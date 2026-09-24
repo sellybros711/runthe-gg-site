@@ -1,0 +1,4 @@
+# Repair output. Everything here is regenerated from the read-only pack by
+# tools/, so it is a build product rather than a source, and committing it
+# would put two answers in the repo for what a strip should look like.
+build/

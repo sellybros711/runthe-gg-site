@@ -642,7 +642,7 @@ const RIVALS = [
 RIVALS.forEach(([a, b]) => {
   if (!iT.has(a) || !iT.has(b)) return;
   const n = PLAYERS.filter((p) => p.t.includes(a) && p.t.includes(b)).length;
-  if (n >= 12) add(`Played for BOTH the ${a} and the ${b}`,
+  if (n >= 12) add(`Played for both the ${a} and the ${b}`,
     { all: [{ k: 'team', v: a }, { k: 'team', v: b }] }, 'two');
 });
 // -- awards ("Pro Bowl winner" reads wrong; selections aren't won)
@@ -746,7 +746,7 @@ nbaAdd('NBA #1 overall draft pick', { all: [NBA, { k: 'draft1' }] }, 'draft');
  ['Golden State Warriors', 'Brooklyn Nets'], ['Boston Celtics', 'Philadelphia 76ers']]
   .forEach(([a, b]) => {
     if (!iT.has(a) || !iT.has(b)) return;
-    nbaAdd(`Played for BOTH the ${a} and the ${b}`, { all: [{ k: 'team', v: a }, { k: 'team', v: b }] }, 'two');
+    nbaAdd(`Played for both the ${a} and the ${b}`, { all: [{ k: 'team', v: a }, { k: 'team', v: b }] }, 'two');
   });
 
 // ------------------------------------------------------------- evaluate

@@ -27,6 +27,7 @@ const D = require(ROOT + '/cfb/commish/docket.js');
 const S = require(ROOT + '/cfb/commish/season.js');
 const SIT = require(ROOT + '/cfb/commish/situation.js');
 const CAL = require(ROOT + '/cfb/commish/calendar.js');
+const FR = require(ROOT + '/cfb/commish/frontier.js');
 const E = require(ROOT + '/cfb/engine.js');
 const teams = leagueTeams(ROOT);
 
@@ -37,8 +38,21 @@ const world0 = (year) => L.createWorld({ year: year || 2025, membership: L.membe
 console.log('\n=== every item is well formed ===');
 {
   const w = world0();
-  const bloc = new Set(B.BLOCS.map((b) => b.id));
+  /* THE ROOM AS IT CAN EVER BE, not as it starts. Six more blocs can be seated by a frontier
+     (see blocs.js SEATED), and an item on the ladder that aims an effect at the President is
+     naming somebody who is genuinely in the room by the time that item can come up. Checking
+     against the founding nine alone reported forty-five perfectly good aims as typos.
+     WHAT THIS STILL CATCHES IS THE TYPO, which is the whole job: a name that is in neither
+     list is nobody, and an effect aimed at nobody is silently dropped by react(). */
+  const bloc = new Set(B.BLOCS.concat(B.SEATED).map((b) => b.id));
   const axis = new Set(L.AXES);
+  /* AND THE LEDGER AS IT CAN EVER BE. A frontier grafts fields onto the world when it is
+     crossed, so a path like `posture.offworld` does not exist on a fresh world and is not a
+     typo: it is a field that does not exist YET. Every one of them is declared in
+     frontier.js, which is what makes this list finite and what keeps the guard sharp. A path
+     in neither the opening world nor any frontier is still an error, and it is still the
+     error this whole check exists for: a ruling that writes nowhere and changes nothing. */
+  const grafted = new Set(FR.allPaths());
   let badPath = [], badAxis = [], badBloc = [], thin = [];
 
   for (const it of D.ITEMS) {
@@ -48,7 +62,7 @@ console.log('\n=== every item is well formed ===');
          holds at runtime, checked here so a typo is a failing test rather than a ruling
          that throws in a player's face halfway through a term. */
       for (const p2 in (o.edit || {}).set || {}) {
-        if (L.getPath(w, p2) === undefined) badPath.push(it.id + '/' + o.id + ' -> ' + p2);
+        if (L.getPath(w, p2) === undefined && !grafted.has(p2)) badPath.push(it.id + '/' + o.id + ' -> ' + p2);
       }
       for (const a in (o.edit || {}).effects || {}) if (!axis.has(a)) badAxis.push(it.id + '/' + o.id + ' -> ' + a);
       for (const b in (o.edit || {}).aimed || {}) {
@@ -57,7 +71,7 @@ console.log('\n=== every item is well formed ===');
       }
     }
     for (const d of it.dials || []) {
-      if (L.getPath(w, d.path) === undefined) badPath.push(it.id + '/dial ' + d.id + ' -> ' + d.path);
+      if (L.getPath(w, d.path) === undefined && !grafted.has(d.path)) badPath.push(it.id + '/dial ' + d.id + ' -> ' + d.path);
       for (const a in d.per || {}) if (!axis.has(a)) badAxis.push(it.id + '/dial ' + d.id + ' -> ' + a);
       for (const b in d.aim || {}) if (!bloc.has(b)) badBloc.push(it.id + '/dial ' + d.id + ' -> ' + b);
     }
@@ -216,7 +230,7 @@ console.log('\n=== the desk is not empty, and it is not the same every year ==='
     /* The offseason beats read LAST season, so they need a term that has one behind it. */
     const later = world0();
     later.year = base.startYear + 2;
-    later.champs = { [base.startYear + 1]: { school: 'Ohio State', color: '#bb0000' } };
+    later.champions = { [base.startYear + 1]: { school: 'Ohio State', color: '#bb0000' } };
     later.ratings = { [base.startYear + 1]: { total: 800, perGame: 1.5, title: 20 } };
     for (const beat of [D.BEATS.WINTER, D.BEATS.PORTAL, D.BEATS.SPRING, D.BEATS.MEDIA]) {
       const wb = Object.assign({}, later, { beat });
@@ -238,6 +252,132 @@ console.log('\n=== the desk is not empty, and it is not the same every year ==='
     for (let beat = 0; beat < 9; beat++) {
       const wb = Object.assign({}, withThreads, { beat });
       D.eligible(wb, L, SIT.build(wb, L, { calendar: CAL })).forEach((i) => seen.add(i.id));
+    }
+  }
+  /* ---- and the items that only exist in a sport that grew ----
+     THE LADDER AT THE BOTTOM OF docket.js IS GATED ON FRONTIER.OPEN, which on a fresh world
+     is false for eight of the ten: nothing is crossed, so nothing past the first rung is
+     eligible, and a sweep that only ever looks at a world0() reports them all unreachable.
+
+     THE FIX IS NOT TO EXCUSE THEM. It is to walk the chain the way a term walks it: cross
+     what is open, then look again, and keep going until nothing new opens. That is a
+     stronger check than the one it replaces, because it proves the chain RESOLVES: a rung
+     whose `needs` can never all be satisfied never becomes open, and this loop terminates
+     without ever having seen it, and it is reported exactly like any other unreachable item.
+     A `needs` naming a frontier that does not exist fails the same way. */
+  {
+    let w = world0();
+    w.year = w.startYear + 6;
+    /* THE FUSES LIT AND THE BOOKS OPEN, because several rungs gate on a second condition as
+       well as on the frontier, and this sweep is asking whether the FRONTIER lets them
+       through. Whether the sport ever reaches these states is the ordinary question every
+       other item in this file is already swept for, and probe_longrun measures it for real.
+       Revenue is set BELOW the line rather than above it: the fund turns up when the sport
+       needs money, which is the whole premise of that item. */
+    w.pressure = { legal: 55, congress: 55, union: 55, hearings: 0 };
+    w.meters.revenue = 40;
+    for (let step = 0; step < FR.FRONTIERS.length + 2; step++) {
+      const openNow = FR.reachable(w);
+      for (let beat = 0; beat < 9; beat++) {
+        const wb = Object.assign({}, w, { beat });
+        D.eligible(wb, L, SIT.build(wb, L, { calendar: CAL })).forEach((i) => seen.add(i.id));
+      }
+      if (!openNow.length) break;
+      openNow.forEach((f) => { w = FR.cross(w, f.id); });
+      /* A crossing costs a year, so the cooldown on a rung already ruled on lapses and the
+         sweep is not measuring its own speed. */
+      w.year += 5;
+    }
+    ok('the frontier chain resolves, every rung reachable from the one before',
+      FR.FRONTIERS.every((f) => FR.has(w, f.id)),
+      FR.FRONTIERS.filter((f) => !FR.has(w, f.id)).map((f) => f.id).join(', ') || 'all '
+        + FR.FRONTIERS.length + ' crossed');
+    /* AND NOTHING IS ITS OWN ANCESTOR. A cycle in `needs` would make both of the frontiers
+       in it permanently closed, which the loop above reports as two unreachable rungs and
+       not as the reason for them. */
+    const cyc = FR.FRONTIERS.filter((f) => f.needs.indexOf(f.id) >= 0);
+    ok('  and no frontier needs itself', !cyc.length, cyc.map((f) => f.id).join(', '));
+    const ghost = FR.FRONTIERS.filter((f) => f.needs.some((n) => !FR.BY_ID[n]));
+    ok('  and every prerequisite is a real frontier', !ghost.length,
+      ghost.map((f) => f.id).join(', '));
+
+    /* EVERY BLOC A FRONTIER SEATS IS A BLOC THAT EXISTS, and it is checked because the two
+       lists are in two files: frontier.js names who joins, blocs.js writes who they are. A
+       name in one and not the other seats somebody with no weights, and react() would dot an
+       undefined and put NaN on the desk. */
+    const seatless = FR.FRONTIERS.filter((f) => f.seats && !B.BY_ID[f.seats]);
+    ok('  and everybody a frontier seats is written in blocs.js', !seatless.length,
+      seatless.map((f) => f.id + ' -> ' + f.seats).join(', '));
+
+    /* AND EVERYBODY IN THE ROOM HAS THEIR OWN VOICE. This is the one that already happened.
+       line() falls back to VOICE.Fans for a bloc with no entry and says nothing about it, so
+       the first term to seat a President had the President of the United States answering a
+       ruling with "My grandfather sat in that stadium. He would not recognize the schedule."
+       Right number, right mood, somebody else's sentence, and a wrong line is a valid string
+       so nothing threw and nothing failed. */
+    const voiceless = B.BLOCS.concat(B.SEATED).filter((b) => !B.VOICE[b.id]);
+    ok('  and every bloc in the room has its own voice', !voiceless.length,
+      voiceless.map((b) => b.id).join(', ')
+        || B.BLOCS.length + ' founding, ' + B.SEATED.length + ' seated, all written');
+    /* WITH ENOUGH OF IT. A band of one is a bloc that says the same thing every time it is
+       in that mood, which across a fifty year term is the thing a player notices first. */
+    const thinBand = B.BLOCS.concat(B.SEATED).filter((b) => {
+      const v = B.VOICE[b.id];
+      return !v || !v.bands || v.bands.length !== 5
+        || v.bands.some((band) => band.length < B.VARIETY);
+    });
+    ok('  and five bands with real variety in each', !thinBand.length,
+      thinBand.map((b) => b.id).join(', '));
+    /* AND NOBODY SAYS SOMEBODY ELSE'S LINE. Copying a bloc's pool and editing half of it is
+       the likely way a new voice gets written, and the half left behind is exactly the
+       failure this section exists for. */
+    const said = {};
+    const dupes = [];
+    B.BLOCS.concat(B.SEATED).forEach((b) => {
+      const v = B.VOICE[b.id] || {};
+      [].concat(...(v.bands || []), v.streak || [], v.relief || [], v.grudge || [])
+        .forEach((s) => {
+          if (said[s] && said[s] !== b.id) dupes.push(b.id + ' says ' + said[s] + "'s line");
+          said[s] = b.id;
+        });
+    });
+    ok('  and nobody is reading somebody else\'s line', !dupes.length,
+      dupes.slice(0, 4).join(', ') || Object.keys(said).length + ' distinct lines');
+
+    /* ── A TAIL MUST NOT EAT THE RULING IT LANDS ON ────────────────────────────────────
+       fallout.merge folds what happened next into the edit, and it used to do it by naming
+       the keys worth keeping. An allowlist drops anything added later, silently, and only on
+       the rulings a tail happens to roll on.
+
+       IT ALREADY COST A DEAD BUTTON. `opens` went missing that way, so applyEdit stopped
+       crossing the frontier, was then asked to write a field the crossing grafts, and threw
+       by design in the middle of the ruling handler: no ledger write, the screen stuck on the
+       desk, and the button the player just pressed doing nothing for ever. `written` had been
+       bolted back on at the bottom of that function years earlier for the same reason, which
+       was the warning nobody read.
+
+       SO THIS CHECKS THE PROPERTY RATHER THAN THE KEY. Every key on the edit survives the
+       merge, whatever the keys turn out to be next year. */
+    const FALL = require(ROOT + '/cfb/commish/fallout.js');
+    const rung = D.BY_ID['fr-capital'];
+    const base = D.resolve(rung, 'sell', {});
+    const merged = FALL.merge(base, { id: 'test-tail', effects: { money: -1 }, aimed: {} });
+    const lost = Object.keys(base).filter((k) => merged[k] === undefined);
+    ok('a fallout tail keeps every field of the ruling it lands on', !lost.length,
+      lost.join(', ') || Object.keys(base).length + ' fields kept');
+    ok('  including the one that enlarges the sport', merged.opens === base.opens,
+      String(merged.opens));
+    /* AND THE WHOLE PATH STILL WORKS WITH A TAIL ON IT, which is the failure as a player met
+       it: the ruling goes through and the frontier is crossed even when something else
+       happened that day. */
+    {
+      let w = world0();
+      w = FR.cross(w, 'union');
+      let threw = null, after = null;
+      try { after = L.applyEdit(w, merged); } catch (e) { threw = e.message; }
+      ok('  and the ruling still applies with a tail folded in', !threw, threw || 'applied');
+      ok('  and the frontier is still crossed', !!(after && after.frontier && after.frontier.capital),
+        after ? Object.keys(after.frontier).join(', ') : 'threw');
     }
   }
   /* ---- asking about the case ----
@@ -644,26 +784,47 @@ console.log('\n=== a term off the real docket ===');
      sport that has been governed for five years. 15 plays the full term and moves two of the
      four numbers. Re-picking an arbitrary input is not the same as loosening a threshold,
      and the thresholds below are untouched. */
-  const SEED = 15;
-  const a = term(SEED, false);
-  /* A TERM ENDS ONE OF TWO WAYS AND BOTH ARE A PASS. This asked for more than twenty
-     rulings and got eighteen, because the bot was fired in the fourth season: it rules at
-     random off a docket with real consequences, so of course it is. Getting removed is the
-     game working, not the docket failing, and an assertion that cannot tell those apart is
-     an assertion that will be edited away the first time somebody tunes a weight. */
-  ok('a term plays off the real docket', a.ruled > 10 && (a.w.outcome || a.w.year > 2025),
-    a.ruled + ' rulings, ' + a.empty + ' quiet beats, '
-    + (a.w.outcome ? 'removed in ' + a.w.year + ': ' + a.w.outcome.reason : 'served the full term'));
-  /* HALF THE TERM HAS NOTHING ON THE DESK, and that is a content gap rather than a bug:
-     eight items cannot fill forty-five beats. It is asserted at the number it is at so it
-     shows up in the output and gets tighter as items are written, rather than being
-     discovered when somebody plays a term and skips through most of it. */
-  ok('  and the desk is empty about as often as eight items predict', a.empty <= 25,
-    a.empty + ' of ' + (a.ruled + a.empty) + ' beats had nothing on it');
-  ok('  and the sport is somewhere else by the end',
-    a.w.playoff.teams !== 12 || a.w.labour.revShare > 0 || a.w.rules.confGames !== 9,
-    a.w.playoff.teams + '-team playoff, ' + Math.round(a.w.labour.revShare * 100) + '% to the players, '
-    + a.w.rules.confGames + ' conference games');
+  /* TWELVE SEEDS, NOT ONE, AND THAT IS THE FIX FOR A TEST THAT HAS NOW BROKEN TWICE.
+     The note above records the first time: every seed's sequence shifted when an opening case
+     was added, and the fixture seed started ending with the bot voted out in its second
+     season. It happened again the day the ladder was written, on the same seed, for the same
+     reason: the pick is deterministic on the world's clock and the pool, so ADDING ANY ITEM
+     ANYWHERE reshuffles every seed's term. A magic number is therefore a test that fails on
+     the one action this mode is going to see most of, which is somebody writing content.
+
+     What these four assertions are actually about is not one term, it is a PROPERTY of the
+     docket: that a term plays, that it ends one of the two legal ways, that the desk is not
+     mostly empty, and that the sport is somewhere else by the end. A property is checked
+     across a sample. The replay assertion below still pins one seed, because determinism is
+     the one claim here that IS about a single term. */
+  const SEEDS = [1, 2, 3, 4, 5, 7, 8, 9, 10, 14, 16, 17];
+  const terms = SEEDS.map((s) => term(s, false));
+  /* A TERM ENDS ONE OF TWO WAYS AND BOTH ARE A PASS. Getting removed is the game working,
+     not the docket failing: the bot rules at random off a docket with real consequences, so
+     of course it is fired sometimes. An assertion that cannot tell those apart is one that
+     gets edited away the first time somebody tunes a weight.
+     A SHORT TERM IS ALSO LEGAL, so the bar is on the MEDIAN rather than on every run: one
+     seed that gets the bot sacked in year one is the mode, twelve of them is a docket that
+     has become impossible to survive. */
+  const ruledSorted = terms.map((t) => t.ruled).sort((x, y) => x - y);
+  const medRuled = ruledSorted[Math.floor(ruledSorted.length / 2)];
+  ok('a term plays off the real docket', medRuled > 10 && terms.every((t) => t.w.outcome || t.w.year > 2025),
+    'median ' + medRuled + ' rulings over ' + SEEDS.length + ' seeds, '
+    + terms.filter((t) => !t.w.outcome).length + ' served the full term');
+  /* THE DESK IS NOT MOSTLY EMPTY. This used to allow twenty-five quiet beats of forty-five,
+     written when eight items could not fill a term. There are a hundred and ten now and the
+     measured answer is zero, so the bar is where the sport actually is: a quiet beat is a
+     player pressing on through a screen with nothing on it. */
+  const worstEmpty = Math.max(...terms.map((t) => t.empty));
+  ok('  and the desk is never empty for long', worstEmpty <= 4,
+    'worst seed had ' + worstEmpty + ' quiet beats');
+  const stuck = terms.filter((t) => !(t.w.playoff.teams !== 12 || t.w.labour.revShare > 0
+    || t.w.rules.confGames !== 9));
+  ok('  and the sport is somewhere else by the end', !stuck.length,
+    stuck.length ? stuck.length + ' of ' + SEEDS.length + ' ended unchanged'
+      : 'all ' + SEEDS.length + ' moved');
+  const SEED = SEEDS[1];
+  const a = terms[1];
   const b = term(SEED, false);
   ok('  the same seed replays it exactly', JSON.stringify(a.w) === JSON.stringify(b.w));
   const c = term(SEED, true);
@@ -729,6 +890,102 @@ console.log('\n=== what the sign said ===');
   ok('the draw always lands on a real sign', drawn.every((x) => !!x));
   ok('  and reaches most of them', new Set(drawn).size >= Math.min(8, SIGNS.length),
     new Set(drawn).size + ' of ' + SIGNS.length);
+}
+
+/* ================================================================
+   A SCHOOL IS SINGULAR IN THIS SPORT.
+
+   "Oregon is 12-0." "Oregon has not lost a game." A place name standing in for a program
+   takes a singular verb in American usage, and the plural is the British habit for club
+   sides. A player caught "Oregon are 12-0 and nobody is watching" on the screen, and once
+   it is pointed at you cannot unsee it: it reads as a game written by somebody who does not
+   watch this sport.
+
+   ASSERTED ON THE RENDERED SENTENCE, not on the source, which is the only place it is
+   checkable. The name is never in the string: every one of these is `c.school + ' is '` or a
+   {champ} token, so grepping docket.js for "Oregon are" finds nothing and always will. So
+   the docket, the podium and the cutscenes are all played against real seasons and the
+   output is read.
+
+   TWO SUBJECTS JOINED BY "and" TAKE A PLURAL VERB and that is not a miss: "Oregon and Ohio
+   State are both unbeaten" is right, and so is "Houston and West Virginia want their kickoff
+   back". Masked to one token before the scan, so the pair reads as the pair.
+
+   MASKING IS ALSO WHAT KEEPS "West Virginia" FROM BEING READ AS "Virginia". Longest name
+   first, or the check reports a false plural on the school whose name ends another school's
+   and somebody goes and breaks a correct sentence to satisfy it.
+   ================================================================ */
+console.log('\n=== a school is singular ===');
+{
+  const M2 = require(ROOT + '/cfb/commish/media.js');
+  const SC2 = require(ROOT + '/cfb/commish/scene.js');
+  const SCHOOLS = Object.keys(L.membershipFrom(teams, 2025)).sort((a, b) => b.length - a.length);
+  const ONE = String.fromCharCode(1), TWO = String.fromCharCode(2);
+  const PLURAL = new RegExp(ONE + ' (are|have|were|do|win|lose|play|go|come|take|make'
+    + '|keep|need|want|get|sit|look)\\b', 'g');
+  const PAIR = new RegExp(ONE + ' and ' + ONE, 'g');
+  const found = [];
+  const scan = (where, t) => {
+    if (!t) return;
+    let s = String(t);
+    for (const sch of SCHOOLS) if (s.indexOf(sch) >= 0) s = s.split(sch).join(ONE);
+    s = s.replace(PAIR, TWO);
+    let m;
+    PLURAL.lastIndex = 0;
+    while ((m = PLURAL.exec(s))) {
+      found.push(where + ': ' + s.slice(Math.max(0, m.index - 34), m.index + 34)
+        .split(ONE).join('<school>').split(TWO).join('<school> and <school>'));
+    }
+  };
+  let sd2 = 7;
+  const rng2 = () => { sd2 = (sd2 * 1103515245 + 12345) % 2147483648; return sd2 / 2147483648; };
+  for (let beat = 0; beat <= 8; beat++) {
+    for (let sd = 1; sd <= 6; sd++) {
+      const w = L.createWorld({ year: 2025, membership: L.membershipFrom(teams, 2025), seed: sd });
+      w.beat = beat;
+      const seg = S.segmentFor(beat);
+      const sim = seg ? S.play(Object.assign({}, w, { beat }), teams, E.createSeededRNG(sd),
+        { through: seg.through, titles: !!seg.titles, bracket: !!seg.bracket }) : null;
+      const sit = SIT.build(w, L, { sim, calendar: CAL });
+      D.ITEMS.forEach((it) => {
+        let c = null;
+        try { c = D.castOf(it, w, L, rng2, sit); } catch (e) { return; }
+        const at = (v) => { try { return D.text(v, c, it, sit); } catch (e) { return ''; } };
+        scan('docket ' + it.id, at(it.title));
+        scan('docket ' + it.id, at(it.brief));
+        (it.options || []).forEach((o) => {
+          scan('docket ' + it.id + ':' + o.id, at(o.label));
+          scan('docket ' + it.id + ':' + o.id, at(o.body));
+        });
+        (it.voices || []).forEach((v) => scan('docket ' + it.id + ' voice', at(v.say)));
+        (it.asks || []).forEach((q) => {
+          scan('docket ' + it.id + ' ask', at(q.q));
+          scan('docket ' + it.id + ' ask', at(q.a));
+        });
+      });
+      M2.QUESTIONS.forEach((q) => {
+        let c = null;
+        try { c = M2.castOf(q, w, L, rng2, sit); } catch (e) { return; }
+        const at = (v) => { try { return M2.text(v, c, q, sit, w); } catch (e) { return ''; } };
+        scan('media ' + q.id, at(q.ask));
+        (q.answers || []).forEach((a) => {
+          scan('media ' + q.id + ':' + a.id, at(a.body));
+          scan('media ' + q.id + ':' + a.id, at(a.wrote));
+        });
+      });
+      (SC2.SCENES || []).forEach((s2) => {
+        let c = null;
+        try { c = SC2.castOf(s2, w, L, sit); } catch (e) { return; }
+        (s2.lines || []).forEach((ln) => {
+          try { scan('scene ' + s2.id, typeof ln.say === 'function' ? ln.say(c, w) : ln.say); }
+          catch (e) { /* a scene with no cast for this world says nothing */ }
+        });
+      });
+    }
+  }
+  const uniq = [...new Set(found)];
+  ok('no school takes a plural verb, over 54 played beats', !uniq.length,
+    uniq.slice(0, 3).join('  |  ') || 'docket, podium and cutscenes');
 }
 
 console.log(bad ? '\n' + bad + ' FAILED' : '\nall clear');

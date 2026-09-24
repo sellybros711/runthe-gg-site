@@ -181,6 +181,27 @@
       { id:'sup_nfl_chad-ochocinco',  name:'Chad Ochocinco',    sport:'NFL', f:5, t:['Cincinnati Bengals','New England Patriots'], j:[85], pos:'Wide Receiver', decade:[2000,2010], col:'Oregon State', ns:11, hp:0 },
       { id:'sup_nfl_aj-green',        name:'A.J. Green',        sport:'NFL', f:5, t:['Cincinnati Bengals','Arizona Cardinals'], j:[18], pos:'Wide Receiver', decade:[2010,2020], col:'Georgia', ns:12, hp:1 },
 
+      /* ================================ colleges the namesake guard stranded */
+      /* These five are already in the curated corpus and were already correct
+         about everything except where they went to school, which they did not
+         carry at all. The college they were being shown with came from another
+         man with the same name, folded in by data.js on name + sport: a
+         linebacker's South Carolina State on the Browns' Hall of Fame tackle,
+         a cornerback's Nebraska on the Ravens' quarterback. Alma Mater printed
+         it as the answer and marked the real school wrong. A player wrote in
+         about Joe Thomas.
+
+         samePerson() in data.js now refuses that fold, which is right and left
+         these five with no college and out of the pool. That is the honest
+         state and it is not the finished one, so here is the record. Each row
+         matches its curated entity on club and position, which is what lets the
+         backfill through, and carries nothing the corpus already has. */
+      { id:'sup_nfl_joe-thomas-ot',   name:'Joe Thomas',        sport:'NFL', f:5, t:['Cleveland Browns'], j:[73], pos:'Offensive Lineman', decade:[2000,2010], col:'Wisconsin', ns:11, hp:1 },
+      { id:'sup_nfl_josh-allen-qb',   name:'Josh Allen',        sport:'NFL', f:5, t:['Buffalo Bills'], j:[17], pos:'Quarterback', decade:[2010,2020], col:'Wyoming', ns:8, hp:1 },
+      { id:'sup_nfl_lamar-jackson-qb',name:'Lamar Jackson',     sport:'NFL', f:5, t:['Baltimore Ravens'], j:[8], pos:'Quarterback', decade:[2010,2020], col:'Louisville', ns:8, hp:1 },
+      { id:'sup_nfl_michael-thomas-wr', name:'Michael Thomas',  sport:'NFL', f:5, t:['New Orleans Saints'], j:[13], pos:'Wide Receiver', decade:[2010,2020], col:'Ohio State', ns:9, hp:0 },
+      { id:'sup_nfl_chris-jones-dl',  name:'Chris Jones',       sport:'NFL', f:4, t:['Kansas City Chiefs'], j:[95], pos:'Defensive Lineman', decade:[2010,2020], col:'Mississippi State', ns:10, hp:0 },
+
       /* ============================================== MLB icons, missing */
       { id:'sup_mlb_tris-speaker',    name:'Tris Speaker',      sport:'MLB', f:5, t:['Boston Red Sox','Cleveland Guardians','Washington Nationals','Athletics'], j:[], pos:'Center Fielder', decade:[1900,1910,1920], col:'', ns:22, hp:0 },
       { id:'sup_mlb_christy-mathewson', name:'Christy Mathewson', sport:'MLB', f:5, t:['New York Giants','Cincinnati Reds'], j:[], pos:'Pitcher', decade:[1900,1910], col:'Bucknell', ns:17, hp:0 },
@@ -194,7 +215,20 @@
       { id:'sup_mlb_willie-mccovey-fix', name:'Willie McCovey', sport:'MLB', f:5, t:['San Francisco Giants','San Diego Padres','Athletics'], j:[44], pos:'First Baseman', decade:[1950,1960,1970,1980], col:'', ns:22, hp:0 },
       { id:'sup_nba_patrick-ewing-fix', name:'Patrick Ewing',   sport:'NBA', f:5, t:['New York Knicks','Oklahoma City Thunder','Orlando Magic'], j:[33], pos:'Center', decade:[1980,1990,2000], col:'Georgetown', ns:17, hp:1 },
 
-      { id:'sup_mlb_lee-smith',       name:'Lee Smith',         sport:'MLB', f:5, t:['Chicago Cubs','Boston Red Sox','St. Louis Cardinals','New York Yankees','Baltimore Orioles','Angels','Cincinnati Reds','Washington Nationals'], j:[46], pos:'Pitcher', decade:[1980,1990], col:'Northwestern State', ns:18, hp:0 }
+      { id:'sup_mlb_lee-smith',       name:'Lee Smith',         sport:'MLB', f:5, t:['Chicago Cubs','Boston Red Sox','St. Louis Cardinals','New York Yankees','Baltimore Orioles','Angels','Cincinnati Reds','Washington Nationals'], j:[46], pos:'Pitcher', decade:[1980,1990], col:'Northwestern State', ns:18, hp:0 },
+
+      /* THE SECOND MAN OF A NAME WE ALREADY HELD.
+       *
+       * A player wrote in: Sportegories refused Dee Brown for "NBA player from
+       * a Big Ten school". We held one Dee Brown, the Celtics guard who won the
+       * 1991 dunk contest and went to Jacksonville, so the game answered about
+       * the wrong man and told him he was wrong.
+       *
+       * The other Dee Brown was Big Ten Player of the Year at Illinois in 2005
+       * and took them to the national final. Sportegories keeps same-named
+       * players apart already (it holds three Josh Allens), so the only thing
+       * missing was the record. */
+      { id:'sup_nba_dee-brown-illinois', name:'Dee Brown',      sport:'NBA', f:4, t:['Utah Jazz','Washington Wizards','Phoenix Suns'], j:[5,11], pos:'Point Guard', decade:[2000,2010], col:'Illinois', ns:4, hp:0 }
     ]
   };
 })(typeof self !== 'undefined' ? self : this);

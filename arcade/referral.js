@@ -234,7 +234,7 @@
        everybody looking at it. */
     ad.innerHTML='<div class="h">Play again? <b>Refer a friend for another try.</b></div>'+
       '<div class="s">They sign up with your link, you both get an extra go at today’s games.</div>'+
-      '<button type="button"><span aria-hidden="true">🎟️</span> Invite a friend</button>';
+      '<button type="button">'+icon('invite')+' Invite a friend</button>';
     ad.querySelector('button').addEventListener('click', function(){ share(); });
     sheet.appendChild(ad);                            // foot of the modal
   }
@@ -273,6 +273,14 @@
   function exhaustKey(){ return 'rtg:ref:exhausted:' + (window.RTGTokens && RTGTokens.today ? RTGTokens.today() : ''); }
   function exhaustSeen(){ try{ return !!localStorage.getItem(exhaustKey()); }catch(e){ return false; } }
   function markExhaust(){ try{ localStorage.setItem(exhaustKey(), '1'); }catch(e){} }
+
+  /* Our own marks, never stock emoji: RTGIcons is the arcade's family and it
+     loads ahead of this file on every page that has it. This prompt is hub-only
+     and the hub has it, but the family missing must never be what takes the
+     modal down, so a miss is an empty string and the caller decides. */
+  function icon(name, opts){
+    try{ return (window.RTGIcons && RTGIcons.get(name, opts)) || ''; }catch(e){ return ''; }
+  }
 
   function promptStyles(){
     if(document.getElementById('rtg-ref-modal-style')) return;
@@ -317,14 +325,17 @@
     // Two ways to keep playing: a free bonus for inviting, or the card for
     // unlimited. The card row only appears if RTGCard is on the page.
     var canCard = !!(window.RTGCard && RTGCard.paywall);
+    var cap = icon('ticket', {size:30});
     scrim.innerHTML=
       '<div class="rtgref-modal">'+
-        '<div class="cap" aria-hidden="true">🎟️</div>'+
+        // Drawn rather than left empty: an empty .cap is a 60px green tile with
+        // nothing in it, which reads as a picture that failed to load.
+        (cap ? '<div class="cap" aria-hidden="true">'+cap+'</div>' : '')+
         '<h2>That’s all four for today</h2>'+
         '<p>Two ways to keep playing. Invite a friend and you <b>both</b> get another go today, or go unlimited with the Arcade Card.</p>'+
-        '<button class="go" type="button" id="rtgRefGo"><span aria-hidden="true">🎟️</span> Invite a friend</button>'+
+        '<button class="go" type="button" id="rtgRefGo">'+icon('invite')+' Invite a friend</button>'+
         (canCard ? '<div class="or">or</div>'+
-          '<button class="card" type="button" id="rtgRefCard"><span aria-hidden="true">🎫</span> <span>Get the <b>Arcade Card</b>, unlimited</span></button>' : '')+
+          '<button class="card" type="button" id="rtgRefCard">'+icon('ticket')+' <span>Get the <b>Arcade Card</b>, unlimited</span></button>' : '')+
         '<div><button class="later" type="button" id="rtgRefLater">Maybe later</button></div>'+
       '</div>';
     function close(){ if(scrim && scrim.parentNode) scrim.parentNode.removeChild(scrim); }

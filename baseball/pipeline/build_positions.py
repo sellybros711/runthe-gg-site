@@ -81,19 +81,43 @@ pit = pd.DataFrame({
 })
 
 # Aggregate multi-stint seasons
-def combine(df, extra=None):
+#
+# A TRADED PLAYER HAS NO DRAFTABLE ROW AT ALL, WHICH IS 2,939 SEASONS. Collapsing
+# his stints to one row labelled TOT is correct arithmetic and makes him
+# unreachable, because three separate filters keep TOT off every board: a man who
+# changed clubs in July is simply not on either club's wheel. Rickey Henderson's
+# 1989, Tom Seaver's 1977 and Bartolo Colon's 2002 are all missing, 33 of them at
+# 6.0 WAR or better, 6.6% of the pool.
+#
+# SPLITTING IS OPT-IN AND DEFAULTS OFF, and that is deliberate rather than timid.
+# The price curve is CONVEX (price = 1.5 * war ** 1.6), so half the WAR costs far
+# less than half the price: splitting a season into two stints makes a great
+# player's half-year the best value on the board, and the draft economy this game
+# is balanced around would move. That is a measurement (re-run the cap sweep in
+# scripts and compare the best-available against budget-bot gap), and the
+# measurement cannot be made until a build has actually produced the split pool.
+#
+# So --split-stints exists, nothing runs it by default, and today's pool is
+# reproduced byte for byte without it. Do not turn it on and ship in one step.
+def combine(df, extra=None, split=False):
     agg = {"bwar": "sum", "name": "first", "role": "first"}
     if extra:
         for c in extra:
             agg[c] = "sum"
     if "ip" in df.columns and not extra:
         agg["ip"] = "first"
-    return (df.dropna(subset=["season", "bwar"])
-              .groupby(["bbref_id", "season"], as_index=False)
+    clean = df.dropna(subset=["season", "bwar"])
+    if split:
+        # One row per club, so each board offers what he did THERE.
+        return clean.groupby(["bbref_id", "season", "team"], as_index=False).agg(agg)
+    return (clean.groupby(["bbref_id", "season"], as_index=False)
               .agg({**agg, "team": lambda s: "TOT" if s.nunique() > 1 else s.iloc[0]}))
 
-bat = combine(bat)
-pit = combine(pit, extra=["ip_start", "ip_relief"])
+SPLIT_STINTS = "--split-stints" in sys.argv
+if SPLIT_STINTS:
+    print("  --split-stints: one row per club. THE DRAFT ECONOMY MOVES, see combine().")
+bat = combine(bat, split=SPLIT_STINTS)
+pit = combine(pit, extra=["ip_start", "ip_relief"], split=SPLIT_STINTS)
 pit["ip"] = (pit["ip_start"] + pit["ip_relief"]) / 3.0
 
 # Pitcher classification
@@ -128,16 +152,20 @@ POS_COLS = {
 }
 
 def load_lahman_table(name):
-    """Load a Lahman table from local CSV (preferred) or pybaseball fallback."""
+    """A Lahman table, off disk if the fetch got it, from the archive if not."""
     local = os.path.join(DATA_DIR, name)
     if os.path.exists(local):
         print(f"  Reading {name} from disk...")
         return pd.read_csv(local, low_memory=False, encoding="utf-8-sig")
-    # Fallback to pybaseball
-    from pybaseball import lahman
-    fn = name.replace(".csv", "").lower()
-    print(f"  Downloading {name} via pybaseball...")
-    return getattr(lahman, fn)()
+    # THE FALLBACK USED TO BE `pybaseball.lahman`, WHICH IS TWO BROKEN THINGS.
+    # It asks for a branch the Chadwick Bureau renamed, so the download answers
+    # with a 404 page and ZipFile reports "File is not a zip file"; and it has
+    # no `teams` function any more, so `getattr` raised on Teams.csv. Both
+    # arrived here as an exception the step below swallowed. lahman.py reads
+    # the archive itself and says which ref answered.
+    import lahman
+    print(f"  {name} was not fetched, reading the archive...")
+    return lahman.table(name)
 
 try:
     A = load_lahman_table("Appearances.csv")
@@ -151,6 +179,21 @@ try:
     A["bbref_id"] = A["playerID"].map(id_map)
     A["season"] = A["yearID"]
     A = A.dropna(subset=["bbref_id"])
+
+    # APPEARANCES IS ONE ROW PER CLUB AND THE LOOP BELOW IS KEYED PER SEASON, so
+    # a traded player wrote his key more than once and the LAST stint won. That
+    # is not a duplicate the way the pricing build's join was, it is a silent
+    # LOSS: ELIG_GAMES is a claim about the season, so a man who played eight
+    # games at short for one club and seven for another played fifteen and
+    # qualifies, while neither stint does and he comes out with no position at
+    # all. Measured against the pool that ships, 2,422 batters lost theirs.
+    #
+    # The same read is in build_pricing.py and was fixed there first, which is
+    # the half worth remembering: that one THREW, because its answer was joined
+    # and the duplicate multiplied rows. This one is the same mistake in the file
+    # that actually builds the shipped pool, and it just quietly drops a column.
+    gcols = [c for c in POS_COLS.values() if c in A.columns]
+    A = A.groupby(["bbref_id", "season"], as_index=False)[gcols].sum()
 
     # Build position eligibility per player-season
     pos_data = {}
@@ -179,12 +222,49 @@ try:
             applied += 1
 
     total_batters = (df["role"] == "bat").sum()
-    print(f"  Applied positions to {applied}/{total_batters} batters ({100*applied/max(1,total_batters):.1f}%)")
+    share = applied / max(1, total_batters)
+    print(f"  Applied positions to {applied}/{total_batters} batters ({100*share:.1f}%)")
+
+    # AND AN EXCEPTION IS NOT THE ONLY WAY THIS ENDS UP EMPTY. A People table
+    # whose bbrefID column arrives blank, or an Appearances table joined against
+    # the wrong id, produces a clean run that applies a position to nobody:
+    # `applied > 0` was the whole test, so zero was the one value it caught and
+    # 4% would have passed.
+    #
+    # POS_FLOOR IS A CATASTROPHE FLOOR AND NOT A QUALITY ONE. The shipped pool
+    # carries a position on 99.4% of its batters, but that is measured AFTER the
+    # playing-time floor, and this frame is the whole of Baseball-Reference, so
+    # the honest figure here is lower and is not a number to guess at. What
+    # holds the real coverage is pool_shape.py, which compares the built pool
+    # against the one that ships. This is here to catch the join collapsing.
+    POS_FLOOR = 0.50
+    if share < POS_FLOOR and "--allow-no-positions" not in sys.argv:
+        sys.exit(
+            f"FATAL: positions reached {100*share:.1f}% of batters, under "
+            f"{100*POS_FLOOR:.0f}%.\n"
+            "  The join has collapsed rather than the data being thin. Check "
+            "that People.csv\n  carries bbrefID, or pass --allow-no-positions."
+        )
     HAS_POSITIONS = applied > 0
 
 except Exception as e:
-    print(f"  WARNING: Could not fetch Lahman Appearances: {e}")
-    print("  Hitter positions will remain blank.")
+    # THIS USED TO BE A WARNING AND THE BUILD CARRIED ON. It produced a pool
+    # with 60,208 batters and a position on none of them, which is not a worse
+    # pool but an unusable one: every slot in the draft is a position, so a
+    # roster cannot be filled at all. The workflow then committed it, because
+    # the step above it had printed a warning and exited zero.
+    #
+    # The dangerous thing is opt in now. --allow-no-positions is there for
+    # somebody rebuilding the price curve on a machine that cannot reach the
+    # archive, which is a real thing to want and is not a thing to ship.
+    print(f"  ERROR: Could not load Lahman Appearances: {e}")
+    if "--allow-no-positions" not in sys.argv:
+        sys.exit(
+            "FATAL: no positions, so nothing could fill a draft slot.\n"
+            "  Run baseball/pipeline/check_lahman.py to read the archive, or\n"
+            "  pass --allow-no-positions to build a pool that cannot be played."
+        )
+    print("  --allow-no-positions: hitter positions will remain blank.")
     HAS_POSITIONS = False
 
 # ---- Step 3: Real closer detection (Lahman Pitching saves) ----
@@ -210,28 +290,50 @@ try:
         if pd.notna(r["SV"]) and r["SV"] >= CLOSER_MIN_SV:
             saves_map[(r["bbref_id"], int(r["season"]))] = True
 
-    # Override closer flag for pitchers with real saves data
+    # THE SAVES COLUMN DECIDES, INCLUDING WHEN IT SAYS NO. This loop used to set
+    # the flag True on a save total and leave it alone otherwise, with a comment
+    # saying a reliever with no saves "could still close". So the innings proxy
+    # survived underneath the real answer and the flag meant "pure reliever OR
+    # real closer", which is 6,041 player-seasons against the saves column's 905.
+    # `closerSavePct` reads the CL slot by name, so that is most of every bullpen
+    # in the game handed a genuine closer's save rate.
+    #
+    # ELIGIBILITY IS NOT THE FLAG AND IS DELIBERATELY UNTOUCHED. Every reliever
+    # in the pool that ships carries `RP;CL`, all 7,239 of them, and only 905
+    # carry the flag: being ABLE to close is a roster shape and having closed is
+    # a fact about the season. Narrowing the eligibility here would empty the CL
+    # slot for most of the board.
     updated = 0
     for idx, row in df.iterrows():
         if row["role"] != "pitch":
             continue
         key = (row["bbref_id"], int(row["season"]))
-        if key in saves_map:
-            df.at[idx, "is_closer_proxy"] = True
+        real = key in saves_map
+        df.at[idx, "is_closer_proxy"] = real
+        if real:
             if "CL" not in str(df.at[idx, "eligible_pos"]):
                 df.at[idx, "eligible_pos"] = "RP;CL"
             updated += 1
-        elif row["eligible_pos"] == "RP;CL":
-            # Was flagged by innings heuristic but doesn't have saves — keep as RP;CL
-            # since they're still relievers who could close
-            pass
 
     print(f"  Found {len(saves_map)} player-seasons with {CLOSER_MIN_SV}+ saves")
     print(f"  Updated {updated} pitcher rows with real closer flags")
 
 except Exception as e:
-    print(f"  WARNING: Could not fetch Lahman Pitching: {e}")
-    print("  Closer flags remain innings-based.")
+    # "CLOSER FLAGS REMAIN INNINGS-BASED" READS LIKE A FALLBACK AND IS NOT ONE.
+    # The heuristic guesses a closer off innings alone, and measured against the
+    # real saves column it calls 22,019 player-seasons a closer where the saves
+    # say 905. `closerSavePct` reads the CL slot by name, so a pool built this
+    # way hands a quarter of every bullpen the save rate of a genuine closer.
+    # That is not a coarser pool, it is a different game, and it shipped as a
+    # warning under a green step.
+    print(f"  ERROR: Could not load Lahman Pitching: {e}")
+    if "--allow-innings-closers" not in sys.argv:
+        sys.exit(
+            "FATAL: no saves, so every closer flag would be a guess off innings.\n"
+            "  Measured against the real column that is 22,019 closers against 905.\n"
+            "  Pass --allow-innings-closers only if you know what that does to the pool."
+        )
+    print("  --allow-innings-closers: closer flags remain innings-based.")
 
 # ---- Step 4: fWAR blend (optional) ----
 print("\nStep 4: Attempting fWAR blend from FanGraphs...")
@@ -284,11 +386,48 @@ try:
     print(f"  Blended fWAR for {matched}/{len(df)} player-seasons ({100*matched/len(df):.1f}%)")
 
 except Exception as e:
+    # THIS except IS WHY THE RUNBOOK LIED FOR MONTHS. FanGraphs answers 403, the
+    # blend is skipped, the build prints a friendly note and carries on, and the
+    # only record of which source actually won was a markdown file somebody wrote
+    # by hand from what the code was SUPPOSED to do. Nothing failed, so nobody
+    # looked: a bWAR-only pool is a perfectly good pool. The symptom was a document
+    # describing a number the game does not have, which is the dangerous direction.
+    #
+    # It still fails soft, because a pool is better than no pool. What changed is
+    # that the build now RECORDS what it did, in a file it writes itself, so the
+    # claim and the data cannot drift again. And --require-fwar is there for the
+    # run that means to have it: asking for a blend and silently not getting one is
+    # the exact shape of this bug.
+    WAR_SOURCE = "bwar"
+    WAR_SOURCE_WHY = f"fWAR blend skipped: {e}"
     print(f"  Skipping fWAR blend: {e}")
-    print("  Prices remain bWAR-only (this is fine for v1).")
+    if "--require-fwar" in sys.argv:
+        sys.exit("FATAL: --require-fwar was given and the blend did not run.")
+    print("  Prices are bWAR-only. Recorded in provenance.json.")
+else:
+    WAR_SOURCE = "blend-50-50"
+    WAR_SOURCE_WHY = f"fWAR blended for {matched}/{len(df)} rows"
 
 # ---- Step 5: Output ----
 print("\nStep 5: Writing output...")
+
+# WHAT THIS BUILD ACTUALLY DID, written by the build. DATA_RUNBOOK.md described a
+# 50/50 FanGraphs blend that never ran, for months, because the only record of
+# which source won was prose somebody wrote from what the code was meant to do.
+# A machine-written file cannot drift from the data beside it.
+prov = {
+    "war_source": WAR_SOURCE,
+    "war_source_note": WAR_SOURCE_WHY,
+    "split_stints": SPLIT_STINTS,
+    "anchor_ip": ANCHOR_IP,
+    "rows": int(len(df)),
+    "seasons": [int(df["season"].min()), int(df["season"].max())],
+}
+prov_path = os.path.join(SCRIPT_DIR, "provenance.json")
+with open(prov_path, "w") as fh:
+    json.dump(prov, fh, indent=2)
+    fh.write("\n")
+print(f"  Wrote {prov_path}: {prov['war_source']}, {prov['rows']} rows")
 
 out_cols = ["bbref_id", "name", "season", "team", "role", "primary_pos",
             "eligible_pos", "is_closer_proxy", "ip", "war_raw", "war_value", "price_m"]

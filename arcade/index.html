@@ -39,7 +39,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:ital,wght@0,600;0,700;0,800;0,900;1,800;1,900&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="/arcade/arcade.css?v=3" />
-<script src="/arcade/icons.js?v=2"></script>
+<script src="/arcade/icons.js?v=3"></script>
 <script src="/arcade/gamemarks.js?v=3"></script>
 <style>
   :root{
@@ -937,7 +937,10 @@ window.GA_ID='G-L29P5MRWKE';
           <div class="iv-kicker">Invite bonus</div>
           <h2 class="iv-head" id="iv-head">Bring a friend, <b>you both get a bonus</b></h2>
           <p class="iv-sub">Share your link. When a friend signs up through it, you each get an extra go at today's free games.</p>
-          <button class="iv-cta" type="button" id="ivShare"><span aria-hidden="true">🎟️</span> Invite a friend</button>
+          <!-- The RTGIcons 'invite' mark, inlined because this is static markup
+               that renders before any script runs, the way the edition chips
+               above are. Same 24x24 grid and the same family attributes. -->
+          <button class="iv-cta" type="button" id="ivShare"><svg width="1em" height="1em" aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="square" stroke-linejoin="miter"><circle cx="9" cy="7" r="3.4"/><path d="M3.2 20.6v-1.1a5.8 5.8 0 0 1 11.6 0v1.1"/><path d="M20 9.5v5.6M17.2 12.3h5.6"/></svg> Invite a friend</button>
           <div class="iv-tally" id="ivTally"></div>
         </section>
 
@@ -1028,13 +1031,13 @@ window.GA_ID='G-L29P5MRWKE';
 <script src="/arcade/day.js?v=2"></script>
 <script src="/arcade/dayroll.js?v=1"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="/arcade/board.js?v=20"></script>
+<script src="/arcade/board.js?v=21"></script>
 <script src="/arcade/auth.js?v=4"></script>
-<script src="/arcade/mycard.js?v=12"></script>
+<script src="/arcade/mycard.js?v=13"></script>
 <script src="/arcade/topbanner.js?v=9"></script>
-<script src="/arcade/auth-ui.js?v=5"></script>
-<script src="/arcade/card.js?v=19"></script>
-<script src="/arcade/referral.js?v=9"></script>
+<script src="/arcade/auth-ui.js?v=6"></script>
+<script src="/arcade/card.js?v=20"></script>
+<script src="/arcade/referral.js?v=10"></script>
 <script src="/arcade/nav.js?v=2"></script>
 <script src="/arcade/calendar.js?v=15"></script>
 <script src="/arcade/tour.js?v=1"></script>

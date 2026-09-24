@@ -37,8 +37,16 @@ const SS='/tmp/claude-0/-home-user-runthe-gg-site/3b48ad95-6870-50f0-afce-ff2b1a
 const UID='11111111-1111-1111-1111-111111111111';
 const URL='http://localhost:8080/cfb/commish/index.html';
 
-/* The account, with the username the page's tester list is written against. */
-const stub=(signedIn,username)=>`
+/* The account: the username the page's tester list is written against, and what it has
+   PAID for. Those are two different questions now and the page asks both. The list decides
+   who can find the mode at all; premium_products() decides whether the gate opens or
+   pitches, because Commish is sold rather than free (owner, 2026-09-08).
+
+   THE RPC STUB HAS TO KNOW WHICH FUNCTION IT IS ANSWERING. It used to answer every rpc()
+   with `true`, which premiumProducts() correctly refuses (it is not an array), so every
+   signed-in tester read as owning nothing and every door in this file shut. That is the
+   whole reason this argument exists. */
+const stub=(signedIn,username,products)=>`
 window.supabase={createClient(){
   const session=${signedIn}?{access_token:'x',user:{id:'${UID}',email:'c@e.com'}}:null;
   return {auth:{onAuthStateChange(){return{data:{}}},
@@ -49,7 +57,9 @@ window.supabase={createClient(){
     signOut:()=>Promise.resolve({})},
     from(){return{select(){return{eq(){return{maybeSingle:()=>Promise.resolve(
       {data:${username?"{username:'"+username+"'}":'null'}})}}}}}},
-    rpc:()=>Promise.resolve({data:true,error:null})}}};`;
+    rpc:(fn)=>Promise.resolve(fn==='premium_products'
+      ? {data:${JSON.stringify(products||[])},error:null}
+      : {data:true,error:null})}}};`;
 
 /* PUT A NAME ON THE REAL LIST, by trapping the assignment access.js makes. Deterministic:
    the name is added the instant the file defines the object, which is before any page code
@@ -62,8 +72,11 @@ const arm=(name)=>`
     get:function(){ return v; },
     set:function(a){ v=a; try{ a.TESTERS.push(${JSON.stringify(name)}); }catch(e){} }});
 })();`;
-/* Signed in as that account, and on the list. */
-const tester=()=>arm(TESTER)+stub(true,TESTER);
+/* Signed in as that account, on the list, and HOLDING the thing the mode is sold as.
+   Every walk below is a paying player's walk, which is the only one that reaches a desk.
+   Pass [] for a tester who has not bought: that is the gate's pitch, checked on its own
+   below rather than at the top of every section. */
+const tester=(products)=>arm(TESTER)+stub(true,TESTER,products||['cfb_premium']);
 
 const b=await chromium.launch({executablePath:'/opt/pw-browsers/chromium-1194/chrome-linux/chrome',args:['--no-sandbox']});
 /* THE SIMULATION SITS BETWEEN THE OFFICE AND THE DESK NOW. Pressing on walks the days of the
@@ -141,6 +154,7 @@ console.log('\n=== every module the page needs is actually loaded ===');
     situation:!!window.PS_CFB_SITUATION, fallout:!!window.PS_CFB_FALLOUT,
     recruiting:!!window.PS_CFB_RECRUITING,
     churn:!!window.PS_CFB_CHURN, rivals:!!window.PS_CFB_RIVALS, report:!!window.PS_CFB_REPORT,
+    note:!!window.PS_CFB_NOTE,
   }));
   const dead=Object.keys(mods).filter((k)=>k!=='engine'&&!mods[k]);
   ok('every module is on the page',!dead.length,dead.join(', ')||Object.keys(mods).length+' modules');
@@ -209,7 +223,13 @@ console.log('\n=== the door ===');
 {
   const {p,errs}=await open(stub(false,null));
   ok('signed out, the mode does not open', await on(p,'s-gate'));
-  ok('  and it says why', /in testing/i.test(await txt(p,'#gate-say')), await txt(p,'#gate-say'));
+  /* IT ASKS FOR AN ACCOUNT AND NOT FOR A PLACE ON A LIST. This read /in testing/ while the
+     mode was gated, and the same line saying that to the public after launch would turn
+     away somebody who is already allowed in. The season clock is keyed on an account, so
+     an account is the true reason and the only one worth giving. */
+  ok('  and it says why', /sign in/i.test(await txt(p,'#gate-say')), await txt(p,'#gate-say'));
+  ok('  and does not call a launched mode a test',
+    !/testing|on the list/i.test(await txt(p,'#gate-say')), await txt(p,'#gate-say'));
   ok('  with a way back to the game', !!(await p.$('#gate-act a[href="/cfb/"]')));
   ok('  and nothing to press that starts a term', !(await p.$('#g-start')));
   console.log('  errors:', errs.length?errs:'none');
@@ -217,29 +237,59 @@ console.log('\n=== the door ===');
   await p.close();
 }
 {
+  /* SIGNED IN AND ON NO LIST, WHICH IS NOW THE ORDINARY VISITOR.
+   *
+   * This section asserted the refusal screen: the mode shut, a badge reading In testing, and
+   * the whoami panel naming the account so a tester could send it to be added. All of it was
+   * right while COMMISH_LIVE was false and all of it is unreachable now, because allowed()
+   * reads that flag before it reads a name. The screen itself is still in the page for the
+   * day the mode is closed again; what changed is who meets it, and the answer is nobody.
+   *
+   * SO THIS WALKS THE THING THAT REPLACED IT. An account nobody has ever heard of takes the
+   * job, and the badge says Free rather than In testing, which is the difference between
+   * being let in on a list and being let in because the mode is open. */
   const {p,errs}=await open(stub(true,'somebodyelse'));
-  ok('signed in but not on the list, still nothing', await on(p,'s-gate'));
-  ok('  and it does not make them feel they are missing the game',
-    /nothing is missing/i.test(await txt(p,'#gate-say')), await txt(p,'#gate-say'));
-  ok('  the badge still says testing', (await txt(p,'#tag'))==='In testing');
-  /* AND IT SAYS WHICH ACCOUNT IT IS REFUSING. The list holds usernames, a username is not
-     an email address, and an account signed in with Google may have none. The first list
-     shipped with a username inferred from an email, matched nobody, and the screen said
-     only "not on the list": nothing on it could tell a tester which of those had happened,
-     or what to send to be added. This is that. */
-  ok('  and it names the account it is refusing', !!(await p.$('#whoami')));
-  ok('    with the username the list matches on',
-    /somebodyelse/.test(await txt(p,'#who-name')), await txt(p,'#who-name'));
-  /* The id is the handle that exists even when the username does not, so it is the one
-     that has to be here. */
-  ok('    and the account id, which exists either way',
-    /[0-9a-f-]{36}/.test(await txt(p,'#who-id')), await txt(p,'#who-id'));
-  ok('    and a way to copy it', !!(await p.$('#who-copy')));
-  /* NO EMAIL ON THIS SCREEN. The gate reads a username and an id, so those are what it
-     shows; putting the address here would mean testers pasting it into a chat to be added. */
-  ok('    and it does not print an email address',
-    !/@/.test(await txt(p,'#whoami')), await txt(p,'#whoami'));
+  /* s-gate IS STILL ON, AND THAT IS NOT THE REFUSAL. This screen is the job offer: being
+     named to the post is the first beat of the mode rather than a door in front of it, so
+     the question is never whether the gate is up, it is what the gate is saying. The two
+     are told apart by what is on it, which is a Take office button or a whoami panel. */
+  ok('signed in and on no list, the gate offers the job', !!(await p.$('#g-start')));
+  ok('  and refuses nobody', !(await p.$('#whoami')));
+  ok('  and the badge says Free, not In testing', (await txt(p,'#tag'))==='Free',
+    await txt(p,'#tag'));
   await p.screenshot({path:SS+'commish_notlisted.png'});
+  console.log('  errors:', errs.length?errs:'none');
+  if(errs.length) bad++;
+  await p.close();
+}
+
+{
+  /* ON THE LIST, HAS NOT BOUGHT, AND THE DOOR OPENS. This branch used to assert the
+     opposite, and the change is the point rather than a regression: the mode was fully
+     paid, so a visitor who had not bought met the store on this screen and stopped, which
+     meant the only way to find out whether it was worth $19.99 was to pay $19.99.
+
+     A free account now plays a whole five season term at one season a day. The store it
+     used to be refused by moved to the wall BETWEEN seasons, where somebody has felt the
+     wait it would end and knows what they would be buying. The wall, the clock and that
+     offer are cfb/build/test/commish/test_clock.mjs; what THIS file still owns is that the
+     door itself no longer refuses anybody who is on the list.
+     See seasonCleared() and supabase/104_commish_free_clock.sql. */
+  const {p,errs}=await open(tester([]));
+  ok('on the list without having bought, the door opens', !!(await p.$('#g-start')));
+  ok('  and the badge says which tier that is', (await txt(p,'#tag'))==='Free');
+  /* AND THE STORE IS NOT ON THIS SCREEN ANY MORE. Asserted rather than assumed gone: a
+     store here and a store on the wall would be the same offer twice, and the one a player
+     met before playing anything is the one that reads as a toll. */
+  ok('  and nothing is being sold at the door', !(await p.$('#b-buy-ps')));
+  ok('  with the mode name still on it', /commish/i.test(await txt(p,'#s-gate')));
+  /* IT REALLY PLAYS, rather than opening onto a second refusal. The first season is paid
+     for by taking the job, so this must reach the office without asking anything. */
+  await p.click('#g-start'); await p.waitForTimeout(700);
+  await pastScene(p);
+  ok('  and a free account reaches the office', await on(p,'s-office'));
+  await p.screenshot({path:SS+'commish_free_gate.png'});
+  console.log('  errors:', errs.length?errs:'none');
   if(errs.length) bad++;
   await p.close();
 }
@@ -359,14 +409,20 @@ console.log('\n=== a tester takes the job ===');
 
 console.log('\n=== what a free player is shown ===');
 {
-  /* THE HALF OF THE DESIGN NOBODY ON THE TESTER LIST CAN SEE, because testers are treated
-     as paying. `?tier=free` is the switch, and this is the check that it shows the offer
+  /* THE HALF OF THE DESIGN A TESTER IS NOT SHOWN BY DEFAULT, because a tester on the list
+     with the row is treated as paying. This is the check that the free tier shows the offer
      rather than hiding it: a setting drawn and dead is the clearest a paywall ever gets,
-     and a setting simply missing teaches nothing. */
-  const {p,errs}=await open(tester(),390);
-  await p.goto(URL+'?tier=free',{waitUntil:'domcontentloaded'});
-  await p.waitForTimeout(2600);
-  ok('a tester can look at the free version', !!(await p.$('#g-start')));
+     and a setting simply missing teaches nothing.
+
+     IT IS REACHED BY OWNING NOTHING, not by a switch. `?tier=free` used to do this and has
+     been removed outright: it drew a link on the mode's front screen, that link outlived
+     the door that hid it, and a player read "See what a free player sees" while being one.
+     `tester([])` is the same account with no cfb_premium row, which is how an actual free
+     player arrives, so this section now walks the path a player walks rather than a path
+     only the suite could take. That is strictly the better fixture, and it is the reason
+     removing the switch cost this file nothing. */
+  const {p,errs}=await open(tester([]),390);
+  ok('a free account reaches the gate', !!(await p.$('#g-start')));
   ok('  and the badge says which view this is', /free/i.test(await txt(p,'#tag')), await txt(p,'#tag'));
   await p.click('#g-start'); await p.waitForTimeout(600);
   await pastScene(p);
@@ -377,35 +433,32 @@ console.log('\n=== what a free player is shown ===');
   /* NOT EVERY ITEM HAS DIALS, so landing on one and skipping is landing on nothing: the
      first run of this block drew an item with no settings, printed a skip, and asserted
      that an EMPTY list of numbers read correctly. That is a check that can never fail.
-     Rule through beats until an item with settings comes up, and fail if none does. */
-  /* AND A BUDGET WIDE ENOUGH THAT LUCK CANNOT DECIDE IT. A test that fails one run in ten is
-     a test people learn to re-run rather than read.
 
-     THE NUMBER IN THE OLD NOTE WAS STALE AND THAT IS WHY IT KEPT FLAKING. It said roughly a
-     quarter of the docket carries settings; six of ninety-one do, which is seven per cent, and
-     the docket has grown a lot since somebody counted. Drawing without replacement, twenty-five
-     items miss one about fourteen times in a hundred, which is exactly the rate this was
-     failing at. Fifty-five items misses three times in a thousand.
+     SO IT IS ASKED FOR BY NAME RATHER THAN WALKED TO, and the walk it replaces is worth
+     writing down because its own note was confidently wrong. It ruled through beats until
+     an item with settings turned up, on the arithmetic that six of a hundred items carry
+     dials, so fifty-five draws would miss about three times in a thousand. All six live in
+     the OFF-SEASON: winter meetings, spring, the portal, media days. Five of a term's nine
+     beats are football, no dial item can be dealt on any of them, and the six compete on
+     weight with everything else inside the four that are left. The real miss rate is
+     nothing like three in a thousand, which is why this went red on a clean tree after
+     fifty-four desks.
 
-     Each item costs about three turns of this loop, so the budget is sized off ITEMS rather
-     than turns, and off the docket rather than a number typed once. */
-  let steps=[], seen=0, beat=0, stuck='';
-  while(beat++<Math.max(75,DOCKET_ITEMS*2)){
-    if(await on(p,'s-office')){ await tap(p,'#b-desk'); await skipSim(p); await p.waitForTimeout(380); continue; }
-    if(await on(p,'s-room')){ await tap(p,'#b-next'); await p.waitForTimeout(450); continue; }
-    if(await on(p,'s-press')){ await podium(p); continue; }
-    if(await on(p,'s-scene')){ await pastScene(p); continue; }
-    if(await on(p,'s-year')){ await tap(p,'#b-year-next'); await p.waitForTimeout(450); continue; }
-    if(!(await on(p,'s-desk'))){ stuck='no screen the loop knows'; break; }
-    seen++;
-    const opt=await p.$('#d-options .opt'); if(opt){ await opt.click(); await p.waitForTimeout(400); }
-    steps=await p.$$eval('.steps button',(e)=>e.map((x)=>({t:x.textContent.trim(),dead:x.disabled})));
-    if(steps.length) break;
-    if(!(await tap(p,'#b-rule'))){ stuck='Rule would not press on item '+seen; break; }
-    await p.waitForTimeout(450);
-  }
-  ok('an item with settings comes up inside a season',
-    steps.length>0, stuck || (seen+' items on the desk before one had settings'));
+     deskItem() opens a named case on the desk the same way the game does, so the assertion
+     is about what a free player SEES on an item that definitely has settings, which is what
+     it was always trying to say. */
+  await p.evaluate(()=>window.PS_CFB_COMMISH_TEST.deskItem('playoff-format'));
+  await p.waitForTimeout(500);
+  const onDesk=await on(p,'s-desk');
+  ok('an item with settings can be put on the desk', onDesk);
+  /* AND A RULING HAS TO BE PICKED BEFORE THEY DRAW. paintDials returns early on `!choice`,
+     because a dial is a refinement of a decision and there is nothing to refine until one is
+     made. The walk this replaced clicked an option without saying why; dropping that click
+     was the whole of the first rewrite's failure, and it reported "0 steps" on an item that
+     certainly has them. */
+  const opt=await p.$('#d-options .opt'); if(opt){ await opt.click(); await p.waitForTimeout(400); }
+  const steps=await p.$$eval('.steps button',(e)=>e.map((x)=>({t:x.textContent.trim(),dead:x.disabled})));
+  ok('  and it draws its settings', steps.length>0, steps.length+' steps');
   ok('  the settings a free player cannot reach are still drawn',
     steps.some((x)=>x.dead), steps.map((x)=>x.t+(x.dead?'*':'')).join(' '));
   ok('  and dead rather than missing', steps.some((x)=>!x.dead));
@@ -508,6 +561,17 @@ console.log('\n=== nine settings you cannot set, and can put on the agenda ===')
   const paths=await p.$$eval('#off-year .yr',(e)=>e.map((x)=>x.dataset.p));
   ok('every row on the year card opens', paths.length>=8 && paths.every((x)=>!!x),
     paths.length+' rows');
+  /* NINE ROWS ARE READ BY SCANNING DOWN THE VALUES, and bold ink against dim ink is a
+     difference you have to look for. The chip is what the eye finds. Same idea as the state
+     card on the sheet a row opens, which is the point: a setting looks like a setting
+     wherever this mode prints one. */
+  const chip=await p.$eval('#off-year .yr u',(e)=>{
+    const s=getComputedStyle(e);
+    return { bw:parseFloat(s.borderTopWidth), bg:s.backgroundColor, pad:parseFloat(s.paddingLeft) };
+  }).catch((x)=>({err:String(x)}));
+  ok('  and carries its value as a chip rather than as bolder text',
+    !chip.err && chip.bw>0 && chip.pad>=4 && !/rgba\(0, 0, 0, 0\)/.test(chip.bg||''),
+    JSON.stringify(chip));
   await p.evaluate(()=>document.querySelector('#off-year .yr[data-p="playoff.teams"]').click());
   await p.waitForTimeout(400);
   ok('  onto a sheet about that one setting',
@@ -515,8 +579,59 @@ console.log('\n=== nine settings you cannot set, and can put on the agenda ===')
   ok('  named in words rather than as a ledger path',
     /playoff/i.test(await txt(p,'#fact-title')) && !/\./.test(await txt(p,'#fact-title')),
     await txt(p,'#fact-title'));
+  /* ── THE SETTING HAS TO LOOK LIKE A SETTING ──────────────────────────────────────────
+     THE VALUE USED TO BE THE SECOND LINE OF THE HEADING. A rule is named in display caps
+     and its state sat straight under it in bigger display type, so "Going pro and coming
+     back" over "allowed" read as one sentence with a line break in it. A reader could not
+     tell which half was the name, and nothing failed: the sheet rendered, the words were
+     right, and the screen was unreadable (owner, from a phone).
+     So this checks the parts that carry the meaning rather than the words. The value is
+     labelled, it is in its own box, and the box is not the heading. */
+  const card=await p.$eval('#fact-body .now',(e)=>({
+    lab:((e.querySelector('i')||{}).textContent||'').trim(),
+    val:((e.querySelector('b')||{}).textContent||'').trim(),
+    box:getComputedStyle(e).borderLeftWidth,
+    size:parseFloat(getComputedStyle(e.querySelector('b')).fontSize),
+    head:parseFloat(getComputedStyle(document.querySelector('#fact-title')).fontSize),
+  })).catch((x)=>({err:String(x)}));
+  ok('  the value is drawn as a state, not as more heading', !card.err, card.err);
+  ok('    and it is labelled as one', /^right now$/i.test(card.lab||''), card.lab);
+  ok('    the setting itself is in there', /\d|team/i.test(card.val||''), card.val);
+  /* THE RULE DOWN THE LEFT EDGE is what makes it a block on the page rather than another
+     line of it, and it is one CSS rule away from being nothing at all. */
+  ok('    in a box of its own', parseFloat(card.box)>=2, card.box);
+  /* AND IT NO LONGER OUT-SHOUTS THE THING IT IS THE STATE OF. It was 34px under a 25px
+     heading, which is the whole reason it read as the headline rather than as the answer.
+     The label and the box are what make it findable; the size never was. */
+  /* A FLOOR AS WELL AS A CEILING, and this is not belt and braces. Writing that ceiling is
+     what put a paragraph of prose outside a CSS comment, which swallowed every rule for the
+     value after it: the card rendered, the check read 15px against a 25px name, and it
+     PASSED. A one-sided bound on a size passes just as happily when the rule is gone. */
+  ok('    without out-sizing the name above it', card.size<=card.head&&card.size>=18,
+    card.size+'px value, '+card.head+'px name');
   ok('  saying you do not set it directly',
     /do not set this directly/i.test(await txt(p,'#fact-body')));
+  /* A SECOND SETTING OPENS AT THE TOP OF ITSELF. One pane serves every one of these and it
+     scrolls, so it used to keep wherever the last one was left: read one to the bottom, tap
+     the next row, and you land in the middle of a sheet that has only just opened, under the
+     heading and the state card that are the answer to what you tapped. */
+  await p.evaluate(()=>{ const pn=document.querySelector('#s-fact .pane'); if(pn) pn.scrollTop=400; });
+  await p.waitForTimeout(150);
+  await p.click('#fact-close');
+  await p.waitForTimeout(300);
+  await p.evaluate(()=>{
+    const el=document.querySelector('#off-year .yr[data-p="labour.reentry"]')
+      ||document.querySelector('#off-year .yr');
+    el.click();
+  });
+  await p.waitForTimeout(400);
+  ok('  and the next one opens at the top of itself',
+    (await p.$eval('#s-fact .pane',(e)=>e.scrollTop))===0,
+    await p.$eval('#s-fact .pane',(e)=>e.scrollTop));
+  await p.click('#fact-close');
+  await p.waitForTimeout(300);
+  await p.evaluate(()=>document.querySelector('#off-year .yr[data-p="playoff.teams"]').click());
+  await p.waitForTimeout(400);
   const take=await p.$$eval('#fact-body [data-take]',(e)=>e.map((x)=>x.dataset.take));
   ok('  and offering the case that would move it', take.length>0, take.join(', '));
   await p.click('#fact-body [data-take]');
@@ -543,6 +658,97 @@ console.log('\n=== nine settings you cannot set, and can put on the agenda ===')
   console.log('  errors:', errs.length?errs:'none');
   if(errs.length) bad++;
   await p.close();
+}
+
+console.log('\n=== the agenda is tiered: free picks one case a year ===');
+{
+  /* Premium set the agenda all winter in the section above. Free gets ONE
+     put-it-on-your-desk a year, and the charge lands when the case is taken, because there
+     is no way off the desk without ruling: a charge is always a ruling. */
+  const p=await b.newPage({viewport:{width:390,height:900}});
+  const errs=[]; p.on('pageerror',(e)=>errs.push(e.message));
+  /* Free is an account with no cfb_premium row, which is the only way to be free now that
+     `?tier=free` is gone. See the note in the free player section above. */
+  await p.addInitScript(tester([]));
+  await p.goto(URL,{waitUntil:'domcontentloaded',timeout:40000});
+  await p.waitForTimeout(2600);
+  await p.click('#g-start'); await p.waitForTimeout(700);
+  await pastScene(p);
+  await p.waitForTimeout(500);
+  const sheet=async()=>{
+    await p.evaluate(()=>{
+      const el=document.querySelector('#off-year .yr[data-p="playoff.teams"]');
+      if(el) el.click();
+    });
+    await p.waitForTimeout(400);
+  };
+  await sheet();
+  ok('a free winter still offers the pick',
+    (await p.$$eval('#fact-body [data-take]',(e)=>e.length))>0);
+  ok('  and says what the allowance is', /One a year\./.test(await txt(p,'#fact-body')));
+  await p.click('#fact-body [data-take]');
+  await p.waitForTimeout(900);
+  ok('taking it opens the case', await on(p,'s-desk'));
+  const used=await p.evaluate(()=>window.PS_CFB_COMMISH_TEST.world().agenda);
+  ok('  and the year\'s pick is charged', used&&used.used===1, JSON.stringify(used));
+  await p.evaluate(()=>window.PS_CFB_COMMISH_TEST.repaint());
+  await p.waitForTimeout(400);
+  await sheet();
+  ok('the same winter offers no second pick',
+    (await p.$$eval('#fact-body [data-take]',(e)=>e.length))===0);
+  ok('  and says why', /pick of the year is spent/i.test(await txt(p,'#fact-body')),
+    (await txt(p,'#fact-body')).slice(0,200));
+  /* A NEW YEAR IS A NEW PICK. The count is keyed to the year on the world, not to the term. */
+  await p.evaluate(()=>{ const T=window.PS_CFB_COMMISH_TEST;
+    T.world().year=2026; T.world().beat=0; T.repaint(); });
+  await p.waitForTimeout(400);
+  await sheet();
+  ok('next winter the pick is back',
+    (await p.$$eval('#fact-body [data-take]',(e)=>e.length))>0);
+  console.log('  errors:', errs.length?errs:'none');
+  if(errs.length) bad++;
+  await p.close();
+}
+
+console.log('\n=== the inheritances: premium can start in the middle of a mess ===');
+{
+  /* A scenario is a term that starts in the middle: the paths are written BEFORE the
+     opening snapshot, so every "was" line and the ending's grade measure from the sport as
+     you found it rather than blaming you for the inheritance. That ordering is the whole
+     feature and it is what this section pins. */
+  const {p,errs}=await open(tester());
+  const names=await p.$$eval('.inh b',(e)=>e.map((x)=>x.textContent));
+  ok('the gate offers the inherited jobs', names.length===3, names.join(' | '));
+  await p.evaluate(()=>window.PS_CFB_COMMISH_TEST.takeJob('paid'));
+  await p.waitForTimeout(900);
+  await pastScene(p);
+  const w=await p.evaluate(()=>window.PS_CFB_COMMISH_TEST.world());
+  ok('the pay era is already in force on day one',
+    w.labour.employment==='employee'&&w.labour.revShare===0.25,
+    w.labour.employment+', '+w.labour.revShare);
+  ok('  and the save knows which job was taken', w.scenario==='paid', String(w.scenario));
+  ok('  and the opening snapshot IS the inheritance',
+    Array.isArray(w.start&&w.start.facts)&&w.start.facts.indexOf('25%')>=0,
+    (w.start&&w.start.facts||[]).join(' | '));
+  ok('  with no rulings on a record you have not touched', w.history.length===0,
+    w.history.length+' rulings');
+  await p.reload({waitUntil:'domcontentloaded'});
+  await p.waitForTimeout(2600);
+  const back=await p.evaluate(()=>JSON.parse(localStorage.getItem('cfb_commish_term')).world);
+  ok('the inheritance survives the browser closing', back.scenario==='paid'
+    &&back.labour.employment==='employee', String(back.scenario));
+  console.log('  errors:', errs.length?errs:'none');
+  if(errs.length) bad++;
+  await p.close();
+
+  /* And the free gate simply does not have them, on the same silent gate as the note. */
+  const f=await b.newPage({viewport:{width:390,height:900}});
+  await f.addInitScript(tester([]));
+  await f.goto(URL,{waitUntil:'domcontentloaded',timeout:40000});
+  await f.waitForTimeout(2600);
+  ok('the free gate has no inherited jobs on it',
+    (await f.$$eval('.inh',(e)=>e.length))===0);
+  await f.close();
 }
 
 console.log('\n=== the office is a commissioner\'s desk in November ===');

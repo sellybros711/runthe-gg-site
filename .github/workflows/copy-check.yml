@@ -1,0 +1,53 @@
+name: Copy check
+
+# The copy rules that are not about dashes: promotional language, AI vocabulary,
+# curly quotes, filler, chat artifacts. See CLAUDE.md and the header of
+# scripts/check-copy.mjs, which explains why this reads player-facing strings
+# rather than whole files the way the dash check does.
+#
+# Runnable locally with the exact same command:
+#   node scripts/check-copy.mjs
+#
+# THE paths: BELOW AND check-copy.mjs's GUARDED ARE TWO COPIES OF ONE ANSWER, which
+# is the note the dash checker already carries, and they had drifted the same way:
+# wrestling has been on GUARDED since its audit and triggered no run here, so a
+# banned word added there failed only for whoever next ran the checker by hand.
+# Add a directory in both places, in the same commit.
+#
+# No secrets, no network, no deploy.
+
+on:
+  pull_request:
+    paths:
+      - 'football/**'
+      - 'cfb/**'
+      - 'assets/**'
+      - 'baseball/**'
+      - 'wrestling/**'
+      - 'scripts/check-copy.mjs'
+      - '.github/workflows/copy-check.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'football/**'
+      - 'cfb/**'
+      - 'assets/**'
+      - 'baseball/**'
+      - 'wrestling/**'
+      - 'scripts/check-copy.mjs'
+      - '.github/workflows/copy-check.yml'
+  workflow_dispatch: {}
+
+concurrency:
+  group: copy-check-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: node scripts/check-copy.mjs

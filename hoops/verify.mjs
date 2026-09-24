@@ -18,12 +18,14 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
+import { execFileSync } from 'node:child_process';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const require = createRequire(import.meta.url);
 const E = require(path.join(HERE, 'engine.js'));
 const R = require(path.join(HERE, 'run.js'));
 import { AWARDS } from './build/fetch-awards.mjs';
+import { scriptBlocks, stripComments, stringLiterals } from '../scripts/check-copy.mjs';
 
 const players = JSON.parse(fs.readFileSync(path.join(HERE, 'data', 'players.json'), 'utf8'));
 const chemistry = JSON.parse(fs.readFileSync(path.join(HERE, 'data', 'chemistry.json'), 'utf8'));
@@ -81,7 +83,8 @@ function isLineup(actual, expect, what) {
 // ─── the data itself ────────────────────────────────────────────────────────
 
 ok(players.length > 0, 'players.json is not empty');
-ok(data.teamSeasons.length >= 6, 'enough team-seasons to fill a roster from');
+ok(data.teamSeasons.length >= E.SLOTS.length,
+  'enough team-seasons to fill a roster from');
 
 for (const p of players) {
   if (!(p.i && p.n && p.s && p.t)) { failures.push(`row missing an identity field: ${JSON.stringify(p)}`); break; }
@@ -145,34 +148,108 @@ for (const slot of E.SLOTS) {
      is not a crash and is not the club either. */
   const uncolored = inPlay.filter((c) => !E.TEAM_COLORS[c]);
   ok(uncolored.length === 0, `every club in the data has its own colors${uncolored.length ? ` (missing ${uncolored.join(', ')})` : ''}`);
+
+  /* AND ON THE DOOR, WHICH IS A DIFFERENT FILL. The One Franchise door on the
+     front page sets the club's accent as the name's colour over the card
+     fill, not over the club's own. wheelColors lifts the accent until it
+     clears the PAGE at #0d1117, and the door is a shade lighter, so a club
+     that just scraped past there could fail here and nowhere else would say
+     so. 3:1 is the bar for the size it is set at (15px bold). Measured worst
+     case is the Clippers at 4.15:1.
+
+     THE FILL IS READ OUT OF THE STYLESHEET, never typed here. A number in
+     both places is two answers to one question, and this one drifts in the
+     direction nobody checks: somebody lightens the door, the contrast gets
+     easier, and the guard goes on asserting against a colour that is not on
+     the page any more. */
+  const pageSrc = fs.readFileSync(path.join(HERE, 'index.html'), 'utf8');
+  const doorRule = /\.modedoor button\{background:(#[0-9a-f]{3,6});/i.exec(pageSrc);
+  ok(!!doorRule, 'the One Franchise door declares a flat fill this can be measured against');
+  const DOOR_FILL = doorRule ? doorRule[1] : '#141a26';
+  const flat = [];
+  for (const f of E.franchises()) {
+    const c = E.contrast(E.clubSkin(f.code).accent, DOOR_FILL);
+    if (c < 3) flat.push(`${f.code} ${c.toFixed(2)}:1`);
+  }
+  ok(flat.length === 0,
+    `every club's name reads on the One Franchise door${flat.length ? `\n      ${flat.join('\n      ')}` : ''}`);
 }
 
 /* ── THE SHARE CARD'S PALETTE IS A SECOND COPY OF THE POSITION COLOURS ─────
  *
  * The page paints a position pill as a gradient off a CSS custom property. A
- * canvas cannot read one, so the card carries the same six colours again as
- * flat hex. Two copies of anything drift, and this pair drifts SILENTLY: the
- * card still renders, it just hands somebody a picture where the centre is a
+ * canvas cannot read one, so the card carries the same colours again as flat
+ * hex. Two copies of anything drift, and this pair drifts SILENTLY: the card
+ * still renders, it just hands somebody a picture where the centre is a
  * different red from the one they were looking at when they signed him.
+ *
+ * THE PAIR IS FOUND, NEVER SPELLED OUT, and the first draft of this spelled it
+ * out: one regex naming all eight properties in order. That reads the two
+ * copies correctly and is a THIRD copy of the same list, so the day the sixth
+ * man slot was removed the regex matched nothing and this section reported the
+ * page as having no position colours at all. A reader that finds nothing lets
+ * every assertion under it pass green, which is how an extractor in this repo
+ * has been silently wrong four times.
+ *
+ * So it reads whatever `POS_COL` names, resolves each one through `:root`, and
+ * asks that the card carries exactly that set. A position added or removed is
+ * covered with nobody remembering this section exists.
  *
  * Read as text rather than executed, which is all this needs to answer.
  */
 {
   const src = fs.readFileSync(path.join(HERE, 'index.html'), 'utf8');
-  const cssBlock = /--pg:([^;]+);\s*--sg:([^;]+);\s*--sf:([^;]+);\s*--pf:([^;]+);\s*--c:([^;]+);\s*\n?\s*--sixth:([^;]+);\s*--g:([^;]+);\s*--f:([^;]+);/.exec(src);
-  ok(!!cssBlock, 'the page declares the position colours as custom properties');
+
+  /* POS_COL is the page's own answer to which positions get painted, and it
+     maps each to the custom property that holds its colour. GF and FC share a
+     property with another position on purpose, so the SET of properties is
+     what matters rather than the count of positions. */
+  const colBlock = /var POS_COL = \{([\s\S]*?)\};/.exec(src);
+  ok(!!colBlock, 'the page names which positions get a colour');
   const hexBlock = /var POS_HEX = \{([\s\S]*?)\};/.exec(src);
   ok(!!hexBlock, 'the share card carries a flat copy of the position colours');
-  if (cssBlock && hexBlock) {
-    const css = { PG: cssBlock[1], SG: cssBlock[2], SF: cssBlock[3], PF: cssBlock[4],
-      C: cssBlock[5], '6TH': cssBlock[6], G: cssBlock[7], F: cssBlock[8] };
+
+  if (colBlock && hexBlock) {
+    const wantProp = {};
+    for (const m of colBlock[1].matchAll(/'?([A-Z0-9]+)'?\s*:\s*'(--[a-z0-9]+)'/gi)) wantProp[m[1]] = m[2];
+    ok(Object.keys(wantProp).length >= 5,
+      `the position map was read (${Object.keys(wantProp).length} entries)`);
+
+    /* Every custom property declared on :root, which is where the page keeps
+       them. EVERY :root BLOCK, not the first one: this page opens with a
+       palette-and-fonts block hundreds of lines above the position colours,
+       so a reader that stopped at the first brace found no position at all
+       and reported a page with no colours on it. */
+    const declared = {};
+    for (const rb of src.matchAll(/:root\{([\s\S]*?)\}/g)) {
+      for (const m of rb[1].matchAll(/(--[a-z0-9]+)\s*:\s*(#[0-9a-f]{3,8})/gi)) {
+        declared[m[1]] = m[2];
+      }
+    }
+    ok(Object.keys(declared).length >= 8,
+      `the page's custom properties were read (${Object.keys(declared).length})`);
+    const missing = Object.entries(wantProp)
+      .filter(([, prop]) => !declared[prop]).map(([pos, prop]) => `${pos} wants ${prop}`);
+    is(missing, [], 'every painted position has a custom property to paint with');
+
     const flat = {};
     for (const m of hexBlock[1].matchAll(/'?([A-Z0-9]+)'?\s*:\s*'(#[0-9a-f]{6})'/gi)) flat[m[1]] = m[2];
+
+    /* The card carries the five slots plus the loose eligibility codes that
+       have a colour of their own. GF and FC alias, so they are not expected
+       on the card: what is asserted is that every colour the card DOES carry
+       is the colour the page declares, and that no painted position whose
+       property is its own is missing from it. */
     const drift = [];
-    for (const [slot, hex] of Object.entries(css)) {
-      const want = hex.trim().toLowerCase();
-      const got = (flat[slot] || '').toLowerCase();
-      if (got !== want) drift.push(`${slot}: page ${want}, card ${got || 'missing'}`);
+    for (const [pos, prop] of Object.entries(wantProp)) {
+      const own = Object.values(wantProp).filter(x => x === prop).length === 1;
+      if (!own) continue;
+      const want = (declared[prop] || '').trim().toLowerCase();
+      const got = (flat[pos] || '').toLowerCase();
+      if (got !== want) drift.push(`${pos}: page ${want || 'missing'}, card ${got || 'missing'}`);
+    }
+    for (const pos of Object.keys(flat)) {
+      if (!wantProp[pos]) drift.push(`${pos}: on the card and painted by nothing`);
     }
     ok(drift.length === 0,
       `the share card paints positions the colour the page does${drift.length ? `\n      ${drift.join('\n      ')}` : ''}`);
@@ -357,15 +434,18 @@ for (const slot of E.SLOTS) {
     if (!bySeason.has(k)) bySeason.set(k, []);
     bySeason.get(k).push(p);
   }
-  const seasonTop6 = new Map();
+  /* A club's best SLOTS.length men, which is the roster this game drafts, so
+     the sweep asks about the same shape the game plays. */
+  const seasonTop = new Map();
   for (const [k, ros] of bySeason) {
-    if (ros.length < 6) continue;
+    if (ros.length < E.SLOTS.length) continue;
     const s = Number(k.split('|')[0]);
-    const six = [...ros].sort((a, b) => b.w - a.w).slice(0, 6).reduce((a, b) => a + b.w, 0);
-    if (!seasonTop6.has(s)) seasonTop6.set(s, []);
-    seasonTop6.get(s).push(six);
+    const core = [...ros].sort((a, b) => b.w - a.w).slice(0, E.SLOTS.length)
+      .reduce((a, b) => a + b.w, 0);
+    if (!seasonTop.has(s)) seasonTop.set(s, []);
+    seasonTop.get(s).push(core);
   }
-  const seasonMean = [...seasonTop6.entries()]
+  const seasonMean = [...seasonTop.entries()]
     .map(([s, v]) => [s, v.reduce((a, b) => a + b, 0) / v.length]);
   if (seasonMean.length >= 10) {
     const all = seasonMean.map(([, v]) => v).sort((a, b) => a - b);
@@ -387,10 +467,13 @@ for (const slot of E.SLOTS) {
 /* Play a full draft by always taking the best player the board will let you
    sign. This is the greedy strategy the cap is supposed to punish, so it is
    also the one most likely to walk into an illegal state. */
-function greedyDraft(seed) {
+/* `picks` stops the draft part way, for the fixtures that need a run standing
+   at a particular slot. Absent, it drafts the whole roster as it always did. */
+function greedyDraft(seed, picks) {
   const run = R.createRun({ seed });
   let guard = 0;
   while (run.phase === R.PHASES.DRAFT && guard++ < 50) {
+    if (picks != null && run.roster.length >= picks) break;
     const draw = R.spin(run, data);
     const options = draw.options.map(k => data.allPlayers[k]).filter(Boolean);
     if (!options.length) throw new Error('a draw came back with no signable options');
@@ -410,7 +493,11 @@ for (let i = 0; i < DRAFTS; i++) runs.push(greedyDraft(1000 + i));
 
 let capBusts = 0, wrongSlot = 0, dupes = 0, overdrawn = 0, positionStacks = 0;
 for (const run of runs) {
-  const spend = run.roster.reduce((s, p) => s + p.p, 0) + E.respinFees(run.respinsUsed);
+  /* READ OFF remaining(), NOT REBUILT FROM THE LADDER. The last slot's re-spin
+     is free, so fees are no longer a function of how many were used: summing
+     the ladder here would over-count a run that took one and report a cap bust
+     that never happened. One source, which is the run's own budget. */
+  const spend = E.CONSTANTS.CAP_MUSD - R.remaining(run);
   if (spend > E.CONSTANTS.CAP_MUSD + 1e-9) capBusts++;
   if (run.roster.length !== E.SLOTS.length) wrongSlot++;
 
@@ -576,10 +663,11 @@ ok(oneByOne._simState === undefined, 'finalizeSeason clears the sim state it bui
  * These assertions have already earned their place several times over. They
  * caught the 2018 Rockets being labelled Showtime off Harden's assist average,
  * the 1986 Celtics being labelled Moreyball, the 2016 Warriors being labelled
- * Point Centre because Draymond Green is eligible at centre, and the 1996 Bulls
- * being excluded from the triangle because Luc Longley averaged 9.1 rather than
- * 12. A model that gets these wrong is not a basketball model, whatever its
- * calibration report says.
+ * Point Centre because Draymond Green is eligible at centre, the 1996 Bulls
+ * being excluded from the triangle because Luc Longley averaged 9.1 rather
+ * than 12, and four of these fixtures still being six men long after the
+ * roster became five. A model that gets these wrong is not a basketball
+ * model, whatever its calibration report says.
  */
 /* BY PLAYER ID, NEVER BY NAME. Basketball-Reference renders names with their
    diacritics, so the real dataset holds "Nikola Jokic" with an accent on the c
@@ -587,10 +675,25 @@ ok(oneByOne._simState === undefined, 'finalizeSeason clears the sim state it bui
    nothing, and an assertion that silently finds nothing is an assertion that
    passes for the wrong reason or fails for a reason that has nothing to do with
    basketball. The slug is stable and is the key everything else joins on. */
+/* THE STARTING FIVE, AND THE SIXTH MAN IS WRITTEN DOWN AND NOT USED.
+ *
+ * Each row below lists six ids because the game drafted six when they were
+ * written, and every one of these fixtures went on handing six men to the
+ * model after the roster became a starting five. It is a quiet way to be
+ * wrong: a system's per-player tests are unaffected, so most of them went on
+ * passing, while every TEAM TOTAL the model reads was a sixth too big. It
+ * surfaced the moment those totals were re-anchored for five men, as the 1987
+ * Lakers, the 1989 Pistons and the 2001 Lakers all coming back Too Many
+ * Mouths: six men's shots against a five man budget.
+ *
+ * The sixth id stays in the list because it documents the club and because
+ * the day this roster size moves again is the day somebody will want it. It
+ * is sliced off rather than deleted, so the fixture follows SLOTS.length
+ * instead of having to be remembered. */
 const lineup = (ids) => {
   const rows = ids.map(([id, s]) => players.find(p => p.i === id && p.s === s));
   if (rows.some(r => !r)) return null;
-  return rows.map((p, i) => ({ ...p, _slot: E.SLOTS[i] }));
+  return rows.slice(0, E.SLOTS.length).map((p, i) => ({ ...p, _slot: E.SLOTS[i] }));
 };
 
 /* WHICH MAN IS MISSING, AND WHAT HE IS PROBABLY CALLED INSTEAD.
@@ -621,7 +724,8 @@ const missingFrom = (ids) => {
   return out;
 };
 
-/* PG, SG, SF, PF, C, sixth man, in that order. */
+/* PG, SG, SF, PF, C, sixth man, in that order. The sixth is documentation and
+   is sliced off: see the note on `lineup` above. */
 const KNOWN = [
   // PG Steve Kerr, SG Michael Jordan, SF Scottie Pippen, PF Dennis Rodman, C Luc Longley, 6th Toni Kukoc
   ['the 1996 Bulls', 'The Triangle', [['kerrst01', 1996], ['jordami01', 1996],
@@ -645,7 +749,7 @@ const KNOWN = [
   ['the 2016 Warriors', 'Pace and Space', [['curryst01', 2016], ['thompkl01', 2016],
     ['barneha02', 2016], ['greendr01', 2016], ['bogutan01', 2016], ['iguodan01', 2016]]],
   // PG Jamal Murray, SG Kentavious Caldwell-Pope, SF Michael Porter Jr., PF Aaron Gordon, C Nikola Jokic, 6th Bruce Brown
-  ['the 2023 Nuggets', 'Point Centre', [['murraja01', 2023], ['caldwke01', 2023],
+  ['the 2023 Nuggets', 'Point Center', [['murraja01', 2023], ['caldwke01', 2023],
     ['portemi01', 2023], ['gordoaa01', 2023], ['jokicni01', 2023], ['brownbr01', 2023]]],
   /* THE EXPECTATION WAS WRONG HERE, NOT THE MODEL, and it is worth saying so
      rather than quietly editing the string. This was written down as Bully Ball
@@ -725,14 +829,15 @@ if (preThree) {
 ok(E.paceAdjust(20, 1972) < 19, 'a 1972 counting stat is deflated to the modern game');
 ok(E.paceAdjust(20, 1999) > 20, 'and a 1999 one is inflated');
 
-/* Chemistry saturates. Six players off one club cannot be worth six times one
-   link, or stacking one team-season beats every talent decision in the draft. */
-const bulls = players.filter(p => p.t === 'CHI' && p.s === 1996).slice(0, 6);
+/* Chemistry saturates. A whole roster off one club cannot be worth one link
+   times the number of pairs, or stacking one team-season beats every talent
+   decision in the draft. */
+const bulls = players.filter(p => p.t === 'CHI' && p.s === 1996).slice(0, E.SLOTS.length);
 const chem6 = E.resolveChemistry(bulls);
 const chem2 = E.resolveChemistry(bulls.slice(0, 2));
 ok(chem6.bonus <= E.CHEMISTRY.MAX + 1e-9, 'chemistry never exceeds its ceiling');
 ok(chem6.raw > chem6.saturated * 3,
-  `nineteen links pay out far less than they are worth face value (raw ${chem6.raw.toFixed(1)}, paid ${chem6.saturated.toFixed(2)})`);
+  `every link pays out far less than face value (raw ${chem6.raw.toFixed(1)}, paid ${chem6.saturated.toFixed(2)})`);
 /* The property that actually matters: adding four more players to a pair
    TRIPLES the link count many times over and cannot triple the payout. */
 ok((chem6.bonus / chem2.bonus) < (chem6.links.length / chem2.links.length) / 3,
@@ -763,8 +868,8 @@ if (mychal && klay) {
 
 /* Better roster, better season. Not on any single run, which is variance, but
    over a hundred of them, which is the model. */
-const best = [...players].sort((x, y) => y.w - x.w).slice(0, 6);
-const worst = [...players].sort((x, y) => x.w - y.w).slice(0, 6);
+const best = [...players].sort((x, y) => y.w - x.w).slice(0, E.SLOTS.length);
+const worst = [...players].sort((x, y) => x.w - y.w).slice(0, E.SLOTS.length);
 const meanWins = (roster) => {
   let total = 0;
   for (let i = 0; i < 60; i++) {
@@ -775,6 +880,1396 @@ const meanWins = (roster) => {
 const bestWins = meanWins(best), worstWins = meanWins(worst);
 ok(bestWins > worstWins + 20,
   `the best six average far more wins than the worst six (${bestWins.toFixed(1)} vs ${worstWins.toFixed(1)})`);
+
+/* ── ONE FRANCHISE ──────────────────────────────────────────────────────────
+ *
+ * The club lock. Three things can go wrong here and two of them are silent.
+ *
+ * THE LINEAGE. A franchise is every code it has ever worn, which is the whole
+ * appeal: an Oklahoma City run reaches Gary Payton. Get the walk wrong and a
+ * Thunder fan gets eighteen seasons instead of fifty-two and nothing anywhere
+ * says so.
+ *
+ * THE RESERVE FLOOR. cheapestForSlot reads the 200 cheapest men per position
+ * ACROSS ALL 16,057 rows, and under a lock not one of them may be drawable. A
+ * floor built from the league promises a $2.2M centre off a club this run can
+ * never spin, so the budget reads bigger than it is and the draft strands
+ * itself at the last slot with no legal player at any price. Nothing throws:
+ * sign() refuses and the player is left on a board with six greyed names.
+ *
+ * SO THE SWEEP ASSERTS THE FLOOR IS ACTUALLY DIFFERENT, and that is not belt
+ * and braces. A sweep that only asserts thirty drafts finish would pass on the
+ * unlocked floor too, for most clubs, most of the time, and report green on
+ * exactly the defect it was written for. Same lesson as check-fullteam's
+ * "assert the replaced reading disagreed at least once".
+ */
+{
+  const fr = E.franchises();
+  is(fr.length, 30, 'thirty current franchises are offered');
+  ok(E.franchiseCodes('OKC').includes('SEA'), 'Oklahoma City reaches Seattle');
+  ok(E.franchiseCodes('MEM').includes('VAN'), 'Memphis reaches Vancouver');
+  /* THE HORNETS OF 1988 TO 2002 ARE CHARLOTTE'S, which is the NBA's own record
+     since 2014 and is what a fan picking the Hornets expects to find: Mourning,
+     Larry Johnson and Muggsy. This table once filed them under the Pelicans,
+     the legal entity that moved, and a Charlotte run had none of them. The two
+     New Orleans codes stay New Orleans. */
+  ok(E.franchiseCodes('CHO').includes('CHH'), 'Charlotte reaches the Hornets of 1988 to 2002');
+  ok(!E.franchiseCodes('NOP').includes('CHH'), 'and New Orleans does not claim them');
+  ok(E.franchiseCodes('NOP').includes('NOH'), 'New Orleans reaches its own Hornets years');
+  ok(E.franchiseCodes('CHO').includes('CHA'), 'Charlotte reaches the Bobcats');
+  ok(E.franchiseCodes('ZZZ').length === 1, 'a code with no row is a franchise of one, not a crash');
+
+  let thin = [], stranded = [], floorSame = 0, floorDiff = 0;
+  for (const f of fr) {
+    const seasons = R.clubSeasons(f.code);
+    if (seasons.length < 3) thin.push(f.code + ' ' + seasons.length);
+
+    /* Best available spends the most and is therefore the strategy most likely
+       to strand; cheapest exercises the other end of the floor. */
+    for (const [label, pick] of [
+      ['best', (o) => o.slice().sort((a, b) => b.w - a.w)[0]],
+      ['cheap', (o) => o.slice().sort((a, b) => a.p - b.p)[0]],
+    ]) {
+      const run = R.createRun({ club: f.code, seed: 4242 });
+      let guard = 0, broke = null;
+      while (run.phase === R.PHASES.DRAFT && guard++ < 40) {
+        /* THE SAME RUN, BOTH FLOORS, AFTER EVERY SIGNING. Measured at the
+           start they are usually the SAME number, and that is not the lock
+           failing: the league's cheapest men sit at the price floor and most
+           clubs have somebody there too, so both sums are six times the base.
+           11 of 30 differ before a single pick. The pools come apart as a
+           draft eats the cheap end of a club that only has fifty seasons in
+           it, which is exactly when a floor built from the whole league
+           starts promising money that is not there. */
+        if (label === 'best') {
+          const locked = R.fullFloor(run);
+          const open = R.fullFloor({ ...run, club: null });
+          /* A smaller pool can never be CHEAPER, so this direction is an
+             invariant rather than a sample. It catches the lock being applied
+             to the wheel and not to the floor. */
+          if (locked < open - 1e-9) {
+            stranded.push(`${f.code}: the locked floor came in under the league floor`);
+          }
+          if (Math.abs(locked - open) < 1e-9) floorSame++; else floorDiff++;
+        }
+        let draw;
+        try { draw = R.spin(run, data); } catch (e) { broke = 'spin: ' + e.message; break; }
+        const opts = draw.options.map(k => data.allPlayers[k]).filter(Boolean);
+        if (!opts.length) { broke = 'empty board'; break; }
+        try { R.sign(run, pick(opts)); } catch (e) { broke = 'sign: ' + e.message; break; }
+      }
+      if (broke || run.roster.length !== E.SLOTS.length) {
+        stranded.push(`${f.code}/${label}: ${broke || 'stalled at ' + run.roster.length}`);
+        continue;
+      }
+      /* Every man really did wear the shirt, which is the mode's one promise. */
+      const codes = new Set(E.franchiseCodes(f.code));
+      if (!run.roster.every(p => codes.has(p.t))) {
+        stranded.push(`${f.code}/${label}: signed somebody off another club`);
+      }
+    }
+  }
+  is(thin, [], 'every franchise on offer has at least three drawable seasons');
+  is(stranded, [], 'every franchise finishes a draft on both strategies, off its own men');
+  /* Measured at 36 of 180 readings. The threshold is 20 rather than 35
+     because the number is a property of where the price floor happens to sit
+     in each club's cheap end, which a data refresh legitimately moves; what
+     would be a bug is it going to zero, which is the lock not being applied
+     to the floor at all. */
+  ok(floorDiff >= 20,
+    `the club lock actually reaches the reserve floor `
+    + `(${floorDiff} of ${floorDiff + floorSame} floor readings differ from the league's)`);
+
+  /* The wheel cannot leave the franchise. Asserted on the drawable list rather
+     than on a played draft, because a draft only proves the clubs it happened
+     to land on. */
+  const lk = R.createRun({ club: 'BOS', seed: 7 });
+  const codes = new Set(E.franchiseCodes('BOS'));
+  ok(R.drawable(lk, data).every(t => codes.has(t.team)), 'a locked wheel never leaves the franchise');
+  ok(R.drawable(lk, data).length > 20, 'a locked wheel still has plenty to land on');
+  ok(R.drawable(R.createRun({}), data).length > R.drawable(lk, data).length * 5,
+    'an unlocked wheel is the whole league');
+
+  let threw = false;
+  try { R.createRun({ club: 'NOPE' }); } catch (e) { threw = true; }
+  ok(threw, 'a club the table does not know is refused rather than silently emptying the wheel');
+}
+
+/* ── DECADES ────────────────────────────────────────────────────────────────
+ *
+ * ERAS and the era filter in drawable() were written with run.js and nothing
+ * on the page could ever set one, so this whole mode shipped unreachable and
+ * untested against real data. Two things it inherits from that:
+ *
+ * THE SPAN IN THE CONSTANT IS NOT THE SPAN IN THE FILE. ERAS.seventies is
+ * [1970, 1979] and the data starts in 1974, so a picker printing the constant
+ * offers four seasons the wheel can never land on.
+ *
+ * AND THE RESERVE FLOOR WAS NEVER SCOPED TO IT, for the same reason the club
+ * lock's was not: nothing ever ran a restricted draft. An eighties run with a
+ * league floor is being promised a 2019 minimum-salary centre.
+ */
+{
+  const eras = Object.keys(E.ERAS);
+  is(eras.length, 6, 'six decades');
+  const stranded = [], thin = [];
+  let floorDiff = 0, floorSame = 0;
+
+  for (const era of eras) {
+    const yrs = R.eraSeasons(era);
+    if (yrs.length < 4) thin.push(`${era} ${yrs.length}`);
+    const span = E.ERAS[era];
+    if (yrs.some(y => y < span[0] || y > span[1])) thin.push(`${era} span leaks`);
+
+    for (const [label, pick] of [
+      ['best', (o) => o.slice().sort((a, b) => b.w - a.w)[0]],
+      ['cheap', (o) => o.slice().sort((a, b) => a.p - b.p)[0]],
+    ]) {
+      const run = R.createRun({ era, seed: 5150 });
+      let guard = 0, broke = null;
+      while (run.phase === R.PHASES.DRAFT && guard++ < 40) {
+        if (label === 'best') {
+          const locked = R.fullFloor(run);
+          const open = R.fullFloor({ ...run, era: null });
+          if (locked < open - 1e-9) stranded.push(`${era}: the era floor came in under the league floor`);
+          if (Math.abs(locked - open) < 1e-9) floorSame++; else floorDiff++;
+        }
+        let draw;
+        try { draw = R.spin(run, data); } catch (e) { broke = 'spin: ' + e.message; break; }
+        const opts = draw.options.map(k => data.allPlayers[k]).filter(Boolean);
+        if (!opts.length) { broke = 'empty board'; break; }
+        try { R.sign(run, pick(opts)); } catch (e) { broke = 'sign: ' + e.message; break; }
+      }
+      if (broke || run.roster.length !== E.SLOTS.length) {
+        stranded.push(`${era}/${label}: ${broke || 'stalled at ' + run.roster.length}`);
+        continue;
+      }
+      if (!run.roster.every(p => p.s >= span[0] && p.s <= span[1])) {
+        stranded.push(`${era}/${label}: signed somebody from another decade`);
+      }
+    }
+  }
+  is(thin, [], 'every decade on offer has at least four seasons in the data');
+  is(stranded, [], 'every decade finishes a draft on both strategies, off its own seasons');
+  /* AND THE ERA FLOOR IS THE LEAGUE FLOOR, EVERY TIME, which is the opposite
+     of what the club sweep found and is worth writing down rather than
+     asserting a difference that does not exist.
+     Measured: a decade holds between 1,252 and 3,696 rows and between 34 and
+     121 men priced at the minimum, at every position, so the cheapest legal
+     bodies cost the same SLOTS.length x $2.0M whether the pool is one decade
+     or all of them. 0 of 30 readings differ. So scoping the floor to an era is
+     defensive on its own.
+     It is NOT defensive when the two locks COMPOSE, and that is the case
+     worth keeping it for: the Lakers in the eighties floor at $19.9M against
+     the league's $12.0M, so a floor that honoured the club and ignored the
+     decade would be quoting $7.9M that this run cannot spend. */
+  is(floorDiff, 0, 'an era alone never moves the reserve floor, because every '
+    + 'decade holds minimum-priced men at every position');
+  /* Six eras times SLOTS.length, derived rather than written: this read 36
+     while the roster was six men and the number is about the sweep rather
+     than about the game. */
+  const eraReadings = 6 * E.SLOTS.length;
+  ok(floorSame === eraReadings,
+    `all ${eraReadings} era floor readings were taken (${floorSame})`);
+
+  const both = R.createRun({ club: 'LAL', era: 'eighties' });
+  const codes = new Set(E.franchiseCodes('LAL'));
+  const dr = R.drawable(both, data);
+  ok(dr.length > 4 && dr.every(t => codes.has(t.team) && t.season >= 1980 && t.season <= 1989),
+    `a club and a decade together are both honoured (${dr.length} Showtime seasons)`);
+  const composed = R.fullFloor(both);
+  const clubOnly = R.fullFloor({ ...both, era: null });
+  ok(composed > clubOnly + 1,
+    `composing the two locks moves the floor that neither moves alone `
+    + `($${composed.toFixed(1)}M against $${clubOnly.toFixed(1)}M)`);
+
+  let threw = false;
+  try { R.createRun({ era: 'the nineteen fifties' }); } catch (e) { threw = true; }
+  ok(threw, 'an era nobody declared is refused');
+}
+
+/* ── A FIELD THE PAGE READS OFF AN OUTCOME HAS TO BE A FIELD OUTCOMES HAVE ──
+ *
+ * `out.spendLeft` was read on the results screen and `outcomeOf` has never set
+ * it. `undefined > 15` is false, so on every run this game has ever played the
+ * branch behind it was dead and the cap advice, which is the central lesson of
+ * the whole thing, never once appeared: a draft that finished $88M under the
+ * cap was told its roster had no shape. Nothing threw, nothing rendered wrong,
+ * and no check could see it.
+ *
+ * So the whole class is checked rather than the one name. A real outcome is
+ * built here and every `out.<field>` in the page has to be one of its keys.
+ *
+ * TWO NAMES ARE WHITELISTED and both are array methods on a DIFFERENT local
+ * called `out`. That is the cost of matching on a variable name, and it is
+ * worth paying: the alternative is parsing the page, and a phantom field is
+ * exactly what this is for. Rename either local and this list needs a look.
+ */
+{
+  const ARRAY_USES = new Set(['length', 'push']);
+  const run = R.createRun({ seed: 31337 });
+  let guard = 0;
+  while (run.phase === R.PHASES.DRAFT && guard++ < 40) {
+    const draw = R.spin(run, data);
+    const opts = draw.options.map(k => data.allPlayers[k]).filter(Boolean);
+    R.sign(run, opts.slice().sort((a, b) => b.w - a.w)[0]);
+  }
+  const outcome = R.playSeason(run);
+  const keys = new Set(Object.keys(outcome));
+  ok(keys.size > 10, `an outcome has fields to check against (${keys.size})`);
+
+  /* COMMENTS COME OUT FIRST, and the first version of this did not do that,
+     so it failed on the comment ABOVE the fix explaining what the phantom
+     field had been. "If this checker reports a problem inside a comment, that
+     is the bug, not the comment", which check-copy.mjs learned twice.
+     Block comments only: a line comment strip would eat the rest of any line
+     holding a `https://` and could swallow a real read with it. My mention
+     was a block comment and so is every long one in this repo. */
+  const src = fs.readFileSync(path.join(HERE, 'index.html'), 'utf8')
+    .replace(/\/\*[\s\S]*?\*\//g, ' ');
+  const read = new Set();
+  for (const m of src.matchAll(/\bout\.([A-Za-z_$][\w$]*)/g)) read.add(m[1]);
+  const phantom = [...read].filter(f => !keys.has(f) && !ARRAY_USES.has(f)).sort();
+  is(phantom, [], 'the results screen reads no field an outcome does not carry');
+  /* The scan has to be finding something, or a broken regex passes green.
+     Same reason check-numbers records its coverage counts. */
+  ok(read.size >= 10, `the outcome scan found real reads (${read.size})`);
+}
+
+/* ── THE LAST PICK IS THE PLAYER'S, AND THE FEE IS NO LONGER A LADDER SUM ───
+ *
+ * The reserve floor promises a LEGAL ROSTER AND NEVER A CHOICE, so a drafter
+ * who spends down to it reaches the last slot able to afford the one man the
+ * floor earmarked. Measured over 500 drafts a bot before this shipped, the
+ * last board was a single forced option on 47.6% of best-available runs and
+ * 61.0% of cap-spending ones, and the re-spin that is supposed to be the way
+ * out was refused at the same moment, because its fee is charged against a
+ * budget already at the floor: trapped on 24.8% and 43.6% of runs. The bot
+ * that hoarded money and drafted badly was never trapped once.
+ *
+ * So the last slot's re-spin is free, and the fee it did not pay has to be
+ * STORED. Written the old way, `remaining()` sums the ladder out of
+ * `respinsUsed` on every read and charges a waived fee back the moment
+ * anything looks at the budget: the money disappears a frame later, the floor
+ * says the roster cannot be filled, and nothing throws.
+ */
+{
+  const seeded = () => R.createRun({ seed: 4242 });
+
+  /* A MID-DRAFT RE-SPIN STILL COSTS THE LADDER, and paying it sticks. Reading
+     the budget twice must not charge twice, which is the whole defect. */
+  const mid = seeded();
+  R.spin(mid, data);
+  const fee = R.canRespin(mid).cost;
+  is(fee, E.CONSTANTS.RESPIN_LADDER_MUSD[0], 'the first re-spin costs the top of the ladder');
+  const before = R.remaining(mid);
+  R.respin(mid, data);
+  is(R.remaining(mid), R.money(before - fee), 'paying it comes off the budget once');
+  is(R.remaining(mid), R.remaining(mid), 'and reading the budget again does not charge it again');
+
+  /* THE LAST SLOT IS FREE, and free is what reopens the valve: the budget is
+     at the floor by then, so a charged re-spin is a refused one. */
+  const last = greedyDraft(31337, E.SLOTS.length - 1);
+  is(R.slotsLeft(last), 1, 'the fixture is at the last open slot');
+  R.spin(last, data);
+  const re = R.canRespin(last);
+  is(re.cost, 0, 'the last slot re-spins for nothing');
+  ok(re.ok, `and is actually offered there (${re.reason || 'ok'})`);
+  /* TAKEN THROUGH A GUARD, because `respin` THROWS on a refusal and the whole
+     point of this fixture is a state where it used to be refused. Left bare,
+     reintroducing the charge kills the suite on a stack trace pointing at this
+     line rather than reporting the trap it exists to name. */
+  const held = R.remaining(last);
+  let refused = null;
+  try { R.respin(last, data); } catch (e) { refused = String((e && e.message) || e); }
+  is(refused, null, 'the free re-spin can actually be taken');
+  is(R.remaining(last), held, 'a free re-spin moves no money at all');
+  is(last.respinsUsed, 1, 'and still counts against the three');
+
+  /* THE BOUND IS THE WHOLE OF WHAT STOPS IT BEING AN EXPLOIT. Free and
+     unlimited is an infinite reroll on the one board small enough to fish. */
+  let spins = 1;
+  while (R.canRespin(last).ok && spins < 20) {
+    try { R.respin(last, data); } catch (e) { break; }
+    spins++;
+  }
+  is(spins, E.CONSTANTS.MAX_RESPINS, 'a free re-spin runs out at MAX_RESPINS');
+  is(R.canRespin(last).reason, 'no re-spins left', 'and says which of the two limits stopped it');
+
+  /* A SAVE WRITTEN BEFORE THE FIELD EXISTED. It never had a free one, so the
+     ladder IS what it paid, and the fallback has to agree to the penny. */
+  const legacy = seeded();
+  legacy.respinsUsed = 2;
+  delete legacy.respinFeesPaid;
+  is(E.CONSTANTS.CAP_MUSD - R.remaining(legacy), E.respinFees(2),
+    'a run saved before the fee was stored still reads its fees off the ladder');
+
+  /* ONE SOURCE FOR THE PRICE GATE. canFinishAfter is the margin's own sign, so
+     the two can never disagree about whether a signing is legal. */
+  const probe = greedyDraft(777, 2);
+  R.spin(probe, data);
+  let checked = 0, disagreed = 0;
+  for (const row of probe.currentDraw.board) {
+    const p = data.allPlayers[row.key];
+    if (!p) continue;
+    const m = R.marginAfter(probe, p);
+    if (m === null) continue;
+    checked++;
+    if ((m >= -1e-9) !== R.canFinishAfter(probe, p)) disagreed++;
+  }
+  ok(checked >= 3, `the margin was asked of a real board (${checked} men)`);
+  is(disagreed, 0, 'the margin and the price gate never disagree');
+
+  /* THE WARNING IS ONLY ASKED WHERE IT WAS MEASURED. With three slots open the
+     same number is headroom shared between two of them, which is a different
+     quantity, and answering it off this table would be reading it for a
+     question nobody put to it. */
+  const early = greedyDraft(555, 1);
+  R.spin(early, data);
+  const anyEarly = early.currentDraw.board.some(row => {
+    const p = data.allPlayers[row.key];
+    return p && R.leavesNoChoice(early, p);
+  });
+  is(R.slotsLeft(early), E.SLOTS.length - 1, 'the early fixture has four slots open');
+  is(anyEarly, false, 'nothing is marked tight while there is more than one pick left');
+  ok(R.LAST_SLOT_ROOM_MUSD > 0, 'the room the last slot needs is a real number');
+}
+
+/* ── THE FLOOR IS UNDER THE CLUB, NOT REPLACED BY IT ────────────────────────
+ *
+ * The court is a hardwood floor now: seven background layers, of which the
+ * top one is a tint on a custom property and the six under it are the wood.
+ * Before that it was one flat gradient, and `body.clubbed .court` said
+ * `background:` and replaced the lot.
+ *
+ * SO THE ONE REGRESSION WORTH GUARDING IS A SECOND `background` ON THE CLUB
+ * RULE. Write one and every plank goes when a club lands, which is a court
+ * that looks perfectly fine in the state a developer opens it in (nothing is
+ * drawn until a club reel lands) and flat in the state a player is in for the
+ * whole draft. Nothing throws and no other check here opens the page.
+ *
+ * The other half is the three courts. The home screen, the draft and the
+ * results each carry one, and every part of the floor is markup: an apron, a
+ * backboard and two corner threes added to one of them and not the others is
+ * two courts in one game. Counted rather than named, so the next part added
+ * is covered without anybody remembering this section exists.
+ */
+{
+  const src = fs.readFileSync(path.join(HERE, 'index.html'), 'utf8');
+
+  const club = /body\.clubbed \.court\{([^}]*)\}/.exec(src);
+  ok(!!club, 'a club still repaints the court');
+  if (club) {
+    ok(/--floor-tint\s*:/.test(club[1]), 'and it does it through the tint layer');
+    ok(!/(^|;)\s*background\s*:/.test(club[1]),
+      'and never by replacing the background, which takes the boards with it');
+  }
+
+  /* ANCHORED ON THE TINT, because `.court` has three other rules and the
+     first of them is an aspect ratio inside a media query. A regex for the
+     selector alone reads that one and reports a floor with no boards in it,
+     which is what the first draft of this did. */
+  const floor = /\n\s*\.court\{([^}]*var\(--floor-tint\)[^}]*)\}/.exec(src);
+  ok(!!floor, 'the court draws its own floor');
+  if (floor) {
+    /* The wood is the planks, the seams and the grain, which is three
+       repeating gradients. Counted rather than matched, because their
+       periods are tuning and the count is the claim. */
+    const repeats = (floor[1].match(/repeating-linear-gradient/g) || []).length;
+    ok(repeats >= 3, `and under it a floor made of boards (${repeats} repeats)`);
+  }
+
+  const courts = (src.match(/<div class="court[ "]/g) || []).length;
+  ok(courts === 3, `three courts on this page (${courts})`);
+  for (const part of ['oob', 'bb', 'c3 l', 'c3 r', 'base', 'side']) {
+    const n = (src.match(new RegExp('class="' + part + '"', 'g')) || []).length;
+    is(n, courts, `every court has its ${part}`);
+  }
+}
+
+/* ── A STRAIGHT COLUMN OF DIGITS IS A FEATURE, NOT A TYPEFACE ───────────────
+ *
+ * This page was set in a code face. `--mono` was `ui-monospace` and 39 rules
+ * reached for it, which is more than the display face was used, and every one
+ * of the 39 was a NUMBER: a price, a record, a scoreline, a win share total,
+ * a streak. The Perfect Season, which this game is a reskin of, uses a
+ * monospace exactly zero times and sets the same figures in its own faces.
+ *
+ * What all 39 wanted was for digits to line up in a column, and
+ * `font-variant-numeric: tabular-nums` does that in ANY face. Reaching for a
+ * typewriter to get a straight line buys a whole voice nobody asked for.
+ *
+ * TWO THINGS ROT HERE AND BOTH ARE SILENT. A monospace can come back, because
+ * it is the reflex for a number and this page has thirty-odd sites where the
+ * next one lands. And a rule that asks for `--num` and forgets the feature
+ * renders a perfectly good number in a slightly wrong column, which nothing
+ * anywhere reports and no screenshot argues with.
+ *
+ * SO THE SECOND CLAIM IS ABOUT THE PAIR, never about one rule: `--num` is
+ * only there to carry the figures, so a rule that names it and no feature is
+ * a rule that has forgotten what it is for. Hero figures on the display face
+ * are checked the same way, because the display face is the other half of the
+ * split and the same reflex misses it.
+ *
+ * The page's own `--mono` is gone and `how-to-play.html`'s went with it: an
+ * unused variable is the next person's invitation.
+ */
+{
+  const pages = ['index.html', 'how-to-play.html'];
+  for (const page of pages) {
+    const raw = fs.readFileSync(path.join(HERE, page), 'utf8');
+    /* Comments out first. This very section names the thing it forbids, and
+       the last three extractors in this repo to read a comment as code each
+       reported a problem that was a paragraph. */
+    const src = raw.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/<!--[\s\S]*?-->/g, ' ');
+
+    ok(!/monospace/.test(src), `${page} reaches for no code face`);
+    ok(!/var\(--mono\)|--mono\s*:/.test(src), `${page} has no mono variable left`);
+
+    /* Every declaration block that sets one of the two number faces. The
+       body face is excluded: it is the page's default and is set on plenty
+       of things that are prose. */
+    const blocks = [...src.matchAll(/\{([^{}]*font-family\s*:\s*var\(--(?:num|display)\)[^{}]*)\}/g)];
+    if (page === 'index.html') {
+      ok(blocks.length >= 30, `${page}: the font scan found real rules (${blocks.length})`);
+    }
+    const bare = blocks
+      .filter(b => /var\(--num\)/.test(b[1]) && !/tabular-nums/.test(b[1]))
+      .map(b => b[1].trim().slice(0, 60));
+    is(bare, [], `${page}: every rule on the number face asks for tabular figures`);
+  }
+
+  /* The utility class went with the variable. `.mono` pointing at a face that
+     is not a monospace is a name that lies to whoever reads the markup. */
+  const idx = fs.readFileSync(path.join(HERE, 'index.html'), 'utf8');
+  ok(!/class="[^"]*\bmono\b/.test(idx), 'and nothing in the markup is still called mono');
+}
+
+/* ── A SHARED RESULT HAS TO SAY WHICH GAME IT WAS, AND THE DAY HAS TO COUNT ─
+ *
+ * Four things live in this section and every one of them fails in silence.
+ *
+ * THE TAGLINE. The football game's share card fell through to "Classic Mode.
+ * Six spins, one roster" THREE separate times, once per mode added after it
+ * was written, and its own CLAUDE.md section records each one. The card
+ * rendered perfectly every time; it simply described a game the player had
+ * not played. The defence is not a fourth branch, it is a check that every
+ * mode's answer is different from every other mode's, so the fifth door
+ * cannot inherit the fourth's words either.
+ *
+ * THE DAY NUMBER. Today's run is one seed for everybody, so the whole mode
+ * rests on two people in one group chat computing the same number from the
+ * same date. An off-by-one across a daylight saving change gives them
+ * different puzzles and neither of them anything to compare, and nothing
+ * anywhere throws: both pages play a perfectly good game.
+ *
+ * THE STREAK. A day counted twice, or a gap that does not reset, is a number
+ * that is simply wrong and looks exactly like a number that is right.
+ *
+ * THE BADGE DIFF. It is the only place in this game that answers "what just
+ * happened" rather than "what is true", and asked one line later it answers
+ * nothing at all, correctly and uselessly.
+ *
+ * THE FUNCTIONS ARE LIFTED OUT OF THE SHIPPED PAGE, never copied here. A copy
+ * of the arithmetic is a second implementation that agrees with itself, which
+ * is the exact failure mythiball's send curve had for as long as its sweep
+ * carried a hand-written duplicate of the curve it was sweeping.
+ */
+{
+  const pageSrc = fs.readFileSync(path.join(HERE, 'index.html'), 'utf8');
+
+  /* Brace-matched rather than regexed to a closing line, because two of these
+     hold an object literal and a `}` at the start of a line inside one would
+     cut the function in half and then fail to parse, which reads as a broken
+     page rather than a broken reader. */
+  const fnSource = (name) => {
+    const head = pageSrc.indexOf('function ' + name + '(');
+    if (head < 0) return null;
+    let i = pageSrc.indexOf('{', head), depth = 0;
+    for (let j = i; j < pageSrc.length; j++) {
+      if (pageSrc[j] === '{') depth++;
+      else if (pageSrc[j] === '}' && --depth === 0) return pageSrc.slice(head, j + 1);
+    }
+    return null;
+  };
+  /* COVERAGE IS HALF THE CHECK. A reader that finds nothing would let every
+     assertion below pass vacuously, which is how an extractor in this repo
+     has been silently wrong three times. */
+  const WANT = ['cardTag', 'dayNumberOf', 'dailySeed', 'dailyRecord',
+    'freshBadges', 'bestsSet', 'shareDare'];
+  /* NUMWORD is not in WANT because it is not a `function` declaration but a
+     `var` holding one, and it is lifted separately below. It is the page's one
+     place that turns a roster count into an English word, so every tagline
+     here reaches for it and a lift without it throws rather than failing an
+     assertion. */
+  const missing = WANT.filter(n => !fnSource(n));
+  is(missing, [], 'every function this section reads is still in the page');
+
+  const lift = (name, names, vals) =>
+    new Function(...names, fnSource(name) + '\nreturn ' + name + ';')(...vals);
+
+  /* NUMWORD, lifted out of its `var` the same way and for the same reason as
+     everything else here: a copy of it would agree with itself. */
+  const numwordSrc = (() => {
+    const head = pageSrc.indexOf('var NUMWORD = function(');
+    if (head < 0) return null;
+    let i = pageSrc.indexOf('{', head), depth = 0;
+    for (let j = i; j < pageSrc.length; j++) {
+      if (pageSrc[j] === '{') depth++;
+      else if (pageSrc[j] === '}' && --depth === 0) return pageSrc.slice(head, j + 1) + ';';
+    }
+    return null;
+  })();
+  ok(!!numwordSrc, 'the page still carries NUMWORD, which every tagline reads');
+  const NUMWORD = numwordSrc
+    ? new Function(numwordSrc + '\nreturn NUMWORD;')()
+    : ((n) => String(n));
+  if (numwordSrc) {
+    /* IT IS THE ONE PLACE A ROSTER COUNT BECOMES A WORD, so it is asserted to
+       answer the roster this game actually drafts. A page saying "six" on a
+       five man game is the exact failure it exists to prevent. */
+    is(NUMWORD(E.SLOTS.length), ['zero', 'one', 'two', 'three', 'four', 'five',
+      'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve'][E.SLOTS.length],
+      'NUMWORD spells the roster size');
+    is(NUMWORD(5, true), 'Five', 'and capitalises for the start of a sentence');
+  }
+
+  /* ---- the tagline names the mode ---- */
+  if (fnSource('cardTag')) {
+    const ERA_NAMES = { eighties: 'The Eighties', nineties: 'The Nineties' };
+    const cardTag = lift('cardTag', ['E', 'ERA_NAMES', 'NUMWORD'], [E, ERA_NAMES, NUMWORD]);
+    const league = cardTag({});
+    const club = cardTag({ club: 'CHI' });
+    const era = cardTag({ era: 'eighties' });
+    const daily = cardTag({ daily: 12 });
+    const all = [league, club, era, daily];
+    ok(all.every(s => typeof s === 'string' && s.length > 10),
+      'every mode gets a tagline');
+    is(new Set(all).size, 4, 'no two modes share a tagline');
+    ok(club.includes(E.team('CHI').full), 'the One Franchise tagline names the club');
+    ok(era.includes('Eighties'), 'the Decades tagline names the decade');
+    ok(daily.includes('12'), "the daily tagline names the day");
+    /* THE LEAGUE SENTENCE IS THE ONE THAT FELL THROUGH IN THE OTHER GAME, so
+       it is the one asserted to appear nowhere else: a locked run wearing it
+       is the whole defect, written as a property rather than as a string. */
+    ok(![club, era, daily].some(s => s === league),
+      'no locked mode falls through to the league tagline');
+  }
+
+  /* ---- the dare ---- */
+  if (fnSource('shareDare')) {
+    const mk = (r) => lift('shareDare', ['run', 'E', 'NUMWORD'], [r, E, NUMWORD]);
+    const plain = mk(null)({ isGOAT: false, titleWon: false });
+    const day = mk({ daily: 3 })({ isGOAT: false, titleWon: false });
+    ok(plain !== day, 'the daily dares differently from an ordinary run');
+    ok(mk(null)({ isGOAT: true, titleWon: true }) !== plain,
+      'a 74 win run is dared differently from an ordinary one');
+  }
+
+  /* ---- the day number ---- */
+  if (fnSource('dayNumberOf')) {
+    const epoch = /var DAILY_EPOCH = '(\d{4}-\d{2}-\d{2})'/.exec(pageSrc);
+    ok(!!epoch, 'the page declares a daily epoch');
+    const dayNumberOf = lift('dayNumberOf', ['DAILY_EPOCH'], [epoch[1]]);
+    is(dayNumberOf(epoch[1]), 1, 'the epoch is day 1');
+
+    /* A WHOLE YEAR, ONE DAY AT A TIME, which is the only way to see a
+       daylight saving change. The US moves its clocks in March and November,
+       and the difference between two LOCAL midnights across those nights is
+       23 or 25 hours, which floors to the wrong day and hands two players in
+       one group chat different puzzles, with nothing anywhere throwing.
+     *
+     * IT HAS TO RUN IN A ZONE THAT HAS A CLOCK CHANGE, and that is why this
+     * is a child process rather than a loop here. Node reads TZ once, this
+     * container runs in UTC, and under UTC the broken version of the
+     * function is correct: swapping Date.UTC for a local Date passed the
+     * whole suite green. A check that can only pass is worth nothing. */
+    /* IT IS SWEPT OVER BOTH KINDS OF EPOCH, and the first draft was not, and
+       passed on the broken version. With the epoch in summer the hour a local
+       clock loses in March never pushes the division past a day boundary, so
+       every answer happens to come out right. With the epoch in WINTER it is
+       wrong by a whole day for every summer date. The epoch ships as one
+       literal that somebody will move, so the claim has to be that the
+       arithmetic is immune to a clock change for ANY epoch, not just for the
+       one currently written down. */
+    const probe = `
+      const out = {};
+      out.zone = new Date(2026, 6, 1).getTimezoneOffset()
+        !== new Date(2026, 0, 1).getTimezoneOffset();
+      for (const EP of ${JSON.stringify([epoch[1], '2026-01-15', '2026-07-15'])}) {
+        /* DAILY_EPOCH is a free identifier inside the lifted function, so it
+           is rebound per epoch by re-lifting rather than by assignment. */
+        const f = new Function('DAILY_EPOCH',
+          ${JSON.stringify(fnSource('dayNumberOf'))} + '; return dayNumberOf;')(EP);
+        const steps = new Set();
+        let prev = null;
+        for (let i = 0; i < 400; i++) {
+          const d = new Date(Date.UTC(2026, 0, 1) + i * 86400000);
+          const n = f(d.toISOString().slice(0, 10));
+          if (prev !== null) steps.add(n - prev);
+          prev = n;
+        }
+        out[EP] = { steps: [...steps], epochIsDayOne: f(EP) === 1,
+          spring: f('2026-03-09') - f('2026-03-07'),
+          autumn: f('2026-11-02') - f('2026-10-31') };
+      }
+      console.log(JSON.stringify(out));`;
+    const walk = JSON.parse(execFileSync(process.execPath, ['-e', probe],
+      { env: { ...process.env, TZ: 'America/New_York' }, encoding: 'utf8' }));
+    /* The probe reports whether it actually got a zone with a clock change in
+       it, because a container with no time zone database silently gives UTC
+       and this whole check would then be measuring nothing. */
+    ok(walk.zone, 'the day walk really ran in a zone that changes its clocks');
+    for (const ep of [epoch[1], '2026-01-15', '2026-07-15']) {
+      is(walk[ep].steps, [1],
+        `consecutive dates are consecutive days off a ${ep} epoch, across both clock changes`);
+      ok(walk[ep].epochIsDayOne, `the ${ep} epoch is its own day 1`);
+      is(walk[ep].spring, 2, `the spring change is two days wide off a ${ep} epoch`);
+      is(walk[ep].autumn, 2, `the autumn change is two days wide off a ${ep} epoch`);
+    }
+  }
+
+  /* ---- the seed ---- */
+  if (fnSource('dailySeed')) {
+    const dailySeed = lift('dailySeed', ['E'], [E]);
+    is(dailySeed(7), dailySeed(7), 'one day is one seed');
+    const seen = new Set();
+    for (let d = 1; d <= 400; d++) seen.add(dailySeed(d));
+    /* Not all-distinct, which a 32 bit hash cannot promise and which nothing
+       depends on. What matters is that the day is really an input: a seed
+       that ignored it would give one value for the whole set. */
+    ok(seen.size > 390, `four hundred days give four hundred puzzles (${seen.size})`);
+    ok([...seen].every(s => Number.isInteger(s) && s >= 0),
+      'every daily seed is a whole non-negative number');
+  }
+
+  /* ---- the streak ---- */
+  if (fnSource('dailyRecord')) {
+    let stored = null, today = 1;
+    const dailyRecord = lift('dailyRecord',
+      ['todayNumber', 'dailyState', 'dailyPut', 'easternISO', 'headline'],
+      [() => today, () => stored, (s) => { stored = s; },
+        () => '2026-01-01', () => 'Lost the play-in']);
+    const play = (day, wins) => {
+      today = day;
+      return dailyRecord({ wins, losses: 82 - wins, rating: 50, titleWon: false });
+    };
+    is(play(1, 40).streak, 1, 'a first daily is a streak of one');
+    is(play(2, 44).streak, 2, 'the next day continues it');
+    is(play(3, 41).streak, 3, 'and the next');
+    /* THE DAY IS THE GUARD, NOT THE COUNT. Playing today twice must not be a
+       second day, and the whole mode rests on it: a door that could be
+       pressed again would hand out a second attempt at the same puzzle and
+       take the comparison with it. */
+    is(play(3, 60).streak, 3, 'the same day played twice is still one day');
+    is(stored.wins, 41, 'and the second attempt is not filed over the first');
+    is(play(5, 50).streak, 1, 'a missed day starts again at one');
+    is(stored.bestStreak, 3, 'the best streak survives the reset');
+    is(stored.best, 50, 'the best daily record is kept across days');
+    is(stored.played, 4, 'and a replayed day is not counted as a run');
+  }
+
+  /* ---- what just lit ---- */
+  if (fnSource('freshBadges')) {
+    const fake = { earned: (c) => (c.runs >= 2 ? [{ id: 'a' }, { id: 'b' }] : [{ id: 'a' }]) };
+    const fresh = lift('freshBadges', ['window'], [{ RTF_BADGES: fake }]);
+    is(fresh({ runs: 1 }, { runs: 2 }).map(b => b.id), ['b'],
+      'only the badge that just lit is reported');
+    is(fresh({ runs: 2 }, { runs: 2 }), [], 'a badge already held is not reported again');
+    /* A BLOCKED SCRIPT COSTS A ROW, NEVER THE SCREEN. badges.js loads beside
+       the page, so it can be absent the same way board.js can in the football
+       game, and there it took the whole leaderboard down. */
+    is(lift('freshBadges', ['window'], [{}])({}, {}), [],
+      'a missing badges.js costs the row and nothing else');
+    is(lift('freshBadges', ['window'], [{ RTF_BADGES: { earned(){ throw new Error('x'); } } }])({}, {}),
+      [], 'and a throwing one costs the same');
+
+    /* Against the REAL catalog, because the fake above only proves the diff
+       and not that the diff is asked of something with badges in it. */
+    const B = require(path.join(HERE, 'badges.js'));
+    const real = lift('freshBadges', ['window'], [{ RTF_BADGES: B }]);
+    const lit = real({}, { runs: 1, rows: [{ w: 40, l: 42 }] });
+    ok(lit.length >= 1 && lit.some(b => b.id === 'first-run'),
+      'a first finished run lights at least the first badge');
+    is(real({ runs: 1, rows: [{ w: 40, l: 42 }] }, { runs: 1, rows: [{ w: 40, l: 42 }] }), [],
+      'and the same career against itself lights nothing');
+  }
+
+  /* ---- the marks a run sets ---- */
+  if (fnSource('bestsSet')) {
+    const ERA_NAMES = { eighties: 'The Eighties' };
+    const mk = (r, day) => lift('bestsSet',
+      ['run', 'E', 'ERA_NAMES', 'dailyState', 'todayNumber', 'dailyIsToday'],
+      [r, E, ERA_NAMES, () => day || null, () => 10,
+        () => !!(r && r.daily && r.daily === 10)]);
+    const outc = (wins, ring) => ({ wins, losses: 82 - wins, titleWon: !!ring });
+
+    /* A FIRST RUN SETS NO RECORD. It is trivially the best of one, and a
+       screen congratulating somebody for beating nobody is the unearnable
+       badge in reverse. */
+    is(mk({})({ runs: 0, bestWins: 0, rings: 0 }, outc(60)).length, 0,
+      'a first run claims no career best');
+    const beat = mk({})({ runs: 3, bestWins: 50, bestLabel: '50-32', rings: 1 }, outc(60));
+    ok(beat.some(m => /Career best/.test(m.text)), 'beating the career best is marked');
+    ok(beat.some(m => /50-32/.test(m.text)), 'and it names what was beaten');
+    is(mk({})({ runs: 3, bestWins: 60, bestLabel: '60-22', rings: 1 }, outc(60)).length, 0,
+      'tying the career best is not beating it');
+    ok(mk({})({ runs: 3, bestWins: 70, rings: 0 }, outc(45, true))
+      .some(m => m.kind === 'ring'), 'a first ring is marked');
+    is(mk({})({ runs: 3, bestWins: 70, rings: 2 }, outc(45, true))
+      .filter(m => m.kind === 'ring').length, 0, 'a second ring is not a first one');
+
+    /* A SHELF HAS TO HAVE BEEN STOOD ON. The first Bulls run is the best
+       Bulls run by default and saying so is noise. */
+    is(mk({ club: 'CHI' })({ runs: 3, bestWins: 70, rings: 1, byClub: {} }, outc(60))
+      .filter(m => /Bulls/.test(m.text)).length, 0, 'a first club run claims no club best');
+    ok(mk({ club: 'CHI' })({ runs: 3, bestWins: 70, rings: 1,
+      byClub: { CHI: { runs: 2, bestWins: 50, bestLabel: '50-32' } } }, outc(60))
+      .some(m => /Bulls/.test(m.text)), 'beating a club best is marked');
+    ok(mk({ era: 'eighties' })({ runs: 3, bestWins: 70, rings: 1,
+      byEra: { eighties: { runs: 2, bestWins: 50, bestLabel: '50-32' } } }, outc(60))
+      .some(m => /Eighties/.test(m.text)), 'beating a decade best is marked');
+
+    /* THE STREAK MARK IS READ OFF YESTERDAY, because the run being marked has
+       not been filed yet. Read off today it would always be one. */
+    const cont = mk({ daily: 10 }, { played: 4, streak: 3, lastDone: 9, best: 70 })
+      ({ runs: 3, bestWins: 70, rings: 1 }, outc(60));
+    ok(cont.some(m => m.kind === 'streak' && /4 days/.test(m.text)),
+      'a continued streak is marked with the day it is about to become');
+    is(mk({ daily: 10 }, { played: 4, streak: 3, lastDone: 4, best: 70 })
+      ({ runs: 3, bestWins: 70, rings: 1 }, outc(60)).filter(m => m.kind === 'streak').length,
+      0, 'a broken streak is not marked at all');
+
+    /* A DRAFT LEFT OVERNIGHT IS NOT TODAY'S RUN. Started on day 9, finished
+       on day 10, it carries daily: 9. Marked as today it would claim a
+       streak day for a board nobody else was playing; marked as day 9 it
+       would walk the streak backwards. It claims neither. */
+    is(mk({ daily: 9 }, { played: 4, streak: 3, lastDone: 9, best: 40 })
+      ({ runs: 3, bestWins: 70, rings: 1 }, outc(60))
+      .filter(m => m.kind === 'streak' || /daily/.test(m.text)).length, 0,
+      'a stale daily finished the next day claims no day and no streak');
+  }
+}
+
+/* ── THE MIGRATION HARDCODES THE ENGINE, AND NOTHING WAS CHECKING IT ───────
+ *
+ * supabase/108_hoops_leaderboard.sql owns every derived field on a board row,
+ * which means it has to know the rules: how long a season is, how many wins
+ * reach the play-in and the top six, how many series each bracket is, what 72
+ * and 74 mean, and what the cap is. Those are LITERALS in that file, on
+ * purpose, so it can be read on its own and pasted into a SQL editor with no
+ * dependency. The comment above them says "MUST MATCH hoops/engine.js
+ * CONSTANTS" and until this section nothing made that true.
+ *
+ * IT FAILS IN THE WORST DIRECTION. Move TOP_SIX_WINS in the engine and the
+ * game starts producing seasons the server labels with the other seed, or
+ * refuses outright for a bracket that is now the wrong length. The page fails
+ * soft, so a refused run resolves to null and the screen says the board is not
+ * reachable: a live, correct game whose leaderboard quietly stopped accepting
+ * anything, reported by nobody, because that is exactly what a board looks
+ * like before the migration has been run.
+ *
+ * The score is the other half. board.js recomputes the stored generated column
+ * locally, because the results screen counts the runs ahead of you before the
+ * insert has come back, so a client that shifts a differential differently
+ * from the column counts against a number that is not in anybody's row.
+ */
+{
+  const sql = fs.readFileSync(path.join(HERE, '..', 'supabase', '108_hoops_leaderboard.sql'), 'utf8');
+  const boardSrc = fs.readFileSync(path.join(HERE, 'board.js'), 'utf8');
+  const pageSrc = fs.readFileSync(path.join(HERE, 'index.html'), 'utf8');
+
+  /* Read as `NAME constant int := 82;`, which is the one form that file uses.
+     A miss answers undefined and fails the comparison below rather than
+     passing quietly, which is the right way round for a reader that could be
+     looking at a renamed constant. */
+  const sqlConst = (name) => {
+    const m = new RegExp(name + '\\s+constant\\s+\\w+\\s*:=\\s*([0-9.]+)').exec(sql);
+    return m ? Number(m[1]) : undefined;
+  };
+  const PAIRS = [
+    ['RTF_REG_GAMES', E.CONSTANTS.REGULAR_SEASON_GAMES, 'the season length'],
+    ['RTF_PLAY_IN_WINS', E.CONSTANTS.PLAY_IN_WINS, 'the play-in line'],
+    ['RTF_TOP_SIX_WINS', E.CONSTANTS.TOP_SIX_WINS, 'the top six line'],
+    ['RTF_ROUNDS_SEEDED', E.CONSTANTS.PLAYOFF_ROUNDS_SEEDED, 'a seeded bracket'],
+    ['RTF_ROUNDS_PLAYIN', E.CONSTANTS.PLAYOFF_ROUNDS_PLAY_IN, 'a play-in bracket'],
+    ['RTF_RECORD_WINS', E.CONSTANTS.RECORD_WINS, 'the record'],
+    ['RTF_GOAT_WINS', E.CONSTANTS.GOAT_WINS, 'the one nobody has done'],
+    ['RTF_CAP_MUSD', E.CONSTANTS.CAP_MUSD, 'the cap'],
+    /* THE ROSTER SIZE, which the migration uses to refuse a run whose picks
+       do not line up. Missing from this list while it was six in both files,
+       so the day the game drafted five the server would have refused every
+       run with nothing on screen saying why. */
+    ['RTF_ROSTER_SIZE', E.SLOTS.length, 'how many men a run drafts'],
+  ];
+  /* COVERAGE FIRST. A reader that finds nothing lets all eight comparisons
+     pass against undefined === undefined, which is how an extractor in this
+     repo has been silently wrong three times. */
+  ok(PAIRS.every(([n]) => sqlConst(n) !== undefined),
+    'the migration still declares every constant this checks'
+    + ' (' + PAIRS.filter(([n]) => sqlConst(n) === undefined).map(([n]) => n).join(', ') + ')');
+  for (const [name, engineValue, what] of PAIRS) {
+    is(sqlConst(name), engineValue, `the migration and the engine agree on ${what}`);
+  }
+
+  /* THE DAILY EPOCH LIVES IN TWO FILES and has to, because one is deployed by
+     hand and the other by a push. Day 1 meaning two different days is a board
+     whose rows are filed under a day nobody else is playing. */
+  const pageEpoch = /var DAILY_EPOCH = '(\d{4}-\d{2}-\d{2})'/.exec(pageSrc);
+  const sqlEpoch = /RTF_DAILY_EPOCH\s+constant\s+date\s*:=\s*date\s*'(\d{4}-\d{2}-\d{2})'/.exec(sql);
+  ok(!!pageEpoch && !!sqlEpoch, 'the page and the migration each declare a daily epoch');
+  if (pageEpoch && sqlEpoch) {
+    is(sqlEpoch[1], pageEpoch[1], 'and they are the same day');
+  }
+
+  /* ── A NUMBER A PLAYER READS HAS TO BE THE NUMBER THE GAME PLAYS ───────
+   *
+   * This is `check-numbers.mjs`'s subject, and hoops is on neither that
+   * script's guarded list nor anybody else's, so the two pages that describe
+   * this game were free to describe a different one.
+   *
+   * IT HAPPENED WHILE THE ROSTER WAS BEING CHANGED. The cap was swept, a
+   * provisional $105M went into the rules page and the meta description
+   * before the sweep had finished, and $120M shipped. Nothing threw: both
+   * pages rendered perfectly and promised a cap the game does not charge,
+   * which is the guide that lies, found by a player.
+   *
+   * how-to-play.html IS STATIC AND CANNOT INTERPOLATE, which is the whole
+   * reason this class of check exists. index.html can, and mostly does.
+   *
+   * AND THE FIRST DRAFT OF THIS CHECK THREW THE SCRIPT AWAY, which is the
+   * fourth wrong extractor in this repo and the one that cost the most. It
+   * stripped `<script>` whole, on the argument directly below about comments,
+   * and index.html is a one file game: every sentence the game PRINTS lives
+   * in that block. So it read the markup and the meta description, found the
+   * cap claims and the one count in the folded card, passed, and left ELEVEN
+   * player-facing "six" strings behind on a five man game, among them the
+   * share text, the daily's dare, the front page door and two hardcoded
+   * "of 6 signed". Its own coverage clause did not save it, because the other
+   * page yields claims and the clause counted both pages together.
+   *
+   * COMMENTS STILL COME OUT, AND THAT PART WAS RIGHT. A code comment here is
+   * prose for the next person and is allowed to say what the roster used to
+   * be: the note above this one says "six men to five" and the engine's cap
+   * note lists every value it has ever had. A reader that failed on those
+   * would be the bug rather than the comment.
+   *
+   * SO IT READS STRINGS, THROUGH check-copy.mjs's OWN WALKER. Telling a
+   * comment from a string needs a character walk rather than a regex, and
+   * telling a regex literal from a division needs one too: `/[&<>"']/g` is a
+   * real line in this page, and a reader that takes its double quote for a
+   * string opener is lost for the rest of the file, which is where the share
+   * text and the front page door happen to live. That walker exists, it was
+   * fixed for that exact literal once already, and a second copy of it would
+   * be wrong a second time.
+   */
+  {
+    const markup = (src) => src
+      .replace(/<script[\s\S]*?<\/script>/gi, ' ')
+      .replace(/<style[\s\S]*?<\/style>/gi, ' ')
+      .replace(/<!--[\s\S]*?-->/g, ' ');
+    /* The markup a reader sees, plus every string the script can print. */
+    const prose = (src) => [markup(src)]
+      .concat(scriptBlocks(src).flatMap(b => stringLiterals(stripComments(b))))
+      .join('\n');
+    const pages = {
+      'index.html': prose(pageSrc),
+      'how-to-play.html': prose(fs.readFileSync(path.join(HERE, 'how-to-play.html'), 'utf8')),
+      /* THE SHARE CARD IS COPY, and it is the most public copy this game has: it
+         is what a link to it looks like in somebody else's chat. It is also a
+         BUILD ASSET, rendered to a png once and never interpolated, so a cap
+         that moves leaves a picture promising the old one with no page to fix
+         it and no reader who can tell. Same argument that put cfb's own og
+         build script on check-copy's guarded list. */
+      'og-source.html': prose(fs.readFileSync(path.join(HERE, 'og-source.html'), 'utf8')),
+    };
+
+    /* THE EXTRACTOR HAS TO PROVE IT READ THE SCRIPT, because the way it failed
+       was by reading a page and finding nothing in it. Two sentences that only
+       exist inside index.html's script block, one of them past the regex
+       literal that desyncs a naive walker. */
+    for (const probe of [' good players. Nothing they do together.', 'days in a row.']) {
+      ok(pages['index.html'].includes(probe),
+        `the copy reader reaches the script's own strings ("${probe}")`);
+    }
+
+    /* Every "$NNNM cap" a reader can see. */
+    const capClaims = [];
+    for (const [name, text] of Object.entries(pages)) {
+      for (const m of text.matchAll(/\$([0-9]+(?:\.[0-9]+)?)M<\/b>?\s*cap|\$([0-9]+(?:\.[0-9]+)?)M\s+cap/gi)) {
+        capClaims.push({ name, value: Number(m[1] || m[2]) });
+      }
+    }
+    ok(capClaims.length >= 2,
+      `the cap is claimed in prose and the claims were found (${capClaims.length})`);
+    const wrongCap = capClaims.filter(c => c.value !== E.CONSTANTS.CAP_MUSD)
+      .map(c => `${c.name} says $${c.value}M`);
+    is(wrongCap, [], `every cap a reader sees is $${E.CONSTANTS.CAP_MUSD}M`);
+
+    /* AND THE SEASON RANGE, WHICH GOES STALE ON ITS OWN ONCE A YEAR.
+       `home-era` is interpolated from the data on load, so the "1974 to 2025"
+       in the markup is only what a reader sees for the moment before the pool
+       arrives, and for as long as it does not. That still makes it a claim: a
+       refresh that adds a season leaves it a year out, in the heading of the
+       front page, with nothing to catch it, because the number that replaced
+       it was right. This is the one number on these pages that moves without
+       anybody editing anything.
+
+       IT READS THE ELEMENT AND NOT THE PROSE, and the first draft did the
+       other thing. A bare "NNNN to NNNN" means several things on these pages:
+       how-to-play lists the seven era bands, and 1980 to 1986 is a correct
+       sentence about the eighties rather than a stale claim about the pool.
+       Scanning for the shape reported all seven as defects, which is the same
+       trap that kept "times" and "players" off the noun list above. The claim
+       lives in one element, so that is what is read. */
+    const seasons = players.map(p => p.s);
+    const span = `${Math.min(...seasons)} to ${Math.max(...seasons)}`;
+    const era = /id="home-era"[^>]*>([^<]*)</.exec(pageSrc);
+    ok(!!era, 'the front page still carries the season range in #home-era');
+    if (era) {
+      is(era[1].trim(), span,
+        `the season range the front page opens on is ${span}`);
+    }
+
+    /* And every count of the roster written as a WORD. "six spins" and "Six
+       men" are correct English sentences, so nothing but this can catch one
+       left behind.
+       TWO NOUNS ARE DELIBERATELY NOT ON THIS LIST and the first draft failed
+       on both. "times" and "players" each mean the roster in one sentence
+       and something else in another: the re-spin ladder is charged "three
+       times" and no club may give up more than "two players". A reader that
+       claimed those reports two correct sentences as defects, which is worse
+       than the hole it closes. What is left is the three nouns that only
+       ever mean the roster on these pages. */
+    const WORDS = ['zero', 'one', 'two', 'three', 'four', 'five', 'six',
+      'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve'];
+    const want = WORDS[E.SLOTS.length];
+    const countClaims = [];
+    for (const [name, text] of Object.entries(pages)) {
+      const re = new RegExp('\\b(' + WORDS.join('|') + ')\\s+(spins|men|starters)\\b', 'gi');
+      for (const m of text.matchAll(re)) {
+        countClaims.push({ name, said: m[1].toLowerCase(), phrase: m[0] });
+      }
+    }
+    /* PER PAGE, because counting both together is what let index.html yield
+       nothing from its script and still pass on how-to-play.html's claims. */
+    for (const name of Object.keys(pages)) {
+      const n = countClaims.filter(c => c.name === name).length;
+      ok(n >= 1, `${name} writes the roster count out in prose (${n} found)`);
+    }
+    const wrongCount = countClaims.filter(c => c.said !== want)
+      .map(c => `${c.name}: "${c.phrase}"`);
+    is(wrongCount, [], `every roster count a reader sees is "${want}"`);
+  }
+
+  /* The slot names the server will accept have to be the slots the game
+     drafts, or a legal roster is refused by a regex. */
+  const slotList = /where s not in \(([^)]*)\)/.exec(sql);
+  ok(!!slotList, 'the migration lists the slots it accepts');
+  if (slotList) {
+    const named = slotList[1].match(/'([^']+)'/g).map((s) => s.slice(1, -1)).sort();
+    is(named, E.SLOTS.slice().sort(), 'and they are the slots the game drafts');
+  }
+
+  /* ---- the score, in two places ---- */
+  const nums = /wins::int \* (\d+)\s*\+ least\((\d+), greatest\((\d+), round\(\(point_diff \+ (\d+)\) \* (\d+)\)/
+    .exec(sql);
+  ok(!!nums, 'the score column is still written the way this reads it');
+  if (nums) {
+    const [, mul, cap, floor, shift, scale] = nums.map(Number);
+    const fromSql = (wins, diff) =>
+      wins * mul + Math.min(cap, Math.max(floor, Math.round((diff + shift) * scale)));
+    /* board.js's own copy, lifted out of the shipped file rather than
+       rewritten here, for the reason the whole repo distrusts a second
+       implementation: a copy of the arithmetic agrees with itself. */
+    const roundTo = (n, places) => {
+      const f = Math.pow(10, places);
+      const v = Number(n) * f;
+      return (v < 0 ? -Math.round(-v) : Math.round(v)) / f;
+    };
+    /* board.js carries three functions for this now (the record score, the
+       depth, and the score that adds them), so the lift takes the whole run of
+       them rather than one brace-matched function. */
+    const lh = boardSrc.indexOf('function depthOf(');
+    const le = boardSrc.indexOf('/* THE SIGNED-IN USER');
+    ok(lh >= 0 && le > lh, 'board.js still has depthOf, recordScoreOf and scoreOf together');
+    const lifted = new Function('round1', boardSrc.slice(lh, le)
+      + '\nreturn { depthOf, recordScoreOf, scoreOf };')((n) => roundTo(n, 1));
+    const { depthOf, recordScoreOf } = lifted;
+    const scoreOf = lifted.scoreOf;
+
+    const dm = /depth::int \* (\d+) \+ wins::int \* \d+/.exec(sql);
+    ok(!!dm, 'the score column leads with how far the run went');
+    const depthMul = dm ? Number(dm[1]) : NaN;
+    const runFromSql = (wins, diff, depth) => depth * depthMul + fromSql(wins, diff);
+
+    let worst = null;
+    for (let w = 0; w <= 82; w++) {
+      for (let d = -20; d <= 20; d += 0.1) {
+        const diff = roundTo(d, 1);
+        if (recordScoreOf(w, diff) !== fromSql(w, diff) && !worst) worst = ['record', w, diff];
+        for (let dp = 0; dp <= 6; dp += 3) {
+          if (scoreOf(w, diff, dp) !== runFromSql(w, diff, dp) && !worst) worst = ['run', w, diff, dp];
+        }
+      }
+    }
+    is(worst, null, 'the client and the column compute the same score everywhere');
+
+    /* HOW FAR IT WENT, against the engine's own bracket. The SQL, board.js
+       and the engine each decide how many rounds a record gets, so every
+       legal (wins, series won) pair is walked through all three. A seeded run
+       starts at 2 and a play-in run at 1, and a ring is 6 from either door. */
+    const C = E.CONSTANTS;
+    let depthBad = null;
+    for (let w = 0; w <= 82; w++) {
+      const seat = E.seedFromRecord(w);
+      const rounds = seat.made ? seat.rounds : 0;
+      for (let po = 0; po <= rounds; po++) {
+        const want = rounds === 0 ? 0 : 6 - (rounds - po);
+        const got = depthOf(w, po, C.TOP_SIX_WINS, C.PLAY_IN_WINS);
+        if (got !== want && !depthBad) depthBad = [w, po, got, want];
+      }
+    }
+    is(depthBad, null, 'depth is 0 for the lottery and 6 for a ring, from either door');
+    /* The upgrade block backfills old rows with literal lines, because a DO
+       block cannot read the function's constants. They are a copy and have to
+       agree. */
+    const bf = /when regular_wins >= (\d+) then 2 \+ playoff_wins\s+when regular_wins >= (\d+) then 1 \+ playoff_wins/.exec(sql);
+    ok(!!bf, 'the migration still backfills depth for a table from the first version');
+    if (bf) is([Number(bf[1]), Number(bf[2])], [C.TOP_SIX_WINS, C.PLAY_IN_WINS],
+      'and its backfill uses the lines the game plays');
+
+    /* One step deeper always outranks any record one step shallower: a 22 win
+       champion is impossible, but the arithmetic has to hold for it anyway. */
+    let deeper = null;
+    for (let dp = 0; dp < 6; dp++) {
+      if (scoreOf(82, 60, dp) >= scoreOf(0, -60, dp + 1) && !deeper) deeper = dp;
+    }
+    is(deeper, null, 'going one round further always outranks any record');
+
+    /* AND THE PROPERTY THE SHIFT AND THE CLAMP EXIST FOR. A differential can
+       never carry into the wins digit, so a 49 win blowout never outranks a
+       50 win grind. Swept rather than spot-checked, because the failure is a
+       differential wide enough to reach the next multiple and that is a
+       question about the whole range. */
+    let carried = null;
+    for (let w = 0; w < 82; w++) {
+      const best = recordScoreOf(w, 60), worstNext = recordScoreOf(w + 1, -60);
+      if (best >= worstNext && !carried) carried = [w, best, worstNext];
+    }
+    is(carried, null, 'one more win always outranks any differential');
+  }
+
+  /* THE MODES THE SERVER ACCEPTS ARE THE DOORS THE GAME HAS, and the table's
+     own check constraint is the list. A door added to the page and not here
+     is a run refused on submit with nothing said to the player. */
+  const modeChk = /run_mode in \(([^)]*)\)\)/.exec(sql);
+  ok(!!modeChk, 'the table constrains run_mode to a list');
+  if (modeChk) {
+    const modes = modeChk[1].match(/'([^']+)'/g).map((s) => s.slice(1, -1)).sort();
+    is(modes, ['club', 'daily', 'era', 'league'],
+      'and it is the four doors the page draws');
+    /* The client's own allowlist, which is what stops a caller putting text
+       into a query, has to be the same four. */
+    const doors = /const DOORS = \[([^\]]*)\]/.exec(boardSrc);
+    ok(!!doors, 'board.js has its own list of doors');
+    if (doors) {
+      is(doors[1].match(/'([^']+)'/g).map((s) => s.slice(1, -1)).sort(), modes,
+        'and board.js allows exactly those');
+    }
+  }
+}
+
+/* ── THE BOX SCORE ADDS UP, OR IT IS NOT A BOX SCORE ────────────────────────
+ *
+ * Six identities, and all six are the kind a reader checks by eye in two
+ * seconds. A box score whose field goals do not produce its points, or whose
+ * minutes do not fill the game, is the most obvious wrong thing this site
+ * could print, so every one of them is asserted over a real season rather
+ * than on a fixture.
+ *
+ * IT IS A DECOMPOSITION AND THE FIRST ASSERTION IS THE ONE THAT SAYS SO. The
+ * points column has to equal the scoreline resolveGame already settled. That
+ * is what stops this becoming a second model of the same game, which is the
+ * fault verify caught once already when the animated season and the instant
+ * season disagreed off one seed.
+ */
+/* SIX SEASONS AND NOT ONE, BECAUSE THE OVERTIME CLAUSE IS THE INTERESTING ONE
+   AND OVERTIME IS RARE. This was a single seeded season, and whether it held
+   an overtime game at all depended on the roster that seed happened to draft:
+   it went red on a build that had not touched the box score, because a change
+   to the DATA moved the draft, moved the season, and left 82 games with no
+   overtime in them. A sample that can fail to contain the case it is written
+   for is measuring the sample, which this repo has now seen at a magic commish
+   seed, at a chase gap and at a discipline band. The seeds are fixed, so this
+   is still deterministic; there is just enough of it. */
+{
+  const bad = { sum: [], identity: [], attempts: [], minutes: [], quarters: [], level: [] };
+  let otSeen = 0, lines = 0, games = 0;
+  const season = [];
+  /* The first of the six is kept whole, because the gameDetail assertions
+     further down are about ONE run opening ONE game twice. */
+  let run = null;
+
+  for (const seed of [8191, 8192, 8193, 8194, 8195, 8196]) {
+    const r = R.createRun({ seed });
+    let guard = 0;
+    while (r.phase === R.PHASES.DRAFT && guard++ < 40) {
+      const draw = R.spin(r, data);
+      const opts = draw.options.map(k => data.allPlayers[k]).filter(Boolean);
+      R.sign(r, opts.slice().sort((a, b) => b.w - a.w)[0]);
+    }
+    R.playSeason(r);
+    /* One roster per season, because a box score is drawn against the men who
+       actually played it. */
+    const men = r.roster.map((p, i) => ({ ...p, _slot: E.SLOTS[r.slotIndex[i]] }));
+    if (!run) run = r;
+    for (const gm of r.season) season.push({ gm, men });
+  }
+
+  const rng = E.createSeededRNG(4242);
+
+  for (const { gm, men } of season) {
+    games++;
+    const tagged = men;
+    const ot = gm.ot || 0;
+    const box = E.gameBox(tagged, gm.yourPoints, rng, ot);
+
+    const pts = box.reduce((s, l) => s + l.pts, 0);
+    if (pts !== gm.yourPoints) bad.sum.push(`${pts} against a ${gm.yourPoints} point game`);
+
+    const mins = box.reduce((s, l) => s + l.min, 0);
+    if (mins !== 240 + ot * 25) bad.minutes.push(`${mins} for ${4 + ot} periods`);
+    for (const l of box) {
+      lines++;
+      /* Two pointers, threes and free throws are his points. Nothing else. */
+      if (2 * (l.fgm - l.tpm) + 3 * l.tpm + l.ftm !== l.pts) {
+        bad.identity.push(`${l.n}: ${l.fgm}fg ${l.tpm}3p ${l.ftm}ft is not ${l.pts}`);
+      }
+      if (l.fgm > l.fga || l.tpm > l.tpa || l.tpm > l.fgm || l.ftm > l.fta) {
+        bad.attempts.push(`${l.n} made more than he took`);
+      }
+      if (l.min > 48 + ot * 5 || l.min < 1) bad.minutes.push(`${l.n} played ${l.min}`);
+      if (l.pts < 0 || l.reb < 0 || l.ast < 0) bad.attempts.push(`${l.n} went negative`);
+    }
+
+    const q = E.quarterLines(gm.yourPoints, gm.oppPoints, ot, rng);
+    const sum = (a) => a.reduce((x, y) => x + y, 0);
+    if (sum(q.yours) !== gm.yourPoints || sum(q.theirs) !== gm.oppPoints) {
+      bad.quarters.push(`${sum(q.yours)}-${sum(q.theirs)} against ${gm.yourPoints}-${gm.oppPoints}`);
+    }
+    if (q.yours.length !== 4 + ot || q.names.length !== 4 + ot) {
+      bad.quarters.push(`${q.yours.length} periods for ${ot} overtimes`);
+    }
+    if (ot) {
+      otSeen++;
+      /* THE ONE THAT IS NOT OBVIOUS. resolveGame breaks a tie by adding points
+         to one side, so a game that went to overtime WAS level at the buzzer.
+         Quarters that do not add up to a tie there are describing a different
+         game from the one on the scoreboard. */
+      if (sum(q.yours.slice(0, 4)) !== sum(q.theirs.slice(0, 4))) {
+        bad.level.push(`${sum(q.yours.slice(0, 4))}-${sum(q.theirs.slice(0, 4))} at the end of regulation`);
+      }
+      if (q.yours.slice(4).some(v => v <= 0) || q.theirs.slice(4).some(v => v <= 0)) {
+        bad.level.push('somebody was shut out of an overtime');
+      }
+    }
+  }
+
+  ok(lines > 400, `enough box score lines to be worth checking (${lines} over ${games} games)`);
+  is(bad.sum.slice(0, 2), [], 'the points column is the scoreline');
+  is(bad.identity.slice(0, 2), [], "a man's shooting line produces his points");
+  is(bad.attempts.slice(0, 2), [], 'nobody makes more than he takes');
+  is(bad.minutes.slice(0, 2), [], 'the minutes column fills the game and nobody plays past the clock');
+  is(bad.quarters.slice(0, 2), [], 'the quarters are the scoreline');
+  ok(otSeen > 0, `overtime games in the sample to check (${otSeen})`);
+  is(bad.level.slice(0, 2), [], 'an overtime game was level at the end of regulation');
+
+  /* apportionCapped is the piece with real arithmetic in it and it was wrong
+     on 73% of inputs when it pinned both bounds in one pass. Swept rather
+     than sampled through a season, because the failure needs a particular
+     shape of weights: three men who want almost nothing beside three who want
+     everything. */
+  {
+     const swept = E.createSeededRNG(7);
+     let broke = 0;
+     for (let t = 0; t < 20000; t++) {
+       const w = Array.from({ length: 6 }, () => Math.max(1, 10 + E.normal(swept) * 14));
+       const ot = t % 7 === 0 ? 1 : 0;
+       const total = 240 + ot * 25, hi = 48 + ot * 5, lo = E.BOX.MIN_FLOOR;
+       const outp = E.apportionCapped(total, w, lo, hi);
+       if (outp.reduce((s, v) => s + v, 0) !== total) broke++;
+       else if (outp.some(v => v > hi || v < lo)) broke++;
+     }
+     is(broke, 0, 'a capped split hits its total inside its bounds, over 20,000 draws');
+     /* Asked for something the bounds cannot hold, it has to stop rather than
+        spin. Both directions, because the repair loop runs both ways. */
+     is(E.apportionCapped(50, [1, 1, 1, 1, 1, 1], 18, 48), [18, 18, 18, 18, 18, 18],
+       'a total below the floors settles on the floors');
+     is(E.apportionCapped(400, [1, 1, 1, 1, 1, 1], 18, 48), [48, 48, 48, 48, 48, 48],
+       'a total above the ceilings settles on the ceilings');
+  }
+
+  /* THE SAME GAME, OPENED TWICE, IS THE SAME GAME. gameDetail draws off the
+     run's seed and the game's own address rather than a shared stream, which
+     is what makes that true across a reload. A box score that rewrote itself
+     every time the sheet opened would be a game that cannot remember what
+     happened in it. */
+  const ref = { kind: 'season', index: 12 };
+  const a = R.gameDetail(run, ref), b = R.gameDetail(run, ref);
+  ok(a && JSON.stringify(a.box) === JSON.stringify(b.box),
+    'opening one game twice shows the same box score');
+  const other = R.gameDetail(run, { kind: 'season', index: 13 });
+  ok(other && JSON.stringify(a.box) !== JSON.stringify(other.box),
+    'two different games are two different box scores');
+  is(R.gameDetail(run, { kind: 'season', index: 9999 }), null, 'a game that is not there is null');
+  is(R.gameDetail(run, { kind: 'playoff', round: 99, game: 0 }), null, 'so is a round that is not there');
+  is(R.gameDetail(run, null), null, 'and so is nothing at all');
+
+  /* THE WALK IS CHRONOLOGICAL, and the first version was not: it listed the
+     playoffs first because that is the order the results screen draws them,
+     so Next on a play-in game went back to game 3 of the regular season. */
+  let outOfOrder = 0, lastIdx = -1, seenPlayoff = false, walked = 0;
+  for (const g of R.bigGames(run)) {
+    walked++;
+    if (g.kind === 'season') {
+      if (seenPlayoff || g.index <= lastIdx) outOfOrder++;
+      lastIdx = g.index;
+    } else seenPlayoff = true;
+  }
+  ok(walked > 10, `the big games list has something in it (${walked})`);
+  is(outOfOrder, 0, 'the big games walk forwards through the season and into the playoffs');
+  /* Every one of them has to open, or a Next lands on a blank sheet. */
+  const dead = R.bigGames(run).filter(g => !R.gameDetail(run, g)).length;
+  is(dead, 0, 'every game the walk offers actually opens');
+
+  /* THE BEST NIGHT IS THE BEST NIGHT, checked against a brute force sweep of
+     every game rather than against itself. It is the one number on the
+     results screen derived by scanning the whole run, so an off-by-one in the
+     scan would name the second best game and nothing would look wrong. */
+  const night = R.bestNight(run);
+  ok(!!night, 'a finished run has a best night');
+  let top = -1;
+  for (let i = 0; i < run.season.length; i++) {
+    for (const l of R.gameDetail(run, { kind: 'season', index: i }).box) {
+      if (l.pts > top) top = l.pts;
+    }
+  }
+  if (run.playoffs && run.playoffs.rounds) {
+    run.playoffs.rounds.forEach((rd, r) => (rd.games || []).forEach((g, gi) => {
+      for (const l of R.gameDetail(run, { kind: 'playoff', round: r, game: gi }).box) {
+        if (l.pts > top) top = l.pts;
+      }
+    }));
+  }
+  is(night.pts, top, 'the best night named is the best night there was');
+  /* And it has to open on the game it claims, showing that man with that
+     line. A link to the wrong game is the quietest way for this to be wrong. */
+  const there = R.gameDetail(run, night.ref);
+  ok(!!there, 'the best night links to a game that opens');
+  ok(there && there.box.some(l => l.n === night.n && l.pts === night.pts),
+    'the game it links to is the one he had that night in');
+  is(R.bestNight(R.createRun({ seed: 1 })), null, 'a run with no season has no best night');
+  is(R.bestNight(null), null, 'and neither does nothing at all');
+}
+
+/* THE ALL TIME RANK INSERTS YOUR TEAM, SO THE DENOMINATOR HAS TO COUNT IT.
+   A roster below every real team-season ranks length + 1, and the page was
+   printing "1404th of 1403 all time". Both ends asserted, because the top end
+   is wrong by the same one and looks like nothing. */
+{
+  const table = data.ratingTable;
+  ok(table && table.length > 1000, `a rating table to rank against (${table.length})`);
+  is(E.nationalRank(table[table.length - 1] + 50, table), 1, 'better than everything ranks first');
+  is(E.nationalRank(table[0] - 50, table), table.length + 1,
+    'worse than everything ranks one past the table, which is what the page must divide by');
+}
+
+/* ── A MAN IS NEVER CALLED "JR." ────────────────────────────────────────────
+ *
+ * lastNameOf took the final whitespace token, so Jaren Jackson Jr. was drawn
+ * as "Jr." on the live floor chips, in every play by play row, in the box
+ * score, in the endgame call and in the coach report. 43 men and 196
+ * player-seasons. Nothing could report it: the string is valid, the chip
+ * renders, and the only symptom is the game calling a real person by a
+ * suffix. Found by playing a game and reading the screen, where the verdict
+ * card said "Jaren Jackson Jr. had 32." directly above a chip saying "Jr.".
+ *
+ * THE SWEEP IS OVER THE POOL AND NOT OVER A LIST, because the way this comes
+ * back is a data refresh adding a name shape nobody wrote a case for. The
+ * hand cases below it are the ones that pin the RULE: a suffix keeps its
+ * surname, a particle keeps its surname, and a man whose FIRST name is a
+ * particle (Del Beshore, Von Wafer) keeps neither. */
+{
+  const SUFFIX_ONLY = /^(?:jr|sr|ii|iii|iv|v)\.?$/i;
+  const offenders = new Set();
+  for (const p of data.players) if (p.n && SUFFIX_ONLY.test(E.lastNameOf(p.n))) offenders.add(p.n);
+  is(offenders.size, 0,
+    `no man in the pool is drawn as a bare suffix (${[...offenders].slice(0, 3).join(', ')})`);
+
+  is(E.lastNameOf('Jaren Jackson Jr.'), 'Jackson Jr.', 'a suffix keeps the surname in front of it');
+  is(E.lastNameOf('Marvin Bagley III'), 'Bagley III', 'and so does a numeral');
+  is(E.lastNameOf('Nick Van Exel'), 'Van Exel', 'a particle is part of the surname');
+  is(E.lastNameOf('Vinny Del Negro'), 'Del Negro', 'which is worth more than tidiness here');
+  is(E.lastNameOf('Del Beshore'), 'Beshore', 'a first name that looks like a particle is not one');
+  is(E.lastNameOf('Von Wafer'), 'Wafer', 'and neither is the other one');
+  is(E.lastNameOf('Michael Ray Richardson'), 'Richardson', 'a middle name is not part of the surname');
+  is(E.lastNameOf('Lou Hudson'), 'Hudson', 'and an ordinary name is unchanged');
+  is(E.lastNameOf('Nenê'), 'Nenê', 'a one word name is itself');
+  is(E.lastNameOf(''), '', 'nothing comes back as nothing');
+  is(E.lastNameOf(null), '', 'and so does nobody');
+
+  /* IT HAS TO BITE ON THE POOL RATHER THAN ON THE CASES. A sweep over a pool
+     holding no suffix names would pass green having exercised nothing, which
+     is this repo's own coverage argument. */
+  const suffixed = new Set();
+  for (const p of data.players)
+    if (p.n && /\s(?:jr|sr|ii|iii|iv|v)\.?$/i.test(p.n)) suffixed.add(p.n);
+  ok(suffixed.size > 20,
+    `and the pool really holds suffix names for it to be wrong about (${suffixed.size})`);
+}
+
+/* ── A CLUB CHIP MAY NOT PROMISE A RING THE WHEEL CANNOT REACH ──────────────
+ *
+ * The One Franchise picker prints a season count off R.clubSeasons, which is
+ * the wheel's own answer, beside a ring count that was the franchise's ALL
+ * TIME total. Joined by a middot they read as one claim, so Boston said "53
+ * seasons, 18 rings" with eleven of those eighteen out of the pool, and
+ * Atlanta and Sacramento each said "1 ring" about a wheel holding no
+ * championship season at all.
+ *
+ * The property is about the DATA and the page's own read of it is asserted in
+ * check-draft.mjs, which is the half that can see the chip. */
+{
+  const clubs = E.franchises().filter(f => R.clubSeasons(f.code).length >= 3);
+  ok(clubs.length >= 25, `every club the picker offers (${clubs.length})`);
+
+  /* WHAT THIS HALF CAN HONESTLY CLAIM IS THAT THE TWO COUNTS DISAGREE.
+     "Every ring inside the window is inside the window" is a sentence about
+     its own filter and can only pass, which is the assertion shape this repo
+     keeps finding in its own checkers. So what is asserted here is that the
+     data still makes the bug POSSIBLE: eight clubs of thirty are narrowed
+     today and two lose their only ring. The day that stops being true this
+     goes red and the browser claim below stops being worth running. */
+  let narrowed = 0, unreachable = 0;
+  for (const f of clubs) {
+    const seasons = new Set(R.clubSeasons(f.code));
+    const inWindow = f.titles.filter(y => seasons.has(y));
+    if (inWindow.length !== f.titles.length) narrowed++;
+    if (f.titles.length && !inWindow.length) unreachable++;
+  }
+  ok(narrowed >= 6, `and the window really narrows some of them (${narrowed})`);
+  ok(unreachable >= 2, `including clubs whose only rings are unreachable (${unreachable})`);
+
+  /* The lineage is the half most easily lost in a fix like this: Oklahoma
+     City's 1979 is Seattle's and IS on the wheel, so it must survive. */
+  const okc = clubs.find(f => /Thunder/.test(f.name));
+  if (okc) {
+    const seasons = new Set(R.clubSeasons(okc.code));
+    ok(okc.titles.filter(y => seasons.has(y)).length >= 2,
+      'and a lineage ring inside the window still counts (Seattle 1979 is the Thunder\'s)');
+  }
+}
 
 /* Every roster plays a real number of games and ends up somewhere real. */
 const sample = E.playRun(best, E.createSeededRNG(99), E.SLOTS, data.oppPool);

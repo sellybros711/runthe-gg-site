@@ -261,6 +261,63 @@
     },
 
     /* ================================================================
+       THE MORNING OF THE STRIKE.
+       The stoppage arrives on the desk as a crisis payoff, and the ruling is where the cost
+       is. This is the parking lot an hour before it lands: the one morning in the mode where
+       the football itself has stopped, which is the biggest thing the sport can do and was a
+       paragraph in a folder.
+       ================================================================ */
+    {
+      id: 'strike-morning',
+      once: true,
+      when: function (w, L, sit) {
+        return !!(sit && sit.ripe && sit.ripe['the-stoppage']);
+      },
+      lines: [
+        { who: 'wire', set: 'paper',
+          say: 'Eleven rosters voted last night not to travel. Four games on Saturday '
+            + 'currently have one team in them.' },
+        { who: 'crowd', set: 'stadium',
+          say: 'I am in the parking lot. The buses are here. The team is not on them.' },
+        { who: 'Players', set: 'ballroom',
+          say: 'Nobody wanted this. You were told the number in March and the date in July.' },
+        { who: 'anchor',
+          say: 'College football has a work stoppage. Saying it slower does not make it '
+            + 'smaller.' },
+        { who: 'chief', set: 'office',
+          say: 'The networks have called four times. Whatever you are going to do, do it '
+            + 'before Saturday.' },
+      ],
+    },
+
+    /* ================================================================
+       THE VERDICT COMES BACK.
+       The lawsuit this office chose to fight ripens into pay-verdict, and until now the
+       courtroom existed as one line in first-filing. This is the morning the reasoning
+       lands, before the folder does.
+       ================================================================ */
+    {
+      id: 'verdict-day',
+      once: true,
+      when: function (w, L, sit) {
+        return !!(sit && sit.ripe && sit.ripe['fought-it']);
+      },
+      lines: [
+        { who: 'judge', set: 'court',
+          say: 'This court has reached a verdict in the matter it has sat through two '
+            + 'football seasons to decide.' },
+        { who: 'counsel', set: 'office',
+          say: 'We lost. I have read the reasoning twice and it is worse than the number.' },
+        { who: 'wire', set: 'paper',
+          say: 'The judgment runs forty pages. The part every lawyer in the country has '
+            + 'already underlined is on page nine.' },
+        { who: 'chief', set: 'office',
+          say: 'Counsel is outside with three options, and none of them is pretending this '
+            + 'did not happen.' },
+      ],
+    },
+
+    /* ================================================================
        SOMEBODY WON IT.
        The bracket is on the year in review and it is a table. This is the confetti.
        ================================================================ */
@@ -281,7 +338,7 @@
             + 'have not been to bed.' },
         { who: 'anchor',
           say: function (c) {
-            return c.champ + ' are national champions. A ' + c.teams + ' team field and they '
+            return c.champ + ' is the national champion. A ' + c.teams + ' team field, and they '
               + 'came through all of it.';
           } },
         { who: 'chief', set: 'office',
@@ -382,6 +439,10 @@
       lines: [
         { who: 'wire', set: 'paper',
           say: function (c) {
+            /* PLURAL HERE AND SINGULAR EVERYWHERE ELSE, and both are right. A school on its
+               own is singular in this sport ("Oregon is 12-0"), but the raid always takes
+               two: the cast picks two distinct members and the conference it picks them from
+               can never have fewer than MIN_CONFERENCE. So does the release count below. */
             var who = c && c.schools && c.schools.length
               ? c.schools.join(' and ') : 'Two schools';
             return who + ' are leaving. The releases went out four minutes apart and said the '
@@ -477,6 +538,40 @@
             + 'the market.' },
       ],
     },
+    {
+      id: 'r-employee', manual: true, when: function () { return false; },
+      lines: [
+        { who: 'wire', set: 'paper',
+          say: 'The word is in writing this morning. The people who play college football are '
+            + 'employees of the schools they play for.' },
+        { who: 'student', set: 'ballroom',
+          say: 'I asked our athletic director what changes on Monday. He said payroll. Then '
+            + 'he asked me to leave.' },
+        { who: 'counsel', set: 'office',
+          say: 'A hundred years of rules assumed the other word. Every one of them is a '
+            + 'contract term now.' },
+        { who: 'radio',
+          say: 'A caller wants to know if a benched sophomore can file a grievance. I have '
+            + 'been on hold with a labor lawyer for an hour.' },
+      ],
+    },
+    {
+      id: 'r-daylight', manual: true, when: function () { return false; },
+      lines: [
+        { who: 'wire', set: 'paper',
+          say: 'The sport has bought its Saturdays back. The price is not being announced, '
+            + 'which is how you know the size of it.' },
+        { who: 'crowd', set: 'stadium',
+          say: 'Kickoff is at one in the afternoon. I can take my kids and be home for '
+            + 'dinner. I forgot this existed.' },
+        { who: 'anchor',
+          say: 'Somewhere an executive is looking at an empty evening window the way a '
+            + 'homeowner looks at a flooded basement.' },
+        { who: 'chief', set: 'office',
+          say: 'The buildings will be full and the checks will be smaller. You have picked '
+            + 'which of those the sport is.' },
+      ],
+    },
 
     /* ================================================================
        AND THREE MORE THE SPORT PRODUCES ON ITS OWN.
@@ -525,6 +620,30 @@
           } },
         { who: 'crowd', set: 'stadium',
           say: 'We have not lost. Say the thing you need us to do and we will do it. Say it.' },
+      ],
+    },
+    {
+      id: 'signing-day',
+      cool: 18,
+      /* NOT IN YEAR ONE. February of the first year sits two beats after the opening scene,
+         and two cutscenes in a new player's first ten minutes is a mode that talks too much.
+         From year two on, the sport's second season gets its morning about twice a term. */
+      when: function (w, L, sit) {
+        return (w.beat || 0) === 1 && !(sit && sit.firstYear);
+      },
+      lines: [
+        { who: 'wire', set: 'paper',
+          say: 'It is signing day. The first letter arrived at 7:01 and the school announced '
+            + 'it with an eleven second video of a helmet.' },
+        { who: 'beat', set: 'paper',
+          say: 'Every February a teenager picks a hat off a folding table and a grown man I '
+            + 'know files eight hundred words about destiny.' },
+        { who: 'radio',
+          say: 'A caller just cried about his class. Happy crying. We took a break and he was '
+            + 'still going.' },
+        { who: 'chief', set: 'office',
+          say: 'Everyone signed today plays in whatever sport you are writing. The room '
+            + 'forgets that. February does not.' },
       ],
     },
     {

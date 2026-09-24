@@ -19,7 +19,7 @@ const E = (typeof require !== 'undefined')
    flex in place of the second receiver, so two of six spots take any of RB/WR/TE and
    trades can actually change the shape of the offense rather than only swap like for
    like. The COUNT is six either way and SLOT_ELIGIBILITY is keyed by slot NAME (which
-   is unchanged), so this one array is the whole difference — the engine's rating math,
+   is unchanged), so this one array is the whole difference. The engine's rating math,
    which reads player positions, needs nothing. slotsOf() prefers the run's own array
    and falls back by mode so a run restored from storage without it still resolves. */
 const TRADE_SLOTS = ['QB', 'RB', 'WR', 'TE', 'FLEX', 'FLEX'];
@@ -573,7 +573,7 @@ function createRun(opts) {
        leaderboard can rank runs by how many seasons they survived rather than ranking loose
        seasons. Null outside a dynasty. See ps_dynasty_tag and the recordRun tag in the page. */
     dynastyId: dynasty ? newDynastyId() : null,
-    /* THE BOSS SEASONS. Every fifth season ends with a marquee game against a real great
+    /* THE BOSS SEASONS. Every second milestone ends with a marquee game against a real great
        team: see E.dynastyBossFor. `boss` holds the pending game while it is being played and
        is cleared once resolved; `frozen` is the list of player ids a won freeze boss has
        taken off the clock; `bossFailSeason` is the one season whose win bar a lost boss
@@ -585,7 +585,7 @@ function createRun(opts) {
     bossFailSeason: null,
     /* What the last boss paid, for the screen that announces it. Cleared when spent. */
     bossReward: null,
-    /* THE ROSTER MANDATES, the odd milestones (5, 15, 25). `challenge` holds the mandate a
+    /* THE ROSTER MANDATES, the odd milestones (3, 9, 15). `challenge` holds the mandate a
        player is currently under: set when the offseason that follows the milestone opens, and
        carried through it because the roster it judges is the one at the far end. Resolved when
        the season starts and the final roster is read. Null outside a mandate offseason. See
@@ -1613,7 +1613,7 @@ function applyBossResult(run, won, freezeId) {
 }
 
 /*
- * IS A MANDATE WAITING. True on the results screen of an odd milestone (5, 15, 25) that the
+ * IS A MANDATE WAITING. True on the results screen of an odd milestone (3, 9, 15) that the
  * run survived: the owner is about to name how the team must be built, and the offseason that
  * follows is where you do it. Mirrors bossPending, and the two are mutually exclusive by the
  * milestone schedule, so a season is a boss OR a mandate, never both.
@@ -1711,6 +1711,45 @@ function startSeason(run, data, ctx) {
   return run;
 }
 
+/*
+ * WHO IS NEXT, AND HOW HARD.
+ *
+ * Lifted out of advanceWeek because a game can now be played two ways. A game this file
+ * RESOLVES asks these questions and answers them in the same breath; a game played FORWARD
+ * on screen has to ask them first, build a sim from the answers, and come back with a score
+ * afterwards. Written once so the live game and the resolved one can never face different
+ * opponents or carry a different home field, which is the class of drift this file has been
+ * bitten by elsewhere.
+ *
+ * It reads the run and changes nothing, so calling it to draw a screen is free.
+ */
+function nextGame(run, data, leagueContext) {
+  const s = run.season;
+  if (run.phase !== PHASES.SEASON && run.phase !== PHASES.PLAYOFFS) {
+    throw new Error('no game to play in phase ' + run.phase);
+  }
+  const playoff = run.phase === PHASES.PLAYOFFS;
+  /* End-aligned, via the engine's own helper. Indexing this list from the front would let a
+     first-round bye skip the Super Bowl opponent, which is backwards. */
+  const oppId = playoff
+    ? E.playoffOpponent(run.playoffs, run.playoffSeed.rounds, s.playoffRound)
+    : run.schedule[s.week];
+  const opp = data.byTeamSeasonId[oppId];
+  const isFinal = playoff && s.playoffRound === run.playoffSeed.rounds - 1;
+  /* An ordinary Sunday reads the roster too: past CLASS_FLOOR the best teams in the game get
+     a weekly edge that scales with how good they are, and fades against the two or three
+     real tests on the schedule. */
+  const advantage = playoff
+    ? homeField(run, s.regularWins, isFinal)
+    : E.weeklyEdgeVs(liveRating(run), opp);
+  return {
+    playoff, oppId, opp, isFinal, advantage,
+    roundName: playoff ? run.playoffSeed.roundNames[s.playoffRound] : null,
+    leagueAvgAllowed: leagueContext[opp.season] ?? 21.5,
+    chem: seasonChem(run),
+  };
+}
+
 /**
  * Play the next game and return its result.
  *
@@ -1722,48 +1761,58 @@ function startSeason(run, data, ctx) {
  * `displayCal` is optional; with it, each result also carries a football-looking
  * scoreline. The internal fantasy-space numbers stay on the result so the sim
  * remains auditable. The transform is presentation only and decides nothing.
+ *
+ * `pre` is the other way a game can arrive here: `{ you, them, won }` in real football
+ * points, from a game the page played forward down by down and asked the player to call.
+ * With it this function RECORDS rather than decides. It is the whole reason nextGame above
+ * exists, and three things about it are worth stating rather than inferring:
+ *
+ *   - THE RESOLVER IS NOT CALLED AT ALL. Calling it and then overriding the winner would put
+ *     a box score on the results screen that disagrees with the scoreline above it, which is
+ *     the one thing a screen printing both must never do.
+ *   - SO THERE ARE NO LINES. A forward sim scores on drives rather than by sampling each man,
+ *     so there is no honest per-player column to print. Every reader of `lines` already guards
+ *     on it, including the playoff broadcast, which is right: the live game WAS the broadcast.
+ *   - AND NO FANTASY-SPACE NUMBERS EITHER. yourScore and oppScore carry the football score,
+ *     because for a game played forward that IS the score. `live` says why, so nothing has to
+ *     work it out from the two fields agreeing.
  */
-function advanceWeek(run, data, leagueContext, displayCal) {
+function advanceWeek(run, data, leagueContext, displayCal, pre) {
   const s = run.season;
-  if (run.phase !== PHASES.SEASON && run.phase !== PHASES.PLAYOFFS) {
-    throw new Error('no game to play in phase ' + run.phase);
+  const g = nextGame(run, data, leagueContext);
+  const { playoff, oppId, opp, advantage, roundName } = g;
+  const gameSlots = slotsOf(run);
+  let r, shown;
+  if (pre) {
+    r = {
+      won: !!pre.won,
+      yourScore: pre.you,
+      oppScore: pre.them,
+      lines: null,
+      defenseModifier: pre.defenseModifier || 1,
+    };
+    shown = { you: pre.you, them: pre.them };
+  } else {
+    const rng = rngFor(run);
+    /* THE DEFENSE DRAFT PLAYS THE MIRROR GAME. Same opponent, same advantage, same league
+       context: what changes is which side of the scoreboard the roster is attached to. */
+    /* FULL TEAM PLAYS BOTH HALVES: its roster decides what you score AND what they score.
+       Picked by name rather than by nested ternary, because there are three of these now. */
+    const resolver = run.full ? E.resolveGameFull
+      : run.defense ? E.resolveGameDefense
+        : E.resolveGame;
+    /* THE COACH AND THE GAME PLAN HAVE TO REACH THE GAME. They were being left off this call,
+       so a mode built around hiring a coach and setting a scheme played every one of its
+       seventeen weeks with neither: the screens worked, the rating moved, and the season was
+       decided by a neutral plan and no coach at all. Nothing failed, which is why it survived.
+       Passed only for full runs, because resolveGame and resolveGameDefense have no eighth
+       argument and handing them one would be the next version of this bug. */
+    r = resolver(run.roster, g.chem, opp, g.leagueAvgAllowed,
+      rng, E.CONSTANTS, advantage,
+      run.full ? { coach: run.coach || null, plan: run.plan || null } : null);
+    shown = displayCal ? E.toFootballScore(r.yourScore, r.oppScore, r.won, rng, displayCal) : null;
   }
 
-  const playoff = run.phase === PHASES.PLAYOFFS;
-  /* End-aligned, via the engine's own helper. Indexing this list from the front would let a
-     first-round bye skip the Super Bowl opponent, which is backwards. */
-  const oppId = playoff
-    ? E.playoffOpponent(run.playoffs, run.playoffSeed.rounds, s.playoffRound)
-    : run.schedule[s.week];
-  const opp = data.byTeamSeasonId[oppId];
-  const rng = rngFor(run);
-  const isFinal = playoff && s.playoffRound === run.playoffSeed.rounds - 1;
-  /* An ordinary Sunday reads the roster too: past CLASS_FLOOR the best teams in the game get
-     a weekly edge that scales with how good they are, and fades against the two or three
-     real tests on the schedule. */
-  const advantage = playoff
-    ? homeField(run, s.regularWins, isFinal)
-    : E.weeklyEdgeVs(liveRating(run), opp);
-  const gameSlots = slotsOf(run);
-  /* THE DEFENSE DRAFT PLAYS THE MIRROR GAME. Same opponent, same advantage, same league
-     context: what changes is which side of the scoreboard the roster is attached to. */
-  /* FULL TEAM PLAYS BOTH HALVES: its roster decides what you score AND what they score.
-     Picked by name rather than by nested ternary, because there are three of these now. */
-  const resolver = run.full ? E.resolveGameFull
-    : run.defense ? E.resolveGameDefense
-      : E.resolveGame;
-  /* THE COACH AND THE GAME PLAN HAVE TO REACH THE GAME. They were being left off this call,
-     so a mode built around hiring a coach and setting a scheme played every one of its
-     seventeen weeks with neither: the screens worked, the rating moved, and the season was
-     decided by a neutral plan and no coach at all. Nothing failed, which is why it survived.
-     Passed only for full runs, because resolveGame and resolveGameDefense have no eighth
-     argument and handing them one would be the next version of this bug. */
-  const r = resolver(run.roster, seasonChem(run), opp, leagueContext[opp.season] ?? 21.5,
-    rng, E.CONSTANTS, advantage,
-    run.full ? { coach: run.coach || null, plan: run.plan || null } : null);
-  const shown = displayCal ? E.toFootballScore(r.yourScore, r.oppScore, r.won, rng, displayCal) : null;
-
-  const roundName = playoff ? run.playoffSeed.roundNames[s.playoffRound] : null;
   if (r.won) s.wins++; else s.losses++;
   const result = {
     week: playoff ? null : s.week + 1,
@@ -1776,6 +1825,9 @@ function advanceWeek(run, data, leagueContext, displayCal) {
     oppScore: Math.round(r.oppScore * 10) / 10,
     shownYou: shown ? shown.you : null,
     shownThem: shown ? shown.them : null,
+    /* Played forward on screen rather than resolved here. See the `pre` note above: it is why
+       this row has no lines and why its two score pairs are the same number twice. */
+    ...(pre ? { live: true } : {}),
     /* THE LINEUP THAT PLAYED, snapshotted. The roster changes mid-season in the Trade
        Machine, so a box score has to remember who was actually on the field that week
        rather than reading today's roster. Each man's season average rides along so the
@@ -3892,12 +3944,12 @@ function projectSeason(roster, chemistry, run, data, leagueContext, trials = 400
  * "draw.board is not iterable" after the wheels landed, and the game sat there
  * with no players and no way forward.
  */
-const RUN_API_VERSION = 47;
+const RUN_API_VERSION = 51;
 
 const api = {
   API_VERSION: RUN_API_VERSION,
   PHASES, createRun, spin, respin, sign,
-  startSeason, advanceWeek, startPlayoffs, indexData, bestPossibleSquad, projectSeason,
+  startSeason, nextGame, advanceWeek, startPlayoffs, indexData, bestPossibleSquad, projectSeason,
   previewSigning,
   remaining, reserveFloor, spendable, canRespin, slotsLeft, affordableFrom,
   boardFrom, blockFor, BLOCK, drawable,

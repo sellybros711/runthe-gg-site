@@ -1,0 +1,758 @@
+/*
+ * store.js : the Run The Bundle store, in one place, for every game that sells it.
+ *
+ * WHY THIS IS SHARED AND NOT COPIED. It is a PAYMENT surface. Two copies of a price, a term
+ * or a product list is two chances to tell a customer something the other page contradicts,
+ * and the one that is wrong is whichever was edited second. The Arcade Card line is the
+ * example that already bit: it is twelve months, everything else in the bundle is permanent,
+ * and a sheet claiming "lifetime access" over all four is false about the more expensive
+ * product. That sentence now exists once.
+ *
+ * Same argument the arcade ad makes at /assets/arcade-ad.js: one look and one set of facts
+ * for every page that shows it.
+ *
+ *   RTG_STORE.html(opts)        the offer, as markup. opts.signedOut swaps the two button
+ *                               labels for their sign-in-first versions.
+ *   RTG_STORE.wire(root, fns)   binds the two buy buttons found inside `root`. fns.buy is
+ *                               called with 'perfect-season' or 'run-the-bundle'.
+ *
+ * IT BRINGS ITS OWN CSS and injects it once, so a page only has to load the file. Every
+ * colour and face comes from the site's design tokens (--ink, --panel, --line, --fn, --fd
+ * and the rest), which both games already define, so the store takes each page's palette
+ * rather than fighting it.
+ *
+ * WHAT IT DOES NOT DO is decide who sees it, take money, or know what the visitor owns. The
+ * host asks those and frames the answer: The Perfect Season shows this in a bottom sheet
+ * with a Close under it, Commish Simulator shows it on its door.
+ */
+(function (root) {
+  'use strict';
+  if (root.RTG_STORE) return;              // a page that includes it twice
+
+  /* The college game's full name. A product name rather than a heading, so it is spelled
+     here rather than read off whichever host happens to be drawing the store. The football
+     page keeps its own copy for its mode cards; if the two ever disagree the one a BUYER
+     sees is this one. */
+  var CFB_NAME = 'The Perfect Season: College Football';
+
+  var esc = function (v) {
+    return String(v == null ? '' : v).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  };
+
+  var CSS = '  .pw-hero{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:13px 0 4px}\n' +
+    /* FOUR TILES GO TWO BY TWO RATHER THAN THREE AND A STRAY. The hero row is three columns
+       wide here, so a fourth tile lands alone in the first column with two empty cells beside
+       it: a row that reads as a mistake rather than a fourth thing. At four it drops to two
+       columns and squares off.
+       A CLASS AND NOT :has(). The count is decided in JS a few lines below, so the markup can
+       simply say what it is; :has() would push the same answer into a selector some browsers
+       still do not implement, and the failure there is silent and only on somebody else's
+       phone, which is the class of bug this file keeps a list of. */
+    '  .pw-hero.pw-four{grid-template-columns:1fr 1fr}\n' +
+    /* EVERY TILE IS THE SAME FOUR THINGS, WHICH IS WHAT KEEPS THE ROW SQUARE.
+       A grid row stretches every cell to the tallest one in it, so a tile carrying a part its
+       neighbour does not carry leaves that neighbour with a void under its text. That is not a
+       subtle effect: ONE tile here had an extra .pw-also line, and measured at 390px it made
+       the top row 167.6px against the bottom row's 128.6px, with about sixty pixels of nothing
+       under TRADE MACHINE. A reader does not diagnose that, they just see a row that looks
+       broken.
+       So the tile is fixed at eyebrow, drawing, name, one line, and the extra mode that line
+       used to name is itemised on the card below, where the rest of the modes are named and
+       where a guard already holds it to the wording on the receipt. */
+    '  .pw-tile{border:1px solid var(--line);border-radius:12px;padding:10px 7px 11px;text-align:center;\n' +
+    '    background:linear-gradient(180deg,rgba(251,191,36,.09),rgba(255,255,255,.02))}\n' +
+    '  .pw-from{display:block;font-family:var(--fn);font-size:7.5px;font-weight:800;\n' +
+    '    letter-spacing:.1em;text-transform:uppercase;color:var(--gc);line-height:1.2;\n' +
+    '    margin:0 0 6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}\n' +
+    /* 34 AND NOT 40. The drawings were grown to 40px when they were the biggest thing on the
+       sheet and had a three line tile under them to balance. At 34 the inset detail still
+       reads (that was the floor the 28px version failed) and four tiles cost the sheet a
+       quarter less height, which is the whole complaint this pass is answering. */
+    '  .pw-tile svg{width:34px;height:34px;display:block;margin:0 auto;\n' +
+    '    filter:drop-shadow(0 2px 5px rgba(0,0,0,.45))}\n' +
+    '  .pw-tile b{display:block;font-family:var(--fn);font-size:10.5px;letter-spacing:.07em;\n' +
+    '    text-transform:uppercase;margin-top:6px;line-height:1.15;color:var(--ink)}\n' +
+    '  .pw-tile i{display:block;font-style:normal;font-size:11px;color:var(--dim-2);\n' +
+    '    margin-top:2px;line-height:1.25}\n' +
+    '  /* A PURCHASE AS A CARD, so the two can be compared side by side rather than one being\n' +
+    '     the offer and the other a footnote under it. */\n' +
+    '  .pw-tier{border:1px solid var(--line-2);border-radius:14px;padding:12px 12px 12px;margin-top:10px;\n' +
+    '    background:var(--panel)}\n' +
+    '  .pw-tier.best{border-color:rgba(251,191,36,.5);\n' +
+    '    background:linear-gradient(180deg,rgba(251,191,36,.10),var(--panel))}\n' +
+    '  /* THE HEADER ROW IS THE SAME HEIGHT ON BOTH CARDS whether or not it carries a tag. The\n' +
+    '     "Best value" pill is 19px against a bare name\'s 16px, so without this the two price\n' +
+    '     rows below sit three pixels out of step with each other, which is exactly enough to\n' +
+    '     stop them reading as a pair and not enough for anybody to see why. */\n' +
+    '  .pw-th{display:flex;align-items:center;gap:8px;min-height:19px}\n' +
+    '  .pw-name{font-family:var(--fn);font-size:11px;letter-spacing:.12em;text-transform:uppercase;\n' +
+    '    color:var(--dim)}\n' +
+    '  .pw-tier.best .pw-name{color:#fbbf24}\n' +
+    '  .pw-tag{margin-left:auto;font-family:var(--fn);font-size:9px;letter-spacing:.1em;\n' +
+    '    text-transform:uppercase;font-weight:800;padding:3px 8px;border-radius:999px;\n' +
+    '    background:linear-gradient(135deg,#fde047,#f59e0b);color:#3b2600}\n' +
+    '  /* BOTH PRICES IN THE SAME PLACE, WHICH THEY WERE NOT.\n' +
+    '     The price used to sit in the header row, pushed to the right edge by margin-left:auto.\n' +
+    '     That works on a card whose header holds nothing else and fails on the one that does:\n' +
+    '     Run The Bundle\'s "Best value" tag already owned the right slot, so its price dropped to\n' +
+    '     a line of its own. The result was $19.99 hard right on one card and $34.99 hard left on\n' +
+    '     the next, and a reader comparing two numbers had to go and find each one.\n' +
+    '     Now both sit on their own line directly under the name, left aligned, so the eye runs\n' +
+    '     down a single edge: name, price, what you get, button, twice. That costs the Premium\n' +
+    '     card one line back, which is the trade, and it is the right way round. The saving is a\n' +
+    '     shorter sheet or a legible one. */\n' +
+    /* THE NUMBERS SHARE A BASELINE AND THE CHIPS SHARE A CENTRE, which is two rules because
+       the row holds two kinds of thing. $34.99 and a struck $80 are both prices and a reader
+       compares them along the baseline they are set on. A chip is a box with a border, and a
+       box hung off a baseline sits low: measured, the One payment chip started 10px down a
+       28px numeral and finished 3px below it, so it read as falling off the price rather than
+       belonging to it.
+       THEY WERE ALSO OUT OF STEP WITH EACH OTHER, which is the defect that shows. Save $45
+       already carried align-self:center and One payment did not, so on the Run The Bundle
+       card two pills a few pixels apart sat 4.7px out of line, at two different type sizes,
+       in a row that already holds four things. Now both centre on the price and both are cut
+       to one size, so the row reads as a price with two tags on it. */
+    '  .pw-cost{display:flex;align-items:baseline;gap:8px;margin:9px 0 2px;flex-wrap:wrap}\n' +
+    '  .pw-cost .pw-save,.pw-cost .pw-once{align-self:center}\n' +
+    '  /* TABULAR FIGURES so the two prices are the same shape as well as the same place: in the\n' +
+    '     proportional cut, the 1 in $19.99 is half the width of the 3 in $34.99 and the numbers\n' +
+    '     stop lining up exactly where somebody is trying to compare them. */\n' +
+    '  .pw-cost b{font-family:var(--fd);font-size:28px;line-height:1;font-weight:400;color:var(--ink);\n' +
+    '    font-variant-numeric:tabular-nums}\n' +
+    '  /* WHAT THIS ACCOUNT IS, in two letters more than it needs. Drawn only when there is a true\n' +
+    '     answer: see acctTier(), which returns nothing at all for a signed out visitor and for one\n' +
+    '     whose ownership has not come back yet. */\n' +
+    '  .pw-pill{display:inline-block;font-style:normal;margin-left:8px;vertical-align:3px;\n' +
+    '    font-family:var(--fn);\n' +
+    '    font-size:9px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;\n' +
+    '    padding:2px 7px;border-radius:999px}\n' +
+    '  .pw-pill.free{background:rgba(255,255,255,.08);color:var(--dim);\n' +
+    '    box-shadow:inset 0 0 0 1px var(--line)}\n' +
+    '  .pw-pill.pro{background:linear-gradient(135deg,#fde047,#f59e0b);color:#3b2600}\n' +
+    '  .pw-was{font-size:13.5px;color:var(--dim-2);text-decoration:line-through;\n' +
+    '    font-variant-numeric:tabular-nums}\n' +
+    '  /* THE SAVING IS A CHIP, not loose green text. It is the one thing in the price row that is\n' +
+    '     not a price, and as bare text at the same baseline it read as a third number to work out.\n' +
+    '     A pill says "label" at a glance, and it answers the gold pill in the header above it. */\n' +
+    '  .pw-save{font-size:9px;font-weight:800;color:#4ade80;font-family:var(--fn);letter-spacing:.09em;\n' +
+    '    text-transform:uppercase;padding:3px 7px;border-radius:999px;white-space:nowrap;\n' +
+    '    background:rgba(74,222,128,.13);box-shadow:inset 0 0 0 1px rgba(74,222,128,.34)}\n' +
+    '  /* WHICH GAME EACH LINE COMES FROM, IN THAT GAME\'S OWN COLOUR. The colour code is\n' +
+    '     the dot plus the name in the same hue, and it is what makes Run The Bundle read\n' +
+    '     as buying things in four places rather than as one long list of nouns.\n' +
+    '\n' +
+    '     A BULLET RATHER THAN A RAIL DOWN THE SIDE. Owner\'s call, and the rail had a\n' +
+    '     real problem behind the preference: a 2px line the full height of a three line\n' +
+    '     block is a lot of coloured ink for a label, and four of them stacked read as a\n' +
+    '     table with borders rather than as a list of things you get. A dot is the same\n' +
+    '     information at a fraction of the weight.\n' +
+    '\n' +
+    '     THE DOT IS DRAWN, NOT A BULLET CHARACTER, because a real bullet inherits the\n' +
+    '     font\'s own size and baseline and lands in a different place in every one of the\n' +
+    '     four rows depending on what follows it.\n' +
+    '\n' +
+    '     LAID OUT AS A GRID so the name, the item and the term all hang off the same\n' +
+    '     left edge in column two, which is what makes it a bullet list rather than a dot\n' +
+    '     with three lines drifting under it. Two columns, and every child is pinned to\n' +
+    '     the second: the dot is the only thing in the first.\n' +
+    '\n' +
+    '     THIS BLOCK SHIPPED ONCE WITH NO RULE AT ALL, which is the failure mode a class\n' +
+    '     rename has. The trim that shortened this sheet replaced .pw-src with .pw-line\n' +
+    '     and took the old CSS with it, so every line went on setting --gc and nothing\n' +
+    '     read it: four identical grey paragraphs and no error anywhere. The colours are\n' +
+    '     measured, and the note on PW_GAME says what against. */\n' +
+    '  .pw-line{display:grid;grid-template-columns:7px 1fr;column-gap:10px;margin-top:9px}\n' +
+    '  .pw-line:before{content:"";grid-column:1;grid-row:1;width:7px;height:7px;\n' +
+    '    border-radius:999px;background:var(--gc);\n' +
+    '    /* Centred on the cap height of the 10px uppercase name above it, whose line box\n' +
+    '       is 12px, rather than on the line box itself: uppercase type sits high in its\n' +
+    '       own leading and a dot centred on the box reads low against it. */\n' +
+    '    margin-top:2px}\n' +
+    '  .pw-line b{display:block;font-family:var(--fn);font-size:10px;letter-spacing:.09em;\n' +
+    '    text-transform:uppercase;font-weight:800;color:var(--gc);line-height:1.2}\n' +
+    '  .pw-line b,.pw-line span,.pw-line>i{grid-column:2}\n' +
+    '  .pw-line span{display:block;font-size:12.5px;color:var(--ink);margin-top:3px;line-height:1.35}\n' +
+    '  /* SOMETHING IN THE BUNDLE THAT HAS RUN OUT. Shown rather than hidden: a line that vanishes\n' +
+    '     on its own expiry date reads as a thing going missing from a receipt, which is the\n' +
+    '     opposite of what a receipt is for. The dot and the name go quiet instead, so "you had\n' +
+    '     this" sits legibly beside "you have this" without either being mistaken for the other. */\n' +
+    '  .pw-line.ended:before{opacity:.3}\n' +
+    '  .pw-line.ended b{opacity:.45}\n' +
+    '  .pw-line.ended span{color:var(--dim)}\n' +
+    '  /* THE DATE LINE, on the receipt and never in the store. The same block does both jobs, so\n' +
+    '     the third line is simply absent where there is nothing bought yet to date.\n' +
+    '     A DIRECT CHILD, so it cannot catch the store\x27s term below. The two are both <i> and they\n' +
+    '     want opposite treatments: a date is a sentence and gets its own line, a term is two\n' +
+    '     words qualifying the item and belongs on the item\x27s line. */\n' +
+    '  .pw-line>i{display:block;font-style:normal;font-size:11px;color:var(--dim-2);margin-top:3px;\n' +
+    '    line-height:1.3}\n' +
+    /* THE TERM RIDES ON THE ITEM RATHER THAN UNDER IT, which costs nothing when it fits and
+       costs exactly what the old layout cost when it does not. It was a third stacked line
+       on every one of these, and measured at 390px that was fourteen pixels apiece on four
+       blocks for two words. "Commissioner Mode" and "Lifetime access" together are half a
+       line; setting them as two rows of a block is what made the offer read as a table.
+       THE RULE THIS IS NOT BREAKING: the term still belongs to the LINE and not to the sheet.
+       One item in Run The Bundle is twelve months and the rest are permanent, so a blanket
+       claim over both cards would be false about the more expensive one. That is why it is
+       per line, and it still is. */
+    '  .pw-line span i{font-size:11px;font-style:normal;color:var(--dim-2);white-space:nowrap}\n' +
+    /* THE SEPARATOR HAS TO BE SEEN OR IT IS NOT ONE. Set in --line-2 it was the colour of a
+       hairline border on a dark panel, so "Commissioner Mode Lifetime access" ran together as
+       one phrase with a wide space in it, which is worse than no separator at all: a reader
+       parses it as a single sentence and the term stops being a term. It takes the term's own
+       colour at reduced opacity, so it is always legible against whatever the term is and
+       always quieter than it. */
+    '  .pw-line span i:before{content:"\\00B7";margin:0 6px;opacity:.6}\n' +
+    '  .pw-line.ended span i{color:var(--dim-2);opacity:.7}\n' +
+    '  /* The header of the Pro page: the pill the profile already uses, with the one sentence\n' +
+    '     that says what being Pro actually gets you, on the same line as it. */\n' +
+    '  .pfpro-h{display:flex;align-items:center;gap:10px;margin-top:12px}\n' +
+    '  .pfpro-h .pw-pill{margin-left:0;vertical-align:0}\n' +
+    '  .pfpro-h span{font-size:12.5px;color:var(--dim-2);line-height:1.35}\n' +
+    '  .pw-note{font-size:12px;color:var(--dim-2);margin:9px 0 0;line-height:1.4}\n' +
+    '  /* ONE PAYMENT, SAID ON EACH PRICE RATHER THAN ONCE OVER BOTH.\n' +
+    '     THIS WAS A HAZARD-STRIPED BAND WITH A BLINKING LAMP, sized to be the loudest thing\n' +
+    '     on the sheet, and the argument for that still stands on its own terms: everything\n' +
+    '     else sold this way is a subscription, and a reader who assumes this one is too is\n' +
+    '     deciding against a monthly charge that does not exist. What it got wrong is where\n' +
+    '     the anxiety is felt. It is felt at the PRICE, and the band answered it a full row\n' +
+    '     above the first one, in the loudest voice on a screen that is already asking for\n' +
+    '     money. The owner called the sheet overwhelming, which is the band and the four\n' +
+    '     tiles above it competing for the same second and a half.\n' +
+    '     So the claim sits beside each figure it is about, twice, quietly. Repeating it is\n' +
+    '     the point rather than the cost: a reader comparing two prices reads one of them. */\n' +
+    /* AN INSET RING RATHER THAN A BORDER, so this chip is exactly as tall as the Save chip
+       beside it. A real 1px border adds two pixels to the box and the other chip draws its
+       outline with box-shadow, which adds none, so the pair came out two pixels different in
+       height and a pixel out of vertical step even once they were aligned the same way. Two
+       pills on one row have to be the same pill. */
+    '  .pw-once{flex:0 0 auto;font-family:var(--fn);font-size:9px;font-weight:800;\n' +
+    '    letter-spacing:.09em;text-transform:uppercase;color:#fbbf24;\n' +
+    '    padding:3px 7px;border-radius:999px;box-shadow:inset 0 0 0 1px rgba(251,191,36,.42);\n' +
+    '    background:rgba(251,191,36,.10);white-space:nowrap}\n' +
+    '  /* THE PROMPT CARD\x27S MARKS, in a row under the word it is selling. Both games draw the\n' +
+    '     card and both had their own .pw-card block, so this one rule lives here instead: it\n' +
+    '     is the only part of the card that has to match the hero row it opens, and the hero\n' +
+    '     row is in this file.\n' +
+    '     IT OUT-SPECIFIES ANY .pw-card .pwc-go span RULE A PAGE CARRIES, which the football\n' +
+    '     game does and which sets display:block. Written a class shorter it loses, the three\n' +
+    '     marks come out stacked in a column, and nothing anywhere reports it. */\n' +
+    '  .pw-card .pwc-go .pwc-marks{display:flex;gap:6px;justify-content:flex-end;margin-top:5px}\n' +
+    '  .pw-card .pwc-go .pwc-marks svg{width:15px;height:15px;display:block;flex:0 0 auto}\n' +
+    '  /* THE BEST VALUE CARD GETS THE GOLD BUTTON. Both tiers shipped with the same red one,\n' +
+    '     which is the house colour for the primary action and cannot be the primary action\n' +
+    '     twice: two identical buttons a thumb apart is a choice presented as a coin toss. The\n' +
+    '     badge, the border and the button are now one thing. */\n' +
+    '  .pw-tier.best .btn{background:linear-gradient(135deg,#fbbf24 0%,#e08c07 100%);color:#3b2600}\n' +
+    '  .pw-tier.best .btn:before{background:linear-gradient(180deg,rgba(255,255,255,.34),transparent)}\n' +
+    '  .pw-foot{font-size:12px;color:var(--dim-2);text-align:center;margin:13px 0 0;line-height:1.4}\n' +
+    '  /* TWO ACROSS ON EVERY PHONE, THREE ONLY WHERE THREE FIT. This was 360px, which put every\n' +
+    '     handset made in the last decade into the three column layout, and the names outgrew it:\n' +
+    '     a viewport sweep at 10px steps with three columns forced found TRADE MACHINE wrapping to\n' +
+    '     two lines at every width up to 420px and COMMISSIONER clipping up to 400px. A wrapped\n' +
+    '     name pushes that tile\'s description down twelve pixels while its neighbours stay put, so\n' +
+    '     the row reads as a mistake rather than a layout.\n' +
+    '     RENAMING A TILE MOVES THIS NUMBER, and it already has. The breakpoint was 449 when the\n' +
+    '     longest name was TRADE MACHINE. COMMISSIONER MODE is longer, and the same sweep now\n' +
+    '     shows it wrapping at every width from 440 up to 520.\n' +
+    '     WHY 549 AND NOT 529, which is the last width that actually fails. At 530px the longest\n' +
+    '     name fits with TWO pixels to spare, which is not a margin, it is a coincidence, and the\n' +
+    '     previous number was picked the same way for the same reason. 550px is the first width\n' +
+    '     with real room, about eight pixels.\n' +
+    '     MEASURE THIS WITH THE REAL FACES LOADED. Anton and Archivo are Google webfonts, and the\n' +
+    '     generic sans a headless browser falls back to is far wider: the first sweep of this said\n' +
+    '     three columns failed up to 450px, which was the fallback face talking. */\n' +
+    '  /* THE OFFER THAT DOES NOT COME BACK.\n' +
+    '\n' +
+    '     checkout-bundle.js refuses any bundle whose products the buyer already holds, and\n' +
+    '     every product in the Premium card above is also in this one. So buying the cheaper\n' +
+    '     card does not leave this one available at the difference. It closes it, for good.\n' +
+    '     Nothing on this sheet said so, and a reader who works that out after paying has\n' +
+    '     been told something by silence at the one screen that can least afford it.\n' +
+    '\n' +
+    '     ONE TIME AND NOT LIMITED TIME. Nothing expires on a date here. There is no\n' +
+    '     countdown to honour and no day this stops being sold, so a limited time claim\n' +
+    '     would be a deadline we never intend to keep, and the reader who comes back next\n' +
+    '     month and finds it unchanged has learned what the rest of this sheet is worth.\n' +
+    '     One time is the literal truth about what the checkout will and will not sell.\n' +
+    '\n' +
+    '     NOT NAMED pw-once, WHICH IS TAKEN, by the One payment chip in the price row three\n' +
+    '     lines above this. That collision is also why the wording matters: ONE TIME beside\n' +
+    '     a chip reading ONE PAYMENT is two different facts in nearly the same words, so\n' +
+    '     the second sentence here has to carry the difference.\n' +
+    '\n' +
+    '     THE LABEL IS INLINE AND NOT A LINE OF ITS OWN, which is a height decision and not\n' +
+    '     a taste one. check-premium holds this whole sheet under 1000px at 390 wide, because\n' +
+    '     the complaint that produced that ceiling was scrolling. Stacked, this block put the\n' +
+    '     sheet at 998, which is not a margin, it is a coincidence: the next line anybody adds\n' +
+    '     breaks it and the ceiling gets raised to make a test pass, which is how a ceiling\n' +
+    '     stops meaning anything. Inline it costs 15px less and the sheet has room again. */\n' +
+    '  .pw-onetime{display:block;font-size:11.5px;line-height:1.4;color:var(--dim-2);\n' +
+    '    margin:12px 0 0;padding:8px 10px;border-radius:10px;\n' +
+    '    background:rgba(251,191,36,.08);box-shadow:inset 0 0 0 1px rgba(251,191,36,.3)}\n' +
+    '  .pw-onetime b{font-family:var(--fn);font-size:9.5px;font-weight:800;\n' +
+    '    letter-spacing:.11em;text-transform:uppercase;color:#fbbf24;margin-right:7px}\n' +
+    '  @media (max-width:549px){\n' +
+    '    .pw-hero{grid-template-columns:1fr 1fr}\n' +
+    /* THE ODD ONE OUT SPANS, and only when it IS odd. Written as :last-child alone this
+       stretched the fourth tile across both columns, which pushed the third onto a row of its
+       own and turned a clean 2x2 into two, one and one. Three tiles still finish with a wide
+       one; four now square off; five would span again, which is the same rule and not a
+       special case. */
+    '    .pw-tile:last-child:nth-child(odd){grid-column:1 / -1}\n' +
+    '  }\n' +
+    /* THE LONGEST NAME ON A NARROW PHONE. Two tiles across leave each one half the sheet, and
+       COMMISSIONER MODE does not fit that on one line at 10.5px, so it wrapped. A grid row
+       grows with its tallest cell, so the bottom row came out 12px taller than the top one and
+       the square 2x2 this pass just built went ragged again.
+       ONE STEP DOWN RATHER THAN A SHORTER NAME. The mode is called Commissioner Mode on its
+       own door and on the card below, and a tile that renames it to fit is how a sheet ends up
+       with two names for one product.
+       389 AND NOT 359, WHICH IS THE 549px NOTE ABOVE ARRIVING AGAIN. Written at 359 this was
+       one step too low and a width sweep found the rag alive and well at 360px, which is what
+       a Galaxy reports. The name needs about 148px of tile: 370px of viewport gives it 151 and
+       390 gives it 161. Three pixels is the coincidence that note warns about, thirteen is a
+       fit, so the full size starts at 390 and everything below it steps down. Nothing changes
+       on the most common phone there is, and every tile is the same height from 320px up.
+       MEASURE THIS WITH THE REAL FACES LOADED, for the reason the 549px note gives. */
+    '  @media (max-width:389px){\n' +
+    '    .pw-tile b{font-size:9px;letter-spacing:.05em}\n' +
+    '    .pw-tile i{font-size:10.5px}\n' +
+    '  }';
+
+  var styled = false;
+  function ensureStyle() {
+    if (styled) return;
+    styled = true;
+    var el = document.createElement('style');
+    el.id = 'rtg-store-css';
+    el.textContent = CSS;
+    (document.head || document.documentElement).appendChild(el);
+  }
+  /* AT LOAD, AND NOT ONLY WHEN THE OFFER IS DRAWN.
+     This block styles more than the offer. It carries .pw-pill, which the profile puts
+     beside an account name, and .pw-line and .pfpro-h, which are the whole of the Your Pro
+     access receipt. None of those goes through html() or art(), and game() never injected
+     anything, so an OWNER was exactly the visitor who could reach them without the CSS: a
+     customer who has bought and is therefore never shown the pitch card opens their own
+     receipt and gets four unstyled paragraphs and a bare word where the pill should be.
+     Nothing throws and nothing looks broken enough to report, which is why it stood.
+     A page that loads this file is a page that shows one of these things, so the lazy
+     injection was buying nothing and costing that. */
+  ensureStyle();
+
+  var pwUid = 0;
+  const PW_ART={
+    /* DYNASTY: a trophy, because the mode is measured in what you won over years. */
+    trophy:'<path fill="{g}" d="M15 7h18v9.5a9 9 0 0 1-18 0Z"/>'+
+      '<path fill="{g}" opacity=".5" d="M15 10.5h-4.5A6.5 6.5 0 0 0 17 17v-3.2a3.3 3.3 0 0 1-2-3.3Z"/>'+
+      '<path fill="{g}" opacity=".5" d="M33 10.5h4.5A6.5 6.5 0 0 1 31 17v-3.2a3.3 3.3 0 0 0 2-3.3Z"/>'+
+      '<path fill="{g}" d="M21.8 25.5h4.4V31h-4.4Z"/>'+
+      '<path fill="{g}" d="M15.5 31h17a2 2 0 0 1 2 2v3.5h-21V33a2 2 0 0 1 2-2Z"/>'+
+      '<path fill="#2a1a02" opacity=".34" d="M24 10.5l1.7 3.5 3.8.5-2.8 2.7.7 3.8-3.4-1.8-3.4 1.8.7-3.8-2.8-2.7 3.8-.5Z"/>',
+    /* THE TRADE MACHINE: two arrows going opposite ways, which is what a trade is.
+       THE SILHOUETTE TEST THE CLIPBOARD BELOW PAID FOR. A pair of CURVED arrows chasing each
+       other round a circle is the reload glyph and nothing else, at any size. Two straight
+       arrows passing has no such twin: it is the exchange mark, and it says swap before it
+       says anything. The shaft of each one is set against the other's head so the pair reads
+       as one movement rather than two signs stacked.
+       A club crest used to live at this key, for a Franchise tile that no longer exists.
+       Franchise is a kind of dynasty, so it sits under the trophy now. */
+    swap:'<rect x="7" y="13" width="24" height="6" rx="3" fill="{g}"/>'+
+      '<path fill="{g}" d="M29 8l13 8-13 8Z"/>'+
+      '<rect x="17" y="29" width="24" height="6" rx="3" fill="{g}"/>'+
+      '<path fill="{g}" d="M19 24L6 32l13 8Z"/>'+
+      '<rect x="11" y="14.6" width="9" height="2.8" rx="1.4" fill="#2a1a02" opacity=".32"/>'+
+      '<rect x="28" y="30.6" width="9" height="2.8" rx="1.4" fill="#2a1a02" opacity=".32"/>',
+    /* COMMISSIONER: a clipboard.
+       THIS IS THE THIRD ATTEMPT AND THE OTHER TWO ARE WORTH RECORDING. A stroked bracket was
+       unreadable at this size, twice. A whistle was drawn next and rendered, at 40px and at
+       3x, as an unmistakable PADLOCK: a round body with an arch over the top is a shackle, and
+       no amount of tuning the spout changes what the silhouette says first. A clipboard has no
+       such twin, and "run a league" is an admin job rather than a tournament. */
+    clipboard:'<rect x="9" y="8" width="30" height="34" rx="4.5" fill="{g}"/>'+
+      '<rect x="18" y="4" width="12" height="8" rx="3.2" fill="{g}"/>'+
+      '<rect x="20.4" y="6.4" width="7.2" height="3.2" rx="1.6" fill="#2a1a02" opacity=".4"/>'+
+      '<rect x="14" y="18" width="20" height="3.4" rx="1.7" fill="#2a1a02" opacity=".38"/>'+
+      '<rect x="14" y="25" width="20" height="3.4" rx="1.7" fill="#2a1a02" opacity=".38"/>'+
+      '<rect x="14" y="32" width="12" height="3.4" rx="1.7" fill="#2a1a02" opacity=".38"/>',
+    /* FULL TEAM: a crest with a seam down it, because the mode is one team made of two
+       halves you draft separately. Six on offense, six on defense, one cap.
+       THE SILHOUETTE TEST THE CLIPBOARD AND THE SWAP BOTH PAID FOR, applied before drawing
+       rather than after. At 15px on the prompt card these four sit in a row, so the only
+       thing that separates them is outline: a cup, two passing arrows, a tall rectangle,
+       and now a shield. None of those four is another one at a glance, which is the whole
+       requirement. A pair of facing chevrons was the obvious football answer and was
+       rejected for the opposite reason: two arrowheads pointing at each other is the swap
+       mark two tiles along with its shafts removed.
+       The seam is the mode rather than decoration, so it is cut out of the crest instead of
+       laid over it: at this size a thin line ON a shape disappears and a gap THROUGH one
+       survives. */
+    shield:'<path fill="{g}" d="M24 4.5 41 11v14.5c0 9.6-7 16.4-17 19.9C14 41.9 7 35.1 7 25.5V11Z"/>'+
+      '<rect x="22.6" y="7" width="2.8" height="35" fill="#2a1a02" opacity=".42"/>'+
+      '<rect x="12" y="19" width="8" height="3" rx="1.5" fill="#2a1a02" opacity=".3"/>'+
+      '<rect x="28" y="27" width="8" height="3" rx="1.5" fill="#2a1a02" opacity=".3"/>',
+    /* The little mark on the three prompt cards. */
+    star:'<path fill="{g}" d="M24 6.5l5.3 10.8 11.9 1.7-8.6 8.4 2 11.8L24 33.6l-10.6 5.6 2-11.8-8.6-8.4 11.9-1.7Z"/>'
+  };
+  /* ONE GRADIENT PER DRAWING, because an id is a document-wide name and the star is on screen
+     three times at once: a shared id makes every copy after the first point at the same def,
+     which works until the first one is removed from the DOM and the rest go black. */
+  function pwArt(k){
+    const id='pwg'+(++pwUid);
+    return '<svg viewBox="0 0 48 48" aria-hidden="true">'+
+      '<defs><linearGradient id="'+id+'" x1="0" y1="0" x2="0.35" y2="1">'+
+        '<stop offset="0" stop-color="#fde68a"/><stop offset="0.55" stop-color="#f5b022"/>'+
+        '<stop offset="1" stop-color="#d97706"/></linearGradient></defs>'+
+      PW_ART[k].replace(/\{g\}/g,'url(#'+id+')')+'</svg>';
+  }
+  /* WHICH GAME EACH MODE IS IN, on the tile.
+     The three tiles named Dynasty, Trade Machine and Commissioner and left a reader to work
+     out that the first two are the NFL game and the third is the college one. That is the
+     whole reason the bundle is worth $19.99 rather than feeling like three things from one
+     game, and it was only said further down, in the itemised cards. Same colour coding as
+     those cards, out of the same PW_GAME table, so the tile and the line it is sold on
+     cannot disagree about which game a mode belongs to. */
+  /* FOUR PARTS, THE SAME FOUR EVERY TIME, and the CSS note above says what a fifth cost.
+     The line under the name is ONE line by construction rather than by luck: these are read
+     in about a second each, in a 2x2 at 175px a side, and a description that wraps on one
+     tile and not its neighbour is the same ragged row arriving by a different door. Keep them
+     short enough to hold at 320px, which is the narrowest phone this has to work on. */
+  const pwTile=(k,name,line,gameKey)=>'<div class="pw-tile">'+
+    (gameKey&&PW_GAME[gameKey]
+      ? '<span class="pw-from" style="--gc:'+PW_GAME[gameKey].c+'">'+
+          esc(PW_GAME[gameKey].shortName||PW_GAME[gameKey].name)+'</span>'
+      : '')+
+    pwArt(k)+'<b>'+esc(name)+'</b>'+
+    '<i>'+esc(line)+'</i>'+'</div>';
+  const PW_GAME={
+    /* shortName is for the tiles, where the full name does not fit a third of a phone.
+     The cards below always use `name`. */
+    ps:{name:'The Perfect Season',c:'#f87171',shortName:'Perfect Season'},
+    cfb:{name:CFB_NAME,c:'#10b981',shortName:'College Football'},
+    arcade:{name:'Run The Arcade',c:'#FF8A3D'},
+    tour:{name:'Run The Tour',c:'#22b8cf'}
+  };
+  /* THE COMPACT GROUP. The tiles at the top of the sheet already say what each mode IS, so a
+     tick list underneath repeating "Dynasty Mode. Unlimited runs" is the same sentence twice
+     in one screen. This keeps the thing the tiles cannot say, which is WHICH GAME each one
+     comes out of, and says it in one line. */
+  /* AND FOR HOW LONG, WHICH IS THE THING THIS SHEET GOT WRONG.
+   *
+   * The lede promised "one payment, lifetime access" over BOTH cards, and one item in Run The
+   * Bundle is not lifetime: the Arcade Card is twelve months. So the strongest claim on the
+   * screen was false about the more expensive product, which is the one direction a pricing
+   * claim must never be wrong in.
+   *
+   * The fix is not to delete the word. Three of the four things really are permanent and that
+   * is worth saying. It is to put the term on the LINE rather than over the sheet, so each row
+   * says what it is and how long it lasts, and the two bundles can be compared on it. */
+  /* ─── WHETHER THIS READER IS BEING SOLD FULL TEAM ──────────────────────────────────
+   *
+   * ASKED OF WHO CAN PLAY IT, NOT OF WHETHER IT HAS LAUNCHED, and that is a correction.
+   * This read PS_FULLTEAM_ACCESS.LIVE, on the argument that a price is one product for
+   * everybody and a tester must not be shown a different offer from the one a stranger
+   * gets. That is the right rule for what the bundle CONTAINS and the wrong one for what
+   * this card should NAME, and the two were being run together.
+   *
+   * What it cost: a tester who could play Full Team, and whose daily limit on it the bundle
+   * would remove, opened the store and found the mode unmentioned. The offer was silent to
+   * exactly the people able to act on it. The reverse case is the one the gate is actually
+   * for, and it still holds: a reader with no Full Team door is told nothing about it, so
+   * the card never sells a mode they cannot find.
+   *
+   * THE PAGE ANSWERS, BECAUSE ONLY THE PAGE KNOWS. Deciding this needs the tester list AND
+   * who is signed in, and this file is handed neither: it is drawn by the college game too,
+   * where fullteam-access.js is not loaded at all. So the football page publishes its own
+   * canPlayFull as RTG_FULLTEAM and this asks it on every render.
+   *
+   * A FUNCTION RATHER THAN A FLAG, deliberately. Ownership and sign-in both move while the
+   * page is open, and a boolean copied into a global at boot is a second answer that goes
+   * stale the moment somebody signs in. Accepts either, because a caller handing a boolean
+   * is not wrong, only frozen.
+   *
+   * The LIVE flag is still the fallback, which is what makes the college game name Full Team
+   * on the day it launches without the football page having to tell it. */
+  const PW_FULL_ON=()=>{
+    try{
+      const v=window.RTG_FULLTEAM;
+      if(typeof v==='function') return !!v();
+      if(typeof v==='boolean') return v;
+      return !!(window.PS_FULLTEAM_ACCESS&&window.PS_FULLTEAM_ACCESS.LIVE);
+    }catch(_){ return false; }
+  };
+  const pwGroupText=(key,text,term)=>{
+    const g=PW_GAME[key];
+    /* THE TERM GOES INSIDE THE SPAN, which is the whole of the layout change: a grid child
+       is its own row whatever its display is, so an <i> beside the text has to be a child OF
+       the text to sit on the same line as it. The receipt's date line is still a direct child
+       and still gets its own row, and the CSS keys on exactly that difference. */
+    return '<div class="pw-line" style="--gc:'+g.c+'"><b>'+esc(g.name)+'</b>'+
+      '<span>'+esc(text)+(term?'<i>'+esc(term)+'</i>':'')+'</span></div>';
+  };
+
+  /* THE OFFER. Both cards in the order they are meant to be compared: the cheaper one first,
+     so the second reads as "and also", which is what Best value has to mean. */
+  function storeHTML(opts) {
+    ensureStyle();
+    var o = opts || {};
+    var WORTH = 80, RTB = 34.99;
+    return '<div class="eyebrow gold">Pro</div>'+
+    /* NOT "GO PRO", AND THE REASON IS LOCAL TO THIS SITE. Going pro is a thing PLAYERS do
+    here: Commissioner Mode carries a named rule called "Going pro and coming back", and the
+    football game is built out of real careers. A purchase screen that opens with the phrase
+    is using the sport's own words for something that is not the sport, which reads as a pun
+    before it reads as an offer.
+    IT ECHOES THE CARD THAT OPENED IT. The prompt card says "Unlock every mode" over the word
+    Unlimited, and a reader who pressed that should land on the same sentence rather than on a
+    second name for it. The noun Pro stays: it is what the ACCOUNT is, it is on the pill and
+    the receipt, and it is not the phrase that misleads. */
+    '<h2 class="display" style="font-size:27px;margin:4px 0 0">Unlock everything</h2>'+
+    '<p class="dim" style="font-size:13.5px;line-height:1.45;margin:7px 0 0">'+
+    /* NO BLANKET TERM UP HERE ANY MORE. "One payment" is true of both bundles and is the
+    thing worth leading with. "Lifetime access" was not true of both, and each line
+    below now carries its own term instead. */
+    /* SEASONS RATHER THAN RUNS, because seasons are what the free tier counts. A free
+    account gets three dynasty seasons a day and unlimited runs, so "unlimited dynasty runs"
+    sold something the reader already had and stayed quiet about the thing they were
+    actually hitting. See 101_dynasty_seasons.sql. */
+    /* AND THE TERM COMES OUT OF THIS SENTENCE, because each line below carries its own. */
+    /* ONE LINE, AND IT NAMES BOTH UNITS. This ran to two lines at 390px, which is forty
+    pixels of lede on a sheet whose complaint is its length. It also only named seasons, and
+    the free tier meters this site in two units: Dynasty and Commissioner count SEASONS,
+    the Trade Machine and Full Team count RUNS. A reader hitting the wall on a run was
+    reading a sentence about seasons. Saying both is shorter than saying one and listing
+    the modes after it. */
+    'Unlimited seasons and runs. No daily limits.</p>'+
+    '<div class="pw-hero'+(PW_FULL_ON()?' pw-four':'')+'">'+
+    /* NO SEASON COUNT ON THE DYNASTY TILE. This read "25 seasons, one job" until recently,
+    and there is no ceiling: the 25 was DYNASTY_MAX_SEASONS, a loop guard in the balance
+    simulator that nothing in the mode ever read. It is gone from the engine, and this
+    tile was the last place the number survived, on the purchase screen, which is the
+    worst place on the site to be wrong about what somebody is buying. */
+    /* FRANCHISE IS NOT ITS OWN TILE. It is a dynasty with the pool locked to one club,
+    bought by the same unlock and ranked on the same ladder, so it sits under the trophy
+    with the open one. That freed the middle tile for the mode a paying customer
+    actually feels the limit on: the Trade Machine is live to every signed in player and
+    Dynasty is invisible to everybody off the tester list, so the row used to promote
+    two doors most readers cannot open and stay quiet about the one they can. Buying
+    ps_premium switches the Trade Machine's daily meter off. See dailyOn(). */
+    /* NOT "Endless arcade mode". Run The Arcade and the Arcade Card are both products on
+       this site, and one of them is sold two cards below this one, so "arcade" as a genre
+       word reads as a place rather than a kind of game. */
+    /* ONE FRANCHISE DYNASTY CAME OFF THIS TILE AND IS NOT LOST. It was a second line under a
+    rule, on this tile alone, and a grid row stretches to its tallest cell, so it put sixty
+    pixels of nothing under the Trade Machine beside it. The mode is named in full on the
+    Premium card below, in the list a guard already holds to the wording on the receipt, so
+    it is still on this screen and is now in the place that itemises what the money buys. */
+    pwTile('trophy','Dynasty Mode','Build a legacy','ps')+
+    pwTile('swap','Trade Machine','Unlimited runs','ps')+
+    /* COMMISSIONER MODE, which is what the game calls it and what the card below this one
+       calls it. The tile was the only place saying just "Commissioner". */
+    pwTile('clipboard','Commissioner Mode','Save the sport','cfb')+
+    /* THE FOURTH TILE, for a reader who can open the mode. It earns the hero row on the same
+       ground the Trade Machine does: it is metered now, one run a day, and what the bundle
+       takes off it is the counting. A mode nobody is limited on would be a feature list. */
+    (PW_FULL_ON()?pwTile('shield','Full Team','Offense and defense','ps'):'')+
+    '</div>'+
+
+    '<div class="pw-tier">'+
+    '<div class="pw-th"><span class="pw-name">Premium Bundle</span></div>'+
+    '<div class="pw-cost"><b>$19.99</b><span class="pw-once">One payment</span></div>'+
+    /* THE TRADE MACHINE IS NAMED HERE BECAUSE IT IS PROMOTED ABOVE. The hero row sells
+    unlimited Trade Machine runs and this is the itemised list of what the money buys,
+    so leaving it off would advertise a thing and then not sell it. It is a real part of
+    the product rather than a nice side effect: dailyOn() stops metering the moment
+    ps_premium is owned. */
+    /* WHAT THE ROW ACTUALLY DELIVERS, named. This read "Dynasty, Franchise and unlimited
+       Trade Machine", which was wrong twice. Nothing in the game is called "Franchise": the
+       mode is One Franchise, and its quick draft half is FREE to any signed in account, so
+       the line was selling something a buyer already had. And it said nothing about what
+       changes, which is the limit: all three of these are playable without paying, on three
+       dynasty seasons a day and one Trade Machine run. What is bought is that the counting
+       stops. */
+    /* FULL TEAM JOINS THE LIST ON ITS LAUNCH FLAG AND NOT ON THE TESTER LIST, which is the
+       rule the badge catalog already follows and for the same reason. CATALOG.length is one
+       number for everybody so two identical cabinets cannot rank differently; a PRICE is one
+       product for everybody so two people cannot be shown different things for $19.99. Who
+       may PLAY the mode today is a different question, answered by canPlayFull(), and it is
+       not this one.
+       READ DEFENSIVELY, and off the global rather than through the football page: this file
+       is drawn by the college game too, where fullteam-access.js is not loaded at all and
+       the honest answer is to say nothing.
+       IT IS A LINE AND NOT A FOURTH TILE. The hero row above is three tiles and the prompt
+       card's .pwc-marks mirrors it at three; a fourth would desync the two, and both suites
+       assert that count. The tiles are the shape of the offer, this is the itemisation. */
+    pwGroupText('ps','Unlimited play: Dynasty, One Franchise Dynasty, Trade Machine'+
+      (PW_FULL_ON()?', Full Team':''),
+      'Lifetime access')+
+    pwGroupText('cfb','Commissioner Mode','Lifetime access')+
+    '<button class="btn" id="b-buy-ps" style="width:100%;margin-top:14px">'+
+    /* NAMES ITS OWN TIER, the way the button on the card below names that one. Two buttons
+       reading "Unlock everything" and "Get the bundle" would be one verb and one noun for two
+       things a reader is choosing between. */
+    (o.signedOut?'Sign in to get Premium':'Get Premium')+'</button>'+
+    '</div>'+
+
+    '<div class="pw-tier best">'+
+    '<div class="pw-th"><span class="pw-name">Run The Bundle</span>'+
+    '<span class="pw-tag">Best value</span></div>'+
+    '<div class="pw-cost"><b>$'+RTB.toFixed(2)+'</b>'+
+    '<span class="pw-was">$'+WORTH+'</span>'+
+    '<span class="pw-save">Save $'+Math.round(WORTH-RTB)+'</span>'+
+    '<span class="pw-once">One payment</span></div>'+
+    '<p class="pw-note">Everything above, plus two more games.</p>'+
+    /* "Everything above" carries the two Lifetime access lines with it, so the Arcade line
+    has to say plainly that it is not one. The term column is for the TERM and nothing else:
+    "12 months" was already said by the line above it, and what a buyer is anxious about is
+    not the length, it is whether a card will be sold to them again next year without being
+    asked. So the column answers only that.
+    THE TOUR LINE CARRIES NO TERM AT ALL, because it has none. Coins and a pack are handed
+    over once and then they are just yours, and a column that reads "Lifetime access,
+    No auto-renewal, Tour is the mid pack tier" is a column that has stopped meaning one
+    thing. What the Tour tier is worth belongs in Run The Tour, not on a receipt line. */
+    pwGroupText('arcade','1 year of the Arcade Card','No auto-renewal')+
+    pwGroupText('tour','100,000 coins and one Tour Pack')+
+    /* LAST THING BEFORE THE BUTTON, because it is the only line on this card that changes
+       the decision rather than describing what is in it. See the note on .pw-onetime. */
+    '<p class="pw-onetime"><b>One time offer</b>Buy the Premium Bundle on its own and '+
+    'this one closes. It is not offered again.</p>'+
+    /* THE BUNDLE IS ALREADY NAMED, twice, in the heading of this card and in the tag beside
+       it. Spelling it out a third time on the button ran to eighteen characters and set at
+       the button's own size it filled the width edge to edge on a phone, which reads as a
+       label rather than a thing to press. THE is the article, and a button under a card
+       headed RUN THE BUNDLE cannot be offering a different one. */
+    '<button class="btn" id="b-buy-rtb" style="width:100%;margin-top:14px">'+
+    (o.signedOut?'Sign in to get it':'Get the bundle')+'</button>'+
+    '</div>'+
+
+    /* THE SUBSCRIPTION ANSWER KEEPS ITS LAST WORD HERE, now that the band above is gone. The
+       chip beside each price says one payment; this says the thing a chip has no room for. */
+    '<p class="pw-foot">Either one makes your account Pro. No subscription, ever. '+
+    'Secure checkout by Stripe.</p>';
+  }
+
+  /* The two buttons, bound inside whatever the host put them in. Scoped to `root` rather
+     than looked up by id on the document: Commish Simulator draws this into a screen that
+     is already in the page, and a document-wide lookup is the wrong element the first time
+     any host shows the store twice. */
+  function wire(rootEl, fns) {
+    var f = fns || {};
+    var ps = rootEl.querySelector('#b-buy-ps');
+    var rtb = rootEl.querySelector('#b-buy-rtb');
+    if (ps && f.buy) ps.onclick = function () { f.buy('perfect-season', ps); };
+    if (rtb && f.buy) rtb.onclick = function () { f.buy('run-the-bundle', rtb); };
+  }
+
+  /*
+   * THE TWO PIECES A HOST STILL NEEDS ON ITS OWN.
+   *
+   * art() draws one of the gold marks. The football page's home prompt card uses the star,
+   * which is not part of the offer but is the same gradient, and one implementation of that
+   * gradient is the point (see the note on pwArt's id counter).
+   *
+   * game() is the colour and display name of one of the four games. The Your Pro access
+   * receipt lists what an account owns in the same colour coding the offer uses, so the two
+   * screens agree about which game a line belongs to.
+   *
+   * BOTH ARE EXPORTED BECAUSE THE PAGE ALREADY CALLED THEM. Moving the store out and leaving
+   * pwArt('star') and PW_GAME behind on the page threw "pwArt is not defined" at boot, on
+   * exactly the accounts that see the prompt card, and took the whole game down to the
+   * loading screen. Nothing in the store itself was wrong; the two lines that stayed were.
+   */
+  function art(k) { ensureStyle(); return pwArt(k); }
+  function game(k) { return PW_GAME[k] || null; }
+
+  /*
+   * THE PROMPT CARD, WHICH IS NOW PART OF THE OFFER RATHER THAN A THING EACH PAGE DRAWS.
+   *
+   * Four of these exist: the football front page, the football profile, the college front
+   * page and the college profile. Every one had its own copy of the markup and its own idea
+   * of what the card was worth, so they said "4 modes", "3 modes" and a sentence, on the same
+   * day, about the same purchase. That is the drift this whole file exists to stop, and the
+   * card had simply never been moved in.
+   *
+   * WHAT IT SAYS IS UNLIMITED, OVER THE THREE MODES THE BUNDLE UNLOCKS. A count was the wrong
+   * half to lead with: what a free account actually meets is the counting, so the word that
+   * answers it is the value. The marks under it are the same three drawings the hero row of
+   * the sheet uses, in the same order, so the card and the screen it opens are recognisably
+   * one offer rather than two descriptions of one.
+   *
+   * AND THE THREE ARE THE THREE TILES, not the four named lines below them. One Franchise
+   * Dynasty is a dynasty with the pool locked to one club: it sits under the trophy in the
+   * hero row and it sits under the trophy here. Counting it separately is how a card ends up
+   * claiming four of something a reader can only find three of.
+   */
+  /* AND THE MARKS ARE THE TILES, so when the hero row grows a fourth this grows with it or
+     the card starts claiming a different number of things from the sheet it opens. That is
+     the same drift the counted "3 modes" and "4 modes" had, arriving by a different door.
+     Built per render rather than held as an array, because whether the fourth is there is a
+     question about the reader and the reader can sign in while the page is open. */
+  var PW_CARD_VALUE = 'Unlimited';
+  /* AND THE WORDS ARE THE STORE'S TOO, WHICH THEY WERE NOT, AND THE CARDS HAD ALREADY DRIFTED
+     AGAIN. The markup moved in here and the two strings stayed as arguments each page passed,
+     so on one day, about one purchase, the football front page said "Unlock every mode" and
+     both profiles said "Unlock everything". The comment on the football page claimed "it says
+     the same thing on all three" while the line directly under it passed something else, which
+     is what an argument buys you: the shared function guarantees the SHAPE and guarantees
+     nothing about the sentence.
+     SO cardInner AND card TAKE NO WORDS AT ALL. Not a default that a caller may override,
+     because a default that can be overridden is the same argument with a politer name and the
+     next page to want a slightly better line takes it. There is one sentence. If it is wrong
+     it is wrong in one place.
+
+     UNLOCK EVERYTHING, NOT UNLOCK EVERY MODE, and the sheet is why. A reader who presses this
+     lands on an <h2> reading Unlock everything, and a card that hands them a different name
+     for the thing they just pressed makes them wonder whether they got the right screen. It
+     is also the truer half: two of the four things in Run The Bundle are not modes. */
+  var PW_CARD_TITLE = 'Unlock everything';
+  /* WHAT CHANGES, THEN WHAT IT COSTS, in that order and in two short sentences, because this
+     line is 11.5px in the narrow column of a card and it is read in about a second.
+     "No daily limits" is plural to match the sheet, and because it is plural: Dynasty and
+     Commissioner count seasons, the Trade Machine and Full Team count runs, and a free
+     account meets four different counters.
+
+     "PAY ONCE" AND NOT "ONE PAYMENT, LIFETIME", AND IT IS MEASURED RATHER THAN PREFERRED.
+     The card's text column is what is left after the value and the marks, which is 200px at
+     390px of viewport once the fourth mark is there and 170px at 360. Measured in the real
+     card on both pages:
+
+       No daily limits. One payment, lifetime.   two lines at 320, 360 AND 390
+       No daily limits. One payment.             one line at 390, two at 360
+       No daily limits. Pay once.                one line at 360 and 390
+
+     The long one wrapped on every phone anybody actually holds, and it wrapped leaving the
+     word "lifetime." alone on a line, which is the widow the Commish card's own note is
+     about. This is the same claim in the width available.
+     THE SHEET STILL SAYS "One payment", on a chip beside each price, and that is not a drift:
+     the sheet has the room and this has a third of it. What must not differ is the CLAIM, and
+     nothing here promises a different one. */
+  var PW_CARD_SUB = 'No daily limits. Pay once.';
+  function cardMarkKeys() {
+    var k = ['trophy', 'swap', 'clipboard'];
+    if (PW_FULL_ON()) k.push('shield');
+    return k;
+  }
+  function cardMarks() {
+    return '<span class="pwc-marks">' +
+      cardMarkKeys().map(function (k) { return pwArt(k); }).join('') + '</span>';
+  }
+  /* The insides on their own, because both front pages BUILD their node rather than writing
+     markup into a string. Same card either way. */
+  function cardInner() {
+    ensureStyle();
+    return '<span class="pwc-ic">' + pwArt('star') + '</span>' +
+      '<span class="pwc-t"><b>' + esc(PW_CARD_TITLE) + '</b>' +
+      '<span>' + esc(PW_CARD_SUB) + '</span></span>' +
+      '<span class="pwc-go"><b>' + esc(PW_CARD_VALUE) + '</b>' + cardMarks() + '</span>';
+  }
+  function cardHTML(id) {
+    return '<button class="pw-card" id="' + esc(id) + '">' + cardInner() + '</button>';
+  }
+
+  root.RTG_STORE = { html: storeHTML, wire: wire, art: art, game: game, CFB_NAME: CFB_NAME,
+    card: cardHTML, cardInner: cardInner, cardValue: PW_CARD_VALUE,
+    cardTitle: PW_CARD_TITLE, cardSub: PW_CARD_SUB };
+})(typeof self !== 'undefined' ? self : this);

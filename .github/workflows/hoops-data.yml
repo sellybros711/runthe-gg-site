@@ -31,9 +31,8 @@ on:
         required: false
         default: '1974'
       to_season:
-        description: 'Last season'
+        description: 'Last season. Leave blank for the last one that has ended.'
         required: false
-        default: '2025'
       commit:
         description: 'Commit the rebuilt data back to this branch?'
         type: boolean
@@ -76,11 +75,38 @@ jobs:
       - name: Fetch parsers still parse
         run: node hoops/build/check-fetch.mjs
 
+      # THE LAST SEASON THAT HAS ENDED, COMPUTED RATHER THAN TYPED.
+      #
+      # This was three copies of the literal '2025', and a SCHEDULED run passes
+      # no inputs, so THE ANNUAL REFRESH WOULD HAVE ASKED FOR 2025 EVERY JULY
+      # FOR EVER. It fires, it re-fetches fifty-two seasons it already has, it
+      # reports "data unchanged", and the new season is never added. A green
+      # run, a correct-looking log, and a game a year behind the sport with
+      # nothing anywhere saying so.
+      #
+      # A season is named for the calendar year it ENDS in and the Finals are
+      # over by the end of June, so from July the current year is the answer and
+      # before July it is last year. Same cutoff fetch-teams.mjs uses to decide
+      # which champions to demand, and the same reason the cron fires in July.
+      - name: The last season that has ended
+        id: season
+        run: |
+          TO="${{ inputs.to_season }}"
+          if [ -z "$TO" ]; then
+            Y=$(date -u +%Y)
+            M=$(date -u +%m)
+            # 10# forces base ten, or 08 and 09 are invalid octal and this dies.
+            if [ "$((10#$M))" -lt 7 ]; then Y=$((Y - 1)); fi
+            TO="$Y"
+          fi
+          echo "to=$TO" >> "$GITHUB_OUTPUT"
+          echo "Fetching seasons through $TO"
+
       - name: Player-seasons
         run: |
           node hoops/build/fetch-nba.mjs \
             --from "${{ inputs.from_season || '1974' }}" \
-            --to "${{ inputs.to_season || '2025' }}"
+            --to "${{ steps.season.outputs.to }}"
 
       # NON-FATAL, AND THAT IS A DELIBERATE DEMOTION. Draft year and college feed
       # exactly two chemistry links out of eight. The player data is the point of
@@ -94,7 +120,7 @@ jobs:
       # than invisible.
       - name: Draft years and colleges
         continue-on-error: true
-        run: node hoops/build/fetch-draft.mjs --from 1960 --to "${{ inputs.to_season || '2025' }}"
+        run: node hoops/build/fetch-draft.mjs --from 1960 --to "${{ steps.season.outputs.to }}"
 
       # NON-FATAL FOR THE SAME REASON as the draft step above, and it is worth
       # saying which reason: the player data is the point of this workflow and
@@ -110,7 +136,7 @@ jobs:
         run: |
           node hoops/build/fetch-awards.mjs \
             --from "${{ inputs.from_season || '1974' }}" \
-            --to "${{ inputs.to_season || '2025' }}"
+            --to "${{ steps.season.outputs.to }}"
 
       # Franchises change: a club relocates, renames, or wins a title. Refreshed
       # in the same run so the team table and the player table are never built
@@ -122,6 +148,52 @@ jobs:
         run: |
           node hoops/build/build-players.mjs \
             --from hoops/build/raw/nba_player_seasons.json
+
+      # A POOL CACHES EXACTLY LIKE A SCRIPT, so a refresh that rewrites one and
+      # leaves its ?v= alone serves a RETURNING player the old basketball. The
+      # page revalidates, the data does not, and the only symptom is somebody
+      # insisting the new season is not in the game. No crash, no wrong screen.
+      #
+      # THIS STEP EXISTS BECAUSE THE REFRESH IS THE ONE WRITER THAT CANNOT DO IT
+      # BY HAND. Everywhere else the bump and the edit are the same commit by a
+      # person; here a bot rewrites 3.6MB of player-seasons once a year and
+      # nobody is watching. So it bumps what it actually changed, and only that:
+      # `git diff --quiet` is the test, so a run that finds no new basketball
+      # moves no number and commits nothing.
+      - name: Bump the cache version of anything that moved
+        run: |
+          for f in players teams; do
+            git diff --quiet -- "hoops/data/$f.json" && continue
+            CUR=$(grep -o "data/$f\.json?v=[0-9]\+" hoops/index.html | head -1 | sed 's/.*=//')
+            if [ -z "$CUR" ]; then
+              echo "hoops/index.html does not version data/$f.json, which it must" >&2
+              exit 1
+            fi
+            NEXT=$((CUR + 1))
+            sed -i "s|data/$f\.json?v=$CUR|data/$f.json?v=$NEXT|g" hoops/index.html
+            echo "data/$f.json: v=$CUR -> v=$NEXT"
+          done
+          node scripts/check-cachebust.mjs --update
+          node scripts/check-cachebust.mjs
+
+      # AND THE SEASON RANGE ON THE FRONT PAGE, for the same reason and by the
+      # same argument. `#home-era` is interpolated from the pool at runtime, so
+      # the range in the markup is what a reader sees for the moment before the
+      # data arrives and for as long as it does not. It is the only claim on
+      # that page that goes wrong WITHOUT anybody editing anything: this refresh
+      # adds a season and leaves it a year out.
+      #
+      # IT WENT RED ON THE FIRST REFRESH AFTER THE GUARD WAS WRITTEN, which is
+      # the guard working and is also a chore nobody should have to do. The bot
+      # adds the season, so the bot rewrites the sentence.
+      - name: The season range the front page opens on
+        run: |
+          SPAN=$(node -e "
+            const p = require('./hoops/data/players.json').map(r => r.s);
+            process.stdout.write(Math.min(...p) + ' to ' + Math.max(...p));
+          ")
+          perl -0pi -e "s{(id=\"home-era\"[^>]*>)[^<]*}{\${1}$SPAN}" hoops/index.html
+          echo "#home-era: $SPAN"
 
       # BEFORE the assertions, deliberately. Everything above this line is a
       # quarter of an hour of throttled fetching, and everything below it is a
@@ -169,7 +241,11 @@ jobs:
         run: |
           git config user.name "hoops-data-bot"
           git config user.email "noreply@anthropic.com"
-          git add hoops/data/players.json hoops/data/teams.json
+          # The page and the record go with the data: the bump step above edits
+          # index.html and scripts/cachebust.json, and a commit that left either
+          # behind would ship a pool under a version nobody asks for.
+          git add hoops/data/players.json hoops/data/teams.json \
+                  hoops/index.html scripts/cachebust.json
           git diff --cached --quiet && echo "data unchanged" || {
             git commit -m "Refresh Run The Floor player data from Basketball-Reference"
             for i in 1 2 3 4 5; do

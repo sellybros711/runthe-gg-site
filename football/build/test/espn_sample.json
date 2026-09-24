@@ -1,0 +1,119 @@
+{
+  "_note": "A HAND WRITTEN STAND-IN, and what it can and cannot prove is written up in espn.mjs. site.api.espn.com is refused by the development sandbox's egress proxy, so no real payload could be saved here. Seven of the nine ids are REAL 2026 week 3 event ids out of games.csv, so the join is driven against the real schedule rather than against made up keys. Four of those seven are well formed. The other three are the malformed cases, deliberately attached to real games: an unknown state (CIN at PIT), a competition with only one side (HOU at IND) and a score that will not parse (KC at MIA). Each of those three has to leave its game on the schedule's own answer rather than half filling it. The eighth event has no id and the ninth is a game we do not have, and both must be ignored.",
+  "events": [
+    {
+      "id": "401872948",
+      "date": "2026-09-25T00:15Z",
+      "name": "Atlanta Falcons at Green Bay Packers",
+      "status": { "period": 1, "displayClock": "15:00", "type": { "state": "pre", "completed": false } },
+      "competitions": [
+        {
+          "id": "401872948",
+          "status": { "period": 2, "displayClock": "3:21", "type": { "state": "in", "completed": false, "detail": "3:21 - 2nd Quarter" } },
+          "competitors": [
+            { "homeAway": "home", "score": "10", "team": { "abbreviation": "GB" } },
+            { "homeAway": "away", "score": "7", "team": { "abbreviation": "ATL" } }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "401872953",
+      "date": "2026-09-27T17:00Z",
+      "status": { "period": 0, "displayClock": "0:00", "type": { "state": "pre", "completed": false } },
+      "competitions": [
+        {
+          "competitors": [
+            { "homeAway": "home", "score": "0", "team": { "abbreviation": "BUF" } },
+            { "homeAway": "away", "score": "0", "team": { "abbreviation": "LAC" } }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "401872949",
+      "date": "2026-09-27T17:00Z",
+      "status": { "period": 5, "displayClock": "0:00", "type": { "state": "post", "completed": true, "detail": "Final/OT" } },
+      "competitions": [
+        {
+          "competitors": [
+            { "homeAway": "home", "score": "27", "team": { "abbreviation": "CLE" } },
+            { "homeAway": "away", "score": "24", "team": { "abbreviation": "CAR" } }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "401872954",
+      "date": "2026-09-27T17:00Z",
+      "status": { "period": 4, "displayClock": "0:00", "type": { "state": "post", "completed": true, "detail": "Final" } },
+      "competitions": [
+        {
+          "competitors": [
+            { "homeAway": "home", "score": "31", "team": { "abbreviation": "DET" } },
+            { "homeAway": "away", "score": "17", "team": { "abbreviation": "NYJ" } }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "401872950",
+      "status": { "period": 3, "displayClock": "8:12", "type": { "state": "halftime", "completed": false } },
+      "competitions": [
+        {
+          "competitors": [
+            { "homeAway": "home", "score": "13", "team": { "abbreviation": "NE" } },
+            { "homeAway": "away", "score": "13", "team": { "abbreviation": "PIT" } }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "401872951",
+      "status": { "period": 2, "displayClock": "9:00", "type": { "state": "in", "completed": false } },
+      "competitions": [
+        {
+          "competitors": [
+            { "homeAway": "home", "score": "3", "team": { "abbreviation": "SEA" } }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "401872952",
+      "status": { "period": 2, "displayClock": "1:11", "type": { "state": "in", "completed": false } },
+      "competitions": [
+        {
+          "competitors": [
+            { "homeAway": "home", "score": "--", "team": { "abbreviation": "TB" } },
+            { "homeAway": "away", "score": "6", "team": { "abbreviation": "NO" } }
+          ]
+        }
+      ]
+    },
+    {
+      "date": "2026-09-27T17:00Z",
+      "status": { "type": { "state": "in" } },
+      "competitions": [
+        {
+          "competitors": [
+            { "homeAway": "home", "score": "7", "team": { "abbreviation": "MIA" } },
+            { "homeAway": "away", "score": "7", "team": { "abbreviation": "NYG" } }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "999999999",
+      "status": { "period": 4, "displayClock": "2:00", "type": { "state": "in", "completed": false } },
+      "competitions": [
+        {
+          "competitors": [
+            { "homeAway": "home", "score": "21", "team": { "abbreviation": "XYZ" } },
+            { "homeAway": "away", "score": "14", "team": { "abbreviation": "ZZZ" } }
+          ]
+        }
+      ]
+    }
+  ]
+}

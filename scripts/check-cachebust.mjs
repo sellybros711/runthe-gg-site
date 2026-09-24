@@ -62,6 +62,29 @@ const TAG = /<script[^>]*\ssrc="([A-Za-z0-9_./-]+\.js)\?v=([^"]+)"/g;
  * name as a <script src> would. */
 const MOD = /(?:^|[\s({,])(?:import|export)[^;'"]*?from\s*['"]\.?\/?([A-Za-z0-9_.-]+\.js)\?v=([^'"]+)['"]/gm;
 
+/* AND EVERY DATA FILE A PAGE FETCHES WITH A ?v= ON IT, which is fourteen of them
+ * across six games and was seeing none.
+ *
+ * A player pool is not a script and it caches exactly like one. `hoops/index.html`
+ * loads
+ *
+ *   fetch('data/players.json?v=3')
+ *
+ * and that number is hand written beside a file a build script rewrites, which is
+ * the whole shape this checker exists for. It was found the way these always are:
+ * hoops derived multi-position eligibility onto all 16,057 rows, and a returning
+ * visitor on the cached v=3 would have gone on drafting the old single-position
+ * pool with nothing anywhere saying so. Not a crash. Not even a wrong screen. Just
+ * a change that silently did not happen for the people who had played before.
+ *
+ * Quieter than a stale script and harder to report: the game works, so the only
+ * symptom is somebody insisting a feature is not there.
+ *
+ * A VERSION BUILT FROM A VARIABLE IS SKIPPED RATHER THAN MANGLED. soccer writes
+ * `'/data/roster_updates.json?v=' + DATA_VERSION`, which is the problem already
+ * solved, so the pattern requires the version to be inside the same quotes. */
+const DATA = /fetch\(\s*['"]([A-Za-z0-9_./-]+\.json)\?v=([A-Za-z0-9_.-]+)['"]/g;
+
 function pages(dir, out = []) {
   for (const name of fs.readdirSync(dir)) {
     if (name === '.git' || name === 'node_modules') continue;
@@ -91,7 +114,7 @@ const found = {};
 for (const page of pages(ROOT)) {
   const html = fs.readFileSync(page, 'utf8');
   const rel = path.relative(ROOT, page);
-  for (const re of [TAG, MOD]) {
+  for (const re of [TAG, MOD, DATA]) {
     for (const m of html.matchAll(re)) {
       /* A leading slash is the SITE root, not the filesystem root. Every arcade game
          reaches its shared scripts that way (/arcade/tokens.js?v=13), and for a year
@@ -146,6 +169,132 @@ if (split.length) {
   process.exit(1);
 }
 
+/*
+ * AND THE OTHER PAIR OF HAND-WRITTEN NUMBERS, WHICH TOOK THE PROFILE AND THE LEADERBOARD OUT.
+ *
+ * A `?v=` is not the only number a page keeps about a sibling script. Several of them also
+ * pin the API they expect, and refuse the module when it does not match:
+ *
+ *   const BOARD_VERSION=17;
+ *   const B=(window.PS_BOARD&&window.PS_BOARD.API_VERSION===BOARD_VERSION)?window.PS_BOARD:{...
+ *
+ * THIS IS THE SILENT ONE OF THE TWO. A `?v=` that has not moved fails loudly, as a missing
+ * function on somebody's phone. This fails SOFTLY, on purpose: the page falls through to a
+ * stub that answers every call with null so that a board.js which is blocked, or a version
+ * behind, degrades to "not reachable" rather than taking the game down. That stub is correct
+ * and it did its job. What nothing anywhere noticed was that it was reached BY MISTAKE.
+ *
+ * It shipped. Adding two functions to board.js moved its API_VERSION to 17 and BOARD_VERSION
+ * in the page stayed at 16, so every visitor ran on the stub: the leaderboard printed the
+ * stub's own lastError ("board.js failed: 0 blocked"), and the profile's runs played and
+ * best rating came back as dashes because mine() and ranks() answer null. No error was
+ * thrown, no check went red, and the site looked exactly like a site whose network was
+ * having a bad day. Reported by a player.
+ *
+ * FOUND RATHER THAN LISTED, the same rule the rest of this file follows: the pairs are read
+ * out of the page, the receiver is resolved through any alias to its global, and the global
+ * is resolved to whichever script on that page assigns it. A new game that pins a version
+ * this way is covered without anybody remembering to add it here.
+ *
+ * COVERAGE IS HALF THE CHECK, which is check-numbers.mjs's lesson and it applies harder to a
+ * resolver than to a regex. A page that mentions API_VERSION and yields no pair means the
+ * reading broke, not that the page is clean, so that is a failure rather than a pass.
+ */
+const NUM = (s) => (/^\d+$/.test(String(s).trim()) ? Number(s) : null);
+/* `API_VERSION: 17` or `API_VERSION: RUN_API_VERSION` with the const declared above it. */
+function moduleVersion(src) {
+  const m = src.match(/API_VERSION\s*:\s*([A-Za-z0-9_]+)/);
+  if (!m) return null;
+  const n = NUM(m[1]);
+  if (n !== null) return n;
+  const d = src.match(new RegExp('\\b(?:const|let|var)\\s+' + m[1] + '\\s*=\\s*(\\d+)'));
+  return d ? Number(d[1]) : null;
+}
+const pins = [];
+let pairs = 0;
+for (const page of pages(ROOT)) {
+  const html = fs.readFileSync(page, 'utf8');
+  const rel = path.relative(ROOT, page);
+  /* A page that COMPARES an API_VERSION is a page that pins one. A page that merely mentions
+     the words (the stub below the comparison writes `API_VERSION:BOARD_VERSION` into itself)
+     is not, so the coverage rule keys on the comparison rather than on the word. */
+  if (!/\.API_VERSION\s*===?/.test(html) && !/===?\s*[A-Za-z_$][\w$.]*\.API_VERSION/.test(html)) continue;
+  /* Both directions of the comparison, and == or ===. The receiver is whatever is on the
+     other side of the dot: `window.PS_BOARD`, `PS_BOARD` or an alias like `E`. */
+  /* NAMED `pinned`, NOT `want`. The manifest below is a top-level const called want, and a
+     block-scoped shadow of it inside this loop is legal, silent and exactly the kind of thing
+     somebody later reads as the manifest. */
+  const pinned = new Map();                     // CONST -> Set(receiver)
+  const add = (k, v) => (pinned.get(k) ?? pinned.set(k, new Set()).get(k)).add(v);
+  for (const m of html.matchAll(/([A-Za-z_$][\w$.]*)\.API_VERSION\s*===?\s*([A-Z][A-Z0-9_]*)/g))
+    add(m[2], m[1]);
+  for (const m of html.matchAll(/([A-Z][A-Z0-9_]*)\s*===?\s*([A-Za-z_$][\w$.]*)\.API_VERSION/g))
+    add(m[1], m[2]);
+  /* THE READING BROKE RATHER THAN THE PAGE BEING CLEAN. A resolver that yields nothing is
+     green, and that is how an extractor in this repo has gone quiet twice already. */
+  if (!pinned.size) {
+    pins.push({ page: rel, name: '(nothing)',
+      why: 'this page compares an API_VERSION and the check could not read the pair' });
+    continue;
+  }
+  /* The scripts this page loads, versioned or not: a pinned module need not be versioned. */
+  const srcs = [...html.matchAll(/<script[^>]*\ssrc="([A-Za-z0-9_./-]+\.js)(?:\?[^"]*)?"/g)]
+    .map((m) => (m[1].startsWith('/') ? path.join(ROOT, m[1].slice(1))
+      : path.join(path.dirname(page), m[1])))
+    .filter((f) => fs.existsSync(f));
+  for (const [name, receivers] of pinned) {
+    const dec = html.match(new RegExp('\\b(?:const|let|var)\\s+' + name + '\\s*=\\s*(\\d+)\\s*;'));
+    if (!dec) { pins.push({ page: rel, name, why: 'the page pins a version it never declares' }); continue; }
+    const at = Number(dec[1]);
+    for (const receiver of receivers) {
+      /* RESOLVED BY WHO SETS IT, NOT BY WHAT IT IS CALLED. This first asked for a PS_
+         prefix, which is the football game's convention and nobody else's: hoops exports
+         RTF_ENGINE and RTF_RUN, so the check reported that it could not tell which module
+         E was on a page that is perfectly correct. A naming convention is not a fact about
+         the code; which file assigns the global is. */
+      let g = receiver.replace(/^window\./, '');
+      /* AND A MODULE THAT WRITES THROUGH ITS IIFE PARAMETER IS STILL SETTING IT, which is
+         the same lesson as the PS_ prefix one line up, arriving at a second spelling. The
+         site's one-file modules are written
+         `(function (root) { ... root.X = api; })(typeof self !== 'undefined' ? self : this)`,
+         so `window.X =` never appears in them and this reported that nothing sets a global
+         a file plainly sets. It is not loosened to any receiver: the name has to be the
+         parameter that function was handed the global object as. */
+      const putsGlobal = (src, n) => {
+        if (new RegExp('window\\.' + n + '\\s*=[^=]').test(src)) return true;
+        const iife = src.match(
+          /\(\s*function\s*\(\s*([A-Za-z_$][\w$]*)\s*\)[\s\S]*\}\s*\)\s*\(\s*typeof\s+(?:self|globalThis)[^)]*\)\s*;?\s*$/);
+        return !!iife && new RegExp('\\b' + iife[1] + '\\.' + n + '\\s*=[^=]').test(src);
+      };
+      const setter = (n) => srcs.find((f) => putsGlobal(fs.readFileSync(f, 'utf8'), n));
+      let file = setter(g);
+      if (!file) {
+        /* Then it is an alias: `var E = window.RTF_ENGINE, R = window.RTF_RUN;` */
+        const al = html.match(new RegExp('\\b' + g + '\\s*=\\s*window\\.([A-Z][A-Z0-9_]*)'));
+        if (al) { g = al[1]; file = setter(g); }
+      }
+      if (!file) { pins.push({ page: rel, name, why: 'nothing on this page sets window.' + g }); continue; }
+      const got = moduleVersion(fs.readFileSync(file, 'utf8'));
+      const script = path.relative(ROOT, file);
+      if (got === null) { pins.push({ page: rel, name, why: script + ' declares no API_VERSION' }); continue; }
+      if (got !== at) {
+        pins.push({ page: rel, name,
+          why: `the page wants ${at} and ${script} is ${got}, so every visitor gets the stub` });
+      }
+      pairs++;
+    }
+  }
+}
+if (pins.length) {
+  console.error('\nA page and its module disagree about the API version.\n');
+  for (const p of pins) console.error(`  ${p.page} -> ${p.name}\n    ${p.why}`);
+  console.error('\nThis one does NOT throw. The page falls through to its offline stub, so the');
+  console.error('game keeps working and the leaderboard, the profile and the meters all go');
+  console.error('quiet as though the network were down. Move the number in the page to match');
+  console.error('the module, in the same commit that changed the module.\n');
+  process.exit(1);
+}
+
 if (UPDATE) {
   fs.writeFileSync(MANIFEST, JSON.stringify(found, null, 2) + '\n');
   const n = Object.values(found).reduce((t, o) => t + Object.keys(o).length, 0);
@@ -179,6 +328,7 @@ for (const [page, scripts] of Object.entries(want)) {
 if (!bad.length) {
   const n = Object.values(found).reduce((t, o) => t + Object.keys(o).length, 0);
   console.log(`cache versions ok: ${n} versioned scripts match what the pages ask for`);
+  console.log(`api versions ok: ${pairs} page/module pins agree`);
   process.exit(0);
 }
 

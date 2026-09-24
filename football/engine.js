@@ -235,6 +235,35 @@ const CONSTANTS = {
   DEF_REF: 36.1,
   DEF_POWER: 1.8,
   DEF_SUPPRESS_MAX: 1.6,   // worst defense lets the opponent run up ~1.6x, no more
+  /*
+   * FULL TEAM CAPS THE BAD END TIGHTER, and only the bad end.
+   *
+   * DEF_POWER and DEF_SUPPRESS_MAX are calibrated for the DEFENCE-ONLY draft, where the
+   * defence you picked is the whole of your game and is meant to decide it. In Full Team it
+   * lands on top of an offence that varies just as much and the two compound: measured
+   * across the drafting range, a Full Team's points allowed swing 2.06x where the quick
+   * draft's swing 1.16x, against a points-scored swing of about 2.8x in both. So the same
+   * imperfect drafting is punished twice, and the mode a player met was careless play
+   * winning 8% of games against the quick draft's 25%, careful play at 7-10 and into the
+   * playoffs 4.5% of the time against 11-6 and 42%, and a board nobody pushed past 15 wins.
+   *
+   * ONLY THE BAD END, and that is the whole design of this constant. Compressing the WHOLE
+   * curve was tried first and it gutted the mode: with defence worth less everywhere the
+   * solver stopped buying any and the optimal roster went from $159.5M off / $100.4M def to
+   * $242.0M / $17.9M, while every win-rate column said the change was working. A ceiling on
+   * the PENALTY leaves the reward for a good defence exactly where it was, so the incentive
+   * to spend on one is untouched.
+   *
+   * It binds below a raw defence of about 32. A careless defence sits at ~25 and a careful
+   * one at ~34, so this lifts the floor and leaves the middle and the top alone, which is
+   * what let FULL_TALENT and FULL_CAP_MUSD be solved for those two rows afterwards.
+   */
+  /* 1.45 RATHER THAN 1.40, and 1.40 is where it still works. Measured against the solver's
+     own split, defence is worth 39% of the cap down to 1.40 and 7% at 1.35: the incentive to
+     buy a defence falls off a cliff between them, because a ceiling on the penalty is also a
+     ceiling on the reason to avoid it. Pick the first value with real room, not the last one
+     that passes. */
+  FULL_DEF_SUPPRESS_MAX: 1.45,
   /* The spread on the offense you are given. Real team scoring runs a standard deviation
      around 40% of the mean (league_context's own pts_scored_sd against pts_scored_mean
      sits near this across the era), and your borrowed offense should be as streaky as
@@ -277,7 +306,21 @@ const CONSTANTS = {
    * rating 103, 16 and 16 at 110) while titles went 2.8% -> 5.3% and 5.8% -> 10.8%.
    */
   ELITE_FLOOR: 95,
-  ELITE_FULL: 105,
+  /*
+   * 103 RATHER THAN 105, AND THE REASON IS THE SAME ONE THREE CONSTANTS BELOW SHARE.
+   *
+   * ELITE_FULL is where roster strength is worth as much as a 17-0 record, so it is the top
+   * of the band and it has to be a rating the game can actually produce. Measured over 3000
+   * drafted rosters: p90 93.7, p99 99.3, p999 103.0, max 104.9. At 105 the vote was fully
+   * earned by nothing, and the best roster anybody drafts collected about 99% of it while a
+   * 97 collected a fifth. Anchored at the top of the real ladder instead, so a genuinely
+   * elite roster gets the elite treatment rather than most of it.
+   *
+   * THE PERFECT SEASON IS STILL UNTOUCHED BY CONSTRUCTION, for the reason the block above
+   * gives: the home field share takes whichever of record and strength is HIGHER, and at
+   * 17-0 that is always the record. This moves what an elite roster with a LOSS gets.
+   */
+  ELITE_FULL: 103,
   /*
    * ─── THE ORDINARY SUNDAY, READ THE SAME WAY AS THE LAST GAME ────────────────
    *
@@ -303,7 +346,13 @@ const CONSTANTS = {
   CLASS_DROP: 0.06,
   CLASS_BREAK_EDGE: 1.020,
   CLASS_MID: 95,
-  CLASS_TOP: 115,
+  /* 103, NOT 115, and this is the one that was furthest out. The stretch above CLASS_FULL
+     is a SEPARATE segment from the fitted one (see weeklyEdgeBand: 95 to 100 is at(rating)
+     and nothing here touches it), and it was written to keep paying up to 115 on the belief
+     that "rosters run fifteen points past" CLASS_FULL. They do not: the best of 3000 reads
+     104.9 and the 1-in-1000 reads 103.0, so the segment was never more than a fifth earned
+     and a 101 roster collected 0.004 of the 0.06 on offer. */
+  CLASS_TOP: 103,
   CLASS_TOP_EDGE: 0.06,
   ELITE_BYE_RATING: 100,
   ELITE_BYE_WINS: 13,
@@ -327,7 +376,11 @@ const CONSTANTS = {
    * where the title game stops being uphill.
    */
   ELITE_POLISH: 0.02,
-  ELITE_POLISH_FULL: 105,
+  /* Same anchor as the two above, for the same measured reason. Kept tiny on purpose: this
+     one rides on weeklyEdge and inherits its damper, so it pays on ordinary Sundays and
+     almost nothing against the contenders, which is why sweeping it alone moved a 95+ win
+     rate by 0.2 points and it is not the lever anybody should reach for. */
+  ELITE_POLISH_FULL: 103,
 
   /*
    * ─── WHAT THE LAST GAME ASKS OF YOUR ROSTER ─────────────────────────────────
@@ -493,7 +546,7 @@ const CONSTANTS = {
    * 2007 Patriots and the 1972 Dolphins and beating them is the whole point. In
    * GM mode the goal is different: you inherit a bad roster and try to turn the
    * season around. Measured against the shipped ladder, a GM who did exactly that
-   * — finishing at a 94 rating, up thirty points — won the title 1.5% of the time,
+   * (finishing at a 94 rating, up thirty points) won the title 1.5% of the time,
    * because a title still meant beating both legends. The story the mode tells and
    * the ending it allows did not match.
    *
@@ -501,25 +554,25 @@ const CONSTANTS = {
    *
    * The bracket (generateContenderPlayoffs) is real playoff teams instead of two of
    * them plus the two myths: the weakest team in, then the ordinary playoff field,
-   * then a top-decile season in the final. Still a gauntlet — the team you meet for
-   * the title is one of the best seasons since 1999 — but a bracket a contender can
+   * then a top-decile season in the final. Still a gauntlet (the team you meet for
+   * the title is one of the best seasons since 1999), but a bracket a contender can
    * come through.
    *
-   * LATE_BYE_*: the bye is also reachable. On record alone it never was — the
+   * LATE_BYE_*: the bye is also reachable. On record alone it never was, because the
    * first six weeks are played with the roster you were handed, so 15 wins is out
    * of reach no matter how well you trade, and over 200 measured seasons a
    * deliberate GM earned it 14 times. So GM mode adds a second route: win
    * LATE_BYE_WINS of your last LATE_BYE_GAMES and you are the hottest team going
    * in, and you get the week off. It rewards precisely what the mode is about, it
    * gives the eight weeks after the deadline something to play for, and it
-   * discriminates hard — a team winning 70% of its games clears it about a
+   * discriminates hard: a team winning 70% of its games clears it about a
    * quarter of the time, a .500 team about one time in thirty.
    *
    * GM_FINAL_HOME_FIELD: how much of that seeding edge survives into the final,
    * GM mode only. Everywhere else the answer is none, and measured on the new
    * bracket that made the Super Bowl unwinnable by construction: a top seed rated
    * 100 was still a 7.7-point underdog in it, because the two hardest things about
-   * the game — a top-decile opponent and no home-field — landed on the same night.
+   * the game (a top-decile opponent and no home-field) landed on the same night.
    * Home-field here is not a crowd, it is the stated reward for the regular season,
    * so on neutral ground it is halved rather than erased. At 0.5 a juggernaut plays
    * the final about even (+0.8 at a 100 rating) and a merely good team is still a
@@ -1415,7 +1468,7 @@ const PLAYOFF_ROUND_NAMES = ['Wild Card', 'Divisional', 'Conference Championship
  * That ordering is the whole guarantee that a perfect season gets no easier: at 17-0 the
  * record already scores 1, so strength can never add to it.
  *
- * `rating` is optional, and without it this is exactly the old record-only arithmetic —
+ * `rating` is optional, and without it this is exactly the old record-only arithmetic,
  * which is what keeps callers with no rating to hand honest rather than quietly generous.
  */
 function playoffShare(wins, rating) {
@@ -1601,7 +1654,7 @@ function finalRecordEase(losses, rating, constants = CONSTANTS) {
  *
  * `opts.lateWins` is how many of the last LATE_BYE_GAMES games were won, and it is
  * only ever passed in GM mode. Given it, a hot finish earns the bye even without
- * the 15-win record — see CONSTANTS.LATE_BYE_*. The three labels are unchanged in
+ * the 15-win record. See CONSTANTS.LATE_BYE_*. The three labels are unchanged in
  * every mode, because badges and the leaderboard read them.
  *
  * `opts.rating` is the team overall, and given it an elite roster (ELITE_BYE_RATING) that
@@ -2462,10 +2515,10 @@ function rosterStructure(roster) {
   /* TEAM SHAPE, HALF STRENGTH. The raw product of the four shape terms is centerd on 1.0
      (a perfectly average build scores 1.0; a strong QB and a clean shape push it up, the
      balance/concentration/floor penalties pull it down). Left alone it swings the rating
-     hard — a great build was worth +12% on its own, which dwarfed the offensive scheme.
+     hard: a great build was worth +12% on its own, which dwarfed the offensive scheme.
      SHAPE_STRENGTH scales that swing: at 0.5 the deviation from 1.0 is halved, so the same
      build is worth +6% and a penalty bites half as much, while good and bad rosters still
-     separate. The scheme bonus (1–3%) then sits on top as its own signal, not buried under
+     separate. The scheme bonus (1-3%) then sits on top as its own signal, not buried under
      a much larger shape term. This multiplier drives both the displayed rating and the game
      sim, so the two stay one number. */
   const shape = (effective / total) * balance * concentration * Math.max(0.3, floor);
@@ -3368,7 +3421,7 @@ function generatePlayoffs(data, rng, opts = {}) {
  * The legends ladder is sliced off the front because a bye must never let you skip
  * the Dolphins. Applied here that was backwards: the last two rungs were both
  * top-decile draws, so slicing the front meant the reward for the #1 seed was
- * skipping the WEAKEST team and then playing both of the strongest — the opposite
+ * skipping the WEAKEST team and then playing both of the strongest, the opposite
  * of a real bracket, where the top seed hosts the lowest remaining seed. Measured,
  * that made the bye worth less than nothing: 1.8% of byes won the title against
  * 3.3% of wild cards.
@@ -3589,6 +3642,15 @@ const DEF_OVERALL_MAP = [
   [10.0, 11.0], [18.0, 32.0], [34.0, 48.0],
   [48.0, 80.0], [52.0, 89.0], [55.0, 95.0],
 ];
+/* Full Team's own reading of the same curve: the identical shape, with a tighter ceiling on
+   how much a bad defence can cost. Both callers on the full path go through this, so the
+   preview the coach screen draws and the game actually played cannot disagree. */
+function fullSuppression(defenseTotal, constants = CONSTANTS) {
+  const cap = constants.FULL_DEF_SUPPRESS_MAX;
+  const s = defenseSuppression(defenseTotal, constants);
+  return cap === undefined ? s : Math.min(cap, s);
+}
+
 function defenseOverall(defenseTotal) {
   if (!(defenseTotal > 0)) return 0;
   const m = DEF_OVERALL_MAP;
@@ -3648,7 +3710,7 @@ function fullParts(roster, chemistryMultiplier, coach, constants = CONSTANTS) {
   return {
     scored,
     stops,
-    allowed: OPP_PTS_NEUTRAL * constants.SCALE * defenseSuppression(stops, constants),
+    allowed: OPP_PTS_NEUTRAL * constants.SCALE * fullSuppression(stops, constants),
   };
 }
 
@@ -3704,20 +3766,99 @@ function fullStrength(roster, chemistryMultiplier, coach, constants = CONSTANTS)
  * gap between the two units is 1.1 points on realistic drafts and 0.6 on careful ones. It is
  * the most legible version and also the most predictive, which does not usually happen.
  */
+/* EVERY PART IS RETURNED, NOT JUST THE ANSWER.
+ *
+ * The results screen has to show a player how a Full Team overall is made, and the only
+ * honest way to do that is to hand it the numbers this function actually multiplied. The
+ * page used to build its own version of the sentence and it was wrong three ways: it ran
+ * rosterStructure over all TWELVE men (the 0.57-for-everybody reading overallOf warns
+ * about, which printed "-44% for how the six fit together" on a team whose halves were at
+ * -12% and +3%), it printed the flattened chemistry rather than the two the units are rated
+ * with, and it claimed the product equalled the overall when the overall is a mean of two
+ * sides with a coach on top.
+ *
+ * So the parts ship with the answer. A breakdown drawn from these cannot disagree with the
+ * rating, because it IS the rating's working. Additive only: `off`, `def`, `coachBoost` and
+ * `overall` are unchanged and every existing caller reads exactly what it read before. */
 function fullSideRatings(roster, chemistryMultiplier, coach, constants = CONSTANTS) {
   const { off, def } = splitSides(roster);
-  if (!off.length || !def.length) return { off: 0, def: 0, coachBoost: 1, overall: 0 };
+  if (!off.length || !def.length) {
+    return { off: 0, def: 0, coachBoost: 1, overall: 0,
+      parts: { offPts: 0, defPts: 0, offChem: 1, defChem: 1, offFit: 1, defFit: 1,
+        offMen: 0, defMen: 0, talent: 1, defRaw: 0 } };
+  }
   const t = constants.FULL_TALENT === undefined ? FULL_TALENT : constants.FULL_TALENT;
-  const o = off.reduce((a, p) => a + p.ppr_ppg_mean, 0) * t
-    * chemOff(chemistryMultiplier) * rosterStructure(off).multiplier;
-  const d = defenseOverall(def.reduce((a, p) => a + p.ppr_ppg_mean, 0) * t
-    * chemDef(chemistryMultiplier) * defenseStructure(def).multiplier);
+  const offPts = off.reduce((a, p) => a + p.ppr_ppg_mean, 0);
+  const defPts = def.reduce((a, p) => a + p.ppr_ppg_mean, 0);
+  const offChem = chemOff(chemistryMultiplier), defChem = chemDef(chemistryMultiplier);
+  const offFit = rosterStructure(off).multiplier, defFit = defenseStructure(def).multiplier;
+  const o = offPts * t * offChem * offFit;
+  /* The defense's raw product is points it gives up. defenseOverall is what puts it on the
+     offense's ladder, which is the step that makes the mean below mean anything, and it is
+     the step a reader cannot infer. Kept so the screen can say it happened. */
+  const defRaw = defPts * t * defChem * defFit;
+  const d = defenseOverall(defRaw);
   const eff = coachEffect(coach);
   const coachBoost = (eff.off + eff.def) / 2;
   /* The units are left alone: a great one passes 100 in its own mode too, and saying so is
      the point. The headline is clamped because it is the number runs are compared by. */
+  /* THE MEAN IS NOT THE TEAM OVERALL, and fullTeamScale is the step between them. Kept in
+     parts so the results screen can show it happened, the same way defRaw is kept for
+     defenseOverall: a reader cannot infer either one. */
+  const mean = (o + d) / 2 * coachBoost;
   return { off: o, def: d, coachBoost,
-    overall: Math.max(0, Math.min(100, (o + d) / 2 * coachBoost)) };
+    overall: Math.max(0, Math.min(100, fullTeamScale(mean))),
+    parts: { offPts, defPts, offChem, defChem, offFit, defFit,
+      offMen: off.length, defMen: def.length, talent: t, defRaw, mean } };
+}
+
+/*
+ * A FULL TEAM'S TEAM OVERALL, ON THE LADDER THE REST OF THE GAME IS CUT FOR.
+ *
+ * This is defenseOverall's problem one level up, and it had the same three symptoms.
+ *
+ * THE PROBLEM. The mean of the two units is an honest reading of what twelve men produce,
+ * and it is not a team overall, because a Full Team splits ONE cap across two units and a
+ * quick draft spends a whole cap on six men. So a twelve man team is always reported weaker
+ * than a six man offence drafted with the same care: measured at matched drafting quality,
+ * careful play read a median 68.4 here against 82.0 there, and a player who deliberately
+ * spends the cap read 76.3.
+ *
+ * WHY THAT IS NOT COSMETIC. liveRating() hands this number to weeklyEdgeVs, seedFromRecord,
+ * playoffShare and finalEdge, and those are cut against CLASS_FLOOR 84, ELITE_FLOOR 95 and
+ * FINAL_EDGE_PIVOT 95. Measured before this map: a player who spends the whole cap cleared
+ * CLASS_FLOOR 8% of the time against the quick draft's 46%, reached ELITE_FLOOR 0% of the
+ * time against 10%, and took the full title game penalty on every single roster. The weekly
+ * class edge, the strength vote on the seed and a neutral title game were all switched OFF
+ * in this mode, and nothing anywhere reported it. It is also the standing measurement that
+ * a Full Team squad "never takes the top seed": the seed vote starts at 95 and the mode
+ * could not reach 95.
+ *
+ * Reported by a player from the other end, as a 20-0 team reading 85, which is not what 85
+ * means anywhere else on this site.
+ *
+ * THE MAP is a line through three anchors that matter, by raw mean: a careless twelve
+ * (~40.7) reads where a careless six reads (~42), so the bottom is unchanged; a roster that
+ * deliberately SPENDS THE CAP (~76.3) reaches CLASS_FLOOR, which is where the quick draft's
+ * careful play sits and where the weekly edge starts; and the best roster the mode can
+ * produce (~96.4, the solver) reads 100, so the top of the scale is reachable and means "you
+ * cannot do better". Below the first anchor it runs to the origin, above the last it keeps
+ * going at the same slope and the clamp takes it.
+ *
+ * THE UNITS ARE NOT TOUCHED. `off` and `def` are what each side produces and the screen
+ * prints them as such; this maps only the headline the game reads.
+ */
+const FULL_SCALE = [[0, 0], [40.7, 42], [76.3, 84], [96.4, 100]];
+function fullTeamScale(raw) {
+  const A = FULL_SCALE;
+  if (!(raw > 0)) return 0;
+  for (let i = 1; i < A.length; i++) {
+    if (raw <= A[i][0] || i === A.length - 1) {
+      const [x0, y0] = A[i - 1], [x1, y1] = A[i];
+      return y0 + (raw - x0) * (y1 - y0) / (x1 - x0);
+    }
+  }
+  return raw;
 }
 
 function fullOverall(roster, chemistryMultiplier, coach, constants) {
@@ -3938,8 +4079,18 @@ const FULL_CAP_MUSD = 280;
  * so there is nothing left for a human to be better at. This rule sits between them, and
  * the bot's best strategy lasts 2.4 times as long as its worst, which is the room a person
  * needs to visibly outplay it.
+ *
+ * AND THERE IS NO LENGTH. A dynasty ends when the owner ends it and at no other point.
+ *
+ * There used to be a DYNASTY_MAX_SEASONS = 25 sitting here, which nothing in the game ever
+ * read: run.js does not, the page does not, and the only code that ever touched it was the
+ * balance simulator using it as a safety stop so a run could not loop forever. It has been
+ * removed rather than corrected, because a constant that governs nothing is worse than no
+ * constant at all. This one was read as a design limit by everything that came near it, up
+ * to and including a note in CLAUDE.md claiming the mode was built to run twenty-five
+ * seasons and a badge catalog that would not name anything past them. The simulator keeps
+ * its own stop, named for what it is.
  */
-const DYNASTY_MAX_SEASONS = 25;
 
 /*
  * ─── THE SCORE ─────────────────────────────────────────────────────────────────────
@@ -4079,11 +4230,30 @@ const DYNASTY_STEP_SEASONS = 10;
  * The bot drafts best-available inside a budget and releases whoever is worth less than half
  * what he is paid. A person who reads the offseason should beat it.
  */
+/*
+ * AND IT STOPS CLIMBING BEFORE IT STOPS BEING POSSIBLE.
+ *
+ * The bar was BASE + one win every ten seasons with nothing above it, and a season is
+ * seventeen games. Left to run, that asks for 17 of 17 at season 91 and 18 of 17 at season
+ * 101: a perfect season to survive, and then an arithmetic wall no roster can climb. This is
+ * an endless mode, so a season it is impossible to pass is a bug rather than a hard ending.
+ *
+ * FOURTEEN, WHICH LEAVES THREE LOSSES. It is where the old formula arrived at season 61
+ * anyway, so nothing inside the range anyone plays moves: the bot's median run is four
+ * seasons and none of a measured three hundred reached twenty-five. This changes the far
+ * tail only, and what it changes there is "cannot be done" into "very hard".
+ *
+ * THE MODE DOES NOT STOP GETTING HARDER WHEN THE NUMBER DOES, and that is the point of
+ * capping it here rather than raising the ceiling. The squeeze this mode runs on is a frozen
+ * cap against a roster that ages every winter, and that keeps tightening on its own for as
+ * long as the run lasts. The bar is the part of the difficulty that had a wall in it.
+ */
+const DYNASTY_WIN_BAR_MAX = 14;
 /* Wins needed in a given season, counting from 1. */
 function dynastyWinBar(season, stepEvery) {
   const step = Math.floor(Math.max(0, Math.max(1, season) - 1)
     / (stepEvery || DYNASTY_STEP_SEASONS));
-  return DYNASTY_BASE_WINS + step;
+  return Math.min(DYNASTY_BASE_WINS + step, DYNASTY_WIN_BAR_MAX);
 }
 
 /**
@@ -4443,8 +4613,29 @@ function dynastyContinuity(roster, tenure) {
  * defence keep their relative weights, and every structure, scheme and chemistry multiplier
  * still lands on top exactly as it did.
  *
- * Fitted, not chosen. See simulator.js --fullteam. */
-const FULL_TALENT = 0.78;
+ * Fitted, not chosen. See simulator.js --fullteam.
+ *
+ * REFITTED FROM 0.78, AND 0.78 WAS FITTED AGAINST A BROKEN ROW. The harness bot that stands
+ * for careful play, buildFullToBudget, took an rng and never called it, so the row this dial
+ * was solved against was ONE deterministic roster replayed: it measured schedule luck rather
+ * than the range a player meets, and it happened to land close enough to the reference that
+ * the fit looked right.
+ *
+ * What a careful player actually got at 0.78, measured once the bot drafted a range: 7-10,
+ * into the playoffs 4.5% of the time against the quick draft's 42%, and in 400 seasons never
+ * once past 15 wins where the quick draft reaches 17-0. That is the mode a player reported
+ * as way too hard, and they were right.
+ *
+ * At 0.90 the careful row sits on the quick draft's: 11-6 against 11-6, playoffs 45.8%
+ * against 41.8%, and a perfect season in 1.0% of them against 0.8%.
+ *
+ * WHAT IT COSTS, stated rather than buried. The SOLVED row overshoots: 91% against the quick
+ * draft's 81%. The careful and solved rows cannot both be hit with this dial, because twelve
+ * picks across two pools give a solver far more room to be right than six do, and no cap
+ * fixes it either (swept $280M to $400M, the careless row never moved at all). The row that
+ * was chosen is the one a person actually plays: a full knapsack over both pools is not a
+ * thing a human does at twelve slots, while a careful draft is what everybody does. */
+const FULL_TALENT = 0.90;
 
 /*
  * ─── THE COACH ─────────────────────────────────────────────────────────────────────
@@ -4804,7 +4995,9 @@ function resolveGameFull(roster, chemistryMultiplier, opponent, leagueAvgAllowed
   const yourScore = rawOff * offMul * tempo * (1 + PLAN.FOURTH_MEAN * plan.fourth);
 
   const defenseTotal = rawDef * chemDef(chemistryMultiplier) * defStructure;
-  const suppression = defenseSuppression(defenseTotal, constants);
+  /* fullSuppression, not defenseSuppression: see FULL_DEF_SUPPRESS_MAX. The defence-only
+     mode goes on using the uncapped ceiling, because there it is the whole game. */
+  const suppression = fullSuppression(defenseTotal, constants);
   /* Pressure is the mirror of the fourth down call, pointed at their score instead of
      yours: it holds them to less on average and gives up more when it misses. The swing is
      applied to the opponent's own spread, because a blitz that fails is their big play. */
@@ -4837,7 +5030,7 @@ function resolveGameFull(roster, chemistryMultiplier, opponent, leagueAvgAllowed
 }
 
 /*
- * HEAD-TO-HEAD — the "Challenge Bowl". Two drafted rosters, neither of which has a defense
+ * HEAD-TO-HEAD: the "Challenge Bowl". Two drafted rosters, neither of which has a defense
  * (both are six offensive skill players), so each side is scored as its OFFENSE against a
  * neutral, league-average defense: the same raw x chemistry x structure the season uses,
  * with defenseModifier fixed at 1 and no SCALE (SCALE converts an opponent's real points
@@ -4849,8 +5042,8 @@ function resolveGameFull(roster, chemistryMultiplier, opponent, leagueAvgAllowed
  * upsets still possible for drama.
  *
  * Scoring is in a FIXED order (a then b) so the result is identical for everyone who
- * recomputes it from the same seed — the challenger, the friend, and anyone they show it to
- * — regardless of whose screen it is. Callers always pass a = challenger, b = friend; the
+ * recomputes it from the same seed (the challenger, the friend, and anyone they show it
+ * to) regardless of whose screen it is. Callers always pass a = challenger, b = friend; the
  * UI decides which side is labeled "you".
  */
 const BOWL_CONSISTENCY = 0.62;
@@ -5095,7 +5288,7 @@ function playRun(roster, chemistryMultiplier, schedule, playoffs, leagueContext,
   const regularLosses = losses;
   const seed = seedFromRecord(regularWins, { rating: teamRating });
   /* A bye means you were seeded on top, so the share is read at no less than the record
-     that route normally takes — the same floor run.js applies in the live game. */
+     that route normally takes, the same floor run.js applies in the live game. */
   const byeWins = seed.bye ? Math.max(regularWins, constants.BYE_SEED_WINS) : regularWins;
   const advantage = 1 + (constants.PLAYOFF_HOME_FIELD || 0)
     * playoffShare(byeWins, teamRating);
@@ -5231,7 +5424,7 @@ function prepareData(teamSeasons) {
  * scope in the browser: two top-level `const API_VERSION` declarations collide
  * and the second file fails to parse at all. Which is what happened, and the boot
  * check below reported it correctly. */
-const ENGINE_API_VERSION = 47;
+const ENGINE_API_VERSION = 51;
 
 /*
  * The three-letter code a team actually wore in a given season.
@@ -5263,7 +5456,7 @@ function eraCode(franchise, season) {
 /*
  * ─── DYNASTY'S BOSS SEASONS ─────────────────────────────────────────────────────
  *
- * Every fifth season the schedule ends with a marquee game against a real great team, and
+ * Every second milestone ends with a marquee game against a real great team, and
  * that game is the one place in this mode where the player is not a spectator. Two levers,
  * both genuine reads rather than buttons that always help:
  *
@@ -5284,22 +5477,38 @@ function eraCode(franchise, season) {
  * 2007 Patriots, the 2013 Broncos) simply puts up a number you have to chase. The scout is
  * the read on which of those two problems you are holding.
  *
- * A MILESTONE EVERY FIVE SEASONS, AND THE TWO KINDS ALTERNATE. The odd multiples of five (5,
- * 15, 25) are ROSTER MANDATES: the owner names a way the team must be built, and you have the
- * offseason that follows to satisfy it. The even multiples (10, 20, 30) are BOSS GAMES, the
+ * A MILESTONE EVERY THIRD SEASON, AND THE TWO KINDS ALTERNATE. The odd multiples of three (3,
+ * 9, 15) are ROSTER MANDATES: the owner names a way the team must be built, and you have the
+ * offseason that follows to satisfy it. The even multiples (6, 12, 18) are BOSS GAMES, the
  * marquee opponent above. Each kind pays its own reward, both aimed at the mode's one squeeze,
  * the frozen cap closing on an ageing roster:
  *
- *   mandate met   (5, 15, 25)   every dead-money charge is cleared.
- *   boss beaten   (10, 20, 30)  one man is frozen at his current age and salary for good.
+ *   mandate met   (3, 9, 15)   every dead-money charge is cleared.
+ *   boss beaten   (6, 12, 18)  one man is frozen at his current age and salary for good.
  *
  * Miss either and the owner wants one more win next season, which is the existing win bar
  * doing the punishing rather than a new way to die. See effectiveWinBar in run.js.
+ *
+ * WHY THREE AND NOT FIVE, which is what this shipped as. The mode is one life: a season under
+ * the bar ends the run and there is no second chance. The simulator measured what that costs
+ * in reach, and on the cadence of five the authored content was mostly unreachable. Roughly
+ * half of runs never got to season five, so half never met a MANDATE at all. Two thirds never
+ * got to ten, so two thirds never met a BOSS, and the third that did met the same one, because
+ * the second boss is season twenty and under four percent of runs got there. Six bosses and
+ * four mandates were written and a typical run saw one thing.
+ *
+ * On a cadence of three the same reach curve pays out very differently: a mandate at three, a
+ * boss at six, and the second boss at twelve rather than twenty. The content did not change.
+ * It just moved to where the players are.
+ *
+ * There is no separate boss cadence constant. A boss is every SECOND milestone, so the boss
+ * interval is twice this number and is derived rather than stored. There used to be a
+ * DYNASTY_BOSS_EVERY = 5 here, which nothing read and which had been wrong since the day
+ * mandates were added: bosses were already ten seasons apart, not five.
  */
-const DYNASTY_BOSS_EVERY = 5;
-const DYNASTY_MILESTONE_EVERY = 5;
-/* Which kind of milestone a season is, or null in an ordinary season. Odd multiples of five
-   are mandates, even ones are bosses, which is the parity of (season / 5). */
+const DYNASTY_MILESTONE_EVERY = 3;
+/* Which kind of milestone a season is, or null in an ordinary season. Odd multiples of the
+   cadence are mandates, even ones are bosses, which is the parity of (season / cadence). */
 function dynastyMilestoneKind(seasonNo, every) {
   const step = every || DYNASTY_MILESTONE_EVERY;
   if (!seasonNo || seasonNo < step || seasonNo % step !== 0) return null;
@@ -5462,6 +5671,142 @@ function bossSimCreate(roster, chemistryMultiplier, boss, oppRow, leagueAvgAllow
 }
 
 /*
+ * ─── A FULL TEAM PLAYOFF GAME, PLAYED FORWARD ────────────────────────────────────────
+ *
+ * The same machine as the boss game: bossSimAdvance and bossSimResolve are pure over the sim
+ * object, so a sim built here is driven by them unchanged and stops at the same two real
+ * calls, fourth down and the two point try.
+ *
+ * WHAT IT CANNOT BORROW IS THE SCORING, and that is the whole reason this function exists
+ * rather than a flag on bossSimCreate. A boss sim models YOUR OFFENCE against THEIR scoring
+ * rate: `themInternal` is the opponent's own points and nothing the player drafted touches
+ * it. That is right for a boss, where the roster is six men on one side of the ball, and it
+ * throws away half of Full Team, where what the other team scores is what your six defenders
+ * allow. Run as-is it would have played the twelve man mode as a six man one and nothing
+ * would have looked wrong on screen.
+ *
+ * SO THE TWO EXPECTATIONS ARE resolveGameFull's OWN, term for term: the offence is its raw
+ * production times talent, chemistry, its own structure and the opponent's defensive
+ * modifier; the opponent's is their scoring rate suppressed by your defence through
+ * fullSuppression, and divided by the home field advantage exactly as the resolver divides
+ * it. A game played here and a game resolved there are the same team against the same
+ * opponent, so the playoff a player watches is the playoff the mode is balanced for.
+ *
+ * THE COACH COMES WITH IT AND THE PLAN COMES IN HALF.
+ *
+ * `extra` is resolveGameFull's own `{ coach, plan }`, because a hired coach plays the
+ * playoffs too and a roster that is worth more with him has to be worth more here. His two
+ * tilts land on the two raw sums, exactly where the resolver puts them.
+ *
+ * THE PLAN IS THE INTERESTING HALF, and only two of its three axes belong in these
+ * expectations:
+ *
+ *   TEMPO      carried. Nothing here models playing fast, so the multiplier is the whole of
+ *              it, the same as in the resolver.
+ *   PRESSURE   carried, on their score. Nothing here models a blitz either.
+ *   FOURTH     NOT carried, and that is the whole point of this file. In the resolver
+ *              FOURTH_MEAN IS going for it, because there are no fourth downs to play. Here
+ *              there are: the sim stops at the real ones and somebody answers. Adding the
+ *              multiplier on top would pay a team twice for the same aggression, once as a
+ *              flat bonus and once in the plays it actually ran.
+ *
+ * The two SWING terms are left out for the same reason read the other way. They widen the
+ * resolver's sampling, and this sim's spread comes from drives, turnovers and kicks rather
+ * than from one draw.
+ */
+function fullSimCreate(roster, chemistryMultiplier, oppRow, leagueAvgAllowed,
+  advantage = 1, constants = CONSTANTS, cal = null, extra = null) {
+  const { off, def } = splitSides(roster);
+  const t = constants.FULL_TALENT === undefined ? FULL_TALENT : constants.FULL_TALENT;
+  const coach = coachEffect(extra && extra.coach);
+  const plan = normalizePlan(extra && extra.plan);
+  const tempo = 1 + PLAN.TEMPO * plan.tempo;
+  const rawOff = off.reduce((s, p) => s + (p.ppr_ppg_mean || 0), 0) * t * coach.off;
+  const rawDef = def.reduce((s, p) => s + (p.ppr_ppg_mean || 0), 0) * t * coach.def;
+  const defMod = oppRow.pts_allowed_mean / leagueAvgAllowed;
+  const yourInternal = rawOff * chemOff(chemistryMultiplier)
+    * rosterStructure(off).multiplier * defMod * tempo;
+  const defenseTotal = rawDef * chemDef(chemistryMultiplier)
+    * defenseStructure(def).multiplier;
+  const themInternal = oppRow.pts_scored_mean * constants.SCALE
+    * fullSuppression(defenseTotal, constants) * tempo
+    * (1 - PLAN.PRESSURE_MEAN * plan.pressure) / (advantage || 1);
+  const youExp = bossExpectedPoints(yourInternal, cal);
+  const themExp = bossExpectedPoints(themInternal, cal);
+  const per = BOSS_SIM.DRIVES_PER_TEAM;
+  return {
+    you: 0, them: 0,
+    youExp, themExp,
+    muYou: bossFitMu(Math.max(0.3, youExp / per)),
+    muThem: bossFitMu(Math.max(0.3, themExp / per)),
+    /* The read belongs to the boss screen's scout and there is none here. Kept on the object
+       because bossSimCreate's shape is what bossSimAdvance reads, and a missing field is how
+       two sims that are meant to be one thing quietly stop being it. */
+    read: null, readRight: false, readTrap: false,
+    clock: 0, drives: [],
+    pos: null, cur: null, pending: null, over: false, won: null,
+    firstReceiver: null,
+  };
+}
+
+/*
+ * ─── WHAT THE COACH DOES WHEN THE SIM STOPS ──────────────────────────────────────────
+ *
+ * A hired coach was paid to call the game, so he answers the same two questions the player
+ * is asked: the fourth down and the two point try. This is that answer, and it takes the
+ * decision the sim handed out plus the plan the hire wrote, and NOTHING ELSE. Not the sim:
+ * everything a call needs is already on the decision, and a policy that could reach into the
+ * sim could reach the numbers the outcome is about to be drawn from.
+ *
+ * IT DRAWS NO RANDOM NUMBER, and that is the property that makes the screen honest. The
+ * page prints what he decided BEFORE bossSimResolve plays it, so a call that read the dice
+ * first would be a coach who already knew. It is also what lets a reader check him: the
+ * situation is on screen and the rule is the same every time.
+ *
+ * WHICH FOURTH DOWNS EVEN REACH HERE is bossGenuineFourth's rule, not this one: short
+ * yardage in plus territory, or any fourth down late and behind. Everything else the sim
+ * settles itself with a kick or a punt, so this is only ever asked the interesting ones and
+ * a conservative coach answering "kick" to all of them is still playing the mode.
+ *
+ * THE FOURTH DOWN AXIS IS A REACH IN YARDS, which is the plainest thing it could be and the
+ * only shape that makes the three settings visibly different on screen:
+ *
+ *   go for it   goes on 4th and 3 or less
+ *   standard    goes on 4th and 2 or less
+ *   punt it     never goes here at all
+ *
+ * The one thing every coach does is keep the ball when the clock is against him and three
+ * points cannot save the game. A man who kicks a field goal to go from seven down to four
+ * down with two minutes left has taken the loss, whatever his philosophy is.
+ *
+ * THE TWO POINT CHART IS LATE AND SHORT. `m` is the margin with the touchdown already
+ * banked and the try not yet taken, so kicking makes it m+1 and the two makes it m+2. The
+ * six numbers below are the ones where that difference changes how many scores the game is,
+ * and all six are only true once there is no time to fix it, which is why the chart is
+ * gated on the fourth quarter. Before that a point is a point. An aggressive coach also
+ * takes the two to TIE, at any point in the game, because that is the one the chart is
+ * least controversial about and it is the difference a player should be able to see.
+ */
+const TWO_POINT_CHART = [-10, -5, -2, 1, 4, 5];
+function fullCoachCall(d, plan) {
+  const p = normalizePlan(plan);
+  if (d.kind === 'two') {
+    const m = d.you - d.them;
+    if (d.quarter >= 4 && TWO_POINT_CHART.indexOf(m) >= 0) return 'two';
+    if (p.fourth === 1 && m === -2) return 'two';
+    return 'kick';
+  }
+  const behind = d.them - d.you;
+  /* Three points do not cover it and there is no time to get the ball back, so the drive is
+     the game. Above every philosophy, including a coach who never otherwise goes. */
+  if (d.quarter >= 4 && behind > 3) return 'go';
+  const reach = p.fourth === 1 ? 3 : p.fourth === 0 ? 2 : 0;
+  if (d.toGo <= reach) return 'go';
+  if (d.inFgRange) return 'fg';
+  return 'punt';
+}
+
+/*
  * THE BOSSES, IN THE ORDER A RUN MEETS THEM. Every team_season_id here exists in
  * team_seasons.json and was checked against it rather than typed from memory. `tell` is what
  * the scout shows, written to point at the counter without naming it. `weakTo` is the attack
@@ -5499,12 +5844,12 @@ const DYNASTY_BOSSES = [
     note: 'the 2019 49ers front' },
 ];
 
-/* Which boss, if any, a season faces. Only the even milestones (10, 20, 30) are bosses now;
-   the odd ones are mandates, so this is null there and dynastyChallengeFor answers instead. */
+/* Which boss, if any, a season faces. Only the even milestones (6, 12, 18) are bosses; the odd
+   ones are mandates, so this is null there and dynastyChallengeFor answers instead. */
 function dynastyBossFor(seasonNo, every) {
   const step = every || DYNASTY_MILESTONE_EVERY;
   if (dynastyMilestoneKind(seasonNo, every) !== 'boss') return null;
-  /* Boss occurrences are 10, 20, 30 ..., so the nth boss (0-based) is (season/5)/2 - 1. */
+  /* Bosses land on every second milestone, so the nth boss (0-based) is (season/step)/2 - 1. */
   const occ = (seasonNo / step) / 2 - 1;
   return { ...DYNASTY_BOSSES[occ % DYNASTY_BOSSES.length], seasonNo, reward: 'freeze' };
 }
@@ -5547,7 +5892,7 @@ const DYNASTY_CHALLENGES = [
 function dynastyChallengeFor(seasonNo, every) {
   const step = every || DYNASTY_MILESTONE_EVERY;
   if (dynastyMilestoneKind(seasonNo, every) !== 'challenge') return null;
-  /* Mandate occurrences are 5, 15, 25 ..., so the nth (0-based) is ((season/5) - 1) / 2. */
+  /* Mandates land on every other milestone, so the nth (0-based) is ((season/step) - 1) / 2. */
   const occ = ((seasonNo / step) - 1) / 2;
   return { ...DYNASTY_CHALLENGES[occ % DYNASTY_CHALLENGES.length], seasonNo, reward: 'deadwipe' };
 }
@@ -5758,14 +6103,23 @@ const publicAPI = {
   })),
   resolveGame, resolveGameDefense, defenseSuppression, defenseOverall, overallOf,
   /* FULL TEAM'S TWELVE, INTERLEAVED, and the order is the design rather than a listing.
-     The draft fills slots in this order, so alternating them is what makes the shared cap
-     felt continuously instead of discovered at pick seven: every offensive signing is
-     immediately followed by a defensive one out of the same wallet. Six then six would let
-     somebody spend $140M on an offense before the game ever mentioned a defense.
+     Alternating the sides is what makes the shared cap felt continuously instead of
+     discovered at pick seven: every offensive signing is immediately followed by a defensive
+     one out of the same wallet. Six then six would let somebody spend $140M on an offense
+     before the game ever mentioned a defense.
 
-     It also makes the pool switch fall out for free. The draft screen asks which data set
-     to spin at each pick, and with the sides interleaved that question is answered by the
-     slot rather than by counting picks. */
+     WHAT THIS LIST DOES NOT DO IS DRIVE THAT ALTERNATION, and a sentence here used to say it
+     did: that with the sides interleaved, the draft screen's question of which pool to spin
+     was answered by the slot rather than by counting picks. It is not, because THE DRAFT DOES
+     NOT FILL THESE IN ORDER. A man goes into whatever open slot fits him, so the lowest open
+     slot only moves when somebody happens to fit it: take a tight end first and he lands at
+     index 8 with index 0 still open, and the next pick is offensive again. Measured over 360
+     completed drafts, reading the side off this list alternated on NONE of them and usually
+     produced the whole offense and then the whole defense.
+
+     So the parity of these entries is the ANSWER the page checks its pick count against, and
+     never the thing it reads the current side from. That is fullPickIsDefensive() in the
+     page, whose header carries the measurement. */
   FULL_SLOTS: ['QB', 'DL', 'RB', 'DL', 'WR', 'LB', 'WR', 'DB', 'TE', 'DB', 'FLEX', 'FLEX'],
   resolveGameFull, splitSides,
   /* FLEX IS AMBIGUOUS IN THIS MODE AND IN NEITHER OF THE OTHER TWO, which is why this
@@ -5788,18 +6142,21 @@ const publicAPI = {
     ['RB', 'WR', 'TE'], ['DL', 'LB', 'DB'],
   ],
   /* The Three Year Deal. Nothing in the live game reaches these yet. */
-  DYNASTY_MAX_SEASONS, DYNASTY_CAP_GROWTH, DYNASTY_CONTINUITY_PER_YEAR,
+  DYNASTY_CAP_GROWTH, DYNASTY_CONTINUITY_PER_YEAR,
   dynastyWinBar, dynastySurvives, DYNASTY_BASE_WINS, DYNASTY_STEP_SEASONS,
-  DYNASTY_BOSS_EVERY, DYNASTY_MILESTONE_EVERY, DYNASTY_BOSSES, DYNASTY_CHALLENGES,
+  DYNASTY_WIN_BAR_MAX,
+  DYNASTY_MILESTONE_EVERY, DYNASTY_BOSSES, DYNASTY_CHALLENGES,
   BOSS_READ_EDGE, BOSS_SIM,
   dynastyMilestoneKind, dynastyBossFor, dynastyBossReward,
   dynastyChallengeFor, dynastyChallengeProgress,
   bossExpectedPoints, bossSimCreate, bossSimAdvance, bossSimResolve, bossClock,
+  fullSimCreate, fullCoachCall,
   DYNASTY_POINTS, dynastySeasonScore, dynastyRunScore,
   dynastySalary, dynastyAge, dynastyGoneFor, dynastyContinuity,
   DYNASTY_DEAD_SHARE, DYNASTY_DEAD_SEASONS, DYNASTY_DEAD_CEILING, dynastyDead,
   /* Measured, not chosen. See the sweep in simulator.js --fullteam. */
   FULL_CAP_MUSD: FULL_CAP_MUSD, FULL_TALENT: FULL_TALENT,
+  fullSuppression, fullTeamScale,
   fullStrength, fullOverall, fullParts, fullSideRatings,
   coachTable, coachPrice, coachEffect, coachLinks, COACH_MIN_SEASONS,
   PLAN, PLAN_AXES, normalizePlan, planFromCoach,

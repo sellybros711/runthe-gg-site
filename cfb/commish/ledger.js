@@ -30,6 +30,30 @@
 (function () {
   'use strict';
 
+  /* THE ONE THING THIS FILE LEANS ON, and it leans softly. frontier.js holds what a permanent
+     enlargement of the sport IS; the ledger only needs to be able to perform one when an edit
+     asks. Resolved both ways because this file is loaded as a script tag in the page and as a
+     require in every headless suite, and OPTIONAL because the ledger has to stay usable on
+     its own: every probe and half the tests build a world with nothing else loaded, and none
+     of them open a frontier. An edit that DOES ask for one without it throws by name, which
+     is a missing script tag reported as a missing script tag rather than as a ruling that
+     quietly did nothing.
+
+     RESOLVED AT THE CALL, NOT AT LOAD. Reading window here would make the order of two script
+     tags decide whether frontiers work at all, and it would decide it silently: ledger.js
+     before frontier.js and this is null for the life of the page, with the failure arriving
+     years into somebody's term. Nothing calls it before a ruling, so late is free. */
+  let FRONTIER_CACHE = null;
+  function frontier() {
+    if (FRONTIER_CACHE) return FRONTIER_CACHE;
+    if (typeof window !== 'undefined' && window.PS_CFB_COMMISH_FRONTIER) {
+      FRONTIER_CACHE = window.PS_CFB_COMMISH_FRONTIER;
+    } else if (typeof module !== 'undefined' && module.exports) {
+      try { FRONTIER_CACHE = require('./frontier.js'); } catch (e) { FRONTIER_CACHE = null; }
+    }
+    return FRONTIER_CACHE;
+  }
+
   /* ---------------- the axes ----------------
      WHAT A RULING IS MADE OF, and the reason nine blocs do not need nine hand-written
      reactions per docket item. A ruling emits a push along these eight axes; a bloc holds
@@ -234,6 +258,24 @@
          been through this" is a thing several items want to know. */
       resolved: [],
 
+      /* THE PARTS OF THE SPORT THAT DID NOT EXIST WHEN YOU TOOK THE JOB.
+         A thread above is a consequence with a date on it: it ripens, it is ruled on, it is
+         cut, and the world is the same shape afterwards. That is right for a lawsuit and
+         wrong for a lifetime. Fifty seasons measured (probe_longrun.mjs) move 38.6 of the
+         sixty-three fields in this file by year 25 and then 0.6 more in the next twenty-five,
+         because there is nothing left to move: the sport cannot become something it was not
+         on the day you arrived.
+
+         A frontier is the other kind of change. Crossing one seats a bloc, grafts new fields
+         onto this world, and opens docket items that could not have existed before, and none
+         of it unwinds. See frontier.js, which holds what they are and what each one costs.
+
+         EMPTY IS THE HONEST OPENING VALUE, and it is also what every save written before this
+         existed has. `has()` there tolerates the missing key rather than requiring a
+         migration, because the save most likely to be missing it is the forty season dynasty
+         that must not break on the next load. */
+      frontier: {},
+
       /* 0..100, all three. Revenue is what the sport makes, health is whether it is still
          worth watching, standing is whether the room still wants you. */
       meters: { revenue: 55, health: 62, standing: 60 },
@@ -306,8 +348,19 @@
      Returns a NEW world. A caller previewing a ruling and a caller committing one run the
      same code, which is the only way a preview can be trusted to be true. */
   function applyEdit(world, edit) {
-    const next = JSON.parse(JSON.stringify(world));
+    let next = JSON.parse(JSON.stringify(world));
     const e = edit || {};
+
+    /* A FRONTIER IS CROSSED BEFORE ANYTHING IS WRITTEN, and the order is the whole of it.
+       Crossing grafts the new fields onto the world, and the same ruling is usually the one
+       that sets them: "recognise the union, and here is the first agreement" is one decision,
+       so `opens` and `set` arrive together. Run the other way round, the set throws on a path
+       that is one line from existing. See frontier.js. */
+    if (e.opens) {
+      const F = frontier();
+      if (!F) throw new Error('ledger: frontier.js is not loaded, cannot open "' + e.opens + '"');
+      next = F.cross(next, e.opens);
+    }
 
     for (const path in e.set || {}) {
       /* THE GUARD. A path the world does not have is a ruling that does nothing, and a
@@ -338,6 +391,12 @@
     next.history.push({
       year: next.year, beat: next.beat,
       id: e.id || null, label: e.label || null,
+      /* THE NOTE, KEPT. The desk has said for a while that a note you attach "is kept on
+         the record with it", and it was not: the note rode the edit to this line and was
+         dropped here, so the one thing the paid tier wrote in its own words evaporated on
+         the next repaint. Clamped, because the record is a save file and a save file is not
+         a diary. */
+      note: e.written ? String(e.written).slice(0, 280) : null,
       effects: Object.assign({}, e.effects || {}),
     });
     return next;

@@ -220,7 +220,7 @@
       head: 'Two states passed conflicting laws about it',
       body: function (ctx) {
         return 'One legislature has made your ruling mandatory within its borders. Another has '
-          + 'made it illegal. Both bills were written in a two weeks, both passed nearly '
+          + 'made it illegal. Both bills were written in two weeks, both passed nearly '
           + 'unanimously, and ' + conf(ctx) + ' has member institutions in both states. The '
           + 'lawyers have asked for a meeting and used the word "unprecedented" twice in one '
           + 'email.';
@@ -717,16 +717,32 @@
   /* FOLD IT INTO THE RULING before the room answers, so the meters on the reaction screen are
      the meters including this. Two edits applied in sequence would deal the room two answers
      to one decision and print two sets of numbers for one press of a button. */
+  /* EVERYTHING THE RULING WAS, PLUS WHAT HAPPENED NEXT. The starting point is a copy of the
+     WHOLE edit rather than a list of the keys worth keeping, and that is a bug fix rather
+     than tidying.
+
+     THE LIST WAS AN ALLOWLIST AND IT SILENTLY DROPPED ANYTHING NEW. It named id, label, set,
+     move, effects and aimed, so a key added to an edit later was deleted by this function on
+     exactly the rulings a tail happened to fire on. `written` had already been bolted back on
+     at the bottom for that reason, which was the warning nobody read.
+
+     WHAT IT COST. `opens` is how one option on the ladder enlarges the sport, and the same
+     ruling usually writes the fields the crossing grafts. Drop `opens` and applyEdit no longer
+     crosses, so it is asked to write a field that does not exist, and it throws by design
+     ("an unknown field is an error, loudly"). The throw lands in the middle of the ruling
+     handler: the ledger is not written, the screen stays on the desk, and the button a player
+     just pressed does nothing at all, for ever. It fires only when a tail rolls, which is
+     some rulings and not others, so it reads as the mode randomly dying.
+
+     Every field a tail contributes is still merged over the top below. */
   function merge(edit, tail) {
     if (!tail) return edit;
-    var out = {
-      id: edit.id, label: edit.label,
-      set: Object.assign({}, edit.set || {}),
-      move: Object.assign({}, edit.move || {}),
-      effects: Object.assign({}, edit.effects || {}),
-      aimed: {},
-      tail: tail.id,
-    };
+    var out = Object.assign({}, edit);
+    out.set = Object.assign({}, edit.set || {});
+    out.move = Object.assign({}, edit.move || {});
+    out.effects = Object.assign({}, edit.effects || {});
+    out.aimed = {};
+    out.tail = tail.id;
     for (var b in edit.aimed || {}) out.aimed[b] = Object.assign({}, edit.aimed[b]);
     for (var a in tail.effects) out.effects[a] = (out.effects[a] || 0) + tail.effects[a];
     for (var bl in tail.aimed) {

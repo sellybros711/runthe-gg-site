@@ -48,7 +48,7 @@ const PANTS=[
   {id:'wine', a:'#7a2440', b:'#611c33'},
   {id:'gold', a:'#d4af37', b:'#b4922c'},
   {id:'royalpurple',a:'#5d2ea6', b:'#4a2487'},
-  {id:'rtgnavy',a:'#173a63', b:'#0d2b4a'},   // Run The Games kit — house navy trousers
+  {id:'rtgnavy',a:'#173a63', b:'#0d2b4a'},   // Run The Games kit: house navy trousers
 ];
 const SHOES=[
   {id:'white',a:'#eef0ee'},

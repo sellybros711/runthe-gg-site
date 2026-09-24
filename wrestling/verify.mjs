@@ -99,7 +99,14 @@ const fresh = async (url)=>{
   const page = await browser.newPage({viewport:{width:1200,height:900}});
   const errs = [];
   page.on('pageerror', e=>errs.push(String(e)));
-  page.on('console', m=>{ if(m.type()==='error' && !/ERR_CONNECTION|favicon/.test(m.text())) errs.push('console: '+m.text()); });
+  /* The page pulls its display face from fonts.googleapis.com. A sandbox with no
+     route out, or one whose proxy CA chromium does not trust, fails that request
+     and every section that watches the console then reports a game error for a
+     webfont. The game does not need the font to work and the suite does not test
+     typography, so a failed EXTERNAL asset is not a finding. Anything from the
+     page's own origin still counts. */
+  const NOT_OURS=/ERR_CONNECTION|ERR_CERT|ERR_PROXY|ERR_NAME_NOT_RESOLVED|favicon|fonts\.googleapis\.com|fonts\.gstatic\.com/;
+  page.on('console', m=>{ if(m.type()==='error' && !NOT_OURS.test(m.text())) errs.push('console: '+m.text()); });
   await page.goto(url, {waitUntil:'domcontentloaded'});
   await page.waitForTimeout(600);
   await page.evaluate(()=>{ try{ localStorage.clear(); }catch(_){} });
@@ -159,6 +166,29 @@ section('pages load');
   if(errs.length) bad('booking sim: '+errs.slice(0,3).join(' | '));
   else if(!r || r.week!==2 || !r.grade) bad('booking sim did not run a show: '+JSON.stringify(r));
   else ok(`booking sim starts a career (${r.promos} promotions, ${r.roster} on the roster, ${r.pool} in the pool) and runs a show (grade ${r.grade}, ${r.title})`);
+  await page.close();
+}
+/* The booking sim follows the career page's graphics setting. It has no toggle
+   of its own, so the only way it can drift is by forgetting to read the key,
+   and what that looks like is the pixel game's terminal face on one page of a
+   game that is smooth on the other. Asked of the face actually applied, in
+   both styles, because a rule that is present and loses the cascade renders
+   exactly like a rule that is missing. */
+{
+  const {page, errs} = await fresh(URL+'/wrestling/booking/');
+  const face = async (mode)=>{
+    await page.evaluate(m=>{ try{ localStorage.setItem('rtr_gfx', m); }catch(_){} }, mode);
+    await page.reload({waitUntil:'domcontentloaded'}); await page.waitForTimeout(300);
+    return page.evaluate(()=>{ const s=document.createElement('span'); s.className='mono'; s.textContent='0-0';
+      document.body.appendChild(s); const f=getComputedStyle(s).fontFamily; s.remove();
+      return {f, retro:document.documentElement.classList.contains('gfx-retro')}; });
+  };
+  const sm=await face('smooth'), rt=await face('retro');
+  if(errs.length) bad('booking styles: '+errs.slice(0,2).join(' | '));
+  (/Barlow/.test(sm.f) && !sm.retro) ? ok('the booking sim speaks in the body face under Smooth')
+    : bad(`the booking sim kept the terminal face under Smooth: ${JSON.stringify(sm)}`);
+  (/monospace/.test(rt.f) && rt.retro) ? ok('and keeps the monospace under Retro, the same setting as the career page')
+    : bad(`the booking sim ignored Retro: ${JSON.stringify(rt)}`);
   await page.close();
 }
 
@@ -534,7 +564,18 @@ section('every stipulation plays out live, and looks like its finish');
     // only in the pool during the finish stretch, so the win is pinned to be
     // sure the player gets a turn there
     {stip:'singles', force:'tell',     want:['pin','sub'],        beats:['tell'], known:true, mustWin:true},
+    // items 8 to 11 of the ranked backlog
+    {stip:'singles', force:'ropebreak',want:['pin','sub','count'],beats:['ropebreak'], mustWin:true},
+    {stip:'singles', force:'limb',     want:['pin','sub','count'],beats:['limb'], hurtLimb:true},
+    {stip:'singles', force:'double',   want:['nc'],               beats:['double','wide','ten'], badBlood:true},
     {stip:'tag',     force:'tagturn',  want:['pin'],              beats:['extra'], team:true, disloyal:true},
+    // item 12: the third body. Four separate things have to work, so there are
+    // four cases: he swaps in, he kills a count, he steals your finish, and he
+    // beats somebody else while you are on the floor watching.
+    {stip:'triple',  force:'swap',      want:['pin','sub'],        beats:['extra','swap'],       triple:true},
+    {stip:'triple',  force:'breakup',   want:['pin','sub'],        beats:['breakup'],            triple:true, mustWin:true},
+    {stip:'triple',  force:'steal',     want:['pin'],              beats:['steal'],              triple:true, mustWin:true},
+    {stip:'triple',  force:'stealchance',want:['pin'],             beats:['stealchance'],        triple:true},
   ];
   for(const cs of CASES){
     const {page, errs} = await fresh(URL+'/wrestling/');
@@ -559,6 +600,8 @@ section('every stipulation plays out live, and looks like its finish');
         if(cs.team){ G.car.allies=[]; formAlliance(mate.id); formTeam(mate.id,'Test Team');
           if(cs.disloyal) allyOf(mate.id).loyalty=5; }        // a partner with nothing left to lose
         if(cs.respect){ const R=rel(opp.id); R.respect=70; R.heat=5; }
+        if(cs.badBlood){ const R=rel(opp.id); R.heat=80; }        // a double count-out needs a reason
+        if(cs.hurtLimb) window.RTR_LIMB=true;                     // a knee already past the point of holding
         if(cs.known){ G.car.finHits=9;                         // the finisher is known, so it gets a tell
           if(!G.w.moves.includes('s5a')) G.w.moves.push('s5a');
           G.w.finisher='s5a';                                  // a rookie has no tier-5 move to hit
@@ -568,6 +611,8 @@ section('every stipulation plays out live, and looks like its finish');
         const o={oppId:opp.id, oppName:opp.name, oppOvr:ovr(G.w)+(cs.mustWin?-25:2), stip:cs.stip, stipLabel:label, mult:1.2, purse:600,
                  stakes:cs.defense?'defense':'standard', card:'Main Event', tag:cs.stip==='tag'};
         if(cs.defense){ G.car.title=beltName(); G.car.reigns=(G.car.reigns||[]).concat([{title:G.car.title, year:G.car.year, week:1}]); o.belt=G.car.title; G.car.standing=30; }
+        if(cs.triple){ const t3=roster[3]||rival;                 // a third body, not the opponent
+          o.third={id:t3.id, name:t3.name, nick:t3.nick, ovr:(ovr(G.w)+2)}; }
         if(cs.stip==='rumble'){
           const ent=roster.slice(0,7).map(x=>({id:x.id,name:x.name,ovr:x.over||55})).concat([{id:'you',name:G.w.name,ovr:ovr(G.w),you:true}]);
           o.stakes='rumble'; o.rumble={entrants:ent};
@@ -591,7 +636,7 @@ section('every stipulation plays out live, and looks like its finish');
         out.extraOn=document.getElementById('fExtra').classList.contains('on');
         out.errs=errsIn;
         const rl=STIP_RULES[cs.stip]||{}; out.noCount=!!rl.noCount; out.noDQ=!!rl.noDQ;
-        window.RTR_FORCE=null; window.RTR_AUTO=null; window.RTR_WIN=null; FIGHT_SPEED=1;
+        window.RTR_FORCE=null; window.RTR_AUTO=null; window.RTR_WIN=null; window.RTR_LIMB=null; FIGHT_SPEED=1;
         return out;
       }, cs);
     }catch(e){ r={done:false, err:e.message}; }
@@ -716,6 +761,245 @@ section('the pass, the streak and the daily objectives');
     : bad('daily objectives did not pay out: '+JSON.stringify({done:r.dailyAllDone,paid:r.dailyPaid,bonus:r.dailyBonus}));
   await page.close();
 }
+/* ---------- 4k. a scene that promises a consequence has to deliver it ----------
+   The shoulder dilemma said "You sit it out. It costs you the night", took the
+   standing hit, and then the match ran anyway: the option wrote prose about a
+   consequence the code never applied. That is a CLASS of bug, not one scene, so
+   this is a lint over every outcome in the deck plus a behavioural check that
+   the effect it needs actually clears the booking. */
+section('a scene that says you are not going out takes you off the card');
+{
+  const {page, errs} = await fresh(URL+'/wrestling/');
+  await page.evaluate(()=>{ quickStart(); });
+  await page.waitForTimeout(800);
+  const r = await page.evaluate(()=>{
+    try{ endTour(); closeModal(); }catch(_){}
+    const out={liars:[], pulled:null, started:null};
+    // any outcome whose prose says you did not work that night
+    const SITS=/\b(sit it out|sat it out|sits it out|cannot go|could not go|not going out|pulled? (yourself )?out|off the card|miss(ed)? the show|somebody else (works|worked) your spot)\b/i;
+    // Many scenes build their options around a cast member and throw without
+    // one, so each is attempted on its own and the skipped count is reported
+    // rather than swallowed: a lint that silently covers nothing is worse than
+    // no lint at all.
+    out.scanned=0; out.skipped=[];
+    // sceneCtx() leaves the cast slots null, and most scenes reach straight
+    // into them, so fill them with real roster members: the lint should cover
+    // the whole deck rather than only the cast-free dilemmas.
+    const _r=houseRoster(myPromoId());
+    const x=sceneCtx(); x.a=_r[0]||null; x.b=_r[1]||null;
+    SCENES.forEach(s=>{
+      const b=s.beats&&s.beats.start; if(!b) return;
+      let opts=null;
+      try{ opts=(typeof b.opts==='function'?b.opts(x):b.opts)||[]; }
+      catch(_e){ out.skipped.push(s.id); return; }
+      out.scanned++;
+      opts.forEach(o=>{
+        (o.outcomes||[]).forEach(oc=>{
+          let t=''; try{ t=String((typeof oc.text==='function')?oc.text(x):oc.text||''); }catch(_e){ return; }
+          if(SITS.test(t) && !(oc.eff&&oc.eff.pullOut)) out.liars.push(s.id+': '+t.slice(0,70));
+        });
+      });
+    });
+    // and the effect does what it says: a booked match becomes an off night,
+    // and the walk to gorilla does not start a fight
+    const roster=houseRoster(myPromoId()), opp=roster[0];
+    G.car.booking={type:'match', o:{oppId:opp.id, oppName:opp.name, oppOvr:40, stip:'singles',
+      stipLabel:'Singles Match', mult:1, purse:400, stakes:'standard', card:'Opener'}};
+    applySceneEffect({pullOut:'test'}, sceneCtx());
+    out.pulled = !!(G.car.booking && G.car.booking.pulled && G.car.booking.type==='dark');
+    let started=false; const realStart=window.startFight;
+    window.startFight=function(){ started=true; };
+    try{ goBooking(); }catch(_){}
+    window.startFight=realStart;
+    out.started=started;
+    return out;
+  });
+  if(errs.length) bad('scene promises: page errors: '+errs.slice(0,2).join(' | '));
+  r.liars.length ? bad(`${r.liars.length} outcome(s) say you sat out without taking you off the card:\n       `+r.liars.join('\n       '))
+                 : ok(`every outcome that says you sat out actually pulls you from the card (${r.scanned} scenes scanned, ${r.skipped.length} need a cast and were skipped)`);
+  r.pulled ? ok('pullOut turns a booked match into an off night') : bad('pullOut left the match on the card');
+  r.started===false ? ok('and the walk to gorilla does not start a fight after it')
+                    : bad('the walk to gorilla started the match anyway after a pull-out');
+  await page.close();
+}
+
+/* ---------- 4l. every championship is its own object ----------
+   A belt was a string, so all of them looked identical everywhere they were
+   shown. Each now carries a plate shape, a metal, a stone and a strap. The
+   point is that they are TELLABLE APART, so the check is that no two share all
+   four, not merely that each has a design. */
+section('every belt has its own design, and no two are the same');
+{
+  const {page, errs} = await fresh(URL+'/wrestling/');
+  await page.evaluate(()=>{ quickStart(); });
+  await page.waitForTimeout(800);
+  const r = await page.evaluate(()=>{
+    try{ endTour(); closeModal(); }catch(_){}
+    const out={missing:[], dupes:[], carries:{}, names:0};
+    const idx=beltArtIndex();
+    const seen={};
+    Object.keys(BELT_CONFIG).forEach(pid=>{
+      const b=BELT_CONFIG[pid]||{};
+      ['world','secondary','tag'].forEach(kind=>{
+        if(!b[kind]) return;
+        out.names++;
+        const art=idx[b[kind]];
+        if(!art || art===BELT_ART_DEFAULT) out.missing.push(pid+':'+kind+' ('+b[kind]+')');
+        if(!art) return;
+        const key=[art.shape,art.metal,art.gem,art.strap].join('|');
+        if(seen[key]) out.dupes.push(b[kind]+' looks identical to '+seen[key]);
+        seen[key]=b[kind];
+      });
+    });
+    // and each way of carrying it actually draws something on the figure
+    const art=beltArtFor(Object.keys(idx)[0]);
+    ['waist','shoulder','hand'].forEach(cr=>{
+      const bare=wrestlerSVG(DEFLOOK,{pose:'ready'});
+      const worn=wrestlerSVG(DEFLOOK,{pose:'ready',belt:{art,carry:cr}});
+      out.carries[cr]=worn.length-bare.length;
+    });
+    // the standalone icon renders for every belt without throwing
+    out.icons=0;
+    try{ Object.keys(idx).forEach(n=>{ if(beltSVG(beltArtFor(n),30).indexOf('<svg')===0) out.icons++; }); }
+    catch(e){ out.iconErr=String(e); }
+    return out;
+  });
+  if(errs.length) bad('belts: page errors: '+errs.slice(0,2).join(' | '));
+  r.missing.length ? bad(`${r.missing.length} belt(s) fall back to the default design: `+r.missing.join(', '))
+                   : ok(`all ${r.names} belts carry their own design`);
+  r.dupes.length ? bad(`${r.dupes.length} belt(s) cannot be told apart:\n       `+r.dupes.join('\n       '))
+                 : ok('no two belts share a shape, metal, stone and strap');
+  const thin=Object.keys(r.carries).filter(k=>r.carries[k]<200);
+  thin.length ? bad('these ways of carrying it draw next to nothing: '+thin.map(k=>k+' (+'+r.carries[k]+' chars)').join(', '))
+              : ok(`all three carries draw on the figure: ${Object.keys(r.carries).map(k=>k+' +'+r.carries[k]).join(' · ')}`);
+  r.iconErr ? bad('the belt icon threw: '+r.iconErr)
+            : (r.icons===r.names ? ok(`the standalone icon renders for all ${r.icons}`) : bad(`the icon rendered for ${r.icons} of ${r.names}`));
+  await page.close();
+}
+
+/* ---------- 4m. the announcers cover the whole match ----------
+   The commentary banks were keyed by hand against the move categories and the
+   phase list, and the two had drifted: `suplex` and `showman` are two of the
+   eight move families and had no bank, so a third of the move list was silent,
+   while `brawl` was a bank nothing ever called. The phase side was worse. The
+   COMEBACK had no lines, which is the one stretch of a wrestling match the
+   announcers exist for. Nothing failed, because a missing bank returns early.
+   This asserts the keys MATCH, rather than that they are non-empty. */
+section('the announcers have a line for every move family and every phase');
+{
+  const {page, errs} = await fresh(URL+'/wrestling/');
+  await page.evaluate(()=>{ quickStart(); });
+  await page.waitForTimeout(800);
+  const r = await page.evaluate(()=>{
+    try{ endTour(); closeModal(); }catch(_){}
+    const cats=MCATS.map(c=>c.id), phases=PHASES.map(p=>p.id);
+    const out={
+      missingCat: cats.filter(c=>!(COLOR_LINES[c]||[]).length),
+      deadCat:    Object.keys(COLOR_LINES).filter(k=>cats.indexOf(k)<0),
+      missingPhase: phases.filter(p=>!(COLOR_PHASE[p]||[]).length),
+      deadPhase:  Object.keys(COLOR_PHASE).filter(k=>phases.indexOf(k)<0),
+      thin: [].concat(
+        cats.filter(c=>(COLOR_LINES[c]||[]).length<5).map(c=>'move '+c),
+        phases.filter(p=>(COLOR_PHASE[p]||[]).length<4).map(p=>'phase '+p)),
+      cats:cats.length, phases:phases.length,
+    };
+    /* And it does not repeat itself inside one match. commLine appends to #fLog
+       directly rather than going through fLog(), so read the DOM: stubbing the
+       logger captured nothing and the check passed on zero draws, which is the
+       shape of test that proves nothing. */
+    COMM_SAID={};
+    G.prefs=Object.assign(G.prefs||{},{commentary:true});
+    const log=document.getElementById('fLog'); log.innerHTML='';
+    const n=(COLOR_LINES.strike||[]).length;
+    for(let i=0;i<n;i++) commLine('strike', null);
+    const got=[...log.children].map(d=>d.textContent.trim()).filter(Boolean);
+    const seen={}; let dupeBefore=0;
+    got.forEach(t=>{ if(seen[t]) dupeBefore++; seen[t]=1; });
+    out.strikeDraws=got.length; out.strikeUnique=Object.keys(seen).length; out.dupes=dupeBefore;
+    out.bankSize=n;
+    return out;
+  });
+  if(errs.length) bad('commentary: page errors: '+errs.slice(0,2).join(' | '));
+  r.missingCat.length ? bad(`${r.missingCat.length} move categor(ies) have no commentary: `+r.missingCat.join(', '))
+                      : ok(`all ${r.cats} move categories have commentary`);
+  r.deadCat.length ? bad('commentary banks nothing calls: '+r.deadCat.join(', '))
+                   : ok('no dead move-commentary banks');
+  r.missingPhase.length ? bad(`${r.missingPhase.length} phase(s) have no commentary: `+r.missingPhase.join(', '))
+                        : ok(`all ${r.phases} match phases have commentary`);
+  r.deadPhase.length ? bad('phase banks nothing calls: '+r.deadPhase.join(', '))
+                     : ok('no dead phase-commentary banks');
+  r.thin.length ? bad('banks too shallow to avoid repeating in one match: '+r.thin.join(', '))
+                : ok('every bank is deep enough for a full match');
+  (r.strikeDraws===r.bankSize && r.dupes===0)
+    ? ok(`${r.strikeDraws} draws from a bank of ${r.bankSize} gave ${r.strikeUnique} different lines, no repeats`)
+    : bad(`commentary repeated itself ${r.dupes} time(s) in ${r.strikeDraws} draws from a bank of ${r.bankSize}`);
+  await page.close();
+}
+
+/* ---------- 4n. the generated text is deep enough not to repeat ----------
+   Depth is the thing a player feels and the thing nothing else measures. A
+   bank that is technically present but three lines deep reads as one line by
+   the tenth match. These are floors, not targets: they are set below where the
+   pools actually sit, so ordinary authoring never trips them and DELETING
+   content does. */
+section('the generated text is deep enough not to repeat');
+{
+  const {page, errs} = await fresh(URL+'/wrestling/');
+  await page.evaluate(()=>{ quickStart(); });
+  await page.waitForTimeout(800);
+  const r = await page.evaluate(()=>{
+    try{ endTour(); closeModal(); }catch(_){}
+    const out={thin:[], sizes:{}};
+    const need=(label, n, floor)=>{ out.sizes[label]=n; if(n<floor) out.thin.push(`${label}: ${n}, floor ${floor}`); };
+
+    MCATS.forEach(c=>need('commentary '+c.id, (COLOR_LINES[c.id]||[]).length, 10));
+    PHASES.forEach(p=>need('phase '+p.id, (COLOR_PHASE[p.id]||[]).length, 8));
+    need('mid-match exchanges', MID_EXCHANGES.length, 8);
+    need('backstage segments', SEGMENT_LIB.length, 11);
+    Object.keys(SAY_BANK).forEach(v=>{
+      need('voice '+v+' win',  (SAY_BANK[v].win||[]).length, 6);
+      need('voice '+v+' lose', (SAY_BANK[v].lose||[]).length, 6);
+    });
+    Object.keys(OPP_MOVES_BY_STYLE).forEach(k=>need('opp moves '+k, OPP_MOVES_BY_STYLE[k].length, 16));
+    need('opp moves base', OPP_MOVES_BASE.length, 12);
+
+    // a dilemma is the only scene that ROLLS rather than paying out, so it is
+    // the one worth having most of
+    need('dilemmas', SCENES.filter(x=>/^dil_/.test(x.id)).length, 7);
+    // and the cuts that every feud walks through need more than one wording
+    const cc={ me:G.w, opp:{name:'Rival',nick:'X',id:'x'}, hist:{count:3,wins:2,losses:1,best:{q:72}},
+               feud:{kind:'grudge',weeks:2}, events:{}, venue:{promoShort:'GCW'},
+               champion:{name:'Somebody',you:false}, weekCount:1 };
+    let multi=0;
+    CUT_BANK.forEach(k=>{ let o=null; try{ o=k.line(cc); }catch(_){ return; }
+      if(Array.isArray(o) && o.length>1) multi++; });
+    need('cuts with more than one wording', multi, 14);
+
+    // every wrestler on the roster can say more than one thing per situation
+    const roster=houseRoster(myPromoId());
+    let worst=99, worstWho='';
+    roster.forEach(ch=>{ ['win','lose','taunt','respect'].forEach(k=>{
+      const n=(((ch.lines||{})[k]||[]).length) + (((SAY_BANK[voiceOf(ch)]||{})[k]||[]).length);
+      if(n<worst){ worst=n; worstWho=ch.name+' '+k; } }); });
+    out.worstChar=worst; out.worstWho=worstWho;
+
+    // and saysLine does not hand back the same sentence twice in a row
+    const ch=roster[0]; SAY_SAID={};
+    const got=[]; for(let i=0;i<6;i++) got.push(saysLine(ch,'win',''));
+    out.sayDupes = got.length - new Set(got).size;
+    out.sayDraws = got.length;
+    return out;
+  });
+  if(errs.length) bad('depth: page errors: '+errs.slice(0,2).join(' | '));
+  r.thin.length ? bad(`${r.thin.length} pool(s) below the floor:\n       `+r.thin.join('\n       '))
+                : ok(`every generated pool is above its floor (${Object.keys(r.sizes).length} checked)`);
+  r.worstChar>=5 ? ok(`the thinnest wrestler-and-situation on the roster has ${r.worstChar} lines (${r.worstWho})`)
+                 : bad(`${r.worstWho} has only ${r.worstChar} line(s) to say`);
+  r.sayDupes===0 ? ok(`${r.sayDraws} things said by one opponent, none of them twice`)
+                 : bad(`an opponent repeated itself ${r.sayDupes} time(s) in ${r.sayDraws}`);
+  await page.close();
+}
+
 section('dilemmas roll, bite, and come back later');
 {
   const {page, errs} = await fresh(URL+'/wrestling/');
@@ -775,6 +1059,224 @@ section('dilemmas roll, bite, and come back later');
   (r.fxBites&&r.fxExpires&&r.fxGone) ? ok('a temporary effect moves the real OVR and expires on schedule') : bad('fx wrong: '+JSON.stringify({bites:r.fxBites,expires:r.fxExpires,gone:r.fxGone}));
   (r.arcPending&&r.arcDue&&r.arcWins&&r.arcSpent) ? ok('a seeded arc comes due weeks later, outranks the ordinary deck, and is spent once played')
     : bad('arc wrong: '+JSON.stringify({pending:r.arcPending,due:r.arcDue,wins:r.arcWins,spent:r.arcSpent}));
+  await page.close();
+}
+
+/* ---------- 4o. a stipulation only speaks its own language ----------
+   A near-fall is a two count. Every stipulation counts the same drama into
+   MS.nearFalls, so the NUMBER is right everywhere and only the WORD can be
+   wrong, and it was: a ladder match logged "near-falls" off the shared phase
+   banner and a belt shot played the whole 1-2-3 under a result reading
+   "pulled down the prize". commitFinish rewrites an illegal finish TYPE, so
+   none of that ever produced a wrong result, which is exactly why nothing
+   reported it. This reads the WORDS, off the same strings a player sees. */
+section('a stipulation only speaks its own language');
+{
+  const {page, errs} = await fresh(URL+'/wrestling/');
+  await page.evaluate(()=>{ quickStart(); });
+  await page.waitForTimeout(800);
+  const r = await page.evaluate(()=>{
+    try{ endTour(); closeModal(); }catch(_){}
+    const out={vocab:[], control:null, noun:{}};
+    const o=(stip)=>({oppName:'Rival', stip, stipLabel:(STIP_RULES[stip]||{}).label||stip,
+                      stakes:'standard', oppOvr:50});
+    // the noun itself, per stipulation, for 0, 1 and 3
+    ['singles','ladder','sub','lms'].forEach(st=>{
+      out.noun[st]=[0,1,3].map(n=>fallNoun(o(st),n));
+    });
+    // no stipulation that is not decided by a fall may use pin vocabulary in
+    // the two places every match writes: the closing log line and the recap
+    const PIN=/near-?fall|time of the fall/i;
+    Object.keys(STIP_RULES).forEach(st=>{
+      const rl=STIP_RULES[st]; if(rl.ends.includes('pin')) return;
+      const ob=o(st);
+      const said=[ timeLabel(ob), fallNoun(ob,3),
+                   matchStory(ob,{quality:70,win:true,finish:{type:rl.ends[0],by:true},
+                                  nearFalls:4,used:[],time:'10:00'}) ].join(' ~ ');
+      if(PIN.test(said)) out.vocab.push({stip:st, said:(said.match(PIN)||[''])[0]});
+    });
+    // and a stipulation that IS decided by a fall must still say it, or this
+    // check would pass just as well on a game that says nothing at all
+    const sg=o('singles');
+    out.control=[ timeLabel(sg), fallNoun(sg,3) ].join(' ~ ');
+    return out;
+  });
+  if(errs.length) bad('stipulation language page errors: '+errs.slice(0,2).join(' | '));
+  r.vocab.length
+    ? r.vocab.forEach(v=>bad(`${v.stip} uses pin vocabulary: "${v.said}"`))
+    : ok('no stipulation decided by anything but a fall uses pin vocabulary');
+  /near-fall/.test(r.control) && /Time of the fall/.test(r.control)
+    ? ok(`a pin stipulation still says it: ${r.control}`)
+    : bad(`the control lost its own vocabulary: ${r.control}`);
+  const L=r.noun.ladder, S=r.noun.sub, P=r.noun.singles;
+  (P[0]==='0 near-falls' && P[1]==='1 near-fall' && P[2]==='3 near-falls')
+    ? ok(`pin: ${P.join(' / ')}`) : bad(`pin nouns wrong: ${P.join(' / ')}`);
+  (L[2]==='3 close calls' && S[2]==='3 escapes')
+    ? ok(`climb: ${L[2]} · submission: ${S[2]}`) : bad(`nouns wrong: ${L[2]} / ${S[2]}`);
+}
+
+/* ---------- 4p. the body heals, and old damage stops compounding ----------
+   The late career was a spiral: wear only ever climbed, so mileage drove
+   injuries, injuries added weeks, and nothing pulled the number back. These
+   are the three things that turned it into an equilibrium. The DISTRIBUTION
+   it produces takes a dozen fourteen-year careers to measure and lives in a
+   probe; what belongs here is that each mechanism still bites at all, because
+   each of them fails silently and the symptom is only visible a decade in. */
+section('the body heals, and old damage stops compounding');
+{
+  const {page, errs} = await fresh(URL+'/wrestling/');
+  await page.evaluate(()=>{ quickStart(); });
+  await page.waitForTimeout(800);
+  const r = await page.evaluate(()=>{
+    try{ endTour(); closeModal(); }catch(_){}
+    const c=G.car, out={};
+    c.age=35; c.wear=200;
+    const floor=Math.max(0,(c.age-21)*4); out.floor=floor;
+    for(let i=0;i<200;i++){ c.injWeeks=6; c.age=35; advanceWeek(); }
+    out.rested=Math.round(c.wear);
+    c.wear=floor-8; const under=c.wear;
+    for(let i=0;i<10;i++){ c.injWeeks=6; c.age=35; advanceWeek(); }
+    out.underFloorMoved=Math.round(c.wear-under);
+    c.injWeeks=0; c.wear=50; const w=c.wear;
+    for(let i=0;i<20;i++){ advanceWeek(); }
+    out.roadAdded=Math.round((c.wear-w)*10)/10;
+    const risk=(n)=>{ c.chronic=[]; for(let i=0;i<n;i++) c.chronic.push({part:'Knee',attr:'ae',pen:2,y:1});
+                      return +injuryRisk({stip:'singles',mult:1}).toFixed(4); };
+    out.r0=risk(0); out.r4=risk(4); out.r12=risk(12); c.chronic=[];
+    // after a long layoff the worst injuries in the table are off the menu
+    c.wear=200; c.cond=20; c.injuries=[{wk:20,y:c.year,w:c.week,id:'neck'}];
+    const worst=INJURIES.length-1; let seen=0;
+    for(let i=0;i<300;i++){ c.hurt=null; c.injWeeks=0;
+      const h=takeInjury(['slam'],1.2,0); if(INJURIES.indexOf(injById(h.id))>=worst-1) seen++; }
+    out.topOfTable=seen;
+    return out;
+  });
+  if(errs.length) bad('wear page errors: '+errs.slice(0,2).join(' | '));
+  (r.rested<=r.floor+2 && r.rested>=r.floor-2)
+    ? ok(`a long layoff takes wear down to the age floor (200 -> ${r.rested}, floor ${r.floor})`)
+    : bad(`rest did not reach the age floor: ${r.rested} against ${r.floor}`);
+  (r.underFloorMoved>=0) ? ok('wear already under the floor is never pushed lower')
+    : bad(`wear under the floor fell a further ${r.underFloorMoved}`);
+  (r.roadAdded>0) ? ok(`the road still adds mileage (+${r.roadAdded} over 20 weeks)`)
+    : bad(`wear no longer climbs while working (${r.roadAdded})`);
+  (r.r4>r.r0 && r.r12===r.r4)
+    ? ok(`chronic damage compounds to four and stops (${r.r0} -> ${r.r4}, twelve is still ${r.r12})`)
+    : bad(`chronic cap wrong: 0=${r.r0} 4=${r.r4} 12=${r.r12}`);
+  (r.topOfTable===0)
+    ? ok('within two years of a long layoff the worst injuries are off the table')
+    : bad(`${r.topOfTable} of 300 draws still reached the top of the injury table`);
+  await page.close();
+}
+
+/* ---------- 4r. two styles, one rig ----------
+   The game draws in Smooth (the default) or Retro, and both are drawn on the
+   SAME skeleton: the joints in JOINT and the angles in POSES. That is the only
+   reason a suplex lands on the same marks in either style, so it is asserted
+   as a property of the markup rather than trusted: for every pose, the ordered
+   list of transforms the two figures emit has to be identical. Everything
+   else here is the ways the smooth figure fails without throwing. */
+section('two styles, one rig');
+{
+  const {page, errs} = await fresh(URL+'/wrestling/');
+  const r = await page.evaluate(()=>{
+    const out={poses:0, rigDiff:[], smoothCrisp:0, retroNotCrisp:0, leaks:[], looks:0, dupIds:0, icons:[], shapes:[]};
+    const tfl=s=>(s.match(/transform="[^"]*"/g)||[]);
+    const tf=s=>tfl(s).join('|');
+    /* Retro draws the rig twice (an outline pass, then the fills); smooth draws
+       it once, with no outline. So smooth is held to Retro's fill pass, which
+       is the second half of its list and must equal the first. */
+    // the whole-body move wraps both passes once and comes first, so it is set aside
+    const fillHalf=s=>{ let l=tfl(s); const pre=(l[0]&&/translate\(/.test(l[0]))?[l.shift()]:[];
+      const h=l.length/2; return l.slice(0,h).join('|')===l.slice(h).join('|') ? pre.concat(l.slice(h)).join('|') : 'UNEVEN:'+l.join('|'); };
+    const pool=sl=>COSM.filter(c=>c.slot===sl).map(c=>c.v);
+    const L0=Object.assign({},DEFLOOK,{hairStyle:'long',face:'beard'});
+    Object.keys(POSES).forEach(k=>{
+      out.poses++;
+      const a=wrestlerSVGRetro(L0,{pose:k}), b=wrestlerSVGSmooth(L0,{pose:k});
+      if(fillHalf(a)!==tf(b)) out.rigDiff.push(k);
+      if(b.indexOf('crispEdges')>=0) out.smoothCrisp++;
+      if(a.indexOf('crispEdges')<0) out.retroNotCrisp++;
+    });
+    // every value of every slot draws, and the behind-the-head marker never leaks
+    ['hair','face','mask','attire','boots','acc','pattern'].forEach(sl=>pool(sl).forEach(v=>{
+      const key=sl==='hair'?'hairStyle':sl;
+      ['ready','prone'].forEach(pose=>{
+        out.looks++;
+        let svg=''; try{ svg=wrestlerSVGSmooth(Object.assign({},DEFLOOK,{[key]:v}),{pose}); }catch(e){ out.leaks.push(sl+':'+v+' threw '+e); return; }
+        if(svg.indexOf('@@HB@@')>=0) out.leaks.push(sl+':'+v+' left the hair marker in');
+        if(/NaN|undefined/.test(svg)) out.leaks.push(sl+':'+v+' printed NaN or undefined');
+      });
+    }));
+    /* hair that hangs behind the head is gathered and dropped in UNDER the face.
+       Forget to drop it in and nothing throws: the rig split keeps shapes only,
+       so the marker is discarded and the tail simply is not there. So the claim
+       is that the hair is drawn, and drawn before the face is. */
+    out.backHair=[];
+    ['pony','mullet','dreads'].forEach(h=>{
+      const svg=wrestlerSVGSmooth(Object.assign({},DEFLOOK,{hairStyle:h,hair:'#123456'}),{});
+      // the hair's own gradients: the colour itself, and the shade a tail is drawn in
+      const cols=['#123456', shade('#123456',-36)];
+      const ids=[...svg.matchAll(/<linearGradient id="([^"]+)"[^>]*><stop[^>]*\/><stop offset=".38" stop-color="([^"]+)"/g)]
+        .filter(g=>cols.indexOf(g[2])>=0).map(g=>g[1]);
+      const body=svg.slice(svg.indexOf('</defs>'));
+      const hairAt = ids.length ? Math.min(...ids.map(id=>{ const k=body.indexOf('url(#'+id+')'); return k<0?1e9:k; })) : -1;
+      const firstFaceFill = body.search(/<path d="M24,14 C24,7\.4[^"]*" fill="url/);
+      if(hairAt<0||hairAt===1e9) out.backHair.push(h+': no hair drawn at all');
+      else if(!(hairAt<firstFaceFill)) out.backHair.push(h+': drawn over the face');
+    });
+    // two wrestlers on one page never share a gradient id
+    const ids=s=>(s.match(/id="([^"]+)"/g)||[]);
+    const x=ids(wrestlerSVGSmooth(DEFLOOK,{})), y=ids(wrestlerSVGSmooth(DEFLOOK,{}));
+    out.dupIds=x.filter(i=>y.indexOf(i)>=0).length; out.idCount=x.length;
+    // every icon and every plate shape has a smooth drawing, so no screen mixes the two
+    Object.keys(PICO).filter(k=>k[0]!=='_').forEach(k=>{ if(!PICO_SM[k]) out.icons.push(k); });
+    Object.keys(BELT_PLATE).forEach(sh=>{ const m=beltPlateSmooth(Object.assign({},BELT_ART_DEFAULT,{shape:sh}),0,0,1,c=>c);
+      if(!/<path/.test(m)||/NaN/.test(m)) out.shapes.push(sh); });
+    /* the trunks cover the crotch. The torso's skin ends at y 53.6 and the first
+       trunks cut a notch up to 51.4 between the legs, so skin showed there on
+       every bare legged attire. Asked of the drawn shape rather than of its
+       source: the trunks are the fill spanning both hips at the waist and not
+       the chest, and the middle of the crotch has to be inside it. */
+    out.crotch=[]; out.trunksSeen=0;
+    const host=document.createElement('div'); host.style.cssText='position:absolute;left:-9999px;width:200px'; document.body.appendChild(host);
+    const inF=(el,x,y)=>el.isPointInFill(new DOMPoint(x,y));
+    pool('attire').forEach(a=>{
+      host.innerHTML=wrestlerSVGSmooth(Object.assign({},DEFLOOK,{attire:a,gear:'#111111',pattern:'none'}),{pose:'ready'});
+      const tr=[...host.querySelectorAll('path')].filter(p=>/^url/.test(p.getAttribute('fill')||'')
+        && inF(p,23.6,45.2) && inF(p,40.4,45.2) && !inF(p,32,36));
+      if(!tr.length) return;
+      out.trunksSeen++;
+      if(!tr.some(p=>inF(p,32,55))) out.crotch.push(a);
+    });
+    host.remove();
+    // the switch: Retro really is the pixel game, and it sticks
+    setGfx(false);
+    out.retroNow = wrestlerSVG(DEFLOOK,{}).indexOf('crispEdges')>=0 && pico('trophy',20).indexOf('crispEdges')>=0
+      && beltSVG(BELT_ART_DEFAULT,30).indexOf('crispEdges')>=0 && document.documentElement.classList.contains('gfx-retro');
+    out.stored = localStorage.getItem('rtr_gfx');
+    return out;
+  });
+  await page.reload(); await page.waitForTimeout(600);
+  const after = await page.evaluate(()=>{ const v={retro:!gfxSmooth(), cls:document.documentElement.classList.contains('gfx-retro')};
+    setGfx(true); v.back=gfxSmooth() && wrestlerSVG(DEFLOOK,{}).indexOf('crispEdges')<0; return v; });
+  if(errs.length) bad('styles: page errors: '+errs.slice(0,2).join(' | '));
+  r.rigDiff.length ? bad(`the two styles pose differently: ${r.rigDiff.join(', ')}`)
+                   : ok(`all ${r.poses} poses emit the same rig in both styles`);
+  (r.smoothCrisp===0 && r.retroNotCrisp===0) ? ok('smooth never asks for crisp edges, retro always does')
+    : bad(`crisp edges in the wrong style: smooth ${r.smoothCrisp}, retro missing ${r.retroNotCrisp}`);
+  r.leaks.length ? bad(`${r.leaks.length} looks draw wrong: `+r.leaks.slice(0,6).join('; '))
+                 : ok(`every value of every gear slot draws clean in smooth (${r.looks} figures)`);
+  r.backHair.length ? bad('back hair wrong: '+r.backHair.join('; ')) : ok('a tail, a mullet and dreads are drawn, and drawn behind the face');
+  (r.idCount>0 && r.dupIds===0) ? ok(`two figures on one page share none of their ${r.idCount} gradient ids`)
+    : bad(`gradient ids collide between figures (${r.dupIds} of ${r.idCount})`);
+  (r.trunksSeen>=3 && !r.crotch.length) ? ok(`the trunks cover the crotch on all ${r.trunksSeen} bare legged attires`)
+    : bad(`trunks leave skin between the legs on: ${r.crotch.join(', ')||'(no trunks found, '+r.trunksSeen+')'}`);
+  r.icons.length ? bad('icons with no smooth drawing: '+r.icons.join(', ')) : ok('every icon has a smooth drawing');
+  r.shapes.length ? bad('belt plates that do not draw smooth: '+r.shapes.join(', ')) : ok('every belt plate shape draws smooth');
+  (r.retroNow && r.stored==='retro') ? ok('the Retro switch puts the pixel figure, icons and belts back')
+    : bad(`the Retro switch did not take: ${JSON.stringify({now:r.retroNow, stored:r.stored})}`);
+  (after.retro && after.cls) ? ok('Retro survives a reload') : bad('Retro did not survive a reload: '+JSON.stringify(after));
+  after.back ? ok('and switching back returns the smooth figure') : bad('switching back did not return the smooth figure');
   await page.close();
 }
 

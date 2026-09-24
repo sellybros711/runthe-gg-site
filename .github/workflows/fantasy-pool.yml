@@ -1,0 +1,253 @@
+name: Build the Fantasy Challenge week
+
+# One week of Fantasy Challenge is a board, and the board is built from the games that have
+# already been played. So it can only be built AFTER the previous week finishes and BEFORE
+# the next one starts, and that window is Tuesday.
+#
+# TUESDAY 11AM EASTERN, WHICH IS AFTER THE MONDAY NIGHT GAME AND WELL BEFORE THURSDAY. The
+# Monday game ends around midnight Eastern and nflverse publishes within a few hours, so
+# this is the first hour of the week when the season to date is complete. It leaves two and
+# a half days before the Thursday kickoff that locks the week.
+#
+# GITHUB'S CRON IS UTC AND DOES NOT KNOW ABOUT DAYLIGHT SAVING, so one entry cannot mean
+# 11am Eastern all year. Both are listed and the job asks WHICH SCHEDULE FIRED rather than
+# what time it is now, which is the fix setlist-data.yml carries a long note about: it used
+# to read the wall clock, GitHub delayed the runs by hours, and six days of refreshes
+# reported success while doing nothing.
+#
+# WHICH WEEK IS IT. Read off games.csv rather than counted from a start date: the first week
+# with no result yet is the week to build. A season with a flexed or postponed game does not
+# move, and neither does this.
+#
+# WHAT IT COMMITS is the week's pool plus fantasy_now.json, which is the only thing telling
+# the page which week is live. Both or neither: a pool with no pointer is invisible and a
+# pointer with no pool is a page that cannot load.
+#
+# NOTHING IS COMMITTED UNLESS check-fantasy PASSES. An unattended job that writes a board
+# nobody can draft from is worse than one that writes nothing, because the mode looks live.
+
+on:
+  schedule:
+    - cron: '0 15 * * 2'    # 11am Eastern while daylight saving is in effect
+    - cron: '0 16 * * 2'    # 11am Eastern the rest of the year
+  workflow_dispatch:
+    inputs:
+      week:
+        description: 'Week to build. Leave blank to use the first unplayed week.'
+        required: false
+        default: ''
+
+permissions:
+  contents: write
+
+concurrency:
+  group: fantasy-pool
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Is this the 11am Eastern entry
+        id: when
+        run: |
+          OFFSET=$(TZ=America/New_York date +%z)
+          FIRED='${{ github.event.schedule }}'
+          echo "New York is at UTC${OFFSET} ($(TZ=America/New_York date))"
+          echo "the schedule that fired: '${FIRED}'"
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "manual run, proceeding"
+            echo "go=yes" >> "$GITHUB_OUTPUT"
+          elif [ "$OFFSET" = "-0400" ] && [ "$FIRED" = "0 15 * * 2" ]; then
+            echo "EDT, so 15:00 UTC is 11am Eastern. Proceeding."
+            echo "go=yes" >> "$GITHUB_OUTPUT"
+          elif [ "$OFFSET" = "-0500" ] && [ "$FIRED" = "0 16 * * 2" ]; then
+            echo "EST, so 16:00 UTC is 11am Eastern. Proceeding."
+            echo "go=yes" >> "$GITHUB_OUTPUT"
+          else
+            echo "this is the other cron entry for the current offset. Stopping."
+            echo "go=no" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@v4
+        if: steps.when.outputs.go == 'yes'
+
+      - uses: actions/setup-node@v4
+        if: steps.when.outputs.go == 'yes'
+        with:
+          node-version: '22'
+
+      # THE WEEK IS THE FIRST ONE WITH NO SCORE IN IT. A finished game carries a result in
+      # games.csv, so the earliest week of this season with a blank home score is the week
+      # about to be played. Asked of the schedule rather than derived from today's date,
+      # because a bye, a flex or a postponement moves a date and never moves this.
+      - name: Which week
+        id: week
+        if: steps.when.outputs.go == 'yes'
+        run: node football/build/next-week.mjs --week '${{ inputs.week }}'
+
+      # SCORE THE WEEK THAT JUST FINISHED BEFORE BUILDING THE NEXT ONE, and the order is the
+      # point rather than tidiness: the page finds a result by asking for the week's own
+      # file, so a week whose board rolls forward before its result is written is a week
+      # somebody played and can never see. By Tuesday morning the Monday night game is in.
+      #
+      # `|| true` because this is allowed to have nothing to do. Week one has no week zero,
+      # and a manual run mid-week hits a week that is not finished, which the build refuses
+      # by design. Neither is a reason to skip building the board.
+      - name: Score the week that just ended
+        if: steps.when.outputs.go == 'yes'
+        run: |
+          PREV=$(( ${{ steps.week.outputs.week }} - 1 ))
+          if [ "$PREV" -ge 1 ]; then
+            node football/build/weekly-results.mjs \
+              --season '${{ steps.week.outputs.season }}' --week "$PREV" --write || \
+              echo "week $PREV could not be scored yet, carrying on"
+          fi
+
+      - name: Build the board
+        if: steps.when.outputs.go == 'yes'
+        run: |
+          node football/build/weekly-pool.mjs \
+            --season '${{ steps.week.outputs.season }}' \
+            --week '${{ steps.week.outputs.week }}' --write
+
+      # The gate. It plays 1,200 drafts three ways against the board that was just written,
+      # so a week that strands or prices somebody out of reach never reaches main.
+      - name: Can it be drafted
+        if: steps.when.outputs.go == 'yes'
+        run: node football/check-fantasy.mjs --quick
+
+      # ─── the server's copy ───────────────────────────────────────────────────────────
+      #
+      # THE DATABASE IS PUBLISHED BEFORE THE BOARD IS COMMITTED, and of the two ways to be
+      # half done only one is survivable. A week open on the server that no page can see yet
+      # is an unvisited week and harmless. A board on the page with no week on the server is
+      # a mode that draws the wheel, takes five drafts and then refuses the submit, which is
+      # the worst screen this mode could show. So the write that must not be missing goes
+      # first, and a failure here stops the commit: no board at all is a state somebody
+      # notices, and this one is not.
+      #
+      # THE BOARD GOES FIRST HERE, AND IT USED TO GO SECOND. The paragraph directly above
+      # says the write that must not be missing goes first, and then the code settled last
+      # week ahead of it. That is the whole of how 2026 week 3 came to be missing from the
+      # server: the results publish raised, `set -e` took the step down, and the board it
+      # exists to write was never sent at all. The comment was right and the order under it
+      # was not, which is the dangerous direction.
+      #
+      # NOTHING IS GIVEN UP BY THE FLIP. "Results before prices" is the two BUILD steps'
+      # rule and it is about the files and the pointer beside them: a week whose board rolls
+      # forward on disk before its result is written is a week somebody played and can never
+      # see. On the server these are two tables about two different weeks, neither reads the
+      # other, and `fantasy_now.json` is not written here at all, so that argument does not
+      # reach this step.
+      - name: Install the postgres client
+        if: steps.when.outputs.go == 'yes'
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-client
+
+      - name: Publish the week to the leaderboard
+        if: steps.when.outputs.go == 'yes'
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          set -euo pipefail
+          if [ -z "${SUPABASE_DB_URL:-}" ]; then
+            echo "::error::SUPABASE_DB_URL is not set, so entries for this week would all"
+            echo "::error::be refused. Add it under Settings -> Secrets -> Actions."
+            exit 1
+          fi
+          SEASON='${{ steps.week.outputs.season }}'
+          WEEK='${{ steps.week.outputs.week }}'
+          PREV=$(( WEEK - 1 ))
+
+          node football/build/publish-week.mjs --season "$SEASON" --week "$WEEK" \
+            | psql "$SUPABASE_DB_URL" -v ON_ERROR_STOP=1 -q
+          echo "published week $WEEK's board"
+
+          # READ IT BACK, because a publish that wrote nothing exits 0. An upsert of zero
+          # rows is a successful statement, and the symptom of one is a week that refuses
+          # every lineup as somebody who is not on the board.
+          psql "$SUPABASE_DB_URL" -v ON_ERROR_STOP=1 -tAc \
+            "select case when count(*) > 100 then 'ok ' || count(*) || ' priced'
+                    else 'FEW' end from public.fantasy_prices
+              where season = $SEASON and week = $WEEK" | tee /tmp/priced
+          grep -q '^ok ' /tmp/priced
+
+          # ─── and then settle the week that just finished ──────────────────────────────
+          #
+          # ONLY IF THAT WEEK WAS EVER OPENED, AND THE FILE ON DISK CANNOT ANSWER THAT.
+          # `fantasy_results` carries a foreign key onto `fantasy_weeks`, so results for a
+          # week with no row are REFUSED rather than ignored. "Score the week that just
+          # ended" writes that file on every single run, including for weeks played before
+          # any of this was deployed, so its presence says the week was PLAYED and says
+          # nothing about whether anybody could enter it.
+          #
+          # IT HAPPENED, AND IT COST THE BOARD. Week 2 was scored into a file on the runner,
+          # its results were sent, the key refused them with "Key (season, week)=(2026, 2)
+          # is not present in table fantasy_weeks", and the step died. A week nobody opened
+          # has no entries, so there is nothing for its results to score and skipping them
+          # costs exactly nothing.
+          #
+          # ASKED ON ITS OWN LINE rather than inside the `if`, because `set -e` does not
+          # fire on a command in a CONDITION. Written there, an unreachable database hands
+          # the test an empty string and the step carries on past a question it never got
+          # an answer to, so what decides the branch is which way `[ "" = "0" ]` happens to
+          # fall. On its own line the read is a plain command, so a database that cannot be
+          # reached stops the step here, with psql's own error, which is the one report
+          # that says what is actually wrong.
+          OPENED=0
+          if [ "$PREV" -ge 1 ] && [ -f "football/data/results_${SEASON}_w${PREV}.json" ]; then
+            OPENED=$(psql "$SUPABASE_DB_URL" -v ON_ERROR_STOP=1 -tAc \
+              "select count(*) from public.fantasy_weeks
+                where season = $SEASON and week = $PREV")
+          fi
+
+          if [ "$PREV" -lt 1 ]; then
+            echo "week $WEEK has no week before it, so there is nothing to settle"
+          elif [ ! -f "football/data/results_${SEASON}_w${PREV}.json" ]; then
+            echo "week $PREV was not scored, so there is nothing to publish"
+          elif [ "$OPENED" = "0" ]; then
+            echo "week $PREV is not on the server, so it took no entries and has nothing"
+            echo "to score. Skipping its results."
+          else
+            node football/build/publish-week.mjs --season "$SEASON" --week "$PREV" --results \
+              | psql "$SUPABASE_DB_URL" -v ON_ERROR_STOP=1 -q
+            echo "published week $PREV's results"
+          fi
+
+      - name: Commit the week
+        if: steps.when.outputs.go == 'yes'
+        run: |
+          git config user.name "fantasy-bot"
+          git config user.email "noreply@anthropic.com"
+          git add football/data/weekly_*.json football/data/results_*.json \
+                  football/data/fantasy_now.json
+          if git diff --cached --quiet; then
+            echo "the board has not moved"
+            exit 0
+          fi
+          git commit -m "Fantasy Challenge: ${{ steps.week.outputs.season }} week ${{ steps.week.outputs.week }}"
+          # Other scheduled jobs push to main too, so a concurrent run can advance the ref
+          # mid-job. Rebase and retry rather than fail on a non-fast-forward.
+          for i in 1 2 3 4 5; do
+            git push && break
+            echo "push rejected, rebasing onto latest main (attempt $i)"
+            git pull --rebase origin main || exit 1
+          done
+
+      # THE WINNER'S CODE, IF THE LIVE JOB HAS NOT ALREADY MADE IT. `fantasy-live.yml` does
+      # this on the tick that marks the week final, which is normally Monday night. It is
+      # here as well because the step above marks the week final too, and it does so when the
+      # overnight stats landed after the live job's Tuesday window closed. Every entrant's
+      # result popup waits on this (115_fantasy_result_when_ready.sql), so a week left unpaid
+      # until Thursday is three days of nobody being told how they did.
+      #
+      # LAST, AFTER THE COMMIT, deliberately. A Stripe failure here must never be the reason
+      # the new week's board was not committed: the board is what everybody drafts on, and a
+      # red run with the board already out is the right shape for "the prize needs a look".
+      - name: Pay the winner of the week that just closed
+        if: steps.when.outputs.go == 'yes'
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+          STRIPE_PRICE_PS_PREMIUM_BUNDLE: ${{ secrets.STRIPE_PRICE_PS_PREMIUM_BUNDLE }}
+        run: node scripts/stripe/mint-winner-code.mjs --pending --mint

@@ -26,6 +26,7 @@ const D = require(ROOT + '/cfb/commish/docket.js');
 const S = require(ROOT + '/cfb/commish/season.js');
 const SIT = require(ROOT + '/cfb/commish/situation.js');
 const CAL = require(ROOT + '/cfb/commish/calendar.js');
+const FR = require(ROOT + '/cfb/commish/frontier.js');
 const F = require(ROOT + '/cfb/commish/fallout.js');
 const E = require(ROOT + '/cfb/engine.js');
 const teams = leagueTeams(ROOT);
@@ -98,6 +99,40 @@ console.log('\n=== the null cases are real answers ===');
   const missing = Object.keys(D.NOSIT).filter((k) => !(k in s));
   ok('  and carries every field the docket may read', !missing.length,
     missing.join(', ') || Object.keys(D.NOSIT).length + ' fields');
+}
+
+console.log('\n=== last year\'s champion, read off the field the page actually writes ===');
+{
+  /* THE FIELD NAME IS THE CONTRACT AND IT WAS BROKEN FOR THE LIFE OF THE MODE. This module
+     read `world.champs`; index.html has always written `world.champions`, so `sit.previous`
+     was null in every real term ever played. Six things read it and all six were quietly
+     off: the confetti cutscene the morning after a title, a media day question about the
+     reigning champion, two docket briefs that name them, and the champion line on the desk
+     strip. Nothing failed, because the only code that ever wrote `champs` was the four test
+     files that set it up by hand. The guards encoded the typo and then proved it worked.
+
+     So this asserts the SHAPE THE PAGE WRITES, quoted from playSeason(), rather than a
+     shape a test invented. If somebody renames the field on either side, this goes red. */
+  const w = world({ beat: 0 });
+  w.year = w.startYear + 1;
+  w.champions = { [w.startYear]: { school: 'Ohio State', color: '#bb0000', conference: 'Big Ten' } };
+  const s = SIT.build(w, L, { calendar: CAL });
+  ok('the situation names last year\'s champion', s.previous && s.previous.champion === 'Ohio State',
+    s.previous ? String(s.previous.champion) : 'sit.previous is null');
+  ok('  and the year they won it', s.previous && s.previous.year === w.startYear,
+    s.previous ? String(s.previous.year) : 'null');
+  /* And the field the page does NOT write must not be the one that works, or the bug is
+     simply reintroduced the other way round. */
+  const wrong = world({ beat: 0 });
+  wrong.year = wrong.startYear + 1;
+  wrong.champs = { [wrong.startYear]: { school: 'Ohio State' } };
+  ok('  and the old misspelling is not a second way in',
+    !SIT.build(wrong, L, { calendar: CAL }).previous);
+  /* Year one has no last year, which is the null case that has to keep working. */
+  const first = world({ beat: 0 });
+  first.champions = {};
+  ok('  while the first winter has no champion to name',
+    !SIT.build(first, L, { calendar: CAL }).previous);
 }
 
 console.log('\n=== a gated item is an item somebody can be dealt ===');
@@ -266,7 +301,7 @@ console.log('\n=== both ends of the range reach the whole thing ===');
   function playTerm(seed, mode) {
     let w = L.createWorld({ year: 2025, membership: L.membershipFrom(teams, 2025), seed: 'q' + seed });
     const rng = E.createSeededRNG(E.hashSeed('q|' + mode + '|' + seed));
-    w.ratings = {}; w.champs = {}; w.tails = [];
+    w.ratings = {}; w.champions = {}; w.tails = [];
     const items = new Set(), tails = new Set();
     for (let y = 0; y < 5; y++) {
       for (let b = 0; b < 9; b++) {
@@ -304,7 +339,7 @@ console.log('\n=== both ends of the range reach the whole thing ===');
               { through: S.WEEKS, titles: true, bracket: true });
             w.ratings[w.year] = { total: Math.round(full.viewers), perGame: full.perGame, title: 20 };
             const ch = full.bracket && full.bracket.champion;
-            if (ch) w.champs[w.year] = { school: ch.team.school, color: ch.team.color };
+            if (ch) w.champions[w.year] = { school: ch.team.school, color: ch.team.color };
           } catch (e) { /* no season to record */ }
         }
         w = L.advance(w);
@@ -360,7 +395,27 @@ console.log('\n=== both ends of the range reach the whole thing ===');
         D.ITEMS.forEach((it) => {
           [].concat(it.pays || []).forEach((id) => { x.threads.push({ id, ripe: 0 }); });
         });
-      })
+      }),
+      /* A SPORT THAT HAS BECOME SOMETHING ELSE. The ladder at the bottom of docket.js is
+         gated on a frontier being open, and a frontier is open only once the ones it needs
+         are crossed, so six of the ten rungs cannot appear in ANY world built from
+         createWorld: they are written for a sport that ten rulings ago decided to be this.
+         Same reasoning as the ripe-threads world directly above, and the same division of
+         labour: whether the CHAIN can be walked at all is test_docket's job, and this asks
+         only whether each rung is writable once it is.
+         THE STATE IS BUILT ONE RUNG AT A TIME, so each world has exactly the frontiers
+         crossed that the next rung needs and no more. Crossing all ten at once would make
+         every rung already taken and none of them eligible, which is the opposite mistake
+         and would pass this check by making it vacuous. */
+      ...FR.FRONTIERS.map((f) => mk((x) => {
+        x.pressure = { legal: 55, congress: 55, union: 55 };
+        x.meters.revenue = 40;
+        const need = (id) => {
+          FR.BY_ID[id].needs.forEach(need);
+          if (!FR.has(x, id)) Object.assign(x, FR.cross(x, id));
+        };
+        f.needs.forEach(need);
+      }))
     );
   }
   const stillMissingItems = [];
@@ -434,7 +489,20 @@ console.log('\n=== both ends of the range reach the whole thing ===');
     const burning = base(); burning.pressure = { legal: 40, congress: 40, union: 40 };
     const loved = base(); loved.meters.standing = 80;
     const hated = base(); hated.meters.standing = 25;
-    states.push(base(), shut, split, burning, loved, hated);
+    /* A SPORT THAT HAS SOLD ITS NAME, which nothing here had and which two tails need. On a
+       fresh world every field in `brand` is null or empty, so `sit.soldCount` is zero in all
+       six states above and a tail gated on it could only ever pass by being drawn during one
+       of the sixteen played terms.
+       THAT IS A SAMPLE, AND A SAMPLE MOVED. It passed for as long as some term happened to
+       sell a sponsor, and `sponsor-collapse` went red the day ten items were added at the
+       bottom of the docket: a different draw, the same perfectly reachable tail. Its sibling
+       `signage` carries an IDENTICAL when() and passed, which is what says the tail was never
+       the problem. Building the state it is written for is the same fix as the twelve seed
+       fixture in test_docket, for the same reason. */
+    const sold = base();
+    sold.brand = { playoff: 'phone', trophy: 'bank', patch: 'energy',
+      bowls: { rose: 'phone', sugar: '', orange: '', fiesta: '', cotton: '', peach: '' } };
+    states.push(base(), shut, split, burning, loved, hated, sold);
   }
   const sits = states.map((x) => SIT.build(x, L, { calendar: CAL }));
   const edits = [
@@ -453,6 +521,57 @@ console.log('\n=== both ends of the range reach the whole thing ===');
   });
   ok('  and every tail fires in a term or in a world the game can reach', !stillMissing.length,
     stillMissing.join(', ') || tails.size + ' in play, the rest gated on a state that exists');
+}
+
+/* ================================================================
+   THE CONTRACT IS NOT FIVE SEASONS ANY MORE.
+
+   Renewals sign a term for three to eight seasons and the world carries the number on
+   `termSeasons`. `lastYear` and `seasonsLeft` were written when five was the only length
+   there was, and the way that failed was silent: media day's "this is the last July you
+   stand up here with the job" fired in year five of an eight year term, three summers
+   early, and then never again in the year it was true. Nothing threw. The item simply
+   turned up on the wrong morning and the right one came and went empty.
+   ================================================================ */
+console.log('\n=== the term is however long the room signed you for ===');
+{
+  const at = (len, year) => SIT.build(
+    world({ termSeasons: len, startYear: 2025, year: year, beat: 0 }), L, { calendar: CAL });
+  const shape = (len, year) => { const s = at(len, year); return [s.seasonOfTerm, s.seasonsLeft, s.lastYear]; };
+
+  ok('a three year leash is in its last year in 2027',
+    String(shape(3, 2027)) === String([3, 0, true]), shape(3, 2027).join(' · '));
+  ok('  and is not in it in 2026',
+    shape(3, 2026)[2] === false, shape(3, 2026).join(' · '));
+  ok('an eight year mandate has three summers left in 2030',
+    String(shape(8, 2030)) === String([6, 2, false]), shape(8, 2030).join(' · '));
+  ok('  and reaches its last year in 2032',
+    String(shape(8, 2032)) === String([8, 0, true]), shape(8, 2032).join(' · '));
+  ok('  rather than in 2029, which is where five would have put it',
+    shape(8, 2029)[2] === false, shape(8, 2029).join(' · '));
+  /* A SAVE FROM BEFORE RENEWALS carries no termSeasons and was signed as five seasons,
+     which is what it has to go on being. */
+  const old = SIT.build(world({ startYear: 2025, year: 2029, beat: 0 }), L, { calendar: CAL });
+  ok('a save written before renewals is still a five season term',
+    old.lastYear === true && old.seasonsLeft === 0 && old.seasonOfTerm === 5,
+    old.seasonOfTerm + ' · ' + old.seasonsLeft + ' · ' + old.lastYear);
+
+  /* AND THE MEDIA DAY ITEM IS THE ONE THAT READS IT, which is the whole reason the two
+     fields matter. Asserted through the item's own gate rather than through the flag, so
+     a rename of either end fails here rather than going quiet again. */
+  const M = require(ROOT + '/cfb/commish/media.js');
+  const qLast = (M.QUESTIONS || M.ASKS || []).filter((q) => q.id === 'q-last')[0];
+  if (qLast) {
+    const fires = (len, year) => {
+      const w = world({ termSeasons: len, startYear: 2025, year: year, beat: 0 });
+      try { return !!qLast.when(w, L, SIT.build(w, L, { calendar: CAL })); } catch (e) { return false; }
+    };
+    ok('  and the last media day of an eight year term is in 2032', fires(8, 2032));
+    ok('  not in 2029', !fires(8, 2029));
+    ok('  and a three year term gets its last one in 2027', fires(3, 2027));
+  } else {
+    ok('  the media day item q-last is still there to read it', false, 'not found');
+  }
 }
 
 console.log(bad ? '\n' + bad + ' FAILED' : '\nall clear');

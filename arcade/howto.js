@@ -10,7 +10,7 @@
     match: [
       'Sixteen names hide four secret groups of four.',
       'A group can be a team, a jersey number, a surname, any shared thread.',
-      'Build a group of four and lock it in. "One away" means three belong together.',
+      'Build a group of four and lock it in. "One away" means exactly three of them belong together.',
       'Four wrong guesses ends the day. Solve all four groups to keep your streak.'
     ],
     table: [
@@ -28,7 +28,7 @@
     oddone: [
       'Five names. Four share a connection: a team, a position, a decade, or the Hall of Fame.',
       "Tap the one that doesn't belong. That is worth a point.",
-      'Then name the connection itself for a second point. Spotting it is luck; saying why is knowing.',
+      'Then name the connection itself for a second point. A wrong link only costs the bonus.',
       'One wrong spot ends the run. A wrong link just costs you the bonus.'
     ],
     rankit: [
@@ -44,10 +44,10 @@
       'Eight guesses. Stuck? Burn a clue for a hint.'
     ],
     almamater: [
-      'One NBA, NFL or MLB player at a time. Where did they go to college?',
-      'Type the school. UNC, North Carolina and University of North Carolina all count.',
-      'Typing it is 2 points. Stuck? Take four choices for 1.',
-      'One wrong school ends the run. A spelling we do not recognise costs nothing.'
+      'You get one NBA, NFL or MLB player at a time. Where did they go to college?',
+      'Type the school. Don’t stress the spelling. UNC, North Carolina and University of North Carolina all count.',
+      'Type it for 2 points. Stuck? Take the 4 choices for 1.',
+      'Pick the wrong school and your run’s over. A spelling we don’t know costs you nothing.'
     ],
     crossword: [
       'A quick sports mini. Type into the grid.',
@@ -57,8 +57,8 @@
     ],
     sportegories: [
       'One letter, eight sports categories, two minutes.',
-      'Type a full name. The FIRST or the LAST name can start with the letter: on B, Bosh works and so does Barry Bonds.',
-      'Bank the easy ones fast; you can come back to anything that stalls.',
+      'Type a full name. The FIRST or the LAST can start with the letter: on B, both Chris Bosh and Barry Bonds count.',
+      'Every row is labelled Anchor, Mid, Hard or Spice. Sweep the Anchors first.',
       'The clock ends the round. Fill all eight for a perfect day.'
     ],
     rollcall: [
@@ -77,7 +77,7 @@
       'Pick a category: NBA, NFL or MLB stat pools.',
       'Players come two at a time. Call whether the next one sits higher or lower on the stat.',
       'Every correct call reveals the real value and extends your run.',
-      'One miss ends it. Endless: the only target is your best run.'
+      'One miss ends it. There is no finish line, only your best run.'
     ]
   };
 

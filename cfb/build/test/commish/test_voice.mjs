@@ -72,9 +72,21 @@ console.log('\n=== every pool is a pool ===');
   /* A POOL OF ONE IS THE THING THIS REPLACED. Forty-five fixed lines is what made the SEC a
      vending machine, so a single-line pool is a regression to that in miniature. */
   ok('  and none of them is a single line', !thin.length, thin.join('; ') || 'every mood has options');
-  ok('  nine blocs have a voice', Object.keys(B.VOICE).length === B.BLOCS.length
-    && B.BLOCS.every((b) => B.VOICE[b.id]), Object.keys(B.VOICE).length + ' voices');
-  ok('  every one with five moods', B.BLOCS.every((b) => B.VOICE[b.id].bands.length === 5));
+  /* THE FOUNDING NINE PLUS WHOEVER CAN JOIN THEM. The room is not a constant any more: a
+     frontier can seat six more (see blocs.js SEATED and frontier.js), and this counted
+     against BLOCS alone, so the day the first one was written it read "nine blocs have a
+     voice, 15 voices" and failed on a file that was correct.
+     ASSERTED AS A MATCH RATHER THAN AS A NUMBER, so the next bloc added does not need this
+     line edited: every voice belongs to somebody in the room, and everybody in the room has
+     one. A voice with no bloc is writing nothing will ever say, which is the same failure as
+     an item nobody can be dealt. */
+  const room = B.BLOCS.concat(B.SEATED);
+  const ghost = Object.keys(B.VOICE).filter((id) => !room.some((b) => b.id === id));
+  ok('  everybody in the room has a voice, and every voice has somebody',
+    room.every((b) => B.VOICE[b.id]) && !ghost.length,
+    room.filter((b) => !B.VOICE[b.id]).map((b) => b.id).concat(ghost.map((g) => g + ' (nobody)'))
+      .join(', ') || B.BLOCS.length + ' founding, ' + B.SEATED.length + ' seated');
+  ok('  every one with five moods', room.every((b) => B.VOICE[b.id].bands.length === 5));
 
   /* AN AXIS NOBODY WEIGHS is a themed line that can never be chosen, because the driver is
      the biggest term of the dot product and a zero weight makes every term zero. */

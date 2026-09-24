@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8">
+<!-- Internal build asset (renders the 1200x630 share image). Never a reader-facing page,
+     so keep it out of search and out of any AdSense crawl. -->
+<meta name="robots" content="noindex, nofollow">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Bitter:wght@600;700&family=Archivo:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+  /* 1200x630, the size every platform crops a share preview from.
+     ============================================================
+     THE CARD THAT SHIPPED WAS THE LIGHT PAGE PHOTOGRAPHED, and it had two problems
+     a picture cannot argue with. It was cream, so in a chat app's dark thread it
+     arrived as a bright rectangle with the contrast of a receipt. And its headline
+     was set in a FALLBACK: there was no source file and no builder anywhere in the
+     repo, so nobody could re-render it, and whoever made it did so without the
+     display face ever arriving. That is this repo's own note about measuring type
+     in a headless browser, baked into the one image the game shows strangers.
+
+     THE GAME'S OWN LANGUAGE, and specifically the game's own DARK theme, which is
+     a real palette this page already ships rather than a mood invented for a card:
+     --bg #14171c deepened to a stock, --gold #e0ac3c, --green #5cb85f and --ink
+     #ece6da, each of which was already lifted until it clears the charcoal. The
+     light theme's green is #2e7d32, which is a tagline nobody can read on this.
+
+     THE FACES ARE THE PAGE'S THREE. Bebas Neue is --fd and sets the headline and
+     the pill labels, Bitter is --fp and sets the one line of prose, Archivo is
+     --fn and sets the wordmark and the footnote. No Anton: that is the football
+     and basketball cards' face and it would say the wrong sport. */
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{width:1200px;height:630px;overflow:hidden;
+    background:#0f1318;color:#ece6da;
+    font-family:'Archivo',system-ui,sans-serif;position:relative;
+    background-image:
+      radial-gradient(900px 560px at 50% -16%, rgba(92,184,95,.11), transparent 70%),
+      radial-gradient(760px 480px at 104% 114%, rgba(224,172,60,.13), transparent 70%);}
+
+  /* THERE ARE NO SEAM ARCS ON THIS CARD, and two passes of trying is why it is
+     worth a note rather than a silent absence. A baseball's stitching is the one
+     mark this sport owns outright, so a pair of faint arcs off the corners is the
+     obvious thing to reach for. Rendered, they do not read as stitching at any
+     opacity that is also visible: close in, one sweeps across the middle of the
+     card and reads as a scratch on the image; far out, the curvature is so slight
+     that what is left is a straight diagonal line through a corner, which reads
+     as a rendering artefact. The stock carries two radial glows and nothing else.
+     Do not add them back without rendering the result and looking at it. */
+
+  /* The frame. A hairline rather than a border: on a card this dark a heavy rule
+     reads as a box around the game instead of an edge to it. */
+  .frame{position:absolute;inset:26px;border:1.5px solid rgba(224,172,60,.34);
+    border-radius:26px;pointer-events:none}
+
+  .wrap{position:relative;height:100%;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;padding:0 72px}
+
+  /* ── the wordmark, ruled either side ──────────────────────────────────────
+     The rules are what stop a small line of gold type floating in the top of the
+     card with nothing holding it. They are gradients so each one fades out at the
+     far end rather than stopping dead against the stock. */
+  .mark{display:flex;align-items:center;gap:22px;margin-bottom:34px}
+  .mark .rule{width:250px;height:1px;}
+  .mark .rule.l{background:linear-gradient(90deg,transparent,rgba(224,172,60,.55))}
+  .mark .rule.r{background:linear-gradient(90deg,rgba(224,172,60,.55),transparent)}
+  .mark .id{display:flex;align-items:center;gap:13px}
+  .mark .id b{font-family:'Archivo',sans-serif;font-weight:700;font-size:27px;
+    letter-spacing:.17em;color:#e0ac3c}
+
+  /* ── the headline ─────────────────────────────────────────────────────────
+     RUN THE in the ink, DIAMOND in the gold, because the last word is the one
+     that says which sport this is and the card has about a second to say it.
+
+     THE EXTRUDE IS DRAWN DOWN AND RIGHT AND IS NOT A BLUR. A soft shadow under
+     display type at this size reads as the print being out of register; a hard
+     stack of offsets reads as the letters standing up off the stock, which is
+     what the old ballpark signage this borrows from actually did.
+
+     THE FIRST PASS CARRIED A 22px BLUR ON THE END OF THE STACK and it smudged:
+     at this size the soft edge spreads under the letter and the whole headline
+     reads slightly out of focus, which is the one thing a share card cannot be.
+     The stack is shorter and hard the whole way down now, with a single tight
+     blur doing nothing but seating the letters against the stock. */
+  h1{font-family:'Bebas Neue','Anton',Impact,sans-serif;font-weight:400;
+    text-transform:uppercase;font-size:158px;line-height:.9;letter-spacing:.012em;
+    white-space:nowrap;
+    text-shadow:
+      2px 2px 0 #05070a, 4px 4px 0 #05070a, 6px 6px 0 #05070a,
+      8px 8px 0 #05070a, 9px 10px 3px rgba(0,0,0,.45);}
+  h1 .g{color:#e0ac3c}
+
+  /* Bitter, which is the page's own prose face, so the one sentence on the card
+     is set in the same thing the game sets its sentences in. */
+  p.tag{font-family:'Bitter',Georgia,serif;font-weight:700;font-size:39px;
+    color:#5cb85f;margin-top:30px;letter-spacing:.004em}
+
+  /* ── the three pills ──────────────────────────────────────────────────────
+     A GRID ROW STRETCHES EVERY CELL TO ITS TALLEST, which is the premium sheet's
+     own rule: these are a flex row of three boxes carrying the same four things,
+     so nothing here may grow a second line and leave sixty pixels of nothing
+     beside its neighbour. The divider is what makes each one read as icon THEN
+     claim rather than as an icon with a caption. */
+  .pills{display:flex;gap:26px;margin-top:44px}
+  .pill{display:flex;align-items:center;gap:20px;
+    padding:19px 30px;border-radius:15px;
+    border:1.5px solid rgba(224,172,60,.5);
+    background:linear-gradient(180deg,rgba(224,172,60,.055),rgba(224,172,60,.015));}
+  .pill .ic{width:34px;height:34px;flex:0 0 34px;color:#e0ac3c}
+  .pill .ic svg{width:100%;height:100%;display:block}
+  .pill .bar{width:1px;height:34px;background:rgba(224,172,60,.4)}
+  .pill .lb{font-family:'Bebas Neue','Anton',Impact,sans-serif;font-weight:400;
+    font-size:31px;letter-spacing:.055em;color:#f3eee3;white-space:nowrap;
+    line-height:1;padding-top:3px}
+
+  /* A HYPHEN IN THE YEAR RANGE, and it is not a typographic preference here: the
+     repo forbids an en dash outright and baseball is on the guarded list, so the
+     card that has always shown 1901 to 2025 with a dash is the one string on it
+     that had to change spelling. */
+  .foot{margin-top:40px;font-family:'Archivo',sans-serif;font-weight:600;
+    font-size:25px;letter-spacing:.055em;color:#8d8574}
+</style>
+</head>
+<body>
+  <div class="frame"></div>
+
+  <div class="wrap">
+    <div class="mark">
+      <span class="rule l"></span>
+      <span class="id">
+        <!-- A diamond, which is the shape the game is named for and the only glyph
+             here that is not type. Drawn rather than an image file, because the game
+             ships no logo and a card waiting on one would not exist. -->
+        <svg width="34" height="34" viewBox="0 0 34 34" aria-hidden="true">
+          <path d="M17 2.5 31.5 17 17 31.5 2.5 17Z" fill="none" stroke="#e0ac3c" stroke-width="2.4" stroke-linejoin="round"/>
+          <circle cx="17" cy="17" r="4.1" fill="#e0ac3c"/>
+        </svg>
+        <b>RUNTHE.GG</b>
+      </span>
+      <span class="rule r"></span>
+    </div>
+
+    <h1>RUN THE <span class="g">DIAMOND</span></h1>
+
+    <p class="tag">Draft an all-time MLB roster. Chase the perfect season.</p>
+
+    <div class="pills">
+      <div class="pill">
+        <span class="ic"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+          <path d="M9 11a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Zm7.5.5a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM9 13c-3.3 0-6 1.8-6 4v2h12v-2c0-2.2-2.7-4-6-4Zm7.5.5c-.9 0-1.8.1-2.5.4 1.2 1 1.9 2.3 1.9 3.6V19h6v-1.8c0-1.9-2.4-3.7-5.4-3.7Z"/>
+        </svg></span>
+        <span class="bar"></span>
+        <span class="lb">Draft 12 legends</span>
+      </div>
+      <div class="pill">
+        <span class="ic"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+          <ellipse cx="12" cy="5.6" rx="7.5" ry="3.1"/>
+          <path d="M4.5 8.4v2.3c0 1.7 3.4 3.1 7.5 3.1s7.5-1.4 7.5-3.1V8.4c-1.6 1.3-4.4 2-7.5 2s-5.9-.7-7.5-2Z"/>
+          <path d="M4.5 13.2v2.3c0 1.7 3.4 3.1 7.5 3.1s7.5-1.4 7.5-3.1v-2.3c-1.6 1.3-4.4 2-7.5 2s-5.9-.7-7.5-2Z"/>
+        </svg></span>
+        <span class="bar"></span>
+        <span class="lb">$170M cap</span>
+      </div>
+      <div class="pill">
+        <span class="ic"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+          <path d="M18 4V2.8H6V4H2.4v2.2c0 2.6 1.9 4.8 4.5 5.3.8 1.6 2.3 2.8 4 3.2v3.1H7.6V20h8.8v-2.2h-3.3v-3.1c1.7-.4 3.2-1.6 4-3.2 2.6-.5 4.5-2.7 4.5-5.3V4H18ZM4.6 6.2H6v3.1c-.9-.5-1.4-1.4-1.4-2.4V6.2Zm14.8.7c0 1-.5 1.9-1.4 2.4V6.2h1.4v.7Z"/>
+        </svg></span>
+        <span class="bar"></span>
+        <span class="lb">Win the World Series</span>
+      </div>
+    </div>
+
+    <div class="foot">Free &middot; No download &middot; 1901-2025</div>
+  </div>
+</body></html>

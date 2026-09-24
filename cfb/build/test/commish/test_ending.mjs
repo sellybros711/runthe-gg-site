@@ -23,7 +23,7 @@ const URL = 'http://localhost:8080/cfb/commish/index.html';
 const UID = '11111111-1111-1111-1111-111111111111';
 const TESTER = 'commish-test-account';
 
-const stub = `
+const stubAs = (products) => `
 window.supabase={createClient(){
   const session={access_token:'x',user:{id:'${UID}',email:'c@e.com'}};
   return {auth:{onAuthStateChange(){return{data:{}}},
@@ -31,7 +31,14 @@ window.supabase={createClient(){
     signOut:()=>Promise.resolve({})},
     from(){return{select(){return{eq(){return{maybeSingle:()=>Promise.resolve(
       {data:{username:'${TESTER}'}})}}}}}},
-    rpc:()=>Promise.resolve({data:true,error:null})}}};`;
+    rpc:(fn)=>Promise.resolve({data:fn==='premium_products'?${JSON.stringify(products)}:true,error:null})}}};`;
+const stub = stubAs(['cfb_premium', 'ps_premium']);
+/* THE SAME ACCOUNT WITH NOTHING BOUGHT. It is the only way to be free now that `?tier=free`
+   has been removed, and it is also how an actual free player arrives, so the one section
+   that needs the free tier walks a real path rather than a switch only this suite could
+   reach. The switch drew a link on the mode's front screen, that link outlived the door
+   that hid it, and a player read "See what a free player sees" while being one. */
+const freeStub = stubAs([]);
 const arm = `
 (function(){ var v;
   Object.defineProperty(window,'PS_CFB_COMMISH_ACCESS',{configurable:true,
@@ -106,13 +113,21 @@ async function runTerm(mode) {
     }
   };
   /* THE TERM HAS TO ACTUALLY END. A year in review and an ending are the same screen, and
-     the button's own text is what tells them apart: mid-term it carries on, at the end it
-     offers the job again. Walking off the ending would test the wrong screen. */
+     something has to tell them apart, or the walk clicks straight off the ending and tests
+     the wrong screen.
+     THE SHARE BUTTON, NOT THE COPY ON THE NEXT ONE. This read the label of #b-year-next and
+     looked for "take the job again", which was the only thing that button ever said at the
+     end of a term. It says four different things now (an extension with a number of years
+     in it, another job after a sacking, or the Pro offer to a free account), and a walk
+     keyed to one of them silently stops recognising the ending, clicks through it, and
+     starts a fresh term instead: the symptom was this file reporting seven terms and seven
+     removals rather than one. #b-term-share is hidden on a year in review and shown on an
+     ending, which is structural rather than a sentence somebody may reword. */
   let ended = false;
   for (let i = 0; i < 460; i++) {
     if (await on('s-year')) {
-      const t = await p.$eval('#b-year-next', (e) => e.textContent).catch(() => '');
-      if (/take the job again/i.test(t)) { ended = true; break; }
+      const done = await p.$eval('#b-term-share', (e) => !e.hidden).catch(() => false);
+      if (done) { ended = true; break; }
       await p.click('#b-year-next').catch(() => {}); await p.waitForTimeout(220); continue;
     }
     if (await on('s-office')) { await p.click('#b-desk').catch(() => {}); await skip(); await p.waitForTimeout(180); continue; }
@@ -145,6 +160,7 @@ const up = await runTerm('up');
         q: (r.querySelector('.docq') || {}).textContent,
         style: (r.querySelector('.docfill') || {}).getAttribute('style') || '',
         bold: (r.querySelector('.docends b') || {}).textContent || '',
+        v: Number(r.getAttribute('data-v')),
       })),
       ev: [].slice.call(e.querySelectorAll('.docev span')).map((s) => s.textContent),
     };
@@ -161,9 +177,13 @@ const up = await runTerm('up');
   ok('  every axis drawn from the center out',
     card.rows.every((r) => /(^|;)\s*(left|right):50%/.test(r.style)),
     JSON.stringify(card.rows.map((r) => r.style.split(';')[0])));
+  /* AN AXIS AT EXACTLY ZERO HAS NO SIDE, and drawing neither end in ink is the honest
+     picture of a term that came out dead even on that question. Asserting every axis had a
+     bold end failed on those terms alone, which is a flake rather than a finding. The rule
+     with the exception written into it: ink a side whenever there is a side. */
   ok('  and the end it landed on is the one set in ink',
-    card.rows.every((r) => r.bold.length > 2),
-    card.rows.map((r) => r.bold).join(' | '));
+    card.rows.every((r) => (r.v === 0 ? r.bold === '' : r.bold.length > 2)),
+    card.rows.map((r) => r.v + ':' + (r.bold || 'even')).join(' | '));
   ok('  with what the sport looks like now underneath', card.ev.length === 4,
     JSON.stringify(card.ev));
 
@@ -221,7 +241,82 @@ console.log('\n=== the term is recorded, once, with what the card shows ===');
     /\d+ of \d+ among [A-Z]/.test(split.text) && !/among The /.test(split.text), split.text);
   ok('no page errors', !up.errs.length, up.errs.join(' | ') || 'none');
 }
+
+console.log('\n=== the career: a finished term goes on the books and comes back ===');
+{
+  /* THE PREMIUM SPINE. "Take the job again" had no memory attached: the next term opened on
+     a sport that had never heard of you. Now a finished term is written to storage the
+     moment the ending runs, and the shelf reads the whole record back. */
+  const kept = await up.p.evaluate(() => window.PS_CFB_COMMISH_TEST.career());
+  ok('the term just played is on the books', kept.terms.length === 1,
+    kept.terms.length + ' terms');
+  const t0 = kept.terms[0] || {};
+  ok('  with the year it began', t0.from === 2025, String(t0.from));
+  ok('  how it ended', typeof t0.reason === 'string' && t0.reason.length > 0, t0.reason);
+  ok('  what it believed', typeof t0.doctrine === 'string' && /^The /.test(t0.doctrine), t0.doctrine);
+  ok('  and what it graded', typeof t0.grade === 'string' && t0.grade.length >= 1, t0.grade);
+  const shelf = await up.p.evaluate(() => {
+    const e = document.getElementById('y-career');
+    return { hidden: e.hidden, text: e.textContent,
+      now: !!e.querySelector('.cterm.now'), rows: e.querySelectorAll('.cterm').length };
+  });
+  ok('the shelf is drawn on the ending', !shelf.hidden);
+  ok('  with this term marked on it', shelf.now && shelf.rows === 1, shelf.rows + ' rows');
+  ok('  and it says the record persists', /on the books/i.test(shelf.text),
+    shelf.text.slice(0, 90));
+
+  /* ENDING TWICE IS ONE TERM. The ending is reachable again for the same term (a reload, a
+     second quit), and a career with the same term on it twice is a record that lies. */
+  await up.p.evaluate(() => { try { window.PS_CFB_COMMISH_TEST.ending(); } catch (e) {} });
+  await up.p.waitForTimeout(400);
+  const twice = await up.p.evaluate(() => window.PS_CFB_COMMISH_TEST.career());
+  ok('running the ending again does not double the row', twice.terms.length === 1,
+    twice.terms.length + ' terms');
+
+  /* THE COMPARISON LINE, against a career written by hand, because playing four more full
+     terms here would cost minutes to prove one sentence. The shelf reads storage, so
+     storage is the honest place to fake. */
+  const judged = await up.p.evaluate(() => {
+    const mine = JSON.parse(localStorage.getItem('cfb_commish_career'));
+    const worse = Object.assign({}, mine.terms[0], { score: 5, grade: 'D' });
+    const best = Object.assign({}, mine.terms[0],
+      { score: 95, grade: 'A', doctrine: 'The Reformer', from: 2030, to: 2034 });
+    localStorage.setItem('cfb_commish_career', JSON.stringify(
+      { v: 1, rulings: mine.rulings, terms: [best, worse] }));
+    const el = document.getElementById('y-career');
+    window.PS_CFB_COMMISH_TEST.paintCareer(el);
+    const after = el.textContent;
+    localStorage.setItem('cfb_commish_career', JSON.stringify(mine));
+    return after;
+  });
+  ok('a worse term is told what the best one was',
+    /best is still 2030-34: A, as The Reformer/.test(judged), judged.slice(0, 140));
+}
 await up.p.close();
+
+console.log('\n=== and the free tier writes the record without being shown it ===');
+{
+  /* Every tier logs terms, so nothing a free player does is lost to them on the day they
+     pay. What free does not get is the shelf: absent, not locked, the same silent gate the
+     ruling note uses. */
+  const p = await b.newPage({ viewport: { width: 390, height: 900 } });
+  /* FREE IS THE ACCOUNT STATE, NEVER A FLAG. freeStub is this same account holding no
+     cfb_premium row, which is what a free player actually is. */
+  await p.addInitScript(arm + freeStub);
+  await p.addInitScript(`try{ localStorage.setItem('cfb_commish_career', JSON.stringify(
+    { v:1, rulings:12, terms:[{ from:2025, to:2029, removed:false, reason:'served',
+      doctrine:'The Reformer', grade:'B', score:70, rulings:40, champions:5 }] })); }catch(e){}`);
+  await p.goto(URL, { waitUntil: 'domcontentloaded', timeout: 40000 });
+  await p.waitForTimeout(2400);
+  const free = await p.evaluate(() => {
+    const el = document.getElementById('y-career');
+    window.PS_CFB_COMMISH_TEST.paintCareer(el);
+    return { hidden: el.hidden, kept: window.PS_CFB_COMMISH_TEST.career().terms.length };
+  });
+  ok('the record is there', free.kept === 1, free.kept + ' terms');
+  ok('  and the shelf is not', free.hidden === true);
+  await p.close();
+}
 
 console.log('\n=== a thin sample says so instead of inventing a percentage ===');
 {
@@ -299,8 +394,16 @@ console.log('\n=== the card states a fact and not a score ===');
     card.data.spectra.map((x) => x.id).join(' '));
   ok('  and facts about the sport it left', card.data.evidence.length >= 3,
     card.data.evidence.length + ' facts');
-  ok('the share text leads with a fact',
-    /five years/i.test(card.text) && /runthe\.gg/.test(card.text), card.text.split('\n')[0]);
+  /* THE YEARS, NOT A COUNT OF THEM. This asked for the literal string "five years", which
+     was true of every term when it was written and is true of none of them now: renewals
+     sign a contract for three to eight seasons, and a sacking cuts any of them short. The
+     assertion was holding the bug in place, so it names the SHAPE the sentence has to have
+     and then says out loud that the old wording must not come back. */
+  ok('the share text leads with the years it covered',
+    /I ran college football (from \d{4} to \d{4}|in \d{4})\./.test(card.text)
+      && /runthe\.gg/.test(card.text), card.text.split('\n')[0]);
+  ok('  and never claims a number of seasons it may not have served',
+    !/\b(three|four|five|six|seven|eight)\s+(years|seasons)\b/i.test(card.text));
   ok('no page errors', !run.errs.length, run.errs.join(' | ') || 'none');
   await run.p.close();
 }

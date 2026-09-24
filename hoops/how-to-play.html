@@ -38,7 +38,6 @@
     --line:rgba(255,255,255,.09);
     --display:'Anton',Impact,'Arial Narrow',sans-serif;
     --body:'Archivo',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
-    --mono:ui-monospace,'SF Mono',Menlo,Consolas,monospace;
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
   html{background:var(--bg);-webkit-text-size-adjust:100%;text-size-adjust:100%;}
@@ -83,7 +82,6 @@
   .spots{display:flex;flex-wrap:wrap;gap:7px;margin:2px 0 16px;}
   .spot{font-family:var(--display);font-size:15px;letter-spacing:.08em;color:#fff;
     padding:6px 13px;border-radius:8px;background:linear-gradient(180deg,#f0782d,#a8460f);}
-  .spot.flex{background:linear-gradient(180deg,#7c5cff,#4a2fb8);}
 
   table{width:100%;border-collapse:collapse;margin:6px 0 16px;font-size:14px;}
   th,td{text-align:left;padding:8px 9px;border-bottom:1px solid var(--line);
@@ -123,8 +121,8 @@
 
 <h1>How to play <span>Run The Floor</span></h1>
 <p class="lede">
-  Spin for a club and a season, sign one player off that roster, and do it six times. Then
-  play all 82 games. The whole game is what happens in between: six great players are not a
+  Spin for a club and a season, sign one player off that roster, and do it five times. Then
+  play all 82 games. The whole game is what happens in between: five great players are not a
   team, and this one is built to know the difference.
 </p>
 
@@ -132,22 +130,23 @@
 <ol class="rules">
   <li>The wheel gives you <b>a club and a season</b>, anywhere from 1972 to 2023. You sign
     one player off that roster.</li>
-  <li>Six spins fill six spots. Five starters and the first man off the bench:</li>
+  <li>Five spins fill a starting five. There is no bench:</li>
 </ol>
 <div class="spots">
   <span class="spot">PG</span><span class="spot">SG</span><span class="spot">SF</span>
-  <span class="spot">PF</span><span class="spot">C</span><span class="spot flex">6TH</span>
+  <span class="spot">PF</span><span class="spot">C</span>
 </div>
 <ol class="rules" start="3">
-  <li>Every signing comes out of a <b>$126M cap</b>, in the range of a real one. The
-    most expensive player in the game costs $60M, so one superstar eats 48% of your roster
-    and the other five have to fit under $85M.</li>
+  <li>Every signing comes out of a <b>$120M cap</b>, in the range of a real one. The
+    most expensive player in the game costs $60M, so one superstar eats half of your roster
+    and the other four have to fit under $60M.</li>
   <li>You may <b>re-spin</b> three times, for $5M, then $10M, then $15M, charged against
     the same cap. A re-spin burns the club you turned down.</li>
-  <li>The sixth man slot takes <b>anybody</b>, and he plays about 72% of a starter's
-    minutes. It is the cheapest place to hide a star and the easiest place to waste one.</li>
-  <li>No roster may hold more than <b>two of the same position</b>, and no club may give
-    up more than <b>two players</b> across a whole run.</li>
+  <li>Every man plays <b>all 48 minutes</b>. There is nobody behind him, so the weakest
+    starter is on the floor as long as the best one.</li>
+  <li>Positions overlap at the edges, the way they do in the sport: a combo guard can take
+    either guard spot. No roster may hold more than <b>two of the same position</b>, and no
+    club may give up more than <b>two players</b> across a whole run.</li>
   <li>Then you play <b>82 games</b> against real team-seasons out of the same data. Win 50
     and you are a top-six seed. Win 43 and you are in the play-in. Below that is the
     lottery.</li>
@@ -170,7 +169,7 @@
     worth exactly nothing, and hunting value alone is a trap: the best win shares per dollar in
     the game belong to minimum contract players, and a rotation of them spends 17% of the cap
     and wins seven games. The question at every pick is not "what is cheapest", it is
-    "who is the best player I can still afford six of".</p>
+    "who is the best player I can still afford five of".</p>
 
   <p><b>Price is what the market pays, not what the player is worth.</b> A season costs what a
     front office would have paid for that box score: points first, then rebounds, assists,
@@ -178,7 +177,7 @@
     bargains on it, and they are the men every fan can name from a title team who never
     scored: Dennis Rodman in 1990, Tyson Chandler in 2012, Horace Grant in 1992. The traps
     are the opposite, a high volume scorer on a bad team. Clicking the biggest number gets
-    you about 42 wins. The best six the same boards could have given you is about 61.</p>
+    you about 43 wins. The best five the same boards could have given you is about 61.</p>
 
   <p><b>A season costs what a man played of it.</b> Price is scaled by how much of his club's
     schedule he actually appeared in, because value already is: win shares are a count, so
@@ -200,32 +199,32 @@
   <p>A card carries what that man won <b>that season</b>, best first: MVP, Finals MVP,
     All-NBA, Defensive Player of the Year, a ring, Rookie of the Year, Sixth Man, Most
     Improved, All-Defensive, All-Star. The bright plates are the five a fan would lead with
-    and the duller ones are everything else, so a roster of six All-Stars does not look like
-    a roster of six MVPs.</p>
+    and the duller ones are everything else, so a roster of All-Stars does not look like
+    a roster of MVPs.</p>
   <p><b>It is a fact, not a rating.</b> The engine does not read these and no signing is
     worth a point more for carrying one. They are there because knowing that the 1990
     Celtics card in front of you belonged to a five-time All-Star is the sort of thing a
     fan knows, and the game should be paying you for knowing it rather than telling you.</p>
   <p>The cards used to carry labels worked out from the box score instead: rim protector,
     creator, no range. They came off for two reasons. They read the fit model's own answer
-    out loud, which turns the draft into collecting one of each colour. And a rate stat from
+    out loud, which turns the draft into collecting one of each color. And a rate stat from
     a single season is not a fact about a player: Karl-Anthony Towns took 1.1 threes a game
     in 2016 and the card called him no range, which is a fair reading of that column and an
     absurd thing to say about him.</p>
 </div>
 
-<h2>Six great players are not a team</h2>
+<h2>Five great players are not a team</h2>
 <p>
   Most draft games stop at "who is worth the most". This one does not, because that is not
   how a basketball roster works, and every fan already knows it. Five things get measured
-  after the sixth signature, and every one of them is an argument people have been having
+  after the fifth signature, and every one of them is an argument people have been having
   about actual NBA teams for forty years.
 </p>
 
 <h3>The ball only bounces once</h3>
 <p>
-  An NBA team takes about 88 shots a night, and a six man core accounts for roughly 72 of
-  them. Every player carries the shots he actually took. Sign six men who each took twenty
+  An NBA team takes about 88 shots a night, and a starting five accounts for roughly 66 of
+  them. Every player carries the shots he actually took. Sign five men who each took twenty
   a night on their own team and you have a roster asking for 120 shots that do not exist,
   and the game charges you for every one of them. This is the single largest penalty in the
   model, and it is the reason a lineup of Jordan, Harden, Bryant, Malone and O'Neal is a
@@ -234,7 +233,7 @@
 
 <h3>Spacing, measured against the player's own era</h3>
 <p>
-  Somebody has to be able to shoot or the paint is a car park. But the three-point line did
+  Somebody has to be able to shoot or the paint is a parking lot. But the three-point line did
   not exist until 1980, and Jerry West attempted zero of them in 1972 because nobody could.
   That is a fact about the league, not a flaw in Jerry West.
 </p>
@@ -263,7 +262,7 @@
 
 <h3>The glass</h3>
 <p>
-  The oldest argument in the sport, and the simplest one here: a core six should account for
+  The oldest argument in the sport, and the simplest one here: a starting five should account for
   about 34 rebounds a night. Below that you are giving away possessions.
 </p>
 
@@ -292,7 +291,7 @@
 
 <h2>What your roster plays</h2>
 <p>
-  When the sixth man signs, the game looks at what you have actually built and names it.
+  When the fifth man signs, the game looks at what you have actually built and names it.
   These are real systems that real teams won with, detected from the players in front of
   you rather than picked off a menu. Each one is worth a fraction of a rating point, which
   is a reward for building something coherent and never a substitute for building something
@@ -308,10 +307,10 @@
     <tr><td>Grit and Grind</td><td>Value sitting disproportionately at the defensive end, and no spacing</td></tr>
     <tr><td>Twin Towers</td><td>Two genuine bigs and the glass owned at both ends</td></tr>
     <tr><td>Bully Ball</td><td>A post man scoring 18 a night with the floor tight</td></tr>
-    <tr><td>Point Centre</td><td>A centre who is the roster's primary passer</td></tr>
+    <tr><td>Point Center</td><td>A center who is the roster's primary passer</td></tr>
     <tr><td>Moreyball</td><td>A high-volume shooting guard and a rim runner who never shoots</td></tr>
     <tr><td>Seven Seconds or Less</td><td>A shooting point guard and a floor stretched to the arc</td></tr>
-    <tr><td>The Death Lineup</td><td>No true centre at all, shooting everywhere, hands in every passing lane</td></tr>
+    <tr><td>The Death Lineup</td><td>No true center at all, shooting everywhere, hands in every passing lane</td></tr>
     <tr><td>Pace and Space</td><td>Shooting across the roster, however you got there</td></tr>
     <tr><td>Motion Offense</td><td>Nobody dominating the ball and everybody passing</td></tr>
     <tr><td>Iso Ball</td><td>One man taking a third of the shots and nobody creating</td></tr>
@@ -328,7 +327,7 @@
   same club in different years, then a draft class.
 </p>
 <p>
-  It <b>saturates</b>, hard. Six players off one roster collect fifteen links and get paid
+  It <b>saturates</b>, hard. Five players off one roster collect ten links and get paid
   for about three of them, because otherwise stacking one team-season would beat every
   other decision in the draft. The ceiling is worth about seven wins across a season, which
   is a real prize and nowhere near enough to replace talent.
@@ -349,6 +348,79 @@
 <p>
   Seventy-two wins is the 1996 Bulls. Seventy-three is the 2016 Warriors. Seventy-four has
   never happened.
+</p>
+
+<h2>The games worth playing, you play</h2>
+<p>
+  Most of the bracket settles itself. A game the series can end in does not. Lose it and
+  the run is over. Win it and the round is yours. Every Finals game counts whatever the
+  series says. Those stop and ask.
+</p>
+<p>
+  Play it and you get the whole game. Possession by possession, a real clock, a running
+  score, and your five men's points climbing beside it. Late and close, it stops and asks
+  you something a coach gets asked. The last shot. Whether to foul when you are up three.
+  Answer it and the game plays your answer.
+</p>
+<p>
+  Sim it and the game is decided the way every other game is. Playing is the better deal.
+  Measured over forty thousand games, a game played forward comes out about a point of win
+  rate ahead of one simmed. Sim the rest hurries the basketball at any time. It still stops
+  for your calls.
+</p>
+
+<h2>Today's run</h2>
+<p>
+  One run a day, and the wheel is seeded off the date. Everybody who plays today gets the
+  same five spins in the same order, so for once two records are the same question answered
+  twice. Send yours to somebody and they can answer it.
+</p>
+<p>
+  The day turns over at midnight Eastern, wherever you are, because a puzzle that changed
+  at a different moment for each player would give two people in one group chat two
+  different boards on the same night. Finish it and the front page keeps a count of the
+  days you have played in a row.
+</p>
+<p>
+  It is the whole league, not a locked one. Re-spins work the way they always do and cost
+  the same money, so two people on the same board are still making different decisions
+  with it.
+</p>
+
+<h2>One Franchise</h2>
+<p>
+  The same game with the club reel held still. Only the year spins, and every man you sign
+  really did wear the shirt. Thirty clubs, and each one counts its whole history: Oklahoma
+  City reaches Seattle, Memphis reaches Vancouver, and Charlotte reaches the Hornets of
+  Mourning and Larry Johnson.
+</p>
+<p>
+  It turns the draft into a history exam about one club. Which eras were loaded, which
+  years to re-spin away from, which cheap season hides a partner for your star. A Celtics
+  run has fifty-two seasons and eighteen rings behind it. A Pelicans run has twenty-four
+  seasons and no rings, and finding five good men in there is a different problem.
+</p>
+<p>
+  <b>Chemistry comes free here and that is deliberate.</b> Everybody on the roster shares
+  the club, so the franchise link fires on every pair and the bonus sits near its ceiling
+  whatever you draft. Measured across all thirty clubs it lands at +2.30 of a possible
+  +2.50. So chemistry stops being the decision in this mode and price, shape and spacing
+  become the whole of it. Your best season here is kept per club and never mixed with a
+  league run, because the two are not the same climb.
+</p>
+
+<h2>Decades</h2>
+<p>
+  Every club, one era. Five men who could have met on the floor. The seventies run from 1974,
+  which is where the data starts, and the rest are whole decades.
+</p>
+<p>
+  It is a narrower board than the league and a wider one than a single club, so chemistry is
+  still a live decision here: a shared college or a real backcourt has to be gone looking
+  for. What changes is the basketball. An eighties roster is playing eighties spacing
+  against eighties opponents, and a man who took nine threes a night does not exist to
+  draft. Each decade keeps its own best, because the seventies and the 2000s are nine wins
+  apart for the same drafting.
 </p>
 
 <a class="cta" href="/hoops/">Play Run The Floor</a>

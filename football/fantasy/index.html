@@ -1,0 +1,3020 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!-- UNLISTED AND NOINDEXED WHILE IT IS BEING BUILT, which is the same posture the wrestling
+     game and Run The Floor are in and is written up in CLAUDE.md under each of them. It is
+     not a lock: anybody with the URL is in, and the tester gate below is a feature flag
+     served to every visitor. Say that plainly rather than implying the link is private. -->
+<meta name="robots" content="noindex, nofollow">
+<title>Fantasy Challenge | RunThe.GG</title>
+<link rel="icon" href="/favicon.ico">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@500;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  /* The football game's own tokens. Copied rather than imported because this page loads
+     none of that page's CSS and a link to it would drag 4,000 lines of game screens in for
+     eleven variables. They are the SAME values, and the position colours especially: a
+     QB chip here must be the QB chip a player already knows from the draft next door. */
+  :root{
+    --bg:#080b14; --panel:#131a2b; --panel-2:#1a2337;
+    --line:rgba(255,255,255,.10); --line-2:rgba(255,255,255,.18);
+    --ink:#eef2f9; --dim:#94a3b8; --dim-2:#7d8fa8;
+    --red:#ef4444; --blue:#3b82f6; --green:#22c55e; --gold:#f0c96b;
+    --qb:#ff0a3b; --rb:#22c55e; --wr:#0f93ff; --te:#eb9500;
+    --grad-red:linear-gradient(135deg,#f05252 0%,#b91c1c 100%);
+    --grad-blue:linear-gradient(135deg,#4d8ef7 0%,#1a49c4 100%);
+    --grad-panel:linear-gradient(180deg,#182134 0%,#111827 100%);
+    --shadow:0 18px 40px -14px rgba(0,0,0,.85), 0 3px 10px -4px rgba(0,0,0,.6);
+    --fd:'Anton',Impact,'Haettenschweiler',sans-serif;
+    --fn:'Archivo',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+    --fb:'Inter',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html{overscroll-behavior:none}
+  html,body{margin:0;background:var(--bg);color:var(--ink)}
+  body{font-family:var(--fb);font-size:16px;line-height:1.45;
+    background-image:radial-gradient(1000px 600px at 50% -8%, rgba(59,130,246,.10), transparent 70%),
+                     radial-gradient(800px 500px at 100% 100%, rgba(239,68,68,.07), transparent 70%);
+    background-attachment:fixed}
+  .wrap{max-width:600px;margin:0 auto;padding:14px 14px 46px}
+  h1,h2,h3{margin:0;line-height:1.05}
+  .display{font-family:var(--fd);font-weight:400;letter-spacing:.01em;text-transform:uppercase}
+  .num{font-family:var(--fd);font-variant-numeric:tabular-nums;letter-spacing:.02em}
+  .eyebrow{font-family:var(--fn);text-transform:uppercase;letter-spacing:.16em;
+    font-size:11px;font-weight:700;color:var(--dim-2)}
+  .dim{color:var(--dim)}
+  button{font:inherit;color:inherit;cursor:pointer;border:none;background:none}
+  a{color:var(--blue)}
+  .btn{display:block;width:100%;padding:16px 18px;border-radius:12px;background:var(--grad-red);
+    color:#fff;font-family:var(--fn);font-size:17px;font-weight:700;text-transform:uppercase;
+    letter-spacing:.045em;text-align:center;box-shadow:var(--shadow);position:relative;
+    overflow:hidden;transition:transform .07s ease,filter .15s ease}
+  .btn:before{content:'';position:absolute;left:0;right:0;top:0;height:40%;
+    background:linear-gradient(180deg,rgba(255,255,255,.22),transparent)}
+  .btn:active{transform:translateY(1px) scale(.995);filter:brightness(1.08)}
+  .btn:disabled{opacity:.4;cursor:default}
+  .btn.blue{background:var(--grad-blue)}
+  .btn.quiet{background:none;border:1px solid var(--line-2);color:var(--dim);box-shadow:none}
+  .btn.quiet:before{display:none}
+  /* .btn sets display:block, so [hidden] loses to it. This file's own version of the rule
+     that has been learned seven times in football/index.html. */
+  .btn[hidden]{display:none}
+  /* Three of the buttons on this page are anchors, because they leave it. .btn was written
+     for <button>, so nothing in it turns the browser's own underline off, and a full width
+     control with an underline through its label reads as a mistake. Found by taking a
+     screenshot and looking at it, which is the only way this class of thing is ever found. */
+  a.btn{text-decoration:none}
+  .card{background:var(--grad-panel);border:1px solid var(--line);border-radius:14px;
+    padding:14px;box-shadow:var(--shadow)}
+
+  /* ---- the header ---- */
+  .top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
+  /* THE HEADER HAS TO HOLD TWO THINGS ON ONE LINE AT 360px, and the first draft did not:
+     the wordmark at 23px and a link reading THE PERFECT SEASON came to about 400px of the
+     362 available, so both wrapped and the page opened on four lines of chrome.
+     MEASURED IN THE HARNESS, WHICH IS THE SAFE DIRECTION HERE. Google Fonts does not
+     resolve in the dev sandbox, so Anton falls back to a face about a third wider: a header
+     that fits here has room to spare on a real phone. */
+  .top a{color:var(--dim);font-family:var(--fn);font-size:12px;font-weight:700;
+    letter-spacing:.04em;text-decoration:none;text-transform:uppercase;white-space:nowrap}
+  .mark{font-family:var(--fd);font-size:19px;letter-spacing:.01em;text-transform:uppercase;
+    white-space:nowrap}
+  .mark i{font-style:normal;color:var(--gold)}
+
+  /* ---- the screens ---- */
+  .screen{display:none}
+  .screen.on{display:block}
+
+  /* ---- the cap rail ---- */
+  .rail{display:flex;align-items:baseline;justify-content:space-between;gap:8px;
+    padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--panel);
+    margin-bottom:10px}
+  .rail b{font-family:var(--fd);font-size:26px;font-variant-numeric:tabular-nums;font-weight:400}
+  .rail .lo{color:var(--red)}
+
+  /* ---- the slot strip ---- */
+  .slots{display:flex;gap:5px;margin-bottom:12px}
+  .slot{flex:1;text-align:center;padding:6px 2px 7px;border-radius:9px;
+    border:1px solid var(--line);background:rgba(255,255,255,.02);min-width:0}
+  .slot .p{font-family:var(--fn);font-size:10px;font-weight:800;letter-spacing:.08em;
+    color:var(--dim-2)}
+  .slot .n{font-family:var(--fb);font-size:10px;font-weight:600;color:var(--dim-2);
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .slot.done{background:rgba(34,197,94,.10);border-color:rgba(34,197,94,.35)}
+  .slot.done .n{color:var(--ink)}
+  .slot.now{border-color:var(--gold);background:rgba(240,201,107,.10)}
+  .slot.now .p{color:var(--gold)}
+
+  /* ---- a man on the board ---- */
+  .men{display:flex;flex-direction:column;gap:8px}
+  /* A GRID AND NOT A WRAPPING FLEX ROW, and that is a correction rather than a preference.
+     `flex-wrap` was the first way to give the stat line a row of its own, with `flex:0 0
+     100%` on it, and it works at 390. It also lets the TOP row break: at 320 the position
+     chip, the name and the price no longer fit on one line, so the price wrapped onto its
+     own and that row came out 121px against the other four at 81. Wrap is a property of the
+     container, so it cannot be granted to one child.
+     Named areas cannot do that. The row is two rows at every width by construction, and the
+     only thing narrowing the viewport can take is name characters, which is what
+     `minmax(0,1fr)` and the ellipsis on it are for.
+     The row gap is small and separate from the column gap: the three lines of a man are one
+     block, and a 10px gutter between them would read as three unrelated things. */
+  .man{display:grid;grid-template-columns:38px minmax(0,1fr) auto;
+    grid-template-areas:"pos who cost" "stat stat stat";
+    align-items:center;column-gap:10px;row-gap:3px;width:100%;text-align:left;
+    padding:10px 12px;border-radius:12px;border:1px solid var(--line);
+    background:var(--panel);transition:transform .07s ease,border-color .15s ease}
+  .man:active{transform:translateY(1px)}
+  .man:disabled{opacity:.38;cursor:default}
+  /* A MAN YOU CANNOT AFFORD IS STILL FULLY LEGIBLE, and that is the point of showing him.
+     Faded to nothing he is a rendering fault; faded a little he is what you gave up.
+
+     DIMMED PART BY PART AND NOT WITH ONE OPACITY ON THE ROW. Opacity on a parent applies to
+     the whole subtree and a child cannot opt back out of it, so `opacity:1` on the price
+     inside a faded row is a rule that does nothing. The price is the reason the row is grey,
+     so it is the one thing that stays at full strength, and that is only possible if the row
+     itself is never faded. `.man:disabled` above would do exactly that, so this wins on
+     order and puts the fade on the parts instead. */
+  .man.poor{opacity:1;border-color:rgba(255,255,255,.06);background:transparent}
+  .man.poor:active{transform:none}
+  /* The stat line fades with the name and the chip, or a row greyed for the money keeps one
+     part at full strength for no reason a reader could name. */
+  .man.poor .pos,.man.poor .who,.man.poor .statline{opacity:.42}
+  .man.poor .cost b{color:var(--gold)}
+  .man.poor .cost s{color:var(--gold);opacity:.75}
+
+  /* ---- what the injury report says ----
+     RED IS FOR A MAN WHO WILL PROBABLY NOT PLAY and gold is for a man who might. Those are
+     two different decisions and one colour for both would be the board saying the same
+     thing about a hamstring that has ruled somebody out and one that has not.
+
+     A MAN ON INJURED RESERVE IS NEITHER, and he is not here: he is left out of the pool
+     entirely, the way a man whose club is idle is, because there is no decision about him
+     and no news to read. The chip only ever appears on somebody who is on a roster. */
+  .inj{flex:0 0 auto;display:inline-flex;align-items:center;
+    font-family:var(--fn);font-size:9.5px;font-weight:800;letter-spacing:.07em;
+    text-transform:uppercase;padding:2px 6px;border-radius:5px;line-height:1.3;
+    border:1px solid rgba(239,68,68,.55);color:#fca5a5;background:rgba(239,68,68,.15)}
+  .inj.q{border-color:rgba(240,201,107,.5);color:var(--gold);background:rgba(240,201,107,.12)}
+  .inj.none{border-color:var(--line-2);color:var(--dim-2);background:none}
+
+  /* A MAN WHO CANNOT PLAY IS NOT THE SAME GREY AS A MAN YOU CANNOT AFFORD, and the two are
+     separated for the same reason the colours are: the cap row's price stays gold because
+     the price is why it is grey, and here the reason is the chip, so the chip stays loud
+     and the NAME stays fully legible. What recedes is everything that was about buying him. */
+  .man.hurt{border-color:rgba(239,68,68,.28);background:transparent}
+  .man.hurt .pos{opacity:.45}
+  .man.hurt .who s,.man.hurt .statline{opacity:.45}
+  .man.hurt .cost{opacity:.45}
+  .man.hurt:active{transform:none}
+
+  /* The sheet a chip opens. Bottom anchored, because it is opened by a thumb near the
+     bottom of a list and a centred box would put the answer under the hand that asked. */
+  .isheet{position:fixed;inset:0;z-index:40;display:flex;align-items:flex-end;
+    justify-content:center;background:rgba(4,7,14,.74);padding:12px}
+  .isheet[hidden]{display:none}
+
+  /* ---- where you finished ----
+     The place is the loudest thing on the sheet, because it is the one fact a reader opened
+     it for. Everything else is a caption on it. */
+  .przhead{display:flex;align-items:baseline;gap:10px;margin-top:6px}
+  .przplace{font-family:var(--fd);font-size:46px;line-height:1;font-weight:400;
+    font-variant-numeric:tabular-nums}
+  .przof{flex:1 1 auto;min-width:0}
+  .przof b{display:block;font-family:var(--fn);font-size:15px;font-weight:700}
+  .przof s{display:block;text-decoration:none;font-size:12px;color:var(--dim-2);
+    font-variant-numeric:tabular-nums}
+  /* Gold for the top three and nothing else, which is what gold means everywhere else on
+     this site: an achievement rather than a decoration. */
+  .przplace.pod{color:var(--gold)}
+
+  /* THE CODE IS A BUTTON BECAUSE THE ONLY THING ANYBODY WANTS TO DO WITH IT IS COPY IT.
+     Written as text it is fifteen characters somebody has to select by hand on a phone,
+     mid sheet, and get exactly right. `user-select:all` is the fallback for a browser that
+     refuses the clipboard: one tap selects the whole string rather than a word of it. */
+  .przcode{display:flex;align-items:center;justify-content:space-between;gap:10px;
+    width:100%;margin-top:6px;padding:12px 14px;border-radius:12px;cursor:pointer;
+    text-align:left;background:rgba(212,175,55,.10);border:1px solid rgba(212,175,55,.5)}
+  .przcode span{font-family:var(--fd);font-size:21px;letter-spacing:.04em;color:var(--gold);
+    user-select:all;word-break:break-all}
+  .przcode em{flex:0 0 auto;font-style:normal;font-size:11px;letter-spacing:.06em;
+    text-transform:uppercase;color:var(--dim-2)}
+  .przcode:disabled{cursor:default}
+  /* display:flex, so the attribute needs its own rule. Ninth time in this repo. */
+  #prz-win[hidden]{display:none}
+  .confetti-cv{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:41}
+  .ibox{width:100%;max-width:560px;border-radius:16px;border:1px solid var(--line-2);
+    background:var(--grad-panel);box-shadow:var(--shadow);padding:16px 16px 14px}
+
+  /* ---- the reveal ----
+     THE ROWS ARE IN THE DOM BEFORE THEY ARE READABLE, which is the whole of why this is
+     safe. A skeleton of placeholders cannot hold the layout exactly, because a row with a
+     two line stat line is 74px and a one line one is 63, so a board built out of
+     stand-ins steps the moment the real men arrive. Built for real and revealed, the box
+     is right on the first frame and nothing below the board ever moves. That is the hoops
+     draft board's lesson, where emptying the container first moved the court 1,554px.
+
+     OPACITY AND TRANSFORM ONLY. Both are composited, so a five row stagger costs no layout
+     and no paint, and a row animating in cannot push its neighbours around. */
+  .man{opacity:1}
+  .men.dealing .man{opacity:0;transform:translateY(8px) scale(.985)}
+  .men.dealing .man.up{opacity:1;transform:none;
+    transition:opacity .22s ease,transform .26s cubic-bezier(.2,.9,.3,1)}
+  /* The man you just signed, on his way out. He is the only thing on the board that has
+     to be acknowledged, so he goes green and lifts while the other four fall away. */
+  .men.clearing .man{opacity:0;transform:translateY(-6px);
+    transition:opacity .16s ease,transform .16s ease}
+  .men.clearing .man.took{opacity:1;transform:none;border-color:rgba(34,197,94,.55);
+    background:rgba(34,197,94,.10)}
+
+  /* A slot filling in. One pop, on the cell that just changed, never on the strip. */
+  @keyframes slotIn{from{transform:scale(.9);opacity:.4}to{transform:none;opacity:1}}
+  .slot.just{animation:slotIn .26s cubic-bezier(.2,.9,.3,1)}
+
+  /* THE MONEY IS COUNTED DOWN IN SCRIPT, so the only thing CSS does here is mark the tick.
+     A number that snaps from $90M to $66M reads as a different screen rather than as
+     something you spent. */
+  #d-left{transition:color .2s ease}
+  #d-left.spending{color:var(--gold)}
+
+  /* NOTHING ABOVE IS LOAD-BEARING, so all of it comes off for a reader who asked. The
+     board is fully readable with every rule here disabled, which is the test of whether a
+     reveal is decoration or a mechanism. */
+  @media (prefers-reduced-motion:reduce){
+    .men.dealing .man,.men.clearing .man{opacity:1;transform:none;transition:none}
+    .slot.just{animation:none}
+    #d-left{transition:none}
+  }
+  .pos{grid-area:pos;text-align:center;font-family:var(--fn);font-size:11px;font-weight:800;
+    letter-spacing:.04em;padding:3px 0;border-radius:6px;color:#fff}
+  .pos.QB{background:var(--qb)} .pos.RB{background:var(--rb)}
+  .pos.WR{background:var(--wr)} .pos.TE{background:var(--te)}
+  /* min-width:0 on the growing child, or a long name refuses to shrink and pushes the
+     price off the row. The name is what absorbs it, never the price. */
+  .who{grid-area:who;min-width:0}
+  /* A FLEX ROW RATHER THAN A BLOCK, so the injury chip sits on the name line and cannot
+     wrap onto a second one. A chip that wrapped would make that row taller than the other
+     four, which is the board stepping again: the same rule the stat line's two line floor
+     below is written for. The NAME is what shrinks, inside its own element, because the
+     chip is the one thing on the row that must not be truncated. */
+  /* AN EXPLICIT LINE HEIGHT, because `normal` is a FONT METRIC and the row's height is
+     otherwise one. Measured across a board it wobbled 21.638px to 21.750px name to name, so
+     the five rows came out 80.83 to 81.25 and rounded to two different whole pixels at some
+     widths and one at others. Nothing a reader would see, and it makes "every row is the
+     same height" a claim that holds or not depending on which names were dealt. Pinned, the
+     row is three line heights and its padding, which is arithmetic. */
+  .who b{display:flex;align-items:center;gap:7px;min-width:0;
+    font-family:var(--fn);font-size:15px;font-weight:700;line-height:1.45;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .who b i{font-style:normal;min-width:0;overflow:hidden;text-overflow:ellipsis}
+  /* THE MATCHUP, AND NOTHING ELSE ON THIS LINE. It used to carry the stat line after a
+     middot, which in this column had about 215px at 390 and therefore ran to two lines with
+     "TD" orphaned on the second. The stats are a row of their own now, below.
+
+     ONE LINE BY CONSTRUCTION. "DET vs NYJ" is eleven characters and cannot wrap, so the two
+     line clamp and the two line floor this rule used to carry are both gone: every row on
+     every board is now a name, a matchup and a stat line, which is the same three lines
+     whatever is on it. That is what keeps the board from stepping when you sign somebody,
+     and it is now a property of the SHAPE rather than of a min-height somebody has to
+     remember. The defect it replaces was worth up to 31px on four presses of five. */
+  .who s{display:block;text-decoration:none;font-size:11.5px;line-height:1.3;
+    color:var(--dim-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  /* The club wears its own colour and the joining word does not: "vs" is not a team. */
+  /* THE CLUB CHIP AND ITS JOINING WORD, defined once because two surfaces draw them: the
+     board row and the confirm sheet. `em` and `i` are italic by default, so a second surface
+     that forgot these rules would print the code in italics and nothing would say so. */
+  .club{font-style:normal;font-weight:700;letter-spacing:.02em}
+  .vs{font-style:normal;opacity:.7}
+
+  /* THE STAT LINE, FULL WIDTH AND NEVER WRAPPING. `flex:0 0 100%` is what puts it on its own
+     row of the button's wrap, under the position chip as well as the name, which is where
+     the width comes from: 334px against the name column's 215 at a 390px phone. The longest
+     line the board can produce is 40 characters, so it fits with room even in the fallback
+     face this repo's harness renders, which is the wider of the two.
+     Ellipsis rather than wrap, so that a longer line somebody adds later costs a few
+     characters instead of silently making one row taller than the other four. */
+  .statline{grid-area:stat;min-width:0;font-size:11.5px;line-height:1.3;color:var(--dim-2);
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .cost{grid-area:cost;text-align:right}
+  .cost b{display:block;font-family:var(--fd);font-size:19px;font-weight:400;
+    font-variant-numeric:tabular-nums}
+  .cost s{display:block;text-decoration:none;font-family:var(--fn);font-size:9.5px;
+    font-weight:700;letter-spacing:.08em;color:var(--dim-2);text-transform:uppercase}
+
+  /* ---- the five, reviewed ---- */
+  .five{display:flex;flex-direction:column;gap:10px}
+  .lineup{border:1px solid var(--line);border-radius:14px;background:var(--grad-panel);
+    padding:12px;width:100%;text-align:left}
+  .lineup.pick{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold) inset}
+  .lineup .hd{display:flex;align-items:baseline;justify-content:space-between;gap:8px;
+    margin-bottom:8px}
+  .lineup .hd b{font-family:var(--fd);font-size:15px;font-weight:400;letter-spacing:.04em;
+    text-transform:uppercase}
+  .lineup .pj{font-family:var(--fd);font-size:27px;font-weight:400;
+    font-variant-numeric:tabular-nums;line-height:1}
+  .lineup .pj s{text-decoration:none;font-family:var(--fn);font-size:9.5px;font-weight:700;
+    letter-spacing:.09em;color:var(--dim-2);display:block;text-align:right}
+  .roster{display:flex;flex-direction:column;gap:3px}
+  .rrow{display:flex;align-items:center;gap:8px;font-size:13px}
+  .rrow .rp{flex:0 0 28px;font-family:var(--fn);font-size:9.5px;font-weight:800;
+    text-align:center;border-radius:4px;padding:2px 0;color:#fff}
+  .rrow .rp.QB{background:var(--qb)} .rrow .rp.RB{background:var(--rb)}
+  .rrow .rp.WR{background:var(--wr)} .rrow .rp.TE{background:var(--te)}
+  .rrow .rn{flex:1 1 auto;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .rrow .rc{flex:0 0 auto;color:var(--dim-2);font-variant-numeric:tabular-nums;font-size:12px}
+  /* A scored row: what he did under his name, and what he scored on the right.
+     THE NAME SHRINKS AND THE SCORE DOES NOT. A reader checking a total against six numbers
+     is looking at the right hand column, and a name is still a name with two letters off. */
+  .rrow.got{align-items:flex-start;padding:3px 0}
+  /* THE WRAP IS A FLEX COLUMN AND THE NAME GETS ITS OWN ELEMENT, which is not decoration.
+     `.rrow .rn` sets white-space:nowrap so a name never wraps, and white-space INHERITS, so
+     a two line clamp on the stat line under it does nothing at all: the line came out cut
+     mid word with no ellipsis, which is worse than the truncation it was added to fix. The
+     nowrap belongs on the NAME, which is the half that has to stay on one line. */
+  .rrow.got .rn{display:flex;flex-direction:column;min-width:0;white-space:normal;
+    overflow:visible}
+  .rrow.got .rn b{font-weight:400;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  /* TWO LINES, for the reason the board's stat line gets them: a quarterback's day is
+     "312 pass yds, 3 TD, 41 rush yds, 1 TD" and cut to one line it loses the rushing half,
+     which on this screen is a chunk of the number printed beside it. Clamped at two so a
+     six row list keeps one rhythm. */
+  .rrow.got .rn s{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;
+    text-decoration:none;font-size:11px;line-height:1.35;color:var(--dim-2);overflow:hidden}
+  .rrow .rs{flex:0 0 auto;font-family:var(--fd);font-size:17px;font-weight:400;
+    font-variant-numeric:tabular-nums;min-width:42px;text-align:right}
+  .rrow .rs.zero{color:var(--dim-2)}
+  /* The projection beside the real total. Quiet, because the real one is the answer. */
+  .vs{margin-top:2px;font-family:var(--fn);font-size:12.5px;font-weight:600;color:var(--dim)}
+  .vs b{font-variant-numeric:tabular-nums;font-weight:800}
+  .vs .up{color:var(--green)} .vs .dn{color:#fca5a5}
+  /* Last week's result, on the home screen, so the loop closes. */
+  .lastwk{display:flex;align-items:center;gap:10px;width:100%;text-align:left;margin-top:12px;
+    padding:11px 13px;border-radius:12px;border:1px solid var(--line-2);background:var(--panel)}
+  .lastwk .lw{flex:1 1 auto;min-width:0}
+  .lastwk .lw b{display:block;font-family:var(--fn);font-size:14px;font-weight:700}
+  .lastwk .lw s{display:block;text-decoration:none;font-size:11.5px;color:var(--dim-2)}
+  .lastwk .lp{flex:0 0 auto;font-family:var(--fd);font-size:25px;font-weight:400;
+    font-variant-numeric:tabular-nums}
+  /* display:flex, so the attribute needs its own rule. Eighth time in this repo. */
+  .lastwk[hidden]{display:none}
+  /* The place on the door takes the same gold the sheet's does, and the same rule: the top
+     three and nothing else. */
+  .lastwk .lp.pod{color:var(--gold)}
+
+  /* The week's standings. A place, a name and a score, and the reader's own row picked out
+     by the blue rail every board on this site uses for WHOSE row it is. */
+  .board{display:flex;flex-direction:column;gap:2px}
+  .brow{display:flex;align-items:center;gap:9px;font-size:13px;padding:4px 7px;
+    border-radius:8px;border-left:3px solid transparent}
+  .brow.me{background:var(--panel);border-left-color:var(--blue)}
+  .brow .bp{flex:0 0 26px;font-family:var(--fd);font-size:15px;font-weight:400;
+    font-variant-numeric:tabular-nums;color:var(--dim-2);text-align:right}
+  .brow.me .bp{color:var(--ink)}
+  .brow .bn{flex:1 1 auto;min-width:0;white-space:nowrap;overflow:hidden;
+    text-overflow:ellipsis}
+  .brow .bs{flex:0 0 auto;font-family:var(--fd);font-size:17px;font-weight:400;
+    font-variant-numeric:tabular-nums;min-width:48px;text-align:right}
+  /* The gap between the top fifty and a reader below it. A row of dots rather than nothing,
+     because a board that jumps from 50 to 112 with no mark reads as a rendering fault. */
+  .brow.gap{color:var(--dim-2);justify-content:center;padding:1px 0}
+
+  /* Who is in, before anybody can see a lineup. It wears the board's own shape and the blue
+     rail every board on this site uses for WHOSE row it is, AND IT CARRIES NO NUMBER, which
+     is the whole difference: a place implies a score and there is no score yet, so a numbered
+     list before the games would invent a standing out of who pressed first. */
+  .erow{display:flex;align-items:center;gap:9px;font-size:13px;padding:4px 7px;
+    border-radius:8px;border-left:3px solid transparent}
+  .erow.me{background:var(--panel);border-left-color:var(--blue)}
+  .erow .en{flex:1 1 auto;min-width:0;white-space:nowrap;overflow:hidden;
+    text-overflow:ellipsis}
+  .erow .ey{flex:0 0 auto;font-size:10px;letter-spacing:.06em;text-transform:uppercase;
+    color:var(--dim-2)}
+
+  /* ---- the board while the games are on ----
+     EVERY MOVING THING HERE IS A TRANSFORM OR AN OPACITY, which is the rule the hoops live
+     board and the football boss battle both run on: both are composited, so twenty five
+     rows sliding past each other cost no layout and no repaint. A board that animated
+     `top` would ask for a layout of the whole list on every frame of every reorder.
+
+     THE TRANSITION IS DECLARED HERE AND DRIVEN FROM SCRIPT. The script does the measuring
+     (where a row was, where it now is) and writes one inverse transform; the rule below is
+     what plays it back to nothing. Written as a keyframe instead, every row would replay it
+     on every repaint, because the painter rebuilds the list and a new node starts its
+     animations over. That is the bracket's own lesson in the hoops game. */
+  .brow{transition:transform .52s cubic-bezier(.22,.9,.28,1),
+    background-color .5s ease,border-left-color .5s ease}
+  /* Mid flight, lifted clear so a row passing another reads as passing rather than merging.
+     Removed as soon as the move ends, so a settled board has a flat stack again. */
+  .brow.moving{position:relative;z-index:2}
+  /* WHICH WAY IT WENT, for the half second it is going. A row that climbed and a row that
+     fell look identical once they have arrived, and the movement is over in half a second:
+     without this the only reader who knows what happened is the one who was watching that
+     exact row. Green up, red down, gone by the time it settles. */
+  .brow.up{background-color:rgba(34,197,94,.13);border-left-color:rgba(34,197,94,.55)}
+  .brow.down{background-color:rgba(239,68,68,.10);border-left-color:rgba(239,68,68,.45)}
+  /* A row whose SCORE moved but whose PLACE did not. Most of a quiet afternoon is this:
+     somebody catches a pass, one number changes, nobody overtakes anybody. Without it the
+     board looks frozen while it is in fact working perfectly. */
+  @keyframes bscore{0%{transform:scale(1)}28%{transform:scale(1.13)}100%{transform:scale(1)}}
+  .brow .bs.tick{animation:bscore .45s ease;color:var(--gold)}
+
+  /* ---- the real games ----
+     A SCOREBOARD IS READ AT A GLANCE AND THE GLANCE IS "WHO IS WINNING", so the leading
+     club is the only thing at full brightness and everything else recedes. A row where both
+     lines are equally loud is a row that has to be read rather than seen, sixteen times. */
+  .gms{display:flex;flex-direction:column;gap:6px}
+  .gm{display:flex;align-items:center;gap:10px;padding:7px 10px;border-radius:10px;
+    background:var(--panel);border:1px solid var(--line)}
+  .gm .gsides{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:1px}
+  .gt{display:flex;align-items:baseline;gap:10px}
+  .gt b{flex:0 0 40px;font-family:var(--fn);font-size:13px;font-weight:700;
+    letter-spacing:.04em;color:var(--dim-2)}
+  .gt i{font-family:var(--fd);font-style:normal;font-size:17px;line-height:1.1;
+    font-variant-numeric:tabular-nums;color:var(--dim-2)}
+  .gt.lead b{color:var(--ink)}
+  .gt.lead i{color:var(--ink)}
+  .gm .gst{flex:0 0 auto;text-align:right;font-family:var(--fn);font-size:10px;
+    font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:var(--dim-2)}
+  /* The clock under the quarter. Tabular, because a scoreboard of sixteen games with the
+     colons in sixteen places reads as a list of unrelated things. */
+  .gm .gst s{display:block;text-decoration:none;font-family:var(--fd);font-size:14px;
+    letter-spacing:.02em;color:var(--dim);font-variant-numeric:tabular-nums}
+  .gm.live{border-color:rgba(239,68,68,.34)}
+  .gm.live .gst{color:#fca5a5}
+
+  /* TWO PANELS, ONE AT A TIME, AND THAT IS A MEASUREMENT RATHER THAN A PREFERENCE.
+     Sixteen games is about 980px at 390 and a full board is fifty rows, so whichever of the
+     two is drawn second is behind a scroll of the other for the whole afternoon. Stacked,
+     the competition this site is actually about sat under the entire NFL slate. Found by
+     taking a screenshot and looking at it, which is how three things on this page have been
+     found now.
+     EACH DOOR LANDS ON WHAT IT PROMISED: the pill says Live scores and opens the games, the
+     entry screen's button says the board and opens the board. A single default would make
+     one of the two a control that takes you somewhere else. */
+  .tabs{display:flex;gap:8px;margin:14px 0 4px}
+  .tabs button{flex:1 1 0;padding:9px 10px;border-radius:999px;border:1px solid var(--line);
+    font-family:var(--fn);font-size:11.5px;font-weight:800;letter-spacing:.08em;
+    text-transform:uppercase;color:var(--dim-2);background:none}
+  .tabs button.on{background:var(--panel-2);border-color:var(--line-2);color:var(--ink)}
+
+  /* THE WAY IN, WHILE THE GAMES ARE ON.
+     Pinned rather than put on a screen, because which screen somebody is on when they want
+     the scores is not something this page gets to decide: they are as likely to be looking
+     at their own six as at the home screen. It is the only fixed thing on this page, so the
+     wrap grows a floor to sit above it: over the last control it would be a button covering
+     the way out, which is the boss battle's own Continue arriving at a pill. */
+  .livebtn{position:fixed;left:50%;transform:translateX(-50%);z-index:30;
+    bottom:calc(14px + env(safe-area-inset-bottom));
+    display:flex;align-items:center;gap:8px;padding:11px 18px 11px 15px;border-radius:999px;
+    background:var(--grad-red);color:#fff;font-family:var(--fn);font-size:12.5px;
+    font-weight:800;letter-spacing:.07em;text-transform:uppercase;box-shadow:var(--shadow);
+    border:1px solid rgba(255,255,255,.16)}
+  /* display:flex, so the attribute needs its own rule. Ninth time in this repo. */
+  .livebtn[hidden]{display:none}
+  .livebtn .bdot{background:#fff;animation:bpulse 1.9s ease-in-out infinite}
+  body.haslive .wrap{padding-bottom:92px}
+
+  /* The live header: a dot that breathes, what it is as of, and how much of the week is in. */
+  .blive{display:flex;align-items:center;gap:7px;flex-wrap:wrap;
+    font-size:11.5px;color:var(--dim-2);margin:2px 0 7px}
+  .blive b{font-weight:600;color:var(--ink);letter-spacing:.06em;font-size:10.5px}
+  .bdot{width:7px;height:7px;border-radius:50%;background:#ef4444;flex:0 0 auto}
+  @keyframes bpulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.45;transform:scale(.78)}}
+  .blive.on .bdot{animation:bpulse 1.9s ease-in-out infinite}
+  /* STOPPED IS ITS OWN STATE AND NOT A MISSING ONE. A feed that has quietly died looks
+     exactly like a quiet afternoon, so the dot goes grey and stops rather than going on
+     breathing over a number that is not moving. */
+  .blive.cold .bdot{background:var(--dim-2);animation:none}
+  .blive.done .bdot{background:#22c55e;animation:none}
+
+  /* NONE OF IT IS LOAD BEARING. The board is the same board with every rule here disabled,
+     which is the test of whether motion is a mechanism or decoration. */
+  @media (prefers-reduced-motion:reduce){
+    .brow{transition:none}
+    .brow .bs.tick{animation:none}
+    .blive.on .bdot{animation:none}
+    .livebtn .bdot{animation:none}
+  }
+
+  .note{font-size:13px;color:var(--dim);margin:10px 0 0}
+  .lede{font-size:14.5px;color:var(--dim);margin:8px 0 0}
+  /* A REFUSAL IS NOT A NOTE. It is the answer to the button under it, it is the reason
+     nothing happened, and it has to be findable by somebody whose thumb is already on the
+     control. Red because every refusal on this page is red, and its own box because a
+     sentence in the dim grey the rest of the furniture uses is one more line of furniture.
+     `[hidden]` is written out because this element is display:block and would otherwise
+     ignore the attribute, which is the seventh time on this site. */
+  .refuse{font-size:14px;line-height:1.4;color:var(--red);margin:14px 0 0;
+    background:rgba(239,68,68,.10);border:1px solid rgba(239,68,68,.45);
+    border-radius:10px;padding:10px 12px}
+  .refuse[hidden]{display:none}
+  .big{font-family:var(--fd);font-size:44px;font-weight:400;line-height:.95;
+    font-variant-numeric:tabular-nums}
+  .rule{height:1px;background:var(--line);margin:16px 0}
+  .pill{display:inline-block;font-family:var(--fn);font-size:10px;font-weight:800;
+    letter-spacing:.09em;text-transform:uppercase;padding:3px 8px;border-radius:999px;
+    border:1px solid var(--line-2);color:var(--dim)}
+  .pill.gold{color:var(--gold);border-color:rgba(240,201,107,.5)}
+  .pill.red{color:#fca5a5;border-color:rgba(239,68,68,.5)}
+  .stack{display:flex;flex-direction:column;gap:10px;margin-top:14px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <span class="mark">Fantasy <i>Challenge</i></span>
+    <a href="/football/">&larr; Perfect Season</a>
+  </div>
+
+  <!-- Every screen ships in the markup and is switched by a class, the way the football
+       page does it. Nothing here is built at runtime except the boards. -->
+  <section id="s-load" class="screen on">
+    <div class="card"><div class="eyebrow">Fantasy Challenge</div>
+      <p class="lede" id="load-say">Loading this week.</p></div>
+  </section>
+
+  <section id="s-shut" class="screen">
+    <div class="card">
+      <div class="eyebrow">Beta</div>
+      <h1 class="display" style="font-size:30px;margin-top:6px">Fantasy Challenge</h1>
+      <p class="lede" id="shut-say"></p>
+      <!-- THE WAY IN, ABOVE THE WAY OUT. A control the reader is being asked to press goes
+           above the one that leaves, and it is hidden rather than absent so the refusal
+           that is not about signing in does not offer it. -->
+      <div class="stack">
+        <a class="btn" id="shut-go" href="/football/#signin" hidden>Sign in</a>
+        <a class="btn quiet" href="/football/">Back to the game</a>
+      </div>
+    </div>
+  </section>
+
+  <section id="s-home" class="screen">
+    <div class="card">
+      <div class="eyebrow" id="home-week"></div>
+      <h1 class="display" style="font-size:32px;margin-top:6px">One lineup. One week.</h1>
+      <p class="lede">Six men: QB, two RB, two WR, TE. Every man is priced on what he has
+        actually done this season. You get five drafts and submit one of them.</p>
+      <p class="lede">Half PPR. Whatever your six score between them is your score.</p>
+      <div class="rule"></div>
+      <div class="rail">
+        <span><span class="eyebrow">Locks</span><br><b id="home-lock" class="num">-</b></span>
+        <span style="text-align:right"><span class="eyebrow">Cap</span><br>
+          <b id="home-cap" class="num">-</b></span>
+      </div>
+      <div class="stack">
+        <button class="btn" id="b-draft">Start drafting</button>
+        <button class="btn blue" id="b-review" hidden>See your lineups</button>
+      </div>
+      <p class="note" id="home-note"></p>
+      <!-- LAST WEEK'S RESULT, on the screen a player lands on. Without it the loop does not
+           close: the week rolls over on Tuesday, the entry screen for the week just played
+           is no longer what this page shows, and the only thing that ever told somebody how
+           they did is gone before most of them come back. Built rather than shipped hidden,
+           because it is drawn only when there is a scored entry to draw. -->
+      <button class="lastwk" id="b-last" hidden>
+        <span class="lw"><b id="last-say"></b><s id="last-sub"></s></span>
+        <span class="lp" id="last-pts"></span>
+      </button>
+      <!-- A WAY BACK TO THE SHEET, and for the winner it is the way back to their code.
+           The popup shows once and then never again on its own, which is right for
+           something that arrives unasked, and would be wrong as the only time a $19.99
+           promotion code is ever on screen. Drawn only when there is a settled result to
+           reopen, so it is never a control that opens nothing. -->
+      <button class="lastwk" id="b-prize" hidden>
+        <span class="lw"><b id="prize-say"></b><s id="prize-sub"></s></span>
+        <span class="lp" id="prize-pl"></span>
+      </button>
+    </div>
+  </section>
+
+  <section id="s-draft" class="screen">
+    <div class="eyebrow" id="d-chance"></div>
+    <div class="rail">
+      <span><span class="eyebrow">Left to spend</span><br><b id="d-left" class="num">-</b></span>
+      <span style="text-align:right"><span class="eyebrow">Signing</span><br>
+        <b id="d-slot" class="num">-</b></span>
+    </div>
+    <div class="slots" id="d-slots"></div>
+    <div class="men" id="d-men"></div>
+    <p class="note" id="d-note"></p>
+    <div class="stack"><button class="btn quiet" id="b-abandon">Start this draft again</button></div>
+  </section>
+
+  <section id="s-review" class="screen">
+    <div class="eyebrow" id="r-eyebrow">Your lineups</div>
+    <h2 class="display" style="font-size:26px;margin:6px 0 4px" id="r-head">Your lineups</h2>
+    <p class="lede" id="r-say"></p>
+    <div class="five" id="r-five" style="margin-top:12px"></div>
+    <!-- THE ANSWER TO A CONTROL GOES WHERE THE CONTROL IS.
+         A refusal used to be written into `r-say`, the lede at the top of this screen, and
+         the button is under five lineup cards. Measured on a 390x844 phone with all five
+         drafted: the page is 1691px, Submit is pressed at a scroll of 847, and the refusal
+         landed 694px ABOVE the top of the window. The button went back to reading "Submit
+         this lineup" and the reader saw nothing happen at all, which is what was reported.
+         That is the boss battle's own rule (a control the game is waiting on goes above the
+         record of it) arriving at the ANSWER rather than at the question. -->
+    <p class="refuse" id="r-refuse" hidden></p>
+    <div class="stack">
+      <button class="btn" id="b-more">Draft another</button>
+      <button class="btn" id="b-submit" disabled>Submit this lineup</button>
+      <button class="btn quiet" id="b-home">Back</button>
+    </div>
+  </section>
+
+  <!-- ONE SCREEN, TWO STATES, and they are the same lineup either side of the games. A
+       second screen for the result would be two places saying what your six men were, and
+       they would disagree the first time one of them was edited. What changes is the big
+       number, the label over it, and whether each row carries what he actually did. -->
+  <section id="s-in" class="screen">
+    <div class="card">
+      <div class="eyebrow" id="in-week"></div>
+      <h2 class="display" style="font-size:28px;margin:6px 0 2px" id="in-head">You are in</h2>
+      <p class="lede" id="in-say"></p>
+      <div class="rule"></div>
+      <div class="eyebrow" id="in-lab">Projected</div>
+      <div class="big" id="in-proj">-</div>
+      <div class="vs" id="in-vs" hidden></div>
+      <!-- WHAT THIS SCREEN IS AS OF. The six under it climb all afternoon, and a total that
+           moves with nothing saying when it last did is a total nobody can trust. The board
+           itself is not here: it is its own screen. -->
+      <div class="blive" id="in-live" hidden style="margin-top:8px">
+        <span class="bdot"></span><b id="in-livelab">LIVE</b>
+        <span id="in-livesay"></span>
+      </div>
+      <div class="roster" id="in-roster" style="margin-top:12px"></div>
+      <!-- AND A WAY TO THE BOARD, drawn only once there is a board to go to. The pinned
+           button reaches the same screen while the games are on; this is what is left when
+           they are over, because a leaderboard whose only door was a live one would
+           disappear at about seven on the Tuesday morning. -->
+      <button class="btn quiet" id="b-in-board" hidden style="margin-top:12px">
+        See the week's board</button>
+      <p class="note" id="in-note"></p>
+      <!-- A WAY BACK, and only when there is somewhere to go back TO. The current week's
+           entry is a terminal screen and the button would be a control to nowhere; last
+           week's is opened from the home screen, and a screen you can only leave by leaving
+           the site is a trap. -->
+      <div class="stack">
+        <button class="btn quiet" id="b-in-back" hidden>Back</button>
+        <a class="btn quiet" href="/football/">Back to the game</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── THE LIVE SCREEN ───────────────────────────────────────────────────────────
+       TWO PANELS ABOUT ONE INSTANT: what the real games are doing, and what that has done
+       to the standings. They are one poll and one answer for exactly that reason, and the
+       "as of" over them belongs to both.
+
+       IT IS A SCREEN OF ITS OWN RATHER THAN A BLOCK ON THE ENTRY SCREEN, which is where the
+       board used to live. Two things made that wrong. A reader who never entered has no
+       entry screen and so had no way to the board at all, on the one afternoon it is worth
+       looking at. And the board hung under a lineup reads as a footnote to it, when on a
+       Sunday it is the thing somebody opened the page for. -->
+  <section id="s-live" class="screen">
+    <div class="card">
+      <div class="eyebrow" id="lv-week"></div>
+      <h2 class="display" style="font-size:28px;margin:6px 0 2px">Live scoreboard</h2>
+      <div class="blive" id="lv-live" hidden>
+        <span class="bdot"></span><b id="lv-livelab">LIVE</b>
+        <span id="lv-livesay"></span>
+      </div>
+      <p class="lede" id="lv-say"></p>
+      <!-- BOTH PANELS STAY IN THE DOM AND ONLY ONE IS SHOWN. The poll paints both on every
+           answer, so switching tabs is instant and neither is ever a screen that has to
+           load. -->
+      <div class="tabs">
+        <button id="lv-tab-games" class="on">The games</button>
+        <button id="lv-tab-board">The board</button>
+      </div>
+      <div id="lv-pane-games">
+        <div class="gms" id="lv-games" style="margin-top:10px"></div>
+      </div>
+      <div id="lv-pane-board" hidden>
+        <div class="eyebrow" id="lv-boardlab" style="margin-top:12px">This week</div>
+        <div class="board" id="lv-board" style="margin-top:6px"></div>
+        <!-- A BOARD HAS FOUR STATES AND THREE OF THEM SHIP BROKEN, and this screen can
+             reach all four where the entry screen could only reach two: the reader here has
+             not necessarily entered, so "nobody yet" is a sentence that can be true. -->
+        <p class="note" id="lv-boardsay"></p>
+      </div>
+      <div class="stack">
+        <button class="btn quiet" id="b-live-back">Back</button>
+        <a class="btn quiet" href="/football/">Back to the game</a>
+      </div>
+    </div>
+  </section>
+</div>
+
+<!-- Outside the wrap because it is fixed to the window rather than to the column. Hidden
+     until the first kickoff and gone again once the last game is well over, which is asked
+     of the SCHEDULE rather than of the day of the week: "Thursday to Monday" is what that
+     works out to most weeks and is not what it means. -->
+<button class="livebtn" id="b-live" hidden><span class="bdot"></span>Live scores</button>
+
+<!-- WHAT THE CHIP OPENS. One sheet for every screen that draws a chip, because three
+     copies of one answer is how the three come to say different things about one hamstring. -->
+<div class="isheet" id="inj-sheet" hidden>
+  <div class="ibox">
+    <div class="eyebrow">Injury report</div>
+    <h3 class="display" id="inj-name" style="font-size:23px;margin:5px 0 0"></h3>
+    <p class="lede" id="inj-line" style="margin-top:10px"></p>
+    <p class="note" id="inj-when"></p>
+    <div class="stack"><button class="btn quiet" id="inj-close">Close</button></div>
+  </div>
+</div>
+
+<!-- THE CONFIRM. Reported by a player: a press signed somebody outright, so a thumb landing
+     on the wrong row spent a slot and money that cannot be handed back, and the only way out
+     was to start the whole draft again.
+
+     IT NAMES HIM AND IT NAMES THE MONEY, because a confirm that only asks "are you sure" is a
+     tap somebody learns to hit without reading. What this page can say that the row cannot is
+     the CONSEQUENCE: which slot he fills, and what is left for the rest of the lineup after
+     he is paid for. -->
+<div class="isheet" id="cf-sheet" hidden>
+  <div class="ibox">
+    <div class="eyebrow" id="cf-slot"></div>
+    <h3 class="display" id="cf-name" style="font-size:23px;margin:5px 0 0"></h3>
+    <p class="lede" id="cf-where" style="margin-top:8px"></p>
+    <p class="note" id="cf-money"></p>
+    <div class="stack">
+      <button class="btn" id="cf-go">Sign him</button>
+      <button class="btn quiet" id="cf-no">Back to the board</button>
+    </div>
+  </div>
+</div>
+
+<!-- WHERE YOU FINISHED. One sheet for the whole field, because a podium and a mid table are
+     the same fact told at different volumes, and two sheets would be two places describing
+     one week. What changes is the place, the line under it, and whether there is a code.
+
+     THE SCRIM DOES NOT CLOSE THIS ONE, which is the opposite of the injury sheet directly
+     above and is deliberate. That sheet is reference a reader opened on purpose and can
+     reopen any time. This one arrives unasked, shows once, and for one reader carries a
+     promotion code worth $19.99: a stray tap on the edge of the screen must not be the
+     thing that takes it away. The button is the way out and it says so. -->
+<div class="isheet" id="prz-sheet" hidden>
+  <div class="ibox">
+    <div class="eyebrow" id="prz-eye">Week 3</div>
+    <div class="przhead">
+      <div class="przplace" id="prz-place">4th</div>
+      <div class="przof">
+        <b id="prz-of">of 12</b>
+        <s id="prz-score">71.9 points</s>
+      </div>
+    </div>
+    <p class="lede" id="prz-say" style="margin-top:12px"></p>
+
+    <!-- The winner's half. Built rather than revealed, so nobody who did not win ever has a
+         code in their page at all. -->
+    <div id="prz-win" hidden>
+      <div class="eyebrow" style="margin-top:16px">Your code</div>
+      <button class="przcode" id="prz-code" type="button">
+        <span id="prz-code-txt"></span>
+        <em id="prz-code-hint">tap to copy</em>
+      </button>
+      <p class="note" id="prz-win-say"></p>
+    </div>
+
+    <div class="stack">
+      <a class="btn go" id="prz-store" href="/football/" hidden>Go and claim it</a>
+      <button class="btn quiet" id="prz-close">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- The tester flag. Read defensively below: a blocked or stale copy leaves the global
+     undefined, and the honest answer to "can this person see an unlaunched mode" when the
+     list cannot be read is no. -->
+<script src="/football/fantasy-access.js?v=2"></script>
+<!-- Accounts, exactly as the football page loads them. Optional: with the CDN blocked
+     PS_AUTH never appears, nobody resolves as a tester, and the page says so. -->
+<script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script defer src="/football/auth.js?v=6"></script>
+<script src="clubs.js?v=2"></script>
+<script src="draft.js?v=5"></script>
+<script src="entries.js?v=4"></script>
+<script>
+(function(){
+  'use strict';
+
+  var D = window.PS_FANTASY_DRAFT;
+  var ACCESS = window.PS_FANTASY_ACCESS;
+
+  /* THE OTHER PAIR OF HAND-WRITTEN NUMBERS, and on this page it is the loud one rather
+     than the silent one. Every other pin on the site falls through to a stub that answers
+     null, which for a leaderboard reads as a bad network day and costs nothing. Here the
+     stub also has to answer a SUBMIT, and a submit that resolves to "no opinion" is a
+     player who does not know whether they entered. So the stub refuses out loud, with a
+     sentence, and the reads stay null. Bump both halves in one commit, the way
+     check-cachebust holds every other pin on this site. */
+  var NEED_FANTASY = 3;
+  var F = (window.PS_FANTASY && window.PS_FANTASY.API_VERSION === NEED_FANTASY)
+    ? window.PS_FANTASY : {
+      API_VERSION: NEED_FANTASY, offline: true,
+      submit: function(){ return Promise.resolve({ ok: false,
+        why: 'This page could not reach the server. Reload and try again.' }); },
+      mine: function(){ return Promise.resolve(null); },
+      standings: function(){ return Promise.resolve(null); },
+      myPlace: function(){ return Promise.resolve(null); },
+      entryCount: function(){ return Promise.resolve(null); },
+      board: function(){ return Promise.resolve(null); },
+      /* NULL AND NOT FALSE. False is "you did not enter that week", which is a real answer
+         and closes the question; null is "nobody knows", which leaves the popup shut and
+         asks again next visit. A stub that answered false would quietly retire a result
+         somebody is owed. */
+      myResult: function(){ return Promise.resolve(null); },
+      ackResult: function(){ return Promise.resolve(false); },
+      myWins: function(){ return Promise.resolve(null); },
+    };
+  var $ = function(id){ return document.getElementById(id); };
+  /* CHANGING SCREEN CANCELS THE DRAFT SCREEN'S REVEAL, which is the rule the hoops live
+     board and the baseball game both carry: nothing may go on animating behind a screen
+     somebody has left. Here the cost of forgetting is a stagger firing into a board that
+     has been rebuilt, which leaves rows stuck invisible. Callers going TO the draft screen
+     show it BEFORE they paint it, or this would cancel the deal they just started. */
+  /*
+   * SHOWING THE SCREEN YOU ARE ALREADY ON IS NOT A SCREEN CHANGE, and until the board began
+   * polling it did not matter. `paintIn` ends with `show('s-in')`, which was a harmless
+   * re-assert of a class that was already set. It stopped being harmless the moment this
+   * function grew teeth, and it broke three things at once, none of which throws:
+   *
+   *   the poll was CANCELLED by the first live repaint, so the board updated once and then
+   *     never again, which is the whole feature failing silently,
+   *   the move timers were cancelled with it, so every row that had just moved kept its
+   *     green or red mark for ever,
+   *   and `scrollTo(0, 0)` yanked a reader who was half way down the board back to the top,
+   *     every twenty seconds, for as long as they watched.
+   *
+   * Found by the guard below rather than by reading, which is the only reason it is written
+   * up here instead of shipping.
+   */
+  var show = function(id){
+    var cur = document.querySelector('.screen.on');
+    if (cur && cur.id === id) return;
+    clearTimers();
+    busy = false;
+    /* AND THE BOARD STOPS POLLING, for the same reason. A leaderboard left ticking behind
+       another screen is a request every twenty seconds for a screen nobody is looking at,
+       and its move timers would land on a board that has been rebuilt. Both are function
+       declarations below, so both are hoisted and callable from here. */
+    stopPolling();
+    clearBoardTimers();
+    /* AND ANY CONFIRM GOES WITH THE SCREEN IT WAS ASKED ON. Its scrim covers everything, so
+       left up it is a sheet about a draft board over whatever screen is now underneath, and
+       the only control on it signs into a board nobody can see. Hoisted, like the two above. */
+    closeConfirm();
+    var all = document.querySelectorAll('.screen');
+    for (var i=0;i<all.length;i++) all[i].classList.toggle('on', all[i].id===id);
+    window.scrollTo(0,0);
+    /* The pinned button is not on any screen, so nothing else would ever hide it. It is
+       wrong on two of them: on the live screen it would be a door to the room it is in, and
+       on the draft screen it would sit over the board somebody is picking from. */
+    syncLiveButton();
+  };
+  var esc = function(s){
+    return String(s==null?'':s).replace(/[&<>"']/g, function(c){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+    });
+  };
+  var money = function(m){ return '$' + (Math.round(m*10)/10) + 'M'; };
+
+  /* HOW MANY OF HIS CLUB'S GAMES HE HAS PLAYED, not how many he has played.
+     The projection reads that share as how likely he is to be out there on Sunday, and it
+     is the biggest single thing moving a man's number, so the card has to show the reader
+     what it is reading. "1 game" in week ten says nothing. "1 of 9" says everything.
+     Falls back to the bare count for a board built before that field existed. */
+  var gamesLine = function(m){
+    var of = m.played_of || 0;
+    if (of > m.games) return m.games + ' of ' + of + ' games';
+    return m.games + (m.games === 1 ? ' game' : ' games');
+  };
+
+  /*
+   * ─── THE INJURY LAYER ─────────────────────────────────────────────────────────────
+   *
+   * `injuries_<season>_w<week>.json`, fetched beside the pool and merged over it. It is a
+   * SECOND FILE because the two move at different speeds: a price is fixed on the Tuesday
+   * and may never move once anybody has drafted against it, while the game status report
+   * for a Sunday game lands on the Wednesday, firms up on the Thursday and is final on the
+   * Friday. Baked into the pool, the only way to learn that somebody is out would be to
+   * reprice the board underneath everybody who had already used it.
+   *
+   * IT FAILS SOFT AND THE MODE IS EXACTLY WHAT IT WAS WITHOUT IT. A 404 is the ordinary
+   * state of a week nobody has built one for, and a page that refused to draft without an
+   * injury report would be a page that stops working on the quietest possible failure.
+   */
+  var INJ = null;           /* the file, or null */
+
+  /** What the report says about one man, or null. */
+  var injOf = function (m) { return (m && m.inj) || null; };
+
+  /* Four states and each one is a different sentence. `off` never reaches a board, because
+     a man on injured reserve is left out of the pool, so it is only ever seen on a lineup
+     that was drafted before he went on it. */
+  /* SPELLED OUT RATHER THAN ABBREVIATED, except for the one abbreviation every fantasy
+     reader already knows. `Q` is what a questionable man is called everywhere this mode's
+     readers have ever seen one; DOUBT is not a word. */
+  var INJ_WORD = { off: 'OUT', out: 'OUT', doubtful: 'DOUBTFUL', questionable: 'Q',
+    none: 'INJ' };
+
+  /*
+   * THE CHIP IS A SPAN INSIDE A BUTTON AND NOT A BUTTON INSIDE ONE, which is invalid and
+   * would not survive a parse. What makes it pressable is that the row it sits on is NEVER
+   * `disabled` when it carries one: a disabled button swallows every pointer event in its
+   * subtree, so a chip on one could be looked at and never tapped. The press is refused by
+   * `canSign` instead, which is the call that greys the row, so the two cannot come apart.
+   */
+  var injChip = function (m) {
+    var e = injOf(m);
+    if (!e || !e.st) return '';
+    var cls = e.st === 'questionable' ? ' q' : (e.st === 'none' ? ' none' : '');
+    return '<span class="inj' + cls + '" data-inj="' + esc(m.player_id) + '">'
+      + esc(INJ_WORD[e.st] || 'INJ') + '</span>';
+  };
+
+  /*
+   * A CLUB CODE IN THE CLUB'S OWN COLOUR. `clubs.js` does the lifting and the argument for
+   * it; all this does is put the answer on the tag and fall back to inheriting the line's
+   * colour for a code that table does not know, which is what a relocation or an expansion
+   * side would be. It writes a style attribute rather than a class because thirty two rules
+   * for something read off data is a stylesheet that has to be edited every time the league
+   * moves a team.
+   */
+  var club = function (code) {
+    if (!code) return '';
+    var c = window.RTF_CLUBS && window.RTF_CLUBS.color(code);
+    return '<em class="club"' + (c ? ' style="color:' + c + '"' : '') + '>' + esc(code) + '</em>';
+  };
+  /* HIS CLUB AND WHO HE PLAYS, WRITTEN ONCE. The board row and the confirm sheet both draw
+     it, and two copies is how the two come to say different things about one bye week. */
+  var matchup = function (m) {
+    return club(m.team)
+      + (m.opp ? ' <i class="vs">' + (m.home ? 'vs' : 'at') + '</i> ' + club(m.opp) : '');
+  };
+
+  var INJ_SAY = {
+    off: 'Not on an active roster.',
+    out: 'Ruled out.',
+    doubtful: 'Doubtful.',
+    questionable: 'Questionable.',
+    none: 'On the injury report, with no designation.',
+  };
+  var ROSTER_SAY = {
+    RES: 'On injured reserve.', PUP: 'On the physically unable to perform list.',
+    NFI: 'On the non-football injury list.', SUS: 'Suspended.',
+    RET: 'Retired.', CUT: 'Not on a roster.', RSN: 'On reserve.', RSR: 'On reserve.',
+    NWT: 'Not with a team.',
+  };
+
+  /*
+   * WHAT IT SAYS IS THE REPORT, AND IT DOES NOT PRETEND TO BE ANYTHING ELSE.
+   *
+   * The designation, the body part and whether he practised. That is what a club is obliged
+   * to publish and it is what every fantasy site is reading when it tells somebody a man is
+   * questionable. It is not a beat writer's paragraph, and the sheet does not imply one:
+   * the last line names the source. Writing the other kind would need a news feed, and
+   * nothing here could have been checked against one.
+   *
+   * AND IT SAYS WHICH WEEK IT IS FROM. On a Tuesday the coming week has not been filed at
+   * all, so the freshest answer about Sunday is last Sunday's, and a sheet that printed it
+   * as though it were this week's would be inventing a certainty nobody has.
+   */
+  function showInj(id){
+    var m = BY_ID[id], e = injOf(m);
+    if (!m || !e) return;
+    $('inj-name').textContent = m.name;
+    var bits = [];
+    bits.push(e.st === 'off' ? (ROSTER_SAY[e.roster] || 'Not on an active roster.')
+      : (INJ_SAY[e.st] || 'On the injury report.'));
+    if (e.d) bits.push(e.d + (e.d2 ? ' and ' + e.d2 : '') + '.');
+    if (e.p) bits.push(e.p + '.');
+    $('inj-line').textContent = bits.join(' ');
+    var when;
+    /* A RULING BY THE SITE IS NOT THE REPORT AND DOES NOT SAY IT IS. The report files no
+       Out until Friday for a Sunday game, so a man his club has already ruled out is
+       ruled out HERE, and the sentence below that names the official NFL report as the
+       source would be false about exactly him. The body part and the practice line above
+       are still the report's, so they stay. */
+    if (e.by === 'site'){
+      $('inj-when').textContent = 'Ruled out for week ' + POOL.week + ' by RunThe.GG. '
+        + 'The official report files game designations on Friday.';
+      $('inj-sheet').hidden = false;
+      return;
+    }
+    if (e.st === 'off') when = 'Read off the roster, as it stands now.';
+    else if (e.w === POOL.week) when = 'From this week\'s report.';
+    else when = 'From the week ' + e.w + ' report. Week ' + POOL.week
+      + ' has not been filed yet, so this is the last thing that was said about him.';
+    $('inj-when').textContent = when + ' Source: the official NFL game status report.';
+    $('inj-sheet').hidden = false;
+  }
+  $('inj-close').onclick = function(){ $('inj-sheet').hidden = true; };
+  /* The scrim closes it, the box does not. A sheet you can only leave by finding one
+     button is a sheet somebody taps around the edge of and gets nothing. */
+  $('inj-sheet').addEventListener('click', function(ev){
+    if (ev.target === $('inj-sheet')) $('inj-sheet').hidden = true;
+  });
+  /* ONE LISTENER FOR EVERY CHIP ON THE PAGE, on the document, because chips are drawn into
+     four different containers by four different painters and every one of them rebuilds its
+     markup. Bound per container, the next painter to draw a chip would be the one nobody
+     remembered to wire up. */
+  document.addEventListener('click', function(ev){
+    var c = ev.target.closest && ev.target.closest('.inj');
+    if (!c || !c.dataset.inj) return;
+    /* Taking the press here is the whole point: on a row that IS signable, tapping the
+       chip must read the report rather than sign a doubtful man by accident. */
+    ev.stopPropagation();
+    ev.preventDefault();
+    showInj(c.dataset.inj);
+  }, true);
+
+  var POOL = null;          /* the week, as built */
+  /* THE WEEK'S OWN CAP, set from POOL at boot and read by every screen. It is the constant
+     until the week arrives, which matters only for the seconds before boot resolves: the
+     first thing that spends it is a draft, and there is no draft before a pool. */
+  var CAP = D.CAP_MUSD;
+  var BY_ID = {};
+  var state = null;         /* { season, week, chances:[], pick, submitted } */
+  var cur = -1;             /* which chance is being drafted */
+
+  /* ---- what is kept, and where ----
+     LOCAL ONLY, ON PURPOSE, FOR NOW. There is no entry table yet, so a lineup lives in this
+     browser and nowhere else: clearing site data loses it, and a second device knows
+     nothing about it. That is a feel test rather than a competition, and the screen says so
+     rather than letting somebody believe they have entered something. */
+  var keyFor = function(season, week){ return 'ps_fantasy_' + season + '_w' + week; };
+  var KEY = function(){ return keyFor(POOL.season, POOL.week); };
+  function load(){
+    try { return JSON.parse(localStorage.getItem(KEY())||'null'); } catch(e){ return null; }
+  }
+  function loadWeek(season, week){
+    try { return JSON.parse(localStorage.getItem(keyFor(season, week))||'null'); }
+    catch(e){ return null; }
+  }
+  function save(){
+    try { localStorage.setItem(KEY(), JSON.stringify(state)); } catch(e){}
+  }
+
+  /* A chance stores the seed and the player IDS, never the player rows. The pool is
+     rebuilt from the file on every visit, so storing the rows would be a second copy of
+     every price that goes stale the moment the week is rebuilt. */
+  function hydrate(c){
+    return { seed: c.seed, men: (c.ids||[]).map(function(id){ return BY_ID[id]; })
+      .filter(Boolean) };
+  }
+  function dehydrate(c){
+    return { seed: c.seed, ids: c.men.map(function(m){ return m.player_id; }) };
+  }
+  var chanceAt = function(i){ return hydrate(state.chances[i]); };
+
+  /*
+   * A DRAFT OVER THE WEEK'S CAP IS REOPENED, NOT KEPT, AND NOT SUBMITTED.
+   *
+   * For a morning the page drafted week 3 at $110M while the server held it at $90M, so a
+   * tester could finish a lineup spending $106.7M that `fantasy_submit` refuses with "that
+   * lineup is over the cap". Nothing on the review screen said so: it printed "$106.7M of
+   * $90M spent" under a Submit button that sent it anyway. Reported by the owner with a
+   * screenshot of exactly that, SENDING... over a lineup the server was always going to
+   * turn away.
+   *
+   * THE WEEK KEEPS ITS $90M, which the owner chose twice, and the lineup gives way. It is
+   * replaced by a FRESH draft in the same chance, so nobody loses one of their five. Its
+   * seed is DERIVED from the old one rather than drawn, so a reload cannot re-roll it: the
+   * rule a chance lives by (store the seed, never re-draw it) holds for the reopened one
+   * the moment it is saved, and holds even where storage is blocked, because the same old
+   * seed always gives the same new one.
+   *
+   * ONLY A LINEUP THE SERVER WOULD REFUSE IS TOUCHED. A legal draft stays exactly as it
+   * is, and a submitted one is never reopened: the row is the server's and it was accepted
+   * under the cap, so if it reads over now the cap is what moved, and taking a reader's
+   * entry away on the strength of that would be this page overruling the competition.
+   * A PARTIAL draft over the cap is reopened too, because the next board would have
+   * negative money to spend and the draft would strand.
+   */
+  function reopenOverCap(){
+    var hit = [];
+    for (var i = 0; i < state.chances.length; i++){
+      if (i === state.submitted) continue;
+      var c = chanceAt(i);
+      if (!c || D.spent(c) <= CAP + 1e-9) continue;
+      var old = state.chances[i];
+      state.chances[i] = { seed: ((old.seed >>> 0) ^ 0x5bd1e995) >>> 0, ids: [],
+        reopened: true };
+      if (state.pick === i) state.pick = null;
+      hit.push(i + 1);
+    }
+    if (hit.length) save();
+  }
+  /* "Draft 3 was" or "Drafts 3 and 4 were". Short, because it is read on the way past. */
+  function reopenedLine(){
+    var open = [];
+    for (var i = 0; i < state.chances.length; i++){
+      var c = state.chances[i];
+      if (c && c.reopened && (c.ids || []).length < D.SLOTS.length) open.push(i + 1);
+    }
+    if (!open.length) return '';
+    var list = open.length === 1 ? String(open[0])
+      : open.slice(0, -1).join(', ') + ' and ' + open[open.length - 1];
+    return (open.length === 1 ? 'Draft ' + list + ' was' : 'Drafts ' + list + ' were')
+      + ' over the ' + money(CAP) + ' cap. '
+      + (open.length === 1 ? 'It is' : 'They are') + ' open to draft again. ';
+  }
+
+  /* ---- the clock ---- */
+  var locked = function(){ return Date.now() >= Date.parse(POOL.locks_at); };
+  function untilLock(){
+    var ms = Date.parse(POOL.locks_at) - Date.now();
+    if (ms <= 0) return 'now';
+    var h = Math.floor(ms/3600000), m = Math.floor((ms%3600000)/60000);
+    if (h >= 24) return Math.floor(h/24) + 'd ' + (h%24) + 'h';
+    return h ? h + 'h ' + m + 'm' : m + 'm';
+  }
+  var lockWhen = function(){
+    var d = new Date(POOL.locks_at);
+    return d.toLocaleString(undefined, { weekday:'short', hour:'numeric', minute:'2-digit' });
+  };
+
+  /* ---- what the week actually scored ----
+   *
+   * FETCHED SPECULATIVELY AND NOT ANNOUNCED IN A POINTER, which is the opposite of how the
+   * pool is found and is the right way round for this one. A pointer would be a third
+   * hand-written field kept in step by two build scripts writing one file, and the failure
+   * is a week that is scored on disk and unscored on screen. The file either exists or it
+   * does not, the URL is derivable from the week, and a 404 is the honest answer to "has
+   * this week been scored yet". It costs one request that usually misses.
+   *
+   * A MAN WITH NO ENTRY SCORED ZERO. The build writes a row for everybody who was active,
+   * so an absent id is inactive, hurt, benched or cut, and all four are nought on a fantasy
+   * lineup. Read as "unknown" instead, a lineup would quietly total five men.
+   */
+  var RESULTS = {};
+  function resultsFor(season, week){
+    var k = season + '|' + week;
+    if (RESULTS[k] !== undefined) return Promise.resolve(RESULTS[k]);
+    return fetch('/football/data/results_' + season + '_w' + week + '.json',
+      { cache: 'no-cache' })
+      .then(function(r){ return r.ok ? r.json() : null; })
+      .catch(function(){ return null; })
+      .then(function(j){ RESULTS[k] = j; return j; });
+  }
+  var scoreOf = function(res, id){
+    var row = res && res.scores && res.scores[id];
+    return { half: row ? row[0] : 0, line: row ? row[1] : '', played: !!row };
+  };
+  function scoreLineup(res, men){
+    var t = 0;
+    for (var i=0;i<men.length;i++) t += scoreOf(res, men[i].player_id).half;
+    return Math.round(t*10)/10;
+  }
+
+  /* ---- the reveal ----
+   *
+   * EVERY TIMER HERE IS CANCELLED BEFORE THE NEXT ONE IS SET, and each one checks it is
+   * still working on the draft it was started for. A draft can be abandoned, a chance
+   * switched or the screen left in the middle of a deal, and a stagger that fired into a
+   * board that is no longer there would leave rows stuck at opacity 0: a blank board with
+   * no way on, which is the failure the empty-board sentence below exists to catch and
+   * which this would produce without anything throwing. Same identity check the baseball
+   * game carries at three schedulers.
+   */
+  var REDUCE = false;
+  try { REDUCE = window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch(e){}
+  var timers = [];
+  function clearTimers(){
+    for (var t=0;t<timers.length;t++) clearTimeout(timers[t]);
+    timers = [];
+  }
+  var later = function(f, ms){ timers.push(setTimeout(f, ms)); };
+  /* Which slot the last signing filled, so the strip pops one cell and not on every paint,
+     and whether a press is already being acknowledged. Declared here with the rest of the
+     reveal's state rather than beside the handler that writes them, because paintDraft
+     READS both and is defined above it. */
+  var JUST = -1;
+  var busy = false;
+
+  /* One row at a time, 55ms apart. Measured on the board rather than chosen: five rows is
+     220ms of stagger on top of a 220ms fade, so the last man is readable a little over
+     four hundred milliseconds after the press. Slower than that and the wheel is in the
+     way of the game. */
+  var DEAL_STEP = 55;
+  function deal(){
+    var men = $('d-men');
+    if (REDUCE) { men.className = 'men'; return; }
+    men.className = 'men dealing';
+    var rows = men.querySelectorAll('.man');
+    /* Reading offsetWidth is what commits the opacity 0 start state, or the browser
+       coalesces it with the class added a line later and nothing fades at all. */
+    void men.offsetWidth;
+    for (var r=0;r<rows.length;r++){
+      (function(el, n){ later(function(){ el.classList.add('up'); }, n * DEAL_STEP); })(rows[r], r);
+    }
+  }
+
+  /* THE NUMBER COUNTS RATHER THAN SNAPPING, and it is driven off rAF instead of a timer
+     because it is the one thing here that writes on every frame. It always LANDS on the
+     real figure, written outside the ramp as well as at the end of it, so a tab that is
+     backgrounded mid-count comes back to the right money rather than to wherever the
+     animation got to. */
+  var moneyRaf = 0, moneyFrom = CAP;
+  function countMoney(to){
+    var el = $('d-left');
+    el.className = 'num' + (to < 12 ? ' lo' : '');
+    if (REDUCE || moneyFrom === to){ moneyFrom = to; el.textContent = money(to); return; }
+    var from = moneyFrom, t0 = 0, ms = 320;
+    moneyFrom = to;
+    if (moneyRaf) cancelAnimationFrame(moneyRaf);
+    el.classList.add('spending');
+    var step = function(t){
+      if (!t0) t0 = t;
+      var k = Math.min(1, (t - t0) / ms);
+      var e = 1 - Math.pow(1 - k, 3);
+      el.textContent = money(Math.round((from + (to - from) * e) * 10) / 10);
+      if (k < 1) { moneyRaf = requestAnimationFrame(step); return; }
+      moneyRaf = 0;
+      el.textContent = money(to);
+      el.classList.remove('spending');
+    };
+    moneyRaf = requestAnimationFrame(step);
+  }
+
+  /* ---- the draft screen ---- */
+  function paintDraft(){
+    var c = chanceAt(cur);
+    var i = c.men.length;
+    $('d-chance').textContent = 'Draft ' + (cur+1) + ' of ' + D.CHANCES;
+    var left = CAP - D.spent(c);
+    countMoney(left);
+    $('d-slot').textContent = i < D.SLOTS.length ? D.SLOTS[i] : 'done';
+
+    var strip = '';
+    for (var k=0;k<D.SLOTS.length;k++){
+      var man = c.men[k];
+      /* ONLY THE CELL THAT JUST CHANGED POPS. Marked on the slot the last signing filled,
+         which is i-1, so a repaint that signed nobody (a reload, coming back to the
+         screen) animates nothing and the strip does not flash on arrival. */
+      strip += '<div class="slot ' + (man?'done':(k===i?'now':''))
+        + (JUST === k ? ' just' : '') + '">'
+        + '<div class="p">' + D.SLOTS[k] + '</div>'
+        + '<div class="n">' + (man ? esc(man.name.split(' ').slice(-1)[0]) : '&nbsp;') + '</div>'
+        + '</div>';
+    }
+    JUST = -1;
+    $('d-slots').innerHTML = strip;
+
+    if (i >= D.SLOTS.length){ toReview(); return; }
+
+    var board = D.boardFor(POOL.pool, c, i, CAP);
+    /* AN EMPTY BOARD IS THE ONE STATE WITH NO WAY OUT OF IT, so it gets a sentence rather
+       than a blank screen. The reserve floor in draft.js is what makes it unreachable and
+       check-fantasy.mjs drives 1,200 drafts three ways to say so, but a screen that would
+       trap a player if the guard were ever wrong should say which of the two it is. */
+    if (!board.length){
+      $('d-men').innerHTML = '';
+      $('d-men').className = 'men';
+      $('d-note').textContent = 'No ' + D.SLOTS[i] + ' can be signed with what is left. '
+        + 'That is a bug. Start this draft again.';
+      return;
+    }
+    /* THE CAP HAS TO BE ON THE SCREEN OR IT IS NOT A BUDGET. A board used to hold only men
+       this roster could afford, so the cap decided the whole lineup and was never once
+       seen. What greys a row and what refuses the press are the same call, so a row that
+       looks signable always is. */
+    var html = '';
+    for (var b=0;b<board.length;b++){
+      var m = board[b];
+      var where = m.opp ? (m.home ? 'vs ' + m.opp : 'at ' + m.opp) : '';
+      /* TWO REASONS A ROW CANNOT BE PRESSED AND THEY ARE NOT THE SAME REASON. The injury
+         wins when a man is both, because it is the one that is about him rather than about
+         the money: a row greyed as "over budget" on somebody who has been ruled out would
+         be telling the reader something false about their own cap. */
+      var out = D.hurt(m);
+      var poor = !out && !D.canSign(POOL.pool, i, left, m);
+      html += '<button class="man' + (out ? ' hurt' : '') + (poor ? ' poor' : '') + '"'
+        /* AND AN INJURED ROW IS NOT `disabled`, deliberately. A disabled button swallows
+           every pointer event inside it, so the chip on it could be read and never tapped,
+           and the report is the whole reason that row is worth drawing. The press is
+           refused by `canSign` in the handler, which is the same call that greyed it. */
+        + (poor ? ' disabled' : '') + ' data-id="' + esc(m.player_id) + '">'
+        + '<span class="pos ' + esc(m.position) + '">' + esc(m.position) + '</span>'
+        + '<span class="who"><b><i>' + esc(m.name) + '</i>' + injChip(m) + '</b>'
+        + '<s>' + matchup(m) + '</s></span>'
+        + '<span class="cost"><b>' + money(m.price_musd) + '</b><s>'
+        /* THE SAME LENGTH AS "over budget", AND THAT IS A MEASUREMENT RATHER THAN A
+           PREFERENCE. This cell and the name share the row: at sixteen characters
+           ("cannot be picked") it took about 26px off the name column and truncated Zay
+           Flowers to "Zay Flow...", on the one row where the reader most needs to know who
+           it is. Found by taking a screenshot and looking at it. */
+        + (poor ? 'over budget' : (out ? 'cannot pick' : gamesLine(m))) + '</s></span>'
+        /* THE STAT LINE IS A ROW OF ITS OWN, spanning the whole button rather than sharing
+           the middle column with the name. Reported as hard to read, and it was: in the name
+           column it had about 215px at 390 and ran to two lines with "TD" orphaned on the
+           second. Full width it has the button's own 334px, which holds the longest line the
+           board can produce with room to spare, so it is one line and never wraps. */
+        + '<span class="statline">' + esc(m.stat_line) + '</span>'
+        + '</button>';
+    }
+    $('d-men').innerHTML = html;
+    deal();
+    /* THE ONLY NUMBER ABOUT THE FUTURE IS THE LINEUP'S, AND IT COMES AFTER THE SIX.
+       A per man projection would say nothing a reader cannot already act on: what the board
+       shows is what he has DONE, and how many of his club's games he was there for, which
+       is both halves of what the projection reads. What he does next is the question. */
+    $('d-note').textContent = 'What they have done so far. What they do on Sunday is yours '
+      + 'to call.';
+  }
+
+  /*
+   * A PRESS HAS TO BE ACKNOWLEDGED BEFORE THE BOARD CHANGES.
+   *
+   * Signed and repainted in the same tick, five men are replaced by five different men
+   * between two frames and nothing on screen says which one was taken. The row you pressed
+   * goes green and holds while the other four fall away, and only then does the next board
+   * deal in. It is 170ms, which is under the threshold where a control starts to feel
+   * unresponsive and is long enough to read a colour.
+   *
+   * THE STATE IS WRITTEN IMMEDIATELY AND ONLY THE PAINT WAITS. A press that put the man in
+   * the roster 170ms later would be a press that can be made twice, and the second one
+   * signs a second man into a slot that already has one. `busy` refuses the second press
+   * for the same reason, so a double tap is one signing on every device.
+   */
+  /*
+   * AND THE PRESS ASKS BEFORE IT SPENDS.
+   *
+   * Reported by a player: a press signed somebody outright, so a thumb landing on the wrong
+   * row took a slot and money that cannot be handed back. There is no undo here and there
+   * should not be one, because a board is redrawn from the roster and putting a man back
+   * would have to un-draw the board he was taken from. The only way out was "Start this
+   * draft again", which throws away every pick made so far to correct the last one.
+   *
+   * WHAT THE SHEET SAYS IS THE CONSEQUENCE, not "are you sure". A confirm that only asks for
+   * a second tap is a tap somebody learns to make without reading, so it names him, names the
+   * slot he fills and says what is left for the rest of the lineup once he is paid for.
+   *
+   * THE TWO PRESSES ARE DIFFERENT MOMENTS AND THE SECOND ONE IS CHECKED AGAIN. A sheet sits
+   * open for as long as somebody leaves it open, so the draft can be started again or the
+   * chance switched underneath it. `signPending` refuses a sheet about a board that is gone
+   * rather than applying it to whatever is on screen now, which is `dynNewSheet`'s own lesson
+   * in the football game arriving at a draft board.
+   */
+  var PENDING = null;
+
+  function closeConfirm(){ $('cf-sheet').hidden = true; PENDING = null; }
+
+  function showConfirm(man){
+    var c = state.chances[cur];
+    var at = c.ids.length;
+    var after = CAP - D.spent(chanceAt(cur)) - man.price_musd;
+    var more = D.SLOTS.length - at - 1;
+    PENDING = { id: man.player_id, chance: cur, at: at };
+    $('cf-slot').textContent = 'Signing at ' + D.SLOTS[at];
+    $('cf-name').textContent = man.name;
+    $('cf-where').innerHTML = matchup(man);
+    $('cf-money').textContent = money(man.price_musd) + '. ' + (more
+      ? 'That leaves ' + money(after) + ' for ' + more + ' more.'
+      : 'That is the last slot.');
+    $('cf-sheet').hidden = false;
+  }
+
+  function signPending(){
+    var p = PENDING;
+    closeConfirm();
+    if (!p || busy) return;
+    var c = state.chances[cur];
+    /* THE BOARD THIS SHEET WAS OPENED ABOUT HAS TO STILL BE THE BOARD. A slot filled or a
+       draft restarted while it was open means this man is the answer to a question nobody
+       is asking any more. */
+    if (p.chance !== cur || !c || c.ids.length !== p.at) return;
+    var man = BY_ID[p.id];
+    if (!man) return;
+    /* And the same two refusals the row already made, asked again on the press that spends.
+       `canSign` is what greys a row and what refused the first press, so a man who became
+       unaffordable in between is refused here by the same call rather than by a second copy
+       of the rule. */
+    if (D.hurt(man)) return;
+    if (!D.canSign(POOL.pool, c.ids.length, CAP - D.spent(chanceAt(cur)), man)) return;
+    signNow(man);
+  }
+
+  $('cf-go').onclick = signPending;
+  $('cf-no').onclick = closeConfirm;
+  /* THE SCRIM CLOSES IT, the way the injury sheet's does. A full screen scrim with no way
+     out but one button is a sheet somebody taps around the edge of and gets nothing. Closing
+     is the SAFE answer here, unlike the injury sheet where either is, so tapping away can
+     only ever cost a press and never a slot. */
+  $('cf-sheet').addEventListener('click', function(ev){
+    if (ev.target === $('cf-sheet')) closeConfirm();
+  });
+
+  $('d-men').addEventListener('click', function(ev){
+    var b = ev.target.closest && ev.target.closest('.man');
+    if (!b || !b.dataset.id || busy) return;
+    var man = BY_ID[b.dataset.id];
+    if (!man) return;
+    /*
+     * A ROW THAT REFUSES AND DOES NOTHING IS A WALL, which is this repo's own rule about a
+     * locked door, arriving at a list. An injured row is deliberately not `disabled`, so a
+     * thumb landing anywhere on it produced a press that was silently refused and no
+     * explanation anywhere. The whole reason that row is drawn is the report, so that is
+     * what a press opens: the chip is the target, and the row is the same target made the
+     * size of a row. Found by the guard, which clicked one and waited for a signing that
+     * was never coming.
+     */
+    if (D.hurt(man)){ showInj(man.player_id); return; }
+    var c = state.chances[cur];
+    /* THE SAME CALL THAT GREYED THE ROW, asked again on the press. `disabled` already stops
+       a real thumb, so this is the belt on a row that somehow got through: a man signed
+       over the ceiling strands the draft later, at a different slot, with nothing on screen
+       connecting the two. */
+    if (!D.canSign(POOL.pool, c.ids.length, CAP - D.spent(chanceAt(cur)), man)) return;
+    showConfirm(man);
+  });
+
+  /* THE SIGNING ITSELF, reached only from the sheet's own button. */
+  function signNow(man){
+    var c = state.chances[cur];
+    c.ids.push(man.player_id);
+    save();
+    JUST = c.ids.length - 1;
+    if (REDUCE){ paintDraft(); return; }
+    busy = true;
+    /* THE ROW IS FOUND AGAIN RATHER THAN HELD, because the press that opened the sheet and
+       the press that signs are different moments and the board could have been repainted in
+       between. Walked rather than queried, since a player id is data and a selector built
+       out of it is a selector somebody else's id gets to write. */
+    var rows = $('d-men').children;
+    for (var k=0;k<rows.length;k++){
+      if (rows[k].dataset && rows[k].dataset.id === man.player_id) rows[k].classList.add('took');
+    }
+    $('d-men').className = 'men clearing';
+    var was = cur, len = c.ids.length;
+    later(function(){
+      busy = false;
+      /* The identity check. A draft abandoned or a chance switched inside those 170ms has
+         moved on, and repainting then would put the old board's next spin on screen. */
+      if (cur !== was || !state.chances[was] || state.chances[was].ids.length !== len) return;
+      paintDraft();
+    }, 170);
+  }
+
+  $('b-abandon').onclick = function(){
+    clearTimers();
+    busy = false;
+    JUST = -1;
+    moneyFrom = CAP;
+    state.chances[cur] = { seed: D.newSeed(), ids: [] };
+    save();
+    paintDraft();
+  };
+
+  /* ---- the review screen ---- */
+  function toReview(){
+    var html = '';
+    for (var i=0;i<state.chances.length;i++){
+      var c = chanceAt(i);
+      if (!D.full(c)) continue;
+      var rows = '';
+      for (var k=0;k<c.men.length;k++){
+        var m = c.men[k];
+        /* THE CHIP FOLLOWS THE MAN ONTO EVERY SCREEN HE IS ON, which is the half that
+           matters most here: a lineup drafted on the Tuesday can have somebody ruled out
+           on the Thursday, and the five chances are what a reader has to do something
+           about it with. Drawn nowhere but the board, the news would arrive only to
+           people who happened to draft again. */
+        /*
+         * THE PARTS SHIP WITH THE ANSWER, which is the Full Team results screen's rule
+         * arriving at the screen where a reader is choosing between five totals.
+         *
+         * The card leads with a projection and gave no way to see where it came from, so
+         * "63.0" against "77.0" was two numbers to trust rather than two lineups to
+         * compare: a reader could not tell a total carried by one man from six solid ones,
+         * which is most of what separates two lineups on a Sunday. `D.projected` is the
+         * sum of exactly these six figures, and every `proj` in the pool is one decimal,
+         * so the printed parts add up to the printed total EXACTLY. Measured over 20,000
+         * random lineups: no rounding seam, ever.
+         *
+         * IT IS THE `.rs` COLUMN, THE SAME ONE THE RESULT SCREEN PUTS THE REAL SCORE IN,
+         * and that is the point rather than reuse. The rightmost figure on a man's row is
+         * his points on both screens: projected before the games and real after, in the
+         * same place, same face, same size. A reader learns one column. The card's own
+         * eyebrow is what says which of the two it is, so six rows do not each repeat the
+         * word.
+         *
+         * The price stays, quieter, to its left. The money is spent by the time anybody
+         * reads this screen, but the spend line under the card is a total too, and it has
+         * the same problem the projection had.
+         */
+        rows += '<div class="rrow"><span class="rp ' + esc(m.position) + '">'
+          + esc(m.position) + '</span>'
+          + '<span class="rn">' + esc(m.name) + '</span>' + injChip(m)
+          + '<span class="rc">' + money(m.price_musd) + '</span>'
+          + '<span class="rs">' + m.proj.toFixed(1) + '</span></div>';
+      }
+      html += '<button class="lineup' + (state.pick===i?' pick':'') + '" data-i="' + i + '">'
+        + '<div class="hd"><b>Draft ' + (i+1) + '</b>'
+        + '<span class="pj">' + D.projected(c).toFixed(1)
+        + '<s>projected</s></span></div>'
+        + '<div class="roster">' + rows + '</div>'
+        + '<div class="note" style="margin-top:8px">' + money(D.spent(c)) + ' of '
+        + money(CAP) + ' spent</div>'
+        + '</button>';
+    }
+    $('r-five').innerHTML = html;
+    var done = state.chances.filter(function(c){
+      return (c.ids||[]).length >= D.SLOTS.length; }).length;
+    var last = done >= D.CHANCES;
+    $('r-eyebrow').textContent = done + ' of ' + D.CHANCES + ' drafted';
+    /* THE SCREEN SAYS WHAT THERE IS TO DO, and after one draft that is not "pick one". It
+       read "Pick the one to submit" over a single lineup with four drafts still owed, which
+       is a screen asking for a decision the player has nothing to make it with. */
+    $('r-head').textContent = last ? 'Pick the one to submit' : 'Draft another, or stop here';
+    $('r-say').textContent = last
+      ? 'Tap a lineup to choose it. One goes in. Once it is in it is in.'
+      : (D.CHANCES - done) + (D.CHANCES - done === 1 ? ' draft left.' : ' drafts left.')
+        + ' You can submit one of these instead. You do not have to use them all.';
+    $('b-more').hidden = last;
+    $('b-submit').disabled = state.pick == null;
+    /* Red is this page's primary. It follows the thing to do rather than sitting on Submit
+       while Submit is refused, which is a disabled red button reading as the main action. */
+    $('b-more').className = 'btn';
+    $('b-submit').className = 'btn' + (last ? '' : ' quiet');
+    show('s-review');
+  }
+
+  $('r-five').addEventListener('click', function(ev){
+    var b = ev.target.closest && ev.target.closest('.lineup');
+    if (!b) return;
+    state.pick = Number(b.dataset.i);
+    save();
+    clearRefused();
+    toReview();
+  });
+
+  $('b-more').onclick = function(){ startChance(); };
+  $('b-home').onclick = function(){ paintHome(); show('s-home'); };
+  $('b-in-back').onclick = function(){ paintHome(); show('s-home'); };
+
+  /* ---- submitting, which is the one thing here that is not this browser's to decide ----
+   *
+   * THE SERVER SAYS WHETHER YOU ARE IN. The page's own clock is a hint that saves a round
+   * trip on an obviously shut week, exactly as `blocked()` is on the Commish door, and it
+   * is deliberately NOT what decides: a browser whose clock is wrong would otherwise enter
+   * a week that has kicked off, and with a prize on it that is the one refusal that has to
+   * be somebody else's.
+   *
+   * THREE ANSWERS, AND THE THIRD IS THE INTERESTING ONE. In, refused, or nobody knows. An
+   * unknown answer is a request that may have written the row and lost its reply, so the
+   * page ASKS rather than guessing: read as a failure it tells somebody to try again on a
+   * week they are already in, and they then meet "you have already entered this week" and
+   * read the mode as broken.
+   *
+   * NOTHING IS WRITTEN LOCALLY UNTIL THE SERVER HAS SAID YES, which is `dynNewSheet`'s
+   * lesson at a new door: marking it submitted first and correcting on a refusal would
+   * leave a player looking at a screen saying they are in on a week that refused them.
+   */
+  var submitting = false;
+  function submitLabel(text, disabled){
+    $('b-submit').textContent = text;
+    $('b-submit').disabled = !!disabled;
+  }
+  /* IT IS WRITTEN BESIDE THE BUTTON AND NOT AT THE TOP OF THE SCREEN, for the reason the
+     markup carries at length: measured, the old `r-say` landed 694px above the window on a
+     390x844 phone with five lineups drafted, so the whole of a refusal was "nothing
+     happened". It is also SCROLLED TO rather than trusted to be in view, because the same
+     screen is 1691px and a reader who pressed Submit from the top of it would be the same
+     distance away in the other direction. */
+  function sayRefused(why){
+    var el = $('r-refuse');
+    el.textContent = why;
+    el.hidden = false;
+    submitLabel('Submit this lineup', state.pick == null);
+    try { el.scrollIntoView({ block: 'nearest' }); } catch (e) { el.scrollIntoView(); }
+  }
+  /* A REFUSAL IS ABOUT THE PRESS THAT CAUSED IT, so it goes the moment anything about that
+     press changes: a different lineup picked, or the same one sent again. Left up, the
+     reader gets last attempt's reason under this attempt's spinner. */
+  function clearRefused(){
+    var el = $('r-refuse');
+    if (el){ el.hidden = true; el.textContent = ''; }
+  }
+  /** A server sentence, capitalised and closed, with nothing else touched. */
+  function asSentence(s){
+    var t = String(s || '').trim();
+    if (!t) return t;
+    t = t.charAt(0).toUpperCase() + t.slice(1);
+    return /[.!?]$/.test(t) ? t : t + '.';
+  }
+  $('b-submit').onclick = function(){
+    if (state.pick == null || submitting) return;
+    if (locked()){ paintHome(); show('s-home'); return; }
+    clearRefused();
+    var c = chanceAt(state.pick);
+    if (!D.full(c)){ sayRefused('That lineup is not finished.'); return; }
+    /* AND NEVER SEND ONE THE SERVER WILL REFUSE ON MONEY. Reopening at boot means this
+       should not happen, which is exactly why it is checked here as well: the review
+       screen printing "$106.7M of $90M spent" over a Submit button that sent it anyway is
+       what the owner reported. */
+    if (D.spent(c) > CAP + 1e-9){
+      sayRefused('That lineup is over the ' + money(CAP) + ' cap. Pick another, or draft '
+        + 'again.');
+      return;
+    }
+    var ids = c.men.map(function(m){ return m.player_id; });
+    var why = '';
+    submitting = true;
+    submitLabel('Sending...', true);
+    F.submit(POOL.season, POOL.week, ids).then(function(r){
+      if (r.ok){ SERVER_IN = { week: POOL.week, row: { picks: ids } }; return true; }
+      if (r.ok === false){ why = r.why || ''; return false; }
+      /* Nobody knows. The one thing that can settle it is the row. */
+      return F.mine(POOL.season, POOL.week).then(function(m){
+        if (m){ SERVER_IN = { week: POOL.week, row: m }; return true; }
+        /* Still nobody knows: `mine` answers null for unreachable and false for "you have
+           not entered", and only the second is safe to report as a refusal. */
+        return m === false ? 'again' : 'unknown';
+      });
+    }).then(function(res){
+      submitting = false;
+      if (res === true){
+        state.submitted = state.pick;
+        save();
+        /*
+         * A SUBMIT LANDS ON THE BOARD, not on your own six.
+         *
+         * It used to open the entry screen, which is a correct receipt and answers the
+         * wrong question: the thing somebody wants at the moment they enter is whether
+         * anybody else has, and their own six are what they were just looking at. The
+         * board carries the confirmation anyway, because their own row is on it and is
+         * marked, so nothing is lost by going to the screen that also says who else is in.
+         *
+         * THE ENTRY SCREEN IS NOT GONE and is one press away: `b-live-back` returns, and
+         * the home screen's own card opens it. What changed is which of the two is the
+         * destination.
+         */
+        openLive('board');
+        return;
+      }
+      if (res === 'again'){
+        sayRefused('That did not get through. Nothing was entered. Try again.');
+      } else if (res === 'unknown'){
+        sayRefused('The server did not answer. Reload before trying again, '
+          + 'so this does not enter you twice.');
+      } else {
+        /* THE SERVER'S OWN SENTENCE, not a translation of it. Every refusal in
+           `fantasy_submit` is already written for a person, so a second copy here would be
+           nine strings that drift the first time one is edited.
+           WHAT THE PAGE OWNS IS THE JOIN. Those sentences are written to stand alone and
+           start lowercase ('sign in to enter'), so pasted after a full stop they read
+           `Not entered. sign in to enter`. Capitalising the first letter and closing the
+           sentence is presentation rather than translation: not one word moves. */
+        sayRefused('Not entered. ' + asSentence(why || 'That lineup was not accepted.'));
+      }
+    });
+  };
+
+  /* ---- submitted, and then scored ----
+   *
+   * `res` null is the lineup before the games. With results it is the same screen carrying
+   * what happened. Drawn from one function so the six men cannot be described two ways.
+   */
+  /* THE SIX COME FROM THE ENTRY WHEREVER IT IS, and that is what moving to a server buys.
+     `state.submitted` is this browser's memory of it; `SERVER_IN` is the row, and the row
+     is the one that outlives clearing site data, a second device and a private window. The
+     men are rebuilt from ids either way, so the two produce the same screen. */
+  var SERVER_IN = null;   /* { week, row } for the week it was read for, or null */
+  /* SCOPED TO ITS OWN WEEK, and that is not belt and braces. `b-last` draws last week's
+     entry by swapping `POOL.week` and `state` around one `paintIn` call, so an unscoped
+     row would put THIS week's six men under last week's heading and its score. */
+  function serverEntry(){
+    return (SERVER_IN && SERVER_IN.week === POOL.week) ? SERVER_IN.row : null;
+  }
+  function entryMen(){
+    var row = serverEntry();
+    if (row && row.picks){
+      var men = row.picks.map(function(id){ return BY_ID[id]; }).filter(Boolean);
+      if (men.length) return men;
+    }
+    return (!state || state.submitted == null) ? [] : chanceAt(state.submitted).men;
+  }
+  function paintIn(res, lookingBack){
+    var c = { men: entryMen() };
+    var done = !!res;
+    $('b-in-back').hidden = !lookingBack;
+    var proj = D.projected(c);
+    $('in-week').textContent = POOL.season + ' week ' + POOL.week
+      + (done && !res.final ? ' · still being played' : '');
+    $('in-head').textContent = done ? 'How it went' : 'You are in';
+    $('in-lab').textContent = done ? 'Half PPR' : 'Projected';
+    var got = done ? scoreLineup(res, c.men) : proj;
+    $('in-proj').textContent = got.toFixed(1);
+
+    /* THE PROJECTION STAYS ON SCREEN NEXT TO THE REAL NUMBER, because a score on its own
+       says nothing. 71.4 is a good week or a bad one depending on what the board thought,
+       and the gap is the only thing on this page that tells a drafter whether the calls
+       they made off what the board could not see were the right ones. */
+    if (done){
+      var d = Math.round((got - proj) * 10) / 10;
+      $('in-vs').innerHTML = 'Projected <b>' + proj.toFixed(1) + '</b>. '
+        + (d === 0 ? 'Exactly that.'
+          : '<span class="' + (d > 0 ? 'up' : 'dn') + '">'
+            + (d > 0 ? '+' : '') + d.toFixed(1) + '</span>'
+            + (d > 0 ? ' better.' : ' short.'));
+    }
+    $('in-vs').hidden = !done;
+
+    var rows = '';
+    for (var k=0;k<c.men.length;k++){
+      var m = c.men[k];
+      var where = m.opp ? (m.home ? 'vs ' + m.opp : 'at ' + m.opp) : '';
+      if (!done){
+        /*
+         * BEFORE KICKOFF THE `.rs` COLUMN IS HIS PROJECTION, AFTER IT IT IS WHAT HE
+         * SCORED, and that is one column with one meaning rather than two.
+         *
+         * This screen leads with a total the same way the review card does, and it had the
+         * same gap: `Projected 63.0` over six men with no working, so a reader who had
+         * just chosen that lineup for its parts lost sight of them the moment they
+         * submitted it. The file's own note above says the six men must not be described
+         * two ways on two screens; a per man figure on the screen you pick from and none
+         * on the screen you land on is exactly that.
+         *
+         * AFTER THE GAMES THIS IS DELIBERATELY NOT DOUBLED UP. `.rs` is the real score by
+         * then and the projection is already beside the real TOTAL, on `in-vs`, which is
+         * where this mode has always said it belongs: the gap between the two is a fact
+         * about the lineup rather than about any one man.
+         */
+        rows += '<div class="rrow"><span class="rp ' + esc(m.position) + '">'
+          + esc(m.position) + '</span>'
+          + '<span class="rn">' + esc(m.name) + '</span>' + injChip(m)
+          + '<span class="rc">' + esc(where) + '</span>'
+          + '<span class="rs">' + m.proj.toFixed(1) + '</span></div>';
+        continue;
+      }
+      var s = scoreOf(res, m.player_id);
+      /* A MAN WHO DID NOT PLAY GETS A SENTENCE, not a blank. Zero beside nothing reads as
+         a rendering fault; zero beside "did not play" is the outcome the drafter was being
+         asked to see coming, and it is most of what separates two lineups. */
+      /* AND A MAN WHO SCORED NEEDS NO SENTENCE AT ALL. "played, nothing to show" is the
+         right line for somebody who was out there and never touched the ball, and it is a
+         contradiction printed next to 8.2. A live row carries no stat line (nothing
+         upstream has written one yet), so the two cases are told apart by the SCORE rather
+         than by whether there is a line to print. Decided on the printed value, which is
+         the commish state card's rule at another door. */
+      var under = s.played
+        ? (s.line || (s.half > 0 ? '' : 'played, nothing to show'))
+        : (res.final ? 'did not play' : 'not played yet');
+      rows += '<div class="rrow got"><span class="rp ' + esc(m.position) + '">'
+        + esc(m.position) + '</span>'
+        + '<span class="rn"><b>' + esc(m.name) + '</b>'
+        + '<s>' + esc(where) + (where && under ? ' · ' : '') + esc(under) + '</s></span>'
+        + injChip(m)
+        + '<span class="rs' + (s.half > 0 ? '' : ' zero') + '">'
+        + s.half.toFixed(1) + '</span></div>';
+    }
+    $('in-roster').innerHTML = rows;
+
+    /* "The week closes" was wrong about both halves. The week ENDS on Monday night, and
+       what happens at the Thursday kickoff is that entries stop. Shown in the reader's own
+       zone by toLocaleString, which is why no zone is named beside it. */
+    /* AND THE COUNT IS ONLY PRINTED WHEN THERE IS ONE. A live answer carries it off the
+       week and a week published before those columns existed does not, so written straight
+       the sentence reads "undefined of undefined games are in". That is this repo's oldest
+       rule about a number in copy: interpolate it or write the sentence without it. */
+    var inSoFar = (Number.isFinite(res && res.played) && Number.isFinite(res && res.games))
+      ? res.played + ' of ' + res.games + ' games are in. This will move.'
+      : 'The games are still being played. This will move.';
+    $('in-say').textContent = done
+      ? (res.final ? 'Week ' + POOL.week + ' is done. This is what your six scored.'
+        : inSoFar)
+      : (locked() ? 'Week ' + POOL.week + ' has kicked off. Your lineup is in.'
+        : 'Your lineup is in. Entries close ' + lockWhen() + '.');
+    /* SAID PLAINLY RATHER THAN IMPLIED, and what it says changed the day the entry became
+       a row. It read "saved in this browser only" for as long as that was true. */
+    $('in-note').textContent = serverEntry()
+      ? 'Entered on your account. One entry a week, and it is final.'
+      : 'Saved in this browser. It is not on your account, so it will not count.';
+    show('s-in');
+  }
+
+  /* ---- where everybody came ----
+   *
+   * FOUR STATES AND THREE OF THEM SHIP BROKEN: unreachable, not locked yet, nobody has
+   * entered, and here is the board. Each needs its own sentence, because a blank box is
+   * how a feature teaches somebody it is broken. On a mode this new "nobody yet" is the
+   * COMMON case, so it says being first is the prize rather than apologising.
+   *
+   * THE PLACE IS ASKED SEPARATELY AND THAT IS NOT A SPARE REQUEST. The board is the top
+   * fifty; your place is counted against everybody. A page working the second out of the
+   * first would tell the two hundredth entrant the same thing as the fifty first.
+   */
+  /*
+   * ─── THE BOARD MOVES, AND THE MOVEMENT IS THE POINT ───────────────────────────────
+   *
+   * FLIP, which is the only way to animate a reorder without animating layout. The rows are
+   * measured where they are, the list is rebuilt in its new order, they are measured again,
+   * each one is given the INVERSE of the distance it just travelled, and then that transform
+   * is played back to nothing. The browser lays out once and animates a transform, so a
+   * board of fifty rows sliding past each other costs the compositor and nothing else.
+   *
+   * READ EVERYTHING, THEN WRITE EVERYTHING. Both loops below are one phase each, and the
+   * single `offsetWidth` between them is the only forced reflow in the whole move. Measuring
+   * one row and then writing its transform before measuring the next is layout thrash: fifty
+   * reflows for one animation, on the frame the page is also parsing a poll.
+   *
+   * KEYED ON `entry_no` AND NEVER ON THE PLACE. Keyed on place, row one is always row one
+   * and NOTHING ever moves: the scores would change under a board that never animates. Keyed
+   * on the name, two readers sharing one and a rename are both a row that teleports. See
+   * 110_fantasy_live.sql for why that key is what it is.
+   *
+   * THE FIRST PAINT NEVER ANIMATES. There is nothing to move from, and fifty rows flying in
+   * from wherever they happened to be measured is a screen announcing itself.
+   */
+  /*
+   * ─── THE WEEK'S SLATE, AND WHEN THE LIVE SCREEN IS WORTH HAVING ───────────────────
+   *
+   * ASKED OF THE SCHEDULE AND NEVER OF THE DAY OF THE WEEK. "Thursday to Monday" is what a
+   * normal week works out to and is not what it means: a week with a Saturday slate, a
+   * London game at half past nine in the morning, or a Friday after Thanksgiving is the
+   * same question with different answers, and a rule written in weekday names is wrong on
+   * all three with nothing to say so. The first kickoff is also exactly when the board
+   * opens, so one fact decides both.
+   *
+   * THE SLATE IS DERIVED FROM THE POOL, which every visitor already downloads: each man
+   * carries his club, his opponent, which of them is at home and when they kick off, so
+   * sixteen games fall out of it with no second request and no new file. Measured on the
+   * live week 3 board: all sixteen, because all thirty two clubs have a priced man.
+   *
+   * A CLUB WITH NOBODY PRICED WOULD DROP ITS GAME, and that is why the server's rows are
+   * merged over the top rather than used only for the scores. `nfl_games` is written off
+   * `games.csv`, which is the schedule whole, so a game the pool cannot see arrives the
+   * first time the writer runs. The pool's half is what makes the screen right BEFORE
+   * anything has been written at all.
+   */
+  var LIVE_TAIL_MS = 6 * 60 * 60 * 1000;   /* live-results.mjs watches for six hours too */
+  var SLATE = null;
+  function slate(){
+    if (SLATE) return SLATE;
+    if (!POOL || !POOL.pool) return [];
+    var by = {}, i, m, away, home;
+    for (i=0;i<POOL.pool.length;i++){
+      m = POOL.pool[i];
+      if (!m.team || !m.opp || !m.kick) continue;
+      away = m.home ? m.opp : m.team;
+      home = m.home ? m.team : m.opp;
+      by[away + '|' + home] = { away: away, home: home, kick: m.kick };
+    }
+    SLATE = Object.keys(by).map(function(k){ return by[k]; });
+    SLATE.sort(function(a,b){ return Date.parse(a.kick) - Date.parse(b.kick); });
+    return SLATE;
+  }
+
+  /** From the first kickoff until well after the last one, or null if the week has none. */
+  function liveWindow(){
+    var s = slate();
+    if (!s.length) return null;
+    var first = Date.parse(s[0].kick);
+    var last = Date.parse(s[s.length-1].kick);
+    if (!Number.isFinite(first) || !Number.isFinite(last)) return null;
+    return { from: first, to: last + LIVE_TAIL_MS };
+  }
+  function liveOpen(){
+    var w = liveWindow();
+    if (!w) return false;
+    var t = Date.now();
+    return t >= w.from && t <= w.to;
+  }
+
+  /*
+   * THE BUTTON IS NOT ON A SCREEN, so nothing else would ever hide it, and it is wrong on
+   * two of them. On the live screen it is a door into the room it is standing in. On the
+   * draft screen it would sit over the board somebody is picking a man from, and the draft
+   * screen cannot be reached inside the window anyway, because the week locks at the first
+   * kickoff.
+   *
+   * `body.haslive` is what gives the column a floor to sit above. Without it the pill
+   * covers whatever the last control on the screen is, which on the entry screen is the way
+   * back to the game.
+   */
+  function syncLiveButton(){
+    var b = $('b-live');
+    if (!b) return;
+    var cur = document.querySelector('.screen.on');
+    var id = cur ? cur.id : '';
+    var want = liveOpen() && (id === 's-home' || id === 's-review' || id === 's-in');
+    b.hidden = !want;
+    document.body.classList.toggle('haslive', want);
+  }
+
+  /*
+   * AND IT HAS TO ARRIVE WITHOUT A RELOAD. Somebody sitting on the home screen at a quarter
+   * past eight on the Thursday is the reader this is for, and nothing else on this page
+   * ticks before the lock: the poll only runs once the board is open. A minute is as often
+   * as a thing that appears once a week needs asking, and all it does is toggle an
+   * attribute.
+   */
+  setInterval(syncLiveButton, 60000);
+
+  /*
+   * ─── THE REAL GAMES ───────────────────────────────────────────────────────────────
+   *
+   * TWO CONTRIBUTORS AND THE SERVER WINS. The pool's slate is the sixteen games and their
+   * kickoffs, which is the whole screen before a ball is thrown and needs nothing to have
+   * run. `nfl_games` is what happened since. Merged rather than chosen between, so the
+   * screen is complete at every point of the weekend rather than only once the writer has
+   * been round.
+   *
+   * A PRE-GAME ROW WHOSE KICKOFF HAS PASSED SAYS SO. That is the shape of a feed outage
+   * from the reader's side: the server refuses to move a game forwards on a source that
+   * knows less, so what is stored stays honest, and a kickoff time printed beside a game
+   * that started an hour ago would be the page inventing the one thing nobody knows.
+   */
+  var QTR = ['', '1st', '2nd', '3rd', '4th'];
+  function periodLabel(p){
+    if (!p) return '';
+    if (p <= 4) return QTR[p];
+    return p === 5 ? 'OT' : (p - 4) + 'OT';
+  }
+  function kickLabel(kick){
+    var t = Date.parse(kick);
+    if (!Number.isFinite(t)) return '';
+    /* The reader's own clock, not Eastern. Somebody in California reading "1:00" about a
+       game that starts at ten is being told the time in a place they are not. */
+    return new Date(t).toLocaleString([], { weekday: 'short', hour: 'numeric',
+      minute: '2-digit' }).replace(',', '');
+  }
+
+  function gameRowHTML(g){
+    var live = g.state === 'in', done = g.state === 'post';
+    var a = g.away_score, h = g.home_score;
+    var has = a != null && h != null;
+    var lead = function(mine, other){ return has && mine > other ? ' lead' : ''; };
+    var right;
+    if (done){
+      right = '<b>' + (g.overtime ? 'Final / OT' : 'Final') + '</b>';
+    } else if (live){
+      right = '<b>' + esc(periodLabel(g.period) || 'Live') + '</b>'
+        + (g.clock ? '<s>' + esc(g.clock) + '</s>' : '');
+    } else if (g.kick && Date.now() >= Date.parse(g.kick)){
+      /* Kicked off, and nothing has told us anything about it. */
+      right = '<b>Under way</b>';
+    } else {
+      right = '<s>' + esc(kickLabel(g.kick)) + '</s>';
+    }
+    var side = function(club, mine, other){
+      return '<div class="gt' + lead(mine, other) + '"><b>' + esc(club) + '</b>'
+        + '<i>' + (has ? esc(String(mine)) : '') + '</i></div>';
+    };
+    return '<div class="gm' + (live ? ' live' : '') + (done ? ' done' : '') + '">'
+      + '<div class="gsides">' + side(g.away, a, h) + side(g.home, h, a) + '</div>'
+      + '<div class="gst">' + right + '</div></div>';
+  }
+
+  function paintScores(d){
+    var box = $('lv-games');
+    if (!box) return;
+    var by = {}, i, g, k, s = slate();
+    for (i=0;i<s.length;i++) by[s[i].away + '|' + s[i].home] = s[i];
+    var served = (d && Array.isArray(d.games)) ? d.games : [];
+    for (i=0;i<served.length;i++){
+      g = served[i];
+      if (!g || !g.away || !g.home) continue;
+      k = g.away + '|' + g.home;
+      by[k] = { away: g.away, home: g.home, kick: g.kick || (by[k] && by[k].kick),
+        state: g.state, away_score: g.away_score, home_score: g.home_score,
+        period: g.period, clock: g.clock, overtime: g.overtime };
+    }
+    var all = Object.keys(by).map(function(x){ return by[x]; });
+    all.sort(function(a,b){ return (Date.parse(a.kick)||0) - (Date.parse(b.kick)||0); });
+    var html = '';
+    for (i=0;i<all.length;i++) html += gameRowHTML(all[i]);
+    /* Nothing at all is a week whose pool this page could not read, which is a state the
+       loading screen already covers. Said rather than left blank anyway. */
+    box.innerHTML = html || '<p class="note">This week\'s games could not be read.</p>';
+  }
+
+  var BOARD_SEEN = null;    /* key -> { place, score } as last drawn, or null before one */
+  var boardTimers = [];
+  function clearBoardTimers(){
+    for (var i=0;i<boardTimers.length;i++) clearTimeout(boardTimers[i]);
+    boardTimers = [];
+  }
+  var boardLater = function(f, ms){ boardTimers.push(setTimeout(f, ms)); };
+
+  /* How long a move takes, which has to match the transition in the CSS: it is what decides
+     when the `up`/`down` marks come off. Read once rather than written twice, so a designer
+     retuning the rule does not leave a row green for ever. */
+  var MOVE_MS = 520;
+
+  function boardRowHTML(key, place, name, score, cls){
+    return '<div class="brow' + (cls ? ' ' + cls : '') + '" data-k="' + esc(key) + '">'
+      + '<span class="bp">' + esc(String(place)) + '</span>'
+      + '<span class="bn">' + esc(name) + '</span>'
+      + '<span class="bs">' + esc(score) + '</span></div>';
+  }
+
+  function paintBoard(data){
+    var rows = data && data.rows;
+    /*
+     * A BOARD HAS FOUR STATES AND THREE OF THEM SHIP BROKEN, and this is the first screen
+     * on this page that can reach all four. While the board lived under the entry screen
+     * the reader had entered BY DEFINITION, so an empty answer could only ever mean the
+     * week had not locked, and "nobody yet" was a sentence that could not be true there.
+     * Here it can be: this screen is open to somebody who never drafted, which is most of
+     * the reason it exists.
+     *
+     * A POLL THAT ANSWERS NULL LEAVES THE BOARD ALONE rather than blanking it. A
+     * leaderboard that emptied itself on one bad request would flash blank every time a
+     * phone changed cell tower. It only says so when there is no board there to leave. */
+    if (!data){
+      if (!BOARD_SEEN) $('lv-boardsay').textContent = 'The board could not be reached. '
+        + 'The games above are this week\'s schedule.';
+      return;
+    }
+    if (!rows || !rows.length){
+      /*
+       * WHO IS IN, BEFORE ANYBODY CAN SEE A LINEUP. "No lineups before the lock" was
+       * implemented as "no rows", and those are two different claims: what a reader wants at
+       * the moment they enter is whether anybody else has, and the only answer this screen
+       * could give was a count on a label. `supabase/112_fantasy_entrants.sql` answers it
+       * with names and NOTHING else, in a function that selects no pick, no projection and
+       * no spend, so the payload cannot carry the answer key however this is painted.
+       *
+       * ABSENT IS NOT EMPTY, and the entry count is what tells them apart. SQL is deployed by
+       * hand and this page by a push, so a database still on 111 answers with no `entrants`
+       * key at all while the week genuinely has entries in it: that falls back to the
+       * sentence this screen has always drawn rather than claiming nobody is there. */
+      var ents = (data.entrants && data.entrants.length) ? data.entrants : null;
+      var n0 = data.week ? data.week.entries : null;
+      BOARD_SEEN = null;
+      $('lv-boardlab').textContent = 'This week'
+        + (n0 ? ' · ' + n0 + (n0 === 1 ? ' entry' : ' entries') : '');
+      if (ents){
+        var eh = '', j, e;
+        for (j=0;j<ents.length;j++){
+          e = ents[j];
+          eh += '<div class="erow' + (e.is_me ? ' me' : '') + '">'
+            + '<span class="en">' + esc(e.display_name || 'Somebody') + '</span>'
+            + (e.is_me ? '<span class="ey">you</span>' : '') + '</div>';
+        }
+        $('lv-board').innerHTML = eh;
+        $('lv-boardsay').textContent = 'Lineups open at the first kickoff.';
+        return;
+      }
+      $('lv-board').innerHTML = '';
+      $('lv-boardsay').textContent = (n0 && !(data.week && data.week.open))
+        ? 'The board opens at the first kickoff.'
+        : 'Nobody has entered this week. Being first is the prize.';
+      return;
+    }
+    $('lv-boardsay').textContent = '';
+
+    var me = data.me && data.me.place ? data.me : null;
+    var n = me ? me.entries : (data.week ? data.week.entries : null);
+    $('lv-boardlab').textContent = 'This week'
+      + (n ? ' · ' + n + (n === 1 ? ' entry' : ' entries') : '');
+
+    var html = '', mine = false, i, r;
+    var want = {};
+    for (i=0;i<rows.length;i++){
+      r = rows[i];
+      if (r.is_me) mine = true;
+      var key = String(r.entry_no == null ? 'p' + r.place : r.entry_no);
+      want[key] = { place: Number(r.place), score: Number(r.score) };
+      html += boardRowHTML(key, r.place, r.display_name || 'Somebody',
+        Number(r.score).toFixed(1), r.is_me ? 'me' : '');
+    }
+    /* Off the bottom of the fifty, and told so rather than left off their own board. The two
+       synthetic rows get keys of their own so they are not mistaken for somebody who moved. */
+    if (!mine && me){
+      html += '<div class="brow gap" data-k="gap">...</div>';
+      want.you = { place: Number(me.place), score: Number(me.score) };
+      html += boardRowHTML('you', me.place, 'You', Number(me.score).toFixed(1), 'me');
+    }
+
+    var box = $('lv-board');
+
+    /* FIRST: where is everything now. */
+    var first = {}, kids = box.children, k;
+    for (i=0;i<kids.length;i++){
+      k = kids[i].getAttribute('data-k');
+      if (k) first[k] = kids[i].getBoundingClientRect().top;
+    }
+
+    var had = BOARD_SEEN;
+    box.innerHTML = html;
+    BOARD_SEEN = want;
+
+    /* AND NOTHING ANIMATES WHILE THE BOARD IS NOT BEING LOOKED AT. The poll paints it on
+       every answer whatever screen or tab is up, so a repaint made while the reader is on
+       their own six, or on the games, is measuring elements with no layout box: every
+       rectangle is zero and every row appears to have travelled the height of the page. The
+       DOM is still updated, which is what makes opening either instant. */
+    if (REDUCE || !had || !boardShowing()) return;
+
+    /* LAST: read every new position before writing a single transform. */
+    kids = box.children;
+    var moves = [];
+    for (i=0;i<kids.length;i++){
+      k = kids[i].getAttribute('data-k');
+      if (!k) continue;
+      var was = had[k];
+      var top = kids[i].getBoundingClientRect().top;
+      var dy = (first[k] == null) ? 0 : first[k] - top;
+      var placeMoved = was && want[k] && was.place !== want[k].place;
+      var scoreMoved = was && want[k] && was.score !== want[k].score;
+      if (dy || placeMoved || scoreMoved) {
+        moves.push({ el: kids[i], dy: dy,
+          dir: placeMoved ? (want[k].place < was.place ? 'up' : 'down') : '',
+          tick: scoreMoved });
+      }
+    }
+    if (!moves.length) return;
+
+    /* INVERT: put every row back where it was, with no transition to get there. */
+    for (i=0;i<moves.length;i++){
+      if (!moves[i].dy) continue;
+      moves[i].el.style.transition = 'none';
+      moves[i].el.style.transform = 'translateY(' + moves[i].dy + 'px)';
+    }
+    /* The one forced reflow of the whole move. Without it the browser coalesces the invert
+       and the play into one style change and nothing travels at all. */
+    void box.offsetWidth;
+
+    /* PLAY. */
+    for (i=0;i<moves.length;i++){
+      var m = moves[i];
+      if (m.dy){
+        m.el.style.transition = '';
+        m.el.style.transform = '';
+        m.el.classList.add('moving');
+      }
+      if (m.dir) m.el.classList.add(m.dir);
+      if (m.tick){
+        var s = m.el.querySelector('.bs');
+        if (s) s.classList.add('tick');
+      }
+    }
+    /* AND THE MARKS COME OFF. A row left green is a row still claiming to have just moved,
+       on a screen that will be polled again in twenty seconds. Cancelled on a screen change
+       for the same reason the draft screen's stagger is: a timer landing on a board that has
+       been rebuilt would strip a class off a row that is mid flight. */
+    boardLater(function(){
+      var all = box.querySelectorAll('.brow.moving,.brow.up,.brow.down,.bs.tick');
+      for (var j=0;j<all.length;j++){
+        all[j].classList.remove('moving', 'up', 'down', 'tick');
+      }
+    }, MOVE_MS + 60);
+  }
+
+  /*
+   * WHAT THE BOARD IS AS OF, which is the half that makes a live board honest.
+   *
+   * `results_at` is when the scoring last CHANGED and `checked_at` is when anything last
+   * LOOKED. A board with a fresh `checked_at` and a stale `results_at` is a quiet afternoon;
+   * one where BOTH are stale is a feed that has stopped, and those two are indistinguishable
+   * without the pair. See 110_fantasy_live.sql.
+   */
+  var COLD_MS = 25 * 60 * 1000;   /* the writer runs about every ten minutes */
+  /*
+   * TWO CHIPS, ONE PAINTER, AND THAT IS THE STORE CARD'S RULE ARRIVING HERE. The entry
+   * screen needs it because the six men under a climbing total are only readable if the
+   * screen says when they last moved; the live screen needs it because it IS the live
+   * screen. Written as two painters they would be two sets of words about one fact, and
+   * they would say different things inside a week. `prefix` is the only thing that differs
+   * and it is not a word: it is which element to write into.
+   */
+  function paintLiveInto(prefix, week){
+    var el = $(prefix + '-live');
+    if (!el) return;
+    if (!week || !week.open){ el.hidden = true; return; }
+    el.hidden = false;
+    var checked = week.checked_at ? Date.parse(week.checked_at) : 0;
+    var moved = week.results_at ? Date.parse(week.results_at) : 0;
+    var games = (week.games_final != null && week.games_total)
+      ? week.games_final + ' of ' + week.games_total + ' games' : '';
+    if (week.scored_at){
+      el.className = 'blive done';
+      $(prefix + '-livelab').textContent = 'FINAL';
+      $(prefix + '-livesay').textContent = games;
+      return;
+    }
+    if (!checked){
+      /* Locked, and nothing has looked yet. Honest rather than silent: this is the state
+         between the Thursday lock and the first run of the writer. */
+      el.className = 'blive cold';
+      $(prefix + '-livelab').textContent = 'NOT SCORED YET';
+      $(prefix + '-livesay').textContent = games;
+      return;
+    }
+    var cold = (Date.now() - checked) > COLD_MS;
+    el.className = 'blive ' + (cold ? 'cold' : 'on');
+    $(prefix + '-livelab').textContent = cold ? 'NOT UPDATING' : 'LIVE';
+    var when = moved ? new Date(moved).toLocaleTimeString([],
+      { hour: 'numeric', minute: '2-digit' }) : null;
+    $(prefix + '-livesay').textContent = (games ? games : '')
+      + (games && when ? ' · ' : '')
+      + (when ? (cold ? 'last moved ' : 'as of ') + when : '');
+  }
+  function paintLive(week){
+    paintLiveInto('in', week);
+    paintLiveInto('lv', week);
+  }
+
+  /*
+   * ─── THE POLL ─────────────────────────────────────────────────────────────────────
+   *
+   * The comment this replaces said the board "is asked every time and not cached, because
+   * it is the one thing on this page that moves while somebody is looking at it: a Sunday
+   * afternoon reload is the whole reason to come back". That was true and the reload was
+   * the part worth removing.
+   *
+   * IT ONLY RUNS WHILE THERE IS SOMETHING TO SEE. A poll that carried on against a week
+   * that is finished, or one that has not locked, is a request every twenty seconds per
+   * reader for an answer that cannot change.
+   *
+   * AND IT STOPS WHEN THE TAB IS HIDDEN. A phone left on this screen in a pocket would
+   * otherwise poll all afternoon. `visibilitychange` restarts it AND asks immediately, so
+   * coming back to the tab shows the current board rather than a twenty second old one.
+   * That first ask on return is the one that matters: it is the moment somebody checks.
+   */
+  var POLL_MS = 20000;
+  var pollTimer = 0;
+  var pollGen = 0;         /* bumped to orphan an answer that is already out */
+
+  function boardLive(week){
+    return !!(week && week.open && !week.scored_at);
+  }
+
+  /* THE TWO SCREENS THE ANSWER IS FOR. Both read the same one call: the entry screen takes
+     the reader's own six out of it and the live screen takes the games and the board. */
+  function watching(){
+    return $('s-in').classList.contains('on') || $('s-live').classList.contains('on');
+  }
+
+  function stopPolling(){
+    pollGen++;
+    if (pollTimer) { clearTimeout(pollTimer); pollTimer = 0; }
+  }
+
+  function pollOnce(){
+    var gen = pollGen;
+    var season = POOL.season, week = POOL.week;
+    return F.board(season, week, 50).then(function(d){
+      /* THREE WAYS AN ANSWER CAN BE STALE BY THE TIME IT LANDS, and all three have been
+         real on this page: the reader left the screen, the poll was stopped, or the live
+         week rolled over underneath a slow request. A board painted for the wrong week is
+         somebody else's competition on your screen. */
+      if (gen !== pollGen) return null;
+      if (!watching()) return null;
+      if (season !== POOL.season || week !== POOL.week) return null;
+      /* PAINTED EVEN WHEN THE ANSWER IS NOTHING, because `paintBoard` has a sentence for
+         that and it is the one state a reader is most likely to be staring at. It leaves an
+         existing board alone; what it will not do is leave a blank box with no explanation
+         under it. */
+      paintBoard(d);
+      if (d){
+        paintLive(d.week);
+        paintScores(d);
+        /* THE ENTRY SCREEN'S OWN HALF, and only while it is the screen. `paintLines` ends
+           in `paintIn`, which ends in `show('s-in')`: called from the live screen it would
+           take a reader off the board they are watching, every twenty seconds. */
+        if ($('s-in').classList.contains('on')) paintLines(d);
+        /* THE DOOR IS DRAWN WHEN THE BOARD HAS SOMETHING TO SAY, which used to be the lock
+           and nothing else. It is the lock OR a list of entrants now: before 112 the only
+           pre-lock answer was no rows, so a button here would have taken somebody somewhere
+           to be told nothing, and that is still exactly what it does on a database without
+           the migration. Read off the answer rather than off the clock, so the door and the
+           screen behind it can never disagree about whether there is a list. */
+        if ($('b-in-board')) $('b-in-board').hidden =
+          !((d.week && d.week.open) || (d.entrants && d.entrants.length));
+      }
+      return d;
+    });
+  }
+
+  function startPolling(){
+    stopPolling();
+    var gen = pollGen;
+    var tick = function(){
+      if (gen !== pollGen) return;
+      pollOnce().then(function(d){
+        if (gen !== pollGen) return;
+        /* THE POLL STOPS ITSELF when the week is settled, and keeps going on a null: a
+           board that gave up after one unreachable request would stay frozen for the rest
+           of the afternoon on a reader whose train went into a tunnel. */
+        if (d && !boardLive(d.week)) { stopPolling(); return; }
+        pollTimer = setTimeout(tick, POLL_MS);
+      });
+    };
+    pollTimer = setTimeout(tick, POLL_MS);
+  }
+
+  document.addEventListener('visibilitychange', function(){
+    if (document.hidden) { stopPolling(); return; }
+    /* The button can have come and gone while the tab was away: a phone put in a pocket on
+       Thursday afternoon comes back out after kickoff. */
+    syncLiveButton();
+    if (!watching()) return;
+    watch();
+  });
+
+  /* ONE WAY TO START WATCHING, called by both screens. Asks immediately, because the moment
+     somebody opens either of them is the moment they want the current answer rather than a
+     twenty second old one, and only then settles into the poll. */
+  function watch(){
+    return pollOnce().then(function(d){
+      if (d && boardLive(d.week)) startPolling();
+      return d;
+    });
+  }
+
+  /*
+   * TWO HANDLES PUBLISHED FOR THE CHECKER, AND NOTHING ON THIS PAGE READS EITHER.
+   *
+   * This is `window.RTF_LIVE`'s argument in the hoops game, arriving here. The thing worth
+   * asserting about this board is what happens on the SECOND answer: whether a row that
+   * changed place actually travels. Waiting for the real twenty seconds would put twenty
+   * seconds into the suite for every one of those assertions, and a checker that slow is a
+   * checker nobody runs.
+   *
+   * `__rtgPoll` asks once, through the real poll, against the real stub, and paints with the
+   * real painter: nothing about the move is faked, only its timing. `__pollMs` shortens the
+   * interval so the "does it keep asking" and "does it stop" claims can be made in under a
+   * second rather than over a minute.
+   *
+   * THEY ARE NOT A BACK DOOR. Neither writes a score, neither reaches the server other than
+   * through the same one call the page already makes, and a page with nothing polling
+   * answers both harmlessly.
+   */
+  window.__rtgPoll = function(){ return pollOnce(); };
+  window.__pollMs = function(ms){
+    POLL_MS = Math.max(20, Number(ms) || POLL_MS);
+    if (pollTimer) startPolling();
+  };
+
+  /*
+   * THE READER'S OWN SIX, WHILE THE GAMES ARE ON.
+   *
+   * `paintIn` draws them off `results_<season>_w<week>.json`, which is written once at the
+   * end of the week: during the games it 404s, so the six sit blank. The live answer
+   * carries the same thing off the server, so a total that is climbing has six men under it
+   * that explain it. THE STATIC FILE STILL WINS once it exists, because it carries the stat
+   * line ("84 rush yds, 1 TD") and this does not.
+   */
+  function paintLines(d){
+    if (!d || !d.me || !d.me.lines || !d.me.lines.length) return;
+    /* THE STATIC FILE WINS ONCE IT EXISTS. It carries the stat line and this does not. */
+    if (RESULTS[POOL.season + '|' + POOL.week]) return;
+    /* SHAPED AS `scoreOf` ALREADY READS IT, `[half, line]`, rather than given a shape of
+       its own: one reader, one format, and `paintIn` needs no branch for a live week.
+       ONLY THE MEN WHO HAVE PLAYED GO IN. `scoreOf` reads the PRESENCE of the row as
+       `played`, so writing a zero for everybody would report six men who had all turned out
+       and done nothing, which is the one thing on that list a drafter is reading it for.
+       `line` is empty because a live row has no stat line here: `paintIn` prints "played,
+       nothing to show" for that, which is true of a man who is out there and has not
+       touched the ball. */
+    var by = {};
+    for (var i=0;i<d.me.lines.length;i++){
+      var l = d.me.lines[i];
+      if (l.played) by[l.player_id] = [Number(l.half_ppr), ''];
+    }
+    /*
+     * AND HOW FAR INTO THE WEEK IT IS, which is the half this was missing.
+     *
+     * `paintIn` prints "3 of 16 games are in. This will move." for an unfinished week, off
+     * `res.played` and `res.games`. A payload carrying only the scores has neither, so the
+     * sentence read "undefined of undefined games are in", on the screen a reader watches
+     * all afternoon. Nothing threw: it is a string built out of two missing numbers.
+     * Found by taking a screenshot of the real page and looking at it.
+     *
+     * `final` is deliberately still absent, so a man with no row reads "not played yet"
+     * rather than "did not play": the week is not over and he may still be on.
+     */
+    var wk = d.week || {};
+    paintIn({ scores: by, played: wk.games_final, games: wk.games_total });
+  }
+
+  /* The entry screen is opened once results may exist, so the fetch happens here rather
+     than at boot: a visitor who has not submitted anything never asks for a results file. */
+  function openIn(){
+    paintIn(null);
+    stopPolling();
+    clearBoardTimers();
+    $('in-live').hidden = true;
+    $('b-in-board').hidden = true;
+    watch();
+    resultsFor(POOL.season, POOL.week).then(function(res){
+      /* Only repaint if this screen is still the one showing. A slow answer landing after
+         somebody pressed Back would put the entry up over whatever they went to. */
+      if (res && $('s-in').classList.contains('on')) paintIn(res);
+    });
+  }
+
+  /*
+   * ─── OPENING THE LIVE SCREEN ──────────────────────────────────────────────────────
+   *
+   * THE SCHEDULE IS DRAWN BEFORE ANYTHING IS ASKED, so the screen is never blank for the
+   * length of a round trip: sixteen games with their kickoff times come out of the pool
+   * this page already has. What the poll adds is what has happened since.
+   */
+  /* WHICH PANEL IS SHOWING. Read by the board painter as well as set by the tabs, because
+     animating a reorder inside a hidden panel is measuring elements with no layout box:
+     every rectangle is zero and every row appears to have travelled the height of the
+     page. */
+  function lvTab(which){
+    var games = which !== 'board';
+    $('lv-tab-games').classList.toggle('on', games);
+    $('lv-tab-board').classList.toggle('on', !games);
+    $('lv-pane-games').hidden = !games;
+    $('lv-pane-board').hidden = games;
+    window.scrollTo(0,0);
+  }
+  function boardShowing(){
+    return $('s-live').classList.contains('on') && !$('lv-pane-board').hidden;
+  }
+  $('lv-tab-games').onclick = function(){ lvTab('games'); };
+  $('lv-tab-board').onclick = function(){ lvTab('board'); };
+
+  function openLive(tab){
+    $('lv-week').textContent = POOL.season + ' week ' + POOL.week;
+    /* THREE STATES, AND THE THIRD ONE ARRIVED WITH THE ENTRANTS LIST. This screen could not
+       be reached before the first kickoff until 112 gave it something to say, so the "not
+       being played" sentence was only ever read after the week had finished. Read before it
+       starts, "this is how it finished" is wrong about a week nobody has played a down of. */
+    $('lv-say').textContent = liveOpen()
+      ? 'Every game of the week, and where everybody is, while it happens.'
+      : (!locked()
+        ? 'Week ' + POOL.week + ' has not kicked off yet.'
+        : 'Week ' + POOL.week + ' is not being played right now. This is how it finished.');
+    $('lv-live').hidden = true;
+    /*
+     * `BOARD_SEEN` IS DELIBERATELY NOT RESET HERE, AND IT WAS, FOR A PASS.
+     *
+     * The reasoning was that opening a screen is not watching a row move, so a board that
+     * animated on arrival would be announcing itself. The premise is false: the poll has
+     * been painting this board all along, while the reader was on their own six or on the
+     * games, so THE ROWS ON SCREEN ALREADY ARE `BOARD_SEEN`. An animation from there to the
+     * next answer is one honest step, and throwing the mark away only loses the first move
+     * after somebody arrives, which is the move they are most likely to have come for.
+     *
+     * What stops a hidden panel animating is `boardShowing()`, which is a different
+     * question asked in a different place.
+     */
+    clearBoardTimers();
+    lvTab(tab === 'board' ? 'board' : 'games');
+    paintScores(null);
+    show('s-live');
+    /* AFTER `show`, WHICH CANCELS TIMERS. The draft screen's reveal learnt this the same
+       way: a watch started before the screen change is a watch the screen change stops. */
+    watch();
+  }
+
+  $('b-live').onclick = function(){ openLive('games'); };
+  $('b-in-board').onclick = function(){ openLive('board'); };
+  $('b-live-back').onclick = function(){
+    /* BACK TO WHERE THEY CAME FROM, which is their own entry if they have one and the home
+       screen if they do not. A single destination would send somebody who has never drafted
+       to a screen about a lineup that does not exist. */
+    if (serverEntry() || (state && state.submitted != null)) openIn();
+    else { paintHome(); show('s-home'); }
+  };
+
+  /* ---- home ---- */
+  function startChance(){
+    var i = -1;
+    for (var k=0;k<state.chances.length;k++){
+      if ((state.chances[k].ids||[]).length < D.SLOTS.length){ i = k; break; }
+    }
+    if (i < 0){
+      if (state.chances.length >= D.CHANCES){ toReview(); return; }
+      state.chances.push({ seed: D.newSeed(), ids: [] });
+      i = state.chances.length - 1;
+    }
+    cur = i;
+    save();
+    /* SHOWN BEFORE IT IS PAINTED. `show` cancels the draft screen's timers, so painting
+       first would start a deal and then immediately cancel its stagger, and the board
+       would come up with one row on it. */
+    show('s-draft');
+    /* A fresh chance starts the money at the full cap so the first signing counts DOWN
+       from it. Carried over, the number would ramp from whatever the last chance ended on,
+       which is a count in the wrong direction on the first press of every draft after the
+       first. */
+    moneyFrom = CAP - D.spent(chanceAt(i));
+    JUST = -1;
+    paintDraft();
+  }
+
+  function paintHome(){
+    var done = state.chances.filter(function(c){
+      return (c.ids||[]).length >= D.SLOTS.length; }).length;
+    /* BETA LEADS THE EYEBROW, because this is the first line of the mode and a reader who
+       meets a rough edge should have been told before they met it rather than after. The
+       door says it too: one word, both surfaces, the way the two how-to surfaces on the
+       arcade pages have to agree. A middot list rather than a sentence, which is what this
+       repo already reaches for when three facts share a line. */
+    $('home-week').textContent = 'Beta · ' + POOL.season + ' week ' + POOL.week
+      + ' · ' + POOL.pool.length + ' men on the board';
+    $('home-lock').textContent = locked() ? 'Locked' : untilLock();
+    $('home-cap').textContent = money(CAP);
+    $('b-draft').hidden = locked() || state.chances.length >= D.CHANCES
+      && done >= D.CHANCES;
+    $('b-draft').textContent = done ? 'Draft ' + (done+1) + ' of ' + D.CHANCES : 'Start drafting';
+    $('b-review').hidden = !done;
+    /* THE REOPENED DRAFTS ARE NAMED WHERE THE READER LANDS, so nobody opens their five
+       and finds one gone with nothing to say why. */
+    $('home-note').textContent = locked()
+      ? 'Week ' + POOL.week + ' has kicked off. Nothing more can be submitted.'
+      : reopenedLine()
+        + 'Draft as many as you like. One lineup goes in, on your account, and it is final.';
+    lastWeekCard();
+    /* AND THE DOOR BACK TO IT, if the answer has already landed. The ASK is at boot rather
+       than here, because the reader most likely to have a result is the one who entered
+       this week as well, and they never reach this screen on the way in. */
+    drawPrizeDoor();
+  }
+
+  /* ---- what you scored last week ----
+   *
+   * READ OFF THE PREVIOUS WEEK'S OWN KEY AND ITS OWN POOL, because the entry stores player
+   * ids and this week's board cannot name last week's men: a man on a bye, cut or traded is
+   * simply not in it, and six ids resolved against the wrong week would silently draw a
+   * four man lineup.
+   *
+   * ONE WEEK BACK AND NO FURTHER. This is the thing a player wants on the way in, not a
+   * history: a season of cards on the front page is a screen you scroll past to reach the
+   * draft, which is the one thing the page is for.
+   */
+  var LAST = null;
+  function lastWeekCard(){
+    var wk = POOL.week - 1;
+    if (wk < 1) return;
+    var prev = loadWeek(POOL.season, wk);
+    if (!prev || prev.submitted == null) return;
+    if (LAST){ drawLast(); return; }
+    Promise.all([
+      resultsFor(POOL.season, wk),
+      fetch('/football/data/weekly_' + POOL.season + '_w' + wk + '.json')
+        .then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; }),
+    ]).then(function(got){
+      var res = got[0], pool = got[1];
+      if (!res || !pool) return;
+      var by = {};
+      for (var i=0;i<pool.pool.length;i++) by[pool.pool[i].player_id] = pool.pool[i];
+      var men = (prev.chances[prev.submitted].ids||[])
+        .map(function(id){ return by[id]; }).filter(Boolean);
+      if (men.length < D.SLOTS.length) return;
+      LAST = { week: wk, men: men, got: scoreLineup(res, men),
+        proj: Math.round(men.reduce(function(t,m){ return t + m.proj; }, 0) * 10) / 10,
+        res: res, final: res.final };
+      drawLast();
+    });
+  }
+  function drawLast(){
+    if (!LAST) return;
+    var d = Math.round((LAST.got - LAST.proj) * 10) / 10;
+    $('last-say').textContent = 'Week ' + LAST.week + (LAST.final ? '' : ', still playing');
+    $('last-sub').textContent = 'Projected ' + LAST.proj.toFixed(1) + '. '
+      + (d === 0 ? 'Exactly that.' : (d > 0 ? '+' : '') + d.toFixed(1)
+        + (d > 0 ? ' better.' : ' short.'));
+    $('last-pts').textContent = LAST.got.toFixed(1);
+    $('b-last').hidden = false;
+  }
+
+  /* ================================================================
+     WHERE YOU FINISHED, TOLD ONCE, AFTER THE WEEK IS OVER
+     ================================================================
+   *
+   * `supabase/114_fantasy_prizes.sql` settles the top three the moment a week is marked
+   * scored, and `fantasy_my_result` answers one reader's own question about it. This is the
+   * only thing on the site that tells an entrant the competition finished, so the rule is
+   * that it arrives on its own rather than being gone looking for.
+   *
+   * IT ASKS ABOUT THIS WEEK FIRST, THEN LAST WEEK. The server answers nothing about a week
+   * until it is scored AND the winner's code exists (115_fantasy_result_when_ready.sql), and
+   * the live job makes that code on the tick that closes the week, which is normally Monday
+   * night. The board does not roll over until the Tuesday build, so for those hours the week
+   * that just finished is still `POOL.week`. Asking only about `POOL.week - 1` made every
+   * entrant wait for Tuesday's board to be told how Monday went. Once the board has rolled,
+   * the finished week is `POOL.week - 1`, which is the same week `lastWeekCard` reads, and
+   * asking the new `POOL.week` first costs one call that answers nothing.
+   *
+   * SHOWN ONCE, AND THE SERVER IS WHAT REMEMBERS. See `ackResult` in entries.js. So a reader
+   * told on Monday night is not told again on Tuesday, when the same week has become
+   * `POOL.week - 1`: the ack is keyed on the week, not on which question found it.
+   */
+  var PRZ = null;      /* the answer, kept so the sheet can be reopened within a visit */
+  var PRZ_ASKED = false;
+
+  /* 11th, 12th and 13th are the exceptions every naive version of this gets wrong, and a
+     competition with twelve entrants meets one of them immediately.
+     THE SUFFIX IS RESOLVED BEFORE IT IS JOINED, because `n + map[x] || n + 'th'` reads as
+     "fall back to th" and is not: `+` binds tighter than `||`, so a miss produces the
+     TRUTHY string "4undefined" and the fallback is never reached. Written that way first,
+     and it renders perfectly. */
+  var ordinal = function(n){
+    var t = n % 100;
+    if (t >= 11 && t <= 13) return n + 'th';
+    var suf = ({ 1: 'st', 2: 'nd', 3: 'rd' })[n % 10];
+    return n + (suf || 'th');
+  };
+
+  function prizeCheck(){
+    if (PRZ_ASKED) return;
+    PRZ_ASKED = true;
+    /* NULL IS "NOBODY KNOWS" AND FALSE IS "NOTHING TO SAY". Only the second one is an
+       answer, and neither opens the sheet by itself: a reader who has already seen it is
+       not told again. The ask is re-armed on a null, because a popup lost to one bad
+       request is a result somebody is never told about. */
+    var take = function(wk, r){
+      PRZ = { week: wk, r: r };
+      drawPrizeDoor();
+      if (!r.seen) showPrize();
+    };
+    F.myResult(POOL.season, POOL.week).then(function(r){
+      if (r == null){ PRZ_ASKED = false; return; }
+      if (r && r.entered) return take(POOL.week, r);
+      var prev = POOL.week - 1;
+      if (prev < 1) return;
+      return F.myResult(POOL.season, prev).then(function(r2){
+        if (r2 == null){ PRZ_ASKED = false; return; }
+        if (r2 && r2.entered) take(prev, r2);
+      });
+    });
+  }
+
+  /* The door, which says where they came so pressing it is never a surprise. */
+  function drawPrizeDoor(){
+    /* Called from every home paint as well as from the answer, so it has to be safe before
+       there is anything to draw: no result is a door that is simply not there. */
+    if (!PRZ) return;
+    var place = Number(PRZ.r.place);
+    $('prize-say').textContent = PRZ.r.promo_code
+      ? 'You won week ' + PRZ.week
+      : 'Week ' + PRZ.week + ' is settled';
+    $('prize-sub').textContent = PRZ.r.promo_code
+      ? 'Your code is in here'
+      : 'Where you finished, out of ' + PRZ.r.entries;
+    $('prize-pl').textContent = ordinal(place);
+    $('prize-pl').classList.toggle('pod', place <= 3);
+    $('b-prize').hidden = false;
+  }
+  $('b-prize').onclick = function(){ showPrize(); };
+
+  function showPrize(){
+    if (!PRZ) return;
+    var r = PRZ.r, place = Number(r.place), entries = Number(r.entries);
+    $('prz-eye').textContent = 'Week ' + PRZ.week + ' is settled';
+    $('prz-place').textContent = ordinal(place);
+    $('prz-place').classList.toggle('pod', place <= 3);
+    $('prz-of').textContent = 'of ' + entries + (entries === 1 ? ' entry' : ' entries');
+    $('prz-score').textContent = Number(r.score).toFixed(1) + ' points';
+
+    /* WHAT IT SAYS IS ABOUT THEIR OWN WEEK AND NEVER ABOUT ANYBODY ELSE'S. The board is one
+       press away and carries the rest; a sheet that listed the people above them would be
+       the leaderboard, badly, on a screen that is already the width of a phone. */
+    /* EVERYBODY WHO DID NOT WIN IS TOLD SOMETHING TRUE AND KIND, in that order. "Better luck
+       next week" was the line under ninth of twelve, which is a shrug at somebody who spent
+       five drafts on it. None of these promises anything about the NEXT board, because this
+       sheet can open after that week has already locked, and a line telling somebody to go
+       and draft into a shut week is the one encouraging sentence that would be false. */
+    var say;
+    /* A WIN WITH NO CODE IS A FIELD OF ONE, which the minting script voids rather than
+       pays. Said plainly, because "you won" over a sheet with no prize on it reads as the
+       prize going missing. The win itself is real and stays on their profile. */
+    if (place === 1 && !r.promo_code && entries < 2)
+      say = 'You were the only entry this week, so there is no prize. The win still counts.';
+    else if (place === 1) say = 'You won the week. Nobody drafted better.';
+    else if (place === 2) say = 'So close. One spot off the top.';
+    else if (place === 3) say = 'Top three. That is a podium finish.';
+    else if (entries > 1 && place <= Math.ceil(entries / 2)) say = 'Top half of the field. That is a good week.';
+    else say = 'Not your week. Every week starts from zero.';
+
+    /* THE PROJECTION IS THE ONE OTHER THING THIS READER CAN BE PROUD OF, and it is theirs
+       alone rather than a comparison with anybody. Said only when it is true, and decided on
+       the PRINTED difference, so a lineup that beat its projection by 0.04 is never told it
+       beat it by 0.0. */
+    var beat = Number(r.score) - Number(r.projected);
+    if (place > 1 && isFinite(beat) && Number(beat.toFixed(1)) > 0)
+      say += ' You beat your projection by ' + beat.toFixed(1) + ' points.';
+    $('prz-say').textContent = say + ' The full board is on the live screen.';
+
+    /* THE CODE IS DRAWN ONLY FOR THE ACCOUNT IT BELONGS TO, and the server is what decides
+       that: `fantasy_my_result` hands a code to its owner and a null to everybody else, so
+       there is nothing here that a reader who did not win could reveal by opening the page
+       source. This branch has nothing to hide because it has nothing to draw. */
+    var code = r.promo_code;
+    $('prz-win').hidden = !code;
+    $('prz-store').hidden = !code;
+    if (code){
+      $('prz-code-txt').textContent = code;
+      $('prz-code-hint').textContent = 'tap to copy';
+      $('prz-win-say').textContent = 'That is the Perfect Season Premium Bundle, free, on '
+        + 'the account you entered with. Paste the code at checkout. It works once.';
+    }
+    $('prz-sheet').hidden = false;
+    /* The winner and nobody else, and only a winner holding a prize: confetti over "there is
+       no prize" is a party for nothing. After the sheet is on the glass, so the confetti
+       falls over a screen that is already telling them why. */
+    if (place === 1 && code) requestAnimationFrame(function(){ requestAnimationFrame(winConfetti); });
+  }
+
+  /* CONFETTI FOR FIRST PLACE, lifted from the football game's own `fireConfetti` so a win
+     looks like a win on both pages. Strips and a few discs rain from above the top, drift,
+     spin, fade over the last stretch, and the canvas removes itself.
+     It sits ABOVE the sheet (z 41 against 40) and takes no pointer events, so it falls over
+     the code without ever being the thing a tap lands on. Skipped entirely for a reader who
+     has asked for reduced motion, and only ever one canvas: reopening the sheet from the
+     door replaces a burst rather than stacking a second one on it. */
+  function winConfetti(){
+    if (REDUCE) return;
+    var old = document.querySelector('.confetti-cv');
+    if (old) old.remove();
+    var colors = ['#fde68a', '#fcd34d', '#f59e0b', '#ffffff', '#ef4444', '#3b82f6'];
+    var duration = 3800, count = 170;
+    var dpr = Math.min(2, window.devicePixelRatio || 1);
+    var cv = document.createElement('canvas');
+    cv.className = 'confetti-cv';
+    cv.setAttribute('aria-hidden', 'true');
+    cv.width = Math.floor(innerWidth * dpr); cv.height = Math.floor(innerHeight * dpr);
+    document.body.appendChild(cv);
+    var cx = cv.getContext('2d'), W = cv.width, H = cv.height, parts = [];
+    for (var i = 0; i < count; i++){
+      parts.push({
+        x: Math.random() * W, y: -Math.random() * H * 0.5 - 20 * dpr,
+        w: (5 + Math.random() * 7) * dpr, h: (9 + Math.random() * 13) * dpr,
+        vx: (-1.1 + Math.random() * 2.2) * dpr, vy: (2.2 + Math.random() * 3.4) * dpr,
+        g: (0.028 + Math.random() * 0.02) * dpr,
+        rot: Math.random() * Math.PI, vr: -0.22 + Math.random() * 0.44,
+        sway: Math.random() * Math.PI * 2, swA: (0.4 + Math.random() * 0.7) * dpr,
+        col: colors[(Math.random() * colors.length) | 0], round: Math.random() < 0.28
+      });
+    }
+    var t0 = performance.now();
+    (function step(){
+      if (!cv.isConnected) return;
+      var life = Math.min(1, (performance.now() - t0) / duration);
+      cx.clearRect(0, 0, W, H);
+      cx.globalAlpha = life < 0.82 ? 1 : Math.max(0, 1 - (life - 0.82) / 0.18);
+      for (var j = 0; j < parts.length; j++){
+        var p = parts[j];
+        p.sway += 0.035; p.x += p.vx + Math.sin(p.sway) * p.swA;
+        p.vy += p.g; p.y += p.vy; p.rot += p.vr;
+        if (p.y - p.h > H) continue;
+        cx.save(); cx.translate(p.x, p.y); cx.rotate(p.rot); cx.fillStyle = p.col;
+        if (p.round){ cx.beginPath(); cx.arc(0, 0, p.w * 0.6, 0, 6.2832); cx.fill(); }
+        else cx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+        cx.restore();
+      }
+      if (life < 1) requestAnimationFrame(step); else cv.remove();
+    })();
+  }
+
+  /* CLOSING IS WHAT ACKNOWLEDGES IT, and the write is not awaited. Every allowance on this
+     page fails open and this is the one sheet a reader cannot get back, so hanging the
+     close on a round trip would be a sheet that will not shut in a tunnel. The cost of a
+     lost ack is being told once more next visit. */
+  function closePrize(){
+    $('prz-sheet').hidden = true;
+    var cf = document.querySelector('.confetti-cv');
+    if (cf) cf.remove();
+    if (PRZ && !PRZ.r.seen){ PRZ.r.seen = true; F.ackResult(POOL.season, PRZ.week); }
+  }
+  $('prz-close').onclick = closePrize;
+
+  /* COPYING IS A CONVENIENCE AND NEVER THE ONLY WAY OUT. `navigator.clipboard` needs a
+     secure context and a user gesture and is refused outright by some in-app browsers, so
+     the string is selectable either way (`user-select:all` on the span) and the button says
+     what happened rather than pretending. */
+  $('prz-code').onclick = function(){
+    var txt = $('prz-code-txt').textContent;
+    var done = function(ok){
+      $('prz-code-hint').textContent = ok ? 'copied' : 'select it and copy';
+    };
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText){
+        navigator.clipboard.writeText(txt).then(function(){ done(true); },
+          function(){ done(false); });
+        return;
+      }
+    } catch (e) {}
+    done(false);
+  };
+
+  $('b-draft').onclick = function(){ startChance(); };
+  $('b-review').onclick = function(){ toReview(); };
+  /* Tapping it opens the same scored screen the entry uses. It has to swap what `state` and
+     `POOL.week` mean for the duration, because paintIn reads both, and it puts them back on
+     the way out: two ways to draw one lineup is how the two come to disagree. */
+  $('b-last').onclick = function(){
+    if (!LAST) return;
+    var keepState = state, keepWeek = POOL.week;
+    state = loadWeek(POOL.season, LAST.week);
+    POOL.week = LAST.week;
+    var keepBy = BY_ID;
+    BY_ID = {};
+    for (var i=0;i<LAST.men.length;i++) BY_ID[LAST.men[i].player_id] = LAST.men[i];
+    paintIn(LAST.res, true);
+    state = keepState; POOL.week = keepWeek; BY_ID = keepBy;
+  };
+
+  /* ---- the gate ----
+   *
+   * TWO ANSWERS AND THEY ARE DIFFERENT SENTENCES. Signed out is a thing the reader can fix
+   * and not-on-the-list is not, and one message for both would tell half of them to go and
+   * do something that will not help. A board with four states ships broken in three of them
+   * is the lesson this is borrowed from.
+   */
+  function gate(who){
+    if (!ACCESS || typeof ACCESS.allowed !== 'function'){
+      $('shut-say').textContent = 'This page could not check whether it is open. '
+        + 'Reload, or try again later.';
+      show('s-shut'); return false;
+    }
+    if (ACCESS.allowed(who)) return true;
+    /* SIGNED OUT, WHICH IS NOW THE ORDINARY REFUSAL RATHER THAN THE RARE ONE.
+     *
+     * A GUEST IS TOLD HERE AND NOT AT THE SUBMIT, which is the whole reason this branch
+     * is worth anything. `fantasy_submit` refuses a signed out lineup itself and always
+     * has, so without this a stranger who followed a link would draft five whole lineups,
+     * choose one, press the last button of the mode and meet a wall. The work is the
+     * drafting. Refusing after it is the worst place on this page to refuse anybody.
+     *
+     * AND THE WAY OUT IS ON THE SCREEN. The sign-in sheet lives on The Perfect Season, so
+     * the button goes there and says what to do, rather than this page carrying a second
+     * copy of an auth form. `#signin` is what opens the sheet on arrival; a build that
+     * has not got that hash yet lands on the front page with the pill in the header, so
+     * the link is worth taking either way. */
+    if (!who || !who.signedIn){
+      $('shut-say').textContent = 'Fantasy Challenge is in beta and it needs an account. '
+        + 'Your lineup is scored against everybody else who entered, so it has to have a '
+        + 'name on it. Sign in and come straight back.';
+      $('shut-go').hidden = false;
+      show('s-shut'); return false;
+    }
+    /* SIGNED IN AND STILL REFUSED, which can only happen with the flag back off. Kept
+       rather than deleted: turning it off is how this mode gets closed again, and the
+       sentence that greets a signed in reader then has to be about the mode and not about
+       their account. */
+    $('shut-go').hidden = true;
+    $('shut-say').textContent = 'Fantasy Challenge is not open right now. It is being '
+      + 'tested with a handful of accounts first.';
+    show('s-shut'); return false;
+  }
+
+  /* THE ACCOUNT IS ASKED BEFORE THE BROWSER IS BELIEVED, which is what moving the entry to
+     a server is for. A row exists on a laptop that never drafted, in a private window, and
+     after clearing site data, and none of those can be known from here. So the boot waits
+     one round trip on the answer.
+     IT FAILS TO THE BROWSER'S OWN COPY rather than to nothing, because `mine()` answers
+     null for unreachable and false for "you have not entered": a bad network must not draw
+     the home screen over an entry somebody already made, and it must not invent one either.
+     The wait is the one place on this page a round trip is worth it, and only because the
+     alternative is showing a drafting screen to somebody who is already in. */
+  function begin(){
+    state = load();
+    if (!state || state.week !== POOL.week || state.season !== POOL.season){
+      state = { season: POOL.season, week: POOL.week, chances: [], pick: null,
+        submitted: null };
+    }
+    /* FAILS OPEN. This runs for every visitor holding a saved week, before anything is
+       drawn, so a malformed save must cost the reopen and never the page. The submit
+       guard is still there behind it. */
+    try { reopenOverCap(); } catch (e) {}
+    F.mine(POOL.season, POOL.week).then(function(row){
+      if (row) SERVER_IN = { week: POOL.week, row: row };
+      /* ASKED AT BOOT AND NOT INSIDE `paintHome`, which is where it was first written and
+         is the one screen the reader most likely to have a result never sees. Somebody who
+         placed last week has almost certainly entered this week too, and an entry lands
+         them on `s-in`: the popup would have been shown to everybody EXCEPT the people
+         playing every week. It guards itself against being asked twice, so the screen it
+         arrives over does not matter. */
+      prizeCheck();
+      if (serverEntry() || (state.submitted != null && D.full(chanceAt(state.submitted)))){
+        openIn();
+        return;
+      }
+      paintHome();
+      show('s-home');
+    });
+  }
+
+  /*
+   * MERGED OVER THE POOL, AND THE MEN WHO CANNOT PLAY AT ALL COME OUT OF IT.
+   *
+   * `BY_ID` is built BEFORE this runs and is never filtered, which is the load-bearing
+   * half. A man signed on the Tuesday who goes on injured reserve on the Wednesday is
+   * still in somebody's lineup, and a lineup that could not name its own sixth man would
+   * be a screen reporting five. So he leaves the WHEEL and stays in the dictionary.
+   *
+   * A BOARD IS DERIVED FROM (seed, pool), SO A POOL THAT SHRINKS REDRAWS IT, and that is
+   * accepted rather than worked around. Inside one visit nothing moves, which is what the
+   * reload guard is about. Across a refresh, an unsigned board can come back with a
+   * different man on it, and the alternative is a wheel that goes on offering somebody the
+   * league has ruled out because it was drawn before anybody knew. What is stored is ids,
+   * so nothing a reader has actually SIGNED can move.
+   */
+  function applyInjuries(inj){
+    if (!inj || !inj.men) return;
+    INJ = inj;
+    /* A MAN WHO WILL NOT PLAY IS NOT OFFERED AT ALL, and that is a reversal of how this
+       used to work. Out and Doubtful were drawn on the wheel in red and refused on the
+       press, on the argument that the report is the most useful thing the board can say
+       about a man somebody was about to take. Asked to change by the site's owner, and the
+       argument against it is better: a board is five seats, and a seat holding a man
+       nobody can take is a seat that offered the reader nothing. He was a choice that was
+       not a choice. Doubtful goes with Out because the measurement says it is Out: 99.2%
+       of doubtful men blank, against 47.7% of questionable ones.
+       QUESTIONABLE STAYS, because that one really is a decision.
+       A ruling by the site (`by: 'site'`) is an Out like any other here. */
+    var GONE = { off: 1, out: 1, doubtful: 1 };
+    var men = POOL.pool, keep = [], i, e;
+    for (i=0;i<men.length;i++){
+      e = inj.men[men[i].player_id];
+      if (e) men[i].inj = e;
+      if (!e || !GONE[e.st]) keep.push(men[i]);
+    }
+    POOL.pool = keep;
+  }
+
+  /* ---- boot ----
+   *
+   * THE WEEK IS READ, NEVER WRITTEN IN THIS FILE. fantasy_now.json says which week is live
+   * and the build writes it, so shipping a new week is one command and no page edit. A
+   * hand-written week number here is the class of thing this repo has been bitten by often
+   * enough to have a checker for.
+   */
+  function boot(){
+    fetch('/football/data/fantasy_now.json', { cache: 'no-cache' })
+      .then(function(r){ if(!r.ok) throw new Error('now'); return r.json(); })
+      .then(function(now){
+        /* REVALIDATED, THE WAY ITS TWO SIBLINGS ALREADY ARE. The pointer above and the
+           injury file below are both no-cache and this was the one that was not, which
+           cost nothing while a week's filename only ever appeared with its final contents.
+           It stopped costing nothing when the pool grew a cap: the name does not change
+           when the file does, so a returning visitor revisiting the same week would be
+           served their own cached copy, find no cap on it and fall back to the constant.
+           That is a whole different board, drawn from a stale file, with nothing to say so.
+           No-cache is a conditional request rather than a refusal to cache: a 304 on every
+           visit that has not moved, fresh bytes on the one that has. */
+        return fetch('/football/data/' + now.file, { cache: 'no-cache' }).then(function(r){
+          if(!r.ok) throw new Error('pool'); return r.json();
+        });
+      })
+      .then(function(p){
+        POOL = p;
+        /* THE CAP THIS WEEK WAS PUBLISHED WITH, read once, off the week itself. Every
+           screen below spends CAP and nothing reads D.CAP_MUSD, which is the constant the
+           NEXT week will be built with and has already been a different number from the
+           live week's for a day. */
+        CAP = D.capFor(p);
+        for (var i=0;i<p.pool.length;i++) BY_ID[p.pool[i].player_id] = p.pool[i];
+        /* THE INJURY FILE IS OPTIONAL AND ITS ABSENCE IS THE ORDINARY CASE, so a miss is a
+           404 that resolves to null rather than a throw. A week nobody has built one for,
+           a deploy that has not landed it and a phone on a bad connection all arrive here
+           the same way, and all three leave the mode exactly as it was. */
+        return fetch('/football/data/injuries_' + p.season + '_w' + p.week + '.json',
+          { cache: 'no-cache' })
+          .then(function(r){ return r.ok ? r.json() : null; })
+          .catch(function(){ return null; })
+          .then(function(inj){ applyInjuries(inj); waitForAuth(); });
+      })
+      .catch(function(){
+        $('load-say').textContent = 'This week could not be loaded. Reload to try again.';
+      });
+  }
+
+  /* auth.js is deferred and answers nothing until getSession resolves, so the gate has to
+     wait for a change rather than read state() once. A page that asked immediately would
+     show every signed in tester the not-open screen for a beat and then correct itself,
+     which reads as being let in by accident. */
+  function waitForAuth(){
+    var A = window.PS_AUTH;
+    if (!A){
+      /* No supabase at all. Nobody resolves as a tester, which is the safe answer. */
+      if (gate(null)) begin();
+      return;
+    }
+    var went = false;
+    var go = function(who){
+      if (went) return;
+      went = true;
+      if (gate(who)) begin();
+    };
+    A.onChange(function(who){ if (who && who.ready) go(who); });
+    A.boot();
+    var now = A.state();
+    if (now && now.ready && now.signedIn) go(now);
+    /* And a backstop, because a blocked CDN means onChange never fires at all. */
+    setTimeout(function(){ go(window.PS_AUTH ? window.PS_AUTH.state() : null); }, 4000);
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', boot);
+  } else boot();
+})();
+</script>
+</body>
+</html>

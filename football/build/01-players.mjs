@@ -479,4 +479,13 @@ async function main() {
               `(attributed to the team with most games).`);
 }
 
-main().catch((e) => { console.error(e); process.exit(1); });
+/* RUN ONLY WHEN RUN, because this module is now IMPORTED as well as executed.
+   weekly-pool.mjs reads the four pricing constants out of it, so that the live week and the
+   historical pool are priced by one curve rather than by two copies of it. Called
+   unconditionally, that import rebuilt every player-season from 1999 to 2025 and printed
+   the whole report before the caller got its first line: a build that works perfectly and
+   takes a minute to hand back a number it already had. Nothing else in the repo imported
+   this file, so the trap was latent rather than broken. */
+if (process.argv[1] && process.argv[1].endsWith('01-players.mjs')) {
+  main().catch((e) => { console.error(e); process.exit(1); });
+}

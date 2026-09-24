@@ -32,7 +32,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:ital,wght@0,600;0,700;0,800;0,900;1,800;1,900&family=Press+Start+2P&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="/arcade/arcade.css?v=3" />
-<script src="/arcade/icons.js?v=2"></script>
+<script src="/arcade/icons.js?v=3"></script>
 <style>
   :root{
     --bg:#071426; --card:#10233A; --card2:#162B44; --card3:#1A3350;
@@ -349,12 +349,12 @@ window.GA_ID='G-L29P5MRWKE';
   <li>The daily board ranks the longest runs, so one great morning can hold up all day.</li>
 </ul>
 <h3>Runs, saves and the daily reset</h3>
-<p>A new deck deals at midnight local time, and your streak grows with every day you play. The Number Game is an Arcade Card game. Members play all twelve Arcade titles without limits, replay any past day from the <a href="/arcade/archive/">Archive</a>, and get NBA, NFL and MLB editions of five of the games. A free RunThe.GG account still gets a daily play of the Daily Crossword, Sportegories, Alma Mater and Career Path.</p>
-<h3>Reading a number you never memorised</h3>
+<p>A new deck deals at midnight local time, and your streak grows with every day you play. The Number Game is an Arcade Card game. A free RunThe.GG account gets one play of it, once ever. The Daily Crossword, Sportegories, Alma Mater and Career Path are free every day, with no account at all. The Card opens all twelve with no limit, plus the <a href="/arcade/archive/">Archive</a> of every past day. Five of the games also have NBA, NFL and MLB editions.</p>
+<h3>Getting the number</h3>
 <ul>
-  <li>The club in the question is the whole question. Stars change numbers between stops more often than memory admits.</li>
-  <li>Retired numbers are gifts. If a franchise hung it in the rafters, that is probably your answer.</li>
-  <li>Positions have number habits. When memory is quiet, lean on where the player lined up.</li>
+  <li>Within two still counts, and it extends the run exactly like a bullseye does. A number you only half remember is always worth typing.</li>
+  <li>The club in the question is the question. Plenty of stars changed number when they moved, and memory files a player under one.</li>
+  <li>Positions have habits. When nothing surfaces, work from where the player lined up.</li>
 </ul>
 <p>Keep the streak brain warm with <a href="/arcade/highlow/">High Low</a>, or trace a journeyman in <a href="/arcade/career/">Career Path</a>.</p>
 </div>
@@ -386,13 +386,13 @@ window.GA_ID='G-L29P5MRWKE';
 <div class="toast" id="toast"></div>
 
 <script src="../match/entities.js?v=12"></script>
-<script src="/arcade/former.js?v=2"></script>
+<script src="/arcade/former.js?v=3"></script>
 <script src="/arcade/stars.js?v=4"></script>
 <script src="/arcade/awards.js?v=3"></script>
-<script src="/arcade/supplement.js?v=4"></script>
-<script src="/arcade/primary.js?v=4"></script>
-<script src="/arcade/data.js?v=3"></script>
-<script src="/arcade/jerseys.js?v=5"></script>
+<script src="/arcade/supplement.js?v=6"></script>
+<script src="/arcade/primary.js?v=25"></script>
+<script src="/arcade/data.js?v=5"></script>
+<script src="/arcade/jerseys.js?v=25"></script>
 <script src="/arcade/teamcolors.js?v=2"></script>
 <script src="/arcade/sfx.js?v=2"></script>
 <script src="/arcade/funnel.js?v=11"></script>
@@ -400,30 +400,30 @@ window.GA_ID='G-L29P5MRWKE';
 <script src="/arcade/result.js?v=1"></script>
 <script src="/arcade/resultart.js?v=2"></script>
 <script src="/arcade/resultstats.js?v=2"></script>
-<script src="/arcade/challenge.js?v=3"></script>
+<script src="/arcade/challenge.js?v=4"></script>
 <script src="/arcade/modal-a11y.js?v=1"></script>
 <script src="/arcade/tokens.js?v=13"></script>
 <script src="/arcade/day.js?v=2"></script>
 <script src="/arcade/dayroll.js?v=1"></script>
 <script src="/arcade/archive.js?v=2"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="/arcade/board.js?v=20"></script>
+<script src="/arcade/board.js?v=21"></script>
 <script src="/arcade/leaderboard.js?v=14"></script>
 <script src="/arcade/alltime.js?v=3"></script>
 <script src="/arcade/auth.js?v=4"></script>
-<script src="/arcade/mycard.js?v=12"></script>
+<script src="/arcade/mycard.js?v=13"></script>
 <script src="/arcade/topbanner.js?v=9"></script>
-<script src="/arcade/auth-ui.js?v=5"></script>
-<script src="/arcade/card.js?v=19"></script>
-<script src="/arcade/referral.js?v=9"></script>
+<script src="/arcade/auth-ui.js?v=6"></script>
+<script src="/arcade/card.js?v=20"></script>
+<script src="/arcade/referral.js?v=10"></script>
 <script src="/arcade/gamemarks.js?v=3"></script>
 <script src="/arcade/calendar.js?v=15"></script>
 <script src="/arcade/archivecta.js?v=2"></script>
 <script src="/arcade/demo.js?v=3"></script>
-<script src="/arcade/pregame.js?v=24"></script>
-<script src="/arcade/howto.js?v=21"></script>
+<script src="/arcade/pregame.js?v=25"></script>
+<script src="/arcade/howto.js?v=23"></script>
 <script src="/arcade/type.js?v=5"></script>
-<script src="/arcade/fact.js?v=1"></script>
+<script src="/arcade/fact.js?v=2"></script>
 <script>
 (function(){
   'use strict';
@@ -476,13 +476,31 @@ window.GA_ID='G-L29P5MRWKE';
   ((window.RTG_JERSEYS && RTG_JERSEYS.stints) || []).forEach(function(s){
     var k = s.sport+'|'+_nkey(s.name); (_stintsByName[k] || (_stintsByName[k] = [])).push(s);
   });
-  var POOL = [];
+  /* A NAME JOIN REACHES EVERYONE, AND IT REACHES THE OTHER MAN TOO.
+     A round is a stint, so a father's stint under a son's card is a question
+     with a false premise: this asked what number Patrick Ewing wore for the
+     2011 Hornets (Patrick Ewing Jr.), Tim Hardaway for the 2019 Mavericks
+     (his son), Glen Rice for the 2014 Wizards, and Antonio Brown for the 2003
+     Bills, seven years before he was drafted.
+     Nobody plays outside their own career, so the decades the record already
+     gives the player settle it without needing to know who the other man is.
+     A year of slack at each end, because a decade list is a rounding of a
+     debut and the cases this catches are out by seven to twenty. */
+  function _ownStint(e, s){
+    var d = e && e.decade;
+    if (!d || !d.length || !s.y0) return true;      // nothing to disagree with
+    var lo = Math.min.apply(null, d) - 1, hi = Math.max.apply(null, d) + 10;
+    return !(s.y1 < lo || s.y0 > hi);
+  }
+  var POOL = [], _skipped = 0;
   ENT.filter(hiqStar).forEach(function(e){
     var ss = _stintsByName[e.sport+'|'+_nkey(e.name)]; if(!ss) return;
     ss.forEach(function(s){
+      if(!_ownStint(e, s)){ _skipped++; return; }
       POOL.push({ id:e.id, name:e.name, sport:e.sport, team:s.team, y0:s.y0, y1:s.y1, num:s.num, f:(e.f||0), star:!!e.star });
     });
   });
+  window.RTG_TABLE_SKIPPED = _skipped;   // read by scripts/check-namesakes.mjs
   function jn(e){ return e.num; }
   // pool rows are stints, not records; the fact line needs the record back
   var FACT_BY_ID={}; ENT.forEach(function(e){ if(e && e.id) FACT_BY_ID[e.id]=e; });

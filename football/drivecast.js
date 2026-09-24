@@ -80,12 +80,12 @@ function drawDriveChart(ctx,w,h,drives,upTo,youColor,themColor,youName,themName,
   const fw=w-pad.l-pad.r,fh=h-pad.t-pad.b;
   const fl=pad.l,ft=pad.t;
 
-  /* end zones sit outside the goal lines; playing field is yards 0–100 mapped
+  /* end zones sit outside the goal lines; playing field is yards 0-100 mapped
      to the inner area between the two end-zone strips */
   const ezW=Math.round(fw*0.06);
   const pfL=fl+ezW,pfW=fw-ezW*2;
 
-  /* field background — the college field is a cooler green with mowing stripes and bolder
+  /* field background: the college field is a cooler green with mowing stripes and bolder
      end zones so it reads clearly apart from the pro field. */
   const college=style==='college';
   ctx.fillStyle=college?'#14402a':'#1a3a1a';ctx.fillRect(fl,ft,fw,fh);
@@ -188,7 +188,7 @@ function drawDriveChart(ctx,w,h,drives,upTo,youColor,themColor,youName,themName,
     const left=Math.min(x1,x2),right=Math.max(x1,x2);
     const barW=Math.max(right-left,2*dpr);
 
-    /* fade older drives — quadratic ease for smoother falloff */
+    /* fade older drives: quadratic ease for smoother falloff */
     const age=shown.length-1-i;
     const t2=Math.max(0,1-age/(maxRows-1));
     const alpha=isActive?0.92:Math.max(0.22,t2*t2*0.75+0.1);

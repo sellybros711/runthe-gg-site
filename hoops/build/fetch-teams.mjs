@@ -70,7 +70,13 @@ const DEFUNCT = {
   BUF: { city: 'Buffalo', name: 'Braves', from: 1970, to: 1978, became: 'LAC' },
   NOH: { city: 'New Orleans', name: 'Hornets', from: 2002, to: 2013, became: 'NOP' },
   NOK: { city: 'New Orleans/Oklahoma City', name: 'Hornets', from: 2005, to: 2007, became: 'NOP' },
-  CHH: { city: 'Charlotte', name: 'Hornets', from: 1988, to: 2002, became: 'NOP' },
+  /* THE NBA'S OWN RECORD, NOT THE LEGAL ENTITY'S. The club that moved to New
+     Orleans in 2002 is the Pelicans, but in 2014 the league handed the
+     Hornets' 1988 to 2002 history back to Charlotte, and that is the history
+     a Hornets fan means: Mourning, Larry Johnson and Muggsy are Charlotte's.
+     This row pointed at NOP for a while and a fan picking Charlotte in One
+     Franchise got none of them. */
+  CHH: { city: 'Charlotte', name: 'Hornets', from: 1988, to: 2002, became: 'CHO' },
   SFW: { city: 'San Francisco', name: 'Warriors', from: 1962, to: 1971, became: 'GSW' },
   STL: { city: 'St. Louis', name: 'Hawks', from: 1955, to: 1968, became: 'ATL' },
   SDR: { city: 'San Diego', name: 'Rockets', from: 1967, to: 1971, became: 'HOU' },
@@ -179,6 +185,10 @@ async function main() {
    * below makes harmless either way. */
   const SUPPLEMENT = {
     BOS: [2024],
+    /* New York over San Antonio, and the first Knicks title since 1973, which
+       is before this game's data starts: every other year on their card is out
+       of range, so 2026 is the only one a player will ever see. */
+    NYK: [2026],
   };
   const supplemented = [];
   for (const [code, years] of Object.entries(SUPPLEMENT)) {
@@ -198,15 +208,26 @@ async function main() {
   /* ── EVERY SEASON HAS EXACTLY ONE CHAMPION ────────────────────────────────
    *
    * Checked back to 1974, which is where this game's data starts, and forward
-   * to LAST year rather than this one: a season is named for the calendar year
-   * it ends in, so the current year's champion may not be crowned yet and
-   * demanding one would fail every spring.
+   * to the last season that has actually ENDED. A season is named for the
+   * calendar year it finishes in, so demanding this year's champion in March
+   * would fail every spring.
+   *
+   * IT USED TO SAY "LAST YEAR" AND THAT IS WRONG FOR HALF OF EVERY YEAR. The
+   * Finals are over by the end of June, so from July onwards the current year
+   * IS settled, and a check that skips it has a six month hole in exactly the
+   * window when a new season is waiting to be added. Read in September 2026 it
+   * cheerfully reported every season from 1974 to 2025 complete while 2026 had
+   * no champion at all and the upstream table had not caught up. July is the
+   * cutoff for the same reason the annual refresh fires on the 5th of it.
    *
    * Fatal, because these years are not decoration. verify.mjs asserts that
    * every season in the player data has a champion in it, and the playoff model
    * is fitted against the real title rate read off this very list, so a gap
    * here quietly moves the calibration as well as the cards. */
-  const lastSettled = new Date().getUTCFullYear() - 1;
+  const now = new Date();
+  const lastSettled = now.getUTCMonth() >= 6            // 6 is July
+    ? now.getUTCFullYear()
+    : now.getUTCFullYear() - 1;
   const byYear = new Map();
   for (const t of Object.values(teams)) {
     for (const y of t.titles) {

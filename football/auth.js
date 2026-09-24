@@ -28,6 +28,12 @@
   let sb = null;
   let session = null;
   let profile = null;          // { username }
+  /* The signed-in account's premium product keys, cached with the user id they
+     belong to. null means never fetched or fetch failed, which callers treat as
+     owning nothing: wrong only in the harmless direction, and the next call
+     re-asks rather than trusting a failure. */
+  let premium = null;
+  let premiumFor = null;
   const listeners = [];
 
   const url = () => window.PS_BOARD_URL || SB_URL;
@@ -42,6 +48,9 @@
     } catch (e) { sb = null; return false; }
     sb.auth.onAuthStateChange((evt, s) => {
       session = s || null;
+      /* A different account holds different unlocks, and none holds none. */
+      const pu = session && session.user && session.user.id;
+      if (pu !== premiumFor) { premium = null; premiumFor = null; }
       if (session) loadProfile().then(fire); else { profile = null; fire(); }
     });
     sb.auth.getSession().then((r) => {
@@ -197,10 +206,121 @@
     } catch (e) { return { error: (e && e.message) || 'that did not work' }; }
   }
 
+
+  /* WHAT THIS ACCOUNT HAS PAID FOR, asked of the database, because the file that
+     gates each mode says so itself: a list shipped in the page is a feature flag
+     and never a permission. premium_products() (supabase/101_premium_bundles.sql)
+     runs as the signed-in user and returns their live product keys, e.g.
+     ['ps_premium','cfb_premium']. Empty array when signed out, on error, or when
+     the account simply owns nothing: all three read the same to a caller, and all
+     three should. */
+  /* `force` SKIPS THE CACHE, and it exists because of what an empty answer is in
+     JavaScript. `premium` holding [] is TRUTHY, so once a signed-in non-owner has
+     been cached as owning nothing, every later call returned that stale [] without
+     ever asking the server again. That is harmless at a gate and fatal on the walk
+     back from Stripe: the buyer returns, the page asks six times over ten seconds,
+     and gets the same cached "you own nothing" every time, so a purchase that
+     landed in one second reads as one that never arrived. Poll with force. */
+  async function premiumProducts(force) {
+    if (!sb || !session) return [];
+    const uid = session.user && session.user.id;
+    if (!force && premium && premiumFor === uid) return premium;
+    try {
+      const r = await sb.rpc('premium_products');
+      if (r && !r.error && Array.isArray(r.data)) {
+        premium = r.data; premiumFor = uid;
+        return premium;
+      }
+    } catch (e) {}
+    return [];
+  }
+
+  /* THE SAME PURCHASES, WITH THE PAPERWORK ON THEM.
+     premiumProducts() above answers the only question a GATE asks: may this
+     account open that door. A customer looking at their own account is asking a
+     different one, and it is the question a refund request is made of: what did I
+     buy, when, and does any of it run out. That needs the rows rather than the
+     keys, so this reads premium_unlocks directly.
+
+     SAFE TO READ FROM THE CLIENT because the table's only policy is select-own
+     (supabase/101_premium_bundles.sql). Nothing here can grant anything: there is
+     no insert, update or delete policy at all, and the webhook's service role is
+     the only writer.
+
+     NOT CACHED, unlike the product keys. This is looked at once in a while by
+     somebody who has just come back from paying, which is exactly the moment a
+     cache would show them an account they no longer have. The keys are asked on
+     every paint and have to be cheap; this is asked when a page is opened.
+
+     Returns [] for signed out, for an error and for an account that owns nothing.
+     A caller that has to tell those apart has already asked premiumProducts(). */
+  async function premiumUnlocks() {
+    if (!sb || !session) return [];
+    const uid = session.user && session.user.id;
+    if (!uid) return [];
+    try {
+      /* The user filter is REDUNDANT AND STAYS. RLS is what actually scopes this to
+         the caller; asking for the row we mean as well costs nothing and means a
+         policy edited by hand in the dashboard cannot turn a receipt screen into
+         somebody else's receipts. Belt and braces, the way every other read here
+         checks its own gate twice. */
+      const r = await sb.from('premium_unlocks')
+        .select('product,source,granted_at,expires_at,fulfilled_at')
+        .eq('user_id', uid)
+        .order('granted_at', { ascending: true });
+      if (r && !r.error && Array.isArray(r.data)) return r.data;
+    } catch (e) {}
+    return [];
+  }
+
+  /* THE STRIPE CUSTOMER PORTAL, which is where a receipt lives.
+     Answers { url } to send the browser to, or { error } naming why not. The
+     endpoint identifies the customer from this session's token and never from
+     anything sent here, so there is nothing to pass but where to come back to. */
+  async function billingPortal(returnPath) {
+    const t = token();
+    if (!t) return { error: 'unauthorized' };
+    try {
+      const r = await fetch('/api/stripe/portal', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + t },
+        body: JSON.stringify({ return_path: returnPath || '/football/' }),
+      });
+      const d = await r.json().catch(() => ({}));
+      if (d && d.url) return { url: d.url };
+      return { error: (d && d.error) || 'failed' };
+    } catch (e) { return { error: 'failed' }; }
+  }
+
+  /* WEEKS THIS ACCOUNT PLACED IN, for the profile's own mark.
+   *
+   * IT IS HERE RATHER THAN IN `football/fantasy/entries.js` because the profile lives on
+   * this page and that module does not, and loading a whole mode's client onto the main
+   * game page to read one list would be the wrong way round. What it shares with that
+   * module is the FUNCTION, `fantasy_my_wins`, so there is one answer and not two.
+   *
+   * NO CODE COMES BACK, by the function's own definition: a profile is a record of what
+   * somebody did rather than a place to keep a voucher, and the promotion code lives on
+   * the one screen that hands it over.
+   *
+   * [] FOR SIGNED OUT, FOR AN ERROR AND FOR AN ACCOUNT THAT HAS WON NOTHING, which is
+   * `premiumUnlocks`' own rule directly above: a mark that is absent and a mark that could
+   * not be read look the same on a profile, and neither is worth a sentence there. */
+  async function fantasyWins() {
+    if (!sb || !session) return [];
+    try {
+      const r = await sb.rpc('fantasy_my_wins');
+      if (r && !r.error && Array.isArray(r.data)) return r.data;
+    } catch (e) {}
+    return [];
+  }
+
   window.PS_AUTH = {
-    API_VERSION: 1,
+    /* 2: `fantasyWins`, the weeks this account placed in. */
+    API_VERSION: 2,
     boot, state, onChange: (f) => { listeners.push(f); return () => {}; },
     signIn, signUp, signInGoogle, signOut,
     available, setName, claim, token, deleteAccount,
+    premiumProducts, premiumUnlocks, billingPortal, fantasyWins,
   };
 })();

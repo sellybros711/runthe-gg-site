@@ -5,6 +5,17 @@ name: Cache-bust check
 # without a bump serves a RETURNING visitor the new page against the script they already
 # have. It fails on their phone and on nobody's development machine.
 #
+# It also checks the OTHER pair of hand-written numbers: a page that pins the API_VERSION it
+# expects from a module has to move that number when the module moves. That one is silent,
+# because the page falls through to an offline stub rather than throwing, and it has already
+# taken the leaderboard and the profile out for every visitor.
+#
+# AND A DATA FILE, which is why `**/data/*.json` is on the paths below. Six games
+# fetch a player pool with a hand-written ?v= on it and the checker reads them now,
+# so a refresh that rewrites a pool without moving the number has to be caught on
+# the push that does it. Without this it would sit unchecked until somebody next
+# touched an .html file, which for an annual data refresh could be months.
+#
 # Runnable locally with the exact same command:
 #   node scripts/check-cachebust.mjs
 # And after a deliberate bump:
@@ -17,6 +28,7 @@ on:
     paths:
       - '**/*.html'
       - '**/*.js'
+      - '**/data/*.json'
       - 'scripts/cachebust.json'
       - 'scripts/check-cachebust.mjs'
       - '.github/workflows/cachebust-check.yml'
@@ -25,6 +37,7 @@ on:
     paths:
       - '**/*.html'
       - '**/*.js'
+      - '**/data/*.json'
       - 'scripts/cachebust.json'
       - 'scripts/check-cachebust.mjs'
       - '.github/workflows/cachebust-check.yml'

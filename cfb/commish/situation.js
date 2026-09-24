@@ -170,8 +170,16 @@
   /* LAST SEASON, for the four beats that have no football of their own. An offseason item
      about "the team that went unbeaten and got left out" is asking about the year that just
      finished, and the world carries the champion for exactly this. */
+  /* `champions`, WITH THE REST OF THE WORD. This read `world.champs` and the page has
+     always written `world.champions`, so nothing in a real term ever populated it and
+     `sit.previous` was permanently null. Six things read it and all six were silently off:
+     the confetti cutscene that fires the morning after a title, a media day question about
+     the reigning champion, two docket briefs that name them, and the champion line on the
+     desk's situation strip. Nothing failed, because the only code that ever wrote `champs` was the
+     four test files that set it up by hand, which is to say the guards encoded the typo and
+     then proved it worked. */
   function lastYearOf(world) {
-    var c = (world && world.champs) || {};
+    var c = (world && world.champions) || {};
     var y = world.year - 1;
     if (!c[y]) return null;
     var r = (world.ratings || {})[y] || null;
@@ -189,6 +197,7 @@
     var confs = confsOf(world, L, season);
     var unbeaten = unbeatenOf(season);
     var startYear = nz(world && world.startYear, world && world.year);
+    var termLen = Math.max(1, Number(nz(world && world.termSeasons, 5)) || 5);
     var day = o.date || (CAL && world ? CAL.decisionDay(world.year, beat, o.itemId || 'x') : null);
 
     var sit = {
@@ -196,11 +205,19 @@
       year: world ? world.year : null,
       beat: beat,
       beatName: (L && L.BEATS && L.BEATS[beat]) || '',
-      /* Which season of the term this is, one-indexed, and how many are left after it. */
+      /* Which season of the term this is, one-indexed, and how many are left after it.
+
+         BOTH READ THE CONTRACT, which is not five any more. Renewals sign a term for
+         anything from three seasons to eight, and these two were written when five was the
+         only number there was. An eight year term fired media day's "this is the last July
+         you stand up here" in year five and then never again in the year it was actually
+         true, and a three year term reached its final summer with the item still locked.
+         A save written before renewals carries no termSeasons and is a five season term,
+         which is what it was signed as. Same fallback as termLen() in the page. */
       seasonOfTerm: world ? (world.year - startYear) + 1 : 1,
-      seasonsLeft: world ? Math.max(0, 5 - ((world.year - startYear) + 1)) : 0,
+      seasonsLeft: world ? Math.max(0, termLen - ((world.year - startYear) + 1)) : 0,
       firstYear: world ? world.year === startYear : true,
-      lastYear: world ? (world.year - startYear) >= 4 : false,
+      lastYear: world ? (world.year - startYear) >= termLen - 1 : false,
       date: day,
       dateLabel: day && CAL ? CAL.longLabel(day) : null,
       month: day && CAL ? CAL.MONTHS[day.getMonth()] : null,

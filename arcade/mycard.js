@@ -1,4 +1,4 @@
-/* mycard.js — "Your Arcade Card": the player's personal dashboard.
+/* mycard.js: "Your Arcade Card", the player's personal dashboard.
  *
  * Opens from the top banner's tokens/Unlimited chip on any arcade page. It's a
  * designed membership-card face plus the stats that used to live on the hub's
@@ -18,7 +18,7 @@
   function T() { return window.RTGTokens || null; }
   function A() { return window.RTG_AUTH || null; }
 
-  // Our own icon set (no stock emoji): monochrome, square-cut, currentColor —
+  // Our own icon set (no stock emoji): monochrome, square-cut, currentColor,
   // same family as RTGIcons. Sized by their container.
   var ICN = {
     flame: '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M13.5 1.6s.8 2.3.8 4.2c0 1.8-1.2 3.3-3 3.3S8.2 7.6 8.2 5.8c0-.4 0-.8.1-1.2C5.6 6.5 4 9.4 4 12.5 4 17.2 7.8 21 12.5 21S21 17.2 21 12.5c0-4.8-3.6-8.8-7.5-10.9z"/></svg>',
@@ -257,8 +257,18 @@
 
     // actions
     out += '<a class="rtgmc-btn vault" href="/arcade/archive/"><span class="tkic">' + ICN.ticket + '</span><b>Enter your Vault · ' + s.vault + ' days available</b></a>';
-    if (ti.isCard) {
+    /* Only when Stripe is actually billing the account. A card can be held
+       without a subscription (bought outright elsewhere on the site, or
+       comped), and offering one of those "Manage subscription" names a thing
+       they do not have and implies a renewal that is not coming. Same gate as
+       card.js renderMember(); board.js answers it. */
+    var bills = false;
+    try { bills = !!(window.RTG_BOARD && RTG_BOARD.billing && RTG_BOARD.billing() === true); } catch (e) {}
+    if (ti.isCard && bills) {
       out += '<button class="rtgmc-sub" type="button" id="rtgmcManage">Manage subscription</button>';
+    } else if (ti.isCard) {
+      /* Nothing offered, and nothing claimed. The card is real and the panel
+         above already says so; this only stops the panel implying a bill. */
     } else if (ti.signed) {
       out += '<button class="rtgmc-btn go" type="button" id="rtgmcBuy">Get the Arcade Card<small>Unlimited plays · every past day</small></button>';
     } else {

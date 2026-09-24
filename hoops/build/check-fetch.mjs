@@ -16,6 +16,7 @@
  */
 
 import { bbrRows, cell, positions, seasonTables } from './fetch-nba.mjs';
+import { deriveEligibility } from './build-players.mjs';
 import { parseSolo, parseTeams, parseAllStars, seasonIn, slugsIn, AWARDS, AWARD_RANK }
   from './fetch-awards.mjs';
 
@@ -300,6 +301,41 @@ is(positions('G'), ['G'], 'a coarse position from an old season passes straight 
 is(positions(''), null, 'a row with no position is not a player this game can use');
 is(positions('XX'), null, 'a position the slot table has never heard of is refused');
 ok(positions('PF-SF')[0] === 'PF', 'the FIRST position listed is the primary, which POSITION_MAX counts on');
+
+// ─── eligibility, read off the seasons either side ──────────────────────────
+/* The source serves one position a season, so all of the game's multi-position
+   eligibility comes from `deriveEligibility` reading the same man's other
+   seasons. Its claims are small and every one of them is load bearing. */
+{
+  const rows = (list) => list.map(([i, s, pp]) => ({ i, s, pp }));
+  const ep = (list) => { const r = rows(list); deriveEligibility(r); return r.map(x => x.ep); };
+
+  is(ep([['a', 2000, 'PF'], ['a', 2001, 'C']]), ['PF;C', 'C;PF'],
+    'a man listed at two adjacent positions in two seasons plays both, his own first');
+  is(ep([['a', 2000, 'PF'], ['a', 2003, 'C']]), ['PF', 'C'],
+    'three seasons apart is a career arc and not an eligibility');
+  is(ep([['a', 2000, 'PG'], ['a', 2001, 'C']]), ['PG', 'C'],
+    'a point guard listed at centre is an artefact, and the two never join');
+  is(ep([['a', 2000, 'SF'], ['b', 2001, 'C']]), ['SF', 'C'],
+    'two different men never lend each other a position');
+  is(ep([['a', 2000, 'SG'], ['a', 2000, 'SG']]), ['SG', 'SG'],
+    'a traded season is two rows and one position');
+  is(ep([['a', 2000, 'SF'], ['a', 2001, 'SG'], ['a', 2001, 'PF']]),
+    ['SF;SG;PF', 'SG;SF', 'PF;SF'],
+    'a man can reach three, and each row leads with its own season');
+  /* IT READS pp AND NEVER ep, which is what makes running it twice a no-op.
+     The backfill mode is a write to a file that is already in the tree, so an
+     accidental second run must not widen anything. */
+  {
+    const r = rows([['a', 2000, 'PF'], ['a', 2001, 'C']]);
+    deriveEligibility(r);
+    const once = r.map(x => x.ep).join('|');
+    deriveEligibility(r);
+    is(r.map(x => x.ep).join('|'), once, 'deriving eligibility twice changes nothing');
+  }
+  /* A season on its own is a season on its own, which is most of the data. */
+  is(ep([['a', 2000, 'C']]), ['C'], 'one season alone keeps one position');
+}
 
 // ─── the award pages ────────────────────────────────────────────────────────
 

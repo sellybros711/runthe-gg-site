@@ -8,7 +8,7 @@
  *   node scripts/fetch-former.mjs
  *
  * NOTABILITY (per the product bar): a player is kept only if they are
- * "somewhat recognizable" — either a HIGH DRAFT PICK or they recorded at
+ * "somewhat recognizable": either a HIGH DRAFT PICK or they recorded at
  * least TWO notable (qualified) seasons. Fan-lore names from older eras clear
  * the two-season bar naturally.
  *
@@ -177,7 +177,7 @@ async function buildMLB() {
     }
   }
 
-  // High draft picks (round 1) — kept even without two qualified seasons.
+  // High draft picks (round 1), kept even without two qualified seasons.
   const highPick = new Map();  // id -> pickNumber
   for (let y = MLB_DRAFT_START; y <= NOW_YEAR; y++) {
     const d = await j(`${MLB_BASE}/draft/${y}`);
@@ -193,7 +193,7 @@ async function buildMLB() {
 
   // Candidates: >=2 qualified seasons. Unlike the NBA/NFL, MLB first-round
   // draft picks are mostly unknown prospects (many never reach the majors), so
-  // a high pick ALONE does not qualify — the player must have actually produced
+  // a high pick ALONE does not qualify. The player must have actually produced
   // two qualified seasons. This drops the no-team draft-bust noise entirely.
   const candidates = [];
   for (const [id, e] of acc) if (e.ns >= 2) candidates.push(id);
@@ -273,6 +273,30 @@ const NFL_TEAMS = {
   ARZ:'Arizona Cardinals', BLT:'Baltimore Ravens', CLV:'Cleveland Browns', HST:'Houston Texans',
   SL:'St. Louis Rams'
 };
+
+/* A CITY CODE IS NOT A FRANCHISE.
+ *
+ * nflverse writes HOU for the Houston Oilers and for the Houston Texans, and
+ * they are not one club under two names: the Oilers left for Tennessee in 1997
+ * and the Texans were founded in 2002 as an expansion team. Reading the code
+ * alone gave Bruce Matthews a career at two franchises when he spent all
+ * nineteen years at one, and Sportegories then refused him for "Offensive
+ * Lineman who never left one franchise". A player wrote in about it.
+ *
+ * Same table and same fix in scripts/fetch-jerseys.mjs, which reads the same
+ * feed. Not the Tennessee side of the move: Oilers to Titans is one franchise
+ * renamed, and this file records only the FIRST season at each club, so the
+ * rename cannot be placed on a season boundary here. */
+const NFL_ERA = {
+  HOU: [[1996, 'Houston Oilers']],       // the Texans arrive in 2002
+  PHX: [[1993, 'Phoenix Cardinals']],
+  LA:  [[1994, 'Los Angeles Rams']]      // and again from 2016, which the default covers
+};
+function nflTeam(code, year) {
+  const era = NFL_ERA[code];
+  if (era) for (const [until, name] of era) if (year <= until) return name;
+  return NFL_TEAMS[code] || code || null;
+}
 const NFL_POS = {
   QB:'Quarterback', RB:'Running Back', FB:'Fullback', HB:'Running Back', WR:'Wide Receiver',
   TE:'Tight End', T:'Offensive Lineman', OT:'Offensive Lineman', G:'Offensive Lineman',
@@ -294,7 +318,7 @@ async function buildNFL() {
       const k = keyOf((r.gsis_id || '').trim(), name);
       let e = acc.get(k);
       if (!e) { e = { name, teams: {}, seasons: {}, jerseys: {}, pos: null, col: null }; acc.set(k, e); }
-      const tn = NFL_TEAMS[r.team] || r.team || null;
+      const tn = nflTeam(r.team, y);
       if (tn && (e.teams[tn] == null || y < e.teams[tn])) e.teams[tn] = y;
       e.seasons[y] = 1;
       const jn = (r.jersey_number != null && r.jersey_number !== '') ? Number(r.jersey_number) : null;
