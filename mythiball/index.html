@@ -6634,7 +6634,7 @@ function endAtBatCleanup() {
   if (atBatCleanup) { atBatCleanup(); atBatCleanup = null; }
   /* The slump belongs to the man it happened to. Left standing it would
      greet the next hitter with his predecessor's shoulders. */
-  if (State.game) State.game.slumpUntil = 0;
+  if (State.game) { State.game.slumpUntil = 0; State.game.contactFx = null; }
 }
 
 /* A single, always-on animation loop paints the field and the meter every
@@ -7027,6 +7027,9 @@ function fitFieldCanvas(cv) {
   FIELD_CAM.scale = scale; FIELD_CAM.draw = draw;
   FIELD_CAM.sx = sx; FIELD_CAM.sy = sy;
   FIELD_CAM.sw = sw; FIELD_CAM.sh = sh;
+  /* How many blocks of the bottom of the crop the deck floats over, so a
+     control drawn on the field can stay above it. See `drawThrowBar`. */
+  FIELD_CAM.deck = deck;
   FIELD_CAM.w = sw * draw; FIELD_CAM.h = sh * draw;
   /* Resizing a canvas CLEARS it and resets its context, which is free in a
      loop that redraws every pixel every frame and ruinous if it ran every
@@ -7108,8 +7111,22 @@ function fitFieldCanvas(cv) {
 let fieldBandAt = '';
 function fieldBand(box) {
   if (!FIELD_CAM.band || !pixWorld) return;
-  const key = FIELD_CAM.sx + ',' + FIELD_CAM.sy + ',' + FIELD_CAM.sw + ',' + FIELD_CAM.sh;
+  const key = FIELD_CAM.sx + ',' + FIELD_CAM.sy + ',' + FIELD_CAM.sw + ',' + FIELD_CAM.sh
+            + ',' + currentTheme().park;
   if (fieldBandAt === key) return;
+  /* ONLY WHILE THE IN-WORLD CAMERA IS AT REST. `cameraNow` punches in on a
+     close play, and punched in on first base the top row of the world
+     canvas is the STANDS, not the sky. The fit changes mid play too (the
+     log under the field grows a line on every call, so the arena shrinks),
+     and that is what asked for a fresh sample at exactly that moment: the
+     band above the picture went near black for the rest of the inning,
+     `rgb(5,5,8)` over a park whose sky is blue. Measured through a ground
+     out at first. So a sample is refused while anything is moving the
+     camera, and asked for again next frame, until the field is quiet. The
+     park is in the key because a new game in a new park keeps the crop. */
+  const g = State.game;
+  if (g && (g.play || g.tail || g.steal || g.replay)) return;
+  if (typeof Cam === 'object' && Cam && Cam.zoom > CAM_BAT.zoom + 0.02) return;
   fieldBandAt = key;
   const w = pixWorld.getContext('2d');
   const mid = Math.max(0, Math.min(pixWorld.width - 1,
@@ -7242,8 +7259,20 @@ function startFieldLoop() {
          into the BITMAP and the bitmap is whatever the page chose to draw at.
          Written off `scale` on a phone the type lands two or three times too
          large and two or three times too far right, which is the second copy
-         of the camera this file already warns about. */
-      const hudK = FIELD_CAM.draw / PIX;
+         of the camera this file already warns about.
+
+         AND IT IS `draw`, NOT `draw / PIX`, because the transform each site
+         captured ALREADY carries the world context's 1/PIX: `m` maps logical
+         to blocks, and a block is `draw` bitmap pixels. Divided by PIX a
+         second time, every label on the field landed a third of the way to
+         the origin at a third of its size. "THROW TO FIRST · SPACE OR CLICK",
+         meant under the throw bar, sat four CSS pixels tall beside the left
+         fielder; "CATCH IT!" was by the light tower. Every fielding window's
+         own instruction, the umpire's OUT!, the GET READY plate and the
+         replay badge, all of them, on every screen, and nothing threw: a
+         label drawn in the wrong place is a valid label. Found by touring
+         the pitching half on a phone and zooming into a yellow smudge. */
+      const hudK = FIELD_CAM.draw;
       for (const [m, fn] of HUD_Q) {
         ctx.setTransform(hudK, 0, 0, hudK, -FIELD_CAM.sx * FIELD_CAM.draw,
                          -FIELD_CAM.sy * FIELD_CAM.draw);
@@ -8430,6 +8459,14 @@ function resolveSwing(cursorT, aim) {
   }
 
   g.lastSwing.res = 'hit';
+  /* THE MOMENT THE BAT MEETS THE BALL IS DRAWN, on the plate camera, for
+     the length of the hit stop. Before this the cut to the field landed on
+     the same frame as the press, so the one thing a batter presses for
+     was the one thing they never saw. `plateViewActive` holds the plate
+     while this is set and the play has not started, and `drawPlateView`
+     puts the ball on the bat with a burst behind it. Where: the ball's
+     own landing spot, which is where the bat found it. */
+  g.contactFx = { at: performance.now(), x: p.loc ? p.loc.x : 0, y: p.loc ? p.loc.y : 0 };
   /* Cowardly Lion who did commit gets a burst of nerve on the swing. */
   let powForRoll = ctx.pow;
   if (batter.quirk === 'skittish' && contact > 0.7) powForRoll = Math.min(100, powForRoll + 15);
@@ -8718,8 +8755,15 @@ const SIM_REACT = 0.22;                /* a fielder's first step */
 const SIM_HIT_BOUNCE = 0.35;
 /* HIT STOP. The world holds its breath for a few frames at contact: the
    crack fires on time, the motion starts a beat later, and that beat is
-   what sells the impact. The classic band is 40 to 80 milliseconds. */
-const HITSTOP_MS = 80;
+   what sells the impact. The classic band is 40 to 80 milliseconds for a
+   fighting game, where the next frame matters. Here the beat has a second
+   job: it is how long the PLATE camera holds the bat on the ball before
+   the cut to the field, and at 80 the picture changed on the same frame
+   the thumb came up, so a hit and a whiff felt the same at the moment of
+   the press. 150 is long enough to see it and short enough that the ball
+   is still leaving the bat when the field comes up. Every play timer is
+   shifted by this, so nothing downstream moves relative to anything else. */
+const HITSTOP_MS = 150;
 
 /* Move a point along a polyline with a speed profile: accelerate, cruise,
    and either stop at the end (decelerating into it) or run through it.
@@ -9545,7 +9589,7 @@ function drawUmpCall(ctx, G, base, verdict, dt) {
   if (called) {
     const pop = Math.min(1, Math.max(0, dt) / 0.18);
     hud(ctx, (c) => {
-      c.font = `bold ${Math.round(10 + 5 * pop)}px monospace`;
+      c.font = `bold ${Math.round(hudPx(10 + 5 * pop, 11 + 6 * pop))}px monospace`;
       c.textAlign = 'center';
       c.textBaseline = 'middle';
       c.fillStyle = 'rgba(20,40,63,.85)';
@@ -9671,15 +9715,56 @@ function drawPlaySim(ctx, sim, t, G, opts) {
   if (ball && !ball.held) {
     const [x, gy] = simProject(G, ball.uv[0], ball.uv[1]);
     items.push({ y: gy + 1, draw: () => {
-      /* two ghosts behind it: the streak is what makes speed read */
-      for (const [back, al, rr] of [[0.07, 0.16, 2], [0.035, 0.32, 3]]) {
-        const b2 = simBallAt(sim, t - back);
-        if (!b2 || b2.held) continue;
-        const [gx2, gg2] = simProject(G, b2.uv[0], b2.uv[1]);
-        ctx.globalAlpha = al;
-        ctx.fillStyle = '#eaeaea';
-        ctx.beginPath(); ctx.arc(gx2, gg2 - b2.h, rr, 0, Math.PI * 2); ctx.fill();
-        ctx.globalAlpha = 1;
+      /* two ghosts behind it: the streak is what makes speed read. Sized
+         off the ball's own floor, because written as 2 and 3 logical
+         pixels they were under a CSS pixel on a phone and the streak did
+         not exist there. */
+      const gr = ballRadiusMin();
+      /* A BIG HIT LEAVES A COMET, which is the one piece of Backyard
+         Baseball's grammar this field never had: the ball you crushed
+         looks crushed. The kind is already on the sim, and the tail is
+         drawn only while the ball is in the AIR (a ball rolling in the
+         gap is a ball rolling), so a single keeps its two quiet ghosts
+         and a double, a triple or a home run trails six, longer and
+         warmer. Gold for a home run, because it is the one the crowd is
+         already standing for. Alpha falls along the tail so it reads as
+         motion rather than as a string of balls. */
+      const big = sim.kind === 'home run' || sim.kind === 'triple' || sim.kind === 'double';
+      if (big && t < sim.landAt) {
+        /* A TAPERED STROKE, NOT A ROW OF CIRCLES. The first draft trailed
+           six ghost discs and against the sky they were six pale dots a
+           reader had to assemble; a comet is one shape. Sampled back along
+           the flight, drawn dark edge first then the colour, wide at the
+           ball and gone at the tail. */
+        const pts = [];
+        for (let k = 9; k >= 0; k--) {
+          const b2 = simBallAt(sim, t - k * 0.028);
+          if (!b2 || b2.held) continue;
+          const [px2, py2] = simProject(G, b2.uv[0], b2.uv[1]);
+          pts.push([px2, py2 - b2.h, 1 - k / 10]);
+        }
+        const tint = sim.kind === 'home run' ? '244,194,90' : '234,234,234';
+        ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+        for (const [edge, col] of [[true, '10,20,30'], [false, tint]]) {
+          for (let k = 1; k < pts.length; k++) {
+            const [ax, ay, au] = pts[k - 1], [bx2, by2, bu] = pts[k];
+            const wd = gr * (0.25 + 1.15 * bu) + (edge ? 2.5 : 0);
+            ctx.strokeStyle = `rgba(${col},${(edge ? 0.55 : 0.9) * (0.15 + 0.85 * bu)})`;
+            ctx.lineWidth = wd;
+            ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(bx2, by2); ctx.stroke();
+            void au;
+          }
+        }
+      } else {
+        for (const [back, al, rs] of [[0.07, 0.16, 0.45], [0.035, 0.32, 0.70]]) {
+          const b2 = simBallAt(sim, t - back);
+          if (!b2 || b2.held) continue;
+          const [gx2, gg2] = simProject(G, b2.uv[0], b2.uv[1]);
+          ctx.globalAlpha = al;
+          ctx.fillStyle = '#eaeaea';
+          ctx.beginPath(); ctx.arc(gx2, gg2 - b2.h, gr * rs, 0, Math.PI * 2); ctx.fill();
+          ctx.globalAlpha = 1;
+        }
       }
       drawBaseball(ctx, x, gy - ball.h, gy);
     } });
@@ -11317,6 +11402,13 @@ function camApply(ctx, cam, w, h) {
   ctx.scale(cam.zoom, cam.zoom);
   ctx.translate(-cam.x, -cam.y);
 }
+/* The same map as a function of one point, for a screen pass that has to
+   put a mark on something the world pass drew under the camera. A null cam
+   is the plate view, which has no camera, and maps to itself. */
+function camPt(cam, w, h, x, y) {
+  if (!cam) return [x, y];
+  return [w / 2 + (x - cam.x) * cam.zoom, h / 2 + (y - cam.y) * cam.zoom];
+}
 
 /* The camera should not drift in from wherever the last game left it. */
 function resetCamera() { Cam = null; }
@@ -11393,7 +11485,7 @@ function plateGeom() {
      and a reader prices one off the other. At 72x98 half-extents the box
      was 144x196: taller than the entire 184px batter sprite, with its top
      edge a head above his head, and a tester read it as double his size.
-     The batter spans y 456 to 640 and the catcher's crown is at 588, so
+     The batter spans y 456 to 640 and the plate is drawn at 604, so
      the box now runs chin to thigh and stops above the glove. Chibi
      anatomy means a literal knees-to-letters zone would be a slot 35px
      tall; this is the arcade reading of the same rule. Every mapping goes
@@ -11434,16 +11526,8 @@ function plateGeom() {
               answer is 4.6 and 344, and there is nowhere further to go
               without moving the zone. */
            batX: 344, batY: 640, batSc: 4.6,
-           /* The catcher is a SLIVER, low and to the inside corner. At
-              512,764 his crown reached y 588 dead-center and covered the
-              plate (drawn at 466 to 494) and both batter's boxes: the one
-              opaque thing in the genre no game puts between the player
-              and the plate. Every reference stages this the same way:
-              MLB The Show's catcher cameras never render him, Backyard
-              and the mobile MLB games draw no catcher at all. Ours keeps
-              a helmet and shoulders at the frame's bottom right, clear of
-              the plate, the boxes' chalk and the zone. */
-           catX: 588, catY: 806, catSc: 4.4,
+           /* No catcher geometry: see the note where he used to be drawn
+              in `drawPlateView`. The camera stands where he crouches. */
            relX: 496, relY: 246 };
 }
 function plateFromZone(P, x, y) { return [P.zx + x * P.zw, P.zy - y * P.zh]; }
@@ -11472,8 +11556,14 @@ function fieldPointFromEvent(e) {
    wants the wide field; a live pitch, the beat after one, or a pitcher
    being aimed wants the plate. */
 function plateViewActive(g) {
-  if (!g || g.over || g.play || g.replay) return false;
+  if (!g || g.over || g.replay) return false;
   const now = performance.now();
+  /* A play holds the plate camera for exactly the hit stop, and only a
+     play that began with a swing: `startedAt` is already shifted by
+     HITSTOP_MS, so this is the same window every play timer waits out,
+     and a play scheduled with no swing behind it (a harness, a walk) cuts
+     at once the way it always did. */
+  if (g.play) return !!g.contactFx && now < g.play.startedAt;
   if (g.steal && g.steal.sim && now < g.steal.sim.t0 + g.steal.sim.end * 1000) return false;
   if (g.tail && (now - g.tail.t0) / 1000 < g.tail.end) return false;
   if (g.jog && now < g.jog.t0 + g.jog.end * 1000) return false;
@@ -11509,7 +11599,16 @@ function platePitchPos(P, pitch, t) {
     case 'heat':      y -= Math.sin(e * Math.PI) * 8; break;
     default:          y -= Math.sin(e * Math.PI) * 4;
   }
-  return { x, y, r: 3.2 + 8.2 * Math.pow(e, 1.4), e, lx, ly, arrive };
+  /* THE BALL IS READABLE FROM THE HAND, not from the last third of the
+     flight. At `3.2 + 8.2 * e^1.4` it left the mound as a 6 logical pixel
+     dot, which is 3.5 CSS pixels on a 390 phone against a pitcher drawn
+     130 tall: a real baseball's proportion, and a fleck. It was only a
+     ball for the last third of the trip, and the timing game is played
+     over the whole of it. Backyard Baseball draws the ball at about a
+     tenth of the pitcher's height the whole way, so it does here: 13
+     logical at release, 25 at the plate, a 1:2 swell rather than 1:3.6.
+     The arrival size is unchanged, so the mitt still covers it. */
+  return { x, y, r: 6.5 + 6 * Math.pow(e, 1.3), e, lx, ly, arrive };
 }
 
 function drawPlateView(ctx, w, h, t, pitch, inWindup, theme) {
@@ -11881,7 +11980,47 @@ function drawPlateView(ctx, w, h, t, pitch, inWindup, theme) {
 
   /* ---- the ball ---- */
   let ballDrawn = false;
-  if (live && !inWindup && !(pitch.swung && g.lastSwing && g.lastSwing.res === 'hit')) {
+  if (g.play && g.contactFx && now < g.play.startedAt) {
+    /* CONTACT. The ball sits where the bat found it, and a burst of rays
+       opens behind it over the hit stop: white going to the swing's own
+       colour, so a bunt and a power swing read as their own kind of hit.
+       Nothing here is a second model of the ball: the field camera takes
+       over at `startedAt` with the ball at the plate at t = 0, which is
+       exactly where this leaves it. */
+    const u = clamp((now - g.contactFx.at) / HITSTOP_MS, 0, 1);
+    const [bx, by] = plateFromZone(P, g.contactFx.x, g.contactFx.y);
+    const mode = g.swingMode || 'contact';
+    const tint = mode === 'power' ? '244,194,90' : mode === 'bunt' ? '111,182,232' : '255,252,242';
+    ctx.save();
+    ctx.translate(bx, by);
+    ctx.rotate(u * 0.35);
+    for (let i = 0; i < 8; i++) {
+      const a = (i / 8) * Math.PI * 2;
+      const len = 18 + 34 * u, wd = 5 * (1 - u * 0.6);
+      ctx.fillStyle = `rgba(${tint},${0.85 * (1 - u * 0.7)})`;
+      ctx.beginPath();
+      ctx.moveTo(Math.cos(a) * 10, Math.sin(a) * 10);
+      ctx.lineTo(Math.cos(a) * len + Math.cos(a + 1.57) * wd, Math.sin(a) * len + Math.sin(a + 1.57) * wd);
+      ctx.lineTo(Math.cos(a) * len - Math.cos(a + 1.57) * wd, Math.sin(a) * len - Math.sin(a + 1.57) * wd);
+      ctx.closePath(); ctx.fill();
+      /* the dark ring everything drawn here wears, or a pale ray on pale
+         dirt is not there: measured on the first render, the rays read
+         only over the grass and vanished over the keyhole */
+      ctx.strokeStyle = `rgba(10,20,30,${0.55 * (1 - u * 0.7)})`;
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    }
+    ctx.restore();
+    ctx.strokeStyle = `rgba(255,255,255,${1 - u})`;
+    ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.arc(bx, by, 14 + 30 * u, 0, Math.PI * 2); ctx.stroke();
+    ctx.fillStyle = '#fbfaf4';
+    ctx.beginPath(); ctx.arc(bx, by, 12, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = '#1b3a5c';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.arc(bx, by, 12, 0, Math.PI * 2); ctx.stroke();
+    ballDrawn = true;
+  } else if (live && !inWindup && !(pitch.swung && g.lastSwing && g.lastSwing.res === 'hit')) {
     const bp = platePitchPos(P, pitch, t);
     if (bp.e >= 1) {
       if (!pitch.arrivedAt) pitch.arrivedAt = now;
@@ -11942,6 +12081,10 @@ function drawPlateView(ctx, w, h, t, pitch, inWindup, theme) {
       if (u < 0.12) { pose = 'swing-in'; arcT = u / 0.3; }
       else if (u < 0.3) { pose = 'swing'; arcT = u / 0.3; }
       else pose = 'follow';
+      /* Through the hit stop the bat is ON the ball, whatever the swing
+         clock says: this is the contact frame held, which is what a hit
+         stop is. */
+      if (g.play && g.contactFx && now < g.play.startedAt) { pose = 'swing'; arcT = 1; }
     } else if (g.slumpUntil && now < g.slumpUntil) {
       /* AFTER the swing follow-through, never instead of it: a man who
          went down swinging finishes the swing first and drops his arms
@@ -11975,9 +12118,17 @@ function drawPlateView(ctx, w, h, t, pitch, inWindup, theme) {
     }
   }
 
-  /* ---- the catcher, from behind, crouched under the zone ---- */
-  const catcher = fielderAt(fteam, 8);
-  if (catcher) drawRunner(ctx, P.catX, P.catY, catcher, P.catSc, 'back');
+  /* THERE IS NO CATCHER ON THIS CAMERA, and there was one for a year. He
+     was drawn as a "sliver" at the frame's bottom right, helmet and
+     shoulders, on the argument that a helmet at the edge says where the
+     camera is standing. On a phone, where the crop is a third of the
+     scene and the placards sit in that corner, what arrived was a red cap
+     and a brown lump under the count, cut off by the frame and by the
+     chip, and it read as a rendering fault rather than a man. Backyard
+     Baseball, the mobile MLB games and The Show's catcher cameras draw no
+     catcher at all, for this reason: the camera IS the catcher. His mitt
+     is still here, as the target the pitch sets up on and the glove the
+     ball lands in, which is the only part of him a batter looks at. */
 
   /* ---- a foul ball comes back at the camera ---- */
   if (g.foulFx && now < g.foulFx.start + g.foulFx.dur) {
@@ -12018,21 +12169,47 @@ function drawPlateView(ctx, w, h, t, pitch, inWindup, theme) {
   }
   if (!playerIsBatting() && (g.aiming || g.meter || (live && pitch.aim))) {
     const src = (g.aiming || g.meter) ? (g.aimPt || { x: 0, y: 0 }) : pitch.aim;
-    const [ax, ay] = plateFromZone(P, src.x, src.y);
+    const [ax0, ay0] = plateFromZone(P, src.x, src.y);
+    /* THE PITCHER'S RETICLE GETS THE BATTER'S TREATMENT. It was a white
+       circle of radius 13 in a 2 logical stroke: on a phone that is an
+       eleven pixel ring drawn a hairline thick, with no dark edge, over
+       whatever the zone's grid put behind it. The bat's oval beside it
+       has had a dark halo and a solid dot for a year. This is the one
+       thing a pitcher places, so it is floored in CSS pixels the way the
+       ball and the labels are, and it wears the dark ring first. */
+    const rr = Math.max(13, hudPx(13, 12));
+    /* Whole blocks, or the stroke is a fraction of one and antialiases to
+       grey, which is the zone line's own lesson. The halo is a block a
+       side. The centre is snapped for the same reason. */
+    const lw = Math.ceil(Math.max(2, hudPx(2, 2)) / PIX) * PIX;
+    const [ax, ay] = [snapB(ax0), snapB(ay0)];
+    const ticks = () => {
+      ctx.beginPath(); ctx.arc(ax, ay, rr, 0, Math.PI * 2); ctx.stroke();
+      ctx.beginPath();
+      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+        ctx.moveTo(ax + dx * rr * 0.6, ay + dy * rr * 0.6); ctx.lineTo(ax + dx * rr * 1.4, ay + dy * rr * 1.4);
+      }
+      ctx.stroke();
+    };
     ctx.globalAlpha = live ? 0.4 : 1;
+    ctx.strokeStyle = 'rgba(10,20,30,.55)';
+    ctx.lineWidth = lw + 2 * PIX;
+    ticks();
     ctx.strokeStyle = '#ffffff';
-    ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.arc(ax, ay, 13, 0, Math.PI * 2); ctx.stroke();
-    ctx.beginPath();
-    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
-      ctx.moveTo(ax + dx * 8, ay + dy * 8); ctx.lineTo(ax + dx * 18, ay + dy * 18);
-    }
-    ctx.stroke();
+    ctx.lineWidth = lw;
+    ticks();
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath(); ctx.arc(ax, ay, Math.max(2, lw * 0.9), 0, Math.PI * 2); ctx.fill();
     ctx.globalAlpha = 1;
   }
   if (g.meter && (!g.meter.released || now < g.meter.doneAt + 600)) {
     const m = g.meter;
-    const bx = P.zx + P.zw + 44, by0 = P.zy - P.zh, bh = P.zh * 2, bw = 16;
+    /* Sixteen logical wide was seven CSS pixels on a phone, and the
+       cursor across it four logical tall was under two: the release, which
+       is the whole of pitching, read off a hairline in a sliver. Both are
+       floored in CSS pixels; the bar's height is the zone's and was fine. */
+    const bw = Math.max(16, hudPx(16, 14)), ch = Math.max(4, hudPx(4, 3));
+    const bx = P.zx + P.zw + 44, by0 = P.zy - P.zh, bh = P.zh * 2;
     const pos = m.released ? m.pos : clamp((now - m.t0) / m.dur, 0, 1);
     ctx.fillStyle = 'rgba(11,16,21,.85)';
     ctx.fillRect(bx - 4, by0 - 4, bw + 8, bh + 8);
@@ -12041,7 +12218,7 @@ function drawPlateView(ctx, w, h, t, pitch, inWindup, theme) {
     ctx.fillStyle = 'rgba(91,176,131,.9)';
     ctx.fillRect(bx, by0 + (m.sweet - m.band) * bh, bw, m.band * 2 * bh);
     ctx.fillStyle = m.released ? (m.q > 0.6 ? '#8ef0b0' : m.q > 0.25 ? '#f4c25a' : '#e0524a') : '#ffffff';
-    ctx.fillRect(bx - 3, by0 + pos * bh - 2, bw + 6, 4);
+    ctx.fillRect(bx - 3, by0 + pos * bh - ch / 2, bw + 6, ch);
   }
 }
 
@@ -12838,7 +13015,7 @@ function drawField(ctx, w, h, t, pitch, inWindup) {
       const gx = bx + (px - bx) * ge;
       let gyy = by + (py - by) * ge;
       ctx.fillStyle = `rgba(255,255,255,${0.22 - gi * 0.06})`;
-      ctx.beginPath(); ctx.arc(gx, gyy, 4 - gi, 0, Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.arc(gx, gyy, ballRadiusMin() * (0.8 - gi * 0.15), 0, Math.PI*2); ctx.fill();
     }
     drawBaseball(ctx, ballX, ballY);
   }
@@ -13061,19 +13238,33 @@ function drawScreenPass(ctx, w, h, g, theme, cam, cx, cy, r, chipY) {
   if (g && g.play && g.play.catchActive && g.play.catchWindow) {
     const cw = g.play.catchWindow;
     const t = clamp((performance.now() - cw.startedAt) / cw.duration, 0, 1);
+    /* THROUGH THE CAMERA, which this pass is not under. The landing spot
+       is a WORLD point and the fielder running at it is drawn under
+       `cameraNow`'s track, which is zoomed in and panned toward the ball
+       while a fly is in the air. Drawn raw, the ring sat where the spot
+       would be with the camera at rest: measured on a phone, 44 logical
+       pixels from the spot at the moment the window opened (the camera was
+       still panned toward the plate), which is fifty CSS pixels between
+       the ring and the man's glove, settling to 3.5 as the track caught up
+       and 8.9 as it eased out. A ring that drifts away from what it marks
+       reads as a bug in the ring. So the spot and the lead line go through
+       the same camera the picture did, and the ring's SIZE does not: it is
+       floored in CSS pixels for a thumb, not a thing in the world. */
+    const [lx, ly] = camPt(cam, w, h, cw.landingX, cw.landingY);
     /* A line from the man chasing to the spot, so the ring reads as HIS
        target and not a shape on the grass. On a phone the fielder and the
        ring can be a thumb apart. */
     const at = g.play.chaseAt;
     if (at) {
+      const [ax, ay] = camPt(cam, w, h, at.x, at.y);
       ctx.save();
       ctx.strokeStyle = 'rgba(15,107,57,.75)';
       ctx.lineWidth = 2;
       ctx.setLineDash([6, 6]);
-      ctx.beginPath(); ctx.moveTo(at.x, at.y); ctx.lineTo(cw.landingX, cw.landingY); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(lx, ly); ctx.stroke();
       ctx.restore();
     }
-    drawCatchRing(ctx, cw.landingX, cw.landingY, t);
+    drawCatchRing(ctx, lx, ly, t);
   }
 
   /* Throw minigame overlay: appears when a grounder is in the field and
@@ -13097,7 +13288,7 @@ function drawScreenPass(ctx, w, h, g, theme, cam, cx, cy, r, chipY) {
       const color = st.level >= 3 ? '#c94b1a' : st.level === 2 ? '#e3b04c'
         : st.level === 1 ? '#5bb083' : '#8fd0a0';
       hud(ctx, (c) => {
-        c.font = 'bold 10px monospace';
+        c.font = `bold ${hudPx(10, 9)}px monospace`;
         c.textAlign = 'center';
         c.textBaseline = 'middle';
         c.fillStyle = color;
@@ -13132,8 +13323,10 @@ function drawCatchRing(ctx, lx, ly, t) {
   /* Green target ring: shrinks as t moves through the middle, widens
      past the sweet spot. Radius drives visual read of when to click. */
   const shrink = 1 - 4 * Math.abs(t - 0.5) * (1 - Math.abs(t - 0.5));
-  const rBig = 46;
-  const rSmall = 12;
+  /* A ring a thumb can find: 46 logical was twenty CSS pixels of radius
+     on a phone, so it is floored the way the labels are. */
+  const rBig = Math.max(46, hudPx(46, 30));
+  const rSmall = Math.max(12, hudPx(12, 8));
   const rNow = rSmall + (rBig - rSmall) * shrink;
   ctx.strokeStyle = '#0f6b39';
   ctx.lineWidth = 3;
@@ -13144,22 +13337,41 @@ function drawCatchRing(ctx, lx, ly, t) {
   ctx.beginPath(); ctx.arc(lx, ly, rSmall, 0, Math.PI * 2); ctx.stroke();
   /* Label */
   hud(ctx, (c) => {
+    const fs = hudPx(12);
     c.fillStyle = '#f4c25a';
-    c.font = 'bold 12px monospace';
+    c.font = `bold ${fs}px monospace`;
     c.textAlign = 'center';
     c.textBaseline = 'middle';
-    c.fillText('CATCH IT!', lx, ly - rBig - 12);
-    c.fillText('SPACE / CLICK', lx, ly + rBig + 12);
+    c.fillText('CATCH IT!', lx, ly - rBig - fs);
+    c.fillText('SPACE / CLICK', lx, ly + rBig + fs);
   });
 }
+/* A LABEL A PLAYER HAS TO READ IS SIZED IN CSS PIXELS, and every one of
+   these was written in logical ones: `12px` on a phone, where a logical
+   pixel is under half a CSS pixel, is five pixels of type. The crisp pass
+   keeps type sharp; it cannot make it big. So a field label asks for its
+   logical size or whatever gives it `minCss` on this screen, whichever is
+   more, the same way the ball has a floor. */
+function hudPx(px, minCss) { return Math.max(px, (minCss || 11) / (FIELD_VIEW || 1)); }
 function drawThrowBar(ctx, w, h, cx, win, t) {
   const barW = w * 0.5;
   const barX = cx - barW/2;
-  const barY = h * 0.90;
-  const barH = 22;
+  /* Tall enough to hit with a thumb: 22 logical is ten CSS pixels on a
+     phone, and the cursor inside it a hairline. */
+  const barH = Math.max(22, hudPx(22, 18));
+  const fs = hudPx(12);
+  /* ABOVE THE DECK, which is the boss battle's own rule arriving at a
+     bar. `h * 0.90` is the bottom tenth of the world, and on a desktop
+     the deck floats over exactly that: the bar and its cursor sat behind
+     the pitch buttons and the window was played blind. `FIELD_CAM.deck`
+     is how many blocks of the crop's bottom the deck covers, measured
+     rather than assumed, so the bar sits on the deck's top edge when
+     there is one and where it always was when there is not. */
+  const deckTop = (FIELD_CAM.sy + FIELD_CAM.sh - (FIELD_CAM.deck || 0)) * PIX;
+  const barY = Math.min(h * 0.90, deckTop - barH - fs - 26);
   /* Background */
   ctx.fillStyle = 'rgba(11,16,21,.92)';
-  ctx.fillRect(barX - 6, barY - 6, barW + 12, barH + 34);
+  ctx.fillRect(barX - 6, barY - 6, barW + 12, barH + fs + 22);
   /* Yellow zone */
   ctx.fillStyle = 'rgba(244,194,90,.36)';
   ctx.fillRect(barX + (win.ideal - win.yellowHalf) * barW, barY,
@@ -13174,17 +13386,23 @@ function drawThrowBar(ctx, w, h, cx, win, t) {
   /* Label */
   hud(ctx, (c) => {
     c.fillStyle = '#f4c25a';
-    c.font = 'bold 12px monospace';
+    c.font = `bold ${fs}px monospace`;
     c.textAlign = 'center';
     c.textBaseline = 'middle';
-    c.fillText('THROW TO FIRST · SPACE OR CLICK', cx, barY + barH + 12);
+    c.fillText('THROW TO FIRST · SPACE OR CLICK', cx, barY + barH + fs * 0.5 + 6);
   });
 }
 
-/* The smallest ball worth drawing: four CSS pixels of radius on screen,
+/* The smallest ball worth drawing: SIX CSS pixels of radius on screen,
    whatever the field is scaled to. Five logical pixels was two on a
-   phone, which is a fleck on the grass. */
-function ballRadiusMin() { return 4 / (FIELD_VIEW || 1); }
+   phone, which is a fleck on the grass, and four CSS was an eight pixel
+   white dot with a one pixel seam, which on a 390 phone read as a speck
+   on the infield the moment the camera cut to the field. A ball in play
+   is the one thing on that screen a reader has to follow, and it was the
+   smallest thing on it. Twelve pixels across, with the outline and the
+   shadow `drawBaseball` scales to it, is about what Backyard Baseball
+   draws at the same distance. */
+function ballRadiusMin() { return 6 / (FIELD_VIEW || 1); }
 /* The narrowest the strike zone's frame may be drawn. Two LOGICAL pixels
    was 1.78 CSS px on a phone at 2.23:1 against the grass, and a hairline
    is not a target.
@@ -13214,11 +13432,17 @@ function drawBaseball(ctx, x, y, groundY) {
   x = Math.round(x); y = Math.round(y);
   if (typeof groundY === 'number') {
     const drop = Math.max(0, groundY - y);
-    const alpha = clamp(0.35 - drop * 0.0015, 0.05, 0.35);
-    const rx = 5 + drop * 0.02;
+    const alpha = clamp(0.35 - drop * 0.0015, 0.08, 0.35);
+    /* THE SHADOW IS SIZED OFF THE BALL, NOT OFF A CONSTANT. It was a five
+       logical pixel ellipse two tall, which on a phone is two CSS pixels
+       by one: nothing, on the one screen where a reader needs it to tell
+       a fly ball from a grounder. It is the ball's own width now, and it
+       spreads as the ball climbs, the way a shadow does under something
+       going up rather than away. */
+    const rx = rad * 0.9 + drop * 0.02, ry = Math.max(2, rad * 0.4);
     ctx.fillStyle = `rgba(0,0,0,${alpha})`;
     ctx.beginPath();
-    ctx.ellipse(x, groundY, rx, 2, 0, 0, Math.PI * 2);
+    ctx.ellipse(x, groundY, rx, ry, 0, 0, Math.PI * 2);
     ctx.fill();
     /* The ball swells as it climbs toward the camera: a pop fly at its
        peak is nearer the viewer than the grass under it, and the size
@@ -13227,9 +13451,17 @@ function drawBaseball(ctx, x, y, groundY) {
   }
   ctx.fillStyle = '#eaeaea';
   ctx.beginPath(); ctx.arc(x, y, rad, 0, Math.PI*2); ctx.fill();
+  /* THE DARK RING EVERY DRAWN THING IN THIS GAME WEARS, and the ball in
+     the field did not: a white disc on green with a one pixel seam, and
+     on the chalk of a base path it disappeared outright. The plate camera
+     has always outlined its ball; this is the same line at the same
+     weight, scaled with the floor so a phone gets a whole CSS pixel of it. */
+  ctx.strokeStyle = '#1b3a5c';
+  ctx.lineWidth = Math.max(1, rad * 0.16);
+  ctx.beginPath(); ctx.arc(x, y, rad - ctx.lineWidth * 0.5, 0, Math.PI*2); ctx.stroke();
   ctx.strokeStyle = '#c94b1a';
-  ctx.lineWidth = 1;
-  ctx.beginPath(); ctx.arc(x, y, rad - 1, -Math.PI*0.2, Math.PI*0.3); ctx.stroke();
+  ctx.lineWidth = Math.max(1, rad * 0.14);
+  ctx.beginPath(); ctx.arc(x, y, rad * 0.62, -Math.PI*0.25, Math.PI*0.35); ctx.stroke();
 }
 
 function drawBatSwing(ctx, x, y, t, sc) {
@@ -13576,17 +13808,18 @@ function drawTimingRing(ctx, G, t, pitch, inWindup) {
     ring(R0, `rgba(27,58,92,${0.35 + pulse * 0.5})`, 3);
     /* On a daylight field white text at 75 percent is a smudge. It goes
        on a plate, like everything else that has to be read over grass. */
-    const gy = cyp - R0 * 0.62 - 12;
+    const fs = hudPx(12), k = fs / 12;
+    const gy = cyp - R0 * 0.62 - 12 * k;
     hud(ctx, (c) => {
-      c.font = 'bold 12px monospace';
+      c.font = `bold ${fs}px monospace`;
       c.textAlign = 'center';
       c.textBaseline = 'middle';
-      const gw = c.measureText('GET READY').width + 14;
+      const gw = c.measureText('GET READY').width + 14 * k;
       c.fillStyle = 'rgba(255,252,242,.94)';
-      c.fillRect(cxp - gw / 2, gy - 9, gw, 18);
+      c.fillRect(cxp - gw / 2, gy - 9 * k, gw, 18 * k);
       c.strokeStyle = '#1b3a5c';
       c.lineWidth = 2;
-      c.strokeRect(cxp - gw / 2, gy - 9, gw, 18);
+      c.strokeRect(cxp - gw / 2, gy - 9 * k, gw, 18 * k);
       c.fillStyle = '#cf3229';
       c.fillText('GET READY', cxp, gy);
     });
@@ -14953,8 +15186,8 @@ function renderHowTo() {
     + 'the ball, late goes the other way. <b>Place</b> decides whether you hit it '
     + 'at all: a bat is a horizontal thing, so a miss along it still finds the '
     + 'ball and a miss over or under it does not. Swing under the ball and it '
-    + 'climbs; over it and it is beaten into the ground. Watch the catcher: his '
-    + 'mitt sets up where the pitch is aimed.</p>'
+    + 'climbs; over it and it is beaten into the ground. Watch the target ring: '
+    + 'it sets up where the pitch is aimed.</p>'
     + '<p>Before each pitch choose your swing with the buttons or keys <b>1, 2, 3</b>: '
     + '<b>Contact</b> widens the green and trades power away, <b>Power</b> narrows '
     + 'it and swings for the fence, and <b>Bunt</b> lays one down: runners move up, '

@@ -5902,6 +5902,148 @@ the scoreboard to the plate. The strip is darker at both edges and NEUTRAL down 
 middle now, so it reads as worn ground. Found by rendering three parks and looking,
 which is the fourth time on this page.
 
+### The ball was the smallest thing on the screen it is the point of
+
+Asked for: gameplay and graphics comparable to Backyard Baseball. The whole loop was
+walked on a phone as a player meets it (the wait, the flight, the swing, the cut, the
+play) and the biggest gap was the same in both cameras. **The ball.** Mid flight it was a
+6 logical pixel dot leaving the mound, which is 3.5 CSS pixels on a 390 phone, and it
+only became a ball for the last third of the trip. After contact the field camera drew
+it as an 8 pixel white disc with a one pixel seam and a shadow two pixels by one, which
+against the infield is a speck, and on a base path's chalk was nothing at all. Backyard
+Baseball's ball is the biggest, most legible thing on its screen at every moment,
+because you cannot time what you cannot see.
+
+- **The plate camera's ball is `6.5 + 6 * e^1.3` now**, 13 logical at release against
+  25 at the plate: a 1:2 swell rather than 1:3.6, about a tenth of the pitcher's height
+  the whole way. The arrival size did not move, so the mitt still covers it.
+- **`ballRadiusMin` is six CSS pixels of radius**, from four. `drawBaseball` draws the
+  same dark ring the plate camera's ball has always worn, at a weight scaled to the
+  floor, and its shadow is the ball's own width rather than a five logical pixel
+  constant. Both ghost trails in the field view were 2 and 3 logical pixels, hardcoded,
+  which on a phone is under one CSS pixel: the streak that makes speed read did not
+  exist there. They scale off the floor too.
+
+**A BIG HIT LEAVES A COMET**, which is the one piece of Backyard Baseball's grammar this
+field never had: the ball you crushed looks crushed. `drawPlaySim` reads `sim.kind`,
+and a double, a triple or a home run trails a tapered stroke while it is in the AIR (a
+ball rolling in the gap is a ball rolling), gold for a homer. A single keeps its two
+quiet ghosts. **The first draft was six ghost discs and against the sky they were six
+pale dots a reader had to assemble**; a comet is one shape, so it is a stroke sampled
+back along the flight, dark edge first and then the colour, wide at the ball and gone at
+the tail. Found by rendering a home run at five instants and looking, which is how the
+contact burst's rays got their dark ring the same afternoon: pale rays on pale dirt were
+not there over the keyhole.
+
+**THE CONTACT FRAME WAS NEVER SHOWN.** `plateViewActive` returned false the instant
+`g.play` existed, and `HITSTOP_MS` shifted every play timer by 80 without holding the
+picture, so the cut to the field landed on the same frame as the press. The one thing a
+batter presses for was the one thing they never saw, and a hit and a whiff felt the same
+at the moment of the thumb. A play holds the plate camera for exactly the hit stop now,
+and only a play that began with a swing (`g.contactFx`, set beside `lastSwing.res =
+'hit'`): `startedAt` is already shifted by `HITSTOP_MS`, so the hold is the window every
+play timer already waits out and the field comes up with the ball at t = 0, which is
+where the plate camera leaves it. `HITSTOP_MS` is **150**, because 80 is a fighting
+game's number and this beat has a second job.
+
+What is drawn in it: the bat forced onto the contact frame whatever the swing clock
+says (which is what a hit stop is), the ball where the pitch landed, a ring and eight
+rays opening behind it in the swing's own colour, so a bunt and a power swing read as
+their own kind of hit. `verify-rules` asserts both halves: a play scheduled with no swing
+behind it still cuts at once, and a swing that connects holds for the hit stop and then
+cuts.
+
+**AND THE CATCHER IS GONE FROM THE PLATE CAMERA.** He was a "sliver" at the bottom
+right, helmet and shoulders, on the argument that a helmet at the edge says where the
+camera stands. On a phone the crop is a third of the scene and the count chip sits in
+that corner, so what arrived was a red cap and a brown lump under the placard, cut by
+the frame and by the chip, reading as a rendering fault. Backyard Baseball, the mobile
+MLB games and The Show's catcher cameras draw no catcher, because the camera IS the
+catcher. His mitt stays, as the target and the glove the ball lands in, which is the
+only part of him a batter looks at. `catX`, `catY` and `catSc` went with him rather
+than staying as constants nothing reads, and the three `verify-rules` claims about his
+crown became one claim that there is no catcher geometry: a rule about a figure that is
+not drawn is a rule that can only pass.
+
+### Every label on the field was a third of its size, a third of the way to the corner
+
+Found by touring the PITCHING half on a phone, which nothing this session had looked at,
+and zooming into a yellow smudge beside the left fielder. It was `THROW TO FIRST · SPACE
+OR CLICK`, four CSS pixels tall, a hundred pixels from the bar it belongs under.
+`CATCH IT!` was by the light tower.
+
+**`hud()` captures the world context's transform, and that transform already carries
+`1/PIX`.** The crisp pass then bridged with `draw / PIX`, so every queued label was
+divided by PIX twice: block (160, 209) landed at 13% across and 32% down, which is the
+light tower, at a third of its size. Every fielding window's own instruction, the
+umpire's `OUT!`, the `GET READY` plate and the replay badge, on every screen, since the
+whole-fraction draw pass went in (`ac99f413`). **Nothing threw and nothing could**: a
+label drawn in the wrong place is a valid label, and no guard here reads type off the
+canvas. The bridge is `draw` now, and the comment over it says why in the same words as
+this paragraph so the next person does not re-derive `/ PIX` from the sentence above it.
+
+**And correctly placed they were still five pixels tall on a phone**, because every one
+was written in logical pixels and a logical pixel is under half a CSS pixel there. The
+crisp pass keeps type sharp; it cannot make it big. `hudPx(px, minCss)` is the ball's
+floor arriving at type: a label asks for its logical size or whatever gives it eleven
+CSS pixels on this screen, whichever is more, and the throw bar's height and the catch
+ring's radii are floored the same way, because a ten pixel bar with a hairline cursor is
+not a target either.
+
+**The throw bar was behind the deck on a desktop.** `h * 0.90` is the bottom tenth of the
+world, and on a desktop the deck floats over exactly that, so the bar and its cursor sat
+behind the pitch buttons and the window was played blind. `FIELD_CAM.deck` is how many
+blocks of the crop's bottom the deck covers, measured by `deckCoverBlocks` rather than
+assumed, and the bar sits on the deck's top edge when there is one. That is the boss
+battle's own rule (a control the game is waiting on goes above the record of it)
+arriving at a bar.
+
+**So `check-firstpitch` reads type off the canvas now**, in its last section: it drives a
+real throw window and a real catch window on a phone and a desktop, finds the labels'
+gold on the glass, and asks where and how big. The throw label has to be centred under
+the bar, in the bottom half, at least seven CSS pixels of core, and above the deck where
+the deck floats; the catch labels have to bracket the ring. **Its first draft passed the
+old page on a desktop, on Humpty Dumpty's straw hat**: 71 gold pixels wide, 8 rows,
+centred at the plate, which is exactly the shape of a label. The label is printed on the
+bar's near black and a hat is not, so every band records whether the pixels beside it
+are dark and the throw claim asks for that; the catch claim asks for a ring's reach in
+both axes. Proved with `MYTHIBALL_PAGE` pointed at the commit before the fix: the phone
+finds no label at all, the desktop finds the hat and refuses it, four claims red.
+
+**THE CATCH RING WAS DRAWN WHERE THE SPOT WOULD BE WITH THE CAMERA AT REST**, and the
+camera is never at rest while a fly ball is in the air. `drawScreenPass` runs after
+`camApply` is restored, so the landing spot (a world point) was painted raw while the
+fielder running at it was painted under `cameraNow`'s track, zoomed and panned toward
+the ball. Measured on a phone through a real fly out: **44 logical pixels** between the
+ring and the spot at the moment the window opened (the camera was still panned toward
+the plate from the previous play), 3.5 once the track caught up, 8.9 as it eased out.
+Fifty CSS pixels between the ring and the glove, at the instant somebody is deciding
+when to press, and it drifted while they looked. `camPt()` is `camApply` as a function
+of one point, and the spot and the lead line go through it; the ring's SIZE does not,
+because it is floored in CSS pixels for a thumb rather than being a thing in the world.
+The robbery borrows the catch ring's drawing, so it is covered by the same line.
+
+**The pitcher's reticle and the release cursor were hairlines on a phone**, for the same
+reason as the labels. The reticle was a white ring of radius 13 in a 2 logical stroke:
+eleven CSS pixels across, under a pixel thick, no dark edge, over the zone's own grid.
+The release meter was 16 logical wide with a 4 logical cursor: a two pixel line in a
+seven pixel bar, and the release is the whole of pitching. The bat's oval beside them
+has had a dark halo, a solid dot and real weight for a year. Both are floored in CSS
+pixels through `hudPx` now and the reticle wears the dark ring first. The batting half
+got its readability pass first because that is the half that was reported; the pitching
+half had every one of the same faults and nobody had toured it.
+
+**The band above the picture went black mid inning, and it was two things meeting.**
+`fieldBand` samples the world's top row for the sky, keyed on the crop, and re-samples
+when the fit changes. On a phone the log under the field grows a line on every call, so
+the arena shrinks and the fit changes DURING A PLAY; and `cameraNow` punches in on a
+close play at first, which puts the STANDS at the top of the world canvas. Together: a
+sample at exactly the wrong frame, `rgb(5,5,8)` over a blue sky, stuck for the rest of
+the inning. Measured through a ground out at first. A sample is refused while anything
+is moving the camera (a play, a tail, a steal, a replay, or `Cam.zoom` above rest) and
+asked again next frame, and the park is in the key because a new game in a new park
+keeps the same crop.
+
 #### And the wide camera left a black hole, which the full bleed layout made bigger
 
 Found by walking the first two pitches again after the pass above. Before the

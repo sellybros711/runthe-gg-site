@@ -1469,7 +1469,7 @@ async function main() {
         p.resolved = true; resolveCalledPitch();
         out.afterCall = plateViewActive(g);
         out.holdMs = g.plateHold - performance.now();
-        /* contact cuts away */
+        /* a play with no swing behind it cuts away at once */
         g.balls = 0; g.strikes = 0;
         endAtBatCleanup();
         throwPitch('fastball', 4);
@@ -1480,6 +1480,20 @@ async function main() {
         out.pitchClosed = !!g.pitch.closed;
         g.play = null; g.tail = null;
         out.afterPlay = plateViewActive(g);
+        /* A SWING THAT CONNECTS HOLDS THE PLATE FOR THE HIT STOP, then
+           cuts. The hold is `startedAt`, which every play timer already
+           waits out, so the field comes up with the ball at t = 0. */
+        endAtBatCleanup();
+        throwPitch('fastball', 4);
+        g.pitch.loc = { x: 0, y: 0 }; g.pci = { x: 0, y: 0 };
+        g.pitch.windupUntil = performance.now() - 1; g.pitch.start = performance.now() - 1;
+        resolveSwing(g.pitch.ideal, { x: 0, y: 0 });
+        out.swingHit = g.lastSwing && g.lastSwing.res === 'hit' && !!g.play;
+        out.onSwing = plateViewActive(g);
+        out.holdIsHitstop = g.play && Math.abs((g.play.startedAt - performance.now()) - HITSTOP_MS) < 40;
+        if (g.play) g.play.startedAt = performance.now() - 1;
+        out.afterHold = plateViewActive(g);
+        g.play = null; g.tail = null; g.contactFx = null;
         window.setTimeout = _st;
         return out;
       });
@@ -1487,7 +1501,10 @@ async function main() {
       ok(r.loc && typeof r.loc.x === 'number' && r.aim, 'the pitch has an aim and a landing spot', JSON.stringify(r.loc));
       ok(r.strikeIsPlace, 'a strike is a fact about where it landed', JSON.stringify(r));
       ok(r.afterCall && r.holdMs > 0, 'a called pitch holds the picture for the beat', JSON.stringify(r));
-      ok(!r.onContact && r.pitchClosed && !r.afterPlay, 'contact cuts to the field and the pitch is closed', JSON.stringify(r));
+      ok(!r.onContact && r.pitchClosed && !r.afterPlay, 'a play with no swing behind it cuts to the field, and the pitch is closed', JSON.stringify(r));
+      ok(r.swingHit && r.onSwing && r.holdIsHitstop && !r.afterHold,
+         'a swing that connects holds the plate for the hit stop and then cuts',
+         JSON.stringify({ hit: r.swingHit, held: r.onSwing, hitstop: r.holdIsHitstop, after: r.afterHold }));
       /* THE ZONE IS PRICED OFF THE BATTER, because the two share the frame.
          At 72x98 half-extents the drawn box was taller than the entire
          batter sprite with its top edge a head above his head, and a
@@ -1496,15 +1513,10 @@ async function main() {
          the catcher's crown. Sprites are 40 rows tall at their scale. */
       const z = await pg.evaluate(() => {
         const P = plateGeom();
-        /* Sprite boxes at their scales (32 wide, 40 tall, feet-anchored),
-           the plate pentagon the ground pass draws at cx, and the rule
-           every reference game keeps: nothing opaque between the player
-           and the plate. The catcher covered it once, dead-center. */
-        const cat = { x0: P.catX - 16 * P.catSc, x1: P.catX + 16 * P.catSc,
-                      y0: P.catY - 40 * P.catSc, y1: P.catY };
-        const plate = { x0: P.cx - 14, x1: P.cx + 14, y0: 604, y1: 617 };
-        const zone = { x0: P.zx - P.zw, x1: P.zx + P.zw, y0: P.zy - P.zh, y1: P.zy + P.zh };
-        const hits = (a, b) => a.x0 < b.x1 && b.x0 < a.x1 && a.y0 < b.y1 && b.y0 < a.y1;
+        /* Sprite boxes at their scales (32 wide, 40 tall, feet-anchored).
+           There is no catcher on this camera any more, so the three claims
+           about his crown and the plate went with him: a rule about a
+           figure that is not drawn is a rule that can only pass. */
         /* Handedness: a steady share of the roster bats left, decided
            by a hash so it never flips between visits, and the mirrored
            box stays clear of the zone the way the home box does. */
@@ -1512,8 +1524,7 @@ async function main() {
         const L2 = ROSTER.filter(c => batsLeft(c.k)).length;
         return { boxH: P.zh * 2, boxTop: P.zy - P.zh, boxBot: P.zy + P.zh,
                  batH: 40 * P.batSc, batTop: P.batY - 40 * P.batSc,
-                 catTop: P.catY - 40 * P.catSc,
-                 catOnPlate: hits(cat, plate), catOnZone: hits(cat, zone),
+                 noCatcher: P.catX == null && P.catSc == null,
                  lefties: L, steady: L === L2, roster: ROSTER.length,
                  headRoom: (P.zy - P.zh) - (P.batY - 40 * P.batSc),
                  leftBoxGap: (2 * P.cx - P.batX - 16 * P.batSc) - (P.zx + P.zw) };
@@ -1535,10 +1546,7 @@ async function main() {
       ok(z.headRoom >= 8 && z.leftBoxGap >= 8,
          'and both of those bounds have room left in them',
          `head ${z.headRoom.toFixed(1)}, mirrored box ${z.leftBoxGap.toFixed(1)}`);
-      ok(z.boxBot < z.catTop, 'and ends above the catcher\'s crown',
-         `zone bottom ${z.boxBot}, catcher top ${z.catTop}`);
-      ok(!z.catOnPlate, 'the catcher does not cover home plate', JSON.stringify(z));
-      ok(!z.catOnZone, 'or any part of the zone', JSON.stringify(z));
+      ok(z.noCatcher, 'and there is no catcher geometry to stand in front of it', JSON.stringify(z));
       ok(z.steady && z.lefties / z.roster >= 0.15 && z.lefties / z.roster <= 0.45,
          'a steady share of the roster bats left',
          `${z.lefties} of ${z.roster}`);
@@ -4937,12 +4945,14 @@ async function main() {
          field got BIGGER: a logical pixel went from just under half a CSS
          pixel to exactly half. The claim the floor is for survived that
          untouched. `ballCss` on its own cannot fail, since the floor is
-         four over the view and the check multiplies it back, so the half
+         six over the view and the check multiplies it back, so the half
          with teeth is that the floor really is above the five logical
-         pixels it replaced, which on a phone was a fleck on the grass. */
-      ok(Math.abs(r.ballCss - 4) < 0.01 && 4 / r.view > 5,
-         'the ball is four CSS pixels on a phone, which is more than five logical ones',
-         JSON.stringify({ view: r.view, ballCss: r.ballCss, logical: 4 / r.view }));
+         pixels it replaced, which on a phone was a fleck on the grass.
+         (It was four CSS pixels for a year, and four was an eight pixel
+         speck on the infield the moment the camera cut to the field.) */
+      ok(Math.abs(r.ballCss - 6) < 0.01 && 6 / r.view > 5,
+         'the ball is six CSS pixels on a phone, which is more than five logical ones',
+         JSON.stringify({ view: r.view, ballCss: r.ballCss, logical: 6 / r.view }));
       ok(r.noWide, 'the page does not scroll sideways');
       ok(r.ring && r.chaseAt, 'the catch ring has a fielder to point from', JSON.stringify({ ring: r.ring, chaseAt: r.chaseAt }));
       ok(errors.length === 0, 'no page errors', errors.join(' | '));
