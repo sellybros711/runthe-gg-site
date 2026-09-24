@@ -11068,16 +11068,54 @@ were. So this is not a buff to good play, it is the removal of a trap for carele
 play, which is `check-runs`' own "doing nothing was the worst outcome" arriving in
 a draft.
 
-**IT MOVES `staffRating`, WHICH IS ITS OWN DECISION AND IS NOT TAKEN HERE.** That
-scale is anchored at `50 + (3.40 - era) * 55` against a measured median ERA of
-3.22, and it was measured on the draft-order assignment because that is what a bot
-signing without choosing produced. At 55 points per ERA point the drift is **about
-nine rating points at the top of the range and two in the middle**, so the scale
-does not shift, it STRETCHES: the gap between a good staff and an ordinary one
-opens by about seven points. Re-anchoring is a one line change and its own
-measurement pass; leaving it means a strong staff reads higher than it used to and
-existing staff board rows sit low. Decide it deliberately rather than by noticing
-the drift later.
+**IT MOVES `staffRating`, WHICH WAS ITS OWN DECISION AND HAS SINCE BEEN TAKEN.**
+That scale was anchored at `50 + (3.40 - era) * 55` against a measured median ERA
+of 3.22, on the draft-order assignment, because that is what a bot signing without
+choosing produced. The sort stretches it by about nine points at the top and two in
+the middle. See the section below for what re-measuring found.
+
+#### And when it was re-anchored, both ends were dead
+
+```
+node baseball/check-staff.mjs     the assignment and its blast radius
+```
+
+The stretch above is real and is not what was wrong. Re-measured over **640 drafts
+at eight grades of drafting quality**, plus **900 more sweeping how much budget is
+held back**, that line had the two defects `teamRating` was rescaled for, at once:
+
+| | |
+|---|---|
+| the top was dead | the best staff ANY strategy reached is **2.93 ERA**, which that line puts at **75.9**. The top 24 points could not be lit by anybody. |
+| the bottom was a wall | **196 of 640** pinned at exactly 1.0, so two staffs a third of a run apart in ERA read the same number. |
+
+**HOLDING MONEY BACK DOES NOT HELP, which is what proves the ceiling is the mode's
+and not the bot's.** Swept at 1.2x, 1.6x, 2.1x, 2.6x and 3.2x a slot's pro-rata
+share against plain greedy, the best ERA reached runs 3.07, 3.00, 2.96, 2.94, 2.93
+and 2.93. Greedy is as good as anything, so the cap does not bind here the way it
+binds a team draft, and there is no strategy left to blame the dead top on.
+
+Both ends are anchored now, **4.63 ERA to 1 and 2.91 to 99**, and the scale is
+live end to end: **nothing at the ceiling and nothing at the floor** over the same
+640, against 196 on the floor before. A sensible draft medians 92, taking the
+second best man each time medians 65, the third 45, the fifth 21 and the worst man
+alive 8.
+
+**THE RATING SHELF IS SCOPED TO TEAMS, and that is the half that would have gone
+wrong quietly.** Every rung of it says "field a team", `best.rating` took the max
+over ALL rows, and a staff is explicitly not on the team scale: `staffRating`'s own
+header says so. While the staff top was dead at 76 that cost nothing, because a
+staff run could never be anybody's best number. Anchored, a sensible staff draft
+medians 92 and would have handed out every rung up to "Best on paper" for pressing
+the obvious button twelve times. `best.rating` skips `r.staff` now.
+
+**And the staff's own rung moved with the scale rather than being left.** `staff_70`
+is `staff_90`: on the old anchors the best staff anybody reached was 77, so 70 was a
+little better than a median good draft, and on the new one a median good draft is
+92. The badge means what it meant. **This is the moment to do that and the only
+one**: a badge is derived from stored rows, so one left too loose cannot be
+tightened later without stripping it off everybody who has it, and this game has no
+rows yet.
 
 #### The guard, and the four mutations that gave it teeth
 
