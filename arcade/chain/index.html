@@ -13,20 +13,20 @@
   if(t!=='light'&&t!=='dark'){ t=(window.matchMedia&&matchMedia('(prefers-color-scheme: light)').matches)?'light':'dark'; try{localStorage.setItem('runthegrid_theme',t);}catch(e){} }
   document.documentElement.setAttribute('data-theme',t); })();
 </script>
-<meta name="description" content="Chain: two players, two teammates in between. Connect them before the clock gets embarrassing." />
+<meta name="description" content="Chain is a daily teammate game. You get two players. Name the 2 teammates that connect them. Go fast before the clock gets embarrassing." />
 <link rel="icon" type="image/png" href="/arcade/assets/arcade-icon.png?v=3" />
 <link rel="apple-touch-icon" href="/arcade/assets/arcade-apple-180.png?v=2" />
 <meta property="og:type" content="website" />
 <meta property="og:site_name" content="RunThe.GG" />
 <meta property="og:title" content="Chain" />
-<meta property="og:description" content="Two players, two teammates in between. Connect them." />
+<meta property="og:description" content="Two players. Name the 2 teammates that connect them." />
 <meta property="og:url" content="https://runthe.gg/arcade/chain/" />
 <meta property="og:image" content="https://runthe.gg/arcade/assets/arcade-share.png?v=3" />
 <meta property="og:image:width" content="1200" />
 <meta property="og:image:height" content="630" />
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:title" content="Chain" />
-<meta name="twitter:description" content="Two players, two teammates in between. Connect them." />
+<meta name="twitter:description" content="Two players. Name the 2 teammates that connect them." />
 <meta name="twitter:image" content="https://runthe.gg/arcade/assets/arcade-share.png?v=3" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -199,14 +199,14 @@ window.GA_ID='G-L29P5MRWKE';
   <!-- ===== setup ===== -->
   <section class="panel on" id="panelSetup">
     <div class="card setup">
-      <div class="kick" id="setupKick">Today's pair</div>
+      <div class="kick" id="setupKick">Today’s pair</div>
       <div class="pair">
         <div class="nm" id="setupA">Loading</div>
         <div class="to">to</div>
         <div class="nm" id="setupB"></div>
       </div>
-      <p class="blurb">Two teammates in between. Name them both and the chain closes.</p>
-      <button class="gobtn" id="startBtn" type="button">Start today's chain</button>
+      <p class="blurb">Name the 2 teammates that connect them. Get both and you’re done.</p>
+      <button class="gobtn" id="startBtn" type="button">Start today’s chain</button>
       <button class="ghost" id="practiceBtn" type="button">Random pair</button>
       <div class="bestline" id="bestLine"></div>
     </div>
@@ -219,13 +219,13 @@ window.GA_ID='G-L29P5MRWKE';
         <div class="lab">Wrong names</div>
         <div class="strikes" id="strikes"><i></i><i></i><i></i><i></i></div>
       </div>
-      <div class="clock"><div class="t" id="clockT">0:00</div><div class="l">Elapsed</div></div>
+      <div class="clock"><div class="t" id="clockT">0:00</div><div class="l">Time</div></div>
     </div>
 
     <div class="ladder" id="ladder"></div>
 
     <div class="askrow">
-      <div class="fieldwrap"><input type="text" id="ask" autocomplete="off" autocapitalize="words" spellcheck="false" placeholder="Name a teammate…" aria-label="Name the next player in the chain" /></div>
+      <div class="fieldwrap"><input type="text" id="ask" autocomplete="off" autocapitalize="words" spellcheck="false" placeholder="Type a teammate…" aria-label="Type the next player in the chain" /></div>
       <button class="go" id="goBtn" type="button">Link</button>
     </div>
     <div class="msg" id="msg"></div>
@@ -244,24 +244,24 @@ window.GA_ID='G-L29P5MRWKE';
   <span class="gj-chev" aria-hidden="true">▾</span>
 </summary>
 <div class="gj-body">
-<p>Chain gives you two players and asks you to connect them through the clubs they played for. Two names go in the middle. Each one has to have been a real teammate of the name above it, and the last one has to have been a teammate of the player at the bottom.</p>
+<p>You get two players. Connect them through the teams they played for. You name the 2 players in the middle. Each one has to be a real teammate of the name above it. The last one also has to be a teammate of the player at the bottom.</p>
 <ul>
-  <li>Teammates means the same club in the same years, not the same club a decade apart.</li>
-  <li>Four wrong names and the chain breaks. The clock is the score, so a fast clean solve wins the day.</li>
-  <li>Any correct route counts. There is never only one.</li>
+  <li>Teammates means same team, same years. Same team 10 years apart doesn’t count.</li>
+  <li>4 wrong names and the chain breaks. Your time is your score. Fast and clean wins the day.</li>
+  <li>Any route that works counts. There’s always more than one.</li>
 </ul>
 <h3>One pair a day</h3>
-<p>A new pair arrives at midnight local time, the same two for everybody. Chain is an Arcade Card game. A free RunThe.GG account gets one play of it, once ever. The Daily Crossword, Sportegories, Alma Mater and Career Path are free every day, with no account at all. The Card opens all twelve with no limit, plus the <a href="/arcade/archive/">Archive</a> of every past day. Five of the games also have NBA, NFL and MLB editions.</p>
-<h3>Finding a route</h3>
+<p>A new pair drops at midnight your time. Everybody gets the same two. Chain is an Arcade Card game. A free RunThe.GG account gets one play of it, once ever. The Daily Crossword, Sportegories, Alma Mater and Career Path are free every day, no account needed. The Card opens all twelve with no limit, plus the <a href="/arcade/archive/">Archive</a> of every past day. Five of the games also have NBA, NFL and MLB editions.</p>
+<h3>Tips</h3>
 <ul>
-  <li>You need two names, not a route. Work in from both ends and the middle is wherever the two shortlists touch.</li>
-  <li>A name is only useful with a season attached, because teammates means the same club in the same years. Ask who else was there that year, not who else wore the shirt.</li>
-  <li>Four wrong names ends the day and the clock is the score. Those pull against each other, so think before you type, but not for long.</li>
+  <li>You don’t need a whole route. Just 2 names. Work in from both ends. The middle is wherever your two lists meet.</li>
+  <li>A name only helps if you know the year. Teammates means same team, same years. Think who else was there that year, not who else wore the jersey.</li>
+  <li>4 wrong names ends your day. Your time is the score too. So think before you type. Just don’t think too long.</li>
 </ul>
-<p>More career trivia: <a href="/arcade/career/">Career Path</a> hides the player behind the clubs, and <a href="/arcade/rollcall/">Roll Call</a> asks for a whole roster.</p>
+<p>Want more? <a href="/arcade/career/">Career Path</a> hides the player behind his teams. <a href="/arcade/rollcall/">Roll Call</a> has you name a whole roster.</p>
 </div>
 </details>
-  <div class="foot">A daily teammate puzzle inside <b>Run The Arcade</b> · <a href="/">RunThe.GG</a> · <a href="mailto:RunTheGames@outlook.com?subject=Run%20The%20Arcade%20data%20error">Spot a data error? Tell us</a> · <a href="/about.html">About</a> · <a href="/privacy.html">Privacy</a> · <a href="/terms.html">Terms</a></div>
+  <div class="foot">A daily teammate game inside <b>Run The Arcade</b> · <a href="/">RunThe.GG</a> · <a href="mailto:RunTheGames@outlook.com?subject=Run%20The%20Arcade%20data%20error">See something wrong? Let us know</a> · <a href="/about.html">About</a> · <a href="/privacy.html">Privacy</a> · <a href="/terms.html">Terms</a></div>
 </div>
 
 <div class="scrim hidden" id="scrim">
@@ -380,7 +380,7 @@ window.GA_ID='G-L29P5MRWKE';
   }
   function linkText(l){
     if(!l) return '';
-    if(!l.dated || l.y0==null) return l.team + ', years unconfirmed';
+    if(!l.dated || l.y0==null) return l.team + ', years not confirmed';
     return l.team + ', ' + (l.y0===l.y1 ? l.y0 : l.y0+' to '+l.y1);
   }
   // roster index, so neighbours can be listed without touching every player
@@ -449,7 +449,7 @@ window.GA_ID='G-L29P5MRWKE';
 
   function renderSetup(){
     var p = pickPair(true, pdate());
-    if(!p){ $('setupA').textContent='Data failed to load'; $('startBtn').disabled=true; return; }
+    if(!p){ $('setupA').textContent='Couldn’t load the data'; $('startBtn').disabled=true; return; }
     $('setupKick').textContent = ARCHIVE ? 'That day’s pair' : 'Today’s pair';
     $('setupA').textContent = nameOf(p.a);
     $('setupB').textContent = nameOf(p.b);
@@ -506,10 +506,10 @@ window.GA_ID='G-L29P5MRWKE';
     renderLadder();
     if(filled.length>=slots()){
       var close = linkOf(node.stints, localNode(puz.b).stints);
-      message('Linked. ' + node.name + ' and ' + nameOf(puz.b) + ': ' + linkText(close) + '.', 'good');
+      message('Linked! ' + node.name + ' and ' + nameOf(puz.b) + ': ' + linkText(close) + '.', 'good');
       finish(true);
     } else {
-      message('Linked. ' + linkText(l) + '.', 'good');
+      message('Linked! ' + linkText(l) + '.', 'good');
     }
   }
 
@@ -525,7 +525,7 @@ window.GA_ID='G-L29P5MRWKE';
     var last = (filled.length === slots()-1);
     var used = {}; used[norm(nameOf(puz.a))]=1; used[norm(nameOf(puz.b))]=1;
     filled.forEach(function(f){ used[norm(f.node.name)]=1; });
-    if(used[k]){ message('Already in the chain.', 'warn'); shake(); return; }
+    if(used[k]){ message('That one’s already in the chain.', 'warn'); shake(); return; }
 
     // ---- our own file first: no network, no wait
     var ids = BY_NAME[k] || [];
@@ -545,7 +545,7 @@ window.GA_ID='G-L29P5MRWKE';
        Varitek were Red Sox together in 2010 and this game called it a lie.
        So before it costs a strike, ask the live check. */
     if(!(TC && TC.clubs)){
-      strike(ids.length ? ('Never a teammate of ' + prev.name + '.') : 'No player by that name.');
+      strike(ids.length ? ('Nope. Never teammates with ' + prev.name + '.') : 'We don’t know that player.');
       return;
     }
     checking = true;
@@ -554,25 +554,25 @@ window.GA_ID='G-L29P5MRWKE';
       checking = false;
       if(done) return;
       if(!found){
-        strike(ids.length ? ('Never a teammate of ' + prev.name + '.')
-                          : 'Could not find a player by that name.');
+        strike(ids.length ? ('Nope. Never teammates with ' + prev.name + '.')
+                          : 'Couldn’t find a player by that name.');
         return;
       }
-      if(found.wrongSport){ strike(found.name + ' is not an ' + sportOf(puz.a) + ' player.'); return; }
-      if(found.noClubs){ strike('No clubs on file for ' + found.name + '.'); return; }
+      if(found.wrongSport){ strike(found.name + ' isn’t an ' + sportOf(puz.a) + ' player.'); return; }
+      if(found.noClubs){ strike('We don’t have any teams for ' + found.name + '.'); return; }
       var l = linkOf(prev.stints, found.stints);
       if(!l){
         strike(found.name + ' never played with ' + prev.name + '.');
         return;
       }
       if(last && !linkOf(found.stints, end.stints)){
-        strike(found.name + ' played with ' + prev.name + ', but never with ' + nameOf(puz.b) + '.');
+        strike(found.name + ' played with ' + prev.name + '. Never with ' + nameOf(puz.b) + ' though.');
         return;
       }
       place({ id:null, name:found.name, live:true, stints:found.stints }, l);
     })['catch'](function(){
       checking = false;
-      if(!done) strike('Could not check that one. Try another name.');
+      if(!done) strike('Couldn’t check that one. Try another name.');
     });
   }
 
@@ -594,7 +594,7 @@ window.GA_ID='G-L29P5MRWKE';
       return;
     }
     var p = pickPair(daily, pdate());
-    if(!p){ toast('Could not build a chain'); return; }
+    if(!p){ toast('Couldn’t build a chain'); return; }
     puz=p; isDaily=daily; filled=[]; strikes=0; done=false; elapsed=0; startedAt=Date.now();
     if(!ARCHIVE && window.RTGTokens && RTGTokens.startAttempt){
       var att = RTGTokens.startAttempt(GAME);
@@ -640,7 +640,7 @@ window.GA_ID='G-L29P5MRWKE';
       }catch(e){}
     }
 
-    $('mSub').textContent = solved ? (strikes===0 ? 'Clean chain' : 'Chain closed') : (strikes>=STRIKES ? 'Chain broken' : 'Gave up');
+    $('mSub').textContent = solved ? (strikes===0 ? 'Clean chain!' : 'Chain closed!') : (strikes>=STRIKES ? 'Chain broken' : 'Gave up');
     $('mScore').textContent = solved ? mmss(elapsed) : '--';
     $('mTitle').textContent = solved ? 'YOUR TIME' : 'NO ROUTE';
     $('mLinks').textContent = puz.links;
@@ -675,7 +675,7 @@ window.GA_ID='G-L29P5MRWKE';
         bits.push('<b>'+esc(nodes[i].name)+'</b> and <b>'+esc(nodes[i+1].name)+'</b>: '+
                   esc(linkText(linkOf(nodes[i].stints, nodes[i+1].stints))));
       }
-      $('mRoute').innerHTML = (solved ? '' : 'One way through:<br>') + bits.join('<br>');
+      $('mRoute').innerHTML = (solved ? '' : 'Here’s one way through:<br>') + bits.join('<br>');
     } else {
       $('mRoute').textContent = '';
     }
@@ -725,7 +725,7 @@ window.GA_ID='G-L29P5MRWKE';
   $('mBoard').addEventListener('click', function(){ try{ if(window.RTG_LB) RTG_LB.open(); }catch(e){} });
   $('mShare').addEventListener('click', function(){
     try{ if(window.RTGShare && RTGShare.send){ RTGShare.send(cardSpec()); return; } }catch(e){}
-    toast('Sharing unavailable');
+    toast('Can’t share from here');
   });
 
   if(window.RTGType && D && D.players){
@@ -765,7 +765,7 @@ window.GA_ID='G-L29P5MRWKE';
   })();
 
   if(!D || !D.players || !D.chain){
-    $('setupA').textContent='Data failed to load';
+    $('setupA').textContent='Couldn’t load the data';
     $('startBtn').disabled=true;
   } else {
     renderSetup();
