@@ -11490,8 +11490,26 @@ function plateGeom() {
      anatomy means a literal knees-to-letters zone would be a slot 35px
      tall; this is the arcade reading of the same rule. Every mapping goes
      through plateFromZone, so gameplay in zone units does not move. */
-  return { w: 960, h: 660, cx: 480, horizon: 262,
-           moundX: 480, moundY: 338, pitSc: 2.9,
+  /* THE HORIZON IS HIGH AND THE PITCHER IS SMALL, and that is the whole of
+     what makes this camera read as a ballfield rather than a diagram.
+
+     Put beside Backyard Baseball's own plate shot, the difference was not
+     detail: it was where the ground ends. Their fence line sits at 13% of
+     the frame and the grass is everything under it; the pitcher is about a
+     fifth of the batter's height and the fielders a tenth. Ours had the
+     horizon at 40%, a band of stands and crowd dots taking 16% on its own,
+     and the pitcher at half the batter with the infielders as big as the
+     pitcher. So the eye read a wall with a diamond drawn in front of it,
+     and no amount of texture was going to fix a composition.
+
+     So the horizon is 184 of 660 (28%) and everything on the ground is
+     refit to it. The pitcher is 1.9 against the batter's 4.6, which is 41%
+     rather than 63%; the infielders step down from 1.25 at the corners to
+     1.05 up the middle, the outfielders to 0.75, and their heads touch the
+     fence the way far fielders do. The zone and the batter do not move,
+     because every camera guard is written against them. */
+  return { w: 960, h: 660, cx: 480, horizon: 184,
+           moundX: 480, moundY: 256, pitSc: 1.9,
            zx: 488, zy: 525, zw: 46, zh: 60,
            /* The batter is the nearest figure to the camera and the one
               the reader identifies with, so he gets the Backyard
@@ -11528,7 +11546,11 @@ function plateGeom() {
            batX: 344, batY: 640, batSc: 4.6,
            /* No catcher geometry: see the note where he used to be drawn
               in `drawPlateView`. The camera stands where he crouches. */
-           relX: 496, relY: 246 };
+           /* The release is the top of his windup: HERO_DRAW_H x pitSc is
+              85 tall from moundY up, and the pack seats every frame on the
+              bottom of its cell, so raised hands sit about four fifths of
+              the way up. */
+           relX: 490, relY: 188 };
 }
 function plateFromZone(P, x, y) { return [P.zx + x * P.zw, P.zy - y * P.zh]; }
 function plateToZone(P, lx, ly) { return { x: (lx - P.zx) / P.zw, y: (P.zy - ly) / P.zh }; }
@@ -11626,33 +11648,38 @@ function drawPlateView(ctx, w, h, t, pitch, inWindup, theme) {
   ctx.fillStyle = sky;
   ctx.fillRect(0, 0, w, P.horizon);
   if (theme.landmark) { ctx.save(); ctx.globalAlpha = 0.9; theme.landmark(ctx, w, h * 0.9); ctx.restore(); }
-  /* upper deck: a dark roofline, then the crowd, then the wall */
+  /* THE STANDS ARE A FAR STRIP NOW, not a wall the game is played against.
+     A roofline, a crowd band a third of what it was, and the wall. The
+     crowd is fewer dots at lower alpha for the same reason: from behind
+     the plate a crowd is a texture at the edge of the picture, and 640
+     saturated flecks in a band a sixth of the frame tall was the loudest
+     thing on the screen after the batter. */
   ctx.fillStyle = plateTint(theme.wall, -0.55);
-  ctx.fillRect(0, 164, w, 12);
+  ctx.fillRect(0, 128, w, 10);
   ctx.fillStyle = plateTint(theme.wall, night ? -0.5 : -0.38);
-  ctx.fillRect(0, 176, w, 78);
+  ctx.fillRect(0, 138, w, 40);
   const crowd = theme.crowd || ['#ccc', '#999', '#eee', '#aaa', '#bbb'];
-  for (let i = 0; i < 640; i++) {
+  for (let i = 0; i < 300; i++) {
     const x = (i * 97 + (i >> 3) * 13) % w;
-    const y = 178 + (i * 53) % 74;
+    const y = 140 + (i * 53) % 36;
     ctx.fillStyle = crowd[i % crowd.length];
-    ctx.globalAlpha = night ? 0.55 : 0.85;
+    ctx.globalAlpha = night ? 0.45 : 0.62;
     ctx.fillRect(x, y, 3, 3);
   }
   ctx.globalAlpha = 1;
   ctx.fillStyle = theme.wall;
-  ctx.fillRect(0, 254, w, 14);
+  ctx.fillRect(0, 176, w, 14);
   ctx.fillStyle = theme.wallLine || '#fff';
-  ctx.fillRect(0, 254, w, 2);
+  ctx.fillRect(0, 176, w, 2);
   /* light towers, lit at night */
   for (const tx of [96, w - 96]) {
     ctx.fillStyle = '#2a2f36';
-    ctx.fillRect(tx - 2, 70, 4, 186);
+    ctx.fillRect(tx - 2, 90, 4, 90);
     ctx.fillStyle = night ? '#f6e7a8' : '#4a5058';
-    ctx.fillRect(tx - 22, 60, 44, 14);
+    ctx.fillRect(tx - 18, 82, 36, 12);
     if (night) {
       ctx.fillStyle = 'rgba(246,231,168,.10)';
-      ctx.beginPath(); ctx.arc(tx, 66, 60, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(tx, 88, 50, 0, Math.PI * 2); ctx.fill();
     }
   }
 
@@ -11664,8 +11691,8 @@ function drawPlateView(ctx, w, h, t, pitch, inWindup, theme) {
     if ((i + 6) % 2) continue;
     ctx.fillStyle = light;
     ctx.beginPath();
-    ctx.moveTo(cx + i * 44, P.horizon);
-    ctx.lineTo(cx + (i + 1) * 44, P.horizon);
+    ctx.moveTo(cx + i * 34, P.horizon);
+    ctx.lineTo(cx + (i + 1) * 34, P.horizon);
     ctx.lineTo(cx + (i + 1) * 250, h);
     ctx.lineTo(cx + i * 250, h);
     ctx.closePath(); ctx.fill();
@@ -11675,7 +11702,7 @@ function drawPlateView(ctx, w, h, t, pitch, inWindup, theme) {
      at the horizon, settling darker toward the camera, then the same
      two-tone hash speckle, in blocks so the low-res pass keeps them. */
   const gg = ctx.createLinearGradient(0, P.horizon, 0, h);
-  gg.addColorStop(0, 'rgba(255,255,255,.10)');
+  gg.addColorStop(0, 'rgba(255,255,255,.12)');
   gg.addColorStop(0.45, 'rgba(0,0,0,0)');
   gg.addColorStop(1, 'rgba(0,0,0,.16)');
   ctx.fillStyle = gg;
@@ -11686,18 +11713,42 @@ function drawPlateView(ctx, w, h, t, pitch, inWindup, theme) {
     ctx.fillStyle = i % 2 ? 'rgba(255,255,255,.05)' : 'rgba(0,0,0,.06)';
     ctx.fillRect(sx, sy, 3, 3);
   }
+  /* A LAWN HAS THINGS GROWING IN IT. Backyard's grass is a field of tufts
+     and dandelions and it is most of why that picture reads as a place.
+     Tufts here are a darker green two blocks wide, scattered down the
+     near two thirds and drawn bigger as they come toward the camera, so
+     they carry the perspective the stripes already carry. The flowers are
+     sparse and pale, and there are none in the snow. */
+  const tuft = plateTint(theme.grass, -0.22);
+  for (let i = 0; i < 90; i++) {
+    const sx = (i * 331 + 17) % w;
+    const d = ((i * 113 + 7) % 100) / 100;
+    const sy = P.horizon + 60 + d * (h - P.horizon - 60);
+    const tw = d > 0.55 ? 9 : 6;
+    ctx.fillStyle = tuft;
+    ctx.fillRect(sx, sy, tw, 3);
+    ctx.fillRect(sx + 3, sy - 3, 3, 3);
+  }
+  if (!theme.snow) {
+    ctx.fillStyle = 'rgba(248,232,140,.75)';
+    for (let i = 0; i < 16; i++) {
+      const sx = (i * 397 + 61) % w;
+      const sy = P.horizon + 90 + ((i * 211 + 19) % (h - P.horizon - 90));
+      ctx.fillRect(sx, sy, 3, 3);
+    }
+  }
   /* ---- the dirt ---- */
   const dirt = theme.track || '#c8a06a';
   ctx.fillStyle = dirt;
-  ctx.beginPath(); ctx.ellipse(cx, 336, 470, 54, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(cx, 258, 430, 40, 0, 0, Math.PI * 2); ctx.fill();
   ctx.fillStyle = theme.grass;
-  ctx.beginPath(); ctx.ellipse(cx, 342, 372, 34, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(cx, 262, 340, 24, 0, 0, Math.PI * 2); ctx.fill();
   /* base paths, first and third */
   for (const side of [-1, 1]) {
     ctx.fillStyle = dirt;
     ctx.beginPath();
     ctx.moveTo(cx + side * 60, 606); ctx.lineTo(cx + side * 96, 606);
-    ctx.lineTo(cx + side * 418, 344); ctx.lineTo(cx + side * 392, 336);
+    ctx.lineTo(cx + side * 398, 264); ctx.lineTo(cx + side * 372, 256);
     ctx.closePath(); ctx.fill();
   }
   /* THE KEYHOLE, WHICH IS WHAT FILLS THE MIDDLE OF THIS CAMERA.
@@ -11720,8 +11771,8 @@ function drawPlateView(ctx, w, h, t, pitch, inWindup, theme) {
      and it reads as one continuous piece of infield. */
   ctx.fillStyle = dirt;
   ctx.beginPath();
-  ctx.moveTo(cx - 40, 346); ctx.lineTo(cx + 40, 346);
-  ctx.lineTo(cx + 124, 586); ctx.lineTo(cx - 124, 586);
+  ctx.moveTo(cx - 26, 264); ctx.lineTo(cx + 26, 264);
+  ctx.lineTo(cx + 92, 586); ctx.lineTo(cx - 92, 586);
   ctx.closePath(); ctx.fill();
   /* Darker at both edges and NEUTRAL down the middle, so the strip reads
      as worn ground rather than as a shape with its own light in it. The
@@ -11729,49 +11780,52 @@ function drawPlateView(ctx, w, h, t, pitch, inWindup, theme) {
      right for a circle of dirt and wrong here: a pale tapering wedge with
      a bright core IS a searchlight, and at the snow park, whose track
      colour is white, it drew a beam from the scoreboard to the plate. */
-  const kg = ctx.createLinearGradient(cx - 124, 0, cx + 124, 0);
+  const kg = ctx.createLinearGradient(cx - 92, 0, cx + 92, 0);
   kg.addColorStop(0, 'rgba(0,0,0,.15)');
   kg.addColorStop(0.5, 'rgba(0,0,0,0)');
   kg.addColorStop(1, 'rgba(0,0,0,.15)');
   ctx.fillStyle = kg;
   ctx.beginPath();
-  ctx.moveTo(cx - 40, 346); ctx.lineTo(cx + 40, 346);
-  ctx.lineTo(cx + 124, 586); ctx.lineTo(cx - 124, 586);
+  ctx.moveTo(cx - 26, 264); ctx.lineTo(cx + 26, 264);
+  ctx.lineTo(cx + 92, 586); ctx.lineTo(cx - 92, 586);
   ctx.closePath(); ctx.fill();
+  /* The home circle was 210 across, which on a phone's 350 wide crop was
+     the whole bottom of the picture: the plate stood in a dirt lot. */
   ctx.fillStyle = dirt;
-  ctx.beginPath(); ctx.ellipse(cx, 618, 210, 58, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(cx, 618, 170, 52, 0, 0, Math.PI * 2); ctx.fill();
   /* A circle of ground has a lit center and darker rim from this camera,
      which is what the wide view's dirtOval already knows. */
-  const hg = ctx.createRadialGradient(cx, 606, 10, cx, 618, 210);
+  const hg = ctx.createRadialGradient(cx, 606, 10, cx, 618, 170);
   hg.addColorStop(0, 'rgba(255,255,255,.10)');
   hg.addColorStop(1, 'rgba(0,0,0,.13)');
   ctx.fillStyle = hg;
-  ctx.beginPath(); ctx.ellipse(cx, 618, 210, 58, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(cx, 618, 170, 52, 0, 0, Math.PI * 2); ctx.fill();
   ctx.fillStyle = dirt;
   /* the mound, its rubber */
-  ctx.beginPath(); ctx.ellipse(cx, 338, 60, 15, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(cx, 256, 46, 11, 0, 0, Math.PI * 2); ctx.fill();
   ctx.fillStyle = '#f2ece0';
-  ctx.fillRect(cx - 7, 333, 14, 3);
+  ctx.fillRect(cx - 6, 252, 12, 3);
   /* Dirt grain over both ground ovals, neutral tones so a dot that
      lands on the inner grass cutout does no harm. */
   for (let i = 0; i < 150; i++) {
     const a = i * 2.399963;
     const rr = Math.sqrt(((i * 73) % 97) / 97);
     const far = i % 3 === 0;
-    const ey = far ? 336 : 618, exr = far ? 470 : 210, eyr = far ? 54 : 58;
+    const ey = far ? 258 : 618, exr = far ? 430 : 170, eyr = far ? 40 : 52;
     ctx.fillStyle = i % 2 ? 'rgba(255,255,255,.05)' : 'rgba(0,0,0,.07)';
     ctx.fillRect(cx + Math.cos(a) * exr * rr, ey + Math.sin(a) * eyr * rr, 3, 3);
   }
-  /* foul lines and the bases */
+  /* foul lines and the bases: the lines run through first and third and
+     on to the fence, the way they do from behind the plate */
   ctx.strokeStyle = 'rgba(255,255,255,.85)';
   ctx.lineWidth = 2;
   for (const side of [-1, 1]) {
     ctx.beginPath();
-    ctx.moveTo(cx + side * 54, 598); ctx.lineTo(cx + side * 470, 322);
+    ctx.moveTo(cx + side * 54, 598); ctx.lineTo(cx + side * 458, P.horizon);
     ctx.stroke();
   }
   ctx.fillStyle = '#f6f2ea';
-  for (const [bx, by, bw, bh] of [[cx + 404, 344, 12, 5], [cx - 404, 344, 12, 5], [cx, 298, 9, 4]]) {
+  for (const [bx, by, bw, bh] of [[cx + 384, 262, 11, 4], [cx - 384, 262, 11, 4], [cx, 226, 8, 3]]) {
     ctx.beginPath();
     ctx.moveTo(bx - bw, by); ctx.lineTo(bx, by - bh); ctx.lineTo(bx + bw, by); ctx.lineTo(bx, by + bh);
     ctx.closePath(); ctx.fill();
@@ -11791,9 +11845,14 @@ function drawPlateView(ctx, w, h, t, pitch, inWindup, theme) {
 
   /* ---- the people, far to near ---- */
   const fteam = currentFieldingTeam();
-  const posts =[[6, cx - 300, 276, 1.1], [7, cx + 16, 268, 1.0], [1, cx + 300, 276, 1.1],
-                 [2, cx - 130, 322, 1.6], [3, cx + 120, 322, 1.6],
-                 [5, cx - 372, 358, 1.8], [4, cx + 372, 358, 1.8]];
+  /* A DEPTH SCALE, far to near: a man's size here is where he stands.
+     The outfielders' heads touch the fence line, the middle infield is a
+     step nearer, the corners a step nearer again, and the pitcher (below)
+     is nearer than all of them. It was 1.0 to 1.8 against a pitcher of
+     2.9, which put the second baseman as big as the man on the mound. */
+  const posts =[[6, cx - 300, 214, 0.75], [7, cx + 16, 204, 0.70], [1, cx + 300, 214, 0.75],
+                 [2, cx - 140, 240, 1.05], [3, cx + 130, 240, 1.05],
+                 [5, cx - 340, 280, 1.25], [4, cx + 340, 280, 1.25]];
   for (const [post, x, y, sc] of posts) {
     const man = fielderAt(fteam, post);
     /* NO CROUCH FOR THE INFIELD ANY MORE, and that is the art rather than a
@@ -11805,7 +11864,7 @@ function drawPlateView(ctx, w, h, t, pitch, inWindup, theme) {
        stand on a still for. */
     if (man) drawRunner(ctx, x, y, man, sc, null);
   }
-  const runnerSpots = [[cx + 330, 360, 1.8], [cx - 46, 302, 1.25], [cx - 330, 360, 1.8]];
+  const runnerSpots = [[cx + 330, 274, 1.2], [cx - 46, 230, 0.95], [cx - 330, 274, 1.2]];
   for (let i = 0; i < 3; i++) {
     if (g.bases[i]) drawRunner(ctx, runnerSpots[i][0], runnerSpots[i][1], g.bases[i], runnerSpots[i][2], null);
   }
@@ -11845,11 +11904,11 @@ function drawPlateView(ctx, w, h, t, pitch, inWindup, theme) {
     const up = pitch.windupUntil - now > 380;
     pitPose = up ? 'cheer' : null;
     /* Against the FIGURE, not at a round number. He is drawn HERO_DRAW_H x
-       pitSc tall from `moundY` up, which is 130 logical pixels, and the
+       pitSc tall from `moundY` up, which is 85 logical pixels, and the
        pack seats every frame on the bottom of its cell, so his raised
        hands are about four fifths of the way up and his hip about a
        third. */
-    pitBall = up ? [0, -104] : [15, -48];
+    pitBall = up ? [0, -68] : [10, -32];
   } else if (live && now - pitch.start < 260) {
     /* square to the plate with the ball gone, which is the front view's
        honest follow through and is also where he already returned to. */
@@ -11916,7 +11975,17 @@ function drawPlateView(ctx, w, h, t, pitch, inWindup, theme) {
     ctx.fillRect(x, y + t, t, h - t * 2);
     ctx.fillRect(x + w - t, y + t, t, h - t * 2);
   };
-  ctx.fillStyle = 'rgba(255,255,255,.10)';
+  /* A PANE WITH CORNERS, NOT A CAGE. The box used to carry a 3x3 grid of
+     thirds inside its frame, and drawn at the size a thumb needs it read
+     as a fence over the plate: nine cells in heavy white, the loudest
+     thing in the picture, over a batter who is meant to be. Backyard's
+     zone is a translucent pane with four corner brackets and nothing in
+     it, and that is what a zone is: a place, not a chart. The thirds
+     were a reading aid for the pitcher and the reticle already reads the
+     spot. The frame stays at the guarded width because a thumb has to find
+     the box; the corners are the gold every control on this site wears,
+     twice the frame's weight, so the box reads as a target. */
+  ctx.fillStyle = 'rgba(255,255,255,.13)';
   ctx.fillRect(zx0, zy0, zW, zH);
   /* The dark halo is what carries the edge over the LIGHT things behind
      it (the chalk, the dirt), the way every sprite here wears a ring. It
@@ -11926,15 +11995,19 @@ function drawPlateView(ctx, w, h, t, pitch, inWindup, theme) {
   band(zx0 - PIX, zy0 - PIX, zW + PIX * 2, zH + PIX * 2, zLine + PIX * 2);
   ctx.fillStyle = 'rgba(255,255,255,1)';
   band(zx0, zy0, zW, zH, zLine);
-  /* The thirds are a reading aid rather than a boundary, so they stay
-     quieter than the frame. They are floored too: at 1 logical pixel they
-     were under a CSS pixel and vanished into the grass entirely. */
-  ctx.fillStyle = 'rgba(255,255,255,.42)';
-  const tw = Math.max(PIX, snapB(zLine * 0.5));
-  for (let i = 1; i < 3; i++) {
-    const gx = snapB(zx0 + zW * i / 3), gy = snapB(zy0 + zH * i / 3);
-    ctx.fillRect(gx, zy0 + zLine, tw, zH - zLine * 2);
-    ctx.fillRect(zx0 + zLine, gy, zW - zLine * 2, tw);
+  const cw = Math.max(PIX * 2, snapB(zLine * 2)), cl = snapB(zW * 0.26);
+  /* (x, y) is the box's own corner; the two arms run inward from it. */
+  const corner = (x, y, dx, dy, t, len) => {
+    ctx.fillRect(dx > 0 ? x : x - len, dy > 0 ? y : y - t, len, t);
+    ctx.fillRect(dx > 0 ? x : x - t, dy > 0 ? y : y - len, t, len);
+  };
+  for (const [fill, o, t, len] of [['rgba(8,16,26,.62)', PIX, cw + PIX * 2, cl + PIX],
+                                   ['#f4c25a', 0, cw, cl]]) {
+    ctx.fillStyle = fill;
+    corner(zx0 - o, zy0 - o, 1, 1, t, len);
+    corner(zx0 + zW + o, zy0 - o, -1, 1, t, len);
+    corner(zx0 - o, zy0 + zH + o, 1, -1, t, len);
+    corner(zx0 + zW + o, zy0 + zH + o, -1, -1, t, len);
   }
 
   /* ---- the catcher's mitt: set up at the spot, moved to the ball ---- */
@@ -12245,7 +12318,11 @@ function drawField(ctx, w, h, t, pitch, inWindup) {
      field takes over the moment anything leaves the plate. */
   if (plateViewActive(State.game)) {
     drawPlateView(ctx, w, h, t, pitch, inWindup, theme);
-    drawScreenPass(ctx, w, h, State.game, theme, null, w / 2, h / 2, 210, 196);
+    /* The arm chip sits over the pitcher's head, read off his own geometry:
+       written as a number it was over his face the day he got smaller. */
+    const PG = plateGeom();
+    drawScreenPass(ctx, w, h, State.game, theme, null, w / 2, h / 2, 210,
+                   PG.moundY - HERO_DRAW_H * PG.pitSc - 12);
     ctx.restore();
     return;
   }

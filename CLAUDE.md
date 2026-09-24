@@ -2664,7 +2664,7 @@ node football/build/test/probe_cap.mjs        what cap makes the draft a decisio
 ```
 
 `football/fantasy/index.html` is the mode and `football/fantasy/draft.js` is the football.
-Six slots (QB, RB, RB, WR, WR, TE), a $90M cap, five whole drafts, one submitted. Half PPR,
+Six slots (QB, RB, RB, WR, WR, TE), a $110M cap, five whole drafts, one submitted. Half PPR,
 scored on what the six actually do. **It is a page of its own rather than a screen inside
 the football game**, because it shares nothing with that engine: no season, no sim, no
 ratings. What it shares is accounts, the palette and the tester pattern.
@@ -2827,8 +2827,9 @@ where it costs most: the $25-48M band ran **-8.21**.
 **Nothing could report it.** Every price was a correct summary of September, every
 projection on every card was right, and no screen ever showed the two disagreeing.
 
-**`PRICE_PROJ_W` is the answer and it is 0.25**, blending the projection into the estimate
-the price is built from. Three things bound it and they close from both sides:
+**`PRICE_PROJ_W` was the answer and it shipped at 0.25**, blending the projection into the
+estimate the price is built from. **It is 1 now**, which the section after this one records.
+The bounding argument is kept because it is what the move had to answer:
 
 | | 0 | 0.25 | 0.5 | 0.75 | 1 |
 |---|---|---|---|---|---|
@@ -2863,6 +2864,164 @@ move by more than a million and **only six move by more than three**, and those 
 men who missed a game (Zay Flowers $12.1M to $7.7M). At 0.5 it is 97 men past three million,
 which is a rebuild rather than an adjustment. **It does not close the gap and is not meant
 to**: an eighth of a defect this file now knows the size of.
+
+#### And then it was asked for whole: `PRICE_PROJ_W` is 1
+
+```
+node football/build/test/probe_cap.mjs --runs 600 --caps 95,100,105,108,112,118
+node football/check-fantasy.mjs --quick   the section named THE PRICE IS THE PROJECTION
+```
+
+Asked for in as many words: the price should be based solely on what a man is projected to
+do this week, as accurately and as freshly as the mode allows. The section above ends by
+saying going further is available, costs the cap, and is a decision about the MODE rather
+than about the pricing, to be taken deliberately rather than quietly. **It was taken.**
+
+**What it buys is half the absence gap**, -2.87 to -1.39, against an eighth at a quarter.
+**What it costs is the residual**: at .999 rank agreement the price IS the projection, so
+the decision the card used to carry is gone. What replaces it is the thing a reader knows
+and the board cannot: the matchup, the weather, who is starting, and the report on any man
+it has not spoken about yet. The thin sample gap widens 1.25 to 1.42, which is 0.17 of a
+point against 1.48 gained, so it is a trade rather than a wash and it is the axis to watch
+if the board starts feeling generous to a man with one week in him.
+
+##### The cap had to move, and stranding is what forced it rather than balance
+
+`draft.js`'s own header had already written down that a more accurate price against a CONVEX
+curve rewards spreading money and walks the crossover up. Re-swept on the week 3 board:
+
+| cap | top | budget | random | top minus random | budget minus top | stranded |
+|---|---|---|---|---|---|---|
+| **90** | 69.5 | 73.9 | 64.7 | 4.8 | +4.3 | **41 of 500** |
+| 100 | 75.3 | 77.3 | 65.9 | 9.5 | +2.0 | 0 |
+| 105 | 78.2 | 78.8 | 66.1 | 12.1 | +0.7 | 0 |
+| **110** | **80.8** | **80.4** | **66.2** | **14.5** | **-0.4** | **0** |
+| 118 | 84.0 | 82.5 | 66.4 | 17.5 | -1.4 | 0 |
+
+**AT $90M IT STRANDED**, which is not a balance question: the board comes up with nothing
+signable and the player is looking at a screen with no way on. Driven bot by bot on the real
+`spin`, a greedy drafter strands **28 of 600** at $90M and **0** at $110M. The cause is the
+projection shrinking a thin sample toward the POSITION LEVEL where `shrunkPPG` shrank it
+toward zero, so the cheap end of the board lifts and the reserve floor lifts with it.
+
+**It ships at $110M**, the round number inside the half point band (105 to 112, centred on
+108), which is the same rule that picked 90 against a crossover of 93.
+
+**AND DRAFTING IS WORTH WHAT IT WAS**, which is the number to read before assuming a more
+accurate price flattens the mode. Each pricing at ITS OWN crossover: `shrunkPPG` at $100M is
+14.7, the projection at $110M is 14.5. **The 4.8 at $90M was the wrong cap and not the
+pricing.** At a MATCHED cap the projection does differentiate less (14.5 against 18.3), which
+is the honest cost and is what a fair price does: when every man is worth what he costs, any
+lineup that spends the cap scores about the same.
+
+**What it costs is that week 3 and week 4 are not comparable.** The cap rides on each
+published week row, so nothing already out there is repriced and week 3 keeps its $90M for
+ever. Two weeks under two caps is a real loss and it is the price of changing the pricing.
+
+##### And the projection grew the one live signal the mode has
+
+"As accurate as possible" is a claim about the PROJECTION rather than about the blend. What
+it did not read is the game status report: `plays` is availability measured BACKWARDS off
+games already missed, and the report is what the club says about Sunday. Measured over the
+same 21,291 draftable player-weeks, actual against what the projection expected:
+
+| status | men | proj | actual | actual/proj | blanked |
+|---|---|---|---|---|---|
+| no report | 17,179 | 4.75 | 4.37 | 0.919 | 44.8% |
+| on it, no call | 2,179 | 7.34 | 7.87 | 1.073 | 21.0% |
+| **questionable** | **1,066** | **6.20** | **4.33** | **0.699** | 47.7% |
+| doubtful | 122 | 6.28 | 0.02 | 0.003 | 99.2% |
+| out | 744 | 5.38 | 0.00 | 0.000 | 100.0% |
+
+**A QUESTIONABLE MAN DELIVERS SEVEN TENTHS OF HIS PROJECTION** and the board charged full
+price for him: a 43% overpay on about one board row in twenty, and the largest single
+inaccuracy left in the price.
+
+**ONLY QUESTIONABLE IS PRICED, and the split is principled rather than cautious.** Read the
+blank column: a questionable man blanks 47.7% against a clear man's 44.8%, almost no change
+for a group whose projection is a third higher, so he is not mostly missing the game. He is
+PLAYING HURT and producing less, which is a fact about his points. Out and doubtful are about
+ABSENCE, `D.hurt` already takes those men off the board, and **36% of men out in one week's
+report are playing by the next**, so a price near zero on one of them is a free star the
+moment he is cleared.
+
+**AND IT IS ONLY READ WHEN THE REPORT IS THIS WEEK'S**, which is measured rather than a
+formality. The same table against the PREVIOUS week's report, which is what a build running
+before the club has filed anything sees: questionable **0.951** against 0.699, doubtful 0.693
+against 0.003, out 0.336 against 0.000. **70.6% of last week's questionable men are cleared
+by this week**, so a week old designation is worth nothing and applying the discount to one
+would be a 30% cut on a man his club has passed fit.
+
+**The build reads the SAME FILE the page reads**, `injuries_<season>_w<week>.json`, rather
+than fetching the CSV again, so the price, the red chip and the sheet are one answer about
+one hamstring. Its absence is exactly the old behaviour, so a fixture or a probe rebuilding
+2022 prices on `plays` alone with nothing to be wrong about.
+
+**0.70 IS MEASURED ON THE FINAL REPORT AND THAT IS THE ONE SOFT EDGE.** nflverse keeps ONE
+ROW per player-week rather than a history, and **78% of them were last modified on a Friday**,
+so the table above is the report as it FINISHED. There is no way from that archive to measure
+what a Wednesday build would have seen. Said rather than implied.
+
+**SO THE TUESDAY BUILD MOSTLY BUYS NOTHING FROM THIS**, and that is worth knowing before
+reading the 0.70 as something the mode collects today. The report for the coming week is
+first filed on the Wednesday, so on a Tuesday `report_week` is usually the week just played
+and `injuryFactor` correctly returns 1 for every man. What this is worth scales with how late
+the build runs, and a later build is a shorter drafting window, which is a decision about the
+mode and is not taken here. `report_week` and `report_priced` are on the built pool so the
+log says which of the two happened rather than leaving somebody to diff prices.
+
+##### A price cannot be live, and that is the rule rather than a limitation
+
+"As live as possible" runs into the one thing this mode cannot bend: **a price may never move
+once anybody has drafted against it.** Two entrants drafting at different times against
+different prices are not in one competition, and there is a prize.
+
+**What IS live is availability**, and it already was: `fantasy-injuries.yml` refreshes the
+report twice a day, the page merges it over the board, and a man ruled out after the build
+leaves the wheel. What that cannot do is move his price.
+
+**AND THE RULE WAS A SENTENCE IN A COMMENT WITH NOTHING KEEPING IT.** Every statement
+`publish-week.mjs` emits is an UPSERT, so a second run of the Tuesday job against a week that
+is already out rewrites `cap_musd` and all 400-odd prices under every lineup entered. Their
+stored `spend` was checked against the old numbers and is then a total of a board that no
+longer exists, and nothing throws. **It went from annoying to fatal when the cap started
+moving**: a rebuild now hands entrants a budget they never drafted with.
+
+So the SQL refuses, rather than the script, because the script has no database to ask and the
+SQL is what actually runs. Driven against a real Postgres 16, both arms: a week with no
+entries publishes 414 prices at the new cap, and a week with one entry **raises, exits 3 so
+`set -e` catches it, and leaves the cap and all 414 prices exactly where they were.** The
+results path is deliberately not guarded, because results are published after a week and
+entries obviously exist by then.
+
+##### Two guards that were reading a number rather than a claim
+
+**`probe_board.mjs` swept `[70, 80, 90]`**, chosen when the cap WAS 90 so the sweep ran up to
+it. With the cap at 110 the whole table sat below the game, reporting 82 stranded drafts at
+its own top row while the mode strands none. It is anchored on `DRAFT.CAP_MUSD` now. A sweep
+that does not contain the value it is about is a sweep about a different game.
+
+**And the cap visibility check pooled three bots**, two of which never approach the cap:
+`thrifty` takes the cheapest man on every board by definition, so its presses dilute the ratio
+with ones where nothing could ever be out of reach. Survivable at $90M, and at $110M the
+pooled figure fell to 1.4% and failed while `probe_board` reported a spending drafter meeting
+an unaffordable man on 22.3% of presses. **The page had not stopped showing the cap. The
+measurement was averaging it away.** It counts BOARDS for the one bot that can run out of
+money now.
+
+**Its floor has to clear two different boards**, which is worth knowing before tightening it.
+The suite reads the pool FILE on disk, and that file is week 3, published and drafted against,
+so it must not be rebuilt: until the next Tuesday build this runs the OLD board at the NEW
+cap. Week 3's shipped pool reads 8.8%, a pool priced at `PRICE_PROJ_W = 1` reads 19.8%, and
+the same pool at the old $90M cap reads 42.3% and strands.
+
+**And the first two drafts of the new guard measured the fixture rather than the page.**
+Asserting that discounting one man moves nobody else, it was asked of the DEAREST man and 47
+others moved: the ceiling is anchored on the best man ON THE BOARD, so marking the anchor
+questionable rescales everything under him, which is the pricing working. Moved to the middle
+of a 60 man slice, 56 others still moved, because at 60 men the discounted man becomes the
+bottom of the VOR range himself and `lo` moves with him. **A fixture small enough to change
+its own percentiles is measuring the fixture.** Over the real 414 man board, 0 others move.
 
 **THE PRICE COULD NOT READ AVAILABILITY WHERE IT SAT.** `pricePool` ran on line 533 and
 `played_of` and `positionLevels` were both computed AFTER it, so the whole fix is half an
@@ -3395,6 +3554,11 @@ Below the eighties, holding money back is. They cross at 93 and are inside half 
 90, which is the only band where a drafter has to look at the board rather than apply a rule.
 **It ships at the round number inside that band** rather than at the crossover: four tenths
 of a point on a fifty point lineup, and `$90M` is a figure somebody can hold in their head.
+
+**EVERY NUMBER IN THAT TABLE IS A PRICE BUILT ON `shrunkPPG` AND THE CAP IS $110M NOW.** The
+same sweep against a price built on the projection puts the crossover at about 108 and $90M
+strands, which is written up in full under `PRICE_PROJ_W`. The rule that picked the value did
+not change; the board it was measured on did.
 
 **Taking whatever the wheel offers scores 39.5**, which is 12.8 behind both. Drafting matters.
 
@@ -6043,6 +6207,56 @@ the inning. Measured through a ground out at first. A sample is refused while an
 is moving the camera (a play, a tail, a steal, a replay, or `Cam.zoom` above rest) and
 asked again next frame, and the park is in the key because a new game in a new park
 keeps the same crop.
+
+### The horizon was at 40%, and no amount of detail fixes a composition
+
+Put beside Backyard Baseball's plate shot by the playtester, with "we need to be a lot
+closer to them". Every pass above this one was detail: the ball, the labels, the
+contact frame, the keyhole. All of it was right and the picture still read as a diagram
+of a diamond drawn in front of a wall, and the reason is where the ground ENDS.
+
+| | Backyard | ours, before | after |
+|---|---|---|---|
+| background above the grass | 13% of the frame | **40%**, 16% of it crowd dots | 28% of the world, 9% of a desktop crop |
+| pitcher against the batter | about a fifth | **63%** | 41% |
+| second baseman against the pitcher | small | **as big** | half |
+| foul lines | run to the fence | ended in the outfield grass | run to the fence |
+| strike zone | a pane with corner brackets | a nine cell cage in heavy white | a pane with gold corners |
+
+**Everything on the ground was refit to a horizon of 184.** Nothing under `plateGeom`
+that a camera guard reads moved: the zone and the batter are where they were, because
+every framing assertion in `verify-rules` and `check-firstpitch` is written against them.
+What moved is everything that is not them, and it moved as a set: the stands to a strip a
+third the height at lower alpha, the infield ring, both base paths, the keyhole, the
+mound, the bases and the fence lines, and the seven fielders and three runners onto a
+DEPTH SCALE (0.70 at the fence up to 1.25 at the corners, the pitcher at 1.9).
+
+**The pitcher's release point and the arm chip are read off his geometry.** `relY` is the
+top of his windup and `pitBall` rides his hands, both as fractions of `HERO_DRAW_H x
+pitSc`; the FRESH chip over his head was passed to `drawScreenPass` as the literal 196,
+which was over his face the moment he got smaller. It is `moundY - height - 12` now.
+
+**A desktop crop shows less of the sky than a phone and that is the camera, not a
+number to tune.** The plate camera covers, a 1440x900 arena binds on width, and the crop
+cannot read below the world's bottom, so the top of a desktop's frame is world y 144
+whatever the horizon is. At 172 the roofline was cut and the picture opened on half a
+crowd; 184 puts the whole crowd band and the wall in a desktop frame and costs a phone
+twelve logical pixels of grass. That is the whole reason for the last 12.
+
+**The home circle was 210 across, which on a phone's 350 wide crop was the whole bottom
+of the picture.** 170 now, and the keyhole is 52 wide at the mound and 184 at the plate
+rather than 80 and 248, so the near infield stops being a dirt lot with a plate in it.
+
+**The zone's thirds are gone and the frame is not.** `check-firstpitch` reads the zone's
+edge at mid height and asks for 3:1 against the grass and 2.5 CSS px of line, so the
+white band stays at `zoneLineMin()`. The corners are `#f4c25a` at twice its weight over
+the dark halo everything here wears, and they are what makes the box read as a target
+rather than a fence. The reticle already reads the spot the thirds were an aid for.
+
+**A lawn has things growing in it.** Ninety two block tufts in a darker green down the
+near two thirds, drawn wider as they come toward the camera, and sixteen pale flecks,
+none in the snow park. They are the cheapest thing in this pass and about a quarter of
+why the grass reads as a field now rather than a fill.
 
 #### And the wide camera left a black hole, which the full bleed layout made bigger
 
@@ -8826,6 +9040,114 @@ disappeared into it, which is the flat court arriving by a different door. At
 .42 it is a floor lit in the club's colours. **The layer count and the layer
 types are identical in both states**, so the .35s fade between clubs still
 interpolates.
+
+### Playing all four modes, which is a different question from checking them
+
+```
+node hoops/check-draft.mjs       sections 7, 8 and 9
+node hoops/verify.mjs            the name sweep and the club window
+```
+
+Every guard here asks whether a screen is CORRECT. Four modes played end to end
+at a phone, looking at each screen, found four things that are each correct in
+that sense and wrong on the glass. None of them threw, and the suite was green
+through all of them.
+
+**A MAN WAS CALLED "JR.".** `lastNameOf` took the final whitespace token, so
+Jaren Jackson Jr. was drawn as **Jr.** on the live floor chips, in every play by
+play row, in the box score, in the endgame call ("Give it to Jr.") and in the
+coach report. **43 men and 196 player-seasons, 1.19% of the pool**, among them
+Tim Hardaway Jr., Gary Trent Jr. and a Defensive Player of the Year.
+
+**It was the two readings side by side that made it obvious.** The page carried
+its own `lastName`, everything-after-the-first-token, which is right about a
+suffix and wrong about a middle name, so the verdict card read **"Jaren Jackson
+Jr. had 32."** directly above a chip reading **"Jr."**. One man, one screen, two
+formatters. There is one now and the page delegates to it, which also fixed
+`Nick Van Exel` reading as "Exel" and `Vinny Del Negro` as "Negro".
+
+The rule is the last token, plus the one before it when that token is a SUFFIX
+or when the token before THAT is a PARTICLE. **A particle is only a particle
+when a first name is left over**, or Del Beshore and Von Wafer lose theirs.
+**Three names in the pool it still gets wrong**, recorded rather than fixed:
+Metta World Peace, Luc Mbah a Moute and Jan van Breda Kolff each carry a
+multi-word surname no rule reaches. A list of three inside a formatter is the
+allowlist this repo keeps finding in the middle of a rule.
+
+**THE SCREEN BETWEEN THE DRAFT AND THE RESULT DID NOT KNOW THE TEAM.** It held
+one card of three numbers. Measured through the real page, its content ended at
+**237px of an 844px phone** before tip-off and 464px with the season running,
+against 780 to 3400 on every other screen, so the five men were absent from the
+last press of the draft until the results screen. It carries the roster now, and
+the same phone reads 690 and 918.
+
+**It is the roster and deliberately NOT the court.** There is a court on the
+draft screen, whose last state is these same five men, and another on the
+results screen. A third is 300px of a picture the reader just watched fill up,
+on the screen that also holds the game strip, and at 320x568 it is the
+difference between one scroll and two. It is drawn by the results screen's own
+painter rather than a copy, because two lists of one roster are two things that
+can disagree about a man.
+
+**A CLUB CHIP PROMISED RINGS THE WHEEL CANNOT REACH.** The One Franchise picker
+prints a season count off `R.clubSeasons`, which is the wheel's own answer, and
+its own comment argues at length for that: a chip printing the club's age would
+promise twenty-eight seasons that cannot be drawn. One line later the ring count
+was the franchise's ALL TIME total. Joined by a middot they read as one claim,
+so Boston said **"53 seasons · 18 rings"** with eleven of the eighteen outside
+the pool. **Eight clubs of thirty overstated it, and two promised a ring that is
+entirely unreachable**: Atlanta's is St Louis in 1958 and Sacramento's is
+Rochester in 1951, so a chip said "1 ring" about a wheel holding no championship
+season at all. The lineage is untouched, which is why this is a filter rather
+than a smaller number: Oklahoma City still counts Seattle's 1979, because that
+season IS on the wheel.
+
+**The guard's expectation comes off a different table from the painter's.** The
+chip filters `f.titles`, which is `LINEAGE_TITLES`; the check asks `E.wonTitle`
+over every season the wheel offers, which is `TITLE_AT`. Restating the painter's
+own filter would be two implementations of one answer. And the pure half in
+`verify.mjs` asserts only that the two counts still DISAGREE for some clubs,
+because "every ring inside the window is inside the window" is a sentence about
+its own filter and can only pass.
+
+#### And a reel landed into a run that had been thrown away
+
+Found by the club-picker guard, which only wanted to reach the picker and had to
+abandon a run to get there.
+
+A spin is about a second long, so pressing the wordmark mid-spin and then
+Abandon leaves two timers pointed at a run that is now null. The landing
+callback ran anyway, walked into `R.remaining(run)` and threw **"Cannot read
+properties of null (reading 'roster')"** out of an animation, on the home
+screen, with nothing on screen to say so.
+
+**THE THROW IS THE LOUD HALF AND NOT THE WORST HALF.** `dressPage` fires first,
+so the abandoned club painted the FRONT PAGE in its colours on the way out: a
+home screen wearing a team the player had just thrown away, which renders
+perfectly and reports nothing. `body.clubbed` is the whole of it, so that is
+what the guard reads rather than the exception.
+
+This is the identity check every other timer on this page already carries, which
+`show()` writes out for the live game and the bracket walk, arriving at the one
+animation that never had it. **The run OBJECT is compared rather than a flag**,
+so it catches a second run as well as no run: `startRun` builds a new one, and a
+spin from the old one landing into it would draw the wrong club on the right
+board. **`reelBusy` is cleared on the way out**, because it is the flag
+`drawInto` refuses on and a stale spin that simply returned would leave the NEXT
+draft unable to deal a board at all.
+
+#### THE SELECTOR AGAIN, AND THIS TIME IT WAS THE GUARD
+
+`check-draft.mjs`'s own section 6 writes down that `pending` sits on the PARENT,
+and its `draftPage` helper then waited on `#opts .ptile:not(.pending)`, which
+returns the moment the tiles EXIST. So section 5, which re-spins looking for a
+two-position man, read a board that had not landed, found `#b-respin` still
+disabled by `reelBusy`, broke out after ONE board and failed.
+
+**Measured rather than re-run until green**: 9.8% of single boards hold no
+two-position man and **0.03% of four-board searches do**, over 3000 real drafts.
+That is the whole difference between a guard that flakes about one run in ten
+and one that does not. Four selectors in that file, fixed in one commit.
 
 ### A straight column of digits is a FEATURE, not a typeface
 

@@ -2141,6 +2141,92 @@ ok(bestWins > worstWins + 20,
     'worse than everything ranks one past the table, which is what the page must divide by');
 }
 
+/* ── A MAN IS NEVER CALLED "JR." ────────────────────────────────────────────
+ *
+ * lastNameOf took the final whitespace token, so Jaren Jackson Jr. was drawn
+ * as "Jr." on the live floor chips, in every play by play row, in the box
+ * score, in the endgame call and in the coach report. 43 men and 196
+ * player-seasons. Nothing could report it: the string is valid, the chip
+ * renders, and the only symptom is the game calling a real person by a
+ * suffix. Found by playing a game and reading the screen, where the verdict
+ * card said "Jaren Jackson Jr. had 32." directly above a chip saying "Jr.".
+ *
+ * THE SWEEP IS OVER THE POOL AND NOT OVER A LIST, because the way this comes
+ * back is a data refresh adding a name shape nobody wrote a case for. The
+ * hand cases below it are the ones that pin the RULE: a suffix keeps its
+ * surname, a particle keeps its surname, and a man whose FIRST name is a
+ * particle (Del Beshore, Von Wafer) keeps neither. */
+{
+  const SUFFIX_ONLY = /^(?:jr|sr|ii|iii|iv|v)\.?$/i;
+  const offenders = new Set();
+  for (const p of data.players) if (p.n && SUFFIX_ONLY.test(E.lastNameOf(p.n))) offenders.add(p.n);
+  is(offenders.size, 0,
+    `no man in the pool is drawn as a bare suffix (${[...offenders].slice(0, 3).join(', ')})`);
+
+  is(E.lastNameOf('Jaren Jackson Jr.'), 'Jackson Jr.', 'a suffix keeps the surname in front of it');
+  is(E.lastNameOf('Marvin Bagley III'), 'Bagley III', 'and so does a numeral');
+  is(E.lastNameOf('Nick Van Exel'), 'Van Exel', 'a particle is part of the surname');
+  is(E.lastNameOf('Vinny Del Negro'), 'Del Negro', 'which is worth more than tidiness here');
+  is(E.lastNameOf('Del Beshore'), 'Beshore', 'a first name that looks like a particle is not one');
+  is(E.lastNameOf('Von Wafer'), 'Wafer', 'and neither is the other one');
+  is(E.lastNameOf('Michael Ray Richardson'), 'Richardson', 'a middle name is not part of the surname');
+  is(E.lastNameOf('Lou Hudson'), 'Hudson', 'and an ordinary name is unchanged');
+  is(E.lastNameOf('Nenê'), 'Nenê', 'a one word name is itself');
+  is(E.lastNameOf(''), '', 'nothing comes back as nothing');
+  is(E.lastNameOf(null), '', 'and so does nobody');
+
+  /* IT HAS TO BITE ON THE POOL RATHER THAN ON THE CASES. A sweep over a pool
+     holding no suffix names would pass green having exercised nothing, which
+     is this repo's own coverage argument. */
+  const suffixed = new Set();
+  for (const p of data.players)
+    if (p.n && /\s(?:jr|sr|ii|iii|iv|v)\.?$/i.test(p.n)) suffixed.add(p.n);
+  ok(suffixed.size > 20,
+    `and the pool really holds suffix names for it to be wrong about (${suffixed.size})`);
+}
+
+/* ── A CLUB CHIP MAY NOT PROMISE A RING THE WHEEL CANNOT REACH ──────────────
+ *
+ * The One Franchise picker prints a season count off R.clubSeasons, which is
+ * the wheel's own answer, beside a ring count that was the franchise's ALL
+ * TIME total. Joined by a middot they read as one claim, so Boston said "53
+ * seasons, 18 rings" with eleven of those eighteen out of the pool, and
+ * Atlanta and Sacramento each said "1 ring" about a wheel holding no
+ * championship season at all.
+ *
+ * The property is about the DATA and the page's own read of it is asserted in
+ * check-draft.mjs, which is the half that can see the chip. */
+{
+  const clubs = E.franchises().filter(f => R.clubSeasons(f.code).length >= 3);
+  ok(clubs.length >= 25, `every club the picker offers (${clubs.length})`);
+
+  /* WHAT THIS HALF CAN HONESTLY CLAIM IS THAT THE TWO COUNTS DISAGREE.
+     "Every ring inside the window is inside the window" is a sentence about
+     its own filter and can only pass, which is the assertion shape this repo
+     keeps finding in its own checkers. So what is asserted here is that the
+     data still makes the bug POSSIBLE: eight clubs of thirty are narrowed
+     today and two lose their only ring. The day that stops being true this
+     goes red and the browser claim below stops being worth running. */
+  let narrowed = 0, unreachable = 0;
+  for (const f of clubs) {
+    const seasons = new Set(R.clubSeasons(f.code));
+    const inWindow = f.titles.filter(y => seasons.has(y));
+    if (inWindow.length !== f.titles.length) narrowed++;
+    if (f.titles.length && !inWindow.length) unreachable++;
+  }
+  ok(narrowed >= 6, `and the window really narrows some of them (${narrowed})`);
+  ok(unreachable >= 2, `including clubs whose only rings are unreachable (${unreachable})`);
+
+  /* The lineage is the half most easily lost in a fix like this: Oklahoma
+     City's 1979 is Seattle's and IS on the wheel, so it must survive. */
+  const okc = clubs.find(f => /Thunder/.test(f.name));
+  if (okc) {
+    const seasons = new Set(R.clubSeasons(okc.code));
+    ok(okc.titles.filter(y => seasons.has(y)).length >= 2,
+      'and a lineage ring inside the window still counts (Seattle 1979 is the Thunder\'s)');
+  }
+}
+
 /* Every roster plays a real number of games and ends up somewhere real. */
 const sample = E.playRun(best, E.createSeededRNG(99), E.SLOTS, data.oppPool);
 is(sample.record.wins + sample.record.losses, E.CONSTANTS.REGULAR_SEASON_GAMES,
