@@ -1780,7 +1780,7 @@ console.log('\nONE RUN A DAY, AND A RUN IN PROGRESS IS NEVER TAKEN');
           const txt = (document.getElementById('sheet-in').innerText || '')
             .replace(/\s+/g, ' ');
           return { n: rows.length, txt,
-            note: (txt.match(/\d+ of the \w+ could not be looked up here/) || [''])[0] };
+            note: (txt.match(/\d+ of the \w+ could(?:n't| not) be looked up here/) || [''])[0] };
         };
         T.runDetail(r);
         /* Synchronous, so this is the sheet before the download can possibly have landed. */

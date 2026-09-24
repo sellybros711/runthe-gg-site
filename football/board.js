@@ -227,7 +227,7 @@
   function failThrown(where, e) {
     offline = true;
     lastError = { where, status: 0, code: 'network',
-      message: (e && e.message) || 'the request did not complete' };
+      message: (e && e.message) || 'the request didn\'t complete' };
     return null;
   }
 
@@ -537,7 +537,7 @@
           const id = await res.json().catch(() => null);
           if (typeof id !== 'number') {
             lastError = { where: 'submit', status: res.status, code: 'shape',
-              message: 'the call succeeded but did not return a row id' };
+              message: 'the call succeeded but didn\'t return a row id' };
             return null;
           }
           lastError = null;
@@ -844,7 +844,7 @@
       const rows = await res.json().catch(() => null);
       if (!Array.isArray(rows)) {
         lastError = { where: 'mine', status: res.status, code: 'shape',
-          message: 'the call succeeded but did not return a list of runs' };
+          message: 'the call succeeded but didn\'t return a list of runs' };
         return null;
       }
       /* A null count is not a zero, for the same reason it is not in countOf: it means the
@@ -1014,7 +1014,7 @@
       const r = (Array.isArray(body) ? body[0] : body) || {};
       return { color: r.color || null, initials: r.initials || null };
     } catch (e) {
-      return { error: (e && e.message) || 'the request did not complete' };
+      return { error: (e && e.message) || 'the request didn\'t complete' };
     }
   }
 

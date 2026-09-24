@@ -623,7 +623,7 @@ const tapped = (p) => p.evaluate(() => window.__nav || null);
   const t = await txt(p, '#sheet-in');
   /* IT NEVER SAYS THE PAYMENT FAILED, because this page cannot know that. */
   ok('it says the payment went through', /payment went through/.test(t));
-  ok('and never says it did not', !/fail/i.test(t) && !/could not/i.test(t));
+  ok('and never says it did not', !/fail/i.test(t) && !/could(?:n't| not)/i.test(t));
   ok('no door is offered for a mode that is still shut', !(await has(p, '#th-go')));
   /* AND IT KEEPS ASKING, forcing past auth.js's cache each time: a cached [] is precisely
      the answer that makes a landed purchase look like a missing one. One ask would be the

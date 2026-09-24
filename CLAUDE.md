@@ -121,6 +121,35 @@ four commas and exactly right. And it does not look for the rule of three: three
 is the number of kinds of special college season there are, and whether a group of
 three is information or padding is a person's job.
 
+**An escaped quote was the third way it went wrong.** A contraction in a
+single-quoted literal is `you\'re`, and the backslash counted against the
+prose-shape filter. A line of copy full of markup and digits sat just over that
+threshold, so the escape pushed it out of every checker that reads copy. Found when
+a contraction pass took one "all 17 games" claim out of `check-numbers`' count
+without changing a word the player sees. `tidy()` unescapes quotes now.
+
+### The football and college games talk like the owner
+
+Casual, with hype saved for the big moments. The Perfect Season, College Football,
+Commissioner Mode, both how-to pages and the store all use contractions now
+(`don't`, `you're`, `it's`). The results verdicts, the rank lines and the purchase
+thank-you were rewritten by hand. Commissioner Mode's characters kept their own
+voices and only picked up the contractions, the same call the Segue pass made about
+the crowd's slang.
+
+**A contraction pass has to know a subject from an object.** "The six that can
+remove you are on the strip" is not "you're", and "the one before it is still
+here" is not "it's". A regex cannot tell those apart, so the pass only contracts
+`it is`, `you are` and the rest when the pronoun opens a clause: at the start of a
+sentence, or after `and`, `but`, `so`, `if`, `when` and the like. It also leaves
+`what there is to`, `it is its own` and `of it is` alone. Read the diff for
+anything that slipped through before shipping one.
+
+**Two checkers read the old spelling and had to take both.** `check-fullteam`
+matched "could not be looked up here" and `test_store` asserted the page never
+says "could not". Before a sweep, grep the checkers for the phrases being
+contracted, as well as the page's own `.test(` calls.
+
 ### A number a player reads has to be the number the game plays
 
 ```

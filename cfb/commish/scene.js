@@ -65,12 +65,12 @@
     counsel: { name: 'Marcus Vail', role: 'Counsel to the office', c: '#818cf8', set: 'office' },
     /* The press, never named, on the same principle the docket and the podium run on. */
     anchor: { name: 'The Saturday panel', role: 'National broadcast', c: '#ec4899', set: 'studio' },
-    radio: { name: 'The morning show', role: 'Sports radio, and it is all they have', c: '#38bdf8', set: 'radio' },
+    radio: { name: 'The morning show', role: 'Sports radio, and it\'s all they have', c: '#38bdf8', set: 'radio' },
     wire: { name: 'The wire', role: 'Filed at 6:02, no adjectives', c: '#94a3b8', set: 'paper' },
     beat: { name: 'A beat writer', role: 'Has covered one school for eleven years', c: '#22d3ee', set: 'paper' },
     student: { name: 'A student paper', role: 'The same age as the players', c: '#a78bfa', set: 'ballroom' },
     /* And the two nobody in this office can call back. */
-    judge: { name: 'The court', role: 'Middle District, and it does not care about football', c: '#f87171', set: 'court' },
+    judge: { name: 'The court', role: 'Middle District, and it doesn\'t care about football', c: '#f87171', set: 'court' },
     crowd: { name: 'Somebody in Row 11', role: 'Has had four beers and an opinion', c: '#38bdf8', set: 'stadium' },
   };
 
@@ -131,7 +131,7 @@
       when: function (w, L, sit) { return !!(sit && sit.firstYear) && (w.beat || 0) === 0; },
       lines: [
         { who: 'wire', set: 'paper',
-          say: 'College football has a new commissioner this morning. The last one did not '
+          say: 'College football has a new commissioner this morning. The last one didn\'t '
             + 'finish the term.' },
         { who: 'wire', set: 'paper',
           say: 'The new commissioner has five years. Same as the last one had.' },
@@ -143,7 +143,7 @@
           say: 'Five years to leave this sport better than they found it. Or however long it '
             + 'takes the room to vote them out.' },
         { who: 'radio',
-          say: 'My phone has not stopped since six. Every caller had a candidate and not one of '
+          say: 'My phone hasn\'t stopped since six. Every caller had a candidate and not one of '
             + 'them said your name.' },
         /* AND THEN THE CHIEF HANDS YOU THE PHONE. Three lines, and the last thing the third
            one does is start the first case: see sceneCheck() in the page, which routes the
@@ -153,7 +153,7 @@
         { who: 'chief', set: 'office',
           say: 'Morning boss. Congratulations on the job. Your first call is already holding.' },
         { who: 'chief', set: 'office',
-          say: 'Fair warning: it is a lawsuit. Welcome to the office.' },
+          say: 'Fair warning: it\'s a lawsuit. Welcome to the office.' },
         { who: 'chief', set: 'office',
           say: 'The last commissioner never cleared their desk, so who knows what you will find '
             + 'in there.' },
@@ -186,7 +186,7 @@
           say: 'The court has a date in eleven months and no interest whatsoever in the '
             + 'football calendar.' },
         { who: 'chief', set: 'office',
-          say: 'It is on your desk. Whatever you do about it, do it before somebody else '
+          say: 'It\'s on your desk. Whatever you do about it, do it before somebody else '
             + 'announces what you are doing about it.' },
       ],
     },
@@ -216,13 +216,13 @@
           } },
         { who: 'beat', set: 'paper',
           say: function (c) {
-            return 'I have covered the ' + c.conf + ' for nineteen years. There is nobody left '
+            return 'I have covered the ' + c.conf + ' for nineteen years. There\'s nobody left '
               + 'in the building to call.';
           } },
         { who: 'crowd', set: 'stadium',
           say: 'My grandfather went to that game. Where does that go now. Where does it go.' },
         { who: 'chief', set: 'office',
-          say: 'The schools will land somewhere. The league does not get to land anywhere.' },
+          say: 'The schools will land somewhere. The league doesn\'t get to land anywhere.' },
       ],
     },
 
@@ -247,7 +247,7 @@
       lines: [
         { who: 'wire', set: 'paper',
           say: function (c) {
-            return c.a + ' and ' + c.b + ' held a call this evening that this office was not '
+            return c.a + ' and ' + c.b + ' held a call this evening that this office wasn\'t '
               + 'told about.';
           } },
         { who: 'anchor',
@@ -278,11 +278,11 @@
           say: 'Eleven rosters voted last night not to travel. Four games on Saturday '
             + 'currently have one team in them.' },
         { who: 'crowd', set: 'stadium',
-          say: 'I am in the parking lot. The buses are here. The team is not on them.' },
+          say: 'I\'m in the parking lot. The buses are here. The team isn\'t on them.' },
         { who: 'Players', set: 'ballroom',
           say: 'Nobody wanted this. You were told the number in March and the date in July.' },
         { who: 'anchor',
-          say: 'College football has a work stoppage. Saying it slower does not make it '
+          say: 'College football has a work stoppage. Saying it slower doesn\'t make it '
             + 'smaller.' },
         { who: 'chief', set: 'office',
           say: 'The networks have called four times. Whatever you are going to do, do it '
@@ -307,13 +307,13 @@
           say: 'This court has reached a verdict in the matter it has sat through two '
             + 'football seasons to decide.' },
         { who: 'counsel', set: 'office',
-          say: 'We lost. I have read the reasoning twice and it is worse than the number.' },
+          say: 'We lost. I have read the reasoning twice and it\'s worse than the number.' },
         { who: 'wire', set: 'paper',
           say: 'The judgment runs forty pages. The part every lawyer in the country has '
             + 'already underlined is on page nine.' },
         { who: 'chief', set: 'office',
           say: 'Counsel is outside with three options, and none of them is pretending this '
-            + 'did not happen.' },
+            + 'didn\'t happen.' },
       ],
     },
 
@@ -334,8 +334,8 @@
       },
       lines: [
         { who: 'crowd', set: 'stadium',
-          say: 'I have waited my entire life for this and I am going to be honest with you, I '
-            + 'have not been to bed.' },
+          say: 'I have waited my entire life for this and I\'m going to be honest with you, I '
+            + 'haven\'t been to bed.' },
         { who: 'anchor',
           say: function (c) {
             return c.champ + ' is the national champion. A ' + c.teams + ' team field, and they '
@@ -366,7 +366,7 @@
               + pct(c.share) + ' of ' + bn(c.pool) + ', starting next year.';
           } },
         { who: 'student', set: 'ballroom',
-          say: 'I have been asking this question for three years and I did not have a follow-up '
+          say: 'I have been asking this question for three years and I didn\'t have a follow-up '
             + 'ready.' },
         { who: 'radio',
           say: 'Somebody is going to call in and tell me this ruins it. He has called four '
@@ -412,7 +412,7 @@
           say: 'The commissioner has been removed. The statement is two sentences long and one '
             + 'of them is about the search.' },
         { who: 'anchor',
-          say: 'They had the release written before the meeting. That is the part that tells '
+          say: 'They had the release written before the meeting. That\'s the part that tells '
             + 'you when this was actually decided.' },
         { who: 'crowd', set: 'stadium',
           say: 'Good. Now put it back the way it was. All of it. Every bit of it.' },
@@ -454,11 +454,11 @@
               + 'Nobody has come out and the lights are on.';
           } },
         { who: 'crowd', set: 'stadium',
-          say: 'Ninety years. Ninety years of that game and it is a scheduling agreement now.' },
+          say: 'Ninety years. Ninety years of that game and it\'s a scheduling agreement now.' },
         { who: 'anchor',
           say: function (c) {
             return 'The ' + ((c && c.to) || 'other league') + ' is now the largest thing in '
-              + 'American sports that is not a professional league.';
+              + 'American sports that isn\'t a professional league.';
           } },
       ],
     },
@@ -467,11 +467,11 @@
       lines: [
         { who: 'wire', set: 'paper',
           say: 'College football has recognized a players association. The vote was taken at '
-            + 'sixty-one schools and it was not close.' },
+            + 'sixty-one schools and it wasn\'t close.' },
         { who: 'Players', set: 'ballroom',
-          say: 'We are not asking any more. We are across the table and there is a table.' },
+          say: 'We aren\'t asking any more. We\'re across the table and there\'s a table.' },
         { who: 'counsel', set: 'office',
-          say: 'Everything after this is bargaining. That is not a warning, it is a '
+          say: 'Everything after this is bargaining. That isn\'t a warning, it\'s a '
             + 'description.' },
         { who: 'radio',
           say: 'Half my callers think this is the end of it. The other half are nineteen.' },
@@ -503,7 +503,7 @@
               + 'twelve.';
           } },
         { who: 'crowd', set: 'stadium',
-          say: 'We are in it. I do not care how, I do not care who else is, we are in it.' },
+          say: 'We\'re in it. I don\'t care how, I don\'t care who else is, we\'re in it.' },
         { who: 'beat', set: 'paper',
           say: 'The best regular season in sport just got a little less load bearing. Ask me '
             + 'in November whether that matters.' },
@@ -530,11 +530,11 @@
           say: 'College football has cut itself off from the betting industry entirely. No '
             + 'other league in the country has done it.' },
         { who: 'anchor',
-          say: 'That is a great deal of money to leave on a table you are also standing on.' },
+          say: 'That\'s a great deal of money to leave on a table you are also standing on.' },
         { who: 'crowd', set: 'stadium',
           say: 'Thank you. Genuinely. My kid is nineteen and plays and he was getting messages.' },
         { who: 'counsel', set: 'office',
-          say: 'It is still legal in forty states. We can decline the money. We cannot decline '
+          say: 'It\'s still legal in forty states. We can decline the money. We can\'t decline '
             + 'the market.' },
       ],
     },
@@ -559,7 +559,7 @@
       id: 'r-daylight', manual: true, when: function () { return false; },
       lines: [
         { who: 'wire', set: 'paper',
-          say: 'The sport has bought its Saturdays back. The price is not being announced, '
+          say: 'The sport has bought its Saturdays back. The price isn\'t being announced, '
             + 'which is how you know the size of it.' },
         { who: 'crowd', set: 'stadium',
           say: 'Kickoff is at one in the afternoon. I can take my kids and be home for '
@@ -588,7 +588,7 @@
           say: 'The game finished at 2:11 in the morning on the east coast. It kicked off at '
             + 'eight.' },
         { who: 'crowd', set: 'stadium',
-          say: 'There were maybe four hundred of us left. I have work. I am forty-one years '
+          say: 'There were maybe four hundred of us left. I have work. I\'m forty-one years '
             + 'old.' },
         { who: 'radio',
           say: 'Best football anybody has seen all year and nobody east of Denver watched the '
@@ -619,7 +619,7 @@
               + 'people in a hotel in Texas.';
           } },
         { who: 'crowd', set: 'stadium',
-          say: 'We have not lost. Say the thing you need us to do and we will do it. Say it.' },
+          say: 'We haven\'t lost. Say the thing you need us to do and we\'ll do it. Say it.' },
       ],
     },
     {
@@ -633,7 +633,7 @@
       },
       lines: [
         { who: 'wire', set: 'paper',
-          say: 'It is signing day. The first letter arrived at 7:01 and the school announced '
+          say: 'It\'s signing day. The first letter arrived at 7:01 and the school announced '
             + 'it with an eleven second video of a helmet.' },
         { who: 'beat', set: 'paper',
           say: 'Every February a teenager picks a hat off a folding table and a grown man I '
@@ -643,7 +643,7 @@
             + 'still going.' },
         { who: 'chief', set: 'office',
           say: 'Everyone signed today plays in whatever sport you are writing. The room '
-            + 'forgets that. February does not.' },
+            + 'forgets that. February doesn\'t.' },
       ],
     },
     {
@@ -655,12 +655,12 @@
       },
       lines: [
         { who: 'anchor',
-          say: 'There is a company name on the playoff, on the jersey and on the trophy. All '
+          say: 'There\'s a company name on the playoff, on the jersey and on the trophy. All '
             + 'three, in the same season.' },
         { who: 'student', set: 'ballroom',
           say: 'I counted eleven on the walk in. I stopped counting at the door.' },
         { who: 'chief', set: 'office',
-          say: 'Every one of them pays for something real. That is true and it is not an '
+          say: 'Every one of them pays for something real. That\'s true and it isn\'t an '
             + 'answer.' },
       ],
     },

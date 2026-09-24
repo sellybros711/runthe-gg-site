@@ -101,7 +101,7 @@
     '     the next, and a reader comparing two numbers had to go and find each one.\n' +
     '     Now both sit on their own line directly under the name, left aligned, so the eye runs\n' +
     '     down a single edge: name, price, what you get, button, twice. That costs the Premium\n' +
-    '     card one line back, which is the trade, and it is the right way round. The saving is a\n' +
+    '     card one line back, which is the trade, and it\'s the right way round. The saving is a\n' +
     '     shorter sheet or a legible one. */\n' +
     /* THE NUMBERS SHARE A BASELINE AND THE CHIPS SHARE A CENTRE, which is two rules because
        the row holds two kinds of thing. $34.99 and a struck $80 are both prices and a reader
@@ -123,7 +123,7 @@
     '    font-variant-numeric:tabular-nums}\n' +
     '  /* WHAT THIS ACCOUNT IS, in two letters more than it needs. Drawn only when there is a true\n' +
     '     answer: see acctTier(), which returns nothing at all for a signed out visitor and for one\n' +
-    '     whose ownership has not come back yet. */\n' +
+    '     whose ownership hasn\'t come back yet. */\n' +
     '  .pw-pill{display:inline-block;font-style:normal;margin-left:8px;vertical-align:3px;\n' +
     '    font-family:var(--fn);\n' +
     '    font-size:9px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;\n' +
@@ -140,7 +140,7 @@
     '    text-transform:uppercase;padding:3px 7px;border-radius:999px;white-space:nowrap;\n' +
     '    background:rgba(74,222,128,.13);box-shadow:inset 0 0 0 1px rgba(74,222,128,.34)}\n' +
     '  /* WHICH GAME EACH LINE COMES FROM, IN THAT GAME\'S OWN COLOUR. The colour code is\n' +
-    '     the dot plus the name in the same hue, and it is what makes Run The Bundle read\n' +
+    '     the dot plus the name in the same hue, and it\'s what makes Run The Bundle read\n' +
     '     as buying things in four places rather than as one long list of nouns.\n' +
     '\n' +
     '     A BULLET RATHER THAN A RAIL DOWN THE SIDE. Owner\'s call, and the rail had a\n' +
@@ -183,7 +183,7 @@
     '  .pw-line.ended span{color:var(--dim)}\n' +
     '  /* THE DATE LINE, on the receipt and never in the store. The same block does both jobs, so\n' +
     '     the third line is simply absent where there is nothing bought yet to date.\n' +
-    '     A DIRECT CHILD, so it cannot catch the store\x27s term below. The two are both <i> and they\n' +
+    '     A DIRECT CHILD, so it can\'t catch the store\x27s term below. The two are both <i> and they\n' +
     '     want opposite treatments: a date is a sentence and gets its own line, a term is two\n' +
     '     words qualifying the item and belongs on the item\x27s line. */\n' +
     '  .pw-line>i{display:block;font-style:normal;font-size:11px;color:var(--dim-2);margin-top:3px;\n' +
@@ -216,8 +216,8 @@
     '     THIS WAS A HAZARD-STRIPED BAND WITH A BLINKING LAMP, sized to be the loudest thing\n' +
     '     on the sheet, and the argument for that still stands on its own terms: everything\n' +
     '     else sold this way is a subscription, and a reader who assumes this one is too is\n' +
-    '     deciding against a monthly charge that does not exist. What it got wrong is where\n' +
-    '     the anxiety is felt. It is felt at the PRICE, and the band answered it a full row\n' +
+    '     deciding against a monthly charge that doesn\'t exist. What it got wrong is where\n' +
+    '     the anxiety is felt. It\'s felt at the PRICE, and the band answered it a full row\n' +
     '     above the first one, in the loudest voice on a screen that is already asking for\n' +
     '     money. The owner called the sheet overwhelming, which is the band and the four\n' +
     '     tiles above it competing for the same second and a half.\n' +
@@ -242,7 +242,7 @@
     '  .pw-card .pwc-go .pwc-marks{display:flex;gap:6px;justify-content:flex-end;margin-top:5px}\n' +
     '  .pw-card .pwc-go .pwc-marks svg{width:15px;height:15px;display:block;flex:0 0 auto}\n' +
     '  /* THE BEST VALUE CARD GETS THE GOLD BUTTON. Both tiers shipped with the same red one,\n' +
-    '     which is the house colour for the primary action and cannot be the primary action\n' +
+    '     which is the house colour for the primary action and can\'t be the primary action\n' +
     '     twice: two identical buttons a thumb apart is a choice presented as a coin toss. The\n' +
     '     badge, the border and the button are now one thing. */\n' +
     '  .pw-tier.best .btn{background:linear-gradient(135deg,#fbbf24 0%,#e08c07 100%);color:#3b2600}\n' +
@@ -258,7 +258,7 @@
     '     longest name was TRADE MACHINE. COMMISSIONER MODE is longer, and the same sweep now\n' +
     '     shows it wrapping at every width from 440 up to 520.\n' +
     '     WHY 549 AND NOT 529, which is the last width that actually fails. At 530px the longest\n' +
-    '     name fits with TWO pixels to spare, which is not a margin, it is a coincidence, and the\n' +
+    '     name fits with TWO pixels to spare, which isn\'t a margin, it\'s a coincidence, and the\n' +
     '     previous number was picked the same way for the same reason. 550px is the first width\n' +
     '     with real room, about eight pixels.\n' +
     '     MEASURE THIS WITH THE REAL FACES LOADED. Anton and Archivo are Google webfonts, and the\n' +
@@ -268,15 +268,15 @@
     '\n' +
     '     checkout-bundle.js refuses any bundle whose products the buyer already holds, and\n' +
     '     every product in the Premium card above is also in this one. So buying the cheaper\n' +
-    '     card does not leave this one available at the difference. It closes it, for good.\n' +
+    '     card doesn\'t leave this one available at the difference. It closes it, for good.\n' +
     '     Nothing on this sheet said so, and a reader who works that out after paying has\n' +
     '     been told something by silence at the one screen that can least afford it.\n' +
     '\n' +
-    '     ONE TIME AND NOT LIMITED TIME. Nothing expires on a date here. There is no\n' +
+    '     ONE TIME AND NOT LIMITED TIME. Nothing expires on a date here. There\'s no\n' +
     '     countdown to honour and no day this stops being sold, so a limited time claim\n' +
     '     would be a deadline we never intend to keep, and the reader who comes back next\n' +
     '     month and finds it unchanged has learned what the rest of this sheet is worth.\n' +
-    '     One time is the literal truth about what the checkout will and will not sell.\n' +
+    '     One time is the literal truth about what the checkout will and won\'t sell.\n' +
     '\n' +
     '     NOT NAMED pw-once, WHICH IS TAKEN, by the One payment chip in the price row three\n' +
     '     lines above this. That collision is also why the wording matters: ONE TIME beside\n' +
@@ -286,7 +286,7 @@
     '     THE LABEL IS INLINE AND NOT A LINE OF ITS OWN, which is a height decision and not\n' +
     '     a taste one. check-premium holds this whole sheet under 1000px at 390 wide, because\n' +
     '     the complaint that produced that ceiling was scrolling. Stacked, this block put the\n' +
-    '     sheet at 998, which is not a margin, it is a coincidence: the next line anybody adds\n' +
+    '     sheet at 998, which isn\'t a margin, it\'s a coincidence: the next line anybody adds\n' +
     '     breaks it and the ceiling gets raised to make a test pass, which is how a ceiling\n' +
     '     stops meaning anything. Inline it costs 15px less and the sheet has room again. */\n' +
     '  .pw-onetime{display:block;font-size:11.5px;line-height:1.4;color:var(--dim-2);\n' +
@@ -618,7 +618,7 @@
     /* LAST THING BEFORE THE BUTTON, because it is the only line on this card that changes
        the decision rather than describing what is in it. See the note on .pw-onetime. */
     '<p class="pw-onetime"><b>One time offer</b>Buy the Premium Bundle on its own and '+
-    'this one closes. It is not offered again.</p>'+
+    'this one closes. It isn\'t offered again.</p>'+
     /* THE BUNDLE IS ALREADY NAMED, twice, in the heading of this card and in the tag beside
        it. Spelling it out a third time on the button ran to eighteen characters and set at
        the button's own size it filled the width edge to edge on a phone, which reads as a

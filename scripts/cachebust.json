@@ -1911,12 +1911,12 @@
   },
   "cfb/commish/index.html": {
     "/assets/store.js": {
-      "v": "21",
-      "sha": "905aa4f7e9d42645"
+      "v": "22",
+      "sha": "8df669f434400d08"
     },
     "/cfb/engine.js": {
-      "v": "34",
-      "sha": "b0d91d3b9bc45e50"
+      "v": "35",
+      "sha": "6790ff818f8387df"
     },
     "access.js": {
       "v": "7",
@@ -1927,16 +1927,16 @@
       "sha": "02a91d5c4391b42b"
     },
     "frontier.js": {
-      "v": "2",
-      "sha": "4a970309474e07f0"
+      "v": "3",
+      "sha": "6de364bef8ecab6c"
     },
     "ledger.js": {
-      "v": "11",
-      "sha": "514d1e74716e4400"
+      "v": "12",
+      "sha": "74e36172dc94034e"
     },
     "blocs.js": {
-      "v": "15",
-      "sha": "82c0c9d5a11aafb7"
+      "v": "16",
+      "sha": "816ed06a5e071216"
     },
     "note.js": {
       "v": "1",
@@ -1947,12 +1947,12 @@
       "sha": "d19df33aadff5118"
     },
     "venues.js": {
-      "v": "8",
-      "sha": "e6a6a4d98cd2ff95"
+      "v": "9",
+      "sha": "256ae9ac2e8ea0e1"
     },
     "docket.js": {
-      "v": "32",
-      "sha": "4e9be55e841393c7"
+      "v": "33",
+      "sha": "149441d9de7d7ca2"
     },
     "rivals.js": {
       "v": "2",
@@ -1963,60 +1963,60 @@
       "sha": "fc632f084e6ecfc6"
     },
     "season.js": {
-      "v": "19",
-      "sha": "308f8b9303e3ab52"
+      "v": "20",
+      "sha": "ad0aced0f89d804b"
     },
     "recruiting.js": {
-      "v": "1",
-      "sha": "96e7b11660ae7814"
+      "v": "2",
+      "sha": "01f5452b433c4bb0"
     },
     "council.js": {
       "v": "3",
       "sha": "1ce94b7007d24d0a"
     },
     "feed.js": {
-      "v": "7",
-      "sha": "cf882b1b4a6ec638"
+      "v": "8",
+      "sha": "96c1c7ee4639385f"
     },
     "calendar.js": {
-      "v": "6",
-      "sha": "9d3baace7aae742e"
+      "v": "7",
+      "sha": "df593d3ce7f885e9"
     },
     "situation.js": {
       "v": "10",
       "sha": "5314e990557f2470"
     },
     "fallout.js": {
-      "v": "8",
-      "sha": "158d3e73ca91237c"
+      "v": "9",
+      "sha": "e0948b126ebdc402"
     },
     "media.js": {
-      "v": "6",
-      "sha": "53fd79b21f83518f"
+      "v": "7",
+      "sha": "cee5b1ee803b4fc5"
     },
     "scene.js": {
-      "v": "10",
-      "sha": "279ac5053e54a97a"
+      "v": "11",
+      "sha": "e9104e3df8a649e3"
     },
     "report.js": {
-      "v": "4",
-      "sha": "41393f2ab30cf370"
+      "v": "5",
+      "sha": "ec88e3bf64e9bad5"
     },
     "metrics.js": {
-      "v": "3",
-      "sha": "5804dd08136312ee"
+      "v": "4",
+      "sha": "7a8a075c4c6ee81e"
     },
     "doctrine.js": {
-      "v": "3",
-      "sha": "9836f2e81768e7c1"
+      "v": "4",
+      "sha": "60fa28e2133930ce"
     },
     "splits.js": {
-      "v": "4",
-      "sha": "1ea16f4acc2b8538"
+      "v": "5",
+      "sha": "f8c8d8db3e957b72"
     },
     "/cfb/auth.js": {
-      "v": "6",
-      "sha": "153192c9aeb27834"
+      "v": "7",
+      "sha": "560799e062cc5d8c"
     },
     "/assets/cloudsave.js": {
       "v": "2",
@@ -2041,24 +2041,24 @@
   },
   "cfb/index.html": {
     "engine.js": {
-      "v": "34",
-      "sha": "b0d91d3b9bc45e50"
+      "v": "35",
+      "sha": "6790ff818f8387df"
     },
     "run.js": {
-      "v": "14",
-      "sha": "7fefcb827460c1f9"
+      "v": "15",
+      "sha": "4613f583129e3bb0"
     },
     "achievements.js": {
       "v": "11",
       "sha": "f57edd42ef794134"
     },
     "auth.js": {
-      "v": "6",
-      "sha": "153192c9aeb27834"
+      "v": "7",
+      "sha": "560799e062cc5d8c"
     },
     "board.js": {
-      "v": "6",
-      "sha": "13d061370a98bbe8"
+      "v": "7",
+      "sha": "1cd31c47cfb72ae6"
     },
     "commish/access.js": {
       "v": "6",
@@ -2069,8 +2069,8 @@
       "sha": "02a91d5c4391b42b"
     },
     "/assets/store.js": {
-      "v": "21",
-      "sha": "905aa4f7e9d42645"
+      "v": "22",
+      "sha": "8df669f434400d08"
     },
     "/cfb/commish/clock.js": {
       "v": "4",
@@ -2087,8 +2087,8 @@
       "sha": "8648d9aa90526509"
     },
     "/football/auth.js": {
-      "v": "6",
-      "sha": "e5f17581ed6580f6"
+      "v": "7",
+      "sha": "faaf90d29173d163"
     },
     "clubs.js": {
       "v": "2",
@@ -2105,12 +2105,12 @@
   },
   "football/index.html": {
     "engine.js": {
-      "v": "97",
-      "sha": "7725fa47fffdcd31"
+      "v": "98",
+      "sha": "d61fa55f136fd526"
     },
     "run.js": {
-      "v": "102",
-      "sha": "cb24fe190d75981b"
+      "v": "103",
+      "sha": "c89d2f6dba5b9b76"
     },
     "/football/fullteam-access.js": {
       "v": "3",
@@ -2125,28 +2125,28 @@
       "sha": "8648d9aa90526509"
     },
     "board.js": {
-      "v": "39",
-      "sha": "3becaf1b8afd7fa6"
+      "v": "40",
+      "sha": "204906d7b9a5bb27"
     },
     "achievements.js": {
-      "v": "14",
-      "sha": "1967fb9d4e886258"
+      "v": "15",
+      "sha": "faf8dcda9af64aa6"
     },
     "crest.js": {
-      "v": "10",
-      "sha": "39ae7ad9335c19bc"
+      "v": "11",
+      "sha": "b35bb059c3376a91"
     },
     "/assets/store.js": {
-      "v": "21",
-      "sha": "905aa4f7e9d42645"
+      "v": "22",
+      "sha": "8df669f434400d08"
     },
     "/assets/cloudsave.js": {
       "v": "2",
       "sha": "db78661bbd724b47"
     },
     "auth.js": {
-      "v": "6",
-      "sha": "e5f17581ed6580f6"
+      "v": "7",
+      "sha": "faaf90d29173d163"
     },
     "data/defender_seasons.json": {
       "v": "1",

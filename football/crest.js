@@ -158,7 +158,7 @@ function arcBand(cx,cy,r,a0,a1,w,col,op){
 
 const MARKS={
   init:{ name:'The Monogram', got:true, t:'The Monogram',
-    note:'Your two letters, which is what the crest shows today. It stays the default forever and it is nobody\'s consolation prize.',
+    note:'Your two letters, which is what the crest shows today. It stays the default forever and it\'s nobody\'s consolation prize.',
     rare:'1.00', tier:null, draw:function(){ return ''; } },
 
   /* THE SIGNAL. A referee with both arms straight up. The stripes are what make it a ref
@@ -246,7 +246,7 @@ const MARKS={
      paintbrush both times: a knot with cloth trailing off it IS a brush, and with no yellow
      there is nothing left to say otherwise. */
   egg:{ name:'Goose Egg', got:true, t:'Goose Egg',
-    note:'Lose every game in a season. The cabinet calls this one The 2008 Lions, and it is worth wearing precisely because it is not an achievement.',
+    note:'Lose every game in a season. The cabinet calls this one The 2008 Lions, and it\'s worth wearing precisely because it isn\'t an achievement.',
     rare:'0.008', tier:'gold',
     draw:function(f,a){
       return '<path d="M50 12c17 0 28 22 28 41 0 20-12 33-28 33s-28-13-28-33c0-19 11-41 28-41z" fill="'+f+'"/>'+
@@ -255,7 +255,7 @@ const MARKS={
     } },
 
   headset:{ name:'The Headset', got:true, t:'The Headset',
-    note:'Win a title in the Trade Machine. You did not draft that team, you assembled it from the war room.',
+    note:'Win a title in the Trade Machine. You didn\'t draft that team, you assembled it from the war room.',
     rare:'0.06', tier:'gold',
     draw:function(f){
       return '<path d="M20 56a30 30 0 0 1 60 0" fill="none" stroke="'+f+'" stroke-width="9"/>'+
@@ -273,7 +273,7 @@ const MARKS={
      marker and a sign on a pole is all that is left. Banners say the thing directly, and
      three of them say three. */
   rafters:{ name:'The Rafters', got:false, t:'The Rafters',
-    note:'Win titles in three straight seasons. One banner each, and they do not come down.',
+    note:'Win titles in three straight seasons. One banner each, and they don\'t come down.',
     rare:'0.006', tier:'legend',
     draw:function(f,a){
       let s='<rect x="10" y="12" width="80" height="9" rx="4" fill="'+f+'"/>';
@@ -351,7 +351,7 @@ const MARKS={
      only mark in the set that is equally crisp at 96 and at 26. A bone and a sitting dog in
      profile both work too and are drawn in the lab if this ever wants replacing. */
   dog:{ name:'The Underdog', got:false, t:'The Underdog',
-    note:'Win the title from a wild card seed. You were not supposed to be there.',
+    note:'Win the title from a wild card seed. You weren\'t supposed to be there.',
     rare:'0.019', tier:'gold',
     /* THE FOUR TOES ARE SET BY MEASURED GAPS, NOT BY EVEN CENTRES.
 

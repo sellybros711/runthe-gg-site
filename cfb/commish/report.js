@@ -68,9 +68,9 @@
         ? 'The sport earned more than you had already promised it, every year, which is the '
           + 'only way a distribution formula ever stops being an argument.'
         : gap <= 0.05
-          ? 'The books came out level. Nobody thanks a commissioner for that and it is harder '
+          ? 'The books came out level. Nobody thanks a commissioner for that and it\'s harder '
             + 'than it sounds.'
-          : 'You wrote checks the football did not cover. Somebody after you has to find '
+          : 'You wrote checks the football didn\'t cover. Somebody after you has to find '
             + 'that money or take it off somebody.',
     };
   }
@@ -91,7 +91,7 @@
         ? 'More people watched college football when you left than when you arrived.'
         : pct >= -2
           ? 'The audience you were handed is roughly the audience you handed on.'
-          : 'Fewer people watched at the end than at the beginning, and that is the number '
+          : 'Fewer people watched at the end than at the beginning, and that\'s the number '
             + 'every other number in this job is eventually derived from.',
     };
   }
@@ -113,7 +113,7 @@
         : bigTwo
           ? 'You lost most of the room and kept the two that can remove you, which is the '
             + 'trade this job is actually made of.'
-          : 'The two conferences that can end a term were not with you at the end of it.',
+          : 'The two conferences that can end a term weren\'t with you at the end of it.',
     };
   }
 
@@ -210,10 +210,10 @@
         ? 'Every conference that was standing when you took the job was standing when you '
           + 'left it.'
         : d === -1
-          ? 'One conference did not survive your term. Somewhere there is a school playing in '
-            + 'a league it did not choose.'
+          ? 'One conference didn\'t survive your term. Somewhere there is a school playing in '
+            + 'a league it didn\'t choose.'
           : Math.abs(d) + ' conferences went under while you were in the chair, and the sport '
-            + 'that is left is a smaller one than the sport you were given.',
+            + 'that\'s left is a smaller one than the sport you were given.',
     };
   }
 
@@ -225,9 +225,9 @@
     { at: 2.7, title: 'A good commissioner',
       line: 'You got more right than wrong and the things you got wrong were the hard ones.' },
     { at: 2.0, title: 'You held the thing together',
-      line: 'Nothing collapsed. In this job that is not nothing, and it is also not much.' },
+      line: 'Nothing collapsed. In this job that isn\'t nothing, and it\'s also not much.' },
     { at: 1.2, title: 'A caretaker at best',
-      line: 'The sport got through your term and is not obviously better for any of it.' },
+      line: 'The sport got through your term and isn\'t obviously better for any of it.' },
     { at: -1, title: 'They will use your name as a warning',
       line: 'Somebody is going to spend a decade undoing this.' },
   ];

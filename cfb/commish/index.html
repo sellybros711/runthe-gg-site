@@ -2323,7 +2323,7 @@
          The map and the sport panel move below these on purpose: in October nobody wants a
          conference footprint, they want to know who is unbeaten. -->
     <div class="card flat" id="off-tvcard" hidden>
-      <div class="eyebrow green" style="margin-bottom:9px">Who is watching</div>
+      <div class="eyebrow green" style="margin-bottom:9px">Who's watching</div>
       <div id="off-tv"></div>
     </div>
     <div class="card flat" id="off-weekcard" hidden>
@@ -2361,7 +2361,7 @@
          how the argument sounds out loud anyway. See heisman() in season.js. -->
     <div class="card flat" id="off-heiscard" hidden>
       <div class="eyebrow" style="margin-bottom:4px">The trophy</div>
-      <p class="dcsub" style="margin-bottom:9px">Where the straw poll is this week. You do not
+      <p class="dcsub" style="margin-bottom:9px">Where the straw poll is this week. You don't
         get a vote, which has never stopped anybody asking what you think.</p>
       <div id="off-heis"></div>
     </div>
@@ -2519,7 +2519,7 @@
   <div class="screen" id="s-press" data-in="slide">
     <div class="beatbar" id="press-beatbar"></div>
     <div class="eyebrow gold" id="p-eyebrow">Media days</div>
-    <h2 id="p-title">You are on first</h2>
+    <h2 id="p-title">You're on first</h2>
     <p class="dcsub" id="p-sub"></p>
     <div class="pdots" id="p-dots"></div>
     <div class="card flat askc">
@@ -2578,7 +2578,7 @@
       <div class="eyebrow" style="margin-bottom:4px">What to look at</div>
       <p class="dcsub">Pick any one of these and the chart above redraws against it. Four
         groups, because there are four kinds of number in this job. What the sport drew.
-        What it is worth. How the office is doing. What is building up against you.</p>
+        What it is worth. How the office is doing. What's building up against you.</p>
       <div id="dc-pick"></div>
     </div>
 
@@ -2630,8 +2630,8 @@
     <div class="eyebrow gold">The record</div>
     <h2>Standings</h2>
     <p class="lede" style="margin-bottom:14px">Every finished term in this game, by the people
-      who played it. Scores are ranked inside a doctrine: the question is not who ran college
-      football best, it is who ran it best out of the people who wanted what you wanted.</p>
+      who played it. Scores are ranked inside a doctrine: the question isn't who ran college
+      football best, it's who ran it best out of the people who wanted what you wanted.</p>
 
     <!-- YOUR OWN LINE FIRST, because it is the thing the screen is opened for. Hidden until
          there is something true to put in it. -->
@@ -2690,7 +2690,7 @@
          two with their answers, after the ruling. It is what makes the budget cost something
          rather than merely limit something. See paintUnasked(). -->
     <div class="card flat" id="r-unaskedcard" hidden>
-      <div class="eyebrow" style="margin-bottom:4px">What you did not ask</div>
+      <div class="eyebrow" style="margin-bottom:4px">What you didn't ask</div>
       <p class="dcsub" id="r-unaskedsub" style="margin-bottom:10px"></p>
       <div class="wire" id="r-unasked"></div>
     </div>
@@ -2778,8 +2778,8 @@
 
 <!-- THE BUNDLE STORE, shared with The Perfect Season. The door below draws it for anybody
      who has not bought, so it has to be there before gate() runs. -->
-<script src="/assets/store.js?v=21"></script>
-<script src="/cfb/engine.js?v=34"></script>
+<script src="/assets/store.js?v=22"></script>
+<script src="/cfb/engine.js?v=35"></script>
 <script src="access.js?v=7"></script>
 <!-- THE FULL TEAM LIST AND FLAG. This page draws the same store the other two do, and
      the store asks whether the bundle it is selling names Full Team. Without this file that
@@ -2790,9 +2790,9 @@
      ask about. Before them on purpose, though neither reads it at load: both resolve it at
      the call so that this order is a convenience rather than a rule somebody can break by
      moving a line. See the header in frontier.js. -->
-<script src="frontier.js?v=2"></script>
-<script src="ledger.js?v=11"></script>
-<script src="blocs.js?v=15"></script>
+<script src="frontier.js?v=3"></script>
+<script src="ledger.js?v=12"></script>
+<script src="blocs.js?v=16"></script>
 <script src="note.js?v=1"></script>
 <!-- The free tier's one season a day. Its clock is the SERVER's
      (supabase/104_commish_free_clock.sql); this is only the transport and the countdown. -->
@@ -2801,8 +2801,8 @@
      Loaded after them it is undefined at the moment they capture it, every venue item is
      silently ineligible forever, and the title game is worth the same wherever it is played.
      Nothing throws. test_page asserts the modules are actually live in the browser. -->
-<script src="venues.js?v=8"></script>
-<script src="docket.js?v=32"></script>
+<script src="venues.js?v=9"></script>
+<script src="docket.js?v=33"></script>
 <!-- BEFORE season.js, which reads window.PS_CFB_CHURN at load time, and which falls back to
      null rather than throwing when it is missing. Loaded after it, or not loaded at all, every
      team is frozen at the season the term began: the top five in 2025 are the top five in 2029
@@ -2813,31 +2813,31 @@
      State plays Michigan about one year in five, and nothing throws. -->
 <script src="rivals.js?v=2"></script>
 <script src="churn.js?v=4"></script>
-<script src="season.js?v=19"></script>
+<script src="season.js?v=20"></script>
 <!-- The board. Captures churn.js and season.js at load time, so after both of them. -->
-<script src="recruiting.js?v=1"></script>
+<script src="recruiting.js?v=2"></script>
 <script src="council.js?v=3"></script>
-<script src="feed.js?v=7"></script>
-<script src="calendar.js?v=6"></script>
+<script src="feed.js?v=8"></script>
+<script src="calendar.js?v=7"></script>
 <script src="situation.js?v=10"></script>
-<script src="fallout.js?v=8"></script>
+<script src="fallout.js?v=9"></script>
 <!-- The podium. Reads nothing at load time; see media.js. -->
-<script src="media.js?v=6"></script>
+<script src="media.js?v=7"></script>
 <!-- The cutscenes. Reads blocs.js at load time, so after it. -->
-<script src="scene.js?v=10"></script>
+<script src="scene.js?v=11"></script>
 <!-- Reads window.PS_CFB_LEDGER at load time, so after ledger.js. Nothing reads THIS at
      load time, so its own position past that point does not matter. -->
-<script src="report.js?v=4"></script>
+<script src="report.js?v=5"></script>
 <!-- Captures nothing off window at load time: it is handed the world by the page and the
      beat names by the caller, so its position here is free. -->
-<script src="metrics.js?v=3"></script>
+<script src="metrics.js?v=4"></script>
 <!-- Reads nothing off window at load time: it is handed a world and returns a profile, so
      its position here is free. -->
-<script src="doctrine.js?v=3"></script>
+<script src="doctrine.js?v=4"></script>
 <!-- Reads window.PS_CFB_AUTH at CALL time, not at load time, so it may sit either side of
      auth.js. It is here rather than up with the rest because nothing else reads it. -->
-<script src="splits.js?v=4"></script>
-<script src="/cfb/auth.js?v=6"></script>
+<script src="splits.js?v=5"></script>
+<script src="/cfb/auth.js?v=7"></script>
 <!-- THE TERM AND THE CAREER, KEPT AGAINST THE ACCOUNT. Shared with The Perfect Season,
      which had the same save in localStorage and the same way of losing it. Optional like
      everything else here: without it the mode keeps its term exactly where it always did,
@@ -3327,7 +3327,7 @@ const SCENARIOS=[
     blocs:{ Presidents:42, SEC:44, 'Big 12':44, Players:64, Fans:46 } },
   { id:'four', name:'Four teams again',
     line:'The courts unwound the bracket in June. Four teams, no automatic bids, and a '
-      +'hundred and twenty schools with no path in. The phones have not stopped.',
+      +'hundred and twenty schools with no path in. The phones haven\'t stopped.',
     set:{ 'playoff.teams':4, 'playoff.byes':0, 'playoff.autobids':0 },
     meters:{ standing:52 },
     blocs:{ 'Group of Five':34, ACC:40, 'Big 12':40, Fans:44, Networks:58, SEC:58 } },
@@ -3553,7 +3553,7 @@ async function loadTeams(){
   else{
     const r=await fetch('/cfb/data/cfb_team_seasons.json?v=9');
     teams=await r.json();
-    console.warn('Commish is running on the draft game team file: the Group of Five is not on the field.');
+    console.warn('Commish is running on the draft game team file: the Group of Five isn\'t on the field.');
   }
   TEAMS=teams;
   for(const t of teams){
@@ -4289,7 +4289,7 @@ function paintSport(el,w,before){
 const FACT_TITLE=['The playoff','The Group of Five','The players','The schedule'];
 const FACT_ABOUT=[
   'How many teams play for the national title, and how many of those seats are guaranteed to '
-    + 'a conference champion rather than handed out by a committee. It is the argument the '
+    + 'a conference champion rather than handed out by a committee. It\'s the argument the '
     + 'sport is really having, and every other argument is downstream of it.',
   'The share of the money that reaches the sixty-odd schools outside the biggest conferences. '
     + 'Nobody in that group can remove you and all of them are in the room.',
@@ -4395,7 +4395,7 @@ function openFact(i){
   html+='</div>';
 
   html+='<div class="sec"><div class="eyebrow">What moves it</div>'
-    +'<p style="margin-top:0;margin-bottom:10px">You do not set this directly. It moves when '
+    +'<p style="margin-top:0;margin-bottom:10px">You don\'t set this directly. It moves when '
     +'one of these reaches your desk and you rule on it.</p>';
   html+=items.length
     ? items.map((it)=>{
@@ -4486,7 +4486,7 @@ const BEAT_INFO=[
   {icon:'gavel',   say:'The room meets before a game has been played, and most of the rules that matter get written here.'},
   {icon:'portal',  say:'Rosters move. Everybody signs, and a fair number of them leave again inside the month.'},
   {icon:'whistle', say:'Spring practice and spring games. The quiet part of the year, which is when the quiet decisions get made.'},
-  {icon:'mic',     say:'Media days. Nothing has happened yet and it is the only thing anybody is covering.'},
+  {icon:'mic',     say:'Media days. Nothing has happened yet and it\'s the only thing anybody is covering.'},
   {icon:'ball',    say:'September. The first real evidence anybody has about anything.'},
   {icon:'ball',    say:'October. The polls start to mean something, so the arguments start to have stakes.'},
   {icon:'ball',    say:'November. Rivalry month, and the part of the year the sport is actually about.'},
@@ -4611,7 +4611,7 @@ function paintCalendar(el,w){
           const just=leaving&&leaving.year===y&&leaving.beat===i?' just':'';
           const said=played?'The '+y+' season: '+champs[y].school
             :ruled[y+':'+i]?ruled[y+':'+i]+(ruled[y+':'+i]===1?' ruling':' rulings')
-            :now?'you are here':'';
+            :now?'you\'re here':'';
           return '<span class="cel '+phaseOf(i)+(state?' '+state:'')+just+'" style="--i:'+i+'"'
             +' title="'+esc(y+', '+name+(said?': '+said:''))+'"></span>';
         }).join('')
@@ -5009,7 +5009,7 @@ P.finishTerm({
     bits.push('<b>'+Math.round(mine/total*100)+'%</b>'
       +'<span>of commissioners came out the same way</span>');
   }else if(total>0){
-    bits.push('<span>You are among the first to finish a term.</span>');
+    bits.push('<span>You\'re among the first to finish a term.</span>');
   }
   /* WHERE IT STANDS AMONG ITS OWN KIND, which is the whole reason the board is split nine
      ways rather than being one list by score. */
@@ -5114,7 +5114,7 @@ function paintBoards(){
 
   P.doctrineBoard(stDoc,20).then((rows)=>{
     if(seq!==stSeq) return;
-    if(!rows){ board.innerHTML='<p class="stnone">Could not reach the board just now. '
+    if(!rows){ board.innerHTML='<p class="stnone">Couldn\'t reach the board just now. '
       +'Your terms are still recorded.</p>'; return; }
     if(!rows.length){ board.innerHTML='<p class="stnone">Nobody has finished a term as '
       +esc(stName(stDoc))+' yet. The first one to do it is top of this board.</p>'; return; }
@@ -5142,7 +5142,7 @@ function paintBoards(){
 
   P.tenureBoard(20).then((rows)=>{
     if(seq!==stSeq) return;
-    if(!rows){ ten.innerHTML='<p class="stnone">Could not reach the board just now.</p>'; return; }
+    if(!rows){ ten.innerHTML='<p class="stnone">Couldn\'t reach the board just now.</p>'; return; }
     if(!rows.length){ ten.innerHTML='<p class="stnone">No finished terms yet.</p>'; return; }
     ten.innerHTML=rows.map((r)=>{
       const bits=[esc(String(r.terms))+(Number(r.terms)===1?' term':' terms')];
@@ -5527,8 +5527,8 @@ const AXIS_SHORT={
    On The Room and is still council-gated. Knowing the SEC will hate option three is the game.
    Knowing they will hate it by 4.2 is the answer key. */
 const AXIS_ABOUT={
-  money:'How much money moves, and toward the top of the sport unless it is aimed somewhere.',
-  access:'How easy the playoff is to reach for somebody who did not have a path.',
+  money:'How much money moves, and toward the top of the sport unless it\'s aimed somewhere.',
+  access:'How easy the playoff is to reach for somebody who didn\'t have a path.',
   autonomy:'Whether a conference keeps a decision or this office takes it.',
   cost:'What the member schools have to pay out.',
   tradition:'Rivalries, sane kickoff times, the things people already love.',
@@ -5618,7 +5618,7 @@ function paintLearn(){
     +'<div class="lsec">What every side wants</div>'
     +'<div class="lrows">'+rows+'</div>'
     +'<p class="lnote">This is what they want, which any commissioner would know. '
-    +'What it costs you in points is the forecast, and that is still only as good as your '
+    +'What it costs you in points is the forecast, and that\'s still only as good as your '
     +'council.</p>';
 }
 /* THE SHAPE OF A RULING, AS MARKS. Three options were three paragraphs that had to be read
@@ -6185,7 +6185,7 @@ function paintWheel(el,card){
      bloodbath and three is a quiet winter, and that is the thing anybody reacts to. */
   $('off-wheelhead').textContent=wheel.length
     +(wheel.length===1?' job changed hands':' jobs changed hands');
-  $('off-wheelsub').textContent='Nobody in this office hired any of them. It is still the '
+  $('off-wheelsub').textContent='Nobody in this office hired any of them. It\'s still the '
     +'reason half the sport will look different in September.';
   el.innerHTML='<div class="whl">'+wheel.slice(0,12).map((c)=>
     '<span class="whc" style="--tc:'+esc(c.color||'#334155')+'">'
@@ -6361,7 +6361,7 @@ const REBUT_FLOOR=-6;
 const REBUT_OUTLIER=3.5;
 const REBUTTALS=[
   { id:'hold', label:'The ruling stands',
-    say:'You say it once, in the room, and do not say it again.',
+    say:'You say it once, in the room, and don\'t say it again.',
     /* The loser hardens; everybody the ruling helped reads it as an office that cannot be
        lobbied, which is worth something to all of them. */
     to:(angry,gained)=>{
@@ -6403,7 +6403,7 @@ function paintRebuttal(el,card,rows){
   $('r-rebuthead').textContent=who+' wants a word';
   const gained=rows.filter((r)=>r.delta>=0.4).map((r)=>r.id);
   el.innerHTML='<p class="dcsub" style="margin:0 0 9px">You can answer this one, and the '
-    +'answer is on the record. It will not change the ruling.</p>'
+    +'answer is on the record. It won\'t change the ruling.</p>'
     +'<div class="rebs">'+REBUTTALS.map((r)=>
       '<button class="reb" data-r="'+esc(r.id)+'"><b>'+esc(r.label)+'</b>'
       +'<span>'+esc(r.say)+'</span></button>').join('')+'</div>';
@@ -6792,14 +6792,14 @@ function dcFoot(live, rows) {
        series that started at zero has no honest index and is dropped. Saying nothing would
        leave a legend with three entries and a plot with two lines. */
     const gone = rows.filter((r) => !r.pts || !r.pts.length).map((r) => r.s.label);
-    if (gone.length) bits.push(gone.join(' and ') + ' started at zero, so there is nothing to index it against.');
+    if (gone.length) bits.push(gone.join(' and ') + ' started at zero, so there\'s nothing to index it against.');
     else bits.push('Every line starts at 100. A line at 120 is up a fifth on where you found it.');
   } else {
     bits.push(esc(live[0].s.about));
     /* A CHART OF ONE POINT LOOKS BROKEN AND IS NOT. Say so, and say when it stops being
        one point, rather than leaving somebody to conclude the feature does not work. */
     if (live[0].pts.length < 2) {
-      bits.push('One reading so far, which is why it is a dot rather than a line. '
+      bits.push('One reading so far, which is why it\'s a dot rather than a line. '
         + 'Another lands on every beat and on every ruling.');
     } else if (live[0].s.from === 'tape') {
       const n = MT.rulings(world, dcState.range).length;
@@ -7257,7 +7257,7 @@ function openPath(path){
   html+='</div>';
 
   html+='<div class="sec"><div class="eyebrow">What moves it</div>'
-    +'<p style="margin-top:0;margin-bottom:10px">You do not set this directly. It moves when '
+    +'<p style="margin-top:0;margin-bottom:10px">You don\'t set this directly. It moves when '
     +'one of these reaches your desk and you rule on it.'
     +(canPut?(isPro()?' In the off-season you can decide which one that is.'
         :' In the off-season you can put one of these on your desk. One a year.')
@@ -7292,7 +7292,7 @@ function paintSettled(el,card){
   card.hidden=false;
   const n=rows.reduce((t,r)=>t+r.items.length,0);
   el.innerHTML='<p class="dcsub" style="margin:0 0 9px">'
-    +n+(n===1?' argument this office':' arguments this office')+' will not have again, because '
+    +n+(n===1?' argument this office':' arguments this office')+' won\'t have again, because '
     +'of how you ruled. This is what a decision is worth after the week it was made.</p>'
     +rows.map((r)=>'<div class="setl">'
       /* THE NAME AND THE STATE, NOT A SENTENCE JOINING THEM. This was one bold line reading
@@ -7434,11 +7434,11 @@ function paintAsks(){
   /* THE COUNT IN WORDS AND THE COST IN A SENTENCE. "You have one question and there are 4"
      was the first version and it read as arithmetic homework. */
   $('d-askhint').textContent=left===D.PROBE_MAX
-    ? 'Four questions in the file and you get two of them. What you do not ask, you do not '
+    ? 'Four questions in the file and you get two of them. What you don\'t ask, you don\'t '
       +'find out until the ruling is already made.'
     : left===1
-      ? 'One question left, and you will not get to ask the other two.'
-      : 'That is both of them. The rest of the file goes back where it came from.';
+      ? 'One question left, and you won\'t get to ask the other two.'
+      : 'That\'s both of them. The rest of the file goes back where it came from.';
   box.innerHTML='<div class="qa">'+qs.map((q)=>{
     const put=asked.indexOf(q.id)>=0;
     const qt=esc(D.text(q.q,cast,item,sit));
@@ -7665,7 +7665,7 @@ const PATH_NAME={
   'posture.globalMembers':'Members outside the country',
   'venues.offworld':'Off the planet',
   'posture.offworld':'Games played off the planet',
-  'posture.colony':'Programs that cannot come home',
+  'posture.colony':'Programs that can\'t come home',
 };
 /* WHAT THE SETTING ACTUALLY IS, for the sheet a row of the year card opens.
    The four headline tiles have had FACT_ABOUT since they were built, so tapping one told you
@@ -7681,7 +7681,7 @@ const PATH_ABOUT={
     +'back. Somebody falls through the middle of this rule every spring, and this is what '
     +'happens to them.',
   'labour.proYears':'How long a player can be paid to play somewhere else and still return '
-    +'to college. It is the line between a college sport and a waiting room.',
+    +'to college. It\'s the line between a college sport and a waiting room.',
   'labour.rulesBy':'Whether this office writes the rules that govern players or each '
     +'conference writes its own. One is hard to pass. The other is hard to enforce.',
   'posture.tvWindows':'How many separate slots a Saturday is cut into for television. Every '
@@ -7924,7 +7924,7 @@ function paintWrite(){
   $('d-write').innerHTML='<div class="dial"><div class="dh"><b>Add a note to the ruling</b>'
     +'</div><textarea class="write" id="d-text" placeholder="'+esc(writeHint())+'"></textarea>'
     +'<p style="font-size:11.5px;color:var(--dim-2);margin-top:7px">This rides along with '
-    +'whichever ruling you pick, and it is kept on the record with it. '
+    +'whichever ruling you pick, and it\'s kept on the record with it. '
     +'<b style="color:var(--dim)">The room reads it.</b> A group whose grievance you answer '
     +'takes the ruling better: softened, never delighted. One concern or two, in plain '
     +'words. A note about everything is a note about nothing.</p></div>';
@@ -7947,8 +7947,8 @@ const WRITE_HINT={
   money:'Say who the money comes from and who it goes to.',
   access:'Say who gets a path and what it takes to walk it.',
   autonomy:'Say who decides this from now on, and in writing.',
-  cost:'Say who is paying for it and out of which pocket.',
-  tradition:'Say what is protected by name and what is not.',
+  cost:'Say who\'s paying for it and out of which pocket.',
+  tradition:'Say what\'s protected by name and what isn\'t.',
   inventory:'Say what gets played, and when, and who sells it.',
   labour:'Say what a player is owed here and who owes it.',
   exposure:'Say how this survives the first person who sues over it.',
@@ -8016,13 +8016,13 @@ function paintNoteAnswer(el,read,forecast,blind){
         :'<b>They read your note.</b> '+esc(cap)+' took it better for being answered.';
     }else{
       h='<b>They would read your note.</b> Somebody would take it better for being '
-        +'answered. Your council cannot say who.';
+        +'answered. Your council can\'t say who.';
     }
   }else if(read.diffuse){
     h='<b>A note about everything is a note about nothing.</b> You raised '
       +read.forces.length+' concerns at once. Nobody felt answered.';
   }else{
-    h='<b>The note is on the record.</b> It answers nobody who is angry about this one.';
+    h='<b>The note is on the record.</b> It answers nobody who\'s angry about this one.';
   }
   el.innerHTML=h;
   el.hidden=false;
@@ -8158,7 +8158,7 @@ function paintAsk(){
   pAnswer=null;
   paintBeatbar($('press-beatbar'),world);
   $('p-eyebrow').textContent='Media days · '+world.year;
-  $('p-title').textContent=at===0?'You are on first':'The next one is already standing';
+  $('p-title').textContent=at===0?'You\'re on first':'The next one is already standing';
   /* SAY WHAT THIS SCREEN IS, ONCE. The desk explains itself with a forecast button; this
      one has to explain itself in a sentence, because what it is missing is the point. */
   $('p-sub').textContent=at===0
@@ -8187,7 +8187,7 @@ function paintAsk(){
      itself. */
   $('p-who').innerHTML='<b>'+esc(A.name)+'</b><span>'+esc(line)+'</span>';
   $('p-ask').textContent=MED.askText(q,c,s2,world);
-  $('p-hint').textContent='No forecast. You are on your feet.';
+  $('p-hint').textContent='No forecast. You\'re on your feet.';
   paintAnswers();
   $('b-say').disabled=true;
   $('b-say').textContent='Say it';
@@ -8809,7 +8809,7 @@ function paintSeason(el,sim){
     +movedBlock(sim)
     +(sim.fromRealData
       ? ''
-      : '<p class="realnote">These teams are real. This season is not: the data stops at '
+      : '<p class="realnote">These teams are real. This season isn\'t: the data stops at '
         +world.startYear+', so every year after your first is played by the sport you have '
         +'been changing rather than one that happened.</p>');
   /* THE BRACKET ARRIVES IN THE ORDER IT WAS PLAYED IN, round by round, which is the one
@@ -8999,8 +8999,8 @@ function yearVerdict(angry,w){
     return one([
       'You go into the winter with '+names.join(' and ')+' against you, and enough of the '
         +'room to make a vote worth counting.',
-      names.join(' and ')+' have stopped taking your calls. That is most of the way to a '
-        +'problem you cannot talk your way out of.',
+      names.join(' and ')+' have stopped taking your calls. That\'s most of the way to a '
+        +'problem you can\'t talk your way out of.',
     ]);
   }
   if(names.length){
@@ -9008,13 +9008,13 @@ function yearVerdict(angry,w){
       'You finish the year with '+names.join(' and ')+' against you. Survivable, and not free.',
       names.join(' and ')+' will spend the offseason briefing against this office. Everybody '
         +'else is fine.',
-      'One bad room, the rest of them behind you. That is an ordinary year in this job.',
+      'One bad room, the rest of them behind you. That\'s an ordinary year in this job.',
     ]);
   }
   if(w.meters.standing>=70){
     return one([
-      'Nobody in the room is against you, which in this job usually means they are waiting.',
-      'A year with the whole room behind you. Enjoy it, because it does not happen twice.',
+      'Nobody in the room is against you, which in this job usually means they\'re waiting.',
+      'A year with the whole room behind you. Enjoy it, because it doesn\'t happen twice.',
     ]);
   }
   return one([
@@ -9348,7 +9348,7 @@ function freeCareerEnd(){
   waitClock(false);
   $('w-act').innerHTML=(window.RTG_STORE
     ? window.RTG_STORE.html({signedOut:false})
-    : '<p class="lede">The store could not be loaded. Reload the page and try again.</p>')
+    : '<p class="lede">The store couldn\'t be loaded. Reload the page and try again.</p>')
     +'<a class="btn ghost" href="/cfb/" style="text-decoration:none;text-align:center;'
     +'margin-top:12px">Back to the game</a>';
   if(window.RTG_STORE) window.RTG_STORE.wire($('w-act'),{buy:(kind,btn)=>buyBundle(kind,btn)});
@@ -9551,7 +9551,7 @@ $('b-term-share').onclick=async()=>{
     throw new Error('no share');
   }catch(e){
     if(e&&e.name==='AbortError') return;
-    try{ await navigator.clipboard.writeText(text); toast('Copied'); }catch(_){ toast('Could not copy'); }
+    try{ await navigator.clipboard.writeText(text); toast('Copied'); }catch(_){ toast('Couldn\'t copy'); }
     if(file){
       const a=document.createElement('a');
       a.href=URL.createObjectURL(file); a.download='commish-simulator.png'; a.click();
@@ -9579,8 +9579,8 @@ async function buyBundle(kind,btn){
     if(btn) btn.textContent=
       d&&d.error==='stripe_not_configured'?'Not on sale yet'
       :d&&d.error==='already_owned'?'This account already owns it'
-      :'Checkout could not start. Try again';
-  }catch(e){ if(btn) btn.textContent='Checkout could not start. Try again'; }
+      :'Checkout couldn\'t start. Try again';
+  }catch(e){ if(btn) btn.textContent='Checkout couldn\'t start. Try again'; }
 }
 /* COMING BACK FROM STRIPE.
  *
@@ -9685,7 +9685,7 @@ function gate(){
      account may have neither. Its copy still says testing, which is correct for the only
      world it can appear in. */
   if(!allowed()){
-    say.textContent='Commish Simulator is in testing and this account is not on the list yet. '
+    say.textContent='Commish Simulator is in testing and this account isn\'t on the list yet. '
       +'Nothing is missing from the game you were playing.';
     /* WHAT THE LIST IS ACTUALLY MATCHING ON, printed, because the first version of this
        screen said "not on the list" and stopped. The list holds usernames, a username is
@@ -9758,7 +9758,7 @@ function gate(){
      What came out was the explaining. "The sport will do what a sport actually does with
      that" is a promise the mode keeps on its own within about three rulings, and a promise
      the thing itself keeps does not need making first. */
-  say.innerHTML=esc('You run college football for five years. Who is in which conference, '
+  say.innerHTML=esc('You run college football for five years. Who\'s in which conference, '
       + 'how many teams play for the title, what a player is owed, who gets the money.')
     +'<span class="goal"><b>Hand over a better sport than you were given.</b> Graded on six '
       +'things: the books, the audience, the room, who wins, who gets in, and the map.</span>'
@@ -9808,7 +9808,7 @@ function gate(){
        player their term is not trapped in this browser. No branches, nothing to gate, and
        nothing that can address the wrong reader. */
     +'<p style="font-size:11.5px;color:var(--dim-2);margin-top:11px;text-align:center">'
-      +'Your term is saved to your account. Sign in anywhere and it is there.</p>';
+      +'Your term is saved to your account. Sign in anywhere and it\'s there.</p>';
   const r=$('g-resume'); if(r) r.onclick=()=>office();
   const gs=$('g-stand'); if(gs) gs.onclick=()=>openStandings('s-gate');
   act.querySelectorAll('[data-sc]').forEach((btn)=>{
