@@ -7505,6 +7505,53 @@ for a claim about a side effect. Whiffs per swing at medium run 25.6 for somebod
 has never played against 34.8 on hard, and nine points of a rate over four hundred
 swings is four sigma. **The sample moves or the claim moves; the band does not.**
 
+#### THE PROP BAT WAS A HAIRLINE ACROSS THE BATTER'S FACE
+
+The handoff pack draws a real bat in the swing and batting stance strips, so the
+page's own three rectangle bat is only drawn for a character whose art has none.
+**That is 31 of the 68**, including whoever is at the plate about half the time.
+
+**Its LENGTH is a share of the figure and its THICKNESS was five pixels**, so it
+was the right bat on the field, where a runner is thirty pixels wide, and a
+thirtieth as thick as it was long on the plate camera, where the batter is six
+times that. Rendered and looked at, what a player sees is a twig floating beside
+the hitter. That is the strike zone's own hairline one screen along: a length
+written in the wrong unit, invisible in the source, and it is the frame a player
+looks at longest. The floor is what the field always drew, so nothing under about
+90 pixels wide moves at all.
+
+**And it was drawn ACROSS HIS FACE.** A quarter turn anticlockwise from the chest
+sweeps the barrel up over the head. Four placements were rendered at plate scale
+and looked at: two read as a bat, and the one that ships is the only one that
+touches nothing, which is a bat held up over the back shoulder.
+
+#### THE PITCHING DECK COVERED THE STRIKE ZONE, AND ONLY THE BATTING ONE WAS SOLVED
+
+`deckCoverBlocks` is honoured and then `sy` is clamped to the world's own bottom
+edge, which is the one of the three clamps that cannot be argued with, so what the
+deck cannot be paid for it simply COVERS. The batting deck was measured and the
+camera's budget was solved against it. The pitching deck is a pitch name, a row of
+types and the two action buttons as a COLUMN, which is 148 pixels against the
+batting deck's 57, and nothing had ever measured it: 22 pixels of a 200 pixel zone
+at 1440 by 900 and **47 of 160 at 1280 by 800**, which is the bottom third of the
+box a pitcher is aiming into.
+
+Walk him and Throw sit beside each other on a wide window now, which is the swing
+row's own fix arriving at the other half, and the last few pixels come off the
+spacing rather than the type, because Throw is what that deck is FOR. Six pixels
+of the smallest desktop are still covered and that is the world running out rather
+than a layout to tighten. `check-firstpitch` walks the pitching half now.
+
+#### `calibrate.mjs` COLLECTS PAGE ERRORS AND ONE WAS REAL
+
+`Cannot read properties of undefined (reading 'weakPitch')`, twice in 150 pitches.
+`batterCtx` is built when a batter steps in and `scheduleCpuSwing` can be reached
+before it is, so **two of the four reads in that one function tested it and two did
+not**. A throw there aborts the swing being scheduled, so what a player sees is a
+pitch nobody swings at and nothing on screen to say why. Every rate target was in
+band either side of it, which is the point: the rates are what that file bands and
+the page errors are what it happens to notice.
+
 #### A fixture that suppresses timers has to book the at bat itself
 
 Every timer is stubbed so a plate appearance costs nothing, and

@@ -8646,8 +8646,10 @@ function scheduleCpuSwing() {
 
      WHIFF WAS ALREADY FLAT ACROSS THE TIERS AND THAT IS THE DESIGN.
      47.4 / 47.8 / 46.2 on easy, medium and hard: these numbers were
-     cancelling DIFF.sweetWidth, which runs .26 / .20 / .16, so a
-     harder dugout was not a dugout that missed less. What the tier
+     cancelling this dugout's own window, which was `DIFF.sweetWidth` at
+     .26 / .20 / .16 when they were solved and is `CPU_SWEET` at those
+     same three numbers now, so a harder dugout was not a dugout that
+     missed less. What the tier
      actually bought was CONTACT: balls in play per swing ran 24.0 /
      27.9 / 31.5.
 
@@ -8668,7 +8670,14 @@ function scheduleCpuSwing() {
   const diffJitter = { easy: 0.115, medium: 0.068, hard: 0.030 }[State.difficulty];
   let jitter = conJitter + diffJitter;
   /* Weak pitch: CPU whiffs badly on their weak pitch. */
-  if (p.pt === g.batterCtx.weakPitch) jitter += 0.14;
+  /* GUARDED, LIKE THE OTHER TWO READS IN THIS FUNCTION. `batterCtx` is built
+     when a batter steps in and this can be reached before it is, so two of the
+     four reads here tested it and two did not: `calibrate.mjs` collects page
+     errors and reported "Cannot read properties of undefined (reading
+     weakPitch)" twice in 150 pitches. A throw here aborts the swing that was
+     being scheduled, so what a player would see is a pitch that nobody swings
+     at and nothing on screen to say why. */
+  if (g.batterCtx && p.pt === g.batterCtx.weakPitch) jitter += 0.14;
   /* Corner / edge pitches are harder to square up. */
   if (p.zoneAim) {
     if (p.zoneAim.isCorner) jitter += 0.12;
@@ -8739,7 +8748,7 @@ function scheduleCpuSwing() {
   const loc = p.loc || { x: 0, y: 0 };
   let locJ = (0.10 + (100 - batter.con) / 320)
     * ({ easy: 1.35, medium: 1.0, hard: 0.8 }[State.difficulty] || 1)
-    + (p.pt === g.batterCtx.weakPitch ? 0.14 : 0);
+    + (g.batterCtx && p.pt === g.batterCtx.weakPitch ? 0.14 : 0);
   /* A pitch he is sitting on is one he knows the shape of, so his barrel
      starts nearer it. Timing alone would make the read a whiff knob;
      what it should buy is squaring the ball up. */
