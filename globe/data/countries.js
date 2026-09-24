@@ -514,7 +514,7 @@
         trivia: [
           { cat: "trivia", type: "brain", q: "What is the capital of Switzerland?", options: ["Zurich", "Geneva", "Bern", "Basel"], a: 2 },
           { cat: "trivia", type: "brain", q: "The Matterhorn is a peak in which mountain range?", options: ["Andes", "Alps", "Rockies", "Himalayas"], a: 1 },
-          { cat: "trivia", type: "brain", q: "Switzerland is world-renowned for chocolate and…", options: ["Watches", "Diamonds", "Silk", "Tea"], a: 0 },
+          { cat: "trivia", type: "brain", q: "Switzerland is famous for chocolate and…", options: ["Watches", "Diamonds", "Silk", "Tea"], a: 0 },
         ],
         word: [
           { cat: "word", type: "brain", answer: "CHEESE", hint: "Swiss fondue is made of this" },
@@ -2385,7 +2385,7 @@
       tasks: {
         trivia: [
           { cat: "trivia", type: "brain", q: "Fiji is an island nation located in which ocean?", options: ["Atlantic", "Pacific", "Indian", "Arctic"], a: 1 },
-          { cat: "trivia", type: "brain", q: "Fiji is world-renowned for its national team in which sport?", options: ["Cricket", "Rugby", "Basketball", "Cycling"], a: 1 },
+          { cat: "trivia", type: "brain", q: "Fiji is famous for its national team in which sport?", options: ["Cricket", "Rugby", "Basketball", "Cycling"], a: 1 },
           { cat: "trivia", type: "brain", q: "What is the capital of Fiji?", options: ["Nadi", "Suva", "Lautoka", "Labasa"], a: 1 },
         ],
         word: [
