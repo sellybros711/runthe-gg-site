@@ -3502,9 +3502,17 @@ function pushLog(t){ if(!G) return; G.log=G.log||[]; G.log.unshift(t); if(G.log.
    innerHTML. It was textContent once, and five call sites printed their own
    <b> tags on screen: every daily-done, every coin gain, every pass claim. */
 function toast(m){ const t=$('toast'); t.innerHTML=m; t.classList.add('show'); clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove('show'),2200); }
-function modal(title,body,btns){ $('modalTitle').textContent=title; $('modalBody').innerHTML=body; const b=$('modalBtns'); b.innerHTML='';
+/* Every open of a modal, and every close, takes a new generation. An async
+   routine that paints into the modal over several beats (revealPack is the one
+   that does) captures it and bails when it no longer matches, because it is
+   otherwise still writing into whatever modal is open by then: close a pack
+   reveal halfway and its next frame overwrites the body and the buttons of the
+   NEXT modal, so a card sheet ends up wearing a rarity grid and a To the Locker
+   button. Nothing throws. Same guard the match engine runs on MS.gen. */
+let MODAL_GEN=0;
+function modal(title,body,btns){ MODAL_GEN++; $('modalTitle').textContent=title; $('modalBody').innerHTML=body; const b=$('modalBtns'); b.innerHTML='';
   (btns||[{label:'OK',fn:closeModal}]).forEach(x=>{const el=document.createElement('button'); el.textContent=x.label; if(x.cls)el.className=x.cls; el.onclick=x.fn; b.appendChild(el);}); $('modalBack').classList.add('open'); }
-function closeModal(){ $('modalBack').classList.remove('open'); }
+function closeModal(){ MODAL_GEN++; $('modalBack').classList.remove('open'); }
 $('modalBack').addEventListener('click',e=>{ if(e.target===$('modalBack')) closeModal(); });
 $('momentBack').addEventListener('click',e=>{ if(e.target===$('momentBack')) nextMoment(); });
 $('cardOv').addEventListener('click',e=>{ if(e.target===$('cardOv')) closeCard(); });
@@ -13374,7 +13382,10 @@ function confirmFarewell(){
     [{label:'Not yet',cls:'ghost',fn:closeModal}]);
   setTimeout(()=>{
     document.querySelectorAll('#modalBody .decopt').forEach(d=>d.onclick=()=>{
-      const wk=+d.dataset.w; closeModal(); announceRetirement(wk); renderCareer();
+      // renderRecord, not renderCareer: this sheet is opened from the record
+      // screen's own button row, so repainting the career screen left the
+      // Announce farewell tour button sitting there after the tour was booked
+      const wk=+d.dataset.w; closeModal(); announceRetirement(wk); renderCareer(); renderRecord();
     });
   },0);
 }
@@ -13744,7 +13755,9 @@ async function revealPack(pack,got){
   modal(pack.name, `<div id="revealArea" style="min-height:190px;display:flex;align-items:center;justify-content:center;">
       <div class="packbox" id="packBox">?</div></div>
     <div class="hint" style="text-align:center;">Opening…</div>`, []);
+  const gen=MODAL_GEN, stale=()=>MODAL_GEN!==gen;
   await new Promise(r=>setTimeout(r,520));
+  if(stale()) return;                 // the items are already banked; only the show is abandoned
   for(let i=0;i<got.length;i++){
     const c=got[i], R=rr(c.rarity);
     $('revealArea').innerHTML=`<div class="reveal r-${c.rarity}">
@@ -13754,6 +13767,7 @@ async function revealPack(pack,got){
         <div class="rv-name">${c.name}</div>
         <div class="rv-slot">${cap(c.slot)}</div></div>`;
     await new Promise(r=>setTimeout(r,c.rarity==='legendary'?1150:c.rarity==='epic'?850:620));
+    if(stale()) return;
   }
   $('modalBody').innerHTML=`<div class="grid g2">`+got.map(c=>{
       const R=rr(c.rarity);
@@ -13778,6 +13792,7 @@ function openPack(pid){
   if(free){ G.bag.packs[pid]=free-1; } else { G.bag.coins-=p.price; }
   const pool=COSM.filter(c=>!c.owned&&!G.bag.owned[c.id]);
   const got=[], order=['common','rare','epic','legendary'];
+  let dust=0;                               // shards THIS pack paid out, not the balance
   const pity=G.bag.pity||0;
   const pityAt=(p.pity||5)-1;               // a dry run of this many guarantees an epic+
   for(let i=0;i<p.n;i++){
@@ -13787,13 +13802,16 @@ function openPack(pid){
     const cands=pool.filter(c=>c.rarity===rar&&!got.includes(c));
     const item=cands.length?cands[Math.floor(rnd()*cands.length)]:(pool.filter(c=>!got.includes(c))[0]);
     if(item){ got.push(item); G.bag.owned[item.id]=true; }
-    else { G.bag.shards+=(RAR[rar]||{shards:1}).shards; }
+    else { const d=(RAR[rar]||{shards:1}).shards; G.bag.shards+=d; dust+=d; }
   }
   G.bag.pity = got.some(c=>c.rarity==='epic'||c.rarity==='legendary') ? 0 : pity+1;
-  G.bag.shards=(G.bag.shards||0)+2;         // every wrapper is worth a little forge dust
+  G.bag.shards=(G.bag.shards||0)+2; dust+=2;   // every wrapper is worth a little forge dust
   save(); refreshHud(); renderShop();
   if(got.length) revealPack(p,got);
-  else modal(p.name,`<p class="log">Everything in this pack was already yours, converted to <b>${G.bag.shards}</b> shards.</p>`,[{label:'OK',fn:closeModal}]);
+  // dust, never G.bag.shards: this sentence is about what the PACK paid, and the
+  // balance is what it used to print, so a player holding 500 shards was told an
+  // all-duplicates pack had converted to 500 of them
+  else modal(p.name,`<p class="log">Everything in this pack was already yours. It converted to <b>${dust}</b> shard${dust===1?'':'s'}.</p>`,[{label:'OK',fn:closeModal}]);
 }
 /* the forge: shards buy the exact item you want, no luck involved */
 const SHARD_COST=window.RTR_SHARD_COST||{common:4,rare:8,epic:16,legendary:32};
@@ -18951,7 +18969,7 @@ function renderHof(){
   const belts = reigns.length ? `<div class="card" style="margin-top:12px;">
       <div class="flab" style="margin-top:0;">Championships</div>
       ${reigns.map(r=>`<div style="padding:6px 0;border-top:1px dashed rgba(255,255,255,.08);">
-        <div style="display:flex;justify-content:space-between;"><b>${r.title}</b><span class="hint mono">Y${r.year}W${r.week}${r.lostYear?` to Y${r.lostYear}W${r.lostWeek}`:' (current)'}</span></div>
+        <div style="display:flex;justify-content:space-between;"><b>${r.title}</b><span class="hint mono">Y${r.year}W${r.week}${r.lostYear?` to Y${r.lostYear}W${r.lostWeek}`:(c.retired?' to the end':' (current)')}</span></div>
         ${r.defenses?`<div class="hint">${r.defenses} defence${r.defenses===1?'':'s'}</div>`:''}
       </div>`).join('')}
     </div>` : '';
