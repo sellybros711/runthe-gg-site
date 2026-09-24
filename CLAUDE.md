@@ -10832,9 +10832,46 @@ pool: it names `positions stop at 2016 and the pool runs to 2025`.
 **The chain is green end to end now**: the reference seasons unchanged, the shape
 gate passed, `check-labels` reproducing all 44,344 prices from `w`, `ip` and `pp`
 with the same 3,959 discounted starters, and `check-numbers` agreeing on 34
-claims. **What is NOT done is shipping it**, because a pool whose recent
-positions come from a mirror eight years behind is not the pool that ships, and
-every run so far has been `commit: false`.
+claims.
+
+##### AND IT HAS SHIPPED, off the CRAN Lahman rather than off a mirror
+
+Every run before this one was `commit: false`, because a pool whose recent
+positions come from a mirror stopping in 2021 is not the pool that ships. With
+the CRAN reader in, what landed:
+
+| | shipped before | now |
+|---|---|---|
+| rows, batters, pitchers, closers | 44,344 · 24,644 · 19,700 · 905 | **identical** |
+| batters with a position | 24,499 | 24,503 |
+| newest season carrying a position | 2021 from a mirror | **2025** |
+| **pitchers with an innings figure** | **18,760** | **19,700** |
+
+**The shipped pool was already good, which is the nuance most easily lost.**
+Positions moved by four. What was broken was never the pool, it was the
+pipeline's ability to REPRODUCE it, and a refresh that cannot reproduce what
+ships cannot ship anything either. The 940 are Negro Leagues pitchers, 1920 to
+1948, whose innings the Chadwick snapshot predated: **it moves no price**, because
+a starter's discount is `min(1, 210/ip)` and those seasons are nowhere near 210,
+and the run reports the same 3,959 discounted starters.
+
+**`provenance.json` is committed with the pool and said 109,859 rows beside a
+pool of 44,344.** That is the build FRAME, before the WAR floor, and that file's
+own header argues a machine-written record cannot drift from the data next to it.
+It was drifting by a factor of two and a half. The shipped counts are written at
+`compact_pool.py`, which is the stage that produces them, and the build's own
+figure is kept as `built_rows` rather than overwritten, because how many rows the
+sources held is a real fact about the run and the only place it is recorded.
+
+**AND THAT STAGE WROTE THE POOL BEFORE IT COULD NOTICE THE POOL WAS EMPTY.**
+`compact()` reads the enriched frame's verbose column names, so handed the
+ALREADY COMPACT file, which is an ordinary thing to do by hand, every row misses
+and the result is `[]`. It wrote that to disk and exited 0, and the shape gate two
+steps later is what caught it: a guard catching another stage's garbage rather
+than the stage refusing to make it. It refuses under a tenth of what came in,
+which is generous, since the real floor drops about 60% of the frame. **Both arms
+were proved**: the wrong file writes nothing and exits 1, and a real frame round
+trips to the shipped pool **byte identical**.
 
 ### The price was normalized for innings and the engine's value was not
 

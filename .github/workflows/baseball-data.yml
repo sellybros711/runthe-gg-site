@@ -200,6 +200,23 @@ jobs:
       # the edit and the bump are one commit by a person; here a bot rewrites the
       # pool and nobody is watching. It bumps only what `git diff --quiet` says
       # actually moved, so a run that finds no new baseball moves no number.
+      # A DRY RUN YOU CANNOT INSPECT PROVES ONLY THAT NOTHING THREW. The header
+      # above tells whoever runs `split_stints` to re-run the cap sweep and
+      # compare the best-available against budget-bot gap before shipping the
+      # result, and with `commit` off there was no way to get the pool off this
+      # runner to do it: the log prints the SHAPE and says nothing about the
+      # draft economy, which is the whole question that input asks. So a run
+      # that does not commit hands the pool back as an artifact instead.
+      - name: Keep the pool for measuring
+        if: ${{ !inputs.commit }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: players-json${{ inputs.split_stints && '-split-stints' || '' }}
+          path: |
+            baseball/data/players.json
+            baseball/pipeline/provenance.json
+          retention-days: 7
+
       - name: Bump the cache version if the pool moved
         if: ${{ inputs.commit }}
         run: |
