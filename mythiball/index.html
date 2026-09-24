@@ -9691,14 +9691,51 @@ function drawPlaySim(ctx, sim, t, G, opts) {
          pixels they were under a CSS pixel on a phone and the streak did
          not exist there. */
       const gr = ballRadiusMin();
-      for (const [back, al, rr] of [[0.07, 0.16, gr * 0.45], [0.035, 0.32, gr * 0.7]]) {
-        const b2 = simBallAt(sim, t - back);
-        if (!b2 || b2.held) continue;
-        const [gx2, gg2] = simProject(G, b2.uv[0], b2.uv[1]);
-        ctx.globalAlpha = al;
-        ctx.fillStyle = '#eaeaea';
-        ctx.beginPath(); ctx.arc(gx2, gg2 - b2.h, rr, 0, Math.PI * 2); ctx.fill();
-        ctx.globalAlpha = 1;
+      /* A BIG HIT LEAVES A COMET, which is the one piece of Backyard
+         Baseball's grammar this field never had: the ball you crushed
+         looks crushed. The kind is already on the sim, and the tail is
+         drawn only while the ball is in the AIR (a ball rolling in the
+         gap is a ball rolling), so a single keeps its two quiet ghosts
+         and a double, a triple or a home run trails six, longer and
+         warmer. Gold for a home run, because it is the one the crowd is
+         already standing for. Alpha falls along the tail so it reads as
+         motion rather than as a string of balls. */
+      const big = sim.kind === 'home run' || sim.kind === 'triple' || sim.kind === 'double';
+      if (big && t < sim.landAt) {
+        /* A TAPERED STROKE, NOT A ROW OF CIRCLES. The first draft trailed
+           six ghost discs and against the sky they were six pale dots a
+           reader had to assemble; a comet is one shape. Sampled back along
+           the flight, drawn dark edge first then the colour, wide at the
+           ball and gone at the tail. */
+        const pts = [];
+        for (let k = 9; k >= 0; k--) {
+          const b2 = simBallAt(sim, t - k * 0.028);
+          if (!b2 || b2.held) continue;
+          const [px2, py2] = simProject(G, b2.uv[0], b2.uv[1]);
+          pts.push([px2, py2 - b2.h, 1 - k / 10]);
+        }
+        const tint = sim.kind === 'home run' ? '244,194,90' : '234,234,234';
+        ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+        for (const [edge, col] of [[true, '10,20,30'], [false, tint]]) {
+          for (let k = 1; k < pts.length; k++) {
+            const [ax, ay, au] = pts[k - 1], [bx2, by2, bu] = pts[k];
+            const wd = gr * (0.25 + 1.15 * bu) + (edge ? 2.5 : 0);
+            ctx.strokeStyle = `rgba(${col},${(edge ? 0.55 : 0.9) * (0.15 + 0.85 * bu)})`;
+            ctx.lineWidth = wd;
+            ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(bx2, by2); ctx.stroke();
+            void au;
+          }
+        }
+      } else {
+        for (const [back, al, rs] of [[0.07, 0.16, 0.45], [0.035, 0.32, 0.70]]) {
+          const b2 = simBallAt(sim, t - back);
+          if (!b2 || b2.held) continue;
+          const [gx2, gg2] = simProject(G, b2.uv[0], b2.uv[1]);
+          ctx.globalAlpha = al;
+          ctx.fillStyle = '#eaeaea';
+          ctx.beginPath(); ctx.arc(gx2, gg2 - b2.h, gr * rs, 0, Math.PI * 2); ctx.fill();
+          ctx.globalAlpha = 1;
+        }
       }
       drawBaseball(ctx, x, gy - ball.h, gy);
     } });
@@ -11930,6 +11967,12 @@ function drawPlateView(ctx, w, h, t, pitch, inWindup, theme) {
       ctx.lineTo(Math.cos(a) * len + Math.cos(a + 1.57) * wd, Math.sin(a) * len + Math.sin(a + 1.57) * wd);
       ctx.lineTo(Math.cos(a) * len - Math.cos(a + 1.57) * wd, Math.sin(a) * len - Math.sin(a + 1.57) * wd);
       ctx.closePath(); ctx.fill();
+      /* the dark ring everything drawn here wears, or a pale ray on pale
+         dirt is not there: measured on the first render, the rays read
+         only over the grass and vanished over the keyhole */
+      ctx.strokeStyle = `rgba(10,20,30,${0.55 * (1 - u * 0.7)})`;
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
     }
     ctx.restore();
     ctx.strokeStyle = `rgba(255,255,255,${1 - u})`;

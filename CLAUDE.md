@@ -5924,6 +5924,17 @@ because you cannot time what you cannot see.
   which on a phone is under one CSS pixel: the streak that makes speed read did not
   exist there. They scale off the floor too.
 
+**A BIG HIT LEAVES A COMET**, which is the one piece of Backyard Baseball's grammar this
+field never had: the ball you crushed looks crushed. `drawPlaySim` reads `sim.kind`,
+and a double, a triple or a home run trails a tapered stroke while it is in the AIR (a
+ball rolling in the gap is a ball rolling), gold for a homer. A single keeps its two
+quiet ghosts. **The first draft was six ghost discs and against the sky they were six
+pale dots a reader had to assemble**; a comet is one shape, so it is a stroke sampled
+back along the flight, dark edge first and then the colour, wide at the ball and gone at
+the tail. Found by rendering a home run at five instants and looking, which is how the
+contact burst's rays got their dark ring the same afternoon: pale rays on pale dirt were
+not there over the keyhole.
+
 **THE CONTACT FRAME WAS NEVER SHOWN.** `plateViewActive` returned false the instant
 `g.play` existed, and `HITSTOP_MS` shifted every play timer by 80 without holding the
 picture, so the cut to the field landed on the same frame as the press. The one thing a
