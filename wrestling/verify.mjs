@@ -1157,13 +1157,20 @@ section('two styles, one rig');
   const {page, errs} = await fresh(URL+'/wrestling/');
   const r = await page.evaluate(()=>{
     const out={poses:0, rigDiff:[], smoothCrisp:0, retroNotCrisp:0, leaks:[], looks:0, dupIds:0, icons:[], shapes:[]};
-    const tf=s=>(s.match(/transform="[^"]*"/g)||[]).join('|');
+    const tfl=s=>(s.match(/transform="[^"]*"/g)||[]);
+    const tf=s=>tfl(s).join('|');
+    /* Retro draws the rig twice (an outline pass, then the fills); smooth draws
+       it once, with no outline. So smooth is held to Retro's fill pass, which
+       is the second half of its list and must equal the first. */
+    // the whole-body move wraps both passes once and comes first, so it is set aside
+    const fillHalf=s=>{ let l=tfl(s); const pre=(l[0]&&/translate\(/.test(l[0]))?[l.shift()]:[];
+      const h=l.length/2; return l.slice(0,h).join('|')===l.slice(h).join('|') ? pre.concat(l.slice(h)).join('|') : 'UNEVEN:'+l.join('|'); };
     const pool=sl=>COSM.filter(c=>c.slot===sl).map(c=>c.v);
     const L0=Object.assign({},DEFLOOK,{hairStyle:'long',face:'beard'});
     Object.keys(POSES).forEach(k=>{
       out.poses++;
       const a=wrestlerSVGRetro(L0,{pose:k}), b=wrestlerSVGSmooth(L0,{pose:k});
-      if(tf(a)!==tf(b)) out.rigDiff.push(k);
+      if(fillHalf(a)!==tf(b)) out.rigDiff.push(k);
       if(b.indexOf('crispEdges')>=0) out.smoothCrisp++;
       if(a.indexOf('crispEdges')<0) out.retroNotCrisp++;
     });
