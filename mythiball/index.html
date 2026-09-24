@@ -48,6 +48,14 @@
     background:repeating-linear-gradient(180deg,
       rgba(20,40,63,.055) 0 1px, transparent 1px 3px);
   }
+  /* ...and it comes OFF while a game is up. A .055 stripe across every
+     third row of the window is a real cut in the one picture three
+     sharpening passes went into, taken at exactly the moment somebody is
+     trying to read a ball, a zone and a bar, and the reference games
+     carry nothing like it over play. `ingame` is only ever the game
+     screen, so the clubhouse and every menu keep the arcade wash where
+     it costs nothing. */
+  body.ingame::after{content:none;}
   img.pico{image-rendering:pixelated;image-rendering:crisp-edges;}
   canvas{image-rendering:pixelated;image-rendering:crisp-edges;}
 

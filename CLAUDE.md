@@ -6332,7 +6332,39 @@ scene and the wear at 263 and 613, away from the band's rows and the zone
 contrast row, which is why the band and zone clauses were re-run rather than
 re-derived.
 
-#### And the wide camera left a black hole, which the full bleed layout made bigger
+#### The CRT comes off while a game is up, and the smoothness question is a fork
+
+Asked as the graphics not having the smoothness and clarity of other games.
+Two different things answer that and only one of them is a fix.
+
+**The scanlines were a .055 stripe across every third row of the one picture
+three sharpening passes went into.** `body::after` is the arcade CRT and its
+own comment calls it the cheapest thing that says arcade, which is true of a
+menu and false of a ball somebody is timing. `body.ingame::after{content:none}`
+takes it off during play and `ingame` is only ever the game screen, so the
+clubhouse and every menu keep the wash. One rule, and the contrast guards can
+only be helped by it, because the overlay is a DOM layer no canvas readback
+ever saw: the pixel guards were blind to it in both directions.
+
+**The rest of the gap is the ART STYLE, not a defect**, and it was prototyped
+rather than argued: the reference games are smooth painted art at native
+resolution and this game is deliberate 3px-block pixel art. A working smooth
+build of the same page exists as a recipe, five edits: `PIX = 1`, every
+`imageSmoothingEnabled` true, `image-rendering:auto`, `heroSpriteCanvas`
+rebuilt as 64px art through two EPX passes then a smoothed downscale, and the
+camera's one literal block constant rescaled (`PLATE_KEEP_Y` is [152,198] in
+blocks and blocks stopped being 3 logical px, plus the whole-number scale and
+`fieldDraw` dropped, which smoothing makes unnecessary). It renders both
+cameras correctly and reads like a different, more modern game.
+
+**It is a decision and not a pass**, because what it costs is real: pixWorld
+grows ninefold (320x220 to 960x660 CPU-drawn per frame, against a measured
+2.48ms drawField at phone throttle), the whole grid guard family in
+`check-firstpitch` and `verify-rules` asserts the opposite of it (whole-number
+blit, off-grid share, smoothing OFF), and the dirt seams, the block snapping
+and the zone's block-counted widths were all designed FOR the pixel look. The
+one-resolution rule survives either way: it says the field and the sprites
+must be ONE style, never which style. Do not ship it as a tuning change.
 
 Found by walking the first two pitches again after the pass above. Before the
 first pitch, and on every ball in play, the wide view is up, and on a portrait
