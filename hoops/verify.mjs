@@ -749,7 +749,7 @@ const KNOWN = [
   ['the 2016 Warriors', 'Pace and Space', [['curryst01', 2016], ['thompkl01', 2016],
     ['barneha02', 2016], ['greendr01', 2016], ['bogutan01', 2016], ['iguodan01', 2016]]],
   // PG Jamal Murray, SG Kentavious Caldwell-Pope, SF Michael Porter Jr., PF Aaron Gordon, C Nikola Jokic, 6th Bruce Brown
-  ['the 2023 Nuggets', 'Point Centre', [['murraja01', 2023], ['caldwke01', 2023],
+  ['the 2023 Nuggets', 'Point Center', [['murraja01', 2023], ['caldwke01', 2023],
     ['portemi01', 2023], ['gordoaa01', 2023], ['jokicni01', 2023], ['brownbr01', 2023]]],
   /* THE EXPECTATION WAS WRONG HERE, NOT THE MODEL, and it is worth saying so
      rather than quietly editing the string. This was written down as Bully Ball
@@ -1788,7 +1788,7 @@ ok(bestWins > worstWins + 20,
        was by reading a page and finding nothing in it. Two sentences that only
        exist inside index.html's script block, one of them past the regex
        literal that desyncs a naive walker. */
-    for (const probe of ['No identity yet', 'days in a row.']) {
+    for (const probe of [' good players. Nothing they do together.', 'days in a row.']) {
       ok(pages['index.html'].includes(probe),
         `the copy reader reaches the script's own strings ("${probe}")`);
     }

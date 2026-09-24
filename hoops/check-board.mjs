@@ -469,7 +469,7 @@ const main = async () => {
     const lines = await page.evaluate(() => [...document.querySelectorAll('#lb-rows .lbrow .who > span')]
       .map((e) => e.textContent));
     ok(/^Champions/.test(lines[0] || ''), `the champion's row says so first (${lines[0]})`);
-    ok(/^Out in round one/.test(lines[2] || ''), `and a first round exit says that (${lines[2]})`);
+    ok(/^Bounced in round one/.test(lines[2] || ''), `and a first round exit says that (${lines[2]})`);
     ok(!lines.some((l) => /all time/.test(l)), 'and the line carries no second ranking to argue with the first');
 
     /* THE FIVE ARE ONE TAP AWAY. The picks ride on every row and nothing drew

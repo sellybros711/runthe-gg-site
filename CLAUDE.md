@@ -9839,6 +9839,41 @@ disappeared into it, which is the flat court arriving by a different door. At
 types are identical in both states**, so the .35s fade between clubs still
 interpolates.
 
+### The game talks like a broadcast, not like its own source
+
+Reported by the owner: most of the text did not read like basketball. It read
+like the comments above it, which are allowed to argue at length. A sentence a
+player reads is a TV graphic or a play-by-play call, and it is written that way
+now across every screen.
+
+| was | is |
+|---|---|
+| The bracket got stiffer than the roster. | Ran into a better team. |
+| Unspent cap is production you never fielded. | You left $14M on the table. |
+| projected 56-26 · title odds 5% | Vegas: 56 wins · Dark horse, 5% |
+| 4.2 off / 4.7 def win shares | 18.1 pts · 4.1 reb · 7.3 ast |
+| Out in the First Round | Bounced in round one |
+| Nobody on this board can play there. | No centers on this roster. |
+| Spacing 0.73x | Spacing: Cramped |
+
+**American spelling and American words.** Center, color, parking lot, team
+rather than club, guys as well as men. `Point Centre` is `Point Center`; its key
+stays `point_centre` because a key can be stored and a name cannot.
+
+**A round is said the way a fan says it.** `roundPhrase()` turns the bracket's
+labels into "round one", "round two" and "the conference finals", and the
+headline, the bracket note, the resume chip and the board rows all read it.
+The gauge line under the headline no longer repeats the round.
+
+**Two sentences were false and are fixed rather than reworded.** The sign-in
+line said the career stays in this browser "whatever you do", and the badge
+note said the cabinet is "kept in this browser". Both have been on the account
+since the cloud save shipped. They ask `cloudReady()` now.
+
+**Win shares stay on the draft tile and leave the roster row.** The tile is a
+price decision and win shares are what the game rates on. The roster row is
+the man, and a man is his points, rebounds and assists.
+
 ### The 1988 to 2002 Hornets are Charlotte's
 
 `CHH` pointed at the Pelicans, which is the legal entity that moved. The NBA handed
