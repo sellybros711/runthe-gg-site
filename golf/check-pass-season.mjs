@@ -126,6 +126,30 @@ window.__P = {
     if(metric==='dailyUnder'||metric==='packsOpened') passChalProgress(metric,n); else questWeekly(metric,n);
     window.toast=t0; S._passPop=null; return passState().xp-s0; },
   mergeChal(a,b){ return mergePassChal(a,b); },
+  /* ---- the Oct 5 gate, saved seasonal packs, season-end settlement ---- */
+  gate(){ return {on:passSystemsOn(), chal:passChalSet().length, chalHTML:passChalHTML(), stamps:passStampsHTML({1:40}), code:passStampsCode(),
+    spookyLive:packTierLive('spooky'), spookyDrop:!!dropReward(dropById('spooky')), live:liveSeasonalPackId(), tease:PASS_NEXT_TEASE}; },
+  savedCard(){ var n=packShopNode(); var c=n.querySelector('[data-savedseasonal]'); return c?c.textContent.replace(/\\s+/g,' '):null; },
+  openSaved(){ var before=packCredits('seasonal'), c0=coinBalance(); var t0=window.toast, msg=[]; window.toast=function(h){ msg.push(String(h)); };
+    try{ startPackDeal({pack:'seasonal'}); }catch(e){ msg.push('ERR '+e.message); } window.toast=t0;
+    var after=packCredits('seasonal'); S.overlay=null; S.packDeal=null; return {before:before, after:after, coins:c0-coinBalance(), msg:msg}; },
+  seasonalCredits(n){ var p=packState(); p.seasonalSpent=(p.seasonalEarned||0)+0; p.seasonalEarned=(p.seasonalEarned||0); packSave(p);
+    if(n>0) grantFreePack(n,{tier:'seasonal',silent:true}); return packCredits('seasonal'); },
+  settleReset(){ S.screen='setup'; ['bag_passprev','bag_passsettled','bag_passsettle_note','bag_pass'].forEach(function(k){ try{ localStorage.removeItem(acctKey(k)); }catch(e){} }); },
+  /* off the title screen while rigging: the title's own popup queue settles on its own, and would win the race */
+  settleRig(n, tier, free, prem, pro){ S.screen='setup'; S.overlay=null; LS.set(acctKey('bag_tourpass'), {season:n, xp:passXpForTier(tier), pro:!!pro, curveV:PASS_CURVE_V, claimed:{free:free||[], prem:prem||[]}});
+    passState(); return passArchive(); },
+  passBought(n){ LS.set(acctKey('bag_pass'), {claimed:'S'+n}); },
+  settle(){ var c0=coinBalance(); var paid=passSettle(); var out={}; Object.keys(paid).forEach(function(k){ out[k]=paid[k].length; });
+    return {paid:out, coins:coinBalance()-c0, ledger:passSettled()}; },
+  expect(n, from, to, lane){ var c=0; for(var t=from;t<=to;t++){ c+=(passTierReward(t,lane,n).coins||0); } return c; },
+  settleNote(){ S.screen='title'; S.overlay=null; maybePassSettleNote(); var ov=S.overlay, sum=S.passClaimSummary;
+    var d=document.createElement('div'); if(ov==='passclaim'){ overlayPassClaim(d); } var t=d.textContent.replace(/\\s+/g,' ');
+    S.overlay=null; S.passClaimSummary=null; return {ov:ov, settled:sum&&sum.settled, n:sum&&sum.n, txt:t}; },
+  mergeArchive(a,b){ return mergePassArchive(a,b); },
+  mergeSettled(a,b){ return mergePassSettled(a,b); },
+  archiveFrom(obj){ passArchiveNote(obj); return passArchive(); },
+
   homeCard(){ return tourPassCard().textContent.replace(/\\s+/g,' '); },
   chalHTML(){ return passChalHTML().replace(/<[^>]+>/g,' ').replace(/\\s+/g,' '); },
   board(){ var n=challengesNode(); return n?n.textContent.replace(/\\s+/g,' '):''; },
@@ -414,6 +438,73 @@ try {
   ok('a newer week wins outright', (await E('mergeChal', { week: 5, season: 2, prog: { a: 9 }, done: {} }, { week: 6, season: 2, prog: {}, done: {} })).week === 6);
   ok('a newer season wins even with an older-looking week', (await E('mergeChal', { week: 9, season: 1, prog: {}, done: {} }, { week: 8, season: 2, prog: {}, done: {} })).season === 2);
   await at('2026-10-10T16:00:00Z');
+
+  head('the Oct 5 gate: deployed early, nothing of Season 2 shows in Season 1');
+  await at('2026-10-03T16:00:00Z');
+  let G2 = await E('gate');
+  ok('Oct 3 is Season 1 and the systems are off', !G2.on && (await E('season')).n === 1, G2);
+  ok('no Pass challenges, no stamps on show', G2.chal === 0 && G2.chalHTML === '' && G2.stamps === '' && G2.code === '', G2);
+  ok('the Spooky drop is live but its new pack and its new reward wait for the season', !G2.spookyLive && !G2.spookyDrop && G2.live === null, G2);
+  ok('the next-season teaser is off', G2.tease === false);
+  await E('histReset');
+  await E('setXp', (await E('xpAt', 60)) + 20000);
+  TP = await E('trackPage');
+  ok('a Season 1 player past tier 60 still reads 60/60, with no overtime panel', /60/.test(TP.head) && /\/60/.test(TP.head) && !/OVERTIME/.test(TP.head) && TP.ot === null && TP.chal === null && TP.stamps === null, TP);
+  LU = await E('levelUp', 58, 70);
+  ok('and a level-up stops at 60', LU.tier1 === 60 && !/Overtime/.test(LU.txt), LU.tier1);
+  H = await E('hist');
+  ok('...while the record underneath already keeps Season 1\'s real best, overtime included', H['1'] >= 70, H);
+  await at('2026-10-05T04:30:00Z');   // 12:30am Eastern, Oct 5
+  G2 = await E('gate');
+  ok('at 12:30am Eastern on Oct 5 it is all on', G2.on && G2.chal === 3 && G2.spookyLive && G2.spookyDrop && G2.live === 'spooky', G2);
+
+  head('saved seasonal packs open in any month, and cannot be bought out of season');
+  await at('2026-09-20T16:00:00Z');
+  await E('seasonalCredits', 2);
+  let SC = await E('savedCard');
+  ok('September shows the saved packs as a card you can open', !!SC && /2 left/.test(SC) && /Yours still open/.test(SC), SC);
+  let OP = await E('openSaved');
+  ok('opening one spends a saved pack and no coins', OP.before === 2 && OP.after === 1 && OP.coins === 0 && !OP.msg.some(m => /out of season/.test(m)), OP);
+  await E('seasonalCredits', 0);
+  OP = await E('openSaved');
+  ok('with none saved, nothing opens and nothing is charged', OP.after === 0 && OP.coins === 0 && OP.msg.some(m => /out of season/.test(m)), OP);
+  ok('and the card is gone', (await E('savedCard')) === null);
+  await at('2026-10-10T16:00:00Z');
+  await E('seasonalCredits', 1);
+  ok('in October a saved pack is on the Spooky card, not a card of its own', (await E('savedCard')) === null && (await E('calendar')).opensAs === 'spooky');
+  await E('seasonalCredits', 0);
+
+  head('season end: reached, unclaimed tiers are delivered');
+  await at('2026-10-06T16:00:00Z');
+  await E('settleReset');
+  let AR = await E('settleRig', 1, 25, [1, 2, 3, 4, 5], [], false);
+  ok('the finished Season 1 track is archived before Season 2 replaces it', AR['1'] && AR['1'].claimed.free.length === 5, AR['1']);
+  let ST2 = await E('settle');
+  const freeCoins = await E('expect', 1, 6, 25, 'free');
+  ok('a free player gets tiers 6 to 25 of the free lane, and nothing on the Pro lane', ST2.paid['1'] === 20 && ST2.ledger['1'].free.length === 20 && ST2.ledger['1'].prem.length === 0, ST2);
+  ok(`...which is the free lane's coins exactly (${freeCoins.toLocaleString()})`, ST2.coins === freeCoins, { got: ST2.coins, want: freeCoins });
+  let NT = await E('settleNote');
+  ok('the home screen says what was delivered, once', NT.ov === 'passclaim' && NT.settled.join() === '1' && NT.n === 20 && /Season 1 rewards delivered/.test(NT.txt) && /never claimed/.test(NT.txt), NT);
+  ok('...and not again', (await E('settleNote')).ov === null);
+  ok('settling twice pays nothing', Object.keys((await E('settle')).paid).length === 0);
+  await E('passBought', 1);
+  ST2 = await E('settle');
+  ok('once the account shows it had the Season 1 pass, the Pro lane follows: tiers 1 to 25', ST2.paid['1'] === 25 && ST2.ledger['1'].prem.length === 25, ST2.paid);
+  ok('a tier past the one reached is never paid', !ST2.ledger['1'].free.includes(26) && !ST2.ledger['1'].prem.includes(26));
+  await E('settleReset');
+  await E('settleRig', 1, 10, [1, 2, 3], [1, 2, 3], true);
+  ST2 = await E('settle');
+  ok('a season marked as having Pro settles both lanes at once, skipping what was claimed', ST2.paid['1'] === 14 && !ST2.ledger['1'].free.includes(3) && ST2.ledger['1'].prem.length === 7, ST2);
+  // a device that never saw Season 1 locally: its track arrives from the cloud
+  await E('settleReset');
+  AR = await E('archiveFrom', { season: 1, xp: await E('xpAt', 12), curveV: 4, claimed: { free: [1], prem: [] } });
+  ok('a Season 1 track that arrives in a cloud pull is archived too', AR['1'] && (await E('settle')).paid['1'] === 11);
+  ok('an in-progress season is never archived', !(await E('archiveFrom', { season: 2, xp: 999, curveV: 4 }))['2']);
+  const MA = await E('mergeArchive', { 1: { season: 1, xp: 100, pro: false, curveV: 4, claimed: { free: [1, 2], prem: [] } } }, { 1: { season: 1, xp: 300, pro: true, curveV: 4, claimed: { free: [3], prem: [1] } } });
+  ok('two devices\' archives merge to the most of each', MA['1'].xp === 300 && MA['1'].pro && MA['1'].claimed.free.join() === '1,2,3' && MA['1'].claimed.prem.join() === '1', MA);
+  const ML = await E('mergeSettled', { 1: { free: [1, 2], prem: [] } }, { 1: { free: [2, 3], prem: [4] }, x: { free: [9] } });
+  ok('the ledger merges as a union, so no device pays a tier twice', JSON.stringify(ML) === JSON.stringify({ 1: { free: [1, 2, 3], prem: [4] } }), ML);
+  await E('settleReset');
 
   head('page errors');
   ok('none', errs.length === 0, errs.slice(0, 3));

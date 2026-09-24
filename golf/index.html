@@ -5165,7 +5165,7 @@ function maybeS1LaunchPopup(){ try{
 const S1_END_BEATS=[
   { id:'s0', at:null, tag:'🎟️ Season 1 Tour Pass',
     head:function(d){ return ['Season 1 ends', d]; },
-    lede:'The Season 1 track locks when the season does. Every tier you have not claimed goes with it. Season 2 starts from zero.',
+    lede:'The Season 1 track locks when the season does. Its Pro rewards lock with it. Season 2 starts from zero.',
     boost:'Buy now and jump to', tail:'Claim them, then climb the rest.', cta:'Get the Season 1 Pass ▸' },
   { id:'s14', at:14, tag:'⏳ The clock is on',
     head:['Two weeks left', 'in Season 1'],
@@ -5181,7 +5181,7 @@ const S1_END_BEATS=[
     boost:'Three days left. Take', tail:'Claim them, then take whatever three days will add.', cta:'Claim the track ▸' },
   { id:'s1', at:1, tag:'🔥 Last call',
     head:['Last day of', 'Season 1'],
-    lede:'The track locks tonight. Every tier still unclaimed goes with it. None of it carries into Season 2.',
+    lede:'The track locks tonight. Its Pro rewards lock with it. None of them carry into Season 2.',
     boost:'Tonight, or not at all. Take', tail:'Claim them before the track locks.', cta:'Last chance ▸' }
 ];
 function s1EndBeat(){ var left=passSeason().daysLeft, pick=S1_END_BEATS[0];
@@ -9780,13 +9780,17 @@ const PASS_PRO_MULT=1.25;                                    // Pro holders earn
 function passDayNum(){ const t=todayKey(), y=Math.floor(t/10000), mo=Math.floor(t/100)%100, d=t%100; return Math.floor(Date.UTC(y,mo-1,d)/86400000); }
 function passSeason(){ let el=passDayNum()-TOURPASS_EPOCH; if(el<0) el=0; const n=Math.floor(el/TOURPASS_LEN)+1, day=(el%TOURPASS_LEN)+1; return {n, day, len:TOURPASS_LEN, daysLeft:TOURPASS_LEN-day+1}; }
 function passState(){ let s=LS.get(acctKey('bag_tourpass'),null); const cur=passSeason().n;
-  if(s&&typeof s==='object'&&s.season!==cur) passHistFromState(s);   // keep last season's stamp BEFORE its state goes
-  if(!s||typeof s!=='object'||s.season!==cur){ s={season:cur, xp:0, pro:false, claimed:{free:[],prem:[]}}; }   // new season -> fresh (last season's rewards lock out)
+  if(s&&typeof s==='object'&&s.season!==cur){ passHistFromState(s); passArchiveNote(s); }   // keep last season's stamp and its unclaimed tiers BEFORE its state goes
+  if(!s||typeof s!=='object'||s.season!==cur){ s={season:cur, xp:0, pro:false, claimed:{free:[],prem:[]}}; }   // new season -> fresh (last season's unclaimed tiers are archived above and delivered by passSettle)
   if(!s.claimed||typeof s.claimed!=='object') s.claimed={free:[],prem:[]};
   if(!Array.isArray(s.claimed.free)) s.claimed.free=[]; if(!Array.isArray(s.claimed.prem)) s.claimed.prem=[];
   s.xp=Math.max(0,+s.xp||0); s.pro=!!s.pro;
   if(s.curveV!==PASS_CURVE_V){ passConvertCurve(s); passSave(s); }   // one-time re-map onto the current XP curve
   passHistFromState(s);   // no-op unless this season's best tier went up (Season 1's stamp lands here before Oct 5)
+  // `pro` was the retired coin unlock. It now means "this account had Pro at some point THIS season", which
+  // is what season-end settlement asks about once the entitlement itself has rolled over. The cloud merge
+  // already ORs it, so it can only ever be set.
+  try{ if(!s.pro && passProActive()){ s.pro=true; passSave(s); } }catch(e){}
   return s; }
 function passSave(s){ try{ LS.set(acctKey('bag_tourpass'), s); }catch(e){} if(typeof cloudPush==='function') cloudPush(); }
 // PRO = the server 60-day Tour Pass entitlement (runtour_wallet().pass_active, bought for $14.99 once
@@ -9841,7 +9845,7 @@ function passConvertCurve(s){
   s.curveV=PASS_CURVE_V; return s;
 }
 function passTierAt(xp){ let t=0; while(t<PASS_TIERS && xp>=passXpForTier(t+1)) t++; return t; }
-function passAddXp(n){ if(!passEnabled()||!sbSignedIn()||!(n>0)) return; const s=passState(), before=passTierX(s.xp);
+function passAddXp(n){ if(!passEnabled()||!sbSignedIn()||!(n>0)) return; const s=passState(), before=passTierShown(s.xp);
   if(!S._passPop) S._passPop={xp0:s.xp, tier0:before};   // first award of this round/season - the popup animates from here
   // Prize-Wheel 2x XP boost: the one chokepoint every XP faucet funnels through, so a boost doubles
   // the daily, a finished season, an online win and a played Moment alike.
@@ -9853,14 +9857,14 @@ function passAddXp(n){ if(!passEnabled()||!sbSignedIn()||!(n>0)) return; const s
 // same way as the welcome gift: passAddXp only records the climb, and the result screens flush it once
 // they're safely on screen. Only fires when a TIER was actually gained.
 function passLevelPending(){ const p=S._passPop; if(!p||!passEnabled()||!sbSignedIn()) return false;
-  return passTierX(passState().xp)>p.tier0; }
+  return passTierShown(passState().xp)>p.tier0; }
 function flushPassLevel(){
   if(!passLevelPending()){ S._passPop=null; return; }
   if(S.overlay) return;                                   // let the welcome gift / login bonus land first
   var busy=['dailyround','playoffwatch','h2hwatch','h2hpreview','h2hplay','h2hdraft','h2hlobby','draft','offseason','setup'];
   if(busy.indexOf(S.screen)>=0) return;                   // never interrupt a live round / draft
   const s=passState(), p=S._passPop;
-  S.passLevel={xp0:p.xp0, tier0:p.tier0, xp1:s.xp, tier1:passTierX(s.xp), boost:!!p.boost, event:p.event||null};
+  S.passLevel={xp0:p.xp0, tier0:p.tier0, xp1:s.xp, tier1:passTierShown(s.xp), boost:!!p.boost, event:p.event||null};
   S._passPop=null; S.overlay='passlevel'; try{ track('tourpass_levelup',{from:p.tier0,to:S.passLevel.tier1}); }catch(e){}
   try{ render(); }catch(e){} }
 // BASE reward tables, written for Season 1 and still the SHAPE of every season: milestone tiers give
@@ -9938,6 +9942,9 @@ const PASS_SEASONS={
               50:{cat:'cardbg',id:'hallowseve',name:'Hallows Eve Backdrop'},
               60:{cat:'fx',id:'wisp',name:'Will-o\'-Wisp Aura'} } },
 };
+// Show the next season's items in a season's last 14 days. OFF (owner, Sep 2026): nothing about Season 2
+// shows before it starts. Turn it on for a season whose next one should be teased.
+const PASS_NEXT_TEASE=false;
 function passSeasonDef(n){ n=n||passSeason().n; return PASS_SEASONS[n]||{name:'Tour Pass', accent:'#a24be0', capstone:null, items:{}, add:{}}; }
 function passTierReward(t, lane, n){
   const def=passSeasonDef(n), base=passBaseReward(t, lane);
@@ -9965,13 +9972,87 @@ function passClaim(tier, lane){
   if(lane==='prem' && !passProActive()) return {ok:false,msg:'Get the Tour Pass to claim Pro rewards'};
   const arr=lane==='prem'?s.claimed.prem:s.claimed.free; if(arr.indexOf(tier)>=0) return {ok:false,msg:'Already claimed'};
   const r=passTierReward(tier, lane);
+  passGrantReward(r);
+  arr.push(tier); passSave(s); track('tourpass_claim',{tier,lane}); return {ok:true, reward:r};
+}
+function passGrantReward(r){ if(!r) return;
   if(r.coins) addBonusCoins(r.coins,{silent:true});
   if(r.shard) shardEarn(r.shard.r, r.shard.n);
   if(r.pack)  grantFreePack(r.pack.n||1, {tier:r.pack.tier, silent:true});
   if(r.cos){ const cs=coinState(); cs.owned[cosKey(r.cos.cat,r.cos.id)]=1; coinSave(cs); }
-  if(r.spin)  grantWheelSpin(r.spin.n||1, {silent:true});
-  arr.push(tier); passSave(s); track('tourpass_claim',{tier,lane}); return {ok:true, reward:r};
-}
+  if(r.spin)  grantWheelSpin(r.spin.n||1, {silent:true}); }
+/* SEASON-END SETTLEMENT (owner, Sep 2026). A tier a player REACHED and never claimed used to be lost when
+   the season rolled over. Now it is delivered: every reached, unclaimed tier on the free lane, and on the
+   Pro lane too if the account had the pass that season. Nothing is paid for a tier that was not reached.
+
+   It needs the finished season's state, and passState() discards it the moment a new season starts, so
+   that state is ARCHIVED first (bag_passprev, by season), from passState's rollover and from both sides
+   of a cloud pull. A settled tier is written to a ledger (bag_passsettled) that the cloud merge unions,
+   so a second device or a second run never pays it twice.
+
+   Whether the account had Pro that season is read three ways, any of which is enough: the season's own
+   `pro` mark (set while the pass was active), the pass pack grant flag (bag_pass.claimed = 'S<n>', written
+   once per season the pass was bought), or the wallet's pass period. The Pro lane is settled only once one
+   of them is true. Until then the free lane is paid and the Pro lane waits, rather than being refused. */
+function passArchive(){ const a=LS.get(acctKey('bag_passprev'),null); return (a&&typeof a==='object')?a:{}; }
+function passArchiveNote(st){ try{
+  if(!sbSignedIn()||!st||typeof st!=='object') return; const n=st.season|0; if(!(n>0) || n>=passSeason().n) return;
+  let xp=Math.max(0,+st.xp||0); if((st.curveV|0)!==PASS_CURVE_V){ const c={xp:xp, curveV:st.curveV}; passConvertCurve(c); xp=c.xp; }
+  const a=passArchive(), o=a[n]||{}, oc=o.claimed||{}, cl=st.claimed||{};
+  const uni=(x,y)=>{ const u=new Set(); (x||[]).forEach(v=>u.add(+v)); (y||[]).forEach(v=>u.add(+v)); return [...u].filter(v=>v>0).sort((p,q)=>p-q); };
+  const nv={season:n, xp:Math.max(xp,+o.xp||0), pro:!!(st.pro||o.pro), curveV:PASS_CURVE_V,
+    claimed:{free:uni(cl.free,oc.free), prem:uni(cl.prem,oc.prem)}};
+  if(JSON.stringify(nv)===JSON.stringify(a[n])) return;
+  a[n]=nv; LS.set(acctKey('bag_passprev'),a); if(typeof cloudPush==='function') cloudPush();
+}catch(e){} }
+function mergePassArchive(x, y){ const out={};
+  [x,y].forEach(a=>{ if(!a||typeof a!=='object') return; Object.keys(a).forEach(k=>{ const v=a[k]; if(!/^\d+$/.test(k)||!v||typeof v!=='object') return;
+    const o=out[k]; if(!o){ out[k]=JSON.parse(JSON.stringify(v)); return; }
+    const uni=(p,q)=>[...new Set([...(p||[]),...(q||[])])].sort((m,n)=>m-n);
+    out[k]={season:+k, xp:Math.max(+o.xp||0,+v.xp||0), pro:!!(o.pro||v.pro), curveV:Math.max(+o.curveV||0,+v.curveV||0),
+      claimed:{free:uni(o.claimed&&o.claimed.free, v.claimed&&v.claimed.free), prem:uni(o.claimed&&o.claimed.prem, v.claimed&&v.claimed.prem)}}; }); });
+  return out; }
+function passSettled(){ const l=LS.get(acctKey('bag_passsettled'),null); return (l&&typeof l==='object')?l:{}; }
+function mergePassSettled(x, y){ const out={};
+  [x,y].forEach(l=>{ if(!l||typeof l!=='object') return; Object.keys(l).forEach(k=>{ if(!/^\d+$/.test(k)) return; const v=l[k]||{}, o=out[k]||(out[k]={free:[],prem:[]});
+    ['free','prem'].forEach(ln=>{ o[ln]=[...new Set([...(o[ln]||[]),...((v[ln]||[]).map(Number))])].sort((m,n)=>m-n); }); }); });
+  return out; }
+function passHadPro(n, st){ try{
+  if(devMode()) return true; if(st&&st.pro) return true;
+  const bp=LS.get(acctKey('bag_pass'),null)||{}; if(bp.claimed==='S'+n) return true;
+  if(_walletCache && _walletCache.passPeriod==='S'+n) return true;
+}catch(e){} return false; }
+// Pays what is owed and returns {season: [rewards]} for anything it paid (empty when nothing was owed).
+function passSettle(){ const paid={}; try{
+  if(!passEnabled()||!sbSignedIn()) return paid;
+  const cur=passSeason().n, a=passArchive(), led=passSettled(); let moved=false;
+  Object.keys(a).forEach(k=>{ const n=+k, st=a[k]; if(!(n>0)||n>=cur||!st) return;
+    const reached=passTierAt(+st.xp||0), L=led[k]||(led[k]={free:[],prem:[]}), cl=st.claimed||{};
+    ['free','prem'].forEach(lane=>{
+      if(lane==='prem' && !passHadPro(n, st)) return;
+      for(let t=1;t<=reached;t++){
+        if((cl[lane]||[]).indexOf(t)>=0 || (L[lane]||[]).indexOf(t)>=0) continue;
+        const r=passTierReward(t, lane, n); passGrantReward(r);
+        (L[lane]=L[lane]||[]).push(t); (paid[n]=paid[n]||[]).push(r); moved=true; } }); });
+  if(moved){ LS.set(acctKey('bag_passsettled'), led);
+    // what to show the player, kept until they have seen it (it can land on a screen that cannot show it)
+    const note=LS.get(acctKey('bag_passsettle_note'),null)||{};
+    Object.keys(paid).forEach(n=>{ note[n]=(note[n]||[]).concat(paid[n]); });
+    LS.set(acctKey('bag_passsettle_note'), note);
+    if(typeof cloudPush==='function') cloudPush();
+    try{ Object.keys(paid).forEach(n=>track('tourpass_settle',{season:+n, n:paid[n].length})); }catch(e){} }
+}catch(e){} return paid; }
+// The popup for a settlement, from the title screen's queue, once nothing else is up.
+function maybePassSettleNote(){ try{
+  if(!sbSignedIn()||S.overlay||S.screen!=='title') return;
+  if(_walletCache) passSettle();   // a session left open across midnight settles here; before the wallet loads it waits, so the Pro lane is not skipped
+  const note=LS.get(acctKey('bag_passsettle_note'),null); if(!note) return;
+  const ks=Object.keys(note).filter(k=>(note[k]||[]).length); LS.set(acctKey('bag_passsettle_note'), null);
+  if(!ks.length) return;
+  const all=[].concat(...ks.map(k=>note[k])), agg=passClaimAgg(all);
+  agg.settled=ks.map(Number).sort((p,q)=>p-q);
+  S.passClaimSummary=agg; S.overlay='passclaim'; try{ render(); }catch(e){}
+}catch(e){} }
 // Returns the list of rewards actually granted, so the caller can break them down in a summary.
 function passClaimAll(){ if(!sbSignedIn()) return []; const s=passState(), t=passTierAt(s.xp), pro=passProActive(); const got=[];
   for(let i=1;i<=t;i++){ const rf=passClaim(i,'free'); if(rf.ok) got.push(rf.reward); if(pro){ const rp=passClaim(i,'prem'); if(rp.ok) got.push(rp.reward); } } return got; }
@@ -10031,6 +10112,15 @@ function mergeTourPass(local, server){
    PASS CHALLENGES. Three a week, paying Pass XP ONLY. They reuse the weekly challenge metrics (and add two:
    a Daily under par, and packs opened), so they count the same events without a second set of hooks. A
    season can theme a whole week (Halloween, Thanksgiving). Nothing here pays coins, packs or shards. */
+/* THE LAUNCH GATE. Everything a player can SEE from this block (overtime, stamps, holiday XP, Pass
+   challenges) switches on with Season 2 at midnight Eastern on Oct 5, so this can be deployed any day
+   before then without showing anything early. What it RECORDS starts the moment it is deployed, and that
+   half must not wait: the build it replaces throws Season 1's state away the first time a player earns XP
+   in Season 2, and a stamp or an unclaimed reward that was never recorded cannot be recovered. */
+const PASS_SYSTEMS_FROM=2;                                     // the first season the four systems are shown in
+function passSystemsOn(){ return passEnabled() && passSeason().n>=PASS_SYSTEMS_FROM; }
+// The tier the SCREENS count: overtime once the systems are on, the plain 60 before.
+function passTierShown(xp){ return passSystemsOn()?passTierX(xp):passTierAt(xp); }
 const PASS_OT_MAX=90, PASS_OT_COST=1500;                       // overtime: tiers 61-90, flat cost each
 const PASS_STAMP_TIER=30, PASS_MARKS=[70,80,90];               // a season's stamp, and the prestige marks on it
 function passTierX(xp){ const t=passTierAt(xp); if(t<PASS_TIERS) return t;
@@ -10053,14 +10143,14 @@ function mergePassHist(a, b){ const o={};
 function passStamps(h){ h=h||passHist(); return Object.keys(h).map(Number).filter(n=>n>0 && (+h[n]||0)>=PASS_STAMP_TIER).sort((a,b)=>a-b)
   .map(n=>({n:n, tier:+h[n], marks:PASS_MARKS.filter(m=>(+h[n])>=m).length})); }
 // Compact form for the board look ("1:35,2:72"), so other players' cards can show your stamps too.
-function passStampsCode(){ const st=passStamps(); return st.length?st.map(x=>x.n+':'+x.tier).join(','):''; }
+function passStampsCode(){ if(!passSystemsOn()) return ''; const st=passStamps(); return st.length?st.map(x=>x.n+':'+x.tier).join(','):''; }
 function passStampsDecode(code){ const h={}; String(code||'').split(',').forEach(p=>{ const m=/^(\d{1,3}):(\d{1,3})$/.exec(p); if(m) h[m[1]]=Math.min(PASS_OT_MAX,+m[2]); }); return h; }
-function passStampsHTML(h, cls){ const st=passStamps(h); if(!st.length) return '';
+function passStampsHTML(h, cls){ if(!passSystemsOn()) return ''; const st=passStamps(h); if(!st.length) return '';
   return '<span class="'+(cls||'pstamps')+'">'+st.map(x=>{ const c=(PASS_SEASONS[x.n]&&PASS_SEASONS[x.n].accent)||'#a24be0';
     return '<i style="--stc:'+c+'" title="Season '+x.n+' · tier '+x.tier+'">S'+x.n+(x.marks?'<em>'+'★'.repeat(x.marks)+'</em>':'')+'</i>'; }).join('')+'</span>'; }
 // ---- holiday XP windows ----
 function passDk(k){ k=k|0; return Math.floor(Date.UTC(Math.floor(k/10000),Math.floor(k/100)%100-1,k%100)/86400000); }
-function passEvents(){ return passSeasonDef().events||[]; }
+function passEvents(){ return passSystemsOn()?(passSeasonDef().events||[]):[]; }
 function passEventNow(){ if(!passEnabled()) return null; const t=todayKey(); return passEvents().find(e=>t>=e.from&&t<=e.to)||null; }
 // The next event inside `days` days, for a heads-up before it starts: {e, inDays}.
 function passEventSoon(days){ if(!passEnabled()) return null; const t=todayKey(), d0=passDk(t);
@@ -10087,16 +10177,16 @@ const PASS_CHAL_POOL=[
 ];
 // The theme for THIS week, if the season names one: {name, emoji, list}. A theme is pinned to the
 // challenge week (weekKey) that contains its day, so it lines up with the reset.
-function passChalTheme(){ const wk=weekKey(), th=passSeasonDef().chalWeeks||[];
+function passChalTheme(){ if(!passSystemsOn()) return null; const wk=weekKey(), th=passSeasonDef().chalWeeks||[];
   return th.find(x=>Math.floor(passDk(x.day)/7)===wk)||null; }
-function passChalSet(){ const th=passChalTheme(); if(th) return th.list.map(c=>Object.assign({xp:PASS_CHAL_THEMED_XP},c));
+function passChalSet(){ if(!passSystemsOn()) return []; const th=passChalTheme(); if(th) return th.list.map(c=>Object.assign({xp:PASS_CHAL_THEMED_XP},c));
   const wk=weekKey(), n=passSeason().n;
   return ['daily','career','extra'].map((g,i)=>seededShuffle(PASS_CHAL_POOL.filter(c=>c.grp===g),(wk*31+n*7+i*13)>>>0)[0])
     .filter(Boolean).map(c=>Object.assign({xp:PASS_CHAL_XP},c)); }
 function passChalState(){ const wk=weekKey(), n=passSeason().n; let w=LS.get(acctKey('bag_passchal'),null);
   if(!w||typeof w!=='object'||w.week!==wk||w.season!==n) w={week:wk, season:n, prog:{}, done:{}};
   w.prog=w.prog||{}; w.done=w.done||{}; return w; }
-function passChalProgress(metric, n){ if(!passEnabled()||!sbSignedIn()||!(n>0)) return [];
+function passChalProgress(metric, n){ if(!passSystemsOn()||!sbSignedIn()||!(n>0)) return [];
   const w=passChalState(), set=passChalSet(); if(!set.some(c=>c.metric===metric)) return [];
   w.prog[metric]=(w.prog[metric]||0)+n;
   const newly=set.filter(c=>!w.done[c.id] && (w.prog[c.metric]||0)>=c.target);
@@ -10116,7 +10206,7 @@ function mergePassChal(local, server){ if(!server) return local; if(!local) retu
   if(b>a) return server; if(a>b) return local;
   const prog={}, lp=local.prog||{}, sp=server.prog||{}; for(const x in lp) prog[x]=lp[x]; for(const x in sp) prog[x]=Math.max(prog[x]||0,sp[x]||0);
   return { week:local.week, season:local.season, prog:prog, done:Object.assign({},server.done,local.done) }; }
-function passChalHTML(){ if(!passEnabled()||!sbSignedIn()) return '';
+function passChalHTML(){ if(!passSystemsOn()||!sbSignedIn()) return '';
   const w=passChalState(), set=passChalSet(), th=passChalTheme(), done=set.filter(c=>w.done[c.id]).length;
   const rows=set.map(c=>{ const v=Math.min(w.prog[c.metric]||0,c.target), ok=!!w.done[c.id];
     return `<div class="wg-row${ok?' done':''}"><span>${ok?'✓ ':''}${esc(c.label)} <span class="small muted" style="letter-spacing:0;text-transform:none">· +${c.xp} XP</span></span><span class="wg-v" style="${ok?'':'color:var(--muted)'}">${v}/${c.target}</span></div>`; }).join('');
@@ -14649,7 +14739,7 @@ function scrTitle(){
   // already oriented on the interface instead of being dropped onto it cold.)
   // Season 1 launch announcement (returning players, once), fires after this render settles, and only
   // when no other overlay (e.g. the login bonus) is up; retried on later title renders until shown.
-  setTimeout(function(){ try{ maybeFirstTour(); }catch(e){} try{ flushPendingWelcome(); }catch(e){} try{ maybeS1LaunchPopup(); }catch(e){} try{ flushPendingLogin(); }catch(e){} try{ maybeS1EndPopup(); }catch(e){} try{ maybeRosterPop(); }catch(e){} try{ maybeArcadeAd(); }catch(e){} }, 420);
+  setTimeout(function(){ try{ maybeFirstTour(); }catch(e){} try{ flushPendingWelcome(); }catch(e){} try{ maybeS1LaunchPopup(); }catch(e){} try{ flushPendingLogin(); }catch(e){} try{ maybeS1EndPopup(); }catch(e){} try{ maybePassSettleNote(); }catch(e){} try{ maybeRosterPop(); }catch(e){} try{ maybeArcadeAd(); }catch(e){} }, 420);
   // ════════════════════════════════════════════════════════════════════
   // Home = ONE HERO + a rail. Whatever you were last playing becomes the big
   // card (mid-career it's "Resume Year 12", first thing in the morning it's
@@ -34980,7 +35070,7 @@ function overlayTourPass(screen){
   }
   const s=passState(), tier=passTierAt(s.xp), capXp=passXpForTier(PASS_TIERS), pro=passProActive();
   // Past tier 60 the header counts OVERTIME (to PASS_OT_MAX) instead of stopping at "max tier".
-  const tx=passTierX(s.xp), ot=tier>=PASS_TIERS, top=ot?PASS_OT_MAX:PASS_TIERS, capX=passXpForTierX(top);
+  const tx=passTierShown(s.xp), ot=passSystemsOn()&&tier>=PASS_TIERS, top=ot?PASS_OT_MAX:PASS_TIERS, capX=passXpForTierX(top);
   const base=tx<top?passXpForTierX(tx):capX, nxt=tx<top?passXpForTierX(tx+1):capX;
   const into=Math.round(Math.min(s.xp,capX)-base), need=Math.max(1,nxt-base), pct=tx<top?Math.min(100,Math.round(100*into/need)):100;
   const claimable=passClaimable(), evLine=passEventLine();
@@ -35028,13 +35118,13 @@ function overlayTourPass(screen){
   if(claimable>0) cta.appendChild($(`<button class="btn goldfill" data-claimall style="margin:10px auto 0">Claim all · ${claimable} ready</button>`));
   try{ const pc=passChalHTML(); if(pc) cta.appendChild($(pc)); }catch(e){}
   // Your stamps so far, and what this season's stamp still needs. Nothing to show before the first one.
-  try{ const stH=passStampsHTML(), got=passTierX(s.xp)>=PASS_STAMP_TIER;
+  if(passSystemsOn()) try{ const stH=passStampsHTML(), got=passTierX(s.xp)>=PASS_STAMP_TIER;
     cta.appendChild($(`<div class="tp-stamps"><span class="tp-stl">SEASON STAMPS</span>${stH||'<span class="small muted">none yet</span>'}<span class="small muted" style="flex-basis:100%;margin-top:4px">${got?`Season ${ssn.n} stamp earned. Overtime marks at ${PASS_MARKS.join(', ')}.`:`Reach tier ${PASS_STAMP_TIER} to keep a Season ${ssn.n} stamp on your nameplate for good.`}</span></div>`)); }catch(e){}
   // NEXT SEASON teaser, for the last two weeks of a season and only once the next one is authored. The
   // hardest days to keep somebody are the ones after they finish a track, so the end of one season shows
   // what the next pays out, read off the same table that will pay it.
   try{ const nx=PASS_SEASONS[ssn.n+1];
-    if(nx && !nx.legacy && ssn.daysLeft<=14){
+    if(PASS_NEXT_TEASE && nx && !nx.legacy && ssn.daysLeft<=14){
       const items=Object.keys(nx.items||{}).map(t=>nx.items[t]);
       const th=items.slice(0,6).map(c=>`<span style="width:30px;height:30px;display:inline-block">${passCosThumb(c)}</span>`).join('');
       cta.appendChild($(`<div class="scout" style="margin:10px 0 0;border-color:${nx.accent||'#a78bfa'};text-align:center">
@@ -35063,7 +35153,7 @@ function overlayTourPass(screen){
   ov.appendChild(track);
   // OVERTIME: one panel rather than thirty more rows, because nothing on it is claimable. It shows from the
   // start so the climb past 60 is known about before anybody gets there.
-  try{ const marks=PASS_MARKS.map(m=>`<div class="tp-otm${tx>=m?' on':''}"><b>${'★'.repeat(PASS_MARKS.indexOf(m)+1)}</b><span>TIER ${m}</span></div>`).join('');
+  if(passSystemsOn()) try{ const marks=PASS_MARKS.map(m=>`<div class="tp-otm${tx>=m?' on':''}"><b>${'★'.repeat(PASS_MARKS.indexOf(m)+1)}</b><span>TIER ${m}</span></div>`).join('');
     ov.appendChild($(`<div class="tp-ot${ot?' live':''}"><div class="tp-oth">OVERTIME · TIERS ${PASS_TIERS+1} TO ${PASS_OT_MAX}</div>
       <p class="small muted" style="margin:4px 0 10px">${ot?`You are on overtime tier ${tx}. `:''}After tier ${PASS_TIERS} the track keeps going, ${coinFmt(PASS_OT_COST)} XP a tier. Each mark below goes on your Season ${ssn.n} stamp for good.</p>
       <div class="tp-otms">${marks}</div></div>`)); }catch(e){}
@@ -35135,13 +35225,13 @@ function overlayPassClaim(screen){
   const ov=$(`<div class="ov tpov" role="dialog" aria-modal="true" style="text-align:center">
     <button class="btn ghost x" style="width:auto;padding:8px 12px;font-size:14px">Close ✕</button>
     <div class="tag" style="color:var(--gold);border-color:var(--gold);margin:0 auto">🎟️ Tour Pass</div>
-    <h3 style="margin:12px 0 2px">${a.n} reward${a.n===1?'':'s'} claimed!</h3>
-    <p class="lede" style="margin:0 auto 14px;max-width:420px">Everything from your reached tiers, straight into your account.</p>
+    <h3 style="margin:12px 0 2px">${a.settled?`Season ${a.settled.join(' and ')} rewards delivered`:`${a.n} reward${a.n===1?'':'s'} claimed!`}</h3>
+    <p class="lede" style="margin:0 auto 14px;max-width:420px">${a.settled?`You reached these tiers and never claimed them. The season ended, so we claimed them for you: ${a.n} reward${a.n===1?'':'s'}.`:'Everything from your reached tiers, straight into your account.'}</p>
     <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px;max-width:440px;margin:0 auto 14px">${grid}</div>
     ${a.coins>0?`<div style="font-family:var(--display);font-size:20px;color:#ffd45e;margin:0 0 4px"><span style="width:20px;height:20px;display:inline-block;vertical-align:-3px">${ic('coin',{size:'20px'})}</span> +${coinFmt(a.coins)} coins total</div>`:''}
     <button class="btn goldfill done" style="max-width:360px;margin:8px auto 0">Nice ▸</button>
     <div class="small muted" style="margin-top:10px">Packs are waiting in Pro Shop → Packs.</div></div>`);
-  const back=()=>{ S.passClaimSummary=null; S.overlay='tourpass'; render(); };   // return to the pass track
+  const back=()=>{ const st=S.passClaimSummary&&S.passClaimSummary.settled; S.passClaimSummary=null; S.overlay=st?null:'tourpass'; render(); };   // back to the pass track (a settlement came from the home screen, so it goes back there)
   ov.querySelector('.x').onclick=back; ov.querySelector('.done').onclick=back;
   screen.appendChild(ov);
 }
@@ -35494,7 +35584,8 @@ const PACK_TYPES={
   // SEASON 2's two themed packs. Price, odds, pity and bias are COPIED from Summer Smash on purpose: the
   // pack ladder is not being re-tuned here, only given a pack for October and one for November, so the Tour
   // Pass's seasonal packs are themed for the whole season instead of falling back to Tour packs.
-  spooky:{id:'spooky', name:'Spooky Season Pack', short:'Spooky', price:30000, seasonal:true,
+  // fromSeason: the Spooky drop opens Oct 1, four days before Season 2. Its pack waits for the season.
+  spooky:{id:'spooky', name:'Spooky Season Pack', short:'Spooky', price:30000, seasonal:true, fromSeason:2,
           dropId:'spooky', dropBias:0.40,
           odds:[['common',0.30],['rare',0.40],['epic',0.22],['legendary',0.08]],
           pityEpic:6, pityLeg:24, col:'#e07a1f', accent:'#ffc48a', glow:'rgba(224,122,31,.5)', icon:'🎃'},
@@ -35579,7 +35670,7 @@ function beginTokenPurchase(id){ var t=DAILY_TOKENS.find(function(x){return x.id
 function beginPassPurchase(){ beginCheckout(TOURPASS.id,'pass_checkout'); }
 const PACK_TIER_ORDER=['base','tour','champ'];
 // tiers to actually offer/display right now: the permanent ladder + any live seasonal packs (price-sorted).
-function packTierLive(id){ var pt=packType(id); if(!pt.seasonal) return true; var d=(typeof dropById==='function')&&dropById(pt.dropId); return !!(d && (!d.window || dropLive(d))); }
+function packTierLive(id){ var pt=packType(id); if(!pt.seasonal) return true; if(pt.fromSeason && passSeason().n<pt.fromSeason) return false; var d=(typeof dropById==='function')&&dropById(pt.dropId); return !!(d && (!d.window || dropLive(d))); }
 function packTierList(){ var list=PACK_TIER_ORDER.slice();
   Object.keys(PACK_TYPES).forEach(function(id){ if(PACK_TIER_ORDER.indexOf(id)<0 && packTierLive(id)) list.push(id); });
   return list.sort(function(a,b){ return packType(a).price-packType(b).price; }); }
@@ -35732,12 +35823,12 @@ const DROP_REWARDS={
     {cat:'cardbg', id:'endlesssummer',name:'Endless Summer Backdrop'} ]},
   drop2: { coins:100000, items:[
     {cat:'cardbg', id:'mythicvault',  name:'The Mythic Vault Backdrop'} ]},
-  spooky:{ coins:100000, items:[
+  spooky:{ coins:100000, fromSeason:2, items:[
     {cat:'cardbg', id:'hauntedhollow',name:'Haunted Hollow Backdrop'} ]},
   harvest:{ coins:100000, items:[
     {cat:'cardbg', id:'cornfield',    name:'Cornfield Sunset Backdrop'} ]},
 };
-function dropReward(d){ return d?(DROP_REWARDS[d.id]||null):null; }
+function dropReward(d){ const r=d?(DROP_REWARDS[d.id]||null):null; return (r && r.fromSeason && passSeason().n<r.fromSeason)?null:r; }
 function dropRewardItems(d){ const r=dropReward(d); return r?(r.items||[]):[]; }
 function rewardDrop(cat,id){ for(const k in DROP_REWARDS){ if((DROP_REWARDS[k].items||[]).some(it=>it.cat===cat&&it.id===id)) return dropById(k); } return null; }
 function cosRewardOnly(cat,id){ return !!rewardDrop(cat,id); }
@@ -36553,7 +36644,10 @@ function startPackDeal(opts){ opts=opts||{};
   if(!packsOn()){ toast(packErr('off')); return; }
   if(!sbSignedIn()){ toast(packErr('signin')); return; }
   var tier=opts.bundle?((S.packBundle&&S.packBundle.pack)||'base'):(opts.pack||'base'); var pt=packType(tier);
-  if(pt.seasonal && !packTierLive(tier)){ toast(pt.name+' is out of season'); return; }   // seasonal pack only while its drop is live
+  // A seasonal pack can only be BOUGHT while its drop is live. A saved seasonal credit (tier 'seasonal') opens
+  // in any month (owner): with no seasonal pack on sale it opens as the plain Seasonal Pack, same odds.
+  var savedSeasonal=(tier==='seasonal' && !opts.bundle && packCredits('seasonal')>0);
+  if(pt.seasonal && !packTierLive(tier) && !savedSeasonal){ toast(pt.name+' is out of season'); return; }
   var free=false;
   if(!opts.bundle){                                    // a bundle sub-open is prepaid: never free/credit
     var freeFirst=(tier==='base') && (opts.free||packIsFree());  // the one-time first-pack-free is base only
@@ -37092,8 +37186,20 @@ function packShopNode(){
   try{ mergeSeasonalCredits(); }catch(e){}
   // Seasonal credits in a month with no seasonal pack are saved, not lost, and the screen says so: otherwise
   // a pass reward would vanish from sight until the next drop opens.
+  // In a month with no seasonal pack on sale, saved ones still open (owner): a card of their own, with no
+  // price and no bundle, because a seasonal pack cannot be BOUGHT out of season.
   try{ var sc=packCredits('seasonal');
-    if(sc>0 && !liveSeasonalPackId()) wrap.appendChild($('<div class="scout" style="max-width:380px;margin:12px auto 0;text-align:center;border-color:#e07a1f"><b style="color:#e07a1f">🎁 '+sc+' seasonal pack'+(sc>1?'s':'')+' saved</b><div class="small muted" style="margin-top:3px">'+(sc>1?'They open':'It opens')+' as the next seasonal pack when it arrives in the store.</div></div>'));
+    if(sc>0 && !liveSeasonalPackId()){ var spt=SEASONAL_PACK;
+      var sEp=spt.odds.reduce(function(a,o){ return a+((o[0]==='epic'||o[0]==='legendary')?o[1]:0); },0), sLg=(spt.odds.find(function(o){return o[0]==='legendary';})||[0,0])[1];
+      var scard=$('<div class="packcard-glow" data-savedseasonal style="--pkg:'+spt.glow+';max-width:380px;margin:12px auto 0;padding:12px;border-radius:16px;background:linear-gradient(165deg,'+spt.col+'1c,#0c1f16);border:2px solid '+spt.col+'">'
+        +'<div style="display:flex;gap:12px;align-items:center"><div style="flex:0 0 auto;filter:drop-shadow(0 0 12px '+spt.glow+')">'+pxPackImg(80,'seasonal')+'</div>'
+        +'<div style="flex:1;min-width:0"><div style="font:800 9px var(--body);letter-spacing:.12em;text-transform:uppercase;color:'+spt.col+'">🎁 Saved from your rewards</div>'
+        +'<div style="font-family:var(--display);font-size:20px;color:'+spt.col+'">'+esc(spt.name)+'</div>'
+        +'<div class="small" style="color:#cfe6d8;margin-top:3px">Epic+ <b style="color:'+PACK_RCOL.epic+'">'+Math.round(sEp*100)+'%</b> · Legendary <b style="color:'+PACK_RCOL.legendary+'">'+Math.round(sLg*100)+'%</b></div>'
+        +'<div class="small muted" style="margin-top:2px">No seasonal pack is in the store this month. Yours still open.</div></div></div></div>');
+      var sBtn=$('<button class="btn" style="width:100%;margin:10px 0 0;background:'+spt.col+';color:#0c1f16">Open a FREE pack · '+sc+' left</button>');
+      sBtn.onclick=function(){ startPackDeal({pack:'seasonal'}); };
+      scard.appendChild(sBtn); wrap.appendChild(scard); }
   }catch(e){}
   var tiers=packTierList();
   tiers.forEach(function(id){
@@ -37909,7 +38015,7 @@ async function sbApply(session){
     // the player happens to open the records overlay, otherwise a signed-in session on a fresh browser
     // shows "unclaimed"/stale local state until something else happens to trigger the fetch.
     bumpBoardEpoch(); crCache=null; crLoad(); reconcileDailyAttempts();
-    cloudPull().finally(()=>{ try{ maybeBackfillLook(); }catch(e){} try{ pushProfileLook(); }catch(e){} try{ checkNameFlag(); }catch(e){} try{ proLoad(true); }catch(e){} try{ maybeWelcomePack(); }catch(e){} try{ sbSubmitStreak(); }catch(e){} try{ maybeReferralFlow(); }catch(e){} try{ maybeBundleRewards(); }catch(e){} try{ maybeCoinGrant(); }catch(e){} try{ maybePackGrant(); }catch(e){} try{ maybeFirstBuySpin(); }catch(e){} try{ maybeLoginBonus(); }catch(e){} try{ maybePassEventNote(); }catch(e){} try{ loadWallet(function(){ try{ maybePassRewards(); }catch(e){} try{ maybeBucketRewards(); }catch(e){} }); }catch(e){} try{ purchaseCheck(); }catch(e){} });   // pull the profile bundle, then retro-fill the golfer (CS395) + welcome pack (CS401) + post streak + referral redeem/claim (CS403) + one-time coin grant (CS459) + daily-login bonus (CS461) + purchased-coin wallet (Stripe) + a post-checkout return
+    cloudPull().finally(()=>{ try{ maybeBackfillLook(); }catch(e){} try{ pushProfileLook(); }catch(e){} try{ checkNameFlag(); }catch(e){} try{ proLoad(true); }catch(e){} try{ maybeWelcomePack(); }catch(e){} try{ sbSubmitStreak(); }catch(e){} try{ maybeReferralFlow(); }catch(e){} try{ maybeBundleRewards(); }catch(e){} try{ maybeCoinGrant(); }catch(e){} try{ maybePackGrant(); }catch(e){} try{ maybeFirstBuySpin(); }catch(e){} try{ maybeLoginBonus(); }catch(e){} try{ maybePassEventNote(); }catch(e){} try{ loadWallet(function(){ try{ maybePassRewards(); }catch(e){} try{ maybeBucketRewards(); }catch(e){} try{ if(Object.keys(passSettle()).length) maybePassSettleNote(); }catch(e){} }); }catch(e){} try{ purchaseCheck(); }catch(e){} });   // pull the profile bundle, then retro-fill the golfer (CS395) + welcome pack (CS401) + post streak + referral redeem/claim (CS403) + one-time coin grant (CS459) + daily-login bonus (CS461) + purchased-coin wallet (Stripe) + a post-checkout return
     maybeAdoptGuestCareer();   // guest signed in via the 10-season login wall → persist their in-memory career + continue
     maybeResumeCareerOnReload();   // a refresh happened mid-career → now that the account is loaded, drop back into it
     if(S._dailyClaimFlow && sbSignedIn()){ S.overlay=null; S.screen='dailyresult'; }   // return to the result screen
@@ -38132,6 +38238,8 @@ function cloudBundle(){
     tourpass: LS.get(acctKey('bag_tourpass'), null),             // Tour Pass Track: {season, xp, pro, claimed:{free[],prem[]}}
     passhist: LS.get(acctKey('bag_passhist'), null),             // best tier reached per season, for good: {season: tier} (stamps + prestige)
     passchal: LS.get(acctKey('bag_passchal'), null),             // this week's Pass challenge progress
+    passprev: LS.get(acctKey('bag_passprev'), null),             // finished seasons' tracks, kept to settle unclaimed tiers
+    passsettled: LS.get(acctKey('bag_passsettled'), null),       // tiers already paid by season-end settlement: {season:{free[],prem[]}}
     wheel: LS.get(acctKey('bag_wheel'), null),                   // Prize Wheel: free-spin day, banked spins, 2x XP boost expiry
     seasonlog: seasonLog(),                                      // Profile → History: the chronological season archive
     careerlog: careerLog(),                                      // Profile → History: every career you have finished
@@ -38391,6 +38499,9 @@ async function cloudPull(){
     { const mpass=mergePass(LS.get(acctKey('bag_pass'),null), server.pass); if(mpass&&mpass.claimed) LS.set(acctKey('bag_pass'), mpass); }   // Tour Pass per-period pack-claim flag cross-device
     { const mbd=mergeBundle(LS.get(acctKey('bag_bundle'),null), server.bundle); if(mbd&&mbd.claimed) LS.set(acctKey('bag_bundle'), mbd); }   // Run The Bundle pack-claim flag cross-device
     passHistFromState(LS.get(acctKey('bag_tourpass'),null)); passHistFromState(server.tourpass);   // stamp both sides BEFORE the merge can drop an older season
+    passArchiveNote(LS.get(acctKey('bag_tourpass'),null)); passArchiveNote(server.tourpass);       // ...and archive them for settlement
+    { const ma=mergePassArchive(LS.get(acctKey('bag_passprev'),null), server.passprev); if(Object.keys(ma).length) LS.set(acctKey('bag_passprev'), ma); }
+    { const ml=mergePassSettled(LS.get(acctKey('bag_passsettled'),null), server.passsettled); if(Object.keys(ml).length) LS.set(acctKey('bag_passsettled'), ml); }
     { const mtp=mergeTourPass(LS.get(acctKey('bag_tourpass'),null), server.tourpass); if(mtp) LS.set(acctKey('bag_tourpass'), mtp); }   // Tour Pass Track progress cross-device
     { const mh=mergePassHist(LS.get(acctKey('bag_passhist'),null), server.passhist); if(Object.keys(mh).length) LS.set(acctKey('bag_passhist'), mh); }   // season stamps: per-season max, never lost
     { const mc=mergePassChal(LS.get(acctKey('bag_passchal'),null), server.passchal); if(mc) LS.set(acctKey('bag_passchal'), mc); }
