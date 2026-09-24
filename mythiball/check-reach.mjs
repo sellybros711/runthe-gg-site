@@ -114,13 +114,13 @@ async function playOne(browser, w, h, dpr, touch, youHome) {
        than a harness poll, because a window can be shorter than one poll,
        and a game where nobody fields is a game that ends sooner and has
        fewer decks to look at. */
-    window.__fielded = 0;
+    window.__fielded = 0; window.__windows = 0;
     const tick = () => {
       const g = State.game, p = g && g.play;
       if (p) {
         const win = p.throwActive ? p.throwWindow : p.catchActive ? p.catchWindow : null;
         if (win && !win.resolved && !win.__armed && win.duration) {
-          win.__armed = true;
+          win.__armed = true; window.__windows++;
           const ideal = p.throwActive && win.ideal != null ? win.ideal : 0.5;
           const at = win.startedAt + ideal * win.duration;
           setTimeout(() => {
@@ -154,7 +154,16 @@ async function playOne(browser, w, h, dpr, touch, youHome) {
   const until = Date.now() + 120e3;
   while (Date.now() < until) {
     guard++;
-    const st = await pg.evaluate(() => {
+    /* AND THE REPLAY CHIP IS STAGED RATHER THAN WAITED FOR. It is offered only
+       while a highlight is stored, which means only after a double, a triple or
+       a home run, so whether this walk ever measures it is a fact about the
+       dice: it appeared on two of the six screens, and both of those reported it
+       off the window. A control that half the sweep never looks at is the badge
+       nothing can light. So once the walk is half way through its budget the
+       page's own `rememberHighlight` is called with the longest of the three
+       labels, which is the widest the chip ever gets. */
+    const stage = Date.now() > until - 60e3;
+    const st = await pg.evaluate((doStage) => {
       const g = State.game;
       /* THE FINAL WHISTLE IS ASKED FIRST, and the first version asked it last.
          Pressing Space all game is a dreadful pitcher, so the other side can
@@ -164,6 +173,10 @@ async function playOne(browser, w, h, dpr, touch, youHome) {
          reported a play by play of nought lines on a screen that had just
          played a whole game. */
       if (!g || g.over) return { over: true };
+      if (doStage && !g.highlight && !g.play && currentBatter()) {
+        rememberHighlight('home run', currentBatter(), { duration: 1200 });
+        refreshHud();
+      }
       const shown = (e) => {
         if (!e) return false;
         const st = getComputedStyle(e);
@@ -188,11 +201,20 @@ async function playOne(browser, w, h, dpr, touch, youHome) {
           .find(e => /^Throw/i.test((e.textContent || '').trim()) && shown(e) && !e.disabled);
         if (thr) { thr.click(); return {}; }
       }
-      /* Space is what acts on every other screen: it swings, it releases the
-         meter, and it answers a fielding window. */
+      /* A FIELDING WINDOW BELONGS TO THE WATCHER AND NOT TO THE BLIND PRESS.
+         Space answers one, and this loop presses Space as fast as it can, so
+         every window was resolved at a t near nought before the watcher's own
+         timer could fire at the window's ideal: measured, nought answered at
+         the ideal across all six screens, and games finishing 12-0 because a
+         throw at t=0 is a throw away. The walk leaves an open window alone. */
+      const p = g.play;
+      if (p && ((p.throwActive && p.throwWindow && !p.throwWindow.resolved) ||
+                (p.catchActive && p.catchWindow && !p.catchWindow.resolved))) return {};
+      /* Space is what acts on every other screen: it swings and it releases
+         the meter. */
       document.dispatchEvent(new KeyboardEvent('keydown', { code: 'Space', bubbles: true }));
       return {};
-    }).catch(e => ({ err: String(e).slice(0, 90) }));
+    }, stage).catch(e => ({ err: String(e).slice(0, 90) }));
     if (st.err) return { err: st.err };
     if (st.over) break;
 
@@ -302,7 +324,15 @@ async function playOne(browser, w, h, dpr, touch, youHome) {
          measured, two minutes of a Fast game writes thirteen lines into a box
          that is 91 pixels on the shortest phone and holds about five. Asked of
          the box, there is nothing to guess. */
-      full: el ? (el.scrollHeight > el.clientHeight + 2) : false,
+      /* SIDEWAYS THE BOX IS NOT THERE, and that is the page's own answer
+         rather than a hole in this claim. A 217 pixel column on a 375 tall
+         phone does not hold the line score, the pitch rows, the way out AND
+         the play by play, so the play by play is hidden in that branch the way
+         the at bat card already is. What the claim is really about is that the
+         deck was at its FULLEST when the rectangles were read, so where the box
+         is gone the lines are counted in the game's own state instead. */
+      full: el ? (getComputedStyle(el).display === 'none'
+                  ? 'hidden' : (el.scrollHeight > el.clientHeight + 2)) : false,
       logPx: el ? Math.round(el.clientHeight) : 0,
     };
   }).catch(() => ({ inn: 0, log: 0, full: false, logPx: 0 }));
@@ -326,7 +356,7 @@ async function playOne(browser, w, h, dpr, touch, youHome) {
   for (const [t, o] of res.out) { seen.add(t); if (o > 1) worst.set(t + ' (result)', o); }
 
   const fin = await pg.evaluate(() => ({
-    screen: State.screen, fielded: window.__fielded | 0,
+    screen: State.screen, fielded: window.__fielded | 0, windows: window.__windows | 0,
     inn: State.game ? State.game.inning : 0,
     sc: State.game ? State.game.away.score + '-' + State.game.home.score : '',
   })).catch(() => ({}));
@@ -339,12 +369,14 @@ async function playOne(browser, w, h, dpr, touch, youHome) {
 async function main() {
   const browser = await chromium.launch();
   console.log('every control a game offers is inside the window');
-  let anySeen = 0, anyFielded = 0, anySamples = 0;
+  let anySeen = 0, anyFielded = 0, anySamples = 0, anyWindows = 0, sawReplay = 0;
   for (const [w, h, dpr, touch, youHome] of SCREENS) {
     const r = await playOne(browser, w, h, dpr, touch, youHome);
     const tag = `${w}x${h}@${dpr} ${touch ? 'touch' : 'mouse'} ${youHome ? 'home' : 'away'}`;
     if (r.err) { ok(false, tag, r.err); continue; }
     anySeen += r.seen.size; anyFielded += r.fin.fielded | 0; anySamples += r.samples;
+    anyWindows += r.fin.windows | 0;
+    if ([...r.seen].some(t => /^Replay/.test(t))) sawReplay++;
     const off = [...r.worst.entries()].map(([t, o]) => `${t} by ${o}px`);
     ok(off.length === 0 && r.pageOver <= 0,
        `${tag}  ${r.seen.size} controls, ${r.samples} samples, ${r.fin.inn} innings, ${r.fin.sc}`,
@@ -360,10 +392,11 @@ async function main() {
     /* COVERAGE, AND THE FIRST VERSION ASKED THE WRONG THING. It wanted two
        innings, which two minutes of a Fast game does not reach, and innings are
        not what this is about anyway: the deck grows because the PLAY BY PLAY
-       fills up, and the log is capped at 40vh, which is about sixteen lines on
-       the shortest phone. So the claim is that the log filled, which is the
-       state every one of the four faults was worst in. */
-    ok(r.fin.full === true, `${tag}  the play by play filled its box`,
+       fills up, and the log is capped, so it is full the moment it overflows its
+       own box. So the claim is that the log filled, which is the state every one
+       of the four faults was worst in. */
+    ok(r.fin.full === true || (r.fin.full === 'hidden' && r.fin.log >= 8),
+       `${tag}  the play by play ${r.fin.full === 'hidden' ? 'is hidden and the game ran' : 'filled its box'}`,
        `${r.fin.log} lines in ${r.fin.logPx}px, not overflowing`);
   }
   /* COVERAGE. A run that never opened a deck saw no controls, and a run where
@@ -371,7 +404,15 @@ async function main() {
      every claim above having exercised nothing. */
   ok(anySeen > SCREENS.length * 3, 'it saw real decks', anySeen + ' controls across the sweep');
   ok(anySamples > SCREENS.length * 40, 'and sampled them all game', anySamples + ' samples');
-  ok(anyFielded > 0, 'and the fielding windows opened', anyFielded + ' played');
+  /* A run where nobody ever fields is a shorter game with fewer decks in it, and
+     the two halves of that are asked separately because they fail differently: a
+     window that never OPENS means the walk never put a ball in play, and a window
+     that opens and is never ANSWERED at its ideal means something else got to it
+     first, which is what the blind press was doing. */
+  ok(anyWindows > 0, 'and the fielding windows opened', anyWindows + ' opened');
+  ok(anyFielded > 0, 'and the walk answered them', anyFielded + ' played');
+  ok(sawReplay === SCREENS.length, 'and the Replay chip was measured on every screen',
+     sawReplay + ' of ' + SCREENS.length);
 
   await browser.close();
   console.log(failures ? `\n${failures} FAILED` : '\nall good');

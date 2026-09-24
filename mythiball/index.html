@@ -291,6 +291,27 @@
     body.ingame .meter-wrap .label{margin:0;flex:0 0 auto;gap:12px;}
     body.ingame .meter-wrap .hint{margin:0;}
     body.ingame .swing-modes{margin:0;}
+    /* AND THE PITCHING DECK PAYS THE SAME BUDGET THE SWING ROW DOES, which is
+       the paragraph above arriving at the half nobody measured. Walk him and
+       Throw are a COLUMN, so the pitching deck is a row of pitch types beside
+       a two high stack, and that stack is what sets its height: measured on a
+       desktop it is 148 pixels against the batting deck's 57.
+
+       The world runs out before the camera can pay for that. `deckCoverBlocks`
+       is honoured and then `sy` is clamped to the world's own bottom edge,
+       which is the one of the three clamps that cannot be argued with, so what
+       the deck cannot be paid for it simply covers: measured, 22 pixels of a
+       200 pixel strike zone at 1440 by 900 and 47 of 160 at 1280 by 800, which
+       is the bottom third of the box a pitcher is aiming INTO. The batting half
+       is clear on every screen, which is why this survived: the zone is the
+       thing that was solved for, and only for the deck that was measured. */
+    body.ingame .pitch-select .col{flex-direction:row;}
+    /* The last few pixels come off the spacing rather than the type, because
+       Throw is what this deck is for and a smaller Throw is a worse deck than
+       a tighter one. At 1280 by 800 they are the difference between the zone's
+       bottom edge being covered and being clear. */
+    body.ingame .pitch-select{margin-top:4px;}
+    body.ingame .meter-wrap{padding-top:6px;padding-bottom:6px;}
     /* AND END GAME LEAVES THE FLOW HERE AND ONLY HERE. Its own row was 33
        pixels of a 22 block budget spent on the one control nobody is
        looking for. Under a tall window there is no budget to spend, the
@@ -1262,8 +1283,31 @@
        Absolute on the left, and the deck flows normally in the padding it
        leaves. The arena's height is the window's, which is what
        fitFieldCanvas needs, and it cannot size anything else. */
-    body.ingame.roomfill .screen{display:block;position:relative;height:100%;
-      padding:4px 0 0 calc(66% + 10px);}
+    /* A COLUMN, NOT A BLOCK, AND THE PLAY BY PLAY IS WHAT GIVES WAY. The
+       arena is out of the flow either way, which is all `display:block` was
+       ever for: it is not the two column grid the note above rejected. What
+       the block cost is that nothing in the deck could shrink, so the play by
+       play took its 34vh whatever was left above it and ran off the bottom of
+       the window. Measured at 844 by 390 while pitching: the deck's fixed part
+       ended at 344, the log took 133 more, and the page was 87 pixels longer
+       than the window with `overflow:hidden` cutting the rest. At 667 by 375 it
+       was 128 and the log started exactly at the bottom edge, so the record of
+       the game was not on the screen at all.
+
+       AND THE END GAME ROW COMES BACK INTO THE FLOW HERE, which is the tall
+       window's own argument arriving sideways. It is pinned to the bottom right
+       corner on a wide window because every pixel the deck is tall is a pixel
+       the camera pushes the picture down by. Sideways the deck is a COLUMN
+       BESIDE the field: it is not standing on the picture at all, so there is no
+       budget to buy and nothing to spend it on. What the pin cost is that the
+       flow did not know the chips were there, so the row above them was laid
+       out to the window's own bottom and they landed on it. Measured at 667 by
+       375, Mound was under Replay by 90 pixels of 23, which is a tap meaning
+       "change my pitcher" opening the sheet that abandons the game. */
+    body.ingame.roomfill .screen{display:flex;flex-direction:column;
+      position:relative;height:100%;padding:4px 0 0 calc(66% + 10px);}
+    body.ingame.roomfill .screen > .controls:last-child{position:static;
+      right:auto;bottom:auto;margin:6px 12px 6px 0;justify-content:flex-start;}
     body.ingame.roomfill .arena{position:absolute;left:0;top:0;width:66%;
       height:100%;margin:0;}
     /* SIDEWAYS STILL PUTS THE FURNITURE BESIDE THE FIELD, and that is not
@@ -1290,14 +1334,57 @@
        Who is up is the biggest thing on the screen, holding a bat. */
     body.ingame.roomfill .atbat{display:none;}
     body.ingame.roomfill .controls{margin-top:8px;}
-    /* The play by play grows without limit and is the least urgent thing
-       on the screen, so it is the one that gets a box to live in. */
-    body.ingame.roomfill .log{max-height:34vh;overflow-y:auto;}
+    /* AND THE PLAY BY PLAY GOES TOO, which is the at bat card's own argument one
+       row down. A 217 pixel column on a 375 tall phone holds the line score, the
+       pitch or swing rows and the way out, and that is all it holds: measured
+       while pitching, the deck's fixed part ends at 344 of 375 and the log was
+       given 34vh of the window regardless, so it ran 128 pixels off the bottom
+       and `overflow:hidden` cut every line of it. Shrunk to nothing instead it
+       is 14 pixels of empty panel, which is worse than absent: a box that is
+       always empty teaches a reader that the game has stopped narrating.
+
+       What it narrates is on the screen anyway. The callout says what just
+       happened over the field, the placards carry the count and the inning, and
+       the line score carries the runs. It comes back the moment the phone is
+       turned upright, where it has the room to be read. */
+    body.ingame.roomfill .log{display:none;}
+    /* THE WAY OUT HAS TO HOLD ONE LINE. Replay and End Game together want 224
+       pixels of a 217 pixel column, so the row wrapped and the deck grew by 31
+       pixels for two chips that fit beside each other everywhere else. The side
+       padding is what a narrow column is short of, which is the same 20 pixels
+       the steal row's own rule buys above. */
+    body.ingame.roomfill .screen > .controls:last-child{flex-wrap:nowrap;
+      margin-right:0;}
+    body.ingame.roomfill .screen > .controls:last-child .btn{padding:5px 6px;
+      min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+    /* AND THE ONE THAT GIVES IS THE OPTIONAL ONE. End Game is the way out of a
+       run and has to be readable whatever else is on the row; Replay is an offer
+       to watch something again. So the chip that can lose letters is the chip
+       nobody needs, which is the fantasy row's rule about the club giving way
+       rather than the name. */
+    body.ingame.roomfill .screen > .controls:last-child .btn:last-child{
+      flex:0 0 auto;}
+    /* And the line score's cells, for the same reason and in the same place:
+       sideways the deck is short of height, and a two row table at 4 pixels of
+       cell padding is 67 of it. */
+    body.ingame.roomfill .linescore th,
+    body.ingame.roomfill .linescore td{padding:3px 7px;}
     /* A column a third of a phone wide does not hold a label and three
        buttons on one line, and the row does not wrap on its own: the third
        button hung off the panel with its name cut in half. */
     body.ingame.roomfill .swing-modes{flex-wrap:wrap;gap:6px;}
     body.ingame.roomfill .swing-modes .lbl{width:100%;}
+    /* AND THE PITCH TYPES ARE TWO COLUMNS BY CONSTRUCTION RATHER THAN BY
+       MEASUREMENT. Wrapped, whether three buttons come out as two rows or three
+       depends on how long this pitcher's pitch NAMES are: The Heat and Fastball
+       pair inside the column and Curveball and Changeup do not, so the deck was
+       31 pixels taller against some arms than others and the play by play was
+       squeezed out of the window against those. A grid is two rows whatever the
+       names are, and the name is what gives rather than the layout. */
+    body.ingame.roomfill .pitch-select .type-row{display:grid;
+      grid-template-columns:1fr 1fr;}
+    body.ingame.roomfill .pitch-select .type-row .btn{overflow:hidden;
+      text-overflow:ellipsis;white-space:nowrap;padding-left:6px;padding-right:6px;}
   }
 
   /* THE TEAM PHOTO. Fifty five cards in a grid is a spreadsheet: it is how
@@ -6732,9 +6819,94 @@ function pitcherRepertoire(p) {
 
    `read` is memory. See the pattern note on patternRead below. */
 const DIFF = {
-  easy:   { speed: 2.7, sweetWidth: 0.26, pitcherSkill: 0.85, chase:  0.06, read: 0.02 },
-  medium: { speed: 2.3, sweetWidth: 0.20, pitcherSkill: 1.00, chase:  0.00, read: 0.05 },
-  hard:   { speed: 1.9, sweetWidth: 0.16, pitcherSkill: 1.12, chase: -0.12, read: 0.11 },
+  easy:   { speed: 2.7, sweetWidth: 0.20, pitcherSkill: 0.85, chase:  0.06, read: 0.02 },
+  medium: { speed: 2.3, sweetWidth: 0.15, pitcherSkill: 1.00, chase:  0.00, read: 0.05 },
+  hard:   { speed: 1.9, sweetWidth: 0.12, pitcherSkill: 1.12, chase: -0.12, read: 0.11 },
+};
+/* `sweetWidth` came down about a quarter (0.26/0.20/0.16 before) and it is what
+   a TIER buys the player: the window is the only one of these three that a
+   person's own timing is measured against, and `check-skill.mjs` reads the
+   effect as whiffs per swing, which at medium runs 25.6 for somebody who has
+   never played against 5.3 for somebody who knows the game. The batting average
+   moves too and by less than a 700 plate appearance sample can resolve, which is
+   why the tier claim in that file is written on the whiffs. */
+
+/* THE OTHER DUGOUT KEEPS ITS OWN WINDOW, AND THE SHARING WAS AN ACCIDENT
+   RATHER THAN A RULE. `sweetWidth` is the PLAYER's timing window: it is in
+   the half of `DIFF` that is about batting, beside the ball speed and the
+   arm's accuracy, and the CPU's own difficulty is `chase` and `read` and its
+   own timing jitter. It reached the CPU only because `swingGeometry` is one
+   function and it read the table directly, so every measurement of the other
+   dugout was a measurement of the player's dial as well.
+
+   What that coupling costs is that the two halves cannot be tuned at all.
+   `calibrate.mjs` holds the CPU to a whiff rate of about 28 per hundred
+   swings, solved per tier against these exact numbers, and the jitter clamps
+   under it are ABSOLUTE times (nobody times a pitch perfectly just by being
+   good), so narrowing the window to make the player's timing matter would
+   raise the CPU's whiff, break that band, and on hard walk straight into the
+   floor that already killed the pattern read once.
+
+   So this is the CPU's window and it is the number the CPU has always had.
+   Nothing about the other dugout moves when the player's column does, which
+   is what makes the player's column a dial. */
+const CPU_SWEET = { easy: 0.26, medium: 0.20, hard: 0.16 };
+
+/* WHAT A BATTED BALL IS WORTH, and it was eight magic numbers in the middle of
+   `resolveSwing` under a comment claiming they were "tuned against a simulation
+   of full plate appearances (scratch tune.mjs)" to give "a perfect player about
+   .67 with 18% homers, a sloppy one about .50, a careless one about .30". That
+   scratch file does not exist, so the claim was unverifiable, and measured
+   through `check-skill.mjs` it was wrong about the thing that matters: in the
+   mode a player is actually in, somebody who had NEVER PLAYED hit .372 and
+   somebody who knew the game hit .591.
+
+   THE DOMINANT TERM IS THE FLOOR AND NOT THE CONTACT, which is the measurement
+   worth keeping. `HIT_BASE` plus `CONTACT_HIT` plus the speed term is what a
+   ball in play is worth on the WORST swing that still connects, and at 0.13 and
+   0.09 that floor was .26, which is real baseball's average on every ball in
+   play. The ceiling was double it. So the window was swept first and moved the
+   top two rungs almost nothing (.591 to .521 across a cut of more than half),
+   because a beginner's average falls through STRIKEOUTS while a competent
+   player's balls in play go on being hits.
+
+   TWO OF THESE ARE THE PLAYER'S ALONE. `CONTACT_HIT` rides on the Contact
+   swing, which only a person can pick (`cpuBatPlan` answers normal, power or
+   bunt), and `sweetWidth` above is the player's window. The rest are shared
+   with the other dugout, so moving them moves the run environment
+   `check-runs.mjs` measures, and they are not to be moved without it.
+
+   WHAT SHIPPED, and the four rungs it was chosen against, in Contact mode at
+   700 plate appearances a rung:
+
+   | who              | was  | easy | medium | hard |
+   |------------------|------|------|--------|------|
+   | never played     | .372 | .294 | .266   | .229 |
+   | one game in      | .453 | .375 | .335   | .324 |
+   | knows it         | .591 | .468 | .430   | .437 |
+   | cannot lose      | .667 | .561 | .585   | .572 |
+
+   The shared coefficients came down about a fifth and `CONTACT_HIT` went 0.09
+   to 0.03. THE CEILING IS THE PART THAT COULD NOT BE FIXED WITH THE PLAYER'S
+   OWN DIALS: the window was swept from 0.20 down to 0.07 first and moved the
+   top rung from .667 to .682, because a 22 millisecond error is inside any
+   window this game could offer. What a narrower window does is take balls in
+   play away from a BEGINNER, so on its own it made the game harder at the end
+   that was already hard enough.
+
+   WHAT IT COSTS THE OTHER DUGOUT IS REAL AND IS THE THING TO WATCH. The CPU
+   sits at a contact quality around 0.64 rather than the 1.0 a competent person
+   reaches, so a cut here is worth less to it than to the player, but it is not
+   worth nothing: its hits per ball in play come down about a sixth. That is
+   the direction the run environment wanted anyway (`check-runs.mjs` measured
+   6.2 a nine before the forced runner was fixed, against a real game's 4.5 and
+   this file's own note that a backyard game should sit a LITTLE over it), and
+   it is measured rather than assumed. */
+const BAT = {
+  HR_BASE: 0.018, HR_Q: 0.135,
+  XBH_BASE: 0.035, XBH_Q: 0.090,
+  HIT_BASE: 0.10, HIT_Q: 0.30,
+  CONTACT_HIT: 0.03, POWER_HIT: -0.04,
 };
 
 /* THE PATTERN. Calling pitches was free of consequence: fastball,
@@ -8674,9 +8846,12 @@ function swingReach(con, mode) {
    swing more than a bat's width off the ball finds nothing whatever the
    timing was. `lift` is how far under the ball the barrel went, which is
    what puts a ball in the air or on the ground. Pure, for the suite. */
-function swingGeometry(cursorT, aim, pitch, ctx, mode) {
+function swingGeometry(cursorT, aim, pitch, ctx, mode, sweet) {
   const diff = DIFF[State.difficulty];
-  let half = diff.sweetWidth / 2;
+  /* The window, which is the player's dial and the CPU's constant. The
+     default is the player's, so a caller measuring the swing's own curves
+     measures the curve a person swings on. */
+  let half = (sweet == null ? diff.sweetWidth : sweet) / 2;
   if (mode === 'contact') half *= 1.25;
   if (mode === 'power') half *= 0.75;
   const perfectDist = Math.abs(cursorT - pitch.ideal);
@@ -8750,7 +8925,8 @@ function resolveSwing(cursorT, aim) {
      so the difficulty setting (which sets that width) finally matters.
      Since the plate camera it is also keyed to WHERE the bat was: see
      swingGeometry. */
-  const geo = swingGeometry(cursorT, swungAt, p, ctx, mode);
+  const geo = swingGeometry(cursorT, swungAt, p, ctx, mode,
+    playerIsBatting() ? diff.sweetWidth : CPU_SWEET[State.difficulty]);
   const half = geo.half, perfectDist = geo.perfectDist;
   let contact = geo.contact;
   let inZone = geo.inZone;
@@ -8870,12 +9046,10 @@ function resolveSwing(cursorT, aim) {
      then ball trajectory then runners then callout. All of that happens
      in scheduleContactPlay below. */
   /* The homer is gated on q SQUARED: dead-center contact is what clears
-     the wall, and power scales it. These constants were tuned against a
-     simulation of full plate appearances (scratch tune.mjs): a perfect
-     player hits about .67 with 18% homers, a sloppy one about .50, a
-     careless one about .30, which is the arcade band this game wants. */
-  let hrChance = (0.018 + 0.155 * contact * contact) * (0.45 + powForRoll / 110);
-  let xbhChance = (0.045 + 0.115 * contact) * (0.55 + powForRoll / 150);
+     the wall, and power scales it. Every coefficient is in `BAT`, which
+     carries the measurement they were chosen against. */
+  let hrChance = (BAT.HR_BASE + BAT.HR_Q * contact * contact) * (0.45 + powForRoll / 110);
+  let xbhChance = (BAT.XBH_BASE + BAT.XBH_Q * contact) * (0.55 + powForRoll / 150);
   if (mode === 'power') { hrChance *= 1.75; xbhChance *= 1.45; }
   if (mode === 'contact') { hrChance *= 0.45; xbhChance *= 0.8; }
   /* The park, for both clubs, only while you are at home. */
@@ -8887,9 +9061,9 @@ function resolveSwing(cursorT, aim) {
   if (Math.random() < xbhChance) {
     return scheduleContactPlay(Math.random() < 0.35 ? 'triple' : 'double', batter, swingInfo);
   }
-  let hitOdds = 0.13 + contact * 0.36 + (ctx.spd - 50)/450;
-  if (mode === 'contact') hitOdds += 0.09;
-  if (mode === 'power') hitOdds -= 0.04;
+  let hitOdds = BAT.HIT_BASE + contact * BAT.HIT_Q + (ctx.spd - 50)/450;
+  if (mode === 'contact') hitOdds += BAT.CONTACT_HIT;
+  if (mode === 'power') hitOdds += BAT.POWER_HIT;
   if (batter.k === 'invisible') hitOdds += 0.05;
   if (Math.random() < hitOdds) return scheduleContactPlay('single', batter, swingInfo);
   /* Out on contact: same staging, the callout fires when the fielder gets
@@ -14439,6 +14613,26 @@ function drawRunnerAt(ctx, x, y, character, scale, pose) {
        nothing in a 64x64 bitmap says whether there is a bat in it. */
     const spr = V2_SPRITES[character.k];
     const drawn = !!(spr && spr.b && spr.b.indexOf(frame) >= 0);
+    /* THE BAT'S THICKNESS WAS A NUMBER OF PIXELS WHERE ITS LENGTH IS A SHARE
+       OF THE FIGURE, so it was the right bat on the field and a HAIR at the
+       plate. `bl` scales with the character and the barrel was a flat 5, so a
+       runner 30 pixels wide got a bat a sixth as thick as it was long and the
+       batter, who is drawn about six times that, got one a thirtieth. Rendered
+       and looked at, what a player sees at the plate is a twig floating beside
+       the hitter. Same class as the strike zone's own hairline: a length
+       written in the wrong unit, invisible in the source.
+
+       The floor is what the field always drew, so nothing under about 90
+       pixels wide moves at all and only the plate camera's batter changes. */
+    const bw = Math.max(5, dw * 0.055);
+    const bat = (bl) => {
+      ctx.fillStyle = '#6b4a24';                       /* grip */
+      ctx.fillRect(-bw * 0.3, 0, bw * 0.6, -bl * 0.35);
+      ctx.fillStyle = '#a97f46';                       /* barrel */
+      ctx.fillRect(-bw / 2, -bl * 0.30, bw, -bl * 0.62);
+      ctx.fillStyle = '#c9a06a';                       /* barrel light edge */
+      ctx.fillRect(-bw / 2, -bl * 0.30, bw * 0.4, -bl * 0.62);
+    };
     if (!drawn && (pose === 'load' || pose === 'follow')) {
       const bl = dw * 0.58;
       ctx.save();
@@ -14449,25 +14643,23 @@ function drawRunnerAt(ctx, x, y, character, scale, pose) {
         ctx.translate(x - dw * 0.34, y - dh * 0.58);
         ctx.rotate(2.35);
       }
-      ctx.fillStyle = '#6b4a24';
-      ctx.fillRect(-1.5, 0, 3, -bl * 0.35);
-      ctx.fillStyle = '#a97f46';
-      ctx.fillRect(-2.5, -bl * 0.30, 5, -bl * 0.62);
-      ctx.fillStyle = '#c9a06a';
-      ctx.fillRect(-2.5, -bl * 0.30, 2, -bl * 0.62);
+      bat(bl);
       ctx.restore();
     }
+    /* AND IT LEANS AWAY FROM HIM RATHER THAN ACROSS HIS FACE. At a quarter
+       turn anticlockwise from the chest the barrel swept up over the head, so
+       the one frame a player looks at longest was a hitter with a stick
+       through his face. Four placements were rendered at the size the plate
+       camera draws a batter and looked at: upright beside the head and this
+       one both read as a bat, and this one is the only one that touches
+       nothing. It is a bat held up over the back shoulder, which is how
+       somebody waits on a pitch. */
     if (!drawn && pose === 'batting') {
       const bl = dw * 0.58;
       ctx.save();
-      ctx.translate(x + dw * 0.30, y - dh * 0.55 + dy);
-      ctx.rotate(-0.75);
-      ctx.fillStyle = '#6b4a24';                       /* grip */
-      ctx.fillRect(-1.5, 0, 3, -bl * 0.35);
-      ctx.fillStyle = '#a97f46';                       /* barrel */
-      ctx.fillRect(-2.5, -bl * 0.30, 5, -bl * 0.62);
-      ctx.fillStyle = '#c9a06a';                       /* barrel light edge */
-      ctx.fillRect(-2.5, -bl * 0.30, 2, -bl * 0.62);
+      ctx.translate(x + dw * 0.26, y - dh * 0.52 + dy);
+      ctx.rotate(0.22);
+      bat(bl);
       ctx.restore();
     }
     return;
@@ -14768,11 +14960,6 @@ function renderGame() {
   };
   stealRow.appendChild(sendBtn);
 
-  const replayBtn = el('button','btn ghost','Replay');
-  replayBtn.id = 'replay-btn';
-  replayBtn.style.display = 'none';
-  replayBtn.onclick = (e) => { e.stopPropagation(); playHighlight(); };
-  stealRow.appendChild(replayBtn);
   s.appendChild(stealRow);
 
   const atbat = el('div','atbat');
@@ -14788,7 +14975,31 @@ function renderGame() {
   }
   s.appendChild(log);
 
+  /* REPLAY SITS WITH END GAME, and it used to have a row of its own. Both are
+     optional, both are occasional, and neither is a control the game is waiting
+     on, so one row holds them and the deck is a row shorter every time a
+     highlight is stored. It had a row because it was built beside Steal, Send
+     and the mound offer, which come and go with the situation; Replay comes and
+     goes with the last big hit, and in the sideways column the two together
+     WRAPPED, so one optional control cost the deck two lines.
+
+     What that cost, measured: sideways on a 667 by 375 phone the row was laid
+     out 52 pixels below the bottom of the window, so the button offering to
+     show the home run you just hit was not on the screen at all, and the page
+     ran 180 pixels longer than the window. At 844 by 390 it landed ON the End
+     Game chip, 32 pixels by 23, so a tap meaning "show me that again" opened
+     the sheet that abandons the game. Nothing threw either way.
+
+     The row this joins already leaves the flow on a wide window (it pins to the
+     bottom right corner), so on every screen a stored highlight now costs the
+     deck nothing at all and the camera nothing at all. End Game stays last, so
+     it stays in the corner it has always been in. */
   const ctrl = el('div','controls');
+  const replayBtn = el('button','btn ghost','Replay');
+  replayBtn.id = 'replay-btn';
+  replayBtn.style.display = 'none';
+  replayBtn.onclick = (e) => { e.stopPropagation(); playHighlight(); };
+  ctrl.appendChild(replayBtn);
   const abort = el('button','btn ghost','End Game');
   abort.onclick = () => {
     if (!abandonGame()) return;

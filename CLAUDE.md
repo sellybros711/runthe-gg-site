@@ -5549,6 +5549,89 @@ That box is 91 pixels on the shortest phone and holds about five lines, so
 thirteen is well past it. Measured on one screen in two minutes: 344 samples,
 twelve controls, a full log.
 
+**AND SIDEWAYS THE BOX IS NOT THERE AT ALL NOW**, so that claim reads the game's
+own state instead on those two screens. A box that is hidden by design and a box
+that never filled are the same reading of `scrollHeight`, which is exactly the
+shape of a claim that goes quiet.
+
+##### THE WALK COULD NOT PITCH, AND THEN ITS SPAM ANSWERED EVERY FIELDING WINDOW
+
+Two coverage failures, found by asserting coverage rather than by reading.
+
+**A PITCH IS THREE PRESSES AND SPACE IS ONLY THE THIRD.** Pick a type, press
+Throw, then release. Space answers the release meter and nothing else, so a walk
+that pressed Space sat on the selection screen for its whole budget: two minutes
+of the pitching half produced nought pitches, nought log lines and an inning that
+never ended, and it read as the play by play failing to fill rather than as a
+pitch never being thrown.
+
+**AND THE FIELDING WINDOWS BELONG TO THE WATCHER, NOT TO THE BLIND PRESS.** The
+walk has an rAF watcher that arms each window and presses at its ideal, which is
+what makes the fielding realistic; the loop then pressed Space as fast as it could
+and resolved every window at a t near nought before that timer fired. Measured:
+**nought answered at the ideal across all six screens**, with games finishing 12-0,
+because a throw at t=0 is a throw away. Now the loop leaves an open window alone,
+and the two halves are asserted separately because they fail differently: a window
+that never OPENS means no ball was put in play, and one that opens and is never
+ANSWERED means something else got to it first. Scores went to 0-1, 1-0 and 3-0.
+
+##### THE REPLAY CHIP HAD A ROW OF ITS OWN, AND HALF THE SWEEP NEVER SAW IT
+
+Replay is offered while a highlight is stored, which means after a double, a
+triple or a home run, so whether a walk ever measures it is a fact about the dice:
+it appeared on **two of the six screens and both of those reported it off the
+window**. A control half the sweep never looks at is the badge nothing can light,
+so the page's own `rememberHighlight` is called at the half way mark with the
+longest of the three labels, which is the widest the chip ever gets.
+
+**What it found is that one optional control cost the deck a whole row**, because
+it was built beside Steal, Send and the mound offer, and sideways the row it was in
+WRAPPED. Measured at 667 by 375, the row was laid out 52 pixels below the bottom of
+the window and the page ran 180 pixels long; at 844 by 390 it landed ON the End
+Game chip, 32 pixels by 23, so a tap meaning "show me that again" opened the sheet
+that abandons the game. It sits with End Game now, in a row that already exists and
+that already leaves the flow on a wide window, so a stored highlight costs the deck
+nothing and the camera nothing. **The portrait phone's field grew 44 pixels** for
+it.
+
+##### AND SIDEWAYS THE PLAY BY PLAY WAS GIVEN 34vh OF A WINDOW WITH NOTHING LEFT
+
+The sideways branch made the screen `display:block`, which is all that was ever
+needed to keep the arena out of a grid column and is NOT the same thing as keeping
+it out of the flow. What the block cost is that nothing in the deck could shrink,
+so the play by play took its share of the window whatever was above it: measured
+at 844 by 390 while pitching, the deck's fixed part ended at 344 of 390, the log
+took 133 more, and the page ran 87 pixels long with `overflow:hidden` cutting the
+rest. At 667 by 375 it was 128 and the log started exactly at the bottom edge, so
+the record of the game was not on the screen at all.
+
+**Three things fix it and two of them are the at bat card's own argument.**
+
+- **The column is a flex column**, so the deck's parts can give way.
+- **The play by play is HIDDEN sideways**, like the at bat card above it. A 217
+  pixel column on a 375 tall phone holds the line score, the pitch rows and the
+  way out, and that is all: shrunk instead it is 14 pixels of empty panel, which
+  is worse than absent, because a box that is always empty teaches a reader that
+  the game has stopped narrating. What it narrates is on the screen anyway, in the
+  callout, the placards and the line score, and it comes back the moment the phone
+  is turned upright.
+- **End Game comes back into the flow**, which is the tall window's own rule
+  arriving sideways: the pin exists because every pixel of deck is a pixel the
+  camera pushes the picture down by, and sideways the deck is a column BESIDE the
+  field and is not standing on the picture at all. Pinned, the flow did not know
+  the chips were there and the row above them was laid out to the window's bottom.
+
+**AND THE PITCH TYPES ARE A TWO COLUMN GRID NOW RATHER THAN A WRAPPED ROW.**
+Whether three buttons came out as two rows or three depended on how long that
+pitcher's pitch NAMES were: The Heat and Fastball pair inside the column and
+Curveball and Changeup do not, so the deck was 31 pixels taller against some arms
+than others. A grid is two rows whatever the names are, and the NAME is what gives.
+Same lesson as the fantasy row's named areas.
+
+**The chip row holds one line by construction too**, and the chip that can lose
+letters is the one nobody needs: End Game is the way out of a run and never
+shrinks, Replay is an offer to watch something again.
+
 ##### THE DECK WAS TOO TALL FOR A SHORT PHONE, and it took three passes to close
 
 **IT IS CLOSED. What follows is the history**, kept because the two things it
@@ -5796,6 +5879,7 @@ node mythiball/calibrate.mjs       the pitch duel's rates against TARGETS bands 
 node mythiball/check-frames.mjs 70 normal --phone --cpu=4   frame times, on the machine that matters
 node mythiball/check-runs.mjs      runs per game, with a defence that turns up (--jobs=N to run several at once)
 node mythiball/check-bat.mjs       the swing's own curves, and that skill pays
+node mythiball/check-skill.mjs     what a PERSON hits, four rungs of skill, both swings
 node mythiball/check-firstpitch.mjs  whether a stranger can READ one pitch
 node scripts/check-dashes.mjs      mythiball is on the GUARDED list
 ```
@@ -7315,6 +7399,123 @@ pitched around would be a punishment rather than a hitter.
 **It is said out loud, once per batter.** A difficulty that changes what the
 opponent knows is invisible otherwise: the player just meets hard contact and
 reads it as luck.
+
+### NOTHING HAD EVER MEASURED THE HALF A PERSON PLAYS
+
+```
+node mythiball/check-skill.mjs                    four rungs, three tiers, both swings
+node mythiball/check-skill.mjs --pa 300           a faster read
+node mythiball/check-skill.mjs --tier medium --mode contact --sweet 0.12 --bat HIT_Q=0.30
+```
+
+`calibrate.mjs` measures the OTHER dugout: its swing rate, its whiffs, its
+chases. `check-bat.mjs` sweeps the swing's own curves and asserts worse never
+helps. Neither of them answers the question a player is actually asking, which is
+what somebody LIKE THEM ends up hitting, and the only written answer was a comment
+over the home run gate claiming a perfect player hits about .67 and a careless one
+about .30, "tuned against a simulation of full plate appearances (scratch
+tune.mjs)". That file does not exist, so the claim was unverifiable, and it was
+wrong about the end that matters.
+
+**It is a model of a PERSON in the box, not of the game.** Four rungs, each a pair
+of standard deviations: how far off the ball the bat is put (in zone units) and how
+late or early the hands are (in milliseconds). It reads the pitch's own landing
+spot and sweet moment out of `g.pitch`, adds its error to both, decides whether the
+pitch looks like a strike (protecting with two strikes, which is what a person
+does), and then calls the page's own `resolveSwing`.
+
+**Measured through it, in the mode the game defaults to, the game was too easy at
+every rung and had no chase in it:** somebody who had NEVER PLAYED hit .372, one
+game in .453, a competent player .591, and the ceiling .667. So the whole distance
+between having played once and being unbeatable was .45 to .67, and the mode a
+player is in the moment they press Contact hit better than a real Hall of Famer.
+
+**IT MEASURED A SWING MODE NOBODY CAN SELECT FOR THE FIRST TWO PASSES**, and that
+is the finding to read before trusting any number here. The buttons are Contact,
+Power and Bunt; `normal` is the word `resolveSwing` uses for the OTHER dugout, and
+the harness set it. It is not a spelling difference: Contact widens the timing
+window by a quarter and then takes 55 per cent of the home run chance away, Power
+narrows it and pays 1.75 times. Read in `normal` a competent player showed 14.7 per
+cent of plate appearances as home runs; in Contact it is 11.4 and in Power 16.9.
+Same lesson as this repo's SQL fixture inventing a column, arriving at a game
+state.
+
+#### The window is the player's dial, and the other dugout keeps its own
+
+`DIFF.sweetWidth` sits in the half of that table which is about BATTING, beside the
+ball speed and the arm's accuracy, and the other dugout's difficulty is `chase`,
+`read` and its own timing jitter. It reached the CPU anyway, because `swingGeometry`
+is one function and read the table directly. **So the CPU's rates were a measurement
+of the player's dial as well, and the player's dial could not be moved.**
+`calibrate.mjs` holds that dugout to about 28 whiffs per hundred swings, solved per
+tier against those exact widths, and the jitter clamps under it are absolute times,
+so narrowing the window to make a person's timing matter would have raised the CPU's
+whiff rate, broken that band, and on hard walked into the floor that has already
+killed the pattern read once.
+
+`CPU_SWEET` is that dugout's window and it holds the numbers the table shipped with,
+so nothing about the other side moves when the player's column does. **That is what
+made the rest of this a single-instrument job.**
+
+#### THE CEILING IS NOT THE WINDOW, WHICH IS WHY THE FIRST SWEEP WENT NOWHERE
+
+The window was the obvious dial and it was swept first, from 0.20 down to 0.07, a
+cut of nearly two thirds. The top rung moved from **.667 to .682**. A 22 millisecond
+error is inside any window this game could offer, so the best player is untouched;
+what a narrow window does is take balls in play away from a BEGINNER, whose average
+falls through STRIKEOUTS while a competent player's balls in play go on being hits.
+On its own it made the game harder at the end that was already hard enough.
+
+**The dominant term is the ladder's FLOOR.** `HIT_BASE` plus `CONTACT_HIT` plus the
+speed term is what a ball in play is worth on the worst swing that still connects,
+and at 0.13 and 0.09 that floor was .26, which is real baseball's average on every
+ball in play. The ceiling was double it. Those eight coefficients are in `BAT` now
+rather than loose in the middle of `resolveSwing`, and the checker can run any of
+them, which is how the shipped ones were picked.
+
+**What shipped**, in Contact mode at 700 plate appearances a rung:
+
+| who | was | easy | medium | hard |
+|---|---|---|---|---|
+| never played | .372 | .291 | .266 | .220 |
+| one game in | .453 | .337 | .335 | .297 |
+| knows it | .591 | .449 | .430 | .410 |
+| cannot lose | .667 | .573 | .585 | .556 |
+
+The shared coefficients came down about a fifth, `CONTACT_HIT` went 0.09 to 0.03,
+and `sweetWidth` went 0.26/0.20/0.16 to 0.20/0.15/0.12.
+
+**WHAT IT COSTS THE OTHER DUGOUT IS REAL, and it is the one part of this that is not
+free.** Six of the eight coefficients are shared, and the CPU sits at a contact
+quality near 0.64 where a competent person reaches 1.0, so a cut is worth less to it
+than to the player and is not worth nothing: its hits per ball in play come down
+about a sixth. That is the direction the run environment wanted anyway, since
+`check-runs.mjs` measured 6.2 a nine before the forced runner was fixed against a
+real game's 4.5, and this file's own note says a backyard game should sit a LITTLE
+over it rather than half again.
+
+#### A tier claim written on the batting average is a coin toss
+
+**The averages barely separate the tiers and the whiffs separate them cleanly**,
+which is what the dial actually does. Easy to hard for a competent player is about
+.03 of average against a standard error near .02 at 700 plate appearances, so it
+inverted between medium and hard on a page with nothing wrong with it. Getting that
+to three sigma needs five thousand appearances a rung, which is minutes a tier in CI
+for a claim about a side effect. Whiffs per swing at medium run 25.6 for somebody who
+has never played against 34.8 on hard, and nine points of a rate over four hundred
+swings is four sigma. **The sample moves or the claim moves; the band does not.**
+
+#### A fixture that suppresses timers has to book the at bat itself
+
+Every timer is stubbed so a plate appearance costs nothing, and
+`scheduleContactPlay` decides the ball and then BOOKS it on a timer. So the first
+version counted hits itself off `g.play.kind` and then read the game's own
+`g.stats` over the top of its own tally: every rate came back **.000 with the in
+play column reading 88 to 100 per cent**, which is a batting line that cannot
+happen. Two copies of one answer, and the one that was right was the one being
+overwritten. It calls the mutation itself now, which is that function's own tail,
+and that matters beyond the totals: whether a bunt or a fly ball is charged as an
+at bat at all is a RULE and it lives in those functions.
 
 #### A swing that misses half the time is not a backyard game
 
