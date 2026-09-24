@@ -14997,13 +14997,27 @@ function refreshAtBatCard(node) {
   node.appendChild(count);
 }
 
-/* AN X IS NOT A BLANK, AND A SCOREBOARD SAYS SO. A home team that is ahead
+/* HOW MANY COLUMNS THE BOARD HAS. The scheduled count, whatever the line
+   score has actually filled, and while the game is LIVE the inning in
+   progress. `g.inning` is excluded once it is over, because endHalfInning
+   advances it before it asks whether the game has ended: after the last out
+   of a five inning game the number reads six, and the board drew a sixth
+   column nobody played. Live it costs nothing to include, because startAtBat
+   opens the batting side's bucket up to the current inning, so the lengths
+   already cover it except in the gap between half innings, which is exactly
+   when the board is on screen.
+
+   AN X IS NOT A BLANK, AND A SCOREBOARD SAYS SO. A home team that is ahead
    when the top of the last inning ends does not bat, and the board wrote the
    same empty cell there that it writes for an inning nobody has reached. Two
    different facts under one blank: the reader cannot tell a game that stopped
    early from one still to be played. The convention is an X, everywhere this
    sport keeps a line score, and it is only ever the home side and only once
    the game is finished. */
+function boardInnings(g) {
+  return Math.max(g.innings, g.over ? 0 : g.inning,
+                  g.lineScore.away.length, g.lineScore.home.length);
+}
 function lineBlank(isHome, i) {
   const g = State.game;
   if (!isHome || !g.over) return '';
@@ -15014,8 +15028,12 @@ function renderLineScore(node) {
   const g = State.game;
   if (!g) return;
   /* Extra innings grow the board. It used to stop at the scheduled count,
-     so a tenth inning was played on a nine column board. */
-  const innings = Math.max(g.innings, g.inning, g.lineScore.away.length, g.lineScore.home.length);
+     so a tenth inning was played on a nine column board.
+     AND `g.inning` OVERSHOOTS BY ONE THE MOMENT A GAME ENDS, which is what
+     `boardInnings` is for: endHalfInning advances the number before it asks
+     whether the game is over, so every completed regulation game finished on
+     inning six of a five inning game and drew a sixth, empty column. */
+  const innings = boardInnings(g);
   const rowFor = (label, arr, score, isYou, isHome) => {
     let html = `<td class="team">${label}${isYou?' *':''}</td>`;
     for (let i = 0; i < innings; i++) {
@@ -15418,7 +15436,7 @@ function renderResult() {
   /* Line score: runs per inning for both sides, the way a real board reads. */
   const lsCard = el('div','card');
   lsCard.appendChild(el('h3', null, 'Line score'));
-  const innCount = Math.max(g.innings, g.lineScore.away.length, g.lineScore.home.length);
+  const innCount = boardInnings(g);
   const lsWrap = el('div','linescore');
   const lsT = document.createElement('table');
   let head1 = '<thead><tr><th></th>';

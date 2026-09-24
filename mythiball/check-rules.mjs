@@ -445,7 +445,16 @@ async function main() {
       const g = open(5, true);
       g.half = 'top'; g.inning = 5; g.outs = 2; g.away.score = 1; g.home.score = 3;
       endHalfInning();
-      out.xCell = { last: lineBlank(true, 4), unplayed: lineBlank(true, 5), away: lineBlank(false, 4) };
+      out.xCell = { last: lineBlank(true, 4), unplayed: lineBlank(true, 5), away: lineBlank(false, 4),
+                    cols: boardInnings(g) };
+    }
+    /* AND A FINISHED GAME DRAWS THE INNINGS IT PLAYED, NOT ONE MORE. */
+    {
+      const g = open(5, false);
+      g.half = 'bottom'; g.inning = 5; g.outs = 2; g.away.score = 3; g.home.score = 1;
+      for (const k of ['away', 'home']) { g.lineScore[k] = [0, 0, 0, 0, 0]; }
+      endHalfInning();
+      out.cols = { over: !!g.over, inning: g.inning, cols: boardInnings(g) };
     }
     /* A SACRIFICE IS NOT AN AT BAT. */
     {
@@ -518,6 +527,9 @@ async function main() {
   ok(sit.plainFly.ab === 1, 'an ordinary fly out is', JSON.stringify(sit.plainFly));
   ok(sit.xCell.last === 'X' && sit.xCell.unplayed === '' && sit.xCell.away === '',
      'a home team that did not need to bat gets an X', JSON.stringify(sit.xCell));
+  ok(sit.xCell.cols === 5, 'and the board it sits on has five columns', JSON.stringify(sit.xCell));
+  ok(sit.cols.over === true && sit.cols.inning === 6 && sit.cols.cols === 5,
+     'a game that went the distance draws five, not six', JSON.stringify(sit.cols));
 
   ok(errors.length === 0, 'no page errors', errors.join(' | '));
 

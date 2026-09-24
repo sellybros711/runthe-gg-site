@@ -5809,6 +5809,23 @@ against a copy of the page with the rule alone removed, over 200 games an arm on
 one seed. That is a real move and it is recorded rather than compensated: the
 old behaviour was not cheaper, it was wrong.
 
+**AN X IS NOT A BLANK, AND THE BOARD HAD A COLUMN TOO MANY.** A home team ahead
+when the top of the last inning ends does not bat, and the board wrote the same
+empty cell there that it writes for an inning nobody has reached: two different
+facts under one blank, and a reader cannot tell a game that stopped early from
+one still to be played. It is an X now, the way every line score in this sport
+writes it, on the home side and only once the game is finished.
+
+**Writing it exposed a column that was never played.** The board sized itself on
+`Math.max(g.innings, g.inning, ...)`, and `endHalfInning` advances the inning
+BEFORE it asks whether the game is over, so after the last out of a five inning
+game the number reads six and the board drew a sixth column. Empty, it read as a
+rendering quirk; with an X in it, it read as a statement that the home team did
+not bat in an inning that did not exist. `boardInnings()` leaves `g.inning` out
+once the game is over, and keeps it while the game is live because that is the
+one moment the lengths do not cover it: the gap between half innings, which is
+exactly when the inning board is on screen.
+
 **A SACRIFICE IS NOT AN AT BAT**, which is the whole reason a man who gives
 himself up for the runner does not pay for it in his average. Both kinds were
 charged one. The sacrifice fly has to be read off the SCORE and never off the
