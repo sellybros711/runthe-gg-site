@@ -1020,8 +1020,9 @@ async function signOne(page, nth = 0) {
 
 async function openPage(browser, url, opts = {}) {
   const { who = null, viewport = { width: 390, height: 844 }, at = null,
-    results = null, storage = null, server = null } = opts;
-  const page = await browser.newPage({ viewport });
+    results = null, storage = null, server = null, reduced = false } = opts;
+  const page = await browser.newPage({ viewport,
+    reducedMotion: reduced ? 'reduce' : 'no-preference' });
   const boom = [];
   const posted = [];
   page.on('pageerror', (e) => boom.push(String(e).slice(0, 200)));
@@ -1752,17 +1753,41 @@ console.log('\nWHERE YOU FINISHED, AND WHO GETS A CODE');
   const CODE = 'RTG-W3-9QK4ZM';
   for (const [label, result, want] of [
     /* THE WINNER. The one arm where a string worth $19.99 is on the page at all. */
+    /* CONFETTI IS THE WINNER'S AND NOBODY ELSE'S, so every open arm asserts it one way or
+       the other: a burst on second place would say the podium won the week. */
     ['a winner is told, and handed their code',
       res({ place: 1, prize_place: 1, promo_code: CODE }),
-      { open: true, place: '1st', code: CODE, store: true, say: /won the week/i }],
+      { open: true, place: '1st', code: CODE, store: true, say: /won the week/i,
+        confetti: true }],
+    /* A REDUCED MOTION READER STILL WINS, and gets everything but the falling paper. */
+    ['and a winner who asked for less motion gets no confetti',
+      res({ place: 1, prize_place: 1, promo_code: CODE }),
+      { open: true, place: '1st', code: CODE, store: true, say: /won the week/i,
+        confetti: false, reduced: true }],
+    ['second is told how close it was',
+      res({ place: 2, prize_place: 2 }),
+      { open: true, place: '2nd', code: null, store: false, say: /so close/i,
+        confetti: false }],
     ['the podium is told, and handed nothing',
       res({ place: 3, prize_place: 3 }),
-      { open: true, place: '3rd', code: null, store: false, say: /podium/i }],
+      { open: true, place: '3rd', code: null, store: false, say: /podium/i,
+        confetti: false }],
+    ['the top half is told it had a good week',
+      res({ place: 5, entries: 12 }),
+      { open: true, place: '5th', code: null, store: false, say: /top half/i,
+        confetti: false }],
     /* THE REST OF THE FIELD, which is most of it, and the arm a popup written for the
-       podium alone would be silent for. */
+       podium alone would be silent for. The fixture scored 71.9 against a projection of
+       69.2, so the one thing this reader did better than expected is said to them. */
     ['somebody who placed nowhere is still told where they came',
       res({ place: 9, entries: 12 }),
-      { open: true, place: '9th', code: null, store: false, say: /next week/i }],
+      { open: true, place: '9th', code: null, store: false,
+        say: /starts from zero.*beat your projection by 2\.7 points/i, confetti: false }],
+    /* AND IT IS NOT SAID WHEN IT IS NOT TRUE, or the kind line is a lie on a bad week. */
+    ['a lineup under its projection is not told it beat it',
+      res({ place: 10, entries: 12, score: 60.1 }),
+      { open: true, place: '10th', code: null, store: false,
+        say: /^(?!.*projection).*starts from zero/i, confetti: false }],
     /* 11th IS THE ONE EVERY NAIVE ORDINAL GETS WRONG, and twelve entrants meet it at once. */
     ['and eleventh is eleventh rather than eleven-st',
       res({ place: 11, entries: 12 }),
@@ -1773,7 +1798,7 @@ console.log('\nWHERE YOU FINISHED, AND WHO GETS A CODE');
       null, { open: false }],
   ]) {
     const { page, boom, posted } = await openPage(browser, FANTASY,
-      { who: TESTER, at: BEFORE, server: { mine: ENTRY, result } });
+      { who: TESTER, at: BEFORE, server: { mine: ENTRY, result }, reduced: !!want.reduced });
     /* THE READER HAS ENTERED THIS WEEK TOO, so boot lands on the entry screen and never on
        the home one. That is the ordinary case for somebody who plays every week, and it is
        exactly the reader the first draft of this feature never showed the popup to. */
@@ -1789,6 +1814,17 @@ console.log('\nWHERE YOU FINISHED, AND WHO GETS A CODE');
           ? null : document.getElementById('prz-code-txt').textContent.trim(),
         store: !document.getElementById('prz-store').hidden,
         door: !document.getElementById('b-prize').hidden,
+        confetti: !!document.querySelector('.confetti-cv'),
+        /* THE CONFETTI MUST NEVER BE WHAT A TAP LANDS ON. It sits over the sheet, so a canvas
+           that took pointer events would make the code and both buttons dead for four
+           seconds, which reads as a prize that will not let itself be claimed. */
+        tapsCode: (function(){
+          const b = document.getElementById('prz-code');
+          if (!b || !b.offsetParent) return null;
+          const r = b.getBoundingClientRect();
+          const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+          return !!hit && b.contains(hit);
+        })(),
         /* THE WHOLE DOCUMENT, because the claim is that a page belonging to somebody who
            did not win contains no code anywhere, not merely that the box is hidden. A
            hidden element still ships its text to every reader. */
@@ -1804,6 +1840,11 @@ console.log('\nWHERE YOU FINISHED, AND WHO GETS A CODE');
         seen.code === want.code, seen.code || 'none');
       ok('  and the way to spend it is ' + (want.store ? 'shown' : 'hidden'),
         seen.store === want.store);
+      if (want.confetti !== undefined)
+        ok('  confetti is ' + (want.confetti ? 'falling' : 'not falling'),
+          seen.confetti === want.confetti, seen.confetti + '');
+      if (want.code) ok('  and a tap on the code still lands on the code',
+        seen.tapsCode === true, seen.tapsCode + '');
       /* NOT ANYWHERE IN THE DOCUMENT for anybody who did not win it. */
       if (!want.code) ok('  and no code is anywhere on the page',
         !seen.html.includes(CODE) && !/RTG-W\d/.test(seen.html));
@@ -1836,6 +1877,10 @@ console.log('\nWHERE YOU FINISHED, AND WHO GETS A CODE');
     ok('closing the sheet acknowledges it',
       posted.filter((p) => p.fn === 'fantasy_ack_result').length === 1,
       posted.filter((p) => p.fn === 'fantasy_ack_result').length + ' acks');
+    /* THE BURST GOES WITH THE SHEET. Left falling, it rains over a home screen that has
+       nothing to celebrate on it. */
+    ok('  and takes the confetti with it',
+      !(await page.evaluate(() => !!document.querySelector('.confetti-cv'))));
 
     /* AND A WINNER CAN GET BACK TO THEIR CODE. The sheet shows once on its own, which is
        right for something that arrives unasked and would be wrong as the only time a

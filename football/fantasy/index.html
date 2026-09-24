@@ -204,6 +204,7 @@
   .przcode:disabled{cursor:default}
   /* display:flex, so the attribute needs its own rule. Ninth time in this repo. */
   #prz-win[hidden]{display:none}
+  .confetti-cv{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:41}
   .ibox{width:100%;max-width:560px;border-radius:16px;border:1px solid var(--line-2);
     background:var(--grad-panel);box-shadow:var(--shadow);padding:16px 16px 14px}
 
@@ -2662,11 +2663,25 @@
     /* WHAT IT SAYS IS ABOUT THEIR OWN WEEK AND NEVER ABOUT ANYBODY ELSE'S. The board is one
        press away and carries the rest; a sheet that listed the people above them would be
        the leaderboard, badly, on a screen that is already the width of a phone. */
+    /* EVERYBODY WHO DID NOT WIN IS TOLD SOMETHING TRUE AND KIND, in that order. "Better luck
+       next week" was the line under ninth of twelve, which is a shrug at somebody who spent
+       five drafts on it. None of these promises anything about the NEXT board, because this
+       sheet can open after that week has already locked, and a line telling somebody to go
+       and draft into a shut week is the one encouraging sentence that would be false. */
     var say;
-    if (place === 1) say = 'You won the week.';
-    else if (place <= 3) say = 'You finished on the podium.';
-    else if (entries > 1 && place <= Math.ceil(entries / 2)) say = 'Top half of the field.';
-    else say = 'Better luck next week.';
+    if (place === 1) say = 'You won the week. Nobody drafted better.';
+    else if (place === 2) say = 'So close. One spot off the top.';
+    else if (place === 3) say = 'Top three. That is a podium finish.';
+    else if (entries > 1 && place <= Math.ceil(entries / 2)) say = 'Top half of the field. That is a good week.';
+    else say = 'Not your week. Every week starts from zero.';
+
+    /* THE PROJECTION IS THE ONE OTHER THING THIS READER CAN BE PROUD OF, and it is theirs
+       alone rather than a comparison with anybody. Said only when it is true, and decided on
+       the PRINTED difference, so a lineup that beat its projection by 0.04 is never told it
+       beat it by 0.0. */
+    var beat = Number(r.score) - Number(r.projected);
+    if (place > 1 && isFinite(beat) && Number(beat.toFixed(1)) > 0)
+      say += ' You beat your projection by ' + beat.toFixed(1) + ' points.';
     $('prz-say').textContent = say + ' The full board is on the live screen.';
 
     /* THE CODE IS DRAWN ONLY FOR THE ACCOUNT IT BELONGS TO, and the server is what decides
@@ -2683,6 +2698,60 @@
         + 'the account you entered with. Paste the code at checkout. It works once.';
     }
     $('prz-sheet').hidden = false;
+    /* The winner and nobody else. After the sheet is on the glass, so the confetti falls over
+       a screen that is already telling them why. */
+    if (place === 1) requestAnimationFrame(function(){ requestAnimationFrame(winConfetti); });
+  }
+
+  /* CONFETTI FOR FIRST PLACE, lifted from the football game's own `fireConfetti` so a win
+     looks like a win on both pages. Strips and a few discs rain from above the top, drift,
+     spin, fade over the last stretch, and the canvas removes itself.
+     It sits ABOVE the sheet (z 41 against 40) and takes no pointer events, so it falls over
+     the code without ever being the thing a tap lands on. Skipped entirely for a reader who
+     has asked for reduced motion, and only ever one canvas: reopening the sheet from the
+     door replaces a burst rather than stacking a second one on it. */
+  function winConfetti(){
+    if (REDUCE) return;
+    var old = document.querySelector('.confetti-cv');
+    if (old) old.remove();
+    var colors = ['#fde68a', '#fcd34d', '#f59e0b', '#ffffff', '#ef4444', '#3b82f6'];
+    var duration = 3800, count = 170;
+    var dpr = Math.min(2, window.devicePixelRatio || 1);
+    var cv = document.createElement('canvas');
+    cv.className = 'confetti-cv';
+    cv.setAttribute('aria-hidden', 'true');
+    cv.width = Math.floor(innerWidth * dpr); cv.height = Math.floor(innerHeight * dpr);
+    document.body.appendChild(cv);
+    var cx = cv.getContext('2d'), W = cv.width, H = cv.height, parts = [];
+    for (var i = 0; i < count; i++){
+      parts.push({
+        x: Math.random() * W, y: -Math.random() * H * 0.5 - 20 * dpr,
+        w: (5 + Math.random() * 7) * dpr, h: (9 + Math.random() * 13) * dpr,
+        vx: (-1.1 + Math.random() * 2.2) * dpr, vy: (2.2 + Math.random() * 3.4) * dpr,
+        g: (0.028 + Math.random() * 0.02) * dpr,
+        rot: Math.random() * Math.PI, vr: -0.22 + Math.random() * 0.44,
+        sway: Math.random() * Math.PI * 2, swA: (0.4 + Math.random() * 0.7) * dpr,
+        col: colors[(Math.random() * colors.length) | 0], round: Math.random() < 0.28
+      });
+    }
+    var t0 = performance.now();
+    (function step(){
+      if (!cv.isConnected) return;
+      var life = Math.min(1, (performance.now() - t0) / duration);
+      cx.clearRect(0, 0, W, H);
+      cx.globalAlpha = life < 0.82 ? 1 : Math.max(0, 1 - (life - 0.82) / 0.18);
+      for (var j = 0; j < parts.length; j++){
+        var p = parts[j];
+        p.sway += 0.035; p.x += p.vx + Math.sin(p.sway) * p.swA;
+        p.vy += p.g; p.y += p.vy; p.rot += p.vr;
+        if (p.y - p.h > H) continue;
+        cx.save(); cx.translate(p.x, p.y); cx.rotate(p.rot); cx.fillStyle = p.col;
+        if (p.round){ cx.beginPath(); cx.arc(0, 0, p.w * 0.6, 0, 6.2832); cx.fill(); }
+        else cx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+        cx.restore();
+      }
+      if (life < 1) requestAnimationFrame(step); else cv.remove();
+    })();
   }
 
   /* CLOSING IS WHAT ACKNOWLEDGES IT, and the write is not awaited. Every allowance on this
@@ -2691,6 +2760,8 @@
      lost ack is being told once more next visit. */
   function closePrize(){
     $('prz-sheet').hidden = true;
+    var cf = document.querySelector('.confetti-cv');
+    if (cf) cf.remove();
     if (PRZ && !PRZ.r.seen){ PRZ.r.seen = true; F.ackResult(POOL.season, PRZ.week); }
   }
   $('prz-close').onclick = closePrize;
