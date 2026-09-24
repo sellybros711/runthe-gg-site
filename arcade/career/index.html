@@ -12,20 +12,20 @@
   if(t!=='light'&&t!=='dark'){ t=(window.matchMedia&&matchMedia('(prefers-color-scheme: light)').matches)?'light':'dark'; try{localStorage.setItem('runthegrid_theme',t);}catch(e){} }
   document.documentElement.setAttribute('data-theme',t); })();
 </script>
-<meta name="description" content="Career Path: a daily sports streak game. Every answer played for three franchises or more, revealed one club at a time. Type the name off the first club for 5 points." />
+<meta name="description" content="Career Path is a daily sports game. Every player here played for 3 or more teams. You see them one team at a time. Name them off the first team for 5 points." />
 <link rel="icon" type="image/png" href="/arcade/assets/arcade-icon.png?v=3" />
 <link rel="apple-touch-icon" href="/arcade/assets/arcade-apple-180.png?v=2" />
 <meta property="og:type" content="website" />
 <meta property="og:site_name" content="RunThe.GG" />
 <meta property="og:title" content="Career Path: Daily Sports Streak Game" />
-<meta property="og:description" content="Name the athlete from their team-by-team journey. One miss ends the run." />
+<meta property="og:description" content="Name the player from the teams they played for. Miss once and you’re out." />
 <meta property="og:url" content="https://runthe.gg/arcade/career/" />
 <meta property="og:image" content="https://runthe.gg/arcade/assets/arcade-share.png?v=3" />
 <meta property="og:image:width" content="1200" />
 <meta property="og:image:height" content="630" />
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:title" content="Career Path: Daily Sports Streak Game" />
-<meta name="twitter:description" content="Name the athlete from their team-by-team journey. One miss ends the run." />
+<meta name="twitter:description" content="Name the player from the teams they played for. Miss once and you’re out." />
 <meta name="twitter:image" content="https://runthe.gg/arcade/assets/arcade-share.png?v=3" />
 <link rel="canonical" href="https://runthe.gg/arcade/career/" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -325,7 +325,7 @@ window.GA_ID='G-L29P5MRWKE';
 
   <div class="runbar">
     <div class="big" id="runN">0</div>
-    <div class="rl"><span class="k">Points today</span><span class="v" id="runSub">Name them off one team for 5. One wrong ends your run.</span></div>
+    <div class="rl"><span class="k">Points today</span><span class="v" id="runSub">Name them off 1 team for 5. Miss once and you’re out.</span></div>
     <div class="best"><span class="n" id="bestRun">0</span><span class="c">Best</span></div>
   </div>
 
@@ -346,10 +346,10 @@ window.GA_ID='G-L29P5MRWKE';
       <button class="answergo" id="answerGo" type="button">Call it</button>
     </div>
     <div class="subprompt" id="subprompt"></div>
-    <button class="bailbtn" type="button" id="bailBtn">Stuck? Show me four names (worth 1)</button>
+    <button class="bailbtn" type="button" id="bailBtn">Not sure? Show me 4 names (1 point)</button>
     <div class="choices" id="choices" hidden></div>
     <div class="factline" id="factline" aria-live="polite"></div>
-    <div class="hintline" id="hintline">Type the name to call it. Every extra team you ask for is worth less.</div>
+    <div class="hintline" id="hintline">Type the name to call it. Each extra team you ask for is worth less.</div>
   </div>
 
   <div class="lb" id="lb">
@@ -364,7 +364,7 @@ window.GA_ID='G-L29P5MRWKE';
       <div class="row"><span class="rk">2</span><span class="who">hoops_hana</span><span class="tm">28 points</span></div>
       <div class="row"><span class="rk">3</span><span class="who">puckluck</span><span class="tm">19 points</span></div>
     </div>
-    <div class="note" id="lbNote">These names are a sample. Live daily rankings arrive with accounts. Sign in with your RunThe.GG account to post your score.</div>
+    <div class="note" id="lbNote">These are sample names. Sign in with your RunThe.GG account to get on the board.</div>
   </div>
 
 <details class="gj" id="howtoTab">
@@ -374,31 +374,31 @@ window.GA_ID='G-L29P5MRWKE';
   <span class="gj-chev" aria-hidden="true">▾</span>
 </summary>
 <div class="gj-body">
-<p>Career Path deals well-travelled careers only: every answer suited up for at least three franchises. You get the scouting file free, with position, college and era, and then the clubs arrive one at a time, first team first. The earlier you call it, the more it pays.</p>
+<p>Every player in Career Path moved around. Each one played for at least 3 teams. You get their scouting file for free: position, college and era. Then the teams show up one at a time, starting with the first. The sooner you call it, the more it’s worth.</p>
 <ul>
-  <li>No multiple choice by default: type the player yourself.</li>
-  <li>Naming them off the first club scores 5 points; off two or three clubs it is 3, and it slides down from there.</li>
-  <li>Stuck? Take four names instead, for a single point.</li>
-  <li>One wrong answer ends the run.</li>
+  <li>No multiple choice unless you ask. Type the player yourself.</li>
+  <li>Name them off the first team and you get 5 points. Off 2 or 3 teams it’s 3. It drops from there.</li>
+  <li>Stuck? Take the 4 names for 1 point.</li>
+  <li>Miss once and your run’s over.</li>
 </ul>
 <h3>Streaks and the daily reset</h3>
-<p>The paths refresh at midnight local time, and finishing a day keeps your streak going. It is one of the four games free every day with no account at all, alongside the Daily Crossword, Sportegories and Alma Mater. An account saves the result: the board, the streak and the achievements. The Card opens all twelve with no limit, plus the <a href="/arcade/archive/">Archive</a> of every past day. Five of the games also have NBA, NFL and MLB editions.</p>
-<h3>How the trail gives it away</h3>
+<p>New careers drop at midnight your time. Finish a day and your streak keeps going. This is one of the four games free every day, no account needed. The other three are the Daily Crossword, Sportegories and Alma Mater. Make an account and it saves your scores, your streak and your achievements. The Card opens all twelve with no limit, plus the <a href="/arcade/archive/">Archive</a> of every past day. Five of the games also have NBA, NFL and MLB editions.</p>
+<h3>Tips</h3>
 <ul>
-  <li>Clubs arrive in career order, so the first one on screen is where they broke in. Most fans file a player under where he finished.</li>
-  <li>The scouting file lands before the clubs do. Position, college and era together rule out most of the league before you have seen a single uniform.</li>
-  <li>Four names scores 1 where typing off the first club scores 5. Take them when keeping the run alive is worth more than the points.</li>
+  <li>Teams show up in order, so the first one is where they broke in. Most people remember a guy for where he finished.</li>
+  <li>Use the scouting file. Position, college and era rule out most of the league before you see a single team.</li>
+  <li>The 4 names get you 1. Typing it off the first team gets you 5. Take the names when staying alive matters more than the points.</li>
 </ul>
-<p>Next stop: name their school in <a href="/arcade/almamater/">Alma Mater</a>, or find the hidden groups in <a href="/arcade/match/">Common Ground</a>.</p>
+<p>Want more? Try <a href="/arcade/almamater/">Alma Mater</a> or <a href="/arcade/match/">Common Ground</a>.</p>
 </div>
 </details>
-  <div class="foot">A daily streak game inside <b>Run The Arcade</b> · <a href="/">RunThe.GG</a> · <a href="mailto:RunTheGames@outlook.com?subject=Run%20The%20Arcade%20data%20error">Spot a data error? Tell us</a> · <a href="/about.html">About</a> · <a href="/privacy.html">Privacy</a> · <a href="/terms.html">Terms</a></div>
+  <div class="foot">A daily streak game inside <b>Run The Arcade</b> · <a href="/">RunThe.GG</a> · <a href="mailto:RunTheGames@outlook.com?subject=Run%20The%20Arcade%20data%20error">See something wrong? Let us know</a> · <a href="/about.html">About</a> · <a href="/privacy.html">Privacy</a> · <a href="/terms.html">Terms</a></div>
 </div>
 
 <div class="scrim hidden" id="scrim">
   <div class="sheet">
     <button class="x" id="mClose" type="button" aria-label="Close">✕</button>
-    <div class="sub-h" id="mSub">Your run ended</div>
+    <div class="sub-h" id="mSub">Your run’s over</div>
     <div class="runbig" id="mRun">0</div>
     <h2>POINTS</h2>
     <div class="milestone" id="mMilestone"></div>
@@ -694,7 +694,7 @@ window.GA_ID='G-L29P5MRWKE';
     var last = shown>=stopsOf(target);
     var v=worthOf(shown);
     if(w){ w.innerHTML='Worth <b>'+v+'</b>'+(v===1?' point':' points'); w.classList.toggle('spent', !!spent); }
-    if(b){ b.disabled = !!spent || last || bailed; b.textContent = last ? 'That is the whole career' : 'Show next team'; }
+    if(b){ b.disabled = !!spent || last || bailed; b.textContent = last ? 'That’s the whole career' : 'Show next team'; }
   }
   var answerIn=document.getElementById('answerIn'), answerGo=document.getElementById('answerGo'),
       bailBtn=document.getElementById('bailBtn'), factEl=document.getElementById('factline');
@@ -741,7 +741,7 @@ window.GA_ID='G-L29P5MRWKE';
     [].forEach.call(choicesEl.querySelectorAll('.choice'), function(bt){ bt.addEventListener('click', function(){ resolve(bt.dataset.id===r.target, bt); }); });
     setAnswerEnabled(true);
     drawWorth(target, false);
-    document.getElementById('subprompt').textContent='One of these four. Worth 1.';
+    document.getElementById('subprompt').textContent='It’s one of these. Worth 1 point.';
     saveResume();
   }
   bailBtn.addEventListener('click', bail);
@@ -763,12 +763,12 @@ window.GA_ID='G-L29P5MRWKE';
     var text=answerIn.value, target=byId[r.target];
     if(!text.trim()){ return; }
     if(window.RTGType && !RTGType.hasFullName(text)){
-      document.getElementById('subprompt').textContent='First name and last name, please.';
+      document.getElementById('subprompt').textContent='First and last name, please.';
       return;
     }
     var right = window.RTGType ? RTGType.sameName(text, target.name) : (text.trim().toLowerCase()===target.name.toLowerCase());
     if(!right && !knownName(text)){
-      document.getElementById('subprompt').textContent='No player by that name here. Check the spelling and try again.';
+      document.getElementById('subprompt').textContent='We don’t know that player. Check the spelling and try again.';
       if(window.RTGSound) RTGSound.soft && RTGSound.soft();
       return;                                   // costs nothing: it is not an answer yet
     }
@@ -819,13 +819,13 @@ window.GA_ID='G-L29P5MRWKE';
       ANSLOG.push(String(got));
       run+=got; solved++; document.getElementById('runN').textContent=run;
       document.getElementById('subprompt').textContent =
-        (got>=5 ? 'Off one team. +5.' : ('+'+got+(got===1?' point':' points'))) + ' It was ' + target.name + '.';
+        (got>=5 ? 'Off 1 team! +5.' : ('+'+got+(got===1?' point':' points'))) + ' It was ' + target.name + '.';
       if(window.RTGSound) RTGSound.lock(); idx++;
       saveResume();
       setTimeout(function(){ busy=false; renderRound(); answerIn.focus(); }, 1900);
     } else {
       ANSLOG.push('x');
-      document.getElementById('subprompt').textContent='It was '+target.name+'.';
+      document.getElementById('subprompt').textContent='Nope. It was '+target.name+'.';
       if(window.RTGSound) RTGSound.wrong();
       setTimeout(function(){ finish(); }, 2400);
     }
@@ -837,9 +837,9 @@ window.GA_ID='G-L29P5MRWKE';
   function fmt(s){ s=Math.max(0,Math.floor(s)); return Math.floor(s/60)+':'+String(s%60).padStart(2,'0'); }
 
   function updateHint(){ var h=document.getElementById('hintline'); if(!h) return;
-    if(ARCHIVE){ h.textContent='Name them now, or show another team for fewer points. · Archive · your personal best'; return; }
+    if(ARCHIVE){ h.textContent='Call it now, or see another team for fewer points. · Archive · your personal best'; return; }
     var lbl = window.RTGTokens ? (' · '+RTGTokens.hint(GAME)) : '';
-    h.textContent='Name them now, or show another team for fewer points.'+lbl; }
+    h.textContent='Call it now, or see another team for fewer points.'+lbl; }
   function beginAttempt(){
     var isReplay = servedDaily || (!ARCHIVE && window.RTGTokens && RTGTokens.playsOf(GAME)>0);
     if(isReplay && !ARCHIVE) clearResume();   // replays are practice: never resumable
@@ -874,7 +874,7 @@ window.GA_ID='G-L29P5MRWKE';
       drawScout(byId[rr.target]);
       if(r.bailed) bail(); else { drawPath(byId[rr.target], false); drawWorth(byId[rr.target], false); }
     }
-    toast('Resumed your run');
+    toast('Picked up where you left off');
   }
   function updateAgainBtn(){
     var b=document.getElementById('mAgain'); if(!b) return;
@@ -944,12 +944,12 @@ window.GA_ID='G-L29P5MRWKE';
     // Emotional copy ladder: new best > tied best > near miss > generic.
     var sub;
     if(locked) sub='Your score today';
-    else if(!attemptFirst) sub='Practice run, not ranked';
+    else if(!attemptFirst) sub='Practice run. Doesn’t count.';
     else if(solved>=ROUNDS) sub='You named them all!';
     else if(NEWBEST) sub='<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px" aria-hidden="true"><path d="M6 4h12v4a6 6 0 0 1-12 0zM6 6H3v2a3 3 0 0 0 3 3M18 6h3v2a3 3 0 0 1-3 3M9 20h6M12 15v5"/></svg> NEW PERSONAL BEST';
     else if(PREVBEST>0 && run===PREVBEST) sub='Tied your best. One more tomorrow!';
     else if(PREVBEST>0 && run>0 && PREVBEST-run<=2) sub=(PREVBEST-run)+' off your best. So close!';
-    else sub='Your run ended';
+    else sub='Your run’s over';
     var subEl=document.getElementById('mSub');
     subEl.innerHTML = sub;
     subEl.classList.toggle('newbest', !locked && NEWBEST);
@@ -1017,14 +1017,14 @@ window.GA_ID='G-L29P5MRWKE';
       var lb=document.querySelector('.lb'); if(!lb) return;
       var pill=lb.querySelector('.lb-pill'); if(pill) pill.textContent='Live';
       var samp=document.getElementById('lbSample'); if(samp){ samp.style.opacity='1';
-        if(!rows.length){ samp.innerHTML='<div class="lb-samplab">Today’s board</div><div class="note" style="margin:2px 0 0">Be the first to post a score today.</div>'; }
-        else{ var me=(RTG_BOARD.state().name||'').toLowerCase(), h='<div class="lb-samplab">Longest runs today</div>';
+        if(!rows.length){ samp.innerHTML='<div class="lb-samplab">Today’s board</div><div class="note" style="margin:2px 0 0">Nobody’s posted yet today. Be the first.</div>'; }
+        else{ var me=(RTG_BOARD.state().name||'').toLowerCase(), h='<div class="lb-samplab">Top scores today</div>';
           for(var i=0;i<rows.length;i++){ var r=rows[i], nm=r.display_name||'Player', mine=me&&nm.toLowerCase()===me;
             h+='<div class="row'+(mine?' you':'')+'"><span class="rk">'+(i+1)+'</span><span class="who">'+lbEsc(nm)+'</span><span class="tm">'+(r.run_len||0)+' points</span></div>'; }
           samp.innerHTML=h;
         }
       }
-      var note=document.getElementById('lbNote'); if(note) note.textContent='Live board: most points today wins, ties broken by time. Sign in on RunThe.GG to post yours.';
+      var note=document.getElementById('lbNote'); if(note) note.textContent='Most points today wins. Ties go to whoever was faster. Sign in to get on the board.';
     });
   }
 
