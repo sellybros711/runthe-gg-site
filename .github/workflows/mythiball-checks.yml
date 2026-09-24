@@ -10,6 +10,8 @@ name: MythiBall checks
 #                                     plus men left on base
 #   node mythiball/check-reach.mjs     every control a game offers is inside the
 #                                     window, on the shortest phone anybody holds
+#   node mythiball/check-skill.mjs    what a PERSON hits, four rungs of skill,
+#                                     against the bands the dials were set to
 #   node mythiball/verify-rules.mjs    walk-offs, the mercy rule, extra innings,
 #                                     one standings order, abandoned games
 #
@@ -67,6 +69,14 @@ jobs:
 
       - name: Every control is inside the window
         run: node mythiball/check-reach.mjs --quick
+
+      # The batting model, at a sample this job can afford. 450 plate
+      # appearances a rung is about a minute and holds every claim in that
+      # file: the rung ordering, the floor, the ceiling and the gap between
+      # them are all worth more than the noise at that size, and the tier
+      # claim is written on the whiffs for exactly that reason.
+      - name: What a person actually hits
+        run: node mythiball/check-skill.mjs --pa 450 --mode contact
 
       - name: The rules, replayed
         run: node mythiball/verify-rules.mjs
