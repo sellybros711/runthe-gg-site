@@ -98,13 +98,21 @@ console.log(`\n1. The twelve arms land in twelve slots (${runs.length} drafts)`)
     `${illegal.length}, e.g. ${illegal.slice(0, 3).join('; ')}`);
 }
 
+/* BEST BY WHAT THE STAFF IS RATED ON, which is E.workloadWar and not the season
+   line. `staffEra` reads a starter over 210 innings, so a 300 inning arm's season
+   WAR is not what he is worth to this rotation, and a suite that ranked on `.w`
+   while the sort ranked on the engine's own valuation is the second copy of a
+   rule this file already warns about twice. Asked THROUGH the engine so the two
+   cannot drift: if the valuation changes, the sort and this both follow it. */
+const val = (p) => E.workloadWar(p);
+
 console.log('\n2. The rotation and the bullpen are sorted, best first');
 {
   const off = [];
   for (const { name, run } of runs) {
     const t = tag(run);
     for (const group of [ROT, PEN]) {
-      const w = group.map((s) => at(t, s)).filter(Boolean).map((p) => p.w);
+      const w = group.map((s) => at(t, s)).filter(Boolean).map(val);
       for (let i = 1; i < w.length; i++) {
         if (w[i] > w[i - 1] + 1e-9) { off.push(`${name}: ${group[i - 1]} ${w[i - 1]} then ${group[i]} ${w[i]}`); break; }
       }
@@ -131,8 +139,8 @@ console.log('\n3. The best relief arm closes');
     /* Only against arms that COULD close. A starter who overflowed into the
        bullpen is not closer-eligible, so he is allowed to out-rank the closer. */
     const better = PEN.map((s) => at(t, s)).filter(Boolean)
-      .filter((p) => E.canFillSlot(p, 'CL', R.eligOf(run)) && p.w > cl.w + 1e-9);
-    if (better.length) off.push(`${name}: ${better[0].n} ${better[0].w} in the pen, ${cl.n} ${cl.w} closing`);
+      .filter((p) => E.canFillSlot(p, 'CL', R.eligOf(run)) && val(p) > val(cl) + 1e-9);
+    if (better.length) off.push(`${name}: ${better[0].n} ${val(better[0]).toFixed(2)} in the pen, ${cl.n} ${val(cl).toFixed(2)} closing`);
   }
   claim(!off.length, 'no closer-eligible arm in the pen out-rates the closer', off.slice(0, 4).join('; '));
 }
@@ -155,7 +163,7 @@ console.log('\n4. THE ROTATION TAKES THE BEST ARMS, whoever was drafted when');
   for (const { name, run } of runs) {
     const t = tag(run);
     const startable = run.roster.filter((p) => E.canFillSlot(p, 'SP1', R.eligOf(run)))
-      .slice().sort((a, b) => b.w - a.w);
+      .slice().sort((a, b) => val(b) - val(a));
     const inRot = ROT.map((s) => at(t, s)).filter(Boolean);
     if (inRot.length !== Math.min(5, startable.length)) {
       off.push(`${name}: ${inRot.length} starting, ${startable.length} could`); continue;
@@ -164,9 +172,9 @@ console.log('\n4. THE ROTATION TAKES THE BEST ARMS, whoever was drafted when');
        starting. That is the whole claim, and it does not care how they got there. */
     const benched = PEN.concat(['CL']).map((s) => at(t, s)).filter(Boolean)
       .filter((p) => E.canFillSlot(p, 'SP1', R.eligOf(run)));
-    const worstStarter = Math.min(...inRot.map((p) => p.w));
-    const better = benched.filter((p) => p.w > worstStarter + 1e-9);
-    if (better.length) off.push(`${name}: ${better[0].n} ${better[0].w} relieving, ${worstStarter} starting`);
+    const worstStarter = Math.min(...inRot.map(val));
+    const better = benched.filter((p) => val(p) > worstStarter + 1e-9);
+    if (better.length) off.push(`${name}: ${better[0].n} ${val(better[0]).toFixed(2)} relieving, ${worstStarter.toFixed(2)} starting`);
   }
   claim(!off.length, 'no arm in the pen could have started ahead of a man who is',
     off.slice(0, 4).join('; '));
@@ -235,7 +243,7 @@ console.log('\n6. Nothing here reaches the other modes');
      mode would put it back in some WAR order and the comparison would move. */
   const scrambled = run.slotIndex.slice().reverse();
   run.slotIndex = scrambled.slice();
-  const wars = run.slotIndex.map((si, k) => [si, run.roster[k].w]).sort((a, b) => a[0] - b[0]).map((x) => x[1]);
+  const wars = run.slotIndex.map((si, k) => [si, val(run.roster[k])]).sort((a, b) => a[0] - b[0]).map((x) => x[1]);
   const alreadySorted = wars.every((w, i) => i === 0 || wars[i - 1] >= w - 1e-9);
   claim(!alreadySorted, 'and the fixture is one a sort would visibly change', 'it was already in order');
   R.sortStaffSlots(run);

@@ -997,6 +997,35 @@ function rosterOffense(roster, chemMultiplier, battingOrderBonus) {
   return baseRPG * chemMultiplier * (battingOrderBonus || 1.0);
 }
 
+/* THE WAR A DRAFTED STARTER IS BOTH PRICED ON AND RATED ON.
+ *
+ * WAR is a COUNTING stat and an ERA is a RATE, so turning a whole season's WAR
+ * straight into an ERA over-credits whoever threw the most innings: Walter
+ * Johnson's 1913 is 15.2 WAR over 346 innings, and read as a rate that is a 0.14
+ * ERA before the floor catches it.
+ *
+ * `build_positions.py` already knew this and PRICED a heavy starter on
+ * `w * ANCHOR_IP/ip`, which is what he did at a standard workload. The engine did
+ * not: `spEra` read the raw figure. So the two halves of the same man disagreed,
+ * and the gap was a straight arbitrage rather than a rounding difference.
+ * MEASURED over the shipped pool, holding the price band fixed, a starter over
+ * 210 innings bought a better ERA than a light one at the same price in every
+ * band there is: 0.30 better under $10M, 0.32 at $10-20M, 0.47 at $20-30M and
+ * 0.50 at $30-45M. A drafter comparing two arms at one price had no way to see
+ * it and no reason to take the light one, ever.
+ *
+ * REAL CLUBS ARE NOT NORMALISED, and `teamStrength` deliberately still reads the
+ * raw figure. The 1908 White Sox really did get 464 innings of Ed Walsh, so the
+ * all-time table they are ranked in is right to count them. A DRAFTED roster is
+ * buying a standard season at a standard price, which is a different question.
+ */
+function workloadWar(p) {
+  if (!p) return 0;
+  if (p.r !== 'p' || p.pp !== 'SP') return p.w;
+  if (!p.ip || p.ip <= CONSTANTS.ANCHOR_IP) return p.w;
+  return p.w * (CONSTANTS.ANCHOR_IP / p.ip);
+}
+
 /*
  * PITCHING + DEFENSE: Run prevention.
  *
@@ -1016,9 +1045,14 @@ function rosterRunPrevention(roster, chemMultiplier) {
   // SP ERA estimate from WAR: higher WAR = lower ERA.
   // Replacement pitcher ~5.0 ERA; floor of 1.60 keeps historic aces great
   // without making a two-ace staff untouchable.
+  /* STAFF.SP_ERA_PER_WAR rather than a literal, because this reads workloadWar
+     and so is the same fit staffEra is: see the constant for why the number
+     that goes with the season line is not the number that goes with this one.
+     teamStrength keeps the season line AND the old 0.32, deliberately, because
+     a real club really did throw those innings. */
   const spEra = (sp) => {
     if (!sp) return CONSTANTS.FILLER_ERA;
-    return Math.max(1.6, 5.0 - sp.w * 0.32);
+    return Math.max(1.6, 5.0 - workloadWar(sp) * STAFF.SP_ERA_PER_WAR);
   };
 
   const sp1Era = spEra(sp1);
@@ -1053,7 +1087,24 @@ const STAFF = {
    * Relief WAR is compressed against starter WAR (fewer innings for the same
    * quality), so a reliever's ERA falls faster per win above replacement. */
   ROTATION_IP_SHARE: 0.70,
-  SP_ERA_BASE: 5.0, SP_ERA_PER_WAR: 0.32, SP_ERA_FLOOR: 1.60,
+  /* THE STARTER COEFFICIENT IS FITTED AGAINST workloadWar AND THE OLD ONE WAS
+   * FITTED AGAINST THE SEASON LINE. Changing what goes in without refitting
+   * what it is multiplied by is not a re-ranking, it is a nerf: measured over
+   * 400 drafted starters a side, the anchor takes a mean 5.42 WAR down to 4.53,
+   * so at 0.32 every rotation in the game got 0.29 of ERA worse and the
+   * quick badge sweep went from nothing dark to 21 badges nothing could light.
+   * The ratio is 1.20 for the three bots that draft real players (best 1.220,
+   * careful 1.196, arms 1.206) and near 1.0 for the two that draft nobody,
+   * because a $3M arm never threw 300 innings; the three that matter are what
+   * this is solved against, since they are what a person plays like.
+   *
+   * IT REINTRODUCES NOTHING, and that is the point worth being sure of. The
+   * arbitrage was that at equal PRICE a heavy arm bought a better ERA, and the
+   * price is built on workloadWar, so once the ERA is too, two men at one price
+   * have one ERA whatever this constant is. The coefficient only sets the
+   * LEVEL. Refit it, never nudge it, and refit it against drafted starters
+   * rather than the whole pool: the pool is mostly men nobody signs. */
+  SP_ERA_BASE: 5.0, SP_ERA_PER_WAR: 0.386, SP_ERA_FLOOR: 1.60,
   RP_ERA_BASE: 4.60, RP_ERA_PER_WAR: 0.55, RP_ERA_FLOOR: 1.35,
 };
 function staffOffense() { return STAFF.LINEUP_RPG; }
@@ -1063,8 +1114,11 @@ function staffOffense() { return STAFF.LINEUP_RPG; }
  * drafted is what takes the ball. */
 /* The staff's blended ERA: the number the whole mode turns on. */
 function staffEra(roster) {
+  /* workloadWar for the same reason rosterRunPrevention uses it: this turns a
+     counting stat into a rate, and a starter's price already carries the anchor.
+     It is a no-op for every reliever, who are priced raw and have no anchor. */
   const era = (p, base, per, floor) =>
-    p ? Math.max(floor, base - Math.max(0, p.w) * per) : base;
+    p ? Math.max(floor, base - Math.max(0, workloadWar(p)) * per) : base;
   const at = (slot) => roster.find(p => p._slot === slot);
   const rot = ['SP1', 'SP2', 'SP3', 'SP4', 'SP5'].map(at);
   const penArms = ['RP1', 'RP2', 'RP3', 'RP4', 'RP5', 'SU', 'CL'].map(at);
@@ -1092,8 +1146,10 @@ function staffRating(roster) {
 }
 
 function staffRunPrevention(roster, chemMultiplier) {
+  /* The same reading staffEra uses, or the rating a staff is SHOWN and the runs
+     it actually gives up would be built from two different numbers. */
   const era = (p, base, per, floor) =>
-    p ? Math.max(floor, base - Math.max(0, p.w) * per) : base;
+    p ? Math.max(floor, base - Math.max(0, workloadWar(p)) * per) : base;
   const at = (slot) => roster.find(p => p._slot === slot);
   const rot = ['SP1', 'SP2', 'SP3', 'SP4', 'SP5'].map(at);
   const pen = ['RP1', 'RP2', 'RP3', 'RP4', 'RP5', 'SU'].map(at);
@@ -2373,7 +2429,7 @@ const publicAPI = {
   STAFF_SLOTS, STAFF_ELIGIBILITY, slotsForMode, eligibilityForMode, slotGroup,
   DIVISIONS, DIVISION_FIRST_SEASON, inDivision, divisionClubs,
   FRANCHISES, CURRENT_FRANCHISES, inFranchise, franchiseOf, franchiseCodes,
-  MARKET, replacementFor,
+  MARKET, replacementFor, workloadWar,
   POSITIONS_AVAILABLE: () => POSITIONS_AVAILABLE,
   setPositionsAvailable,
   hashSeed, createSeededRNG, sampleGamma,

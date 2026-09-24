@@ -94,16 +94,55 @@ const namesBlock = html.slice(html.indexOf('const TEAM_NAMES={'), html.indexOf('
 claim(/TOT:/.test(namesBlock), 'TEAM_NAMES carries a TOT entry to read the words from');
 
 /* EVERY FUNCTION seasonLine LEANS ON, not just seasonLine. It was three names and
-   is five, and this lift is what caught the change: splitting the row's facts into
-   rowFacts and heavyIP left the old list resolving a ReferenceError at the first
-   call. `E` is passed in because heavyIP reads ANCHOR_IP off the engine. */
-const page = eval(`(function(E){const esc=s=>String(s);${namesBlock}${lift('clubTag')}${lift('halfTag')}${lift('heavyIP')}${lift('rowFacts')}${lift('seasonLine')}${lift('seasonText')}${lift('offerMeta')}return{clubTag,halfTag,heavyIP,rowFacts,seasonLine,seasonText,offerMeta};})`)(E);
+   is five, and this lift is what caught the change TWICE: splitting the row's
+   facts into rowFacts and heavyIP left the old list resolving a ReferenceError at
+   the first call, and so did offerMeta growing an offerWar under it. `E` is passed
+   in because heavyIP reads ANCHOR_IP off the engine and offerWar reads
+   workloadWar. */
+const page = eval(`(function(E){const esc=s=>String(s);${namesBlock}${lift('clubTag')}${lift('halfTag')}${lift('heavyIP')}${lift('rowFacts')}${lift('seasonLine')}${lift('seasonText')}${lift('offerWar')}${lift('offerMeta')}return{clubTag,halfTag,heavyIP,rowFacts,seasonLine,seasonText,offerWar,offerMeta};})`)(E);
 
 claim(page.clubTag('TOT') !== 'TOT' && page.clubTag('TOT').length > 3,
   'TOT is rendered as words, not as the code',
   `got ${JSON.stringify(page.clubTag('TOT'))}`);
 claim(page.clubTag('NYY') === 'NYY',
   'a real club code is left exactly as it is');
+
+/* ── A CLUB CODE IS NOT A CLUB WITHOUT A SEASON ────────────────────────────
+   `BAL` in 1914 is the Federal League Baltimore Terrapins, and `BAL` from 1954
+   is the Orioles, who are the St. Louis Browns moved and did not exist in 1914.
+   teamFullName was keyed on the code alone, so the hero reel and the draw banner
+   called that Terrapin side the Baltimore Orioles: a false statement about a
+   real club, on a game whose whole pitch is that the history is real.
+   DRIVEN THROUGH THE PAGE'S OWN FUNCTION, and both directions are asserted,
+   because a fix that named every Baltimore team the Terrapins would satisfy a
+   one-sided check perfectly. The third claim is the one that would have caught
+   the bug this fix nearly introduced: `.map(teamFullName)` hands the callback an
+   INDEX, which the new signature reads as a season, so the first decoy on every
+   reel would have been named as of season 0. */
+const nameFns = eval(`(function(E){${namesBlock}${lift('teamFullName')}return teamFullName;})`)(E);
+claim(nameFns('BAL', 1914) === 'Baltimore Terrapins',
+  'a 1914 Baltimore side is the Terrapins', `got ${JSON.stringify(nameFns('BAL', 1914))}`);
+claim(nameFns('BAL', 1971) === 'Baltimore Orioles',
+  'and a 1971 Baltimore side is still the Orioles', `got ${JSON.stringify(nameFns('BAL', 1971))}`);
+claim(nameFns('BAL') === 'Baltimore Orioles',
+  'a caller with no season gets the modern club, as every franchise surface does');
+/* The pool's own rows, so this cannot pass on a code the game never draws. */
+const balSeasons = [...new Set(players.filter(p => p.t === 'BAL').map(p => p.s))];
+const misnamed = balSeasons.filter(s => (s < 1954) !== (nameFns('BAL', s) === 'Baltimore Terrapins'));
+claim(misnamed.length === 0,
+  `every Baltimore season in the pool is named for the club that played it (${balSeasons.length} seasons)`,
+  `wrong on ${misnamed.join(', ')}`);
+/* COVERAGE: the bug was one code today and the mechanism is general, so what is
+   asserted is that no OTHER code silently needs this. A second collision arriving
+   in the data should fail here rather than ship as a wrong club name. */
+const codes = [...new Set(players.map(p => p.t))];
+const ambiguous = codes.filter((c) => {
+  const seasons = [...new Set(players.filter(p => p.t === c).map(p => p.s))];
+  return new Set(seasons.map((s) => E.franchiseOf(c, s))).size > 1;
+});
+claim(ambiguous.length === 1 && ambiguous[0] === 'BAL',
+  'and BAL is still the only code that means two different clubs',
+  `ambiguous: ${ambiguous.join(', ') || 'none'}`);
 
 const totRow = players.find(p => p.t === 'TOT');
 claim(totRow && !/\bTOT\b/.test(page.seasonLine(totRow)),
@@ -272,6 +311,153 @@ claim(new RegExp(String(ANCHOR) + ' innings').test(draft),
   'the draft screen says what the innings do to a price');
 claim(new RegExp(String(ANCHOR) + ' innings').test(fs.readFileSync(path.join(DIR, 'how-to-play.html'), 'utf8')),
   'and how-to-play says it too');
+
+/* ── 6. AND THE PRICE AND THE VALUE READ ONE WAR ───────────────────────────── */
+console.log('\n6. At one price, a heavy arm is worth no more than a light one');
+
+/* The label above is the half a reader sees. This is the half that decides the
+   game, and it was wrong for as long as the label existed: the price was built
+   on 210 innings and the ENGINE read the season line, so at equal price a heavy
+   innings starter bought a better rotation ERA than a light one. Measured over
+   the shipped pool it ran 0.04 to 0.07 of ERA in every band, which is a bargain
+   nothing on any screen could report, because every figure involved was a true
+   statement about a season.
+
+   PER PRICE BAND, and it has to be: comparing heavy arms with light ones outright
+   compares dear men with cheap ones and says nothing at all. */
+{
+  const era = (p) => {
+    /* Driven through the engine's own staffEra rather than rebuilt here. The
+       rest of the staff is identical in both arms, so the only thing that
+       differs between two readings is the man in SP1. */
+    const rest = [];
+    for (const s of ['SP2', 'SP3', 'SP4', 'SP5']) rest.push({ _slot: s, w: 2, ip: 200, r: 'p', pp: 'SP' });
+    for (const s of ['RP1', 'RP2', 'RP3', 'RP4', 'RP5', 'SU', 'CL']) rest.push({ _slot: s, w: 1, ip: 60, r: 'p', pp: 'RP' });
+    return E.staffEra([{ ...p, _slot: 'SP1' }].concat(rest));
+  };
+  const sp = players.filter((p) => p.r === 'p' && p.pp === 'SP' && p.ip > 0);
+  const mean = (a) => a.reduce((s, p) => s + era(p), 0) / a.length;
+  let worst = -99, worstBand = null, bands = 0;
+  for (const [lo, hi] of [[10, 20], [20, 30], [30, 999]]) {
+    const inBand = sp.filter((p) => p.p >= lo && p.p < hi);
+    const light = inBand.filter((p) => p.ip <= ANCHOR), heavy = inBand.filter((p) => p.ip > ANCHOR);
+    if (light.length < 20 || heavy.length < 20) continue;
+    bands++;
+    const gap = mean(light) - mean(heavy);
+    if (gap > worst) { worst = gap; worstBand = `$${lo}-${hi}M: ${gap.toFixed(3)} ERA`; }
+  }
+  /* The bottom band is deliberately out: under $10M the price floor packs
+     thousands of men onto one figure, so "equal price" stops meaning equal. */
+  claim(bands >= 3, `three price bands are deep enough to compare (${bands})`);
+  claim(worst < 0.02, `a heavy arm's advantage at equal price is gone (worst ${worstBand})`,
+    `was 0.044, 0.066 and 0.069 across these three bands before the engine read the same WAR the price did`);
+
+  /* Coverage: the claim above passes trivially if this pool has no workhorses in
+     the dear bands, which is exactly what it looked like from the trade sheet for
+     as long as the offer projection dropped `ip`. */
+  const dearHeavy = sp.filter((p) => p.p >= 20 && p.ip > ANCHOR).length;
+  claim(dearHeavy > 100, `and there are ${dearHeavy} heavy arms priced over $20M to be wrong about`);
+}
+
+/* WHICH READING GOES WHERE, because the two are one edit from being swapped and
+   nothing downstream would throw. teamStrength rates REAL clubs, who really did
+   throw those innings, so it keeps the season line and the coefficient fitted to
+   it; everything that rates a DRAFTED roster reads workloadWar and the
+   coefficient fitted to that. Asked of the source, since both answers are valid
+   numbers and no measurement of an output can tell which fit produced it. */
+{
+  const eng = fs.readFileSync(path.join(DIR, 'engine.js'), 'utf8');
+  const body = (name) => {
+    const i = eng.indexOf('function ' + name + '(');
+    return i < 0 ? '' : eng.slice(i, eng.indexOf('\nfunction ', i + 1));
+  };
+  claim(/sp\.w \* 0\.32/.test(body('teamStrength')),
+    'teamStrength still rates a real club on its own season line');
+  for (const fn of ['rosterRunPrevention', 'staffEra', 'staffRunPrevention']) {
+    claim(/workloadWar\(/.test(body(fn)), `${fn} reads workloadWar`);
+    claim(!/\* 0\.32\b/.test(body(fn)), `and ${fn} does not carry the coefficient fitted to the season line`);
+  }
+}
+
+/* ── 7. AN OFFER PROMISES WHAT IT DELIVERS ─────────────────────────────────── */
+console.log('\n7. A trade offer is a subtraction the reader can do on screen');
+
+/* The Trade Machine's whole offer is a better player for one of yours, and it
+   was filtered and headlined on the season line while the season is played on
+   workloadWar. Measured over 1,578 real offers, ONE IN FIVE advertised a gain
+   that was really a loss or nothing, worst case "+5.2 WAR" for a swap worth
+   -0.5. Nothing threw: every figure on the sheet was a true statement about a
+   season, and the only symptom was a mode that made your team worse.
+
+   Driven through the page's OWN offerWar rather than a copy of it, because a
+   second implementation of a rounding rule agrees with itself. */
+{
+  const offerWar = page.offerWar;
+  claim(typeof offerWar === 'function', 'offerWar is still in the page');
+  const data = R.indexData(players);
+
+  let offers = 0, notAGain = 0, seam = 0, heavySides = 0, sides = 0, fieldsOk = 0, worst = null;
+  for (let i = 0; i < 40; i++) {
+    const run = R.createRun({ seed: E.hashSeed('offer-check-' + i), tradeMachine: true });
+    let ok = true;
+    while (R.slotsLeft(run) > 0) {
+      try { R.spin(run, data); } catch (_) { ok = false; break; }
+      const opts = (run.currentDraw.options || []).map((k) => data.allPlayers[k]).filter(Boolean);
+      const can = opts.filter((p) => R.canFinishAfter(run, p));
+      if (!can.length) { ok = false; break; }
+      const rem = R.remaining(run), left = R.slotsLeft(run);
+      const lim = Math.max((rem / Math.max(1, left)) * 2.1, 6);
+      const fit = can.filter((p) => p.p <= lim);
+      try { R.sign(run, (fit.length ? fit : can).sort((a, b) => b.w - a.w)[0]); } catch (_) { ok = false; break; }
+    }
+    if (!ok) continue;
+    for (const g of R.TRADE.WINDOWS) {
+      let os = null;
+      try { os = R.tradeOffers(run, data, g); } catch (_) {}
+      for (const off of (os || [])) {
+        offers++;
+        const gain = offerWar(off.in) - offerWar(off.out);
+        if (gain <= 0) {
+          notAGain++;
+          if (!worst || gain < worst.g) worst = { g: gain, t: `${off.out.n} ${off.out.s} to ${off.in.n} ${off.in.s}` };
+        }
+        /* The headline is this subtraction, so it can only be honest if the two
+           rows it is drawn from are what was subtracted. */
+        const printed = Number((offerWar(off.in) - offerWar(off.out)).toFixed(1));
+        if (Math.abs(printed - Number(gain.toFixed(1))) > 1e-9) seam++;
+        /* Against the ROW the side was projected from, because the pool itself
+           holds 940 pitchers with no innings at all and a claim that every side
+           carries one would be failing on the data rather than on the
+           projection. `out` is a roster index, `in` is the offer's own key. */
+        for (const [s, real] of [[off.out, run.roster[off.rosterIdx]], [off.in, data.allPlayers[off.key]]]) {
+          sides++;
+          if (real && s.r === real.r && s.pp === real.pp && s.ip === real.ip) fieldsOk++;
+          if (s.r === 'p' && s.pp === 'SP' && s.ip > ANCHOR) heavySides++;
+        }
+      }
+    }
+  }
+  claim(offers > 120, `the walk met ${offers} real offers`);
+  claim(!notAGain, 'no offer advertises a gain that is not one',
+    worst && `worst ${worst.g.toFixed(1)}: ${worst.t}; was 20.0% of offers before the filter read workloadWar`);
+  claim(!seam, 'and the headline is the difference of the two figures printed beside it',
+    `${seam} of ${offers} disagreed; 64 of 207 did before offerWar rounded first`);
+
+  /* COVERAGE, ASKED OF THE PROJECTION AND NOT OF THE MIX. The real defect was
+     that the offer sides are a flat projection which dropped `r`, `pp` and `ip`,
+     so the page's own heavyIP answered no for every man alive and none of 2,274
+     sides was ever tagged. Asked as a SHARE of offers that are heavy arms it
+     would be measuring the mode's economics instead: a rotation upgrade at equal
+     money cannot exist now that a starter's price is monotone in the figure he
+     is valued on, so heavy sides are about 1% and a share threshold would either
+     pass on nothing or fail on a correct page. What must be true is that the
+     fields are THERE. */
+  claim(fieldsOk === sides && sides > 0,
+    `every one of the ${sides} offer sides carries the row's own role, position and innings`,
+    `${sides - fieldsOk} disagreed with the row they were projected from, which is how the tag went quiet on all of them`);
+  claim(heavySides > 0,
+    `and ${heavySides} of them are heavy arms, so the tag has something to say`);
+}
 
 console.log(failures ? `\n${failures} failed.\n` : '\nAll checks passed.\n');
 process.exit(failures ? 1 : 0);
