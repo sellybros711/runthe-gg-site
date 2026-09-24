@@ -2257,7 +2257,11 @@ window.GA_ID='G-L29P5MRWKE';
   /* CS355c: the shot-number "pin" above the golfer's head (the golfer covers the resting marker); held */
   .hvswnum{opacity:0; animation:hvswNum 1000ms ease forwards}
   @keyframes hvswNum{0%{opacity:0;transform:translateY(2px)}10%,100%{opacity:1;transform:translateY(0)}}
-  @media (prefers-reduced-motion:reduce){ .hvswing,.hvswnum{display:none} }
+  .hvspark{opacity:0;transform-box:fill-box;transform-origin:center;animation:hvspark 340ms ease-out both}
+  @keyframes hvspark{0%{opacity:0;transform:scale(.3)}15%{opacity:.95}100%{opacity:0;transform:scale(3.4)}}
+  .hvturf{opacity:0;animation:hvturf 560ms cubic-bezier(.15,.7,.35,1) both}
+  @keyframes hvturf{0%{opacity:0;transform:translate(0,0)}8%{opacity:1}70%{opacity:1}100%{opacity:0;transform:translate(var(--dx),var(--dy))}}
+  @media (prefers-reduced-motion:reduce){ .hvswing,.hvswnum,.hvimp{display:none} }
   .hvob{position:absolute;z-index:2;pointer-events:none}
   .hvhole{top:8px;left:8px;background:rgba(8,17,26,.72);border:1px solid rgba(255,255,255,.16);border-radius:8px;
     padding:5px 9px;font:800 11.5px/1 var(--body);letter-spacing:.1em;color:#eef4ee}
@@ -2368,6 +2372,10 @@ window.GA_ID='G-L29P5MRWKE';
   @keyframes reflashPop{0%{opacity:0;transform:scale(.86)}60%{transform:scale(1.03)}100%{opacity:1;transform:scale(1)}}
   @media (prefers-reduced-motion:reduce){ .reflash{animation:none} }
   @media (prefers-reduced-motion:reduce){ .hvdesc{animation:none} }
+  .hvdesc.hvcapR{left:var(--hvcx)!important}
+  .hvdesc.hvcapL{right:var(--hvcx)!important}
+  .hvwind,.hvboard{transition:opacity .25s ease}
+  .hvwind.hvpeek,.hvboard.hvpeek{opacity:.22}
   /* holed-result pill: floats CENTER on the tracer (its own layer) so it never collides with the
      always-present scoreboard - the leaderboard stays put; the result pops over the middle of the course */
   /* CS356j: the holed result pops at the TOP of the tracer (below the hole chip), not over the golfer in the middle */
@@ -3099,8 +3107,17 @@ window.GA_ID='G-L29P5MRWKE';
   /* CS440: shorter preview box so the item grid shows more (owner: box too tall, wasted space). The golfer
      is width-constrained, so give the avatarfig an explicit width to fill the shorter box instead of floating
      tiny in a big empty area. */
-  .shop-preview{display:flex; justify-content:center; align-items:flex-end; height:190px; margin:2px 0 2px}
-  .shop-preview .avatarfig{height:190px; width:150px}
+  .shop-preview{position:relative; display:flex; justify-content:center; align-items:flex-end; height:190px; margin:2px 0 2px}
+  .shop-preview .avatarfig{height:190px; width:150px; position:relative; z-index:1}
+  /* the golfer is on a stage here, like a character select: a spotlight from above and a round of turf
+     under the feet, lit on its near edge. Both sit behind the figure and never take a tap. */
+  .shop-preview::before{content:''; position:absolute; left:50%; top:-6px; bottom:6px; width:min(64%,300px); transform:translateX(-50%);
+    pointer-events:none; z-index:0; background:radial-gradient(60% 80% at 50% 0%,rgba(255,240,190,.2),rgba(255,240,190,.05) 55%,transparent 75%);
+    -webkit-mask:linear-gradient(transparent,#000 35%); mask:linear-gradient(transparent,#000 35%)}
+  .shop-preview::after{content:''; position:absolute; left:50%; bottom:-2px; width:min(58%,220px); height:30px; transform:translateX(-50%);
+    pointer-events:none; z-index:0; border-radius:50%;
+    background:radial-gradient(50% 42% at 50% 44%,rgba(0,0,0,.5),transparent 70%),repeating-linear-gradient(90deg,#2f7a45 0 14px,#2a6e3e 14px 28px);
+    box-shadow:0 2px 0 #1a4a2a,0 5px 14px rgba(0,0,0,.5),inset 0 2px 0 rgba(170,230,150,.35)}
   /* IMG_8306: setup screen reuses the shop tab layout - non-sticky within its bordered box, shorter preview */
   /* CS453: pin the golfer preview so it stays visible while scrolling the customization options.
      Sits just under the sticky app banner (~50px + safe area), opaque bg so tiles scroll cleanly beneath. */
@@ -17273,7 +17290,19 @@ function hvSwingMarkup(g,p,look){
       +`</g>`; }
   // CS483u: an equipped effect (aura) glows on the golfer - a pulse in the effect's colour on the group.
   const fx=fxOf(look); const glow=fx?` hvsw-glow`:'', gsty=fx?` style="--fxc:${fx.col}"`:'';
-  return `<g class="hvswing hvsw-${kind}${glow}"${gsty}>${imgs}</g>${badge}`;
+  // Contact. At the moment the ball leaves (the same 640 and 360ms hvKick launches it on) a white ring
+  // pops at the ball, and a full swing or a chip throws a few bits of turf up the shot line. Tiny, quick,
+  // and it is what makes the swing read as hitting something rather than a figure changing pose.
+  let imp='';
+  if(!holdStatic){ const d=kind==='putt'?360:640, n=Math.hypot(vx,vy)||1, ux=vx/n, uy=vy/n, R=bodyGH;
+    let bits='';
+    if(kind!=='putt'){ const cols=p.k==='tee'?['#a6d06e','#eef0eb','#7fc25a']:['#7fc25a','#4a7a2e','#a6d06e','#6b4e2a'];
+      const base=Math.atan2(uy,ux), sz=Math.max(0.9,R*0.07);
+      for(let i=0;i<7;i++){ const ang=base+(i-3)*0.24, dist=R*(0.45+0.1*(i%3));
+        const dx=Math.cos(ang)*dist, dy=Math.sin(ang)*dist-R*0.18;
+        bits+=`<rect class="hvturf" x="${(A[0]-sz/2).toFixed(1)}" y="${(A[1]-sz/2).toFixed(1)}" width="${sz.toFixed(2)}" height="${sz.toFixed(2)}" fill="${cols[i%cols.length]}" style="--dx:${dx.toFixed(1)}px;--dy:${dy.toFixed(1)}px;animation-delay:${d+(i%3)*18}ms"/>`; } }
+    imp=`<g class="hvimp" aria-hidden="true"><circle class="hvspark" cx="${A[0].toFixed(1)}" cy="${A[1].toFixed(1)}" r="${(R*(kind==='putt'?0.07:0.11)).toFixed(2)}" fill="none" stroke="#fff" stroke-width="${(R*0.05).toFixed(2)}" style="animation-delay:${d}ms"/>${bits}</g>`; }
+  return `<g class="hvswing hvsw-${kind}${glow}"${gsty}>${imgs}</g>${imp}${badge}`;
 }
 // CS378-A1: a STATIC address-pose golfer standing OVER the ball, used during a par-4/5 approach decision so
 // the drive's ball rests on the fairway with the golfer set over it (owner: "not a ball frozen in the air.
@@ -31644,8 +31673,26 @@ function hvRevealDist(){ ['hv-dist','hv-carry'].forEach(id=>{ const d=document.g
 // phone. Their offset used to be a fixed 48px, so a long caption ran underneath both. Each shell now
 // carries its caption's real height in --hvdh, measured whenever the DOM changes (rAF-throttled).
 let _hvFitQ=false;
+// The HUD gets out of the golfer's way. A tee is usually at the bottom of the frame, which is exactly where
+// the caption sits, so the most important swing of every hole was played behind a line of text. When the
+// swinging golfer is under the caption it moves to the other side of the frame (and wraps; --hvdh follows
+// it, so the wind chip and the board rise with it). If the golfer is under the wind chip or the board they
+// go see-through until the golfer has moved on. Only class and style changes, so the observer below never
+// re-fires on its own work.
+function hvHudDodge(sh,d){
+  const sw=sh.querySelector('.hvswing'), shr=sh.getBoundingClientRect();
+  const g=sw?sw.getBoundingClientRect():null, live=!!(g&&g.width>0);
+  const hit=(r)=>live && g.bottom>r.top-3 && g.top<r.bottom+3 && g.right>r.left-3 && g.left<r.right+3;
+  if(d){ d.classList.remove('hvcapL','hvcapR');
+    if(hit(d.getBoundingClientRect())){ const mid=(g.left+g.right)/2-shr.left;
+      if(mid<shr.width/2){ d.classList.add('hvcapR'); d.style.setProperty('--hvcx',Math.round(g.right-shr.left+10)+'px'); }
+      else { d.classList.add('hvcapL'); d.style.setProperty('--hvcx',Math.round(shr.right-g.left+10)+'px'); } } }
+  sh.querySelectorAll(':scope > .hvwind, :scope > .hvboard').forEach(el=>{ el.classList.toggle('hvpeek', hit(el.getBoundingClientRect())); });
+}
 function hvFitHud(){ _hvFitQ=false; try{ document.querySelectorAll('.hvshell').forEach(sh=>{ const d=sh.querySelector(':scope > .hvdesc');
-  if(d){ const h=Math.ceil(d.getBoundingClientRect().height); if(h>0 && sh._hvdh!==h){ sh._hvdh=h; sh.style.setProperty('--hvdh', h+'px'); } } }); }catch(e){} }
+  try{ hvHudDodge(sh,d); }catch(e){}
+  if(d){ const h=Math.ceil(d.getBoundingClientRect().height); if(h>0 && sh._hvdh!==h){ sh._hvdh=h; sh.style.setProperty('--hvdh', h+'px'); } }
+  try{ hvHudDodge(sh,null); }catch(e){} }); }catch(e){} }
 try{ new MutationObserver(()=>{ if(!_hvFitQ){ _hvFitQ=true; requestAnimationFrame(hvFitHud); } }).observe(document.documentElement,{childList:true,subtree:true}); }catch(e){}
 try{ addEventListener('resize',()=>{ document.querySelectorAll('.hvshell').forEach(sh=>{ sh._hvdh=0; }); hvFitHud(); }); }catch(e){}
 /* A BIRDIE IS A HIGHLIGHT (owner, Sep 2026: "look and feel like a real video game"). Under par the result
