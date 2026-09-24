@@ -57,8 +57,8 @@ export function playLine(r) {
   return bits.join(', ');
 }
 
-export async function buildWeeklyResults({ season, week, partial = false }) {
-  const games = parseCSVObjects(await cachedCSV(GAMES_URL, 'games.csv'));
+export async function buildWeeklyResults({ season, week, partial = false, maxAgeMs }) {
+  const games = parseCSVObjects(await cachedCSV(GAMES_URL, 'games.csv', { maxAgeMs }));
   const sched = weekGames(games, season, week);
   if (!sched.size) throw new Error(`the schedule has no week ${week} of ${season}`);
 
@@ -72,7 +72,8 @@ export async function buildWeeklyResults({ season, week, partial = false }) {
       + 'Pass --partial to build it anyway.');
   }
 
-  const rows = parseCSVObjects(await nflverseCSV('stats_player', `stats_player_week_${season}.csv`));
+  const rows = parseCSVObjects(
+    await nflverseCSV('stats_player', `stats_player_week_${season}.csv`, { maxAgeMs }));
   const scored = new Map();
   let checked = 0;
   for (const r of rows) {
@@ -93,9 +94,43 @@ export async function buildWeeklyResults({ season, week, partial = false }) {
   }
   if (!checked) throw new Error('no REG rows to check the half PPR identity against');
 
+  /*
+   * ─── THE SCHEDULE SAYING A GAME IS OVER IS NOT THE STATS BEING IN ──────────────────
+   *
+   * `games.csv` carries a final score the moment a game ends. nflverse's player rows for
+   * that game land some minutes later. Between those two moments the week looks FINISHED
+   * off the schedule and is missing a club's worth of scoring, and marking it final there
+   * settles the week on incomplete stats: every screen says the result is in while the
+   * board is still climbing, and `fantasy_mark_results` will not un-say it.
+   *
+   * It cost nothing before this, because the Tuesday build runs two days after the last
+   * whistle. It is a live path defect, and the live path is the one that runs at the exact
+   * minute the Monday night game ends.
+   *
+   * So final means both: the schedule has every game played AND every club that played has
+   * somebody with a row. Measured on a real snapshot of week 2 taken at 11:25pm ET on the
+   * Sunday, the stats held 28 of the 32 clubs, which is exactly the state this refuses.
+   */
+  const clubsPlayed = new Set();
+  for (const g of inWeek) {
+    if (scoreOf(g.home_score) == null) continue;
+    if (g.home_team) clubsPlayed.add(g.home_team);
+    if (g.away_team) clubsPlayed.add(g.away_team);
+  }
+  const clubsScored = new Set();
+  for (const r of rows) {
+    if (String(r.season_type) !== 'REG' || num(r.week) !== week) continue;
+    if (r.team) clubsScored.add(r.team);
+  }
+  const missing = [...clubsPlayed].filter((t) => !clubsScored.has(t)).sort();
+
   return {
     season, week,
-    final: !unplayed.length,
+    final: !unplayed.length && !missing.length,
+    /* Named rather than folded into `final`, so a caller can say WHY a finished week is not
+       being marked final yet, and so the live workflow's log answers the question this
+       whole design is trying to measure: how far behind the stats run the whistle. */
+    awaiting_stats: missing,
     games: inWeek.length,
     played: inWeek.length - unplayed.length,
     /* Keyed by player id, because the page looks up the six men it already holds rather
@@ -115,12 +150,21 @@ if (process.argv[1] && process.argv[1].endsWith('weekly-results.mjs')) {
   const season = Number(arg('--season', '2026'));
   const week = Number(arg('--week', '3'));
   const built = await buildWeeklyResults({
-    season, week, partial: process.argv.includes('--partial'),
+    season, week,
+    partial: process.argv.includes('--partial'),
+    /* `--fresh` IS WHAT THE LIVE PATH PASSES. Without it the cache never expires, which is
+       right for a finished season and is a board that never moves for one being played. */
+    maxAgeMs: process.argv.includes('--fresh') ? 0 : undefined,
   });
   const ids = Object.keys(built.scores);
   console.log(`${season} week ${week}: ${built.played} of ${built.games} games played`
     + (built.final ? ', final' : ', STILL BEING PLAYED'));
   console.log(`  ${ids.length} men with a row`);
+  if (built.awaiting_stats.length) {
+    console.log(`  waiting on stats for ${built.awaiting_stats.length} club`
+      + `${built.awaiting_stats.length === 1 ? '' : 's'} whose game is over: `
+      + built.awaiting_stats.join(', '));
+  }
   const top = ids.map((id) => [id, built.scores[id]])
     .sort((a, b) => b[1][0] - a[1][0]).slice(0, 6);
   console.log('\n  the six best half PPR days of the week:');

@@ -17,9 +17,38 @@
      ready to be reviewed. -->
 <meta name="robots" content="noindex, nofollow">
 <title>Run The Floor: NBA Draft Game | RunThe.GG</title>
-<meta name="description" content="Run The Floor: spin for a season and a club, draft a six man NBA rotation under a $126M cap, then play all 82 games and chase a ring.">
+<meta name="description" content="Run The Floor: spin for a season and a club, draft an NBA starting five under a $120M cap, then play all 82 games and chase a ring.">
 <meta name="theme-color" content="#0d1117">
 <link rel="canonical" href="https://runthe.gg/hoops/">
+<!-- THE SHARE CARD.
+     Every finished run offers a share ending in this page's URL, and the DAILY's whole
+     loop is that share: the mode exists so two people can compare the same five spins.
+     Without an og:image that unfurls as a bare line of text in iMessage, WhatsApp,
+     Discord and Slack, which is the single worst place for a game spread by sharing to
+     have a gap. The football game's own note here says the same thing; this page simply
+     had none of the block at all.
+
+     IT IS HERE WHILE THE PAGE IS STILL NOINDEXED, deliberately. A robots tag tells a
+     CRAWLER not to index; it does nothing to a chat app unfurling a link somebody was
+     handed, which is exactly how an unlaunched game reaches its first testers. The two
+     questions are unrelated and only one of them is about launching.
+
+     hoops/og.png is built by hoops/build/og.mjs from hoops/og-source.html. -->
+<meta property="og:title" content="Run The Floor: NBA Draft Game">
+<meta property="og:description" content="Run The Floor: spin for a season and a club, draft an NBA starting five under a $120M cap, then play all 82 games and chase a ring.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="RunThe.GG">
+<meta property="og:url" content="https://runthe.gg/hoops/">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://runthe.gg/hoops/og.png?v=1">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Run The Floor: draft an NBA starting five under a $120M cap and play all 82 games. The five roster spots shown as PG, SG, SF, PF and C.">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Run The Floor: Free NBA Roster Draft Game">
+<meta name="twitter:description" content="Spin for a season and a club, draft an NBA starting five under a $120M cap, then play all 82 games and chase a ring.">
+<meta name="twitter:image" content="https://runthe.gg/hoops/og.png?v=1">
+<meta name="twitter:image:alt" content="Run The Floor: draft an NBA starting five under a $120M cap and play all 82 games.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230d1117'/%3E%3Ctext x='16' y='24' font-size='20' text-anchor='middle'%3E%F0%9F%8F%80%3C/text%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -44,7 +73,32 @@
     --green:#22c55e; --red:#ef4444; --line:rgba(255,255,255,.09);
     --display:'Anton',Impact,'Arial Narrow',sans-serif;
     --body:'Archivo',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
-    --mono:ui-monospace,'SF Mono',Menlo,Consolas,monospace;
+    /* ── ALIGNED DIGITS ARE A FONT FEATURE, NOT A TYPEFACE ──────────────────
+     *
+     * This game was set in a code face. `--mono` was `ui-monospace` and it was
+     * reached for 39 times, which is MORE than the display face was used, and
+     * every single one of those was a NUMBER: a price, a record, a scoreline,
+     * a win share total, a streak. The Perfect Season, which this game is a
+     * reskin of, uses a monospace exactly ZERO times and sets the same figures
+     * in its own display and body faces.
+     *
+     * What every one of those rules actually wanted is for digits to line up
+     * in a column, and `font-variant-numeric: tabular-nums` does that in ANY
+     * face. Reaching for a typewriter to get a straight line buys a whole
+     * voice nobody asked for: a scoreboard set in a code face reads as a
+     * terminal, and this is a game about basketball.
+     *
+     * So there are two number faces and the split is SIZE, not meaning. The
+     * hero figures (the money, a record, a scoreline) take the display face,
+     * which is what football's `.num` does. Everything inline stays on the
+     * body face, because the display face is a single heavy weight and at the
+     * 9.5px a badge count is set in it is a smudge.
+     *
+     * It points AT `--body` rather than repeating its stack, because the two
+     * are one answer and a copy of a font stack is the thing that drifts the
+     * day somebody changes the body face and cannot work out why half the
+     * numbers on the page did not follow. What `--num` carries is the ROLE. */
+    --num:var(--body);
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
   html{background:var(--bg);-webkit-text-size-adjust:100%;text-size-adjust:100%;}
@@ -62,7 +116,7 @@
      chrome, so it sits flush against the top of the window rather than floating
      20px down it and then jumping up the moment you scroll. */
   .wrap{max-width:660px;margin:0 auto;padding:0 16px 64px;}
-  .mono{font-family:var(--mono);font-variant-numeric:tabular-nums;}
+  .num{font-family:var(--num);font-variant-numeric:tabular-nums;}
   .dim{color:var(--mut);}
 
 
@@ -82,6 +136,44 @@
   h2 .sub{font-family:var(--body);font-size:12px;letter-spacing:0;text-transform:none;
     color:var(--dim);font-weight:600;}
   h3{font-size:14px;margin:16px 0 4px;color:var(--ink);font-weight:800;}
+
+  /* ── THE FOLDED CARD ───────────────────────────────────────────────────
+   *
+   * A details wearing .card, so the front page reads as four cards of which
+   * one opens rather than as a card and a widget.
+   *
+   * THE SUMMARY HOLDS AN h2 AND THAT IS DELIBERATE. The heading is the same
+   * heading the other three cards carry, so it has to be the same element or
+   * it is a second copy of that rule waiting to drift. What it costs is one
+   * line: an h2 is display:flex and a block, and a summary lays its marker
+   * out beside its content, so the h2 has to be told to share the row.
+   *
+   * `list-style:none` AND the webkit marker rule, because Safari draws the
+   * triangle through the first and not the second.
+   *
+   * Shut, the card is the summary and nothing else, so its own bottom
+   * padding would be a strip of empty card under the heading. It comes back
+   * when the card opens. */
+  details.howto{padding:16px 16px 0;}
+  details.howto[open]{padding-bottom:16px;}
+  .howto>summary{list-style:none;cursor:pointer;display:flex;align-items:baseline;
+    gap:10px;padding:0 0 16px;-webkit-tap-highlight-color:transparent;}
+  .howto[open]>summary{padding-bottom:0;}
+  .howto>summary::-webkit-details-marker{display:none;}
+  .howto>summary h2{margin:0;flex:1 1 auto;}
+  .howto .ht-chev{flex:0 0 auto;width:8px;height:8px;align-self:center;
+    border-right:2px solid var(--mut);border-bottom:2px solid var(--mut);
+    transform:rotate(45deg) translate(-2px,-2px);transition:transform .2s ease;}
+  .howto[open] .ht-chev{transform:rotate(-135deg);}
+  /* The first heading inside sits straight under the summary, so it does not
+     want the 16px an h3 uses to separate itself from the paragraph above it. */
+  .howto>h3:first-of-type{margin-top:12px;}
+  /* The second half was its own card with its own h2. Folded together it is a
+     turn in one document, so it gets a rule across the card rather than a
+     heading that looks like the six under it. */
+  .howto .ht-turn{margin-top:22px;padding-top:16px;border-top:1px solid var(--line);
+    font-family:var(--display);font-weight:400;text-transform:uppercase;
+    letter-spacing:.02em;font-size:17px;}
   .card p.dim{font-size:14.5px;line-height:1.6;margin:0 0 4px;}
   .card p.dim b{color:var(--ink);}
   .card p.dim a{color:#5eead4;font-weight:700;text-decoration:none;}
@@ -109,7 +201,7 @@
     border:1px solid var(--line);border-radius:9px;padding:8px 10px;}
   .hud .label{font-size:9.5px;letter-spacing:.13em;text-transform:uppercase;
     color:var(--dim);font-weight:800;}
-  .hud .value{font-family:var(--mono);font-size:17px;font-weight:700;margin-top:1px;}
+  .hud .value{font-family:var(--num);font-variant-numeric:tabular-nums;font-size:17px;font-weight:700;margin-top:1px;}
   .hud .value.warn{color:var(--gold);} .hud .value.bad{color:var(--red);}
 
   /* the roster */
@@ -121,7 +213,7 @@
   .slot .pos{font-family:var(--display);font-size:15px;color:var(--orange);letter-spacing:.04em;}
   .slot .who{font-weight:700;font-size:14px;line-height:1.25;}
   .slot .who small{display:block;font-weight:600;color:var(--dim);font-size:11.5px;}
-  .slot .cost{font-family:var(--mono);font-size:13px;color:var(--mut);}
+  .slot .cost{font-family:var(--num);font-variant-numeric:tabular-nums;font-size:13px;color:var(--mut);}
 
   /* the board */
   .board{display:grid;gap:6px;margin:10px 0 0;}
@@ -131,7 +223,7 @@
   .pick:hover:not(:disabled){background:rgba(240,120,45,.13);border-color:var(--orange);}
   .pick small{display:block;font-weight:600;color:var(--dim);font-size:11.5px;
     margin-top:1px;letter-spacing:.01em;}
-  .pick .price{font-family:var(--mono);font-size:14px;font-weight:800;color:var(--gold);white-space:nowrap;}
+  .pick .price{font-family:var(--num);font-variant-numeric:tabular-nums;font-size:14px;font-weight:800;color:var(--gold);white-space:nowrap;}
   .pick:disabled{opacity:.4;}
   .pick:disabled .price{color:var(--red);}
 
@@ -140,7 +232,7 @@
     background:linear-gradient(90deg,rgba(240,120,45,.20),rgba(240,120,45,.04));
     border:1px solid rgba(240,120,45,.35);}
   .drawhead .club{font-family:var(--display);font-size:21px;letter-spacing:.02em;text-transform:uppercase;}
-  .drawhead .rec{font-family:var(--mono);font-size:12px;color:var(--mut);}
+  .drawhead .rec{font-family:var(--num);font-variant-numeric:tabular-nums;font-size:12px;color:var(--mut);}
   /* Real franchise history under the club the wheel landed on: when they
      started, what they had won BY THAT SEASON, and who they later became. */
   .clubnote{margin:6px 2px 0;font-size:12px;color:var(--dim);}
@@ -164,8 +256,8 @@
     background:linear-gradient(180deg,#fde68a,#d19410);color:#2a1b02;
     border:1px solid #f0c25a;box-shadow:0 1px 4px rgba(0,0,0,.45);
     max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-  /* Still a plate, just duller metal. A roster with six All-Stars must not read
-     like a roster with six MVPs. */
+  /* Still a plate, just duller metal. A roster of All-Stars must not read like
+     a roster of MVPs. */
   .awd.minor{background:linear-gradient(180deg,#e3c883,#a67c24);border-color:#c2a04a;
     box-shadow:0 1px 3px rgba(0,0,0,.4);}
   .awdmore{font-size:9.5px;font-weight:800;letter-spacing:.04em;color:#e0b64a;
@@ -176,7 +268,7 @@
   .fitrow{display:grid;grid-template-columns:76px 1fr 62px;gap:9px;align-items:center;
     margin-bottom:6px;font-size:12px;}
   .fitrow .nm{color:var(--mut);font-weight:700;}
-  .fitrow .val{font-family:var(--mono);text-align:right;font-size:11.5px;color:var(--dim);}
+  .fitrow .val{font-family:var(--num);font-variant-numeric:tabular-nums;text-align:right;font-size:11.5px;color:var(--dim);}
   .meter{height:7px;border-radius:4px;background:rgba(255,255,255,.07);position:relative;
     overflow:hidden;}
   .meter i{position:absolute;top:0;bottom:0;left:0;border-radius:4px;display:block;
@@ -200,13 +292,13 @@
   table.season td{padding:4px 6px;border-bottom:1px solid var(--line);}
   table.season td.w{color:var(--green);font-weight:800;}
   table.season td.l{color:var(--red);font-weight:800;}
-  table.season td.sc{font-family:var(--mono);text-align:right;white-space:nowrap;}
+  table.season td.sc{font-family:var(--num);font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap;}
   .scroll{max-height:280px;overflow-y:auto;overflow-x:auto;}
 
   .verdict{font-family:var(--display);font-size:clamp(24px,6.5vw,34px);text-transform:uppercase;
     letter-spacing:.02em;margin:0 0 4px;}
   .verdict.good{color:var(--gold);} .verdict.bad{color:var(--mut);}
-  .record{font-family:var(--mono);font-size:30px;font-weight:700;margin:0 0 10px;}
+  .record{font-family:var(--display);font-variant-numeric:tabular-nums;font-size:30px;font-weight:700;margin:0 0 10px;}
 
   .tags{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 0;}
   .tag{font-size:11.5px;font-weight:700;padding:4px 9px;border-radius:999px;
@@ -244,11 +336,11 @@
   .cap-head{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;}
   .cap-budget .lbl,.mstat .lbl{display:block;font-size:9.5px;letter-spacing:.14em;
     text-transform:uppercase;color:var(--dim);font-weight:800;}
-  .capamt{font-family:var(--mono);font-size:27px;font-weight:700;line-height:1.05;
+  .capamt{font-family:var(--display);font-size:27px;font-weight:700;line-height:1.05;
     font-variant-numeric:tabular-nums;display:block;transition:color .2s ease;}
   .capamt.warn{color:var(--gold);} .capamt.bad{color:var(--red);}
   .cap-meta{display:flex;gap:14px;text-align:right;}
-  .mstat b{font-family:var(--mono);font-size:15px;font-weight:700;display:block;}
+  .mstat b{font-family:var(--num);font-variant-numeric:tabular-nums;font-size:15px;font-weight:700;display:block;}
   .chemval.zero{color:var(--dim);} .chemval.up{color:var(--green);}
   .capbar{height:6px;border-radius:99px;background:rgba(255,255,255,.07);overflow:hidden;
     margin:9px 0 6px;}
@@ -265,7 +357,7 @@
      has been written because a node with no content still had a box. */
   #c-note:empty,#d-note:empty,#d-note2:empty{display:none;}
 
-  /* The lineup as six dots, so the HUD can say what you have without the
+  /* The lineup as one dot a slot, so the HUD can say what you have without the
      roster card being on screen. Filled dots carry the slot's first letter. */
   .dpips{display:flex;gap:5px;margin-top:9px;}
   .dpip{flex:1 1 0;height:26px;border-radius:7px;border:1px dashed var(--line);
@@ -289,17 +381,109 @@
      its right then hung off the screen: the price column, the re-spin button,
      the tabs. This one line is the difference. */
   .draftmain > *{min-width:0;}
-  /* On a phone the court follows the board. On a wide screen it becomes a rail
-     that stays put while the player list scrolls. */
-  @media(min-width:840px){
-    .draftmain{grid-template-columns:minmax(0,1fr) 316px;align-items:start;}
-    .dside{position:sticky;top:180px;}
+  /* ── THE DRAFT ON A WIDE SCREEN ─────────────────────────────────────────
+   *
+   * It is The Perfect Season's draft screen, in this sport, and that is a
+   * deliberate copy rather than a coincidence: the two games are the same
+   * skeleton and a player who knows one should not have to learn the other's
+   * shape. PICTURE LEFT, WHEEL RIGHT, board full width underneath.
+   *
+   * WHAT IT REPLACED WAS A 298px COLUMN ON A 1512px MONITOR. The page shipped
+   * at the 660px wrap every other screen uses, with the court taking a fixed
+   * 316px rail out of it, so the thing the whole screen is for (fourteen
+   * player tiles) was drawn narrower than it is on a phone, the position tabs
+   * overflowed and scrolled, and the sort row wrapped onto two lines. That is
+   * the football file's own "phone screenshot pasted into the middle of a
+   * desktop", with a rail taking half of what was left.
+   *
+   * NOTHING IS STICKY ANY MORE, and that is the one thing given up here. The
+   * court used to be a rail that held its place while the board scrolled,
+   * which is genuinely nice and is exactly what the football game refuses, in
+   * as many words, because a sticky block whose own height changes reshapes
+   * the page under the finger and that layout lost a day to it once. The
+   * board is three columns wide now, so it is about a third as tall and the
+   * court leaves the screen much later anyway.
+   *
+   * 920 IS FOOTBALL'S THRESHOLD and this file now uses it too. What it does
+   * NOT copy is the 1200 to 1259 fallback to one column: that exists because
+   * the ad rails appear at 1200 and take 200 a side, leaving 800, and this
+   * game carries no ad tag at all. See check-posture.mjs.
+   *
+   * EVERY RULE HERE IS INSIDE min-width:920px, so a phone renders exactly as
+   * it did. That is asserted rather than hoped: the mobile screenshots were
+   * compared byte for byte either side of this change. */
+  @media(min-width:920px){
+    /* :has, so only the draft gets the width. Every other screen in this game
+       is a column of cards and reads worse wide.
+
+       `.active`, NOT `.on`. The football game marks its live screen `.on` and
+       this one has always used `.active`, so the rule lifted across from there
+       matched nothing at all: no error, no warning, just a draft that stayed
+       660px wide on a 1512px monitor, which is indistinguishable from the bug
+       this block exists to fix. Caught by measuring the wrap rather than by
+       looking at the screen. */
+    .wrap:has(#s-draft.active){max-width:1040px;}
+    .draftmain{grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+      column-gap:24px;align-items:start;}
+    /* display:contents, so the four blocks inside .dpick become grid items of
+       .draftmain itself. Without it the board is trapped in one half and three
+       columns of tiles would be 170px each. */
+    .dpick{display:contents;}
+    .dside{grid-column:1;grid-row:1;}
+    .dtop{grid-column:2;grid-row:1;}
+    /* THE FLATTER COURT, which is the phone's rule arriving for the phone's
+       reason rather than for its width. 1/0.94 is nearly square, so across
+       half of 1040 it draws 492x462 against a wheel block of about 180 beside
+       it: a picture two and a half times the height of the thing it is
+       reference for, with the hole under the reels to prove it. At 1/0.72 the
+       two columns are within about 170px and the row reads as a row. */
+    .dside .court{aspect-ratio:1/0.72;}
+    .tabs,.opts{grid-column:1/-1;}
+    /* THE BOARD IS THREE ACROSS, which is what the extra width is for and what
+       football's `.opts` does at this width. */
+    .opts{grid-template-columns:repeat(3,minmax(0,1fr));}
+    .optgroup,.sortbar{grid-column:1/-1;}
+    /* The sort belongs to the board under it, so it sits at the board's right
+       edge rather than floating at the left of a 1040px row. Its own top
+       margin goes with it: on a phone it separates the sort from the tabs
+       above, and here it is stacked on `.opts`'s margin and the tab row's
+       padding into about 40px of nothing between two controls that belong
+       together. */
+    /* `.opts .sortbar` AND NOT `.sortbar`, because a media query adds no
+       specificity and this block sits about eleven hundred lines above the
+       base rule it is arguing with: at equal weight the later one wins and
+       the margin stayed. The sort bar is built into `#opts`, so the deeper
+       selector is true rather than a trick. Same cascade the football prompt
+       card's `.pwc-marks` lost. */
+    .opts .sortbar{justify-content:flex-end;margin-top:0;}
+    /* THE PIPS GO ENTIRELY, height and all. They exist to carry the lineup
+       once the court has scrolled out of reach, and in two columns the court
+       has its own half of the top row: all their reserved height did was leave
+       a band of nothing under the money bar. Reserving space for something
+       that cannot happen is a gap. Football hides them here for this reason. */
+    .dpips{display:none;}
   }
-  /* Shorter on a phone, because it is reference and the board is the decision. */
-  @media(max-width:839px){
-    .court{aspect-ratio:1/0.72;}
-    .spot{width:64px;}
-    .spot .disc{width:30px;height:30px;font-size:9px;}
+  /* Shorter on a phone, because it is reference and the board is the decision.
+     The ceiling is one pixel under the wide layout's floor, so there is no
+     width that gets neither rule.
+   *
+   * THIS BLOCK HAD NEVER ONCE APPLIED, and it was found by measuring the court
+   * across the breakpoint rather than by looking at it. A media query adds no
+   * specificity, and `.court` and `.spot` are both declared several hundred
+   * lines BELOW this, so at equal weight the later rule won every time: the
+   * draft court has always drawn at the base 1/0.94 (358x337 on a 390px
+   * phone against the 358x258 written here) with 74px spots. Nothing threw,
+   * nothing looked broken, and the file has said the opposite for as long as
+   * the rule has existed.
+   *
+   * SCOPED TO `.dside`, which raises it over the base rule and is also the
+   * honest reach: the sentence above is about the court you draft next to.
+   * The home hero and the results screen draw their own and keep 1/0.94,
+   * which is what they have always had. */
+  @media(max-width:919px){
+    .dside .court{aspect-ratio:1/0.72;}
+    .dside .spot{width:64px;}
+    .dside .spot .disc{width:30px;height:30px;font-size:9px;}
   }
   .reels{display:grid;grid-template-columns:92px minmax(0,1fr);gap:8px;}
   .reelbox{position:relative;height:104px;overflow:hidden;border-radius:13px;
@@ -312,7 +496,7 @@
   .reel-strip{position:absolute;left:0;right:0;top:0;z-index:1;will-change:transform;}
   .reel-i{height:34px;display:flex;align-items:center;justify-content:center;
     color:var(--ink);opacity:.5;padding:0 6px;text-align:center;}
-  .reelbox.season .reel-i{font-family:var(--mono);font-size:20px;font-weight:700;}
+  .reelbox.season .reel-i{font-family:var(--display);font-variant-numeric:tabular-nums;font-size:20px;font-weight:700;}
   .reelbox.club .reel-i{font-size:13.5px;font-weight:800;line-height:1.1;}
   .reel-i span{display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   .reel-win{position:absolute;left:5px;right:5px;top:50%;height:34px;margin-top:-17px;z-index:3;
@@ -334,7 +518,7 @@
   .ptab{flex:1;background:transparent;border:1px solid var(--cardb);color:var(--mut);
     font-size:12.5px;font-weight:800;padding:0 10px;height:36px;min-height:36px;border-radius:9px;}
   .ptab.on{background:var(--card);color:var(--ink);border-color:var(--line);}
-  .ptab span{font-family:var(--mono);font-weight:700;opacity:.75;}
+  .ptab span{font-family:var(--num);font-variant-numeric:tabular-nums;font-weight:700;opacity:.75;}
   .badgegrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(108px,1fr));gap:8px;
     max-height:44vh;overflow-y:auto;padding-right:2px;}
   .bdg{border:1px solid var(--cardb);border-radius:10px;padding:9px 9px 8px;background:#10151f;
@@ -348,7 +532,7 @@
   .bdg .bp{display:block;margin-top:6px;height:4px;border-radius:99px;
     background:rgba(255,255,255,.08);overflow:hidden;}
   .bdg .bp i{display:block;height:100%;border-radius:99px;background:var(--mut);}
-  .bdg .bnum{display:block;font-family:var(--mono);font-size:9.5px;color:var(--dim);margin-top:4px;}
+  .bdg .bnum{display:block;font-family:var(--num);font-variant-numeric:tabular-nums;font-size:9.5px;color:var(--dim);margin-top:4px;}
   /* Four metals, so a cabinet reads at a glance as mostly-bronze or
      mostly-gold rather than as a wall of identical squares. */
   .bdg.on.bronze{border-color:#a1662f;background:linear-gradient(180deg,rgba(161,102,47,.2),#10151f);}
@@ -368,7 +552,7 @@
     border-radius:10px;padding:9px 11px;background:#10151f;min-width:0;}
   .ern .em{flex:0 0 auto;width:26px;height:26px;border-radius:50%;
     display:flex;align-items:center;justify-content:center;
-    font-family:var(--mono);font-size:12px;font-weight:700;color:#0d1117;}
+    font-family:var(--num);font-variant-numeric:tabular-nums;font-size:12px;font-weight:700;color:#0d1117;}
   .ern .et{min-width:0;}
   .ern .et b{display:block;font-size:13.5px;font-weight:800;line-height:1.3;color:var(--ink);}
   .ern .et span{display:block;font-size:11.5px;line-height:1.35;color:var(--dim);margin-top:2px;}
@@ -415,14 +599,14 @@
   .lbrow{display:flex;align-items:center;gap:10px;padding:9px 2px;
     border-bottom:1px solid var(--cardb);min-width:0;}
   .lbrow:last-child{border-bottom:0;}
-  .lbrow .pl{flex:0 0 30px;font-family:var(--mono);font-size:13px;color:var(--dim);
+  .lbrow .pl{flex:0 0 30px;font-family:var(--num);font-variant-numeric:tabular-nums;font-size:13px;color:var(--dim);
     text-align:right;}
   .lbrow .who{flex:1;min-width:0;}
   .lbrow .who b{display:block;font-size:13.5px;font-weight:800;
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .lbrow .who span{display:block;font-size:11px;color:var(--dim);margin-top:2px;
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-  .lbrow .val{flex:0 0 auto;font-family:var(--mono);font-size:15px;font-weight:700;
+  .lbrow .val{flex:0 0 auto;font-family:var(--num);font-variant-numeric:tabular-nums;font-size:15px;font-weight:700;
     text-align:right;}
   .lbrow .val em{display:block;font-family:var(--body);font-style:normal;
     font-size:10px;letter-spacing:.07em;text-transform:uppercase;color:var(--dim);
@@ -442,7 +626,7 @@
     padding:11px 13px;transition:background .12s ease;}
   .lbstand[hidden]{display:none;}
   .lbstand:hover{background:#1a2333;}
-  .lbstand .lp{flex:0 0 auto;font-family:var(--mono);font-size:20px;font-weight:700;
+  .lbstand .lp{flex:0 0 auto;font-family:var(--display);font-variant-numeric:tabular-nums;font-size:20px;font-weight:700;
     color:var(--gold);}
   .lbstand .lt{flex:1;min-width:0;}
   .lbstand .lt b{display:block;font-size:12.5px;font-weight:800;}
@@ -523,12 +707,12 @@
   /* ── AND SO DOES THE PAGE AROUND IT ────────────────────────────────────
      Once a club has landed, the chrome you draft inside takes its colours: the
      cap panel's edge and the wash behind it, the money bar, and the floor those
-     six men stand on. body.clubbed is set when the reels land and cleared when
+     the roster stands on. body.clubbed is set when the reels land and cleared when
      the next spin starts, so the page and the wheel are never claiming
      different clubs.
 
      WHAT DELIBERATELY DOES NOT CHANGE. The position pills, the discs on the
-     court and the slot pips keep their own six colours everywhere, because a
+     court and the slot pips keep their own position colours everywhere, because a
      position colour means one thing across the whole game and a club cannot be
      allowed to repaint it. The cap bar's gold and red warning states are
      untouched for the same reason: those two colours are a message about money,
@@ -591,8 +775,8 @@
   /* ── the half court ─────────────────────────────────────────────────────
      The football games draw a field with the roster standing on it. This is
      the same idea in the sport it belongs to: five spots where those players
-     actually stand, plus the sixth man on the bench outside the sideline,
-     because he is not on the floor and the picture should not pretend he is. */
+     actually stand, and the roster is exactly those five, so the picture is
+     the team rather than the team and a note about the bench. */
   /* ── IT IS A HARDWOOD FLOOR, AND EVERY LAYER IS DOING A JOB ─────────────
    *
    * It was a flat brown radial gradient with four white outlines on it, which
@@ -676,7 +860,7 @@
     margin-left:-6.5%;border-radius:1px;background:rgba(255,255,255,.8);}
   /* THE PAINT IS PAINTED. An old school lane is a solid block of colour and
      it is the second thing anybody recognises about a court after the wood.
-     Neutral until a club is drawn, because the six position colours on the
+     Neutral until a club is drawn, because the position colours on the
      discs are the only palette this screen owns by default. */
   .court .key{left:34%;right:34%;top:0;height:38%;border-top:0;
     background:linear-gradient(180deg,rgba(138,52,20,.62),rgba(112,42,16,.5));}
@@ -688,8 +872,6 @@
   .court .side{position:absolute;left:0;right:0;bottom:20%;height:2px;
     background:linear-gradient(90deg,rgba(255,255,255,.18),rgba(255,255,255,.62) 18%,
       rgba(255,255,255,.62) 82%,rgba(255,255,255,.18));}
-  .court .benchlbl{position:absolute;left:8px;bottom:5px;font-size:8.5px;letter-spacing:.16em;
-    text-transform:uppercase;color:var(--dim);font-weight:800;}
   .spot{position:absolute;transform:translate(-50%,-50%);width:74px;text-align:center;
     transition:opacity .3s ease;}
   .spot .disc{width:34px;height:34px;margin:0 auto;border-radius:50%;
@@ -721,7 +903,9 @@
   .tab{flex:0 0 auto;padding:9px 13px;border-radius:9px;border:1.5px solid var(--line);
     background:rgba(255,255,255,.03);font-family:var(--body);font-size:13px;font-weight:700;
     color:var(--mut);cursor:pointer;white-space:nowrap;transition:all .12s ease;min-height:38px;}
-  .tab .n{font-size:10.5px;opacity:.7;margin-left:4px;}
+  /* Tabular here is not about a column. The count falls as you sign, so a 9
+     narrower than a 2 moves every tab to the right of it. */
+  .tab .n{font-size:10.5px;opacity:.7;margin-left:4px;font-variant-numeric:tabular-nums;}
   .tab.on{color:#fff;border-color:transparent;background:linear-gradient(135deg,#3f4c60,rgba(0,0,0,.5));}
   .tab:active{transform:scale(.97);}
   .tab.full{color:var(--dim);border-style:dashed;}
@@ -735,7 +919,7 @@
      skipped at any point without changing a single scoreline. */
   .scoreboard{display:flex;align-items:baseline;justify-content:space-between;gap:10px;
     margin:0 0 10px;}
-  .scoreboard .rec{font-family:var(--mono);font-size:34px;font-weight:700;line-height:1;
+  .scoreboard .rec{font-family:var(--display);font-size:34px;font-weight:700;line-height:1;
     font-variant-numeric:tabular-nums;}
   .scoreboard .streak{font-size:12px;font-weight:800;letter-spacing:.05em;color:var(--dim);}
   .scoreboard .streak.hot{color:var(--green);} .scoreboard .streak.cold{color:var(--red);}
@@ -758,7 +942,7 @@
     padding:8px 10px;}
   .simbar .lbl{font-size:9.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--dim);
     font-weight:800;display:block;}
-  .simbar b{font-family:var(--mono);font-size:16px;font-weight:700;}
+  .simbar b{font-family:var(--num);font-variant-numeric:tabular-nums;font-size:16px;font-weight:700;}
 
   /* The bracket, one row a round, each revealed as it is played. */
   .bracket{display:grid;gap:6px;margin:4px 0 0;}
@@ -773,7 +957,7 @@
   .brow .res{font-size:11px;font-weight:800;letter-spacing:.08em;padding:3px 8px;border-radius:5px;}
   .brow .res.w{color:var(--green);background:rgba(34,197,94,.12);}
   .brow .res.l{color:var(--red);background:rgba(239,68,68,.12);}
-  .brow .sc{font-family:var(--mono);font-size:13px;font-weight:700;}
+  .brow .sc{font-family:var(--num);font-variant-numeric:tabular-nums;font-size:13px;font-weight:700;}
   .brow.title{border-color:var(--gold);background:rgba(242,193,78,.08);}
 
   /* ══ THE PLAYOFF BRACKET ═══════════════════════════════════════════════
@@ -822,7 +1006,7 @@
   .brk-t .sd{flex:0 0 14px;text-align:center;font-size:9.5px;font-weight:800;color:var(--dim);}
   .brk-t .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
     font-variant-numeric:tabular-nums;}
-  .brk-t .sc{flex:0 0 auto;font-family:var(--mono);font-size:11px;font-weight:700;
+  .brk-t .sc{flex:0 0 auto;font-family:var(--num);font-variant-numeric:tabular-nums;font-size:11px;font-weight:700;
     color:var(--dim);}
   .brk-t.me .nm{color:var(--gold);font-weight:800;}
   .brk-t.won{color:var(--ink);background:rgba(34,197,94,.07);}
@@ -930,7 +1114,7 @@
   .lvv-score{font-size:26px;font-weight:700;margin:4px 0 2px;}
   .lvv-line{font-size:13px;color:var(--mut);margin:0 0 12px;}
 
-  /* The six, with their points climbing. This is the half of a live game a
+  /* The starters, with their points climbing. This is the half of a live game a
      resolved one cannot show at all: whose night it is, while it is his. */
   .lvmen{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;}
   .lvman{padding:8px 6px;border-radius:8px;border:1px solid var(--line);
@@ -948,11 +1132,11 @@
   .lvlog{display:grid;gap:4px;max-height:40vh;overflow:auto;}
   .lvrow{display:grid;grid-template-columns:54px 1fr auto;gap:8px;align-items:baseline;
     padding:5px 7px;border-radius:6px;font-size:12px;background:rgba(255,255,255,.02);}
-  .lvrow .lvt{font-family:var(--mono);font-size:10px;color:var(--dim);}
+  .lvrow .lvt{font-family:var(--num);font-variant-numeric:tabular-nums;font-size:10px;color:var(--dim);}
   .lvrow .lvw{color:var(--mut);min-width:0;overflow:hidden;text-overflow:ellipsis;
     white-space:nowrap;}
   .lvrow .lvw b{color:var(--ink);font-weight:700;}
-  .lvrow .lvs{font-family:var(--mono);font-size:11px;font-weight:700;color:var(--dim);}
+  .lvrow .lvs{font-family:var(--num);font-variant-numeric:tabular-nums;font-size:11px;font-weight:700;color:var(--dim);}
   .lvrow.mine{background:rgba(242,193,78,.07);}
   .lvrow.call{background:rgba(240,120,45,.12);}
   .lvrow.call .lvw b{color:var(--orange);}
@@ -1030,7 +1214,7 @@
     display:flex;flex-direction:column;align-items:center;justify-content:center;
     gap:1px;background:#141a26;pointer-events:none;}
   .modedoor .md-streak[hidden]{display:none;}
-  .modedoor .md-streak b{font-family:var(--mono);font-size:19px;color:#f2c14e;
+  .modedoor .md-streak b{font-family:var(--num);font-variant-numeric:tabular-nums;font-size:19px;color:#f2c14e;
     line-height:1;}
   .modedoor .md-streak span{font-size:9px;letter-spacing:.09em;text-transform:uppercase;
     color:var(--dim);}
@@ -1057,15 +1241,15 @@
   .clubchip .cc-city{display:block;font-size:10.5px;color:var(--dim);margin-top:2px;
     padding-left:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .clubchip .cc-meta{display:block;font-size:10px;color:var(--mut);margin-top:5px;
-    padding-left:6px;font-family:var(--mono);}
+    padding-left:6px;font-family:var(--num);font-variant-numeric:tabular-nums;}
   .clubchip .cc-rings{color:var(--gold);}
   .clubchip:hover{border-color:var(--cc-accent,#3d4a60);}
 
   /* ══ ONE GAME ══════════════════════════════════════════════════════════
-     A box score is a TABLE and wants to read as one: figures in a mono face,
-     right aligned, on a tight rhythm, with the name the only thing in the
-     body face. Anything prettier stops being scannable, which is the whole
-     job of a box score. */
+     A box score is a TABLE and wants to read as one: tabular figures, right
+     aligned, on a tight rhythm, with the name the only thing set normally.
+     Anything prettier stops being scannable, which is the whole job of a box
+     score. */
   .gs-head{margin:0 0 12px;}
   .gs-eyebrow{font-size:10px;letter-spacing:.15em;text-transform:uppercase;
     color:var(--dim);font-weight:800;margin-bottom:4px;}
@@ -1073,12 +1257,12 @@
   .gs-res{font-family:var(--display);font-size:15px;letter-spacing:.06em;
     text-transform:uppercase;}
   .gs-res.w{color:var(--green);} .gs-res.l{color:var(--red);}
-  .gs-score{font-family:var(--mono);font-size:27px;font-weight:700;
+  .gs-score{font-family:var(--display);font-size:27px;font-weight:700;
     font-variant-numeric:tabular-nums;color:var(--ink);}
   .gs-opp{font-size:12.5px;color:var(--mut);margin:5px 0 0;}
 
   .qtr{width:100%;border-collapse:collapse;margin:0 0 14px;
-    font-family:var(--mono);font-size:12.5px;font-variant-numeric:tabular-nums;}
+    font-family:var(--num);font-size:12.5px;font-variant-numeric:tabular-nums;}
   .qtr th{font-family:var(--body);font-size:9.5px;letter-spacing:.1em;
     text-transform:uppercase;color:var(--dim);font-weight:800;text-align:right;
     padding:0 0 5px;}
@@ -1089,7 +1273,7 @@
   .qtr td.tot{color:var(--ink);font-weight:700;}
   .qtr tr.you td{color:var(--ink);}
 
-  .boxs{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:12px;
+  .boxs{width:100%;border-collapse:collapse;font-family:var(--num);font-size:12px;
     font-variant-numeric:tabular-nums;}
   .boxs th{font-family:var(--body);font-size:9px;letter-spacing:.08em;
     text-transform:uppercase;color:var(--dim);font-weight:800;text-align:right;
@@ -1118,7 +1302,7 @@
     color:var(--ink);font-family:var(--body);}
   .bestnight[hidden]{display:none;}
   .bestnight:hover{border-color:rgba(240,120,45,.7);}
-  .bestnight .bn-p{font-family:var(--mono);font-size:25px;font-weight:700;
+  .bestnight .bn-p{font-family:var(--display);font-size:25px;font-weight:700;
     line-height:1;color:var(--orange);flex:0 0 auto;font-variant-numeric:tabular-nums;}
   .bestnight .bn-t{flex:1;min-width:0;}
   .bestnight .bn-w{display:block;font-size:9.5px;letter-spacing:.13em;
@@ -1150,7 +1334,7 @@
     font-weight:800;color:var(--dim);min-width:46px;}
   .pogame .pg-r{font-weight:800;min-width:14px;}
   .pogame .pg-r.w{color:var(--green);} .pogame .pg-r.l{color:var(--red);}
-  .pogame .pg-s{font-family:var(--mono);font-variant-numeric:tabular-nums;
+  .pogame .pg-s{font-family:var(--num);font-variant-numeric:tabular-nums;
     margin-left:auto;color:var(--ink);}
   .pogame .pg-s:after{content:'\203A';margin-left:7px;color:var(--dim);}
 
@@ -1221,7 +1405,7 @@
     padding:9px 10px;text-align:center;}
   .pstat .lbl{display:block;font-size:9px;letter-spacing:.11em;text-transform:uppercase;
     color:var(--dim);font-weight:800;}
-  .pstat b{font-family:var(--mono);font-size:18px;font-weight:700;}
+  .pstat b{font-family:var(--num);font-variant-numeric:tabular-nums;font-size:18px;font-weight:700;}
   .plist{list-style:none;padding:0;margin:10px 0 0;font-size:13.5px;}
   .plist li{display:flex;justify-content:space-between;gap:12px;padding:7px 0;
     border-top:1px solid var(--line);color:var(--mut);}
@@ -1268,13 +1452,13 @@
   .leaguestats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:10px 0 0;}
   .lstat{background:rgba(255,255,255,.035);border:1px solid var(--line);border-radius:10px;
     padding:11px 9px;text-align:center;}
-  .lstat b{display:block;font-family:var(--mono);font-size:19px;font-weight:700;line-height:1.1;}
+  .lstat b{display:block;font-family:var(--num);font-variant-numeric:tabular-nums;font-size:19px;font-weight:700;line-height:1.1;}
   .lstat span{display:block;font-size:9.5px;letter-spacing:.11em;text-transform:uppercase;
     color:var(--dim);font-weight:800;margin-top:3px;}
 
   /* The career strip, which only exists once there is a career. */
   .cstrip{display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
-  .cstrip .big-n{font-family:var(--mono);font-size:26px;font-weight:700;line-height:1;}
+  .cstrip .big-n{font-family:var(--display);font-variant-numeric:tabular-nums;font-size:26px;font-weight:700;line-height:1;}
   .cstrip .lab{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);
     font-weight:800;}
   .lastrun{font-size:13px;color:var(--mut);margin:10px 0 0;line-height:1.5;}
@@ -1284,18 +1468,22 @@
   /* ══ POSITION COLOURS ══════════════════════════════════════════════════
      The football game paints every position its own colour and puts it on a
      pill, which is the one bit of that UI worth stealing wholesale: a board of
-     six names is scannable by shape and colour before a word of it is read.
+     a column of names is scannable by shape and colour before a word of it is read.
      Ported here with the same rule it uses, that a man who plays two spots gets
      TWO pills in their own colours rather than one pill reading "PG/SG" painted
      whichever colour came first.
 
      Backcourt cool, frontcourt warm, so the two halves of a lineup separate at a
-     glance even for somebody who cannot name the five positions. The bench spot
-     is purple and deliberately outside that scheme, because it is a place on the
-     roster rather than a position anybody plays. */
+     glance even for somebody who cannot name the five positions.
+
+     THE PURPLE IS GONE WITH THE BENCH SPOT. It was deliberately outside the
+     scheme, because a sixth man slot was a place on the roster rather than a
+     position anybody plays, and a starting five has no such place. What is
+     left is five positions and the three loose eligibility codes (G, F, FC)
+     that a data row can carry. */
   :root{
     --pg:#3b82f6; --sg:#06b6d4; --sf:#22c55e; --pf:#f59e0b; --c:#ef4444;
-    --sixth:#a855f7; --g:#6366f1; --f:#84cc16;
+    --g:#6366f1; --f:#84cc16;
   }
   .poss{display:flex;align-items:center;gap:3px;flex:0 0 auto;flex-wrap:wrap;}
   .pos{flex:0 0 auto;min-width:30px;text-align:center;padding:3px 5px;border-radius:6px;
@@ -1307,7 +1495,7 @@
   /* ══ THE PLAYER BOARD ══════════════════════════════════════════════════
      Rebuilt for a phone first. The old row put the name, four stats, the badges
      and the price on one line, which on a 390px screen wrapped into a paragraph
-     and made six of them an undifferentiated wall. */
+     and made a column of them an undifferentiated wall. */
   .opts{display:grid;gap:9px;margin-top:10px;}
   .ptile{display:grid;grid-template-columns:1fr auto;gap:10px 12px;align-items:start;
     width:100%;text-align:left;padding:12px 13px;border-radius:12px;
@@ -1328,14 +1516,30 @@
      sentence: the tile is a button and a button that argues with you is slow. */
   .ptile .chemline{grid-column:1/-1;display:flex;align-items:baseline;gap:6px;
     margin-top:-3px;min-width:0;}
-  .ptile .chemline b{font-family:var(--mono);font-size:12px;font-weight:700;color:#4ade80;
+  .ptile .chemline b{font-family:var(--num);font-variant-numeric:tabular-nums;font-size:12px;font-weight:700;color:#4ade80;
     flex:0 0 auto;}
   .ptile .chemline i{font-style:normal;font-size:11.5px;color:#86efac;opacity:.85;
     overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 
+  /* WHAT THIS SIGNING LEAVES THE LAST SLOT. Amber rather than red: it is a
+     consequence worth knowing and not a refusal, and the tile stays fully
+     pressable, because spending the cap is the good way to draft and this
+     line exists so the cost of it is visible rather than to talk anybody out
+     of it. It spans the row the way chemline does, so the grid's other two
+     columns keep their widths whether or not it is there.
+     TABULAR, because the figure changes per tile and a column of prices that
+     shifted under the eye would be the one thing this line adds noise with. */
+  .ptile .tight{grid-column:1/-1;margin-top:-2px;font-size:11.5px;
+    font-family:var(--num);font-variant-numeric:tabular-nums;
+    color:#fbbf24;opacity:.9;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  /* Said once, above the board, when it is true of every man on it. */
+  .opts .tightall{grid-column:1/-1;margin:0 0 2px;font-size:12px;
+    color:#fbbf24;opacity:.9;}
+
   /* The price block, and the thing that was missing: what that price BUYS. */
   .ptile .money{text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:3px;}
-  .ptile .price{font-family:var(--mono);font-size:17px;font-weight:700;line-height:1;
+  .ptile .price{font-family:var(--num);font-size:17px;font-weight:700;line-height:1;
     font-variant-numeric:tabular-nums;}
   .ptile .price.no{color:var(--red);}
   .deal{font-size:9.5px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;
@@ -1347,7 +1551,7 @@
   /* The stat line as labelled figures rather than a run-on sentence. */
   .ptile .stats{grid-column:1/-1;display:flex;gap:12px;flex-wrap:wrap;margin-top:2px;}
   .ptile .st{display:flex;align-items:baseline;gap:3px;}
-  .ptile .st b{font-family:var(--mono);font-size:13.5px;font-weight:700;}
+  .ptile .st b{font-family:var(--num);font-variant-numeric:tabular-nums;font-size:13.5px;font-weight:700;}
   .ptile .st i{font-style:normal;font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;
     color:var(--dim);font-weight:700;}
   .ptile .st.key b{color:var(--gold);}
@@ -1412,7 +1616,7 @@
      winning. It is the opposite: a draft that finishes $40M under the cap wins
      about thirteen games. What matters is what is left PER SLOT, so that is
      what the HUD leads with now. */
-  .perslot{font-family:var(--mono);font-size:12.5px;color:var(--mut);
+  .perslot{font-family:var(--num);font-size:12.5px;color:var(--mut);
     font-variant-numeric:tabular-nums;}
   .perslot b{color:var(--ink);font-weight:700;}
   #c-note.warn{color:var(--gold);}
@@ -1445,7 +1649,7 @@
      to keep only its arcs and answer "who is THIS man tied to".
 
      It replaces a bullet list. The list said the same facts and none of the
-     shape: six players with one dense cluster and one loner is a picture, and
+     shape: a roster with one dense cluster and one loner is a picture, and
      it was five lines of prose. */
   .rail{position:relative;margin:10px 0 0;transition:height .28s ease;}
   .rail.off{height:0;margin:0;overflow:hidden;opacity:0;}
@@ -1492,7 +1696,7 @@
     grid-template-columns:auto 1fr auto;gap:10px;align-items:center;min-height:44px;}
   .month > summary::-webkit-details-marker{display:none;}
   .month .mn{font-size:13px;font-weight:800;}
-  .month .mrec{font-family:var(--mono);font-size:13px;font-weight:700;}
+  .month .mrec{font-family:var(--num);font-variant-numeric:tabular-nums;font-size:13px;font-weight:700;}
   .month .mbar{display:flex;gap:2px;}
   .month .mbar i{width:5px;height:14px;border-radius:1px;background:#7f1d1d;}
   .month .mbar i.w{background:var(--green);}
@@ -1543,7 +1747,7 @@
     font-size:12px;font-weight:700;padding:0 11px;height:34px;min-height:34px;border-radius:8px;}
   .appbar button.link:hover{color:var(--ink);}
   /* The state chip: what the top bar can say that the wordmark cannot. */
-  .appbar .state{font-family:var(--mono);font-size:12px;font-weight:700;color:var(--gold);
+  .appbar .state{font-family:var(--num);font-variant-numeric:tabular-nums;font-size:12px;font-weight:700;color:var(--gold);
     padding:0 9px;height:34px;display:flex;align-items:center;border-radius:8px;
     background:rgba(242,193,78,.1);white-space:nowrap;}
   /* display:flex ON A CLASS BEATS THE BROWSER'S OWN [hidden]{display:none}, which
@@ -1651,12 +1855,11 @@
       <div class="bb"></div>
       <div class="rim"></div>
       <div class="side"></div>
-      <div class="benchlbl">Bench</div>
     </div>
   </div>
   <div class="eyebrow">RunThe.GG</div>
   <h1>Run The <span>Floor</span></h1>
-  <p>Spin for a season and a club. Draft six. Play 82 and chase a ring.</p>
+  <p>Spin for a season and a club. Draft a starting five. Play 82 and chase a ring.</p>
 </header>
 
 <!-- ── home ─────────────────────────────────────────────────────────────── -->
@@ -1688,7 +1891,7 @@
 
   <!-- TODAY'S RUN, AND IT SITS ABOVE THE OTHER TWO BECAUSE IT EXPIRES.
        One Franchise and Decades are there every day and are chosen by mood.
-       This one is the same six spins for everybody and it is gone at
+       This one is the same spins for everybody and it is gone at
        midnight, so it is the only door on this page with a reason to be
        taken NOW, and the only one that gives two people something to compare.
        Its own class rather than .modedoor: it carries a result once it has
@@ -1696,7 +1899,7 @@
   <div class="modedoor daily" id="b-daily">
     <button class="md-main" id="b-daily-go">
       <span class="md-name" id="dl-name">Today's run</span>
-      <span class="md-sub" id="dl-sub">The same six spins for everybody today.</span>
+      <span class="md-sub" id="dl-sub">The same spins for everybody today.</span>
     </button>
     <span class="md-streak" id="dl-streak" hidden></span>
   </div>
@@ -1738,7 +1941,7 @@
   <div class="modedoor" id="b-decade">
     <button class="md-main" id="b-decade-go">
       <span class="md-name" id="dc-name">Decades</span>
-      <span class="md-sub" id="dc-sub">One decade, the whole league. Six men out of one era.</span>
+      <span class="md-sub" id="dc-sub">One decade, the whole league. A starting five out of one era.</span>
     </button>
     <button class="md-pick" id="b-decade-pick" hidden
       aria-label="Switch decade"><span class="md-chev" aria-hidden="true"></span></button>
@@ -1747,7 +1950,7 @@
   <!-- WHAT YOU ARE DRAFTING FROM. Filled from the data once it loads, so the
        numbers are the file's rather than a claim typed into the markup. -->
   <div class="card">
-    <h2>The league <span class="sub" id="home-era">1974 to 2025</span></h2>
+    <h2>The league <span class="sub" id="home-era">1974 to 2026</span></h2>
     <div class="leaguestats">
       <div class="lstat"><b id="ls-players">-</b><span>Player-seasons</span></div>
       <div class="lstat"><b id="ls-clubs">-</b><span>Club seasons</span></div>
@@ -1774,13 +1977,35 @@
     </div>
   </div>
 
-  <div class="card">
-    <h2>How a run goes <span class="sub">six spins, one cap</span></h2>
+  <!-- ONE FOLDED CARD, AND IT WAS FIFTY-FIVE PER CENT OF THE SCREEN.
+       "How a run goes" and "Why five stars lose" were two open cards at the
+       bottom of the front page, worth 1,682px of a 3,082px page at 390 and
+       1,846 of 3,236 at 360: more than half the home screen, every visit, for
+       the whole life of the reader's account. They are one subject (how this
+       game works) and they are reference, so they are one card now, headed
+       How to play, and shut.
+
+       FOLDED IS NOT HIDDEN, which is the arcade's own note and is why the
+       comment that used to sit over the second card still holds: the prose
+       ships in the HTML either way, a crawler reads a closed details at full
+       weight, and the part a basketball fan would want to argue with is still
+       on the page the model runs on. What changed is that somebody who came
+       to press Start no longer scrolls past an essay to reach the bottom of
+       the screen.
+
+       The summary is the other cards' own h2, because this is one more card
+       on a page of cards and the only thing different about it is that it
+       opens. -->
+  <details class="card howto" id="home-howto">
+    <summary><h2>How to play <span class="sub">five spins, one cap</span></h2>
+      <span class="ht-chev" aria-hidden="true"></span></summary>
+
+    <h3>How a run goes</h3>
     <p class="dim" style="font-size:14px;margin:0 0 10px">
       The wheel gives you a club and a season. You sign one player off that roster, and
-      you do it six times to fill a point guard, a shooting guard, a small forward, a
-      power forward, a centre and a sixth man. Every signing comes out of a
-      <b style="color:var(--ink)">$126M</b> cap, and the cap is the whole game: the best
+      you do it five times to fill a point guard, a shooting guard, a small forward, a
+      power forward and a centre. Every signing comes out of a
+      <b style="color:var(--ink)">$120M</b> cap, and the cap is the whole game: the best
       man on every board runs to about $300M, so it cannot be done.
     </p>
     <p class="dim" style="font-size:14px;margin:0 0 4px">
@@ -1790,23 +2015,15 @@
       share a club, a college or a draft class build chemistry on top of that. Then you
       play all 82 against real teams out of the same data.
     </p>
-  </div>
 
-  <!-- REAL CONTENT, IN THE MARKUP, NOT BEHIND A START BUTTON.
-       A game page whose every word arrives after a click is a page a crawler and
-       a reviewer both read as empty. This is also the part a basketball fan
-       would actually want to argue with, which is the better reason to write it:
-       it is the thinking behind the model, in plain words, on the page the model
-       runs on. -->
-  <div class="card">
-    <h2>Why six stars lose <span class="sub">the thinking behind the game</span></h2>
+    <h3 class="ht-turn">Why five stars lose</h3>
 
     <h3>The ball only bounces once</h3>
     <p class="dim">
-      An NBA team takes about 88 shots a night, and a starting five plus a sixth
-      man accounts for roughly 72 of them. Every player here carries the shots he
-      actually took. Draft six men who each took twenty a night on their own team
-      and you have a roster asking for 120 shots that do not exist. Jordan,
+      An NBA team takes about 88 shots a night, and a starting five accounts for
+      roughly 66 of them. Every player here carries the shots he
+      actually took. Draft five men who each took twenty a night on their own team
+      and you have a roster asking for 100 shots that do not exist. Jordan,
       Harden, Bryant, Malone and O'Neal is the most talented lineup you can
       assemble in this game and one of the worst basketball teams in it.
     </p>
@@ -1832,22 +2049,22 @@
 
     <h3>Then it tells you what you built</h3>
     <p class="dim">
-      When the sixth man signs, the game names the system your roster plays:
+      When the fifth man signs, the game names the system your roster plays:
       Showtime, the Triangle, Grit and Grind, Pick and Roll, Twin Towers,
       Moreyball, Point Centre and the rest. They are checked against real
       lineups, so the 1996 Bulls come back running the Triangle and the 1989
       Pistons come back Grit and Grind. Get it wrong and it will tell you that
-      too: six volume scorers are not a system, they are Too Many Mouths.
+      too: five volume scorers are not a system, they are Too Many Mouths.
       <a href="/hoops/how-to-play.html">The full rules are here.</a>
     </p>
-  </div>
+  </details>
 </div>
 
 <!-- ── draft ────────────────────────────────────────────────────────────── -->
 <div class="screen" id="s-draft">
   <!-- THE PINNED HUD. Budget on the left as the hero, slot count and chemistry
        on the right as two matched tiles, a bar under all three, and the lineup
-       as six pips so the roster is legible without the court being on screen. -->
+       as pips so the roster is legible without the court being on screen. -->
   <div class="capwrap">
     <div class="cap-head">
       <div class="cap-budget">
@@ -1855,7 +2072,7 @@
         <span class="capamt" id="c-amt">$138.0M</span>
       </div>
       <div class="cap-meta">
-        <div class="mstat"><span class="lbl">Slot</span><b id="d-count">1 of 6</b></div>
+        <div class="mstat"><span class="lbl">Slot</span><b id="d-count">1 of 5</b></div>
         <div class="mstat"><span class="lbl">Chemistry</span><b class="chemval zero" id="c-chem">None</b></div>
       </div>
     </div>
@@ -1873,22 +2090,31 @@
        nothing. -->
   <div class="draftmain">
     <div class="dpick">
-      <div class="reels">
-        <div class="reelbox season waiting" id="box-s" aria-label="Season">
-          <div class="reel-strip" id="reel-s"></div>
-          <div class="reel-win"></div>
+      <!-- THE WHEEL AND WHAT IT SAYS, as one block, because on a wide screen
+           it is one COLUMN: the court takes the other half of the top row and
+           the board runs full width underneath. That is the football game's
+           `.dcol`, and it is a wrapper rather than four grid placements
+           because two of these four are empty most of the draft and an empty
+           grid item still costs its row gap. On a phone it is a plain block
+           and changes nothing. -->
+      <div class="dtop">
+        <div class="reels">
+          <div class="reelbox season waiting" id="box-s" aria-label="Season">
+            <div class="reel-strip" id="reel-s"></div>
+            <div class="reel-win"></div>
+          </div>
+          <div class="reelbox club waiting" id="box-c" aria-label="Club">
+            <div class="reel-strip" id="reel-c"></div>
+            <div class="reel-win"></div>
+          </div>
         </div>
-        <div class="reelbox club waiting" id="box-c" aria-label="Club">
-          <div class="reel-strip" id="reel-c"></div>
-          <div class="reel-win"></div>
+        <p class="drawnote" id="d-note2"></p>
+        <div class="btnrow" style="margin-top:10px">
+          <button id="b-spin" style="flex:1">Spin</button>
+          <button class="ghost" id="b-respin">Re-spin</button>
         </div>
+        <p class="drawnote" id="d-note"></p>
       </div>
-      <p class="drawnote" id="d-note2"></p>
-      <div class="btnrow" style="margin-top:10px">
-        <button id="b-spin" style="flex:1">Spin</button>
-        <button class="ghost" id="b-respin">Re-spin</button>
-      </div>
-      <p class="drawnote" id="d-note"></p>
 
       <div class="tabs" id="tabs" role="tablist"></div>
       <div class="opts" id="opts"></div>
@@ -1906,7 +2132,6 @@
         <div class="bb"></div>
       <div class="rim"></div>
         <div class="side"></div>
-        <div class="benchlbl">Bench</div>
       </div>
       <div class="rail off" id="rail"></div>
     </aside>
@@ -1993,16 +2218,16 @@
   <div class="card lvboard">
     <div class="lvscore">
       <div class="lvside" id="lv-syou">
-        <span class="lvsname">Your six</span>
-        <span class="lvpts mono" id="lv-you">0</span>
+        <span class="lvsname">Your five</span>
+        <span class="lvpts num" id="lv-you">0</span>
       </div>
       <div class="lvmid">
         <span class="lvq" id="lv-q">Q1</span>
-        <span class="lvclock mono" id="lv-clock">12:00</span>
+        <span class="lvclock num" id="lv-clock">12:00</span>
       </div>
       <div class="lvside" id="lv-sthem">
         <span class="lvsname">The field</span>
-        <span class="lvpts mono" id="lv-them">0</span>
+        <span class="lvpts num" id="lv-them">0</span>
       </div>
     </div>
     <div class="lvbar"><i id="lv-fill"></i></div>
@@ -2021,7 +2246,7 @@
 
   <div class="card lvverdict" id="lv-verdict" hidden>
     <div class="lvv-res" id="lvv-res"></div>
-    <div class="lvv-score mono" id="lvv-score"></div>
+    <div class="lvv-score num" id="lvv-score"></div>
     <div class="lvv-line" id="lvv-line"></div>
     <button class="big" id="b-lv-next">Continue</button>
   </div>
@@ -2054,7 +2279,7 @@
       <span class="pl" id="o-gl"></span></span>
   </div>
   <div class="verdict" id="o-verdict">-</div>
-    <div class="record mono" id="o-record">-</div>
+    <div class="record num" id="o-record">-</div>
     <p class="story" id="o-story"></p>
     <p class="dim" style="margin:0;font-size:13.5px" id="o-seed"></p>
     <div class="tags" id="o-tags"></div>
@@ -2089,7 +2314,7 @@
 
   <div class="card">
     <h2>Your draft <span class="sub" id="o-grade"></span></h2>
-    <!-- The same court as the draft screen, so the six men you finished with are
+    <!-- The same court as the draft screen, so the men you finished with are
          seen where they played rather than only listed. -->
     <div class="court" id="o-court" role="img" aria-label="Your rotation on the floor">
       <div class="oob"></div>
@@ -2102,7 +2327,6 @@
       <div class="bb"></div>
       <div class="rim"></div>
       <div class="side"></div>
-      <div class="benchlbl">Bench</div>
     </div>
     <div class="slots" id="o-slots" style="margin-top:12px"></div>
     <p class="dim" style="font-size:12.5px;margin:10px 0 0" id="o-best"></p>
@@ -2205,7 +2429,7 @@
   <div class="panel">
     <h2 id="era-h">Decades <span class="sub">pick an era</span></h2>
     <p class="dim" style="font-size:13px;margin:0 0 12px;line-height:1.5">
-      Every club, one decade. Six men who could have met on the floor.
+      Every club, one decade. Five men who could have met on the floor.
     </p>
     <div class="clubgrid" id="eragrid"></div>
     <div class="btnrow" style="margin-top:14px">
@@ -2252,8 +2476,13 @@
     <div class="btnrow" style="margin-top:8px">
       <button class="ghost" id="b-prof-clear" style="flex:1">Clear career</button>
     </div>
-    <p class="dim" style="font-size:11.5px;margin:10px 0 0">Stored in this browser only.
-      Clearing site data or a private window loses it, and nothing here is sent anywhere.</p>
+    <!-- WHERE THE CAREER IS KEPT, AND IT IS TWO DIFFERENT SENTENCES NOW. This
+         said "Stored in this browser only" and "nothing here is sent anywhere",
+         which was true for a year and stopped being true the day the shelf
+         landed. A page telling somebody their record is private while it is on
+         a server is the worst kind of stale copy, so the line is written by
+         renderCareerNote off whether there is an account to keep it against. -->
+    <p class="dim" id="pf-store" style="font-size:11.5px;margin:10px 0 0"></p>
   </div>
 </div>
 
@@ -2340,7 +2569,7 @@
   <div class="frg-scrim"></div>
   <div class="frg-panel" id="frg-panel">
     <div class="frg-eyebrow">First time here</div>
-    <h2>Draft six, then play 82</h2>
+    <h2>Draft five, then play 82</h2>
     <ol class="frg-steps" id="frg-steps"></ol>
     <p class="frg-goal" id="frg-goal"></p>
     <p class="frg-later">The other modes, your career and the badges can all wait
@@ -2383,8 +2612,8 @@
      number in the same commit as the edit, then run:
        node scripts/check-cachebust.mjs --update
      CI checks it on any push touching an .html or .js file. See CLAUDE.md. -->
-<script src="engine.js?v=16"></script>
-<script src="run.js?v=8"></script>
+<script src="engine.js?v=20"></script>
+<script src="run.js?v=10"></script>
 <script src="badges.js?v=1"></script>
 <!-- ACCOUNTS AND THE LEADERBOARD. All three are OPTIONAL: if the CDN is blocked
      or either file fails to load, the game runs exactly as it did, with runs
@@ -2396,6 +2625,13 @@
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="board.js?v=1"></script>
 <script src="auth.js?v=1"></script>
+<!-- THE SHELF. cloudsave.js is the transport and is shared with the football and
+     college games; cloud.js is this game's own policy about slots, progress and
+     what happens when two devices disagree. The transport asks window.RTF_AUTH
+     for a token at CALL time rather than at load, so the order here is for a
+     reader rather than for the browser. -->
+<script src="/assets/cloudsave.js?v=2"></script>
+<script src="cloud.js?v=1"></script>
 <script>
 (function(){
 'use strict';
@@ -2405,6 +2641,28 @@ var DATA = null, run = null, board = [];
 
 var $ = function(id){ return document.getElementById(id); };
 var money = function(v){ return '$' + (Math.round(v * 10) / 10).toFixed(1) + 'M'; };
+
+/* A ROSTER COUNT, AS AN ENGLISH WORD, IN ONE PLACE.
+ *
+ * This page prints how many men a roster holds in ordinary sentences, and a
+ * sentence cannot interpolate a digit without reading like a spec: "sign 5
+ * players" is not how anybody says it. So it was written out as "Six" and
+ * "six" wherever it came up, and the day the roster went from six men to five
+ * every one of those became a page describing a game it was not running.
+ *
+ * That is this repo's oldest rule (when a number is in copy, either
+ * interpolate it or write the sentence without it) meeting the one case where
+ * interpolating a digit is worse than the problem. The answer is to
+ * interpolate the WORD. `cap` capitalises it for the start of a sentence.
+ *
+ * It answers a digit past twelve rather than throwing, because a wrong-looking
+ * "13" in a sentence is a smaller failure than a page that will not boot. */
+var NUMWORD = function(n, cap){
+  var words = ['zero', 'one', 'two', 'three', 'four', 'five', 'six',
+    'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve'];
+  var w = (n >= 0 && n < words.length) ? words[n] : String(n);
+  return cap ? w.charAt(0).toUpperCase() + w.slice(1) : w;
+};
 var bold = function(text){
   var b = document.createElement('b');
   b.textContent = text;
@@ -2427,7 +2685,7 @@ var bold = function(text){
  * comes back still disagrees, say so in words instead of dying quietly. One
  * retry, so this can never become a reload loop.
  */
-var NEED_VERSION = 5;
+var NEED_VERSION = 7;
 (function bootCheck(){
   if (E && R && E.API_VERSION === NEED_VERSION && R.API_VERSION === NEED_VERSION) return;
   if (!/[?&]fresh=/.test(location.search)) {
@@ -2441,6 +2699,22 @@ var NEED_VERSION = 5;
   throw new Error('version mismatch: page needs ' + NEED_VERSION
     + ', engine ' + (E && E.API_VERSION) + ', run ' + (R && R.API_VERSION));
 })();
+
+/* THE TWO PHRASES PRINTED FROM MORE THAN ONE PLACE, once each.
+ *
+ * "Your five" names the player's own side on the bracket and again in the box
+ * score, and the daily's dare is the same sentence in `shareText` and in
+ * `shareDaily`. Both were written out twice, and both survived the roster
+ * going from six men to five twice, for the reason anything written twice
+ * survives an edit.
+ *
+ * BELOW THE BOOT CHECK AND NOT BESIDE NUMWORD, which is where they were
+ * written first. They read `E.SLOTS`, and the whole point of the check above
+ * is that a blocked or stale engine.js is met with a reload rather than a
+ * crash: evaluated before it, a missing engine is a TypeError on line one and
+ * the page is blank instead of self-healing. */
+var YOUR_LOT = 'Your ' + NUMWORD(E.SLOTS.length);
+var DAILY_DARE = 'Everybody got the same ' + NUMWORD(E.SLOTS.length) + ' spins.';
 
 /* ── THE OTHER PAIR OF HAND-WRITTEN NUMBERS, AND IT IS THE SILENT ONE ──────
  *
@@ -2495,6 +2769,17 @@ var A = window.RTF_AUTH || {
   token: function(){ return null; },
   claim: function(){ return Promise.resolve(false); },
 };
+
+/* AND THE SHELF, PINNED THE SAME WAY THE BOARD IS. cloud.js decides what a merge
+ * keeps, and a page running one version of that rule against a script holding
+ * another is the quietest failure on this page: nothing throws, every screen
+ * renders, and the only symptom is a cabinet that comes back slightly wrong.
+ * `null` is the honest answer when either half is missing, and every caller
+ * below is written to do nothing at all when it is. */
+var NEED_CLOUD = 1;
+var CL = (window.RTF_CLOUD && window.RTF_CLOUD.API_VERSION === NEED_CLOUD)
+  ? window.RTF_CLOUD : null;
+var SV = window.RTG_SAVE || null;
 
 /* AN UNHANDLED ERROR IN OUR CODE SAYS SO ON SCREEN. A silent throw mid-draft
  * looks exactly like the game being broken with no explanation, which is how
@@ -2695,11 +2980,11 @@ function renderAppBar(screen){
 
 function boot(){
   Promise.all([
-    fetch('data/players.json?v=3').then(function(r){ return r.json(); })
+    fetch('data/players.json?v=5').then(function(r){ return r.json(); })
       .then(function(v){ bootStep('Players loaded.'); return v; }),
     fetch('data/chemistry.json?v=1').then(function(r){ return r.json(); })
       .then(function(v){ bootStep(); return v; }).catch(function(){ bootStep(); return null; }),
-    fetch('data/teams.json?v=2').then(function(r){ return r.json(); })
+    fetch('data/teams.json?v=3').then(function(r){ return r.json(); })
       .then(function(v){ bootStep(); return v; }).catch(function(){ bootStep(); return null; })
   ]).then(function(res){
     if (res[1]) E.setCuratedChemistry(res[1]);
@@ -2756,6 +3041,13 @@ function boot(){
     A.boot();
     A.onChange(function(){
       if ($('sheet').classList.contains('open')) renderAccount();
+      /* THE SHELF IS ASKED ON EVERY CHANGE OF ACCOUNT, and the boot is one of
+         them: nothing is signed in at parse time, so a pull started beside
+         A.boot() would always find no token and answer nothing. Signing IN is
+         the moment somebody expects their cabinet to arrive, and cloudPull
+         refuses to run twice at once, so a change that fires more than once
+         while the first answer is out costs nothing. */
+      cloudPull();
       /* A RUN FINISHED BEFORE SIGNING IN IS CLAIMED ON THE WAY IN. The id is
          on the saved run, so this survives the reload that a Google sign-in
          redirect puts in the middle of it, which is the case that would
@@ -2799,6 +3091,13 @@ function startRun(club, era, daily){
   /* STARTING A RUN IS THE WAY OUT OF THE GUIDE, which is why the scrim never
      covered the button. Marked seen whichever door was used. */
   if (!$('frg').hidden) frgClose();
+  /* THE OLD RUN IS DELETED BEFORE THE NEW ONE IS SAVED, and the order is the
+     whole of it. A fresh run is progress zero, so a put would be REFUSED by a
+     shelf holding a bracket, and the refusal is silent: this device would go on
+     drafting while the next boot on any device resumed the run that was just
+     abandoned. Dropping also discards whatever write of the old run was still
+     pending, because it goes through the same per-slot queue. */
+  cloudDropRun();
   run = R.createRun(opts);
   /* Read off opts and not off the arguments, because the daily branch above
      clears both locks and a remember taken from the argument would file a
@@ -3077,7 +3376,9 @@ function renderGame(d){
       + 'reconstruction. No rebounds or assists: nothing in a live game counts '
       + 'them. The other side is a strength here rather than a roster, so it '
       + 'has no box score.'
-    : 'Six men, ' + (240 + d.ot * 25)
+    /* THE MINUTES ARE DERIVED, and at five men they are arithmetic: five on
+       the floor for the whole game is 240 player minutes and 48 each. */
+    : NUMWORD(E.SLOTS.length, true) + ' men, ' + (240 + d.ot * 25)
       + ' minutes, every point. The other side is a strength here rather than a '
       + 'roster, so it has no box score.';
 
@@ -3097,7 +3398,7 @@ function renderGame(d){
  * EVERY NUMBER IS READ OUT OF THE CONSTANTS. A guide is copy, and copy with a
  * typed number in it is a guide that lies the first time somebody sweeps the
  * cap. The cap has already been swept twice in this game's short life ($134M
- * to $126M), and a first-time player told the wrong one has no way to know.
+ * to $120M), and a first-time player told the wrong one has no way to know.
  *
  * WHAT IT DOES NOT DO is walk anybody through a practice draft. The football
  * game has one and it is worth having; it is also a second copy of the draft
@@ -3115,7 +3416,7 @@ function frgFill(){
   var C = E.CONSTANTS;
   /* THE DEAREST MAN IN THE GAME, read out of the data. "A star costs half the
      cap" was the first draft of that sentence and it is not true: the top
-     price in 16,057 rows is Bob McAdoo's 1975 at $60.0M against a $126M cap,
+     price in 16,057 rows is Bob McAdoo's 1975 at $60.0M against a $120M cap,
      which is 48%, and nobody is over half. A guide is the worst place to be
      nearly right, so it prints the real number. */
   var dearest = 0;
@@ -3126,11 +3427,16 @@ function frgFill(){
     }
   }
   var steps = [
+    /* THE COUNT IS READ OFF THE SLOT LIST, never written. This step said
+       "Six times" beside a five position line for as long as the two were
+       different numbers, which is the class of thing check-numbers exists
+       for, arriving inside one sentence. */
     'Spin for a season and a club, then sign one player off that roster. '
-      + '<b>Six times</b>, filling the five positions and a sixth man.',
-    'All six fit under a <b>' + money(C.CAP_MUSD) + '</b> cap'
+      + '<b>' + NUMWORD(E.SLOTS.length) + ' times</b>, one for every position '
+      + 'on the floor.',
+    'All ' + NUMWORD(E.SLOTS.length) + ' fit under a <b>' + money(C.CAP_MUSD) + '</b> cap'
       + (dearest ? ', and the dearest man in the game is <b>' + money(dearest) + '</b>' : '')
-      + '. Six stars is not a roster you can afford.',
+      + '. ' + NUMWORD(E.SLOTS.length, true) + ' stars is not a roster you can afford.',
     'Then the season plays itself. <b>' + C.REGULAR_SEASON_GAMES + ' games</b>, '
       + 'and the playoffs if you get there.'
   ];
@@ -3242,7 +3548,8 @@ function renderEraDoor(){
     door.className = 'modedoor';
     name.textContent = 'Decades';
     name.style.removeProperty('color');
-    sub.textContent = 'One decade, the whole league. Six men out of one era.';
+    sub.textContent = 'One decade, the whole league. '
+      + NUMWORD(E.SLOTS.length, true) + ' men out of one era.';
     pick.hidden = true;
     main.onclick = openEras;
     return;
@@ -3285,7 +3592,7 @@ function modeChip(r){
 
 /* ── TODAY'S RUN ───────────────────────────────────────────────────────────
  *
- * The seed is the date, so every player gets the same six spins and two
+ * The seed is the date, so every player gets the same spins and two
  * records are comparable for the first time in this game. Everything else
  * here is an ordinary league run.
  *
@@ -3483,7 +3790,7 @@ function lockClubReel(draw){
 
 /* WHAT YOU DREW, WITHOUT THE ANIMATION. A run restored mid-draft has a club and
    a season already drawn and no spin coming, and the reels used to sit empty
-   and grey through it: the board underneath said which six men were on offer
+   and grey through it: the board underneath said which men were on offer
    and nothing on the page said whose team they were. */
 function showDraw(draw){
   if (!draw) return;
@@ -3705,10 +4012,10 @@ function fireConfetti(){
 // ── position pills ─────────────────────────────────────────────────────────
 
 /* ONE PLACE THAT PAINTS A POSITION, which is the football game's rule and the
- * reason a palette change there is one edit rather than a hunt through six call
+ * reason a palette change there is one edit rather than a hunt through the call
  * sites writing the same gradient four slightly different ways. */
 var POS_COL = { PG: '--pg', SG: '--sg', SF: '--sf', PF: '--pf', C: '--c',
-  '6TH': '--sixth', G: '--g', F: '--f', GF: '--sf', FC: '--pf' };
+  G: '--g', F: '--f', GF: '--sf', FC: '--pf' };
 
 function posPaint(pos){
   return 'linear-gradient(160deg,var(' + (POS_COL[pos] || '--g') + '),rgba(0,0,0,.42))';
@@ -3937,14 +4244,18 @@ function reelPools(){
 
 // ── the court ──────────────────────────────────────────────────────────────
 
-/* WHERE THESE MEN ACTUALLY STAND. The five on the floor sit where their
-   position plays: the point at the top of the key, the wings out beyond the
-   arc, the forward on the weak side block and the centre in the paint. The
-   sixth man is deliberately BELOW the sideline, off the floor, because he is
-   not on it and a picture that puts him there is telling a small lie. */
+/* WHERE THESE MEN ACTUALLY STAND. The five sit where their position plays:
+   the point at the top of the key, the wings out beyond the arc, the forward
+   on the weak side block and the centre in the paint.
+
+   THERE IS NO SIXTH SPOT, and that is the picture this screen was always
+   trying to draw. The sixth man used to sit BELOW the sideline, off the floor,
+   because he was not on it and a picture that put him there would have been
+   telling a small lie. Five men is five spots, so the lie has nothing left to
+   avoid and the court is simply the team. */
 var SPOTS = {
   PG:  { x: 50, y: 62 }, SG: { x: 84, y: 46 }, SF: { x: 16, y: 46 },
-  PF:  { x: 27, y: 20 }, C:  { x: 62, y: 15 }, '6TH': { x: 50, y: 89 }
+  PF:  { x: 27, y: 20 }, C:  { x: 62, y: 15 }
 };
 
 function renderCourt(justSlot, into){
@@ -4220,7 +4531,12 @@ function renderHud(justSlot){
 
   $('c-amt').textContent = money(remaining);
   $('c-amt').className = 'capamt' + (remaining < cap * 0.14 ? ' bad' : remaining < cap * 0.3 ? ' warn' : '');
-  $('d-count').textContent = (run.roster.length + 1 > 6 ? 6 : run.roster.length + 1) + ' of 6';
+  /* THE SLOT COUNTER IS THE SLOT LIST, twice: the ceiling and the total were
+     both a literal 6, so a five man draft counted "1 of 6" under a court with
+     five spots on it, all the way to a last pick that read "6 of 6". A number
+     on the HUD is the one number a drafter is actually watching. */
+  var full = E.SLOTS.length;
+  $('d-count').textContent = Math.min(run.roster.length + 1, full) + ' of ' + full;
 
   var pct = Math.max(0, Math.min(100, (remaining / cap) * 100));
   $('c-bar').style.width = pct + '%';
@@ -4347,7 +4663,12 @@ function renderDraft(justSlot){
 
   var re = R.canRespin(run);
   $('b-respin').disabled = !re.ok || !draw || reelBusy;
-  $('b-respin').textContent = 'Re-spin (' + money(re.cost) + ')';
+  /* FREE IS A WORD AND NOT A PRICE OF ZERO. The last slot's re-spin costs
+     nothing, and "Re-spin ($0M)" reads as a rendering fault rather than as the
+     one thing that screen has to offer. */
+  $('b-respin').textContent = re.cost > 0
+    ? 'Re-spin (' + money(re.cost) + ')'
+    : 'Re-spin (free)';
   $('d-note').textContent = re.ok ? '' : (draw ? re.reason : '');
 
   renderFit();
@@ -4374,7 +4695,7 @@ function renderDraft(justSlot){
  */
 function drawNote(draw){
   var slots = draw.openSlots.length === E.SLOTS.length
-    ? 'Filling all six'
+    ? 'Filling all ' + NUMWORD(E.SLOTS.length)
     : 'Filling ' + draw.openSlots.join(' / ');
   if (reelBusy) return slots;
   if (run.club) {
@@ -4473,6 +4794,38 @@ function renderOptions(draw){
 
   renderSortBar(draw);
 
+  /* ── WHAT THIS PICK DOES TO THE LAST ONE ─────────────────────────────────
+   *
+   * The reserve floor promises a LEGAL ROSTER AND NEVER A CHOICE: it earmarks
+   * the cheapest man for every open slot, so a drafter who spends down to it
+   * reaches the last slot able to afford precisely that man. Measured, the
+   * last board is a single forced option on 47.6% of best-available runs and
+   * 61.0% of runs that spend the cap, against 10.2% for a bot that hoards
+   * money. The game was taking the last of its five decisions away from the
+   * player who had drafted the way it rewards, and nothing on screen said so
+   * until it had happened.
+   *
+   * So it is said BEFORE the tap, which is the rule the dynasty door in the
+   * football game already runs on.
+   *
+   * MARKED PER TILE, OR ONCE, AND NEVER BOTH. Measured over 450 second to last
+   * boards: 21.9% of signable tiles would carry the mark, 51.1% of boards
+   * carry none at all, and on 23.3% EVERY signable man leaves it tight. That
+   * last case is the divider rule below arriving one line up: a mark that is
+   * on everything marks nothing, and what it is really saying is a fact about
+   * the board rather than about any man on it. */
+  var signableRows = rows.filter(function(row){ return !row.block && row.p.p <= afford; });
+  var tightRows = signableRows.filter(function(row){ return R.leavesNoChoice(run, row.p); });
+  var allTight = signableRows.length > 0 && tightRows.length === signableRows.length;
+  var markTight = tightRows.length > 0 && !allTight;
+
+  if (allTight) {
+    var warn = document.createElement('p');
+    warn.className = 'dim tightall';
+    warn.textContent = 'Every man here leaves the last pick tight. That re-spin is free.';
+    boardEl.appendChild(warn);
+  }
+
   /* A HEADING OVER THE WHOLE LIST IS NOT A HEADING. On an opening board every
      man is affordable, so "SIGNABLE" sat alone above ten signable players and
      told nobody anything, for 26px off the top of the one screen that matters.
@@ -4501,7 +4854,9 @@ function renderOptions(draw){
       g.appendChild(lb); g.appendChild(rule);
       boardEl.appendChild(g);
     }
-    boardEl.appendChild(playerTile(p, block, tooDear, r));
+    boardEl.appendChild(playerTile(p, block, tooDear, r,
+      markTight && !block && !tooDear && R.leavesNoChoice(run, p)
+        ? R.marginAfter(run, p) : null));
   }
 
   if (!rows.length) {
@@ -4629,7 +4984,7 @@ function chemHint(p, block){
   return el;
 }
 
-function playerTile(p, block, tooDear, idx){
+function playerTile(p, block, tooDear, idx, tightLeft){
   var off = !!block || tooDear;
   var b = document.createElement('button');
   b.className = 'ptile' + (off ? ' off' : '');
@@ -4673,6 +5028,16 @@ function playerTile(p, block, tooDear, idx){
      shorter on average than it was. */
   var chem = chemHint(p, block);
   if (chem) b.appendChild(chem);
+
+  /* What signing him leaves for the last slot, on the tiles where that is the
+     thing worth knowing. Null on every other pick and on every other board,
+     so this line is absent far more often than it is present. */
+  if (tightLeft !== null && tightLeft !== undefined) {
+    var tl = document.createElement('span');
+    tl.className = 'tight';
+    tl.textContent = 'Leaves $' + tightLeft.toFixed(1) + 'M for your last pick.';
+    b.appendChild(tl);
+  }
 
   var stats = document.createElement('span');
   stats.className = 'stats';
@@ -4819,7 +5184,8 @@ function renderFit(){
     b2.textContent = 'No identity yet';
     line.appendChild(b2);
     line.appendChild(document.createTextNode(
-      'Six good players, but nothing they obviously do together.'));
+      NUMWORD(E.SLOTS.length, true)
+        + ' good players, but nothing they obviously do together.'));
   }
   box.appendChild(line);
 }
@@ -5286,7 +5652,7 @@ function brkSeat(e, state, score){
   var cls = state ? ' ' + state : '';
   return '<div class="brk-t' + (e.you ? ' me' : '') + cls + '">'
     + '<span class="sd">' + (e.seed == null ? '' : e.seed) + '</span>'
-    + '<span class="nm">' + (e.you ? 'Your six' : esc(e.wins + '-'
+    + '<span class="nm">' + (e.you ? YOUR_LOT : esc(e.wins + '-'
       + (E.CONSTANTS.REGULAR_SEASON_GAMES - e.wins))) + '</span>'
     + '<span class="sc">' + (score == null ? '' : score) + '</span></div>';
 }
@@ -5766,7 +6132,7 @@ function lvWords(p){
     if (p.kind === 'and1') return ['They score, and one', ''];
     return ['They score', ''];
   }
-  var who = p.name ? boxName(p.name) : 'Your six';
+  var who = p.name ? boxName(p.name) : YOUR_LOT;
   if (p.kind === 'to') return ['', 'Turnover'];
   if (p.kind === 'miss') return [who, ' misses'];
   if (p.kind === 'three') return [who, ' from three'];
@@ -6269,7 +6635,8 @@ function renderOver(out){
   if (squad) {
     $('o-grade').textContent = 'draft efficiency ' + squad.efficiency.toFixed(0) + '%';
     $('o-best').textContent = 'You signed ' + squad.actualWs.toFixed(1)
-      + ' win shares. The best legal six out of the clubs you actually spun was '
+      + ' win shares. The best legal ' + NUMWORD(E.SLOTS.length)
+      + ' out of the clubs you actually spun was '
       + squad.bestWs.toFixed(1) + ', for ' + money(squad.spend) + '.';
   } else {
     $('o-grade').textContent = '';
@@ -6704,12 +7071,14 @@ function renderOverDoors(){
       door('Day ' + d.day + ' is done · ' + d.label, 'Send it to somebody.', true, shareDaily);
     }
   } else {
-    door("Today's run", 'The same six spins for everybody today.', true,
+    door("Today's run", 'The same ' + NUMWORD(E.SLOTS.length)
+      + ' spins for everybody today.', true,
       function(){ startRun(null, null, true); });
   }
 
   if (run.club || run.era || run.daily) {
-    door('The league', 'Every season, every club, six spins.', false,
+    door('The league', 'Every season, every club, ' + NUMWORD(E.SLOTS.length)
+      + ' spins.', false,
       function(){ startRun(); });
   }
   if (!run.club) {
@@ -6722,8 +7091,9 @@ function renderOverDoors(){
   if (!run.era) {
     var le = lastEra();
     door(le ? (ERA_NAMES[le] || le) : 'Decades',
-      le ? 'Six men out of one decade.'
-         : 'One decade, the whole league. Six men out of one era.',
+      le ? NUMWORD(E.SLOTS.length, true) + ' men out of one decade.'
+         : 'One decade, the whole league. ' + NUMWORD(E.SLOTS.length, true)
+           + ' men out of one era.',
       false, le ? function(){ startRun(null, le); } : openEras);
   }
 }
@@ -7028,12 +7398,12 @@ function shareDare(out){
   /* THE DAILY'S DARE IS A DIFFERENT KIND OF QUESTION and it belongs on the
      card as well as in the text. Every other dare asks somebody to go and
      play a game, which they can answer with any roster at all. This one asks
-     them to play the SAME six spins, which is the only dare here with one
+     them to play the SAME spins, which is the only dare here with one
      answer, and it is the whole reason the mode exists. */
-  if (run && run.daily) return 'Same six spins. Can you beat it?';
+  if (run && run.daily) return 'Same ' + NUMWORD(E.SLOTS.length) + ' spins. Can you beat it?';
   if (out.isGOAT) return 'Can you win 74?';
   if (out.titleWon) return 'Can you win a ring?';
-  return 'Can you build a better six?';
+  return 'Can you build a better ' + NUMWORD(E.SLOTS.length) + '?';
 }
 
 /* WHICH GAME THIS WAS, IN ONE LINE, and it is derived rather than written.
@@ -7046,10 +7416,16 @@ function shareDare(out){
  * the club's own name is already the longest thing that goes in it.
  */
 function cardTag(r){
-  if (r && r.daily) return 'Day ' + r.daily + '. The same six spins for everybody.';
-  if (r && r.club) return 'One franchise: ' + E.team(r.club).full + ', six seasons of it.';
-  if (r && r.era) return (ERA_NAMES[r.era] || r.era) + '. Six men out of one decade.';
-  return 'Six NBA seasons, one cap, 82 games.';
+  /* EVERY COUNT HERE IS THE SLOT LIST, because a tagline is the one string on
+     this card nobody re-reads and the football game's own card fell through to
+     "Classic Mode. Six spins, one roster" three separate times. A literal has
+     no branch to forget AND no number to update. */
+  var n = NUMWORD(E.SLOTS.length);
+  if (r && r.daily) return 'Day ' + r.daily + '. The same ' + n + ' spins for everybody.';
+  if (r && r.club) return 'One franchise: ' + E.team(r.club).full + ', ' + n + ' seasons of it.';
+  if (r && r.era) return (ERA_NAMES[r.era] || r.era) + '. ' + NUMWORD(E.SLOTS.length, true)
+    + ' men out of one decade.';
+  return NUMWORD(E.SLOTS.length, true) + ' NBA seasons, one cap, 82 games.';
 }
 
 function shareText(out){
@@ -7071,7 +7447,7 @@ function shareText(out){
      read off the stored day rather than off the run, because the run does
      not know how many days came before it. */
   var d = (run && run.daily) ? dailyState() : null;
-  var dare = d ? 'Everybody got the same six spins.'
+  var dare = d ? DAILY_DARE
     + (d.streak > 1 ? '\n' + d.streak + ' days in a row.' : '')
     : shareDare(out);
   return head + '\n' + line + '\n' + dare + '\n' + SHARE_URL;
@@ -7088,18 +7464,41 @@ function shareText(out){
  * anchors written down, a six man card always lands the same and the gaps
  * between blocks can be read off without running it.
  */
-var CARD = {
-  W: 1080, H: 1350, PAD: 76,
-  TITLE: 96, TAG: 126,
-  REC: 372, VERDICT: 436,
-  RULE1: 482,
-  ROWS: 552, ROW: 92,          // six players, last baseline 1012
-  RULE2: 1064,
-  STAT: 1150, STAT_LABEL: 1192,
-  DARE: 1258,
-  LINK_T: 1282, LINK_H: 58,
-  KEEL: 10
-};
+/* THE CARD'S TAIL IS DERIVED FROM THE ROSTER, and the reason is the football
+ * game's share card, whose own section records every y between the two rules
+ * being a constant written for a six man roster: the day that mode drafted
+ * twelve, the seventh row printed THROUGH the closing rule and the next five
+ * on top of the footer, and it still rendered, still saved and still shared.
+ *
+ * THIS GAME LOST A ROW RATHER THAN GAINING SIX, so the failure is the quiet
+ * one in the other direction: nothing overlaps, the card simply carries 92px
+ * of empty stock between the last man and the rule under him, on every card
+ * anybody posts. Nothing throws and no check that reads the layout function's
+ * own numbers can see it, because they still add up.
+ *
+ * So the row pitch and the type are fixed and everything AFTER the roster
+ * hangs off where the roster actually ends. A card at five men is byte for
+ * byte the six man card with one row taken out of the middle. */
+var CARD = (function(){
+  var PAD = 76, ROWS = 552, ROW = 92;
+  var n = (E && E.SLOTS) ? E.SLOTS.length : 5;
+  /* The last man's baseline, and then the gap the closing rule always sat at
+     under it: 1064 against a six man card's last baseline of 1012. */
+  var lastBaseline = ROWS + (n - 1) * ROW;
+  var RULE2 = lastBaseline + 52;
+  return {
+    W: 1080, H: RULE2 + 286, PAD: PAD,
+    TITLE: 96, TAG: 126,
+    REC: 372, VERDICT: 436,
+    RULE1: 482,
+    ROWS: ROWS, ROW: ROW,
+    RULE2: RULE2,
+    STAT: RULE2 + 86, STAT_LABEL: RULE2 + 128,
+    DARE: RULE2 + 194,
+    LINK_T: RULE2 + 218, LINK_H: 58,
+    KEEL: 10
+  };
+})();
 
 function hexAt(hex, a){
   var h = String(hex).replace('#', '');
@@ -7179,7 +7578,7 @@ function drawShareCard(){
   };
   rule(CARD.RULE1);
 
-  /* THE SIX, in the order they fill the floor rather than the order they were
+  /* THE ROSTER, in the order it fills the floor rather than the order it was
      signed, so two cards of the same roster read the same way. Each carries the
      colour its position wears everywhere else in the game. */
   var filled = {};
@@ -7255,7 +7654,7 @@ function drawShareCard(){
    custom properties, which a canvas cannot read, so the values live here too.
    verify.mjs asserts the two agree. */
 var POS_HEX = { PG: '#3b82f6', SG: '#06b6d4', SF: '#22c55e', PF: '#f59e0b',
-  C: '#ef4444', '6TH': '#a855f7', G: '#6366f1', F: '#84cc16' };
+  C: '#ef4444', G: '#6366f1', F: '#84cc16' };
 
 function roundRect(x, left, top, w, h, r){
   x.beginPath();
@@ -7516,6 +7915,14 @@ function recordRun(out){
 
   c.rows = Array.isArray(c.rows) ? c.rows : [];
   c.rows.push({
+    /* THE RUN'S OWN SEED, so two devices merging their careers can tell one
+       finished season from another. Without an identity the union in cloud.js
+       is not idempotent and every row on the device doubles on every boot.
+       Rows already on a device have none and fall back to a key built from
+       their contents, which is why this is a new field rather than a version
+       bump: loadCareer accepts version 1 and nothing else, and raising it
+       would throw away every career on every device. */
+    id: (run && typeof run.seed === 'number') ? run.seed : undefined,
     w: out.wins, l: out.losses,
     ring: !!out.titleWon,
     po: !!(run.playoffs && run.playoffs.rounds.length),
@@ -7545,6 +7952,7 @@ function recordRun(out){
   if (c.rows.length > 250) c.rows = c.rows.slice(-250);
 
   try { localStorage.setItem(PKEY, JSON.stringify(c)); } catch (e) {}
+  cloudPushCareer(c);
 
   /* THE ORDER OF THESE THREE LINES IS LOAD-BEARING and they are statements
      rather than fields of one literal for that reason. bestsSet compares
@@ -7555,6 +7963,15 @@ function recordRun(out){
   var fresh = freshBadges(before, c);
   var bests = bestsSet(before, out);
   var day = dailyIsToday() ? dailyRecord(out) : null;
+  /* THE DAILY IS PUSHED FROM HERE AND NOT FROM dailyRecord OR dailyPut, and
+     both of those were tried. `dailyRecord` is LIFTED OUT OF THIS PAGE by
+     verify.mjs and driven in node, so a page-level call inside it is a
+     ReferenceError in a suite that has nothing to do with the shelf. `dailyPut`
+     is also what the pull writes a merged record through, so hooking the setter
+     would queue this write and then queue the pull's own settle behind it: two
+     round trips carrying the same bytes. The caller is the one place that is
+     neither. */
+  if (day) cloudPushDaily(day);
   return { career: c, fresh: fresh, bests: bests, daily: day };
 }
 
@@ -7631,6 +8048,7 @@ function renderCareer(){
   var c = loadCareer();
   var list = $('pf-list');
   list.textContent = '';
+  renderCareerNote();
 
   if (!c || !c.runs) {
     $('pf-runs').textContent = '0';
@@ -7639,7 +8057,8 @@ function renderCareer(){
     $('prof-sub').textContent = '';
     var li = document.createElement('li');
     li.style.cssText = 'display:block;border:0;color:var(--mut)';
-    li.textContent = 'No finished runs yet. Draft six and play the 82.';
+    li.textContent = 'No finished runs yet. Draft '
+      + NUMWORD(E.SLOTS.length) + ' and play the 82.';
     list.appendChild(li);
     return;
   }
@@ -7732,7 +8151,30 @@ function closeProfile(){
 
 function clearCareer(){
   try { localStorage.removeItem(PKEY); } catch (e) {}
+  /* AND OFF THE SHELF, OR THE NEXT BOOT BRINGS IT STRAIGHT BACK. The pull
+     merges rather than overwrites, so a career cleared here and left on the
+     server is a button that appears to do nothing a moment later. Deleting is
+     the same rule the run follows and the same rule 103 argues for: starting
+     over deletes, because progress can never be used to write something
+     smaller over something bigger. */
+  if (cloudReady()) cloudPush(CL.SLOT_CAREER, function(){ return { drop: true }; });
   renderCareer();
+  renderHome();
+}
+
+/* WHERE THE CAREER IS KEPT, in a sentence that has to be true of the reader
+   looking at it. Signed out it is this browser and nothing else, which is what
+   it has always been. Signed in it is on the account, which is the whole point
+   of the shelf and is also a disclosure: somebody should not have to read the
+   source to find out their record left the device. */
+function renderCareerNote(){
+  var el = $('pf-store');
+  if (!el) return;
+  el.textContent = cloudReady()
+    ? ('Kept on your account, so it follows you to another device. '
+       + 'Clear career removes it there too.')
+    : ('Stored in this browser only. Clearing site data or a private window loses it. '
+       + 'Sign in and it is kept on your account instead.');
 }
 
 /* ── THE ACCOUNT ROW ───────────────────────────────────────────────────────
@@ -8033,8 +8475,9 @@ function renderDailyDoor(){
   if (live) {
     name.textContent = "Today's run · day " + n;
     sub.textContent = run.phase === R.PHASES.DRAFT
-      ? run.roster.length + ' of 6 signed. Pick up where you left off.'
-      : 'Six signed, 82 still to play.';
+      ? run.roster.length + ' of ' + E.SLOTS.length
+        + ' signed. Pick up where you left off.'
+      : NUMWORD(E.SLOTS.length, true) + ' signed, 82 still to play.';
     main.onclick = function(){ show('s-draft'); renderDraft(); };
   } else if (done) {
     name.textContent = 'Day ' + n + ' · ' + s.label;
@@ -8042,7 +8485,8 @@ function renderDailyDoor(){
     main.onclick = shareDaily;
   } else {
     name.textContent = "Today's run · day " + n;
-    sub.textContent = 'The same six spins for everybody today.';
+    sub.textContent = 'The same ' + NUMWORD(E.SLOTS.length)
+      + ' spins for everybody today.';
     main.onclick = function(){ startRun(null, null, true); };
   }
 
@@ -8083,7 +8527,7 @@ function shareDaily(){
   if (!s || !s.done) return;
   var text = 'Run The Floor, day ' + s.day + '\n'
     + s.label + '. ' + s.headline + '. Rating ' + s.rating + '.\n'
-    + 'Everybody got the same six spins.\n'
+    + DAILY_DARE + '\n'
     + (s.streak > 1 ? s.streak + ' days in a row.\n' : '')
     + SHARE_URL;
   if (navigator.share) {
@@ -8124,11 +8568,11 @@ function renderHome(){
       : inBracket ? 'In the playoffs' : 'Season not played')
       + (chip ? ' · ' + chip : '');
     $('rz-where').textContent = drafting
-      ? run.roster.length + ' of 6 signed'
+      ? run.roster.length + ' of ' + E.SLOTS.length + ' signed'
       : inBracket ? bracketWhere()
-      : 'six signed, 82 to play';
+      : NUMWORD(E.SLOTS.length) + ' signed, 82 to play';
 
-    /* Who is actually on it, because "3 of 6" is a progress bar and the names
+    /* Who is actually on it, because "3 of 5" is a progress bar and the names
        are the reason to come back. */
     var names = [];
     for (var i = 0; i < run.roster.length; i++) names.push(run.roster[i].n);
@@ -8203,6 +8647,11 @@ var KEY = 'runthefloor_run_v1';
 
 function save(){
   try { localStorage.setItem(KEY, JSON.stringify(run)); } catch (e) {}
+  /* LOCAL FIRST AND NEVER AWAITED. This is called on every signing, every
+     re-spin and every round of the bracket, so a version that waited on a
+     round trip would put the network between a tap and the board redrawing.
+     The upload rides behind, coalesced per slot. */
+  cloudPushRun();
 }
 
 function restore(){
@@ -8246,9 +8695,255 @@ function resumeRun(){
 
 function abandonRun(){
   try { localStorage.removeItem(KEY); } catch (e) {}
+  /* THE SHELF IS TOLD, AND IT IS A DELETE RATHER THAN A SMALLER WRITE. Progress
+     decides a conflict, so writing an empty run over a stored one would be
+     refused and the run would come back on the next boot. 103's own header
+     says this: starting over deletes. */
+  cloudDropRun();
   run = null;
   renderHome();
   show('s-home');
+}
+
+// ── the shelf ──────────────────────────────────────────────────────────────
+
+/*
+ * THE RUN, THE CAREER AND THE DAILY BELONG TO THE ACCOUNT. localStorage above
+ * is still written first and synchronously, and still authoritative for speed:
+ * nothing here sits between a tap and the screen responding. What changes is
+ * that the browser copy is a cache of supabase/103_cloud_saves.sql rather than
+ * the only copy of anything.
+ *
+ * WHAT IT IS ACTUALLY FOR is the cabinet. A run in progress is worth twenty
+ * minutes and a career is worth however long somebody has been playing, and
+ * every badge in badges.js is DERIVED from that career, so a second device or a
+ * cleared jar is an empty cabinet with no error anywhere to explain it. That is
+ * the failure this exists to stop, and it is silent by construction.
+ *
+ * EVERY CALL FAILS SOFT AND NOTHING HERE IS AWAITED. cloudsave.js answers null
+ * for "no opinion", never for "you have no save", and a shelf that cannot be
+ * reached must never be the reason a run goes. Signed out, blocked, offline or
+ * missing a version: the game is exactly the game it was before any of this.
+ *
+ * The merge rules live in cloud.js beside the argument for them.
+ */
+
+function cloudReady(){
+  return !!(CL && SV && typeof SV.signedIn === 'function' && SV.signedIn());
+}
+
+/* Queued per slot by the transport, so a draft signing five men in a minute
+   sends the state as it stands when the wire is free rather than five writes
+   racing each other to one row. */
+function cloudPush(slot, build){
+  if (!cloudReady()) return null;
+  try { return SV.queue(CL.GAME, slot, build); } catch (e) { return null; }
+}
+
+function cloudPushRun(){
+  if (!cloudReady()) return null;
+  return cloudPush(CL.SLOT_RUN, function(){
+    if (!run) return null;
+    return { payload: run, progress: CL.runProgress(run) };
+  });
+}
+
+function cloudDropRun(){
+  if (!cloudReady()) return null;
+  return cloudPush(CL.SLOT_RUN, function(){ return { drop: true }; });
+}
+
+function cloudPushCareer(c){
+  if (!cloudReady() || !c) return null;
+  return cloudPush(CL.SLOT_CAREER, function(){
+    return { payload: c, progress: CL.careerProgress(c) };
+  });
+}
+
+function cloudPushDaily(s){
+  if (!cloudReady() || !s) return null;
+  return cloudPush(CL.SLOT_DAILY, function(){
+    return { payload: s, progress: CL.dailyProgress(s) };
+  });
+}
+
+/*
+ * THE PULL, and the three slots are three different questions.
+ *
+ * A CAREER AND A DAILY ARE MERGED AND PUSHED BACK, always, because neither side
+ * is behind the other: two devices hold runs the other has never seen. The
+ * merge is monotone, so the answer is at least as good as both and the push
+ * after it always lands.
+ *
+ * A RUN IS ADOPTED, AND ONLY ON THE FRONT PAGE. Replacing `run` under somebody
+ * who is already drafting swaps the game out from under a decision they are
+ * making, which is the rule the football pull runs on. The answer arrives after
+ * boot has finished, so the test is what is on screen at that moment and not
+ * what was on screen when the request went out.
+ */
+var cloudPulling = false;
+
+/*
+ * WHOSE COPY THE BROWSER IS HOLDING, which is the question that decides whether
+ * a pull MERGES or REPLACES, and getting it wrong is a disclosure rather than a
+ * lost save.
+ *
+ * Two accounts on one browser is the fifth way 103's own header lists for
+ * losing a run, and merging is what turns it into the opposite problem: sign in
+ * as somebody else and their cabinet quietly adopts the runs, the rings and the
+ * streak of whoever used this browser last. Neither account's record is true
+ * afterwards and nothing anywhere says so.
+ *
+ * So the browser records whose it is. Three cases, and the middle one is the
+ * one worth keeping:
+ *
+ *   nobody's     a career played signed out. MERGED, which is claiming it, the
+ *                same way a finished run is claimed on the way in.
+ *   this account MERGED, which is the ordinary second device.
+ *   somebody else REPLACED, with the account's own copy or with nothing. It is
+ *                not this reader's record and it is safe on the shelf it
+ *                belongs to.
+ *
+ * IT DOES NOT APPLY TO THE RUN, and that line is drawn deliberately. A draft in
+ * progress is not a record of anybody's: it makes no claim about who did what,
+ * it is on no board, and nothing is derived from it. Signing in part way
+ * through one means that draft is now yours on this account, which is exactly
+ * the rule the leaderboard already runs on when it claims a finished run on the
+ * way in. Clearing somebody's half-finished draft because they changed accounts
+ * would be this file destroying a run rather than keeping one.
+ *
+ * It is a per-browser fact and never leaves the device, so it lives here rather
+ * than in the payload.
+ */
+var OWNERKEY = 'rtf.owner.v1';
+
+function cloudOwner(){
+  try { return localStorage.getItem(OWNERKEY) || null; } catch (e) { return null; }
+}
+function cloudSetOwner(id){
+  try {
+    if (id) localStorage.setItem(OWNERKEY, id); else localStorage.removeItem(OWNERKEY);
+  } catch (e) {}
+}
+
+function cloudPull(){
+  if (!cloudReady() || cloudPulling) return null;
+  var who = (A.state && A.state().userId) || null;
+  /* MINE UNLESS THE BROWSER SAYS IT BELONGS TO SOMEBODY ELSE. An unknown owner
+     is treated as mine deliberately: it is either a first sign in or a browser
+     from before this existed, and refusing to claim those would throw away the
+     careers this whole feature is for. */
+  var mine = !who || !cloudOwner() || cloudOwner() === who;
+  cloudPulling = true;
+  return SV.all(CL.GAME).then(function(rows){
+    cloudPulling = false;
+    if (!rows) return;           /* no opinion. The local copy stands. */
+    var by = {}, i;
+    for (i = 0; i < rows.length; i++) if (rows[i].slot) by[rows[i].slot] = rows[i];
+    /* THE OWNER IS WRITTEN BEFORE ANYTHING IS ADOPTED, so a merge interrupted
+       half way cannot leave this browser claiming to hold the previous
+       account's record while it actually holds a mixture. */
+    cloudSetOwner(who);
+    cloudAdoptCareer(by[CL.SLOT_CAREER], mine);
+    cloudAdoptDaily(by[CL.SLOT_DAILY], mine);
+    cloudAdoptRun(by[CL.SLOT_RUN]);
+  }, function(){ cloudPulling = false; });
+}
+
+/* THE PUSH IS SKIPPED WHEN THE MERGE CHANGED NOTHING, which is the common case
+   for somebody playing on one device: the shelf already holds exactly this. A
+   missing row compares unequal and is therefore always written, which is how a
+   career that has never been uploaded gets there. */
+function cloudSettle(slot, merged, stored, progress){
+  var had = stored && stored.payload ? JSON.stringify(stored.payload) : null;
+  if (had === JSON.stringify(merged)) return false;
+  cloudPush(slot, function(){ return { payload: merged, progress: progress }; });
+  return true;
+}
+
+/* WHAT THE BROWSER SHOULD NOW HOLD, and the local write is the same shape for
+   both records: write it if it changed, clear the key if there is nothing left,
+   and repaint whatever was on screen while the answer was out. */
+function cloudWriteLocal(key, value, before){
+  var now = value == null ? null : JSON.stringify(value);
+  if (now === before) return false;
+  try {
+    if (now === null) localStorage.removeItem(key); else localStorage.setItem(key, now);
+  } catch (e) {}
+  /* The front page reads both records, the cabinet reads the career, and a
+     merge landing under an empty shelf has to redraw it or the only way to see
+     a cabinet that has just arrived is to reload. */
+  renderHome();
+  if ($('sheet').classList.contains('open')) renderCareer();
+  return true;
+}
+
+function cloudAdoptCareer(rowIn, claim){
+  var before = null;
+  try { before = localStorage.getItem(PKEY); } catch (e) {}
+  var theirs = rowIn && rowIn.payload ? rowIn.payload : null;
+  /* NOT MINE: the account's own copy stands alone, and no copy at all means an
+     empty cabinet rather than the previous reader's. Nothing is pushed on this
+     path, because what is on the shelf IS the answer. */
+  if (!claim) { cloudWriteLocal(PKEY, theirs, before); return; }
+  var mine = loadCareer();
+  if (!mine && !theirs) return;
+  var merged = CL.mergeCareer(mine || blankCareer(), theirs || {});
+  cloudWriteLocal(PKEY, merged, before);
+  cloudSettle(CL.SLOT_CAREER, merged, rowIn, CL.careerProgress(merged));
+}
+
+function cloudAdoptDaily(rowIn, claim){
+  var before = null;
+  try { before = localStorage.getItem(DAILYKEY); } catch (e) {}
+  var theirs = rowIn && rowIn.payload ? rowIn.payload : null;
+  if (!claim) { cloudWriteLocal(DAILYKEY, theirs, before); return; }
+  var mine = dailyState();
+  if (!mine && !theirs) return;
+  var merged = CL.mergeDaily(mine || {}, theirs || {});
+  if (!merged) return;
+  cloudWriteLocal(DAILYKEY, merged, before);
+  cloudSettle(CL.SLOT_DAILY, merged, rowIn, CL.dailyProgress(merged));
+}
+
+/* THE SHELF, PUBLISHED, AND NOTHING ON THIS PAGE READS IT.
+ *
+ * It is here so hoops/check-cloudsave.mjs can ask for a pull at the moment it
+ * has arranged, rather than waiting for one: the pull is fired by a change of
+ * account, which needs a live supabase client, and a save test has no business
+ * loading one. Same argument as window.RTF_LIVE above.
+ *
+ * The two pushes are exported for the same reason and no other. Filing a real
+ * career means playing 82 games and a bracket through the page for every row,
+ * which is minutes per assertion, and what is under test here is the SYNC. The
+ * merge itself is swept over the real badge catalog in node.
+ *
+ * NOTHING ELSE GOES ON THIS OBJECT. Starting a run, abandoning one and opening
+ * the cabinet are all buttons, and a guard that presses the button is testing
+ * the thing a player does. */
+window.RTF_SYNC = {
+  pull: function(){ return cloudPull(); },
+  pushCareer: function(c){ return cloudPushCareer(c); },
+  pushDaily: function(s){ return cloudPushDaily(s); },
+};
+
+function cloudAdoptRun(rowIn){
+  var theirs = rowIn && rowIn.payload ? rowIn.payload : null;
+  var here = run ? CL.runProgress(run) : -1;
+  if (!theirs || theirs.version !== 1) {
+    /* Nothing stored, or something this page cannot open. Either way the local
+       run is the only one there is, so it goes up. */
+    if (run) cloudPushRun();
+    return;
+  }
+  if (CL.runProgress(theirs) <= here) { if (run) cloudPushRun(); return; }
+  /* FURTHER ALONG THAN THIS DEVICE, so adopt it. Never mid-game: `restore` is
+     what decides which screen a run belongs on, and it is only honest to call
+     it while nobody is looking at a screen of their own. */
+  if (!$('s-home').classList.contains('active')) return;
+  try { localStorage.setItem(KEY, JSON.stringify(theirs)); } catch (e) {}
+  restore();
+  renderHome();
 }
 
 // ── wiring ─────────────────────────────────────────────────────────────────

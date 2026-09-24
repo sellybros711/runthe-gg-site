@@ -65,6 +65,13 @@ const GUARDED = [
      exists because the rest of the repo predates the rule, and this page does not. */
   'football/fantasy/index.html',
   'football/fantasy/draft.js',
+  // Run The Diamond. Added after the audit that cleared it: nothing on the banned
+  // list across both pages, only long-sentence warnings, which this file does not
+  // fail on. Its NUMBERS are held by baseball/check-numbers.mjs rather than by
+  // scripts/check-numbers.mjs, because that one accepts a claim matching EITHER of
+  // the two football games and a third engine would loosen it again for both.
+  'baseball/index.html',
+  'baseball/how-to-play.html',
   // The wrestling game and its data files. Added after the audit that cleared
   // them, per the rule on the dash checker: guard a directory only once it is
   // clean, never before, or the check becomes noise people learn to ignore.
@@ -319,6 +326,14 @@ export function filesUnder(p) {
   return out;
 }
 export { GUARDED };
+/* THE WALKER IS EXPORTED BECAUSE IT HAS ALREADY BEEN GOT WRONG TWICE HERE, and
+   a third copy of it would be got wrong a third time. `hoops/verify.mjs` has
+   its own rule to enforce over the strings a player reads (that every roster
+   count is the roster's own count) and needs exactly this extraction to do it:
+   the script block, comments out, strings kept, and a regex literal known from
+   a division. It is not on GUARDED and must not be added to it until the game
+   has been read against the English rules in this file. */
+export { scriptBlocks, stripComments, stringLiterals, markupText };
 
 const isMain = !!process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;
 if (isMain) main();

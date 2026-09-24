@@ -113,6 +113,120 @@ const DIVISIONS = {
 };
 const DIVISION_FIRST_SEASON = 1994;
 
+/* A FRANCHISE outlives its club code, and until this table existed the game had
+ * no way to say so.
+ *
+ * Baseball-Reference writes the code the club wore THAT YEAR, so one continuous
+ * franchise arrives under several: the Marlins are FLA through 2011 and MIA after,
+ * the Dodgers are BRO through 1957 and LAD after, the Athletics are PHA, KCA, OAK
+ * and now ATH. Keyed on the raw code, One Franchise offered the Marlins as
+ * 2012-2025 and fourteen seasons, of a club that has played since 1993. Reported
+ * by a player. The Angels were worse and read as nonsense on the card: LAA is
+ * 1961-1964 AND 2005-2025 with CAL and ANA in between, so the picker printed
+ * "1961-2025, 25 seasons", a span of sixty-five years with forty missing.
+ *
+ * IT IS NOT ONLY THE PICKER, and the quieter half reaches every mode. The
+ * chemistry franchise link asks whether two men played for the same club, so a
+ * 2011 Marlin and a 2013 Marlin were strangers, and a 1952 Boston Brave and a 1954
+ * Milwaukee Brave were strangers. Nothing throws: a link that does not fire is a
+ * link nobody can see the absence of.
+ *
+ * [code, firstSeason, lastSeason], which is DIVISIONS' own shape, and the years
+ * are load-bearing rather than tidy. Two codes in this data mean two different
+ * things at two different times:
+ *
+ *   LAA  1961-1964 the Los Angeles Angels, and 2005-2025 the same franchise come
+ *        back to the name, with CAL and ANA in the middle. A lineage keyed on
+ *        codes alone would collapse the gap and claim the CAL and ANA years twice.
+ *   BAL  1914-1915 is the FEDERAL LEAGUE Baltimore Terrapins, who folded, and
+ *        1954-2025 is the Orioles, who are the St. Louis Browns moved. Those are
+ *        two unrelated clubs on one code, so the Orioles lineage starts at 1954
+ *        and the Terrapins belong to no franchise, which is the truth about them.
+ *
+ * ONLY A FRANCHISE THAT HAS WORN MORE THAN ONE CODE IS LISTED. `franchiseOf`
+ * falls back to the code itself, so the Cubs need no row and cannot drift from
+ * one. Everything here was validated against the pool before it was written: every
+ * span holds real seasons, no season is claimed twice, and the only pool season no
+ * lineage claims is the Terrapins. */
+const FRANCHISES = {
+  ATL: [['BSN', 1901, 1952], ['MLN', 1953, 1965], ['ATL', 1966, 2025]],
+  BAL: [['MLA', 1901, 1901], ['SLB', 1902, 1953], ['BAL', 1954, 2025]],
+  LAA: [['LAA', 1961, 1964], ['CAL', 1965, 1996], ['ANA', 1997, 2004], ['LAA', 2005, 2025]],
+  LAD: [['BRO', 1901, 1957], ['LAD', 1958, 2025]],
+  MIA: [['FLA', 1993, 2011], ['MIA', 2012, 2025]],
+  MIL: [['SEP', 1969, 1969], ['MIL', 1970, 2025]],
+  MIN: [['WSH', 1901, 1960], ['MIN', 1961, 2025]],
+  NYY: [['BLA', 1901, 1902], ['NYY', 1903, 2025]],
+  ATH: [['PHA', 1901, 1954], ['KCA', 1955, 1967], ['OAK', 1968, 2024], ['ATH', 2025, 2025]],
+  SFG: [['NYG', 1901, 1957], ['SFG', 1958, 2025]],
+  TBR: [['TBD', 1998, 2007], ['TBR', 2008, 2025]],
+  TEX: [['WSA', 1961, 1971], ['TEX', 1972, 2025]],
+  WSN: [['MON', 1969, 2004], ['WSN', 2005, 2025]],
+};
+
+/* THE THIRTY CLUBS PLAYING TODAY, and the only things One Franchise offers.
+ *
+ * Every earlier name is reached THROUGH the franchise that wears it now: the Boston
+ * and Milwaukee Braves are the Atlanta Braves, the Montreal Expos are the Washington
+ * Nationals, the St. Louis Browns are the Baltimore Orioles. The picker used to list
+ * those fifteen a second time as cards of their own, which made one club two entries
+ * and asked a reader to know that the Browns and the Orioles are the same history.
+ *
+ * It is a LIST rather than a filter on the pool, because the two questions are not
+ * the same. "Which clubs may be drafted" is a fact about the league today; "which
+ * clubs have enough men to fill a roster" is a fact about the data, and leaving the
+ * first to fall out of the second is how a Negro League club or a Federal League
+ * club appears the day somebody loosens a depth gate. Every key of FRANCHISES is in
+ * here, and check-franchise.mjs holds the two together. */
+const CURRENT_FRANCHISES = [
+  'ARI', 'ATH', 'ATL', 'BAL', 'BOS', 'CHC', 'CHW', 'CIN', 'CLE', 'COL',
+  'DET', 'HOU', 'KCR', 'LAA', 'LAD', 'MIA', 'MIL', 'MIN', 'NYM', 'NYY',
+  'PHI', 'PIT', 'SDP', 'SEA', 'SFG', 'STL', 'TBR', 'TEX', 'TOR', 'WSN',
+];
+
+/* Does this club-season belong to this franchise? `fran` is normally one of the
+ * thirty above. A BARE CODE still answers for itself, which the picker no longer
+ * needs and a SAVED RUN does: a run started when the picker offered the Brooklyn
+ * Dodgers on their own carries `franchise: 'BRO'`, and that run has to go on
+ * drawing Brooklyn rather than quietly becoming a Los Angeles run or drawing
+ * nothing at all. */
+function inFranchise(fran, team, season) {
+  const rows = FRANCHISES[fran];
+  if (!rows) return team === fran;
+  for (const [code, from, to] of rows) {
+    if (code === team && season >= from && season <= to) return true;
+  }
+  return false;
+}
+
+/* Which franchise a club-season belongs to, as the code that franchise wears
+ * today. The season is required and is not decoration: BAL in 1914 is a club
+ * that folded and BAL in 1970 is the Orioles. */
+function franchiseOf(team, season) {
+  for (const fran of Object.keys(FRANCHISES)) {
+    if (inFranchise(fran, team, season)) return fran;
+  }
+  /* A CODE THAT IS ITSELF A FRANCHISE KEY, IN A SEASON THAT KEY DOES NOT CLAIM,
+     IS A DIFFERENT CLUB WEARING THE SAME THREE LETTERS. Returning the bare code
+     here folded the 1914 Federal League Terrapins into the Baltimore Orioles: the
+     picker counted their seasons on the Orioles card and the chemistry linked a
+     Terrapin to an Oriole. Found by the guard rather than by reading, because a
+     card one season wide of the truth looks exactly like a card.
+     The star cannot collide with a real code, and it is ONE bucket rather than one
+     per season, because the Terrapins were a club for two years and their own two
+     seasons really are team-mates. */
+  return FRANCHISES[team] ? team + '*' : team;
+}
+
+/* The codes a franchise has worn, oldest first, for the card and the guard. */
+function franchiseCodes(fran) {
+  const rows = FRANCHISES[fran];
+  if (!rows) return [fran];
+  const seen = [];
+  for (const [code] of rows) if (!seen.includes(code)) seen.push(code);
+  return seen;
+}
+
 /* Salary Cap Survivor.
  *
  * The draft is the same. What changes is that the roster does not stay bought:
@@ -186,6 +300,35 @@ const STAFF_ELIGIBILITY = {
 /* The slot list and eligibility a run plays under. */
 function slotsForMode(staff) { return staff ? STAFF_SLOTS : SLOTS; }
 function eligibilityForMode(staff) { return staff ? STAFF_ELIGIBILITY : SLOT_ELIGIBILITY; }
+
+/* ─── SLOTS THE SIM CANNOT TELL APART ───
+ *
+ * staffEra and staffRunPrevention AVERAGE the five rotation slots together, and
+ * average RP1 through RP5 and SU together. So a staff's five starters are one job
+ * with five names, its six relievers are one job with six names, and where an arm
+ * lands inside its group changes nothing the season reads. The base game is the
+ * same story at a smaller size: SP1 and SP2 are its two starters and teamStrength
+ * adds them.
+ *
+ * The chooser has to know, and IT CANNOT WORK THIS OUT FROM THE NAME. A regex on
+ * the string is the version that shipped, and the strings do not carry the answer:
+ * SP2 and SP5 are the same job, RP5 and SU are the same job, and nothing in either
+ * pair of names says so. What it produced was a sheet offering nine doors into
+ * three rooms, with SP2 missing from it while SP5 was on it, because the regex
+ * stripped a trailing 1 or 2 and left every other digit alone.
+ *
+ * CL is deliberately on its own. It is the one arm read by name, in saveRate.
+ */
+const STAFF_SLOT_GROUP = {
+  SP1: 'ROTATION', SP2: 'ROTATION', SP3: 'ROTATION', SP4: 'ROTATION', SP5: 'ROTATION',
+  RP1: 'BULLPEN', RP2: 'BULLPEN', RP3: 'BULLPEN', RP4: 'BULLPEN', RP5: 'BULLPEN',
+  SU: 'BULLPEN',
+};
+const BASE_SLOT_GROUP = { SP1: 'ROTATION', SP2: 'ROTATION' };
+function slotGroup(slotName, staff) {
+  const m = staff ? STAFF_SLOT_GROUP : BASE_SLOT_GROUP;
+  return m[slotName] || slotName;
+}
 
 /* What positions can fill each slot.
  * Hitter positions are currently blank in the data (pending Lahman),
@@ -498,15 +641,46 @@ function squadRating(roster) {
 const PROJ = {
   /* Pythagorean expectation understates the spread this game's schedule
    * produces: fitted over 220 drafted rosters against the season simulator,
-   * rms 1.5 wins. Refit rather than nudged if the run model changes. */
+   * rms 1.5 wins. Refit rather than nudged if the run model changes.
+   *
+   * RE-MEASURED over 208 rosters swept across eight drafting-quality levels,
+   * from a bot holding back 94% of its budget to one spending the cap, each
+   * played for 16 seasons: actual = 1.019 * projected + 1.61, rms 1.60 wins,
+   * over a range of 50 to 107 actual wins. The projection is sound across the
+   * whole range a draft can reach, so it was left alone and only the anchors
+   * below moved. */
   SLOPE: 1.5047,
   INTERCEPT: -50.51,
-  /* The two anchors the scale hangs on, both of them things a player already
-   * knows: 88 wins is the wild card line and a coin flip for October, 116 wins
-   * ties the all-time record. A roster that cannot reach October now rates in
-   * the teens instead of the high seventies. */
-  PIVOT_WINS: 88, PIVOT_RATING: 50,
-  TOP_WINS: 116, TOP_RATING: 100,
+  /*
+   * THE SCALE IS ANCHORED ON WHAT A DRAFT CAN ACTUALLY PRODUCE, at both ends.
+   *
+   * It used to hang on 88 wins = 50 and 116 wins = 100, both of them real
+   * things (the wild card line, and the all-time record). The trouble is that
+   * a roster is not a real club: it is twelve men bought under a $170M cap,
+   * and 116 wins is not on the menu. Measured over 240 drafts, four ways:
+   *
+   *     cheapest man every time   every run rated exactly 1.0
+   *     best value per dollar     every run rated exactly 1.0
+   *     at random                 median 6.5, best 49.4
+   *     best available            median 37.5, best 71.4
+   *
+   * So the top 28 points were unreachable and the bottom was a WALL rather
+   * than a scale: `Math.max(1, ...)` crushed every careless draft onto one
+   * number, and two teams forty wins apart both read 1.0. A player reported a
+   * 73-89 season rating 17 and was right that it meant nothing.
+   *
+   * Both ends are measured now, through the real draft loop:
+   *
+   *     FLOOR  take the worst man on every board, 60 drafts: 31 projected wins
+   *     TOP    strong drafting, 250 drafts: p50 85, p95 98, best 106
+   *
+   * So 99 is the best roster this cap buys, reached about once in 250 good
+   * drafts, and 1 is a draft nobody could do worse than. Every point between
+   * is 0.77 of a win, and no part of the scale is unreachable in either
+   * direction. Re-measure both ends if the cap or the player pool moves: they
+   * are facts about the draft, not preferences. */
+  FLOOR_WINS: 31, FLOOR_RATING: 1,
+  TOP_WINS: 106, TOP_RATING: 99,
 };
 
 /* What a roster projects to win over 162, on this game's schedule. */
@@ -517,9 +691,9 @@ function projectedWins(offense, defense) {
 
 function teamRating(offense, defense) {
   const w = projectedWins(offense, defense);
-  const k = (PROJ.TOP_RATING - PROJ.PIVOT_RATING) / (PROJ.TOP_WINS - PROJ.PIVOT_WINS);
-  const r = (w - PROJ.PIVOT_WINS) * k + PROJ.PIVOT_RATING;
-  return Math.max(1, Math.min(100, Math.round(r * 10) / 10));
+  const k = (PROJ.TOP_RATING - PROJ.FLOOR_RATING) / (PROJ.TOP_WINS - PROJ.FLOOR_WINS);
+  const r = (w - PROJ.FLOOR_WINS) * k + PROJ.FLOOR_RATING;
+  return Math.max(PROJ.FLOOR_RATING, Math.min(PROJ.TOP_RATING, Math.round(r * 10) / 10));
 }
 
 /* National rank: where a finished season's rating places among all
@@ -625,7 +799,13 @@ function suppressedIn(opts) {
 function pairLinks(a, b, opts) {
   const off = suppressedIn(opts);
   const links = [];
-  const sameTeam = a.t === b.t;
+  /* SAME FRANCHISE, NOT SAME CODE. Written `a.t === b.t` a rename made two
+     team-mates strangers: a 2011 Marlin (FLA) and a 2013 Marlin (MIA) shared no
+     link, nor a 1952 Boston Brave and a 1954 Milwaukee Brave. See FRANCHISES.
+     `sameSeason` still guards the reunion and the double-play combo below, and a
+     club cannot wear two codes in one year, so those are unaffected. */
+  const franA = franchiseOf(a.t, a.s);
+  const sameTeam = franA === franchiseOf(b.t, b.s);
   const sameSeason = a.s === b.s;
 
   // Family: a real relationship across any team or season (e.g. two Alous).
@@ -640,8 +820,11 @@ function pairLinks(a, b, opts) {
   }
 
   if (sameTeam && !sameSeason) {
+    /* Name the code they actually shared when they shared one, and the franchise
+       only when they did not. Two 1950s Boston Braves reading "ATL franchise"
+       would be a link telling a reader something that never happened to them. */
     links.push({ type: 'franchise', value: CHEMISTRY.VALUES.franchise,
-      label: `${a.t} franchise` });
+      label: `${a.t === b.t ? a.t : franA} franchise` });
   }
 
   // DP combo: 2B + SS from same team-season
@@ -2044,15 +2227,24 @@ function coachReport(roster, chem, structure, rating, unspentMusd) {
     strengths.push(structure.archetype.name);
 
   let verdict;
-  /* Pinned to what the rating now MEANS, measured over 260 drafts: 70+ takes the
-   * title two times in five, 50-60 makes October nine times in ten, 40-50 forty
-   * per cent of the time, and under 40 essentially never. A verdict that promises
-   * more than the band delivers is how a 79-83 season ends up under the words
-   * "all-time great". */
-  if (rating >= 70) verdict = 'All-time great';
-  else if (rating >= 55) verdict = 'World Series contender';
-  else if (rating >= 45) verdict = 'Playoff team';
-  else if (rating >= 35) verdict = 'Fringe contender';
+  /* Pinned to what the rating MEANS, re-measured over 390 drafts after the scale
+   * was re-anchored on what a draft can actually produce:
+   *
+   *     90+     104.2 mean wins, 100% Octobers, 20% titles
+   *     80-90    97.7 mean wins,  97% Octobers, 10% titles
+   *     70-80    88.7 mean wins,  52% Octobers
+   *     60-70    81.9 mean wins,  21% Octobers
+   *     under 60 72.6 and below,   2% Octobers
+   *
+   * These moved WITH the scale rather than being retuned: the old set (70 / 55 /
+   * 45 / 35) described a scale where 71 was the best anything reached, so left
+   * alone it would have called an 88-win wild card team an all-time great. A
+   * verdict that promises more than its band delivers is how a 79-83 season
+   * ended up under those words the first time. */
+  if (rating >= 90) verdict = 'All-time great';
+  else if (rating >= 80) verdict = 'World Series contender';
+  else if (rating >= 70) verdict = 'Playoff team';
+  else if (rating >= 60) verdict = 'Fringe contender';
   else verdict = 'Rebuilding';
 
   return { strengths, weaknesses, verdict, archetype: structure && structure.archetype };
@@ -2169,8 +2361,9 @@ function teamColors(code) {
 
 const publicAPI = {
   CONSTANTS, ERAS, CHEMISTRY, SLOTS, SLOT_ELIGIBILITY,
-  STAFF_SLOTS, STAFF_ELIGIBILITY, slotsForMode, eligibilityForMode,
+  STAFF_SLOTS, STAFF_ELIGIBILITY, slotsForMode, eligibilityForMode, slotGroup,
   DIVISIONS, DIVISION_FIRST_SEASON, inDivision, divisionClubs,
+  FRANCHISES, CURRENT_FRANCHISES, inFranchise, franchiseOf, franchiseCodes,
   MARKET, replacementFor,
   POSITIONS_AVAILABLE: () => POSITIONS_AVAILABLE,
   setPositionsAvailable,

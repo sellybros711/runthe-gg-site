@@ -62,6 +62,29 @@ const TAG = /<script[^>]*\ssrc="([A-Za-z0-9_./-]+\.js)\?v=([^"]+)"/g;
  * name as a <script src> would. */
 const MOD = /(?:^|[\s({,])(?:import|export)[^;'"]*?from\s*['"]\.?\/?([A-Za-z0-9_.-]+\.js)\?v=([^'"]+)['"]/gm;
 
+/* AND EVERY DATA FILE A PAGE FETCHES WITH A ?v= ON IT, which is fourteen of them
+ * across six games and was seeing none.
+ *
+ * A player pool is not a script and it caches exactly like one. `hoops/index.html`
+ * loads
+ *
+ *   fetch('data/players.json?v=3')
+ *
+ * and that number is hand written beside a file a build script rewrites, which is
+ * the whole shape this checker exists for. It was found the way these always are:
+ * hoops derived multi-position eligibility onto all 16,057 rows, and a returning
+ * visitor on the cached v=3 would have gone on drafting the old single-position
+ * pool with nothing anywhere saying so. Not a crash. Not even a wrong screen. Just
+ * a change that silently did not happen for the people who had played before.
+ *
+ * Quieter than a stale script and harder to report: the game works, so the only
+ * symptom is somebody insisting a feature is not there.
+ *
+ * A VERSION BUILT FROM A VARIABLE IS SKIPPED RATHER THAN MANGLED. soccer writes
+ * `'/data/roster_updates.json?v=' + DATA_VERSION`, which is the problem already
+ * solved, so the pattern requires the version to be inside the same quotes. */
+const DATA = /fetch\(\s*['"]([A-Za-z0-9_./-]+\.json)\?v=([A-Za-z0-9_.-]+)['"]/g;
+
 function pages(dir, out = []) {
   for (const name of fs.readdirSync(dir)) {
     if (name === '.git' || name === 'node_modules') continue;
@@ -91,7 +114,7 @@ const found = {};
 for (const page of pages(ROOT)) {
   const html = fs.readFileSync(page, 'utf8');
   const rel = path.relative(ROOT, page);
-  for (const re of [TAG, MOD]) {
+  for (const re of [TAG, MOD, DATA]) {
     for (const m of html.matchAll(re)) {
       /* A leading slash is the SITE root, not the filesystem root. Every arcade game
          reaches its shared scripts that way (/arcade/tokens.js?v=13), and for a year

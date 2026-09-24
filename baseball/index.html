@@ -8,7 +8,22 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Run The Diamond: MLB Draft Game | RunThe.GG</title>
 <meta name="description" content="Run The Diamond: Draft an all-time MLB roster from 1901-2025 under a $170M cap, simulate a 162-game season, and chase the World Series. Free, no download.">
-<meta name="theme-color" content="#e8dcc8">
+<meta name="theme-color" content="#e8dcc8" id="themeMeta">
+<script>
+/* THEME BOOT, BEFORE FIRST PAINT, and it is the arcade's script rather than a
+   version of it: runthegrid_theme is shared across the whole suite, so somebody
+   who set dark on the arcade arrives here dark. Run after first paint and the
+   page flashes cream on the way in, which is the one thing a dark mode must not
+   do to somebody opening it at night. */
+(function(){
+  var t; try{ t = localStorage.getItem('runthegrid_theme'); }catch(e){}
+  if(t !== 'light' && t !== 'dark'){
+    t = (window.matchMedia && matchMedia('(prefers-color-scheme: light)').matches) ? 'light' : 'dark';
+    try { localStorage.setItem('runthegrid_theme', t); } catch (e) {}
+  }
+  document.documentElement.setAttribute('data-theme', t);
+})();
+</script>
 <link rel="canonical" href="https://runthe.gg/baseball/">
 <link rel="manifest" href="manifest.webmanifest?v=1">
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png?v=1">
@@ -18,14 +33,14 @@
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="RunThe.GG">
 <meta property="og:url" content="https://runthe.gg/baseball/">
-<meta property="og:image" content="https://runthe.gg/baseball/og.png?v=1">
+<meta property="og:image" content="https://runthe.gg/baseball/og.png?v=2">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="Run The Diamond: draft an all-time MLB roster and chase the perfect season.">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Run The Diamond: MLB Draft Game">
 <meta name="twitter:description" content="Draft an all-time MLB roster under a $170M cap. Simulate 162 games. Win the World Series.">
-<meta name="twitter:image" content="https://runthe.gg/baseball/og.png?v=1">
+<meta name="twitter:image" content="https://runthe.gg/baseball/og.png?v=2">
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"VideoGame","name":"Run The Diamond","url":"https://runthe.gg/baseball/",
 "description":"Draft an all-time MLB roster from 1901 to 2025 under a $170M salary cap, then simulate a 162-game season and chase the World Series.",
@@ -49,7 +64,13 @@ document.head.appendChild(s);})();
 :root{
   --bg:#e8dcc8;--panel:#f5f0e6;--panel-2:#ece4d4;
   --line:rgba(0,0,0,.10);--line-2:rgba(0,0,0,.16);
-  --ink:#1a1a1a;--dim:#6b6252;--dim-2:#8a7e6e;
+  /* THE TWO QUIET INKS CLEAR 4.5:1, which they did not before any of this. On
+     the page's own cream, --dim measured 4.44 and --dim-2 2.93, so the eyebrows,
+     the kickers and every 'x of 12' on the site's own scale were under the bar the
+     arcade is already held to. Solved against the three surfaces they land on: the
+     page, a panel and the daily card's gold tint. They are still the quiet half of
+     the page, they are now readable while being it. */
+  --ink:#1a1a1a;--dim:#5a5242;--dim-2:#665d4e;
   --red:#c0392b;--green:#2e7d32;--blue:#1a5276;--gold:#b8860b;--orange:#d4772c;--purple:#6a4c93;
   --cream:#f5f0e6;--tan:#c8b898;--leather:#8b6d4c;--dirt:#6b523a;
   --grad-red:linear-gradient(135deg,#c0392b 0%,#8b1a1a 100%);
@@ -62,6 +83,67 @@ document.head.appendChild(s);})();
   --fp:'Bitter',Georgia,'Times New Roman',serif;
   --fn:'Archivo',system-ui,sans-serif;
   --fb:'Bitter',Georgia,serif;
+
+  /* ─── THE FOUR TOKENS THE DARK THEME NEEDED AND THE LIGHT ONE DID NOT ───
+     Every hairline, tint and inset on this page was written rgba(0,0,0,·), which
+     is correct on cream and INVISIBLE on charcoal: the borders, the row rules and
+     the sunken wells all simply stop existing, and nothing anywhere reports it
+     because a border nobody can see still renders. They are one colour with one
+     alpha each, so they are tokens now and the dark block flips them to white.
+     --edge carries the CHANNELS and never the alpha, so `rgba(var(--edge),.08)`
+     keeps every one of the thirty-odd alphas exactly where it was set: the light
+     theme is byte for byte what it was, and one token flips all of them. Written
+     as a handful of finished colours instead, a .02 tint and a .05 tint collapse
+     into one and the light page quietly changes under a dark-mode commit.
+
+     SHADOWS ARE NOT ON IT. A box-shadow is black in both themes, because a shadow
+     is an absence of light rather than a line drawn on a surface. Flipping those
+     would put a white glow around every card at night.
+
+     --ink-on is what sits on a FILLED chip (a position, a club plate, a button),
+     which stays near-white in both themes because the fill under it does. */
+  --edge:0,0,0;
+  --ink-on:#fff;
+
+  /* The two cards that are not a panel: the good outcome and the bad one. A win
+     hero, a champion's row in the bracket and a run scoring in the play by play
+     all wear the same pale gold, and they carry --ink, so a dark theme that left
+     them alone would put near-white type on cream. They are surfaces rather than
+     accents, which is why they are here and not in the block above. */
+  --warm:linear-gradient(180deg,#f7efd8,#efe3c6);
+  --cool:linear-gradient(180deg,#f2ece0,#e9e0d0);
+  --warm-ink:#7a5c12;
+}
+
+/* ─── DARK ───
+   A NIGHT GAME, not an inverted page. The light theme is cream paper and warm
+   browns, so the dark one is the same ballpark after dark: a cool charcoal with
+   the warmth kept in the ink and the accents rather than scrubbed out of them.
+   Straight inversion gives a blue-grey page that has nothing to do with the
+   light one, and a visitor who toggles should recognise the game.
+
+   ONLY SURFACES AND INK MOVE. The field's green, the dirt, the position colours
+   and the club plates are the SPORT rather than the theme: a baseball field is
+   green at night too, and a club's colours do not change because the page did.
+   Inverting those is how a themed page ends up lying about what it is showing. */
+:root[data-theme="dark"]{
+  --bg:#14171c;--panel:#1d222a;--panel-2:#171b22;
+  --line:rgba(255,255,255,.10);--line-2:rgba(255,255,255,.16);
+  --ink:#ece6da;--dim:#aaa294;--dim-2:#948d7e;
+  /* Each accent lifted until it clears the charcoal. The light theme's blue is
+     #1a5276 at 2.1:1 on this background, which is a link nobody can read. */
+  --red:#e0685a;--green:#5cb85f;--blue:#6aa9d8;--gold:#e0ac3c;--orange:#e89552;--purple:#a98ad4;
+  --cream:#232932;--tan:#4a4335;--leather:#b08c63;--dirt:#8a6b4a;
+  --grad-red:linear-gradient(135deg,#a8352a 0%,#6e1616 100%);
+  --grad-blue:linear-gradient(135deg,#2a4f75 0%,#17334c 100%);
+  --grad-green:linear-gradient(135deg,#2a6e2e 0%,#18521c 100%);
+  --grad-gold:linear-gradient(135deg,#9c7209 0%,#755810 100%);
+  --grad-panel:linear-gradient(180deg,#1d222a 0%,#171b22 100%);
+  --shadow:0 18px 40px -14px rgba(0,0,0,.62),0 3px 10px -4px rgba(0,0,0,.44);
+  --edge:255,255,255;
+  --warm:linear-gradient(180deg,#3d3218,#2c2410);
+  --cool:linear-gradient(180deg,#242a33,#1b2027);
+  --warm-ink:#e8c25c;
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html{background:var(--bg);color:var(--ink);font-family:var(--fb);-webkit-font-smoothing:antialiased}
@@ -86,12 +168,83 @@ h1,h2,h3{margin:0}
   transition:transform .1s ease,filter .1s ease}
 .btn::before{content:'';position:absolute;inset:0;
   background:linear-gradient(180deg,rgba(255,255,255,.14) 0%,transparent 35%),
-  repeating-linear-gradient(90deg,rgba(0,0,0,.03) 0 2px,transparent 2px 6px);pointer-events:none}
+  repeating-linear-gradient(90deg,rgba(var(--edge),.03) 0 2px,transparent 2px 6px);pointer-events:none}
 .btn:active{transform:translateY(1px) scale(.995);filter:brightness(1.08)}
-.btn.ghost{background:transparent;border:1.5px solid rgba(0,0,0,.18);color:var(--dim);font-size:14px;padding:12px 18px;box-shadow:none}
+.btn.ghost{background:transparent;border:1.5px solid rgba(var(--edge),.18);color:var(--dim);font-size:14px;padding:12px 18px;box-shadow:none}
 .btn.ghost::before{display:none}
 .btn.sm{font-size:13px;padding:8px 14px;width:auto}
 .btn:disabled{opacity:.4;pointer-events:none}
+
+/* ─── the button that IS a baseball ───
+   The primary call to action was a brown bar with a ball emoji stuck on each end
+   of the words, which is a button with a picture of the sport beside it rather
+   than a button made of it. It is a close crop of a ball now: leather, a seam
+   sweeping in from each end, and the label stitched into the middle in the red
+   the laces are.
+
+   THE LEATHER IS THE SAME COLOUR IN BOTH THEMES, and that is deliberate rather
+   than an unconverted surface. A baseball is white under lights and white in the
+   afternoon, so it belongs with the field's green and the club plates on the list
+   of things that are the SPORT rather than the page: inverting it would draw a
+   charcoal ball, which is not a thing. check-theme.mjs asserts that from both
+   ends rather than simply skipping it.
+
+   --lace and --hide are tokens because the same two colours are the stitching,
+   the label and the hide, in a fixed pairing that no theme moves. */
+/* TWO REDS, AND THAT IS THE REFERENCE RATHER THAN AN OVERSIGHT. --lace is the
+   waxed thread, which on a real ball is bright; --lace-ink is the label, which has
+   to be read rather than admired and is a deeper brick. It measured 4.49:1 at the
+   brighter red, which is under the bar on the one control the whole page is for. */
+:root{--hide:#f4efe3;--lace:#b9182b;--lace-ink:#8a1626}
+.btn.ball{background:
+  radial-gradient(120% 150% at 50% -30%,rgba(255,255,255,.85) 0%,transparent 60%),
+  radial-gradient(130% 120% at 50% 50%,transparent 52%,rgba(120,96,70,.16) 100%),
+  /* The tooth of the hide, at .02 over a 7px pitch. It was .045 over 3px first
+     and the button read as corduroy, which is the hoops floor's own note about
+     its seams arriving here: one repeating gradient at one period is found by the
+     eye in a second, and at that point it is cloth rather than leather. */
+  repeating-linear-gradient(108deg,rgba(150,120,96,.02) 0 1px,transparent 1px 7px),
+  linear-gradient(180deg,#fbf7ef 0%,var(--hide) 46%,#e9e1d1 100%);
+  /* Stated again, opaquely, AFTER the shorthand. `background:` resets
+     background-color to transparent, so without this the label's real backdrop is
+     whatever is behind the button and every contrast probe measures the page
+     instead of the hide. */
+  background-color:var(--hide);
+  color:var(--lace-ink);border-bottom:none;
+  box-shadow:0 2px 0 rgba(120,96,70,.28),0 10px 22px -10px rgba(60,44,28,.45),
+    inset 0 0 0 1px rgba(120,96,70,.16)}
+/* The sheen and the fine ruling on .btn::before are written for the brown fill
+   and read as a smear on leather. */
+.btn.ball::before{display:none}
+/* THE SEAM IS NEAR-VERTICAL AND CHUNKY, WHICH IS THE THIRD SHAPE IT HAS WORN,
+   and the history is the warning. It shipped as a tight bow hugging each end,
+   which read as a pale bar with a decoration at each corner; then the bow was
+   STRETCHED 2.1x inward and the same stitches spread over the longer arc came
+   out thin and clipped, a pair of wings rather than laces. Reported both times.
+   What the reference photo actually has is neither: a gentle, almost vertical
+   seam spanning the full height, laces thick enough to count, sitting INSIDE
+   the ball with leather on both sides. So the seam was rebuilt to that, not
+   stretched a third time. Four rebuilds were rendered and looked at; the
+   near-vertical chunky one is the photo.
+
+   The strip is one button-height square, so the seam scales with the ball and
+   never with the width: a wider button shows more leather between the same two
+   seams, which is what a wider crop of a ball is. */
+.bs{position:absolute;top:0;height:100%;width:auto;aspect-ratio:1;pointer-events:none;overflow:visible}
+/* WHERE THE SEAM STANDS is a percentage of the button, so the composition holds
+   as the crop widens. Measured ink to label in the FALLBACK face, which is wider
+   than the Bebas a visitor gets, so every number is the pessimistic one: at 2%
+   the gap is 35px on a 358px button and about 4px at 320, which is an iPhone SE
+   rather than a hypothetical, so the narrowest phones pull the seam back to 1%
+   (about 10px of gap) and a desktop pushes it in to 4% for the photo's spacing. */
+.bs-l{left:2%}
+/* One symbol, mirrored. A second path for the right hand seam is a second copy of
+   a drawing, and the two would drift the first time either was retouched. */
+.bs-r{right:2%;transform:scaleX(-1)}
+@media (max-width:359px){.bs-l{left:1%}.bs-r{right:1%}}
+@media (min-width:600px){.bs-l{left:4%}.bs-r{right:4%}}
+/* The label sits over the seams and never under them. */
+.btn.ball span{position:relative;padding:0 4px}
 
 /* ─── loading ─── */
 .load{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;gap:14px}
@@ -130,30 +283,50 @@ h1,h2,h3{margin:0}
   text-transform:none;color:var(--dim-2)}
 .hrow{display:flex;gap:8px;justify-content:center;margin-bottom:16px}
 .hp-util-btn{width:auto;flex:1}
+/* The phone keeps the three plain buttons it has always had. The icon and the line
+   under the name are the DESKTOP card, and they are in the markup rather than built
+   there because a door that only exists at one width is a door that gets forgotten. */
+.hp-util-btn b{font-weight:inherit}
+.hp-util-btn .hu-i,.hp-util-btn .hu-s{display:none}
 
 /* ─── reels ─── */
 .reels{display:grid;grid-template-columns:120px 1fr;gap:10px;margin-top:11px}
 .reelcol{min-width:0}
 .rlabel{display:block;margin:0 0 5px 0;font-family:var(--fn);font-size:9px;letter-spacing:.14em;
   text-transform:uppercase;color:var(--dim-2);text-align:center}
-.reelbox{position:relative;height:114px;overflow:hidden;border-radius:8px;
-  border:2px solid rgba(0,0,0,.20);box-shadow:inset 0 2px 6px rgba(0,0,0,.25),0 2px 4px rgba(0,0,0,.08)}
+/* A REEL IS THREE ROWS AND THE MIDDLE ONE IS THE BAND, and that was six copies of
+   one number. The strip lands its target `REEL_H` from the top of the box and the
+   band is centred at 50%, so the two agree only while the box is exactly three rows
+   tall. Written out as 114, 38, -19, 38, 38 and a `REEL_H=38` in the script, any one
+   of them could move on its own: the reel would spin perfectly, land perfectly, and
+   draw the highlight around the row above or below the pick. Nothing throws.
+   `--reel-h` is the one answer now. The height is `* 3` by construction, the band and
+   the wash derive from it, and `reelH()` reads it back off the box, so the desktop
+   front page can ask for a bigger reel by setting one property. */
+.reelbox{--reel-h:38px;position:relative;height:calc(var(--reel-h) * 3);overflow:hidden;border-radius:8px;
+  border:2px solid rgba(var(--edge),.20);box-shadow:inset 0 2px 6px rgba(0,0,0,.25),0 2px 4px rgba(0,0,0,.08)}
 .reelbox.year{background:linear-gradient(180deg,#2a5e1a,#1e4a14 50%,#174010)}
 .reelbox.team{background:linear-gradient(180deg,#8b3a2a,#6d2c1e 50%,#5a2418)}
 .reelbox:after{content:'';position:absolute;inset:0;z-index:2;pointer-events:none}
 .reelbox.year:after{background:linear-gradient(180deg,#174010 2%,rgba(23,64,16,.12) 30%,rgba(23,64,16,.12) 70%,#174010 98%)}
 .reelbox.team:after{background:linear-gradient(180deg,#5a2418 2%,rgba(90,36,24,.12) 30%,rgba(90,36,24,.12) 70%,#5a2418 98%)}
+/* BLACK IN BOTH THEMES. This is a vignette over a reel painted in the drawn CLUB'S
+   colours, so what is under it is not a surface the theme owns and darkening is the
+   whole job: it is what pushes the top and bottom rows back so the middle one reads
+   as the pick. Flipped to white for dark mode it became a veil, and on a club with
+   pale colours (Milwaukee's gold) the two rows either side of the selection washed
+   out to nothing. Found by taking a screenshot and looking at it. */
 .reelbox.clubbed:after{background:linear-gradient(180deg,rgba(0,0,0,.72) 2%,rgba(0,0,0,.10) 34%,
   rgba(0,0,0,.10) 66%,rgba(0,0,0,.72) 98%)}
 .reelbox .strip{position:absolute;left:0;right:0;top:0;z-index:1;will-change:transform,filter}
 .reelbox .wash{display:none}
 .reelbox.clubbed .wash{display:block}
-.reelbox .band{position:absolute;left:6px;right:6px;top:50%;height:38px;margin-top:-19px;z-index:3;
+.reelbox .band{position:absolute;left:6px;right:6px;top:50%;height:var(--reel-h);margin-top:calc(var(--reel-h) / -2);z-index:3;
   border-radius:7px;border:1.5px solid rgba(255,255,255,.18);pointer-events:none;
   transition:border-color .2s ease,box-shadow .2s ease,background .2s ease}
 .reelbox.year .band{border-color:rgba(200,180,80,.40);background:rgba(200,180,80,.06)}
 .reelbox.team .band{border-color:rgba(255,255,255,.15);background:rgba(255,255,255,.04)}
-.reel-i{height:38px;display:grid;place-items:center;padding:0 9px;text-align:center;
+.reel-i{height:var(--reel-h);display:grid;place-items:center;padding:0 9px;text-align:center;
   font-family:var(--fd);text-transform:uppercase;letter-spacing:.06em;color:#fff;
   line-height:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .reelbox.year .reel-i{font-size:24px;font-weight:400}
@@ -172,14 +345,14 @@ h1,h2,h3{margin:0}
 @keyframes bandhit{0%{box-shadow:0 0 0 0 rgba(255,255,255,.42),0 0 18px 2px rgba(255,255,255,.22)}
   100%{box-shadow:0 0 0 7px rgba(255,255,255,0),0 0 0 0 rgba(255,255,255,0)}}
 @keyframes facehit{0%{transform:scale(1)}40%{transform:scale(1.13)}100%{transform:scale(1)}}
-.reelbox.done:not(.clubbed){border-color:rgba(0,0,0,.20)}
+.reelbox.done:not(.clubbed){border-color:rgba(var(--edge),.20)}
 .reelbox.year.done:not(.clubbed) .band{border-color:rgba(200,180,80,.45);background:rgba(200,180,80,.08)}
 .reelbox.team.done:not(.clubbed) .band{border-color:rgba(255,220,180,.35);background:rgba(255,220,180,.06)}
 .reelbox.clubbed,.reelbox.clubbed.done{border-color:var(--c2);background:var(--c1)}
 .reelbox.clubbed .reel-i{color:var(--on,#fff);opacity:.34}
 .reelbox.clubbed .reel-i.land{opacity:1;font-weight:900;letter-spacing:.03em}
 .reelbox.clubbed .band,.reelbox.clubbed.done .band{border-color:var(--c2);border-width:1.5px;background:rgba(255,255,255,.13)}
-.reelbox.clubbed .wash{position:absolute;left:6px;right:6px;top:50%;height:38px;margin-top:-19px;
+.reelbox.clubbed .wash{position:absolute;left:6px;right:6px;top:50%;height:var(--reel-h);margin-top:calc(var(--reel-h) / -2);
   border-radius:7px;z-index:0;background:var(--c1);opacity:0;pointer-events:none;animation:clubwash .5s ease-out}
 @keyframes clubwash{0%{opacity:0;transform:scale(.86)}45%{opacity:.9;transform:scale(1.05)}100%{opacity:0;transform:scale(1)}}
 
@@ -187,6 +360,8 @@ h1,h2,h3{margin:0}
 .field{position:relative;width:100%;aspect-ratio:1/0.68;border-radius:14px;overflow:hidden;
   background:#3d8a2e;
   border:3px solid #2a5a18;box-shadow:0 4px 16px rgba(0,0,0,.18),inset 0 0 0 2px rgba(120,180,60,.25)}
+/* Black in both themes, for the reel vignette's reason: the mown stripes are shade
+   on grass, and the grass is green at night. */
 .field .turf{position:absolute;inset:0;
   background:repeating-linear-gradient(0deg,rgba(0,0,0,.012) 0 5px,transparent 5px 10px)}
 .field .lit{position:absolute;inset:0;
@@ -199,12 +374,15 @@ h1,h2,h3{margin:0}
 .chip{--discr:17px;position:absolute;transform:translate(-50%,calc(-1 * var(--discr)));
   display:flex;flex-direction:column;width:62px;text-align:center;cursor:pointer;z-index:4}
 .chip .disc{position:relative;width:36px;height:36px;margin:0 auto;border-radius:50%;display:grid;place-items:center;
-  font-family:var(--fn);font-size:10px;font-weight:700;color:#fff;border:2px solid rgba(0,0,0,.25);
+  font-family:var(--fn);font-size:10px;font-weight:700;color:#fff;border:2px solid rgba(var(--edge),.25);
   box-shadow:0 3px 8px -3px rgba(0,0,0,.40)}
 .chip .disc .dl{display:block;line-height:1}
 .chip.filled .disc{color:#fff}
 .chip.filled .disc:after{content:'';position:absolute;inset:-5px;border-radius:50%;
   border:1px solid rgba(255,255,255,.17);pointer-events:none}
+/* The empty position disc is cream ON THE GRASS, so its edge is drawn against
+   its own fill rather than against the page: black in both themes, or in dark it
+   is a white line on a cream disc and the disc loses its outline. */
 .chip.empty .disc{background:linear-gradient(180deg,#f5f0e6,#e8dcc8);border:2px solid rgba(0,0,0,.18);
   color:#5a4a30;box-shadow:inset 0 1px 2px rgba(255,255,255,.5),0 2px 6px -2px rgba(0,0,0,.25)}
 .chip.now .disc{border-color:#fff;animation:chipulse 1.6s ease-in-out infinite}
@@ -227,7 +405,7 @@ h1,h2,h3{margin:0}
    than a single digit, and it takes the color of that player's strongest bond. */
 .chip .pip{position:absolute;top:-4px;right:-10px;min-width:17px;height:15px;padding:0 4px;
   border-radius:99px;display:none;place-items:center;font-family:var(--fn);
-  font-size:9px;font-weight:800;color:#fff;border:1.5px solid rgba(0,0,0,.35);
+  font-size:9px;font-weight:800;color:#fff;border:1.5px solid rgba(var(--edge),.35);
   font-style:normal;white-space:nowrap;box-shadow:0 1px 3px -1px rgba(0,0,0,.5)}
 
 /* ─── cap bar ─── */
@@ -245,13 +423,13 @@ h1,h2,h3{margin:0}
 .ck-btn{display:inline-flex;align-items:center;gap:4px;background:none;border:0;padding:0;
   cursor:pointer;font:inherit;color:inherit;text-transform:inherit;letter-spacing:inherit}
 .ck-btn i{display:grid;place-items:center;width:13px;height:13px;border-radius:50%;
-  border:1px solid rgba(0,0,0,.22);font-style:normal;font-size:9px;font-weight:800;line-height:1}
+  border:1px solid rgba(var(--edge),.22);font-style:normal;font-size:9px;font-weight:800;line-height:1}
 .ck-btn:hover i,.ck-btn:focus-visible i{border-color:var(--gold);color:var(--gold)}
 .chemval{font-size:18px;color:var(--green)}
 .chemval.zero{color:var(--dim)}
 .chemval.bump{animation:chembump .5s ease}
 @keyframes chembump{0%{transform:scale(1)}30%{transform:scale(1.15)}100%{transform:scale(1)}}
-.bar{height:5px;border-radius:99px;background:rgba(0,0,0,.08);overflow:hidden;margin-top:9px}
+.bar{height:5px;border-radius:99px;background:rgba(var(--edge),.08);overflow:hidden;margin-top:9px}
 .bar i{display:block;height:100%;border-radius:99px;background:var(--grad-green);transition:width .4s ease}
 .bar i.low{background:var(--grad-red)}
 .perslot{font-family:var(--fn);font-size:12px;font-weight:600;color:var(--dim);margin-top:7px;white-space:nowrap}
@@ -262,7 +440,7 @@ h1,h2,h3{margin:0}
 .dpips i{flex:0 0 auto;min-width:22px;height:26px;padding:0 3px;border-radius:5px;
   display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;
   font-family:var(--fn);font-size:8.5px;font-weight:600;line-height:1;letter-spacing:.02em;font-style:normal;
-  background:rgba(0,0,0,.04);border:1px dashed rgba(0,0,0,.15);color:var(--dim-2)}
+  background:rgba(var(--edge),.04);border:1px dashed rgba(var(--edge),.15);color:var(--dim-2)}
 .dpips i.on{border-style:solid;border-color:transparent;color:#fff}
 
 /* ─── tabs ─── */
@@ -270,7 +448,7 @@ h1,h2,h3{margin:0}
 .tabs::-webkit-scrollbar{display:none}
 @keyframes optin{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 .tabs{animation:optin .22s ease-out both}
-.tab{flex:0 0 auto;padding:7px 12px;border-radius:8px;border:1px solid rgba(0,0,0,.10);
+.tab{flex:0 0 auto;padding:7px 12px;border-radius:8px;border:1px solid rgba(var(--edge),.10);
   background:var(--panel);color:var(--dim);font-family:var(--fn);font-size:11px;font-weight:700;
   letter-spacing:.05em;cursor:pointer;white-space:nowrap;transition:border-color .15s}
 .tab.on{border-color:var(--green);background:var(--green);color:#fff}
@@ -281,7 +459,7 @@ h1,h2,h3{margin:0}
 .sortrow{display:flex;gap:5px;align-items:center;margin-top:8px}
 .sortrow .sl{font-family:var(--fn);font-size:10px;font-weight:700;letter-spacing:.08em;
   text-transform:uppercase;color:var(--dim-2);margin-right:2px}
-.sbtn{padding:6px 11px;border-radius:8px;border:1px solid rgba(0,0,0,.10);
+.sbtn{padding:6px 11px;border-radius:8px;border:1px solid rgba(var(--edge),.10);
   background:var(--panel);color:var(--dim);font-family:var(--fn);font-size:11px;
   font-weight:700;letter-spacing:.04em;cursor:pointer;white-space:nowrap;transition:border-color .15s}
 .sbtn.on{border-color:var(--gold);background:var(--gold);color:#fff}
@@ -290,7 +468,7 @@ h1,h2,h3{margin:0}
 .opts{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:11px}
 .opts .tile{animation:optin .24s ease-out both}
 .tile{display:flex;flex-direction:column;gap:0;padding:10px;border-radius:10px;min-width:0;
-  background:var(--grad-panel);border:1px solid rgba(0,0,0,.10);text-align:left;cursor:pointer;
+  background:var(--grad-panel);border:1px solid rgba(var(--edge),.10);text-align:left;cursor:pointer;
   transition:transform .12s ease,border-color .12s ease,box-shadow .12s ease;
   box-shadow:0 2px 6px rgba(0,0,0,.06)}
 .tile:active{transform:scale(.975)}
@@ -331,7 +509,7 @@ h1,h2,h3{margin:0}
 .warv.w1{color:#6b6252}
 .warv.w0{color:var(--dim-2)}
 .tile.off .warv{color:var(--dim-2)!important;text-shadow:none}
-.tile.off{background:rgba(0,0,0,.02);border-style:dashed;border-color:rgba(0,0,0,.08);cursor:default;box-shadow:none}
+.tile.off{background:rgba(var(--edge),.02);border-style:dashed;border-color:rgba(var(--edge),.08);cursor:default;box-shadow:none}
 .tile.off:active{transform:none}
 .tile.off .pos{filter:grayscale(1);opacity:.45}
 .tile.off .nm,.tile.off .pr,.tile.off .pts b{color:var(--dim-2)}
@@ -354,7 +532,7 @@ h1,h2,h3{margin:0}
 .record-line{font-family:var(--fn);font-size:12px;color:var(--dim);text-align:center}
 .sim-feed{max-height:400px;overflow-y:auto;margin:12px 0}
 .sim-game{display:flex;align-items:center;justify-content:space-between;padding:6px 0;
-  border-bottom:1px solid rgba(0,0,0,.06);font-family:var(--fn);font-size:13px}
+  border-bottom:1px solid rgba(var(--edge),.06);font-family:var(--fn);font-size:13px}
 .sim-game .gnum{color:var(--dim-2);width:34px;font-weight:700;flex:0 0 auto}
 .sim-game .gopp{flex:1;color:var(--dim);font-weight:600;white-space:nowrap;overflow:hidden;
   text-overflow:ellipsis;padding:0 8px}
@@ -367,7 +545,7 @@ h1,h2,h3{margin:0}
    last row indented and the row lengths at the mercy of the viewport width. */
 .sim-progress{display:grid;grid-template-columns:repeat(54,1fr);gap:2px;margin:12px 0}
 @media (max-width:360px){.sim-progress{grid-template-columns:repeat(27,1fr);gap:1.5px}}
-.sim-pip{width:auto;height:14px;border-radius:2px;background:rgba(0,0,0,.08)}
+.sim-pip{width:auto;height:14px;border-radius:2px;background:rgba(var(--edge),.08)}
 .sim-pip.w{background:var(--green)} .sim-pip.l{background:var(--red)}
 
 /* ─── the bracket ───
@@ -414,7 +592,7 @@ h1,h2,h3{margin:0}
 .brk-t.won.me .nm{color:var(--gold)}
 .brk-t.out{opacity:.4}
 .brk-t.tbd .nm{color:var(--dim-2);font-weight:600;font-style:italic}
-.brk-t.champ{background:linear-gradient(180deg,#f7efd8,#efe3c6)}
+.brk-t.champ{background:var(--warm)}
 .brk-t.champ .nm{color:var(--gold)}
 .brk-note{text-align:center;font-family:var(--fp);font-size:13px;color:var(--dim);
   margin:6px 0 0;min-height:18px}
@@ -458,7 +636,7 @@ h1,h2,h3{margin:0}
 .sr-mid::before,.sr-mid::after{content:'';flex:1;height:1px;background:var(--line-2)}
 .sr-meta{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
 .sr-chip{font-family:var(--fn);font-size:11px;font-weight:800;text-transform:uppercase;
-  letter-spacing:.06em;padding:5px 9px;border-radius:99px;background:rgba(0,0,0,.06);color:var(--dim)}
+  letter-spacing:.06em;padding:5px 9px;border-radius:99px;background:rgba(var(--edge),.06);color:var(--dim)}
 .sr-chip.home{background:rgba(46,125,50,.14);color:var(--green)}
 /* The road ahead, so a series card says where it sits in October rather than
    leaving the player to count. */
@@ -499,7 +677,7 @@ h1,h2,h3{margin:0}
 .gm-line td{font-weight:700;color:var(--dim)}
 .gm-line .tm{text-align:left;padding-left:10px;min-width:74px;max-width:110px;
   font-weight:800;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.gm-line .rhe{font-weight:800;color:var(--ink);background:rgba(0,0,0,.05)}
+.gm-line .rhe{font-weight:800;color:var(--ink);background:rgba(var(--edge),.05)}
 .gm-line .now{background:rgba(184,134,11,.18);color:var(--ink);font-weight:800}
 .gm-line tr.you .tm{color:var(--green)}
 .gm-line td.fresh{animation:gmpop .45s ease both}
@@ -509,14 +687,14 @@ h1,h2,h3{margin:0}
   border-radius:14px;background:var(--panel);border:1px solid var(--line)}
 .gm-diamond{position:relative;flex:0 0 auto;width:104px;height:104px}
 /* Inset so the frame's corners land ON the bases rather than outside them. */
-.gm-frame{position:absolute;inset:21px;border:1px dashed rgba(0,0,0,.16);
+.gm-frame{position:absolute;inset:21px;border:1px dashed rgba(var(--edge),.16);
   transform:rotate(45deg);border-radius:3px}
 .gm-base{position:absolute;width:19px;height:19px;transform:rotate(45deg);border-radius:3px;
-  background:rgba(0,0,0,.08);border:1px solid rgba(0,0,0,.14);transition:background .25s,transform .25s}
+  background:rgba(var(--edge),.08);border:1px solid rgba(var(--edge),.14);transition:background .25s,transform .25s}
 .gm-base.on{background:var(--gold);border-color:#8b6914;box-shadow:0 0 0 4px rgba(184,134,11,.18)}
 .gm-base.b1{right:4px;top:42px} .gm-base.b2{left:42px;top:4px} .gm-base.b3{left:4px;top:42px}
 .gm-home{position:absolute;left:44px;bottom:2px;width:15px;height:15px;transform:rotate(45deg);
-  background:var(--cream);border:1px solid rgba(0,0,0,.28);border-radius:2px}
+  background:var(--cream);border:1px solid rgba(var(--edge),.28);border-radius:2px}
 /* A run crossing the plate is the only thing on this screen worth a flourish. */
 .gm-diamond.scored .gm-home{animation:gmplate .7s ease both}
 @keyframes gmplate{
@@ -526,7 +704,7 @@ h1,h2,h3{margin:0}
 .gm-state{flex:1;min-width:0}
 .gm-outs{display:flex;align-items:center;gap:5px;font-family:var(--fn);font-size:10px;
   font-weight:800;text-transform:uppercase;letter-spacing:.09em;color:var(--dim-2)}
-.gm-dot{width:9px;height:9px;border-radius:50%;background:rgba(0,0,0,.12)}
+.gm-dot{width:9px;height:9px;border-radius:50%;background:rgba(var(--edge),.12)}
 .gm-dot.on{background:var(--red)}
 .gm-inn{margin-left:6px;color:var(--gold)}
 .gm-up{font-family:var(--fd);font-size:24px;line-height:1.1;margin-top:7px;
@@ -548,11 +726,11 @@ h1,h2,h3{margin:0}
 .gm-feed>.gm-play:first-child{animation:gmin .3s ease both}
 @keyframes gmin{from{opacity:0;transform:translateY(-7px)}to{opacity:1;transform:none}}
 .gm-play .tag{flex:0 0 auto;font-family:var(--fn);font-size:9px;font-weight:800;
-  letter-spacing:.06em;padding:2px 5px;border-radius:5px;background:rgba(0,0,0,.07);
+  letter-spacing:.06em;padding:2px 5px;border-radius:5px;background:rgba(var(--edge),.07);
   color:var(--dim-2);text-transform:uppercase}
 .gm-play.hit{border-color:rgba(46,125,50,.3)}
 .gm-play.hit .tag{background:rgba(46,125,50,.16);color:var(--green)}
-.gm-play.run{background:linear-gradient(180deg,#f7efd8,#efe3c6);border-color:rgba(184,134,11,.45)}
+.gm-play.run{background:var(--warm);border-color:rgba(184,134,11,.45)}
 .gm-play.run .tag{background:var(--grad-gold);color:#fff}
 .gm-play .rbi{color:var(--gold);font-weight:700}
 .gm-play.beat{justify-content:center;background:none;border:0;color:var(--dim-2);
@@ -577,7 +755,7 @@ h1,h2,h3{margin:0}
 }
 
 /* ─── result screen ─── */
-.result-card{background:var(--panel);border:1px solid rgba(0,0,0,.10);border-radius:14px;
+.result-card{background:var(--panel);border:1px solid rgba(var(--edge),.10);border-radius:14px;
   padding:24px 20px;text-align:center;margin:16px 0;position:relative;overflow:hidden;
   box-shadow:0 2px 8px rgba(0,0,0,.06)}
 .result-card .rc-title{font-family:var(--fd);font-size:14px;text-transform:uppercase;
@@ -601,7 +779,7 @@ h1,h2,h3{margin:0}
 .share-row{display:flex;gap:8px;margin:16px 0}
 .share-row .btn{flex:1}
 .roster-final{display:flex;flex-direction:column;gap:4px;margin:12px 0}
-.rslot{display:flex;align-items:center;gap:10px;background:var(--panel);border:1px solid rgba(0,0,0,.08);
+.rslot{display:flex;align-items:center;gap:10px;background:var(--panel);border:1px solid rgba(var(--edge),.08);
   border-radius:8px;padding:8px 12px;min-height:40px}
 /* posPaint() paints a dark gradient behind this chip, so it needs white ink and
    real padding. It read as a blank colored block while it inherited --dim-2. */
@@ -617,22 +795,47 @@ h1,h2,h3{margin:0}
 
 /* ─── field beside lineup card, on a screen with room for it ───
    The page is a 640px column, which is right for a phone and leaves a desktop
-   showing a diamond with half the window empty beside it. Above 900px the field
-   row alone steps outside that column and splits in two: the diamond on the left,
-   a lineup card on the right carrying all twelve including the pitching staff.
-   Nothing else on the page moves, and below 900px this rule does not exist. */
+   showing a diamond with half the window empty beside it. Above 920px the field
+   row splits in two: the diamond on the left, a lineup card on the right carrying
+   all twelve including the pitching staff. Below 920px this rule does not exist.
+
+   THE ROW USED TO STEP OUTSIDE THE COLUMN and it is the whole page that widens
+   now, which is the football game's arrangement and the reason this reads as the
+   same site. A row wider than the page it sits in means the diamond and the board
+   under it have different left edges, so the screen has two rulers on it: the
+   draft was 1020px of field over 640px of tiles, and the eye reads that as a panel
+   pasted onto a phone layout rather than as a desktop page. `.wrap:has()` below is
+   where the width now lives, and it is per SCREEN, because every other screen here
+   is a column of prose that reads worse wide. */
 .fieldrow .lineupcard{display:none}
-@media (min-width:900px){
-  .fieldrow{display:flex;gap:18px;align-items:flex-start;
-    width:min(1020px,calc(100vw - 40px));
-    margin-left:calc((100% - min(1020px,100vw - 40px)) / 2)}
-  .fieldrow .field{flex:1 1 auto;min-width:0;margin:0}
-  .fieldrow .lineupcard{display:block;flex:0 0 322px}
+/* 1000, AND IT IS ARITHMETIC RATHER THAN A ROUND NUMBER OR FOOTBALL'S 920. The card
+   has a floor: a head and twelve rows at 30px is 411px and nothing makes it shorter.
+   The field is an aspect ratio, so to reach 411 it needs 604px of width, and 604 plus
+   the 18px gap plus a 340px card plus the page's own 28px of padding is 990. Split
+   below that and the field is the SHORT one, which is the imbalance this pass is about
+   wearing the other hat: measured at 920 it came out 363 against the card's 411.
+   Anything under 1000 stays one column, where the diamond has the whole width. */
+@media (min-width:1000px){
+  /* STRETCH, NOT FLEX-START. The card is twelve rows of fixed height and the field
+     is an aspect ratio, so left alone the two are different lengths and the row
+     reads as unbalanced whichever one happens to be taller. Stretching alone is
+     not enough either: a block card grows and leaves the slack at the bottom, so
+     the card is a column and the rows share what the field's height gives them. */
+  .fieldrow{display:flex;gap:18px;align-items:stretch}
+  /* THE FIELD IS THE ONE ITEM THAT MAY NOT STRETCH. It is an aspect-ratio box, and
+     a stretched flex item takes the line's height instead, so on any row where the
+     right hand column is the taller of the two the diamond is drawn into a shape it
+     was not laid out for: the SVG is inset:0 and the bases go with it. Pinning it
+     is what makes the stretch above mean "the card matches the field" rather than
+     "whichever is taller pulls the other". */
+  .fieldrow .field{flex:1 1 auto;min-width:0;margin:0;align-self:flex-start}
+  .fieldrow .lineupcard{display:flex;flex-direction:column;flex:0 0 340px}
+  .fieldrow .lineupcard .lc-row{flex:1 1 auto}
   /* The card carries the staff, so the strip under the field would say it twice. */
   .fieldrow+.staffline{display:none}
   /* The squad screen already has the richer thing: its own twelve with prices and
      chemistry. That list IS the right column there, so it gets no second card. */
-  .fieldrow.sq>div:last-child{flex:0 0 342px;min-width:0}
+  .fieldrow.sq>div:last-child{flex:0 0 360px;min-width:0}
   .fieldrow.sq .eyebrow{margin-top:0!important}
   .fieldrow.sq .rslot{padding:7px 10px;min-height:36px;gap:8px}
   .fieldrow.sq .rslot .rname{font-size:14px;min-width:0;overflow:hidden;
@@ -645,7 +848,7 @@ h1,h2,h3{margin:0}
   text-transform:uppercase;color:var(--gold);margin-bottom:8px}
 .lc-head span{color:var(--dim-2);letter-spacing:.06em}
 .lc-row{display:flex;align-items:center;gap:8px;padding:5px 2px;min-height:30px;
-  border-bottom:1px solid rgba(0,0,0,.05)}
+  border-bottom:1px solid rgba(var(--edge),.05)}
 .lc-row:last-child{border-bottom:0}
 .lc-row.open{opacity:.5}
 /* The staff is the half the diamond cannot show, so it gets a line above it. */
@@ -653,7 +856,7 @@ h1,h2,h3{margin:0}
 .lc-pos{flex:0 0 34px;text-align:center;font-family:var(--fn);font-size:9.5px;
   font-weight:800;letter-spacing:.03em;padding:3px 4px;border-radius:5px;color:#fff;
   text-shadow:0 1px 1px rgba(0,0,0,.35)}
-.lc-row.open .lc-pos{background:rgba(0,0,0,.1)!important;color:var(--dim-2);text-shadow:none}
+.lc-row.open .lc-pos{background:rgba(var(--edge),.1)!important;color:var(--dim-2);text-shadow:none}
 .lc-nm{flex:1;min-width:0;font-family:var(--fp);font-size:13.5px;font-weight:700;
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .lc-row.open .lc-nm{font-style:italic;font-weight:600;color:var(--dim-2)}
@@ -668,7 +871,7 @@ h1,h2,h3{margin:0}
 .staffline{display:flex;gap:7px;margin:8px 0 2px}
 .sl-arm{flex:1;min-width:0;display:flex;align-items:center;gap:7px;padding:7px 9px;
   border-radius:10px;background:var(--panel);border:1px solid var(--line)}
-.sl-arm.filled{border-color:rgba(0,0,0,.16)}
+.sl-arm.filled{border-color:rgba(var(--edge),.16)}
 .sl-pos{flex:0 0 auto;font-family:var(--fn);font-size:9.5px;font-weight:800;
   letter-spacing:.04em;padding:3px 5px;border-radius:5px;color:#fff;
   text-shadow:0 1px 1px rgba(0,0,0,.35)}
@@ -686,12 +889,12 @@ h1,h2,h3{margin:0}
 /* ─── results v2 ─── */
 .ro-hero{position:relative;text-align:center;margin:14px 0 12px;padding:22px 18px 20px;
   border-radius:16px;overflow:hidden;background:var(--grad-panel);
-  border:1px solid rgba(0,0,0,.10);box-shadow:0 4px 16px -6px rgba(0,0,0,.18)}
+  border:1px solid rgba(var(--edge),.10);box-shadow:0 4px 16px -6px rgba(0,0,0,.18)}
 .ro-hero.win{border-color:rgba(184,134,11,.55);
-  background:linear-gradient(180deg,#f7efd8,#efe3c6);box-shadow:0 6px 22px -8px rgba(184,134,11,.4)}
-.ro-hero.lose{background:linear-gradient(180deg,#f2ece0,#e9e0d0)}
+  background:var(--warm);box-shadow:0 6px 22px -8px rgba(184,134,11,.4)}
+.ro-hero.lose{background:var(--cool)}
 .ro-ribbon{display:inline-block;font-family:var(--fn);font-size:10.5px;font-weight:800;
-  letter-spacing:.14em;text-transform:uppercase;color:#7a5c12;background:rgba(184,134,11,.14);
+  letter-spacing:.14em;text-transform:uppercase;color:var(--warm-ink);background:rgba(184,134,11,.14);
   border:1px solid rgba(184,134,11,.35);padding:4px 12px;border-radius:99px;margin-bottom:12px}
 .ro-record{font-family:var(--fd);font-size:clamp(48px,15vw,76px);line-height:.95;letter-spacing:.02em}
 .ro-record .w{color:var(--green)} .ro-record .l{color:var(--red)} .ro-record .d{color:var(--dim);margin:0 6px}
@@ -701,17 +904,17 @@ h1,h2,h3{margin:0}
 .ro-sub{font-family:var(--fn);font-size:12px;font-weight:600;color:var(--dim);margin-top:5px}
 
 .ro-cells{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0}
-.ro-cell{background:var(--panel);border:1px solid rgba(0,0,0,.10);border-radius:12px;
+.ro-cell{background:var(--panel);border:1px solid rgba(var(--edge),.10);border-radius:12px;
   padding:12px 8px;text-align:center;box-shadow:0 2px 6px rgba(0,0,0,.05)}
 .ro-cell .cv{font-family:var(--fd);font-size:30px;line-height:1;color:var(--ink)}
 .ro-cell .cv .u{font-size:15px;color:var(--dim-2)}
 .ro-cell .cv.gold{color:var(--gold)} .ro-cell .cv.green{color:var(--green)}
 .ro-cell .cl{font-family:var(--fn);font-size:9.5px;font-weight:700;letter-spacing:.07em;
   text-transform:uppercase;color:var(--dim-2);margin-top:5px}
-.ro-meter{height:5px;border-radius:99px;background:rgba(0,0,0,.09);margin-top:8px;overflow:hidden}
+.ro-meter{height:5px;border-radius:99px;background:rgba(var(--edge),.09);margin-top:8px;overflow:hidden}
 .ro-meter i{display:block;height:100%;border-radius:99px;background:var(--grad-gold)}
 
-.ro-coach{background:var(--panel);border:1px solid rgba(0,0,0,.10);border-radius:14px;
+.ro-coach{background:var(--panel);border:1px solid rgba(var(--edge),.10);border-radius:14px;
   padding:15px 16px;margin:12px 0;box-shadow:0 2px 6px rgba(0,0,0,.05)}
 .ro-coach .ch{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:11px}
 .ro-coach .ceyebrow{font-family:var(--fn);font-size:10px;font-weight:800;letter-spacing:.12em;
@@ -727,7 +930,7 @@ h1,h2,h3{margin:0}
 .ro-take.neg .ic{background:rgba(192,57,43,.14);color:var(--red)}
 .ro-take .tt{color:var(--ink)}
 .ro-proj{font-family:var(--fn);font-size:12px;color:var(--dim);margin-top:11px;
-  padding-top:11px;border-top:1px solid rgba(0,0,0,.08)}
+  padding-top:11px;border-top:1px solid rgba(var(--edge),.08)}
 .ro-proj b{color:var(--ink);font-weight:800}
 
 .sq-verdict{text-align:center;font-family:'Righteous',var(--fd);font-size:clamp(18px,5.5vw,26px);
@@ -753,10 +956,10 @@ h1,h2,h3{margin:0}
 .chemkey-row .ck-name{display:block;font-family:var(--fn);font-size:13px;font-weight:800;color:var(--ink);line-height:1.2}
 .chemkey-row .ck-note{display:block;font-size:11px;color:var(--dim-2);line-height:1.3}
 .chemcap{font-size:12px;color:var(--dim);line-height:1.5;margin-top:10px;
-  padding-top:10px;border-top:1px solid rgba(0,0,0,.10)}
+  padding-top:10px;border-top:1px solid rgba(var(--edge),.10)}
 /* chemistry stated in wins, on the results screen */
 .chemworth{display:flex;align-items:baseline;justify-content:center;gap:7px;
-  margin-top:10px;padding-top:10px;border-top:1px solid rgba(0,0,0,.10)}
+  margin-top:10px;padding-top:10px;border-top:1px solid rgba(var(--edge),.10)}
 .chemworth b{font-family:'Righteous',var(--fd);font-size:22px;color:var(--green);line-height:1}
 .chemworth span{font-family:var(--fn);font-size:12px;font-weight:700;color:var(--dim)}
 
@@ -776,12 +979,12 @@ h1,h2,h3{margin:0}
 
 /* ─── badge medallion ─── */
 .bdg-ic{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;flex:0 0 auto;
-  font-size:15px;border:2px solid rgba(0,0,0,.15);box-shadow:0 2px 5px -1px rgba(0,0,0,.3)}
+  font-size:15px;border:2px solid rgba(var(--edge),.15);box-shadow:0 2px 5px -1px rgba(0,0,0,.3)}
 .bdg-ic.bronze{background:linear-gradient(160deg,#c88a4a,#8a5a2a)}
 .bdg-ic.silver{background:linear-gradient(160deg,#cfd4da,#9aa2ab)}
 .bdg-ic.gold{background:linear-gradient(160deg,#f0c850,#b8860b)}
 .bdg-ic.legend{background:linear-gradient(160deg,#8e6aad,#5a3d7a)}
-.bdg-ic.off{background:rgba(0,0,0,.06);border-color:rgba(0,0,0,.10);box-shadow:none;filter:grayscale(1);opacity:.5}
+.bdg-ic.off{background:rgba(var(--edge),.06);border-color:rgba(var(--edge),.10);box-shadow:none;filter:grayscale(1);opacity:.5}
 
 /* ─── bottom sheet ─── */
 .sheet{position:fixed;inset:0;z-index:120;display:none}
@@ -792,7 +995,7 @@ h1,h2,h3{margin:0}
   background:var(--bg);border-radius:20px 20px 0 0;padding:8px 16px calc(24px + env(safe-area-inset-bottom));
   box-shadow:0 -8px 30px -8px rgba(0,0,0,.4);animation:sheetup .32s cubic-bezier(.33,1,.68,1)}
 @keyframes sheetup{from{transform:translateY(100%)}to{transform:none}}
-.sheet-grab{width:40px;height:4px;border-radius:99px;background:rgba(0,0,0,.18);margin:8px auto 4px}
+.sheet-grab{width:40px;height:4px;border-radius:99px;background:rgba(var(--edge),.18);margin:8px auto 4px}
 .sheet-hd{display:flex;align-items:center;justify-content:space-between;padding:6px 0 12px}
 .sheet-title{font-family:'Righteous',var(--fd);font-size:22px;text-transform:uppercase;letter-spacing:.02em}
 .sheet-x{background:none;border:none;font-size:28px;line-height:1;color:var(--dim);cursor:pointer;padding:0 4px}
@@ -801,7 +1004,7 @@ h1,h2,h3{margin:0}
 
 /* ─── trophy case ─── */
 .trophy-career{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px}
-.trophy-career .stk{background:var(--panel);border:1px solid rgba(0,0,0,.08);border-radius:10px;
+.trophy-career .stk{background:var(--panel);border:1px solid rgba(var(--edge),.08);border-radius:10px;
   padding:10px 6px;text-align:center}
 .trophy-career .stk .sv{font-family:var(--fd);font-size:24px;line-height:1;color:var(--ink)}
 .trophy-career .stk .sl{font-family:var(--fn);font-size:8.5px;font-weight:700;letter-spacing:.05em;
@@ -812,7 +1015,22 @@ h1,h2,h3{margin:0}
   text-transform:uppercase;color:var(--dim)}
 .trophy-group .tg-count{font-family:var(--fn);font-size:11px;font-weight:700;color:var(--dim-2)}
 .trophy-grid{display:flex;flex-direction:column;gap:6px}
-.ach{display:flex;align-items:center;gap:11px;background:var(--panel);border:1px solid rgba(0,0,0,.07);
+/* THE LOCKED HALF FOLDS, and that is arithmetic rather than taste. The catalogue
+   went from 36 badges to 205, and drawn flat that is a sheet about nine thousand
+   pixels deep whose first screen is the same for somebody on their first season
+   and somebody on their hundredth. A trophy cabinet is FOR what you earned, so
+   that is what is open; what is left is the map, one tap behind a line that says
+   how much of it there is. Folded is not hidden: every badge is in the DOM either
+   way, so nothing is lost to a reader who wants the whole list. */
+.tg-more{margin-top:6px}
+.tg-more>summary{list-style:none;cursor:pointer;font-family:var(--fn);font-size:11px;
+  font-weight:700;color:var(--dim-2);padding:7px 2px}
+.tg-more>summary::-webkit-details-marker{display:none}
+.tg-more>summary::after{content:' +';font-weight:800}
+.tg-more[open]>summary::after{content:' -'}
+.tg-more>summary:hover{color:var(--ink)}
+.tg-more .trophy-grid{margin-top:4px}
+.ach{display:flex;align-items:center;gap:11px;background:var(--panel);border:1px solid rgba(var(--edge),.07);
   border-radius:10px;padding:9px 12px}
 .ach.locked{opacity:.62}
 .ach .ach-t{font-family:var(--fp);font-size:14px;font-weight:700;color:var(--ink)}
@@ -822,7 +1040,7 @@ h1,h2,h3{margin:0}
 /* ─── position chooser ─── */
 .pos-sub{font-size:13px;color:var(--dim);margin:0 0 12px}
 .pos-opts{display:flex;flex-direction:column;gap:8px}
-.pos-opt{display:flex;align-items:center;gap:12px;background:var(--panel);border:1px solid rgba(0,0,0,.10);
+.pos-opt{display:flex;align-items:center;gap:12px;background:var(--panel);border:1px solid rgba(var(--edge),.10);
   border-radius:11px;padding:12px 14px;cursor:pointer;text-align:left;width:100%;
   transition:border-color .12s,transform .1s}
 .pos-opt:active{transform:scale(.99)}
@@ -836,7 +1054,7 @@ h1,h2,h3{margin:0}
 
 /* ─── era picker ─── */
 .era-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:6px;margin:12px 0}
-.era-btn{background:var(--panel);border:1px solid rgba(0,0,0,.10);border-radius:8px;padding:10px 8px;
+.era-btn{background:var(--panel);border:1px solid rgba(var(--edge),.10);border-radius:8px;padding:10px 8px;
   text-align:center;cursor:pointer;font-family:var(--fn);font-size:14px;font-weight:700;
   color:var(--ink);transition:border-color .15s}
 .era-btn:hover{border-color:var(--gold)}
@@ -845,29 +1063,60 @@ h1,h2,h3{margin:0}
 .fran-sec{display:flex;align-items:center;gap:9px;margin:20px 0 9px;
   font-family:var(--fn);font-size:11px;font-weight:800;letter-spacing:.12em;
   text-transform:uppercase;color:var(--dim-2)}
-.fran-sec::after{content:'';flex:1;height:1px;background:rgba(0,0,0,.12)}
+.fran-sec::after{content:'';flex:1;height:1px;background:rgba(var(--edge),.12)}
 .fran-sec .n{font-weight:700;color:var(--dim-2);opacity:.7;letter-spacing:.04em}
 .fran-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(158px,1fr));gap:8px}
 .fran-card{position:relative;display:block;width:100%;text-align:left;cursor:pointer;
-  background:var(--panel);border:1px solid rgba(0,0,0,.10);border-radius:10px;
+  background:var(--panel);border:1px solid rgba(var(--edge),.10);border-radius:10px;
   padding:10px 11px 10px 17px;overflow:hidden;font-family:var(--fn);
   transition:transform .14s ease,box-shadow .14s ease,border-color .14s ease}
-/* the club's own colors, as a spine down the left edge */
+/* ONE COLOUR. The spine used to carry both club colours split on a diagonal, and
+   with the five depth pips under the card in a third tone that was three colour
+   ideas in a box two inches wide. A card in a grid of forty-five is scanned, not
+   studied: the club's primary down the edge is the whole of what the colour is
+   for, which is telling this card from the one beside it. */
 .fran-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:7px;
-  background:linear-gradient(160deg,var(--c1) 0%,var(--c1) 52%,var(--c2) 52%,var(--c2) 100%);
-  transition:width .14s ease}
-.fran-card:hover,.fran-card:focus-visible{transform:translateY(-2px);border-color:rgba(0,0,0,.2);
+  background:var(--c1);transition:width .14s ease}
+.fran-card:hover,.fran-card:focus-visible{transform:translateY(-2px);border-color:rgba(var(--edge),.2);
   box-shadow:0 5px 14px rgba(60,40,15,.16);outline:none}
 .fran-card:hover::before,.fran-card:focus-visible::before{width:10px}
 .fran-card:active{transform:translateY(0)}
 .fran-name{font-size:13px;font-weight:800;line-height:1.24;color:var(--ink)}
+/* IT WRAPS, because the franchise lineage made the season counts three digits.
+   Measured at 390px of viewport, "1902-2025 · 111 seasons" needs exactly 147px in a
+   147px column, so under `nowrap` it rendered "1902-2025 · 111 seaso...": the season
+   count is the number this card is FOR, and it was the half being cut. Two digits
+   fitted, which is why it survived while the Marlins card said 14.
+   That 147 is the FALLBACK face, since Google Fonts does not resolve in the dev
+   sandbox, so a real visitor in Archivo gets it narrower and may never have seen the
+   ellipsis. Wrapping is what makes that question moot: a line that wraps cannot hide
+   the count in any face. */
 .fran-yrs{margin-top:3px;font-size:10.5px;font-weight:700;color:var(--dim-2);
-  font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  font-variant-numeric:tabular-nums;line-height:1.3}
+/* The lineage line, and the one string on this card that may never be cut: it
+   names clubs, so a truncation ends mid-name and claims a club the card does not
+   contain. Clamped at two it drew "Earlier: Philadelphia Athletics &middot; Kansas
+   City..." on the Athletics, naming two of three and cutting the second in half.
+   FOUR, measured rather than reasoned: the Athletics have worn three earlier names
+   and the longest of them needs four lines at the narrowest card this grid draws.
+   It costs height on that one card, and a grid row stretches, so nothing beside it
+   moves. Every other card carries one or two. */
+.fran-was{margin-top:4px;font-size:10px;font-weight:600;color:var(--dim-2);
+  line-height:1.3;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;
+  overflow:hidden}
+/* IT WRAPS, for the reason `.fran-yrs` does. "Best Player:" is seven characters
+   longer than the "Best:" this replaced, which put "Best Player: Randy Johnson" at
+   163px in a 147px column: under `nowrap` it cut a real person's name, and a name
+   is the one thing on this card a reader is scanning for. Caught by the fit check
+   the moment the label changed, on 27 of 45 cards. */
 .fran-best{margin-top:5px;font-size:10.5px;font-weight:600;color:var(--dim);
-  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.fran-depth{display:flex;gap:3px;margin-top:7px}
-.fran-depth i{flex:1;height:3px;border-radius:2px;background:rgba(0,0,0,.11)}
-.fran-depth i.on{background:var(--c1)}
+  line-height:1.3}
+/* THE DEPTH PIPS ARE GONE, and `.fran-depth` with them rather than left hidden.
+   Five bars on a square-root scale answered "how deep is this club's pool", which
+   is a question nobody asked at the picker and which the card could only answer
+   relative to the deepest club in the list, so a reader had to hold forty-five
+   cards in their head for it to mean anything. An unused rule is the next
+   person's invitation, which is why it is deleted rather than commented out. */
 @media (prefers-reduced-motion:reduce){
   .fran-card,.fran-card::before{transition:none}
   .fran-card:hover,.fran-card:focus-visible{transform:none}
@@ -885,7 +1134,7 @@ h1,h2,h3{margin:0}
 .sb-card{position:relative;border-radius:9px;padding:6px 6px 7px;min-height:58px;
   display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;
   text-align:center;overflow:hidden}
-.sb-card.empty{border:1.5px dashed rgba(0,0,0,.20);background:rgba(0,0,0,.02)}
+.sb-card.empty{border:1.5px dashed rgba(var(--edge),.20);background:rgba(var(--edge),.02)}
 .sb-card.empty .sb-slot{color:var(--dim-2)}
 .sb-card.now{border-color:var(--gold);border-style:solid;
   box-shadow:0 0 0 3px rgba(184,134,11,.16)}
@@ -915,9 +1164,9 @@ h1,h2,h3{margin:0}
   font-variant-numeric:tabular-nums}
 .captrack.danger .ct-v{color:var(--red)}
 .ct-shocks{margin-left:auto;display:flex;gap:4px}
-.ct-shocks i{width:7px;height:7px;border-radius:50%;background:rgba(0,0,0,.14)}
+.ct-shocks i{width:7px;height:7px;border-radius:50%;background:rgba(var(--edge),.14)}
 .ct-shocks i.hit{background:var(--red)}
-.ct-bar{height:6px;border-radius:99px;background:rgba(0,0,0,.09);overflow:hidden;margin-top:7px}
+.ct-bar{height:6px;border-radius:99px;background:rgba(var(--edge),.09);overflow:hidden;margin-top:7px}
 .ct-bar i{display:block;height:100%;border-radius:99px;background:var(--grad-green);
   transition:width .5s cubic-bezier(.33,1,.68,1)}
 .captrack.danger .ct-bar i{background:var(--grad-red)}
@@ -955,6 +1204,9 @@ h1,h2,h3{margin:0}
 .dc-streak{margin-left:auto;font-family:var(--fn);font-size:11px;font-weight:800;
   color:var(--orange);background:rgba(212,119,44,.12);padding:2px 8px;border-radius:99px}
 .dc-sub{font-size:12.5px;line-height:1.35;color:var(--dim)}
+/* The phone card is what it has always been: the text, and the whole card presses.
+   `.dc-go` is the desktop's, where the card is a wide band with room to the right. */
+.dc-go{display:none}
 .dc-done{display:flex;align-items:baseline;gap:9px}
 .dc-done b{font-family:'Righteous',var(--fd);font-size:20px;color:var(--ink)}
 .dc-grid{font-size:12px;letter-spacing:1px}
@@ -1039,6 +1291,13 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
 .hdr-btn svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.9;
   stroke-linecap:round;stroke-linejoin:round}
 .hdr-btn:hover{border-color:var(--gold);color:var(--gold)}
+/* ONE BUTTON HOLDING BOTH ICONS, and the theme decides which one is drawn. The
+   icon shows what pressing it GIVES you, so the light page offers the moon. Two
+   buttons would be two things to keep in step and one of them always visible in
+   the accessibility tree. */
+#b-theme .th-sun{display:none}
+:root[data-theme="dark"] #b-theme .th-sun{display:block}
+:root[data-theme="dark"] #b-theme .th-moon{display:none}
 
 /* ─── mode cards ───
    One sheet instead of a column of look-alike buttons on the home screen. Same
@@ -1086,7 +1345,7 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
 .modecard.mc-trade .mc-title{color:var(--orange)}
 /* A mode that exists on the sheet but is not open yet. Dimmed, not tappable, and the
    description stays fully legible: the card is the advertisement for coming back. */
-.modecard.mc-soon{cursor:default;border-style:dashed;background:rgba(0,0,0,.015)}
+.modecard.mc-soon{cursor:default;border-style:dashed;background:rgba(var(--edge),.015)}
 .modecard.mc-soon .mc-icon{filter:grayscale(1);opacity:.55}
 .modecard.mc-soon .mc-title{color:var(--dim-2)}
 .mc-sticker.soon{background:none;color:var(--dim-2);border:1px solid var(--line-2)}
@@ -1128,15 +1387,125 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
 .about-body p{margin:0 0 8px}
 
 /* ─── footer ─── */
-.legal{margin-top:32px;padding:16px 0;border-top:1px solid rgba(0,0,0,.08);font-size:12px;color:var(--dim);text-align:center}
+.legal{margin-top:32px;padding:16px 0;border-top:1px solid rgba(var(--edge),.08);font-size:12px;color:var(--dim);text-align:center}
 .legal a{color:var(--dim-2)} .legal p{margin:6px 0} .legal span{margin:0 6px}
 .src{font-size:11px;color:var(--dim);margin-top:8px}
 
 /* ─── responsive ─── */
 @media(min-width:700px){.wrap{max-width:640px}}
-@media(min-width:1260px){
-  .dcols{display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:start}
-  .dcols .opts{grid-template-columns:repeat(2,1fr)}
+
+/* ─── the page on a desktop ───
+   The football game's system, thresholds and all, because the two are the same
+   site and a visitor who has played one should not meet a different shape here.
+   `:has()` on the wrap, because the width is a fact about the SCREEN rather than
+   about the window: the draft is a diamond, a card and a board of tiles and wants
+   the room, and every other screen is a column of prose that reads worse wide.
+
+   The draft gets 1040 and the board goes to three across. Two 480px tiles on a
+   1440 monitor is a phone screenshot in the middle of a desktop, which is the
+   thing this whole block is about. Three is what football's board does and what
+   the tile was measured at.
+
+   A .dcols grid sat here for a while and was never in the markup, so it set the
+   width of nothing on any screen. Two columns is not the answer on this game
+   anyway: the lineup card already has the right hand side, and the board is the
+   thing a drafter reads. */
+@media(min-width:1000px){
+  .wrap:has(#s-draft.on),
+  .wrap:has(#s-squad.on),
+  .wrap:has(#s-intro.on){max-width:1040px}
+  .wrap:has(#s-season.on),
+  .wrap:has(#s-playoffs.on),
+  .wrap:has(#s-series.on),
+  .wrap:has(#s-game.on),
+  .wrap:has(#s-over.on){max-width:860px}
+  .opts{grid-template-columns:repeat(3,minmax(0,1fr))}
+
+  /* ─── the front page, wide ───
+     Two designs rather than two sizes of one, which is the clubhouse's own lesson.
+     What differs is the STAGE, not the running order: a phone stacks the two reels
+     over the field because there is no room beside it, and a desktop stands them
+     either side of it. The name of the game sits under the picture on both, where it
+     is a caption on something the reader has already looked at.
+
+     THE DAILY IS THE ONE THING THAT MOVES UP. It is the offer with a clock on it and
+     the only thing on this page that is different today from yesterday, so on a screen
+     with a whole band to spare it goes above the field rather than below the name,
+     where a reader has to scroll past the game to find out there is one.
+
+     THE ORDER IS CSS AND THE MARKUP IS THE PHONE'S. Written into the DOM instead, the
+     reels and the field would have to live in two different parents to get side by
+     side here, and every JS handle on this screen would then depend on which width it
+     was built at. `order` on a flex column costs nothing and the phone is byte for
+     byte what it was.
+
+     Every child is given one, and the default is 9 rather than 0: an element added
+     later with no order lands just above the footer, which is where a new thing on
+     this page belongs. At 0 it would jump silently to the very top. */
+  #s-intro.on{display:flex;flex-direction:column}
+  #s-intro.on>*{order:9}
+  #s-intro .dailycard{order:1;margin-bottom:22px;
+    display:flex;align-items:center;gap:20px;padding:18px 18px 18px 20px}
+  #s-intro .dc-txt{flex:1 1 auto;min-width:0}
+  #s-intro .dc-go{display:block;flex:0 0 auto;font-family:var(--fd);font-size:17px;
+    text-transform:uppercase;letter-spacing:.05em;padding:13px 22px;border-radius:9px;
+    background:linear-gradient(180deg,var(--gold),#a5791a);color:#1a1205;
+    border-bottom:3px solid #6f4f0d}
+  #s-intro .dailycard.played .dc-go{background:none;border:1.5px solid var(--line-2);
+    border-bottom-width:1.5px;color:var(--dim);font-size:15px;padding:11px 18px}
+  #s-intro .dc-sub{font-size:13.5px}
+  #s-intro .hero{order:2}
+  #s-intro .htitle{order:3;margin-bottom:20px}
+  #s-intro #b-start{order:4}
+  #s-intro #b-modes{order:5}
+  #s-intro .hrow{order:6}
+  #s-intro .legal{order:10}
+
+  /* The title carries the rule the kicker above it already draws, because at this
+     width the name has a whole band of page to itself and needs an edge to sit in. */
+  .htitle h1{font-size:62px;display:flex;align-items:center;justify-content:center;gap:24px}
+  .htitle h1::before,.htitle h1::after{content:'';flex:0 0 62px;height:2px;border-radius:2px;
+    background:linear-gradient(90deg,transparent,var(--gold),transparent)}
+  .htitle p{font-size:15px;letter-spacing:.02em}
+
+  /* THE REELS FLANK THE FIELD, and `display:contents` is what lets them, without the
+     markup moving: the two columns stop being a grid of their own and become items of
+     the hero's. A fixed side column rather than a fraction, because these are two
+     wheels of a fixed size and what should take the width a wider window brings is the
+     picture of the ballpark between them. */
+  /* 30px under the picture rather than 20: the tagline is the last line of the hero
+     and the kicker is the first of the title, so at the phone's spacing the two read
+     as one four line block with the wordmark buried in the middle of it. */
+  .hero{display:grid;grid-template-columns:150px minmax(0,1fr) 150px;
+    gap:0 24px;align-items:center;margin-bottom:30px}
+  .hero-reels{display:contents}
+  .hero .reelcol:first-child{grid-column:1;grid-row:1}
+  .hero .reelcol:last-child{grid-column:3;grid-row:1}
+  .hero-field{grid-column:2;grid-row:1;margin-top:0}
+  .hnote{grid-column:1/-1;grid-row:2;margin-top:16px;font-size:13.5px}
+  /* One property, because the box is three rows by construction and the script reads
+     the row back off the box. A 114px reel beside a 480px field reads as a postage
+     stamp, which is what the first pass at this looked like. */
+  .hero .reelbox{--reel-h:64px;border-radius:11px}
+  .hero .reelbox.year .reel-i{font-size:34px}
+  .hero .reelbox.team .reel-i{font-size:15px;white-space:normal;line-height:1.15;letter-spacing:.04em}
+  .hero .rlabel{font-size:10px;letter-spacing:.2em;margin-bottom:8px}
+
+  #s-intro #b-start{font-size:24px;padding:22px 28px}
+  #s-intro #b-modes{margin-bottom:22px}
+
+  /* Three cards rather than three buttons, which is the same three doors wearing the
+     room this width has. The icon and the line under the name are already in the
+     markup and hidden on a phone, so nothing here builds a control. */
+  #s-intro .hrow{gap:14px}
+  #s-intro .hp-util-btn{flex-direction:column;gap:7px;padding:20px 16px;border-radius:12px;
+    text-align:center;background:var(--panel);border-color:var(--line)}
+  #s-intro .hp-util-btn:hover{border-color:var(--gold);color:var(--ink)}
+  #s-intro .hp-util-btn .hu-i{display:block;width:26px;height:26px;fill:none;stroke:currentColor;
+    stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;color:var(--gold)}
+  #s-intro .hp-util-btn b{font-size:15px;letter-spacing:.05em;color:var(--ink)}
+  #s-intro .hp-util-btn .hu-s{display:block;font-family:var(--fn);font-size:11.5px;font-weight:600;
+    text-transform:none;letter-spacing:0;color:var(--dim-2)}
 }
 @media(max-height:800px){
   .field.hero-field{aspect-ratio:auto;height:280px}
@@ -1154,6 +1523,24 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
 </style>
 </head>
 <body>
+<!-- ONE SEAM, DRAWN ONCE. Four of these are on the page (both ends of two
+     buttons) and the stitch path is a kilobyte, so it is a <symbol> the buttons
+     <use>, the way mythiball stores a repeated pose as a reference rather than as
+     the drawing again. The right hand copy is the same symbol mirrored in CSS.
+
+     THE STITCHES ARE A MIRROR PAIR ACROSS THE SEAM, never a copy. Each one leaves
+     the gutter pointing outward and leans along the curve, so a pair meets as a
+     shallow chevron, which is what the stitching on a real ball is. Leaned the
+     same way instead, one row comes out nearly parallel to the seam and the whole
+     thing stops reading as a baseball. Generated rather than drawn by hand: the
+     curve is a quadratic and each stitch is placed on its normal. -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <symbol id="seam" viewBox="0 0 100 100">
+    <path d="M42 -14Q51 50 42 114" fill="none" stroke="rgba(150,120,96,.38)" stroke-width="2.6"/>
+    <path fill="none" stroke="var(--lace)" stroke-width="5.5" stroke-linecap="round"
+      d="M47.9 -7.5L59.3 -15.7M38.0 -6.3L25.0 -11.4M49.5 6.9L61.1 -1.0M39.5 7.8L26.7 2.3M50.6 21.2L62.4 13.8M40.6 21.9L27.9 15.9M51.3 35.6L63.3 28.5M41.3 35.9L28.8 29.6M51.5 50.0L63.8 43.3M41.5 50.0L29.2 43.3M51.3 64.4L63.8 58.1M41.3 64.1L29.2 57.0M50.6 78.8L63.3 72.8M40.6 78.1L28.8 70.7M49.5 93.1L62.3 87.6M39.5 92.2L27.9 84.4M47.9 107.5L60.9 102.4M38.0 106.3L26.6 98.1"/>
+  </symbol>
+</svg>
 <div class="wrap">
 
 <header>
@@ -1163,6 +1550,11 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
   </a>
   <div class="hdr-r">
     <a class="pill site" href="/">RunThe<i>.GG</i></a>
+    <button class="hdr-btn" id="b-theme" aria-label="Switch between light and dark" title="Light or dark">
+      <svg viewBox="0 0 24 24" aria-hidden="true" class="th-sun"><circle cx="12" cy="12" r="4.2"/>
+        <path d="M12 2.6v2.2M12 19.2v2.2M2.6 12h2.2M19.2 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M18.7 5.3l-1.6 1.6M6.9 17.1l-1.6 1.6"/></svg>
+      <svg viewBox="0 0 24 24" aria-hidden="true" class="th-moon"><path d="M20 14.2A8.2 8.2 0 0 1 9.8 4 8.4 8.4 0 1 0 20 14.2z"/></svg>
+    </button>
     <button class="hdr-btn" id="b-trophy-hd" aria-label="Trophy case" title="Trophy case">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4h10v5a5 5 0 0 1-10 0z"/>
         <path d="M7 6H4.5v1.5A3.5 3.5 0 0 0 8 11"/><path d="M17 6h2.5v1.5A3.5 3.5 0 0 1 16 11"/>
@@ -1195,12 +1587,22 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
   </div>
 
   <button class="dailycard" id="daily-card"></button>
-  <button class="btn hp-start" id="b-start">&#9918; Draft your team &#9918;</button>
+  <button class="btn ball hp-start" id="b-start"><svg class="bs bs-l" viewBox="0 0 100 100" aria-hidden="true"><use href="#seam"/></svg><svg class="bs bs-r" viewBox="0 0 100 100" aria-hidden="true"><use href="#seam"/></svg><span>Draft your team</span></button>
   <button class="btn ghost hp-secondary" id="b-modes">More ways to play</button>
   <div class="hrow">
-    <button class="btn ghost hp-util-btn" id="b-how-play">How to play</button>
-    <button class="btn ghost hp-util-btn" id="b-board">Leaderboard</button>
-    <button class="btn ghost hp-util-btn" id="b-trophy">Trophy case</button>
+    <button class="btn ghost hp-util-btn" id="b-how-play">
+      <svg class="hu-i" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5.2h6a3 3 0 0 1 3 3v11a2.4 2.4 0 0 0-2.4-2.4H3z"/>
+        <path d="M21 5.2h-6a3 3 0 0 0-3 3v11a2.4 2.4 0 0 1 2.4-2.4H21z"/></svg>
+      <b>How to play</b><span class="hu-s">Learn the rules and scoring.</span></button>
+    <button class="btn ghost hp-util-btn" id="b-board">
+      <svg class="hu-i" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V12"/><path d="M10 20V4"/>
+        <path d="M16 20v-6"/><path d="M22 20H2"/></svg>
+      <b>Leaderboard</b><span class="hu-s">See how you stack up.</span></button>
+    <button class="btn ghost hp-util-btn" id="b-trophy">
+      <svg class="hu-i" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4h10v5a5 5 0 0 1-10 0z"/>
+        <path d="M7 6H4.5v1.5A3.5 3.5 0 0 0 8 11"/><path d="M17 6h2.5v1.5A3.5 3.5 0 0 1 16 11"/>
+        <path d="M12 14v3"/><path d="M8.5 20h7"/><path d="M10 17h4l.6 3h-5.2z"/></svg>
+      <b>Trophy case</b><span class="hu-s">Past winners and top scores.</span></button>
   </div>
 
   <details class="about">
@@ -1323,7 +1725,8 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
   <div id="tabs" class="tabs"></div>
   <div id="sortrow" class="sortrow"></div>
   <div id="opts" class="opts"></div>
-  <p class="srcnote">WAR is Baseball-Reference's, 1901 to 2025. FanGraphs rates the same season differently.</p>
+  <p class="srcnote">WAR is Baseball-Reference's, 1901 to 2025. FanGraphs rates the same season differently.
+    A starter who threw more than 210 innings is priced on what he did in 210. The WAR shown is his whole season.</p>
 
   <div style="margin-top:14px"><button class="btn ghost sm" id="b-quit">Quit this run</button></div>
 </div>
@@ -1552,7 +1955,7 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
     <div class="fr-steps">
       <div class="fr-step"><span class="n">1</span><p>Every spin lands on a real team-season.
         Take one player off that roster. Twelve times, filling a lineup and a staff.</p></div>
-      <div class="fr-step"><span class="n">2</span><p>All twelve share a <b>$170M</b> budget.
+      <div class="fr-step"><span class="n">2</span><p>All twelve share a $170M budget.
         That is the puzzle: prices come from how good the season actually was, so the last
         few spots are always the hard ones.</p></div>
       <div class="fr-step"><span class="n">3</span><p>Then 162 games play out against real
@@ -1560,7 +1963,7 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
     </div>
     <div class="fr-goal"><p>Your goal: <b>116 wins and the World Series.</b> That ties the
       all-time record. It is meant to be very hard, and almost nobody gets there first try.</p></div>
-    <button class="btn" id="b-first-go">&#9918; Draft your team &#9918;</button>
+    <button class="btn ball" id="b-first-go"><svg class="bs bs-l" viewBox="0 0 100 100" aria-hidden="true"><use href="#seam"/></svg><svg class="bs bs-r" viewBox="0 0 100 100" aria-hidden="true"><use href="#seam"/></svg><span>Draft your team</span></button>
     <div style="margin-top:8px"><button class="btn ghost sm" data-close-first>I have played before</button></div>
   </div>
 </div>
@@ -1594,9 +1997,9 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
   </div>
 </div>
 
-<script src="engine.js?v=20"></script>
-<script src="run.js?v=17"></script>
-<script src="achievements.js?v=4"></script>
+<script src="engine.js?v=24"></script>
+<script src="run.js?v=21"></script>
+<script src="achievements.js?v=6"></script>
 <script src="board.js?v=1"></script>
 <script>
 (function(){
@@ -1632,6 +2035,9 @@ function rowFromRun(o){
     chemLinks:[...new Set(links)],era:RUN.era||null,franchise:RUN.franchise||null,division:RUN.division||null,
     capSurvivor:!!RUN.capSurvivor,cuts:(RUN.cuts||[]).length,staff:!!RUN.staff,
     tradeMachine:!!RUN.tradeMachine,trades:(RUN.trades||[]).filter(t=>t.accepted).length,
+    /* The daily was the one mode the row did not record, so no badge could ask
+       about it. Every other mode has been on the row since it was written. */
+    daily:!!RUN.daily,
     eliminatedWS:!!(last&&last.round==='World Series'&&!o.titleWon),
     picks:RUN.roster.map((p,i)=>({i:p.i,s:p.s,t:p.t,slot:SLOTS_NOW()[RUN.slotIndex[i]],w:p.w})),
   };
@@ -1679,13 +2085,16 @@ function renderTrophy(){
   $('trophy-body').innerHTML='<div style="text-align:center;font-family:var(--fn);font-size:12px;'+
     'font-weight:700;color:var(--gold);margin-bottom:12px">'+ev.earned.length+' of '+ev.total+' badges</div>'+
     ACH.GROUPS.map(g=>{
-      const grp=byGroup[g];const all=grp.earned.concat(grp.locked);
+      const grp=byGroup[g];const total=grp.earned.length+grp.locked.length;
+      const tile=(a,earned)=>'<div class="ach'+(earned?'':' locked')+'">'+badgeIc(a,earned)+
+        '<div><div class="ach-t">'+esc(a.name)+'</div><div class="ach-d">'+esc(a.desc)+'</div></div></div>';
+      const got=grp.earned.length
+        ? '<div class="trophy-grid">'+grp.earned.map(a=>tile(a,true)).join('')+'</div>' : '';
+      const left=grp.locked.length
+        ? '<details class="tg-more"><summary>'+grp.locked.length+' still to earn</summary>'+
+          '<div class="trophy-grid">'+grp.locked.map(a=>tile(a,false)).join('')+'</div></details>' : '';
       return '<div class="trophy-group"><div class="tg-hd"><span class="tg-name">'+g+
-        '</span><span class="tg-count">'+grp.earned.length+'/'+all.length+'</span></div><div class="trophy-grid">'+
-        all.map(a=>{const earned=grp.earned.includes(a);
-          return '<div class="ach'+(earned?'':' locked')+'">'+badgeIc(a,earned)+
-            '<div><div class="ach-t">'+esc(a.name)+'</div><div class="ach-d">'+esc(a.desc)+'</div></div></div>';
-        }).join('')+'</div></div>';
+        '</span><span class="tg-count">'+grp.earned.length+'/'+total+'</span></div>'+got+left+'</div>';
     }).join('');
 }
 function openTrophy(){if(!ACH)return;renderTrophy();openSheet('sheet-trophy');ga('trophy_opened');}
@@ -1697,6 +2106,34 @@ const SLOTS_NOW=()=>R.slotsOf(typeof RUN!=='undefined'?RUN:null);
 const esc=s=>{const d=document.createElement('div');d.textContent=s;return d.innerHTML;};
 const show=id=>{document.querySelectorAll('.screen').forEach(s=>s.classList.remove('on'));$(id).classList.add('on');};
 const M=v=>'$'+v.toFixed(1)+'M';
+/* ── A NUMBER A PLAYER READS HAS TO BE THE NUMBER THE GAME PLAYS ──
+   The cap is written out by hand a dozen times across this page and how-to-play.html,
+   including the JSON-LD block Google renders, and nothing held any of them to
+   CAP_MUSD. Change the cap and the game charges the new one while every sentence
+   describing it promises the old one. Nothing throws; the only symptom is a guide
+   that lies, found by a player. This game has already had its cap swept once.
+
+   `baseball/check-numbers.mjs` holds all twelve now, which is the same mechanism
+   football and the college game use for their own twenty-two hardcoded figures.
+
+   INTERPOLATING THE PROSE WAS TRIED FIRST AND MADE THINGS WORSE, which is worth
+   knowing before reaching for it again. Wrapping each figure in a `<span>` so a
+   `capSync()` could correct it at boot SPLITS THE TEXT NODE, and check-copy's
+   walker reads text nodes: three sentences came out as "All twelve share a" and
+   "budget. That is the puzzle", with the $170M between them belonging to neither.
+   The claim stayed on the page and left the checker's view entirely. That is this
+   repo's own extractor-desync trap, self-inflicted, and it is a net loss: the guard
+   is the thing that catches the drift at COMMIT time for the half of the copy that
+   cannot interpolate at all, and interpolation bought self-correction by making the
+   guard cover less. The sentences are whole and the checker owns every one.
+
+   What is still interpolated is the one figure that is not prose: the money line's
+   placeholder, which `paintCap` overwrites on the first paint of a run anyway, so
+   left alone it is stale only for a frame and in view source for ever. */
+function capSync(){
+  const amt=$('c-amt');
+  if(amt) amt.textContent=M(E.CONSTANTS.CAP_MUSD);
+}
 const lastName=n=>{const p=n.trim().split(/\s+/);return p[p.length-1];};
 /* WAR as a temperature band. See .warv in the stylesheet for why five. */
 const warBand=w=>'w'+(w>=8?5:w>=6?4:w>=4.5?3:w>=3?2:w>=1.5?1:0);
@@ -1754,11 +2191,33 @@ function chemBadge(entry,size){
 const POS_COLORS={
   C:'#c0392b','1B':'#b8860b','2B':'#a07d2e','3B':'#b8860b',SS:'#8b6d4c',
   LF:'#2e7d32',CF:'#1b5e20',RF:'#2e7d32',DH:'#6a4c93',
-  SP:'#2e5a88',SP1:'#2e5a88',SP2:'#1a3d5c',CL:'#d4772c',RP:'#b35c1e',
+  SP:'#2e5a88',SP1:'#2e5a88',SP2:'#1a3d5c',CL:'#d4772c',RP:'#b35c1e',SU:'#b35c1e',
 };
-function posColor(p){return POS_COLORS[p]||'#475569';}
+/* FALL THROUGH TO THE BASE, or every slot this table does not name by hand comes
+   back the fallback grey. All-Time Staff is twelve arms named SP1 to SP5, RP1 to
+   RP5, SU and CL, and only four of those were in the table: its lineup card drew
+   the whole back of the rotation and the whole pen in the colour that means "no
+   position", beside two blue starters. */
+function posColor(p){return POS_COLORS[p]||POS_COLORS[slotBase(String(p))]||'#475569';}
 function posPaint(p){const c=posColor(p);return'background:linear-gradient(160deg,'+c+',rgba(0,0,0,.45))';}
 
+/* WHICH INK A CLUB'S COLOUR CAN CARRY, measured rather than written. The plate
+   was `--tcon:#fff` for all fifty, and five of them are light enough that white
+   9px type on them is not readable: Milwaukee's gold is 1.58:1, and Baltimore,
+   Miami and both San Francisco codes sit between 2.9 and 4.2. A club's colours
+   are a fact about the club, so the ink is what has to give. Neither theme moves
+   this: the plate is the club's colour in both, so the answer is the same in both.
+   Same idea the hoops game's wheelColors() is built on, at one chip. */
+function inkOn(hex){
+  const m=/^#?([0-9a-f]{6})$/i.exec(String(hex||''));
+  if(!m)return '#fff';
+  const n=parseInt(m[1],16);
+  const lin=c=>{c/=255;return c<=0.03928?c/12.92:Math.pow((c+0.055)/1.055,2.4);};
+  const l=0.2126*lin(n>>16&255)+0.7152*lin(n>>8&255)+0.0722*lin(n&255);
+  /* The two candidates, and whichever is further away wins. 0.1791 is the point
+     where white and black are equally readable. */
+  return l>0.1791?'#101010':'#fff';
+}
 function tcPlate(team,season){
   const tc=E.teamColors(team);
   /* Through clubTag like every other club on screen, though this chip is the
@@ -1767,7 +2226,7 @@ function tcPlate(team,season){
      no multi-club row reaches a lineup card. It goes through anyway because the
      chip is sized for a three letter code and the day one of those filters
      changes is not the day to discover that. */
-  return'<span class="tc" style="--tcbg:'+tc[0]+';--tcon:#fff">'+esc(clubTag(team))+'</span>';
+  return'<span class="tc" style="--tcbg:'+tc[0]+';--tcon:'+inkOn(tc[0])+'">'+esc(clubTag(team))+'</span>';
 }
 
 /* ─── diamond coordinates ─── */
@@ -1785,7 +2244,15 @@ const DIAMOND_SPOTS=[
 ];
 
 /* ─── reel system ─── */
-const REEL_H=38, REEL_FACES=3;
+/* REEL_FACES is 3 because a reel box IS three rows: the pick and the one either side
+   of it. The ROW HEIGHT is the stylesheet's, read back off the box rather than written
+   here a second time, because the desktop front page draws a bigger reel beside the
+   field and a hardcoded 38 there would land every pick a row out of its own band. */
+const REEL_FACES=3, REEL_H_FALLBACK=38;
+function reelH(box){
+  const v=parseFloat(getComputedStyle(box).getPropertyValue('--reel-h'));
+  return v>0?v:REEL_H_FALLBACK;
+}
 
 function reelEase(t){
   const glide=1-Math.pow(1-t,3.4);
@@ -1810,7 +2277,7 @@ function reel(el,faces,target,ms,done,onLand){
   items.push(target);
   for(let i=0;i<REEL_FACES;i++) items.push(nextFace(i===0?target:null));
   el.innerHTML=items.map((t,i)=>'<div class="reel-i'+(i===N?' land':'')+'">'+esc(t)+'</div>').join('');
-  const dist=(N-1)*REEL_H;
+  const dist=(N-1)*reelH(box);
   box.classList.remove('waiting','done','hit');
   box.classList.add('spin');
   const t0=(window.performance||Date).now();
@@ -1847,7 +2314,13 @@ const TEAM_NAMES={
   WSH:'Washington Senators',WSA:'Washington Senators',SLB:'St. Louis Browns',
   FLA:'Florida Marlins',CAL:'California Angels',ANA:'Anaheim Angels',
   TBD:'Tampa Bay Devil Rays',KCA:'Kansas City Athletics',SEP:'Seattle Pilots',
-  BLA:'Baltimore Orioles',ATH:'Athletics',
+  /* NOT the modern Orioles, who are the St. Louis Browns moved. These are the
+     1901-02 American League club that went to New York and became the Yankees, and
+     the years are in the name because both cards can sit in one picker and the
+     Yankees' own card names this one. Three clubs in this list share a name with
+     another (two Orioles, two sets of Senators); this is the pair a reader cannot
+     otherwise separate, because the other two are told apart by what they became. */
+  BLA:'Baltimore Orioles (1901-02)',ATH:'Athletics',
   CHI:'Chicago Whales',IND:'Indianapolis Hoosiers',NEW:'Newark Peppers',
   PBS:'Pittsburgh Rebels',SLM:'St. Louis Terriers',BTT:'Brooklyn Tip-Tops',
   CAG:'Chicago American Giants',KCM:'Kansas City Monarchs',HG:'Homestead Grays',
@@ -1879,14 +2352,38 @@ function clubTag(code){return code==='TOT'?TEAM_NAMES.TOT:code;}
    (see below) and two layouts must not become two spellings. */
 function halfTag(p){return p.half?p.half+' only':'';}
 
-/* Season, club, and which half of a two-way season this row is. */
+/* ── THE FOURTH REASON A LOOKUP DISAGREES, and the last one that was unlabelled.
+   Three are already on the row: bWAR against fWAR (the source note under the
+   board), a two-way season being two half rows (halfTag), and TOT not being a club
+   (clubTag). The fourth is that A STARTER'S PRICE IS NOT SET ON THE WAR BESIDE IT.
+
+   `build_positions.py` scales a starter's WAR by min(1, ANCHOR_IP / ip) before
+   pricing him, so a man who threw 264 innings is priced on what he did in 210. The
+   figure on the tile is the whole season, because that is the number a reader looks
+   up. So Clemens' 1997 shows 11.9 WAR and costs less than a 10.4, and until this
+   was labelled there was nothing anywhere on the page to say why.
+
+   It applies to STARTERS ONLY, which is what the build does: relievers and batters
+   are priced on the raw figure. Verified against every shipped row rather than read
+   off the script, because the script cannot be run here: all 44,344 reproduce
+   exactly from w, ip and pp, and 3,959 of the 12,461 starters (31.8%) carry a
+   discount. So the page can say which rows they are with no rebuild. */
+function heavyIP(p){
+  const anchor=(E.CONSTANTS&&E.CONSTANTS.ANCHOR_IP)||210;
+  return (p.r==='p'&&p.pp==='SP'&&p.ip>anchor)?Math.round(p.ip)+' IP':'';
+}
+/* Season, club, which half of a two-way season this row is, and the innings when
+   they are what set the price. Built once from a list so the two spellings below
+   cannot drift into two different rows. */
+function rowFacts(p){
+  return [p.s+' '+clubTag(p.t), halfTag(p), heavyIP(p)].filter(Boolean);
+}
 function seasonLine(p){
-  const h=halfTag(p);
-  return p.s+' '+esc(clubTag(p.t))+(h?' &middot; '+h:'');
+  const f=rowFacts(p);
+  return esc(f[0])+f.slice(1).map(x=>' &middot; '+esc(x)).join('');
 }
 function seasonText(p){
-  const h=halfTag(p);
-  return p.s+' '+clubTag(p.t)+(h?' · '+h:'');
+  return rowFacts(p).join(' · ');
 }
 
 function dressInTeamColors(team){
@@ -2339,6 +2836,7 @@ async function boot(){
     DATA=R.indexData(players);
     const hasPositions=players.some(p=>p.r==='b'&&p.ep&&p.ep.length>0);
     if(hasPositions) E.setPositionsAvailable(true);
+    capSync();
     show('s-intro');
     heroSync();
     paintDailyCard();
@@ -2360,6 +2858,28 @@ $('b-how-play').addEventListener('click',()=>{
   show('s-how');
 });
 $('b-trophy-hd').addEventListener('click',openTrophy);
+/* The theme, written to the key the whole suite shares, so the choice follows the
+   reader to the arcade and back. The meta tag moves with it or the phone's own
+   browser chrome stays cream around a dark page, which on iOS is a bright bar at
+   the top of the screen and is most of what a dark mode is asked for. */
+function paintThemeMeta(){
+  const m=$('themeMeta');if(!m)return;
+  const dark=document.documentElement.getAttribute('data-theme')==='dark';
+  m.setAttribute('content',dark?'#14171c':'#e8dcc8');
+}
+paintThemeMeta();
+$('b-theme').addEventListener('click',()=>{
+  const next=document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark';
+  document.documentElement.setAttribute('data-theme',next);
+  try{localStorage.setItem('runthegrid_theme',next);}catch(_){}
+  paintThemeMeta();
+  /* NOTHING IS REPAINTED and nothing needs to be: no code on this page reads a
+     colour back out of getComputedStyle, so every surface is a custom property
+     and the switch is the cascade. The one canvas here is the share card, and it
+     is built from literals on purpose: an image somebody posts has to look the
+     same to everybody, not like the theme the sharer happened to be in. */
+  ga('theme_set',{theme:next});
+});
 $('b-modes').addEventListener('click',openModes);
 $('b-board').addEventListener('click',openBoard);
 $('b-board-back').addEventListener('click',()=>{show('s-intro');heroSync();});
@@ -2478,7 +2998,7 @@ function boardPayload(o){
     franchise:mode==='franchise'?RUN.franchise:null,
     era:mode==='era'?RUN.era:null,
     division:mode==='division'?RUN.division:null,
-    dailyKey:RUN.daily?utcKey():null,
+    dailyKey:RUN.daily?easternISO():null,
     dailyClient:RUN.daily?clientId():null,
     rating:shownRating(o)==null?null:Math.round(shownRating(o)*10)/10,
     allTimeRank:RUN.staff?null:(o.allTimeRank==null?null:o.allTimeRank),
@@ -2535,7 +3055,7 @@ function paintBoard(){
   list.innerHTML='<div class="bd-empty">Loading...</div>';
   const B=BOARD();
   if(!B){list.innerHTML='<div class="bd-empty">The leaderboard is not available.</div>';return;}
-  const where=boardTab==='daily'?{dailyKey:utcKey()}:{mode:boardTab};
+  const where=boardTab==='daily'?{dailyKey:easternISO()}:{mode:boardTab};
   B.top({...where,limit:50}).then(rows=>{
     if(rows==null){
       list.innerHTML='<div class="bd-empty">'+(B.needsMigration
@@ -2571,37 +3091,71 @@ function paintBoard(){
 /* ─── the daily ───────────────────────────────────────────────────────────
  * One board a day, the same board for everybody, and a grid you can paste.
  *
- * The seed is the UTC date, so "today" starts at the same instant for every
- * player and two people comparing results are comparing the same draft. One run
- * per day is the whole point: it is what makes a result worth posting and what
- * brings anybody back tomorrow. */
-const DAILY_EPOCH=Date.UTC(2026,0,1);
-function utcKey(d){
+ * The day is the EASTERN date, which is what every other calendar-day clock on
+ * this site already uses, and it shipped on UTC. THE DIFFERENCE IS NOT COSMETIC:
+ * UTC rolls at 7 or 8pm Eastern, so the board a player was part way through was
+ * taken off them in the middle of their own evening, and the "one try" they had
+ * spent was spent on yesterday's puzzle. The visitor's own midnight is the other
+ * wrong answer, because it gives two people in one group chat different boards on
+ * the same night, and everybody getting the same twelve spins is the whole mode.
+ *
+ * `dayNumberOf` does its arithmetic in UTC ON PURPOSE, over a date that was
+ * resolved in Eastern. Two local midnights are 23 or 25 hours apart across a clock
+ * change, which floors to the wrong day twice a year and hands two players
+ * different boards with nothing anywhere throwing. */
+const DAILY_EPOCH='2026-01-01';          // day 1
+function easternISO(d){
   const t=d||new Date();
-  return t.getUTCFullYear()+'-'+String(t.getUTCMonth()+1).padStart(2,'0')+'-'+
-    String(t.getUTCDate()).padStart(2,'0');
+  try{
+    /* en-CA formats as YYYY-MM-DD, which is the one locale that gives this shape
+       without reassembling parts. Tested rather than trusted: anything else falls
+       through to the local date, because a browser with no time zone database
+       should answer the wrong day rather than no day at all. */
+    const s=new Intl.DateTimeFormat('en-CA',{timeZone:'America/New_York',
+      year:'numeric',month:'2-digit',day:'2-digit'}).format(t);
+    if(/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+  }catch(_){}
+  const p=n=>(n<10?'0':'')+n;
+  return t.getFullYear()+'-'+p(t.getMonth()+1)+'-'+p(t.getDate());
 }
-function dailyNo(){
-  return Math.floor((Date.UTC(new Date().getUTCFullYear(),new Date().getUTCMonth(),
-    new Date().getUTCDate())-DAILY_EPOCH)/86400000)+1;
+function dayNumberOf(iso){
+  const a=String(iso).split('-'), b=DAILY_EPOCH.split('-');
+  return Math.floor((Date.UTC(+a[0],+a[1]-1,+a[2])-Date.UTC(+b[0],+b[1]-1,+b[2]))/86400000)+1;
 }
+/* The clamp is a guard against a wrong device clock, never a place to keep an
+   off-by-one: hoops kept an epoch that was a day out behind exactly this line. */
+function dailyNo(){ return Math.max(1,dayNumberOf(easternISO())); }
 const DAILY_KEY='rtd_daily';
 function loadDaily(){try{return JSON.parse(localStorage.getItem(DAILY_KEY)||'{}');}catch(e){return {};}}
 function saveDaily(o){try{localStorage.setItem(DAILY_KEY,JSON.stringify(o));}catch(e){}}
-function todaysDaily(){const d=loadDaily();return d.date===utcKey()?d:null;}
-/* The streak only survives if yesterday was played too. */
+/* THE RECORD CARRIES A VERSION, AND A RECORD FROM BEFORE THE CLOCK MOVED IS READ
+   AS "NOT TODAY". That is the whole migration and it has to be in this direction.
+   A record written under UTC stamped the date it was already tomorrow in Greenwich,
+   so somebody who played at 8pm Eastern stored tomorrow's date: read against the
+   Eastern key the next evening it MATCHES, and they would be told they had already
+   played a board they had not seen. Refusing to trust a v1 record costs at worst
+   one extra board, once, to somebody who played in that window. Being wrongly
+   locked out of the day's only try is the mistake that cannot be undone. */
+const DAILY_V=2;
+function todaysDaily(){const d=loadDaily();return (d.v===DAILY_V&&d.date===easternISO())?d:null;}
+/* The streak is counted in DAY NUMBERS rather than by rebuilding yesterday's date
+   string, which is one fewer place for a clock change to be wrong. */
 function dailyStreak(){
   const d=loadDaily();
-  if(!d.date)return 0;
-  const y=new Date();y.setUTCDate(y.getUTCDate()-1);
-  if(d.date===utcKey()||d.date===utcKey(y))return d.streak||0;
-  return 0;
+  if(!d.n)return 0;
+  const n=dailyNo();
+  return (d.n===n||d.n===n-1)?(d.streak||0):0;
 }
 function recordDaily(o){
   const prev=loadDaily();
-  const y=new Date();y.setUTCDate(y.getUTCDate()-1);
-  const streak=(prev.date===utcKey(y)?(prev.streak||0):0)+1;
-  saveDaily({date:utcKey(),n:dailyNo(),wins:o.wins,losses:o.losses,
+  const n=dailyNo();
+  /* `prev.n === n` continues the streak as well as `n-1`, and that clause is the
+     migration rather than an off-by-one: a v1 record written in the 8pm-to-midnight
+     window carries the UTC day, which is this day's number, and todaysDaily has
+     deliberately ignored it. Without it that player's streak resets once for having
+     played in the evening. It can only ever be generous by a day, one time. */
+  const streak=((prev.n===n-1||prev.n===n)?(prev.streak||0):0)+1;
+  saveDaily({v:DAILY_V,date:easternISO(),n,wins:o.wins,losses:o.losses,
     titleWon:!!o.titleWon,madePlayoffs:!!o.madePlayoffs,
     rating:shownRating(o)!=null?Math.round(shownRating(o)):null,
     rank:o.allTimeRank!=null?o.allTimeRank:null,
@@ -2630,7 +3184,7 @@ function seasonGrid(){
 function startDaily(){
   const done=todaysDaily();
   if(done){showDailyDone(done);return;}
-  startRun({seed:E.hashSeed('rtd-daily-'+utcKey()),daily:true});
+  startRun({seed:E.hashSeed('rtd-daily-'+easternISO()),daily:true});
 }
 function showDailyDone(d){
   $('modes-in')&&0;
@@ -2640,21 +3194,29 @@ function showDailyDone(d){
       d.madePlayoffs?'Reached October':'Missed the playoffs')+'</div>'+
     (d.grid?'<div class="dd-grid">'+d.grid+'</div>':'')+
     '<p class="dim" style="font-size:12.5px;margin:10px 0 0">A new board every day at '+
-    'midnight UTC. Come back tomorrow to keep the streak.</p>';
+    'midnight Eastern. Come back tomorrow to keep the streak.</p>';
   openSheet('sheet-daily');
 }
 function paintDailyCard(){
   const el=$('daily-card');if(!el)return;
   const d=todaysDaily();
   const streak=dailyStreak();
+  /* The whole card is the button and always has been, so `.dc-go` is a LABEL on the
+     press rather than a second control: it is drawn inside the same button and says
+     what pressing it does. Both states name their own, because the card opens the
+     draft on one and last night's result on the other, and it is only shown where
+     there is room for it (see the desktop block in the stylesheet). */
   el.innerHTML=
-    '<div class="dc-hd"><span class="dc-eye">Daily challenge</span>'+
-      '<span class="dc-no">#'+dailyNo()+'</span>'+
-      (streak>0?'<span class="dc-streak">&#128293; '+streak+'</span>':'')+'</div>'+
-    (d?'<div class="dc-done"><b>'+d.wins+'-'+d.losses+'</b>'+
-        (d.grid?'<span class="dc-grid">'+d.grid+'</span>':'')+'</div>'+
-        '<div class="dc-sub">Played. New board at midnight UTC.</div>'
-      :'<div class="dc-sub">Everybody gets the same twelve spins today. One try.</div>');
+    '<div class="dc-txt">'+
+      '<div class="dc-hd"><span class="dc-eye">Daily challenge</span>'+
+        '<span class="dc-no">#'+dailyNo()+'</span>'+
+        (streak>0?'<span class="dc-streak">&#128293; '+streak+'</span>':'')+'</div>'+
+      (d?'<div class="dc-done"><b>'+d.wins+'-'+d.losses+'</b>'+
+          (d.grid?'<span class="dc-grid">'+d.grid+'</span>':'')+'</div>'+
+          '<div class="dc-sub">Played. New board at midnight Eastern.</div>'
+        :'<div class="dc-sub">Everybody gets the same twelve spins today. One try.</div>')+
+    '</div>'+
+    '<span class="dc-go">'+(d?'See your result':'Start today\'s draft')+' &rarr;</span>';
   el.classList.toggle('played',!!d);
 }
 
@@ -2720,54 +3282,77 @@ function buildEraGrid(){
 }
 
 /* ─── franchise mode ─── */
-/* The thirty clubs playing today. Everything else in the picker is a club that
- * moved, was renamed, or folded, which is the more evocative half of the list
- * and deserves its own heading rather than being interleaved alphabetically. */
-const CURRENT_CLUBS=new Set(['ARI','ATL','BAL','BOS','CHC','CHW','CIN','CLE','COL','DET',
-  'HOU','KCR','LAA','LAD','MIA','MIL','MIN','NYM','NYY','OAK','PHI','PIT','SDP','SEA',
-  'SFG','STL','TBR','TEX','TOR','WSN']);
+/* The thirty clubs playing today live in E.CURRENT_FRANCHISES and are not written
+ * out again here. The page kept its own copy while the picker had two sections to
+ * sort cards into, and two copies of one list is a thing a guard then has to hold
+ * together; there is one section and one list now. */
 
-function franCard(f,maxDepth){
+/* The names this club has already worn. Read off E.FRANCHISES rather than written
+   out, so a lineage corrected in the engine corrects the sentence with it.
+
+   IT USED TO HAVE A SECOND BRANCH reading "Now the Atlanta Braves", for the cards
+   that were an earlier identity on its own. There are no such cards any more, so
+   that branch could no longer fire, and a branch that cannot fire is a claim about
+   the picker that stopped being true without anybody editing it. */
+function franLineageNote(f){
+  const older=(f.codes||[]).filter(c=>c!==f.team);
+  if(!older.length) return '';
+  /* A middot list rather than "the X, the Y and the Z". The Athletics have worn
+     three earlier names, and written as a sentence that is three commas on a card
+     two inches wide, which is the one place this repo's short-sentence rule bites
+     hardest. The middot is what it already recommends for fields on one line. */
+  return 'Earlier: '+older.map(teamFullName).join(' · ');
+}
+
+function franCard(f){
   const tc=E.teamColors(f.team);
   const btn=document.createElement('button');
   btn.className='fran-card';
   btn.style.setProperty('--c1',tc[0]);
-  btn.style.setProperty('--c2',tc[1]||tc[0]);
-  // Five pips on a square-root scale: the deepest club fills all five, and the
-  // thinnest still shows one, so the meter reads as a comparison and never as
-  // an empty card.
-  const tier=Math.max(1,Math.min(5,Math.round(Math.sqrt(f.depth/maxDepth)*5)));
-  let pips='';
-  for(let i=0;i<5;i++) pips+='<i class="'+(i<tier?'on':'')+'"></i>';
   const yrs=f.lo===f.hi?String(f.lo):f.lo+'-'+f.hi;
   const best=f.best?esc(f.best.n):'';
+  /* WHAT THIS CLUB USED TO BE CALLED, in one line, because the whole of what this
+     card offers is a history and half of that history is under another city's name.
+     A reader looking for the Montreal Expos has to be able to see that they are on
+     the Washington Nationals card. A club that never moved and never changed its
+     name gets no line, which is seventeen of the thirty. */
+  const lineage=franLineageNote(f);
+  /* THE SEASON COUNT IS GONE FROM THE CARD AND STAYS IN THE LABEL. On screen it
+     said the same thing as the span beside it for every club that has played every
+     year since it started, which is most of them, and it is the span a reader is
+     actually choosing on. A screen reader gets no span to scan, so the count is
+     what tells it 1902-2025 is a hundred and eleven seasons rather than two dates. */
   btn.innerHTML='<div class="fran-name">'+esc(teamFullName(f.team))+'</div>'+
-    '<div class="fran-yrs">'+yrs+' &middot; '+f.seasons+' seasons</div>'+
-    (best?'<div class="fran-best">Best: '+best+'</div>':'')+
-    '<div class="fran-depth">'+pips+'</div>';
-  btn.setAttribute('aria-label',teamFullName(f.team)+', '+f.lo+' to '+f.hi+', '+f.seasons+' seasons');
+    '<div class="fran-yrs">'+yrs+'</div>'+
+    (lineage?'<div class="fran-was">'+esc(lineage)+'</div>':'')+
+    (best?'<div class="fran-best">Best Player: '+best+'</div>':'');
+  btn.setAttribute('aria-label',teamFullName(f.team)+', '+f.lo+' to '+f.hi+', '+f.seasons+
+    ' seasons'+(lineage?', '+lineage:''));
   btn.addEventListener('click',()=>startRun({franchise:f.team}));
   return btn;
 }
 
+/* ONE SECTION, because there is only one kind of thing in it now. The picker used
+   to split "Playing today" from "Moved, renamed, folded", and that second heading
+   held fifteen cards every one of which was an earlier name of a club in the first.
+   A heading over the only group on a screen is a label for nothing, so the count
+   moves up beside the screen's own title. */
 function buildFranGrid(){
   const host=$('fran-sections');host.innerHTML='';
-  const list=R.eligibleFranchises(DATA);
-  const maxDepth=list.reduce((m,f)=>Math.max(m,f.depth),1);
-  const byName=(a,b)=>teamFullName(a.team).localeCompare(teamFullName(b.team));
-  const now=list.filter(f=>CURRENT_CLUBS.has(f.team)).sort(byName);
-  const old=list.filter(f=>!CURRENT_CLUBS.has(f.team)).sort(byName);
-  for(const sec of [{label:'Playing today',rows:now},{label:'Moved, renamed, folded',rows:old}]){
-    if(!sec.rows.length) continue;
-    const h=document.createElement('div');
-    h.className='fran-sec';
-    h.innerHTML='<span>'+sec.label+'</span><span class="n">'+sec.rows.length+'</span>';
-    host.appendChild(h);
-    const grid=document.createElement('div');
-    grid.className='fran-grid';
-    for(const f of sec.rows) grid.appendChild(franCard(f,maxDepth));
-    host.appendChild(grid);
-  }
+  const list=R.eligibleFranchises(DATA)
+    .sort((a,b)=>teamFullName(a.team).localeCompare(teamFullName(b.team)));
+  const h=document.createElement('div');
+  h.className='fran-sec';
+  /* The heading does not say "thirty" while the count sits interpolated beside it.
+     That is this repo's oldest rule: a number in copy is either interpolated or
+     written out of the sentence, and a hand-written thirty here is a sentence that
+     goes wrong the day a club is added or the depth gates move. */
+  h.innerHTML='<span>Every club playing today</span><span class="n">'+list.length+'</span>';
+  host.appendChild(h);
+  const grid=document.createElement('div');
+  grid.className='fran-grid';
+  for(const f of list) grid.appendChild(franCard(f));
+  host.appendChild(grid);
 }
 
 /* ─── division draft ───
@@ -2860,7 +3445,7 @@ function buildDrawExtras(draw){
   const ts=DATA.teamSeasons;
   const era=RUN.era?E.ERAS[RUN.era]:null;
   let pool=era?ts.filter(t=>t.season>=era[0]&&t.season<=era[1]):ts;
-  if(RUN.franchise)pool=pool.filter(t=>t.team===RUN.franchise);
+  if(RUN.franchise)pool=pool.filter(t=>E.inFranchise(RUN.franchise,t.team,t.season));
   draw.yearOptions=[...new Set(pool.map(t=>String(t.season)))].sort();
   draw.teamOptions=[...new Set(pool.map(t=>t.team))];
   if(!draw.teamOptions.length) draw.teamOptions=[draw.team];
@@ -2931,6 +3516,11 @@ function paintOpts(draw){
       const key=tile.dataset.key;
       const p=DATA.allPlayers[key];
       if(!p) return;
+      /* THE STAFF NEVER ASKS. Twelve arms into twelve arm-shaped slots is not a
+         decision the sim can hear: see sortStaffSlots in run.js. A starter takes
+         the rotation until it is full, a reliever takes the bullpen, and the slots
+         re-rank themselves best first as the board fills. */
+      if(RUN.staff){ signPlayer(p); return; }
       const choices=signChoices(p);
       if(choices.length<=1){ signPlayer(p, choices.length?choices[0].slotIdx:undefined); }
       else openPosChooser(p, choices);
@@ -2943,17 +3533,29 @@ function paintOpts(draw){
 function optTile(r,i){
   const p=r.p,block=r.block;
   const pos=p.pp||(p.ep?p.ep.split(';')[0]:'');
-  // Distinct open positions this player could fill (SP1/SP2 collapsed).
+  /* Where this man could go. THE SAME LIST THE CHOOSER OFFERS, out of the same
+     function, because for as long as they were two loops they disagreed: the tile
+     promised a reader SP, SP5 and four relief slots and the sheet that opened on
+     the tap offered a different set again. */
   let destSlot=null,premium=false;
   if(!block){
-    const bases=[];const seen=new Set();
     for(const idx of R.eligibleOpenSlots(RUN,p)){
-      const bs=SLOTS_NOW()[idx].replace(/[12]$/,'');
       const sN=SLOTS_NOW()[idx];
       if(DATA.scarcity&&DATA.scarcity[sN]&&DATA.scarcity[sN].premium&&p.w>=3.5) premium=true;
-      if(!seen.has(bs)){seen.add(bs);bases.push(bs);}
     }
-    if(bases.length) destSlot=bases.length<=3?bases.join(' &middot; '):bases.slice(0,3).join(' &middot; ')+'&hellip;';
+    if(RUN.staff){
+      /* WHERE HE ENDS UP, not where the signing happens to take him. The staff
+         assigns itself, so a list of open arm slots would offer a reader a choice
+         the tap does not give them, and slotForPlayer alone would be wrong a frame
+         later: it names the slot the pick TAKES and the re-rank then moves
+         everybody. staffLanding does the real signing on a clone and reads the
+         answer back. It is the JOB rather than the slot number because SP3 is not
+         a thing the sim can tell from SP4. */
+      destSlot=R.staffLanding(RUN,p);
+    }else{
+      const bases=openJobs(p).map(j=>j.base);
+      if(bases.length) destSlot=bases.length<=3?bases.join(' &middot; '):bases.slice(0,3).join(' &middot; ')+'&hellip;';
+    }
   }
   // What signing this player would actually bond, named and valued, in the same
   // colors the diamond and the results roster use. A percentage delta alone
@@ -3001,19 +3603,34 @@ function paintRespins(){
 }
 
 /* ─── position chooser ─── */
-function slotBase(name){return name.replace(/[12]$/,'');}
-/* Distinct placement choices for a player among open slots. SP1/SP2 collapse
- * (identical), so the user only chooses between real positions. */
-function signChoices(p){
-  const idxs=R.eligibleOpenSlots(RUN,p);
-  const out=[];const seenSP=new Set();
-  for(const i of idxs){
+/* ANY trailing digit, not a 1 or a 2. Written `[12]$` this answered SP3 for SP3
+   and RP4 for RP4, which is not a position, so All-Time Staff drew seven of its
+   twelve chips in the fallback grey while SP1 and SP2 were blue beside them. */
+function slotBase(name){return name.replace(/\d+$/,'');}
+/* THE OPEN JOBS A PLAYER COULD TAKE, and the one place that question is answered.
+ * A group is one job, so it gets one entry: see slotGroup in the engine, which is
+ * where "which slots can the sim tell apart" is decided.
+ *
+ * It was three loops, each with its own copy of a regex that stripped a trailing 1
+ * or 2 and left every other digit alone. In All-Time Staff that made SP2 the same
+ * job as SP1 and SP5 a job of its own, so a reader with SP1, SP2 and SP5 open was
+ * offered SP1 and SP5 and asked why SP2 was missing. It is missing because all five
+ * are one job, which is now said once and said the same way on the tile, in the
+ * sheet and on the card. */
+function openJobs(p){
+  const staff=!!(RUN&&RUN.staff);
+  const out=[];const seen=new Set();
+  for(const i of R.eligibleOpenSlots(RUN,p)){
     const name=SLOTS_NOW()[i];const base=slotBase(name);
-    if(base==='SP'){if(seenSP.has('SP'))continue;seenSP.add('SP');}
-    const natural=(p.pp===name)||(p.pp&&base===p.pp)||
-      (name==='SP1'&&p.r==='p')||(name==='CL'&&p.r==='p');
-    out.push({slotIdx:i,name,base,natural});
+    const group=E.slotGroup(name,staff);
+    if(seen.has(group))continue;seen.add(group);
+    const natural=(p.pp===name)||(p.pp&&base===p.pp)||(name==='CL'&&p.r==='p');
+    out.push({slotIdx:i,name,base,group,natural});
   }
+  return out;
+}
+function signChoices(p){
+  const out=openJobs(p);
   // natural position first, DH last
   out.sort((a,b)=>{
     if(a.natural!==b.natural)return a.natural?-1:1;
@@ -3031,24 +3648,39 @@ function signPlayer(p,slotIdx){
 function openPosChooser(p,choices){
   $('pos-title').textContent=lastName(p.n);
   $('pos-sub').textContent='Where do you want to play '+p.n+'? ('+seasonText(p)+')';
-  $('pos-opts').innerHTML=choices.map((ch,i)=>{
-    const note=ch.base==='DH'?'Designated hitter':ch.natural?'Primary position':
-      (p.r==='p'?'Pitcher':'Also played here');
+  $('pos-opts').innerHTML=choices.map((ch)=>{
     return '<button class="pos-opt'+(ch.natural?' natural':'')+'" data-slot="'+ch.slotIdx+'">'+
-      '<span class="pchip" style="'+posPaint(slotBase(ch.name))+'">'+ch.name+'</span>'+
-      '<span class="pmeta"><span class="pname">'+esc(ch.name==='DH'?'Designated Hitter':posLabel(ch.name))+'</span>'+
-      '<span class="pnote">'+note+'</span></span><span class="pgo">&rsaquo;</span></button>';
+      '<span class="pchip" style="'+posPaint(slotBase(ch.name))+'">'+esc(ch.name)+'</span>'+
+      '<span class="pmeta"><span class="pname">'+esc(posLabel(ch.name))+'</span>'+
+      '<span class="pnote">'+esc(slotNote(p,ch))+'</span></span>'+
+      '<span class="pgo">&rsaquo;</span></button>';
   }).join('');
   $('pos-opts').querySelectorAll('.pos-opt').forEach(btn=>{
     btn.addEventListener('click',()=>signPlayer(p,parseInt(btn.dataset.slot,10)));
   });
   openSheet('sheet-pos');
 }
+/* Every slot either game plays, by its BASE, so a five man rotation and a six man
+   pen are covered without listing eleven names. SU is a bullpen job wearing its own
+   word, which is why it is spelled out rather than left to fall through to itself.  */
 function posLabel(name){
+  if(name==='SU')return 'Reliever';
   const L={C:'Catcher','1B':'First Base','2B':'Second Base','3B':'Third Base',SS:'Shortstop',
     LF:'Left Field',CF:'Center Field',RF:'Right Field',DH:'Designated Hitter',
-    SP1:'Starting Pitcher',SP2:'Starting Pitcher',CL:'Closer'};
-  return L[name]||name;
+    SP:'Starting Pitcher',RP:'Reliever',CL:'Closer'};
+  return L[slotBase(name)]||name;
+}
+/* What taking this slot would MEAN, which is the half the name cannot say. A
+   pitcher offered a relief job used to be told "Pitcher", under a heading already
+   reading Reliever: the same fact twice, and no answer to the question the sheet
+   is asking. */
+function slotNote(p,ch){
+  if(ch.base==='DH')return 'Designated hitter';
+  if(ch.natural)return 'Primary position';
+  if(ch.group==='ROTATION')return 'In the rotation';
+  if(ch.group==='BULLPEN')return 'Out of the bullpen';
+  if(ch.name==='CL')return 'Closing games';
+  return 'Also played here';
 }
 
 /* ─── squad review (no pre-play odds) ─── */

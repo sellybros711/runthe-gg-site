@@ -25,6 +25,7 @@ const require = createRequire(import.meta.url);
 const E = require(path.join(HERE, 'engine.js'));
 const R = require(path.join(HERE, 'run.js'));
 import { AWARDS } from './build/fetch-awards.mjs';
+import { scriptBlocks, stripComments, stringLiterals } from '../scripts/check-copy.mjs';
 
 const players = JSON.parse(fs.readFileSync(path.join(HERE, 'data', 'players.json'), 'utf8'));
 const chemistry = JSON.parse(fs.readFileSync(path.join(HERE, 'data', 'chemistry.json'), 'utf8'));
@@ -82,7 +83,8 @@ function isLineup(actual, expect, what) {
 // ─── the data itself ────────────────────────────────────────────────────────
 
 ok(players.length > 0, 'players.json is not empty');
-ok(data.teamSeasons.length >= 6, 'enough team-seasons to fill a roster from');
+ok(data.teamSeasons.length >= E.SLOTS.length,
+  'enough team-seasons to fill a roster from');
 
 for (const p of players) {
   if (!(p.i && p.n && p.s && p.t)) { failures.push(`row missing an identity field: ${JSON.stringify(p)}`); break; }
@@ -176,29 +178,78 @@ for (const slot of E.SLOTS) {
 /* ── THE SHARE CARD'S PALETTE IS A SECOND COPY OF THE POSITION COLOURS ─────
  *
  * The page paints a position pill as a gradient off a CSS custom property. A
- * canvas cannot read one, so the card carries the same six colours again as
- * flat hex. Two copies of anything drift, and this pair drifts SILENTLY: the
- * card still renders, it just hands somebody a picture where the centre is a
+ * canvas cannot read one, so the card carries the same colours again as flat
+ * hex. Two copies of anything drift, and this pair drifts SILENTLY: the card
+ * still renders, it just hands somebody a picture where the centre is a
  * different red from the one they were looking at when they signed him.
+ *
+ * THE PAIR IS FOUND, NEVER SPELLED OUT, and the first draft of this spelled it
+ * out: one regex naming all eight properties in order. That reads the two
+ * copies correctly and is a THIRD copy of the same list, so the day the sixth
+ * man slot was removed the regex matched nothing and this section reported the
+ * page as having no position colours at all. A reader that finds nothing lets
+ * every assertion under it pass green, which is how an extractor in this repo
+ * has been silently wrong four times.
+ *
+ * So it reads whatever `POS_COL` names, resolves each one through `:root`, and
+ * asks that the card carries exactly that set. A position added or removed is
+ * covered with nobody remembering this section exists.
  *
  * Read as text rather than executed, which is all this needs to answer.
  */
 {
   const src = fs.readFileSync(path.join(HERE, 'index.html'), 'utf8');
-  const cssBlock = /--pg:([^;]+);\s*--sg:([^;]+);\s*--sf:([^;]+);\s*--pf:([^;]+);\s*--c:([^;]+);\s*\n?\s*--sixth:([^;]+);\s*--g:([^;]+);\s*--f:([^;]+);/.exec(src);
-  ok(!!cssBlock, 'the page declares the position colours as custom properties');
+
+  /* POS_COL is the page's own answer to which positions get painted, and it
+     maps each to the custom property that holds its colour. GF and FC share a
+     property with another position on purpose, so the SET of properties is
+     what matters rather than the count of positions. */
+  const colBlock = /var POS_COL = \{([\s\S]*?)\};/.exec(src);
+  ok(!!colBlock, 'the page names which positions get a colour');
   const hexBlock = /var POS_HEX = \{([\s\S]*?)\};/.exec(src);
   ok(!!hexBlock, 'the share card carries a flat copy of the position colours');
-  if (cssBlock && hexBlock) {
-    const css = { PG: cssBlock[1], SG: cssBlock[2], SF: cssBlock[3], PF: cssBlock[4],
-      C: cssBlock[5], '6TH': cssBlock[6], G: cssBlock[7], F: cssBlock[8] };
+
+  if (colBlock && hexBlock) {
+    const wantProp = {};
+    for (const m of colBlock[1].matchAll(/'?([A-Z0-9]+)'?\s*:\s*'(--[a-z0-9]+)'/gi)) wantProp[m[1]] = m[2];
+    ok(Object.keys(wantProp).length >= 5,
+      `the position map was read (${Object.keys(wantProp).length} entries)`);
+
+    /* Every custom property declared on :root, which is where the page keeps
+       them. EVERY :root BLOCK, not the first one: this page opens with a
+       palette-and-fonts block hundreds of lines above the position colours,
+       so a reader that stopped at the first brace found no position at all
+       and reported a page with no colours on it. */
+    const declared = {};
+    for (const rb of src.matchAll(/:root\{([\s\S]*?)\}/g)) {
+      for (const m of rb[1].matchAll(/(--[a-z0-9]+)\s*:\s*(#[0-9a-f]{3,8})/gi)) {
+        declared[m[1]] = m[2];
+      }
+    }
+    ok(Object.keys(declared).length >= 8,
+      `the page's custom properties were read (${Object.keys(declared).length})`);
+    const missing = Object.entries(wantProp)
+      .filter(([, prop]) => !declared[prop]).map(([pos, prop]) => `${pos} wants ${prop}`);
+    is(missing, [], 'every painted position has a custom property to paint with');
+
     const flat = {};
     for (const m of hexBlock[1].matchAll(/'?([A-Z0-9]+)'?\s*:\s*'(#[0-9a-f]{6})'/gi)) flat[m[1]] = m[2];
+
+    /* The card carries the five slots plus the loose eligibility codes that
+       have a colour of their own. GF and FC alias, so they are not expected
+       on the card: what is asserted is that every colour the card DOES carry
+       is the colour the page declares, and that no painted position whose
+       property is its own is missing from it. */
     const drift = [];
-    for (const [slot, hex] of Object.entries(css)) {
-      const want = hex.trim().toLowerCase();
-      const got = (flat[slot] || '').toLowerCase();
-      if (got !== want) drift.push(`${slot}: page ${want}, card ${got || 'missing'}`);
+    for (const [pos, prop] of Object.entries(wantProp)) {
+      const own = Object.values(wantProp).filter(x => x === prop).length === 1;
+      if (!own) continue;
+      const want = (declared[prop] || '').trim().toLowerCase();
+      const got = (flat[pos] || '').toLowerCase();
+      if (got !== want) drift.push(`${pos}: page ${want || 'missing'}, card ${got || 'missing'}`);
+    }
+    for (const pos of Object.keys(flat)) {
+      if (!wantProp[pos]) drift.push(`${pos}: on the card and painted by nothing`);
     }
     ok(drift.length === 0,
       `the share card paints positions the colour the page does${drift.length ? `\n      ${drift.join('\n      ')}` : ''}`);
@@ -383,15 +434,18 @@ for (const slot of E.SLOTS) {
     if (!bySeason.has(k)) bySeason.set(k, []);
     bySeason.get(k).push(p);
   }
-  const seasonTop6 = new Map();
+  /* A club's best SLOTS.length men, which is the roster this game drafts, so
+     the sweep asks about the same shape the game plays. */
+  const seasonTop = new Map();
   for (const [k, ros] of bySeason) {
-    if (ros.length < 6) continue;
+    if (ros.length < E.SLOTS.length) continue;
     const s = Number(k.split('|')[0]);
-    const six = [...ros].sort((a, b) => b.w - a.w).slice(0, 6).reduce((a, b) => a + b.w, 0);
-    if (!seasonTop6.has(s)) seasonTop6.set(s, []);
-    seasonTop6.get(s).push(six);
+    const core = [...ros].sort((a, b) => b.w - a.w).slice(0, E.SLOTS.length)
+      .reduce((a, b) => a + b.w, 0);
+    if (!seasonTop.has(s)) seasonTop.set(s, []);
+    seasonTop.get(s).push(core);
   }
-  const seasonMean = [...seasonTop6.entries()]
+  const seasonMean = [...seasonTop.entries()]
     .map(([s, v]) => [s, v.reduce((a, b) => a + b, 0) / v.length]);
   if (seasonMean.length >= 10) {
     const all = seasonMean.map(([, v]) => v).sort((a, b) => a - b);
@@ -413,10 +467,13 @@ for (const slot of E.SLOTS) {
 /* Play a full draft by always taking the best player the board will let you
    sign. This is the greedy strategy the cap is supposed to punish, so it is
    also the one most likely to walk into an illegal state. */
-function greedyDraft(seed) {
+/* `picks` stops the draft part way, for the fixtures that need a run standing
+   at a particular slot. Absent, it drafts the whole roster as it always did. */
+function greedyDraft(seed, picks) {
   const run = R.createRun({ seed });
   let guard = 0;
   while (run.phase === R.PHASES.DRAFT && guard++ < 50) {
+    if (picks != null && run.roster.length >= picks) break;
     const draw = R.spin(run, data);
     const options = draw.options.map(k => data.allPlayers[k]).filter(Boolean);
     if (!options.length) throw new Error('a draw came back with no signable options');
@@ -436,7 +493,11 @@ for (let i = 0; i < DRAFTS; i++) runs.push(greedyDraft(1000 + i));
 
 let capBusts = 0, wrongSlot = 0, dupes = 0, overdrawn = 0, positionStacks = 0;
 for (const run of runs) {
-  const spend = run.roster.reduce((s, p) => s + p.p, 0) + E.respinFees(run.respinsUsed);
+  /* READ OFF remaining(), NOT REBUILT FROM THE LADDER. The last slot's re-spin
+     is free, so fees are no longer a function of how many were used: summing
+     the ladder here would over-count a run that took one and report a cap bust
+     that never happened. One source, which is the run's own budget. */
+  const spend = E.CONSTANTS.CAP_MUSD - R.remaining(run);
   if (spend > E.CONSTANTS.CAP_MUSD + 1e-9) capBusts++;
   if (run.roster.length !== E.SLOTS.length) wrongSlot++;
 
@@ -602,10 +663,11 @@ ok(oneByOne._simState === undefined, 'finalizeSeason clears the sim state it bui
  * These assertions have already earned their place several times over. They
  * caught the 2018 Rockets being labelled Showtime off Harden's assist average,
  * the 1986 Celtics being labelled Moreyball, the 2016 Warriors being labelled
- * Point Centre because Draymond Green is eligible at centre, and the 1996 Bulls
- * being excluded from the triangle because Luc Longley averaged 9.1 rather than
- * 12. A model that gets these wrong is not a basketball model, whatever its
- * calibration report says.
+ * Point Centre because Draymond Green is eligible at centre, the 1996 Bulls
+ * being excluded from the triangle because Luc Longley averaged 9.1 rather
+ * than 12, and four of these fixtures still being six men long after the
+ * roster became five. A model that gets these wrong is not a basketball
+ * model, whatever its calibration report says.
  */
 /* BY PLAYER ID, NEVER BY NAME. Basketball-Reference renders names with their
    diacritics, so the real dataset holds "Nikola Jokic" with an accent on the c
@@ -613,10 +675,25 @@ ok(oneByOne._simState === undefined, 'finalizeSeason clears the sim state it bui
    nothing, and an assertion that silently finds nothing is an assertion that
    passes for the wrong reason or fails for a reason that has nothing to do with
    basketball. The slug is stable and is the key everything else joins on. */
+/* THE STARTING FIVE, AND THE SIXTH MAN IS WRITTEN DOWN AND NOT USED.
+ *
+ * Each row below lists six ids because the game drafted six when they were
+ * written, and every one of these fixtures went on handing six men to the
+ * model after the roster became a starting five. It is a quiet way to be
+ * wrong: a system's per-player tests are unaffected, so most of them went on
+ * passing, while every TEAM TOTAL the model reads was a sixth too big. It
+ * surfaced the moment those totals were re-anchored for five men, as the 1987
+ * Lakers, the 1989 Pistons and the 2001 Lakers all coming back Too Many
+ * Mouths: six men's shots against a five man budget.
+ *
+ * The sixth id stays in the list because it documents the club and because
+ * the day this roster size moves again is the day somebody will want it. It
+ * is sliced off rather than deleted, so the fixture follows SLOTS.length
+ * instead of having to be remembered. */
 const lineup = (ids) => {
   const rows = ids.map(([id, s]) => players.find(p => p.i === id && p.s === s));
   if (rows.some(r => !r)) return null;
-  return rows.map((p, i) => ({ ...p, _slot: E.SLOTS[i] }));
+  return rows.slice(0, E.SLOTS.length).map((p, i) => ({ ...p, _slot: E.SLOTS[i] }));
 };
 
 /* WHICH MAN IS MISSING, AND WHAT HE IS PROBABLY CALLED INSTEAD.
@@ -647,7 +724,8 @@ const missingFrom = (ids) => {
   return out;
 };
 
-/* PG, SG, SF, PF, C, sixth man, in that order. */
+/* PG, SG, SF, PF, C, sixth man, in that order. The sixth is documentation and
+   is sliced off: see the note on `lineup` above. */
 const KNOWN = [
   // PG Steve Kerr, SG Michael Jordan, SF Scottie Pippen, PF Dennis Rodman, C Luc Longley, 6th Toni Kukoc
   ['the 1996 Bulls', 'The Triangle', [['kerrst01', 1996], ['jordami01', 1996],
@@ -751,14 +829,15 @@ if (preThree) {
 ok(E.paceAdjust(20, 1972) < 19, 'a 1972 counting stat is deflated to the modern game');
 ok(E.paceAdjust(20, 1999) > 20, 'and a 1999 one is inflated');
 
-/* Chemistry saturates. Six players off one club cannot be worth six times one
-   link, or stacking one team-season beats every talent decision in the draft. */
-const bulls = players.filter(p => p.t === 'CHI' && p.s === 1996).slice(0, 6);
+/* Chemistry saturates. A whole roster off one club cannot be worth one link
+   times the number of pairs, or stacking one team-season beats every talent
+   decision in the draft. */
+const bulls = players.filter(p => p.t === 'CHI' && p.s === 1996).slice(0, E.SLOTS.length);
 const chem6 = E.resolveChemistry(bulls);
 const chem2 = E.resolveChemistry(bulls.slice(0, 2));
 ok(chem6.bonus <= E.CHEMISTRY.MAX + 1e-9, 'chemistry never exceeds its ceiling');
 ok(chem6.raw > chem6.saturated * 3,
-  `nineteen links pay out far less than they are worth face value (raw ${chem6.raw.toFixed(1)}, paid ${chem6.saturated.toFixed(2)})`);
+  `every link pays out far less than face value (raw ${chem6.raw.toFixed(1)}, paid ${chem6.saturated.toFixed(2)})`);
 /* The property that actually matters: adding four more players to a pair
    TRIPLES the link count many times over and cannot triple the payout. */
 ok((chem6.bonus / chem2.bonus) < (chem6.links.length / chem2.links.length) / 3,
@@ -789,8 +868,8 @@ if (mychal && klay) {
 
 /* Better roster, better season. Not on any single run, which is variance, but
    over a hundred of them, which is the model. */
-const best = [...players].sort((x, y) => y.w - x.w).slice(0, 6);
-const worst = [...players].sort((x, y) => x.w - y.w).slice(0, 6);
+const best = [...players].sort((x, y) => y.w - x.w).slice(0, E.SLOTS.length);
+const worst = [...players].sort((x, y) => x.w - y.w).slice(0, E.SLOTS.length);
 const meanWins = (roster) => {
   let total = 0;
   for (let i = 0; i < 60; i++) {
@@ -973,9 +1052,9 @@ ok(bestWins > worstWins + 20,
      of what the club sweep found and is worth writing down rather than
      asserting a difference that does not exist.
      Measured: a decade holds between 1,252 and 3,696 rows and between 34 and
-     121 men priced at the minimum, at every position, so the six cheapest
-     legal bodies cost the same 6 x $2.0M whether the pool is one decade or
-     all of them. 0 of 36 readings differ. So scoping the floor to an era is
+     121 men priced at the minimum, at every position, so the cheapest legal
+     bodies cost the same SLOTS.length x $2.0M whether the pool is one decade
+     or all of them. 0 of 30 readings differ. So scoping the floor to an era is
      defensive on its own.
      It is NOT defensive when the two locks COMPOSE, and that is the case
      worth keeping it for: the Lakers in the eighties floor at $19.9M against
@@ -983,7 +1062,12 @@ ok(bestWins > worstWins + 20,
      decade would be quoting $7.9M that this run cannot spend. */
   is(floorDiff, 0, 'an era alone never moves the reserve floor, because every '
     + 'decade holds minimum-priced men at every position');
-  ok(floorSame === 36, `all 36 era floor readings were taken (${floorSame})`);
+  /* Six eras times SLOTS.length, derived rather than written: this read 36
+     while the roster was six men and the number is about the sweep rather
+     than about the game. */
+  const eraReadings = 6 * E.SLOTS.length;
+  ok(floorSame === eraReadings,
+    `all ${eraReadings} era floor readings were taken (${floorSame})`);
 
   const both = R.createRun({ club: 'LAL', era: 'eighties' });
   const codes = new Set(E.franchiseCodes('LAL'));
@@ -1049,6 +1133,105 @@ ok(bestWins > worstWins + 20,
   ok(read.size >= 10, `the outcome scan found real reads (${read.size})`);
 }
 
+/* ── THE LAST PICK IS THE PLAYER'S, AND THE FEE IS NO LONGER A LADDER SUM ───
+ *
+ * The reserve floor promises a LEGAL ROSTER AND NEVER A CHOICE, so a drafter
+ * who spends down to it reaches the last slot able to afford the one man the
+ * floor earmarked. Measured over 500 drafts a bot before this shipped, the
+ * last board was a single forced option on 47.6% of best-available runs and
+ * 61.0% of cap-spending ones, and the re-spin that is supposed to be the way
+ * out was refused at the same moment, because its fee is charged against a
+ * budget already at the floor: trapped on 24.8% and 43.6% of runs. The bot
+ * that hoarded money and drafted badly was never trapped once.
+ *
+ * So the last slot's re-spin is free, and the fee it did not pay has to be
+ * STORED. Written the old way, `remaining()` sums the ladder out of
+ * `respinsUsed` on every read and charges a waived fee back the moment
+ * anything looks at the budget: the money disappears a frame later, the floor
+ * says the roster cannot be filled, and nothing throws.
+ */
+{
+  const seeded = () => R.createRun({ seed: 4242 });
+
+  /* A MID-DRAFT RE-SPIN STILL COSTS THE LADDER, and paying it sticks. Reading
+     the budget twice must not charge twice, which is the whole defect. */
+  const mid = seeded();
+  R.spin(mid, data);
+  const fee = R.canRespin(mid).cost;
+  is(fee, E.CONSTANTS.RESPIN_LADDER_MUSD[0], 'the first re-spin costs the top of the ladder');
+  const before = R.remaining(mid);
+  R.respin(mid, data);
+  is(R.remaining(mid), R.money(before - fee), 'paying it comes off the budget once');
+  is(R.remaining(mid), R.remaining(mid), 'and reading the budget again does not charge it again');
+
+  /* THE LAST SLOT IS FREE, and free is what reopens the valve: the budget is
+     at the floor by then, so a charged re-spin is a refused one. */
+  const last = greedyDraft(31337, E.SLOTS.length - 1);
+  is(R.slotsLeft(last), 1, 'the fixture is at the last open slot');
+  R.spin(last, data);
+  const re = R.canRespin(last);
+  is(re.cost, 0, 'the last slot re-spins for nothing');
+  ok(re.ok, `and is actually offered there (${re.reason || 'ok'})`);
+  /* TAKEN THROUGH A GUARD, because `respin` THROWS on a refusal and the whole
+     point of this fixture is a state where it used to be refused. Left bare,
+     reintroducing the charge kills the suite on a stack trace pointing at this
+     line rather than reporting the trap it exists to name. */
+  const held = R.remaining(last);
+  let refused = null;
+  try { R.respin(last, data); } catch (e) { refused = String((e && e.message) || e); }
+  is(refused, null, 'the free re-spin can actually be taken');
+  is(R.remaining(last), held, 'a free re-spin moves no money at all');
+  is(last.respinsUsed, 1, 'and still counts against the three');
+
+  /* THE BOUND IS THE WHOLE OF WHAT STOPS IT BEING AN EXPLOIT. Free and
+     unlimited is an infinite reroll on the one board small enough to fish. */
+  let spins = 1;
+  while (R.canRespin(last).ok && spins < 20) {
+    try { R.respin(last, data); } catch (e) { break; }
+    spins++;
+  }
+  is(spins, E.CONSTANTS.MAX_RESPINS, 'a free re-spin runs out at MAX_RESPINS');
+  is(R.canRespin(last).reason, 'no re-spins left', 'and says which of the two limits stopped it');
+
+  /* A SAVE WRITTEN BEFORE THE FIELD EXISTED. It never had a free one, so the
+     ladder IS what it paid, and the fallback has to agree to the penny. */
+  const legacy = seeded();
+  legacy.respinsUsed = 2;
+  delete legacy.respinFeesPaid;
+  is(E.CONSTANTS.CAP_MUSD - R.remaining(legacy), E.respinFees(2),
+    'a run saved before the fee was stored still reads its fees off the ladder');
+
+  /* ONE SOURCE FOR THE PRICE GATE. canFinishAfter is the margin's own sign, so
+     the two can never disagree about whether a signing is legal. */
+  const probe = greedyDraft(777, 2);
+  R.spin(probe, data);
+  let checked = 0, disagreed = 0;
+  for (const row of probe.currentDraw.board) {
+    const p = data.allPlayers[row.key];
+    if (!p) continue;
+    const m = R.marginAfter(probe, p);
+    if (m === null) continue;
+    checked++;
+    if ((m >= -1e-9) !== R.canFinishAfter(probe, p)) disagreed++;
+  }
+  ok(checked >= 3, `the margin was asked of a real board (${checked} men)`);
+  is(disagreed, 0, 'the margin and the price gate never disagree');
+
+  /* THE WARNING IS ONLY ASKED WHERE IT WAS MEASURED. With three slots open the
+     same number is headroom shared between two of them, which is a different
+     quantity, and answering it off this table would be reading it for a
+     question nobody put to it. */
+  const early = greedyDraft(555, 1);
+  R.spin(early, data);
+  const anyEarly = early.currentDraw.board.some(row => {
+    const p = data.allPlayers[row.key];
+    return p && R.leavesNoChoice(early, p);
+  });
+  is(R.slotsLeft(early), E.SLOTS.length - 1, 'the early fixture has four slots open');
+  is(anyEarly, false, 'nothing is marked tight while there is more than one pick left');
+  ok(R.LAST_SLOT_ROOM_MUSD > 0, 'the room the last slot needs is a real number');
+}
+
 /* ── THE FLOOR IS UNDER THE CLUB, NOT REPLACED BY IT ────────────────────────
  *
  * The court is a hardwood floor now: seven background layers, of which the
@@ -1099,6 +1282,64 @@ ok(bestWins > worstWins + 20,
     const n = (src.match(new RegExp('class="' + part + '"', 'g')) || []).length;
     is(n, courts, `every court has its ${part}`);
   }
+}
+
+/* ── A STRAIGHT COLUMN OF DIGITS IS A FEATURE, NOT A TYPEFACE ───────────────
+ *
+ * This page was set in a code face. `--mono` was `ui-monospace` and 39 rules
+ * reached for it, which is more than the display face was used, and every one
+ * of the 39 was a NUMBER: a price, a record, a scoreline, a win share total,
+ * a streak. The Perfect Season, which this game is a reskin of, uses a
+ * monospace exactly zero times and sets the same figures in its own faces.
+ *
+ * What all 39 wanted was for digits to line up in a column, and
+ * `font-variant-numeric: tabular-nums` does that in ANY face. Reaching for a
+ * typewriter to get a straight line buys a whole voice nobody asked for.
+ *
+ * TWO THINGS ROT HERE AND BOTH ARE SILENT. A monospace can come back, because
+ * it is the reflex for a number and this page has thirty-odd sites where the
+ * next one lands. And a rule that asks for `--num` and forgets the feature
+ * renders a perfectly good number in a slightly wrong column, which nothing
+ * anywhere reports and no screenshot argues with.
+ *
+ * SO THE SECOND CLAIM IS ABOUT THE PAIR, never about one rule: `--num` is
+ * only there to carry the figures, so a rule that names it and no feature is
+ * a rule that has forgotten what it is for. Hero figures on the display face
+ * are checked the same way, because the display face is the other half of the
+ * split and the same reflex misses it.
+ *
+ * The page's own `--mono` is gone and `how-to-play.html`'s went with it: an
+ * unused variable is the next person's invitation.
+ */
+{
+  const pages = ['index.html', 'how-to-play.html'];
+  for (const page of pages) {
+    const raw = fs.readFileSync(path.join(HERE, page), 'utf8');
+    /* Comments out first. This very section names the thing it forbids, and
+       the last three extractors in this repo to read a comment as code each
+       reported a problem that was a paragraph. */
+    const src = raw.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/<!--[\s\S]*?-->/g, ' ');
+
+    ok(!/monospace/.test(src), `${page} reaches for no code face`);
+    ok(!/var\(--mono\)|--mono\s*:/.test(src), `${page} has no mono variable left`);
+
+    /* Every declaration block that sets one of the two number faces. The
+       body face is excluded: it is the page's default and is set on plenty
+       of things that are prose. */
+    const blocks = [...src.matchAll(/\{([^{}]*font-family\s*:\s*var\(--(?:num|display)\)[^{}]*)\}/g)];
+    if (page === 'index.html') {
+      ok(blocks.length >= 30, `${page}: the font scan found real rules (${blocks.length})`);
+    }
+    const bare = blocks
+      .filter(b => /var\(--num\)/.test(b[1]) && !/tabular-nums/.test(b[1]))
+      .map(b => b[1].trim().slice(0, 60));
+    is(bare, [], `${page}: every rule on the number face asks for tabular figures`);
+  }
+
+  /* The utility class went with the variable. `.mono` pointing at a face that
+     is not a monospace is a name that lies to whoever reads the markup. */
+  const idx = fs.readFileSync(path.join(HERE, 'index.html'), 'utf8');
+  ok(!/class="[^"]*\bmono\b/.test(idx), 'and nothing in the markup is still called mono');
 }
 
 /* ── A SHARED RESULT HAS TO SAY WHICH GAME IT WAS, AND THE DAY HAS TO COUNT ─
@@ -1153,16 +1394,47 @@ ok(bestWins > worstWins + 20,
      has been silently wrong three times. */
   const WANT = ['cardTag', 'dayNumberOf', 'dailySeed', 'dailyRecord',
     'freshBadges', 'bestsSet', 'shareDare'];
+  /* NUMWORD is not in WANT because it is not a `function` declaration but a
+     `var` holding one, and it is lifted separately below. It is the page's one
+     place that turns a roster count into an English word, so every tagline
+     here reaches for it and a lift without it throws rather than failing an
+     assertion. */
   const missing = WANT.filter(n => !fnSource(n));
   is(missing, [], 'every function this section reads is still in the page');
 
   const lift = (name, names, vals) =>
     new Function(...names, fnSource(name) + '\nreturn ' + name + ';')(...vals);
 
+  /* NUMWORD, lifted out of its `var` the same way and for the same reason as
+     everything else here: a copy of it would agree with itself. */
+  const numwordSrc = (() => {
+    const head = pageSrc.indexOf('var NUMWORD = function(');
+    if (head < 0) return null;
+    let i = pageSrc.indexOf('{', head), depth = 0;
+    for (let j = i; j < pageSrc.length; j++) {
+      if (pageSrc[j] === '{') depth++;
+      else if (pageSrc[j] === '}' && --depth === 0) return pageSrc.slice(head, j + 1) + ';';
+    }
+    return null;
+  })();
+  ok(!!numwordSrc, 'the page still carries NUMWORD, which every tagline reads');
+  const NUMWORD = numwordSrc
+    ? new Function(numwordSrc + '\nreturn NUMWORD;')()
+    : ((n) => String(n));
+  if (numwordSrc) {
+    /* IT IS THE ONE PLACE A ROSTER COUNT BECOMES A WORD, so it is asserted to
+       answer the roster this game actually drafts. A page saying "six" on a
+       five man game is the exact failure it exists to prevent. */
+    is(NUMWORD(E.SLOTS.length), ['zero', 'one', 'two', 'three', 'four', 'five',
+      'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve'][E.SLOTS.length],
+      'NUMWORD spells the roster size');
+    is(NUMWORD(5, true), 'Five', 'and capitalises for the start of a sentence');
+  }
+
   /* ---- the tagline names the mode ---- */
   if (fnSource('cardTag')) {
     const ERA_NAMES = { eighties: 'The Eighties', nineties: 'The Nineties' };
-    const cardTag = lift('cardTag', ['E', 'ERA_NAMES'], [E, ERA_NAMES]);
+    const cardTag = lift('cardTag', ['E', 'ERA_NAMES', 'NUMWORD'], [E, ERA_NAMES, NUMWORD]);
     const league = cardTag({});
     const club = cardTag({ club: 'CHI' });
     const era = cardTag({ era: 'eighties' });
@@ -1183,7 +1455,7 @@ ok(bestWins > worstWins + 20,
 
   /* ---- the dare ---- */
   if (fnSource('shareDare')) {
-    const mk = (r) => lift('shareDare', ['run'], [r]);
+    const mk = (r) => lift('shareDare', ['run', 'E', 'NUMWORD'], [r, E, NUMWORD]);
     const plain = mk(null)({ isGOAT: false, titleWon: false });
     const day = mk({ daily: 3 })({ isGOAT: false, titleWon: false });
     ok(plain !== day, 'the daily dares differently from an ordinary run');
@@ -1421,6 +1693,11 @@ ok(bestWins > worstWins + 20,
     ['RTF_RECORD_WINS', E.CONSTANTS.RECORD_WINS, 'the record'],
     ['RTF_GOAT_WINS', E.CONSTANTS.GOAT_WINS, 'the one nobody has done'],
     ['RTF_CAP_MUSD', E.CONSTANTS.CAP_MUSD, 'the cap'],
+    /* THE ROSTER SIZE, which the migration uses to refuse a run whose picks
+       do not line up. Missing from this list while it was six in both files,
+       so the day the game drafted five the server would have refused every
+       run with nothing on screen saying why. */
+    ['RTF_ROSTER_SIZE', E.SLOTS.length, 'how many men a run drafts'],
   ];
   /* COVERAGE FIRST. A reader that finds nothing lets all eight comparisons
      pass against undefined === undefined, which is how an extractor in this
@@ -1440,6 +1717,146 @@ ok(bestWins > worstWins + 20,
   ok(!!pageEpoch && !!sqlEpoch, 'the page and the migration each declare a daily epoch');
   if (pageEpoch && sqlEpoch) {
     is(sqlEpoch[1], pageEpoch[1], 'and they are the same day');
+  }
+
+  /* ── A NUMBER A PLAYER READS HAS TO BE THE NUMBER THE GAME PLAYS ───────
+   *
+   * This is `check-numbers.mjs`'s subject, and hoops is on neither that
+   * script's guarded list nor anybody else's, so the two pages that describe
+   * this game were free to describe a different one.
+   *
+   * IT HAPPENED WHILE THE ROSTER WAS BEING CHANGED. The cap was swept, a
+   * provisional $105M went into the rules page and the meta description
+   * before the sweep had finished, and $120M shipped. Nothing threw: both
+   * pages rendered perfectly and promised a cap the game does not charge,
+   * which is the guide that lies, found by a player.
+   *
+   * how-to-play.html IS STATIC AND CANNOT INTERPOLATE, which is the whole
+   * reason this class of check exists. index.html can, and mostly does.
+   *
+   * AND THE FIRST DRAFT OF THIS CHECK THREW THE SCRIPT AWAY, which is the
+   * fourth wrong extractor in this repo and the one that cost the most. It
+   * stripped `<script>` whole, on the argument directly below about comments,
+   * and index.html is a one file game: every sentence the game PRINTS lives
+   * in that block. So it read the markup and the meta description, found the
+   * cap claims and the one count in the folded card, passed, and left ELEVEN
+   * player-facing "six" strings behind on a five man game, among them the
+   * share text, the daily's dare, the front page door and two hardcoded
+   * "of 6 signed". Its own coverage clause did not save it, because the other
+   * page yields claims and the clause counted both pages together.
+   *
+   * COMMENTS STILL COME OUT, AND THAT PART WAS RIGHT. A code comment here is
+   * prose for the next person and is allowed to say what the roster used to
+   * be: the note above this one says "six men to five" and the engine's cap
+   * note lists every value it has ever had. A reader that failed on those
+   * would be the bug rather than the comment.
+   *
+   * SO IT READS STRINGS, THROUGH check-copy.mjs's OWN WALKER. Telling a
+   * comment from a string needs a character walk rather than a regex, and
+   * telling a regex literal from a division needs one too: `/[&<>"']/g` is a
+   * real line in this page, and a reader that takes its double quote for a
+   * string opener is lost for the rest of the file, which is where the share
+   * text and the front page door happen to live. That walker exists, it was
+   * fixed for that exact literal once already, and a second copy of it would
+   * be wrong a second time.
+   */
+  {
+    const markup = (src) => src
+      .replace(/<script[\s\S]*?<\/script>/gi, ' ')
+      .replace(/<style[\s\S]*?<\/style>/gi, ' ')
+      .replace(/<!--[\s\S]*?-->/g, ' ');
+    /* The markup a reader sees, plus every string the script can print. */
+    const prose = (src) => [markup(src)]
+      .concat(scriptBlocks(src).flatMap(b => stringLiterals(stripComments(b))))
+      .join('\n');
+    const pages = {
+      'index.html': prose(pageSrc),
+      'how-to-play.html': prose(fs.readFileSync(path.join(HERE, 'how-to-play.html'), 'utf8')),
+      /* THE SHARE CARD IS COPY, and it is the most public copy this game has: it
+         is what a link to it looks like in somebody else's chat. It is also a
+         BUILD ASSET, rendered to a png once and never interpolated, so a cap
+         that moves leaves a picture promising the old one with no page to fix
+         it and no reader who can tell. Same argument that put cfb's own og
+         build script on check-copy's guarded list. */
+      'og-source.html': prose(fs.readFileSync(path.join(HERE, 'og-source.html'), 'utf8')),
+    };
+
+    /* THE EXTRACTOR HAS TO PROVE IT READ THE SCRIPT, because the way it failed
+       was by reading a page and finding nothing in it. Two sentences that only
+       exist inside index.html's script block, one of them past the regex
+       literal that desyncs a naive walker. */
+    for (const probe of ['No identity yet', 'days in a row.']) {
+      ok(pages['index.html'].includes(probe),
+        `the copy reader reaches the script's own strings ("${probe}")`);
+    }
+
+    /* Every "$NNNM cap" a reader can see. */
+    const capClaims = [];
+    for (const [name, text] of Object.entries(pages)) {
+      for (const m of text.matchAll(/\$([0-9]+(?:\.[0-9]+)?)M<\/b>?\s*cap|\$([0-9]+(?:\.[0-9]+)?)M\s+cap/gi)) {
+        capClaims.push({ name, value: Number(m[1] || m[2]) });
+      }
+    }
+    ok(capClaims.length >= 2,
+      `the cap is claimed in prose and the claims were found (${capClaims.length})`);
+    const wrongCap = capClaims.filter(c => c.value !== E.CONSTANTS.CAP_MUSD)
+      .map(c => `${c.name} says $${c.value}M`);
+    is(wrongCap, [], `every cap a reader sees is $${E.CONSTANTS.CAP_MUSD}M`);
+
+    /* AND THE SEASON RANGE, WHICH GOES STALE ON ITS OWN ONCE A YEAR.
+       `home-era` is interpolated from the data on load, so the "1974 to 2025"
+       in the markup is only what a reader sees for the moment before the pool
+       arrives, and for as long as it does not. That still makes it a claim: a
+       refresh that adds a season leaves it a year out, in the heading of the
+       front page, with nothing to catch it, because the number that replaced
+       it was right. This is the one number on these pages that moves without
+       anybody editing anything.
+
+       IT READS THE ELEMENT AND NOT THE PROSE, and the first draft did the
+       other thing. A bare "NNNN to NNNN" means several things on these pages:
+       how-to-play lists the seven era bands, and 1980 to 1986 is a correct
+       sentence about the eighties rather than a stale claim about the pool.
+       Scanning for the shape reported all seven as defects, which is the same
+       trap that kept "times" and "players" off the noun list above. The claim
+       lives in one element, so that is what is read. */
+    const seasons = players.map(p => p.s);
+    const span = `${Math.min(...seasons)} to ${Math.max(...seasons)}`;
+    const era = /id="home-era"[^>]*>([^<]*)</.exec(pageSrc);
+    ok(!!era, 'the front page still carries the season range in #home-era');
+    if (era) {
+      is(era[1].trim(), span,
+        `the season range the front page opens on is ${span}`);
+    }
+
+    /* And every count of the roster written as a WORD. "six spins" and "Six
+       men" are correct English sentences, so nothing but this can catch one
+       left behind.
+       TWO NOUNS ARE DELIBERATELY NOT ON THIS LIST and the first draft failed
+       on both. "times" and "players" each mean the roster in one sentence
+       and something else in another: the re-spin ladder is charged "three
+       times" and no club may give up more than "two players". A reader that
+       claimed those reports two correct sentences as defects, which is worse
+       than the hole it closes. What is left is the three nouns that only
+       ever mean the roster on these pages. */
+    const WORDS = ['zero', 'one', 'two', 'three', 'four', 'five', 'six',
+      'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve'];
+    const want = WORDS[E.SLOTS.length];
+    const countClaims = [];
+    for (const [name, text] of Object.entries(pages)) {
+      const re = new RegExp('\\b(' + WORDS.join('|') + ')\\s+(spins|men|starters)\\b', 'gi');
+      for (const m of text.matchAll(re)) {
+        countClaims.push({ name, said: m[1].toLowerCase(), phrase: m[0] });
+      }
+    }
+    /* PER PAGE, because counting both together is what let index.html yield
+       nothing from its script and still pass on how-to-play.html's claims. */
+    for (const name of Object.keys(pages)) {
+      const n = countClaims.filter(c => c.name === name).length;
+      ok(n >= 1, `${name} writes the roster count out in prose (${n} found)`);
+    }
+    const wrongCount = countClaims.filter(c => c.said !== want)
+      .map(c => `${c.name}: "${c.phrase}"`);
+    is(wrongCount, [], `every roster count a reader sees is "${want}"`);
   }
 
   /* The slot names the server will accept have to be the slots the game
@@ -1533,22 +1950,44 @@ ok(bestWins > worstWins + 20,
  * fault verify caught once already when the animated season and the instant
  * season disagreed off one seed.
  */
+/* SIX SEASONS AND NOT ONE, BECAUSE THE OVERTIME CLAUSE IS THE INTERESTING ONE
+   AND OVERTIME IS RARE. This was a single seeded season, and whether it held
+   an overtime game at all depended on the roster that seed happened to draft:
+   it went red on a build that had not touched the box score, because a change
+   to the DATA moved the draft, moved the season, and left 82 games with no
+   overtime in them. A sample that can fail to contain the case it is written
+   for is measuring the sample, which this repo has now seen at a magic commish
+   seed, at a chase gap and at a discipline band. The seeds are fixed, so this
+   is still deterministic; there is just enough of it. */
 {
-  const run = R.createRun({ seed: 8191 });
-  let guard = 0;
-  while (run.phase === R.PHASES.DRAFT && guard++ < 40) {
-    const draw = R.spin(run, data);
-    const opts = draw.options.map(k => data.allPlayers[k]).filter(Boolean);
-    R.sign(run, opts.slice().sort((a, b) => b.w - a.w)[0]);
+  const bad = { sum: [], identity: [], attempts: [], minutes: [], quarters: [], level: [] };
+  let otSeen = 0, lines = 0, games = 0;
+  const season = [];
+  /* The first of the six is kept whole, because the gameDetail assertions
+     further down are about ONE run opening ONE game twice. */
+  let run = null;
+
+  for (const seed of [8191, 8192, 8193, 8194, 8195, 8196]) {
+    const r = R.createRun({ seed });
+    let guard = 0;
+    while (r.phase === R.PHASES.DRAFT && guard++ < 40) {
+      const draw = R.spin(r, data);
+      const opts = draw.options.map(k => data.allPlayers[k]).filter(Boolean);
+      R.sign(r, opts.slice().sort((a, b) => b.w - a.w)[0]);
+    }
+    R.playSeason(r);
+    /* One roster per season, because a box score is drawn against the men who
+       actually played it. */
+    const men = r.roster.map((p, i) => ({ ...p, _slot: E.SLOTS[r.slotIndex[i]] }));
+    if (!run) run = r;
+    for (const gm of r.season) season.push({ gm, men });
   }
-  const tagged = run.roster.map((p, i) => ({ ...p, _slot: E.SLOTS[run.slotIndex[i]] }));
-  R.playSeason(run);
 
   const rng = E.createSeededRNG(4242);
-  const bad = { sum: [], identity: [], attempts: [], minutes: [], quarters: [], level: [] };
-  let otSeen = 0, lines = 0;
 
-  for (const gm of run.season) {
+  for (const { gm, men } of season) {
+    games++;
+    const tagged = men;
     const ot = gm.ot || 0;
     const box = E.gameBox(tagged, gm.yourPoints, rng, ot);
 
@@ -1593,7 +2032,7 @@ ok(bestWins > worstWins + 20,
     }
   }
 
-  ok(lines > 400, `enough box score lines to be worth checking (${lines})`);
+  ok(lines > 400, `enough box score lines to be worth checking (${lines} over ${games} games)`);
   is(bad.sum.slice(0, 2), [], 'the points column is the scoreline');
   is(bad.identity.slice(0, 2), [], "a man's shooting line produces his points");
   is(bad.attempts.slice(0, 2), [], 'nobody makes more than he takes');

@@ -61,3 +61,81 @@ jobs:
       # club code is how the labels come back.
       - name: What a player-season says it is
         run: node baseball/check-labels.mjs
+
+      # The cap is written out by hand a dozen times across the game page and the
+      # how-to page, four of them in a <head>: the meta description, the og and
+      # twitter descriptions, and the JSON-LD block Google renders in a rich
+      # result. Nothing held any of them to CAP_MUSD, and this game has already had
+      # its cap swept once. A claim is attributed to the game its sentence NAMES,
+      # because the modes sheet cross-sells both football games with their own
+      # numbers, and the JSON-LD is parsed as JSON rather than sniffed as prose.
+      - name: A number a player reads
+        run: node baseball/check-numbers.mjs
+
+      # The daily shipped on a UTC day, which rolls at 7 or 8pm Eastern: it took the
+      # board away in the middle of somebody's evening and spent their one try on
+      # what was by then yesterday's puzzle. Every way a day boundary breaks is
+      # invisible on the machine it is written on, so this walks the evening hours,
+      # both offsets, and the two Sundays the clocks move. Run under a non-Eastern
+      # zone deliberately: the claim is that the machine's own zone cannot matter.
+      - name: The daily rolls at Eastern midnight
+        run: TZ=Asia/Tokyo node baseball/check-daily.mjs
+
+      # All-Time Staff assigns its own slots, because SP3 against SP4 is a
+      # question staffEra cannot hear: it averages the rotation and averages the
+      # pen. What it CAN hear is rotation against bullpen and who closes, so the
+      # sort is held to the ranking, to eligibility, and to leaving every other
+      # mode alone. A staff sorted wrong is a legal roster the sim reads happily.
+      - name: The staff sorts itself
+        run: node baseball/check-staff.mjs 60
+
+      # Every badge, against real runs. The catalogue went from 36 to 205 in one
+      # pass, and a badge nobody can earn throws no error and breaks no test: the
+      # cabinet renders, the square stays dark, and nobody reports it. The hoops
+      # catalogue shipped three of those. This one shipped two on its first draft,
+      # both found here: a re-spin rung asking for five of a thing capped at three,
+      # and a play streak that reported ten after forty consecutive days because it
+      # sorted its day keys as text.
+      # --quick IS THE STRICT ONE HERE, which is the opposite of what the flag
+      # usually means. The two excuse lists are a record of what a sweep reaches,
+      # so they can only be tuned to one sweep, and they are tuned to this one: the
+      # full run reaches strictly more and would call some of them stale, pruning
+      # them would then fail this run, and that loop has no end. Reachability is
+      # hard on both. The full sweep is three minutes and is the developer's
+      # stronger answer.
+      - name: Every badge is reachable
+        run: node baseball/check-badges.mjs --quick
+
+      # The two themes. A dark mode bolted onto a cream page fails silently three
+      # ways: a panel nobody tokenised stays cream, a hairline written
+      # rgba(0,0,0,.10) stops existing, and an accent solved against paper goes
+      # unreadable. None of the three throws and a screenshot of the one screen
+      # somebody looked at shows none of them. It measures the real screens in a
+      # real browser, and what it FAILS on is a regression against the light
+      # theme rather than an absolute, because the light palette predates it.
+      #
+      # The front page is two designs rather than two sizes of one, and the order
+      # is CSS over the phone's markup, so every way it rots renders perfectly: a
+      # block that leaks under its breakpoint, a display:contents that stops
+      # applying, an element added with no order. And the reel geometry under both
+      # is one property now, where a wrong row height spins, lands and draws the
+      # highlight around the row next to the pick.
+      - name: The front page, and the reel under it
+        run: |
+          npm install --no-save playwright@1.49.1
+          npx playwright install --with-deps chromium
+          node baseball/check-theme.mjs
+          node baseball/check-home.mjs
+
+      # A WHOLE RUN, TO THE SCREEN IT ENDS ON. Nothing here reached the results
+      # screen before: the theme walk drafts a few picks and stops, and everything
+      # else runs in node. So the results screen, the trophy cabinet, the share
+      # card, the board submit and the daily record had never been opened in a
+      # browser at all, and they are the last five things a player meets. The bug
+      # that lives in a join like that leaves the last screen up and the button
+      # doing nothing for ever, so page errors are collected throughout and are
+      # their own failure. Every request out is refused at the route: the
+      # leaderboard is a live competition and a submit that got out would file a
+      # fabricated season on it.
+      - name: A whole run, to the results screen
+        run: node baseball/check-run.mjs

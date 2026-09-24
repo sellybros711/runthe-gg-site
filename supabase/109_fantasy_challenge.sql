@@ -274,7 +274,12 @@ begin
     raise exception 'that lineup is over the cap';
   end if;
 
-  select p.display_name into v_name from public.profiles p where p.id = v_user;
+  /* `username`, WHICH IS WHAT AN ACCOUNT'S NAME IS CALLED. This read was written
+     `p.display_name` and there is no such column: `supabase/10_accounts.sql` names it
+     `username`, a citext, and every other board on this site copies it out as
+     `select username::text`. It raised on the first real entry anybody tried to make.
+     See 113 for the whole story, including why no test caught it. */
+  select p.username::text into v_name from public.profiles p where p.id = v_user;
 
   begin
     insert into public.fantasy_entries
@@ -350,6 +355,23 @@ as $$
 $$;
 
 grant execute on function public.fantasy_entry_count(int,int) to anon, authenticated;
+
+-- DROPPED FIRST, SO THIS FILE CAN BE RUN A SECOND TIME. `create or replace` refuses to
+-- change a function's return type, and a `returns table` function's row type IS its return
+-- type, so 110 adding two columns to this one makes 109 un-re-runnable from that day on:
+-- re-applying the chain against a database that already has it fails here, half way, with
+-- "cannot change return type of existing function". 110 carries the identical drop directly
+-- above its own copy, for the same reason and in the same words.
+--
+-- Nothing depends on this function in the catalog sense. 114's `fantasy_settle_week` calls
+-- it, and plpgsql resolves a call at CALL time rather than recording a dependency, so the
+-- drop is clean and the re-create a few lines down is what the caller finds.
+--
+-- WHICH MEANS THE ORDER OF THE CHAIN IS LOAD BEARING RATHER THAN TIDY. Run on its own
+-- against a database on 110 or later this file installs the OLD three column shape and the
+-- live board loses two columns. Run as the chain does it, 110 replaces it a moment later
+-- inside the same transaction and nothing outside ever sees the older one.
+drop function if exists public.fantasy_standings(int, int, int);
 
 create or replace function public.fantasy_standings(
   p_season int, p_week int, p_limit int default 50)

@@ -38,15 +38,24 @@
   var TIMEOUT_MS = 12000;
 
   /* Overridable the way board.js allows, so a check can point the module at a stand-in
-     without touching the shipped constants. */
-  function base() { return (root.PS_BOARD_URL || SB_URL) + '/rest/v1/'; }
+     without touching the shipped constants.
+     BOTH NAMES, AND THE SECOND ONE IS A SAFETY RULE RATHER THAN A CONVENIENCE. Each game
+     stubs its own board under its own name, and a page whose board is pointed at a stand-in
+     while its SAVES still go to the live project is a checker writing real rows on somebody's
+     account. That is the rule check-fantasy.mjs and the Stripe checks already run on. So
+     redirecting the board redirects the shelf with it, and what a stand-in that does not
+     implement these four functions costs is a refusal, which this module is built to take. */
+  function base() { return (root.PS_BOARD_URL || root.RTF_BOARD_URL || SB_URL) + '/rest/v1/'; }
 
-  /* THE TOKEN, FROM WHICHEVER AUTH MODULE THIS PAGE LOADED. The two games ship separate auth
-     clients against one project, and this file is loaded by both. Anonymous is not a fallback
-     worth having: every function in 103 raises without auth.uid(), so a page with no session
-     would spend a round trip to be told what it already knew. */
+  /* THE TOKEN, FROM WHICHEVER AUTH MODULE THIS PAGE LOADED. The games ship separate auth
+     clients against one project, and this file is loaded by all of them. Anonymous is not a
+     fallback worth having: every function in 103 raises without auth.uid(), so a page with no
+     session would spend a round trip to be told what it already knew.
+     A page loads exactly one of these, so the order is arbitrary and the list is the whole
+     rule: a game missing from it saves nothing, silently, because `token` answering null is
+     also what "signed out" looks like. */
   function token() {
-    var a = root.PS_AUTH || root.PS_CFB_AUTH;
+    var a = root.PS_AUTH || root.PS_CFB_AUTH || root.RTF_AUTH;
     var t = a && typeof a.token === 'function' ? a.token() : null;
     return t || null;
   }

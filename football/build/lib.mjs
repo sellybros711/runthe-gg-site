@@ -179,10 +179,32 @@ export function toCSV(rows, columns) {
  * older `player_stats` release stops carrying recent seasons; we verified the
  * two agree on fantasy_points_ppr before switching.
  */
-export async function nflverseCSV(release, asset) {
+/*
+ * ─── THE CACHE NEVER EXPIRES, AND FOR ONE CALLER THAT IS A FROZEN BOARD ─────────────
+ *
+ * Every season from 1999 to last year is finished and will never change again, so a cache
+ * with no expiry is exactly right for the builds this file was written for: the alternative
+ * is re-downloading eighty megabytes to rebuild a pool.
+ *
+ * It is wrong for anything reading a season that is STILL BEING PLAYED. The live scoring
+ * path polls this file every few minutes during the games, and served a copy from disk it
+ * would poll the same bytes all afternoon: the board would come up, score whatever was in
+ * the cache, and never move again. Nothing throws, nothing looks broken, and the symptom is
+ * a leaderboard that is simply wrong about a live competition.
+ *
+ * In a GitHub Actions run the workspace is empty, so the live writer fetches every time and
+ * is correct BY ACCIDENT. That is the part worth removing: the day somebody adds a cache
+ * step to make the workflow faster, the live board stops and no check anywhere goes red.
+ *
+ * So a caller that needs a fresh answer asks for one. The default is unchanged and every
+ * existing build reads exactly the bytes it read before.
+ */
+export async function nflverseCSV(release, asset, opts = {}) {
+  const maxAgeMs = opts.maxAgeMs == null ? Infinity : opts.maxAgeMs;
   fs.mkdirSync(CACHE_DIR, { recursive: true });
   const cached = path.join(CACHE_DIR, asset);
-  if (fs.existsSync(cached) && fs.statSync(cached).size > 0) {
+  if (fs.existsSync(cached) && fs.statSync(cached).size > 0
+      && Date.now() - fs.statSync(cached).mtimeMs <= maxAgeMs) {
     return fs.readFileSync(cached, 'utf8');
   }
   const url = `https://github.com/nflverse/nflverse-data/releases/download/${release}/${asset}`;
@@ -196,11 +218,15 @@ export async function nflverseCSV(release, asset) {
   return text;
 }
 
-/** Any URL, cached under build/.cache by `name`. */
-export async function cachedCSV(url, name) {
+/** Any URL, cached under build/.cache by `name`. `maxAgeMs` as above, and it matters more
+    here: `games.csv` is the SCHEDULE, and a stale copy is what decides a week is still
+    being played hours after it finished, or finished before it has. */
+export async function cachedCSV(url, name, opts = {}) {
+  const maxAgeMs = opts.maxAgeMs == null ? Infinity : opts.maxAgeMs;
   fs.mkdirSync(CACHE_DIR, { recursive: true });
   const cached = path.join(CACHE_DIR, name);
-  if (fs.existsSync(cached) && fs.statSync(cached).size > 0) {
+  if (fs.existsSync(cached) && fs.statSync(cached).size > 0
+      && Date.now() - fs.statSync(cached).mtimeMs <= maxAgeMs) {
     return fs.readFileSync(cached, 'utf8');
   }
   const res = await fetch(url, { redirect: 'follow' });

@@ -179,6 +179,10 @@ async function main() {
    * below makes harmless either way. */
   const SUPPLEMENT = {
     BOS: [2024],
+    /* New York over San Antonio, and the first Knicks title since 1973, which
+       is before this game's data starts: every other year on their card is out
+       of range, so 2026 is the only one a player will ever see. */
+    NYK: [2026],
   };
   const supplemented = [];
   for (const [code, years] of Object.entries(SUPPLEMENT)) {
@@ -198,15 +202,26 @@ async function main() {
   /* ── EVERY SEASON HAS EXACTLY ONE CHAMPION ────────────────────────────────
    *
    * Checked back to 1974, which is where this game's data starts, and forward
-   * to LAST year rather than this one: a season is named for the calendar year
-   * it ends in, so the current year's champion may not be crowned yet and
-   * demanding one would fail every spring.
+   * to the last season that has actually ENDED. A season is named for the
+   * calendar year it finishes in, so demanding this year's champion in March
+   * would fail every spring.
+   *
+   * IT USED TO SAY "LAST YEAR" AND THAT IS WRONG FOR HALF OF EVERY YEAR. The
+   * Finals are over by the end of June, so from July onwards the current year
+   * IS settled, and a check that skips it has a six month hole in exactly the
+   * window when a new season is waiting to be added. Read in September 2026 it
+   * cheerfully reported every season from 1974 to 2025 complete while 2026 had
+   * no champion at all and the upstream table had not caught up. July is the
+   * cutoff for the same reason the annual refresh fires on the 5th of it.
    *
    * Fatal, because these years are not decoration. verify.mjs asserts that
    * every season in the player data has a champion in it, and the playoff model
    * is fitted against the real title rate read off this very list, so a gap
    * here quietly moves the calibration as well as the cards. */
-  const lastSettled = new Date().getUTCFullYear() - 1;
+  const now = new Date();
+  const lastSettled = now.getUTCMonth() >= 6            // 6 is July
+    ? now.getUTCFullYear()
+    : now.getUTCFullYear() - 1;
   const byYear = new Map();
   for (const t of Object.values(teams)) {
     for (const y of t.titles) {

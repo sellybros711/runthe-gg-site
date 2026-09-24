@@ -63,10 +63,15 @@ const near = (a, b, tol, what) => ok(Math.abs(a - b) <= tol,
   `${what}\n      ${a.toFixed(2)} against ${b.toFixed(2)}, tolerance ${tol}`);
 const head = (s) => console.log('\n' + s + '\n' + '-'.repeat(s.length));
 
-const SIX = ['PG', 'SG', 'SF', 'PF', 'C', '6TH'];
-function fixtureSix(season, club) {
-  const rows = DATA.players.filter((p) => p.s === season && p.t === club).slice(0, 6);
-  return rows.map((p, i) => ({ ...p, _slot: SIX[i] }));
+/* A FIXTURE ROSTER OFF A REAL CLUB, one man a slot. The slot list is the
+   engine's own, never a copy: written out here it was `['PG','SG','SF','PF',
+   'C','6TH']`, which is a second copy of a list that has since changed, and a
+   fixture a slot longer than the game drafts is a fixture testing a roster
+   nobody can build. */
+function fixtureFive(season, club) {
+  const rows = DATA.players.filter((p) => p.s === season && p.t === club)
+    .slice(0, E.SLOTS.length);
+  return rows.map((p, i) => ({ ...p, _slot: E.SLOTS[i] }));
 }
 const stats = (a) => {
   const m = a.reduce((s, x) => s + x, 0) / a.length;
@@ -76,8 +81,9 @@ const stats = (a) => {
 // ── 1. one game adds up ─────────────────────────────────────────────────────
 head('1. a live game adds up, and its log agrees with its scoreboard');
 {
-  const men = fixtureSix(1996, 'CHI');
-  ok(men.length === 6, 'the fixture is a real six man roster');
+  const men = fixtureFive(1996, 'CHI');
+  ok(men.length === E.SLOTS.length,
+    `the fixture is a real ${E.SLOTS.length} man roster (${men.length})`);
 
   let plays = 0, boxBad = 0, colBad = 0, parityBad = 0, ptsBad = 0, shotBad = 0;
   let lineSum = 0, scoreSum = 0, otGames = 0;
@@ -129,7 +135,7 @@ head('1. a live game adds up, and its log agrees with its scoreboard');
   is0(boxBad, 'the box score is the scoreline, and nobody finishes level');
   is0(ptsBad, 'every points total is his own twos, threes and free throws');
   is0(shotBad, 'nobody makes more than he takes, or takes more threes than shots');
-  ok(lineSum === scoreSum, 'the six lines are the whole of the team score');
+  ok(lineSum === scoreSum, 'the box score lines are the whole of the team score');
   ok(otGames > 0 && otGames < 100, `overtime happens and is rare (${otGames} of 400)`);
 }
 
@@ -172,7 +178,7 @@ head('2. it is a second sampler of resolveGame and not a second model');
     * Math.sqrt((p / 100) * (1 - p / 100) / N);
   console.log(`  bands at N=${N}: mean ${meanTol.toFixed(2)}, spread ${sdTol.toFixed(2)},`
     + ` win rate ${winTolAt(66).toFixed(2)} points at an even matchup`);
-  const men = fixtureSix(1996, 'CHI');
+  const men = fixtureFive(1996, 'CHI');
   console.log('  matchup       resolver              live, every call auto');
   for (const c of CASES) {
     const r1 = E.createSeededRNG(4242);
@@ -204,7 +210,7 @@ head('2. it is a second sampler of resolveGame and not a second model');
      the honest failure mode of this whole section, and it has to fail. */
   const keep = E.LIVE.PULL;
   E.LIVE.PULL = 0;
-  const men2 = fixtureSix(1996, 'CHI');
+  const men2 = fixtureFive(1996, 'CHI');
   const rn = E.createSeededRNG(99);
   const loose = [];
   for (let i = 0; i < 1200; i++) {
@@ -219,7 +225,7 @@ head('2. it is a second sampler of resolveGame and not a second model');
 // ── 3. the two calls ────────────────────────────────────────────────────────
 head('3. the calls are real, reachable, and only asked when they are calls');
 {
-  const men = fixtureSix(1996, 'CHI');
+  const men = fixtureFive(1996, 'CHI');
   const rng = E.createSeededRNG(31337);
   let games = 0, withCall = 0, calls = 0, shot = 0, foul = 0, wide = 0, early = 0;
   const seen = {};
@@ -509,7 +515,9 @@ async function boot(page) {
    tile off a board that is about to be replaced. */
 async function toBracket(page) {
   await page.evaluate(() => document.querySelector('#b-start').click());
-  for (let i = 0; i < 6; i++) {
+  /* HOW MANY TO SIGN IS THE ENGINE'S ANSWER, never a literal: written 6 this
+     loop presses one more time than the game drafts. */
+  for (let i = 0; i < E.SLOTS.length; i++) {
       /* :not(.pending) IS LOAD-BEARING AND IT IS NOT BELT AND BRACES.
        `.opts.pending` hides the tile's CHILDREN and sets pointer-events
        none on the tile, so the tile itself is a visible box with a size and
@@ -522,15 +530,15 @@ async function toBracket(page) {
     await page.waitForSelector('.opts:not(.pending) .ptile:not(.off)', { timeout: 25000 });
     await page.evaluate(() =>
       document.querySelector('.opts:not(.pending) .ptile:not(.off)').click());
-    await page.waitForFunction((want) => {
+    await page.waitForFunction((a) => {
       try {
         const r = JSON.parse(localStorage.getItem('runthefloor_run_v1') || 'null');
-        if (!r || !Array.isArray(r.roster) || r.roster.length < want) return false;
-        if (r.roster.length >= 6) return true;
+        if (!r || !Array.isArray(r.roster) || r.roster.length < a.want) return false;
+        if (r.roster.length >= a.full) return true;
         const opts = document.querySelector('.opts');
         return !!r.currentDraw && !!opts && !/pending/.test(opts.className);
       } catch (e) { return false; }
-    }, i + 1, { timeout: 25000 });
+    }, { want: i + 1, full: E.SLOTS.length }, { timeout: 25000 });
   }
   await page.waitForTimeout(400);
   await page.evaluate(() => document.querySelector('#b-play').click());
@@ -643,7 +651,8 @@ const main = async () => {
     }));
     ok(start.you === '0' && start.them === '0', 'it tips off at nothing apiece');
     ok(start.q === 'Q1', 'in the first quarter');
-    ok(start.men === 6, 'with all six men on the board');
+    ok(start.men === E.SLOTS.length,
+      `with every man on the board (${start.men} of ${E.SLOTS.length})`);
     ok(start.log === 0, 'and an empty play by play');
   }
 
@@ -769,9 +778,9 @@ const main = async () => {
     ok((v.you > v.them) === /You take it/.test(v.res),
       `and says who won (${JSON.stringify(v.res)})`);
     ok(/w|l/.test(v.cls.split(' ').pop()), 'the verdict is coloured by the result');
-    /* THE SIX ADD UP TO THE TEAM, on the screen and not only in the engine. */
+    /* THE STARTERS ADD UP TO THE TEAM, on the screen and not only in the engine. */
     ok(v.men.reduce((a, b) => a + b, 0) === v.you,
-      `the six men on the board add to the team score (${v.men.join('+')} against ${v.you})`);
+      `the men on the board add to the team score (${v.men.join('+')} against ${v.you})`);
     ok(v.nextBottom <= v.vh,
       `Continue is on the screen (${Math.round(v.nextBottom)} of ${v.vh})`);
   }

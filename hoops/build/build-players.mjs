@@ -150,6 +150,93 @@ export function priceOf(row, clubGames) {
   return Math.round(price * 10) / 10;
 }
 
+/* ── WHERE A MAN CAN PLAY, READ OFF WHERE HE DID ────────────────────────────
+ *
+ * `fetch-nba.mjs` splits a hyphenated position, its own fixture proves it on
+ * `PF-SF`, and every one of the 16,057 rows the last fetch produced carried a
+ * SINGLE position. That is what the source served, not a parser fault: today
+ * Basketball-Reference states one position per season row.
+ *
+ * SO THE ENGINE'S WHOLE ELIGIBILITY TABLE DECIDED NOTHING. One position a man
+ * and one slot a position means every roster the game can draft is one of
+ * each, `POSITION_MAX` can never bind, and `slotForPlayer`'s walk down the
+ * open slots has one answer by construction. Measured over 750 drafts with two
+ * bots deliberately stacking one end: one centre, every time, in all 750. A
+ * player reported that you can still go big or small with a starting five,
+ * which is true of the MEN and was not true of the slots.
+ *
+ * WHAT THE SOURCE DOES SAY, over more than one row: the same man, listed at
+ * two positions in two seasons. Kevin Garnett is a PF in one year and a C in
+ * the next, and that is Basketball-Reference's own statement about Kevin
+ * Garnett rather than anything invented here. So a season's eligibility is
+ * every position this player was listed at in the season before it, the
+ * season itself, and the season after.
+ *
+ * PLUS ONE AND MINUS ONE, and the window is the whole of the judgement. It is
+ * the tightest claim the data supports: the source put him at both within a
+ * year. Widening it turns a career ARC into an eligibility, which is a
+ * different and false claim: over five decades a guard becomes a forward and
+ * a wide window would let 1974 him play where 1986 him played. Measured, the
+ * three windows give 22.0%, 31.3% and 37.2% of rows a second position, and
+ * the extra ones bought by the wider two are mostly that arc.
+ *
+ * ADJACENT ON THE FLOOR, NEVER ACROSS THE COURT. A point guard listed at
+ * centre two seasons later is a data artefact rather than a swingman, and 64
+ * rows carry one. A position may only pick up its neighbours.
+ *
+ * IT READS THE ROWS THAT SHIP, which is why it runs after the playing time
+ * floor. That is deliberate rather than convenient: it is what lets the same
+ * function be applied to a `players.json` built before this existed and give
+ * the identical answer, instead of the build and the backfill quietly
+ * disagreeing about a season one of them can see. It is idempotent for the
+ * same reason, since it reads `pp` and never `ep`.
+ */
+const ADJACENT = {
+  PG: ['SG'],
+  SG: ['PG', 'SF'],
+  SF: ['SG', 'PF'],
+  PF: ['SF', 'C'],
+  C: ['PF'],
+  /* The coarse families, for the day the source serves one again. There is
+     exactly one row in the data today that is not one of the five: Adam
+     Keefe's 1998, listed F. */
+  G: ['PG', 'SG'],
+  F: ['SF', 'PF'],
+  GF: ['SG', 'SF'],
+  FC: ['PF', 'C'],
+};
+/* Primary first, then the rest in this order, so two men who end up with the
+   same pair read the same way on a card. */
+const POS_ORDER = ['PG', 'SG', 'SF', 'PF', 'C', 'G', 'F', 'GF', 'FC'];
+
+export function deriveEligibility(rows) {
+  const listed = new Map();          // id -> season -> Set(position)
+  for (const r of rows) {
+    if (!r.pp) continue;
+    if (!listed.has(r.i)) listed.set(r.i, new Map());
+    const byYear = listed.get(r.i);
+    if (!byYear.has(r.s)) byYear.set(r.s, new Set());
+    byYear.get(r.s).add(r.pp);
+  }
+
+  let gained = 0, dropped = 0;
+  for (const r of rows) {
+    if (!r.pp) continue;
+    const byYear = listed.get(r.i);
+    const near = new Set([r.pp]);
+    for (const y of [r.s - 1, r.s, r.s + 1]) {
+      for (const q of (byYear.get(y) || [])) near.add(q);
+    }
+    const ok = new Set([r.pp, ...(ADJACENT[r.pp] || [])]);
+    const kept = [...near].filter((q) => ok.has(q));
+    dropped += near.size - kept.length;
+    kept.sort((a, b) => POS_ORDER.indexOf(a) - POS_ORDER.indexOf(b));
+    r.ep = [r.pp, ...kept.filter((q) => q !== r.pp)].join(';');
+    if (kept.length > 1) gained++;
+  }
+  return { gained, dropped, rows };
+}
+
 /* A curated family whose ids are not in the data never fires, and a TYPO in one
    of those ids is exactly the same thing: silent. So every build says which
    families are live and which are waiting on players the data does not hold
@@ -175,7 +262,39 @@ function reportCuratedChemistry(priced) {
   if (waiting.length) console.log(`    waiting on data: ${waiting.length} more`);
 }
 
+/* THE BACKFILL, AND IT IS A MODE OF THE BUILDER RATHER THAN A SCRIPT OF ITS
+ * OWN. `players.json` was built before `deriveEligibility` existed and the
+ * fetch it came from cannot be re-run here (Basketball-Reference is blocked
+ * from the dev sandbox, the same split this repo records for the register
+ * build), so the committed artefact has to be brought forward in place.
+ *
+ * A one-off script would be a second copy of the rule, and the way that fails
+ * is the next fetch quietly shipping single positions again with nothing
+ * saying so. This calls the same function the build calls, on the same rows,
+ * and it is idempotent, so running it twice is a no-op. */
+function eligibilityOnly() {
+  const out = path.join(DATA_DIR, 'players.json');
+  const rows = JSON.parse(fs.readFileSync(out, 'utf8'));
+  const before = rows.filter((r) => String(r.ep || '').includes(';')).length;
+  const { gained, dropped } = deriveEligibility(rows);
+  fs.writeFileSync(out, JSON.stringify(rows) + '\n');
+  console.log(`Re-read eligibility over ${rows.length} rows in `
+    + `${path.relative(process.cwd(), out)}`);
+  console.log(`  ${before} carried more than one position before, ${gained} do now `
+    + `(${(100 * gained / rows.length).toFixed(1)}%)`);
+  console.log(`  ${dropped} listings dropped as not adjacent on the floor`);
+  const pairs = {};
+  for (const r of rows) {
+    const e = String(r.ep || '').split(';');
+    if (e.length > 1) { const k = e.join('/'); pairs[k] = (pairs[k] || 0) + 1; }
+  }
+  const top = Object.entries(pairs).sort((a, b) => b[1] - a[1]).slice(0, 10);
+  console.log('  ' + top.map(([k, v]) => `${k} ${v}`).join('  '));
+}
+
 function main() {
+  if (process.argv.includes('--eligibility')) return eligibilityOnly();
+
   const fromArg = process.argv.indexOf('--from');
   let rows, source;
 
@@ -216,6 +335,15 @@ function main() {
   if (rows.length !== before) {
     console.log(`  playing time floor: kept ${rows.length} of ${before} rows `
       + `(${MIN_MPG} mpg across ${MIN_GAMES} games)`);
+  }
+
+  /* AFTER THE FLOOR, ON PURPOSE. See the note on deriveEligibility: reading
+     the rows that ship is what lets the backfill give the identical answer. */
+  {
+    const { gained, dropped } = deriveEligibility(rows);
+    console.log(`  eligibility: ${gained} of ${rows.length} rows play more than `
+      + `one position (${(100 * gained / rows.length).toFixed(1)}%), `
+      + `${dropped} listings dropped as not adjacent on the floor`);
   }
 
   /* ── WIN SHARES ARE A COUNTING STAT, AND NOT EVERY SEASON IS 82 GAMES ─────
@@ -435,7 +563,8 @@ function main() {
      existed and the cap has been $134M throughout: a hardcoded number in a
      report about whether the economy fits the cap is the one number in it that
      cannot be trusted. */
-  console.log(`  a six-man roster of median players costs $${(at(0.5) * 6).toFixed(1)}M `
+  console.log(`  a roster of ${E.SLOTS.length} median players costs `
+    + `$${(at(0.5) * E.SLOTS.length).toFixed(1)}M `
     + `against a $${E.CONSTANTS.CAP_MUSD}M cap`);
 }
 

@@ -154,6 +154,13 @@ const career = {
   totalWins: 0, totalLosses: 0, clubs: {}, shapes: {}, beat72: 0,
   seasons: {}, colleges: {}, rows: [],
 };
+/* Seeds per shape bot for the system sweep below. 110 puts the rarest system
+   (the Death Lineup, which wants a roster with no rebounder, real spacing,
+   real hands and real volume from the arc) at single figures out of about a
+   thousand, which is rare rather than absent. Drafts only, so it is seconds.
+   --quick cuts it the way it cuts the badge sweep. */
+const SYSTEM_DRAFTS = argRuns < 900 ? 55 : 110;
+
 const names = Object.keys(STRATEGIES);
 let played = 0;
 for (let i = 0; i < argRuns; i++) {
@@ -194,6 +201,110 @@ ok(unreachable.length === 0,
       + '      A badge nobody can earn is not a hard badge. Loosen the threshold in\n'
       + '      badges.js until this passes, and put the measured number in the comment.'
     : ''}`);
+
+/* ── AND EVERY SYSTEM HAS TO BE REACHABLE TOO ────────────────────────────
+ *
+ * This file exists because a badge nobody can earn throws no error and breaks
+ * no test. A SYSTEM nobody can be named is the same thing wearing a different
+ * coat, and there was no guard for it, so two of the fourteen shipped dead:
+ *
+ *   Twin Towers      fired on 175 of 800 drafts when the roster was six men
+ *                    and on 0 of 800 at five, because it asked for two men
+ *                    ELIGIBLE AT CENTRE and a starting five has one centre
+ *                    slot. Killed by the roster change, reported by nobody.
+ *   The Death Lineup asked for no man whose position is centre, which the
+ *                    centre slot makes impossible. Dead at six men as well,
+ *                    so it had never once been named.
+ *
+ * Both were found by a player saying you can still go big or small with a
+ * starting five, which is true, and which the game had quietly stopped being
+ * able to say.
+ *
+ * IT DRAFTS AND DOES NOT PLAY, which is why it can afford its own bots. A
+ * system is a property of the roster, so no season has to be simulated: a
+ * thousand drafts here cost a fraction of the sweep above. And it needs its
+ * own bots, because the seven strategies above are all about MONEY and a
+ * system is about shape: not one of them would ever chase threes, steals or
+ * the glass, and four of the fourteen are unreachable to all seven. That is
+ * the badge sweep's own lesson, which added two strategies rather than
+ * loosening two thresholds.
+ *
+ * A SYSTEM REPORTED UNREACHED IS THE SAME QUESTION A BADGE REPORTED UNREACHED
+ * IS. Either the roster cannot produce it, in which case rewrite what it
+ * tests, or no bot here is trying, in which case add the one a player would
+ * use. Never move a threshold to suit a bot.
+ *
+ * FIRST MATCH WINS in detectSystem, so a rung can also be reachable and always
+ * shadowed by a looser one above it. That is what the counts are printed for,
+ * and it is what sent Twin Towers above Pick and Roll. */
+{
+  const pa = (v, s) => E.paceAdjust(v || 0, s);
+  const SHAPES = {
+    'best available': (o) => o.slice().sort((a, b) => b.w - a.w)[0],
+    cheapest: (o) => o.slice().sort((a, b) => a.p - b.p)[0],
+    'the glass': (o) => o.slice().sort((a, b) => pa(b.reb, b.s) - pa(a.reb, a.s))[0],
+    shooters: (o) => o.slice().sort((a, b) => pa(b.tpa, b.s) - pa(a.tpa, a.s))[0],
+    'ball hogs': (o) => o.slice().sort((a, b) => pa(b.fga, b.s) - pa(a.fga, a.s))[0],
+    passers: (o) => o.slice().sort((a, b) => pa(b.ast, b.s) - pa(a.ast, a.s))[0],
+    hands: (o) => o.slice().sort((a, b) => pa(b.stl, b.s) - pa(a.stl, a.s))[0],
+    'the post': (o) => o.slice().sort((a, b) => pa(b.pts, b.s) - pa(a.pts, a.s))[0],
+    spacing: (o) => o.slice().sort((a, b) => E.spacingIndex(b) - E.spacingIndex(a))[0],
+  };
+  const shapeNames = Object.keys(SHAPES);
+  const seen = new Map();
+  let drafted = 0;
+  for (let i = 0; i < SYSTEM_DRAFTS * shapeNames.length; i++) {
+    const pick = SHAPES[shapeNames[i % shapeNames.length]];
+    const run = R.createRun({ seed: 90000 + i });
+    let guard = 0, fine = true;
+    try {
+      while (run.phase === R.PHASES.DRAFT && guard++ < 50) {
+        const draw = R.spin(run, data);
+        const options = draw.options.map((k) => data.allPlayers[k]).filter(Boolean);
+        if (!options.length) { fine = false; break; }
+        R.sign(run, pick(options, run));
+      }
+    } catch (e) { fine = false; }
+    if (!fine || run.roster.length !== E.SLOTS.length) continue;
+    drafted++;
+    const s = E.detectSystem(run.roster);
+    if (s) seen.set(s.key, (seen.get(s.key) || 0) + 1);
+  }
+  ok(drafted > SYSTEM_DRAFTS * shapeNames.length * 0.9,
+    `enough drafts completed to judge the systems on (${drafted})`);
+
+  const dead = E.SYSTEMS.map((s) => s.key).filter((k) => !seen.has(k));
+  ok(dead.length === 0,
+    `every system can be named${dead.length
+      ? `\n      never named across ${drafted} drafts ${shapeNames.length} ways: ${dead.join(', ')}\n`
+        + '      A system nobody reaches is not a rare system. Either the roster cannot\n'
+        + '      produce it, in which case rewrite what it tests, or no bot above is\n'
+        + '      trying, in which case add the one a player would use.'
+      : ''}`);
+  if (process.argv.includes('--systems')) {
+    console.log(`\n  ${drafted} drafts, ${shapeNames.length} ways`);
+    for (const s of E.SYSTEMS) console.log(`    ${s.key.padEnd(18)} ${String(seen.get(s.key) || 0).padStart(5)}`);
+  }
+}
+
+/* ── a key a caller compares against has to be a key a system has ──────────
+ *
+ * `coachReport` tested `archetype.key === 'hero_ball'` to print "Leans hard on
+ * <name>", and no system has ever had that key: the one it means is `iso`,
+ * which is the second most common label a drafted roster gets. So that
+ * weakness had never printed once. Same class as the results screen reading
+ * `out.spendLeft` off an outcome that has no such field, and just as silent,
+ * because an `undefined` compares false rather than throwing. */
+{
+  const known = new Set(E.SYSTEMS.map((s) => s.key));
+  const src = fs.readFileSync(path.join(HERE, 'engine.js'), 'utf8');
+  const compared = [...src.matchAll(/archetype\.key\s*===\s*'([^']+)'/g)].map((m) => m[1]);
+  ok(compared.length > 0, `the engine compares a system key somewhere (${compared.length})`);
+  const strangers = compared.filter((k) => !known.has(k));
+  ok(strangers.length === 0,
+    `every system key a caller names is a real one${strangers.length
+      ? `\n      no system has the key: ${strangers.join(', ')}` : ''}`);
+}
 
 /* ── the volume badges are checked by their counter, not by earning them ─── */
 const COUNTERS = [

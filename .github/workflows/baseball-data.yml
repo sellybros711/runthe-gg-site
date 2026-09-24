@@ -1,0 +1,240 @@
+name: Refresh Run The Diamond player data
+
+# Builds baseball/data/players.json from Baseball-Reference and commits it.
+#
+# THIS IS THE ONLY PLACE THE PIPELINE CAN RUN, which is the same split the hoops
+# data workflow documents: baseball-reference.com and fangraphs.com are both
+# refused by the development sandbox's egress proxy (403 on CONNECT) and open
+# from GitHub's runners.
+#
+# AND UNTIL NOW IT WAS A LAPTOP JOB. fetch_inputs.py's own docstring says "run
+# this on a normal machine, then hand the zip back", so the pool was whatever
+# somebody's machine produced on the day, with no record of which sources
+# answered. That is how DATA_RUNBOOK.md came to describe a 50/50 FanGraphs blend
+# that never ran: FanGraphs answered 403, the build printed a friendly note and
+# carried on, and nothing anywhere recorded that the shipped file was bWAR only.
+# The build writes pipeline/provenance.json now, so the claim and the data cannot
+# drift again, and that file is committed with the pool.
+#
+# Four stages:
+#   fetch_inputs.py     bWAR bulk files, FanGraphs leaderboards, Lahman tables
+#   build_pricing.py    joins them and prices every player-season
+#   build_positions.py  positions, closer flags, the starter innings anchor
+#   compact_pool.py     the verbose frame becomes the file the game downloads
+#
+# AND LAHMAN IS READ BY lahman.py RATHER THAN BY pybaseball, which asks for a
+# branch the Chadwick Bureau renamed and has no `teams` function any more. Both
+# of those reached this workflow as a warning it printed and carried on past, so
+# a refresh built a pool with a position on 0 of its 60,208 batters and 22,019
+# closers against the saves column's 905. Every price in it was right.
+#
+# NO SECRETS. It reads public sources and writes files back to this branch.
+#
+# WHAT IT WILL NOT DO ON ITS OWN is change the shape of the pool. `split_stints`
+# is an input and defaults to false: splitting a traded player's season into one
+# row per club recovers 2,939 seasons that are currently draftable from nowhere,
+# and it moves the draft economy, because the price curve is convex and half the
+# WAR costs much less than half the price. Run it, then re-run the cap sweep and
+# compare the best-available against budget-bot gap BEFORE shipping the result.
+
+on:
+  workflow_dispatch:
+    inputs:
+      split_stints:
+        description: 'One row per club for a traded season (MOVES THE DRAFT ECONOMY, measure before shipping)'
+        type: boolean
+        default: false
+      require_fwar:
+        description: 'Fail if the FanGraphs blend does not run, instead of falling back to bWAR'
+        type: boolean
+        default: false
+      commit:
+        description: 'Commit the rebuilt pool'
+        type: boolean
+        default: true
+
+concurrency:
+  group: baseball-data
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install
+        # pyreadr reads CRAN's .RData, which is where the CURRENT Lahman comes
+        # from: SABR's own Box folder answers HTTP 512 to a script. Without it
+        # lahman.py falls back to the zip mirrors, which stop in 2021, and
+        # pool_shape.py then refuses to ship the result.
+        run: pip install pandas numpy pybaseball pyreadr
+
+      # The pool as it stands, kept aside so the run can print what MOVED rather
+      # than a column of numbers somebody has to remember the old value of.
+      - name: Keep the pool that ships
+        run: cp baseball/data/players.json /tmp/pool_before.json
+
+      # THE READER, AND THE TWO STEPS THAT USED TO SWALLOW IT. This needs no
+      # network at all, so it goes before the fetch: a run that cannot read the
+      # archive layout, or that would carry on past a Lahman failure, should say
+      # so in ten seconds rather than after a 35MB download.
+      - name: The Lahman reader, and the build that depends on it
+        working-directory: baseball/pipeline
+        run: python3 check_lahman.py
+
+      - name: Fetch the raw inputs
+        working-directory: baseball/pipeline
+        run: python3 fetch_inputs.py
+
+      # WHAT ANSWERED, printed before anything is built. fetch_inputs.py reports a
+      # failed source and carries on by design, so the log is the only place a 403
+      # shows up, and reading it is how the blend's absence should have been caught
+      # the first time.
+      #
+      # AND THE COLUMNS, because a row count cannot say what is IN a file and
+      # this sandbox cannot reach Baseball-Reference to look. The runbook never
+      # recorded what the bulk WAR files carry, so what the pipeline may ask of
+      # them was guesswork from here, and the newest season each source reaches
+      # is the fact that decides whether a rebuild is shippable at all: the
+      # Lahman mirror the fetch falls back to stops in 2021 and has no Negro
+      # Leagues, which is 2,421 batters with no position and is invisible in a
+      # row count.
+      - name: What the fetch actually got
+        working-directory: baseball/pipeline
+        run: |
+          ls -la data/ && wc -l data/*.txt data/*.csv 2>/dev/null || true
+          echo ""
+          for f in data/*.txt data/*.csv; do
+            [ -f "$f" ] || continue
+            echo "== $f"
+            head -1 "$f" | tr ',' '\n' | tr -d '\r' | paste -sd' ' -
+          done
+          echo ""
+          echo "== newest season each Lahman table reaches"
+          python3 - <<'PY'
+          import csv, glob, os
+          for p in sorted(glob.glob("data/*.csv")):
+              try:
+                  with open(p, newline="", encoding="utf-8-sig") as fh:
+                      r = csv.DictReader(fh)
+                      col = next((c for c in (r.fieldnames or []) if c.lower() == "yearid"), None)
+                      if not col:
+                          continue
+                      years = [int(x[col]) for x in r if (x.get(col) or "").strip().isdigit()]
+                  print(f"  {os.path.basename(p):20} {min(years)} to {max(years)}  ({len(years):,} rows)")
+              except Exception as e:
+                  print(f"  {os.path.basename(p):20} could not be read: {e}")
+          PY
+
+      # FOUR STAGES, AND THE FOURTH ONE WAS MISSING FOR THE LIFE OF THIS FILE.
+      # build_positions.py ends at priced_players_enriched.json, which carries
+      # verbose column names because it is the frame the build was working in.
+      # The game fetches baseball/data/players.json, which carries compact keys
+      # because every visitor downloads it. Nothing turned one into the other, so
+      # the commit step below did `git add` on a file this workflow had never
+      # written: every run found it unchanged, printed "The pool did not move"
+      # and exited green. A workflow that looks like it refreshes the pool on
+      # every firing and has never once written a byte of it.
+      - name: Build
+        working-directory: baseball/pipeline
+        run: |
+          set -o pipefail
+          python3 build_pricing.py
+          python3 build_positions.py \
+            ${{ inputs.split_stints && '--split-stints' || '' }} \
+            ${{ inputs.require_fwar && '--require-fwar' || '' }}
+          python3 compact_pool.py
+          cat provenance.json
+
+      # WHAT THE SOURCES ACTUALLY SAID ABOUT TEN SEASONS A READER CAN LOOK UP.
+      # Neither WAR source can be reached from the development sandbox, so every
+      # figure in this game's write-up was recalled rather than fetched, and one
+      # of them disagrees with the pool: Ted Williams 1941 ships at 10.36 against
+      # a remembered 10.6. This runner is the only machine in the project that
+      # can settle that, and it settles it by printing both pools side by side.
+      - name: The seasons a reader can check
+        run: python3 baseball/pipeline/reference_seasons.py
+             baseball/data/players.json /tmp/pool_before.json
+
+      # AND THE SHAPE, because the reference seasons cannot see this and proved
+      # it on the first real run: they agreed to the decimal on all ten while the
+      # pool underneath them had 109,859 rows against 44,344, positions on none
+      # of its 60,208 batters, and 22,019 closers against 905. The bulk WAR files
+      # fetched cleanly, so every number those ten rows print was right; what
+      # failed was Lahman, which is positions and closer flags. A pool can be
+      # correct about every figure it shows and still be the wrong pool.
+      #
+      # The only thing that went red was check-labels, on the longest CLUB LINE
+      # being 38 characters, because a pool 2.5 times the size holds a longer
+      # name. That is a catastrophe caught by its shadow, and this is the step
+      # that catches it by its face.
+      - name: The rebuilt pool is the same kind of thing
+        run: python3 baseball/pipeline/pool_shape.py
+             baseball/data/players.json /tmp/pool_before.json
+
+      # The pool the game will actually serve, checked before it is committed.
+      # check-labels drives every shipped row through the pricing rule, so a build
+      # that changed the formula or lost the innings anchor fails here rather than
+      # on somebody's draft screen.
+      - name: The pool still says what it is
+        run: |
+          node baseball/check-labels.mjs
+          node baseball/check-numbers.mjs
+
+      # A DATA FILE CACHES EXACTLY LIKE A SCRIPT. The page fetches
+      # data/players.json?v=N with the number written by hand, so a refresh that
+      # rewrites 4.7MB of player-seasons and leaves that number alone serves a
+      # RETURNING visitor the old pool. index.html revalidates and the data does
+      # not, so nothing throws, no screen is wrong, and the only symptom is
+      # somebody insisting a season is not in the game.
+      #
+      # THIS IS THE ONE WRITER THAT CANNOT DO THE BUMP BY HAND. Everywhere else
+      # the edit and the bump are one commit by a person; here a bot rewrites the
+      # pool and nobody is watching. It bumps only what `git diff --quiet` says
+      # actually moved, so a run that finds no new baseball moves no number.
+      - name: Bump the cache version if the pool moved
+        if: ${{ inputs.commit }}
+        run: |
+          if git diff --quiet -- baseball/data/players.json; then
+            echo "The pool did not move, so the version stays where it is."
+            exit 0
+          fi
+          CUR=$(grep -o "data/players\.json?v=[0-9]\+" baseball/index.html | head -1 | sed 's/.*=//')
+          if [ -z "$CUR" ]; then
+            echo "baseball/index.html does not version data/players.json, which it must" >&2
+            exit 1
+          fi
+          NEXT=$((CUR + 1))
+          sed -i "s|data/players\.json?v=$CUR|data/players.json?v=$NEXT|g" baseball/index.html
+          echo "data/players.json: v=$CUR -> v=$NEXT"
+          node scripts/check-cachebust.mjs --update
+          node scripts/check-cachebust.mjs
+
+      - name: Commit
+        if: ${{ inputs.commit }}
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          # The page and the record go with the data: the bump step edits
+          # index.html and scripts/cachebust.json, and a commit that left either
+          # behind would ship a pool under a version nobody asks for.
+          git add baseball/data/players.json baseball/pipeline/provenance.json \
+                  baseball/index.html scripts/cachebust.json
+          if git diff --cached --quiet; then
+            echo "The pool did not move."
+            exit 0
+          fi
+          git commit -m "Baseball: refresh the player pool from Baseball-Reference"
+          for i in 1 2 3 4 5; do
+            git push && break
+            echo "push rejected, rebasing (attempt $i)"
+            git pull --rebase origin "${GITHUB_REF_NAME}" || exit 1
+          done
