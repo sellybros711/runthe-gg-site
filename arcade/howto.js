@@ -44,10 +44,10 @@
       'Eight guesses. Stuck? Burn a clue for a hint.'
     ],
     almamater: [
-      'One NBA, NFL or MLB player at a time. Where did they go to college?',
-      'Type the school. UNC, North Carolina and University of North Carolina all count.',
-      'Typing it is 2 points. Stuck? Take four choices for 1.',
-      'One wrong school ends the run. A spelling we do not recognise costs nothing.'
+      'You get one NBA, NFL or MLB player at a time. Where did they go to college?',
+      'Type the school. Don’t stress the spelling. UNC, North Carolina and University of North Carolina all count.',
+      'Type it for 2 points. Stuck? Take the 4 choices for 1.',
+      'Pick the wrong school and your run’s over. A spelling we don’t know costs you nothing.'
     ],
     crossword: [
       'A quick sports mini. Type into the grid.',
