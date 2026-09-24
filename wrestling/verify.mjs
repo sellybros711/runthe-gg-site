@@ -1209,6 +1209,23 @@ section('two styles, one rig');
     Object.keys(PICO).filter(k=>k[0]!=='_').forEach(k=>{ if(!PICO_SM[k]) out.icons.push(k); });
     Object.keys(BELT_PLATE).forEach(sh=>{ const m=beltPlateSmooth(Object.assign({},BELT_ART_DEFAULT,{shape:sh}),0,0,1,c=>c);
       if(!/<path/.test(m)||/NaN/.test(m)) out.shapes.push(sh); });
+    /* the trunks cover the crotch. The torso's skin ends at y 53.6 and the first
+       trunks cut a notch up to 51.4 between the legs, so skin showed there on
+       every bare legged attire. Asked of the drawn shape rather than of its
+       source: the trunks are the fill spanning both hips at the waist and not
+       the chest, and the middle of the crotch has to be inside it. */
+    out.crotch=[]; out.trunksSeen=0;
+    const host=document.createElement('div'); host.style.cssText='position:absolute;left:-9999px;width:200px'; document.body.appendChild(host);
+    const inF=(el,x,y)=>el.isPointInFill(new DOMPoint(x,y));
+    pool('attire').forEach(a=>{
+      host.innerHTML=wrestlerSVGSmooth(Object.assign({},DEFLOOK,{attire:a,gear:'#111111',pattern:'none'}),{pose:'ready'});
+      const tr=[...host.querySelectorAll('path')].filter(p=>/^url/.test(p.getAttribute('fill')||'')
+        && inF(p,23.6,45.2) && inF(p,40.4,45.2) && !inF(p,32,36));
+      if(!tr.length) return;
+      out.trunksSeen++;
+      if(!tr.some(p=>inF(p,32,55))) out.crotch.push(a);
+    });
+    host.remove();
     // the switch: Retro really is the pixel game, and it sticks
     setGfx(false);
     out.retroNow = wrestlerSVG(DEFLOOK,{}).indexOf('crispEdges')>=0 && pico('trophy',20).indexOf('crispEdges')>=0
@@ -1229,6 +1246,8 @@ section('two styles, one rig');
   r.backHair.length ? bad('back hair wrong: '+r.backHair.join('; ')) : ok('a tail, a mullet and dreads are drawn, and drawn behind the face');
   (r.idCount>0 && r.dupIds===0) ? ok(`two figures on one page share none of their ${r.idCount} gradient ids`)
     : bad(`gradient ids collide between figures (${r.dupIds} of ${r.idCount})`);
+  (r.trunksSeen>=3 && !r.crotch.length) ? ok(`the trunks cover the crotch on all ${r.trunksSeen} bare legged attires`)
+    : bad(`trunks leave skin between the legs on: ${r.crotch.join(', ')||'(no trunks found, '+r.trunksSeen+')'}`);
   r.icons.length ? bad('icons with no smooth drawing: '+r.icons.join(', ')) : ok('every icon has a smooth drawing');
   r.shapes.length ? bad('belt plates that do not draw smooth: '+r.shapes.join(', ')) : ok('every belt plate shape draws smooth');
   (r.retroNow && r.stored==='retro') ? ok('the Retro switch puts the pixel figure, icons and belts back')

@@ -5224,10 +5224,12 @@ function wrestlerSVGSmooth(L,opt){
       +P(tX,28,tW,2,'#e0b341')+FILL('M29,30 L35,30 L35.4,52 L28.6,52 Z', shade(gear,-38)); }
   // trunks over the waist
   if(!tightsFull){
-    const TRD='M22.6,44.2 L41.4,44.2 L42.2,52.8 Q38.6,55.8 34,53.8 L32,51.4 L30,53.8 Q25.4,55.8 21.8,52.8 Z';
+    /* the leg openings rise at the SIDES and the middle comes down to meet them:
+       a notch cut up into the crotch showed skin between the legs */
+    const TRD='M22.6,44.2 L41.4,44.2 L42.2,52.8 Q38.8,54.4 35,55.4 Q33.4,56.2 32,56.4 Q30.6,56.2 29,55.4 Q25.2,54.4 21.8,52.8 Z';
     B.torso+=SIL(TRD, GR(gear))+LINE('M23,45.9 L41,45.9', shade(gear,34), .8, .7);
-    if(L.pattern==='stripe'){ B.torso+=FILL('M23.1,44.8 L25,44.8 L24.4,54 L22.6,53.4 Z', trim)+FILL('M40.9,44.8 L39,44.8 L39.6,54 L41.4,53.4 Z', trim); }
-    if(L.pattern==='split') B.torso+=FILL('M32,44.6 L41,44.6 L41.8,52.6 Q38.6,55.4 34,53.6 L32,51.4 Z', GR(trim));
+    if(L.pattern==='stripe'){ B.torso+=FILL('M23.1,44.8 L25,44.8 L24.6,53.9 L22.5,53.2 Z', trim)+FILL('M40.9,44.8 L39,44.8 L39.4,53.9 L41.5,53.2 Z', trim); }
+    if(L.pattern==='split') B.torso+=FILL('M32,44.6 L41,44.6 L41.8,52.6 Q38.6,54.2 34.8,55.2 Q33.4,55.9 32,56 Z', GR(trim));
     if(L.pattern==='gold') B.torso+=P(22.6,51.6,19,1.6,'#e0b341')+P(23,44.6,18,1.2,'#e0b341');
   }
   if(L.tattoo&&L.tattoo!=='none'){

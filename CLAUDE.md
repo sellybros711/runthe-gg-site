@@ -4719,6 +4719,12 @@ silently and the tail simply is not there. What it asserts now is that a pony, a
 mullet and dreads are drawn at all AND drawn before the face fill, proved by
 deleting the drop-in and by moving the pony to the front.
 
+**The trunks come down through the middle.** The first smooth trunks cut a notch
+up between the legs to y 51.4 while the torso's skin ends at 53.6, so every bare
+legged attire showed skin at the crotch. Reported with a screenshot. The guard asks
+the drawn shape (`isPointInFill` at the middle of the crotch) on every attire that
+draws trunks, and with the notch back it names all twelve.
+
 **Gradient ids carry the figure's own counter.** Two wrestlers on one screen with
 the same id would paint each other, and a def inside a `display:none` screen does
 not resolve for anybody else. Asserted.
