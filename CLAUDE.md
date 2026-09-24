@@ -6044,6 +6044,56 @@ is moving the camera (a play, a tail, a steal, a replay, or `Cam.zoom` above res
 asked again next frame, and the park is in the key because a new game in a new park
 keeps the same crop.
 
+### The horizon was at 40%, and no amount of detail fixes a composition
+
+Put beside Backyard Baseball's plate shot by the playtester, with "we need to be a lot
+closer to them". Every pass above this one was detail: the ball, the labels, the
+contact frame, the keyhole. All of it was right and the picture still read as a diagram
+of a diamond drawn in front of a wall, and the reason is where the ground ENDS.
+
+| | Backyard | ours, before | after |
+|---|---|---|---|
+| background above the grass | 13% of the frame | **40%**, 16% of it crowd dots | 28% of the world, 9% of a desktop crop |
+| pitcher against the batter | about a fifth | **63%** | 41% |
+| second baseman against the pitcher | small | **as big** | half |
+| foul lines | run to the fence | ended in the outfield grass | run to the fence |
+| strike zone | a pane with corner brackets | a nine cell cage in heavy white | a pane with gold corners |
+
+**Everything on the ground was refit to a horizon of 184.** Nothing under `plateGeom`
+that a camera guard reads moved: the zone and the batter are where they were, because
+every framing assertion in `verify-rules` and `check-firstpitch` is written against them.
+What moved is everything that is not them, and it moved as a set: the stands to a strip a
+third the height at lower alpha, the infield ring, both base paths, the keyhole, the
+mound, the bases and the fence lines, and the seven fielders and three runners onto a
+DEPTH SCALE (0.70 at the fence up to 1.25 at the corners, the pitcher at 1.9).
+
+**The pitcher's release point and the arm chip are read off his geometry.** `relY` is the
+top of his windup and `pitBall` rides his hands, both as fractions of `HERO_DRAW_H x
+pitSc`; the FRESH chip over his head was passed to `drawScreenPass` as the literal 196,
+which was over his face the moment he got smaller. It is `moundY - height - 12` now.
+
+**A desktop crop shows less of the sky than a phone and that is the camera, not a
+number to tune.** The plate camera covers, a 1440x900 arena binds on width, and the crop
+cannot read below the world's bottom, so the top of a desktop's frame is world y 144
+whatever the horizon is. At 172 the roofline was cut and the picture opened on half a
+crowd; 184 puts the whole crowd band and the wall in a desktop frame and costs a phone
+twelve logical pixels of grass. That is the whole reason for the last 12.
+
+**The home circle was 210 across, which on a phone's 350 wide crop was the whole bottom
+of the picture.** 170 now, and the keyhole is 52 wide at the mound and 184 at the plate
+rather than 80 and 248, so the near infield stops being a dirt lot with a plate in it.
+
+**The zone's thirds are gone and the frame is not.** `check-firstpitch` reads the zone's
+edge at mid height and asks for 3:1 against the grass and 2.5 CSS px of line, so the
+white band stays at `zoneLineMin()`. The corners are `#f4c25a` at twice its weight over
+the dark halo everything here wears, and they are what makes the box read as a target
+rather than a fence. The reticle already reads the spot the thirds were an aid for.
+
+**A lawn has things growing in it.** Ninety two block tufts in a darker green down the
+near two thirds, drawn wider as they come toward the camera, and sixteen pale flecks,
+none in the snow park. They are the cheapest thing in this pass and about a quarter of
+why the grass reads as a field now rather than a fill.
+
 #### And the wide camera left a black hole, which the full bleed layout made bigger
 
 Found by walking the first two pitches again after the pass above. Before the
