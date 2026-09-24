@@ -375,7 +375,9 @@
   /* Backstage floor plan */
   .bs-budget{display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--panel);border:1px solid var(--line);border-radius:10px;margin-bottom:12px;}
   .bs-budget-k{font-family:var(--display);letter-spacing:.14em;font-size:10.5px;color:var(--text-dim);text-transform:uppercase;}
-  .bs-budget-v{font-family:var(--mono);font-size:20px;color:var(--gold);font-weight:800;}
+  /* nowrap or "2 / 2" breaks across two lines at phone width */
+  .bs-budget-v{font-family:var(--mono);font-size:20px;color:var(--gold);font-weight:800;white-space:nowrap;flex:none;}
+  .bs-budget-k{flex:none;}
   .bs-floor{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px;}
   .bs-room{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:11px 12px;display:flex;flex-direction:column;gap:6px;}
   .bs-room-h{font-family:var(--display);font-size:13px;letter-spacing:.06em;color:var(--cream);text-transform:uppercase;display:flex;align-items:center;gap:8px;}
@@ -494,6 +496,13 @@
   .fmid{text-align:center;}
   .fstip{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--text-dim);font-weight:800;}
   .frules{font-size:10px;color:var(--text-faint);margin:2px 0 4px;line-height:1.25;max-width:34ch;margin-left:auto;margin-right:auto;}
+  /* On a phone the middle column is ~120px wide, and a triple threat's rules
+     paragraph ran twelve lines tall there, shoving the stage below the fold.
+     Clamp it to two lines; a tap opens the full text for whoever wants it. */
+  @media(max-width:640px){
+    .frules{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;cursor:pointer;}
+    .frules.open{display:block;-webkit-line-clamp:unset;overflow:visible;}
+  }
   .fclock{font-family:var(--display);font-size:24px;color:var(--brandred-bright);line-height:1;}
 
   .momwrap{margin-bottom:10px;}
@@ -527,6 +536,12 @@
      them at low opacity, and you look at the match through the links the way a
      camera does. */
   .arena .cageback{position:absolute;inset:0;pointer-events:none;z-index:2;display:none;}
+  /* the hanging prize in a ladder/briefcase/TLC match: cable from the rafters,
+     prize swaying over the middle of the ring, wrestlers pass in front of it */
+  .arena .hangprize{position:absolute;left:50%;top:0;transform:translateX(-50%);pointer-events:none;
+    z-index:2;display:none;transform-origin:50% 0;animation:hangsway 5.5s ease-in-out infinite alternate;}
+  .arena.hang .hangprize{display:block;}
+  @keyframes hangsway{from{transform:translateX(-50%) rotate(-2.4deg);}to{transform:translateX(-50%) rotate(2.4deg);}}
   .arena .cagelayer{position:absolute;inset:0;pointer-events:none;z-index:5;display:none;}
   .arena.cage .cageback,.arena.cage .cagelayer{display:block;}
   .arena.cage{box-shadow:inset 0 0 90px 30px rgba(0,0,0,.62);}
@@ -825,8 +840,13 @@
   .rm-row:hover{background:rgba(255,255,255,.035);}
   .rm-row:active{background:rgba(255,255,255,.06);}
   .rm-top{display:flex;align-items:baseline;justify-content:space-between;gap:8px;}
+  /* The value and its "holding" tag always fit; the LABEL is what gives way.
+     Both sides were nowrap, so at 390px "LOCKER ROOM 48 holding" clipped the
+     tag mid-word on the right edge, which reads as a broken screen. */
   .rm-l{font-family:var(--display);font-size:10px;letter-spacing:.18em;text-transform:uppercase;
-    color:var(--text-faint);font-weight:800;white-space:nowrap;}
+    color:var(--text-faint);font-weight:800;white-space:nowrap;flex:1 1 auto;min-width:0;
+    overflow:hidden;text-overflow:ellipsis;}
+  .rm-top .rm-v{flex:none;}
   .rm-v{font-family:var(--mono);font-size:23px;font-weight:800;line-height:1;
     display:flex;align-items:baseline;gap:6px;white-space:nowrap;}
   .rm-d{font-size:10px;font-weight:800;letter-spacing:.04em;}
@@ -1403,7 +1423,10 @@
   /* ---- the Ropes Pass ---- */
   .passhead{display:flex;gap:14px;align-items:center;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin-bottom:10px;}
   .passhead .ph-l{flex:1;min-width:0;} .passhead .ph-r{flex:none;text-align:right;}
-  .ph-tier{font-family:var(--display);font-size:15px;color:var(--text-dim);letter-spacing:.06em;}
+  /* nowrap, and a cap on the right column: at 390px the "days left" hint used
+     to squeeze the left side until "TIER 0 / 50" broke across two lines */
+  .ph-tier{font-family:var(--display);font-size:15px;color:var(--text-dim);letter-spacing:.06em;white-space:nowrap;}
+  .passhead .ph-r{max-width:42%;}
   .ph-tier b{font-size:30px;color:var(--gold);} .ph-tier span{color:var(--text-faint);}
   .ph-bar{height:10px;background:rgba(0,0,0,.5);border:1px solid var(--line);border-radius:999px;overflow:hidden;margin:6px 0 5px;}
   .ph-bar i{display:block;height:100%;background:linear-gradient(90deg,#8a6a1e,var(--gold));}
@@ -1782,7 +1805,7 @@
     </div>
     <div class="fmid">
       <div class="fstip" id="fStip">SINGLES MATCH</div>
-      <div class="frules" id="fRules"></div>
+      <div class="frules" id="fRules" onclick="this.classList.toggle('open')"></div>
       <div class="fclock" id="fClock">0:00</div>
       <div class="fphase" id="fPhase">BELL</div>
     </div>
@@ -1807,6 +1830,8 @@
     <div class="floor"></div>
     <div class="ringback"></div>
     <div class="cageback" id="fCageB"></div>
+    <!-- the thing a ladder match is FOR: the prize on its cable over the ring -->
+    <div class="hangprize" id="fHang"></div>
     <div class="fighter me" id="fMe"></div>
     <div class="fighter opp" id="fOpp"></div>
     <div class="fighter ref" id="fRef"></div>
@@ -3473,7 +3498,10 @@ function rnd(){ RNG=(RNG*1664525+1013904223)>>>0; return RNG/4294967296; }
 function rint(a,b){ return a+Math.floor(rnd()*(b-a+1)); }
 function pick(a){ return a[Math.floor(rnd()*a.length)]; }
 function pushLog(t){ if(!G) return; G.log=G.log||[]; G.log.unshift(t); if(G.log.length>60) G.log.pop(); }
-function toast(m){ const t=$('toast'); t.textContent=m; t.classList.add('show'); clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove('show'),2200); }
+/* Toasts carry markup (every coin toast bolds its number), so this must be
+   innerHTML. It was textContent once, and five call sites printed their own
+   <b> tags on screen: every daily-done, every coin gain, every pass claim. */
+function toast(m){ const t=$('toast'); t.innerHTML=m; t.classList.add('show'); clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove('show'),2200); }
 function modal(title,body,btns){ $('modalTitle').textContent=title; $('modalBody').innerHTML=body; const b=$('modalBtns'); b.innerHTML='';
   (btns||[{label:'OK',fn:closeModal}]).forEach(x=>{const el=document.createElement('button'); el.textContent=x.label; if(x.cls)el.className=x.cls; el.onclick=x.fn; b.appendChild(el);}); $('modalBack').classList.add('open'); }
 function closeModal(){ $('modalBack').classList.remove('open'); }
@@ -6754,7 +6782,10 @@ function injuryRisk(o){
   const condPart  = Math.max(0, 65-c.cond)/65 * 0.22;        // below 65 cond
   const wearPart  = Math.max(0, (c.wear||0)-40)/120 * 0.14;  // multiplies other risks
   const workedHurt= c.workedHurt ? 0.55 : 0;
-  const chronic   = ((c.chronic||[]).length) * 0.02;
+  // Chronic damage compounds, but the list is unbounded over a long career.
+  // Four entries is where it stops adding risk, or a twenty-year veteran's
+  // file alone guarantees the next injury.
+  const chronic   = Math.min(4,(c.chronic||[]).length) * 0.02;
   const diff = (G.prefs&&G.prefs.difficulty)||'pro';
   const diffInj = diff==='rookie'?0.85 : diff==='legend'?1.20 : 1;
   return clamp((stipPart + condPart + wearPart + workedHurt + chronic) * sc.inj * diffInj, 0, 0.85);
@@ -7190,7 +7221,7 @@ function openInbox(){
   const news=(G.world&&G.world.news||[]).slice(0,20);
   const inboxHtml = inbox.length ? inbox.map(x=>`<div class="inbox-item sev-${x.sev||'info'}"><span class="ico">${x.ico||'•'}</span><span class="txt">${x.txt}</span></div>`).join('') : '<p class="hint">Nothing new.</p>';
   const newsHtml = news.length ? news.map(n=>`<div class="inbox-item sev-info"><span class="ico">${n.ico||'•'}</span><span class="txt">${(n.text||n.t||'')} <span class="hint" style="margin-left:6px;">Y${n.y}W${n.w}</span></span></div>`).join('') : '<p class="hint">Quiet week around the wrestling world.</p>';
-  modal('Inbox &amp; News',
+  modal('Inbox & News',   // modal titles are textContent, so an entity here prints literally
     `<div class="flab" style="margin-top:0;">Your inbox <span class="hint">(${inbox.length})</span></div>${inboxHtml}
      <div class="flab" style="margin-top:14px;">The Ropes Report <span class="hint">(${news.length})</span></div>${newsHtml}`,
     [{label:'Close',fn:closeModal}]);
@@ -9122,6 +9153,10 @@ function newLimbs(){ return {head:0,arm:0,leg:0,back:0}; }
 function limbFor(cat,worker){ return LIMB_HIT[cat] || worker.target || 'leg'; }
 function worstLimb(w){ let k='head',v=-1; Object.keys(w.limb).forEach(x=>{ if(w.limb[x]>v){v=w.limb[x];k=x;} }); return v>18?k:null; }
 function bare(n){ return String(n||'').replace(/^(an?|the)\s+/i,''); }
+// What counts as a weapon when the referee is enforcing the rules. Names, not
+// tiers, because "Ring Post Whip" is tier 2 and legal while everything with
+// furniture in the name is not.
+const WEAPON_MOVE_RE=/chair|kendo|table|barbed|ladder|thumbtack|cage|trash/i;
 function clockStr(){ const m=Math.floor(MS.clock/60), s=MS.clock%60; return `${m}:${s<10?'0':''}${s}`; }
 
 // pick a move: escalating through the match, never the same one twice running
@@ -9135,10 +9170,20 @@ function myMove(){
   if(!all.length) return {id:'_fa',name:'a forearm smash',dmg:12,pop:8,cat:'strike',tier:1,stam:4,risk:0.02};
   const planned=all.filter(m=>plan.includes(m.cat));
   let pool=planned.length>=3?planned:all;
+  const rules=stipRules(MS.o);
+  // The same rule the opponent's kit obeys: a chair or a table in a match
+  // under referee's enforcement is a disqualification, not offense. The
+  // hardcore tier-1 shortcuts (eye rake, a choke on the ropes) stay: a
+  // referee allows those to a count. Weapons wait for the stipulations that
+  // let them count. The finisher is exempt because reaching for it is the
+  // player's own call at the finish decision, not the sim's.
+  if(!rules.noDQ && !rules.lenient){
+    const clean=pool.filter(m=>!(m.cat==='hardcore' && WEAPON_MOVE_RE.test(m.name)));
+    if(clean.length>=3) pool=clean;
+  }
   // In a Submission Match, the wrestler works holds regardless of their plan.
   // Otherwise a wrestler booked into a sub match won by pinfall would produce
   // a "won by submission" finish line with no actual sub move on the tape.
-  const rules=stipRules(MS.o);
   const subOnly = rules.ends.length===1 && rules.ends[0]==='sub';
   if(subOnly){
     const subs=all.filter(m=>m.cat==='submission');
@@ -9252,8 +9297,15 @@ function oppMove(){
   const pool = rnd() < (stretchy?0.82:0.72) ? styleKit : OPP_MOVES_BASE;
   let band = pool.filter(m=>tierOf2(m)<=ph.tier[1]);
   if(!band.length) band = pool;
-  // Sub match: the opponent works holds too, so the finish reads honest.
   const rules=stipRules(MS.o);
+  // A chair shot in a match under referee's enforcement is a disqualification,
+  // not offense. Weapon moves stay in the kit only where the stipulation lets
+  // them count, or where the referee is written as letting things go.
+  if(!rules.noDQ && !rules.lenient){
+    const clean=band.filter(m=>m.cat!=='hardcore');
+    if(clean.length) band=clean;
+  }
+  // Sub match: the opponent works holds too, so the finish reads honest.
   if(rules.ends.length===1 && rules.ends[0]==='sub'){
     const subs=OPP_MOVES.filter(m=>m.cat==='submission');
     if(subs.length && (ph.id==='stretch'?rnd()<0.75:rnd()<0.5)) band=subs;
@@ -9547,7 +9599,40 @@ async function startFight(o){
   // Some stipulations need visible ring hardware. Steel cage is the first one.
   const _arena=$('arena');
   if(_arena){
-    _arena.classList.toggle('cage', o.stip==='cage');
+    /* The Steel Dome wears the same mesh walls as the cage (it IS an enclosure)
+       plus a ribbed roof drawn over the back layer, so "no way out" is a thing
+       you can see rather than a sentence in the header. It played on a bare
+       singles ring for its whole first version and nothing failed. */
+    _arena.classList.toggle('cage', o.stip==='cage'||o.stip==='chamber');
+    const _hangStip = o.stip==='ladder'||o.stip==='mitb'||o.stip==='tlc';
+    _arena.classList.toggle('hang', _hangStip);
+    const _hg=$('fHang');
+    if(_hg && _hangStip){
+      const cable=`<div style="width:2px;height:34px;background:linear-gradient(#777,#3a3a40);margin:0 auto;"></div>`;
+      if(o.stip==='mitb'){
+        _hg.innerHTML=cable+`<svg width="34" height="26" viewBox="0 0 34 26" style="display:block;margin:-1px auto 0;">
+          <rect x="13" y="0" width="8" height="5" rx="2" fill="none" stroke="#8a8a92" stroke-width="2"/>
+          <rect x="2" y="4" width="30" height="20" rx="3" fill="#3f3428" stroke="#8a6f3a" stroke-width="1.6"/>
+          <rect x="2" y="11" width="30" height="3" fill="#8a6f3a" opacity=".8"/></svg>`;
+      } else {
+        const _belt=(typeof beltArtFor==='function')?beltArtFor(o.belt||beltName(workTier())):null;
+        _hg.innerHTML=cable+`<div style="margin:-2px auto 0;width:44px;">${_belt?beltSVG(_belt,44):''}</div>`;
+      }
+    } else if(_hg){ _hg.innerHTML=''; }
+    if(o.stip==='chamber'){
+      const cb=$('fCageB');
+      if(cb && !cb.querySelector('.domeroof')){
+        const bar='#9a9aa2', barD='#2e2e35';
+        const arc=(y,c,w,op)=>`<path d="M ${RING.bx1} ${y} Q 50 ${y-14} ${RING.bx2} ${y}" fill="none" stroke="${c}" stroke-width="${w}" opacity="${op}" vector-effect="non-scaling-stroke"/>`;
+        let ribs='';
+        for(let i=0;i<=6;i++){ const x=RING.bx1+(RING.bx2-RING.bx1)*i/6;
+          ribs+=`<line x1="${x.toFixed(1)}" y1="2" x2="${(50+(x-50)*0.35).toFixed(1)}" y2="-9" stroke="${bar}" stroke-width="0.8" opacity="0.55" vector-effect="non-scaling-stroke"/>`; }
+        cb.insertAdjacentHTML('beforeend',
+          `<svg class="domeroof" viewBox="0 -12 100 112" preserveAspectRatio="none" aria-hidden="true" style="position:absolute;inset:0;width:100%;height:100%;">
+             ${arc(2,barD,2.6,1)}${arc(2,bar,1.2,0.9)}${arc(3.5,bar,0.8,0.5)}${ribs}
+           </svg>`);
+      }
+    }
   }
   figLook('me',G.w.look);
   figLook('opp',oc?oc.look:oppLook(o.oppId,o.oppName));
@@ -10246,6 +10331,19 @@ function coverChance(byMe,isFin){
   return clamp(p,0,0.85);
 }
 async function coverAttempt(byMe, mvName, isFin){
+  /* A cover only exists where a referee would count one. In a ladder, briefcase
+     or TLC match nobody is counting falls, and in a submission or I Quit match
+     the rules say a pinfall does nothing, so a hooked leg and a KICK OUT window
+     there read as the game not knowing its own stipulation. It shipped that way:
+     a ladder match ran the whole 1-2-kickout theatre and the result screen then
+     bragged about "the near-falls down the stretch". The same dramatic beat goes
+     to the mechanic that stipulation actually ends on instead. */
+  const _ends = stipRules(MS.o).ends;
+  if(!_ends.includes('pin') && !(_ends.length===1 && _ends[0]==='ko')){
+    if(_ends.includes('sub')) return submissionAttempt(byMe, mvName);
+    if(_ends.includes('climb') && MS.phase>=3) return climbAttempt();
+    return;
+  }
   MS.covers++;
   const A=byMe?'me':'opp', D=byMe?'opp':'me';
   const Dm=byMe?MS.opp:MS.me;
@@ -10370,8 +10468,28 @@ async function submissionAttempt(byMe, mvName){
     refDrift();
   }
   if(willTap){
-    await callout('TAP! TAP! TAP!');
-    fLog(byMe?`<span class="hi">${MS.opp.name} taps out!</span>`:`<span class="bad">You had to tap.</span>`);
+    // Iron Man: a tap-out is a FALL on the scoreboard, not the finish. The
+    // pin path already knew this; the submission path ended the whole match
+    // at 14 minutes of a twenty-minute time limit and nothing looked wrong.
+    if(MS.o && MS.o.stip==='iron'){
+      await callout('TAP! TAP! TAP!');
+      MS.falls = MS.falls || {me:0, opp:0};
+      const side = byMe ? 'me' : 'opp';
+      MS.falls[side]++;
+      fLog(`<span class="good"><b>FALL FOR ${side==='me'?'YOU':'THEM'}</b> · ${MS.falls.me}-${MS.falls.opp} on the scoreboard.</span>`);
+      MS.quality+=8; MS.mom=clamp(MS.mom+(byMe?-14:14),-100,100); setMom();
+      await settle(300); return;
+    }
+    // I Quit ends on the words, not a tap. Same mechanic, different picture:
+    // the referee is holding a microphone, not lifting an arm.
+    if(MS.o && MS.o.stip==='iquit'){
+      await callout('SAY IT!');
+      fLog(byMe?`<span class="hi">The referee gets the microphone in there, and ${MS.opp.name} says it. "I quit." It is over.</span>`
+               :`<span class="bad">The microphone is in your face and the hold is not going anywhere. You say the words.</span>`);
+    } else {
+      await callout('TAP! TAP! TAP!');
+      fLog(byMe?`<span class="hi">${MS.opp.name} taps out!</span>`:`<span class="bad">You had to tap.</span>`);
+    }
     commitFinish({type:'sub',by:byMe,move:mvName,part});
     MS.quality+=16;
     await endFight(byMe); return;
@@ -11030,14 +11148,26 @@ function groupMoves(used){
   return [...n.entries()].sort((a,b)=>b[1]-a[1])
     .map(([nm,c])=>c>1?`${nm} <span class="x">×${c}</span>`:nm).join(' · ');
 }
-function finishLine(res){
+function finishLine(res,o){
   const f=res.finish||{};
   // in a triple threat the winner is not always one of the two in the pin, so
   // the finish carries the name and it takes priority over the guess
   const who=f.who || (f.by?'You':(MS&&MS.opp?MS.opp.name:'They'));
-  if(f.type==='sub')   return `${who} won by submission at ${res.time}${f.move?` with the ${bare(f.move)}`:''}`;
+  if(f.type==='sub'){
+    const _st=(o&&o.stip)||(MS&&MS.o&&MS.o.stip);
+    if(_st==='iquit') return `${who} won the I Quit match at ${res.time}: the words were said`;
+    return `${who} won by submission at ${res.time}${f.move?` with the ${bare(f.move)}`:''}`;
+  }
   if(f.type==='ko')    return `${who} won by ten-count knockout at ${res.time}`;
-  if(f.type==='climb') return `${who} won by escape at ${res.time}`;
+  if(f.type==='climb'){
+    // a climb means two different pictures: over the cage wall, or up a ladder
+    // to the thing hanging over the ring. "Escape" is only true of the cage.
+    const stip=(o&&o.stip)||(MS&&MS.o&&MS.o.stip);
+    if(stip==='mitb')                 return `${who} pulled down the briefcase at ${res.time}`;
+    if(stip==='ladder'||stip==='tlc') return `${who} pulled down the prize at ${res.time}`;
+    return `${who} won by escape at ${res.time}`;
+  }
+  if(f.type==='rumble')return `${who} won the battle royal, last over the top rope at ${res.time}`;
   if(f.type==='count') return `${who} won by count-out at ${res.time}`;
   if(f.type==='dq')    return `${who} won by disqualification at ${res.time}${f.reason?` (${f.reason})`:''}`;
   if(f.type==='nc')    return `No contest at ${res.time}${f.reason?` (${f.reason})`:''}`;
@@ -12133,7 +12263,7 @@ function renderMatch(o,res){
       <div class="sb-band">${starBand(s)}</div>
     </div>
     <div class="mfinish">
-      <div class="mf-head">${finishLine(res)}</div>
+      <div class="mf-head">${finishLine(res,o)}</div>
       <div class="mf-sub">${o.stipLabel} · ${o.oppName} (OVR ${o.oppOvr})${o.card?` · ${o.card}`:''}</div>
     </div>
     <p class="mstory">${matchStory(o,res)}</p>
@@ -12327,11 +12457,18 @@ function askWhosNext(isTag){
 }
 function matchStory(o,res){
   const q=res.quality, n=o.oppName, f=res.finish||{};
-  const open=q>=80?`You and ${n} tore the house down.`:q>=62?`A strong outing with ${n}.`:q>=45?`A solid, workmanlike match with ${n}.`:`It never clicked with ${n}.`;
+  // These bands sit on the same screen as starBand(), which calls anything
+  // under two stars rough. Two stars is quality 58, so "solid" must not start
+  // below 58 here or the recap praises a match the rating box just panned.
+  const open=q>=80?`You and ${n} tore the house down.`:q>=62?`A strong outing with ${n}.`:q>=58?`A solid, workmanlike match with ${n}.`:`It never clicked with ${n}.`;
   let mid;
-  if(f.type==='sub') mid=res.win?` You worked the ${LIMB_NAME[f.part]||'limb'} all night and made them tap.`:` ${n} found the hold and you had nothing left to give.`;
+  if(f.type==='sub') mid=(o.stip==='iquit')
+    ? (res.win?` You held on until ${n} said the words into the microphone.`:` The microphone was in your face and you said it.`)
+    : (res.win?` You worked the ${LIMB_NAME[f.part]||'limb'} all night and made them tap.`:` ${n} found the hold and you had nothing left to give.`);
   else if(f.type==='ko') mid=res.win?` You beat them down and they could not answer the ten count.`:` You could not beat the count. It was over on the floor.`;
-  else if(f.type==='climb') mid=res.win?` You got over the top first, feet on the floor before them.`:` ${n} beat you to the top and dropped clear.`;
+  else if(f.type==='climb') mid=(o.stip==='cage')
+    ? (res.win?` You got over the top first, feet on the floor before them.`:` ${n} beat you to the top and dropped clear.`)
+    : (res.win?` You climbed while they were down and took it off the hook.`:` ${n} was up the ladder before you could stand, and it was over.`);
   else if(f.type==='rumble') mid=res.win?` Last one over the top rope. The field was empty behind you.`:` They dumped you and the crowd howled. You never got close to the end.`;
   else if(f.type==='tour') mid=res.win?` A one-night booking, and the tape travelled home with your name on it.`:` A rough night in a strange building. The tape is what everyone will see.`;
   else if(f.type==='count') mid=res.win?` ${n} took a walk you did not follow. Ten count on the floor.`:` You could not make it back. The count reached ten while you were still climbing to your feet.`;
@@ -12339,7 +12476,10 @@ function matchStory(o,res){
   else if(f.type==='nc') mid=` The referee waved it off before anybody could win.${f.reason?' '+cap(f.reason)+'.':''}`;
   else if(res.win) mid=f.fin?` The finisher did it. Three seconds later it was over.`:` You caught them flat and stole the three.`;
   else mid=f.fin?` They hit the ${bare(f.move)} and that was that.`:` ${n} had an answer when it mattered.`;
-  const nf=(res.nearFalls||0)>=3?' The near-falls down the stretch had them out of their seats.':'';
+  // "near-falls" is pin language: in a climb or knockout stip the same count
+  // tracks interrupted climbs and broken ten-counts, so name it honestly there
+  const _pinStip=stipRules(o).ends.includes('pin');
+  const nf=(res.nearFalls||0)>=3?(_pinStip?' The near-falls down the stretch had them out of their seats.':' It kept almost ending, and the crowd rode every one.'):'';
   const end=q>=75?' The crowd was still buzzing on the way out.':q<45?' The room was quiet by the finish.':'';
   // Feud-shape flavour: the sentence a paper would write about the story
   // playing out between them. Only fires when this match IS the story rival.
@@ -12393,7 +12533,17 @@ function advanceWeek(){
   // ---- the road: recovery is slower the harder you work ----
   c.cond=clamp(c.cond + (11 - sc.wear*4) - (c.hurt?3:0));
   c.mom=c.mom+(50-c.mom)*0.10;
-  c.wear=(c.wear||0)+sc.wear*0.34+(c.age>32?0.10:0);
+  // A layoff takes miles off the body; the road puts them on. Wear used to
+  // only ever climb, and a measured 14-year career spent years 9 to 13 almost
+  // entirely in rehab: mileage drove injuries, injuries added weeks, and
+  // nothing ever pulled the number back down. Healing during a layoff turns
+  // the spiral into an equilibrium: a full-time veteran settles around one
+  // real injury a year, and a lighter schedule still buys a real difference.
+  // The floor is the miles that never come off: four a year of age, so a
+  // 35-year-old can rehab back to "heavy miles" but never to a rookie's legs.
+  if(c.injWeeks>0){ const floor=Math.max(0,(c.age-21)*4);
+    c.wear=Math.max(Math.min(floor,c.wear||0),(c.wear||0)-1.2); }
+  else c.wear=(c.wear||0)+sc.wear*0.34+(c.age>32?0.10:0);
   c.standing=clamp((c.standing||50)+(52-(c.standing||50))*0.03);
   // ---- payday: the downside guarantee lands whether you wrestled or not ----
   if(c.deal){
@@ -12825,7 +12975,7 @@ function takeInjury(cats,stipMult,severityBoost){
   // veteran. Body terms now carry the weight and the roll is the garnish.
   const bodyRisk = (c.wear||0)/220                       // ~0.45 at heavy mileage
                  + Math.max(0,100-c.cond)/240            // ~0.25 when run down
-                 + ((c.chronic||[]).length)*0.05;        // old damage compounds
+                 + Math.min(4,(c.chronic||[]).length)*0.05; // old damage compounds, capped
   const sev=clamp(bodyRisk + (stipMult-1)*0.40 + (severityBoost||0) + rnd()*0.42, 0, 0.999);
   let idx=Math.min(set.length-1, Math.floor(sev*set.length));
   // A fresh body has a ceiling. The worst injuries in the table (neck, back)
@@ -12833,6 +12983,14 @@ function takeInjury(cats,stipMult,severityBoost){
   // a rookie's first cage match.
   const green = (c.wear||0) < 25 && (c.chronic||[]).length===0;
   if(green) idx=Math.min(idx, Math.max(0, set.length-3));
+  // The other end of the same rule. Once body risk saturates, the raw index
+  // lands on the disc or the neck nearly every draw, and a measured late
+  // career became an annual 20-to-30-week layoff: one catastrophe is a story,
+  // one every spring is a treadmill. After any long layoff the top of the
+  // table is off-limits for two years; the body finds smaller ways to fail.
+  const _now=c.year*WEEKS_PER_YEAR+c.week;
+  const _bigRecent=(c.injuries||[]).some(i=>i.wk>=10 && _now-(i.y*WEEKS_PER_YEAR+i.w) < WEEKS_PER_YEAR*2);
+  if(_bigRecent) idx=Math.min(idx, Math.max(0, set.length-3));
   const def=set[idx];
   const wk=rint(def.wk[0],def.wk[1]) + Math.round((c.wear||0)/90);
   const pen=rint(def.pen[0],def.pen[1]);
@@ -14534,8 +14692,15 @@ const CUT_BANK=[
   // ----- OPEN-MIC cuts -----
   {id:'cut_open_call',    phase:['hook'],   stakes:['open_mic','callout'], tags:['boast','threat'],
     hostile:-0.3, intensity:0.85,
-    line:c=>c.champion&&!c.champion.you
+    // The champion line only fires when the champion is the one being talked
+    // to: on an open mic with nobody out here, or when the champ IS the target.
+    // It used to fire in any callout, so you stood face to face with one
+    // wrestler and called a different name into the microphone.
+    line:c=>(c.champion&&!c.champion.you&&(!c.opp||c.opp.holdsBelt))
       ? `${c.champion.name}. This microphone is open, and it is calling your name. You have a title on your shoulder and I have a problem with that. Come out here and disagree.`
+      : c.opp
+      ? [`${c.opp.name}. You are already out here. Good. Everybody gets to watch me say this to your face.`,
+         `${c.opp.name}. I asked for this microphone with your name in my mouth. Stand there and hear it.`]
       : `Nobody put me on this show for the segment. Somebody put me on this show for the microphone. This is why. Listen close.`},
 
   // ----- CALLOUT cuts -----
@@ -15073,10 +15238,11 @@ function pmModePicker(){
   const isBig = stakes.some(s=>['title_call','title_defense','feud_end','main_event','title_chase'].indexOf(s)>=0);
   const isEventish = isBig || stakes.some(s=>['feud','callout','rematch','open_mic'].indexOf(s)>=0);
   const remembered = (G && G.prefs && G.prefs.promoPlay) || 'quick';
-  const rec = isBig ? 'build' : isEventish ? 'quick' : 'quick';
+  // Exactly ONE mode carries "recommended". Two separate variables used to
+  // decide it, so any eventish promo tagged both a card and Ride the Wave.
+  const rec = isBig ? 'build' : isEventish ? 'rhythm' : 'quick';
   const badgeFor = m=> m===rec ? `<span class="pm-rec">recommended</span>` : m===remembered ? `<span class="pm-rec pm-remem">your usual</span>` : '';
   const cta = m => remembered===m ? 'style="border-color:var(--gold);background:linear-gradient(180deg,rgba(224,179,65,.10),rgba(0,0,0,.28));"' : '';
-  const rhythmRec = isEventish ? 'rhythm' : rec;
   $('pmChoices').innerHTML=`
     <div class="flab">Cut the promo</div>
     <div class="pmmode-grid">
@@ -15093,7 +15259,7 @@ function pmModePicker(){
       <div class="pmmode" ${cta('rhythm')} onclick="pmChoosePlay('rhythm')">
         <div class="pmm-k">Ride the Wave</div>
         <div class="pmm-t">Three timing taps. Hit the crowd on the rise and the pop is huge. Miss and the line dies flat.</div>
-        <div class="pmm-b">${rhythmRec==='rhythm'?'<span class="pm-rec">recommended</span>':''}${remembered==='rhythm'?'<span class="pm-rec pm-remem">your usual</span>':''}</div>
+        <div class="pmm-b">${badgeFor('rhythm')}</div>
       </div>
       <div class="pmmode" ${cta('build')} onclick="pmChoosePlay('build')">
         <div class="pmm-k">Build the Promo</div>
