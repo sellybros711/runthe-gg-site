@@ -5543,10 +5543,11 @@ first, which two minutes of a Fast game does not reach, and innings are not what
 this is about: the deck grows because the PLAY BY PLAY fills up. Counted in LINES
 instead, the threshold is a guess about the font and the phone, and it guessed
 sixteen against a measured thirteen. **The cap is the claim**: the log is held to
-40vh and scrolls past it, so the deck is as tall as it will ever get the moment
-that box OVERFLOWS, and asked of the box there is nothing to guess. Thirteen
-lines already overflow 227 pixels. Measured on one screen in two minutes: 344
-samples, twelve controls, a full log.
+16vh in a game and scrolls past it, so the deck is as tall as it will ever get
+the moment that box OVERFLOWS, and asked of the box there is nothing to guess.
+That box is 91 pixels on the shortest phone and holds about five lines, so
+thirteen is well past it. Measured on one screen in two minutes: 344 samples,
+twelve controls, a full log.
 
 ##### THE DECK WAS TOO TALL FOR A SHORT PHONE, and it took three passes to close
 

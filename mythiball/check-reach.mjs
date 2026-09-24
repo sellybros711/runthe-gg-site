@@ -279,11 +279,12 @@ async function playOne(browser, w, h, dpr, touch, youHome) {
       inn: State.game ? State.game.inning : 0,
       log: State.game && State.game.log ? State.game.log.length : 0,
       /* THE CAP IS THE CLAIM, NOT A LINE COUNT. The play by play is held to
-         40vh and scrolls past it, so the deck is as tall as it will ever get
-         the moment the box overflows. Counted in LINES the threshold is a
-         guess about the font and the phone: measured, two minutes of a Fast
-         game writes thirteen of them, and thirteen already overflows 227
-         pixels. Asked of the box, there is nothing to guess. */
+         16vh in a game and scrolls past it, so the deck is as tall as it will
+         ever get the moment that box overflows. Counted in LINES the threshold
+         is a guess about the font and the phone, and it guessed wrong twice:
+         measured, two minutes of a Fast game writes thirteen lines into a box
+         that is 91 pixels on the shortest phone and holds about five. Asked of
+         the box, there is nothing to guess. */
       full: el ? (el.scrollHeight > el.clientHeight + 2) : false,
       logPx: el ? Math.round(el.clientHeight) : 0,
     };
