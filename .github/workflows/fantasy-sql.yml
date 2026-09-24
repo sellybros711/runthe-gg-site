@@ -1,6 +1,6 @@
 name: "Fantasy: apply the database layer"
 
-# Installs 109, 110, 111 and 112 against the live database, in order, and then
+# Installs 109 through 113 against the live database, in order, and then
 # reads
 # the preflight back so the run says whether it actually worked.
 #
@@ -61,7 +61,7 @@ jobs:
             exit 1
           fi
 
-          FILES="109_fantasy_access.sql 110_fantasy_core.sql 111_fantasy_model.sql 112_fantasy_sequence_grants.sql"
+          FILES="109_fantasy_access.sql 110_fantasy_core.sql 111_fantasy_model.sql 112_fantasy_sequence_grants.sql 113_fantasy_function_grants.sql"
 
           for f in $FILES; do
             if [ ! -f "supabase/$f" ]; then
@@ -70,15 +70,17 @@ jobs:
             fi
           done
 
-          # ONE TRANSACTION ACROSS ALL FOUR, not one each. 110 and 111 both
+          # ONE TRANSACTION ACROSS ALL FIVE, not one each. 110 and 111 both
           # depend on fantasy_is_allowed() from 109, so a partial install is a
-          # database with tables whose policies never attached. 112 grants on
-          # the sequences 110 and 111 create, and without it the Worker inserts
-          # nothing anywhere. All or nothing.
+          # database with tables whose policies never attached. 112 and 113
+          # grant on the sequences and functions 110 and 111 create: without
+          # 112 the Worker inserts nothing anywhere, and without 113 it cannot
+          # call the budget, so it refuses every sweep. All or nothing.
           cat supabase/109_fantasy_access.sql \
               supabase/110_fantasy_core.sql \
               supabase/111_fantasy_model.sql \
-              supabase/112_fantasy_sequence_grants.sql > /tmp/fantasy.sql
+              supabase/112_fantasy_sequence_grants.sql \
+              supabase/113_fantasy_function_grants.sql > /tmp/fantasy.sql
 
           if [ "$APPLY" != "true" ]; then
             echo "DRY RUN. Everything below is executed and then thrown away."
@@ -86,12 +88,12 @@ jobs:
             { cat /tmp/fantasy.sql; echo ""; echo "rollback;"; } > /tmp/dry.sql
             psql "$SUPABASE_DB_URL" -v ON_ERROR_STOP=1 -1 -f /tmp/dry.sql
             echo ""
-            echo "DRY RUN PASSED. The four files are valid against the live schema."
+            echo "DRY RUN PASSED. The five files are valid against the live schema."
             echo "Nothing was written. Re-run with 'apply' ticked to commit them."
             exit 0
           fi
 
-          echo "APPLYING all four in one transaction."
+          echo "APPLYING all five in one transaction."
           psql "$SUPABASE_DB_URL" -v ON_ERROR_STOP=1 -1 -f /tmp/fantasy.sql
           echo ""
           echo "Applied."

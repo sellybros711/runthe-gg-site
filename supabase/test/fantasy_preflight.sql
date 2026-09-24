@@ -205,8 +205,53 @@ rows_ as (
          || ' RUN 112. Without it the Worker polls, spends credits and stores NOTHING,'
          || ' and the run log that would have told you is refused by the same grant.'
 
+  -- 112's BUG ONE LEVEL DEEPER, and it shipped because 112 went looking for
+  -- the thing the error named rather than for everything the same
+  -- misunderstanding had touched. Postgres grants EXECUTE on a new function to
+  -- PUBLIC, so `revoke all ... from public` (which 109 and 111 both use, quite
+  -- correctly, to keep browsers out) removes it from service_role too. The
+  -- Worker's first live tick came back 403 on fantasy_budget_spend.
+  --
+  -- Asked of the weakest function, for 112's reason: one function added
+  -- without the grant is the whole failure.
   union all
-  select 23, 'STRUCTURE', 'the credit cap functions exist',
+  select 23, 'STRUCTURE', 'service_role can call every fantasy function',
+         not exists (
+           select 1 from pg_proc p
+             join pg_namespace n on n.oid = p.pronamespace
+            where n.nspname = 'public' and p.proname like 'fantasy%'
+              and not has_function_privilege('service_role', p.oid, 'EXECUTE')
+         )
+         and exists (select 1 from pg_proc p
+                       join pg_namespace n on n.oid = p.pronamespace
+                      where n.nspname = 'public' and p.proname like 'fantasy%'),
+         (select coalesce('cannot call: ' || string_agg(p.proname, ', '), 'no fantasy functions exist at all, so 109 and 111 did not run')
+            from pg_proc p
+            join pg_namespace n on n.oid = p.pronamespace
+           where n.nspname = 'public' and p.proname like 'fantasy%'
+             and not has_function_privilege('service_role', p.oid, 'EXECUTE'))
+         || ' RUN 113. The Worker calls fantasy_budget_spend before every paid'
+         || ' request, so without it the poller refuses every sweep and collects nothing.'
+
+  -- AND THE OTHER DIRECTION, which is the one that would be a disclosure
+  -- rather than an outage. Nothing in a browser may move the budget: a client
+  -- that could call fantasy_budget_spend could burn the month's allowance, and
+  -- one that could call fantasy_budget_observe could lie about what is left.
+  -- 113 grants to service_role only, and this is what says so out loud.
+  union all
+  select 24, 'STRUCTURE', 'no browser role can move the budget',
+         not exists (
+           select 1 from pg_proc p
+             join pg_namespace n on n.oid = p.pronamespace
+            where n.nspname = 'public'
+              and p.proname in ('fantasy_budget_spend', 'fantasy_budget_observe')
+              and (has_function_privilege('anon', p.oid, 'EXECUTE')
+                or has_function_privilege('authenticated', p.oid, 'EXECUTE'))
+         ),
+         'a client role can call a budget write. It can spend the month''s allowance or lie about what is left.'
+
+  union all
+  select 25, 'STRUCTURE', 'the credit cap functions exist',
          (select count(*) from proc where name in
             ('fantasy_budget_spend', 'fantasy_budget_observe',
              'fantasy_budget_state', 'fantasy_default_cap')) = 4,
