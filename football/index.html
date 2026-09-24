@@ -563,18 +563,27 @@ window.GA_ID='G-L29P5MRWKE';
      ANCHORED ON THE PAIR'S OWN ENDS so the family holds, and pulled down from them so the
      pair still wins the page: .hp-off ends at #a01f1f and .hp-def at #153aa4, and these
      sit just inside both. */
-  .hp-ft{background:linear-gradient(100deg,
-    #a8262f 0%,#8a2329 40%,#14171f 50%,#1e3690 60%,#2445b4 100%);
-    border-color:rgba(255,255,255,.16);
-    box-shadow:0 10px 26px -14px #000,inset 0 1px 0 rgba(255,255,255,.12)}
-  /* The same top wash the two halves above carry, which is where their depth comes from.
-     .hp-full turns :before off for the flat card; this turns it back on for this one. */
-  .hp-ft:before{display:block;content:'';position:absolute;left:0;right:0;top:0;height:46%;
-    pointer-events:none;background:linear-gradient(180deg,rgba(255,255,255,.14),transparent)}
+  /* ---- AND THEN IT MOVED FROM THE FILL TO THE EDGE, to calm the front page ----
+     Asked for by the owner: the page felt crowded. Measured, the stack under the tagline
+     was six full width cards in a row, each with its own saturated treatment, and the top
+     two were BOTH red and blue fills, so they read as one large block rather than a start
+     button and a second mode. Nothing on the page read as primary.
+     So one door is filled (the Offense/Defense pair, which is where most visitors start)
+     and every other mode is a dark card whose EDGE carries its colour: this one red to
+     blue, Dynasty gold, Fantasy Challenge its neon.
+     THE PROBLEM THE FILL SOLVED STAYS SOLVED, which is the reason this is not a revert.
+     The fill was added because the card was the neutral grey hairline shared with the
+     Trade Machine and read as a control you cannot press. A vivid two colour edge with a
+     white title is not that: it is the same treatment the Dynasty and Fantasy doors
+     already wear, and both read as pressable.
+     Drawn as two backgrounds (a padding-box fill over a border-box gradient) because
+     border-image cannot follow a border-radius. */
+  .hp-ft{background:linear-gradient(180deg,#171a22,#101218) padding-box,
+    linear-gradient(100deg,#c0303a 0%,#8a2329 42%,#2a2f3d 50%,#1e3690 58%,#3056d0 100%) border-box;
+    border:1.5px solid transparent;
+    box-shadow:0 10px 24px -16px #000}
   .hp-ft .hp-full-name,.hp-ft .hp-full-sub{position:relative;z-index:1}
-  /* On a coloured ground the dim token is the wrong grey: it is mixed for the page's dark
-     card and goes muddy over the red. Same value the pair's own sub-label uses. */
-  .hp-ft .hp-full-sub{color:rgba(255,255,255,.76)}
+  .hp-ft .hp-full-sub{color:rgba(226,233,245,.6)}
   .hp-ft .hp-full-name{color:#fff}
   .hp-ft:active{filter:brightness(1.08)}
   /* ---- A DOOR WHOSE DAY IS SPENT SAYS SO BEFORE IT IS PRESSED ----
@@ -592,10 +601,10 @@ window.GA_ID='G-L29P5MRWKE';
    * THE FILL GOES GREY RATHER THAN DIM. Halving the opacity of a red-to-blue gradient leaves
    * a muddy purple that reads as a rendering fault; desaturating it leaves the same card with
    * the life out of it, which is the thing being said. */
-  .hp-ft:has(.hp-tag-spent){background:linear-gradient(100deg,
-    #3a3036 0%,#332c30 40%,#14171f 50%,#2b3040 60%,#333a4e 100%);
-    animation:none;border-color:rgba(255,255,255,.18);
-    box-shadow:0 10px 26px -18px #000,inset 0 1px 0 rgba(255,255,255,.08)}
+  .hp-ft:has(.hp-tag-spent){background:linear-gradient(180deg,#15171d,#0f1116) padding-box,
+    linear-gradient(100deg,#4a3c42 0%,#3a3036 42%,#23262e 50%,#2e3446 58%,#3a4258 100%) border-box;
+    animation:none;border-color:transparent;
+    box-shadow:0 10px 26px -18px #000}
   .hp-ft:has(.hp-tag-spent) .hp-full-name{color:rgba(244,247,252,.58)}
   .hp-ft:has(.hp-tag-spent) .hp-full-sub{color:rgba(226,233,245,.5)}
   .hp-ft .hp-tag-spent{background:rgba(255,255,255,.06);
@@ -644,7 +653,11 @@ window.GA_ID='G-L29P5MRWKE';
      page has. It is the anchor of the group and now looks like it.
      THE GLOW IS OUTSIDE THE BOX, so `overflow:hidden` above does not clip it: that property
      is there to hold the light pool in and has nothing to say about a box-shadow. */
-  .hp-dyn{overflow:hidden;gap:9px;padding:16px 15px 15px;border-radius:15px;
+  /* COMPACT, SINCE THE CALM PASS. It was the tallest card on the front page by a third,
+     a 40px ball over a 30px headline over a tagline, and the tallest thing in a stack
+     is what makes the stack feel full. Smaller ball, 24px headline, tighter gaps: same
+     three lines, same order, about 30px shorter. */
+  .hp-dyn{overflow:hidden;gap:5px;padding:13px 15px 12px;border-radius:15px;
     background:linear-gradient(180deg,#20242c 0%,#12141a 58%,#0b0d11 100%);
     border:1.5px solid rgba(240,198,116,.58);
     box-shadow:0 18px 40px -20px #000,inset 0 1px 0 rgba(255,255,255,.14),
@@ -665,10 +678,10 @@ window.GA_ID='G-L29P5MRWKE';
   }
   /* The pool of light the ball sits in. On the button rather than on the mark so it is not
      clipped by the mark's own box, and behind everything because it is the ground. */
-  .hp-dyn:after{content:'';position:absolute;left:50%;top:-14px;width:190px;height:120px;
+  .hp-dyn:after{content:'';position:absolute;left:50%;top:-14px;width:170px;height:92px;
     transform:translateX(-50%);pointer-events:none;
     background:radial-gradient(50% 50% at 50% 50%,rgba(226,178,90,.16),transparent 70%)}
-  .hp-dyn .hp-mark{position:relative;z-index:1;display:block;width:40px;height:27px;
+  .hp-dyn .hp-mark{position:relative;z-index:1;display:block;width:30px;height:20px;
     margin-bottom:-1px;filter:drop-shadow(0 3px 7px rgba(0,0,0,.55))}
   /* Above the light. .hp-full lays its lines out in the flow and the pool is absolute, so
      without a stacking order of their own the words paint under it. */
@@ -704,7 +717,7 @@ window.GA_ID='G-L29P5MRWKE';
      Balance stays as insurance for the narrowest phones, where 26px type can still run out
      of room: it breaks the line evenly rather than wherever the width happens to end.
      Ignored by engines that do not have it, which get the ordinary greedy wrap. */
-  .hp-dyn .hp-full-name{font-family:var(--fd);font-size:30px;font-weight:400;
+  .hp-dyn .hp-full-name{font-family:var(--fd);font-size:24px;font-weight:400;
     letter-spacing:.02em;text-transform:uppercase;color:#f4f7fc;text-wrap:balance}
   .hp-dyn .hp-full-sub{font-size:9.5px;font-weight:800;letter-spacing:.15em;
     color:rgba(226,233,245,.56)}
@@ -744,7 +757,7 @@ window.GA_ID='G-L29P5MRWKE';
     50%{box-shadow:0 0 0 6px rgba(226,178,90,.04)}
   }
   @media (max-width:340px){
-    .hp-dyn .hp-full-name{font-size:26px}
+    .hp-dyn .hp-full-name{font-size:22px}
     .hp-dyn .hp-full-sub{letter-spacing:.11em}
   }
   /* ---- THE TWO HEADINGS THAT TURN THREE BUTTONS INTO TWO CHOICES ----
@@ -767,7 +780,9 @@ window.GA_ID='G-L29P5MRWKE';
      gap took that away, and the first door then sat flush against the Offense/Defense split
      with no gap at all. Measured, not eyeballed: the strip read 0px there and 8px everywhere
      else, which is the sort of thing that looks like a rendering fault rather than a choice. */
-  .hp-longer{display:flex;flex-direction:column;gap:8px;margin-top:8px}
+  /* 10 AND NOT 8, since the calm pass: eight pixels between cards this heavy read as one
+     slab with lines drawn on it. */
+  .hp-longer{display:flex;flex-direction:column;gap:10px;margin-top:10px}
   /* THE WAY OUT OF A SAVED DYNASTY, under the door back into it. Deliberately the quietest
      control on the front page: it throws a run away, and the thing somebody came back for
      is the one above it. */
@@ -2031,7 +2046,7 @@ window.GA_ID='G-L29P5MRWKE';
      fill and the thin border, so it still sits below the doors above it and above the three
      flat utility buttons below it, while sharing their edges. */
   .hp-more{display:flex;width:100%;justify-content:center;
-    margin-top:12px;gap:9px;font-size:13px;letter-spacing:.05em;
+    margin-top:20px;gap:9px;font-size:13px;letter-spacing:.05em;
     border-radius:12px;border:1px solid var(--line-2);
     background:linear-gradient(180deg,rgba(255,255,255,.062),rgba(255,255,255,.018));
     color:rgba(238,242,249,.92);
@@ -2061,7 +2076,7 @@ window.GA_ID='G-L29P5MRWKE';
      like, with one more thing in it. */
   /* .hrow.hp-util, both classes, because .hrow sets its two columns further down the sheet
      and a single-class rule up here loses the tie on order alone. */
-  .hrow.hp-util{margin-top:8px;grid-template-columns:repeat(3,1fr);gap:6px}
+  .hrow.hp-util{margin-top:4px;grid-template-columns:repeat(3,1fr);gap:6px}
   /* THREE LABELS IN THE WIDTH TWO USED TO HAVE. "Leaderboard" is eleven uppercase
      characters and will not wrap, so on a 320 screen it ran out of its own button while
      "How to play" wrapped to two lines and made all three of them 57px tall. The tracking
@@ -2080,9 +2095,16 @@ window.GA_ID='G-L29P5MRWKE';
     .hrow.hp-util{gap:4px}
     .hp-util .hp-util-btn{font-size:10px;padding-left:3px;padding-right:3px}
   }
+  /* LINKS, NOT THREE MORE BOXES, since the calm pass. Under More ways to play these were
+     the seventh, eighth and ninth bordered controls in one screen of phone. They are
+     reference (how to play, the tutorial, the board), so they take the weight of a link:
+     no border, a quiet underline, and the same tap target as before. The border is
+     transparent rather than removed so the box, and every measured width above, is
+     exactly the size it was. */
   .hp-util-btn{padding:11px 14px;font-size:13px;background:transparent;box-shadow:none;
-    border:1.5px solid var(--line);border-radius:10px;color:var(--dim);font-weight:600;
-    letter-spacing:.04em}
+    border:1.5px solid transparent;border-radius:10px;color:var(--dim);font-weight:600;
+    letter-spacing:.04em;text-decoration:underline;text-underline-offset:4px;
+    text-decoration-color:rgba(226,233,245,.28);text-decoration-thickness:1px}
   .hp-util-btn:before{display:none}
   .hp-util-btn:active{background:rgba(255,255,255,.04)}
   /* One re-spin button per wheel, priced the same, so the choice is about what

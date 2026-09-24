@@ -2704,6 +2704,16 @@ cannot see is another device, and that is recorded rather than fixed: asking the
 out and a green door telling a stranger they are in is the one thing this light must never
 say.
 
+**SO IT IS THE ONLY FILLED, GLOWING DOOR ON THE FRONT PAGE, and that is what makes it read.**
+Reported as the home screen feeling crowded, and the cause was that every door shouted: a
+saturated red and blue pair, a solid red and blue Full Team slab, a gold Dynasty card and a
+neon sign, one under the other. The Offense and Defense pair stays filled because it is the
+game. Full Team carries its red and blue as a gradient EDGE on a dark card (the dark seam
+between the two is kept, so it is still the pair joined), Dynasty is shorter, and Tutorial,
+How to play and Leaderboard are underlined text rather than three more boxes. A neon door
+among filled doors is one more loud thing; among outlined ones it is the sign.
+`check-fullteam.mjs` still asserts `hp-ft` carries its own colour, which is now the edge.
+
 **THREE ACCESS FILES NOW, AND THEY ARE STILL THREE FILES.** `fullteam-access.js` says in as
 many words "when a third mode wants this, merge them". This is the third and the merge is
 DEFERRED. It was deferred while this one was unlaunched, for the obvious reason, and it is

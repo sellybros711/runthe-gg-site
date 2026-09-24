@@ -388,10 +388,13 @@ console.log('\nTHE FIELD AND THE BOARD AGREE ABOUT WHICH SIDE IS PICKING');
   const { page, boom } = await open(browser);
   ok('the door is built', await page.evaluate(() =>
     !!document.getElementById('b-start-full')));
-  /* THE FILL IS PART OF THE DOOR, not decoration to be dropped in a refactor. Without
-     hp-ft this card is the neutral grey shared with the Trade Machine, which on a phone
-     between a saturated pair and a gold card reads as a control you cannot press. */
-  ok('  and carries its own fill', await page.evaluate(() =>
+  /* ITS OWN COLOUR IS PART OF THE DOOR, not decoration to be dropped in a refactor.
+     Without hp-ft this card is the neutral grey shared with the Trade Machine, which on a
+     phone between a saturated pair and a gold card reads as a control you cannot press.
+     Since the front page's calm pass the colour is on the EDGE rather than the fill (one
+     filled door on the page, the pair; every other mode outlined in its own colour), and
+     the class is still what carries it. */
+  ok('  and carries its own colour', await page.evaluate(() =>
     (document.getElementById('b-start-full') || {}).classList.contains('hp-ft')));
 
   await page.evaluate(() => window.__t.beginFullDraft());
