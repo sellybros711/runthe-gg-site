@@ -84,6 +84,37 @@ export function poolSQL(pool, { cap, slots }) {
   out.push('begin;');
   out.push('');
   out.push(`-- ${season} week ${week}: ${pool.pool.length} men, locks ${pool.locks_at}`);
+  /*
+   * A WEEK SOMEBODY HAS DRAFTED AGAINST MUST NOT BE REPRICED, and until now that was a
+   * sentence in a comment with nothing keeping it.
+   *
+   * Every statement below is an UPSERT, so a second run of the Tuesday job against a week
+   * that is already out rewrites `cap_musd` and all 400-odd prices under every lineup that
+   * has been entered. Their stored `spend` was checked against the old numbers and is then
+   * a total of a board that no longer exists, and nothing anywhere throws: the entries are
+   * still there, still legal looking, and quietly measured against a different game.
+   *
+   * IT WENT FROM ANNOYING TO FATAL WHEN THE CAP STARTED MOVING. Re-emitting slightly
+   * different prices under one cap was survivable. `PRICE_PROJ_W` moved the cap from $90M
+   * to $110M, so a rebuild of a published week now hands its entrants a budget they never
+   * drafted with.
+   *
+   * SO THE SQL REFUSES, rather than the script, because the script has no database to ask
+   * and the SQL is what actually runs. This is the one place in the mode that fails CLOSED,
+   * for the reason 109 gives: there is a prize, so a wrongly allowed write costs more than
+   * a wrongly refused one. A week nobody has entered republishes freely, which is what a
+   * Tuesday rebuild before anybody has drafted actually is.
+   */
+  out.push(`do $$`);
+  out.push(`begin`);
+  out.push(`  if exists (select 1 from public.fantasy_entries`);
+  out.push(`              where season = ${season} and week = ${week}) then`);
+  out.push(`    raise exception `);
+  out.push(`      'week ${week} of ${season} already has entries, so its prices and cap `
+    + `must not move. Publish a week before anybody drafts it, or not at all.';`);
+  out.push(`  end if;`);
+  out.push(`end $$;`);
+  out.push('');
   /* The prices below reference this row, so it has to exist before them. On a REBUILD it
      already does and this restates it, which is right: the lock can move if the schedule
      moved, and the men and their prices are the same board being restated under it. */

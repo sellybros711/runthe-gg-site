@@ -410,9 +410,8 @@ export const shrunkPPG = (p) => (p.games * p.half_ppg) / (p.games + SHRINK_K);
  * (the baseline, the VOR span, the power curve, the ceiling anchor) reads the quantity it
  * always did.
  *
- * WHY A QUARTER, WHICH IS THE PART TO READ BEFORE MOVING IT. Three things bound it and
- * they close from both sides. Availability bias, the rank agreement between price and
- * projection on the live week 3 board, and the cap sweep on that same board:
+ * It shipped at a QUARTER, bounded from both sides by three measurements on the live week 3
+ * board:
  *
  *      w                       0        0.25      0.5       0.75      1
  *      absence gap         -2.87      -2.53     -2.15     -1.68     -1.39
@@ -421,42 +420,115 @@ export const shrunkPPG = (p) => (p.games * p.half_ppg) / (p.games + SHRINK_K);
  *      budget - top at 90   +1.3       +2.4      +3.5         -         -
  *      top - random at 90   11.2        9.7       7.3         -         -
  *
- * THE TOP OF THE RANGE IS RULED OUT BY THE CARD. At 0.75 and past it the price IS the
- * projection in rank, and the whole reason the projection was refitted was to stop it being
- * a restatement of the price. The residual between the two is the decision this mode is
- * built around, and pricing off the projection deletes it.
+ * The argument for the quarter was that the top of the range deletes the residual between
+ * price and projection, which is the decision the mode is built around, and that the middle
+ * walks the cap crossover to about 105. It finished by saying that going further is
+ * available, costs the cap, and is a decision about the MODE rather than about the pricing,
+ * so it should be taken deliberately rather than quietly.
  *
- * THE MIDDLE IS RULED OUT BY THE CAP, and that is the one that cost a measurement rather
- * than an argument. `probe_cap.mjs` picks $90M because it is the band where spending
- * everything and holding money back trade places; at 0.5 the budget bot is 3.5 points clear
- * there and the crossover has walked to about 105, which is the one-strategy shape that
- * sweep exists to refuse. What drafting is worth at all falls with it, 11.2 to 7.3.
+ * ─── AND IT WAS TAKEN. `PRICE_PROJ_W` IS 1 ─────────────────────────────────────────
  *
- * None of that is the blend being wrong. A more accurate price against a CONVEX price curve
- * genuinely does reward spreading money, so better pricing moves that band. The honest
- * answer at 0.5 would be to move the cap with it, and that is a bigger change than this one
- * and not one to make in the middle of a season: the cap is on every published week row, so
- * moving it makes two weeks of results incomparable.
+ * Asked for in as many words: the price should be based solely on what a man is projected
+ * to do this week, as accurately and as freshly as the mode allows. So the blend is gone
+ * and the price IS the projection.
  *
- * AND THE CONTROL IS WHAT SAYS 0.25 IS SAFE RATHER THAN MERELY SMALL. `SHRINK_K` was fitted
- * on sample size and took that gap from 3.48 to 0.12, so a fix for availability that
- * re-opens it has moved the defect rather than removed it. At 0.25 that axis does not move
- * at all, to two decimals; by w = 1 it is -1.42 and drifting. A cheaper looking candidate,
- * `shrunkPPG * playShare`, was measured too and is worse on BOTH axes at once (-2.06 and
- * -1.43), because it discounts a thin sample twice.
+ * WHAT THAT BUYS is the absence gap, which is the defect this whole section exists for:
+ * -2.87 points at w = 0 and -1.39 at w = 1. Half of it, against an eighth at a quarter.
  *
- * WHAT IT ACTUALLY DOES TO A BOARD, which is the half a reader can see. On week 3, 217 of
- * 414 men move by more than a million and only SIX move by more than three, and those six
- * are the men who missed a game: Zay Flowers goes $12.1M to $7.7M. That is the shape this
- * is meant to have. At 0.5 it is 97 men past three million, which is a rebuild rather than
- * an adjustment.
+ * WHAT IT COSTS, and both are recorded rather than argued away:
  *
- * IT DOES NOT CLOSE THE GAP AND IS NOT MEANT TO. -2.87 to -2.53 is an eighth of a defect
- * this file now knows the size of. Going further is available and costs the cap; that is a
- * decision about the mode rather than about the pricing, so it is written down here rather
- * than taken quietly.
+ *   The RESIDUAL between price and projection is gone, at .999 rank agreement. That was a
+ *   real decision on the card and it is no longer one. What replaces it as the decision is
+ *   the thing a reader knows and the board cannot: the matchup, the weather, who is
+ *   starting, and the game status report for any man the report has not spoken about yet.
+ *
+ *   The THIN SAMPLE gap widens, -1.25 to -1.42, because the projection shrinks toward the
+ *   position level where the price shrank toward zero, and `SHRINK_K`'s own header argues a
+ *   man is on this board BECAUSE his one game was big. That is 0.17 of a point against the
+ *   1.48 the absence axis gains, so it is a trade rather than a wash, and it is the axis to
+ *   watch if the board ever starts feeling generous to a man with one week in him.
+ *
+ *   The CAP had to be re-measured, because a more accurate price against a CONVEX curve
+ *   rewards spreading money and walks the crossover up. See `CAP_MUSD` in `draft.js` for
+ *   where it landed and what the sweep said.
+ *
+ * ─── AND THE PROJECTION GREW THE ONE LIVE SIGNAL IN THE SYSTEM ─────────────────────
+ *
+ * "As accurate as possible" is a claim about the projection rather than about the blend, so
+ * the blend is only half of this. What the projection did not read is the GAME STATUS
+ * REPORT, which is the one forward looking thing this mode has: `plays` is availability
+ * measured BACKWARDS, off games already missed, and the report is what the club says about
+ * Sunday.
+ *
+ * Measured over the same 21,291 draftable player-weeks, actual points against what the
+ * projection expected:
+ *
+ *      status                 men     proj   actual   actual/proj   blanked
+ *      no report            17,179    4.75     4.37       0.919       44.8%
+ *      on it, no call        2,179    7.34     7.87       1.073       21.0%
+ *      QUESTIONABLE          1,066    6.20     4.33       0.699       47.7%
+ *      doubtful                122    6.28     0.02       0.003       99.2%
+ *      out                     744    5.38     0.00       0.000      100.0%
+ *
+ * A QUESTIONABLE MAN DELIVERS SEVEN TENTHS OF HIS PROJECTION and the board charged full
+ * price for him. That is a 43% overpay on about one board row in twenty, and it is the
+ * largest single inaccuracy left in the price.
+ *
+ * ONLY QUESTIONABLE IS PRICED, and the split is principled rather than cautious. Read the
+ * blank column: a questionable man blanks 47.7% against a clear man's 44.8%, which is
+ * almost no change for a group whose projection is a third higher, so he is not mostly
+ * missing the game. He is PLAYING HURT and producing less, which is a fact about his points
+ * and belongs in the price. Out and doubtful are about ABSENCE, the board already takes
+ * those men off it (`D.hurt` in `draft.js`), and pricing an absent man near zero would make
+ * a star free the moment he is cleared: measured, 36% of men who were out in one week's
+ * report are playing by the next.
+ *
+ * AND IT IS ONLY READ WHEN THE REPORT IS THIS WEEK'S, which is measured and not a
+ * formality. The same table against the PREVIOUS week's report, which is what a build
+ * running before the club has filed anything would see:
+ *
+ *      questionable last week      0.951        against 0.699 this week
+ *      doubtful last week          0.693        against 0.003
+ *      out last week               0.336        against 0.000
+ *
+ * A week old designation is worth almost nothing: 70.6% of last week's questionable men are
+ * cleared by this week. So `injuryFactor` returns 1 unless the report is for the week being
+ * priced, and the accuracy this buys scales with how fresh the report is when the build
+ * runs. See `buildWeeklyPool` for what that means for the Tuesday build.
  */
-export const PRICE_PROJ_W = 0.25;
+export const PRICE_PROJ_W = 1;
+
+/*
+ * WHAT A DESIGNATION IS WORTH, as a multiplier on the projection.
+ *
+ * Measured above. Only `questionable` is here, and the empty entries are the argument: out
+ * and doubtful are absence rather than performance, the board removes those men, and a
+ * price near zero on a man who is later cleared is a free star.
+ *
+ * A NUMBER MEASURED ON THE FINAL REPORT, and that is the one soft edge in it. nflverse
+ * keeps ONE ROW per player-week rather than a history, and 78% of them were last modified
+ * on a Friday, so what the table above reads is the report as it FINISHED. There is no way
+ * from that archive to measure what a Wednesday build would have seen, so 0.70 is what a
+ * complete report is worth and a partial one is worth somewhere between that and nothing.
+ * Said rather than implied, because the alternative is reading a fitted constant as though
+ * it were measured at the moment the build actually runs.
+ */
+export const INJ_FACTOR = { questionable: 0.70 };
+
+/**
+ * How much of his projection a man's own club expects him to deliver.
+ *
+ * @param p       a row, optionally carrying `report`: his status in `report_week`'s report
+ * @param report_week  the week that report was filed for, or null when there is none
+ * @param week    the week being priced
+ */
+export function injuryFactor(p, reportWeek, week) {
+  /* THE REPORT HAS TO BE ABOUT THE WEEK BEING PRICED. A designation from last week is worth
+     0.951 on a questionable man, which is to say nothing, and applying 0.70 to it would be
+     a 30% discount on a man the club has since cleared. */
+  if (!p || !p.report || reportWeek == null || week == null || reportWeek !== week) return 1;
+  return INJ_FACTOR[p.report] ?? 1;
+}
 
 /** How many REG games each club has already played before `week`, read off the schedule. */
 export function clubGamesToDate(games, season, week) {
@@ -494,15 +566,24 @@ export function positionLevels(men) {
 /**
  * @param p       a season to date row, carrying `played_of`: his club's games so far.
  * @param levels  what positionLevels() answered for this board.
+ * @param fit     an availability factor from the game status report, default 1. Passed in
+ *                rather than read off the row, so a caller measuring the projection WITHOUT
+ *                the report (every probe that predates it) gets the old number exactly and
+ *                nothing silently changes underneath a fit.
  */
-export const projectedPoints = (p, levels) => {
+export const projectedPoints = (p, levels, fit = 1) => {
   /* A man cannot have played more games than his club, and a missing denominator means a
      club with no schedule read, which is availability unknown rather than availability
      zero. Never below zero and never above one. */
   const of = p.played_of || p.games;
   const plays = of > 0 ? Math.min(1, Math.max(0, p.games / of)) : 1;
   const level = PROJ_LEVEL * ((levels && levels.get(p.position)) || 0);
-  return Math.max(0, plays * ((p.games * p.half_ppg + SHRINK_K * level) / (p.games + SHRINK_K)));
+  /* TWO AVAILABILITY TERMS AND THEY ANSWER DIFFERENT QUESTIONS. `plays` is how often he has
+     been out there, measured backwards off the games his club has played. `fit` is what his
+     club has said about THIS Sunday. The first is all a build had until the report was read;
+     the second is the only forward looking number in the mode. */
+  return Math.max(0, fit * plays
+    * ((p.games * p.half_ppg + SHRINK_K * level) / (p.games + SHRINK_K)));
 };
 
 /**
@@ -535,7 +616,7 @@ export function pricePool(men, levels = null, w = PRICE_PROJ_W) {
   }
   for (const p of men) {
     p.est_ppg = w > 0
-      ? (1 - w) * shrunkPPG(p) + w * projectedPoints(p, levels)
+      ? (1 - w) * shrunkPPG(p) + w * projectedPoints(p, levels, p.fit == null ? 1 : p.fit)
       : shrunkPPG(p);
   }
   const desc = men.map((p) => p.est_ppg).sort((a, b) => b - a);
@@ -636,6 +717,45 @@ export async function buildWeeklyPool({ season, week, minGames = 1 }) {
   const clubGames = clubGamesToDate(games, season, week);
   for (const p of eligible) p.played_of = clubGames.get(p.team) || p.games;
 
+  /*
+   * WHAT THE CLUBS HAVE SAID ABOUT SUNDAY, read off the SAME FILE the page reads.
+   *
+   * `injuries.mjs` writes `injuries_<season>_w<week>.json` and `fantasy-injuries.yml`
+   * refreshes it twice a day. Reading it here rather than fetching the CSV again is the
+   * whole point: the price, the red chip on the board and the sheet a reader opens are then
+   * one answer about one hamstring, and a build that priced off a report the page does not
+   * have would be a board disagreeing with itself.
+   *
+   * IT IS OPTIONAL AND ITS ABSENCE IS EXACTLY THE OLD BEHAVIOUR. A week with no file, a
+   * fixture, a probe rebuilding 2022: every one of those prices on `plays` alone, which is
+   * what shipped before this. No throw, because there is nothing to be wrong about.
+   *
+   * AND THE TUESDAY BUILD MOSTLY READS LAST WEEK'S. The report for the coming week is first
+   * filed on the Wednesday, so on a Tuesday `report_week` is usually the week just played,
+   * `injuryFactor` correctly returns 1 for every man, and this costs and buys nothing. What
+   * it is worth scales with how late the build runs, and the numbers for moving it are in
+   * `INJ_FACTOR`'s own note. Nothing here decides that: a later build is a shorter drafting
+   * window, which is a decision about the mode.
+   */
+  let reportWeek = null;
+  try {
+    const f = path.join(DATA_DIR, `injuries_${season}_w${week}.json`);
+    if (fs.existsSync(f)) {
+      const rep = JSON.parse(fs.readFileSync(f, 'utf8'));
+      reportWeek = rep.report_week ?? null;
+      for (const p of eligible) {
+        const e = rep.men && rep.men[p.player_id];
+        p.report = e ? e.st : null;
+      }
+    }
+  } catch (e) {
+    /* A REPORT THAT WILL NOT PARSE MUST NOT TAKE THE WEEK'S BOARD DOWN. Every man falls
+       back to no designation, which is the price this file shipped for a year. */
+    reportWeek = null;
+    for (const p of eligible) p.report = null;
+  }
+  for (const p of eligible) p.fit = injuryFactor(p, reportWeek, week);
+
   /* What each position is doing on THIS board, which is what a thin sample is argued
      toward. Read over the eligible men, so a bye week narrows it by itself. */
   const levels = positionLevels(eligible);
@@ -662,8 +782,10 @@ export async function buildWeeklyPool({ season, week, minGames = 1 }) {
        the arithmetic is how a curve and its sweep come apart. Never shown to a player. */
     est_ppg: round(p.est_ppg, 2),
     /* THE ONE NUMBER ON THE CARD ABOUT THE FUTURE, and the only rating of any kind this
-       mode shows. One decimal, because it is points and a player will add six of them up. */
-    proj: round(projectedPoints(p, levels), 1),
+       mode shows. One decimal, because it is points and a player will add six of them up.
+       IT READS THE SAME `fit` THE PRICE DID, or the card would print a projection the price
+       was not set against, which is the disagreement this whole pass exists to end. */
+    proj: round(projectedPoints(p, levels, p.fit), 1),
     half_total: round(p.half, 1),
     price_musd: p.price_musd,
     stat_line: statLine(p),
@@ -682,6 +804,12 @@ export async function buildWeeklyPool({ season, week, minGames = 1 }) {
     ...anchors,
     checked,
     clubs_playing: playing.size,
+    /* WHICH REPORT THE PRICE READ, and how many men it moved. Reported rather than
+       inferred: a build whose report is a week old is a build pricing on `plays` alone,
+       which is a correct board and a different one, and the log is where somebody finds
+       that out rather than by diffing prices. */
+    report_week: reportWeek,
+    report_priced: eligible.filter((p) => p.fit !== 1).length,
     /* How many men with a game already played were left off because their club is idle.
        Reported rather than shipped, because the bye trap is removed at the door here and a
        reader of this file should be able to see how big the door was. */

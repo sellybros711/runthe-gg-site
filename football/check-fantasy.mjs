@@ -123,6 +123,8 @@ console.log('\nA DRAFT ALWAYS FINISHES');
     random: (b, rnd) => b[Math.floor(rnd() * b.length)],
   };
   let stranded = 0, over = 0, short = 0, runs = 0, worst = 0, noneCan = 0, shown = 0, grey = 0;
+  /* AND THE SAME COUNT FOR THE SPENDER ALONE. See the assertion at the bottom. */
+  let spShown = 0, spGrey = 0, spBoards = 0, spHeld = 0;
   for (const name of Object.keys(BOTS)) {
     for (let r = 0; r < 400; r++) {
       const c = { seed: (r * 2654435761 + name.length) >>> 0, men: [] };
@@ -136,6 +138,10 @@ console.log('\nA DRAFT ALWAYS FINISHES');
            that the reserve floor exists to prevent, and it renders perfectly. */
         const can = board.filter((m) => D.canSign(POOL.pool, i, left, m));
         shown += board.length; grey += board.length - can.length;
+        if (name === 'greedy') {
+          spShown += board.length; spGrey += board.length - can.length;
+          spBoards++; if (can.length < board.length) spHeld++;
+        }
         if (!can.length) { noneCan++; break; }
         c.men.push(BOTS[name](can, rnd));
       }
@@ -156,14 +162,42 @@ console.log('\nA DRAFT ALWAYS FINISHES');
     `${noneCan} boards with nothing signable`);
   ok('  and nothing signed was ever over the cap', !over,
     `worst spend $${worst.toFixed(1)}M of $${D.CAP_MUSD}M`);
-  /* AND THE CAP IS ACTUALLY SEEN, which is the whole reason the out of reach rows exist.
-     A board that never shows one is the old board wearing new code: it would pass every
-     assertion above and change nothing a player notices, which is exactly how this mode
-     came to have an invisible budget in the first place. Measured on the live board it is
-     about one row in eight; the floor is loose because it depends on the week's own price
-     spread, and what it catches is the feature quietly reverting to nothing. */
+  /*
+   * AND THE CAP IS ACTUALLY SEEN, which is the whole reason the out of reach rows exist. A
+   * board that never shows one is the old board wearing new code: it would pass every
+   * assertion above and change nothing a player notices, which is exactly how this mode came
+   * to have an invisible budget in the first place.
+   *
+   * ASKED OF THE SPENDER, AND OF BOARDS RATHER THAN ROWS, which is a fix rather than a
+   * loosening. It was `grey / shown > 0.02` over all three bots together, and two of the
+   * three never go near the cap: `thrifty` takes the cheapest man on every board by
+   * definition and cannot run out of money, so its boards dilute the ratio with presses at
+   * which nothing could ever be out of reach. That was survivable at $90M and stopped being
+   * so when `PRICE_PROJ_W` moved the cap to $110M: the pooled figure fell to 1.4% and failed,
+   * while `probe_board.mjs` on the same board reported a spending drafter meeting an
+   * unaffordable man on 22.3% of presses. The page had not stopped showing the cap. The
+   * measurement was averaging it away.
+   *
+   * So it counts BOARDS holding at least one man out of reach, for the one bot that can run
+   * out of money, which is the quantity probe_board quotes and the thing a player meets: a
+   * press where the wheel offers something they cannot have.
+   *
+   * THE FLOOR IS 5% AND IT HAS TO CLEAR TWO DIFFERENT BOARDS, which is worth knowing before
+   * tightening it. This file reads the pool FILE on disk, and that file is week 3, published
+   * and drafted against at the old cap and the old pricing, so it must not be rebuilt. So
+   * until the next Tuesday build this runs the OLD board at the NEW cap:
+   *
+   *      week 3's shipped pool, cap $110M       8.8% of a spender's boards
+   *      a pool priced at PRICE_PROJ_W = 1      19.8%
+   *      the same pool at the old $90M cap      42.3%, and it STRANDS 28 drafts in 600
+   *
+   * Five is under both of the first two and nowhere near the third, so it catches the
+   * feature reverting to nothing without pinning either board's own number.
+   */
   ok('  and the cap is visible on the board rather than only in the totals',
-    grey / shown > 0.02, `${(grey / shown * 100).toFixed(1)}% of rows are out of reach`);
+    spHeld / spBoards > 0.05,
+    `a spender meets one on ${(spHeld / spBoards * 100).toFixed(1)}% of boards, `
+    + `${(spGrey / spShown * 100).toFixed(1)}% of its rows`);
 }
 
 /* ================================================================
@@ -436,6 +470,93 @@ console.log('\nTHE INJURY REPORT IS BUILT FROM TWO SOURCES');
  * So the question is asked of every code the POOL can produce, which is the set a reader can
  * actually be shown.
  */
+/* ================================================================
+   THE PRICE IS THE PROJECTION, AND THE PROJECTION READS THE REPORT
+
+   `PRICE_PROJ_W` is 1, so there is no blend left to check: what matters is that the one
+   estimate the price is built from reads the one forward looking signal the mode has, and
+   that it reads it ONLY when the signal is about the week being priced. Both halves are
+   measured constants (`INJ_FACTOR`, and 0.951 for a week old designation), so both are
+   asserted as behaviour rather than by reading the numbers back out of the module.
+   ================================================================ */
+console.log('\nTHE PRICE IS THE PROJECTION, AND IT READS THE GAME STATUS REPORT');
+{
+  const WP = await import('./build/weekly-pool.mjs');
+  const { injuryFactor, projectedPoints, pricePool, positionLevels, INJ_FACTOR,
+    PRICE_PROJ_W } = WP;
+
+  ok('the price is the projection and nothing else', PRICE_PROJ_W === 1,
+    `PRICE_PROJ_W = ${PRICE_PROJ_W}`);
+
+  /* A QUESTIONABLE MAN DELIVERS 0.70 OF HIS PROJECTION, measured over 21,291 draftable
+     player-weeks. Asked of the function rather than of the table, because what ships is
+     what `injuryFactor` returns. */
+  const q = { report: 'questionable' };
+  ok('  a questionable man in THIS week\'s report is discounted',
+    injuryFactor(q, 3, 3) === INJ_FACTOR.questionable && injuryFactor(q, 3, 3) < 1,
+    `x${injuryFactor(q, 3, 3)}`);
+
+  /* AND A WEEK OLD ONE IS NOT, which is the clause most likely to be tidied away as an
+     equality nobody needs. Measured: last week's questionable men deliver 0.951, because
+     70.6% of them are cleared by this week, so applying the discount to one would be a
+     30% cut on a man his club has since passed fit. */
+  ok('  and a week old designation is worth nothing', injuryFactor(q, 2, 3) === 1);
+  ok('  and no report at all is worth nothing', injuryFactor({ report: null }, 3, 3) === 1
+    && injuryFactor(q, null, 3) === 1);
+
+  /* OUT AND DOUBTFUL ARE DELIBERATELY NOT PRICED. They are absence rather than performance,
+     `D.hurt` already takes those men off the board, and 36% of men out in one week's report
+     are playing by the next: a price near zero on one of them is a free star the moment he
+     is cleared. */
+  for (const st of ['out', 'doubtful']) {
+    ok(`  ${st} is not repriced, because the board removes him instead`,
+      injuryFactor({ report: st }, 3, 3) === 1);
+  }
+
+  /* IT REACHES THE PROJECTION AND THE PRICE, not just the lookup. Two identical men, one
+     questionable, priced through the real curve. */
+  const men = () => POOL.pool.map((p) => ({
+    player_id: p.player_id, name: p.name, position: p.position, team: p.team,
+    games: p.games, played_of: p.played_of, half_ppg: p.half_ppg,
+  }));
+  const lv = positionLevels(men());
+  const one = men()[0];
+  ok('  the projection itself carries the factor',
+    Math.abs(projectedPoints(one, lv, 0.7) - 0.7 * projectedPoints(one, lv, 1)) < 1e-9);
+
+  /*
+   * A MAN OUT OF THE MIDDLE OF THE BOARD, AND THAT IS NOT AN ARBITRARY CHOICE.
+   *
+   * The first draft discounted the DEAREST man and asserted nobody else moved, and 47 others
+   * moved by over a million. That is the pricing working rather than a leak: the ceiling is
+   * anchored on the best man ON THE BOARD, deliberately (see `pricePool`, which explains why
+   * a quantile is wrong at 400 men), so marking the anchor questionable rescales everything
+   * under him. Real, correct, and worth knowing: the week a board's best man is doubtful is
+   * a week every price on it moves.
+   *
+   * What the discount must NOT do is leak into men it is not about, so it is asked of
+   * somebody in the middle, where the anchors do not move.
+   *
+   * AND IT IS THE WHOLE BOARD RATHER THAN A SLICE OF IT, which was the second draft's bug.
+   * Run over 60 men the discounted man became the bottom of the VOR range himself, so `lo`
+   * moved and 56 others moved with it: a true reading of a 60 man board and a false one
+   * about the 414 man board the game actually prices. A fixture small enough to change its
+   * own percentiles is measuring the fixture.
+   */
+  const MID = Math.floor(POOL.pool.length / 2);
+  const plain = men();
+  const hurt = men();
+  hurt[MID].fit = INJ_FACTOR.questionable;
+  pricePool(plain, positionLevels(plain));
+  pricePool(hurt, positionLevels(hurt));
+  ok('  and a questionable man is cheaper than the same man cleared',
+    hurt[MID].price_musd < plain[MID].price_musd,
+    `$${plain[MID].price_musd}M to $${hurt[MID].price_musd}M`);
+  const moved = plain.filter((p, i) => i !== MID
+    && Math.abs(p.price_musd - hurt[i].price_musd) > 0.5).length;
+  ok('  and nobody else on the board moved', moved === 0, `${moved} others moved 50c+`);
+}
+
 console.log('\nEVERY CLUB THE BOARD CAN NAME HAS A COLOUR THAT READS');
 {
   const src = fs.readFileSync(path.join(ROOT, 'football/fantasy/clubs.js'), 'utf8');

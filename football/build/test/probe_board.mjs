@@ -160,7 +160,15 @@ const main = async () => {
    * what the screen says rather than about what the totals come to.
    */
   const REACHES = [20, 40];
-  const CAPS = [70, 80, 90];
+  /*
+   * ANCHORED ON THE SHIPPED CAP RATHER THAN WRITTEN OUT, which is a fix. This was
+   * `[70, 80, 90]`, chosen when the cap WAS 90 so the sweep ran up to it. `PRICE_PROJ_W`
+   * then moved the cap to 110 and the whole table sat below the game: it went on reporting
+   * 82 stranded drafts at its own top row while the mode it is measuring strands none, and
+   * nothing said so. A sweep that does not contain the value it is about is a sweep about
+   * a different game.
+   */
+  const CAPS = [0.65, 0.8, 1].map((f) => Math.round(DRAFT.CAP_MUSD * f));
   console.log('\nWHAT WOULD MAKE THE CAP VISIBLE. `dearest at QB1` is the best man the wheel'
     + '\noffers on the first press, and `out of reach` counts boards holding a man the'
     + '\nroster cannot sign. Greedy, same seeds.');
