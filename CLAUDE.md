@@ -10600,6 +10600,76 @@ It was drifting by a factor of two and a half. The shipped counts are written at
 figure is kept as `built_rows` rather than overwritten, because how many rows the
 sources held is a real fact about the run and the only place it is recorded.
 
+##### AND THE TRADED SEASONS ARE BACK, because the sweep said they cost nothing
+
+```
+node baseball/pipeline/draft_economy.mjs <pool.json> [other.json] [runs]
+```
+
+The build collapsed a traded man's stints into one combined row and then dropped
+it from every board, because TOT is not a club, so **2,939 player-seasons were
+in the download and draftable from nowhere**. `split_stints` is the input that
+splits them back out, and the workflow's own header told whoever ran it to
+re-run the cap sweep first, because the price curve is convex and half a
+season's WAR costs much less than half the price: a board of half-seasons is a
+board of cheap production, which is the one thing the cap exists to make
+somebody choose between.
+
+**THERE WAS NO WAY TO RUN THAT SWEEP.** With `commit` off the pool never left
+the runner, and the artifact host is refused from the development sandbox on the
+CONNECT. So the runner does it: `draft_economy.mjs` plays the same two bots
+`probe_cap` is built on, and the number is the GAP between them.
+
+**The first answer was noise and said so.** At the default 40 drafts a bot it
+read +10.1 against the shipped pool's +13.0, and 2.9 points is the size of one
+standard error on a gap at that sample. At **400 drafts a bot**:
+
+| | gap | best available | holds money back |
+|---|---|---|---|
+| the pool that ships | **+11.6** | 65.2, 33% Octobers | 76.8, 66% |
+| with split stints | **+11.2** | 64.9, 33% | 76.2, 62% |
+
+**-0.4 points against a standard error of 1.3**, so the draft economy does not
+move, and the shipped pool's +11.6 lands on the +11.2 this file records from
+`probe_cap`, which is what says the probe is measuring the right thing.
+
+So it ships. The pool goes 44,344 rows to 45,379: the 2,939 combined rows leave
+and the per-club halves arrive, most of them under the 0.50 WAR floor, which is
+why the net is about a thousand rather than three thousand.
+
+**WHAT THE GAP COULD NOT SEE IS THE YARDSTICK, and it moved in the good
+direction.** The sweep reads `shownRating`; the all-time rank reads `squadRating`
+through `teamStrength`, which rates a REAL club by its best men, and a traded
+man used to be a TOT row filed under no club and counted for neither of his. He
+counts for both now, so the table grows 2,594 team-seasons to 2,717 while its
+shape does not move at all: p50 49.9 to 50.4, p99 81.8 to 81.7, **the top
+identical at 95.4**. Over 120 best-available drafts the median is unchanged
+(74.7 to 75.1 on the yardstick, 66.7 to 66.8 shown) and the CEILING opens: best
+all-time rank **7 to 3**, and the badge sweep reaches 1.
+
+**That makes `rank_one` reachable, which is a fix rather than a side effect.**
+This file already records it as excused reluctantly, on the grounds that no bot
+reaches 95.4 and that it had only ever lit off a defect in the old yardstick. An
+unreachable legend badge is exactly what `check-badges` exists to catch.
+
+**THE EXCUSE LISTS CHURNED BY FIVE IN AND FIVE OUT, and that is the pool moving
+rather than ten badges changing.** `rank_one` and four title rungs light now;
+`rating_95`, `one_season_5`, two Trade Machine rungs and `daily_title` went the
+other way. The full sweep reaches all ten either way. Those lists are a record of
+what ONE sweep reaches, so they move whenever the pool does, and reconciling them
+is the price of a check that refuses to go quiet.
+
+**THE SWEEP PRINTS ITS OWN ERROR BAR, and that is the half worth keeping.** Two
+numbers side by side invite a decision the sample cannot support, and this one
+would have been the wrong decision: read at 40 drafts it says don't ship, read
+at 400 it says the difference was never there. `economy_runs` is an input and
+the default is a tripwire rather than a measurement.
+
+**It runs LAST in the job.** In the middle, a fourteen minute measurement
+printed its verdict seven hundred lines from the end of the log, under
+everything `check-labels` writes, which is the same failure one level up: a
+workflow that tells a person to measure and gives them no way to.
+
 **AND THAT STAGE WROTE THE POOL BEFORE IT COULD NOTICE THE POOL WAS EMPTY.**
 `compact()` reads the enriched frame's verbose column names, so handed the
 ALREADY COMPACT file, which is an ordinary thing to do by hand, every row misses
