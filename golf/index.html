@@ -5362,7 +5362,7 @@ function overlaySeasonLaunch(screen){
     <div style="margin:0 auto 4px">${pxFigureHTML(passCapstoneLook(),120)}</div>
     <div class="sl-row">${thumbs}</div>
     <div class="s1card" style="background:linear-gradient(160deg,rgba(224,118,42,.18),rgba(154,74,216,.08));border:1px solid rgba(224,118,42,.5);border-radius:14px;padding:13px 14px;max-width:430px;margin:0 auto 12px;text-align:left">
-      <div class="small" style="color:#ffeedd;line-height:1.55">${PASS_TIERS} new tiers. <b style="color:${acc}">${free.length} exclusives on the free lane.</b> ${prem.length} more on the Pro lane${cap?`, ending with the <b style="color:${acc}">${esc(cap.name)}</b>`:''}. None of them come back after Season ${n}.${ld?` <br>${esc(ld.name)} is live in the Pro Shop.`:''}</div>
+      <div class="small" style="color:#ffeedd;line-height:1.55">${PASS_TIERS} new tiers. <b style="color:${acc}">${all.length} season exclusives on the Pro lane</b>${cap?`, ending with the <b style="color:${acc}">${esc(cap.name)}</b>`:''}. The free lane pays out packs. None of the exclusives come back after Season ${n}.${ld?` <br>${esc(ld.name)} is live in the Pro Shop.`:''}</div>
     </div>
     <button class="btn store s1btn s1store" style="max-width:360px;margin:0 auto 8px">See the Season ${n} track ▸</button>
     <button class="btn ghost play s1btn" style="max-width:360px;margin:0 auto">Let's play</button>
@@ -9864,11 +9864,12 @@ function passDefaultReward(t, lane){
    would have re-served Season 1: the Beach Shades and the Floppy Hat again, and the "one-season-only" Plate
    and Champion Aura handed to the same people a second time. Nothing would have thrown. The only symptom
    would have been the pass's headline promise quietly turning false for everybody who had bought it before.
-   A season here is a THEME and its cosmetics, laid over the base tables:
+   A season here is ITS COSMETICS, laid over the base tables:
      - every pack, shard and spin stays exactly where Season 1 put it, so no season is ever worth less;
      - the base cosmetics are REMOVED, and a tier that carried nothing else pays that tier's default coins
-       instead (Season 2 therefore pays slightly MORE coins than Season 1, never fewer);
-     - the season's own cosmetics are added at the tiers named below.
+       instead, unless `add` gives it something (Season 2 gives those two free tiers a seasonal pack);
+     - the season's own cosmetics are added at the tiers named in `items`. They are all on the PRO lane
+       (owner): the season's gear is what the pass sells, and the free lane pays out packs.
    Every item named here is an EXCLUSIVE: price 0 in its own list, so it is never in a pack, a shard wheel
    or the shop (passItemOf() and cosmeticPriceBase enforce it). A season with no entry gets the base
    packs and coins and NO cosmetics, which is safe but empty: author the next one before it starts.
@@ -9878,38 +9879,41 @@ const PASS_SEASONS={
       capstone:{fx:'passcrown', plate:'passplate'},
       freeKind:'Summer Smash collectibles',
       excl:{ prem:{ 20:{cat:'plate',id:'passplate',name:'Tour Pass Plate'}, 60:{cat:'fx',id:'passcrown',name:'Tour Champion Aura'} } } },
-  // Oct 5 - Dec 3 2026. The track follows the calendar: Halloween in the early tiers, the harvest and
-  // Thanksgiving in the back half, and a capstone that belongs to both (a ghost light over a cold field).
+  // Oct 5 - Dec 3 2026. One pass, one list: seventeen Halloween and Thanksgiving pieces on the Pro lane,
+  // capped by a ghost light over a cold field.
   2:{ name:'Hallows & Harvest', accent:'#e0762a',
       capstone:{fx:'wisp', plate:'pass2plate'},
-      freeKind:'season exclusives',
-      launch:{ tag:'🎃 Hallows & Harvest', lede:'Halloween in the early tiers. The harvest in the back half.' },
-      free:{ 10:{cat:'pat',id:'candycorn',name:'Candy Corn Print'},
-             15:{cat:'ball',id:'acorn',name:'Acorn Ball'},
-             25:{cat:'hw',id:'harvestbeanie',name:'Harvest Knit'},
-             35:{cat:'pat',id:'flannel',name:'Harvest Flannel'},
-             50:{cat:'plate',id:'hayride',name:'Hayride Plate'},
-             60:{cat:'cardbg',id:'pumpkinfield',name:'Pumpkin Field Backdrop'} },
-      prem:{  5:{cat:'pat',id:'spiderweb',name:'Spider Web Print'},
-             10:{cat:'ball',id:'jackolantern',name:'Jack-o\'-Lantern Ball'},
-             15:{cat:'ew',id:'ghoulglow',name:'Ghoul Glow Specs'},
-             20:{cat:'plate',id:'pass2plate',name:'Hallows & Harvest Plate'},
-             25:{cat:'hw',id:'horns',name:'Devil Horns'},
-             30:{cat:'fx',id:'batswarm',name:'Bat Swarm Aura'},
-             35:{cat:'hw',id:'scarecrow',name:'Scarecrow Hat'},
-             40:{cat:'pat',id:'autumnleaves',name:'Autumn Leaves Print'},
-             45:{cat:'hw',id:'pilgrim',name:'Pilgrim Hat'},
-             50:{cat:'cardbg',id:'hallowseve',name:'Hallows Eve Backdrop'},
-             60:{cat:'fx',id:'wisp',name:'Will-o\'-Wisp Aura'} } },
+      launch:{ tag:'🎃 Hallows & Harvest', lede:'Seventeen Halloween and Thanksgiving pieces, all on one track.' },
+      // The free lane's two cosmetic tiers from Season 1 become seasonal packs. 'seasonal' is not one pack:
+      // it opens as whichever seasonal pack the store is selling on the day it is opened.
+      add:{ free:{ 15:{pack:{tier:'seasonal',n:1}}, 35:{pack:{tier:'seasonal',n:1}} } },
+      items:{  3:{cat:'pat',id:'candycorn',name:'Candy Corn Print'},
+               5:{cat:'pat',id:'spiderweb',name:'Spider Web Print'},
+               8:{cat:'ball',id:'acorn',name:'Acorn Ball'},
+              10:{cat:'ball',id:'jackolantern',name:'Jack-o\'-Lantern Ball'},
+              13:{cat:'hw',id:'harvestbeanie',name:'Harvest Knit'},
+              15:{cat:'ew',id:'ghoulglow',name:'Ghoul Glow Specs'},
+              18:{cat:'pat',id:'flannel',name:'Harvest Flannel'},
+              20:{cat:'plate',id:'pass2plate',name:'Hallows & Harvest Plate'},
+              25:{cat:'hw',id:'horns',name:'Devil Horns'},
+              28:{cat:'plate',id:'hayride',name:'Hayride Plate'},
+              30:{cat:'fx',id:'batswarm',name:'Bat Swarm Aura'},
+              35:{cat:'hw',id:'scarecrow',name:'Scarecrow Hat'},
+              38:{cat:'cardbg',id:'pumpkinfield',name:'Pumpkin Field Backdrop'},
+              40:{cat:'pat',id:'autumnleaves',name:'Autumn Leaves Print'},
+              45:{cat:'hw',id:'pilgrim',name:'Pilgrim Hat'},
+              50:{cat:'cardbg',id:'hallowseve',name:'Hallows Eve Backdrop'},
+              60:{cat:'fx',id:'wisp',name:'Will-o\'-Wisp Aura'} } },
 };
-function passSeasonDef(n){ n=n||passSeason().n; return PASS_SEASONS[n]||{name:'Tour Pass', accent:'#a24be0', capstone:null, freeKind:'season exclusives', free:{}, prem:{}}; }
+function passSeasonDef(n){ n=n||passSeason().n; return PASS_SEASONS[n]||{name:'Tour Pass', accent:'#a24be0', capstone:null, items:{}, add:{}}; }
 function passTierReward(t, lane, n){
   const def=passSeasonDef(n), base=passBaseReward(t, lane);
   if(def.legacy) return base;
   const r=Object.assign({}, base); delete r.cos;
+  const extra=((def.add||{})[lane]||{})[t];
+  if(extra) Object.assign(r, extra);
   if(!r.coins && !r.pack && !r.shard && !r.spin) r.coins=passDefaultReward(t, lane).coins;
-  const cos=(lane==='prem'?def.prem:def.free)||{};
-  if(cos[t]) r.cos=cos[t];
+  if(lane==='prem' && def.items && def.items[t]) r.cos=def.items[t];
   return r;
 }
 // Which season's track an item belongs to, or null. Season 1's exclusives are listed by hand because its
@@ -9917,7 +9921,7 @@ function passTierReward(t, lane, n){
 var _passItems=null;
 function passItemOf(cat,id){
   if(!_passItems){ _passItems={};
-    Object.keys(PASS_SEASONS).forEach(function(n){ const d=PASS_SEASONS[n], lanes=d.legacy?(d.excl||{}):{free:d.free, prem:d.prem};
+    Object.keys(PASS_SEASONS).forEach(function(n){ const d=PASS_SEASONS[n], lanes=d.legacy?(d.excl||{}):{prem:d.items};
       ['free','prem'].forEach(function(lane){ const m=lanes[lane]||{};
         Object.keys(m).forEach(function(t){ _passItems[m[t].cat+'|'+m[t].id]={season:+n, lane:lane, tier:+t}; }); }); }); }
   return _passItems[cat+'|'+id]||null;
@@ -11861,7 +11865,7 @@ function navSetActive(nav){
   // unclaimed-reward dots (refreshed every render, so they clear the moment the reward is claimed):
   // a free pack lights the Pro Shop tab, unviewed new items light the Profile tab.
   const si=sbSignedIn();
-  const nFree = si ? (((typeof packIsFree==='function')&&packIsFree()?1:0)+((typeof packCredits==='function')?(packCredits('base')+packCredits('tour')+packCredits('champ')):0)) : 0;
+  const nFree = si ? (((typeof packIsFree==='function')&&packIsFree()?1:0)+((typeof packCredits==='function')?(packCredits('base')+packCredits('tour')+packCredits('champ')+(liveSeasonalPackId()?packCredits('seasonal'):0)):0)) : 0;
   const newN = (typeof cosNewTotal==='function') ? cosNewTotal() : 0;
   let passClaim=0; try{ if(si && typeof passClaimable==='function' && passEnabled()) passClaim=passClaimable(); }catch(e){}
   // enhancement 2: an unclaimed thing should be impossible to miss - the pass carries a NUMBER, and the
@@ -14568,7 +14572,7 @@ function scrTitle(){
   mkTile(PXI.target,'#16b5a6','Quests','', ()=>{S.overlay='challenges';render();}, {dot:_dqLeft>0});
   mkTile(PXI.podium,'#4aa3ff','Ranks','', ()=>{S.overlay='leaderboard';render();});
   mkTile(PXI.cup,'#F1D04A','Profile','', ()=>{S.overlay='record';render();});
-  if(SHOP_ENABLED){ const nFree=((typeof packIsFree==='function')&&packIsFree()?1:0)+((typeof packCredits==='function')?(packCredits('base')+packCredits('tour')+packCredits('champ')):0);
+  if(SHOP_ENABLED){ const nFree=((typeof packIsFree==='function')&&packIsFree()?1:0)+((typeof packCredits==='function')?(packCredits('base')+packCredits('tour')+packCredits('champ')+(liveSeasonalPackId()?packCredits('seasonal'):0)):0);
     const shopNew=((typeof cosNewTotal==='function')&&cosNewTotal()>0)||nFree>0;   // CS423: NEW-item dot on the Pro Shop tile (leads to the gear)
     mkTile(PXI.cart,'#3fbf7a','Shop','', ()=>{S.overlay='shop'; if(nFree>0)S.shopSec='packs'; render();}, {dot:shopNew}); }
   mkTile(PXI.gift,'#b06be0','Invite','', ()=>{ referralShare(); });   // CS403: refer a friend -> free packs
@@ -14968,7 +14972,7 @@ function scrSetup(){
   if(!guest && SHOP_ENABLED){
     const under=$(`<div class="setup-under" style="margin:14px 0 96px"></div>`);   // bottom margin clears the fixed Back/Done action bar
     try{ under.appendChild(accBoostSummaryNode()); }catch(e){}
-    const nFree=((typeof packIsFree==='function')&&packIsFree()?1:0)+((typeof packCredits==='function')?(packCredits('base')+packCredits('tour')+packCredits('champ')):0);
+    const nFree=((typeof packIsFree==='function')&&packIsFree()?1:0)+((typeof packCredits==='function')?(packCredits('base')+packCredits('tour')+packCredits('champ')+(liveSeasonalPackId()?packCredits('seasonal'):0)):0);
     const newN=(typeof cosNewTotal==='function')?cosNewTotal():0;
     const sb=$(`<button class="setup-shopbtn" style="position:relative">${ic('cart',{size:'16px'})}<span>Pro Shop &amp; Packs${nFree>0?' · 🎁 '+nFree+' free pack'+(nFree>1?'s':''):''}${newN>0?' · <span style="color:#ff8f88;font-weight:800">'+newN+' NEW</span>':''}</span> <span class="ssb-go">▸</span>${newN>0?'<span style="position:absolute;top:-4px;right:-4px;width:12px;height:12px;border-radius:50%;background:#e2554e;border:2px solid #0e2016;box-shadow:0 0 6px rgba(226,85,78,.9)"></span>':''}</button>`);
     sb.onclick=()=>{ track('setup_shop_open'); S.overlay='shop'; S.shopSec='packs'; render(); };
@@ -34727,7 +34731,7 @@ function passLootTilesHTML(lane){
   const a=passLootSummary(lane), pro=lane==='prem', out=[];
   a.cos.forEach(c=>out.push(`<div class="tps-item ex"><span class="tps-tag" style="background:var(--gold-grad-d);color:#241a05">EXCLUSIVE</span>
     <div class="tps-thumb">${passCosThumb(c)}</div><span class="tps-n">${esc(c.name)}</span></div>`));
-  ['champ','tour','base'].forEach(t=>{ const n=a.packs[t]; if(!n) return;
+  ['champ','seasonal','tour','base'].forEach(t=>{ const n=a.packs[t]; if(!n) return;
     out.push(`<div class="tps-item${t==='champ'?' ex':(t==='tour'&&pro?' pro':'')}"><img src="${pxPackURL(t)}" alt="" style="width:40px;height:50px;object-fit:contain;image-rendering:pixelated">
       <span class="tps-n">${esc(packType(t).name)}</span><span class="tps-q">×${n}</span></div>`); });
   ['legendary','epic','rare','common'].forEach(r=>{ const n=a.shards[r]; if(!n) return; const rr=ACC_RARITY[r];
@@ -34860,7 +34864,7 @@ function overlayTourPass(screen){
   // what the next pays out, read off the same table that will pay it.
   try{ const nx=PASS_SEASONS[ssn.n+1];
     if(nx && !nx.legacy && ssn.daysLeft<=14){
-      const items=[].concat(Object.keys(nx.free||{}).map(t=>nx.free[t]), Object.keys(nx.prem||{}).map(t=>nx.prem[t]));
+      const items=Object.keys(nx.items||{}).map(t=>nx.items[t]);
       const th=items.slice(0,6).map(c=>`<span style="width:30px;height:30px;display:inline-block">${passCosThumb(c)}</span>`).join('');
       cta.appendChild($(`<div class="scout" style="margin:10px 0 0;border-color:${nx.accent||'#a78bfa'};text-align:center">
         <div style="font:900 10px/1 var(--body);letter-spacing:.16em;color:${nx.accent||'#a78bfa'}">NEXT UP · SEASON ${ssn.n+1}</div>
@@ -35321,6 +35325,12 @@ const PACK_TYPES={
           dropId:'harvest', dropBias:0.40,
           odds:[['common',0.30],['rare',0.40],['epic',0.22],['legendary',0.08]],
           pityEpic:6, pityLeg:24, col:'#d8843a', accent:'#f2c86a', glow:'rgba(216,132,58,.48)', icon:'🍂'},
+  // December, so a season that runs into it (Season 2 ends Dec 3) always has a seasonal pack on sale for its
+  // seasonal credits to open as. Same copy of Summer's price and odds as the two above.
+  winter:{id:'winter', name:'Winter Classic Pack', short:'Winter', price:30000, seasonal:true,
+          dropId:'winter', dropBias:0.40,
+          odds:[['common',0.30],['rare',0.40],['epic',0.22],['legendary',0.08]],
+          pityEpic:6, pityLeg:24, col:'#6fb8e8', accent:'#cfe9ff', glow:'rgba(111,184,232,.48)', icon:'❄'},
 };
 // ---- REAL-MONEY COIN BUCKETS ------------------------------------------------------------------
 // The "$1.99 = 15,000 coins = one full 30-year career's earnings" anchor, as an escalating-value
@@ -35396,7 +35406,11 @@ function packTierLive(id){ var pt=packType(id); if(!pt.seasonal) return true; va
 function packTierList(){ var list=PACK_TIER_ORDER.slice();
   Object.keys(PACK_TYPES).forEach(function(id){ if(PACK_TIER_ORDER.indexOf(id)<0 && packTierLive(id)) list.push(id); });
   return list.sort(function(a,b){ return packType(a).price-packType(b).price; }); }
-function packType(id){ return PACK_TYPES[id]||PACK_TYPES.base; }
+// 'seasonal' is not a pack of its own: it is whichever seasonal pack is live, and a plain placeholder in a
+// month with none (so a track reward or a saved credit still has a name and a picture).
+const SEASONAL_PACK={id:'seasonal', name:'Seasonal Pack', short:'Seasonal', price:30000, seasonal:true,
+  odds:[['common',0.30],['rare',0.40],['epic',0.22],['legendary',0.08]], pityEpic:6, pityLeg:24, col:'#e07a1f', accent:'#ffc48a', glow:'rgba(224,122,31,.5)', icon:'🎁'};
+function packType(id){ if(id==='seasonal'){ var live=liveSeasonalPackId(); return live?PACK_TYPES[live]:SEASONAL_PACK; } return PACK_TYPES[id]||PACK_TYPES.base; }
 function packPrice(id){ return Math.round(packType(id).price); }
 function packBundlePriceFor(id){ return packPrice(id)*PACK_BUNDLE_PAY; }
 // per-tier pack art palette overrides (recolor the green wrapper; keep/contrast the crest). Cached in pxPackURL.
@@ -35406,7 +35420,9 @@ const PACK_PAL_OVR={
   champ:{ E:'#caa233', e:'#9c7a22', D:'#665012', L:'#efd76a', S:'#fbe7a8', G:'#fff4cf', g:'#e6c866', H:'#ffffff' },  // rich gold body + pale-gold crest/band
   summer:{ E:'#e8792a', e:'#c25f18', D:'#8a3f0e', L:'#ffb15a', S:'#ffe0b0' },                                      // warm sunset-orange body
   spooky:{ E:'#3a1f52', e:'#2a1440', D:'#160a24', L:'#6a3a8a', S:'#e07a1f' },                                       // midnight purple, pumpkin band
-  harvest:{ E:'#a8561c', e:'#8a4416', D:'#5a2a0c', L:'#d8843a', S:'#f2c86a' }                                       // roast amber, harvest gold
+  harvest:{ E:'#a8561c', e:'#8a4416', D:'#5a2a0c', L:'#d8843a', S:'#f2c86a' },                                      // roast amber, harvest gold
+  winter:{ E:'#2f6ea8', e:'#245688', D:'#163a5e', L:'#6fb8e8', S:'#eaf6ff' },                                       // ice blue, snow band
+  seasonal:{ E:'#b8561a', e:'#8a4012', D:'#5a280a', L:'#e8893a', S:'#ffd39a' }                                      // the placeholder in a month with none
 };
 const PXPACK=[
 "gggggggggggggggggggggggggggggg",
@@ -35457,7 +35473,7 @@ const PXPACK=[
 ];
 const PXPACK_PAL={K:'#141c16',E:'#146e46',e:'#0f5034',D:'#0b3624',L:'#40b278',G:'#e2b43c',g:'#b48c28',H:'#fff0b4',W:'#eef0eb',R:'#c8423c',T:'#18968c',S:'#78d2b4'};
 var _pxPackURL={};
-function pxPackURL(tier){ tier=tier||'base'; if(_pxPackURL[tier]) return _pxPackURL[tier];
+function pxPackURL(tier){ tier=tier||'base'; if(tier==='seasonal') tier=liveSeasonalPackId()||'seasonal'; if(_pxPackURL[tier]) return _pxPackURL[tier];
   var pal=Object.assign({}, PXPACK_PAL, PACK_PAL_OVR[tier]||{});
   var pxw=PXPACK[0].length, pxh=PXPACK.length, sc=8;
   var cv=document.createElement('canvas'); cv.width=pxw*sc; cv.height=pxh*sc; var ctx=cv.getContext('2d');
@@ -35626,7 +35642,12 @@ function packCreditFields(tier){ tier=tier||'base';
   if(tier==='tour') return ['tourEarned','tourSpent'];
   if(tier==='champ') return ['champEarned','champSpent'];
   if(tier==='base') return ['packEarned','packSpent'];
-  return [tier+'Earned', tier+'Spent'];   // seasonal tiers (summer, ...) get their own counters: the Tour Pass grants these
+  // Every seasonal pack shares ONE pool. A seasonal credit is not a Summer pack or a Spooky pack, it is "the
+  // seasonal pack", and it opens as whichever one the store is selling on the day it is opened. So a pass
+  // reward earned in October and opened in November is a Harvest pack, and nothing is ever stranded when a
+  // month ends: the credits wait for the next seasonal pack instead.
+  if(tier==='seasonal' || (PACK_TYPES[tier] && PACK_TYPES[tier].seasonal)) return ['seasonalEarned','seasonalSpent'];
+  return [tier+'Earned', tier+'Spent'];
 }
 /* ---- DUPE SHARDS (pack endgame): every duplicate pull grants 1 shard of its rarity. A duplicate from a
    PAID pack also refunds coins (see dupeRefund below - free packs pay the shard only). Collect EXCHANGE_COST
@@ -35785,26 +35806,24 @@ function grantFreePack(n,opts){ opts=opts||{}; n=n||1; if(!packsOn()||!sbSignedI
   var f=packCreditFields(opts.tier||'base'), p=packState(); p[f[0]]=(p[f[0]]||0)+n; packSave(p);
   if(!opts.silent){ var nm=packType(opts.tier||'base').name; toast('<span style="color:var(--gold);font-weight:800">🎁 Free '+esc(nm)+' earned!</span>'+(opts.why?' · <span class="small">'+opts.why+'</span>':'')+'<br><span class="small">Open it in the Pro Shop → Packs.</span>', 4200); }
   return n; }
-/* A SEASONAL pack only opens while its drop is live, and credits for one are real: the Tour Pass hands out
-   two, and a gift can too. So on the morning a window closes, every unopened seasonal credit became a pack
-   the player owned and could never open. Nothing threw. The card for it vanished with the season and the
-   credit sat in bag_packs forever. It already happened to Summer Smash packs granted in August.
-   Each stranded credit becomes a Tour pack credit. Every seasonal pack copies the Tour pack's odds and
-   pity, so the player keeps the same pull and loses only the bias toward a drop that is no longer on sale.
-   Both counters only ever go UP (spent on the seasonal side, earned on the Tour side), which is the shape
-   the cloud merge already takes the max of, so two devices doing this at once agree rather than double. */
-function rehomeSeasonalCredits(){ try{
-  if(!packsOn()||!sbSignedIn()) return 0;
-  var p=packState(), moved=0, names=[];
-  Object.keys(PACK_TYPES).forEach(function(id){ var pt=PACK_TYPES[id]; if(!pt.seasonal || packTierLive(id)) return;
-    var f=packCreditFields(id), n=Math.max(0,(p[f[0]]||0)-(p[f[1]]||0)); if(n<=0) return;
-    var ft=packCreditFields('tour'); p[f[1]]=(p[f[1]]||0)+n; p[ft[0]]=(p[ft[0]]||0)+n; moved+=n; names.push(pt.name); });
+/* Before the pool above, each seasonal pack kept its own counters (summerEarned, ...), so a credit for one
+   was stranded the day its window closed: the Tour Pass hands out two, and August's Summer packs could
+   never be opened after Aug 31. This folds any of those old counters into the shared pool, once. Both sides
+   only ever go UP (spent on the old counter, earned on the pool), which is the shape the cloud merge takes
+   the max of, so two devices doing it at once agree rather than double. */
+function mergeSeasonalCredits(){ try{
+  if(!sbSignedIn()) return 0;
+  var p=packState(), moved=0;
+  Object.keys(PACK_TYPES).forEach(function(id){ if(!PACK_TYPES[id].seasonal) return;
+    var e=id+'Earned', sp=id+'Spent', n=Math.max(0,(p[e]||0)-(p[sp]||0)); if(n<=0) return;
+    p[sp]=(p[sp]||0)+n; p.seasonalEarned=(p.seasonalEarned||0)+n; moved+=n; });
   if(!moved) return 0;
   packSave(p);
-  try{ track('seasonal_credit_rehome',{n:moved}); }catch(e){}
-  try{ toast('<span style="color:var(--gold);font-weight:800">🎁 '+moved+' Tour Pack'+(moved>1?'s':'')+' added</span><br><span class="small">Your unopened '+esc(names.join(' and '))+(moved>1?'s are':' is')+' out of season, so '+(moved>1?'they are':'it is')+' now '+(moved>1?'Tour Packs':'a Tour Pack')+'. Same odds.</span>', 5600); }catch(e){}
+  try{ track('seasonal_credit_merge',{n:moved}); }catch(e){}
   return moved;
 }catch(e){ return 0; } }
+// The seasonal pack the store is selling right now, or null in a month with none.
+function liveSeasonalPackId(){ var t=null; try{ Object.keys(PACK_TYPES).forEach(function(id){ if(PACK_TYPES[id].seasonal && packTierLive(id)) t=id; }); }catch(e){} return t; }
 // One-time targeted PACK grant to a named account (owner request), mirroring the coin grant: matched by the
 // server-attributed username, applied EXACTLY ONCE per account on any device, guarded by a synced version
 // flag (bag_packs.packGrantV, carried by mergePacks). To grant again later: bump PACK_GRANT_V + set PACK_GRANTS.
@@ -35972,13 +35991,13 @@ function overlayWelcomePack(screen){
 // gates the once-per-season client grant of the pass's seasonal packs. Fallback only, the wallet's
 // pass_period from runtour_wallet() is authoritative when present.
 function passPeriodNow(){ try{ return 'S'+passSeason().n; }catch(e){ return ''; } }
-function passPackTier(){ var t='tour'; try{ Object.keys(PACK_TYPES).forEach(function(id){ if(PACK_TYPES[id].seasonal && packTierLive(id)) t=id; }); }catch(e){} return t; }
+function passPackTier(){ return liveSeasonalPackId()?'seasonal':'tour'; }   // the pass's two packs are seasonal credits whenever a seasonal pack is on sale
 // Tour Pass rewards are split: the pass COINS are credited SERVER-SIDE at purchase (in the wallet); the
 // SEASONAL PACKS are granted here, client-side, once per pass period (packs are an inherently client-side
 // store). Runs when an active pass is detected (sign-in / post-purchase). Idempotent via a per-account,
 // cloud-synced claim flag (bag_pass.claimed = the period already rewarded).
 function maybePassRewards(){ try{
-  try{ rehomeSeasonalCredits(); }catch(e){}
+  try{ mergeSeasonalCredits(); }catch(e){}
   if(!sbSignedIn() || !dailyPassActive()) return;
   var period=(_walletCache&&_walletCache.passPeriod)||passPeriodNow();
   var st=LS.get(acctKey('bag_pass'),null)||{}, n=TOURPASS.packs||0, tier=passPackTier();
@@ -36883,7 +36902,12 @@ function packShopNode(){
       +(free?'🎁 Your first pack is on us, open the Base pack free!':('🎁 '+credits+' free pack'+(credits>1?'s':'')+' ready, open a Base pack, from your challenges &amp; streak!'))+'</div>'));
   }
   // CS406: tier cards (base / tour / champion) + any live seasonal pack, escalating odds + price
-  try{ rehomeSeasonalCredits(); }catch(e){}   // an out-of-season credit shows up on the Tour card instead
+  try{ mergeSeasonalCredits(); }catch(e){}
+  // Seasonal credits in a month with no seasonal pack are saved, not lost, and the screen says so: otherwise
+  // a pass reward would vanish from sight until the next drop opens.
+  try{ var sc=packCredits('seasonal');
+    if(sc>0 && !liveSeasonalPackId()) wrap.appendChild($('<div class="scout" style="max-width:380px;margin:12px auto 0;text-align:center;border-color:#e07a1f"><b style="color:#e07a1f">🎁 '+sc+' seasonal pack'+(sc>1?'s':'')+' saved</b><div class="small muted" style="margin-top:3px">'+(sc>1?'They open':'It opens')+' as the next seasonal pack when it arrives in the store.</div></div>'));
+  }catch(e){}
   var tiers=packTierList();
   tiers.forEach(function(id){
     var pt=packType(id);

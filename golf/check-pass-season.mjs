@@ -54,7 +54,7 @@ window.__P = {
     for(var t=1;t<=PASS_TIERS;t++){ out.base.free.push(passBaseReward(t,'free')); out.base.prem.push(passBaseReward(t,'prem')); }
     return out; },
   items(){ var out=[];
-    Object.keys(PASS_SEASONS).forEach(function(n){ var d=PASS_SEASONS[n], lanes=d.legacy?(d.excl||{}):{free:d.free,prem:d.prem};
+    Object.keys(PASS_SEASONS).forEach(function(n){ var d=PASS_SEASONS[n], lanes=d.legacy?(d.excl||{}):{prem:d.items};
       ['free','prem'].forEach(function(lane){ var m=lanes[lane]||{}; Object.keys(m).forEach(function(t){ out.push({season:+n,lane:lane,tier:+t,cat:m[t].cat,id:m[t].id,name:m[t].name}); }); }); });
     return out; },
   audit(cat,id){
@@ -77,17 +77,20 @@ window.__P = {
     for(var i=0;i<d.length;i+=16) cols.add(d[i]+','+d[i+1]+','+d[i+2]); return cols.size; },
   tile(cat,id,store){ S.overlay=store?'shop':null; var o=(cosmeticItems(cat)||[]).find(function(x){ return x.id===id; })||{id:id,name:id};
     var h=cosTileHTML(cat,o); S.overlay=null; return h; },
-  packs(){ var out={}; ['summer','spooky','harvest','tour'].forEach(function(k){ var p=PACK_TYPES[k]; out[k]=p?{price:p.price,odds:p.odds,pityEpic:p.pityEpic,pityLeg:p.pityLeg,bias:p.dropBias||0,drop:p.dropId||null,art:!!PACK_PAL_OVR[k]}:null; }); return out; },
-  calendar(){ return {live:packTierList(), passTier:passPackTier(), drop:(liveThemedDrop()||{}).id||null,
+  packs(){ var out={}; ['summer','spooky','harvest','winter','tour'].forEach(function(k){ var p=PACK_TYPES[k]; out[k]=p?{price:p.price,odds:p.odds,pityEpic:p.pityEpic,pityLeg:p.pityLeg,bias:p.dropBias||0,drop:p.dropId||null,art:!!PACK_PAL_OVR[k]}:null; }); return out; },
+  calendar(){ return {live:packTierList(), passTier:passPackTier(), opensAs:packType('seasonal').id, drop:(liveThemedDrop()||{}).id||null,
     harvestInPool:packPool().some(function(e){ return e.cat==='hw'&&e.id==='turkey'; }),
     spookyInPool:packPool().some(function(e){ return e.cat==='hw'&&e.id==='witch'; })}; },
   drops(){ return DROPS.filter(function(d){ return d.id==='spooky'||d.id==='harvest'; }).map(function(d){
     var r=DROP_REWARDS[d.id]||{};
     return {id:d.id, window:d.window, items:d.items.map(function(ci){ return {cat:ci[0],id:ci[1],base:cosmeticPriceBase(ci[0],ci[1]),listed:(cosmeticItems(ci[0])||[]).some(function(o){return o.id===ci[1];})}; }),
       reward:(r.items||[]).map(function(it){ return {cat:it.cat,id:it.id,listed:(cosmeticItems(it.cat)||[]).some(function(o){return o.id===it.id;}),bg:!!CARDBG_ART[it.id]}; }), coins:r.coins||0}; }); },
-  rehome(n){ var p=packState(); p.summerEarned=(p.summerEarned||0)+n; p.tourEarned=p.tourEarned||0; packSave(p);
-    var t0=packCredits('tour'), s0=packCredits('summer'), m1=rehomeSeasonalCredits(), m2=rehomeSeasonalCredits();
-    return {t0:t0, s0:s0, m1:m1, m2:m2, t1:packCredits('tour'), s1:packCredits('summer')}; },
+  /* credits are one pool: old per-pack counters fold in, and whatever is in the pool opens as the live pack */
+  pool(n){ var p=packState(); p.summerEarned=(p.summerEarned||0)+n; packSave(p);
+    var before=packCredits('seasonal'), m1=mergeSeasonalCredits(), m2=mergeSeasonalCredits();
+    grantFreePack(1,{tier:'seasonal',silent:true});
+    return {before:before, m1:m1, m2:m2, pool:packCredits('seasonal'), asLive:liveSeasonalPackId()?packCredits(liveSeasonalPackId()):null,
+      live:liveSeasonalPackId(), opensAs:packType('seasonal').id}; },
   claimAll(){ var s=passState(); s.xp=passXpForTier(PASS_TIERS); passSave(s); var got=passClaimAll(); var own=coinState().owned;
     return {n:got.length, cos:got.filter(function(r){return r.cos;}).map(function(r){ return {cat:r.cos.cat,id:r.cos.id,owned:!!own[cosKey(r.cos.cat,r.cos.id)]}; })}; },
   /* the Go Pro pitch, which only a player WITHOUT the pass sees */
@@ -129,10 +132,14 @@ try {
     const moved = [];
     for (let i = 0; i < s1.length; i++) {
       const a = s1[i], z = s2[i];
-      if (JSON.stringify(a.pack || null) !== JSON.stringify(z.pack || null) || JSON.stringify(a.shard || null) !== JSON.stringify(z.shard || null)
+      // Season 2 may ADD a pack where Season 1 had only a cosmetic; it may never change or drop one.
+      if ((a.pack && JSON.stringify(a.pack) !== JSON.stringify(z.pack || null)) || JSON.stringify(a.shard || null) !== JSON.stringify(z.shard || null)
         || JSON.stringify(a.spin || null) !== JSON.stringify(z.spin || null) || (z.coins || 0) < (a.coins || 0)) moved.push(i + 1);
     }
     ok(`${lane}: every pack, shard and spin is where Season 1 put it, and no tier pays fewer coins`, !moved.length, moved);
+    const added = s2.map((z, i) => (!s1[i].pack && z.pack) ? (i + 1) + ':' + z.pack.tier : null).filter(Boolean);
+    if (lane === 'free') ok('free: the two tiers Season 1 spent on cosmetics pay a seasonal pack instead', added.join(',') === '15:seasonal,35:seasonal', added);
+    else ok('prem: no pack is added on the Pro lane', !added.length, added);
     const c1 = sum(s1, 'coins'), c2 = sum(s2, 'coins');
     ok(`${lane}: Season 2 coins ${c2.toLocaleString()} >= Season 1 ${c1.toLocaleString()}`, c2 >= c1);
     const s1cos = new Set(s1.filter(r => r.cos).map(r => r.cos.cat + '|' + r.cos.id));
@@ -140,6 +147,7 @@ try {
     ok(`${lane}: no Season 1 cosmetic comes back in Season 2`, !repeat.length, repeat);
     ok(`${lane}: a season nobody has authored pays no cosmetics at all`, !T[3][lane].some(r => r.cos));
   }
+  ok('free: Season 2 gives no season items away on the free lane', !T[2].free.some(r => r.cos), T[2].free.filter(r => r.cos).map(r => r.cos.id));
   const n2 = T[2].free.filter(r => r.cos).length + T[2].prem.filter(r => r.cos).length;
   const n1 = T[1].free.filter(r => r.cos).length + T[1].prem.filter(r => r.cos).length;
   ok(`Season 2 has more cosmetics than Season 1 (${n2} against ${n1})`, n2 > n1);
@@ -168,15 +176,15 @@ try {
   const tCrown = await E('tile', 'fx', 'passcrown', true);
   ok('a past season\'s exclusive is gone from the store', tCrown === '');
   const tCandy = await E('tile', 'pat', 'candycorn', false);
-  ok('the closet shows the same locked tile, not a buy', /Season 2 Tour Pass · Free tier 10/.test(tCandy));
+  ok('the closet shows the same locked tile, not a buy', /Season 2 Tour Pass · Pro tier 3/.test(tCandy));
 
   head('seasonal packs copy Summer Smash exactly');
   const P = await E('packs');
-  for (const k of ['spooky', 'harvest']) {
+  for (const k of ['spooky', 'harvest', 'winter']) {
     const a = P[k], s = P.summer;
     ok(`${k}: price, odds, pity and bias equal Summer's`, !!a && a.price === s.price && JSON.stringify(a.odds) === JSON.stringify(s.odds)
       && a.pityEpic === s.pityEpic && a.pityLeg === s.pityLeg && a.bias === s.bias, a);
-    ok(`${k}: and its odds equal the Tour pack's, so a rehomed credit loses nothing but the bias`, JSON.stringify(a.odds) === JSON.stringify(P.tour.odds) && a.pityEpic === P.tour.pityEpic && a.pityLeg === P.tour.pityLeg);
+    ok(`${k}: and its odds equal the Tour pack's, so the pool is never worth less than a Tour pack`, JSON.stringify(a.odds) === JSON.stringify(P.tour.odds) && a.pityEpic === P.tour.pityEpic && a.pityLeg === P.tour.pityLeg);
     ok(`${k}: has its own pack art`, a.art);
   }
 
@@ -189,26 +197,32 @@ try {
   head('October');
   let C = await E('calendar');
   ok('the Spooky pack is on sale and the Harvest pack is not', C.live.includes('spooky') && !C.live.includes('harvest'), C.live);
-  ok('the Tour Pass hands out Spooky packs', C.passTier === 'spooky', C.passTier);
+  ok('the Tour Pass hands out seasonal packs, and they open as Spooky packs', C.passTier === 'seasonal' && C.opensAs === 'spooky', C);
   ok('Harvest items are not in packs yet', !C.harvestInPool && C.spookyInPool);
 
   head('November');
   await page.clock.setSystemTime(new Date('2026-11-12T16:00:00Z'));
   C = await E('calendar');
   ok('the Harvest pack is on sale and the Spooky pack is not', C.live.includes('harvest') && !C.live.includes('spooky'), C.live);
-  ok('the Tour Pass hands out Harvest packs', C.passTier === 'harvest', C.passTier);
+  ok('the same seasonal credit opens as a Harvest pack now', C.passTier === 'seasonal' && C.opensAs === 'harvest', C);
   ok('Harvest items are in packs, Spooky items are not', C.harvestInPool && !C.spookyInPool);
   ok('still Season 2', (await E('season')).n === 2);
 
   head('December, the last three days of the season');
   await page.clock.setSystemTime(new Date('2026-12-02T16:00:00Z'));
   C = await E('calendar');
-  ok('no Halloween or harvest pack, the pass falls back to Tour packs', C.passTier === 'tour' && !C.live.includes('harvest'), C);
+  ok('the Winter pack takes over, so the season never runs without a seasonal pack', C.live.includes('winter') && !C.live.includes('harvest') && C.opensAs === 'winter', C);
 
-  head('a seasonal credit outlives its window');
-  const R = await E('rehome', 2);
-  ok('two unopened Summer packs become two Tour packs', R.s0 === 2 && R.m1 === 2 && R.t1 === R.t0 + 2 && R.s1 === 0, R);
-  ok('and doing it again moves nothing', R.m2 === 0);
+  head('seasonal credits are one pool that follows the store');
+  const R = await E('pool', 2);
+  ok('two old Summer credits fold into the pool, once', R.m1 === 2 && R.m2 === 0 && R.pool === R.before + 3, R);
+  ok('in December the pool is what the Winter card offers free', R.live === 'winter' && R.asLive === R.pool, R);
+  await page.clock.setSystemTime(new Date('2026-09-20T16:00:00Z'));
+  const R2 = await E('pool', 0);
+  ok('in a month with no seasonal pack the credits are kept, under a plain name', R2.live === null && R2.pool === R.pool + 1 && R2.opensAs === 'seasonal', R2);
+  await page.clock.setSystemTime(new Date('2026-10-10T16:00:00Z'));
+  const R3 = await E('pool', 0);
+  ok('and they are all on the Spooky card the day it opens', R3.live === 'spooky' && R3.asLive === R3.pool && R3.pool === R2.pool + 1, R3);
 
   head('the sales pages and the launch popup read the Season 2 table');
   await page.clock.setSystemTime(new Date('2026-10-10T16:00:00Z'));
