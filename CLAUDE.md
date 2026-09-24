@@ -6904,6 +6904,20 @@ renders perfectly and breaks nothing.
   The **SIZE of the gap is on the mean**, because the clamp legitimately compresses
   it against the most patient dugout and demanding eight points there is a coin
   toss rather than a rule.
+
+  **AND THEN THE SURVIVING PER TEAM CLAIM FLAKED TOO, WHICH IS THE THIRD TIME.**
+  `easy > hard` went red on The Kids Table at **7.0 against 7.0**, on a build whose
+  only change was a stylesheet. Re-measured through the guard's own sweep (lifted
+  out of it rather than rewritten) at 6,000 pitches a cell, the true gap runs
+  **6.5 to 18.9** across the seventeen and the smallest is that team, whose base
+  sits against `swingProb`'s 0.05 floor so the hard tier clamps. At 200 that gap
+  has a mean of 6.10 and **sd 2.20**, which puts a tie 2.8 sigma out: about one run
+  in 360, which is rare enough to read as a real defect when it lands and common
+  enough to land. The per team sample is **800** now, where the deviation halves
+  and zero is 5.5 sigma out, for about nine seconds. Relaxing the claim to `>=`
+  would make it blind to the inversion it exists for. **The range above was
+  recorded as 8.4 to 23.0 and the BOTTOM of it is the whole argument**, so it is
+  re-measured rather than carried forward.
 - **`read` is memory.** `patternRead` keeps a ROLLING window of the last 20
   pitches the player CALLED and answers how hard the bat is sitting on this
   one. An arm nobody steers writes nothing, because there is no pattern in a

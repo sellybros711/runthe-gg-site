@@ -2342,12 +2342,17 @@ async function main() {
            team pushes the base against that floor, the hard tier clamps,
            and the gap compresses.
 
-           Measured over all seventeen, the gap runs 8.4 to 23.0 with a
-           mean of 16.8, and the smallest belongs to the most patient team
-           in the game. At 500 pitches the standard error on that gap is
-           about 1.8 points, so a threshold of 8 against that one team is a
-           COIN TOSS. It came up 6.8 and failed, on a build that had not
-           touched the dugout at all.
+           Measured over all seventeen at 6,000 pitches a cell, the gap
+           runs 6.5 to 18.9 and the smallest belongs to the most patient
+           team in the game. At 500 pitches the standard error on that gap
+           is about 1.8 points, so a threshold of 8 against that one team
+           is a COIN TOSS. It came up 6.8 and failed, on a build that had
+           not touched the dugout at all.
+
+           (The range was recorded here as 8.4 to 23.0 from an earlier
+           measurement. It is re-measured above because the same sweep now
+           reads 6.5 at the bottom, which matters: the bottom of that range
+           is the whole reason the per team sample had to move.)
 
            So the sweep walks every team style instead. currentBattingTeam
            Style reads State.opponent live, so swapping it needs no restart
@@ -2356,8 +2361,27 @@ async function main() {
            CON term spans about 0.05. */
         const savedOpp = State.opponent;
         out.byTeam = OPPONENTS.map((o) => {
+          /* AND THE PER TEAM SAMPLE IS 800, WHICH IS THE THIRD TIME THIS
+             FILE HAS LEARNED THE SAME THING. At 200 the per team claim
+             `easy > hard` went red on The Kids Table at 7.0 against 7.0,
+             on a build whose only change was a stylesheet.
+
+             Measured through this exact sweep at 6,000 pitches a cell, the
+             true gap runs 6.5 to 18.9 across the seventeen and the
+             SMALLEST is The Kids Table, the most patient dugout in the
+             game, whose base sits against `swingProb`'s 0.05 floor so the
+             hard tier clamps and the gap compresses. At 200 that gap has a
+             mean of 6.10 and a standard deviation of 2.20, which puts a
+             tie 2.8 sigma out: about one run in 360, which is rare enough
+             to look like a real defect when it lands and common enough to
+             land. At 800 the deviation halves and zero is 5.5 sigma out.
+
+             THE SAMPLE MOVES AND THE CLAIM DOES NOT. Relaxing this to
+             `>=` would make it unable to see the inversion it exists for,
+             which is a dugout whose style genuinely turns the dial over.
+             Thirty thousand extra pitches cost about nine seconds. */
           State.opponent = o;
-          const M = 200;
+          const M = 800;
           return { name: o.name,
                    easy: sweep('easy',   1.9, 0, false, even, M).swing,
                    med:  sweep('medium', 1.9, 0, false, even, M).swing,
