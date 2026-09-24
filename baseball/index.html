@@ -3016,7 +3016,7 @@ function heroSync(){
 /* ─── boot ─── */
 async function boot(){
   try{
-    const res=await fetch('data/players.json?v=2');
+    const res=await fetch('data/players.json?v=3');
     if(!res.ok) throw new Error('Failed to load player data');
     const players=await res.json();
     // Curated real relationships (families). Non-fatal if it fails to load.
