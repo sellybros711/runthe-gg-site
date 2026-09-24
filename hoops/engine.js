@@ -2920,9 +2920,44 @@ function coachReport(roster, chem, structure, rating, unspentMusd, ortg, drtg) {
   return { strengths, weaknesses, verdict, archetype: structure && structure.archetype };
 }
 
+/* THE LAST TOKEN IS NOT THE SURNAME, AND THE PAGE HAD TWO ANSWERS TO THAT.
+ *
+ * This took the final whitespace token, so Jaren Jackson Jr. was drawn as
+ * "Jr." on the live floor chips, in every play by play row, in the box score,
+ * in the endgame call ("Give it to Jr.") and in the coach report. 43 men and
+ * 196 player-seasons, 1.19% of the pool, among them Tim Hardaway Jr., Gary
+ * Trent Jr. and a Defensive Player of the Year. NOTHING COULD REPORT IT: the
+ * string is valid, the chip renders, and the only symptom is the game calling
+ * a real person by his father's suffix.
+ *
+ * It was the two readings SIDE BY SIDE that made it obvious. The page carried
+ * its own `lastName`, everything-after-the-first-token, which is right about a
+ * suffix and wrong about a middle name, so a live game's verdict card read
+ * "Jaren Jackson Jr. had 32." directly above a chip reading "Jr.". One man,
+ * one screen, two formatters. There is one now, and the page delegates to it.
+ *
+ * The rule is the last token, plus the one before it when that token is a
+ * SUFFIX (Jackson Jr., Bagley III) or when the token before THAT is a
+ * PARTICLE (Van Exel, Del Negro, Da Silva). A particle is only a particle
+ * when a first name is left over, or Del Beshore and Von Wafer lose theirs.
+ *
+ * THREE NAMES IN THE POOL IT STILL GETS WRONG, recorded rather than fixed:
+ * Metta World Peace, Luc Mbah a Moute and Jan van Breda Kolff all carry a
+ * multi-word surname no rule reaches, and each comes back as its final token.
+ * A list of three inside a formatter is the allowlist this repo keeps finding
+ * in the middle of a rule; if it ever earns one it should be data, beside the
+ * pool, rather than a branch here.
+ */
+const NAME_SUFFIX = /^(?:jr|sr|ii|iii|iv|v)\.?$/i;
+const NAME_PARTICLE = /^(?:van|von|de|del|della|di|da|la|le|st|dos|das)\.?$/i;
+
 function lastNameOf(n) {
-  const parts = String(n).trim().split(/\s+/);
-  return parts[parts.length - 1];
+  const parts = String(n == null ? '' : n).trim().split(/\s+/).filter(Boolean);
+  if (!parts.length) return '';
+  let i = parts.length - 1;
+  if (i > 0 && NAME_SUFFIX.test(parts[i])) i--;
+  if (i - 1 > 0 && NAME_PARTICLE.test(parts[i - 1])) i--;
+  return parts.slice(i).join(' ');
 }
 
 // ─── a whole season, start to finish ────────────────────────────────────────

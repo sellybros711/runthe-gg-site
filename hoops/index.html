@@ -2176,6 +2176,31 @@
     </div>
   </div>
 
+  <!-- ── the five men ──────────────────────────────────────────────────────
+       THE TEAM USED TO VANISH BETWEEN THE DRAFT AND THE RESULT. This screen
+       held one card of three numbers: measured through the real page, its
+       content ended at 237px of an 844px phone before tip-off and 464px with
+       the season running, against 780 to 3400 on every other screen. So the
+       one screen that stands between signing the fifth man and reading the
+       verdict said nothing about who you had signed, and the names were gone
+       from the last press of the draft until the results screen.
+
+       IT IS THE ROSTER AND DELIBERATELY NOT THE COURT. There is a court on
+       the draft screen, whose last state is these same five men in place, and
+       another on the results screen. A third would be 300px of a picture the
+       reader had just finished watching fill up, on the screen that also has
+       to hold the game strip; at 320x568 it is the difference between one
+       scroll and two. What is genuinely absent here is the LIST: who they
+       are, what they cost and what they bring.
+
+       DRAWN BY THE RESULTS SCREEN'S OWN PAINTER, never a copy of it. Two
+       lists of one roster are two things that can disagree about a man, which
+       is the whole argument the shared court painter already carries. -->
+  <div class="card" id="squadcard">
+    <h2>Your five <span class="sub" id="p-spend"></span></h2>
+    <div class="slots" id="p-slots"></div>
+  </div>
+
 </div>
 
 <!-- ── the playoff bracket ──────────────────────────────────────────────── -->
@@ -2612,7 +2637,7 @@
      number in the same commit as the edit, then run:
        node scripts/check-cachebust.mjs --update
      CI checks it on any push touching an .html or .js file. See CLAUDE.md. -->
-<script src="engine.js?v=20"></script>
+<script src="engine.js?v=21"></script>
 <script src="run.js?v=10"></script>
 <script src="badges.js?v=1"></script>
 <!-- ACCOUNTS AND THE LEADERBOARD. All three are OPTIONAL: if the CDN is blocked
@@ -3162,6 +3187,8 @@ function renderClubs(){
          and none should ever be, but a chip that starts a run the wheel cannot
          spin is a dead end with no message on it. */
       if (seasons.length < 3) return;
+      var inSeasons = {};
+      for (var s = 0; s < seasons.length; s++) inSeasons[seasons[s]] = true;
       var skin = E.clubSkin(f.code);
       var b = document.createElement('button');
       b.className = 'clubchip';
@@ -3183,11 +3210,25 @@ function renderClubs(){
       var meta = document.createElement('span');
       meta.className = 'cc-meta';
       meta.appendChild(document.createTextNode(seasons.length + ' seasons'));
-      if (f.titles.length) {
+      /* AND THE RINGS ARE COUNTED OVER THOSE SAME SEASONS, which is the rule
+         directly above arriving one line later. The season count was already
+         the wheel's own answer and the ring count was the franchise's all
+         time total, joined by a middot, so Boston read "53 seasons · 18
+         rings" and eleven of those eighteen are Russell era and undraftable.
+         Eight clubs of thirty overstated it. TWO OF THEM PROMISED A RING THAT
+         CANNOT BE REACHED AT ALL: Atlanta's is St Louis in 1958 and
+         Sacramento's is Rochester in 1951, so a chip said "1 ring" about a
+         wheel holding no championship season whatsoever.
+
+         The lineage is untouched and is the reason this is a filter rather
+         than a smaller number: Oklahoma City still counts Seattle's 1979,
+         because that season IS on the wheel. */
+      var rings = f.titles.filter(function(y){ return inSeasons[y] === true; }).length;
+      if (rings) {
         meta.appendChild(document.createTextNode(' · '));
         var t = document.createElement('span');
         t.className = 'cc-rings';
-        t.textContent = f.titles.length + (f.titles.length === 1 ? ' ring' : ' rings');
+        t.textContent = rings + (rings === 1 ? ' ring' : ' rings');
         meta.appendChild(t);
       }
       b.appendChild(nm); b.appendChild(city); b.appendChild(meta);
@@ -3741,7 +3782,41 @@ function drawInto(fn){
      than only on the first. */
   var locked = !!run.club;
   var pools = reelPools(), pending = locked ? 1 : 2;
+
+  /* ── A REEL LANDS INTO ITS OWN DRAW, OR NOT AT ALL ──────────────────────
+   *
+   * A spin is about a second long and every one of these callbacks is a timer
+   * pointed at a run that may be gone by the time it fires. Pressing the
+   * wordmark mid-spin and then Abandon sets `run` to null, and the landing
+   * callback then ran anyway: `renderDraft` walked into `R.remaining(run)`
+   * and threw "Cannot read properties of null (reading 'roster')" out of an
+   * animation, on the home screen, with nothing on screen to say so.
+   *
+   * THE THROW IS THE LOUD HALF AND IT IS NOT THE WORST HALF. `dressPage`
+   * fires first, so an abandoned club painted the FRONT PAGE in its colours
+   * on the way out: a home screen wearing a team the player had just thrown
+   * away, which renders perfectly and reports nothing.
+   *
+   * This is the identity check every other timer on this page already
+   * carries, which `show()` writes out for the live game and the bracket
+   * walk, arriving at the one animation that never had it. The run OBJECT is
+   * compared rather than a flag, so it catches a second run as well as no
+   * run: `startRun` builds a new one, and a spin from the old one landing
+   * into it would draw the wrong club on the right board.
+   *
+   * reelBusy is cleared on the way out. It is the flag `drawInto` refuses on,
+   * so a stale spin that simply returned would leave the NEXT draft unable to
+   * deal a board at all, which is a worse failure than the one being fixed.
+   */
+  var forRun = run, forDraw = draw;
+  var mine = function(){
+    if (run === forRun && run && run.currentDraw === forDraw) return true;
+    reelBusy = false;
+    return false;
+  };
+
   var settled = function(){
+    if (!mine()) return;
     if (--pending > 0) return;
     reelBusy = false;
     renderDraft();
@@ -3749,6 +3824,7 @@ function drawInto(fn){
   if (locked) {
     lockClubReel(draw);
     spinReel($('box-s'), $('reel-s'), pools.seasons, String(draw.season), function(){
+      if (!mine()) return;
       dressReel($('box-s'), draw.team);
       dressPage(draw.team);
       say('You drew ' + draw.season + '. Filling ' + draw.openSlots.join(', ') + '.');
@@ -3760,7 +3836,9 @@ function drawInto(fn){
   /* The club lands a beat after the season, which is the order the question is
      asked in: which year, and then whose team. */
   setTimeout(function(){
+    if (!mine()) return;
     spinReel($('box-c'), $('reel-c'), pools.clubs, E.teamName(draw.team), function(){
+      if (!mine()) return;
       /* BOTH boxes, and only once the CLUB has landed. Dressing the season box
          at the same moment its own reel stops would give the answer away a beat
          early: the color says Bulls before the second reel has said Bulls. */
@@ -3856,10 +3934,16 @@ function railTier(v){
   return RAIL_TIERS[RAIL_TIERS.length - 1];
 }
 
-function lastName(n){
-  var bits = String(n || '').split(' ');
-  return bits.length > 1 ? bits.slice(1).join(' ') : n;
-}
+/* THE PAGE HAS NO OPINION ABOUT A SURNAME ANY MORE.
+ *
+ * This used to be everything after the first token, which is right about
+ * "Jackson Jr." and wrong about "Ray Richardson", while the engine's
+ * lastNameOf took the final token, which is the other way round. So the court
+ * and the live board printed different names for one man, and a live game's
+ * verdict card read "Jaren Jackson Jr. had 32." over a chip reading "Jr.".
+ * The rule lives in engine.js now and this is the one call into it, kept as a
+ * name rather than inlined because the two courts and the rail all want it. */
+function lastName(n){ return E.lastNameOf(n); }
 
 function drawRail(){
   var el = $('rail');
@@ -5273,6 +5357,15 @@ function toSeason(){
      one of them had already been overtaken. */
   $('p-proj').textContent = st.archetype.name + ' · before tip-off, '
     + proj.typical + '-' + (82 - proj.typical) + ' and a ' + proj.titlePct + '% title';
+
+  /* THE FIVE MEN, so the roster is on screen for the season it is playing.
+     R.capOf rather than the constant, which is the one that stays true if a
+     mode is ever given a cap of its own, and R.remaining already nets off the
+     re-spin fees, so this is the money that actually left the budget rather
+     than the money that went on players. */
+  renderRoster($('p-slots'));
+  $('p-spend').textContent = money(R.capOf(run) - R.remaining(run))
+    + ' of ' + money(R.capOf(run)) + ' spent';
 }
 
 /* THE SEASON IS ALREADY PLAYED BEFORE THE FIRST CELL LIGHTS.

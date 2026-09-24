@@ -8827,6 +8827,114 @@ disappeared into it, which is the flat court arriving by a different door. At
 types are identical in both states**, so the .35s fade between clubs still
 interpolates.
 
+### Playing all four modes, which is a different question from checking them
+
+```
+node hoops/check-draft.mjs       sections 7, 8 and 9
+node hoops/verify.mjs            the name sweep and the club window
+```
+
+Every guard here asks whether a screen is CORRECT. Four modes played end to end
+at a phone, looking at each screen, found four things that are each correct in
+that sense and wrong on the glass. None of them threw, and the suite was green
+through all of them.
+
+**A MAN WAS CALLED "JR.".** `lastNameOf` took the final whitespace token, so
+Jaren Jackson Jr. was drawn as **Jr.** on the live floor chips, in every play by
+play row, in the box score, in the endgame call ("Give it to Jr.") and in the
+coach report. **43 men and 196 player-seasons, 1.19% of the pool**, among them
+Tim Hardaway Jr., Gary Trent Jr. and a Defensive Player of the Year.
+
+**It was the two readings side by side that made it obvious.** The page carried
+its own `lastName`, everything-after-the-first-token, which is right about a
+suffix and wrong about a middle name, so the verdict card read **"Jaren Jackson
+Jr. had 32."** directly above a chip reading **"Jr."**. One man, one screen, two
+formatters. There is one now and the page delegates to it, which also fixed
+`Nick Van Exel` reading as "Exel" and `Vinny Del Negro` as "Negro".
+
+The rule is the last token, plus the one before it when that token is a SUFFIX
+or when the token before THAT is a PARTICLE. **A particle is only a particle
+when a first name is left over**, or Del Beshore and Von Wafer lose theirs.
+**Three names in the pool it still gets wrong**, recorded rather than fixed:
+Metta World Peace, Luc Mbah a Moute and Jan van Breda Kolff each carry a
+multi-word surname no rule reaches. A list of three inside a formatter is the
+allowlist this repo keeps finding in the middle of a rule.
+
+**THE SCREEN BETWEEN THE DRAFT AND THE RESULT DID NOT KNOW THE TEAM.** It held
+one card of three numbers. Measured through the real page, its content ended at
+**237px of an 844px phone** before tip-off and 464px with the season running,
+against 780 to 3400 on every other screen, so the five men were absent from the
+last press of the draft until the results screen. It carries the roster now, and
+the same phone reads 690 and 918.
+
+**It is the roster and deliberately NOT the court.** There is a court on the
+draft screen, whose last state is these same five men, and another on the
+results screen. A third is 300px of a picture the reader just watched fill up,
+on the screen that also holds the game strip, and at 320x568 it is the
+difference between one scroll and two. It is drawn by the results screen's own
+painter rather than a copy, because two lists of one roster are two things that
+can disagree about a man.
+
+**A CLUB CHIP PROMISED RINGS THE WHEEL CANNOT REACH.** The One Franchise picker
+prints a season count off `R.clubSeasons`, which is the wheel's own answer, and
+its own comment argues at length for that: a chip printing the club's age would
+promise twenty-eight seasons that cannot be drawn. One line later the ring count
+was the franchise's ALL TIME total. Joined by a middot they read as one claim,
+so Boston said **"53 seasons · 18 rings"** with eleven of the eighteen outside
+the pool. **Eight clubs of thirty overstated it, and two promised a ring that is
+entirely unreachable**: Atlanta's is St Louis in 1958 and Sacramento's is
+Rochester in 1951, so a chip said "1 ring" about a wheel holding no championship
+season at all. The lineage is untouched, which is why this is a filter rather
+than a smaller number: Oklahoma City still counts Seattle's 1979, because that
+season IS on the wheel.
+
+**The guard's expectation comes off a different table from the painter's.** The
+chip filters `f.titles`, which is `LINEAGE_TITLES`; the check asks `E.wonTitle`
+over every season the wheel offers, which is `TITLE_AT`. Restating the painter's
+own filter would be two implementations of one answer. And the pure half in
+`verify.mjs` asserts only that the two counts still DISAGREE for some clubs,
+because "every ring inside the window is inside the window" is a sentence about
+its own filter and can only pass.
+
+#### And a reel landed into a run that had been thrown away
+
+Found by the club-picker guard, which only wanted to reach the picker and had to
+abandon a run to get there.
+
+A spin is about a second long, so pressing the wordmark mid-spin and then
+Abandon leaves two timers pointed at a run that is now null. The landing
+callback ran anyway, walked into `R.remaining(run)` and threw **"Cannot read
+properties of null (reading 'roster')"** out of an animation, on the home
+screen, with nothing on screen to say so.
+
+**THE THROW IS THE LOUD HALF AND NOT THE WORST HALF.** `dressPage` fires first,
+so the abandoned club painted the FRONT PAGE in its colours on the way out: a
+home screen wearing a team the player had just thrown away, which renders
+perfectly and reports nothing. `body.clubbed` is the whole of it, so that is
+what the guard reads rather than the exception.
+
+This is the identity check every other timer on this page already carries, which
+`show()` writes out for the live game and the bracket walk, arriving at the one
+animation that never had it. **The run OBJECT is compared rather than a flag**,
+so it catches a second run as well as no run: `startRun` builds a new one, and a
+spin from the old one landing into it would draw the wrong club on the right
+board. **`reelBusy` is cleared on the way out**, because it is the flag
+`drawInto` refuses on and a stale spin that simply returned would leave the NEXT
+draft unable to deal a board at all.
+
+#### THE SELECTOR AGAIN, AND THIS TIME IT WAS THE GUARD
+
+`check-draft.mjs`'s own section 6 writes down that `pending` sits on the PARENT,
+and its `draftPage` helper then waited on `#opts .ptile:not(.pending)`, which
+returns the moment the tiles EXIST. So section 5, which re-spins looking for a
+two-position man, read a board that had not landed, found `#b-respin` still
+disabled by `reelBusy`, broke out after ONE board and failed.
+
+**Measured rather than re-run until green**: 9.8% of single boards hold no
+two-position man and **0.03% of four-board searches do**, over 3000 real drafts.
+That is the whole difference between a guard that flakes about one run in ten
+and one that does not. Four selectors in that file, fixed in one commit.
+
 ### A straight column of digits is a FEATURE, not a typeface
 
 This game was set in a code face. `--mono` was `ui-monospace` and **39 rules
