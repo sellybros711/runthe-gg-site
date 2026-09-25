@@ -1,0 +1,32 @@
+<!doctype html>
+<!-- THE RUN THE TOUR LOGO, IN PIXELS. `node golf/build-logo.mjs` renders every logo file from this page.
+
+     The drawing itself is NOT in this file. It lives in the game (golf/index.html, between PIXK BEGIN and
+     PIXK END) because the in-game share cards draw the same title, and one drawing in two places is two
+     drawings the first time either is touched. This page reads that block out of the game and runs it.
+
+     A retro game title (owner picked it from three directions): chunky gold TOUR with a 16-bit extrude,
+     the O is a golf ball, the letters stand on a mown putting green, and the pin is in the cup at the end
+     of it with its flag waving. Every file is one of the kit's grids at a WHOLE scale:
+       lockup  104 x 54   the title (loading screen, share cards, the link preview)
+       icon32   32 x 32   the app icons and a 32px tab
+       icon16   16 x 16   a 16px tab and the header, drawn again at that size rather than scaled down -->
+<html><head><meta charset="utf-8"><meta name="robots" content="noindex, nofollow"><title>Run The Tour logo</title>
+<style>html,body{margin:0;background:#12281c} canvas{image-rendering:pixelated;margin:14px;vertical-align:top}</style></head>
+<body>
+<script>
+(async function(){
+  const src=await (await fetch('/golf/index.html',{cache:'no-store'})).text();
+  const a=src.indexOf('/* ==================== PIXK BEGIN'), b=src.indexOf('/* ==================== PIXK END ==================== */');
+  if(a<0||b<0) throw new Error('the pixel kit markers are missing from golf/index.html');
+  const PIXK=new Function(src.slice(a,b)+'\nreturn PIXK;')();
+  window.PIXK=PIXK;
+  // the four frames of the flag, a quarter turn of the wave apart
+  window.PHASES=[0,Math.PI/2,Math.PI,Math.PI*1.5];
+  const add=c=>document.body.appendChild(c);
+  PHASES.forEach(p=>add(PIXK.toCanvas(PIXK.lockup(p),4)));
+  add(PIXK.toCanvas(PIXK.icon(32,0),6)); add(PIXK.toCanvas(PIXK.icon(16,0),6));
+  window.__markReady=true;
+})();
+</script>
+</body></html>

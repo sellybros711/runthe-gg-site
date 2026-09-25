@@ -1,0 +1,119 @@
+<!doctype html>
+<!-- THE LINK PREVIEW (wrestling/og.png), IN PIXELS. `node wrestling/build-logo.mjs` renders it with the
+     logo files.
+
+     It's what a chat app draws when somebody pastes a link to the game, so for most people it's the
+     first thing they ever see of it. It's painted with the game's own pixel kit (read out of
+     wrestling/index.html, between RPK BEGIN and RPK END) on a 400 x 210 grid at 6x = 2400 x 1260.
+
+     THE CHAMPION IS THE GAME'S. The builder opens the game, draws the retro pixel wrestler with
+     wrestlerSVGRetro(), and hands it here with the stat names and the OVR the game's own ovr() gives
+     those stats. This page waits for them, so opened on its own it draws nothing. -->
+<html><head><meta charset="utf-8"><meta name="robots" content="noindex, nofollow"><title>Run The Ropes link preview</title>
+<style>html,body{margin:0;background:#000} canvas{display:block;width:1200px;image-rendering:pixelated}</style></head>
+<body>
+<script>
+(async function(){
+  const src=await (await fetch('/wrestling/index.html',{cache:'no-store'})).text();
+  const a=src.indexOf('/* ==================== RPK BEGIN'), b=src.indexOf('/* ==================== RPK END ==================== */');
+  if(a<0||b<0) throw new Error('the pixel kit markers are missing from wrestling/index.html');
+  const P=new Function(src.slice(a,b)+'\nreturn RPK;')();
+  while(!window.__HERO) await new Promise(r=>setTimeout(r,50));
+  const H=window.__HERO;
+  const GW=400, GH=210, U=6;
+  const cv=document.createElement('canvas'); cv.width=GW*U; cv.height=GH*U; const ctx=cv.getContext('2d');
+  ctx.imageSmoothingEnabled=false;
+  const BOX=window.BOX={};
+
+  // the house, with the light on the ring
+  P.draw(ctx,P.arena(GW,GH,{ringTop:0.84, spots:[[0.74,0.2]], flashes:34}),0,0,U);
+  // a dark wash down the left so the words read
+  const wash=P.grid(GW,GH);
+  for(let y=0;y<GH;y++) for(let x=0;x<236;x++){ const t=x/236; if(((x+y)%2===0) && t>0.86) continue; wash.put(x,y,`rgba(8,3,5,${(0.5*(1-t*0.7)).toFixed(3)})`); }
+  P.draw(ctx,wash,0,0,U);
+
+  const top=P.grid(GW,GH), txt=P.grid(GW,GH);
+  // the frame: gold on the top and left, red on the bottom and right
+  for(let y=0;y<GH;y++) for(let x=0;x<GW;x++){ const d=Math.min(x,y,GW-1-x,GH-1-y);
+    if(d===0||d===3) top.put(x,y,P.K); else if(d<=2) top.put(x,y,(x+y<(GW+GH)/2)?P.GOLD[2]:P.RED[3]); }
+
+  // the title, at 2x
+  const lk=P.lockup(), big=P.grid(P.LW*2,P.LHT*2);
+  for(let y=0;y<big.h;y++) for(let x=0;x<big.w;x++){ const c=lk.get(x>>1,y>>1); if(c) big.put(x,y,c); }
+  P.stamp(top,big,12,8); BOX.title=[12,8,12+big.w,8+big.h];
+
+  // the promise
+  const goldRow=j=>j<2?P.GOLD[1]:j<5?P.GOLD[2]:P.GOLD[3];
+  const e1=P.text(txt,'BUILD A WRESTLER.',18,136,{scale:2,bold:true,color:P.CREAM[0]});
+  const e2=P.text(txt,'WIN THE BELT.',18,158,{scale:2,bold:true,color:goldRow});
+  BOX.promise=[18,136,Math.max(e1,e2),172];
+
+  // the right side: three stats, then the champion in the ring with his rating on a plate
+  const px0=246, pw=144, mid=px0+pw/2;
+  const pan=P.grid(GW,GH), py0=10, ph=66;
+  for(let y=py0;y<py0+ph;y++) for(let x=px0;x<px0+pw;x++){
+    const cx=Math.min(x-px0,px0+pw-1-x), cy=Math.min(y-py0,py0+ph-1-y); if(cx+cy<3) continue;
+    pan.put(x,y,(cx===0||cy===0||cx+cy===3)?'rgba(246,197,61,.65)':'rgba(10,4,6,.86)'); }
+  P.draw(ctx,pan,0,0,U);
+  { const t='BOOK YOUR CAREER', o={bold:true}; P.text(txt,t,Math.round(mid-P.textW(t,o)/2),py0+5,Object.assign({color:P.RED[1]},o)); }
+  H.rows.forEach(([k,v],i)=>{
+    const ry=py0+16+i*16, rx=px0+6, rw=pw-12;
+    for(let y=ry;y<ry+14;y++) for(let x=rx;x<rx+rw;x++){ const e=(y===ry||y===ry+13||x===rx||x===rx+rw-1); if((y===ry||y===ry+13)&&(x===rx||x===rx+rw-1)) continue;
+      top.put(x,y,e?P.GOLD[3]:'rgba(0,0,0,.35)'); }
+    P.text(txt,k,rx+5,ry+4,{bold:true,color:P.CREAM[0]});
+    const bx=rx+rw-20, by=ry+2;
+    for(let y=by;y<by+10;y++) for(let x=bx;x<bx+18;x++){ const j=y-by; top.put(x,y,j<1?P.GOLD[0]:j<5?P.GOLD[2]:j<8?P.GOLD[3]:P.GOLD[4]); }
+    P.text(top,String(v),bx+Math.round((18-P.textW(String(v),{bold:true}))/2),by+2,{bold:true,color:'#2a1604'});
+  });
+  BOX.panel=[px0,py0,px0+pw,py0+ph];
+
+  // the champion: the game's own pixel figure, one cell a unit, standing on the canvas
+  const img=new Image(); img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(H.svg);
+  await img.decode();
+  const fc=document.createElement('canvas'); fc.width=H.vb[2]; fc.height=H.vb[3];
+  const fx=fc.getContext('2d'); fx.imageSmoothingEnabled=false; fx.drawImage(img,0,0,fc.width,fc.height);
+  const fig=P.fromCanvas(fc);
+  // his own bounds, read off the pixels, so the feet land on the canvas whatever the pose
+  let bb=[fig.w,fig.h,0,0]; for(let y=0;y<fig.h;y++) for(let x=0;x<fig.w;x++) if(fig.px[y*fig.w+x]){ bb=[Math.min(bb[0],x),Math.min(bb[1],y),Math.max(bb[2],x+1),Math.max(bb[3],y+1)]; }
+  const rTop=GH-30;
+  const figX=Math.round(mid-(bb[0]+bb[2])/2)-18, figY=rTop-bb[3]+2;
+  const hero=P.grid(GW,GH); P.stamp(hero,fig,figX,figY); P.draw(ctx,hero,0,0,U);
+  BOX.hero=[figX+bb[0],figY+bb[1],figX+bb[2],figY+bb[3]];
+  BOX.apron=[246,rTop+3,346,rTop+6];
+
+  // the ring in front of him: the canvas edge, the apron and the near ropes
+  const ring=P.grid(GW,GH), rx0=246, rx1=346, ropes=[rTop-30,rTop-19,rTop-8];
+  for(let x=rx0;x<rx1;x++){ ring.put(x,rTop,P.MAT.top); ring.put(x,rTop+1,P.MAT.line);
+    ring.put(x,rTop+2,P.GOLD[3]); for(let y=rTop+3;y<rTop+6;y++) ring.put(x,y,y<rTop+5?P.APRON[0]:P.APRON[1]); }
+  ropes.forEach(y=>{ for(let x=rx0;x<rx1;x++){ ring.put(x,y,P.ROPE[0]); ring.put(x,y+1,P.ROPE[2]); } });
+  [rx0,rx1-3].forEach(px=>{ for(let y=rTop-38;y<rTop;y++){ ring.put(px,y,P.POST[0]); ring.put(px+1,y,P.POST[1]); ring.put(px+2,y,P.POST[2]); }
+    ropes.forEach(y=>{ ring.rect(px-1,y-1,5,4,P.PAD[1]); ring.rect(px-1,y-1,5,1,P.PAD[0]); }); });
+  P.outline(ring,P.K); P.draw(ctx,ring,0,0,U);
+
+  // his rating: the plate, the number under it, and what it is
+  const bcx=369, bcy=98, br=13;
+  const badge=P.grid(GW,GH); P.plate(badge,bcx,bcy,br);
+  const ov=String(H.ovr), oo={scale:3,bold:true};
+  P.text(badge,ov,Math.round(bcx-P.textW(ov,oo)/2),bcy+br+5,Object.assign({color:j=>j<2?P.GOLD[0]:j<4?P.GOLD[1]:j<6?P.GOLD[2]:P.GOLD[3]},oo));
+  const lo={};
+  [['OVR',P.CREAM[0],bcy+br+29],['YOUR',P.CREAM[0],bcy+br+41],['CHAMPION',P.GOLD[1],bcy+br+50]].forEach(([t,c,y])=>{
+    P.text(badge,t,Math.round(bcx-P.textW(t,lo)/2),y,Object.assign({color:c},lo)); });
+  P.outline(badge,P.K); P.draw(ctx,badge,0,0,U);
+  const cw=P.textW('CHAMPION',lo);
+  BOX.badge=[Math.round(bcx-Math.max(cw,br*2)/2),bcy-br,Math.round(bcx+Math.max(cw,br*2)/2),bcy+br+57];
+
+  // the address, on a strip across the foot of the left side
+  { const t1='PLAY FREE AT ', t2='RUNTHE.GG/WRESTLING', o2={scale:2}, w=P.textW(t1+t2,o2), bx=Math.round((GW-w-16)/2), by=187;
+    for(let y=by;y<by+17;y++) for(let x=bx;x<bx+w+16;x++){ const e=(y===by||y===by+16||x===bx||x===bx+w+15); if((y===by||y===by+16)&&(x===bx||x===bx+w+15)) continue;
+      top.put(x,y,e?'rgba(246,197,61,.7)':'rgba(10,4,6,.9)'); }
+    const xe=P.text(txt,t1,bx+8,by+2,Object.assign({color:P.CREAM[0]},o2));
+    P.text(txt,t2,xe,by+2,Object.assign({color:P.GOLD[2]},o2));
+    BOX.foot=[bx,by,bx+w+16,by+17]; }
+  [[236,24,1],[200,118,1],[160,126,1]].forEach(([x,y,s])=>P.star(top,x,y,s));
+  P.outline(top,P.K); P.draw(ctx,top,0,0,U);
+  P.outline(txt,P.K); P.draw(ctx,txt,0,0,U);
+  document.body.appendChild(cv);
+  window.OG=cv; window.__ogReady=true;
+})();
+</script>
+</body></html>

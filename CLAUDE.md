@@ -324,6 +324,48 @@ that it could not tell which module `E` was on a hoops page that is entirely cor
 The rule keys on the comparison rather than on the word, because the stub below it writes
 `API_VERSION:BOARD_VERSION` into itself and would otherwise count as a pin.
 
+## The Perfect Season front page is one switcher and one button
+
+`#s-intro` in `football/index.html`. The quick drafts are one question with three answers,
+so they are one control: `#hp-mode` (Offense, Defense, Full Team), then `#b-start`, which
+says Spin your first pick and calls whichever door the switcher names. The longer modes sit
+under it as a two-column shelf in `#hp-longer`.
+
+**THE OLD DOORS ARE STILL IN THE MARKUP AND STILL DO THE WORK.** `#b-start` calls
+`beginDraft`, `beginDefenseDraft` or `fullDoor`, the same functions `#b-start-off`,
+`#b-start-def` and `#b-start-full` always called, so the account wall, the day's allowance
+and a saved Full Team season are all decided exactly where they were. `#hp-split` and
+`#b-start-full` are kept and never drawn: the pair for anything that presses it directly,
+the Full Team door because `ensureFullButton` is where that mode's save and meter state
+lives, and `paintHomeMode` reads it into the tab note, the button label and the line under
+the button. Delete either and nothing throws; the Full Team tab just stops knowing whether
+there is a run to resume.
+
+**A TAB IS DRAWN ONLY FOR A MODE THIS ACCOUNT CAN PLAY**, asked of `canPlayDefense` and
+`canPlayFull`, the two calls that used to decide whether those doors existed. With Offense
+alone there is no question and the switcher goes. The choice is remembered on the device
+(`ps_home_mode`), and a remembered mode the account can no longer play falls back to
+Offense rather than to a hidden tab.
+
+**THE FIELD FOLLOWS THE SWITCHER, and it is twelve chips that are never torn down.** Six a
+side, updated in place by `heroChips`, so a switch changes where each one stands and the
+CSS transition on `left` and `top` does the rest: the side you left runs off its own end,
+the side you picked runs on, and Full Team folds both toward one line with the draft's own
+`fullY()`. Rebuilt instead, a switch is a cut. The markings are the draft field's own
+(`fieldMarkings`) in a `.hmk` layer that fades, so the grass never repaints under men who
+are mid-run. On Full Team the hero only signs where a name has room (`HERO_FULL_OK`): a
+lineman's name lands on the receiver across the line, and the back's runs off the bottom.
+
+**SHORT SCREENS KEEP THE BUTTON ABOVE THE FOLD**, which this page has always measured. The
+switcher costs about sixty pixels the old pair did not, so under 760 tall the name goes
+back to one line and the slot list stands down, under 640 the subtitle goes, and under 600
+the kicker. Measured: 320x568, 360x640, 375x667, 390x664 and 844x390 all land Spin on
+screen. Re-measure after touching anything above it.
+
+**The name is two lines on a tall phone and on a desktop**, "Season" in red, and back to
+one line on a short phone. Its size is `min(14vw,84px)` rather than the old one-line fit,
+because "THE PERFECT" is eleven of the eighteen characters.
+
 ## The football game's badge cabinet
 
 `football/achievements.js` is the badge catalog for The Perfect Season, and every badge in
@@ -4911,8 +4953,65 @@ caught it. The promo reader's `TONE` lists and the scene lint's `SITS` regex are
 the same shape. Before a wording sweep, grep for `.test(` over prose and write
 both spellings into any regex that reads a sentence the game produced.
 
+### The brand is pixel art, and Run The Tour's title was the lead rather than the template
+
+```
+(nohup python3 -m http.server 8080 &) ; node wrestling/build-logo.mjs
+```
+
+Asked for with golf's pixel title as the inspiration and not as something to copy. Tour stands
+gold letters on a putting green, with a ball for the O and the pin at the end. This is a wrestling
+title card:
+- ROPES in red block letters with a straight drop, and the O is a championship plate.
+- Three ring ropes run behind the word between two turnbuckle posts.
+- It all stands on the ring canvas over a navy apron.
+- RUN THE sits on a black and gold nameplate.
+
+The icon is a ring corner with the plate in front of it.
+
+**One kit, one drawing.** The palette, a 5 x 7 font, the title, the icon and an arena scene live in
+the game between `RPK BEGIN` and `RPK END`. `logo-source.html` and `og-source.html` lift that block
+out by those markers, which is golf's arrangement. So the home title, the site bar mark, the logo
+files, the link card and the share card can never become five versions of one mark.
+
+| | where |
+|---|---|
+| the home title and the site bar mark | `paintBrand()`, painting every `canvas[data-rpk]` |
+| the logo files | `lockup.png`, `logo.png`, `favicon-16/32/48.png` |
+| the phone icons | `icon-180`, `-192`, `-512`, `icon-maskable-512.png`, and `manifest.webmanifest` |
+| the link card | `og.png`, from `og-source.html` |
+| the share card | `drawShareCard()`, behind Share card on the flip card |
+
+**A cell is a whole number of device pixels, never CSS pixels.** On a 2.625 phone a 3x title in CSS
+is 7.875 device pixels a cell, which is two widths of pixel and mush. `paintBrand()` picks the device
+cell first and lets the CSS size follow, so the title can come out a pixel off a round number and is
+hard edged everywhere.
+
+**The files have to be what the kit draws.** Section 4q of `verify.mjs` repaints the favicon and the
+lockup from the kit and compares them cell for cell with the committed files. An edit to the kit that
+nobody rebuilt fails there, rather than leaving a tab showing last week's mark while the page paints
+this week's.
+
+**The wrestler on the link card is the game's.** The builder opens the real page, draws the look it
+carries with `wrestlerSVGRetro()`, reads the stat names out of `ATTRS`, and works out the OVR with
+`ovr()`. So the figure is one the game draws and the rating is one it would give those stats. The
+card reports a box for every block, and the builder refuses to write if one is over the frame or on
+top of another. `PREVIEW=path` writes the card anyway, for looking at a failure. That is how the url
+strip was caught running under the champion.
+
+**The share card is head and shoulders, never the whole figure.** Golf crops its golfer to a bust
+because a full standing figure can trip a social site's sensitivity filter on upload, and a wrestler
+in trunks is that problem twice over. A champion carries the belt over the shoulder on the card,
+because at the waist the crop cuts it off. The figure reaches the grid through an `Image`, which can
+fail without throwing, so the card records it in `cv._drew` and 4q reads that.
+
+**The tile labels are chosen to fit, not cut.** A 31 cell tile holds five letters of this font, and
+the first version truncated RECORD and EARNED to RECOR and EARNE. They are W-L, BELTS, POP and CASH.
+
 The game is unlisted: not linked from the homepage, nav or sitemap, and
-noindexed. Keep it that way unless asked.
+noindexed. Keep it that way unless asked. **The og tags do not change that.** A
+robots tag tells a crawler not to index and does nothing to a chat app unfurling
+a link somebody was handed, which is how an unlisted game reaches its testers.
 
 ## MythiBall, the baseball game
 
@@ -11142,6 +11241,7 @@ node baseball/check-home.mjs      the front page's two designs, and the reel und
 node baseball/check-staff.mjs     the All-Time Staff assignment and its blast radius
 node baseball/check-badges.mjs    every badge is reachable, against real runs
 node baseball/check-run.mjs       a whole run, in a browser, to the screen it ends on
+node baseball/build/icons.mjs     every icon, drawn from the one mark
 ```
 
 ### IT IS SERVED AND UNLISTED, and a launch is four edits rather than one
@@ -13160,6 +13260,41 @@ symbol's viewBox went to 210x100 while the four `<use>` instances kept
 frame, which is part of why the stretch rendered small and thin. Two viewBoxes
 describing one drawing are the `?v=` pair's problem in SVG: nothing throws, and
 the only symptom is art that looks wrong. They are the same 100x100 now.
+
+### The mark is a diamond with a seam across it, and every icon comes from one drawing
+
+```
+node baseball/build/icons.mjs     every icon size, the header mark and the share card mark
+```
+
+The game is named for the field and the stone, so the mark is both: a cut diamond
+with a baseball seam stitched across it. It replaced a flat ball on an infield that
+said nothing about the name and matched none of the site's other games. Chosen by
+the owner from four concepts (a puzzle ball in the football icons' colours, this
+stone, a 70s patch and a pixel ball).
+
+**Six icon files had no source anywhere in the repo**, which is the share card's
+history two sections down arriving at the icons. So `icons.mjs` draws them all from
+one SVG function, and a change to the mark is one edit and one run.
+
+**The background is the page's own cream**, at the owner's asking. On cream a pale
+stone washes out, so it carries a dark outline and the sparkles are the page's gold.
+
+**The favicon is a different drawing, not a smaller one.** At 32px the stitches are
+a pixel each and smear, so the small variant keeps the silhouette, the facets and the
+seam as one line. **The maskable icon keeps the stone inside Android's 80% safe
+circle.**
+
+**The share card draws a PNG and the header draws the SVG.** `mark-256.png` is
+preloaded at boot and drawn either side of the title. A canvas that draws an SVG
+image can refuse to export in some browsers, and then Share does nothing. A
+same-origin PNG never does. If it has not loaded yet the card falls back to the two
+stars it always had.
+
+**Four version pins moved together**: the icons and the manifest to `v=2`, and the
+link preview to `v=3` on both pages. The manifest had also been promising a $245M
+cap since before the cap moved to $170M. No checker reads a manifest, so nothing
+caught it.
 
 ### The share card had no source and no builder, and was set in a fallback
 

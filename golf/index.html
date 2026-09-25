@@ -14,7 +14,7 @@
 <meta property="og:url" content="https://runthe.gg/golf/">
 <meta property="og:title" content="Run The Tour, Free Daily Golf Simulation Game">
 <meta property="og:description" content="A free daily golf simulation game. Draft a skill from each real pro to build your own golfer, then beat the pro on a new course every day, run a full career, and play head-to-head online.">
-<meta property="og:image" content="https://runthe.gg/golf/og.png?v=8">
+<meta property="og:image" content="https://runthe.gg/golf/og.png?v=10">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="Run The Tour, a free daily golf simulation game. Draft skills from real pro golfers and beat the daily course.">
@@ -22,7 +22,7 @@
 <meta name="twitter:site" content="@RunTheGG">
 <meta name="twitter:title" content="Run The Tour, Free Daily Golf Simulation Game">
 <meta name="twitter:description" content="A free daily golf simulation game. Draft a skill from each real pro to build your own golfer, then beat the pro on a new course every day, run a full career, and play head-to-head online.">
-<meta name="twitter:image" content="https://runthe.gg/golf/og.png?v=8">
+<meta name="twitter:image" content="https://runthe.gg/golf/og.png?v=10">
 <!-- Structured data: a VideoGame + BreadcrumbList graph so search engines and AI crawlers can render
      rich results (free-game price signal, genre/platform) for the game's marquee page. -->
 <script type="application/ld+json">
@@ -33,8 +33,10 @@
 {"@type":"ListItem","position":2,"name":"Run The Tour","item":"https://runthe.gg/golf/"}]}
 ]}
 </script>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 76'%3E%3Cpath d='M32 2 L60 12 V40 C60 58 47 68 32 74 C17 68 4 58 4 40 V12 Z' fill='%2311432f' stroke='%23cda24a' stroke-width='3'/%3E%3Cpath d='M26 17 v36' stroke='%23e9d8ac' stroke-width='2.6' stroke-linecap='round'/%3E%3Cpath d='M26 18 h16 l-4 5 4 5 h-16 z' fill='%23EBA61F'/%3E%3Cellipse cx='32' cy='57' rx='17' ry='5.4' fill='none' stroke='%23cda54a' stroke-width='1.6'/%3E%3Ccircle cx='38' cy='57' r='2.2' fill='%23f4ecd9'/%3E%3C/svg%3E">
-<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png?v=3">
+<link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png?v=3">
+<link rel="icon" type="image/png" sizes="48x48" href="favicon-48.png?v=3">
+<link rel="apple-touch-icon" href="icon-180.png?v=3">
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -151,19 +153,20 @@ window.GA_ID='G-L29P5MRWKE';
     background:#06200f; background-image:var(--pagebg);
     opacity:1; transition:opacity .42s ease}
   #rtt-boot.gone{opacity:0; pointer-events:none}
+  @media (max-width:359px){ .boot-crest{--fw:208px; height:108px} }
   .boot-in{display:flex; flex-direction:column; align-items:center; text-align:center; width:100%; max-width:340px}
-  .boot-crest{width:86px; height:102px; display:block;
+  /* the pixel title, at a whole multiple of its 104 x 54 grid (3x, or 2x on a narrow phone), with nearest
+     neighbour scaling so every pixel stays square */
+  /* The flag WAVES here: lockup-wave.png is four frames of the title side by side, a quarter turn of the
+     wave apart, and steps() walks through them without ever showing a blend of two. --fw is one frame's
+     width on screen, so the strip is four of them and the walk ends one strip to the left. */
+  .boot-crest{--fw:312px; width:var(--fw); height:162px; display:block; image-rendering:crisp-edges; image-rendering:pixelated;
+    background:url(lockup-wave.png?v=1) 0 0 / calc(var(--fw) * 4) 100% no-repeat;
     filter:drop-shadow(0 0 14px rgba(241,208,74,.20)) drop-shadow(0 8px 20px rgba(0,0,0,.5));
     animation:bootRise .5s cubic-bezier(.22,.9,.26,1) both,
-              bootFloat 3.8s cubic-bezier(.4,0,.2,1) .5s infinite}
-  .boot-wm{margin-top:16px; line-height:1;
-    animation:bootRise .5s cubic-bezier(.22,.9,.26,1) .06s both}
-  .boot-wm b{display:block; font-family:var(--display); font-weight:400; font-size:15px;
-    letter-spacing:.30em; text-indent:.30em; color:var(--cream); opacity:.9}
-  .boot-wm i{display:block; margin-top:3px; font-family:var(--display); font-style:normal; font-weight:400;
-    font-size:clamp(38px,12vw,50px); letter-spacing:.06em; text-indent:.06em;
-    background:var(--gold-grad); -webkit-background-clip:text; background-clip:text;
-    -webkit-text-fill-color:transparent; color:transparent}
+              bootFloat 3.8s cubic-bezier(.4,0,.2,1) .5s infinite,
+              bootWave .72s steps(4) infinite}
+  @keyframes bootWave{from{background-position:0 0} to{background-position:calc(var(--fw) * -4) 0}}
   .boot-bar{position:relative; width:min(228px,64vw); height:5px; margin-top:24px; border-radius:99px;
     background:rgba(244,227,201,.10); overflow:hidden;
     animation:bootRise .5s cubic-bezier(.22,.9,.26,1) .12s both}
@@ -188,11 +191,10 @@ window.GA_ID='G-L29P5MRWKE';
   }
   @keyframes bootSweep{from{transform:translateX(-100%)} to{transform:translateX(100%)}}
   @media (prefers-reduced-motion:reduce){
-    .boot-crest,.boot-bar,.boot-say,.boot-wm{animation:none}
+    .boot-crest,.boot-bar,.boot-say{animation:none}
     .boot-bar > i::after{animation:none; opacity:0}
     .boot-bar > i{transition:none}
     #rtt-boot{transition:none}
-    .boot-wm{transition:none}
   }
   #app{max-width:none; margin:0; padding:0 env(safe-area-inset-right, 0px) calc(36px + env(safe-area-inset-bottom, 0px)) env(safe-area-inset-left, 0px)}
 
@@ -259,6 +261,9 @@ window.GA_ID='G-L29P5MRWKE';
   .banner{display:flex; align-items:center; gap:10px; max-width:780px; margin:0 auto; position:relative}
   .banner .icobtn{width:36px;height:36px;font-size:17px; flex:0 0 auto}
   .bnbrand{flex:1 1 auto; min-width:0; display:flex; justify-content:center; align-items:center; overflow:hidden; background:none;border:0;padding:0;cursor:pointer}
+  .bnmark{width:24px; height:24px; flex:0 0 auto; margin-right:7px; image-rendering:crisp-edges; image-rendering:pixelated}
+  @media (max-width:380px){ .bnmark{width:20px; height:20px; margin-right:5px} }
+  .bnbrand.nomark .bnmark{display:none}
   .bnwm{display:inline-flex; align-items:baseline; gap:5px; font-family:var(--serif); text-transform:uppercase; white-space:nowrap; line-height:1; max-width:100%; overflow:hidden}
   .bnwm b{font-weight:700; font-size:17px; letter-spacing:.05em; color:var(--oncard)}   /* CS424: match "Tour" size */
   .bnwm i{font-style:normal; font-weight:700; font-size:17px; letter-spacing:.05em; color:var(--gold)}
@@ -1708,7 +1713,7 @@ window.GA_ID='G-L29P5MRWKE';
   .avatarfig canvas{border-radius:50%}
   /* CS353: retro pixel golfer, crisp scaling, no border-radius crop, contain within the sized box */
   .pxfig{filter:none}
-  .pxfig .pximg{width:100%; height:100%; object-fit:contain; image-rendering:pixelated; image-rendering:crisp-edges; border-radius:0; filter:drop-shadow(0 3px 5px rgba(0,0,0,.45))}
+  .pxfig .pximg{width:100%; height:100%; object-fit:contain; image-rendering:crisp-edges; image-rendering:pixelated; border-radius:0; filter:drop-shadow(0 3px 5px rgba(0,0,0,.45))}
   /* CS410, the EFFECT LAYER: animated glow auras. The glow is a drop-shadow, so it hugs the golfer's silhouette
      and works on any avatar img (the wrapped .pximg and the bare .pxfigsm). --fxc = per-effect glow color. */
   .pxfig .pximg[class*="fx-"], .pxfigsm[class*="fx-"], img.fxa[class*="fx-"]{ animation:fxGlow 2.4s ease-in-out infinite; }
@@ -3513,16 +3518,7 @@ h2{font-size:11px;letter-spacing:.04em}
      than the game's crestSVG(), which lives inside that script) so it needs nothing to be ready. -->
 <div id="rtt-boot" role="status" aria-live="polite">
   <div class="boot-in">
-    <svg class="boot-crest" viewBox="0 0 64 76" fill="none" aria-hidden="true">
-      <path d="M32 2 L60 12 V40 C60 58 47 68 32 74 C17 68 4 58 4 40 V12 Z" fill="#0b2e1f" stroke="#d3bd53" stroke-width="2.6"/>
-      <path d="M32 5 L57 14 V40 C57 56 45.5 65 32 70.5 C18.5 65 7 56 7 40 V14 Z" fill="none" stroke="#cda54a" stroke-width="0.8" opacity="0.55"/>
-      <path d="M26 17 v36" stroke="#e9d8ac" stroke-width="2.6" stroke-linecap="round"/>
-      <path d="M26 18 h16 l-4 5 4 5 h-16 z" fill="#F1D04A"/>
-      <ellipse cx="32" cy="57" rx="17" ry="5.4" fill="none" stroke="#cda54a" stroke-width="1.6"/>
-      <circle cx="26" cy="57" r="1.7" fill="#0a2a20"/>
-      <circle cx="38" cy="57" r="2.2" fill="#f4ecd9"/>
-    </svg>
-    <div class="boot-wm" id="boot-wm"><b>RUN THE</b><i>TOUR</i></div>
+    <div class="boot-crest" role="img" aria-label="Run The Tour"></div>
     <div class="boot-bar" id="boot-bar" role="progressbar" aria-label="Loading Run The Tour"
          aria-valuemin="0" aria-valuemax="100" aria-valuenow="8"><i id="boot-fill" style="width:8%"></i></div>
     <p class="boot-say" id="boot-say">Loading the course</p>
@@ -3738,89 +3734,128 @@ const ICONS={
   cart:'<circle cx="9" cy="20" r="1.5"/><circle cx="17" cy="20" r="1.5"/><path d="M3 4h2l2.2 11.2a1.5 1.5 0 0 0 1.5 1.2h8.1a1.5 1.5 0 0 0 1.5-1.2L21 8H6" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>'
 };
 const PXICONS={
-"ticket":["..................","..................","..................","..mmmmmmmmmmmmmm..","..m............m..","..m........m...m..","..m.mmmmm......m..","..m........m...m..","...m..........m...","...m..........m...","..m............m..","..m........m...m..","..m.mmmmm......m..","..m........m...m..","..mmmmmmmmmmmmmm..","..................","..................",".................."],
-"skip":["..................","..................","..................","..................","..m....m.....mm...","..mm...mm....mm...","..mmm..mmm...mm...","..mmmm.mmmm..mm...","..mmmmmmmmmm.mm...","..mmmmmmmmmm.mm...","..mmmm.mmmm..mm...","..mmm..mmm...mm...","..mm...mm....mm...","..m....m.....mm...","..................","..................","..................",".................."],
-"clock":["..................","........mm........","........mm........",".....mmmmmmmm.....","....mm......mm....","...mm........mm...","..mm..........mm..","..m............m..","..m.....m......m..","..m.....m......m..","..m.....mmmm...m..","..m............m..","..mm..........mm..","...mm........mm...","....mm......mm....",".....mmmmmmmm.....","..................",".................."],
-"arrowLeft":["..................","..................","..................","..................",".......mm.........","......mmm.........",".....mmm..........","....mmm...........","...mmmmmmmmmmmm...","...mmmmmmmmmmmm...","....mmm...........",".....mmm..........","......mmm.........",".......mm.........","..................","..................","..................",".................."],
-"arrowUR":["..................","..................","..................","..................","......mmmmmmm.....",".....mmmmmmmmm....","..........mmmm....",".........mmmmm....","........mmm.mm....",".......mmm..mm....","......mmm...mm....",".....mmm....mm....","....mmm.....m.....",".....m............","..................","..................","..................",".................."],
-"arrowUp":["..................","..................","..................","........mm........",".......mmmm.......","......mmmmmm......",".....mmmmmmmm.....","....mmm.mm.mmm....","....mm..mm..mm....","........mm........","........mm........","........mm........","........mm........","........mm........","........mm........","........mm........","..................",".................."],
-"bag":[".......mmmm.......","......mmmmmm......",".....mm....mm.....",".....m......m.....","....mm......mm....","....mm......mm....","...mmmmmmmmmmmm...","...mmmmmmmmmmmm...","...mmmmmmmmmmmm...","...mmmmmmmmmmmm...","...mmmmmmmmmmmm...","...mmmmmmmmmmmm...","...mmmmmmmmmmmm...","...mmmmmmmmmmmm...","...mmmmmmmmmmmm...","..................","..................",".................."],
-"ball":["..................",".......mmmm.......",".....mmmmmmmm.....","....mm.m.m.mm.....","...m.m.m.m.m.m....","...mm.m.m.m.mm....","..m.m.m.m.m.m.m...","..mm.m.m.m.m.mm...","..m.m.m.m.m.m.m...","..mm.m.m.m.m.mm...","...m.m.m.m.m.m....","...mm.m.m.m.mm....","....mm.m.m.mm.....",".....mmmmmmmm.....",".......mmmm.......","..................","..................",".................."],
-"bolt":["..................",".........mmm......","........mmm.......",".......mmm........","......mmm.........",".....mmmmmmmm.....","....mmmmmmmm......","........mmm.......",".......mmm........","......mmm.........",".....mmmmmmmm.....","....mmmmmmm.......",".......mmm........","......mmm.........",".....mmm..........","....mm............","..................",".................."],
-"book":["..................","..................","...mmmmm.mmmmmm...","..mmmmmmmmmmmmmm..","..mm....mm....mm..","..mm....mm....mm..","..mm....mm....mm..","..mm....mm....mm..","..mm....mm....mm..","..mm....mm....mm..","..mm....mm....mm..","..mm....mm....mm..","..mmmmm.mm.mmmmm..","..mmmmmmmmmmmmmm..","........mm........","..................","..................",".................."],
-"brick":["..................","..................","..................","..................",".mmmmmmmmmmmmmmmm.",".mm...mmmmmm...mm.",".mm...mmmmmm...mm.",".mm...mmmmmm...mm.",".mmmmmmmmmmmmmmmm.",".mmmmmmmmmmmmmmmm.",".mm..mm....mm..mm.",".mm..mm....mm..mm.",".mm..mm....mm..mm.",".mmmmmmmmmmmmmmmm.","..................","..................","..................",".................."],
-"bug":["..................","..................",".......mmmm.......","......mm..mm......","..m...mm..mm...m..","..mmm..mmmm..mmm..","...mmmmmmmmmmmm...","...mmmm.mm.mmmm...","..mmmm..mm..mmmm..","....mm..mm..mm....","....mm..mm..mm....","..mmmm..mm..mmmm..","..mm.mm.mm.mm.mm..","......mmmmmm......",".......mmmm.......","..................","..................",".................."],
-"building":["..................","..................","........mm........",".......mmmm.......",".....mmm..mmm.....","....mm......mm....","..mmmmmmmmmmmmmm..","..mmmmmmmmmmmmmm..","..mm..........mm..","..mm..........mm..","..mmmm..mm..mmmm..","..mmmm..mm..mmmm..","..mmmm..mm..mmmm..","..mmmm..mm..mmmm..","..mmmm..mm..mmmm..","..mmmmmmmmmmmmmm..","...mmmmmmmmmmmm...",".................."],
-"bulb":["..................",".......mmmm.......",".....mmmmmmm......",".....mmmmmmmm.....","....mm......mm....","....mm......mm....","....mm......mm....","....m.......mm....","....mm......mm....","....mmm....mmm....",".....mm....mm.....","......mmmmmm......","......mmmmmm......",".......mmmm.......","......mmmmmm......",".......mmmm.......","........mm........",".................."],
-"calendar":["..................","..................",".....mm....mm.....","...mmmmmmmmmmmm...","..mmmmmmmmmmmmmm..","..mm.mm....mm.mm..","..mmmmmmmmmmmmmm..","..mmmmmmmmmmmmmm..","..mm..........mm..","..mm.mmm......mm..","..mm.mmm......mm..","..mm..m.......mm..","..mm..........mm..","..mm..........mm..","..mm..........mm..","...mmmmmmmmmmmm...",".....mmmmmmmm.....",".................."],
-"cap":["..................","..................","..................","......mmmmmm......","....mmmmmmmmmm....","...mmmmmmmmmmmm...","...mmmmmmmmmmmm...","..mmmmmmmmmmmmmm..",".mmmmmmmmmmmmmmmm.",".mm..........mmmmm","..................","..................","..................","..................","..................","..................","..................",".................."],
-"cart":["..................","..................","..mm..............","..mmm.............","...mm.............","...mmmmmmmmmmmmm..","....mmmmmmmmmmmm..","....mm........mm..","....mm........mm..","....mm........m...","....mm.......mm...",".....mmmmmmmmmm...",".....mmmmmmmmm....","..................","......mm....mm....","......mm....mm....","..................",".................."],
-"charm":["..................","..................","..................","..................","........mm........","........mmm.......","........mmm.......","........mmmmm.....",".....mmmmmmmmm....",".....mmmmmmmmm....",".....mmmmmmmmm....","........mmm.......","........mmm.......","........mmm.......","........mm........","........mm........","..................",".................."],
-"chartup":["..................","..................","..mm..............","..mm..............","..mm.......mmmm...","..mm......mmmmm...","..mm........mmm...","..mm....m..mmmm...","..mm...mmmmmmmm...","..mm..mmmmmm......","..mm.mm...m.......","..mmmm............","..mm..............","..mm..............","..mmmmmmmmmmmmmm..","..mmmmmmmmmmmmmm..","..................",".................."],
-"chat":["..................","..................","..................","..mmmmmmmmmmmmmm..",".mmmmmmmmmmmmmmmm.",".mm............mm.",".mm..mmmmmmmm..mm.",".mm..mmmmmmmm..mm.",".mm...mmmm.....mm.",".mm..mmmmmm....mm.",".mm............mm.",".mmm..mmmmmmmmmmm.","..mmmmmmmmmmmmmm..","...mmm............","...mmm............","...m..............","..................",".................."],
-"checkered":["..................","....m.............","...mmmmmmmmmm.....","....mmmmmmmmmm....","....mmmmmmmmmm....","....mm.mm..mmm....","....mmm..mm.mm....","....mmmmmmmmmm....","....mmmmmmmmmm....","....mmmmmmmmm.....","....m.............","....m.............","....m.............","....m.............","....m.............","....m.............","....m.............",".................."],
-"clipboard":["..................","..................","....mmmmmmmmmm....","...mmmmmmmmmmmm...","...mm...mm...mm...","...mm........mm...","...mm........mm...","...mm.mmmmmm.mm...","...mmmmmmmmmmmm...","...mm........mm...","...mmmmmmmmmmmm...","...mm........mm...","...mmmmmmm...mm...","...mm.mmmm...mm...","...mm........mm...","...mmmmmmmmmmmm...",".....mmmmmmmm.....",".................."],
-"cloud":["..................","..................","..................","..................",".......mmmm.......","......mmmmmm......",".....mmmmmmmmm....","....mmmmmmmmmmmm..","...mmmmmmmmmmmmm..","..mmmmmmmmmmmmmm..","..mmmmmmmmmmmmmm..","..mmmmmmmmmmmmmm..","...mmmmmmmmmmmmm..","....mmmmmmmmmm....","..................","..................","..................",".................."],
-"crown":["..................","..................","..m............m..","..mm..m....m..mm..",".m.m..mm..mm..m.m.",".m.m.mmmm.mmm.m.m.",".m.mmmmmmmmmmmm.m.",".m.mmmmmmmmmmmm.m.",".m.mmmmmmmmmmmm.m.",".mmmmmmmmmmmmmmmm.",".m.mmm.mmmm.mmm.m.",".m.mmm.mmmm.mmm.m.",".mmmmmmmmmmmmmmmm.","..................","..................","..................","..................",".................."],
-"driver":["..................","..................","..............mm..",".............mm...","............mm....","...........mm.....","..........mm......",".........mm.......","........mm........",".......mm.........",".....mmmm.........","...mmmmmm.........","..mmmmmmmm........",".mmmmmmmmm........",".mmmmmmmmm........","..mmmmmmm.........","...mmmmm..........",".................."],
-"fire":["..................",".........m........","........mm........",".......mmm........","......mmmm........","......m.mmm.......",".....m...mmm......","....mm....mm......","...mm..m...mm.....","..mm..mmm..mm.....","..m..mmmmm..m.....",".mm..mmmmm..mm....",".m..mmmmmmm..m....",".mm.mmmmmmm.mm....","..mmm.....mmm.....","...mmmmmmmmm......",".....mmmmm........",".................."],
-"flag":["....m.............","....m.............","....mmmmmmmm......","....mmmmmmmmmm....","....mmmmmmmmmmm...","....mmmmmmmmmm....","....mmmmmmmm......","....m.............","....m.............","....m.............","....m.............","....m.............","....m.............","...mmm............","..mmmmmmm.........",".mmmmmmmmm........","..................",".................."],
-"gear":["..................","........mm........","........mm........","...mm...mm...mm...","...mmm......mmm...","....mm.mmmm.mm....","......mmmmmm......",".....mmm..mmm.....",".mmm.mm....mm.mmm.",".mmm.mm....mm.mmm.",".....mmm..mmm.....","......mmmmmm......","....mm.mmmm.mm....","...mmm......mmm...","...mm...mm...mm...","........mm........","........mm........",".................."],
-"gem":["..................",".....mmmmmmmm.....","...mmmmmmmmmmmm...","...mmmm....mmmm...","..mm.m......m.mm..","..mmmmmmmmmmmmmm..","..mmmmmmmmmmmmmm..","..mmmm......mmmm..","...mmm......mmm...","....mmm....mmm....","....mmm....mmm....",".....mmm..mmm.....","......mm..mm......",".......mmmm.......",".......mmmm.......","........mm........","..................",".................."],
-"globe":["..................","......mmmmmm......","....mm..mm..mm....","...m....mm....m...","..m.....mm.....m..","..m..mmmmmmmm..m..",".m......mm......m.",".m......mm......m.",".mmmmmmmmmmmmmmmm.",".m......mm......m.",".m......mm......m.","..m..mmmmmmmm..m..","..m.....mm.....m..","...m....mm....m...","....mm..mm..mm....","......mmmmmm......","..................",".................."],
-"glove":["..................","..................","..................","..................",".......mmmm.......",".......mmmmm......","......mmmmmm......",".....mmm..mmm.....",".....mmm..mmmm....","....mm.m....m.....","....mm......m.....","....mm.....mm.....","....mm.....mm.....","....mm.....mm.....","....mm.....mm.....","....mmmmmmmmm.....",".....mmmmmmm......",".................."],
-"goat":["..................","..mm........mm....",".mmm........mmm...",".mm..........mm...",".mm..........mm...","..mmmmmmmmmmmm....",".mmmmmmmmmmmmmm...",".mm.mmmmmmmm.mm...",".m..m.mmmm.m..m...",".mm.mm.mm.mm.mm...","..mmmmmmmmmmmm....","...mmmmmmmmmm.....","....mmm..mmm......",".....mmmmmm.......","......m..m........",".....mm..mm.......",".....mmmmmm.......",".................."],
-"golfer":["..................",".......mmm........","......mmmmm.......","......mmmmm...mm..",".......mmm...mm...","......mmmmm.mm....",".....mmmmmmmm.....","....m.mmmmm.......","....mm.mmm........","......mmmmm.......","......mmmmm.......","......mm.mm.......",".....mm...mm......","....mm.....mm.....","...mm.......mm....","..................","..................",".................."],
-"grit":["..................","..................","....mmmmmm........","...mmmmmmmm.......","..mm......mmm.....","..m.mmmm...mm.....","..m.mmmmm..mm.....","..m.....mmmmm.....","..mmmmmm...mmm....",".mmmmmmmmm..mm....",".mmmmmmmmmm.mm....",".mmmmmmmmm..mm....",".mmmmmmmm...mm....","..mmmmmmmmmmm.....","...mmmmmmmmm......","..................","..................",".................."],
-"haptic":["..................",".......mmmm.......",".....mmmmmmmm.....",".....mm....mm.....",".....mm....mm.....",".....mm....mm.....","...m.mm....mm.m...","...m.mm....mm.m...","...m.mm....mm.m...","...m.mm....mm.m...","...m.mm....mm.m...","...m.mm....mm.m...",".....mm....mm.....",".....mm.mm.mm.....",".....mm....mm.....","......mmmmmm......",".......mmmm.......",".................."],
-"home":["..................","..................","........mm........",".......mmmm.......","......mmmmmm......",".....mm....mm.....","....mm......mm....","...mm........mm...","..mmm........mmm..","....m........m....","....m..mmmm..m....","....m..mmmm..m....","....m..mmmm..m....","....m..mmmm..m....","....mmmmmmmmmm....","....mmmmmmmmmm....","..................",".................."],
-"jug":["..................","......mmmmmm......",".....mm....mm.....",".....mmmmmmmm.....",".....m......m.....",".....m......mmm...",".....m......m..m..",".....m......m..m..",".....m......m.mm..",".....m......mmm...",".....m......m.....",".....m......m.....",".....mm....mm.....","......mmmmmm......","......mmmmmm......","..................","..................",".................."],
-"key":["..................","..................","....mmmm..........","...mmmmmm.........","..mm....mm........","..mm....mm........","..mm....mm........","..mm....mm........","...mmmmmmm........","....mmmmmmm.......",".........mmmmm....","..........mmmm....","..........mmmm....","..........mmmm....","..................","..................","..................",".................."],
-"lock":["..................","........mm........","......mmmmmm......",".....mmm..mmm.....",".....mm....mm.....",".....mm....mm.....",".....mm....mm.....",".....mmmmmmmm.....","....mmmmmmmmmm....","...mmmmmmmmmmmm...","...mmmmmmmmmmmm...","...mmmmmmmmmmmm...","...mmmmmmmmmmmm...","...mmmmmmmmmmmm...","....mmmmmmmmmm....","..................","..................",".................."],
-"lockkey":["..................","........mm........","......mmmmmm......",".....mmm..mmm.....",".....mm....mm.....",".....mm....mm.....",".....mm....mm.....",".....mmmmmmmm.....","....mmmmmmmmmm....","...mmmmmmmmmmmm...","...mmmmmmmmmmmm...","...mmmmmmmmmmmm...","...mmmmmmmmmmmm...","...mmmmmmmmmmmm...","....mmmmmmmmmm....","..................","..................",".................."],
-"mail":["..................","..................","..................","..mmmmmmmmmmmmmm..","..mmmmmmmmmmmmmm..",".mmmm........mmmm.",".mmmmm......mmmmm.",".mm..mm....mm..mm.",".mm...mmmmmm...mm.",".mm....mmmm....mm.",".mm............mm.",".mm............mm.",".mm............mm.","..mmmmmmmmmmmmmm..","..mmmmmmmmmmmmmm..","..................","..................",".................."],
-"money":["..................","........mm........",".......m..m.......","......mmmmmm......",".....mm.mm.mm.....","....mmmmmmmmmm....","...mmmmmmmmmmmm...","..mmmmm.m.mmmmm...","..mmmm.mmm.mmmm...","..mmmm.m...mmmm...","..mmmm.mmm.mmmm...","..mmmm...m.mmmm...","..mmmm.mmm.mmmm...","..mmmmm.m.mmmmm...","...mmmmmmmmmmmm...","....mmmmmmmmmm....",".....mmmmmmmm.....",".................."],
-"party":["..................","..................","..........mmm.....","...........mmmmm..","...........mmmm...","......m....mmm....",".....mmm..........",".....mmmm....mm...",".....mmmmm....mm..","....mmmmmmm....m..","....mmmmmmmm......","...mmmmmmmmmm.....","...mmmmmmmmm......","...mmmmmm.........","..mmmmm...........","..mm..............","..................",".................."],
-"pawn":["..................","..................",".......mmmm.......",".......mmmm.......","......mmmmmm......",".......mmmm.......",".......mmmm.......",".......mmmm.......",".......mmmm.......",".......mmmm.......","......mmmmmm......",".....mmmmmmmm.....",".....mmmmmmmm.....",".....mmmmmmmm.....",".....mmmmmmmm.....","....mmmmmmmmmm....",".....mmmmmmmm.....",".................."],
-"pennant":["..................","....m.............","...mm.............","....mmmmmm........","....mmmmmmmm......","....mmmmmmmm......","....mmmmmmmm......","....mmmmmmmm......","....mmmmmm........","....m.............","....m.............","....m.............","....m.............","....m.............","....m.............","....m.............","....m.............",".................."],
-"pin":["..................",".......mmmm.......","......mmmmmm......",".....mmmmmmmm.....",".....mmmmmmmm.....","....mmmm..mmmm....","....mmmm..mmmm....",".....mmmmmmmm.....",".....mmmmmmmm.....",".....mmmmmmmm.....","......mmmmmm......","......mmmmmm......",".......mmmm.......","........mm........","........mm........","..................","..................",".................."],
-"putter":["..................","......mm..........","......mm..........","......mm..........","......mm..........","......mm..........","......mm..........","......mm..........","......mm..........","......mm..........","......mm..........","...mmmmmmmmmm.....","..mmmmmmmmmmmm....","..mmmmmmmmmmmm....","..................","..................","..................",".................."],
-"repeat":["..................","............m.....","........mm..mm....",".....mmmmmmmmm....","....mmm..mmmmm....","...mm.....mmm.....","...mm.............","..mm..............","..mm..........mm..","..mm..........mm..","..............mm..",".............mm...",".....mmm....mmm...","....mmmmm..mmm....","....mmmmmmmmm.....","....mm.mmmm.......",".....m............",".................."],
-"ribbon":["..................","....mmmmmmmmm.....","...mm.......mm....","..mm.........mm...","..m..mmmmmm...m...","..m.mm....mm..m...","..m.m......m..m...","..m.m......m..m...","..m.mm....mm..m...","..m..mmmmmm...m...","..mm.........mm...","...mm.......mm....","....mm.m.m.mm.....",".....m.m.m.m......","....mm.....mm.....","...mm.......mm....","..m..........m....",".................."],
-"rock":["..................","..................",".........mm.......",".......mmmmmm.....",".....mmmmmmmmmm...","...mmmmmmmmmmmmm..","..mmmmmmmmmmmmmmm.",".mmmmmmmmmmmmmmmm.",".mmmmmmmmmmmmmmmm.",".mmmmmmmmmmmmmmmm.","..mmmmmmmmmmmmmm..","...mmmmmmmmmmmm...",".....mmmmmmmm.....","..................","..................","..................","..................",".................."],
-"scales":["..................","........mm........","...mmmmmmmmmmmm...","..m....mm....m...",".mmm...mm...mmm..","mm.mm..mm..mm.mm.","m...m..mm..m...m.","mm.mm..mm..mm.mm.",".mmm...mm...mmm..","..m....mm....m...",".......mm.........",".......mm.........",".....mmmmmm.......","....mmmmmmmm......","...mmmmmmmmmm.....","..................","..................",".................."],
-"scissors":["..................","..................","..................","..mmmmm...........","..mm.mm...........","..mm.mm.......mm..","..mmmmmm.....mmm..","...mmm.mmm.mmm....","........mmmmm.....","..........m.......","...mmm.mmm.mmm....","..mmmmmm.....mmm..","..mm.mm.......mm..","..mm.mm...........","..mmmm............","..................","..................",".................."],
-"scroll":["..................","..................","..mmmmmmmmmmmm....",".mmmmmmmmmmmmmm...",".m..mm.......mm...",".m..mm.......mm...",".mmmmm.mmmmmmmm...",".mmmmm..mmmm.mm...","....mm.mmmmm.mm...","....mm.mmmmm.mm...","....mm.......mm...","....mm.......mm...",".....m........m...",".....mmmmmmmmmmm..","..................","..................","..................",".................."],
-"shades":["..................","..................","..................","..................","..................","..................","....mmm....mmm....","..mmmmmm..mmmmmm..","..mm..mmmmmm..mm..","..mm...mmmm...mm..","..mm...mmmm...mm..","..mmmmmm..mmmmmm..","...mmmmm..mmmmm...","..................","..................","..................","..................",".................."],
-"shield":["..................","...mmmmmmmmmmmm...","..mmmmmmmmmmmmmm..",".mm..........mm..",".m............m..",".m..........m.m..",".m.........mm.m..",".m........mm..m..",".m..m....mm...m..",".m..mm..mm....m..",".m...mmmmm....m..",".m....mmm.....m..","..m....m.....m...","..m..........m...","...m........m....","....mm....mm.....","......mmmm.......",".................."],
-"shoe":["..................","..................","..................","..................","..................","..................","......mm..........",".....mmmm.........","....mm..mm........","...mmm..mmmmmm....","..mmm........mmm..",".mm...........mm..",".mmmmmmmmmmmmmmm..","..mmmmmmmmmmmmmm..","...mmmmmmmmmmmm...","..................","..................",".................."],
-"slot":["..................","..................","..................","...mmmmmmmmmmmm...","..mmmmmmmmmmmmmm..","..mm..........mmm.","..mm..mmmmmm..mmm.","..mm..mmmmmm..mmm.","..mm....mm....mmm.","..mm..mmmmmm..mmm.","..mm..mmmmmm..mmm.","..mm....mm....mm..","..mm....mm....mm..","..mmmmmmmmmmmmmm..","...mmmmmmmmmmmm...","..................","..................",".................."],
-"snake":["..................","......mmmmmm......",".....mm....mm.....","....m..mm...m.....","....m.mmmm..m.....","....m..mm..m......",".....mmmmmmm......","........mmm.......",".......mmm........","......mmm.........",".....mmm..........","....mmm...mmm.....","...mm...mmmmmm....","..mm...mm....mm...","..mm..mm......m...","..mmmmmm......m...","...mmm.......mm...",".................."],
-"snow":["..................","........mm........","........mm........",".......mmmm.......","...mm...mm...mm...","..mmm...mm...mmm..","..mmmmm.mm.mmmmm..","....mmmmmmmmmm....",".......mmmm.......",".......mmmm.......","....mmmmmmmmmm....","..mmmmm.mm.mmmmm..","..mmm...mm...mmm..","...mm...mm...mm...","........mm........","........mm........",".......mmmm.......",".................."],
-"sound":["..................","..................","..................","..................","........mm...m....","......mmmm...mm...","...mmmmmmm.m..m...","..mmmmm.mm.mm.mm..","..mm....mm..m.mm..","..mm....mm..m.mm..","..mmmmm.mm.mm.mm..","..mmmmmmmm.m..m...","......mmmm...mm...","........mm...m....","..................","..................","..................",".................."],
-"sparkle":["..................","........mm........","........mm........",".......mmmm.......","...m...mmmm...m...","..mm...mmmm...mm..","...mm.mmmmmm.mm...","....mmmmmmmmmm....",".mmmmmmmmmmmmmmmm.",".mmmmmmmmmmmmmmmm.","....mmmmmmmmmm....","...mm.mmmmmm.mm...","..mm...mmmm...mm..","...m...mmmm...m...",".......mmmm.......","........mm........","........mm........",".................."],
-"sprout":["..................","..................","..................","..................","..................","..................","...mmmm....mmm....","...mmmmm.mmmmm....","...mmmmmmmmmmm....","....mmmmmmmm......",".......mmm........","........mm........","........mm........","........mm........","........mm........","........mm........","..................",".................."],
-"sun":["........mm........","........mm........","..mm....mm....mm..","..mmm...mm...mmm..","...mm........mm...",".......mmmm.......","......mmmmmm......",".....mmmmmmmm.....","mmmm.mmmmmmmm.mmmm","mmmm.mmmmmmmm.mmmm",".....mmmmmmmm.....","......mmmmmm......",".......mmmm.......","...mm........mm...","..mmm...mm...mmm..","..mm....mm....mm..","........mm........","........mm........"],
-"swap":["..................","..................","...........m......","...........mm.....",".....mmmmmmmmm....","....mmmmmmmmmm....","...........mmm....","..........mmm.....","..................","..................",".....mmm..........","....mmm...........","....mmmmmmmmmm....","....mmmmmmmmm.....",".....mm...........","......m...........","..................",".................."],
-"swords":["..................",".mm...........mm..",".mmm.........mmm..","..mmm.......mmm...","...mmm.....mmm....","....mmm...mmm.....",".....mmm.mmm......","......mmmmm.......",".....mmm.mmm......","....mmm...mmm.....","...mmm.....mmm....","..mmm..m....mmm...",".mmm..mmm....mmm..",".mm..mm.mm....mm..","......m...........","..................","..................",".................."],
-"target":["..................",".......mmmm.......",".....mm....mm.....","....m........m....","...m..mmmmmm..m...","..m..m......m..m..","..m.m..mmmm..m.m..",".m..m.m....m.m..m.",".m..m.m.mm.m.m..m.",".m..m.m.mm.m.m..m.",".m..m.m....m.m..m.",".m..m..mmmm..m..m.","..m.m........m.m..","..m..mmmmmmmm..m..","...m........m..m..","....mm....mm......",".....mmmmmm.......",".......mm........."],
-"trophy":["..................","...mmmmmmmmmmmm...","..m.mmmmmmmmmm.m..",".m..mmmmmmmmmm..m.",".m..mmmmmmmmmm..m.","..m.mmmmmmmmmm.m..","...mmmmmmmmmmmm...","....mmmmmmmmmm....","......mmmmmm......",".......mmmm.......","........mm........","........mm........",".....mmmmmmmm.....","....mmmmmmmmmm....","....mmmmmmmmmm....","..................","..................",".................."],
-"user":["..................","..................","..................",".......mmmm.......","......mmmmmm......","......mmmmmm......","......mmmmmm......","......mmmmmm......",".......mmmm.......","..................",".....mmmmmmmm.....","....mmmmmmmmmm....","...mm........mm...","...m..........m...","..mm..........mm..","..mm..........mm..","..................",".................."]
+"ticket":["..................", "..................", "..................", ".hhhhhhhhhhhmhhhh.", ".mmmmmmmmmmm.mmmm.", ".dmmmmmmmmmmmmmmd.", "..dmmmdmmmmm.mmd..", "...mdddddmmmmmm...", "...mmdddmmmm.mm...", "...mmdmdmmmmmmm...", "..hmmmmmmmmm.mmh..", ".hmmmmmmmmmmmmmmh.", ".mmmmmmmmmmm.mmmm.", ".dddddddddddmdddd.", "..................", "..................", "..................", ".................."],
+"skip":["..................", "..................", "..................", "..................", "..h.....h.....hh..", "..mh....mh....mm..", "..mmh...mmh...mm..", "..mmmh..mmmh..mm..", "..mmmmm.mmmmm.mm..", "..mmmmm.mmmmm.mm..", "..mmmd..mmmd..mm..", "..mmd...mmd...mm..", "..md....md....mm..", "..d.....d.....dd..", "..................", "..................", "..................", ".................."],
+"clock":["..................", ".......mhhm.......", "........mm........", "........mm.....m..", "......mmmmmm..mm..", "....hmmmmmmmmh....", "....mm..mm..mm....", "...hm...mm...mh...", "...md...mm...dm...", "..hm....mm....mh..", "..mm....ddmmm.mm..", "..dm....ddmmm.md..", "...mh........hm...", "...dm........md...", "....mm......mm....", "....dmmmmmmmmd....", "......mmmmmm......", ".................."],
+"arrowLeft":["..................", "..................", "..................", ".......h..........", "......hm..........", ".....hmm..........", "....hmmm..........", "...hmmmmhhhhhhhh..", "..mmmmmmmmmmmmmm..", "..mmmmmmmmmmmmmm..", "...dmmmmdddddddd..", "....dmmm..........", ".....dmm..........", "......dm..........", ".......d..........", "..................", "..................", ".................."],
+"arrowUR":["..................", "..................", "......mmhhhhhhhh..", ".......mmmmmmmmm..", "........dmmmmmmm..", ".........mmmmmmm..", ".........mmmmmmm..", "........hmmmmmmm..", ".......hmmmddmmm..", "......hmmmd..dmm..", ".....hmmmd....dm..", "....hmmmd......d..", "...hmmmd..........", "..mmmmd...........", "...dmd............", "....d.............", "..................", ".................."],
+"arrowUp":["..................", "..................", "........hh........", ".......hmmh.......", "......hmmmmh......", ".....hmmmmmmh.....", "....mmmmmmmmmm....", "...mmddmmmmddmm...", ".......mmmm.......", ".......mmmm.......", ".......mmmm.......", ".......mmmm.......", ".......mmmm.......", ".......mmmm.......", ".......mmmm.......", ".......dddd.......", "..................", ".................."],
+"bag":["..................", ".......mmmm.......", "......hm..mh......", "......m....m......", "......m....m......", "....hhmhhhhmhh....", "...hmmmmmmmmmmh...", "...mmmmmmmmmmmm...", "...mmmmmmmmmmmm...", "...mmmmmmmmmmmm...", "...mmddddddddmm...", "...mmddddddddmm...", "...mmdmmhhmmdmm...", "...mmdmmmmmmdmm...", "...mmdmmmmmmdmm...", "...dmddddddddmd...", "....dddddddddd....", ".................."],
+"ball":["..................", "........hh........", ".....hhhmmhhh.....", "....hmmmmmmmmh....", "...hmhhmmdmmmmh...", "..hmhmmmmmmmmmmh..", "..mmmmmmmmmmmmmm..", "..mmmdmmdmmdmmmm..", ".mmmmmmmmmmmmmmmm.", ".mmmmmmmmmmmmmmmm.", "..mmmmdmmdmmdmmm..", "..mmmmmmmmmmmmmm..", "..dmmmmmmmmmmmmd..", "...dmmmmdmmdmmd...", "....dmmmmmmmmd....", ".....dddmmddd.....", "........dd........", ".................."],
+"bolt":[".........hhhhhm...", ".........mmmmm....", "........hmmmmd....", "........mmmmd.....", ".......hmmmm......", "......hmmmmd......", "......mmmmm.......", ".....hmmmmmhmm....", "....mmmmmmmmm.....", "....mddmmmmd......", ".......mmmd.......", ".......mmd........", "......hmd.........", "......md..........", "......d...........", ".....m............", "..................", ".................."],
+"book":["..................", "..................", "..................", "...hhhhh..hhhhh...", ".hhmmmmmddmmmmmhh.", ".mmmmmmmddmmmmmmm.", ".mmddddmddmddddmm.", ".mmmmmmmddmmmmmmm.", ".mmddddmddmddddmm.", ".mmmmmmmddmmmmmmm.", ".mmddddmddmddddmm.", ".mmmmmmmddmmmmmmm.", ".mmmmmmmddmmmmmmm.", ".mmmmmmmddmmmmmmm.", ".ddddddm..mdddddd.", ".......dmmd.......", "..................", ".................."],
+"brick":["..................", "..................", "..................", ".hhhhhhh.hhhhhhhh.", ".mmmmmmm.mmmmmmmm.", ".ddddddd.dddddddd.", "..................", ".hhh.hhhhhhh.hhhh.", ".mmm.mmmmmmm.mmmm.", ".ddd.ddddddd.dddd.", "..................", ".hhhhhhh.hhhhhhhh.", ".mmmmmmm.mmmmmmmm.", ".mmmmmmm.mmmmmmmm.", ".ddddddd.dddddddd.", "..................", "..................", ".................."],
+"bug":[".....m......m.....", "......m....m......", ".......hhhh.......", ".......mmmm.......", "......hmmmmh......", "......mmmmmm......", ".mm..hmmmmmmh..mm.", "..mhhmmmddmmmhhm..", "...mmmmmddmmmmm...", "...mmddmddmddmm...", "...mmddmddmddmm...", "mmmdmmmmddmmmmdmmm", "....mmdmddmdmm....", "....mmdmddmdmm....", "...mddmmddmmddm...", "..mm..dddddd..mm..", ".mm............mm.", ".................."],
+"building":["........hh........", ".......hmmh.......", ".....hhmmmmhh.....", "...hhmmmmmmmmhh...", ".mmmmmmmmmmmmmmmm.", ".mmddddddddddddmm.", "..................", "..hh..hh..hh..hh..", "..mm..mm..mm..mm..", "..mm..mm..mm..mm..", "..mm..mm..mm..mm..", "..mm..mm..mm..mm..", "..dd..dd..dd..dd..", "..................", ".mmmmmmmmmmmmmmmm.", "mmmmmmmmmmmmmmmmmm", "..................", ".................."],
+"bulb":["..................", ".......hhhh.......", ".....hhmmmmhh.....", "....hmmmmmmmmh....", "....mmhmmmmmmm....", "...hmhmmmmmmmmh...", "...mmhmmmmmmmmm...", "...mmmmmmmmmmmm...", "...dmmmmddmmmmd...", "....mmmdmmdmmm....", "....dmmmddmmmd....", ".....dmmddmmd.....", "......mmmmmm......", "......dddddd......", "......dmmmmd......", ".......dddd.......", "........dd........", ".................."],
+"calendar":["..................", ".....dd....dd.....", ".....dd....dd.....", "..hhhddhhhhddhhh..", "..mmmddmmmmddmmm..", "..mmmmmmmmmmmmmm..", "..mddddddddddddm..", "..m............m..", "..m.mm..mm..mm.m..", "..m.mm..mm..mm.m..", "..m............m..", "..m............m..", "..m.mm..mm..dd.m..", "..m.mm..mm..dd.m..", "..m............m..", "..d............d..", "...mmmmmmmmmmmm...", ".................."],
+"cap":["..................", "..................", "..................", "......h...........", "....hhmhhh........", "...hmmmmmmhh......", "..hmmmmmmmmmh.....", ".hmmmmmmmmmmmh....", ".mmmmmmmmmmmmm....", ".mmmmmmmmmmmmmh...", ".dddddddddddmmmmmm", "...........ddddddd", "..................", "..................", "..................", "..................", "..................", ".................."],
+"cart":["..................", "..................", "mm................", "mmm...............", "..mhhhhhhhhhhhhhm.", "...mmmmdmmdmmdmmm.", "...mdddddddddddd..", "...dmmmdmmdmmdmm..", "....dddddddddddd..", "....mmmdmmdmmdm...", "....ddddddddddd...", "..................", "....dddddddddddd..", ".....mmm....mmm...", ".....mmm....mmm...", ".....ddd....ddd...", "..................", ".................."],
+"charm":["..................", "..................", ".hhhhh......hhhhh.", ".mmmmm......mmmmm.", "..mdmm......mmdm..", "..mmmm......mmmm..", "..mmmd......dmmm..", ".hmmm........mmmh.", ".mdmm........mmdm.", ".mmmm........mmmm.", ".mmmm........mmmm.", ".mdmm........mmdm.", ".dmmm........mmmd.", "..mmmh......hmmm..", "..dmmmh....hmmmd..", "...ddmmmmmmmmdd...", ".....ddmmmmdd.....", ".................."],
+"chartup":["..................", "............mmmh..", ".h............mm..", ".m...........m.m..", ".m..........m..d..", ".m.........m......", ".m.....mm.m.......", ".m...mm.mm.hhh....", ".m..mm.....mmm....", ".m.m.......mmm....", ".m.....hhh.mmm....", ".m.....mmm.mmm....", ".m.hhh.mmm.mmm....", ".m.mmm.mmm.mmm....", ".m.mmm.mmm.mmm....", ".m.mmm.mmm.mmm....", ".dmdddmdddmdddmmm.", ".................."],
+"chat":["..................", "..................", "..hhhhhhhhhhhhhh..", ".hmmmmmmmmmmmmmmh.", ".mmmmmmmmmmmmmmmm.", ".mmmddmmddmmddmmm.", ".mmm..mm..mm..mmm.", ".mmm..mm..mm..mmm.", ".mmmhhmmhhmmhhmmm.", ".mmmmmmmmmmmmmmmm.", ".mmmmmmmmmmmmmmmm.", ".dmmmmmmmmmmmmmmd.", "..dmmmdddddddddd..", "...mmd............", "...md.............", "...d..............", "..................", ".................."],
+"checkered":["..................", "..hh..............", "..mmhhhmmhhmmhhmh.", "..mmmmm..mm..mm.m.", "..mmmdd..dd..dd.m.", "..mmm..mm..mm..mm.", "..mmm..mm..mm..mm.", "..mmmmm..mm..mm.m.", "..mmmmm..mm..mm.m.", "..mmm..hh..hh..hm.", "..mmm..mm..mm..mm.", "..mmdmmddmmddmmdd.", "..mm..............", "..mm..............", "..mm..............", "..mm..............", "..mm..............", "..dd.............."],
+"clipboard":["..................", "........mm........", "......hhmmhh......", "...hhhmm..mmhhh...", "...mmmmmhhmmmmm...", "...mmmmmmmmmmmm...", "...mmhhhhhhhhmm...", "...mmhhhhhhhhmm...", "...mmhddddddhmm...", "...mmhhhhhhhhmm...", "...mmhddddddhmm...", "...mmhhhhhhhhmm...", "...mmhddddhhhmm...", "...mmhhhhhhhhmm...", "...mmhhhhhhhhmm...", "...dmhhhhhhhhmd...", "....dddddddddd....", ".................."],
+"cloud":["..................", "..................", "..................", ".........hhh......", ".......hhmmmhh....", ".......mmmmmmm....", "......hmmmmmmmh...", "....hhmmmmmmmmm...", "...hmmmmmmmmmmm...", "..hmmmmmmmmmmmmh..", "..mmmmmmmmmmmmmmm.", "..dmmmmmmmmmmmmmm.", "...mmmmmmmmmmmmm..", "...ddddddddddddd..", "..................", "..................", "..................", ".................."],
+"crown":["..................", "........hh........", "........mm........", ".mm.....mm.....mm.", ".mm.....mm.....mm.", "........mm........", "..h....hmmh....h..", "..m....mmmm...hm..", "..mh..hmmmmh..mm..", "..mmh.mmmmmm.hmm..", "..mmmhmmmmmmhmmm..", "..mmmmmmmmmmmmmm..", "..dddddddddddddd..", "..mmmmmmmmmmmmmm..", "..mmhmmmddmmmhmm..", "..dddddddddddddd..", "..................", ".................."],
+"driver":["..............ddd.", "..............ddd.", "..............ddd.", ".............hddd.", ".............mmd..", "............hmd...", "...........hmm....", "...........mmd....", "..........hmd.....", ".........hmm......", ".....hhh.mmd......", "...hhmmmhmd.......", "..hhhmmmmm........", ".mhmmmmmmd........", ".mmmmmmmd.........", "..dddddd..........", "..................", ".................."],
+"fire":["........h.........", "........mh........", ".......hmm........", ".......mmmh.......", "......hmmmm..h....", ".....hmmmmmh.mh...", "....hmmmmmmmhmm...", "...hmmmmmmmmmmmh..", "...mmmmmmhmmmmmm..", "..hmmmmmhhmmmmmm..", "..mmmmmhhhhmmmmm..", "..mmmmhhhhhmmmmm..", "..dmmmhhhhhhmmmd..", "...dmmhhhhhhmmd...", "....ddmhhhhmdd....", "......dddddd......", "..................", ".................."],
+"flag":["..................", "....hhh...........", "....mmmhhh........", "....mmmmmmhhh.....", "....mmmmmmmmmmmm..", "....mmmmmmddd.....", "....mmmddd........", "....mmd...........", "....mm............", "....mm............", "....mm............", "....mm............", "....mm............", "....mm............", "....mm............", "..mmddmmmmmm......", "...mddmmmmm.......", ".................."],
+"gear":["..................", "........hh........", "........mm........", "...mh.hhmmhh.hm...", "...mmhmmmmmmhmm...", "....mmmmmmmmmm....", "...hmmmddddmmmh...", "...mmmm....mmmm...", ".mmmmmm....mmmmmm.", ".mmmmmm....mmmmmm.", "...mmmm....mmmm...", "...dmmmhhhhmmmd...", "....mmmmmmmmmm....", "...mmdmmmmmmdmm...", "...md.ddmmdd.dm...", "........mm........", "........dd........", ".................."],
+"gem":["..................", "..................", ".....hhhhhhhh.....", "....hmdmmmmdmh....", "...hhmddmmddmmh...", "..hhhmmdmmdmmmmh..", ".mdddddddddddddd..", "..dmmmdmmmmdmmmd..", "...dmmdmmmmdmmd...", "....mmddmmddmd....", "....dmmdmmdmm.....", ".....dmdmmdmd.....", "......dddddd......", ".......mddd.......", ".......ddd........", "........dd........", "..................", ".................."],
+"globe":["..................", "........hh........", ".....mhmmmmhm.....", "....mmmmmmmmmm....", "...hm.m.mm.m.mh...", "..hm..d.mm.d..mh..", "..md....mm....dm..", "..m..h..mm..h..m..", ".mmmmmmmmmmmmmmmm.", ".mmmmmmmmmmmmmmmm.", "..m..d..mm..d..m..", "..mh....mm....hm..", "..dm..h.mm.h..md..", "...dm.m.mm.m.md...", "....mmmmmmmmmm....", ".....mdmmmmdm.....", "........dd........", ".................."],
+"glove":["..................", "..................", ".......hh.hh......", "....hh.mm.mm......", "....mm.mm.mm.hh...", "....mm.mm.mm.mm...", "....mm.mm.mm.mm...", "....mm.mm.mm.mm...", "....mmhmmhmmhmm...", ".h..mmmmmmmmmmm...", ".mh.mmmmmdddmmm...", ".dmhmmmmmdhdmmm...", "..dmmmmmmdddmmd...", "...dmmmmmmmmmd....", "....mmmmmmmmm.....", "....ddddddddd.....", "....ddddddddd.....", ".................."],
+"goat":["..m............m..", "..mh..........hm..", "...mh........hm...", "...dmh......hmd...", "mmm.mmhhhhhhmm.mmm", ".mmhmmmmmmmmmmhmm.", "...mmdmmmmmmdmm...", "...dm.mmmmmm.md...", "....mhmmmmmmhm....", "....dmmmmmmmmd....", ".....mmmmmmmm.....", ".....dmmddmmd.....", "......mm..mm......", "......dmhhmd......", ".......dmmd.......", "........dd........", "..................", ".................."],
+"golfer":["..............m...", ".......hhh...mm...", "......mmmmh.mm....", "......mmmmmhm.....", ".......mmmmm......", ".....mhmmmmm......", "....mmmmmmmm......", "....m.mmmmmm......", "......mmmmmm......", "......mmmdmm......", "......mmd.dmh.....", ".....hmd...dmh....", ".....mm.....dm....", "....hmd......mh...", "....mm.......mm...", "...mmm.......mmm..", "..mmdd......mddm..", ".................."],
+"grit":["..................", "..................", "..................", "......hhhhhh......", ".....mmmmmmmm.....", "....mmmmmmmmmm....", "...h..ddmmdd..h...", "...mhh..mm..hhm...", "..hmmm..mm..mmmh..", "h.mmmm..mm..mmmm.h", ".hdmmmmhmmhmmmmdh.", "h..mmmmmmmmmmmm..h", "...dmm.dddd.mmd...", "....dm.dddd.md....", ".....dmmmmmmd.....", "......mddddm......", "..................", ".................."],
+"haptic":["..................", "..................", ".......mmmm.......", "......hmmmmh......", "......m....m......", "...h..m....m..h...", "...m..m....m..m...", ".h.d..m....m..d.h.", ".m....m....m....m.", ".m....m....m....m.", ".d.h..m....m..h.d.", "...m..m....m..m...", "...d..m....m..d...", "......mhhhhm......", "......dmddmd......", ".......dddd.......", "..................", ".................."],
+"home":["..................", "........hh........", ".......hmmh..hh...", "......hmmmmh.mm...", ".....hmmmmmmhmm...", "....hmmmmmmmmmm...", "...hmmmmmmmmmmm...", "..mmmmmmmmmmmmmm..", ".mmmmmmmmmmmmmmmm.", "...mmmmmmmmmmmm...", "...mmmmddddmmmm...", "...mmmm....mmmm...", "...mmmm....mmmm...", "...mmmm..d.mmmm...", "...mmmm....mmmm...", "...mmmm....mmmm...", "...dddd....dddd...", ".................."],
+"jug":["..................", ".....mhhhhhm......", "......mmmmm.......", "......mmmmm.......", ".....hmmmmmh.mmh..", "....hmmmmmmmh..m..", "....mmmmmmmmm..m..", "...hmmmmmmmmmh.m..", "...mmdddddddmm.m..", "...mmmmmmmmmmmmd..", "...dmhhhhhhhmd....", "....mmmmmmmmm.....", "....dmmmmmmmd.....", ".....dmmmmmd......", "......mmmmm.......", ".....mmmmmmm......", "....mmdddddmm.....", ".................."],
+"key":["..................", "....hhh...........", "..hhmmmhh.........", "..mmdddmm.........", ".hmm...mmh........", ".mmm...mmm........", ".dmm...mmd........", "..mmhhhmm.........", "..ddmmmdmh........", "....ddd.dmh.......", ".........dmh......", "..........dmhhh...", "...........mmmm...", "...........mmmm...", "...........dddmhh.", "..............mmm.", "..............ddd.", ".................."],
+"lock":["..................", "..................", "..................", ".......hmmh.......", "......hmmmmh......", ".....hmd..dmh.....", "....hmd....dmh....", "....mm......mm....", "...hmmhhmmhhmmh...", "...mmmmmmmmmmmm...", "...mmmmm..mmmmm...", "...mmmmm..mmmmm...", "...mmmmm..mmmmm...", "...mmmmm..mmmmm...", "...mmmmm..mmmmm...", "...dmmmmmmmmmmd...", "....ddddmmdddd....", ".................."],
+"lockkey":["..................", "..................", "..................", "....hmmh..........", "...hmmmmh.........", "..hmd..dmh........", ".hmd....dmh..mmm..", ".mm......mm.hm.mh.", ".mmhhmmhhmm.m...m.", ".mmmmmmmmmm.dm.hd.", ".mmmm..mmmm..mhm..", ".mmmm..mmmm...mm..", ".mmmm..mmmm...mm..", ".mmmm..mmmm...mmm.", ".mmmm..mmmm...mm..", ".dmmmmmmmmd...mm..", "..dddmmddd....mmm.", "..............dd.."],
+"mail":["..................", "..................", "..................", "..mhhhhhhhhhhhhm..", "..dmmmmmmmmmmmmd..", ".h.ddmmmmmmmmdd.h.", ".mh.ddmmmmmmdd.hm.", ".mmh.ddmmmmdd.hmm.", ".mmmh.ddmmdd.hmmm.", ".mmmmh..dd..hmmmm.", ".mmmmmhh..hhmmmmm.", ".mmmmmmmhhmmmmmmm.", ".mmmmmmmmmmmmmmmm.", ".dmmmmmmmmmmmmmmd.", "..dddddddddddddd..", "..................", "..................", ".................."],
+"money":["..................", ".....mm....mm.....", ".....mmhhhhmm.....", ".......mmmm.......", ".......mmmm.......", "......dddddd......", ".....hmmmmmmh.....", "....hmmmdmmmmh....", "....mmmm.ddmmm....", "...hmmmd...mmmh...", "...mmmm.mmmmmmm...", "...mmmmm..mmmmm...", "...mmmmmmm.mmmm...", "...dmmm...hmmmd...", "....mmmhh.mmmm....", "....dmmmmhmmmd....", ".....ddmmmmdd.....", ".......dddd......."],
+"party":["..................", "..................", "..........hm....hh", "..........mm....hh", "..........m.......", "........hmd...mm..", "........mm....mm..", "....hh..d.........", "....dmh.....hmmm..", "....mdmh....mmm...", "...hmmdmh..md.....", "...dmmmdmh.....hh.", "...mdmmmdmm....hh.", "..hmmdmmddm.......", "..mmmddd..........", "..ddd.............", ".m................", ".................."],
+"pawn":["..................", "..................", ".......hhhh.......", "......mmmmmm......", "......mmmmmm......", ".......dmmd.......", "........mm........", "......mhmmhm......", ".......mmmm.......", ".......mmmm.......", "......hmmmmh......", "......mmmmmm......", "......mmmmmm......", "....hhmmmmmmhh....", "....mmmmmmmmmm....", "...mmmmmmmmmmmm...", "...mddddddddddm...", ".................."],
+"pennant":["..................", "...hh.............", "...mmhh...........", "...mmmmhhh........", "...mmmmmmmhhh.....", "...mmmmmmmmmmmmm..", "...mmmmmmmddd.....", "...mmmmddd........", "...mmdd...........", "...mm.............", "...mm.............", "...mm.............", "...mm.............", "...mm.............", "...mm.............", "...mm.............", "..mddm............", ".................."],
+"pin":["..................", ".......hhhh.......", ".....hhmmmmhh.....", "....hmmmmmmmmh....", "....mmmddddmmm....", "...hmmm....mmmh...", "...mmmm....mmmm...", "...mmmm....mmmm...", "...dmmm....mmmd...", "....mmmhhhhmmm....", "....dmmmmmmmmd....", ".....dmmmmmmd.....", "......dmmmmd......", ".......dmmd.......", "........mm........", "........dd........", "..................", ".................."],
+"putter":["...........dd.....", "...........dd.....", "...........dd.....", "..........hdd.....", "..........mm......", "..........mm......", ".........hmm......", ".........mmd......", ".........mm.......", ".........mm.......", "........hmd.......", "........mm........", ".....hh.mm........", "..mhhmmhmmhhm.....", "..mmmmmmmmmmm.....", "...ddddddddd......", "..................", ".................."],
+"repeat":["..................", "...........hh.....", "...........mmh....", "...hhhhhhhhmmmmm..", "...mmmmmmmmmmmmm..", "..hmmddddddmmd....", "..mmm......dd.....", "..mmm........hhh..", "..mmm........mmm..", "..mmm........mmm..", "..ddmh.......mmm..", "....mm.......mmm..", "..mmmmhhhhhhhmmd..", "..mmmmmmmmmmmmm...", "....dmddddddddd...", ".....d............", "..................", ".................."],
+"ribbon":["..................", "......hhhhhh......", ".....hmmmmmmh.....", "....hmmmmmmmmh....", "...hmmmhhhhmmmh...", "...mmmhhmmhhmmm...", "...mmmhmmmmhmmm...", "...mmmhmmmmhmmm...", "...mmmhhmmhhmmm...", "...dmmmhhhhmmmd...", "....mmmmmmmmmm....", "....mdmmmmmmdm....", "....m.mmddmm.m....", "....mmmm..mmmm....", "....mmmm..mmmm....", "....d.dm..md.d....", ".......d..d.......", ".................."],
+"rock":["..................", "..................", "..................", "..................", ".......hhhhh......", "......hmmmmmh.....", "....hhmmdmmmmh....", "...hmhhmdmmmdmh...", "...mmmmdmmmmddmh..", "..hmmmmdmmmmmddm..", ".hmmmmmddmmmmmdm..", ".mmmmmmmddmmmmmmh.", ".mmmmmmmmdmmmmmmm.", ".mmmmmmmmmmmmmmmm.", ".mmmmmmmmmmmmmmmd.", ".ddddddddddddddd..", "..................", ".................."],
+"scales":["........hh........", ".......hmmh.......", ".mmmmmmmmmmmmmmmm.", "..m....mmmm....m..", ".m.m...mmmm...m.m.", ".m.m...mmmm...m.m.", "h...h..mmmm..h...h", "m...m..mmmm..m...m", "dmmmd..mmmm..dmmmd", ".mmm...mmmm...mmm.", ".......mmmm.......", ".......mmmm.......", ".......mmmm.......", ".......mmmm.......", "....mmmmmmmmmm....", "...mmmmddddmmmm...", "..................", ".................."],
+"scissors":["..................", "...mmm............", "..hmmmh...........", ".hm...mh..........", ".mm...mm........hm", ".dm...mm......hhmm", "..dmmmdmh....hmmd.", "...mmm.dmhh.hmmd..", "........dmmdmdd...", ".........mmmd.....", "...mmm..hmmdmhh...", "..hmmmhhmdd.dmmh..", ".hm...mmd....dmmh.", ".mm...mm......ddmm", ".dm...md........dm", "..dmmmd...........", "...mmm............", ".................."],
+"scroll":["..................", "...hhhhhhhhhhhh...", "..mdmmmmmmmmmmmm..", "..mdmmmmmmmmmmdm..", "....mmmmmmmmmm....", "....mmmmmmmmmm....", "....mmddddddmm....", "....mmmmmmmmmm....", "....mmddddddmm....", "....mmmmmmmmmm....", "....mmddddddmm....", "....mmmmmmmmmm....", "....mmddddmmmm....", "....mmmmmmmmmm....", "..mhmmmmmmmmmmhm..", "..mmmmmmmmmmmmdm..", "...dddddddddddd...", ".................."],
+"shades":["..................", "..................", "..................", "..................", "..................", "mhhhhhhmmmmhhhhhhm", ".mmmmmm....mmmmmm.", ".mhhmmmmmmmhhmmmm.", ".dhmmmm....hmmmmd.", "..dmmmd....dmmmd..", "...ddd......ddd...", "..................", "..................", "..................", "..................", "..................", "..................", ".................."],
+"shield":["..................", "..hhhhhhhhhhhhhh..", "..mmmmmmmmmmmmmm..", "..mmmmmmmmmmmmmm..", "..mmmmmmmmmmddmm..", "..mmmmmmmmmd..mm..", "..mmmmmmmmd...mm..", "..mmmddmmd...hmm..", "..dmm..dm....mmd..", "...mm...d...hmm...", "...dmh.....hmmd...", "....mmh...hmmm....", "....dmmhhhmmmd....", ".....dmmmmmmd.....", "......dmmmmd......", ".......dddd.......", "..................", ".................."],
+"shoe":["..................", "..................", "..................", "..................", ".......hmhh.......", "......hmmmm.......", "......mm.dm.......", ".....hmmh.d.......", ".....mmmmh.hh.....", ".hhhhmmmmmhmmhh...", ".mmmmmmmmmmmmmmhh.", ".mmmmmmmmmmmmmmmm.", ".mmmmmmmmmmmmmmmm.", ".ddddddddddddddddd", ".ddddddddddddddddd", "..d..d..d..d..d...", "..................", ".................."],
+"slot":["..................", "..hhhhhhhhhhh.....", "..mmmmmmmmmmm..h..", "..mmmmmmmmmmm.mmm.", ".hmmmmmmmmmmmh.m..", ".mmddmddmddmmm.m..", ".mm..m..m..mmm.m..", ".mm..m..m..mmm.m..", ".mmhhmhhmhhmmm.m..", ".mmhhmhhmhhmmm.m..", ".mm..m..m..mmm.m..", ".mm..m..m..mmmmd..", ".mmhhmhhmhhmmm....", ".mmdddddddddmm....", ".mmdddddddddmm....", ".mmmmmmmmmmmmm....", ".ddddddddddddd....", ".................."],
+"snake":["..................", "..................", "..................", "............m.....", "..........hhmhh...", "..........mm.mm.dd", "..........mmhmmdd.", "......hmmmmmmdd..d", ".....hmmmmddd.....", "....mmm...........", "....mmm...........", ".....dmmmmmmmh....", "......dmmmmmmmh...", ".............mmm..", ".............mmm..", "...mmmmmmmmmmmd...", "...mmmmmmmmmmd....", ".................."],
+"snow":["..................", "......m.hh.m......", ".......mmmm.......", "........mm........", "..mhh...mm...hhm..", "..mmmh..mm..hmmm..", "...dmmhhmmhhmmd...", "....ddmmmmmmdd....", "......mmhhmm......", "......mmhhmm......", "....hhmmmmmmhh....", "...hmmddmmddmmh...", "..mmmd..mm..dmmm..", "..mdd...mm...ddm..", "........mm........", ".......mmmm.......", "......m.dd.m......", ".................."],
+"sound":["..................", "..................", "........h.........", ".......hm...mm....", "......hmm....mh...", ".....hmmm..h..m...", ".hhhhmmmm..m..mh..", ".mmmmmmmm..dh.dm..", ".mmmmmmmm...m..m..", ".mmmmmmmm...m..m..", ".mmmmmmmm..hd.hm..", ".ddddmmmm..m..md..", ".....dmmm..d..m...", "......dmm....md...", ".......dm...mm....", "........d.........", "..................", ".................."],
+"sparkle":["..................", "..............h...", "......hh.....mmm..", "......mm......d...", "......mm..........", ".....hmmh.........", "....hmmmmh........", ".mmmmmmhmmmmm.....", ".mmmmmmhmmmmm.....", "....dmmmmd........", ".....dmmd.........", "......mm..........", "......mm..........", "......dd......h...", ".............hmh..", "..............h...", "..................", ".................."],
+"sprout":["..................", "..................", "..............hhh.", "mhhhh......hhhmdm.", ".mmmmh.....mmmdmm.", ".mmdmmh...hmmdmmd.", ".dmmddmh..mmdmmd..", "..mmmddm..mdmdd...", "..ddddmdhhmdd.....", "......ddmmd.......", "........mm........", "........mm........", "........mm........", "........mm........", "........mm........", "........mm........", "....dddddddddd....", ".................."],
+"sun":["........hh........", "........mm........", "........dd........", "..mm..........mm..", "...m..........m...", "......hhhhhh......", ".....hmmmmmmh.....", ".....mmmmmmmm.....", "mmm..mmmmmmmm..mmm", "mmm..mmmmmmmm..mmm", ".....mmmmmmmm.....", ".....dmmmmmmd.....", "......dddddd......", "...m..........m...", "..mm..........mm..", "........hh........", "........mm........", "........dd........"],
+"swap":["..................", "..................", "............h.....", "............mhh...", "..mmmmmmmmmmmmmm..", "..mmmmmmmmmmmmmm..", "............mdd...", "............d.....", "..................", "..................", ".....h............", "...hhm............", "..mmmmmmmmmmmmmm..", "..mmmmmmmmmmmmmm..", "...ddm............", ".....d............", "..................", ".................."],
+"swords":["..................", ".mh............hm.", ".mmh..........hmm.", "..dmh........hmd..", "...dmh......hmd...", "....dmh....hmd....", ".....dmh..hmd.....", "......dmhhmd......", ".......mmmm.......", "..mh...mmmm...hm..", "..mmh.hmddmh.hmm..", "...dmhmd..dmhmd...", "....mmm....mmm....", "...hmdmh..hmdmh...", "..hmd.dmmmmd.dmh..", ".mmd...dmmd...dmm.", ".md............dm.", ".................."],
+"target":["..................", "......mmmmmm......", "....hmmmmmmmmh....", "...hmm......mmh...", "..hmd..hmmh..dmh..", "..md..hmmmmh..dm..", ".hm..hmd..dmh..mh.", ".mm.hmd.hh.dmh.mm.", ".mm.mm.mmmm.mm.mm.", ".mm.mm.mmmm.mm.mm.", ".mm.dmh.dd.hmd.mm.", ".dm..dmh..hmd..md.", "..mh..dmmmmd..hm..", "..dmh..dmmd..hmd..", "...dmm......mmd...", "....dmmmmmmmmd....", "......mmmmmm......", ".................."],
+"trophy":["..................", "...hhhhhhhhhhhh...", "hmmmmmmmmmmmmmmmmh", "m..mmhmmmmmmmmm..m", "m..dmhmmmmmmmmd..m", "d...mhmmmmmmmm...d", ".m..dhmmmmmmmd..m.", "..m..dmmmmmmd..m..", "......dmmmmd......", ".......dmmd.......", "........mm........", "........mm........", "........mm........", ".....hhhmmhhh.....", "....hmmmmmmmmh....", "....mmddddddmm....", "....dddddddddd....", ".................."],
+"user":["..................", ".......hhhh.......", "......hmmmmh......", ".....hmmmmmmh.....", ".....mmmmmmmm.....", ".....dmmmmmmd.....", "......dmmmmd......", ".......dddd.......", "..................", ".....hhhhhhhh.....", "...hhmmmmmmmmhh...", "..hmmmmmmmmmmmmh..", ".hmmmmmmmmmmmmmmh.", ".mmmmmmmmmmmmmmmm.", ".dddddddddddddddd.", "..................", "..................", ".................."],
+"hourglass":["..................", "..mhmmmmmmmmmmhm..", "..mmmmmmmmmmmmmm..", "...m..........m...", "...d..........d...", "....m.dddddd.m....", ".....m.dddd.m.....", "......m.dd.m......", ".......mddm.......", ".......mddm.......", "......m.dd.m......", ".....m..dd..m.....", "....m...dd...m....", "...h...dddd...h...", "...m.dddddddd.m...", "...mddddddddddm...", "..mmmmmmmmmmmmmm..", "..mddddddddddddm.."],
+"news":["..................", "..................", ".hmmmmmmmmmmmmh...", ".m............m...", ".m.mmmmmmmmmm.mdh.", ".m.mmmmmmmmmm.mdm.", ".m............mdm.", ".m.ddddd.mmmm.mdm.", ".m.ddddd......mdm.", ".m.ddddd.mmmm.mdm.", ".m.ddddd......mdm.", ".m............mdm.", ".m.mmmmmmmmmm.mdm.", ".m............mdm.", ".m.mmmmmmm....mdm.", ".dmmmmmmmmmmmmddm.", "...............md.", "...mmmmmmmmmmmmd.."],
+"swirl":["..................", "........mmm.......", ".....hmmmmmmmm....", "....hmm.....mmm...", "...hmd........mh..", "...md..mmmmm...mh.", "..hm..hm...mh..dm.", "..mm..m.....mh..m.", "..mm.mm..hh.dm..m.", "..mm..m..mm..m..m.", "..dm..dmmmd.hm..m.", "...mh..mmd..md..m.", "...dmm.....mm..hm.", "....dmmmmmmmd..md.", "......mmmmm...md..", "...m.........mm...", "...mmmm...mmmm....", ".....mmmmmmm......"],
+"receipt":["..................", "...hhhhhhhhhhhh...", "...mmmmmmmmmmmm...", "...mmddddddddmm...", "...mm........mm...", "...mmmmmmmmhhmm...", "...mm......mmmm...", "...mmmmmmmmdmmm...", "...mm.......mmm...", "...mmmmmhhmmmmm...", "...mmmmmmmmmdmm...", "...mm...mm...mm...", "...mm...mm...mm...", "...mmhhhmmhhhmm...", "...mmmmmmmmmmmm...", "...mdmdmdmdmdmd...", "...d.d.d.d.d.d....", ".................."],
+"infinity":["..................", "..................", "..................", "..................", "..................", "...hmmmh..hmmmh...", "..hmmmmmhhmmmmmh..", ".hmd...mmmm...dmh.", ".mm....mmmm....mm.", ".mm....mmmm....mm.", ".dmh...mmmm...hmd.", "..dmmmmmddmmmmmd..", "...dmmmd..dmmmd...", "..................", "..................", "..................", "..................", ".................."],
+"ff":["..................", "..................", "..................", "..................", "..h......h........", "..mh.....mh.......", "..mmh....mmh......", "..mmmh...mmmh.....", "..mmmmh..mmmmh....", "..mmmmmm.mmmmmm...", "..mmmmd..mmmmd....", "..mmmd...mmmd.....", "..mmd....mmd......", "..md.....md.......", "..d......d........", "..................", "..................", ".................."],
+"shirt":["..................", ".....hhh..hhh.....", "..hhhmm.dd.mmhhh..", ".hmmmmmhddhmmmmmh.", "hmmmmmmmddmmmmmmmh", "mmmmmmmmmmmmmmmmmm", "dmmmmmmmmmmmmmmmmd", ".ddmmmmmmmmmmmmdd.", "...dmmmmmmmmmmd...", "....mmmmmmmmmm....", "....mmmmmmmmmm....", "....mmmmmmmmmm....", "....mmmmmmmmmm....", "....mmmmmmmmmm....", "....mmmmmmmmmm....", "....mmmmmmmmmm....", "....dddddddddd....", ".................."],
+"cards":["..................", "..hhhhmmm.........", ".hmmmmmmmm........", ".mmmmm............", ".mmmmm..mmmmmmm...", ".mmmmm.h.......h..", ".mmmmm.m..hhh..m..", ".mmmmm.m..mmm..m..", ".mmmmm.m..ddd..m..", ".mmmmm.m.......m..", ".mmmmm.m.hhhhh.m..", ".mmmmm.mhmmmmmhm..", ".mmmmm.mmmmmmmmm..", ".ddddd.mdddddddm..", ".......m.......m..", ".......d.......d..", "........mmmmmmm...", ".................."],
+"vs":["..................", "..................", "..................", "..................", "..hmhhhmhhmmmmhh..", ".hmmmmmmmmmmmmmmh.", ".mm.mmm.mm....mmm.", ".mm.mmm.mm.mmmmmm.", ".mm.dmd.mm...mmmm.", ".mmh.m.hmmmmm.mmm.", ".mmm.d.mmmmmm.mmm.", ".mmmh.hmmm...hmmm.", ".dmmmmmmmmmmmmmmd.", "..dddmddddmmmddd..", "..................", "..................", "..................", ".................."],
+"bars":["..................", "..................", "............hhhh..", "............mmmm..", "............mmmm..", "............mmmm..", ".......hhhh.mmmm..", ".......mmmm.mmmm..", ".......mmmm.mmmm..", ".......mmmm.mmmm..", "..hhhh.mmmm.mmmm..", "..mmmm.mmmm.mmmm..", "..mmmm.mmmm.mmmm..", "..mmmm.mmmm.mmmm..", "..mmmm.mmmm.mmmm..", "..mmmm.mmmm.mmmm..", ".mddddmddddmddddm.", ".................."],
+"pencil":["..................", ".............hh...", "............hhhh..", "...........hmmhmm.", "..........hddmmd..", ".........hmmmmd...", "........hmmmmd....", ".......hmmmmd.....", "......hmmmmd......", ".....hmmmmd.......", "....hmmmmd........", "...mmmmmd.........", "...mmmmd..........", "..h.dmd...........", "..mm.d............", ".mmmm.............", ".md...............", ".................."],
+"compass":["........mm........", ".....hmm..mmh.....", "....hmmmmmmmmh....", "...hmd......dmh...", "..hmd........dmh..", ".hmd........m.dmh.", ".mm.......hm...mm.", ".mm.....hhmm...mm.", ".mm....dmmm....mm.", ".mm....ddmd....mm.", ".mm...dddd.....mm.", ".mm...dd.......mm.", ".dmh.d........hmd.", "..dmh........hmd..", "...dmh......hmd...", "....dmmmmmmmmd....", ".....dmmmmmmd.....", ".................."],
+"info":["..................", ".....hhhmmhhh.....", "....hmmmmmmmmh....", "...hmmmm..mmmmh...", "..hmmmmm..mmmmmh..", ".hmmmmmmmmmmmmmmh.", ".mmmmmmdmmmmmmmmm.", ".mmmmmm...mmmmmmm.", ".mmmmmmh..mmmmmmm.", ".mmmmmmm..mmmmmmm.", ".mmmmmmm..mmmmmmm.", ".mmmmmmm..mmmmmmm.", ".dmmmmdd..ddmmmmd.", "..dmmm......mmmd..", "...dmmhhhhhhmmd...", "....dmmmmmmmmd....", ".....dddddddd.....", ".................."],
+"megaphone":["..................", "..................", ".............hhdh.", "............hmmdm.", "..........hhmmmdm.", ".........hmmmmmdm.", "..hhhhhhhmmmmmmdm.", ".hmmmmmmmmmmmmmdm.", ".mmmmmmmmmmmmmmdm.", ".mmmmmmmmmmmmmmdm.", ".ddddddmmmmmmmmdm.", ".......ddmmmmmmdm.", "....hhh..dmmmmmdm.", "....mmm...ddmmmdm.", "....mmm.....dmmdm.", "....ddd......dddm.", "...............dd.", ".................."],
+"handshake":["..................", "..................", "..................", "dd..............dd", "ddd.....hhhh...ddd", "dddh..hhmmmmh.hddd", "dddmhhmmdmmmmhmddd", ".ddmmmdm.mdmmmmdd.", "..dmmm.dmm.dmmmd..", "...dmmh.mmh.dmm...", "....dmmh.dmh.md...", ".....dmmh.mmmd....", "......dmmmmmm.....", ".......ddmdd......", "..................", "..................", "..................", ".................."],
+"warning":["..................", "........hh........", "........mm........", ".......hmmh.......", ".......mmmm.......", "......hmddmh......", "......mm..mm......", ".....hmm..mmh.....", ".....mmm..mmm.....", "....hmmm..mmmh....", "....mmmm..mmmm....", "...hmmmm..mmmmh...", "...mmmmmmmmmmmm...", "..hmmmmm..mmmmmh..", "..mmmmmm..mmmmmm..", ".mmmmmmmmmmmmmmmm.", ".mddddddmmddddddm.", ".................."],
+"bell":["..................", "........hh........", ".......hmmh.......", ".....hhmmmmhh.....", "....hmmmmmmmmh....", "....mmmmmmmmmm....", "...hmmmmmmmmmmh...", "...mmmmmmmmmmmm...", "...mmmmmmmmmmmm...", "...mmmmmmmmmmmm...", "..hmmmmmmmmmmmmh..", "..mmmmmmmmmmmmmm..", ".mmmmmmmmmmmmmmmm.", "mmddddddddddddddmm", "..................", ".......mmmm.......", "........mm........", ".................."],
+"door":["..................", "...hhhhhhhhhhhh...", "...mmmmmmmmmmmm...", "...mmddddddddmm...", "...mmdmmmmmmdmm...", "...mmdmmmmmmdmm...", "...mmdmmmmmmdmm...", "...mmdmmmmmmdmm...", "...mmddddddddmm...", "...mmmmmmmm.hmm...", "...mmddddddddmm...", "...mmdmmmmmmdmm...", "...mmdmmmmmmdmm...", "...mmdmmmmmmdmm...", "...mmdmmmmmmdmm...", "...mmddddddddmm...", "...mmmmmmmmmmmm...", ".mmddddddddddddmm."],
+"wave":["..................", "........hh........", ".....hh.mm.hh.....", ".....mm.mm.mm.....", ".....mm.mm.mm.....", ".....mm.mm.mm.hh..", ".....mm.mm.mm.mm..", "..m..mm.mm.mm.mm..", ".m...mmhmmhmmhmm..", ".m...mmmmmmmmmmm..", "..m..mmmmmmmmmmm..", "..mm.mmmmmmmmmmm..", "...mmmmmmmmmmmmd..", "....mmmmmmmmmmd...", ".....dmmmmmmmd....", "......dmmmmmm.....", ".......mmmmmm.....", ".......dddddd....."],
+"shuffle":["..................", "..............h...", "..............mh..", "mmmmh......hhmmmm.", "mmmmmh.....mmmmmm.", "....dmh...hmd.md..", ".....mmh.hmm..d...", ".....dmmhmmd......", "......mmmmm.......", "......mmmmm.......", ".....hmmdmmh..h...", ".....mmd.dmm..mh..", "mmmmmmd...dmmmmmm.", "mmmmmd.....dmmmmm.", "..............md..", "..............d...", "..................", ".................."],
+"gradcap":["..................", "..................", "........hh........", "......hhmmhh......", "....hhmmmmmmhh....", "..hhmmmmmmmmmmhh..", "mmmmmmmmmdmmmmmmm.", "..ddmmmmmmdddddm..", "....mmmmmmmmmm.m..", "....mddddddddm.m..", "....mmmmmmmmmm.m..", "....mmmmmmmmmm.m..", "....mmmmmmmmmm.m..", "....dmmmmmmmddhmh.", ".....ddddddd..mmm.", "..............ddd.", "..................", ".................."],
+"ruler":["..................", ".h................", ".mh...............", ".mmh..............", ".mmmh.............", ".mmmmh............", ".mmmmmh...........", ".mmmmmmh..........", ".mmmdmmmh.........", ".mmm.dmmmh........", ".mmm..dmmmh.......", ".mmm...dmmmh......", ".mmm....dmmmh.....", ".mmm.....mmmmh....", ".mmmhhhhhmmmmmh...", ".mmmmmmmmmmmmmmm..", ".ddddddddddddddmm.", ".................."],
+"wind":["..................", "..........mmm.....", ".........m...m....", "..............m...", ".............mm...", "mmmmmmmmmmmmmm....", "mmmmmmmmmmmmm.....", "..................", "mmmmmmmmmmmmmmmm..", "mmmmmmmmmmmmmmmmh.", "................mm", ".....mmmmmmmm...mm", ".....mmmmmmmmh.md.", ".............mmm..", ".............d....", "..............mm..", "..................", ".................."],
+"tv":["..................", ".....m......m.....", "......m....m......", ".......m..m.......", "........hh........", "..hmmmmmmmmmmhhh..", ".hmmmmmmddmmmmmmh.", ".mm..........mdmm.", ".mm..........mdmm.", ".mm..........mmmm.", ".mm..........mdmm.", ".mm..........mdmm.", ".mm..........mmmm.", ".mm..........mmmm.", ".dmhhmmmmmmmmmmmd.", "..dmmmmmmmmmmmmd..", "...dd........dd...", ".................."],
+"map":["..................", ".....hd.........h.", "..hhhmdddd...hhhm.", "hhmmmmddddddhmmmm.", "mmmmmmddddddmmdmm.", "mmmmmmddddddmd.dm.", "mmmmmmddddhdm...m.", "mmmmmmddddddmh.hm.", "mmmmmmdddhddmmhmm.", "mmmmdmdhddddmmmmm.", "mmmd.mddddddmmmmm.", "mmm.hmddddddmmmmm.", "mmmhmmddddddmmmmm.", "mmmmmmddddddmmmmm.", "mmmmmdddddddmmmmd.", "mmddd..dddddmddd..", "dd........ddd.....", ".................."],
+"green":["..................", "...........hhhhm..", "...........mmmmm..", "...........mmdd...", "...........md.....", "...........m......", "...........m......", "...........m......", "...........m......", "....hhhhhhhmhh....", "..hhmmmmmmmmmmhh..", ".hmmmmmmmmdmdmmmh.", "mmmmhhmmmd.m.dmmmm", "mmmmhmmmm..d..mmmm", ".dmmmmmmmh...hmmd.", "..ddmmmmmmmmmmdd..", "....ddddddmmmd....", ".................."],
+"bed":["..................", "..................", "..................", ".hh...............", ".mm...............", ".mm...............", ".mm...............", ".mm...............", ".mm.hh..hhhhhhhhh.", ".mmhmmh.mmmmmmmmm.", ".mmdddddddddddddd.", ".mmmmmmmmmmmmmmmm.", ".mmmmmmmmmmmmmmmm.", ".mmddddddddddddmm.", ".mm............mm.", ".mm............mm.", ".dd............dd.", ".................."],
+"sunrise":["..................", "..................", "..................", "........m.........", "........m.........", "....m........m....", "....m........m....", ".......hhhh.......", ".....hhmmmmhh.....", ".mm..mmmmmmmm..mm.", "....hmmmmmmmmh....", "....mmmmmmmmmm....", "mmmmmmmmmmmmmmmmmm", "mmmmddddddddddmmmm", "..................", "..mmmmmm..mmmmmm..", "..................", ".....mmmmmmmm....."],
+"ballot":["..................", "......hmmmmh......", "......m....m......", "......m....m......", "......m...mm......", "......mm.m.m......", "......m.m..m......", "......m....m......", "......mhhhhm......", "..hhhhhhhhhhhhhh..", "..mmmmmmmmmmmmmm..", "..mmddddddddddmm..", "..mmmmmmmmmmmmmm..", "..mmmmmmmmmmmmmm..", "..mmmmmmmmmmmmmm..", "..mmmmmmmmmmmmmm..", "..dddddddddddddd..", ".................."],
+"mic":["..................", ".......hhhh.......", "......hmmmmh......", "......mddddm......", "......mmmmmm......", "......mddddm......", "......mmmmmm......", "..mh..mddddm..hm..", "...m..dmmmmd..m...", "...m...dddd...m...", "...dm........md...", "....mm......mm....", ".....mmmhhmmm.....", "........mm........", "........mm........", "........mm........", ".....mmmmmmmm.....", ".....mmmddmmm....."],
+"install":[".....mmmmmmmm.....", "....hmmmmmmmmh....", "....m........m....", "....m...hh...m....", "....m...mm...m....", "....m...mm...m....", "....m...mm...m....", "....m...mm...m....", "....m...mm...m....", "....m.mmmmmm.m....", "....m..mmmm..m....", "....m...dd...m....", "....m........m....", "....m.mmmmmm.m....", "....m........m....", "....mhhh..hhhm....", "....dmmmmmmmmd....", ".....dddmmddd....."],
+"dog":["..................", "....hhhhhhhhhh....", "..hhmmmmmmmmmmhh..", ".ddmmmmmmmmmmmmdd.", "dddmmdmmmmmmdmmddd", "dddmm.mmmmmm.mmddd", "dddmm.mmmmmm.mmddd", "dddmmhmmmmmmhmmddd", "dd.mmmmddddmmmm.dd", "dd.dmmm....mmmd.dd", ".d..dmmm..mmmd..d.", ".....mmmhhmmm.....", ".....dm.mm.md.....", "......dmmmmd......", ".......mddm.......", "..................", "..................", ".................."],
+"cricket":["..................", "...............hm.", "...hh.........hm..", "..hmmh.......hmd..", ".mmhmmm......mm...", ".mmmmmm.....hmm...", "..dmmd.....hmmm...", "...dd.....hmmmd...", "..........mmmm....", ".........hmmmd....", "........hmmmd.....", ".......hmmmm......", ".......mmmmd......", "......hmmmd.......", ".....hmmmd........", ".....mmmm.........", "....mmmmd.........", "....mddd.........."]
 };
-const PX_COINS=["..................","..................","....kkkkk.........","...kkmmmkk........","..kmmmmmmmk.......",".kkmmmmmmmkk......",".kmmmmmmmmmk......",".kmmmmmmmmkkkkk...",".kmmmmmmkkhhmmmkk.",".kkmmmmmkhhhdmmmk.","..kmmmmkhhdddddmmk","...kkmmkhhhhdmmmmk","....kkkkmhhhdmmmmk",".......kmmdddddmmk",".......kmmmmdmmmmk","........kmmmdmmmk.","........kkmmmmmkk.","..........kkkkk..."];
-const PX_TOKEN=["..................","..................","......kkkkkkk.....",".....kkmmmmmkk....","....kmmmmmmmmmk...","...kmmmmymmmmmmk..","..kkmmmyyymmmmmkk.","..kmmmmyyymmmmmmk.","..kyyyyyyyyyyyymk.","..kyyyyyyyyyyymmk.","..kmyyyyyyyyymmmk.","..kyyyyymyyyyymmk.","..kkyymmmmmyyymkk.","...kmmmmmmmmmmmk..","....kmmmmmmmmmk...",".....kkmmmmmkk....","......kkkkkkk.....",".................."];
-// CS456: render every UI icon as pixel art (auto-rasterized from the vector set at 18x18) so the whole
-// game matches the pixel theme. Monochrome icons inherit currentColor exactly like the old vectors did;
-// the colored emblems (coin/medals/legend token) render via the pixel palette. Falls back to the vector
-// for anything not in PXICONS/pxColorEmblem.
+const PX_COINS=[".....kkk..........", "...kkdddkk........", "..kddhhhddk.......", ".kddhmmmhddk......", ".kdhmmmmkkkkkk....", "kdhmmddkddddddk...", "kdhmmdkdhhhhhhdk..", "kdhmmkdhhmmddhmdk.", ".kdhkdhhmddddmmmdk", ".kddkdhmddmmmmmmdk", "..kdkdhmmdddmmmmdk", "...kkdhmmmmdddmmdk", "....kdhmmmmmddmmdk", "....kdhhmddddmmmdk", ".....kdmmmddmmmdk.", "......kdmmmmmmdk..", ".......kddddddk...", "........kkkkkk...."];
+const PX_TOKEN=["......kkkkkk......", "....kkddddddkk....", "...kddhhhhhhddk...", "..kddhhmmmmhhddk..", ".kddhmmmmmmmmmddk.", ".kdhmmmmyymmmmmdk.", "kdhhmmmmyymmmmmmdk", "kdhmmmmwyymmmmmmdk", "kdhmmyyyyyyyymmmdk", "kdhmmmyyyyyymmmmdk", "kdhmmmmyyyymmmmmdk", "kdhhmmyyyyyymmmmdk", ".kdhmmyymmyymmmdk.", ".kddmmmmmmmmmmddk.", "..kddmmmmmmmmddk..", "...kddmmmmmmddk...", "....kkddddddkk....", "......kkkkkk......"];
+// CS456: every UI icon is pixel art on an 18x18 grid. The one-colour set (PXICONS) is hand drawn:
+// 'm' is the body, 'h' the light along the top of a thick run and 'd' the shade along its bottom.
+// Drawn mono (no color given) the body inherits currentColor, exactly like the old vectors did, and
+// the light and shade are white and black laid over it at low opacity, so the bevel follows whatever
+// colour the text is, gold on a card or ink on a gold button. The colored emblems (coin, medals,
+// legend token) render through the pixel palette. Falls back to the vector for anything not in
+// PXICONS/pxColorEmblem.
 function pxIconSVG(rows, sz, color, style){
   const mono=!color;
   const pal=color?{m:color,d:pxShadeHex(color,0.62),h:pxLiteHex(color,0.5),k:'#2a2412',w:'#f2f5f7',b:'#3a6fb0',r:'#d0433a',y:'#F1D04A',g:'#2fa564'}:null;
-  let cells='';
+  let cells='', dk='', lt='';
   for(let y=0;y<rows.length;y++){const row=rows[y];for(let x=0;x<row.length;x++){const ch=row[x];if(ch==='.')continue;
-    cells+=`<rect x="${x}" y="${y}" width="1.04" height="1.04"${mono?'':(' fill="'+(pal[ch]||'#f0f')+'"')}/>`;}}
-  return `<svg class="ic" viewBox="0 0 18 18" width="${sz}" height="${sz}"${mono?' fill="currentColor"':''} shape-rendering="crispEdges" aria-hidden="true" focusable="false"${style?` style="${style}"`:''}>${cells}</svg>`;
+    if(mono){ const c=`M${x} ${y}h1.04v1.04h-1.04z`; cells+=c; if(ch==='d') dk+=c; else if(ch==='h') lt+=c; }
+    else cells+=`<rect x="${x}" y="${y}" width="1.04" height="1.04" fill="${pal[ch]||'#f0f'}"/>`;}}
+  const body=mono?`<path d="${cells}"/>${dk?`<path d="${dk}" fill="#000" opacity=".3"/>`:''}${lt?`<path d="${lt}" fill="#fff" opacity=".42"/>`:''}`:cells;
+  return `<svg class="ic" viewBox="0 0 18 18" width="${sz}" height="${sz}"${mono?' fill="currentColor"':''} shape-rendering="crispEdges" aria-hidden="true" focusable="false"${style?` style="${style}"`:''}>${body}</svg>`;
 }
+const PX_EMBLEM={"wheel":["wheel","#d0433a"],"pumpkin":["pumpkin","#e8801f"],"turkey":["turkey","#9a5f2e"],"leaf":["leaf","#d8843a"],"heart":["heart","#d0433a"],"palette":["palette","#d6a45a"],"bandage":["bandage","#e3ae78"],"flagUS":["flagUS","#d0433a"],"flagEU":["flagEU","#3a6fb0"],"faceCry":["faceCry","#F7C948"],"faceDevil":["faceDevil","#8b5cf6"],"faceSalute":["faceSalute","#F7C948"],"facePlead":["facePlead","#F7C948"],"faceCalm":["faceCalm","#F7C948"],"faceCold":["faceCold","#5bb8f0"],"faceGrimace":["faceGrimace","#F7C948"],"faceSweat":["faceSweat","#F7C948"],"skull":["skull","#e8ebf0"],"eyes":["eyes","#f2f5f7"],"handsUp":["handsUp","#F7C948"],"flex":["flex","#F7C948"],"popcorn":["popcorn","#d0433a"],"giftBox":["gift","#d0433a"],"starGold":["star","#F1D04A"]};
 function pxColorEmblem(name){   // colored pixel emblems (defined lazily so PXI, at the bottom of the file, is ready)
   if(name==='coin')  return [PXI.dollar,'#F1D04A'];
   if(name==='coins') return [PX_COINS,'#F1D04A'];
@@ -3828,6 +3863,7 @@ function pxColorEmblem(name){   // colored pixel emblems (defined lazily so PXI,
   if(name==='medalSilver') return [PXI.medal,'#d7dde3'];
   if(name==='medalBronze') return [PXI.medal,'#c8823f'];
   if(name==='legendtoken') return [PX_TOKEN,'#8b5cf6'];
+  const e=PX_EMBLEM[name]; if(e && PXI[e[0]]) return [PXI[e[0]],e[1]];
   return null;
 }
 function ic(name,o){ o=o||{}; const sz=o.size||'1em';
@@ -3839,8 +3875,10 @@ function ic(name,o){ o=o||{}; const sz=o.size||'1em';
    touch the hundreds of emoji spots individually and data-field emojis (badge.e, headline.icon, …) convert
    for free. Copy-to-clipboard share text never passes through here, so it keeps its emoji (SVG can't live in
    plain text). Only replaces emoji in TEXT runs, never inside a tag/attribute. Kept as text on purpose:
-   plain text arrows (→ ← ↺), ✓, ✕, ★, country flags, and the daily-share color squares. The
-   emoji-presentation arrows (⬆ ↗ ↩) that iOS renders as colored boxes ARE mapped to themed icons. */
+   plain text arrows (→ ← ↺), ✓, ✕, ★, ♥ beside a like count, the falling ❅ of the frost weather, and the
+   daily-share color squares (share text, never on screen). The emoji-presentation arrows (⬆ ↗ ↩) that iOS
+   renders as colored boxes ARE mapped to themed icons. golf/check-emoji.mjs holds every emoji in this file
+   to that: mapped here, or on its short list of reasons not to be. */
 const EMOJI_MAP={
   '🏆':'trophy','⛳':'flag','📍':'pin','🔒':'lock','🔐':'lockkey','🔑':'key','🏅':'medal','🎖':'ribbon',
   '⚔':'swords','🐐':'goat','🥇':'medalGold','🥈':'medalSilver','🥉':'medalBronze','🔥':'fire','🎯':'target',
@@ -3851,7 +3889,22 @@ const EMOJI_MAP={
   '🏠':'home','👤':'user','😤':'grit','🌱':'sprout','☼':'sun','⚑':'pennant','⚖':'scales',
   '⏭':'skip','⏱':'clock','🛍':'cart',
   '⬆':'arrowUp','↗':'arrowUR','↩':'arrowLeft',
-  '💬':'chat','🐞':'bug','💡':'bulb','🔊':'sound','📳':'haptic'
+  '💬':'chat','🐞':'bug','💡':'bulb','🔊':'sound','📳':'haptic',
+  // the stand ins drawn for the rest (golf/pixel-icons/more.py and pxmore.py). Each is picked for what the
+  // emoji MEANS where it appears, so the cup is a putting green, the rivalry glove is crossed swords and a
+  // Tour Pass ticket is the same ticket the pass wears everywhere else.
+  '🎁':'giftBox','🎟':'ticket','🎫':'ticket','🎡':'wheel','⏳':'hourglass','⭐':'starGold','🪙':'coin',
+  '📰':'news','🗞':'news','🌀':'swirl','🧾':'receipt','🎃':'pumpkin','🦃':'turkey','🍂':'leaf','☀':'sun',
+  '♾':'infinity','❤':'heart','⏩':'ff','🎨':'palette','🧑':'user','👕':'shirt','👔':'shirt','🎴':'cards',
+  '🃏':'cards','🆚':'vs','📊':'bars','✎':'pencil','✍':'pencil','🧭':'compass','ℹ':'info','▣':'install',
+  '🧢':'cap','🧤':'glove','📣':'megaphone','🩹':'bandage','🤝':'handshake','⚠':'warning','🕒':'clock',
+  '🕰':'clock','🔔':'bell','🚪':'door','📅':'calendar','👋':'wave','🔀':'shuffle','🎓':'gradcap','🚩':'flag',
+  '📐':'ruler','🌬':'wind','📺':'tv','🗺':'map','🕳':'green','🛏':'bed','🥊':'swords','🌅':'sunrise',
+  '📚':'book','🗳':'ballot','🎤':'mic','🇺🇸':'flagUS','🇪🇺':'flagEU',
+  // the fans' reactions in the chatter feed
+  '💀':'skull','🙌':'handsUp','👀':'eyes','😭':'faceCry','😈':'faceDevil','💅':'shades','🍿':'popcorn',
+  '🫡':'faceSalute','🥹':'facePlead','🙏':'heart','😌':'faceCalm','🥶':'faceCold','💪':'flex','🐕':'dog',
+  '😬':'faceGrimace','😅':'faceSweat','🫣':'faceGrimace','🏏':'cricket'
 };
 const EMOJI_RE=new RegExp('(?:'+Object.keys(EMOJI_MAP).map(e=>e.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')).join('|')+')️?','g');
 function emojifyIcons(h){ if(h==null) return h; h=String(h);
@@ -4790,14 +4843,14 @@ function seasonRepNode(oldPts, list){
   const wrap=$(`<div style="max-width:520px;margin:4px auto 12px"></div>`);
   // --- the status bar ---
   const meter=$(`<div class="scout" style="margin:0 auto 8px;border-color:var(--gold)"></div>`);
-  meter.innerHTML=`
+  meter.innerHTML=emojifyIcons(`
     <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px">
       <div><div class="small muted" style="letter-spacing:.14em;text-transform:uppercase;font-size:10px">Tour Rep${gain>0?` · <span class="rep-gain" style="color:#35d6a0;font-weight:800">+0</span>`:''}</div>
         <div class="rep-tier" style="font-family:var(--serif);font-weight:800;font-size:22px;color:var(--gold);line-height:1.05">, </div></div>
       <div style="text-align:right"><div class="rep-pts" style="font-family:var(--mono);font-weight:800;font-size:18px;color:var(--oncard)">${oldPts} pts</div>
         <div class="small muted">${done}/${ACH_TOTAL} done</div></div></div>
     <div style="margin-top:9px;height:9px;border-radius:5px;background:rgba(255,255,255,.08);overflow:hidden"><span class="rep-bar" style="display:block;height:100%;width:0%;background:linear-gradient(90deg,#e6a91f,#f6cd74)"></span></div>
-    <div class="small muted center rep-foot" style="margin-top:5px"></div>`;
+    <div class="small muted center rep-foot" style="margin-top:5px"></div>`);
   wrap.appendChild(meter);
   const tierEl=meter.querySelector('.rep-tier'), ptsEl=meter.querySelector('.rep-pts'), barEl=meter.querySelector('.rep-bar'),
         footEl=meter.querySelector('.rep-foot'), gainEl=meter.querySelector('.rep-gain');
@@ -11760,7 +11813,15 @@ function header(){
   left.appendChild(pl);
   bar.appendChild(left);
   // brand wordmark, absolutely centered horizontally across the banner → home
-  const brand=$(`<button class="bnbrand" aria-label="Home"><span class="bnwm"><b>Run The</b><i>Tour</i></span></button>`);
+  const brand=$(`<button class="bnbrand" aria-label="Home"><img class="bnmark" src="mark.png?v=3" width="24" height="24" alt="" decoding="async"><span class="bnwm"><b>Run The</b><i>Tour</i></span></button>`);
+  /* The mark sits beside the wordmark, as the football header carries its helmet. The words come first,
+     though: when the pills on either side leave no room for both (a guest with a Legend token AND coins on
+     a 390 phone), the mark steps out rather than cutting "TOUR" in half. Measured, because it depends on
+     the pills and on the font the page actually got. */
+  const fitMark=()=>{ try{ if(!brand.isConnected) return; brand.classList.remove('nomark'); const wm=brand.querySelector('.bnwm');
+    if(wm && wm.scrollWidth>wm.clientWidth+1) brand.classList.add('nomark'); }catch(e){} };
+  requestAnimationFrame(fitMark);
+  try{ document.fonts && document.fonts.ready.then(fitMark); }catch(e){}   // the display face can land later and be wider
   brand.onclick=()=>{ S.screen='title'; S.overlay=null; render(); };
   bar.appendChild(brand);
   // right group: legends-token counter + coin pill. CS433: shown for GUESTS too (as "0"), where a tap leads
@@ -12953,18 +13014,18 @@ function overlayAccount(screen){
     else if(sbSignedIn()&&sbUsername) S.overlay='record';
     render(); };
   if(mode==='username'){
-    box.innerHTML=`${forceName?`<div class="scout" style="border-color:#e2554e;margin:0 0 10px;text-align:left"><b style="color:#ff8a80">Username removed</b><div class="small" style="margin-top:3px;color:#dfeae2">${esc(sbNameFlag)}</div></div>`:''}
+    box.innerHTML=emojifyIcons(`${forceName?`<div class="scout" style="border-color:#e2554e;margin:0 0 10px;text-align:left"><b style="color:#ff8a80">Username removed</b><div class="small" style="margin-top:3px;color:#dfeae2">${esc(sbNameFlag)}</div></div>`:''}
       <p class="lede" style="margin:0 0 10px;text-align:left">Choose how you'll show up on the leaderboards, 3-20 letters or numbers.</p>
       <input class="name" id="au-user" maxlength="20" placeholder="e.g. BirdieKing" autocomplete="off">
       ${err?`<div class="autherr">${esc(err)}</div>`:''}
       <button class="btn goldfill" id="au-set" style="margin-top:10px" ${busy?'disabled':''}>${busy?'Saving…':'Save username'}</button>
-      <button class="btn ghost" id="au-out" style="margin-top:8px">Sign out</button>`;
+      <button class="btn ghost" id="au-out" style="margin-top:8px">Sign out</button>`);
     box.querySelector('#au-set').onclick=()=>{ const v=box.querySelector('#au-user').value; if(!v.trim()){S.acctErr='Enter a username.';render();return;} go(()=>sbSetUsername(v)); };
     box.querySelector('#au-out').onclick=()=>go(()=>sbSignOut());
   } else {
     const isUp=mode==='signup';
     let birthPrefill=''; try{ birthPrefill=localStorage.getItem('rtt_birth_year')||''; }catch(e){}
-    box.innerHTML=`${unlockPerks()}<button class="btn gbtn" id="au-google" ${busy?'disabled':''}>${GOOGLE_G}Continue with Google</button>
+    box.innerHTML=emojifyIcons(`${unlockPerks()}<button class="btn gbtn" id="au-google" ${busy?'disabled':''}>${GOOGLE_G}Continue with Google</button>
       <div class="author"><span>or</span></div>
       ${isUp?`<input class="name" id="au-user2" maxlength="20" placeholder="Username" autocomplete="username">
               <input class="name" id="au-email" type="email" placeholder="Email" autocomplete="email" style="margin-top:8px">
@@ -12976,7 +13037,7 @@ function overlayAccount(screen){
       ${S.acctNote?`<div class="small" style="color:#35d6a0;margin-top:9px">${esc(S.acctNote)}</div>`:''}
       ${err?`<div class="autherr">${esc(err)}</div>`:''}
       <button class="btn goldfill" id="au-go" style="margin-top:10px" ${busy?'disabled':''}>${busy?'…':(isUp?'Create account':'Sign in')}</button>
-      <div class="small muted center" style="margin-top:13px">${isUp?'Already have an account?':'New here?'} <a href="#" id="au-swap" style="color:var(--gold);font-weight:700">${isUp?'Sign in':'Create one'}</a></div>`;
+      <div class="small muted center" style="margin-top:13px">${isUp?'Already have an account?':'New here?'} <a href="#" id="au-swap" style="color:var(--gold);font-weight:700">${isUp?'Sign in':'Create one'}</a></div>`);
     box.querySelector('#au-google').onclick=()=>{ if(isUp){ const ag=ageGateOk(box); if(!ag.ok){ S.acctErr=ag.msg; render(); return; } } setRemember(true); go(()=>sbSignInGoogle()); };
     box.querySelector('#au-go').onclick=async()=>{ const pass=box.querySelector('#au-pass').value;
       setRemember(true);
@@ -15134,7 +15195,7 @@ function bagMenuNode(){
   wrap.appendChild($(`<div class="small muted" style="margin-bottom:8px">Your club sets · each one runs driver to putter. Tap one to equip it. Your golfer shows its display club, the whole set boosts you, and its name shows on your shots in the sim.</div>`));
   const owned=(cosmeticItems('club')||[]).filter(o=>cosOwned('club',o.id));
   const grid=$(`<div class="sgrid"></div>`);
-  grid.innerHTML=owned.map(o=>cosTileHTML('club',o)).join('');
+  grid.innerHTML=emojifyIcons(owned.map(o=>cosTileHTML('club',o)).join(''));
   wrap.appendChild(grid);
   grid.querySelectorAll('[data-tile]').forEach(x=>x.onclick=()=>shopTileClick(x));
   const locked=(cosmeticItems('club')||[]).some(o=>!cosOwned('club',o.id));
@@ -15307,8 +15368,8 @@ function scrSetup(){
       tiles=cosmeticItems(cat).filter(o=>cosOwned(cat,o.id) || ((cat==='plate'||cat==='cardbg') && (CARD_EARN[cosKey(cat,o.id)]||cosRewardOnly(cat,o.id)))).map(o=>cosTileHTML(cat,o));   // card cosmetics also show LOCKED earned + collection-reward items with how to earn them
     }
     const catLabel=(cats.find(c=>c[0]===cat)||[,cat])[1];
-    grid.innerHTML=tiles.length?tiles.join('')
-      :`<div class="shop-empty">You don't own any ${esc(catPlural(catLabel))} yet. Grab some in the Pro Shop.</div>`;
+    grid.innerHTML=emojifyIcons(tiles.length?tiles.join('')
+      :`<div class="shop-empty">You don't own any ${esc(catPlural(catLabel))} yet. Grab some in the Pro Shop.</div>`);
     wrap.appendChild(grid);
     if((cat==='plate'||cat==='cardbg') && !guest){
       const pv=$(`<button class="setup-shopbtn" style="margin-top:11px"><span>★ Preview my Player Card</span> <span class="ssb-go">▸</span></button>`);
@@ -17868,7 +17929,7 @@ function slotSpin(el, finalName, done){
   // up so it's above the viewport, then animate DOWN to translateY(0), decelerating to a stop on the winner.
   const rows=[finalName]; for(let i=0;i<24;i++) rows.push(GOLFERS[Math.floor(Math.random()*GOLFERS.length)].name);
   el.classList.add('slotting');
-  el.innerHTML=`<div class="slotstrip">${rows.map(nm=>`<div class="slotrow" style="height:${H}px;line-height:${H}px">${esc(cardDispName(nm))}</div>`).join('')}</div>`;
+  el.innerHTML=emojifyIcons(`<div class="slotstrip">${rows.map(nm=>`<div class="slotrow" style="height:${H}px;line-height:${H}px">${esc(cardDispName(nm))}</div>`).join('')}</div>`);
   const strip=el.querySelector('.slotstrip'), startY=-(rows.length-1)*H;
   strip.style.transform=`translateY(${startY}px)`;
   let fired=false; const fin=()=>{ if(fired) return; fired=true; done(); };
@@ -20332,7 +20393,7 @@ function scrEntry(){
     const tags=[...p.good.map(t=>({t,good:true})), ...entryPerks(p), ...p.bad.map(t=>({t,good:false}))]
       .map(o=>`<span class="ep-tg" style="color:${o.good?'#35d6a0':'#E14A33'};border-color:${o.good?'rgba(53,214,160,.32)':'rgba(225,74,51,.32)'}">${o.good?'✓':'✗'} ${esc(o.t)}</span>`).join('');
     panel.style.borderColor=p.col;
-    panel.innerHTML=`<div class="ep-kick" style="color:${p.col}">${esc(p.kick)}</div>
+    panel.innerHTML=emojifyIcons(`<div class="ep-kick" style="color:${p.col}">${esc(p.kick)}</div>
       <div class="ep-nm">${esc(p.name)}</div>
       <div class="small muted ep-blurb">${esc(p.blurb)}</div>
       ${meter('Career', (st.yrs-18)/(CAREER_MAX_YEARS-18)*100, st.yrs+' seasons', p.col)}
@@ -20342,10 +20403,10 @@ function scrEntry(){
       ${meter('Fans', st.fans/ENTRY_FANS_MAX*100, entryFansTxt(st.fans), '#ff9d3a')}
       <div class="small muted ep-note">Career is your <b>tour</b> career. Play it out and the Legend Circuit picks you up at 50 for up to ${CIRCUIT_MAX_YEARS} more, <b>${st.yrs+CIRCUIT_MAX_YEARS} seasons in all</b>.</div>
       <div class="ep-tags">${tags}</div>
-      ${catchHTML(p)}`;
+      ${catchHTML(p)}`);
     requestAnimationFrame(()=>{ try{ panel.querySelectorAll('.ep-mfill').forEach(f=>{ f.style.width=f.getAttribute('data-w')+'%'; }); }catch(e){} });
     // the name goes in the sub, not the label: "Turn pro as Late" / "as Exemption" reads badly
-    go.innerHTML=`Turn pro ▸<span class="sub">${esc(p.name)} · age ${p.age}</span>`;
+    go.innerHTML=emojifyIcons(`Turn pro ▸<span class="sub">${esc(p.name)} · age ${p.age}</span>`);
     wrap.querySelectorAll('[data-ep]').forEach(el=>el.classList.toggle('on', el.getAttribute('data-ep')===id));
   }
   wrap.querySelectorAll('[data-ep]').forEach(el=>{ el.onclick=()=>{
@@ -22354,6 +22415,11 @@ function csFeedHTML(tx){
 }
 // A beat's text may be a body string that already carries entities or markup (the storylines escape their
 // own names). The typewriter prints PLAIN text, so decode once and type that.
+// a line of cutscene text is TYPED, so it goes in as text rather than markup, which skips emojifyIcons().
+// A fan post on the feed carries its reaction emoji, so a line that has one is written as escaped markup
+// with the emoji swapped for its pixel icon; a line that has none stays plain text, exactly as before.
+function csTx(el, s){ s=String(s==null?'':s); EMOJI_RE.lastIndex=0;
+  if(EMOJI_RE.test(s)){ EMOJI_RE.lastIndex=0; el.innerHTML=emojifyIcons(esc(s)); } else el.textContent=s; }
 function csPlain(s){
   try{ const d=document.createElement('div'); d.innerHTML=String(s==null?'':s); return (d.textContent||'').replace(/\s+/g,' ').trim(); }
   catch(e){ return String(s==null?'':s); }
@@ -22442,9 +22508,9 @@ function csPlay(beats, ctx, done, opts){
     }else{
       stage.style.removeProperty('--dh'); stage.style.removeProperty('--csink');
     }
-    cast.innerHTML=csCastHTML(b, ctx);
+    cast.innerHTML=emojifyIcons(csCastHTML(b, ctx));
     const kickTx=csT(b.kick,ctx);
-    kick.textContent=kickTx?csPlain(kickTx):''; kick.style.display=kickTx?'':'none';
+    csTx(kick,kickTx?csPlain(kickTx):''); kick.style.display=kickTx?'':'none';
     extra.innerHTML=''; card.classList.remove('wide');
     skipBtn.style.display = b.choice ? 'none' : '';   // a decision can't be skipped, even mid-line
     const raw=csT(b.tx,ctx); full=Array.isArray(raw)?raw.join(' '):csPlain(raw);
@@ -22457,15 +22523,15 @@ function csPlay(beats, ctx, done, opts){
     if(b.buzz){ card.classList.add('wide'); txEl.innerHTML=''; txEl.style.display='none'; typing=false;
       try{ extra.appendChild($(pressBuzzHTML(b.buzz))); }catch(e){}
       return; }
-    if(fr==='feed' && !b.choice){ txEl.innerHTML=csFeedHTML(raw); typing=false; return; }
+    if(fr==='feed' && !b.choice){ txEl.innerHTML=emojifyIcons(csFeedHTML(raw)); typing=false; return; }
     const showRest=()=>{ csRest(b); };
-    if(reduce){ txEl.textContent=full; typing=false; showRest(); return; }
+    if(reduce){ csTx(txEl,full); typing=false; showRest(); return; }
     shown=0; typing=true; txEl.innerHTML='<span class="cs-caret">▌</span>';
     stop();
     timer=setInterval(()=>{
-      shown+=2;
-      if(shown>=full.length){ stop(); typing=false; txEl.textContent=full; showRest(); return; }
-      txEl.innerHTML=esc(full.slice(0,shown))+'<span class="cs-caret">▌</span>';
+      shown+=2; while(shown<full.length && /[\udc00-\udfff\ufe0f]/.test(full[shown])) shown++;   // never cut an emoji in half
+      if(shown>=full.length){ stop(); typing=false; csTx(txEl,full); showRest(); return; }
+      txEl.innerHTML=emojifyIcons(esc(full.slice(0,shown)))+'<span class="cs-caret">▌</span>';
     }, 18);
   };
   // Whatever a beat carries UNDER its line: a facts card (the first-time inductions), the stat row a
@@ -22473,8 +22539,8 @@ function csPlay(beats, ctx, done, opts){
   // finished two ways (it runs out, or you tap through it) and both have to land the same beat.
   function csRest(b){
     if(!b) return;
-    if(b.facts){ card.classList.add('wide'); extra.innerHTML=b.facts; }
-    else if(b.stats){ card.classList.add('wide'); extra.innerHTML=`<div style="margin-top:2px">${storyStatsRowHTML(b.stats)}</div>`; }
+    if(b.facts){ card.classList.add('wide'); extra.innerHTML=emojifyIcons(b.facts); }
+    else if(b.stats){ card.classList.add('wide'); extra.innerHTML=emojifyIcons(`<div style="margin-top:2px">${storyStatsRowHTML(b.stats)}</div>`); }
     if(b.choice) mountChoices(b);
   }
   // the answers, in the box. Tapping the scene can't skip past a decision, and neither can Skip.
@@ -22504,7 +22570,7 @@ function csPlay(beats, ctx, done, opts){
   }
   const advance=()=>{
     if(choosing) return;                                   // a decision is up: it has to be answered
-    if(typing){ stop(); typing=false; txEl.textContent=full; csRest(list[i]); return; }
+    if(typing){ stop(); typing=false; csTx(txEl,full); csRest(list[i]); return; }
     i++;
     if(i>=list.length){ finish(); return; }
     paint();
@@ -23185,7 +23251,7 @@ function showStorylineModal(sb){
       const backfired=res.backfired;
       // tick the at-stake two-axis meter to its new values (meter width animates via CSS)
       const repBox=ov.querySelector('.js-rep');
-      if(repBox) repBox.innerHTML=repMeterHTML();
+      if(repBox) repBox.innerHTML=emojifyIcons(repMeterHTML());
       // CS311 (owner): keep the chosen answer highlighted at the top and drop the other options, so it's
       // clear which one you said. The risk pill is removed (the roll is resolved).
       btns.querySelectorAll('button').forEach(x=>{ if(x!==b) x.remove(); });
@@ -23730,7 +23796,7 @@ function sponsorOfferPopup(offers){
   const slotsBox=ov.querySelector('.soslots'), box=ov.querySelector('.soffers');
   const hint=ov.querySelector('.sohint'), hd=ov.querySelector('.sohd'), later=ov.querySelector('.solater');
   const paint=()=>{
-    slotsBox.innerHTML=SPONSOR_SLOTS.map(s=>slotStatusCardHTML(s)).join('');
+    slotsBox.innerHTML=emojifyIcons(SPONSOR_SLOTS.map(s=>slotStatusCardHTML(s)).join(''));
     const open=SPONSOR_SLOTS.filter(sl=>!sponsorOf(sl)).length;
     hint.textContent = signed
       ? (list.length>1?'Signed. The other brands are still on the table.':'Signed. The other brand is still on the table.')
@@ -24207,9 +24273,9 @@ function sponsorDecisionNode(){
   const offers=S.career.sponsorOffers||[];
   const wrap=$(`<div class="scout" style="border-color:${offers.length?'#ffd45e':'var(--line)'};text-align:left;max-width:560px;margin:0 auto 12px;${offers.length?'box-shadow:0 0 22px rgba(241,208,74,.16)':''}"></div>`);
   const hist=(S.career.sponsorHistory||[]).map(h=>h.brand);
-  wrap.innerHTML=`<div style="font:800 11px/1 var(--body);letter-spacing:.22em;color:#ffd45e;text-transform:uppercase;display:flex;align-items:center;gap:7px">${ic('cart')} Your sponsors</div>
+  wrap.innerHTML=emojifyIcons(`<div style="font:800 11px/1 var(--body);letter-spacing:.22em;color:#ffd45e;text-transform:uppercase;display:flex;align-items:center;gap:7px">${ic('cart')} Your sponsors</div>
     <div class="small muted" style="margin:6px 0 10px">Wear up to two brands, one on the cap and one on the shirt. Each is its own deal.</div>
-    <div style="display:flex;gap:9px;flex-wrap:wrap">${slotStatusCardHTML('hat')}${slotStatusCardHTML('shirt')}</div>`;
+    <div style="display:flex;gap:9px;flex-wrap:wrap">${slotStatusCardHTML('hat')}${slotStatusCardHTML('shirt')}</div>`);
   if(!offers.length){
     wrap.appendChild($(`<div class="small muted" style="margin-top:10px">Keep delivering and every relationship and bonus grows. Grow your fan base and a bigger brand may come calling.${hist.length?' · Past: '+esc(hist.slice(-4).join(', ')):''}</div>`));
     return wrap;
@@ -24945,10 +25011,7 @@ function pxTrophySVG(rows, cls){
   return `<svg${cls?' class="'+cls+'"':''} viewBox="0 0 ${PXT_W} ${PXT_H}" width="100%" height="100%" shape-rendering="crispEdges" preserveAspectRatio="xMidYMid meet">${cells}</svg>`;
 }
 // CS356c: small pixel icons for the Trophy Room medal/cup/honor chips, tinted per-chip.
-const PXI={"medal":[".....kkkkkkkk.....",".....kddkkddk.....",".....kddkkddk.....",".....kddkkddk.....",".....kddkkddk.....",".....kddkkddk.....",".....kddddddk.....",".....kkkkmkkkk....","....kkmmmmmmmkk...","....kmmmhmmmmmk...","....kmmhmhmmmmk...","...kkmmmhhhmmmkk..","...kmmmhhdhhmmmk..","...kkmmmhhhmmmkk..","....kmmmmhmmmmk...","....kmmmmmmmmmk...","....kkmmmmmmmkk...",".....kkkkmkkkk...."],"cup":["..................","...kkkkkkkkkkkk...",".kkkmmmmmmmmmmkkk.",".kmmkmhmmmmdmkmmk.",".kmkkmhmmmmmmkkmk.",".kmkkmmmmmmmmkkmk.",".kmmmmmmmmmmmmmmk.",".kkkkkmmmmmdkkkkk.",".....kkmmmmkk.....","......kkmmkk......",".......kmmk.......","....kkkkmmkkkk....","...kkmmmmmmmmkk...","...khhhhhhhhhhk...","...kmmmmmmmmmmk...","...kkkkkkkkkkkk...","..................",".................."],"shield":["..................","..kkkkkkkkkkkkkk..","..kmmmmmmmmmmmmk..","..kmmmmmddmmmmmk..","..kkmmmmhhmmmmkk..","...kmmmhhhhmmmk...","...kmmmhhhhmmmk...","...kmmmmhhmmmmk...","...kkkmmmmmmkkk...",".....kkkmmkkk.....",".......kkkk.......","......kkmmkk......","......kmmmmk......","......kkmmkk......",".......kkkk.......","..................","..................",".................."],"star":[".......kkkk.......",".......kmmk.......",".......khmk.......","......kkmmkk......","......kmmmmk......",".kkkkkkmmmmkkkkkk.",".kmmmmmhhhmmmmmmk.",".kmmmmmhhhmmmmmmk.",".kkkmmmmmmmmmmkkk.","...kmmmmmmmmmmk...","...kkmmmmmmmmkk...","...kkmmmmmmmmkk...","...kmmmmmmmmmmk...","...kmmmkkkkmmmk...","...kmmmk..kmmmk...","...kkkkk..kkkkk...","..................",".................."],"crown":["..................","..................",".......kkkk.......",".......khhk.......","..kkkk.kmmk.kkkk..","..khhk.kmmk.khhk..","..kmmk.kmmk.kmmk..","..kmmk.khhk.kmmk..","..kmmkkkmmkkkmmk..","..kmmmmmmmmmmmmk..","..kmmmmmmmmmmmmk..","..kmmmmmmmmmmmmk..","..kmmmmmmmmmmmmk..","..kddddddddddddk..","..kkkkkkkkkkkkkk..","..................","..................",".................."],"dollar":["..................","........kkk.......",".....kkkkmkkkk....","....kkmmmmmmmkk...","...kkmmmhhmmmmkk..","..kkmmhhhhhhdmmkk.","..kmmdhhhhhhddmmk.","..kmmdhdhhddddmmk.",".kkmmdhhhhhhddmmkk",".kmmddhhhhhhdddmmk",".kkmmdddhhdhddmmkk","..kmmdhhhhhhddmmk.","..kmmdhhhhhhddmmk.","..kkmmddhhdddmmkk.","...kkmmmhhmmmmkk..","....kkmmmmmmmkk...",".....kkkkmkkkk....","........kkk......."],"target":["..................","........kkk.......",".....kkkkmkkkk....","....kkmmmmmmmkk...","...kkmmhhhhhmmkk..","..kkmmhhmmmhhmmkk.","..kmmhmmhhhmmhmmk.","..kmhhmhdddhmhhmk.",".kkmhmhddhddhmhmkk",".kmmhmhdhhhdhmhmmk",".kkmhmhddhddhmhmkk","..kmhhmhdddhmhhmk.","..kmmhmmhhhmmhmmk.","..kkmmhhmmmhhmmkk.","...kkmmhhhhhmmkk..","....kkmmmmmmmkk...",".....kkkkmkkkk....","........kkk......."],"globe":["..................","........kkk.......",".....kkkkbkkkk....","....kkbbbbbbbkk...","...kkbwbbgggggkk..","..kkgwgbgggggggkk.","..kbggggbgggggbbk.","..kggggbbbbbbbbbk.",".kkbbbbbbbgggbbbkk",".kbbgggbbbgggbbbbk",".kkbggggbbbbbbbbkk","..kbgggbbbgggbbbk.","..kbgggbbgggggbbk.","..kkbgbbbbgggbbkk.","...kkbbbbbbbbbkk..","....kkbbbbbbbkk...",".....kkkkbkkkk....","........kkk......."],"ribbon":["..................","......kkkkkkk.....",".....kkdddddkk....","....kkddmmmddkk...","...kkdmmmmmmmdkk..","...kddmhmhmmmddk..","...kdmmmhhhmmmdk..","...kdmmhhhhhmmdk..","...kdmmmhhhmmmdk..","...kddmmmhmmmddk..","...kkdmmmmmmmdkk..","....kkmmmmmmmkk...",".....kdddddddk....",".....kdddkdddk....",".....kdddkdddk....",".....kdddkdddk....",".....kkdkkkdkk....","......kdk.kdk....."],
-"podium":["..................","..................","......kkkkkkk.....","......khhhhhk.....","......kmmmmmk.....","......kmmmmmk.....",".kkkkkkmmmmmk.....",".khhhhkmmmmmk.....",".kmmmmkmmmmmk.....",".kmmmmkmmmmmkkkkkk",".kmmmmkmmmmmkhhhhk",".kmmmmkmmmmmkmmmmk",".kmmmmkmmmmmkmmmmk",".kmmmmkmmmmmkmmmmk",".kmmmmkmmmmmkmmmmk","kkmmmmkmmmmmkmmmmk","kddddddddddddddddk","kkkkkkkkkkkkkkkkkk"],
-"cart":["..................","..................","kkkkk.............","kmmmk.............","kkkmk.............","..kmkkkkkkkkkkkk..","..kkmmmmmmmmmmmk..","...kmhhhhhhhhhmk..","...kmhhhhhhhhhmk..","...kmhhhhhhhhhmk..","...kmhhhhhhhhhmk..","...kmhhhhhhhhhmk..","...kmmmmmmmmmmmk..","...kkkkkkkkkkkkk..",".....kddk.kddk....",".....kddk.kddk....",".....kkkk.kkkk....",".................."],
-"gift":["..................","..................",".....kkkkkkkkk....",".....kdddkdddk....",".....kdddddddk....",".kkkkkdddddddkkkkk",".kmmmmmmdddmmmmmmk",".kmmmmmmdddmmmmmmk",".kmmmmmmdddmmmmmmk",".kkmhhhhdddhhhhmkk","..kmhhhhdddhhhhmk.","..kmhhhhdddhhhhmk.","..kmhhhhdddhhhhmk.","..kmhhhhdddhhhhmk.","..kmhhhhdddhhhhmk.","..kmhhhhdddhhhhmk.","..kmmmmmdddmmmmmk.","..kkkkkkkkkkkkkkk."]};
+const PXI={"medal":[".....kkkkkkkk.....","....krbbwwbbrk....","....krbbwwbbrk....","....krbbwwbbrk....","....krbbwwbbrk....","....krbbwwbbrk....","....krbbwwbbrk....",".....kddddddk.....","....kdhmmmmmdk....","...kdhmmmmmmmdk...","...kdhmmwwmmmdk...","...kdmwwwwwwmdk...","...kdmmwwwwmmdk...","...kdmmwmmwmmdk...","...kddmmmmmmddk...","....kddmmmmddk....",".....kkddddkk.....",".......kkkk......."],"cup":["....kkkkkkkkkk....","..kkmmmmmmmmmmkk..",".kmkmhhmmmmmdmkmk.","kmkkmhhmmmmmdmkkmk","kmkkmhhmmmmmdmkkmk",".kmkmhhmmmmmdmkmk.","..kmkmmmmmmmmkmk..","...k.kmmmmmmk.k...","......kmmmmk......",".......kmmk.......",".......kmmk.......","......kkmmkk......","....kkmmmmmmkk....","...kddddddddddk...","...kddyyyyyyddk...","...kddddddddddk...","....kkkkkkkkkk....",".................."],"shield":["..kkkkkkkkkkkkkk..",".kmmmmmmmdddddddk.",".kmhhhhhhdddddddk.",".kmmmmmmmdddddddk.",".kmmmmmmwwddddddk.",".kmmmmmmwwddddddk.",".kmmmmmmwwddddddk.",".kmmmwwwwwwwwdddk.",".kmmmmwwwwwwddddk.","..kmmmmwwwwddddk..","..kmmmwwwwwwdddk..","...kmmwwmdwwddk...","...kmmmmmdddddk...","....kmmmmddddk....",".....kkmmddkk.....",".......kmdk.......","........kk........",".................."],"star":["..................","..................","........kk........",".......khmk.......",".......khmk.......","......khhmmk......","..kkkkkhhmmkkkkk..",".khhhhhhhmmmmmmmk.","..khhhhhhmmmmmmk..","...kmmmmmmmmmmk...","....kmmmmddddk....","....kmmmmddddk....","....kmmmmddddk....","....kmmmkkdddk....","....kmmk..kddk....","...kmkk....kkdk...","....k........k....",".................."],"crown":["..................","........kk........",".kk....kmmk....kk.","kmmk...kmmk...kmmk","kmmk....kk....kmmk",".kkk...kmhk....kk.",".kmhk..khmk...kmk.",".kmk..kmmmmk.kmmk.",".kmmkkmmmmmmkkmmk.",".kmmmkmmmmmmkmmmk.",".kmmmmmmmmmmmmmmk.",".kmmmmmmmmmmmmmmk.",".khhhhhhhhhhhhhhk.",".kddrrddbbddrrddk.",".kddrrddbbddrrddk.",".kddddddddddddddk.","..kkkkkkkkkkkkkk..",".................."],"dollar":["......kkkkkk......","....kkddddddkk....","...kddhhhhhhddk...","..kddhmmmmmmhddk..",".kddhmmmmmmmmmddk.",".kdhmmmmmddmmmmdk.","kdhmmmmddddmmmmmdk","kdhmmmddmmmmmmmmdk","kdhmmmmdddmmmmmmdk","kdhmmmmmmdddmmmmdk","kdhmmmmmmmddmmmmdk","kdhmmmmddddmmmmmdk",".kdhmmmmddmmmmmdk.",".kddmmmmmmmmmmddk.","..kddmmmmmmmmddk..","...kddmmmmmmddk...","....kkddddddkk....","......kkkkkk......"],"target":["......kkkkkk......","....kkmmmmmmkk....","...kmmmmmmmmmmk...","..kmmmmwwwwmmmmk..",".kmmmwwwwwwwwmmmk.",".kmmwwwmmmmwwwmmk.","kmmmwwmmmmmmwwmmmk","kmmwwmmwwwwmmwwmmk","kmmwwmmwrrwmmwwmmk","kmmwwmmwrrwmmwwmdk","kmmwwmmwwwwmmwwddk","kmmmwwmmmmmmwwdddk",".kmmwwwmmmmwwwddk.",".kmmmwwwwwwwwdddk.","..kmmmmwwwwddddk..","...kmmmmmmddddk...","....kkmmmdddkk....","......kkkkkk......"],"globe":["......kkkkkk......","....kkbbbbbbkk....","...kbgggbbbbbbk...","..kbgwggggbbbbbk..",".kbgwggggggbbggbk.",".kbwggggggbbbgggk.","kbbbggggbbbbgggggk","kbbbbgggbbbggggggk","kbbbbbggbbbggggggk","kbbbbbbgbbbbggggbk","kbbbbbbbbbbgggbbbk","kbbbggbbbbbggbbbbk",".kbbgggbbbbgbbbbk.",".kbbbggbbbbbbbbbk.","..kbbbbbbbbbbbbk..","...kbbbbbbbbbbk...","....kkbbbbbbkk....","......kkkkkk......"],"ribbon":["........kk........",".....kkkmmkkk.....","....kmmmmmmmmk....","...kmmmmhhmmmmk...","..kmmmhhhhhhmmmk..","...kmmhhyyhhmmk...","..kmmhhyyyyhhmmk..","..kmmhhyyyyhhmmk..","...kmhhyyyyhhmk...","..kmmmhhhhhhmmmk..","...kmmmhhhhmmmk...","...kkmmmmmmmmk....","...kdkmmmmmmkk....","...kddkkkkkkdk....","...kddddkkdddk....","...kddddkkdddk....","...kdkkdkkdkk.....","....k..k..k......."],"podium":["........kk........",".......kyyk.......",".......kyyk.......","......kkkkkk......",".....khhhhhhk.....",".....kmmmmmmk.....",".....kmmmmmmk.....",".kkkkkmmwwmmk.....","khhhhhmwwwmmk.....","kdddddmmwwmmkkkkk.","kdddddmmwwmmhhhhhk","kdddddmmwwmmdddddk","kdddddmmwwmmdddddk","kdddddmwwwwmdddddk","kdddddmmmmmmdddddk","kdddddmmmmmmdddddk","kdddddmmmmmmdddddk",".kkkkkkkkkkkkkkkk."],"cart":["..................",".kk...............","kmmk..............",".kmkkkkkkkkkkkkkk.","..kmhhhhhhhhhhhhhk","..kmmmmdmmdmmdmmk.","...kmmmdmmdmmdmmk.","...kmdddddddddddk.","...kmmmdmmdmmdmmk.","....kmmdmmdmmdmk..","....kmmdmmdmmdmk..",".....kkkkkkkkkkk..","....kdddddddddddk.","....kdddkkkkdddk..","....kdwdk..kdwdk..","....kdddk..kdddk..",".....kkk....kkk...",".................."],"gift":["....kk......kk....","...kyyk....kyyk...","..kykkyk..kykkyk..","..kykkkykkykkkyk..","...kyyykyykyyyk...",".kkkkkkkyykkkkkkk.","khhhhhhhkkhhhhhhhk","khhhhhhhyyhhhhhhhk","khhhhhhhyyhhhhhhhk",".kddddddyyddddddk.",".kmmmmmmyymmmmmmk.",".kmmmmmmyymmmmmmk.",".kmmmmmmyymmmmmmk.",".kmmmmmmyymmmmmmk.",".kmmmmmmyymmmmmmk.",".kmmmmmmyymmmmmmk.",".kmmmmmmyymmmmmmk.","..kkkkkkkkkkkkkk.."],"wheel":[".....kmhhmmmk.....",".....kkmmmmkk.....","....kddkmmkddk....","...kddggkkggddk...","..kyyyyggggwwwyk..",".kdyyyyggggwwwwdk.",".kdyyyyyggwwwwwdk.","kdmmyyyyggwwwwrrdk","kdmmmmykkkkwrrrrdk","kymmmmmkyykrrrrryk","kdmmmmmkkkkrrrrrdk","kdmmwwwwkkyyyyrrdk","kddwwwwwbbyyyyyddk",".kdwwwwbbbbyyyydk.","..kywwwbbbbyyyyk..","..kddwwbbbbyyddk..","...kkdddyddddkk...",".....kkddddkk....."],"pumpkin":["........kk........",".......kggkk......",".......kggggk.....",".......kggkk......",".....kkkggkkk.....","...kkmmkggkmmkk...","..kmmdmmkkmmdmmk..",".kmmmdmmmmmmdmmmk.","kmmmmyymmmmmyymmmk","kmmmmyyymmmyyymmmk","kmmmmdmmmmmmdmmmmk","kmmmmdmmmmmmdmmmmk","kmmmmdymymymymmmmk","kmmmmdyyyyyyymmmmk",".kmmmdmymymydmmmk.","..kmmdmmmmmmdmmk..","...kkdmmmmmmdkk...",".....kkkkkkkk....."],"turkey":["......kkkkkk......","....kkrrrrrrkk....","...krrrrrrrrrrk...","..krrryykkyyrrrk..",".krrryykhhkyyrrrk.",".krryykhhhhkyyrrk.","krryydkhkhhkdyyrrk","krryddkhhhhkddyrrk","kryydkmkhyrkkdyyrk","kryykmmmkkrkmkyyrk","kryykmmmmmkmmkyyrk","krrkmmmmmmmmmmkrrk","krrkmmmmmmmmmmkrrk",".kkkkmmmmmmmmkkkk.","....kmmmmmmmmk....",".....kmymmmyk.....","......kymmmyk.....","......kykkkyk....."],"leaf":["...............k..","...........kkkkmk.","........kkkmmmmmmk","......kkmmmmmmmdk.",".....kmmmmmmmmdmk.","....kmmhmmmmmdmmk.","...kmmhdmmmmdmmmk.","...kmhmdmmmdmmmk..","..kmhmmddmdmdmmk..",".kmmmmmmddmmmdmk..",".kmmdmmmdmmmmmk...",".kmmmdmdmmmmmmk...",".kmmmmdmmmmmmk....",".kmmmdmmmmmkk.....",".kmmdmmmmmk.......",".kddmmmmmk........","kdmmkkkkk.........","dkkk.............."],"heart":["..................","..kkkk......kkkk..",".kmmmmk....kmmmmk.","kmmmhmmk..kmmmmddk","mmmhmmmmkkmmmmdddd","mmhmmmmmmmmmmddddd","mmhmmmmmmmmmdddddd","mmmmmmmmmmmddddddd","kmmmmmmmmmdddddddk",".kmmmmmmmdddddddk.","..kmmmmmmddddddk..","...kmmmmmdddddk...","....kmmmmddddk....",".....kmmmdddk.....","......kmmddk......",".......kmdk.......","........kk........",".................."],"palette":["......kkkkkk......","....kkmmmmmmkk....","...kmmmmmmmmmmk...","..kmmmmmmyymmmmk..",".kmmmmmmmyymmmmdk.",".kmmmrrmmmmmmbbmk.","kmmmmrrmmmmmmbbmdk","kmmmmmmmmmmmmmmmdk","kmmmmmmmmmmmmmmmdk","kmmmmmmmmmmmmmggdk","kmmmmmmmmmmmmmggdk","kmmmmkkmmmmmmmmddk","kmkkk..kmmmwwmdddk",".k....kmmmmwwdddk.","......kmmmmmdddk..","......kmmmddddk...","......kddddddk....",".......kkkkkk....."],"bandage":["..................","...........kk.....","..........kmmk....",".........kmmdmk...","........kmmmmmmk..",".......kmmmmmmdmk.","......khhmmmmmmk..",".....khhhhmmmmk...","....khhhdhdmmk....","...kmmhhhdhhk.....","..kmmmmhdhdk......",".kmmmmmmhhk.......","kmmdmmmmmk........",".kmmmmmmk.........","..kmmdmk..........","...kmmk...........","....kk............",".................."],"flagUS":["..................","..................",".kkkkkkkkkkkkkkkk.","kbbbbbbbbrrrrrrrrk","kbwbwbwbbwwwwwwwwk","kbbbbbbbbrrrrrrrrk","kbbwbwbwbwwwwwwwwk","kbbbbbbbbrrrrrrrrk","kbwbwbwbbwwwwwwwwk","kbbbbbbbbrrrrrrrrk","kwwwwwwwwwwwwwwwwk","krrrrrrrrrrrrrrrrk","kwwwwwwwwwwwwwwwwk","krrrrrrrrrrrrrrrrk","kwwwwwwwwwwwwwwwwk",".kkkkkkkkkkkkkkkk.","..................",".................."],"flagEU":["..................","..................",".kkkkkkkkkkkkkkkk.","kbbbbbbbbbbbbbbbbk","kbbbbbybybybbbbbbk","kbbbbbbbbbbbbbbbbk","kbbbybbbbbbbybbbbk","kbbbbbbbbbbbbbbbbk","kbbbybbbbbbbybbbbk","kbbbbbbbbbbbbbbbbk","kbbbybbbbbbbybbbbk","kbbbbbbbbbbbbbbbbk","kbbbbbybybybbbbbbk","kbbbbbbbbbbbbbbbbk","kbbbbbbbbbbbbbbbbk",".kkkkkkkkkkkkkkkk.","..................",".................."],"faceCry":[".....kkkkkkkk.....","....kmmmmmmmmk....","...kmmmmmmmmmmk...","..kmmmmmmmmmmmmk..",".kmmmhmmmmmmmmmdk.","kmmmhmmmmmmmmmmmdk","kmmmhmmmmmmmmmmmdk","kmmmkkkkmmkkkkmmdk","kmmmkmmmmmmmmkmmdk","kmmmmbmmmmmmbmmmdk","kmmmmbmkkkkmbmmddk","kmmmmbmkkkkmbmmddk","kmmmmbmkrrkmbmdddk",".kmmmbmkkkkmbdddk.","..kmmbmmmmmmbddk..","...kdbbmmmdbbdk...","....kbddddddbk....",".....kkkkkkkk....."],"faceDevil":["..................","..k....kkkk....k..",".kmk.kkmmmmkk.kmk.",".kmmkmmmmmmmmkmmk.","..kkmhmmmmmmmmkk..","..kmhmmmmmmmmmmk..",".kmmhkmmmmmmkmmdk.",".kmmmmkmmmmkmmmdk.",".kmmmmkmmmmkmmmdk.","kmmmmmkmmmmkmmmddk","kmmmmmmmmmmmmmmddk",".kmmkmmmmmmmmkddk.",".kmmmkkkkkkkkmddk.",".kmmmmkkkkkkmdddk.","..kmmmmmmmmmdddk..","...kdmmmmmddddk...","....kddddddddk....",".....kkkkkkkk....."],"faceSalute":["..................","......kkkkkkkkkkk.","....kkmkmmmmmmmmmk","...kmmmkmmmmmmmmmk","..kmmhmmkddddddddk",".kmmhmmmkmmmmmmmmk",".kmmhmmmmkkkkkkkk.","kmmmmmmmmmmmmmmddk","kmmmmkkmmmmkkmmddk","kmmmmkkmmmmkkmmddk","kmmmmmmmmmmmmmmddk","kmmmmmmmmmmmmmmddk",".kmmmmmmmmmmmmddk.",".kmmmmkkkkkkmdddk.","..kmmmmmmmmmdddk..","...kmmmmmmddddk...","....kddddddddk....",".....kkkkkkkk....."],"facePlead":[".....kkkkkkkk.....","....kmmmmmmmmk....","...kmmmmmmmmmmk...","..kmmmmmmmmmmmmk..",".kmmmhmmmmmmmmmdk.","kmmmhmmmmmmmmmmmdk","kmmmwwwwmmwwwwmmdk","kmmmwwkwmmwwkwmmdk","kmmmwkkwmmwkkwmmdk","kmmmwkkwmmwkkwmmdk","kmmmbbbbmmbbbbmddk","kmmmmmmmmmmmmmmddk","kmmmmmmmkkmmmmdddk",".kmmmmmkmmkmmdddk.","..kmmmmmmmmmdddk..","...kdmmmmmddddk...","....kddddddddk....",".....kkkkkkkk....."],"faceCalm":[".....kkkkkkkk.....","....kmmmmmmmmk....","...kmmmmmmmmmmk...","..kmmmmmmmmmmmmk..",".kmmmhmmmmmmmmmdk.","kmmmhmmmmmmmmmmmdk","kmmmhmmmmmmmmmmmdk","kmmmkmmkmmkmmkmmdk","kmmmmkkmmmmkkmmmdk","kmmmmmmmmmmmmmmmdk","kmmrrmmmmmmmmrrddk","kmmmmmkmmmmkmmmddk","kmmmmmmkkkkmmmdddk",".kmmmmmmmmmmmdddk.","..kmmmmmmmmmdddk..","...kdmmmmmddddk...","....kddddddddk....",".....kkkkkkkk....."],"faceCold":[".....kkkkkkkk.....","....kwwwwwwwwk....","...kwmwmmwmwmwk...","..kmmmmmmmmmmmmk..",".kmmmhmmmmmmmmmdk.","kmmmhmmmmmmmmmmmdk","kmmmhwkmmmmwkmmmdk","kmmmmkkmmmmkkmmmdk","kmmmmkkmmmmkkmmmdk","kmmmmmmmmmmmmmmmdk","kmmmkkkkkkkkkkmddk","kmmmkwwkwwkwwkmddk","kmmmkwwkwwkwwkdddk",".kmmkkkkkkkkkkddk.","..kmmmmmmmmmdddk..","...kdmmmmmddddk...","....kddddddddk....",".....kkkkkkkk....."],"faceGrimace":[".....kkkkkkkk.....","....kmmmmmmmmk....","...kmmmmmmmmmmk...","..kmmmmmmmmmmmmk..",".kmmmhmmmmmmmmmdk.","kmmmhmmmmmmmmmmmdk","kmmmhkkmmmmkkmmmdk","kmmmmkkmmmmkkmmmdk","kmmmmkkmmmmkkmmmdk","kmmmmmmmmmmmmmmmdk","kmmkkkkkkkkkkkkddk","kmmkwwkwwkwkwwkddk","kmmkkkkkkkkkkkkddk",".kmkwwkwwkwkwwkdk.","..kkkkkkkkkkkkkk..","...kdmmmmmddddk...","....kddddddddk....",".....kkkkkkkk....."],"faceSweat":["..............kbk.","......kkkkkk.kwbbk","....kkmmmmmmkkbbbk","...kmmmmmmmmmmkbk.","..kmmhmmmmmmmmmk..",".kmmhmmmmmmmmmmdk.",".kmmhmmmmmmmmmmdk.","kmmmmkkmmmmkkmmddk","kmmmkmmkmmkmmkmddk","kmmmmmmmmmmmmmmddk","kmmmmmmmmmmmmmmddk","kmmmmkkkkkkkkmmddk",".kmmmkwwwwwwkmddk.",".kmmmmkkkkkkmdddk.","..kmmmmmmmmmdddk..","...kmmmmmmddddk...","....kddddddddk....",".....kkkkkkkk....."],"skull":[".....kkmmmmkk.....","....kmmmmmmmmk....","...kmhmmmmmmmmk...","..kmhmmmmmmmmmmk..",".kmmmmmmmmmmmmmmk.",".kmmmmmmmmmmmmmmk.",".kmmmkkkmmkkkmmmk.","kmmmkkkkmmkkkkmmmk","kmmmkkkkmmkkkkmmmk",".kmmkkkkmmkkkkmmk.",".kmmmmmmkkmmmmmmk.",".kmmmmmmkkmmmmmmk.","..kmmmmmmmmmmmmk..","...kmmmdmdmdmmk...","....kkkdkdkdkk....","....kmmdmdmdmk....","....kmmdmdmdmk....",".....kkkkkkkk....."],"eyes":["..................","..................","...kkkk....kkkk...","..kmmmmk..kmmmmk..","..kmmmmmkkmmmmmk..",".kmmmmmmkkmmmmmmk.",".kmmmmmmkmmmmmmmk.",".kmmmmmmkmmmmmmmk.",".kmmmwkmkmmmmwkmk.",".kmmmkkmkmmmmkkmk.",".kmmmkkmkmmmmkkmk.",".kmmmkkmkmmmmkkmk.",".kmmmmmmkkmmmmmmk.","..kmmmmmkkmmmmmk..","..kmmmmk..kmmmmk..","...kkkk....kkkk...","..................",".................."],"handsUp":[".k.....kyyk.....k.","kyk....kyyk....kyk",".kyk....kk....kyk.","..k.k.k....k.k.k..",".kmkmkmk..kmkmkmk.",".kmmmmmk..kmmmmmk.","kmmmmmmmkkmmmmmmmk","kmmmmmmmkkmmmmmmmk","kmmmmmmmkkmmmmmmmk","kmmmmmmmkkmmmmmmmk",".kmmmmmk..kmmmmmk.","..kmmmk....kmmmk..","..kmmmk....kmmmk..","..kmmmk....kmmmk..","..kmmmk....kmmmk..","...kkk......kkk...","..................",".................."],"flex":["..........kkkk....",".........kmmmmk...","........kmmmmmmk..","........kmdmmmmk..",".........kmdddmk..","....kkk...kmmmmk..","...kmmmk..kmmmmk..","..kmmhmmk.kmmmmk..",".kmmhhmmmkdmmmmk..","kmmhmmmmmdmmmmmk..","mmmmmmmmmmmmmmmk..","mmmmmmmmmmmmmmk...","mmmmmmmmmmmmmk....","kdddddddddddk.....",".kkkkkkkkkkk......","..................","..................",".................."],"popcorn":[".....kk.kkkkk.....","....kwwkwwwwwk....","...kwwwwwwywwwk...","...kwwwwwwwwwwk...","...kkwwwwwwwwwk...","..kwwwwywywwwwwk..","..kkkkkkkkkkkkkwk.","..kwmmwwmmwwmmwk..","..kwmmwwmmwwmmwk..","..kwmmwwmmwwmmwk..","..kwmmwwmmwwmmwk..","...kmmwwmmwwmmk...","...kmmwwmmwwmmk...","...kmmwwmmwwmmk...","...kmmwwmmwwmmk...","...kmmwwmmwwmmk...","...kmmwwmmwwmmk...","....kkkkkkkkkk...."]};
 function pxShadeHex(hex,f){ hex=hex.replace('#',''); const r=parseInt(hex.slice(0,2),16),g=parseInt(hex.slice(2,4),16),b=parseInt(hex.slice(4,6),16); const C=v=>Math.max(0,Math.min(255,Math.round(v))).toString(16).padStart(2,'0'); return '#'+C(r*f)+C(g*f)+C(b*f); }
 function pxLiteHex(hex,f){ hex=hex.replace('#',''); const r=parseInt(hex.slice(0,2),16),g=parseInt(hex.slice(2,4),16),b=parseInt(hex.slice(4,6),16); const C=v=>Math.max(0,Math.min(255,Math.round(v+(255-v)*f))).toString(16).padStart(2,'0'); return '#'+C(r)+C(g)+C(b); }
 function pxMedalSVG(rows, color){
@@ -24997,20 +25060,46 @@ function canvasTrophy(x,cx,cy,s,col){
   const cell=s*1.08, gw=PXT_W*cell, gh=PXT_H*cell, ox=cx-gw/2, oy=cy-gh/2;
   for(let y=0;y<PXT_CUP.length;y++){ const row=PXT_CUP[y]; for(let px=0;px<row.length;px++){ const ch=row[px]; if(ch==='.')continue; x.fillStyle=(ch==='k'?PXT_PAL.k:(PXT_PAL[ch]||col)); x.fillRect(ox+px*cell, oy+y*cell, cell+0.6, cell+0.6); }}
 }
+// The major-win card, in the same pixels as the season card (owner: the share graphics were outdated): the
+// course at dusk, the title, the game's pixel trophy at a whole multiple of its own grid, and the event, the
+// winner and the score in the kit's bitmap font. 270 x 338 cells at 4x = 1080 x 1352.
 function drawMajorWinCard(cv, info){
-  const W=600,H=760; cv.width=W; cv.height=H; const x=cv.getContext('2d');
-  const g=x.createLinearGradient(0,0,0,H); g.addColorStop(0,'#114a32'); g.addColorStop(1,'#06180f'); x.fillStyle=g; x.fillRect(0,0,W,H);
-  x.strokeStyle=info.accent||'#F1D04A'; x.lineWidth=4; x.strokeRect(13,13,W-26,H-26);
-  x.textAlign='center';
-  x.fillStyle='#F4E3C9'; x.font='600 26px Georgia, serif'; x.fillText('RUN THE', W/2, 72);
-  x.fillStyle='#F1D04A'; x.font='700 54px Georgia, serif'; x.fillText('TOUR', W/2, 124);
-  canvasTrophy(x, W/2, 240, 3.3, '#F1D04A');
-  x.fillStyle='#f7e48a'; x.font='800 40px Arial, sans-serif'; x.fillText('MAJOR CHAMPION', W/2, 358);
-  x.fillStyle='#dfeae2'; x.font='600 26px Georgia, serif'; x.fillText(info.evt, W/2, 398);
-  x.fillStyle='#F4E3C9'; x.font='700 44px Georgia, serif'; x.fillText(info.name, W/2, 474);
-  x.fillStyle='#9cbfa8'; x.font='700 20px Arial, sans-serif'; x.fillText('OVR '+info.ovr+'   ·   '+info.year, W/2, 508);
-  x.fillStyle='#35d6a0'; x.font='800 30px Arial, sans-serif'; x.fillText('Winning score '+info.score, W/2, 566);
-  x.fillStyle='#9cbfa8'; x.font='700 22px Arial, sans-serif'; x.fillText('build your golfer → runthe.gg/golf', W/2, H-48);
+  const P=PIXK, U=4, GW=270, GH=338, W=GW*U, H=GH*U; cv.width=W; cv.height=H; const x=cv.getContext('2d');
+  x.imageSmoothingEnabled=false;
+  P.draw(x, P.scene(GW,GH,{horizon:0.36, sunX:0.3}), 0,0,U);
+  const pan=P.grid(GW,GH), px0=12, py0=66, pw=246, ph=256;
+  for(let y=py0;y<py0+ph;y++) for(let xx=px0;xx<px0+pw;xx++){
+    const cx=Math.min(xx-px0,px0+pw-1-xx), cy=Math.min(y-py0,py0+ph-1-y); if(cx+cy<3) continue;
+    pan.put(xx,y,(cx===0||cy===0||cx+cy===3)?'rgba(241,208,74,.55)':'rgba(6,18,12,.80)'); }
+  P.draw(x,pan,0,0,U);
+  const top=P.grid(GW,GH), txt=P.grid(GW,GH);
+  const center=(str,y,o)=>P.text(txt,str,Math.round((GW-P.textW(str,o))/2),y,o);
+  for(let y=0;y<GH;y++) for(let xx=0;xx<GW;xx++){ const d=Math.min(xx,y,GW-1-xx,GH-1-y);
+    if(d===0||d===3) top.put(xx,y,P.K); else if(d<=2) top.put(xx,y,(xx+y<(GW+GH)/2)?P.GOLD[2]:P.GOLD[4]); }
+  if(!_pkLockup) _pkLockup=P.lockup(0);
+  P.stamp(top,_pkLockup,Math.round((GW-104)/2),8);
+  // the ribbon
+  { const hl='MAJOR CHAMPION', o={scale:2,bold:true}, tw=P.textW(hl,o), rw=tw+24, rh=18, rx=Math.round((GW-rw)/2), ry=72;
+    for(let y=ry+4;y<ry+rh+3;y++){ for(let xx=rx-9;xx<rx;xx++) top.put(xx,y,P.EXT[1]); for(let xx=rx+rw;xx<rx+rw+9;xx++) top.put(xx,y,P.EXT[1]); }
+    for(let y=ry;y<ry+rh;y++) for(let xx=rx;xx<rx+rw;xx++){ const j=y-ry; top.put(xx,y, j===0?P.GOLD[0]:j<rh/2?P.GOLD[2]:j<rh-1?P.GOLD[3]:P.GOLD[5]); }
+    P.outline(top,P.K);
+    P.text(top,hl,Math.round((GW-tw)/2),ry+2,Object.assign({color:'#2a1604'},o)); }
+  // sparkles round where the trophy stands
+  [[96,112,2],[176,104,1],[184,150,2],[84,160,1]].forEach(([a,b,c])=>P.star(top,a,b,c));
+  P.outline(top,P.K); P.draw(x,top,0,0,U);
+  // the trophy: the game's own pixel cup, at a whole number of the card's cells so it sits on the grid
+  try{ const cell=12, s=cell/1.08, gw=PXT_W*cell, gh=PXT_H*cell;   // 12px = three of the card's cells
+    x.save(); x.shadowColor='rgba(255,214,90,.55)'; x.shadowBlur=36;
+    canvasTrophy(x, W/2, 98*U + gh/2, s, info.accent||'#F1D04A'); x.restore(); }catch(e){}
+  const ev=info.evt||'', eo=P.textW(ev,{scale:2,bold:true})<=232?{scale:2,bold:true}:{scale:1,bold:true};
+  center(ev,188,Object.assign({color:info.accent||P.GOLD[1]},eo));
+  const nm=info.name||'Your Golfer', no=P.textW(nm,{scale:2,bold:true})<=236?{scale:2,bold:true}:{scale:1,bold:true};
+  center(nm,212,Object.assign({color:P.CREAM[0]},no));
+  center('OVR '+info.ovr+' · '+info.year,234,{color:'#a9c9b4'});
+  center('WINNING SCORE',254,{color:'#a9c9b4'});
+  center(''+info.score,266,{scale:4,bold:true,color:'#46e6ad'});
+  center('RUNTHE.GG/GOLF',327,{color:P.GOLD[1],bold:true});
+  P.outline(txt,P.K); P.draw(x,txt,0,0,U);
 }
 function shareMajorWin(evt,o){
   const me=S.season.me; const cv=document.createElement('canvas');
@@ -25024,12 +25113,12 @@ let _poTimer=null;
 function celebratePlayoff(ce, opts){
   opts=opts||{}; const evt=ce.evt, po=ce.playoff, log=po.log||[]; const youWon=!!po.youWon;
   const stage=document.createElement('div'); stage.className='celebrate'+(evt.major?' major':'');
-  stage.innerHTML=`<div style="position:relative;z-index:2;width:min(560px,92vw);text-align:center">
+  stage.innerHTML=emojifyIcons(`<div style="position:relative;z-index:2;width:min(560px,92vw);text-align:center">
     <div class="celeb-kicker" style="letter-spacing:.2em;text-transform:uppercase;color:#ffd76a;font-weight:800;font-size:13px">${esc(evt.name)}</div>
     <div class="celeb-title" style="font-family:var(--serif);font-weight:800;color:#fff;font-size:30px;margin:6px 0 2px">SUDDEN-DEATH PLAYOFF</div>
     <div class="small" style="color:#cfe6d8;margin-bottom:14px">${po.players.length} tied, win a hole to take the title</div>
     <div class="po-holes" style="display:flex;flex-direction:column;gap:8px;max-height:50vh;overflow-y:auto"></div>
-    <div class="po-actions" style="margin-top:16px"></div></div>`;
+    <div class="po-actions" style="margin-top:16px"></div></div>`);
   document.body.appendChild(stage);
   const holesEl=stage.querySelector('.po-holes'), actions=stage.querySelector('.po-actions');
   let i=0, fin=false;
@@ -25050,8 +25139,8 @@ function celebratePlayoff(ce, opts){
     const h=log[i]; i++;
     const card=document.createElement('div');
     card.style.cssText='background:rgba(0,0,0,.28);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:9px 11px;text-align:left;animation:celebRise .4s ease both';
-    card.innerHTML=`<div class="small" style="letter-spacing:.12em;text-transform:uppercase;color:#ffd76a;font-weight:800;margin-bottom:5px">Playoff hole ${h.hole}</div>`+
-      h.scores.map(s=>`<div style="display:flex;justify-content:space-between;gap:10px;padding:2px 0;color:${s.you?'#ffd76a':'#dfeee6'};font-weight:${s.you?800:600}"><span>${s.you?'★ ':''}${esc(s.name)}</span><span>${esc(s.label)}${s.advances?'':' <span style="color:#e07a5f">· out</span>'}</span></div>`).join('');
+    card.innerHTML=emojifyIcons(`<div class="small" style="letter-spacing:.12em;text-transform:uppercase;color:#ffd76a;font-weight:800;margin-bottom:5px">Playoff hole ${h.hole}</div>`+
+      h.scores.map(s=>`<div style="display:flex;justify-content:space-between;gap:10px;padding:2px 0;color:${s.you?'#ffd76a':'#dfeee6'};font-weight:${s.you?800:600}"><span>${s.you?'★ ':''}${esc(s.name)}</span><span>${esc(s.label)}${s.advances?'':' <span style="color:#e07a5f">· out</span>'}</span></div>`).join(''));
     holesEl.appendChild(card); holesEl.scrollTop=holesEl.scrollHeight;
     _poTimer=setTimeout(revealNext, opts.reduce?10:(opts.auto?1500:1900));
   }
@@ -25150,7 +25239,7 @@ function celebrateOlympicPodium(ce, opts){
   [M[1],M[0],M[2]].forEach(m=>{   // display order: silver, gold, bronze
     const o=m.o, you=o.p.you;
     const col=$(`<div style="flex:0 0 auto;width:31%;max-width:168px;opacity:.16;transition:opacity .5s"></div>`);
-    col.innerHTML=`
+    col.innerHTML=emojifyIcons(`
       <div class="pod-card" style="opacity:0;transform:translateY(14px);transition:opacity .5s,transform .5s;background:rgba(0,0,0,.32);border:1px solid ${m.col};border-radius:12px;padding:9px 6px;margin-bottom:8px">
         <div style="font-size:26px;line-height:1">${m.emoji}</div>
         <div style="margin-top:4px;font-weight:800;color:${you?'#ffd76a':'#fff'};font-size:13px;line-height:1.25">${o.p.nation?natFlag(o.p.nation)+' ':''}${esc(o.p.name)}</div>
@@ -25159,7 +25248,7 @@ function celebrateOlympicPodium(ce, opts){
       </div>
       <div style="height:${m.h}px;border-radius:8px 8px 0 0;background:linear-gradient(180deg,${m.col},rgba(0,0,0,.32));display:flex;align-items:flex-start;justify-content:center;padding-top:7px;box-shadow:0 0 22px ${m.glow}">
         <span style="font-family:var(--display);font-size:30px;color:rgba(0,0,0,.5);font-weight:800">${M.indexOf(m)+1}</span>
-      </div>`;
+      </div>`);
     col.innerHTML=emojifyIcons(col.innerHTML); podium.appendChild(col); colEls[m.lab]=col;
   });
   wrap.appendChild(podium);
@@ -25617,7 +25706,7 @@ function scrTeamCup(){
   // header / scoreboard, pinned to the top of the viewport as the match cards below scroll.
   // The wordmark carries each cup's own identity (colors + matchup) so which cup this is reads instantly.
   const scoreboard=$(`<div class="cupsticky"></div>`);
-  scoreboard.innerHTML=`<div class="center"><div style="display:inline-block;background:${th.bg};border:1px solid ${th.border};border-radius:12px;padding:7px 18px 8px">
+  scoreboard.innerHTML=emojifyIcons(`<div class="center"><div style="display:inline-block;background:${th.bg};border:1px solid ${th.border};border-radius:12px;padding:7px 18px 8px">
     <div style="font-family:var(--display);font-size:21px;letter-spacing:.05em;line-height:1;text-transform:uppercase;color:${th.accent}">${th.emoji} ${esc(T.short)}</div>
     <div style="font:700 9.5px/1 var(--body);letter-spacing:.18em;text-transform:uppercase;color:${th.accent};opacity:.8;margin-top:4px">${th.vs}${involved?' · YOU\'RE '+(T.captain?'CAPTAINING':'PLAYING'):''}</div>
   </div></div>
@@ -25630,7 +25719,7 @@ function scrTeamCup(){
       <div style="font:800 11px/1 var(--body);letter-spacing:.14em;text-transform:uppercase;color:#e6e8ff">${natFlag(T.codeB)} ${esc(T.nameB)}${!youA?youTag:''}</div>
       <div class="mono" style="font-weight:800;font-size:36px;color:#fff;margin-top:4px">${ptTxt(rb)}</div></div>
   </div>
-  <div class="small muted center">First to 14½ wins · 28 points${allDone?'':` · match ${matchN} of ${TOTAL}`}</div>`;
+  <div class="small muted center">First to 14½ wins · 28 points${allDone?'':` · match ${matchN} of ${TOTAL}`}</div>`);
   scoreboard.innerHTML=emojifyIcons(scoreboard.innerHTML);
   add(scoreboard);
 
@@ -25661,7 +25750,7 @@ function scrTeamCup(){
     card.appendChild($(`<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 11px;background:rgba(255,255,255,.03);border-bottom:1px solid var(--line)">
       <div style="font:800 11px/1 var(--body);letter-spacing:.12em;text-transform:uppercase;color:var(--gold)">Day ${sess.day} · ${esc(sess.title)}${complete?'':` <span class="muted" style="font-weight:600">${revN}/${sess.matches.length}</span>`}</div>
       <div class="mono" style="font-weight:800;color:#fff">${ptTxt(sa)} - ${ptTxt(sb)}</div></div>`));
-    const body=$(`<div></div>`); body.innerHTML=rev.map((m,i)=>cupMatchRow(m, newestHere && i===revN-1 && !reduce)).join(''); card.appendChild(body);
+    const body=$(`<div></div>`); body.innerHTML=emojifyIcons(rev.map((m,i)=>cupMatchRow(m, newestHere && i===revN-1 && !reduce)).join('')); card.appendChild(body);
     add(card);
   });
 
@@ -26478,7 +26567,7 @@ function mpSettle(el, m){
   const w=rows[aWin?0:1], l=rows[aWin?1:0];
   w.classList.add('win','done'); l.classList.add('lose');
   const res=w.querySelector('.mpres');
-  if(res) res.innerHTML=mpResHTML(m);
+  if(res) res.innerHTML=emojifyIcons(mpResHTML(m));
   el.classList.add('done');
   if(m.you) el.classList.add(m.youWon?'won':'lost');
 }
@@ -26529,7 +26618,7 @@ function mpSettleLive(host, inner, st, si, animate, B){
     // the table under it re-sorts, which IS the group stage: what you just watched changed the order
     const g=B && B.groups[s.gi], tbl=inner.querySelector('#gt-'+s.gi);
     if(g && tbl){
-      tbl.innerHTML=groupTableHTML(B, g, st, si+1);
+      tbl.innerHTML=emojifyIcons(groupTableHTML(B, g, st, si+1));
       if(animate){ tbl.classList.remove('flash'); void tbl.offsetWidth; tbl.classList.add('flash'); }
     }
     return;   // nobody advances anywhere in week 1: the table is the result
@@ -27676,6 +27765,197 @@ function lbRow(o){
     <span class="pl">${o.p.name}</span><span class="sc">${sc}</span><span class="mny">${mny}</span></div>`);
 }
 
+/* ==================== PIXK BEGIN: the pixel kit ====================
+   One source for the game's pixel branding: the palette, a 5 x 7 bitmap font, the RUN THE TOUR title,
+   the ball-and-flag icon, and a dusk course scene. The share cards draw with it here, and
+   golf/logo-source.html and golf/og-source.html read THIS block out of this file, so the logo files, the
+   link preview and the in-game cards can never drift into three versions of one mark.
+   Everything paints onto a grid of colour cells; pixk.toCanvas() blows a grid up by a WHOLE number, so no
+   pixel is ever drawn at 1.5x (two pixels of one width and one of another). Self-contained on purpose:
+   no game state is read, which is what lets the other two files lift it. */
+const PIXK=(function(){
+  const K='#120b04';
+  const GOLD=['#fffbe0','#fff0a0','#ffd84a','#ffbf1f','#f09e12','#c9780a'];
+  const EXT=['#8f4f08','#7a4106','#613304','#482503'];
+  const CREAM=['#fffaf0','#f4e3c9','#d9c3a0'];
+  const BALL=['#ffffff','#f3f6f8','#dfe5e9','#c3ccd3','#9aa6b0','#6f7d88'];
+  const GRASS={fringe:'#9be36a', a:'#57c24a', b:'#46ad3e', dark:'#2f8a34', edge:'#1f6327'};
+  const FLAG=['#ffc2b8','#ff6b5e','#e33429','#b0201a','#7d1511'];
+  const POLE=['#ffffff','#e9e4d8','#bdb5a4'];
+  const SPARK=['#ffffff','#fff3b0'];
+
+  function grid(w,h){ const px=new Array(w*h).fill(null); const g={w,h,px,
+    put(x,y,c){ x=Math.round(x); y=Math.round(y); if(x>=0&&y>=0&&x<w&&y<h&&c) px[y*w+x]=c; },
+    get(x,y){ return (x>=0&&y>=0&&x<w&&y<h)?px[y*w+x]:null; },
+    rect(x,y,ww,hh,c){ for(let j=0;j<hh;j++) for(let i=0;i<ww;i++) g.put(x+i,y+j,c); } };
+    return g; }
+  // a dark ring round everything painted so far (4-neighbour); `mask` limits which cells count as solid
+  function outline(g,c,mask){ const s=g.px.slice(); for(let y=0;y<g.h;y++) for(let x=0;x<g.w;x++){ if(s[y*g.w+x]) continue;
+    if([[1,0],[-1,0],[0,1],[0,-1]].some(([a,b])=>{ const X=x+a,Y=y+b; return X>=0&&Y>=0&&X<g.w&&Y<g.h&&s[Y*g.w+X]&&(!mask||mask[Y*g.w+X]); })) g.px[y*g.w+x]=c; } }
+  // stamp grid b onto grid a at (x,y)
+  function stamp(a,b,x,y){ for(let j=0;j<b.h;j++) for(let i=0;i<b.w;i++){ const c=b.px[j*b.w+i]; if(c) a.put(x+i,y+j,c); } }
+
+  /* ---- the 5 x 7 font. Glyphs may be narrower than 5 (punctuation); lower case is drawn as upper case,
+     accents are dropped, and anything else becomes a question mark rather than a gap nobody can read. */
+  const F={
+  A:[".111.","1...1","1...1","11111","1...1","1...1","1...1"], B:["1111.","1...1","1...1","1111.","1...1","1...1","1111."],
+  C:[".111.","1...1","1....","1....","1....","1...1",".111."], D:["1111.","1...1","1...1","1...1","1...1","1...1","1111."],
+  E:["11111","1....","1....","1111.","1....","1....","11111"], F:["11111","1....","1....","1111.","1....","1....","1...."],
+  G:[".1111","1....","1....","1..11","1...1","1...1",".111."], H:["1...1","1...1","1...1","11111","1...1","1...1","1...1"],
+  I:["111",".1.",".1.",".1.",".1.",".1.","111"], J:["..111","...1.","...1.","...1.","...1.","1..1.",".11.."],
+  K:["1...1","1..1.","1.1..","11...","1.1..","1..1.","1...1"], L:["1....","1....","1....","1....","1....","1....","11111"],
+  M:["1...1","11.11","1.1.1","1.1.1","1...1","1...1","1...1"], N:["1...1","11..1","1.1.1","1..11","1...1","1...1","1...1"],
+  O:[".111.","1...1","1...1","1...1","1...1","1...1",".111."], P:["1111.","1...1","1...1","1111.","1....","1....","1...."],
+  Q:[".111.","1...1","1...1","1...1","1.1.1","1..1.",".11.1"], R:["1111.","1...1","1...1","1111.","1.1..","1..1.","1...1"],
+  S:[".1111","1....","1....",".111.","....1","....1","1111."], T:["11111","..1..","..1..","..1..","..1..","..1..","..1.."],
+  U:["1...1","1...1","1...1","1...1","1...1","1...1",".111."], V:["1...1","1...1","1...1","1...1","1...1",".1.1.","..1.."],
+  W:["1...1","1...1","1...1","1.1.1","1.1.1","1.1.1",".1.1."], X:["1...1","1...1",".1.1.","..1..",".1.1.","1...1","1...1"],
+  Y:["1...1","1...1",".1.1.","..1..","..1..","..1..","..1.."], Z:["11111","....1","...1.","..1..",".1...","1....","11111"],
+  '0':[".111.","1...1","1..11","1.1.1","11..1","1...1",".111."], '1':[".1.","11.",".1.",".1.",".1.",".1.","111"],
+  '2':[".111.","1...1","....1","...1.","..1..",".1...","11111"], '3':["11111","...1.","..1..","...1.","....1","1...1",".111."],
+  '4':["...1.","..11.",".1.1.","1..1.","11111","...1.","...1."], '5':["11111","1....","1111.","....1","....1","1...1",".111."],
+  '6':["..11.",".1...","1....","1111.","1...1","1...1",".111."], '7':["11111","....1","...1.","..1..",".1...",".1...",".1..."],
+  '8':[".111.","1...1","1...1",".111.","1...1","1...1",".111."], '9':[".111.","1...1","1...1",".1111","....1","...1.",".11.."],
+  '.':["..","..","..","..","..","11","11"], ',':["..","..","..","..",".1",".1","1."], "'":["1","1",".",".",".",".","."],
+  '-':["....","....","....","1111","....","....","...."], '+':["...","...",".1.","111",".1.","...","..."],
+  '#':[".1.1.",".1.1.","11111",".1.1.","11111",".1.1.",".1.1."], '$':["..1..",".1111","1.1..",".111.","..1.1","1111.","..1.."],
+  '/':["....1","...1.","...1.","..1..",".1...",".1...","1...."], ':':["..","11","11","..","11","11",".."],
+  '!':["1","1","1","1","1",".","1"], '?':[".111.","1...1","....1","...1.","..1..",".....","..1.."],
+  '&':[".11..","1..1.","1.1..",".1...","1.1.1","1..1.",".11.1"], '×':[".....","1...1",".1.1.","..1..",".1.1.","1...1","....."],
+  '%':["11..1","11..1","...1.","..1..",".1...","1..11","1..11"], '(':[".1","1.","1.","1.","1.","1.",".1"], ')':["1.",".1",".1",".1",".1",".1","1."],
+  ' ':["...","...","...","...","...","...","..."], '·':["..","..","..","11","..","..",".."],
+  };
+  // any minus or long dash in a name or a score comes out as a plain hyphen, the one this font draws (the
+  // class is built from char codes because this file may not contain those characters, even escaped)
+  const LONGDASH=new RegExp('['+String.fromCharCode(0x2212,0x2013,0x2014)+']','g');
+  function norm(s){ return String(s==null?'':s).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase().replace(LONGDASH,'-'); }
+  const glyph=ch=>F[ch]||F['?'];
+  // o: {scale, bold, gap, color(row) | string}
+  function textW(str,o){ o=o||{}; const s=o.scale||1, gap=o.gap==null?1:o.gap, b=o.bold?1:0; let w=0;
+    for(const ch of norm(str)) w+=(glyph(ch)[0].length+b+gap)*s; return Math.max(0,w-gap*s); }
+  function text(g,str,x,y,o){ o=o||{}; const s=o.scale||1, gap=o.gap==null?1:o.gap, b=o.bold?1:0, col=o.color||CREAM[1];
+    for(const ch of norm(str)){ const gl=glyph(ch), gw=gl[0].length;
+      gl.forEach((row,j)=>{ for(let i=0;i<gw;i++) if(row[i]==='1'){ const c=typeof col==='function'?col(j):col;
+        g.rect(x+i*s,y+j*s,s,s,c); if(b) g.rect(x+(i+1)*s,y+j*s,s,s,c); } });
+      x+=(gw+b+gap)*s; }
+    return x; }
+
+  /* a golf ball: lit from the upper left, a staggered field of dimples that fades before the rim, a hot spot */
+  function ball(g,cx,cy,r,opts){ opts=opts||{}; const dim=opts.dimples!==false;
+    for(let y=Math.floor(cy-r-1);y<=Math.ceil(cy+r+1);y++) for(let x=Math.floor(cx-r-1);x<=Math.ceil(cx+r+1);x++){
+      const dx=x-cx, dy=y-cy; if(dx*dx+dy*dy>r*r) continue;
+      const nx=dx/r, ny=dy/r, nz=Math.sqrt(Math.max(0,1-nx*nx-ny*ny)), L=-0.52*nx-0.6*ny+0.6*nz;
+      let t=L>0.9?0:L>0.7?1:L>0.42?2:L>0.12?3:L>-0.2?4:5;
+      if(dim && t>=1 && t<=4 && nz>0.3){ const row=Math.floor((y-cy+100)/3); if(((y-Math.floor(cy)+99)%3===0) && ((x-Math.floor(cx)+(row%2?2:0)+100)%4===0)) t=Math.min(5,t+1); }
+      g.put(x,y,BALL[t]); }
+    if(opts.spot!==false){ const hx=Math.round(cx-r*0.42), hy=Math.round(cy-r*0.46);
+      (r>=6?[[0,0],[1,0],[0,1],[-1,0],[0,-1],[2,-1]]:[[0,0]]).forEach(([a,b])=>g.put(hx+a,hy+b,BALL[0])); } }
+  function star(g,x,y,s){ g.put(x,y,SPARK[0]); for(let i=1;i<=s;i++){ const c=i===s?SPARK[1]:SPARK[0]; g.put(x+i,y,c); g.put(x-i,y,c); g.put(x,y+i,c); g.put(x,y-i,c); } }
+
+  /* THE FLAG WAVES. Each column of cloth rides a sine wave that grows toward the free end (the edge at the
+     pole cannot move), the pennant tapers as it goes, and every column is lit or shaded by which way the
+     cloth is facing there: rising toward the light is brighter, falling away is darker. `phase` moves the
+     wave, so four phases a quarter turn apart are four frames of it rippling. */
+  function flag(g,px,top,bottom,len,phase){ phase=phase||0;
+    for(let y=top;y<=bottom;y++) g.put(px,y, y<=top+1?POLE[0]:POLE[1]);
+    g.put(px,top-1,POLE[0]);
+    const H0=len>=8?7:5, H1=len>=8?4:3;
+    for(let i=1;i<=len;i++){ const t=i/len, a=i*0.78-phase;
+      // the wave's height is kept under the cloth's own, so neighbouring columns always overlap and the flag
+      // reads as one piece of cloth rippling rather than as ribbons
+      const yo=Math.round(Math.sin(a)*(len>=8?1.25:0.9)*t), h=Math.max(H1,Math.round(H0-(H0-H1)*t)), sl=Math.cos(a)*t;
+      for(let r=0;r<h;r++){ let k=r===0?1:(r===h-1?3:2);
+        if(sl>0.35) k=Math.max(0,k-1); else if(sl<-0.35) k=Math.min(4,k+1);
+        g.put(px+i, top+yo+r, FLAG[k]); }
+      if(i===len && len>=8) g.put(px+i+1, top+yo+1, FLAG[3]);   // a frayed tip
+    }
+    g.put(px+1,top+2,POLE[2]); }
+
+  /* ---- the big letters of TOUR, drawn by hand on a 16 x 20 grid (the O is the ball) ---- */
+  const BIG={
+  T:["1111111111111111","1111111111111111","1111111111111111","1111111111111111","1111111111111111",".....111111.....",".....111111.....",".....111111.....",".....111111.....",".....111111.....",".....111111.....",".....111111.....",".....111111.....",".....111111.....",".....111111.....",".....111111.....",".....111111.....",".....111111.....",".....111111.....",".....111111....."],
+  U:["11111......11111","11111......11111","11111......11111","11111......11111","11111......11111","11111......11111","11111......11111","11111......11111","11111......11111","11111......11111","11111......11111","11111......11111","11111......11111","11111......11111","111111....111111","1111111111111111","1111111111111111",".11111111111111.",".11111111111111.","..111111111111.."],
+  R:["1111111111111...","11111111111111..","111111111111111.","11111....111111.","11111.....11111.","11111.....11111.","11111....111111.","111111111111111.","11111111111111..","1111111111111...","11111.111111....","11111..111111...","11111..111111...","11111...111111..","11111...111111..","11111....111111.","11111....111111.","11111.....111111","11111.....111111","11111.....111111"],
+  };
+  const SMALL={R:F.R,U:F.U,N:F.N,T:F.T,H:F.H,E:F.E};
+
+  function lockup(phase){
+    const W=104, H=54, g=grid(W,H), LT=14, LH=20;
+    const gx=52, gy=LT+LH+2, grx=49, gry=7.5;
+    for(let y=Math.floor(gy-gry);y<=gy+gry;y++) for(let x=0;x<W;x++){ const d=((x-gx)/grx)**2+((y-gy)/gry)**2; if(d>1) continue;
+      let c=(Math.floor((x+(y-gy)*1.2)/6)%2)?GRASS.a:GRASS.b; if(d>0.72) c=GRASS.dark; if(d>0.72 && y<gy) c=GRASS.fringe; g.put(x,y,c); }
+    const cupX=92, cupY=gy+1;
+    g.rect(cupX-1,cupY,4,2,'#0c2a12'); g.put(cupX-2,cupY+1,'#0c2a12'); g.put(cupX+3,cupY+1,'#0c2a12');
+    outline(g,GRASS.edge,g.px.map(Boolean));
+    const face=grid(W,H);
+    [['T',6],['U',46],['R',64]].forEach(([ch,x0])=>{ BIG[ch].forEach((row,j)=>{ for(let i=0;i<16;i++) if(row[i]==='1') face.put(x0+i,LT+j,'F'); }); });
+    const isF=(x,y)=>face.get(x,y)==='F';
+    for(let d=3;d>=1;d--) for(let y=0;y<H;y++) for(let x=0;x<W;x++) if(isF(x-d,y-d)) g.put(x,y,EXT[d-1]);
+    for(let y=0;y<H;y++) for(let x=0;x<W;x++){ if(!isF(x,y)) continue;
+      const j=y-LT; let c=GOLD[j<2?0:j<5?1:j<9?2:j<13?3:j<17?4:5];
+      if(!isF(x,y-1)) c=GOLD[0];
+      else if(!isF(x-1,y) && j<14) c=GOLD[Math.max(0,GOLD.indexOf(c)-1)];
+      if(!isF(x,y+1) && isF(x,y-1)) c=GOLD[5];
+      if(!isF(x+1,y) && j>2) c=GOLD[Math.min(5,GOLD.indexOf(c)+1)];
+      g.put(x,y,c); }
+    for(let x=25;x<=43;x++) for(let y=LT+LH;y<=LT+LH+2;y++){ const d=((x-34)/9.5)**2+((y-(LT+LH+1))/1.6)**2; if(d<=1) g.put(x,y,GRASS.edge); }
+    ball(g,33.5,LT+LH/2-0.4,10.7);
+    flag(g,cupX,4,cupY,10,phase);
+    const rt=grid(W,H); let sx=7; const sy=4;
+    for(const ch of 'RUN THE'){ if(ch!==' ') SMALL[ch].forEach((row,j)=>{ for(let i=0;i<5;i++) if(row[i]==='1'){
+        const c=j<2?CREAM[0]:j<5?CREAM[1]:CREAM[2]; rt.put(sx+i,sy+j,c); rt.put(sx+i+1,sy+j,c); } });
+      sx+=(ch===' '?4:7); }
+    for(let i=0;i<W*H;i++) if(rt.px[i]){ const x=i%W, y=(i/W)|0; if(!rt.get(x+1,y+1)) g.put(x+1,y+1,'#3a2410'); }
+    for(let i=0;i<W*H;i++) if(rt.px[i]) g.px[i]=rt.px[i];
+    outline(g,K);
+    star(g,99,21,1); star(g,60,8,1);
+    return g; }
+
+  function icon(N,phase){
+    const g=grid(N,N), k=N/32;
+    const gx=16*k-0.5, gy=25.5*k, rx=14.5*k, ry=4.6*k;
+    for(let y=0;y<N;y++) for(let x=0;x<N;x++){ const d=((x-gx)/rx)**2+((y-gy)/ry)**2; if(d>1) continue;
+      let c=(Math.floor((x+(y-gy)*1.2)/(3*k))%2)?GRASS.a:GRASS.b; if(d>0.7) c=(y<gy)?GRASS.fringe:GRASS.dark; g.put(x,y,c); }
+    outline(g,GRASS.edge,g.px.map(Boolean));
+    if(N>=32) flag(g,Math.round(23*k),Math.round(3*k),Math.round(25*k),7,phase);
+    else { const px=Math.round(23*k); for(let y=1;y<=12;y++) g.put(px,y,POLE[1]); g.put(px,1,POLE[0]);
+      [[3,1,0],[4,2,1],[3,2,1],[1,3,1]].forEach(([l,t,o],j)=>{ for(let i=1;i<=l;i++) g.put(px+i,1+j+(i>2?o:0),FLAG[t]); }); }
+    ball(g, 12*k-0.5, 17*k, N>=32?8.6:4.4, {dimples:N>=32});
+    outline(g,K);
+    if(N>=32) star(g,5,5,1);
+    return g; }
+
+  /* a dusk course: banded sky dithered at every seam, a low sun, two ridges of hills and a mown fairway.
+     `horizon` is where the hills meet the fairway, as a share of the height. */
+  function scene(w,h,o){ o=o||{}; const g=grid(w,h), hz=Math.round(h*(o.horizon||0.56));
+    const sky=o.sky||['#1b1440','#2d1b55','#4a2461','#7a2f6a','#b8445e','#e8704a','#f7a84a','#ffcf70'];
+    const bands=sky.length;
+    for(let y=0;y<hz;y++){ const f=y/hz*bands, b=Math.floor(f), frac=f-b;
+      for(let x=0;x<w;x++){ let c=sky[Math.min(bands-1,b)];
+        if(frac>0.7 && (x+y)%2===0 && b+1<bands) c=sky[b+1];           // a checker seam between two bands
+        g.put(x,y,c); } }
+    const sx=Math.round(w*(o.sunX||0.7)), sy=hz-Math.round(h*0.05), sr=Math.round(Math.min(w,h)*0.09);
+    for(let y=sy-sr;y<=sy;y++) for(let x=sx-sr;x<=sx+sr;x++){ if((x-sx)**2+(y-sy)**2>sr*sr) continue;
+      if((y-(sy-sr))%4===3 && y>sy-sr*0.5) continue;                     // the sun's banded lower half, a retro set
+      g.put(x,y,y<sy-sr*0.55?'#fff1b8':'#ffcf5a'); }
+    const ridge=(base,amp,freq,off,col)=>{ for(let x=0;x<w;x++){ const t=Math.round(base-amp*(0.6+0.4*Math.sin(x*freq+off))-amp*0.35*Math.sin(x*freq*2.3+off*1.7));
+      for(let y=t;y<hz+2;y++) g.put(x,y,col); } };
+    ridge(hz-2,h*0.06,0.035,1.2,'#3a2a5c');
+    ridge(hz+1,h*0.035,0.06,4.1,'#1f4a3c');
+    for(let y=hz;y<h;y++) for(let x=0;x<w;x++){ const depth=(y-hz)/(h-hz);
+      const band=Math.floor((x - (w/2) )*(0.35+depth*0.9)/ (6+depth*10) + 100);
+      let c=band%2?'#2f8a3e':'#277a36'; if(depth>0.55) c=band%2?'#256e31':'#1f622b'; if(y===hz) c='#4fae52';
+      g.put(x,y,c); }
+    return g; }
+
+  function toCanvas(g,scale){ const c=document.createElement('canvas'); c.width=g.w*scale; c.height=g.h*scale;
+    const x=c.getContext('2d'); for(let y=0;y<g.h;y++) for(let i=0;i<g.w;i++){ const col=g.px[y*g.w+i]; if(!col) continue; x.fillStyle=col; x.fillRect(i*scale,y*scale,scale,scale); } return c; }
+  // draw a grid straight onto a context at (x,y) in whole cells of `scale` pixels
+  function draw(ctx,g,x,y,scale){ for(let j=0;j<g.h;j++) for(let i=0;i<g.w;i++){ const col=g.px[j*g.w+i]; if(!col) continue; ctx.fillStyle=col; ctx.fillRect(x+i*scale,y+j*scale,scale,scale); } }
+  return {K,GOLD,EXT,CREAM,BALL,GRASS,FLAG,POLE,SPARK,grid,outline,stamp,text,textW,norm,ball,star,flag,lockup,icon,scene,toCanvas,draw};
+})();
+/* ==================== PIXK END ==================== */
+
 /* ---------- share card (canvas image) ---------- */
 const RLABS=['DRV','ACC','APP','SHT','SCR','BNK','PUT','COM'];
 function bestTxt(b){return b===99?'MC':(b===1?'WIN':'T'+b);}
@@ -27683,7 +27963,7 @@ function bestTxt(b){return b===99?'MC':(b===1?'WIN':'T'+b);}
 // ribbon, an OVR badge, and a clean 4-tile stat row. Drawn fully synchronously (the golfer is a
 // cached canvas, drawn via drawImage), so both the on-screen preview and the toBlob share capture render.
 function drawShareCard(cv,info,vals){
-  const W=560,H=720,ctx=cv.getContext('2d');
+  const W=1080,H=1352,ctx=cv.getContext('2d');
   cv.width=W; cv.height=H;
   let yearLine='';
   if(info.year && !S.daily) yearLine = S.circuitMode ? (calYear(info.year)+' · LEGEND CIRCUIT') : (calYear(info.year)+' SEASON · YR '+info.year+' OF '+careerYears());
@@ -27707,94 +27987,108 @@ function playerCardHeadline(info){
   if(w>0) return w>1?w+'× WINNER':'TOUR WINNER';
   return 'SEASON '+yr;
 }
-// shared player-card renderer (season + career). o={look,name,ovr,net,headline,ribbon2,cells[4]}
+// shared player-card renderer (season + career). o={look,name,ovr,net,headline,ribbon2,yearLine,cells[4]}
+/* THE SHARE CARD, IN THE GAME'S OWN PIXELS (owner: "extremely outdated"). It was a smooth vector card set in
+   Georgia and Impact around a pixel golfer, which is two art styles on one picture, and the one picture a
+   player posts. Now the whole card is one pixel grid, 270 x 338 cells blown up 4x to 1080 x 1352 (a 4:5
+   post, the shape every feed crops to), painted with the pixel kit: the dusk course behind, the RUN THE
+   TOUR title up top, a framed portrait window, and every word in the kit's bitmap font.
+   Layers, because a grid cell holds one colour and the panel has to be see-through: the scene, then the
+   panel over it, then the golfer (a raster of his own at 12px a sprite pixel), then everything on top.
+   The two cosmetics the old card carried still show: the equipped card background fills the portrait
+   window, and the equipped nameplate is the bar behind the name. */
+let _pkLockup=null;
 function drawPlayerCard(ctx,W,H,o){
-  const GOLD='#F1D04A', GOLD2='#c9a520', CREAM='#F4E3C9';
-  const bg=ctx.createLinearGradient(0,0,0,H); bg.addColorStop(0,'#123f2c'); bg.addColorStop(.55,'#0b301d'); bg.addColorStop(1,'#061e10');
-  ctx.fillStyle=bg; ctx.fillRect(0,0,W,H);
-  const sp=ctx.createRadialGradient(W/2,130,20,W/2,130,W*0.95); sp.addColorStop(0,'rgba(74,156,108,.26)'); sp.addColorStop(1,'rgba(74,156,108,0)');
-  ctx.fillStyle=sp; ctx.fillRect(0,0,W,H);
-  // gold top bar + inner frame
-  const gt=ctx.createLinearGradient(0,0,0,9); gt.addColorStop(0,'#f6e7a6'); gt.addColorStop(1,GOLD2);
-  ctx.fillStyle=gt; ctx.fillRect(0,0,W,9);
-  ctx.strokeStyle='rgba(241,208,74,.5)'; ctx.lineWidth=2; ctx.strokeRect(13,13,W-26,H-26);
-  ctx.textAlign='center';
-  // wordmark
-  ctx.font='700 26px Cinzel, Georgia, serif';
-  const ta='RUN THE ', tb='TOUR', wa=ctx.measureText(ta).width, wb=ctx.measureText(tb).width, tx=W/2-(wa+wb)/2;
-  ctx.textAlign='left'; ctx.fillStyle=CREAM; ctx.fillText(ta,tx,56); ctx.fillStyle=GOLD; ctx.fillText(tb,tx+wa,56); ctx.textAlign='center';
-  // gold headline ribbon
-  const ry=74, rh=46; let rw=Math.min(W-56, Math.max(300, (o.headline.length*17)+80));
-  const rg=ctx.createLinearGradient(0,ry,0,ry+rh); rg.addColorStop(0,'#f4d75a'); rg.addColorStop(1,GOLD2);
-  ctx.fillStyle=rg; cardRoundRect(ctx,W/2-rw/2,ry,rw,rh,11); ctx.fill();
-  ctx.fillStyle='#1c2a15'; ctx.font='800 24px Impact,system-ui,sans-serif'; ctx.fillText(o.headline, W/2, ry+31);
-  // year line (e.g. "YEAR 5 OF 30")
-  if(o.yearLine){ ctx.fillStyle=GOLD; ctx.font='800 13px system-ui,sans-serif';
-    ctx.save(); ctx.globalAlpha=.9; ctx.fillText(o.yearLine, W/2, 141); ctx.restore(); }
-  // pixel golfer as a HEAD-AND-SHOULDERS portrait medallion. A full standing figure (with legs) can trip
-  // social-media auto-sensitive classifiers on share; a circular bust reads unambiguously as a game avatar.
-  const golferTop=o.yearLine?168:156;
-  const portR=Math.round(H*0.155);                 // ~112 for H=720
-  const portCy=golferTop+portR;
-  const glf=pxGolferCanvas(o.look);
-  // medallion backing + soft drop shadow
-  ctx.save(); ctx.shadowColor='rgba(0,0,0,.42)'; ctx.shadowBlur=16; ctx.shadowOffsetY=7;
-  ctx.beginPath(); ctx.arc(W/2,portCy,portR,0,7); ctx.fillStyle='#0c2c1c'; ctx.fill(); ctx.restore();
-  // crop the sprite to head + shoulders (rows ~2..34 of 56), clipped to the circle → no lower body
-  ctx.save(); ctx.beginPath(); ctx.arc(W/2,portCy,portR-2,0,7); ctx.clip();
-  // player-card cosmetic: the equipped card BACKGROUND fills the medallion behind the golfer
-  try{ const cbg=(o.look&&o.look.cardbg)||'club'; if(cbg!=='club'){ const bcv=pxCardBgCanvas(cbg);
-    ctx.imageSmoothingEnabled=false; ctx.drawImage(bcv, W/2-portR, portCy-portR, portR*2, portR*2*(bcv.height/bcv.width)); } }catch(e){}
+  const P=PIXK, U=4, GW=270, GH=338;
   ctx.imageSmoothingEnabled=false;
-  const gsc=glf.height/PXG_H, sr0=2, srH=32, dw=portR*2.55, dh=dw*(srH/PXG_W), dx=W/2-dw/2, dy=(portCy-portR)-dh*0.03;
-  ctx.drawImage(glf, 0, Math.round(sr0*gsc), glf.width, Math.round(srH*gsc), dx, dy, dw, dh);
-  ctx.restore();
-  // gold ring
-  const rgm=ctx.createLinearGradient(W/2-portR,portCy-portR,W/2+portR,portCy+portR); rgm.addColorStop(0,'#f6e7a6'); rgm.addColorStop(1,GOLD2);
-  ctx.strokeStyle=rgm; ctx.lineWidth=4; ctx.beginPath(); ctx.arc(W/2,portCy,portR,0,7); ctx.stroke();
-  // OVR badge on the lower-right edge of the medallion
-  const bx=W/2+portR*0.72, by=portCy+portR*0.64, br=42;
-  ctx.save(); ctx.shadowColor='rgba(0,0,0,.4)'; ctx.shadowBlur=10;
-  const bgr=ctx.createLinearGradient(bx-br,by-br,bx+br,by+br); bgr.addColorStop(0,'#f6e7a6'); bgr.addColorStop(1,GOLD2);
-  ctx.fillStyle=bgr; ctx.beginPath(); ctx.arc(bx,by,br,0,7); ctx.fill(); ctx.restore();
-  ctx.fillStyle='#1c2a15'; ctx.font='800 33px Impact,system-ui,sans-serif'; ctx.fillText(''+o.ovr, bx, by+5);
-  ctx.font='800 10px system-ui,sans-serif'; ctx.fillText('OVR', bx, by+21);
-  const heroBottom=portCy+portR;
-  // name (auto-fit, serif)
-  let nm=(o.name||'Your Golfer').toUpperCase(), ns=34;
-  do{ ctx.font='700 '+ns+'px Cinzel, Georgia, serif'; if(ctx.measureText(nm).width<=W-90)break; ns-=2; }while(ns>16);
-  // player-card cosmetic: the equipped NAMEPLATE colors a bar behind the name
-  const _ps=(o.look&&o.look.plate&&o.look.plate!=='classic'&&typeof PLATE_STYLE!=='undefined')?PLATE_STYLE[o.look.plate]:null;
-  if(_ps){ const pw=Math.min(W-90,ctx.measureText(nm).width+56), py=heroBottom+26;
-    const pg=ctx.createLinearGradient(0,py,0,py+44); pg.addColorStop(0,_ps.c1); pg.addColorStop(1,_ps.c2);
-    ctx.fillStyle=pg; cardRoundRect(ctx,W/2-pw/2,py,pw,44,10); ctx.fill();
-    ctx.strokeStyle=_ps.bd; ctx.lineWidth=1.5; ctx.stroke();
-    ctx.fillStyle=_ps.tx; }
-  else ctx.fillStyle=CREAM;
-  ctx.fillText(nm, W/2, heroBottom+58);
-  // NET hero number
-  ctx.fillStyle=o.net>=0?'#35d6a0':'#E14A33'; ctx.font='800 30px Impact,system-ui,sans-serif';
-  ctx.fillText(fmtSigned(o.net), W/2, heroBottom+98);
-  ctx.fillStyle='#9cbfa8'; ctx.font='800 11px system-ui,sans-serif'; ctx.fillText(o.ribbon2||'NET WORTH THIS SEASON', W/2, heroBottom+117);
-  // 4-tile stat row
-  const n=4, gap=11, m=26, tw=(W-m*2-gap*(n-1))/n, th=72, ty=H-th-30;
-  o.cells.forEach((c,i)=>{ const x=m+i*(tw+gap);
-    cardRoundRect(ctx,x,ty,tw,th,11); ctx.fillStyle='rgba(255,255,255,.05)'; ctx.fill();
-    ctx.strokeStyle='rgba(241,208,74,.18)'; ctx.lineWidth=1; ctx.stroke();
-    ctx.fillStyle='#9cbfa8'; ctx.font='800 10px system-ui,sans-serif'; ctx.fillText(c[0], x+tw/2, ty+23);
-    ctx.fillStyle=c[2]; ctx.font='800 25px Impact,system-ui,sans-serif';
-    let vs=''+c[1], fs=25; while(ctx.measureText(vs).width>tw-10 && fs>13){ fs-=1; ctx.font='800 '+fs+'px Impact,system-ui,sans-serif'; }
-    ctx.fillText(vs, x+tw/2, ty+53);
-  });
-  // bottom-middle site tag
-  ctx.textAlign='center';
-  ctx.fillStyle=GOLD; ctx.font='800 15px system-ui,sans-serif'; ctx.globalAlpha=.92;
-  ctx.fillText('RunThe.gg/golf', W/2, H-11);
-  ctx.globalAlpha=1;
+  ctx.fillStyle='#0b1a12'; ctx.fillRect(0,0,W,H);
+  // 1. the course at dusk
+  P.draw(ctx, P.scene(GW,GH,{horizon:0.36, sunX:0.74}), 0,0,U);
+  // 2. the panel everything else sits on: see-through, with notched corners
+  const pan=P.grid(GW,GH), px0=12, py0=66, pw=246, ph=256;
+  for(let y=py0;y<py0+ph;y++) for(let x=px0;x<px0+pw;x++){
+    const cx=Math.min(x-px0,px0+pw-1-x), cy=Math.min(y-py0,py0+ph-1-y); if(cx+cy<3) continue;
+    const edge=(cx===0||cy===0||cx+cy===3);
+    pan.put(x,y, edge?'rgba(241,208,74,.55)':'rgba(6,18,12,.80)'); }
+  P.draw(ctx,pan,0,0,U);
+  // 3. the portrait window's back: the equipped card background, or the course's own sky
+  const wx=83, wy=102, ww=104, wh=92, ix=wx+4, iy=wy+4, iw=ww-8, ih=wh-8;
+  let bgDone=false;
+  try{ const cbg=(o.look&&o.look.cardbg)||'club'; if(cbg!=='club'){ const bcv=pxCardBgCanvas(cbg);
+    const sc=Math.max(iw*U/bcv.width, ih*U/bcv.height), dw=bcv.width*sc, dh=bcv.height*sc;
+    ctx.save(); ctx.beginPath(); ctx.rect(ix*U,iy*U,iw*U,ih*U); ctx.clip();
+    ctx.drawImage(bcv, ix*U+(iw*U-dw)/2, iy*U+(ih*U-dh)/2, dw, dh); ctx.restore(); bgDone=true; } }catch(e){}
+  if(!bgDone){ const sky=P.scene(iw,ih,{horizon:0.72, sunX:0.26}); P.draw(ctx,sky,ix*U,iy*U,U); }
+  // 4. the golfer, head and shoulders (a full standing figure can trip a feed's sensitivity check), at a
+  //    whole 8px a sprite pixel (two of the card's cells) so his pixels are square and sit on its grid
+  try{ const glf=pxGolferCanvas(o.look), gsc=glf.height/PXG_H, SP=8, r1=34, rows=Math.min(r1,Math.floor(ih*U/SP)), r0=r1-rows;
+    ctx.save(); ctx.beginPath(); ctx.rect(ix*U,iy*U,iw*U,ih*U); ctx.clip();
+    ctx.drawImage(glf, 0, Math.round(r0*gsc), glf.width, Math.round(rows*gsc),
+      Math.round((ix+iw/2)*U - PXG_W*SP/2), (iy+ih)*U - rows*SP, PXG_W*SP, rows*SP);
+    ctx.restore(); }catch(e){}
+  // 5. everything on top
+  const top=P.grid(GW,GH), txt=P.grid(GW,GH);
+  const center=(str,y,opt)=>{ P.text(txt,str,Math.round((GW-P.textW(str,opt))/2),y,opt); };
+  // the frame round the whole card: ink, two rows of gold, ink
+  for(let y=0;y<GH;y++) for(let x=0;x<GW;x++){ const d=Math.min(x,y,GW-1-x,GH-1-y);
+    if(d===0||d===3) top.put(x,y,P.K); else if(d<=2) top.put(x,y,(x+y<(GW+GH)/2)?P.GOLD[2]:P.GOLD[4]); }
+  // the title
+  if(!_pkLockup) _pkLockup=P.lockup(0);
+  P.stamp(top,_pkLockup,Math.round((GW-104)/2),8);
+  // the headline ribbon, with folded tails
+  { const hl=o.headline||'', big=P.textW(hl,{scale:2,bold:true})<=208, opt=big?{scale:2,bold:true}:{scale:1,bold:true};
+    const tw=P.textW(hl,opt), rw=Math.max(120,tw+24), rh=18, rx=Math.round((GW-rw)/2), ry=72;
+    for(let y=ry+4;y<ry+rh+3;y++){ for(let x=rx-9;x<rx;x++) if(!(x<rx-6 && (y-ry-4)%2===0 && x===rx-9)) top.put(x,y,P.EXT[1]);
+      for(let x=rx+rw;x<rx+rw+9;x++) top.put(x,y,P.EXT[1]); }
+    for(let x=rx-9;x<rx-5;x++){ top.put(x,ry+4+Math.floor((rh-1)/2),null); }
+    for(let y=ry;y<ry+rh;y++) for(let x=rx;x<rx+rw;x++){ const j=y-ry; top.put(x,y, j===0?P.GOLD[0]:j<rh/2?P.GOLD[2]:j<rh-1?P.GOLD[3]:P.GOLD[5]); }
+    P.outline(top,P.K);
+    P.text(top,hl,Math.round((GW-tw)/2),ry+(big?2:6),Object.assign({color:'#2a1604'},opt)); }
+  if(o.yearLine) center(o.yearLine,95,{color:P.GOLD[2]});
+  // the portrait window's frame
+  for(let y=wy;y<wy+wh;y++) for(let x=wx;x<wx+ww;x++){ const d=Math.min(x-wx,y-wy,wx+ww-1-x,wy+wh-1-y);
+    if(d===0||d===3) top.put(x,y,P.K); else if(d<=2) top.put(x,y,(x-wx+y-wy<(ww+wh)/2)?P.GOLD[1]:P.GOLD[4]); }
+  // the OVR shield on the window's corner
+  { const bx=176, by=170, bw=30, bh=32;
+    for(let y=by;y<by+bh;y++){ const inset=y>by+bh-10?Math.round((y-(by+bh-10))*1.4):0;
+      for(let x=bx+inset;x<bx+bw-inset;x++){ const j=y-by; top.put(x,y, j<2?P.GOLD[0]:j<12?P.GOLD[2]:j<22?P.GOLD[3]:P.GOLD[4]); } }
+    P.text(top,'OVR',bx+Math.round((bw-P.textW('OVR'))/2),by+3,{color:'#5a3a08'});
+    const ov=''+(o.ovr==null?'':o.ovr), os=P.textW(ov,{scale:2,bold:true})<=bw-4?2:1;
+    P.text(top,ov,bx+Math.round((bw-P.textW(ov,{scale:os,bold:true}))/2),by+12,{scale:os,bold:true,color:'#2a1604'}); }
+  // the name, on the equipped nameplate when there is one
+  { let nm=(o.name||'Your Golfer'), opt={scale:2,bold:true};
+    if(P.textW(nm,opt)>232) opt={scale:1,bold:true};
+    const ps=(o.look&&o.look.plate&&o.look.plate!=='classic'&&typeof PLATE_STYLE!=='undefined')?PLATE_STYLE[o.look.plate]:null;
+    const tw=P.textW(nm,opt), ny=opt.scale===2?204:208;
+    if(ps){ const bw=Math.min(236,tw+20), bx=Math.round((GW-bw)/2);
+      for(let y=200;y<222;y++) for(let x=bx;x<bx+bw;x++){ const e=(y===200||y===221||x===bx||x===bx+bw-1); top.put(x,y, e?ps.bd:(y<211?ps.c1:ps.c2)); }
+      P.text(top,nm,Math.round((GW-tw)/2),ny,Object.assign({color:ps.tx},opt)); }
+    else center(nm,ny,Object.assign({color:P.CREAM[0]},opt)); }
+  // the number: what the year (or the career) was worth
+  { const nv=(typeof fmtSigned==='function')?fmtSigned(o.net):(''+o.net);
+    const opt=P.textW(nv,{scale:3,bold:true})<=236?{scale:3,bold:true}:{scale:2,bold:true};
+    center(nv,229,Object.assign({color:o.net>=0?'#46e6ad':'#ff6a5e'},opt));
+    center(o.ribbon2||'NET WORTH THIS SEASON',255,{color:'#a9c9b4'}); }
+  // four stat tiles
+  { const n=4, tw=56, gap=6, tx0=Math.round((GW-(n*tw+(n-1)*gap))/2), ty=268, th=44;
+    (o.cells||[]).slice(0,4).forEach((c,i)=>{ const x=tx0+i*(tw+gap);
+      for(let y=ty;y<ty+th;y++) for(let xx=x;xx<x+tw;xx++){ const e=(y===ty||y===ty+th-1||xx===x||xx===x+tw-1);
+        const corner=(y===ty||y===ty+th-1)&&(xx===x||xx===x+tw-1); if(corner) continue;
+        pan.put(xx,y,null); top.put(xx,y, e?'rgba(241,208,74,.45)':'rgba(255,255,255,.07)'); }
+      P.text(txt,c[0],x+Math.round((tw-P.textW(c[0]))/2),ty+7,{color:'#a9c9b4'});
+      const v=''+c[1], big=P.textW(v,{scale:2,bold:true})<=tw-6, opt=big?{scale:2,bold:true}:{scale:1,bold:true};
+      P.text(txt,v,x+Math.round((tw-P.textW(v,opt))/2),ty+(big?21:25),Object.assign({color:c[2]},opt)); }); }
+  // the address
+  center('RUNTHE.GG/GOLF',327,{color:P.GOLD[1],bold:true});
+  P.outline(top,P.K);
+  P.draw(ctx,top,0,0,U);
+  // every word gets an ink outline so it reads on the course as well as on the panel
+  P.outline(txt,P.K);
+  P.draw(ctx,txt,0,0,U);
 }
 function cardRoundRect(ctx,x,y,w,h,r){ ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); }
 function drawCareerCard(cv,info,vals){
-  const W=560,H=720,ctx=cv.getContext('2d');
+  const W=1080,H=1352,ctx=cv.getContext('2d');
   cv.width=W; cv.height=H;
   const maj=info.majors||0, w=info.wins||0, yr=info.years||1;
   const headline = maj>=4?'GRAND SLAM LEGEND' : maj>0?(maj>1?maj+'× MAJOR CHAMPION':'MAJOR CHAMPION') : (w>0?(w>1?w+' TOUR WINS':'TOUR WINNER'):yr+'-YEAR CAREER');
@@ -33442,7 +33736,7 @@ function scrSpotlightResult(){
     const grid=scoreCardEl({holes:18, pars:holes.map(h=>h.par),   // CS502: realistic Hole/Par/OUT-IN-TOT card
       rows:[{label:(S.name||'You'), color:'#4f9df0', mine:true, strokes:holes.map(h=>h.par+h.toPar), tp:holes.map(h=>h.toPar)}]});
     grid.style.margin='14px auto 0'; add(grid);
-    { const sg=sgRound(holes); if(sg){ const w=$(`<div></div>`); w.innerHTML=sgCardHTML(sg); add(w); } }   // item 03
+    { const sg=sgRound(holes); if(sg){ const w=$(`<div></div>`); w.innerHTML=emojifyIcons(sgCardHTML(sg)); add(w); } }   // item 03
   }
   const shr=$(`<button class="btn goldfill" style="max-width:520px;margin:14px auto 0">↗ Share your result<span class="sub">Brag about the special event</span></button>`);
   shr.onclick=()=>{ track('spotlight_shared'); shareText(spotlightShareText(rec&&rec.best!=null?{course:r.course,total:rec.best,won:wonEvent}:r,sp)); }; add(shr);
@@ -34946,7 +35240,7 @@ function scrDailyResult(){
     add(wrapg);
     // item 03: strokes gained MEASURED from the shots you just played (needs the live shot data, so a
     // result reloaded from storage - which only stores par/toPar per hole - simply doesn't show it).
-    { const sg=sgRound(holes); if(sg){ const w=$(`<div></div>`); w.innerHTML=sgCardHTML(sg); add(w); } }
+    { const sg=sgRound(holes); if(sg){ const w=$(`<div></div>`); w.innerHTML=emojifyIcons(sgCardHTML(sg)); add(w); } }
   }
   renderMeta();   // owner (IMG_8714): streak / 7-day rewards / daily-record now render BELOW the scorecard
   // CS483n: Share (blue) + the primary action (red) sit SIDE BY SIDE in one row (owner)
@@ -36541,7 +36835,7 @@ function overlayPassLevel(screen){
     const b=passXpForTierX(t), n=passXpForTierX(t+1); return Math.round(Math.min(xp,cap)-b)+' / '+(n-b)+' XP'; };
   const setStop=(t)=>{ lv.querySelector('b').textContent=t; nx.querySelector('b').textContent=Math.min(TOPX,t+1); };
   const rest=()=>{ setStop(pl.tier1); fill.style.transition='width .6s ease'; fill.style.width=pctInto(pl.xp1,pl.tier1)+'%';
-    lab.textContent=label(pl.xp1,pl.tier1); lv.classList.add('on'); if(gEl) gEl.innerHTML='+'+coinFmt(Math.round(pl.xp1-pl.xp0))+' XP'+(pl.boost?' <span style="color:#c9a0ff">(2× boost ⚡)</span>':'')+(ev?' <span style="color:#ffb35a">('+ev.emoji+' '+(ev.mult||2)+'× '+esc(ev.name)+')</span>':'')+' · Tier '+pl.tier0+' → '+pl.tier1; };
+    lab.textContent=label(pl.xp1,pl.tier1); lv.classList.add('on'); if(gEl) gEl.innerHTML=emojifyIcons('+'+coinFmt(Math.round(pl.xp1-pl.xp0))+' XP'+(pl.boost?' <span style="color:#c9a0ff">(2× boost ⚡)</span>':'')+(ev?' <span style="color:#ffb35a">('+ev.emoji+' '+(ev.mult||2)+'× '+esc(ev.name)+')</span>':'')+' · Tier '+pl.tier0+' → '+pl.tier1); };
   // pace it so one level feels weighty but a big climb doesn't drag (the whole run stays ~4s)
   const FILL=Math.max(260, Math.round(850/Math.max(1,Math.sqrt(gained)))), HOLD=Math.max(120, Math.round(FILL*0.29));
   if(reduce){ rest(); return; }
@@ -36917,12 +37211,12 @@ function coinShortfall(o){
       h+=`<p class="csp-note">Coins live with your account. Create a free one to earn and spend them.</p>
         <button class="btn goldfill acct">Create a free account ▸</button>
         <button class="btn ghost no">Not now</button>`;
-      card.innerHTML=h;
+      card.innerHTML=emojifyIcons(h);
       card.querySelector('.acct').onclick=()=>{ close(); S.shopPreview=null; S.overlay='account'; S.acctMode='signup'; S.acctErr=''; render(); };
     } else if(!BUCKETS_ENABLED){
       h+=`<p class="csp-earn">Coins come from playing. Finish a season, clear achievements and grab your daily login bonus.</p>
         <button class="btn ghost no">Close</button>`;
-      card.innerHTML=h;
+      card.innerHTML=emojifyIcons(h);
     } else {
       const b=coinBucketFor(gap), fb=!buys.has(b.id), got=fb?b.coins*2:b.coins;
       // The banner is only shown when the bucket being OFFERED still carries its 2x. A general "first
@@ -36944,7 +37238,7 @@ function coinShortfall(o){
       <button class="btn ghost store">See all coin buckets ▸</button>
       <p class="csp-earn">Coins come from playing too. Finish a season, clear achievements and grab your daily login bonus.</p>
       <button class="btn ghost no">Not now</button>`;
-      card.innerHTML=h;
+      card.innerHTML=emojifyIcons(h);
       card.querySelector('.buy').onclick=()=>{ close(); try{ track('coinshort_buy',{bucket:b.id, from:o.from||''}); }catch(e){}
         try{ beginBucketPurchase(b.id); }catch(e){} };
       card.querySelector('.store').onclick=goStore;
@@ -37354,7 +37648,7 @@ function overlayPackWheel(app){
   function finalX(vw, jitter){ return vw/2 - (w.winIdx*PITCH + CW/2) + (jitter||0); }
   function land(){
     if(ov && ov.isConnected===false) return;   // CS463: a stale (re-rendered-away) instance must not touch detached DOM / append confetti to the live app
-    w.done=true; title.innerHTML=titleTxt();
+    w.done=true; title.innerHTML=emojifyIcons(titleTxt());
     try{ wheel.classList.remove('pwtension'); wheel.classList.add('pwdone'); }catch(e){}
     var winCell=strip.children[w.winIdx];
     if(winCell){ winCell.classList.add('pwwin'); winCell.classList.add('pwlit'); }
@@ -37396,7 +37690,7 @@ function overlayPackWheel(app){
     setTimeout(onEnd, WIND+DUR+420);   // safety net
   }
   function spin(){
-    if(w.spun) return; w.spun=true; title.innerHTML=titleTxt(); renderFoot();
+    if(w.spun) return; w.spun=true; title.innerHTML=emojifyIcons(titleTxt()); renderFoot();
     if(hero && !reduce){ hero.classList.add('rip'); try{ if(typeof buzz==='function') buzz([14,40,22]); }catch(e){}
       setTimeout(function(){ if(ov.isConnected===false) return; hero.classList.add('gone'); runSpinAnim(); }, 720); return; }
     if(hero) hero.classList.add('gone');
@@ -37615,7 +37909,7 @@ function packShopNode(){
     tiers.forEach(function(id){ var pt=packType(id); var v=(pt.odds.find(function(o){return o[0]===r;})||[0,0])[1]; tbl+='<div style="text-align:center;color:'+rc+'">'+Math.round(v*100)+'%</div>'; });
   });
   tbl+='</div>';
-  odds.innerHTML=tbl+'<div class="small muted" style="text-align:center;margin-top:10px;line-height:1.5">Every pull is a fresh random roll from the full locker. A duplicate always earns <b style="color:#8fe0c4">1 shard of its rarity</b>, and a duplicate from a pack you <b>bought</b> also refunds coins ('+PACK_RANK.map(function(r){return coinFmt(PACK_DUPE_REFUND[r]);}).join(' / ')+' by rarity). Free packs pay shards only. Collect '+EXCHANGE_COST+' shards of a rarity and trade them in the <b>Shard Exchange</b> for an item one rarity up.</div>'+shardSummaryHTML();
+  odds.innerHTML=emojifyIcons(tbl+'<div class="small muted" style="text-align:center;margin-top:10px;line-height:1.5">Every pull is a fresh random roll from the full locker. A duplicate always earns <b style="color:#8fe0c4">1 shard of its rarity</b>, and a duplicate from a pack you <b>bought</b> also refunds coins ('+PACK_RANK.map(function(r){return coinFmt(PACK_DUPE_REFUND[r]);}).join(' / ')+' by rarity). Free packs pay shards only. Collect '+EXCHANGE_COST+' shards of a rarity and trade them in the <b>Shard Exchange</b> for an item one rarity up.</div>'+shardSummaryHTML());
   wrap.appendChild(odds);
   // #5 discoverability: signed-in and can't afford even the cheapest pack → point at Buy Coins (tasteful,
   // only at the moment it's actually useful).
@@ -37780,7 +38074,7 @@ function overlayShop(screen){
       back.onclick=()=>{ S.shopDrop=null; render(); };
       dwrap.appendChild(back);
       const dgrid=$(`<div class="sgrid"></div>`);
-      dgrid.innerHTML=sel.items.map(ci=>{ const o=(cosmeticItems(ci[0])||[]).find(x=>x.id===ci[1]); return o?cosTileHTML(ci[0],o):''; }).join('');
+      dgrid.innerHTML=emojifyIcons(sel.items.map(ci=>{ const o=(cosmeticItems(ci[0])||[]).find(x=>x.id===ci[1]); return o?cosTileHTML(ci[0],o):''; }).join(''));
       dwrap.appendChild(dgrid);
       if(!live) dwrap.appendChild($(`<div class="small muted center" style="margin-top:10px">Out of season. Anything you already own stays wearable all year.</div>`));
       dwrap.querySelectorAll('[data-tile]').forEach(x=>x.onclick=()=>shopTileClick(x));
