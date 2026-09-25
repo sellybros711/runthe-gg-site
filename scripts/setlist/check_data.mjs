@@ -2726,6 +2726,35 @@ if (prose) {
     `about copy says ${saidShows} shows and the data has ${realShows}`);
 }
 
+/* A DRAFT SURVIVES A REFRESH. The night used to live in memory only, so a
+   reload threw every pick away with nothing on screen to say so. Each half of
+   this is silent when it goes: a lost save is a Resume button that never
+   appears, and a lost clear is a Resume button for a night already scored or
+   deliberately thrown away. Read off the function bodies, since the claim is
+   about WHERE each call sits. */
+{
+  const body = name => {
+    const at = gameBare.indexOf(`function ${name}(`);
+    if (at < 0) return '';
+    const open = gameBare.indexOf('{', at);
+    let depth = 0;
+    for (let i = open; i < gameBare.length; i++) {
+      if (gameBare[i] === '{') depth++;
+      else if (gameBare[i] === '}' && --depth === 0) return gameBare.slice(open, i);
+    }
+    return '';
+  };
+  check(/name === 'reveal' \|\| name === 'draft'\) saveDraft\(\)/.test(body('setScreen')),
+    'every reveal and draft screen saves the draft');
+  check(/saveDraft\(\)/.test(body('closeSet')), 'closing a set saves the draft');
+  check(/clearDraft\(\)/.test(body('finishShow')), 'a scored night clears the saved draft');
+  check(/clearDraft\(\)/.test(body('start')), 'starting a new night clears the old draft');
+  check(/onYes:\s*\(\)\s*=>\s*\{\s*clearDraft\(\)/.test(gameBare), 'leaving the show clears the draft');
+  check(/data-resume=/.test(gameBare) && /resumeDraft\(/.test(gameBare), 'the home screen offers Resume');
+  check(/sh\.songs\[idx\]/.test(body('resumeDraft')),
+    'a resumed pick is looked up by its position in its show, so a sandwich survives');
+}
+
 console.log();
 console.log(failures ? `${failures} check(s) failed` : 'all checks passed');
 process.exit(failures ? 1 : 0);
