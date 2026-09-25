@@ -2140,12 +2140,16 @@ function poNext(po, rng) {
     elimination: facing,
     /* Win this and the round is. */
     closeout: closing,
-    /* WHICH GAMES ARE WORTH PLAYING, and it is one rule rather than a list.
-       A game the series can END in, either way, plus every Finals game.
-       Measured over 170 playoff runs: mean 2.6 of them, median 2, p90 5. A
-       year that reaches a game seven Finals can offer thirteen, which is the
-       run that deserves them. */
-    big: facing || closing || c.round === 'NBA Finals',
+    /* WHICH GAMES ARE WORTH PLAYING: GAME 7S, AND NOTHING ELSE.
+       It used to be any game the series could end in, plus every Finals
+       game. Measured, that stopped a first round exit at up to five doors
+       and a long run at thirteen, and a stop that comes up five times a
+       series is a pause rather than an event. Reported by the owner as too
+       many pauses. A Game 7 is the one game both sides can lose everything
+       in, so it is the one worth stopping the bracket for. The play-in is a
+       single game and deliberately NOT a Game 7: it simmed through the
+       bracket like any other game before the door existed. */
+    big: c.bestOf > 1 && facing && closing,
     /* A game seven, which is the only one both sides face elimination in.
        BEST OF SEVEN IS PART OF THE CLAIM. In a one game round the need is 1,
        so both sides are at need minus one before a ball is thrown and the

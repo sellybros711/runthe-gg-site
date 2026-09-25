@@ -696,6 +696,39 @@
     padding:9px 15px;border-radius:999px;font-size:13px;font-weight:700;white-space:nowrap;
     opacity:0;pointer-events:none;transition:opacity .18s ease;box-shadow:0 6px 20px rgba(0,0,0,.5);}
   .toast.on{opacity:1;}
+  /* THE STAMP. A signing used to be a chip sliding onto the court and nothing
+     else, so the one decision this game is built around, whether the price was
+     right, was only ever answered on the tile BEFORE the press. The stamp
+     answers it after, in the tile's own colours, for about a second. It sits
+     over the court rather than the board because backToWheel has already sent
+     the page to the top, and it takes no pointer so a thumb on its way to the
+     reels goes straight through it. */
+  .stamp{position:fixed;left:50%;top:26vh;z-index:96;pointer-events:none;
+    transform:translate(-50%,-50%) rotate(-5deg) scale(1);opacity:0;text-align:center;
+    padding:10px 20px 11px;border-radius:12px;border:3px solid currentColor;
+    background:rgba(13,17,23,.92);box-shadow:0 10px 30px rgba(0,0,0,.55);}
+  .stamp b{display:block;font-family:var(--display);font-size:30px;line-height:1;
+    letter-spacing:.04em;text-transform:uppercase;}
+  .stamp span{display:block;margin-top:5px;font-size:12px;font-weight:700;color:var(--ink);
+    white-space:nowrap;}
+  .stamp.good{color:#4ade80;} .stamp.fair{color:#94a3b8;}
+  .stamp.bad{color:#fca5a5;} .stamp.none{color:#64748b;}
+  .stamp.on{animation:stampIn 1.15s cubic-bezier(.2,.9,.3,1.2) forwards;}
+  @keyframes stampIn{
+    0%{opacity:0;transform:translate(-50%,-50%) rotate(-5deg) scale(1.6);}
+    14%{opacity:1;transform:translate(-50%,-50%) rotate(-5deg) scale(.96);}
+    22%{transform:translate(-50%,-50%) rotate(-5deg) scale(1);}
+    78%{opacity:1;}
+    100%{opacity:0;transform:translate(-50%,-50%) rotate(-5deg) scale(1);}
+  }
+  @media (prefers-reduced-motion:reduce){
+    @keyframes stampIn{0%,100%{opacity:0;}10%,80%{opacity:1;}}
+  }
+  /* The draft as squares on the results screen: the same row the share text
+     carries, big enough to read, with what each colour counted. */
+  .ogrid{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:2px 0 12px;}
+  .ogrid .sq{font-size:26px;letter-spacing:3px;line-height:1;}
+  .ogrid .ct{font-size:12px;color:var(--mut);font-weight:600;}
   .crash{display:none;position:fixed;left:10px;right:10px;bottom:10px;z-index:90;
     background:#7f1d1d;color:#fff;border:1px solid #b91c1c;border-radius:10px;
     padding:11px 13px;font-size:13px;line-height:1.4;cursor:pointer;
@@ -1828,6 +1861,7 @@
      bug it is reporting. -->
 <div class="crash" id="crash" role="alert" onclick="this.style.display='none'"></div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
+<div class="stamp" id="stamp" aria-hidden="true"><b id="stamp-w"></b><span id="stamp-s"></span></div>
 
 <!-- WHAT JUST HAPPENED, FOR SOMEBODY WHO CANNOT SEE THE WHEEL. The reels are a
      picture of a decision that has already been made, and to a screen reader
@@ -2243,9 +2277,9 @@
   <!-- THE DOOR SITS ABOVE THE RAIL, which is the same rule the live board's
        call box follows. The rail is the tallest thing on this screen and it
        scrolls; a control the game is waiting on underneath it is a control
-       the player has to go looking for. Shown when the bracket reaches a game
-       the series can end in, or any Finals game, and hidden the rest of the
-       time so a quiet second round plays through without asking anything. -->
+       the player has to go looking for. Shown when the bracket reaches a Game 7
+       (poNext's `big`), and hidden the rest of the time so every other game
+       plays through without asking anything. -->
   <div class="card lvdoor" id="lvdoor" hidden>
     <div class="lvd-eye" id="lvd-eye"></div>
     <h3 class="lvd-title" id="lvd-title"></h3>
@@ -2369,6 +2403,7 @@
 
   <div class="card">
     <h2>Your draft <span class="sub" id="o-grade"></span></h2>
+    <div class="ogrid" id="o-grid"></div>
     <!-- The same court as the draft screen, so the men you finished with are
          seen where they played rather than only listed. -->
     <div class="court" id="o-court" role="img" aria-label="Your rotation on the floor">
@@ -2669,7 +2704,7 @@
      number in the same commit as the edit, then run:
        node scripts/check-cachebust.mjs --update
      CI checks it on any push touching an .html or .js file. See CLAUDE.md. -->
-<script src="engine.js?v=22"></script>
+<script src="engine.js?v=23"></script>
 <script src="run.js?v=11"></script>
 <script src="badges.js?v=1"></script>
 <!-- ACCOUNTS AND THE LEADERBOARD. All three are OPTIONAL: if the CDN is blocked
@@ -3517,10 +3552,9 @@ function frgFill(){
     /* AND THE PLAYOFF GAMES ARE YOURS, which three steps never mentioned.
        It is the most distinctive thing this game does and a first-timer was
        told the opposite in as many words: "the season plays itself" and then
-       nothing. The claim describes `big` in engine.js, which is a game either
-       side can be knocked out in, a game that wins the series, and every
-       Finals game. It is a rule rather than a number, so there is nothing to
-       interpolate.
+       nothing. The claim describes `big` in engine.js, which is a Game 7 and
+       nothing else. It is a rule rather than a number, so there is nothing
+       to interpolate.
 
        ONE CLAUSE ON THE STEP THAT IS ALREADY ABOUT THE SEASON, rather than a
        fourth step, and the room is measured rather than guessed. The panel
@@ -3531,8 +3565,7 @@ function frgFill(){
        and the way out of the guide there is the Start button it points at
        rather than the Got it inside the panel. */
     'Then the season plays itself: <b>' + C.REGULAR_SEASON_GAMES + ' games</b>. '
-      + 'In the playoffs <b>you play any game that can end a series</b>, '
-      + 'and every game of the Finals.'
+      + 'In the playoffs, <b>every Game 7 is yours to play</b>.'
   ];
   var ol = $('frg-steps');
   ol.textContent = '';
@@ -5242,6 +5275,7 @@ function sign(p){
   /* Which slot he just went into, so the court and the pips can land that one
      chip rather than re-animating all six every time. */
   var justSlot = run.roster.length > before ? E.SLOTS[run.slotIndex[run.roster.length - 1]] : null;
+  if (justSlot) stampDeal(p);
   activeTab = 'ALL';
   if (run.phase === R.PHASES.SEASON) { renderDraft(justSlot); toSeason(); return; }
   renderDraft(justSlot);
@@ -5254,6 +5288,25 @@ function sign(p){
   backToWheel();
   /* A beat to watch the chip land before the reels start again. */
   setTimeout(spin, 240);
+}
+
+/* The verdict on the man just signed, off the same dealOf his tile read, so
+   the stamp can never say something the board did not. Restarted rather than
+   queued: two quick signings show the second verdict, not the first one late. */
+var stampTimer = null;
+function stampDeal(p){
+  var el = $('stamp');
+  if (!el || !p) return;
+  var d = dealOf(p);
+  var key = d ? d.key : 'none';
+  $('stamp-w').textContent = d ? d.label : 'Role player';
+  $('stamp-s').textContent = p.n +' \u00B7 ' + money(p.p);
+  el.className = 'stamp ' + key;
+  void el.offsetWidth;
+  el.className = 'stamp ' + key + ' on';
+  clearTimeout(stampTimer);
+  stampTimer = setTimeout(function(){ el.className = 'stamp ' + key; }, 1200);
+  say(($('stamp-w').textContent) + '. ' + p.n + ' signed for ' + money(p.p) + '.');
 }
 
 function backToWheel(){
@@ -6116,8 +6169,8 @@ function brkFastArm(fn){
   if (b) b.disabled = !brkFast;
 }
 
-/* Your series, a game at a time. A game the series can end in stops here and
-   offers the door; everything else lands on the seat and carries on. */
+/* Your series, a game at a time. A Game 7 stops here and offers the door;
+   everything else lands on the seat and carries on. */
 function brkSeries(){
   stopBracket();
   brkFastArm(null);
@@ -6238,8 +6291,10 @@ function seriesLine(next){
     + (next.home ? 'your floor' : 'their floor');
 }
 
+/* The door opens on a Game 7 and nothing else (poNext's `big`), so the first
+   line is the one a player meets. The rest are what a harness that widens the
+   door reads, and they stay true about the game they describe. */
 function doorWhy(next){
-  if (next.bestOf === 1) return "Win and you're in. Lose and you're done.";
   if (next.decider) return 'Winner take all. Forty-eight minutes for the round.';
   if (next.elimination && next.closeout) return 'Winner moves on.';
   if (next.elimination) return 'Lose and the season is over.';
@@ -6878,6 +6933,7 @@ function renderOver(out){
   renderRoster($('o-slots'));
   renderCourt(null, $('o-court'));
 
+  renderDraftGrid();
   var squad = R.bestPossibleSquad(run, DATA);
   if (squad) {
     $('o-grade').textContent = 'draft efficiency ' + squad.efficiency.toFixed(0) + '%';
@@ -7748,6 +7804,55 @@ function shareDare(out){
   return 'Can you build a better ' + NUMWORD(E.SLOTS.length) + '?';
 }
 
+/* THE DRAFT, AS A ROW OF SQUARES. A shared record says how the season went
+ * and nothing about how it was built, and the build is the half this game is
+ * about. So the text carries one square a man, in the order he fills the
+ * floor, coloured by the same verdict his tile wore on the board: green for a
+ * bargain, white for the going rate, red for paying for points, black for a
+ * man too cheap for the question to mean anything. A friend who has played
+ * reads it without a legend, and one who has not can see five decisions.
+ *
+ * THE SQUARES ARE DATA AND NOT PROSE, which is the one reason emoji are here
+ * at all. A chat app shows text and nothing else, so a row of colours is the
+ * only picture a shared result can carry, and it is the shape every daily
+ * puzzle's share has taught people to read.
+ *
+ * Pure over its arguments so verify.mjs can lift it: the keys come from
+ * dealOf, which needs the pool, and the page is what has the pool. */
+var DEAL_SQ = { good: '\uD83D\uDFE9', fair: '\u2B1C', bad: '\uD83D\uDFE5', none: '\u2B1B' };
+function gridLine(keys){
+  return keys.map(function(k){ return DEAL_SQ[k] || DEAL_SQ.none; }).join('');
+}
+
+/* The roster in slot order, each with his verdict. One walk, read by the share
+   text, the card and the results screen, so the three cannot disagree about a
+   man. */
+function draftCells(r){
+  var filled = {};
+  for (var i = 0; i < r.roster.length; i++) filled[E.SLOTS[r.slotIndex[i]]] = r.roster[i];
+  return E.SLOTS.map(function(slot){
+    var p = filled[slot] || null;
+    var d = p ? dealOf(p) : null;
+    return { slot: slot, p: p, key: d ? d.key : 'none', label: d ? d.label : 'Role player' };
+  });
+}
+
+/* THE POSTSEASON, A SERIES AT A TIME. "Lost in the conference finals" says
+   where it ended; 4-1, 4-3, 2-4 says how, and a 4-3 is a Game 7 somebody
+   played. Null for a run that never got there, because a line reading
+   nothing is a line that looks broken. */
+var ROUND_SHORT = { 'Play-In': 'Play-in', 'First Round': 'R1',
+  'Conference Semifinals': 'R2', 'Conference Finals': 'CF', 'NBA Finals': 'Finals' };
+function pathLine(rounds, won){
+  if (!rounds || !rounds.length) return null;
+  var bits = rounds.map(function(r){
+    var name = ROUND_SHORT[r.round] || r.round;
+    if (r.round === 'Play-In') return name + ' ' + (r.won ? 'W' : 'L');
+    return name + ' ' + r.yourWins + '-' + r.oppWins;
+  });
+  return bits.join(' \u00B7 ') + (won ? ' \uD83C\uDFC6' : '');
+}
+
 /* WHICH GAME THIS WAS, IN ONE LINE, and it is derived rather than written.
  * The football game's share card fell through to "Classic Mode. Six spins,
  * one roster" three separate times, once per mode added after it, because the
@@ -7792,7 +7897,13 @@ function shareText(out){
   var dare = d ? DAILY_DARE
     + (d.streak > 1 ? '\n' + d.streak + ' days in a row.' : '')
     : shareDare(out);
-  return head + '\n' + line + '\n' + dare + '\n' + SHARE_URL;
+  /* The grid goes under the result and above the dare, which is where every
+     daily puzzle's share puts it: the verdict, then the picture, then the
+     invitation. */
+  var grid = gridLine(draftCells(run).map(function(c){ return c.key; }));
+  var path = run.playoffs ? pathLine(run.playoffs.rounds, run.playoffs.won) : null;
+  return head + '\n' + line + '\n' + grid + (path ? '\n' + path : '')
+    + '\n' + dare + '\n' + SHARE_URL;
 }
 
 /* THE CARD, DRAWN TO A CANVAS AT 1080x1350.
@@ -7831,8 +7942,8 @@ var CARD = (function(){
   return {
     W: 1080, H: RULE2 + 286, PAD: PAD,
     TITLE: 96, TAG: 126,
-    REC: 372, VERDICT: 436,
-    RULE1: 482,
+    REC: 372, VERDICT: 436, PATH: 476,
+    RULE1: 496,
     ROWS: ROWS, ROW: ROW,
     RULE2: RULE2,
     STAT: RULE2 + 86, STAT_LABEL: RULE2 + 128,
@@ -7913,6 +8024,15 @@ function drawShareCard(){
   x.fillStyle = out.titleWon ? '#f2c14e' : skin.accent;
   x.font = '700 44px Archivo, system-ui, sans-serif';
   x.fillText(headline(out).toUpperCase(), mid, CARD.VERDICT);
+  /* How it went, a series at a time, quietly under how it ended. Drawn
+     without the trophy glyph, because an emoji in a canvas is whatever the
+     machine's emoji font is and the verdict above already says champions. */
+  var path = run.playoffs ? pathLine(run.playoffs.rounds, false) : null;
+  if (path) {
+    x.fillStyle = hexAt('#94a3b8', 0.95);
+    x.font = '700 26px Archivo, system-ui, sans-serif';
+    x.fillText(clip(x, path.toUpperCase(), CARD.W - PAD * 2), mid, CARD.PATH);
+  }
 
   var rule = function(y){
     x.fillStyle = hexAt(skin.accent, 0.3);
@@ -7923,10 +8043,9 @@ function drawShareCard(){
   /* THE ROSTER, in the order it fills the floor rather than the order it was
      signed, so two cards of the same roster read the same way. Each carries the
      colour its position wears everywhere else in the game. */
-  var filled = {};
-  for (var r = 0; r < run.roster.length; r++) filled[E.SLOTS[run.slotIndex[r]]] = run.roster[r];
-  for (var i = 0; i < E.SLOTS.length; i++) {
-    var slot = E.SLOTS[i], p = filled[slot];
+  var cells = draftCells(run);
+  for (var i = 0; i < cells.length; i++) {
+    var slot = cells[i].slot, p = cells[i].p;
     var y = CARD.ROWS + i * CARD.ROW;
     x.textAlign = 'left';
     // the position chip
@@ -7948,6 +8067,12 @@ function drawShareCard(){
     x.fillStyle = skin.accent;
     x.font = '700 34px Archivo, system-ui, sans-serif';
     x.fillText('$' + p.p.toFixed(1) + 'M', CARD.W - PAD, y);
+    /* THE VERDICT HIS TILE WORE, under his price, in the tile's own colours.
+       It is the card's version of the square row in the share text, and it
+       is the line that says whether this roster was built or bought. */
+    x.fillStyle = DEAL_HEX[cells[i].key];
+    x.font = '800 20px Archivo, system-ui, sans-serif';
+    x.fillText(cells[i].label.toUpperCase(), CARD.W - PAD, y + 33);
   }
 
   rule(CARD.RULE2);
@@ -7995,8 +8120,40 @@ function drawShareCard(){
 /* The position colours as flat hex. The page paints these as gradients off CSS
    custom properties, which a canvas cannot read, so the values live here too.
    verify.mjs asserts the two agree. */
+/* The deal chip's text colours, flat, for the same reason. */
+var DEAL_HEX = { good: '#4ade80', fair: '#94a3b8', bad: '#fca5a5', none: '#64748b' };
 var POS_HEX = { PG: '#3b82f6', SG: '#06b6d4', SF: '#22c55e', PF: '#f59e0b',
   C: '#ef4444', G: '#6366f1', F: '#84cc16' };
+
+/* WHAT THE SQUARES COUNTED, in words, because the results screen is where a
+   player learns what the row in their share text means. */
+var GRID_WORDS = { good: ['bargain', 'bargains'], fair: ['at the going rate', 'at the going rate'],
+  bad: ['overpay', 'overpays'], none: ['role player', 'role players'] };
+function renderDraftGrid(){
+  var box = $('o-grid');
+  if (!box) return;
+  box.textContent = '';
+  if (!run || !run.roster || run.roster.length < E.SLOTS.length) return;
+  var cells = draftCells(run), n = {};
+  cells.forEach(function(c){ n[c.key] = (n[c.key] || 0) + 1; });
+  var sq = document.createElement('span');
+  sq.className = 'sq';
+  sq.textContent = gridLine(cells.map(function(c){ return c.key; }));
+  sq.setAttribute('aria-hidden', 'true');
+  var ct = document.createElement('span');
+  ct.className = 'ct';
+  /* Each count is one unbreakable piece, so a narrow phone wraps BETWEEN
+     counts rather than leaving "role player" alone on a line under "1". */
+  ['good', 'fair', 'bad', 'none'].filter(function(k){ return n[k]; }).forEach(function(k, i){
+    if (i) ct.appendChild(document.createTextNode(' \u00B7 '));
+    var b = document.createElement('span');
+    b.style.whiteSpace = 'nowrap';
+    b.textContent = n[k] + ' ' + GRID_WORDS[k][n[k] === 1 ? 0 : 1];
+    ct.appendChild(b);
+  });
+  box.appendChild(sq);
+  box.appendChild(ct);
+}
 
 function roundRect(x, left, top, w, h, r){
   x.beginPath();

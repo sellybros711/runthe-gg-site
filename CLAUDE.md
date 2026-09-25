@@ -9451,6 +9451,42 @@ tagline.** `verify.mjs` asserts all four are different and that no locked mode
 falls through to the league's, so a fifth door cannot inherit the fourth's
 words either.
 
+#### The share carries the draft, as squares
+
+A shared result said how the season went and nothing about how it was built,
+and the build is the half this game is about. So the text carries a row of
+five squares in slot order, one a man, coloured by the verdict his tile wore
+on the board: green for a bargain, white for the going rate, red for paying
+for points, black for a man under three win shares. Under it is the playoff
+path a series at a time (`R1 4-3 · R2 2-4`), with a trophy only for a
+champion.
+
+**The squares are the one place emoji are allowed in this game's copy**, and
+the reason is the medium: a chat app shows text and nothing else, so a row of
+colours is the only picture a shared result can carry. They are data rather
+than prose. The card draws the same two things with no emoji at all: the path
+under the verdict, and each man's verdict under his price in the chip's own
+colours, because an emoji in a canvas is whatever the machine's emoji font is.
+
+**`draftCells()` is the one walk** the share text, the card and the results
+screen all read, and every verdict is `dealOf`'s. A second walk would be a
+screen and a share that disagree about a man. `verify.mjs` lifts `gridLine`
+and `pathLine` out of the page and asserts four different squares, one square
+a man, a square for every key `dealOf` can answer (read out of its source, so
+a verdict renamed there cannot fall through to black), and a short name for
+every round the engine plays. Merging two squares fails it.
+
+**A signing is stamped.** The verdict used to be answered only on the tile
+BEFORE the press, so the one decision the draft is built around got no answer
+after it. `stampDeal()` puts the verdict over the court for about a second,
+off the same `dealOf`, restarted rather than queued so two quick signings show
+the second one. It takes no pointer, so a thumb heading for the reels goes
+straight through it.
+
+**The results screen shows the row too**, with what it counted, and each count
+is one unbreakable piece. Without that a 390px phone left "role player" alone
+on a line under a "1".
+
 #### A badge earned in silence is a badge nobody has
 
 `badges.js` computes forty-odd badges off the whole career and the only surface
@@ -10348,11 +10384,28 @@ it**, which is why the sweep and the guard both walk four.
 
 #### Which games are offered
 
-A game the series can END in, either way, plus every Finals game. One rule
-rather than a list, and the two halves of it are the elimination game and the
-closeout. Measured over 170 playoff runs: **mean 2.6 a run, median 2, p90 5**,
-and a year that reaches a game seven Finals can offer thirteen, which is the
-run that deserves them. The play-in is one game, so it is always one.
+**A Game 7, and nothing else.** `big` in `poNext` is `bestOf > 1 && facing
+&& closing`, which is the same test as `decider`.
+
+**It used to be every game a series could END in, plus every Finals game**,
+measured at a mean of 2.6 stops a run and up to thirteen. Reported by a player
+as too many pauses in the quick draft, and timed through the real page it was:
+a first round exit met FIVE doors, and the bracket walk that is meant to take
+twelve to nineteen seconds became a sequence of the same question. A stop that
+comes every series is a pause; one that comes one run in five is an event.
+Measured after, over 200 runs: **mean 0.2, max 1**.
+
+**The play-in is NOT a Game 7**, although both `elimination` and `closeout` are
+true there by arithmetic, so it plays through with everything else.
+
+**The browser half of `check-live` widens the door on purpose.** Waiting for a
+one-in-five event makes every screen behind the door a coin toss on whether the
+walk gets to see it, which is the badge nothing can light. So `widenDoor()`
+wraps `RTF_ENGINE.poNext` inside the page to flag any SERIES game that can end
+it, and has to be applied again after a reload. Section 4 is where the real rule
+is asserted, exactly, off the engine, and section 5 plays every series-ending
+game forward rather than only the Game 7s, because what it asserts is the
+record and not the door.
 
 #### The bracket is one loop, and it is the loop that already existed
 
