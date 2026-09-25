@@ -2124,6 +2124,40 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
   .tab.on{color:var(--ink);}
   .tab.on svg{color:var(--tealT);}
   .tab:active{opacity:.6;}
+  /* THE TOP-LEVEL TABS NEED NO BACK BUTTON: the bar under them is the way
+     anywhere. A full-width Back under the board or the song list was a second
+     navigation competing with the first. The screens one level down (your
+     nights, track your shows) keep theirs, because back up to You is a real
+     step the bar does not name. */
+  body[data-screen="tour"] #backHome, body[data-screen="songs"] #backHome,
+  body[data-screen="board"] #backHome, body[data-screen="profile"] #backHome{display:none;}
+  /* ON A DESKTOP THE TABS ARE THE HEADER'S NAV. A phone's bottom bar pinned
+     under a 1440px screen is a thumb control on a device with no thumb, and it
+     sat 800px from the logo it belongs with. Same element, same five tabs and
+     the same lit state, moved into the empty middle of the top bar. 1000px is
+     where the lockup, five tabs and the two controls fit on one line. */
+  @media (min-width:1000px){
+    body.hasTabs .tabbar{top:calc(env(safe-area-inset-top,0px) + 9px); bottom:auto;
+      left:50%; right:auto; transform:translateX(-50%); background:transparent;
+      border:0; padding:0; z-index:45;}
+    .tabbar-in{max-width:none; gap:2px;}
+    .tab{flex:0 0 auto; flex-direction:row; min-height:36px; padding:0 13px;
+      border-radius:99px; gap:7px;}
+    .tab svg{width:17px; height:17px;}
+    .tab span{font-size:13px; letter-spacing:0;}
+    .tab:hover{color:var(--ink);}
+    .tab.on{background:var(--card2);}
+    body.hasTabs .wrap{padding-bottom:calc(24px + env(safe-area-inset-bottom,0));}
+  }
+  /* A list reads in a column, not across a monitor. The tour dates, the song
+     list, the board and your shows are lists, so on a wide screen they hold a
+     readable measure instead of running a venue name 1400px from its date. */
+  @media (min-width:900px){
+    body[data-screen="tour"] #app, body[data-screen="songs"] #app,
+    body[data-screen="board"] #app, body[data-screen="profile"] #app,
+    body[data-screen="nights"] #app, body[data-screen="browse"] #app{
+      max-width:780px; margin:0 auto;}
+  }
 
   /* ---------------- accounts, the board and the profile ----------------
      All of this is OPTIONAL. Nothing below is on the path between opening the
@@ -3225,6 +3259,7 @@ function setScreen(name){
      how the current screen re-renders, and that must not yank the page. */
   const changed = S.screen !== name;
   S.screen = name;
+  document.body.dataset.screen = name;
   // The sheet belongs to the draft screen only — never let it survive a screen change.
   if (name !== 'draft') document.body.classList.remove('sheet-on');
   document.body.classList.toggle('playing', name === 'draft' || name === 'reveal');
