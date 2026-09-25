@@ -2069,21 +2069,38 @@ async function main() {
         const bat = () => currentBatter();
         const put = (i, c) => { g.bases[i] = c; };
         const before = g.away.score + g.home.score;
+        const tot = (o) => Object.values(o || {}).reduce((a, c) => a + c, 0);
+        const abs = () => tot(g.stats.ab);
+        /* Three at bat deltas, measured around the three plate appearances
+           whose at bat is a RULE rather than a default. Taken here because
+           a total cannot say which of them is wrong, and a total is what
+           this check used to be: it read 8 when the sacrifice bunt stopped
+           being an at bat, and the honest answer was three claims rather
+           than a 7. */
+        /* Named abd and not d, because the payload below already carries d
+           for doubles and the later key silently wins: every delta came
+           back undefined and all three claims failed on a correct page. */
+        const abd = {};
         try {
           applyHitMutation('home run', bat());
           applyHitMutation('single', bat());
           applyHitMutation('double', bat());
-          put(0, ROSTER[20]); put(1, ROSTER[21]); put(2, ROSTER[22]); recordWalk();
+          put(0, ROSTER[20]); put(1, ROSTER[21]); put(2, ROSTER[22]);
+          let a = abs(); recordWalk(); abd.walk = abs() - a;
           g.bases = [null, null, null]; recordWalk();
           recordOut('swinging strikeout', true);
           applyOutMutation('fly out', bat());
           applyOutMutation('ground out', bat());
           g.outs = 0; applyHitMutation('triple', bat());
-          g.bases = [null, null, ROSTER[23]]; applyOutMutation('bunt out', bat());
+          g.bases = [null, null, ROSTER[23]];
+          a = abs(); applyOutMutation('bunt out', bat()); abd.sac = abs() - a;
+          g.bases = [null, null, null];
+          a = abs(); applyOutMutation('bunt out', bat()); abd.bunt = abs() - a;
         } catch (e) { window.setTimeout = realTimeout; return { threw: String(e) }; }
         window.setTimeout = realTimeout;
-        const sum = (o) => Object.values(o || {}).reduce((a, c) => a + c, 0);
+        const sum = tot;
         return {
+          abd,
           delta: (g.away.score + g.home.score) - before,
           runs: sum(g.stats.r), rbi: sum(g.stats.rbi), ab: sum(g.stats.ab),
           h: sum(g.stats.hits), bb: sum(g.stats.bb), hr: sum(g.stats.hr),
@@ -2102,10 +2119,15 @@ async function main() {
       ok(r.pOuts >= 4, 'an out reaches the man who recorded it', 'outs ' + r.pOuts);
       ok(r.h >= r.hr + r.d + r.t, 'extra base hits are a subset of hits',
          `${r.h} hits against ${r.hr}+${r.d}+${r.t}`);
-      /* The walk is the one plate appearance that must NOT be an at bat,
-         which is the whole reason an average and an on base are two
-         different numbers. Two walks were drawn above. */
-      ok(r.ab === 8, 'a walk is a plate appearance and not an at bat', 'ab ' + r.ab);
+      /* A walk and a sacrifice are the two plate appearances that must NOT
+         be at bats, which is the whole reason an average and an on base are
+         two different numbers, and the whole reason a man who gives himself
+         up for the runner does not pay for it. The bunt with nobody on is
+         the control: without it the pair above pass on a page that has
+         stopped charging an at bat for a bunt at all. */
+      ok(r.abd.walk === 0, 'a walk is a plate appearance and not an at bat', 'ab +' + r.abd.walk);
+      ok(r.abd.sac === 0, 'a sacrifice bunt is not an at bat either', 'ab +' + r.abd.sac);
+      ok(r.abd.bunt === 1, 'a bunt with nobody on is an ordinary at bat', 'ab +' + r.abd.bunt);
       ok(errors.length === 0, 'no page errors', errors.join(' | '));
       await pg.close();
     }
