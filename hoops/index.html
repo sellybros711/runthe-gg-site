@@ -16,8 +16,8 @@
      audit. Take the noindex off and this page joins the reviewed site, and it is not
      ready to be reviewed. -->
 <meta name="robots" content="noindex, nofollow">
-<title>Run The Floor: NBA Draft Game | RunThe.GG</title>
-<meta name="description" content="Run The Floor: spin a season and a team, draft an NBA starting five under a $120M cap, then play all 82 games and chase a ring.">
+<title>Run The Floor: NBA History Games | RunThe.GG</title>
+<meta name="description" content="Run The Floor: fix a real NBA team with one trade, pass the ball through real teammates, hold the court against history, or draft a starting five under a $120M cap.">
 <meta name="theme-color" content="#0d1117">
 <link rel="canonical" href="https://runthe.gg/hoops/">
 <!-- THE SHARE CARD.
@@ -34,8 +34,8 @@
      questions are unrelated and only one of them is about launching.
 
      hoops/og.png is built by hoops/build/og.mjs from hoops/og-source.html. -->
-<meta property="og:title" content="Run The Floor: NBA Draft Game">
-<meta property="og:description" content="Run The Floor: spin a season and a team, draft an NBA starting five under a $120M cap, then play all 82 games and chase a ring.">
+<meta property="og:title" content="Run The Floor: NBA History Games">
+<meta property="og:description" content="Run The Floor: fix a real NBA team with one trade, pass the ball through real teammates, hold the court against history, or draft a starting five under a $120M cap.">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="RunThe.GG">
 <meta property="og:url" content="https://runthe.gg/hoops/">
@@ -45,8 +45,8 @@
 <meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="Run The Floor: draft an NBA starting five under a $120M cap and play all 82 games. The five roster spots shown as PG, SG, SF, PF and C.">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Run The Floor: Free NBA Roster Draft Game">
-<meta name="twitter:description" content="Spin a season and a team, draft an NBA starting five under a $120M cap, then play all 82 games and chase a ring.">
+<meta name="twitter:title" content="Run The Floor: Free NBA History Games">
+<meta name="twitter:description" content="Fix a real NBA team with one trade, pass the ball through real teammates, hold the court against history, or draft a starting five under a $120M cap.">
 <meta name="twitter:image" content="https://runthe.gg/hoops/og.png?v=2">
 <meta name="twitter:image:alt" content="Run The Floor: draft an NBA starting five under a $120M cap and play all 82 games.">
 <link rel="manifest" href="manifest.webmanifest">
@@ -1720,6 +1720,12 @@
      data files as each parses, the league index, and the first paint. The bar
      reports rather than performs. A bar that always fills in two seconds is a
      worse lie than three dots, because it looks like information. */
+  .lgstrip{display:flex;flex-wrap:wrap;justify-content:center;gap:4px 12px;margin:-4px 0 14px;
+    font-size:12px;color:var(--dim);font-weight:700;text-align:center;}
+  .lgstrip b{color:var(--mut);font-family:var(--num);font-variant-numeric:tabular-nums;}
+  .lgstrip .boot{flex:1 0 100%;margin:6px 0 0;}
+  .lgstrip .boot.done{display:none;}
+  .lgstrip #loadmsg{font-size:12px;margin:6px 0 0;}
   .boot{margin:12px 0 0;}
   .boottrack{height:5px;border-radius:99px;background:rgba(255,255,255,.07);overflow:hidden;}
   .boottrack i{display:block;height:100%;width:0;border-radius:99px;
@@ -1917,6 +1923,61 @@
      game's own spinReel(), so this cannot drift away from what playing actually
      looks like. -->
 <header class="mast">
+  <div class="eyebrow">RunThe.GG</div>
+  <h1><span class="l1">Run The</span> <span class="l2">Floor</span></h1>
+  <p>Fix history. Pass through it. Take the court from it.</p>
+</header>
+
+<!-- ── home ─────────────────────────────────────────────────────────────── -->
+<div class="screen active" id="s-home">
+  <!-- A RUN IN PROGRESS IS THE FIRST THING, and only when there is one. The
+       page used to jump straight back into it on load, which meant a returning
+       player never saw this screen at all and had no way to abandon a draft
+       that had gone badly except a button labelled Reset.
+       The card is hidden along with its contents rather than left standing
+       empty, because Start moved down to the dock and what remained on a first
+       visit was a bordered box with nothing in it. -->
+  <div class="card hero" id="herocard" style="display:none">
+    <div class="resume" id="home-resume" style="display:none">
+      <div class="rh"><b id="rz-title">Run in progress</b><span id="rz-where"></span></div>
+      <p class="who" id="rz-who"></p>
+      <div class="btnrow">
+        <button id="b-resume" style="flex:2">Resume</button>
+        <button class="ghost" id="b-abandon">Abandon</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- WHAT EVERY MODE IS BUILT FROM, in one line. It was a card of its own
+       when the draft was the whole game; with four ways to play it is the
+       thing all four share, so it sits above them and costs one line rather
+       than a card. The numbers are the file's, filled once it loads, and the
+       loading bar under them goes when the data is in. -->
+  <div class="lgstrip" id="lgstrip">
+    <span><b id="ls-players">-</b> player-seasons</span>
+    <span><b id="ls-clubs">-</b> team seasons</span>
+    <span><b id="ls-teams">-</b> franchises</span>
+    <span id="home-era">1974 to 2026</span>
+    <div class="boot" id="boot">
+      <div class="boottrack"><i id="boot-bar"></i></div>
+      <p class="dim" id="loadmsg">Loading the league...</p>
+    </div>
+  </div>
+
+  <!-- TODAY'S PLAY, and the one button the dock carries on this screen. It is
+       whichever daily is still open, then Conquest, so the thumb always lands on
+       the thing a returning player came for. modes-ui.js sets its label and what
+       it does; it is here so the dock has a real element to move. -->
+  <button class="big" id="b-today" disabled>Loading...</button>
+
+  <!-- THE MODES, drawn by modes-ui.js once the league has loaded. -->
+  <div class="mhome" id="modes-home"></div>
+
+  <!-- QUICK DRAFT: the game this page started as, now one way to play of four.
+       The court and the reels that used to open the page live in its card,
+       because they are a picture of exactly this mode and nothing else. -->
+  <h2 class="mhome-h" id="qd-h">Quick Draft</h2>
+  <div class="card qd" id="qd-card">
   <div class="hero" id="hero">
     <div class="reels heroreels">
       <div class="reelbox season waiting" id="h-box-s" aria-hidden="true">
@@ -1942,37 +2003,11 @@
       <div class="side"></div>
     </div>
   </div>
-  <div class="eyebrow">RunThe.GG</div>
-  <h1><span class="l1">Run The</span> <span class="l2">Floor</span></h1>
-  <p>Spin a season and a team. Draft a starting five. Play 82 and chase a ring.</p>
-</header>
-
-<!-- ── home ─────────────────────────────────────────────────────────────── -->
-<div class="screen active" id="s-home">
-  <!-- A RUN IN PROGRESS IS THE FIRST THING, and only when there is one. The
-       page used to jump straight back into it on load, which meant a returning
-       player never saw this screen at all and had no way to abandon a draft
-       that had gone badly except a button labelled Reset.
-       The card is hidden along with its contents rather than left standing
-       empty, because Start moved down to the dock and what remained on a first
-       visit was a bordered box with nothing in it. -->
-  <div class="card hero" id="herocard" style="display:none">
-    <div class="resume" id="home-resume" style="display:none">
-      <div class="rh"><b id="rz-title">Run in progress</b><span id="rz-where"></span></div>
-      <p class="who" id="rz-who"></p>
-      <div class="btnrow">
-        <button id="b-resume" style="flex:2">Resume</button>
-        <button class="ghost" id="b-abandon">Abandon</button>
-      </div>
-    </div>
+    <p class="dim qd-say">Spin a season and a team. Sign five under a
+      <b>$120M</b> cap. Play 82 and chase a ring.</p>
+    <button class="big" id="b-start">Start a draft</button>
   </div>
 
-  <!-- OUTSIDE THE CARD ABOVE, because the dock borrows this button and puts it
-       back here afterwards, and it cannot be put back into something hidden.
-       How to play used to sit under it; the rules are linked from the run-goes
-       card below and from the footer, and Career from the bar, so what was left
-       here was three ways to leave a screen nobody had started yet. -->
-  <button class="big" id="b-start">Start a run</button>
 
   <!-- TODAY'S RUN, AND IT SITS ABOVE THE OTHER TWO BECAUSE IT EXPIRES.
        One Franchise and Decades are there every day and are chosen by mood.
@@ -1983,7 +2018,7 @@
        been played, which the other two never do. -->
   <div class="modedoor daily" id="b-daily">
     <button class="md-main" id="b-daily-go">
-      <span class="md-name" id="dl-name">Daily</span>
+      <span class="md-name" id="dl-name">Daily Draft</span>
       <span class="md-sub" id="dl-sub">Same spins for everyone today.</span>
     </button>
     <span class="md-streak" id="dl-streak" hidden></span>
@@ -2030,21 +2065,6 @@
     </button>
     <button class="md-pick" id="b-decade-pick" hidden
       aria-label="Switch decade"><span class="md-chev" aria-hidden="true"></span></button>
-  </div>
-
-  <!-- WHAT YOU ARE DRAFTING FROM. Filled from the data once it loads, so the
-       numbers are the file's rather than a claim typed into the markup. -->
-  <div class="card">
-    <h2>The league <span class="sub" id="home-era">1974 to 2026</span></h2>
-    <div class="leaguestats">
-      <div class="lstat"><b id="ls-players">-</b><span>Player-seasons</span></div>
-      <div class="lstat"><b id="ls-clubs">-</b><span>Team seasons</span></div>
-      <div class="lstat"><b id="ls-teams">-</b><span>Franchises</span></div>
-    </div>
-    <div class="boot" id="boot">
-      <div class="boottrack"><i id="boot-bar"></i></div>
-      <p class="dim" style="font-size:13px;margin:9px 0 0" id="loadmsg">Loading the league...</p>
-    </div>
   </div>
 
   <!-- The career strip, which is hidden until there is a career to show. An
@@ -2473,6 +2493,14 @@
   </div>
 </div>
 
+<!-- ── the three modes that are not a draft ──────────────────────────────
+     Empty shells. modes-ui.js draws all three from the rules in modes.js, so
+     the markup and the stylesheet that dresses it ship in one file with one
+     cache version. -->
+<div class="screen" id="s-cq"></div>
+<div class="screen" id="s-fix"></div>
+<div class="screen" id="s-pass"></div>
+
 <!-- ── career, kept on this device ───────────────────────────────────────
      Every run that reaches a result adds a line to this. It never leaves the
      browser it was played in: there is no account and nothing is sent
@@ -2681,11 +2709,10 @@
   <div class="frg-scrim"></div>
   <div class="frg-panel" id="frg-panel">
     <div class="frg-eyebrow">First time here</div>
-    <h2>Draft five, then play 82</h2>
+    <h2>Four ways to play</h2>
     <ol class="frg-steps" id="frg-steps"></ol>
     <p class="frg-goal" id="frg-goal"></p>
-    <p class="frg-later">Other modes, your career and badges can wait.
-      Play one first.</p>
+    <p class="frg-later">Your career and badges can wait. Play one first.</p>
     <button class="ghost sm" id="frg-x" type="button">Got it</button>
   </div>
   <div class="frg-point" id="frg-point">
@@ -2727,6 +2754,7 @@
 <script src="engine.js?v=23"></script>
 <script src="run.js?v=11"></script>
 <script src="badges.js?v=1"></script>
+<script src="modes.js?v=1"></script>
 <!-- ACCOUNTS AND THE LEADERBOARD. All three are OPTIONAL: if the CDN is blocked
      or either file fails to load, the game runs exactly as it did, with runs
      kept in this browser and the board reporting itself unreachable. An account
@@ -2735,7 +2763,7 @@
      for it rather than reading window.supabase once: on a repeat visit the data
      comes out of cache in milliseconds while this is still in flight. -->
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="board.js?v=2"></script>
+<script src="board.js?v=3"></script>
 <script src="auth.js?v=1"></script>
 <!-- THE SHELF. cloudsave.js is the transport and is shared with the football and
      college games; cloud.js is this game's own policy about slots, progress and
@@ -2858,7 +2886,7 @@ var DAILY_DARE = 'Everyone got the same ' + NUMWORD(E.SLOTS.length) + ' spins.';
  * handle. It is also what carries the diagnosis: `lastError` says which of the
  * two halves is missing, in words, on the screen that would otherwise just be
  * empty. */
-var NEED_BOARD = 2;
+var NEED_BOARD = 3;
 var B = (window.RTF_BOARD && window.RTF_BOARD.API_VERSION === NEED_BOARD)
   ? window.RTF_BOARD
   : {
@@ -2869,6 +2897,13 @@ var B = (window.RTF_BOARD && window.RTF_BOARD.API_VERSION === NEED_BOARD)
       top: function(){ return Promise.resolve(null); },
       mine: function(){ return Promise.resolve(null); },
       boards: function(){ return Promise.resolve(null); },
+      submitFix: function(){ return Promise.resolve(null); },
+      submitPasses: function(){ return Promise.resolve(null); },
+      submitConquest: function(){ return Promise.resolve(null); },
+      claimPlay: function(){ return Promise.resolve(false); },
+      playTop: function(){ return Promise.resolve(null); },
+      playPlace: function(){ return Promise.resolve(null); },
+      moveCount: function(){ return Promise.resolve(null); },
       scoreOf: function(){ return null; },
       offline: true,
       lastError: { where: 'boot', status: 0, code: 'version',
@@ -2952,6 +2987,7 @@ function show(id){
   if (id !== 's-live' && LV && LV.timer) { clearTimeout(LV.timer); LV.timer = null; }
   if (id !== 's-brk') stopBracket();
   if (id === 's-home') heroStart(); else heroStop();
+  if (window.RTF_MODES_UI) window.RTF_MODES_UI.leave(id);
   /* The club belongs to the draft. The season, the results and the home screen
      have no club, and a results screen still wearing the last team you spun is
      claiming that team played the season. */
@@ -2978,7 +3014,9 @@ function show(id){
  * A screen with neither gets an empty dock, which CSS hides.
  */
 var DOCK_FOR = {
-  's-home':   function(){ return [$('b-start')]; },
+  /* TODAY'S PLAY, not the draft. The draft is one of four ways in now, and
+     the button a thumb lands on is whichever daily is still open. */
+  's-home':   function(){ return [$('b-today')]; },
   's-draft':  function(){
     /* Between draws the action is the spin. During one it is picking a player
        off the board, which is not a button, so the dock carries the way OUT of
@@ -3013,7 +3051,7 @@ var DOCK_FOR = {
 var HOME_OF = {};
 
 function rememberHomes(){
-  var ids = ['b-start', 'b-spin', 'b-respin', 'b-play', 'b-skip', 'b-again',
+  var ids = ['b-today', 'b-start', 'b-spin', 'b-respin', 'b-play', 'b-skip', 'b-again',
     'b-lv-fast', 'b-lv-next', 'b-brk-fast'];
   for (var i = 0; i < ids.length; i++) {
     var el = $(ids[i]);
@@ -3143,6 +3181,7 @@ function boot(){
        and the only way out of a draft that had gone wrong was a button called
        Reset. Now the run is offered, and the offer says where it got to. */
     restore();
+    if (window.RTF_MODES_UI) window.RTF_MODES_UI.onData();
     renderHome();
     /* The front page can only play the game once the game has data to play
        with, which is here and not at boot. */
@@ -3547,45 +3586,23 @@ function frgMark(){ try { localStorage.setItem(FRG_KEY, '1'); } catch (e) {} }
 
 function frgFill(){
   var C = E.CONSTANTS;
-  /* THE DEAREST MAN IN THE GAME, read out of the data. "A star costs half the
-     cap" was the first draft of that sentence and it is not true: the top
-     price in 16,057 rows is Bob McAdoo's 1975 at $60.0M against a $120M cap,
-     which is 48%, and nobody is over half. A guide is the worst place to be
-     nearly right, so it prints the real number. */
-  var dearest = 0;
-  if (DATA && DATA.allPlayers) {
-    for (var k in DATA.allPlayers) {
-      var pr = DATA.allPlayers[k].p;
-      if (pr > dearest) dearest = pr;
-    }
-  }
-  var steps = [
-    /* THE COUNT IS READ OFF THE SLOT LIST, never written. This step said
-       "Six times" beside a five position line for as long as the two were
-       different numbers, which is the class of thing check-numbers exists
-       for, arriving inside one sentence. */
-    'Spin a season and a team. Sign one guy off that roster. '
-      + '<b>Do it ' + NUMWORD(E.SLOTS.length) + ' times:</b> ' + E.SLOTS.join(', ') + '.',
-    '<b>' + money(C.CAP_MUSD) + '</b> for all ' + NUMWORD(E.SLOTS.length) + '.'
-      + (dearest ? ' The priciest season in the game costs <b>' + money(dearest) + '</b>.' : '')
-      + ' You cannot buy ' + NUMWORD(E.SLOTS.length) + ' superstars.',
-    /* AND THE PLAYOFF GAMES ARE YOURS, which three steps never mentioned.
-       It is the most distinctive thing this game does and a first-timer was
-       told the opposite in as many words: "the season plays itself" and then
-       nothing. The claim describes `big` in engine.js, which is a Game 7 and
-       nothing else. It is a rule rather than a number, so there is nothing
-       to interpolate.
+  /* FOUR MODES, ONE LINE EACH, in the order the front page shows them. This
+     guide used to be the draft's rules in three steps, which was right while
+     the draft was the game. It is one of four ways in now, and a first-timer
+     told only how to draft would never find the other three.
 
-       ONE CLAUSE ON THE STEP THAT IS ALREADY ABOUT THE SEASON, rather than a
-       fourth step, and the room is measured rather than guessed. The panel
-       is content sized under a max-height, and 360x640 is the tight one: 515
-       of 538 with this sentence in, against 495 before it, so a fourth step
-       is what would tip it over. 320x568 scrolled inside itself BEFORE this
-       and scrolls 41px more now, which is a cost rather than a regression,
-       and the way out of the guide there is the Start button it points at
-       rather than the Got it inside the panel. */
-    'Then the season plays itself: <b>' + C.REGULAR_SEASON_GAMES + ' games</b>. '
-      + 'In the playoffs, <b>every Game 7 is yours to play</b>.'
+     THE GAME 7 CLAUSE STAYS, on the draft's own line. It is the most
+     distinctive thing that mode does and check-home holds the guide to saying
+     it. Every number is read off the constants, never typed. */
+  var steps = [
+    '<b>Fix History</b>, every day. One real team that fell short. '
+      + 'Make one trade and see if they win it.',
+    '<b>Six Passes</b>, every day. Get the ball from one legend to another '
+      + 'through real teammates.',
+    '<b>Conquest.</b> Winners stay on. Beat real teams and take their best guys.',
+    '<b>Quick Draft.</b> ' + NUMWORD(E.SLOTS.length, true) + ' picks under a '
+      + money(C.CAP_MUSD) + ' cap. Play ' + C.REGULAR_SEASON_GAMES
+      + ', and <b>every Game 7 is yours to play</b>.'
   ];
   var ol = $('frg-steps');
   ol.textContent = '';
@@ -3594,9 +3611,7 @@ function frgFill(){
     li.innerHTML = steps[i];
     ol.appendChild(li);
   }
-  $('frg-goal').innerHTML = 'The goal: <b>a ring.</b> '
-    + C.TOP_SIX_WINS + ' wins gets you a top six seed. ' + C.PLAY_IN_WINS
-    + ' gets you the play-in. ' + C.RECORD_WINS + ' is the 1996 Bulls.';
+  $('frg-goal').innerHTML = 'Start with <b>today\'s Fix</b>. It takes two minutes.';
 }
 
 /* Shown on the FRONT PAGE only, and only once the data has landed, because
@@ -7480,14 +7495,22 @@ function renderOverDoors(){
      a run and is then refused by startRun's own guard is the wall the rest of
      this file keeps taking down. Once it is played, the row says so and
      shares it, which is where that tap was going anyway. */
+  /* THE OTHER THREE GAMES FIRST, because a finished draft is the moment
+     somebody is choosing what to play next, and a list of more drafts is the
+     one answer that never shows them there is anything else. Asked of
+     modes-ui.js, which knows whether today's two dailies are done. */
+  var MU = window.RTF_MODES_UI;
+  if (MU && MU.doors) {
+    MU.doors().forEach(function(d){ door(d.title, d.why, d.gold, d.go); });
+  }
   if (dailyDone()) {
     var d = dailyState();
     if (!run.daily) {
       door('Day ' + d.day + ' is done · ' + d.label, 'Send it to a friend.', true, shareDaily);
     }
   } else {
-    door('Daily', 'Same ' + NUMWORD(E.SLOTS.length)
-      + ' spins for everyone today.', true,
+    door('Daily Draft', 'Same ' + NUMWORD(E.SLOTS.length)
+      + ' spins for everyone today.', false,
       function(){ startRun(null, null, true); });
   }
 
@@ -9003,7 +9026,7 @@ function renderDailyDoor(){
 
   door.className = 'modedoor daily' + (done && !live ? ' done' : '');
   if (live) {
-    name.textContent = 'Daily · Day ' + n;
+    name.textContent = 'Daily Draft · Day ' + n;
     sub.textContent = run.phase === R.PHASES.DRAFT
       ? run.roster.length + ' of ' + E.SLOTS.length
         + ' signed. Pick it back up.'
@@ -9014,7 +9037,7 @@ function renderDailyDoor(){
     sub.textContent = s.headline + '. Send it. Back tomorrow.';
     main.onclick = shareDaily;
   } else {
-    name.textContent = 'Daily · Day ' + n;
+    name.textContent = 'Daily Draft · Day ' + n;
     sub.textContent = 'Same ' + NUMWORD(E.SLOTS.length)
       + ' spins for everyone today.';
     main.onclick = function(){ startRun(null, null, true); };
@@ -9120,7 +9143,7 @@ function renderHome(){
     } else {
       $('rz-who').textContent = 'Nobody signed yet.';
     }
-    $('b-start').textContent = 'Start a new run';
+    $('b-start').textContent = 'Start a new draft';
   } else {
     rz.style.display = 'none';
     if (hero) hero.style.display = 'none';
@@ -9132,12 +9155,13 @@ function renderHome(){
        modes have their own door directly under it, and the results screen's
        own Run it back is the one that really does replay the mode. */
     var league = run && !run.club && !run.era && !run.daily;
-    $('b-start').textContent = (run && league) ? 'Run it back' : 'Start a run';
+    $('b-start').textContent = (run && league) ? 'Draft again' : 'Start a draft';
   }
 
   renderDailyDoor();
   renderModeDoor();
   renderEraDoor();
+  if (window.RTF_MODES_UI) window.RTF_MODES_UI.renderHome();
 
   var c = loadCareer();
   var box = $('home-career');
@@ -9554,6 +9578,46 @@ document.addEventListener('keydown', function(ev){
   if (!$('frg').hidden) frgClose();
 });
 
+/* ── THE BRIDGE TO modes-ui.js ─────────────────────────────────────────────
+ *
+ * Conquest, Fix History and Six Passes are drawn by modes-ui.js, which loads
+ * after this script and cannot see inside it. This is everything it is allowed
+ * to reach, and it is deliberately a list of verbs rather than the page's
+ * state: the modes have their own saves and never touch `run`, so a Conquest
+ * run and a draft in progress can both be alive without either knowing. */
+window.RTF_PAGE = {
+  get data(){ return DATA; },
+  show: show,
+  money: money,
+  esc: esc,
+  toast: toast,
+  easternISO: easternISO,
+  dayNumberOf: dayNumberOf,
+  SHARE_URL: SHARE_URL,
+  board: function(){ return B; },
+  auth: function(){ return A; },
+  openProfile: openProfile,
+  goHome: function(){ show('s-home'); renderHome(); },
+  /* The chip in the top bar, for a screen that is not the draft's. */
+  bar: function(text){
+    var st = $('ab-state');
+    if (!st) return;
+    st.hidden = !text;
+    st.className = 'state';
+    st.textContent = text || '';
+  },
+  shareText: function(text){
+    if (navigator.share) {
+      navigator.share({ text: text }).catch(function(err){
+        if (err && err.name === 'AbortError') return;
+        copyAndDownload(text, null);
+      });
+      return;
+    }
+    copyAndDownload(text, null);
+  }
+};
+
 rememberHomes();
 /* READ OFF THE ENGINE, NEVER TYPED. Regulation over four quarters is the
    engine's own constant, and a 720 written here would be a second copy of it
@@ -9564,5 +9628,8 @@ renderAppBar('s-home');
 boot();
 })();
 </script>
+<!-- AFTER the page, because it draws through window.RTF_PAGE, which the script
+     above publishes. -->
+<script src="modes-ui.js?v=1"></script>
 </body>
 </html>

@@ -84,7 +84,7 @@ has_table as (
     'commish_free_clock','ps_runs','profiles',
     'fantasy_weeks','fantasy_prices','fantasy_results','fantasy_entries',
     'nfl_games','fantasy_prizes',
-    'rtf_runs','rtd_runs'
+    'rtf_runs','rtd_runs','rtf_plays'
   ]) as t
   where to_regclass('public.' || t) is not null
 ),
@@ -367,7 +367,26 @@ check_rows(sort, migration, what, breaks, ok) as (
       'Every daily finished between 8pm and midnight Eastern is refused as backdated and never reaches the board. It looks like a quiet evening. Re-run 97, which is safe over an existing copy.',
       (select count(*) > 0 from proc where name = 'rtd_board_day')
       and (select count(*) > 0 from proc
-            where name = 'rtd_submit_run' and body like '%rtd_board_day(%'))
+            where name = 'rtd_submit_run' and body like '%rtd_board_day(%')),
+
+  -- RUN THE FLOOR'S OTHER THREE MODES, and the same silence as row 22. Fix
+  -- History, Six Passes and Conquest play entirely in the browser, keep their
+  -- results on the device, and file to rtf_plays through board.js, which fails
+  -- soft. Against a database without 116 every mode plays, every result screen
+  -- draws, and the one thing missing is a place and a leaderboard, which reads
+  -- exactly like a network that is down. The one-a-day index is in the same
+  -- row rather than its own, because 116 creates it in the same file and the
+  -- table is new, so nothing already in it can refuse the index.
+  (26, '116_hoops_modes',
+      'rtf_plays, so Fix History, Six Passes and Conquest have leaderboards',
+      'The three new modes play and never reach a board: no place on the result screen and an empty leaderboard, for everybody. It looks like a bad network day.',
+      (select count(*) > 0 from has_table where name = 'rtf_plays')
+      and (select count(*) > 0 from proc where name = 'rtf_submit_fix')
+      and (select count(*) > 0 from proc where name = 'rtf_submit_passes')
+      and (select count(*) > 0 from proc where name = 'rtf_submit_conquest')
+      and (select count(*) > 0 from proc where name = 'rtf_claim_play')
+      and (select count(*) > 0 from idx
+            where name = 'rtf_plays_daily_one_idx' and tbl = 'rtf_plays'))
 )
 -- The summary has to come LAST, and a UNION can only be ordered by an output
 -- column, so the sort key is carried through a subquery rather than sorted on

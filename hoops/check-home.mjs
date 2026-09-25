@@ -85,7 +85,7 @@ async function homePage(browser, width, height) {
 const browser = await pw.chromium.launch({ executablePath: CHROME });
 
 // ── 1. the front page fits ──────────────────────────────────────────────────
-section('1. the front page is about two screens, on the widths that bind');
+section('1. the front page is under three screens, on the widths that bind');
 {
   /* 360 is narrower AND shorter, so it is the worst case and not 320: what
      costs screens here is prose reflowing into more lines against a viewport
@@ -98,7 +98,17 @@ section('1. the front page is about two screens, on the widths that bind');
       over: document.documentElement.scrollWidth - document.documentElement.clientWidth,
     }));
     const screens = g.page / h;
-    ok(screens < 2.4, `${w}x${h}: ${screens.toFixed(2)} screens (${g.page}px)`);
+    /* 2.8 SINCE THE PAGE BECAME FOUR GAMES, and that is a move made on
+       purpose rather than to get a run through. The budget was 2.4 while the
+       front page held one mode, and the complaint it answered was an essay
+       nobody asked for: that essay is still folded, and a check that it stays
+       folded is section 2. What grew is Fix History, Six Passes and Conquest,
+       each a door, and the page was compacted first: the league card became
+       one line, the cards and the Quick Draft court were tightened, and the
+       blurbs lost a sentence each. Measured after: 2.30 at 390x844 and 2.67
+       at 360x740. An unfolded essay is about a screen and a half on its own,
+       so this still fails on the regression it exists for. */
+    ok(screens < 2.8, `${w}x${h}: ${screens.toFixed(2)} screens (${g.page}px)`);
     ok(g.over === 0, `${w}x${h}: nothing hangs off the side`);
     ok(boom.length === 0, `${w}x${h}: no page errors (${boom.join(' | ') || 'none'})`);
     await ctx.close();
@@ -181,12 +191,16 @@ section('3. the first run guide names the games you get to call');
     page.on('pageerror', (e) => boom.push(String(e).slice(0, 200)));
     await page.route('**/*', serve);
     await page.goto('http://local.test/hoops/', { waitUntil: 'domcontentloaded' });
-    await page.waitForSelector('#b-start:not([disabled])', { timeout: 30000 });
+    await page.waitForSelector('#b-today:not([disabled])', { timeout: 30000 });
     await page.waitForTimeout(400);
 
+    /* THE ARROW POINTS AT TODAY'S PLAY, which is the button the dock carries
+       now that the draft is one mode of four. It was #b-start, and a check
+       still reading #b-start would be measuring a button inside a card
+       halfway down the page, which the scrim correctly covers. */
     const g = await page.evaluate(() => {
       const pan = document.querySelector('#frg-panel');
-      const start = document.querySelector('#b-start');
+      const start = document.querySelector('#b-today');
       const r = start.getBoundingClientRect();
       const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
       return {
@@ -205,6 +219,12 @@ section('3. the first run guide names the games you get to call');
        five stops. It opens on a Game 7 alone now (poNext's `big`), so a guide
        still promising the wider rule is a guide that lies. */
     ok(/game 7/i.test(all), `${w}x${h}: it says every Game 7 is yours to play`);
+    /* FOUR MODES, AND A GUIDE THAT NAMES THREE HIDES ONE. A first-timer told
+       only how to draft never finds the other three, which is the reason the
+       guide was rewritten. */
+    for (const m of ['Fix History', 'Six Passes', 'Conquest', 'Quick Draft']) {
+      ok(all.indexOf(m) >= 0, `${w}x${h}: the guide names ${m}`);
+    }
     ok(!/end a series|every game of the finals/i.test(all),
       `${w}x${h}: and no longer promises the wider rule it replaced`);
     /* THE OLD SENTENCE ON ITS OWN IS THE DEFECT. "The season plays itself" is
@@ -216,7 +236,7 @@ section('3. the first run guide names the games you get to call');
       + `(${g.need} of ${g.have})`);
     /* The way out of the guide is the button it points at, which is the
        whole of its design and the thing an extra line could cover. */
-    ok(g.startLive, `${w}x${h}: Start is still the element at its own centre`);
+    ok(g.startLive, `${w}x${h}: today's play is still the element at its own centre`);
     ok(boom.length === 0, `${w}x${h}: no page errors (${boom.join(' | ') || 'none'})`);
     await ctx.close();
   }
