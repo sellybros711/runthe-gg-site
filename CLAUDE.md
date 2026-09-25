@@ -13835,60 +13835,56 @@ against 418 at exactly 1000.
 of nothing on any screen. Two columns is the wrong answer on this game anyway: the
 lineup card already has the right hand side.
 
-### The front page is two designs, not two sizes of one
+### The front page is one order, and the Draft button is on the first screen
 
 ```
-node baseball/check-home.mjs      the order, the flank, the reel, at seven widths
+node baseball/check-home.mjs      the order, the fold, the flank, the reel, at eleven widths
 ```
 
-Asked for: the desktop front page should stand the two reels either side of the field,
-and the phone should stay exactly as it is.
+Asked for as "how do we design it better so it doesn't look cheap", and then "on
+mobile it looks worse". Measured on a 390x844 phone, **the Draft button started at
+865px**, under a 230px logo, a kicker, a tagline card and the field. So the one
+control the page is for needed a scroll to find, and the page read as a poster with
+a game somewhere under it. Nothing threw. Every piece rendered correctly.
 
-**They really are two designs, which is mythiball's clubhouse lesson arriving at a
-second game.** What differs is the STAGE: a phone stacks the two reels over the field
-because there is no room beside it, and a desktop stands them either side of it. The
-phone's arrangement is not the desktop's squeezed.
+**Both widths read the same order now**: the logo, the picture, the Draft button, one
+line of tagline, the daily, More ways to play, and three doors. What differs is only
+the STAGE, which is mythiball's clubhouse lesson: a phone stacks the two reels over
+the field, and a desktop stands them either side of it (`display:contents` on the two
+columns, fixed side widths so the picture takes the spare room). The markup IS the
+order, so there is no CSS `order` left to drift and no default order to remember.
 
-**THE NAME SITS UNDER THE PICTURE ON BOTH**, and that is a reversal worth reading
-before undoing it. The first pass at this put the wordmark at the top as a masthead,
-which is the shape a marketing page has, and it was moved back on the second look: the
-name of the game is a CAPTION on something the reader has already looked at, and this
-page's whole job above the fold is the field with the two wheels turning beside it.
-Leading with a 62px wordmark spends the top of the screen saying what the tab already
-says.
+**THIS REVERSES TWO EARLIER CALLS, deliberately.** An earlier pass put the name UNDER
+the picture as a caption, on the argument that a 62px wordmark spends the top of the
+screen saying what the tab already says. That was right about a text wordmark and
+wrong about the owner's logo, which is the most distinctive thing on the page and is
+drawn small enough (210px across on a phone, 250 on a desktop, 130 on a short phone)
+that it costs less than the kicker and tagline it replaced. And the daily used to LEAD
+the desktop. It sits under the button on both widths now, because a page that opens
+on two offers says neither.
 
-**The daily is the one thing that moves up**, and the only real disagreement between
-the two widths. It is the offer with a clock on it, the one thing on this page that is
-different today from yesterday, so on a screen with a whole band to spare it goes above
-the field. On a phone it stays where the markup puts it, under the name, because there
-is no band to spare and the field has to come first.
+**THE CLAIM IS THE FOLD.** `check-home` asserts the Draft button's bottom edge is
+inside the window at 390x844, 360x740, 375x667, 320x568, 768x1024, 999x900 and every
+desktop size it walks, including 1280x720. Short screens get a smaller logo and a
+shorter field through `max-height` queries rather than a fixed field height. The old
+page fails that claim at all eleven sizes, which is how the guard was proved.
 
-**THE ORDER IS CSS AND THE MARKUP IS THE PHONE'S.** Written into the DOM instead, the
-reels and the field would have to live in two different parents to get side by side,
-and every handle on that screen would depend on which width it was built at.
-`#s-intro.on` is a flex column past 1000px and `order` does the rest, so the phone is
-byte for byte what it was: measured at 390, 360, 320, 768 and 999, every box on the
-front page is at the same coordinate to two decimals before and after.
+**The header hides its own name on the front page and only there**
+(`body:has(#s-intro.on) header .lockup`). Two names stacked 60px apart read as a page
+that has not decided what it is called. It is `visibility` rather than `display`, so
+the header keeps its height and nothing under it moves. The guard asks the same page
+twice, with the front page on and off, because a rule that hid the name everywhere
+would pass the first half and leave every draft nameless.
 
-**`display:contents` is what lets the reels flank without the markup moving.** The two
-columns stop being a grid of their own and become items of the hero's, so the year
-takes column one, the field column two and the team column three. The side columns are
-a FIXED width rather than a fraction, because they are two wheels of a known size and
-what should take the room a wider window brings is the picture between them.
+**A phone door takes the short word.** The three doors are a third of a phone each,
+so "How to play" and "Trophy case" wrapped to two lines and "Leaderboard" ran edge to
+edge. Each label carries both (`.hu-long` and `.hu-short`: Rules, Leaders, Trophies)
+and the desktop block swaps them back. The guard asks for one line per door at every
+phone width.
 
-**The default order is 9 and not 0**, which is the clause most likely to be tidied
-away. Every child of that screen is given one; an element added later with none takes
-0 and jumps silently to the very top of the page, above the daily, which is a page that
-renders perfectly and reads wrong. At 9 it lands just above the footer, which is where
-a new thing belongs.
-
-**AND THE PHONE SECTION HAD TO GROW A CLAIM WHEN THE NAME MOVED BACK.** While the
-desktop led with the wordmark, "the field comes before the name" was true of the phone
-and false of the desktop, so it caught a block leaking down. With the name under the
-field on both, that assertion is true either side of the breakpoint and catches
-nothing. What the two widths still disagree about is the DAILY, so that is what the
-phone section asks now. A guard whose claims are all true of the thing it is meant to
-tell apart is the badge nobody can light, arriving at a media query.
+**`box()` in the guard answers NaN for a missing element, never null.** The first run
+against the old page died on a TypeError at the first absent `.htag`, which reported
+nothing. With NaN every comparison is false and the claim is named.
 
 #### A reel is three rows, and that was six copies of one number
 
@@ -13925,8 +13921,9 @@ card holds no nested control.
 
 **Six defects were reintroduced one at a time** and each is caught by the assertions it
 should be: a hardcoded band, a hardcoded row in the script, the reels made a grid again,
-the desktop block leaking under its own breakpoint (16 failures), the default order
-removed, and one sentence for both daily states.
+the desktop block leaking under its own breakpoint (16 failures), and one sentence for
+both daily states. The redesign above removed CSS `order` altogether, so the default
+order claim went with it.
 
 #### And it made `check-theme` go red on a screen it never touched
 

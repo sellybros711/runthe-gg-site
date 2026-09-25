@@ -289,25 +289,22 @@ h1,h2,h3{margin:0}
 .hero-field .chip.pop .who,.hero-field .chip.pop .yr{animation:signin .34s ease-out .1s both}
 @keyframes signin{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
 .hero-field.clearing .chip{transition:opacity .32s ease;opacity:0}
-.htitle{text-align:center;margin-bottom:16px}
-.htitle h1{font-family:'Righteous',var(--fd);font-size:clamp(34px,10vw,52px);text-transform:uppercase;letter-spacing:.03em;line-height:1.05}
-/* The sibling games all carry one word of the name in the game's own color. Flat
-   black on cream read as a document heading rather than a wordmark. */
-.htitle h1 em{font-style:normal;color:var(--leather);
-  text-shadow:0 2px 0 rgba(255,255,255,.4),0 3px 6px rgba(107,82,58,.22)}
-.htitle p{color:var(--dim);font-size:14px;margin:8px 0 0}
-/* THE NAME IS THE OWNER'S LOGO, not set type. It stays inside the h1 with the name as
-   its alt text, so a crawler and a screen reader still get the page's title in words.
-   Sized by width and capped, because the artwork is about 1.3 wide to 1 tall and a
-   logo the full width of a phone would push the draft button off the first screen.
-   build/logo.py cuts it off its cream stock, so it sits on either theme. */
-.htitle h1 .hlogo{display:block;width:min(300px,78vw);height:auto;margin:0 auto}
-@media(min-width:1000px){.htitle h1 .hlogo{width:340px}}
-.htitle .kicker{font-family:var(--fn);font-size:11px;font-weight:600;letter-spacing:.24em;
-  text-transform:uppercase;color:var(--gold);display:flex;align-items:center;justify-content:center;gap:8px}
-.htitle .kicker::before,.htitle .kicker::after{content:'';display:inline-block;width:32px;height:1px;
-  background:linear-gradient(90deg,transparent,var(--gold),transparent)}
-.hnote{margin:11px 0 0;text-align:center;font-size:12.5px;color:var(--dim-2)}
+/* THE LOGO IS THE MASTHEAD, at the top of the front page on every width. It sat under
+   the field for a day, 230px tall on a phone, and read as an advert dropped into the
+   middle of the page: the biggest thing on the screen, two screens below the header
+   that already spelled the name out in text, with three taglines round it and the
+   Draft button pushed off the first screen. Now it is the first thing, small, and the
+   header hides its own text name on this screen so the brand is said once.
+
+   It stays inside the h1 with the name as its alt text, so a crawler and a screen
+   reader still get the page's title in words. build/logo.py cuts it off its cream
+   stock, so it sits on either theme. */
+.htitle{text-align:center;margin:0 0 8px}
+.htitle h1{margin:0;line-height:0}
+.htitle h1 .hlogo{display:block;width:min(210px,56vw);height:auto;margin:0 auto}
+body:has(#s-intro.on) header .lockup{visibility:hidden}
+/* One tagline, under the button, short enough to hold one line on a 320 phone. */
+.htag{margin:0 0 16px;text-align:center;font-size:13.5px;color:var(--dim)}
 .hp-start{margin-bottom:10px}
 .hp-secondary{margin-bottom:10px}
 .mode-row{display:flex;gap:8px;margin-bottom:10px}
@@ -317,11 +314,20 @@ h1,h2,h3{margin:0}
   text-transform:none;color:var(--dim-2)}
 .hrow{display:flex;gap:8px;justify-content:center;margin-bottom:16px}
 .hp-util-btn{width:auto;flex:1}
-/* The phone keeps the three plain buttons it has always had. The icon and the line
-   under the name are the DESKTOP card, and they are in the markup rather than built
-   there because a door that only exists at one width is a door that gets forgotten. */
+/* The line under the name is the DESKTOP card's, and it is in the markup rather than
+   built there because a door that only exists at one width gets forgotten. */
 .hp-util-btn b{font-weight:inherit}
-.hp-util-btn .hu-i,.hp-util-btn .hu-s{display:none}
+.hp-util-btn .hu-s{display:none}
+/* A phone door is a third of the width, so it takes the short word. "How to play"
+   and "Trophy case" wrapped to two lines and "Leaderboard" ran edge to edge. */
+.hp-util-btn .hu-long{display:none}
+/* Three doors three across. As bare labels they wrapped ("HOW TO / PLAY") and the
+   middle one touched its own edges, so a phone gets the desktop's icon over a
+   shorter label, which holds one line at 320. */
+.hrow{display:grid;grid-template-columns:repeat(3,minmax(0,1fr))}
+.hp-util-btn{flex-direction:column;gap:6px;padding:12px 6px;font-size:12.5px;letter-spacing:.05em;line-height:1.1}
+.hp-util-btn .hu-i{display:block;width:22px;height:22px;fill:none;stroke:currentColor;
+  stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;color:var(--gold)}
 
 /* ─── reels ─── */
 .reels{display:grid;grid-template-columns:120px 1fr;gap:10px;margin-top:11px}
@@ -1588,26 +1594,15 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
      Two designs rather than two sizes of one, which is the clubhouse's own lesson.
      What differs is the STAGE, not the running order: a phone stacks the two reels
      over the field because there is no room beside it, and a desktop stands them
-     either side of it. The name of the game sits under the picture on both, where it
-     is a caption on something the reader has already looked at.
+     either side of it. The order is the markup's on both widths: the logo, the
+     picture, the Draft button, one tagline, then the daily and the other doors.
 
-     THE DAILY IS THE ONE THING THAT MOVES UP. It is the offer with a clock on it and
-     the only thing on this page that is different today from yesterday, so on a screen
-     with a whole band to spare it goes above the field rather than below the name,
-     where a reader has to scroll past the game to find out there is one.
-
-     THE ORDER IS CSS AND THE MARKUP IS THE PHONE'S. Written into the DOM instead, the
-     reels and the field would have to live in two different parents to get side by
-     side here, and every JS handle on this screen would then depend on which width it
-     was built at. `order` on a flex column costs nothing and the phone is byte for
-     byte what it was.
-
-     Every child is given one, and the default is 9 rather than 0: an element added
-     later with no order lands just above the footer, which is where a new thing on
-     this page belongs. At 0 it would jump silently to the very top. */
-  #s-intro.on{display:flex;flex-direction:column}
-  #s-intro.on>*{order:9}
-  #s-intro .dailycard{order:1;margin-bottom:22px;
+     THE DAILY USED TO LEAD HERE, above the field, and the name sat under the picture as
+     a caption. Once the name became the owner's logo that order put a 340px piece of
+     artwork between the field and the button, and the one control this page exists
+     for fell under the fold on a 900px monitor. The logo leads now and the daily sits
+     directly under the button, still on the first screen. */
+  #s-intro .dailycard{margin-bottom:22px;
     display:flex;align-items:center;gap:20px;padding:18px 18px 18px 20px}
   #s-intro .dc-txt{flex:1 1 auto;min-width:0}
   #s-intro .dc-go{display:block;flex:0 0 auto;font-family:var(--fd);font-size:17px;
@@ -1617,35 +1612,21 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
   #s-intro .dailycard.played .dc-go{background:none;border:1.5px solid var(--line-2);
     border-bottom-width:1.5px;color:var(--dim);font-size:15px;padding:11px 18px}
   #s-intro .dc-sub{font-size:13.5px}
-  #s-intro .hero{order:2}
-  #s-intro .htitle{order:3;margin-bottom:20px}
-  #s-intro #b-start{order:4}
-  #s-intro #b-modes{order:5}
-  #s-intro .hrow{order:6}
-  #s-intro .legal{order:10}
-
-  /* The title carries the rule the kicker above it already draws, because at this
-     width the name has a whole band of page to itself and needs an edge to sit in. */
-  .htitle h1{font-size:62px;display:flex;align-items:center;justify-content:center;gap:24px}
-  .htitle h1::before,.htitle h1::after{content:'';flex:0 0 62px;height:2px;border-radius:2px;
-    background:linear-gradient(90deg,transparent,var(--gold),transparent)}
-  .htitle p{font-size:15px;letter-spacing:.02em}
+  .htitle{margin-bottom:14px}
+  .htitle h1 .hlogo{width:250px}
+  .htag{font-size:15px;letter-spacing:.02em;margin-bottom:22px}
 
   /* THE REELS FLANK THE FIELD, and `display:contents` is what lets them, without the
      markup moving: the two columns stop being a grid of their own and become items of
      the hero's. A fixed side column rather than a fraction, because these are two
      wheels of a fixed size and what should take the width a wider window brings is the
      picture of the ballpark between them. */
-  /* 30px under the picture rather than 20: the tagline is the last line of the hero
-     and the kicker is the first of the title, so at the phone's spacing the two read
-     as one four line block with the wordmark buried in the middle of it. */
   .hero{display:grid;grid-template-columns:150px minmax(0,1fr) 150px;
-    gap:0 24px;align-items:center;margin-bottom:30px}
+    gap:0 24px;align-items:center;margin-bottom:20px}
   .hero-reels{display:contents}
   .hero .reelcol:first-child{grid-column:1;grid-row:1}
   .hero .reelcol:last-child{grid-column:3;grid-row:1}
   .hero-field{grid-column:2;grid-row:1;margin-top:0}
-  .hnote{grid-column:1/-1;grid-row:2;margin-top:16px;font-size:13.5px}
   /* One property, because the box is three rows by construction and the script reads
      the row back off the box. A 114px reel beside a 480px field reads as a postage
      stamp, which is what the first pass at this looked like. */
@@ -1661,24 +1642,30 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
      room this width has. The icon and the line under the name are already in the
      markup and hidden on a phone, so nothing here builds a control. */
   #s-intro .hrow{gap:14px}
-  #s-intro .hp-util-btn{flex-direction:column;gap:7px;padding:20px 16px;border-radius:12px;
+  #s-intro .hp-util-btn{gap:7px;padding:20px 16px;border-radius:12px;
     text-align:center;background:var(--panel);border-color:var(--line)}
   #s-intro .hp-util-btn:hover{border-color:var(--gold);color:var(--ink)}
-  #s-intro .hp-util-btn .hu-i{display:block;width:26px;height:26px;fill:none;stroke:currentColor;
-    stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;color:var(--gold)}
+  #s-intro .hp-util-btn .hu-i{width:26px;height:26px}
+  #s-intro .hp-util-btn .hu-long{display:inline}
+  #s-intro .hp-util-btn .hu-short{display:none}
   #s-intro .hp-util-btn b{font-size:15px;letter-spacing:.05em;color:var(--ink)}
   #s-intro .hp-util-btn .hu-s{display:block;font-family:var(--fn);font-size:11.5px;font-weight:600;
     text-transform:none;letter-spacing:0;color:var(--dim-2)}
 }
+/* SHORT SCREENS KEEP THE DRAFT BUTTON ON THE FIRST SCREEN. The logo gives way first,
+   because it is the one thing on this page that is only decoration. A short desktop
+   also caps the field, which at that width would otherwise be 470px tall on its own. */
 @media(max-height:800px){
-  .field.hero-field{aspect-ratio:auto;height:280px}
+  .htitle h1 .hlogo{width:min(170px,46vw)}
   .hero{margin-bottom:10px}
-  .hnote{margin-top:7px;font-size:11.5px}
+}
+@media(max-height:800px) and (min-width:1000px){
+  .field.hero-field{aspect-ratio:auto;height:300px}
 }
 @media(max-height:640px){
-  .field.hero-field{height:150px}
+  .htitle h1 .hlogo{width:130px}
+  .field.hero-field{aspect-ratio:auto;height:150px}
   .chip .yr{display:none}
-  .htitle h1{font-size:min(10.5vw,40px)}
 }
 @media(prefers-reduced-motion:reduce){
   *{animation-duration:.01ms !important;animation-iteration-count:1 !important;transition-duration:.01ms !important}
@@ -1732,6 +1719,10 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
 </div>
 
 <div class="screen" id="s-intro">
+  <div class="htitle">
+    <h1><img class="hlogo" src="logo.webp?v=1" alt="Run The Diamond" width="822" height="631" decoding="async" fetchpriority="high"></h1>
+  </div>
+
   <div class="hero" id="hero">
     <div class="reels hero-reels">
       <div class="reelcol"><span class="rlabel">&starf; Year &starf;</span>
@@ -1740,32 +1731,27 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
         <div class="reelbox team waiting" id="h-box-t"><div class="strip" id="h-reel-t"></div><span class="band"></span><span class="wash"></span></div></div>
     </div>
     <div class="field hero-field" id="h-field"></div>
-    <p class="hnote">&starf; Twelve spins, twelve spots, one shot at all of them. &starf;</p>
   </div>
 
-  <div class="htitle">
-    <div class="kicker">1901 to 2025</div>
-    <h1><img class="hlogo" src="logo.webp?v=1" alt="Run The Diamond" width="822" height="631" decoding="async" fetchpriority="high"></h1>
-    <p>Draft twelve MLB legends. Build your lineup. Win the World Series.</p>
-  </div>
+  <button class="btn ball hp-start" id="b-start"><svg class="bs bs-l" viewBox="0 0 100 100" aria-hidden="true"><use href="#seam"/></svg><svg class="bs bs-r" viewBox="0 0 100 100" aria-hidden="true"><use href="#seam"/></svg><span>Draft your team</span></button>
+  <p class="htag">Draft twelve legends. Win the World Series.</p>
 
   <button class="dailycard" id="daily-card"></button>
-  <button class="btn ball hp-start" id="b-start"><svg class="bs bs-l" viewBox="0 0 100 100" aria-hidden="true"><use href="#seam"/></svg><svg class="bs bs-r" viewBox="0 0 100 100" aria-hidden="true"><use href="#seam"/></svg><span>Draft your team</span></button>
   <button class="btn ghost hp-secondary" id="b-modes">More ways to play</button>
   <div class="hrow">
     <button class="btn ghost hp-util-btn" id="b-how-play">
       <svg class="hu-i" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5.2h6a3 3 0 0 1 3 3v11a2.4 2.4 0 0 0-2.4-2.4H3z"/>
         <path d="M21 5.2h-6a3 3 0 0 0-3 3v11a2.4 2.4 0 0 1 2.4-2.4H21z"/></svg>
-      <b>How to play</b><span class="hu-s">Learn the rules and scoring.</span></button>
+      <b><span class="hu-long">How to play</span><span class="hu-short">Rules</span></b><span class="hu-s">Learn the rules and scoring.</span></button>
     <button class="btn ghost hp-util-btn" id="b-board">
       <svg class="hu-i" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V12"/><path d="M10 20V4"/>
         <path d="M16 20v-6"/><path d="M22 20H2"/></svg>
-      <b>Leaderboard</b><span class="hu-s">See how you stack up.</span></button>
+      <b><span class="hu-long">Leaderboard</span><span class="hu-short">Leaders</span></b><span class="hu-s">See how you stack up.</span></button>
     <button class="btn ghost hp-util-btn" id="b-trophy">
       <svg class="hu-i" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4h10v5a5 5 0 0 1-10 0z"/>
         <path d="M7 6H4.5v1.5A3.5 3.5 0 0 0 8 11"/><path d="M17 6h2.5v1.5A3.5 3.5 0 0 1 16 11"/>
         <path d="M12 14v3"/><path d="M8.5 20h7"/><path d="M10 17h4l.6 3h-5.2z"/></svg>
-      <b>Trophy case</b><span class="hu-s">Past winners and top scores.</span></button>
+      <b><span class="hu-long">Trophy case</span><span class="hu-short">Trophies</span></b><span class="hu-s">Past winners and top scores.</span></button>
   </div>
 
   <details class="about">
