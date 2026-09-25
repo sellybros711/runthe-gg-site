@@ -366,6 +366,167 @@ async function playOne(browser, w, h, dpr, touch, youHome) {
            turnAgree: turned ? turned.agree : null };
 }
 
+/* ---- the two sheets that open OVER the field ----
+
+   THE WALK ABOVE CANNOT SEE THESE AND NEVER COULD. It plays with Space and
+   presses the deck, so the bullpen and the coach plaque were the two surfaces
+   in this game nothing had ever opened, and `.arena` sets overflow:hidden, so
+   a plaque taller than the arena is not a scroll away, it is CUT. Measured,
+   both halves of the fault this file exists for were there:
+
+     320x568   the sheet was 445px against a 341px arena, so it hung 52px off
+               the TOP and the heading and the note explaining the rule were
+               simply not drawn
+     667x375   Stay with him, which is the only way out that does not change
+               your pitcher, ran 23px past the bottom
+
+   WHAT IT ASKS IS REACHABILITY AND NOT CONTAINMENT, which is the distinction
+   the log claim above already makes. The arms live in a scroller now, so their
+   rectangles legitimately sit outside the window when they are scrolled away.
+   What may never be outside it is the BOX, the heading, and the bar the game
+   is waiting on; and the scroller has to actually reach its own last row.
+
+   THE SHADE IS ASSERTED IN BOTH DIRECTIONS. A list clipped on its own edge
+   reads as the last row, and a cue still showing at the end of the list is the
+   lie the other way, so it has to be on where there is more and off at the
+   end. That is the cut sheet's rule in the baseball game, arriving here.
+
+   THE COACH PLAQUE IS MEASURED AND IS CORRECT TODAY, at 196 to 250px against
+   every arena in the sweep. It is here because it is the first thing a
+   stranger meets and a fourth step would break it in silence. */
+async function sheets(browser) {
+  console.log('the sheets that open over the field');
+  for (const [w, h, dpr] of [[320, 568, 2], [360, 640, 2], [667, 375, 2],
+                             [390, 844, 3], [1440, 900, 1]]) {
+    const tag = `${w}x${h}`;
+    const ctx = await browser.newContext({ viewport: { width: w, height: h },
+      deviceScaleFactor: dpr, hasTouch: true, isMobile: true });
+    const pg = await ctx.newPage();
+    const errs = []; pg.on('pageerror', e => errs.push(e.message));
+    await pg.goto(URL);
+    await pg.evaluate(() => localStorage.clear());
+    await pg.goto(URL);
+    /* THE COACH IS LEFT ON, because it only ever appears on a first visit and
+       that is how this game is met. `youHome` puts you in the field first, so
+       the pitching cards are the ones drawn and the bullpen is offered. */
+    await pg.evaluate(() => {
+      Sound.muted = true; PREFS.cutscenes = false; PREFS.coach = true;
+      State.gameSpeed = 'fast'; applyGameSpeed();
+      State.team = ROSTER.slice(0, 9).map(c => c.k);
+      State.teamName = 'Testers';
+      State.opponent = OPPONENTS[0];
+      State.innings = 5; State.mode = 'exhibition';
+      startGame({ mode: 'exhibition', youHome: true });
+    });
+    await pg.waitForTimeout(1200);
+    /* Walked to its LAST step, which is the tallest: the fielding note is the
+       longest of the four and the one a fifth would be added beside. */
+    let coach = null;
+    for (let i = 0; i < 5; i++) {
+      const got = await pg.evaluate(() => {
+        const b = document.querySelector('.coach');
+        if (!b) return null;
+        const r = b.getBoundingClientRect();
+        const btns = [...b.querySelectorAll('button')].map(x => {
+          const q = x.getBoundingClientRect();
+          return { label: (x.textContent || '').trim(),
+                   over: Math.max(0, q.bottom - innerHeight, q.right - innerWidth, -q.top, -q.left) };
+        });
+        return { h: Math.round(r.height),
+                 over: Math.round(Math.max(0, r.bottom - innerHeight, r.right - innerWidth,
+                                           -r.top, -r.left)),
+                 btns };
+      });
+      if (!got) break;
+      if (!coach || got.h > coach.h) coach = got;
+      const next = await pg.$('.coach-bar .btn:not(.ghost)');
+      if (!next) break;
+      const last = ((await next.textContent()) || '').trim() === 'Play ball';
+      await next.click({ force: true });
+      await pg.waitForTimeout(220);
+      if (last) break;
+    }
+    ok(coach !== null, `${tag}  the coach plaque came up`, 'not drawn');
+    if (coach) {
+      const bad = coach.btns.filter(b => b.over > 0).map(b => `${b.label} by ${Math.round(b.over)}px`);
+      ok(coach.over === 0 && bad.length === 0,
+         `${tag}  and it fits, at its tallest step (${coach.h}px)`,
+         (coach.over ? `the plaque is ${coach.over}px outside the window. ` : '') + bad.join(', '));
+    }
+
+    /* THE DECK HAS TO HAVE SETTLED, and the first draft opened the bullpen in
+       the same frame the coach was dismissed in. The pitch deck was still
+       being painted, so the arena was transiently TALLER than it ever is in
+       play, and with the cap deliberately removed the sheet fitted at 320x568
+       and the guard reported only the sideways arm of its own defect. The
+       arena is shortest when the deck is tallest, so the pessimistic reading
+       needs the deck drawn and the log started. */
+    await pg.evaluate(() => {
+      PREFS.coach = false;
+      const c = document.querySelector('.coach'); if (c) c.remove();
+    });
+    await pg.waitForTimeout(3000);
+    const pen = await pg.evaluate(async () => {
+      openBullpen();
+      await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+      const box = document.querySelector('#pen');
+      if (!box) return null;
+      const body = box.querySelector('.pen-body');
+      const shade = box.querySelector('.pen-shade');
+      const bar = box.querySelector('.pen-bar button');
+      const H = innerHeight, W = innerWidth;
+      const outside = (r) => Math.round(Math.max(0, r.bottom - H, r.right - W, -r.top, -r.left));
+      const arms = [...box.querySelectorAll('.pen-arm')];
+      const bt = body.getBoundingClientRect();
+      /* Reachable means inside the scroller's own CONTENT, so a row scrolled
+         away still counts and a row laid out past the content does not. */
+      const reach = arms.every(a => {
+        const q = a.getBoundingClientRect();
+        return q.top - bt.top + body.scrollTop >= -1
+            && q.bottom - bt.top + body.scrollTop <= body.scrollHeight + 1;
+      });
+      const before = { more: body.classList.contains('more'),
+                       shade: getComputedStyle(shade).display };
+      const scrolls = body.scrollHeight - body.clientHeight;
+      body.scrollTop = body.scrollHeight;
+      body.dispatchEvent(new Event('scroll'));
+      await new Promise(r => requestAnimationFrame(r));
+      const lastArm = arms.length ? arms[arms.length - 1].getBoundingClientRect() : null;
+      return {
+        arms: arms.length, reach, scrolls,
+        box: outside(box.getBoundingClientRect()),
+        body: outside(bt),
+        bar: bar ? outside(bar.getBoundingClientRect()) : 999,
+        barLabel: bar ? (bar.textContent || '').trim() : '',
+        lastIn: lastArm ? outside(lastArm) === 0 : false,
+        shadeBefore: before.shade, moreBefore: before.more,
+        shadeAfter: getComputedStyle(shade).display,
+        moreAfter: body.classList.contains('more'),
+      };
+    });
+    ok(pen !== null, `${tag}  the bullpen came up`, 'not drawn');
+    if (pen) {
+      ok(pen.box === 0, `${tag}  the bullpen sheet is inside the window`,
+         `${pen.box}px outside it`);
+      ok(pen.bar === 0, `${tag}  and the way out of it is on the screen`,
+         `${pen.barLabel} is ${pen.bar}px outside the window`);
+      ok(pen.arms === 8 && pen.reach, `${tag}  all ${pen.arms} arms are inside the scroller`,
+         'arms ' + pen.arms + ', reachable ' + pen.reach);
+      ok(pen.lastIn, `${tag}  and scrolling to the end brings the last one on screen`,
+         'still outside the window at the scroll end');
+      /* Both directions, on the real scroll state rather than on a width: the
+         shade is a lie whichever way round it is wrong. */
+      ok(pen.moreBefore === (pen.scrolls > 8),
+         `${tag}  the shade is on exactly when there is more (${pen.scrolls}px to scroll)`,
+         `more=${pen.moreBefore}, shade=${pen.shadeBefore}`);
+      ok(pen.shadeAfter === 'none', `${tag}  and it comes off at the end of the list`,
+         'shade=' + pen.shadeAfter);
+    }
+    ok(errs.length === 0, `${tag}  no page errors`, [...new Set(errs)].join(' | '));
+    await ctx.close();
+  }
+}
+
 async function main() {
   const browser = await chromium.launch();
   console.log('every control a game offers is inside the window');
@@ -413,6 +574,8 @@ async function main() {
   ok(anyFielded > 0, 'and the walk answered them', anyFielded + ' played');
   ok(sawReplay === SCREENS.length, 'and the Replay chip was measured on every screen',
      sawReplay + ' of ' + SCREENS.length);
+
+  await sheets(browser);
 
   await browser.close();
   console.log(failures ? `\n${failures} FAILED` : '\nall good');

@@ -22,7 +22,10 @@ name: MythiBall checks
 # broad one: it sweeps games rather than posing situations, so it names a
 # broken rule in a minute where the other takes the best part of an hour.
 # check-reach takes its one screen, which is the 320 by 568 phone three of the
-# four unreachable controls were found on.
+# four unreachable controls were found on. Its sheet section is NOT cut by
+# --quick and walks five viewports either way: opening a plaque costs seconds
+# where playing a screen costs two minutes, and the phone those two defects
+# were on is the one a shortened list would drop.
 
 on:
   pull_request:

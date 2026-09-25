@@ -5373,8 +5373,12 @@ to 750, so a crop centred on the canvas cut his bat off at the frame's edge.
 
 ```
 node mythiball/check-reach.mjs          six screens, two minutes of play each
-node mythiball/check-reach.mjs --quick  one screen, for a loop
+node mythiball/check-reach.mjs --quick  one screen of play, and every sheet
 ```
+
+`--quick` cuts the screens it PLAYS from six to one. It does not cut the sheet
+section, which walks five viewports either way, because opening a plaque costs
+seconds where playing a screen costs two minutes.
 
 Measured across eleven viewports, both halves of the game, reading every
 pressable control's rectangle against the window rather than looking at a
@@ -5632,6 +5636,69 @@ Same lesson as the fantasy row's named areas.
 letters is the one nobody needs: End Game is the way out of a run and never
 shrinks, Replay is an offer to watch something again.
 
+##### AND THE TWO SHEETS THAT OPEN OVER THE FIELD HAD NEVER BEEN OPENED
+
+`check-reach` plays with Space and presses the deck, so the bullpen and the coach
+plaque were the two surfaces in this game nothing had ever measured. `.arena` sets
+`overflow:hidden`, which is the part that makes this worse than a control off the
+side of the window: a plaque taller than the arena is not a scroll away and it is
+not merely off screen, it is CUT, by a box two levels up that has nothing to do
+with sheets. Both halves of that file's own fault were there:
+
+| | what was gone |
+|---|---|
+| 320x568 | the sheet is 445px against a 341px arena, so it hung **52px off the TOP** and the heading and the whole note explaining the rule were not drawn |
+| 667x375 sideways | **Stay with him**, which is the only way out that does not change your pitcher, ran 23px past the bottom |
+
+So a reader who opened the bullpen sideways to look and not to change anything had
+no press left that did not change something. **Nothing threw**, the sheet rendered,
+and every arm on it was correct.
+
+**The cap is a percentage of the arena and the middle of the sheet scrolls.** The
+heading and the bar stay outside the scroller, because the title says which sheet
+this is and the bar is the control the game is waiting on. It is measured after the
+sheet is on the page, since a box with no layout box answers zero for
+`scrollHeight` and `clientHeight` alike and a read at build time says every sheet
+fits.
+
+**THE STATE LINE AND THE RULE WERE ONE PARAGRAPH, and that is what made 320 bad.**
+Who is on the mound and how tired he is changes on every open and is the reason
+anybody came, so it stays above the scroller. The three sentences after it are a
+RULE, and printed first they were 70px of a 178px scrollport: a first look at a 320
+by 568 phone met **none of the eight arms**. The rule goes BELOW the arms now,
+which is the boss battle's order arriving at a sheet, since the arms are the
+decision and the rule is the reference. Visible arms went 0 to 3 there, 4 to 8 at
+360x640, and 3 to 6 sideways.
+
+**It is a footnote and deliberately NOT a one shot.** Keying it to a first open the
+way the coach cards are keyed was tried and is the worse trade: it hides a rule for
+ever to save a scroll, and the how to play page carries the same rule in more
+detail anyway, including the recovery rate this sheet never mentioned.
+
+**The shade is the cut sheet's, from the baseball game, for the same reason and
+with the same two sided claim.** A row clipped on the scrollport's own edge reads
+as the last row, and a cue still showing at the end of the list is the lie the
+other way, so it is toggled off the real scroll state and asserted in both
+directions. A sticky zero height overlay rather than an inset shadow, because an
+inset shadow paints under opaque children and the arms are opaque.
+
+**WHAT THE GUARD ASKS IS REACHABILITY AND NOT CONTAINMENT**, which is the
+distinction the play by play claim in the same file already makes. An arm's
+rectangle legitimately sits outside the window when it is scrolled away, so what
+may never be outside it is the BOX, the heading and the bar; and the scroller has
+to actually reach its own last row.
+
+**ITS FIRST DRAFT OPENED THE SHEET IN THE FRAME THE COACH WAS DISMISSED IN**, so
+the pitch deck was still being painted and the arena was transiently TALLER than it
+ever is in play. With the cap deliberately removed the sheet then FITTED at
+320x568 and the guard reported only the sideways arm of its own defect. The arena
+is shortest when the deck is tallest, so the pessimistic reading needs the deck
+drawn and the log started. Three seconds of play, and both arms are named.
+
+**The coach plaque is measured and is correct today**, 196 to 250px against every
+arena in the sweep. It is in the guard because it is the first thing a stranger
+meets and a fourth step would break it in silence.
+
 ##### THE DECK WAS TOO TALL FOR A SHORT PHONE, and it took three passes to close
 
 **IT IS CLOSED. What follows is the history**, kept because the two things it
@@ -5873,7 +5940,8 @@ The regression suite, which is the thing to run after editing:
 ```
 node mythiball/check-posture.mjs   unlisted, and the capital alias still lands
 node mythiball/check-rules.mjs     whole games, and the sport's own arithmetic
-node mythiball/check-reach.mjs      every control a game offers is inside the window
+node mythiball/check-reach.mjs      every control a game offers is inside the window,
+                                   including the two sheets that open over the field
 node mythiball/verify-rules.mjs    the rules replayed in a headless browser
 node mythiball/calibrate.mjs       the pitch duel's rates against TARGETS bands (minutes; --quick for a loop, --easy/--hard for a tier)
 node mythiball/check-frames.mjs 70 normal --phone --cpu=4   frame times, on the machine that matters

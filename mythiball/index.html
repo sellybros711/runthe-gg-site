@@ -906,12 +906,38 @@
   .controls .btn.selected{background:var(--gold);color:#fff6ea;}
   /* The bullpen: a plaque over the field with the eight arms on the
      bench, each with the one number that matters on the mound. */
+  /* CAPPED TO THE FIELD IT SITS OVER, and the middle of it scrolls. The
+     arena sets overflow:hidden, so a plaque taller than the arena is not a
+     scroll away, it is CUT. Uncapped this one is 445px against a 341px
+     arena on a 320 by 568 phone, so it hung 52px off the top and the
+     heading and the whole note explaining the rule were gone; held
+     sideways on a 667 by 375 phone the way OUT, Stay with him, ran 23px
+     past the bottom, so a reader who did not want to change pitchers had
+     no press left that did not change one. Nothing here had measured it:
+     check-reach plays with Space and never opens this sheet.
+
+     The heading and the bar sit OUTSIDE the scroller, because the title
+     says which sheet this is and the bar is the control the game is
+     waiting on. Only the note and the arms move. */
   .pen{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
     width:min(560px,94%);background:var(--panel);border:var(--bd-strong);
     box-shadow:var(--shadow);padding:12px 14px;z-index:10;
-    font-size:12px;color:var(--text);}
+    font-size:12px;color:var(--text);
+    max-height:calc(100% - 16px);display:flex;flex-direction:column;}
   .pen h4{margin:0 0 4px;font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);}
   .pen .note{font-size:10px;color:var(--text-dim);margin-bottom:8px;line-height:1.5;}
+  .pen .pen-rule{margin:8px 0 0;}
+  .pen-body{overflow-y:auto;min-height:0;}
+  /* A row clipped on the scrollport's own edge reads as the last row. Zero
+     height, sticky, and toggled off the real scroll state rather than
+     painted always, because a cue still showing at the end of the list is
+     the lie in the other direction. A sticky overlay and not an inset
+     shadow: an inset shadow paints UNDER opaque children, and the arms
+     are opaque. */
+  .pen-body .pen-shade{position:sticky;bottom:0;height:0;display:none;pointer-events:none;}
+  .pen-body.more .pen-shade{display:block;}
+  .pen-body .pen-shade::before{content:'';position:absolute;left:0;right:0;bottom:0;height:22px;
+    background:linear-gradient(rgba(27,58,92,0),rgba(27,58,92,.30));}
   .pen-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:6px;}
   .pen-arm{border:var(--bd);background:var(--panel-2);padding:5px 4px;text-align:center;
     cursor:pointer;font:inherit;color:inherit;box-shadow:var(--shadow-sm);}
@@ -15184,11 +15210,22 @@ function openBullpen() {
   const box = el('div', 'pen');
   box.id = 'pen';
   box.appendChild(el('h4', null, 'Who pitches'));
-  box.appendChild(el('div', 'note',
+  /* THE STATE LINE IS NOT THE RULE, and they were one paragraph. Who is out
+     there and how tired he is changes on every open and is the reason
+     anybody came, so it stays above the scroller with the heading. The
+     three sentences after it are a RULE, so they go BELOW the arms: the
+     arms are the decision this sheet is waiting on and the rule is the
+     reference, which is the boss battle's own order arriving at a sheet.
+     Written the other way round they were 70px of a 178px scrollport on a
+     320 by 568 phone, so a first look there met NONE of the eight arms.
+
+     It is a footnote and not a one shot. Keying it to a first open the way
+     the coach cards are keyed hides a rule for ever to save a scroll,
+     which is the worse trade. */
+  box.appendChild(el('div', 'note pen-state',
     `<b>${on.n}</b> is <b>${st.label}</b> (PIT ${on.pit}) after ${st.worked} inning`
-    + `${st.worked === 1 ? '' : 's'} of work. Anyone can take the mound: he walks in from `
-    + 'his position and <b>' + on.n + '</b> walks out to it. Nobody leaves the game and '
-    + 'the batting order does not move, so an arm you rest is one you get back.'));
+    + `${st.worked === 1 ? '' : 's'} of work.`));
+  const body = el('div', 'pen-body');
   const grid = el('div', 'pen-grid');
   for (const x of opts) {
     const b = el('button', 'pen-arm');
@@ -15199,13 +15236,27 @@ function openBullpen() {
     b.onclick = (e) => { e.stopPropagation(); closeBullpen(); swapToMound(team, x.i); };
     grid.appendChild(b);
   }
-  box.appendChild(grid);
+  body.appendChild(grid);
+  body.appendChild(el('div', 'note pen-rule',
+    'Anyone can take the mound: he walks in from his position and <b>'
+    + on.n + '</b> walks out to it. Nobody leaves the game and the batting '
+    + 'order does not move, so an arm you rest is one you get back.'));
+  const shade = el('div', 'pen-shade');
+  body.appendChild(shade);
+  box.appendChild(body);
   const bar = el('div', 'pen-bar');
   const stay = el('button', 'btn ghost', `Stay with ${on.n}`);
   stay.onclick = (e) => { e.stopPropagation(); closeBullpen(); };
   bar.appendChild(stay);
   box.appendChild(bar);
   arena.appendChild(box);
+  /* MEASURED AFTER THE SHEET IS ON THE PAGE. A box with no layout box
+     answers zero for scrollHeight and clientHeight alike, so a read at
+     build time would say every sheet fits. */
+  const more = () => body.classList.toggle('more',
+    body.scrollHeight - body.scrollTop - body.clientHeight > 8);
+  body.onscroll = more;
+  requestAnimationFrame(more);
 }
 function closeBullpen() {
   penOpen = false;
