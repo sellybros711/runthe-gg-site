@@ -10986,7 +10986,7 @@ baseball re-spin. The cap and the season are in because the home page really
 does state both and neither collides (170 against 11, 140 and 280; 162 against
 12 and 17). The counts are re-recorded: 88 claims across 7 pages.
 
-### The leaderboard is in the preflight now, and it is two rows rather than one
+### The leaderboard is in the preflight now, and it is three rows rather than one
 
 ```
 psql ... -f supabase/test/launch_preflight.sql     or paste it into the SQL editor
@@ -11002,8 +11002,8 @@ a player can tell the two apart. That was survivable while the game was
 unlaunched and stops being survivable the day the home page links it.
 
 **TWO ROWS, because they are two failures rather than one at two sizes**, which
-is the fantasy chain's own argument arriving inside a single file. Row 22 is the
-board not existing. Row 23 is `rtd_runs_daily_once`, the partial unique index
+is the fantasy chain's own argument arriving inside a single file. Row 23 is the
+board not existing. Row 24 is `rtd_runs_daily_once`, the partial unique index
 that is the whole of the rule that a browser files one result per puzzle:
 without it the board draws, the scores are real, and the daily quietly stops
 being a competition because one person can file the same day repeatedly and
@@ -11028,8 +11028,32 @@ written read NO against a database where the table was sitting right there.
 **Driven against a real Postgres 16, both ways.** Bare database: 24 rows, no
 error, both new rows NO and named in the summary. With `97` loaded: both yes.
 Then each was proved to bite alone, which is the whole argument for two rows:
-dropping the index alone leaves row 22 yes and takes row 23 to NO, and dropping
-`rtd_claim_run` takes row 22 to NO on its own.
+dropping the index alone leaves row 23 yes and takes row 24 to NO, and dropping
+`rtd_claim_run` takes row 23 to NO on its own.
+
+#### The daily was checked against the UTC date, and the page names it by the Eastern one
+
+Found reading the migration before handing it over to be pasted, and nothing
+here could have caught it. `rtd_submit_run` refused a daily whose key was not
+`(now() at time zone 'utc')::date`, and `easternISO()` in the page is what
+builds the key. The two disagree from **8pm Eastern to midnight in summer and
+from 7pm in winter**, so every daily finished in that window, which is when most
+people play, was refused as backdated. The board fails soft, so what a player
+saw was an evening with nobody on the daily.
+
+**The SQL test encoded the same wrong calendar**, which is why it passed:
+`baseball_board_test.sql` built its "today" off UTC too, and a suite that shares
+the defect it is testing cannot see it. It asks `rtd_board_day()` at three fixed
+instants now (a September evening, a January evening, just past midnight),
+because nothing lets a test move `now()`, and asserts the submit reads that
+function rather than a calendar of its own. Against the old file it fails
+exactly that claim and nothing else.
+
+**Row 25 exists because an early copy of 97 reads as fully deployed.** Every
+object rows 23 and 24 ask for is in that copy. What tells it apart is whether
+the submit's BODY calls `rtd_board_day(`, so that is what the row asks. The fix
+is re-running 97, which is idempotent and was driven over an old copy with no
+error.
 
 ### The $170M cap is right, and the per-slot dollar is the wrong comparison
 

@@ -87,7 +87,7 @@ end $$;
 
 -- ---- one daily per browser -------------------------------------------------
 do $$
-declare today text := (now() at time zone 'utc')::date::text; a bigint; b bigint;
+declare today text := (now() at time zone 'America/New_York')::date::text; a bigint; b bigint;
 begin
   a := rtd_submit_run(99,2,'free',null,null,null,today,'browser-1',82,20,null,7,169,0,null,null,0,0,pk(),ls());
   b := rtd_submit_run(120,3,'free',null,null,null,today,'browser-1',95,2,null,9,169,0,null,null,0,0,pk(),ls());
@@ -158,4 +158,20 @@ select throws('more re-spins than exist',
 select throws('a backdated daily',
   'perform rtd_submit_run(95,0,''free'',null,null,null,''2020-01-01'',''cli'',80,30,null,0,150,0,null,null,0,0,pk(),ls())');
 select throws('a daily played under a mode',
-  'perform rtd_submit_run(95,0,''staff'',null,null,null,(now() at time zone ''utc'')::date::text,''cli'',63,null,3.1,0,150,0,null,null,0,0,pk(),ss())');
+  'perform rtd_submit_run(95,0,''staff'',null,null,null,(now() at time zone ''America/New_York'')::date::text,''cli'',63,null,3.1,0,150,0,null,null,0,0,pk(),ss())');
+
+-- ---- which calendar a daily belongs to -------------------------------------
+-- The page names a daily by the Eastern date. At 11:30pm Eastern in September it
+-- is already the next day in UTC, and a check written against the UTC date
+-- refused every daily finished in that window as backdated. Asked at fixed
+-- instants, because nothing lets a test move now().
+select ok('late evening Eastern is still the Eastern day',
+  rtd_board_day('2026-09-25 23:30:00-04')::text, '2026-09-25');
+select ok('in winter too, when the gap opens at 7pm',
+  rtd_board_day('2026-01-15 19:30:00-05')::text, '2026-01-15');
+select ok('and it rolls at Eastern midnight',
+  rtd_board_day('2026-09-26 00:05:00-04')::text, '2026-09-26');
+-- And the submit reads that rule rather than its own copy of a calendar.
+select ok('the submit checks the daily against rtd_board_day',
+  (select (prosrc like '%rtd_board_day(%')::text from pg_proc
+    where proname = 'rtd_submit_run'), 'true');

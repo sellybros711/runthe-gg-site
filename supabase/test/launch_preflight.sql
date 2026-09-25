@@ -353,7 +353,21 @@ check_rows(sort, migration, what, breaks, ok) as (
       'rtd_runs_daily_once, so the daily takes one result per browser',
       'The daily is scored and not policed: one browser can file the same puzzle again and again and every attempt ranks. The board renders perfectly and its top is one player repeated.',
       (select count(*) > 0 from idx
-        where name = 'rtd_runs_daily_once' and tbl = 'rtd_runs'))
+        where name = 'rtd_runs_daily_once' and tbl = 'rtd_runs')),
+
+  -- A THIRD ROW, because an early copy of 97 is a board that exists and a daily
+  -- that is refused every evening. That copy checked a daily against the UTC
+  -- date while the page names it by the Eastern one, so from 8pm Eastern (7pm in
+  -- winter) to midnight every daily was refused as backdated. Row 23 answers yes
+  -- to that database, because every object it asks for is there. What tells the
+  -- two apart is whether the submit reads rtd_board_day(), which only the fixed
+  -- copy has, so this asks the function's BODY rather than its existence.
+  (25, '97 daily on the Eastern day',
+      'rtd_submit_run reads rtd_board_day(), so an evening daily is accepted',
+      'Every daily finished between 8pm and midnight Eastern is refused as backdated and never reaches the board. It looks like a quiet evening. Re-run 97, which is safe over an existing copy.',
+      (select count(*) > 0 from proc where name = 'rtd_board_day')
+      and (select count(*) > 0 from proc
+            where name = 'rtd_submit_run' and body like '%rtd_board_day(%'))
 )
 -- The summary has to come LAST, and a UNION can only be ordered by an output
 -- column, so the sort key is carried through a subquery rather than sorted on
