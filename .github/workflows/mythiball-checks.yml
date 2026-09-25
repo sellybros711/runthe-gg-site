@@ -73,6 +73,12 @@ jobs:
       - name: Every control is inside the window
         run: node mythiball/check-reach.mjs --quick
 
+      # About a minute. It is the only thing that asks whether an entrance
+      # FINISHES, and a card stuck at its first keyframe is a hole in a
+      # screen that throws nothing.
+      - name: The menus move, settle and stay off the game
+        run: node mythiball/check-motion.mjs
+
       # The batting model, at a sample this job can afford. 450 plate
       # appearances a rung is about a minute and holds every claim in that
       # file: the rung ordering, the floor, the ceiling and the gap between

@@ -5804,6 +5804,100 @@ it, the count had not moved, and the section reported the mechanic as gone.
 It waits on the pitch being resolved now. A fixed wait past a beat somebody
 is allowed to tune is a test that fails on the next tuning pass.
 
+### Every screen that is not the game MOVES, and only in two properties
+
+```
+node mythiball/check-motion.mjs
+```
+
+Asked for: the menus, the pop ups and everything that is not gameplay should be
+immersive and exciting, with smooth animation. Before this pass the page had
+**two keyframes in sixteen thousand lines**, and the biggest reward in the game
+was 26 bits of confetti clipped inside a 55px heading.
+
+**EVERYTHING ANIMATES A TRANSFORM OR AN OPACITY AND NOTHING ELSE.** Those are
+the two properties a browser composites, so a card rising costs no layout and
+no paint on the frame it moves. The guard READS the stylesheet for it: every
+`@keyframes mo-*` block is brace matched and may declare `transform`,
+`opacity` and the count-up's `--n`, and nothing else. A breathing ring that
+animated its `box-shadow` instead would be a repaint every frame, and it
+renders perfectly.
+
+**A SCREEN RISES IN ONCE, ON ARRIVAL, and that rule is the one easiest to
+lose.** Most screens here re-render whole on every choice (a city, a colour,
+a setting), so an entrance keyed to `render()` replays on every tap and the
+page flinches whenever it is touched. `motionAfterRender` runs the
+choreography only when the screen CHANGES; a same-screen render pops the
+control that was pressed instead. The pressed control is remembered on
+`pointerdown` in the capture phase, because the render it causes has emptied
+the page before any later handler could look. **A caller that renders a
+screen the starter already rendered gets no entrance**, which is the rule
+working: `startSeason` and `startCup` render their own hubs.
+
+**NEVER ON THE GAME.** Every rule that could reach a control over the field is
+written under `body:not(.ingame)`, and `motionAfterRender` returns on
+`'game'`. Six checkers measure rectangles while a pitch is live, and a
+position or a transform added to a deck button by a rule written for the menus
+is a control that moves off the window with nothing saying so. The coach
+plaque and the bullpen get an ENTRANCE, which is over by the time anything is
+measured, and nothing that keeps moving.
+
+**A FINISHED ENTRANCE TAKES ITS CLASS WITH IT.** `animation-fill-mode: both`
+holds the last keyframe, and a held keyframe beats every ordinary declaration,
+so a card that kept `mo-in` could never lift on hover or tilt again. One
+`animationend` listener removes it. **And a hidden element gets none**: it
+cannot run the animation, so it would keep the class and the first keyframe
+until whenever it is shown. The roster's infobox was the case that found
+it.
+
+**THE SCOREBOARD COUNTS, AND THE NUMBER IN THE DOM IS THE RESULT FROM THE FIRST
+FRAME.** The figure is the element's `::after`, drawn off a registered `--n`
+the browser animates, and the element's own text is the score, set
+transparent. So a reader, a screen reader and `verify-rules` reading
+`#app .card p` all get the answer, while the eye gets the count. **`--n` is
+registered `inherits: true` and that is the whole of it working**: a pseudo
+element only sees a registered property its host passes down, so registered
+`inherits: false` the host counted to 7 and the figure read 0 for ever. It
+rendered perfectly, and the guard reads the pseudo element's `counter-reset`
+for that reason.
+
+**THE CELEBRATION IS ONE CANVAS, NOT TWO HUNDRED NODES.** Two hundred animated
+nodes is two hundred layers. It takes no pointer, stops when its pieces are
+down, when the screen changes (`render()` stops it before it empties the
+page), or when another starts, and a win screen calls it AFTER the screen is
+built, because a celebration started inside the render it belongs to would be
+stopped by that same render's check. The cup and the season champion defer
+theirs by a timer for the same reason.
+
+**The old trophy's three rectangles were `.trophy` pseudo elements** and they
+still matched the drawn cup, so a navy slab hung off its base and the rays drew
+at the old bowl's size in the corner. `.trophy.cup` takes every box property
+back. Found by looking.
+
+**The tilt and the glare are for a mouse.** They sit under
+`(hover: hover) and (pointer: fine)`, in the stylesheet and in the listener,
+because a finger has no hover: on a phone a tilt is a card that leans after it
+has been let go of. The listener writes custom properties and never a
+transform, so the stylesheet stays the one place that says what a tilted card
+looks like.
+
+**REDUCED MOTION IS A FULL STOP.** No entrance, no count, no confetti, no
+wire ticker, no infinite sheen, and the guard asserts
+`document.getAnimations()` is empty on three screens under
+`reducedMotion: 'reduce'`, plus that the scoreboard still reads the score with
+nothing counting.
+
+**A slam and a rise start outside the box they end in**, and a transformed box
+adds to the page's scrollable width: a verdict at twice its size put a
+sideways scrollbar under a phone for the half second it took to land. `#app`
+is `overflow: clip` off the game, which makes no scroll container (so sticky
+still sticks), with a clip margin that keeps the cards' shadows. The guard
+samples `scrollWidth` three times during every entrance.
+
+**Proved by mutation**: keeping the entrance class, replaying on the same
+screen, a keyframe animating `box-shadow`, and `inherits: false` each fail
+their own claims.
+
 ### A phone gets a MENU, a desktop gets the room
 
 The home screen is the clubhouse. It is called the clubhouse everywhere the
@@ -5949,6 +6043,8 @@ node mythiball/check-runs.mjs      runs per game, with a defence that turns up (
 node mythiball/check-bat.mjs       the swing's own curves, and that skill pays
 node mythiball/check-skill.mjs     what a PERSON hits, four rungs of skill, both swings
 node mythiball/check-firstpitch.mjs  whether a stranger can READ one pitch
+node mythiball/check-motion.mjs    the menus move, every entrance finishes, and
+                                   none of it reaches the game
 node mythiball/whiff.mjs 3000      what the other dugout does with a swing, at a
                                    sample that can answer (a meter, not a guard)
 node scripts/check-dashes.mjs      mythiball is on the GUARDED list

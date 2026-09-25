@@ -1500,6 +1500,259 @@
     .row-2{grid-template-columns:1fr;}
     .plate-row{grid-template-columns:1fr;}
   }
+
+  /* ================================================================== MOTION
+     EVERYTHING HERE MOVES A TRANSFORM OR AN OPACITY AND NOTHING ELSE. Those
+     two are the properties a browser hands to the compositor, so a card
+     rising into place costs no layout and no paint on the frame it moves.
+     A height, a margin or a box-shadow animated instead is a repaint of the
+     whole card on every frame, which is exactly the stutter this block
+     exists to take off the screens between games.
+
+     IT IS NEVER ON THE GAME. `body.ingame` is the one screen where a frame
+     is spent on the field and where six checkers measure rectangles while a
+     pitch is live, so every rule that could reach a control over the field
+     is written under `body:not(.ingame)`. The plaques over the field get
+     their own ENTRANCE and nothing that keeps moving after it.
+
+     A SCREEN RISES IN ONCE, ON ARRIVAL. `motionAfterRender` adds `mo-in`
+     only when the screen CHANGES. Most screens here re-render whole on
+     every choice (a city, a colour, a setting), and replaying the entrance
+     on each tap is a page that flinches every time somebody touches it.
+     A re-render of the same screen pops the control that was pressed
+     instead, which is the answer to the tap.
+
+     REDUCED MOTION IS A FULL STOP, NOT A SHORTER VERSION. See the block at
+     the end. */
+  /* A slam and a rise both start outside the box they end in, and a
+     transformed box still adds to the page's scrollable width: a verdict
+     at twice its size put a sideways scrollbar under a phone for the half
+     second it took to land. `clip` makes no scroll container, so sticky
+     children still stick, and the margin keeps the cards' own shadows. */
+  body:not(.ingame) #app{overflow:clip;overflow-clip-margin:28px;}
+  :root{
+    --ease-out:cubic-bezier(.16,1,.3,1);
+    --ease-spring:cubic-bezier(.34,1.56,.64,1);
+  }
+  .mo-in{animation:mo-rise .64s var(--ease-out) both;}
+  @keyframes mo-rise{
+    from{opacity:0;transform:translate3d(0,24px,0) scale(.975);}
+    to{opacity:1;transform:none;}
+  }
+  /* A table row slides rather than rises: a column of numbers arriving from
+     the left reads as a board being filled in. */
+  .mo-row{animation:mo-slide .5s var(--ease-out) both;}
+  @keyframes mo-slide{
+    from{opacity:0;transform:translate3d(-14px,0,0);}
+    to{opacity:1;transform:none;}
+  }
+  .mo-pop{animation:mo-pop .46s var(--ease-spring);}
+  @keyframes mo-pop{0%{transform:scale(1);}32%{transform:scale(1.09);}100%{transform:scale(1);}}
+
+  /* ------------------------------------------------------------ the controls
+     A button answers on the frame it is pressed: down and a little smaller,
+     in 90ms with no easing tail, which is the cabinet's own rule kept. What
+     is new is the way BACK up, which is a spring, and the hover, which
+     lifts. */
+  body:not(.ingame) :is(.btn,.bigplay,.toggle,.sb,.hmode,.park-card){
+    transition:transform .44s var(--ease-spring), box-shadow .24s ease,
+      filter .2s ease, background-color .2s ease, color .2s ease;
+  }
+  @media (hover:hover) and (pointer:fine){
+    body:not(.ingame) :is(.btn:not(:disabled),.toggle,.sb):hover{transform:translate3d(0,-2px,0);}
+    body:not(.ingame) .bigplay:hover{transform:translate3d(0,-3px,0) scale(1.012);
+      box-shadow:0 2px 3px rgba(20,40,63,.10), 0 18px 32px -10px rgba(158,30,24,.55);}
+  }
+  body:not(.ingame) :is(.btn:not(:disabled),.bigplay,.toggle,.sb,.hmode,.park-card):active{
+    transform:translate3d(0,1px,0) scale(.965);transition-duration:.09s;
+    box-shadow:var(--shadow-press);}
+  body:not(.ingame) .toggle.on{box-shadow:0 1px 2px rgba(20,40,63,.12), 0 8px 16px -8px rgba(158,30,24,.6);}
+
+  /* THE SHEEN. A band of light crosses a solid button on hover, and crosses
+     the franchise button on its own every few seconds, because that button
+     is the one thing on the front page that is waiting for somebody. It is
+     a pseudo element moved by transform, clipped by the button's own
+     radius. */
+  body:not(.ingame) :is(.btn:not(.ghost),.bigplay){position:relative;overflow:hidden;isolation:isolate;}
+  body:not(.ingame) :is(.btn:not(.ghost),.bigplay)::after{content:'';position:absolute;
+    top:-4px;bottom:-4px;left:-10%;width:60%;pointer-events:none;z-index:1;
+    background:linear-gradient(100deg,rgba(255,255,255,0) 20%,rgba(255,255,255,.34) 50%,rgba(255,255,255,0) 80%);
+    transform:translate3d(-130%,0,0) skewX(-12deg);
+    transition:transform .75s var(--ease-out);}
+  @media (hover:hover) and (pointer:fine){
+    body:not(.ingame) :is(.btn:not(.ghost):not(:disabled),.bigplay):hover::after{
+      transform:translate3d(260%,0,0) skewX(-12deg);}
+  }
+  body:not(.ingame) .bigplay::before{content:'';position:absolute;inset:0;pointer-events:none;
+    z-index:1;border-radius:inherit;
+    background:linear-gradient(100deg,rgba(255,255,255,0) 40%,rgba(255,236,190,.42) 50%,rgba(255,255,255,0) 60%);
+    transform:translate3d(-100%,0,0);animation:mo-sheen 5.6s var(--ease-out) 1.6s infinite;}
+  @keyframes mo-sheen{0%{transform:translate3d(-100%,0,0);}28%,100%{transform:translate3d(100%,0,0);}}
+  /* The play mark breathes, which is the second hint the button is live. */
+  body:not(.ingame) .bigplay .bp-mark{animation:mo-nudge 1.8s ease-in-out infinite;}
+  @keyframes mo-nudge{0%,100%{transform:translate3d(0,0,0);}50%{transform:translate3d(4px,0,0);}}
+
+  /* ---------------------------------------------------------------- the cards
+     A tile tips toward the pointer and a glare follows it. `--rx`, `--ry`
+     and the glare's `--mx`/`--my` are written by one pointermove listener
+     (`motionTilt`), and ONLY under a fine pointer: a finger has no hover,
+     so on a phone a tilt would be a card that leans after you have already
+     let go of it. */
+  body:not(.ingame) :is(.hmode,.park-card){position:relative;overflow:hidden;}
+  @media (hover:hover) and (pointer:fine){
+    body:not(.ingame) :is(.hmode,.park-card,.charcard:not(.locked),.potg,.award){
+      transform:perspective(900px) rotateX(var(--rx,0deg)) rotateY(var(--ry,0deg))
+        translate3d(0,var(--ty,0px),0);}
+    body:not(.ingame) :is(.hmode,.park-card,.charcard:not(.locked),.potg,.award):hover{--ty:-4px;
+      box-shadow:0 2px 4px rgba(20,40,63,.08), 0 22px 34px -14px rgba(20,40,63,.42);}
+    body:not(.ingame) :is(.hmode,.park-card,.charcard:not(.locked),.potg,.award).tilting{
+      transition:transform .14s ease-out, box-shadow .24s ease;}
+    body:not(.ingame) :is(.hmode,.park-card,.charcard:not(.locked))::after{content:'';
+      position:absolute;inset:0;pointer-events:none;border-radius:inherit;opacity:0;
+      background:radial-gradient(220px circle at var(--mx,50%) var(--my,50%),
+        rgba(255,255,255,.55), rgba(255,255,255,0) 60%);
+      transition:opacity .3s ease;}
+    body:not(.ingame) :is(.hmode,.park-card,.charcard:not(.locked)):hover::after{opacity:1;}
+  }
+  body:not(.ingame) .charcard{transition:transform .44s var(--ease-spring), box-shadow .24s ease,
+    background-color .2s ease;}
+  /* The pick number lands with a bounce, and the card it lands on pops. */
+  .charcard .pickno.fresh{animation:mo-stamp .5s var(--ease-spring) both;}
+  @keyframes mo-stamp{from{opacity:0;transform:scale(2.2) rotate(-18deg);}to{opacity:1;transform:none;}}
+
+  /* ------------------------------------------------------------- the verdict
+     A WIN IS STAMPED ON, A LOSS SETTLES. The same heading used to arrive the
+     same way either side of the result, which made the reward moment and
+     the consolation one feel identical. */
+  body:not(.ingame) h2.verdict{font-size:clamp(30px,8vw,52px);line-height:1;letter-spacing:.02em;
+    padding:6px 0 14px;transform-origin:0 60%;}
+  body:not(.ingame) h2.verdict.win{animation:mo-slam .7s var(--ease-spring) both;
+    text-shadow:0 2px 0 rgba(20,40,63,.25), 0 10px 24px rgba(27,138,74,.35);}
+  body:not(.ingame) h2.verdict:not(.win){animation:mo-settle .9s var(--ease-out) both;}
+  @keyframes mo-slam{0%{opacity:0;transform:scale(1.9) rotate(-4deg);}
+    55%{opacity:1;transform:scale(.94) rotate(1deg);}100%{opacity:1;transform:none;}}
+  @keyframes mo-settle{from{opacity:0;transform:translate3d(0,-18px,0);}to{opacity:1;transform:none;}}
+
+  /* THE FINAL, AS A SCOREBOARD. The score was one line of body text in a
+     card, which is the least a result can be. The digits count up, and
+     they are PAINT: the real number is the element's own text from the
+     first frame (so a reader, a screen reader and a checker all get the
+     result), set transparent, and the counting figure is drawn over it
+     from a registered `--n` the browser animates. Where `@property` is
+     not supported the property does not interpolate, and the figure simply
+     lands on the answer. */
+  /* INHERITS, and that is the whole of it working. The figure is drawn by
+     the element's `::after`, and a pseudo element only sees a registered
+     property its host passes down: registered `inherits:false`, the host
+     counted to 7 and the figure on screen read 0 for ever. */
+  @property --n{syntax:'<integer>';inherits:true;initial-value:0;}
+  .fboard{margin:4px 0 2px;background:var(--line);border-radius:var(--r);
+    padding:6px 6px;box-shadow:inset 0 2px 0 rgba(255,255,255,.06), var(--shadow);}
+  .fb-row{display:flex;align-items:center;gap:12px;padding:8px 12px;border-radius:10px;
+    color:#c8d6e6;}
+  .fb-row + .fb-row{border-top:1px solid rgba(255,255,255,.08);}
+  .fb-row.won{color:#fff6ea;background:rgba(255,255,255,.06);}
+  .fb-kit{flex:0 0 auto;width:10px;height:26px;border-radius:4px;background:var(--k,#8aa0b8);
+    box-shadow:0 0 0 1.5px rgba(255,255,255,.25);}
+  .fb-team{flex:1 1 auto;min-width:0;font-family:var(--font-display);font-weight:800;
+    font-size:17px;letter-spacing:.04em;text-transform:uppercase;overflow:hidden;
+    text-overflow:ellipsis;white-space:nowrap;}
+  .fb-you{font-size:10px;letter-spacing:.16em;color:#ffd98a;margin-left:6px;vertical-align:2px;}
+  .fb-runs{position:relative;flex:0 0 auto;min-width:1.6em;text-align:right;
+    font-family:var(--font-display);font-weight:800;font-size:40px;line-height:1;
+    font-variant-numeric:tabular-nums;}
+  .fb-row.won .fb-runs{color:#ffd98a;}
+  .countup{--n:var(--to);-webkit-text-fill-color:transparent;}
+  .countup::after{content:counter(n);counter-reset:n var(--n);position:absolute;
+    inset:0;text-align:inherit;-webkit-text-fill-color:currentColor;}
+  .countup.go{animation:mo-count 1.15s var(--ease-out) both;}
+  @keyframes mo-count{from{--n:0;}to{--n:var(--to);}}
+
+  /* The celebration canvas. Over everything, under nothing, and never in
+     the way: it takes no pointer and it is removed when it is done. */
+  .confetti-cv{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:9000;}
+
+  /* ----------------------------------------------------------------- trophy
+     A drawn cup rather than three rectangles, standing in a slow turn of
+     light, floating. The rays are one conic gradient turned by a transform,
+     so the only thing that moves every frame is a composited layer. */
+  .trophy.cup{display:inline-grid;place-items:center;position:relative;width:96px;height:96px;
+    margin:0 16px 0 0;vertical-align:middle;}
+  /* The old cup's three rectangles were the `.trophy` pseudo elements, and
+     they still match this one: every box property they set is taken back
+     here, or a navy slab hangs off the new base and the rays are drawn at
+     the old bowl's size in its corner. */
+  .trophy.cup::after{content:none;}
+  .trophy.cup::before{content:'';position:absolute;left:-18px;right:-18px;top:-18px;bottom:-18px;
+    width:auto;height:auto;border:0;border-radius:50%;
+    background:repeating-conic-gradient(from 0deg,rgba(244,194,90,.38) 0 10deg,rgba(244,194,90,0) 10deg 30deg);
+    -webkit-mask:radial-gradient(circle,#000 30%,transparent 70%);
+            mask:radial-gradient(circle,#000 30%,transparent 70%);
+    animation:mo-spin 14s linear infinite;}
+  .has-cup{display:flex;align-items:center;gap:6px;}
+  .has-cup > div:last-child{min-width:0;}
+  .trophy.cup svg{position:relative;width:78px;height:auto;overflow:visible;
+    filter:drop-shadow(0 8px 10px rgba(20,40,63,.35));
+    animation:mo-rise-cup .9s var(--ease-spring) both, mo-float 3.2s ease-in-out .9s infinite;}
+  @keyframes mo-spin{to{transform:rotate(360deg);}}
+  @keyframes mo-rise-cup{from{opacity:0;transform:translate3d(0,30px,0) scale(.4) rotate(-12deg);}
+    to{opacity:1;transform:none;}}
+  @keyframes mo-float{0%,100%{transform:translate3d(0,0,0);}50%{transform:translate3d(0,-6px,0);}}
+  .trophy.cup .shine{animation:mo-glint 3.6s ease-in-out 1.2s infinite;}
+  @keyframes mo-glint{0%{transform:translate3d(-60px,0,0);}35%,100%{transform:translate3d(90px,0,0);}}
+
+  /* ---------------------------------------------------------- over the field
+     The coach plaque and the bullpen ARRIVE, and the next note on a plaque
+     crossfades in. Both are positioned by a centring transform, so the
+     keyframes carry it. */
+  .coach{animation:mo-plaque .5s var(--ease-spring) both;}
+  .pen{animation:mo-plaque .46s var(--ease-spring) both;}
+  @keyframes mo-plaque{from{opacity:0;transform:translate(-50%,-44%) scale(.9);}
+    to{opacity:1;transform:translate(-50%,-50%) scale(1);}}
+  .coach-text.mo-note{animation:mo-note .34s var(--ease-out) both;}
+  @keyframes mo-note{from{opacity:0;transform:translate3d(10px,0,0);}to{opacity:1;transform:none;}}
+  .pen .pen-arm{transition:transform .3s var(--ease-spring), background-color .15s ease;}
+  @media (hover:hover) and (pointer:fine){.pen .pen-arm:hover{transform:translate3d(0,-2px,0);}}
+
+  /* The press conference: a new speaker slides in, the box lifts. These run
+     on every beat on purpose, because a beat IS a new node. */
+  .press-portrait{animation:mo-speaker .5s var(--ease-out) both;}
+  .press-box{animation:mo-rise .46s var(--ease-out) .06s both;}
+  @keyframes mo-speaker{from{opacity:0;transform:translate3d(-22px,0,0) scale(.96);}to{opacity:1;transform:none;}}
+  .press-choices > *{animation:mo-rise .4s var(--ease-out) both;}
+  .press-choices > *:nth-child(2){animation-delay:.06s;}
+  .press-choices > *:nth-child(3){animation-delay:.12s;}
+  .press-more{animation:mo-bob 1s ease-in-out infinite;}
+  @keyframes mo-bob{0%,100%{transform:translate3d(0,0,0);}50%{transform:translate3d(0,4px,0);}}
+
+  /* YOUR MATCH IN A BRACKET BREATHES. A ring round it fades in and out,
+     which is an opacity on a pseudo element with a fixed shadow, so the
+     shadow is painted once and only its visibility moves. */
+  body:not(.ingame) :is(.cupbracket,.bracket) .match:has(.row.you){position:relative;}
+  body:not(.ingame) :is(.cupbracket,.bracket) .match:has(.row.you)::after{content:'';position:absolute;
+    inset:-3px;border-radius:calc(var(--r-sm) + 3px);pointer-events:none;
+    box-shadow:0 0 0 2px var(--gold), 0 0 18px 2px rgba(207,50,41,.35);
+    animation:mo-breathe 2.2s ease-in-out infinite;}
+  @keyframes mo-breathe{0%,100%{opacity:.35;}50%{opacity:1;}}
+
+  /* The wire changes line, and the old one leaves before the new arrives. */
+  .wire span{display:inline-block;transition:opacity .35s ease, transform .35s var(--ease-out);}
+  .wire span.out{opacity:0;transform:translate3d(0,-6px,0);}
+  .wire span.pre{opacity:0;transform:translate3d(0,6px,0);transition:none;}
+
+  /* The banner at the top of a hub is the headline of the screen. */
+  body:not(.ingame) .banner.mo-in{animation-name:mo-banner;}
+  @keyframes mo-banner{from{opacity:0;transform:translate3d(0,-12px,0) scale(.98);}to{opacity:1;transform:none;}}
+
+  @media (prefers-reduced-motion: reduce){
+    .mo-in,.mo-row,.mo-pop,.pickno.fresh,h2.verdict,.countup.go,.coach,.pen,
+    .coach-text.mo-note,.press-portrait,.press-box,.press-choices > *,.press-more,
+    .trophy.cup::before,.trophy.cup svg,.trophy.cup .shine,
+    body:not(.ingame) :is(.cupbracket,.bracket) .match::after,
+    body:not(.ingame) .bigplay::before,body:not(.ingame) .bigplay .bp-mark{animation:none !important;}
+    body:not(.ingame) *{transition-duration:0s !important;}
+    body:not(.ingame) :is(.hmode,.park-card,.charcard,.potg,.award){transform:none !important;}
+  }
 </style>
 </head>
 <body>
@@ -2936,7 +3189,281 @@ const el = (tag, cls, html) => {
   return n;
 };
 
+/* ============================================================================
+   MOTION
+   The choreography for every screen that is not the game. The stylesheet
+   says what moves and how (transform and opacity only); this says WHEN.
+   ============================================================================ */
+let MOTION_SCREEN = null;   /* the screen the last render drew */
+let MOTION_PRESS = null;    /* the label of the control pressed last */
+
+/* Remembered on the way DOWN, because the render the press causes empties
+   the page before any click handler that ran afterwards could look. */
+document.addEventListener('pointerdown', (e) => {
+  const b = e.target && e.target.closest
+    && e.target.closest('button, .toggle, .park-card, .sb');
+  MOTION_PRESS = b ? (b.textContent || '').trim() : null;
+}, true);
+
+/* WHICH THINGS RISE, IN ORDER. A unit is one thing a reader sees arrive: a
+   heading, a card, a tile. A wrapper that is the only card on its screen is
+   opened up, because a whole menu rising as one slab is no choreography at
+   all. A grid is opened up to its first cells and no further: a roster of
+   sixty eight is not sixty eight entrances, and the ones below the fold
+   are never seen arriving anyway. */
+const MO_OPEN = '.hmodes, .roster, .park-grid, .award-grid';
+const MO_MAX = 26;
+function motionUnits(root) {
+  const out = [];
+  const take = (node, depth) => {
+    for (const ch of node.children) {
+      if (out.length >= MO_MAX) return;
+      /* A hidden thing gets no entrance: it cannot run one, so it would keep
+         the class and the held first keyframe until whenever it is shown. */
+      if (ch.hidden || ch.matches('h2.verdict, script, style')) continue;
+      const lone = ch.matches('.card') && node.matches('.screen')
+        && node.querySelectorAll(':scope > .card').length === 1;
+      if (depth < 3 && (ch.matches('.screen') || lone)) { take(ch, depth + 1); continue; }
+      if (depth < 3 && ch.matches(MO_OPEN)) {
+        let n = 0;
+        for (const cell of ch.children) {
+          if (out.length >= MO_MAX || n++ >= 12) break;
+          out.push(cell);
+        }
+        continue;
+      }
+      out.push(ch);
+    }
+  };
+  take(root, 0);
+  return out;
+}
+
+/* The delay compresses: the first dozen units are 46ms apart and the rest
+   16ms, so a long screen is still all in within a second rather than
+   trailing its last card in two seconds after the first. */
+function motionDelay(i) { return Math.min(i, 12) * 46 + Math.max(0, i - 12) * 16; }
+
+function choreograph(root) {
+  const units = motionUnits(root);
+  units.forEach((u, i) => {
+    u.style.animationDelay = motionDelay(i) + 'ms';
+    u.classList.add('mo-in');
+  });
+  /* Table rows fill in behind the card that holds them. */
+  let t = 0;
+  for (const tb of root.querySelectorAll('table tbody')) {
+    if (t++ > 5) break;
+    const host = units.findIndex(u => u.contains(tb));
+    const base = motionDelay(Math.max(0, host)) + 120;
+    [...tb.rows].slice(0, 20).forEach((r, j) => {
+      r.style.animationDelay = (base + j * 28) + 'ms';
+      r.classList.add('mo-row');
+    });
+  }
+  /* A bracket fills in round by round, left to right, the way it is read. */
+  for (const br of root.querySelectorAll('.cupbracket, .bracket')) {
+    const host = units.findIndex(u => u.contains(br));
+    const base = motionDelay(Math.max(0, host)) + 140;
+    [...br.querySelectorAll(':scope > .col')].forEach((col, c) => {
+      [...col.querySelectorAll('.match')].forEach((m, j) => {
+        m.style.animationDelay = (base + c * 150 + j * 45) + 'ms';
+        m.classList.add('mo-in');
+      });
+    });
+  }
+  /* The counting figures start when the board they sit on has arrived. */
+  for (const c of root.querySelectorAll('.countup')) {
+    const host = units.findIndex(u => u.contains(c));
+    c.style.animationDelay = (motionDelay(Math.max(0, host)) + 260) + 'ms';
+    c.classList.add('go');
+  }
+}
+
+/* A FINISHED ENTRANCE TAKES ITS CLASS WITH IT. `animation-fill-mode: both`
+   holds the last keyframe, and a held keyframe wins over every ordinary
+   declaration, so a card that kept `mo-in` could never lift on hover or
+   tilt toward the pointer again. */
+document.addEventListener('animationend', (e) => {
+  const t = e.target;
+  if (!t || !t.classList) return;
+  if (e.animationName === 'mo-rise' || e.animationName === 'mo-banner') t.classList.remove('mo-in');
+  else if (e.animationName === 'mo-slide') t.classList.remove('mo-row');
+  else if (e.animationName === 'mo-pop') t.classList.remove('mo-pop');
+  if (e.animationName === 'mo-rise' || e.animationName === 'mo-slide' || e.animationName === 'mo-banner') {
+    t.style.animationDelay = '';
+  }
+});
+
+function motionPop(node) {
+  if (!node || REDUCED.matches) return;
+  node.classList.remove('mo-pop');
+  void node.offsetWidth;   /* the one forced reflow: it restarts the keyframes */
+  node.classList.add('mo-pop');
+}
+
+function motionAfterRender(s) {
+  const changed = s !== MOTION_SCREEN;
+  MOTION_SCREEN = s;
+  const press = MOTION_PRESS;
+  MOTION_PRESS = null;
+  if (s === 'game' || REDUCED.matches) return;
+  if (changed) { choreograph(app); return; }
+  /* The same screen again: the control that caused it answers. */
+  if (press) {
+    const hit = [...app.querySelectorAll('.toggle, .park-card, .sb, .btn')]
+      .find(b => (b.textContent || '').trim() === press);
+    if (hit) motionPop(hit);
+  }
+}
+
+/* THE TILT. One listener for every tile, and only under a fine pointer. It
+   writes four custom properties and never a transform, so the stylesheet
+   stays the one place that decides what a tilted card looks like. */
+const MO_FINE = window.matchMedia('(hover: hover) and (pointer: fine)');
+const MO_TILT = '.hmode, .park-card, .charcard:not(.locked), .potg, .award';
+let moTilted = null;
+function motionUntilt(n) {
+  if (!n) return;
+  n.classList.remove('tilting');
+  n.style.removeProperty('--rx'); n.style.removeProperty('--ry');
+}
+document.addEventListener('pointermove', (e) => {
+  if (!MO_FINE.matches || REDUCED.matches || document.body.classList.contains('ingame')) return;
+  const card = e.target && e.target.closest && e.target.closest(MO_TILT);
+  if (card !== moTilted) { motionUntilt(moTilted); moTilted = card; }
+  if (!card) return;
+  const r = card.getBoundingClientRect();
+  const x = (e.clientX - r.left) / r.width, y = (e.clientY - r.top) / r.height;
+  /* Smaller cards tip further: the same angle on a wide tile swings its far
+     edge through more pixels than it does on a narrow one. */
+  const amp = r.width > 300 ? 3.5 : 7;
+  card.classList.add('tilting');
+  card.style.setProperty('--ry', ((x - 0.5) * amp).toFixed(2) + 'deg');
+  card.style.setProperty('--rx', ((0.5 - y) * amp).toFixed(2) + 'deg');
+  card.style.setProperty('--mx', (x * 100).toFixed(1) + '%');
+  card.style.setProperty('--my', (y * 100).toFixed(1) + '%');
+}, { passive: true });
+document.addEventListener('pointerleave', () => { motionUntilt(moTilted); moTilted = null; });
+
+/* THE CELEBRATION. A burst from both bottom corners and a shower from the
+   top, in the colours the caller hands it, on one canvas laid over the
+   window. It is drawn by hand rather than as two hundred DOM nodes because
+   two hundred animated nodes is two hundred layers, and a canvas is one. It
+   stops itself: when the pieces are down, when the screen changes, or when
+   another celebration starts. */
+let CELEBRATION = null;
+function celebrate(colors, power) {
+  if (CELEBRATION) CELEBRATION.stop();
+  if (REDUCED.matches) return;
+  power = power || 1;
+  const cv = document.createElement('canvas');
+  cv.className = 'confetti-cv';
+  cv.setAttribute('aria-hidden', 'true');
+  document.body.appendChild(cv);
+  const ctx = cv.getContext('2d');
+  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  let W = 0, H = 0;
+  const size = () => {
+    W = window.innerWidth; H = window.innerHeight;
+    cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  };
+  size();
+  window.addEventListener('resize', size);
+  const pal = (colors && colors.length ? colors : ['#cf3229', '#f4c25a', '#1566ae', '#1b8a4a'])
+    .concat(['#fff6ea']);
+  const bits = [];
+  const add = (x, y, vx, vy) => bits.push({
+    x, y, vx, vy,
+    w: 6 + Math.random() * 6, h: 9 + Math.random() * 9,
+    rot: Math.random() * 6.28, vr: (Math.random() - 0.5) * 0.35,
+    flip: Math.random() * 6.28, vf: 0.08 + Math.random() * 0.14,
+    c: pal[Math.floor(Math.random() * pal.length)],
+    round: Math.random() < 0.18,
+    sway: Math.random() * 6.28,
+  });
+  /* Scaled to the window: a phone gets a handful fewer than a monitor, so
+     the density reads the same on both. */
+  const per = Math.round((34 + Math.min(W, 1600) / 1600 * 46) * power);
+  for (let i = 0; i < per; i++) {
+    const sp = (0.55 + Math.random() * 0.75) * Math.max(1, H / 900);
+    add(-10, H + 10, (5 + Math.random() * 9) * sp, -(13 + Math.random() * 11) * sp);
+    add(W + 10, H + 10, -(5 + Math.random() * 9) * sp, -(13 + Math.random() * 11) * sp);
+  }
+  const shower = Math.round(per * 0.7);
+  let showered = 0;
+  const screenAt = State.screen;
+  const t0 = performance.now();
+  let last = t0, raf = 0;
+  const stop = () => {
+    cancelAnimationFrame(raf);
+    window.removeEventListener('resize', size);
+    cv.remove();
+    if (CELEBRATION && CELEBRATION.cv === cv) CELEBRATION = null;
+  };
+  const step = (now) => {
+    if (State.screen !== screenAt || !cv.isConnected) { stop(); return; }
+    /* Frame time, clamped, so a stalled tab does not fire every piece off
+       the screen in one step when it comes back. */
+    const k = Math.min(2.5, (now - last) / 16.67);
+    last = now;
+    const age = (now - t0) / 1000;
+    /* The shower trickles in over the first second and a half. */
+    while (showered < shower && showered < shower * age / 1.5) {
+      add(Math.random() * W, -20, (Math.random() - 0.5) * 3, 2 + Math.random() * 3);
+      showered++;
+    }
+    ctx.clearRect(0, 0, W, H);
+    let alive = 0;
+    for (const b of bits) {
+      b.vy += 0.34 * k;
+      b.vx *= Math.pow(0.985, k); b.vy *= Math.pow(0.985, k);
+      /* Terminal velocity, then a flutter: paper does not fall like a ball. */
+      if (b.vy > 4.2) b.vy = 4.2;
+      b.sway += 0.06 * k;
+      b.x += (b.vx + Math.sin(b.sway) * 0.9) * k;
+      b.y += b.vy * k;
+      b.rot += b.vr * k; b.flip += b.vf * k;
+      if (b.y > H + 40) continue;
+      alive++;
+      const fade = age > 3.4 ? Math.max(0, 1 - (age - 3.4) / 0.9) : 1;
+      ctx.save();
+      ctx.globalAlpha = fade;
+      ctx.translate(b.x, b.y);
+      ctx.rotate(b.rot);
+      ctx.scale(1, Math.cos(b.flip));
+      ctx.fillStyle = b.c;
+      if (b.round) { ctx.beginPath(); ctx.arc(0, 0, b.w * 0.45, 0, 6.2832); ctx.fill(); }
+      else ctx.fillRect(-b.w / 2, -b.h / 2, b.w, b.h);
+      ctx.restore();
+    }
+    if ((alive === 0 && showered >= shower) || age > 4.4) { stop(); return; }
+    raf = requestAnimationFrame(step);
+  };
+  raf = requestAnimationFrame(step);
+  CELEBRATION = { stop, cv };
+}
+
+/* A DRAWN CUP. It replaced three rectangles, and its light and its float
+   are the stylesheet's; this is only the shape. */
+function trophyArt() {
+  return '<div class="trophy cup" aria-hidden="true"><svg viewBox="0 0 80 92" width="78" height="90">'
+    + '<defs><linearGradient id="tg" x1="0" x2="1"><stop offset="0" stop-color="#b8861f"/>'
+    + '<stop offset=".45" stop-color="#ffe08a"/><stop offset="1" stop-color="#c99526"/></linearGradient>'
+    + '<clipPath id="tc"><path d="M18 6h44v20c0 16-10 28-22 28S18 42 18 26z"/></clipPath></defs>'
+    + '<path d="M18 12H8c0 14 6 22 14 23M62 12h10c0 14-6 22-14 23" fill="none" stroke="#b8861f" stroke-width="5" stroke-linecap="round"/>'
+    + '<path d="M18 6h44v20c0 16-10 28-22 28S18 42 18 26z" fill="url(#tg)" stroke="#8a6212" stroke-width="2"/>'
+    + '<g clip-path="url(#tc)"><rect class="shine" x="10" y="0" width="12" height="60" fill="#fff" opacity=".55" transform="skewX(-18)"/></g>'
+    + '<path d="M40 16l3 6 7 1-5 5 1 7-6-3-6 3 1-7-5-5 7-1z" fill="#fff6ea" opacity=".9"/>'
+    + '<rect x="35" y="53" width="10" height="14" fill="url(#tg)" stroke="#8a6212" stroke-width="2"/>'
+    + '<rect x="22" y="66" width="36" height="9" rx="2" fill="url(#tg)" stroke="#8a6212" stroke-width="2"/>'
+    + '<rect x="16" y="75" width="48" height="12" rx="3" fill="#1b3a5c" stroke="#0f2238" stroke-width="2"/>'
+    + '</svg></div>';
+}
+
 function render() {
+  if (CELEBRATION) CELEBRATION.stop();
   app.innerHTML = '';
   const s = State.screen;
   document.body.classList.toggle('ingame', s === 'game');
@@ -2963,6 +3490,7 @@ function render() {
   else if (s === 'cup') renderCup();
   else if (s === 'cutscene') renderCutscene();
   else if (s === 'franchise') renderFranchise();
+  motionAfterRender(s);
 }
 $('#btn-home').addEventListener('click', () => {
   if (State.game && State.game.live) {
@@ -4777,7 +5305,32 @@ function clubhouseWire() {
   }
   const wrap = el('div', 'wire');
   wrap.appendChild(el('b', null, 'Clubhouse wire'));
-  wrap.appendChild(el('span', null, lines[Math.floor(Math.random() * lines.length)]));
+  let at = Math.floor(Math.random() * lines.length);
+  const line = el('span', null, lines[at]);
+  wrap.appendChild(line);
+  /* THE WIRE RUNS. One line out, the next one in, every few seconds, so the
+     clubhouse has something happening in it while somebody decides. The
+     loop is a timer that checks the line is still on the page and stops
+     itself the moment the menu is left, which is the rule every loop here
+     keeps. Held still under reduced motion: a line that changes on its
+     own is motion whether or not it slides. */
+  if (lines.length > 1 && !REDUCED.matches) {
+    const tick = () => {
+      if (!line.isConnected) return;
+      line.classList.add('out');
+      setTimeout(() => {
+        if (!line.isConnected) return;
+        at = (at + 1) % lines.length;
+        line.textContent = lines[at];
+        line.classList.remove('out');
+        line.classList.add('pre');
+        void line.offsetWidth;
+        line.classList.remove('pre');
+        setTimeout(tick, 6200);
+      }, 380);
+    };
+    setTimeout(tick, 6200);
+  }
   return wrap;
 }
 
@@ -5189,6 +5742,14 @@ function renderRoster() {
         picked.add(c.k);
       }
       redraw();
+      /* The card that was pressed answers, and only that one: `redraw`
+         rebuilds every pick number, so a stamp on all of them would be the
+         whole roster flinching at each pick. */
+      if (picked.has(c.k)) {
+        const pn = cc.querySelector('.pickno');
+        if (pn) pn.classList.add('fresh');
+        motionPop(cc);
+      }
       /* Ninth pick rolls straight into settings, per the design ask. The
          Continue button stays for the case where a player rearranges picks
          and it never fires. */
@@ -5557,10 +6118,16 @@ function renderCup() {
   const banner = el('div','banner');
   if (C.done) {
     const champ = C.entrants[C.champion];
+    if (champ.you) banner.classList.add('has-cup');
     banner.innerHTML = champ.you
-      ? `<div class="trophy"><i></i></div><b>You win the Cup.</b> Eight teams in, one left standing.`
+      ? `${trophyArt()}<div><b>You win the Cup.</b> Eight teams in, one left standing.</div>`
       : `<b>${champ.name} wins the Cup.</b> Better luck next draw.`;
-    if (champ.you && !C.fanfared) { C.fanfared = true; Sound.play('title'); }
+    if (champ.you && !C.fanfared) {
+      C.fanfared = true; Sound.play('title');
+      /* After this render has built the screen, or the celebration would be
+         stopped by the render check it was started inside. */
+      setTimeout(() => { if (State.screen === 'cup') celebrate([teamKitColor(), '#f4c25a', '#ffe08a'], 1.8); }, 0);
+    }
   } else {
     const nm = nextCupMatch(C);
     const seed = C.entrants.findIndex(e => e.you);
@@ -8065,6 +8632,11 @@ function coachShow(kind, steps, then) {
   const show = () => {
     text.innerHTML = `<span class="coach-step">${i + 1} of ${steps.length}</span>` + steps[i];
     next.textContent = i === steps.length - 1 ? 'Play ball' : 'Got it';
+    /* The next note slides in rather than swapping under the reader's eye.
+       The first note arrives with the plaque, so it is left alone. */
+    if (i > 0 && !REDUCED.matches) {
+      text.classList.remove('mo-note'); void text.offsetWidth; text.classList.add('mo-note');
+    }
   };
   const done = () => { box.remove(); PREFS['coach_' + kind] = true; savePrefs(); then(); };
   next.onclick = (e) => { e.stopPropagation(); if (++i >= steps.length) done(); else show(); };
@@ -15762,19 +16334,12 @@ function renderResult() {
   h2.className = win && !g.forfeit ? 'verdict win' : 'verdict';
   s.appendChild(h2);
   if (!g.forfeit) Sound.play(win ? 'win' : 'loss');
-  if (win && !g.forfeit) {
-    const kit = teamKitColor();
-    const burst = el('div','confetti');
-    for (let i = 0; i < 26; i++) {
-      const bit = el('i');
-      bit.style.left = (4 + Math.random() * 92) + '%';
-      bit.style.background = i % 3 === 0 ? kit : i % 3 === 1 ? '#f4c25a' : '#fff6ea';
-      bit.style.animationDelay = (Math.random() * 0.8) + 's';
-      bit.style.animationDuration = (1.6 + Math.random() * 1.2) + 's';
-      burst.appendChild(bit);
-    }
-    h2.appendChild(burst);
-  }
+  /* THE CONFETTI WAS 26 BITS INSIDE THE HEADING, clipped to its own 55px
+     box, so the biggest moment in the game was a flutter behind two words.
+     It is the whole window now, in the club's kit colour. It is called
+     after the screen is built, below, because a celebration started while
+     `app` is still empty would be stopped by the next render check. */
+  const party = win && !g.forfeit;
   /* Win number, at the round numbers, from PROGRESS. */
   if (g.winNo && [1, 5, 10, 25, 50, 100, 250].includes(g.winNo)) {
     const wn = el('div','banner');
@@ -15816,11 +16381,22 @@ function renderResult() {
     : g.mercy ? `Mercy rule: a lead of ${MERCY_RUNS} from the ${ordinal(mercyFrom(g))} inning on ends the game.`
     : g.inning > g.innings ? `Decided in ${g.inning} innings.`
     : '';
+  /* A SCOREBOARD, away over home the way every board in the sport reads,
+     with the winning row lit and the figures counting up. See `.countup`
+     for why the number in the DOM is the result from the first frame. */
+  const kit = teamKitColor();
+  const fbRow = (t) => {
+    const won = t.score > (t === g.away ? g.home : g.away).score;
+    return `<div class="fb-row${won ? ' won' : ''}">`
+      + `<span class="fb-kit" style="--k:${t.isYou ? kit : '#8aa0b8'}"></span>`
+      + `<span class="fb-team">${t.name}${t.isYou ? '<span class="fb-you">You</span>' : ''}</span>`
+      + `<b class="fb-runs countup" style="--to:${t.score | 0}">${t.score}</b></div>`;
+  };
+  head.classList.add('final-card');
   head.innerHTML =
     `<h3>Final</h3>`
-    + `<p style="font-size:18px;color:var(--text)">${you.name} <b style="color:var(--gold)">${you.score}</b>`
-    + ` &nbsp;·&nbsp; ${foe.name} <b>${foe.score}</b></p>`
-    + (note ? `<p style="color:var(--gold)">${note}</p>` : '');
+    + `<div class="fboard">${fbRow(g.away)}${fbRow(g.home)}</div>`
+    + (note ? `<p style="color:var(--gold);margin-top:10px">${note}</p>` : '');
   s.appendChild(head);
 
   /* Anything unlocked by this game gets its own celebration card. */
@@ -15980,6 +16556,7 @@ function renderResult() {
   s.appendChild(row);
 
   app.appendChild(s);
+  if (party) celebrate([teamKitColor(), '#f4c25a', '#1b8a4a'], g.round === 'final' ? 1.6 : 1);
 }
 
 /* ============================================================================
@@ -16485,12 +17062,14 @@ function renderSeasonEnd() {
   s.appendChild(h2);
   if (youWon) {
     Sound.play('title');
+    setTimeout(() => { if (State.screen === 'season-end') celebrate([teamKitColor(), '#f4c25a', '#ffe08a'], 1.8); }, 0);
     const tcard = el('div','card');
     tcard.style.borderColor = 'var(--gold)';
-    tcard.innerHTML = `<div class="trophy"><i></i></div>`
-      + `<span style="font-size:18px;font-weight:900;letter-spacing:.08em;vertical-align:middle">`
+    tcard.classList.add('has-cup');
+    tcard.innerHTML = trophyArt()
+      + `<div><span style="font-size:18px;font-weight:900;letter-spacing:.08em">`
       + `${S.teamName}, champions</span>`
-      + `<p style="margin-top:8px">Title number ${PROGRESS.titles | 0} on this browser.</p>`;
+      + `<p style="margin-top:8px">Title number ${PROGRESS.titles | 0} on this browser.</p></div>`;
     s.appendChild(tcard);
   }
   const card = el('div','card');
