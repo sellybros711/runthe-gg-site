@@ -2563,18 +2563,21 @@ window.GA_ID='G-L29P5MRWKE';
      save, the meter) and is not drawn. The Spin button reads both. */
   #s-intro #b-start-full{display:none}
 
-  /* ─── THE SHELF ─── The longer modes side by side rather than one full-width block each.
-     The store card and the dynasty's footnote still take the whole row. */
-  .hp-longer{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;align-items:stretch}
+  /* ─── THE SHELF ─── On a wide screen the longer modes sit side by side. NOT ON A PHONE:
+     each door carries a record corner, a mark and a one-line caption that were measured at
+     full width (see check-premium and check-fantasy), and at half of a 390 phone the corner
+     lands on the football and the captions wrap. So a phone keeps them stacked, with the gap
+     a shelf would have, and the store card and the dynasty's footnote take the whole row
+     either way. */
+  .hp-longer{display:grid;grid-template-columns:minmax(0,1fr);gap:10px;align-items:stretch;margin-top:18px}
   .hp-longer>*{margin:0!important;min-width:0}
-  .hp-longer>.pw-card,.hp-longer>#b-dyn-new,.hp-longer>:only-child{grid-column:1/-1}
-  .hp-longer>.hp-full{justify-content:center;min-height:118px;padding:28px 10px 14px;border-radius:14px}
-  .hp-longer>.hp-full .hp-full-name{font-size:21px;line-height:1.02;white-space:normal;text-align:center}
-  .hp-longer>.hp-full .hp-full-sub{font-size:9.5px;letter-spacing:.06em}
-  .hp-longer>.hp-dyn .hp-full-name{font-size:24px}
-  @media (max-width:360px){
-    .hp-longer>.hp-full .hp-full-name{font-size:18px}
-    .hp-longer>.hp-dyn .hp-full-name{font-size:20px}
+  @media (min-width:920px) and (min-height:560px){
+    .hp-longer{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .hp-longer>.pw-card,.hp-longer>#b-dyn-new,.hp-longer>:only-child{grid-column:1/-1}
+    .hp-longer>.hp-full{justify-content:center;min-height:118px;padding:28px 10px 14px;border-radius:14px}
+    .hp-longer>.hp-full .hp-full-name{font-size:21px;line-height:1.02;white-space:normal;text-align:center}
+    .hp-longer>.hp-dyn .hp-full-name{font-size:24px}
+    .hp-longer>.hp-dyn .hp-full-sub{letter-spacing:.06em;white-space:nowrap}
   }
 
   /* ─── THE FIELD FOLLOWS THE SWITCHER ─── Twelve chips live on the hero field for good,
@@ -5474,7 +5477,7 @@ window.GA_ID='G-L29P5MRWKE';
     #s-intro>.hero{grid-row:1/span 9}
     #s-intro>.htitle,#s-intro>#hp-mode,#s-intro>#hp-slots,#s-intro>#hp-rule{grid-column:2}
     #s-intro>.htitle{margin-bottom:18px}
-    #s-intro>.htitle h1{font-size:70px}
+    #s-intro>.htitle h1{font-size:min(70px,6.4vw)}
     #s-intro>.htitle h1 .l2{display:block}
     #s-intro>.htitle p{display:block}
     #s-intro>#b-start{margin-top:0}
