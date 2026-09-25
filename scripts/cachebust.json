@@ -2170,9 +2170,13 @@
       "v": "1",
       "sha": "0b4588cf96acbdd3"
     },
+    "modes.js": {
+      "v": "1",
+      "sha": "4b749d2bad936227"
+    },
     "board.js": {
-      "v": "2",
-      "sha": "e05bac77c8126345"
+      "v": "3",
+      "sha": "923bf9a1a5e722bf"
     },
     "auth.js": {
       "v": "1",
@@ -2185,6 +2189,10 @@
     "cloud.js": {
       "v": "1",
       "sha": "d401cefb277986c4"
+    },
+    "modes-ui.js": {
+      "v": "1",
+      "sha": "3939b372c25b442a"
     },
     "data/players.json": {
       "v": "5",

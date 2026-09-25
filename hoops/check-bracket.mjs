@@ -401,7 +401,28 @@ async function boot(page){
   await page.goto('http://local.test/hoops/', { waitUntil: 'domcontentloaded' });
   await page.waitForSelector('#b-start:not([disabled])', { timeout: 30000 });
   await page.evaluate(() => { const b = document.querySelector('#frg-x'); if (b) b.click(); });
+  await widenDoor(page);
   await page.waitForTimeout(200);
+}
+
+/* THE DOOR IS A GAME 7 AND A GAME 7 IS RARE. Since the door stopped opening
+   on every game that could end a series, a run meets one about one time in
+   five, so sections 6 and 7 waited on an event that mostly never came: the
+   door was never seen and the run played itself out to the results screen.
+   That failed on every run from the commit that made the change, which is a
+   guard nobody reads. check-live.mjs met the same problem and widens the door
+   inside the page for exactly this; the real rule is asserted there, off the
+   engine, so this walk is free to ask for a door on any series game that can
+   end it. */
+async function widenDoor(page) {
+  await page.evaluate(() => {
+    const E = window.RTF_ENGINE, real = E.poNext;
+    E.poNext = function (po, rng) {
+      const n = real.call(this, po, rng);
+      if (n && n.bestOf > 1 && (n.elimination || n.closeout)) n.big = true;
+      return n;
+    };
+  });
 }
 
 /* Draft best-available through the real board and play the 82.

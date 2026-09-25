@@ -37,7 +37,7 @@
 (function () {
   'use strict';
 
-  const BOARD_API_VERSION = 2;
+  const BOARD_API_VERSION = 3;
 
   const SB_URL = 'https://jcrrxqfpdelrmvjuihnm.supabase.co';
   const SB_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpjcnJ4cWZwZGVscm12anVpaG5tIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA3OTY5NjIsImV4cCI6MjA5NjM3Mjk2Mn0.wyjoZpa2yRW-l38-KMGqBvEgTlW9v1KheNye7csWAlM';
@@ -165,7 +165,7 @@
     /* A 404 is the table or the function missing. A message naming either is
        the same thing arriving as a 400 from a stale schema cache, which is a
        real state a Supabase project sits in for a minute after a migration. */
-    if (res.status === 404 || /rtf_runs|rtf_submit_run|rtf_board_modes|record_score|depth/.test(msg)) {
+    if (res.status === 404 || /rtf_runs|rtf_submit_run|rtf_board_modes|record_score|depth|rtf_plays|rtf_submit_(fix|passes|conquest)/.test(msg)) {
       needsMigration = true;
     }
     lastError = { where, status: res.status, code: (body && body.code) || '', message: msg };
@@ -469,6 +469,104 @@
     } catch (e) { return failThrown('boards', e); }
   }
 
+  /* ---------------- the three other modes ----------------
+     Fix History, Six Passes and Conquest file into rtf_plays
+     (supabase/116_hoops_modes.sql), one submit function each, and the server
+     derives the score from the result. Higher is better on all three boards,
+     so every read below is the same query with a different mode. */
+  const PLAYS = 'rtf_plays';
+  const PLAY_COLS = 'id,created_at,display_name,mode,day,score,' +
+    'fix_ts,fix_slot,fix_out,fix_in,fix_odds,fix_base,replay_wins,replay_title,' +
+    'passes,par,solved,chain,cq_wins,cq_lives,cq_cleared,cq_lost_to,cq_roster,cq_took';
+  const MODES = ['fix', 'passes', 'conquest'];
+  const modeOk = (m) => MODES.indexOf(m) >= 0;
+  const dayOk = (d) => d == null || (Number.isFinite(Number(d)) && Number(d) >= 1);
+
+  async function rpc(where, name, body) {
+    try {
+      const res = await timed(base() + 'rpc/' + name, {
+        method: 'POST', headers: headers(), body: JSON.stringify(body),
+      });
+      if (!res.ok) return await fail(where, res);
+      return await res.json();
+    } catch (e) { return failThrown(where, e); }
+  }
+
+  async function submitFix(r) {
+    const id = await rpc('submitFix', 'rtf_submit_fix', {
+      p_day: Math.round(r.day), p_ts: r.ts, p_slot: Math.round(r.slot),
+      p_out: r.out, p_in: r.inKey,
+      p_odds: roundTo(r.odds, 4), p_base: roundTo(r.base, 4),
+      p_replay_wins: r.replay ? Math.round(r.replay.w) : null,
+      p_replay_title: r.replay ? !!r.replay.title : null,
+    });
+    return typeof id === 'number' ? id : null;
+  }
+  async function submitPasses(day, chain, par, solved) {
+    const id = await rpc('submitPasses', 'rtf_submit_passes', {
+      p_day: Math.round(day), p_chain: chain, p_par: Math.round(par), p_solved: !!solved,
+    });
+    return typeof id === 'number' ? id : null;
+  }
+  async function submitConquest(c) {
+    const id = await rpc('submitConquest', 'rtf_submit_conquest', {
+      p_wins: Math.round(c.wins), p_lives: Math.round(c.lives), p_cleared: !!c.cleared,
+      p_lost_to: c.lostTo || null, p_roster: c.roster || null, p_took: c.took || null,
+      p_seed: String(c.seed),
+    });
+    return typeof id === 'number' ? id : null;
+  }
+  async function claimPlay(id) {
+    if (!id) return false;
+    return (await rpc('claimPlay', 'rtf_claim_play', { p_id: id })) === true;
+  }
+
+  /* The scope for one board: a mode, and a day for the dailies. Conquest's
+     all-time board passes no day. Validated rather than passed through, so
+     nothing a caller hands in reaches a query string as text. */
+  function playScope(mode, day, named) {
+    let q = '&mode=eq.' + mode;
+    if (day != null) q += '&day=eq.' + Math.round(Number(day));
+    if (named) q += '&display_name=not.is.null';
+    return q;
+  }
+  async function playTop(mode, day, limit) {
+    if (!modeOk(mode) || !dayOk(day)) return null;
+    const n = Math.min(100, Math.max(1, Math.round(Number(limit) || 25)));
+    try {
+      const q = base() + PLAYS + '?select=' + PLAY_COLS +
+        '&order=score.desc,created_at.asc&limit=' + n + playScope(mode, day, true);
+      const res = await timed(q, { headers: headers() });
+      if (!res.ok) return await fail('playTop', res);
+      const rows = await res.json();
+      return Array.isArray(rows) ? rows : null;
+    } catch (e) { return failThrown('playTop', e); }
+  }
+  async function playCount(mode, day, extra) {
+    try {
+      const q = base() + PLAYS + '?select=id&limit=1' + playScope(mode, day, false) + (extra || '');
+      const res = await timed(q, { headers: headers({ Prefer: 'count=exact' }) });
+      if (!res.ok) return await fail('playCount', res);
+      return countOf(res);
+    } catch (e) { return failThrown('playCount', e); }
+  }
+  /* Where a score sits among EVERY play on the board, named or not, so a
+     guest's place is out of the same field as everybody's. */
+  async function playPlace(mode, day, score) {
+    if (!modeOk(mode) || !dayOk(day) || !Number.isFinite(Number(score))) return null;
+    const [ahead, total] = await Promise.all([
+      playCount(mode, day, '&score=gt.' + encodeURIComponent(Number(score))),
+      playCount(mode, day, ''),
+    ]);
+    if (ahead === null || total === null) return null;
+    return { place: ahead + 1, total };
+  }
+  /* How many people made the same Fix History move today. */
+  async function moveCount(day, inKey) {
+    if (!dayOk(day) || !/^[a-z0-9.'-]{2,16}\|[0-9]{4}\|[A-Z]{2,4}$/.test(String(inKey))) return null;
+    return playCount('fix', day, '&fix_in=eq.' + encodeURIComponent(inKey));
+  }
+
   window.RTF_BOARD = {
     /* Moves when any of the shapes above change. index.html pins this and falls
        through to a stub that answers null to everything when it disagrees,
@@ -479,6 +577,7 @@
        page's NEED_BOARD in the same commit. */
     API_VERSION: BOARD_API_VERSION,
     submit, claim, ranks, top, mine, boards, placeIn, total, boardsScope: scope,
+    submitFix, submitPasses, submitConquest, claimPlay, playTop, playPlace, moveCount,
     scoreOf, recordScoreOf, depthOf, modeOf, round1,
     SORTS, DIR, DEFAULT_SORT,
     get offline() { return offline; },

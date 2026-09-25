@@ -8578,6 +8578,7 @@ node hoops/check-bracket.mjs      the playoff bracket, and the field it draws
 node hoops/check-draft.mjs        the draft screen's shape, desktop and phone
 node hoops/check-home.mjs         how far the front page scrolls, and the fold
 node hoops/check-cloudsave.mjs    the run, the career and the daily, on two devices
+node hoops/check-modes.mjs        Conquest, Fix History and Six Passes (--quick: no browser)
 ```
 
 `check-badges.mjs` takes about two minutes, because proving a badge is reachable
@@ -8593,6 +8594,163 @@ the strategies a player would use, never loosening a threshold to suit a bot.
 `verify.mjs` prints a **TARGETS** block. Read it after any change to the data or
 the constants: it states what the balance is supposed to look like and flags what
 is outside its band.
+
+### Four ways to play, and the draft is one of them
+
+```
+node hoops/check-modes.mjs                 the rules, the copy, the SQL, a browser walk
+node hoops/check-modes.mjs --quick         no browser
+psql -d hoops_modes -f supabase/test/hoops_board_base.sql
+psql -d hoops_modes -f supabase/116_hoops_modes.sql
+psql -d hoops_modes -f supabase/test/hoops_modes_test.sql
+```
+
+Reported by the owner: a draft that goes 73-9 is the football game with a
+basketball on it, and a season is one decision followed by a long wait. So the
+front page leads with three games that are not drafts, and the draft is **Quick
+Draft**, one card of four.
+
+| | what it is | where |
+|---|---|---|
+| Fix History | the daily: one real team that fell short, one salary-matched trade | `fx*` |
+| Six Passes | the daily: one All-Star to another through real teammates | `ps*` |
+| Conquest | winners stay on against real teams; take a man off each one you beat | `cq*` |
+| Quick Draft | the game this page started as | `run.js` |
+
+`hoops/modes.js` is the rules and `hoops/modes-ui.js` draws them, through
+`window.RTF_PAGE`, which the page publishes before it boots. The UI file injects
+its own stylesheet, which is `/assets/store.js`'s arrangement: a stylesheet in
+its own file is a second cached thing with a version nothing checks.
+
+**NONE OF THE THREE IS A SECOND MODEL OF BASKETBALL.** Every rating is the
+pipeline a drafted five runs through, every game is `resolveGame` and every
+season is `playRun`. The modes decide who plays, never how a game goes, so the
+calibration the draft is balanced on carries over untouched.
+
+#### Conquest: one loss and out could not carry it
+
+The first version was one loss and the run is over, and a single NBA game is too
+noisy for that. A team fifteen rating points better wins about three in four, so
+over 200 runs a bot the median was ONE win whatever the steals were, and the bot
+that took the best man every time finished within a game of the one that never
+took anybody. **The steal did not matter, and the steal is the game.**
+
+Three lives fixed it. A loss costs one and the same team stays on for a rematch;
+beating a boss (every fifth rung) gives one back. Measured, 200 runs a bot:
+
+| | median | p90 | clears all 25 |
+|---|---|---|---|
+| the best steal | 6 | 23 | 6.5% |
+| never steals | 4 | 9 | 0% |
+
+`check-modes` holds the SHAPE rather than those numbers, because the ladder is
+drawn off the pool and a refreshed season moves every figure a little.
+
+**The crew is role players, not scrubs.** Scrubs rated 1 and made the first game
+a 28% chance.
+
+**A REMATCH IS A NEW GAME, so the attempt is in the rng tag.** Without it a loss
+replays itself identically until the lives run out. Proved by mutation: the
+balance band collapses to a median of one.
+
+**The scoreboard reveals a result that already exists, and three things on it
+spoiled it.** `cqPlay` decides the game before the quarters start, so the win
+counter read "1" in the second quarter, the lost life dimmed at the tip, and an
+overtime column appeared before a ball was thrown. The count and the lives are
+held back until the final horn (`cqShown`, `cqLivesHeld`) and the fifth column
+is added when overtime is reached. The guard reads the counter mid-game.
+
+The win chance printed before tip-off is read off `resolveGame`'s own
+arithmetic, and `check-modes` holds it to 20,000 simulated games at three rungs.
+
+#### Fix History: the score is the odds, not the replay
+
+One replayed season is a coin with a ring on one side, so two people who made
+the same move would land hundreds of places apart on the dice. **The score is
+the share of 1,000 seasons the new five win, on the day's seeds**, so the same
+five score the same number on every device and a leaderboard can rank it. One
+season is replayed off the day's seed as the story.
+
+`fxOddsStep` is the same count over a slice, so the screen plays the thousand a
+frame at a time and the meter settles as they come in. It is the whole of
+`fxOdds` rather than a copy: seeds are addressed by index, so any split adds up
+to the same answer, and the guard says so.
+
+**The daily team's five are the best five of its top nine who can cover the
+positions.** The best five by win shares alone fit PG, SG, SF, PF and C on only
+533 of 1,433 team-seasons, because plenty of great teams had three bigs.
+
+**The search shows the stat line and minutes, never win shares.** The market
+prices points, value is win shares, and knowing who was worth more than he was
+paid is the puzzle. Printing win shares prints the answer. Minutes are there
+because 4.3 rebounds in fourteen minutes and in thirty are different players.
+
+Base odds run about 2% to 24% and the best move is worth about twenty points.
+The best moves found by brute force are the fan-knowledge answers (Rodman or
+Kevon Looney into the 2009 Celtics, Sidney Moncrief for Devin Booker), which is
+the evidence the puzzle is the one intended.
+
+#### Six Passes: the ends are All-Stars, and the gap sets the par
+
+The first version took both ends from the best careers by win shares and served
+Derrick McKey and Michael Cage. **Both ends now have three or more All-Star
+nods**, which is 162 men, every name a fan expects.
+
+**The gap between the two careers is what sets the par**, measured over every
+pair of the 162: under ten years apart is par 2 nine times in ten, twenty to
+twenty-nine is mostly 3, thirty or more mostly 4 with real 5s. A twenty year
+floor lands a year of days on 3 (209), 4 (138) and 5 (18), none missing.
+
+**The picker is grouped by club STINT, each teammate once.** By season, Reggie
+Theus's picker was 9,900 pixels tall, because a ten year career repeats one
+locker room ten times. The ten best known show first and the rest are a tap away.
+
+Every pass is final and the shot clock is ten passes. An undo turns it into a
+map to be searched at leisure.
+
+#### The boards, and `supabase/116_hoops_modes.sql`
+
+One table, `rtf_plays`, and not `rtf_runs`: that table is a finished SEASON and
+none of these is one. **The score is derived by the server** from the result
+each submit function is sent (the odds, the chain, the wins), and higher is
+better on all three boards. What cannot be checked in plpgsql is trusted within
+bounds, which is 108's own position on a season's record: a thousand seasons of
+the engine is not a stored procedure. What can be checked is: the day is today
+(Eastern, 108's epoch), a chain fits the shot clock, a solved chain is not under
+par, and one account files one of each daily with the first standing.
+
+**Deploy 116 by hand.** Without it all three modes play and keep their results
+on the device, and every place line and leaderboard is empty, which looks like a
+network that is down. Row 26 of `launch_preflight.sql` asks for it.
+
+**A place never prints past its field.** The two counts are separate requests
+and the play being placed can land between them, so "42nd of 41" was a reachable
+answer. Found by the stand-in in `check-modes`.
+
+**The SQL test's first two failures were the test.** A submit called inside a
+WHERE ran once per row scanned and filed a play each time; a rename checked in
+the statement that made it read the snapshot from before it. Both are two
+statements now.
+
+#### The front page, and the button the dock carries
+
+The dock carries **today's play**, `#b-today`: whichever daily is still open,
+then Conquest. The first-time guide points at it and names all four modes;
+`check-home` holds both. The draft's own button, `#b-start`, lives in the Quick
+Draft card now, with the court and reels that used to open the page, because
+they are a picture of that mode and nothing else.
+
+**The league card became one line under the tagline**, holding the same ids and
+the loading bar, which goes when the data is in. **`check-home`'s budget moved
+from 2.4 to 2.8 screens, on purpose.** The page holds four games where it held
+one, and it was compacted first: 2.30 screens at 390x844 and 2.67 at 360x740
+after. An unfolded essay is about a screen and a half, so it still fails on the
+regression it exists for.
+
+**`check-bracket` had been failing on every run since Game 7 became the only
+door**, because a door comes about one run in five and the walk waited for one
+that mostly never came. It widens the door inside the page the way `check-live`
+already did; the real rule is asserted in `check-live` off the engine.
 
 ### The roster is a STARTING FIVE, and six was never this sport's number
 
