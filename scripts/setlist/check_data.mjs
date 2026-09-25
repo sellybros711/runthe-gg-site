@@ -468,6 +468,17 @@ check((game.match(/data-tab="/g) || []).length === 5, 'it carries five tabs');
 check(/data-tab="songs"/.test(game), 'and the songs list is one of them');
 for (const dest of ['home', 'tour', 'songs', 'board', 'profile'])
   check(new RegExp(`data-tab="${dest}"`).test(game), `  including ${dest}`);
+/* ON A DESKTOP THE SAME FIVE TABS ARE THE HEADER'S NAV, still fixed (so the
+   rule above holds), moved to the top and never pinned under a 1440px screen. */
+check(/@media \(min-width:1000px\)\{\s*body\.hasTabs \.tabbar\{top:[^}]*bottom:auto/.test(game),
+      'on a desktop the tabs move into the header');
+/* The top-level tabs carry no Back button, because the bar is the way back;
+   the screens one level under You keep theirs. Keyed on the screen, which
+   setScreen writes onto the body. */
+check(/document\.body\.dataset\.screen = name;/.test(gameBare)
+   && /body\[data-screen="board"\] #backHome/.test(game)
+   && !/body\[data-screen="(nights|browse)"\] #backHome/.test(game),
+      'no Back under the top-level tabs, and the ones below You keep theirs');
 /* Shown only on the browsing screens: the default is display:none and a body
    class turns it on, so the draft (which is not in that set) never gets it. */
 check(/\.tabbar\{[^}]*display:none/.test(game) && /body\.hasTabs \.tabbar\{display:block;?\}/.test(game),
