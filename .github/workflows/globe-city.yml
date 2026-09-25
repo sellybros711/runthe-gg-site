@@ -1,0 +1,60 @@
+name: Build a Street Hunt city
+
+# Builds globe/data/city-<id>.json from OpenStreetMap and commits it.
+#
+# THIS IS THE ONLY PLACE THE BUILD CAN RUN. Overpass is refused from the dev
+# sandbox and open from GitHub's runners, the same split hoops-data.yml
+# documents. It fires on a push that touches the builder, so a change to what
+# is kept rebuilds the city without anybody remembering to press a button.
+#
+# NO SECRETS. It reads a public API and writes one file back to the branch it
+# ran on. The data is (c) OpenStreetMap contributors, ODbL, and the game says so.
+
+on:
+  workflow_dispatch:
+    inputs:
+      city:
+        description: 'City id (see CITIES in globe/build/osm-city.mjs)'
+        required: false
+        default: 'paris'
+  push:
+    paths:
+      - 'globe/build/osm-city.mjs'
+      - '.github/workflows/globe-city.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: globe-city-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Fetch and build
+        run: node globe/build/osm-city.mjs "${{ inputs.city || 'paris' }}"
+
+      - name: Commit the city
+        run: |
+          F="globe/data/city-${{ inputs.city || 'paris' }}.json"
+          git add "$F"
+          if git diff --cached --quiet; then
+            echo "The city did not move."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898699+github-actions[bot]@users.noreply.github.com"
+          git commit -m "globe: rebuild $F from OpenStreetMap"
+          for i in 1 2 3 4; do
+            git pull --rebase origin "${GITHUB_REF_NAME}" && git push origin "HEAD:${GITHUB_REF_NAME}" && exit 0
+            sleep $((i * 5))
+          done
+          exit 1
