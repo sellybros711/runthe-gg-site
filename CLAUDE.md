@@ -7257,6 +7257,34 @@ first: a screen with nothing to fill proves nothing about the fill. **Its
 counted as the fallback, which is exactly what a missing custom property is.
 Proved by removing the sampler: four failures, the colours reported as null.
 
+##### THE COLOUR WAS RIGHT AND THE FLATNESS WAS THE FAULT
+
+Everything above is about the band being the park's own colour, and it is. What
+it never asked is what the band looks like once it is more than a seam. Measured
+during a ball in play at 390x844: the picture is 293 CSS pixels of a 570 pixel
+arena, so **48% of the wide view was two unchanging colours**, and at 320x568 it
+is 35%. A sampled slab is still a slab.
+
+**A sky deepens toward the top and near ground falls into shadow**, so the band
+is shaded away from the picture and is exactly the sampled colour where it meets
+it. That is the whole of the change: one overlay on the arena, nothing in the
+canvas, no camera moved. Desktop and sideways have a band of one or two pixels,
+so `--pic` reads about 49.9 there and the overlay collapses to nothing.
+
+**`--pic` IS THE PICTURE'S OWN HALF HEIGHT AND NOT HALF THE ARENA.** Anchored at
+50% the overlay is zero at the arena's midpoint rather than at the canvas's edge,
+so there is a STEP where the band meets the picture, and the bigger the band the
+bigger the step: the flatness this fixes, arriving by its own back door. It is
+written in `fitFieldCanvas`, where the canvas height and the arena height are
+both already in hand and the line runs only when the fit changes.
+
+**Nothing else here could see it.** The colour claims above read `--sky` and
+`--turf` rather than the glass, which is right on their own terms, and a step is
+a perfectly valid gradient. So the guard reads `--pic` against the rectangles it
+is supposed to describe, at a tenth of a percent, which on the tallest arena in
+the sweep is under a pixel. Anchored back at 50% it names every park on both
+phones: `--pic 50 against a real half of 20.80`.
+
 #### The guard measures the glass, and it found two things the eye did not
 
 `check-firstpitch.mjs`'s fourth section reads where the zone lands in CSS

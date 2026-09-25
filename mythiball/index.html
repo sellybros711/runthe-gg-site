@@ -254,7 +254,28 @@
      canvas is centred, so the split at half is exactly where the picture
      is whatever size the band comes out. The near black is the fallback
      for the frame before the first sample and for a park that has not
-     drawn yet. */
+     drawn yet.
+
+     AND IT IS SHADED AWAY FROM THE PICTURE, because two flat slabs is what
+     a phone actually got: measured at 390x844 the park is 269 CSS pixels of
+     a 665 pixel arena, so 61% of the wide view was one of two unchanging
+     colours. The colour was right and the FLATNESS was the fault. A sky
+     deepens toward the top and near ground falls into shadow, so the
+     overlay is nothing at the seam and grows outward from it.
+
+     `--pic` is the picture's own half height as a share of the arena,
+     written by `fitFieldCanvas` where both numbers are already in hand, so
+     the overlay is zero exactly where the band meets the canvas rather
+     than at some fraction that happens to be close. Anchored on 50%
+     instead there is a visible STEP at the canvas edge, and the bigger the
+     band the bigger the step, which is the fault this fixes arriving by
+     its own back door. A screen with no band writes 50% and the whole
+     overlay collapses to nothing.
+
+     `check-firstpitch` reads `--sky` and `--turf` rather than the glass, so
+     it is untouched by this, and that is the right way round: the claim it
+     makes is that the band is the park's own colour, and the seam still is
+     that colour to the channel. */
   /* THE FLOOR IS THE COVER THRESHOLD AND NOTHING ELSE, which is a
      correction. It was `min(56vh, 480px)`, and on a tall window that number
      is never reached: the arena is the one child with grow, so it takes every
@@ -275,7 +296,12 @@
      takes everything going. */
   body.ingame .arena{flex:5 1 0;min-height:min(56vh, 480px, 69vw);width:100%;
     max-width:none;margin:0;border:0;border-radius:var(--r-sm);box-shadow:none;
-    background:linear-gradient(to bottom, var(--sky, #0b1015) 0 50%,
+    background:
+      linear-gradient(to bottom, rgba(6,10,20,.30) 0,
+        rgba(6,10,20,0) calc(50% - var(--pic, 50%)),
+        rgba(6,10,20,0) calc(50% + var(--pic, 50%)),
+        rgba(6,10,20,.34) 100%),
+      linear-gradient(to bottom, var(--sky, #0b1015) 0 50%,
       var(--turf, #0b1015) 50% 100%);position:relative;overflow:hidden;}
   @media (min-aspect-ratio: 3/4){
     body.ingame .arena{position:absolute;inset:0;width:auto;min-height:0;}
@@ -7571,6 +7597,13 @@ function fitFieldCanvas(cv) {
      measured there, because this is where the two heights are already in
      hand and it writes only when the fit changes. */
   FIELD_CAM.band = ch0 < bh - 1;
+  /* AND WHERE THE PICTURE'S OWN EDGES ARE, as a share of the arena, so the
+     band can be shaded away from them and be EXACTLY the sampled colour
+     where it meets the canvas. Written as a half height because the canvas
+     is centred, so one number places both seams. 50% means the picture
+     fills the arena and the shading is nothing at all, which is every
+     screen that has no band. See the arena's own rule. */
+  box.style.setProperty('--pic', (Math.min(50, ch0 / bh * 50)).toFixed(2) + '%');
   fieldBandAt = '';
 }
 

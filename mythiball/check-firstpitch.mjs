@@ -552,7 +552,11 @@ const main = async () => {
                          dead: Math.round((box.height - r2.height) * 100 / box.height),
                          top: at(0), bottom: at(cv.height - 1),
                          sky: parse(cs.getPropertyValue('--sky')),
-                         turf: parse(cs.getPropertyValue('--turf')) });
+                         turf: parse(cs.getPropertyValue('--turf')),
+                         /* where the page says the picture's edges are,
+                            against where they actually are */
+                         pic: parseFloat(cs.getPropertyValue('--pic')),
+                         half: r2.height / box.height * 50 });
               step();
             });
           }));
@@ -581,6 +585,21 @@ const main = async () => {
         || (x.sky[0] < 30 && x.sky[1] < 40 && x.sky[2] < 45));
       ok(dark.length === 0, `${label}: never the near black it used to be`,
         `${dark.length} parks fall back to the arena's own colour`);
+      /* AND THE SHADE IS ANCHORED ON THE PICTURE'S OWN EDGE. The band is
+         that park's colour at the seam and is shaded away from it, because
+         two flat slabs is what 48% of a phone's wide view was. The overlay
+         has to be ZERO where it meets the canvas: anchored on half the
+         arena instead there is a step at the canvas edge, growing with the
+         band, which is the flatness this fixes arriving by its own back
+         door. Nothing else here can see it, because the colour claims above
+         read the custom properties rather than the glass and a step is a
+         perfectly valid gradient.
+
+         A tenth of a percent, which on the tallest arena in the sweep is
+         under a pixel. */
+      const slip = banded.filter(x => !(Math.abs(x.pic - x.half) < 0.1));
+      ok(slip.length === 0, `${label}: and the shade is zero where it meets the picture`,
+        slip.slice(0, 3).map(x => `${x.park}: --pic ${x.pic} against a real half of ${x.half.toFixed(2)}`).join('; '));
       ok(errors.length === 0, `${label}: no page errors`, errors.join(' | '));
       await pg.close(); await ctx.close();
     }
