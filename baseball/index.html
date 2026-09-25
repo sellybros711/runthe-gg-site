@@ -1135,23 +1135,35 @@ body:has(#s-intro.on) header .lockup{visibility:hidden}
 .ach .ach-d{font-size:11px;color:var(--dim);margin-top:1px}
 .trophy-note{text-align:center;font-size:11px;color:var(--dim-2);margin:10px 0 0}
 
-/* ─── position chooser ─── */
-.pos-sub{font-size:13px;color:var(--dim);margin:0 0 12px}
-.pos-opts{display:flex;flex-direction:column;gap:8px}
-.pos-opt{display:flex;align-items:center;gap:12px;background:var(--panel);border:1px solid rgba(var(--edge),.10);
-  border-radius:11px;padding:12px 14px;cursor:pointer;text-align:left;width:100%;
-  transition:border-color .12s,transform .1s}
-.pos-opt:active{transform:scale(.99)}
-.pos-opt.natural{border-color:rgba(46,125,50,.4);box-shadow:0 0 0 1px rgba(46,125,50,.15)}
-.pos-opt .pchip{flex:0 0 auto;min-width:42px;text-align:center;padding:6px 0;border-radius:8px;
-  color:#fff;font-family:var(--fn);font-size:13px;font-weight:800;letter-spacing:.04em}
-.pos-opt .pmeta{flex:1;min-width:0}
-/* Blocks, or the pair is one run-on line: a span is inline, so the note sat
-   flush against the name ("Second BasePrimary position") and its margin-top
-   was doing nothing. The stack this was drawn as needs saying out loud. */
-.pos-opt .pmeta .pname{display:block;font-family:var(--fn);font-size:14px;font-weight:700;color:var(--ink)}
-.pos-opt .pmeta .pnote{display:block;font-size:11px;color:var(--dim-2);margin-top:1px}
-.pos-opt .pgo{font-size:20px;color:var(--dim-2)}
+/* ─── placing a man who fits more than one slot ───
+   It was a sheet over the page listing the slots as rows. The field already draws
+   every slot, so the choice is made ON it now: the open slots he can take glow gold,
+   everything else steps back, and a tap on a glowing spot signs him there. The same
+   targets light on the staff strip and the lineup card, because the mound is one
+   disc and a starter who can also close has two places on it. */
+.pickbar{position:fixed;left:50%;bottom:calc(14px + env(safe-area-inset-bottom));
+  transform:translateX(-50%);z-index:90;display:flex;align-items:center;gap:12px;
+  width:min(520px,calc(100% - 24px));padding:10px 10px 10px 16px;border-radius:14px;
+  background:var(--ink);color:var(--bg);box-shadow:0 10px 30px -8px rgba(0,0,0,.55);
+  animation:pbin .22s ease-out both}
+.pickbar[hidden]{display:none}
+.pickbar .pb-txt{flex:1;min-width:0;font-size:13.5px;line-height:1.3}
+.pickbar .pb-txt b{font-weight:800}
+.pickbar .btn{flex:0 0 auto;width:auto;color:var(--bg);border-color:rgba(var(--edge),.35)}
+@keyframes pbin{from{transform:translate(-50%,16px);opacity:0}to{transform:translate(-50%,0);opacity:1}}
+#s-draft.picking .field .chip{transition:opacity .18s}
+#s-draft.picking .field .chip:not(.target){opacity:.35;pointer-events:none}
+.chip.target .disc{background:linear-gradient(180deg,#ffe29a,#f0b93c);border:2px solid #fff;color:#3a2a00;
+  animation:tgpulse 1.2s ease-in-out infinite}
+@keyframes tgpulse{0%,100%{box-shadow:0 0 0 3px rgba(240,185,60,.55),0 6px 16px -4px #000}
+  50%{box-shadow:0 0 0 9px rgba(240,185,60,.12),0 6px 16px -4px #000}}
+.chip.target .who{color:#ffe29a;font-style:italic}
+.chip.target{z-index:6}
+.sl-arm.target,.lc-row.target{cursor:pointer;opacity:1;outline:2px solid var(--gold);outline-offset:-2px;
+  background:rgba(240,185,60,.14)}
+.lc-row.target .lc-nm{color:var(--ink);font-style:italic}
+.tile.picking{outline:3px solid var(--gold);outline-offset:-3px}
+@media (prefers-reduced-motion:reduce){.chip.target .disc,.pickbar{animation:none}}
 
 /* ─── era picker ─── */
 /* The same track the franchise grid runs on, because they hold the same card. */
@@ -1872,6 +1884,10 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
       <div class="reelbox team" id="box-t"><div class="strip" id="reel-t"></div><span class="band"></span><span class="wash"></span></div></div>
   </div>
   <div id="d-respin"></div>
+  <div class="pickbar" id="pick-bar" role="status" aria-live="polite" hidden>
+    <span class="pb-txt" id="pick-txt"></span>
+    <button class="btn ghost sm" id="b-pick-x">Cancel</button>
+  </div>
 
   <div id="tabs" class="tabs"></div>
   <div id="sortrow" class="sortrow"></div>
@@ -2033,19 +2049,6 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
 </div>
 
 </div><!-- .wrap -->
-
-<div class="sheet" id="sheet-pos" aria-hidden="true">
-  <div class="sheet-scrim" data-close-pos></div>
-  <div class="sheet-inner">
-    <div class="sheet-grab"></div>
-    <div class="sheet-hd">
-      <h3 class="sheet-title" id="pos-title">Where to play</h3>
-      <button class="sheet-x" data-close-pos aria-label="Close">&times;</button>
-    </div>
-    <p class="pos-sub" id="pos-sub"></p>
-    <div class="pos-opts" id="pos-opts"></div>
-  </div>
-</div>
 
 <div class="sheet" id="sheet-cut" aria-hidden="true">
   <div class="sheet-scrim"></div>
@@ -2276,7 +2279,15 @@ const $=id=>document.getElementById(id);
    so nothing in the UI may read E.SLOTS directly once a run is live. */
 const SLOTS_NOW=()=>R.slotsOf(typeof RUN!=='undefined'?RUN:null);
 const esc=s=>{const d=document.createElement('div');d.textContent=s;return d.innerHTML;};
-const show=id=>{document.querySelectorAll('.screen').forEach(s=>s.classList.remove('on'));$(id).classList.add('on');};
+/* The man being placed on the field, or null. Declared up here rather than beside
+   the functions that use it, because show() and the field painters run at boot and a
+   `let` read before its own line throws. See startPick. */
+var PICK=null;
+const show=id=>{
+  /* A placing left open on the draft would be a gold board waiting on the next
+     screen's clicks, so any screen change drops it. */
+  if(PICK&&id!=='s-draft'){PICK=null;paintPickBar();}
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('on'));$(id).classList.add('on');};
 const M=v=>'$'+v.toFixed(1)+'M';
 /* ── A NUMBER A PLAYER READS HAS TO BE THE NUMBER THE GAME PLAYS ──
    The cap is written out by hand a dozen times across this page and how-to-play.html,
@@ -2718,7 +2729,8 @@ function drawLineupCard(el){
     (left?left+' to fill':'Set')+'</span></div>'+
     slots.map((slot,i)=>{
       const p=bySlot[i];
-      return '<div class="lc-row'+(p?'':' open')+(i===firstArm?' arm1':'')+'">'+
+      const ch=PICK&&PICK.choices.find(c=>c.slotIdx===i);
+      return '<div class="lc-row'+(p?'':' open')+(i===firstArm?' arm1':'')+(ch?' target':'')+(ch&&ch.natural?' natural':'')+'" data-i="'+i+'">'+
         '<span class="lc-pos" style="'+posPaint(slot)+'">'+esc(slot)+'</span>'+
         (p?'<span class="lc-nm">'+esc(p.n)+'</span>'+
             '<span class="lc-yr">'+tcPlate(p.t,p.s)+' '+p.s+'</span>'+
@@ -2742,7 +2754,8 @@ function drawStaffLine(el){
   RUN.roster.forEach((p,i)=>{bySlot[RUN.slotIndex[i]]=p;});
   el.innerHTML=PITCHER_SLOTS.map(i=>{
     const p=bySlot[i];
-    return '<div class="sl-arm'+(p?' filled':'')+'">'+
+    const ch=PICK&&PICK.choices.find(c=>c.slotIdx===i);
+    return '<div class="sl-arm'+(p?' filled':'')+(ch?' target':'')+(ch&&ch.natural?' natural':'')+'" data-i="'+i+'">'+
       '<span class="sl-pos" style="'+posPaint(slots[i])+'">'+esc(slots[i])+'</span>'+
       (p?'<span class="sl-nm">'+esc(lastName(p.n))+'</span>'+
           '<span class="sl-yr">'+tcPlate(p.t,p.s)+' '+p.s+'</span>'
@@ -2794,7 +2807,12 @@ function drawField(el,live){
 
   const pitchersFilled=PITCHER_SLOTS.filter(i=>bySlot[i]);
   const pitchersOpen=PITCHER_SLOTS.filter(i=>!bySlot[i]);
-  const activePitcher=pitchersOpen.length>0?pitchersOpen[0]:
+  /* While a man is being placed, the mound shows the arm slot he could take, so a
+     starter lands on a disc reading SP and a closer on one reading CP. */
+  const targets=el.id==='field'&&PICK?new Set(PICK.choices.map(c=>c.slotIdx)):null;
+  const natural=el.id==='field'&&PICK?new Set(PICK.choices.filter(c=>c.natural).map(c=>c.slotIdx)):null;
+  const pitchTarget=targets?PITCHER_SLOTS.find(i=>targets.has(i)):undefined;
+  const activePitcher=pitchTarget!=null?pitchTarget:pitchersOpen.length>0?pitchersOpen[0]:
     pitchersFilled.length>0?pitchersFilled[pitchersFilled.length-1]:9;
 
   st.chips.forEach((c,i)=>{
@@ -2804,12 +2822,14 @@ function drawField(el,live){
     if(isPitcher) c.style.display='';
     const wasFilled=c.classList.contains('filled');
     const justFilled=!!p&&!wasFilled;
-    c.className='chip '+(p?'filled':'empty')+((live&&!p&&openCount===1)?' now':'')+(justFilled?' pop':'');
+    const tgt=!!targets&&targets.has(i);
+    c.className='chip '+(p?'filled':'empty')+((live&&!p&&openCount===1&&!targets)?' now':'')+
+      (justFilled?' pop':'')+(tgt?' target':'')+(tgt&&natural.has(i)?' natural':'');
     const disc=c.querySelector('.disc');
     const pitcherLabel=isPitcher&&!p?(i===11?'CP':'SP'):E.SLOTS[i];
     disc.querySelector('.dl').textContent=isPitcher&&!p?pitcherLabel:E.SLOTS[i];
     disc.style.cssText=p?posPaint(E.SLOTS[i]):'';
-    c.querySelector('.who').textContent=p?lastName(p.n):'';
+    c.querySelector('.who').textContent=p?lastName(p.n):tgt?lastName(PICK.p.n)+'?':'';
     c.querySelector('.yr').innerHTML=p?tcPlate(p.t,p.s)+' '+p.s:'';
     const pip=c.querySelector('.pip');
     const ce=p?chemBySlot[i]:null;
@@ -3522,7 +3542,6 @@ $('b-share').addEventListener('click',shareResult);
 $('b-trophy').addEventListener('click',openTrophy);
 $('b-trophy-2').addEventListener('click',openTrophy);
 document.querySelectorAll('[data-close]').forEach(el=>el.addEventListener('click',()=>closeSheet('sheet-trophy')));
-document.querySelectorAll('[data-close-pos]').forEach(el=>el.addEventListener('click',()=>closeSheet('sheet-pos')));
 document.querySelectorAll('[data-close-chem]').forEach(el=>el.addEventListener('click',()=>closeSheet('sheet-chem')));
 $('b-chemkey').addEventListener('click',openChemKey);
 document.addEventListener('visibilitychange',heroSync);
@@ -3755,6 +3774,7 @@ function paintTop(){
 }
 
 function nextSpin(){
+  PICK=null;paintPickBar();
   paintTop();drawField($('field'),true);drawStaffLine($('field-staff'));drawLineupCard($('field-card'));watchFold();
   $('opts').innerHTML='';$('tabs').innerHTML='';$('d-respin').innerHTML='';
   activeTab='ALL';
@@ -3849,9 +3869,11 @@ function paintOpts(draw){
          the rotation until it is full, a reliever takes the bullpen, and the slots
          re-rank themselves best first as the board fills. */
       if(RUN.staff){ signPlayer(p); return; }
+      /* Pressing the tile that is being placed puts it back. */
+      if(PICK&&PICK.key===key){ endPick(); return; }
       const choices=signChoices(p);
-      if(choices.length<=1){ signPlayer(p, choices.length?choices[0].slotIdx:undefined); }
-      else openPosChooser(p, choices);
+      if(choices.length<=1){ endPick(true); signPlayer(p, choices.length?choices[0].slotIdx:undefined); }
+      else startPick(p, choices, key);
     });
   });
 
@@ -3925,6 +3947,7 @@ function paintRespins(){
   if(check.ok){
     el.innerHTML='<div class="respin-row"><button class="btn ghost sm" id="b-respin">Re-spin ('+M(check.cost)+')</button></div>';
     $('b-respin').addEventListener('click',()=>{
+      PICK=null;paintPickBar();
       R.respin(RUN,DATA);
       const draw=RUN.currentDraw;
       buildDrawExtras(draw);
@@ -3975,48 +3998,62 @@ function signChoices(p){
 }
 function afterSign(){ if(RUN.phase===R.PHASES.SEASON) showSquad(); else nextSpin(); }
 function signPlayer(p,slotIdx){
+  PICK=null;paintPickBar();
   try{R.sign(RUN,p,slotIdx);}catch(e){console.error(e);return;}
-  closeSheet('sheet-pos');
   afterSign();
 }
-function openPosChooser(p,choices){
-  $('pos-title').textContent=lastName(p.n);
-  $('pos-sub').textContent='Where do you want to play '+p.n+'? ('+seasonText(p)+')';
-  $('pos-opts').innerHTML=choices.map((ch)=>{
-    return '<button class="pos-opt'+(ch.natural?' natural':'')+'" data-slot="'+ch.slotIdx+'">'+
-      '<span class="pchip" style="'+posPaint(slotBase(ch.name))+'">'+esc(ch.name)+'</span>'+
-      '<span class="pmeta"><span class="pname">'+esc(posLabel(ch.name))+'</span>'+
-      '<span class="pnote">'+esc(slotNote(p,ch))+'</span></span>'+
-      '<span class="pgo">&rsaquo;</span></button>';
-  }).join('');
-  $('pos-opts').querySelectorAll('.pos-opt').forEach(btn=>{
-    btn.addEventListener('click',()=>signPlayer(p,parseInt(btn.dataset.slot,10)));
-  });
-  openSheet('sheet-pos');
+/* ─── placing him on the field ───
+   A man who fits more than one open slot is placed by tapping the field, which is
+   the picture of those slots the page already draws. PICK is the one piece of state:
+   the man, the jobs he can take (signChoices, the same list the tile prints) and the
+   tile he came from. Everything that draws a slot reads it, so the diamond, the staff
+   strip and the lineup card cannot offer three different sets. */
+function startPick(p,choices,key){
+  PICK={p,choices,key};
+  repaintPick();
+  /* On a phone the field is above the board, so the man tapped is a scroll away
+     from where he is going. Only when the field is not already whole on screen. */
+  const f=$('field');
+  if(f){
+    const r=f.getBoundingClientRect();
+    if(r.top<0||r.bottom>innerHeight-70)
+      f.scrollIntoView({block:'center',behavior:matchMedia('(prefers-reduced-motion:reduce)').matches?'auto':'smooth'});
+  }
 }
-/* Every slot either game plays, by its BASE, so a five man rotation and a six man
-   pen are covered without listing eleven names. SU is a bullpen job wearing its own
-   word, which is why it is spelled out rather than left to fall through to itself.  */
-function posLabel(name){
-  if(name==='SU')return 'Reliever';
-  const L={C:'Catcher','1B':'First Base','2B':'Second Base','3B':'Third Base',SS:'Shortstop',
-    LF:'Left Field',CF:'Center Field',RF:'Right Field',DH:'Designated Hitter',
-    SP:'Starting Pitcher',RP:'Reliever',CL:'Closer'};
-  return L[slotBase(name)]||name;
+function endPick(quiet){
+  if(!PICK)return;
+  const key=PICK.key;PICK=null;
+  if(quiet){paintPickBar();return;}
+  repaintPick();
+  const t=[...document.querySelectorAll('#opts .tile')].find(x=>x.dataset.key===key);
+  if(t){const r=t.getBoundingClientRect();if(r.top<0||r.bottom>innerHeight)t.scrollIntoView({block:'center'});}
 }
-/* What taking this slot would MEAN, which is the half the name cannot say. A
-   pitcher offered a relief job used to be told "Pitcher", under a heading already
-   reading Reliever: the same fact twice, and no answer to the question the sheet
-   is asking. */
-function slotNote(p,ch){
-  if(ch.base==='DH')return 'Designated hitter';
-  if(ch.natural)return 'Primary position';
-  if(ch.group==='ROTATION')return 'In the rotation';
-  if(ch.group==='BULLPEN')return 'Out of the bullpen';
-  if(ch.name==='CL')return 'Closing games';
-  return 'Also played here';
+function repaintPick(){
+  if(!RUN)return;
+  drawField($('field'),true);drawStaffLine($('field-staff'));drawLineupCard($('field-card'));
+  paintPickBar();
 }
-
+function paintPickBar(){
+  const bar=$('pick-bar'),scr=$('s-draft');
+  if(scr)scr.classList.toggle('picking',!!PICK);
+  document.querySelectorAll('#opts .tile').forEach(t=>t.classList.toggle('picking',!!PICK&&t.dataset.key===PICK.key));
+  if(!bar)return;
+  if(!PICK){bar.hidden=true;return;}
+  $('pick-txt').innerHTML='Where does <b>'+esc(PICK.p.n)+'</b> play? Tap a gold spot.';
+  bar.hidden=false;
+}
+function pickAt(e){
+  if(!PICK)return;
+  const hit=e.target.closest('[data-i]');
+  if(!hit)return;
+  const i=parseInt(hit.dataset.i,10);
+  if(!PICK.choices.some(c=>c.slotIdx===i))return;
+  e.stopPropagation();
+  signPlayer(PICK.p,i);
+}
+['field','field-staff','field-card'].forEach(id=>{const el=$(id);if(el)el.addEventListener('click',pickAt);});
+$('b-pick-x').addEventListener('click',()=>endPick());
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&PICK)endPick();});
 /* ─── squad review (no pre-play odds) ─── */
 /* The coach's take for a staff. The main one reads a lineup, a batting order and a
    bench, none of which exist here. */

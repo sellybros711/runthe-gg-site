@@ -566,6 +566,10 @@
   .badge-bar span{display:block;height:100%;background:linear-gradient(90deg,var(--globe),var(--teal));}
   .badge-prog{font-size:11.5px;color:var(--mut);font-weight:700;}
 
+  .taskcard.shortcut{margin-top:12px;border-color:rgba(236,181,80,.55);background:linear-gradient(135deg,rgba(236,181,80,.16),rgba(236,181,80,.03));
+    box-shadow:0 0 0 1px rgba(236,181,80,.15),0 12px 28px -18px rgba(236,181,80,.7);animation:rtgSwap .3s .08s cubic-bezier(.22,.9,.32,1) both;}
+  .taskcard.shortcut .pr{color:#f3dca0;}
+  .catchip.sc{background:linear-gradient(180deg,var(--goldhi),var(--golddk));color:#1a1030;border-color:transparent;}
   .skiprow{display:flex;align-items:center;gap:10px;background:rgba(236,181,80,.08);border:1px solid rgba(236,181,80,.3);
     border-radius:12px;padding:11px 13px;margin-top:12px;}
   .skiprow .sx{font-size:12.5px;color:#f3dca0;line-height:1.4;flex:1;}
@@ -646,6 +650,123 @@
   .pflags button{padding:0;border:1px solid var(--cardb);border-radius:6px;overflow:hidden;background:none;cursor:pointer;line-height:0;}
   .pflags button.sel{outline:2px solid var(--globe);outline-offset:1px;}
   .stat.link{cursor:pointer;transition:border-color .15s;} .stat.link:hover{border-color:rgba(236,181,80,.5);}
+
+  /* ===== play arena: destination strip, live field, ready card, done beat ===== */
+  .arena{position:relative;}
+  .arena-top{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:700;color:var(--mut);margin:-4px 0 12px;letter-spacing:.02em;}
+  .arena-top b{color:var(--ink);}
+  .field{margin:-4px 0 14px;padding:8px 10px 9px;border-radius:12px;background:rgba(0,0,0,.2);border:1px solid rgba(255,255,255,.06);}
+  .fl-hd{display:flex;justify-content:space-between;gap:8px;font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--mut);margin-bottom:7px;}
+  .fl-hd b{color:var(--ink);}
+  .fl-hd .rvin{color:#ff8d84;}
+  .fl-row{display:flex;gap:5px;flex-wrap:wrap;}
+  .fchip{position:relative;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;
+    background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);filter:grayscale(.8);opacity:.5;transition:opacity .25s,filter .25s,background .25s,border-color .25s;}
+  .fchip.riv{border-color:rgba(238,90,68,.75);}
+  .fchip.in{filter:none;opacity:1;background:rgba(53,214,160,.16);border-color:var(--ok);animation:fcIn .42s cubic-bezier(.2,1.4,.4,1);}
+  .fchip.in::after{content:"✓";position:absolute;right:-3px;bottom:-3px;width:13px;height:13px;border-radius:50%;background:var(--ok);color:#06231a;
+    font-size:9px;font-weight:900;display:flex;align-items:center;justify-content:center;}
+  .fchip.riv.in{background:rgba(238,90,68,.22);border-color:#EE5A44;}
+  .fchip.riv.in::after{background:#EE5A44;color:#fff;}
+  @keyframes fcIn{0%{transform:scale(.6);}60%{transform:scale(1.28);}100%{transform:scale(1);}}
+  .timer{transition:color .3s,box-shadow .3s;}
+  .timer.hot{color:var(--ok);box-shadow:0 0 0 1px rgba(53,214,160,.35);}
+  .timer.late{color:#ff8d84;box-shadow:0 0 0 1px rgba(255,107,107,.35);}
+  .ready{position:relative;text-align:center;padding:18px 10px 16px;border-radius:16px;cursor:pointer;user-select:none;-webkit-user-select:none;
+    background:radial-gradient(120% 90% at 50% 0%,rgba(236,181,80,.15),rgba(255,255,255,.02));border:1px dashed rgba(236,181,80,.3);animation:rtgFade .25s both;}
+  .rk-ico{font-size:42px;line-height:1;display:inline-block;animation:rkBob 1.3s ease-in-out infinite;}
+  .rk-name{font-family:'Bricolage Grotesque','Archivo',sans-serif;font-size:22px;font-weight:800;margin-top:8px;color:var(--goldhi);}
+  .rk-how{font-size:14.5px;color:var(--ink);opacity:.92;margin-top:4px;line-height:1.35;}
+  .rk-count{font-family:'Bricolage Grotesque','Archivo',sans-serif;font-size:66px;font-weight:800;line-height:1;margin-top:12px;color:#fff;font-variant-numeric:tabular-nums;}
+  .rk-count.go{color:var(--ok);text-shadow:0 0 24px rgba(53,214,160,.5);}
+  .rk-beat{animation:rkBeat .42s cubic-bezier(.2,1.3,.4,1) both;}
+  .rk-sc{display:inline-block;margin-top:10px;font-size:12px;font-weight:800;color:#1a1030;background:linear-gradient(180deg,var(--goldhi),var(--golddk));border-radius:999px;padding:4px 11px;}
+  .rk-tap{font-size:11px;font-weight:700;color:var(--mut);margin-top:10px;letter-spacing:.04em;}
+  @keyframes rkBeat{0%{transform:scale(1.9);opacity:0;}55%{transform:scale(.92);opacity:1;}100%{transform:scale(1);}}
+  @keyframes rkBob{0%,100%{transform:translateY(0) rotate(-4deg);}50%{transform:translateY(-5px) rotate(4deg);}}
+  .mg-in{animation:rtgMgIn .32s cubic-bezier(.2,1,.3,1) both;}
+  @keyframes rtgMgIn{from{opacity:0;transform:scale(.96) translateY(6px);}}
+  .donebeat{position:absolute;inset:0;z-index:5;border-radius:inherit;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
+    background:rgba(14,11,34,.92);-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);cursor:pointer;animation:rtgFade .2s both;text-align:center;padding:16px;}
+  .db-k{font-size:11px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:var(--ok);}
+  .db-t{font-family:'Bricolage Grotesque','Archivo',sans-serif;font-size:60px;font-weight:800;line-height:1;color:var(--goldhi);animation:rkBeat .45s both;font-variant-numeric:tabular-nums;}
+  .db-t small{font-size:22px;color:var(--mut);margin-left:3px;}
+  .db-k.gold{color:var(--goldhi);font-size:13px;}
+  .db-combo{font-size:12px;font-weight:900;color:#fff;background:rgba(236,181,80,.2);border:1px solid rgba(236,181,80,.45);border-radius:999px;padding:2px 10px;margin:4px 0 2px;}
+  .db-sub{font-size:13px;color:var(--mut);font-weight:700;}
+  .db-place{margin-top:10px;font-size:28px;font-weight:900;color:#fff;animation:rtgPopIn .3s .15s both;}
+  .db-place small{font-size:13px;color:var(--mut);font-weight:700;}
+  .db-go.sc{color:var(--ok);}
+  .db-go{margin-top:14px;font-size:13px;font-weight:800;color:var(--goldhi);animation:gatepulse 1.1s infinite;}
+  /* ===== minigame motion ===== */
+  .opts .opt{animation:rtgOptIn .34s cubic-bezier(.2,1,.3,1) backwards;}
+  .opts .opt:nth-child(2){animation-delay:.05s;} .opts .opt:nth-child(3){animation-delay:.1s;}
+  .opts .opt:nth-child(4){animation-delay:.15s;} .opts .opt:nth-child(5){animation-delay:.2s;}
+  .opts .opt.right{animation:rtgRight .5s both;}
+  .opts .opt.wrong{animation:rtgShake .36s both;}
+  .opts.settled .opt:not(.right){opacity:.38;transition:opacity .2s;}
+  @keyframes rtgOptIn{from{opacity:0;transform:translateY(10px) scale(.97);}}
+  @keyframes rtgRight{0%{transform:scale(1);}40%{transform:scale(1.04);box-shadow:0 0 0 4px rgba(53,214,160,.25),0 0 28px rgba(53,214,160,.35);}100%{transform:scale(1);}}
+  @keyframes rtgShake{0%,100%{transform:none;}20%{transform:translateX(-6px);}40%{transform:translateX(6px);}60%{transform:translateX(-4px);}80%{transform:translateX(3px);}}
+  .slot.solved .tileslot{animation:rtgWave .5s both;animation-delay:calc(var(--i,0) * 55ms);border-color:var(--ok);background:rgba(53,214,160,.18);}
+  @keyframes rtgWave{40%{transform:translateY(-9px) scale(1.08);}}
+  .tileslot.pop-in{border-color:var(--goldhi);}
+  .reactbox.go .big{animation:rtgGoPulse .42s ease-in-out infinite alternate;}
+  @keyframes rtgGoPulse{to{transform:scale(1.14);}}
+  .eet,.kmo,.kms{padding:0;}
+  .eet .flagemoji,.kmo .flagemoji,.kms .flagemoji{font-size:28px!important;}
+  /* memory match: real card flips */
+  .mmgrid{display:grid;grid-template-columns:repeat(4,64px);gap:10px;justify-content:center;margin:10px auto 4px;}
+  .mmc{width:64px;height:64px;perspective:520px;cursor:pointer;}
+  .mmin{position:relative;width:100%;height:100%;transition:transform .38s cubic-bezier(.3,1.3,.5,1);transform-style:preserve-3d;}
+  .mmc.up .mmin{transform:rotateY(180deg);}
+  .mmf{position:absolute;inset:0;border-radius:14px;display:flex;align-items:center;justify-content:center;backface-visibility:hidden;-webkit-backface-visibility:hidden;border:1px solid var(--cardb);}
+  .mmback{background:repeating-linear-gradient(45deg,rgba(236,181,80,.08) 0 6px,transparent 6px 12px),linear-gradient(135deg,#3a2f7a,#241c52);font-size:24px;box-shadow:inset 0 0 0 3px rgba(236,181,80,.2);}
+  .mmface{transform:rotateY(180deg);background:rgba(255,255,255,.08);font-size:30px;}
+  .mmc.done .mmface{background:rgba(53,214,160,.18);border-color:var(--ok);box-shadow:0 0 18px rgba(53,214,160,.3);}
+  .mmc.done .mmin{animation:mmGot .45s both;}
+  .mmc.no .mmface{border-color:var(--bad);background:rgba(255,107,107,.15);}
+  @keyframes mmGot{0%{transform:rotateY(180deg) scale(1);}50%{transform:rotateY(180deg) scale(1.13);}100%{transform:rotateY(180deg) scale(1);}}
+  /* whack: flags pop out of holes */
+  .wkgrid{display:grid;grid-template-columns:repeat(3,80px);gap:12px;justify-content:center;margin:10px auto 4px;}
+  .wkc{position:relative;width:80px;height:72px;overflow:hidden;border-radius:14px;cursor:pointer;touch-action:manipulation;
+    background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,.08));border:1px solid rgba(255,255,255,.07);}
+  .wkhole{position:absolute;left:12%;right:12%;bottom:7px;height:15px;border-radius:50%;background:radial-gradient(ellipse at 50% 40%,#05040f,#1d1740);box-shadow:inset 0 3px 6px rgba(0,0,0,.85);}
+  .wkmole{position:absolute;left:50%;bottom:15px;transform:translate(-50%,140%);line-height:0;filter:drop-shadow(0 5px 5px rgba(0,0,0,.55));}
+  .wkc.up .wkmole{animation:wkRise .2s cubic-bezier(.2,1.5,.4,1) both;}
+  .wkc.bonk .wkmole{animation:wkBonk .22s both;}
+  .wkc.bad{animation:rtgShake .32s;}
+  @keyframes wkRise{from{transform:translate(-50%,140%);}to{transform:translate(-50%,0);}}
+  @keyframes wkBonk{0%{transform:translate(-50%,0) scale(1.2,.75);}100%{transform:translate(-50%,140%) scale(.9,1.1);}}
+  /* true or false: a swipe card */
+  .tfdeck{position:relative;height:150px;margin:2px 0 4px;}
+  .tfcard{position:absolute;inset:0;border-radius:18px;background:linear-gradient(160deg,#322868,#1d1745);border:1px solid rgba(236,181,80,.32);
+    box-shadow:0 14px 30px -14px rgba(0,0,0,.75);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px 22px;text-align:center;
+    touch-action:pan-y;cursor:grab;transition:transform .3s cubic-bezier(.2,.9,.3,1),opacity .3s,box-shadow .2s;user-select:none;-webkit-user-select:none;}
+  .tfcard.drag{transition:box-shadow .2s;cursor:grabbing;}
+  .tfq{font-size:19px;font-weight:800;line-height:1.35;}
+  .tfhint{font-size:10.5px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--mut);margin-top:10px;}
+  .tfcard[data-lean="t"]{box-shadow:0 0 0 2px rgba(53,214,160,.7),0 14px 30px -14px rgba(0,0,0,.75);}
+  .tfcard[data-lean="f"]{box-shadow:0 0 0 2px rgba(255,107,107,.7),0 14px 30px -14px rgba(0,0,0,.75);}
+  .tfcard.fly-r{transform:translateX(125%) rotate(16deg)!important;opacity:0;}
+  .tfcard.fly-l{transform:translateX(-125%) rotate(-16deg)!important;opacity:0;}
+  .tfcard.tf-in{animation:tfIn .28s cubic-bezier(.2,1.2,.4,1) backwards;}
+  @keyframes tfIn{from{transform:translateY(26px) scale(.93);opacity:0;}}
+  .tfstamp{position:absolute;top:12px;right:14px;font-size:13px;font-weight:900;letter-spacing:.12em;padding:3px 9px;border-radius:7px;border:2px solid;opacity:0;transform:rotate(12deg) scale(1.7);}
+  .tfstamp.show{opacity:1;transform:rotate(12deg) scale(1);transition:opacity .12s,transform .16s cubic-bezier(.2,1.4,.4,1);}
+  .tfstamp.ok{color:var(--ok);} .tfstamp.no{color:var(--bad);}
+  .tfbtns .btn{flex:1;}
+  /* two-way duels */
+  .duel{position:relative;flex-wrap:nowrap;}
+  .duel .hlo{flex:1;}
+  .duel .vs{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:2;width:34px;height:34px;border-radius:50%;pointer-events:none;
+    background:linear-gradient(180deg,var(--goldhi),var(--golddk));color:#1a1030;font-size:11.5px;font-weight:900;display:flex;align-items:center;justify-content:center;
+    box-shadow:0 0 0 4px var(--card),0 6px 14px rgba(0,0,0,.5);}
+  .hlo.win{animation:rtgRight .5s both;background:rgba(53,214,160,.12);}
+  .hlo.lose{opacity:.5;}
+  #rscard{transition:transform .28s cubic-bezier(.5,0,.7,.4),opacity .28s;}
+  #rscard.fly-a{transform:translate(-30%,74px) scale(.35) rotate(-10deg);opacity:0;}
+  #rscard.fly-b{transform:translate(30%,74px) scale(.35) rotate(10deg);opacity:0;}
 </style>
 </head>
 <body>
@@ -747,6 +868,27 @@
     runway:1, photosnap:1, stampit:1 };
   function taskKind(t){ return t.kind || KIND[t.cat] || 'mcq'; }
   function taskLabel(t){ return KIND_LABEL[taskKind(t)] || CAT_LABEL[t.cat] || 'Task'; }
+  // the ready card: an icon and one plain line on how to win, shown before GO
+  var KIND_ICON = { mcq:'🧠', flagid:'🏳️', capital:'🏛️', truefalse:'⚖️', higherlower:'↕️', oddoneout:'🧩',
+    memorymatch:'🃏', whack:'🔨', targettap:'🚕', mapfind:'📍', streetscout:'🛣️', zoomreveal:'🔍',
+    swingmeter:'🛫', eagleeye:'🦅', kimsgame:'👀', typeticket:'🎫', baggage:'🧳', rhythmecho:'🥁',
+    closest:'📏', closerfar:'🧭', compass:'🧭', regionsort:'🗂️', flightplan:'🗺️', globehunt:'🌡️',
+    detective:'🕵️', runway:'🛬', photosnap:'📸', stampit:'🛂', scramble:'🔤', sequence:'🔁', reaction:'🚦', order:'📊' };
+  var KIND_HOW = { mcq:'Pick the right answer.', flagid:'Name the flag.', capital:'Pick the capital.',
+    truefalse:'Swipe right for true, left for false.', higherlower:'Pick the one that wins each round.',
+    oddoneout:'Find the one that doesn\'t fit.', memorymatch:'Flip two cards at a time. Match every pair.',
+    whack:'Tap the right flag. Skip the rest.', targettap:'Tap when your taxi hits the curb.',
+    mapfind:'Drop one pin. Closer is better.', streetscout:'Look around, then pin it.',
+    zoomreveal:'Name the flag from a few pieces.', swingmeter:'Pull up when the speed hits green.',
+    eagleeye:'Find the flag that doesn\'t belong.', kimsgame:'Remember the flags. Spot the new one.',
+    typeticket:'Spell the city, letter by letter.', baggage:'Grab your bag when it hits the green zone.',
+    rhythmecho:'Listen first. Then tap the beat back.', closest:'Pick the closest one.',
+    closerfar:'Pick the one that\'s closer.', compass:'Tap the way you\'d fly.',
+    regionsort:'Sort each country into its region.', flightplan:'Tap the stops, closest first.',
+    globehunt:'Follow the heat to the hidden country.', detective:'Read the clues. Name the country.',
+    runway:'Descend, then flare right before you land.', photosnap:'Snap when it\'s in the frame.',
+    stampit:'Line it up, then press just right.', scramble:'Unscramble the word.',
+    sequence:'Watch the pattern. Repeat it.', reaction:'Tap on GO. Never on STOP.', order:'Tap them in order.' };
 
   var GHOSTS = [
     {n:'Team Fox',   f:'🦊'}, {n:'Team Wolf',  f:'🐺'}, {n:'Team Hawk',  f:'🦅'},
@@ -1295,6 +1437,10 @@
         + '<p class="muted" style="font-size:13px;line-height:1.6;margin:0">The <b>Daily Route</b> is one race a day that everybody plays the same. Your first run counts and you get a grid to share. '
         + 'Every race you get a <b>rival</b>. Finish ahead of them for bonus miles. '
         + 'You earn <b>miles</b> every stage. Spend them on extra power-ups before a race. Every country you land in gets stamped in your <b>Passport</b>.</p></div>'
+      + '<div class="card"><h3 style="font-size:15px;margin-bottom:6px">⚡ The Shortcut and the live field</h3>'
+        + '<p class="muted" style="font-size:13px;line-height:1.6;margin:0">One stage each race offers a <b>Shortcut</b>. Clear it with no misses and you skip the City Run. Miss once and every miss costs double. '
+        + 'While you play, <b>the field</b> lights up as each team finishes, so you always know if you\'re ahead. '
+        + 'You can play from a keyboard too: 1 to 4 to answer, arrows to pick a side, Space for the big button.</p></div>'
       + '<div class="btnrow"><button class="btn ghost" id="htback">‹ Back</button><button class="btn globe" id="htplay">Start the race 🌍</button></div>'
       + foot();
     $('htback').onclick=function(){ S.screen='home'; render(); };
@@ -1417,6 +1563,8 @@
     S.round = 1;
     S.usedCountries = {};
     S.skipUsed = false;
+    // the Shortcut: one mid-race stage offers a third card. Clean it and you skip the City Run.
+    S.scStage = 3 + Math.floor((S.daily ? dailyRng(0,7)() : Math.random())*4); S.scUsed=false; S.scTask=null;
     var pk=S.packed||{};
     S.boosts = { fifty:1+(pk.fifty?1:0), shield:1+(pk.shield?1:0) };    // one of each power-up per race, plus any carry-on
     S.extraSkip = pk.skip?1:0; S.packed=null;
@@ -1494,6 +1642,21 @@
   }
 
   // ---- generated game types (self-contained, no per-country authoring) ----
+  var FLAG_KIN = [
+    ['it','mx','ie','ci','hu','bg'], ['id','pl','sg','at','pe','lb','ca','jp'],
+    ['nl','ru','fr','hr','rs','sk','cz','th','cr','lu'], ['de','be','ro','co','ec','ve','bo','gh','am'],
+    ['se','no','fi','dk','is','ch','gb'], ['au','nz','fj','gb','us'], ['us','my','cu','cl','pa','do','ph','lr'],
+    ['cn','vn','tr','tn','ma','kg','sg'], ['ar','uy','gt','gr','il','fi','sv','ni'],
+    ['ae','jo','kw','iq','eg','ye','sy','sd','om'], ['gh','sn','cm','et','bo','mz','zw','za','ke','tz','ug','ng','ml'],
+    ['sa','pk','dz','bd','ir','ng','tz'], ['in','ie','ci','ne','tj'], ['ar','uy','ua','kz','bo'], ['qa','bh','lv','ge','ch','dk'] ];
+  // up to n countries whose flags look like c's, topped up at random
+  function lookalikes(c, n){
+    var me=flagISO(c.flag), kin={}, out=[];
+    FLAG_KIN.forEach(function(g){ if(g.indexOf(me)>=0) g.forEach(function(x){ if(x!==me) kin[x]=1; }); });
+    shuffle(COUNTRIES).forEach(function(x){ if(out.length<n && x.id!==c.id && kin[flagISO(x.flag)]) out.push(x); });
+    otherCountries(c, n*3).forEach(function(x){ if(out.length<n && out.indexOf(x)<0) out.push(x); });
+    return out;
+  }
   function otherCountries(c, n){ return shuffle(COUNTRIES.filter(function(x){ return x.id!==c.id; })).slice(0,n); }
   // regions can be compound (e.g. Turkey = "Europe/Asia"); two regions "share" if
   // any slash-part matches, so a transcontinental country is never a false outlier.
@@ -1561,7 +1724,7 @@
     g.push({ kind:'memorymatch', cat:'memory', type:'brain', q:'Match all the pairs', tiles:tiles.slice(0,4) });
     // Whack-A-Landmark: tap the country's flag, dodge the decoys
     g.push({ kind:'whack', cat:'reflex', type:'reflex', q:'Tap '+c.flag+' when it pops up. Ignore the others.',
-             target:c.flag, decoys:shuffle(otherCountries(c,4).map(function(x){return x.flag;})) });
+             target:c.flag, decoys:shuffle((ramp()>=0.4?lookalikes(c,4):otherCountries(c,4)).map(function(x){return x.flag;})) });
     // Quick Tap: hit the moving target
     g.push({ kind:'targettap', cat:'reflex', type:'reflex', q:'Grab a taxi. Tap when yours hits the curb.' });
     // Find It On The Map: pin-drop, scored by distance (needs coords)
@@ -1579,7 +1742,7 @@
     g.push({ kind:'swingmeter', cat:'reflex', type:'reflex', q:'Time your takeoff. Pull up when the speed hits green.' });
     // Eagle Eye: one flag in the wall doesn't belong (visual hunt)
     g.push({ kind:'eagleeye', cat:'reflex', type:'reflex', q:'One of these isn’t '+c.name+'’s flag. Find it.',
-             target:c.flag, imposters:shuffle(otherCountries(c,3).map(function(x){return x.flag;})) });
+             target:c.flag, imposters:lookalikes(c,3).map(function(x){return x.flag;}) });
     // Memory Lineup: flags flash, find the one that WASN'T shown (observation)
     g.push({ kind:'kimsgame', cat:'memory', type:'brain', q:'Memorize the flags, then find the one that wasn’t there' });
     // Type The Ticket: retype the destination shown on your boarding pass (dexterity)
@@ -1726,7 +1889,12 @@
     } else {
       S.stageType='solo'; S.offered=[pick(fresh(pool))];
     }
-    S.chosen=null;
+    S.chosen=null; S.scTask=null;
+    if(!onlineActive() && !isFinal() && !S.scUsed && S.round===S.scStage){
+      var taken=S.offered.map(function(t){ return taskKind(t); });
+      var sc=brain.filter(function(t){ var k=taskKind(t); return taken.indexOf(k)<0 && k!=='mapfind' && k!=='streetscout' && k!=='globehunt'; });
+      if(sc.length) S.scTask=pick(sc);
+    }
   }
   function noteKind(k){ S.recentKinds=(S.recentKinds||[]); S.recentKinds.push(k); if(S.recentKinds.length>3) S.recentKinds.shift(); }
 
@@ -1862,6 +2030,12 @@
         + '<div class="pr">'+esc(taskBlurb(t))+'</div></button>';
     });
     html += '</div>';
+    if(S.scTask){
+      html += '<button class="taskcard shortcut" id="scard">'
+        + '<div class="ct"><span class="catchip sc">⚡ Shortcut</span><span class="catchip">'+esc(taskLabel(S.scTask))+'</span>'
+        + '<span class="pen">miss +'+(PENALTY[S.scTask.cat]*2)+'s</span></div>'
+        + '<div class="pr">No misses and you skip the City Run. Miss once and every miss costs double.</div></button>';
+    }
     // Skip Pass (GDD §2, Fast Forward analog): once per race, take the field median
     // time. Offline only: online timing is server-authoritative.
     if(!S.skipUsed && !isFinal() && !onlineActive()){
@@ -1878,6 +2052,7 @@
       };
     });
     if($('skip')) $('skip').onclick=useSkipPass;
+    if($('scard')) $('scard').onclick=function(){ S.chosen=S.scTask; S.scUsed=true; S._scPick=true; S.phase='play'; renderStage(); };
     renderAcct();
   }
   function taskBlurb(t){
@@ -1896,16 +2071,51 @@
     var t=S.chosen, kind=taskKind(t);
     noteKind(kind);   // remember for cross-stage variety
     var _sk=statsDefault(); _sk.kinds[kind]=1; saveStats(_sk);   // track game types played (badges)
-    S.play = { start: performance.now(), misses:0, done:false, shield:false };
+    S.play = { start: performance.now(), misses:0, done:false, shield:false, fin:[], sc:!!S._scPick };
+    S._scPick=false;
+    // pace the field NOW, so the live ticker shows the exact times the Checkpoint will use
+    if(!onlineActive()){ try{ S.play.ghosts=simulateGhosts(); }catch(e){ S.play.ghosts=null; } }
+    var d=S.dest||{};
     app.innerHTML = topbar() + hud()
-      + '<div class="card">'
-        + '<div class="game-hd"><span class="cat">'+esc(taskLabel(t))+(coopTurn()?' · 👤 '+esc(coopTurn()):'')+'</span>'
+      + '<div class="card arena">'
+        + '<div class="arena-top">'+(d.flag?flagImg(d.flag,{w:30,h:20,rad:4}):'')
+          + '<span>'+(d.final?'The Final':'Stage '+S.round)+(d.name?' · <b>'+esc(d.name)+'</b>':'')+'</span></div>'
+        + '<div class="game-hd"><span class="cat">'+(S.play.sc?'⚡ Shortcut · ':'')+esc(taskLabel(t))+(coopTurn()?' · 👤 '+esc(coopTurn()):'')+'</span>'
         + '<span class="timer" id="tmr">0.0</span></div>'
+        + fieldHtml()
         + '<div id="mg"></div>'
         + '<div class="missline" id="miss"></div>'
         + '<div class="boostbar" id="boostbar"></div>'
       + '</div>' + foot();
-    startTimer();
+    readyGo(kind, function(){ startKind(t, kind); });
+    renderAcct();
+  }
+  // the ready card: what the game is, one line on how to win, then 3, 2, 1, GO.
+  // The clock starts at GO, so reading the rules never costs you time. Tap to skip.
+  function readyGo(kind, go){
+    var mg=$('mg'), p=S.play; if(!mg) return go();
+    var n=3, to=null, fired=false;
+    mg.innerHTML='<div class="ready" id="ready">'
+      + '<div class="rk-ico">'+(KIND_ICON[kind]||'🌍')+'</div>'
+      + '<div class="rk-name">'+esc(KIND_LABEL[kind]||'Challenge')+'</div>'
+      + '<div class="rk-how">'+esc(KIND_HOW[kind]||'Go fast. Misses cost time.')+'</div>'
+      + (p.sc?'<div class="rk-sc">⚡ Shortcut: no misses skips the City Run</div>':'')
+      + '<div class="rk-count" id="rkc">3</div>'
+      + '<div class="rk-tap">Tap to start now</div></div>';
+    function fire(){ if(fired || S.play!==p || !$('ready')) return; fired=true; clearTimeout(to); go(); }
+    function tick(){
+      if(fired || S.play!==p || !$('ready')) return;
+      var c=$('rkc');
+      if(n>0){ if(c){ c.textContent=String(n); retrig(c,'rk-beat'); } beep(520,0.07,'sine',0.08); n--; to=setTimeout(tick, 420); }
+      else { if(c){ c.textContent='GO'; c.classList.add('go'); retrig(c,'rk-beat'); } beep(880,0.13,'triangle',0.12); vibe(12); to=setTimeout(fire, 250); }
+    }
+    // a click (not pointerdown) so the tap that skips can't land on the game underneath
+    $('ready').onclick=function(){ if(fired) return; beep(880,0.1,'triangle',0.1); fire(); };
+    tick();
+  }
+  function startKind(t, kind){
+    S.play.start=performance.now(); startTimer();
+    var mg=$('mg'); if(mg){ retrig(mg,'mg-in'); setTimeout(function(){ if(mg) mg.classList.remove('mg-in'); }, 360); }
     if(kind==='mcq'||kind==='flagid'||kind==='capital'||kind==='oddoneout'||kind==='closest') mgMcq(t);
     else if(kind==='scramble') mgScramble(t);
     else if(kind==='sequence') mgSequence(t);
@@ -1936,7 +2146,60 @@
     else if(kind==='stampit') mgStampIt(t);
     else finishTask();   // safety
     renderBoosts(kind);
-    renderAcct();
+  }
+  // the live field: every other team, lighting up the moment they finish this
+  // challenge. Their times are the real ones the Checkpoint will use.
+  function fieldHtml(){
+    var g=S.play&&S.play.ghosts; if(!g||!g.length) return '';
+    var chips=g.map(function(x,i){
+      return '<span class="fchip'+(x.team.id===S.rivalId?' riv':'')+'" data-k="'+i+'" title="'+esc(x.team.name)+'">'+esc(x.team.flag)+'</span>';
+    }).join('');
+    return '<div class="field" id="field"><div class="fl-hd"><span>The field</span><span id="fldn"><b>0</b> of '+g.length+' done</span></div>'
+      + '<div class="fl-row">'+chips+'</div></div>';
+  }
+  function tickField(eff){
+    var p=S.play, g=p&&p.ghosts; if(!g||!g.length) return;
+    var done=0, rvIn=false;
+    g.forEach(function(x,i){
+      if(x.chal<=eff){
+        done++; if(x.team.id===S.rivalId) rvIn=true;
+        if(!p.fin[i]){ p.fin[i]=1; var el=document.querySelector('.fchip[data-k="'+i+'"]'); if(el) el.classList.add('in'); }
+      }
+    });
+    var l=$('fldn');
+    if(l && l.getAttribute('data-n')!==String(done)+rvIn){
+      l.setAttribute('data-n', String(done)+rvIn);
+      l.innerHTML=(rvIn?'<span class="rvin">Rival is done · </span>':'')+'<b>'+done+'</b> of '+g.length+' done';
+    }
+    var tm=$('tmr');
+    if(tm){ var f=done/g.length; tm.classList.toggle('hot', f<0.34); tm.classList.toggle('late', f>=0.67); }
+  }
+  // the beat between the challenge and the City Run: your time, and where it
+  // puts you right now. Tap to go on, or it moves by itself.
+  function doneBeat(raw, misses, cb){
+    var p=S.play, mg=$('mg'), card=mg&&mg.parentNode;
+    if(!card || !p) return cb();
+    var counted = Math.max(0, misses - ((p.shield && misses>0)?1:0));   // the Shield forgives one
+    var pen=(PENALTY[(S.chosen&&S.chosen.cat)||'trivia']||0)*(p.sc&&counted?2:1);
+    var eff = raw + counted*pen;
+    tickField(eff);
+    var g=p.ghosts, place='';
+    if(g&&g.length){
+      var ahead=g.filter(function(x){ return x.chal<eff; }).length;
+      place='<div class="db-place">#'+(ahead+1)+' <small>of '+(g.length+1)+' so far</small></div>';
+    }
+    var sub = counted ? fmtTime(raw)+'s + '+counted+(counted>1?' misses':' miss')
+            : (misses ? 'Shield saved your miss' : 'No misses');
+    var el=document.createElement('div'); el.className='donebeat';
+    var combo=(p.combo||0)>=3 ? '<div class="db-combo">×'+p.combo+' combo</div>' : '';
+    el.innerHTML='<div class="db-k'+(misses?'':' gold')+'">'+(misses?'Challenge done':'Perfect 🎯')+'</div>'+combo+'<div class="db-t">'+fmtTime(eff)+'<small>s</small></div>'
+      + '<div class="db-sub">'+sub+'</div>' + place
+      + (p.sc&&!counted ? '<div class="db-go sc">⚡ Shortcut! No City Run. Straight to the Checkpoint ›</div>'
+                        : '<div class="db-go">Now run to the Checkpoint ›</div>');
+    card.appendChild(el);
+    var gone=false;
+    function go(){ if(gone) return; gone=true; if(S.play!==p || !el.isConnected) return; cb(); }
+    el.onclick=go; setTimeout(go, 1200);
   }
   // ---- power-ups (Boosts): one of each per race, deployed mid-challenge ----
   var MCQ_KINDS={ mcq:1, flagid:1, capital:1, oddoneout:1, closest:1, zoomreveal:1 };
@@ -1968,25 +2231,27 @@
     stopTimer();
     S.timerId = setInterval(function(){
       var e=$('tmr'); if(!e){ stopTimer(); return; }
-      e.textContent = fmtTime((performance.now()-S.play.start)/1000);
+      var el=(performance.now()-S.play.start)/1000;
+      e.textContent = fmtTime(el);
+      if(S.play && !S.play.done) tickField(el + (S.play.misses||0)*(PENALTY[(S.chosen&&S.chosen.cat)||'trivia']||0));
     }, 100);
   }
   function stopTimer(){ if(S.timerId){ clearInterval(S.timerId); S.timerId=null; } }
   function showMiss(){
-    if(S.play && S.play.misses){ sfx('wrong'); jolt(); }   // central miss cue for every game: sting + shake + penalty flyup
+    if(S.play && S.play.misses){ sfx('wrong'); jolt(); if(S.play.sc && S.play.misses===1) toast('⚡ Shortcut lost. Misses now cost double.'); }   // central miss cue for every game: sting + shake + penalty flyup
     var e=$('miss'); if(!e) return;
     e.innerHTML = S.play.misses ? 'Misses: <b>'+S.play.misses+'</b> (+'+(S.play.misses*PENALTY[S.chosen.cat])+'s)' : '';
     if(S.play.misses) swapIn(e);   // pulse so the penalty registers without looking down
   }
-  function finishTask(){
+  function finishTask(rawOverride){
     stopTimer();
-    var raw = (performance.now()-S.play.start)/1000;
+    var raw = rawOverride!=null ? rawOverride : (performance.now()-S.play.start)/1000;
     // solve stinger, the same payoff on all 31 kinds: word + burst + a clean-solve bonus line
     var cx=window.innerWidth/2, cy=window.innerHeight*0.38;
-    flyup(S.play.misses? 'SOLVED' : 'PERFECT 🎯', 'big'+(S.play.misses?'':' gold'), cx, cy);
+    // the words live on the done beat now; the burst is the hit
     FX.burst(cx, cy, S.play.misses?40:80, Math.PI*1.7, 8); vibe(S.play.misses?14:[12,30,18]);
-    if((S.play.combo||0)>=3) flyup('×'+S.play.combo+' combo!', 'combo gold', cx, cy+40);
-    resolveRound(raw, S.play.misses, false);
+    var m=S.play.misses;
+    doneBeat(raw, m, function(){ resolveRound(raw, m, false); });
   }
 
   /* ---------- minigame: multiple choice (trivia / math) ---------- */
@@ -2000,7 +2265,7 @@
       b.onclick=function(){
         if(S.play.done) return;
         var correct = (+b.getAttribute('data-i'))===t.a;
-        if(correct){ b.classList.add('right'); popIn(b); vibe(12); sfx('correct'); FX.pop(b); S.play.done=true; setTimeout(finishTask,220); }
+        if(correct){ b.classList.add('right'); b.parentNode.classList.add('settled'); vibe(12); sfx('correct'); FX.pop(b); S.play.done=true; setTimeout(finishTask,380); }
         else{ b.classList.add('wrong'); b.disabled=true; S.play.misses++; showMiss(); }
       };
     });
@@ -2030,7 +2295,7 @@
     Array.prototype.forEach.call(document.querySelectorAll('.opt'), function(b){
       b.onclick=function(){
         if(S.play.done) return;
-        if((+b.getAttribute('data-i'))===t.a){ b.classList.add('right'); popIn(b); vibe(12); sfx('correct'); FX.pop(b); frRevealAll(); S.play.done=true; setTimeout(finishTask,320); }
+        if((+b.getAttribute('data-i'))===t.a){ b.classList.add('right'); b.parentNode.classList.add('settled'); vibe(12); sfx('correct'); FX.pop(b); frRevealAll(); S.play.done=true; setTimeout(finishTask,420); }
         else{ b.classList.add('wrong'); b.disabled=true; S.play.misses++; showMiss(); frReveal(); }
       };
     });
@@ -2075,17 +2340,18 @@
     };
     // normalize built to chars for slot rendering
   }
+  function solvedWave(el){ if(!el) return; Array.prototype.forEach.call(el.children, function(c,i){ c.style.setProperty('--i', i); }); el.classList.add('solved'); }
   function builtStr(){ return S.scr.built.map(function(x){return x.ch;}).join(''); }
   function checkScramble(t){
     var answer=t.answer.toUpperCase();
     // re-render with the new letter placed
     var slots='';
     for(var i=0;i<answer.length;i++){ var e=S.scr.built[i]; slots+='<div class="tileslot'+(e?' filled':'')+'">'+(e?esc(e.ch):'')+'</div>'; }
-    var slotEl=document.querySelector('.slot'); if(slotEl) slotEl.innerHTML=slots;
+    var slotEl=document.querySelector('.slot'); if(slotEl){ slotEl.innerHTML=slots; var nw=slotEl.children[S.scr.built.length-1]; if(nw) popIn(nw); }
     var bankEls=document.querySelectorAll('.ltile');
     S.scr.built.forEach(function(x){ if(bankEls[x.i]) bankEls[x.i].classList.add('used'); });
     if(S.scr.built.length===answer.length){
-      if(builtStr()===answer){ sfx('correct'); vibe(14); S.play.done=true; setTimeout(finishTask,200); }
+      if(builtStr()===answer){ sfx('correct'); vibe(14); S.play.done=true; solvedWave(slotEl); setTimeout(finishTask,520); }
       else{ S.play.misses++; showMiss();
         // clear the wrong attempt (board glides back in rather than hard-cutting)
         S.scr.built=[]; S.scr.used=[]; setTimeout(function(){ if(!S.play.done){ renderScramble(t); swapIn(document.querySelector('.slot')); } },350); }
@@ -2121,7 +2387,7 @@
       S.play.start=performance.now(); startTimer();   // start timing the input phase
       return;
     }
-    var el=seqTile(S.seq.seq[k]); if(el) el.classList.add('lit');
+    var el=seqTile(S.seq.seq[k]); if(el) el.classList.add('lit'); beep(330+S.seq.seq[k]*95,0.2,'sine',0.09);
     setTimeout(function(){ if(el) el.classList.remove('lit');
       setTimeout(function(){ playSequence(t,k+1); }, 220);
     }, 600);
@@ -2131,7 +2397,7 @@
     var want=S.seq.seq[S.seq.input.length];
     if(i===want){
       S.seq.input.push(i);
-      el.classList.add('tap'); setTimeout(function(){ if(el) el.classList.remove('tap'); },180);
+      el.classList.add('tap'); popIn(el); beep(330+i*95,0.14,'sine',0.08); setTimeout(function(){ if(el) el.classList.remove('tap'); },180);
       seqStatus();
       if(S.seq.input.length===S.seq.seq.length){ sfx('correct'); vibe(14); S.play.done=true; setTimeout(finishTask,220); }
     } else {
@@ -2201,10 +2467,11 @@
     else if(kind==='stopTap'){ S.play.misses++; showMiss(); S.rx.msg='That was STOP!'; S.rx.sub='+1 miss'; }
     else /* early */{ S.play.misses++; showMiss(); S.rx.msg='Too soon!'; S.rx.sub='+1 miss · wait for it'; }
     S.rx.state='fb'; renderReaction(t);
+    tickField(0.8 + S.rx.sum/1000 + S.play.misses*(PENALTY[t.cat]||0));
     if(S.rx.go>=S.rx.need){
       S.play.done=true;
       var raw = 0.8 + S.rx.sum/1000;   // small overhead + summed reaction time (incl. slow penalties)
-      S.rx.to=setTimeout(function(){ resolveRound(raw, S.play.misses, false); }, 650);
+      S.rx.to=setTimeout(function(){ finishTask(raw); }, 650);
     } else {
       S.rx.to=setTimeout(function(){ if(!S.play.done) reactBegin(t); }, 750);
     }
@@ -2329,27 +2596,48 @@
   function mgTrueFalse(t){
     S.tf={ i:0, items:t.items };
     $('mg').innerHTML='<div class="seqstatus" id="tfst"></div>'
-      + '<div class="prompt" id="tfq" style="text-align:center;min-height:56px;display:flex;align-items:center;justify-content:center"></div>'
-      + '<div class="btnrow"><button class="btn ghost" id="tft" style="flex:1">✓ True</button>'
-      + '<button class="btn ghost" id="tff" style="flex:1">✗ False</button></div>';
+      + '<div class="tfdeck"><div class="tfcard" id="tfcard"><div class="tfstamp" id="tfstamp"></div>'
+        + '<div class="tfq" id="tfq"></div><div class="tfhint">Swipe or tap</div></div></div>'
+      + '<div class="btnrow tfbtns"><button class="btn ghost" id="tff">✗ False</button>'
+      + '<button class="btn ghost" id="tft">✓ True</button></div>';
     $('tft').onclick=function(){ tfAns(t,true,this); }; $('tff').onclick=function(){ tfAns(t,false,this); };
+    tfDrag(t);
     tfPaint();
+  }
+  // drag the card: past 70px it counts as an answer, right is true, left is false
+  function tfDrag(t){
+    var c=$('tfcard'); if(!c) return; var x0=null, dx=0;
+    c.addEventListener('pointerdown', function(e){ if(S.play.done||S.tf.lock) return; x0=e.clientX; dx=0; try{ c.setPointerCapture(e.pointerId); }catch(_){} c.classList.add('drag'); });
+    c.addEventListener('pointermove', function(e){ if(x0==null) return; dx=e.clientX-x0;
+      c.style.transform='translateX('+dx+'px) rotate('+(dx/16).toFixed(1)+'deg)'; c.setAttribute('data-lean', dx>30?'t':(dx<-30?'f':'')); });
+    function up(){ if(x0==null) return; x0=null; c.classList.remove('drag');
+      if(Math.abs(dx)>70) tfAns(t, dx>0, dx>0?$('tft'):$('tff'));
+      else { c.style.transform=''; c.setAttribute('data-lean',''); } }
+    c.addEventListener('pointerup', up); c.addEventListener('pointercancel', up);
   }
   function tfPaint(){
     var st=$('tfst'); if(st) st.innerHTML='Statement <b>'+(S.tf.i+1)+'</b>/'+S.tf.items.length;
-    var q=$('tfq'); if(q){ q.textContent=S.tf.items[S.tf.i].s; swapIn(q); }
+    var c=$('tfcard');
+    // reset with transitions off, or the new card slides back from where the old one flew
+    if(c){ c.style.transition='none'; c.className='tfcard'; c.style.transform=''; c.setAttribute('data-lean',''); void c.offsetWidth; c.style.transition=''; }
+    var sp=$('tfstamp'); if(sp){ sp.className='tfstamp'; sp.textContent=''; }
+    var q=$('tfq'); if(q) q.textContent=S.tf.items[S.tf.i].s;
+    if(c) retrig(c,'tf-in');
   }
   function tfAns(t,ans,btn){
     if(S.play.done || S.tf.lock) return;
     var ok = (ans===S.tf.items[S.tf.i].t);
     if(ok) sfx('tap'); else { S.play.misses++; showMiss(); }
     if(btn) btn.style.borderColor = ok?'var(--ok)':'var(--bad)';
-    S.tf.lock=true;   // feedback beat, same pacing as the MCQ games' 220ms
+    var c=$('tfcard'), sp=$('tfstamp');
+    if(sp){ sp.textContent=ans?'TRUE':'FALSE'; sp.className='tfstamp show '+(ok?'ok':'no'); }
+    if(c){ c.classList.remove('tf-in'); c.style.transform=''; setTimeout(function(){ if(c) c.classList.add(ans?'fly-r':'fly-l'); }, 90); }
+    S.tf.lock=true;   // feedback beat: the stamp lands, the card flies off
     setTimeout(function(){
       S.tf.lock=false; if(btn) btn.style.borderColor='';
       S.tf.i++;
       if(S.tf.i>=S.tf.items.length){ S.play.done=true; finishTask(); } else tfPaint();
-    },240);
+    },360);
   }
 
   /* ---------- minigame: Higher or Lower (compare a stat) ----------
@@ -2358,8 +2646,8 @@
     S.hl={ round:0, rounds:t.rounds||3, items:t.items };
     $('mg').innerHTML='<div class="seqstatus" id="hlst"></div>'
       + '<div class="prompt" style="text-align:center">'+esc(t.q)+'</div>'
-      + '<div class="btnrow"><button class="btn ghost hlo" data-i="0" style="flex:1"></button>'
-      + '<button class="btn ghost hlo" data-i="1" style="flex:1"></button></div>';
+      + '<div class="btnrow duel"><button class="btn ghost hlo" data-i="0"></button><div class="vs">VS</div>'
+      + '<button class="btn ghost hlo" data-i="1"></button></div>';
     each('.hlo', function(b){ b.onclick=function(){ hlAns(t, +b.getAttribute('data-i'), b); }; });
     hlPaint();
   }
@@ -2389,14 +2677,14 @@
     each('.hlo', function(b){
       var j=+b.getAttribute('data-i'), win=(lowerWins ? p[j].value<=p[1-j].value : p[j].value>=p[1-j].value);
       b.innerHTML=esc(p[j].label)+'<span class="revval">'+coordLabel(p[j].value,t.dir)+'</span>';
-      b.style.borderColor = win?'var(--ok)':'var(--bad)';
+      b.style.borderColor = win?'var(--ok)':'var(--bad)'; b.classList.add(win?'win':'lose');
     });
     S.hl.lock=true;
     setTimeout(function(){
-      S.hl.lock=false; each('.hlo', function(b){ b.style.borderColor=''; });
+      S.hl.lock=false; each('.hlo', function(b){ b.style.borderColor=''; b.classList.remove('win','lose'); });
       S.hl.round++;
       if(S.hl.round>=S.hl.rounds){ S.play.done=true; finishTask(); } else hlPaint();
-    },240);
+    },420);
   }
 
   /* ---------- minigame: Memory Match (concentration) ----------
@@ -2405,32 +2693,36 @@
   function mgMemoryMatch(t){
     var cards=shuffle(t.tiles.concat(t.tiles)).map(function(e,i){ return { id:i, em:e, up:false, done:false }; });
     S.mm={ cards:cards, open:[] };
-    var grid=cards.map(function(c){ return '<div class="seqtile mmc" data-id="'+c.id+'">❓</div>'; }).join('');
-    $('mg').innerHTML='<div class="prompt" style="text-align:center">Flip the cards, match all the pairs</div>'
-      + '<div class="seqgrid" style="max-width:280px;margin:8px auto 0">'+grid+'</div>';
+    var grid=cards.map(function(c){
+      return '<div class="mmc" data-id="'+c.id+'"><div class="mmin"><div class="mmf mmback">🌍</div>'
+        + '<div class="mmf mmface">'+flagImg(c.em,{w:40,h:27,rad:4})+'</div></div></div>';
+    }).join('');
+    $('mg').innerHTML='<div class="prompt" style="text-align:center">Flip two cards at a time. Match all the pairs.</div>'
+      + '<div class="mmgrid">'+grid+'</div>';
     each('.mmc', function(b){ b.onclick=function(){ mmFlip(+b.getAttribute('data-id')); }; });
   }
-  function mmPaint(id, pop){
+  function mmPaint(id){
     var c=S.mm.cards[id], el=document.querySelector('.mmc[data-id="'+id+'"]');
     if(!c||!el) return;
-    el.textContent=(c.up||c.done)?c.em:'❓';
-    el.classList.toggle('lit', c.up&&!c.done);
-    el.classList.toggle('tap', c.done);
-    if(pop) popIn(el);
+    el.classList.toggle('up', c.up||c.done);
+    el.classList.toggle('done', c.done);
+    if(!c.up) el.classList.remove('no');
   }
   function mmFlip(id){
     if(S.play.done) return;
     var c=S.mm.cards[id]; if(!c||c.up||c.done||S.mm.open.length>=2) return;
-    c.up=true; S.mm.open.push(id); mmPaint(id, true);
+    c.up=true; S.mm.open.push(id); mmPaint(id); beep(700,0.04,'triangle',0.05);
     if(S.mm.open.length===2){
       var a=S.mm.cards[S.mm.open[0]], b=S.mm.cards[S.mm.open[1]];
       if(a.em===b.em){
-        sfx('correct'); vibe(12); a.done=b.done=true; S.mm.open=[]; mmPaint(a.id); mmPaint(b.id);
+        a.done=b.done=true; S.mm.open=[];
+        setTimeout(function(){ sfx('correct'); vibe(12); mmPaint(a.id); mmPaint(b.id); }, 260);
         var all=true; S.mm.cards.forEach(function(x){ if(!x.done) all=false; });
-        if(all){ S.play.done=true; setTimeout(finishTask,260); }
+        if(all){ S.play.done=true; setTimeout(finishTask,720); }
       } else {
-        S.play.misses++; showMiss();
-        setTimeout(function(){ a.up=false; b.up=false; S.mm.open=[]; if(!S.play.done){ mmPaint(a.id); mmPaint(b.id); } }, 720);
+        setTimeout(function(){ if(S.play.done) return; S.play.misses++; showMiss();
+          [a,b].forEach(function(x){ var e2=document.querySelector('.mmc[data-id="'+x.id+'"]'); if(e2) e2.classList.add('no'); }); }, 300);
+        setTimeout(function(){ a.up=false; b.up=false; S.mm.open=[]; if(!S.play.done){ mmPaint(a.id); mmPaint(b.id); } }, 820);
       }
     }
   }
@@ -2441,17 +2733,21 @@
     // pop rate speeds up (820→560ms) and one more hit is needed on later Stages
     var d=ramp(), tick=Math.round(900-220*d);   // hold each pop a touch longer so it doesn't vanish mid-reach
     S.wk={ hits:0, need:5+Math.round(d), cells:[null,null,null,null,null,null,null,null,null], timer:null };
-    var cells=''; for(var i=0;i<9;i++){ cells+='<div class="seqtile wkc" data-i="'+i+'"></div>'; }
+    var cells=''; for(var i=0;i<9;i++){ cells+='<div class="wkc" data-i="'+i+'" data-v=""><div class="wkmole"></div><div class="wkhole"></div></div>'; }
     $('mg').innerHTML='<div class="seqstatus" id="wkst"></div>'
-      + '<div class="prompt" style="text-align:center">'+esc(t.q)+'</div>'
-      + '<div class="seqgrid" style="max-width:260px;margin:8px auto 0">'+cells+'</div>';
+      + '<div class="prompt" style="text-align:center">Tap '+flagImg(t.target,{w:30,h:20,rad:3})+' when it pops up. Skip the others.</div>'
+      + '<div class="wkgrid">'+cells+'</div>';
     each('.wkc', function(b){ fastTap(b, function(){ whackTap(t, +b.getAttribute('data-i')); }); });
     wkStatus(); S.wk.timer=setInterval(function(){ tickWhack(t); }, tick); tickWhack(t);
   }
   function wkStatus(){ var e=$('wkst'); if(e) e.innerHTML='Hits <b>'+S.wk.hits+'</b>/'+S.wk.need; }
   function wkCell(i){ return document.querySelector('.wkc[data-i="'+i+'"]'); }
   function wkPaint(){ for(var i=0;i<9;i++){ var el=wkCell(i); if(!el) continue; var v=S.wk.cells[i]||'';
-    if(el.textContent!==v){ el.textContent=v; if(v) popIn(el); else el.classList.remove('pop-in'); } } }
+    if(el.getAttribute('data-v')!==v){ el.setAttribute('data-v',v); el.classList.remove('bonk','bad');
+      var m=el.querySelector('.wkmole');
+      if(v){ if(m) m.innerHTML=flagImg(v,{w:46,h:31,rad:4}); retrig(el,'up'); } else el.classList.remove('up'); } } }
+  function wkHit(el, good){ if(!el) return; el.setAttribute('data-v',''); el.classList.remove('up'); retrig(el, good?'bonk':'bad');
+    if(!good) setTimeout(function(){ if(el) el.classList.remove('bad'); },340); }
   function tickWhack(t){
     if(S.play.done || !$('wkst')){ clearInterval(S.wk.timer); return; }
     var cells=[null,null,null,null,null,null,null,null,null];
@@ -2464,9 +2760,9 @@
   function whackTap(t,i){
     if(S.play.done) return;
     var c=S.wk.cells[i]; if(!c){ var ec=wkCell(i); if(ec) retrig(ec,'hitflash'); return; }   // empty tap: brief flash so it feels registered
-    if(c===t.target){ S.wk.hits++; S.wk.cells[i]=null; var el=wkCell(i); if(el) el.textContent=''; wkStatus();
+    if(c===t.target){ S.wk.hits++; S.wk.cells[i]=null; wkHit(wkCell(i), true); sfx('correct'); wkStatus();
       if(S.wk.hits>=S.wk.need){ S.play.done=true; clearInterval(S.wk.timer); finishTask(); return; }
-    } else { S.play.misses++; showMiss(); S.wk.cells[i]=null; var el2=wkCell(i); if(el2) el2.textContent=''; }
+    } else { S.play.misses++; showMiss(); S.wk.cells[i]=null; wkHit(wkCell(i), false); }
   }
 
   /* ---------- minigame: Quick Tap (reflex) ---------- */
@@ -2617,7 +2913,7 @@
     var n=Math.min(24, S.ee.n + S.ee.round*3);
     var imp=t.imposters[S.ee.round % t.imposters.length] || t.imposters[0];
     var at=Math.floor(Math.random()*n), tiles='';
-    for(var i=0;i<n;i++){ tiles+='<div class="seqtile eet" data-b="'+(i===at?1:0)+'" style="width:52px;height:52px;font-size:27px">'+(i===at?imp:t.target)+'</div>'; }
+    for(var i=0;i<n;i++){ tiles+='<div class="seqtile eet" data-b="'+(i===at?1:0)+'" style="width:52px;height:52px">'+flagImg(i===at?imp:t.target,{w:38,h:26,rad:3})+'</div>'; }
     $('mg').innerHTML='<div class="seqstatus">Found <b>'+S.ee.round+'</b>/'+S.ee.rounds+'</div>'
       + '<div class="prompt" style="text-align:center">'+esc(t.q)+'</div>'
       + '<div class="seqgrid swap-in" style="max-width:340px;margin:8px auto 0;gap:8px">'+tiles+'</div>';
@@ -2644,14 +2940,14 @@
     S.km.intruder=flags[S.km.k];
     var shown=flags.slice(0, S.km.k);
     S.km.opts=shuffle([S.km.intruder].concat(shuffle(shown).slice(0,3)));
-    var tiles=shown.map(function(f){ return '<div class="seqtile" style="width:54px;height:54px;font-size:28px">'+f+'</div>'; }).join('');
+    var tiles=shown.map(function(f,i){ return '<div class="seqtile kms pop-in" style="width:54px;height:54px;animation-delay:'+(i*70)+'ms">'+flagImg(f,{w:40,h:27,rad:3})+'</div>'; }).join('');
     $('mg').innerHTML='<div class="seqstatus">Lineup <b>'+(S.km.round+1)+'</b>/'+S.km.rounds+'</div>'
       + '<div class="prompt" style="text-align:center">👀 Memorize the lineup…</div>'
       + '<div class="seqgrid swap-in" id="kmshow" style="max-width:340px;margin:8px auto 0">'+tiles+'</div>';
     setTimeout(function(){ if(!S.play.done && $('kmshow')) kimAsk(t); }, S.km.flashMs);
   }
   function kimAsk(t){
-    var opts=S.km.opts.map(function(f){ return '<div class="seqtile kmo" data-f="'+f+'" style="width:58px;height:58px;font-size:30px">'+f+'</div>'; }).join('');
+    var opts=S.km.opts.map(function(f){ return '<div class="seqtile kmo" data-f="'+f+'" style="width:60px;height:60px">'+flagImg(f,{w:44,h:30,rad:4})+'</div>'; }).join('');
     $('mg').innerHTML='<div class="seqstatus">Lineup <b>'+(S.km.round+1)+'</b>/'+S.km.rounds+'</div>'
       + '<div class="prompt" style="text-align:center">Which flag <b style="color:var(--bad)">wasn\'t</b> there?</div>'
       + '<div class="seqgrid swap-in" style="margin-top:8px">'+opts+'</div>';
@@ -2700,7 +2996,8 @@
       S.tk.idx++;
       while(S.tk.word[S.tk.idx]===' ') S.tk.idx++;   // spaces fill themselves
       var s=$('tkslots'); if(s) s.innerHTML=tkSlots();   // slots aren't tappable, safe to rebuild
-      if(S.tk.idx>=S.tk.word.length){ S.play.done=true; setTimeout(finishTask,200); }
+      if(s){ var nw2=s.querySelectorAll('.tileslot.filled'); if(nw2.length) popIn(nw2[nw2.length-1]); }
+      if(S.tk.idx>=S.tk.word.length){ S.play.done=true; solvedWave(s); sfx('correct'); setTimeout(finishTask,520); }
     } else {
       S.play.misses++; showMiss();
       el.style.borderColor='var(--bad)'; setTimeout(function(){ if(el) el.style.borderColor=''; },300);
@@ -2854,8 +3151,8 @@
     S.cf={ i:0, rounds:t.pairs.length };
     $('mg').innerHTML='<div class="seqstatus" id="cfst"></div>'
       + '<div class="prompt" style="text-align:center">'+esc(t.q)+'</div>'
-      + '<div class="btnrow"><button class="btn ghost hlo" data-i="0" style="flex:1"></button>'
-      + '<button class="btn ghost hlo" data-i="1" style="flex:1"></button></div>';
+      + '<div class="btnrow duel"><button class="btn ghost hlo" data-i="0"></button><div class="vs">VS</div>'
+      + '<button class="btn ghost hlo" data-i="1"></button></div>';
     each('.hlo', function(b){ b.onclick=function(){ cfAns(t, +b.getAttribute('data-i'), b); }; });
     cfPaint(t);
   }
@@ -2873,14 +3170,14 @@
     each('.hlo', function(b){
       var j=+b.getAttribute('data-i'), it=(j===0?p.a:p.b);
       b.innerHTML=esc(it.label)+'<span class="revval">'+Math.round(it.d).toLocaleString()+' km</span>';
-      b.style.borderColor = (j===win)?'var(--ok)':'var(--bad)';
+      b.style.borderColor = (j===win)?'var(--ok)':'var(--bad)'; b.classList.add(j===win?'win':'lose');
     });
     S.cf.lock=true;
     setTimeout(function(){
-      S.cf.lock=false; each('.hlo', function(b){ b.style.borderColor=''; });
+      S.cf.lock=false; each('.hlo', function(b){ b.style.borderColor=''; b.classList.remove('win','lose'); });
       S.cf.i++;
       if(S.cf.i>=S.cf.rounds){ S.play.done=true; finishTask(); } else cfPaint(t);
-    },240);
+    },420);
   }
 
   /* ---------- minigame: Compass Chase (tap the direction, 2-3 rounds) ---------- */
@@ -2958,19 +3255,20 @@
     var st=$('rsst'); if(st) st.innerHTML='Sorted <b>'+S.rs.i+'</b>/'+S.rs.queue.length;
     var f=$('rsflag'); if(f) f.innerHTML=flagImg(q.flag,{w:104,h:70,rad:11,cls:'hero'});
     var n=$('rsname'); if(n) n.textContent=q.name;
-    swapIn($('rscard'));
+    var cd=$('rscard'); if(cd){ cd.style.transition='none'; cd.classList.remove('fly-a','fly-b'); void cd.offsetWidth; cd.style.transition=''; popIn(cd); }
   }
   function rsAns(t,r,btn){
     if(S.play.done || S.rs.lock) return;
     var ok = (r===S.rs.queue[S.rs.i].region);
     if(ok) sfx('tap'); else { S.play.misses++; showMiss(); }
     if(btn) btn.style.borderColor = ok?'var(--ok)':'var(--bad)';
+    var cd=$('rscard'); if(cd) cd.classList.add(btn&&btn.classList.contains('a')?'fly-a':'fly-b');
     S.rs.lock=true;
     setTimeout(function(){
       S.rs.lock=false; if(btn) btn.style.borderColor='';
       S.rs.i++;
       if(S.rs.i>=S.rs.queue.length){ S.play.done=true; finishTask(); } else rsPaint();
-    },240);
+    },300);
   }
 
   /* ---------- minigame: Pilot The Landing (controllable descent) ----------
@@ -3285,7 +3583,7 @@
       + '<circle cx="'+vx+'" cy="'+vy+'" r="3" fill="#EE5A44"/>'
       + '<circle cx="'+cx+'" cy="'+cy+'" r="3.2" fill="#35d6a0" stroke="#fff" stroke-width="0.5"/>');
     var h=$('maphint'); if(h) h.innerHTML='You were <b>'+Math.round(d).toLocaleString()+' km</b> away · '+(miss===0?'bullseye! 🎯':('+'+miss+' miss'+(miss>1?'es':'')));
-    setTimeout(function(){ resolveRound(raw, miss, false); }, 1500);
+    setTimeout(function(){ doneBeat(raw, miss, function(){ resolveRound(raw, miss, false); }); }, 1500);
   }
 
   /* ---------- minigame: Globe Hunt (Globle-style "warmer / colder" hunt) ----------
@@ -3457,6 +3755,27 @@
   }
   function ssKill(){ try{ if(S.ssViewer&&S.ssViewer.remove) S.ssViewer.remove(); }catch(e){} S.ssViewer=null; }
 
+
+  // keyboard play: 1-4 (or A-D) answer, arrows pick a side, Space hits the main control
+  document.addEventListener('keydown', function(e){
+    if(S.screen!=='stage' || S.phase!=='play' || !S.play || e.metaKey || e.ctrlKey || e.altKey) return;
+    var tg=e.target && e.target.tagName; if(tg==='INPUT' || tg==='TEXTAREA') return;
+    var k=e.key||'';
+    var rd=$('ready'); if(rd){ if(k===' '||k==='Enter'){ e.preventDefault(); rd.click(); } return; }
+    if(S.play.done || document.querySelector('.donebeat')) return;
+    function press(el){ if(el && !el.disabled){ e.preventDefault(); el.click(); return true; } return false; }
+    var idx='1234'.indexOf(k); if(idx<0 && k.length===1) idx='abcd'.indexOf(k.toLowerCase());
+    var opts=document.querySelectorAll('#mg .opts .opt');
+    if(opts.length && idx>=0 && idx<opts.length){ press(opts[idx]); return; }
+    if($('tft')){ if(k==='ArrowRight'||k==='t'||k==='T'){ press($('tft')); return; } if(k==='ArrowLeft'||k==='f'||k==='F'){ press($('tff')); return; } }
+    var duo=document.querySelectorAll('#mg .hlo');
+    if(duo.length===2){ if(k==='ArrowLeft'||k==='1'){ press(duo[0]); return; } if(k==='ArrowRight'||k==='2'){ press(duo[1]); return; } }
+    if(k===' '||k==='Enter'){
+      var main=$('tobtn')||$('rwbtn')||$('psshut')||$('stfield')||$('hrfield')||$('bgfield')||$('rbox')||$('repad');
+      if(main){ e.preventDefault(); main.click(); }
+    }
+  });
+
   /* -------------------------------------------------- Skip Pass (field median) */
   function useSkipPass(){
     if(S.extraSkip>0) S.extraSkip--; else S.skipUsed=true;
@@ -3481,8 +3800,9 @@
       var misses = (Math.random() < clampP(t.skill)) ? 1 : 0;
       if(Math.random() < clampP(t.skill)*0.4) misses++;
       // challenge time + the City Run to the Checkpoint (every team runs it)
-      var eff = base * t.skill * rnd(0.9,1.12) + misses*pen + RUN_BASE * t.skill * rnd(0.85,1.15);
-      return { team:t, eff:eff };
+      var chal = base * t.skill * rnd(0.9,1.12) + misses*pen;
+      var eff = chal + RUN_BASE * t.skill * rnd(0.85,1.15);
+      return { team:t, eff:eff, chal:chal };
     });
   }
   function clampP(skill){ var p=(skill-0.8)*0.45; return Math.max(0, Math.min(0.55, p)); }
@@ -3494,8 +3814,9 @@
     // Amazing-Race beat: after the challenge you still have to SPRINT THE CITY to
     // the Checkpoint mat, and that run counts. Intercept the first resolve, play
     // the City Run, then come back through here with the combined time.
+    if(!skipped && !S._runDone && S.play && S.play.sc && playerMisses===0){ S._runDone=true; S._scWin=true; }
     if(!skipped && !S._runDone){
-      S._runPend={ raw:playerRaw, misses:playerMisses, ghosts:preGhosts||null };
+      S._runPend={ raw:playerRaw, misses:playerMisses, ghosts:preGhosts||(S.play&&S.play.ghosts)||null };
       stopTimer(); S.phase='run'; renderStage(); return;
     }
     var act = S._runPend ? S._runPend.raw : playerRaw;      // challenge-only time
@@ -3503,8 +3824,10 @@
     S._runDone=false; S._runPend=null;
     if(onlineActive()){ return duoSubmit(playerRaw, playerMisses, act, runT); }   // two-devices duo: post my time, combine on the leaderboard
     var pen = PENALTY[(S.chosen&&S.chosen.cat) || 'trivia'];
+    var sc = (!skipped && S.play && S.play.sc) ? (S._scWin?'win':'fail') : null; S._scWin=false;
+    if(sc==='fail') pen*=2;
     var playerEff = skipped ? playerRaw : (playerRaw + playerMisses*pen);
-    S.lastResult = { raw:playerRaw, act:act, runT:runT, misses:playerMisses, eff:playerEff, skipped:!!skipped, pen:pen };
+    S.lastResult = { raw:playerRaw, act:act, runT:runT, misses:playerMisses, eff:playerEff, skipped:!!skipped, pen:pen, sc:sc };
 
     var ghosts = preGhosts || simulateGhosts();
     // stamp this round's effective time onto every alive team
@@ -3727,7 +4050,9 @@
       body = '<div class="breakdown"><span>Challenge <b>'+fmtTime(r.act!=null?r.act:r.raw)+'s</b></span>'
         + (r.runT?'<span>City Run <b>'+fmtTime(r.runT)+'s</b></span>':'')
         + '<span>Misses <b>'+r.misses+'</b> (+'+(r.misses*r.pen)+'s)</span></div>'
-        + (S._shieldSaved ? '<div class="muted" style="font-size:12px;margin-top:8px;color:var(--ok)">🛡️ Shield saved you a miss</div>' : '');
+        + (S._shieldSaved ? '<div class="muted" style="font-size:12px;margin-top:8px;color:var(--ok)">🛡️ Shield saved you a miss</div>' : '')
+        + (r.sc==='win' ? '<div class="muted" style="font-size:12.5px;margin-top:8px;color:var(--goldhi);font-weight:800">⚡ Shortcut cleared. You skipped the City Run.</div>'
+          : r.sc==='fail' ? '<div class="muted" style="font-size:12.5px;margin-top:8px;color:#ff8d84;font-weight:800">⚡ Shortcut lost. Your misses cost double.</div>' : '');
     }
     S._shieldSaved=false;
     app.innerHTML = topbar() + hud()
@@ -4017,6 +4342,7 @@
     else {
       add(40,'cleared');
       if(r.misses===0) add(25,'no misses');
+      if(r.sc==='win') add(100,'Shortcut');
       if(S.streak>=2) add(10*Math.min(S.streak,5),'streak');
     }
     var field=aliveTeams().filter(function(t){ return t.eff!=null; }).sort(function(a,b){ return a.eff-b.eff; });
@@ -4033,7 +4359,7 @@
   function milesRow(){
     var m=S.lastMiles; if(!m || !m.total) return '';
     return '<div><div class="milesrow">✈️ <b id="milesn">+'+m.total+'</b> miles'
-      + '<span>· '+m.parts.map(function(p){ return p[0]+' '+esc(p[1]); }).join(' · ')+'</span></div></div>';
+      + '<span style="flex-basis:100%">'+m.parts.map(function(p){ return p[0]+' '+esc(p[1]); }).join(' · ')+'</span></div></div>';
   }
   function countUp(el, to, dur, prefix){
     if(!el) return; prefix=prefix||'';
