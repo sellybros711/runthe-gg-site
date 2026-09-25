@@ -12951,11 +12951,38 @@ function drawPlateView(ctx, w, h, t, pitch, inWindup, theme) {
       ballDrawn = true;
     } else {
       drawTarget(mitt[0], mitt[1]);
-      for (let gi = 3; gi >= 1; gi--) {
-        const gp = platePitchPos(P, pitch, t - gi * 0.035);
-        if (gp.e <= 0) continue;
-        ctx.fillStyle = `rgba(255,255,255,${0.34 - gi * 0.08})`;
-        ctx.beginPath(); ctx.arc(gp.x, gp.y, gp.r * 0.9, 0, Math.PI * 2); ctx.fill();
+      /* A TAPERED STROKE, NOT THREE DISCS, which is the comet the wide
+         camera already draws on a big hit, arriving at the view this game
+         is actually played from. Three ghosts at 26, 18 and 10 percent
+         white with no dark edge read as three separate balls on grass and
+         as NOTHING over the keyhole, which the composition pass laid down
+         the middle of this exact picture: photographed on a desktop, three
+         tan blobs on tan ground with a gap between the last one and the
+         ball. The streak is what makes a pitch's SPEED read, and speed is
+         the whole of what a batter is timing.
+
+         It is sampled through `platePitchPos`, so it is the path the ball
+         actually took: a curveball's trail bends with the curveball. Dark
+         edge first and then the white, wide at the ball and gone at the
+         tail, so it reads as motion rather than as a string of balls. */
+      {
+        const pts = [];
+        for (let k = 8; k >= 0; k--) {
+          const gp = platePitchPos(P, pitch, t - k * 0.016);
+          if (gp.e <= 0) continue;
+          pts.push([gp.x, gp.y, gp.r, 1 - k / 9]);
+        }
+        if (pts.length > 1) {
+          ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+          for (const [edge, col] of [[true, '10,20,30'], [false, '255,255,255']]) {
+            for (let k = 1; k < pts.length; k++) {
+              const [ax, ay] = pts[k - 1], [bx2, by2, br, bu] = pts[k];
+              ctx.strokeStyle = `rgba(${col},${(edge ? 0.30 : 0.60) * (0.08 + 0.92 * bu)})`;
+              ctx.lineWidth = br * (0.30 + 0.95 * bu) + (edge ? 2 : 0);
+              ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(bx2, by2); ctx.stroke();
+            }
+          }
+        }
       }
       ctx.fillStyle = 'rgba(0,0,0,.25)';
       ctx.beginPath(); ctx.arc(bp.x + 1.5, bp.y + 1.5, bp.r, 0, Math.PI * 2); ctx.fill();
@@ -13928,35 +13955,66 @@ function drawField(ctx, w, h, t, pitch, inWindup) {
     /* Per-pitch flight character: fastball rides straight and hard, the
        curveball bends late and big, the changeup floats then dies. */
     if (pitch.pt === 'changeup') e = Math.pow(e, 1.45);
-    let ballX = bx + (px - bx) * e;
-    let ballY = by + (py - by) * e;
-    if (pitch.pt === 'curveball') {
-      /* Late break: barely moves early, sweeps hard in the last third. */
-      const bend = Math.pow(e, 2.2) * Math.sin(e * Math.PI);
-      ballX += bend * 34 * (pitch.ideal < 0.5 ? -1 : 1);
-    } else if (pitch.pt === 'screwball') {
-      /* The curveball's mirror: it breaks the other way. */
-      const bend = Math.pow(e, 2.2) * Math.sin(e * Math.PI);
-      ballX -= bend * 34 * (pitch.ideal < 0.5 ? -1 : 1);
-    } else if (pitch.pt === 'changeup') {
-      /* Small fade plus a visible dip at the end. */
-      ballX += Math.sin(e * Math.PI) * 8;
-      ballY += Math.pow(e, 3) * 10;
-    } else if (pitch.pt === 'slowball') {
-      /* Floats up on a rainbow, drops in lazily. */
-      ballY -= Math.sin(e * Math.PI) * 14;
-    } else if (pitch.pt === 'knuckler') {
-      /* It flutters. Even the pitcher does not know. */
-      ballX += Math.sin(e * 17) * 4 + Math.sin(e * 7) * 3;
-      ballY += Math.sin(e * 11) * 2;
-    }
-    /* Trail: three ghosts behind the ball so speed reads. */
-    for (let gi = 1; gi <= 3; gi++) {
-      const ge = clamp(e - gi * 0.05, 0, 1);
-      const gx = bx + (px - bx) * ge;
-      let gyy = by + (py - by) * ge;
-      ctx.fillStyle = `rgba(255,255,255,${0.22 - gi * 0.06})`;
-      ctx.beginPath(); ctx.arc(gx, gyy, ballRadiusMin() * (0.8 - gi * 0.15), 0, Math.PI*2); ctx.fill();
+    /* THE FLIGHT IS ONE FUNCTION OF e, AND IT WAS TWO. The ball's break
+       was applied to the ball and the trail was three ghosts on the
+       STRAIGHT line between the release point and the plate, so a
+       curveball's trail showed no curve: the one thing that pitch is
+       about, drawn as though it were a fastball. One function, and the
+       trail is the path the ball actually took. */
+    const flightAt = (ee) => {
+      let X = bx + (px - bx) * ee;
+      let Y = by + (py - by) * ee;
+      if (pitch.pt === 'curveball') {
+        /* Late break: barely moves early, sweeps hard in the last third. */
+        X += Math.pow(ee, 2.2) * Math.sin(ee * Math.PI) * 34 * (pitch.ideal < 0.5 ? -1 : 1);
+      } else if (pitch.pt === 'screwball') {
+        /* The curveball's mirror: it breaks the other way. */
+        X -= Math.pow(ee, 2.2) * Math.sin(ee * Math.PI) * 34 * (pitch.ideal < 0.5 ? -1 : 1);
+      } else if (pitch.pt === 'changeup') {
+        /* Small fade plus a visible dip at the end. */
+        X += Math.sin(ee * Math.PI) * 8;
+        Y += Math.pow(ee, 3) * 10;
+      } else if (pitch.pt === 'slowball') {
+        /* Floats up on a rainbow, drops in lazily. */
+        Y -= Math.sin(ee * Math.PI) * 14;
+      } else if (pitch.pt === 'knuckler') {
+        /* It flutters. Even the pitcher does not know. */
+        X += Math.sin(ee * 17) * 4 + Math.sin(ee * 7) * 3;
+        Y += Math.sin(ee * 11) * 2;
+      }
+      return [X, Y];
+    };
+    const [ballX, ballY] = flightAt(e);
+    /* A TAPERED STROKE, NOT THREE DISCS, the same shape the plate camera
+       and the big hit comet use, so a moving ball has one language in
+       this game wherever it is drawn. What was here was white at 16, 10
+       and 4 percent alpha with no dark edge at all.
+
+       THIS BRANCH IS NOT DEAD, which was worth measuring rather than
+       assuming: `plateViewActive` hands the picture back to the wide
+       camera during a steal, a tail or a jog, and a pitch can be live in
+       all three. Counted through a real inning, it drew 219 frames. */
+    {
+      const gr = ballRadiusMin();
+      const pts = [];
+      for (let k = 7; k >= 1; k--) {
+        const ee = e - k * 0.022;
+        if (ee <= 0) continue;
+        const [gx, gy] = flightAt(ee);
+        pts.push([gx, gy, 1 - k / 8]);
+      }
+      pts.push([ballX, ballY, 1]);
+      if (pts.length > 1) {
+        ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+        for (const [edge, col] of [[true, '10,20,30'], [false, '255,255,255']]) {
+          for (let k = 1; k < pts.length; k++) {
+            const [ax, ay] = pts[k - 1], [bx2, by2, bu] = pts[k];
+            ctx.strokeStyle = `rgba(${col},${(edge ? 0.34 : 0.62) * (0.1 + 0.9 * bu)})`;
+            ctx.lineWidth = gr * (0.2 + 0.85 * bu) + (edge ? 2 : 0);
+            ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(bx2, by2); ctx.stroke();
+          }
+        }
+      }
     }
     drawBaseball(ctx, ballX, ballY);
   }

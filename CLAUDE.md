@@ -6691,6 +6691,48 @@ the tail. Found by rendering a home run at five instants and looking, which is h
 contact burst's rays got their dark ring the same afternoon: pale rays on pale dirt were
 not there over the keyhole.
 
+#### And the PITCH had no streak at all, on the camera the game is played from
+
+That pass gave the ball a floor, a dark ring and a comet on a big hit, and it was all
+about the WIDE camera. The plate camera's pitch kept the trail it shipped with: three
+discs at 26, 18 and 10 percent white, no dark edge, at nine tenths of the ball's own
+radius. Photographed on a desktop, they are three tan blobs on the tan keyhole, which
+the composition pass laid down the middle of this exact picture, with a gap between the
+last one and the ball. **The streak is what makes a pitch's SPEED read, and speed is
+the whole of what a batter is timing.**
+
+It is the comet's shape now, so a moving ball has one language wherever this game draws
+one: sampled back along the flight, dark edge first and then the white, wide at the ball
+and gone at the tail. Sampled through `platePitchPos`, which is the one flight function
+that camera has, so a curveball's trail bends with the curveball.
+
+**THERE ARE TWO PITCH BALLS AND THE OBVIOUS ONE IS THE ONE NOBODY SEES.** `drawField`
+has its own, after the early return that hands the picture to `drawPlateView`, and it
+looks exactly like the one to fix. An afternoon went into improving it before a
+screenshot showed the discs unchanged. **Its ghosts really were on the straight line
+between the release point and the plate while the ball itself broke off it**, so a
+curveball there trailed like a fastball, and that is fixed too: one function of `e` for
+both, the way the plate camera already had it.
+
+**IT IS NOT DEAD, WHICH WAS MEASURED RATHER THAN ASSUMED**, because this repo's own
+`recordHit` lesson is that a dead copy of a rule is where the next person spends their
+afternoon. `plateViewActive` hands the picture back to the wide camera during a steal, a
+tail or a jog, and a pitch can be live in all three. Counted through a real inning with
+a probe in the branch: **219 frames**.
+
+**IT COSTS NOTHING, and the single run said otherwise.** `check-frames` came back 47ms
+mean with 98% of frames over 33, which reads as a render that has doubled. Interleaved,
+two runs an arm against the same build without the trail: **52.84 and 47.41 against
+51.54 and 45.51**, a difference smaller than the spread between two passes of one arm.
+
+**AND THE BANDS IN THAT FILE ARE STALE, which is the more useful half.** Run against
+`origin/main`, which is what is deployed and has none of this session in it, the same
+machine reads **51.47 and 53.13**. Same bytes, and the file's own header records 20ms.
+So the numbers are a fact about the box on the day, the bands were anchored two
+rendering passes ago, and `check-frames` is a METER for an A/B rather than a verdict on
+a build. Do not move those bands to make a run pass, and do not read a red one as a
+regression without running both arms.
+
 **THE CONTACT FRAME WAS NEVER SHOWN.** `plateViewActive` returned false the instant
 `g.play` existed, and `HITSTOP_MS` shifted every play timer by 80 without holding the
 picture, so the cut to the field landed on the same frame as the press. The one thing a
