@@ -1,9 +1,21 @@
-/* The four facts that decide whether a game is launched, and they move together.
+/* The four facts that decide whether a game is launched, and what they say today.
  *
  *   node baseball/check-posture.mjs
  *
- * Run The Diamond is LIVE. That is not one edit, it is four, and each of them is
- * invisible on its own:
+ * Run The Diamond is SERVED AND UNLISTED, which is Segue's row in CLAUDE.md's
+ * table rather than hoops'. It is indexable, in the sitemap and carrying its ad
+ * tag, and the home page does not link it. Somebody handed the URL or finding it
+ * in search can play it; somebody browsing runthe.gg will not stumble on it. It
+ * was launched with a home page link for a day and the owner took the link back
+ * off, so the four facts below are TWO declarations now rather than one:
+ *
+ *   INDEXED   the first three rows (robots, sitemap, ad tag), which move together
+ *   LINKED    the fourth (the home page tile and card, the JSON-LD, the nav)
+ *
+ * They move separately because the owner can want one without the other, and
+ * does today. What must never happen is a mixture INSIDE either group.
+ *
+ * Launched, it is four edits, and each of them is invisible on its own:
  *
  *   indexable              no robots tag telling a crawler to stay away
  *   in sitemap.xml         something points a crawler at it in the first place
@@ -28,9 +40,10 @@
  * and the four rows are asked against that declaration rather than against
  * whatever the files happen to say.
  *
- * TO UN-LAUNCH THE GAME, set LIVE to false and put back the four things this
- * then asks for. That is the point: it costs a deliberate edit to a guard rather
- * than a deletion nobody notices. hoops/check-posture.mjs is the same file for
+ * TO CHANGE THE STATE, change INDEXED or LINKED and make the edits this then
+ * asks for. That is the point: it costs a deliberate edit to a guard rather than
+ * a deletion nobody notices. LINKED on its own is what relaunching on the home
+ * page means, and the launch commit (e1b7ec63) is the home page it restores. hoops/check-posture.mjs is the same file for
  * the game that has not launched, and its header argues the other side.
  */
 
@@ -42,8 +55,11 @@ const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.join(HERE, '..');
 const read = (p) => fs.readFileSync(path.join(ROOT, p), 'utf8');
 
-/* THE ONE DECLARATION. Everything below is asked against this. */
-const LIVE = true;
+/* THE TWO DECLARATIONS. Everything below is asked against these. LINKED without
+   INDEXED is refused outright: a page the home page sends visitors to while
+   telling crawlers to stay away is the contradiction this file exists for. */
+const INDEXED = true;
+const LINKED = false;
 
 /* The two pages a reader meets. og-source.html is deliberately not one of them:
    it is the template the share card is rendered from, never a page, and it is
@@ -58,7 +74,11 @@ const NAV = ['index.html', '404.html', 'about.html'];
 
 const AD = 'pagead2.googlesyndication.com';
 const problems = [];
-const state = LIVE ? 'live' : 'unlaunched';
+const state = INDEXED ? (LINKED ? 'live' : 'served and unlisted') : 'unlaunched';
+if (LINKED && !INDEXED) {
+  problems.push('LINKED is true and INDEXED is false. The home page would send visitors '
+    + 'to a game that tells a crawler to stay away. Pick one state.');
+}
 
 /* ------------------------------------------------------------------ *
  * 1. THE FOUR ROWS, asked of both pages.
@@ -69,22 +89,22 @@ for (const rel of PAGES) {
   const src = read(rel);
   const noindexed = /name=["']robots["'][^>]*noindex/i.test(src);
 
-  if (LIVE && noindexed) {
-    problems.push(`${rel} is noindexed while this file says the game is live. A crawler `
-      + 'is being told to stay away from a game the home page links to, and check-adsense '
-      + 'stops auditing this page the moment that tag is there.');
+  if (INDEXED && noindexed) {
+    problems.push(`${rel} is noindexed while this file says the game is indexed. `
+      + 'check-adsense stops auditing this page the moment that tag is there, and the ad '
+      + 'tag and its consent ordering go unasked with it.');
   }
-  if (!LIVE && !noindexed) {
+  if (!INDEXED && !noindexed) {
     problems.push(`${rel} is indexable while this file says the game is unlaunched. That `
       + 'puts an unfinished game into the surface AdSense reviews.');
   }
 
   const hasAd = src.includes(AD);
-  if (LIVE && !hasAd) {
+  if (INDEXED && !hasAd) {
     problems.push(`${rel} carries no AdSense publisher tag. It is an indexable page on a `
       + 'site that is reviewed as a whole, so it has to be able to serve one.');
   }
-  if (!LIVE && hasAd) {
+  if (!INDEXED && hasAd) {
     problems.push(`${rel} carries the AdSense publisher tag on an unlaunched game.`);
   }
 
@@ -105,12 +125,12 @@ for (const rel of PAGES) {
 
 for (const url of URLS) {
   const listed = sitemap.includes(url);
-  if (LIVE && !listed) {
-    problems.push(`sitemap.xml does not list ${url}. The page is indexable and linked, so `
+  if (INDEXED && !listed) {
+    problems.push(`sitemap.xml does not list ${url}. The page is indexable, so `
       + 'nothing is broken and it quietly never gets crawled, which is the slowest '
       + 'possible way to find out.');
   }
-  if (!LIVE && listed) {
+  if (!INDEXED && listed) {
     problems.push(`sitemap.xml lists ${url} for an unlaunched game.`);
   }
 }
@@ -119,12 +139,13 @@ for (const url of URLS) {
  * 2. LINKED FROM THE SITE, or not, depending.
  * ------------------------------------------------------------------ */
 const linkedFrom = NAV.filter((nav) => /href=["'][^"']*\/baseball\//i.test(read(nav)));
-if (LIVE && !linkedFrom.length) {
+if (LINKED && !linkedFrom.length) {
   problems.push(`none of ${NAV.join(', ')} links to /baseball/. Linking it from the site is `
     + 'the step that launches it, and the rest of this file says it is launched.');
 }
-if (!LIVE && linkedFrom.length) {
-  problems.push(`${linkedFrom.join(', ')} links to /baseball/ on an unlaunched game.`);
+if (!LINKED && linkedFrom.length) {
+  problems.push(`${linkedFrom.join(', ')} links to /baseball/, and this file says the game `
+    + 'is not on the site\'s own pages yet.');
 }
 
 /* THE HOME PAGE REACHES A VISITOR TWICE AND THE TWO DO NOT OVERLAP. Tiles are the
@@ -133,12 +154,19 @@ if (!LIVE && linkedFrom.length) {
    only one of them is a game that exists on one kind of device, which renders
    perfectly and is invisible to every other check here. */
 const home = read('index.html');
-if (LIVE) {
-  if (!/<a class="gtile[^"]*baseball[^"]*"/i.test(home)) {
+const hasTile = /<a class="gtile[^"]*baseball[^"]*"/i.test(home);
+const hasCard = /<article class="feat[^"]*baseball[^"]*"/i.test(home);
+if (!LINKED && (hasTile || hasCard)) {
+  problems.push(`index.html carries a baseball ${hasTile ? 'tile' : 'card'} while this file says `
+    + 'the game is not on the home page. Half a link is a game that exists on one kind of '
+    + 'device.');
+}
+if (LINKED) {
+  if (!hasTile) {
     problems.push('index.html has no .gtile for baseball. Tiles are the phone home screen, '
       + 'so without one the game cannot be found on a phone at all.');
   }
-  if (!/<article class="feat[^"]*baseball[^"]*"/i.test(home)) {
+  if (!hasCard) {
     problems.push('index.html has no .feat card for baseball. Cards are the desktop home '
       + 'screen, so without one the game cannot be found on a desktop at all.');
   }
@@ -153,7 +181,7 @@ if (LIVE) {
  * nothing fails, the page is right, and the structured data quietly says the
  * site has five games.
  * ------------------------------------------------------------------ */
-if (LIVE) {
+{
   const blocks = [...home.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)];
   let listed = false;
   let parsed = 0;
@@ -174,7 +202,10 @@ if (LIVE) {
   if (!parsed) {
     problems.push('found no parseable JSON-LD on index.html, so this check is not checking '
       + 'anything. Has the block moved?');
-  } else if (!listed) {
+  } else if (!LINKED && listed) {
+    problems.push('the home page JSON-LD ItemList names /baseball/ while the page itself does '
+      + 'not link it. A search engine would be told about a game the reader cannot find.');
+  } else if (LINKED && !listed) {
     problems.push('the home page JSON-LD ItemList does not name /baseball/. That block is '
       + 'what a search engine reads as the list of games on this site, so the game is '
       + 'launched everywhere except the one place a crawler is told to look.');
@@ -221,15 +252,16 @@ if (rows.length < 1000) {
 if (problems.length) {
   console.error(`Run The Diamond posture (declared ${state}): ${problems.length} problem(s)\n`);
   for (const p of problems) console.error('  ' + p);
-  console.error(`\nLIVE is ${LIVE} at the top of this file. If the game's state has really`);
+  console.error(`\nINDEXED is ${INDEXED} and LINKED is ${LINKED} at the top of this file. If the state has really`);
   console.error('changed, change that line in the same commit as the four edits, so launching');
   console.error('or un-launching is a decision somebody made rather than a guard nobody read.');
   process.exit(1);
 }
 
-console.log(LIVE
-  ? 'Run The Diamond posture: indexable, in the sitemap, ad tag behind its consent defaults, '
-    + 'linked from the home page on both phone and desktop, and named in the JSON-LD.'
-  : 'Run The Diamond posture: noindexed, no ad tag, not in the sitemap, linked from nowhere.');
+console.log(`Run The Diamond posture (${state}): `
+  + (INDEXED ? 'indexable, in the sitemap, ad tag behind its consent defaults, '
+             : 'noindexed, no ad tag, not in the sitemap, ')
+  + (LINKED ? 'linked from the home page on both phone and desktop, and named in the JSON-LD.'
+            : 'and not linked from the home page, the nav or the JSON-LD.'));
 console.log(`  ${rows.length.toLocaleString()} player-seasons in the pool.`);
 console.log('  og-source.html is a build input and stays out of the index either way.');

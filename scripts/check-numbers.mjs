@@ -71,7 +71,10 @@ const NFL = require('../football/engine.js').CONSTANTS;
    page started making claims ($170M, all 162 games) that neither of the two
    engines above plays, and this file correctly called four correct sentences
    defects. Widening `ok` is the documented cost of one file guarding a page that
-   is about more than one game, and it is written up under `the cap` below. */
+   is about more than one game, and it is written up under `the cap` below.
+   The game has since come back OFF the home page, and this import stays: it
+   allows two values and claims nothing, so it costs nothing while no page states
+   them, and it is the edit a relaunch would otherwise have to remember. */
 const MLB = require('../baseball/engine.js').CONSTANTS;
 
 /* The player data decides the year range, not a constant: "since 2005" and

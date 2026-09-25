@@ -10887,7 +10887,7 @@ account. Redirecting the board redirects the shelf with it.
 so **read the cache-busting section above before editing any of them**.
 
 ```
-node baseball/check-posture.mjs   the four facts that say the game is launched
+node baseball/check-posture.mjs   the four facts, against two declarations
 node baseball/check-atbats.mjs    the at-bat simulator, against real brackets
 node baseball/check-bracket.mjs   the playoff field, against real runs
 node baseball/check-labels.mjs    what a player-season row says it is
@@ -10898,16 +10898,36 @@ node baseball/check-badges.mjs    every badge is reachable, against real runs
 node baseball/check-run.mjs       a whole run, in a browser, to the screen it ends on
 ```
 
-### IT IS LAUNCHED, and a launch is four edits rather than one
+### IT IS SERVED AND UNLISTED, and a launch is four edits rather than one
 
 ```
-node baseball/check-posture.mjs   the four rows, against one declaration
+node baseball/check-posture.mjs   the four rows, against INDEXED and LINKED
 ```
 
-Run The Diamond is live: indexable, in `sitemap.xml`, carrying the AdSense tag
-behind its Consent Mode defaults, and linked from the home page. That is the
-opposite of the row hoops still occupies, and the table under Run The Floor is
-the one to read for the argument on the other side.
+Run The Diamond is indexable, in `sitemap.xml` and carrying the AdSense tag
+behind its Consent Mode defaults, and **the home page does not link it**. That is
+Segue's row in the table under the setlist game, not hoops' and not the full
+launch. It was launched with a home page link for a day and the owner took the
+link back off, so what follows describes a launch that was made, and undone
+by one half.
+
+**SO THE GUARD HAS TWO DECLARATIONS RATHER THAN ONE.** `INDEXED` holds the
+first three rows (robots, sitemap, ad tag), which move together. `LINKED` holds
+the fourth: the phone tile, the desktop card, the JSON-LD `ItemList` entry and
+any nav link. Each group is all or nothing, and `LINKED` without `INDEXED` is
+refused outright, because it sends visitors to a page that tells a crawler to
+stay away. Driven four ways: the launched home page against `LINKED = false`
+names the nav link, the tile and card, and the JSON-LD; the unlisted page against
+`LINKED = true` names all four; the launched page against `LINKED = true` passes;
+and `LINKED` without `INDEXED` names the contradiction.
+
+**RELAUNCHING ON THE HOME PAGE IS ONE LINE AND ONE FILE.** Set `LINKED = true`
+and restore `index.html` from the launch commit (`e1b7ec63`), which carries the
+tile, the card, the prose paragraph, the FAQ line and the JSON-LD entry in one
+piece. Then `node scripts/check-numbers.mjs --update`, because the home page's
+cap and season claims come back with it (4 each against 6). The `MLB` import in
+that file was left in for exactly this: it allows two values and claims nothing
+while no page states them.
 
 **IT IS FOUR EDITS AND EVERY ONE OF THEM IS INVISIBLE ALONE.** A page dropped
 from the sitemap is still indexable and still linked, so nothing breaks and it
