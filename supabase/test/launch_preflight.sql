@@ -84,7 +84,7 @@ has_table as (
     'commish_free_clock','ps_runs','profiles',
     'fantasy_weeks','fantasy_prices','fantasy_results','fantasy_entries',
     'nfl_games','fantasy_prizes',
-    'rtf_runs'
+    'rtf_runs','rtd_runs'
   ]) as t
   where to_regclass('public.' || t) is not null
 ),
@@ -106,6 +106,24 @@ trg as (
   join pg_class c on c.oid = t.tgrelid
   join pg_namespace n on n.oid = c.relnamespace
   where n.nspname = 'public' and not t.tgisinternal
+),
+-- AN INDEX CAN FAIL ON ITS OWN WHERE THE TABLE BESIDE IT CANNOT, which is the
+-- only reason this third helper exists. A unique index is refused outright by
+-- data that already breaks it, so a file pasted into the SQL editor statement by
+-- statement can leave the table committed and the index raised, and `if not
+-- exists` does not help: it skips on a name that is taken, never on a duplicate
+-- row. Applied through `--single-transaction` the whole file rolls back and the
+-- table is missing too, which the block above already catches; pasted by hand it
+-- is the 114 trigger all over again, an object whose absence is invisible from
+-- every side. Like `col` and `trg` and unlike `has_table`, it asks the catalog
+-- for everything and lets the row do the filtering.
+idx as (
+  select i.relname as name, t.relname as tbl
+  from pg_index x
+  join pg_class i on i.oid = x.indexrelid
+  join pg_class t on t.oid = x.indrelid
+  join pg_namespace n on n.oid = i.relnamespace
+  where n.nspname = 'public'
 ),
 check_rows(sort, migration, what, breaks, ok) as (
   values
@@ -292,7 +310,37 @@ check_rows(sort, migration, what, breaks, ok) as (
       'The Run The Floor board never loads, for everybody, for ever, and it is indistinguishable from a network that is down. The game plays, the run records in the career, the badges light, and the one thing missing is the list. Nobody reports it.',
       (select count(*) > 0 from has_table where name = 'rtf_runs')
       and (select count(*) > 0 from proc where name = 'rtf_submit_run')
-      and (select count(*) > 0 from proc where name = 'rtf_board_modes'))
+      and (select count(*) > 0 from proc where name = 'rtf_board_modes')),
+
+  -- AND THE SAME SHAPE ONE GAME ALONG, for a game that is now LINKED FROM THE
+  -- HOME PAGE, which is what makes this row the one most worth reading. Run The
+  -- Diamond's board fails soft exactly as Run The Floor's does: every call in
+  -- `baseball/board.js` resolves to null, the screen says the board is not
+  -- reachable, and it says it on every device for ever while twelve modes play
+  -- perfectly, the career records and every badge lights. There is no state a
+  -- player can tell an undeployed migration and a dead network apart from, so
+  -- asking here is the only way to know.
+  (22, '97_baseball_leaderboard',
+      'rtd_runs, and a Run The Diamond season can be filed at all',
+      'The Run The Diamond board never loads, for everybody, for ever, and it is indistinguishable from a network that is down. Nobody reports it, because nothing looks broken.',
+      (select count(*) > 0 from has_table where name = 'rtd_runs')
+      and (select count(*) > 0 from proc where name = 'rtd_submit_run')
+      and (select count(*) > 0 from proc where name = 'rtd_claim_run')),
+
+  -- ITS OWN ROW BECAUSE IT IS ITS OWN FAILURE, which is the six fantasy rows'
+  -- argument arriving inside one file. The row above is the board not existing.
+  -- This is the board existing and the daily quietly not being a competition:
+  -- one partial unique index is the whole of the rule that a browser files one
+  -- result per puzzle, so without it the same person can submit the same day
+  -- repeatedly and every copy ranks. The board draws, the scores are real, and
+  -- the only symptom is a daily leaderboard whose top is one player several
+  -- times over. Folded into the row above it would answer NO about the board
+  -- when the board is fine.
+  (23, '97 daily-once index',
+      'rtd_runs_daily_once, so the daily takes one result per browser',
+      'The daily is scored and not policed: one browser can file the same puzzle again and again and every attempt ranks. The board renders perfectly and its top is one player repeated.',
+      (select count(*) > 0 from idx
+        where name = 'rtd_runs_daily_once' and tbl = 'rtd_runs'))
 )
 -- The summary has to come LAST, and a UNION can only be ordered by an output
 -- column, so the sort key is carried through a subquery rather than sorted on

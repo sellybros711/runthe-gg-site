@@ -214,8 +214,24 @@ if (seedList.length < 3) bad('the seeding spreads across the field', 'only ' + s
 /* Determinism: the same run always draws the same field. */
 console.log('\nDETERMINISM\n');
 {
-  const run = octoberRun(20000) || octoberRun(20001) || octoberRun(20002);
-  if (!run) bad('a run to check determinism against');
+  /* SEARCHED, NEVER PINNED, and this file had three magic seeds until the pool
+     moved under them. The claim here is a property of `createBracket` (the same
+     run always draws the same field) and it needs ANY run that reached October,
+     so which seed supplies it is not part of the claim. `octoberRun` drafts by
+     taking the first man on every board, which is a careless draft: measured
+     against the shipped pool only about 30% of seeds reach the playoffs at all,
+     so three pins had roughly a one in three chance of ALL failing on any change
+     to the data, and that is what happened. Splitting traded stints back out
+     took the pool 44,344 rows to 45,379, every seeded draw reshuffled, all three
+     stopped qualifying, and the section reported a page defect when what it had
+     was no fixture. Same lesson as the commissioner term fixture, which samples
+     twelve seeds for the same reason.
+
+     The search is bounded and the failure still means something: no run in two
+     hundred seeds reaching October would be a real finding about the mode. */
+  let run = null;
+  for (let s = 20000; s < 20200 && !run; s++) run = octoberRun(s);
+  if (!run) bad('a run to check determinism against', 'no seed in 20000-20199 reached October');
   else {
     const a = JSON.stringify(bracketFor(run).near.map(x => x && (x.you ? 'me' : x.team && x.team.id)));
     const b = JSON.stringify(bracketFor(run).near.map(x => x && (x.you ? 'me' : x.team && x.team.id)));

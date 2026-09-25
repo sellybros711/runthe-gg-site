@@ -66,6 +66,13 @@ import { copyOf } from './check-copy.mjs';
 const require = createRequire(import.meta.url);
 const CFB = require('../cfb/engine.js').CONSTANTS;
 const NFL = require('../football/engine.js').CONSTANTS;
+/* THE THIRD ENGINE ARRIVED WITH A LAUNCH, and it had to. The home page describes
+   every game on the site, so the moment Run The Diamond was linked from it the
+   page started making claims ($170M, all 162 games) that neither of the two
+   engines above plays, and this file correctly called four correct sentences
+   defects. Widening `ok` is the documented cost of one file guarding a page that
+   is about more than one game, and it is written up under `the cap` below. */
+const MLB = require('../baseball/engine.js').CONSTANTS;
 
 /* The player data decides the year range, not a constant: "since 2005" and
    "2005 to 2025" are claims about the file, and the file is what a refresh moves. */
@@ -112,8 +119,8 @@ const FACTS = [
     /* A price, a valuation or a rung on the ladder is not the cap. */
     notBefore: /\b(like|worth|at|costs|for)\s+$/i,
     notNear: /,\s*then\s*\$/,
-    ok: [money(CFB.CAP_MUSD), money(NFL.CAP_MUSD), '$280M'],
-    why: 'CAP_MUSD in cfb/engine.js and football/engine.js ($280M is Full Team)',
+    ok: [money(CFB.CAP_MUSD), money(NFL.CAP_MUSD), money(MLB.CAP_MUSD), '$280M'],
+    why: 'CAP_MUSD in cfb, football and baseball engine.js ($280M is Full Team)',
   },
   {
     id: 'the re-spin ladder',
@@ -123,6 +130,15 @@ const FACTS = [
     find: /\$[\d.]+[MK], then \$[\d.]+[MK], then \$[\d.]+[MK]/g,
     near: /./,
     all: /\$[\d.]+[MK]/g,
+    /* BASEBALL IS DELIBERATELY NOT IN THIS ONE, and the collision check is what
+       said so. Its ladder is $5M, $10M, $15M, which is the NFL game's ladder
+       exactly, so adding it puts two games on one set of values and a stale
+       claim about one would then be accepted as a correct claim about the other.
+       That is the hole this file's header warns about, arriving for real.
+       It buys nothing to pay for: no guarded page claims baseball's ladder,
+       because the baseball pages are not on PAGES and the home page describes
+       the game without pricing a re-spin. The cap and the season are added above
+       because the home page really does state both, and neither collides. */
     ok: [...CFB.RESPIN_LADDER_MUSD.map(money), ...NFL.RESPIN_LADDER_MUSD.map(money)],
     why: 'RESPIN_LADDER_MUSD',
   },
@@ -132,7 +148,7 @@ const FACTS = [
     /* NOT a bare "games". The homepage says "5 games live" about the arcade, which is
        a count of products and not the length of anybody's season. */
     near: /season|play all|regular/i,
-    ok: [CFB.REGULAR_SEASON_GAMES, NFL.REGULAR_SEASON_GAMES],
+    ok: [CFB.REGULAR_SEASON_GAMES, NFL.REGULAR_SEASON_GAMES, MLB.REGULAR_SEASON_GAMES],
     why: 'REGULAR_SEASON_GAMES',
   },
   {

@@ -10111,6 +10111,7 @@ account. Redirecting the board redirects the shelf with it.
 so **read the cache-busting section above before editing any of them**.
 
 ```
+node baseball/check-posture.mjs   the four facts that say the game is launched
 node baseball/check-atbats.mjs    the at-bat simulator, against real brackets
 node baseball/check-bracket.mjs   the playoff field, against real runs
 node baseball/check-labels.mjs    what a player-season row says it is
@@ -10120,6 +10121,139 @@ node baseball/check-staff.mjs     the All-Time Staff assignment and its blast ra
 node baseball/check-badges.mjs    every badge is reachable, against real runs
 node baseball/check-run.mjs       a whole run, in a browser, to the screen it ends on
 ```
+
+### IT IS LAUNCHED, and a launch is four edits rather than one
+
+```
+node baseball/check-posture.mjs   the four rows, against one declaration
+```
+
+Run The Diamond is live: indexable, in `sitemap.xml`, carrying the AdSense tag
+behind its Consent Mode defaults, and linked from the home page. That is the
+opposite of the row hoops still occupies, and the table under Run The Floor is
+the one to read for the argument on the other side.
+
+**IT IS FOUR EDITS AND EVERY ONE OF THEM IS INVISIBLE ALONE.** A page dropped
+from the sitemap is still indexable and still linked, so nothing breaks and it
+quietly stops being crawled. A page that keeps its robots tag while sitting in
+the sitemap is a contradiction a crawler reports back weeks later. A launched
+game with no ad tag is a page in the reviewed surface that cannot serve one,
+which is what two AdSense rejections were already traced to. So the four move
+together or they do not move.
+
+**THE HOLE THE POSTURE GUARD COVERS IS ONE `check-adsense` CANNOT.** That file
+walks every INDEXABLE page and SKIPS anything noindexed, so putting the robots
+tag back here does not fail it: it stops auditing this game at all, and the ad
+tag, the consent ordering and the policy links go unasked with it. **A guard
+that goes quiet when a thing is half reverted is worse than no guard**, so the
+state is declared ONCE, as `LIVE` at the top of `check-posture.mjs`, and the
+rows are asked against the declaration rather than against whatever the files
+happen to say. Un-launching means editing that line, which is the whole point.
+
+**THE HOME PAGE REACHES A VISITOR TWICE AND THE TWO DO NOT OVERLAP.**
+`.gtiles` is `display:none` until 640px and `.games > .feat` is hidden from 640
+down, so tiles are the phone home screen and cards are the desktop one. A link
+added to only one of them is a game that exists on one kind of device, renders
+perfectly, and is invisible to every other check on the site. Both are
+asserted. **And the JSON-LD is a third answer**: the `ItemList` in the home
+page's graph is what a search engine reads as the list of games here, so a game
+launched in the markup and missing from that block is the stale-number trap in
+its worst place. Asserted too, by parsing the block rather than matching text.
+
+**AN ODD NUMBER OF TILES IN TWO COLUMNS LEAVES ONE ALONE**, and the gap beside
+it reads as a tile that failed to load. `.gtile.newest` takes the whole row,
+which costs nothing because the row was half empty. The class is on the NEWEST
+tile and not on baseball, so the seventh game inherits it with no rule to
+remember. It is deliberately not `.hero`, which is the arcade's marquee and a
+claim about being the flagship.
+
+**The card is `noshots`, which is the one place this launch is visibly thinner
+than its siblings.** That modifier has sat unused in the stylesheet since it was
+written for a game being redesigned, and this is the first card to want it: info
+full width, no showcase rail. Golf has a CSS showcase, football and college have
+a live drive canvas, soccer has phone clips. Baseball has none of those and a
+bad showcase is worse than an honest empty column, so the right hand third is
+open. The share card is NOT the thing to drop in there: `og.png` is a 1200x630
+link preview whose headline is sized to be read in a feed, and at 250px its text
+is illegible.
+
+**`og-source.html` stays noindexed either way**, and that is asserted on its own
+branch rather than folded into the pages. It is the template `build/og.mjs`
+renders the share card from and is never served to anybody, so a launch is about
+the game and this is a build input. Left indexable it becomes a page with a
+headline, no navigation and no reason to exist, and `check-adsense` would then
+correctly start demanding an ad tag on it.
+
+**Eight mutations were reintroduced one at a time** and each names exactly one
+thing: the robots tag back on, the ad tag off, both sitemap entries gone, the
+tile gone, the card gone, the `ItemList` entry gone, the ad tag moved above its
+consent defaults, and `og-source.html` made indexable. The `LIVE = false` arm
+was driven too, against the launched tree, and reports all seven in the other
+direction.
+
+#### The home page describes three games now, so `check-numbers` knows three engines
+
+The moment the game was linked, `index.html` started stating `$170M` and `all
+162 games`, and that file knew two engines. It called four correct sentences
+defects, which is the right failure: a page claiming a number no game plays is
+exactly what it is for, and the fix is to teach it rather than to silence it.
+`MLB` is the third `CONSTANTS` import, and the cap and the season are widened.
+
+**THE COLLISION CHECK FIRED ON THE SAME RUN, which is the first time it has.**
+That file's own header records the accepted weakening (a claim is allowed if it
+matches EITHER game) and the standing warning that two games sharing a value
+would hide a stale claim about one behind the other. Baseball's re-spin ladder
+is `$5M, $10M, $15M`, which is the NFL game's ladder **exactly**, so adding it
+put two games on one set of values. **It is left out**, because it buys nothing
+to pay for: the baseball pages are not on `PAGES`, and no guarded page prices a
+baseball re-spin. The cap and the season are in because the home page really
+does state both and neither collides (170 against 11, 140 and 280; 162 against
+12 and 17). The counts are re-recorded: 88 claims across 7 pages.
+
+### The leaderboard is in the preflight now, and it is two rows rather than one
+
+```
+psql ... -f supabase/test/launch_preflight.sql     or paste it into the SQL editor
+```
+
+`97_baseball_leaderboard.sql` was named zero times in that file. The board fails
+soft exactly as every board here does, so an undeployed migration is
+**indistinguishable from a network that is down**: every call in
+`baseball/board.js` resolves to null, the screen says the board is not
+reachable, and it says that on every device for ever while twelve modes play
+perfectly, the career records and every badge lights. There is no state in which
+a player can tell the two apart. That was survivable while the game was
+unlaunched and stops being survivable the day the home page links it.
+
+**TWO ROWS, because they are two failures rather than one at two sizes**, which
+is the fantasy chain's own argument arriving inside a single file. Row 22 is the
+board not existing. Row 23 is `rtd_runs_daily_once`, the partial unique index
+that is the whole of the rule that a browser files one result per puzzle:
+without it the board draws, the scores are real, and the daily quietly stops
+being a competition because one person can file the same day repeatedly and
+every copy ranks. Folded together, the row would answer NO about the board on a
+day the board is fine.
+
+**AN INDEX CAN FAIL ON ITS OWN WHERE THE TABLE BESIDE IT CANNOT**, which is why
+`idx` was added as a third catalog helper. A unique index is refused outright by
+data that already breaks it, and `if not exists` does not save it: that skips on
+a name that is taken, never on a duplicate row. Applied through
+`--single-transaction` the whole file rolls back and the table is missing too,
+which the existing block already catches; pasted into the SQL editor statement
+by statement it is 114's trigger all over again, an object whose absence is
+invisible from every side. Like `col` and `trg` and **unlike `has_table`**, it
+asks the catalog for everything and lets the row filter, so it can never read
+false for ever about something nobody added to a list.
+
+`rtd_runs` went on the `has_table` allowlist in the same edit, because that
+block is a trap rather than a convenience and the last row added after it was
+written read NO against a database where the table was sitting right there.
+
+**Driven against a real Postgres 16, both ways.** Bare database: 24 rows, no
+error, both new rows NO and named in the summary. With `97` loaded: both yes.
+Then each was proved to bite alone, which is the whole argument for two rows:
+dropping the index alone leaves row 22 yes and takes row 23 to NO, and dropping
+`rtd_claim_run` takes row 22 to NO on its own.
 
 ### The $170M cap is right, and the per-slot dollar is the wrong comparison
 
@@ -11080,6 +11214,34 @@ labelled as such.** A roster is drafted across every era from 71 clubs, half of
 which no longer exist and some of which were never in either league, so filing the
 1931 Homestead Grays under the AL would be a tidy-looking lie. They are the
 player's side and the other one.
+
+#### And its determinism section pinned three magic seeds, which the pool ate
+
+`check-bracket.mjs` went red on a pass that touched no engine, no run loop and no
+data file: `DETERMINISM: a run to check determinism against`. It reads exactly
+three files and not one of them had changed, so it was pre-existing by
+construction, and it is **the magic seed trap this file already documents twice**
+arriving in a third game.
+
+The section needs a run that reached October, and asked for one as
+`octoberRun(20000) || octoberRun(20001) || octoberRun(20002)`. `octoberRun`
+drafts by taking the first man on every board, which is a careless draft:
+measured against the shipped pool, **about 30% of seeds reach the playoffs at
+all**, so three pins had roughly a **one in three chance of all failing** on any
+change to the data. Splitting traded stints back out took the pool 44,344 rows to
+45,379, every seeded draw reshuffled, and all three stopped qualifying.
+
+**Measured rather than re-run until green**: the three pinned seeds come back
+false deterministically, and **60 of the 200 seeds from 20000 reach October**,
+the first being 20005. So the page was right the whole time and the file had no
+fixture.
+
+**The seed is not part of the claim**, which is what makes searching the fix
+rather than a loosening. What is being asserted is a property of `createBracket`,
+that the same run always draws the same field, and ANY October run supplies it.
+The search is bounded at two hundred and the failure still means something: no
+run in two hundred seeds reaching October would be a real finding about the mode
+rather than a missing fixture.
 
 ### The at-bat simulator
 
