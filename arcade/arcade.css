@@ -403,7 +403,7 @@ html body .runbar{border:1px solid var(--line2); border-left-width:4px; border-r
 html body .modesw:not(:empty){gap:3px; padding:4px; border-radius:14px;
   background:var(--card2); border:1px solid var(--line);}
 html body .modesw:not(:empty) button{border:0; border-radius:10px; min-height:36px;
-  font-size:11.5px; letter-spacing:.06em;}
+  font-size:11px; letter-spacing:.03em; white-space:nowrap; padding-left:4px; padding-right:4px;}
 html body .modesw:not(:empty) button:not(.on){background:transparent;}
 html body .modesw:not(:empty) button:not(.on):hover{background:color-mix(in srgb, var(--ink) 6%, transparent);}
 html body .modesw:not(:empty) button.on{box-shadow:0 4px 12px -6px rgba(0,0,0,.5);}
@@ -412,3 +412,49 @@ html body .modesw:not(:empty) button.on{box-shadow:0 4px 12px -6px rgba(0,0,0,.5
 html body .gj{border-top:0; margin-top:26px; padding-top:0;}
 html body .gj > summary{border-radius:14px; background:var(--card); border-color:var(--line2);}
 html body .gj > summary h2{font-size:15px; letter-spacing:.03em;}
+
+/* ---- overlays sit above the site banner ----------------------------------
+   Every game's result screen and the shared how-to were stacked at 50 to 100
+   while the sticky site banner sits at 9500 and the bottom nav at 9400. So
+   the banner cut across the top of every result, over the close button, the
+   moment a game ended. They sit just above the banner now and still under the
+   shared sheets that must win (pregame 9600, leaderboard 9650, the card and
+   sign-in sheets 9998 and up). */
+html body .scrim, html body .rtgHowto-scrim, html body #resultModal, html body #statsModal{z-index:9560;}
+html body .podium{z-index:9562;}
+html body .confetti{z-index:9566;}
+html body .toast, html body .cw-toast{z-index:9570;}
+html body .popup{z-index:9575;}
+
+/* ---- the leaderboard door ------------------------------------------------
+   An orange stripe and an orange word-art label made this row louder than
+   the game above it. It is a door, so it reads as one: a tinted trophy tile,
+   the label in ink, and the accent kept to the icon. */
+html body .rtglb-open{border-radius:16px; border:1px solid var(--line2); border-left-width:1px;
+  background:var(--card); padding:12px 14px; box-shadow:none;}
+html body .rtglb-open svg{width:38px; height:38px; padding:9px; box-sizing:border-box; border-radius:11px;
+  background:color-mix(in srgb, var(--lba) 16%, var(--card2));}
+html body .rtglb-open .t b{font-family:var(--f); font-weight:900; font-size:14.5px; letter-spacing:0;
+  text-transform:none; color:var(--ink);}
+html body .rtglb-open .t span{font-weight:600;}
+
+/* ---- the lifeline (Alma Mater, Career Path) -------------------------------
+   A dashed outline read as a placeholder nobody had filled in. It is a real
+   choice with a real cost, so it is a real button: quiet, but solid. */
+html body .bailbtn{border:1px solid var(--line2); border-radius:14px; background:var(--card);
+  min-height:46px; font-weight:800;}
+html body .bailbtn:hover:not(:disabled){background:var(--card2);}
+
+/* ---- the pre-game card (pregame.js) ---------------------------------------
+   The same lit tile the hub draws for each game, so the card a player opens
+   from the hub looks like the tile they just tapped. */
+html body .rtgpg{border-radius:22px;}
+html body .rtgpg-cap{height:104px; border-bottom:0;
+  background:
+    radial-gradient(circle at 50% 120%, color-mix(in srgb, var(--c, var(--blue, #2F6BFF)) 34%, transparent), transparent 62%),
+    radial-gradient(color-mix(in srgb, var(--c, var(--blue, #2F6BFF)) 30%, transparent) 1px, transparent 1.4px) 0 0 / 14px 14px,
+    linear-gradient(160deg, color-mix(in srgb, var(--c, var(--blue, #2F6BFF)) 24%, var(--card)), color-mix(in srgb, var(--c, var(--blue, #2F6BFF)) 7%, var(--card)));}
+html body .rtgpg-cap svg{width:56px; height:56px; filter:drop-shadow(0 8px 14px rgba(0,0,0,.28));}
+html body .rtgpg-nm{font-size:28px;}
+html body .rtgpg-go{font-style:normal; letter-spacing:.01em; border-radius:14px;
+  box-shadow:0 14px 28px -14px color-mix(in srgb, var(--c, var(--blue, #2F6BFF)) 85%, transparent);}
