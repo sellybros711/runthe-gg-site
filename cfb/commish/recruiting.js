@@ -197,7 +197,7 @@
         + 'board sits closer to the middle of it than the sport is used to.';
     }
     if (spread <= 0.90) {
-      return 'Schools pay their own players now, so a collective cannot outbid a budget. The '
+      return 'Schools pay their own players now, so a collective can\'t outbid a budget. The '
         + 'top of this board sits closer to the middle of it than it did.';
     }
     if ((lab.portalWindows || 0) >= 3) {
@@ -205,7 +205,7 @@
         + 'number of these names will be somewhere else inside eighteen months.';
     }
     if (lab.portalWindows === 0) {
-      return 'There is no portal window, so a class is a class again. What a school signs in '
+      return 'There\'s no portal window, so a class is a class again. What a school signs in '
         + 'February is what it has.';
     }
     return '';

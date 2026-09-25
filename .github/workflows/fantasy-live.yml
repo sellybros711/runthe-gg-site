@@ -2,7 +2,7 @@ name: Score the Fantasy Challenge week, live
 
 # THE BOARD MOVES WHILE THE GAMES ARE BEING PLAYED, and this is the only thing that moves
 # it. `fantasy-pool.yml` builds a week on the Tuesday and scores the one before it; this
-# runs every ten minutes through the games and writes whatever nflverse has so far.
+# stays awake through the games and writes what ESPN's box score and nflverse have so far.
 #
 # IT ALSO WRITES THE SCOREBOARD, on the same tick, from the same run. The live screen shows
 # the real games and the standings side by side, and they are about one instant: written by
@@ -39,10 +39,10 @@ name: Score the Fantasy Challenge week, live
 # game starts. Nothing here reads a wall clock, so a clock change moves nothing. A run with
 # nothing to do prints a line and exits: it costs about twenty seconds and writes no SQL.
 #
-# WHY TEN MINUTES. GitHub's minimum is five and it says plainly that scheduled runs can be
-# delayed under load, so the real cadence is "about every ten minutes, sometimes worse". The
-# board is honest about that on its own: `checked_at` is when a run last looked, and the page
-# says so rather than implying it is a live wire.
+# WHY A LOOP. GitHub's cron is best effort and it proved it: not one scheduled firing ran on
+# the first Thursday. So a firing only has to WAKE the job, and the job keeps itself awake
+# for as long as a game is on (see the step below). The board is honest about the cadence
+# on its own: `checked_at` is when a tick last looked, and the page says so.
 #
 # ─── IT ALSO ANSWERS A QUESTION NOBODY HAS MEASURED YET ────────────────────────────────
 #
@@ -74,6 +74,8 @@ on:
 
 permissions:
   contents: read
+  # To hand over to a fresh run when the six hour job limit comes round mid game.
+  actions: write
 
 # NEVER TWO AT ONCE, AND THE LATE ONE IS THE ONE TO DROP. Two runs writing the same week
 # would both be correct (the upsert is idempotent) and would race on `results_at`, so the
@@ -87,6 +89,7 @@ concurrency:
 jobs:
   score:
     runs-on: ubuntu-latest
+    timeout-minutes: 350
     steps:
       - uses: actions/checkout@v4
 
@@ -104,22 +107,79 @@ jobs:
       - name: Install the postgres client
         run: sudo apt-get update && sudo apt-get install -y --no-install-recommends postgresql-client
 
-      # THE WHOLE JOB. Nothing to do prints a line and writes no SQL, and psql handed an
-      # empty script is a no-op, so the pipe needs no condition around it.
+      # ONE JOB THAT STAYS AWAKE FOR THE GAMES, rather than one job a tick.
+      #
+      # THE CRON BELOW NEVER FIRED ON THE FIRST THURSDAY. Six scheduled firings sat inside the
+      # game window and GitHub ran none of them, which it is allowed to do: scheduled runs are
+      # best effort and are dropped under load. So the board read 0.0 for every entrant with
+      # a green tick on nothing. What the cron is now is a way to WAKE this job, and one
+      # firing that lands anywhere inside three hours of a kickoff is enough: the loop keeps
+      # scoring every two minutes while a game is on and every ten while it is waiting on a
+      # kickoff or on nflverse's stats, and stops when there is nothing left to watch.
+      #
+      # A job is capped at six hours, so a loop still watching at five and a half DISPATCHES
+      # ITSELF and exits. A workflow_dispatch made with the job's own token is the one kind of
+      # event GitHub lets that token start, and the concurrency group queues the new run
+      # behind this one, so there is never a gap and never two writers.
+      #
+      # The repository is public, so the minutes this spends are free.
       #
       # `set -o pipefail` IS LOAD BEARING. Without it the exit status is psql's, so a build
-      # that failed outright would pipe nothing into a psql that succeeded and the run would
-      # go green having scored nobody. That is the one failure here that looks exactly like
-      # a quiet afternoon.
-      - name: Score whatever has been played
+      # that failed outright would pipe nothing into a psql that succeeded and the tick would
+      # read as a quiet afternoon. A failed tick does not end the loop (a database blip at
+      # 2pm should not cost the rest of Sunday), three in a row do, and any failure at all
+      # takes the run red when it ends.
+      #
+      # THE WINNER'S CODE IS MINTED ON EVERY TICK TOO, because the tick that closes the week
+      # is the one that settles the top three (114's trigger) and every entrant's result
+      # waits on the code (115). `--pending` asks the database which weeks are unpaid, so a
+      # tick with nothing to pay costs one query. Its failures are counted the same way.
+      - name: Score the games for as long as they are on
         env:
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+          STRIPE_PRICE_PS_PREMIUM_BUNDLE: ${{ secrets.STRIPE_PRICE_PS_PREMIUM_BUNDLE }}
+          GH_TOKEN: ${{ github.token }}
+          FORCE: ${{ inputs.force && '--force' || '' }}
         run: |
           set -o pipefail
           if [ -z "$SUPABASE_DB_URL" ]; then
             echo "SUPABASE_DB_URL is not set, so there is nowhere to write. Failing loudly."
             exit 1
           fi
-          node football/build/live-results.mjs \
-            ${{ inputs.force && '--force' || '' }} \
-            | psql -v ON_ERROR_STOP=1 "$SUPABASE_DB_URL"
+          st="$RUNNER_TEMP/live-status"
+          deadline=$((SECONDS + 330 * 60))
+          failed=0
+          streak=0
+          tick=0
+          while :; do
+            tick=$((tick + 1))
+            echo "::group::tick $tick at $(date -u +%H:%MZ)"
+            if node football/build/live-results.mjs $FORCE --status "$st" \
+                 | psql -q -v ON_ERROR_STOP=1 "$SUPABASE_DB_URL"; then
+              streak=0
+            else
+              echo "::warning::tick $tick failed to score"
+              failed=1; streak=$((streak + 1))
+            fi
+            node scripts/stripe/mint-winner-code.mjs --pending --mint \
+              || { echo "::warning::tick $tick failed to mint"; failed=1; }
+            echo "::endgroup::"
+            FORCE=''
+            if [ "$streak" -ge 3 ]; then
+              echo "::error::three ticks in a row failed to score. Stopping."
+              exit 1
+            fi
+            read -r what wait < "$st" || what=sleep
+            if [ "$what" != "watch" ]; then
+              echo "Nothing left to watch. Stopping after $tick ticks."
+              break
+            fi
+            if [ "$SECONDS" -ge "$deadline" ]; then
+              echo "Still watching at the job's time limit, so handing over to a fresh run."
+              gh workflow run fantasy-live.yml --ref "$GITHUB_REF_NAME"
+              break
+            fi
+            sleep "${wait:-600}"
+          done
+          exit "$failed"

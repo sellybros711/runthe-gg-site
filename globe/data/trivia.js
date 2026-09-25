@@ -7,7 +7,7 @@
 
    RULE: the correct answer is NEVER the country's own name (that's a giveaway
    when you already know where you are). Answers are specific facts: a dish, a
-   person, a sport, a landmark, a number, a neighbour.
+   person, a sport, a landmark, a number, a neighbor.
 
    Shape:  ID: [ { q, options:[a,b,c,d], a: <index of correct> }, ... ]
    Only facts we're confident about are included; coverage expands over time.
@@ -72,7 +72,7 @@
     ],
     TH: [
       { q: "Thailand's water-splashing New Year festival is called…?", options: ["Songkran", "Holi", "Diwali", "Obon"], a: 0 },
-      { q: "Which spicy Thai soup is flavoured with lemongrass?", options: ["Tom yum", "Miso", "Borscht", "Gazpacho"], a: 0 },
+      { q: "Which spicy Thai soup is flavored with lemongrass?", options: ["Tom yum", "Miso", "Borscht", "Gazpacho"], a: 0 },
       { q: "Bangkok is famous for its ornate Buddhist temples called…?", options: ["Wats", "Pagodas", "Mosques", "Basilicas"], a: 0 },
     ],
     ES: [
@@ -126,7 +126,7 @@
       { q: "Which strong Turkish drink is served in tiny cups?", options: ["Turkish coffee", "Espresso", "Matcha", "Chai latte"], a: 0 },
     ],
     RU: [
-      { q: "The colourful onion-domed cathedral on Red Square is St. …?", options: ["Basil's", "Peter's", "Paul's", "Mark's"], a: 0 },
+      { q: "The colorful onion-domed cathedral on Red Square is St. …?", options: ["Basil's", "Peter's", "Paul's", "Mark's"], a: 0 },
       { q: "Which country launched the first human into space?", options: ["Soviet Union", "United States", "China", "France"], a: 0 },
       { q: "Which Russian lake is the deepest in the world?", options: ["Lake Baikal", "Lake Victoria", "Lake Como", "Loch Ness"], a: 0 },
     ],
@@ -158,7 +158,7 @@
     PH: [
       { q: "Filipino icon Manny Pacquiao is a world champion in which sport?", options: ["Boxing", "Basketball", "Sprinting", "Swimming"], a: 0 },
       { q: "The Philippines is made up of roughly how many islands?", options: ["7,000+", "50", "500", "20"], a: 0 },
-      { q: "Which sweet purple yam is a popular Filipino dessert flavour?", options: ["Ube", "Taro", "Matcha", "Mango"], a: 0 },
+      { q: "Which sweet purple yam is a popular Filipino dessert flavor?", options: ["Ube", "Taro", "Matcha", "Mango"], a: 0 },
     ],
     SG: [
       { q: "Singapore's mythical lion-fish statue is called the…?", options: ["Merlion", "Sphinx", "Griffin", "Chimera"], a: 0 },
@@ -318,7 +318,7 @@
     DZ: [
       { q: "Algeria is Africa's largest country by area, mostly covered by which desert?", options: ["Sahara", "Kalahari", "Gobi", "Namib"], a: 0 },
       { q: "Algeria sits on which sea's southern shore?", options: ["Mediterranean", "Red", "Black", "Caspian"], a: 0 },
-      { q: "Algeria's northern neighbours across the sea are on which continent?", options: ["Europe", "Asia", "South America", "Australia"], a: 0 },
+      { q: "Algeria's northern neighbors across the sea are on which continent?", options: ["Europe", "Asia", "South America", "Australia"], a: 0 },
     ],
     TN: [
       { q: "Which sci-fi franchise filmed desert scenes in Tunisia?", options: ["Star Wars", "Star Trek", "Jurassic Park", "The Matrix"], a: 0 },
@@ -332,16 +332,16 @@
     ],
     BO: [
       { q: "The Salar de Uyuni in Bolivia is the world's largest natural flat of what?", options: ["Salt", "Sand", "Ice", "Mud"], a: 0 },
-      { q: "Bolivia shares the high-altitude Lake Titicaca with which neighbour?", options: ["Peru", "Chile", "Brazil", "Paraguay"], a: 0 },
+      { q: "Bolivia shares the high-altitude Lake Titicaca with which neighbor?", options: ["Peru", "Chile", "Brazil", "Paraguay"], a: 0 },
       { q: "Bolivia's city of La Paz is famous for being extremely…?", options: ["High-altitude", "Below sea level", "Coastal", "Tropical island"], a: 0 },
     ],
     UY: [
       { q: "Uruguay hosted and won the very first FIFA World Cup in which sport?", options: ["Football", "Rugby", "Cricket", "Baseball"], a: 0 },
-      { q: "Uruguay sits between Argentina and which larger neighbour?", options: ["Brazil", "Chile", "Peru", "Bolivia"], a: 0 },
-      { q: "Like its neighbours, Uruguay enjoys grilled-meat feasts called…?", options: ["Asado", "Luau", "Clambake", "Fondue"], a: 0 },
+      { q: "Uruguay sits between Argentina and which larger neighbor?", options: ["Brazil", "Chile", "Peru", "Bolivia"], a: 0 },
+      { q: "Like its neighbors, Uruguay enjoys grilled-meat feasts called…?", options: ["Asado", "Luau", "Clambake", "Fondue"], a: 0 },
     ],
     JM: [
-      { q: "Jamaican sprinter Usain Bolt holds the world record in which event?", options: ["100 metres", "Marathon", "Long jump", "Hurdles"], a: 0 },
+      { q: "Jamaican sprinter Usain Bolt holds the world record in which event?", options: ["100 meters", "Marathon", "Long jump", "Hurdles"], a: 0 },
       { q: "Which music genre did Jamaica's Bob Marley make world-famous?", options: ["Reggae", "Jazz", "Blues", "Soul"], a: 0 },
       { q: "Jamaica is an island nation in which sea?", options: ["Caribbean", "Mediterranean", "Baltic", "Coral"], a: 0 },
     ],
@@ -471,7 +471,7 @@
       { q: "Uganda is crossed by which imaginary line?", options: ["The Equator", "The Prime Meridian", "The Arctic Circle", "The Tropic of Cancer"], a: 0 },
     ],
     ZW: [
-      { q: "Zimbabwe shares the massive Victoria Falls with which neighbour?", options: ["Zambia", "Botswana", "Mozambique", "Namibia"], a: 0 },
+      { q: "Zimbabwe shares the massive Victoria Falls with which neighbor?", options: ["Zambia", "Botswana", "Mozambique", "Namibia"], a: 0 },
       { q: "Which thundering waterfall lies on the Zimbabwe-Zambia border?", options: ["Victoria Falls", "Niagara Falls", "Angel Falls", "Iguazu Falls"], a: 0 },
       { q: "Zimbabwe's national parks are famous for herds of which large tusked animal?", options: ["Elephants", "Kangaroos", "Bison", "Reindeer"], a: 0 },
     ],

@@ -45,11 +45,12 @@
 
 import fs from 'fs';
 import path from 'path';
-import { DATA_DIR, cachedCSV, parseCSVObjects, GAMES_URL } from './lib.mjs';
+import { DATA_DIR, cachedCSV, nflverseCSV, parseCSVObjects, GAMES_URL } from './lib.mjs';
 import { buildWeeklyResults } from './weekly-results.mjs';
 import { weekGames } from './weekly-pool.mjs';
 import { resultsSQL } from './publish-week.mjs';
 import { buildScores, scoresSQL } from './nfl-scores.mjs';
+import { fetchBoxes, boxScores, crosswalk } from './espn-box.mjs';
 
 const arg = (flag, fallback) => {
   const i = process.argv.indexOf(flag);
@@ -60,6 +61,12 @@ const FORCE = process.argv.includes('--force');
 /* A saved payload instead of the feed, which is the only way the scoreboard half of this
    can be driven from a machine that cannot reach ESPN. See espn.mjs. */
 const ESPN_FILE = arg('--espn', null);
+/* Where to tell the workflow's loop whether to keep watching. One line: `watch 120`, `watch
+   600` or `sleep`. A file rather than an exit code, because an exit code is how this script
+   says it FAILED and the loop has to be able to tell the two apart. */
+const STATUS_FILE = arg('--status', null);
+const status = (v) => { if (STATUS_FILE) fs.writeFileSync(STATUS_FILE, v + '\n'); };
+status('sleep');
 
 /* Everything explanatory goes to stderr, so `| psql` only ever receives SQL. A workflow log
    still shows all of it, which is where the cadence question gets answered. */
@@ -71,6 +78,13 @@ const say = (...a) => process.stderr.write(a.join(' ') + '\n');
    costs a few cheap no-op runs; too tight stops watching before the points arrive. */
 const BEFORE_MS = 10 * 60 * 1000;
 const AFTER_MS = 6 * 60 * 60 * 1000;
+
+/* HOW EARLY THE LOOP STAYS AWAKE FOR A KICKOFF. GitHub's cron is a wide net and it is
+   best effort: on the first Thursday of this mode not one of the six scheduled firings in
+   the game window ran at all. So any firing that does land inside three hours of a kickoff
+   keeps the job alive until the games are over, rather than trusting another firing to
+   turn up at the right minute. */
+const LEAD_MS = 3 * 60 * 60 * 1000;
 
 const main = async () => {
   const nowFile = path.join(DATA_DIR, 'fantasy_now.json');
@@ -109,6 +123,9 @@ const main = async () => {
 
   const inGame = kicks.filter((k) => at >= k - BEFORE_MS && at <= k + AFTER_MS).length;
   const before = at < kicks[0] - BEFORE_MS;
+  const next = kicks.find((k) => k > at);
+  const soon = next != null && next - at <= LEAD_MS;
+  if (soon || inGame) status('watch 600');
   const et = (ms) => new Date(ms).toLocaleString('en-US',
     { timeZone: 'America/New_York', weekday: 'short', hour: 'numeric', minute: '2-digit' });
 
@@ -129,6 +146,7 @@ const main = async () => {
      Tuesday build takes over. */
   const waiting = built.awaiting_stats.length;
   const worth = inGame > 0 || waiting > 0 || !built.final;
+  if (waiting && !built.final) status('watch 600');
 
   say(`  ${built.played} of ${built.games} games played, ${rows} men with a row`
     + (waiting ? `, waiting on ${built.awaiting_stats.join(', ')}` : '')
@@ -172,6 +190,48 @@ const main = async () => {
       + '). The week is still scored.');
   }
 
+  /* ─── THE POINTS WHILE THE GAME IS ON ─────────────────────────────────────────────
+   *
+   * nflverse writes a game's rows hours after the whistle, so without this every lineup
+   * read 0.0 through the whole of the first Thursday. ESPN's box score is read for every
+   * game that has started and whose clubs nflverse has not written yet, and it only ever
+   * fills men nflverse has no row for. See espn-box.mjs for why it never pays.
+   *
+   * Like the scoreboard, it may not take the job red.
+   */
+  let provisional = 0;
+  if (scores && !built.final && !ESPN_FILE) {
+    try {
+      const done = new Set(built.scored_clubs || []);
+      const espnOf = new Map((scores.slate || []).map((g) => [g.game_id, g.espn]));
+      const ids = scores.rows
+        .filter((r) => (r.state === 'in' || r.state === 'post')
+          && !(done.has(r.home) && done.has(r.away)))
+        .map((r) => espnOf.get(r.game_id)).filter(Boolean);
+      if (ids.length) {
+        const xwalk = crosswalk(parseCSVObjects(
+          await nflverseCSV('players', 'players.csv', { maxAgeMs: 12 * 60 * 60 * 1000 })));
+        const boxes = await fetchBoxes(ids);
+        const got = boxScores(boxes, xwalk, new Set(Object.keys(built.scores)));
+        provisional = Object.keys(got.scores).length;
+        Object.assign(built.scores, got.scores);
+        say(`  box: ${boxes.length} of ${ids.length} games read, ${provisional} men scored`
+          + ` off ESPN until nflverse lands`
+          + (got.unmapped ? `, ${got.unmapped} with no crosswalk row` : ''));
+      }
+      /* The count the board prints is games FINISHED, and ESPN knows a game is over hours
+         before games.csv does. This is display only: `final` is still nflverse's alone. */
+      const post = scores.rows.filter((r) => r.state === 'post').length;
+      if (post > built.played) built.played = post;
+    } catch (e) {
+      say('  box: could not be read (' + (e && e.message ? e.message : e)
+        + '). The week is still scored off nflverse.');
+    }
+  }
+  /* A game on the field is polled every two minutes. Everything else the loop waits for
+     (a kickoff inside three hours, a club whose stats have not landed) is ten. */
+  if (scores && scores.rows.some((r) => r.state === 'in')) status('watch 120');
+
   if (WHY) {
     say('  --why, so no SQL was written.');
     return;
@@ -183,7 +243,7 @@ const main = async () => {
      settles anyway; nothing settles a scoreboard. */
   if (scores && scores.rows.length) process.stdout.write(scoresSQL(season, week, scores.rows));
   process.stdout.write(resultsSQL(built));
-  say(`  wrote SQL for ${rows} men`
+  say(`  wrote SQL for ${Object.keys(built.scores).length} men`
     + (built.final ? ' and marked the week final.' : '.'));
 };
 

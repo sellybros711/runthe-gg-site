@@ -65,18 +65,18 @@
     rollcall: 'Roll Call', chain: 'Chain'
   };
   var DESC = {
-    match: 'Can you spot what sixteen athletes have in common? Four hidden groups, four mistakes allowed.',
-    sportegories: 'How many athletes can you name from a single letter? Eight categories, two minutes.',
-    crossword: 'How deep does your sports vocabulary go? A mini crossword against the clock.',
-    rankit: 'Think you know who tops the all-time lists? Put five athletes in order, fewest tries wins.',
-    guess: 'Can you name the mystery athlete? Eight guesses, and every one tells you more.',
-    almamater: 'How well do you know where athletes went to college? Keep naming schools until you miss.',
-    career: 'How many clubs does it take before you know the player? The earlier you call it, the more it scores.',
-    table: 'How well do you know athletes\u2019 jersey numbers? Go for as long as you can.',
-    oddone: 'Can you spot which of five athletes does not belong? Name the link too, and keep the run alive.',
-    highlow: 'Higher or lower? Pick a stat, then call every athlete that follows until you miss.',
-    rollcall: 'How much of that squad do you still remember? One club, one season, ninety seconds.',
-    chain: 'Can you get from one player to another through teammates? Two names in the middle.'
+    match: 'Can you spot what sixteen athletes have in common? Four hidden groups. Four mistakes allowed.',
+    sportegories: 'How many athletes can you name off one letter? Eight categories, two minutes.',
+    crossword: 'How deep does your sports knowledge go? A mini crossword against the clock.',
+    rankit: 'Think you know who tops the all-time lists? Put five athletes in order. Fewest tries wins.',
+    guess: 'Can you name the mystery athlete? Eight guesses, and each one tells you more.',
+    almamater: 'Do you know where athletes went to college? Keep naming schools until you miss.',
+    career: 'How many teams does it take before you know the player? The sooner you call it, the more points you get.',
+    table: 'How well do you know jersey numbers? Go as long as you can.',
+    oddone: 'Can you spot which of five athletes doesn’t belong? Name the link too and keep your run going.',
+    highlow: 'Higher or lower? Pick a stat and keep calling it until you miss.',
+    rollcall: 'How much of that team do you still remember? One team, one season, 90 seconds.',
+    chain: 'Can you get from one player to another through teammates? Fill in the two names in the middle.'
   };
 
   // Aliases, because the Vault and the hub have historically keyed these

@@ -1,0 +1,28 @@
+<!doctype html>
+<!-- THE RUN THE ROPES LOGO, IN PIXELS. `node wrestling/build-logo.mjs` renders every logo file from this page.
+
+     The drawing itself is NOT in this file. It lives in the game (wrestling/index.html, between RPK BEGIN
+     and RPK END) because the home screen and the share card draw the same title, and one drawing in two
+     places is two drawings the first time either is touched. This page reads that block out of the game.
+
+     Every file is one of the kit's grids at a WHOLE scale:
+       lockup  112 x 58   the title
+       icon32   32 x 32   the app icons and a 32px tab
+       icon16   16 x 16   a 16px tab, drawn again at that size rather than scaled down -->
+<html><head><meta charset="utf-8"><meta name="robots" content="noindex, nofollow"><title>Run The Ropes logo</title>
+<style>html,body{margin:0;background:#1a0c0c} canvas{image-rendering:pixelated;margin:14px;vertical-align:top}</style></head>
+<body>
+<script>
+(async function(){
+  const src=await (await fetch('/wrestling/index.html',{cache:'no-store'})).text();
+  const a=src.indexOf('/* ==================== RPK BEGIN'), b=src.indexOf('/* ==================== RPK END ==================== */');
+  if(a<0||b<0) throw new Error('the pixel kit markers are missing from wrestling/index.html');
+  const RPK=new Function(src.slice(a,b)+'\nreturn RPK;')();
+  window.RPK=RPK;
+  const add=c=>document.body.appendChild(c);
+  add(RPK.toCanvas(RPK.lockup(),4));
+  add(RPK.toCanvas(RPK.icon(32),6)); add(RPK.toCanvas(RPK.icon(16),6));
+  window.__markReady=true;
+})();
+</script>
+</body></html>

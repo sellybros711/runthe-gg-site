@@ -508,7 +508,7 @@ const seas = await t.page.evaluate(async () => {
   return out;
 });
 ok('a spent day names the seasons, not a run',
-  /That is your 3 seasons/i.test(seas.capped.text)
+  /That(?:'s| is) your 3 seasons/i.test(seas.capped.text)
     && /all 3 of your free seasons/i.test(seas.capped.text),
   seas.capped.text.slice(0, 120));
 ok('and says the dynasty is still there',
@@ -518,7 +518,7 @@ ok('and that the clock is theirs and 24 hours long',
 ok('the boss battle is the one way to earn another', seas.capped.grace === true);
 ok('and stops being offered once it is earned', seas.boss.grace === false);
 ok('a firing ends the day in its own words',
-  /That is the day/i.test(seas.fired.text) && /a firing ends the day/i.test(seas.fired.text),
+  /That(?:'s| is) the day/i.test(seas.fired.text) && /a firing ends the day/i.test(seas.fired.text),
   seas.fired.text.slice(0, 120));
 ok('and is offered no boss battle, having no run to play one in', seas.fired.grace === false);
 ok('nothing anywhere promises a calendar reset',
@@ -796,14 +796,14 @@ for (const [label, opts, want] of cases) {
   if (want === 'owned') {
     /* CASE-INSENSITIVE, because .display is uppercased in CSS and innerText reports what
        is rendered. A case-sensitive match here fails on a heading that is perfectly right. */
-    ok('    says You are Pro', /You are Pro/i.test(r.text), r.text.slice(0, 90));
-    ok('    thanks them in so many words', /Thank you\. Genuinely\./i.test(r.text));
+    ok('    says You are Pro', /You(?:'re| are) Pro/i.test(r.text), r.text.slice(0, 90));
+    ok('    thanks them in so many words', /Thank you\. Seriously\./i.test(r.text));
     ok('    fires confetti', r.confetti === true);
     ok('    offers the door list', /ck-see/.test(r.buttons), r.buttons);
   } else {
-    ok('    does NOT claim Pro', !/You are Pro/i.test(r.text), r.text.slice(0, 90));
+    ok('    does NOT claim Pro', !/You(?:'re| are) Pro/i.test(r.text), r.text.slice(0, 90));
     ok('    does NOT fire confetti', r.confetti === false);
-    ok('    still thanks them', /Thank you\. Genuinely\./i.test(r.text));
+    ok('    still thanks them', /Thank you\. Seriously\./i.test(r.text));
     ok('    says the purchase is safe', /purchase is safe/i.test(r.text), r.text.slice(0, 140));
     ok('    offers a way back in', /ck-in/.test(r.buttons), r.buttons);
   }
@@ -814,7 +814,7 @@ for (const [label, opts, want] of cases) {
    imply it. */
 const pend = await ck.page.evaluate(() => window.__ck({ answers: [[]] }));
 console.log('  the webhook has not landed at all:');
-ok('    does not claim Pro', !/You are Pro/i.test(pend.text));
+ok('    does not claim Pro', !/You(?:'re| are) Pro/i.test(pend.text));
 ok('    does not fire confetti', pend.confetti === false);
 ok('    never suggests the payment failed', !/fail|problem|wrong|error/i.test(pend.text), pend.text.slice(0, 140));
 ok('    offers to ask again', /ck-again/.test(pend.buttons), pend.buttons);
@@ -861,10 +861,10 @@ for (const stillOpen of [true, false]) {
     };
   }, stillOpen);
   console.log('  ' + (stillOpen ? 'with the sheet still up:' : 'after they closed it:'));
-  ok('    it said it was setting up first', !/You are Pro/i.test(late.during), late.during.slice(0, 70));
+  ok('    it said it was setting up first', !/You(?:'re| are) Pro/i.test(late.during), late.during.slice(0, 70));
   ok('    the header gains the Pro ring', late.proRing === true);
   if (stillOpen) {
-    ok('    the sheet becomes the celebration', /You are Pro/i.test(late.after), late.after.slice(0, 70));
+    ok('    the sheet becomes the celebration', /You(?:'re| are) Pro/i.test(late.after), late.after.slice(0, 70));
     ok('    and the confetti fires then', late.confetti === true);
   } else {
     /* A popup over whatever they went back to is the wrong way to deliver good news. */

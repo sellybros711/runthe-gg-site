@@ -133,7 +133,7 @@
   function failThrown(where, e) {
     offline = true;
     lastError = { where, status: 0, code: 'network',
-      message: (e && e.message) || 'the request did not complete' };
+      message: (e && e.message) || 'the request didn\'t complete' };
     return null;
   }
 
@@ -577,7 +577,7 @@
       const r = (Array.isArray(body) ? body[0] : body) || {};
       return { school: r.school || null, initials: r.initials || null };
     } catch (e) {
-      return { error: (e && e.message) || 'the request did not complete' };
+      return { error: (e && e.message) || 'the request didn\'t complete' };
     }
   }
 

@@ -2,6 +2,7 @@
  "season": 2026,
  "week": 3,
  "minGames": 1,
+ "cap_musd": 90,
  "baseline": 2.63,
  "vorLo": -2.69,
  "vorRef": 16.49,

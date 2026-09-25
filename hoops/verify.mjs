@@ -749,7 +749,7 @@ const KNOWN = [
   ['the 2016 Warriors', 'Pace and Space', [['curryst01', 2016], ['thompkl01', 2016],
     ['barneha02', 2016], ['greendr01', 2016], ['bogutan01', 2016], ['iguodan01', 2016]]],
   // PG Jamal Murray, SG Kentavious Caldwell-Pope, SF Michael Porter Jr., PF Aaron Gordon, C Nikola Jokic, 6th Bruce Brown
-  ['the 2023 Nuggets', 'Point Centre', [['murraja01', 2023], ['caldwke01', 2023],
+  ['the 2023 Nuggets', 'Point Center', [['murraja01', 2023], ['caldwke01', 2023],
     ['portemi01', 2023], ['gordoaa01', 2023], ['jokicni01', 2023], ['brownbr01', 2023]]],
   /* THE EXPECTATION WAS WRONG HERE, NOT THE MODEL, and it is worth saying so
      rather than quietly editing the string. This was written down as Bully Ball
@@ -908,11 +908,14 @@ ok(bestWins > worstWins + 20,
   is(fr.length, 30, 'thirty current franchises are offered');
   ok(E.franchiseCodes('OKC').includes('SEA'), 'Oklahoma City reaches Seattle');
   ok(E.franchiseCodes('MEM').includes('VAN'), 'Memphis reaches Vancouver');
-  ok(E.franchiseCodes('NOP').includes('CHH'), 'New Orleans reaches the Charlotte Hornets');
-  /* The two Charlotte clubs are different franchises and this is the one pair
-     in the table that a lineage walk can plausibly merge. The Hornets left for
-     New Orleans and the Bobcats took the name later. */
-  ok(!E.franchiseCodes('CHO').includes('CHH'), 'the Hornets who left are not the Hornets who stayed');
+  /* THE HORNETS OF 1988 TO 2002 ARE CHARLOTTE'S, which is the NBA's own record
+     since 2014 and is what a fan picking the Hornets expects to find: Mourning,
+     Larry Johnson and Muggsy. This table once filed them under the Pelicans,
+     the legal entity that moved, and a Charlotte run had none of them. The two
+     New Orleans codes stay New Orleans. */
+  ok(E.franchiseCodes('CHO').includes('CHH'), 'Charlotte reaches the Hornets of 1988 to 2002');
+  ok(!E.franchiseCodes('NOP').includes('CHH'), 'and New Orleans does not claim them');
+  ok(E.franchiseCodes('NOP').includes('NOH'), 'New Orleans reaches its own Hornets years');
   ok(E.franchiseCodes('CHO').includes('CHA'), 'Charlotte reaches the Bobcats');
   ok(E.franchiseCodes('ZZZ').length === 1, 'a code with no row is a franchise of one, not a crash');
 
@@ -1393,7 +1396,7 @@ ok(bestWins > worstWins + 20,
      assertion below pass vacuously, which is how an extractor in this repo
      has been silently wrong three times. */
   const WANT = ['cardTag', 'dayNumberOf', 'dailySeed', 'dailyRecord',
-    'freshBadges', 'bestsSet', 'shareDare'];
+    'freshBadges', 'bestsSet', 'shareDare', 'gridLine', 'pathLine'];
   /* NUMWORD is not in WANT because it is not a `function` declaration but a
      `var` holding one, and it is lifted separately below. It is the page's one
      place that turns a roster count into an English word, so every tagline
@@ -1461,6 +1464,47 @@ ok(bestWins > worstWins + 20,
     ok(plain !== day, 'the daily dares differently from an ordinary run');
     ok(mk(null)({ isGOAT: true, titleWon: true }) !== plain,
       'a 74 win run is dared differently from an ordinary one');
+  }
+
+  /* ---- the share grid ---- */
+  if (fnSource('gridLine') && fnSource('pathLine')) {
+    /* The squares ride in the share text, so the thing that has to hold is
+       that they say what the tiles said: one square a man, a DIFFERENT square
+       for each verdict, and an unknown key never printing nothing. The table
+       is lifted with the function, never restated. */
+    const sqSrc = /var DEAL_SQ = (\{[^}]*\});/.exec(pageSrc);
+    ok(!!sqSrc, 'the page declares the deal squares');
+    const DEAL_SQ = sqSrc ? new Function('return ' + sqSrc[1] + ';')() : {};
+    const gridLine = lift('gridLine', ['DEAL_SQ'], [DEAL_SQ]);
+    const keys = ['good', 'fair', 'bad', 'none'];
+    is(new Set(keys.map(k => DEAL_SQ[k])).size, keys.length,
+      'every verdict gets its own square');
+    is([...gridLine(['good', 'bad', 'fair', 'none', 'good'])].length,
+      [...gridLine(['good', 'good', 'good', 'good', 'good'])].length,
+      'one square a man, whatever the verdicts');
+    is(gridLine(['mystery']), DEAL_SQ.none, 'an unknown verdict still draws a square');
+    /* THE KEYS ARE dealOf's OWN, read out of its source, so a verdict renamed
+       there cannot quietly fall through to the black square here. */
+    const dealKeys = [...(fnSource('dealOf') || '').matchAll(/key: '(\w+)'/g)].map(m => m[1]);
+    ok(dealKeys.length >= 3 && dealKeys.every(k => DEAL_SQ[k]),
+      `every key dealOf can answer has a square (${dealKeys.join(', ')})`);
+
+    const rsSrc = /var ROUND_SHORT = (\{[^}]*\});/.exec(pageSrc);
+    const ROUND_SHORT = rsSrc ? new Function('return ' + rsSrc[1] + ';')() : {};
+    const pathLine = lift('pathLine', ['ROUND_SHORT'], [ROUND_SHORT]);
+    ok(!!rsSrc && E.PLAYOFF_ROUND_NAMES.every(r => ROUND_SHORT[r]),
+      'every round the engine plays has a short name');
+    is(pathLine([], false), null, 'no playoffs, no path line');
+    const run = [
+      { round: 'Play-In', won: true, yourWins: 1, oppWins: 0 },
+      { round: 'First Round', won: true, yourWins: 4, oppWins: 3 },
+      { round: 'Conference Semifinals', won: false, yourWins: 2, oppWins: 4 },
+    ];
+    const p = pathLine(run, false);
+    ok(/Play-in W/.test(p) && /4-3/.test(p) && /2-4/.test(p),
+      `the path reads a series at a time (${p})`);
+    ok(!/\uD83C\uDFC6/.test(p) && /\uD83C\uDFC6/.test(pathLine(run, true)),
+      'and only a champion gets the trophy');
   }
 
   /* ---- the day number ---- */
@@ -1785,7 +1829,7 @@ ok(bestWins > worstWins + 20,
        was by reading a page and finding nothing in it. Two sentences that only
        exist inside index.html's script block, one of them past the regex
        literal that desyncs a naive walker. */
-    for (const probe of ['No identity yet', 'days in a row.']) {
+    for (const probe of [' good players. Nothing they do together.', 'days in a row.']) {
       ok(pages['index.html'].includes(probe),
         `the copy reader reaches the script's own strings ("${probe}")`);
     }
@@ -1879,29 +1923,70 @@ ok(bestWins > worstWins + 20,
     /* board.js's own copy, lifted out of the shipped file rather than
        rewritten here, for the reason the whole repo distrusts a second
        implementation: a copy of the arithmetic agrees with itself. */
-    const head = boardSrc.indexOf('function scoreOf(');
-    let depth = 0, end = -1;
-    for (let j = boardSrc.indexOf('{', head); j < boardSrc.length; j++) {
-      if (boardSrc[j] === '{') depth++;
-      else if (boardSrc[j] === '}' && --depth === 0) { end = j + 1; break; }
-    }
-    ok(head >= 0 && end > head, 'board.js still has a scoreOf to compare against');
     const roundTo = (n, places) => {
       const f = Math.pow(10, places);
       const v = Number(n) * f;
       return (v < 0 ? -Math.round(-v) : Math.round(v)) / f;
     };
-    const scoreOf = new Function('round1',
-      boardSrc.slice(head, end) + '\nreturn scoreOf;')((n) => roundTo(n, 1));
+    /* board.js carries three functions for this now (the record score, the
+       depth, and the score that adds them), so the lift takes the whole run of
+       them rather than one brace-matched function. */
+    const lh = boardSrc.indexOf('function depthOf(');
+    const le = boardSrc.indexOf('/* THE SIGNED-IN USER');
+    ok(lh >= 0 && le > lh, 'board.js still has depthOf, recordScoreOf and scoreOf together');
+    const lifted = new Function('round1', boardSrc.slice(lh, le)
+      + '\nreturn { depthOf, recordScoreOf, scoreOf };')((n) => roundTo(n, 1));
+    const { depthOf, recordScoreOf } = lifted;
+    const scoreOf = lifted.scoreOf;
+
+    const dm = /depth::int \* (\d+) \+ wins::int \* \d+/.exec(sql);
+    ok(!!dm, 'the score column leads with how far the run went');
+    const depthMul = dm ? Number(dm[1]) : NaN;
+    const runFromSql = (wins, diff, depth) => depth * depthMul + fromSql(wins, diff);
 
     let worst = null;
     for (let w = 0; w <= 82; w++) {
       for (let d = -20; d <= 20; d += 0.1) {
         const diff = roundTo(d, 1);
-        if (scoreOf(w, diff) !== fromSql(w, diff) && !worst) worst = [w, diff];
+        if (recordScoreOf(w, diff) !== fromSql(w, diff) && !worst) worst = ['record', w, diff];
+        for (let dp = 0; dp <= 6; dp += 3) {
+          if (scoreOf(w, diff, dp) !== runFromSql(w, diff, dp) && !worst) worst = ['run', w, diff, dp];
+        }
       }
     }
     is(worst, null, 'the client and the column compute the same score everywhere');
+
+    /* HOW FAR IT WENT, against the engine's own bracket. The SQL, board.js
+       and the engine each decide how many rounds a record gets, so every
+       legal (wins, series won) pair is walked through all three. A seeded run
+       starts at 2 and a play-in run at 1, and a ring is 6 from either door. */
+    const C = E.CONSTANTS;
+    let depthBad = null;
+    for (let w = 0; w <= 82; w++) {
+      const seat = E.seedFromRecord(w);
+      const rounds = seat.made ? seat.rounds : 0;
+      for (let po = 0; po <= rounds; po++) {
+        const want = rounds === 0 ? 0 : 6 - (rounds - po);
+        const got = depthOf(w, po, C.TOP_SIX_WINS, C.PLAY_IN_WINS);
+        if (got !== want && !depthBad) depthBad = [w, po, got, want];
+      }
+    }
+    is(depthBad, null, 'depth is 0 for the lottery and 6 for a ring, from either door');
+    /* The upgrade block backfills old rows with literal lines, because a DO
+       block cannot read the function's constants. They are a copy and have to
+       agree. */
+    const bf = /when regular_wins >= (\d+) then 2 \+ playoff_wins\s+when regular_wins >= (\d+) then 1 \+ playoff_wins/.exec(sql);
+    ok(!!bf, 'the migration still backfills depth for a table from the first version');
+    if (bf) is([Number(bf[1]), Number(bf[2])], [C.TOP_SIX_WINS, C.PLAY_IN_WINS],
+      'and its backfill uses the lines the game plays');
+
+    /* One step deeper always outranks any record one step shallower: a 22 win
+       champion is impossible, but the arithmetic has to hold for it anyway. */
+    let deeper = null;
+    for (let dp = 0; dp < 6; dp++) {
+      if (scoreOf(82, 60, dp) >= scoreOf(0, -60, dp + 1) && !deeper) deeper = dp;
+    }
+    is(deeper, null, 'going one round further always outranks any record');
 
     /* AND THE PROPERTY THE SHIFT AND THE CLAMP EXIST FOR. A differential can
        never carry into the wins digit, so a 49 win blowout never outranks a
@@ -1910,7 +1995,7 @@ ok(bestWins > worstWins + 20,
        question about the whole range. */
     let carried = null;
     for (let w = 0; w < 82; w++) {
-      const best = scoreOf(w, 60), worstNext = scoreOf(w + 1, -60);
+      const best = recordScoreOf(w, 60), worstNext = recordScoreOf(w + 1, -60);
       if (best >= worstNext && !carried) carried = [w, best, worstNext];
     }
     is(carried, null, 'one more win always outranks any differential');

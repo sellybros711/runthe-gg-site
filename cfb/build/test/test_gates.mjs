@@ -297,7 +297,7 @@ console.log('\n=== signed in, but the board cannot answer ===');
   await p.click('#pf-go-case'); await p.waitForTimeout(6000);
   const t=(await p.textContent('#sheet-in')).replace(/\s+/g,' ');
   ok('the case does not spin forever', !/Fetching your seasons/.test(t), t.slice(0,80));
-  ok('it says the fetch failed and nothing is lost', /could not be fetched/.test(t)||/No seasons yet/.test(t));
+  ok('it says the fetch failed and nothing is lost', /could(?:n't| not) be fetched/.test(t)||/No seasons yet/.test(t));
   await p.screenshot({path:SS+'gate_case_boarddown.png'});
   console.log('  errors:', errs.length?errs:'none');
   if(errs.length) bad++;

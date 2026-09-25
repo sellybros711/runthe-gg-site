@@ -133,7 +133,9 @@ function rowOf(run) {
   }
   return {
     w: out.wins, l: out.losses, ring: !!out.titleWon,
-    po: !!(run.playoffs && run.playoffs.rounds.length),
+    /* The page's madePlayoffs(): a play-in loss is not the playoffs. */
+    po: !!(run.playoffs && run.playoffs.rounds.length
+      && (run.playoffs.rounds[0].round !== 'Play-In' || run.playoffs.rounds[0].won)),
     rating: Math.round(out.rating),
     chem: out.chemistry && typeof out.chemistry.bonus === 'number'
       ? Math.round(out.chemistry.bonus * 100) / 100 : 0,
@@ -173,7 +175,7 @@ for (let i = 0; i < argRuns; i++) {
   career.totalLosses += out.losses;
   if (out.titleWon) career.rings++;
   if (out.beatRecord) career.beat72++;
-  if (run.playoffs && run.playoffs.rounds.length) career.playoffs++;
+  if (rowOf(run).po) career.playoffs++;
   if (out.wins > career.bestWins) career.bestWins = out.wins;
   if (out.rating > career.bestRating) career.bestRating = out.rating;
   const shape = out.structure && out.structure.archetype ? out.structure.archetype.name : null;

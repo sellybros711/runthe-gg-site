@@ -52,6 +52,10 @@ on:
         description: 'Commit the rebuilt pool'
         type: boolean
         default: true
+      economy_runs:
+        description: 'Drafts per bot in the draft-economy sweep (raise it before deciding anything)'
+        type: string
+        default: '40'
 
 concurrency:
   group: baseball-data
@@ -200,6 +204,28 @@ jobs:
       # the edit and the bump are one commit by a person; here a bot rewrites the
       # pool and nobody is watching. It bumps only what `git diff --quiet` says
       # actually moved, so a run that finds no new baseball moves no number.
+      # A DRY RUN YOU CANNOT INSPECT PROVES ONLY THAT NOTHING THREW. The header
+      # above tells whoever runs `split_stints` to re-run the cap sweep and
+      # compare the best-available against budget-bot gap before shipping the
+      # result, and with `commit` off there was no way to get the pool off this
+      # runner to do it: the log prints the SHAPE and says nothing about the
+      # draft economy, which is the whole question that input asks. So a run
+      # that does not commit hands the pool back as an artifact instead.
+      # `always()`, BECAUSE THE RUN THAT FAILS IS THE ONE YOU MOST WANT THE POOL
+      # FROM. Placed after the checks with a plain `if`, this step was skipped on
+      # exactly the dispatch it was added for: the split_stints dry run went red
+      # at check-labels and handed back nothing, so the only way to see what that
+      # input builds was to read a log. A dry run exists to be inspected.
+      - name: Keep the pool for measuring
+        if: ${{ always() && !inputs.commit }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: players-json${{ inputs.split_stints && '-split-stints' || '' }}
+          path: |
+            baseball/data/players.json
+            baseball/pipeline/provenance.json
+          retention-days: 7
+
       - name: Bump the cache version if the pool moved
         if: ${{ inputs.commit }}
         run: |
@@ -238,3 +264,36 @@ jobs:
             echo "push rejected, rebasing (attempt $i)"
             git pull --rebase origin "${GITHUB_REF_NAME}" || exit 1
           done
+
+      # AND WHETHER IT STILL PLAYS THE SAME GAME, which is the question the shape
+      # gate cannot ask.
+      #
+      # IT IS THE LAST STEP BECAUSE ITS ANSWER HAS TO BE FINDABLE. Run in the
+      # middle, a fourteen minute measurement printed its verdict seven hundred
+      # lines from the end of the log, under every line check-labels writes, and
+      # a number nobody can find is a number nobody reads. It never fails the
+      # job and never gates the commit, so it costs nothing to run last: the
+      # steps that decide whether the pool ships are the checks above.
+      #
+      # `split_stints` is the input this exists for: the price
+      # curve is convex, so half a season's WAR costs much less than half the
+      # price, and splitting a traded man's season fills the board with cheap
+      # production. This file's own header tells whoever runs it to re-run the
+      # cap sweep by hand first, and there was no way to: with `commit` off the
+      # pool never left the runner, and the artifact host is refused from the
+      # development sandbox. So the runner does the sweep, because it is the one
+      # machine in the project holding both pools.
+      #
+      # It runs on EVERY rebuild rather than only on split_stints. Any pool
+      # change can move the gap, and two minutes on a job that fires once a year
+      # is the difference between shipping a pool and shipping a pool that plays
+      # the same game.
+      - name: And whether it still plays the same game
+        if: ${{ always() }}
+        # THE DEFAULT IS A TRIPWIRE AND NOT A MEASUREMENT. At 40 drafts a bot the
+        # standard error on the GAP is about 2.8 rating points, which is the size
+        # of the whole effect split_stints has, so the default run says only that
+        # nothing fell over. Raise it before deciding anything.
+        run: node baseball/pipeline/draft_economy.mjs
+             baseball/data/players.json /tmp/pool_before.json
+             ${{ inputs.economy_runs || '40' }}

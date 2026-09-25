@@ -1,0 +1,85 @@
+<!doctype html>
+<!-- THE LINK PREVIEW (golf/og.png), IN PIXELS. `node golf/build-logo.mjs` renders it along with the logo files.
+
+     It is what a chat app or a feed draws when somebody pastes a link to the game, so for most people it is
+     the first thing they ever see of it. It used to be a smooth vector poster with the old shield in the
+     corner; it is the game's own pixel art now, painted with the same kit as the logo and the share cards
+     (read out of golf/index.html, between PIXK BEGIN and PIXK END), on a 400 x 210 grid at 6x = 2400 x 1260.
+
+     The pitch is unchanged, because it is the game: draft skills from the pros, build one golfer, chase the
+     greatest of all time. Numbers on it are illustrative ratings, the same three the old card carried. -->
+<html><head><meta charset="utf-8"><meta name="robots" content="noindex, nofollow"><title>Run The Tour link preview</title>
+<style>html,body{margin:0;background:#000} canvas{display:block;width:1200px;image-rendering:pixelated}</style></head>
+<body>
+<script>
+(async function(){
+  const src=await (await fetch('/golf/index.html',{cache:'no-store'})).text();
+  const a=src.indexOf('/* ==================== PIXK BEGIN'), b=src.indexOf('/* ==================== PIXK END ==================== */');
+  if(a<0||b<0) throw new Error('the pixel kit markers are missing from golf/index.html');
+  const P=new Function(src.slice(a,b)+'\nreturn PIXK;')();
+  const GW=400, GH=210, U=6;
+  const cv=document.createElement('canvas'); cv.width=GW*U; cv.height=GH*U; const ctx=cv.getContext('2d');
+  ctx.imageSmoothingEnabled=false;
+
+  // the course at dusk, full bleed
+  P.draw(ctx,P.scene(GW,GH,{horizon:0.5, sunX:0.62}),0,0,U);
+  // a soft dark wash down the left, so the words read over the sky
+  const wash=P.grid(GW,GH);
+  for(let y=0;y<GH;y++) for(let x=0;x<232;x++){ const t=x/232; if(((x+y)%2===0) && t>0.86) continue; wash.put(x,y,`rgba(6,16,11,${(0.55*(1-t*0.7)).toFixed(3)})`); }
+  P.draw(ctx,wash,0,0,U);
+
+  const top=P.grid(GW,GH), txt=P.grid(GW,GH);
+  // the frame
+  for(let y=0;y<GH;y++) for(let x=0;x<GW;x++){ const d=Math.min(x,y,GW-1-x,GH-1-y);
+    if(d===0||d===3) top.put(x,y,P.K); else if(d<=2) top.put(x,y,(x+y<(GW+GH)/2)?P.GOLD[2]:P.GOLD[4]); }
+  // the title, big
+  const lk=P.lockup(0), big=P.grid(208,108);
+  for(let y=0;y<108;y++) for(let x=0;x<208;x++){ const c=lk.get(x>>1,y>>1); if(c) big.put(x,y,c); }
+  P.stamp(top,big,14,10);
+  // the promise
+  // three lines rather than two: at this size "BECOME THE G.O.A.T." runs into the panel on one line
+  const goldRow=j=>j<2?P.GOLD[1]:j<5?P.GOLD[2]:P.GOLD[3];
+  P.text(txt,'BUILD A GOLFER.',20,122,{scale:2,bold:true,color:P.CREAM[0]});
+  P.text(txt,'BECOME THE',20,142,{scale:2,bold:true,color:goldRow});
+  P.text(txt,'G.O.A.T.',20,162,{scale:2,bold:true,color:goldRow});
+
+  // the right panel: draft three skills, get one legend
+  const px0=242, py0=12, pw=146, ph=164;
+  const pan=P.grid(GW,GH);
+  for(let y=py0;y<py0+ph;y++) for(let x=px0;x<px0+pw;x++){
+    const cx=Math.min(x-px0,px0+pw-1-x), cy=Math.min(y-py0,py0+ph-1-y); if(cx+cy<3) continue;
+    pan.put(x,y,(cx===0||cy===0||cx+cy===3)?'rgba(241,208,74,.6)':'rgba(6,18,12,.84)'); }
+  P.draw(ctx,pan,0,0,U);
+  const mid=px0+pw/2, cen=(str,y,o)=>P.text(txt,str,Math.round(mid-P.textW(str,o)/2),y,o);
+  cen('DRAFT THE PROS',py0+8,{bold:true,color:'#7fe8c8'});
+  [['DRIVING','98'],['APPROACH','97'],['PUTTING','99']].forEach(([k,v],i)=>{
+    const ry=py0+22+i*24, rx=px0+8, rw=pw-16;
+    for(let y=ry;y<ry+20;y++) for(let x=rx;x<rx+rw;x++){ const e=(y===ry||y===ry+19||x===rx||x===rx+rw-1); if((y===ry||y===ry+19)&&(x===rx||x===rx+rw-1)) continue;
+      top.put(x,y,e?P.GOLD[3]:'rgba(0,0,0,.35)'); }
+    P.text(txt,k,rx+6,ry+7,{bold:true,color:P.CREAM[0]});
+    const bx=rx+rw-30, by=ry+2;
+    for(let y=by;y<by+16;y++) for(let x=bx;x<bx+28;x++){ const j=y-by; top.put(x,y,j<2?P.GOLD[0]:j<8?P.GOLD[2]:j<14?P.GOLD[3]:P.GOLD[5]); }
+    P.text(top,v,bx+Math.round((28-P.textW(v,{scale:2,bold:true}))/2),by+1,{scale:2,bold:true,color:'#2a1604'});
+  });
+  // the result: one shield
+  { const sw=44, sh=48, sx=Math.round(mid-sw/2), sy=py0+96;
+    for(let y=sy;y<sy+sh;y++){ const inset=y>sy+sh-10?Math.round((y-(sy+sh-10))*1.8):0;
+      for(let x=sx+inset;x<sx+sw-inset;x++){ const j=y-sy; top.put(x,y,j<3?P.GOLD[0]:j<16?P.GOLD[2]:j<30?P.GOLD[3]:P.GOLD[4]); } }
+    P.text(top,'99',sx+Math.round((sw-P.textW('99',{scale:3,bold:true}))/2),sy+4,{scale:3,bold:true,color:'#2a1604'});
+    P.text(top,'OVR',sx+Math.round((sw-P.textW('OVR',{bold:true}))/2),sy+29,{bold:true,color:'#5a3a08'}); }
+  cen('YOUR LEGEND',py0+ph-14,{bold:true,color:P.GOLD[1]});
+
+  // the address, on a strip across the foot
+  { const t='PLAY FREE AT RUNTHE.GG/GOLF', o={scale:2,color:P.CREAM[0]}, w=P.textW(t,o), bx=Math.round((GW-w)/2)-10, by=184;
+    for(let y=by;y<by+20;y++) for(let x=bx;x<bx+w+20;x++){ const e=(y===by||y===by+19||x===bx||x===bx+w+19); if((y===by||y===by+19)&&(x===bx||x===bx+w+19)) continue;
+      top.put(x,y,e?'rgba(241,208,74,.7)':'rgba(6,18,12,.86)'); }
+    P.text(txt,'PLAY FREE AT ',bx+10,by+4,o);
+    P.text(txt,'RUNTHE.GG/GOLF',bx+10+P.textW('PLAY FREE AT ',o)+2*o.scale,by+4,Object.assign({},o,{color:P.GOLD[2]})); }
+  [[180,18,2],[228,116,1],[378,186,1],[200,160,1]].forEach(([x,y,s])=>P.star(top,x,y,s));
+  P.outline(top,P.K); P.draw(ctx,top,0,0,U);
+  P.outline(txt,P.K); P.draw(ctx,txt,0,0,U);
+  document.body.appendChild(cv);
+  window.OG=cv; window.__ogReady=true;
+})();
+</script>
+</body></html>

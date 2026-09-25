@@ -121,6 +121,35 @@ four commas and exactly right. And it does not look for the rule of three: three
 is the number of kinds of special college season there are, and whether a group of
 three is information or padding is a person's job.
 
+**An escaped quote was the third way it went wrong.** A contraction in a
+single-quoted literal is `you\'re`, and the backslash counted against the
+prose-shape filter. A line of copy full of markup and digits sat just over that
+threshold, so the escape pushed it out of every checker that reads copy. Found when
+a contraction pass took one "all 17 games" claim out of `check-numbers`' count
+without changing a word the player sees. `tidy()` unescapes quotes now.
+
+### The football and college games talk like the owner
+
+Casual, with hype saved for the big moments. The Perfect Season, College Football,
+Commissioner Mode, both how-to pages and the store all use contractions now
+(`don't`, `you're`, `it's`). The results verdicts, the rank lines and the purchase
+thank-you were rewritten by hand. Commissioner Mode's characters kept their own
+voices and only picked up the contractions, the same call the Segue pass made about
+the crowd's slang.
+
+**A contraction pass has to know a subject from an object.** "The six that can
+remove you are on the strip" is not "you're", and "the one before it is still
+here" is not "it's". A regex cannot tell those apart, so the pass only contracts
+`it is`, `you are` and the rest when the pronoun opens a clause: at the start of a
+sentence, or after `and`, `but`, `so`, `if`, `when` and the like. It also leaves
+`what there is to`, `it is its own` and `of it is` alone. Read the diff for
+anything that slipped through before shipping one.
+
+**Two checkers read the old spelling and had to take both.** `check-fullteam`
+matched "could not be looked up here" and `test_store` asserted the page never
+says "could not". Before a sweep, grep the checkers for the phrases being
+contracted, as well as the page's own `.test(` calls.
+
 ### A number a player reads has to be the number the game plays
 
 ```
@@ -294,6 +323,56 @@ that it could not tell which module `E` was on a hoops page that is entirely cor
 `API_VERSION` and yields no pair is a broken reader, not a clean page, so that is a failure.
 The rule keys on the comparison rather than on the word, because the stub below it writes
 `API_VERSION:BOARD_VERSION` into itself and would otherwise count as a pin.
+
+## The Perfect Season front page is one switcher and one button
+
+`#s-intro` in `football/index.html`. The quick drafts are one question with three answers,
+so they are one control: `#hp-mode` (Offense, Defense, Full Team), then `#b-start`, which
+names what it drafts (`HOME_GO`: Draft your offense, your defense, your full team) and calls
+whichever door the switcher names. The longer modes sit under it in `#hp-longer`, stacked on
+a phone and two across on a desktop.
+
+**The button is frosted glass, and the thing behind the glass is drawn inside it.** It sits
+on flat dark, and a backdrop blur of flat dark is flat dark. So `.hp-go-fx` holds two soft
+lights in the mode's colours under a translucent tint, a sheen and a grain layer, at
+`z-index:-1` inside an `isolation:isolate` button. Drop the isolation and that layer paints
+under the page instead of under the label. The label is measured in real Anton: "Draft your
+full team" leaves about eleven pixels at 320, so anything longer needs measuring first.
+
+**THE OLD DOORS ARE STILL IN THE MARKUP AND STILL DO THE WORK.** `#b-start` calls
+`beginDraft`, `beginDefenseDraft` or `fullDoor`, the same functions `#b-start-off`,
+`#b-start-def` and `#b-start-full` always called, so the account wall, the day's allowance
+and a saved Full Team season are all decided exactly where they were. `#hp-split` and
+`#b-start-full` are kept and never drawn: the pair for anything that presses it directly,
+the Full Team door because `ensureFullButton` is where that mode's save and meter state
+lives, and `paintHomeMode` reads it into the tab note, the button label and the line under
+the button. Delete either and nothing throws; the Full Team tab just stops knowing whether
+there is a run to resume.
+
+**A TAB IS DRAWN ONLY FOR A MODE THIS ACCOUNT CAN PLAY**, asked of `canPlayDefense` and
+`canPlayFull`, the two calls that used to decide whether those doors existed. With Offense
+alone there is no question and the switcher goes. The choice is remembered on the device
+(`ps_home_mode`), and a remembered mode the account can no longer play falls back to
+Offense rather than to a hidden tab.
+
+**THE FIELD FOLLOWS THE SWITCHER, and it is twelve chips that are never torn down.** Six a
+side, updated in place by `heroChips`, so a switch changes where each one stands and the
+CSS transition on `left` and `top` does the rest: the side you left runs off its own end,
+the side you picked runs on, and Full Team folds both toward one line with the draft's own
+`fullY()`. Rebuilt instead, a switch is a cut. The markings are the draft field's own
+(`fieldMarkings`) in a `.hmk` layer that fades, so the grass never repaints under men who
+are mid-run. On Full Team the hero only signs where a name has room (`HERO_FULL_OK`): a
+lineman's name lands on the receiver across the line, and the back's runs off the bottom.
+
+**SHORT SCREENS KEEP THE BUTTON ABOVE THE FOLD**, which this page has always measured. The
+switcher costs about sixty pixels the old pair did not, so under 760 tall the name goes
+back to one line and the slot list stands down, under 640 the subtitle goes, and under 600
+the kicker. Measured: 320x568, 360x640, 375x667, 390x664 and 844x390 all land Spin on
+screen. Re-measure after touching anything above it.
+
+**The name is two lines on a tall phone and on a desktop**, "Season" in red, and back to
+one line on a short phone. Its size is `min(14vw,84px)` rather than the old one-line fit,
+because "THE PERFECT" is eleven of the eighteen characters.
 
 ## The football game's badge cabinet
 
@@ -2669,19 +2748,128 @@ scored on what the six actually do. **It is a page of its own rather than a scre
 the football game**, because it shares nothing with that engine: no season, no sim, no
 ratings. What it shares is accounts, the palette and the tester pattern.
 
-**IT IS NOT LAUNCHED AND THE FLAG IS NOT A LOCK.** `fantasy-access.js` ships
-`FANTASY_LIVE = false`, so the door on the front page is BUILT for a tester and for nobody
-else. The file is served to every visitor and the list is a console line from being edited.
-Say that plainly rather than implying the page is private. It is the same gate the unlisted
-games run on.
+**IT IS LAUNCHED, IN BETA, AND WHAT IT ASKS FOR IS AN ACCOUNT.** `fantasy-access.js` ships
+`FANTASY_LIVE = true`, so the door is built for everybody. What decides whether it OPENS is
+whether somebody is signed in, and those are two questions kept apart the way the Commish
+door and the One Franchise lock keep theirs:
+
+| | asks | so that |
+|---|---|---|
+| whether the door is DRAWN | `show()` | everybody finds the mode |
+| whether it OPENS | `allowed()` | nothing drafts that cannot enter |
+
+A guest gets the same door wearing a padlock and the press opens the sign-in sheet. **The
+lock is fully pressable**: `.mc-soon` sets `pointer-events:none` and is deliberately not
+reused, because a lock a thumb falls straight through is a lock with no way to the thing
+that opens it.
+
+**THE POINT OF THE GATE IS WHERE THE REFUSAL LANDS, NOT THAT THERE IS ONE.**
+`fantasy_submit` has always refused a signed out lineup itself, in the one place that can,
+because there is a prize. Without the gate a stranger who follows a link drafts five whole
+lineups, chooses one, presses the last button of the mode and meets a wall. The work is the
+drafting. This is still a feature flag and not a permission.
+
+**THE DOOR IS A NEON SIGN AND THE COLOUR IS THE STATE.** Red until a lineup is in, green
+once one is. It is the only door on this page whose border answers a question rather than
+naming a mode, and it earns it: one lineup a week against a clock makes "have I entered this
+week" the single thing a returning reader wants off the front page. It reads the mode's OWN
+`ps_fantasy_<season>_w<week>` record, which `save()` writes only after the server has said
+yes, so a refused entry can never light it green. **It fails soft to RED**, which is the safe
+direction: an unknown answer costs a tap onto a screen that says you are already in, where
+green on a bad read would tell somebody they had entered a competition they had not. What it
+cannot see is another device, and that is recorded rather than fixed: asking the server needs
+`entries.js`, a client and a round trip on every front page paint, for a border colour.
+**A guest holding a lineup is still red**, because a browser keeps localStorage across a sign
+out and a green door telling a stranger they are in is the one thing this light must never
+say.
+
+**SO IT IS THE ONLY FILLED, GLOWING DOOR ON THE FRONT PAGE, and that is what makes it read.**
+Reported as the home screen feeling crowded, and the cause was that every door shouted: a
+saturated red and blue pair, a solid red and blue Full Team slab, a gold Dynasty card and a
+neon sign, one under the other. The Offense and Defense pair stays filled because it is the
+game. Full Team carries its red and blue as a gradient EDGE on a dark card (the dark seam
+between the two is kept, so it is still the pair joined), Dynasty is shorter, and Tutorial,
+How to play and Leaderboard are underlined text rather than three more boxes. A neon door
+among filled doors is one more loud thing; among outlined ones it is the sign.
+`check-fullteam.mjs` still asserts `hp-ft` carries its own colour, which is now the edge.
 
 **THREE ACCESS FILES NOW, AND THEY ARE STILL THREE FILES.** `fullteam-access.js` says in as
 many words "when a third mode wants this, merge them". This is the third and the merge is
-DEFERRED, which is written in the new file's header: the other two ship `LIVE = true`, so
-merging means editing two launched modes and their callers in the middle of building an
-unlaunched one, and the way that fails is a door that is never built, which reports nothing.
+DEFERRED. It was deferred while this one was unlaunched, for the obvious reason, and it is
+**still** deferred now that all three flags are true, for a different one: this file is no
+longer the same SHAPE as the other two. It has a show/allow split they do not have, because
+it is the only mode here that asks for an account. Merging means teaching the other two a
+question they never ask, and the way that fails is a door that is never built, which reports
+nothing. Do it on a day with nothing on the clock.
 `check-fullteam.mjs` walks **every** `*-access.js` on disk now rather than naming two, so the
 lists cannot drift and a fourth mode is covered without anybody remembering.
+
+#### A published week's cap is the WEEK's, and the constant is only the next one's
+
+```
+node football/check-fantasy.mjs --quick   the section named THE LIVE WEEK CARRIES ITS OWN CAP
+```
+
+**IT SHIPPED BROKEN AND NOTHING ANYWHERE THREW.** Week 3 of 2026 was published to the server
+at **$90M** with 414 prices. `CAP_MUSD` went to **110** the next day, with the pricing change
+that earned it. `fantasy_weeks.cap_musd` does not move, ever, because a price may never move
+once anybody has drafted against it and `fantasy_submit` checks a lineup against the ROW.
+
+So the page and the server disagreed by $20M. A lineup spending $95M drafted perfectly,
+looked legal on every screen, and would have been refused at the last press of five drafts.
+
+**AND THE BOARD ITSELF MOVES, WHICH IS WORSE THAN THE REFUSAL.** The cap reaches `ceilingAt`
+through `boardFor`, which sets the guaranteed signable seat and the reserve floor, so a board
+drawn at 110 is not the board drawn at 90 with a different number over it. It is a different
+board, and two readers on two deploys would have drafted different weeks.
+
+**IT WAS ALSO VISIBLE AS THE THING A PLAYER REPORTED.** Greedy drafting on that board leaves
+**$10.6M** at $110M, $5.8M at $100M and **$2.2M** at the $90M it was priced for. "I picked
+the best player every round and still had leftover money" is that row of the table. The cap
+binds at 90 and strands 0 of 120 drafts, which is what it was tuned for.
+
+**SO THE POOL CARRIES ITS OWN CAP AND EVERYTHING ASKS THE POOL.** `weekly-pool.mjs` writes
+`cap_musd` at build time, `publish-week.mjs` sends the POOL's cap to the server rather than
+the constant (or a republish of an older week would send today's cap with yesterday's
+prices), and the page reads it off the week it fetched into one `CAP` that every screen
+spends. One answer, three readers, and `CAP_MUSD` is only ever the seed for the next build.
+
+**THE FALLBACK IS THE LOUD HALF, NOT THE QUIET ONE.** `capFor` answers the constant for a
+pool built before the key existed, which is right, and is exactly the original defect if the
+live week ever loses it. So `check-fantasy.mjs` asserts the live pool CARRIES one rather than
+trusting the fallback, and asserts the cap changes the board, **which its own first draft got
+wrong**: at pick one with the whole cap in hand every drawn man is affordable at either cap,
+so the fixture compared two identical boards and would have reported the defect as fixed.
+Measured, the two agree at pick one and differ on 240 of 360 (seed, pick) pairs once money
+has been spent, so the fixture spends first.
+
+**AND THE POOL WAS THE ONE DATA FILE FETCHED WITHOUT REVALIDATION.** `fantasy_now.json` and
+the injury file are both `no-cache` and this was not, which cost nothing while a week's
+filename only ever appeared with its final contents. It stopped costing nothing the moment
+the pool grew a cap: the name does not change when the file does, so a returning visitor
+would be served their own cached copy, find no cap on it and fall back to the constant.
+
+**AND THE LINEUPS ALREADY DRAFTED AT THE WRONG CAP ARE REOPENED, NOT SUBMITTED.** Fixing the
+cap stopped new over-cap drafts and did nothing about the ones in people's browsers. The
+owner's own review screen read "$106.7M of $90M spent" under SENDING..., and the page had no
+check of its own: it posted a lineup `fantasy_submit` was always going to refuse. Only
+testers were affected, because the launch and the fix went out in one commit, so the public
+has only ever drafted at $90M.
+
+Asked "raise the week to $110M, or reopen the over-cap drafts", the owner chose to reopen.
+`reopenOverCap()` runs at boot: any unsubmitted draft spending more than the week's cap
+becomes a fresh draft in the same chance, so nobody loses one of their five, and the home
+note names which. **The new seed is DERIVED from the old one**, never drawn, or a reload
+would be a re-roll. A legal draft is untouched, a submitted one is never touched (the row is
+the server's and was accepted under the cap), and a partial draft over the cap is reopened
+too because its next board would have negative money. It **fails open** in a try, since it
+runs before anything is drawn for every visitor with a saved week.
+
+**The submit button checks the cap as well**, which reopening makes unreachable. That is the
+point of it. The guard proves it from both sides: with reopening removed the second line
+refuses the press and nothing is sent, and with both removed the leak is reported the moment
+it happens rather than after the page has moved on to the board, which is where the first
+draft of that check crashed before it could say anything.
 
 ### The price is what he has done. The projection is the same number.
 
@@ -3407,16 +3595,67 @@ lineup was legal, and it was worth nought.
 | `players.csv` | is he on a roster at all | injured reserve is not a designation to read |
 | `injuries.csv` | what did his club file this week | Out, Doubtful, Questionable, the body part, the practice |
 
-**Injured reserve takes a man OFF THE BOARD and a designation does not.** There is no
-decision to make about somebody on IR and no news to read, so he leaves the pool the way a
-man whose club is idle was never in it. An Out or Doubtful designation is the opposite: it is
-this week's news and it is the most useful thing the board can say about a man a reader was
-about to take, so he is **drawn, in red, and cannot be picked**. Questionable is a real
-decision and is left alone.
+**Injured reserve, Out and Doubtful all take a man OFF THE BOARD.** That is a reversal, made
+by the site's owner on launch day, and the old argument is worth keeping so nobody restores
+it by accident. An Out or Doubtful man used to be **drawn in red and refused on the press**,
+on the ground that the report is the most useful thing a board can say about a man a reader
+was about to take. The answer to that is arithmetic: a board is five seats, and a seat
+holding a man nobody can take offered the reader nothing. It was a choice that was not a
+choice. **Doubtful goes with Out because the data says it is Out**: 99.2% of doubtful men
+blank, against 47.7% of questionable ones. Questionable is a real decision and stays.
 
-Measured on the live week 3 board: 5 priced men on reserve, 7 Out, 2 Doubtful, 11
-Questionable. Only two of the designated men are inside the wheel's reach at all, which is
-why the guard searches boards rather than assuming one.
+It is done in `applyInjuries` in the page, beside injured reserve, and `D.hurt()` in
+`draft.js` still refuses both as a second line. **`BY_ID` is never filtered**, so a man
+signed before he was ruled out stays in that reader's lineup and his chip still opens the
+report.
+
+The guard's non vacuous half is the COUNT: the front page prints how many men are on the
+board, and that number is asked for with all three removed, while the live file is required
+to hold at least one Out or Doubtful man. Without that second clause the old rule and the
+new one give the same count and the assertion says nothing.
+
+#### The report cannot say Out until Friday, so the site can
+
+```
+football/data/fantasy_ruled_out.json     keyed "season-week", id and name
+node football/build/injuries.mjs --write the list is applied here, and by the workflow
+```
+
+**Found by the owner on launch day: Jayden Daniels was offered, unmarked, and was not
+going to play.** Every row in the file was correct. nflverse had him as `Elbow, Did Not
+Participate In Practice` with NO designation, because for a Sunday game the Wednesday and
+Thursday reports are PRACTICE reports and Out, Doubtful and Questionable are only filed on
+the Friday. So a man his club has already ruled out reads, in the one source this trusts,
+exactly like a man having a rest day, for two of the four days a week is open.
+
+**The list is applied in the BUILDER and not the page**, so there is still one file saying
+who cannot play and the twice daily refresh keeps it. The workflow runs the builder, the
+builder reads the list, and the bytes stay identical until the report or the list moves.
+
+**The name is written beside the id and both must match the board, or it throws.** A hand
+edited list of opaque ids is how the wrong man is ruled out: one transposed digit and a fit
+receiver leaves every board with nothing to say why. A name alone is worse, for the reason
+`check-namesakes` exists.
+
+**It never softens a roster** (injured reserve stays `off`), and **it does not pretend to be
+the report**: the entry carries `by: 'site'` and the sheet says RunThe.GG ruled him out,
+because every other sheet names the official NFL report as its source and that would be
+false about exactly him. **A ruling outranks the report**, so an entry for a man who is
+cleared has to be deleted by hand.
+
+#### And a designation expires when his club files without him
+
+Rebuilding for Daniels turned up the opposite fault. The builder kept the LATEST ROW per
+man, so Kyler Murray and Jauan Jennings came out "out (week 2)" off a Minnesota that had
+already filed week 3 with eight names and neither of theirs. The report lists the men a
+club is worried about; a man it leaves off is practising in full. It was already wrong (they
+were drawn red and refused) and it went invisible the same afternoon, when Out stopped
+being drawn: two healthy players would simply have left every board.
+
+**The rule is per CLUB and not per calendar.** A row is dropped once its club has filed a
+newer week. On a Tuesday no club has filed the coming week, so every carry forward the
+header argues for is untouched. It is keyed on the row's own club, which is the one that
+filed it.
 
 **THE SPLIT IS MADE IN `draft.js` AND NOT IN THE PAGE**, because four separate things ask a
 version of "can this man fill this slot": what greys a row, what refuses the press, what the
@@ -3500,6 +3739,11 @@ in the page, because a row nothing can draw is a row nothing can open. The ten w
 practise fully keep their chip, which on a Tuesday is the most useful thing the report has.
 
 #### The chip, and the press it takes
+
+**The red chip is now only ever seen in a LINEUP**, on a man somebody signed before he was
+ruled out, because the wheel no longer offers Out or Doubtful men at all (see above). On the
+board a chip is gold (`Q`) or the quiet `INJ` of a man who did not practise and has no
+designation yet, and both of those are real picks.
 
 **Red for a man who will probably not play, gold for a man who might.** Two decisions, two
 colours; one colour for both would be the board saying the same thing about a hamstring that
@@ -4055,6 +4299,60 @@ having scored nobody: the one failure here that looks exactly like a quiet after
 has no rows for the week, and an emitter that threw there would take the workflow red every
 single week for the one condition that is certain.
 
+#### The cron never fired, so the job is a loop now
+
+**Not one of the six scheduled firings inside the first Thursday's game window ran.** GitHub's
+cron is best effort and drops runs under load, which it is allowed to do. The board read 0.0
+for all 27 entrants with nothing red anywhere, because a job that never starts cannot fail.
+
+So a firing only has to WAKE the job. `fantasy-live.yml` loops: every two minutes while ESPN
+says a game is on, every ten while a kickoff is inside three hours or a club's stats are
+missing, and it stops when there is nothing to watch. `live-results.mjs --status FILE` is what
+decides, written as a file because the exit code already means "failed". A loop still going at
+five and a half hours dispatches itself (the one event the job's own token may start) and the
+concurrency group queues the new run behind it. The repository is public, so the minutes are
+free. One failed tick does not end the loop; three in a row do, and any failure takes the run
+red when it ends.
+
+#### And nflverse is hours late, so the points during a game are ESPN's box score
+
+```
+node football/build/test/test_box.mjs
+```
+
+The second half of the same 0.0. nflverse writes a game's player rows hours after the whistle
+(still missing at 11:25pm ET after Thursday's game), so even a job that ran had nobody to
+score. `football/build/espn-box.mjs` reads ESPN's per game summary for every game that has
+started and whose clubs nflverse has not written, joins each athlete on `espn_id` to the pool's
+gsis id through `players.csv`, and scores him.
+
+**IT NEVER PAYS.** It fills only men nflverse has no row for, nflverse replaces them by upsert
+the moment it lands, and a week is only marked final off nflverse. The rule is written out
+(nflverse ships totals, never the rule) and it matches `fantasy_points` on **18,443 of 18,443**
+2025 regular season rows with no two point conversion. That is the one thing a box score cannot
+see: a man who scores one reads two points low until nflverse lands.
+
+The "N of 16 games" count takes ESPN's finished games when that is more than `games.csv` has.
+It is display only; `final` stays nflverse's alone.
+
+#### A row opens into its lineup, and the leader wears the prize
+
+```
+node football/check-fantasy.mjs   the section named A ROW OPENS INTO ITS LINEUP
+```
+
+Every row on the live board is a button, and pressing it folds out the six men with each one's
+points and whether his game is on. `fantasy_standings` already returned `picks` after the lock
+and nothing drew them. What each man has scored is one plain read of `fantasy_results`, which
+110 made public (a man's points are a fact about a game, not about anybody's entry), asked
+beside the board on every poll so the two are one instant. No migration.
+
+**Open lineups stay open across polls** (`BOARD_OPEN`, by row key), or a lineup somebody was
+reading would fold shut every twenty seconds. **The leader is green with a PRO pill** only once
+somebody has a point: straight after the lock the order is who entered first, and marking that
+row as winning a prize would invent a leader. Green rather than gold, because gold on this page
+already means a podium AFTER the week. All four claims were proved by mutation.
+
 #### The rows are keyed on the ENTRY, and the key is not the entry's id
 
 A board that animates cannot do without a stable row key. Keyed on PLACE, row one is always
@@ -4404,6 +4702,50 @@ those. Whatever holds a win has to be its own record.
 are small.** An automated path from "won a week" to "owns the product" is a second way to obtain
 the thing the store sells, and the store has exactly one on purpose.
 
+**The result sheet says something kind to everybody and throws confetti for one.** Second
+is "so close", third is a podium finish, the top half had a good week, and everybody else
+is told every week starts from zero, plus that they beat their projection when the PRINTED
+difference says they did. No line promises anything about the next board, because the
+sheet can open after that week has locked. Confetti is first place only, skipped under
+reduced motion, sits above the sheet with no pointer events, and goes when the sheet
+closes. `check-fantasy.mjs` asserts all of it, including that a tap on the code still
+lands on the code, and each claim was proved by reintroducing its defect.
+
+#### Nobody is told the result until the winner's code exists
+
+```
+psql -d fantasy -f supabase/115_fantasy_result_when_ready.sql
+psql -d fantasy -f supabase/test/fantasy_ready_test.sql
+node scripts/stripe/mint-winner-code.mjs --pending          what it would do
+```
+
+Asked for by the owner. Under 114 the popup answered the moment a week was scored and the
+code arrived whenever somebody minted it, so a winner could open the page in that gap, be
+told "1st" with no code, and close a sheet that only opens by itself once. **115 holds
+EVERY entrant's result back** until first place has left `none`, so the whole field hears it
+at the moment the winner can be paid. `void` counts as ready.
+
+**The code is made by the live job, on the tick that closes the week.** `fantasy-live.yml`
+runs `mint-winner-code.mjs --pending --mint` after it scores, and the scoring write that
+marks a week final (Monday night game played and every club's stats in) settles the top
+three by trigger in the same tick. `fantasy-pool.yml` runs it again after its commit, for
+the week whose stats landed after the live window closed. `--pending` asks the database
+which weeks are unpaid, so a missed tick is picked up by the next one.
+
+**A field of one is voided unattended**, which releases that entrant's result with no code
+and a sentence saying why, and no confetti. `--force` still pays one by hand.
+
+**The page asks about THIS week first, then last week**, because the week that closed on
+Monday night is still `POOL.week` until Tuesday's build rolls the board. The ack is keyed
+on the week, so a reader told on Monday is not told again on Tuesday.
+
+**It needs two repository secrets it did not have**: `STRIPE_SECRET_KEY` (a restricted key
+with write on coupons and promotion codes and read on prices is enough) and
+`STRIPE_PRICE_PS_PREMIUM_BUNDLE`. Without them a week with a real winner fails the live job
+every tick, loudly, and nobody is told the result, which is the intended failure. The
+success path has only ever run against a local stand-in (`STRIPE_API_BASE`, refused unless
+it is loopback), because api.stripe.com is blocked from the dev sandbox.
+
 **A profile image only a winner has is a claim about an account, so it is the board's own
 problem**: `display_pro` is already the pattern, a derived boolean written by a trigger rather
 than typed, because a mark anybody can set is a mark that means nothing.
@@ -4497,13 +4839,187 @@ The distribution needs a dozen careers and lives in a probe. What is in `verify.
 each of the three mechanisms still bites, because a green distribution would pass just as
 well on a fix that had quietly stopped working.
 
+### Smooth and Retro, and why the smooth figure is the pixel rig
+
+```
+node wrestling/verify.mjs --quick   the section named "two styles, one rig"
+```
+
+The game draws in two styles and **Smooth is the default**. Retro is the pixel
+game exactly as it was, kept whole behind a toggle on the home screen rather than
+deleted: `wrestlerSVGRetro` is byte for byte the old `wrestlerSVG`. It is a device
+setting (`rtr_gfx` in localStorage), not part of a save, because it is about the
+screen in front of you. Switching reloads the page, because figures, icons and
+belts drawn in the old style are sitting in markup all over it (the inbox, the
+news, the locker) and a reload is the one repaint that cannot miss any of them.
+
+**THE SMOOTH FIGURE IS THE SAME RIG, AND THAT IS THE WHOLE DESIGN.** Every bone
+sits on the joints in `JOINT`, every pose is the bag of angles in `POSES`, and the
+rig is assembled by the same transforms. So a suplex, a pin or a ref's count lands
+on exactly the same marks in either style and nothing in the match engine knows
+which one it is drawing. The guard asserts that as a property of the markup: for
+all 43 poses, the ordered list of transforms the two figures emit is identical.
+Pointing one knee at the hip joint fails 26 of them.
+
+What changes is the ink. The body is tapered tubes, a real torso and a real head,
+each lit by a cylindrical gradient.
+
+**THERE IS NO BLACK OUTLINE, and that was asked for after the first version had
+one.** The pixel figure needs its border to read as a figure at all; round an
+illustration it is the sticker look. The outline pass is still BUILT (the gear code
+draws its own borders in `OUTLINE` and they route there) and then left out, so what
+separates the figure from the ring is its own shading and the drop shadow the page
+already puts under it. **Every fill carries a thin translucent inner line instead**
+(`FIG_INK`, a shadow at .30 rather than an ink line): without it an arm crossing a
+chest of the same skin disappears into it, because a smooth gradient has no shading
+steps to tell them apart.
+
+**So the rig guard compares against HALF of Retro.** Retro emits the rig twice (the
+outline pass, then the fills) and smooth once. The whole-body move wraps both passes
+and comes first, so it is set aside before the halves are split; the first draft did
+not and failed 39 poses on a correct page.
+
+**The long tail of gear is the pixel code, read smooth.** About a hundred and fifty
+patterns, masks, boots and accessories are each a handful of `P()` and `LIMB()`
+calls in figure space. Inside `wrestlerSVGSmooth` those two names are shadowed by
+rounded, gradient versions, so every item keeps its placement. The pieces a reader
+looks at first (the body, the face, twenty four hairstyles, the beards, the three
+masks an opponent can roll, boots and trunks) are drawn by hand. **A new gear item
+written in `P()` works in both styles on day one**, and the guard draws every value
+of every slot in two poses and fails on a throw, a NaN or an undefined.
+
+**Hair that hangs behind the head has its own layer**, `HB`, dropped in under the
+neck and face. The first version drew a mullet and dreads straight across the face.
+**The first guard for it could not fail**: it looked for the marker leaking into the
+output, and the rig split keeps shapes only, so a forgotten marker is discarded
+silently and the tail simply is not there. What it asserts now is that a pony, a
+mullet and dreads are drawn at all AND drawn before the face fill, proved by
+deleting the drop-in and by moving the pony to the front.
+
+**The trunks come down through the middle.** The first smooth trunks cut a notch
+up between the legs to y 51.4 while the torso's skin ends at 53.6, so every bare
+legged attire showed skin at the crotch. Reported with a screenshot. The guard asks
+the drawn shape (`isPointInFill` at the middle of the crotch) on every attire that
+draws trunks, and with the notch back it names all twelve.
+
+**Gradient ids carry the figure's own counter.** Two wrestlers on one screen with
+the same id would paint each other, and a def inside a `display:none` screen does
+not resolve for anybody else. Asserted.
+
+**What else went smooth, and the rule for each:**
+
+| surface | smooth | retro |
+|---|---|---|
+| wrestlers | `wrestlerSVGSmooth` | `wrestlerSVGRetro` |
+| icons | `PICO_SM`, one per `PICO` id, same 16 unit square | `PICO` |
+| belts | `beltPlateSmooth`, the same six plate shapes as real outlines | `beltPlate`'s 11x9 masks |
+| pundit sets | no crisp edges, props get rounded corners | crisp |
+| the crowd | soft blobs | hard dots |
+| `image-rendering` | `--pxr: auto` | `html.gfx-retro` sets `pixelated` |
+
+**Every icon has a smooth drawing and the guard says so**, because an id falling
+back to its pixel square is a pixel icon on a smooth screen, the one resolution rule
+MythiBall already carries. The fallback exists so a NEW id can never render as
+nothing; the guard is what stops that fallback being used in anger.
+
+**The belt keeps what makes the twenty four tell apart.** Shape, metal, stone and
+strap are unchanged, so the existing "no two belts share a design" guard is still
+the one that matters.
+
+**The page chrome follows the figure.** Seventy odd rules set labels and stats in a
+system monospace, the pixel game's terminal voice. Smooth points `--mono` at the
+body face and turns `tabular-nums` on page wide, which is the column the monospace
+was really there for (Run The Floor's lesson). Retro keeps the monospace.
+
+**The booking sim follows the same setting and has no toggle of its own.**
+`wrestling/booking/` reads `rtr_gfx` in a head script, before first paint, and
+takes the same `--mono` override: it has no figures to redraw, so what Smooth
+changes there is the voice. It had been left in the terminal face while the career
+page went smooth, which is one game showing two styles. The guard reads the face
+actually applied, in both styles, because a rule that loses the cascade renders
+exactly like a rule that is missing.
+
 The roster, the mentors in `legends.js`, the free agents in `personalities.js` and the
 booking sim's promotions all use LEGAL names and invented companies. No ring names,
 no trademarked match or event names, no catchphrases. The suite's second section
 carries the blocklist; add to it when you remove something.
 
+### The voice is a fan talking, and the game reads some of its own sentences
+
+Everything a player reads is written the way a wrestling fan talks to a friend:
+contractions, American spelling, short lines. It used to say "you are not going
+out tonight" and "cheque" and "half four". A rulebook entry explains the rule in
+one breath and keeps every real number.
+
+**Rewording can break the game, because a few functions match its own prose.**
+`inferStoryKind` picks a feud's story type by regex over the reason sentence the
+loss trigger wrote, and it looked for "not ready" and "does not consider you".
+Contracted, those read "aren't ready" and "doesn't consider you", the match
+missed, and a two loss underdog story started as a title story ten times in
+twelve. Nothing threw. The `underdog did not start` check in `verify.mjs` is what
+caught it. The promo reader's `TONE` lists and the scene lint's `SITS` regex are
+the same shape. Before a wording sweep, grep for `.test(` over prose and write
+both spellings into any regex that reads a sentence the game produced.
+
+### The brand is pixel art, and Run The Tour's title was the lead rather than the template
+
+```
+(nohup python3 -m http.server 8080 &) ; node wrestling/build-logo.mjs
+```
+
+Asked for with golf's pixel title as the inspiration and not as something to copy. Tour stands
+gold letters on a putting green, with a ball for the O and the pin at the end. This is a wrestling
+title card:
+- ROPES in red block letters with a straight drop, and the O is a championship plate.
+- Three ring ropes run behind the word between two turnbuckle posts.
+- It all stands on the ring canvas over a navy apron.
+- RUN THE sits on a black and gold nameplate.
+
+The icon is a ring corner with the plate in front of it.
+
+**One kit, one drawing.** The palette, a 5 x 7 font, the title, the icon and an arena scene live in
+the game between `RPK BEGIN` and `RPK END`. `logo-source.html` and `og-source.html` lift that block
+out by those markers, which is golf's arrangement. So the home title, the site bar mark, the logo
+files, the link card and the share card can never become five versions of one mark.
+
+| | where |
+|---|---|
+| the home title and the site bar mark | `paintBrand()`, painting every `canvas[data-rpk]` |
+| the logo files | `lockup.png`, `logo.png`, `favicon-16/32/48.png` |
+| the phone icons | `icon-180`, `-192`, `-512`, `icon-maskable-512.png`, and `manifest.webmanifest` |
+| the link card | `og.png`, from `og-source.html` |
+| the share card | `drawShareCard()`, behind Share card on the flip card |
+
+**A cell is a whole number of device pixels, never CSS pixels.** On a 2.625 phone a 3x title in CSS
+is 7.875 device pixels a cell, which is two widths of pixel and mush. `paintBrand()` picks the device
+cell first and lets the CSS size follow, so the title can come out a pixel off a round number and is
+hard edged everywhere.
+
+**The files have to be what the kit draws.** Section 4q of `verify.mjs` repaints the favicon and the
+lockup from the kit and compares them cell for cell with the committed files. An edit to the kit that
+nobody rebuilt fails there, rather than leaving a tab showing last week's mark while the page paints
+this week's.
+
+**The wrestler on the link card is the game's.** The builder opens the real page, draws the look it
+carries with `wrestlerSVGRetro()`, reads the stat names out of `ATTRS`, and works out the OVR with
+`ovr()`. So the figure is one the game draws and the rating is one it would give those stats. The
+card reports a box for every block, and the builder refuses to write if one is over the frame or on
+top of another. `PREVIEW=path` writes the card anyway, for looking at a failure. That is how the url
+strip was caught running under the champion.
+
+**The share card is head and shoulders, never the whole figure.** Golf crops its golfer to a bust
+because a full standing figure can trip a social site's sensitivity filter on upload, and a wrestler
+in trunks is that problem twice over. A champion carries the belt over the shoulder on the card,
+because at the waist the crop cuts it off. The figure reaches the grid through an `Image`, which can
+fail without throwing, so the card records it in `cv._drew` and 4q reads that.
+
+**The tile labels are chosen to fit, not cut.** A 31 cell tile holds five letters of this font, and
+the first version truncated RECORD and EARNED to RECOR and EARNE. They are W-L, BELTS, POP and CASH.
+
 The game is unlisted: not linked from the homepage, nav or sitemap, and
-noindexed. Keep it that way unless asked.
+noindexed. Keep it that way unless asked. **The og tags do not change that.** A
+robots tag tells a crawler not to index and does nothing to a chat app unfurling
+a link somebody was handed, which is how an unlisted game reaches its testers.
 
 ## MythiBall, the baseball game
 
@@ -9141,6 +9657,7 @@ node hoops/check-bracket.mjs      the playoff bracket, and the field it draws
 node hoops/check-draft.mjs        the draft screen's shape, desktop and phone
 node hoops/check-home.mjs         how far the front page scrolls, and the fold
 node hoops/check-cloudsave.mjs    the run, the career and the daily, on two devices
+node hoops/check-modes.mjs        Conquest, Fix History and Six Passes (--quick: no browser)
 ```
 
 `check-badges.mjs` takes about two minutes, because proving a badge is reachable
@@ -9156,6 +9673,163 @@ the strategies a player would use, never loosening a threshold to suit a bot.
 `verify.mjs` prints a **TARGETS** block. Read it after any change to the data or
 the constants: it states what the balance is supposed to look like and flags what
 is outside its band.
+
+### Four ways to play, and the draft is one of them
+
+```
+node hoops/check-modes.mjs                 the rules, the copy, the SQL, a browser walk
+node hoops/check-modes.mjs --quick         no browser
+psql -d hoops_modes -f supabase/test/hoops_board_base.sql
+psql -d hoops_modes -f supabase/116_hoops_modes.sql
+psql -d hoops_modes -f supabase/test/hoops_modes_test.sql
+```
+
+Reported by the owner: a draft that goes 73-9 is the football game with a
+basketball on it, and a season is one decision followed by a long wait. So the
+front page leads with three games that are not drafts, and the draft is **Quick
+Draft**, one card of four.
+
+| | what it is | where |
+|---|---|---|
+| Fix History | the daily: one real team that fell short, one salary-matched trade | `fx*` |
+| Six Passes | the daily: one All-Star to another through real teammates | `ps*` |
+| Conquest | winners stay on against real teams; take a man off each one you beat | `cq*` |
+| Quick Draft | the game this page started as | `run.js` |
+
+`hoops/modes.js` is the rules and `hoops/modes-ui.js` draws them, through
+`window.RTF_PAGE`, which the page publishes before it boots. The UI file injects
+its own stylesheet, which is `/assets/store.js`'s arrangement: a stylesheet in
+its own file is a second cached thing with a version nothing checks.
+
+**NONE OF THE THREE IS A SECOND MODEL OF BASKETBALL.** Every rating is the
+pipeline a drafted five runs through, every game is `resolveGame` and every
+season is `playRun`. The modes decide who plays, never how a game goes, so the
+calibration the draft is balanced on carries over untouched.
+
+#### Conquest: one loss and out could not carry it
+
+The first version was one loss and the run is over, and a single NBA game is too
+noisy for that. A team fifteen rating points better wins about three in four, so
+over 200 runs a bot the median was ONE win whatever the steals were, and the bot
+that took the best man every time finished within a game of the one that never
+took anybody. **The steal did not matter, and the steal is the game.**
+
+Three lives fixed it. A loss costs one and the same team stays on for a rematch;
+beating a boss (every fifth rung) gives one back. Measured, 200 runs a bot:
+
+| | median | p90 | clears all 25 |
+|---|---|---|---|
+| the best steal | 6 | 23 | 6.5% |
+| never steals | 4 | 9 | 0% |
+
+`check-modes` holds the SHAPE rather than those numbers, because the ladder is
+drawn off the pool and a refreshed season moves every figure a little.
+
+**The crew is role players, not scrubs.** Scrubs rated 1 and made the first game
+a 28% chance.
+
+**A REMATCH IS A NEW GAME, so the attempt is in the rng tag.** Without it a loss
+replays itself identically until the lives run out. Proved by mutation: the
+balance band collapses to a median of one.
+
+**The scoreboard reveals a result that already exists, and three things on it
+spoiled it.** `cqPlay` decides the game before the quarters start, so the win
+counter read "1" in the second quarter, the lost life dimmed at the tip, and an
+overtime column appeared before a ball was thrown. The count and the lives are
+held back until the final horn (`cqShown`, `cqLivesHeld`) and the fifth column
+is added when overtime is reached. The guard reads the counter mid-game.
+
+The win chance printed before tip-off is read off `resolveGame`'s own
+arithmetic, and `check-modes` holds it to 20,000 simulated games at three rungs.
+
+#### Fix History: the score is the odds, not the replay
+
+One replayed season is a coin with a ring on one side, so two people who made
+the same move would land hundreds of places apart on the dice. **The score is
+the share of 1,000 seasons the new five win, on the day's seeds**, so the same
+five score the same number on every device and a leaderboard can rank it. One
+season is replayed off the day's seed as the story.
+
+`fxOddsStep` is the same count over a slice, so the screen plays the thousand a
+frame at a time and the meter settles as they come in. It is the whole of
+`fxOdds` rather than a copy: seeds are addressed by index, so any split adds up
+to the same answer, and the guard says so.
+
+**The daily team's five are the best five of its top nine who can cover the
+positions.** The best five by win shares alone fit PG, SG, SF, PF and C on only
+533 of 1,433 team-seasons, because plenty of great teams had three bigs.
+
+**The search shows the stat line and minutes, never win shares.** The market
+prices points, value is win shares, and knowing who was worth more than he was
+paid is the puzzle. Printing win shares prints the answer. Minutes are there
+because 4.3 rebounds in fourteen minutes and in thirty are different players.
+
+Base odds run about 2% to 24% and the best move is worth about twenty points.
+The best moves found by brute force are the fan-knowledge answers (Rodman or
+Kevon Looney into the 2009 Celtics, Sidney Moncrief for Devin Booker), which is
+the evidence the puzzle is the one intended.
+
+#### Six Passes: the ends are All-Stars, and the gap sets the par
+
+The first version took both ends from the best careers by win shares and served
+Derrick McKey and Michael Cage. **Both ends now have three or more All-Star
+nods**, which is 162 men, every name a fan expects.
+
+**The gap between the two careers is what sets the par**, measured over every
+pair of the 162: under ten years apart is par 2 nine times in ten, twenty to
+twenty-nine is mostly 3, thirty or more mostly 4 with real 5s. A twenty year
+floor lands a year of days on 3 (209), 4 (138) and 5 (18), none missing.
+
+**The picker is grouped by club STINT, each teammate once.** By season, Reggie
+Theus's picker was 9,900 pixels tall, because a ten year career repeats one
+locker room ten times. The ten best known show first and the rest are a tap away.
+
+Every pass is final and the shot clock is ten passes. An undo turns it into a
+map to be searched at leisure.
+
+#### The boards, and `supabase/116_hoops_modes.sql`
+
+One table, `rtf_plays`, and not `rtf_runs`: that table is a finished SEASON and
+none of these is one. **The score is derived by the server** from the result
+each submit function is sent (the odds, the chain, the wins), and higher is
+better on all three boards. What cannot be checked in plpgsql is trusted within
+bounds, which is 108's own position on a season's record: a thousand seasons of
+the engine is not a stored procedure. What can be checked is: the day is today
+(Eastern, 108's epoch), a chain fits the shot clock, a solved chain is not under
+par, and one account files one of each daily with the first standing.
+
+**Deploy 116 by hand.** Without it all three modes play and keep their results
+on the device, and every place line and leaderboard is empty, which looks like a
+network that is down. Row 26 of `launch_preflight.sql` asks for it.
+
+**A place never prints past its field.** The two counts are separate requests
+and the play being placed can land between them, so "42nd of 41" was a reachable
+answer. Found by the stand-in in `check-modes`.
+
+**The SQL test's first two failures were the test.** A submit called inside a
+WHERE ran once per row scanned and filed a play each time; a rename checked in
+the statement that made it read the snapshot from before it. Both are two
+statements now.
+
+#### The front page, and the button the dock carries
+
+The dock carries **today's play**, `#b-today`: whichever daily is still open,
+then Conquest. The first-time guide points at it and names all four modes;
+`check-home` holds both. The draft's own button, `#b-start`, lives in the Quick
+Draft card now, with the court and reels that used to open the page, because
+they are a picture of that mode and nothing else.
+
+**The league card became one line under the tagline**, holding the same ids and
+the loading bar, which goes when the data is in. **`check-home`'s budget moved
+from 2.4 to 2.8 screens, on purpose.** The page holds four games where it held
+one, and it was compacted first: 2.30 screens at 390x844 and 2.67 at 360x740
+after. An unfolded essay is about a screen and a half, so it still fails on the
+regression it exists for.
+
+**`check-bracket` had been failing on every run since Game 7 became the only
+door**, because a door comes about one run in five and the walk waited for one
+that mostly never came. It widens the door inside the page the way `check-live`
+already did; the real rule is asserted in `check-live` off the engine.
 
 ### The roster is a STARTING FIVE, and six was never this sport's number
 
@@ -10121,6 +10795,42 @@ tagline.** `verify.mjs` asserts all four are different and that no locked mode
 falls through to the league's, so a fifth door cannot inherit the fourth's
 words either.
 
+#### The share carries the draft, as squares
+
+A shared result said how the season went and nothing about how it was built,
+and the build is the half this game is about. So the text carries a row of
+five squares in slot order, one a man, coloured by the verdict his tile wore
+on the board: green for a bargain, white for the going rate, red for paying
+for points, black for a man under three win shares. Under it is the playoff
+path a series at a time (`R1 4-3 · R2 2-4`), with a trophy only for a
+champion.
+
+**The squares are the one place emoji are allowed in this game's copy**, and
+the reason is the medium: a chat app shows text and nothing else, so a row of
+colours is the only picture a shared result can carry. They are data rather
+than prose. The card draws the same two things with no emoji at all: the path
+under the verdict, and each man's verdict under his price in the chip's own
+colours, because an emoji in a canvas is whatever the machine's emoji font is.
+
+**`draftCells()` is the one walk** the share text, the card and the results
+screen all read, and every verdict is `dealOf`'s. A second walk would be a
+screen and a share that disagree about a man. `verify.mjs` lifts `gridLine`
+and `pathLine` out of the page and asserts four different squares, one square
+a man, a square for every key `dealOf` can answer (read out of its source, so
+a verdict renamed there cannot fall through to black), and a short name for
+every round the engine plays. Merging two squares fails it.
+
+**A signing is stamped.** The verdict used to be answered only on the tile
+BEFORE the press, so the one decision the draft is built around got no answer
+after it. `stampDeal()` puts the verdict over the court for about a second,
+off the same `dealOf`, restarted rather than queued so two quick signings show
+the second one. It takes no pointer, so a thumb heading for the reels goes
+straight through it.
+
+**The results screen shows the row too**, with what it counted, and each count
+is one unbreakable piece. Without that a 390px phone left "role player" alone
+on a line under a "1".
+
 #### A badge earned in silence is a badge nobody has
 
 `badges.js` computes forty-odd badges off the whole career and the only surface
@@ -10281,6 +10991,56 @@ for a release**, and the section above on `BOARD_VERSION` tells the whole
 story. `check-cachebust.mjs` found this pin on its own, by who SETS the global,
 and there are eight pins across the site now.
 
+#### A ring outranks a record, because the game says the ring is the goal
+
+**The board ranked on the regular season alone, and a champion sat 98th.** `score`
+was wins then point differential, so over 1,800 simulated league runs the median
+champion was 98th on the board, under a pile of 60 win teams that went out in the
+first round. The guide says "your goal: win the ring" and hands the player the
+playoff games to call themselves, and the one list that ranks them filed the title
+as decoration. Nothing failed: every row was right and the order was a different
+game's.
+
+`depth` is how far a run went, 0 to 6, derived by `rtf_submit_run()` and never
+sent: missed, lost the play-in, out in each of the four rounds, champions. A
+seeded run starts at 2 and a play-in run at 1, so a ring is 6 from either door.
+**`score` leads with it** (`depth * 1000000` over the old key), so a 45 win
+champion outranks a 68 win Finals loser and a Finals loss outranks a second round
+one. **The record is a board of its own**, `record_score`, because chasing 72 is
+its own sport. Three tabs: Best run, Best record, Team rating.
+
+**It shipped undeployed, which is what made it cheap.** A generated column cannot
+be altered, so a table created by the first version gets `score` dropped and
+re-added in an idempotent block that also backfills `depth` from columns that
+version already derived. Dropping the column drops its two indexes and the
+`create index if not exists` below puts them back. Applied twice over rows from
+the old file, verified on Postgres 16. The preflight row asks for `record_score`,
+so a database still on the first cut reads NO.
+
+**Made the playoffs means the bracket.** A play-in loss is not the playoffs in the
+NBA, and `made_playoffs`, the career's playoff count and the "In the field" badge
+all counted one. `madePlayoffs()` in the page is the rule, and `check-badges`
+restates it in `rowOf` beside the page's.
+
+**One daily per account per day, and the first stands.** The page refuses a
+replay, but a browser is not a wall: a cleared jar or a second device before the
+cloud save lands filed the day again with the board in hand. The function hands
+back the first entry, a unique partial index holds it, and `rtf_claim_run` will
+not turn a signed out daily into a second entry for a day already filed.
+
+**A board row opens to its five.** The picks rode on every row from day one and
+nothing drew them, so the board said who won and never what they built. They are
+drawn against this browser's own `DATA.allPlayers`, with no request.
+
+**A signed out run is placed in a field that counts it.** Its row is not on a named
+list, so the standing read "313th of 312" at the bottom. It says "Would be 41st of
+313" now, and a signed in standing waits for its own submit before it counts.
+
+**The SQL test had been dead since the roster went to five.** Its fixture sent six
+picks, the function has refused six since that change, and the file died at its
+first submit. Nothing ran it. It is five now and asserts both four and six are
+refused.
+
 #### Accounts are the site's, and nothing here is a gate
 
 `hoops/auth.js` adds NO new account system: `profiles` from
@@ -10348,6 +11108,16 @@ every team-season in the data. A bracket that picked the opponent instead
 would quietly rebuild the difficulty curve. What is drawn here is the field
 AROUND that path, and the fourteen games the player is not in are simulated
 for the reveal alone.
+
+#### A conference is twenty wins wide, and the walk made it fourteen
+
+Every seat was the player's record stepped one to three wins a seed, and the far
+conference stepped down from a 62 to 68 win top seed the same way. So an East 8
+seed won 56 and every club in it was better than every club in the player's West,
+which a fan reads in one glance. `brkLadder()` holds each seed within two wins of
+where it usually lands, off `BRK_OVER` and the play-in line, and the player's own
+record is still never moved. `check-bracket` asserts the far conference runs at
+least fourteen wins top to bottom and that no 8 seed has a top six record.
 
 #### It names nobody, and that is this game's rule rather than a shortcut
 
@@ -10548,6 +11318,50 @@ disappeared into it, which is the flat court arriving by a different door. At
 .42 it is a floor lit in the club's colours. **The layer count and the layer
 types are identical in both states**, so the .35s fade between clubs still
 interpolates.
+
+### The game talks like a broadcast, not like its own source
+
+Reported by the owner: most of the text did not read like basketball. It read
+like the comments above it, which are allowed to argue at length. A sentence a
+player reads is a TV graphic or a play-by-play call, and it is written that way
+now across every screen.
+
+| was | is |
+|---|---|
+| The bracket got stiffer than the roster. | Ran into a better team. |
+| Unspent cap is production you never fielded. | You left $14M on the table. |
+| projected 56-26 · title odds 5% | Vegas: 56 wins · Dark horse, 5% |
+| 4.2 off / 4.7 def win shares | 18.1 pts · 4.1 reb · 7.3 ast |
+| Out in the First Round | Bounced in round one |
+| Nobody on this board can play there. | No centers on this roster. |
+| Spacing 0.73x | Spacing: Cramped |
+
+**American spelling and American words.** Center, color, parking lot, team
+rather than club, guys as well as men. `Point Centre` is `Point Center`; its key
+stays `point_centre` because a key can be stored and a name cannot.
+
+**A round is said the way a fan says it.** `roundPhrase()` turns the bracket's
+labels into "round one", "round two" and "the conference finals", and the
+headline, the bracket note, the resume chip and the board rows all read it.
+The gauge line under the headline no longer repeats the round.
+
+**Two sentences were false and are fixed rather than reworded.** The sign-in
+line said the career stays in this browser "whatever you do", and the badge
+note said the cabinet is "kept in this browser". Both have been on the account
+since the cloud save shipped. They ask `cloudReady()` now.
+
+**Win shares stay on the draft tile and leave the roster row.** The tile is a
+price decision and win shares are what the game rates on. The roster row is
+the man, and a man is his points, rebounds and assists.
+
+### The 1988 to 2002 Hornets are Charlotte's
+
+`CHH` pointed at the Pelicans, which is the legal entity that moved. The NBA handed
+that history back to Charlotte in 2014, and it is the history a Hornets fan means:
+Mourning, Larry Johnson and Muggsy. A Charlotte run in One Franchise had none of
+them and the draft note said "later the New Orleans Pelicans". It is `became:
+'CHO'` in `fetch-teams.mjs` and in `teams.json`, and `verify.mjs` asserts both
+directions.
 
 ### Playing all four modes, which is a different question from checking them
 
@@ -10914,11 +11728,28 @@ it**, which is why the sweep and the guard both walk four.
 
 #### Which games are offered
 
-A game the series can END in, either way, plus every Finals game. One rule
-rather than a list, and the two halves of it are the elimination game and the
-closeout. Measured over 170 playoff runs: **mean 2.6 a run, median 2, p90 5**,
-and a year that reaches a game seven Finals can offer thirteen, which is the
-run that deserves them. The play-in is one game, so it is always one.
+**A Game 7, and nothing else.** `big` in `poNext` is `bestOf > 1 && facing
+&& closing`, which is the same test as `decider`.
+
+**It used to be every game a series could END in, plus every Finals game**,
+measured at a mean of 2.6 stops a run and up to thirteen. Reported by a player
+as too many pauses in the quick draft, and timed through the real page it was:
+a first round exit met FIVE doors, and the bracket walk that is meant to take
+twelve to nineteen seconds became a sequence of the same question. A stop that
+comes every series is a pause; one that comes one run in five is an event.
+Measured after, over 200 runs: **mean 0.2, max 1**.
+
+**The play-in is NOT a Game 7**, although both `elimination` and `closeout` are
+true there by arithmetic, so it plays through with everything else.
+
+**The browser half of `check-live` widens the door on purpose.** Waiting for a
+one-in-five event makes every screen behind the door a coin toss on whether the
+walk gets to see it, which is the badge nothing can light. So `widenDoor()`
+wraps `RTF_ENGINE.poNext` inside the page to flag any SERIES game that can end
+it, and has to be applied again after a reload. Section 4 is where the real rule
+is asserted, exactly, off the engine, and section 5 plays every series-ending
+game forward rather than only the Game 7s, because what it asserts is the
+record and not the door.
 
 #### The bracket is one loop, and it is the loop that already existed
 
@@ -11232,8 +12063,9 @@ proxy and the page's own `<link>` arrives empty, and a refusal to write if a
 display face is missing, read off the loaded FontFace set rather than
 `document.fonts.check()`.
 
-**The ball is drawn rather than an image file**, because this game ships no
-logo and a card waiting on one would not exist. **The tags go in while the page
+**The ball on the card is `hoops/logo.png` at exactly half size**, so each of its
+22 pixel cells lands on 11 and the pixel art stays crisp. The build waits for the
+image and refuses to write a card without it. **The tags go in while the page
 is still noindexed**, deliberately: a robots tag tells a crawler not to index
 and does nothing to a chat app unfurling a link somebody was handed, which is
 how an unlaunched game reaches its testers.
@@ -11254,6 +12086,40 @@ thing. A bare "NNNN to NNNN" means several things here: `how-to-play.html`
 lists the seven era bands, and 1980 to 1986 is a correct sentence about the
 eighties. Scanning for the shape reported all seven as defects, which is the
 trap that kept "times" and "players" off the roster-count noun list.
+
+### The logo is an 8-bit ball, and every size is a whole multiple of one grid
+
+```
+node hoops/build/logo.mjs     the favicons, the icons, the mark, the wordmark and the lockup
+node hoops/build/og.mjs       the share card, which uses logo.png (needs :8080)
+```
+
+`hoops/build/logo-art.mjs` is the drawing, as a grid of cells built from a few rules:
+a one cell outline, an upright seam and a level seam through the middle, two side seams
+that step out once near the rim, and light cut into diagonal bands off the top left.
+`logo.mjs` lays it out at every size, under the football game's file names.
+
+**THE GRID IS ODD.** The first draft was 20 cells, which has no middle column, so the
+upright seam sat a cell right of centre and the ball leaned. 21 for the mark and 15 for
+the favicon are symmetric.
+
+**EVERY SIZE IS A WHOLE MULTIPLE OF THE GRID, AND THE SHADOW IS ONE CELL.** A pixel ball
+scaled by 1.3 has cells one and two pixels wide at random, which reads as a rendering
+fault. So `favicon-16` is fifteen cells and a one pixel shadow, 32 and 48 are that at 2x
+and 3x, and `mark.png` is the 21 cell ball at 1x (22px with its shadow), drawn at 22 CSS
+pixels in the top bar with `image-rendering:pixelated` so a phone scales it by 2 or 3.
+
+**THE NAME IS SET IN PRESS START 2P, and only the name.** The top bar, the home title,
+the rules page's title and the share card. It is drawn on an 8 pixel grid, so it is set
+at multiples of 8 (the top bar's 10px is the one exception, measured to fit a 360px bar
+beside the Career button). `--pixel` falls back to the display face and **never to a
+monospace**, because `verify.mjs` keeps a code face off these pages and a fallback stack
+ending in `monospace` fails it. Paragraphs stay in Archivo: a sentence in the pixel face
+is hard to read on a phone.
+
+**Google Fonts does not load in the sandbox**, so a screenshot of the page shows the
+fallback. Inline the face with `addStyleTag`, the way `og.mjs` does, before judging the
+title by eye.
 
 ### The board is in the preflight now, and the helper under it could only say NO
 
@@ -11453,6 +12319,7 @@ account. Redirecting the board redirects the shelf with it.
 so **read the cache-busting section above before editing any of them**.
 
 ```
+node baseball/check-posture.mjs   the four facts, against two declarations
 node baseball/check-atbats.mjs    the at-bat simulator, against real brackets
 node baseball/check-bracket.mjs   the playoff field, against real runs
 node baseball/check-labels.mjs    what a player-season row says it is
@@ -11461,7 +12328,185 @@ node baseball/check-home.mjs      the front page's two designs, and the reel und
 node baseball/check-staff.mjs     the All-Time Staff assignment and its blast radius
 node baseball/check-badges.mjs    every badge is reachable, against real runs
 node baseball/check-run.mjs       a whole run, in a browser, to the screen it ends on
+node baseball/build/icons.mjs     every icon, drawn from the one mark
 ```
+
+### IT IS SERVED AND UNLISTED, and a launch is four edits rather than one
+
+```
+node baseball/check-posture.mjs   the four rows, against INDEXED and LINKED
+```
+
+Run The Diamond is indexable, in `sitemap.xml` and carrying the AdSense tag
+behind its Consent Mode defaults, and **the home page does not link it**. That is
+Segue's row in the table under the setlist game, not hoops' and not the full
+launch. It was launched with a home page link for a day and the owner took the
+link back off, so what follows describes a launch that was made, and undone
+by one half.
+
+**SO THE GUARD HAS TWO DECLARATIONS RATHER THAN ONE.** `INDEXED` holds the
+first three rows (robots, sitemap, ad tag), which move together. `LINKED` holds
+the fourth: the phone tile, the desktop card, the JSON-LD `ItemList` entry and
+any nav link. Each group is all or nothing, and `LINKED` without `INDEXED` is
+refused outright, because it sends visitors to a page that tells a crawler to
+stay away. Driven four ways: the launched home page against `LINKED = false`
+names the nav link, the tile and card, and the JSON-LD; the unlisted page against
+`LINKED = true` names all four; the launched page against `LINKED = true` passes;
+and `LINKED` without `INDEXED` names the contradiction.
+
+**RELAUNCHING ON THE HOME PAGE IS ONE LINE AND ONE FILE.** Set `LINKED = true`
+and restore `index.html` from the launch commit (`e1b7ec63`), which carries the
+tile, the card, the prose paragraph, the FAQ line and the JSON-LD entry in one
+piece. Then `node scripts/check-numbers.mjs --update`, because the home page's
+cap and season claims come back with it (4 each against 6). The `MLB` import in
+that file was left in for exactly this: it allows two values and claims nothing
+while no page states them.
+
+**IT IS FOUR EDITS AND EVERY ONE OF THEM IS INVISIBLE ALONE.** A page dropped
+from the sitemap is still indexable and still linked, so nothing breaks and it
+quietly stops being crawled. A page that keeps its robots tag while sitting in
+the sitemap is a contradiction a crawler reports back weeks later. A launched
+game with no ad tag is a page in the reviewed surface that cannot serve one,
+which is what two AdSense rejections were already traced to. So the four move
+together or they do not move.
+
+**THE HOLE THE POSTURE GUARD COVERS IS ONE `check-adsense` CANNOT.** That file
+walks every INDEXABLE page and SKIPS anything noindexed, so putting the robots
+tag back here does not fail it: it stops auditing this game at all, and the ad
+tag, the consent ordering and the policy links go unasked with it. **A guard
+that goes quiet when a thing is half reverted is worse than no guard**, so the
+state is declared ONCE, as `LIVE` at the top of `check-posture.mjs`, and the
+rows are asked against the declaration rather than against whatever the files
+happen to say. Un-launching means editing that line, which is the whole point.
+
+**THE HOME PAGE REACHES A VISITOR TWICE AND THE TWO DO NOT OVERLAP.**
+`.gtiles` is `display:none` until 640px and `.games > .feat` is hidden from 640
+down, so tiles are the phone home screen and cards are the desktop one. A link
+added to only one of them is a game that exists on one kind of device, renders
+perfectly, and is invisible to every other check on the site. Both are
+asserted. **And the JSON-LD is a third answer**: the `ItemList` in the home
+page's graph is what a search engine reads as the list of games here, so a game
+launched in the markup and missing from that block is the stale-number trap in
+its worst place. Asserted too, by parsing the block rather than matching text.
+
+**AN ODD NUMBER OF TILES IN TWO COLUMNS LEAVES ONE ALONE**, and the gap beside
+it reads as a tile that failed to load. `.gtile.newest` takes the whole row,
+which costs nothing because the row was half empty. The class is on the NEWEST
+tile and not on baseball, so the seventh game inherits it with no rule to
+remember. It is deliberately not `.hero`, which is the arcade's marquee and a
+claim about being the flagship.
+
+**The card is `noshots`, which is the one place this launch is visibly thinner
+than its siblings.** That modifier has sat unused in the stylesheet since it was
+written for a game being redesigned, and this is the first card to want it: info
+full width, no showcase rail. Golf has a CSS showcase, football and college have
+a live drive canvas, soccer has phone clips. Baseball has none of those and a
+bad showcase is worse than an honest empty column, so the right hand third is
+open. The share card is NOT the thing to drop in there: `og.png` is a 1200x630
+link preview whose headline is sized to be read in a feed, and at 250px its text
+is illegible.
+
+**`og-source.html` stays noindexed either way**, and that is asserted on its own
+branch rather than folded into the pages. It is the template `build/og.mjs`
+renders the share card from and is never served to anybody, so a launch is about
+the game and this is a build input. Left indexable it becomes a page with a
+headline, no navigation and no reason to exist, and `check-adsense` would then
+correctly start demanding an ad tag on it.
+
+**Eight mutations were reintroduced one at a time** and each names exactly one
+thing: the robots tag back on, the ad tag off, both sitemap entries gone, the
+tile gone, the card gone, the `ItemList` entry gone, the ad tag moved above its
+consent defaults, and `og-source.html` made indexable. The `LIVE = false` arm
+was driven too, against the launched tree, and reports all seven in the other
+direction.
+
+#### The home page describes three games now, so `check-numbers` knows three engines
+
+The moment the game was linked, `index.html` started stating `$170M` and `all
+162 games`, and that file knew two engines. It called four correct sentences
+defects, which is the right failure: a page claiming a number no game plays is
+exactly what it is for, and the fix is to teach it rather than to silence it.
+`MLB` is the third `CONSTANTS` import, and the cap and the season are widened.
+
+**THE COLLISION CHECK FIRED ON THE SAME RUN, which is the first time it has.**
+That file's own header records the accepted weakening (a claim is allowed if it
+matches EITHER game) and the standing warning that two games sharing a value
+would hide a stale claim about one behind the other. Baseball's re-spin ladder
+is `$5M, $10M, $15M`, which is the NFL game's ladder **exactly**, so adding it
+put two games on one set of values. **It is left out**, because it buys nothing
+to pay for: the baseball pages are not on `PAGES`, and no guarded page prices a
+baseball re-spin. The cap and the season are in because the home page really
+does state both and neither collides (170 against 11, 140 and 280; 162 against
+12 and 17). The counts are re-recorded: 88 claims across 7 pages.
+
+### The leaderboard is in the preflight now, and it is three rows rather than one
+
+```
+psql ... -f supabase/test/launch_preflight.sql     or paste it into the SQL editor
+```
+
+`97_baseball_leaderboard.sql` was named zero times in that file. The board fails
+soft exactly as every board here does, so an undeployed migration is
+**indistinguishable from a network that is down**: every call in
+`baseball/board.js` resolves to null, the screen says the board is not
+reachable, and it says that on every device for ever while twelve modes play
+perfectly, the career records and every badge lights. There is no state in which
+a player can tell the two apart. That was survivable while the game was
+unlaunched and stops being survivable the day the home page links it.
+
+**TWO ROWS, because they are two failures rather than one at two sizes**, which
+is the fantasy chain's own argument arriving inside a single file. Row 23 is the
+board not existing. Row 24 is `rtd_runs_daily_once`, the partial unique index
+that is the whole of the rule that a browser files one result per puzzle:
+without it the board draws, the scores are real, and the daily quietly stops
+being a competition because one person can file the same day repeatedly and
+every copy ranks. Folded together, the row would answer NO about the board on a
+day the board is fine.
+
+**AN INDEX CAN FAIL ON ITS OWN WHERE THE TABLE BESIDE IT CANNOT**, which is why
+`idx` was added as a third catalog helper. A unique index is refused outright by
+data that already breaks it, and `if not exists` does not save it: that skips on
+a name that is taken, never on a duplicate row. Applied through
+`--single-transaction` the whole file rolls back and the table is missing too,
+which the existing block already catches; pasted into the SQL editor statement
+by statement it is 114's trigger all over again, an object whose absence is
+invisible from every side. Like `col` and `trg` and **unlike `has_table`**, it
+asks the catalog for everything and lets the row filter, so it can never read
+false for ever about something nobody added to a list.
+
+`rtd_runs` went on the `has_table` allowlist in the same edit, because that
+block is a trap rather than a convenience and the last row added after it was
+written read NO against a database where the table was sitting right there.
+
+**Driven against a real Postgres 16, both ways.** Bare database: 24 rows, no
+error, both new rows NO and named in the summary. With `97` loaded: both yes.
+Then each was proved to bite alone, which is the whole argument for two rows:
+dropping the index alone leaves row 23 yes and takes row 24 to NO, and dropping
+`rtd_claim_run` takes row 23 to NO on its own.
+
+#### The daily was checked against the UTC date, and the page names it by the Eastern one
+
+Found reading the migration before handing it over to be pasted, and nothing
+here could have caught it. `rtd_submit_run` refused a daily whose key was not
+`(now() at time zone 'utc')::date`, and `easternISO()` in the page is what
+builds the key. The two disagree from **8pm Eastern to midnight in summer and
+from 7pm in winter**, so every daily finished in that window, which is when most
+people play, was refused as backdated. The board fails soft, so what a player
+saw was an evening with nobody on the daily.
+
+**The SQL test encoded the same wrong calendar**, which is why it passed:
+`baseball_board_test.sql` built its "today" off UTC too, and a suite that shares
+the defect it is testing cannot see it. It asks `rtd_board_day()` at three fixed
+instants now (a September evening, a January evening, just past midnight),
+because nothing lets a test move `now()`, and asserts the submit reads that
+function rather than a calendar of its own. Against the old file it fails
+exactly that claim and nothing else.
+
+**Row 25 exists because an early copy of 97 reads as fully deployed.** Every
+object rows 23 and 24 ask for is in that copy. What tells it apart is whether
+the submit's BODY calls `rtd_board_day(`, so that is what the row asks. The fix
+is re-running 97, which is idempotent and was driven over an old copy with no
+error.
 
 ### The $170M cap is right, and the per-slot dollar is the wrong comparison
 
@@ -11911,9 +12956,116 @@ pool: it names `positions stop at 2016 and the pool runs to 2025`.
 **The chain is green end to end now**: the reference seasons unchanged, the shape
 gate passed, `check-labels` reproducing all 44,344 prices from `w`, `ip` and `pp`
 with the same 3,959 discounted starters, and `check-numbers` agreeing on 34
-claims. **What is NOT done is shipping it**, because a pool whose recent
-positions come from a mirror eight years behind is not the pool that ships, and
-every run so far has been `commit: false`.
+claims.
+
+##### AND IT HAS SHIPPED, off the CRAN Lahman rather than off a mirror
+
+Every run before this one was `commit: false`, because a pool whose recent
+positions come from a mirror stopping in 2021 is not the pool that ships. With
+the CRAN reader in, what landed:
+
+| | shipped before | now |
+|---|---|---|
+| rows, batters, pitchers, closers | 44,344 · 24,644 · 19,700 · 905 | **identical** |
+| batters with a position | 24,499 | 24,503 |
+| newest season carrying a position | 2021 from a mirror | **2025** |
+| **pitchers with an innings figure** | **18,760** | **19,700** |
+
+**The shipped pool was already good, which is the nuance most easily lost.**
+Positions moved by four. What was broken was never the pool, it was the
+pipeline's ability to REPRODUCE it, and a refresh that cannot reproduce what
+ships cannot ship anything either. The 940 are Negro Leagues pitchers, 1920 to
+1948, whose innings the Chadwick snapshot predated: **it moves no price**, because
+a starter's discount is `min(1, 210/ip)` and those seasons are nowhere near 210,
+and the run reports the same 3,959 discounted starters.
+
+**`provenance.json` is committed with the pool and said 109,859 rows beside a
+pool of 44,344.** That is the build FRAME, before the WAR floor, and that file's
+own header argues a machine-written record cannot drift from the data next to it.
+It was drifting by a factor of two and a half. The shipped counts are written at
+`compact_pool.py`, which is the stage that produces them, and the build's own
+figure is kept as `built_rows` rather than overwritten, because how many rows the
+sources held is a real fact about the run and the only place it is recorded.
+
+##### AND THE TRADED SEASONS ARE BACK, because the sweep said they cost nothing
+
+```
+node baseball/pipeline/draft_economy.mjs <pool.json> [other.json] [runs]
+```
+
+The build collapsed a traded man's stints into one combined row and then dropped
+it from every board, because TOT is not a club, so **2,939 player-seasons were
+in the download and draftable from nowhere**. `split_stints` is the input that
+splits them back out, and the workflow's own header told whoever ran it to
+re-run the cap sweep first, because the price curve is convex and half a
+season's WAR costs much less than half the price: a board of half-seasons is a
+board of cheap production, which is the one thing the cap exists to make
+somebody choose between.
+
+**THERE WAS NO WAY TO RUN THAT SWEEP.** With `commit` off the pool never left
+the runner, and the artifact host is refused from the development sandbox on the
+CONNECT. So the runner does it: `draft_economy.mjs` plays the same two bots
+`probe_cap` is built on, and the number is the GAP between them.
+
+**The first answer was noise and said so.** At the default 40 drafts a bot it
+read +10.1 against the shipped pool's +13.0, and 2.9 points is the size of one
+standard error on a gap at that sample. At **400 drafts a bot**:
+
+| | gap | best available | holds money back |
+|---|---|---|---|
+| the pool that ships | **+11.6** | 65.2, 33% Octobers | 76.8, 66% |
+| with split stints | **+11.2** | 64.9, 33% | 76.2, 62% |
+
+**-0.4 points against a standard error of 1.3**, so the draft economy does not
+move, and the shipped pool's +11.6 lands on the +11.2 this file records from
+`probe_cap`, which is what says the probe is measuring the right thing.
+
+So it ships. The pool goes 44,344 rows to 45,379: the 2,939 combined rows leave
+and the per-club halves arrive, most of them under the 0.50 WAR floor, which is
+why the net is about a thousand rather than three thousand.
+
+**WHAT THE GAP COULD NOT SEE IS THE YARDSTICK, and it moved in the good
+direction.** The sweep reads `shownRating`; the all-time rank reads `squadRating`
+through `teamStrength`, which rates a REAL club by its best men, and a traded
+man used to be a TOT row filed under no club and counted for neither of his. He
+counts for both now, so the table grows 2,594 team-seasons to 2,717 while its
+shape does not move at all: p50 49.9 to 50.4, p99 81.8 to 81.7, **the top
+identical at 95.4**. Over 120 best-available drafts the median is unchanged
+(74.7 to 75.1 on the yardstick, 66.7 to 66.8 shown) and the CEILING opens: best
+all-time rank **7 to 3**, and the badge sweep reaches 1.
+
+**That makes `rank_one` reachable, which is a fix rather than a side effect.**
+This file already records it as excused reluctantly, on the grounds that no bot
+reaches 95.4 and that it had only ever lit off a defect in the old yardstick. An
+unreachable legend badge is exactly what `check-badges` exists to catch.
+
+**THE EXCUSE LISTS CHURNED BY FIVE IN AND FIVE OUT, and that is the pool moving
+rather than ten badges changing.** `rank_one` and four title rungs light now;
+`rating_95`, `one_season_5`, two Trade Machine rungs and `daily_title` went the
+other way. The full sweep reaches all ten either way. Those lists are a record of
+what ONE sweep reaches, so they move whenever the pool does, and reconciling them
+is the price of a check that refuses to go quiet.
+
+**THE SWEEP PRINTS ITS OWN ERROR BAR, and that is the half worth keeping.** Two
+numbers side by side invite a decision the sample cannot support, and this one
+would have been the wrong decision: read at 40 drafts it says don't ship, read
+at 400 it says the difference was never there. `economy_runs` is an input and
+the default is a tripwire rather than a measurement.
+
+**It runs LAST in the job.** In the middle, a fourteen minute measurement
+printed its verdict seven hundred lines from the end of the log, under
+everything `check-labels` writes, which is the same failure one level up: a
+workflow that tells a person to measure and gives them no way to.
+
+**AND THAT STAGE WROTE THE POOL BEFORE IT COULD NOTICE THE POOL WAS EMPTY.**
+`compact()` reads the enriched frame's verbose column names, so handed the
+ALREADY COMPACT file, which is an ordinary thing to do by hand, every row misses
+and the result is `[]`. It wrote that to disk and exited 0, and the shape gate two
+steps later is what caught it: a guard catching another stage's garbage rather
+than the stage refusing to make it. It refuses under a tenth of what came in,
+which is generous, since the real floor drops about 60% of the frame. **Both arms
+were proved**: the wrong file writes nothing and exits 1, and a real frame round
+trips to the shipped pool **byte identical**.
 
 ### The price was normalized for innings and the engine's value was not
 
@@ -12316,6 +13468,34 @@ which no longer exist and some of which were never in either league, so filing t
 1931 Homestead Grays under the AL would be a tidy-looking lie. They are the
 player's side and the other one.
 
+#### And its determinism section pinned three magic seeds, which the pool ate
+
+`check-bracket.mjs` went red on a pass that touched no engine, no run loop and no
+data file: `DETERMINISM: a run to check determinism against`. It reads exactly
+three files and not one of them had changed, so it was pre-existing by
+construction, and it is **the magic seed trap this file already documents twice**
+arriving in a third game.
+
+The section needs a run that reached October, and asked for one as
+`octoberRun(20000) || octoberRun(20001) || octoberRun(20002)`. `octoberRun`
+drafts by taking the first man on every board, which is a careless draft:
+measured against the shipped pool, **about 30% of seeds reach the playoffs at
+all**, so three pins had roughly a **one in three chance of all failing** on any
+change to the data. Splitting traded stints back out took the pool 44,344 rows to
+45,379, every seeded draw reshuffled, and all three stopped qualifying.
+
+**Measured rather than re-run until green**: the three pinned seeds come back
+false deterministically, and **60 of the 200 seeds from 20000 reach October**,
+the first being 20005. So the page was right the whole time and the file had no
+fixture.
+
+**The seed is not part of the claim**, which is what makes searching the fix
+rather than a loosening. What is being asserted is a property of `createBracket`,
+that the same run always draws the same field, and ANY October run supplies it.
+The search is bounded at two hundred and the failure still means something: no
+run in two hundred seeds reaching October would be a real finding about the mode
+rather than a missing fixture.
+
 ### The at-bat simulator
 
 October is played out plate by plate in every mode except Classic and the daily,
@@ -12410,16 +13590,54 @@ were. So this is not a buff to good play, it is the removal of a trap for carele
 play, which is `check-runs`' own "doing nothing was the worst outcome" arriving in
 a draft.
 
-**IT MOVES `staffRating`, WHICH IS ITS OWN DECISION AND IS NOT TAKEN HERE.** That
-scale is anchored at `50 + (3.40 - era) * 55` against a measured median ERA of
-3.22, and it was measured on the draft-order assignment because that is what a bot
-signing without choosing produced. At 55 points per ERA point the drift is **about
-nine rating points at the top of the range and two in the middle**, so the scale
-does not shift, it STRETCHES: the gap between a good staff and an ordinary one
-opens by about seven points. Re-anchoring is a one line change and its own
-measurement pass; leaving it means a strong staff reads higher than it used to and
-existing staff board rows sit low. Decide it deliberately rather than by noticing
-the drift later.
+**IT MOVES `staffRating`, WHICH WAS ITS OWN DECISION AND HAS SINCE BEEN TAKEN.**
+That scale was anchored at `50 + (3.40 - era) * 55` against a measured median ERA
+of 3.22, on the draft-order assignment, because that is what a bot signing without
+choosing produced. The sort stretches it by about nine points at the top and two in
+the middle. See the section below for what re-measuring found.
+
+#### And when it was re-anchored, both ends were dead
+
+```
+node baseball/check-staff.mjs     the assignment and its blast radius
+```
+
+The stretch above is real and is not what was wrong. Re-measured over **640 drafts
+at eight grades of drafting quality**, plus **900 more sweeping how much budget is
+held back**, that line had the two defects `teamRating` was rescaled for, at once:
+
+| | |
+|---|---|
+| the top was dead | the best staff ANY strategy reached is **2.93 ERA**, which that line puts at **75.9**. The top 24 points could not be lit by anybody. |
+| the bottom was a wall | **196 of 640** pinned at exactly 1.0, so two staffs a third of a run apart in ERA read the same number. |
+
+**HOLDING MONEY BACK DOES NOT HELP, which is what proves the ceiling is the mode's
+and not the bot's.** Swept at 1.2x, 1.6x, 2.1x, 2.6x and 3.2x a slot's pro-rata
+share against plain greedy, the best ERA reached runs 3.07, 3.00, 2.96, 2.94, 2.93
+and 2.93. Greedy is as good as anything, so the cap does not bind here the way it
+binds a team draft, and there is no strategy left to blame the dead top on.
+
+Both ends are anchored now, **4.63 ERA to 1 and 2.91 to 99**, and the scale is
+live end to end: **nothing at the ceiling and nothing at the floor** over the same
+640, against 196 on the floor before. A sensible draft medians 92, taking the
+second best man each time medians 65, the third 45, the fifth 21 and the worst man
+alive 8.
+
+**THE RATING SHELF IS SCOPED TO TEAMS, and that is the half that would have gone
+wrong quietly.** Every rung of it says "field a team", `best.rating` took the max
+over ALL rows, and a staff is explicitly not on the team scale: `staffRating`'s own
+header says so. While the staff top was dead at 76 that cost nothing, because a
+staff run could never be anybody's best number. Anchored, a sensible staff draft
+medians 92 and would have handed out every rung up to "Best on paper" for pressing
+the obvious button twelve times. `best.rating` skips `r.staff` now.
+
+**And the staff's own rung moved with the scale rather than being left.** `staff_70`
+is `staff_90`: on the old anchors the best staff anybody reached was 77, so 70 was a
+little better than a median good draft, and on the new one a median good draft is
+92. The badge means what it meant. **This is the moment to do that and the only
+one**: a badge is derived from stored rows, so one left too loose cannot be
+tightened later without stripping it off everybody who has it, and this game has no
+rows yet.
 
 #### The guard, and the four mutations that gave it teeth
 
@@ -13129,6 +14347,41 @@ symbol's viewBox went to 210x100 while the four `<use>` instances kept
 frame, which is part of why the stretch rendered small and thin. Two viewBoxes
 describing one drawing are the `?v=` pair's problem in SVG: nothing throws, and
 the only symptom is art that looks wrong. They are the same 100x100 now.
+
+### The mark is a diamond with a seam across it, and every icon comes from one drawing
+
+```
+node baseball/build/icons.mjs     every icon size, the header mark and the share card mark
+```
+
+The game is named for the field and the stone, so the mark is both: a cut diamond
+with a baseball seam stitched across it. It replaced a flat ball on an infield that
+said nothing about the name and matched none of the site's other games. Chosen by
+the owner from four concepts (a puzzle ball in the football icons' colours, this
+stone, a 70s patch and a pixel ball).
+
+**Six icon files had no source anywhere in the repo**, which is the share card's
+history two sections down arriving at the icons. So `icons.mjs` draws them all from
+one SVG function, and a change to the mark is one edit and one run.
+
+**The background is the page's own cream**, at the owner's asking. On cream a pale
+stone washes out, so it carries a dark outline and the sparkles are the page's gold.
+
+**The favicon is a different drawing, not a smaller one.** At 32px the stitches are
+a pixel each and smear, so the small variant keeps the silhouette, the facets and the
+seam as one line. **The maskable icon keeps the stone inside Android's 80% safe
+circle.**
+
+**The share card draws a PNG and the header draws the SVG.** `mark-256.png` is
+preloaded at boot and drawn either side of the title. A canvas that draws an SVG
+image can refuse to export in some browsers, and then Share does nothing. A
+same-origin PNG never does. If it has not loaded yet the card falls back to the two
+stars it always had.
+
+**Four version pins moved together**: the icons and the manifest to `v=2`, and the
+link preview to `v=3` on both pages. The manifest had also been promising a $245M
+cap since before the cap moved to $170M. No checker reads a manifest, so nothing
+caught it.
 
 ### The share card had no source and no builder, and was set in a fallback
 

@@ -202,7 +202,7 @@ console.log('\n=== every scene can actually fire ===');
   {
     const said = SCN.saysOf(SCN.BY_ID['take-office']).join(' ').toLowerCase();
     ok('  and somebody held the job before you', /the last one|before you|predecessor/.test(said));
-    ok('  and did not finish the term', /did not finish|pushed out|removed/.test(said));
+    ok('  and did not finish the term', /did(?:n't| not) finish|pushed out|removed/.test(said));
     ok('  rather than the job being invented this morning',
       !/did not exist|nobody has ever held/.test(said));
   }

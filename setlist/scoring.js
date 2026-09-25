@@ -433,9 +433,9 @@ export const BREADTH = [
     has: songs => songs.some(p => (Number(p.show_gap) || 0) >= BREADTH_BUSTOUT_GAP),
     missed: 'Nothing anybody had been waiting for' },
   { id: 'jamchart', points: 26, label: 'A jamchart version',
-    blurb: 'A take the archive flagged',
+    blurb: 'A version the archive called out',
     has: songs => songs.some(p => flag(p.is_jamchart)),
-    missed: 'No version the archive thought worth flagging' },
+    missed: 'Nothing the archive called out' },
   { id: 'bigjam',   points: 26, label: 'A 20-minute jam',
     blurb: 'One song given the whole room',
     has: songs => songs.some(p => lenOf(p) >= BREADTH_BIG_JAM),
@@ -637,7 +637,7 @@ export const HEADLINES = [
   { id: 'sandwich',  when: s => s.sandwiches >= 1,
     text: 'Wrapped a whole song inside another one. Showoffs.' },
   { id: 'onceever',  when: s => s.rarestSegue === 1 && s.segues >= 3,
-    text: 'Three transitions, none of which they have played twice. Tapers wept.' },
+    text: "Three segues they've never played twice. Tapers wept." },
   { id: 'seguerun',  when: s => s.segues >= 3,
     text: 'Barely stopped to tune. One long exhale.' },
   { id: 'bustoutbig',when: s => s.bustouts >= 2,
@@ -655,7 +655,7 @@ export const HEADLINES = [
   { id: 'noencore',  when: s => s.encoreSongs === 0,
     text: 'No encore. Bold. The parking lot had opinions.' },
   { id: 'nocover',   when: s => !s.cards.has('cover') && s.songs >= 8,
-    text: 'Not one song of somebody else\'s. Confident, that.' },
+    text: 'Not one song of somebody else\'s. Bold move.' },
   { id: 'sprint',    when: s => s.avgLen > 0 && s.avgLen <= 420,
     text: 'No breathing room all night. A greatest-hits sprint.' },
   { id: 'set1thin',  when: s => s.setRatios[0] < SHORT_SET_RATIO,
@@ -671,7 +671,7 @@ export const HEADLINES = [
   { id: 'monsterjam',when: s => s.longest >= 1500,
     text: 'One song ate half a set. Nobody wanted it to end.' },
   { id: 'coverheavy',when: s => s.covers >= 3,
-    text: 'Half a covers set broke out. Depending who you ask, that is a compliment.' },
+    text: "Half a covers set broke out. Depending who you ask, that's a compliment." },
   { id: 'everything',when: s => s.breadthGot === 5,
     text: 'A cover, a bustout, a monster jam. Left nothing on the shelf.' },
   { id: 'bustout',   when: s => s.bustouts >= 1 && s.longest >= LEN_20MIN,
@@ -688,7 +688,7 @@ export const HEADLINES = [
   { id: 'good',      when: s => s.overallRatio >= 0.88,
     text: 'Ran it close. A few minutes left in the tank.' },
   { id: 'solid',     when: () => true,
-    text: 'A good night. Not one they will bootleg forever.' },
+    text: "A good night. Not one they'll bootleg forever." },
 ];
 
 
@@ -699,7 +699,7 @@ export function setNote(ratio, songs) {
   if (songs === 0) return 'Never happened.';
   if (ratio >= 0.97) return 'Filled to the curfew.';
   if (ratio >= 0.9) return 'Paced about right.';
-  if (ratio >= SHORT_SET_RATIO) return 'A little room left on the table.';
+  if (ratio >= SHORT_SET_RATIO) return 'Left a little time on the table.';
   if (ratio >= 0.6) return 'Cut short. The crowd noticed.';
   return 'Barely a set.';
 }
@@ -736,7 +736,7 @@ export const RX = {
     '{gap} since the last one. The rail noticed immediately.',
     'Deep cut. A pocket of the floor lost it.',
     'Somebody in section 102 has waited all tour for that.',
-    'Been a while. The people who knew went properly loud.',
+    'Been a while. The people who knew got loud.',
     'Dusted off. Three rows understood immediately.',
   ],
   bustout: [
@@ -755,7 +755,7 @@ export const RX = {
      lost the other: the room still erupts, and it was still the wrong place
      for it. So the line says both. */
   bustoutClash: [
-    '{gap}! And they buried it. Still bedlam, mind.',
+    '{gap}! And they buried it. Still bedlam, though.',
     'Huge bustout, wrong moment. The pop was real anyway.',
     '{gap} of waiting, spent in the wrong slot. Still counts.',
   ],
@@ -766,7 +766,7 @@ export const RX = {
   ],
   legend: [
     'Full hose. The rail came apart.',
-    'That is the version people will send each other.',
+    "That's the version people will send each other.",
     'Type II and gone. Nobody sat down for that.',
     'Patient, then majestic. Absolute bliss.',
   ],
@@ -777,7 +777,7 @@ export const RX = {
     'Peaked, dropped, peaked again.',
   ],
   jam: [
-    'Proper jam vehicle. Big peak on the end.',
+    'Real jam vehicle. Big peak at the end.',
     'Nice patient build. Room locked in.',
     'Plinko into bliss. Heads grinning up front.',
     'Legs on that one. Tapers are pleased.',
@@ -798,7 +798,7 @@ export const RX = {
   cooldown: [
     'Everybody exhales. Perfect place for it.',
     'Beers refilled, legs recovered. Exactly what that needed.',
-    'The room comes down together. Nicely judged.',
+    'The room comes down together. Nice call.',
     'Soft landing after all that. Somebody knew what to do.',
   ],
   tease: [
@@ -808,13 +808,13 @@ export const RX = {
   ],
   opening: [
     'Lights down, first notes. The place erupts.',
-    'Openers do not usually get that reaction.',
-    'Straight out of the gate. Nobody is sitting down tonight.',
+    "Openers don't usually get that reaction.",
+    "Straight out of the gate. Nobody's sitting down tonight.",
   ],
   lastcall: [
     'Last one. Nobody wanted the lights.',
-    'That is the night. House lights, everybody hoarse.',
-    'Final note, and the room does not move for a second.',
+    "That's the night. House lights, everybody hoarse.",
+    "Final note, and the room doesn't move for a second.",
   ],
   breather: [
     'Lighters up. Earned breather.',
@@ -851,7 +851,7 @@ export const RX = {
     'Played it straight. Nobody minded.',
     'A song happened. The lot heard about it later.',
     'Serviceable. Good time to find your people.',
-    'Held the room, did not move it.',
+    "Held the room. Didn't move it.",
     'Nice enough. The rail checked their texts.',
   ],
   clash: [
@@ -983,7 +983,7 @@ export function eventLine(kinds, seed = 0) {
   ]);
   if (kinds.includes('chain')) return one([
     'Still no gap. Third one in a row.',
-    'They have not stopped. Nobody is tuning.',
+    "They haven't stopped. Nobody's tuning.",
   ]);
   if (kinds.includes('exact')) return one([
     'Same transition as the tape. Seamless.',

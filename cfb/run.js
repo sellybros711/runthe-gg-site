@@ -337,7 +337,7 @@ function spin(run, data, constraint) {
 function respin(run, data, kind) {
   const which = kind === 'year' ? 'year' : 'team';
   const check = canRespin(run, which, data);
-  if (!check.ok) throw new Error(`cannot re-spin: ${check.reason}`);
+  if (!check.ok) throw new Error(`can't re-spin: ${check.reason}`);
   const draw = run.currentDraw;
   run.respinsUsed++;
   if (draw) run.usedTeamSeasons.push(draw.team_season_id);
@@ -398,7 +398,7 @@ function sign(run, player, want) {
   if (run.phase !== PHASES.DRAFT) throw new Error('not drafting');
   if (!run.currentDraw) throw new Error('nothing drawn');
   if (!run.currentDraw.options.includes(pkey(player))) throw new Error('player not on this team');
-  if (!canFinishAfter(run, player, run.currentDraw.team_season_id)) throw new Error('cannot afford');
+  if (!canFinishAfter(run, player, run.currentDraw.team_season_id)) throw new Error('can\'t afford');
   const slot = (want === undefined || want === null)
     ? slotForPlayer(run, player)
     : (slotChoices(run, player).indexOf(want) >= 0 ? want : null);
@@ -558,7 +558,7 @@ function advanceWeek(run, data, leagueContext, displayCal) {
 
 function startPlayoffs(run) {
   if (run.phase !== PHASES.SEEDING) throw new Error('not at seeding');
-  if (!run.playoffSeed.made) throw new Error('did not make the playoffs');
+  if (!run.playoffSeed.made) throw new Error('didn\'t make the playoffs');
   /* A BYE SEED WATCHES THE FIRST ROUND. Their quarterfinal is against the winner of one
      of those games, so it has to be played before anybody can be asked who that is, and
      playing it here rather than inside the first game means the screen can show it. */

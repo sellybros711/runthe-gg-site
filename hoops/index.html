@@ -16,8 +16,8 @@
      audit. Take the noindex off and this page joins the reviewed site, and it is not
      ready to be reviewed. -->
 <meta name="robots" content="noindex, nofollow">
-<title>Run The Floor: NBA Draft Game | RunThe.GG</title>
-<meta name="description" content="Run The Floor: spin for a season and a club, draft an NBA starting five under a $120M cap, then play all 82 games and chase a ring.">
+<title>Run The Floor: NBA History Games | RunThe.GG</title>
+<meta name="description" content="Run The Floor: fix a real NBA team with one trade, pass the ball through real teammates, hold the court against history, or draft a starting five under a $120M cap.">
 <meta name="theme-color" content="#0d1117">
 <link rel="canonical" href="https://runthe.gg/hoops/">
 <!-- THE SHARE CARD.
@@ -34,22 +34,30 @@
      questions are unrelated and only one of them is about launching.
 
      hoops/og.png is built by hoops/build/og.mjs from hoops/og-source.html. -->
-<meta property="og:title" content="Run The Floor: NBA Draft Game">
-<meta property="og:description" content="Run The Floor: spin for a season and a club, draft an NBA starting five under a $120M cap, then play all 82 games and chase a ring.">
+<meta property="og:title" content="Run The Floor: NBA History Games">
+<meta property="og:description" content="Run The Floor: fix a real NBA team with one trade, pass the ball through real teammates, hold the court against history, or draft a starting five under a $120M cap.">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="RunThe.GG">
 <meta property="og:url" content="https://runthe.gg/hoops/">
 <meta property="og:locale" content="en_US">
-<meta property="og:image" content="https://runthe.gg/hoops/og.png?v=1">
+<meta property="og:image" content="https://runthe.gg/hoops/og.png?v=2">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="Run The Floor: draft an NBA starting five under a $120M cap and play all 82 games. The five roster spots shown as PG, SG, SF, PF and C.">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Run The Floor: Free NBA Roster Draft Game">
-<meta name="twitter:description" content="Spin for a season and a club, draft an NBA starting five under a $120M cap, then play all 82 games and chase a ring.">
-<meta name="twitter:image" content="https://runthe.gg/hoops/og.png?v=1">
+<meta name="twitter:title" content="Run The Floor: Free NBA History Games">
+<meta name="twitter:description" content="Fix a real NBA team with one trade, pass the ball through real teammates, hold the court against history, or draft a starting five under a $120M cap.">
+<meta name="twitter:image" content="https://runthe.gg/hoops/og.png?v=2">
 <meta name="twitter:image:alt" content="Run The Floor: draft an NBA starting five under a $120M cap and play all 82 games.">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230d1117'/%3E%3Ctext x='16' y='24' font-size='20' text-anchor='middle'%3E%F0%9F%8F%80%3C/text%3E%3C/svg%3E">
+<link rel="manifest" href="manifest.webmanifest">
+<!-- THE MARK IS AN 8-BIT BALL, built by hoops/build/logo.mjs from one pixel grid. The
+     favicons are the 15 cell ball at 1x, 2x and 3x rather than one image scaled, because a
+     pixel ball scaled by anything but a whole number stops being pixel art. It replaced an
+     emoji in an SVG, which drew whatever the visitor's emoji font drew. -->
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png?v=1">
+<link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png?v=1">
+<link rel="icon" type="image/png" sizes="48x48" href="favicon-48.png?v=1">
+<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=1">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <!-- THE FONT DOES NOT GET TO HOLD THE GAME HOSTAGE.
@@ -62,9 +70,9 @@
      face below has a real fallback stack, so text paints immediately in the fallback
      and swaps when Anton and Archivo arrive. -->
 <link rel="stylesheet" media="print" onload="this.media='all';this.onload=null"
-  href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@400;600;700;800;900&display=swap">
+  href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@400;600;700;800;900&family=Press+Start+2P&display=swap">
 <noscript><link rel="stylesheet"
-  href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@400;600;700;800;900&display=swap"></noscript>
+  href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@400;600;700;800;900&family=Press+Start+2P&display=swap"></noscript>
 
 <style>
   :root{
@@ -73,6 +81,11 @@
     --green:#22c55e; --red:#ef4444; --line:rgba(255,255,255,.09);
     --display:'Anton',Impact,'Arial Narrow',sans-serif;
     --body:'Archivo',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+    /* The brand face: the pixel type the logo is set in, used for the name and nothing
+       else. It falls back to the display face rather than to a monospace, because the
+       code face this page was once set in is the thing verify.mjs keeps out. It is drawn
+       on an 8 pixel grid, so every size it is set at is a multiple of 8. */
+    --pixel:'Press Start 2P',var(--display);
     /* ── ALIGNED DIGITS ARE A FONT FEATURE, NOT A TYPEFACE ──────────────────
      *
      * This game was set in a code face. `--mono` was `ui-monospace` and it was
@@ -123,9 +136,18 @@
   header.mast{text-align:center;margin:0 0 16px;}
   header.mast .eyebrow{font-size:11px;letter-spacing:.22em;text-transform:uppercase;
     color:var(--orange);font-weight:800;}
-  header.mast h1{font-family:var(--display);font-weight:400;text-transform:uppercase;
-    font-size:clamp(30px,8vw,46px);line-height:1;margin:4px 0 6px;letter-spacing:.01em;}
-  header.mast h1 span{color:var(--orange);}
+  /* The name is the logo's own lockup: RUN THE small and white over FLOOR large in
+     the ball's orange, with the stepped shadow the wordmark is built from. */
+  header.mast h1{font-family:var(--pixel);font-weight:400;text-transform:uppercase;
+    line-height:1;margin:12px 0 12px;letter-spacing:0;}
+  header.mast h1 .l1{display:block;font-size:16px;color:#e8edf7;text-shadow:2px 2px 0 #3a4466;}
+  header.mast h1 .l2{display:block;font-size:32px;color:#ffae3d;margin-top:8px;
+    text-shadow:0 3px 0 #e8632a,0 6px 0 #a8341f,4px 9px 0 #05060b;}
+  @media(min-width:600px){
+    header.mast h1 .l1{font-size:24px;text-shadow:3px 3px 0 #3a4466;}
+    header.mast h1 .l2{font-size:48px;margin-top:10px;
+      text-shadow:0 4px 0 #e8632a,0 8px 0 #a8341f,6px 13px 0 #05060b;}
+  }
   header.mast p{margin:0;color:var(--mut);font-size:14px;}
 
   .card{background:linear-gradient(180deg,var(--card),#10151f);border:1px solid var(--cardb);
@@ -596,8 +618,21 @@
   .lbnote.first{color:#f2c14e;}
 
   .lbrows{list-style:none;margin:0;padding:0;max-height:46vh;overflow-y:auto;}
-  .lbrow{display:flex;align-items:center;gap:10px;padding:9px 2px;
-    border-bottom:1px solid var(--cardb);min-width:0;}
+  .lbrow{display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:9px 2px;
+    border-bottom:1px solid var(--cardb);min-width:0;cursor:pointer;}
+  .lbrow:focus-visible{outline:2px solid var(--gold);outline-offset:-2px;}
+  /* THE FIVE, under the row that drafted them. A board of names and records
+     answers who won and never what they built, which is the first thing a fan
+     asks of the top of any leaderboard. The picks have ridden on every row
+     since the day it shipped and nothing drew them. */
+  .lbfive{flex:0 0 100%;margin:2px 0 0 40px;padding:0;list-style:none;
+    font-size:12px;line-height:1.55;color:var(--ink);}
+  .lbfive[hidden]{display:none;}
+  .lbfive li{display:flex;gap:8px;min-width:0;}
+  .lbfive .ps{flex:0 0 22px;color:var(--dim);font-weight:800;font-size:10.5px;
+    letter-spacing:.04em;padding-top:1px;}
+  .lbfive .pn{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .lbfive .pn i{font-style:normal;color:var(--dim);}
   .lbrow:last-child{border-bottom:0;}
   .lbrow .pl{flex:0 0 30px;font-family:var(--num);font-variant-numeric:tabular-nums;font-size:13px;color:var(--dim);
     text-align:right;}
@@ -683,6 +718,39 @@
     padding:9px 15px;border-radius:999px;font-size:13px;font-weight:700;white-space:nowrap;
     opacity:0;pointer-events:none;transition:opacity .18s ease;box-shadow:0 6px 20px rgba(0,0,0,.5);}
   .toast.on{opacity:1;}
+  /* THE STAMP. A signing used to be a chip sliding onto the court and nothing
+     else, so the one decision this game is built around, whether the price was
+     right, was only ever answered on the tile BEFORE the press. The stamp
+     answers it after, in the tile's own colours, for about a second. It sits
+     over the court rather than the board because backToWheel has already sent
+     the page to the top, and it takes no pointer so a thumb on its way to the
+     reels goes straight through it. */
+  .stamp{position:fixed;left:50%;top:26vh;z-index:96;pointer-events:none;
+    transform:translate(-50%,-50%) rotate(-5deg) scale(1);opacity:0;text-align:center;
+    padding:10px 20px 11px;border-radius:12px;border:3px solid currentColor;
+    background:rgba(13,17,23,.92);box-shadow:0 10px 30px rgba(0,0,0,.55);}
+  .stamp b{display:block;font-family:var(--display);font-size:30px;line-height:1;
+    letter-spacing:.04em;text-transform:uppercase;}
+  .stamp span{display:block;margin-top:5px;font-size:12px;font-weight:700;color:var(--ink);
+    white-space:nowrap;}
+  .stamp.good{color:#4ade80;} .stamp.fair{color:#94a3b8;}
+  .stamp.bad{color:#fca5a5;} .stamp.none{color:#64748b;}
+  .stamp.on{animation:stampIn 1.15s cubic-bezier(.2,.9,.3,1.2) forwards;}
+  @keyframes stampIn{
+    0%{opacity:0;transform:translate(-50%,-50%) rotate(-5deg) scale(1.6);}
+    14%{opacity:1;transform:translate(-50%,-50%) rotate(-5deg) scale(.96);}
+    22%{transform:translate(-50%,-50%) rotate(-5deg) scale(1);}
+    78%{opacity:1;}
+    100%{opacity:0;transform:translate(-50%,-50%) rotate(-5deg) scale(1);}
+  }
+  @media (prefers-reduced-motion:reduce){
+    @keyframes stampIn{0%,100%{opacity:0;}10%,80%{opacity:1;}}
+  }
+  /* The draft as squares on the results screen: the same row the share text
+     carries, big enough to read, with what each colour counted. */
+  .ogrid{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:2px 0 12px;}
+  .ogrid .sq{font-size:26px;letter-spacing:3px;line-height:1;}
+  .ogrid .ct{font-size:12px;color:var(--mut);font-weight:600;}
   .crash{display:none;position:fixed;left:10px;right:10px;bottom:10px;z-index:90;
     background:#7f1d1d;color:#fff;border:1px solid #b91c1c;border-radius:10px;
     padding:11px 13px;font-size:13px;line-height:1.4;cursor:pointer;
@@ -1652,6 +1720,12 @@
      data files as each parses, the league index, and the first paint. The bar
      reports rather than performs. A bar that always fills in two seconds is a
      worse lie than three dots, because it looks like information. */
+  .lgstrip{display:flex;flex-wrap:wrap;justify-content:center;gap:4px 12px;margin:-4px 0 14px;
+    font-size:12px;color:var(--dim);font-weight:700;text-align:center;}
+  .lgstrip b{color:var(--mut);font-family:var(--num);font-variant-numeric:tabular-nums;}
+  .lgstrip .boot{flex:1 0 100%;margin:6px 0 0;}
+  .lgstrip .boot.done{display:none;}
+  .lgstrip #loadmsg{font-size:12px;margin:6px 0 0;}
   .boot{margin:12px 0 0;}
   .boottrack{height:5px;border-radius:99px;background:rgba(255,255,255,.07);overflow:hidden;}
   .boottrack i{display:block;height:100%;width:0;border-radius:99px;
@@ -1751,15 +1825,13 @@
   .appbar .mark{display:flex;align-items:center;gap:7px;min-width:0;height:100%;
     background:none;border:0;padding:0 6px 0 0;color:inherit;font-family:inherit;
     cursor:pointer;min-height:0;}
-  .appbar .ball{flex:0 0 auto;width:22px;height:22px;border-radius:50%;
-    border:2px solid var(--orange);position:relative;}
-  .appbar .ball:before,.appbar .ball:after{content:'';position:absolute;background:var(--orange);}
-  .appbar .ball:before{left:50%;top:0;bottom:0;width:1.5px;margin-left:-.75px;}
-  .appbar .ball:after{top:50%;left:0;right:0;height:1.5px;margin-top:-.75px;}
-  .appbar .wm{font-family:var(--display);font-weight:400;text-transform:uppercase;
-    font-size:15px;letter-spacing:.02em;line-height:1;white-space:nowrap;overflow:hidden;
-    text-overflow:ellipsis;}
-  .appbar .wm span{color:var(--orange);}
+  /* The logo's ball at 1x. It is 22 pixels drawn at 22 CSS pixels, so a phone scales
+     it by 2 or 3, which pixelated keeps as whole cells rather than blurring. */
+  .appbar .ball{flex:0 0 auto;width:22px;height:22px;image-rendering:pixelated;display:block;}
+  .appbar .wm{font-family:var(--pixel);font-weight:400;text-transform:uppercase;
+    font-size:10px;letter-spacing:0;line-height:1.3;white-space:nowrap;overflow:hidden;
+    text-overflow:ellipsis;color:#e8edf7;}
+  .appbar .wm span{color:#ffae3d;}
   .appbar .right{display:flex;align-items:center;gap:6px;flex:0 0 auto;}
   .appbar button.link{background:transparent;border:1px solid var(--cardb);color:var(--mut);
     font-size:12px;font-weight:700;padding:0 11px;height:34px;min-height:34px;border-radius:8px;}
@@ -1779,7 +1851,7 @@
   /* The mark is the way home from every screen, so it has to read as a control
      rather than as a logo printed on the page. */
   .appbar .mark:active{opacity:.6;}
-  @media(max-width:374px){ .appbar .wm{font-size:13.5px;} }
+  @media(max-width:374px){ .appbar .wm{font-size:8px;} }
 
   /* The capwrap now sticks UNDER the bar rather than over it. */
   .capwrap{top:var(--hdr);}
@@ -1815,6 +1887,7 @@
      bug it is reporting. -->
 <div class="crash" id="crash" role="alert" onclick="this.style.display='none'"></div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
+<div class="stamp" id="stamp" aria-hidden="true"><b id="stamp-w"></b><span id="stamp-s"></span></div>
 
 <!-- WHAT JUST HAPPENED, FOR SOMEBODY WHO CANNOT SEE THE WHEEL. The reels are a
      picture of a decision that has already been made, and to a screen reader
@@ -1831,7 +1904,7 @@
      record, which is why neither of those is a button on a screen any more. -->
 <div class="appbar">
   <button class="mark" id="b-mark" aria-label="Run The Floor, back to the home screen">
-    <span class="ball" aria-hidden="true"></span>
+    <img class="ball" src="mark.png?v=1" width="22" height="22" alt="" decoding="async">
     <span class="wm">Run The <span>Floor</span></span>
   </button>
   <div class="right">
@@ -1850,6 +1923,61 @@
      game's own spinReel(), so this cannot drift away from what playing actually
      looks like. -->
 <header class="mast">
+  <div class="eyebrow">RunThe.GG</div>
+  <h1><span class="l1">Run The</span> <span class="l2">Floor</span></h1>
+  <p>Fix history. Pass through it. Take the court from it.</p>
+</header>
+
+<!-- ── home ─────────────────────────────────────────────────────────────── -->
+<div class="screen active" id="s-home">
+  <!-- A RUN IN PROGRESS IS THE FIRST THING, and only when there is one. The
+       page used to jump straight back into it on load, which meant a returning
+       player never saw this screen at all and had no way to abandon a draft
+       that had gone badly except a button labelled Reset.
+       The card is hidden along with its contents rather than left standing
+       empty, because Start moved down to the dock and what remained on a first
+       visit was a bordered box with nothing in it. -->
+  <div class="card hero" id="herocard" style="display:none">
+    <div class="resume" id="home-resume" style="display:none">
+      <div class="rh"><b id="rz-title">Run in progress</b><span id="rz-where"></span></div>
+      <p class="who" id="rz-who"></p>
+      <div class="btnrow">
+        <button id="b-resume" style="flex:2">Resume</button>
+        <button class="ghost" id="b-abandon">Abandon</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- WHAT EVERY MODE IS BUILT FROM, in one line. It was a card of its own
+       when the draft was the whole game; with four ways to play it is the
+       thing all four share, so it sits above them and costs one line rather
+       than a card. The numbers are the file's, filled once it loads, and the
+       loading bar under them goes when the data is in. -->
+  <div class="lgstrip" id="lgstrip">
+    <span><b id="ls-players">-</b> player-seasons</span>
+    <span><b id="ls-clubs">-</b> team seasons</span>
+    <span><b id="ls-teams">-</b> franchises</span>
+    <span id="home-era">1974 to 2026</span>
+    <div class="boot" id="boot">
+      <div class="boottrack"><i id="boot-bar"></i></div>
+      <p class="dim" id="loadmsg">Loading the league...</p>
+    </div>
+  </div>
+
+  <!-- TODAY'S PLAY, and the one button the dock carries on this screen. It is
+       whichever daily is still open, then Conquest, so the thumb always lands on
+       the thing a returning player came for. modes-ui.js sets its label and what
+       it does; it is here so the dock has a real element to move. -->
+  <button class="big" id="b-today" disabled>Loading...</button>
+
+  <!-- THE MODES, drawn by modes-ui.js once the league has loaded. -->
+  <div class="mhome" id="modes-home"></div>
+
+  <!-- QUICK DRAFT: the game this page started as, now one way to play of four.
+       The court and the reels that used to open the page live in its card,
+       because they are a picture of exactly this mode and nothing else. -->
+  <h2 class="mhome-h" id="qd-h">Quick Draft</h2>
+  <div class="card qd" id="qd-card">
   <div class="hero" id="hero">
     <div class="reels heroreels">
       <div class="reelbox season waiting" id="h-box-s" aria-hidden="true">
@@ -1875,37 +2003,11 @@
       <div class="side"></div>
     </div>
   </div>
-  <div class="eyebrow">RunThe.GG</div>
-  <h1>Run The <span>Floor</span></h1>
-  <p>Spin for a season and a club. Draft a starting five. Play 82 and chase a ring.</p>
-</header>
-
-<!-- ── home ─────────────────────────────────────────────────────────────── -->
-<div class="screen active" id="s-home">
-  <!-- A RUN IN PROGRESS IS THE FIRST THING, and only when there is one. The
-       page used to jump straight back into it on load, which meant a returning
-       player never saw this screen at all and had no way to abandon a draft
-       that had gone badly except a button labelled Reset.
-       The card is hidden along with its contents rather than left standing
-       empty, because Start moved down to the dock and what remained on a first
-       visit was a bordered box with nothing in it. -->
-  <div class="card hero" id="herocard" style="display:none">
-    <div class="resume" id="home-resume" style="display:none">
-      <div class="rh"><b id="rz-title">Run in progress</b><span id="rz-where"></span></div>
-      <p class="who" id="rz-who"></p>
-      <div class="btnrow">
-        <button id="b-resume" style="flex:2">Resume</button>
-        <button class="ghost" id="b-abandon">Abandon</button>
-      </div>
-    </div>
+    <p class="dim qd-say">Spin a season and a team. Sign five under a
+      <b>$120M</b> cap. Play 82 and chase a ring.</p>
+    <button class="big" id="b-start">Start a draft</button>
   </div>
 
-  <!-- OUTSIDE THE CARD ABOVE, because the dock borrows this button and puts it
-       back here afterwards, and it cannot be put back into something hidden.
-       How to play used to sit under it; the rules are linked from the run-goes
-       card below and from the footer, and Career from the bar, so what was left
-       here was three ways to leave a screen nobody had started yet. -->
-  <button class="big" id="b-start">Start a run</button>
 
   <!-- TODAY'S RUN, AND IT SITS ABOVE THE OTHER TWO BECAUSE IT EXPIRES.
        One Franchise and Decades are there every day and are chosen by mood.
@@ -1916,8 +2018,8 @@
        been played, which the other two never do. -->
   <div class="modedoor daily" id="b-daily">
     <button class="md-main" id="b-daily-go">
-      <span class="md-name" id="dl-name">Today's run</span>
-      <span class="md-sub" id="dl-sub">The same spins for everybody today.</span>
+      <span class="md-name" id="dl-name">Daily Draft</span>
+      <span class="md-sub" id="dl-sub">Same spins for everyone today.</span>
     </button>
     <span class="md-streak" id="dl-streak" hidden></span>
   </div>
@@ -1937,7 +2039,7 @@
   <div class="modedoor" id="b-franchise">
     <button class="md-main" id="b-franchise-go">
       <span class="md-name" id="md-name">One Franchise</span>
-      <span class="md-sub" id="md-sub">Lock the wheel to one club. Only the year moves.</span>
+      <span class="md-sub" id="md-sub">Pick a team. Only the year spins.</span>
     </button>
     <!-- TWO TARGETS, AND ONLY ONCE THERE IS SOMETHING TO SWITCH FROM. Before a
          club has been played the whole door opens the picker, because there is
@@ -1959,25 +2061,10 @@
   <div class="modedoor" id="b-decade">
     <button class="md-main" id="b-decade-go">
       <span class="md-name" id="dc-name">Decades</span>
-      <span class="md-sub" id="dc-sub">One decade, the whole league. A starting five out of one era.</span>
+      <span class="md-sub" id="dc-sub">One decade. Every team. A starting five from one era.</span>
     </button>
     <button class="md-pick" id="b-decade-pick" hidden
       aria-label="Switch decade"><span class="md-chev" aria-hidden="true"></span></button>
-  </div>
-
-  <!-- WHAT YOU ARE DRAFTING FROM. Filled from the data once it loads, so the
-       numbers are the file's rather than a claim typed into the markup. -->
-  <div class="card">
-    <h2>The league <span class="sub" id="home-era">1974 to 2026</span></h2>
-    <div class="leaguestats">
-      <div class="lstat"><b id="ls-players">-</b><span>Player-seasons</span></div>
-      <div class="lstat"><b id="ls-clubs">-</b><span>Club seasons</span></div>
-      <div class="lstat"><b id="ls-teams">-</b><span>Franchises</span></div>
-    </div>
-    <div class="boot" id="boot">
-      <div class="boottrack"><i id="boot-bar"></i></div>
-      <p class="dim" style="font-size:13px;margin:9px 0 0" id="loadmsg">Loading the league...</p>
-    </div>
   </div>
 
   <!-- The career strip, which is hidden until there is a career to show. An
@@ -2020,59 +2107,58 @@
 
     <h3>How a run goes</h3>
     <p class="dim" style="font-size:14px;margin:0 0 10px">
-      The wheel gives you a club and a season. You sign one player off that roster, and
-      you do it five times to fill a point guard, a shooting guard, a small forward, a
-      power forward and a centre. Every signing comes out of a
-      <b style="color:var(--ink)">$120M</b> cap, and the cap is the whole game: the best
-      man on every board runs to about $300M, so it cannot be done.
+      The wheel gives you a team and a season. You sign one player off that roster.
+      Do it five times: a point guard, a shooting guard, a small forward, a power
+      forward and a center. It all comes out of a
+      <b style="color:var(--ink)">$120M</b> cap, and the cap is the whole game. The
+      best player on every board adds up to about $300M. You cannot have them all.
     </p>
     <p class="dim" style="font-size:14px;margin:0 0 4px">
-      Price is what a front office would have paid for that box score, and value is win
-      shares, which is a different number. So the board has bargains on it and the
-      bargains are the men who won something without scoring. Players who really did
-      share a club, a college or a draft class build chemistry on top of that. Then you
-      play all 82 against real teams out of the same data.
+      Price is what a front office would pay for that box score. Value is win
+      shares, and that is a different number. So the board has bargains, and the
+      bargains are the guys who won without scoring. Real teammates, college
+      teammates and draft classmates add chemistry on top. Then you play all 82
+      against real teams from the same data.
     </p>
 
     <h3 class="ht-turn">Why five stars lose</h3>
 
     <h3>The ball only bounces once</h3>
     <p class="dim">
-      An NBA team takes about 88 shots a night, and a starting five accounts for
-      roughly 66 of them. Every player here carries the shots he
-      actually took. Draft five men who each took twenty a night on their own team
-      and you have a roster asking for 100 shots that do not exist. Jordan,
-      Harden, Bryant, Malone and O'Neal is the most talented lineup you can
-      assemble in this game and one of the worst basketball teams in it.
+      An NBA team takes about 88 shots a night. A starting five takes roughly 66
+      of them. Every player here brings the shots he actually took. Draft five
+      guys who each took twenty a night and you need 100 shots that do not exist.
+      Jordan, Harden, Bryant, Malone and O'Neal is the most talented lineup you
+      can build here. It is also one of the worst teams in the game.
     </p>
 
     <h3>Somebody has to be able to shoot</h3>
     <p class="dim">
-      Without spacing the paint is a car park. But the three-point line did not
-      exist until 1980, and Jerry West attempted none in 1972 because nobody
-      could, so shooting is measured against what a player's <b>own league</b>
-      shot, on two counts: how many he took, and what share of his attempts they
-      were. Steve Kerr took only 2.9 a night, which is unremarkable, and they
-      were half his shots, which is not.
+      Without spacing the paint is a parking lot. But the three-point line did not
+      exist until 1980. Jerry West attempted zero threes in 1972 because nobody
+      could. So shooting is measured against a player's <b>own league</b>, two
+      ways: how many he took, and what share of his shots they were. Steve Kerr
+      took only 2.9 a night. That is ordinary. They were half his shots. That is
+      not.
     </p>
 
     <h3>An anchor, not a committee</h3>
     <p class="dim">
-      Five men with 0.4 blocks each do not add up to a rim protector; one man
-      with two of them is one. Same for passing: a roster whose best creator
-      averages two assists is five players taking turns. Both read the best man
-      on the roster rather than the total, which is why signing Ben Wallace or
-      Magic Johnson changes a team in a way that five willing helpers never does.
+      Five guys with 0.4 blocks each are not a rim protector. One guy with two
+      blocks is. Same for passing: if your best creator averages two assists, you
+      have five players taking turns. Both count the best player on the roster,
+      not the total. That is why signing Ben Wallace or Magic Johnson changes a
+      team, and five willing helpers never do.
     </p>
 
     <h3>Then it tells you what you built</h3>
     <p class="dim">
-      When the fifth man signs, the game names the system your roster plays:
-      Showtime, the Triangle, Grit and Grind, Pick and Roll, Twin Towers,
-      Moreyball, Point Centre and the rest. They are checked against real
-      lineups, so the 1996 Bulls come back running the Triangle and the 1989
-      Pistons come back Grit and Grind. Get it wrong and it will tell you that
-      too: five volume scorers are not a system, they are Too Many Mouths.
+      When the fifth man signs, the game names your system: Showtime, the
+      Triangle, Grit and Grind, Pick and Roll, Twin Towers, Moreyball, Point
+      Center and more. They are tested against real lineups. The 1996 Bulls come
+      back running the Triangle. The 1989 Pistons come back Grit and Grind. Get
+      it wrong and it will tell you: five volume scorers are not a system. They
+      are Too Many Mouths.
       <a href="/hoops/how-to-play.html">The full rules are here.</a>
     </p>
   </details>
@@ -2231,9 +2317,9 @@
   <!-- THE DOOR SITS ABOVE THE RAIL, which is the same rule the live board's
        call box follows. The rail is the tallest thing on this screen and it
        scrolls; a control the game is waiting on underneath it is a control
-       the player has to go looking for. Shown when the bracket reaches a game
-       the series can end in, or any Finals game, and hidden the rest of the
-       time so a quiet second round plays through without asking anything. -->
+       the player has to go looking for. Shown when the bracket reaches a Game 7
+       (poNext's `big`), and hidden the rest of the time so every other game
+       plays through without asking anything. -->
   <div class="card lvdoor" id="lvdoor" hidden>
     <div class="lvd-eye" id="lvd-eye"></div>
     <h3 class="lvd-title" id="lvd-title"></h3>
@@ -2357,6 +2443,7 @@
 
   <div class="card">
     <h2>Your draft <span class="sub" id="o-grade"></span></h2>
+    <div class="ogrid" id="o-grid"></div>
     <!-- The same court as the draft screen, so the men you finished with are
          seen where they played rather than only listed. -->
     <div class="court" id="o-court" role="img" aria-label="Your rotation on the floor">
@@ -2406,6 +2493,14 @@
   </div>
 </div>
 
+<!-- ── the three modes that are not a draft ──────────────────────────────
+     Empty shells. modes-ui.js draws all three from the rules in modes.js, so
+     the markup and the stylesheet that dresses it ship in one file with one
+     cache version. -->
+<div class="screen" id="s-cq"></div>
+<div class="screen" id="s-fix"></div>
+<div class="screen" id="s-pass"></div>
+
 <!-- ── career, kept on this device ───────────────────────────────────────
      Every run that reaches a result adds a line to this. It never leaves the
      browser it was played in: there is no account and nothing is sent
@@ -2418,14 +2513,14 @@
      row can never promise a franchise the wheel cannot actually draw. -->
 <div class="sheet" id="clubsheet" role="dialog" aria-modal="true" aria-labelledby="club-h">
   <div class="panel">
-    <h2 id="club-h">One Franchise <span class="sub">pick your club</span></h2>
+    <h2 id="club-h">One Franchise <span class="sub">pick your team</span></h2>
     <!-- TWO LINES. Five pushed the first club off the top of a 390px screen,
          and a picker whose first screen is prose is a picker. The lineage note
          moved into the row it is about: the season count on a Thunder chip
          already says 52, which is the whole claim. -->
     <p class="dim" style="font-size:13px;margin:0 0 12px;line-height:1.5">
-      The club reel stops. Only the year spins, and every man you sign really
-      did wear the shirt. The whole history counts, so Oklahoma City reaches
+      The team reel locks. Only the year spins, and every player you sign really
+      wore the jersey. The whole history counts, so Oklahoma City reaches
       Seattle.
     </p>
     <div class="clubgrid" id="clubgrid"></div>
@@ -2472,7 +2567,7 @@
   <div class="panel">
     <h2 id="era-h">Decades <span class="sub">pick an era</span></h2>
     <p class="dim" style="font-size:13px;margin:0 0 12px;line-height:1.5">
-      Every club, one decade. Five men who could have met on the floor.
+      Every team, one decade. Five guys who could have shared the floor.
     </p>
     <div class="clubgrid" id="eragrid"></div>
     <div class="btnrow" style="margin-top:14px">
@@ -2560,21 +2655,23 @@
           <option value="league">The league</option>
           <option value="club">One Franchise</option>
           <option value="era">Decades</option>
-          <option value="daily">Today's run</option>
+          <option value="daily">Daily</option>
         </select>
       </label>
       <label class="lbmode" id="lb-keywrap" hidden>
-        <span class="sr-only">Which club or decade</span>
+        <span class="sr-only">Which team or decade</span>
         <select id="lb-key"></select>
       </label>
     </div>
 
-    <!-- TWO AXES AND NOT THREE. The record is the headline and the rating is
-         the roster, which are the two questions this game asks. A third on
-         point differential would order almost the same rows, because the
-         score already breaks a tie on wins with exactly that. -->
+    <!-- THREE AXES, AND HOW FAR YOU WENT COMES FIRST. The goal the guide
+         names is the ring, so Best run ranks a title above any record and a
+         Finals loss above a second round one. Best record is the 72 chase on
+         its own, and the rating is the roster. See board.js for why all three
+         earn a tab. -->
     <div class="ptabs" role="tablist">
-      <button class="ptab on" id="lb-ax-record" role="tab" aria-selected="true">Record</button>
+      <button class="ptab on" id="lb-ax-run" role="tab" aria-selected="true">Best run</button>
+      <button class="ptab" id="lb-ax-record" role="tab" aria-selected="false">Best record</button>
       <button class="ptab" id="lb-ax-rating" role="tab" aria-selected="false">Team rating</button>
     </div>
 
@@ -2612,11 +2709,10 @@
   <div class="frg-scrim"></div>
   <div class="frg-panel" id="frg-panel">
     <div class="frg-eyebrow">First time here</div>
-    <h2>Draft five, then play 82</h2>
+    <h2>Four ways to play</h2>
     <ol class="frg-steps" id="frg-steps"></ol>
     <p class="frg-goal" id="frg-goal"></p>
-    <p class="frg-later">The other modes, your career and the badges can all wait
-      until you have played one.</p>
+    <p class="frg-later">Your career and badges can wait. Play one first.</p>
     <button class="ghost sm" id="frg-x" type="button">Got it</button>
   </div>
   <div class="frg-point" id="frg-point">
@@ -2655,9 +2751,10 @@
      number in the same commit as the edit, then run:
        node scripts/check-cachebust.mjs --update
      CI checks it on any push touching an .html or .js file. See CLAUDE.md. -->
-<script src="engine.js?v=21"></script>
-<script src="run.js?v=10"></script>
+<script src="engine.js?v=23"></script>
+<script src="run.js?v=11"></script>
 <script src="badges.js?v=1"></script>
+<script src="modes.js?v=1"></script>
 <!-- ACCOUNTS AND THE LEADERBOARD. All three are OPTIONAL: if the CDN is blocked
      or either file fails to load, the game runs exactly as it did, with runs
      kept in this browser and the board reporting itself unreachable. An account
@@ -2666,7 +2763,7 @@
      for it rather than reading window.supabase once: on a repeat visit the data
      comes out of cache in milliseconds while this is still in flight. -->
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="board.js?v=1"></script>
+<script src="board.js?v=3"></script>
 <script src="auth.js?v=1"></script>
 <!-- THE SHELF. cloudsave.js is the transport and is shared with the football and
      college games; cloud.js is this game's own policy about slots, progress and
@@ -2683,7 +2780,13 @@ var E = window.RTF_ENGINE, R = window.RTF_RUN;
 var DATA = null, run = null, board = [];
 
 var $ = function(id){ return document.getElementById(id); };
-var money = function(v){ return '$' + (Math.round(v * 10) / 10).toFixed(1) + 'M'; };
+/* A WHOLE NUMBER OF MILLIONS IS WRITTEN WHOLE. "$120.0M" is how a spreadsheet
+   writes a salary cap and "$120M" is how a basketball fan does, so the decimal
+   only appears when there is something in it. */
+var money = function(v){
+  var r = Math.round(v * 10) / 10;
+  return '$' + (r % 1 === 0 ? r.toFixed(0) : r.toFixed(1)) + 'M';
+};
 
 /* A ROSTER COUNT, AS AN ENGLISH WORD, IN ONE PLACE.
  *
@@ -2757,7 +2860,7 @@ var NEED_VERSION = 7;
  * crash: evaluated before it, a missing engine is a TypeError on line one and
  * the page is blank instead of self-healing. */
 var YOUR_LOT = 'Your ' + NUMWORD(E.SLOTS.length);
-var DAILY_DARE = 'Everybody got the same ' + NUMWORD(E.SLOTS.length) + ' spins.';
+var DAILY_DARE = 'Everyone got the same ' + NUMWORD(E.SLOTS.length) + ' spins.';
 
 /* ── THE OTHER PAIR OF HAND-WRITTEN NUMBERS, AND IT IS THE SILENT ONE ──────
  *
@@ -2783,7 +2886,7 @@ var DAILY_DARE = 'Everybody got the same ' + NUMWORD(E.SLOTS.length) + ' spins.'
  * handle. It is also what carries the diagnosis: `lastError` says which of the
  * two halves is missing, in words, on the screen that would otherwise just be
  * empty. */
-var NEED_BOARD = 1;
+var NEED_BOARD = 3;
 var B = (window.RTF_BOARD && window.RTF_BOARD.API_VERSION === NEED_BOARD)
   ? window.RTF_BOARD
   : {
@@ -2794,6 +2897,13 @@ var B = (window.RTF_BOARD && window.RTF_BOARD.API_VERSION === NEED_BOARD)
       top: function(){ return Promise.resolve(null); },
       mine: function(){ return Promise.resolve(null); },
       boards: function(){ return Promise.resolve(null); },
+      submitFix: function(){ return Promise.resolve(null); },
+      submitPasses: function(){ return Promise.resolve(null); },
+      submitConquest: function(){ return Promise.resolve(null); },
+      claimPlay: function(){ return Promise.resolve(false); },
+      playTop: function(){ return Promise.resolve(null); },
+      playPlace: function(){ return Promise.resolve(null); },
+      moveCount: function(){ return Promise.resolve(null); },
       scoreOf: function(){ return null; },
       offline: true,
       lastError: { where: 'boot', status: 0, code: 'version',
@@ -2877,6 +2987,7 @@ function show(id){
   if (id !== 's-live' && LV && LV.timer) { clearTimeout(LV.timer); LV.timer = null; }
   if (id !== 's-brk') stopBracket();
   if (id === 's-home') heroStart(); else heroStop();
+  if (window.RTF_MODES_UI) window.RTF_MODES_UI.leave(id);
   /* The club belongs to the draft. The season, the results and the home screen
      have no club, and a results screen still wearing the last team you spun is
      claiming that team played the season. */
@@ -2903,7 +3014,9 @@ function show(id){
  * A screen with neither gets an empty dock, which CSS hides.
  */
 var DOCK_FOR = {
-  's-home':   function(){ return [$('b-start')]; },
+  /* TODAY'S PLAY, not the draft. The draft is one of four ways in now, and
+     the button a thumb lands on is whichever daily is still open. */
+  's-home':   function(){ return [$('b-today')]; },
   's-draft':  function(){
     /* Between draws the action is the spin. During one it is picking a player
        off the board, which is not a button, so the dock carries the way OUT of
@@ -2938,7 +3051,7 @@ var DOCK_FOR = {
 var HOME_OF = {};
 
 function rememberHomes(){
-  var ids = ['b-start', 'b-spin', 'b-respin', 'b-play', 'b-skip', 'b-again',
+  var ids = ['b-today', 'b-start', 'b-spin', 'b-respin', 'b-play', 'b-skip', 'b-again',
     'b-lv-fast', 'b-lv-next', 'b-brk-fast'];
   for (var i = 0; i < ids.length; i++) {
     var el = $(ids[i]);
@@ -3027,7 +3140,7 @@ function boot(){
       .then(function(v){ bootStep('Players loaded.'); return v; }),
     fetch('data/chemistry.json?v=1').then(function(r){ return r.json(); })
       .then(function(v){ bootStep(); return v; }).catch(function(){ bootStep(); return null; }),
-    fetch('data/teams.json?v=3').then(function(r){ return r.json(); })
+    fetch('data/teams.json?v=4').then(function(r){ return r.json(); })
       .then(function(v){ bootStep(); return v; }).catch(function(){ bootStep(); return null; })
   ]).then(function(res){
     if (res[1]) E.setCuratedChemistry(res[1]);
@@ -3036,7 +3149,7 @@ function boot(){
     if (res[2]) E.setTeams(res[2]);
     DATA = R.indexData(res[0]);
     buildGoingRate(res[0]);
-    bootStep('Indexing the league.');
+    bootStep('Loading every season.');
 
     var seasons = {}, franchises = {};
     for (var i = 0; i < DATA.teamSeasons.length; i++) {
@@ -3061,13 +3174,14 @@ function boot(){
     $('ls-teams').textContent = String(Object.keys(franchises).length);
     if (yrs.length) $('home-era').textContent = yrs[0] + ' to ' + yrs[yrs.length - 1];
     $('b-start').disabled = false;
-    bootStep('Every line is that player\'s real season, from Basketball-Reference.');
+    bootStep('Real seasons. Real stats. From Basketball-Reference.');
 
     /* A SAVED RUN NO LONGER HIJACKS THE LOAD. It used to jump straight to
        whatever screen the run was on, so a returning player never saw this page
        and the only way out of a draft that had gone wrong was a button called
        Reset. Now the run is offered, and the offer says where it got to. */
     restore();
+    if (window.RTF_MODES_UI) window.RTF_MODES_UI.onData();
     renderHome();
     /* The front page can only play the game once the game has data to play
        with, which is here and not at boot. */
@@ -3431,14 +3545,13 @@ function renderGame(d){
      minutes", which is the thing a reader notices first and would otherwise
      read as a bug. The second answers "where is their box score". */
   $('gs-note').textContent = d.live
-    ? 'You played this one. Every number here is what happened, not a '
-      + 'reconstruction. No rebounds or assists: nothing in a live game counts '
-      + 'them. The other side is a strength here rather than a roster, so it '
-      + 'has no box score.'
+    ? 'You played this one. Every number is what happened. '
+      + 'No rebounds or assists: the live game does not count them. '
+      + 'The other side is a team rating, not a roster, so it has no box score.'
     /* THE MINUTES ARE DERIVED, and at five men they are arithmetic: five on
        the floor for the whole game is 240 player minutes and 48 each. */
     : NUMWORD(E.SLOTS.length, true) + ' men, ' + (240 + d.ot * 25)
-      + ' minutes, every point. The other side is a strength here rather than a '
+      + ' minutes, every point. The other side is a team rating, not a '
       + 'roster, so it has no box score.';
 
   var prev = $('b-gs-prev'), next = $('b-gs-next');
@@ -3473,48 +3586,23 @@ function frgMark(){ try { localStorage.setItem(FRG_KEY, '1'); } catch (e) {} }
 
 function frgFill(){
   var C = E.CONSTANTS;
-  /* THE DEAREST MAN IN THE GAME, read out of the data. "A star costs half the
-     cap" was the first draft of that sentence and it is not true: the top
-     price in 16,057 rows is Bob McAdoo's 1975 at $60.0M against a $120M cap,
-     which is 48%, and nobody is over half. A guide is the worst place to be
-     nearly right, so it prints the real number. */
-  var dearest = 0;
-  if (DATA && DATA.allPlayers) {
-    for (var k in DATA.allPlayers) {
-      var pr = DATA.allPlayers[k].p;
-      if (pr > dearest) dearest = pr;
-    }
-  }
-  var steps = [
-    /* THE COUNT IS READ OFF THE SLOT LIST, never written. This step said
-       "Six times" beside a five position line for as long as the two were
-       different numbers, which is the class of thing check-numbers exists
-       for, arriving inside one sentence. */
-    'Spin for a season and a club, then sign one player off that roster. '
-      + '<b>' + NUMWORD(E.SLOTS.length) + ' times</b>, one for every position '
-      + 'on the floor.',
-    'All ' + NUMWORD(E.SLOTS.length) + ' fit under a <b>' + money(C.CAP_MUSD) + '</b> cap'
-      + (dearest ? ', and the dearest man in the game is <b>' + money(dearest) + '</b>' : '')
-      + '. ' + NUMWORD(E.SLOTS.length, true) + ' stars is not a roster you can afford.',
-    /* AND THE PLAYOFF GAMES ARE YOURS, which three steps never mentioned.
-       It is the most distinctive thing this game does and a first-timer was
-       told the opposite in as many words: "the season plays itself" and then
-       nothing. The claim describes `big` in engine.js, which is a game either
-       side can be knocked out in, a game that wins the series, and every
-       Finals game. It is a rule rather than a number, so there is nothing to
-       interpolate.
+  /* FOUR MODES, ONE LINE EACH, in the order the front page shows them. This
+     guide used to be the draft's rules in three steps, which was right while
+     the draft was the game. It is one of four ways in now, and a first-timer
+     told only how to draft would never find the other three.
 
-       ONE CLAUSE ON THE STEP THAT IS ALREADY ABOUT THE SEASON, rather than a
-       fourth step, and the room is measured rather than guessed. The panel
-       is content sized under a max-height, and 360x640 is the tight one: 515
-       of 538 with this sentence in, against 495 before it, so a fourth step
-       is what would tip it over. 320x568 scrolled inside itself BEFORE this
-       and scrolls 41px more now, which is a cost rather than a regression,
-       and the way out of the guide there is the Start button it points at
-       rather than the Got it inside the panel. */
-    'Then the season plays itself. <b>' + C.REGULAR_SEASON_GAMES + ' games</b>, '
-      + 'and the playoffs if you get there. <b>You call the games that can end '
-      + 'a series</b>, and every Finals game.'
+     THE GAME 7 CLAUSE STAYS, on the draft's own line. It is the most
+     distinctive thing that mode does and check-home holds the guide to saying
+     it. Every number is read off the constants, never typed. */
+  var steps = [
+    '<b>Fix History</b>, every day. One real team that fell short. '
+      + 'Make one trade and see if they win it.',
+    '<b>Six Passes</b>, every day. Get the ball from one legend to another '
+      + 'through real teammates.',
+    '<b>Conquest.</b> Winners stay on. Beat real teams and take their best guys.',
+    '<b>Quick Draft.</b> ' + NUMWORD(E.SLOTS.length, true) + ' picks under a '
+      + money(C.CAP_MUSD) + ' cap. Play ' + C.REGULAR_SEASON_GAMES
+      + ', and <b>every Game 7 is yours to play</b>.'
   ];
   var ol = $('frg-steps');
   ol.textContent = '';
@@ -3523,9 +3611,7 @@ function frgFill(){
     li.innerHTML = steps[i];
     ol.appendChild(li);
   }
-  $('frg-goal').innerHTML = 'Your goal: <b>win the ring.</b> '
-    + C.TOP_SIX_WINS + ' wins is a top six seed, ' + C.PLAY_IN_WINS
-    + ' is the play-in, and ' + C.RECORD_WINS + ' is the 1996 Bulls.';
+  $('frg-goal').innerHTML = 'Start with <b>today\'s Fix</b>. It takes two minutes.';
 }
 
 /* Shown on the FRONT PAGE only, and only once the data has landed, because
@@ -3624,8 +3710,8 @@ function renderEraDoor(){
     door.className = 'modedoor';
     name.textContent = 'Decades';
     name.style.removeProperty('color');
-    sub.textContent = 'One decade, the whole league. '
-      + NUMWORD(E.SLOTS.length, true) + ' men out of one era.';
+    sub.textContent = 'One decade. Every team. '
+      + NUMWORD(E.SLOTS.length, true) + ' from one era.';
     pick.hidden = true;
     main.onclick = openEras;
     return;
@@ -3639,8 +3725,8 @@ function renderEraDoor(){
   name.textContent = ERA_NAMES[last] || last;
   name.style.color = 'var(--orange)';
   sub.textContent = yrs.length
-    ? yrs[0] + ' to ' + yrs[yrs.length - 1] + ', every club.'
-    : 'One decade, the whole league.';
+    ? yrs[0] + ' to ' + yrs[yrs.length - 1] + '. Every team.'
+    : 'One decade. Every team.';
   pick.hidden = false;
   main.onclick = function(){ startRun(null, last); };
 }
@@ -3650,7 +3736,7 @@ function renderEraDoor(){
    the game, and labelling it would put a badge on every screen. */
 function modeLabel(r){
   if (!r) return null;
-  if (r.daily) return "Today's run · day " + r.daily;
+  if (r.daily) return 'Daily · Day ' + r.daily;
   if (r.club) return 'One Franchise · ' + E.teamName(r.club);
   if (r.era) return ERA_NAMES[r.era] || r.era;
   return null;
@@ -3862,7 +3948,7 @@ function drawInto(fn){
       if (!mine()) return;
       dressReel($('box-s'), draw.team);
       dressPage(draw.team);
-      say('You drew ' + draw.season + '. Filling ' + draw.openSlots.join(', ') + '.');
+      say('The ' + draw.season + ' season. Open: ' + draw.openSlots.join(', ') + '.');
       settled();
     });
     return;
@@ -3880,8 +3966,8 @@ function drawInto(fn){
       dressReel($('box-s'), draw.team);
       dressReel($('box-c'), draw.team);
       dressPage(draw.team);
-      say('You drew the ' + draw.season + ' ' + E.teamName(draw.team)
-        + '. Filling ' + draw.openSlots.join(', ') + '.');
+      say('The ' + draw.season + ' ' + E.teamName(draw.team)
+        + '. Open: ' + draw.openSlots.join(', ') + '.');
       settled();
     });
   }, 130);
@@ -4065,12 +4151,12 @@ function drawRail(){
   if (railFocus !== null && bySlot[railFocus]) {
     var mine = arcs.filter(function(x){ return x.a === railFocus || x.b === railFocus; });
     note.textContent = bySlot[railFocus].n + ': ' + (mine.length
-      ? mine.length + ' link' + (mine.length === 1 ? '' : 's') + ', ' + mine[0].label
-      : 'no links to anybody here');
+      ? mine.length + ' connection' + (mine.length === 1 ? '' : 's') + ', ' + mine[0].label
+      : 'no connections here');
   } else {
     note.textContent = arcs.length
-      ? arcs.length + ' link' + (arcs.length === 1 ? '' : 's') + '. Tap a man to see only his.'
-      : 'No links yet. Men who shared a club, a college or a draft class build them.';
+      ? arcs.length + ' connection' + (arcs.length === 1 ? '' : 's') + '. Tap a player to see his.'
+      : 'No chemistry yet. Old teammates, college teammates and draft classmates build it.';
   }
   el.appendChild(note);
 }
@@ -4672,12 +4758,12 @@ function renderHud(justSlot){
   per.textContent = '';
   per.className = 'perslot';
   if (left <= 0) {
-    per.textContent = 'Rotation full.';
+    per.textContent = 'Roster full.';
   } else if (left === 1) {
     /* One slot left, so the average IS the money and there is nothing to
        average it over. Saying "$14.2M a man across 1 slot" is arithmetic
        performed on the reader for no reason. */
-    per.appendChild(document.createTextNode('All of it on the last slot: up to '));
+    per.appendChild(document.createTextNode('Last pick. Up to '));
     per.appendChild(bold(money(Math.max(0, spendable))));
   } else {
     /* THE AVERAGE FIRST, because it is the number the next pick is actually
@@ -4694,7 +4780,7 @@ function renderHud(justSlot){
        on every screen of the draft. The slot count came out because "Slot 1
        of 6" is printed two inches above it. */
     per.appendChild(bold(money(remaining / left)));
-    per.appendChild(document.createTextNode(' a man · up to '));
+    per.appendChild(document.createTextNode(' a spot · up to '));
     per.appendChild(bold(money(Math.max(0, spendable))));
     per.appendChild(document.createTextNode(' here'));
   }
@@ -4707,8 +4793,8 @@ function renderHud(justSlot){
     var perSlot = remaining / left;
     if (perSlot > 26 && left <= 3) {
       note.className = 'warn';
-      note.textContent = 'You have ' + money(remaining) + ' for ' + left + ' slot'
-        + (left === 1 ? '' : 's') + '. Cap left over at the end is worth nothing, so spend it.';
+      note.textContent = money(remaining) + ' left for ' + left + ' spot'
+        + (left === 1 ? '' : 's') + '. Spend it. Unused cap buys nothing.';
     }
   }
 
@@ -4738,11 +4824,28 @@ function renderHud(justSlot){
   return chem;
 }
 
+/* The box score line a fan reads a season by. Win shares are what the game
+   RATES a man on and the board prints them; a roster row is the man, and a man
+   is his points, rebounds and assists. */
+function oddsWord(pct){
+  return pct >= 30 ? 'Title favorite' : pct >= 15 ? 'Contender'
+    : pct >= 5 ? 'Dark horse' : pct >= 1 ? 'Long shot' : 'No shot';
+}
+
+function statLine(p){
+  return p.pts + ' pts · ' + p.reb + ' reb · ' + p.ast + ' ast';
+}
+
+/* A tab that comes up empty says which spot it is short of, in the words a
+   fan uses for the position rather than its code. */
+var POS_PLURAL = { PG: 'point guards', SG: 'shooting guards', SF: 'small forwards',
+  PF: 'power forwards', C: 'centers' };
+
 var BLOCK_TEXT = {
-  drafted: 'already signed',
-  no_spot: 'no open slot',
-  position_full: 'position full',
-  price: 'cannot afford'
+  drafted: 'already on your team',
+  no_spot: 'no open spot for him',
+  position_full: 'that spot is filled',
+  price: 'too expensive'
 };
 
 var activeTab = 'ALL';
@@ -4753,7 +4856,7 @@ function renderDraft(justSlot){
 
   var draw = run.currentDraw;
   if (!draw) {
-    $('d-note2').textContent = 'Spin for a season and a club.';
+    $('d-note2').textContent = 'Spin a season and a team.';
     $('tabs').textContent = '';
     $('opts').textContent = '';
     $('tabs').className = 'tabs';
@@ -4814,11 +4917,11 @@ function renderDraft(justSlot){
  */
 function drawNote(draw){
   var slots = draw.openSlots.length === E.SLOTS.length
-    ? 'Filling all ' + NUMWORD(E.SLOTS.length)
-    : 'Filling ' + draw.openSlots.join(' / ');
+    ? 'Open: all ' + NUMWORD(E.SLOTS.length)
+    : 'Open: ' + draw.openSlots.join(' / ');
   if (reelBusy) return slots;
   if (run.club) {
-    return slots + (E.wonTitle(draw.team, draw.season) ? ' · champions that year' : '');
+    return slots + (E.wonTitle(draw.team, draw.season) ? ' · won the title that year' : '');
   }
   var note = E.teamNote(draw.team, draw.season);
   return slots + (note ? ' · ' + note : '');
@@ -4941,7 +5044,7 @@ function renderOptions(draw){
   if (allTight) {
     var warn = document.createElement('p');
     warn.className = 'dim tightall';
-    warn.textContent = 'Every man here leaves the last pick tight. That re-spin is free.';
+    warn.textContent = 'Anyone here leaves your last pick thin. Re-spinning the last pick is free.';
     boardEl.appendChild(warn);
   }
 
@@ -4982,7 +5085,8 @@ function renderOptions(draw){
     var none = document.createElement('p');
     none.className = 'dim';
     none.style.cssText = 'font-size:13px;margin:8px 0';
-    none.textContent = 'Nobody on this board can play there. Try another tab.';
+    none.textContent = activeTab === 'ALL' ? 'Nobody here you can sign.'
+      : 'No ' + (POS_PLURAL[activeTab] || activeTab) + ' on this roster. Try another tab.';
     boardEl.appendChild(none);
   }
 }
@@ -5185,7 +5289,7 @@ function playerTile(p, block, tooDear, idx, tightLeft){
     var why = document.createElement('span');
     why.className = 'why';
     why.textContent = block ? (BLOCK_TEXT[block] || block)
-      : 'Needs $' + (p.p - R.spendable(run)).toFixed(1) + 'M more than you can spend here';
+      : '$' + (p.p - R.spendable(run)).toFixed(1) + 'M over what you can spend';
     b.appendChild(why);
   } else {
     b.onclick = function(){ sign(p); };
@@ -5206,6 +5310,7 @@ function sign(p){
   /* Which slot he just went into, so the court and the pips can land that one
      chip rather than re-animating all six every time. */
   var justSlot = run.roster.length > before ? E.SLOTS[run.slotIndex[run.roster.length - 1]] : null;
+  if (justSlot) stampDeal(p);
   activeTab = 'ALL';
   if (run.phase === R.PHASES.SEASON) { renderDraft(justSlot); toSeason(); return; }
   renderDraft(justSlot);
@@ -5220,6 +5325,25 @@ function sign(p){
   setTimeout(spin, 240);
 }
 
+/* The verdict on the man just signed, off the same dealOf his tile read, so
+   the stamp can never say something the board did not. Restarted rather than
+   queued: two quick signings show the second verdict, not the first one late. */
+var stampTimer = null;
+function stampDeal(p){
+  var el = $('stamp');
+  if (!el || !p) return;
+  var d = dealOf(p);
+  var key = d ? d.key : 'none';
+  $('stamp-w').textContent = d ? d.label : 'Role player';
+  $('stamp-s').textContent = p.n +' \u00B7 ' + money(p.p);
+  el.className = 'stamp ' + key;
+  void el.offsetWidth;
+  el.className = 'stamp ' + key + ' on';
+  clearTimeout(stampTimer);
+  stampTimer = setTimeout(function(){ el.className = 'stamp ' + key; }, 1200);
+  say(($('stamp-w').textContent) + '. ' + p.n + ' signed for ' + money(p.p) + '.');
+}
+
 function backToWheel(){
   try { window.scrollTo({ top: 0, behavior: 'smooth' }); }
   catch (e) { window.scrollTo(0, 0); }
@@ -5229,14 +5353,20 @@ function backToWheel(){
 var FIT_ROWS = [
   { key: 'spacing', name: 'Spacing',
     get: function(P){ return P.spacing; }, target: E.FIT.SPACING_FLOOR, good: E.FIT.SPACING_GOOD,
-    fmt: function(v){ return v.toFixed(2) + 'x'; } },
+    /* A WORD, NOT A MULTIPLIER. The index is shooting against the player's own
+       league, so "0.73x" was a ratio nobody could read at a glance. The bands
+       are the meter's own floor and good line, so the word and the bar agree. */
+    fmt: function(v){
+      return v < E.FIT.SPACING_FLOOR ? 'Cramped'
+        : v < 1 ? 'Okay' : v < E.FIT.SPACING_GOOD ? 'Good' : 'Elite';
+    } },
   { key: 'rim', name: 'Rim',
     get: function(P){ return P.bestRim; }, target: E.FIT.RIM_ANCHOR, good: E.FIT.RIM_ANCHOR * 1.7,
     fmt: function(v){ return v.toFixed(1) + ' blk'; } },
-  { key: 'creation', name: 'Creation',
+  { key: 'creation', name: 'Passing',
     get: function(P){ return P.bestCreator; }, target: E.FIT.CREATOR, good: E.FIT.CREATOR * 1.5,
     fmt: function(v){ return v.toFixed(1) + ' ast'; } },
-  { key: 'glass', name: 'The glass',
+  { key: 'glass', name: 'Boards',
     get: function(P){ return P.reb; }, target: E.FIT.REB_TARGET, good: E.FIT.REB_TARGET * 1.2,
     fmt: function(v){ return v.toFixed(0) + ' reb'; } },
   { key: 'shots', name: 'Shots', invert: true,
@@ -5292,7 +5422,7 @@ function renderFit(){
   var line = document.createElement('p');
   line.className = 'sysline';
   if (run.roster.length < 4) {
-    line.textContent = 'Sign a few more and this roster will start to look like something.';
+    line.textContent = 'Sign a few more. Then this team gets an identity.';
   } else if (f.system) {
     var b = document.createElement('b');
     b.textContent = f.system.name;
@@ -5300,11 +5430,11 @@ function renderFit(){
     line.appendChild(document.createTextNode(f.system.blurb));
   } else {
     var b2 = document.createElement('b');
-    b2.textContent = 'No identity yet';
+    b2.textContent = 'No system';
     line.appendChild(b2);
     line.appendChild(document.createTextNode(
       NUMWORD(E.SLOTS.length, true)
-        + ' good players, but nothing they obviously do together.'));
+        + ' good players. Nothing they do together.'));
   }
   box.appendChild(line);
 }
@@ -5329,8 +5459,7 @@ function renderRoster(slotsEl){
     if (p) {
       who.appendChild(document.createTextNode(p.n));
       var sub = document.createElement('small');
-      sub.textContent = p.s + ' ' + E.teamName(p.t) + ' · ' + p.ow.toFixed(1)
-        + ' off / ' + p.dw.toFixed(1) + ' def win shares';
+      sub.textContent = p.s + ' ' + E.teamName(p.t) + ' · ' + statLine(p);
       who.appendChild(sub);
       /* THE WHOLE LIST HERE, not the two a board tile has room for. This is the
          roster you built, read at leisure, and "MVP · Champion · All-NBA 1st"
@@ -5390,8 +5519,14 @@ function toSeason(){
      BEFORE tip-off, which is honest and useful, and the only thing wrong was
      the tense: the reader was being handed two records with nothing saying
      one of them had already been overtaken. */
-  $('p-proj').textContent = st.archetype.name + ' · before tip-off, '
-    + proj.typical + '-' + (82 - proj.typical) + ' and a ' + proj.titlePct + '% title';
+  /* "a 0% title" is not a phrase anybody says. Odds under one percent are
+     said as that, rather than printed as a zero that reads like a verdict. */
+  /* SAID THE WAY A PRESEASON SHOW SAYS IT: a win total and a word for the
+     odds. The percentage stays beside the word, because "dark horse" is an
+     opinion and the number is what it is an opinion about. */
+  $('p-proj').textContent = st.archetype.name + ' · Vegas: '
+    + proj.typical + ' wins · ' + oddsWord(proj.titlePct) + ', '
+    + (proj.titlePct < 1 ? 'under 1%' : proj.titlePct + '%');
 
   /* THE FIVE MEN, so the roster is on screen for the season it is playing.
      R.capOf rather than the constant, which is the one that stays true if a
@@ -5581,15 +5716,30 @@ function brkColumnWins(anchorSeed, anchorWins, rng){
   var out = new Array(8), cur = anchorWins;
   out[anchorSeed - 1] = anchorWins;
   for (var s = anchorSeed - 1; s >= 1; s--) {
-    cur += 1 + Math.floor(rng() * 3);
+    cur = Math.max(cur + 1 + Math.floor(rng() * 3), brkLadder(s) - 2);
     out[s - 1] = Math.min(E.CONSTANTS.REGULAR_SEASON_GAMES, cur);
   }
   cur = anchorWins;
   for (var t = anchorSeed + 1; t <= 8; t++) {
-    cur -= 1 + Math.floor(rng() * 3);
+    cur = Math.min(cur - 1 - Math.floor(rng() * 3), brkLadder(t) + 2);
     out[t - 1] = Math.max(20, cur);
   }
   return out;
+}
+
+/* WHERE A SEED USUALLY LANDS, and the walk above is held near it. Stepping one
+   to three wins a seed from a single anchor is monotone and is also far too
+   narrow: a real conference runs about twenty wins from its 1 seed to its 8,
+   and the walk ran fourteen. From a 67 win top seed it drew a 56 win 8 seed,
+   so every club in the far conference was better than every club in the
+   player's own, which a fan reads in one glance. The six seeds with a place
+   come off BRK_OVER, the two play-in seats sit between the play-in line and
+   the top six line, and the walk may not wander more than two wins from any
+   of it. The player's own record is still never moved. */
+function brkLadder(seed){
+  var C = E.CONSTANTS;
+  if (seed <= BRK_OVER.length) return C.TOP_SIX_WINS + BRK_OVER[seed - 1] + 1;
+  return seed === BRK_OVER.length + 1 ? C.TOP_SIX_WINS - 3 : C.PLAY_IN_WINS + 2;
 }
 
 /* How often the better seed takes the series, and how long it goes. Nothing
@@ -5625,7 +5775,7 @@ function brkBuild(){
   /* The far conference has no player, so it is anchored on its own top seed
      rather than on anybody: the same ladder the seeds are named off, plus a
      little room. */
-  var farTop = E.CONSTANTS.TOP_SIX_WINS + BRK_OVER[0] + Math.floor(rng() * 7);
+  var farTop = brkLadder(1) - 1 + Math.floor(rng() * 5);
   var farWins = brkColumnWins(1, farTop, rng);
 
   var seat = function(s, w, you){ return { seed: s, wins: w, you: !!you }; };
@@ -6054,8 +6204,8 @@ function brkFastArm(fn){
   if (b) b.disabled = !brkFast;
 }
 
-/* Your series, a game at a time. A game the series can end in stops here and
-   offers the door; everything else lands on the seat and carries on. */
+/* Your series, a game at a time. A Game 7 stops here and offers the door;
+   everything else lands on the seat and carries on. */
 function brkSeries(){
   stopBracket();
   brkFastArm(null);
@@ -6090,10 +6240,10 @@ function brkSeriesNote(){
   var g = brkColumn(brkCol).filter(function(x){ return x.mine; })[0];
   var them = null;
   if (g && g.pair) them = g.pair[0] && g.pair[0].you ? g.pair[1] : g.pair[0];
-  var form = 'playing like a ' + oppWins(cur.oppNet) + ' win team.';
+  var form = 'They play like a ' + oppWins(cur.oppNet) + ' win team.';
   brkNote(them && them.seed != null
-    ? 'The ' + them.seed + ' seed, ' + form
-    : 'One game to get in. They are ' + form);
+    ? 'Next up: the ' + them.seed + ' seed. ' + form
+    : 'One game to get in. ' + form);
 }
 
 function brkRoundDone(){
@@ -6107,7 +6257,7 @@ function brkRoundDone(){
       ? 'Through to the ' + (BRK_SHORT[nx] === 'Finals' ? 'Finals' : nx) + '.'
       : 'Champions.');
   } else {
-    brkNote('Out in the ' + (BRK_SHORT[B.names[brkCol]] || B.names[brkCol]) + '.');
+    brkNote('Bounced in ' + roundPhrase(B.names[brkCol]) + '.');
   }
   brkTimer = setTimeout(run.po.done ? brkFinale : brkEnter, 1000);
 }
@@ -6176,13 +6326,15 @@ function seriesLine(next){
     + (next.home ? 'your floor' : 'their floor');
 }
 
+/* The door opens on a Game 7 and nothing else (poNext's `big`), so the first
+   line is the one a player meets. The rest are what a harness that widens the
+   door reads, and they stay true about the game they describe. */
 function doorWhy(next){
-  if (next.bestOf === 1) return 'One game for the whole bracket. Lose it and the run is over.';
-  if (next.decider) return 'Nothing left after this one. Forty eight minutes for the round.';
-  if (next.elimination && next.closeout) return 'Whoever wins it goes through.';
-  if (next.elimination) return 'Lose and the run ends here.';
-  if (next.closeout) return 'Win and the round is yours.';
-  return 'Every game of the Finals is worth watching.';
+  if (next.decider) return 'Winner take all. Forty-eight minutes for the round.';
+  if (next.elimination && next.closeout) return 'Winner moves on.';
+  if (next.elimination) return 'Lose and the season is over.';
+  if (next.closeout) return 'Win and you move on.';
+  return "It's the Finals. Every game counts.";
 }
 
 function showDoor(next){
@@ -6303,9 +6455,9 @@ function lvWords(p){
   if (!p.mine) {
     if (p.kind === 'to') return ['They turn it over', ''];
     if (p.kind === 'miss') return ['They miss', ''];
-    if (p.kind === 'three') return ['A three for them', ''];
+    if (p.kind === 'three') return ['They hit a three', ''];
     if (p.kind === 'ft') return [p.pts ? 'They score at the line' : 'They miss at the line', ''];
-    if (p.kind === 'and1') return ['They score, and one', ''];
+    if (p.kind === 'and1') return ['And one for them', ''];
     return ['They score', ''];
   }
   var who = p.name ? boxName(p.name) : YOUR_LOT;
@@ -6313,7 +6465,7 @@ function lvWords(p){
   if (p.kind === 'miss') return [who, ' misses'];
   if (p.kind === 'three') return [who, ' from three'];
   if (p.kind === 'two') return [who, ' scores'];
-  if (p.kind === 'and1') return [who, ' scores, and one'];
+  if (p.kind === 'and1') return [who, ', and one'];
   if (p.kind === 'ft') return [who, p.pts ? ' from the line' : ' misses at the line'];
   return [who, ''];
 }
@@ -6518,7 +6670,7 @@ function lvAsk(d){
   var box = $('lv-call');
   $('lvc-q').textContent = d.kind === 'foul'
     ? 'Up three, ' + lvFmt(lvQuarterClock(LV.sim)) + ' left. They have the ball.'
-    : (d.margin > 0 ? 'Up ' + d.margin : d.margin < 0 ? 'Down ' + (-d.margin) : 'Level')
+    : (d.margin > 0 ? 'Up ' + d.margin : d.margin < 0 ? 'Down ' + (-d.margin) : 'Tied')
       + ', ' + lvFmt(lvQuarterClock(LV.sim)) + ' left. Last shot.';
   var wrap = $('lvc-opts');
   wrap.textContent = '';
@@ -6634,7 +6786,15 @@ function headline(out){
   var last = run.playoffs.rounds[run.playoffs.rounds.length - 1];
   if (last.round === 'Play-In') return 'Lost the play-in';
   if (last.round === 'NBA Finals') return 'Lost the Finals';
-  return 'Out in the ' + last.round;
+  return 'Bounced in ' + roundPhrase(last.round);
+}
+
+/* A round as it is said inside a sentence. "Out in the Conference
+   Semifinals" is the bracket's label read aloud; nobody watching says it. */
+function roundPhrase(name){
+  return ({ 'Play-In': 'the play-in', 'First Round': 'round one',
+    'Conference Semifinals': 'round two', 'Conference Finals': 'the conference finals',
+    'NBA Finals': 'the Finals' })[name] || name;
 }
 
 /* A net rating, said as the number of games that club would win over 82. Uses
@@ -6680,8 +6840,8 @@ function renderOver(out){
   var mode = modeLabel(run);
   $('o-seed').textContent = (mode ? mode + ' · ' : '')
     + out.seedLabel
-    + ' · rating ' + out.rating.toFixed(0)
-    + ' · offense ' + out.ortg.toFixed(1) + ', defense ' + out.drtg.toFixed(1)
+    + ' · Rating ' + out.rating.toFixed(0)
+    + ' · ORtg ' + out.ortg.toFixed(1) + ' · DRtg ' + out.drtg.toFixed(1)
     /* THE DENOMINATOR COUNTS YOUR TEAM, because the rank does. nationalRank
        inserts this roster into the table of real team-seasons and reports
        where it landed, so a roster worse than all 1,403 of them is 1,404th,
@@ -6691,7 +6851,7 @@ function renderOver(out){
        looking like anything. */
     + (out.allTimeRank
       ? ' · ' + out.allTimeRank + getOrdinal(out.allTimeRank) + ' of '
-        + (DATA.ratingTable.length + 1) + ' all time'
+        + (DATA.ratingTable.length + 1).toLocaleString('en-US') + ' all time'
       : '');
 
   var tags = $('o-tags');
@@ -6722,10 +6882,11 @@ function renderOver(out){
     none.className = 'dim';
     none.style.cssText = 'margin:0;font-size:13.5px';
     none.textContent = 'Missed them. ' + E.CONSTANTS.PLAY_IN_WINS
-      + ' wins gets you into the play-in, ' + E.CONSTANTS.TOP_SIX_WINS + ' gets you a seed.';
+      + ' wins gets you to the play-in. ' + E.CONSTANTS.TOP_SIX_WINS + ' gets you a seed.';
     po.appendChild(none);
   } else {
-    $('o-porounds').textContent = run.playoffs.rounds.length + ' rounds';
+    $('o-porounds').textContent = run.playoffs.rounds.length
+      + (run.playoffs.rounds.length === 1 ? ' round' : ' rounds');
 
     /* ONE BLOCK PER SERIES, AND IT USED TO BE TWO.
      *
@@ -6807,12 +6968,13 @@ function renderOver(out){
   renderRoster($('o-slots'));
   renderCourt(null, $('o-court'));
 
+  renderDraftGrid();
   var squad = R.bestPossibleSquad(run, DATA);
   if (squad) {
     $('o-grade').textContent = 'draft efficiency ' + squad.efficiency.toFixed(0) + '%';
-    $('o-best').textContent = 'You signed ' + squad.actualWs.toFixed(1)
-      + ' win shares. The best legal ' + NUMWORD(E.SLOTS.length)
-      + ' out of the clubs you actually spun was '
+    $('o-best').textContent = YOUR_LOT + ': ' + squad.actualWs.toFixed(1)
+      + ' win shares. The best ' + NUMWORD(E.SLOTS.length)
+      + ' you could have built off your spins: '
       + squad.bestWs.toFixed(1) + ', for ' + money(squad.spend) + '.';
   } else {
     $('o-grade').textContent = '';
@@ -6837,7 +6999,7 @@ function renderOver(out){
  * is decide the board is broken.
  */
 var lbMode = { door: 'league', key: null, day: null };
-var lbAxis = 'record';
+var lbAxis = 'run';
 /* The row this browser just put on the board, so it can be marked in the list.
    The id and not the whole run: a row comes back from the server and the local
    run is not it. */
@@ -6860,9 +7022,35 @@ function modeOfRun(r){
   return { door: 'league', key: null, day: null };
 }
 
+/* HOW MANY SERIES THE RUN WON, counted off the bracket rather than stored,
+   because run.playoffs is the record of what happened and a second count
+   beside it would be the thing that drifts. The submit and the standing both
+   read it, so the place the results screen shows is counted against the
+   number the row will actually hold. */
+function seriesWon(r){
+  return r && r.playoffs
+    ? r.playoffs.rounds.filter(function(x){ return x.won; }).length : 0;
+}
+function runDepth(r, out){
+  return B.depthOf(out.wins, seriesWon(r),
+    E.CONSTANTS.TOP_SIX_WINS, E.CONSTANTS.PLAY_IN_WINS);
+}
+
+/* HOW FAR A BOARD ROW WENT, in the words a fan uses. The server stores it as a
+   number from 0 to 6 and the list is ordered on it, so the line under a name
+   leads with it: the row above yours is above you for a reason you can read. */
+var DEPTH_WORDS = ['Missed the playoffs', 'Lost the play-in', 'Bounced in round one',
+  'Bounced in round two', 'Lost in the conference finals', 'Lost the Finals', 'Champions'];
+
+/* The mode's name as it reads inside a sentence, where "on The league" is a
+   capital letter in the middle of a line. */
+function boardPhrase(m){
+  return modeName(m).replace(/^The /, 'the ');
+}
+
 function modeName(m){
   if (!m) return 'The league';
-  if (m.door === 'daily') return "Today's run · day " + m.day;
+  if (m.door === 'daily') return 'Daily · Day ' + m.day;
   if (m.door === 'club') return 'One Franchise · ' + E.teamName(m.key);
   if (m.door === 'era') return ERA_NAMES[m.key] || m.key;
   return 'The league';
@@ -6879,6 +7067,10 @@ function modeName(m){
    submitting there would put the same season on the board every time somebody
    reopened the tab. rtf_submit_run() swallows a same-minute duplicate as well,
    which covers a retry rather than this. */
+/* The submit in flight, so the standing can count the field AFTER this run's
+   row is in it rather than racing it. Raced, a signed in run was counted
+   against a field that did not hold it yet and printed one short. */
+var submitP = null;
 function submitRun(out){
   if (!run || run.submitted) return Promise.resolve(null);
   run.submitted = true;
@@ -6889,8 +7081,7 @@ function submitRun(out){
     /* HOW MANY SERIES WERE WON, counted off the bracket rather than stored,
        because run.playoffs is the record of what happened and a second count
        beside it would be the thing that drifts. */
-    playoffWins: run.playoffs
-      ? run.playoffs.rounds.filter(function(r){ return r.won; }).length : 0,
+    playoffWins: seriesWon(run),
     /* PER GAME, which is what a basketball differential means everywhere else
        and what the column holds. The season total is 82 times bigger and would
        be refused by the range check, loudly, which is the right direction for
@@ -6918,7 +7109,7 @@ function submitRun(out){
     seed: String(run.seed),
     rngCalls: run.rngCalls,
   };
-  return B.submit(payload).then(function(id){
+  return submitP = B.submit(payload).then(function(id){
     if (id) {
       lbMine = id;
       run.boardId = id;
@@ -6944,7 +7135,7 @@ function renderStanding(out){
   if (!el) return;
   var m = modeOfRun(run);
   var score = B.scoreOf(out.wins, (out.totalPF - out.totalPA)
-    / E.CONSTANTS.REGULAR_SEASON_GAMES);
+    / E.CONSTANTS.REGULAR_SEASON_GAMES, runDepth(run, out));
 
   var draw = function(big, head, sub, open){
     el.textContent = '';
@@ -6971,28 +7162,44 @@ function renderStanding(out){
   };
 
   el.hidden = true;
-  B.ranks(m, score).then(function(r){
+  (submitP || Promise.resolve(null)).then(function(){
+    return B.ranks(m, score);
+  }).then(function(r){
     if (!run || run.phase !== R.PHASES.OVER) return;   // they moved on
     if (r.place === null || r.total === null) {
       /* NOT REACHABLE IS NOT NOBODY. A board that cannot be asked and a board
          with nothing on it are two different sentences, and printing the
          second for the first is how a feature teaches somebody it is broken. */
-      draw('-', 'The leaderboard is not reachable',
+      draw('-', 'Leaderboard not reachable',
         B.needsMigration
           ? 'The board is not set up on this site yet.'
-          : 'Your run is safe. It is the board that is offline.', false);
+          : 'Your run is saved. The board is offline right now.', false);
       return;
     }
-    if (r.total === 0) {
-      draw('1st', 'First on the ' + modeName(m).toLowerCase() + ' board',
-        'Nobody has finished one here yet. Sign in and it has your name on it.', true);
+    /* A RUN PLAYED SIGNED OUT IS NOT ON THE LIST, which is named runs only,
+       so its place is where it WOULD sit and the field it is out of has to
+       count it: "313th of 312" is what this printed before, for any signed
+       out run at the bottom. A signed in run whose row has not landed yet is
+       the same case for a moment, so the field is never smaller than the
+       place. */
+    var st = A.state();
+    var named = !!(st && st.signedIn);
+    var field = Math.max(r.total + (named && run.boardId ? 0 : 1), r.place);
+    var at = r.place + ordinalOf(r.place);
+    if (!named) {
+      draw(at, 'Would be ' + at + ' of ' + field + ' on ' + boardPhrase(m),
+        'Sign in to claim it.', true);
       return;
     }
-    draw(r.place + ordinalOf(r.place), r.place + ordinalOf(r.place) + ' of '
-      + r.total + ' on ' + modeName(m),
+    if (field === 1) {
+      draw('1st', 'First on ' + boardPhrase(m),
+        'First finished run on this board. The top spot is yours.', true);
+      return;
+    }
+    draw(at, at + ' of ' + field + ' on ' + boardPhrase(m),
       (r.played && r.played > r.total)
-        ? r.played + ' runs played here, ' + r.total + ' of them signed'
-        : 'Tap to see the board', true);
+        ? r.played + ' runs played here. ' + r.total + ' signed in.'
+        : 'Tap to see the board.', true);
   });
 }
 
@@ -7067,10 +7274,10 @@ function paintBoard(){
   note.textContent = 'Loading.';
   foot.textContent = '';
 
-  $('lb-ax-record').className = 'ptab' + (lbAxis === 'record' ? ' on' : '');
-  $('lb-ax-rating').className = 'ptab' + (lbAxis === 'rating' ? ' on' : '');
-  $('lb-ax-record').setAttribute('aria-selected', lbAxis === 'record' ? 'true' : 'false');
-  $('lb-ax-rating').setAttribute('aria-selected', lbAxis === 'rating' ? 'true' : 'false');
+  ['run', 'record', 'rating'].forEach(function(ax){
+    $('lb-ax-' + ax).className = 'ptab' + (lbAxis === ax ? ' on' : '');
+    $('lb-ax-' + ax).setAttribute('aria-selected', lbAxis === ax ? 'true' : 'false');
+  });
 
   B.top(lbMode, 50, lbAxis).then(function(list){
     /* A SLOWER REQUEST MUST NOT PAINT OVER A FASTER ONE. Two selects a half
@@ -7081,22 +7288,22 @@ function paintBoard(){
       note.className = 'lbnote bad';
       note.textContent = B.needsMigration
         ? 'The leaderboard is not set up on this site yet.'
-        : 'The leaderboard is not reachable right now. Nothing is lost: your runs are recorded here either way.';
+        : 'Leaderboard not reachable right now. Your runs still count here.';
       foot.textContent = B.lastError
         ? B.lastError.where + ': ' + B.lastError.message : '';
       return;
     }
     if (!list.length) {
       note.className = 'lbnote first';
-      note.textContent = 'Nobody has put a name to a run on this board yet. '
-        + 'Finish one signed in and you are first.';
+      note.textContent = 'No names on this board yet. '
+        + 'Finish a run signed in and you are first.';
       return;
     }
     note.textContent = list.length === 1 ? 'One run on the board.'
       : list.length + ' runs on the board, best first.';
     list.forEach(function(row, i){ rows.appendChild(lbRow(row, i + 1)); });
-    foot.textContent = 'A run only appears here with a name on it. '
-      + 'Runs played signed out still count, and still record in your career.';
+    foot.textContent = 'Only signed-in runs make the board. '
+      + 'Signed out, a run still counts toward your career.';
   });
 }
 
@@ -7114,13 +7321,16 @@ function lbRow(row, place){
   name.textContent = row.display_name || 'Anonymous';
   who.appendChild(name);
   var line = document.createElement('span');
-  /* WHAT THE ROSTER WAS, in the words the results screen already uses, and
-     never a number this board invented. A ring is the thing worth marking. */
+  /* HOW FAR IT WENT FIRST, because that is what the list is ordered on and
+     the reason the row above yours is above you. Then the system, in the words
+     the results screen already uses, and never a number this board invented.
+     A row filed before depth existed falls back to its seed. */
   var bits = [];
-  if (row.title_won) bits.push('Champion');
+  var d = row.depth == null ? null : Number(row.depth);
+  if (d !== null && DEPTH_WORDS[d]) bits.push(DEPTH_WORDS[d]);
+  else if (row.title_won) bits.push('Champions');
   else if (row.seed_label) bits.push(row.seed_label);
   if (row.archetype) bits.push(row.archetype);
-  if (row.all_time_rank) bits.push(row.all_time_rank + getOrdinal(row.all_time_rank) + ' all time');
   line.textContent = bits.join(' · ');
   if (row.title_won) line.className = 'ring';
   who.appendChild(line);
@@ -7138,6 +7348,50 @@ function lbRow(row, place){
   val.appendChild(em);
 
   li.appendChild(p); li.appendChild(who); li.appendChild(val);
+
+  /* THE FIVE, one tap away. Every row carries its picks as E.pkey strings,
+     which is the key DATA.allPlayers is built on, so a row is drawn against
+     this browser's own copy of the league with no request and no translation.
+     A pick the local data cannot name (a season this copy does not have yet)
+     says so rather than being skipped, because a roster of four reads as a
+     rendering fault. */
+  var picks = Array.isArray(row.picks) ? row.picks : [];
+  if (picks.length) {
+    var five = document.createElement('ul');
+    five.className = 'lbfive';
+    five.hidden = true;
+    var slots = Array.isArray(row.slots) ? row.slots : [];
+    picks.forEach(function(k, i){
+      var pl = DATA && DATA.allPlayers ? DATA.allPlayers[k] : null;
+      var r = document.createElement('li');
+      var ps = document.createElement('span');
+      ps.className = 'ps';
+      ps.textContent = slots[i] || (pl && pl.pp) || '';
+      var pn = document.createElement('span');
+      pn.className = 'pn';
+      if (pl) {
+        pn.textContent = pl.n + ' ';
+        var yr = document.createElement('i');
+        yr.textContent = pl.s + ' ' + E.teamName(pl.t);
+        pn.appendChild(yr);
+      } else {
+        pn.textContent = 'Season not in this version of the game';
+      }
+      r.appendChild(ps); r.appendChild(pn);
+      five.appendChild(r);
+    });
+    li.appendChild(five);
+    li.tabIndex = 0;
+    li.setAttribute('aria-expanded', 'false');
+    var flip = function(){
+      five.hidden = !five.hidden;
+      li.setAttribute('aria-expanded', five.hidden ? 'false' : 'true');
+    };
+    li.onclick = flip;
+    li.onkeydown = function(e){
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); flip(); }
+    };
+  }
   return li;
 }
 
@@ -7241,35 +7495,43 @@ function renderOverDoors(){
      a run and is then refused by startRun's own guard is the wall the rest of
      this file keeps taking down. Once it is played, the row says so and
      shares it, which is where that tap was going anyway. */
+  /* THE OTHER THREE GAMES FIRST, because a finished draft is the moment
+     somebody is choosing what to play next, and a list of more drafts is the
+     one answer that never shows them there is anything else. Asked of
+     modes-ui.js, which knows whether today's two dailies are done. */
+  var MU = window.RTF_MODES_UI;
+  if (MU && MU.doors) {
+    MU.doors().forEach(function(d){ door(d.title, d.why, d.gold, d.go); });
+  }
   if (dailyDone()) {
     var d = dailyState();
     if (!run.daily) {
-      door('Day ' + d.day + ' is done · ' + d.label, 'Send it to somebody.', true, shareDaily);
+      door('Day ' + d.day + ' is done · ' + d.label, 'Send it to a friend.', true, shareDaily);
     }
   } else {
-    door("Today's run", 'The same ' + NUMWORD(E.SLOTS.length)
-      + ' spins for everybody today.', true,
+    door('Daily Draft', 'Same ' + NUMWORD(E.SLOTS.length)
+      + ' spins for everyone today.', false,
       function(){ startRun(null, null, true); });
   }
 
   if (run.club || run.era || run.daily) {
-    door('The league', 'Every season, every club, ' + NUMWORD(E.SLOTS.length)
+    door('The league', 'Every season. Every team. ' + NUMWORD(E.SLOTS.length, true)
       + ' spins.', false,
       function(){ startRun(); });
   }
   if (!run.club) {
     var last = lastClub();
     door(last ? 'One Franchise · ' + E.teamName(last) : 'One Franchise',
-      last ? E.team(last).full + ', only the year moves.'
-           : 'Lock the wheel to one club. Only the year moves.',
+      last ? E.team(last).full + '. Only the year spins.'
+           : 'Pick a team. Only the year spins.',
       false, last ? function(){ startRun(last); } : openClubs);
   }
   if (!run.era) {
     var le = lastEra();
     door(le ? (ERA_NAMES[le] || le) : 'Decades',
-      le ? NUMWORD(E.SLOTS.length, true) + ' men out of one decade.'
-         : 'One decade, the whole league. ' + NUMWORD(E.SLOTS.length, true)
-           + ' men out of one era.',
+      le ? NUMWORD(E.SLOTS.length, true) + ' from one decade.'
+         : 'One decade. Every team. ' + NUMWORD(E.SLOTS.length, true)
+           + ' from one era.',
       false, le ? function(){ startRun(null, le); } : openEras);
   }
 }
@@ -7328,15 +7590,16 @@ function renderGauge(out){
 
   if (out.titleWon) {
     big = 'RING'; cls = 'pgood'; pct = 100;
-    line = wins + '-' + out.losses + ' and the title. Nothing left to chase but the record.';
+    line = wins + '-' + out.losses + ' and a ring. Only the record is left to chase.';
   } else if (run.playoffs && run.playoffs.rounds.length) {
     var last = run.playoffs.rounds[run.playoffs.rounds.length - 1];
     big = String(last.yourWins) + '-' + last.oppWins; cls = 'pmid';
     unit = 'last series';
     pct = Math.round(100 * last.yourWins / Math.max(1, last.yourWins + last.oppWins));
-    line = 'Out in the ' + last.round + '. ' + (last.yourWins >= 3
-      ? 'One game the other way and you are still playing.'
-      : 'The bracket got stiffer than the roster.');
+    /* The round is the headline right above this, so the line is the verdict
+       on the series and never the round's name a second time. */
+    line = last.yourWins >= 3 ? 'One more win and you were still playing.'
+      : 'Ran into a better team.';
   } else {
     var short = playIn - wins;
     big = short <= 0 ? '0' : String(short);
@@ -7356,13 +7619,12 @@ function renderGauge(out){
        second does. It also names the size of the mistake, because "cap left
        over" and "$88.5M left over" are different sentences. */
     var spare = R.remaining(run);
-    line = short <= 0 ? 'Enough wins, wrong side of the tiebreak.'
+    line = short <= 0 ? 'Enough wins. Lost the tiebreak.'
       : spare > 15
-        ? 'You finished ' + money(spare) + ' under the cap. Unspent cap is '
-          + 'production you never fielded.'
+        ? 'You left ' + money(spare) + ' on the table. Unused cap never plays.'
         : wins >= playIn - 6
-          ? 'The wins were there. A hole in the fit rows costs more than a name does.'
-          : 'The roster never had a shape. Read the fit rows next time.';
+          ? "Talent was there. The fit wasn't."
+          : 'Never came together. Draft a fit, not a highlight reel.';
   }
   $('o-gv').textContent = big;
   $('o-gv').className = 'pv ' + cls;
@@ -7445,7 +7707,10 @@ function renderMonths(){
     box.appendChild(d);
   }
   if (best) {
-    $('o-monthsub').textContent = 'best stretch ' + best.w + '-' + best.l
+    /* NAMED BY ITS LENGTH. The story line above counts the best TEN games and
+       this counts the best block of twelve, so both called "best stretch" put
+       8-2 and 9-3 on one screen as two answers to one question. */
+    $('o-monthsub').textContent = 'best block ' + best.w + '-' + best.l
       + ', games ' + (best.from + 1) + ' to ' + best.to;
   }
 }
@@ -7504,8 +7769,8 @@ function seasonStory(out){
   var marqN = marqW + marqL;
   if (marqN >= 8) {
     var rate = marqW / marqN;
-    if (rate >= 0.58) bits.push('Beat the good teams: ' + marqW + '-' + marqL + ' on marquee nights.');
-    else if (rate <= 0.20) bits.push('Never solved the good teams: ' + marqW + '-' + marqL + ' on marquee nights.');
+    if (rate >= 0.58) bits.push('Handled the contenders: ' + marqW + '-' + marqL + ' on marquee nights.');
+    else if (rate <= 0.20) bits.push("Couldn't beat the contenders: " + marqW + '-' + marqL + ' on marquee nights.');
   }
 
   /* HOW IT ENDED USED TO BE SAID HERE TOO, AND THE GAUGE OWNS IT NOW.
@@ -7531,7 +7796,7 @@ function seasonStory(out){
   if (!bits.length) {
     var run10 = bestStretch(games, 10);
     if (run10) {
-      bits.push('Best stretch: ' + run10.w + '-' + run10.l + ' ' + when(run10.at) + '.');
+      bits.push('Hottest ten games: ' + run10.w + '-' + run10.l + ' ' + when(run10.at) + '.');
     }
   }
 
@@ -7582,6 +7847,55 @@ function shareDare(out){
   return 'Can you build a better ' + NUMWORD(E.SLOTS.length) + '?';
 }
 
+/* THE DRAFT, AS A ROW OF SQUARES. A shared record says how the season went
+ * and nothing about how it was built, and the build is the half this game is
+ * about. So the text carries one square a man, in the order he fills the
+ * floor, coloured by the same verdict his tile wore on the board: green for a
+ * bargain, white for the going rate, red for paying for points, black for a
+ * man too cheap for the question to mean anything. A friend who has played
+ * reads it without a legend, and one who has not can see five decisions.
+ *
+ * THE SQUARES ARE DATA AND NOT PROSE, which is the one reason emoji are here
+ * at all. A chat app shows text and nothing else, so a row of colours is the
+ * only picture a shared result can carry, and it is the shape every daily
+ * puzzle's share has taught people to read.
+ *
+ * Pure over its arguments so verify.mjs can lift it: the keys come from
+ * dealOf, which needs the pool, and the page is what has the pool. */
+var DEAL_SQ = { good: '\uD83D\uDFE9', fair: '\u2B1C', bad: '\uD83D\uDFE5', none: '\u2B1B' };
+function gridLine(keys){
+  return keys.map(function(k){ return DEAL_SQ[k] || DEAL_SQ.none; }).join('');
+}
+
+/* The roster in slot order, each with his verdict. One walk, read by the share
+   text, the card and the results screen, so the three cannot disagree about a
+   man. */
+function draftCells(r){
+  var filled = {};
+  for (var i = 0; i < r.roster.length; i++) filled[E.SLOTS[r.slotIndex[i]]] = r.roster[i];
+  return E.SLOTS.map(function(slot){
+    var p = filled[slot] || null;
+    var d = p ? dealOf(p) : null;
+    return { slot: slot, p: p, key: d ? d.key : 'none', label: d ? d.label : 'Role player' };
+  });
+}
+
+/* THE POSTSEASON, A SERIES AT A TIME. "Lost in the conference finals" says
+   where it ended; 4-1, 4-3, 2-4 says how, and a 4-3 is a Game 7 somebody
+   played. Null for a run that never got there, because a line reading
+   nothing is a line that looks broken. */
+var ROUND_SHORT = { 'Play-In': 'Play-in', 'First Round': 'R1',
+  'Conference Semifinals': 'R2', 'Conference Finals': 'CF', 'NBA Finals': 'Finals' };
+function pathLine(rounds, won){
+  if (!rounds || !rounds.length) return null;
+  var bits = rounds.map(function(r){
+    var name = ROUND_SHORT[r.round] || r.round;
+    if (r.round === 'Play-In') return name + ' ' + (r.won ? 'W' : 'L');
+    return name + ' ' + r.yourWins + '-' + r.oppWins;
+  });
+  return bits.join(' \u00B7 ') + (won ? ' \uD83C\uDFC6' : '');
+}
+
 /* WHICH GAME THIS WAS, IN ONE LINE, and it is derived rather than written.
  * The football game's share card fell through to "Classic Mode. Six spins,
  * one roster" three separate times, once per mode added after it, because the
@@ -7597,11 +7911,11 @@ function cardTag(r){
      "Classic Mode. Six spins, one roster" three separate times. A literal has
      no branch to forget AND no number to update. */
   var n = NUMWORD(E.SLOTS.length);
-  if (r && r.daily) return 'Day ' + r.daily + '. The same ' + n + ' spins for everybody.';
-  if (r && r.club) return 'One franchise: ' + E.team(r.club).full + ', ' + n + ' seasons of it.';
+  if (r && r.daily) return 'Daily, day ' + r.daily + '. Same ' + n + ' spins for everyone.';
+  if (r && r.club) return 'One franchise: ' + E.team(r.club).full + '. ' + NUMWORD(E.SLOTS.length, true) + ' seasons of it.';
   if (r && r.era) return (ERA_NAMES[r.era] || r.era) + '. ' + NUMWORD(E.SLOTS.length, true)
-    + ' men out of one decade.';
-  return NUMWORD(E.SLOTS.length, true) + ' NBA seasons, one cap, 82 games.';
+    + ' from one decade.';
+  return NUMWORD(E.SLOTS.length, true) + ' NBA seasons. One cap. 82 games.';
 }
 
 function shareText(out){
@@ -7626,7 +7940,13 @@ function shareText(out){
   var dare = d ? DAILY_DARE
     + (d.streak > 1 ? '\n' + d.streak + ' days in a row.' : '')
     : shareDare(out);
-  return head + '\n' + line + '\n' + dare + '\n' + SHARE_URL;
+  /* The grid goes under the result and above the dare, which is where every
+     daily puzzle's share puts it: the verdict, then the picture, then the
+     invitation. */
+  var grid = gridLine(draftCells(run).map(function(c){ return c.key; }));
+  var path = run.playoffs ? pathLine(run.playoffs.rounds, run.playoffs.won) : null;
+  return head + '\n' + line + '\n' + grid + (path ? '\n' + path : '')
+    + '\n' + dare + '\n' + SHARE_URL;
 }
 
 /* THE CARD, DRAWN TO A CANVAS AT 1080x1350.
@@ -7665,8 +7985,8 @@ var CARD = (function(){
   return {
     W: 1080, H: RULE2 + 286, PAD: PAD,
     TITLE: 96, TAG: 126,
-    REC: 372, VERDICT: 436,
-    RULE1: 482,
+    REC: 372, VERDICT: 436, PATH: 476,
+    RULE1: 496,
     ROWS: ROWS, ROW: ROW,
     RULE2: RULE2,
     STAT: RULE2 + 86, STAT_LABEL: RULE2 + 128,
@@ -7747,6 +8067,15 @@ function drawShareCard(){
   x.fillStyle = out.titleWon ? '#f2c14e' : skin.accent;
   x.font = '700 44px Archivo, system-ui, sans-serif';
   x.fillText(headline(out).toUpperCase(), mid, CARD.VERDICT);
+  /* How it went, a series at a time, quietly under how it ended. Drawn
+     without the trophy glyph, because an emoji in a canvas is whatever the
+     machine's emoji font is and the verdict above already says champions. */
+  var path = run.playoffs ? pathLine(run.playoffs.rounds, false) : null;
+  if (path) {
+    x.fillStyle = hexAt('#94a3b8', 0.95);
+    x.font = '700 26px Archivo, system-ui, sans-serif';
+    x.fillText(clip(x, path.toUpperCase(), CARD.W - PAD * 2), mid, CARD.PATH);
+  }
 
   var rule = function(y){
     x.fillStyle = hexAt(skin.accent, 0.3);
@@ -7757,10 +8086,9 @@ function drawShareCard(){
   /* THE ROSTER, in the order it fills the floor rather than the order it was
      signed, so two cards of the same roster read the same way. Each carries the
      colour its position wears everywhere else in the game. */
-  var filled = {};
-  for (var r = 0; r < run.roster.length; r++) filled[E.SLOTS[run.slotIndex[r]]] = run.roster[r];
-  for (var i = 0; i < E.SLOTS.length; i++) {
-    var slot = E.SLOTS[i], p = filled[slot];
+  var cells = draftCells(run);
+  for (var i = 0; i < cells.length; i++) {
+    var slot = cells[i].slot, p = cells[i].p;
     var y = CARD.ROWS + i * CARD.ROW;
     x.textAlign = 'left';
     // the position chip
@@ -7782,6 +8110,12 @@ function drawShareCard(){
     x.fillStyle = skin.accent;
     x.font = '700 34px Archivo, system-ui, sans-serif';
     x.fillText('$' + p.p.toFixed(1) + 'M', CARD.W - PAD, y);
+    /* THE VERDICT HIS TILE WORE, under his price, in the tile's own colours.
+       It is the card's version of the square row in the share text, and it
+       is the line that says whether this roster was built or bought. */
+    x.fillStyle = DEAL_HEX[cells[i].key];
+    x.font = '800 20px Archivo, system-ui, sans-serif';
+    x.fillText(cells[i].label.toUpperCase(), CARD.W - PAD, y + 33);
   }
 
   rule(CARD.RULE2);
@@ -7829,8 +8163,40 @@ function drawShareCard(){
 /* The position colours as flat hex. The page paints these as gradients off CSS
    custom properties, which a canvas cannot read, so the values live here too.
    verify.mjs asserts the two agree. */
+/* The deal chip's text colours, flat, for the same reason. */
+var DEAL_HEX = { good: '#4ade80', fair: '#94a3b8', bad: '#fca5a5', none: '#64748b' };
 var POS_HEX = { PG: '#3b82f6', SG: '#06b6d4', SF: '#22c55e', PF: '#f59e0b',
   C: '#ef4444', G: '#6366f1', F: '#84cc16' };
+
+/* WHAT THE SQUARES COUNTED, in words, because the results screen is where a
+   player learns what the row in their share text means. */
+var GRID_WORDS = { good: ['bargain', 'bargains'], fair: ['at the going rate', 'at the going rate'],
+  bad: ['overpay', 'overpays'], none: ['role player', 'role players'] };
+function renderDraftGrid(){
+  var box = $('o-grid');
+  if (!box) return;
+  box.textContent = '';
+  if (!run || !run.roster || run.roster.length < E.SLOTS.length) return;
+  var cells = draftCells(run), n = {};
+  cells.forEach(function(c){ n[c.key] = (n[c.key] || 0) + 1; });
+  var sq = document.createElement('span');
+  sq.className = 'sq';
+  sq.textContent = gridLine(cells.map(function(c){ return c.key; }));
+  sq.setAttribute('aria-hidden', 'true');
+  var ct = document.createElement('span');
+  ct.className = 'ct';
+  /* Each count is one unbreakable piece, so a narrow phone wraps BETWEEN
+     counts rather than leaving "role player" alone on a line under "1". */
+  ['good', 'fair', 'bad', 'none'].filter(function(k){ return n[k]; }).forEach(function(k, i){
+    if (i) ct.appendChild(document.createTextNode(' \u00B7 '));
+    var b = document.createElement('span');
+    b.style.whiteSpace = 'nowrap';
+    b.textContent = n[k] + ' ' + GRID_WORDS[k][n[k] === 1 ? 0 : 1];
+    ct.appendChild(b);
+  });
+  box.appendChild(sq);
+  box.appendChild(ct);
+}
 
 function roundRect(x, left, top, w, h, r){
   x.beginPath();
@@ -7991,6 +8357,16 @@ function blankCareer(){
  * cannot reach into the one being compared against. A structuredClone would
  * do the same job and is not available everywhere this has to run.
  */
+/* MADE THE PLAYOFFS MEANS THE BRACKET, NOT THE PLAY-IN. In the NBA a club that
+   loses its play-in game did not make the playoffs, and "In the field" lit on
+   exactly that season, beside a results screen reading LOST THE PLAY-IN. A
+   play-in run is in the field once it has won the play-in, and not before. */
+function madePlayoffs(r){
+  var rs = r && r.playoffs && r.playoffs.rounds;
+  if (!rs || !rs.length) return false;
+  return rs[0].round !== 'Play-In' || !!rs[0].won;
+}
+
 function recordRun(out){
   var before = loadCareer() || blankCareer();
   var c = loadCareer() || blankCareer();
@@ -7999,7 +8375,7 @@ function recordRun(out){
   c.totalLosses += out.losses;
   if (out.titleWon) c.rings++;
   if (out.beatRecord) c.beat72++;
-  if (run.playoffs && run.playoffs.rounds.length) c.playoffs++;
+  if (madePlayoffs(run)) c.playoffs++;
   if (out.wins > c.bestWins) {
     c.bestWins = out.wins;
     c.bestLabel = out.wins + '-' + out.losses;
@@ -8101,7 +8477,7 @@ function recordRun(out){
     id: (run && typeof run.seed === 'number') ? run.seed : undefined,
     w: out.wins, l: out.losses,
     ring: !!out.titleWon,
-    po: !!(run.playoffs && run.playoffs.rounds.length),
+    po: madePlayoffs(run),
     rating: Math.round(out.rating),
     chem: out.chemistry && typeof out.chemistry.bonus === 'number'
       ? Math.round(out.chemistry.bonus * 100) / 100 : 0,
@@ -8234,7 +8610,7 @@ function renderCareer(){
     var li = document.createElement('li');
     li.style.cssText = 'display:block;border:0;color:var(--mut)';
     li.textContent = 'No finished runs yet. Draft '
-      + NUMWORD(E.SLOTS.length) + ' and play the 82.';
+      + NUMWORD(E.SLOTS.length) + '. Play 82.';
     list.appendChild(li);
     return;
   }
@@ -8263,7 +8639,7 @@ function renderCareer(){
   var shape = topOf(c.shapes);
   if (shape) row('Most drafted shape', shape.name + ' (' + shape.n + ')');
   var club = topOf(c.clubs);
-  if (club) row('Most drafted club', club.name + ' (' + club.n + ')');
+  if (club) row('Most drafted team', club.name + ' (' + club.n + ')');
 
   /* THE ONE FRANCHISE SHELF, and it is a separate block for the reason
      recordRun keeps a separate number: these are not runs against the league,
@@ -8347,10 +8723,10 @@ function renderCareerNote(){
   var el = $('pf-store');
   if (!el) return;
   el.textContent = cloudReady()
-    ? ('Kept on your account, so it follows you to another device. '
-       + 'Clear career removes it there too.')
-    : ('Stored in this browser only. Clearing site data or a private window loses it. '
-       + 'Sign in and it is kept on your account instead.');
+    ? ('Saved on your account. It follows you to any device. '
+       + 'Clear career wipes it there too.')
+    : ('Saved in this browser only. Clearing site data or a private window wipes it. '
+       + 'Sign in to keep it on your account.');
 }
 
 /* ── THE ACCOUNT ROW ───────────────────────────────────────────────────────
@@ -8410,14 +8786,14 @@ function renderAccount(){
 
   if (!st.ready && st.waiting) { say('Checking for your account.'); return; }
   if (!st.ready) {
-    say('Accounts are not available right now, so runs record without a name. '
+    say('Accounts are down right now. Runs still count, just without a name. '
       + 'Everything else works.');
     return;
   }
 
   if (!st.signedIn) {
-    say('Sign in to put your name on the leaderboard. Your runs record either '
-      + 'way, and the career below is this browser’s whatever you do.');
+    say('Sign in to put your name on the leaderboard and keep your career on '
+      + 'every device. Your runs count either way.');
     var r1 = row();
     var email = document.createElement('input');
     email.type = 'email'; email.placeholder = 'Email'; email.autocomplete = 'email';
@@ -8448,7 +8824,7 @@ function renderAccount(){
          signed in with no name, which is the state Google sign-in already
          produces and the one below exists to answer. */
       var name = prompt('Pick a name for the board. Letters, numbers and '
-        + 'underscores.');
+        + 'underscores only.');
       if (!name) return;
       if (busy) return;
       busy = true;
@@ -8465,7 +8841,7 @@ function renderAccount(){
 
   if (!st.name) {
     say('You are signed in as <b>' + esc(st.email || 'your account')
-      + '</b>. Pick a name and it goes on every run you have already played.');
+      + '</b>. Pick a name. It goes on every run you have already played.');
     var rn = row();
     var nm = document.createElement('input');
     nm.placeholder = 'Name on the board';
@@ -8568,13 +8944,14 @@ function renderBadges(){
   if (note) {
     if (runs > stored) {
       note.hidden = false;
-      note.textContent = 'Clubs and systems count every run you have played. The rest read the '
-        + stored + ' run' + (stored === 1 ? '' : 's') + ' recorded in detail, which started when '
-        + 'badges did, so ' + (runs - stored) + ' earlier run'
-        + (runs - stored === 1 ? '' : 's') + ' cannot be checked against them.';
+      note.textContent = 'Team and system badges count every run. Other badges read the '
+        + stored + ' run' + (stored === 1 ? '' : 's') + ' saved in detail since badges launched. '
+        + 'Your ' + (runs - stored) + ' earlier run'
+        + (runs - stored === 1 ? '' : 's') + ' cannot count toward them.';
     } else {
       note.hidden = false;
-      note.textContent = 'Kept in this browser, like the record above. Clearing site data loses them.';
+      note.textContent = cloudReady() ? 'Saved on your account with your career.'
+        : 'Saved in this browser with your career. Clearing site data wipes them.';
     }
   }
 }
@@ -8618,7 +8995,7 @@ function renderModeDoor(){
     door.style.removeProperty('--md-accent');
     name.textContent = 'One Franchise';
     name.style.removeProperty('color');
-    sub.textContent = 'Lock the wheel to one club. Only the year moves.';
+    sub.textContent = 'Pick a team. Only the year spins.';
     pick.hidden = true;
     main.onclick = openClubs;
     return;
@@ -8628,7 +9005,7 @@ function renderModeDoor(){
   door.style.setProperty('--md-accent', skin.accent);
   name.textContent = 'One Franchise · ' + E.teamName(last);
   name.style.color = skin.accent;
-  sub.textContent = E.team(last).full + ', ' + seasons + ' seasons on the wheel.';
+  sub.textContent = E.team(last).full + '. ' + seasons + ' seasons on the wheel.';
   pick.hidden = false;
   main.onclick = function(){ startRun(last); };
 }
@@ -8649,20 +9026,20 @@ function renderDailyDoor(){
 
   door.className = 'modedoor daily' + (done && !live ? ' done' : '');
   if (live) {
-    name.textContent = "Today's run · day " + n;
+    name.textContent = 'Daily Draft · Day ' + n;
     sub.textContent = run.phase === R.PHASES.DRAFT
       ? run.roster.length + ' of ' + E.SLOTS.length
-        + ' signed. Pick up where you left off.'
-      : NUMWORD(E.SLOTS.length, true) + ' signed, 82 still to play.';
+        + ' signed. Pick it back up.'
+      : NUMWORD(E.SLOTS.length, true) + ' signed. 82 to play.';
     main.onclick = function(){ show('s-draft'); renderDraft(); };
   } else if (done) {
     name.textContent = 'Day ' + n + ' · ' + s.label;
-    sub.textContent = s.headline + '. Send it to somebody, then back tomorrow.';
+    sub.textContent = s.headline + '. Send it. Back tomorrow.';
     main.onclick = shareDaily;
   } else {
-    name.textContent = "Today's run · day " + n;
-    sub.textContent = 'The same ' + NUMWORD(E.SLOTS.length)
-      + ' spins for everybody today.';
+    name.textContent = 'Daily Draft · Day ' + n;
+    sub.textContent = 'Same ' + NUMWORD(E.SLOTS.length)
+      + ' spins for everyone today.';
     main.onclick = function(){ startRun(null, null, true); };
   }
 
@@ -8719,12 +9096,12 @@ function shareDaily(){
    by. Reads the runner rather than a count, so a play-in and a Finals do not
    both come back as "the playoffs". */
 function bracketWhere(){
-  if (!run.po) return 'season played, no playoffs';
+  if (!run.po) return 'missed the playoffs';
   var done = run.po.results.length;
   var cur = run.po.cur;
   if (cur) return cur.round + ', series ' + cur.yourWins + '-' + cur.oppWins;
-  if (done) return 'through the ' + run.po.results[done - 1].round;
-  return 'the bracket is waiting';
+  if (done) return 'won ' + roundPhrase(run.po.results[done - 1].round);
+  return 'playoffs up next';
 }
 
 function renderHome(){
@@ -8741,7 +9118,7 @@ function renderHome(){
     var inBracket = run.phase === R.PHASES.PLAYOFFS;
     var chip = modeChip(run);
     $('rz-title').textContent = (drafting ? 'Draft in progress'
-      : inBracket ? 'In the playoffs' : 'Season not played')
+      : inBracket ? 'In the playoffs' : 'Season up next')
       + (chip ? ' · ' + chip : '');
     $('rz-where').textContent = drafting
       ? run.roster.length + ' of ' + E.SLOTS.length + ' signed'
@@ -8761,11 +9138,12 @@ function renderHome(){
          of a wrapped list of names with the money on the row below it. */
       $('rz-who').appendChild(document.createElement('br'));
       $('rz-who').appendChild(document.createTextNode(
-        money(R.remaining(run)) + ' of the cap left, ' + R.slotsLeft(run) + ' to fill'));
+        money(R.remaining(run)) + ' left. ' + R.slotsLeft(run)
+          + (R.slotsLeft(run) === 1 ? ' spot' : ' spots') + ' to fill.'));
     } else {
       $('rz-who').textContent = 'Nobody signed yet.';
     }
-    $('b-start').textContent = 'Start a new run';
+    $('b-start').textContent = 'Start a new draft';
   } else {
     rz.style.display = 'none';
     if (hero) hero.style.display = 'none';
@@ -8777,12 +9155,13 @@ function renderHome(){
        modes have their own door directly under it, and the results screen's
        own Run it back is the one that really does replay the mode. */
     var league = run && !run.club && !run.era && !run.daily;
-    $('b-start').textContent = (run && league) ? 'Run it back' : 'Start a run';
+    $('b-start').textContent = (run && league) ? 'Draft again' : 'Start a draft';
   }
 
   renderDailyDoor();
   renderModeDoor();
   renderEraDoor();
+  if (window.RTF_MODES_UI) window.RTF_MODES_UI.renderHome();
 
   var c = loadCareer();
   var box = $('home-career');
@@ -8794,7 +9173,7 @@ function renderHome(){
   $('hc-best').textContent = c.bestLabel || '-';
   $('hc-sub').textContent = c.rings
     ? c.rings + (c.rings === 1 ? ' ring' : ' rings') + ' in ' + c.runs
-    : 'still chasing the first ring';
+    : 'still chasing ring number one';
 
   /* THE LINE THAT GIVES A REASON TO PLAY AGAIN. A personal best is a target,
      and a target is the whole of a single player game's endgame. */
@@ -9175,6 +9554,7 @@ $('lb-key').onchange = function(){
   lbMode = { door: lbMode.door, key: this.value, day: null };
   paintBoard();
 };
+$('lb-ax-run').onclick = function(){ lbAxis = 'run'; paintBoard(); };
 $('lb-ax-record').onclick = function(){ lbAxis = 'record'; paintBoard(); };
 $('lb-ax-rating').onclick = function(){ lbAxis = 'rating'; paintBoard(); };
 /* Tapping the scrim closes it, which is what a sheet is expected to do, but a
@@ -9198,6 +9578,46 @@ document.addEventListener('keydown', function(ev){
   if (!$('frg').hidden) frgClose();
 });
 
+/* ── THE BRIDGE TO modes-ui.js ─────────────────────────────────────────────
+ *
+ * Conquest, Fix History and Six Passes are drawn by modes-ui.js, which loads
+ * after this script and cannot see inside it. This is everything it is allowed
+ * to reach, and it is deliberately a list of verbs rather than the page's
+ * state: the modes have their own saves and never touch `run`, so a Conquest
+ * run and a draft in progress can both be alive without either knowing. */
+window.RTF_PAGE = {
+  get data(){ return DATA; },
+  show: show,
+  money: money,
+  esc: esc,
+  toast: toast,
+  easternISO: easternISO,
+  dayNumberOf: dayNumberOf,
+  SHARE_URL: SHARE_URL,
+  board: function(){ return B; },
+  auth: function(){ return A; },
+  openProfile: openProfile,
+  goHome: function(){ show('s-home'); renderHome(); },
+  /* The chip in the top bar, for a screen that is not the draft's. */
+  bar: function(text){
+    var st = $('ab-state');
+    if (!st) return;
+    st.hidden = !text;
+    st.className = 'state';
+    st.textContent = text || '';
+  },
+  shareText: function(text){
+    if (navigator.share) {
+      navigator.share({ text: text }).catch(function(err){
+        if (err && err.name === 'AbortError') return;
+        copyAndDownload(text, null);
+      });
+      return;
+    }
+    copyAndDownload(text, null);
+  }
+};
+
 rememberHomes();
 /* READ OFF THE ENGINE, NEVER TYPED. Regulation over four quarters is the
    engine's own constant, and a 720 written here would be a second copy of it
@@ -9208,5 +9628,8 @@ renderAppBar('s-home');
 boot();
 })();
 </script>
+<!-- AFTER the page, because it draws through window.RTF_PAGE, which the script
+     above publishes. -->
+<script src="modes-ui.js?v=1"></script>
 </body>
 </html>

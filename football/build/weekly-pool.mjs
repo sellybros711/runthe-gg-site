@@ -52,6 +52,11 @@ import {
   DATA_DIR, quantileSorted, round,
 } from './lib.mjs';
 import { BASE_PRICE, MAX_PRICE, PRICE_K, BASELINE_RANK } from './01-players.mjs';
+/* The cap the board is drawn and priced for, off the same file the page drafts against, so
+   a week carries the cap it was built with rather than the one a later deploy happens to
+   say. `publish-week.mjs` then sends the WEEK's cap to the server, never this import. */
+const DRAFT = (await import('../fantasy/draft.js')).default
+  || (await import('../fantasy/draft.js'));
 
 /* The columns this file cannot work without. Named rather than assumed, because nflverse
    renames things between releases and a missing column read as 0 is a silent zero in
@@ -801,6 +806,15 @@ export async function buildWeeklyPool({ season, week, minGames = 1 }) {
 
   return {
     season, week, minGames,
+    /* THE CAP THIS BOARD WAS PRICED AND DRAWN FOR, written into the week rather than left
+       to whatever `draft.js` happens to say on the day somebody reads it.
+       A published week's cap is fixed for ever, because `fantasy_submit` checks a lineup
+       against `fantasy_weeks.cap_musd` and a price may never move once anybody has drafted
+       against it. So the constant is the seed for the NEXT build and this is what the week
+       is. Week 3 of 2026 was published at 90 and the constant went to 110 the next day,
+       which drew every reader a different board and would have refused a legal looking
+       lineup at the last press of five drafts. */
+    cap_musd: DRAFT.CAP_MUSD,
     ...anchors,
     checked,
     clubs_playing: playing.size,

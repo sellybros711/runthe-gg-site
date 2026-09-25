@@ -1170,7 +1170,7 @@
       tags.push('blowouts');
       notes.push('The first round was a chore. ' + blowouts + ' of ' + first.length
         + ' games were over by the third quarter and the studio spent the night cutting away '
-        + 'to a game that was not on your bracket.');
+        + 'to a game that wasn\'t on your bracket.');
       effects.inventory = -1.2;
       effects.tradition = -0.8;
     }
@@ -1192,7 +1192,7 @@
       var s = sim.field.snub;
       tags.push('snub');
       notes.push(s.school + ' finished ' + s.wins + '-' + s.losses + ' and stayed home. '
-        + 'That is the angriest fanbase in the country and they have your name.');
+        + 'That\'s the angriest fanbase in the country and they have your name.');
     }
     var champ = sim.bracket.champion;
     if (champ && champ.how === 'auto' && champ.seed > Math.ceil(sim.field.seats.length / 2)) {
@@ -1225,7 +1225,7 @@
     var last = sim.bracket.rounds[sim.bracket.rounds.length - 1] || [];
     if (last[0] && last[0].margin >= 21) {
       tags.push('blowout-final');
-      notes.push('The final was over at half time. That is the game the sport shows its '
+      notes.push('The final was over at half time. That\'s the game the sport shows its '
         + 'children and this year it showed them a scrimmage.');
       effects.inventory = (effects.inventory || 0) - 0.7;
     } else if (last[0] && last[0].margin <= 3) {

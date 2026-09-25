@@ -310,21 +310,18 @@ head('4. the door opens on the games worth playing and no others');
     while (guard++ < 200) {
       const next = R.pendingGame(run);
       if (!next) break;
-      const canEnd = next.elimination || next.closeout;
-      const shouldBe = canEnd || next.round === 'NBA Finals';
+      /* GAME 7 AND NOTHING ELSE. Both sides one win from the round, in a
+         best of seven, is the whole rule, and the play-in is not one. */
+      const shouldBe = next.bestOf === 7 && next.yourWins === 3 && next.oppWins === 3;
       if (next.big !== shouldBe) wrong++;
+      if (next.big !== !!next.decider) wrong++;
       if (next.big) { n++; bigs++; }
-      /* The game that ENDED a round has to have been a big one, because a
-         series ends on a game the series could end in, by definition. If that
-         is ever false the rule has a hole in it.
-         ASKED BY WHETHER THE ROUND GREW, which is the second version of this.
-         The first read the last FINISHED round and compared its length to
-         this game's index, so it was comparing a game in round three against
-         a round one that finished half an hour of bracket ago, and reported
-         54 holes in a rule that has none. */
+      /* A GAME 7 ALWAYS ENDS ITS ROUND, which is the one structural claim the
+         rule makes. If a door ever opens on a game after which the series
+         goes on, the rule has a hole in it. */
       const roundsBefore = run.po.results.length;
       R.simGame(run);
-      if (run.po.results.length > roundsBefore && !next.big) missedLast++;
+      if (next.big && run.po.results.length === roundsBefore) missedLast++;
     }
     per.push(n);
     R.finishRun(run);
@@ -334,10 +331,12 @@ head('4. the door opens on the games worth playing and no others');
   console.log(`  ${brackets} brackets of ${runs} runs: mean ${p.mean.toFixed(1)} big games,`
     + ` median ${sorted[Math.floor(sorted.length / 2)]},`
     + ` p90 ${sorted[Math.floor(sorted.length * 0.9)]}, max ${sorted[sorted.length - 1]}`);
-  is0(wrong, 'big is exactly: the series can end, or it is the Finals');
-  is0(missedLast, 'the game that ends a round is always one of them');
-  ok(p.mean > 1.2 && p.mean < 5,
-    `a run is offered a handful and not a screenful (mean ${p.mean.toFixed(1)})`);
+  is0(wrong, 'big is exactly a Game 7');
+  is0(missedLast, 'a Game 7 always ends its round');
+  ok(sorted[sorted.length - 1] <= 4,
+    `a run can never stop more than once a round (max ${sorted[sorted.length - 1]})`);
+  ok(p.mean < 1,
+    `a door is an event and not a pause (mean ${p.mean.toFixed(2)} a run)`);
   ok(bigs > 0, 'the door opens at all');
 }
 
@@ -367,7 +366,11 @@ head('5. a played game is the game the bracket records');
     while (guard++ < 200) {
       const next = R.pendingGame(run);
       if (!next) break;
-      if (!next.big) { R.simGame(run); continue; }
+      /* The door opens on a Game 7 alone, which is about one run in five, so a
+         sample keyed on the door is a handful of games. What this section is
+         about is the RECORD, and any game can be played forward, so it plays
+         every game that could end a series: the same path, forty times over. */
+      if (!(next.big || next.elimination || next.closeout)) { R.simGame(run); continue; }
       const g = R.liveGame(run);
       /* A LIVE GAME MUST NOT MOVE THE RUN'S OWN STREAM, because the run's
          stream is what every game AFTER this one is drawn from. Playing a
@@ -505,7 +508,32 @@ async function boot(page) {
   await page.goto('http://local.test/hoops/', { waitUntil: 'domcontentloaded' });
   await page.waitForSelector('#b-start:not([disabled])', { timeout: 30000 });
   await page.evaluate(() => { const b = document.querySelector('#frg-x'); if (b) b.click(); });
+  /* THE DOOR OPENS ON A GAME 7 ALONE, about one run in five, and the page's
+     own walk drafts badly enough that it is rarer again. Waiting for one is a
+     screen this file can only reach by luck, which is the badge nothing can
+     light. WHICH games open the door is the engine's rule and section 4
+     asserts it exactly; everything from here down is about the SCREEN a door
+     opens onto. So the page is handed the wider rule it used to run on (any
+     series game that can end it), through the engine object run.js reads at
+     call time. Nothing about the door, the board or the calls is faked: only
+     how often somebody gets to meet one. */
+  await widenDoor(page);
   await page.waitForTimeout(200);
+}
+
+/* A page load forgets it, so a reload has to ask again. */
+async function widenDoor(page) {
+  await page.evaluate(() => {
+    const E = window.RTF_ENGINE, real = E.poNext;
+    E.poNext = function (po, rng) {
+      const n = real.call(this, po, rng);
+      /* A series game only. The play-in is one game, so it can never be a
+         Game 7 and never opens a door, and widening it here would test a
+         screen no player can reach. */
+      if (n && n.bestOf > 1 && (n.elimination || n.closeout)) n.big = true;
+      return n;
+    };
+  });
 }
 
 /* Draft best-available through the real board, then play the 82 and skip to
@@ -636,7 +664,7 @@ const main = async () => {
     ok(/Play-In|Round|Final|Semi|Conference/i.test(d.eye),
       `the door names the round (${JSON.stringify(d.eye)})`);
     ok(d.title.length > 2, `and says what kind of game it is (${JSON.stringify(d.title)})`);
-    ok(/Series|One game/.test(d.why), 'and where the series stands');
+    ok(/Series \d-\d/.test(d.why), `and where the series stands (${JSON.stringify(d.why)})`);
     ok(d.play && d.sim, 'both answers are offered');
     ok(d.playBox > 30, 'Play it is a real control');
 
@@ -856,6 +884,7 @@ const main = async () => {
 
       await p2.reload({ waitUntil: 'domcontentloaded' });
       await p2.waitForSelector('#b-start:not([disabled])', { timeout: 30000 });
+      await widenDoor(p2);
       const home = await p2.evaluate(() => ({
         title: document.querySelector('#rz-title').textContent,
         where: document.querySelector('#rz-where').textContent,

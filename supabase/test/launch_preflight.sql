@@ -84,7 +84,7 @@ has_table as (
     'commish_free_clock','ps_runs','profiles',
     'fantasy_weeks','fantasy_prices','fantasy_results','fantasy_entries',
     'nfl_games','fantasy_prizes',
-    'rtf_runs'
+    'rtf_runs','rtd_runs','rtf_plays'
   ]) as t
   where to_regclass('public.' || t) is not null
 ),
@@ -106,6 +106,24 @@ trg as (
   join pg_class c on c.oid = t.tgrelid
   join pg_namespace n on n.oid = c.relnamespace
   where n.nspname = 'public' and not t.tgisinternal
+),
+-- AN INDEX CAN FAIL ON ITS OWN WHERE THE TABLE BESIDE IT CANNOT, which is the
+-- only reason this third helper exists. A unique index is refused outright by
+-- data that already breaks it, so a file pasted into the SQL editor statement by
+-- statement can leave the table committed and the index raised, and `if not
+-- exists` does not help: it skips on a name that is taken, never on a duplicate
+-- row. Applied through `--single-transaction` the whole file rolls back and the
+-- table is missing too, which the block above already catches; pasted by hand it
+-- is the 114 trigger all over again, an object whose absence is invisible from
+-- every side. Like `col` and `trg` and unlike `has_table`, it asks the catalog
+-- for everything and lets the row do the filtering.
+idx as (
+  select i.relname as name, t.relname as tbl
+  from pg_index x
+  join pg_class i on i.oid = x.indexrelid
+  join pg_class t on t.oid = x.indrelid
+  join pg_namespace n on n.oid = i.relnamespace
+  where n.nspname = 'public'
 ),
 check_rows(sort, migration, what, breaks, ok) as (
   values
@@ -199,17 +217,17 @@ check_rows(sort, migration, what, breaks, ok) as (
   -- takes no entries rather than waving everybody through. Loud rather than
   -- silent, and only testers can reach it while FANTASY_LIVE is false.
   --
-  -- IT IS SIX FILES AND THEY ARE SIX ROWS, because the ways they go missing are
+  -- IT IS SEVEN FILES AND THEY ARE SEVEN ROWS, because the ways they go missing are
   -- not the same failure at different sizes. One of them refuses every lineup
   -- and says so. Three of them leave a screen that renders perfectly and is
   -- quietly a week behind, or empty, or silent about who is in. A single row
-  -- reading "the fantasy layer" would answer NO to all six and say which of
+  -- reading "the fantasy layer" would answer NO to all seven and say which of
   -- those is happening about none of them.
   --
   -- The order they are listed in is the order they must be applied in. 110
   -- restates two of 109's functions, 111 and 112 each restate 110's board, and
   -- 113 restates 109's submit, so the LAST file to touch a thing is the one
-  -- that wins. `.github/workflows/fantasy-sql.yml` runs all six in that order
+  -- that wins. `.github/workflows/fantasy-sql.yml` runs all seven in that order
   -- inside one transaction, which is why a half applied chain is not a state
   -- this report expects to meet.
   (15, '109_fantasy_challenge',
@@ -275,6 +293,14 @@ check_rows(sort, migration, what, breaks, ok) as (
       and (select count(*) > 0 from trg
             where name = 'fantasy_settle_on_scored' and tbl = 'fantasy_weeks')),
 
+  -- Asked of the body, the way 113's row is: 115 restates a function 114 already
+  -- declares, so its presence says nothing about which of the two wrote it.
+  (21, '115_fantasy_result_when_ready',
+      'nobody is told the result until the winner has a code',
+      'The result popup opens the moment a week is scored, before the code is made. A winner who looks in that gap is told they won with no code on the sheet, and the sheet only opens by itself once.',
+      (select count(*) > 0 from proc
+        where name = 'fantasy_my_result' and body like '%promo_state%')),
+
   -- AND THE ONE THAT LOOKS EXACTLY LIKE A BAD NETWORK DAY. Run The Floor's
   -- board fails soft on purpose, the way every board on this site does: an
   -- unreachable server costs a list and never a run. That is right, and it is
@@ -287,12 +313,80 @@ check_rows(sort, migration, what, breaks, ok) as (
   -- 108 TWICE IS NOT A TYPO. This migration and 108_dynasty_slot were written
   -- for two different games in the same week and share a number. They touch
   -- nothing in common, so the collision costs nothing but a second look.
-  (21, '108_hoops_leaderboard',
+  (22, '108_hoops_leaderboard',
       'rtf_runs, and a Run The Floor season can be filed at all',
       'The Run The Floor board never loads, for everybody, for ever, and it is indistinguishable from a network that is down. The game plays, the run records in the career, the badges light, and the one thing missing is the list. Nobody reports it.',
       (select count(*) > 0 from has_table where name = 'rtf_runs')
       and (select count(*) > 0 from proc where name = 'rtf_submit_run')
-      and (select count(*) > 0 from proc where name = 'rtf_board_modes'))
+      and (select count(*) > 0 from proc where name = 'rtf_board_modes')
+      -- AND THE VERSION THAT RANKS A RING FIRST. The first cut of 108 ranked
+      -- on the regular season alone, and a database holding it plays and
+      -- files perfectly while the board puts a champion 98th. record_score
+      -- only exists in the version that fixed it.
+      and (select count(*) > 0 from col where tbl = 'rtf_runs' and name = 'record_score')),
+
+  -- AND THE SAME SHAPE ONE GAME ALONG, for a game that is now LINKED FROM THE
+  -- HOME PAGE, which is what makes this row the one most worth reading. Run The
+  -- Diamond's board fails soft exactly as Run The Floor's does: every call in
+  -- `baseball/board.js` resolves to null, the screen says the board is not
+  -- reachable, and it says it on every device for ever while twelve modes play
+  -- perfectly, the career records and every badge lights. There is no state a
+  -- player can tell an undeployed migration and a dead network apart from, so
+  -- asking here is the only way to know.
+  (23, '97_baseball_leaderboard',
+      'rtd_runs, and a Run The Diamond season can be filed at all',
+      'The Run The Diamond board never loads, for everybody, for ever, and it is indistinguishable from a network that is down. Nobody reports it, because nothing looks broken.',
+      (select count(*) > 0 from has_table where name = 'rtd_runs')
+      and (select count(*) > 0 from proc where name = 'rtd_submit_run')
+      and (select count(*) > 0 from proc where name = 'rtd_claim_run')),
+
+  -- ITS OWN ROW BECAUSE IT IS ITS OWN FAILURE, which is the seven fantasy rows'
+  -- argument arriving inside one file. The row above is the board not existing.
+  -- This is the board existing and the daily quietly not being a competition:
+  -- one partial unique index is the whole of the rule that a browser files one
+  -- result per puzzle, so without it the same person can submit the same day
+  -- repeatedly and every copy ranks. The board draws, the scores are real, and
+  -- the only symptom is a daily leaderboard whose top is one player several
+  -- times over. Folded into the row above it would answer NO about the board
+  -- when the board is fine.
+  (24, '97 daily-once index',
+      'rtd_runs_daily_once, so the daily takes one result per browser',
+      'The daily is scored and not policed: one browser can file the same puzzle again and again and every attempt ranks. The board renders perfectly and its top is one player repeated.',
+      (select count(*) > 0 from idx
+        where name = 'rtd_runs_daily_once' and tbl = 'rtd_runs')),
+
+  -- A THIRD ROW, because an early copy of 97 is a board that exists and a daily
+  -- that is refused every evening. That copy checked a daily against the UTC
+  -- date while the page names it by the Eastern one, so from 8pm Eastern (7pm in
+  -- winter) to midnight every daily was refused as backdated. Row 23 answers yes
+  -- to that database, because every object it asks for is there. What tells the
+  -- two apart is whether the submit reads rtd_board_day(), which only the fixed
+  -- copy has, so this asks the function's BODY rather than its existence.
+  (25, '97 daily on the Eastern day',
+      'rtd_submit_run reads rtd_board_day(), so an evening daily is accepted',
+      'Every daily finished between 8pm and midnight Eastern is refused as backdated and never reaches the board. It looks like a quiet evening. Re-run 97, which is safe over an existing copy.',
+      (select count(*) > 0 from proc where name = 'rtd_board_day')
+      and (select count(*) > 0 from proc
+            where name = 'rtd_submit_run' and body like '%rtd_board_day(%')),
+
+  -- RUN THE FLOOR'S OTHER THREE MODES, and the same silence as row 22. Fix
+  -- History, Six Passes and Conquest play entirely in the browser, keep their
+  -- results on the device, and file to rtf_plays through board.js, which fails
+  -- soft. Against a database without 116 every mode plays, every result screen
+  -- draws, and the one thing missing is a place and a leaderboard, which reads
+  -- exactly like a network that is down. The one-a-day index is in the same
+  -- row rather than its own, because 116 creates it in the same file and the
+  -- table is new, so nothing already in it can refuse the index.
+  (26, '116_hoops_modes',
+      'rtf_plays, so Fix History, Six Passes and Conquest have leaderboards',
+      'The three new modes play and never reach a board: no place on the result screen and an empty leaderboard, for everybody. It looks like a bad network day.',
+      (select count(*) > 0 from has_table where name = 'rtf_plays')
+      and (select count(*) > 0 from proc where name = 'rtf_submit_fix')
+      and (select count(*) > 0 from proc where name = 'rtf_submit_passes')
+      and (select count(*) > 0 from proc where name = 'rtf_submit_conquest')
+      and (select count(*) > 0 from proc where name = 'rtf_claim_play')
+      and (select count(*) > 0 from idx
+            where name = 'rtf_plays_daily_one_idx' and tbl = 'rtf_plays'))
 )
 -- The summary has to come LAST, and a UNION can only be ordered by an output
 -- column, so the sort key is carried through a subquery rather than sorted on

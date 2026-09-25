@@ -241,7 +241,13 @@ function markupText(html) {
   out.push(...[...body2.matchAll(/\b(?:content|title|alt|placeholder|aria-label)="([^"]{4,})"/g)].map((m) => m[1]));
   return out;
 }
+/* An escaped quote is a quote. `you\'re` in a single-quoted literal is the string
+   "you're", and left escaped the backslash counts against looksLikeProse below, which
+   is enough to push a line of copy full of markup and digits under the threshold and
+   out of every check that reads it. Found when a contraction pass took one "17 games"
+   claim out of check-numbers' count without changing a word of what it says. */
 const tidy = (s) => s
+  .replace(/\\(['"`])/g, '$1')
   .replace(/<[^>]+>/g, ' ')
   .replace(/&[a-z]+;|&#\d+;/g, ' ')
   .replace(/\\n|\\t/g, ' ')

@@ -206,6 +206,14 @@ window.__DT = {
       labelOverlap:(lb.length===2 && over(lb[0],lb[1])),
       sameSize:(mk.length===2 && Math.abs(mk[0].w-mk[1].w)<1.5 && Math.abs(mk[0].h-mk[1].h)<1.5),
       labelOverChip:(cr!=null && lb.some(function(r){ return over(r,{l:cr.left,t:cr.top,r:cr.right,b:cr.bottom}); })),
+      /* A LABEL STAYS ON ITS MARKER: the ring's centre sits under the label, clear of its rounded ends,
+         and the little pointer is on the ring. The old de-collision slid labels by however far it took
+         and the pointer went with them, so "Safe" could float over the water a hundred pixels from its ring
+         (owner). Measured on screen, because the answer depends on the font the label actually got. */
+      detached:Array.prototype.filter.call(shell.querySelectorAll('.dctarget'), function(c){
+        var w=c.querySelector('.dtw').getBoundingClientRect(), m=c.querySelector('.dtr').getBoundingClientRect(),
+            pt=c.querySelector('.dtp').getBoundingClientRect(), mx=(m.left+m.right)/2;
+        return mx<w.left+8 || mx>w.right-8 || Math.abs((pt.left+pt.right)/2-mx)>2.5; }).length,
       gap:(mk.length===2?+Math.hypot((mk[0].l+mk[0].r)/2-(mk[1].l+mk[1].r)/2,(mk[0].t+mk[0].b)/2-(mk[1].t+mk[1].b)/2).toFixed(1):null),
       zLine:zLine, zPanel:zPanel, zMark:zMark,
       nums:Array.prototype.map.call(shell.querySelectorAll('.dctarget .dtr i'), function(e){ return e.textContent; })};
@@ -301,6 +309,7 @@ const run = async () => {
   const sample = rows.filter(r => { const k = r.course + '|' + r.hole; if (seen[k]) return false; seen[k] = 1; return true; });
   let mOv = 0, lOv = 0, notSame = 0, noLine = 0, chipHit = 0, minGap = 1e9, bad2 = [], zBad = 0;
   let frameHit = 0; const frameEx = [];
+  let detached = 0; const detEx = [];
   let greenN = 0, offGreen = 0, lineMiss = 0, badLab = 0, worstOff = 0, offSum = 0;
   let notInGreen = 0, vSlid = 0, worstIn = 0, tooNarrow = 0, overPush = 0, shortPush = 0;
   let midMoved = 0, inward = 0, safeWorst = 0, safeOffGreen = 0;
@@ -314,6 +323,7 @@ const run = async () => {
     if (!m2.sameSize) notSame++;
     if (m2.lines !== 1) noLine++;
     if (m2.labelOverChip) chipHit++;
+    if (m2.detached) { detached += m2.detached; if (detEx.length < 3) detEx.push({ course: r.course, hole: r.hole }); }
     if (m2.outFrame) { frameHit += m2.outFrame; if (frameEx.length < 3) frameEx.push({ course: r.course, hole: r.hole, n: m2.outFrame }); }
     if (!(m2.zLine < m2.zPanel && m2.zPanel < m2.zMark)) zBad++;
     if (m2.gap != null) minGap = Math.min(minGap, m2.gap);
@@ -356,6 +366,7 @@ const run = async () => {
   ok('both markers are always the same size, so neither can swallow the other', notSame === 0, notSame);
   ok('the leader lines are drawn on every one', noLine === 0, noLine);
   ok('and no label is left sitting under the hole chip', chipHit === 0, chipHit);
+  ok('and every label stays on its own marker, its pointer on the ring', detached === 0, { detached, examples: detEx });
   ok('nor hanging off the edge of the window with its word cut in half', frameHit === 0, { off: frameHit, examples: frameEx });
   const z = await page.evaluate(() => window.__DT.render('Augusta National', 0));
   console.log(`    paint order, back to front: lines ${z.zLine}, docked panels ${z.zPanel}, markers ${z.zMark}`);

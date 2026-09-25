@@ -3,13 +3,13 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<title>RunTheGlobe: Globe-Trotting Race (Preview Build)</title>
+<title>RunTheGlobe: Race Around the World (Preview Build)</title>
 
 <!-- PREVIEW / BACKGROUND BUILD: this game is not released yet. Keep it out of
      search until it ships, and it is intentionally NOT linked from the homepage
      or listed in sitemap.xml. -->
 <meta name="robots" content="noindex,nofollow" />
-<meta name="description" content="RunTheGlobe: a globe-trotting drafting and trivia race. Draw a country each stage, beat the clock, check in, and don't finish last, or you're Grounded. Part of RunThe.GG." />
+<meta name="description" content="RunTheGlobe: a race around the world. Every stage you land in a new country and play a quick challenge against the clock. Slowest team is out. Part of RunThe.GG." />
 <meta name="theme-color" content="#0e0b20" />
 
 <link rel="icon" href="/globe/brand/icon_48.png?v=4" sizes="any" />
@@ -24,7 +24,7 @@
 <!-- social card (the wordmark on its own dark map) -->
 <meta property="og:type" content="website" />
 <meta property="og:title" content="RunTheGlobe: The Race Around The World" />
-<meta property="og:description" content="Draw a country, beat the clock, don't finish last. A globe-trotting race, part of RunThe.GG." />
+<meta property="og:description" content="Land in a new country, beat the clock, don't finish last. A race around the world from RunThe.GG." />
 <meta property="og:image" content="/globe/brand/og.jpg?v=4" />
 <meta name="twitter:card" content="summary_large_image" />
 
@@ -893,29 +893,29 @@
   function countryFact(c){
     if(!c) return null;
     var bank=(window.GLOBE_TRIVIA||{})[c.id]||[], t=bank.length?pick(bank):null;
-    if(t && t.options){ var q=t.q.replace(/…\?$/,'…?'); return 'Quick one while you deplane. '+esc(q)+' <b>'+esc(t.options[t.a])+'.</b>'; }
-    return 'Capital here is <b>'+esc(c.capital)+'</b>.';
+    if(t && t.options){ var q=t.q.replace(/…\?$/,'…?'); return 'Quick fact. '+esc(q)+' <b>'+esc(t.options[t.a])+'.</b>'; }
+    return 'The capital here is <b>'+esc(c.capital)+'</b>.';
   }
   function introBeats(){
     var fl=S.finishLine, n=S.teams.length;
     return [
       { kick:'RunTheGlobe', title:'The Race', sub:n+' teams · '+ROUNDS+' stages · one finish line', sfx:'checkpoint' },
-      { who:'host', text:'Welcome aboard, <b>'+esc(S.teamName)+'</b>. '+n+' teams, '+ROUNDS+' stages, and one finish line: <b>'+esc(fl.landmark)+'</b> in '+esc(fl.city)+'.' },
-      { who:'host', text:'Every stage, every team lands in the same country and plays the same challenge. The <b>slowest team is Grounded</b>. Simple. Brutal.' },
-      { who:'pilot', text:'Wheels up. Mash the screen in flight to get there faster. I don\'t judge.', fx:'burst' }
+      { who:'host', text:'Welcome in, <b>'+esc(S.teamName)+'</b>. '+n+' teams. '+ROUNDS+' stages. The finish line is <b>'+esc(fl.landmark)+'</b> in '+esc(fl.city)+'.' },
+      { who:'host', text:'Every stage, all the teams land in the same country and play the same challenge. <b>Slowest team is Grounded</b> and goes home.' },
+      { who:'pilot', text:'We\'re taking off. Tap the screen during the flight to get there faster.', fx:'burst' }
     ];
   }
   function arrivalBeats(){
     var d=S.dest, alive=aliveTeams().length, b=[];
     if(d.final){
       b.push({ kick:'The Final', title:esc(d.name), sub:esc(d.landmark||'the finish line'), sfx:'checkpoint' });
-      b.push({ who:'pilot', text:'Final approach into <b>'+esc(d.name)+'</b>. Whatever you have left, spend it here.' });
-      b.push({ who:'host', text:alive+' teams touch down. <b>First across the line at '+esc(d.landmark||'the finish')+' wins the whole race.</b> No second place.', fx:'burst' });
+      b.push({ who:'pilot', text:'We\'re landing in <b>'+esc(d.name)+'</b>. This is the last one. Give it everything.' });
+      b.push({ who:'host', text:alive+' teams made it. <b>First one to '+esc(d.landmark||'the finish')+' wins the whole race.</b>', fx:'burst' });
       return b;
     }
     b.push({ kick:'Stage '+S.round+' of '+ROUNDS, title:esc(d.name), sub:esc(d.region)+' · '+alive+' teams left', sfx:'checkpoint' });
-    if(S.round<=2) b.push({ who:'pilot', text:'Touching down in <b>'+esc(d.name)+'</b>, '+esc(d.region)+'. Local time: whenever you make it to the mat.' });
-    var f=countryFact(d.country); if(f) b.push({ who:'host', text:f+(S.round===1?' Slowest team here goes home. <b>Don\'t let it be you.</b>':' '+(alive-1)+' seats at the next stage. '+(S.streak>=2?'You\'re on a <b>'+S.streak+'-stage clean streak</b>. Keep it.':'Go.')) });
+    if(S.round<=2) b.push({ who:'pilot', text:'We\'re landing in <b>'+esc(d.name)+'</b>. Get to the mat as fast as you can.' });
+    var f=countryFact(d.country); if(f) b.push({ who:'host', text:f+(S.round===1?' Slowest team here goes home. <b>Don\'t let it be you.</b>':' Only '+(alive-1)+' teams move on. '+(S.streak>=2?'That\'s <b>'+S.streak+' perfect stages</b> in a row. Keep it going.':'Go.')) });
     return b;
   }
   function verdictBeats(ranked, groundedTeam, final){
@@ -923,16 +923,16 @@
     if(final){
       var won=ranked[0].id==='you';
       return won
-        ? [{ who:'control', text:'Checking the line at <b>'+esc(S.dest.landmark||S.dest.name)+'</b>… first team across…' },
-           { kick:'Race Winner', title:esc(S.teamName), sub:'You win RunTheGlobe', sfx:'win', fx:'celebrate' }]
-        : [{ who:'control', text:'Checking the line at <b>'+esc(S.dest.landmark||S.dest.name)+'</b>… first team across is <b>'+esc(ranked[0].name)+'</b>.' },
-           { who:'host', text:'You finished <b>#'+you+' of '+n+'</b> in the Final. That\'s a podium race. Run it back.', sfx:'lose' }];
+        ? [{ who:'control', text:'Checking the finish at <b>'+esc(S.dest.landmark||S.dest.name)+'</b>…' },
+           { kick:'Race Winner', title:esc(S.teamName), sub:'You won the whole race', sfx:'win', fx:'celebrate' }]
+        : [{ who:'control', text:'Checking the finish at <b>'+esc(S.dest.landmark||S.dest.name)+'</b>… <b>'+esc(ranked[0].name)+'</b> got there first.' },
+           { who:'host', text:'You finished <b>#'+you+' of '+n+'</b> in the Final. So close. Run it back.', sfx:'lose' }];
     }
     if(groundedTeam.id==='you')
-      return [{ who:'control', text:'All teams checked in at <b>'+esc(S.dest.name)+'</b>… last team to the mat…' },
-              { kick:'Grounded', title:esc(S.teamName), sub:'Slowest at '+esc(S.dest.name)+' · your race ends here', sfx:'lose' }];
-    return [{ who:'control', text:'All teams checked in at <b>'+esc(S.dest.name)+'</b>. You came in <b>#'+you+' of '+n+'</b>.' },
-            { who:'host', text:'Last team to the mat: <b>'+esc(groundedTeam.name)+'</b>. Grounded. '+(n-1)+' teams fly on. <b>You\'re one of them.</b>', sfx:'checkpoint', fx:'burst' }];
+      return [{ who:'control', text:'Everyone\'s checked in at <b>'+esc(S.dest.name)+'</b>. Last team in is…' },
+              { kick:'Grounded', title:esc(S.teamName), sub:'Slowest at '+esc(S.dest.name)+'. You\'re out.', sfx:'lose' }];
+    return [{ who:'control', text:'Everyone\'s checked in at <b>'+esc(S.dest.name)+'</b>. You came in <b>#'+you+' of '+n+'</b>.' },
+            { who:'host', text:'<b>'+esc(groundedTeam.name)+'</b> came in last. They\'re out. <b>You\'re still in.</b>', sfx:'checkpoint', fx:'burst' }];
   }
 
   /* ---- dopamine feeders: universal hooks fired by every challenge kind ----
@@ -1010,7 +1010,7 @@
     try{
       if(navigator.share){ navigator.share({ text:text }).catch(function(){}); return; }
     }catch(e){}
-    try{ navigator.clipboard.writeText(text).then(function(){ toast('Result copied to clipboard'); }).catch(function(){ toast(text); }); }
+    try{ navigator.clipboard.writeText(text).then(function(){ toast('Copied to your clipboard'); }).catch(function(){ toast(text); }); }
     catch(e){ toast('Copy failed'); }
   }
 
@@ -1048,7 +1048,7 @@
       tiers:[{n:1,l:'Bronze'},{n:5,l:'Silver'},{n:15,l:'Gold'},{n:40,l:'Platinum'}] },
     { id:'podium', name:'Podium Regular', icon:'🥉', metric:function(s){return s.top3;}, unit:'top-3s',
       tiers:[{n:3,l:'Bronze'},{n:10,l:'Silver'},{n:30,l:'Gold'}] },
-    { id:'sharp', name:'Sharpshooter', icon:'🎯', metric:function(s){return s.perfectStages;}, unit:'flawless stages',
+    { id:'sharp', name:'Sharpshooter', icon:'🎯', metric:function(s){return s.perfectStages;}, unit:'perfect stages',
       tiers:[{n:10,l:'Bronze'},{n:50,l:'Silver'},{n:150,l:'Gold'}] },
     { id:'speed', name:'Speed Demon', icon:'⚡', metric:function(s){return s.fastestStage?Math.max(0, 6-s.fastestStage):0;}, unit:'',
       tiers:[{n:1,l:'Bronze'},{n:2.5,l:'Silver'},{n:3.5,l:'Gold'}] },   // fastest < 5s / 3.5s / 2.5s
@@ -1073,7 +1073,7 @@
     if(earned.length){
       var msg = earned.length===1
         ? ('🎉 New badge: '+earned[0].icon+' '+earned[0].name+' · '+earned[0].tier)
-        : ('🎉 '+earned.length+' new badges unlocked! See the Trophy Room.');
+        : ('🎉 '+earned.length+' new badges. Check the Trophy Room.');
       if(typeof toast==='function') toast(msg);
     }
     S.newBadges=earned;
@@ -1145,17 +1145,17 @@
         + '<div class="hero-imgwrap"><img class="hero-wm" src="/globe/brand/wordmark.jpg" alt="Run The Globe" width="1200" height="434" /></div>'
         + '<div class="hero-cap">'
           + '<div class="herohook">Outrun 10 rival teams around the world.</div>'
-          + '<p class="lede" style="margin-top:7px">Every Stage jets the field to a new country. Beat the clock at 30+ challenges. Then <b>sprint the city to the Checkpoint mat</b>. The slowest team each Stage is <b style="color:var(--coral)">Grounded</b>. Survive all '
-          + ROUNDS + ' Stages to win the Final.</p>'
+          + '<p class="lede" style="margin-top:7px">Every Stage you fly to a new country. Beat the clock in a quick challenge. Then <b>run to the Checkpoint</b>. Slowest team each Stage is <b style="color:var(--coral)">Grounded</b>. Make it through all '
+          + ROUNDS + ' Stages to win.</p>'
           + '<button class="btn ghost sm" id="howto" style="margin-top:12px">📖 How to play</button>'
         + '</div>'
       + '</div>'
       + '<div class="card">'
         + '<h3 style="font-size:16px;margin-bottom:4px">How do you want to play?</h3>'
-        + '<p class="muted" style="font-size:12.5px;margin:0 0 12px">You race a field of 11 teams either way. Pick who\'s on <b>your</b> team.</p>'
-        + modeRow('solo',MODE_ICON.solo,'Solo Race','Race the field on your own. You take every challenge.','','gold')
-        + modeRow('duo_same',MODE_ICON.duo,'Team Race · Same Screen','You and a partner, one device, one team. Take turns each Stage.','','green')
-        + modeRow('duo_two',MODE_ICON.two,'Team Race · Two Devices','You and a partner on separate devices, same team.','Beta','coral')
+        + '<p class="muted" style="font-size:12.5px;margin:0 0 12px">You race 11 teams either way. Pick who\'s on <b>your</b> team.</p>'
+        + modeRow('solo',MODE_ICON.solo,'Solo Race','Just you. You play every challenge.','','gold')
+        + modeRow('duo_same',MODE_ICON.duo,'Team Race · Same Screen','You and a friend on one phone. Take turns each Stage.','','green')
+        + modeRow('duo_two',MODE_ICON.two,'Team Race · Two Devices','You and a friend on two phones. Same team.','Beta','coral')
       + '</div>'
       + '<div class="card">'
         + '<h3 style="font-size:16px;margin-bottom:12px">Your record</h3>'
@@ -1189,20 +1189,20 @@
     var illoDraw = '<div class="ill-flag">🗼</div><div class="ill-t">TOKYO</div><div class="ill-s">Asia</div>';
     var illoGames= '<div class="ill-chips"><span>🧠</span><span>🗺️</span><span>⚡</span><span>🎧</span><span>🔤</span><span>🎯</span></div>';
     var illoSplit= '<div class="ill-split"><span class="a">🧠 Brain</span><span class="b">⚡ Reflex</span></div>';
-    var illoRun = '<div class="ill-flag">🏃</div><div class="ill-t">→ 🚩 MAT</div><div class="ill-s">sprint!</div>';
+    var illoRun = '<div class="ill-flag">🏃</div><div class="ill-t">→ 🚩 MAT</div><div class="ill-s">run!</div>';
     var illoGround='<div class="ill-lb"><div><span>1 You</span><span>5.1</span></div><div><span>2 Fox</span><span>7.8</span></div><div class="g"><span>3 Wolf</span><span>OUT</span></div></div>';
     var illoFinal= '<div class="ill-flag">🏁</div><div class="ill-t" style="color:var(--acc)">THE FINAL</div>';
     app.innerHTML = topbar()
       + '<div class="card"><h1 style="font-size:26px">How to Play</h1>'
-        + '<p class="lede">RunTheGlobe is a survival race around the world against a field of '+FIELD_SIZE+' teams. Here\'s one Stage of the loop. You\'ll run '+ROUNDS+' of them.</p></div>'
-      + howPanel('gold', illoDraw, '1 · Draw a destination', 'Every Stage jets the whole field to the same random country. You fly the leg on the map, then the destination is revealed. A race criss-crosses '+ROUNDS+' of them.')
-      + howPanel('green', illoGames, '2 · Beat the clock', 'Play a lightning challenge from <b>30+ game types</b>: trivia, maps, memory, word, reflex and audio. A timer runs the whole time, and every slip adds penalty seconds.')
-      + howPanel('coral', illoSplit, '3 · Split Path or Solo Call', 'Most Stages are a <b>Split Path</b>: pick one of two challenges, usually a brain game against a reflex game, and play to your strength. A <b>Solo Call</b> hands everyone the same single task.')
-      + howPanel('gold', illoRun, '4 · Sprint to the Checkpoint', 'Touch down in a <b>cartoon version of the city</b> and sprint through the streets, Amazing-Race style. Find the Checkpoint mat flying <b>your destination\'s flag</b> and tap it. The clock runs the whole way.')
-      + howPanel('coral', illoGround, '5 · Don\'t finish last', 'Your <b>effective time</b> = challenge + City Run + penalties. The slowest team each Stage is <b style="color:var(--coral)">Grounded</b>, and eliminated.')
-      + howPanel('green', illoFinal, '6 · Win the Final', 'Outlast everyone to Stage '+ROUNDS+', the Final. The last 3 teams sprint to a world landmark. The fastest wins the whole race.')
+        + '<p class="lede">RunTheGlobe is a race around the world against '+FIELD_SIZE+' teams. Here\'s how one Stage works. You\'ll run '+ROUNDS+' of them.</p></div>'
+      + howPanel('gold', illoDraw, '1 · Draw a destination', 'Every Stage, all the teams fly to the same random country. Tap during the flight to get there faster. One race hits '+ROUNDS+' countries.')
+      + howPanel('green', illoGames, '2 · Beat the clock', 'Play a quick challenge. There are <b>30+ kinds</b>: trivia, maps, memory, words, reflexes and sound. The clock is always running. Every mistake adds seconds.')
+      + howPanel('coral', illoSplit, '3 · Split Path or Solo Call', 'Most Stages are a <b>Split Path</b>. You pick one of two challenges. Usually one is a thinking game and one is a reflex game, so pick what you\'re good at. A <b>Solo Call</b> gives everyone the same one.')
+      + howPanel('gold', illoRun, '4 · Sprint to the Checkpoint', 'After the challenge you land in a <b>cartoon version of the city</b>. Tap fast to run. Then tap the mat with <b>your country\'s flag</b>. The clock is still running.')
+      + howPanel('coral', illoGround, '5 · Don\'t finish last', 'Your time is the challenge plus the run plus any penalties. Slowest team each Stage is <b style="color:var(--coral)">Grounded</b>. That means you\'re out.')
+      + howPanel('green', illoFinal, '6 · Win the Final', 'Make it to Stage '+ROUNDS+'. That\'s the Final. The last 3 teams race to a famous landmark. Fastest team wins.')
       + '<div class="card"><h3 style="font-size:15px;margin-bottom:6px">🤝 Solo or team up</h3>'
-        + '<p class="muted" style="font-size:13px;line-height:1.6;margin:0">Race <b>Solo</b>, or as a team. <b>Same Screen</b> puts two of you on one device, taking turns. <b>Two Devices</b> puts you and a partner on separate phones, times combined. Either way you face a full field, so it feels the same whether the rivals are friends or the house.</p></div>'
+        + '<p class="muted" style="font-size:13px;line-height:1.6;margin:0">Play <b>Solo</b> or with a friend. <b>Same Screen</b> is two of you on one phone, taking turns. <b>Two Devices</b> is you and a friend on your own phones, and your times get added up. Either way you race a full field of teams.</p></div>'
       + '<div class="btnrow"><button class="btn ghost" id="htback">‹ Back</button><button class="btn globe" id="htplay">Start the race 🌍</button></div>'
       + foot();
     $('htback').onclick=function(){ S.screen='home'; render(); };
@@ -1277,8 +1277,8 @@
     app.innerHTML = topbar()
       + '<div class="card">'
         + '<h1 style="font-size:24px">'+(duo?'Name your duo':'Name your team')+'</h1>'
-        + '<p class="lede">'+(duo?'Two of you, one screen, one team':'You')+' vs a field of '+FIELD_SIZE+' teams through '+ROUNDS+' Stages. '
-          + 'The slowest team is Grounded each Stage until the 3-team Final. Don\'t be last.'
+        + '<p class="lede">'+(duo?'Two of you, one screen, one team':'You')+' vs '+FIELD_SIZE+' teams over '+ROUNDS+' Stages. '
+          + 'Slowest team each Stage is Grounded. The last 3 teams race the Final. Don\'t be last.'
           + (duo?' You\'ll take turns. The game says who\'s up each Stage.':'')+'</p>'
         + '<div style="margin-top:16px"><label class="fld" for="tn">Team name</label>'
         + '<input type="text" id="tn" maxlength="18" placeholder="'+(duo?'Our Team':'Your Team')+'" value="'+esc(S.teamName||'')+'" /></div>'
@@ -1397,18 +1397,18 @@
     var fq = otherCountries(c,1)[0] || c;
     var wrong = otherCountries(fq,3);
     var opts = shuffle([fq.name].concat(wrong.map(function(x){return x.name;})));
-    g.push({ kind:'flagid', cat:'trivia', type:'brain', q:'Which country flies this flag?', flag:fq.flag,
+    g.push({ kind:'flagid', cat:'trivia', type:'brain', q:'Whose flag is this?', flag:fq.flag,
              options:opts, a:opts.indexOf(fq.name) });
     // Flag Reveal (Flagle-style): name the flag as pieces are uncovered (random subject)
     var zq = otherCountries(c,1)[0] || c;
     var zw = otherCountries(zq,3);
     var zopts = shuffle([zq.name].concat(zw.map(function(x){return x.name;})));
-    g.push({ kind:'zoomreveal', cat:'trivia', type:'brain', q:'Which country flies this flag? Guess from the revealed pieces.', flag:zq.flag,
+    g.push({ kind:'zoomreveal', cat:'trivia', type:'brain', q:'Whose flag is this? Guess from the pieces you can see.', flag:zq.flag,
              options:zopts, a:zopts.indexOf(zq.name) });
     // Name The Capital: pick the capital from four
     var wc = otherCountries(c,3);
     var capOpts = shuffle([c.capital].concat(wc.map(function(x){return x.capital;})));
-    g.push({ kind:'capital', cat:'trivia', type:'brain', q:'What is the capital of '+c.name+'?',
+    g.push({ kind:'capital', cat:'trivia', type:'brain', q:'What\'s the capital of '+c.name+'?',
              options:capOpts, a:capOpts.indexOf(c.capital) });
     // Odd One Out: three from one region + one outlier. Match against the SINGLE
     // displayed region (cReg), not c's full region string: otherwise a country that
@@ -1420,7 +1420,7 @@
     if(same.length>=2 && diff.length){
       var trio=[c].concat(shuffle(same).slice(0,2)); var outlier=pick(diff);
       var four=shuffle(trio.concat([outlier])).map(function(x){return {n:x.name,bad:x.id===outlier.id};});
-      g.push({ kind:'oddoneout', cat:'math', type:'brain', q:'Three of these are in '+cReg+'. Tap the one that is NOT.',
+      g.push({ kind:'oddoneout', cat:'math', type:'brain', q:'Three of these are in '+cReg+'. Tap the one that isn\'t.',
                options:four.map(function(x){return x.n;}), a:four.map(function(x){return x.bad;}).indexOf(true) });
     }
     // True or False rapid-fire: capital statements drawn from the world
@@ -1431,7 +1431,7 @@
       if(lie){ var o=pick(otherCountries(x,1)); cap=o.capital; }
       tf.push({ s:'The capital of '+x.name+' is '+cap+'.', t:!lie });
     });
-    g.push({ kind:'truefalse', cat:'trivia', type:'brain', q:'True or false. Tap fast!', items:tf });
+    g.push({ kind:'truefalse', cat:'trivia', type:'brain', q:'True or false? Go fast.', items:tf });
     // Higher or Lower: compare two cities. ONLY from a DIRECTIONAL spatial task
     // (lat/long), where the question and scoring are unambiguous. Stat-ordered
     // tasks (population/size/etc.) are skipped so we never ask "farther north"
@@ -1447,10 +1447,10 @@
     var tiles=(c.tasks.memory&&c.tasks.memory[0]&&c.tasks.memory[0].tiles)||['🌍','🧭','✈️','🗺️'];
     g.push({ kind:'memorymatch', cat:'memory', type:'brain', q:'Match all the pairs', tiles:tiles.slice(0,4) });
     // Whack-A-Landmark: tap the country's flag, dodge the decoys
-    g.push({ kind:'whack', cat:'reflex', type:'reflex', q:'Tap '+c.flag+' as it pops up. Ignore the rest!',
+    g.push({ kind:'whack', cat:'reflex', type:'reflex', q:'Tap '+c.flag+' when it pops up. Ignore the others.',
              target:c.flag, decoys:shuffle(otherCountries(c,4).map(function(x){return x.flag;})) });
     // Quick Tap: hit the moving target
-    g.push({ kind:'targettap', cat:'reflex', type:'reflex', q:'Hail your ride. Flag the taxi down at the curb.' });
+    g.push({ kind:'targettap', cat:'reflex', type:'reflex', q:'Grab a taxi. Tap when yours hits the curb.' });
     // Find It On The Map: pin-drop, scored by distance (needs coords)
     if(c.ll && c.ll.length===2){
       g.push({ kind:'mapfind', cat:'spatial', type:'brain', q:'Where in the world is '+c.name+'? Tap the map.', ll:c.ll, name:c.name });
@@ -1463,12 +1463,12 @@
     // its city names). The contest is timing, aim, memory and dexterity, so a
     // player who knows nothing about the destination competes evenly. ----
     // Swing Meter: land taps in a shrinking green zone (timing)
-    g.push({ kind:'swingmeter', cat:'reflex', type:'reflex', q:'Time your takeoff. Rotate when speed hits the green.' });
+    g.push({ kind:'swingmeter', cat:'reflex', type:'reflex', q:'Time your takeoff. Pull up when the speed hits green.' });
     // Eagle Eye: one flag in the wall doesn't belong (visual hunt)
-    g.push({ kind:'eagleeye', cat:'reflex', type:'reflex', q:'One of these is NOT '+c.name+'’s flag. Spot it!',
+    g.push({ kind:'eagleeye', cat:'reflex', type:'reflex', q:'One of these isn’t '+c.name+'’s flag. Find it.',
              target:c.flag, imposters:shuffle(otherCountries(c,3).map(function(x){return x.flag;})) });
     // Memory Lineup: flags flash, find the one that WASN'T shown (observation)
-    g.push({ kind:'kimsgame', cat:'memory', type:'brain', q:'Memorize the lineup, then spot the flag that wasn’t there' });
+    g.push({ kind:'kimsgame', cat:'memory', type:'brain', q:'Memorize the flags, then find the one that wasn’t there' });
     // Type The Ticket: retype the destination shown on your boarding pass (dexterity)
     var tw=ticketWord(c);
     if(tw) g.push({ kind:'typeticket', cat:'word', type:'brain', q:'Type your destination, fast', word:tw });
@@ -1519,7 +1519,7 @@
         var okgap=true, s2;
         for(s2=1;s2<stops.length;s2++){ if(stops[s2].d < stops[s2-1].d*1.25) okgap=false; }
         if(okgap) g.push({ kind:'flightplan', cat:'dragdrop', type:'brain',
-                           q:'Plot your route from '+c.name+'. Tap the stops nearest → farthest.',
+                           q:'Plan your route from '+c.name+'. Tap the stops from closest to farthest.',
                            origin:{ name:c.name, ll:c.ll },
                            stops:shuffle(stops).map(function(p){ return { name:p.x.name, flag:p.x.flag, ll:p.x.ll, d:Math.round(p.d) }; }) });
         // Globe Hunt: a hidden country; tap dots and follow the heat to find it
@@ -1528,7 +1528,7 @@
         var decoys=shuffle(byd.slice(3)).slice(0,15).map(function(p){ return p.x; });
         var pins=shuffle([c].concat(decoys)).map(function(x){ return { name:x.name, flag:x.flag, ll:x.ll }; });
         if(pins.length>=8) g.push({ kind:'globehunt', cat:'spatial', type:'brain',
-                                    q:'A country is hidden. Tap dots and follow the heat to find it.',
+                                    q:'A country is hidden on the map. Tap dots to see if you\'re getting warmer.',
                                     target:{ name:c.name, flag:c.flag, ll:c.ll }, pins:pins });
       }
     }
@@ -1554,18 +1554,18 @@
       if(dR && dH && dI){
         var suspects=shuffle([c,dR,dH,dI]).map(function(x){ return { name:x.name, flag:x.flag }; });
         g.push({ kind:'detective', cat:'trivia', type:'brain',
-                 q:'Whose passport is this? Read the dossier and make your accusation.',
+                 q:'Whose passport is this? Read the clues and make your pick.',
                  answer:c.name, suspects:suspects,
                  clues:[ 'Region on file: '+c.region,
                          'Last seen in the '+(cNorth?'Northern':'Southern')+' Hemisphere',
-                         'Their capital begins with the letter “'+cInit+'”',
+                         'Their capital starts with '+cInit,
                          'Capital city: '+c.capital ] });
       }
     }
     // ---- pure-skill set 2 (timing/aim/ears, zero knowledge) ----
     g.push({ kind:'runway', cat:'reflex', type:'reflex', q:'Land on the runway. 3 clean landings' });
-    g.push({ kind:'photosnap', cat:'reflex', type:'reflex', flag:c.flag, q:'Frame '+c.flag+' in the viewfinder. 3 clean shots' });
-    g.push({ kind:'stampit', cat:'reflex', type:'reflex', q:'Stamp the passport. Press when the stamp lines up over the box' });
+    g.push({ kind:'photosnap', cat:'reflex', type:'reflex', flag:c.flag, q:'Get '+c.flag+' in the frame. Take 3 good shots' });
+    g.push({ kind:'stampit', cat:'reflex', type:'reflex', q:'Stamp the passport. Tap when the stamp is over the box' });
     return g;
   }
   // boarding-pass word for Type The Ticket: capital (fallback: country name),
@@ -1679,7 +1679,7 @@
     function bez(t){ var u=1-t; return [u*u*P0[0]+2*u*t*C[0]+t*t*P1[0], u*u*P0[1]+2*u*t*C[1]+t*t*P1[1]]; }
     app.innerHTML = topbar() + hud()
       + '<div class="card" id="flycard" style="cursor:pointer">'
-        + '<div class="stagetype">✈️ In transit · Stage '+S.round+'</div>'
+        + '<div class="stagetype">✈️ Flying · Stage '+S.round+'</div>'
         + '<svg id="flysvg" viewBox="0 0 360 180" preserveAspectRatio="none" style="width:100%;height:auto;aspect-ratio:2/1;'
           + 'background:radial-gradient(120% 120% at 50% 35%,rgba(26,74,134,.55),rgba(10,8,26,.95));border:1px solid var(--cardb);border-radius:12px">'
           + worldSVGInner()
@@ -1688,7 +1688,7 @@
           + '<circle id="flydest" cx="'+P1[0]+'" cy="'+P1[1]+'" r="0" fill="none" stroke="#EE5A44" stroke-width="1.4"/>'
           + '<text id="flyplane" x="'+P0[0]+'" y="'+P0[1]+'" font-size="15" text-anchor="middle" dominant-baseline="central">✈️</text>'
         + '</svg>'
-        + '<div class="ohint" id="flyhint" style="margin-top:10px">✈️ <b>Tap to boost</b> your flight. Mash to get there faster.</div>'
+        + '<div class="ohint" id="flyhint" style="margin-top:10px">✈️ <b>Tap the screen</b> to fly faster.</div>'
       + '</div>' + foot();
     var arc=$('flyarc'), plane=$('flyplane'), dest=$('flydest'), card=$('flycard');
     var prog=0, boost=0, last=performance.now();
@@ -1726,11 +1726,11 @@
           + (d.final?'<div><span class="final-badge">🏁 The Final · '+esc(d.landmark||'the finish line')+'</span></div>':'')
         + '</div>'
         + '<p class="lede" style="text-align:center">'
-          + (d.final ? 'The last '+aliveTeams().length+' teams race to the finish. Fastest effective time wins the whole race.'
-                     : 'All '+aliveTeams().length+' remaining teams draw the same destination.')
+          + (d.final ? 'The last '+aliveTeams().length+' teams race to the finish. Fastest time wins it all.'
+                     : 'All '+aliveTeams().length+' teams still in the race land here.')
         + '</p>'
-        + (coopTurn() ? '<div class="coopturn">👤 <b>'+esc(coopTurn())+'</b>, you\'re up this Stage. Hand over the device</div>' : '')
-        + '<button class="btn globe" id="rev" style="margin-top:6px">Reveal the challenge ›</button>'
+        + (coopTurn() ? '<div class="coopturn">👤 <b>'+esc(coopTurn())+'</b>, you\'re up this Stage. Pass the phone.</div>' : '')
+        + '<button class="btn globe" id="rev" style="margin-top:6px">See the challenge ›</button>'
       + '</div>' + foot();
     $('rev').onclick=function(){ S.phase='choice'; renderStage(); };
     renderAcct();
@@ -1739,7 +1739,7 @@
   /* --- phase: challenge choice (Split Path / Solo Call) --- */
   function viewChoice(){
     var html = topbar() + hud() + '<div class="card">'
-      + '<div class="stagetype">'+(S.stageType==='split'?'🍴 Split Path · choose your task':'📢 Solo Call · one task, no choice')+'</div>'
+      + '<div class="stagetype">'+(S.stageType==='split'?'🍴 Split Path · pick one':'📢 Solo Call · everyone plays this one')+'</div>'
       + '<div class="choice">';
     S.offered.forEach(function(t,i){
       var refl = !!REFLEX_KINDS[taskKind(t)];
@@ -1752,7 +1752,7 @@
     // Skip Pass (GDD §2, Fast Forward analog): once per race, take the field median
     // time. Offline only: online timing is server-authoritative.
     if(!S.skipUsed && !isFinal() && !onlineActive()){
-      html += '<div class="skiprow"><div class="sx"><b>⏩ Skip Pass</b>: skip this task once per race and check in at the field\'s median time. Safe, but you won\'t gain ground.</div>'
+      html += '<div class="skiprow"><div class="sx"><b>⏩ Skip Pass</b>: skip this one. You can use it once per race. You get the average time, so it\'s safe but you won\'t move up.</div>'
         + '<button class="btn ghost sm" id="skip" style="flex:0 0 auto">Use</button></div>';
     }
     html += '</div>' + foot();
@@ -1771,7 +1771,7 @@
       case 'mcq':      return t.q;
       case 'scramble': return 'Unscramble the word: '+t.hint;
       case 'sequence': return t.prompt+'. Repeat it back';
-      case 'reaction': return 'Signal Sprint: tap on GO, hold on STOP';
+      case 'reaction': return 'Signal Sprint: tap on GO, never on STOP';
       case 'order':    return t.q;
       default:         return t.q || t.prompt || 'Complete the task';
     }
@@ -1869,7 +1869,7 @@
     var raw = (performance.now()-S.play.start)/1000;
     // solve stinger, the same payoff on all 31 kinds: word + burst + a clean-solve bonus line
     var cx=window.innerWidth/2, cy=window.innerHeight*0.38;
-    flyup(S.play.misses? 'SOLVED' : 'CLEAN SOLVE 🎯', 'big'+(S.play.misses?'':' gold'), cx, cy);
+    flyup(S.play.misses? 'SOLVED' : 'PERFECT 🎯', 'big'+(S.play.misses?'':' gold'), cx, cy);
     FX.burst(cx, cy, S.play.misses?40:80, Math.PI*1.7, 8); vibe(S.play.misses?14:[12,30,18]);
     if((S.play.combo||0)>=3) flyup('×'+S.play.combo+' combo!', 'combo gold', cx, cy+40);
     resolveRound(raw, S.play.misses, false);
@@ -1910,7 +1910,7 @@
         + flagImg(t.flag,{fill:true,fit:'cover'})
         + tiles
       + '</div>'
-      + '<div class="ohint" id="frhint" style="margin-bottom:10px">Name the flag. Each wrong guess reveals another piece.</div>'
+      + '<div class="ohint" id="frhint" style="margin-bottom:10px">Name the flag. Every wrong guess shows another piece.</div>'
       + '<div class="opts">'+opts+'</div>';
     frReveal();   // one piece free
     Array.prototype.forEach.call(document.querySelectorAll('.opt'), function(b){
@@ -2037,7 +2037,7 @@
     // (no "all-STOP draw = ~1s" exploit).
     S.rx={ go:0, need:5, sum:0, state:'idle', armAt:0, msg:'', sub:'', to:null };
     stopTimer();   // reaction measures its own summed reaction time, not wall clock
-    $('mg').innerHTML='<div class="prompt" style="text-align:center">Signal Sprint: tap on GO, hold on STOP</div>'
+    $('mg').innerHTML='<div class="prompt" style="text-align:center">Signal Sprint: tap on GO, never on STOP</div>'
       + '<div class="reps" id="rxreps"></div>'
       + '<div class="reactbox idle" id="rbox"><div class="big" id="rxbig"></div><div class="sm" id="rxsm"></div></div>';
     fastTap($('rbox'), function(){ reactTap(t); });
@@ -2048,7 +2048,7 @@
     var e=$('rxreps');
     if(e){ var reps=''; for(var i=0;i<S.rx.need;i++){ reps+='<div class="rep'+(i<S.rx.go?' done':'')+'"></div>'; } e.innerHTML=reps; }
     var st=S.rx.state, cls, big, sm;
-    if(st==='idle'){ cls='idle'; big='Ready?'; sm='Tap to start. Then tap on 🟢 GO, but never on 🛑 STOP.'; }
+    if(st==='idle'){ cls='idle'; big='Ready?'; sm='Tap to start. Tap on 🟢 GO. Never tap on 🛑 STOP.'; }
     else if(st==='wait'){ cls='wait'; big='Wait…'; sm='Watch for the signal.'; }
     else if(st==='go'){ cls='go'; big='GO! TAP!'; sm='Now!'; }
     else if(st==='stop'){ cls='stop'; big='🛑 STOP'; sm="Don't tap!"; }
@@ -2188,7 +2188,7 @@
       + '<text x="'+o[0]+'" y="'+(o[1]-6)+'" font-size="7" font-weight="800" text-anchor="middle" fill="#EE5A44">START</text>'
       + dots
       + '</svg>'
-      + '<div class="ohint" id="fphint" style="margin-top:10px">Tap the nearest stop first, then work outward.</div>';
+      + '<div class="ohint" id="fphint" style="margin-top:10px">Tap the closest stop first, then the next closest.</div>';
     each('#fpmap .fpstop', function(g){ g.addEventListener('click', function(){ fpTap(g); }); });
   }
   function fpTap(g){
@@ -2379,7 +2379,7 @@
         + '<div style="position:absolute;bottom:60px;left:50%;transform:translateX(-50%);font-size:24px;pointer-events:none">🧍</div>'
         + '<div id="hrcue" style="position:absolute;bottom:96px;left:50%;transform:translateX(-50%);font-size:13px;font-weight:900;color:var(--ok);opacity:0;transition:opacity .1s;pointer-events:none">🖐️ NOW!</div>'
       + '</div>'
-      + '<div class="ohint">Tap <b>anywhere</b> the moment your <b>🚕 taxi</b> reaches the curb, not the traffic.</div>';
+      + '<div class="ohint">Tap <b>anywhere</b> when your <b>🚕 taxi</b> hits the curb. Ignore the other cars.</div>';
     hrStatus(); hrSpawn();
     fastTap($('hrfield'), hrTap);
     S.hr.last=performance.now();
@@ -2456,7 +2456,7 @@
         + '<div style="position:absolute;left:7px;top:5px;font-size:10px;font-weight:800;color:var(--ink);mix-blend-mode:difference">SPEED</div>'
       + '</div>'
       + '<div id="tomsg" style="text-align:center;margin:8px 0;min-height:18px;font-weight:700;color:var(--mut)">Throttle up…</div>'
-      + '<button class="btn globe" id="tobtn" style="width:100%">🛫 Rotate. Pull up!</button>';
+      + '<button class="btn globe" id="tobtn" style="width:100%">🛫 Pull up</button>';
     var bd=$('toband'); if(bd){ bd.style.left=((S.to.bandC-S.to.bandW/2)*100)+'%'; bd.style.width=(S.to.bandW*100)+'%'; }
     fastTap($('tobtn'), toRotate);
     S.to.last=performance.now();
@@ -2477,19 +2477,19 @@
     if(s>=lo && s<=hi){
       S.to.done2=true; sfx('correct'); vibe([12,26,12]);
       var pl=$('toplane'); if(pl){ pl.style.transition='left .55s ease-in,bottom .55s ease-in,transform .55s'; pl.style.left='88%'; pl.style.bottom='78%'; pl.style.transform='translate(-50%,0) rotate(-20deg)'; }
-      var m=$('tomsg'); if(m){ m.textContent='🛫 Clean rotation. Wheels up!'; m.style.color='var(--ok)'; }
+      var m=$('tomsg'); if(m){ m.textContent='🛫 Nice takeoff.'; m.style.color='var(--ok)'; }
       var f=$('tofield'); if(f) flash(f);
       S.play.done=true; setTimeout(finishTask,760);
     } else {
       S.play.misses++; showMiss();
-      var m2=$('tomsg'); if(m2) m2.textContent = s<lo ? 'Not enough speed. Hold the runway!' : 'Rotating late. Pull up!';
+      var m2=$('tomsg'); if(m2) m2.textContent = s<lo ? 'Not fast enough yet. Wait for it.' : 'Too late. Pull up now.';
       var f2=$('tofield'); if(f2) retrig(f2,'hitflash');
     }
   }
   function toOverrun(){
     if(S.to.done2) return; S.to.done2=true;
     S.play.misses++; S.play.misses++; showMiss();
-    var m=$('tomsg'); if(m){ m.textContent='💥 Overran the runway. Takeoff aborted!'; m.style.color='var(--bad)'; }
+    var m=$('tomsg'); if(m){ m.textContent='💥 You ran out of runway.'; m.style.color='var(--bad)'; }
     var f=$('tofield'); if(f) retrig(f,'hitflash');
     S.play.done=true; setTimeout(finishTask,820);
   }
@@ -2539,7 +2539,7 @@
   function kimAsk(t){
     var opts=S.km.opts.map(function(f){ return '<div class="seqtile kmo" data-f="'+f+'" style="width:58px;height:58px;font-size:30px">'+f+'</div>'; }).join('');
     $('mg').innerHTML='<div class="seqstatus">Lineup <b>'+(S.km.round+1)+'</b>/'+S.km.rounds+'</div>'
-      + '<div class="prompt" style="text-align:center">Which flag was <b style="color:var(--bad)">NOT</b> in the lineup?</div>'
+      + '<div class="prompt" style="text-align:center">Which flag <b style="color:var(--bad)">wasn\'t</b> there?</div>'
       + '<div class="seqgrid swap-in" style="margin-top:8px">'+opts+'</div>';
     each('.kmo', function(b){ b.onclick=function(){ kimTap(t,b); }; });
   }
@@ -2565,7 +2565,7 @@
       + '</div>'
       + '<div class="slot" id="tkslots">'+tkSlots()+'</div>'
       + '<div class="bank">'+letters.map(function(l,i){ return '<div class="ltile tkt" data-i="'+i+'">'+esc(l)+'</div>'; }).join('')+'</div>'
-      + (S.tk.fade?'<div class="ohint">The ink fades fast. Read it while you can!</div>':'');
+      + (S.tk.fade?'<div class="ohint">The ink fades fast. Read it quick.</div>':'');
     each('.tkt', function(b){ b.onclick=function(){ tkTap(+b.getAttribute('data-i'), b); }; });
     if(S.tk.fade) setTimeout(function(){ var w=$('tkword'); if(w && !S.play.done) w.style.opacity='0.05'; }, 1500);
   }
@@ -2801,7 +2801,7 @@
       + '<div class="prompt" style="text-align:center">'+esc(t.q)+'</div>'
       + '<div class="cprose">'+compassRose()+'<div class="cphub" id="cphub"></div></div>'
       + '<div id="cptgt" style="text-align:center;font-size:18px;font-weight:800;margin-top:10px"></div>'
-      + '<div class="ohint" style="margin-top:4px">Tap the bearing you would fly.</div>';
+      + '<div class="ohint" style="margin-top:4px">Tap the direction you\'d fly.</div>';
     each('.cpw', function(p){ p.onclick=function(){ cpAns(t, p.getAttribute('data-d'), p); }; });
     cpPaint(t);
   }
@@ -2872,7 +2872,7 @@
            cruise:0.9, cspeed:0.155+0.05*d, drate:0.42+0.12*d,
            z0:0.54, z1:0.86, flareAlt:0, slam:false, done2:false, last:performance.now() };
     $('mg').innerHTML='<div class="seqstatus" id="rwst">✈️ Cleared to land</div>'
-      + '<div class="prompt" style="text-align:center;margin-bottom:8px">Bring her down smooth. <b>Descend</b>, then <b>flare</b> to touch down gently.</div>'
+      + '<div class="prompt" style="text-align:center;margin-bottom:8px">Bring it in smooth. Hit <b>Descend</b>, then hit <b>Flare</b> right before you touch down.</div>'
       + '<div id="rwfield" style="position:relative;height:'+RW.H+'px;border-radius:14px;border:1px solid var(--cardb);overflow:hidden;touch-action:manipulation;'
           + 'background:linear-gradient(180deg,#20386e 0%,#3f63ad 34%,#89a7cf 60%,#b9cfe0 66%)">'
         + '<svg viewBox="0 0 360 210" preserveAspectRatio="none" style="position:absolute;inset:0;width:100%;height:100%">'
@@ -2926,17 +2926,17 @@
     if(S.play.done || S.rw.done2) return;
     var r=S.rw, b=$('rwbtn');
     if(r.phase==='cruise'){ r.phase='descent'; sfx('tap'); if(b) b.textContent='🛬 Flare / Touchdown';
-      var m=$('rwmsg'); if(m){ m.textContent='Descending. Ease her onto the numbers.'; } }
+      var m=$('rwmsg'); if(m){ m.textContent='Going down. Get ready to flare.'; } }
     else if(r.phase==='descent'){ r.phase='flare'; r.flareAlt=r.alt; sfx('tap'); if(b){ b.disabled=true; b.style.opacity='.5'; } }
   }
-  function rwOvershoot(){ if(S.rw.done2) return; S.rw.done2=true; rwResult(false,'✈️ Overshot the runway. Go around!',2); }
+  function rwOvershoot(){ if(S.rw.done2) return; S.rw.done2=true; rwResult(false,'✈️ Missed the runway. Try again.',2); }
   function rwTouchdown(){
     if(S.rw.done2) return; S.rw.done2=true;
     var r=S.rw, xc=r.x, inZone = xc>=r.z0-0.03 && xc<=r.z1+0.03;
     rwPlace();
-    if(r.slam || r.flareAlt>0.34){ rwResult(false, r.slam?'💥 Slammed it. You never flared!':'💥 Hard landing. Came in too fast!', inZone?2:3); }
-    else if(!inZone){ rwResult(false, xc<r.z0?'⬇️ Landed short of the runway':'➡️ Floated past the zone', 2); }
-    else if(r.flareAlt<=0.17){ rwResult(true,'🛬 Greased it! Textbook landing.',0,true); }
+    if(r.slam || r.flareAlt>0.34){ rwResult(false, r.slam?'💥 Hard landing. You never flared.':'💥 Hard landing. Too fast.', inZone?2:3); }
+    else if(!inZone){ rwResult(false, xc<r.z0?'⬇️ Landed short of the runway':'➡️ Went past the landing zone', 2); }
+    else if(r.flareAlt<=0.17){ rwResult(true,'🛬 Perfect landing.',0,true); }
     else { rwResult(true,'🛬 Smooth landing.',0); }
   }
   function rwResult(ok, msg, miss, perfect){
@@ -3050,8 +3050,8 @@
       r.lockX=r.pos; r.alignErr=Math.abs(r.pos-r.tx); r.phase='press';
       var st=$('ststamp'); if(st){ st.style.left=(r.lockX*100)+'%'; retrig(st,'press'); }
       var gg=$('stgauge'); if(gg) gg.style.display='block';
-      var stt=$('stst'); if(stt) stt.innerHTML='Step 2 · press with the right force';
-      var h=$('sthint'); if(h) h.textContent='Tap when the needle is in the green band.';
+      var stt=$('stst'); if(stt) stt.innerHTML='Step 2 · press it just right';
+      var h=$('sthint'); if(h) h.textContent='Tap when the needle is in the green.';
       sfx('tap');
       return;
     }
@@ -3073,9 +3073,9 @@
       field.appendChild(im); popIn(im);
     }
     var stt=$('stst'), h=$('sthint');
-    if(crisp){ sfx('correct'); vibe([12,24,12]); if(stt) stt.innerHTML='🛂 Crisp stamp!'; if(h){ h.textContent='Perfectly aligned and inked.'; h.style.color='var(--ok)'; } }
+    if(crisp){ sfx('correct'); vibe([12,24,12]); if(stt) stt.innerHTML='🛂 Nice stamp!'; if(h){ h.textContent='Perfect stamp.'; h.style.color='var(--ok)'; } }
     else {
-      var why = !aligned ? 'Off the box. Smudged.' : (r.press<0.6 ? 'Too light. A faint half-stamp.' : 'Too hard. An over-inked blot.');
+      var why = !aligned ? 'Off the box. Smudged.' : (r.press<0.6 ? 'Too light. Barely shows.' : 'Too hard. Ink everywhere.');
       S.play.misses++; if(!aligned && !pressGood) S.play.misses++;   // both wrong = 2
       showMiss(); if(stt) stt.innerHTML='Smudged'; if(h){ h.textContent=why; h.style.color='var(--bad)'; }
     }
@@ -3192,7 +3192,7 @@
     $('mg').innerHTML='<div class="prompt" style="text-align:center">'+esc(t.q)+'</div>'
       + '<svg id="ghmap" viewBox="0 0 360 180" preserveAspectRatio="none" style="width:100%;height:auto;aspect-ratio:2/1;background:radial-gradient(120% 120% at 50% 40%,rgba(26,74,134,.5),rgba(10,8,26,.92));border:1px solid var(--cardb);border-radius:12px;touch-action:manipulation">'
       + worldSVGInner() + dots + '</svg>'
-      + '<div id="ghread" style="text-align:center;margin-top:10px;font-weight:700;min-height:22px">Tap any dot to take a heat reading.</div>';
+      + '<div id="ghread" style="text-align:center;margin-top:10px;font-weight:700;min-height:22px">Tap any dot to see how warm you are.</div>';
     each('.ghpin', function(g){ g.addEventListener('click', function(){ var dot=g.querySelector('.ghdot'); ghTap(t, +g.getAttribute('data-i'), dot); }); });
   }
   function ghHeat(d){
@@ -3215,7 +3215,7 @@
         + '<animate attributeName="r" from="3" to="18" dur="0.7s"/><animate attributeName="opacity" from="1" to="0" dur="0.7s"/></circle>');
       var extra=Math.max(0, S.gh.guesses - S.gh.par);
       S.play.misses=Math.min(4, extra);
-      var r=$('ghread'); if(r) r.innerHTML='<b>'+p.flag+' '+esc(p.name)+'</b> · found it in '+S.gh.guesses+' reading'+(S.gh.guesses>1?'s':'')+(S.play.misses?' · +'+S.play.misses+' miss'+(S.play.misses>1?'es':''):' · clean 🎯');
+      var r=$('ghread'); if(r) r.innerHTML='<b>'+p.flag+' '+esc(p.name)+'</b> · found it in '+S.gh.guesses+' '+(S.gh.guesses>1?'tries':'try')+(S.play.misses?' · +'+S.play.misses+' miss'+(S.play.misses>1?'es':''):' · clean 🎯');
       showMiss();
       setTimeout(function(){ finishTask(); }, 950);
       return;
@@ -3242,7 +3242,7 @@
       + '<div id="dtfile" style="background:var(--card);border:1px dashed var(--cardb);border-radius:12px;padding:12px 14px;margin-bottom:12px">'
         + '<div style="font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--mut);margin-bottom:8px">🕵 Dossier · Case File</div>'
         + '<div id="dtclues"></div></div>'
-      + '<button class="btn ghost" id="dtmore" style="width:100%;margin-bottom:12px">Reveal another clue 🔍</button>'
+      + '<button class="btn ghost" id="dtmore" style="width:100%;margin-bottom:12px">Show another clue 🔍</button>'
       + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">'+sus+'</div>';
     each('.dtsus', function(b){ b.addEventListener('click', function(){ dtAccuse(t, +b.getAttribute('data-i'), b); }); });
     var more=$('dtmore'); if(more) more.addEventListener('click', function(){ dtReveal(t); });
@@ -3255,7 +3255,7 @@
     }).join('');
     var last=box.lastElementChild; if(last) swapIn(last);
     var more=$('dtmore');
-    if(more && S.dt.shown>=t.clues.length){ more.disabled=true; more.textContent='All clues revealed'; more.style.opacity='.5'; }
+    if(more && S.dt.shown>=t.clues.length){ more.disabled=true; more.textContent='That\'s all the clues'; more.style.opacity='.5'; }
   }
   function dtReveal(t){
     if(S.dt.done || S.dt.shown>=t.clues.length) return;
@@ -3330,7 +3330,7 @@
       mapillaryNearby(t.ll, function(loc,err){
         if(!loc) return fail(err||'no imagery');
         log('   ✓ found image '+String(loc.id).slice(0,10)+'…');
-        $('mg').innerHTML='<div class="prompt" style="text-align:center;font-size:15px">Look around this street. Then pin where in the world you are.</div>'
+        $('mg').innerHTML='<div class="prompt" style="text-align:center;font-size:15px">Look around. Then guess where in the world you are.</div>'
           + '<div id="pano" style="width:100%;height:250px;border-radius:12px;overflow:hidden;border:1px solid var(--cardb);background:#000"></div>'
           + '<div style="text-align:center;font-size:10.5px;color:var(--mut);margin-top:5px">Street imagery © <a href="https://www.mapillary.com" target="_blank" rel="noopener" style="color:var(--mut)">Mapillary</a> contributors, CC BY-SA</div>'
           + '<button class="btn globe" id="ssguess" style="margin-top:10px">📍 Make my guess ›</button>';
@@ -3495,7 +3495,7 @@
           + '<div class="runtmr" id="rtmr"></div>'
           + '<div class="runhint" id="rhint">Touching down…</div>'
         + '</div>'
-        + '<div class="ohint" style="margin-top:10px">Tap fast to sprint, then hit the mat flying <b>your destination\'s flag</b>, from memory. Wrong mat +2.5s.</div>'
+        + '<div class="ohint" style="margin-top:10px">Tap fast to run. Then tap the mat with <b>your country\'s flag</b>. Wrong mat costs 2.5s.</div>'
       + '</div>' + foot();
 
     // ---- run loop ----
@@ -3516,7 +3516,7 @@
       if(st.done||!$('runscene')) return;
       st.state='run'; st.t0=performance.now(); st.last=performance.now();
       scene.setAttribute('data-state','run'); setVB(0);
-      var h=$('rhint'); if(h) h.textContent='Tap fast to sprint →';
+      var h=$('rhint'); if(h) h.textContent='Tap fast to run →';
     }
     if(reduceMotion()) beginRun();
     else{
@@ -3547,7 +3547,7 @@
         setTimeout(function(){ finishRunPhase(runT); }, 430);
       } else {
         st.pen+=2.5; sfx('wrong'); vibe([16,40,16]); retrig(scene,'runshake');
-        var h=$('rhint'); if(h) h.innerHTML='Wrong mat! +2.5s. Which flag was your destination?';
+        var h=$('rhint'); if(h) h.innerHTML='Wrong mat. That\'s 2.5s. Which flag is yours?';
       }
     }
     (function loop(){
@@ -3558,7 +3558,7 @@
         if(st.x>=PLAZA){
           st.x=PLAZA; st.v=0; st.state='pick'; scene.setAttribute('data-state','pick');
           each('#runscene .gate',function(g){ g.classList.add('pick'); });
-          var h=$('rhint'); if(h) h.innerHTML='You\'re here! Tap the mat flying your destination\'s flag.';
+          var h=$('rhint'); if(h) h.innerHTML='You made it. Tap the mat with your country\'s flag.';
         }
         setVB(Math.max(0,Math.min(W-VIEW, st.x-130)));
         paintRunner();
@@ -3581,12 +3581,12 @@
     if(you<0 || n<2) return '';   // no comparable field yet (duo pre-combine), skip the bar
     var beat=n-1-you;
     var med=field.length?field[Math.floor(field.length/2)].eff:null, st=statsDefault(), chips='';
-    if(!r.skipped && r.misses===0) chips+='<span class="good">🎯 Clean solve</span>';
+    if(!r.skipped && r.misses===0) chips+='<span class="good">🎯 No misses</span>';
     if(S.streak>=2) chips+='<span class="hot">🔥 '+S.streak+'-stage streak</span>';
     if(!r.skipped && r.misses===0 && st.fastestStage && Math.abs(st.fastestStage-r.act)<0.001) chips+='<span class="gold">⚡ Personal best</span>';
     if(S._shieldSaved) chips+='<span class="good">🛡️ Shield save</span>';
-    if(med!=null && r.eff<med) chips+='<span class="good">'+fmtTime(med-r.eff)+'s ahead of median</span>';
-    if(you===0 && n>1) chips+='<span class="gold">🥇 Fastest in the field</span>';
+    if(med!=null && r.eff<med) chips+='<span class="good">'+fmtTime(med-r.eff)+'s faster than most</span>';
+    if(you===0 && n>1) chips+='<span class="gold">🥇 Fastest team</span>';
     var pct=n>1?Math.round(beat/(n-1)*100):100;
     return (chips?'<div class="verdict">'+chips+'</div>':'')
       + '<div class="fieldbar"><div class="lbl"><span>Field</span><b>Beat '+beat+' of '+(n-1)+' teams</b></div>'
@@ -3597,19 +3597,19 @@
     var r=S.lastResult;
     var body;
     if(r.skipped){
-      body = '<p class="lede" style="text-align:center">⏩ <b>Skip Pass used.</b> You checked in at the field\'s median time.</p>';
+      body = '<p class="lede" style="text-align:center">⏩ <b>Skip Pass used.</b> You got the average time.</p>';
     } else {
       body = '<div class="breakdown"><span>Challenge <b>'+fmtTime(r.act!=null?r.act:r.raw)+'s</b></span>'
         + (r.runT?'<span>City Run <b>'+fmtTime(r.runT)+'s</b></span>':'')
         + '<span>Misses <b>'+r.misses+'</b> (+'+(r.misses*r.pen)+'s)</span></div>'
-        + (S._shieldSaved ? '<div class="muted" style="font-size:12px;margin-top:8px;color:var(--ok)">🛡️ Shield forgave a miss</div>' : '');
+        + (S._shieldSaved ? '<div class="muted" style="font-size:12px;margin-top:8px;color:var(--ok)">🛡️ Shield saved you a miss</div>' : '');
     }
     S._shieldSaved=false;
     app.innerHTML = topbar() + hud()
       + '<div class="card center">'
         + '<div class="stagetype">✅ Checkpoint</div>'
         + '<div class="bigtime" id="bigt" style="margin-top:6px">'+fmtTime(r.eff)+'<span class="u">s</span></div>'
-        + '<div class="muted" style="font-size:12px;margin-top:4px">your effective time</div>'
+        + '<div class="muted" style="font-size:12px;margin-top:4px">your time</div>'
         + body
         + checkpointVerdict(r)
         + '<button class="btn globe" id="lb" style="margin-top:16px">See the leaderboard ›</button>'
@@ -3658,12 +3658,12 @@
     if(final){
       var youWon = ranked[0].id==='you';
       banner = youWon
-        ? '<div class="banner win"><h2>🏆 You win RunTheGlobe!</h2><p>First across the finish at '+esc(S.dest.landmark||S.dest.name)+'. The whole race is yours.</p></div>'
-        : '<div class="banner grounded"><h2>So close.</h2><p>You finished #'+youRank+' in the Final at '+esc(S.dest.name)+'. '+esc(ranked[0].name)+' took the race.</p></div>';
+        ? '<div class="banner win"><h2>🏆 You won RunTheGlobe!</h2><p>You got to '+esc(S.dest.landmark||S.dest.name)+' first. The whole race is yours.</p></div>'
+        : '<div class="banner grounded"><h2>So close.</h2><p>You finished #'+youRank+' in the Final at '+esc(S.dest.name)+'. '+esc(ranked[0].name)+' won it.</p></div>';
     } else if(groundedTeam.id==='you'){
-      banner = '<div class="banner grounded"><h2>✈️ You\'ve been Grounded</h2><p>Slowest at '+esc(S.dest.name)+' this Stage. Your race ends here.</p></div>';
+      banner = '<div class="banner grounded"><h2>✈️ You got Grounded</h2><p>Slowest at '+esc(S.dest.name)+' this Stage. You\'re out.</p></div>';
     } else {
-      banner = '<div class="banner safe"><h2>You advance ›</h2><p>#'+youRank+' of '+ranked.length+' at '+esc(S.dest.name)+'. '+esc(groundedTeam.name)+' is Grounded.</p></div>';
+      banner = '<div class="banner safe"><h2>You\'re still in ›</h2><p>#'+youRank+' of '+ranked.length+' at '+esc(S.dest.name)+'. '+esc(groundedTeam.name)+' got Grounded.</p></div>';
     }
 
     app.innerHTML = topbar() + hud()
@@ -3684,8 +3684,8 @@
       $('again').onclick=function(){ S.screen='setup'; render(); };
       $('share').onclick=function(){
         shareResult(youWon2
-          ? ('🌍 I just WON RunTheGlobe! First across the finish at '+(S.dest.landmark||S.dest.name)+', beating '+(FIELD_SIZE-1)+' teams! Play at runthe.gg/globe')
-          : ('🌍 I finished #'+youRank+' of '+FIELD_SIZE+' in RunTheGlobe\'s Final at '+S.dest.name+'. Can you do better? runthe.gg/globe'));
+          ? ('🌍 I just won RunTheGlobe. Beat '+(FIELD_SIZE-1)+' teams to '+(S.dest.landmark||S.dest.name)+'. Play at runthe.gg/globe')
+          : ('🌍 I finished #'+youRank+' of '+FIELD_SIZE+' in RunTheGlobe\'s Final at '+S.dest.name+'. Think you can beat that? runthe.gg/globe'));
       };
     } else if(groundedTeam.id==='you'){
       sfx('lose');
@@ -3798,13 +3798,13 @@
     var back='<button class="btn ghost sm" id="oback" style="flex:0 0 auto;margin-top:14px">‹ Home</button>';
     if(!sbReady()){
       app.innerHTML = topbar() + '<div class="card center"><h2>Team Race is offline</h2>'
-        + '<p class="lede">Couldn\'t reach the account service. Check your connection and reload.</p>'+back+'</div>' + foot();
+        + '<p class="lede">Can\'t connect right now. Check your internet and reload.</p>'+back+'</div>' + foot();
       $('oback').onclick=function(){ S.screen='home'; render(); }; return;
     }
     if(!acct.user){
       app.innerHTML = topbar() + '<div class="card center">'
         + '<div style="font-size:44px">🔐</div><h2 style="margin-top:6px">Sign in to team up</h2>'
-        + '<p class="lede">Two-device team races use your free RunThe.GG account so your team is yours. '
+        + '<p class="lede">Team races on two phones need a free RunThe.GG account. '
         + 'Sign in on the home site, then come back here.</p>'
         + '<a class="btn globe" href="/" style="margin-top:14px">Go to RunThe.GG to sign in</a>'+back+'</div>' + foot();
       $('oback').onclick=function(){ S.screen='home'; render(); }; renderAcct(); return;
@@ -3816,7 +3816,7 @@
         + '<button class="btn ghost sm" id="odrop" style="margin-top:8px">Forget it</button></div>' : '';
     app.innerHTML = topbar()
       + '<div class="card"><h2 style="font-size:22px">Team Race · Two Devices <span style="font-size:12px;color:var(--globe)">Beta</span></h2>'
-        + '<p class="lede">You and a partner race the field <b>as one team</b> from separate devices. Every Stage you both play, and your times add together. Start a team and share the code, or join your partner\'s.</p>'
+        + '<p class="lede">You and a friend race as <b>one team</b> on your own phones. Every Stage you both play, and your times get added up. Start a team and send the code, or join theirs.</p>'
         + '<div style="margin-top:14px"><label class="fld" for="otn">Team name</label>'
         + '<input type="text" id="otn" maxlength="18" placeholder="'+esc(acct.username?acct.username+' & co':'Our Team')+'" value="'+esc(S.teamName||'')+'" /></div>'
         + '<button class="btn globe" id="ocreate" style="margin-top:12px">Start a team</button>'
@@ -3834,18 +3834,18 @@
     $('ocreate').onclick=function(){
       var nm=myName(); S.teamName=nm; var b=$('ocreate'); b.disabled=true; b.textContent='Starting…';
       rpc('create_globe_duo',{p_name:nm||'Our Team'}).then(function(r){
-        if(r.error){ toast((r.error&&r.error.message)||'Could not start'); b.disabled=false; b.textContent='Start a team'; return; }
+        if(r.error){ toast((r.error&&r.error.message)||'Couldn\'t start'); b.disabled=false; b.textContent='Start a team'; return; }
         enterDuo(r.data);
-      }).catch(function(){ toast('Could not start'); b.disabled=false; b.textContent='Start a team'; });
+      }).catch(function(){ toast('Couldn\'t start'); b.disabled=false; b.textContent='Start a team'; });
     };
     $('ojoinbtn').onclick=function(){
       var code=($('ojoin').value||'').trim().toUpperCase();
       if(code.length<4){ toast('Enter your partner\'s 5-letter code'); return; }
       var b=$('ojoinbtn'); b.disabled=true; b.textContent='Joining…';
       rpc('join_globe_duo',{p_code:code}).then(function(r){
-        if(r.error){ toast((r.error&&r.error.message)||'Could not join'); b.disabled=false; b.textContent='Join team'; return; }
+        if(r.error){ toast((r.error&&r.error.message)||'Couldn\'t join'); b.disabled=false; b.textContent='Join team'; return; }
         enterDuo(r.data);
-      }).catch(function(){ toast('Could not join'); b.disabled=false; b.textContent='Join team'; });
+      }).catch(function(){ toast('Couldn\'t join'); b.disabled=false; b.textContent='Join team'; });
     };
     renderAcct();
   }
@@ -3937,7 +3937,7 @@
           : '<div class="lbrow"><span class="p">⏳</span><span class="nm" style="color:var(--mut)">Waiting for your partner…</span><span class="tm"></span></div>');
     var ctrl = two
       ? '<button class="btn globe" id="ostart" style="margin-top:14px">Start the race 🌍</button>'
-        + '<p class="muted" style="font-size:12px;text-align:center;margin-top:8px">You face a field of '+FIELD_SIZE+' teams. Each Stage you both play a different challenge. Your times add up.</p>'
+        + '<p class="muted" style="font-size:12px;text-align:center;margin-top:8px">You\'re racing '+FIELD_SIZE+' teams. Each Stage you each play a different challenge. Your times get added up.</p>'
       : '<p class="muted" style="text-align:center;margin-top:14px">Send your partner the code above. When they join, you can start.</p>';
     app.innerHTML = topbar()
       + '<div class="card center"><div class="muted" style="font-size:12px;letter-spacing:.1em;text-transform:uppercase">Your team code</div>'
@@ -4012,7 +4012,7 @@
   function duoViewChoice(){
     var mine=duoMyTaskIndex();
     var html=topbar()+hud()+'<div class="card">'
-      + '<div class="stagetype">🍴 Split Path · you and your partner each take one</div>'
+      + '<div class="stagetype">🍴 Split Path · you each take one</div>'
       + '<div class="choice">';
     S.offered.forEach(function(t,i){
       var refl=!!REFLEX_KINDS[taskKind(t)];
@@ -4026,7 +4026,7 @@
           +'<div style="color:var(--mut);font-weight:800;font-size:12px;margin-top:8px">🔒 '+esc(S.online.partnerName||'Your partner')+'\'s challenge</div></div>';
       }
     });
-    html+='</div><p class="muted" style="font-size:12px;text-align:center;margin-top:8px">Your team\'s Stage time is <b>both challenges added together</b>, so you can\'t both grab the quick one.</p></div>'+foot();
+    html+='</div><p class="muted" style="font-size:12px;text-align:center;margin-top:8px">Your Stage time is <b>both challenges added up</b>. So you can\'t both take the easy one.</p></div>'+foot();
     app.innerHTML=html;
     var mb=document.querySelector('.taskcard[data-i="'+mine+'"]');
     if(mb) mb.onclick=function(){ S.chosen=S.offered[mine]; S.phase='play'; renderStage(); };
@@ -4078,12 +4078,12 @@
     if(final){
       var youWon=ranked[0].id==='you';
       banner = youWon
-        ? '<div class="banner win"><h2>🏆 Your team wins RunTheGlobe!</h2><p>First across the finish at '+esc(S.dest.landmark||S.dest.name)+' with a combined '+fmtTime(teamEff)+'s.</p></div>'
-        : '<div class="banner grounded"><h2>So close.</h2><p>Your team finished #'+youRank+' in the Final. '+esc(ranked[0].name)+' took the race.</p></div>';
+        ? '<div class="banner win"><h2>🏆 Your team won RunTheGlobe!</h2><p>You got to '+esc(S.dest.landmark||S.dest.name)+' first with a combined '+fmtTime(teamEff)+'s.</p></div>'
+        : '<div class="banner grounded"><h2>So close.</h2><p>Your team finished #'+youRank+' in the Final. '+esc(ranked[0].name)+' won it.</p></div>';
     } else if(groundedTeam.id==='you'){
-      banner = '<div class="banner grounded"><h2>✈️ Your team is Grounded</h2><p>Slowest at '+esc(S.dest.name)+' (combined '+fmtTime(teamEff)+'s). Your race ends here.</p></div>';
+      banner = '<div class="banner grounded"><h2>✈️ Your team got Grounded</h2><p>Slowest at '+esc(S.dest.name)+' (combined '+fmtTime(teamEff)+'s). You\'re out.</p></div>';
     } else {
-      banner = '<div class="banner safe"><h2>You advance ›</h2><p>#'+youRank+' of '+ranked.length+' at '+esc(S.dest.name)+' with a combined '+fmtTime(teamEff)+'s. '+esc(groundedTeam.name)+' is Grounded.</p></div>';
+      banner = '<div class="banner safe"><h2>You\'re still in ›</h2><p>#'+youRank+' of '+ranked.length+' at '+esc(S.dest.name)+' with a combined '+fmtTime(teamEff)+'s. '+esc(groundedTeam.name)+' got Grounded.</p></div>';
     }
     app.innerHTML = topbar() + hud()
       + '<div class="card">'+banner
@@ -4097,7 +4097,7 @@
       btns.innerHTML='<div class="btnrow"><button class="btn ghost" id="home">Home</button><button class="btn ghost" id="share">📋 Share</button><button class="btn globe" id="again">New team race 🌍</button></div>';
       $('home').onclick=function(){ duoLeave(); S.screen='home'; render(); };
       $('again').onclick=function(){ duoLeave(); S.screen='online'; render(); };
-      $('share').onclick=function(){ shareResult(youWon2 ? ('🌍 My partner and I just WON a team race in RunTheGlobe! Play at runthe.gg/globe') : ('🌍 My team finished #'+youRank+' in a RunTheGlobe team race. Race us at runthe.gg/globe')); };
+      $('share').onclick=function(){ shareResult(youWon2 ? ('🌍 My partner and I just won a team race in RunTheGlobe. Play at runthe.gg/globe') : ('🌍 My team finished #'+youRank+' in a RunTheGlobe team race. Race us at runthe.gg/globe')); };
     } else if(groundedTeam.id==='you'){
       sfx('lose'); recordRaceEnd(ranked); duoClearSess();
       btns.innerHTML='<div class="btnrow"><button class="btn ghost" id="home">Home</button><button class="btn globe" id="watch">Watch the rest ▶</button></div>';
@@ -4179,8 +4179,8 @@
   /* --------------------------------------------------------------- bootstrap */
   S.screen='home';
   if(!COUNTRIES.length){
-    app.innerHTML = '<div class="wrap"><div class="card center"><h2>Content failed to load</h2>'
-      + '<p class="lede">The country task bank didn\'t load. Refresh to try again.</p></div></div>';
+    app.innerHTML = '<div class="wrap"><div class="card center"><h2>Something didn\'t load</h2>'
+      + '<p class="lede">The game didn\'t load right. Refresh to try again.</p></div></div>';
   } else {
     render();
     initAccount();

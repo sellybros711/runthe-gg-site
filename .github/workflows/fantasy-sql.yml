@@ -115,7 +115,8 @@ jobs:
                  111_nfl_scores \
                  112_fantasy_entrants \
                  113_fantasy_submit_username \
-                 114_fantasy_prizes"
+                 114_fantasy_prizes \
+                 115_fantasy_result_when_ready"
 
           # Checked before anything is concatenated, so a missing file is named
           # rather than producing a chain with a hole in it.
@@ -126,7 +127,7 @@ jobs:
             fi
           done
 
-          # ONE TRANSACTION ACROSS ALL SIX, not one each. Every file after 109
+          # ONE TRANSACTION ACROSS ALL SEVEN, not one each. Every file after 109
           # depends on something an earlier one made, so a partial install is a
           # database whose board is two files behind its tables, and every way
           # that shows up on screen looks like a network problem. All or nothing.
@@ -151,13 +152,13 @@ jobs:
             { echo "begin;"; cat /tmp/chain.sql; echo "rollback;"; } > /tmp/dry.sql
             psql "$SUPABASE_DB_URL" -v ON_ERROR_STOP=1 -f /tmp/dry.sql
             echo ""
-            echo "DRY RUN PASSED. All six files are valid against the live schema."
+            echo "DRY RUN PASSED. All seven files are valid against the live schema."
             echo "Nothing was written. Re-run with 'apply' ticked to commit them."
             echo "The preflight below will still say NO for anything not already deployed."
             exit 0
           fi
 
-          echo "APPLYING all six in one transaction."
+          echo "APPLYING all seven in one transaction."
           psql "$SUPABASE_DB_URL" -v ON_ERROR_STOP=1 --single-transaction -f /tmp/chain.sql
           echo ""
           echo "Applied."
@@ -176,7 +177,7 @@ jobs:
       # used to name did not exist. Writing one would have meant a second report
       # asking a version of the same questions, and 96's `commish_my_tenure` is
       # the standing warning about what two implementations of one answer do.
-      # launch_preflight.sql already carried a row for 109; it carries all six
+      # launch_preflight.sql already carried a row for 109; it carries all seven
       # now, and the rest of the site comes along for free.
       - name: Preflight, and read it back
         if: always()
@@ -187,7 +188,7 @@ jobs:
           set -euo pipefail
           if [ -z "${SUPABASE_DB_URL:-}" ]; then exit 0; fi
 
-          echo "The whole site, not just the six. Read the last column."
+          echo "The whole site, not just the seven. Read the last column."
           echo ""
           psql "$SUPABASE_DB_URL" -f supabase/test/launch_preflight.sql | tee /tmp/pre.txt
           echo ""
@@ -198,13 +199,13 @@ jobs:
           # version of this step came to grep for a string the report has never
           # printed. Field 3 of an unaligned row is exactly "yes" or "NO".
           #
-          # The alternative was a second, narrower query naming the six checks
+          # The alternative was a second, narrower query naming the seven checks
           # again, which is two copies of one answer and would drift the first
           # time either was edited. Reading one file twice is not.
           psql "$SUPABASE_DB_URL" -tA -F '|' -f supabase/test/launch_preflight.sql > /tmp/pre.psv
 
           MISSING=$(awk -F'|' '
-            $1 ~ /^(109_fantasy_challenge|110_fantasy_live|111_nfl_scores|112_fantasy_entrants|113_fantasy_submit_username|114_fantasy_prizes)$/ \
+            $1 ~ /^(109_fantasy_challenge|110_fantasy_live|111_nfl_scores|112_fantasy_entrants|113_fantasy_submit_username|114_fantasy_prizes|115_fantasy_result_when_ready)$/ \
               && $3 == "NO" { printf "%s ", $1 }
           ' /tmp/pre.psv)
 
@@ -221,9 +222,9 @@ jobs:
             exit 1
           fi
 
-          echo "All six fantasy migrations are deployed."
+          echo "All seven fantasy migrations are deployed."
 
-          # A WARNING AND NOT A FAILURE, because this job's subject is the six.
+          # A WARNING AND NOT A FAILURE, because this job's subject is the seven.
           # The rest of the report is about migrations nobody dispatched here,
           # and taking the run red on one of those would teach everybody that
           # this workflow goes red for reasons that are not its business.

@@ -480,6 +480,67 @@ window.GA_ID='G-L29P5MRWKE';
      anything in the flow would shift the label off centre. */
   .hp-tag-pro{background:rgba(226,178,90,.16);border-color:rgba(226,178,90,.5);
     color:#F3DDAE}
+  /* BETA. Not the launch green .mc-new wears, which says a finished mode is new, and not
+     the grey of something broken. Blue is the one colour on this page that is neither a
+     paid thing nor a warning, so it reads as a label rather than as a state. */
+  .hp-tag-beta{background:rgba(59,130,246,.18);border-color:rgba(59,130,246,.55);
+    color:#93c5fd}
+  /* ---- FANTASY CHALLENGE'S DOOR IS A NEON SIGN, AND THE COLOUR IS THE STATE ----
+     RED until a lineup is in, GREEN once one is. That is the only door on this page whose
+     border answers a question rather than naming a mode, and it earns it: the mode is one
+     lineup a week against a clock, so "have I entered this week" is the single thing a
+     returning reader wants off the front page, and it is exactly what a scrolling thumb
+     can read without stopping.
+     A NEON TUBE IS A BRIGHT LINE PLUS THE AIR AROUND IT, so it is three shadows and not
+     one: a tight inner bloom, a wider outer haze, and an inset that lights the glass from
+     behind. One flat glow reads as a focus ring, which is a state this page already uses
+     for something else. */
+  .hp-full.hp-fan{border:1.5px solid var(--fan-l);
+    background:linear-gradient(180deg,var(--fan-bg1),var(--fan-bg2));
+    box-shadow:0 0 6px -1px var(--fan-g1), 0 0 18px -4px var(--fan-g2),
+      inset 0 0 14px -8px var(--fan-g1)}
+  .hp-full.hp-fan{--fan-l:rgba(239,68,68,.82); --fan-g1:rgba(239,68,68,.75);
+    --fan-g2:rgba(239,68,68,.55);
+    --fan-bg1:rgba(42,12,14,.62); --fan-bg2:rgba(26,9,11,.62)}
+  /* IN, AND THE WHOLE SIGN CHANGES COLOUR RATHER THAN GAINING A BADGE. A tick beside a red
+     border would be two marks answering one question, and on a 360px phone the border is
+     the half that is legible at a glance. */
+  .hp-full.hp-fan.hp-fan-in{--fan-l:rgba(34,197,94,.82); --fan-g1:rgba(34,197,94,.7);
+    --fan-g2:rgba(34,197,94,.5);
+    --fan-bg1:rgba(8,38,20,.62); --fan-bg2:rgba(6,26,14,.62)}
+  .hp-full.hp-fan .hp-full-name{color:#ffe8e8}
+  .hp-full.hp-fan.hp-fan-in .hp-full-name{color:#dcfce7}
+  .hp-full.hp-fan .hp-full-sub{color:rgba(255,226,226,.72)}
+  .hp-full.hp-fan.hp-fan-in .hp-full-sub{color:rgba(220,252,231,.72)}
+  .hp-full.hp-fan:hover{--fan-g1:rgba(239,68,68,.95); --fan-g2:rgba(239,68,68,.7)}
+  .hp-full.hp-fan.hp-fan-in:hover{--fan-g1:rgba(34,197,94,.9); --fan-g2:rgba(34,197,94,.65)}
+  /* THE TUBE BREATHES, AND ONLY THE GLOW MOVES. Animating the border colour makes the line
+     itself flicker, which reads as a failing sign rather than a lit one, and animating the
+     box-shadow's SPREAD would relayout nothing but does repaint the whole card. This rides
+     on opacity through a pseudo element, so it is a compositor job.
+     4.5s AND SHALLOW. A neon sign hums; it does not blink. Anything quicker than about
+     three seconds on a control this size reads as a notification demanding a tap. */
+  .hp-full.hp-fan{position:relative}
+  .hp-full.hp-fan::after{content:'';position:absolute;inset:-1px;border-radius:inherit;
+    pointer-events:none;box-shadow:0 0 12px -2px var(--fan-g1), 0 0 26px -6px var(--fan-g2);
+    opacity:.45}
+  @media (prefers-reduced-motion:no-preference){
+    .hp-full.hp-fan::after{animation:fanhum 4.5s ease-in-out infinite}
+  }
+  @keyframes fanhum{0%,100%{opacity:.30} 50%{opacity:.85}}
+  /* ---- AND THE SHUT VERSION OF IT ----
+     The border stays RED rather than going gold, because red already means "no lineup in"
+     and that is true of a guest: they have not entered either. A third colour would be a
+     third thing to learn for a state the padlock and the sub line already name.
+     FULLY PRESSABLE. .mc-soon is the wrong treatment and is deliberately not reused: it
+     sets pointer-events:none, and a lock a thumb falls straight through is a lock with no
+     way to the thing that opens it. The press opens the sign-in sheet, which is where that
+     tap was always going to end. */
+  .hp-full.hp-fan.hp-lock .hp-full-name{color:rgba(255,232,232,.92)}
+  /* Sized off the label it sits in rather than in pixels, so it tracks the name at every
+     width instead of needing a breakpoint of its own. */
+  .hp-lk{width:.82em;height:.82em;vertical-align:-0.06em;margin-right:5px;
+    opacity:.9}
   /* ---- FULL TEAM'S OWN FILL, AND WHY IT IS NOT MORE OF THE GREY ABOVE ----
      .hp-full is the shared card shape and it stays neutral, because the Trade Machine wears
      it too. This modifier is Full Team's alone (ensureFullButton adds it) so nothing else
@@ -502,18 +563,27 @@ window.GA_ID='G-L29P5MRWKE';
      ANCHORED ON THE PAIR'S OWN ENDS so the family holds, and pulled down from them so the
      pair still wins the page: .hp-off ends at #a01f1f and .hp-def at #153aa4, and these
      sit just inside both. */
-  .hp-ft{background:linear-gradient(100deg,
-    #a8262f 0%,#8a2329 40%,#14171f 50%,#1e3690 60%,#2445b4 100%);
-    border-color:rgba(255,255,255,.16);
-    box-shadow:0 10px 26px -14px #000,inset 0 1px 0 rgba(255,255,255,.12)}
-  /* The same top wash the two halves above carry, which is where their depth comes from.
-     .hp-full turns :before off for the flat card; this turns it back on for this one. */
-  .hp-ft:before{display:block;content:'';position:absolute;left:0;right:0;top:0;height:46%;
-    pointer-events:none;background:linear-gradient(180deg,rgba(255,255,255,.14),transparent)}
+  /* ---- AND THEN IT MOVED FROM THE FILL TO THE EDGE, to calm the front page ----
+     Asked for by the owner: the page felt crowded. Measured, the stack under the tagline
+     was six full width cards in a row, each with its own saturated treatment, and the top
+     two were BOTH red and blue fills, so they read as one large block rather than a start
+     button and a second mode. Nothing on the page read as primary.
+     So one door is filled (the Offense/Defense pair, which is where most visitors start)
+     and every other mode is a dark card whose EDGE carries its colour: this one red to
+     blue, Dynasty gold, Fantasy Challenge its neon.
+     THE PROBLEM THE FILL SOLVED STAYS SOLVED, which is the reason this is not a revert.
+     The fill was added because the card was the neutral grey hairline shared with the
+     Trade Machine and read as a control you cannot press. A vivid two colour edge with a
+     white title is not that: it is the same treatment the Dynasty and Fantasy doors
+     already wear, and both read as pressable.
+     Drawn as two backgrounds (a padding-box fill over a border-box gradient) because
+     border-image cannot follow a border-radius. */
+  .hp-ft{background:linear-gradient(180deg,#171a22,#101218) padding-box,
+    linear-gradient(100deg,#c0303a 0%,#8a2329 42%,#2a2f3d 50%,#1e3690 58%,#3056d0 100%) border-box;
+    border:1.5px solid transparent;
+    box-shadow:0 10px 24px -16px #000}
   .hp-ft .hp-full-name,.hp-ft .hp-full-sub{position:relative;z-index:1}
-  /* On a coloured ground the dim token is the wrong grey: it is mixed for the page's dark
-     card and goes muddy over the red. Same value the pair's own sub-label uses. */
-  .hp-ft .hp-full-sub{color:rgba(255,255,255,.76)}
+  .hp-ft .hp-full-sub{color:rgba(226,233,245,.6)}
   .hp-ft .hp-full-name{color:#fff}
   .hp-ft:active{filter:brightness(1.08)}
   /* ---- A DOOR WHOSE DAY IS SPENT SAYS SO BEFORE IT IS PRESSED ----
@@ -531,10 +601,10 @@ window.GA_ID='G-L29P5MRWKE';
    * THE FILL GOES GREY RATHER THAN DIM. Halving the opacity of a red-to-blue gradient leaves
    * a muddy purple that reads as a rendering fault; desaturating it leaves the same card with
    * the life out of it, which is the thing being said. */
-  .hp-ft:has(.hp-tag-spent){background:linear-gradient(100deg,
-    #3a3036 0%,#332c30 40%,#14171f 50%,#2b3040 60%,#333a4e 100%);
-    animation:none;border-color:rgba(255,255,255,.18);
-    box-shadow:0 10px 26px -18px #000,inset 0 1px 0 rgba(255,255,255,.08)}
+  .hp-ft:has(.hp-tag-spent){background:linear-gradient(180deg,#15171d,#0f1116) padding-box,
+    linear-gradient(100deg,#4a3c42 0%,#3a3036 42%,#23262e 50%,#2e3446 58%,#3a4258 100%) border-box;
+    animation:none;border-color:transparent;
+    box-shadow:0 10px 26px -18px #000}
   .hp-ft:has(.hp-tag-spent) .hp-full-name{color:rgba(244,247,252,.58)}
   .hp-ft:has(.hp-tag-spent) .hp-full-sub{color:rgba(226,233,245,.5)}
   .hp-ft .hp-tag-spent{background:rgba(255,255,255,.06);
@@ -583,7 +653,11 @@ window.GA_ID='G-L29P5MRWKE';
      page has. It is the anchor of the group and now looks like it.
      THE GLOW IS OUTSIDE THE BOX, so `overflow:hidden` above does not clip it: that property
      is there to hold the light pool in and has nothing to say about a box-shadow. */
-  .hp-dyn{overflow:hidden;gap:9px;padding:16px 15px 15px;border-radius:15px;
+  /* COMPACT, SINCE THE CALM PASS. It was the tallest card on the front page by a third,
+     a 40px ball over a 30px headline over a tagline, and the tallest thing in a stack
+     is what makes the stack feel full. Smaller ball, 24px headline, tighter gaps: same
+     three lines, same order, about 30px shorter. */
+  .hp-dyn{overflow:hidden;gap:5px;padding:13px 15px 12px;border-radius:15px;
     background:linear-gradient(180deg,#20242c 0%,#12141a 58%,#0b0d11 100%);
     border:1.5px solid rgba(240,198,116,.58);
     box-shadow:0 18px 40px -20px #000,inset 0 1px 0 rgba(255,255,255,.14),
@@ -604,10 +678,10 @@ window.GA_ID='G-L29P5MRWKE';
   }
   /* The pool of light the ball sits in. On the button rather than on the mark so it is not
      clipped by the mark's own box, and behind everything because it is the ground. */
-  .hp-dyn:after{content:'';position:absolute;left:50%;top:-14px;width:190px;height:120px;
+  .hp-dyn:after{content:'';position:absolute;left:50%;top:-14px;width:170px;height:92px;
     transform:translateX(-50%);pointer-events:none;
     background:radial-gradient(50% 50% at 50% 50%,rgba(226,178,90,.16),transparent 70%)}
-  .hp-dyn .hp-mark{position:relative;z-index:1;display:block;width:40px;height:27px;
+  .hp-dyn .hp-mark{position:relative;z-index:1;display:block;width:30px;height:20px;
     margin-bottom:-1px;filter:drop-shadow(0 3px 7px rgba(0,0,0,.55))}
   /* Above the light. .hp-full lays its lines out in the flow and the pool is absolute, so
      without a stacking order of their own the words paint under it. */
@@ -643,7 +717,7 @@ window.GA_ID='G-L29P5MRWKE';
      Balance stays as insurance for the narrowest phones, where 26px type can still run out
      of room: it breaks the line evenly rather than wherever the width happens to end.
      Ignored by engines that do not have it, which get the ordinary greedy wrap. */
-  .hp-dyn .hp-full-name{font-family:var(--fd);font-size:30px;font-weight:400;
+  .hp-dyn .hp-full-name{font-family:var(--fd);font-size:24px;font-weight:400;
     letter-spacing:.02em;text-transform:uppercase;color:#f4f7fc;text-wrap:balance}
   .hp-dyn .hp-full-sub{font-size:9.5px;font-weight:800;letter-spacing:.15em;
     color:rgba(226,233,245,.56)}
@@ -683,7 +757,7 @@ window.GA_ID='G-L29P5MRWKE';
     50%{box-shadow:0 0 0 6px rgba(226,178,90,.04)}
   }
   @media (max-width:340px){
-    .hp-dyn .hp-full-name{font-size:26px}
+    .hp-dyn .hp-full-name{font-size:22px}
     .hp-dyn .hp-full-sub{letter-spacing:.11em}
   }
   /* ---- THE TWO HEADINGS THAT TURN THREE BUTTONS INTO TWO CHOICES ----
@@ -706,7 +780,9 @@ window.GA_ID='G-L29P5MRWKE';
      gap took that away, and the first door then sat flush against the Offense/Defense split
      with no gap at all. Measured, not eyeballed: the strip read 0px there and 8px everywhere
      else, which is the sort of thing that looks like a rendering fault rather than a choice. */
-  .hp-longer{display:flex;flex-direction:column;gap:8px;margin-top:8px}
+  /* 10 AND NOT 8, since the calm pass: eight pixels between cards this heavy read as one
+     slab with lines drawn on it. */
+  .hp-longer{display:flex;flex-direction:column;gap:10px;margin-top:10px}
   /* THE WAY OUT OF A SAVED DYNASTY, under the door back into it. Deliberately the quietest
      control on the front page: it throws a run away, and the thing somebody came back for
      is the one above it. */
@@ -1970,9 +2046,11 @@ window.GA_ID='G-L29P5MRWKE';
      fill and the thin border, so it still sits below the doors above it and above the three
      flat utility buttons below it, while sharing their edges. */
   .hp-more{display:flex;width:100%;justify-content:center;
-    margin-top:12px;gap:9px;font-size:13px;letter-spacing:.05em;
-    border-radius:12px;border:1px solid var(--line-2);
-    background:linear-gradient(180deg,rgba(255,255,255,.062),rgba(255,255,255,.018));
+    margin-top:20px;gap:9px;font-size:13px;letter-spacing:.05em;
+    border-radius:14px;border:1px solid rgba(255,255,255,.14);
+    background:linear-gradient(180deg,rgba(255,255,255,.07),rgba(255,255,255,.02));
+    -webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.09);
     color:rgba(238,242,249,.92);
     transition:border-color .15s ease,background .15s ease,transform .07s ease}
   .hp-more:hover{border-color:rgba(255,255,255,.28);
@@ -2000,7 +2078,7 @@ window.GA_ID='G-L29P5MRWKE';
      like, with one more thing in it. */
   /* .hrow.hp-util, both classes, because .hrow sets its two columns further down the sheet
      and a single-class rule up here loses the tie on order alone. */
-  .hrow.hp-util{margin-top:8px;grid-template-columns:repeat(3,1fr);gap:6px}
+  .hrow.hp-util{margin-top:4px;grid-template-columns:repeat(3,1fr);gap:6px}
   /* THREE LABELS IN THE WIDTH TWO USED TO HAVE. "Leaderboard" is eleven uppercase
      characters and will not wrap, so on a 320 screen it ran out of its own button while
      "How to play" wrapped to two lines and made all three of them 57px tall. The tracking
@@ -2019,9 +2097,16 @@ window.GA_ID='G-L29P5MRWKE';
     .hrow.hp-util{gap:4px}
     .hp-util .hp-util-btn{font-size:10px;padding-left:3px;padding-right:3px}
   }
+  /* LINKS, NOT THREE MORE BOXES, since the calm pass. Under More ways to play these were
+     the seventh, eighth and ninth bordered controls in one screen of phone. They are
+     reference (how to play, the tutorial, the board), so they take the weight of a link:
+     no border, a quiet underline, and the same tap target as before. The border is
+     transparent rather than removed so the box, and every measured width above, is
+     exactly the size it was. */
   .hp-util-btn{padding:11px 14px;font-size:13px;background:transparent;box-shadow:none;
-    border:1.5px solid var(--line);border-radius:10px;color:var(--dim);font-weight:600;
-    letter-spacing:.04em}
+    border:1.5px solid transparent;border-radius:10px;color:var(--dim);font-weight:600;
+    letter-spacing:.04em;text-decoration:underline;text-underline-offset:4px;
+    text-decoration-color:rgba(226,233,245,.28);text-decoration-thickness:1px}
   .hp-util-btn:before{display:none}
   .hp-util-btn:active{background:rgba(255,255,255,.04)}
   /* One re-spin button per wheel, priced the same, so the choice is about what
@@ -2298,7 +2383,8 @@ window.GA_ID='G-L29P5MRWKE';
        a flex container's DIRECT children, so a descendant selector that still matches has no
        effect at all and the group would silently fall to the catch-all order:5, landing
        under the utility row. */
-    #s-intro #b-start,#s-intro #hp-split,#s-intro #hp-longer{order:2}
+    #s-intro #hp-mode,#s-intro #hp-slots,#s-intro #b-start,#s-intro #hp-rule,
+    #s-intro #hp-split,#s-intro #hp-longer{order:2}
     #s-intro #b-teams{order:3}
     #s-intro .hp-util{order:4}
     #s-intro .hero{order:6;margin-top:16px;margin-bottom:0}
@@ -2405,6 +2491,195 @@ window.GA_ID='G-L29P5MRWKE';
   .htitle h1{font-family:var(--fd);font-size:min(11vw,70px);line-height:.9;
     letter-spacing:.005em;margin:7px 0 0;text-transform:uppercase;white-space:nowrap}
   .htitle p{margin:11px auto 0;max-width:23em;font-size:14px;color:var(--dim);line-height:1.45}
+  /* ─── THE FRONT PAGE, REDESIGNED ────────────────────────────────────────────────────────
+     The name on two lines, one switcher, one button, and the longer modes on a shelf.
+
+     THE NAME IS TWO LINES NOW, so the one-line sizing above no longer binds. "THE PERFECT"
+     is eleven of the eighteen characters, so the same 7.79px-per-px measure gives it about
+     4.8em: 14vw fits it at 320 with room even in the wider fallback face, and the cap holds it
+     at 84 once the column stops growing. nowrap stays on each line for the reason written above. */
+  .htitle h1{font-size:min(14vw,84px);line-height:.88}
+  .htitle p{max-width:27em}
+  .htitle h1 .l2{display:block;color:var(--red)}
+
+  /* COLOURS THAT CAN TRANSITION. A gradient cannot be tweened, but its stops can when they
+     are registered custom properties, so the switcher's pill and the Spin button slide from
+     red to blue to the red-and-blue of Full Team instead of snapping. A browser without
+     @property simply swaps the colours, which is the same information. */
+  @property --gl{syntax:'<color>';inherits:true;initial-value:#d93a3a}
+  @property --gr{syntax:'<color>';inherits:true;initial-value:#a01f1f}
+  #s-intro{--gl:#d93a3a;--gr:#a01f1f;--glow:rgba(239,68,68,.55);
+    transition:--gl .45s ease,--gr .45s ease}
+  #s-intro.hm-def{--gl:#2f63e4;--gr:#153aa4;--glow:rgba(59,130,246,.55)}
+  #s-intro.hm-full{--gl:#c62828;--gr:#1d4ed8;--glow:rgba(139,92,246,.5)}
+
+  .hp-mode{position:relative;display:grid;grid-template-columns:repeat(var(--n,3),minmax(0,1fr));
+    gap:6px;padding:5px;margin:4px 0 0;border-radius:16px;
+    background:linear-gradient(180deg,rgba(255,255,255,.07),rgba(255,255,255,.025));
+    border:1px solid rgba(255,255,255,.13);
+    -webkit-backdrop-filter:blur(14px) saturate(1.4);backdrop-filter:blur(14px) saturate(1.4);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.1),0 10px 26px -18px #000}
+  .hp-mode[hidden]{display:none}
+  /* ONE PILL SLIDING UNDER THE TABS, rather than a background on whichever tab is checked.
+     It moves by its own width plus the gap, so it lands on each column exactly whatever the
+     screen is. --i is the checked tab's place among the ones that are showing. */
+  .hp-mode-pill{position:absolute;top:5px;bottom:5px;left:5px;border-radius:10px;
+    width:calc((100% - 10px - (var(--n,3) - 1) * 6px) / var(--n,3));
+    transform:translateX(calc(var(--i,0) * (100% + 6px)));
+    background:linear-gradient(115deg,var(--gl) 0%,var(--gl) 46%,var(--gr) 54%,var(--gr) 100%);
+    border:1px solid rgba(255,255,255,.28);box-sizing:border-box;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.4),0 6px 16px -8px var(--glow);
+    transition:transform .5s cubic-bezier(.22,1.2,.36,1),box-shadow .4s ease}
+  #s-intro:not(.hm-full) .hp-mode-pill{background:linear-gradient(135deg,var(--gl),var(--gr))}
+  .hp-tab{position:relative;z-index:1;min-height:48px;border:0;border-radius:10px;
+    background:transparent;cursor:pointer;font-family:var(--fn);font-size:15px;font-weight:800;
+    letter-spacing:.08em;text-transform:uppercase;line-height:1.05;color:var(--dim);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+    transition:color .3s ease;-webkit-tap-highlight-color:transparent}
+  .hp-tab[hidden]{display:none}
+  .hp-tab[data-m="off"]{color:#fca5a5}
+  .hp-tab[data-m="def"]{color:#a5c4fb}
+  .hp-tab[aria-checked="true"]{color:#fff}
+  .hp-tab small{font-size:9px;letter-spacing:.1em;font-weight:700;color:inherit;opacity:.72}
+  .hp-tab small:empty{display:none}
+  .hp-tab:focus-visible{outline:2px solid #fff;outline-offset:-2px}
+  .hp-slots{margin:9px 0 9px;text-align:center;font-family:var(--fn);font-size:11.5px;
+    font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--dim-2)}
+  .hp-mode[hidden]+.hp-slots{margin-top:2px}
+  /* THE START BUTTON IS FROSTED GLASS, tinted with the switcher's colour.
+     Real backdrop-filter has nothing to blur here: the button sits on the page's flat dark,
+     and a blur of flat dark is flat dark. So what is "behind the glass" is drawn INSIDE it:
+     two soft lights in the mode's colours in .hp-go-fx, under a translucent tint, a frost
+     sheen, a little grain and a bright hairline edge. The backdrop-filter is still set, so
+     anything that ever does pass behind it (the page scrolling under a sticky header, a
+     glow) frosts properly. isolation keeps the z-index:-1 layer inside the button and
+     above its own background, which is what lets the label sit on top of it. */
+  .hp-start{isolation:isolate;display:flex;align-items:center;justify-content:center;gap:10px;
+    font-family:var(--fd);font-size:min(25px,7vw);white-space:nowrap;font-weight:400;letter-spacing:.06em;
+    padding:17px 18px;border-radius:16px;color:#fff;
+    background:linear-gradient(115deg,var(--gl),var(--gr));
+    background:linear-gradient(115deg,color-mix(in srgb,var(--gl) 58%,transparent),color-mix(in srgb,var(--gr) 52%,transparent));
+    border:1px solid rgba(255,255,255,.32);
+    -webkit-backdrop-filter:blur(16px) saturate(1.6);backdrop-filter:blur(16px) saturate(1.6);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.55),inset 0 -1px 0 rgba(255,255,255,.1),
+      0 18px 38px -16px var(--glow),0 3px 12px rgba(0,0,0,.4);
+    text-shadow:0 1px 2px rgba(0,0,0,.3);
+    transition:box-shadow .45s ease,border-color .3s ease,transform .07s ease}
+  #s-intro.hm-full .hp-start{background:linear-gradient(115deg,
+    color-mix(in srgb,var(--gl) 58%,transparent) 0%,color-mix(in srgb,var(--gl) 58%,transparent) 42%,
+    color-mix(in srgb,var(--gr) 55%,transparent) 58%,color-mix(in srgb,var(--gr) 55%,transparent) 100%)}
+  .hp-start:hover{border-color:rgba(255,255,255,.5)}
+  .hp-go-fx{position:absolute;inset:0;z-index:-1;border-radius:inherit;overflow:hidden;pointer-events:none}
+  .hp-go-fx i{position:absolute;width:70%;aspect-ratio:1;border-radius:50%;filter:blur(18px);opacity:.85}
+  .hp-go-fx i:nth-child(1){left:-12%;top:-95%;background:radial-gradient(circle,var(--gl),transparent 68%)}
+  .hp-go-fx i:nth-child(2){right:-14%;bottom:-100%;background:radial-gradient(circle,var(--gr),transparent 68%)}
+  /* The frost: a brighter top half, the way light catches the upper face of a pane. */
+  .hp-go-fx:before{content:'';position:absolute;inset:0;
+    background:linear-gradient(180deg,rgba(255,255,255,.26) 0%,rgba(255,255,255,.08) 46%,rgba(255,255,255,0) 54%,rgba(255,255,255,.05) 100%)}
+  /* Grain, which is the difference between frosted glass and tinted plastic. */
+  .hp-go-fx:after{content:'';position:absolute;inset:0;opacity:.16;mix-blend-mode:overlay;
+    background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)'/%3E%3C/svg%3E")}
+  @media (prefers-reduced-motion:no-preference){
+    .hp-go-fx i:nth-child(1){animation:hpgoA 9s ease-in-out infinite alternate}
+    .hp-go-fx i:nth-child(2){animation:hpgoB 11s ease-in-out infinite alternate}
+  }
+  @keyframes hpgoA{to{transform:translate(38%,22%)}}
+  @keyframes hpgoB{to{transform:translate(-36%,-18%)}}
+  .hp-go-l{position:relative}
+  .hp-go-l.swap{animation:hpswap .38s ease-out}
+  .hp-go-ar{flex:0 0 auto;width:.8em;height:.8em;fill:none;stroke:currentColor;stroke-width:3;
+    stroke-linecap:round;stroke-linejoin:round;opacity:.9;filter:drop-shadow(0 1px 2px rgba(0,0,0,.3));
+    transition:transform .2s ease}
+  .hp-start:hover .hp-go-ar{transform:translateX(3px)}
+  .hp-start.hp-loading .hp-go-ar{visibility:hidden}
+  /* Under 360 the longest label, "Draft your full team", has about eleven pixels to spare
+     in Anton. The padding and the tracking give a little back for a fallback face. */
+  @media (max-width:359px){.hp-start{padding-left:12px;padding-right:12px;letter-spacing:.04em;gap:8px}}
+  .hp-start.hp-loading{opacity:.7;pointer-events:none}
+  .hp-start.hp-loading .hp-go-l{visibility:hidden}
+  .hp-start.hp-loading:after{content:'';position:absolute;left:50%;top:50%;width:20px;
+    height:20px;margin:-10px 0 0 -10px;border-radius:50%;border:2.5px solid rgba(255,255,255,.3);
+    border-top-color:#fff;animation:hpSpin .7s linear infinite}
+  .hp-rule{margin:9px 0 0;text-align:center;font-size:12.5px;color:var(--dim);min-height:1.45em}
+  .hp-rule:empty{display:none}
+  .hp-slots.swap,.hp-rule.swap{animation:hpswap .38s ease-out}
+  @keyframes hpswap{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
+  /* THE OLD PAIR IS KEPT AND NEVER SHOWN. Its buttons still own beginDraft and
+     beginDefenseDraft and their loading states, and scripts that already press them keep
+     working, but the page has one way to start now. */
+  #s-intro #hp-split,#s-intro #hp-pick{display:none}
+  /* Full Team lives in the switcher now, so its door stays in the group for its state (the
+     save, the meter) and is not drawn. The Spin button reads both. */
+  #s-intro #b-start-full{display:none}
+
+  /* ─── THE SHELF ─── On a wide screen the longer modes sit side by side. NOT ON A PHONE:
+     each door carries a record corner, a mark and a one-line caption that were measured at
+     full width (see check-premium and check-fantasy), and at half of a 390 phone the corner
+     lands on the football and the captions wrap. So a phone keeps them stacked, with the gap
+     a shelf would have, and the store card and the dynasty's footnote take the whole row
+     either way. */
+  .hp-longer{display:grid;grid-template-columns:minmax(0,1fr);gap:10px;align-items:stretch;margin-top:18px}
+  .hp-longer>*{margin:0!important;min-width:0}
+  @media (min-width:920px) and (min-height:560px){
+    .hp-longer{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .hp-longer>.pw-card,.hp-longer>#b-dyn-new,.hp-longer>:only-child{grid-column:1/-1}
+    .hp-longer>.hp-full{justify-content:center;min-height:118px;padding:28px 10px 14px;border-radius:14px}
+    .hp-longer>.hp-full .hp-full-name{font-size:21px;line-height:1.02;white-space:normal;text-align:center}
+    .hp-longer>.hp-dyn .hp-full-name{font-size:24px}
+    .hp-longer>.hp-dyn .hp-full-sub{letter-spacing:.06em;white-space:nowrap}
+  }
+
+  /* ─── THE FIELD FOLLOWS THE SWITCHER ─── Twelve chips live on the hero field for good,
+     six a side, and a switch MOVES them rather than redrawing: the side you left runs off
+     its own end of the field and the side you picked comes on, one man at a time. */
+  .hero-field .chip{transition:left .62s cubic-bezier(.22,1.2,.36,1),top .62s cubic-bezier(.22,1.2,.36,1),
+    opacity .38s ease}
+  .hero-field .chip.gone{opacity:0;pointer-events:none}
+  .hero-field .hmk{position:absolute;inset:0;transition:opacity .35s ease}
+  .hero-field .hmk.out{opacity:0}
+  .hero-field .hsweep{position:absolute;top:0;bottom:0;left:-45%;width:40%;z-index:3;pointer-events:none;
+    background:linear-gradient(100deg,transparent,rgba(255,255,255,.14),transparent);
+    animation:hsweep .8s ease-out forwards}
+  @keyframes hsweep{to{left:110%}}
+  .field.hero-field.fullfield{aspect-ratio:1/0.54}
+  .hero-field.fullfield .chip .yr{display:none}
+  .hero-field.fullfield .chip .disc{width:30px;height:30px;font-size:10px}
+  .hero-field.fullfield .chip{--discr:15px}
+  .hero-field.fullfield .halfglow.up,.hero-field.fullfield .halfglow.down{opacity:.55}
+  @media (max-height:800px){
+    .hero-field.fullfield .chip .lab{display:none}
+    .hero-field.fullfield .chip .disc{width:24px;height:24px;font-size:8.5px}
+    .hero-field.fullfield .chip{--discr:12px}
+  }
+  /* SHORT SCREENS KEEP THE BUTTON ABOVE THE FOLD, which is the rule this page has always kept
+     and measured. The switcher costs about sixty pixels the old pair did not, so under 760 the
+     name goes back to one line (SEASON still red), the slot list stands down (the tabs already
+     say which side), and under 640 the subtitle goes too. */
+  @media (max-height:760px){
+    .htitle h1{font-size:min(11vw,70px);line-height:.9}
+    .htitle h1 .l2{display:inline}
+    .hp-slots{display:none}
+    .hp-mode{margin-bottom:10px}
+  }
+  @media (max-height:640px){
+    .htitle h1{font-size:min(10.5vw,40px)}
+    .htitle p{display:none}
+    .hp-tab{min-height:44px}
+  }
+  /* An iPhone SE is the tight one: 568 tall, and everything above has already come off. */
+  @media (max-height:600px){
+    .htitle .kicker{display:none}
+    .hp-start{padding:14px 18px}
+    .field.hero-field{height:108px}
+  }
+  @media (max-height:400px){
+    .htitle h1{font-size:min(8.5vw,31px)}
+  }
+  @media (prefers-reduced-motion:reduce){
+    .hero-field .chip,.hero-field .hmk,.hp-mode-pill,.hp-tab,#s-intro,.hp-start{transition:none}
+    .hero-field .hsweep,.hp-slots.swap,.hp-rule.swap{animation:none}
+    .hero-field .hsweep{display:none}
+  }
   .hrow{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:9px}
 
   /* WHERE THIS RUN RANKS
@@ -5243,6 +5518,22 @@ window.GA_ID='G-L29P5MRWKE';
   @media (min-width:1200px) and (min-height:560px){
     .wrap:has(#s-intro.on){max-width:min(1040px,calc(100vw - 400px))}
   }
+  /* THE REDESIGN ON A WIDE SCREEN: the field on the left, and the name, the switcher, the
+     button and the shelf stacked in the right column. The title moves into that column too,
+     so the first thing the eye meets on the right is the name and directly under it the one
+     decision. */
+  @media (min-width:920px) and (min-height:560px){
+    #s-intro>.hero{grid-row:1/span 9}
+    #s-intro>.htitle,#s-intro>#hp-mode,#s-intro>#hp-slots,#s-intro>#hp-rule{grid-column:2}
+    #s-intro>.htitle{margin-bottom:18px}
+    #s-intro>.htitle h1{font-size:min(70px,6.4vw)}
+    #s-intro>.htitle h1 .l2{display:block}
+    #s-intro>.htitle p{display:block}
+    #s-intro>#b-start{margin-top:0}
+    .hp-longer{margin-top:18px}
+    .hp-start{font-size:28px;padding:19px 18px}
+    .hp-tab{min-height:52px;font-size:16px}
+  }
   /* Tiles arrive as a consequence of the reels landing, so they come in on a short
      stagger rather than all at once out of nowhere. */
   @keyframes optin{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
@@ -6753,7 +7044,7 @@ window.GA_ID='G-L29P5MRWKE';
 <p>Spin a wheel for a year and an NFL team, sign one player off each of six draws, and
 build a roster out of every season from 1999 to 2025 under a $140M salary cap.</p>
 <p>Then play all 17 games against a real schedule and chase a perfect season. Every
-player is priced and scored from his actual week by week statistics. There is a One Franchise
+player is priced and scored from his actual week by week statistics. There's a One Franchise
 mode where every spin is one franchise you choose, and a leaderboard for each of the thirty-two
 franchises as well as for free play. Free, no download, playable in your browser.</p>
 <p><strong>This game needs JavaScript to play.</strong> Please turn it on and reload.</p>
@@ -6841,16 +7132,37 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
       <div class="kicker">1999 to 2025</div>
       <!-- No <br>. The break was hardcoded, so the headline was two lines no matter what
            size it was set at, and the clamp below could never have fixed it on its own. -->
-      <h1>The Perfect Season</h1>
-      <p>Draft six NFL legends. Build your lineup. Chase a perfect season.</p>
+      <!-- TWO LINES NOW, ON PURPOSE. One line had to be sized to fit 390px and read as a
+           caption; broken after "Perfect" the name can be set twice as large and still clear
+           the narrowest phone, and "Season" carries the red the header wordmark already uses. -->
+      <h1>The Perfect <span class="l2">Season</span></h1>
+      <p>Spin a year and a team. Sign one. Beat the cap.</p>
     </div>
+
+    <!-- THE SWITCHER AND THE ONE BUTTON.
+         The front page used to ask for a decision in five separate places: an Offense and
+         Defense pair, then Full Team, Dynasty and Fantasy each as a door of their own, every
+         one of them a full-width block. The three quick drafts are one question with three
+         answers, so they are one control: pick a side here, press Spin, and the field above
+         changes to show what you picked.
+         The old doors are still in the markup (#hp-split) and still own their handlers and
+         their loading states. The Spin button only decides which of them to call, so nothing
+         about how a run starts has moved. paintHomeMode is the one painter. -->
+    <div class="hp-mode" id="hp-mode" role="radiogroup" aria-label="Pick your roster" hidden>
+      <span class="hp-mode-pill" aria-hidden="true"></span>
+      <button class="hp-tab" type="button" role="radio" data-m="off" id="hp-tab-off" aria-checked="true">Offense</button>
+      <button class="hp-tab" type="button" role="radio" data-m="def" id="hp-tab-def" aria-checked="false">Defense</button>
+      <button class="hp-tab" type="button" role="radio" data-m="full" id="hp-tab-full" aria-checked="false">Full Team<small id="hp-tab-full-note"></small></button>
+    </div>
+    <p class="hp-slots" id="hp-slots">QB &middot; RB &middot; WR &middot; WR &middot; TE &middot; FLEX</p>
 
     <!-- TWO CONTROLS, ONE OF THEM ON SCREEN AT A TIME. Everybody gets the single Start a
          run button below; testers get the Offense and Defense pair instead, and
          paintHomeStart is the only thing that decides which. Both are in the markup rather
          than one being built at runtime so the first-run guide, the landscape ordering and
          the focus ring all have something real to attach to before any script runs. -->
-    <button class="btn hp-start" id="b-start">Start a run</button>
+    <button class="btn hp-start m-off" id="b-start"><span class="hp-go-fx" aria-hidden="true"><i></i><i></i></span><span class="hp-go-l">Draft your offense</span><svg class="hp-go-ar" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></button>
+    <p class="hp-rule" id="hp-rule"></p>
     <!-- Shown and hidden with the split, not with the page: it is a caption for the pair of
          buttons and says nothing about the single Start a run. -->
     <p class="hp-pick" id="hp-pick" hidden>Which side of the ball will you draft?</p>
@@ -6974,20 +7286,20 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
            a $140M salary cap. Then you play all 17 games and, if you win enough of them, a playoff run
            that ends the moment you lose once.</p>
         <p>Every player is priced and scored from his real week-by-week statistics for the exact season you
-           drafted him from, not from his career reputation. That is the whole skill of the game: knowing
+           drafted him from, not from his career reputation. That's the whole skill of the game: knowing
            which seasons were monsters. A legend in a down year is an overpriced name, and a journeyman in
            his one outlier season is often the best value on the board.</p>
 
         <h2>How a run works</h2>
         <ul>
           <li>Six spins, six signings, $140M. Money left unspent is production you never fielded.</li>
-          <li>Do not like the draw? Re-spin the year or the team for $5M, then $10M, then $15M. It comes off the
+          <li>Don't like the draw? Re-spin the year or the team for $5M, then $10M, then $15M. It comes off the
               same budget that signs your players.</li>
           <li>Players who shared a team, a college or a draft class build chemistry, which lifts the whole
               roster. Two linked mid-priced players often beat one isolated superstar at the same price.</li>
           <li>Shape matters as much as talent. A quarterback with nobody to throw to loses games a
               balanced roster wins.</li>
-          <li>Win 12 of 17 and you are in the playoffs. Win 15 and you skip a round. One playoff loss
+          <li>Win 12 of 17 and you're in the playoffs. Win 16 and you skip a round. One playoff loss
               ends the run.</li>
         </ul>
 
@@ -7005,14 +7317,14 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
         <h3>Do I need an account?</h3>
         <p>No. You can play a full season as a guest. A free account saves your runs, puts you on the
            leaderboards and unlocks One Franchise mode.</p>
-        <h3>What is a perfect season?</h3>
-        <p>20 and 0: seventeen regular-season wins and a clean playoff run. It is rare by design, and it is
+        <h3>What's a perfect season?</h3>
+        <p>20 and 0: seventeen regular-season wins and a clean playoff run. It's rare by design, and it's
            the number the leaderboards are built around.</p>
         <h3>Where do the numbers come from?</h3>
         <p>Real NFL statistics from the <a href="https://github.com/nflverse/nflverse-data" target="_blank" rel="noopener">nflverse</a>
            open data project, applied season by season rather than career-wide.</p>
         <h3>Does it work on a phone?</h3>
-        <p>Yes. It is built for the browser on phone, tablet and desktop, and can be added to your home
+        <p>Yes. It's built for the browser on phone, tablet and desktop, and can be added to your home
            screen.</p>
         <p>New here? Read the full <a href="/football/how-to-play.html">how to play guide</a>, try the college
            version in <a href="/cfb/">Perfect Season: College Football</a>, play the daily sports puzzles at
@@ -7297,12 +7609,12 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
     <div class="cogrid" id="co-grid"></div>
     <p class="comkt" id="co-market"></p>
     <!-- THE OTHER DOOR, and it is the one that hands the scheme back to you. -->
-    <button class="btn ghost sm" id="b-coach-none" style="width:100%;margin-top:10px">No coach, I will call it myself</button>
+    <button class="btn ghost sm" id="b-coach-none" style="width:100%;margin-top:10px">No coach, I'll call it myself</button>
     <!-- WHAT DECLINING A COACH BUYS. It used to be three dials set before kickoff, which is
          neither what a coach does nor what calling it yourself means, and measured over 264
          seasons one of the three did nothing at all. It is the playoff calls now. -->
     <div id="co-planwrap" hidden>
-      <h3 class="display" style="font-size:20px;margin:20px 0 4px">You are calling it</h3>
+      <h3 class="display" style="font-size:20px;margin:20px 0 4px">You're calling it</h3>
       <p class="dim" id="co-planwho" style="font-size:12.5px;margin:0 0 10px"></p>
       <div id="co-plan"></div>
     </div>
@@ -7652,7 +7964,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
          with the way to fix it, because the alternative is a player believing a season
          counted when it never reached the board. -->
     <div class="savefail" id="o-savefail" hidden>
-      <div class="sf-txt"><b>This run was not saved.</b><span id="o-savefail-why">The leaderboard could not be reached, so it has not been counted.</span></div>
+      <div class="sf-txt"><b>This run wasn't saved.</b><span id="o-savefail-why">The leaderboard couldn't be reached, so it hasn't been counted.</span></div>
       <button class="btn sm" id="b-save-retry">Try again</button>
     </div>
     <!-- THE SEASON, AS ONE CARD.
@@ -7951,8 +8263,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
     <div class="eyebrow gold">Owner's mandate &middot; Season <span id="mb-season">5</span></div>
     <h2 class="display bs-name" id="mb-name">The youth movement</h2>
     <div class="mb-ask" id="mb-ask">Field three players aged 25 or younger.</div>
-    <p class="mb-when">You have this whole offseason to build it. Keep who fits, cut who does
-      not, and sign the rest off the wheel.</p>
+    <p class="mb-when">You have this whole offseason to build it. Keep who fits, cut who doesn't, and sign the rest off the wheel.</p>
     <div class="mb-cols">
       <div class="mb-col win">
         <span class="mb-h">If you meet it and survive</span>
@@ -7964,7 +8275,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
       </div>
     </div>
     <p class="mb-safe">Either way the run goes on. A mandate is a bonus on top of the season,
-      not another way to be fired: miss it and you simply do not get the reward.</p>
+      not another way to be fired: miss it and you simply don't get the reward.</p>
     <button class="btn dock-go" id="b-mb-go">Into the offseason</button>
   </div>
 
@@ -8098,7 +8409,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 <div class="tutend" id="tutend" hidden>
   <div class="tutend-in">
     <div class="frg-eyebrow">Tutorial complete</div>
-    <h2 id="tutend-h">That is a team</h2>
+    <h2 id="tutend-h">That's a team</h2>
     <p class="frg-goal" id="tutend-body"></p>
     <button class="btn" id="tutend-go" type="button" style="width:100%">Start my own run</button>
     <button class="btn ghost sm" id="tutend-play" type="button"
@@ -8116,16 +8427,16 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
     <ol class="frg-steps">
       <li>Spin for a year and a team, then take one player from it. Six times, filling
         QB, RB, two WR, TE and a flex.</li>
-      <li>All six have to fit under a $140M salary cap. That is the puzzle: the last pick
+      <li>All six have to fit under a $140M salary cap. That's the puzzle: the last pick
         is always the hard one.</li>
       <li>Then the season plays itself. Seventeen games, and the playoffs if you make it.</li>
     </ol>
     <p class="frg-goal">Your goal: <b>win all 17 and the Super Bowl.</b> That is a perfect
-      season. It is meant to be very hard, and almost nobody gets there first try.</p>
+      season. It's meant to be very hard, and almost nobody gets there first try.</p>
     <p class="frg-later">Everything else (the other modes, the leaderboard, your profile)
       can wait until you have played one.</p>
     <button class="btn frg-x" id="frg-tut" type="button">Walk me through one</button>
-    <button class="btn ghost sm frg-x" id="frg-x" type="button">No thanks, I will try it</button>
+    <button class="btn ghost sm frg-x" id="frg-x" type="button">No thanks, I'll try it</button>
   </div>
   <div class="frg-hint" id="frg-hint">Start here</div>
   <div class="frg-arrow" id="frg-arrow" aria-hidden="true">
@@ -8138,8 +8449,8 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 
 <div class="sheet" id="sheet"><div class="inner" id="sheet-in"></div></div>
 
-<script src="engine.js?v=97"></script>
-<script src="run.js?v=102"></script>
+<script src="engine.js?v=98"></script>
+<script src="run.js?v=103"></script>
 <!-- WHO CAN SEE FULL TEAM. Its own file rather than an array in this one, because three
      separate things ask and a list written three times drifts. Not optional in the way the
      account scripts below are, but it fails safe: canPlayFull() reads it defensively, so a
@@ -8152,16 +8463,16 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 <!-- WHO CAN SEE FANTASY CHALLENGE. The only one of the three whose flag is still false, so
      the only one whose list currently decides anything. Read defensively by
      canPlayFantasy(), which answers no when the file cannot be read. -->
-<script src="fantasy-access.js?v=1"></script>
+<script src="fantasy-access.js?v=2"></script>
 <!-- Accounts. Both are optional: if the CDN is blocked the game runs exactly as it
      did, with runs recorded anonymously. Deferred so neither delays first paint. -->
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="board.js?v=39"></script>
-<script src="achievements.js?v=14"></script>
+<script src="board.js?v=40"></script>
+<script src="achievements.js?v=15"></script>
 <!-- The profile crest. Optional in the same way the two above are: it reads the catalog
      achievements.js installs, and if either fails to load the game falls back to the flat
      disc it drew before any of this existed. -->
-<script src="crest.js?v=10"></script>
+<script src="crest.js?v=11"></script>
 <!-- NO ARCADE HOUSE AD ON THIS GAME, by request, the same call the college game took
      earlier and for the same reason. /assets/arcade-ad.js still runs on the homepage and
      the golf game; this one asks nobody. Somebody who has opened this page has come to
@@ -8174,13 +8485,13 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 <!-- THE STORE, SHARED WITH COMMISH SIMULATOR. Not deferred: premiumSheet() can be opened by
      a door the moment the page is interactive, and a store that is not there yet draws the
      fallback line instead of the offer. -->
-<script src="/assets/store.js?v=21"></script>
+<script src="/assets/store.js?v=22"></script>
 <!-- THE RUN, KEPT AGAINST THE ACCOUNT. Shared with Commish Simulator, which had the same
      save in localStorage and the same way of losing it. Optional like everything else up
      here: without it the game keeps its runs exactly where it always did, in this browser
      and nowhere else. See supabase/103_cloud_saves.sql. -->
 <script src="/assets/cloudsave.js?v=2"></script>
-<script defer src="auth.js?v=6"></script>
+<script defer src="auth.js?v=7"></script>
 <script>
 (function(){
 'use strict';
@@ -8340,7 +8651,7 @@ const B=(window.PS_BOARD&&window.PS_BOARD.API_VERSION===BOARD_VERSION)?window.PS
   submit:async()=>null, ranks:async()=>({day:null,week:null,all:null}),
   rankIn:async()=>null, placeIn:async()=>null, total:async()=>null, perfectCount:async()=>null, top:async()=>null,
   mine:async()=>null, byId:async()=>null,
-  myAvatar:async()=>null, setAvatar:async()=>({error:'the leaderboard script did not load'}),
+  myAvatar:async()=>null, setAvatar:async()=>({error:'the leaderboard script didn\'t load'}),
   scoreOf:(w,d)=>w*10000+Math.min(9999,Math.max(0,
     Math.round((Math.round(d*10)/10+40)*100))),
   cutoffISO:()=>null, todayUTC:()=>new Date().toISOString().slice(0,10),
@@ -8348,10 +8659,10 @@ const B=(window.PS_BOARD&&window.PS_BOARD.API_VERSION===BOARD_VERSION)?window.PS
   /* The stub has to answer everything the module does, or a blocked board.js turns a
      missing method into a thrown error somewhere far away from the cause. The probe's
      answer is the honest one for this state: the board is not there to ask. */
-  probe:async()=>({read:{status:0,ok:false,message:'board.js did not load'},
-    write:{status:0,code:'blocked',message:'board.js did not load',healthy:false}}),
+  probe:async()=>({read:{status:0,ok:false,message:'board.js didn\'t load'},
+    write:{status:0,code:'blocked',message:'board.js didn\'t load',healthy:false}}),
   lastError:{where:'board.js',status:0,code:'blocked',
-    message:'the leaderboard script did not load, usually a blocked request'},
+    message:'the leaderboard script didn\'t load, usually a blocked request'},
   needsAccountsMigration:false, needsAvatarMigration:false, avatarFnMissing:false,
   modeColumnMissing:false,
   /* Dynasty board's calls, answered the same soft way as the rest of the stub: a
@@ -8433,12 +8744,26 @@ const fullTeamSold=()=>canPlayFull();
    IT IS NOT IN THE STORE AND MUST NOT BE. Nothing about this mode is sold, so there is no
    `fantasySold()` beside it: the bundle's card names what the bundle contains, and a mode
    that is free to enter and not yet finished is neither. */
+/* WHETHER IT OPENS. An account, always, because an entry belongs to one and the server
+   refuses a signed out lineup itself. */
 const canPlayFantasy=()=>{
   const A=window.PS_FANTASY_ACCESS;
   if(!A||typeof A.allowed!=='function') return false;
-  if(A.LIVE) return true;
-  if(!authState.signedIn) return false;
-  return A.allowed({name:authState.name,userId:authState.userId});
+  return A.allowed({signedIn:authState.signedIn,name:authState.name,userId:authState.userId});
+};
+/* WHETHER THE DOOR IS DRAWN, which is a different question and is the reason a guest ever
+   hears about this mode at all. Launched, everybody gets it; signed out it wears a padlock
+   and the press goes to sign in. Read defensively like the two above: a blocked or stale
+   access file leaves PS_FANTASY_ACCESS undefined and the honest answer is then no door. */
+const fantasyShow=()=>{
+  const A=window.PS_FANTASY_ACCESS;
+  if(!A) return false;
+  /* `show` is new, so a CACHED copy of this file one deploy behind has `allowed` and not
+     `show`. Falling back to LIVE keeps that visitor's door drawn rather than silently
+     taking the mode off their page, which is the failure this whole split exists to stop.
+     Same shape as the board's version pin: the older answer is the safe one here. */
+  if(typeof A.show!=='function') return !!A.LIVE;
+  return A.show({signedIn:authState.signedIn,name:authState.name,userId:authState.userId});
 };
 /* AND THE STORE ASKS THE PAGE, because only the page knows. Deciding this needs the tester
    list and who is signed in; /assets/store.js is handed neither and is drawn by the college
@@ -8722,17 +9047,17 @@ function checkoutThanks(state){
   const box=$('sheet-in');
   box.dataset.kind='premium';
   const HEAD={owned:'Pro unlocked',pending:'Payment received',signedout:'Payment received'};
-  const TITLE={owned:'You are Pro',pending:'Thank you',signedout:'Thank you'};
+  const TITLE={owned:'You\'re Pro',pending:'Thank you',signedout:'Thank you'};
   /* WRITTEN AS GRATITUDE AND NOT AS A STATUS LINE. The version this replaces opened with
      "Your payment went through", which is what a card terminal prints. */
   const BODY={
-    owned:'Thank you. Genuinely. This is a small site and a bundle like yours is what keeps '+
-      'it being made. Your account is Pro on every device you sign in on.',
-    pending:'Thank you. Genuinely. Your payment is through and your account is being set up '+
-      'right now. It usually takes a few seconds.',
-    signedout:'Thank you. Genuinely. Your purchase is safe on your account. This browser is '+
-      'just not signed in to it right now, which can happen coming back from the payment '+
-      'page. Sign in and everything you bought is there.'
+    owned:'Thank you. Seriously. This is a small site and people like you keep it going. '+
+      'You\'re Pro on every device you sign in on.',
+    pending:'Thank you. Seriously. Your payment\'s in and we\'re setting up your account '+
+      'now. It usually takes a few seconds.',
+    signedout:'Thank you. Seriously. Your purchase is safe on your account. This browser '+
+      'just isn\'t signed in right now, which can happen coming back from checkout. '+
+      'Sign in and it\'s all there.'
   };
   box.innerHTML='<div class="eyebrow gold">'+HEAD[state]+'</div>'+
     '<h2 class="display" style="font-size:30px;margin:4px 0 8px">'+TITLE[state]+'</h2>'+
@@ -8850,7 +9175,7 @@ function unlockedSheet(){
          premiumSet, and a blocked request leaves that empty while the purchase is perfectly
          fine. Never tell somebody their bundle is gone. */
       : '<p class="dim" style="font-size:12.5px;line-height:1.45;margin:14px 0 0">'+
-          'Your Pro modes are unlocked. The list of what is in your bundle could not be '+
+          'Your Pro modes are unlocked. The list of what is in your bundle couldn\'t be '+
           'loaded just now. Reload the page and it will come back.</p>')+
     '<p class="dim" style="font-size:12px;line-height:1.45;margin:14px 0 0">'+
       'You paid once. Nothing here renews and nothing charges you again.</p>'+
@@ -9649,7 +9974,7 @@ async function boot(){
     LEAGUE=lg.league_avg_pts_allowed_by_season; CAL=cal;
     BYKEY=new Map(pl.map(p=>[p.player_id+'|'+p.season,p]));
     bootStep('Building the league');
-    $('h-field').innerHTML=fieldMarkings();
+    heroMode=homeModeNow(); heroMarkings(heroMode,false);
     authBoot(); watchTabs(); wireDealNav(); paintHomeStart();
     /* AFTER the page is up and deliberately not awaited: the walk back from Stripe polls
        for a webhook and must never hold the game behind it. */
@@ -9677,7 +10002,7 @@ async function boot(){
        this one by a single frame. */
     fbFlush();
   }catch(e){
-    $('s-load').innerHTML='<div class="load"><h3 class="display">Could not load the data</h3>'+
+    $('s-load').innerHTML='<div class="load"><h3 class="display">Couldn\'t load the data</h3>'+
       '<p class="dim" style="font-size:13px">'+esc(e.message)+'</p></div>';
   }
 }
@@ -10088,7 +10413,7 @@ function drawRail(el,bySlot,links,at){
       const mine=arcs.filter(c=>c.a===st.focus||c.b===st.focus).length;
       const who=lastName(bySlot[st.focus].name);
       // "Blake, 0 of 1" reads like a score. Say it plainly instead.
-      note.textContent=mine?who+', '+mine+' of '+arcs.length:who+' is not connected to anyone';
+      note.textContent=mine?who+', '+mine+' of '+arcs.length:who+' isn\'t connected to anyone';
     }else{
       note.textContent=arcs.length+(arcs.length===1?' connection':' connections')+', tap a player';
     }
@@ -10134,7 +10459,7 @@ function sheetMoney(p){
     '<div class="kv"><span class="dim">Worth now</span><b class="'+cls+'">'+M(worth)+'</b></div>'+
     '<p class="shmoney '+cls+'">'+
       (edge>=WIN_OVERPAY
-        ? 'You pay '+M(paid)+' for '+M(worth)+' of value. That is cap you did not have to spend.'
+        ? 'You pay '+M(paid)+' for '+M(worth)+' of value. That\'s cap you didn\'t have to spend.'
         : edge<=-WIN_OVERPAY
         ? 'You pay '+M(paid)+' for '+M(worth)+' of value. You pay it every season he stays.'
         : 'You pay '+M(paid)+' for '+M(worth)+' of value.')+
@@ -10310,7 +10635,15 @@ function beginDraft(opts){
   }
   show('s-draft'); nextSpin();
 }
-$('b-start').onclick=()=>{ beginDraft({}); };
+/* THE ONE BUTTON, AND WHICH DOOR IT OPENS IS THE SWITCHER'S ANSWER. Each branch calls the
+   same function its old door called, so the account wall, the day's allowance and a saved
+   Full Team season are all decided exactly where they always were. */
+$('b-start').onclick=()=>{
+  const m=homeModeNow();
+  if(m==='def') return beginDefenseDraft();
+  if(m==='full') return fullDoor();
+  return beginDraft({});
+};
 $('b-start-off').onclick=()=>{ beginDraft({}); };
 $('b-start-def').onclick=()=>{ beginDefenseDraft(); };
 /* NO BINDING HERE FOR FULL TEAM. The node does not exist at load: ensureFullButton() makes
@@ -10682,7 +11015,7 @@ function dynastyRunWall(){
   const at=runDayNext(), cd=at?dailyCountdown(at):null;
   const saved=dynRead('open')||dynRead('club');
   $('sheet-in').innerHTML='<div class="eyebrow gold">Dynasty</div>'+
-    '<h2 class="display" style="font-size:25px;margin:4px 0 8px">That is today\'s dynasty</h2>'+
+    '<h2 class="display" style="font-size:25px;margin:4px 0 8px">That\'s today\'s dynasty</h2>'+
     '<p class="dim" style="font-size:13.5px;line-height:1.45;margin:0 0 10px">'+
       'You start one new dynasty a day. '+
       (cd?'The next one unlocks in <b>'+esc(cd)+'</b>.'
@@ -10736,9 +11069,9 @@ function dailySpentSheet(mode){
      answers 3 today and 4 after a boss, so nobody has seen it. It is one server constant
      away from being the copy on a paywall, which is the worst screen to be ungrammatical
      on, and the fix costs less than the note explaining why it was left. */
-  const head=ended?'That is the day'
-    :seasons?(allow>1?'That is your '+allow+' seasons':'That is your season')
-    :'That is today\'s run';
+  const head=ended?'That\'s the day'
+    :seasons?(allow>1?'That\'s your '+allow+' seasons':'That\'s your season')
+    :'That\'s today\'s run';
   const body=ended
     ? 'The run is over, and a firing ends the day with it. '+when('next one')+
       ' Every run gets '+allow+' free season'+(allow>1?'s':'')+'.'
@@ -10778,7 +11111,7 @@ function dailySpentSheet(mode){
             ? '<b>One thing earns you another season today</b>'+
               '<span>Win a boss battle.</span>'
             : '<b>Two things earn you another run today</b>'+
-              '<span>Get fired in season one. That one does not count.</span>'+
+              '<span>Get fired in season one. That one doesn\'t count.</span>'+
               '<span>Win a boss battle.</span>')+
         '</div>'
       : '')+
@@ -10962,9 +11295,9 @@ function premiumSheet(){
      left to chance. */
   if(dynastyOwned()){
     box.innerHTML='<div class="eyebrow gold">Your account</div>'+
-      '<h2 class="display" style="font-size:26px;margin:4px 0 8px">You are Pro</h2>'+
+      '<h2 class="display" style="font-size:26px;margin:4px 0 8px">You\'re Pro</h2>'+
       '<p class="dim" style="font-size:13.5px;line-height:1.45;margin:0">'+
-        'Every Pro mode is unlocked, on every device you sign in on. There is nothing to '+
+        'Every Pro mode is unlocked, on every device you sign in on. There\'s nothing to '+
         'renew.</p>'+
       '<div style="margin-top:14px"><button class="btn ghost" id="sh-x" style="width:100%">Close</button></div>';
     openSheet();
@@ -10981,7 +11314,7 @@ function premiumSheet(){
      there is a step before the money and the buttons say which one it is. */
   box.innerHTML=(window.RTG_STORE
     ? window.RTG_STORE.html({signedOut:!authState.signedIn})
-    : '<p class="dim">The store could not be loaded. Reload the page and try again.</p>')+
+    : '<p class="dim">The store couldn\'t be loaded. Reload the page and try again.</p>')+
     '<div style="margin-top:12px"><button class="btn ghost" id="sh-x" style="width:100%">Not now</button></div>';
   if(window.RTG_STORE) window.RTG_STORE.wire(box,{buy:(kind)=>beginBundleCheckout(kind)});
   openSheet();
@@ -11011,16 +11344,20 @@ async function beginBundleCheckout(kind){
     if(d&&d.url){ location.href=d.url; return; }
     if(d&&d.error==='already_owned'){ toast('This account already owns it.'); premiumRefresh(); closeSheet(); return; }
     if(d&&d.error==='stripe_not_configured'){ toast('Not on sale yet.'); return; }
-    toast('Checkout could not start. Try again.');
-  }catch(e){ toast('Checkout could not start. Try again.'); }
+    toast('Checkout couldn\'t start. Try again.');
+  }catch(e){ toast('Checkout couldn\'t start. Try again.'); }
 }
 
 function paintHomeStart(){
   const split=$('hp-split'), one=$('b-start');
   if(!split||!one) return;
   const on=canPlayDefense();
-  split.hidden=!on;
-  one.hidden=on;
+  /* THE PAIR IS NEVER SHOWN NOW and the one button always is: the switcher above it is
+     where the side of the ball is chosen. The pair keeps its handlers for anything that
+     presses it directly. */
+  split.hidden=true;
+  one.hidden=false;
+  homeBusy(false);
   /* The caption belongs to the pair, so it comes and goes with the pair. Over a lone Start a
      run it would be telling somebody to choose between one thing. */
   const pick=$('hp-pick');
@@ -11051,7 +11388,125 @@ function paintHomeStart(){
   ensureFantasyButton();
   trimLongGroup();
   ensurePremiumCard();
+  paintHomeMode();
 }
+
+/* ─── THE SWITCHER ────────────────────────────────────────────────────────────────────────
+ *
+ * Three answers to one question, and only the ones this account can play are drawn: Defense
+ * asks canPlayDefense and Full Team asks canPlayFull, the same two calls that used to decide
+ * whether those doors existed. With only Offense left there is no question, so the control
+ * goes and the button simply starts a draft.
+ *
+ * THE CHOICE IS REMEMBERED on this device. Somebody who plays Defense every time should not
+ * have to say so every visit. A remembered mode this account can no longer play falls back
+ * to Offense rather than to a hidden tab. */
+const HOME_MODE_KEY='ps_home_mode';
+let homeMode=null;
+function homeModeList(){
+  const m=['off'];
+  if(canPlayDefense()) m.push('def');
+  if(canPlayFull()) m.push('full');
+  return m;
+}
+function homeModeNow(){
+  if(homeMode===null){
+    try{ homeMode=localStorage.getItem(HOME_MODE_KEY)||'off'; }catch(_){ homeMode='off'; }
+  }
+  return homeModeList().includes(homeMode)?homeMode:'off';
+}
+function setHomeMode(m){
+  if(m===homeModeNow()) return;
+  homeMode=m;
+  try{ localStorage.setItem(HOME_MODE_KEY,m); }catch(_){}
+  /* Asked for as soon as a side that needs it is picked, so the Spin that follows is warm. */
+  if(m!=='off') loadDefensePool().catch(()=>{});
+  paintHomeMode(true);
+}
+/* The Spin button's loading state, for the two sides that fetch a second pool first. */
+function homeBusy(on){
+  const b=$('b-start');
+  if(!b) return;
+  b.classList.toggle('hp-loading',!!on);
+  b.disabled=!!on;
+}
+/* WHAT THE LINE UNDER THE BUTTON SAYS. The numbers are read out of the constants, so a cap
+   that moves moves here too. Full Team's line is its old door's line: a saved season, a spent
+   day, or the shape of the run. */
+function homeRule(m){
+  if(m==='full'){
+    if(fullRead()) return 'Your season is saved. Pick up where you left off.';
+    if(dailyShut('full')){
+      const t=dailyCountdown(dailyResetsAt('full'));
+      return t?('Used today. Next run in '+t+'.'):'Used today. Next run tomorrow.';
+    }
+    return 'Twelve spins. '+M0(E.FULL_CAP_MUSD)+' cap.'+(dailyOn()?' One run a day.':'')+
+      (oneTeamReady()?'':' Needs a free account.');
+  }
+  return 'Six spins. '+M0(E.CONSTANTS.CAP_MUSD)+' cap.'+
+    (m==='def'&&!oneTeamReady()?' Needs a free account.':'');
+}
+/* The button names what it drafts, so the switcher's answer is on the thing you press. */
+const HOME_GO={off:'Draft your offense',def:'Draft your defense',full:'Draft your full team'};
+function homeSwap(el,html){
+  if(!el||el.innerHTML===html) return;
+  el.innerHTML=html;
+  if(reduceMotion()) return;
+  el.classList.remove('swap'); void el.offsetWidth; el.classList.add('swap');
+}
+function paintHomeMode(animate){
+  const box=$('hp-mode'), intro=$('s-intro');
+  if(!box||!intro||typeof E==='undefined') return;
+  const list=homeModeList();
+  const m=homeModeNow();
+  box.hidden=list.length<2;
+  box.style.setProperty('--n',String(list.length));
+  box.style.setProperty('--i',String(Math.max(0,list.indexOf(m))));
+  box.querySelectorAll('.hp-tab').forEach((t)=>{
+    const on=list.includes(t.dataset.m);
+    t.hidden=!on;
+    t.setAttribute('aria-checked',t.dataset.m===m?'true':'false');
+    t.tabIndex=t.dataset.m===m?0:-1;
+  });
+  intro.classList.toggle('hm-off',m==='off');
+  intro.classList.toggle('hm-def',m==='def');
+  intro.classList.toggle('hm-full',m==='full');
+  /* The Full Team tab says what state its run is in, the way its door did. */
+  const note=$('hp-tab-full-note');
+  if(note){
+    note.textContent=list.includes('full')
+      ?(fullRead()?'Resume':(dailyShut('full')?'Used today':(dailyOn()?'1 a day':'')))
+      :'';
+  }
+  const slots=m==='def'?E.DEFENSE_SLOTS:(m==='full'?null:E.SLOTS);
+  const sl=$('hp-slots');
+  const slHtml=slots?slots.join(' &middot; '):'Six on offense &middot; six on defense';
+  if(animate) homeSwap(sl,slHtml); else if(sl) sl.innerHTML=slHtml;
+  const ru=$('hp-rule');
+  if(animate) homeSwap(ru,homeRule(m)); else if(ru) ru.textContent=homeRule(m);
+  const go=document.querySelector('#b-start .hp-go-l');
+  const goTxt=(m==='full'&&fullRead())?'Resume Full Team':HOME_GO[m]||HOME_GO.off;
+  if(go&&go.textContent!==goTxt){
+    go.textContent=goTxt;
+    if(animate&&!reduceMotion()){ go.classList.remove('swap'); void go.offsetWidth; go.classList.add('swap'); }
+  }
+  heroSwitch();
+}
+/* Wired once. Arrow keys move between the tabs the way a radio group does. */
+(function(){
+  const box=$('hp-mode');
+  if(!box) return;
+  box.querySelectorAll('.hp-tab').forEach((t)=>{ t.onclick=()=>setHomeMode(t.dataset.m); });
+  box.addEventListener('keydown',(e)=>{
+    if(e.key!=='ArrowRight'&&e.key!=='ArrowLeft') return;
+    const list=homeModeList();
+    const i=list.indexOf(homeModeNow());
+    const n=list[(i+(e.key==='ArrowRight'?1:list.length-1))%list.length];
+    e.preventDefault();
+    setHomeMode(n);
+    const t=$('hp-tab-'+n); if(t) t.focus();
+  });
+})();
 
 /*
  * WHO IS OFFERED THE STORE, and the answer is the same rule the doors use: somebody who
@@ -11213,8 +11668,8 @@ function ensureLongGroup(){
   /* AFTER WHICHEVER STARTER IS SHOWING. The split and the lone Start a run are the same
      slot wearing two faces and only one is ever in the layout, so this anchors to the one
      that is rather than to a fixed id. */
-  const split=$('hp-split'), one=$('b-start');
-  const top=(split&&!split.hidden)?split:one;
+  /* UNDER THE LINE BELOW THE SPIN BUTTON, which is the last thing that belongs to it. */
+  const top=$('hp-rule')||$('b-start');
   if(!top||!top.parentNode) return box;
   if(box.previousSibling!==top) top.parentNode.insertBefore(box,top.nextSibling);
   return box;
@@ -11448,26 +11903,128 @@ function dynHiHTML(){
    Commish door carries about preventDefault.
    NO METER TO ASK ABOUT, so this builder has no dailyEnsure and no shut state: one entry a
    week is the rule and the lock is a kickoff rather than an allowance. */
+/* ---- HAS THIS BROWSER ENTERED THE LIVE WEEK ----
+ *
+ * The door's neon is red until a lineup is in and green after, so the front page has to
+ * answer a question the mode owns. It reads the mode's OWN localStorage record, which is
+ * written only after `fantasy_submit` has said yes: `state.submitted` is set on the success
+ * path and nowhere else, so a refused entry never lights this green.
+ *
+ * IT FAILS SOFT TO RED, AND THAT IS THE SAFE DIRECTION rather than a shrug. Red means "no
+ * lineup in", which is what an unknown answer should say: the worst it costs is a tap onto
+ * a screen that says you are already in, and the mode's own screens are the truth. Green on
+ * a bad read would tell somebody they had entered a competition they had not.
+ *
+ * WHAT IT CANNOT SEE IS ANOTHER DEVICE. A lineup entered on a phone leaves this laptop's
+ * door red until the mode is opened here. The row is the server's and `fantasy_my_entry`
+ * knows, but asking it needs `entries.js`, a supabase client and a round trip on every
+ * front page paint for a border colour. Decoration must never hold up a page that works
+ * without it, so this reads what is already on disk and is wrong in the quiet direction.
+ *
+ * THE WEEK IS READ AND NEVER WRITTEN HERE, which is the mode's own rule. A week number in
+ * this file is the class of thing this repo keeps a checker for, and it would go stale
+ * every Tuesday: the door would stay green into a week nobody had entered. */
+let fanWeek=null, fanAsked=false;
+function fantasyEntered(){
+  if(!fanWeek) return false;
+  try{
+    const raw=localStorage.getItem('ps_fantasy_'+fanWeek.season+'_w'+fanWeek.week);
+    if(!raw) return false;
+    const s=JSON.parse(raw);
+    return !!s&&s.submitted!=null;
+  }catch(_){ return false; }
+}
+/* ASKED ONCE, LAZILY, AND ONLY FOR SOMEBODY WHO IS SHOWN THE DOOR. Never awaited: the door
+   is drawn red immediately and repaints itself if the answer says otherwise, so a slow or
+   blocked pointer costs a colour and never a paint. */
+function fantasyWeekEnsure(){
+  if(fanAsked) return;
+  fanAsked=true;
+  fetch('/football/data/fantasy_now.json',{cache:'no-cache'})
+    .then(r=>r.ok?r.json():null)
+    .then(n=>{
+      if(!n||n.season==null||n.week==null) return;
+      fanWeek=n;
+      /* Only repaint if the answer actually changes the door, so this is a no-op on the
+         common visit and cannot fight whatever else has repainted since. */
+      if(fantasyEntered()) ensureFantasyButton();
+    })
+    .catch(()=>{});
+}
+
+/* THE SAME PADLOCK THE modes sheet DRAWS, written out again rather than shared, because
+   MC_LOCK is a const inside the sheet's own painter and hoisting it to module scope to
+   reach it from here is a bigger change than one path. Its own class, sized off the label
+   it sits in so it tracks the name rather than being pinned in pixels. */
+const HP_LOCK='<svg class="hp-lk" viewBox="0 0 24 24" aria-hidden="true">'+
+  '<path fill="none" stroke="currentColor" stroke-width="2.4" '+
+    'd="M7.6 10.4V7a4.4 4.4 0 0 1 8.8 0v3.4"/>'+
+  '<rect x="4.2" y="10.2" width="15.6" height="11.6" rx="2.4" fill="currentColor"/></svg>';
+
 function ensureFantasyButton(){
   let el=$('b-fantasy');
-  if(!canPlayFantasy()){
+  if(!fantasyShow()){
     if(el&&el.parentNode) el.parentNode.removeChild(el);
     return;
   }
   const box=ensureLongGroup(); if(!box) return;
+  /* Asked here rather than at boot, so the request only ever goes out for somebody who is
+     actually shown this door. Same rule dynHiEnsure follows beside the Dynasty one. */
+  fantasyWeekEnsure();
   if(!el){
     el=document.createElement('a');
-    el.className='btn hp-full';
     el.id='b-fantasy';
     el.href='/football/fantasy/';
-    /* PREVIEW, WHICH IS THE HONEST WORD WHILE ONLY A TESTER CAN SEE IT, and is the word
-       Full Team's door wore until the day that mode launched. New is what a finished mode
-       that is new says; Preview tells the handful of people who can open this that the
-       rough edges are expected. */
-    el.innerHTML='<span class="hp-tag">Preview</span>'+
-      '<span class="hp-full-name">Fantasy Challenge</span>'+
-      '<span class="hp-full-sub">One lineup &middot; one week</span>';
   }
+  /* REBUILT ON EVERY CALL, not only on the one that made the node, which is the Dynasty
+     door's rule and matters here for the same reason: this runs on every auth change, and
+     signing in has to take the padlock off without a reload. Written once at creation, a
+     guest who signed in would be left looking at a locked door onto a mode they can now
+     play. */
+  const open=canPlayFantasy();
+  /* THE PADLOCK WAITS FOR AN ANSWER, WHICH IS THE MODE PAGE'S OWN RULE ARRIVING HERE.
+     paintHomeStart runs at boot, synchronously, before PS_AUTH has resolved getSession, so
+     authState is {ready:false,signedIn:false} for the first beat of every visit. Decided
+     off that, a returning signed in player is shown a door reading "Sign in to play" and
+     then corrected, which reads as having been signed out.
+     THE TWO MISTAKES ARE NOT SYMMETRIC. Telling somebody who is signed in to sign in is
+     alarming; showing a guest an unlocked door for a beat costs nothing, because the
+     HANDLER asks canPlayFantasy() again at press time and a guest who taps inside that
+     window still gets the sheet. So the chrome waits and the rule does not. */
+  const showLock=authState.ready&&!open;
+  /* GREEN ONLY FOR SOMEBODY WHO COULD HAVE ENTERED. A guest's browser can hold a lineup
+     from before they signed out, and a green door promising a stranger they are in is the
+     one thing this light must never say. */
+  const inThisWeek=open&&fantasyEntered();
+  el.className='btn hp-full hp-fan'+(inThisWeek?' hp-fan-in':'')+(showLock?' hp-lock':'');
+  /* BETA, BECAUSE IT IS. Preview was the honest word while only a tester could open it and
+     New is what a finished mode says. Beta is the one that tells a reader the mode is real,
+     is theirs, and has rough edges. */
+  el.innerHTML='<span class="hp-tag hp-tag-beta">Beta</span>'+
+    '<span class="hp-full-name">'+(showLock?HP_LOCK:'')+'Fantasy Challenge</span>'+
+    '<span class="hp-full-sub">'+(inThisWeek
+      ? 'Lineup in &middot; watch it score'
+      : showLock
+        ? 'Sign in to play &middot; one lineup a week'
+        : 'One lineup &middot; one week')+'</span>';
+  /* THE COLOUR IS A CLAIM ABOUT THIS ACCOUNT, so it is said out loud for a reader who
+     cannot see a border at all. The border is the fast answer and this is the true one. */
+  el.setAttribute('aria-label','Fantasy Challenge, beta. '+(inThisWeek
+    ? 'Your lineup is in for this week.'
+    : showLock ? 'Sign in to play.' : 'No lineup entered yet this week.'));
+  /* THE LOCKED DOOR IS FULLY PRESSABLE AND THE PRESS GOES TO SIGN IN, which is the whole
+     point of drawing it. `.mc-soon` is the wrong treatment and is deliberately not reused:
+     it sets pointer-events:none, and a lock a thumb falls straight through is a lock with
+     no way to the thing that opens it.
+     preventDefault ONLY on this branch, so an open door keeps middle click, open in a new
+     tab and a long press working the way an anchor should. That is the college game's
+     Commish door rule, and it is why this is an <a> and not a <button>. */
+  el.onclick=(e)=>{
+    if(canPlayFantasy()) return;
+    e.preventDefault();
+    authMode='in';
+    profileSheet();
+  };
   /* LAST OF THE MODE DOORS, AND STILL ABOVE THE STORE CARD. Appending to the group alone
      put it under "Unlock everything", because ensurePremiumCard runs after this and inserts
      into the same container, so the offer ended up in the middle of the list of modes with
@@ -11777,7 +12334,7 @@ function dynastyReplaceSheet(opts){
     '<p class="dim" style="font-size:13.5px;line-height:1.45;margin:0 0 12px">'+
       (where?'<b>'+esc(where)+'</b>, ':'')+
       (r&&r.score>0?SCORE(r.score)+' points. ':'')+
-      'Starting another '+(slot==='club'?'One Franchise ':'')+'run ends it. There is no way '+
+      'Starting another '+(slot==='club'?'One Franchise ':'')+'run ends it. There\'s no way '+
       'back to it.</p>'+
     '<div style="margin-top:14px"><button class="btn" id="b-dr-keep">Keep playing it</button></div>'+
     '<div style="margin-top:8px"><button class="btn ghost sm" id="b-dr-new">Start a new one anyway</button></div>';
@@ -11841,7 +12398,7 @@ function dynastyRulesHTML(go,opts){
       'How long can you last?</h2>'+
     /* THE RULE FIRST AND ON ITS OWN. Everything under this is detail. */
     '<div class="dynrule">'+
-      '<span class="ul-line"><b>'+base+' wins</b><i>or you are fired</i></span>'+
+      '<span class="ul-line"><b>'+base+' wins</b><i>or you\'re fired</i></span>'+
       '<p>Win '+base+' games and you play another season. Miss once and the run is over.</p>'+
     '</div>'+
     /* ---- AND WHAT A DAY OF IT COSTS, SECOND ON THE SHEET ----
@@ -11889,7 +12446,7 @@ function dynastyRulesHTML(go,opts){
             '<li><b>One run a day, free.</b> Carrying on a run you have already started never '+
               'costs one. Play it over as many days as it lasts.</li>'+
             '<li><b>Fired in season one? Have another.</b> A run that dies in its first '+
-              'season does not count against the day.</li>'+
+              'season doesn\'t count against the day.</li>'+
             '<li><b>Win a boss battle, get another.</b> Reach season '+(E.DYNASTY_MILESTONE_EVERY*2)+
               ' and beat the marquee team, and the day gives you one more.</li>'+
           '</ul>')
@@ -11911,17 +12468,17 @@ function dynastyRulesHTML(go,opts){
     '<div class="dynmoney">'+
       '<div class="dm-cap"><span>Your cap</span><b>$140M</b><i>and it never changes</i></div>'+
       '<ul class="dm-list">'+
-        '<li><b>You pay what you drafted him at.</b> Sign a 24 year old at $9M and he is $9M '+
+        '<li><b>You pay what you drafted him at.</b> Sign a 24 year old at $9M and he\'s $9M '+
           'at 34 too, even when he plays like $40M. That gap is cap you never spend, and it '+
           'is the whole game.</li>'+
         '<li class="in"><b>A player who leaves gives it all back.</b> Retire, run out of seasons, '+
           'or sign elsewhere: every dollar of his deal is yours to spend again.</li>'+
         '<li class="out"><b>Cutting a player keeps a quarter on your books.</b> You get three '+
           'quarters back to spend now. The last quarter is dead cap: cap you pay for a '+
-          'player who is gone, for the rest of the run.'+
+          'player who\'s gone, for the rest of the run.'+
           '<span class="dm-bar"><i class="back" style="width:75%">75% back</i>'+
             '<i class="dead" style="width:25%">25% dead</i></span></li>'+
-        '<li><b>Over the cap? Keep everyone.</b> You are never forced to cut. You just cannot '+
+        '<li><b>Over the cap? Keep everyone.</b> You\'re never forced to cut. You just can\'t '+
           'sign anyone new until you free up room.</li>'+
       '</ul>'+
     '</div>'+
@@ -12428,7 +12985,7 @@ function dynResume(slot){
   endRun();
   show('s-intro');
   ensureDynastyButton();
-  toast('That saved run could not be opened. It has been cleared.');
+  toast('That saved run couldn\'t be opened. It has been cleared.');
 }
 
 /* Throwing one away is a decision, so it is asked rather than assumed. */
@@ -12448,7 +13005,7 @@ function dynNewSheet(){
     '<h2 class="display" style="font-size:25px;margin:4px 0 8px">Give up on this run?</h2>'+
     '<p class="dim" style="font-size:13.5px;margin:0">You are '+
       (n?n+' season'+(n===1?'':'s')+' in':'one draft in')+
-      '. Starting a new run throws this one away. You cannot get it back.</p>'+
+      '. Starting a new run throws this one away. You can\'t get it back.</p>'+
     '<div style="margin-top:14px"><button class="btn" id="b-dyn-drop">Start a new run</button></div>'+
     '<div style="margin-top:8px"><button class="btn ghost sm" id="b-dyn-keep">Keep playing this one</button></div>';
   $('sheet-in').dataset.kind='dynnew';
@@ -12592,7 +13149,7 @@ function tradeResume(){
   tradeClear();
   endRun();
   show('s-intro');
-  toast('That saved run could not be opened. It has been cleared.');
+  toast('That saved run couldn\'t be opened. It has been cleared.');
   return true;
 }
 
@@ -12729,9 +13286,9 @@ function fullResume(){
     fullClear();
     endRun();
     show('s-intro');
-    toast('That saved run could not be opened. It has been cleared.');
+    toast('That saved run couldn\'t be opened. It has been cleared.');
   },()=>{
-    toast('Could not load the defensive players. Check your connection and try again.');
+    toast('Couldn\'t load the defensive players. Check your connection and try again.');
   });
   return true;
 }
@@ -12781,6 +13338,7 @@ function beginFullDraft(){
   if(dailyShut('full')) return dailyStop('full');
   const b=$('b-start-full');
   if(b){ b.disabled=true; b.classList.add('hp-loading'); }
+  homeBusy(true);
   /* THE CATCH IS ON THE FETCH AND NOTHING ELSE.
      Chained as .then(...).catch(...) it also caught anything beginDraft threw, and the
      first thing beginDraft threw was the field renderer reading a coordinate for a chip
@@ -12793,7 +13351,8 @@ function beginFullDraft(){
     beginDraft({full:true});
   },()=>{
     if(b){ b.disabled=false; b.classList.remove('hp-loading'); }
-    toast('Could not load the defensive players. Check your connection and try again.');
+    homeBusy(false);
+    toast('Couldn\'t load the defensive players. Check your connection and try again.');
   });
 }
 
@@ -12810,6 +13369,7 @@ function beginDefenseDraft(){
   }
   const b=$('b-start-def');
   if(b){ b.disabled=true; b.classList.add('hp-loading'); }
+  homeBusy(true);
   /* Two arguments rather than a chained .catch, for the reason written out in
      beginFullDraft: a chained catch reports a bug in the draft as a failed download. */
   loadDefensePool().then(()=>{
@@ -12817,7 +13377,8 @@ function beginDefenseDraft(){
     beginDraft({defense:true});
   },()=>{
     if(b){ b.disabled=false; b.classList.remove('hp-loading'); }
-    toast('Could not load the defensive players. Check your connection and try again.');
+    homeBusy(false);
+    toast('Couldn\'t load the defensive players. Check your connection and try again.');
   });
 }
 $('b-tut').onclick=()=>{ tutStart(); };
@@ -12871,18 +13432,18 @@ const WALL={
   club:{name:'One Franchise',
     what:'Draft the greatest team in one franchise\'s history. Every spin gives you that '+
       'franchise in a different year, and you sign one player from each.',
-    note:'<b>Every franchise has its own leaderboard.</b> You are only up against people '+
+    note:'<b>Every franchise has its own leaderboard.</b> You\'re only up against people '+
       'who picked the same one.',
-    noname:'You are signed in. Pick a username and One Franchise opens, because every run on '+
+    noname:'You\'re signed in. Pick a username and One Franchise opens, because every run on '+
       'these boards is listed under a name.',
-    out:'One Franchise needs a free account. It is thirty-two leaderboards, one per '+
+    out:'One Franchise needs a free account. It\'s thirty-two leaderboards, one per '+
       'franchise, and a run has to have a name on it to be listed.'},
   defense:{name:'Defense',
     what:'Draft six defenders under the same cap and try to stop the league instead of '+
       'outscoring it. Every takeaway they force is one of your men.',
-    note:'<b>Defense has its own leaderboard.</b> You are only up against people who drafted '+
+    note:'<b>Defense has its own leaderboard.</b> You\'re only up against people who drafted '+
       'the same side of the ball.',
-    noname:'You are signed in. Pick a username and Defense opens, because every run on that '+
+    noname:'You\'re signed in. Pick a username and Defense opens, because every run on that '+
       'board is listed under a name.',
     out:'Defense needs a free account. It has its own leaderboard, and a run has to have a '+
       'name on it to be listed.'},
@@ -12893,10 +13454,10 @@ const WALL={
   full:{name:'Full Team',
     what:'Draft six on offense and six on defense out of ONE cap, and play a season where '+
       'your roster decides what both teams score. The first mode that can hand you an '+
-      'offense that scores at will and a defense that cannot get a stop.',
-    note:'<b>Full Team has its own leaderboard.</b> You are only up against people who '+
+      'offense that scores at will and a defense that can\'t get a stop.',
+    note:'<b>Full Team has its own leaderboard.</b> You\'re only up against people who '+
       'drafted a whole team.',
-    noname:'You are signed in. Pick a username and Full Team opens, because every run on '+
+    noname:'You\'re signed in. Pick a username and Full Team opens, because every run on '+
       'that board is listed under a name.',
     out:'Full Team needs a free account. It has its own leaderboard, and a run has to have '+
       'a name on it to be listed.'},
@@ -12909,7 +13470,7 @@ const WALL={
     what:'Draft six players from any year. Every offseason each becomes his own next real '+
       'season, unless he retires or signs somewhere else. The cap never moves.',
     note:'<b>One miss and the run is over.</b> Scored on how long you last.',
-    noname:'You are signed in. Pick a username and Dynasty opens. Every run on that '+
+    noname:'You\'re signed in. Pick a username and Dynasty opens. Every run on that '+
       'board is listed under a name.',
     out:'Dynasty needs a free account. A run has to have a name on it to be listed.'},
 };
@@ -13177,11 +13738,11 @@ function modeMenu(){
         '<p>'+(tradeSave_
           ? esc(tradeWeek>0
               ? 'You are '+tradeWeek+' week'+(tradeWeek===1?'':'s')+' into a season. Pick it back up.'
-              : 'Your team is dealt and the season has not kicked off. Pick it back up.')
+              : 'Your team is dealt and the season hasn\'t kicked off. Pick it back up.')
           : (tradeSpent
             ? esc(tradeCd?'Your run today is used. The next one unlocks in '+tradeCd+'.'
                          :'Your run today is used. The next one unlocks at midnight Eastern.')
-            : 'You are thrown into a season as the GM. Win with the team you\'re dealt, or trade your way to the top.'))+
+            : 'You\'re thrown into a season as the GM. Win with the team you\'re dealt, or trade your way to the top.'))+
         '</p>'+
       '</button>'+
     '</div>'+
@@ -13745,7 +14306,7 @@ function tutSteps(){
         n(M(left))+' to sign all six.' },
     { t:'The cap is the whole puzzle',
       b:'One spot gone, '+n(M(left))+' left for '+n(spots)+'. The figure under the cap is '+
-        'what is left PER remaining spot: when it turns red you can no longer afford an '+
+        'what\'s left PER remaining spot: when it turns red you can no longer afford an '+
         'average player everywhere else. A star early is paid for by bargains later.' },
     { t:'The tabs are positions',
       b:'QB, RB, WR and TE, with everyone the team had at each. A position with nowhere '+
@@ -13761,7 +14322,7 @@ function tutSteps(){
         'price: an expensive start is either the reason the team is good or the reason the '+
         'last two spots are whoever happens to be cheapest.' },
     { t:'Last spot',
-      b:'Whatever is left has to cover it. If nothing on the board fits, that is exactly '+
+      b:'Whatever is left has to cover it. If nothing on the board fits, that\'s exactly '+
         'what a respin is for, fee and all.' },
   ];
 }
@@ -13806,7 +14367,7 @@ function tutFinish(){
   const bar=$('tut'); if(bar) bar.hidden=true;
   const scr=$('s-draft'); if(scr) scr.style.paddingBottom='';
   $('tutend-body').innerHTML='In a real run the season plays out from here: seventeen games, '+
-    'then the playoffs if you get there. This practice draft is not recorded and never '+
+    'then the playoffs if you get there. This practice draft isn\'t recorded and never '+
     'reaches the leaderboard.';
   end.hidden=false;
   $('tutend-go').onclick=()=>{ tutStop(true); ga('tutorial_to_real_run'); beginDraft({}); };
@@ -13994,7 +14555,7 @@ function eraPicker(){
     '<h2 class="display" style="font-size:25px;margin:4px 0 8px">Pick a decade</h2>'+
     '<p class="dim" style="font-size:13.5px;line-height:1.45;margin:0 0 10px">'+
       'Every spin gives you a team from that decade. Your opponents come from the same era, '+
-      'and you are ranked against other players who picked it.</p>'+
+      'and you\'re ranked against other players who picked it.</p>'+
     '<div class="eragrid">'+
       eras.map(e=>'<button class="btn erabtn" data-era="'+e+'">'+esc(e)+'</button>').join('')+
     '</div>'+
@@ -14047,7 +14608,7 @@ function clubPicker(forDynasty){
          bite years earlier. That is the whole reason to play this rather than the open one,
          so it is what the screen says. */
       ? '<p class="dim" style="font-size:13.5px;line-height:1.45;margin:0 0 10px">One club, '+
-          'season after season, for as long as you can keep the job. You are drafting out of '+
+          'season after season, for as long as you can keep the job. You\'re drafting out of '+
           'one team\'s whole history and nobody else\'s, so it runs thin far sooner than the '+
           'open wheel does.</p>'+
         '<ul class="modenotes">'+
@@ -14060,7 +14621,7 @@ function clubPicker(forDynasty){
           'greatest team in its history. Every spin gives you that franchise in a different '+
           'year, and you sign one player from each.</p>'+
         '<ul class="modenotes">'+
-          '<li><b>Every franchise has its own leaderboard.</b> You are only up against people '+
+          '<li><b>Every franchise has its own leaderboard.</b> You\'re only up against people '+
             'who picked the same one.</li>'+
           '<li><b>Sign in to get on it.</b> Guest runs are played and counted, but not '+
             'recorded.</li>'+
@@ -14111,7 +14672,7 @@ function paintDynastyDraftBar(){
   const cols=[];
   cols.push({
     lab:'Season '+run.seasonNo,
-    val:'<span class="gd-goal"><b>'+bar+' wins</b><i>or you are fired</i></span>',
+    val:'<span class="gd-goal"><b>'+bar+' wins</b><i>or you\'re fired</i></span>',
   });
   if(last){
     /* HOW LAST YEAR FINISHED, AND BY HOW MUCH. The record on its own does not say whether
@@ -14282,7 +14843,7 @@ function paintTop(){
      note is the third of three that share one slot, so the fact most likely to be preempted
      was the one that never goes away. It has its own column in Dynasty strip at the top
      of this HUD, which is on screen at every scroll position. See paintDynastyDraftBar. */
-  if(left>1&&rem-floor<8){n.style.display='block';n.textContent='Keep at least '+M(floor)+' back or you cannot fill the rest of your team.';}
+  if(left>1&&rem-floor<8){n.style.display='block';n.textContent='Keep at least '+M(floor)+' back or you can\'t fill the rest of your team.';}
   else if(left===1&&rem>25){n.style.display='block';n.textContent='You still have '+M(rem)+' left and this is the last spot to spend it on.';}
   else n.style.display='none';
   /* The club goes here rather than into a banner of its own. It is the one thing about an
@@ -14926,7 +15487,7 @@ function askSlot(p,choices){
        depending on what is still open, and a sentence that promises two under a list of
        three is the kind of thing that makes a player distrust the rest of the screen. */
     '<p class="dim" style="font-size:13.5px;margin:0">He can play any of these, and which '+
-      'one he takes decides what is left for your other picks.</p>'+
+      'one he takes decides what\'s left for your other picks.</p>'+
     '<div class="slotpick">'+choices.map(i=>
       '<button class="slotopt" data-i="'+i+'">'+
         '<span class="tag" style="'+posPaint(slots[i])+'">'+esc(slots[i])+'</span>'+
@@ -15301,7 +15862,7 @@ function dynastyGoalHTML(withSeason){
   const at=run.seasonNo+L.left;
   return '<div class="ultim">'+
       (withSeason?'<span class="ul-top">Season <b>'+run.seasonNo+'</b></span>':'')+
-      '<span class="ul-line"><b>'+bar+' wins</b><i>or you are fired</i></span>'+
+      '<span class="ul-line"><b>'+bar+' wins</b><i>or you\'re fired</i></span>'+
     '</div>'+
     '<div class="pips">'+pips+'</div>'+
     '<div class="stepnote">'+(L.left===1
@@ -15384,8 +15945,8 @@ function paintDryWheel(){
        belt to that brace, and it says the true thing rather than nothing. */
     (run.roster.length
       ? '<button class="btn" id="b-short">Take the field with '+run.roster.length+'</button>'
-      : '<p class="dw-p">There is nobody to field and nobody you can sign. This should not '+
-        'be reachable: if you are seeing it, the run is stuck and worth reporting.</p>')+
+      : '<p class="dw-p">There\'s nobody to field and nobody you can sign. This shouldn\'t '+
+        'be reachable: if you\'re seeing it, the run is stuck and worth reporting.</p>')+
     '</div>';
   const b=$('b-short');
   if(b) b.onclick=()=>{
@@ -15490,7 +16051,7 @@ function paintWinterCap(animate){
   const deadNote=dead>0.05?' '+M(dead)+' is dead.':'';
   const cutNote=run.roster.length?' A cut returns three quarters of his salary.':'';
   $('w-note').textContent=over>0.05
-    ? M(over)+' over. You cannot sign anyone until you are under.'+deadNote+cutNote
+    ? M(over)+' over. You can\'t sign anyone until you\'re under.'+deadNote+cutNote
     : M(cap-committed)+' of room.'+deadNote+cutNote;
 }
 
@@ -16266,7 +16827,7 @@ function fullBreakdown(){
       scale(p.talent)+term(chem,'chemistry')+term(fit,'fit')+'</span>'+
     '<span class="fbe">'+eq+'</span><b class="fbv">'+rate1(val)+'</b></div>';
   return '<div class="fbreak">'+
-    '<div class="fbhead">How that is made</div>'+
+    '<div class="fbhead">How that\'s made</div>'+
     /* OFFENSE EQUALS, DEFENSE ARROWS, and the difference is the point rather than a
        typographic tic: with the scale printed, the offense really is the four terms
        multiplied and a reader can check it on a calculator. The defense cannot be, because
@@ -16316,7 +16877,7 @@ function fullBreakdown(){
       : '')+
     /* WHAT THE ARROW MEANS, said once, under the table. The alternative is a longer defense
        row on a 390px phone, where it would wrap and push the value off its own line. */
-    '<div class="fbfoot">Defense counts what you stop, so it is placed on the offense\'s '+
+    '<div class="fbfoot">Defense counts what you stop, so it\'s placed on the offense\'s '+
       'scale to be averaged with it. Your twelve share one cap, so the team is then read '+
       'on the same scale every mode is rated on.</div>'+
     '</div>';
@@ -16398,8 +16959,8 @@ function paintSquad(keepSeason){
     : '<p class="dim" style="font-size:13px;margin:6px 0 0">'+(run.franchise
         ? 'Sharing the '+esc(E.nickname(run.franchise))+' earns nothing here, because every '+
           'roster in this mode does. None of these six shared a season, a college or a draft '+
-          'class, so there is no chemistry this run.'
-        : 'Nobody here ever played together, so there is no chemistry this run.')+'</p>';
+          'class, so there\'s no chemistry this run.'
+        : 'Nobody here ever played together, so there\'s no chemistry this run.')+'</p>';
   /* Coach's take. Every line ties to one of the meters underneath it, so the
      structure multiplier explains itself instead of being a hidden number. */
   const spend=run.roster.reduce((t,p)=>t+p.price_musd,0)+E.respinFees(run.respinsUsed);
@@ -16803,13 +17364,13 @@ function paintDynastyBar(s){
       '<div class="gb-rt">'+
         '<div class="gb-top">'+
           '<span>Wins <b>'+wins+'</b> of <b>'+bar+'</b></span>'+
-          '<span class="gb-or">'+(done?'You keep your job':'or you are fired')+'</span>'+
+          '<span class="gb-or">'+(done?'You keep your job':'or you\'re fired')+'</span>'+
         '</div>'+
         '<div class="gb-track">'+track+'</div>'+
         '<div class="gb-note">'+(done
           ? 'Job saved. Season '+(run.seasonNo+1)+' is next.'
           : (dead
-            ? 'You cannot get there. This is the last season.'
+            ? 'You can\'t get there. This is the last season.'
             : need+' more from '+left+' game'+(left===1?'':'s')+'.'))+'</div>'+
       '</div>'+
     '</div>'+
@@ -17926,7 +18487,7 @@ function openTradeWindow(step,opts){
     }else if(cashOut>0){
       /* The one thing that has taken cap room off you, and what is left of it. */
       rise.innerHTML='<b>$'+cashOut.toFixed(1)+'M of your cap is gone</b>, paid out as cash in '+
-        'trades. Payroll <b>$'+payroll.toFixed(1)+'M</b> against what is left of $'+CAP()+'M, '+
+        'trades. Payroll <b>$'+payroll.toFixed(1)+'M</b> against what\'s left of $'+CAP()+'M, '+
         '<b>$'+cap.remaining.toFixed(1)+'M</b> to spend'+
         (deadline?'. Last window to use it.':'.');
     }else if(cashOut<0){
@@ -18010,7 +18571,7 @@ function updateShopState(){
        GM shedding salary actually needs to know while choosing who to shop. */
     (cap.overBy>0
       ? ' <span class="over">Take back under <b>$'+Math.max(0,outSal-cap.overBy).toFixed(1)+
-        'M</b> and you are under the cap.</span>'
+        'M</b> and you\'re under the cap.</span>'
       : '');
 }
 
@@ -18689,7 +19250,7 @@ function paintSeed(){
       ' overall you are seeded on top whatever the record says. Three wins from a championship.'
     : sd.bye
       ? 'You earned a first-round bye. Three wins from a championship.'
-      : 'You are in. Four wins from a championship.';
+      : 'You\'re in. Four wins from a championship.';
 
   /* Playoff progress tracker */
   const allRounds=['Wild Card','Divisional','Conf.','Title'];
@@ -20913,18 +21474,18 @@ function paintOver(){
   if(o.perfect){c.classList.add('gold','perfect');
     emb.hidden=false; emb.innerHTML=EMBLEM_CROWN;
     $('o-title').textContent='Perfect season';
-    $('o-sub').textContent='Seventeen straight, then three more. No real team has ever done it.';
+    $('o-sub').textContent='Seventeen straight, then three more. No real NFL team has ever done that. Go brag.';
   }else if(o.titleWon){c.classList.add('win');
     emb.hidden=false; emb.innerHTML=EMBLEM_TROPHY;
     $('o-title').textContent='Champions';
-    $('o-sub').textContent='You won the title. The undefeated run is still out there.';
+    $('o-sub').textContent='You won it all. Now go get the perfect one.';
   }else if(o.eliminatedIn){c.classList.add('out');
     $('o-title').textContent='Out in the '+o.eliminatedIn;
-    $('o-sub').textContent=o.undefeatedRegular?'Undefeated right up to the playoffs.'
-      :'One loss ends it once you are there.';
+    $('o-sub').textContent=o.undefeatedRegular?'Unbeaten all year, then one bad day. That one stings.'
+      :'One loss and you\'re done. Run it back.';
   }else{c.classList.add('out');
     $('o-title').textContent='Missed the playoffs';
-    $('o-sub').textContent='It takes '+E.CONSTANTS.PLAYOFF_WINS+' wins to get in.';
+    $('o-sub').textContent='You need '+E.CONSTANTS.PLAYOFF_WINS+' wins to get in. Run it back.';
   }
   ga('run_complete',{outcome:o.perfect?'perfect':o.titleWon?'champion':o.eliminatedIn?'eliminated':'missed_playoffs',record:o.record,mode:runMode(),club:run&&run.franchise||null});
 
@@ -21271,7 +21832,7 @@ function paintOver(){
        the number it DOES have means instead of apologising for one it does not. */
     if(run.full){
       $('o-miss').innerHTML=
-        '<p class="dim" style="font-size:13px;margin:0 0 8px">There is no best-possible score in '+
+        '<p class="dim" style="font-size:13px;margin:0 0 8px">There\'s no best-possible score in '+
         'Full Team yet. Twelve spots across two pools under one cap is a different problem '+
         'from six, and a wrong answer here would be worse than none.</p>'+
         '<p class="caveat" style="margin:0">Team overall is your offense and your defense '+
@@ -21281,7 +21842,7 @@ function paintOver(){
         'produce HERE, which is a shade under what the same men manage with only one side of '+
         'the ball to carry.</p>';
     }
-    else if(!best){ $('o-miss').innerHTML='<p class="dim" style="font-size:13px;margin:0">Could not work this one out.</p>'; }
+    else if(!best){ $('o-miss').innerHTML='<p class="dim" style="font-size:13px;margin:0">Couldn\'t work this one out.</p>'; }
     else{
       const band=share>=90?'pgood':(share>=70?'pmid':'pbad');
       const fill=sband;
@@ -21310,14 +21871,14 @@ function paintOver(){
             'what the simulation scores with. ')+
         (isDefRun()?'Points allowed':'Points scored')+' and both records come from replaying '+
         'the two teams against your actual 17 opponents many times, because one season is mostly '+
-        'luck: they are the season each roster typically plays, not the one yours happened to. '+
+        'luck: they\'re the season each roster typically plays, not the one yours happened to. '+
         'Your six teams stay fixed, so a different pick would also have changed what the wheel '+
         'showed you next.</p>';
     }
     /* Only now, with perfectPct known, is the run sent and the board read. */
     paintRanks().catch(()=>{
       $('o-ranks').innerHTML='<p class="rankfoot" style="margin-top:8px">The leaderboard '+
-        'is not reachable right now, so this run has not been counted.</p>';
+        'isn\'t reachable right now, so this run hasn\'t been counted.</p>';
       paintRankStrip(null);
       paintSaveBanner();
     });
@@ -21959,7 +22520,7 @@ $('b-share').onclick=async()=>{
     if(e&&e.name==='AbortError') return;   // they closed the sheet, not a failure
     // No share sheet: put the text on the clipboard and hand over the image.
     try{ await navigator.clipboard.writeText(text); toast('Copied'); }
-    catch(_){ toast('Could not copy'); }
+    catch(_){ toast('Couldn\'t copy'); }
     if(file){
       const a=document.createElement('a');
       a.href=URL.createObjectURL(file); a.download='perfect-season.png';
@@ -22342,7 +22903,7 @@ async function shareTextFile(text,file,fname){
     if(navigator.share){ await navigator.share({text}); return; }
     throw new Error('no share');
   }catch(e){ if(e&&e.name==='AbortError') return;
-    try{ await navigator.clipboard.writeText(text); toast('Link copied'); }catch(_){ toast('Could not copy'); }
+    try{ await navigator.clipboard.writeText(text); toast('Link copied'); }catch(_){ toast('Couldn\'t copy'); }
     if(file){ const a=document.createElement('a'); a.href=URL.createObjectURL(file); a.download=fname||'card.png';
       a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),4000); }
   }
@@ -22436,41 +22997,86 @@ const HERO_SPOTS=[
    player-seasons mostly surfaces people nobody recognizes, which makes the game look like it
    is about obscure players when it is about the famous ones. */
 const HERO_TOP_N=20;
-let heroPoolCache=null;
+/* ONE CACHE PER SIDE OF THE BALL. The defensive pool is a second download, so its half is
+   built the first time the switcher asks for it and not before. */
+const heroPoolCache={};
 
-function heroPool(){
-  if(heroPoolCache) return heroPoolCache;
+function heroPool(side){
+  side=side||'off';
+  if(heroPoolCache[side]) return heroPoolCache[side];
+  const src=side==='def'?(DDATA&&DDATA.players):(DATA&&DATA.players);
+  if(!src) return null;
   const by={};
-  for(const p of DATA.players)(by[p.position] ??= []).push(p);
+  for(const p of src)(by[p.position] ??= []).push(p);
   for(const k in by){
     by[k].sort((a,b)=>b.ppr_ppg_mean-a.ppr_ppg_mean);
     by[k]=by[k].slice(0,HERO_TOP_N);
   }
-  heroPoolCache=by;
-  return heroPoolCache;
+  heroPoolCache[side]=by;
+  return by;
 }
 
-/* Three signings, on three different spots, each filled by somebody who can actually play
-   there. The FLEX spot takes a back, a receiver or a tight end, which is the same rule the
-   real draft enforces. */
-function heroPicks(){
-  const pool=heroPool();
-  const spots=HERO_SPOTS.map((sp,i)=>i);
+/* ─── THE HERO FIELD FOLLOWS THE SWITCHER ─────────────────────────────────────────────────
+ *
+ * TWELVE CHIPS, SIX A SIDE, and they are never torn down. A switch changes where each one
+ * STANDS, and the CSS transition on left and top does the rest: the side you left runs off
+ * its own end of the field, the side you picked runs on, and on Full Team both line up either
+ * side of one line of scrimmage. Rebuilt instead, a switch would be a cut, and the whole
+ * point of the control is that you watch your answer arrive.
+ *
+ * The offensive spots are HERO_SPOTS, unchanged. The defensive ones are SPOT_FALLBACK_DEF's
+ * own coordinates, which is the formation the defense draft opens on. On Full Team both are
+ * folded toward the middle by fullY(), the same mapping the Full Team draft field uses, so
+ * the front page draws the picture that mode actually draws. */
+const HERO_DEF_SPOTS=[
+  {label:'DL',   left:30, top:64},
+  {label:'DL',   left:70, top:64},
+  {label:'LB',   left:50, top:44},
+  {label:'DB',   left:12, top:24},
+  {label:'DB',   left:88, top:24},
+  {label:'FLEX', left:32, top:24},
+];
+const HERO_ALL=[
+  ...HERO_SPOTS.map((sp,i)=>({k:'o'+i,side:'off',sp})),
+  ...HERO_DEF_SPOTS.map((sp,i)=>({k:'d'+i,side:'def',sp})),
+];
+/* WHERE A SIGNING CAN STAND ON A FULL FIELD. Twelve men on a field this short means a
+   lineman's name lands on the receiver across the line from him, and the back's runs off the
+   bottom. So on Full Team the front page only signs where a name has room; the other chips
+   are still on the field, empty, so the formation reads whole. */
+const HERO_FULL_OK=new Set(['o0','o2','o3','o4','o5','d3','d4','d5']);
+let heroMode='off';
+
+function heroAt(h,mode){
+  if(mode==='full') return {left:h.sp.left, top:fullY(h.sp.top,h.side==='def'), shown:true};
+  if(mode===h.side) return {left:h.sp.left, top:h.sp.top, shown:true};
+  /* Off its own end of the field: the offense leaves by the bottom, the defense by the top. */
+  return {left:h.sp.left, top:h.side==='off'?122:-22, shown:false};
+}
+
+/* Three signings, on three different spots in the formation on screen, each filled by
+   somebody who can actually play there. A FLEX takes any position on its own side, which is
+   the same rule the real draft enforces. */
+function heroPicks(mode){
+  mode=mode||heroMode;
+  const spots=HERO_ALL.filter(h=>mode==='full'?HERO_FULL_OK.has(h.k):h.side===mode);
   for(let i=spots.length-1;i>0;i--){
     const j=Math.floor(Math.random()*(i+1)); [spots[i],spots[j]]=[spots[j],spots[i]];
   }
   const out=[];
-  for(const at of spots){
+  for(const h of spots){
     if(out.length>=3) break;
-    const label=HERO_SPOTS[at].label;
-    const allowed=label==='FLEX'?['RB','WR','TE']:[label];
+    const pool=heroPool(h.side);
+    if(!pool) continue;
+    const label=h.sp.label;
+    const allowed=label==='FLEX'?(h.side==='def'?['DL','LB','DB']:['RB','WR','TE']):[label];
     const pos=allowed[Math.floor(Math.random()*allowed.length)];
     const cand=pool[pos];
     if(!cand||!cand.length) continue;
     const p=cand[Math.floor(Math.random()*cand.length)];
     const ts=DATA.byTeamSeasonId[p.team_season_id];
     if(!ts) continue;
-    out.push({at, season:p.season, team:ts.display.replace(/^\d{4}\s+/,''),
+    out.push({k:h.k, season:p.season, team:ts.display.replace(/^\d{4}\s+/,''),
       fr:p.franchise, pos, last:lastName(p.name)});
   }
   return out;
@@ -22499,25 +23105,89 @@ function heroFaces(){
 
 function heroChips(){
   const f=$('h-field');
-  f.querySelectorAll('.chip').forEach(c=>c.remove());
-  /* Spots are used exactly as designed. An earlier version squeezed them into a "safe band"
-     computed from the field's height so labels always fit, and that was the wrong trade: it
-     moved every bubble, and pushed the top row hard against the field's edge. Nothing moves
-     now; the chips whose label would not fit below flip it above instead. */
-  HERO_SPOTS.forEach((sp,i)=>{
-    const on=heroFilled.find(x=>x.at===i);
-    const el=document.createElement('div');
-    el.className='chip '+(on?'filled':'empty')+(on&&on.fresh?' pop':'');
-    el.style.left=sp.left+'%'; el.style.top=sp.top+'%';
+  if(!f) return;
+  /* Spots are used exactly as designed, and every chip is updated in place rather than
+     rebuilt, so a chip that changes position slides there instead of reappearing. */
+  HERO_ALL.forEach((h)=>{
+    let el=f.querySelector('.chip[data-k="'+h.k+'"]');
+    const at=heroAt(h,heroMode);
+    if(!el){
+      el=document.createElement('div');
+      el.dataset.k=h.k;
+      el.style.left=at.left+'%'; el.style.top=at.top+'%';
+      f.appendChild(el);
+    }
+    const on=at.shown?heroFilled.find(x=>x.k===h.k):null;
+    el.className='chip '+(on?'filled':'empty')+(on&&on.fresh?' pop':'')+(at.shown?'':' gone');
+    el.style.left=at.left+'%'; el.style.top=at.top+'%';
     const style=on?' style="background:linear-gradient(160deg,var(--'+on.pos.toLowerCase()+
       '),rgba(0,0,0,.45))"':'';
-    el.innerHTML='<div class="disc"'+style+'><span class="dl">'+(on?on.pos:sp.label)+
+    el.innerHTML='<div class="disc"'+style+'><span class="dl">'+(on?on.pos:h.sp.label)+
       '</span></div>'+(on?'<div class="lab"><div class="who">'+esc(on.last)+
       '</div><div class="yr">'+tcPlate(on.fr,on.season)+' '+on.season+
       '</div></div>':'');
-    f.appendChild(el);
     if(on) on.fresh=false;
   });
+}
+
+/* THE MARKINGS FOR EACH SIDE ARE THE DRAFT FIELD'S OWN: an end zone for the offense, the same
+   plus a line of scrimmage for the defense, and the open field with both units for Full
+   Team. They sit in a layer of their own under the chips so a switch can fade one set out
+   and the next in, rather than repainting the grass under twelve men who are mid-run. */
+function heroMarkings(mode,fade){
+  const f=$('h-field');
+  if(!f) return;
+  const kind=mode==='full'?'full':mode==='def';
+  const old=[...f.querySelectorAll('.hmk')];
+  /* Anything else a previous boot wrote straight into the field goes too. */
+  [...f.children].forEach(c=>{ if(!c.classList.contains('hmk')&&!c.classList.contains('chip')) c.remove(); });
+  const mk=document.createElement('div');
+  mk.className='hmk'+(fade&&old.length?' out':'');
+  mk.innerHTML=fieldMarkings(kind);
+  f.insertBefore(mk,f.firstChild);
+  f.classList.toggle('fullfield',mode==='full');
+  f.classList.toggle('pick-off',mode==='full');
+  f.classList.toggle('pick-def',mode==='full');
+  if(fade&&old.length){
+    requestAnimationFrame(()=>requestAnimationFrame(()=>{
+      mk.classList.remove('out');
+      old.forEach(o=>o.classList.add('out'));
+      setTimeout(()=>old.forEach(o=>o.remove()),420);
+    }));
+  }else old.forEach(o=>o.remove());
+}
+
+/* THE SWITCH ITSELF. Called by the switcher, and by paintHomeMode whenever the mode the page
+   is showing stops matching the one that is allowed (a signed out visitor's saved choice of
+   Defense, say, before the account has answered). */
+function heroSwitch(){
+  if(!DATA) return;
+  const want=homeModeNow();
+  if(want===heroMode) return;
+  heroMode=want;
+  const f=$('h-field');
+  if(!f) return;
+  heroMarkings(want,true);
+  /* One man at a time rather than all six together: the cascade is what reads as a unit
+     running on, where a block moving as one reads as a slide changing. */
+  const chips=[...f.querySelectorAll('.chip')];
+  chips.forEach((c,i)=>{ c.style.transitionDelay=(HERO_REDUCE?0:(i%6)*45)+'ms'; });
+  heroChips();
+  setTimeout(()=>chips.forEach(c=>{ c.style.transitionDelay=''; }),1100);
+  if(!HERO_REDUCE){
+    const sw=document.createElement('div');
+    sw.className='hsweep';
+    f.appendChild(sw);
+    setTimeout(()=>sw.remove(),900);
+  }
+  /* AND THE LOOP STARTS AGAIN ON THE NEW SIDE, once the runners have arrived. heroStop
+     bumps heroRun, which is what cancels a loop in the middle of a spin. */
+  if(HERO_REDUCE){ heroStatic(); return; }
+  if(heroRunning){
+    heroStop();
+    const seq=++heroRun;
+    setTimeout(()=>{ if(seq===heroRun&&heroRunning) heroLoop(seq); },650);
+  }
 }
 
 /* A reel with nothing in it yet. Three faces and no transform, so the placeholder
@@ -22546,10 +23216,11 @@ function heroReset(){
 /* No animation at all for anyone who has asked their device for less of it. They
    get the end of the sequence held still, which is the same information. */
 function heroStatic(){
-  const picks=heroPicks();
-  const last=picks[picks.length-1];
+  const picks=heroPicks(heroMode);
   heroFilled=picks.map(p=>({...p}));
   heroChips();
+  const last=picks[picks.length-1];
+  if(!last) return;
   heroSettle($('h-reel-y'),['2004',String(last.season),'2019'],String(last.season));
   heroSettle($('h-reel-t'),['Tennessee Titans',last.team,'Indianapolis Colts'],last.team);
   $('h-box-y').className='reelbox year done';
@@ -22562,10 +23233,16 @@ async function heroLoop(seq){
   const live=()=>seq===heroRun;
   while(live()){
     heroFilled=[]; heroChips(); heroReset();
+    /* A side of the ball whose people have not arrived yet waits for them. The download is
+       the defense draft's own, so the wait is paid once and the draft then starts warm. */
+    if(heroMode!=='off'&&!DDATA){
+      try{ await loadDefensePool(); }catch(_){ return; }
+      if(!live()) return;
+    }
     await heroNap(HERO.gap);
     /* Drawn per loop, not per page load, so the animation is different the second time
        round rather than only different between visits. */
-    for(const pk of heroPicks()){
+    for(const pk of heroPicks(heroMode)){
       if(!live()) return;
       const spinYear=heroSpin($('h-reel-y'),faces.years,String(pk.season),HERO.year);
       await heroNap(HERO.stagger);
@@ -22624,14 +23301,14 @@ function howToPlay(){
       'that year. Sign one player off it.</span></li>'+
     '<li><span class="n">2</span><span>Six spins fill six spots, and you have <b>'+cap+
       '</b> to spend. Not spending it is its own mistake.</span></li>'+
-    '<li><span class="n">3</span><span>Do not like the draw? Spin the <b>year</b> or the <b>team</b> '+
+    '<li><span class="n">3</span><span>Don\'t like the draw? Spin the <b>year</b> or the <b>team</b> '+
       'again for '+R1+', off your budget.</span></li>'+
     '<li><span class="n">4</span><span>Players who shared a team, a college or a draft class build '+
       '<b>chemistry</b>, which lifts the whole roster.</span></li>'+
-    '<li><span class="n">5</span><span>Shape matters as much as talent. A quarterback who cannot '+
+    '<li><span class="n">5</span><span>Shape matters as much as talent. A quarterback who can\'t '+
       'throw wastes your receivers, and stars alongside nobody get found out.</span></li>'+
-    '<li><span class="n">6</span><span>Play all <b>17 games</b>. Win 12 and you are in the playoffs, '+
-      'win 15 and you skip a round. One playoff loss ends it.</span></li>'+
+    '<li><span class="n">6</span><span>Play all <b>17 games</b>. Win 12 and you\'re in the playoffs, '+
+      'win '+E.CONSTANTS.BYE_SEED_WINS+' and you skip a round. One playoff loss ends it.</span></li>'+
     '<li><span class="n">7</span><span><b>One Franchise</b> is the same game with the wheel '+
       'locked to one franchise. Only the year moves, every franchise has its own '+
       'leaderboard, and it needs a free account.</span></li>'+
@@ -22788,8 +23465,34 @@ function authBoot(){
        inherits the last one's marks. */
     if(!st.signedIn){ myCrest=null; myMark=null; mySeen=null; }
     else { loadMyMark(); loadSeen(); crestBoot(); }
+    signinHash();
   });
   a.boot();
+}
+
+/* #signin OPENS THE SIGN-IN SHEET ON ARRIVAL, because another page has to be able to send
+   somebody here to do exactly one thing. Fantasy Challenge's shut screen is the first
+   caller: the sheet lives on this page and a second copy of an auth form on that one would
+   be two ways to sign in that drift.
+   ASKED FROM THE AUTH CHANGE AND NOT AT BOOT, because PS_AUTH answers nothing until
+   getSession resolves. Asked at boot, a returning visitor with a live session is shown a
+   sign-in sheet for a beat and then corrected, which reads as having been signed out.
+   ONCE, AND THE HASH IS CLEARED. It is a one-shot instruction rather than a state, so a
+   reader who closes the sheet and reloads should get the page rather than the sheet again,
+   and a shared link should not carry it. replaceState so the back button is untouched.
+   AND NOT FOR SOMEBODY ALREADY SIGNED IN: profileSheet() answers with the profile hub for
+   them, which is a screen they did not ask for. The hash is still cleared, so following
+   the link with a live session simply lands on the front page. */
+let signinDone=false;
+function signinHash(){
+  if(signinDone) return;
+  if(!authState.ready) return;
+  if(location.hash!=='#signin') return;
+  signinDone=true;
+  try{ history.replaceState(null,'',location.pathname+location.search); }catch(_){}
+  if(authState.signedIn) return;
+  authMode='in';
+  profileSheet();
 }
 
 /* Fetch the rows the crest needs, once per account, and repaint what is already on screen.
@@ -23291,7 +23994,7 @@ function whatsNewSheet(){
     '<h2 class="display" style="font-size:25px;margin:4px 0 10px">Your circle is a crest now</h2>'+
     '<div class="wnrow">'+
       '<span class="pfp crested wnbig" aria-hidden="true">'+mine+'</span>'+
-      '<p class="wnlead">That is yours, drawn from what you have actually done. '+
+      '<p class="wnlead">That\'s yours, drawn from what you have actually done. '+
         'Four things go into it, and every one of them is earned rather than picked '+
         'off a list.</p>'+
     '</div>'+
@@ -23307,7 +24010,7 @@ function whatsNewSheet(){
       '<li><span class="n">3</span><span><b>A seal</b> on the rim for your rank, which '+
         'climbs with your badge count. Ten of them: Bronze 1, 2 and 3, then Silver, then '+
         'Gold, then GOAT for every badge in the game. The chevrons are the number. '+
-        'Nothing to choose: it is your cabinet, in one shape.</span></li>'+
+        'Nothing to choose: it\'s your cabinet, in one shape.</span></li>'+
       '<li><span class="n">4</span><span><b>The ring</b>, for the honors worth a ring. '+
         'A title gets gold. Titles in two straight seasons, or a 20-0, and the light '+
         'starts moving round it.</span></li>'+
@@ -23449,9 +24152,9 @@ function paintRankRow(a){
        browser could not work one out at all: no catalog, or a profile read that came back
        without the column. Saying "not ranked yet" there would be a guess about somebody's
        career, so it says nothing about badges and lets the seal be absent. */
-    line='<b>Rank unavailable</b><span>Your badges could not be read just now.</span>';
+    line='<b>Rank unavailable</b><span>Your badges couldn\'t be read just now.</span>';
   }else if(i>=C.TIERS.length-1){
-    line='<b>'+esc(t.name)+'</b><span>Every badge in the game. There is nothing above this.</span>';
+    line='<b>'+esc(t.name)+'</b><span>Every badge in the game. There\'s nothing above this.</span>';
   }else{
     const at=C.nextTierAt(i), next=C.TIERS[i+1];
     line='<b>'+esc(t.name)+'</b><span>'+myCrest.badges+' of '+myCrest.total+' badges. '+
@@ -23592,7 +24295,7 @@ function paintPfpEdit(nm){
          glance, and the difference is whether anybody chose it. */
       label.innerHTML=a.chosen
         ? 'Playing for the <b>'+esc(a.team)+'</b>'
-        : 'No team picked, so you are showing <b>'+esc(a.team)+'</b> colors for now';
+        : 'No team picked, so you\'re showing <b>'+esc(a.team)+'</b> colors for now';
     }
     paintClubSteps(a);
     paintMarkGrid();
@@ -23650,7 +24353,7 @@ function paintPfpEdit(nm){
          p_initials) in the schema cache" is a true sentence for whoever runs the database
          and gibberish to everybody else, and it was going straight onto the screen. */
       profileSheet(r.missing
-        ? 'Teams and initials are not switched on for this game yet, so there was nothing '+
+        ? 'Teams and initials aren\'t switched on for this game yet, so there was nothing '+
           'to save to. Nothing has changed, and your pick is still here.'
         : r.error);
       return;
@@ -24242,7 +24945,7 @@ async function pfProLoad(){
        request, an expired token or an account comped by hand outside the table all land
        here, and none of them is a reason to tell somebody their purchase is gone. */
     list.innerHTML='<p class="dim" style="font-size:12.5px;line-height:1.45;margin:0">'+
-      'Your Pro modes are unlocked. The list of what is in your bundle could not be loaded '+
+      'Your Pro modes are unlocked. The list of what is in your bundle couldn\'t be loaded '+
       'just now. Reload the page and it will come back.</p>';
   }else{
     let ends=null, endedOn=null;
@@ -24319,11 +25022,11 @@ async function pfProLoad(){
        try again is telling them to keep pressing a button that cannot work. */
     const b=$('pf-bill'); if(!b) return;
     b.disabled=true;
-    b.textContent=(r&&r.error==='no_customer')?'No Stripe receipt for this account':'Could not open Stripe';
+    b.textContent=(r&&r.error==='no_customer')?'No Stripe receipt for this account':'Couldn\'t open Stripe';
     const note=b.nextElementSibling;
     if(note) note.textContent=(r&&r.error==='no_customer')
-      ? 'This account was unlocked without a card payment, so there is no receipt to show.'
-      : 'Try again in a moment. Your Pro access is not affected.';
+      ? 'This account was unlocked without a card payment, so there\'s no receipt to show.'
+      : 'Try again in a moment. Your Pro access isn\'t affected.';
   };
 }
 
@@ -24401,7 +25104,7 @@ async function pfDraftsPaint(userId,tab){
   if(!c||!c.rows.length){
     slot.innerHTML='<p class="dim" style="font-size:12.5px;margin:7px 0 0">'+
       (c?'No runs recorded yet. Finish a season and it lands here.'
-        :'Your run history could not be read just now. Nothing has been lost.')+'</p>';
+        :'Your run history couldn\'t be read just now. Nothing has been lost.')+'</p>';
     return;
   }
   const list=pfDraftSort(c.rows,tab);
@@ -24459,7 +25162,7 @@ async function pfCareerPaint(userId){
   const slot=$('sh-career');
   if(!slot||$('sheet-in').dataset.kind!=='profile') return;
   if(!c){ slot.innerHTML='<p class="dim" style="font-size:12.5px;margin:7px 0 0">Your run '+
-    'history could not be read just now. Nothing has been lost.</p>'; return; }
+    'history couldn\'t be read just now. Nothing has been lost.</p>'; return; }
   await achReady(c.rows);
   const res=achEvaluate(c.rows);
   /* No .bestlist to wire up any more. Opening a run from a list is the Drafts page's job,
@@ -24530,7 +25233,7 @@ function pfLook(){
     (canUseCrest()?'<p class="shsec" style="margin-top:16px">Your club</p>'+
       '<p class="dim" style="font-size:11.5px;margin:0 0 7px">A club\'s colors are earned, '+
         'not picked. <b>Play one draft with a club in One Franchise mode and their colors '+
-        'are yours.</b> The locked ones below are the clubs you have not drafted with yet.</p>'
+        'are yours.</b> The locked ones below are the clubs you haven\'t drafted with yet.</p>'
       :'')+
     '<div class="swatches" id="a-swatches"></div>'+
     (canUseCrest()?'<div id="crest-steps"></div>':'')+
@@ -24544,7 +25247,7 @@ function pfLook(){
       ?'<p class="shsec" style="margin-top:20px">Your mark</p>'+
        '<p class="dim" style="font-size:11.5px;margin:0 0 6px">The shape inside the circle. '+
          'Each one is opened by a badge, and every locked one below says which. Tap an '+
-         'unlocked one to wear it: this saves as you tap, there is no button.</p>'+
+         'unlocked one to wear it: this saves as you tap, there\'s no button.</p>'+
        '<div class="markgrid" id="crest-marks"></div>'+
        '<p class="shsec" style="margin-top:20px">Your ring</p>'+
        '<p class="dim" style="font-size:11.5px;margin:0 0 6px">The outer edge of the circle. '+
@@ -24553,7 +25256,7 @@ function pfLook(){
        '<div class="markgrid rings" id="crest-rings"></div>'+
        '<p class="shsec" style="margin-top:20px">Your rank</p>'+
        '<p class="dim" style="font-size:11.5px;margin:0 0 6px">The little seal on the rim. '+
-         '<b>Nothing to choose here either.</b> It is your badge count and it moves on its '+
+         '<b>Nothing to choose here either.</b> It\'s your badge count and it moves on its '+
          'own, ten ranks from Bronze 1 up to GOAT.</p>'+
        '<div id="crest-rank"></div>'
       :'')+
@@ -24646,7 +25349,7 @@ function pfWireDelete(){
     if(step===0){
       step=1;
       del.textContent='I understand, continue';
-      note.innerHTML='<b>This cannot be undone.</b> Your sign-in, your name, your circle and '+
+      note.innerHTML='<b>This can\'t be undone.</b> Your sign-in, your name, your circle and '+
         'your claim on every run you have posted in every RunThe.GG game go for good. There '+
         'is no undo and nobody can put it back. Runs already on a leaderboard stay there, '+
         'without your name on them.';
@@ -24679,11 +25382,11 @@ function pfWireDelete(){
     if(r&&r.ok){ closeSheet(); toast('Your account has been deleted.'); return; }
     if(r&&r.reason==='active_subscription'){
       pfAccount('You have a subscription that is still '+esc(r.status||'active')+
-        '. Cancel it first, then delete the account, so you are not charged for one you no longer have.');
+        '. Cancel it first, then delete the account, so you aren\'t charged for one you no longer have.');
       return;
     }
-    if(r&&r.reason==='not_signed_in'){ pfAccount('You are not signed in any more.'); return; }
-    pfAccount((r&&r.error)||'That did not work. Nothing has been deleted.');
+    if(r&&r.reason==='not_signed_in'){ pfAccount('You aren\'t signed in any more.'); return; }
+    pfAccount((r&&r.error)||'That didn\'t work. Nothing has been deleted.');
   };
 }
 
@@ -24698,7 +25401,7 @@ function profileSheet(msg,ok){
   if(!A()||!st.ready){
     box.innerHTML='<div class="eyebrow">Your profile</div>'+
       '<h2 class="display" style="font-size:25px;margin:4px 0 6px">Accounts are offline</h2>'+
-      '<p class="dim" style="font-size:13.5px;margin:0">The sign-in library did not load, '+
+      '<p class="dim" style="font-size:13.5px;margin:0">The sign-in library didn\'t load, '+
       'usually a blocked script. Your runs are still recorded and still ranked, without a '+
       'name on them.</p>'+close;
     openSheet(); return;
@@ -24954,7 +25657,7 @@ async function sendFeedback(){
   if(fbQueueSave(fbQueueLoad().concat([payload]))){
     fbDraft.msg=''; fbDraft.email='';
     closeSheet();
-    toast('Saved. It will send itself when you are back online');
+    toast('Saved. It will send itself when you\'re back online');
     return;
   }
   /* Nowhere to keep it either, which means storage is blocked as well as the network. This
@@ -24970,7 +25673,7 @@ async function sendFeedback(){
      no mail handler and there is no way to find out which happened, so the message does not
      claim the part that cannot be checked. It names the address instead, which is the one
      thing that works either way. */
-  feedbackSheet('That could not be sent, and this browser will not let the game hold on to '+
+  feedbackSheet('That couldn\'t be sent, and this browser won\'t let the game hold on to '+
     'it either. Your mail app should open with the message in it. If nothing opens, nothing '+
     'has been lost: send it to '+FB_EMAIL+'.');
   const mail='mailto:'+FB_EMAIL+'?subject='+encodeURIComponent('The Perfect Season, '+label+
@@ -25259,7 +25962,7 @@ async function submitAfterSignIn(){
   if($('s-over').classList.contains('on')) paintRanks();
   if($('s-board').classList.contains('on')) loadBoard();
   const on=submitted&&submitted!=='guest';
-  if(!on){ toast('Signed in, but the run could not be sent'); return; }
+  if(!on){ toast('Signed in, but the run couldn\'t be sent'); return; }
   /* Signed in with no username yet, which Google sign-in lands you in: the run is sent
      and owned, and it is still not on any list until there is a name to list it under.
      Saying "your run is on the board" here would be the same lie the results panel used
@@ -25299,7 +26002,7 @@ async function showMyRowOnBoard(){
   if(el){
     el.scrollIntoView({block:'center',behavior:HERO_REDUCE?'auto':'smooth'});
     el.classList.remove('found'); void el.offsetWidth; el.classList.add('found');
-    toast('You are on the board');
+    toast('You\'re on the board');
     return;
   }
   /* Outside the 500. The sticky preview at the foot of the screen is already carrying
@@ -25365,7 +26068,7 @@ function paintRankStrip(r){
         ? '<span>Those placings are where this run <b>would</b> sit. Only runs with a name '+
           'on them go on the board.</span>'+
           '<button class="btn sm" id="b-gate-strip">'+act+'</button>'
-        : '<span>The board could not be read just now, so there is no placing to show. '+
+        : '<span>The board couldn\'t be read just now, so there\'s no placing to show. '+
           'Only runs with a name on them go on it, and <b>this one is kept either '+
           'way</b>.</span>'+
           '<button class="btn sm" id="b-gate-strip">'+act+'</button>');
@@ -25483,8 +26186,8 @@ async function paintRanks(){
     /* Unreadable board. A guest still gets the way in, for the reason above: the submit
        is a different call from the count and may well work. And the probe goes here,
        because this is where the problem is being seen. */
-    el.innerHTML='<p class="rankfoot" style="margin-top:8px">The leaderboard could not '+
-      'be read just now, so there is no placing to show. Nothing else about your season '+
+    el.innerHTML='<p class="rankfoot" style="margin-top:8px">The leaderboard couldn\'t '+
+      'be read just now, so there\'s no placing to show. Nothing else about your season '+
       'changes.</p>'+boardWhy()+
       (submitted==='guest'
         ? '<div class="guestgate"><b>Sign in to get on the board</b>'+
@@ -25546,8 +26249,8 @@ async function paintRanks(){
   }
   if(submitted===false){
     el.innerHTML='<div class="r3">'+WINDOWS.map(cell).join('')+'</div>'+
-      '<p class="rankfoot">Those are the standings, but <b>this run was not recorded</b>, '+
-      'so it is not among them.</p>'+boardWhy()+
+      '<p class="rankfoot">Those are the standings, but <b>this run wasn\'t recorded</b>, '+
+      'so it isn\'t among them.</p>'+boardWhy()+
       '<div class="hrow"><button class="btn ghost sm" id="b-board3">See the leaderboard</button>'+
       '<button class="btn ghost sm" id="b-diag-x">Check the connection</button></div>';
     $('b-board3').onclick=openBoard;
@@ -25595,12 +26298,12 @@ async function runDiagnostics(){
     (good?'#4ade80':'#f87171')+'">'+esc(v)+'</span></div>';
   let verdict, fix='';
   if(!r.read||!r.read.ok){
-    verdict='The board cannot be read at all.';
-    fix='The table is not there, or the project is unreachable from this device. Run '+
+    verdict='The board can\'t be read at all.';
+    fix='The table isn\'t there, or the project is unreachable from this device. Run '+
       'supabase/50_football_perfect_season.sql.';
   }else if(r.write&&r.write.healthy&&B.needsAccountsMigration){
     verdict='The board works, but names are missing.';
-    fix='51_football_accounts.sql has not been run, so ps_runs has no display_name '+
+    fix='51_football_accounts.sql hasn\'t been run, so ps_runs has no display_name '+
       'column and every row shows as Anonymous. The board falls back to reading '+
       'without it rather than breaking, which is why everything else still works.';
   /* Below the names one and above the healthy one, in the same shape and for the same
@@ -25613,20 +26316,20 @@ async function runDiagnostics(){
      nothing, it is the whole board returning 400 on every read. Nothing below can be true
      while the column every query filters on is absent. */
   }else if(B.modeColumnMissing){
-    verdict='The board cannot be read: it is one file behind.';
+    verdict='The board can\'t be read: it\'s one file behind.';
     fix='ps_runs has no run_mode column, so every board query is rejected. Run '+
       'supabase/57_football_run_mode.sql, which adds it, moves the old daily runs out of '+
-      'the way and ends by reporting what is now in place. If the message below mentions '+
-      'an ordered-set aggregate, that is the same problem seen through a stale API schema '+
+      'the way and ends by reporting what\'s now in place. If the message below mentions '+
+      'an ordered-set aggregate, that\'s the same problem seen through a stale API schema '+
       'cache, and the same file fixes it.';
   }else if(r.write&&r.write.healthy&&B.avatarFnMissing){
-    verdict='The board works, but teams and initials cannot be saved.';
-    fix='ps_set_avatar is not in the API schema cache. Run '+
+    verdict='The board works, but teams and initials can\'t be saved.';
+    fix='ps_set_avatar isn\'t in the API schema cache. Run '+
       'supabase/55_football_avatars_setup.sql, which sets this up from any starting state '+
-      'and ends by reporting what is now in place.';
+      'and ends by reporting what\'s now in place.';
   }else if(r.write&&r.write.healthy&&B.needsAvatarMigration){
     verdict='The board works, but nobody can choose a color.';
-    fix='53_football_profile_avatars.sql has not been run, so ps_runs has no display_color '+
+    fix='53_football_profile_avatars.sql hasn\'t been run, so ps_runs has no display_color '+
       'column. Names and places are unaffected and every circle falls back to the color '+
       'worked out from the name, which is why nothing looks broken.';
   }else if(r.write&&r.write.healthy){
@@ -25634,16 +26337,16 @@ async function runDiagnostics(){
     fix='Reads work and the function refused a deliberately impossible run for the '+
       'right reason, which is what a healthy setup does.';
   }else if(r.write&&(r.write.status===404||r.write.code==='PGRST202')){
-    verdict='The table is there but the function is not.';
-    fix='Either the SQL was only partly run, or PostgREST has not picked up the new '+
+    verdict='The table is there but the function isn\'t.';
+    fix='Either the SQL was only partly run, or PostgREST hasn\'t picked up the new '+
       'function yet. Run the whole of supabase/50_football_perfect_season.sql, then '+
       "run NOTIFY pgrst, 'reload schema'; to make the API notice it.";
   }else if(r.write&&(r.write.status===401||r.write.status===403)){
     verdict='The function exists but this key may not call it.';
-    fix='The grant at the bottom of the SQL did not apply. Re-run the last two '+
+    fix='The grant at the bottom of the SQL didn\'t apply. Re-run the last two '+
       'statements of supabase/50_football_perfect_season.sql.';
   }else{
-    verdict='The function answered in a way it should not.';
+    verdict='The function answered in a way it shouldn\'t.';
     fix='The message below is the database\'s own words and says what it objected to.';
   }
   box.innerHTML='<div class="eyebrow">Leaderboard</div>'+
@@ -25669,14 +26372,14 @@ async function runDiagnostics(){
 function rankLine(r){
   const best=r.day||r.week||r.all;
   if(!best) return '';
-  if(r.all&&r.all.rank===1) return 'The best run anyone has played. Nobody has beaten it yet.';
-  if(r.day&&r.day.rank===1) return 'Top of the board today.';
+  if(r.all&&r.all.rank===1) return 'Best run anyone\'s ever played. Nobody\'s topped it.';
+  if(r.day&&r.day.rank===1) return 'You\'re #1 today.';
   const w=r.all||r.week||r.day;
   const label=r.all?'ever played':(r.week?'this week':'today');
   const beat=w.total>1?Math.round(100*(w.total-w.rank)/(w.total-1)):100;
   const games=run.outcome.wins+run.outcome.losses;
   return 'Better than '+beat+'% of every run '+label+'. '+
-    (run.outcome.perfect?'And it is a perfect season, which almost nobody manages.'
+    (run.outcome.perfect?'And it\'s a perfect season. Almost nobody gets one.'
       :'Your '+run.outcome.record+' came out of '+games+' games.');
 }
 
@@ -26071,7 +26774,7 @@ async function loadBoard(){
   if(rows===null){
     $('lb-rows').innerHTML='';
     $('lb-note').style.display='';
-    $('lb-note').textContent='The leaderboard is not reachable right now. Your runs are '+
+    $('lb-note').textContent='The leaderboard isn\'t reachable right now. Your runs are '+
       'still played and still counted once it comes back.';
     $('lb-rows').innerHTML=boardWhy();
     return;   // the board screen has its own Check the connection button already
@@ -26213,11 +26916,11 @@ function paintBoard(){
     $('lb-podium').className='podium'; $('lb-podium').innerHTML='';
     $('lb-rows').innerHTML='<div class="lbempty">'+
       (lbWin==='all'
-        ?(lbTrade?'Nobody has finished a Trade Machine season yet. Play one and you are first.'
+        ?(lbTrade?'Nobody has finished a Trade Machine season yet. Play one and you\'re first.'
           :lbClub?'Nobody has drafted a One Franchise '+esc(E.nickname(lbClub))+' run yet. '+
-            'Play one and you are first.'
-          :'No runs recorded yet. Play one and you are first.')
-        :'Nobody has finished a run in this window yet. Play one and you are first.')+
+            'Play one and you\'re first.'
+          :'No runs recorded yet. Play one and you\'re first.')
+        :'Nobody has finished a run in this window yet. Play one and you\'re first.')+
       '</div>';
     hideMyPin();
     return;
@@ -26334,7 +27037,7 @@ async function loadDynastyBoard(){
   lbBusy=false; lbRows=rows; lbMyPlace=place;
   if(rows===null){
     $('lb-rows').innerHTML=''; $('lb-note').style.display='';
-    $('lb-note').textContent='The leaderboard is not reachable right now. Your runs are '+
+    $('lb-note').textContent='The leaderboard isn\'t reachable right now. Your runs are '+
       'still played and still counted once it comes back.';
     $('lb-rows').innerHTML=boardWhy();
     return;
@@ -26347,9 +27050,9 @@ function paintDynastyBoard(){
   const rows=lbRows||[];
   if(!rows.length){
     $('lb-podium').className='podium'; $('lb-podium').innerHTML='';
-    const none=lbWin==='day'?'No Dynasty runs today. Survive a season and you are first.'
-      :lbWin==='week'?'No Dynasty runs this week. Survive a season and you are first.'
-      :'No Dynasty runs on the board yet. Survive a season and you are first.';
+    const none=lbWin==='day'?'No Dynasty runs today. Survive a season and you\'re first.'
+      :lbWin==='week'?'No Dynasty runs this week. Survive a season and you\'re first.'
+      :'No Dynasty runs on the board yet. Survive a season and you\'re first.';
     $('lb-rows').innerHTML='<div class="lbempty">'+none+'</div>';
     hideMyPin(); return;
   }
@@ -26650,12 +27353,12 @@ function runDetail(row,back,onShare){
         (rdName?'<span class="rdnm">'+esc(rdName)+'</span>':'')+'</div>')+
     '</div>'+
     (known.length?rdRoster(known)
-      :'<p class="dim" style="font-size:12.5px;margin:12px 0 0">This run\'s players are not '+
+      :'<p class="dim" style="font-size:12.5px;margin:12px 0 0">This run\'s players aren\'t '+
        'in the player data this browser has.</p>')+
     /* THE SIZE OF THE ROSTER, not the word six. A Full Team run showed "6 of the six could
        not be looked up here", which is a sentence that cannot be true. */
     (missing&&known.length?'<p class="dim" style="font-size:11.5px;margin:7px 0 0">'+missing+
-      ' of the '+countWord(men.length)+' could not be looked up here.</p>':'')+
+      ' of the '+countWord(men.length)+' couldn\'t be looked up here.</p>':'')+
     '<div class="rdstat">'+
       tile(rating===null?'--':rating.toFixed(1),'Team rating')+
       tile(perf===null?'--':perf+'%','Of the best possible')+

@@ -121,7 +121,7 @@
       head: 'A booster has commissioned a statue of you',
       body: function (ctx) {
         return 'Nine feet, bronze, paid for privately, and already installed outside a '
-          + school(ctx) + ' facility without anybody asking this office. It does not look like '
+          + school(ctx) + ' facility without anybody asking this office. It doesn\'t look like '
           + 'you. It looks like a man who has been told bad news about a boat. It has its own '
           + 'account now and the account is funnier than you are.';
       },
@@ -237,7 +237,7 @@
       head: 'Two of them walked out',
       body: function (ctx) {
         return 'Not dramatically. They collected their things, said thank you, and left before '
-          + 'the vote, which under the bylaws does not affect anything and under every other '
+          + 'the vote, which under the bylaws doesn\'t affect anything and under every other '
           + 'consideration affects everything. One of them was photographed in the parking lot on '
           + 'the telephone, and the photograph is on the front of two newspapers.';
       },
@@ -248,12 +248,12 @@
       id: 'unanimous',
       weight: 2,
       when: function (w, sit) { return sit.standing != null && sit.standing >= 70; },
-      head: 'It went through unanimously and that is the worrying part',
+      head: 'It went through unanimously and that\'s the worrying part',
       body: function (ctx) {
         return 'Nobody spoke against it. Nobody asked a question. The whole thing took four '
           + 'minutes and two of those were somebody finding the right document. A room that '
           + 'agrees this easily has either been convinced or has stopped bothering, and the '
-          + 'minutes cannot tell you which.';
+          + 'minutes can\'t tell you which.';
       },
       effects: { autonomy: 0.8, exposure: 0.6 },
       aimed: { Presidents: { autonomy: 0.8 } },
@@ -266,7 +266,7 @@
       body: function (ctx) {
         return 'Forty-one minutes of audio, published in full, in which two commissioners '
           + 'discuss a third commissioner\'s hair for longer than they discuss the ruling. It '
-          + 'is not damaging. It is not even interesting. It is now the only thing anybody in '
+          + 'isn\'t damaging. It isn\'t even interesting. It\'s now the only thing anybody in '
           + 'this sport will talk about for eight days.';
       },
       effects: { exposure: -1.2, inventory: 0.6, autonomy: -0.4 },
@@ -326,8 +326,8 @@
       body: function (ctx) {
         return 'Signed by three hundred and forty of them across every conference, drafted in a '
           + 'group chat over one night, and better written than anything this office has '
-          + 'published in a decade. It is four paragraphs long. The third paragraph is the one '
-          + 'everybody is quoting and it is about you specifically.';
+          + 'published in a decade. It\'s four paragraphs long. The third paragraph is the one '
+          + 'everybody is quoting and it\'s about you specifically.';
       },
       effects: { labour: 0.8, exposure: -1.2 },
       aimed: { Players: { labour: 1.4 }, Presidents: { exposure: -1 } },
@@ -352,11 +352,11 @@
       id: 'mascot-outside',
       weight: 2,
       when: function () { return true; },
-      head: 'There is a mascot outside the building',
+      head: 'There\'s a mascot outside the building',
       body: function (ctx) {
-        return 'He has been there since seven. He is in full costume. He is holding a sign '
-          + 'about the ruling and he will not take the head off. Security cannot establish '
-          + 'which school he is from, because the costume is not any of theirs, and a reporter '
+        return 'He has been there since seven. He\'s in full costume. He\'s holding a sign '
+          + 'about the ruling and he won\'t take the head off. Security can\'t establish '
+          + 'which school he is from, because the costume isn\'t any of theirs, and a reporter '
           + 'has now been sent to find out.';
       },
       effects: { exposure: -0.6, tradition: 1, inventory: 0.8 },
@@ -366,12 +366,12 @@
       id: 'barn',
       weight: 2,
       when: function () { return true; },
-      head: 'It is painted on a barn',
+      head: 'It\'s painted on a barn',
       body: function (ctx) {
         return 'Somewhere off a state road in Kentucky, forty feet across, visible from the '
-          + 'air, quoting the ruling and adding a word that is not in it. The farmer has given '
+          + 'air, quoting the ruling and adding a word that isn\'t in it. The farmer has given '
           + 'three interviews. The barn has a hashtag. Two airlines have adjusted an approach '
-          + 'path and one of them says that is a coincidence.';
+          + 'path and one of them says that\'s a coincidence.';
       },
       effects: { tradition: 1.2, exposure: -0.4 },
       aimed: { Fans: { tradition: 1.4 } },
@@ -383,7 +383,7 @@
       head: 'Your page has been edited two thousand times',
       body: function (ctx) {
         return 'It has been locked, unlocked, and locked again. For four hours yesterday '
-          + 'afternoon your occupation was listed as something this office will not repeat and '
+          + 'afternoon your occupation was listed as something this office won\'t repeat and '
           + 'your date of birth was 1834. Somebody has been very patiently restoring it and '
           + 'that person has now given an interview about it.';
       },
@@ -422,7 +422,7 @@
       id: 'typo',
       weight: 3,
       when: function () { return true; },
-      head: 'There is a typo in the ruling',
+      head: 'There\'s a typo in the ruling',
       body: function (ctx) {
         return 'One letter, in clause four, which changes a word into a different real word '
           + 'and changes the sentence into something between meaningless and obscene. It went '
@@ -436,12 +436,12 @@
       id: 'ai-video',
       weight: 3,
       when: function () { return true; },
-      head: 'There is a video of you saying something you did not say',
+      head: 'There\'s a video of you saying something you didn\'t say',
       body: function (ctx) {
-        return 'It is not good. It is good enough. Ninety seconds of you announcing a version '
+        return 'It isn\'t good. It\'s good enough. Ninety seconds of you announcing a version '
           + 'of this ruling that is considerably more aggressive than the actual one, in your '
-          + 'voice, in an office that does not exist. Two local news stations ran it before '
-          + 'anybody checked and one of them has not corrected it.';
+          + 'voice, in an office that doesn\'t exist. Two local news stations ran it before '
+          + 'anybody checked and one of them hasn\'t corrected it.';
       },
       effects: { exposure: -1.8, autonomy: -0.6 },
       aimed: { Presidents: { exposure: -1.6 } },
@@ -450,11 +450,11 @@
       id: 'song',
       weight: 2,
       when: function () { return true; },
-      head: 'There is a country song about it',
+      head: 'There\'s a country song about it',
       body: function (ctx) {
         return 'Three minutes and forty seconds, released within a week, currently the eleventh '
-          + 'most played song in four states. The chorus is about this office. It is not '
-          + 'complimentary and it is a genuinely good song, which is the part that is going to '
+          + 'most played song in four states. The chorus is about this office. It isn\'t '
+          + 'complimentary and it\'s a genuinely good song, which is the part that is going to '
           + 'keep it alive for twenty years.';
       },
       effects: { tradition: 0.8, exposure: -1, inventory: 0.6 },
@@ -482,7 +482,7 @@
       when: function (w, sit, ctx) { return fx(ctx, 'exposure') < -1 || (w.pressure.legal || 0) >= 20; },
       head: 'It was filed within the day',
       body: function (ctx) {
-        return 'Forty-one pages, in a district that has not been friendly to this sport, on '
+        return 'Forty-one pages, in a district that hasn\'t been friendly to this sport, on '
           + 'behalf of a plaintiff nobody in this office had heard of on Monday. The filing '
           + 'quotes the ruling nine times and quotes something said at media days eighteen '
           + 'months ago once, which is the sentence the lawyers keep going back to.';
@@ -511,8 +511,8 @@
       head: 'A professional league copied it',
       body: function (ctx) {
         return 'Within a month, nearly word for word, with an acknowledgment in a footnote '
-          + 'nobody was supposed to read and a press release that does not mention this sport '
-          + 'at all. It is the first time in living memory that anything has traveled in that '
+          + 'nobody was supposed to read and a press release that doesn\'t mention this sport '
+          + 'at all. It\'s the first time in living memory that anything has traveled in that '
           + 'direction and every president in the room has now mentioned it to you.';
       },
       effects: { autonomy: 1.2, tradition: 0.6, exposure: 0.6 },
@@ -525,8 +525,8 @@
       head: 'Two conferences say they will ignore it',
       body: function (ctx) {
         return conf(ctx) + ' and one other have published a joint statement saying they will '
-          + 'proceed as though the ruling does not exist, pending "further clarification". '
-          + 'There is no mechanism in the bylaws for what happens next. There has never needed '
+          + 'proceed as though the ruling doesn\'t exist, pending "further clarification". '
+          + 'There\'s no mechanism in the bylaws for what happens next. There has never needed '
           + 'to be one.';
       },
       effects: { autonomy: -2, exposure: -1.2 },
@@ -557,7 +557,7 @@
         return 'Every player who declared, went undrafted and had nowhere to go back to. '
           + 'Eighty short interviews, one photograph each, published across four days as a '
           + 'series. Six of them are working night shifts. Two are back at the same high '
-          + 'school they were recruited out of, coaching. It is very good journalism and it '
+          + 'school they were recruited out of, coaching. It\'s very good journalism and it '
           + 'is about a rule with this office\'s name on it.';
       },
       effects: { exposure: -2, labour: -0.8, tradition: -0.6 },
@@ -572,7 +572,7 @@
         return 'Professional camps broke on a Tuesday and by Thursday nine men who had said '
           + 'goodbye in April were back on college rosters, four of them at ' + school(ctx)
           + '\'s conference rivals. One walked into a team meeting he had a locker in fourteen '
-          + 'weeks ago. Somebody filmed the room reacting and it is the best thing anybody has '
+          + 'weeks ago. Somebody filmed the room reacting and it\'s the best thing anybody has '
           + 'seen this year.';
       },
       effects: { inventory: 1.2, labour: 0.8, tradition: -1 },
@@ -611,12 +611,12 @@
       id: 'the-roof',
       weight: 2,
       when: function (w, sit) { return !!sit.titleVenue; },
-      head: 'The roof did not close',
+      head: 'The roof didn\'t close',
       body: function (ctx) {
         var v = ctx.sit && ctx.sit.titleVenue;
         return 'A test run at ' + ((v && v.name) || 'the host stadium') + ' stopped the roof '
           + 'two thirds of the way across and left it there for nine hours. The building says '
-          + 'it is a sensor. The building has said it is a sensor twice before. There is a '
+          + 'it\'s a sensor. The building has said it is a sensor twice before. There\'s a '
           + 'forecast for the week of the game and everybody in this office has now looked at '
           + 'it more than once.';
       },
@@ -633,7 +633,7 @@
         return ((v && v.city) || 'The host city') + ' has committed to a parade, a fan '
           + 'festival, a week of free concerts and a light display on four bridges, none of '
           + 'which was in the bid and all of which they are paying for. Their tourism board '
-          + 'has decided this is the week they become the city that does this. It is going to '
+          + 'has decided this is the week they become the city that does this. It\'s going to '
           + 'be enormous.';
       },
       effects: { inventory: 1.4, tradition: 1, money: 0.6 },

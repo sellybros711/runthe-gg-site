@@ -194,6 +194,41 @@ async function toResults(p) {
   return !!(await p.$('#s-over.on'));
 }
 
+// ══ 0. the all-time ribbon has one rule, and the share card obeys it ════════
+head('0. THE RIBBON HAS ONE RULE, AND THE SHARE CARD READS IT');
+/* The results screen and the share card both hang "Nth-greatest team of all
+   time" over a season. The screen's copy was gated to a top 100 roster that
+   reached October and the card's was not, so a 73-89 season that missed the
+   playoffs went out to a group chat as the 439th-greatest team of all time. A
+   played run cannot be relied on to land either side of that line, so the rule
+   is lifted out of the page and asked directly, and the card is held to it. */
+{
+  const src = readFileSync(new URL('./index.html', import.meta.url), 'utf8');
+  const body = (name) => {
+    const at = src.indexOf('function ' + name + '(');
+    if (at < 0) return null;
+    let i = src.indexOf('{', at), depth = 0;
+    for (let j = i; j < src.length; j++) {
+      if (src[j] === '{') depth++;
+      else if (src[j] === '}' && --depth === 0) return src.slice(at, j + 1);
+    }
+    return null;
+  };
+  const rule = body('crownedRank');
+  claim(!!rule, 'the page has one ribbon rule, crownedRank()');
+  if (rule) {
+    const crownedRank = new Function(rule + '; return crownedRank;')();
+    claim(crownedRank({ allTimeRank: 27, madePlayoffs: true }) === 27, 'a top 100 roster that reached October is crowned');
+    claim(crownedRank({ allTimeRank: 27, madePlayoffs: false }) === null, 'a top 100 roster that missed October is not');
+    claim(crownedRank({ allTimeRank: 439, madePlayoffs: true }) === null, 'a roster outside the top 100 is not, even in October');
+    claim(crownedRank({ allTimeRank: null, madePlayoffs: true }) === null, 'a run with no rank (All-Time Staff) is not');
+  }
+  const card = body('drawShareCard') || '';
+  claim(/crownedRank\(o\)/.test(card), 'the share card asks crownedRank() before it draws the ribbon');
+  claim(!/ordinal\(o\.allTimeRank\)/.test(card), 'and never prints the raw rank as a ribbon',
+    'drawShareCard still formats o.allTimeRank into the ribbon line directly');
+}
+
 // ══ 1. a Classic run, end to end ═══════════════════════════════════════════
 head('1. A WHOLE RUN REACHES THE SCREEN IT ENDS ON');
 const { ctx, p } = await openPage({});

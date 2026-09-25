@@ -8,7 +8,7 @@
                               caching/CORS; the SW never intercepts them).
    skipWaiting + clients.claim mean a newly-deployed SW takes over on the next load. Bump CACHE to
    force-invalidate everything on a breaking change. */
-const CACHE = 'runtour-v7';   // CS430: network-first-with-timeout for HTML (fast loads on slow networks)
+const CACHE = 'runtour-v8';   // v8: the new mark, so a cached icon is not served the old shield (CS430: network-first HTML)
 // How long a returning player waits for a fresh download before we hand them the cached page. The whole
 // game is one file, so on a mid-tier phone the gzipped body alone takes ~2s - at the old 2500ms the
 // network still won and nobody ever got the fast path. 1200ms means a decent connection is still served

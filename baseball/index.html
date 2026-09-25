@@ -3,9 +3,6 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<!-- Not for search: an unlaunched preview: real code and data, but linked from nowhere and absent from sitemap.xml.
-     Kept out of the index so the site is not crawled as a set of near-empty pages. -->
-<meta name="robots" content="noindex, nofollow">
 <title>Run The Diamond: MLB Draft Game | RunThe.GG</title>
 <meta name="description" content="Run The Diamond: Draft an all-time MLB roster from 1901-2025 under a $170M cap, simulate a 162-game season, and chase the World Series. Free, no download.">
 <meta name="theme-color" content="#e8dcc8" id="themeMeta">
@@ -25,22 +22,22 @@
 })();
 </script>
 <link rel="canonical" href="https://runthe.gg/baseball/">
-<link rel="manifest" href="manifest.webmanifest?v=1">
-<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png?v=1">
-<link rel="apple-touch-icon" href="apple-touch-icon.png?v=1">
+<link rel="manifest" href="manifest.webmanifest?v=2">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png?v=2">
+<link rel="apple-touch-icon" href="apple-touch-icon.png?v=2">
 <meta property="og:title" content="Run The Diamond: MLB Draft Game">
 <meta property="og:description" content="Draft an all-time MLB roster under a $170M cap. Simulate 162 games. Win the World Series.">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="RunThe.GG">
 <meta property="og:url" content="https://runthe.gg/baseball/">
-<meta property="og:image" content="https://runthe.gg/baseball/og.png?v=2">
+<meta property="og:image" content="https://runthe.gg/baseball/og.png?v=3">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="Run The Diamond: draft an all-time MLB roster and chase the perfect season.">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Run The Diamond: MLB Draft Game">
 <meta name="twitter:description" content="Draft an all-time MLB roster under a $170M cap. Simulate 162 games. Win the World Series.">
-<meta name="twitter:image" content="https://runthe.gg/baseball/og.png?v=2">
+<meta name="twitter:image" content="https://runthe.gg/baseball/og.png?v=3">
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"VideoGame","name":"Run The Diamond","url":"https://runthe.gg/baseball/",
 "description":"Draft an all-time MLB roster from 1901 to 2025 under a $170M salary cap, then simulate a 162-game season and chase the World Series.",
@@ -48,6 +45,19 @@
 "playMode":"SinglePlayer","inLanguage":"en","isAccessibleForFree":true,
 "publisher":{"@type":"Organization","name":"RunThe.GG","url":"https://runthe.gg/"}}
 </script>
+<!-- CONSENT DEFAULTS FIRST, THEN THE AD TAG, and the order is the whole of it.
+     privacy.html promises no advertising cookie is set before the CMP answers, so
+     a page that loads adsbygoogle.js with nothing in front of it breaks that
+     promise silently. scripts/check-adsense.mjs asserts the two indexes as well as
+     their presence. This block sits above the GA loader below deliberately: that
+     one reassigns window.gtag, which is harmless because both push into the same
+     window.dataLayer and this call has already queued by then. -->
+<script>
+window.dataLayer=window.dataLayer||[];
+window.gtag=window.gtag||function(){dataLayer.push(arguments);};
+gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personalization:'denied',analytics_storage:'granted',wait_for_update:500});
+</script>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5952069078178257" crossorigin="anonymous"></script>
 <script>
 window.GA_ID='G-L29P5MRWKE';
 (function(){var id=window.GA_ID;if(!id||id.indexOf('G-')!==0||/X{4,}/.test(id))return;
@@ -1662,7 +1672,7 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
 
 <header>
   <a class="lockup" href="." aria-label="Run The Diamond, back to the start">
-    <img class="mark" src="icon-192.png?v=1" alt="" width="28" height="28" decoding="async">
+    <img class="mark" src="mark.svg?v=1" alt="" width="28" height="28" decoding="async">
     <span class="brand">Run The <em>Diamond</em></span>
   </a>
   <div class="hdr-r">
@@ -2119,9 +2129,9 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
   </div>
 </div>
 
-<script src="engine.js?v=27"></script>
+<script src="engine.js?v=28"></script>
 <script src="run.js?v=23"></script>
-<script src="achievements.js?v=6"></script>
+<script src="achievements.js?v=7"></script>
 <script src="board.js?v=1"></script>
 <script>
 (function(){
@@ -3016,7 +3026,7 @@ function heroSync(){
 /* ─── boot ─── */
 async function boot(){
   try{
-    const res=await fetch('data/players.json?v=2');
+    const res=await fetch('data/players.json?v=4');
     if(!res.ok) throw new Error('Failed to load player data');
     const players=await res.json();
     // Curated real relationships (families). Non-fatal if it fails to load.
@@ -4948,9 +4958,10 @@ function showResult(){
      louder than the verdict it was undercutting. Every rank still shows, in the
      cell below, labelled, where it means what it says.
      Top 100 is the band the badge catalogue already cuts at, and reaching
-     October is what says the season backed the roster up. */
+     October is what says the season backed the roster up. The rule is
+     crownedRank(), which the share card reads too. */
   const rank=o.allTimeRank;
-  const crowned=!!rank&&rank<=100&&o.madePlayoffs;
+  const crowned=crownedRank(o)!=null;
   $('ro-ribbon').textContent=crowned?(ordinal(rank)+'-greatest team of all time'):'';
   $('ro-ribbon').hidden=!crowned;
   const vd=$('ro-verdict');
@@ -5197,6 +5208,17 @@ function shareLines(o){
 }
 function rr(ctx,x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);
   ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+/* The all-time ribbon's rule, written once. The results screen and the share card
+   both hang "Nth-greatest team of all time" over a season, and the card kept its
+   own copy of that line after the screen's was gated: so a 73-89 season that
+   missed the playoffs went out to a group chat as the 439th-greatest team of all
+   time, on the one picture of this game other people see. Answers the rank when
+   the season earns the line, and null when it does not. */
+function crownedRank(o){
+  const rank=o&&o.allTimeRank;
+  return rank&&rank<=100&&o.madePlayoffs?rank:null;
+}
+const SHARE_MARK=new Image();SHARE_MARK.src='mark-256.png?v=1';
 function drawShareCard(o){
   const W=1080,H=1350,cv=document.createElement('canvas');cv.width=W;cv.height=H;
   const c=cv.getContext('2d');
@@ -5209,10 +5231,19 @@ function drawShareCard(o){
   const win=o.titleWon||o.beatRecord;
   // kicker
   c.textAlign='center';c.fillStyle='#b8860b';c.font='800 30px Archivo, sans-serif';
-  c.fillText('★  RUN THE DIAMOND  ★',W/2,118);
+  /* The game's mark either side of the name. Drawn from a PNG preloaded at boot
+     rather than an SVG, because an SVG drawn into a canvas can stop it exporting in
+     some browsers, and then Share does nothing. Not loaded yet, it falls back to the
+     stars the card always had rather than waiting. */
+  if(SHARE_MARK.complete&&SHARE_MARK.naturalWidth){
+    c.fillText('RUN THE DIAMOND',W/2,118);
+    const half=c.measureText('RUN THE DIAMOND').width/2, m=58;
+    c.drawImage(SHARE_MARK,W/2-half-24-m,118-11-m/2,m,m);
+    c.drawImage(SHARE_MARK,W/2+half+24,118-11-m/2,m,m);
+  }else c.fillText('★  RUN THE DIAMOND  ★',W/2,118);
   // all-time rank ribbon
-  if(o.allTimeRank){c.fillStyle='#7a5c12';c.font='700 26px Archivo, sans-serif';
-    c.fillText(ordinal(o.allTimeRank).toUpperCase()+'-GREATEST TEAM OF ALL TIME',W/2,168);}
+  if(crownedRank(o)){c.fillStyle='#7a5c12';c.font='700 26px Archivo, sans-serif';
+    c.fillText(ordinal(crownedRank(o)).toUpperCase()+'-GREATEST TEAM OF ALL TIME',W/2,168);}
   // record
   c.font='400 210px "Righteous", Impact, sans-serif';
   const rec=o.wins+'-'+o.losses;

@@ -11,10 +11,18 @@
      not at all, and hoops/check-posture.mjs asserts exactly that. -->
 <meta name="robots" content="noindex, nofollow">
 <title>How to Play Run The Floor: The NBA Draft Game | RunThe.GG</title>
-<meta name="description" content="The rules of Run The Floor, and the basketball behind them: the shot budget, spacing measured against era, rim protection, and the ten NBA systems the game can recognise in a roster.">
+<meta name="description" content="How to play Run The Floor: Fix History, Six Passes, Conquest and Quick Draft, and the basketball behind them: the shot budget, spacing measured against era, rim protection and the systems a roster can run.">
 <meta name="theme-color" content="#0d1117">
 <link rel="canonical" href="https://runthe.gg/hoops/how-to-play.html">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230d1117'/%3E%3Ctext x='16' y='24' font-size='20' text-anchor='middle'%3E%F0%9F%8F%80%3C/text%3E%3C/svg%3E">
+<link rel="manifest" href="manifest.webmanifest">
+<!-- THE MARK IS AN 8-BIT BALL, built by hoops/build/logo.mjs from one pixel grid. The
+     favicons are the 15 cell ball at 1x, 2x and 3x rather than one image scaled, because a
+     pixel ball scaled by anything but a whole number stops being pixel art. It replaced an
+     emoji in an SVG, which drew whatever the visitor's emoji font drew. -->
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png?v=1">
+<link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png?v=1">
+<link rel="icon" type="image/png" sizes="48x48" href="favicon-48.png?v=1">
+<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=1">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <!-- THE FONT DOES NOT GET TO HOLD THE GAME HOSTAGE.
@@ -27,9 +35,9 @@
      face below has a real fallback stack, so text paints immediately in the fallback
      and swaps when Anton and Archivo arrive. -->
 <link rel="stylesheet" media="print" onload="this.media='all';this.onload=null"
-  href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@400;600;700;800;900&display=swap">
+  href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@400;600;700;800;900&family=Press+Start+2P&display=swap">
 <noscript><link rel="stylesheet"
-  href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@400;600;700;800;900&display=swap"></noscript>
+  href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@400;600;700;800;900&family=Press+Start+2P&display=swap"></noscript>
 
 <style>
   :root{
@@ -59,7 +67,11 @@
 
   h1{font-family:var(--display);font-weight:400;text-transform:uppercase;letter-spacing:.01em;
     font-size:clamp(27px,7vw,40px);line-height:1.04;margin:0 0 10px;}
-  h1 span{color:var(--orange);}
+  /* The game's name in the logo's own pixel face and colours. Its fallback is the
+     display face, never a monospace. */
+  h1 span{display:block;margin-top:10px;font-family:'Press Start 2P',var(--display);
+    font-size:24px;line-height:1.2;color:#ffae3d;text-shadow:0 3px 0 #e8632a,0 6px 0 #a8341f,4px 9px 0 #05060b;}
+  @media(max-width:420px){ h1 span{font-size:16px;text-shadow:0 2px 0 #e8632a,0 4px 0 #a8341f,3px 6px 0 #05060b;} }
   .lede{font-size:16.5px;color:#c3d0e2;margin:0 0 24px;}
 
   h2{font-family:var(--display);font-weight:400;text-transform:uppercase;letter-spacing:.03em;
@@ -121,14 +133,71 @@
 
 <h1>How to play <span>Run The Floor</span></h1>
 <p class="lede">
+  Four ways to play the history of the NBA, all built on the same real seasons. Two of them
+  are daily puzzles that are the same for everybody, one is a run you can go on for as long
+  as you keep winning, and one is the draft this game started as.
+</p>
+
+<h2>Fix History</h2>
+<p>
+  <b>The daily.</b> Every day, one real team that was good enough to win a title and did
+  not. You get one move. Trade one of its starting five for anybody since 1974 who costs no
+  more than the man he replaces and can play the same spot. Then the season is replayed.
+</p>
+<p>
+  <b>Your score is the title odds</b>: the share of replayed seasons your version of the team
+  wins it all. Everybody plays the same seasons, so the same move always scores the same, and
+  the leaderboard is a list of the best ideas rather than the luckiest dice. One of those
+  seasons is played out as the story, and that is the record you see.
+</p>
+<p>
+  The trick is the price. What a player costs here is what the market would pay for his box
+  score, and the market pays for points. So the moves that fix a team are the guys who won
+  without scoring: the rebounders, the defenders and the passers. Knowing who they were is
+  the whole puzzle, which is why the search shows you the stat line and not the answer.
+</p>
+
+<h2>Six Passes</h2>
+<p>
+  <b>The other daily.</b> Two All-Stars from different eras. Get the ball from the first to
+  the second, and every pass has to go to somebody the man with the ball really played with:
+  same team, same season. Par is the shortest chain that exists.
+</p>
+<p>
+  Every pass is final and the shot clock is ten passes. The timeline at the top shows the
+  ball moving through the years, which is most of the strategy: to get from the seventies to
+  today you need a man whose career crossed the gap.
+</p>
+
+<h2>Conquest</h2>
+<p>
+  <b>Winners stay on.</b> You start with five role players and the court. Real teams line up
+  to take it off you, weakest first, and the best team in the data is waiting at the top of
+  the line. Every fifth team is a boss.
+</p>
+<p>
+  <b>Beat a team and take one of its players.</b> He goes into the spot of the man you drop,
+  so he has to be able to play it: taking their center means giving up yours. Everything in
+  the rules below still counts. Take the leading scorer off every team you beat and you build
+  five guys fighting over one ball.
+</p>
+<p>
+  You have <b>three lives</b>. Lose and the same team stays on for a rematch. Beat a boss and
+  you get a life back. The run is over when the last one goes, and your score is how many
+  teams you beat.
+</p>
+
+<h2>Quick Draft</h2>
+<p>
   Spin for a club and a season, sign one player off that roster, and do it five times. Then
   play all 82 games. The whole game is what happens in between: five great players are not a
-  team, and this one is built to know the difference.
+  team, and this one is built to know the difference. The rest of this page is its rules,
+  and they are the rules every other mode is played under too.
 </p>
 
 <h2>The rules</h2>
 <ol class="rules">
-  <li>The wheel gives you <b>a club and a season</b>, anywhere from 1972 to 2023. You sign
+  <li>The wheel gives you <b>a club and a season</b>, any season since 1974. You sign
     one player off that roster.</li>
   <li>Five spins fill a starting five. There is no bench:</li>
 </ol>
@@ -207,7 +276,7 @@
     fan knows, and the game should be paying you for knowing it rather than telling you.</p>
   <p>The cards used to carry labels worked out from the box score instead: rim protector,
     creator, no range. They came off for two reasons. They read the fit model's own answer
-    out loud, which turns the draft into collecting one of each colour. And a rate stat from
+    out loud, which turns the draft into collecting one of each color. And a rate stat from
     a single season is not a fact about a player: Karl-Anthony Towns took 1.1 threes a game
     in 2016 and the card called him no range, which is a fair reading of that column and an
     absurd thing to say about him.</p>
@@ -233,7 +302,7 @@
 
 <h3>Spacing, measured against the player's own era</h3>
 <p>
-  Somebody has to be able to shoot or the paint is a car park. But the three-point line did
+  Somebody has to be able to shoot or the paint is a parking lot. But the three-point line did
   not exist until 1980, and Jerry West attempted zero of them in 1972 because nobody could.
   That is a fact about the league, not a flaw in Jerry West.
 </p>
@@ -307,10 +376,10 @@
     <tr><td>Grit and Grind</td><td>Value sitting disproportionately at the defensive end, and no spacing</td></tr>
     <tr><td>Twin Towers</td><td>Two genuine bigs and the glass owned at both ends</td></tr>
     <tr><td>Bully Ball</td><td>A post man scoring 18 a night with the floor tight</td></tr>
-    <tr><td>Point Centre</td><td>A centre who is the roster's primary passer</td></tr>
+    <tr><td>Point Center</td><td>A center who is the roster's primary passer</td></tr>
     <tr><td>Moreyball</td><td>A high-volume shooting guard and a rim runner who never shoots</td></tr>
     <tr><td>Seven Seconds or Less</td><td>A shooting point guard and a floor stretched to the arc</td></tr>
-    <tr><td>The Death Lineup</td><td>No true centre at all, shooting everywhere, hands in every passing lane</td></tr>
+    <tr><td>The Death Lineup</td><td>No true center at all, shooting everywhere, hands in every passing lane</td></tr>
     <tr><td>Pace and Space</td><td>Shooting across the roster, however you got there</td></tr>
     <tr><td>Motion Offense</td><td>Nobody dominating the ball and everybody passing</td></tr>
     <tr><td>Iso Ball</td><td>One man taking a third of the shots and nobody creating</td></tr>
@@ -350,11 +419,10 @@
   never happened.
 </p>
 
-<h2>The games worth playing, you play</h2>
+<h2>Game 7 is yours to play</h2>
 <p>
-  Most of the bracket settles itself. A game the series can end in does not. Lose it and
-  the run is over. Win it and the round is yours. Every Finals game counts whatever the
-  series says. Those stop and ask.
+  The bracket settles itself, game after game. A Game 7 does not. Win it and the round is
+  yours. Lose it and the run is over. That one stops and asks.
 </p>
 <p>
   Play it and you get the whole game. Possession by possession, a real clock, a running
@@ -369,7 +437,7 @@
   for your calls.
 </p>
 
-<h2>Today's run</h2>
+<h2>Daily Draft</h2>
 <p>
   One run a day, and the wheel is seeded off the date. Everybody who plays today gets the
   same five spins in the same order, so for once two records are the same question answered
@@ -391,13 +459,13 @@
 <p>
   The same game with the club reel held still. Only the year spins, and every man you sign
   really did wear the shirt. Thirty clubs, and each one counts its whole history: Oklahoma
-  City reaches Seattle, Memphis reaches Vancouver, and New Orleans reaches the Hornets who
-  left Charlotte.
+  City reaches Seattle, Memphis reaches Vancouver, and Charlotte reaches the Hornets of
+  Mourning and Larry Johnson.
 </p>
 <p>
   It turns the draft into a history exam about one club. Which eras were loaded, which
   years to re-spin away from, which cheap season hides a partner for your star. A Celtics
-  run has fifty-two seasons and eighteen rings behind it. A Hornets run has twenty-one
+  run has fifty-two seasons and eighteen rings behind it. A Pelicans run has twenty-four
   seasons and no rings, and finding five good men in there is a different problem.
 </p>
 <p>

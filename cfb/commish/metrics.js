@@ -142,7 +142,7 @@
     { id: 'share', label: 'The player share', sub: 'percent of the pool', group: 'The money',
       from: 'tape', color: '#c27a06', good: null, dp: 1, suffix: '%', scale: 100,
       pick: function (r) { return r.sh; },
-      about: 'What reaches the players. There is no correct value and every group in the '
+      about: 'What reaches the players. There\'s no correct value and every group in the '
         + 'room has a different one.' },
 
     /* ---- the office ---- */
@@ -169,13 +169,13 @@
     { id: 'autobids', label: 'Guaranteed bids', sub: 'seats', group: 'The sport',
       from: 'tape', color: '#9333ea', good: null, dp: 0, suffix: '',
       pick: function (r) { return r.pa; },
-      about: 'Seats a conference champion cannot be left out of.' },
+      about: 'Seats a conference champion can\'t be left out of.' },
 
     /* ---- the fuses ---- */
     { id: 'legal', label: 'Legal', sub: 'pressure', group: 'The pressure',
       from: 'tape', color: '#c27a06', good: 'down', dp: 0, suffix: '',
       pick: function (r) { return r.lg; },
-      about: 'These do not tick down, they go off. Every drop in this line is something '
+      about: 'These don\'t tick down, they go off. Every drop in this line is something '
         + 'having already happened to you.' },
     { id: 'congress', label: 'Congress', sub: 'pressure', group: 'The pressure',
       from: 'tape', color: '#c27a06', good: 'down', dp: 0, suffix: '',

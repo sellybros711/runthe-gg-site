@@ -12,20 +12,20 @@
   if(t!=='light'&&t!=='dark'){ t=(window.matchMedia&&matchMedia('(prefers-color-scheme: light)').matches)?'light':'dark'; try{localStorage.setItem('runthegrid_theme',t);}catch(e){} }
   document.documentElement.setAttribute('data-theme',t); })();
 </script>
-<meta name="description" content="Number Game: a daily sports recall streak. One player, one club, one question: what number did they wear? Type it and see how far you can go." />
+<meta name="description" content="Number Game is a daily sports streak game. You get a player and a team. What number did they wear there? Type it and see how far you can go." />
 <link rel="icon" type="image/png" href="/arcade/assets/arcade-icon.png?v=3" />
 <link rel="apple-touch-icon" href="/arcade/assets/arcade-apple-180.png?v=2" />
 <meta property="og:type" content="website" />
 <meta property="og:site_name" content="RunThe.GG" />
 <meta property="og:title" content="Number Game: Daily Sports Streak Game" />
-<meta property="og:description" content="One player, one question: what number did they wear? Type it and see how far you can go." />
+<meta property="og:description" content="You get a player. What number did they wear? Type it and see how far you can go." />
 <meta property="og:url" content="https://runthe.gg/arcade/table/" />
 <meta property="og:image" content="https://runthe.gg/arcade/assets/arcade-share.png?v=3" />
 <meta property="og:image:width" content="1200" />
 <meta property="og:image:height" content="630" />
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:title" content="Number Game: Daily Sports Streak Game" />
-<meta name="twitter:description" content="One player, one question: what number did they wear? Type it and see how far you can go." />
+<meta name="twitter:description" content="You get a player. What number did they wear? Type it and see how far you can go." />
 <meta name="twitter:image" content="https://runthe.gg/arcade/assets/arcade-share.png?v=3" />
 <link rel="canonical" href="https://runthe.gg/arcade/table/" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -301,7 +301,7 @@ window.GA_ID='G-L29P5MRWKE';
 
   <div class="runbar">
     <div class="rstat cur"><span class="big" id="runN">0</span><span class="lab">In a row</span></div>
-    <div class="rl"><span class="v" id="runSub">Exact is a bullseye. Within two still counts. One save, then the run ends.</span><span class="shieldpill" id="shieldPill">Save ready</span></div>
+    <div class="rl"><span class="v" id="runSub">Exact is a bullseye. Within 2 still counts. You get 1 save, then you’re out.</span><span class="shieldpill" id="shieldPill">Save ready</span></div>
     <div class="rstat best"><span class="big" id="bestRun">0</span><span class="lab">Best ever</span></div>
   </div>
 
@@ -316,7 +316,7 @@ window.GA_ID='G-L29P5MRWKE';
     </div>
     <div class="subprompt" id="subprompt"></div>
     <div class="factline" id="factline" aria-live="polite"></div>
-    <div class="hintline" id="hintline">Type the number. Within two still counts.</div>
+    <div class="hintline" id="hintline">Type the number. Within 2 still counts.</div>
   </div>
 
   <div class="lb" id="lb">
@@ -331,7 +331,7 @@ window.GA_ID='G-L29P5MRWKE';
       <div class="row"><span class="rk">2</span><span class="who">hoops_hana</span><span class="tm">17 in a row</span></div>
       <div class="row"><span class="rk">3</span><span class="who">puckluck</span><span class="tm">14 in a row</span></div>
     </div>
-    <div class="note" id="lbNote">These names are a sample. Live daily rankings arrive with accounts. Sign in with your RunThe.GG account to post your run.</div>
+    <div class="note" id="lbNote">These are sample names. Sign in with your RunThe.GG account to get on the board.</div>
   </div>
 
 <details class="gj" id="howtoTab">
@@ -341,31 +341,31 @@ window.GA_ID='G-L29P5MRWKE';
   <span class="gj-chev" aria-hidden="true">▾</span>
 </summary>
 <div class="gj-body">
-<p>One player, one club, one question: what number did they wear there? Type your answer and find out. An exact hit is a bullseye, and within two still counts, because being a digit out is remembering, not guessing.</p>
+<p>You get a player and a team. What number did they wear there? Type it and find out. Exact is a bullseye. Within 2 still counts. Being a digit off means you remembered it. You didn’t guess.</p>
 <ul>
-  <li>Every correct call extends your run, and the questions keep coming.</li>
-  <li>You carry one save. The first real miss burns it; a second ends the run.</li>
-  <li>The deck opens on household names and works down into the deep cuts.</li>
-  <li>The daily board ranks the longest runs, so one great morning can hold up all day.</li>
+  <li>Every right answer keeps your run going. The questions keep coming.</li>
+  <li>You get 1 save. Your first real miss uses it. The second one ends your run.</li>
+  <li>It starts with big names and gets into the deep cuts.</li>
+  <li>The daily board ranks the longest runs. One great morning can hold up all day.</li>
 </ul>
-<h3>Runs, saves and the daily reset</h3>
-<p>A new deck deals at midnight local time, and your streak grows with every day you play. The Number Game is an Arcade Card game. A free RunThe.GG account gets one play of it, once ever. The Daily Crossword, Sportegories, Alma Mater and Career Path are free every day, with no account at all. The Card opens all twelve with no limit, plus the <a href="/arcade/archive/">Archive</a> of every past day. Five of the games also have NBA, NFL and MLB editions.</p>
-<h3>Getting the number</h3>
+<h3>Streaks and the daily reset</h3>
+<p>New players drop at midnight your time. Your streak grows every day you play. The Number Game is an Arcade Card game. A free RunThe.GG account gets one play of it, once ever. The Daily Crossword, Sportegories, Alma Mater and Career Path are free every day, no account needed. The Card opens all twelve with no limit, plus the <a href="/arcade/archive/">Archive</a> of every past day. Five of the games also have NBA, NFL and MLB editions.</p>
+<h3>Tips</h3>
 <ul>
-  <li>Within two still counts, and it extends the run exactly like a bullseye does. A number you only half remember is always worth typing.</li>
-  <li>The club in the question is the question. Plenty of stars changed number when they moved, and memory files a player under one.</li>
-  <li>Positions have habits. When nothing surfaces, work from where the player lined up.</li>
+  <li>Within 2 keeps your run going just like a bullseye. Kind of remember it? Type it.</li>
+  <li>Look at the team. Lots of stars changed numbers when they moved. Most people only remember one of them.</li>
+  <li>Positions have habits. If nothing comes to you, think about where they lined up.</li>
 </ul>
-<p>Keep the streak brain warm with <a href="/arcade/highlow/">High Low</a>, or trace a journeyman in <a href="/arcade/career/">Career Path</a>.</p>
+<p>Want more? Try <a href="/arcade/highlow/">High Low</a> or <a href="/arcade/career/">Career Path</a>.</p>
 </div>
 </details>
-  <div class="foot">A daily streak game inside <b>Run The Arcade</b> · <a href="/">RunThe.GG</a> · <a href="mailto:RunTheGames@outlook.com?subject=Run%20The%20Arcade%20data%20error">Spot a data error? Tell us</a> · <a href="/about.html">About</a> · <a href="/privacy.html">Privacy</a> · <a href="/terms.html">Terms</a></div>
+  <div class="foot">A daily streak game inside <b>Run The Arcade</b> · <a href="/">RunThe.GG</a> · <a href="mailto:RunTheGames@outlook.com?subject=Run%20The%20Arcade%20data%20error">See something wrong? Let us know</a> · <a href="/about.html">About</a> · <a href="/privacy.html">Privacy</a> · <a href="/terms.html">Terms</a></div>
 </div>
 
 <div class="scrim hidden" id="scrim">
   <div class="sheet">
     <button class="x" id="mClose" type="button" aria-label="Close">✕</button>
-    <div class="sub-h" id="mSub">Your run ended</div>
+    <div class="sub-h" id="mSub">Your run’s over</div>
     <div class="runbig" id="mRun">0</div>
     <h2 id="mTitle">IN A ROW</h2>
     <div class="milestone" id="mMilestone"></div>
@@ -390,13 +390,13 @@ window.GA_ID='G-L29P5MRWKE';
 <script src="/arcade/stars.js?v=4"></script>
 <script src="/arcade/awards.js?v=3"></script>
 <script src="/arcade/supplement.js?v=6"></script>
-<script src="/arcade/primary.js?v=24"></script>
+<script src="/arcade/primary.js?v=25"></script>
 <script src="/arcade/data.js?v=5"></script>
-<script src="/arcade/jerseys.js?v=24"></script>
+<script src="/arcade/jerseys.js?v=25"></script>
 <script src="/arcade/teamcolors.js?v=2"></script>
 <script src="/arcade/sfx.js?v=2"></script>
 <script src="/arcade/funnel.js?v=11"></script>
-<script src="/arcade/share.js?v=8"></script>
+<script src="/arcade/share.js?v=9"></script>
 <script src="/arcade/result.js?v=1"></script>
 <script src="/arcade/resultart.js?v=2"></script>
 <script src="/arcade/resultstats.js?v=2"></script>
@@ -408,22 +408,22 @@ window.GA_ID='G-L29P5MRWKE';
 <script src="/arcade/archive.js?v=2"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="/arcade/board.js?v=21"></script>
-<script src="/arcade/leaderboard.js?v=14"></script>
+<script src="/arcade/leaderboard.js?v=15"></script>
 <script src="/arcade/alltime.js?v=3"></script>
 <script src="/arcade/auth.js?v=4"></script>
-<script src="/arcade/mycard.js?v=13"></script>
+<script src="/arcade/mycard.js?v=14"></script>
 <script src="/arcade/topbanner.js?v=9"></script>
-<script src="/arcade/auth-ui.js?v=6"></script>
-<script src="/arcade/card.js?v=20"></script>
-<script src="/arcade/referral.js?v=10"></script>
-<script src="/arcade/gamemarks.js?v=3"></script>
+<script src="/arcade/auth-ui.js?v=7"></script>
+<script src="/arcade/card.js?v=22"></script>
+<script src="/arcade/referral.js?v=11"></script>
+<script src="/arcade/gamemarks.js?v=4"></script>
 <script src="/arcade/calendar.js?v=15"></script>
 <script src="/arcade/archivecta.js?v=2"></script>
-<script src="/arcade/demo.js?v=3"></script>
-<script src="/arcade/pregame.js?v=25"></script>
-<script src="/arcade/howto.js?v=22"></script>
+<script src="/arcade/demo.js?v=4"></script>
+<script src="/arcade/pregame.js?v=26"></script>
+<script src="/arcade/howto.js?v=24"></script>
 <script src="/arcade/type.js?v=5"></script>
-<script src="/arcade/fact.js?v=2"></script>
+<script src="/arcade/fact.js?v=3"></script>
 <script>
 (function(){
   'use strict';
@@ -618,7 +618,7 @@ window.GA_ID='G-L29P5MRWKE';
     if(off===0){
       ANSLOG.push('c'); bulls++;
       if(card) card.classList.add('correct');
-      subEl.textContent='Bullseye. '+real+'.'; subEl.className='subprompt good';
+      subEl.textContent='Bullseye! '+real+'.'; subEl.className='subprompt good';
       run++; if(run>peak) peak=run; document.getElementById('runN').textContent=run;
       if(window.RTGSound) RTGSound.lock();
       idx++; saveResume();
@@ -626,7 +626,7 @@ window.GA_ID='G-L29P5MRWKE';
     } else if(off<=2){
       ANSLOG.push('h');                       // close enough: the run lives
       if(card) card.classList.add('correct');
-      subEl.textContent='Close. It was '+real+', you said '+said+'. That counts.';
+      subEl.textContent='Close enough! It was '+real+'. You said '+said+'. That counts.';
       subEl.className='subprompt near';
       run++; if(run>peak) peak=run; document.getElementById('runN').textContent=run;
       if(window.RTGSound && RTGSound.soft) RTGSound.soft();
@@ -638,7 +638,7 @@ window.GA_ID='G-L29P5MRWKE';
       // back to 0 - your best (the peak you reached) is banked and keeps standing.
       if(card) card.classList.add('wrong');
       shield=false; updateShieldPill();
-      subEl.textContent='It was '+real+'. Saved, back to 0.'; subEl.className='subprompt bad';
+      subEl.textContent='Nope. It was '+real+'. Your save kicked in. Back to 0.'; subEl.className='subprompt bad';
       run=0; document.getElementById('runN').textContent=run;
       if(window.RTGSound) RTGSound.soft();
       idx++; saveResume();
@@ -646,7 +646,7 @@ window.GA_ID='G-L29P5MRWKE';
     } else {
       ANSLOG.push('x');
       if(card) card.classList.add('wrong');
-      subEl.textContent='It was '+real+'.'; subEl.className='subprompt bad';
+      subEl.textContent='Nope. It was '+real+'.'; subEl.className='subprompt bad';
       if(window.RTGSound) RTGSound.wrong();
       setTimeout(function(){ finish(); }, 2200);
     }
@@ -658,9 +658,9 @@ window.GA_ID='G-L29P5MRWKE';
   function fmt(s){ s=Math.max(0,Math.floor(s)); return Math.floor(s/60)+':'+String(s%60).padStart(2,'0'); }
 
   function updateHint(){ var h=document.getElementById('hintline'); if(!h) return;
-    if(ARCHIVE){ h.textContent='Type the number. Within two still counts. · Archive · your personal best'; return; }
+    if(ARCHIVE){ h.textContent='Type the number. Within 2 still counts. · Archive · your personal best'; return; }
     var lbl = window.RTGTokens ? (' · '+RTGTokens.hint(GAME)) : '';
-    h.textContent='Type the number. Within two still counts.'+lbl; }
+    h.textContent='Type the number. Within 2 still counts.'+lbl; }
   function beginAttempt(){
     // Ranked first play = the daily board; every replay is a fresh random board.
     var isReplay = servedDaily || (!ARCHIVE && window.RTGTokens && RTGTokens.playsOf(GAME)>0);
@@ -688,7 +688,7 @@ window.GA_ID='G-L29P5MRWKE';
     document.getElementById('runN').textContent=run;
     var scr=document.getElementById('scrim'); if(scr) scr.classList.add('hidden');
     renderRound(); updateHint();
-    toast('Resumed your run');
+    toast('Picked up where you left off');
   }
   function updateAgainBtn(){
     var b=document.getElementById('mAgain'); if(!b) return;
@@ -761,12 +761,12 @@ window.GA_ID='G-L29P5MRWKE';
     // Emotional copy ladder: new best > tied best > near miss > generic.
     var sub;
     if(locked) sub='Your run today';
-    else if(!attemptFirst) sub='Practice run, not ranked';
+    else if(!attemptFirst) sub='Practice run. Doesn’t count.';
     else if(score>=SEQ.length) sub='You cleared the whole table!';
     else if(NEWBEST) sub='<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px" aria-hidden="true"><path d="M6 4h12v4a6 6 0 0 1-12 0zM6 6H3v2a3 3 0 0 0 3 3M18 6h3v2a3 3 0 0 1-3 3M9 20h6M12 15v5"/></svg> NEW PERSONAL BEST';
     else if(PREVBEST>0 && score===PREVBEST) sub='Tied your best. One more tomorrow!';
     else if(PREVBEST>0 && score>0 && PREVBEST-score<=2) sub=(PREVBEST-score)+' off your best. So close!';
-    else sub='Your run ended';
+    else sub='Your run’s over';
     if(!locked && !shield) sub += ' · used your save';
     var subEl=document.getElementById('mSub');
     subEl.innerHTML = sub;
@@ -836,14 +836,14 @@ window.GA_ID='G-L29P5MRWKE';
       var lb=document.querySelector('.lb'); if(!lb) return;
       var pill=lb.querySelector('.lb-pill'); if(pill) pill.textContent='Live';
       var samp=document.getElementById('lbSample'); if(samp){ samp.style.opacity='1';
-        if(!rows.length){ samp.innerHTML='<div class="lb-samplab">Today’s board</div><div class="note" style="margin:2px 0 0">Be the first to post a run today.</div>'; }
-        else{ var me=(RTG_BOARD.state().name||'').toLowerCase(), h='<div class="lb-samplab">Longest runs today</div>';
+        if(!rows.length){ samp.innerHTML='<div class="lb-samplab">Today’s board</div><div class="note" style="margin:2px 0 0">Nobody’s posted yet today. Be the first.</div>'; }
+        else{ var me=(RTG_BOARD.state().name||'').toLowerCase(), h='<div class="lb-samplab">Top runs today</div>';
           for(var i=0;i<rows.length;i++){ var r=rows[i], nm=r.display_name||'Player', mine=me&&nm.toLowerCase()===me;
             h+='<div class="row'+(mine?' you':'')+'"><span class="rk">'+(i+1)+'</span><span class="who">'+lbEsc(nm)+'</span><span class="tm">'+(r.run_len||0)+' in a row</span></div>'; }
           samp.innerHTML=h;
         }
       }
-      var note=document.getElementById('lbNote'); if(note) note.textContent='Live board: longest run today wins, ties broken by time. Sign in on RunThe.GG to post yours.';
+      var note=document.getElementById('lbNote'); if(note) note.textContent='Longest run today wins. Ties go to whoever was faster. Sign in to get on the board.';
     });
   }
 

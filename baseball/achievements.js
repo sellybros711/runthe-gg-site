@@ -404,8 +404,12 @@ shelf('The modes', MODES.reduce((out, [key, label]) => out.concat([
     (c) => c.best.trades >= 3],
   ['trade_stand_pat', 'Stood pat', 'Reach October in The Trade Machine without accepting a trade.',
     'gold', (c) => c.rows.some((r) => r.tradeMachine && (r.trades || 0) === 0 && r.madePlayoffs)],
-  ['staff_70', 'A staff for the ages', 'Field an All-Time Staff rated 70 or better.', 'gold',
-    (c) => c.rows.some((r) => r.staff && (r.rating || 0) >= 70)],
+  /* 90 AND NOT 70 BECAUSE THE SCALE MOVED, not because the badge was mistuned.
+     On the old anchors the best staff anybody reached was 77, so 70 was a little
+     better than a median good draft; against a scale whose top is now reachable
+     a median good draft is 92, and 70 would be handed out for turning up. */
+  ['staff_90', 'A staff for the ages', 'Field an All-Time Staff rated 90 or better.', 'gold',
+    (c) => c.rows.some((r) => r.staff && (r.rating || 0) >= 90)],
 ])),
 
 shelf('The daily', [
@@ -534,7 +538,17 @@ function buildCtx(rows, nowTs) {
     if ((r.wins || 0) > best.wins) best.wins = r.wins;
     if ((r.wins != null ? r.wins : Infinity) < worst.wins) worst.wins = r.wins;
     if ((r.losses || 0) > worst.losses) worst.losses = r.losses;
-    if ((r.rating || 0) > best.rating) best.rating = r.rating;
+    /* A STAFF IS NOT A TEAM AND IS NOT ON THE SAME SCALE. Every rung of the
+       rating shelf says "field a team", and staffRating is anchored on what a
+       twelve-arm staff produces rather than on what a roster does: the two share
+       a range and mean different things, which staffRating's own header says in
+       as many words. While the staff scale's top was dead at 76 that cost
+       nothing, because a staff run could never be anybody's best number. Once
+       both ends were anchored, a sensible staff draft medians 92 and would have
+       handed out every rung up to "Best on paper" for pressing the obvious
+       button twelve times. `staff_90` is the rung that asks about a staff, and
+       it reads r.staff for exactly this reason. */
+    if (!r.staff && (r.rating || 0) > best.rating) best.rating = r.rating;
     if ((r.efficiency || 0) > best.efficiency) best.efficiency = r.efficiency;
     if ((r.chemPct != null ? r.chemPct : -100) > best.chemPct) best.chemPct = r.chemPct;
     if (r.allTimeRank != null && (bestRank == null || r.allTimeRank < bestRank)) bestRank = r.allTimeRank;

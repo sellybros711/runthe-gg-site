@@ -626,7 +626,7 @@ function pairLinks(a, b) {
   }
 
   if (a.col && b.col && a.col === b.col) {
-    links.push({ type: 'alma_mater', value: V.alma_mater, label: `${a.col} men` });
+    links.push({ type: 'alma_mater', value: V.alma_mater, label: `${a.col} alums` });
   }
 
   if (a.dr && b.dr && a.dr === b.dr && a.i !== b.i) {
@@ -749,7 +749,7 @@ const SYSTEMS = [
        and a half rating points for being unplayable. */
     key: 'too_many_mouths',
     name: 'Too Many Mouths',
-    blurb: 'Five men who all had the ball on their own team. Somebody here is not getting it back.',
+    blurb: 'Five guys who all had the ball on their own team. Somebody is not getting it back.',
     /* THE MARGIN IS A TEAM TOTAL AND WAS WRITTEN FOR SIX MEN. At +18 over the
        budget this gate was 90 shots, and the most a six man roster ever took
        across 960 drafts eight ways was 89.9; at five men the budget fell to 66
@@ -763,8 +763,8 @@ const SYSTEMS = [
   },
   {
     key: 'point_centre',
-    name: 'Point Centre',
-    blurb: 'The offense runs through a seven footer at the elbow. Everything is a read, and he makes all of them.',
+    name: 'Point Center',
+    blurb: 'The offense runs through a seven footer at the elbow. Every read is his.',
     detect: (r, P) => {
       /* HIS PRIMARY POSITION, not merely eligible there. Draymond Green can
          play the five and passed like a guard, and on eligibility alone the
@@ -783,7 +783,7 @@ const SYSTEMS = [
   {
     key: 'moreyball',
     name: 'Moreyball',
-    blurb: 'Threes and layups, nothing in between. A guard who shoots from the logo and a centre who only dunks.',
+    blurb: 'Threes and layups. Nothing in between. A guard who shoots from the logo and a center who only dunks.',
     detect: (r, P) => {
       const shooter = r.filter(p => hasAny(positionsOf(p), ['PG', 'SG', 'G', 'GF']))
         .map(spacingIndex).sort((a, b) => b - a)[0] || 0;
@@ -802,7 +802,7 @@ const SYSTEMS = [
   {
     key: 'seven_seconds',
     name: 'Seven Seconds or Less',
-    blurb: 'A shooting point guard, a floor stretched to the arc, and a shot up before the defense is set.',
+    blurb: 'A shooting point guard. The floor stretched to the arc. A shot up before the defense is set.',
     detect: (r, P) => {
       const pg = r.find(p => (p._slot || p.pp) === 'PG');
       if (!pg || spacingIndex(pg) < 1.4 || paceAdjust(pg.ast || 0, pg.s) < 5.5) return -1;
@@ -815,7 +815,7 @@ const SYSTEMS = [
   {
     key: 'death_lineup',
     name: 'The Death Lineup',
-    blurb: 'No true centre, five men who can switch every screen, and shooting at every position.',
+    blurb: 'No true center. Five guys who switch every screen. Shooters at every spot.',
     detect: (r, P) => {
       /* NO TRUE CENTRE, AND IT IS NOT ASKED OF A POSITION CODE.
          This read `r.filter(p => p.pp === 'C').length` and refused any roster
@@ -865,7 +865,7 @@ const SYSTEMS = [
        bonus, so the move costs no rating anywhere and only changes the word. */
     key: 'twin_towers',
     name: 'Twin Towers',
-    blurb: 'Two genuine bigs, the glass owned at both ends, and nothing easy at the rim.',
+    blurb: 'Two real bigs. They own the glass at both ends. Nothing easy at the rim.',
     detect: (r, P) => {
       /* TWO MEN WHO REBOUND LIKE BIGS, not two men whose position says so.
          This asked for two players ELIGIBLE AT CENTRE, which was reachable
@@ -896,7 +896,7 @@ const SYSTEMS = [
   {
     key: 'pick_and_roll',
     name: 'Pick and Roll',
-    blurb: 'A guard who reads it perfectly and a big who sets it and dives. Two men, and nobody has ever guarded it.',
+    blurb: 'A guard who reads it perfectly and a big who sets it and dives. Nobody has ever guarded it.',
     detect: (r, P) => {
       const guard = r.filter(p => hasAny(positionsOf(p), ['PG', 'G']))
         .sort((a, b) => paceAdjust(b.ast || 0, b.s) - paceAdjust(a.ast || 0, a.s))[0];
@@ -912,7 +912,7 @@ const SYSTEMS = [
   {
     key: 'grit_and_grind',
     name: 'Grit and Grind',
-    blurb: 'Nobody scores easily, nobody scores often, and the game is played in the mud.',
+    blurb: 'Nobody scores easy. Nobody scores often. The game is played in the mud.',
     detect: (r, P) => {
       const dws = r.reduce((s, p) => s + Math.max(0, p.dw), 0);
       const ows = r.reduce((s, p) => s + Math.max(0, p.ow), 0);
@@ -949,7 +949,7 @@ const SYSTEMS = [
   {
     key: 'triangle',
     name: 'The Triangle',
-    blurb: 'A dominant wing, a post to play through, and everybody spaced where the read expects them.',
+    blurb: 'A dominant wing. A post to play through. Everybody spaced where the read wants them.',
     detect: (r, P) => {
       const wing = r.filter(p => hasAny(positionsOf(p), ['SG', 'SF', 'GF']))
         .sort((a, b) => (b.ow || 0) - (a.ow || 0))[0];
@@ -978,7 +978,7 @@ const SYSTEMS = [
   {
     key: 'seven_footers',
     name: 'Bully Ball',
-    blurb: 'The ball goes inside, it stays inside, and the rest of the league gets tired.',
+    blurb: 'The ball goes inside. It stays inside. The rest of the league gets tired.',
     detect: (r, P) => {
       const post = r.filter(p => hasAny(positionsOf(p), ['C', 'FC'])
         && paceAdjust(p.pts || 0, p.s) >= 18)[0];
@@ -992,7 +992,7 @@ const SYSTEMS = [
   {
     key: 'showtime',
     name: 'Showtime',
-    blurb: 'A great passer pushing it every time, and wings who beat everybody down the floor.',
+    blurb: 'A great passer pushing it every time. Wings who beat everybody down the floor.',
     detect: (r, P) => {
       if (P.bestCreator < 8.0) return -1;
       const bigs = r.filter(p => hasAny(positionsOf(p), ['C', 'FC'])).length;
@@ -1009,7 +1009,7 @@ const SYSTEMS = [
   {
     key: 'motion',
     name: 'Motion Offense',
-    blurb: 'Nobody dominates the ball, everybody touches it, and the extra pass is always there.',
+    blurb: 'Nobody hogs the ball. Everybody touches it. The extra pass is always there.',
     detect: (r, P) => {
       /* THE ASSISTS ARE A TEAM TOTAL AND THE SHOTS ARE ONE MAN'S, so only the
          first moved to five men: at 22 this cleared 26.7% of six man drafts
@@ -1023,7 +1023,7 @@ const SYSTEMS = [
   {
     key: 'pace_and_space',
     name: 'Pace and Space',
-    blurb: 'Shooting everywhere, a rim runner to finish, and the floor pulled wide open.',
+    blurb: 'Shooting everywhere. A rim runner to finish. The floor pulled wide open.',
     detect: (r, P) => {
       if (P.spacing < 1.05 || P.tpa < FIT.MODERN_TPA) return -1;
       return fit(over(P.spacing, 1.05, 0.9));
@@ -1033,7 +1033,7 @@ const SYSTEMS = [
   {
     key: 'iso',
     name: 'Iso Ball',
-    blurb: 'One man with the ball and four men watching. It works right up until it does not.',
+    blurb: "One guy with the ball. Four guys watching. It works until it doesn't.",
     detect: (r, P) => {
       /* SHARE, not attempts. Every good team has a man taking twenty shots a
          night: Jordan took 22.6 on a 72 win team. What makes it iso ball is
@@ -2140,12 +2140,16 @@ function poNext(po, rng) {
     elimination: facing,
     /* Win this and the round is. */
     closeout: closing,
-    /* WHICH GAMES ARE WORTH PLAYING, and it is one rule rather than a list.
-       A game the series can END in, either way, plus every Finals game.
-       Measured over 170 playoff runs: mean 2.6 of them, median 2, p90 5. A
-       year that reaches a game seven Finals can offer thirteen, which is the
-       run that deserves them. */
-    big: facing || closing || c.round === 'NBA Finals',
+    /* WHICH GAMES ARE WORTH PLAYING: GAME 7S, AND NOTHING ELSE.
+       It used to be any game the series could end in, plus every Finals
+       game. Measured, that stopped a first round exit at up to five doors
+       and a long run at thirteen, and a stop that comes up five times a
+       series is a pause rather than an event. Reported by the owner as too
+       many pauses. A Game 7 is the one game both sides can lose everything
+       in, so it is the one worth stopping the bracket for. The play-in is a
+       single game and deliberately NOT a Game 7: it simmed through the
+       bracket like any other game before the door existed. */
+    big: c.bestOf > 1 && facing && closing,
     /* A game seven, which is the only one both sides face elimination in.
        BEST OF SEVEN IS PART OF THE CLAIM. In a one game round the need is 1,
        so both sides are at need minus one before a ball is thrown and the
@@ -2887,14 +2891,14 @@ function coachReport(roster, chem, structure, rating, unspentMusd, ortg, drtg) {
   const strengths = [], weaknesses = [];
   if (typeof ortg === 'number') {
     if (ortg >= L + 5) strengths.push('Elite offense');
-    else if (ortg < L - 3) weaknesses.push('Cannot score enough');
+    else if (ortg < L - 3) weaknesses.push("Can't score");
   }
   if (typeof drtg === 'number') {
     if (drtg <= L - 5) strengths.push('Locks teams down');
     else if (drtg > L + 3) weaknesses.push('Nobody guards anybody');
   }
   if (weakest && weakest.w >= WEAK_LINK.STRONG) strengths.push('No weak link');
-  else if (!weakest || weakest.w < WEAK_LINK.HOLE) weaknesses.push('A hole in the five');
+  else if (!weakest || weakest.w < WEAK_LINK.HOLE) weaknesses.push('A hole in the lineup');
   if (chemBonus >= 1.6) strengths.push('Real chemistry');
   else if (chemBonus < 0.4) weaknesses.push('Five strangers');
   /* 'iso', AND IT READ 'hero_ball' FOR THE LIFE OF THIS FUNCTION. No system
@@ -3380,7 +3384,7 @@ function teamDisplay(code, season) {
 function teamNote(code, season) {
   const t = team(code);
   const bits = [];
-  if (t.founded) bits.push(`founded ${t.founded}`);
+  if (t.founded) bits.push(`est. ${t.founded}`);
   /* THE FRANCHISE'S TITLES, not the row's. A club that has since been renamed
      carries an empty titles array, because teams.json files the honours under
      the modern code, so the 1978 Bullets used to be described as a club that
@@ -3391,8 +3395,8 @@ function teamNote(code, season) {
        that came later and saying otherwise is just wrong. */
     const won = typeof season === 'number' ? owned.filter(y => y <= season) : owned;
     if (won.length) {
-      bits.push(won.length === 1 ? '1 championship' : `${won.length} championships`);
-      if (won.length <= 3) bits.push(`(${won.join(', ')})`);
+      const n = won.length === 1 ? '1 title' : `${won.length} titles`;
+      bits.push(won.length <= 3 ? `${n} (${won.join(', ')})` : n);
     }
   }
   /* The FULL name of what they became, because half of these kept their
@@ -3400,7 +3404,7 @@ function teamNote(code, season) {
      tells a reader nothing at all. */
   if (t.current === false && t.became) {
     const now = team(t.became);
-    bits.push(`later the ${now.full || now.name}`);
+    bits.push(`now the ${now.full || now.name}`);
   }
   return bits.length ? bits.join(' · ') : null;
 }

@@ -95,7 +95,7 @@
     'gate+': { name: 'The Populist',
       line: 'You kept opening doors that had been shut for a long time.' },
     'gate-': { name: 'The Gatekeeper',
-      line: 'You kept the sport small at the top and did not apologize for it.' },
+      line: 'You kept the sport small at the top and didn\'t apologize for it.' },
     'stage+': { name: 'The Showman',
       line: 'You treated college football as inventory and sold it well.' },
     'stage-': { name: 'The Keeper',

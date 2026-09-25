@@ -269,7 +269,9 @@ const run = async () => {
   ok('reopening the game the same day shows nothing again', v4.beats.join(',') === 's7' && v5.beats.length === 0, { first: v4, again: v5 });
 
   head('an account that saw a beat on another device');
-  ok('does not see that one here', (await rigPending({ kind: 'plain', seen: ['s0'] })) === false);
+  // Pinned inside the intro's window (27 days left): unpinned, this read the real date and started failing
+  // on Sep 20, when the current beat stopped being the intro. The game was right; the test had aged.
+  ok('does not see that one here', (await rigPending({ kind: 'plain', seen: ['s0'], left: 27 })) === false);
   ok('but a beat it has NOT seen still fires', (await rigPending({ kind: 'plain', seen: ['s0'], left: 7 })) === true);
   const merged = await page.evaluate(() => mergePass({ s1seen: ['s0', 's14'] }, { s1seen: ['s0', 's7'] }));
   ok('because a merge unions the beats from both sides',
@@ -278,7 +280,7 @@ const run = async () => {
   ok('the flag the first version wrote still counts as the intro',
     merged2.s1seen.join(',') === 's0' && merged2.s1end === true, merged2);
   ok('...so an account upgraded from that build does not replay it',
-    (await rigPending({ kind: 'plain', seen: true })) === false);
+    (await rigPending({ kind: 'plain', seen: true, left: 27 })) === false);
   const merged3 = await page.evaluate(() => mergePass({ claimed: 'S1' }, { claimed: 'S1' }));
   ok('and an account that has seen nothing is not marked as having seen anything',
     !merged3.s1end && merged3.s1seen.length === 0, merged3);

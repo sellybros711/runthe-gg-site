@@ -170,13 +170,42 @@ create table if not exists rtf_runs (
   seed          text,
   rng_calls     integer,
 
+  -- HOW FAR THE RUN WENT, derived by rtf_submit_run() and never sent:
+  --   0 missed the playoffs      4 lost in the conference finals
+  --   1 lost the play-in         5 lost in the Finals
+  --   2 lost in the first round  6 won the title
+  --   3 lost in the second round
+  -- A seeded run starts at 2 and a play-in run at 1, and each series won is
+  -- one more, so both reach 6 on a ring. See `score` for why it leads.
+  depth         smallint not null default 0,
+
   -- ONE sortable key, so ranking is a single count(*) and one index covers it.
-  -- Monotone in wins first, then per-game differential, which is shifted by 40
-  -- and clamped into 0..9999 so it can never carry into the wins digit: a 50
-  -- win season can never outrank a 51 win one however lopsided the scores.
+  --
+  -- HOW FAR THE RUN WENT COMES FIRST. The game tells a player "your goal: win
+  -- the ring", hands them the playoff games to play themselves, and this
+  -- column used to rank on regular season wins alone: over 1,800 simulated
+  -- league runs the median champion sat 98th, under a pile of 60 win teams
+  -- that went out in the first round. A board that files a title as a tiebreak
+  -- is a board about a different game. Banners fly for ever and records do
+  -- not, so a ring outranks any record, and a Finals loss outranks a second
+  -- round one however many games either team won in the winter.
+  --
+  -- Then wins, then per-game differential, which is shifted by 40 and clamped
+  -- into 0..9999 so it can never carry into the wins digit: a 50 win season
+  -- never outranks a 51 win one at the same depth however lopsided the scores.
   -- Measured over real drafts the differential runs about -12 to +12, so the
-  -- clamp is a guard against a client bug rather than a live ceiling.
+  -- clamp is a guard against a client bug rather than a live ceiling. The top
+  -- of the range is 6,829,999, well inside an integer.
   score integer generated always as (
+    depth::int * 1000000 + wins::int * 10000
+    + least(9999, greatest(0, round((point_diff + 40) * 100)::int))
+  ) stored,
+
+  -- THE RECORD ALONE, for the Best record tab. Chasing 72 is its own sport and
+  -- a 70 win season that lost in the conference finals is still the thing a
+  -- fan screenshots. The same arithmetic as `score` with the depth left off,
+  -- written out again because a generated column cannot read another one.
+  record_score integer generated always as (
     wins::int * 10000
     + least(9999, greatest(0, round((point_diff + 40) * 100)::int))
   ) stored,
@@ -196,6 +225,33 @@ create table if not exists rtf_runs (
 
 comment on table rtf_runs is
   'Completed runs of Run The Floor (/hoops). Written only by rtf_submit_run().';
+
+-- A TABLE CREATED BY THE FIRST VERSION OF THIS FILE HAS A SCORE WITHOUT DEPTH,
+-- and `create table if not exists` leaves it exactly as it was. So the three
+-- columns are brought forward here, which is idempotent: nothing happens once
+-- record_score exists. Dropping `score` drops the two indexes on it with it,
+-- and they are created again below. Depth is backfilled off the columns the
+-- first version already derived, by the same rule rtf_submit_run() uses.
+do $$
+begin
+  if not exists (select 1 from information_schema.columns
+                  where table_schema = 'public' and table_name = 'rtf_runs'
+                    and column_name = 'record_score') then
+    alter table rtf_runs add column if not exists depth smallint not null default 0;
+    update rtf_runs set depth = case
+      when regular_wins >= 50 then 2 + playoff_wins
+      when regular_wins >= 43 then 1 + playoff_wins
+      else 0 end;
+    update rtf_runs set made_playoffs = depth >= 2;
+    alter table rtf_runs drop column if exists score;
+    alter table rtf_runs add column score integer generated always as (
+      depth::int * 1000000 + wins::int * 10000
+      + least(9999, greatest(0, round((point_diff + 40) * 100)::int))) stored;
+    alter table rtf_runs add column record_score integer generated always as (
+      wins::int * 10000
+      + least(9999, greatest(0, round((point_diff + 40) * 100)::int))) stored;
+  end if;
+end $$;
 
 alter table rtf_runs enable row level security;
 
@@ -235,6 +291,8 @@ create index if not exists rtf_runs_mode_score_idx
   on rtf_runs (run_mode, score desc, created_at asc);
 create index if not exists rtf_runs_mode_rating_idx
   on rtf_runs (run_mode, rating desc, created_at asc);
+create index if not exists rtf_runs_mode_record_idx
+  on rtf_runs (run_mode, record_score desc, created_at asc);
 create index if not exists rtf_runs_mode_created_idx
   on rtf_runs (run_mode, created_at desc, score desc);
 -- The two locked boards: the mode and the key together are the scope. Partial,
@@ -246,6 +304,9 @@ create index if not exists rtf_runs_lock_score_idx
 create index if not exists rtf_runs_lock_rating_idx
   on rtf_runs (run_mode, lock_key, rating desc, created_at asc)
   where lock_key is not null;
+create index if not exists rtf_runs_lock_record_idx
+  on rtf_runs (run_mode, lock_key, record_score desc, created_at asc)
+  where lock_key is not null;
 -- One day is one puzzle, so the day IS the window: an equality rather than a
 -- range, which is why this needs no created_at companion to stay a plain scan.
 create index if not exists rtf_runs_daily_score_idx
@@ -254,6 +315,32 @@ create index if not exists rtf_runs_daily_score_idx
 create index if not exists rtf_runs_daily_rating_idx
   on rtf_runs (daily_day, rating desc, created_at asc)
   where daily_day is not null;
+create index if not exists rtf_runs_daily_record_idx
+  on rtf_runs (daily_day, record_score desc, created_at asc)
+  where daily_day is not null;
+
+-- ONE DAILY PER ACCOUNT PER DAY. It is one puzzle with one answer, the same
+-- five spins for everybody, and the page already refuses a second attempt.
+-- The page is a browser, though: clear site data, or open a second device
+-- before the cloud save lands, and the same account would file the day again
+-- with the board already in hand. So the FIRST run an account files for a day
+-- is its entry, here where it cannot be walked around. A guest run carries no
+-- account and no name, so it is on no list and this does not reach it.
+-- Created only when the table holds no duplicate already, so re-applying this
+-- file against a database that has one reports it rather than failing whole.
+do $$
+begin
+  if not exists (select 1 from pg_indexes where indexname = 'rtf_runs_daily_one_idx') then
+    if exists (select 1 from rtf_runs where daily_day is not null and user_id is not null
+                group by user_id, daily_day having count(*) > 1) then
+      raise notice 'rtf_runs holds a second daily for some account; one-a-day index not created';
+    else
+      create unique index rtf_runs_daily_one_idx
+        on rtf_runs (user_id, daily_day)
+        where daily_day is not null and user_id is not null;
+    end if;
+  end if;
+end $$;
 -- Your own runs, newest first, which is what the profile asks for.
 create index if not exists rtf_runs_user_idx
   on rtf_runs (user_id, created_at desc) where user_id is not null;
@@ -324,6 +411,7 @@ declare
   v_user   uuid := auth.uid();
   v_name   text;
   v_dupe   bigint;
+  v_depth  int;
   v_id     bigint;
 begin
   -- ---- which competition, decided here and never sent ----
@@ -389,9 +477,12 @@ begin
   else
     v_rounds := 0;                  v_label := 'Lottery';
   end if;
-  v_made := v_rounds > 0;
+  -- IN THE BRACKET is what "made the playoffs" means in the NBA, and a club
+  -- that loses its play-in game did not. So a play-in run has made it once it
+  -- has won the play-in, which is its first series here.
+  v_made := v_rounds = RTF_ROUNDS_SEEDED or (v_rounds = RTF_ROUNDS_PLAYIN and v_po >= 1);
 
-  if not v_made then
+  if v_rounds = 0 then
     if v_po <> 0 then
       raise exception 'playoff wins with % regular season wins, which misses the playoffs', v_reg;
     end if;
@@ -402,6 +493,12 @@ begin
     end if;
     v_title := v_po = v_rounds;
   end if;
+  -- How far it went: a seeded run starts in the first round and a play-in run
+  -- one step before it, and every series won is one further. Both are 6 on a
+  -- ring, because a play-in bracket is one series longer.
+  v_depth := case when v_rounds = 0 then 0
+                  when v_rounds = RTF_ROUNDS_SEEDED then 2 + v_po
+                  else 1 + v_po end;
 
   -- THE LOSSES ARE THE REGULAR SEASON'S ALONE, which is the one place this
   -- deliberately differs from the football table. A round here is a SERIES, so
@@ -477,6 +574,16 @@ begin
     select username::text into v_name from profiles where id = v_user;
   end if;
 
+  -- ---- one daily per account per day, and the first one stands ----
+  -- Handed back rather than refused, so a second device that finishes the
+  -- same day lands on the entry that already counts instead of on an error.
+  if v_mode = 'daily' and v_user is not null then
+    select id into v_dupe from rtf_runs
+     where user_id = v_user and daily_day = v_day
+     order by created_at asc limit 1;
+    if v_dupe is not null then return v_dupe; end if;
+  end if;
+
   -- ---- swallow an accidental double submit ----
   -- A retry after a timeout, or a second tap on a button, must not put the same
   -- season on the board twice. Same roster, same result, same competition,
@@ -495,13 +602,13 @@ begin
   insert into rtf_runs (
     user_id, display_name, run_mode, lock_key, daily_day, daily_iso,
     regular_wins, playoff_wins, wins, losses, games,
-    made_playoffs, title_won, beat_record, is_goat, seed_label,
+    made_playoffs, title_won, beat_record, is_goat, seed_label, depth,
     point_diff, rating, ortg, drtg, chemistry, structure_mult, archetype,
     spend_musd, respins, all_time_rank, picks, slots, seed, rng_calls
   ) values (
     v_user, v_name, v_mode, v_key, v_day, v_iso,
     v_reg, v_po, v_wins, v_losses, RTF_REG_GAMES,
-    v_made, v_title, v_reg >= RTF_RECORD_WINS, v_reg >= RTF_GOAT_WINS, v_label,
+    v_made, v_title, v_reg >= RTF_RECORD_WINS, v_reg >= RTF_GOAT_WINS, v_label, v_depth,
     round(p_point_diff, 1), round(p_rating, 1), round(p_ortg, 1), round(p_drtg, 1),
     round(p_chemistry, 2), round(p_structure_mult, 3), p_archetype,
     round(p_spend_musd, 1), coalesce(p_respins, 0), p_all_time_rank,
@@ -534,9 +641,14 @@ declare
 begin
   if v_user is null then return false; end if;
   select username::text into v_name from profiles where id = v_user;
-  update rtf_runs
+  -- A daily played signed out cannot become a SECOND entry for a day this
+  -- account has already filed, or claiming it would be the replay the
+  -- one-a-day rule exists to stop. The first entry stands.
+  update rtf_runs r
      set user_id = v_user, display_name = v_name
-   where id = p_id and user_id is null;
+   where r.id = p_id and r.user_id is null
+     and not (r.daily_day is not null and exists (
+       select 1 from rtf_runs o where o.user_id = v_user and o.daily_day = r.daily_day));
   get diagnostics v_rows = row_count;
   return v_rows > 0;
 end $$;

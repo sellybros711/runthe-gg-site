@@ -17,7 +17,7 @@ window.RTR_MOVE_CATS = [
   { id:'slam',     name:'Slams & Throws', attr:'po', icon:'💥', blurb:'Body slams, powerbombs, drivers.' },
   { id:'suplex',   name:'Suplexes',       attr:'te', icon:'🔄', blurb:'Amateur-rooted throws and bridges.' },
   { id:'submission',name:'Submissions',   attr:'te', icon:'🔒', blurb:'Holds that end matches without a pin.' },
-  { id:'aerial',   name:'High-Flying',    attr:'ae', icon:'🦅', blurb:'Top-rope offence and dives.' },
+  { id:'aerial',   name:'High-Flying',    attr:'ae', icon:'🦅', blurb:'Top-rope offense and dives.' },
   { id:'technical',name:'Chain & Counters',attr:'ps',icon:'🧠', blurb:'Ring IQ: reversals, counters, transitions.' },
   { id:'hardcore', name:'Hardcore',       attr:'to', icon:'🪑', blurb:'Brawling, weapons, punishment.' },
   { id:'showman',  name:'Showmanship',    attr:'ch', icon:'🎤', blurb:'Taunts, crowd work, theatrics.' },
