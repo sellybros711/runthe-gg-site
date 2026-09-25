@@ -1067,22 +1067,48 @@ body:has(#s-intro.on) header .lockup{visibility:hidden}
 .btn.trophy-cta{margin-top:10px}
 
 /* ─── badge medallion ─── */
-.bdg-ic{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;flex:0 0 auto;
-  font-size:15px;border:2px solid rgba(var(--edge),.15);box-shadow:0 2px 5px -1px rgba(0,0,0,.3)}
-.bdg-ic.bronze{background:linear-gradient(160deg,#c88a4a,#8a5a2a)}
-.bdg-ic.silver{background:linear-gradient(160deg,#cfd4da,#9aa2ab)}
-.bdg-ic.gold{background:linear-gradient(160deg,#f0c850,#b8860b)}
-.bdg-ic.legend{background:linear-gradient(160deg,#8e6aad,#5a3d7a)}
-.bdg-ic.off{background:rgba(var(--edge),.06);border-color:rgba(var(--edge),.10);box-shadow:none;filter:grayscale(1);opacity:.5}
+.bdg-ic{width:40px;height:40px;border-radius:50%;display:block;flex:0 0 auto;position:relative;
+  background:radial-gradient(circle at 34% 28%,#fffdf6 0,#f3ecdc 45%,#dcd0b2 100%);
+  border:3px solid var(--tier,#b0a58c);box-shadow:0 3px 7px -2px rgba(0,0,0,.4),inset 0 -2px 4px rgba(90,60,20,.18)}
+/* A BADGE IS A BASEBALL, and the ball is the same white whatever the tier, the
+   way a real commemorative ball is. The tier is the RIM, which is where a
+   trophy ball's display ring would be, and the seams are the one piece of the
+   drawing every badge shares. The ball does not flip in the dark theme, for the
+   same reason the draft button's hide does not: it is the sport, not the page. */
+.bdg-ic.bronze{--tier:#b0763b}
+.acct{margin:0 0 14px;padding:12px;border:1px solid rgba(var(--edge),.12);border-radius:12px;background:rgba(var(--edge),.03)}
+.acct p{font-size:13px;color:var(--dim);margin:0 0 8px}
+.acct p b{color:var(--ink)}
+.acct .arow{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.acct .arow.who{align-items:center;justify-content:space-between;margin-top:0;font-size:13px;color:var(--dim)}
+.acct .arow.who b{color:var(--ink)}
+.acct input{flex:1 1 100%;min-width:0;padding:10px 12px;border-radius:9px;border:1px solid rgba(var(--edge),.2);
+  background:var(--panel,#fff);color:var(--ink);font:inherit;font-size:14px}
+.acct .btn{flex:1 1 auto;width:auto;margin:0;padding:10px 12px;font-size:13px}
+.acct .aerr{font-size:12px;color:#c0392b;margin:8px 0 0}
+.acct .aerr.ok{color:var(--green)}
+.trophy-locked{text-align:center;padding:14px 6px 4px}
+.trophy-locked .tl-balls{display:flex;gap:10px;justify-content:center;margin-bottom:12px}
+.trophy-locked .tl-t{font-family:var(--fp);font-weight:700;font-size:15px;color:var(--ink);margin-bottom:6px}
+.trophy-locked p{font-size:13px;color:var(--dim);margin:0}
+.newbadges.guest .nb-d{margin:4px 0 10px}
+.newbadges.guest .nb-go{width:auto;margin:0}
+.bdg-ic.silver{--tier:#a9b0b8}
+.bdg-ic.gold{--tier:#d9a521}
+.bdg-ic.legend{--tier:#7a55a0}
+.bdg-ic.off{background:radial-gradient(circle at 34% 28%,#eeece7,#cfccc4);--tier:#b9b5ac;
+  box-shadow:none;opacity:.5}
+.bdg-ic svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+.bdg-ic .bs{fill:none;stroke:#c8232c;stroke-width:1.15;stroke-linecap:round}
+.bdg-ic.off .bs{stroke:#9a958c}
+.bdg-ic .bg{fill:none;stroke:#2b2116;stroke-width:2.8;stroke-linecap:round;stroke-linejoin:round}
+.bdg-ic.off .bg{stroke:#7d786f}
 /* THE DISC IS THE TIER AND THE GLYPH IS THE SUBJECT, which is two facts in two
    places rather than one carrying both badly. The glyph used to be the tier too
    (a crown, a trophy, and a black dot for everything else), so a cabinet of two
    hundred badges was two hundred identical brown discs and the only one a reader
    could tell apart at a glance was the one they had already read. The colour
    still says bronze, silver, gold, legend. */
-.bdg-ic svg{width:17px;height:17px;fill:none;stroke:#fff;stroke-width:2;
-  stroke-linecap:round;stroke-linejoin:round}
-.bdg-ic.off svg{stroke:var(--dim-2)}
 
 /* ─── bottom sheet ─── */
 .sheet{position:fixed;inset:0;z-index:120;display:none}
@@ -2157,9 +2183,10 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
       <h3 class="sheet-title">Trophy case</h3>
       <button class="sheet-x" data-close aria-label="Close">&times;</button>
     </div>
+    <div class="acct" id="trophy-acct"></div>
     <div class="trophy-career" id="trophy-career"></div>
     <div class="trophy-body" id="trophy-body"></div>
-    <p class="trophy-note">Badges are kept in this browser. Play more seasons to unlock them all.</p>
+    <p class="trophy-note" id="trophy-note"></p>
   </div>
 </div>
 
@@ -2167,6 +2194,8 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
 <script src="run.js?v=24"></script>
 <script src="achievements.js?v=10"></script>
 <script src="board.js?v=1"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="auth.js?v=1"></script>
 <script>
 (function(){
 'use strict';
@@ -2177,6 +2206,15 @@ let sortKey='war', sortAsc=false;
 
 /* analytics helper (no-op if GA not present) */
 function ga(ev,params){try{if(window.gtag)window.gtag('event',ev,params||{});}catch(_){}}
+
+/* Accounts, with a stub in front so a blocked CDN or a missing file costs the
+   cabinet rather than the page. `ready` false and `waiting` false is the honest
+   answer when the file itself is not here. */
+var A=window.RTD_AUTH||{
+  boot:()=>false,
+  state:()=>({ready:false,waiting:false,signedIn:false}),
+  onChange:()=>()=>{},token:()=>null,
+};
 
 /* ─── history persistence (derive-everything: store compact rows only) ─── */
 const HIST_KEY='rtd_history', HIST_MAX=400;
@@ -2192,7 +2230,7 @@ function rowFromRun(o){
   let bps=null;try{bps=R.bestPossibleSquad(RUN,DATA);}catch(_){}
   const last=(RUN.playoffs&&RUN.playoffs.rounds)?RUN.playoffs.rounds[RUN.playoffs.rounds.length-1]:null;
   return {
-    ts:Date.now(),wins:o.wins,losses:o.losses,titleWon:!!o.titleWon,madePlayoffs:!!o.madePlayoffs,
+    ts:Date.now(),u:acctId(),wins:o.wins,losses:o.losses,titleWon:!!o.titleWon,madePlayoffs:!!o.madePlayoffs,
     seedLabel:o.seedLabel||null,isGOAT:!!o.isGOAT,beatRecord:!!o.beatRecord,
     rating:shownRating(o)!=null?Math.round(shownRating(o)):null,allTimeRank:o.allTimeRank!=null?o.allTimeRank:null,
     chemPct:o.chemistry?Math.round((o.chemistry.multiplier-1)*1000)/10:null,
@@ -2208,15 +2246,34 @@ function rowFromRun(o){
     picks:RUN.roster.map((p,i)=>({i:p.i,s:p.s,t:p.t,slot:SLOTS_NOW()[RUN.slotIndex[i]],w:p.w})),
   };
 }
+/* ── BADGES ARE FOR ACCOUNTS ──
+   Asked for in as many words: guests do not earn or collect badges. Every row
+   still goes into the history, signed in or not, because the career line
+   (seasons, titles) is the player's whatever they are. What a row carries is
+   `u`, the account it was PLAYED on, and the cabinet reads only the rows whose
+   `u` is the account signed in now.
+
+   THREE THINGS FOLLOW, and each is the rule rather than a side effect:
+   - A season played signed out never counts, even after signing in. Signing in
+     afterwards is not how a guest collects what they played for.
+   - Two accounts on one browser keep two cabinets, because the filter is the
+     id and not "anybody signed in".
+   - Rows filed before this shipped carry no `u`, so nobody's old browser
+     history turns into badges on the day they first sign in. */
+function acctId(){try{const st=A.state();return st&&st.signedIn&&st.userId||null;}catch(_){return null;}}
+function badgeRows(rows){const u=acctId();return u?(rows||loadHistory()).filter(r=>r.u===u):[];}
 let lastNewBadges=[];
+/* null is a guest season: the results screen says what signing in is for,
+   rather than listing badges nobody is allowed to keep. */
 function recordRun(o){
   if(!ACH){lastNewBadges=[];return;}
   const prev=loadHistory();
   const row=rowFromRun(o);
-  try{lastNewBadges=ACH.newlyEarned(prev,row);}catch(_){lastNewBadges=[];}
+  if(row.u){try{lastNewBadges=ACH.newlyEarned(badgeRows(prev),row);}catch(_){lastNewBadges=[];}}
+  else lastNewBadges=null;
   saveHistory(prev.concat([row]));
   try{ga('run_complete',{outcome:o.titleWon?'title':o.madePlayoffs?'playoffs':'missed',wins:o.wins,rating:o.rating!=null?Math.round(o.rating):0,rank:o.allTimeRank||0});}catch(_){}
-  lastNewBadges.forEach(a=>{try{ga('achievement_earned',{id:a.id,tier:a.tier,group:a.group});}catch(_){}});
+  (lastNewBadges||[]).forEach(a=>{try{ga('achievement_earned',{id:a.id,tier:a.tier,group:a.group});}catch(_){}});
 }
 /* One glyph a shelf, drawn rather than set in emoji, because the medallion is
    34px and an emoji at that size is whatever the reader's phone thinks it is.
@@ -2235,15 +2292,44 @@ const BDG_GLYPH={
 };
 const BDG_FALLBACK='<circle cx="12" cy="12" r="8"/><path d="M8.2 6.6c2.3 2.7 2.3 8.1 0 10.8"/><path d="M15.8 6.6c-2.3 2.7-2.3 8.1 0 10.8"/>';
 const BDG_LOCK='<rect x="4.5" y="10.5" width="15" height="10" rx="2.2"/><path d="M8 10.5V7.8a4 4 0 0 1 8 0v2.7"/>';
+/* The two seams and their stitches, worked out once. Each seam is a curve
+   bowing in from the edge of the ball, the way the ball on the draft button
+   is drawn, and each stitch is a short tick leaning out from the curve, in
+   mirror pairs so the two sides meet as the chevrons a real seam makes. */
+const BALL_SEAMS=(()=>{
+  const out=[];
+  for(const side of[-1,1]){
+    const x0=20+side*10.5, xm=20+side*5.5, y0=5.5, y1=34.5;
+    const P=t=>{const u=1-t;return[u*u*x0+2*u*t*xm+t*t*x0, y0+(y1-y0)*t];};
+    out.push('<path class="bs" d="M'+x0+' '+y0+'Q'+xm+' 20 '+x0+' '+y1+'"/>');
+    for(let k=1;k<=6;k++){
+      const t=k/7,[x,y]=P(t);
+      const dx=2*(1-t)*(xm-x0)+2*t*(x0-xm), dy=y1-y0;
+      const L=Math.hypot(dx,dy), tx=dx/L, ty=dy/L, nx=-ty, ny=tx;
+      const f=v=>v.toFixed(2), w=1.7, back=1.1, tip=.5;
+      out.push('<path class="bs" d="M'+f(x+nx*w-tx*back)+' '+f(y+ny*w-ty*back)+
+        'L'+f(x+tx*tip)+' '+f(y+ty*tip)+'L'+f(x-nx*w-tx*back)+' '+f(y-ny*w-ty*back)+'"/>');
+    }
+  }
+  return out.join('');
+})();
 function badgeIc(a,earned){
   const g=earned?(BDG_GLYPH[a.group]||BDG_FALLBACK):BDG_LOCK;
   return '<span class="bdg-ic '+a.tier+(earned?'':' off')+'" aria-hidden="true">'+
-    '<svg viewBox="0 0 24 24">'+g+'</svg></span>';
+    '<svg viewBox="0 0 40 40">'+BALL_SEAMS+
+    '<g class="bg" transform="translate(14 14) scale(.5)">'+g+'</g></svg></span>';
 }
 
 /* ─── new-badges panel on the results screen ─── */
 function paintNewBadges(){
   const el=$('ro-newbadges');el.innerHTML='';
+  if(lastNewBadges===null&&ACH){
+    el.innerHTML='<div class="newbadges guest"><div class="nb-hd">Badges are for signed-in players</div>'+
+      '<p class="nb-d">Sign in and every season you play counts toward '+ACH.CATALOGUE.length+' badges.</p>'+
+      '<button class="btn sm nb-go" id="b-nb-signin">Sign in to collect</button></div>';
+    $('b-nb-signin').addEventListener('click',openTrophy);
+    return;
+  }
   if(!lastNewBadges||!lastNewBadges.length)return;
   const show=lastNewBadges.slice(0,6);
   el.innerHTML='<div class="newbadges"><div class="nb-hd">'+lastNewBadges.length+
@@ -2257,8 +2343,13 @@ function paintNewBadges(){
 function openSheet(id){const s=$(id);s.classList.add('on');s.setAttribute('aria-hidden','false');}
 function closeSheet(id){const s=$(id);s.classList.remove('on');s.setAttribute('aria-hidden','true');}
 function renderTrophy(){
-  const rows=loadHistory();const ev=ACH.evaluate(rows);
+  renderAccount();
+  const signed=!!acctId();
+  const rows=signed?badgeRows():loadHistory();const ev=ACH.evaluate(rows);
   const st=ev.stats;
+  $('trophy-note').textContent=signed
+    ?'Every season you play signed in counts. Seasons played as a guest do not.'
+    :'Your seasons are kept in this browser. Badges need an account.';
   $('trophy-career').innerHTML=[
     ['Seasons',st.runs],['Titles',st.titles],
     ['Best rank',st.bestRank?('#'+st.bestRank):'n/a'],['Day streak',ev.play.best],
@@ -2266,6 +2357,13 @@ function renderTrophy(){
   const byGroup={};ACH.GROUPS.forEach(g=>byGroup[g]={earned:[],locked:[]});
   ev.earned.forEach(a=>byGroup[a.group]&&byGroup[a.group].earned.push(a));
   ev.locked.forEach(a=>byGroup[a.group]&&byGroup[a.group].locked.push(a));
+  if(!signed){
+    $('trophy-body').innerHTML='<div class="trophy-locked">'+
+      '<div class="tl-balls">'+['bronze','silver','gold','legend'].map(t=>badgeIc({tier:t,group:'Winning'},true)).join('')+'</div>'+
+      '<div class="tl-t">'+ACH.CATALOGUE.length+' badges, for players with an account</div>'+
+      '<p>Guests can play every mode. Badges are earned only by seasons played signed in.</p></div>';
+    return;
+  }
   $('trophy-body').innerHTML='<div style="text-align:center;font-family:var(--fn);font-size:12px;'+
     'font-weight:700;color:var(--gold);margin-bottom:12px">'+ev.earned.length+' of '+ev.total+' badges</div>'+
     ACH.GROUPS.map(g=>{
@@ -2280,6 +2378,51 @@ function renderTrophy(){
       return '<div class="trophy-group"><div class="tg-hd"><span class="tg-name">'+g+
         '</span><span class="tg-count">'+grp.earned.length+'/'+total+'</span></div>'+got+left+'</div>';
     }).join('');
+}
+/* THE ACCOUNT PANEL, in the trophy sheet because that is the one thing an
+   account buys here. Five states, the same five hoops draws: checking,
+   unavailable, signed out, signed in with no name yet, and signed in. Built
+   rather than written into the markup, because markup for five states is
+   markup for whichever one somebody last looked at. */
+function renderAccount(){
+  const el=$('trophy-acct');if(!el)return;
+  const st=A.state();el.textContent='';
+  const say=html=>{const p=document.createElement('p');p.innerHTML=html;el.appendChild(p);return p;};
+  const row=()=>{const d=document.createElement('div');d.className='arow';el.appendChild(d);return d;};
+  const btn=(into,label,cls,fn)=>{const b=document.createElement('button');b.className='btn '+(cls||'');
+    b.textContent=label;b.onclick=fn;into.appendChild(b);return b;};
+  const err=(msg,good)=>{const p=document.createElement('p');p.className='aerr'+(good?' ok':'');p.textContent=msg;el.appendChild(p);};
+  const inp=(into,type,ph,ac)=>{const i=document.createElement('input');i.type=type;i.placeholder=ph;
+    if(ac)i.autocomplete=ac;into.appendChild(i);return i;};
+  if(!st.ready&&st.waiting){say('Checking for your account.');return;}
+  if(!st.ready){say('Accounts are down right now. You can still play. Badges wait until they are back.');return;}
+  if(!st.signedIn){
+    say('<b>Sign in to collect badges.</b> A RunThe.GG account works on every game here.');
+    const email=inp(row(),'email','Email','email');
+    const pass=inp(row(),'password','Password','current-password');
+    const r3=row();let busy=false;
+    const go=fn=>()=>{if(busy)return;busy=true;fn().then(res=>{busy=false;
+      if(res&&res.error)err(res.error);else renderTrophy();});};
+    btn(r3,'Sign in','',go(()=>A.signIn(email.value,pass.value)));
+    btn(r3,'Create account','ghost',()=>{
+      const name=prompt('Pick a name for the leaderboard. Letters, numbers and underscores only.');
+      if(!name||busy)return;busy=true;
+      A.signUp(email.value,pass.value,name.trim()).then(res=>{busy=false;
+        if(res&&res.error)err(res.error);else err('Check your email to confirm the account.',true);});
+    });
+    btn(row(),'Sign in with Google','ghost',()=>A.signInGoogle());
+    return;
+  }
+  if(!st.name){
+    say('Signed in as <b>'+esc(st.email||'your account')+'</b>. Pick a name for the leaderboard.');
+    const rn=row();const nm=inp(rn,'text','Name on the board');
+    btn(rn,'Save','',()=>A.setName(nm.value.trim()).then(res=>{if(res&&res.error)err(res.error);else renderTrophy();}));
+    btn(row(),'Sign out','ghost sm',()=>A.signOut().then(renderTrophy));
+    return;
+  }
+  const r=row();r.classList.add('who');
+  const p=document.createElement('span');p.innerHTML='Signed in as <b>'+esc(st.name)+'</b>';r.appendChild(p);
+  btn(r,'Sign out','ghost sm',()=>A.signOut().then(renderTrophy));
 }
 function openTrophy(){if(!ACH)return;renderTrophy();openSheet('sheet-trophy');ga('trophy_opened');}
 
@@ -3086,6 +3229,16 @@ function heroSync(){
 
 /* ─── boot ─── */
 async function boot(){
+  /* ACCOUNTS, BOOTED HERE. supabase-js is deferred, so boot() may find no library
+     yet and keeps polling; every change hands board.js the live token, so a
+     season submitted signed in is filed under the account. */
+  try{
+    A.boot();
+    A.onChange(()=>{
+      window.RTD_ACCESS_TOKEN=A.token()||null;
+      if($('sheet-trophy').classList.contains('on'))renderTrophy();
+    });
+  }catch(_){}
   try{
     const res=await fetch('data/players.json?v=4');
     if(!res.ok) throw new Error('Failed to load player data');

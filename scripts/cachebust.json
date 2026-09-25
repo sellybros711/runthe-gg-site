@@ -1916,6 +1916,10 @@
       "v": "1",
       "sha": "ca72c43361b377d7"
     },
+    "auth.js": {
+      "v": "1",
+      "sha": "6d86e5218755b919"
+    },
     "data/players.json": {
       "v": "4",
       "sha": "de0e5570f243ac32"

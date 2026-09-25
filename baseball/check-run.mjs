@@ -89,6 +89,19 @@ async function openPage(opts) {
     blocked.push(u);
     return route.abort();
   });
+  /* A SIGNED IN PLAYER IS A STUB, NEVER THE LIVE PROJECT. Badges are for
+     accounts, so the Classic walk plays signed in and the daily walk plays as a
+     guest, and each asserts its own half. auth.js is swapped for a module that
+     answers the same shape and says it is signed in, registered after the
+     catch-all so it wins, and the supabase-js library is never fetched. */
+  if (opts && opts.acct) {
+    await ctx.route('**/baseball/auth.js*', (route) => route.fulfill({
+      contentType: 'application/javascript',
+      body: `window.RTD_AUTH={API_VERSION:1,boot:()=>true,
+        state:()=>({ready:true,waiting:false,signedIn:true,userId:${JSON.stringify(opts.acct)},name:'checkrun'}),
+        onChange:()=>()=>{},token:()=>null,signOut:()=>Promise.resolve()};`,
+    }));
+  }
   const p = await ctx.newPage();
   p.on('pageerror', (e) => errors.push(String(e)));
   await p.addInitScript(() => {
@@ -231,7 +244,7 @@ head('0. THE RIBBON HAS ONE RULE, AND THE SHARE CARD READS IT');
 
 // ══ 1. a Classic run, end to end ═══════════════════════════════════════════
 head('1. A WHOLE RUN REACHES THE SCREEN IT ENDS ON');
-const { ctx, p } = await openPage({});
+const { ctx, p } = await openPage({ acct: 'check-run-user' });
 const drafted = await draft(p);
 claim(drafted.stalled === null, 'twelve picks, with no board the draft could not go on from',
   drafted.stalled != null ? `stalled at pick ${drafted.stalled + 1}` : '');
@@ -437,6 +450,32 @@ claim(stored.daily && typeof stored.daily.n === 'number' && stored.daily.n > 0,
 const dRow = stored.hist[stored.hist.length - 1] || {};
 claim(stored.hist.length === 1 && dRow.daily === true,
   'and it is in the history with its own flag set', `rows ${stored.hist.length}, daily ${dRow.daily}`);
+
+/* BADGES ARE FOR ACCOUNTS. This walk is a guest, so the season is filed with no
+   account on it, the results screen offers a sign in rather than listing badges,
+   and the cabinet draws no badge at all. Each is asked on its own, because a
+   panel that still listed badges and a cabinet that still counted them are two
+   different ways for the rule to leak. */
+claim(dRow.u == null, 'a guest season carries no account', `u ${JSON.stringify(dRow.u)}`);
+const guest = await d1.p.evaluate(() => {
+  const nb = document.getElementById('ro-newbadges');
+  return { text: nb ? nb.textContent : '', listed: nb ? nb.querySelectorAll('.nb-item').length : -1,
+           signin: !!document.getElementById('b-nb-signin') };
+});
+claim(guest.listed === 0 && guest.signin, 'the results screen offers a sign in and lists no badge',
+  JSON.stringify(guest.text.slice(0, 80)));
+await d1.p.click('#b-nb-signin');
+await d1.p.waitForTimeout(350);
+const gcab = await d1.p.evaluate(() => ({
+  tiles: document.querySelectorAll('#trophy-body .ach').length,
+  locked: !!document.querySelector('#trophy-body .trophy-locked'),
+  acct: (document.getElementById('trophy-acct') || {}).textContent || '',
+}));
+claim(gcab.tiles === 0 && gcab.locked, 'and the cabinet a guest opens holds no badge',
+  `${gcab.tiles} tiles`);
+claim(gcab.acct.length > 0, 'with the account panel above it', JSON.stringify(gcab.acct.slice(0, 60)));
+await d1.p.click('#sheet-trophy .sheet-x');
+await d1.p.waitForSelector('#sheet-trophy.on', { state: 'hidden', timeout: 10000 });
 
 /* THE CARD A RETURNING VISITOR MEETS, IN THE SAME JAR THE RUN WAS PLAYED IN, which
    is the half the page's own front screen is for: a daily that recorded itself and

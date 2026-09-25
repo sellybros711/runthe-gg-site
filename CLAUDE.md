@@ -12843,6 +12843,51 @@ the submit's BODY calls `rtd_board_day(`, so that is what the row asks. The fix
 is re-running 97, which is idempotent and was driven over an old copy with no
 error.
 
+### Badges are for accounts, and a badge is a baseball
+
+```
+node baseball/check-run.mjs      the Classic walk signed in, the daily walk as a guest
+```
+
+Asked for: guests do not get to earn or collect badges. **This game had no
+sign-in at all**, so the first half was porting one: `baseball/auth.js` is
+`hoops/auth.js` pointed at `rtd_*`, on the site's one account system. Nothing
+server side was needed, because `97_baseball_leaderboard.sql` already reads
+`auth.uid()` in its submit, claim and rename. `board.js` had always read a
+`window.RTD_ACCESS_TOKEN` that nothing set; the page sets it on every auth
+change now, so a season submitted signed in is filed under the account.
+
+**A row carries `u`, the account it was PLAYED on, and the cabinet reads only
+rows whose `u` is the account signed in now.** Every row is still filed, so
+a guest's seasons and titles are still counted on the career line. Three rules
+follow, and each is the design rather than a side effect:
+
+- **A season played as a guest never counts**, even after signing in. Signing
+  in afterwards is not how a guest collects what they played for.
+- **Two accounts on one browser keep two cabinets**, because the filter is the
+  id and not "somebody is signed in".
+- **Rows filed before this shipped carry no `u`**, so no browser's old history
+  turns into badges on the day it first signs in. That was a conscious call:
+  every cabinet anybody had before this is empty until they play signed in.
+
+**The results screen says what signing in is for** instead of listing badges
+nobody may keep (`lastNewBadges === null` is a guest season), and its button
+opens the trophy sheet, which carries the account panel at the TOP: five
+states, the same five hoops draws.
+
+**Where this is weakest, said plainly**: the cabinet is still derived from
+`localStorage` rows, so it is a gate a determined person could edit. It is the
+same trust the whole badge design already makes (no server keeps badges), and
+it is enough for what was asked, which is that playing as a guest does not
+earn them.
+
+**A badge is drawn as a baseball.** A cream ball with two red seams,
+chevron stitches, the shelf's glyph in the middle, and the TIER as the rim
+(bronze, silver, gold, purple), the way a trophy ball sits in a display ring.
+The ball does not flip in the dark theme, for the same reason the draft
+button's hide does not. `BALL_SEAMS` is computed once and shared by every
+badge.
+
 ### The cap is $190M now, because $170M made October a coin flip for most drafts
 
 Reported by players: the cap felt too low and it was hard to make the playoffs.
