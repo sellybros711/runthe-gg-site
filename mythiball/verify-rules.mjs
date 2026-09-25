@@ -4148,15 +4148,21 @@ async function main() {
           startGame({ mode: 'exhibition', youHome: true });
         });
         await wait(pg, 1200);
-        /* Ask for the wide field. IT DOES NOT ALWAYS HOLD, and the comment
-           that used to sit here said it did: the next pitch is about a
-           second away and puts the plate camera straight back, so by the
-           time the read below happens the scale is the plate's on every
-           screen here. Nothing above cares, because the grid claims are
-           true of either camera. The one claim that DOES care samples both
-           on purpose, and says so where it is made. */
-        await pg.evaluate(() => { const g = State.game; if (g) { g.aiming = false; g.pitch = null; } });
-        await wait(pg, 400);
+        /* READ THE PLATE CAMERA, AND WAIT FOR IT RATHER THAN HOPING.
+           This used to clear the pitch to ask for the wide field and then
+           read 400ms later, on the argument that the next pitch puts the
+           plate camera back in time and that the grid claims hold of
+           either camera anyway. Both halves were wrong on a slower
+           machine. CI read the retina desktop while the WIDE camera still
+           held (scale 10, the whole world across), and the smooth read two
+           frames later caught the plate (scale 12): two cameras compared
+           and reported as two renderers disagreeing. And the wide camera
+           on a 1920 screen runs out of world sideways and letterboxes by
+           design, which the arena claim below is not about. So the reads
+           are the plate's by construction. The claim that is about the
+           wide camera clears the pitch itself, inside two frames, below. */
+        await pg.waitForFunction(() => State.game && plateViewActive(State.game), null, { timeout: 15000 });
+        await wait(pg, 150);
         const r = await pg.evaluate(() => {
           const cv = document.getElementById('field');
           const c = cv.getContext('2d');
@@ -4181,6 +4187,7 @@ async function main() {
                    wantW: box.clientWidth * dpr, wantH: box.clientHeight * dpr,
                    modal: all.slice().sort((a, b) => b[1] - a[1])[0][0],
                    strayShare: stray / px,
+                   plate: !!plateViewActive(State.game),
                    smoothing: cv.getContext('2d').imageSmoothingEnabled };
         });
         const scale = r.scale, draw = r.draw, step = scale / draw;
@@ -4240,11 +4247,11 @@ async function main() {
            This is the assertion that would catch somebody "simplifying"
            smooth mode by making the world finer, which is the version that
            was measured at 103ms a frame and reframed every screen. */
-        ok(s.scale === scale && s.sx === r.sx && s.sy === r.sy
+        ok(s.plate === r.plate && s.scale === scale && s.sx === r.sx && s.sy === r.sy
            && s.sw === r.sw && s.sh === r.sh,
           `${label}: smooth frames the identical crop at the identical scale`,
-          JSON.stringify({ retro: { scale, sx: r.sx, sy: r.sy, sw: r.sw, sh: r.sh },
-                           smooth: { scale: s.scale, sx: s.sx, sy: s.sy, sw: s.sw, sh: s.sh } }));
+          JSON.stringify({ retro: { plate: r.plate, scale, sx: r.sx, sy: r.sy, sw: r.sw, sh: r.sh },
+                           smooth: { plate: s.plate, scale: s.scale, sx: s.sx, sy: s.sy, sw: s.sw, sh: s.sh } }));
         /* AT THE SCREEN'S OWN RESOLUTION, AT OR ABOVE AND NEVER BELOW.
            Below CSS resolution the picture is softer than the glass can
            show, which is the only way this mode can look worse than the one
