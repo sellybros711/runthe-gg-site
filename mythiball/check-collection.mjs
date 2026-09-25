@@ -197,14 +197,14 @@ console.log('your player');
     out.name = ME.n; out.banked = PROGRESS.me.points; out.bats = batsLeft('me');
     out.inTable = ROSTER_BY_KEY.me === ME; out.draftable = DRAFTABLE()[0] === ME && isUnlocked('me');
     out.notInRoster = !ROSTER.some(c => c.k === 'me');
-    /* the drawing: every pose a whole 64 by 64 grid, standing on row 62 */
+    /* the drawing: every pose a whole V2_W by V2_H grid, standing on its second row from the bottom */
     const spr = V2_SPRITES.me, poses = Object.keys(spr.f);
     out.poseProblems = [];
     for (const p of poses) {
       const rows = v2Frame('me', p);
-      if (rows.length !== 64 || rows.some(r => r.length !== 64)) out.poseProblems.push(p + ':size');
+      if (rows.length !== V2_H || rows.some(r => r.length !== V2_W)) out.poseProblems.push(p + ':size');
       const lit = rows.map((r, y) => /[^.]/.test(r) ? y : -1).filter(y => y >= 0);
-      if (lit[lit.length - 1] !== 62) out.poseProblems.push(p + ':floor ' + lit[lit.length - 1]);
+      if (lit[lit.length - 1] !== V2_H - 2) out.poseProblems.push(p + ':floor ' + lit[lit.length - 1]);
       for (const row of rows) for (const ch of row) if (ch !== '.' && !spr.p[ch]) { out.poseProblems.push(p + ':key ' + ch); break; }
     }
     const need = ['idle', 'ready', 'load', 'swing', 'swing1', 'follow', 'run1', 'run2', 'run3', 'run4', 'cheer', 'catch', 'throw', 'back', 'slump', 'windup', 'kick', 'release', 'backrun1', 'backrun2'];

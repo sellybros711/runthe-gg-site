@@ -5314,15 +5314,80 @@ that the number moved when the bytes did**, because there is no earlier version 
 rebuild, bump every reference to a file that changed. A drifted version and a renamed marker were each
 reintroduced to prove the check bites.
 
-The sprites came from a generator and now come from a HANDOFF PACK, and the
-generator is kept because the pack cannot answer everything:
+### The roster is drawn by a rig, and the pack is only the reference now
+
+```
+node mythiball/sprites/tools/build_rig.mjs           bake the roster into the page
+node mythiball/sprites/tools/build_rig.mjs --sheet   a contact sheet of every idle
+```
+
+Reported by the owner as looking low quality and low production value, with the
+pixel style kept. They were right, and no filter could fix it: the pack's
+characters were rectangles with square heads, about fifty near identical colours
+each, and a batting stance that grew a bat in the frame it swung in. Cleaning and
+upscaling the old frames was tried first and could not be told apart at game size.
+
+**Every character is a spec, posed and turned into pixels.** `sprites/cast.js`
+holds one per character: a build (kid, stocky, giant, lanky, round, small) with any
+of its numbers moved, a head shape, and what they wear. The rig between `RIG BEGIN`
+and `RIG END` in the page poses it, draws each shape with an outline and three cel
+bands, draws it at several times the grid and gives each pixel the colour covering
+most of it. **No pixel is a blend of two colours**, which is what keeps it pixel art
+rather than a small drawing.
+
+**The heads are not one shape, on purpose.** A head is a superellipse with its own
+roundness, width, height, top and jaw, so Frankenstein is a block, Humpty is an egg,
+Dracula narrows to a point and Popeye's jaw is wider than his crown. The bodies
+vary the same way. Asked for in as many words: more chibi, and not one body.
+
+**The grid is 96, up from 64.** `V2_W` and `V2_H` carry it and nothing in the page
+should say 64 about a sprite. It costs about 170KB compressed on the page, which was
+measured before choosing it.
+
+**The rig lives in the page because the custom player is drawn by it live.** The
+roster is baked; the player's look is chosen in the page, so `meSpriteBuild` hands
+`meSpec(look)` to `RIG.lazy`, which draws a pose the first time something reads it.
+One rig for both is what keeps the player's own character in the same style as
+everybody they play with. The builder runs the page's own rig for the same reason:
+a baked table and a live player drawn by two copies of one rig would drift.
+
+**Three rules the builder enforces, all of which failed silently first:**
+
+- **One size per character.** A top hat, rabbit ears or both arms up in a cheer
+  leave the frame, so `fitScale` finds the largest scale at which no pose does and
+  uses it for every pose. Fitting per pose would make a figure shrink when it cheers.
+- **Seated.** The lowest pixel of every frame is the second row from the bottom,
+  whatever the pose did with the feet, because the camera draws the bottom of the
+  cell on the dirt. A run stride with both feet up would otherwise hover.
+- **52 colours.** The table format is palette letters, so a character's colours
+  past 52 fold into the nearest kept one, by use.
+
+**The pitcher's delivery is front facing now.** The wide camera draws him in
+`windup` and `release`, and the pack's were a side profile, which is the same
+throwing to third base the plate camera was fixed for. The rig draws them facing the
+reader: hands together, the knee up, the arm coming down toward the camera.
+
+**The stance bat is drawn in front of the head.** A chibi head is big enough to hide
+a bat held behind it, so `ready` and `load` carry `batFront`. At the plate the bat is
+the thing a player looks at.
+
+**The guard that expected some characters with no bat was rewritten, not loosened.**
+It was a fact about the pack. Now every character draws one, the check asks for all
+of them, and the prop bat fallback is exercised on a fixture with its bat list taken
+away, because no real sprite reaches it any more.
+
+**The link card still shows the pack's art.** `og-source.html` reads the grid size
+off the rows now, so a rebuild works, but its trading cards were laid out for 64
+pixel portraits and were not rebuilt in this pass.
+
+The history below is the pack's, and it is kept because the specs follow its looks.
+
+The sprites came from a generator and then from a HANDOFF PACK. The pack's tools
+that wrote the table (`build_table.py`, `install.py`) and both generators are
+deleted, because any of them would overwrite the rig's table:
 
 ```
 python3 mythiball/sprites/tools/audit.py        what is in the pack
-python3 mythiball/sprites/tools/build_table.py  build V2_SPRITES from it
-python3 mythiball/sprites/tools/install.py      swap it into the page
-python3 mythiball/sprites/tools/install.py --revert   put the generator back
-python3 mythiball/gen_sprites_v2.py > sprites.js      the old parametric one
 ```
 
 **THE STILLS ARE WHAT MADE THE SWAP POSSIBLE, NOT THE ANIMATION STRIPS.**
@@ -6868,6 +6933,7 @@ The regression suite, which is the thing to run after editing:
 ```
 node mythiball/check-posture.mjs   unlisted, the capital alias still lands, the brand holds, and every park's scenery exists
 node mythiball/check-collection.mjs  the ten starters, the packs, the ladder and your own player
+node mythiball/sprites/tools/build_rig.mjs --dry   the roster still bakes from its specs
 node mythiball/check-rules.mjs     whole games, and the sport's own arithmetic
 node mythiball/check-reach.mjs      every control a game offers is inside the window,
                                    including the two sheets that open over the field
