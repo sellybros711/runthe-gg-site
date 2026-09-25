@@ -236,7 +236,14 @@ function polysOf(el) {
 function packRing(ring, tol) {
   const c = clipRect(ring, bx0 - PAD, by0 - PAD, bx1 + PAD, by1 + PAD);
   if (c.length < 3) return null;
-  const idx = dp(c.concat([c[0]]), tol).slice(0, -1);
+  // A CLOSED RING HAS THE SAME POINT AT BOTH ENDS, so the first segment
+  // Douglas-Peucker measures against has no length and every vertex reads as
+  // on it. The first build collapsed all 400 parks and all the river to a
+  // single point that way. Pin the vertex farthest from the start as well.
+  let far = 0, fd = -1;
+  for (let i = 1; i < c.length; i++) { const d = Math.hypot(c[i][0] - c[0][0], c[i][1] - c[0][1]); if (d > fd) { fd = d; far = i; } }
+  const keep = []; keep[far] = true;
+  const idx = dp(c.concat([c[0]]), tol, keep).slice(0, -1);
   if (idx.length < 3) return null;
   const flat = []; for (const i of idx) flat.push(Math.round(c[i][0]), Math.round(c[i][1]));
   return flat;
