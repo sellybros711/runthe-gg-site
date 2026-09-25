@@ -328,8 +328,16 @@ The rule keys on the comparison rather than on the word, because the stub below 
 
 `#s-intro` in `football/index.html`. The quick drafts are one question with three answers,
 so they are one control: `#hp-mode` (Offense, Defense, Full Team), then `#b-start`, which
-says Spin your first pick and calls whichever door the switcher names. The longer modes sit
-under it as a two-column shelf in `#hp-longer`.
+names what it drafts (`HOME_GO`: Draft your offense, your defense, your full team) and calls
+whichever door the switcher names. The longer modes sit under it in `#hp-longer`, stacked on
+a phone and two across on a desktop.
+
+**The button is frosted glass, and the thing behind the glass is drawn inside it.** It sits
+on flat dark, and a backdrop blur of flat dark is flat dark. So `.hp-go-fx` holds two soft
+lights in the mode's colours under a translucent tint, a sheen and a grain layer, at
+`z-index:-1` inside an `isolation:isolate` button. Drop the isolation and that layer paints
+under the page instead of under the label. The label is measured in real Anton: "Draft your
+full team" leaves about eleven pixels at 320, so anything longer needs measuring first.
 
 **THE OLD DOORS ARE STILL IN THE MARKUP AND STILL DO THE WORK.** `#b-start` calls
 `beginDraft`, `beginDefenseDraft` or `fullDoor`, the same functions `#b-start-off`,
