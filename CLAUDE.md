@@ -10984,6 +10984,7 @@ node baseball/check-home.mjs      the front page's two designs, and the reel und
 node baseball/check-staff.mjs     the All-Time Staff assignment and its blast radius
 node baseball/check-badges.mjs    every badge is reachable, against real runs
 node baseball/check-run.mjs       a whole run, in a browser, to the screen it ends on
+node baseball/build/icons.mjs     every icon, drawn from the one mark
 ```
 
 ### IT IS SERVED AND UNLISTED, and a launch is four edits rather than one
@@ -13002,6 +13003,41 @@ symbol's viewBox went to 210x100 while the four `<use>` instances kept
 frame, which is part of why the stretch rendered small and thin. Two viewBoxes
 describing one drawing are the `?v=` pair's problem in SVG: nothing throws, and
 the only symptom is art that looks wrong. They are the same 100x100 now.
+
+### The mark is a diamond with a seam across it, and every icon comes from one drawing
+
+```
+node baseball/build/icons.mjs     every icon size, the header mark and the share card mark
+```
+
+The game is named for the field and the stone, so the mark is both: a cut diamond
+with a baseball seam stitched across it. It replaced a flat ball on an infield that
+said nothing about the name and matched none of the site's other games. Chosen by
+the owner from four concepts (a puzzle ball in the football icons' colours, this
+stone, a 70s patch and a pixel ball).
+
+**Six icon files had no source anywhere in the repo**, which is the share card's
+history two sections down arriving at the icons. So `icons.mjs` draws them all from
+one SVG function, and a change to the mark is one edit and one run.
+
+**The background is the page's own cream**, at the owner's asking. On cream a pale
+stone washes out, so it carries a dark outline and the sparkles are the page's gold.
+
+**The favicon is a different drawing, not a smaller one.** At 32px the stitches are
+a pixel each and smear, so the small variant keeps the silhouette, the facets and the
+seam as one line. **The maskable icon keeps the stone inside Android's 80% safe
+circle.**
+
+**The share card draws a PNG and the header draws the SVG.** `mark-256.png` is
+preloaded at boot and drawn either side of the title. A canvas that draws an SVG
+image can refuse to export in some browsers, and then Share does nothing. A
+same-origin PNG never does. If it has not loaded yet the card falls back to the two
+stars it always had.
+
+**Four version pins moved together**: the icons and the manifest to `v=2`, and the
+link preview to `v=3` on both pages. The manifest had also been promising a $245M
+cap since before the cap moved to $170M. No checker reads a manifest, so nothing
+caught it.
 
 ### The share card had no source and no builder, and was set in a fallback
 

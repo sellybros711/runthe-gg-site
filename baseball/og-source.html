@@ -123,13 +123,10 @@
     <div class="mark">
       <span class="rule l"></span>
       <span class="id">
-        <!-- A diamond, which is the shape the game is named for and the only glyph
-             here that is not type. Drawn rather than an image file, because the game
-             ships no logo and a card waiting on one would not exist. -->
-        <svg width="34" height="34" viewBox="0 0 34 34" aria-hidden="true">
-          <path d="M17 2.5 31.5 17 17 31.5 2.5 17Z" fill="none" stroke="#e0ac3c" stroke-width="2.4" stroke-linejoin="round"/>
-          <circle cx="17" cy="17" r="4.1" fill="#e0ac3c"/>
-        </svg>
+        <!-- The game's mark: a cut diamond with a baseball seam across it, the same
+             drawing as the icons (baseball/build/icons.mjs writes mark.svg). Pulled in
+             by url so the card and the icons cannot drift apart. -->
+        <img src="mark.svg?v=1" width="44" height="44" alt="" style="display:block">
         <b>RUNTHE.GG</b>
       </span>
       <span class="rule r"></span>
