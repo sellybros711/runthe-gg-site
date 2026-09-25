@@ -12843,7 +12843,52 @@ the submit's BODY calls `rtd_board_day(`, so that is what the row asks. The fix
 is re-running 97, which is idempotent and was driven over an old copy with no
 error.
 
-### The $170M cap is right, and the per-slot dollar is the wrong comparison
+### The cap is $190M now, because $170M made October a coin flip for most drafts
+
+Reported by players: the cap felt too low and it was hard to make the playoffs.
+It was measured before anything moved, 200 drafts a bot, after the primary
+position and teammate chemistry pass:
+
+| cap | best available | careful | chases chemistry |
+|---|---|---|---|
+| $170M | 81.4 wins, **29%** Octobers, 1% titles | 90.1, 59%, 2.5% | 89.2, 60%, 5% |
+| $180M | 84.8, 46%, 3% | 92.2, 69%, 9.5% | 92.9, 72%, 9% |
+| **$190M** | **89.1, 56%, 7.5%** | **93.7, 73%, 11.5%** | **96.2, 80%, 14%** |
+| $200M | 92.7, 65%, 13% | 97.2, 83%, 17% | 98.5, 88%, 24% |
+
+**Taking the best man every time is how a new player drafts**, and at $170M
+it missed October seven runs in ten. At $190M it makes it more often than not,
+and careful play still beats it by about five wins and seventeen points of
+Octobers, so the budget is still the decision. A random draft is 56 wins at
+every cap, because the board it is offered does not depend on the cap.
+
+**What moved with it:**
+
+- **`bargain_title` went $160M to $180M**, the same $10M under the cap.
+  Loosening strips nobody.
+- **All-Time Staff's top anchor went 2.91 to 2.77 ERA.** The best staff any
+  strategy reached went 2.916 to 2.775, and nine staffs pinned at 100 until it
+  moved. The floor is the worst man on every board and no cap touches it.
+- **The team rating was deliberately NOT re-anchored.** It is projected wins on
+  a line from 31 to 106, so it still says how many wins a roster is worth. About
+  3% of chemistry-chasing drafts now reach the 99 ceiling, against none before.
+  Re-anchoring would lower every rating a player sees on the day the cap went
+  up, and move what the rating badges mean.
+- **The quick badge sweep's excuses moved**: seven title and legend rungs light
+  now and three Survivor and draft rungs went the other way. The full sweep
+  lights all of them.
+- **The share card was re-rendered** (`og.png?v=5`), and every `$170M` a reader
+  sees says `$190M`. `baseball/check-numbers.mjs` holds them to `CAP_MUSD`.
+
+**Board rows filed before this sit low** against rows filed after. That is the
+price of changing the cap on a live board, the same as the football game's
+Full Team retune.
+
+The section below is the $170M argument, kept because its method is how the
+next move should be measured, and its crossover (holding money back stops
+paying somewhere between $230M and $300M) still says where the cap must not go.
+
+### The $170M cap WAS right on its own terms, and the per-slot dollar is the wrong comparison
 
 Asked, because football gives $140M for 6 and $280M for 12 and hoops gives $126M for
 6, which is about $23M and $21M a slot against this game's **$14.2M**. That reads as
@@ -14056,6 +14101,72 @@ spots for a man who is no longer on the board.
 DOM instead: `#s-draft.picking` says a placement is up, `.target` marks every gold
 spot, and `.natural` marks the one at his own position, which is what
 `check-run` taps.
+
+### His own position is his whole WAR, and chemistry means they played together
+
+Asked for from the placement screen: putting a man at his own position should
+give his best rating before chemistry, and anywhere else should cost a little.
+And every kind of chemistry should actually be in use.
+
+**`slotWar(p, slot)` is the one reading.** A batter at his primary position
+(`pp`, with `OF` covering LF, CF and RF) is his season WAR. Anywhere else costs
+`POSITION_FIT.OFF`, **8%**. DH counts as off position for everybody but a DH.
+Pitchers and replacement bodies are never charged. `rosterOffense` and the
+defence term in `rosterRunPrevention` read it, so it moves the shown rating and
+the season. **`teamStrength` deliberately does not**, for the same reason it
+still reads the raw season line: it is the yardstick against real clubs, and a
+real club played its men wherever it played them.
+
+**`slotForPlayer` tries his own position first**, then a dedicated slot, then
+DH. The page's `openJobs` asks `E.primaryAt` for the star, so the gold star and
+the number the season plays are one rule. On the field his own spot pulses and
+wears a star; every other spot is quieter and prints the cost, read off
+`POSITION_FIT` so tuning it rewrites the label. A man fielded off his position
+wears an amber ring on the diamond and an amber WAR on the lineup card, and the
+card prints the charged figure rather than the season line.
+
+About two batters a run end up off position, because their own spot was taken.
+
+**THREE OF THE SIX LINKS NEVER ASKED WHETHER TWO MEN PLAYED TOGETHER.** The
+battery and the double-play combo needed the same club AND the same drafted
+season, which almost never happens across a twelve-man draft (battery lit on 3%
+of chemistry-chasing rosters, the DP combo on well under that). A catcher and
+the pitcher he caught for four years were strangers if you drafted them from
+different seasons. Now:
+
+| link | value | asks |
+|---|---|---|
+| family | 0.09 | a curated pair |
+| reunion | 0.08 | same club, same drafted season |
+| battery | 0.07 | a catcher and a pitcher who shared a franchise-season, at C and a pitching slot |
+| dp_combo | 0.06 | a 2B and a SS who shared a franchise-season, at those slots |
+| **teammates** | **0.05** | **new**: shared any franchise-season in their careers |
+| franchise | 0.03 (was 0.04) | same club, never together |
+| era | 0.005 | same era |
+
+`setCareers` builds, per player id, every franchise-season he appears in,
+through `franchiseOf` so a Montreal Expo and a Washington National are one
+club. `sharedSeason` answers the earliest shared one. Battery and DP ask the
+SLOT a man is placed in (`_slot`), not his listed positions, so a shortstop
+fielded at DH is not half a double-play combo.
+
+**Measured over 120 drafts a bot:**
+
+| | wins before | wins after |
+|---|---|---|
+| best available | 81.8 | 83.7 |
+| chases chemistry | 82.2 | **90.3** |
+
+Chasing chemistry used to be worth 0.4 wins over taking the best man and is
+worth about 6.6 now, which is what makes it a strategy. Teammates links land on
+89% of chemistry-chasing rosters, battery on 19%. **0.03 for teammates was
+tried and rejected**: it would have made playing together worth less than a
+bare shared shirt. The franchise tie came down to keep that order.
+
+**`link_teammates` ("Played together") is a new silver badge**, and the quick
+badge sweep moved: eight excuses came off because the chemistry bot now
+reaches them, and `rank_one` and `one_franchise_8` went on, because the bot
+chases team-mates rather than stacking eight from one club.
 
 ### The desktop page is football's, and the two columns have to be the same length
 
