@@ -4249,6 +4249,60 @@ having scored nobody: the one failure here that looks exactly like a quiet after
 has no rows for the week, and an emitter that threw there would take the workflow red every
 single week for the one condition that is certain.
 
+#### The cron never fired, so the job is a loop now
+
+**Not one of the six scheduled firings inside the first Thursday's game window ran.** GitHub's
+cron is best effort and drops runs under load, which it is allowed to do. The board read 0.0
+for all 27 entrants with nothing red anywhere, because a job that never starts cannot fail.
+
+So a firing only has to WAKE the job. `fantasy-live.yml` loops: every two minutes while ESPN
+says a game is on, every ten while a kickoff is inside three hours or a club's stats are
+missing, and it stops when there is nothing to watch. `live-results.mjs --status FILE` is what
+decides, written as a file because the exit code already means "failed". A loop still going at
+five and a half hours dispatches itself (the one event the job's own token may start) and the
+concurrency group queues the new run behind it. The repository is public, so the minutes are
+free. One failed tick does not end the loop; three in a row do, and any failure takes the run
+red when it ends.
+
+#### And nflverse is hours late, so the points during a game are ESPN's box score
+
+```
+node football/build/test/test_box.mjs
+```
+
+The second half of the same 0.0. nflverse writes a game's player rows hours after the whistle
+(still missing at 11:25pm ET after Thursday's game), so even a job that ran had nobody to
+score. `football/build/espn-box.mjs` reads ESPN's per game summary for every game that has
+started and whose clubs nflverse has not written, joins each athlete on `espn_id` to the pool's
+gsis id through `players.csv`, and scores him.
+
+**IT NEVER PAYS.** It fills only men nflverse has no row for, nflverse replaces them by upsert
+the moment it lands, and a week is only marked final off nflverse. The rule is written out
+(nflverse ships totals, never the rule) and it matches `fantasy_points` on **18,443 of 18,443**
+2025 regular season rows with no two point conversion. That is the one thing a box score cannot
+see: a man who scores one reads two points low until nflverse lands.
+
+The "N of 16 games" count takes ESPN's finished games when that is more than `games.csv` has.
+It is display only; `final` stays nflverse's alone.
+
+#### A row opens into its lineup, and the leader wears the prize
+
+```
+node football/check-fantasy.mjs   the section named A ROW OPENS INTO ITS LINEUP
+```
+
+Every row on the live board is a button, and pressing it folds out the six men with each one's
+points and whether his game is on. `fantasy_standings` already returned `picks` after the lock
+and nothing drew them. What each man has scored is one plain read of `fantasy_results`, which
+110 made public (a man's points are a fact about a game, not about anybody's entry), asked
+beside the board on every poll so the two are one instant. No migration.
+
+**Open lineups stay open across polls** (`BOARD_OPEN`, by row key), or a lineup somebody was
+reading would fold shut every twenty seconds. **The leader is green with a PRO pill** only once
+somebody has a point: straight after the lock the order is who entered first, and marking that
+row as winning a prize would invent a leader. Green rather than gold, because gold on this page
+already means a podium AFTER the week. All four claims were proved by mutation.
+
 #### The rows are keyed on the ENTRY, and the key is not the entry's id
 
 A board that animates cannot do without a stable row key. Keyed on PLACE, row one is always

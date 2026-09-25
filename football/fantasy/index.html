@@ -365,20 +365,73 @@
 
   /* The week's standings. A place, a name and a score, and the reader's own row picked out
      by the blue rail every board on this site uses for WHOSE row it is. */
-  .board{display:flex;flex-direction:column;gap:2px}
-  .brow{display:flex;align-items:center;gap:9px;font-size:13px;padding:4px 7px;
-    border-radius:8px;border-left:3px solid transparent}
+  .board{display:flex;flex-direction:column;gap:3px}
+  /* A ROW IS A WRAPPER, A BUTTON AND A LINEUP. The wrapper carries the key, the rail and the
+     move marks, because it is what travels; the button is the part a thumb presses; the
+     lineup folds out under it. The button is a real <button> so a keyboard and a screen
+     reader get the same press a thumb does. */
+  .brow{font-size:13px;border-radius:10px;border-left:3px solid transparent;
+    background:rgba(255,255,255,.025)}
+  .brow .bhd{display:flex;align-items:center;gap:9px;width:100%;padding:8px 9px 8px 6px;
+    background:none;border:0;color:inherit;font:inherit;text-align:left;cursor:pointer;
+    border-radius:10px;-webkit-tap-highlight-color:transparent}
+  .brow .bhd:focus-visible{outline:2px solid var(--blue);outline-offset:-2px}
   .brow.me{background:var(--panel);border-left-color:var(--blue)}
-  .brow .bp{flex:0 0 26px;font-family:var(--fd);font-size:15px;font-weight:400;
+  .brow .bp{flex:0 0 24px;font-family:var(--fd);font-size:15px;font-weight:400;
     font-variant-numeric:tabular-nums;color:var(--dim-2);text-align:right}
   .brow.me .bp{color:var(--ink)}
-  .brow .bn{flex:1 1 auto;min-width:0;white-space:nowrap;overflow:hidden;
-    text-overflow:ellipsis}
-  .brow .bs{flex:0 0 auto;font-family:var(--fd);font-size:17px;font-weight:400;
+  .brow .bnw{flex:1 1 auto;min-width:0;display:flex;align-items:center;gap:7px}
+  .brow .bn{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  /* SIX DOTS, ONE A MAN, lit once his game has put a number on him. It is how far along a
+     lineup is, which is the other half of reading a score: 40 with two men left to play and
+     40 with none are not the same 40. */
+  .brow .bdots{flex:0 0 auto;display:flex;gap:3px}
+  .brow .bdots i{width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,.14)}
+  .brow .bdots i.on{background:var(--dim)}
+  .brow .bs{flex:0 0 auto;font-family:var(--fd);font-size:18px;font-weight:400;
     font-variant-numeric:tabular-nums;min-width:48px;text-align:right}
+  .brow .bcv{flex:0 0 auto;width:14px;height:14px;color:var(--dim-2);
+    transition:transform .22s ease}
+  .brow.open .bcv{transform:rotate(180deg)}
+
+  /* THE LEADER IS GREEN, AND WEARS THE PRIZE. First place when the week ends wins a Pro
+     account, so the top row says so while it is the top row. Green rather than gold because
+     gold on this page already means a podium AFTER the week; green is "in front right now",
+     which is the same green the move marks use for a row that climbed. Only drawn once
+     somebody has a point: a board of zeroes has an order but no leader. */
+  .brow.lead{background:rgba(34,197,94,.11);border-left-color:var(--green)}
+  .brow.lead .bp,.brow.lead .bs{color:var(--green)}
+  .brow .bpro{flex:0 0 auto;display:inline-flex;align-items:center;gap:3px;
+    font-size:9.5px;font-weight:800;letter-spacing:.08em;line-height:1;padding:3px 6px 3px 5px;
+    border-radius:99px;color:#06270f;background:var(--green)}
+  .brow .bpro svg{width:10px;height:10px}
+
+  /* THE LINEUP, FOLDED UNDER THE ROW. A grid row animating 0fr to 1fr is the one way to
+     open a box to its own height without measuring it; only a press does this, never a
+     poll, so it is one layout on one tap rather than one a frame. */
+  .brow .broster{display:grid;grid-template-rows:0fr;transition:grid-template-rows .24s ease}
+  .brow.open .broster{grid-template-rows:1fr}
+  .brow .broster > div{overflow:hidden;min-height:0;visibility:hidden;
+    transition:visibility 0s linear .24s}
+  .brow.open .broster > div{visibility:visible;transition-delay:0s}
+  .bm{display:flex;align-items:center;gap:8px;padding:6px 10px 6px 33px;font-size:12.5px;
+    border-top:1px solid rgba(255,255,255,.05)}
+  .bm .bmp{flex:0 0 22px;font-size:9.5px;font-weight:800;letter-spacing:.06em;
+    color:var(--dim-2)}
+  .bm .bmp.QB{color:var(--qb)} .bm .bmp.RB{color:var(--rb)}
+  .bm .bmp.WR{color:var(--wr)} .bm .bmp.TE{color:var(--te)}
+  .bm .bmn{flex:1 1 auto;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .bm .bmn .club{margin-left:5px;font-size:10.5px}
+  .bm .bmst{flex:0 0 auto;font-size:10px;color:var(--dim-2);text-transform:uppercase;
+    letter-spacing:.05em}
+  .bm .bmst.live{color:var(--green)}
+  .bm .bmpts{flex:0 0 38px;text-align:right;font-family:var(--fd);font-size:15px;
+    font-variant-numeric:tabular-nums}
+  .bm .bmpts.none{color:var(--dim-2)}
+  .bm:last-child{padding-bottom:9px}
   /* The gap between the top fifty and a reader below it. A row of dots rather than nothing,
      because a board that jumps from 50 to 112 with no mark reads as a rendering fault. */
-  .brow.gap{color:var(--dim-2);justify-content:center;padding:1px 0}
+  .brow.gap{color:var(--dim-2);text-align:center;padding:1px 0;background:none}
 
   /* Who is in, before anybody can see a lineup. It wears the board's own shape and the blue
      rail every board on this site uses for WHOSE row it is, AND IT CARRIES NO NUMBER, which
@@ -493,6 +546,7 @@
      which is the test of whether motion is a mechanism or decoration. */
   @media (prefers-reduced-motion:reduce){
     .brow{transition:none}
+    .brow .broster,.brow .broster > div,.brow .bcv{transition:none}
     .brow .bs.tick{animation:none}
     .blive.on .bdot{animation:none}
     .livebtn .bdot{animation:none}
@@ -698,6 +752,7 @@
              reach all four where the entry screen could only reach two: the reader here has
              not necessarily entered, so "nobody yet" is a sentence that can be true. -->
         <p class="note" id="lv-boardsay"></p>
+        <p class="note" id="lv-boardhow" hidden>Tap a name to see the lineup. First place when the week ends wins a Pro account.</p>
       </div>
       <div class="stack">
         <button class="btn quiet" id="b-live-back">Back</button>
@@ -795,7 +850,7 @@
 <script defer src="/football/auth.js?v=7"></script>
 <script src="clubs.js?v=2"></script>
 <script src="draft.js?v=5"></script>
-<script src="entries.js?v=4"></script>
+<script src="entries.js?v=5"></script>
 <script>
 (function(){
   'use strict';
@@ -2007,12 +2062,115 @@
      retuning the rule does not leave a row green for ever. */
   var MOVE_MS = 520;
 
-  function boardRowHTML(key, place, name, score, cls){
-    return '<div class="brow' + (cls ? ' ' + cls : '') + '" data-k="' + esc(key) + '">'
-      + '<span class="bp">' + esc(String(place)) + '</span>'
-      + '<span class="bn">' + esc(name) + '</span>'
-      + '<span class="bs">' + esc(score) + '</span></div>';
+  /* WHICH LINEUPS ARE OPEN, by row key, so a poll that rebuilds the list twenty seconds
+     after somebody opened one does not fold it back up under their thumb. */
+  var BOARD_OPEN = {};
+  /* What each man has scored so far, keyed on his id. Filled from `fantasy_results` on every
+     poll once the week has locked (see `entries.js`), and read by the lineups under the
+     rows. A man with no entry has not put a number up yet. */
+  var LIVE_PTS = null;
+
+  var TROPHY = '<svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="'
+    + 'M4 1h8v2h2.5v2.2A3.3 3.3 0 0 1 11.6 8.5 4 4 0 0 1 9 10.7V12h2.5v2h-7v-2H7v-1.3A4 4 0'
+    + ' 0 1 4.4 8.5 3.3 3.3 0 0 1 1.5 5.2V3H4zm0 3.5H3v.7c0 .8.4 1.5 1 1.9zm8 0v2.6c.6-.4 1-1.1'
+    + ' 1-1.9v-.7z"/></svg>';
+  var CHEVRON = '<svg class="bcv" viewBox="0 0 16 16" aria-hidden="true"><path fill="none"'
+    + ' stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"'
+    + ' d="M4 6l4 4 4-4"/></svg>';
+
+  /* A club's game this week, as the scoreboard has it right now. The same merge the games
+     panel draws, so a man's lineup row and the scoreboard beside it cannot disagree about
+     whether his game has started. */
+  function gamesByClub(d){
+    var by = {}, i, g, s = slate();
+    for (i=0;i<s.length;i++){ by[s[i].away] = s[i]; by[s[i].home] = s[i]; }
+    var served = (d && Array.isArray(d.games)) ? d.games : [];
+    for (i=0;i<served.length;i++){
+      g = served[i];
+      if (!g || !g.away || !g.home) continue;
+      var had = by[g.away] || by[g.home] || {};
+      g = { away: g.away, home: g.home, kick: g.kick || had.kick, state: g.state };
+      by[g.away] = g; by[g.home] = g;
+    }
+    return by;
   }
+
+  var POS_ORDER = { QB: 0, RB: 1, WR: 2, TE: 3 };
+  /* THE SIX, in the order a lineup is read: quarterback down to tight end. What each man has
+     scored is `LIVE_PTS` first and the results file once it exists, because the file is the
+     settled number and the live one is on its way to it. */
+  function rosterHTML(ids, games){
+    var men = [], i;
+    for (i=0;i<ids.length;i++) men.push(BY_ID[ids[i]] || { player_id: ids[i], name: 'Unknown', position: '' });
+    men.sort(function(a,b){ return (POS_ORDER[a.position] == null ? 9 : POS_ORDER[a.position])
+      - (POS_ORDER[b.position] == null ? 9 : POS_ORDER[b.position]); });
+    var file = RESULTS[POOL.season + '|' + POOL.week];
+    var html = '';
+    for (i=0;i<men.length;i++){
+      var m = men[i];
+      var pts = file && file.scores && file.scores[m.player_id]
+        ? Number(file.scores[m.player_id][0])
+        : (LIVE_PTS && LIVE_PTS[m.player_id] != null ? LIVE_PTS[m.player_id] : null);
+      var g = games[m.team];
+      var st = '', cls = '';
+      if (g && g.state === 'in') { st = 'Live'; cls = ' live'; }
+      else if (g && g.state === 'post') st = 'Final';
+      else if (g && g.kick && Date.now() >= Date.parse(g.kick)) st = 'Under way';
+      else if (g && g.kick) {
+        /* SHORTER THAN THE SCOREBOARD'S, because this column shares a phone row with a name.
+           "Sun 5 PM" rather than "Sun 5:00 PM": every kickoff is on the hour or the half,
+           and the half is kept when it is there. */
+        var kt = new Date(Date.parse(g.kick));
+        st = Number.isFinite(kt.getTime()) ? kt.toLocaleString([], kt.getMinutes()
+          ? { weekday: 'short', hour: 'numeric', minute: '2-digit' }
+          : { weekday: 'short', hour: 'numeric' }).replace(',', '') : '';
+      }
+      var started = g && (g.state === 'in' || g.state === 'post'
+        || (g.kick && Date.now() >= Date.parse(g.kick)));
+      var shown = pts != null ? Number(pts).toFixed(1) : (started ? '0.0' : '-');
+      html += '<div class="bm"><span class="bmp ' + esc(m.position || '') + '">' + esc(m.position || '') + '</span>'
+        + '<span class="bmn">' + esc(m.name) + (m.team ? club(m.team) : '') + '</span>'
+        + '<span class="bmst' + cls + '">' + esc(st) + '</span>'
+        + '<span class="bmpts' + (pts == null ? ' none' : '') + '">' + esc(shown) + '</span></div>';
+    }
+    return html;
+  }
+
+  function boardRowHTML(key, place, name, score, cls, o){
+    o = o || {};
+    var open = !!BOARD_OPEN[key] && !!o.roster;
+    var dots = '';
+    if (o.played != null){
+      for (var i=0;i<6;i++) dots += '<i' + (i < o.played ? ' class="on"' : '') + '></i>';
+      dots = '<span class="bdots" aria-label="' + o.played + ' of 6 have played">' + dots + '</span>';
+    }
+    var id = 'bro-' + String(key).replace(/[^\w-]/g, '');
+    return '<div class="brow' + (cls ? ' ' + cls : '') + (open ? ' open' : '')
+      + '" data-k="' + esc(key) + '">'
+      + '<button type="button" class="bhd"' + (o.roster ? ' aria-controls="' + id + '"'
+        + ' aria-expanded="' + open + '"' : ' disabled') + '>'
+      + '<span class="bp">' + esc(String(place)) + '</span>'
+      + '<span class="bnw"><span class="bn">' + esc(name) + '</span>'
+      + (o.lead ? '<span class="bpro" title="First place wins a Pro account">' + TROPHY + 'PRO</span>' : '')
+      + '</span>' + dots
+      + '<span class="bs">' + esc(score) + '</span>'
+      + (o.roster ? CHEVRON : '') + '</button>'
+      + (o.roster ? '<div class="broster" id="' + id + '"><div>' + o.roster + '</div></div>' : '')
+      + '</div>';
+  }
+
+  /* ONE LISTENER FOR THE WHOLE BOARD, because the rows are rebuilt on every poll and a
+     handler on each would be fifty handlers thrown away every twenty seconds. The class is
+     toggled in place rather than repainted, so opening a lineup never costs a reorder. */
+  $('lv-board').addEventListener('click', function(ev){
+    var b = ev.target.closest && ev.target.closest('.bhd');
+    if (!b || b.disabled) return;
+    var row = b.parentNode, k = row.getAttribute('data-k');
+    var open = !row.classList.contains('open');
+    row.classList.toggle('open', open);
+    b.setAttribute('aria-expanded', String(open));
+    if (open) BOARD_OPEN[k] = 1; else delete BOARD_OPEN[k];
+  });
 
   function paintBoard(data){
     var rows = data && data.rows;
@@ -2033,6 +2191,7 @@
       return;
     }
     if (!rows || !rows.length){
+      $('lv-boardhow').hidden = true;
       /*
        * WHO IS IN, BEFORE ANYBODY CAN SEE A LINEUP. "No lineups before the lock" was
        * implemented as "no rows", and those are two different claims: what a reader wants at
@@ -2077,21 +2236,34 @@
 
     var html = '', mine = false, i, r;
     var want = {};
+    var games = gamesByClub(data);
+    /* IN FRONT RIGHT NOW, and only once somebody has a point. Before the first score the
+       order is who entered first, and marking that row as winning a prize would be the page
+       inventing a leader. */
+    var leadOn = rows.length && Number(rows[0].score) > 0;
     for (i=0;i<rows.length;i++){
       r = rows[i];
       if (r.is_me) mine = true;
       var key = String(r.entry_no == null ? 'p' + r.place : r.entry_no);
       want[key] = { place: Number(r.place), score: Number(r.score) };
+      var lead = leadOn && Number(r.place) === 1;
       html += boardRowHTML(key, r.place, r.display_name || 'Somebody',
-        Number(r.score).toFixed(1), r.is_me ? 'me' : '');
+        Number(r.score).toFixed(1),
+        ((r.is_me ? 'me' : '') + (lead ? ' lead' : '')).trim(),
+        { lead: lead, played: r.played == null ? null : Number(r.played),
+          roster: Array.isArray(r.picks) && r.picks.length ? rosterHTML(r.picks, games) : '' });
     }
     /* Off the bottom of the fifty, and told so rather than left off their own board. The two
        synthetic rows get keys of their own so they are not mistaken for somebody who moved. */
     if (!mine && me){
       html += '<div class="brow gap" data-k="gap">...</div>';
       want.you = { place: Number(me.place), score: Number(me.score) };
-      html += boardRowHTML('you', me.place, 'You', Number(me.score).toFixed(1), 'me');
+      var ml = Array.isArray(me.lines) ? me.lines : [];
+      html += boardRowHTML('you', me.place, 'You', Number(me.score).toFixed(1), 'me',
+        { played: ml.length ? ml.filter(function(l){ return l.played; }).length : null,
+          roster: ml.length ? rosterHTML(ml.map(function(l){ return l.player_id; }), games) : '' });
     }
+    $('lv-boardhow').hidden = false;
 
     var box = $('lv-board');
 
@@ -2261,7 +2433,17 @@
   function pollOnce(){
     var gen = pollGen;
     var season = POOL.season, week = POOL.week;
-    return F.board(season, week, 50).then(function(d){
+    /* THE POINTS EVERY MAN ON THE BOARD HAS SCORED, asked beside the board rather than
+       after it so the lineups under the rows are one instant with the scores beside them.
+       Before the lock it answers nothing, because nobody has played. */
+    return Promise.all([F.board(season, week, 50),
+      F.results ? F.results(season, week) : null]).then(function(both){
+      var d = both[0];
+      if (both[1] && gen === pollGen){
+        var pts = {};
+        for (var pi=0;pi<both[1].length;pi++) pts[both[1][pi].player_id] = Number(both[1][pi].half_ppr);
+        LIVE_PTS = pts;
+      }
       /* THREE WAYS AN ANSWER CAN BE STALE BY THE TIME IT LANDS, and all three have been
          real on this page: the reader left the screen, the poll was stopped, or the live
          week rolled over underneath a slow request. A board painted for the wrong week is

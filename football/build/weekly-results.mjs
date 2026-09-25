@@ -131,6 +131,10 @@ export async function buildWeeklyResults({ season, week, partial = false, maxAge
        being marked final yet, and so the live workflow's log answers the question this
        whole design is trying to measure: how far behind the stats run the whistle. */
     awaiting_stats: missing,
+    /* Which clubs nflverse has written. The live path reads this to decide whose points
+       still have to come from ESPN's box score, because a club nflverse has written is a
+       club whose numbers are the ones that pay. */
+    scored_clubs: [...clubsScored].sort(),
     games: inWeek.length,
     played: inWeek.length - unplayed.length,
     /* Keyed by player id, because the page looks up the six men it already holds rather
