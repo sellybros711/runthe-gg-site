@@ -4538,28 +4538,43 @@ private.
 the way `Wrestling/` and `Tour/` answer theirs, because the capitalised URL is
 the one that gets typed and pasted. It carries its own robots tag.
 
-### The brand is Run The Tour's kit, carried over
+### The brand shares Run The Tour's plumbing and deliberately not its look
 
 ```
 (nohup python3 -m http.server 8099 &) ; node mythiball/build-logo.mjs
 ```
 
-Asked for: new branding using Run The Tour's as the reference. So it is that kit (golf's PIXK) rather than a
-look inspired by it: the same 5x7 font, the same six golds, the same three step extrude and the same
-`toCanvas` at whole scales. Small cream MYTHI over chunky gold BALL, standing on an infield, and a
-**winged baseball** where the Tour has a golf ball and a flag. The two games read as one family.
+Asked for: new branding with Run The Tour's as the reference. **The first pass took "reference" as "copy",
+and the owner's verdict was that it was too similar.** It used the Tour's six golds and its extrude, a small
+cream word stacked over a big gold one on a grass oval, sparkles, and the Tour's card layout on a dark
+night sky. That is the Tour's mark with a baseball in it.
+
+**What is shared now is the pipeline and nothing you can see.** The grid, the outline pass, the 5x7 font and
+`toCanvas` at whole scales are the Tour's PIXK. The look is the game's own cabinet palette (scorecard cream,
+navy ink, arcade red, the same three colours the page's UI uses) and baseball's own shapes:
+
+| | Run The Tour | MythiBall |
+|---|---|---|
+| wordmark | gold, extruded, small word over big | red varsity letters on an arch like a jersey, cream ring, navy drop |
+| flourish | a waving flag | a script tail that is a pitch's trail, ending in the ball |
+| icon | a ball and flag on a green | a stitched sleeve patch, a gold bolt through the ball |
+| link card | a dusk course, left and right halves | a cream scorecard and three trading cards |
+
+**If this ever drifts back toward the Tour, that table is the thing to check.** Gold letters, grass under
+the wordmark, sparkles and a dark scene are each a step toward the other game.
 
 **The drawing lives in the game**, between `MYPIX BEGIN` and `MYPIX END`, and `logo-source.html` and
-`og-source.html` read that block out of the page by its markers. The header draws its mark with the same
+`og-source.html` read that block out of the page by its markers. The header draws the patch with the same
 kit at boot rather than fetching a file, so the header, the icons and the link preview are one drawing.
 
-**What the builder writes**, every file one of the kit's grids at a whole scale: `logo.png` (the lockup at
-4x), `lockup.png` and `lockup-flap.png` (one wingbeat, four frames side by side), four icons plated on the
-night navy, three favicons, `mark.png`, `manifest.webmanifest` by hand, and `og.png` at 2400x1260.
+**What the builder writes**, every file one of the kit's grids at a whole scale: `logo.png` (the wordmark at
+4x), `lockup.png` and `lockup-spin.png` (the ball spinning, four frames side by side), four icons on a cream
+plate, three favicons, `mark.png`, `manifest.webmanifest` by hand, and `og.png` at 2400x1260.
 
-**The three players on the link preview are the game's own sprites.** `og-source.html` lifts `V2_SPRITES`
-and `v2Frame` out of the page and decodes them with the game's own function rather than a copy. Each is
-drawn at one grid cell a pixel, the size the art was made at, so the card is one pixel grid edge to edge.
+**The trading cards are the game's own**: `og-source.html` lifts `V2_SPRITES` and `v2Frame` out of the page
+and decodes with the game's own function, and reads each card's name and role off its `ROSTER` row. Each
+sprite is drawn at one grid cell a pixel, so the card is one pixel grid edge to edge. **They stand in a row,
+not a fan**: fanned, the front card covered the name plates of the two behind it.
 
 **The card carries no count, deliberately.** The roster size is the number a pitch for this game wants to
 say, and a picture cannot be re-interpolated: the day a character is added it would go on promising the
@@ -4571,20 +4586,20 @@ is the only way anybody reaches it. Hoops made the same call. **The capital alia
 tag for tag**, because `runthe.gg/Mythiball` is the URL that gets pasted and a chat app reads the head
 without following the refresh.
 
-#### Four things only looking could say
+#### Things only looking could say
 
 - **Bold is every column drawn twice**, which fills the one cell gaps inside M and N. A bold M came out as
   a solid block and a bold N as an H, so DRAFT YOUR NINE read as HIHE. Run The Tour has the same font and
   never met it, because no Tour card sets an M or an N in bold. `BOLDG` draws those two by hand at seven
   wide. Do not go back to doubling them.
-- **A grid cell holds one colour.** The light towers' haze was a translucent colour `put` into the sky, so
-  it REPLACED the sky rather than sitting over it, and on a card drawn onto nothing it showed as a grey
-  checker column. `mix` blends it into the cell under it.
+- **A grid cell holds one colour**, so a translucent colour `put` into a grid replaces what is under it
+  rather than sitting over it. `mix` exists for that.
 - **At a radius under 9 the laces cover the ball.** Stitches both sides of the seam read as a baseball at
-  the lockup's size and as an egg with a rash on the 32px icon. Under 9 they go inside only.
+  the wordmark's size and as an egg with a rash on a 32px icon. Under 9 they go inside only.
+- **Stitches across the patch band read as gear teeth.** The patch is sewn with a one pixel running stitch
+  along the middle of its band, which is what a sewn patch looks like.
 - **`.mark` was already a class on this page** (a small inline badge with a border), so the header mark
-  arrived wearing its border and shadow. It is `.bmark`. And straight onto the cream the wings are cream
-  on cream, so the header mark sits on the icon's own navy plate.
+  arrived wearing its border and shadow. It is `.bmark`.
 
 **Two bitmaps for the header and CSS picks one.** The header changes size when a game starts, and a
 bitmap chosen at boot would be scaled by three quarters over the live field. The kit draws the 32 and
