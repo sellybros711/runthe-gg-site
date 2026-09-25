@@ -14,7 +14,7 @@
 <meta property="og:url" content="https://runthe.gg/golf/">
 <meta property="og:title" content="Run The Tour, Free Daily Golf Simulation Game">
 <meta property="og:description" content="A free daily golf simulation game. Draft a skill from each real pro to build your own golfer, then beat the pro on a new course every day, run a full career, and play head-to-head online.">
-<meta property="og:image" content="https://runthe.gg/golf/og.png?v=9">
+<meta property="og:image" content="https://runthe.gg/golf/og.png?v=10">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="Run The Tour, a free daily golf simulation game. Draft skills from real pro golfers and beat the daily course.">
@@ -22,7 +22,7 @@
 <meta name="twitter:site" content="@RunTheGG">
 <meta name="twitter:title" content="Run The Tour, Free Daily Golf Simulation Game">
 <meta name="twitter:description" content="A free daily golf simulation game. Draft a skill from each real pro to build your own golfer, then beat the pro on a new course every day, run a full career, and play head-to-head online.">
-<meta name="twitter:image" content="https://runthe.gg/golf/og.png?v=9">
+<meta name="twitter:image" content="https://runthe.gg/golf/og.png?v=10">
 <!-- Structured data: a VideoGame + BreadcrumbList graph so search engines and AI crawlers can render
      rich results (free-game price signal, genre/platform) for the game's marquee page. -->
 <script type="application/ld+json">
@@ -153,14 +153,20 @@ window.GA_ID='G-L29P5MRWKE';
     background:#06200f; background-image:var(--pagebg);
     opacity:1; transition:opacity .42s ease}
   #rtt-boot.gone{opacity:0; pointer-events:none}
-  @media (max-width:359px){ .boot-crest{width:208px!important; height:108px!important} }
+  @media (max-width:359px){ .boot-crest{--fw:208px; height:108px} }
   .boot-in{display:flex; flex-direction:column; align-items:center; text-align:center; width:100%; max-width:340px}
   /* the pixel title, at a whole multiple of its 104 x 54 grid (3x, or 2x on a narrow phone), with nearest
      neighbour scaling so every pixel stays square */
-  .boot-crest{width:312px; height:162px; display:block; image-rendering:crisp-edges; image-rendering:pixelated;
+  /* The flag WAVES here: lockup-wave.png is four frames of the title side by side, a quarter turn of the
+     wave apart, and steps() walks through them without ever showing a blend of two. --fw is one frame's
+     width on screen, so the strip is four of them and the walk ends one strip to the left. */
+  .boot-crest{--fw:312px; width:var(--fw); height:162px; display:block; image-rendering:crisp-edges; image-rendering:pixelated;
+    background:url(lockup-wave.png?v=1) 0 0 / calc(var(--fw) * 4) 100% no-repeat;
     filter:drop-shadow(0 0 14px rgba(241,208,74,.20)) drop-shadow(0 8px 20px rgba(0,0,0,.5));
     animation:bootRise .5s cubic-bezier(.22,.9,.26,1) both,
-              bootFloat 3.8s cubic-bezier(.4,0,.2,1) .5s infinite}
+              bootFloat 3.8s cubic-bezier(.4,0,.2,1) .5s infinite,
+              bootWave .72s steps(4) infinite}
+  @keyframes bootWave{from{background-position:0 0} to{background-position:calc(var(--fw) * -4) 0}}
   .boot-bar{position:relative; width:min(228px,64vw); height:5px; margin-top:24px; border-radius:99px;
     background:rgba(244,227,201,.10); overflow:hidden;
     animation:bootRise .5s cubic-bezier(.22,.9,.26,1) .12s both}
@@ -3512,7 +3518,7 @@ h2{font-size:11px;letter-spacing:.04em}
      than the game's crestSVG(), which lives inside that script) so it needs nothing to be ready. -->
 <div id="rtt-boot" role="status" aria-live="polite">
   <div class="boot-in">
-    <img class="boot-crest" src="lockup.png?v=1" width="104" height="54" alt="Run The Tour" decoding="async">
+    <div class="boot-crest" role="img" aria-label="Run The Tour"></div>
     <div class="boot-bar" id="boot-bar" role="progressbar" aria-label="Loading Run The Tour"
          aria-valuemin="0" aria-valuemax="100" aria-valuenow="8"><i id="boot-fill" style="width:8%"></i></div>
     <p class="boot-say" id="boot-say">Loading the course</p>
@@ -24995,20 +25001,46 @@ function canvasTrophy(x,cx,cy,s,col){
   const cell=s*1.08, gw=PXT_W*cell, gh=PXT_H*cell, ox=cx-gw/2, oy=cy-gh/2;
   for(let y=0;y<PXT_CUP.length;y++){ const row=PXT_CUP[y]; for(let px=0;px<row.length;px++){ const ch=row[px]; if(ch==='.')continue; x.fillStyle=(ch==='k'?PXT_PAL.k:(PXT_PAL[ch]||col)); x.fillRect(ox+px*cell, oy+y*cell, cell+0.6, cell+0.6); }}
 }
+// The major-win card, in the same pixels as the season card (owner: the share graphics were outdated): the
+// course at dusk, the title, the game's pixel trophy at a whole multiple of its own grid, and the event, the
+// winner and the score in the kit's bitmap font. 270 x 338 cells at 4x = 1080 x 1352.
 function drawMajorWinCard(cv, info){
-  const W=600,H=760; cv.width=W; cv.height=H; const x=cv.getContext('2d');
-  const g=x.createLinearGradient(0,0,0,H); g.addColorStop(0,'#114a32'); g.addColorStop(1,'#06180f'); x.fillStyle=g; x.fillRect(0,0,W,H);
-  x.strokeStyle=info.accent||'#F1D04A'; x.lineWidth=4; x.strokeRect(13,13,W-26,H-26);
-  x.textAlign='center';
-  x.fillStyle='#F4E3C9'; x.font='600 26px Georgia, serif'; x.fillText('RUN THE', W/2, 72);
-  x.fillStyle='#F1D04A'; x.font='700 54px Georgia, serif'; x.fillText('TOUR', W/2, 124);
-  canvasTrophy(x, W/2, 240, 3.3, '#F1D04A');
-  x.fillStyle='#f7e48a'; x.font='800 40px Arial, sans-serif'; x.fillText('MAJOR CHAMPION', W/2, 358);
-  x.fillStyle='#dfeae2'; x.font='600 26px Georgia, serif'; x.fillText(info.evt, W/2, 398);
-  x.fillStyle='#F4E3C9'; x.font='700 44px Georgia, serif'; x.fillText(info.name, W/2, 474);
-  x.fillStyle='#9cbfa8'; x.font='700 20px Arial, sans-serif'; x.fillText('OVR '+info.ovr+'   ·   '+info.year, W/2, 508);
-  x.fillStyle='#35d6a0'; x.font='800 30px Arial, sans-serif'; x.fillText('Winning score '+info.score, W/2, 566);
-  x.fillStyle='#9cbfa8'; x.font='700 22px Arial, sans-serif'; x.fillText('build your golfer → runthe.gg/golf', W/2, H-48);
+  const P=PIXK, U=4, GW=270, GH=338, W=GW*U, H=GH*U; cv.width=W; cv.height=H; const x=cv.getContext('2d');
+  x.imageSmoothingEnabled=false;
+  P.draw(x, P.scene(GW,GH,{horizon:0.36, sunX:0.3}), 0,0,U);
+  const pan=P.grid(GW,GH), px0=12, py0=66, pw=246, ph=256;
+  for(let y=py0;y<py0+ph;y++) for(let xx=px0;xx<px0+pw;xx++){
+    const cx=Math.min(xx-px0,px0+pw-1-xx), cy=Math.min(y-py0,py0+ph-1-y); if(cx+cy<3) continue;
+    pan.put(xx,y,(cx===0||cy===0||cx+cy===3)?'rgba(241,208,74,.55)':'rgba(6,18,12,.80)'); }
+  P.draw(x,pan,0,0,U);
+  const top=P.grid(GW,GH), txt=P.grid(GW,GH);
+  const center=(str,y,o)=>P.text(txt,str,Math.round((GW-P.textW(str,o))/2),y,o);
+  for(let y=0;y<GH;y++) for(let xx=0;xx<GW;xx++){ const d=Math.min(xx,y,GW-1-xx,GH-1-y);
+    if(d===0||d===3) top.put(xx,y,P.K); else if(d<=2) top.put(xx,y,(xx+y<(GW+GH)/2)?P.GOLD[2]:P.GOLD[4]); }
+  if(!_pkLockup) _pkLockup=P.lockup(0);
+  P.stamp(top,_pkLockup,Math.round((GW-104)/2),8);
+  // the ribbon
+  { const hl='MAJOR CHAMPION', o={scale:2,bold:true}, tw=P.textW(hl,o), rw=tw+24, rh=18, rx=Math.round((GW-rw)/2), ry=72;
+    for(let y=ry+4;y<ry+rh+3;y++){ for(let xx=rx-9;xx<rx;xx++) top.put(xx,y,P.EXT[1]); for(let xx=rx+rw;xx<rx+rw+9;xx++) top.put(xx,y,P.EXT[1]); }
+    for(let y=ry;y<ry+rh;y++) for(let xx=rx;xx<rx+rw;xx++){ const j=y-ry; top.put(xx,y, j===0?P.GOLD[0]:j<rh/2?P.GOLD[2]:j<rh-1?P.GOLD[3]:P.GOLD[5]); }
+    P.outline(top,P.K);
+    P.text(top,hl,Math.round((GW-tw)/2),ry+2,Object.assign({color:'#2a1604'},o)); }
+  // sparkles round where the trophy stands
+  [[96,112,2],[176,104,1],[184,150,2],[84,160,1]].forEach(([a,b,c])=>P.star(top,a,b,c));
+  P.outline(top,P.K); P.draw(x,top,0,0,U);
+  // the trophy: the game's own pixel cup, at a whole number of the card's cells so it sits on the grid
+  try{ const cell=12, s=cell/1.08, gw=PXT_W*cell, gh=PXT_H*cell;   // 12px = three of the card's cells
+    x.save(); x.shadowColor='rgba(255,214,90,.55)'; x.shadowBlur=36;
+    canvasTrophy(x, W/2, 98*U + gh/2, s, info.accent||'#F1D04A'); x.restore(); }catch(e){}
+  const ev=info.evt||'', eo=P.textW(ev,{scale:2,bold:true})<=232?{scale:2,bold:true}:{scale:1,bold:true};
+  center(ev,188,Object.assign({color:info.accent||P.GOLD[1]},eo));
+  const nm=info.name||'Your Golfer', no=P.textW(nm,{scale:2,bold:true})<=236?{scale:2,bold:true}:{scale:1,bold:true};
+  center(nm,212,Object.assign({color:P.CREAM[0]},no));
+  center('OVR '+info.ovr+' · '+info.year,234,{color:'#a9c9b4'});
+  center('WINNING SCORE',254,{color:'#a9c9b4'});
+  center(''+info.score,266,{scale:4,bold:true,color:'#46e6ad'});
+  center('RUNTHE.GG/GOLF',327,{color:P.GOLD[1],bold:true});
+  P.outline(txt,P.K); P.draw(x,txt,0,0,U);
 }
 function shareMajorWin(evt,o){
   const me=S.season.me; const cv=document.createElement('canvas');
@@ -27674,6 +27706,197 @@ function lbRow(o){
     <span class="pl">${o.p.name}</span><span class="sc">${sc}</span><span class="mny">${mny}</span></div>`);
 }
 
+/* ==================== PIXK BEGIN: the pixel kit ====================
+   One source for the game's pixel branding: the palette, a 5 x 7 bitmap font, the RUN THE TOUR title,
+   the ball-and-flag icon, and a dusk course scene. The share cards draw with it here, and
+   golf/logo-source.html and golf/og-source.html read THIS block out of this file, so the logo files, the
+   link preview and the in-game cards can never drift into three versions of one mark.
+   Everything paints onto a grid of colour cells; pixk.toCanvas() blows a grid up by a WHOLE number, so no
+   pixel is ever drawn at 1.5x (two pixels of one width and one of another). Self-contained on purpose:
+   no game state is read, which is what lets the other two files lift it. */
+const PIXK=(function(){
+  const K='#120b04';
+  const GOLD=['#fffbe0','#fff0a0','#ffd84a','#ffbf1f','#f09e12','#c9780a'];
+  const EXT=['#8f4f08','#7a4106','#613304','#482503'];
+  const CREAM=['#fffaf0','#f4e3c9','#d9c3a0'];
+  const BALL=['#ffffff','#f3f6f8','#dfe5e9','#c3ccd3','#9aa6b0','#6f7d88'];
+  const GRASS={fringe:'#9be36a', a:'#57c24a', b:'#46ad3e', dark:'#2f8a34', edge:'#1f6327'};
+  const FLAG=['#ffc2b8','#ff6b5e','#e33429','#b0201a','#7d1511'];
+  const POLE=['#ffffff','#e9e4d8','#bdb5a4'];
+  const SPARK=['#ffffff','#fff3b0'];
+
+  function grid(w,h){ const px=new Array(w*h).fill(null); const g={w,h,px,
+    put(x,y,c){ x=Math.round(x); y=Math.round(y); if(x>=0&&y>=0&&x<w&&y<h&&c) px[y*w+x]=c; },
+    get(x,y){ return (x>=0&&y>=0&&x<w&&y<h)?px[y*w+x]:null; },
+    rect(x,y,ww,hh,c){ for(let j=0;j<hh;j++) for(let i=0;i<ww;i++) g.put(x+i,y+j,c); } };
+    return g; }
+  // a dark ring round everything painted so far (4-neighbour); `mask` limits which cells count as solid
+  function outline(g,c,mask){ const s=g.px.slice(); for(let y=0;y<g.h;y++) for(let x=0;x<g.w;x++){ if(s[y*g.w+x]) continue;
+    if([[1,0],[-1,0],[0,1],[0,-1]].some(([a,b])=>{ const X=x+a,Y=y+b; return X>=0&&Y>=0&&X<g.w&&Y<g.h&&s[Y*g.w+X]&&(!mask||mask[Y*g.w+X]); })) g.px[y*g.w+x]=c; } }
+  // stamp grid b onto grid a at (x,y)
+  function stamp(a,b,x,y){ for(let j=0;j<b.h;j++) for(let i=0;i<b.w;i++){ const c=b.px[j*b.w+i]; if(c) a.put(x+i,y+j,c); } }
+
+  /* ---- the 5 x 7 font. Glyphs may be narrower than 5 (punctuation); lower case is drawn as upper case,
+     accents are dropped, and anything else becomes a question mark rather than a gap nobody can read. */
+  const F={
+  A:[".111.","1...1","1...1","11111","1...1","1...1","1...1"], B:["1111.","1...1","1...1","1111.","1...1","1...1","1111."],
+  C:[".111.","1...1","1....","1....","1....","1...1",".111."], D:["1111.","1...1","1...1","1...1","1...1","1...1","1111."],
+  E:["11111","1....","1....","1111.","1....","1....","11111"], F:["11111","1....","1....","1111.","1....","1....","1...."],
+  G:[".1111","1....","1....","1..11","1...1","1...1",".111."], H:["1...1","1...1","1...1","11111","1...1","1...1","1...1"],
+  I:["111",".1.",".1.",".1.",".1.",".1.","111"], J:["..111","...1.","...1.","...1.","...1.","1..1.",".11.."],
+  K:["1...1","1..1.","1.1..","11...","1.1..","1..1.","1...1"], L:["1....","1....","1....","1....","1....","1....","11111"],
+  M:["1...1","11.11","1.1.1","1.1.1","1...1","1...1","1...1"], N:["1...1","11..1","1.1.1","1..11","1...1","1...1","1...1"],
+  O:[".111.","1...1","1...1","1...1","1...1","1...1",".111."], P:["1111.","1...1","1...1","1111.","1....","1....","1...."],
+  Q:[".111.","1...1","1...1","1...1","1.1.1","1..1.",".11.1"], R:["1111.","1...1","1...1","1111.","1.1..","1..1.","1...1"],
+  S:[".1111","1....","1....",".111.","....1","....1","1111."], T:["11111","..1..","..1..","..1..","..1..","..1..","..1.."],
+  U:["1...1","1...1","1...1","1...1","1...1","1...1",".111."], V:["1...1","1...1","1...1","1...1","1...1",".1.1.","..1.."],
+  W:["1...1","1...1","1...1","1.1.1","1.1.1","1.1.1",".1.1."], X:["1...1","1...1",".1.1.","..1..",".1.1.","1...1","1...1"],
+  Y:["1...1","1...1",".1.1.","..1..","..1..","..1..","..1.."], Z:["11111","....1","...1.","..1..",".1...","1....","11111"],
+  '0':[".111.","1...1","1..11","1.1.1","11..1","1...1",".111."], '1':[".1.","11.",".1.",".1.",".1.",".1.","111"],
+  '2':[".111.","1...1","....1","...1.","..1..",".1...","11111"], '3':["11111","...1.","..1..","...1.","....1","1...1",".111."],
+  '4':["...1.","..11.",".1.1.","1..1.","11111","...1.","...1."], '5':["11111","1....","1111.","....1","....1","1...1",".111."],
+  '6':["..11.",".1...","1....","1111.","1...1","1...1",".111."], '7':["11111","....1","...1.","..1..",".1...",".1...",".1..."],
+  '8':[".111.","1...1","1...1",".111.","1...1","1...1",".111."], '9':[".111.","1...1","1...1",".1111","....1","...1.",".11.."],
+  '.':["..","..","..","..","..","11","11"], ',':["..","..","..","..",".1",".1","1."], "'":["1","1",".",".",".",".","."],
+  '-':["....","....","....","1111","....","....","...."], '+':["...","...",".1.","111",".1.","...","..."],
+  '#':[".1.1.",".1.1.","11111",".1.1.","11111",".1.1.",".1.1."], '$':["..1..",".1111","1.1..",".111.","..1.1","1111.","..1.."],
+  '/':["....1","...1.","...1.","..1..",".1...",".1...","1...."], ':':["..","11","11","..","11","11",".."],
+  '!':["1","1","1","1","1",".","1"], '?':[".111.","1...1","....1","...1.","..1..",".....","..1.."],
+  '&':[".11..","1..1.","1.1..",".1...","1.1.1","1..1.",".11.1"], '×':[".....","1...1",".1.1.","..1..",".1.1.","1...1","....."],
+  '%':["11..1","11..1","...1.","..1..",".1...","1..11","1..11"], '(':[".1","1.","1.","1.","1.","1.",".1"], ')':["1.",".1",".1",".1",".1",".1","1."],
+  ' ':["...","...","...","...","...","...","..."], '·':["..","..","..","11","..","..",".."],
+  };
+  // any minus or long dash in a name or a score comes out as a plain hyphen, the one this font draws (the
+  // class is built from char codes because this file may not contain those characters, even escaped)
+  const LONGDASH=new RegExp('['+String.fromCharCode(0x2212,0x2013,0x2014)+']','g');
+  function norm(s){ return String(s==null?'':s).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase().replace(LONGDASH,'-'); }
+  const glyph=ch=>F[ch]||F['?'];
+  // o: {scale, bold, gap, color(row) | string}
+  function textW(str,o){ o=o||{}; const s=o.scale||1, gap=o.gap==null?1:o.gap, b=o.bold?1:0; let w=0;
+    for(const ch of norm(str)) w+=(glyph(ch)[0].length+b+gap)*s; return Math.max(0,w-gap*s); }
+  function text(g,str,x,y,o){ o=o||{}; const s=o.scale||1, gap=o.gap==null?1:o.gap, b=o.bold?1:0, col=o.color||CREAM[1];
+    for(const ch of norm(str)){ const gl=glyph(ch), gw=gl[0].length;
+      gl.forEach((row,j)=>{ for(let i=0;i<gw;i++) if(row[i]==='1'){ const c=typeof col==='function'?col(j):col;
+        g.rect(x+i*s,y+j*s,s,s,c); if(b) g.rect(x+(i+1)*s,y+j*s,s,s,c); } });
+      x+=(gw+b+gap)*s; }
+    return x; }
+
+  /* a golf ball: lit from the upper left, a staggered field of dimples that fades before the rim, a hot spot */
+  function ball(g,cx,cy,r,opts){ opts=opts||{}; const dim=opts.dimples!==false;
+    for(let y=Math.floor(cy-r-1);y<=Math.ceil(cy+r+1);y++) for(let x=Math.floor(cx-r-1);x<=Math.ceil(cx+r+1);x++){
+      const dx=x-cx, dy=y-cy; if(dx*dx+dy*dy>r*r) continue;
+      const nx=dx/r, ny=dy/r, nz=Math.sqrt(Math.max(0,1-nx*nx-ny*ny)), L=-0.52*nx-0.6*ny+0.6*nz;
+      let t=L>0.9?0:L>0.7?1:L>0.42?2:L>0.12?3:L>-0.2?4:5;
+      if(dim && t>=1 && t<=4 && nz>0.3){ const row=Math.floor((y-cy+100)/3); if(((y-Math.floor(cy)+99)%3===0) && ((x-Math.floor(cx)+(row%2?2:0)+100)%4===0)) t=Math.min(5,t+1); }
+      g.put(x,y,BALL[t]); }
+    if(opts.spot!==false){ const hx=Math.round(cx-r*0.42), hy=Math.round(cy-r*0.46);
+      (r>=6?[[0,0],[1,0],[0,1],[-1,0],[0,-1],[2,-1]]:[[0,0]]).forEach(([a,b])=>g.put(hx+a,hy+b,BALL[0])); } }
+  function star(g,x,y,s){ g.put(x,y,SPARK[0]); for(let i=1;i<=s;i++){ const c=i===s?SPARK[1]:SPARK[0]; g.put(x+i,y,c); g.put(x-i,y,c); g.put(x,y+i,c); g.put(x,y-i,c); } }
+
+  /* THE FLAG WAVES. Each column of cloth rides a sine wave that grows toward the free end (the edge at the
+     pole cannot move), the pennant tapers as it goes, and every column is lit or shaded by which way the
+     cloth is facing there: rising toward the light is brighter, falling away is darker. `phase` moves the
+     wave, so four phases a quarter turn apart are four frames of it rippling. */
+  function flag(g,px,top,bottom,len,phase){ phase=phase||0;
+    for(let y=top;y<=bottom;y++) g.put(px,y, y<=top+1?POLE[0]:POLE[1]);
+    g.put(px,top-1,POLE[0]);
+    const H0=len>=8?7:5, H1=len>=8?4:3;
+    for(let i=1;i<=len;i++){ const t=i/len, a=i*0.78-phase;
+      // the wave's height is kept under the cloth's own, so neighbouring columns always overlap and the flag
+      // reads as one piece of cloth rippling rather than as ribbons
+      const yo=Math.round(Math.sin(a)*(len>=8?1.25:0.9)*t), h=Math.max(H1,Math.round(H0-(H0-H1)*t)), sl=Math.cos(a)*t;
+      for(let r=0;r<h;r++){ let k=r===0?1:(r===h-1?3:2);
+        if(sl>0.35) k=Math.max(0,k-1); else if(sl<-0.35) k=Math.min(4,k+1);
+        g.put(px+i, top+yo+r, FLAG[k]); }
+      if(i===len && len>=8) g.put(px+i+1, top+yo+1, FLAG[3]);   // a frayed tip
+    }
+    g.put(px+1,top+2,POLE[2]); }
+
+  /* ---- the big letters of TOUR, drawn by hand on a 16 x 20 grid (the O is the ball) ---- */
+  const BIG={
+  T:["1111111111111111","1111111111111111","1111111111111111","1111111111111111","1111111111111111",".....111111.....",".....111111.....",".....111111.....",".....111111.....",".....111111.....",".....111111.....",".....111111.....",".....111111.....",".....111111.....",".....111111.....",".....111111.....",".....111111.....",".....111111.....",".....111111.....",".....111111....."],
+  U:["11111......11111","11111......11111","11111......11111","11111......11111","11111......11111","11111......11111","11111......11111","11111......11111","11111......11111","11111......11111","11111......11111","11111......11111","11111......11111","11111......11111","111111....111111","1111111111111111","1111111111111111",".11111111111111.",".11111111111111.","..111111111111.."],
+  R:["1111111111111...","11111111111111..","111111111111111.","11111....111111.","11111.....11111.","11111.....11111.","11111....111111.","111111111111111.","11111111111111..","1111111111111...","11111.111111....","11111..111111...","11111..111111...","11111...111111..","11111...111111..","11111....111111.","11111....111111.","11111.....111111","11111.....111111","11111.....111111"],
+  };
+  const SMALL={R:F.R,U:F.U,N:F.N,T:F.T,H:F.H,E:F.E};
+
+  function lockup(phase){
+    const W=104, H=54, g=grid(W,H), LT=14, LH=20;
+    const gx=52, gy=LT+LH+2, grx=49, gry=7.5;
+    for(let y=Math.floor(gy-gry);y<=gy+gry;y++) for(let x=0;x<W;x++){ const d=((x-gx)/grx)**2+((y-gy)/gry)**2; if(d>1) continue;
+      let c=(Math.floor((x+(y-gy)*1.2)/6)%2)?GRASS.a:GRASS.b; if(d>0.72) c=GRASS.dark; if(d>0.72 && y<gy) c=GRASS.fringe; g.put(x,y,c); }
+    const cupX=92, cupY=gy+1;
+    g.rect(cupX-1,cupY,4,2,'#0c2a12'); g.put(cupX-2,cupY+1,'#0c2a12'); g.put(cupX+3,cupY+1,'#0c2a12');
+    outline(g,GRASS.edge,g.px.map(Boolean));
+    const face=grid(W,H);
+    [['T',6],['U',46],['R',64]].forEach(([ch,x0])=>{ BIG[ch].forEach((row,j)=>{ for(let i=0;i<16;i++) if(row[i]==='1') face.put(x0+i,LT+j,'F'); }); });
+    const isF=(x,y)=>face.get(x,y)==='F';
+    for(let d=3;d>=1;d--) for(let y=0;y<H;y++) for(let x=0;x<W;x++) if(isF(x-d,y-d)) g.put(x,y,EXT[d-1]);
+    for(let y=0;y<H;y++) for(let x=0;x<W;x++){ if(!isF(x,y)) continue;
+      const j=y-LT; let c=GOLD[j<2?0:j<5?1:j<9?2:j<13?3:j<17?4:5];
+      if(!isF(x,y-1)) c=GOLD[0];
+      else if(!isF(x-1,y) && j<14) c=GOLD[Math.max(0,GOLD.indexOf(c)-1)];
+      if(!isF(x,y+1) && isF(x,y-1)) c=GOLD[5];
+      if(!isF(x+1,y) && j>2) c=GOLD[Math.min(5,GOLD.indexOf(c)+1)];
+      g.put(x,y,c); }
+    for(let x=25;x<=43;x++) for(let y=LT+LH;y<=LT+LH+2;y++){ const d=((x-34)/9.5)**2+((y-(LT+LH+1))/1.6)**2; if(d<=1) g.put(x,y,GRASS.edge); }
+    ball(g,33.5,LT+LH/2-0.4,10.7);
+    flag(g,cupX,4,cupY,10,phase);
+    const rt=grid(W,H); let sx=7; const sy=4;
+    for(const ch of 'RUN THE'){ if(ch!==' ') SMALL[ch].forEach((row,j)=>{ for(let i=0;i<5;i++) if(row[i]==='1'){
+        const c=j<2?CREAM[0]:j<5?CREAM[1]:CREAM[2]; rt.put(sx+i,sy+j,c); rt.put(sx+i+1,sy+j,c); } });
+      sx+=(ch===' '?4:7); }
+    for(let i=0;i<W*H;i++) if(rt.px[i]){ const x=i%W, y=(i/W)|0; if(!rt.get(x+1,y+1)) g.put(x+1,y+1,'#3a2410'); }
+    for(let i=0;i<W*H;i++) if(rt.px[i]) g.px[i]=rt.px[i];
+    outline(g,K);
+    star(g,99,21,1); star(g,60,8,1);
+    return g; }
+
+  function icon(N,phase){
+    const g=grid(N,N), k=N/32;
+    const gx=16*k-0.5, gy=25.5*k, rx=14.5*k, ry=4.6*k;
+    for(let y=0;y<N;y++) for(let x=0;x<N;x++){ const d=((x-gx)/rx)**2+((y-gy)/ry)**2; if(d>1) continue;
+      let c=(Math.floor((x+(y-gy)*1.2)/(3*k))%2)?GRASS.a:GRASS.b; if(d>0.7) c=(y<gy)?GRASS.fringe:GRASS.dark; g.put(x,y,c); }
+    outline(g,GRASS.edge,g.px.map(Boolean));
+    if(N>=32) flag(g,Math.round(23*k),Math.round(3*k),Math.round(25*k),7,phase);
+    else { const px=Math.round(23*k); for(let y=1;y<=12;y++) g.put(px,y,POLE[1]); g.put(px,1,POLE[0]);
+      [[3,1,0],[4,2,1],[3,2,1],[1,3,1]].forEach(([l,t,o],j)=>{ for(let i=1;i<=l;i++) g.put(px+i,1+j+(i>2?o:0),FLAG[t]); }); }
+    ball(g, 12*k-0.5, 17*k, N>=32?8.6:4.4, {dimples:N>=32});
+    outline(g,K);
+    if(N>=32) star(g,5,5,1);
+    return g; }
+
+  /* a dusk course: banded sky dithered at every seam, a low sun, two ridges of hills and a mown fairway.
+     `horizon` is where the hills meet the fairway, as a share of the height. */
+  function scene(w,h,o){ o=o||{}; const g=grid(w,h), hz=Math.round(h*(o.horizon||0.56));
+    const sky=o.sky||['#1b1440','#2d1b55','#4a2461','#7a2f6a','#b8445e','#e8704a','#f7a84a','#ffcf70'];
+    const bands=sky.length;
+    for(let y=0;y<hz;y++){ const f=y/hz*bands, b=Math.floor(f), frac=f-b;
+      for(let x=0;x<w;x++){ let c=sky[Math.min(bands-1,b)];
+        if(frac>0.7 && (x+y)%2===0 && b+1<bands) c=sky[b+1];           // a checker seam between two bands
+        g.put(x,y,c); } }
+    const sx=Math.round(w*(o.sunX||0.7)), sy=hz-Math.round(h*0.05), sr=Math.round(Math.min(w,h)*0.09);
+    for(let y=sy-sr;y<=sy;y++) for(let x=sx-sr;x<=sx+sr;x++){ if((x-sx)**2+(y-sy)**2>sr*sr) continue;
+      if((y-(sy-sr))%4===3 && y>sy-sr*0.5) continue;                     // the sun's banded lower half, a retro set
+      g.put(x,y,y<sy-sr*0.55?'#fff1b8':'#ffcf5a'); }
+    const ridge=(base,amp,freq,off,col)=>{ for(let x=0;x<w;x++){ const t=Math.round(base-amp*(0.6+0.4*Math.sin(x*freq+off))-amp*0.35*Math.sin(x*freq*2.3+off*1.7));
+      for(let y=t;y<hz+2;y++) g.put(x,y,col); } };
+    ridge(hz-2,h*0.06,0.035,1.2,'#3a2a5c');
+    ridge(hz+1,h*0.035,0.06,4.1,'#1f4a3c');
+    for(let y=hz;y<h;y++) for(let x=0;x<w;x++){ const depth=(y-hz)/(h-hz);
+      const band=Math.floor((x - (w/2) )*(0.35+depth*0.9)/ (6+depth*10) + 100);
+      let c=band%2?'#2f8a3e':'#277a36'; if(depth>0.55) c=band%2?'#256e31':'#1f622b'; if(y===hz) c='#4fae52';
+      g.put(x,y,c); }
+    return g; }
+
+  function toCanvas(g,scale){ const c=document.createElement('canvas'); c.width=g.w*scale; c.height=g.h*scale;
+    const x=c.getContext('2d'); for(let y=0;y<g.h;y++) for(let i=0;i<g.w;i++){ const col=g.px[y*g.w+i]; if(!col) continue; x.fillStyle=col; x.fillRect(i*scale,y*scale,scale,scale); } return c; }
+  // draw a grid straight onto a context at (x,y) in whole cells of `scale` pixels
+  function draw(ctx,g,x,y,scale){ for(let j=0;j<g.h;j++) for(let i=0;i<g.w;i++){ const col=g.px[j*g.w+i]; if(!col) continue; ctx.fillStyle=col; ctx.fillRect(x+i*scale,y+j*scale,scale,scale); } }
+  return {K,GOLD,EXT,CREAM,BALL,GRASS,FLAG,POLE,SPARK,grid,outline,stamp,text,textW,norm,ball,star,flag,lockup,icon,scene,toCanvas,draw};
+})();
+/* ==================== PIXK END ==================== */
+
 /* ---------- share card (canvas image) ---------- */
 const RLABS=['DRV','ACC','APP','SHT','SCR','BNK','PUT','COM'];
 function bestTxt(b){return b===99?'MC':(b===1?'WIN':'T'+b);}
@@ -27681,7 +27904,7 @@ function bestTxt(b){return b===99?'MC':(b===1?'WIN':'T'+b);}
 // ribbon, an OVR badge, and a clean 4-tile stat row. Drawn fully synchronously (the golfer is a
 // cached canvas, drawn via drawImage), so both the on-screen preview and the toBlob share capture render.
 function drawShareCard(cv,info,vals){
-  const W=560,H=720,ctx=cv.getContext('2d');
+  const W=1080,H=1352,ctx=cv.getContext('2d');
   cv.width=W; cv.height=H;
   let yearLine='';
   if(info.year && !S.daily) yearLine = S.circuitMode ? (calYear(info.year)+' · LEGEND CIRCUIT') : (calYear(info.year)+' SEASON · YR '+info.year+' OF '+careerYears());
@@ -27705,94 +27928,108 @@ function playerCardHeadline(info){
   if(w>0) return w>1?w+'× WINNER':'TOUR WINNER';
   return 'SEASON '+yr;
 }
-// shared player-card renderer (season + career). o={look,name,ovr,net,headline,ribbon2,cells[4]}
+// shared player-card renderer (season + career). o={look,name,ovr,net,headline,ribbon2,yearLine,cells[4]}
+/* THE SHARE CARD, IN THE GAME'S OWN PIXELS (owner: "extremely outdated"). It was a smooth vector card set in
+   Georgia and Impact around a pixel golfer, which is two art styles on one picture, and the one picture a
+   player posts. Now the whole card is one pixel grid, 270 x 338 cells blown up 4x to 1080 x 1352 (a 4:5
+   post, the shape every feed crops to), painted with the pixel kit: the dusk course behind, the RUN THE
+   TOUR title up top, a framed portrait window, and every word in the kit's bitmap font.
+   Layers, because a grid cell holds one colour and the panel has to be see-through: the scene, then the
+   panel over it, then the golfer (a raster of his own at 12px a sprite pixel), then everything on top.
+   The two cosmetics the old card carried still show: the equipped card background fills the portrait
+   window, and the equipped nameplate is the bar behind the name. */
+let _pkLockup=null;
 function drawPlayerCard(ctx,W,H,o){
-  const GOLD='#F1D04A', GOLD2='#c9a520', CREAM='#F4E3C9';
-  const bg=ctx.createLinearGradient(0,0,0,H); bg.addColorStop(0,'#123f2c'); bg.addColorStop(.55,'#0b301d'); bg.addColorStop(1,'#061e10');
-  ctx.fillStyle=bg; ctx.fillRect(0,0,W,H);
-  const sp=ctx.createRadialGradient(W/2,130,20,W/2,130,W*0.95); sp.addColorStop(0,'rgba(74,156,108,.26)'); sp.addColorStop(1,'rgba(74,156,108,0)');
-  ctx.fillStyle=sp; ctx.fillRect(0,0,W,H);
-  // gold top bar + inner frame
-  const gt=ctx.createLinearGradient(0,0,0,9); gt.addColorStop(0,'#f6e7a6'); gt.addColorStop(1,GOLD2);
-  ctx.fillStyle=gt; ctx.fillRect(0,0,W,9);
-  ctx.strokeStyle='rgba(241,208,74,.5)'; ctx.lineWidth=2; ctx.strokeRect(13,13,W-26,H-26);
-  ctx.textAlign='center';
-  // wordmark
-  ctx.font='700 26px Cinzel, Georgia, serif';
-  const ta='RUN THE ', tb='TOUR', wa=ctx.measureText(ta).width, wb=ctx.measureText(tb).width, tx=W/2-(wa+wb)/2;
-  ctx.textAlign='left'; ctx.fillStyle=CREAM; ctx.fillText(ta,tx,56); ctx.fillStyle=GOLD; ctx.fillText(tb,tx+wa,56); ctx.textAlign='center';
-  // gold headline ribbon
-  const ry=74, rh=46; let rw=Math.min(W-56, Math.max(300, (o.headline.length*17)+80));
-  const rg=ctx.createLinearGradient(0,ry,0,ry+rh); rg.addColorStop(0,'#f4d75a'); rg.addColorStop(1,GOLD2);
-  ctx.fillStyle=rg; cardRoundRect(ctx,W/2-rw/2,ry,rw,rh,11); ctx.fill();
-  ctx.fillStyle='#1c2a15'; ctx.font='800 24px Impact,system-ui,sans-serif'; ctx.fillText(o.headline, W/2, ry+31);
-  // year line (e.g. "YEAR 5 OF 30")
-  if(o.yearLine){ ctx.fillStyle=GOLD; ctx.font='800 13px system-ui,sans-serif';
-    ctx.save(); ctx.globalAlpha=.9; ctx.fillText(o.yearLine, W/2, 141); ctx.restore(); }
-  // pixel golfer as a HEAD-AND-SHOULDERS portrait medallion. A full standing figure (with legs) can trip
-  // social-media auto-sensitive classifiers on share; a circular bust reads unambiguously as a game avatar.
-  const golferTop=o.yearLine?168:156;
-  const portR=Math.round(H*0.155);                 // ~112 for H=720
-  const portCy=golferTop+portR;
-  const glf=pxGolferCanvas(o.look);
-  // medallion backing + soft drop shadow
-  ctx.save(); ctx.shadowColor='rgba(0,0,0,.42)'; ctx.shadowBlur=16; ctx.shadowOffsetY=7;
-  ctx.beginPath(); ctx.arc(W/2,portCy,portR,0,7); ctx.fillStyle='#0c2c1c'; ctx.fill(); ctx.restore();
-  // crop the sprite to head + shoulders (rows ~2..34 of 56), clipped to the circle → no lower body
-  ctx.save(); ctx.beginPath(); ctx.arc(W/2,portCy,portR-2,0,7); ctx.clip();
-  // player-card cosmetic: the equipped card BACKGROUND fills the medallion behind the golfer
-  try{ const cbg=(o.look&&o.look.cardbg)||'club'; if(cbg!=='club'){ const bcv=pxCardBgCanvas(cbg);
-    ctx.imageSmoothingEnabled=false; ctx.drawImage(bcv, W/2-portR, portCy-portR, portR*2, portR*2*(bcv.height/bcv.width)); } }catch(e){}
+  const P=PIXK, U=4, GW=270, GH=338;
   ctx.imageSmoothingEnabled=false;
-  const gsc=glf.height/PXG_H, sr0=2, srH=32, dw=portR*2.55, dh=dw*(srH/PXG_W), dx=W/2-dw/2, dy=(portCy-portR)-dh*0.03;
-  ctx.drawImage(glf, 0, Math.round(sr0*gsc), glf.width, Math.round(srH*gsc), dx, dy, dw, dh);
-  ctx.restore();
-  // gold ring
-  const rgm=ctx.createLinearGradient(W/2-portR,portCy-portR,W/2+portR,portCy+portR); rgm.addColorStop(0,'#f6e7a6'); rgm.addColorStop(1,GOLD2);
-  ctx.strokeStyle=rgm; ctx.lineWidth=4; ctx.beginPath(); ctx.arc(W/2,portCy,portR,0,7); ctx.stroke();
-  // OVR badge on the lower-right edge of the medallion
-  const bx=W/2+portR*0.72, by=portCy+portR*0.64, br=42;
-  ctx.save(); ctx.shadowColor='rgba(0,0,0,.4)'; ctx.shadowBlur=10;
-  const bgr=ctx.createLinearGradient(bx-br,by-br,bx+br,by+br); bgr.addColorStop(0,'#f6e7a6'); bgr.addColorStop(1,GOLD2);
-  ctx.fillStyle=bgr; ctx.beginPath(); ctx.arc(bx,by,br,0,7); ctx.fill(); ctx.restore();
-  ctx.fillStyle='#1c2a15'; ctx.font='800 33px Impact,system-ui,sans-serif'; ctx.fillText(''+o.ovr, bx, by+5);
-  ctx.font='800 10px system-ui,sans-serif'; ctx.fillText('OVR', bx, by+21);
-  const heroBottom=portCy+portR;
-  // name (auto-fit, serif)
-  let nm=(o.name||'Your Golfer').toUpperCase(), ns=34;
-  do{ ctx.font='700 '+ns+'px Cinzel, Georgia, serif'; if(ctx.measureText(nm).width<=W-90)break; ns-=2; }while(ns>16);
-  // player-card cosmetic: the equipped NAMEPLATE colors a bar behind the name
-  const _ps=(o.look&&o.look.plate&&o.look.plate!=='classic'&&typeof PLATE_STYLE!=='undefined')?PLATE_STYLE[o.look.plate]:null;
-  if(_ps){ const pw=Math.min(W-90,ctx.measureText(nm).width+56), py=heroBottom+26;
-    const pg=ctx.createLinearGradient(0,py,0,py+44); pg.addColorStop(0,_ps.c1); pg.addColorStop(1,_ps.c2);
-    ctx.fillStyle=pg; cardRoundRect(ctx,W/2-pw/2,py,pw,44,10); ctx.fill();
-    ctx.strokeStyle=_ps.bd; ctx.lineWidth=1.5; ctx.stroke();
-    ctx.fillStyle=_ps.tx; }
-  else ctx.fillStyle=CREAM;
-  ctx.fillText(nm, W/2, heroBottom+58);
-  // NET hero number
-  ctx.fillStyle=o.net>=0?'#35d6a0':'#E14A33'; ctx.font='800 30px Impact,system-ui,sans-serif';
-  ctx.fillText(fmtSigned(o.net), W/2, heroBottom+98);
-  ctx.fillStyle='#9cbfa8'; ctx.font='800 11px system-ui,sans-serif'; ctx.fillText(o.ribbon2||'NET WORTH THIS SEASON', W/2, heroBottom+117);
-  // 4-tile stat row
-  const n=4, gap=11, m=26, tw=(W-m*2-gap*(n-1))/n, th=72, ty=H-th-30;
-  o.cells.forEach((c,i)=>{ const x=m+i*(tw+gap);
-    cardRoundRect(ctx,x,ty,tw,th,11); ctx.fillStyle='rgba(255,255,255,.05)'; ctx.fill();
-    ctx.strokeStyle='rgba(241,208,74,.18)'; ctx.lineWidth=1; ctx.stroke();
-    ctx.fillStyle='#9cbfa8'; ctx.font='800 10px system-ui,sans-serif'; ctx.fillText(c[0], x+tw/2, ty+23);
-    ctx.fillStyle=c[2]; ctx.font='800 25px Impact,system-ui,sans-serif';
-    let vs=''+c[1], fs=25; while(ctx.measureText(vs).width>tw-10 && fs>13){ fs-=1; ctx.font='800 '+fs+'px Impact,system-ui,sans-serif'; }
-    ctx.fillText(vs, x+tw/2, ty+53);
-  });
-  // bottom-middle site tag
-  ctx.textAlign='center';
-  ctx.fillStyle=GOLD; ctx.font='800 15px system-ui,sans-serif'; ctx.globalAlpha=.92;
-  ctx.fillText('RunThe.gg/golf', W/2, H-11);
-  ctx.globalAlpha=1;
+  ctx.fillStyle='#0b1a12'; ctx.fillRect(0,0,W,H);
+  // 1. the course at dusk
+  P.draw(ctx, P.scene(GW,GH,{horizon:0.36, sunX:0.74}), 0,0,U);
+  // 2. the panel everything else sits on: see-through, with notched corners
+  const pan=P.grid(GW,GH), px0=12, py0=66, pw=246, ph=256;
+  for(let y=py0;y<py0+ph;y++) for(let x=px0;x<px0+pw;x++){
+    const cx=Math.min(x-px0,px0+pw-1-x), cy=Math.min(y-py0,py0+ph-1-y); if(cx+cy<3) continue;
+    const edge=(cx===0||cy===0||cx+cy===3);
+    pan.put(x,y, edge?'rgba(241,208,74,.55)':'rgba(6,18,12,.80)'); }
+  P.draw(ctx,pan,0,0,U);
+  // 3. the portrait window's back: the equipped card background, or the course's own sky
+  const wx=83, wy=102, ww=104, wh=92, ix=wx+4, iy=wy+4, iw=ww-8, ih=wh-8;
+  let bgDone=false;
+  try{ const cbg=(o.look&&o.look.cardbg)||'club'; if(cbg!=='club'){ const bcv=pxCardBgCanvas(cbg);
+    const sc=Math.max(iw*U/bcv.width, ih*U/bcv.height), dw=bcv.width*sc, dh=bcv.height*sc;
+    ctx.save(); ctx.beginPath(); ctx.rect(ix*U,iy*U,iw*U,ih*U); ctx.clip();
+    ctx.drawImage(bcv, ix*U+(iw*U-dw)/2, iy*U+(ih*U-dh)/2, dw, dh); ctx.restore(); bgDone=true; } }catch(e){}
+  if(!bgDone){ const sky=P.scene(iw,ih,{horizon:0.72, sunX:0.26}); P.draw(ctx,sky,ix*U,iy*U,U); }
+  // 4. the golfer, head and shoulders (a full standing figure can trip a feed's sensitivity check), at a
+  //    whole 8px a sprite pixel (two of the card's cells) so his pixels are square and sit on its grid
+  try{ const glf=pxGolferCanvas(o.look), gsc=glf.height/PXG_H, SP=8, r1=34, rows=Math.min(r1,Math.floor(ih*U/SP)), r0=r1-rows;
+    ctx.save(); ctx.beginPath(); ctx.rect(ix*U,iy*U,iw*U,ih*U); ctx.clip();
+    ctx.drawImage(glf, 0, Math.round(r0*gsc), glf.width, Math.round(rows*gsc),
+      Math.round((ix+iw/2)*U - PXG_W*SP/2), (iy+ih)*U - rows*SP, PXG_W*SP, rows*SP);
+    ctx.restore(); }catch(e){}
+  // 5. everything on top
+  const top=P.grid(GW,GH), txt=P.grid(GW,GH);
+  const center=(str,y,opt)=>{ P.text(txt,str,Math.round((GW-P.textW(str,opt))/2),y,opt); };
+  // the frame round the whole card: ink, two rows of gold, ink
+  for(let y=0;y<GH;y++) for(let x=0;x<GW;x++){ const d=Math.min(x,y,GW-1-x,GH-1-y);
+    if(d===0||d===3) top.put(x,y,P.K); else if(d<=2) top.put(x,y,(x+y<(GW+GH)/2)?P.GOLD[2]:P.GOLD[4]); }
+  // the title
+  if(!_pkLockup) _pkLockup=P.lockup(0);
+  P.stamp(top,_pkLockup,Math.round((GW-104)/2),8);
+  // the headline ribbon, with folded tails
+  { const hl=o.headline||'', big=P.textW(hl,{scale:2,bold:true})<=208, opt=big?{scale:2,bold:true}:{scale:1,bold:true};
+    const tw=P.textW(hl,opt), rw=Math.max(120,tw+24), rh=18, rx=Math.round((GW-rw)/2), ry=72;
+    for(let y=ry+4;y<ry+rh+3;y++){ for(let x=rx-9;x<rx;x++) if(!(x<rx-6 && (y-ry-4)%2===0 && x===rx-9)) top.put(x,y,P.EXT[1]);
+      for(let x=rx+rw;x<rx+rw+9;x++) top.put(x,y,P.EXT[1]); }
+    for(let x=rx-9;x<rx-5;x++){ top.put(x,ry+4+Math.floor((rh-1)/2),null); }
+    for(let y=ry;y<ry+rh;y++) for(let x=rx;x<rx+rw;x++){ const j=y-ry; top.put(x,y, j===0?P.GOLD[0]:j<rh/2?P.GOLD[2]:j<rh-1?P.GOLD[3]:P.GOLD[5]); }
+    P.outline(top,P.K);
+    P.text(top,hl,Math.round((GW-tw)/2),ry+(big?2:6),Object.assign({color:'#2a1604'},opt)); }
+  if(o.yearLine) center(o.yearLine,95,{color:P.GOLD[2]});
+  // the portrait window's frame
+  for(let y=wy;y<wy+wh;y++) for(let x=wx;x<wx+ww;x++){ const d=Math.min(x-wx,y-wy,wx+ww-1-x,wy+wh-1-y);
+    if(d===0||d===3) top.put(x,y,P.K); else if(d<=2) top.put(x,y,(x-wx+y-wy<(ww+wh)/2)?P.GOLD[1]:P.GOLD[4]); }
+  // the OVR shield on the window's corner
+  { const bx=176, by=170, bw=30, bh=32;
+    for(let y=by;y<by+bh;y++){ const inset=y>by+bh-10?Math.round((y-(by+bh-10))*1.4):0;
+      for(let x=bx+inset;x<bx+bw-inset;x++){ const j=y-by; top.put(x,y, j<2?P.GOLD[0]:j<12?P.GOLD[2]:j<22?P.GOLD[3]:P.GOLD[4]); } }
+    P.text(top,'OVR',bx+Math.round((bw-P.textW('OVR'))/2),by+3,{color:'#5a3a08'});
+    const ov=''+(o.ovr==null?'':o.ovr), os=P.textW(ov,{scale:2,bold:true})<=bw-4?2:1;
+    P.text(top,ov,bx+Math.round((bw-P.textW(ov,{scale:os,bold:true}))/2),by+12,{scale:os,bold:true,color:'#2a1604'}); }
+  // the name, on the equipped nameplate when there is one
+  { let nm=(o.name||'Your Golfer'), opt={scale:2,bold:true};
+    if(P.textW(nm,opt)>232) opt={scale:1,bold:true};
+    const ps=(o.look&&o.look.plate&&o.look.plate!=='classic'&&typeof PLATE_STYLE!=='undefined')?PLATE_STYLE[o.look.plate]:null;
+    const tw=P.textW(nm,opt), ny=opt.scale===2?204:208;
+    if(ps){ const bw=Math.min(236,tw+20), bx=Math.round((GW-bw)/2);
+      for(let y=200;y<222;y++) for(let x=bx;x<bx+bw;x++){ const e=(y===200||y===221||x===bx||x===bx+bw-1); top.put(x,y, e?ps.bd:(y<211?ps.c1:ps.c2)); }
+      P.text(top,nm,Math.round((GW-tw)/2),ny,Object.assign({color:ps.tx},opt)); }
+    else center(nm,ny,Object.assign({color:P.CREAM[0]},opt)); }
+  // the number: what the year (or the career) was worth
+  { const nv=(typeof fmtSigned==='function')?fmtSigned(o.net):(''+o.net);
+    const opt=P.textW(nv,{scale:3,bold:true})<=236?{scale:3,bold:true}:{scale:2,bold:true};
+    center(nv,229,Object.assign({color:o.net>=0?'#46e6ad':'#ff6a5e'},opt));
+    center(o.ribbon2||'NET WORTH THIS SEASON',255,{color:'#a9c9b4'}); }
+  // four stat tiles
+  { const n=4, tw=56, gap=6, tx0=Math.round((GW-(n*tw+(n-1)*gap))/2), ty=268, th=44;
+    (o.cells||[]).slice(0,4).forEach((c,i)=>{ const x=tx0+i*(tw+gap);
+      for(let y=ty;y<ty+th;y++) for(let xx=x;xx<x+tw;xx++){ const e=(y===ty||y===ty+th-1||xx===x||xx===x+tw-1);
+        const corner=(y===ty||y===ty+th-1)&&(xx===x||xx===x+tw-1); if(corner) continue;
+        pan.put(xx,y,null); top.put(xx,y, e?'rgba(241,208,74,.45)':'rgba(255,255,255,.07)'); }
+      P.text(txt,c[0],x+Math.round((tw-P.textW(c[0]))/2),ty+7,{color:'#a9c9b4'});
+      const v=''+c[1], big=P.textW(v,{scale:2,bold:true})<=tw-6, opt=big?{scale:2,bold:true}:{scale:1,bold:true};
+      P.text(txt,v,x+Math.round((tw-P.textW(v,opt))/2),ty+(big?21:25),Object.assign({color:c[2]},opt)); }); }
+  // the address
+  center('RUNTHE.GG/GOLF',327,{color:P.GOLD[1],bold:true});
+  P.outline(top,P.K);
+  P.draw(ctx,top,0,0,U);
+  // every word gets an ink outline so it reads on the course as well as on the panel
+  P.outline(txt,P.K);
+  P.draw(ctx,txt,0,0,U);
 }
 function cardRoundRect(ctx,x,y,w,h,r){ ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); }
 function drawCareerCard(cv,info,vals){
-  const W=560,H=720,ctx=cv.getContext('2d');
+  const W=1080,H=1352,ctx=cv.getContext('2d');
   cv.width=W; cv.height=H;
   const maj=info.majors||0, w=info.wins||0, yr=info.years||1;
   const headline = maj>=4?'GRAND SLAM LEGEND' : maj>0?(maj>1?maj+'× MAJOR CHAMPION':'MAJOR CHAMPION') : (w>0?(w>1?w+' TOUR WINS':'TOUR WINNER'):yr+'-YEAR CAREER');

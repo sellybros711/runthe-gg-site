@@ -1,152 +1,32 @@
 <!doctype html>
-<!-- THE RUN THE TOUR LOGO, IN PIXELS. Source for every golf logo file; `node golf/build-logo.mjs` renders them.
+<!-- THE RUN THE TOUR LOGO, IN PIXELS. `node golf/build-logo.mjs` renders every logo file from this page.
+
+     The drawing itself is NOT in this file. It lives in the game (golf/index.html, between PIXK BEGIN and
+     PIXK END) because the in-game share cards draw the same title, and one drawing in two places is two
+     drawings the first time either is touched. This page reads that block out of the game and runs it.
 
      A retro game title (owner picked it from three directions): chunky gold TOUR with a 16-bit extrude,
      the O is a golf ball, the letters stand on a mown putting green, and the pin is in the cup at the end
-     of it. RUN THE sits above in cream, the way the old wordmark stacked it.
-
-     Pixel art only stays crisp at whole multiples of its own grid, so nothing here is drawn to be shrunk:
-       lockup  104 x 52   the title (loading screen, share card, anywhere the name is the point)
-       icon32   32 x 32   the app icons and a 32px tab: the ball and the flag on a patch of green
-       icon16   16 x 16   a 16px tab and the header, drawn again at that size rather than scaled down
-     Every file is one of these at an integer scale. -->
+     of it with its flag waving. Every file is one of the kit's grids at a WHOLE scale:
+       lockup  104 x 54   the title (loading screen, share cards, the link preview)
+       icon32   32 x 32   the app icons and a 32px tab
+       icon16   16 x 16   a 16px tab and the header, drawn again at that size rather than scaled down -->
 <html><head><meta charset="utf-8"><title>Run The Tour logo</title>
-<style>html,body{margin:0;background:#12281c} canvas{image-rendering:pixelated;margin:14px;vertical-align:top}
-  .lt{background:#e9ecef}</style></head>
+<style>html,body{margin:0;background:#12281c} canvas{image-rendering:pixelated;margin:14px;vertical-align:top}</style></head>
 <body>
 <script>
-(function(){
-const K='#120b04';                                        // the ink: a warm near-black, so gold edges do not go grey
-const GOLD=['#fffbe0','#fff0a0','#ffd84a','#ffbf1f','#f09e12','#c9780a'];   // top to bottom of a letter
-const EXT=['#8f4f08','#7a4106','#613304','#482503'];                        // the extrude, darkening with depth
-const CREAM=['#fffaf0','#f4e3c9','#d9c3a0'];
-const BALL=['#ffffff','#f3f6f8','#dfe5e9','#c3ccd3','#9aa6b0','#6f7d88'];
-const GRASS={fringe:'#9be36a', a:'#57c24a', b:'#46ad3e', dark:'#2f8a34', edge:'#1f6327'};
-const FLAG=['#ffb3a8','#ff5a4d','#e33429','#b0201a','#7d1511'];
-const POLE=['#ffffff','#e9e4d8','#bdb5a4'];
-const SPARK=['#ffffff','#fff3b0'];
-
-function grid(w,h){ const px=new Array(w*h).fill(null); const g={w,h,px,
-  put(x,y,c){ x=Math.round(x); y=Math.round(y); if(x>=0&&y>=0&&x<w&&y<h&&c) px[y*w+x]=c; },
-  get(x,y){ return (x>=0&&y>=0&&x<w&&y<h)?px[y*w+x]:null; },
-  rect(x,y,ww,hh,c){ for(let j=0;j<hh;j++) for(let i=0;i<ww;i++) g.put(x+i,y+j,c); } };
-  return g; }
-// dark outline round everything painted so far (4-neighbour), optionally only where `only` says
-function outline(g,c,mask){ const s=g.px.slice(); for(let y=0;y<g.h;y++) for(let x=0;x<g.w;x++){ if(s[y*g.w+x]) continue;
-  if([[1,0],[-1,0],[0,1],[0,-1]].some(([a,b])=>{ const X=x+a,Y=y+b; return X>=0&&Y>=0&&X<g.w&&Y<g.h&&s[Y*g.w+X]&&(!mask||mask[Y*g.w+X]); })) g.px[y*g.w+x]=c; } }
-
-/* ---- the big letters, drawn by hand on a 16 x 20 grid (the O is the ball, not a glyph) ---- */
-const BIG={
-T:["1111111111111111","1111111111111111","1111111111111111","1111111111111111","1111111111111111",
-   ".....111111.....",".....111111.....",".....111111.....",".....111111.....",".....111111.....",
-   ".....111111.....",".....111111.....",".....111111.....",".....111111.....",".....111111.....",
-   ".....111111.....",".....111111.....",".....111111.....",".....111111.....",".....111111....."],
-U:["11111......11111","11111......11111","11111......11111","11111......11111","11111......11111",
-   "11111......11111","11111......11111","11111......11111","11111......11111","11111......11111",
-   "11111......11111","11111......11111","11111......11111","11111......11111","111111....111111",
-   "1111111111111111","1111111111111111",".11111111111111.",".11111111111111.","..111111111111.."],
-R:["1111111111111...","11111111111111..","111111111111111.","11111....111111.","11111.....11111.",
-   "11111.....11111.","11111....111111.","111111111111111.","11111111111111..","1111111111111...",
-   "11111.111111....","11111..111111...","11111..111111...","11111...111111..","11111...111111..",
-   "11111....111111.","11111....111111.","11111.....111111","11111.....111111","11111.....111111"],
-};
-// the 5 x 7 face for RUN THE
-const SMALL={R:["1111.","1...1","1...1","1111.","1.1..","1..1.","1...1"],U:["1...1","1...1","1...1","1...1","1...1","1...1",".111."],
-  N:["1...1","11..1","1.1.1","1..11","1...1","1...1","1...1"],T:["11111","..1..","..1..","..1..","..1..","..1..","..1.."],
-  H:["1...1","1...1","1...1","11111","1...1","1...1","1...1"],E:["11111","1....","1....","1111.","1....","1....","11111"]," ":[".....",".....",".....",".....",".....",".....","....."]};
-
-/* a golf ball: lit from the upper left, a staggered field of dimples that fades before the rim, a hot spot */
-function ball(g,cx,cy,r,opts){ opts=opts||{}; const dim=opts.dimples!==false;
-  for(let y=Math.floor(cy-r-1);y<=Math.ceil(cy+r+1);y++) for(let x=Math.floor(cx-r-1);x<=Math.ceil(cx+r+1);x++){
-    const dx=x-cx, dy=y-cy; if(dx*dx+dy*dy>r*r) continue;
-    const nx=dx/r, ny=dy/r, nz=Math.sqrt(Math.max(0,1-nx*nx-ny*ny)), L=-0.52*nx-0.6*ny+0.6*nz;
-    let t=L>0.9?0:L>0.7?1:L>0.42?2:L>0.12?3:L>-0.2?4:5;
-    if(dim && t>=1 && t<=4 && nz>0.3){ const row=Math.floor((y-cy+100)/3); if(((y-Math.floor(cy)+99)%3===0) && ((x-Math.floor(cx)+(row%2?2:0)+100)%4===0)) t=Math.min(5,t+1); }
-    g.put(x,y,BALL[t]); }
-  if(opts.spot!==false){ const hx=Math.round(cx-r*0.42), hy=Math.round(cy-r*0.46);
-    (r>=6?[[0,0],[1,0],[0,1],[-1,0],[0,-1],[2,-1]]:[[0,0]]).forEach(([a,b])=>g.put(hx+a,hy+b,BALL[0])); } }
-function star(g,x,y,s){ g.put(x,y,SPARK[0]); for(let i=1;i<=s;i++){ const c=i===s?SPARK[1]:SPARK[0]; g.put(x+i,y,c); g.put(x-i,y,c); g.put(x,y+i,c); g.put(x,y-i,c); } }
-function flag(g,px,top,bottom,len){   // a pin from `top` down to `bottom`, the flag streaming right and rippling
-  for(let y=top;y<=bottom;y++) g.put(px,y, y<=top+1?POLE[0]:POLE[1]);
-  g.put(px+1,top+2,POLE[2]);   // a sliver of shade down the pole's right under the flag
-  const rows=len>=8?[[len-1,1,0],[len,1,1],[len+1,2,1],[len,2,2],[len-2,3,3],[len-4,3,3]]:[[len,1,1],[len+1,2,2],[len-1,3,3],[len-3,3,3]];
-  rows.forEach(([l,a,b],j)=>{ for(let i=1;i<=l;i++){ let c=FLAG[i<3?a:b]; if(j===0) c=i>1&&i<l-1?FLAG[0]:FLAG[1];
-      if(i===Math.round(l*0.6)&&j>0) c=FLAG[Math.min(4,b+1)];   // a ripple fold
-      g.put(px+i,top+j,c); } });
-  g.put(px,top-1,POLE[0]); }
-
-/* ================= the lockup ================= */
-function lockup(){
-  const W=104, H=54, g=grid(W,H);
-  const LT=14, LH=20;                                  // TOUR's top and height
-  const layout=[['T',6],['O',24],['U',46],['R',64]];   // x of each character (the O is 20 wide)
-  // 1. the putting green, behind everything: a flattened ellipse with mow stripes and a lit fringe
-  const gx=52, gy=LT+LH+2, grx=49, gry=7.5;
-  for(let y=Math.floor(gy-gry);y<=gy+gry;y++) for(let x=0;x<W;x++){ const d=((x-gx)/grx)**2+((y-gy)/gry)**2; if(d>1) continue;
-    let c=(Math.floor((x+ (y-gy)*1.2)/6)%2)?GRASS.a:GRASS.b; if(d>0.72) c=GRASS.dark; if(d>0.72 && y<gy) c=GRASS.fringe; g.put(x,y,c); }
-  // the cup, and the pin in it, near the right end of the green
-  const cupX=92, cupY=gy+1;
-  g.rect(cupX-1,cupY,4,2,'#0c2a12'); g.put(cupX-2,cupY+1,'#0c2a12'); g.put(cupX+3,cupY+1,'#0c2a12');
-  const greenMask=g.px.map(Boolean);
-  outline(g,GRASS.edge,greenMask);
-  // 2. the letters: extrude first (three steps down-right), then the faces over it
-  const face=grid(W,H);
-  layout.forEach(([ch,x0])=>{ if(ch==='O') return; BIG[ch].forEach((row,j)=>{ for(let i=0;i<16;i++) if(row[i]==='1') face.put(x0+i,LT+j,'F'); }); });
-  const isF=(x,y)=>face.get(x,y)==='F';
-  for(let d=3;d>=1;d--) for(let y=0;y<H;y++) for(let x=0;x<W;x++) if(isF(x-d,y-d)) g.put(x,y,EXT[d-1]);
-  for(let y=0;y<H;y++) for(let x=0;x<W;x++){ if(!isF(x,y)) continue;
-    const j=y-LT; let c=GOLD[j<2?0:j<5?1:j<9?2:j<13?3:j<17?4:5];
-    if(!isF(x,y-1)) c=GOLD[0];                        // every top edge catches the light
-    else if(!isF(x-1,y) && j<14) c=GOLD[Math.max(0,GOLD.indexOf(c)-1)];   // and every left edge a little
-    if(!isF(x,y+1) && isF(x,y-1)) c=GOLD[5];          // bottom edges sit in shade
-    if(!isF(x+1,y) && j>2) c=GOLD[Math.min(5,GOLD.indexOf(c)+1)];
-    g.put(x,y,c); }
-  // 3. the ball is the O, standing on the green like the letters, with a contact shadow so it SITS on it
-  for(let x=25;x<=43;x++) for(let y=LT+LH;y<=LT+LH+2;y++){ const d=((x-34)/9.5)**2+((y-(LT+LH+1))/1.6)**2; if(d<=1) g.put(x,y,GRASS.edge); }
-  ball(g,24+9.5,LT+LH/2-0.4,10.7);
-  // 4. the flag at the end of the green
-  flag(g,cupX,4,cupY,9);
-  // 5. RUN THE in cream, set over the T and the O: the 5 x 7 face at a bold weight (each stroke two
-  //    pixels wide), with a one pixel drop in dark brown
-  const rt=grid(W,H); let sx=7; const sy=4;
-  for(const ch of 'RUN THE'){ SMALL[ch].forEach((row,j)=>{ for(let i=0;i<5;i++) if(row[i]==='1'){
-      const c=j<2?CREAM[0]:j<5?CREAM[1]:CREAM[2]; rt.put(sx+i,sy+j,c); rt.put(sx+i+1,sy+j,c); } });
-    sx+=(ch===' '?4:7); }
-  for(let i=0;i<W*H;i++) if(rt.px[i]){ const x=i%W, y=(i/W)|0; if(!rt.get(x+1,y+1)) g.put(x+1,y+1,'#3a2410'); }
-  for(let i=0;i<W*H;i++) if(rt.px[i]) g.px[i]=rt.px[i];
-  // 6. one outline round the whole thing, so it holds on any background
-  outline(g,K);
-  // 7. sparkles off the ball's shine and the flag
-  star(g,99,20,1); star(g,60,8,1);
-  return g;
-}
-
-/* ================= the icon: the ball by the pin, on a patch of green ================= */
-function icon(N){
-  const g=grid(N,N), k=N/32;
-  // the green patch
-  const gx=16*k-0.5, gy=25.5*k, rx=14.5*k, ry=4.6*k;
-  for(let y=0;y<N;y++) for(let x=0;x<N;x++){ const d=((x-gx)/rx)**2+((y-gy)/ry)**2; if(d>1) continue;
-    let c=(Math.floor((x+(y-gy)*1.2)/(3*k))%2)?GRASS.a:GRASS.b; if(d>0.7) c=(y<gy)?GRASS.fringe:GRASS.dark; g.put(x,y,c); }
-  const gm=g.px.map(Boolean); outline(g,GRASS.edge,gm);
-  // the pin, back right, and its flag
-  if(N>=32) flag(g,Math.round(23*k),Math.round(3*k),Math.round(25*k),6);
-  else { const px=Math.round(23*k); for(let y=1;y<=12;y++) g.put(px,y,POLE[1]); g.put(px,1,POLE[0]);
-    [[3,1],[4,2],[2,3]].forEach(([l,t],j)=>{ for(let i=1;i<=l;i++) g.put(px+i,1+j,FLAG[t]); }); }
-  // the ball, front left, sitting on the green
-  ball(g, 12*k-0.5, 17*k, N>=32?8.6:4.4, {dimples:N>=32});
-  outline(g,K);
-  if(N>=32){ star(g,5,5,1); }
-  return g;
-}
-
-function toCanvas(g, scale){ const c=document.createElement('canvas'); c.width=g.w*scale; c.height=g.h*scale;
-  const x=c.getContext('2d'); for(let y=0;y<g.h;y++) for(let i=0;i<g.w;i++){ const col=g.px[y*g.w+i]; if(!col) continue; x.fillStyle=col; x.fillRect(i*scale,y*scale,scale,scale); } return c; }
-window.LOGO={lockup, icon, toCanvas};
-const add=(c,cls)=>{ if(cls) c.className=cls; document.body.appendChild(c); };
-add(toCanvas(lockup(),6)); add(toCanvas(icon(32),6)); add(toCanvas(icon(16),6));
-add(toCanvas(lockup(),2)); add(toCanvas(icon(32),1)); add(toCanvas(icon(16),1)); add(toCanvas(lockup(),3),'lt');
-window.__markReady=true;
+(async function(){
+  const src=await (await fetch('/golf/index.html',{cache:'no-store'})).text();
+  const a=src.indexOf('/* ==================== PIXK BEGIN'), b=src.indexOf('/* ==================== PIXK END ==================== */');
+  if(a<0||b<0) throw new Error('the pixel kit markers are missing from golf/index.html');
+  const PIXK=new Function(src.slice(a,b)+'\nreturn PIXK;')();
+  window.PIXK=PIXK;
+  // the four frames of the flag, a quarter turn of the wave apart
+  window.PHASES=[0,Math.PI/2,Math.PI,Math.PI*1.5];
+  const add=c=>document.body.appendChild(c);
+  PHASES.forEach(p=>add(PIXK.toCanvas(PIXK.lockup(p),4)));
+  add(PIXK.toCanvas(PIXK.icon(32,0),6)); add(PIXK.toCanvas(PIXK.icon(16,0),6));
+  window.__markReady=true;
 })();
 </script>
 </body></html>
