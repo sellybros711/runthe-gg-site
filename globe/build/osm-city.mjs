@@ -158,8 +158,19 @@ function nid(osm) {
   const [la, lo] = nodeLL.get(osm); const [x, y] = proj(la, lo);
   i = nodes.length / 2; nodes.push(Math.round(x), Math.round(y)); nodeIdx.set(osm, i); return i;
 }
+// Names reach the player (the street pill, the map labels), and this repo
+// allows no em or en dash anywhere a player reads. OSM writes both. A spaced
+// one is a name plus a subtitle ("Promenade des Berges de la Seine, then the
+// quay"), so it takes a colon. A bare one joins two words ("Odeon" and
+// "Theatre de l'Europe"), so it takes a hyphen. The two characters are built
+// from their code points because the dash checker rightly refuses to see
+// them written in any form, and scripts/check-dashes.mjs guards the output.
+const DASHES = String.fromCharCode(8211, 8212);
+const SPACED = new RegExp('\\s+[' + DASHES + ']\\s+', 'g'), BARE = new RegExp('[' + DASHES + ']', 'g');
+function undash(s) { return s.replace(SPACED, ': ').replace(BARE, '-'); }
 function nm(s) {
   if (!s) return -1;
+  s = undash(s);
   let i = nameIdx.get(s); if (i === undefined) { i = names.length; names.push(s); nameIdx.set(s, i); } return i;
 }
 const ways = [];

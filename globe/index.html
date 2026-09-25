@@ -767,6 +767,69 @@
   #rscard{transition:transform .28s cubic-bezier(.5,0,.7,.4),opacity .28s;}
   #rscard.fly-a{transform:translate(-30%,74px) scale(.35) rotate(-10deg);opacity:0;}
   #rscard.fly-b{transform:translate(30%,74px) scale(.35) rotate(10deg);opacity:0;}
+
+  /* ---- Street Hunt ---- */
+  .huntc{position:relative;overflow:hidden;border-color:rgba(236,181,80,.35);
+    background:radial-gradient(120% 90% at 100% 0%,rgba(42,106,163,.35),transparent 60%),var(--card);}
+  .huntc .hck{display:flex;justify-content:space-between;align-items:center;font-size:11.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--goldhi);}
+  .huntc .new{background:var(--coral,#E24632);color:#fff;border-radius:999px;padding:3px 9px;letter-spacing:.04em;}
+  .huntc h3{font-size:19px;margin:6px 0 4px}
+  .huntc p{font-size:13px;line-height:1.55;margin:0}
+  .huntc .hdone{margin-top:9px;font-size:13px}
+  .hunt{padding:12px}
+  .hmap{position:relative;height:min(62vh,560px);min-height:340px;border-radius:14px;overflow:hidden;background:#141032;
+    touch-action:none;user-select:none;-webkit-user-select:none;border:1px solid var(--cardb);margin-top:8px}
+  .hmap canvas#hcv{position:absolute;inset:0;cursor:pointer}
+  .htop{position:absolute;left:8px;right:8px;top:8px;display:flex;gap:6px;pointer-events:none}
+  .hpill{background:rgba(12,9,32,.82);border:1px solid rgba(255,255,255,.14);color:var(--ink);font-weight:800;font-size:13px;
+    padding:5px 10px;border-radius:999px;font-variant-numeric:tabular-nums}
+  .hpill.htime{color:var(--goldhi);margin-right:auto;font-size:15px}
+  .hpill.bump{animation:hbump .35s ease}
+  @keyframes hbump{40%{transform:scale(1.25)}}
+  .hmini{position:absolute;right:8px;bottom:8px;border-radius:8px;border:1.5px solid rgba(236,181,80,.55);box-shadow:0 6px 18px -6px rgba(0,0,0,.8);pointer-events:none}
+  .hzoom{position:absolute;right:8px;top:46px;display:flex;flex-direction:column;gap:6px}
+  .hzoom button{width:36px;height:36px;border-radius:10px;border:1px solid rgba(255,255,255,.18);background:rgba(12,9,32,.85);color:#fff;font-size:20px;font-weight:800;cursor:pointer}
+  .hstreet{position:absolute;left:8px;bottom:8px;max-width:calc(100% - 150px);background:rgba(12,9,32,.85);color:#fff;font-size:12.5px;font-weight:700;
+    padding:5px 10px;border-radius:8px;border-left:3px solid var(--globe);opacity:0;transform:translateY(6px);transition:opacity .25s,transform .25s;pointer-events:none;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .hstreet.on{opacity:1;transform:none}
+  .hsay{position:absolute;left:50%;top:48px;transform:translate(-50%,-8px);max-width:86%;display:flex;gap:9px;align-items:center;
+    background:#fff;color:#1a1438;font-weight:700;font-size:13.5px;line-height:1.35;padding:9px 13px;border-radius:14px;
+    box-shadow:0 10px 26px -8px rgba(0,0,0,.7);opacity:0;pointer-events:none;transition:opacity .2s,transform .2s}
+  .hsay .f{font-size:24px}
+  .hsay.on{opacity:1;transform:translate(-50%,0)}
+  .hbanner{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) scale(.8);display:flex;flex-direction:column;align-items:center;gap:2px;
+    background:rgba(12,9,32,.92);border:2px solid var(--ok);border-radius:16px;padding:14px 22px;opacity:0;pointer-events:none;transition:opacity .2s,transform .25s cubic-bezier(.3,1.4,.5,1)}
+  .hbanner .e{font-size:40px}
+  .hbanner b{font-size:19px;color:#fff}
+  .hbanner span:last-child{font-size:12.5px;color:var(--mut)}
+  .hbanner.on{opacity:1;transform:translate(-50%,-50%) scale(1)}
+  .hintro{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(10,8,26,.72);backdrop-filter:blur(2px);transition:opacity .25s}
+  .hintro.out{opacity:0}
+  .hi-in{width:min(92%,380px);background:var(--card);border:1px solid rgba(236,181,80,.4);border-radius:16px;padding:18px;text-align:center;animation:hpop .35s cubic-bezier(.22,.9,.32,1)}
+  @keyframes hpop{from{opacity:0;transform:translateY(12px) scale(.96)}to{opacity:1;transform:none}}
+  .hi-k{font-size:12px;color:var(--mut);font-weight:700}
+  .hi-t{font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--goldhi);font-weight:800;margin-top:10px}
+  .hi-q{font-size:17px;font-weight:800;line-height:1.35;margin:6px 0 12px}
+  .hi-how{text-align:left;font-size:12.5px;color:var(--mut);margin:0 0 14px;padding-left:18px;line-height:1.6}
+  .hclue{margin-top:10px;background:var(--card2);border:1px solid var(--cardb);border-left:4px solid var(--globe);border-radius:12px;padding:11px 13px}
+  .hclue.flip{animation:hflip .45s ease}
+  @keyframes hflip{0%{transform:rotateX(80deg);opacity:0}100%{transform:none;opacity:1}}
+  .hclue .hk{font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--goldhi);font-weight:800}
+  .hclue .hk b{color:var(--coral,#E24632)}
+  .hclue .hq{font-size:15.5px;font-weight:800;line-height:1.4;margin-top:4px}
+  .hclue .hh{font-size:12.5px;color:var(--mut);margin-top:6px}
+  .hclue .hh.on{color:var(--goldhi)}
+  .hosm{font-size:11px;color:var(--mut);text-align:center;margin-top:10px;line-height:1.6}
+  .hload{height:6px;border-radius:9px;background:rgba(255,255,255,.08);overflow:hidden;margin:14px auto 4px;max-width:220px}
+  .hload i{display:block;height:100%;width:40%;background:var(--globe);border-radius:9px;animation:hload 1s ease-in-out infinite alternate}
+  @keyframes hload{from{transform:translateX(-60%)}to{transform:translateX(210%)}}
+  .huntend .he-medal{font-size:64px;margin-top:6px;animation:hpop .5s cubic-bezier(.3,1.5,.5,1)}
+  .huntend .he-time{font-size:44px;font-weight:900;color:var(--goldhi);font-variant-numeric:tabular-nums}
+  .huntend .he-sub{font-size:14px;margin-top:2px}
+  .huntend .he-route{display:flex;flex-wrap:wrap;justify-content:center;gap:6px;margin:14px 0 10px;font-size:12.5px;font-weight:700}
+  .huntend .he-route span{background:var(--card2);border:1px solid var(--cardb);border-radius:999px;padding:4px 10px}
+  .huntend .he-route i{color:var(--mut);font-style:normal;align-self:center}
 </style>
 </head>
 <body>
@@ -1349,6 +1412,7 @@
     if(S.screen==='passport')  return renderPassport();
     if(S.screen==='howto')     return renderHowTo();
     if(S.screen==='stage')     return renderStage();
+    if(S.screen==='hunt')      return renderHunt();
     renderHome();
   }
 
@@ -1377,6 +1441,7 @@
         + '</div>'
       + '</div>'
       + dailyCard()
+      + huntCard()
       + '<div class="card">'
         + '<h3 style="font-size:16px;margin-bottom:4px">How do you want to play?</h3>'
         + '<p class="muted" style="font-size:12.5px;margin:0 0 12px">You race 11 teams either way. Pick who\'s on <b>your</b> team.</p>'
@@ -1403,6 +1468,7 @@
     var pp=$('passport'); if(pp) pp.onclick=function(){ S.screen='passport'; render(); };
     var ps=$('pstat'); if(ps) ps.onclick=function(){ S.screen='passport'; render(); };
     wireDailyCard();
+    wireHuntCard();
     var tr=$('trophies'); if(tr) tr.onclick=function(){ S.screen='trophies'; render(); };
     var ht=$('howto'); if(ht) ht.onclick=function(){ S.screen='howto'; render(); };
     renderAcct();
@@ -4925,13 +4991,609 @@
     S.phase='draw'; renderStage();
   }
 
+  /* ======================================================================
+     STREET HUNT: dropped on a real street, three clues, one mat.
+
+     The city is REAL: every street, the river and the parks come out of
+     OpenStreetMap through globe/build/osm-city.mjs, which runs on a GitHub
+     runner because Overpass is refused from the dev sandbox. The game walks
+     the street graph itself, so you can only go where a street goes.
+
+     A hunt is a drop point and a chain of three landmarks. Each clue names
+     a landmark without naming it. The last one holds the Checkpoint mat.
+     Nothing shows you where the stops are: you read the streets, ask a
+     local (they point, they never name it), or pay 10s for a ping.
+
+     THE ROUTE IS DERIVED FROM A SEED AND THE STREET GRAPH, never stored,
+     so today's hunt is the same for everybody on the same data file, and a
+     rebuilt city can move it. That is the right way round: a route stored
+     beside a graph that changed would send people to nodes that no longer
+     exist.
+     ====================================================================== */
+  var HUNT_SPEED = 50;            // metres a second: a game jog, not a walk
+  var HUNT_ZOOM = [0.42, 0.72, 1.15];
+  var HUNT = {
+    paris: { id:'paris', name:'Paris', flag:'🇫🇷', file:'/globe/data/city-paris.json?v=1', stops:[
+      { id:'eiffel', n:'Eiffel Tower', e:'🗼', ll:[48.85826,2.29450],
+        clue:'Built for a World\'s Fair in 1889. 330 metres of iron. Everybody\'s first photo.',
+        hint:'South bank. Look for the long lawn.' },
+      { id:'trocadero', n:'Trocadéro', e:'📸', ll:[48.86200,2.28850],
+        clue:'The best view of the tower is from across the river. Go stand on that terrace.',
+        hint:'North bank, straight across from the tower.' },
+      { id:'arc', n:'Arc de Triomphe', e:'🏛️', ll:[48.87378,2.29504],
+        clue:'Twelve avenues meet in a star. The Unknown Soldier lies under this arch.',
+        hint:'The top of the Champs-Élysées.' },
+      { id:'grandpalais', n:'Grand Palais', e:'🎪', ll:[48.86610,2.31252],
+        clue:'A giant glass roof over a hall built in 1900. Fashion shows, art fairs, fencing.',
+        hint:'Just off the Champs-Élysées, near the river.' },
+      { id:'alexandre', n:'Pont Alexandre III', e:'🌉', ll:[48.86386,2.31363],
+        clue:'The fanciest bridge in the city. Gold statues on every corner.',
+        hint:'It crosses between the Grand Palais and Les Invalides.' },
+      { id:'concorde', n:'Place de la Concorde', e:'🗿', ll:[48.86553,2.32125],
+        clue:'The biggest square in the city. A 3,000 year old Egyptian obelisk stands in the middle.',
+        hint:'The bottom of the Champs-Élysées.' },
+      { id:'invalides', n:'Les Invalides', e:'⚜️', ll:[48.85502,2.31265],
+        clue:'A golden dome. Napoleon is buried underneath.',
+        hint:'South bank. A long lawn runs down to the river.' },
+      { id:'orsay', n:'Musée d\'Orsay', e:'🕰️', ll:[48.85999,2.32655],
+        clue:'An old train station turned into a museum. Look for the giant clocks.',
+        hint:'South bank, across the river from the Tuileries.' },
+      { id:'vendome', n:'Place Vendôme', e:'💎', ll:[48.86750,2.32943],
+        clue:'An eight sided square full of jewellers. The column is made from melted cannons.',
+        hint:'Between the Tuileries and the Opéra.' },
+      { id:'opera', n:'Palais Garnier', e:'🎭', ll:[48.87196,2.33165],
+        clue:'The Phantom lived under this opera house. Gold on the roof, chandeliers inside.',
+        hint:'North of the Louvre, at the top of the avenue named after it.' },
+      { id:'louvre', n:'The Louvre', e:'🔺', ll:[48.86106,2.33583],
+        clue:'A glass pyramid in a palace courtyard. The Mona Lisa is inside.',
+        hint:'North bank, right by the river. It\'s huge.' },
+      { id:'pontneuf', n:'Pont Neuf', e:'🌁', ll:[48.85708,2.34131],
+        clue:'Its name means the new bridge. It\'s the oldest one in the city.',
+        hint:'The west tip of the island in the middle of the river.' },
+      { id:'notredame', n:'Notre-Dame', e:'⛪', ll:[48.85296,2.34990],
+        clue:'A Gothic cathedral on an island. It burned in 2019 and opened again in 2024.',
+        hint:'The bigger island in the middle of the river.' },
+      { id:'hoteldeville', n:'Hôtel de Ville', e:'🏰', ll:[48.85658,2.35231],
+        clue:'The mayor works in this palace. There\'s a big square out front and an ice rink in winter.',
+        hint:'North bank, across from the islands.' },
+      { id:'pompidou', n:'Centre Pompidou', e:'🧪', ll:[48.86064,2.35222],
+        clue:'A museum that wears its pipes on the outside. Blue for air, green for water.',
+        hint:'North bank, a few blocks up from City Hall.' }
+    ]}
+  };
+  var HUNT_LOCALS = ['🧑‍🎨','👩‍🍳','🧔','👵','🧑‍💼','👮','🧑‍🎤','👨‍🦳','🙋‍♀️','🚴'];
+  var HUNT_DATA = {};
+  var H = null;
+
+  function huntFmt(t){ t=Math.max(0,t); var m=Math.floor(t/60), s=t-m*60; return m+':'+(s<10?'0':'')+s.toFixed(1); }
+  function huntLoad(cid, cb){
+    if(HUNT_DATA[cid]) return cb(null, HUNT_DATA[cid]);
+    fetch(HUNT[cid].file).then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
+      .then(function(j){ HUNT_DATA[cid]=huntPrep(j, HUNT[cid]); cb(null, HUNT_DATA[cid]); })
+      .catch(function(e){ cb(e); });
+  }
+
+  // ---- the street graph ----
+  function huntPrep(j, city){
+    var N=j.nodes.length/2, X=new Float32Array(N), Y=new Float32Array(N), i, k;
+    for(i=0;i<N;i++){ X[i]=j.nodes[2*i]; Y[i]=j.nodes[2*i+1]; }
+    var deg=new Uint32Array(N), E2=0;
+    j.ways.forEach(function(w){ for(var k=4;k<w.length;k++){ if(w[k-1]===w[k]) continue; deg[w[k-1]]++; deg[w[k]]++; E2+=2; } });
+    var start=new Uint32Array(N+1); for(i=0;i<N;i++) start[i+1]=start[i]+deg[i];
+    var fill=start.slice(0,N), to=new Uint32Array(E2), len=new Float32Array(E2), way=new Uint32Array(E2);
+    j.ways.forEach(function(w, wi){ for(var k=4;k<w.length;k++){ var a=w[k-1], b=w[k]; if(a===b) continue;
+      var d=Math.hypot(X[a]-X[b], Y[a]-Y[b]);
+      to[fill[a]]=b; len[fill[a]]=d; way[fill[a]]=wi; fill[a]++;
+      to[fill[b]]=a; len[fill[b]]=d; way[fill[b]]=wi; fill[b]++; } });
+    // connected components: taps, drops and stops only ever use the biggest,
+    // or a tap on a sealed-off courtyard would have no path to it
+    var comp=new Int32Array(N).fill(-1), sizes=[], q=new Uint32Array(N);
+    for(i=0;i<N;i++){ if(comp[i]>=0 || deg[i]===0) continue;
+      var c=sizes.length, qh=0, qt=0, sz=0; q[qt++]=i; comp[i]=c;
+      while(qh<qt){ var u=q[qh++]; sz++; for(k=start[u];k<start[u+1];k++){ var v=to[k]; if(comp[v]<0){ comp[v]=c; q[qt++]=v; } } }
+      sizes.push(sz); }
+    var main=0; for(i=1;i<sizes.length;i++) if(sizes[i]>sizes[main]) main=i;
+    // node grid (main component only) for nearest lookups
+    var GC=120, grid=new Map();
+    for(i=0;i<N;i++){ if(comp[i]!==main) continue; var key=Math.floor(X[i]/GC)+','+Math.floor(Y[i]/GC);
+      var a0=grid.get(key); if(!a0) grid.set(key, a0=[]); a0.push(i); }
+    // way render grid
+    var WC=250, wgrid=new Map(), wbb=new Float32Array(j.ways.length*4);
+    j.ways.forEach(function(w, wi){ var x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;
+      for(var k=3;k<w.length;k++){ var n=w[k]; if(X[n]<x0)x0=X[n]; if(X[n]>x1)x1=X[n]; if(Y[n]<y0)y0=Y[n]; if(Y[n]>y1)y1=Y[n]; }
+      wbb[wi*4]=x0; wbb[wi*4+1]=y0; wbb[wi*4+2]=x1; wbb[wi*4+3]=y1;
+      // a way whose nodes all rounded onto one metre draws as a stray dot
+      var tot=0; for(var k2=4;k2<w.length;k2++) tot+=Math.hypot(X[w[k2]]-X[w[k2-1]], Y[w[k2]]-Y[w[k2-1]]); if(tot<3) return;
+      for(var gx=Math.floor(x0/WC); gx<=Math.floor(x1/WC); gx++) for(var gy=Math.floor(y0/WC); gy<=Math.floor(y1/WC); gy++){
+        var kk=gx+','+gy, arr=wgrid.get(kk); if(!arr) wgrid.set(kk, arr=[]); arr.push(wi); } });
+    // the longest segment of every way, which is where its name label goes
+    var lseg=new Uint16Array(j.ways.length), lsegL=new Float32Array(j.ways.length);
+    j.ways.forEach(function(w, wi){ var bk=4, bl=0; for(var k=4;k<w.length;k++){ var l=Math.hypot(X[w[k]]-X[w[k-1]], Y[w[k]]-Y[w[k-1]]); if(l>bl){ bl=l; bk=k; } } lseg[wi]=bk; lsegL[wi]=bl; });
+    function polyPath(list, want){ var p=new Path2D(), any=false;
+      list.forEach(function(r){ var off=(want==='notable')?1:0; if(r[off]!==(want==='inner'?1:0) && want!=='notable') return;
+        var o=off+1; if(r.length-o<6) return; p.moveTo(r[o], r[o+1]); for(var q2=o+2;q2<r.length;q2+=2) p.lineTo(r[q2], r[q2+1]); p.closePath(); any=true; });
+      return any?p:null; }
+    var lat0=j.origin[0], lon0=j.origin[1], MY=111320, MX=111320*Math.cos(lat0*Math.PI/180);
+    var D={ j:j, city:city, N:N, X:X, Y:Y, start:start, to:to, len:len, way:way, comp:comp, main:main,
+      GC:GC, grid:grid, WC:WC, wgrid:wgrid, wbb:wbb, lseg:lseg, lsegL:lsegL, tw:{},
+      waterOut:polyPath(j.water,'outer'), waterIn:polyPath(j.water,'inner'),
+      parkOut:polyPath(j.parks,'outer'), parkIn:polyPath(j.parks,'inner'), notable:polyPath(j.notable,'notable'),
+      proj:function(lat,lon){ return [(lon-lon0)*MX, (lat0-lat)*MY]; },
+      box:j.box, stamp:new Uint32Array(j.ways.length), frame:1 };
+    // the stops, on this graph. A stop with no street within 260m is dropped.
+    // 150 dropped the Louvre: the pyramid stands in a courtyard with no street
+    // in it, so the stop is reached from the edge of the palace instead, and
+    // its arrival ring grows to match.
+    D.stops=city.stops.map(function(s){ var p=D.proj(s.ll[0], s.ll[1]), n=huntNearest(D, p[0], p[1], 260);
+      return n<0?null:{ s:s, x:p[0], y:p[1], node:n, r:Math.max(55, Math.hypot(X[n]-p[0], Y[n]-p[1])+22) }; }).filter(Boolean);
+    return D;
+  }
+  function huntNearest(D, x, y, maxR){
+    var c=D.GC, gx=Math.floor(x/c), gy=Math.floor(y/c), best=-1, bd=maxR||1e9, R=Math.ceil((maxR||800)/c)+1;
+    for(var r=0;r<=R;r++){
+      for(var dx=-r;dx<=r;dx++) for(var dy=-r;dy<=r;dy++){
+        if(Math.max(Math.abs(dx),Math.abs(dy))!==r) continue;
+        var a=D.grid.get((gx+dx)+','+(gy+dy)); if(!a) continue;
+        for(var i=0;i<a.length;i++){ var n=a[i], d=Math.hypot(D.X[n]-x, D.Y[n]-y); if(d<bd){ bd=d; best=n; } }
+      }
+      if(best>=0 && bd<(r-1)*c) break;
+    }
+    return best;
+  }
+  function huntDijkstra(D, src, dst){
+    var N=D.N, dist=new Float64Array(N).fill(Infinity), prev=new Int32Array(N).fill(-1);
+    var hk=[0], hv=[src]; dist[src]=0;
+    function sw(i,j){ var t=hk[i]; hk[i]=hk[j]; hk[j]=t; t=hv[i]; hv[i]=hv[j]; hv[j]=t; }
+    while(hk.length){
+      var d0=hk[0], u=hv[0], last=hk.length-1;
+      hk[0]=hk[last]; hv[0]=hv[last]; hk.pop(); hv.pop();
+      for(var i=0,n=hk.length;;){ var l=2*i+1,r=l+1,m=i; if(l<n&&hk[l]<hk[m]) m=l; if(r<n&&hk[r]<hk[m]) m=r; if(m===i) break; sw(i,m); i=m; }
+      if(d0>dist[u]) continue;
+      if(u===dst) break;
+      for(var e=D.start[u]; e<D.start[u+1]; e++){ var v=D.to[e], nd=d0+D.len[e];
+        if(nd<dist[v]){ dist[v]=nd; prev[v]=u; hk.push(nd); hv.push(v);
+          for(var c=hk.length-1;c>0;){ var p=(c-1)>>1; if(hk[p]<=hk[c]) break; sw(c,p); c=p; } } }
+    }
+    return { dist:dist, prev:prev };
+  }
+  function huntPath(D, a, b){
+    if(a===b) return [a];
+    var r=huntDijkstra(D, a, b); if(r.prev[b]<0) return null;
+    var p=[]; for(var n=b; n!==-1; n=r.prev[n]) p.push(n); return p.reverse();
+  }
+
+  // ---- a route: a drop point and three stops, derived from a seed ----
+  function huntRoute(D, seed){
+    var rng=_mulberry32(seed||1), st=D.stops.slice();
+    for(var i=st.length-1;i>0;i--){ var jx=Math.floor(rng()*(i+1)), t=st[i]; st[i]=st[jx]; st[jx]=t; }
+    function pickNear(dist, lo, hi, not){ var c=st.filter(function(s){ var d=dist[s.node]; return d>=lo && d<=hi && not.indexOf(s)<0; });
+      return c.length ? c[Math.floor(rng()*c.length)] : null; }
+    for(var a=0;a<st.length;a++){
+      var A=st[a], dA=huntDijkstra(D, A.node, -1).dist;
+      var B=pickNear(dA, 700, 2100, [A]); if(!B) continue;
+      var dB=huntDijkstra(D, B.node, -1).dist;
+      var C=pickNear(dB, 700, 2100, [A,B]); if(!C || dA[C.node]<450) continue;
+      var drop=-1;
+      for(var t2=0;t2<6000;t2++){ var n=Math.floor(rng()*D.N); if(D.comp[n]!==D.main) continue;
+        if(dA[n]>=650 && dA[n]<=1300 && dB[n]>500){ drop=n; break; } }
+      if(drop<0) continue;
+      var metres=dA[drop]+dA[B.node]+dB[C.node];
+      return { drop:drop, stops:[A,B,C], metres:metres, par:metres/HUNT_SPEED };
+    }
+    return null;
+  }
+
+  // ---- start ----
+  function startHunt(cid, daily){
+    var city=HUNT[cid]; if(!city) return;
+    S.screen='hunt';
+    H={ cid:cid, daily:!!daily, phase:'load', err:null };
+    render();
+    huntLoad(cid, function(err, D){
+      if(!H || H.cid!==cid) return;
+      if(err){ H.phase='err'; H.err=err; render(); return; }
+      var seed = daily ? cityHash('hunt:'+cid+':'+dailyKey()) : ((Math.random()*4294967295)>>>0);
+      var R=huntRoute(D, seed);
+      if(!R){ H.phase='err'; H.err=new Error('no route'); render(); return; }
+      var rng=_mulberry32(seed^0x5bd1e995), locals=[], cro=[], k, n;
+      for(k=0;k<60 && locals.length<48;k++){ n=Math.floor(rng()*D.N); if(D.comp[n]!==D.main) continue;
+        if(Math.hypot(D.X[n]-D.X[R.drop], D.Y[n]-D.Y[R.drop])<120) continue;
+        locals.push({ x:D.X[n], y:D.Y[n], at:n, nx:n, e:HUNT_LOCALS[Math.floor(rng()*HUNT_LOCALS.length)], leg:-1, ph:rng()*6 }); }
+      for(k=0;k<400 && cro.length<36;k++){ n=Math.floor(rng()*D.N); if(D.comp[n]!==D.main) continue; cro.push({ x:D.X[n], y:D.Y[n], got:false, ph:rng()*6 }); }
+      H={ cid:cid, daily:!!daily, seed:seed, D:D, R:R, phase:'intro', leg:0,
+          p:{ x:D.X[R.drop], y:D.Y[R.drop], at:R.drop, path:[], i:0, heading:0, way:D.way[D.start[R.drop]] },
+          cam:{ x:D.X[R.drop], y:D.Y[R.drop], z:1, ox:0, oy:0 },
+          locals:locals, cro:cro, got:0, pings:0, pingUntil:0, seen:{}, wrong:{}, trail:[D.X[R.drop], D.Y[R.drop]],
+          t0:0, legT0:0, keys:{}, fog:null, mini:null, sayUntil:0, tap:null };
+      render();
+    });
+  }
+
+  function huntCard(){
+    var rec=huntStore(), today=rec.daily[dailyKey()];
+    return '<div class="card huntc">'
+      + '<div class="hck"><span>🗺️ Street Hunt</span><span class="new">New</span></div>'
+      + '<h3>Get lost in Paris 🇫🇷</h3>'
+      + '<p class="muted">You get dropped on a real street. Follow three clues across the city to the Checkpoint mat. Locals point the way. Croissants take a second off.</p>'
+      + (today ? '<div class="hdone">Today: <b>'+huntFmt(today.t)+'</b> '+(today.medal||'')+'</div>' : '')
+      + '<div class="btnrow"><button class="btn globe" id="hday">'+(today?'Replay today\'s hunt':'Today\'s hunt')+'</button><button class="btn ghost" id="hrand">Random drop</button></div>'
+      + '</div>';
+  }
+  function wireHuntCard(){
+    var a=$('hday'); if(a) a.onclick=function(){ startHunt('paris', true); };
+    var b=$('hrand'); if(b) b.onclick=function(){ startHunt('paris', false); };
+  }
+  function huntStore(){ try{ var o=JSON.parse(localStorage.getItem('rtg_hunt')||'{}')||{}; o.daily=o.daily||{}; o.runs=o.runs||0; o.best=o.best||null; return o; }catch(e){ return { daily:{}, runs:0, best:null }; } }
+  function huntSave(o){ try{ localStorage.setItem('rtg_hunt', JSON.stringify(o)); }catch(e){} }
+
+  // ---- the screen ----
+  function renderHunt(){
+    if(!H){ S.screen='home'; return render(); }
+    var city=HUNT[H.cid];
+    if(H.phase==='load' || H.phase==='err'){
+      app.innerHTML = topbar() + '<div class="card center">'
+        + (H.phase==='load'
+          ? '<div class="stagetype">🗺️ Street Hunt · '+esc(city.name)+'</div><p class="lede">Loading the streets of '+esc(city.name)+'…</p><div class="hload"><i></i></div>'
+          : '<div class="stagetype">🗺️ Street Hunt</div><p class="lede">'+esc(city.name)+' didn\'t load. Check your connection and try again.</p><div class="btnrow"><button class="btn ghost" id="hback">‹ Back</button><button class="btn globe" id="hretry">Try again</button></div>')
+        + '</div>' + foot();
+      var hb=$('hback'); if(hb) hb.onclick=function(){ H=null; S.screen='home'; render(); };
+      var hr=$('hretry'); if(hr) hr.onclick=function(){ startHunt(H.cid, H.daily); };
+      renderAcct(); return;
+    }
+    if(H.phase==='done') return renderHuntEnd();
+    app.innerHTML = topbar()
+      + '<div class="card hunt">'
+        + '<div class="stagetype">🗺️ Street Hunt · '+esc(city.name)+' '+city.flag+(H.daily?' · Today':'')+'</div>'
+        + '<div class="hmap" id="hmap">'
+          + '<canvas id="hcv"></canvas>'
+          + '<div class="htop"><span class="hpill htime" id="htime">0:00.0</span><span class="hpill" id="hleg">📍 1/3</span><span class="hpill" id="hcro">🥐 0</span></div>'
+          + '<canvas id="hmini" class="hmini"></canvas>'
+          + '<div class="hzoom"><button id="hzin" aria-label="Zoom in">+</button><button id="hzout" aria-label="Zoom out">−</button></div>'
+          + '<div class="hstreet" id="hstreet"></div>'
+          + '<div class="hsay" id="hsay"></div>'
+          + '<div class="hbanner" id="hbanner"></div>'
+          + (H.phase==='intro' ? huntIntroHtml() : '')
+        + '</div>'
+        + '<div class="hclue" id="hclue"></div>'
+        + '<div class="btnrow"><button class="btn ghost sm" id="hping">📡 Ping the stop (+10s)</button><button class="btn ghost sm" id="hquit">Quit</button></div>'
+        + '<div class="hosm">Tap the map to run there. Drag to look around. Arrow keys work too.<br>Map data © OpenStreetMap contributors</div>'
+      + '</div>' + foot();
+    renderAcct();
+    huntClue();
+    huntMount();
+  }
+  function huntIntroHtml(){
+    var s=H.R.stops[0].s;
+    return '<div class="hintro" id="hintro"><div class="hi-in">'
+      + '<div class="hi-k">You\'ve been dropped somewhere in '+esc(HUNT[H.cid].name)+'</div>'
+      + '<div class="hi-t">Clue 1 of 3</div>'
+      + '<div class="hi-q">'+esc(s.clue)+'</div>'
+      + '<ul class="hi-how"><li>Tap the map to run there</li><li>Walk past a local and they\'ll point the way</li><li>Every 🥐 takes 1s off your time</li><li>The last stop has the Checkpoint mat</li></ul>'
+      + '<button class="btn globe" id="hgo">Go 🏃</button></div></div>';
+  }
+  function huntClue(){
+    var el=$('hclue'); if(!el||!H||!H.R) return;
+    var s=H.R.stops[H.leg].s, last=H.leg===2;
+    var hintOn=H.t0 && (performance.now()-H.legT0)>30000;
+    el.innerHTML='<div class="hk">Clue '+(H.leg+1)+' of 3'+(last?' · <b>the Checkpoint mat is here</b>':'')+'</div>'
+      + '<div class="hq">'+esc(s.clue)+'</div>'
+      + '<div class="hh'+(hintOn?' on':'')+'" id="hhint">'+(hintOn?('💡 '+esc(s.hint)):'💡 A hint shows up after 30 seconds')+'</div>';
+    var lg=$('hleg'); if(lg) lg.textContent='📍 '+(H.leg+1)+'/3';
+  }
+
+  function huntMount(){
+    var cv=$('hcv'), box=$('hmap'); if(!cv||!box) return;
+    var ctx=cv.getContext('2d'), mini=$('hmini'), mctx=mini.getContext('2d');
+    var D=H.D, dpr=Math.min(2, window.devicePixelRatio||1), W=0, Hh=0;
+    function size(){ var r=box.getBoundingClientRect(); W=r.width; Hh=r.height; cv.width=Math.round(W*dpr); cv.height=Math.round(Hh*dpr); cv.style.width=W+'px'; cv.style.height=Hh+'px'; }
+    size();
+    var ro=null; try{ ro=new ResizeObserver(size); ro.observe(box); }catch(e){ window.addEventListener('resize', size); }
+    huntMiniInit(mini);
+
+    // input: tap to run, drag to look
+    var drag=null;
+    cv.addEventListener('pointerdown', function(e){ drag={ x:e.clientX, y:e.clientY, moved:false, id:e.pointerId }; try{ cv.setPointerCapture(e.pointerId); }catch(er){} });
+    cv.addEventListener('pointermove', function(e){ if(!drag) return; var dx=e.clientX-drag.x, dy=e.clientY-drag.y;
+      if(!drag.moved && Math.hypot(dx,dy)<7) return; drag.moved=true;
+      var sc=HUNT_ZOOM[H.cam.z]; H.cam.ox-=dx/sc; H.cam.oy-=dy/sc; drag.x=e.clientX; drag.y=e.clientY; H.lookT=performance.now(); });
+    cv.addEventListener('pointerup', function(e){ var d=drag; drag=null; if(!d||d.moved) return;
+      var r=cv.getBoundingClientRect(), sc=HUNT_ZOOM[H.cam.z];
+      var wx=H.cam.x+(e.clientX-r.left-W/2)/sc, wy=H.cam.y+(e.clientY-r.top-Hh/2)/sc;
+      huntGoTo(wx, wy); });
+    cv.addEventListener('wheel', function(e){ e.preventDefault(); huntZoom(e.deltaY<0?1:-1); }, { passive:false });
+    $('hzin').onclick=function(){ huntZoom(1); };
+    $('hzout').onclick=function(){ huntZoom(-1); };
+    $('hping').onclick=huntPing;
+    $('hquit').onclick=function(){ H=null; S.screen='home'; render(); };
+    var go=$('hgo'); if(go) go.onclick=function(){ var hi=$('hintro'); if(hi) hi.classList.add('out'); setTimeout(function(){ if(hi&&hi.parentNode) hi.parentNode.removeChild(hi); }, 260);
+      H.phase='play'; H.t0=performance.now(); H.legT0=H.t0; sfx('checkpoint'); huntClue(); };
+    function key(e, down){ if(S.screen!=='hunt'||!H) return; var k=e.key;
+      if(k==='ArrowUp'||k==='ArrowDown'||k==='ArrowLeft'||k==='ArrowRight'||k==='w'||k==='a'||k==='s'||k==='d'){ e.preventDefault(); H.keys[k]=down; }
+      else if(down && (k==='+'||k==='=')) huntZoom(1); else if(down && (k==='-'||k==='_')) huntZoom(-1);
+      else if(down && (k===' '||k==='Enter') && $('hgo')){ e.preventDefault(); $('hgo').click(); } }
+    var kd=function(e){ key(e,true); }, ku=function(e){ key(e,false); };
+    document.addEventListener('keydown', kd); document.addEventListener('keyup', ku);
+
+    var last=performance.now(), myH=H;
+    (function loop(){
+      if(H!==myH || !document.body.contains(cv) || S.screen!=='hunt' || H.phase==='done'){
+        document.removeEventListener('keydown', kd); document.removeEventListener('keyup', ku); if(ro) ro.disconnect(); return; }
+      var now=performance.now(), dt=Math.min(0.05,(now-last)/1000); last=now;
+      huntStep(dt, now);
+      if(H.phase==='done') return;
+      huntDraw(ctx, W, Hh, dpr, now);
+      huntMiniDraw(mctx, now);
+      requestAnimationFrame(loop);
+    })();
+  }
+  function huntZoom(d){ if(!H) return; H.cam.z=Math.max(0, Math.min(HUNT_ZOOM.length-1, H.cam.z+d)); }
+
+  // tap: run the shortest street path to the nearest street node
+  function huntGoTo(wx, wy){
+    if(!H || H.phase!=='play') return;
+    var D=H.D, dst=huntNearest(D, wx, wy, 400); if(dst<0) return;
+    var p=H.p, from=(p.path.length && p.i<p.path.length) ? p.path[p.i] : p.at;
+    var path=huntPath(D, from, dst); if(!path) return;
+    p.path=path; p.i=0; H.tap={ x:D.X[dst], y:D.Y[dst], t:performance.now() };
+    H.cam.ox*=0.5; H.cam.oy*=0.5;
+  }
+  function huntPing(){
+    if(!H || H.phase!=='play') return;
+    H.pings++; H.pingUntil=performance.now()+6000; sfx('tap');
+    huntSay('📡', 'Ping. +10s on your time.', 1600);
+  }
+  function huntSay(face, text, ms){
+    var el=$('hsay'); if(!el) return;
+    el.innerHTML='<span class="f">'+face+'</span><span>'+esc(text)+'</span>'; retrig(el,'on');
+    H.sayUntil=performance.now()+(ms||4200);
+  }
+  function huntDir(dx, dy){ var b=Math.atan2(dx, -dy)*180/Math.PI; if(b<0) b+=360;
+    return ['north','north-east','east','south-east','south','south-west','west','north-west'][Math.round(b/45)%8]; }
+
+  function huntStep(dt, now){
+    var D=H.D, p=H.p;
+    if(H.phase==='play'){
+      // keyboard: at a node, take the street that points closest to the keys
+      var kx=(H.keys.ArrowRight||H.keys.d?1:0)-(H.keys.ArrowLeft||H.keys.a?1:0), ky=(H.keys.ArrowDown||H.keys.s?1:0)-(H.keys.ArrowUp||H.keys.w?1:0);
+      if((kx||ky) && !(p.path.length && p.i<p.path.length)){
+        var best=-1, bs=0.35, L=Math.hypot(kx,ky);
+        for(var e=D.start[p.at]; e<D.start[p.at+1]; e++){ var v=D.to[e], vx=D.X[v]-D.X[p.at], vy=D.Y[v]-D.Y[p.at], vl=Math.hypot(vx,vy)||1;
+          var dot=(vx*kx+vy*ky)/(vl*L); if(dot>bs){ bs=dot; best=v; } }
+        if(best>=0){ p.path=[best]; p.i=0; H.cam.ox*=0.6; H.cam.oy*=0.6; }
+      }
+      // run along the path
+      var step=HUNT_SPEED*dt;
+      while(step>0 && p.path.length && p.i<p.path.length){
+        var n=p.path[p.i], tx=D.X[n], ty=D.Y[n], dx=tx-p.x, dy=ty-p.y, d=Math.hypot(dx,dy);
+        if(d<=step){ p.x=tx; p.y=ty; step-=d; for(var e2=D.start[p.at]; e2<D.start[p.at+1]; e2++) if(D.to[e2]===n){ p.way=D.way[e2]; break; }
+          p.at=n; p.i++; }
+        else { p.x+=dx/d*step; p.y+=dy/d*step; p.heading=Math.atan2(dy,dx); step=0; }
+      }
+      if(p.i>=p.path.length){ p.path=[]; p.i=0; }
+      var lt=H.trail; if(Math.hypot(lt[lt.length-2]-p.x, lt[lt.length-1]-p.y)>18){ lt.push(p.x,p.y); huntFogAt(p.x,p.y); }
+      // croissants
+      H.cro.forEach(function(c){ if(!c.got && Math.hypot(c.x-p.x,c.y-p.y)<16){ c.got=true; H.got++; sfx('correct'); var hc=$('hcro'); if(hc){ hc.textContent='🥐 '+H.got; retrig(hc,'bump'); } } });
+      // locals point the way, once each per clue
+      var tgt=H.R.stops[H.leg];
+      H.locals.forEach(function(l){ if(l.leg!==H.leg && Math.hypot(l.x-p.x,l.y-p.y)<30){ l.leg=H.leg;
+        var dx2=tgt.x-l.x, dy2=tgt.y-l.y, dd=Math.hypot(dx2,dy2), dir=huntDir(dx2,dy2);
+        var far=dd<150?'Almost there. Look around.':dd>=950?('About '+(Math.round(dd/500)*0.5)+' km.'):('About '+(Math.round(dd/100)*100)+' m.');
+        var lines=['Bonjour! Try '+dir+'. ', 'Ah, that one? Go '+dir+'. ', 'Head '+dir+'. '];
+        huntSay(l.e, dd<150?far:(lines[(l.ph*10|0)%3]+far)); } });
+      // stops
+      H.D.stops.forEach(function(s){ var d=Math.hypot(s.x-p.x, s.y-p.y);
+        if(d<420) H.seen[s.s.id]=1;
+        if(d<s.r){
+          if(s===tgt) huntArrive();
+          else if(!H.wrong[s.s.id] && H.R.stops.slice(0,H.leg).indexOf(s)<0){ H.wrong[s.s.id]=1; huntSay(s.s.e, 'That\'s '+s.s.n+'. Not the one you want.', 2600); }
+        } });
+      // clock
+      var tm=$('htime'); if(tm) tm.textContent=huntFmt(huntTime(now));
+      if((now-H.legT0)>30000){ var hh=$('hhint'); if(hh && !hh.classList.contains('on')) huntClue(); }
+    }
+    // locals wander
+    H.locals.forEach(function(l){ var tx=D.X[l.nx], ty=D.Y[l.nx], dx=tx-l.x, dy=ty-l.y, d=Math.hypot(dx,dy), s=6*dt;
+      if(d<=s){ l.x=tx; l.y=ty; l.at=l.nx; var a=D.start[l.at], b=D.start[l.at+1]; if(b>a) l.nx=D.to[a+Math.floor(Math.random()*(b-a))]; }
+      else { l.x+=dx/d*s; l.y+=dy/d*s; } });
+    // camera: follow, and let a drag drift back once you run
+    var c=H.cam; if(p.path.length && (!H.lookT || now-H.lookT>900)){ c.ox*=Math.pow(0.08,dt); c.oy*=Math.pow(0.08,dt); }
+    c.x+=(p.x+c.ox-c.x)*Math.min(1,dt*6); c.y+=(p.y+c.oy-c.y)*Math.min(1,dt*6);
+    var st=$('hstreet'); if(st){ var w=p.way>=0?H.D.j.ways[p.way]:null, nm=(w&&w[1]>=0)?H.D.j.names[w[1]]:'';
+      if(st._t!==nm){ st._t=nm; st.textContent=nm; st.classList.toggle('on', !!nm); } }
+    var say=$('hsay'); if(say && say.classList.contains('on') && now>H.sayUntil) say.classList.remove('on');
+  }
+  function huntTime(now){ return Math.max(0, (now-H.t0)/1000 + H.pings*10 - H.got*1); }
+
+  function huntArrive(){
+    var s=H.R.stops[H.leg];
+    H.p.path=[]; H.p.i=0;
+    sfx('correct'); vibe(20);
+    var b=$('hbanner');
+    if(H.leg===2){ huntFinish(); return; }
+    if(b){ b.innerHTML='<span class="e">'+s.s.e+'</span><b>'+esc(s.s.n)+'</b><span>Stop '+(H.leg+1)+' found. Next clue.</span>'; retrig(b,'on'); setTimeout(function(){ if(b) b.classList.remove('on'); }, 2200); }
+    try{ var r=$('hmap').getBoundingClientRect(); FX.burst(r.left+r.width/2, r.top+r.height/2, 50, Math.PI*1.4, 6); }catch(e){}
+    H.leg++; H.legT0=performance.now(); H.pingUntil=0; huntClue();
+    var cl=$('hclue'); if(cl) retrig(cl,'flip');
+  }
+  function huntFinish(){
+    var now=performance.now(), t=huntTime(now), par=H.R.par;
+    var medal = t<=par*1.35+15 ? '🥇' : t<=par*1.9+30 ? '🥈' : t<=par*2.8+50 ? '🥉' : '';
+    var rec=huntStore(); rec.runs++;
+    var isNewBest=!rec.best || t<rec.best; if(isNewBest) rec.best=t;
+    var key=dailyKey(), first=H.daily && !rec.daily[key];
+    if(first) rec.daily[key]={ t:t, medal:medal, got:H.got, pings:H.pings };
+    huntSave(rec);
+    var miles=40+H.got*5+(medal==='🥇'?60:medal==='🥈'?30:medal==='🥉'?15:0);
+    try{ var st=statsDefault(); st.miles+=miles; st.milesTotal+=miles; saveStats(st); }catch(e){}
+    H.res={ t:t, par:par, medal:medal, raw:(now-H.t0)/1000, miles:miles, newBest:isNewBest, first:first };
+    H.phase='done'; sfx('win');
+    setTimeout(function(){ if(S.screen==='hunt' && H && H.phase==='done'){ render(); try{ FX.celebrate(); }catch(e){} } }, 650);
+    var b=$('hbanner'); if(b){ b.innerHTML='<span class="e">🚩</span><b>Checkpoint!</b><span>'+esc(H.R.stops[2].s.n)+'</span>'; retrig(b,'on'); }
+  }
+  function renderHuntEnd(){
+    var r=H.res, city=HUNT[H.cid];
+    var stops=H.R.stops.map(function(s,i){ return '<span>'+s.s.e+' '+esc(s.s.n)+(i===2?' 🚩':'')+'</span>'; }).join('<i>›</i>');
+    app.innerHTML = topbar() + '<div class="card center huntend">'
+      + '<div class="stagetype">🗺️ Street Hunt · '+esc(city.name)+' '+city.flag+'</div>'
+      + '<div class="he-medal">'+(r.medal||'🏁')+'</div>'
+      + '<div class="he-time">'+huntFmt(r.t)+'</div>'
+      + '<div class="he-sub">'+(r.medal==='🥇'?'Gold. You know this city.':r.medal==='🥈'?'Silver. Solid run.':r.medal==='🥉'?'Bronze. You got there.':'You made it to the mat.')+(r.newBest?' <b>New best.</b>':'')+'</div>'
+      + '<div class="he-route">'+stops+'</div>'
+      + '<div class="breakdown"><span>Running <b>'+huntFmt(r.raw)+'</b></span><span>🥐 '+H.got+' <b>−'+H.got+'s</b></span><span>📡 '+H.pings+' <b>+'+(H.pings*10)+'s</b></span></div>'
+      + '<div class="muted" style="font-size:12.5px;margin-top:10px">Gold is under '+huntFmt(r.par*1.35+15)+'. +'+r.miles+' miles.</div>'
+      + '<div class="btnrow"><button class="btn globe" id="hshare">📋 Share</button><button class="btn ghost" id="hagain">New drop</button></div>'
+      + '<button class="btn ghost sm" id="hhome" style="width:auto;margin-top:12px">‹ Home</button>'
+      + '</div>' + foot();
+    $('hshare').onclick=function(){ shareResult('RunTheGlobe Street Hunt · '+city.name+' '+city.flag+(H.daily?(' · '+fmtDay(dailyKey())):'')+'\n⏱ '+huntFmt(r.t)+' '+(r.medal||'🏁')+'\n'+H.R.stops.map(function(s){ return s.s.e; }).join(' › ')+' 🚩\n🥐 '+H.got+' · 📡 '+H.pings+'\nrunthe.gg/globe'); };
+    $('hagain').onclick=function(){ startHunt(H.cid, false); };
+    $('hhome').onclick=function(){ H=null; S.screen='home'; render(); };
+    renderAcct();
+  }
+
+  // ---- fog and the minimap ----
+  function huntMiniInit(mini){
+    var D=H.D, b=D.box, bw=b[2]-b[0], bh=b[3]-b[1], MW=124, MH=Math.round(MW*bh/bw), dpr=Math.min(2,window.devicePixelRatio||1);
+    mini.width=MW*dpr; mini.height=MH*dpr; mini.style.width=MW+'px'; mini.style.height=MH+'px';
+    var s=MW/bw;
+    if(!D.miniBase){ var base=document.createElement('canvas'); base.width=MW*dpr; base.height=MH*dpr; var g=base.getContext('2d');
+      g.setTransform(s*dpr,0,0,s*dpr,-b[0]*s*dpr,-b[1]*s*dpr);
+      g.fillStyle='#1d1840'; g.fillRect(b[0],b[1],bw,bh);
+      if(D.waterOut){ g.fillStyle='#2a6aa3'; g.fill(D.waterOut); } if(D.waterIn){ g.fillStyle='#1d1840'; g.fill(D.waterIn); }
+      if(D.parkOut){ g.fillStyle='#2a5a45'; g.fill(D.parkOut); }
+      g.strokeStyle='#b1a6ee'; g.lineWidth=1.8/s; g.beginPath();
+      D.j.ways.forEach(function(w){ if(w[0]>2) return; g.moveTo(D.X[w[3]],D.Y[w[3]]); for(var k=4;k<w.length;k++) g.lineTo(D.X[w[k]],D.Y[w[k]]); }); g.stroke();
+      D.miniBase=base; }
+    var fog=document.createElement('canvas'); fog.width=MW*dpr; fog.height=MH*dpr; var f=fog.getContext('2d');
+    f.fillStyle='rgba(10,8,24,.8)'; f.fillRect(0,0,fog.width,fog.height);
+    H.mini={ MW:MW, MH:MH, s:s, dpr:dpr, fog:fog, f:f };
+    huntFogAt(H.p.x, H.p.y);
+  }
+  function huntFogAt(x, y){
+    var m=H.mini; if(!m) return; var b=H.D.box, f=m.f;
+    f.save(); f.globalCompositeOperation='destination-out';
+    var cx=(x-b[0])*m.s*m.dpr, cy=(y-b[1])*m.s*m.dpr, r=200*m.s*m.dpr;
+    var gr=f.createRadialGradient(cx,cy,r*0.35,cx,cy,r); gr.addColorStop(0,'rgba(0,0,0,1)'); gr.addColorStop(1,'rgba(0,0,0,0)');
+    f.fillStyle=gr; f.beginPath(); f.arc(cx,cy,r,0,6.2832); f.fill(); f.restore();
+  }
+  function huntMiniDraw(g, now){
+    var m=H.mini, D=H.D, b=D.box; if(!m) return;
+    g.setTransform(1,0,0,1,0,0); g.clearRect(0,0,m.MW*m.dpr,m.MH*m.dpr);
+    g.drawImage(D.miniBase,0,0); g.drawImage(m.fog,0,0);
+    g.setTransform(m.s*m.dpr,0,0,m.s*m.dpr,-b[0]*m.s*m.dpr,-b[1]*m.s*m.dpr);
+    D.stops.forEach(function(s){ if(!H.seen[s.s.id]) return; g.fillStyle='#F6D488'; g.beginPath(); g.arc(s.x,s.y,4/m.s,0,6.2832); g.fill(); });
+    var pr=(3.2+Math.sin(now/180))/m.s;
+    g.fillStyle='#ffffff'; g.beginPath(); g.arc(H.p.x,H.p.y,pr+1.4/m.s,0,6.2832); g.fill();
+    g.fillStyle='#E24632'; g.beginPath(); g.arc(H.p.x,H.p.y,pr,0,6.2832); g.fill();
+  }
+
+  // street names along the street, the biggest roads first, never on top of each other
+  function huntLabels(ctx, D, vis, sc, c, W, Hh, dpr){
+    var z=HUNT_ZOOM[c.z], maxCls=c.z>=1?3:2, j=D.j, placed=[], done={};
+    ctx.setTransform(dpr,0,0,dpr,0,0); ctx.font='700 11px system-ui,sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.lineJoin='round';
+    var cand=vis.filter(function(wi){ var w=j.ways[wi]; return w[1]>=0 && w[0]<=maxCls && !(w[2]&2); })
+      .sort(function(a,b){ return (j.ways[a][0]-j.ways[b][0]) || (D.lsegL[b]-D.lsegL[a]); });
+    for(var n=0;n<cand.length && placed.length<18;n++){
+      var wi=cand[n], w=j.ways[wi], nm=j.names[w[1]]; if(done[nm]) continue;
+      // the longest piece of this street whose middle is on screen
+      var tw=D.tw[nm]||(D.tw[nm]=ctx.measureText(nm).width), ax=0, ay=0, bx=0, by=0, L=0;
+      if(D.lsegL[wi]*z<tw+18) continue;
+      for(var k=4;k<w.length;k++){ var a=w[k-1], b=w[k];
+        var x1=(D.X[a]-c.x)*z+W/2, y1=(D.Y[a]-c.y)*z+Hh/2, x2=(D.X[b]-c.x)*z+W/2, y2=(D.Y[b]-c.y)*z+Hh/2;
+        var mx0=(x1+x2)/2, my0=(y1+y2)/2; if(mx0<30||mx0>W-30||my0<44||my0>Hh-34) continue;
+        var l0=Math.hypot(x2-x1,y2-y1); if(l0>L){ L=l0; ax=x1; ay=y1; bx=x2; by=y2; } }
+      if(L<tw+18) continue;
+      var mx=(ax+bx)/2, my=(ay+by)/2;
+      var clash=false; for(var q=0;q<placed.length;q++) if(Math.abs(placed[q][0]-mx)<tw/2+placed[q][2]/2+6 && Math.abs(placed[q][1]-my)<18){ clash=true; break; }
+      if(clash) continue;
+      var ang=Math.atan2(by-ay,bx-ax); if(ang>Math.PI/2) ang-=Math.PI; if(ang<-Math.PI/2) ang+=Math.PI;
+      ctx.save(); ctx.translate(mx,my); ctx.rotate(ang);
+      ctx.strokeStyle='rgba(13,10,34,.95)'; ctx.lineWidth=3.5; ctx.strokeText(nm,0,0);
+      ctx.fillStyle=w[0]===0?'#fff1cc':'#e6e1ff'; ctx.fillText(nm,0,0); ctx.restore();
+      placed.push([mx,my,tw]); done[nm]=1;
+    }
+  }
+
+  // ---- the map ----
+  var HUNT_ST = [ { w:17, c:'#e2b85e' }, { w:13, c:'#a99cf0' }, { w:10, c:'#7b70c4' }, { w:6.5, c:'#4d4488' }, { w:6, c:'#6a6796' } ];
+  function huntDraw(ctx, W, Hh, dpr, now){
+    var D=H.D, c=H.cam, sc=HUNT_ZOOM[c.z]*dpr;
+    ctx.setTransform(1,0,0,1,0,0);
+    ctx.fillStyle='#141032'; ctx.fillRect(0,0,W*dpr,Hh*dpr);
+    ctx.setTransform(sc,0,0,sc, W*dpr/2-c.x*sc, Hh*dpr/2-c.y*sc);
+    var hw=W/2/HUNT_ZOOM[c.z]+40, hh=Hh/2/HUNT_ZOOM[c.z]+40, x0=c.x-hw, x1=c.x+hw, y0=c.y-hh, y1=c.y+hh;
+    var b=D.box; ctx.fillStyle='#1f1a45'; ctx.fillRect(b[0],b[1],b[2]-b[0],b[3]-b[1]);
+    if(D.parkOut){ ctx.fillStyle='#1f4a3a'; ctx.fill(D.parkOut); }
+    if(D.parkIn){ ctx.fillStyle='#1f1a45'; ctx.fill(D.parkIn); }
+    if(D.waterOut){ ctx.fillStyle='#1d5486'; ctx.fill(D.waterOut); ctx.strokeStyle='#2f6ea6'; ctx.lineWidth=3; ctx.stroke(D.waterOut); }
+    if(D.waterIn){ ctx.fillStyle='#1f1a45'; ctx.fill(D.waterIn); }
+    if(D.notable){ ctx.fillStyle='#342b66'; ctx.fill(D.notable); ctx.strokeStyle='#4d428a'; ctx.lineWidth=1.5; ctx.stroke(D.notable); }
+    // streets in view
+    var vis=[], fr=++D.frame, paths=[new Path2D(),new Path2D(),new Path2D(),new Path2D(),new Path2D()], bridges=new Path2D();
+    var WC=D.WC, j=D.j;
+    for(var gx=Math.floor(x0/WC); gx<=Math.floor(x1/WC); gx++) for(var gy=Math.floor(y0/WC); gy<=Math.floor(y1/WC); gy++){
+      var arr=D.wgrid.get(gx+','+gy); if(!arr) continue;
+      for(var i=0;i<arr.length;i++){ var wi=arr[i]; if(D.stamp[wi]===fr) continue; D.stamp[wi]=fr; vis.push(wi);
+        var w=j.ways[wi], p=paths[w[0]]; p.moveTo(D.X[w[3]],D.Y[w[3]]); for(var k=4;k<w.length;k++) p.lineTo(D.X[w[k]],D.Y[w[k]]);
+        if(w[2]&1){ bridges.moveTo(D.X[w[3]],D.Y[w[3]]); for(k=4;k<w.length;k++) bridges.lineTo(D.X[w[k]],D.Y[w[k]]); } }
+    }
+    ctx.lineCap='round'; ctx.lineJoin='round';
+    ctx.strokeStyle='#0d0a22'; ctx.lineWidth=HUNT_ST[0].w+9; ctx.stroke(bridges);
+    for(var cl=4;cl>=0;cl--){ ctx.strokeStyle='#0f0c28'; ctx.lineWidth=HUNT_ST[cl].w+4; ctx.stroke(paths[cl]); }
+    for(cl=4;cl>=0;cl--){ ctx.strokeStyle=HUNT_ST[cl].c; ctx.lineWidth=HUNT_ST[cl].w; ctx.stroke(paths[cl]); }
+    huntLabels(ctx, D, vis, sc, c, W, Hh, dpr);
+    ctx.setTransform(sc,0,0,sc, W*dpr/2-c.x*sc, Hh*dpr/2-c.y*sc);
+    // your trail
+    var tr=H.trail; if(tr.length>3){ ctx.beginPath(); ctx.moveTo(tr[0],tr[1]); for(var t=2;t<tr.length;t+=2) ctx.lineTo(tr[t],tr[t+1]);
+      ctx.strokeStyle='rgba(246,212,136,.35)'; ctx.lineWidth=4; ctx.setLineDash([10,12]); ctx.stroke(); ctx.setLineDash([]); }
+    // the route you tapped
+    var p=H.p; if(p.path.length && p.i<p.path.length){ ctx.beginPath(); ctx.moveTo(p.x,p.y); for(var q=p.i;q<p.path.length;q++) ctx.lineTo(D.X[p.path[q]],D.Y[p.path[q]]);
+      ctx.strokeStyle='rgba(255,255,255,.75)'; ctx.lineWidth=3.5/HUNT_ZOOM[c.z]; ctx.setLineDash([6/HUNT_ZOOM[c.z],7/HUNT_ZOOM[c.z]]); ctx.stroke(); ctx.setLineDash([]); }
+
+    // screen space from here: emoji and markers stay the same size at any zoom
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    var z=HUNT_ZOOM[c.z];
+    function SX(x){ return (x-c.x)*z+W/2; } function SY(y){ return (y-c.y)*z+Hh/2; }
+    function inView(x,y,m){ var sx=SX(x), sy=SY(y); return sx>-m && sx<W+m && sy>-m && sy<Hh+m; }
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    var EF='"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif';
+    if(H.tap && now-H.tap.t<700){ var tk=(now-H.tap.t)/700; ctx.strokeStyle='rgba(255,255,255,'+(1-tk)+')'; ctx.lineWidth=2.5; ctx.beginPath(); ctx.arc(SX(H.tap.x),SY(H.tap.y),6+tk*18,0,6.2832); ctx.stroke(); }
+    H.cro.forEach(function(k2){ if(k2.got||!inView(k2.x,k2.y,20)) return; ctx.font='17px '+EF; ctx.fillText('🥐', SX(k2.x), SY(k2.y)-3+Math.sin(now/300+k2.ph)*2.5); });
+    H.locals.forEach(function(l){ if(!inView(l.x,l.y,20)) return; var asked=l.leg===H.leg;
+      ctx.globalAlpha=asked?0.55:1; ctx.font='20px '+EF; ctx.fillText(l.e, SX(l.x), SY(l.y)-6+Math.abs(Math.sin(now/260+l.ph))*-2); ctx.globalAlpha=1;
+      if(!asked){ ctx.fillStyle='#fff'; ctx.font='bold 10px system-ui,sans-serif'; ctx.fillText('?', SX(l.x)+11, SY(l.y)-17); } });
+    // landmarks: you only see one once you're close
+    var tgt=H.R.stops[H.leg];
+    D.stops.forEach(function(s){ var d=Math.hypot(s.x-p.x,s.y-p.y); if(d>420 || !inView(s.x,s.y,60)) return;
+      var sx=SX(s.x), sy=SY(s.y), done=H.R.stops.slice(0,H.leg).indexOf(s)>=0;
+      ctx.fillStyle=done?'rgba(63,206,134,.9)':'rgba(20,16,50,.88)'; ctx.strokeStyle=done?'#3fce86':'#ECB550'; ctx.lineWidth=2.5;
+      ctx.beginPath(); ctx.arc(sx,sy,19,0,6.2832); ctx.fill(); ctx.stroke();
+      ctx.font='21px '+EF; ctx.fillText(s.s.e, sx, sy+1);
+      if(d<260 || done){ ctx.font='800 12px system-ui,sans-serif'; var tw=ctx.measureText(s.s.n).width+14;
+        ctx.fillStyle='rgba(12,9,32,.85)'; ctx.fillRect(sx-tw/2, sy+24, tw, 19); ctx.fillStyle='#F6D488'; ctx.fillText(s.s.n, sx, sy+34); }
+      if(s===tgt && H.leg===2 && d<260){ ctx.font='24px '+EF; ctx.fillText('🚩', sx+24, sy-18+Math.sin(now/200)*2); } });
+    // you
+    var px=SX(p.x), py=SY(p.y), pulse=(now/900)%1;
+    ctx.strokeStyle='rgba(226,70,50,'+(0.6*(1-pulse))+')'; ctx.lineWidth=3; ctx.beginPath(); ctx.arc(px,py,9+pulse*18,0,6.2832); ctx.stroke();
+    ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(px,py,10,0,6.2832); ctx.fill();
+    ctx.fillStyle='#E24632'; ctx.beginPath(); ctx.arc(px,py,7.5,0,6.2832); ctx.fill();
+    if(p.path.length){ ctx.save(); ctx.translate(px,py); ctx.rotate(p.heading); ctx.fillStyle='#fff'; ctx.beginPath(); ctx.moveTo(15,0); ctx.lineTo(9,-5); ctx.lineTo(9,5); ctx.closePath(); ctx.fill(); ctx.restore(); }
+    // ping: an arrow on the edge of the map toward the stop
+    if(H.pingUntil>now){ var ang=Math.atan2(tgt.y-p.y, tgt.x-p.x), dd=Math.hypot(tgt.x-p.x,tgt.y-p.y);
+      var rx=Math.min(W,Hh)/2-34, ax=W/2+Math.cos(ang)*rx, ay=Hh/2+Math.sin(ang)*rx;
+      ctx.save(); ctx.translate(ax,ay); ctx.rotate(ang); ctx.fillStyle='#ECB550'; ctx.strokeStyle='#2a1e05'; ctx.lineWidth=2;
+      ctx.beginPath(); ctx.moveTo(16,0); ctx.lineTo(-10,-11); ctx.lineTo(-5,0); ctx.lineTo(-10,11); ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.restore();
+      ctx.font='800 12px system-ui,sans-serif'; ctx.fillStyle='#F6D488'; ctx.fillText(Math.round(dd/10)*10+' m', ax-Math.cos(ang)*26, ay-Math.sin(ang)*26); }
+  }
+
   /* --------------------------------------------------------------- bootstrap */
   S.screen='home';
+  var HUNT_Q=(function(){ try{ return new URLSearchParams(location.search).get('hunt'); }catch(e){ return null; } })();
   if(!COUNTRIES.length){
     app.innerHTML = '<div class="wrap"><div class="card center"><h2>Something didn\'t load</h2>'
       + '<p class="lede">The game didn\'t load right. Refresh to try again.</p></div></div>';
   } else {
-    render();
+    if(HUNT_Q && HUNT[HUNT_Q]) startHunt(HUNT_Q, false); else render();
     initAccount();
     // mute toggle (delegated so it works on every screen without a re-render)
     app.addEventListener('click', function(e){
