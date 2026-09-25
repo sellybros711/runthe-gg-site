@@ -242,9 +242,14 @@ shelf('Roster craft', [
      rosters spent a minimum of $147.8M and a median of $168.9M: the cap binds, so
      winning cheap is a narrow thing rather than a big one. $160M leaves $10M of
      the cap unspent, which is a league-minimum slot, and it is about a fifth of
-     titles. A badge is not allowed to name a saving the game cannot make. */
-  ['bargain_title', 'Moneyball', 'Win the title spending under $160M.', 'gold',
-    (c) => c.rows.some((r) => r.titleWon && r.spend != null && r.spend < 160)],
+     titles. A badge is not allowed to name a saving the game cannot make.
+
+     THE CAP WENT TO $190M AND THIS FOLLOWED IT TO $180M, the same $10M under.
+     Loosening strips nobody: every roster that won under $160M is also under
+     $180M. Left at $160M it would be $30M under a cap that binds, which is the
+     $140M mistake above arriving from the other side. */
+  ['bargain_title', 'Moneyball', 'Win the title spending under $180M.', 'gold',
+    (c) => c.rows.some((r) => r.titleWon && r.spend != null && r.spend < 180)],
   ['no_respin_title', 'No do-overs', 'Win the title using no re-spins.', 'gold',
     (c) => c.rows.some((r) => r.titleWon && (r.respins || 0) === 0)],
   /* THREE IS THE CEILING, not a number picked to be hard: CONSTANTS.MAX_RESPINS
@@ -331,9 +336,9 @@ shelf('The roster', [
     (c) => c.best.rosterWar >= 55],
   ['floor_2', 'No passengers', 'Field twelve players who were all worth 2 WAR.', 'gold',
     (c) => c.best.floorWar >= 2],
-  /* One badge a link type. There are six and the most any roster carried over
-     1,750 played seasons is four, so there is deliberately no "all six" rung: the
-     double-play combo and the battery both need a same-season pairing at named
+  /* One badge a link type. There are seven and no roster carries them all, so
+     there is deliberately no "all seven" rung: the double-play combo and the
+     battery both need two men who really played together, fielded at the named
      positions, and the family link needs two men out of a curated list. */
   ['link_era', 'Same era', 'Build a roster linked by the years they played.', 'bronze',
     (c) => c.linkTypes.has('era')],
@@ -341,6 +346,8 @@ shelf('The roster', [
     (c) => c.linkTypes.has('franchise')],
   ['link_reunion', 'Reunion', 'Field two team-mates from the same season.', 'silver',
     (c) => c.linkTypes.has('reunion')],
+  ['link_teammates', 'Played together', 'Field two men who were real team-mates.', 'silver',
+    (c) => c.linkTypes.has('teammates')],
   ['link_dp', 'Turn two', 'Field a real double-play combination.', 'gold',
     (c) => c.linkTypes.has('dp_combo')],
   ['link_battery', 'Batterymates', 'Field a real catcher and pitcher pairing.', 'gold',

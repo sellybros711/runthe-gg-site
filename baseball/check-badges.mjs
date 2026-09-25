@@ -258,35 +258,13 @@ for (const [opts, bot, respins] of plan) {
 const GRIND = {
   daily_100: 'daily_50',
   daily_streak_30: 'daily_streak_14',
-  title_10: 'title_5',
 };
 const SKILL = {
-  /* THE TOP OF THE WINNING LADDER. Measured over 1,750 played seasons, matching
-     the all-time record happens on 0.2% of them and beating it on 0.1%, which a
-     sweep this size meets once if it is lucky. A person drafting deliberately
-     does better than any bot here. */
-  tie_record: 'win_110', goat: 'tie_record',
-  /* THE NUMBER ONE TEAM OF ALL TIME, and it used to light for the wrong reason.
-     `bestRank` is nationalRank() over squadRating, so rank 1 means beating the
-     best of 2,594 real team-seasons, which rates 95.4. Measured over 250 seeds a
-     greedy draft tops out at 87.7 (rank 8) and 150 seeds of three other bots
-     never passed 86.4, so no bot here reaches it.
-
-     It LIT before `rebuildSimState` was corrected, and that is the whole reason
-     it is only being excused now: the old yardstick swapped scales on any run
-     that cut a player or took a trade and reached 100.0, which clears 95.4
-     comfortably. A badge lit by a defect was never really reachable.
-
-     `rank_top3` wants 89.5 and DOES light, so the excuse rests on the same
-     mechanic being reached one rung down rather than on nothing. */
   /* A TITLE IS ABOUT ONE RUN IN SIXTY even for the best bot, so anything that
      asks for a title AND a second condition is a coincidence the sweep cannot
      schedule. Each is excused by the half of itself that IS reached, so no claim
      here rests on the excuse alone. */
-  wildcard_title: 'seed_wildcard',
-  murderers_row: 'arch_murderers_row',
   respin_title: 'respin_3',
-  threepeat: 'btb_title', fourpeat: 'threepeat',
   /* `daily_title` and `mode_classic_title` came off with them, for the same
      reason and on the same run. */
   mode_survivor_title: 'mode_survivor_oct',
@@ -300,7 +278,7 @@ const SKILL = {
      Franchise finding one line up arriving at the fifth mode. Every other named
      mode carries this line; this one did not, and it lit in quick only for as
      long as the sweep happened to win one there. The full sweep lights it. */
-  /* A title is roughly one run in twenty and a title spending under $160M is
+  /* A title is roughly one run in twenty and a title spending under $180M is
      about a fifth of those, so the quick sweep reaches the first and not the
      second. Anchored on the half it does reach, which is winning one at all. */
   /* SALARY CAP SURVIVOR'S THREE ENTRIES CAME OFF and the reason is worth keeping,
@@ -315,28 +293,32 @@ const SKILL = {
      drafter to want them. Five rosters in 1,750 had one. The anchor is the other
      link that has to be gone looking for rather than fallen into. */
   family: 'link_battery',
-  /* Ten Octobers running, at a 23% October rate. */
-  oct_streak_10: 'oct_streak_5',
   /* THESE FIVE AND THE FIVE THAT CAME OFF ARE ONE EVENT: the pool grew. Splitting
      a traded season into one row per club added 1,035 rows and moved which
      borderline badges a sweep this size happens to reach. `rank_one` and four
-     title rungs came off because they light now; these five went the other way.
-     Nothing about any of them changed, and the FULL sweep reaches all ten. */
-  rating_95: 'rating_paper',
-  one_season_5: 'one_season_4',
+     title rungs came off because they light now; five went the other way, and the
+     chemistry pass below took four of those back. The FULL sweep reaches all ten. */
   mode_trade_title: 'mode_trade_oct',
-  trade_stand_pat: 'mode_trade_oct',
-  daily_title: 'daily_oct',
-  /* TWO TITLES RUNNING, at about one run in twenty. The chain above already
-     anchors three and four in a row on this one, so it was the only rung of that
-     ladder with nothing under it: it lit in quick while the sweep happened to
-     stack two, and the full sweep lights it. Anchored on winning one at all. */
-  btb_title: 'win_title',
-  /* 98% draft efficiency, which is the share of the WAR on your own boards that
-     you walked away with. `eff_95` is the rung below and lights; the last three
-     points need every board to offer the best man at a price the roster can still
-     afford, which is the draft going right twelve times running. */
+  /* THE CHEMISTRY PASS MOVED THE BORDERLINE AGAIN, which is the pool-growth note
+     above arriving from a different cause. Real team-mates now link at 0.05 and
+     a bare franchise tie fell to 0.03, so the chemistry bot chases men who played
+     TOGETHER rather than men who wore one shirt, and stopped stacking eight from
+     one club. Eight badges it used to miss now light (the record, ten Octobers,
+     the 95 rating, the perfect draft and four more) and their excuses came off.
+     These two went the other way. Each is anchored on the rung below it.
+     (`rank_one` was the other, and the cap change below took it back off.) */
+  one_franchise_8: 'one_franchise',
+  /* THE CAP WENT FROM $170M TO $190M, and the borderline moved a third time.
+     Titles got easier, so seven title and legend rungs now light in quick and
+     their excuses came off: back to back, three and four in a row, ten titles,
+     the wild card title, Murderers' Row and the number one team of all time.
+     Three went the other way. A thrifty drafter now finishes with room under
+     the cap, so the market rarely forces it into five cuts, and a clean October
+     in Survivor becomes a coin toss at three runs a bot. The perfect draft is
+     the same coin toss one pass later. The FULL sweep lights all three. */
   perfect_draft: 'eff_95',
+  surv_cut_5: 'surv_cut_3',
+  surv_clean_oct: 'mode_survivor_oct',
   /* `daily_100w` HAD AN EXCUSE AND DID NOT NEED ONE. A hundred wins on a daily
      lights in the quick sweep (spread / classic), so the entry was section 5's
      own target: an excuse written for something that turned out to be reachable,
