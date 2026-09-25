@@ -575,6 +575,23 @@
   .bdg.on.ring .bb{filter:drop-shadow(0 0 6px rgba(242,193,78,.55));}
   /* THE CABINET IS AN ACCOUNT'S. A guest sees what is in it and the one
      thing that opens it, rather than an empty tab or a tab that is missing. */
+  /* SHELVES THAT FOLD. A hundred and seventy tiles drawn flat is a sheet that
+     opens on the same first screen whether somebody has played once or a
+     thousand times. A shelf with something on it is open; the rest are one tap
+     away and say how many are on them. */
+  .bshelf{grid-column:1/-1;border-top:1px solid var(--cardb);padding-top:6px;}
+  .bshelf:first-child{border-top:0;padding-top:0;}
+  .bshelf>summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:8px;
+    min-height:36px;font-size:12.5px;font-weight:800;color:var(--ink);letter-spacing:.02em;}
+  .bshelf>summary::-webkit-details-marker{display:none;}
+  .bshelf>summary::before{content:'';width:7px;height:7px;border-right:2px solid var(--mut);
+    border-bottom:2px solid var(--mut);transform:rotate(-45deg);transition:transform .15s;flex:none;}
+  .bshelf[open]>summary::before{transform:rotate(45deg);}
+  .bshelf>summary .n{margin-left:auto;font-family:var(--num);font-variant-numeric:tabular-nums;
+    font-weight:700;font-size:11px;color:var(--dim);}
+  .bshelf>summary .n.full{color:#f2c14e;}
+  .bshelf .bgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(108px,1fr));gap:8px;
+    padding:4px 0 10px;}
   .bdg-guest{grid-column:1/-1;text-align:center;padding:16px 10px 6px;}
   .bdg-guest .bbrow{display:flex;justify-content:center;gap:8px;margin-bottom:12px;}
   .bdg-guest .bbrow span{width:42px;height:42px;display:block;}
@@ -2814,7 +2831,7 @@
      CI checks it on any push touching an .html or .js file. See CLAUDE.md. -->
 <script src="engine.js?v=23"></script>
 <script src="run.js?v=11"></script>
-<script src="badges.js?v=1"></script>
+<script src="badges.js?v=2"></script>
 <script src="modes.js?v=5"></script>
 <!-- ACCOUNTS AND THE LEADERBOARD. All three are OPTIONAL: if the CDN is blocked
      or either file fails to load, the game runs exactly as it did, with runs
@@ -2832,7 +2849,7 @@
      for a token at CALL time rather than at load, so the order here is for a
      reader rather than for the browser. -->
 <script src="/assets/cloudsave.js?v=2"></script>
-<script src="cloud.js?v=1"></script>
+<script src="cloud.js?v=2"></script>
 <script>
 (function(){
 'use strict';
@@ -2990,7 +3007,7 @@ var A = window.RTF_AUTH || {
  * renders, and the only symptom is a cabinet that comes back slightly wrong.
  * `null` is the honest answer when either half is missing, and every caller
  * below is written to do nothing at all when it is. */
-var NEED_CLOUD = 1;
+var NEED_CLOUD = 2;
 var CL = (window.RTF_CLOUD && window.RTF_CLOUD.API_VERSION === NEED_CLOUD)
   ? window.RTF_CLOUD : null;
 var SV = window.RTG_SAVE || null;
@@ -3230,7 +3247,13 @@ function boot(){
       window.RTF_BADGES.setTotals({
         seasons: yrs.length,
         clubs: Object.keys(franchises).length,
-        shapes: (E.SYSTEMS && E.SYSTEMS.length) || 0
+        shapes: (E.SYSTEMS && E.SYSTEMS.length) || 0,
+        franchises: E.franchises().length,
+        mvps: (function(){
+          var m = {};
+          DATA.players.forEach(function(p){ if ((p.aw || []).indexOf('mvp') >= 0) m[p.s] = 1; });
+          return Object.keys(m).length;
+        })()
       });
     }
     $('ls-players').textContent = DATA.players.length.toLocaleString();
@@ -3913,6 +3936,18 @@ function dailyIsToday(){
    the day number alone, so it cannot drift with a clock: yesterday's day plus
    one continues, anything else starts again at one. A day replayed is not a
    second day, which is why the guard is on the day and not on the count. */
+/* What the daily streak WILL be once today is filed, asked before it is. The
+   career is written first and the daily record after it, on purpose (see the
+   note in recordRun), so the badge for a streak reads this rather than the
+   record. Same arithmetic as dailyRecord, and a day already filed answers the
+   streak it already has. */
+function dailyStreakAfter(){
+  if (!dailyIsToday()) return 0;
+  var n = todayNumber(), s = dailyState();
+  if (s && s.done && s.day === n) return s.streak || 0;
+  return (s && s.lastDone === n - 1) ? (s.streak || 0) + 1 : 1;
+}
+
 function dailyRecord(out){
   var n = todayNumber();
   var s = dailyState() || { v: 1, played: 0, streak: 0, bestStreak: 0, lastDone: 0, best: -1 };
@@ -8597,6 +8632,20 @@ function recordRun(out){
      against a career that stops saving at all. */
   if (c.rows.length > 250) c.rows = c.rows.slice(-250);
 
+  /* THE FEATS, which is where every badge added after the rows lives. The rule
+     for what a run proves is badges.js' draftFeats, the same function
+     check-badges.mjs plays the game through, so the page and the checker
+     cannot disagree about what a Game 7 is. A blocked badges.js costs the
+     feats and nothing else. */
+  var BG = window.RTF_BADGES;
+  if (BG && typeof BG.draftFeats === 'function') {
+    try {
+      BG.applyFeats(c, BG.draftFeats(run));
+      var dStreak = dailyStreakAfter();
+      if (dStreak) BG.applyFeats(c, { max: { 'daily.streak': dStreak } });
+    } catch (e) {}
+  }
+
   try { localStorage.setItem(PKEY, JSON.stringify(c)); } catch (e) {}
   cloudPushCareer(c);
 
@@ -9122,8 +9171,38 @@ function renderBadges(){
     return (rank[b.tier] || 9) - (rank[a.tier] || 9);
   });
 
+  /* ONE SHELF A GROUP, in badges.js' order, each keeping the sort above. */
+  var shelves = {}, order = (B.GROUPS || [['all', 'Badges']]);
+  order.forEach(function(gr){
+    var mine = all.filter(function(b){ return (b.g || 'all') === gr[0]; });
+    if (!mine.length) return;
+    var have = mine.filter(function(b){ return b.got; }).length;
+    var d = document.createElement('details');
+    d.className = 'bshelf';
+    d.setAttribute('data-g', gr[0]);
+    if (have > 0) d.open = true;
+    var sm = document.createElement('summary');
+    var t = document.createElement('span');
+    t.textContent = gr[1];
+    var n = document.createElement('span');
+    n.className = 'n' + (have === mine.length ? ' full' : '');
+    n.textContent = have + '/' + mine.length;
+    sm.appendChild(t); sm.appendChild(n);
+    d.appendChild(sm);
+    var inner = document.createElement('div');
+    inner.className = 'bgrid';
+    d.appendChild(inner);
+    grid.appendChild(d);
+    shelves[gr[0]] = inner;
+  });
+  /* A shelf nobody has opened yet still opens on the first one, so a new
+     account does not meet thirteen closed boxes. */
+  if (!grid.querySelector('.bshelf[open]') && grid.firstChild) grid.firstChild.open = true;
+
   for (var i = 0; i < all.length; i++) {
     var b = all[i];
+    var home = shelves[b.g || 'all'];
+    if (!home) continue;
     var el = document.createElement('div');
     el.className = 'bdg ' + (b.got ? 'on ' + b.tier : 'off');
     var ball = document.createElement('span');
@@ -9153,7 +9232,7 @@ function renderBadges(){
       n.textContent = b.have + ' of ' + b.need;
       el.appendChild(n);
     }
-    grid.appendChild(el);
+    home.appendChild(el);
   }
 
   /* WHAT IS AND IS NOT RETROACTIVE, said out loud. The career has always
@@ -9849,8 +9928,34 @@ function closeQuickDraft(){
   };
 })();
 
+/* THE OTHER MODES' FEATS. Conquest, Fix History and Six Passes file no row,
+   so what they prove lands here instead: modes-ui.js asks badges.js for the
+   feats and hands them over, and this writes them onto the career the same
+   way recordRun does. What lit is said once, as a toast, and only to an
+   account, because the cabinet is an account's. */
+function recordFeats(f){
+  var BG = window.RTF_BADGES;
+  if (!BG || !f) return [];
+  var before = loadCareer() || blankCareer();
+  var c = loadCareer() || blankCareer();
+  BG.applyFeats(c, f);
+  try { localStorage.setItem(PKEY, JSON.stringify(c)); } catch (e) {}
+  cloudPushCareer(c);
+  var fresh = freshBadges(before, c);
+  /* AFTER whatever the mode says about the moment itself, which is usually a
+     toast of its own fired in the same tick. Said at once, the badge would be
+     written over before anybody read it. */
+  if (fresh.length && badgesOn()) {
+    var line = fresh.length === 1 ? 'Badge: ' + fresh[0].name
+      : fresh.length + ' badges: ' + fresh.map(function(b){ return b.name; }).join(', ');
+    setTimeout(function(){ toast(line); }, 2300);
+  }
+  return fresh;
+}
+
 window.RTF_PAGE = {
   get data(){ return DATA; },
+  feats: recordFeats,
   show: show,
   money: money,
   esc: esc,
@@ -9896,6 +10001,6 @@ boot();
 </script>
 <!-- AFTER the page, because it draws through window.RTF_PAGE, which the script
      above publishes. -->
-<script src="modes-ui.js?v=5"></script>
+<script src="modes-ui.js?v=6"></script>
 </body>
 </html>

@@ -710,6 +710,44 @@ const main = async () => {
     ok(/^\d+\/\d+$/.test(member.count), 'and the tab counts them');
     ok(member.cells > 0 && Number.isInteger(member.ballPx / member.cells),
       'a ball is a whole number of pixels a cell (' + member.ballPx + 'px over ' + member.cells + ' cells)');
+
+    /* THE SHELVES. One a group, in badges.js' order, each counting its own
+       tiles, and open exactly when something on it is earned: a shelf that
+       opened empty is a wall of grey, and one that stayed shut over a badge
+       somebody just earned hides the thing they came to look at. */
+    const shelves = await page.evaluate(() => {
+      const G = window.RTF_BADGES.GROUPS;
+      const sh = [...document.querySelectorAll('#pf-badges .bshelf')];
+      return {
+        groups: G.map((g) => g[0]), drawn: sh.map((d) => d.getAttribute('data-g')),
+        total: window.RTF_BADGES.TOTAL,
+        tiles: sh.reduce((n, d) => n + d.querySelectorAll('.bdg').length, 0),
+        counts: sh.every((d) => {
+          const m = d.querySelector('summary .n').textContent.match(/^(\d+)\/(\d+)$/);
+          return m && +m[1] === d.querySelectorAll('.bdg.on').length && +m[2] === d.querySelectorAll('.bdg').length;
+        }),
+        openRule: sh.every((d) => d.open === (d.querySelectorAll('.bdg.on').length > 0)),
+      };
+    });
+    is(shelves.drawn, shelves.groups, 'the cabinet draws one shelf a group, in order');
+    is(shelves.tiles, shelves.total, 'and every badge in the catalog is on one of them');
+    ok(shelves.counts, 'every shelf counts what is on it');
+    ok(shelves.openRule, 'a shelf is open exactly when something on it is earned');
+
+    /* THE OTHER MODES' HOOK. Conquest, Fix History and Six Passes hand their
+       feats to RTF_PAGE.feats; what lights has to land on the career, the
+       cabinet and a toast, and the toast has to wait for the mode's own. */
+    const hook = await page.evaluate(async () => {
+      const fresh = window.RTF_PAGE.feats({ add: { 'ps.played': 1, 'ps.solved': 1 } });
+      const soon = document.querySelector('#toast').textContent;
+      await new Promise((r) => setTimeout(r, 2500));
+      const c = JSON.parse(localStorage.getItem('runthefloor_career_v1'));
+      return { fresh: fresh.map((b) => b.id), soon, later: document.querySelector('#toast').textContent,
+        feats: c && c.feats };
+    });
+    ok(hook.fresh.includes('ps-first') && hook.fresh.includes('ps-1'), 'a mode\'s feats light its badges (' + hook.fresh + ')');
+    ok(hook.feats && hook.feats['ps.solved'] === 1, 'and they are written onto the career');
+    ok(!/badge/i.test(hook.soon) && /badges?/i.test(hook.later), 'and the toast waits its turn, then says so');
     await page.context().close();
   }
 

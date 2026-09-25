@@ -1012,6 +1012,20 @@ function cqRecordBest(){
   if (w > b.best) b.best = w;
   if (M.cqOver(cq) && !cq.counted) { b.runs++; cq.counted = true; if (M.cqCleared(cq)) b.cleared++; cqSave(); }
   lsSet(CQ_BEST, b);
+  cqFeats();
+}
+
+/* WHAT THIS RUN HAS PROVED, for the cabinet. Every Conquest feat is a maximum
+   of the run as it stands, so asking after every steal and again at the end
+   counts nothing twice. The one count, runs finished, rides on `final`, which
+   is passed once and marked on the run so a reload cannot pass it again. */
+function cqFeats(){
+  var BD = window.RTF_BADGES;
+  if (!BD || !P.feats || !cq) return;
+  var final = M.cqOver(cq) && !cq.featsFiled;
+  var d = data();
+  P.feats(BD.conquestFeats(cq, M.CQ.RUNGS, function(k){ return d.allPlayers[k]; }, final));
+  if (final) { cq.featsFiled = true; cqSave(); }
 }
 
 function cqOverHtml(){
@@ -1507,7 +1521,7 @@ function fxTalkWire(box){
     var r = tk.reply;
     fxBlock = r.deal.outs; fxPicksOn = r.deal.picks;
     fxTalk = null;
-    fxAcceptAndMeasure({ with: tk.with, ins: r.deal.ins });
+    fxAcceptAndMeasure({ with: tk.with, ins: r.deal.ins, talked: true });
   };
 }
 
@@ -1563,6 +1577,10 @@ function fxAcceptAndMeasure(offer){
   var was = fxOddsNow().odds;
   M.fxDeal(d, st, outs, fxPicksOn.slice(), offer.with, ins);
   fxSaveSeason();
+  /* A deal that came out of a counter or a proposal is a negotiated one. Only
+     this screen knows, so the feat is written here, after the deal is legal
+     and made rather than on the press. */
+  if (offer.talked && P.feats) P.feats({ add: { 'fx.talk': 1 } });
   fxBlock = []; fxPicksOn = []; fxCallsMemo = null;
   fxBusy = true;
   var n = M.FX.SIMS, done = 0, titles = 0, wins = 0, box = $('s-fix');
@@ -1632,11 +1650,23 @@ function fxFinish(){
   };
   r.headline = fxHeadline(r);
   fxKeep(p.day, r);
+  fxFeats(r);
   lsDel(FX_RUN);
   fxSt = null;
   fxView = 'desk';
   fxRender();
   window.scrollTo({ top: 0 });
+}
+
+/* A finished day, told to the cabinet. The streak is days in a row finished,
+   read off this device's own store because only it knows which days those are;
+   it merges by maximum, so a second device can only ever add to it. */
+function fxFeats(r){
+  var BD = window.RTF_BADGES;
+  if (!BD || !P.feats) return;
+  var days = fxStore().days, n = 0;
+  for (var d = r.day; days[d]; d--) n++;
+  P.feats(BD.fixFeats(r, n));
 }
 
 /* What happened in the one season everybody's moves are replayed through. */
@@ -1979,9 +2009,21 @@ function psPass(to){
   psKeep(st);
   psFilter = '';
   psOpenStints = {};
-  if (st.done) psSubmit(pz, st);
+  if (st.done) { psSubmit(pz, st); psFeats(pz, st); }
   psRender(true);
   window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+/* A finished chain, told to the cabinet once. The streak is days in a row
+   solved, off this device's store. */
+function psFeats(pz, st){
+  var BD = window.RTF_BADGES;
+  if (!BD || !P.feats || st.featsFiled) return;
+  var days = psStore().days, n = 0;
+  for (var d = pz.day; days[d] && days[d].solved; d--) n++;
+  P.feats(BD.passesFeats(!!st.solved, passesOf(st), pz.par, M.PS.CLOCK, n));
+  st.featsFiled = true;
+  psKeep(st);
 }
 
 function psVerdict(st){

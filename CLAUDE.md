@@ -11188,6 +11188,111 @@ tile with no ball fails two.
 the page as a field the results screen expects an outcome to carry, and `out.join` failed
 it.
 
+#### A cabinet for somebody who knows the sport, and every square is proved
+
+```
+node hoops/check-badges.mjs            every badge reached by a bot, or excused with a proof
+node hoops/check-badges.mjs --reunions how many One Franchise drafts each reunion took
+```
+
+Asked for as "a ton of badges that are exciting and niche goals that would make
+basketball fans appreciate the dedication behind this game". The cabinet went from
+37 to **171 on thirteen shelves**, and the ones worth reading about are the ones a
+fan recognises: Bird, McHale and Parish on one roster; Stockton to Malone; a man
+who averaged 35 (four seasons since 1974 qualify); a triple-double season; "Fo',
+fo', fo'" for a title that lost one playoff game; Down 3-1; the 2007 Mavericks as a
+heartbreak badge; every MVP since 1974; the Dream Team; the classes of '84, '96 and
+'03. Conquest, Fix History and Six Passes each got a shelf of their own.
+
+**THE REUNIONS ARE THE DEDICATION, AND THEY ARE ONE CLUB EACH ON PURPOSE.** Off
+the whole league the wheel lands on one team-season about once in fourteen hundred
+spins, so three named men on one roster is a lottery ticket. Locked to their club
+in One Franchise it is a hunt: which seasons overlap, which fit under the cap
+together, and when to spend a re-spin. Measured with a bot that signs a target
+when one is on the board and re-spins when none is, over 100 drafts each: 57 in
+100 for Stockton and Malone, 2 for Webber, Bibby and Divac and for LeBron, Wade
+and Bosh. The tier is that measurement: 30 or more silver, 7 to 29 gold, under 7 a
+ring. The badge text never says to use One Franchise. Working that out is the
+point.
+
+**THE FEATS MAP IS THE ONE PLACE A MODE WRITES.** Every badge is still derived, but
+three modes file no row (a row is a finished season) and the rows are capped at
+250, so a badge about one roster read off the rows could be lit on run 12 and gone
+again by run 263. `career.feats` is a count per thing that happened, and the badge
+reads the count. What writes it is four pure functions in `badges.js`
+(`draftFeats`, `conquestFeats`, `fixFeats`, `passesFeats`), called by the page,
+by `modes-ui.js` through `RTF_PAGE.feats`, and by the checker, so a rule is never
+restated. `applyFeats` is the one writer: `add` sums, `max` keeps the high-water
+mark.
+
+**`feats` IS ON `CAREER_COUNTS` IN cloud.js, AND THAT IS THE LOAD-BEARING LINE.**
+The career merge is an allowlist, so a key on none of its three lists is DROPPED on
+merge, silently: the badge lights on the device that earned it and goes dark the
+first time another device syncs. Every feat value is a count or a high-water mark,
+so a maximum per key is right for both and never takes a badge away (it can
+under-count across devices, which only delays one). `cloud.js` moved to API 2 with
+it, so a cached page cannot run the old merge. `check-cloudsave`'s fuzz draws real
+feat keys off the catalog's own source; with `feats` taken off the list it fails on
+the first seed.
+
+**Conquest's feats are maximums of the run as it stands**, so `cqRecordBest` asks
+after every steal and again at the end without counting anything twice. The one
+count, runs finished, rides on `final`, which is passed once and marked on the run
+(`featsFiled`) so a reload cannot pass it again. **A negotiated deal is the one feat
+only a screen knows**, so `fxAcceptAndMeasure` writes `fx.talk` after the deal is
+made and legal, never on the press.
+
+**The daily streak is read BEFORE today is filed.** `recordRun` writes the career
+and then `dailyRecord` files the day, in that order for a reason written there, so
+the streak badge reads `dailyStreakAfter()`, which is `dailyRecord`'s arithmetic
+asked a step early.
+
+**Mode badges toast 2.3 seconds late**, because the mode fires a toast of its own
+in the same tick ("Boss beaten: a life back") and a badge said at once is written
+over before anybody reads it. check-board asserts the order, and fails when the
+delay is removed.
+
+**The cabinet folds into shelves, one a group, open exactly when something on it
+is earned.** A shelf that opened empty is a wall of grey; one that stayed shut over
+a badge somebody just earned hides the thing they came to see. With nothing earned
+anywhere, the first shelf opens so a new account does not meet thirteen closed
+boxes.
+
+##### What the measurement cut, before it could ship as content
+
+Six ideas were written, measured over 1,500 runs, and changed, because a badge
+nobody can earn throws nothing:
+
+| asked for | measured | became |
+|---|---|---|
+| win a double overtime game | overtime is only ever one period (`ot` is 0 or 1) | cut |
+| go unbeaten at home | never fewer than four home losses | 36 home wins |
+| win 34 straight | best seen 21 | 20 straight |
+| sixteen and oh in the playoffs | never; the fewest losses on a title run was 1 | cut, "Fo', fo', fo'" kept |
+| five 20-point scorers | never more than three; the cap cannot hold five | three |
+| plus 15 a night | best seen 13.1 | plus 10 |
+
+##### Every badge lit, or excused WITH A PROOF
+
+`check-badges` plays the league six ways as before, then plays the way a person
+chasing each shelf would: a reunion hunter per trio in One Franchise, a stat hunter
+per line, a hunter per named man, locked and daily title runs, three Conquest bots,
+five Fix History bots and two Six Passes solvers. **The Fix History bot that
+matters is the negotiator**, which asks other clubs for their best non-franchise
+men and pays the sweetener: the one-for-one value bot tops out near 35% title odds,
+and the negotiator took the 2025 Nuggets from 11% to 56%.
+
+What is still dark must be on `EXCUSED` with one of three reasons, and each carries
+a proof that runs: **grind** (a bigger count of something the sweep did produce, so
+the count must have moved), **page** (the page writes the key, asserted off its
+source), **skill** (a hand-built run lights it through the real rule, so it is not
+dead code). Three more guards hold the list honest: an excuse for a badge that lit
+anyway fails, so it cannot rot into a blanket; every feat a badge reads must be
+written somewhere; and every named man is a real id who played for his reunion's
+club. **The full sweep is the strict one and it is what CI runs**; a short
+`--runs` sweep prints what it did not reach instead of failing, because the list is
+a record of one sweep and can only be tuned to that one.
+
 #### Run it back means the same game, and two buttons could not keep that promise
 
 The results screen's Run it back really does replay the mode. **The daily is the
