@@ -1744,6 +1744,94 @@
   body:not(.ingame) .banner.mo-in{animation-name:mo-banner;}
   @keyframes mo-banner{from{opacity:0;transform:translate3d(0,-12px,0) scale(.98);}to{opacity:1;transform:none;}}
 
+  /* THE QUICK START. Four loops at the top of How To Play, one per thing a
+     player does with their hands: aim, swing, pitch, field. Each is an
+     SVG whose moving parts are drawn round their own origin inside a
+     translated group, so every keyframe is a translate, a scale, a rotate
+     or an opacity and nothing is ever re-laid out.
+
+     THE RESTING STATE IS THE LESSON. Written with no animation, every part
+     sits at the one frame that explains the step: the bat on the ball, the
+     cursor stopped in the green, the ring at its tightest. That is what a
+     reader with reduced motion gets, and it is why the keyframes animate
+     AWAY from the base rather than the base being frame zero. */
+  .qs{border-color:rgba(207,50,41,.45);}
+  .qs .qs-lead{margin:2px 0 12px;}
+  .qs-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
+  @media (max-width:760px){ .qs-grid{grid-template-columns:repeat(2,1fr);gap:10px;} }
+  .qs-step{display:flex;flex-direction:column;gap:6px;min-width:0;}
+  .qs-step svg{display:block;width:100%;height:auto;border-radius:var(--r-sm);
+    box-shadow:var(--shadow-sm);background:#2d5f2c;}
+  .qs-step h4{margin:2px 0 0;font-size:14px;letter-spacing:.06em;text-transform:uppercase;
+    display:flex;align-items:center;gap:7px;}
+  .qs-step h4 i{font-style:normal;display:inline-grid;place-items:center;width:20px;height:20px;
+    border-radius:50%;background:var(--gold);color:#fff;font-size:11px;flex:none;}
+  .qs-step p{margin:0;font-size:12px;line-height:1.45;}
+  .qs svg .mv{transform-box:view-box;transform-origin:0 0;}
+  .qs svg .ring{vector-effect:non-scaling-stroke;}
+  .qs svg text{font-family:inherit;}
+
+  .qs .aim-ball{animation:mo-qs-aim-ball 3.2s ease-in infinite;}
+  .qs .aim-bat{animation:mo-qs-aim-bat 3.2s ease-in-out infinite;}
+  .qs .aim-glow{opacity:0;animation:mo-qs-aim-glow 3.2s ease-out infinite;}
+  @keyframes mo-qs-aim-ball{0%{opacity:0;transform:translate(-13px,-52px) scale(.3);}
+    10%{opacity:1;} 62%,88%{opacity:1;transform:none;} 96%,100%{opacity:0;transform:none;}}
+  @keyframes mo-qs-aim-bat{0%,18%{transform:translate(-13px,-18px);} 56%,90%{transform:none;}
+    100%{transform:translate(-13px,-18px);}}
+  @keyframes mo-qs-aim-glow{0%,60%{opacity:0;transform:scale(.8);} 66%{opacity:.6;transform:scale(1.25);}
+    86%,100%{opacity:0;transform:scale(1.4);}}
+
+  .qs .sw-ball{animation:mo-qs-sw-ball 3s linear infinite;}
+  .qs .sw-bat{animation:mo-qs-sw-bat 3s ease-in-out infinite;}
+  .qs .sw-burst{animation:mo-qs-sw-burst 3s ease-out infinite;}
+  @keyframes mo-qs-sw-ball{0%{opacity:0;transform:translate(0,-40px) scale(.3);}
+    8%{opacity:1;} 46%{transform:none;animation-timing-function:ease-out;}
+    80%{opacity:1;transform:translate(-58px,-48px) scale(.35);} 86%,100%{opacity:0;transform:translate(-58px,-48px) scale(.35);}}
+  @keyframes mo-qs-sw-bat{0%,36%{transform:rotate(110deg);} 46%{transform:none;}
+    56%,80%{transform:rotate(-28deg);} 100%{transform:rotate(110deg);}}
+  @keyframes mo-qs-sw-burst{0%,44%{opacity:0;transform:scale(.4);} 49%{opacity:1;transform:scale(.8);}
+    68%,100%{opacity:0;transform:scale(1.6);}}
+
+  .qs .pi-ret{animation:mo-qs-pi-ret 3.6s ease-in-out infinite;}
+  .qs .pi-btn{animation:mo-qs-pi-btn 3.6s ease-out infinite;}
+  .qs .pi-cur{animation:mo-qs-pi-cur 3.6s infinite;}
+  .qs .pi-hit{animation:mo-qs-pi-hit 3.6s infinite;}
+  .qs .pi-ball{animation:mo-qs-pi-ball 3.6s ease-in infinite;}
+  @keyframes mo-qs-pi-ret{0%,4%{opacity:0;transform:translate(10px,-14px);} 8%{opacity:1;transform:translate(10px,-14px);}
+    20%,90%{opacity:1;transform:none;} 96%,100%{opacity:0;transform:none;}}
+  @keyframes mo-qs-pi-btn{0%,22%{transform:none;} 25%{transform:scale(.88);} 30%,100%{transform:none;}}
+  @keyframes mo-qs-pi-cur{0%{opacity:0;transform:translateY(-35px);} 24%{opacity:1;transform:translateY(-35px);animation-timing-function:linear;}
+    52%,92%{opacity:1;transform:none;} 97%,100%{opacity:0;transform:none;}}
+  @keyframes mo-qs-pi-hit{0%,51%{opacity:0;} 54%,90%{opacity:1;} 96%,100%{opacity:0;}}
+  @keyframes mo-qs-pi-ball{0%,53%{opacity:0;transform:translate(10px,-54px) scale(.3);} 56%{opacity:1;}
+    80%,90%{opacity:1;transform:none;} 96%,100%{opacity:0;transform:none;}}
+
+  .qs .fi-ring{transform:scale(.34);animation:mo-qs-fi-ring 3.2s ease-in infinite;}
+  .qs .fi-ball{animation:mo-qs-fi-ball 3.2s ease-in infinite;}
+  .qs .fi-out{animation:mo-qs-fi-out 3.2s ease-out infinite;}
+  @keyframes mo-qs-fi-ring{0%{opacity:1;transform:none;} 50%{opacity:1;transform:scale(.34);}
+    58%,100%{opacity:0;transform:scale(.34);}}
+  @keyframes mo-qs-fi-ball{0%{opacity:0;transform:translate(46px,-50px) scale(.6);} 8%{opacity:1;}
+    50%,86%{opacity:1;transform:none;} 94%,100%{opacity:0;transform:none;}}
+  @keyframes mo-qs-fi-out{0%,50%{opacity:0;transform:scale(.5);} 56%{opacity:1;transform:scale(1.15);}
+    62%,86%{opacity:1;transform:none;} 94%,100%{opacity:0;transform:none;}}
+
+  /* The press. A ripple where the finger or the click lands, at the moment
+     it should land, so "when" is drawn as well as said. */
+  .qs .tap{opacity:0;}
+  .qs .sw-tap{animation:mo-qs-tap 3s ease-out infinite;}
+  .qs .pi-tap{animation:mo-qs-tap-pi 3.6s ease-out infinite;}
+  .qs .pi-tap2{animation:mo-qs-tap-pi2 3.6s ease-out infinite;}
+  .qs .fi-tap{animation:mo-qs-tap-fi 3.2s ease-out infinite;}
+  @keyframes mo-qs-tap{0%,45%{opacity:0;transform:scale(.3);} 47%{opacity:.95;transform:scale(.45);} 62%,100%{opacity:0;transform:scale(1.5);}}
+  @keyframes mo-qs-tap-pi{0%,22%{opacity:0;transform:scale(.3);} 24%{opacity:.95;transform:scale(.45);} 38%,100%{opacity:0;transform:scale(1.5);}}
+  @keyframes mo-qs-tap-pi2{0%,51%{opacity:0;transform:scale(.3);} 53%{opacity:.95;transform:scale(.45);} 67%,100%{opacity:0;transform:scale(1.5);}}
+  @keyframes mo-qs-tap-fi{0%,49%{opacity:0;transform:scale(.3);} 51%{opacity:.95;transform:scale(.45);} 66%,100%{opacity:0;transform:scale(1.5);}}
+
+  @media (prefers-reduced-motion: reduce){
+    .qs svg *{animation:none !important;}
+  }
+
   @media (prefers-reduced-motion: reduce){
     .mo-in,.mo-row,.mo-pop,.pickno.fresh,h2.verdict,.countup.go,.coach,.pen,
     .coach-text.mo-note,.press-portrait,.press-box,.press-choices > *,.press-more,
@@ -7274,7 +7362,7 @@ function startGame(opts) {
   State.screen = 'game';
   render();
   Sound.music.start(Sound);
-  setTimeout(startAtBat, 400);
+  atBatIn(400);
 }
 
 function currentBattingTeam() {
@@ -8486,9 +8574,24 @@ function stopFieldLoop() {
   fieldRafId = 0;
 }
 
+/* A TIMER FIRES INTO ITS OWN GAME OR NOT AT ALL, which is the rule the
+   throw window, the catch window and the robbery already carry, arriving at
+   the one timer every plate appearance goes through. Every beat before the
+   next batter (a hit, an out, a walk, the break between half innings, the
+   first pitch) used to be `setTimeout(startAtBat, ms)`, which starts an at
+   bat in whatever game is current when it lands. Leave inside the beat and
+   it throws on a game that is gone. Start another game inside it, which a
+   Play again on the result screen can do inside a home run's beat, and the
+   old timer begins a SECOND at bat in the new game on top of its own. Found
+   by `check-motion`, which starts games quickly enough to land in the gap. */
+function atBatIn(ms) {
+  const g = State.game;
+  setTimeout(() => { if (State.game === g) startAtBat(); }, ms);
+}
+
 function startAtBat() {
   const g = State.game;
-  if (g.over) return;
+  if (!g || g.over) return;
   /* Belt and braces: nothing starts an at bat after a walk-off, whichever
      path scored the run. */
   if (g.walkoff) { g.over = true; g.winner = 'home'; return finishGame(); }
@@ -12078,13 +12181,13 @@ function afterHitTransition(kind) {
      never what produced it. */
   if (endPlateAppearance()) return;
   refreshHud();
-  setTimeout(startAtBat, kind === 'home run' ? BEAT.afterHomer : BEAT.afterHit);
+  atBatIn(kind === 'home run' ? BEAT.afterHomer : BEAT.afterHit);
 }
 
 function afterOutTransition() {
   if (endPlateAppearance()) return;
   refreshHud();
-  setTimeout(startAtBat, BEAT.afterOut);
+  atBatIn(BEAT.afterOut);
 }
 
 function randPos(out) {
@@ -12146,7 +12249,7 @@ function recordWalk() {
   }
   nextBatter();
   refreshHud();
-  setTimeout(startAtBat, BEAT.afterWalk);
+  atBatIn(BEAT.afterWalk);
 }
 
 function recordOut(reason, isStrikeout) {
@@ -12208,7 +12311,7 @@ function recordOut(reason, isStrikeout) {
   }
   if (endPlateAppearance()) return;
   refreshHud();
-  setTimeout(startAtBat, BEAT.afterOut);
+  atBatIn(BEAT.afterOut);
 }
 
 function nextBatter() {
@@ -12299,7 +12402,7 @@ function endHalfInning() {
      of the beat. startAtBat takes it down. */
   boardTimer = setTimeout(() => { if (State.game === g && !g.over) showInningBoard(); },
                           Math.min(900, Math.round(BEAT.betweenHalfInnings * 0.3)));
-  setTimeout(startAtBat, BEAT.betweenHalfInnings);
+  atBatIn(BEAT.betweenHalfInnings);
 }
 
 function checkGameOver() {
@@ -16873,12 +16976,123 @@ function renderMeet() {
   app.appendChild(s);
 }
 
+/* THE QUICK START: the four things a player does with their hands, drawn
+   moving, above everything else on this page. The prose below is the
+   reference; this is the part a stranger reads before their first pitch,
+   so it says one thing a step and shows the moment to press.
+
+   It is SVG rather than the game's own canvas drawers, deliberately. A
+   loop that repainted a canvas every frame would be a second render loop
+   on a menu screen, running for as long as somebody reads, and it would
+   need its own stop on every way off the page. CSS animations stop with
+   the node. The colours are the game's: the bat's green oval with its dark
+   halo, the white reticle, the release bar's green and yellow bands, the
+   catch ring's dark green over its orange sweet ring. The drawn figures
+   further down are still the game's own functions and still hold the
+   detail. */
+function howtoQuickStart() {
+  const ball = '<circle r="4.2" fill="#eaeaea" stroke="#1b3a5c" stroke-width="1"/>'
+    + '<path d="M-2.6 -1.5 A2.8 2.8 0 0 1 1.8 -2.2" fill="none" stroke="#c94b1a" stroke-width=".9"/>';
+  const oval = '<ellipse rx="15" ry="11" fill="none" stroke="rgba(255,255,255,.35)" stroke-width="1"/>'
+    + '<ellipse rx="8.5" ry="6.2" fill="none" stroke="rgba(10,20,30,.55)" stroke-width="4"/>'
+    + '<ellipse rx="8.5" ry="6.2" fill="none" stroke="#8ef0b0" stroke-width="2.2"/>'
+    + '<circle r="1.6" fill="#8ef0b0"/>';
+  const tap = (cls, x, y) => `<g transform="translate(${x} ${y})"><circle class="mv tap ${cls}" r="12" `
+    + 'fill="rgba(255,255,255,.18)" stroke="#fff" stroke-width="2"/></g>';
+  const at = (x, y, cls, inner) => `<g transform="translate(${x} ${y})"><g class="mv ${cls}">${inner}</g></g>`;
+  /* The plate camera, reduced to what the step needs: the wall, the grass,
+     the dirt round home, and the zone with its gold corners. */
+  const plate = (zx, zy, zw, zh) => {
+    let stripes = '';
+    for (let x = 0; x < 160; x += 20) stripes += `<rect x="${x}" y="24" width="10" height="86" fill="rgba(0,0,0,.06)"/>`;
+    const c = 7, g = '#f4c25a';
+    const corner = (x, y, dx, dy) => `<path d="M${x + dx * c} ${y} H${x} V${y + dy * c}" fill="none" stroke="${g}" stroke-width="2.6"/>`;
+    return '<rect width="160" height="110" fill="#3f8a3c"/>' + stripes
+      + '<rect width="160" height="22" fill="#1f3d2a"/><rect y="22" width="160" height="2" fill="#10261a"/>'
+      + '<path d="M14 110 Q80 72 146 110 Z" fill="#9a6a3c"/>'
+      + '<path d="M72 99 h16 v4 l-8 5 l-8 -5 z" fill="#f5ecc8"/>'
+      + `<rect x="${zx}" y="${zy}" width="${zw}" height="${zh}" fill="rgba(255,255,255,.07)" stroke="rgba(10,20,30,.5)" stroke-width="4.5"/>`
+      + `<rect x="${zx}" y="${zy}" width="${zw}" height="${zh}" fill="none" stroke="#fff" stroke-width="2"/>`
+      + corner(zx, zy, 1, 1) + corner(zx + zw, zy, -1, 1) + corner(zx, zy + zh, 1, -1) + corner(zx + zw, zy + zh, -1, -1);
+  };
+  const svg = (label, body) => `<svg viewBox="0 0 160 110" role="img" aria-label="${label}">${body}</svg>`;
+  const pointer = '<path d="M9 6 v11 l3 -3 l2.5 5 l2.2 -1 l-2.5 -5 h4.2 z" fill="#fff" stroke="#10261a" stroke-width=".9"/>';
+  const reticle = '<g fill="none" stroke-linecap="round">'
+    + '<circle r="6" stroke="rgba(10,20,30,.55)" stroke-width="4"/>'
+    + '<path d="M3.6 0 H8.5 M-3.6 0 H-8.5 M0 3.6 V8.5 M0 -3.6 V-8.5" stroke="rgba(10,20,30,.55)" stroke-width="4"/>'
+    + '<circle r="6" stroke="#fff" stroke-width="2"/>'
+    + '<path d="M3.6 0 H8.5 M-3.6 0 H-8.5 M0 3.6 V8.5 M0 -3.6 V-8.5" stroke="#fff" stroke-width="2"/>'
+    + '</g><circle r="1.6" fill="#fff"/>';
+  let rays = '';
+  for (let i = 0; i < 8; i++) {
+    const a = i * Math.PI / 4, c = Math.cos(a), s = Math.sin(a);
+    rays += `<path d="M${(c * 8).toFixed(1)} ${(s * 8).toFixed(1)} L${(c * 14).toFixed(1)} ${(s * 14).toFixed(1)}"/>`;
+  }
+
+  const aim = svg('The bat oval moves onto the pitch as it arrives', plate(58, 26, 44, 54)
+    + at(93, 70, 'aim-glow', '<ellipse rx="12" ry="9" fill="#8ef0b0"/>')
+    + at(93, 70, 'aim-ball', ball)
+    + at(93, 70, 'aim-bat', oval + pointer));
+
+  const swing = svg('The bat swings as the ball reaches the oval and the ball flies away', plate(58, 26, 44, 54)
+    + at(118, 60, 'sw-bat', '<path d="M0 -2 L-38 -4 Q-42 0 -38 4 L0 2 Z" fill="#c8924f" stroke="#5a3a1a" stroke-width="1"/>')
+    + `<g class="sw-oval" transform="translate(80 58)">${oval}</g>`
+    + at(80, 58, 'sw-burst', `<g stroke="rgba(10,20,30,.5)" stroke-width="4" stroke-linecap="round">${rays}</g>`
+      + `<g stroke="#8ef0b0" stroke-width="2" stroke-linecap="round">${rays}</g>`)
+    + at(80, 58, 'sw-ball', ball)
+    + tap('sw-tap', 80, 58));
+
+  const pitch = svg('Aim the pitch, press Throw, and stop the release bar in the green', plate(40, 26, 40, 54)
+    + '<rect x="93" y="23" width="16" height="60" rx="2" fill="rgba(11,16,21,.85)"/>'
+    + '<rect x="96" y="54" width="10" height="17" fill="rgba(244,194,90,.55)"/>'
+    + '<rect class="pi-green" x="96" y="59" width="10" height="7" fill="rgba(91,176,131,.95)"/>'
+    + at(0, 62.5, 'pi-cur', '<rect x="93" y="-1.5" width="16" height="3" fill="#fff"/>')
+    + '<rect class="pi-hit" x="93" y="61" width="16" height="3" fill="#8ef0b0"/>'
+    + tap('pi-tap2', 101, 62.5)
+    + at(50, 68, 'pi-ret', reticle)
+    + at(50, 68, 'pi-ball', ball)
+    + at(26, 96, 'pi-btn', '<rect x="-20" y="-7.5" width="40" height="15" rx="7.5" fill="#cf3229"/>'
+      + '<text y="3" text-anchor="middle" font-size="8" font-weight="800" fill="#fff" letter-spacing=".6">THROW</text>')
+    + tap('pi-tap', 26, 96));
+
+  let mow = '';
+  for (let x = 0; x < 160; x += 22) mow += `<rect x="${x}" y="20" width="11" height="90" fill="rgba(255,255,255,.05)"/>`;
+  const field = svg('A ring shrinks over the landing spot and a press at its tightest makes the catch',
+    '<rect width="160" height="110" fill="#4c9a48"/>' + mow
+    + '<rect width="160" height="13" fill="#1f3d2a"/><rect y="13" width="160" height="7" fill="#9a6a3c"/>'
+    + '<ellipse cx="80" cy="70" rx="6" ry="2.4" fill="rgba(0,0,0,.25)"/>'
+    + '<circle class="fi-sweet" cx="80" cy="66" r="9" fill="none" stroke="rgba(232,150,12,.95)" stroke-width="2"/>'
+    + at(80, 66, 'fi-ring', '<circle class="ring" r="28" fill="none" stroke="rgba(255,255,255,.55)" stroke-width="5"/>'
+      + '<circle class="ring" r="28" fill="none" stroke="#0f6b39" stroke-width="3"/>')
+    + at(80, 66, 'fi-ball', ball)
+    + tap('fi-tap', 80, 66)
+    + at(80, 34, 'fi-out', '<text y="5" text-anchor="middle" font-size="15" font-weight="900" fill="#fff" '
+      + 'stroke="#1b3a5c" stroke-width="3" paint-order="stroke">OUT!</text>')
+    + '<text x="80" y="105" text-anchor="middle" font-size="8" font-weight="800" fill="#f4c25a" letter-spacing=".6">CATCH IT!</text>');
+
+  const card = el('div', 'card qs');
+  card.innerHTML = '<h3>Quick start</h3>'
+    + '<p class="qs-lead">Draft nine. Bat when you are up. Pitch when they are. Most runs wins.</p>'
+    + '<div class="qs-grid">'
+    + `<div class="qs-step">${aim}<h4><i>1</i>Aim</h4>`
+    + '<p>Move the green oval onto the ball. Use the mouse, a finger or the arrow keys.</p></div>'
+    + `<div class="qs-step">${swing}<h4><i>2</i>Swing</h4>`
+    + '<p>Click, tap or press Space as it arrives. On a phone one tap aims and swings.</p></div>'
+    + `<div class="qs-step">${pitch}<h4><i>3</i>Pitch</h4>`
+    + '<p>Pick a pitch and a spot. Press Throw. Stop the bar in the green.</p></div>'
+    + `<div class="qs-step">${field}<h4><i>4</i>Field</h4>`
+    + '<p>Press when the ring is tightest. A grounder shows a bar. Stop it in the green.</p></div>'
+    + '</div>';
+  return card;
+}
+
 function renderHowTo() {
   const s = el('div','screen');
   /* Appended as nodes, never innerHTML +=: that re-parses the card and
      hands back a fresh, blank canvas in place of every drawn figure. */
   const add = (card, html) => card.appendChild(el('div', null, html));
   s.appendChild(el('h2', null, 'How to play'));
+  s.appendChild(howtoQuickStart());
 
   const bat = el('div','card');
   add(bat,

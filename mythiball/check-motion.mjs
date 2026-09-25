@@ -40,7 +40,10 @@ console.log('the keyframes move a transform or an opacity and nothing else');
   const src = fs.readFileSync(PAGE, 'utf8');
   const css = src.slice(src.indexOf('<style>'), src.indexOf('</style>'));
   const frames = [...css.matchAll(/@keyframes\s+(mo-[\w-]+)\s*\{/g)];
-  const allowed = new Set(['transform', 'opacity', '--n']);
+  /* `animation-timing-function` inside a keyframe is not a property that
+     is animated: it is the easing of the segment that starts there, which
+     is how a sweep can run linear and then stop dead. */
+  const allowed = new Set(['transform', 'opacity', '--n', 'animation-timing-function']);
   const bad = [];
   for (const m of frames) {
     /* Brace matched rather than regexed: a keyframe block holds blocks. */
@@ -253,6 +256,87 @@ console.log('\nreduced motion');
   ok(counted.join(',') === 'n 6,n 2', 'the scoreboard reads the score with nothing counting', counted.join(','));
   ok(errors.length === 0, 'no page errors', errors.join(' | '));
   await ctx.close();
+}
+
+/* ---- 8. how to play opens with the quick start ---- */
+console.log('\nhow to play opens by showing how to play');
+{
+  /* FIRST, MOVING, AND STILL A LESSON WHEN IT STOPS. The page used to open
+     on eight hundred words, so a stranger met the rules before the controls.
+     The quick start is four loops above all of that. What can go wrong is
+     that it slides down the page as cards are added, that its loops stop
+     (a picture of a step is not the step), or that the frame reduced motion
+     rests on is a frame that explains nothing. */
+  const { ctx, pg, errors } = await open();
+  await pg.evaluate(() => { State.screen = 'howto'; render(); });
+  await pg.waitForTimeout(1200);
+  const r = await pg.evaluate(async () => {
+    const s = document.querySelector('#app .screen');
+    const qs = s && s.querySelector(':scope > .qs');
+    if (!qs) return { found: false };
+    const kids = [...s.children];
+    const qsTop = qs.getBoundingClientRect().top;
+    const firstProse = kids.filter(k => k.matches('.card') && k !== qs)
+      .reduce((m, k) => Math.min(m, k.getBoundingClientRect().top), Infinity);
+    const steps = [...qs.querySelectorAll('.qs-step')];
+    const running = steps.map(st => document.getAnimations()
+      .filter(a => a.playState === 'running' && a.effect && st.contains(a.effect.target)).length);
+    /* Where every moving part is, sampled across a third of a loop. A
+       hold phase can be most of a second, so one pair of readings is a
+       coin toss on whether it lands in one. */
+    const at = () => steps.map(st => [...st.querySelectorAll('.mv')].map(e => {
+      const b = e.getBoundingClientRect(); return [b.x, b.y, b.width];
+    }));
+    const reads = [];
+    for (let i = 0; i < 4; i++) { reads.push(at()); await new Promise(r => setTimeout(r, 450)); }
+    const moved = steps.map((_, i) => reads.some(rd => rd[i].some((v, j) =>
+      v.some((n, k) => Math.abs(n - reads[0][i][j][k]) > 1))));
+    return {
+      found: true,
+      second: kids.indexOf(qs) === 1 && kids[0].matches('h2'),
+      above: qsTop < firstProse,
+      steps: steps.length,
+      whole: steps.every(st => st.querySelector('svg') && st.querySelector('h4') && st.querySelector('p')),
+      running, moved,
+    };
+  });
+  ok(r.found, 'the page has a quick start', JSON.stringify(r));
+  if (r.found) {
+    ok(r.second && r.above, 'and it is the first thing under the heading, above every card of prose', JSON.stringify(r));
+    ok(r.steps === 4 && r.whole, 'four steps, each a picture, a name and a line', JSON.stringify(r));
+    ok(r.running.every(n => n >= 2), 'every step is animating', r.running.join(','));
+    ok(r.moved.every(Boolean), 'and its parts actually move on the glass', r.moved.join(','));
+  }
+  ok(errors.length === 0, 'no page errors', errors.join(' | '));
+  await ctx.close();
+
+  /* Reduced motion keeps the pictures and stops them on the frame that
+     explains the step. Each claim is a relation between two drawn things,
+     so a restyle that keeps the lesson keeps passing. */
+  const still = await open({ reducedMotion: 'reduce' });
+  await still.pg.evaluate(() => { State.screen = 'howto'; render(); });
+  await still.pg.waitForTimeout(600);
+  const z = await still.pg.evaluate(() => {
+    const c = sel => { const b = document.querySelector('.qs ' + sel).getBoundingClientRect();
+      return { x: b.x + b.width / 2, y: b.y + b.height / 2, w: b.width, top: b.top, bottom: b.bottom }; };
+    const near = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
+    const green = c('.pi-green'), cur = c('.pi-cur');
+    return {
+      running: document.getAnimations().filter(a => a.playState === 'running'
+        && document.querySelector('.qs').contains(a.effect && a.effect.target)).length,
+      aim: near(c('.aim-bat ellipse:nth-child(3)'), c('.aim-ball circle')),
+      swing: near(c('.sw-oval ellipse:nth-child(3)'), c('.sw-ball circle')),
+      curIn: cur.y >= green.top && cur.y <= green.bottom,
+      ring: c('.fi-ring').w / c('.fi-sweet').w,
+      out: parseFloat(getComputedStyle(document.querySelector('.qs .fi-out')).opacity),
+    };
+  });
+  ok(z.running === 0, 'under reduced motion nothing in it runs', z.running + ' running');
+  ok(z.aim < 1.5 && z.swing < 1.5, 'and it rests with the bat on the ball', JSON.stringify(z));
+  ok(z.curIn, 'the release rests in the green', JSON.stringify(z));
+  ok(z.ring < 1.6 && z.out > 0.99, 'the catch rests at its tightest, called out', JSON.stringify(z));
+  ok(still.errors.length === 0, 'no page errors', still.errors.join(' | '));
+  await still.ctx.close();
 }
 
 await browser.close();

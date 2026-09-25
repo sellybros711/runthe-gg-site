@@ -53,6 +53,7 @@
      the stale timer      a play's timer fires into its OWN play or not at all
      a window's own play  a catch or a robbery never resolves into the play that replaced it
      its own clock        a play is applied on its own timer, never on the one it replaced
+     its own game         the next batter steps in to the game that called for him
      one grid         retro blows the world up by a whole number, onto the arena's own
                       pixels, and smooth frames the identical crop at the screen's own
      the code's own claims  what the comments assert about the code is true of it
@@ -4003,6 +4004,48 @@ async function main() {
          'A PLAY IS APPLIED ON ITS OWN CLOCK, not on the one it replaced',
          `applied after ${r.appliedAfterMs}ms, its own is ${r.bApplyMs}ms`);
       ok(r.alive && errors.length === 0, 'no page errors', errors.join(' | '));
+      await pg.close();
+    }
+
+    /* ---- the next batter belongs to the game that called for him ---- */
+    {
+      console.log('an at bat starts in its own game');
+      /* The same rule a fourth time, at the beat every plate appearance
+         goes through. Each wait before the next batter was
+         `setTimeout(startAtBat, ms)`, which starts an at bat in whatever
+         game is current when it lands. Found by check-motion, which starts
+         games quickly enough to leave one inside its first 400ms and threw
+         "Cannot read properties of null (reading 'over')". Driven both
+         ways here: a game left inside the beat, and a game REPLACED inside
+         it, which is the quiet half. Counted by a spy on the function
+         itself, because a second at bat in a live game renders and throws
+         nothing. */
+      const { pg, errors } = await fresh(browser);
+      const r = await pg.evaluate(async () => {
+        const sleep = ms => new Promise(r => setTimeout(r, ms));
+        const kick = () => {
+          State.team = ROSTER.slice(0, 9).map(c => c.k); State.teamName = 'Testers';
+          State.opponent = randomOpponent(null); State.innings = 5; State.mode = 'exhibition';
+          startGame({ mode: 'exhibition', youHome: true });
+          return State.game;
+        };
+        kick();
+        await sleep(100);
+        State.game = null; State.screen = 'menu'; render();
+        await sleep(600);
+        const real = window.startAtBat;
+        let first = null;
+        const calls = [];
+        window.startAtBat = function () { calls.push(State.game === first); return real.apply(this, arguments); };
+        kick();                       /* A: its 400ms beat is now pending */
+        await sleep(120);
+        first = kick();               /* B replaces it inside that beat */
+        await sleep(900);
+        window.startAtBat = real;
+        return { calls: calls.length, intoB: calls.filter(Boolean).length };
+      });
+      ok(errors.length === 0, 'a game left inside its first beat does not throw', errors.join(' | '));
+      ok(r.intoB === 1, 'a replacing game gets exactly one first at bat, its own', JSON.stringify(r));
       await pg.close();
     }
 

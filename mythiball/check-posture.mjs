@@ -425,7 +425,14 @@ if (!opponentsMatch) {
   if (!howto) {
     problems.push('could not find renderHowTo() in mythiball/index.html.');
   } else {
-    const text = howto[0];
+    /* The quick start above the prose teaches the same controls in fewer
+       words, so a stale one there is the same lie told first. */
+    const quick = page.match(/function howtoQuickStart\(\)[\s\S]*?\n\}\n/);
+    if (!quick) problems.push('could not find howtoQuickStart() in mythiball/index.html.');
+    else if (!howto[0].includes('howtoQuickStart()')) {
+      problems.push('How To Play no longer shows the quick start. It is the part a stranger reads first.');
+    }
+    const text = howto[0] + (quick ? quick[0] : '');
     for (const stale of ['marker', 'meter under the field', 'five seconds', 'shakes off the sign',
                          'Throw It', 'howtoRing(', 'closes as the pitch']) {
       if (text.includes(stale)) {

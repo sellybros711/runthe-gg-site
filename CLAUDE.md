@@ -5898,6 +5898,64 @@ samples `scrollWidth` three times during every entrance.
 screen, a keyframe animating `box-shadow`, and `inherits: false` each fail
 their own claims.
 
+#### How to play opens by SHOWING how to play
+
+Asked for: clear animations with simple instructions at the top, before all
+the text. The page opened on eight hundred words, so a stranger met the rules
+before the controls. `howtoQuickStart()` is four loops above everything else:
+**aim, swing, pitch, field**. Each is a picture, a name and one line.
+
+**It is SVG and CSS, not the game's canvas drawers**, and that is the one
+place this page departs from "the figures are drawn by the game's own
+functions". A canvas repainted every frame would be a second render loop on a
+menu screen, running for as long as somebody reads, needing its own stop on
+every way off the page. A CSS animation stops with its node. The colours are
+the game's (the bat's green oval, the white reticle, the release bar's bands,
+the catch ring over its sweet ring), and the drawn figures further down still
+hold the detail.
+
+**THE RESTING STATE IS THE LESSON.** Every moving part is drawn at the one
+frame that explains its step (the bat on the ball, the cursor stopped in the
+green, the ring at its tightest) and the keyframes animate AWAY from that. So
+reduced motion is not a blank or a frame zero, it is the answer. The guard
+asserts it as relations between drawn things rather than as coordinates, so a
+restyle that keeps the lesson keeps passing.
+
+**Every keyframe is `mo-qs-*`**, which puts the loops under the
+compositor-only rule the first section of `check-motion` already reads. That
+rule now allows `animation-timing-function` inside a keyframe, which is the
+easing of the segment starting there rather than an animated property: it is
+how the release cursor sweeps linearly and then stops dead.
+
+**The copy is device neutral**, like the rest of this page: "click, tap or
+press Space", "the mouse, a finger or the arrow keys". `check-posture` scans
+the quick start for stale controls too, because it teaches the same controls
+in fewer words and a stale one there is the same lie told first.
+
+**Proved by mutation**: the card moved below the batting card, every loop
+stopped, the ring's resting scale removed, and the release cursor resting
+outside the green each fail their own claims.
+
+##### And writing its guard found an at bat that started in the wrong game
+
+Every beat before the next batter was `setTimeout(startAtBat, ms)`, which
+starts an at bat in whatever game is current when it lands. Six sites: the
+first pitch, a hit, two paths to an out, a walk and the break between half
+innings. `check-motion` starts games fast enough to leave one inside its first
+400ms, and one run in several threw `Cannot read properties of null (reading
+'over')`.
+
+**THE THROW IS THE LOUD HALF.** Replace the game inside the beat instead,
+which Play again on a result screen can do inside a home run's, and the old
+timer begins a SECOND at bat in the new game on top of its own. Driven with a
+spy on `startAtBat`: two calls into the replacing game before, one after.
+Nothing throws in that case, which is why it had never been seen.
+
+`atBatIn(ms)` captures the game and fires only into it. This is the throw
+window's rule, the catch window's and the robbery's, arriving a fourth time at
+the one timer every plate appearance goes through. `verify-rules` drives both
+halves in "an at bat starts in its own game".
+
 ### A phone gets a MENU, a desktop gets the room
 
 The home screen is the clubhouse. It is called the clubhouse everywhere the
