@@ -376,9 +376,14 @@ async function main() {
         const known2 = !!g.batterCtx.weakKnown;
         refreshHud();
         const card = document.getElementById('atbat').textContent;
+        /* AND THE PITCHER IS STILL TOLD, which is the other half of the
+           clause and the one that would be lost by gating this on the
+           pitch rather than on the side. You chose it. */
+        const deck = (document.getElementById('pt-name') || {}).textContent || '';
         offerPitchSelection();
         const marked = [...document.querySelectorAll('#pitch-select button.weak')].map(b => b.dataset.pt);
         return { strip, weak: rep[0], weakLabel, plaque1, known1, left, plaque2, known2, before, card, marked,
+                 deck, deckWant: PITCHES[rep[0]].label.toUpperCase(),
                  said: g.log.some(l => /cannot handle/.test(l.text)), windup: BEAT.windup };
       });
       ok(!r.strip.grid && r.strip.throwBtn && r.strip.aiming, 'the strip is pitch and Throw; the spot is aimed on the field', JSON.stringify(r.strip));
@@ -387,6 +392,8 @@ async function main() {
       ok(r.known2 && r.plaque2 === 'WEAK PITCH · ' + r.weakLabel && r.said, 'the weak pitch is announced and logged', JSON.stringify({ p: r.plaque2, w: r.weakLabel }));
       ok(!/weak vs/i.test(r.before) && /weak vs/i.test(r.card), 'the at bat card marks it, only after', JSON.stringify({ before: r.before, card: r.card }));
       ok(r.marked.length === 1 && r.marked[0] === r.weak, 'the button is marked', JSON.stringify(r.marked));
+      ok(r.deck.indexOf(r.deckWant) >= 0, 'and the deck names the pitch you chose, at once',
+         `it read "${r.deck}"`);
       ok(errors.length === 0, 'no page errors', errors.join(' | '));
       await pg.close();
     }
@@ -398,10 +405,36 @@ async function main() {
       await exhibition(pg, false);
       const r = await pg.evaluate(() => {
         const g = State.game; g.half = 'top'; g.inning = 1;
-        throwPitch();
-        return { left: g.pitch.windupUntil - performance.now(), windup: BEAT.windup };
+        throwPitch('curveball');
+        refreshHud();
+        const lbl = () => (document.getElementById('pt-name') || {}).textContent || '';
+        /* THE LOUDEST LINE ON THE DECK MUST NOT NAME THE PITCH BEFORE IT
+           ARRIVES. It did, about seven tenths of a pitch duration before
+           the ball even left the hand, which is the whole read given away
+           on a game that models a read as the other dugout's difficulty
+           dial. Read at the moment a batter is deciding, and again once
+           the ball is in the mitt, where naming it is a record. */
+        /* READ AGAINST WHATEVER IS LIVE, never against the pitch this
+           fixture asked for. The CPU is the one pitching here, so its own
+           next throw can replace `g.pitch` between the two reads: pinned
+           to curveball the claim failed on a page doing the right thing,
+           naming a knuckler it had correctly just been handed. */
+        const nameNow = () => {
+          const i = g.pitch && PITCHES[g.pitch.pt];
+          return String(i ? i.label : (g.pitch ? g.pitch.pt : '')).toUpperCase();
+        };
+        const during = lbl(), duringWant = nameNow();
+        g.pitch.arrivedAt = performance.now();
+        refreshHud();
+        const after = lbl(), afterWant = nameNow();
+        return { left: g.pitch.windupUntil - performance.now(), windup: BEAT.windup,
+                 during, duringWant, after, afterWant };
       });
       ok(r.left > r.windup * 0.9, 'the full beat when you bat', JSON.stringify(r));
+      ok(r.during.indexOf(r.duringWant) < 0, 'and the deck does not name the pitch before it arrives',
+         `it read "${r.during}" against a live ${r.duringWant}`);
+      ok(r.after.indexOf(r.afterWant) >= 0, 'and does name it once the ball is in the mitt',
+         `it read "${r.after}" against a live ${r.afterWant}`);
       ok(errors.length === 0, 'no page errors', errors.join(' | '));
       await pg.close();
     }

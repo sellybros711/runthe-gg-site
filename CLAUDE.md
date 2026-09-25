@@ -7538,6 +7538,47 @@ pitched around would be a punishment rather than a hitter.
 opponent knows is invisible otherwise: the player just meets hard contact and
 reads it as luck.
 
+#### AND THE HUMAN HAD THE WHOLE READ FOR NOTHING, ON THE LOUDEST LINE OF THE DECK
+
+Everything above is a dial that decides how much the other dugout KNOWS about
+what is coming, earned over twenty pitches and worth a hard bat's timing error
+from .082 to .024. A human batter was simply told. `pt-name` names the live
+pitch, and measured through the real page it did so **about seven tenths of a
+pitch duration BEFORE the ball left the hand**, on every pitch, from the first
+of the game: `label first names it at t=-0.76 (during the windup)`.
+
+**It lives in the PITCHER's own meter block**, where `meter-side` and
+`meter-hint` beside it are already gated on which side is up, and it alone was
+not. The at bat card three lines away in the same function already gates the
+weak pitch tell on `!playerIsBatting()`. So the convention was in this
+function twice and this line missed it, which is why nothing looked wrong: it
+is a correct label for the side it was written for.
+
+**IT IS A RECORD RATHER THAN A TELL NOW.** Pitching, you chose it, so it names
+it at once, unchanged. Batting, it names the pitch once the ball has arrived
+or been swung at, which is after the decision is made. That is what a
+broadcast does, it teaches a repertoire over an at bat, and it costs no read.
+
+**The waiting word is shorter than the longest pitch name, on purpose.** The
+first draft read `HERE IT COMES`, four characters past `Curveball`, on the one
+deck row a 320 by 568 phone was already fifty pixels over. `ON THE WAY` is ten
+against nine, and measured rather than argued.
+
+**No band moved, and that is worth stating.** `check-skill` and `calibrate`
+drive the engine rather than the deck, so every rate in both is untouched. What
+changed is what a PERSON knows, which no harness here measures and which is the
+one thing the difficulty model was already built around.
+
+**Guarded on both sides, because gating it on the pitch rather than on the side
+loses the half that must stay.** `verify-rules` reads the deck while batting at
+the moment a batter is deciding and again with the ball in the mitt, and reads
+it while pitching, where it must name the pitch at once. Each was proved by
+mutation. **The batting claim reads against whatever pitch is LIVE, never
+against the one the fixture asked for**: the CPU is the one pitching there, so
+its next throw can replace `g.pitch` between the two reads, and pinned to a
+curveball the claim failed on a page doing the right thing, naming a knuckler
+it had correctly just been handed.
+
 ### NOTHING HAD EVER MEASURED THE HALF A PERSON PLAYS
 
 ```

@@ -15491,10 +15491,33 @@ function refreshHud() {
       log.scrollTop = log.scrollHeight;
     }
   }
+  /* THE LOUDEST LINE ON THE DECK WAS TELLING THE BATTER WHAT WAS COMING.
+     This label lives in the pitcher's own meter block, where `meter-side`
+     and `meter-hint` beside it are already gated on which side is up, and
+     it alone was not: measured, it named the pitch about seven tenths of a
+     pitch duration BEFORE the ball left the hand, on every pitch, from the
+     first of the game.
+
+     That is the whole read, given away. The game MODELS a read as a
+     difficulty dial for the other dugout (`DIFF.read`, earned over twenty
+     pitches and worth a hard bat's timing error from .082 down to .024),
+     and a human had the complete answer for nothing. The at bat card three
+     lines from here already gates exactly this class of information on
+     `!playerIsBatting()`, for the weak pitch tell, so the convention was
+     already in this function.
+
+     IT IS A RECORD RATHER THAN A TELL NOW. Pitching, you chose it, so it
+     names it as it always did. Batting, it names the pitch once the ball
+     has ARRIVED or been swung at, which is after the decision is made:
+     that is what a broadcast does, it teaches a repertoire over an at bat,
+     and it costs no read. */
   const ptName = document.getElementById('pt-name');
   if (ptName && g.pitch) {
+    const told = !playerIsBatting() || g.pitch.swung || g.pitch.arrivedAt;
     const info = PITCHES[g.pitch.pt];
-    ptName.textContent = String(info ? info.label : (g.pitch.pt || 'Pitch')).toUpperCase();
+    ptName.textContent = told
+      ? String(info ? info.label : (g.pitch.pt || 'Pitch')).toUpperCase()
+      : 'ON THE WAY';
   }
   refreshStealButton();
   /* Show swing controls only when the player is batting; show the
