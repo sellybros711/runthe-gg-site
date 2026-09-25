@@ -12422,7 +12422,8 @@ node baseball/check-home.mjs      the front page's two designs, and the reel und
 node baseball/check-staff.mjs     the All-Time Staff assignment and its blast radius
 node baseball/check-badges.mjs    every badge is reachable, against real runs
 node baseball/check-run.mjs       a whole run, in a browser, to the screen it ends on
-node baseball/build/icons.mjs     every icon, drawn from the one mark
+node baseball/build/icons.mjs     every icon, drawn from the one pixel ball
+python3 baseball/build/logo.py    the logo, cut off its stock
 ```
 
 ### IT IS SERVED AND UNLISTED, and a launch is four edits rather than one
@@ -14442,40 +14443,39 @@ frame, which is part of why the stretch rendered small and thin. Two viewBoxes
 describing one drawing are the `?v=` pair's problem in SVG: nothing throws, and
 the only symptom is art that looks wrong. They are the same 100x100 now.
 
-### The mark is a diamond with a seam across it, and every icon comes from one drawing
+### The logo is the owner's artwork, and the icon is its ball redrawn as pixels
 
 ```
+python3 baseball/build/logo.py    the logo, cut off its cream stock
 node baseball/build/icons.mjs     every icon size, the header mark and the share card mark
 ```
 
-The game is named for the field and the stone, so the mark is both: a cut diamond
-with a baseball seam stitched across it. It replaced a flat ball on an infield that
-said nothing about the name and matched none of the site's other games. Chosen by
-the owner from four concepts (a puzzle ball in the football icons' colours, this
-stone, a 70s patch and a pixel ball).
+The home page's title is the owner's logo (`build/logo-source.webp`, kept as
+supplied). It sits inside the `h1` with the name as its alt text, so crawlers and
+screen readers still read the title in words. It replaced a cut diamond mark that
+lasted a day.
 
-**Six icon files had no source anywhere in the repo**, which is the share card's
-history two sections down arriving at the icons. So `icons.mjs` draws them all from
-one SVG function, and a change to the mark is one edit and one run.
+**The stock is removed by a flood fill from the border**, because the page shows
+the logo on cream AND on the dark theme's charcoal. The fill takes every pale,
+low-saturation pixel connected to the edge. It cannot reach inside the sign or
+the ball, because both are closed by a dark outline. **It ships as WebP**: 40KB
+against 294KB as a PNG, and the artwork is soft painted pixels, so lossy costs
+nothing visible.
 
-**The background is the page's own cream**, at the owner's asking. On cream a pale
-stone washes out, so it carries a dark outline and the sparkles are the page's gold.
+**The icon is the ball on top of the logo, REDRAWN, not cropped.** The artwork's
+pixels sit on no fixed grid, so a crop resampled to 32px or 192px is mush. The
+ball in `icons.mjs` is drawn cell by cell on an odd grid (25 cells, with a
+two-cell outline like the logo's), and every size is a whole number of pixels
+per cell. **The favicon is a different drawing**: 15 cells with plain seams,
+because the zigzag stitches smear at 16px.
 
-**The favicon is a different drawing, not a smaller one.** At 32px the stitches are
-a pixel each and smear, so the small variant keeps the silhouette, the facets and the
-seam as one line. **The maskable icon keeps the stone inside Android's 80% safe
-circle.**
+**The header mark is 26px** so each of its 26 cells (the ball plus its shadow)
+lands on exactly 2 or 3 device pixels. The share card draws `mark-256.png` rather
+than the SVG, because a canvas that draws an SVG image can refuse to export.
 
-**The share card draws a PNG and the header draws the SVG.** `mark-256.png` is
-preloaded at boot and drawn either side of the title. A canvas that draws an SVG
-image can refuse to export in some browsers, and then Share does nothing. A
-same-origin PNG never does. If it has not loaded yet the card falls back to the two
-stars it always had.
-
-**Four version pins moved together**: the icons and the manifest to `v=2`, and the
-link preview to `v=3` on both pages. The manifest had also been promising a $245M
-cap since before the cap moved to $170M. No checker reads a manifest, so nothing
-caught it.
+**Five version pins moved together**: the icons and the manifest to `v=3`,
+`mark.svg` and `mark-256.png` to `v=2`, and `og.png` to `v=4`, because the card
+carries the mark and was re-rendered.
 
 ### The share card had no source and no builder, and was set in a fallback
 
