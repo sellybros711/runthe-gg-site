@@ -1226,7 +1226,7 @@ const BOWLS = {
     { name: 'Landing Bowl', tagline: 'Jacksonville, a proud old bowl with a good name to beat.' },
     { name: 'Frontera Bowl', tagline: 'El Paso, one of the oldest bowls there is, played in the shadow of the Franklins.' },
     { name: 'Mission Bowl', tagline: 'San Antonio, routinely the best matchup of the non-playoff slate.' },
-    { name: 'Melody Bowl', tagline: 'Nashville, and a downtown that does not sleep.' },
+    { name: 'Melody Bowl', tagline: 'Nashville, and a downtown that doesn\'t sleep.' },
     { name: 'Neon Bowl', tagline: 'The Las Vegas Strip, the brightest lights in bowl season.' },
     { name: 'Yuletide Bowl', tagline: 'San Diego, palm trees and a December kickoff.' },
     { name: 'Bayshore Bowl', tagline: 'Tampa on New Year\'s Day, a bowl older than most in the room.' },
@@ -1637,7 +1637,7 @@ const SCHEMES = [
       if (!qb || (qb.rush_ppg || 0) < 4) return -1;
       return over(qb.rush_ppg, 4, 6);
     },
-    strength: 'Dual Threat quarterback. Defenses cannot key on one thing.',
+    strength: 'Dual Threat quarterback. Defenses can\'t key on one thing.',
   },
 ];
 

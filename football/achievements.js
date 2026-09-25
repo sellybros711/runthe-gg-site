@@ -1184,14 +1184,14 @@
     (c) => ['1for1', '1for2', '1for3', '2for1', '2for2', '2for3']
       .every((t) => c.moveTypes.has(t))));
   add(A('gave_them_more', 'They asked, you paid',
-    'Take a deal where the other GM wanted a second player you had not offered.',
+    'Take a deal where the other GM wanted a second player you hadn\'t offered.',
     'silver', 'Front office', (c) => c.moveRuns.some((m) => m.askedFor >= 1)));
   add(A('asked_for_the_best', 'Priced out of a favorite',
     'Give up a 15-point-a-game player the other GM asked for on top of the deal.',
     'gold', 'Front office',
     (c) => c.askedPlayers.some((p) => Number(p.ppr_ppg_mean) >= 15)));
   add(A('held_the_line', 'Held the line',
-    'Win a Trade Machine title in a season where you never gave up a player you had not offered.',
+    'Win a Trade Machine title in a season where you never gave up a player you hadn\'t offered.',
     'gold', 'Front office',
     (c) => c.moveRuns.some((m) => m.askedFor === 0 && m.trades >= 2
       && isTrue(m.row.title_won))));
@@ -1529,7 +1529,7 @@
       const men = c.rosterOf(r);
       return men.length > 0 && fn(men, r);
     }));
-    add(A('dyn_same_six', 'If it is not broken',
+    add(A('dyn_same_six', 'If it isn\'t broken',
       'Field the exact same six men two seasons running.', 'gold', 'Dynasty',
       (c) => c.anyDynasty((d) => d.seasons.some((r, i) => {
         if (!i) return false;

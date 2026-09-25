@@ -2090,7 +2090,7 @@ const SCHEMES = [
       if (!rb || (rb.rush_ppg || 0) < 10) return -1;
       return fitAvg(over(qb.rush_ppg, 3.5, 4), over(rb.rush_ppg, 10, 6));
     },
-    strength: 'Wildcat. Two runners the defense cannot account for.',
+    strength: 'Wildcat. Two runners the defense can\'t account for.',
   },
   {
     key: 'air_coryell',
@@ -2168,7 +2168,7 @@ const SCHEMES = [
       if (!qb || (qb.rush_ppg || 0) < 3.5) return -1;
       return over(qb.rush_ppg, 3.5, 6);
     },
-    strength: 'Dual Threat quarterback. Defenses cannot key on one thing.',
+    strength: 'Dual Threat quarterback. Defenses can\'t key on one thing.',
   },
   {
     key: 'two_te',
@@ -2330,7 +2330,7 @@ const DEFENSE_SCHEMES = [
   },
   {
     key: 'bend_dont_break',
-    name: 'Bend but Do Not Break',
+    name: 'Bend but Don\'t Break',
     detect(roster) {
       /* Volume tacklers and few splash plays: everything is in front of you, and it
          stays there. Requires the tackling to be real AND the rush to be quiet, so it
@@ -2340,7 +2340,7 @@ const DEFENSE_SCHEMES = [
       if (tackle < 30 || rush > 4) return -1;
       return fitAvg(over(tackle, 30, 12), over(4 - rush, 0, 3));
     },
-    strength: 'Bend but Do Not Break. Everything is in front of you and it stays there.',
+    strength: 'Bend but Don\'t Break. Everything is in front of you and it stays there.',
   },
 ];
 
@@ -2632,7 +2632,7 @@ function coachReport(roster, chemistryMultiplier, spend) {
   if (st.qbSupport >= 1.06) {
     strengths.push(`${qb ? last(qb.name) : 'Your quarterback'} lifts everyone he throws to.`);
   } else if (st.qbSupport <= 0.86) {
-    weaknesses.push(`${qb ? last(qb.name) : 'Your quarterback'} cannot get these receivers the ball.`);
+    weaknesses.push(`${qb ? last(qb.name) : 'Your quarterback'} can't get these receivers the ball.`);
   } else if (st.qbSupport <= 0.95) {
     weaknesses.push('An ordinary quarterback holds your receivers back.');
   }
@@ -2693,7 +2693,7 @@ function coachReport(roster, chemistryMultiplier, spend) {
   if (st.multiplier >= 1.03 && total >= 60) verdict = 'A real contender.';
   else if (st.multiplier >= 0.96 && total >= 50) verdict = 'Good enough to win a lot of games.';
   else if (total >= 40) verdict = 'Middle of the pack. It will need some luck.';
-  else verdict = 'This is not a playoff team.';
+  else verdict = 'This isn\'t a playoff team.';
 
   return { structure: st, strengths, weaknesses, verdict, totalFppg: total, swing };
 }
@@ -5831,13 +5831,13 @@ const DYNASTY_BOSSES = [
     tell: 'An offense that never punts. Keep it on the sideline and shorten the game.',
     note: 'the 16-0 Patriots' },
   { team_season_id: 'BAL-2000', weakTo: 'air', trap: 'ground',
-    tell: 'The best run defense ever assembled. Do not try to run on it.',
+    tell: 'The best run defense ever assembled. Don\'t try to run on it.',
     note: 'the 2000 Ravens' },
   { team_season_id: 'DEN-2013', weakTo: 'ground', trap: 'trick',
     tell: 'A record-setting passing attack. Out-score it by keeping it off the field.',
     note: 'the 606-point Broncos' },
   { team_season_id: 'TB-2002', weakTo: 'trick', trap: 'ground',
-    tell: 'A Cover 2 that reads everything in front of it. You will need something it has not seen.',
+    tell: 'A Cover 2 that reads everything in front of it. You\'ll need something it hasn\'t seen.',
     note: 'the 2002 Buccaneers' },
   { team_season_id: 'SF-2019', weakTo: 'air', trap: 'trick',
     tell: 'A four-man rush that gets home on its own. Get the ball out quick and over the top.',

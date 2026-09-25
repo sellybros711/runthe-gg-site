@@ -133,7 +133,7 @@ for (const g of GAMES) {
      disclosure rather than just noise. */
   const warnText = await p.$eval('#pf-delnote', (e) => (e.textContent || '').replace(/\s+/g, ' '));
   ok('  ...and it spells out the whole loss',
-    /cannot be undone/i.test(warnText) && /every RunThe\.GG game/i.test(warnText)
+    /(?:cannot|can't) be undone/i.test(warnText) && /every RunThe\.GG game/i.test(warnText)
       && /leaderboard/i.test(warnText), warnText.slice(0, 120));
   ok('  ...and the way back appears', !!(await p.$('#a-delcancel')));
   ok('  ...and the button is still quiet at this step', !warned.filled && warned.w < warned.sheetW * 0.7,

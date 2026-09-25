@@ -202,7 +202,7 @@
 
     if (m === 'newpass') {
       t.textContent = 'Set a new password';
-      l.textContent = 'Choose a new password for your account. You’ll stay signed in on this device.';
+      l.textContent = 'Pick a new password. You’ll stay signed in on this device.';
       b.innerHTML =
         '<input type="password" id="rtgauthNp" placeholder="New password" autocomplete="new-password">' +
         '<input type="password" id="rtgauthNp2" placeholder="Confirm new password" autocomplete="new-password">' +
@@ -215,7 +215,7 @@
     // sign in / sign up
     var isUp = m === 'signup';
     t.textContent = isUp ? 'Create your account' : 'Welcome back';
-    l.textContent = 'Free forever. One account works across every RunThe.GG game: Arcade, Football, Soccer, Golf and more.';
+    l.textContent = 'Free forever. One account for every RunThe.GG game: Arcade, Football, Soccer, Golf and more.';
     b.innerHTML =
       '<button class="rtgauth-gbtn" id="rtgauthG" type="button"' + (busy ? ' disabled' : '') + '>' + GOOGLE_G + 'Continue with Google</button>' +
       '<div class="rtgauth-or">or</div>' +
@@ -245,13 +245,13 @@
       if (!em || !pw) { st.err = 'Enter an email and password.'; renderModal(); return; }
       run(function () {
         return A.signUp(em, pw, u).then(function (r) {
-          if (!r.error && r.needsConfirm) { st.mode = 'signin'; st.note = 'Account created. Check your email to confirm, then sign in.'; }
+          if (!r.error && r.needsConfirm) { st.mode = 'signin'; st.note = 'Account made! Check your email to confirm, then sign in.'; }
           return r;
         });
       });
     } else {
       var id = $('rtgauthId').value.trim();
-      if (!id || !pw) { st.err = 'Enter your login and password.'; renderModal(); return; }
+      if (!id || !pw) { st.err = 'Enter your username or email and your password.'; renderModal(); return; }
       run(function () { return A.signIn(id, pw); });
     }
   }
@@ -268,7 +268,7 @@
       if (r && r.error) { st.err = r.error; renderModal(); return; }
       st.note = 'If an account uses that email, a reset link is on its way. Check your inbox.';
       renderModal();
-    }).catch(function () { st.busy = false; st.err = 'Could not send the email. Try again.'; renderModal(); });
+    }).catch(function () { st.busy = false; st.err = 'Couldn’t send the email. Try again.'; renderModal(); });
   }
 
   // password reset: set the new password inside the recovery session (run() handles
@@ -281,12 +281,12 @@
   }
 
   function onDelete() {
-    if (!window.confirm('Delete your RunThe.GG account? This removes your profile, streaks and scores across every game and cannot be undone.')) return;
+    if (!window.confirm('Delete your RunThe.GG account? This wipes your profile, streaks and scores in every game. You can’t undo it.')) return;
     run(function () {
       return A.deleteAccount().then(function (r) {
         if (r && r.ok) { st.note = ''; return { error: null }; }
         if (r && r.reason === 'active_subscription') return { error: 'Cancel your Pro subscription before deleting your account.' };
-        if (r && r.reason) return { error: 'Could not delete the account right now.' };
+        if (r && r.reason) return { error: 'Couldn’t delete your account right now.' };
         return r;
       });
     }, true);

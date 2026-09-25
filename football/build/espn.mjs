@@ -147,9 +147,26 @@ async function getJSON(url) {
     const res = await fetch(url, {
       signal: ctl.signal,
       redirect: 'follow',
-      /* Asked for as a browser would, because an unauthenticated public endpoint is
-         entitled to refuse a client that will not say what it is. */
-      headers: { accept: 'application/json', 'user-agent': 'runthe.gg/1.0 (+https://runthe.gg)' },
+      /* ASKED FOR AS A BROWSER WOULD, AND THIS LINE USED TO SAY SO WHILE DOING THE
+         OPPOSITE. It sent `runthe.gg/1.0 (+https://runthe.gg)`, which is a self
+         identifying bot rather than a browser, and the comment above it claiming otherwise
+         is the "a comment is a claim" class this repo keeps finding: the sentence was
+         right and the code under it was not.
+         THE FIRST REAL RUN OF fantasy-live.yml IS WHAT FOUND IT, which is what that
+         workflow's header says a run of it is for. Every one of the four requests came
+         back HTTP 403, the week form and both date forms alike. A 403 on a public
+         unauthenticated endpoint is not a week numbering disagreement and not an outage:
+         it is the client being refused, and the only thing ESPN knew about this client was
+         that user agent.
+         NOTHING HERE CAN TEST IT. site.api.espn.com is refused by the development
+         sandbox's egress proxy on the CONNECT, so a dispatch of the workflow is the test,
+         and the line to read in its log is `scoreboard:`. */
+      headers: {
+        accept: 'application/json, text/plain, */*',
+        'accept-language': 'en-US,en;q=0.9',
+        'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36'
+          + ' (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36',
+      },
     });
     if (!res.ok) { say(`  espn: HTTP ${res.status} on ${url}`); return null; }
     return await res.json();

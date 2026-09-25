@@ -37,7 +37,7 @@
 (function () {
   'use strict';
 
-  const BOARD_API_VERSION = 1;
+  const BOARD_API_VERSION = 2;
 
   const SB_URL = 'https://jcrrxqfpdelrmvjuihnm.supabase.co';
   const SB_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpjcnJ4cWZwZGVscm12anVpaG5tIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA3OTY5NjIsImV4cCI6MjA5NjM3Mjk2Mn0.wyjoZpa2yRW-l38-KMGqBvEgTlW9v1KheNye7csWAlM';
@@ -54,7 +54,7 @@
      request. No player-supplied text is among them: the roster comes back as
      ids and is drawn against the client's own copy of players.json. */
   const COLS = 'id,created_at,display_name,run_mode,lock_key,daily_day,' +
-    'wins,losses,games,playoff_wins,made_playoffs,title_won,beat_record,is_goat,' +
+    'wins,losses,games,playoff_wins,made_playoffs,title_won,beat_record,is_goat,depth,' +
     'seed_label,point_diff,rating,ortg,drtg,chemistry,structure_mult,archetype,' +
     'spend_musd,respins,all_time_rank,picks,slots';
 
@@ -111,18 +111,24 @@
     return q;
   }
 
-  /* ---------------- the two axes ----------------
+  /* ---------------- the three axes ----------------
      Named here rather than taking a column from the caller, so nothing can put
      an arbitrary string into an order= parameter.
 
-     TWO AND NOT THREE. The football board has a third, and the college one
-     retired a third for a reason that applies here: an axis that does not
-     discriminate is a column of the same value all the way down. Wins is the
-     record, rating is the roster, and those are the two questions this game
-     asks. A third on point differential would order almost the same rows as
-     wins does, because score already breaks a tie on wins with exactly that. */
-  const SORTS = { record: 'score', rating: 'rating' };
-  const DIR = { record: 'desc', rating: 'desc' };
+     THREE, AND THE FIRST IS HOW FAR THE RUN WENT. This board shipped with two
+     (the record and the rating) and ranked a run on its regular season alone,
+     so over 1,800 simulated league runs the median champion sat 98th, under
+     60 win teams that went out in the first round. The game's own guide says
+     the goal is the ring and hands the player the playoff games to call, so
+     `score` leads with depth (see 108_hoops_leaderboard.sql) and the record
+     is a board of its own, because chasing 72 is its own sport.
+
+     The college board retired an axis because it did not discriminate. These
+     three disagree on real runs: a 45 win champion is first on Best run and
+     nowhere on Best record, and the rating is the roster rather than either. */
+  const SORTS = { run: 'score', record: 'record_score', rating: 'rating' };
+  const DIR = { run: 'desc', record: 'desc', rating: 'desc' };
+  const DEFAULT_SORT = 'run';
 
   /* Postgres reads an index backwards as happily as forwards, but only when
      EVERY sort key reverses together: `score asc, created_at asc` against a
@@ -159,7 +165,7 @@
     /* A 404 is the table or the function missing. A message naming either is
        the same thing arriving as a 400 from a stale schema cache, which is a
        real state a Supabase project sits in for a minute after a migration. */
-    if (res.status === 404 || /rtf_runs|rtf_submit_run|rtf_board_modes/.test(msg)) {
+    if (res.status === 404 || /rtf_runs|rtf_submit_run|rtf_board_modes|record_score|depth/.test(msg)) {
       needsMigration = true;
     }
     lastError = { where, status: res.status, code: (body && body.code) || '', message: msg };
@@ -195,22 +201,48 @@
   };
   const round1 = (n) => roundTo(n, 1);
 
-  /* THE SCORE, RECOMPUTED HERE, and it has to be byte-identical to the stored
-     generated column in 108_hoops_leaderboard.sql:
+  /* HOW FAR A RUN WENT, 0 to 6, and it has to agree with rtf_submit_run():
 
-       wins * 10000 + least(9999, greatest(0, round((point_diff + 40) * 100)))
+       0 missed the playoffs      4 lost in the conference finals
+       1 lost the play-in         5 lost in the Finals
+       2 lost in the first round  6 won the title
+       3 lost in the second round
+
+     A seeded run starts at 2 and a play-in run at 1, and each series won is
+     one more. The lines are the engine's own constants, passed in rather than
+     read off a global, so this file does not have to load before engine.js. */
+  function depthOf(wins, playoffWins, topSix, playIn) {
+    const w = Math.round(Number(wins));
+    const po = Math.max(0, Math.round(Number(playoffWins) || 0));
+    if (!Number.isFinite(w)) return null;
+    if (w >= topSix) return 2 + po;
+    if (w >= playIn) return 1 + po;
+    return 0;
+  }
+
+  /* THE SCORE, RECOMPUTED HERE, and it has to be byte-identical to the stored
+     generated columns in 108_hoops_leaderboard.sql:
+
+       score        = depth * 1000000 + record_score
+       record_score = wins * 10000
+                      + least(9999, greatest(0, round((point_diff + 40) * 100)))
 
      The results screen counts the runs ahead of you the moment the season ends,
      which is before the insert has come back, so this is the number that count
      is taken against. Two definitions of one thing is the shape that drifts, so
      the file that owns it is the SQL and this is a copy that has to be checked
      against it. verify.mjs does exactly that. */
-  function scoreOf(wins, pointDiff) {
+  function recordScoreOf(wins, pointDiff) {
     const w = Math.round(Number(wins));
     const d = round1(Number(pointDiff));
     if (!Number.isFinite(w) || !Number.isFinite(d)) return null;
     const shifted = Math.min(9999, Math.max(0, Math.round((d + 40) * 100)));
     return w * 10000 + shifted;
+  }
+  function scoreOf(wins, pointDiff, depth) {
+    const r = recordScoreOf(wins, pointDiff);
+    const dp = Math.round(Number(depth) || 0);
+    return r === null ? null : dp * 1000000 + r;
   }
 
   /* THE SIGNED-IN USER'S TOKEN, WHEN THERE IS ONE. Sending the anon key while
@@ -322,7 +354,7 @@
      first. */
   async function placeIn(mode, sort, dirWant, value, named) {
     if (value === null || value === undefined || !Number.isFinite(Number(value))) return null;
-    const key = SORTS[sort] ? sort : 'record';
+    const key = SORTS[sort] ? sort : DEFAULT_SORT;
     const col = SORTS[key];
     const dir = dirOf(key, dirWant);
     /* Rounded to match what the column HOLDS, or the comparison is against a
@@ -365,7 +397,7 @@
      it is out of describe the same population as the list. */
   async function ranks(mode, score) {
     const [place, count, played] = await Promise.all([
-      placeIn(mode, 'record', 'desc', score, true),
+      placeIn(mode, 'run', 'desc', score, true),
       total(mode, true),
       /* And the unnamed total beside it, because "how many runs have been
          played here" and "who is on the board" are two different questions and
@@ -385,7 +417,7 @@
      same reason `sort` is looked up in SORTS: nothing a caller hands in reaches
      an order= parameter as text. */
   async function top(mode, limit, sort, dirWant) {
-    const key = SORTS[sort] ? sort : 'record';
+    const key = SORTS[sort] ? sort : DEFAULT_SORT;
     const col = SORTS[key];
     const dir = dirOf(key, dirWant);
     const n = Math.min(200, Math.max(1, Math.round(Number(limit) || 25)));
@@ -447,8 +479,8 @@
        page's NEED_BOARD in the same commit. */
     API_VERSION: BOARD_API_VERSION,
     submit, claim, ranks, top, mine, boards, placeIn, total, boardsScope: scope,
-    scoreOf, modeOf, round1,
-    SORTS, DIR,
+    scoreOf, recordScoreOf, depthOf, modeOf, round1,
+    SORTS, DIR, DEFAULT_SORT,
     get offline() { return offline; },
     get lastError() { return lastError; },
     get needsMigration() { return needsMigration; },

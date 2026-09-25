@@ -57,7 +57,14 @@ const lum = ([R, G, B]) => {
 };
 const ratio = (a, b) => (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
 
-async function game(browser, w, h, dpr) {
+/* WHICH RENDERER, and the default is deliberately not passed anywhere.
+   Every section here is about what a reader can SEE, and both modes draw
+   the same geometry at the same size, so a legibility claim is a claim
+   about both and is asked of whatever the page ships as its default. The
+   two sections that are about the MACHINERY rather than the picture name
+   their mode, because "a block is a whole number of device pixels" is a
+   sentence retro means and smooth does not. */
+async function game(browser, w, h, dpr, mode) {
   const ctx = await browser.newContext({ viewport: { width: w, height: h },
     deviceScaleFactor: dpr, isMobile: w < 900, hasTouch: w < 900 });
   const pg = await ctx.newPage();
@@ -67,12 +74,13 @@ async function game(browser, w, h, dpr) {
   await pg.evaluate(() => localStorage.clear());
   await pg.goto(URL);
   await pg.waitForTimeout(400);
-  await pg.evaluate(() => {
+  await pg.evaluate((m) => {
     Sound.muted = true; PREFS.cutscenes = false; PREFS.coach = false;
+    if (m) { PREFS.smooth = m === 'smooth'; document.body.classList.toggle('smooth', PREFS.smooth); }
     State.team = ROSTER.slice(0, 9).map(c => c.k); State.teamName = 'Testers';
     State.opponent = OPPONENTS[0]; State.innings = 5; State.mode = 'exhibition';
     startGame({ mode: 'exhibition', youHome: false });
-  });
+  }, mode || null);
   return { ctx, pg, errors };
 }
 
@@ -210,8 +218,19 @@ const main = async () => {
        IT IS ASKED OF THE DESTINATION AND NOT OF THE PIXELS, because a
        colour count cannot say WHOSE pixel it is: a figure overlaps the
        grass, the dirt and the man behind him. The property is exact and it
-       is the one that broke. */
-    const { ctx, pg, errors } = await game(browser, 390, 844, 3);
+       is the one that broke.
+
+       IT IS A RETRO CLAIM AND IT IS ASKED OF RETRO, which is a narrowing
+       rather than a loosening. The defect is that a bitmap landing between
+       two pixels of a LOW RESOLUTION blit is then magnified whole, so the
+       figure is soft whichever way it is filtered. Smooth has no such blit:
+       the sprite is rasterized onto the display bitmap at the size it will
+       occupy, and a fractional destination there is one filtered edge on a
+       picture whose every edge is filtered, which is how a figure moves
+       across a field without stepping. Asking this of smooth would be
+       demanding the pixel grid back from the mode that exists to not have
+       one. The smooth half is asserted in the section below instead. */
+    const { ctx, pg, errors } = await game(browser, 390, 844, 3, 'retro');
     await pg.waitForFunction(() => State.game && plateViewActive(State.game),
       { timeout: 25000 });
     const r = await pg.evaluate(() => new Promise((res) => {
@@ -242,6 +261,97 @@ const main = async () => {
       'nothing was drawn, so the check below asserted nothing');
     ok(r.bad === 0, 'every one of them lands on a whole pixel of the blit',
       `${r.bad} of ${r.n} landed between two: ${r.off.join('  ')}`);
+    ok(errors.length === 0, 'no page errors', errors.join(' | '));
+    await pg.close(); await ctx.close();
+  }
+
+  /* ---- and in smooth mode the art is smoothed ---- */
+  {
+    console.log('and in smooth mode the art is smoothed');
+    /* THE SAME DEFECT WEARS A DIFFERENT SHAPE HERE, and the obvious way to
+       ask about it CANNOT FAIL. The tempting claim is that the destination
+       a sprite covers is the size of the canvas it came from, and that is
+       true by construction rather than by correctness: the blit is written
+       `drawImage(hcv, x, y, dw, dh)` with `dw = hbl / k`, so the destination
+       in bitmap pixels is `dw * k`, which is `hbl`, which is the source
+       width, whatever `hbl` turns out to be. Written that way it passed the
+       mutation that builds the sprite at the wrong size. This repo has that
+       trap written down four times already and it was walked into again.
+
+       SO THE CLAIM IS ABOUT THE ART ITSELF, and what it measures is the
+       share of a built sprite's opaque pixels that are EXACTLY one of the
+       character's own palette entries.
+
+       EPX INVENTS NO COLOUR. That is its defining property and it is what
+       makes this measurable: a flat interior comes through it untouched and
+       only the edges are blended, by the near 1:1 resize at the end. So the
+       three ways of building the same frame separate cleanly, measured over
+       six characters at the size the plate camera asks for:
+
+         retro, `fillRect` on a 64 grid            1.000, every pixel
+         smooth, EPX twice then the resize         0.583 to 0.711
+         a straight bilinear blowup of the 64px    0.153 to 0.358
+
+       A BAND RATHER THAN A FLOOR, because both ends are real failures and
+       they are opposite ones. At 1.0 the mode has fallen through to the
+       hard squares and is not smoothing at all. Under about 0.45 it is
+       smearing the whole figure rather than its edges, which is what a
+       naive upscale does and is visibly mushier than either: rendered side
+       by side, the faces and the bat lose their definition. The threshold
+       sits in the gap between 0.358 and 0.583, which is the widest gap
+       available and about as far from both as it can be.
+
+       A COLOUR COUNT WAS THE FIRST VERSION AND IT CAUGHT ONLY ONE END.
+       Blurring everything also produces thousands of colours, so it passed
+       the mutation that removes EPX while failing the one that removes the
+       whole smooth path. Half a guard reads exactly like a whole one. */
+    const { ctx, pg, errors } = await game(browser, 390, 844, 3, 'smooth');
+    await pg.waitForFunction(() => State.game && plateViewActive(State.game),
+      { timeout: 25000 });
+    const r = await pg.evaluate(() => {
+      const who = ROSTER.filter(c => hasHero(c.k)).slice(0, 6);
+      /* the size the plate camera actually asks for at this scale */
+      const px = Math.max(8, Math.round(HERO_DRAW_H * plateGeom().batSc
+                                        * (FIELD_CAM.draw / PIX)));
+      const share = (k, smooth) => {
+        const hex = Object.values(V2_SPRITES[k].p).map((h) => {
+          const n = h.replace('#', '');
+          return parseInt(n.length === 3 ? n[0]+n[0]+n[1]+n[1]+n[2]+n[2] : n, 16);
+        });
+        const pal = new Set(hex);
+        PREFS.smooth = smooth;
+        const cv = heroSpriteCanvas(k, px, 'ready');
+        const d = cv.getContext('2d', { willReadFrequently: true })
+                    .getImageData(0, 0, cv.width, cv.height).data;
+        let hit = 0, n = 0;
+        for (let i = 0; i < d.length; i += 4) {
+          if (d[i + 3] < 200) continue;           /* transparent margin, and its fringe */
+          n++;
+          if (pal.has((d[i] << 16) | (d[i + 1] << 8) | d[i + 2])) hit++;
+        }
+        return n ? hit / n : 1;
+      };
+      const rows = who.map(c => ({ k: c.k, smooth: share(c.k, true), retro: share(c.k, false) }));
+      PREFS.smooth = true;
+      return { px, rows,
+               worstRetro: Math.min(...rows.map(x => x.retro)),
+               hiSmooth: Math.max(...rows.map(x => x.smooth)),
+               loSmooth: Math.min(...rows.map(x => x.smooth)) };
+    });
+    /* Retro is the CONTROL, and it is what says the measurement is of the
+       mode rather than of the character: the identical frames at the
+       identical size, built the other way, hold no colour the palette
+       does not. */
+    ok(r.worstRetro >= 0.999,
+      `retro builds all ${r.rows.length} out of their own palettes and nothing else`,
+      `worst was ${r.worstRetro.toFixed(3)}`);
+    ok(r.hiSmooth < 0.95,
+      `and smooth blends them (at most ${r.hiSmooth.toFixed(2)} left pure at ${r.px}px)`,
+      'the art is not being smoothed at all: smooth fell through to the hard squares');
+    ok(r.loSmooth > 0.45,
+      `at the edges and not all over (at least ${r.loSmooth.toFixed(2)} left pure)`,
+      `${r.loSmooth.toFixed(3)} is a naive blowup of the 64px art rather than EPX: `
+      + JSON.stringify(r.rows.map(x => [x.k, +x.smooth.toFixed(2)])));
     ok(errors.length === 0, 'no page errors', errors.join(' | '));
     await pg.close(); await ctx.close();
   }
@@ -658,8 +768,11 @@ const main = async () => {
        catch ring's two labels have to bracket the ring. Reintroduce the old
        bridge and the throw label reads 13% across, 32% down, four pixels
        tall: every claim but "found" fails. */
-    const boxes = (d, W, H) => {
-      /* Self contained, because it is shipped into the page as source. */
+    const boxes = (d, W, H, k) => {
+      /* Self contained, because it is shipped into the page as source.
+         `k` is bitmap pixels per CSS pixel, and everything this measures is
+         expressed through it. See the filter at the bottom for why. */
+      k = k || 1;
       const gold = (d, i) => d[i] >= 232 && d[i + 1] >= 180 && d[i + 1] <= 208
                           && d[i + 2] >= 70 && d[i + 2] <= 112;
       /* Row histogram of gold, split into bands where a row has none: one
@@ -690,8 +803,19 @@ const main = async () => {
                               return d[i] < 48 && d[i + 1] < 48 && d[i + 2] < 48; };
         b.dark = dark(b.x0 - 4) && dark(b.x1 + 4);
       }
-      /* a band of type is wide: a stray gold pixel or a chip is not */
-      return out.filter(b => b.x1 - b.x0 > 40 && b.n > 60);
+      /* A BAND OF TYPE IS WIDE: a stray gold pixel or a chip is not.
+         IN CSS PIXELS AND NEVER IN BITMAP ONES, which is the difference
+         between a claim about the label and a claim about the machine it
+         was measured on. Written as bare bitmap counts these were right
+         for as long as the page always drew at or above CSS resolution,
+         and smooth mode draws at exactly it: on a 390 phone the bitmap
+         goes 584 wide to 438, so a nine character `CATCH IT!` loses a
+         quarter of its width and nearly half its pixel count and fell
+         under both numbers. The label was the same size on the glass the
+         whole time, which the cap height assertion beside this one was
+         still reporting correctly, so the only symptom was one of the two
+         bands disappearing from a check that could see the other. */
+      return out.filter(b => (b.x1 - b.x0) / k > 40 && b.n / (k * k) > 60);
     };
     for (const [label, w, h, dpr] of [['phone', 390, 844, 3], ['desktop', 1440, 900, 1]]) {
       const { ctx, pg, errors } = await game(browser, w, h, dpr);
@@ -710,7 +834,7 @@ const main = async () => {
         const d = c.getImageData(0, 0, cv.width, cv.height).data;
         const rect = cv.getBoundingClientRect();
         const k = cv.width / rect.width;                 /* bitmap px per CSS px */
-        const bands = boxes(d, cv.width, cv.height).map(b => ({
+        const bands = boxes(d, cv.width, cv.height, k).map(b => ({
           cx: (b.x0 + b.x1) / 2 / cv.width, cy: (b.y0 + b.y1) / 2 / cv.height,
           h: (b.y1 - b.y0 + 1) / k, bottomPage: rect.top + b.y1 / k, dark: b.dark }));
         const m = document.querySelector('.meter-wrap');
@@ -752,14 +876,37 @@ const main = async () => {
            blit used: logical / PIX is blocks, minus the crop, times draw */
         const ring = cw ? { x: (cw.landingX / PIX - FIELD_CAM.sx) * FIELD_CAM.draw / cv.width,
                             y: (cw.landingY / PIX - FIELD_CAM.sy) * FIELD_CAM.draw / cv.height } : null;
-        return { ring, bands: boxes(d, cv.width, cv.height).map(b => ({
+        return { ring, wcss: cv.width / k, hcss: cv.height / k,
+          bands: boxes(d, cv.width, cv.height, k).map(b => ({
           cx: (b.x0 + b.x1) / 2 / cv.width, cy: (b.y0 + b.y1) / 2 / cv.height, h: (b.y1 - b.y0 + 1) / k })) };
       }, boxes.toString());
       ok(ring && r2.ring, `${label}: a catch window opens on a fly ball`);
       if (r2.ring) {
-        /* within a ring's reach of the ring, in both axes, so the hat at the
-           plate cannot be the lower label of a ring in centre field */
-        const near = r2.bands.filter(b => Math.abs(b.cx - r2.ring.x) < 0.12 && Math.abs(b.cy - r2.ring.y) < 0.2);
+        /* WITHIN A REACH OF THE RING, IN CSS PIXELS AND NOT IN A SHARE OF
+           THE CANVAS, so the hat at the plate cannot be the lower label of
+           a ring in centre field.
+
+           IT WAS A SHARE AND IT WAS A COIN FLIP. The labels sit a fixed
+           distance off the ring, so as a fraction of the CANVAS that
+           distance depends on how much world the crop holds, and the upper
+           one landed at 0.189 to 0.204 of the height against a window of
+           0.2: whether this passed was decided by where the fly ball
+           happened to come down. It went red twice in three runs on a page
+           with nothing wrong with it.
+
+           MEASURED RATHER THAN GUESSED, over both renderers and both
+           screens, in CSS pixels off the ring:
+
+             CATCH IT!      56 on a phone, 107 to 142 on a desktop
+             SPACE / CLICK  26 on a phone,  38 to  48 on a desktop
+             the straw hat  139 to 145 on a phone, 429 to 452 on a desktop
+
+           So 250 has about a 1.7x margin on both sides at once, where the
+           old share had none. The horizontal window does the rest: a label
+           is centred on its ring to within 6 CSS pixels on every screen
+           measured, and nothing else here is. */
+        const near = r2.bands.filter(b => Math.abs(b.cx - r2.ring.x) * r2.wcss < 60
+                                       && Math.abs(b.cy - r2.ring.y) * r2.hcss < 250);
         const above = near.some(b => b.cy < r2.ring.y), below = near.some(b => b.cy > r2.ring.y);
         ok(above && below, `${label}: CATCH IT! and SPACE / CLICK bracket the ring`,
           `ring at (${(r2.ring.x * 100).toFixed(0)}%, ${(r2.ring.y * 100).toFixed(0)}%), bands ${JSON.stringify(r2.bands)}`);

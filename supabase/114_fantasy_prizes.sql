@@ -5,7 +5,7 @@
 --
 -- Needs 109 and 110. Independent of 111, 112 and 113.
 --
--- THE TOP THREE ARE RECORDED AUTOMATICALLY. THE CODE IS MINTED BY HAND.
+-- THE TOP THREE ARE RECORDED BY TRIGGER. THE CODE IS MINTED BY A SEPARATE STEP.
 -- ---------------------------------------------------------------------------
 -- That split is the whole safety argument of this file and it is not tidiness.
 --
@@ -15,9 +15,11 @@
 -- thing the store sells, and the store has exactly one on purpose.
 --
 -- So this file records WHO won and leaves `promo_code` null. `scripts/stripe/mint-winner-
--- code.mjs` is what fills it, from a workflow with a dry run, after a person has looked at
--- how many people actually entered. Two entrants and a free bundle is a decision somebody
--- should make with their eyes open, and a trigger cannot make it.
+-- code.mjs` is what fills it. It was written to be run by a person; it now runs on its own,
+-- from `fantasy-live.yml`, on the tick that closes the week, and a field of one is voided
+-- rather than paid. That is still a separate step from this trigger, in a separate process
+-- holding the Stripe key, which is the half of the argument above that matters.
+-- `115_fantasy_result_when_ready.sql` keeps every entrant's result back until it has run.
 --
 -- A CODE IS NOT A GRANT, AND THAT IS WHY IT IS A CODE. `functions/api/stripe/checkout-
 -- bundle.js` already sends `allow_promotion_codes`, and `webhook.js` already grants on

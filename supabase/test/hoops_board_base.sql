@@ -61,15 +61,20 @@ create or replace function today_day() returns int
 $$;
 
 -- One legal roster, so a check that is about something else does not have to
--- write six picks out again. The ids are the shape players.json uses.
-create or replace function six(tag text default 'a') returns text[]
+-- write five picks out again. The ids are the shape players.json uses.
+--
+-- IT WAS SIX FOR A WHILE AFTER THE GAME WENT TO FIVE, and the function has
+-- refused six since that day, so every check below its first submit went
+-- unrun: the file died at line 75 on "a run has 5 picks, got 6". Nothing
+-- ran it. The name follows the roster now rather than a number.
+create or replace function five(tag text default 'a') returns text[]
   language sql immutable as $$
   select array[
     'jordami01|1996|CHI', 'pippesc01|1996|CHI', 'rodmade01|1996|CHI',
-    'kukocto01|1996|CHI', 'harpero01|1996|CHI',
+    'kukocto01|1996|CHI',
     'longolu01|199' || (abs(hashtext(tag)) % 10)::text || '|CHI'
   ]::text[]
-  -- The sixth pick varies with the tag so two calls can be two different
+  -- The last pick varies with the tag so two calls can be two different
   -- rosters, which is what the double submit guard needs to be asked about.
   -- A DIGIT AND NOT A HASH CHARACTER: md5 is hex, so one call in three would
   -- have produced a season ending in a letter and been refused by the pick

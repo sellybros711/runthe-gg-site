@@ -342,10 +342,14 @@ console.log('\nAN ACCOUNT THAT IS NOBODY IN PARTICULAR IS LET IN');
    * NOTHING FAILS WHEN THIS DRIFTS. A door that is never built throws nothing, renders
    * nothing and is reported by nobody, which is the shape of every bug this file exists for.
    *
-   * THERE ARE THREE LISTS NOW, and the third is the one the drift can actually cost
-   * something again: Fantasy Challenge ships FANTASY_LIVE = false, so its list is the only
-   * one of the three still deciding who sees a mode. So this walks whatever access files are
-   * on disk rather than naming two, and the next mode is covered without anybody remembering.
+   * THERE ARE THREE LISTS NOW AND ALL THREE FLAGS ARE TRUE, so none of them decides who
+   * sees a mode any more. Fantasy Challenge was the last one that did and it launched: its
+   * `allowed()` asks for an ACCOUNT rather than for the list, because there is a prize and
+   * an entry belongs to somebody. The assertion survives on the reason the other two keep
+   * theirs: turning a flag back off is how a mode gets closed again, and a list rebuilt
+   * from memory in that moment would be the wrong list.
+   * IT WALKS WHATEVER ACCESS FILES ARE ON DISK rather than naming them, so a fourth mode is
+   * covered without anybody remembering. That is what caught the third one for free.
    *
    * A DIFFERENCE IS ALLOWED, AND HAS TO BE ANNOUNCED. If one mode should preview to somebody
    * the others should not, say so in the files and this assertion is the thing that makes
@@ -384,10 +388,13 @@ console.log('\nTHE FIELD AND THE BOARD AGREE ABOUT WHICH SIDE IS PICKING');
   const { page, boom } = await open(browser);
   ok('the door is built', await page.evaluate(() =>
     !!document.getElementById('b-start-full')));
-  /* THE FILL IS PART OF THE DOOR, not decoration to be dropped in a refactor. Without
-     hp-ft this card is the neutral grey shared with the Trade Machine, which on a phone
-     between a saturated pair and a gold card reads as a control you cannot press. */
-  ok('  and carries its own fill', await page.evaluate(() =>
+  /* ITS OWN COLOUR IS PART OF THE DOOR, not decoration to be dropped in a refactor.
+     Without hp-ft this card is the neutral grey shared with the Trade Machine, which on a
+     phone between a saturated pair and a gold card reads as a control you cannot press.
+     Since the front page's calm pass the colour is on the EDGE rather than the fill (one
+     filled door on the page, the pair; every other mode outlined in its own colour), and
+     the class is still what carries it. */
+  ok('  and carries its own colour', await page.evaluate(() =>
     (document.getElementById('b-start-full') || {}).classList.contains('hp-ft')));
 
   await page.evaluate(() => window.__t.beginFullDraft());
@@ -1773,7 +1780,7 @@ console.log('\nONE RUN A DAY, AND A RUN IN PROGRESS IS NEVER TAKEN');
           const txt = (document.getElementById('sheet-in').innerText || '')
             .replace(/\s+/g, ' ');
           return { n: rows.length, txt,
-            note: (txt.match(/\d+ of the \w+ could not be looked up here/) || [''])[0] };
+            note: (txt.match(/\d+ of the \w+ could(?:n't| not) be looked up here/) || [''])[0] };
         };
         T.runDetail(r);
         /* Synchronous, so this is the sheet before the download can possibly have landed. */

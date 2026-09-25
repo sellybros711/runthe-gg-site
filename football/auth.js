@@ -86,11 +86,11 @@
      Errors are returned rather than thrown, and returned as the server's own words:
      "Invalid login credentials" is worth showing, "an error occurred" is not. */
   const wrap = async (p) => {
-    if (!sb) return { error: 'Accounts are not available right now.' };
+    if (!sb) return { error: 'Accounts aren\'t available right now.' };
     try {
       const { error } = await p;
       return { error: error ? (error.message || String(error)) : null };
-    } catch (e) { return { error: (e && e.message) || 'that did not work' }; }
+    } catch (e) { return { error: (e && e.message) || 'that didn\'t work' }; }
   };
 
   const signIn = (email, password) =>
@@ -100,10 +100,10 @@
      reads to make the profile row. It is checked for availability first so the
      failure comes before the account exists rather than after. */
   async function signUp(email, password, username) {
-    if (!sb) return { error: 'Accounts are not available right now.' };
+    if (!sb) return { error: 'Accounts aren\'t available right now.' };
     const free = await available(username);
     if (free === false) return { error: 'That name is taken.' };
-    if (free === null) return { error: 'Could not check that name. Try again.' };
+    if (free === null) return { error: 'Couldn\'t check that name. Try again.' };
     return wrap(sb.auth.signUp({
       email: email.trim(), password,
       options: { data: { username }, emailRedirectTo: location.origin + location.pathname },
@@ -161,7 +161,7 @@
      the name on every run already recorded, which is the price of the board storing
      a copy rather than joining profiles on every read. */
   async function setName(username) {
-    if (!sb) return { error: 'Accounts are not available right now.' };
+    if (!sb) return { error: 'Accounts aren\'t available right now.' };
     const r = await wrap(sb.rpc('set_username', { p_username: username }));
     if (r.error) return r;
     await loadProfile();
@@ -194,7 +194,7 @@
      subscription, which nothing here can cancel, and the player has to do that first.
      Sign-out is ours to do afterwards, because the session outlives the row it points at. */
   async function deleteAccount() {
-    if (!sb) return { error: 'Accounts are not available right now.' };
+    if (!sb) return { error: 'Accounts aren\'t available right now.' };
     try {
       const { data, error } = await sb.rpc('rtg_delete_my_account');
       if (error) return { error: error.message || String(error) };
@@ -203,7 +203,7 @@
       }
       try { await signOut(); } catch (e) {}
       return { ok: true };
-    } catch (e) { return { error: (e && e.message) || 'that did not work' }; }
+    } catch (e) { return { error: (e && e.message) || 'that didn\'t work' }; }
   }
 
 

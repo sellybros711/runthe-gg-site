@@ -52,7 +52,7 @@ create or replace function pg_temp.sub(
 returns bigint language sql as $$
   select rtf_submit_run(wins, po, diff, club, era, day, rating,
     118.0, 112.0, 1.40, 1.02, 'Triangle', 120.0, 1, 400,
-    six(tag), array['PG','SG','SF','PF','C','6TH']::text[], 'seed-' || tag, 900)
+    five(tag), array['PG','SG','SF','PF','C']::text[], 'seed-' || tag, 900)
 $$;
 
 -- IT RESETS ITS OWN FIXTURE, because it changes one. The rename check near
@@ -141,27 +141,31 @@ select pg_temp.ck('a rating off the scale is refused',
 
 -- The roster, which is the one thing here that is never re-derivable and so is
 -- the one place a malformed value would sit on the board for ever.
-select pg_temp.ck('five picks is not a roster',
+select pg_temp.ck('four picks is not a roster',
   pg_temp.boom($$ select rtf_submit_run(50, 0, 1.0, null, null, null, 60,
     118, 112, 1.4, 1.02, 'x', 120, 0, null,
-    array['a|1996|CHI','b|1996|CHI','c|1996|CHI','d|1996|CHI','e|1996|CHI']::text[]) $$) like '%6 picks%');
+    array['a|1996|CHI','b|1996|CHI','c|1996|CHI','d|1996|CHI']::text[]) $$) like '%5 picks%');
+select pg_temp.ck('and neither is six',
+  pg_temp.boom($$ select rtf_submit_run(50, 0, 1.0, null, null, null, 60,
+    118, 112, 1.4, 1.02, 'x', 120, 0, null,
+    array['a|1996|CHI','b|1996|CHI','c|1996|CHI','d|1996|CHI','e|1996|CHI','f|1996|CHI']::text[]) $$) like '%5 picks%');
 select pg_temp.ck('the same player cannot be signed twice',
   pg_temp.boom($$ select rtf_submit_run(50, 0, 1.0, null, null, null, 60,
     118, 112, 1.4, 1.02, 'x', 120, 0, null,
-    array['a|1996|CHI','a|1996|CHI','c|1996|CHI','d|1996|CHI','e|1996|CHI','f|1996|CHI']::text[]) $$)
+    array['a|1996|CHI','a|1996|CHI','c|1996|CHI','d|1996|CHI','e|1996|CHI']::text[]) $$)
     like '%twice%');
 select pg_temp.ck('a pick that is not <id>|<season>|<CLUB> is refused',
   pg_temp.boom($$ select rtf_submit_run(50, 0, 1.0, null, null, null, 60,
     118, 112, 1.4, 1.02, 'x', 120, 0, null,
-    array['a|1996|CHI','b|1996|CHI','c|1996|CHI','d|1996|CHI','e|1996|CHI','<script>']::text[]) $$)
+    array['a|1996|CHI','b|1996|CHI','c|1996|CHI','d|1996|CHI','<script>']::text[]) $$)
     like '%player_id%');
 select pg_temp.ck('an unknown slot name is refused',
   pg_temp.boom($$ select rtf_submit_run(50, 0, 1.0, null, null, null, 60,
-    118, 112, 1.4, 1.02, 'x', 120, 0, null, six('a'),
-    array['PG','SG','SF','PF','C','QB']::text[]) $$) like '%slot%');
+    118, 112, 1.4, 1.02, 'x', 120, 0, null, five('a'),
+    array['PG','SG','SF','PF','QB']::text[]) $$) like '%slot%');
 select pg_temp.ck('spending over the cap is refused',
   pg_temp.boom($$ select rtf_submit_run(50, 0, 1.0, null, null, null, 60,
-    118, 112, 1.4, 1.02, 'x', 400, 0, null, six('a')) $$) like '%cap%');
+    118, 112, 1.4, 1.02, 'x', 400, 0, null, five('a')) $$) like '%cap%');
 
 -- ── the mode is derived, and two locks is a mode the game has no door for ──
 truncate public.rtf_runs;
@@ -242,6 +246,81 @@ select pg_temp.ck('and the differential breaks a tie on wins',
   (select point_diff from rtf_runs order by score desc limit 1) = 9.0);
 select pg_temp.ck('a differential at the clamp does not carry into the wins digit',
   (select max(score) - min(score) from rtf_runs) < 10000);
+
+-- ── how far a run went comes first ─────────────────────────────────────────
+-- The game's own guide says the goal is the ring and hands the player the
+-- playoff games to call, and this board used to rank on the regular season
+-- alone: the median simulated champion sat 98th. Each check is written as the
+-- comparison a fan would make and the old board got backwards.
+truncate public.rtf_runs;
+select be(null);
+select pg_temp.sub(45, 5, null, null, null, 'ring45');   -- play-in to the title
+select pg_temp.sub(68, 3, null, null, null, 'fin68');    -- lost the Finals
+select pg_temp.sub(62, 0, null, null, null, 'r1');       -- out in the first round
+select pg_temp.ck('a 45 win champion outranks a 68 win Finals loser',
+  (select wins from rtf_runs order by score desc limit 1) = 45);
+select pg_temp.ck('and a Finals loss outranks a first round exit',
+  (select array_agg(wins order by score desc) from rtf_runs) = array[45, 68, 62]::smallint[]);
+select pg_temp.ck('the record board still orders on wins alone',
+  (select array_agg(wins order by record_score desc) from rtf_runs) = array[68, 62, 45]::smallint[]);
+select pg_temp.ck('a ring from the play-in and a ring from the top six are the same depth',
+  (select depth from rtf_runs where wins = 45) = 6);
+truncate public.rtf_runs;
+select pg_temp.sub(60, 4, null, null, null, 'seededring');
+select pg_temp.ck('four series off a top six seed is depth 6 too',
+  (select depth from rtf_runs) = 6);
+truncate public.rtf_runs;
+select pg_temp.sub(58, 1, null, null, null, 'semis');
+select pg_temp.sub(44, 2, null, null, null, 'pisemis');
+select pg_temp.ck('a second round loss is the same depth from either door',
+  (select count(distinct depth) from rtf_runs) = 1
+  and (select min(depth) from rtf_runs) = 3);
+select pg_temp.ck('and at the same depth the record decides',
+  (select wins from rtf_runs order by score desc limit 1) = 58);
+
+-- ── a play-in loss is not the playoffs ─────────────────────────────────────
+truncate public.rtf_runs;
+select pg_temp.sub(45, 0, null, null, null, 'pilost');
+select pg_temp.ck('losing the play-in is not making the playoffs',
+  not (select made_playoffs from rtf_runs));
+select pg_temp.ck('and it sits one step above the lottery',
+  (select depth from rtf_runs) = 1);
+truncate public.rtf_runs;
+select pg_temp.sub(45, 1, null, null, null, 'piwon');
+select pg_temp.ck('winning it is',
+  (select made_playoffs from rtf_runs));
+
+-- ── one daily per account per day ──────────────────────────────────────────
+truncate public.rtf_runs;
+select be(1);
+select pg_temp.sub(41, 0, null, null, today_day(), 'first');
+select pg_temp.ck('a second daily for the same day hands back the first',
+  pg_temp.sub(66, 3, null, null, today_day(), 'second')
+    = (select id from rtf_runs where wins = 41));
+select pg_temp.ck('so the day holds one entry for this account, and it is the first',
+  (select count(*) from rtf_runs where user_id is not null) = 1
+  and (select wins from rtf_runs) = 41);
+select be(2);
+select pg_temp.sub(50, 0, null, null, today_day(), 'other');
+select pg_temp.ck('another account still enters the same day',
+  (select count(*) from rtf_runs where daily_day = today_day()) = 2);
+select be(1);
+select pg_temp.sub(52, 0, null, null, null, 'league1');
+select pg_temp.sub(53, 0, null, null, null, 'league2');
+select pg_temp.ck('and the league is not one a day',
+  (select count(*) from rtf_runs where run_mode = 'league') = 2);
+-- A daily played signed out and then claimed is a second attempt by the back
+-- door, and has to be refused the same way.
+select be(null);
+select pg_temp.sub(70, 0, null, null, today_day(), 'guestday');
+select be(1);
+select pg_temp.ck('claiming a signed out daily for a day already entered is refused',
+  not rtf_claim_run((select id from rtf_runs where wins = 70)));
+select pg_temp.ck('and the entry that counts is still the first',
+  (select wins from rtf_runs where user_id = '00000000-0000-0000-0000-000000000001'
+     and daily_day = today_day()) = 41);
+select pg_temp.ck('the table itself refuses a second one',
+  exists (select 1 from pg_indexes where indexname = 'rtf_runs_daily_one_idx'));
 
 -- ── the name is read here and can never be sent ────────────────────────────
 truncate public.rtf_runs;
@@ -419,6 +498,9 @@ end $$;
 select pg_temp.ck('the score board is an index scan',
   pg_temp.plan($$ select id from rtf_runs where run_mode = 'league'
                    order by score desc, created_at asc limit 50 $$) like '%rtf_runs_mode_score_idx%');
+select pg_temp.ck('the record board is an index scan',
+  pg_temp.plan($$ select id from rtf_runs where run_mode = 'league'
+                   order by record_score desc, created_at asc limit 50 $$) like '%rtf_runs_mode_record_idx%');
 select pg_temp.ck('the rating board is an index scan',
   pg_temp.plan($$ select id from rtf_runs where run_mode = 'league'
                    order by rating desc, created_at asc limit 50 $$) like '%rtf_runs_mode_rating_idx%');

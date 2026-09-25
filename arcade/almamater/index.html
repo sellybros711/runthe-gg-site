@@ -12,20 +12,20 @@
   if(t!=='light'&&t!=='dark'){ t=(window.matchMedia&&matchMedia('(prefers-color-scheme: light)').matches)?'light':'dark'; try{localStorage.setItem('runthegrid_theme',t);}catch(e){} }
   document.documentElement.setAttribute('data-theme',t); })();
 </script>
-<meta name="description" content="Alma Mater: a daily sports streak game. Type the college each NBA, NFL or MLB player came from. Two points for typing it, one if you take the four choices." />
+<meta name="description" content="Alma Mater is a daily sports game. Type where each NBA, NFL or MLB player went to college. 2 points if you type it, 1 if you take the choices." />
 <link rel="icon" type="image/png" href="/arcade/assets/arcade-icon.png?v=3" />
 <link rel="apple-touch-icon" href="/arcade/assets/arcade-apple-180.png?v=2" />
 <meta property="og:type" content="website" />
 <meta property="og:site_name" content="RunThe.GG" />
 <meta property="og:title" content="Alma Mater: Daily College Sports Game" />
-<meta property="og:description" content="Name the college every player came from. How long can your streak last?" />
+<meta property="og:description" content="Name where each player went to college. See how long you can go." />
 <meta property="og:url" content="https://runthe.gg/arcade/almamater/" />
 <meta property="og:image" content="https://runthe.gg/arcade/assets/arcade-share.png?v=3" />
 <meta property="og:image:width" content="1200" />
 <meta property="og:image:height" content="630" />
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:title" content="Alma Mater: Daily College Sports Game" />
-<meta name="twitter:description" content="Name the college every player came from. How long can your streak last?" />
+<meta name="twitter:description" content="Name where each player went to college. See how long you can go." />
 <meta name="twitter:image" content="https://runthe.gg/arcade/assets/arcade-share.png?v=3" />
 <link rel="canonical" href="https://runthe.gg/arcade/almamater/" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -299,7 +299,7 @@ window.GA_ID='G-L29P5MRWKE';
 
   <div class="runbar">
     <div class="big" id="runN">0</div>
-    <div class="rl"><span class="k">Points today</span><span class="v" id="runSub">Type it for 2, take four choices for 1. One wrong ends your run.</span></div>
+    <div class="rl"><span class="k">Points today</span><span class="v" id="runSub">Type it for 2. Take the choices for 1. Miss once and you’re out.</span></div>
     <div class="best"><span class="n" id="bestRun">0</span><span class="c">Best</span></div>
   </div>
 
@@ -308,14 +308,14 @@ window.GA_ID='G-L29P5MRWKE';
   <div class="playcol">
     <div class="pcard"><div class="plab" id="pMeta">&nbsp;</div><div class="pname" id="pName">&nbsp;</div></div>
     <div class="answerbar" id="answerbar">
-      <input class="answerin" id="answerIn" type="text" placeholder="Name the school" aria-label="Name the school" />
+      <input class="answerin" id="answerIn" type="text" placeholder="Type the school" aria-label="Type the school" />
       <button class="answergo" id="answerGo" type="button">Answer</button>
     </div>
     <div class="subprompt" id="subprompt"></div>
-    <button class="bailbtn" type="button" id="bailBtn">Stuck? Show me four schools (worth 1)</button>
+    <button class="bailbtn" type="button" id="bailBtn">Not sure? Show me 4 schools (1 point)</button>
     <div class="choices" id="choices" hidden></div>
     <div class="factline" id="factline" aria-live="polite"></div>
-    <div class="hintline" id="hintline">Type the school. Four choices are there if you need them.</div>
+    <div class="hintline" id="hintline">Type the school. Stuck? Grab the 4 choices.</div>
   </div>
 
   <div class="lb" id="lb">
@@ -330,7 +330,7 @@ window.GA_ID='G-L29P5MRWKE';
       <div class="row"><span class="rk">2</span><span class="who">hoops_hana</span><span class="tm">19 points</span></div>
       <div class="row"><span class="rk">3</span><span class="who">puckluck</span><span class="tm">14 points</span></div>
     </div>
-    <div class="note" id="lbNote">These names are a sample. Live daily rankings arrive with accounts. Sign in with your RunThe.GG account to post your run.</div>
+    <div class="note" id="lbNote">These are sample names. Sign in with your RunThe.GG account to get on the board.</div>
   </div>
 
 <details class="gj" id="howtoTab">
@@ -340,31 +340,31 @@ window.GA_ID='G-L29P5MRWKE';
   <span class="gj-chev" aria-hidden="true">▾</span>
 </summary>
 <div class="gj-body">
-<p>One NBA, NFL or MLB player at a time, and one question: where did they go to college? Type the school. Spelling anxiety is handled for you: UNC, North Carolina and University of North Carolina all count as the same right answer.</p>
+<p>You get one NBA, NFL or MLB player at a time. Where did they go to college? Type the school. Don’t stress the spelling. UNC, North Carolina and University of North Carolina all count.</p>
 <ul>
-  <li>Typing the school is worth 2 points.</li>
-  <li>Stuck? Take four choices instead, for 1 point.</li>
-  <li>One wrong school ends the run. A spelling the game does not recognise costs nothing.</li>
-  <li>Famous names start the run. It gets deeper the longer you last.</li>
+  <li>Type the school and you get 2 points.</li>
+  <li>Stuck? Take the 4 choices for 1 point.</li>
+  <li>Pick the wrong school and your run’s over. A spelling we don’t know doesn’t count against you.</li>
+  <li>It starts with big names and gets harder the longer you go.</li>
 </ul>
 <h3>Streaks and the daily reset</h3>
-<p>The slate refreshes at midnight local time, and every finished day extends your streak. It is one of the four games free every day with no account at all, alongside the Daily Crossword, Sportegories and Career Path. An account saves the result: the board, the streak and the achievements. The Card opens all twelve with no limit, plus the <a href="/arcade/archive/">Archive</a> of every past day. Five of the games also have NBA, NFL and MLB editions.</p>
-<h3>Getting the school</h3>
+<p>New players drop at midnight your time. Finish a day and your streak keeps going. This is one of the four games free every day, no account needed. The other three are the Daily Crossword, Sportegories and Career Path. Make an account and it saves your runs, your streak and your achievements. The Card opens all twelve with no limit, plus the <a href="/arcade/archive/">Archive</a> of every past day. Five of the games also have NBA, NFL and MLB editions.</p>
+<h3>Tips</h3>
 <ul>
-  <li>A spelling we do not recognise costs nothing, so type the school you half remember before you take the four choices. Only a real school that is the wrong one ends the run.</li>
-  <li>Think back to draft night. The school gets said in the same breath as the pick, which is where most people actually learned it.</li>
-  <li>Programs specialise. Some schools have turned out linemen for thirty years, so the position on screen narrows the list before a name arrives.</li>
+  <li>Kind of know it? Type it before you take the choices. A spelling we don’t know costs you nothing. Only a real school that’s wrong ends your run.</li>
+  <li>Think back to draft night. They say the school right when the pick is in. That’s where most of us picked it up.</li>
+  <li>Use the position. Some schools crank out linemen every year, so that cuts the list down fast.</li>
 </ul>
-<p>Follow the same careers club by club in <a href="/arcade/career/">Career Path</a>, or race a letter in <a href="/arcade/sportegories/">Sportegories</a>.</p>
+<p>Want more? Try <a href="/arcade/career/">Career Path</a> or <a href="/arcade/sportegories/">Sportegories</a>.</p>
 </div>
 </details>
-  <div class="foot">A daily streak game inside <b>Run The Arcade</b> · <a href="/">RunThe.GG</a> · <a href="mailto:RunTheGames@outlook.com?subject=Run%20The%20Arcade%20data%20error">Spot a data error? Tell us</a> · <a href="/about.html">About</a> · <a href="/privacy.html">Privacy</a> · <a href="/terms.html">Terms</a></div>
+  <div class="foot">A daily streak game inside <b>Run The Arcade</b> · <a href="/">RunThe.GG</a> · <a href="mailto:RunTheGames@outlook.com?subject=Run%20The%20Arcade%20data%20error">See something wrong? Let us know</a> · <a href="/about.html">About</a> · <a href="/privacy.html">Privacy</a> · <a href="/terms.html">Terms</a></div>
 </div>
 
 <div class="scrim hidden" id="scrim">
   <div class="sheet">
     <button class="x" id="mClose" type="button" aria-label="Close">✕</button>
-    <div class="sub-h" id="mSub">Your run ended</div>
+    <div class="sub-h" id="mSub">Your run’s over</div>
     <div class="runbig" id="mRun">0</div>
     <h2>POINTS</h2>
     <div class="milestone" id="mMilestone"></div>
@@ -389,13 +389,13 @@ window.GA_ID='G-L29P5MRWKE';
 <script src="/arcade/stars.js?v=4"></script>
 <script src="/arcade/awards.js?v=3"></script>
 <script src="/arcade/supplement.js?v=6"></script>
-<script src="/arcade/primary.js?v=24"></script>
+<script src="/arcade/primary.js?v=25"></script>
 <script src="/arcade/data.js?v=5"></script>
 <script src="/arcade/rosters.js?v=4"></script>
 <script src="/arcade/sfx.js?v=2"></script>
 <script src="/arcade/result.js?v=1"></script>
 <script src="/arcade/funnel.js?v=11"></script>
-<script src="/arcade/share.js?v=8"></script>
+<script src="/arcade/share.js?v=9"></script>
 <script src="/arcade/resultart.js?v=2"></script>
 <script src="/arcade/resultstats.js?v=2"></script>
 <script src="/arcade/challenge.js?v=4"></script>
@@ -408,23 +408,23 @@ window.GA_ID='G-L29P5MRWKE';
 <script src="/arcade/favteam.js?v=1"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="/arcade/board.js?v=21"></script>
-<script src="/arcade/leaderboard.js?v=14"></script>
+<script src="/arcade/leaderboard.js?v=15"></script>
 <script src="/arcade/alltime.js?v=3"></script>
 <script src="/arcade/auth.js?v=4"></script>
-<script src="/arcade/mycard.js?v=13"></script>
+<script src="/arcade/mycard.js?v=14"></script>
 <script src="/arcade/topbanner.js?v=9"></script>
-<script src="/arcade/auth-ui.js?v=6"></script>
-<script src="/arcade/card.js?v=20"></script>
-<script src="/arcade/referral.js?v=10"></script>
-<script src="/arcade/gamemarks.js?v=3"></script>
+<script src="/arcade/auth-ui.js?v=7"></script>
+<script src="/arcade/card.js?v=22"></script>
+<script src="/arcade/referral.js?v=11"></script>
+<script src="/arcade/gamemarks.js?v=4"></script>
 <script src="/arcade/calendar.js?v=15"></script>
 <script src="/arcade/archivecta.js?v=2"></script>
-<script src="/arcade/demo.js?v=3"></script>
-<script src="/arcade/pregame.js?v=25"></script>
-<script src="/arcade/howto.js?v=22"></script>
+<script src="/arcade/demo.js?v=4"></script>
+<script src="/arcade/pregame.js?v=26"></script>
+<script src="/arcade/howto.js?v=24"></script>
 <script src="/arcade/teamcolors.js?v=2"></script>
 <script src="/arcade/type.js?v=5"></script>
-<script src="/arcade/fact.js?v=2"></script>
+<script src="/arcade/fact.js?v=3"></script>
 <script>
 (function(){
   'use strict';
@@ -655,7 +655,7 @@ window.GA_ID='G-L29P5MRWKE';
     choicesEl.innerHTML = r.opts.map(function(c,i){ return '<button class="choice" type="button" data-i="'+i+'">'+esc(label(c))+'</button>'; }).join('');
     [].forEach.call(choicesEl.querySelectorAll('.choice'), function(bt){ bt.addEventListener('click', function(){ resolve(r.opts[+bt.dataset.i]===r.col, bt); }); });
     setAnswerEnabled(true);
-    setSub('One of these four. Worth 1.');
+    setSub('It’s one of these. Worth 1 point.');
     saveResume();
   }
   bailBtn.addEventListener('click', bail);
@@ -677,7 +677,7 @@ window.GA_ID='G-L29P5MRWKE';
     if(!text.trim()) return;
     var right = window.RTGType ? RTGType.sameCollege(text, r.col) : (text.trim().toLowerCase()===String(r.col).toLowerCase());
     if(!right && !knownSchool(text)){
-      setSub('No school by that name here. Check the spelling and try again.');
+      setSub('We don’t know that school. Check the spelling and try again.');
       if(window.RTGSound && RTGSound.soft) RTGSound.soft();
       return;
     }
@@ -725,7 +725,7 @@ window.GA_ID='G-L29P5MRWKE';
       setTimeout(function(){ busy=false; renderRound(); answerIn.focus(); }, 1400);
     } else {
       ANSLOG.push('x');
-      setSub('<span class="pts">Miss.</span> <span class="school">It was '+esc(label(r.col))+'.</span>', 'miss');
+      setSub('<span class="pts">Nope.</span> <span class="school">It was '+esc(label(r.col))+'.</span>', 'miss');
       if(window.RTGSound) RTGSound.wrong();
       setTimeout(function(){ finish(); }, 2000);
     }
@@ -736,9 +736,9 @@ window.GA_ID='G-L29P5MRWKE';
     started=true; startTs=performance.now(); }
 
   function updateHint(){ var h=document.getElementById('hintline'); if(!h) return;
-    if(ARCHIVE){ h.textContent='Type the school. Four choices are there if you need them. · Archive · your personal best'; return; }
+    if(ARCHIVE){ h.textContent='Type the school. Stuck? Grab the 4 choices. · Archive · your personal best'; return; }
     var lbl = window.RTGTokens ? (' · '+RTGTokens.hint(GAME)) : '';
-    h.textContent='Type the school. Four choices are there if you need them.'+lbl; }
+    h.textContent='Type the school. Stuck? Grab the 4 choices.'+lbl; }
   function beginAttempt(){
     var isReplay = servedDaily || (!ARCHIVE && window.RTGTokens && RTGTokens.playsOf(GAME)>0);
     if(isReplay && !ARCHIVE) clearResume();   // replays are practice: never resumable
@@ -764,7 +764,7 @@ window.GA_ID='G-L29P5MRWKE';
     var scr=document.getElementById('scrim'); if(scr) scr.classList.add('hidden');
     renderRound(); updateHint();
     if(r.bailed) bail();          // come back to the four you had already paid for
-    toast('Resumed your run');
+    toast('Picked up where you left off');
   }
   function updateAgainBtn(){
     var b=document.getElementById('mAgain'); if(!b) return;
@@ -833,12 +833,12 @@ window.GA_ID='G-L29P5MRWKE';
     // Emotional copy ladder: new best > tied best > near miss > generic.
     var sub;
     if(locked) sub='Your run today';
-    else if(!attemptFirst) sub='Practice run, not ranked';
+    else if(!attemptFirst) sub='Practice run. Doesn’t count.';
     else if(run>=SEQ.length) sub='You named them all!';
     else if(NEWBEST) sub='<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px" aria-hidden="true"><path d="M6 4h12v4a6 6 0 0 1-12 0zM6 6H3v2a3 3 0 0 0 3 3M18 6h3v2a3 3 0 0 1-3 3M9 20h6M12 15v5"/></svg> NEW PERSONAL BEST';
     else if(PREVBEST>0 && run===PREVBEST) sub='Tied your best. One more tomorrow!';
     else if(PREVBEST>0 && run>0 && PREVBEST-run<=2) sub=(PREVBEST-run)+' off your best. So close!';
-    else sub='Your run ended';
+    else sub='Your run’s over';
     var subEl=document.getElementById('mSub');
     subEl.textContent = sub;
     subEl.classList.toggle('newbest', !locked && NEWBEST);
@@ -914,14 +914,14 @@ window.GA_ID='G-L29P5MRWKE';
       var lb=document.querySelector('.lb'); if(!lb) return;
       var pill=lb.querySelector('.lb-pill'); if(pill) pill.textContent='Live';
       var samp=document.getElementById('lbSample'); if(samp){ samp.style.opacity='1';
-        if(!rows.length){ samp.innerHTML='<div class="lb-samplab">Today’s board</div><div class="note" style="margin:2px 0 0">Be the first to post a run today.</div>'; }
-        else{ var me=(RTG_BOARD.state().name||'').toLowerCase(), h='<div class="lb-samplab">Longest runs today</div>';
+        if(!rows.length){ samp.innerHTML='<div class="lb-samplab">Today’s board</div><div class="note" style="margin:2px 0 0">Nobody’s posted yet today. Be the first.</div>'; }
+        else{ var me=(RTG_BOARD.state().name||'').toLowerCase(), h='<div class="lb-samplab">Top runs today</div>';
           for(var i=0;i<rows.length;i++){ var r=rows[i], nm=r.display_name||'Player', mine=me&&nm.toLowerCase()===me;
             h+='<div class="row'+(mine?' you':'')+'"><span class="rk">'+(i+1)+'</span><span class="who">'+lbEsc(nm)+'</span><span class="tm">'+(r.run_len||0)+' points</span></div>'; }
           samp.innerHTML=h;
         }
       }
-      var note=document.getElementById('lbNote'); if(note) note.textContent='Live board: longest run today wins, ties broken by time. Sign in on RunThe.GG to post yours.';
+      var note=document.getElementById('lbNote'); if(note) note.textContent='Longest run today wins. Ties go to whoever was faster. Sign in to get on the board.';
     });
   }
 
@@ -977,7 +977,7 @@ window.GA_ID='G-L29P5MRWKE';
       done=true; choicesEl.style.pointerEvents='none'; choicesEl.style.opacity='.5';
       document.getElementById('pMeta').textContent='Warming up';
       document.getElementById('pName').textContent='Coming soon';
-      document.getElementById('hintline').textContent='We’re collecting college data. Check back soon.';
+      document.getElementById('hintline').textContent='Still working on the college data for this one. Check back soon.';
       return;
     }
     choicesEl.style.pointerEvents=''; choicesEl.style.opacity='';   // re-enable if a prior mode was locked

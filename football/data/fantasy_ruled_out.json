@@ -1,0 +1,8 @@
+{
+ "note": "Men the site has ruled out before the official report can. For a Sunday game the report files no Out, Doubtful or Questionable until Friday, so a man his club has already ruled out reads as a practice absence until then. Keyed on season-week so a ruling never reaches the next week. The name must match the board's name for that id or football/build/injuries.mjs throws. Remove an entry if he is cleared: a ruling here outranks the report. Applied by the builder, which the injury workflow runs twice a day, so an edit here lands on the next run or on `node football/build/injuries.mjs --write`.",
+ "weeks": {
+  "2026-3": {
+   "00-0039910": { "name": "Jayden Daniels" }
+  }
+ }
+}

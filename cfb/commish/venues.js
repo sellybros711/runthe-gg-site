@@ -170,7 +170,7 @@
       named: { kind: 'local', bind: 1,
         of: 'the Tournament of Roses, a parade that has come down Colorado Boulevard every '
           + 'New Year since 1890 and that owns the game rather than the other way round',
-        gone: 'The parade does not move. Take the football somewhere else and the parade '
+        gone: 'The parade doesn\'t move. Take the football somewhere else and the parade '
           + 'keeps the name, because it was always theirs.' } },
     { id: 'sugar', name: 'Sugar Bowl', venue: 'nola', tier: 3, slot: 'jan1', heritage: 0.9,
       tie: 'SEC', pick: 0,
@@ -178,20 +178,20 @@
         of: 'the sugar trade that built the Louisiana delta, and a stretch of New Orleans '
           + 'that was still called the Sugar Bowl district before there was a football game',
         gone: 'The name is a piece of Louisiana. Somewhere else it is a word about a crop '
-          + 'that does not grow there.' } },
+          + 'that doesn\'t grow there.' } },
     { id: 'orange', name: 'Orange Bowl', venue: 'mia', tier: 3, slot: 'jan1', heritage: 0.8,
       tie: 'ACC', pick: 0,
       named: { kind: 'local', bind: 0.8,
         of: 'the fruit south Florida sold itself on, and a festival built to advertise it to '
           + 'people in the cold',
-        gone: 'It was an advertisement for a place. Move it and it is advertising the wrong '
+        gone: 'It was an advertisement for a place. Move it and it\'s advertising the wrong '
           + 'one.' } },
     { id: 'fiesta', name: 'Fiesta Bowl', venue: 'phx', tier: 3, slot: 'jan1', heritage: 0.6,
       tie: 'Big 12', pick: 0,
       named: { kind: 'local', bind: 0.6,
         of: 'a festival the valley invented in the seventies for the express purpose of '
           + 'having a bowl game',
-        gone: 'The festival exists because the game does. Take the game and there is nothing '
+        gone: 'The festival exists because the game does. Take the game and there\'s nothing '
           + 'left for the name to sit on.' } },
     { id: 'cotton', name: 'Cotton Bowl', venue: 'dfw', tier: 3, slot: 'jan1', heritage: 0.7,
       tie: '', pick: 0,
@@ -204,21 +204,21 @@
       tie: '', pick: 0,
       named: { kind: 'local', bind: 0.7,
         of: 'the state of Georgia, roughly the way everything in the state of Georgia is',
-        gone: 'You can play a Peach Bowl outside Georgia. You will be asked about it every '
+        gone: 'You can play a Peach Bowl outside Georgia. You\'ll be asked about it every '
           + 'year, forever.' } },
     { id: 'citrus', name: 'Citrus Bowl', venue: 'orl', tier: 2, slot: 'jan1', heritage: 0.4,
       tie: '', pick: 0.02,
       named: { kind: 'local', bind: 0.6,
         of: 'central Florida groves, and a stadium that was called the Citrus Bowl for '
           + 'forty years before a sponsor bought the sign',
-        gone: 'The groves are the name. Take it north and it is a word nobody local chose.' } },
+        gone: 'The groves are the name. Take it north and it\'s a word nobody local chose.' } },
     { id: 'alamo', name: 'Alamo Bowl', venue: 'sa', tier: 2, slot: 'late', heritage: 0.3,
       tie: '', pick: 0.06,
       named: { kind: 'city', bind: 0.95,
         of: 'a building four blocks from the stadium that is the single most visited thing '
           + 'in Texas',
         gone: 'The Alamo is at a fixed address. An Alamo Bowl anywhere else is a sentence '
-          + 'that does not survive being said out loud.' } },
+          + 'that doesn\'t survive being said out loud.' } },
     { id: 'gator', name: 'Gator Bowl', venue: 'jax', tier: 2, slot: 'late', heritage: 0.35,
       tie: '', pick: 0.1,
       named: { kind: 'local', bind: 0.7,
@@ -230,21 +230,21 @@
       tie: '', pick: 0.14,
       named: { kind: 'free', bind: 0.15,
         of: 'the last week of December, which happens everywhere at the same time',
-        gone: 'Nothing. It is the one name on the board that is true in any city, and '
+        gone: 'Nothing. It\'s the one name on the board that is true in any city, and '
           + 'whoever chose it in 1978 has quietly won an argument nobody was having.' } },
     { id: 'music', name: 'Music City Bowl', venue: 'nsh', tier: 2, slot: 'late', heritage: 0.2,
       tie: '', pick: 0.22,
       named: { kind: 'city', bind: 0.9,
-        of: 'Nashville, because Music City is not a description of Nashville, it is what '
+        of: 'Nashville, because Music City isn\'t a description of Nashville, it\'s what '
           + 'Nashville is called',
-        gone: 'The name is the city with the city taken out. Move it and you are running '
+        gone: 'The name is the city with the city taken out. Move it and you\'re running '
           + 'the Music City Bowl in a town with no music in it.' } },
     { id: 'pinstripe', name: 'Pinstripe Bowl', venue: 'bronx', tier: 1, slot: 'late', heritage: 0.15,
       tie: '', pick: 0.42,
       named: { kind: 'club', bind: 0.9,
         of: 'a baseball uniform. The game is played in that club\'s ballpark, the name is '
           + 'their trademark, and they license it one December at a time',
-        gone: 'The name is not the sport\'s to move. It goes back to the club the day the '
+        gone: 'The name isn\'t the sport\'s to move. It goes back to the club the day the '
           + 'game leaves their building, and no city can buy it from you because you have '
           + 'never owned it.' } },
     { id: 'quickstop', name: 'Motor City Bowl', venue: 'det', tier: 1, slot: 'early', heritage: 0.1,
@@ -252,14 +252,14 @@
       named: { kind: 'city', bind: 0.9,
         of: 'Detroit, and specifically the thing Detroit built, which is the whole joke and '
           + 'the whole point',
-        gone: 'There is one Motor City. Everybody knows which one, including the city you '
+        gone: 'There\'s one Motor City. Everybody knows which one, including the city you '
           + 'would be taking it to.' } },
     { id: 'bahamas', name: 'Bahamas Bowl', venue: 'nas', tier: 1, slot: 'early', heritage: 0.05,
       tie: '', pick: 0.72,
       named: { kind: 'city', bind: 1,
         of: 'a country',
-        gone: 'There is no version of this where the game moves and the name comes along. '
-          + 'It is not a nickname, it is a passport.' } },
+        gone: 'There\'s no version of this where the game moves and the name comes along. '
+          + 'It isn\'t a nickname, it\'s a passport.' } },
   ];
 
   /* ---- the sponsors ----
@@ -283,7 +283,7 @@
         + 'sport, in cash, today, and their chief executive is twenty-nine.' },
     { id: 'book', name: 'Big Baller Sportsbook', kind: 'a sportsbook',
       pay: 1.6, risk: 0.35, hate: 0.55,
-      pitch: 'They are already the biggest advertiser in every broadcast this sport sells. '
+      pitch: 'They\'re already the biggest advertiser in every broadcast this sport sells. '
         + 'This is only the part where their name is on the trophy.' },
     { id: 'pickup', name: 'Bruteline Trucks', kind: 'a pickup truck maker',
       pay: 1.2, risk: 0.05, hate: 0.05,

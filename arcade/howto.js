@@ -8,76 +8,76 @@
 
   var CONTENT = {
     match: [
-      'Sixteen names hide four secret groups of four.',
-      'A group can be a team, a jersey number, a surname, any shared thread.',
-      'Build a group of four and lock it in. "One away" means exactly three of them belong together.',
-      'Four wrong guesses ends the day. Solve all four groups to keep your streak.'
+      'Sixteen names. Four hidden groups of four.',
+      'A group can be a team, a jersey number, a last name. Anything they share.',
+      'Pick four and lock them in. "One away" means 3 of your 4 go together.',
+      '4 wrong guesses and your day’s over. Solve all four groups to keep your streak.'
     ],
     table: [
-      'One player, one club, one question: what number did they wear there?',
-      'Type it. Exact is a bullseye; within two still counts, because a digit out is remembering, not guessing.',
-      'You get one save; a second real miss ends the run.',
-      'It opens on household names and works down into the deep cuts.'
+      'One player, one team. What number did they wear there?',
+      'Type it. Exact is a bullseye. Off by 2 or less still counts.',
+      'You get one save. Miss for real a second time and your run’s over.',
+      'It starts with big names and gets deeper the longer you go.'
     ],
     career: [
-      'Well-travelled careers only: every answer played for at least three franchises.',
-      'You get the scouting file free: position, college and era. Then the clubs arrive one at a time, first team first.',
-      'No multiple choice: type who it is. Off the first club it is 5 points, off two or three it is 3, and down from there.',
-      'Stuck? Take four names instead, for one point. A wrong answer ends your run.'
+      'Only players who moved around. Every answer played for at least 3 teams.',
+      'You start with position, college and era for free. Then the teams show up one at a time, first team first.',
+      'No multiple choice. Type who it is. Get it off the first team for 5 points, off two or three for 3, and less from there.',
+      'Stuck? Take 4 names for 1 point. A wrong answer ends your run.'
     ],
     oddone: [
-      'Five names. Four share a connection: a team, a position, a decade, or the Hall of Fame.',
-      "Tap the one that doesn't belong. That is worth a point.",
-      'Then name the connection itself for a second point. A wrong link only costs the bonus.',
-      'One wrong spot ends the run. A wrong link just costs you the bonus.'
+      'Five names. Four of them have something in common: a team, a position, a decade, or the Hall of Fame.',
+      'Tap the one that doesn’t belong. That’s 1 point.',
+      'Then name what the other four share for a second point.',
+      'Tap the wrong name and your run’s over. A wrong link just costs you the bonus.'
     ],
     rankit: [
-      'Five retired NBA, NFL or MLB players, one career stat: points, rebounds, home runs, passing yards, sacks, saves and more.',
-      'Most at the top, always. Tap two names to swap them, then hit Check.',
-      'One puzzle a day, five tries at it. Fewest tries wins the board.',
-      'Real values reveal after every check, so each try tells you something.'
+      'Five retired NBA, NFL or MLB players. One career stat, like points, home runs, passing yards or saves.',
+      'Most goes on top. Tap two names to swap them, then hit Check.',
+      'One puzzle a day. You get 5 tries. Fewest tries wins the board.',
+      'You see the real numbers after every check, so each try tells you something.'
     ],
     guess: [
-      'One NBA, NFL or MLB player from any era. The sport is given.',
-      'Type any player from that sport; tiles compare careers, not this season: position, franchises, debut decade, college and honours.',
-      'Green = match, yellow = close, arrows point higher or lower.',
-      'Eight guesses. Stuck? Burn a clue for a hint.'
+      'One NBA, NFL or MLB player from any era. We tell you the sport.',
+      'Guess any player from that sport. The tiles compare whole careers: position, teams, debut decade, college and awards.',
+      'Green means a match. Yellow means close. Arrows point higher or lower.',
+      'You get 8 guesses. Stuck? Burn a clue for a hint.'
     ],
     almamater: [
-      'One NBA, NFL or MLB player at a time. Where did they go to college?',
-      'Type the school. UNC, North Carolina and University of North Carolina all count.',
-      'Typing it is 2 points. Stuck? Take four choices for 1.',
-      'One wrong school ends the run. A spelling we do not recognise costs nothing.'
+      'You get one NBA, NFL or MLB player at a time. Where did they go to college?',
+      'Type the school. Don’t stress the spelling. UNC, North Carolina and University of North Carolina all count.',
+      'Type it for 2 points. Stuck? Take the 4 choices for 1.',
+      'Pick the wrong school and your run’s over. A spelling we don’t know costs you nothing.'
     ],
     crossword: [
       'A quick sports mini. Type into the grid.',
-      'Tap a cell to switch across/down; clues sit below.',
+      'Tap a cell to switch across and down. Clues are below.',
       'Fastest clean solve tops the board.',
-      'Free players get one Reveal; Pro gets unlimited.'
+      'Free players get one Reveal. Pro gets unlimited.'
     ],
     sportegories: [
       'One letter, eight sports categories, two minutes.',
-      'Type a full name. The FIRST or the LAST can start with the letter: on B, both Chris Bosh and Barry Bonds count.',
-      'Every row is labelled Anchor, Mid, Hard or Spice. Sweep the Anchors first.',
-      'The clock ends the round. Fill all eight for a perfect day.'
+      'Type a full name. The first OR last name can start with the letter. On B, Chris Bosh and Barry Bonds both count.',
+      'Every row is marked Anchor, Mid, Hard or Spice. Knock out the Anchors first.',
+      'When the clock runs out, the round’s over. Fill all eight for a perfect day.'
     ],
     rollcall: [
-      'One club, one season, ninety seconds on the clock.',
+      'One team, one season, 90 seconds on the clock.',
       'Every blank is a player who wore that uniform that year. Type the names you remember.',
-      'A right player in the wrong season is not a miss: the game tells you when he was there.',
-      'Wrong names cost nothing but time. The score is how many you get.'
+      'Right player, wrong season? That’s not a miss. We’ll tell you when he was there.',
+      'Wrong names only cost you time. Your score is how many you get.'
     ],
     chain: [
-      'Two players, and two teammates to find in between.',
-      'Each name has to have played alongside the one above it, same club, same years.',
-      'The last name has to reach the player at the bottom as well.',
-      'Four wrong names breaks the chain. The clock is the score, so a clean solve wins the day.'
+      'Two players. Find the two teammates that connect them.',
+      'Each name has to have played with the one above it. Same team, same years.',
+      'The last name has to connect to the player at the bottom too.',
+      '4 wrong names and the chain breaks. Your time is your score, so a clean solve wins the day.'
     ],
     highlow: [
-      'Pick a category: NBA, NFL or MLB stat pools.',
-      'Players come two at a time. Call whether the next one sits higher or lower on the stat.',
-      'Every correct call reveals the real value and extends your run.',
-      'One miss ends it. There is no finish line, only your best run.'
+      'Pick a category. There are NBA, NFL and MLB stat pools.',
+      'Players come two at a time. Is the next one higher or lower on the stat?',
+      'Every right call shows the real number and keeps your run going.',
+      'One miss and it’s over. There’s no finish line. Just your best run.'
     ]
   };
 

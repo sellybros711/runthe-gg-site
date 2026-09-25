@@ -12,20 +12,20 @@
   if(t!=='light'&&t!=='dark'){ t=(window.matchMedia&&matchMedia('(prefers-color-scheme: light)').matches)?'light':'dark'; try{localStorage.setItem('runthegrid_theme',t);}catch(e){} }
   document.documentElement.setAttribute('data-theme',t); })();
 </script>
-<meta name="description" content="Rank It: one daily sports ranking puzzle. Put five athletes in the right order by era or career stats. Five tries - fewest wins." />
+<meta name="description" content="Rank It is a daily sports ranking puzzle. Put five players in order by a career stat. You get 5 tries. Fewest tries wins." />
 <link rel="icon" type="image/png" href="/arcade/assets/arcade-icon.png?v=3" />
 <link rel="apple-touch-icon" href="/arcade/assets/arcade-apple-180.png?v=2" />
 <meta property="og:type" content="website" />
 <meta property="og:site_name" content="RunThe.GG" />
 <meta property="og:title" content="Rank It: Daily Sports Ordering Game" />
-<meta property="og:description" content="Five athletes. One right order. A new set every day." />
+<meta property="og:description" content="Five players. One right order. New set every day." />
 <meta property="og:url" content="https://runthe.gg/arcade/rankit/" />
 <meta property="og:image" content="https://runthe.gg/arcade/assets/arcade-share.png?v=3" />
 <meta property="og:image:width" content="1200" />
 <meta property="og:image:height" content="630" />
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:title" content="Rank It: Daily Sports Ordering Game" />
-<meta name="twitter:description" content="Five athletes. One right order. A new set every day." />
+<meta name="twitter:description" content="Five players. One right order. New set every day." />
 <meta name="twitter:image" content="https://runthe.gg/arcade/assets/arcade-share.png?v=3" />
 <link rel="canonical" href="https://runthe.gg/arcade/rankit/" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -390,7 +390,7 @@ window.GA_ID='G-L29P5MRWKE';
   </div>
 
   <div class="modesw hidden" id="modesw" role="tablist" aria-label="Choose sport version"></div>
-  <div class="lead"><span class="k" id="axisLabel">Today’s ranking</span><span class="v" id="prompt">Rank these five by a career stat, <b>most</b> at the top.</span></div>
+  <div class="lead"><span class="k" id="axisLabel">Today’s ranking</span><span class="v" id="prompt">Rank these five by a career stat. <b>Most</b> at the top.</span></div>
 
   <div class="playcol">
     <div class="axis"><span id="axTop">↑ Most</span><span id="axBot">Fewest ↓</span></div>
@@ -398,7 +398,7 @@ window.GA_ID='G-L29P5MRWKE';
     <div class="rows" id="rows"></div>
 
     <div class="actions"><button class="checkbtn" id="checkBtn" type="button">Check order</button></div>
-    <div class="hintline" id="hintline">Drag a row or use the arrows to reorder, then check. Five tries to get all five right.</div>
+    <div class="hintline" id="hintline">Drag a row or use the arrows to reorder. Then hit Check. You get 5 tries to get all five right.</div>
   </div>
 
   <div class="lb" id="lb">
@@ -413,7 +413,7 @@ window.GA_ID='G-L29P5MRWKE';
       <div class="row"><span class="rk">2</span><span class="who">hoops_hana</span><span class="tm">8 sets</span></div>
       <div class="row"><span class="rk">3</span><span class="who">puckluck</span><span class="tm">5 sets</span></div>
     </div>
-    <div class="note" id="lbNote">These names are a sample. Live daily rankings arrive with accounts. Sign in with your RunThe.GG account to post your run.</div>
+    <div class="note" id="lbNote">These are sample names. Sign in with your RunThe.GG account to get on the board.</div>
   </div>
 
 <details class="gj" id="howtoTab">
@@ -423,24 +423,24 @@ window.GA_ID='G-L29P5MRWKE';
   <span class="gj-chev" aria-hidden="true">▾</span>
 </summary>
 <div class="gj-body">
-<p>Rank It hands you five retired NBA, NFL or MLB players and one career stat: points, rebounds, home runs, passing yards, sacks, saves and more. Put them in order, most at the top, always. It looks simple right up until two greats are separated by a rounding error.</p>
+<p>You get five retired NBA, NFL or MLB players and one career stat: points, rebounds, home runs, passing yards, sacks, saves and more. Put them in order. Most always goes at the top. Looks easy until two greats are separated by almost nothing.</p>
 <ul>
-  <li>Tap two names to swap them until the order feels right, then hit Check.</li>
-  <li>One puzzle a day, five tries at it. The fewest tries tops the daily board.</li>
-  <li>Real career values reveal after every check, so each try teaches you something concrete.</li>
+  <li>Tap two names to swap them. When the order looks right, hit Check.</li>
+  <li>One puzzle a day. You get 5 tries. Fewest tries tops the daily board.</li>
+  <li>Every check tells you how many are in the right spot. You don’t find out which ones.</li>
 </ul>
-<h3>One puzzle, one board, one day</h3>
-<p>The set flips at midnight local time and everyone ranks the same five, which is what makes the leaderboard an argument worth having. Rank It is an Arcade Card game. A free RunThe.GG account gets one play of it, once ever. The Daily Crossword, Sportegories, Alma Mater and Career Path are free every day, with no account at all. The Card opens all twelve with no limit, plus the <a href="/arcade/archive/">Archive</a> of every past day. Five of the games also have NBA, NFL and MLB editions.</p>
-<h3>Getting the order right</h3>
+<h3>One puzzle a day</h3>
+<p>A new set drops at midnight your time. Everybody ranks the same five, so the leaderboard is a real argument. Rank It is an Arcade Card game. A free RunThe.GG account gets one play of it, once ever. The Daily Crossword, Sportegories, Alma Mater and Career Path are free every day, no account needed. The Card opens all twelve with no limit, plus the <a href="/arcade/archive/">Archive</a> of every past day. Five of the games also have NBA, NFL and MLB editions.</p>
+<h3>Tips</h3>
 <ul>
-  <li>These are career totals, not peaks. The player who lasted fifteen years usually outranks the one who was better for five.</li>
-  <li>Set the top and the bottom first. The middle three sort themselves once the range is fixed.</li>
-  <li>Real values show after every check, so no try is wasted. Rank the ones you are unsure of against the numbers you have just been handed.</li>
+  <li>These are career totals, not peaks. The guy who lasted 15 years usually beats the guy who was better for 5.</li>
+  <li>Lock in the top and the bottom first. The middle three are easier once those are set.</li>
+  <li>Make one swap per check when you can. If the count goes up or down, you know that swap did it.</li>
 </ul>
-<p>More daily arguments: call the stat line in <a href="/arcade/highlow/">High Low</a>, or race the clock in the <a href="/arcade/crossword/">Daily Crossword</a>.</p>
+<p>Want more? Call the stat line in <a href="/arcade/highlow/">High Low</a>, or race the clock in the <a href="/arcade/crossword/">Daily Crossword</a>.</p>
 </div>
 </details>
-  <div class="foot">One daily ranking puzzle inside <b>Run The Arcade</b> · <a href="/">RunThe.GG</a> · <a href="mailto:RunTheGames@outlook.com?subject=Run%20The%20Arcade%20data%20error">Spot a data error? Tell us</a> · <a href="/about.html">About</a> · <a href="/privacy.html">Privacy</a> · <a href="/terms.html">Terms</a></div>
+  <div class="foot">One daily ranking puzzle inside <b>Run The Arcade</b> · <a href="/">RunThe.GG</a> · <a href="mailto:RunTheGames@outlook.com?subject=Run%20The%20Arcade%20data%20error">See something wrong? Let us know</a> · <a href="/about.html">About</a> · <a href="/privacy.html">Privacy</a> · <a href="/terms.html">Terms</a></div>
 </div>
 
 <div class="scrim hidden" id="scrim">
@@ -471,13 +471,13 @@ window.GA_ID='G-L29P5MRWKE';
 <script src="/arcade/stars.js?v=4"></script>
 <script src="/arcade/awards.js?v=3"></script>
 <script src="/arcade/supplement.js?v=6"></script>
-<script src="/arcade/primary.js?v=24"></script>
+<script src="/arcade/primary.js?v=25"></script>
 <script src="/arcade/data.js?v=5"></script>
 <script src="/arcade/stats.js?v=3"></script>
 <script src="/arcade/teamcolors.js?v=2"></script>
 <script src="/arcade/sfx.js?v=2"></script>
 <script src="/arcade/funnel.js?v=11"></script>
-<script src="/arcade/share.js?v=8"></script>
+<script src="/arcade/share.js?v=9"></script>
 <script src="/arcade/result.js?v=1"></script>
 <script src="/arcade/resultart.js?v=2"></script>
 <script src="/arcade/resultstats.js?v=2"></script>
@@ -490,20 +490,20 @@ window.GA_ID='G-L29P5MRWKE';
 <script src="/arcade/archive.js?v=2"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="/arcade/board.js?v=21"></script>
-<script src="/arcade/leaderboard.js?v=14"></script>
+<script src="/arcade/leaderboard.js?v=15"></script>
 <script src="/arcade/alltime.js?v=3"></script>
 <script src="/arcade/auth.js?v=4"></script>
-<script src="/arcade/mycard.js?v=13"></script>
+<script src="/arcade/mycard.js?v=14"></script>
 <script src="/arcade/topbanner.js?v=9"></script>
-<script src="/arcade/auth-ui.js?v=6"></script>
-<script src="/arcade/card.js?v=20"></script>
-<script src="/arcade/referral.js?v=10"></script>
-<script src="/arcade/gamemarks.js?v=3"></script>
+<script src="/arcade/auth-ui.js?v=7"></script>
+<script src="/arcade/card.js?v=22"></script>
+<script src="/arcade/referral.js?v=11"></script>
+<script src="/arcade/gamemarks.js?v=4"></script>
 <script src="/arcade/calendar.js?v=15"></script>
 <script src="/arcade/archivecta.js?v=2"></script>
-<script src="/arcade/demo.js?v=3"></script>
-<script src="/arcade/pregame.js?v=25"></script>
-<script src="/arcade/howto.js?v=22"></script>
+<script src="/arcade/demo.js?v=4"></script>
+<script src="/arcade/pregame.js?v=26"></script>
+<script src="/arcade/howto.js?v=24"></script>
 <script>
 (function(){
   'use strict';
@@ -601,7 +601,7 @@ window.GA_ID='G-L29P5MRWKE';
       return {
         cat:cat, answer:picked.map(function(p){ return p.e; }),
         key:function(e){ return vmap[e.id]; },
-        lead:'Rank by '+cfg.label+', <b>most</b> at the top.',
+        lead:'Rank by '+cfg.label+'. <b>Most</b> at the top.',
         axisTop:'Most', axisBot:'Fewest',
         val:function(e){ return Number(vmap[e.id]).toLocaleString('en-US')+' '+cfg.unit; }
       };
@@ -907,7 +907,7 @@ window.GA_ID='G-L29P5MRWKE';
     }
     if(tries>=MAX_TRIES){ finish(); return; }   // already out of tries today
     renderTries(); render(); updateHint();
-    toast('Resumed today\u2019s puzzle');
+    toast('Picked up where you left off');
   }
   function updateAgainBtn(){
     var b=document.getElementById('mAgain'); if(!b) return;
@@ -987,11 +987,11 @@ window.GA_ID='G-L29P5MRWKE';
     var sub;
     if(locked) sub='Today’s result';
     else if(!ok) sub='Out of tries';
-    else if(!attemptFirst) sub='Practice puzzle, not ranked';
+    else if(!attemptFirst) sub='Practice run. Doesn’t count.';
     else if(t===1) sub='First try. Nobody does that.';
     else if(NEWBEST) sub='<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px" aria-hidden="true"><path d="M6 4h12v4a6 6 0 0 1-12 0zM6 6H3v2a3 3 0 0 0 3 3M18 6h3v2a3 3 0 0 1-3 3M9 20h6M12 15v5"/></svg> NEW PERSONAL BEST';
     else if(PREVBEST>0 && t===PREVBEST) sub='Matched your best. One more tomorrow!';
-    else sub='Solved in '+t+' '+(t===1?'try':'tries');
+    else sub='Solved in '+t+' '+(t===1?'try':'tries')+'!';
     var subEl=document.getElementById('mSub');
     subEl.innerHTML = sub;
     subEl.classList.toggle('newbest', !locked && NEWBEST);
@@ -1077,14 +1077,14 @@ window.GA_ID='G-L29P5MRWKE';
       var lb=document.querySelector('.lb'); if(!lb) return;
       var pill=lb.querySelector('.lb-pill'); if(pill) pill.textContent='Live';
       var samp=document.getElementById('lbSample'); if(samp){ samp.style.opacity='1';
-        if(!rows.length){ samp.innerHTML='<div class="lb-samplab">Today’s board</div><div class="note" style="margin:2px 0 0">Be the first to post a run today.</div>'; }
-        else{ var me=(RTG_BOARD.state().name||'').toLowerCase(), h='<div class="lb-samplab">Longest runs today</div>';
+        if(!rows.length){ samp.innerHTML='<div class="lb-samplab">Today’s board</div><div class="note" style="margin:2px 0 0">Nobody’s posted yet today. Be the first.</div>'; }
+        else{ var me=(RTG_BOARD.state().name||'').toLowerCase(), h='<div class="lb-samplab">Top runs today</div>';
           for(var i=0;i<rows.length;i++){ var r=rows[i], nm=r.display_name||'Player', mine=me&&nm.toLowerCase()===me;
             h+='<div class="row'+(mine?' you':'')+'"><span class="rk">'+(i+1)+'</span><span class="who">'+lbEsc(nm)+'</span><span class="tm">'+(r.run_len||0)+' sets</span></div>'; }
           samp.innerHTML=h;
         }
       }
-      var note=document.getElementById('lbNote'); if(note) note.textContent='Live board: most sets cleared today wins, ties broken by time. Sign in on RunThe.GG to post yours.';
+      var note=document.getElementById('lbNote'); if(note) note.textContent='Most sets cleared today wins. Ties go to whoever was faster. Sign in to get on the board.';
     });
   }
 

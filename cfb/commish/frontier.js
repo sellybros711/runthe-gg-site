@@ -65,7 +65,7 @@
     { n: 4, id: 'borderless', name: 'The sport without borders',
       blurb: 'It stopped being American.' },
     { n: 5, id: 'offworld', name: 'The sport off the planet',
-      blurb: 'Somebody asked why not, and this office could not think of a reason.' },
+      blurb: 'Somebody asked why not, and this office couldn\'t think of a reason.' },
   ];
 
   /* EVERY FRONTIER.
@@ -85,18 +85,18 @@
 
     { id: 'capital', era: 2, needs: [], seats: 'Capital',
       name: 'Outside money owns a piece',
-      line: 'Somebody who is not a university owns part of this sport.',
+      line: 'Somebody who isn\'t a university owns part of this sport.',
       adds: { 'money.outside': 0, 'money.valuation': 0 } },
 
     { id: 'franchise', era: 2, needs: ['capital'],
       name: 'A program is a franchise',
-      line: 'A program can be moved, sold or created. It is not a school any more.',
+      line: 'A program can be moved, sold or created. It isn\'t a school any more.',
       adds: { 'posture.relocation': 'allowed', 'posture.expansion': 0 } },
 
     /* ---- era 3: the sport becomes a public question ---- */
     { id: 'congress', era: 3, needs: ['union'], seats: 'Congress',
       name: 'Washington has a committee',
-      line: 'There is a standing committee on this sport, and it can compel you.',
+      line: 'There\'s a standing committee on this sport, and it can compel you.',
       adds: { 'pressure.hearings': 0, 'posture.federalCharter': 'none' } },
 
     { id: 'antitrust', era: 3, needs: ['congress'],
@@ -112,7 +112,7 @@
     /* ---- era 4: the sport stops being American ---- */
     { id: 'abroad', era: 4, needs: ['franchise'], seats: 'Host Nations',
       name: 'Games abroad',
-      line: 'The sport plays outside the United States, for money that is not American.',
+      line: 'The sport plays outside the United States, for money that isn\'t American.',
       adds: { 'posture.abroad': 0, 'venues.foreign': 'none' } },
 
     /* NEEDS THE EXEMPTION, and that is a real dependency rather than a longer chain for its
@@ -120,7 +120,7 @@
        office could do, and a sport that never got its antitrust exemption would be sued out
        of it before the first kickoff. */
     { id: 'global', era: 4, needs: ['abroad', 'whitehouse', 'antitrust'],
-      name: 'Members who are not American',
+      name: 'Members who aren\'t American',
       line: 'A member school is whatever this office says a member school is.',
       adds: { 'posture.globalMembers': 0 } },
 
@@ -131,8 +131,8 @@
       adds: { 'venues.offworld': 'none', 'posture.offworld': 0 } },
 
     { id: 'colony', era: 5, needs: ['orbital'],
-      name: 'A program that is not on Earth',
-      line: 'There is a team in this league that cannot come home for the holidays.',
+      name: 'A program that isn\'t on Earth',
+      line: 'There\'s a team in this league that can\'t come home for the holidays.',
       adds: { 'posture.colony': 0 } },
   ];
 
@@ -206,7 +206,7 @@
        (test_docket) rather than a sport that quietly makes no sense. */
     var short = f.needs.filter(function (n) { return !has(world, n); });
     if (short.length) {
-      throw new Error('frontier: cannot open "' + id + '" before ' + short.join(', '));
+      throw new Error('frontier: can\'t open "' + id + '" before ' + short.join(', '));
     }
     var next = JSON.parse(JSON.stringify(world));
     next.frontier = next.frontier || {};

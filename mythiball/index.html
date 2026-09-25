@@ -30,10 +30,51 @@
     --navy:#1b3a5c;
     --shadow:3px 3px 0 #1b3a5c;
     --shadow-sm:2px 2px 0 #1b3a5c;
+    /* THE SURFACE LANGUAGE, and it is tokens for the reason `--pxr` is.
+       Fifty two rules on this page draw a border and sixteen draw a
+       shadow, in six spellings between them, so the cabinet look is six
+       strings rather than a decision taken per component. Swapping the
+       strings moves every screen at once and leaves each rule's own box
+       model alone, which is what stops a redesign quietly costing a
+       margin somewhere nobody looks.
+
+       WHAT IS KEPT IS THE WARMTH AND THE WEIGHT. Scorecard cream, navy
+       ink and arcade red are right, and they are the field's own colours:
+       the dirt, the shadow under a figure and the seam on the ball. What
+       goes is the WOODCUT: a 2px flat line and a hard offset under every
+       object is a printing technique, and the picture those objects now
+       sit around is painted. A border that describes an edge and a shadow
+       that describes height say the same thing in the language the field
+       is speaking. */
+    --bd:1.5px solid rgba(27,58,92,.30);
+    --bd-strong:2px solid rgba(27,58,92,.40);
+    --r-sm:10px;
+    --r:14px;
+    --r-lg:22px;
+    --shadow:0 1px 2px rgba(20,40,63,.07), 0 10px 22px -8px rgba(20,40,63,.30);
+    --shadow-sm:0 1px 2px rgba(20,40,63,.06), 0 5px 12px -5px rgba(20,40,63,.24);
+    /* Pressed: the object is ON the surface, so the height goes and a
+       contact shadow is what is left. */
+    --shadow-press:0 1px 2px rgba(20,40,63,.12);
+    --ring-gold:0 0 0 2px var(--gold), 0 6px 14px -6px rgba(20,40,63,.28);
+    /* A DISPLAY FACE AND A TEXT FACE, AND BOTH ARE THE SYSTEM'S. This game
+       is one self contained file that asks the network for nothing, and a
+       webfont would be a new dependency AND unverifiable here, since
+       Google Fonts does not resolve in the dev sandbox and every
+       screenshot would be of the fallback anyway. `ui-rounded` is SF Pro
+       Rounded on Apple, which is the friendly geometric face this wants,
+       and everywhere else the stack lands on the platform's own UI face.
+       What matters most is the thing being LEFT: a monospace is a code
+       face, and it was setting every name, every quirk and every sentence
+       in the game. */
+    --font-display:ui-rounded,'SF Pro Rounded','Segoe UI Variable Display',
+      system-ui,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;
+    --font-text:system-ui,-apple-system,'Segoe UI',Roboto,
+      'Helvetica Neue',Arial,sans-serif;
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
   html,body{margin:0;padding:0;background:var(--ink);color:var(--text);
-    font-family:ui-monospace,'SF Mono',Menlo,Consolas,monospace;
+    font-family:var(--font-text);
     min-height:100vh;overscroll-behavior-y:none;}
   body{
     background:
@@ -56,16 +97,42 @@
      screen, so the clubhouse and every menu keep the arcade wash where
      it costs nothing. */
   body.ingame::after{content:none;}
-  img.pico{image-rendering:pixelated;image-rendering:crisp-edges;}
-  canvas{image-rendering:pixelated;image-rendering:crisp-edges;}
+  img.pico{image-rendering:var(--pxr);}
+  canvas{image-rendering:var(--pxr);}
+  /* The browser's own last step, and it is the one rule that has to move
+     with the renderer. Retro hands it a whole number magnification of a
+     low resolution bitmap and wants no filter on it; smooth hands it a
+     picture already drawn at CSS resolution and wants the filter, or the
+     mode's one remaining resize is the only hard edged thing left in a
+     frame with no hard edges in it.
+
+     IT IS A CUSTOM PROPERTY AND NOT A SELECTOR, which is the shape the
+     hoops court's `--floor-tint` already runs on and is load bearing for
+     the same reason. Fifteen rules on this page declare a rendering mode
+     and FOUR of them carry two classes (`.board .due canvas`,
+     `.atbat .avatar`, `.ph-hero .ph-cast`, `.meetbar .mug canvas`), so a
+     `body.smooth canvas` override at one class LOSES to all four on
+     specificity: the field would smooth and the avatar beside it would
+     stay blocky, in the one mode whose whole argument is that a frame has
+     one style in it. A property inherits instead, so it reaches every one
+     of the fifteen whatever they weigh, and a sixteenth added later is
+     covered by writing `var(--pxr)`. */
+  /* AND EVERYWHERE ELSE A NUMBER HAS TO LINE UP. A scoreboard, a line
+     score, a count and a clock are all columns of digits that must not
+     move as they change, and there are enough of them that naming each
+     one is a list somebody forgets to add to. */
+  table,.linescore,.sb,.num,.statgrid,.fr-stat,.meterbar,.count,
+  .box,.score,.tally{font-variant-numeric:tabular-nums;}
+  :root{--pxr:pixelated;}
+  body.smooth{--pxr:auto;}
 
   .wrap{max-width:920px;margin:0 auto;padding:14px 14px 60px;}
   .swing-modes{display:flex;align-items:center;gap:8px;margin:8px 0 2px;}
   .swing-modes .lbl{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--text-dim);}
   .mode-btn{font:inherit;font-size:12px;letter-spacing:.06em;text-transform:uppercase;
-    background:var(--panel);color:var(--text);border:2px solid var(--line);border-radius:0;
+    background:var(--panel);color:var(--text);border:var(--bd);border-radius:var(--r-sm);
     padding:6px 14px;cursor:pointer;font-weight:700;box-shadow:var(--shadow-sm);}
-  .mode-btn:active{transform:translate(2px,2px);box-shadow:none;}
+  .mode-btn:active{transform:translateY(1px);box-shadow:var(--shadow-press);}
   .mode-btn.selected{background:var(--gold);color:#fff;}
   /* On the game screen the box opens up: the field is the point. The
      height cap leaves room for the swing strip under the field, which on
@@ -182,7 +249,7 @@
      for the frame before the first sample and for a park that has not
      drawn yet. */
   body.ingame .arena{flex:5 1 0;min-height:min(56vh, 480px);width:100%;
-    max-width:none;margin:0;border:0;border-radius:0;box-shadow:none;
+    max-width:none;margin:0;border:0;border-radius:var(--r-sm);box-shadow:none;
     background:linear-gradient(to bottom, var(--sky, #0b1015) 0 50%,
       var(--turf, #0b1015) 50% 100%);position:relative;overflow:hidden;}
   @media (min-aspect-ratio: 3/4){
@@ -318,9 +385,19 @@
   body.ingame .atbat{flex:0 1 auto;min-height:0;overflow:hidden;}
   .brand{display:flex;align-items:center;gap:10px;padding:8px 0 12px;
     border-bottom:3px solid var(--line);margin-bottom:4px;}
-  .brand h1{margin:0;font-size:24px;letter-spacing:.16em;text-transform:uppercase;
+  .brand h1{margin:0;font-family:var(--font-display);font-size:25px;letter-spacing:.02em;
+    text-transform:uppercase;white-space:nowrap;flex:0 0 auto;
     color:var(--gold);font-weight:900;text-shadow:2px 2px 0 var(--navy);}
-  .brand .tag{color:var(--text-dim);font-size:11px;letter-spacing:.14em;text-transform:uppercase;}
+  /* THE TWO STRAPLINES SHRINK AND THE CONTROLS DO NOT. A monospace held
+     this row together by accident: every glyph was one width, so the line
+     happened to fit. In a proportional face the same words are wider and
+     the row wrapped, which put the wordmark on one line and MAIN MENU on
+     another. `min-width:0` is what lets a flex item shrink below its own
+     text at all, and the ellipsis is what it does when it has to. */
+  .brand .tag{color:var(--text-dim);font-size:11px;letter-spacing:.06em;
+    text-transform:uppercase;min-width:0;overflow:hidden;text-overflow:ellipsis;
+    white-space:nowrap;flex:0 1 auto;}
+  .brand button{flex:0 0 auto;white-space:nowrap;}
   /* THE MOTTO IS THE QUIETEST THING ON THE LINE, and it is aria-hidden
      because it is a mood rather than information: a screen reader already
      has the name and what the game is from the two above it. It is the
@@ -329,51 +406,65 @@
   .brand .motto{color:#9a7c4e;border-left:2px solid #d9c49a;padding-left:10px;}
   @media (max-width: 860px){ .brand .motto{display:none;} }
   .brand .spacer{flex:1;}
-  .brand button{background:var(--panel);color:var(--text);border:2px solid var(--line);
-    padding:5px 10px;font-family:inherit;font-size:11px;letter-spacing:.1em;text-transform:uppercase;
-    cursor:pointer;border-radius:0;margin-left:6px;box-shadow:var(--shadow-sm);font-weight:700;}
+  .brand button{background:var(--panel);color:var(--text);border:var(--bd);
+    padding:7px 12px;font-family:var(--font-display);font-size:12px;letter-spacing:.03em;
+    text-transform:uppercase;
+    cursor:pointer;border-radius:var(--r-sm);margin-left:6px;box-shadow:var(--shadow-sm);font-weight:700;}
   .brand button:hover{background:var(--panel-2);}
-  .brand button:active{transform:translate(2px,2px);box-shadow:none;}
+  .brand button:active{transform:translateY(1px);box-shadow:var(--shadow-press);}
 
   .screen{padding:18px 0;}
-  h2{margin:0 0 12px;font-size:16px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);}
-  h3{margin:14px 0 6px;font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--text-dim);}
-  p{margin:0 0 10px;color:var(--text-dim);line-height:1.5;font-size:13px;}
+  h2{margin:0 0 12px;font-family:var(--font-display);font-size:19px;letter-spacing:.05em;text-transform:uppercase;color:var(--gold);font-weight:800;}
+  h3{margin:14px 0 6px;font-family:var(--font-display);font-size:13px;letter-spacing:.07em;text-transform:uppercase;color:var(--text-dim);font-weight:700;}
+  p{margin:0 0 10px;color:var(--text-dim);line-height:1.55;font-size:14px;letter-spacing:0;}
 
-  .btn{display:inline-block;background:var(--gold);color:#fff6ea;border:2px solid var(--line);
-    padding:10px 16px;font-family:inherit;font-size:13px;letter-spacing:.12em;
-    text-transform:uppercase;cursor:pointer;border-radius:0;font-weight:900;
-    box-shadow:var(--shadow);}
+  .btn{display:inline-block;background:var(--gold);color:#fff6ea;
+    border:1.5px solid rgba(20,40,63,.18);
+    padding:12px 20px;font-family:var(--font-display);font-size:15px;letter-spacing:.04em;
+    text-transform:uppercase;cursor:pointer;border-radius:var(--r);font-weight:800;
+    box-shadow:var(--shadow);transition:box-shadow .12s,transform .12s;}
   .btn:hover{filter:brightness(1.08);}
   /* A cabinet button goes DOWN when you hit it: it travels onto its own
      shadow. Nothing else here says arcade for one line of CSS. */
-  .btn:active{transform:translate(3px,3px);box-shadow:none;}
+  .btn:active{transform:translateY(1px);box-shadow:var(--shadow-press);}
   .btn.ghost{background:var(--panel);color:var(--text);}
   .btn.ghost:hover{background:var(--panel-2);}
   .btn.red{background:var(--red);color:#fff;}
   .btn:disabled{opacity:.45;cursor:not-allowed;filter:none;box-shadow:var(--shadow);}
   .btn-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px;}
 
-  .card{background:var(--panel);border:2px solid var(--line);border-radius:0;padding:14px;
+  .card{background:var(--panel);border:var(--bd);border-radius:var(--r);padding:16px;
     box-shadow:var(--shadow);}
   .card + .card{margin-top:12px;}
 
   .roster{display:grid;grid-template-columns:repeat(auto-fill,minmax(148px,1fr));gap:10px;}
-  .charcard{background:var(--panel);border:2px solid var(--line);border-radius:0;padding:10px;
+  .charcard{background:var(--panel);border:var(--bd);border-radius:var(--r-sm);padding:10px;
     cursor:pointer;transition:transform .08s;text-align:center;position:relative;
     box-shadow:var(--shadow-sm);}
-  .charcard:hover{transform:translate(-1px,-1px);box-shadow:3px 3px 0 var(--navy);}
-  .charcard.picked{background:var(--panel-2);box-shadow:3px 3px 0 var(--gold);}
-  .charcard canvas{width:64px;height:auto;background:#bfe4f7;border:2px solid var(--line);
-    border-radius:0;image-rendering:pixelated;}
-  .charcard .name{margin-top:6px;font-size:12px;color:var(--text);letter-spacing:.06em;}
-  .charcard .role{font-size:10px;color:var(--text-dim);letter-spacing:.08em;text-transform:uppercase;}
+  .charcard:hover{transform:translate(-1px,-1px);box-shadow:var(--shadow-sm);}
+  .charcard.picked{background:var(--panel-2);box-shadow:var(--ring-gold);}
+  .charcard canvas{width:64px;height:auto;background:#bfe4f7;border:var(--bd);
+    border-radius:var(--r-sm);image-rendering:var(--pxr);}
+  .charcard .name{margin-top:7px;font-family:var(--font-display);font-size:14px;font-weight:700;color:var(--text);letter-spacing:0;}
+  .charcard .role{font-family:var(--font-display);font-size:10px;font-weight:700;color:var(--text-dim);letter-spacing:.07em;text-transform:uppercase;}
   .charcard .pickno{position:absolute;top:5px;right:5px;background:var(--gold);color:#fff;
-    font-size:10px;padding:2px 5px;border-radius:0;font-weight:900;border:1px solid var(--line);}
-  .statgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin-top:6px;font-size:10px;color:var(--text-dim);}
+    font-size:10px;padding:2px 5px;border-radius:var(--r-sm);font-weight:900;border:1px solid var(--line);}
+  /* TABULAR FIGURES, NEVER A MONOSPACE. Six ratings in three columns only
+     read as a table if the digits are one width, which is what the code
+     face was quietly buying. `tabular-nums` buys the same thing in any
+     face and costs no voice at all. */
+  .statgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:4px 2px;margin-top:7px;
+    font-size:10px;color:var(--text-dim);font-variant-numeric:tabular-nums;
+    letter-spacing:0;}
+  /* A LABEL AND ITS VALUE ARE ONE THING. Three of these share a card about
+     a hundred and sixty pixels wide, so a cell is around fifty: `POW 45`
+     fits and `POW` over `45` is what happens the moment it does not. The
+     monospace hid this by being narrow; the fix is to say the pair may not
+     break rather than to go back to a face that could not. */
+  .statgrid span{white-space:nowrap;}
   .statgrid span.arm b{color:var(--gold);}
   .statgrid span b{color:var(--text);}
-  .quirk{margin-top:6px;padding-top:6px;border-top:2px dashed rgba(27,58,92,.35);font-size:10px;color:var(--purple);line-height:1.4;}
+  .quirk{margin-top:7px;padding-top:7px;border-top:1px solid rgba(27,58,92,.16);font-size:11px;color:var(--purple);line-height:1.45;letter-spacing:0;}
   .charcard.locked{opacity:.55;cursor:not-allowed;}
   .charcard.locked canvas{filter:grayscale(1) brightness(.7);}
   .charcard.locked:hover{transform:none;box-shadow:var(--shadow-sm);}
@@ -405,22 +496,22 @@
   .headrow{display:flex;align-items:center;gap:8px;}
   .headrow h3{margin:14px 0 6px;}
   .infodot{font:inherit;font-size:11px;font-weight:900;line-height:1;
-    width:20px;height:20px;border:2px solid var(--line);background:var(--panel);
+    width:20px;height:20px;border:var(--bd);background:var(--panel);
     color:var(--text-dim);cursor:pointer;padding:0;border-radius:50%;
-    box-shadow:1px 1px 0 var(--navy);}
+    box-shadow:var(--shadow-sm);}
   .infodot:hover,.infodot[aria-expanded="true"]{background:var(--gold);color:#fff6ea;}
-  .infodot:active{transform:translate(1px,1px);box-shadow:none;}
+  .infodot:active{transform:translateY(1px);box-shadow:var(--shadow-press);}
   .infobox{margin-top:8px;padding:8px 10px;background:var(--panel-2);
-    border:2px solid var(--line);font-size:11px;line-height:1.5;color:var(--text-dim);}
+    border:var(--bd);font-size:11px;line-height:1.5;color:var(--text-dim);}
 
   /* The sort rail above the grid. */
   .sortbar{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:10px;}
   .sortbar .lbl{font-size:10px;letter-spacing:.16em;text-transform:uppercase;
     color:var(--text-dim);margin-right:2px;}
   .sortbar .sb{font:inherit;font-size:11px;letter-spacing:.08em;text-transform:uppercase;
-    font-weight:700;background:var(--panel);color:var(--text);border:2px solid var(--line);
+    font-weight:700;background:var(--panel);color:var(--text);border:var(--bd);
     padding:5px 10px;cursor:pointer;box-shadow:var(--shadow-sm);}
-  .sortbar .sb:active{transform:translate(2px,2px);box-shadow:none;}
+  .sortbar .sb:active{transform:translateY(1px);box-shadow:var(--shadow-press);}
   .sortbar .sb.on{background:var(--gold);color:#fff6ea;}
   .sortbar .tail{font-size:10px;color:var(--text-dim);letter-spacing:.06em;
     text-transform:none;margin-left:auto;}
@@ -432,11 +523,11 @@
      the grid's own bounds cannot clip it, and it never takes the pointer,
      so moving toward it does not make it flicker. */
   .lockpop{position:fixed;z-index:400;width:250px;background:var(--panel);
-    border:3px solid var(--line);box-shadow:5px 5px 0 var(--navy);padding:10px 12px;
+    border:var(--bd-strong);box-shadow:var(--shadow);padding:10px 12px;
     pointer-events:none;font-size:12px;color:var(--text);line-height:1.5;}
   .lockpop .pop-name{font-weight:900;font-size:13px;letter-spacing:.06em;}
   .lockpop .pop-chip{display:inline-block;margin-top:4px;padding:1px 6px;font-size:9px;
-    letter-spacing:.16em;text-transform:uppercase;font-weight:900;border:2px solid var(--line);}
+    letter-spacing:.16em;text-transform:uppercase;font-weight:900;border:var(--bd);}
   .lockpop .pop-chip.lk{background:var(--gold);color:#fff6ea;}
   .lockpop .pop-chip.ok{background:var(--green);color:#fff6ea;}
   .lockpop .pop-chip.base{background:var(--panel-2);color:var(--text-dim);}
@@ -445,15 +536,16 @@
     letter-spacing:.06em;}
   .lockpop .pop-count{margin-top:7px;font-size:11px;font-weight:900;
     letter-spacing:.06em;color:var(--gold);}
-  .lockpop .pop-bar{margin-top:4px;height:9px;background:#e2d6b4;border:2px solid var(--line);}
+  .lockpop .pop-bar{margin-top:4px;height:9px;background:#e2d6b4;border:var(--bd);}
   .lockpop .pop-bar i{display:block;height:100%;background:var(--gold);}
   @media (max-width:600px){.lockpop{display:none;}}
 
   .toggle-row{display:flex;gap:6px;flex-wrap:wrap;}
-  .toggle{padding:8px 12px;background:var(--panel);border:2px solid var(--line);border-radius:0;
-    cursor:pointer;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--text);
-    font-weight:700;box-shadow:var(--shadow-sm);}
-  .toggle:active{transform:translate(2px,2px);box-shadow:none;}
+  .toggle{padding:9px 14px;background:var(--panel);border:var(--bd);border-radius:var(--r-sm);
+    cursor:pointer;font-family:var(--font-display);font-size:13px;letter-spacing:.04em;
+    text-transform:uppercase;color:var(--text);
+    font-weight:700;box-shadow:var(--shadow-sm);transition:box-shadow .12s,transform .12s;}
+  .toggle:active{transform:translateY(1px);box-shadow:var(--shadow-press);}
   .toggle.on{background:var(--gold);color:#fff;}
 
   /* Game.
@@ -466,12 +558,12 @@
   .arena{
     position:relative;
     background:#7fc9ea;
-    border:4px solid var(--line);
-    border-radius:0;
+    border:var(--bd-strong);
+    border-radius:var(--r-sm);
     padding:0;
     overflow:hidden;
     margin:0 auto 12px;
-    box-shadow:5px 5px 0 var(--navy);
+    box-shadow:var(--shadow);
     width:fit-content;
     max-width:100%;
   }
@@ -497,7 +589,7 @@
   .arena .corner{position:absolute;pointer-events:none;padding:6px 10px;
     font-family:inherit;text-transform:uppercase;letter-spacing:.12em;font-size:12px;
     font-weight:700;color:#0f2237;background:rgba(255,252,242,.94);
-    border:2px solid var(--navy);}
+    border:var(--bd);}
   .arena .corner.park .lbl{color:var(--gold);font-size:11px;font-weight:900;letter-spacing:.2em;}
   .arena .corner.tl{top:8px;left:8px;text-align:left;}
   .arena .corner.tr{top:8px;right:8px;text-align:right;}
@@ -520,8 +612,8 @@
   /* The coach: a plaque over the field with a numbered note and two
      buttons. Sits above the callout so a STRIKE cannot land on top of it. */
   .coach{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
-    width:min(540px,92%);background:var(--panel);border:3px solid var(--line);
-    box-shadow:5px 5px 0 var(--navy);padding:14px 16px;z-index:9;
+    width:min(540px,92%);background:var(--panel);border:var(--bd-strong);
+    box-shadow:var(--shadow);padding:14px 16px;z-index:9;
     font-size:14px;line-height:1.55;color:var(--text);}
   .coach b{color:var(--gold);}
   .coach-step{display:block;font-size:10px;letter-spacing:.2em;text-transform:uppercase;
@@ -529,7 +621,7 @@
   .coach-bar{display:flex;justify-content:flex-end;gap:8px;margin-top:12px;}
   @media (max-width:600px){.coach{font-size:12px;padding:10px 12px;}}
 
-  .callout{
+  .callout{border-radius:var(--r);
     position:absolute;
     /* NOT ON THE PITCHER. 38% of the arena is the mound in both cameras, so
        every call in the game was announced across the face of the man who
@@ -541,18 +633,19 @@
     transform:translate(-50%,-50%) scale(.9);
     padding:14px 30px;
     background:var(--panel);
-    border:3px solid var(--line);
-    border-radius:0;
+    border:var(--bd-strong);
+    border-radius:var(--r-sm);
     color:var(--gold);
     font-family:inherit;
-    font-size:26px;
-    font-weight:900;
-    letter-spacing:.16em;
+    font-size:28px;
+    font-family:var(--font-display);
+    font-weight:800;
+    letter-spacing:.03em;
     text-transform:uppercase;
     pointer-events:none;
     opacity:0;
     transition:opacity .18s ease-out, transform .28s cubic-bezier(.2,.9,.2,1.2);
-    box-shadow:5px 5px 0 var(--navy);
+    box-shadow:var(--shadow);
     white-space:nowrap;
     z-index:6;
   }
@@ -572,7 +665,7 @@
      the thing the box score only implies (a first homer, a three hit game,
      the fifth strikeout) at the moment it happens. */
   .toast{position:absolute;top:52px;left:50%;transform:translate(-50%,-10px);
-    padding:7px 16px;background:var(--panel-2);border:2px solid var(--line);
+    padding:7px 16px;background:var(--panel-2);border:var(--bd);
     color:var(--text);font-size:12px;font-weight:900;letter-spacing:.16em;
     text-transform:uppercase;box-shadow:var(--shadow-sm);opacity:0;
     transition:opacity .16s, transform .22s cubic-bezier(.2,.9,.2,1.2);
@@ -591,15 +684,15 @@
   .trophy{display:inline-block;width:56px;height:70px;position:relative;margin:6px 14px 0 0;
     vertical-align:middle;}
   .trophy:before{content:'';position:absolute;left:8px;top:0;width:40px;height:34px;
-    background:var(--gold);border:3px solid var(--line);border-radius:0 0 18px 18px;}
+    background:var(--gold);border:var(--bd-strong);border-radius:var(--r-sm) 0 18px 18px;}
   .trophy:after{content:'';position:absolute;left:14px;bottom:0;width:28px;height:12px;
-    background:var(--navy);border:3px solid var(--line);}
+    background:var(--navy);border:var(--bd-strong);}
   .trophy i{position:absolute;left:24px;top:34px;width:8px;height:22px;background:var(--gold);
-    border:3px solid var(--line);}
+    border:var(--bd-strong);}
   @media (max-width:600px){.toast{font-size:10px;padding:5px 10px;top:44px;}}
   /* Form chips on the at bat card. */
   .form-chip{display:inline-block;margin-left:8px;padding:2px 7px;font-size:9px;
-    letter-spacing:.14em;font-weight:900;border:2px solid var(--line);vertical-align:middle;}
+    letter-spacing:.14em;font-weight:900;border:var(--bd);vertical-align:middle;}
   .form-chip.hot{background:var(--gold);color:#fff6ea;}
   .form-chip.cold{background:#cfe3f2;color:var(--navy);}
 
@@ -609,7 +702,7 @@
   .park-strip{display:none;text-align:center;font-size:10px;letter-spacing:.2em;
     text-transform:uppercase;font-weight:900;color:var(--gold);margin:-4px 0 6px;}
   @media (max-width:600px){
-    .callout{font-size:18px;padding:10px 18px;}
+    .callout{border-radius:var(--r);font-size:18px;padding:10px 18px;letter-spacing:.03em;}
     .callout.homer{font-size:22px;}
     /* THREE PLACARDS ON A PHONE FIELD IS TWO TOO MANY. The two score chips
        go: the line score right above the field already carries both scores
@@ -624,7 +717,7 @@
     .arena .corner.bl,.arena .corner.br{bottom:6px;}
     .arena .corner.bl{left:6px;} .arena .corner.br{right:6px;}
     .brand{padding:6px 0 8px;gap:6px;}
-    .brand h1{font-size:15px;letter-spacing:.1em;}
+    .brand h1{font-size:16px;letter-spacing:.02em;}
     .brand .tag{display:none;}
     .brand button{font-size:9px;padding:4px 7px;margin-left:4px;white-space:nowrap;}
     .wrap{padding:8px 8px 40px;}
@@ -634,7 +727,7 @@
   .plate-row{
     display:grid;grid-template-columns:1fr;gap:10px;align-items:stretch;
   }
-  .meter-wrap{background:var(--panel);border:2px solid var(--line);border-radius:0;padding:10px 14px;
+  .meter-wrap{background:var(--panel);border:var(--bd);border-radius:var(--r-sm);padding:10px 14px;
     box-shadow:var(--shadow);}
   .meter-wrap .label{display:flex;justify-content:space-between;font-size:11px;color:var(--text-dim);
     letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px;}
@@ -652,8 +745,8 @@
     color:var(--text-dim);}
   .pitch-select .type-row{display:flex;gap:6px;}
   .zone-grid{display:grid;grid-template-columns:repeat(3,32px);grid-template-rows:repeat(3,32px);
-    gap:2px;background:var(--navy);padding:3px;border:2px solid var(--line);
-    border-radius:0;box-shadow:var(--shadow-sm);}
+    gap:2px;background:var(--navy);padding:3px;border:var(--bd);
+    border-radius:var(--r-sm);box-shadow:var(--shadow-sm);}
   .zone-grid button{background:#eadfc0;border:0;cursor:pointer;padding:0;transition:background .1s;}
   .zone-grid button:hover{background:#ffd44a;}
   .zone-grid button.corner{background:#d7c9a8;}
@@ -677,37 +770,37 @@
      it: who is due, whose arm, and which way the next half goes. It sits
      low so SIDES CHANGE and EXTRA INNINGS keep their spot above it. */
   .board{position:absolute;left:50%;bottom:12%;transform:translateX(-50%);
-    width:min(520px,92%);background:var(--panel);border:3px solid var(--line);
-    box-shadow:5px 5px 0 var(--navy);padding:10px 14px;z-index:7;pointer-events:none;
+    width:min(520px,92%);background:var(--panel);border:var(--bd-strong);
+    box-shadow:var(--shadow);padding:10px 14px;z-index:7;pointer-events:none;
     color:var(--text);font-size:12px;letter-spacing:.06em;}
   .board .board-head{display:flex;justify-content:space-between;gap:10px;align-items:baseline;
     border-bottom:2px solid var(--line);padding-bottom:6px;margin-bottom:8px;}
-  .board .board-head b{color:var(--gold);font-size:15px;letter-spacing:.14em;text-transform:uppercase;}
+  .board .board-head b{color:var(--gold);font-family:var(--font-display);font-size:16px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;}
   .board .board-due{display:flex;align-items:center;gap:12px;}
   .board .board-due .lbl{font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--text-dim);}
   .board .due{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:9px;
     max-width:84px;}
   .board .due span{max-width:84px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-  .board .due canvas{image-rendering:pixelated;}
+  .board .due canvas{image-rendering:var(--pxr);}
   .board .board-arm{margin-top:6px;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--text-dim);}
   .board .board-arm b{color:var(--text);}
   @media (max-width:600px){.board{font-size:10px;padding:8px 10px;bottom:8%;} .board .board-head b{font-size:12px;}}
   .swing-btn{display:none;width:100%;margin-top:10px;padding:16px;font-size:16px;
-    background:var(--gold);color:#fff6ea;border:3px solid var(--line);border-radius:0;
-    font-weight:900;letter-spacing:.28em;cursor:pointer;font-family:inherit;
+    background:var(--gold);color:#fff6ea;border:var(--bd-strong);border-radius:var(--r-sm);
+    font-weight:800;letter-spacing:.05em;cursor:pointer;font-family:var(--font-display);
     text-transform:uppercase;box-shadow:var(--shadow);}
-  .swing-btn:active{transform:translate(3px,3px);box-shadow:none;}
+  .swing-btn:active{transform:translateY(1px);box-shadow:var(--shadow-press);}
   @media (max-width:900px){.swing-btn{display:block;}}
 
-  .atbat{background:var(--panel);border:2px solid var(--line);border-radius:0;padding:10px 14px;
+  .atbat{background:var(--panel);border:var(--bd);border-radius:var(--r-sm);padding:10px 14px;
     display:flex;gap:14px;align-items:center;flex-wrap:wrap;box-shadow:var(--shadow);}
-  .atbat .avatar{width:36px;height:auto;image-rendering:pixelated;}
+  .atbat .avatar{width:36px;height:auto;image-rendering:var(--pxr);}
   .atbat .who{font-size:14px;letter-spacing:.06em;}
   .atbat .who b{color:var(--gold);}
   .atbat .vs{font-size:11px;color:var(--text-dim);letter-spacing:.08em;text-transform:uppercase;margin-top:2px;}
   .atbat .count{margin-left:auto;font-size:16px;color:var(--text);letter-spacing:.14em;font-weight:700;}
 
-  .log{background:var(--panel);border:2px solid var(--line);border-radius:0;padding:10px 14px;
+  .log{background:var(--panel);border:var(--bd);border-radius:var(--r-sm);padding:10px 14px;
     max-height:110px;overflow-y:auto;font-size:12px;line-height:1.6;color:var(--text-dim);
     box-shadow:var(--shadow);}
   .log .line{padding:1px 0;}
@@ -718,16 +811,16 @@
   /* The bullpen: a plaque over the field with the eight arms on the
      bench, each with the one number that matters on the mound. */
   .pen{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
-    width:min(560px,94%);background:var(--panel);border:3px solid var(--line);
-    box-shadow:5px 5px 0 var(--navy);padding:12px 14px;z-index:10;
+    width:min(560px,94%);background:var(--panel);border:var(--bd-strong);
+    box-shadow:var(--shadow);padding:12px 14px;z-index:10;
     font-size:12px;color:var(--text);}
   .pen h4{margin:0 0 4px;font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);}
   .pen .note{font-size:10px;color:var(--text-dim);margin-bottom:8px;line-height:1.5;}
   .pen-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:6px;}
-  .pen-arm{border:2px solid var(--line);background:var(--panel-2);padding:5px 4px;text-align:center;
+  .pen-arm{border:var(--bd);background:var(--panel-2);padding:5px 4px;text-align:center;
     cursor:pointer;font:inherit;color:inherit;box-shadow:var(--shadow-sm);}
   .pen-arm:hover{background:var(--gold);color:#fff6ea;}
-  .pen-arm canvas{display:block;margin:0 auto 2px;image-rendering:pixelated;}
+  .pen-arm canvas{display:block;margin:0 auto 2px;image-rendering:var(--pxr);}
   .pen-arm .nm{font-size:10px;font-weight:900;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   .pen-arm .con{font-size:9px;letter-spacing:.12em;color:var(--text-dim);}
   .pen-arm:hover .con{color:#fff6ea;}
@@ -736,8 +829,8 @@
 
   /* Line score: the classic ballpark board, one column per inning plus runs. */
   .linescore{display:flex;justify-content:center;margin-bottom:10px;overflow-x:auto;}
-  .linescore table{border-collapse:collapse;background:var(--panel);border:2px solid var(--line);
-    border-radius:0;overflow:hidden;font-size:13px;box-shadow:var(--shadow);}
+  .linescore table{border-collapse:collapse;background:var(--panel);border:var(--bd);
+    border-radius:var(--r-sm);overflow:hidden;font-size:13px;box-shadow:var(--shadow);}
   .linescore th,.linescore td{padding:4px 9px;text-align:center;
     font-variant-numeric:tabular-nums;border-left:1px solid rgba(27,58,92,.3);}
   .linescore th{color:var(--text-dim);font-weight:500;font-size:10px;letter-spacing:.1em;}
@@ -756,22 +849,22 @@
   /* The playoff line runs above fifth place. */
   .table tr.cut td{border-top:2px solid var(--gold);}
   .mark{display:inline-block;font-size:9px;letter-spacing:.14em;text-transform:uppercase;
-    font-weight:900;padding:1px 5px;border:2px solid var(--line);margin-left:6px;vertical-align:middle;}
+    font-weight:900;padding:1px 5px;border:var(--bd);margin-left:6px;vertical-align:middle;}
   .mark.x{color:var(--green);} .mark.e{color:var(--text-dim);} .mark.u{color:var(--red);}
   .table.sched tr.next td{background:rgba(227,176,76,.18);}
   /* Season awards: one plaque per winner. */
   .awards{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;}
-  .award,.earn{border:2px solid var(--line);padding:8px;text-align:center;background:var(--panel-2);
+  .award,.earn{border:var(--bd);padding:8px;text-align:center;background:var(--panel-2);
     box-shadow:var(--shadow-sm);}
   .award .ttl{font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);font-weight:900;}
-  .award canvas,.earn canvas{display:block;margin:6px auto;image-rendering:pixelated;}
+  .award canvas,.earn canvas{display:block;margin:6px auto;image-rendering:var(--pxr);}
   .award .nm,.earn .nm{font-weight:900;font-size:12px;}
   .award .ln,.earn .ln{font-size:10px;color:var(--text-dim);margin-top:2px;}
   .earn{opacity:.9;} .earn .nm{color:var(--text-dim);}
 
   .bracket{display:grid;grid-template-columns:1fr auto 1fr;gap:12px;align-items:center;}
   .bracket .col{display:flex;flex-direction:column;gap:10px;}
-  .bracket .match{background:var(--panel);border:2px solid var(--line);border-radius:0;padding:8px 10px;
+  .bracket .match{background:var(--panel);border:var(--bd);border-radius:var(--r-sm);padding:8px 10px;
     font-size:12px;box-shadow:var(--shadow-sm);}
   .bracket .match .row{display:flex;justify-content:space-between;padding:2px 0;}
   .bracket .match .row.win{color:var(--gold);}
@@ -784,14 +877,14 @@
     gap:10px;min-width:170px;flex:1;}
   .cupbracket .roundlbl{color:var(--text-dim);font-size:10px;letter-spacing:.14em;
     text-transform:uppercase;text-align:center;margin-bottom:2px;}
-  .cupbracket .match{background:var(--panel);border:2px solid var(--line);
-    border-radius:0;padding:7px 9px;font-size:12px;box-shadow:var(--shadow-sm);}
+  .cupbracket .match{background:var(--panel);border:var(--bd);
+    border-radius:var(--r-sm);padding:7px 9px;font-size:12px;box-shadow:var(--shadow-sm);}
   .cupbracket .match .row{display:flex;justify-content:space-between;gap:8px;padding:2px 0;}
   .cupbracket .match .row.win{color:var(--gold);font-weight:700;}
   .cupbracket .match .row.you{text-decoration:underline;text-underline-offset:3px;}
 
   .banner{background:var(--panel-2);
-    border:2px solid var(--line);border-radius:0;padding:10px 12px;margin-bottom:10px;
+    border:var(--bd);border-radius:var(--r-sm);padding:10px 12px;margin-bottom:10px;
     font-size:13px;box-shadow:var(--shadow-sm);}
   .banner b{color:var(--gold);}
 
@@ -799,13 +892,13 @@
      out: the whole screen is one plaque so it reads as a cut AWAY from the
      game rather than another panel on the same page. */
   .press{max-width:760px;margin:0 auto;cursor:pointer;user-select:none;}
-  .press-stage{background:var(--panel);border:3px solid var(--line);box-shadow:5px 5px 0 var(--navy);}
+  .press-stage{background:var(--panel);border:var(--bd-strong);box-shadow:var(--shadow);}
   .press-portrait{background:linear-gradient(180deg,#bfe4f7,#8fd0e8);
     border-bottom:3px solid var(--line);display:flex;justify-content:center;
     align-items:flex-end;overflow:hidden;}
-  .press-portrait canvas{display:block;image-rendering:pixelated;}
+  .press-portrait canvas{display:block;image-rendering:var(--pxr);}
   .press-box{padding:12px 16px 14px;position:relative;min-height:132px;}
-  .press-name{font-size:20px;font-weight:900;letter-spacing:.14em;text-transform:uppercase;}
+  .press-name{font-family:var(--font-display);font-size:21px;font-weight:800;letter-spacing:.02em;text-transform:uppercase;}
   .press-outlet{font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--text-dim);
     padding-bottom:8px;margin-bottom:10px;border-bottom:2px solid rgba(27,58,92,.25);}
   .press-text{font-size:15px;line-height:1.65;color:var(--text);min-height:52px;}
@@ -824,10 +917,10 @@
   /* Park cards: a three band mock of the park's own palette above the
      name, so the choice reads visually before it reads numerically. */
   .park-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px;}
-  .park-card{border:2px solid var(--line);background:var(--panel);cursor:pointer;
+  .park-card{border:var(--bd);background:var(--panel);cursor:pointer;
     box-shadow:var(--shadow-sm);padding:0 0 10px;transition:transform .08s;}
   .park-card:hover{transform:translate(-1px,-1px);}
-  .park-card.on{background:var(--panel-2);box-shadow:3px 3px 0 var(--gold);}
+  .park-card.on{background:var(--panel-2);box-shadow:var(--ring-gold);}
   .park-card .pk-sky{height:48px;position:relative;border-bottom:2px solid var(--line);}
   .park-card .pk-wall{position:absolute;left:0;right:0;top:22px;height:9px;}
   .park-card .pk-grass{position:absolute;left:0;right:0;top:31px;bottom:0;}
@@ -870,8 +963,8 @@
   body.inroom h2{margin-bottom:8px;}
   body.inroom .card{padding:10px;}
   .clubhouse{position:relative;width:100%;margin:0 auto;}
-  .clubhouse canvas{display:block;width:100%;height:auto;image-rendering:pixelated;
-    border:3px solid var(--line);box-shadow:5px 5px 0 var(--navy);background:#6b4a24;}
+  .clubhouse canvas{display:block;width:100%;height:auto;image-rendering:var(--pxr);
+    border:var(--bd-strong);box-shadow:var(--shadow);background:#6b4a24;}
   .clubhouse .hot{position:absolute;background:none;border:0;padding:0;margin:0;
     cursor:pointer;font:inherit;color:transparent;}
   /* THE CAST LAYER. Same box as the room, no border of its own (the rule
@@ -882,7 +975,7 @@
   .ph-hero{position:relative;}
   .ph-hero .ph-cast{position:absolute;left:0;top:0;width:100%;height:100%;
     border:0;box-shadow:none;background:none;pointer-events:none;
-    image-rendering:pixelated;image-rendering:crisp-edges;}
+    image-rendering:var(--pxr);}
 
   /* ---------------------------------------------------------- the franchise
      THE ONE OBVIOUS THING TO PRESS. It is a scoreboard with a button under
@@ -891,24 +984,25 @@
      page. Nothing else here is allowed to be this loud. */
   .fr-panel{margin:12px auto 0;max-width:880px;text-align:center;}
   .fr-stat{display:flex;align-items:baseline;justify-content:center;gap:14px;
-    flex-wrap:wrap;background:var(--line);color:#f6e7c2;border:3px solid var(--line);
-    box-shadow:var(--shadow);padding:8px 16px;}
-  .fr-stat b{font-size:15px;letter-spacing:.16em;text-transform:uppercase;}
-  .fr-stat i{font-style:normal;font-size:26px;font-weight:900;color:#ffd98a;
-    letter-spacing:.04em;}
-  .fr-stat span{font-size:12px;letter-spacing:.14em;text-transform:uppercase;
+    flex-wrap:wrap;background:var(--line);color:#f6e7c2;border:var(--bd-strong);
+    box-shadow:var(--shadow);padding:10px 18px;border-radius:var(--r);}
+  .fr-stat b{font-family:var(--font-display);font-size:15px;letter-spacing:.06em;text-transform:uppercase;font-weight:700;}
+  .fr-stat i{font-style:normal;font-family:var(--font-display);font-size:28px;
+    font-weight:800;color:#ffd98a;letter-spacing:.01em;}
+  .fr-stat span{font-size:12px;letter-spacing:.07em;text-transform:uppercase;
     color:#c8d6e6;}
   .fr-stat.empty{display:block;font-size:12px;letter-spacing:.06em;
     text-transform:none;color:#d9e3ef;line-height:1.5;}
   .bigplay{display:flex;align-items:center;justify-content:center;gap:12px;
     width:100%;margin-top:10px;background:var(--gold);color:#fff6ea;
-    border:3px solid var(--line);box-shadow:5px 5px 0 var(--navy);
-    font-family:inherit;font-size:17px;font-weight:900;letter-spacing:.14em;
-    text-transform:uppercase;padding:15px 18px;cursor:pointer;}
+    border:1.5px solid rgba(20,40,63,.18);box-shadow:var(--shadow);border-radius:var(--r);
+    font-family:var(--font-display);font-size:19px;font-weight:800;letter-spacing:.04em;
+    text-transform:uppercase;padding:17px 18px;cursor:pointer;
+    transition:box-shadow .12s,transform .12s;}
   .bigplay:hover{background:#e0453a;}
   /* A cabinet button travels onto its own shadow. 3px, and no easing on the
      way down: a retro control answers on the frame you press it. */
-  .bigplay:active{transform:translate(5px,5px);box-shadow:none;}
+  .bigplay:active{transform:translateY(1px);box-shadow:var(--shadow-press);}
   .bigplay:focus-visible{outline:3px solid var(--line);outline-offset:4px;}
   /* The play mark is drawn, not a glyph: a triangle out of borders sits on
      the baseline the same way in every font this page might fall back to. */
@@ -924,17 +1018,17 @@
      plus the longest word in the blurb set a floor the column refuses to go
      under: at 320px the right hand column ran 8px off the screen. */
   .hmode{display:flex;align-items:center;gap:12px;text-align:left;min-width:0;
-    background:var(--panel);border:3px solid var(--line);
+    background:var(--panel);border:var(--bd-strong);
     box-shadow:var(--shadow);padding:11px 12px;cursor:pointer;
     font-family:inherit;color:var(--text);
     transition:background 120ms steps(2), transform 100ms steps(1);}
   .hmode:hover{background:var(--panel-2);}
-  .hmode:active{transform:translate(3px,3px);box-shadow:none;}
+  .hmode:active{transform:translateY(1px);box-shadow:var(--shadow-press);}
   .hmode:focus-visible{outline:3px solid var(--gold);outline-offset:3px;}
   .hmode-art{flex:0 0 auto;width:56px;height:56px;display:grid;place-items:center;
-    background:#f7ecd0;border:2px solid var(--line);}
+    background:#f7ecd0;border:var(--bd);}
   .hmode-art canvas{display:block;width:100%;height:100%;
-    image-rendering:pixelated;image-rendering:crisp-edges;}
+    image-rendering:var(--pxr);}
   .hmode-txt{min-width:0;}
   .hmode-txt b{display:block;font-size:13px;font-weight:900;letter-spacing:.12em;
     text-transform:uppercase;color:var(--gold);}
@@ -992,7 +1086,7 @@
   .clubhouse .hot:focus-visible{outline:3px solid var(--gold);outline-offset:2px;}
   /* The rail: one line about whatever is under the pointer. */
   .clubhouse-rail{margin:8px auto 0;background:var(--panel);
-    border:3px solid var(--line);box-shadow:var(--shadow-sm);padding:9px 14px;
+    border:var(--bd-strong);box-shadow:var(--shadow-sm);padding:9px 14px;
     font-size:13px;color:var(--text-dim);min-height:42px;display:flex;
     align-items:center;gap:10px;}
   .clubhouse-rail b{color:var(--gold);letter-spacing:.1em;text-transform:uppercase;
@@ -1021,17 +1115,17 @@
 
      The desktop keeps the room. It has the width for it and a pointer to
      drive the rail, which is what the room was designed around. */
-  .ph-strip{display:block;width:100%;height:auto;image-rendering:pixelated;
-    border:3px solid var(--line);box-shadow:4px 4px 0 var(--navy);
+  .ph-strip{display:block;width:100%;height:auto;image-rendering:var(--pxr);
+    border:var(--bd-strong);box-shadow:var(--shadow);
     background:#9c6b3a;}
   .ph-menu{display:flex;flex-direction:column;gap:10px;margin-top:12px;}
   .ph-door{display:flex;align-items:center;gap:12px;width:100%;
     font:inherit;text-align:left;cursor:pointer;padding:10px 12px;
-    background:var(--panel);border:3px solid var(--line);
-    box-shadow:4px 4px 0 var(--navy);}
-  .ph-door:active{transform:translate(3px,3px);box-shadow:none;}
+    background:var(--panel);border:var(--bd-strong);
+    box-shadow:var(--shadow);}
+  .ph-door:active{transform:translateY(1px);box-shadow:var(--shadow-press);}
   .ph-door canvas{display:block;flex:none;width:58px;height:58px;
-    image-rendering:pixelated;background:#6b4a24;border:2px solid var(--line);}
+    image-rendering:var(--pxr);background:#6b4a24;border:var(--bd);}
   .ph-door .ph-txt{display:flex;flex-direction:column;gap:3px;min-width:0;}
   .ph-door b{font-size:19px;font-weight:900;letter-spacing:.08em;
     text-transform:uppercase;color:var(--red);line-height:1.05;}
@@ -1139,8 +1233,8 @@
      Same canvas-plus-transparent-buttons trick as the clubhouse, for the same
      reason: hit testing on coordinates would cost the keyboard. */
   .photo{position:relative;width:100%;max-width:940px;margin:0 auto;}
-  .photo canvas{display:block;width:100%;height:auto;image-rendering:pixelated;
-    border:3px solid var(--line);box-shadow:5px 5px 0 var(--navy);background:#7fc9ea;}
+  .photo canvas{display:block;width:100%;height:auto;image-rendering:var(--pxr);
+    border:var(--bd-strong);box-shadow:var(--shadow);background:#7fc9ea;}
   .photo .hot{position:absolute;background:none;border:0;padding:0;margin:0;
     cursor:pointer;font:inherit;color:transparent;}
   .photo .hot:focus-visible{outline:3px solid var(--gold);outline-offset:1px;}
@@ -1148,12 +1242,12 @@
      than the last one must not walk the picture up and down the page while
      the pointer moves across a row. */
   .meetbar{max-width:940px;margin:10px auto 0;background:var(--panel);
-    border:3px solid var(--line);box-shadow:var(--shadow);padding:12px 14px;
+    border:var(--bd-strong);box-shadow:var(--shadow);padding:12px 14px;
     display:flex;gap:14px;align-items:flex-start;min-height:132px;}
   .meetbar .mug{flex:0 0 auto;width:64px;height:100px;background:#bfe4f7;
-    border:2px solid var(--line);display:flex;align-items:flex-end;justify-content:center;
+    border:var(--bd);display:flex;align-items:flex-end;justify-content:center;
     overflow:hidden;}
-  .meetbar .mug canvas{image-rendering:pixelated;}
+  .meetbar .mug canvas{image-rendering:var(--pxr);}
   .meetbar .body{flex:1;min-width:0;}
   .meetbar .mname{font-size:18px;font-weight:900;letter-spacing:.06em;}
   .meetbar .mrole{font-size:10px;letter-spacing:.2em;text-transform:uppercase;
@@ -1183,7 +1277,7 @@
   /* How To Play figures: drawn by the game's own functions, so they cannot
      go stale the way the old text did. */
   .howto-fig{display:block;width:100%;max-width:400px;height:auto;
-    border:2px solid var(--line);box-shadow:var(--shadow-sm);margin:8px 0 10px;}
+    border:var(--bd);box-shadow:var(--shadow-sm);margin:8px 0 10px;}
   .howto-grid{display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap;margin:8px 0 10px;}
   .howto-grid .zone-grid button{cursor:default;}
 
@@ -1982,11 +2076,69 @@ function drawHeroSprite(ctx, key, size, frame) {
     }
   }
 }
+/* EPX, TWICE. The art is 64 pixels and a batter is drawn about four times
+   that, so magnifying it is what puts visible squares on the one thing a
+   reader looks at all game. This is the standard pixel art scaler: each
+   pixel becomes four, and a corner is rounded only where its two
+   neighbours agree and the opposite pair does not. It invents no colour,
+   which is the property that matters on this roster: every output pixel is
+   one of the character's own palette entries, so a scaled Medusa is still
+   drawn in Medusa's greens and nothing goes muddy at the edges.
+
+   TWICE RATHER THAN ONCE, because one pass is 128 against a draw of about
+   256 and the remaining magnification lands back on visible squares. Two
+   is 256, which is at or above what the field ever asks for, so the final
+   step is a filtered REDUCTION and reductions do not show steps.
+
+   IT IS NOT AN ANTI-ALIASER AND MUST NOT BE READ AS ONE. A straight
+   diagonal stays a staircase of half the step, because the source really
+   does only know 64 rows. What it removes is the single pixel jaggies and
+   the hard corner; what it cannot remove is the resolution. */
+function epxUp(src) {
+  const w = src.width, h = src.height;
+  const sarr = new Uint32Array(src.getContext('2d', { willReadFrequently: true })
+    .getImageData(0, 0, w, h).data.buffer);
+  const out = document.createElement('canvas');
+  out.width = w * 2; out.height = h * 2;
+  const octx = out.getContext('2d');
+  const od = octx.createImageData(w * 2, h * 2);
+  const oarr = new Uint32Array(od.data.buffer);
+  const at = (x, y) => sarr[Math.min(h - 1, Math.max(0, y)) * w + Math.min(w - 1, Math.max(0, x))];
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+    const P = at(x, y), A = at(x, y - 1), B = at(x + 1, y), C = at(x - 1, y), D = at(x, y + 1);
+    let e1 = P, e2 = P, e3 = P, e4 = P;
+    if (C === A && C !== D && A !== B) e1 = A;
+    if (A === B && A !== C && B !== D) e2 = B;
+    if (D === C && D !== B && C !== A) e3 = C;
+    if (B === D && B !== A && D !== C) e4 = B;
+    const i = (y * 2) * (w * 2) + x * 2;
+    oarr[i] = e1; oarr[i + 1] = e2; oarr[i + w * 2] = e3; oarr[i + w * 2 + 1] = e4;
+  }
+  octx.putImageData(od, 0, 0);
+  return out;
+}
 function heroSpriteCanvas(key, size, frame) {
+  if (!graphicsSmooth()) {
+    const cv = document.createElement('canvas');
+    cv.width = size;
+    cv.height = Math.round(size * V2_H / V2_W);
+    drawHeroSprite(cv.getContext('2d'), key, size, frame || 'idle');
+    return cv;
+  }
+  /* Built at the art's OWN size first, because EPX reads neighbours and a
+     sprite already magnified into fat squares has none: every neighbour of
+     a pixel in the middle of a 4x4 block is itself, so every test fails and
+     two passes of it hand back exactly what they were given. */
+  const base = document.createElement('canvas');
+  base.width = V2_W; base.height = V2_H;
+  drawHeroSprite(base.getContext('2d', { willReadFrequently: true }), key, V2_W, frame || 'idle');
+  const up = epxUp(epxUp(base));
   const cv = document.createElement('canvas');
   cv.width = size;
   cv.height = Math.round(size * V2_H / V2_W);
-  drawHeroSprite(cv.getContext('2d'), key, size, frame || 'idle');
+  const c = cv.getContext('2d');
+  c.imageSmoothingEnabled = true; c.imageSmoothingQuality = 'high';
+  c.drawImage(up, 0, 0, cv.width, cv.height);
   return cv;
 }
 /* ONE BUILT SPRITE PER (character, size, frame), FOR EVER.
@@ -1995,7 +2147,13 @@ function heroSpriteCanvas(key, size, frame) {
    once and keep it. */
 const spriteStore = new Map();
 function spriteFor(key, px, frame) {
-  const ck = key + '|' + px + '|' + (frame || 'idle');
+  /* THE MODE IS IN THE KEY RATHER THAN CLEARED ON THE TOGGLE. What is
+     cached is a DRAWING and the two modes draw different ones, so a key
+     without it hands a retro player the smoothed art for the rest of the
+     session, on whichever characters happened to be built first. Clearing
+     the map on the toggle would work and is the version that goes wrong
+     later, because it is a thing to remember at every future caller. */
+  const ck = key + '|' + px + '|' + (frame || 'idle') + (graphicsSmooth() ? '|s' : '');
   let cv = spriteStore.get(ck);
   if (!cv) { cv = heroSpriteCanvas(key, px, frame); spriteStore.set(ck, cv); }
   return cv;
@@ -2308,6 +2466,23 @@ Sound.muted = !!PREFS.muted;
 /* Cutscenes default ON: they are the reason the season mode has a shape.
    The toggle exists for a second playthrough, not for the first. */
 if (PREFS.cutscenes === undefined) PREFS.cutscenes = true;
+/* SMOOTH DEFAULTS ON, AND RETRO IS KEPT RATHER THAN RETIRED. The two are
+   one renderer with one branch, not two pictures: the same drawField, the
+   same camera, the same geometry in the same logical units. What differs
+   is where it is rasterized. Retro draws the world into a small canvas and
+   magnifies it with smoothing off, which is what makes a block a block;
+   smooth rasterizes the same paths straight onto the display bitmap and
+   upscales the sprite art instead.
+
+   The toggle exists because the COST cannot be measured here. This sandbox
+   has no GPU, so Canvas2D rasterizes in software and a large anti-aliased
+   fill is charged at a rate no real phone pays. Measured at 4x throttle on
+   a 390 phone the two modes are level (36.3ms against 36.4ms), and that
+   number is a ceiling rather than a reading. A player whose device
+   disagrees has one tap out of it, and the answer costs nothing to change
+   because neither path was deleted. */
+if (PREFS.smooth === undefined) PREFS.smooth = true;
+function graphicsSmooth() { return PREFS.smooth !== false; }
 function savePrefs() {
   try {
     localStorage.setItem(PREFS_KEY, JSON.stringify({
@@ -2317,6 +2492,7 @@ function savePrefs() {
       teamName: State.teamName,
       muted: Sound.muted,
       cutscenes: PREFS.cutscenes !== false,
+      smooth: PREFS.smooth !== false,
       coach: PREFS.coach !== false,
       coach_bat: !!PREFS.coach_bat,
       coach_pitch: !!PREFS.coach_pitch,
@@ -2550,6 +2726,11 @@ function render() {
   app.innerHTML = '';
   const s = State.screen;
   document.body.classList.toggle('ingame', s === 'game');
+  /* On EVERY render rather than only on the toggle, for the reason
+     `seasonTag` returns an empty string: written where the choice is made,
+     it is one place to forget, and what it costs is a canvas filtered as
+     though it were the other mode with nothing anywhere saying so. */
+  document.body.classList.toggle('smooth', graphicsSmooth());
   /* The clubhouse is the home page, so on the menu the page gets out of its way. */
   /* `inroom` is the ROOM's page layout, so it is off when the menu is the
      phone one: there is no canvas to fill the window with. */
@@ -4955,6 +5136,14 @@ function renderSettings() {
         (v) => State.gameSpeed === v,
         (v) => { State.gameSpeed = v; applyGameSpeed(); });
 
+  /* The words are what the two look like, never how they work. "Smooth"
+     and "Retro" are a picture a reader can predict; "direct raster" and
+     "nearest neighbour" are the inside of the renderer, and a settings row
+     that needs the code read to answer it is a row nobody touches. */
+  group('Graphics', [{ v:true, label:'Smooth' }, { v:false, label:'Retro' }],
+        (v) => graphicsSmooth() === v,
+        (v) => { PREFS.smooth = v; document.body.classList.toggle('smooth', v); });
+
   group('Cutscenes', [{ v:true, label:'On' }, { v:false, label:'Off' }],
         (v) => (PREFS.cutscenes !== false) === v,
         (v) => { PREFS.cutscenes = v; });
@@ -5786,7 +5975,7 @@ function renderSeasonHub() {
      does, because the factor was chosen once and is felt every home game. */
   const idCard = el('div','card');
   idCard.innerHTML =
-      `<div style="background:${kit.a};color:${kit.b};border:2px solid var(--navy);`
+      `<div style="background:${kit.a};color:${kit.b};border:var(--bd);`
     + `padding:10px 14px;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">`
     + `<div><div style="font-size:10px;letter-spacing:.22em;text-transform:uppercase;opacity:.85">`
     + `${F ? F.city : ''}</div>`
@@ -6877,6 +7066,24 @@ function plateFocus() {
    the one thing this is not allowed to do. */
 function fieldDraw(scale, dpr) {
   const floor = scale / (dpr || 1);
+  /* SMOOTH MODE WANTS THE FLOOR ITSELF, NOT THE NEXT WHOLE DIVISOR ABOVE
+     IT. The divisor exists so the browser's last step is a whole number,
+     which is what keeps a block from being four device pixels here and
+     five there. Nothing in smooth mode is a block, so a fractional last
+     step is a filtered resize of a picture that is already filtered, and
+     rounding UP to a divisor is then pure fill for nothing: measured on a
+     390 phone at ratio 3, drawing the field at device resolution is 148ms
+     a frame against 36ms at CSS resolution, which is the whole difference
+     between the mode being playable and not. */
+  /* CEIL AND NEVER ROUND, and the difference is a whole mode. `round` takes
+     4/3 to 1, so the wide camera on a 390 phone drew a 292 pixel bitmap
+     into a 389 pixel element: three quarters of CSS resolution, upscaled
+     back, which is softer than the glass can show. That is the one way this
+     mode can look WORSE than the one it replaces, and it is invisible in
+     the source because the number it produces is a perfectly ordinary
+     number. Found by dumping the bitmap beside the element it is laid out
+     in. Going the other way costs fill and can only ever be sharper. */
+  if (graphicsSmooth()) return Math.max(1, Math.ceil(floor - 1e-9));
   for (let d = 1; d <= scale; d++) {
     if (scale % d === 0 && d >= floor - 1e-9) return d;
   }
@@ -7118,7 +7325,16 @@ function fitFieldCanvas(cv) {
    cut between the two views takes one sample and holding either takes none. */
 let fieldBandAt = '';
 function fieldBand(box) {
-  if (!FIELD_CAM.band || !pixWorld) return;
+  if (!FIELD_CAM.band) return;
+  /* WHICHEVER CANVAS THE MODE ACTUALLY DREW INTO. Retro has the small
+     world canvas and reads it, which is what the note above is about.
+     Smooth never builds one, so the only picture in existence is the
+     display bitmap, and the band is read off that instead. A readback
+     from it is the thing the note warns against, and it is affordable
+     for the same reason the sample is affordable at all: it happens on
+     a camera change and not per frame, and it is nine pixels. */
+  const smoothBand = graphicsSmooth();
+  if (!smoothBand && !pixWorld) return;
   const key = FIELD_CAM.sx + ',' + FIELD_CAM.sy + ',' + FIELD_CAM.sw + ',' + FIELD_CAM.sh
             + ',' + currentTheme().park;
   if (fieldBandAt === key) return;
@@ -7143,8 +7359,10 @@ function fieldBand(box) {
      letterbox under a ball in play wore the plate crop's dirt, a beach
      under a green field. The band belongs to the camera that shows it. */
   if (plateViewActive(g)) return;
+  const fcv = smoothBand ? box.querySelector('canvas') : pixWorld;
+  if (!fcv || !fcv.width || !fcv.height) return;
   fieldBandAt = key;
-  const w = pixWorld.getContext('2d');
+  const w = fcv.getContext('2d', smoothBand ? { willReadFrequently: true } : undefined);
   /* THE ROW'S TYPICAL PIXEL, NEVER THE MIDLINE ONE. The plate scene's
      bottom row is the home circle's dirt at the midline and grass either
      side of it, so one centre pixel painted the letterbox tan under a
@@ -7156,14 +7374,20 @@ function fieldBand(box) {
      shares its dominant channel: averaged in, it pulled the band seven
      channels off the sky it sits against, and the guard on the band
      rightly refused a colour that is no pixel of the row. */
+  /* Both modes are asked in WORLD BLOCKS and each maps to its own canvas:
+     retro's holds the whole world at one block a pixel, smooth's holds the
+     crop at `draw` pixels a block. One reader, two mappings, so the choice
+     of row can never drift from the choice of canvas. */
+  const cx = (bx) => smoothBand ? (bx - FIELD_CAM.sx) * FIELD_CAM.draw : bx;
+  const cy = (by) => smoothBand ? (by - FIELD_CAM.sy) * FIELD_CAM.draw : by;
   const rgb = (y) => {
-    const yy = Math.max(0, Math.min(pixWorld.height - 1, y));
+    const yy = Math.max(0, Math.min(fcv.height - 1, Math.round(cy(y))));
     const dom = (d) => d[1] >= d[0] && d[1] >= d[2] ? 'g' : d[2] >= d[0] ? 'b' : 'r';
     const groups = { r: [], g: [], b: [] };
     let mid = null;
     for (let i = 0; i < 9; i++) {
-      const x = Math.max(0, Math.min(pixWorld.width - 1,
-        Math.round(FIELD_CAM.sx + FIELD_CAM.sw * (i + 0.5) / 9)));
+      const x = Math.max(0, Math.min(fcv.width - 1,
+        Math.round(cx(FIELD_CAM.sx + FIELD_CAM.sw * (i + 0.5) / 9))));
       const d = w.getImageData(x, yy, 1, 1).data;
       groups[dom(d)].push([d[0], d[1], d[2]]);
       if (i === 4) mid = [d[0], d[1], d[2]];
@@ -7276,23 +7500,54 @@ function startFieldLoop() {
       /* The world at one low resolution (see PIX above), then blitted to
          the display bitmap with smoothing off. drawField saves and
          restores around its own transforms, so the base survives it. */
-      if (!pixWorld) {
-        pixWorld = document.createElement('canvas');
-        pixWorld.width = Math.round(FIELD_W / PIX);
-        pixWorld.height = Math.round(FIELD_H / PIX);
-      }
-      const wctx = pixWorld.getContext('2d');
-      wctx.setTransform(1 / PIX, 0, 0, 1 / PIX, 0, 0);
       HUD_Q.length = 0;
-      drawField(wctx, FIELD_W, FIELD_H, t, p || null, inWindup);
-      ctx.setTransform(1, 0, 0, 1, 0, 0);
-      ctx.imageSmoothingEnabled = false;
-      /* THE CROP IS A SOURCE RECTANGLE, which is what keeps a world block a
-         whole number of device pixels. Blitting the whole world into an
-         oversized canvas and letting the arena clip it is what handed the
-         browser a fractional scale to finish. */
-      ctx.drawImage(pixWorld, FIELD_CAM.sx, FIELD_CAM.sy, FIELD_CAM.sw, FIELD_CAM.sh,
-                    0, 0, fCv.width, fCv.height);
+      const smooth = graphicsSmooth();
+      if (smooth) {
+        /* SMOOTH: THE SAME DRAW, WITH THE MIDDLE CANVAS TAKEN OUT. The two
+           transforms retro applies one after the other are composed into
+           one here: logical through 1/PIX is blocks, and a block is `draw`
+           bitmap pixels at the crop's offset. So every shape is rasterized
+           ONCE, at the bitmap's own resolution, with the anti-aliasing the
+           2D context does by default, and nothing is resampled at all.
+
+           PIX STAYS 3 AND IS STILL THE UNIT, which is what keeps this a
+           branch rather than a second game. Every constant on the camera
+           is counted in blocks (the crop, `PLATE_KEEP_Y`, `deckCoverBlocks`,
+           `zoneLineMin`, `snapB`), and all of them are about where things
+           are and how big, never about whether a block is visible as one.
+           Drawing the same geometry at a finer grain does not move any of
+           them, and that is why both modes frame the plate identically.
+
+           IT IS ALSO CHEAPER THAN THE OBVIOUS VERSION. Keeping the middle
+           canvas and merely making it fine (PIX 1, a filtered blit) was
+           measured at 103ms a frame on a throttled phone against this
+           path's 36ms, because it pays for a nine times larger world AND
+           a filtered magnification of it. */
+        const wk = FIELD_CAM.draw / PIX;
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        ctx.setTransform(wk, 0, 0, wk, -FIELD_CAM.sx * FIELD_CAM.draw,
+                         -FIELD_CAM.sy * FIELD_CAM.draw);
+        drawField(ctx, FIELD_W, FIELD_H, t, p || null, inWindup);
+      } else {
+        if (!pixWorld) {
+          pixWorld = document.createElement('canvas');
+          pixWorld.width = Math.round(FIELD_W / PIX);
+          pixWorld.height = Math.round(FIELD_H / PIX);
+        }
+        const wctx = pixWorld.getContext('2d');
+        wctx.setTransform(1 / PIX, 0, 0, 1 / PIX, 0, 0);
+        drawField(wctx, FIELD_W, FIELD_H, t, p || null, inWindup);
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.imageSmoothingEnabled = false;
+        /* THE CROP IS A SOURCE RECTANGLE, which is what keeps a world block a
+           whole number of device pixels. Blitting the whole world into an
+           oversized canvas and letting the arena clip it is what handed the
+           browser a fractional scale to finish. */
+        ctx.drawImage(pixWorld, FIELD_CAM.sx, FIELD_CAM.sy, FIELD_CAM.sw, FIELD_CAM.sh,
+                      0, 0, fCv.width, fCv.height);
+      }
       /* The crisp pass: each queued site replays on the display canvas
          under the transform it was drawn with. The world context maps
          logical through 1/PIX and the display maps a block to `scale`
@@ -7317,10 +7572,19 @@ function startFieldLoop() {
          replay badge, all of them, on every screen, and nothing threw: a
          label drawn in the wrong place is a valid label. Found by touring
          the pitching half on a phone and zooming into a yellow smudge. */
+      /* IN SMOOTH MODE THE CAPTURED TRANSFORM IS ALREADY THE ANSWER, and
+         bridging it a second time is the exact bug the paragraph above
+         records. Retro captures a transform on the WORLD context, which
+         maps logical to blocks, so it needs the camera in front of it to
+         reach the bitmap. Smooth captures on the DISPLAY context, which
+         already carries the camera, so the bridge is the identity and
+         applying `draw` on top of it would put every label `draw` times
+         too large and too far from the origin. */
       const hudK = FIELD_CAM.draw;
       for (const [m, fn] of HUD_Q) {
-        ctx.setTransform(hudK, 0, 0, hudK, -FIELD_CAM.sx * FIELD_CAM.draw,
-                         -FIELD_CAM.sy * FIELD_CAM.draw);
+        if (smooth) ctx.setTransform(1, 0, 0, 1, 0, 0);
+        else ctx.setTransform(hudK, 0, 0, hudK, -FIELD_CAM.sx * FIELD_CAM.draw,
+                              -FIELD_CAM.sy * FIELD_CAM.draw);
         ctx.transform(m.a, m.b, m.c, m.d, m.e, m.f);
         fn(ctx);
       }

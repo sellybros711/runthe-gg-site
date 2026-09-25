@@ -153,7 +153,7 @@
          described it without naming either end. */
       [0, 20, function (c, p) {
         return 'The starting quarterback at ' + (p(c.small, 0) || 'a Group of Five school')
-          + ' enters at eleven at night. He is at ' + (p(c.elite, 1) || 'a power school')
+          + ' enters at eleven at night. He\'s at ' + (p(c.elite, 1) || 'a power school')
           + ' by breakfast.';
       }, 'portal'],
       [0, 22, function (c, p) {
@@ -165,7 +165,7 @@
         return 'A receiver leaves ' + (p(c.big, 3) || 'one power school') + ' for '
           + (p(c.big, 4) || 'another') + ' and both fanbases claim they won it.';
       }, 'portal'],
-      [0, 30, 'The portal window shuts. Everybody counts what is left.', 'portal'],
+      [0, 30, 'The portal window shuts. Everybody counts what\'s left.', 'portal'],
       [1, 4, function (c, p) {
         return 'Signing day. The best class in the country belongs to '
           + (p(c.elite, 5) || 'the usual place') + ', and nobody is surprised.';

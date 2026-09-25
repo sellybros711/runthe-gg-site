@@ -256,7 +256,7 @@
     }
 
     // actions
-    out += '<a class="rtgmc-btn vault" href="/arcade/archive/"><span class="tkic">' + ICN.ticket + '</span><b>Enter your Vault · ' + s.vault + ' days available</b></a>';
+    out += '<a class="rtgmc-btn vault" href="/arcade/archive/"><span class="tkic">' + ICN.ticket + '</span><b>Open your Vault · ' + s.vault + ' days to play</b></a>';
     /* Only when Stripe is actually billing the account. A card can be held
        without a subscription (bought outright elsewhere on the site, or
        comped), and offering one of those "Manage subscription" names a thing

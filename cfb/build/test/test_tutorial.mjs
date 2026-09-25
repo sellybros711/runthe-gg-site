@@ -147,7 +147,7 @@ for (let i = 0; i < 12 && !(await p.$('#tutend:not([hidden])')); i++) {
 }
 ok('finishing the roster ends the tutorial', await p.isVisible('#tutend'));
 ok('  it says the practice run is not recorded',
-  /not recorded/i.test((await p.textContent('#tutend-body')) || ''),
+  /(?:not|n't) recorded/i.test((await p.textContent('#tutend-body')) || ''),
   ((await p.textContent('#tutend-body')) || '').slice(0, 90));
 ok('  and offers a real run', !!(await p.$('#tutend-go')),
   ((await p.textContent('#tutend-go')) || '').trim());

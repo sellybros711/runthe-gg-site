@@ -85,7 +85,7 @@
         early: true, total: total, pct: null, stance: 'early', rare: false,
         line: total <= 1
           ? 'Nobody else has ruled on this yet.'
-          : 'You are among the first to rule on this.',
+          : 'You\'re among the first to rule on this.',
       };
     }
 

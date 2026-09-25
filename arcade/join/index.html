@@ -11,14 +11,14 @@
   if(t!=='light'&&t!=='dark'){ t=(window.matchMedia&&matchMedia('(prefers-color-scheme: light)').matches)?'light':'dark'; try{localStorage.setItem('runthegrid_theme',t);}catch(e){} }
   document.documentElement.setAttribute('data-theme',t); })();
 </script>
-<meta name="description" content="A friend invited you to Run The Arcade. Sign up through their link and you both get an extra go at today's daily sports puzzles and streak games." />
+<meta name="description" content="A friend invited you to Run The Arcade. Sign up with their link and you both get an extra go at today’s daily sports puzzles and streak games." />
 <meta name="robots" content="noindex" />
 <link rel="icon" type="image/png" href="/arcade/assets/arcade-icon.png?v=3" />
 <link rel="apple-touch-icon" href="/arcade/assets/arcade-apple-180.png?v=2" />
 <meta property="og:type" content="website" />
 <meta property="og:site_name" content="RunThe.GG" />
-<meta property="og:title" content="You're invited to Run The Arcade" />
-<meta property="og:description" content="Sign up through this link and you both get an extra go at today's games." />
+<meta property="og:title" content="You’re invited to Run The Arcade" />
+<meta property="og:description" content="Sign up with this link and you both get an extra go at today’s games." />
 <meta property="og:image" content="https://runthe.gg/arcade/assets/arcade-share.png?v=3" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -127,17 +127,17 @@
         <span class="ticket">Invite bonus</span>
         <div class="cap"><img src="/arcade/assets/arcade-icon.png?v=3" alt="" width="52" height="52" /></div>
         <h1><span class="who" id="whoLine">A friend</span> invited you to Run The Arcade</h1>
-        <p class="sub">Twelve quick daily sports puzzles and streak games. Sign up through this invite and <b>you both get an extra go at today's games.</b></p>
+        <p class="sub">Twelve quick daily sports puzzles and streak games. Sign up with this invite and <b>you both get an extra go at today’s games.</b></p>
       </div>
       <div class="body">
-        <div class="perk"><span class="n">1</span><span class="t"><b>Create your free account.</b> It takes a few seconds and saves your streaks, trophies and leaderboard rank.</span></div>
-        <div class="perk"><span class="n">2</span><span class="t"><b>You each get a bonus attempt today</b> on the Daily Crossword, Sportegories, Alma Mater and Career Path, the free daily and streak games.</span></div>
-        <div class="perk"><span class="n">3</span><span class="t"><b>Play.</b> The bonus is ready the moment you sign in, no code to enter.</span></div>
+        <div class="perk"><span class="n">1</span><span class="t"><b>Make your free account.</b> It takes a few seconds. It saves your streaks, trophies and leaderboard rank.</span></div>
+        <div class="perk"><span class="n">2</span><span class="t"><b>You each get a bonus try today</b> on the Daily Crossword, Sportegories, Alma Mater and Career Path. Those are the free daily and streak games.</span></div>
+        <div class="perk"><span class="n">3</span><span class="t"><b>Play.</b> The bonus is ready as soon as you sign in. No code to enter.</span></div>
         <div class="cta">
           <button class="btn primary" id="btnSignup" type="button">Create a free account</button>
           <button class="btn ghost" id="btnSignin" type="button">Already have an account? Sign in</button>
         </div>
-        <p class="fine" id="noCodeNote" style="display:none">Heads up: this link is missing its invite code, so the bonus can't be applied. You can still <a href="/arcade/">play the arcade</a>.</p>
+        <p class="fine" id="noCodeNote" style="display:none">Heads up: this link is missing its invite code, so we can’t add the bonus. You can still <a href="/arcade/">play the arcade</a>.</p>
         <p class="fine">No thanks, just <a href="/arcade/">take me to the arcade</a>.</p>
       </div>
     </div>
@@ -149,12 +149,12 @@
         <div class="cap">
           <svg width="46" height="46" viewBox="0 0 24 24" fill="none" stroke="var(--greenT)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
         </div>
-        <h1 id="doneTitle">You're in</h1>
-        <p class="sub" id="doneSub">You and <b id="doneWho">your friend</b> each have an extra go at today's games. Go use it.</p>
+        <h1 id="doneTitle">You’re in</h1>
+        <p class="sub" id="doneSub">You and <b id="doneWho">your friend</b> each have an extra go at today’s games. Go use it!</p>
       </div>
       <div class="body">
         <div class="cta">
-          <a class="btn primary" href="/arcade/">Play today's games</a>
+          <a class="btn primary" href="/arcade/">Play today’s games</a>
         </div>
       </div>
     </div>
@@ -167,9 +167,9 @@
   <script src="/arcade/tokens.js?v=13"></script>
 <script src="/arcade/day.js?v=2"></script>
   <script src="/arcade/auth.js?v=4"></script>
-  <script src="/arcade/auth-ui.js?v=6"></script>
-  <script src="/arcade/card.js?v=20"></script>
-  <script src="/arcade/referral.js?v=10"></script>
+  <script src="/arcade/auth-ui.js?v=7"></script>
+  <script src="/arcade/card.js?v=22"></script>
+  <script src="/arcade/referral.js?v=11"></script>
   <script>
   (function(){
     var LS = window.localStorage;
@@ -225,7 +225,7 @@
     document.addEventListener('rtg:referral:declined', function(e){
       var reason = e && e.detail && e.detail.reason;
       if(reason==='already_referred' || reason==='self' || reason==='account_not_new'){
-        q('doneTitle').textContent = "You're all set";
+        q('doneTitle').textContent = 'You’re all set';
         q('doneSub').textContent = 'Your account is ready. Jump into today’s games.';
         q('inviteCard').classList.add('hidden');
         q('doneCard').classList.remove('hidden');

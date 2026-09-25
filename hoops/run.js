@@ -104,7 +104,7 @@ function respinFeeNow(run) {
  * every man signed really did wear that jersey. `run.club` is a MODERN
  * franchise code and the lock covers its whole lineage, which is the point of
  * it: an Oklahoma City run reaches Gary Payton, a Memphis run reaches
- * Vancouver, and a New Orleans run reaches the Charlotte Hornets who left.
+ * Vancouver, and a Charlotte run reaches the Hornets of 1988 to 2002.
  *
  * THE RESERVE FLOOR HAS TO BE LOCKED TOO, and that is the part that is easy to
  * miss. cheapestForSlot reads the league-wide cheapBy, which is the 200
