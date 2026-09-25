@@ -455,6 +455,87 @@ if (!opponentsMatch) {
   }
 }
 
+/* 7. THE BRAND. The logo files are painted by the kit between MYPIX BEGIN and MYPIX END in the game and
+      rendered by mythiball/build-logo.mjs, which reads that block out of this page by its markers. What can
+      rot here, and all of it silently:
+
+      - A marker renamed in a tidy up. The page still works, and the next person to rebuild the logo gets a
+        throw from a build step nobody has run in months.
+      - A file the page names and nobody rendered. A 404 icon is a blank tab and a blank home screen.
+      - TWO ?v= ON ONE FILE. Each file is named in up to three places (the game, the capital alias that is
+        the URL people actually paste, and the manifest), all written by hand. Bump one and not the others
+        and a chat app that has seen either name goes on serving the old card out of its own cache. The
+        baseball card shipped that way inside one edit. A number that MOVED when the bytes did is not
+        knowable here, because there is no earlier version to compare against; build-logo.mjs's header
+        says so.
+      - The two pages carrying different previews, which is the same drift one level up.
+      - A source page losing its robots tag, which is two build templates in the indexable site. */
+{
+  const DIR = path.join(ROOT, 'mythiball');
+  const alias = read('Mythiball/index.html');
+  const manifest = read('mythiball/manifest.webmanifest');
+  if (!page.includes('/* ==================== MYPIX BEGIN') || !page.includes('/* ==================== MYPIX END ==================== */')) {
+    problems.push('mythiball/index.html has lost a MYPIX marker. logo-source.html and og-source.html find '
+      + 'the pixel kit by those two exact lines, so the logo can no longer be rebuilt.');
+  }
+  for (const src of ['logo-source.html', 'og-source.html']) {
+    const f = path.join(DIR, src);
+    if (!fs.existsSync(f)) { problems.push(`mythiball/${src} is missing. build-logo.mjs renders from it.`); continue; }
+    if (!/name=["']robots["'][^>]*noindex/i.test(fs.readFileSync(f, 'utf8'))) {
+      problems.push(`mythiball/${src} is not noindexed. It is a build template, served like any file here.`);
+    }
+  }
+  // every file any of the three names, with the version it gives
+  const seen = new Map();
+  const note = (where, text, re) => { for (const m of text.matchAll(re)) {
+    const file = m[1].replace(/^.*\//, ''), v = m[2] || null;
+    if (!seen.has(file)) seen.set(file, []);
+    seen.get(file).push({ where, v });
+  } };
+  const REF = /["'](?:https:\/\/runthe\.gg)?(?:\/mythiball\/)?((?:icon|favicon|og|mark|logo|lockup)[\w-]*\.png)(?:\?v=(\d+))?["']/g;
+  note('mythiball/index.html', page, REF);
+  note('Mythiball/index.html', alias, REF);
+  note('mythiball/manifest.webmanifest', manifest, REF);
+  if (seen.size < 6) {
+    problems.push(`The brand check found only ${seen.size} image references across the two pages and the `
+      + 'manifest. Either the head lost its icon and preview tags, or this reader stopped matching them.');
+  }
+  for (const [file, refs] of seen) {
+    if (!fs.existsSync(path.join(DIR, file))) {
+      problems.push(`${refs[0].where} names mythiball/${file}, which does not exist. Run build-logo.mjs.`);
+    }
+    const vs = [...new Set(refs.map(r => r.v))];
+    if (vs.length > 1) {
+      problems.push(`mythiball/${file} is asked for as ${refs.map(r => `?v=${r.v} in ${r.where}`).join(' and ')}. `
+        + 'One file, one version, or a cache that has seen either name keeps the old picture.');
+    }
+  }
+  // the two pages unfurl identically
+  const tagsOf = (h) => [...h.matchAll(/<meta (?:property|name)=["']((?:og|twitter):[\w:]+)["'] content=["']([^"']*)["']/g)]
+    .map(m => m[1] + '=' + m[2]).sort().join('\n');
+  const gameTags = tagsOf(page), aliasTags = tagsOf(alias);
+  if (!/og:image=https:\/\/runthe\.gg\/mythiball\/og\.png/.test(gameTags)) {
+    problems.push('mythiball/index.html carries no og:image. A pasted link to an unlisted game is the only way '
+      + 'anybody reaches it, and without one it unfurls as a bare line of text.');
+  }
+  if (gameTags !== aliasTags) {
+    problems.push('Mythiball/index.html and mythiball/index.html carry different link previews. The capital '
+      + 'alias is the URL people paste, so it has to unfurl as the game does, tag for tag.');
+  }
+  // the preview is the size its tags declare, read off the PNG header rather than trusted
+  const og = path.join(DIR, 'og.png');
+  if (fs.existsSync(og)) {
+    const b = fs.readFileSync(og), w = b.readUInt32BE(16), h = b.readUInt32BE(20);
+    const dw = +(gameTags.match(/og:image:width=(\d+)/) || [])[1], dh = +(gameTags.match(/og:image:height=(\d+)/) || [])[1];
+    if (w !== dw || h !== dh) problems.push(`mythiball/og.png is ${w}x${h} and its tags say ${dw}x${dh}.`);
+  }
+  // the header draws its mark with the kit rather than fetching a file, so the two cannot drift
+  if (!/MYPIX\.icon\(N, 0\)/.test(page)) {
+    problems.push('The header no longer draws its mark with MYPIX. A mark drawn any other way is a second '
+      + 'drawing of the logo, and it drifts from the files the first time either is touched.');
+  }
+}
+
 if (problems.length) {
   console.error(`MythiBall posture: ${problems.length} problem(s)\n`);
   for (const p of problems) console.error('  ' + p);

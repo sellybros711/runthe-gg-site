@@ -1,0 +1,36 @@
+{
+  "id": "/mythiball/",
+  "name": "MythiBall",
+  "short_name": "MythiBall",
+  "description": "Public domain baseball. Draft nine legends and monsters, then play them in an arcade game you aim, swing and pitch yourself.",
+  "categories": [
+    "games",
+    "sports"
+  ],
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#10213f",
+  "theme_color": "#10213f",
+  "icons": [
+    {
+      "src": "icon-192.png?v=1",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-512.png?v=1",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-maskable-512.png?v=1",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

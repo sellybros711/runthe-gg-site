@@ -4538,6 +4538,67 @@ private.
 the way `Wrestling/` and `Tour/` answer theirs, because the capitalised URL is
 the one that gets typed and pasted. It carries its own robots tag.
 
+### The brand is Run The Tour's kit, carried over
+
+```
+(nohup python3 -m http.server 8099 &) ; node mythiball/build-logo.mjs
+```
+
+Asked for: new branding using Run The Tour's as the reference. So it is that kit (golf's PIXK) rather than a
+look inspired by it: the same 5x7 font, the same six golds, the same three step extrude and the same
+`toCanvas` at whole scales. Small cream MYTHI over chunky gold BALL, standing on an infield, and a
+**winged baseball** where the Tour has a golf ball and a flag. The two games read as one family.
+
+**The drawing lives in the game**, between `MYPIX BEGIN` and `MYPIX END`, and `logo-source.html` and
+`og-source.html` read that block out of the page by its markers. The header draws its mark with the same
+kit at boot rather than fetching a file, so the header, the icons and the link preview are one drawing.
+
+**What the builder writes**, every file one of the kit's grids at a whole scale: `logo.png` (the lockup at
+4x), `lockup.png` and `lockup-flap.png` (one wingbeat, four frames side by side), four icons plated on the
+night navy, three favicons, `mark.png`, `manifest.webmanifest` by hand, and `og.png` at 2400x1260.
+
+**The three players on the link preview are the game's own sprites.** `og-source.html` lifts `V2_SPRITES`
+and `v2Frame` out of the page and decodes them with the game's own function rather than a copy. Each is
+drawn at one grid cell a pixel, the size the art was made at, so the card is one pixel grid edge to edge.
+
+**The card carries no count, deliberately.** The roster size is the number a pitch for this game wants to
+say, and a picture cannot be re-interpolated: the day a character is added it would go on promising the
+old number. "Nine" is the sport rather than a setting.
+
+**Link tags on an unlisted game are right, not a leak.** Robots tells a crawler not to index and does
+nothing to a chat app unfurling a link somebody was handed, and while the game is unlisted a handed link
+is the only way anybody reaches it. Hoops made the same call. **The capital alias carries the same tags,
+tag for tag**, because `runthe.gg/Mythiball` is the URL that gets pasted and a chat app reads the head
+without following the refresh.
+
+#### Four things only looking could say
+
+- **Bold is every column drawn twice**, which fills the one cell gaps inside M and N. A bold M came out as
+  a solid block and a bold N as an H, so DRAFT YOUR NINE read as HIHE. Run The Tour has the same font and
+  never met it, because no Tour card sets an M or an N in bold. `BOLDG` draws those two by hand at seven
+  wide. Do not go back to doubling them.
+- **A grid cell holds one colour.** The light towers' haze was a translucent colour `put` into the sky, so
+  it REPLACED the sky rather than sitting over it, and on a card drawn onto nothing it showed as a grey
+  checker column. `mix` blends it into the cell under it.
+- **At a radius under 9 the laces cover the ball.** Stitches both sides of the seam read as a baseball at
+  the lockup's size and as an egg with a rash on the 32px icon. Under 9 they go inside only.
+- **`.mark` was already a class on this page** (a small inline badge with a border), so the header mark
+  arrived wearing its border and shadow. It is `.bmark`. And straight onto the cream the wings are cream
+  on cream, so the header mark sits on the icon's own navy plate.
+
+**Two bitmaps for the header and CSS picks one.** The header changes size when a game starts, and a
+bitmap chosen at boot would be scaled by three quarters over the live field. The kit draws the 32 and
+the 16 by hand, which is why there are two rather than one scaled.
+
+#### What check-posture holds
+
+Every `?v=` on one file agrees across the game, the alias and the manifest; every file named exists; both
+pages carry identical previews; `og.png`'s real size, read off the PNG header, matches its tags; the
+markers exist; the source pages are noindexed; and the header draws with the kit. **What it cannot say is
+that the number moved when the bytes did**, because there is no earlier version to compare with. After a
+rebuild, bump every reference to a file that changed. A drifted version and a renamed marker were each
+reintroduced to prove the check bites.
+
 The sprites came from a generator and now come from a HANDOFF PACK, and the
 generator is kept because the pack cannot answer everything:
 
@@ -6090,7 +6151,7 @@ demanded zero would be holding the page to a design it no longer has.
 The regression suite, which is the thing to run after editing:
 
 ```
-node mythiball/check-posture.mjs   unlisted, and the capital alias still lands
+node mythiball/check-posture.mjs   unlisted, the capital alias still lands, and the brand holds
 node mythiball/check-rules.mjs     whole games, and the sport's own arithmetic
 node mythiball/check-reach.mjs      every control a game offers is inside the window,
                                    including the two sheets that open over the field

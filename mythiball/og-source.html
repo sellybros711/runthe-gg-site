@@ -1,0 +1,94 @@
+<!doctype html>
+<!-- THE LINK PREVIEW (mythiball/og.png), IN PIXELS. `node mythiball/build-logo.mjs` renders it along with the
+     logo files.
+
+     It is what a chat app draws when somebody pastes a link to the game, so for most people it is the first
+     thing they ever see of it, and while the game is unlisted a pasted link is the ONLY way anybody reaches
+     it. It is painted with the same kit as the logo (read out of mythiball/index.html, between MYPIX BEGIN
+     and MYPIX END), on a 400 x 210 grid at 6x = 2400 x 1260, which is Run The Tour's own card size.
+
+     THE THREE PLAYERS ON IT ARE THE GAME'S OWN SPRITES, decoded by the game's own v2Frame out of the game's
+     own V2_SPRITES, both lifted from the page the same way the kit is. A card with a drawing of a vampire
+     on it would be a picture of a character the game does not have. Each is drawn at one grid cell a pixel,
+     which is the scale the art was made at, so the card is one pixel grid from edge to edge.
+
+     IT CARRIES NO COUNT, deliberately. The roster size is the one number a pitch for this game wants to
+     say, and a picture cannot be re-interpolated: the day a character is added the card would go on
+     promising the old number with no page to correct. "Nine" is the sport rather than a setting. -->
+<html><head><meta charset="utf-8"><meta name="robots" content="noindex, nofollow"><title>MythiBall link preview</title>
+<style>html,body{margin:0;background:#000} canvas{display:block;width:1200px;image-rendering:pixelated}</style></head>
+<body>
+<script>
+(async function(){
+  const src=await (await fetch('/mythiball/index.html',{cache:'no-store'})).text();
+  const a=src.indexOf('/* ==================== MYPIX BEGIN'), b=src.indexOf('/* ==================== MYPIX END ==================== */');
+  if(a<0||b<0) throw new Error('the pixel kit markers are missing from mythiball/index.html');
+  const P=new Function(src.slice(a,b)+'\nreturn MYPIX;')();
+
+  // the game's sprite table and its decoder, lifted rather than copied
+  const lineOf=head=>{ const i=src.indexOf(head); if(i<0) throw new Error('missing from the game: '+head); return src.slice(i,src.indexOf('\n',i)); };
+  const fnOf=head=>{ const i=src.indexOf(head); if(i<0) throw new Error('missing from the game: '+head);
+    let d=0,j=src.indexOf('{',i); for(;j<src.length;j++){ if(src[j]==='{') d++; else if(src[j]==='}'&&--d===0) break; } return src.slice(i,j+1); };
+  const S=new Function(lineOf('const V2_SPRITES = ')+'\nconst v2FrameCache = new Map();\n'+fnOf('function v2Frame(')+'\nreturn {V2_SPRITES, v2Frame};')();
+  const sprite=(key,pose)=>{ const spr=S.V2_SPRITES[key]; if(!spr) throw new Error('no sprite for '+key);
+    const rows=S.v2Frame(key,pose), g=P.grid(64,64);
+    rows.forEach((r,y)=>{ for(let x=0;x<r.length;x++){ const c=spr.p[r[x]]; if(c) g.put(x,y,c); } });
+    return g; };
+  const lit=g=>{ let t=64,bt=0; for(let i=0;i<g.px.length;i++) if(g.px[i]){ const y=(i/64)|0; t=Math.min(t,y); bt=Math.max(bt,y); } return {top:t,bottom:bt}; };
+
+  const GW=400, GH=210, U=6;
+  const cv=document.createElement('canvas'); cv.width=GW*U; cv.height=GH*U; const ctx=cv.getContext('2d');
+  ctx.imageSmoothingEnabled=false;
+
+  // the park at night, full bleed
+  P.draw(ctx,P.scene(GW,GH,{horizon:0.5, clayX:0.78, towers:[26,378]}),0,0,U);
+  // a dark wash down the left, so the words read over the lights
+  const wash=P.grid(GW,GH);
+  for(let y=0;y<GH;y++) for(let x=0;x<236;x++){ const t=x/236; if(((x+y)%2===0) && t>0.86) continue; wash.put(x,y,`rgba(5,10,24,${(0.62*(1-t*0.7)).toFixed(3)})`); }
+  P.draw(ctx,wash,0,0,U);
+
+  const top=P.grid(GW,GH), txt=P.grid(GW,GH);
+  // the frame, the Tour card's, in the same gold
+  for(let y=0;y<GH;y++) for(let x=0;x<GW;x++){ const d=Math.min(x,y,GW-1-x,GH-1-y);
+    if(d===0||d===3) top.put(x,y,P.K); else if(d<=2) top.put(x,y,(x+y<(GW+GH)/2)?P.GOLD[2]:P.GOLD[4]); }
+  // the title, at 2x
+  const lk=P.lockup(0), big=P.grid(lk.w*2,lk.h*2);
+  for(let y=0;y<big.h;y++) for(let x=0;x<big.w;x++){ const c=lk.get(x>>1,y>>1); if(c) big.put(x,y,c); }
+  P.stamp(top,big,12,6);
+  // the promise, which is the game's own motto
+  const goldRow=j=>j<2?P.GOLD[1]:j<5?P.GOLD[2]:P.GOLD[3];
+  P.text(txt,'LEGENDS.',22,124,{scale:2,bold:true,color:P.CREAM[0]});
+  P.text(txt,'MONSTERS.',22,144,{scale:2,bold:true,color:goldRow});
+  P.text(txt,'ONE DIAMOND.',22,164,{scale:2,bold:true,color:goldRow});
+
+  // the right: three of the roster on the clay, under a label
+  const cast=[['dracula',236],['kong',326],['zeus',281]];      // drawn back to front: zeus stands in front
+  const mid=315, cen=(g,str,y,o)=>P.text(g,str,Math.round(mid-P.textW(str,o)/2),y,o);
+  { const t='DRAFT YOUR NINE', o={bold:true}, w=P.textW(t,o), bx=Math.round(mid-w/2)-8, by=18;
+    const pan=P.grid(GW,GH);
+    for(let y=by;y<by+17;y++) for(let x=bx;x<bx+w+16;x++){ const e=(y===by||y===by+16||x===bx||x===bx+w+15); if((y===by||y===by+16)&&(x===bx||x===bx+w+15)) continue;
+      pan.put(x,y,e?'rgba(241,208,74,.7)':'rgba(5,10,24,.86)'); }
+    P.draw(ctx,pan,0,0,U);
+    cen(txt,t,by+5,{bold:true,color:P.CREAM[0]});
+    cen(txt,'FROM THE PUBLIC DOMAIN',by+24,{color:'#9fc3ff'}); }
+  const people=P.grid(GW,GH), FEET=176;
+  for(const [key,x0] of cast){ const s=sprite(key,'cheer'), {bottom}=lit(s), y0=FEET-bottom;
+    // a shadow on the clay under each of them
+    for(let x=x0+14;x<x0+50;x++) for(let y=FEET-1;y<=FEET+2;y++){ const d=((x-(x0+32))/17)**2+((y-FEET-0.5)/2.2)**2; if(d<=1) people.put(x,y,'rgba(40,18,6,.55)'); }
+    P.stamp(people,s,x0,y0); }
+  P.draw(ctx,people,0,0,U);
+
+  // the address, on a strip across the foot
+  { const t='PLAY AT ', u='RUNTHE.GG/MYTHIBALL', o={scale:2,color:P.CREAM[0]}, w=P.textW(t+u,o), bx=Math.round((GW-w)/2)-10, by=184;
+    for(let y=by;y<by+20;y++) for(let x=bx;x<bx+w+20;x++){ const e=(y===by||y===by+19||x===bx||x===bx+w+19); if((y===by||y===by+19)&&(x===bx||x===bx+w+19)) continue;
+      top.put(x,y,e?'rgba(241,208,74,.7)':'rgba(5,10,24,.88)'); }
+    P.text(txt,t,bx+10,by+4,o);
+    P.text(txt,u,bx+10+P.textW(t,o)+2*o.scale,by+4,Object.assign({},o,{color:P.GOLD[2]})); }
+  [[216,24,2],[226,112,1],[160,120,1],[384,150,1]].forEach(([x,y,s])=>P.star(top,x,y,s));
+  P.outline(top,P.K); P.draw(ctx,top,0,0,U);
+  P.outline(txt,P.K); P.draw(ctx,txt,0,0,U);
+  document.body.appendChild(cv);
+  window.OG=cv; window.OG_CAST=cast.map(c=>c[0]); window.__ogReady=true;
+})();
+</script>
+</body></html>

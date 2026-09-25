@@ -5,8 +5,33 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>MythiBall</title>
 <meta name="robots" content="noindex, nofollow" />
-<meta name="theme-color" content="#0b1015" />
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230b1015'/%3E%3Ctext x='16' y='23' font-size='20' text-anchor='middle'%3E%E2%9A%BE%3C/text%3E%3C/svg%3E" />
+<meta name="theme-color" content="#10213f" />
+<!-- THE BRAND, painted by the pixel kit between MYPIX BEGIN and MYPIX END below and rendered by
+     mythiball/build-logo.mjs. The game is unlisted, so a pasted link is the only way anybody reaches it,
+     and without these tags that link unfurls as a bare line of text. Tags on a noindexed page are not a
+     contradiction: robots tells a crawler not to index, and does nothing to a chat app unfurling a link
+     somebody was handed. Every ?v= on one file must agree, here, in the alias stub and in the manifest:
+     node mythiball/check-posture.mjs holds them. -->
+<link rel="icon" type="image/png" sizes="32x32" href="/mythiball/favicon-32.png?v=1" />
+<link rel="icon" type="image/png" sizes="16x16" href="/mythiball/favicon-16.png?v=1" />
+<link rel="icon" type="image/png" sizes="48x48" href="/mythiball/favicon-48.png?v=1" />
+<link rel="apple-touch-icon" href="/mythiball/icon-180.png?v=1" />
+<link rel="manifest" href="/mythiball/manifest.webmanifest" />
+<meta name="description" content="Public domain baseball. Draft nine legends and monsters, then play them in an arcade game you aim, swing and pitch yourself." />
+<meta property="og:title" content="MythiBall | Public domain baseball" />
+<meta property="og:description" content="Public domain baseball. Draft nine legends and monsters, then play them in an arcade game you aim, swing and pitch yourself." />
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="RunThe.GG" />
+<meta property="og:url" content="https://runthe.gg/mythiball/" />
+<meta property="og:image" content="https://runthe.gg/mythiball/og.png?v=1" />
+<meta property="og:image:width" content="2400" />
+<meta property="og:image:height" content="1260" />
+<meta property="og:image:alt" content="MythiBall. A winged baseball flies off the gold title over a ballpark at night. Dracula, Zeus and the Great Ape cheer on the infield." />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:site" content="@RunTheGG" />
+<meta name="twitter:title" content="MythiBall | Public domain baseball" />
+<meta name="twitter:description" content="Public domain baseball. Draft nine legends and monsters, then play them in an arcade game you aim, swing and pitch yourself." />
+<meta name="twitter:image" content="https://runthe.gg/mythiball/og.png?v=1" />
 <style>
   :root{
     /* A 1980s baseball cabinet, not a dashboard. Scorecard cream, navy
@@ -162,6 +187,8 @@
     height:100vh;height:100dvh;display:flex;flex-direction:column;}
   body.ingame .brand{flex:0 0 auto;margin:0;padding:5px 12px;border-bottom-width:2px;}
   body.ingame .brand h1{font-size:17px;}
+  body.ingame .brand .bmark.m32{display:none;}
+  body.ingame .brand .bmark.m16{display:block;width:24px;height:24px;}
   /* `#app` is the mount every screen is built into and it is an ordinary
      block, so a flex child two levels down inherits nothing from the wrap
      and is simply content sized: the screen measured 515 of a 900 tall
@@ -505,7 +532,14 @@
     border-bottom:3px solid var(--line);margin-bottom:4px;}
   .brand h1{margin:0;font-family:var(--font-display);font-size:25px;letter-spacing:.02em;
     text-transform:uppercase;white-space:nowrap;flex:0 0 auto;
-    color:var(--gold);font-weight:900;text-shadow:2px 2px 0 var(--navy);}
+    color:var(--gold);font-weight:900;text-shadow:2px 2px 0 var(--navy);
+    display:inline-flex;align-items:center;gap:8px;}
+  /* THE MARK IS PIXEL ART IN BOTH RENDERERS. Smooth mode is about the field; the mark is the same 16 by 16
+     grid as the favicon, drawn by the kit at boot rather than fetched, so the header and the logo files are
+     one drawing. It is sized in whole multiples of 16 wherever the room allows. */
+  .brand .bmark{width:32px;height:32px;flex:0 0 auto;image-rendering:pixelated;display:block;
+    border:0;border-radius:6px;box-shadow:var(--shadow-sm);}
+  .brand .bmark.m16{display:none;border-radius:4px;}
   /* THE TWO STRAPLINES SHRINK AND THE CONTROLS DO NOT. A monospace held
      this row together by accident: every glyph was one width, so the line
      happened to fit. In a proportional face the same words are wider and
@@ -836,6 +870,8 @@
     .arena .corner.bl{left:6px;} .arena .corner.br{right:6px;}
     .brand{padding:6px 0 8px;gap:6px;}
     .brand h1{font-size:16px;letter-spacing:.02em;}
+    .brand .bmark.m32{display:none;}
+    .brand .bmark.m16{display:block;width:24px;height:24px;}
     .brand .tag{display:none;}
     .brand button{font-size:9px;padding:4px 7px;margin-left:4px;white-space:nowrap;}
     .wrap{padding:8px 8px 40px;}
@@ -1306,6 +1342,8 @@
   @media (max-height: 560px){
     .brand{padding:2px 0 4px;margin-bottom:2px;}
     .brand h1{font-size:14px;letter-spacing:.1em;text-shadow:1px 1px 0 var(--navy);}
+    .brand .bmark.m32{display:none;}
+    .brand .bmark.m16{display:block;width:16px;height:16px;border-radius:3px;}
     .brand .tag{display:none;}
     .brand button{font-size:9px;padding:3px 7px;}
     body.roomfill .clubtabs{margin:4px auto 0;}
@@ -1846,7 +1884,7 @@
 <body>
 <div class="wrap">
   <div class="brand">
-    <h1>MythiBall</h1>
+    <h1><span class="mark-slot" aria-hidden="true"></span>MythiBall</h1>
     <span class="tag">Public domain baseball</span>
     <span class="tag motto" aria-hidden="true">Legends. Monsters. One diamond.</span>
     <span class="spacer"></span>
@@ -1858,6 +1896,260 @@
 
 <script>
 "use strict";
+
+/* ==================== MYPIX BEGIN: the pixel kit ====================
+   One source for MythiBall's pixel branding: the palette, a 5 x 7 bitmap font, the MYTHIBALL title, the
+   winged ball icon and a night park. The header draws its mark with it here, and mythiball/logo-source.html
+   and mythiball/og-source.html read THIS block out of this file, so the logo files, the link preview and the
+   page can never drift into three versions of one mark. It is Run The Tour's kit (golf/index.html, PIXK)
+   carried over: the same font, the same gold and the same 16-bit extrude, so the two games read as one
+   family, and a baseball where that one has a golf ball.
+   Everything paints onto a grid of colour cells; toCanvas() blows a grid up by a WHOLE number, so no pixel
+   is ever drawn at 1.5x. Self-contained on purpose: no game state is read, which is what lets the other two
+   files lift it. */
+const MYPIX=(function(){
+  const K='#120b04';
+  const GOLD=['#fffbe0','#fff0a0','#ffd84a','#ffbf1f','#f09e12','#c9780a'];
+  const EXT=['#8f4f08','#7a4106','#613304','#482503'];
+  const CREAM=['#fffaf0','#f4e3c9','#d9c3a0'];
+  // a baseball's hide is off white rather than a golf ball's cold grey, and its seam is red thread
+  const HIDE=['#ffffff','#fdf8ec','#f1e8d4','#dccfb2','#bba98a','#8f7d60'];
+  const LACE=['#ff6a52','#e0301f','#a8180f'];
+  const GRASS={fringe:'#9be36a', a:'#57c24a', b:'#46ad3e', dark:'#2f8a34', edge:'#1f6327'};
+  const CLAY=['#f0b77c','#dc9660','#c27a48','#9c5c34','#6f3f22'];
+  const CHALK='#fffdf4';
+  const WING=['#ffffff','#fff3c8','#f4dc8a','#d9b25a','#a8812f'];
+  const NAVY=['#0a1428','#10213f','#17305a','#1f3f73'];
+  const SPARK=['#ffffff','#fff3b0'];
+
+  function grid(w,h){ const px=new Array(w*h).fill(null); const g={w,h,px,
+    put(x,y,c){ x=Math.round(x); y=Math.round(y); if(x>=0&&y>=0&&x<w&&y<h&&c) px[y*w+x]=c; },
+    get(x,y){ return (x>=0&&y>=0&&x<w&&y<h)?px[y*w+x]:null; },
+    rect(x,y,ww,hh,c){ for(let j=0;j<hh;j++) for(let i=0;i<ww;i++) g.put(x+i,y+j,c); } };
+    return g; }
+  // a dark ring round everything painted so far (4-neighbour); `mask` limits which cells count as solid
+  function outline(g,c,mask){ const s=g.px.slice(); for(let y=0;y<g.h;y++) for(let x=0;x<g.w;x++){ if(s[y*g.w+x]) continue;
+    if([[1,0],[-1,0],[0,1],[0,-1]].some(([a,b])=>{ const X=x+a,Y=y+b; return X>=0&&Y>=0&&X<g.w&&Y<g.h&&s[Y*g.w+X]&&(!mask||mask[Y*g.w+X]); })) g.px[y*g.w+x]=c; } }
+  // two #rrggbb colours, t of the way from a to b
+  function mix(a,b,t){ if(!a) return b; const p=(h,i)=>parseInt(h.slice(1+2*i,3+2*i),16);
+    return '#'+[0,1,2].map(i=>Math.round(p(a,i)+(p(b,i)-p(a,i))*t).toString(16).padStart(2,'0')).join(''); }
+  function stamp(a,b,x,y){ for(let j=0;j<b.h;j++) for(let i=0;i<b.w;i++){ const c=b.px[j*b.w+i]; if(c) a.put(x+i,y+j,c); } }
+
+  /* ---- the 5 x 7 font, Run The Tour's glyph for glyph. Lower case is drawn as upper case, accents are
+     dropped, and anything else becomes a question mark rather than a gap nobody can read. */
+  const F={
+  A:[".111.","1...1","1...1","11111","1...1","1...1","1...1"], B:["1111.","1...1","1...1","1111.","1...1","1...1","1111."],
+  C:[".111.","1...1","1....","1....","1....","1...1",".111."], D:["1111.","1...1","1...1","1...1","1...1","1...1","1111."],
+  E:["11111","1....","1....","1111.","1....","1....","11111"], F:["11111","1....","1....","1111.","1....","1....","1...."],
+  G:[".1111","1....","1....","1..11","1...1","1...1",".111."], H:["1...1","1...1","1...1","11111","1...1","1...1","1...1"],
+  I:["111",".1.",".1.",".1.",".1.",".1.","111"], J:["..111","...1.","...1.","...1.","...1.","1..1.",".11.."],
+  K:["1...1","1..1.","1.1..","11...","1.1..","1..1.","1...1"], L:["1....","1....","1....","1....","1....","1....","11111"],
+  M:["1...1","11.11","1.1.1","1.1.1","1...1","1...1","1...1"], N:["1...1","11..1","1.1.1","1..11","1...1","1...1","1...1"],
+  O:[".111.","1...1","1...1","1...1","1...1","1...1",".111."], P:["1111.","1...1","1...1","1111.","1....","1....","1...."],
+  Q:[".111.","1...1","1...1","1...1","1.1.1","1..1.",".11.1"], R:["1111.","1...1","1...1","1111.","1.1..","1..1.","1...1"],
+  S:[".1111","1....","1....",".111.","....1","....1","1111."], T:["11111","..1..","..1..","..1..","..1..","..1..","..1.."],
+  U:["1...1","1...1","1...1","1...1","1...1","1...1",".111."], V:["1...1","1...1","1...1","1...1","1...1",".1.1.","..1.."],
+  W:["1...1","1...1","1...1","1.1.1","1.1.1","1.1.1",".1.1."], X:["1...1","1...1",".1.1.","..1..",".1.1.","1...1","1...1"],
+  Y:["1...1","1...1",".1.1.","..1..","..1..","..1..","..1.."], Z:["11111","....1","...1.","..1..",".1...","1....","11111"],
+  '0':[".111.","1...1","1..11","1.1.1","11..1","1...1",".111."], '1':[".1.","11.",".1.",".1.",".1.",".1.","111"],
+  '2':[".111.","1...1","....1","...1.","..1..",".1...","11111"], '3':["11111","...1.","..1..","...1.","....1","1...1",".111."],
+  '4':["...1.","..11.",".1.1.","1..1.","11111","...1.","...1."], '5':["11111","1....","1111.","....1","....1","1...1",".111."],
+  '6':["..11.",".1...","1....","1111.","1...1","1...1",".111."], '7':["11111","....1","...1.","..1..",".1...",".1...",".1..."],
+  '8':[".111.","1...1","1...1",".111.","1...1","1...1",".111."], '9':[".111.","1...1","1...1",".1111","....1","...1.",".11.."],
+  '.':["..","..","..","..","..","11","11"], ',':["..","..","..","..",".1",".1","1."], "'":["1","1",".",".",".",".","."],
+  '-':["....","....","....","1111","....","....","...."], '+':["...","...",".1.","111",".1.","...","..."],
+  '/':["....1","...1.","...1.","..1..",".1...",".1...","1...."], ':':["..","11","11","..","11","11",".."],
+  '!':["1","1","1","1","1",".","1"], '?':[".111.","1...1","....1","...1.","..1..",".....","..1.."],
+  '&':[".11..","1..1.","1.1..",".1...","1.1.1","1..1.",".11.1"],
+  ' ':["...","...","...","...","...","...","..."], '·':["..","..","..","11","..","..",".."],
+  };
+  // any minus or long dash comes out as the plain hyphen this font draws (the class is built from char
+  // codes because this file may not contain those characters, even escaped)
+  const LONGDASH=new RegExp('['+String.fromCharCode(0x2212,0x2013,0x2014)+']','g');
+  function norm(s){ return String(s==null?'':s).normalize('NFD').replace(/[̀-ͯ]/g,'').toUpperCase().replace(LONGDASH,'-'); }
+  const glyph=ch=>F[ch]||F['?'];
+  /* BOLD IS EVERY COLUMN DRAWN TWICE, which fills the one-cell gaps inside M and N: a bold M came out as
+     a solid block and a bold N as an H with a smear in it, so NINE read as HIHE. Those two are drawn at
+     bold weight by hand instead, seven wide, and are not doubled. */
+  const BOLDG={M:["11...11","111.111","1111111","11.1.11","11...11","11...11","11...11"],
+               N:["11...11","111..11","1111.11","11.1111","11..111","11...11","11...11"]};
+  const cellOf=(ch,b)=>b&&BOLDG[ch]?{gl:BOLDG[ch],dbl:0}:{gl:glyph(ch),dbl:b};
+  function textW(str,o){ o=o||{}; const s=o.scale||1, gap=o.gap==null?1:o.gap, b=o.bold?1:0; let w=0;
+    for(const ch of norm(str)){ const {gl,dbl}=cellOf(ch,b); w+=(gl[0].length+dbl+gap)*s; } return Math.max(0,w-gap*s); }
+  function text(g,str,x,y,o){ o=o||{}; const s=o.scale||1, gap=o.gap==null?1:o.gap, b=o.bold?1:0, col=o.color||CREAM[1];
+    for(const ch of norm(str)){ const {gl,dbl}=cellOf(ch,b), gw=gl[0].length;
+      gl.forEach((row,j)=>{ for(let i=0;i<gw;i++) if(row[i]==='1'){ const c=typeof col==='function'?col(j):col;
+        g.rect(x+i*s,y+j*s,s,s,c); if(dbl) g.rect(x+(i+1)*s,y+j*s,s,s,c); } });
+      x+=(gw+dbl+gap)*s; }
+    return x; }
+
+  /* A BASEBALL. Lit from the upper left like the golf ball it replaces, and its two seams are arcs of
+     circles set off either side of the ball, which is the shape a real seam makes when you look at one
+     face on: two curves bowing toward each other. Every other cell along a seam is a stitch. `turn` slides
+     the seams sideways, so a sequence of turns is the ball spinning. */
+  function ball(g,cx,cy,r,o){ o=o||{}; const turn=o.turn||0, laces=o.laces!==false;
+    const off=r*1.28, R=r*0.93;
+    for(let y=Math.floor(cy-r-1);y<=Math.ceil(cy+r+1);y++) for(let x=Math.floor(cx-r-1);x<=Math.ceil(cx+r+1);x++){
+      const dx=x-cx, dy=y-cy; if(dx*dx+dy*dy>r*r) continue;
+      const nx=dx/r, ny=dy/r, nz=Math.sqrt(Math.max(0,1-nx*nx-ny*ny)), L=-0.52*nx-0.6*ny+0.6*nz;
+      let c=HIDE[L>0.9?0:L>0.7?1:L>0.42?2:L>0.12?3:L>-0.2?4:5];
+      if(laces){ for(const sd of [-1,1]){ const sx=cx+sd*(off-turn*sd), d=Math.hypot(x-sx,y-cy);
+          if(Math.abs(d-R)<0.62) c=LACE[L>0.3?1:2];
+          // a stitch either side of the seam on every other row, so the thread reads as a row of chevrons
+          // under r 9 there is no room for both rows: the ticks go on the inside only, every other row,
+          // or the laces cover the ball and it reads as an egg with a rash
+          else if(r>=5 && Math.abs(d-R)<1.75 && ((y-Math.floor(cy)+100)%2===0) && (r>=9 || d<R)) c=LACE[L>0.5?0:1]; } }
+      g.put(x,y,c); }
+    if(o.spot!==false){ const hx=Math.round(cx-r*0.42), hy=Math.round(cy-r*0.46);
+      (r>=6?[[0,0],[1,0],[0,1],[-1,0],[0,-1]]:[[0,0]]).forEach(([a,b])=>g.put(hx+a,hy+b,HIDE[0])); } }
+  function star(g,x,y,s){ g.put(x,y,SPARK[0]); for(let i=1;i<=s;i++){ const c=i===s?SPARK[1]:SPARK[0]; g.put(x+i,y,c); g.put(x-i,y,c); g.put(x,y+i,c); g.put(x,y-i,c); } }
+
+  /* THE WINGS FLAP. A wing is a fan of feathers rooted at the ball's shoulder, drawn back to front: each
+     feather is fat near the root and comes to a point, lit along its top edge and shaded along its bottom,
+     so the one in front covers the root of the one behind and leaves only its tip showing. That is what
+     makes a scalloped wing rather than a flat paddle. `phase` sweeps the whole fan up and down, so four
+     phases a quarter turn apart are four frames of one wingbeat. `side` is -1 for the left wing, 1 the right. */
+  function wing(g,rx,ry,side,len,phase){ phase=phase||0;
+    const lift=0.86+Math.sin(phase)*0.38, n=len>=10?5:4, spread=len>=10?0.27:0.33, wd=len>=10?2.4:1.8;
+    for(let f=n-1;f>=0;f--){
+      const a=lift-f*spread, l=len*(1-f*0.12), ux=Math.cos(a)*side, uy=-Math.sin(a), nx=Math.sin(a)*side, ny=Math.cos(a);
+      for(let y=Math.floor(ry-len-3);y<=Math.ceil(ry+len+3);y++) for(let x=Math.floor(rx-len-3);x<=Math.ceil(rx+len+3);x++){
+        const dx=x-rx, dy=y-ry, t=dx*ux+dy*uy; if(t<0||t>l) continue;
+        const v=dx*nx+dy*ny, q=t/l, r=wd*(q<0.3?0.7+q:1.3-(q-0.3)*1.55); if(Math.abs(v)>r) continue;
+        g.put(x,y, v>r*0.35?(f===n-1?WING[4]:WING[3]) : v<-r*0.45?(f===0?WING[2]:WING[0]) : WING[1]); } }
+  }
+
+  /* ---- the big letters of BALL, drawn by hand on a 16 x 20 grid, block for block the weight of the
+     TOUR letters in Run The Tour's title ---- */
+  const BIG={
+  B:["11111111111111..","111111111111111.","1111111111111111","11111.....111111","11111......11111","11111......11111","11111.....111111","111111111111111.","11111111111111..","111111111111111.","11111.....111111","11111......11111","11111......11111","11111......11111","11111......11111","11111.....111111","1111111111111111","1111111111111111","111111111111111.","11111111111111.."],
+  A:["..111111111111..",".11111111111111.","1111111111111111","111111....111111","11111......11111","11111......11111","11111......11111","11111......11111","11111......11111","1111111111111111","1111111111111111","1111111111111111","11111......11111","11111......11111","11111......11111","11111......11111","11111......11111","11111......11111","11111......11111","11111......11111"],
+  L:["11111.........","11111.........","11111.........","11111.........","11111.........","11111.........","11111.........","11111.........","11111.........","11111.........","11111.........","11111.........","11111.........","11111.........","11111.........","11111111111111","11111111111111","11111111111111","11111111111111","11111111111111"],
+  };
+
+  // the infield: a grass oval with a clay skin in it, a chalk line, and home plate under the flying ball
+  function infield(g,gx,gy,grx,gry,plateX){
+    for(let y=Math.floor(gy-gry);y<=gy+gry;y++) for(let x=0;x<g.w;x++){ const d=((x-gx)/grx)**2+((y-gy)/gry)**2; if(d>1) continue;
+      let c=(Math.floor((x+(y-gy)*1.2)/6)%2)?GRASS.a:GRASS.b; if(d>0.72) c=GRASS.dark; if(d>0.72 && y<gy) c=GRASS.fringe;
+      // the clay: an inner oval, dithered at its edge so the seam between dirt and grass reads as worn
+      const e=((x-gx)/(grx*0.66))**2+((y-gy-0.6)/(gry*0.6))**2;
+      if(e<=1 && !(e>0.84 && (x+y)%2)) c=e<0.35?CLAY[1]:e<0.7?CLAY[2]:CLAY[3];
+      g.put(x,y,c); }
+    outline(g,GRASS.edge,g.px.map(Boolean));
+    if(plateX!=null){ const py=Math.round(gy);
+      [[0,0,4],[0,1,4],[1,2,2]].forEach(([dx,dy,w])=>{ for(let i=0;i<w;i++) g.put(plateX-2+dx+i,py-1+dy,CHALK); }); } }
+
+  function lockup(phase){
+    const W=108, H=56, g=grid(W,H), LT=15, LH=20;
+    const gx=54, gy=LT+LH+3, grx=51, gry=8;
+    infield(g,gx,gy,grx,gry,null);
+    const face=grid(W,H);
+    [['B',5],['A',23],['L',41],['L',57]].forEach(([ch,x0])=>{ BIG[ch].forEach((row,j)=>{ for(let i=0;i<row.length;i++) if(row[i]==='1') face.put(x0+i,LT+j,'F'); }); });
+    const isF=(x,y)=>face.get(x,y)==='F';
+    for(let d=3;d>=1;d--) for(let y=0;y<H;y++) for(let x=0;x<W;x++) if(isF(x-d,y-d)) g.put(x,y,EXT[d-1]);
+    for(let y=0;y<H;y++) for(let x=0;x<W;x++){ if(!isF(x,y)) continue;
+      const j=y-LT; let c=GOLD[j<2?0:j<5?1:j<9?2:j<13?3:j<17?4:5];
+      if(!isF(x,y-1)) c=GOLD[0];
+      else if(!isF(x-1,y) && j<14) c=GOLD[Math.max(0,GOLD.indexOf(c)-1)];
+      if(!isF(x,y+1) && isF(x,y-1)) c=GOLD[5];
+      if(!isF(x+1,y) && j>2) c=GOLD[Math.min(5,GOLD.indexOf(c)+1)];
+      g.put(x,y,c); }
+    // the ball's shadow on the clay, straight under it, so it reads as flying rather than stuck on
+    for(let x=82;x<=98;x++) for(let y=gy-1;y<=gy+1;y++){ const d=((x-90)/7.5)**2+((y-gy)/1.3)**2; if(d<=1) g.put(x,y,CLAY[4]); }
+    const bx=90, by=20, br=9.6;
+    wing(g,bx-5,by-2,-1,14,phase); wing(g,bx+5,by-2,1,14,phase);
+    ball(g,bx,by,br);
+    const rt=grid(W,H); let sx=6; const sy=4;
+    const SM=Object.assign({},F,{M:BOLDG.M});
+    for(const ch of 'MYTHI'){ SM[ch].forEach((row,j)=>{ for(let i=0;i<row.length;i++) if(row[i]==='1'){
+        const c=j<2?CREAM[0]:j<5?CREAM[1]:CREAM[2]; rt.put(sx+i,sy+j,c); if(ch!=='M') rt.put(sx+i+1,sy+j,c); } });
+      sx+=SM[ch][0].length+(ch==='M'?1:2); }
+    for(let i=0;i<W*H;i++) if(rt.px[i]){ const x=i%W, y=(i/W)|0; if(!rt.get(x+1,y+1)) g.put(x+1,y+1,'#3a2410'); }
+    for(let i=0;i<W*H;i++) if(rt.px[i]) g.px[i]=rt.px[i];
+    outline(g,K);
+    star(g,47,7,1); star(g,104,40,1); star(g,72,5,1);
+    return g; }
+
+  // the icon: the winged ball over a patch of infield. Drawn again at 16 rather than scaled down.
+  function icon(N,phase){
+    const g=grid(N,N);
+    if(N>=32){
+      infield(g,15.5,26,14.5,4.4,null);
+      // the ball's shadow on the clay, so it reads as flying over the infield rather than sitting in it
+      for(let x=9;x<=22;x++) for(let y=25;y<=27;y++){ if(((x-15.5)/6)**2+((y-26)/1.2)**2<=1) g.put(x,y,CLAY[4]); }
+      wing(g,11,12,-1,11,phase); wing(g,20,12,1,11,phase);
+      ball(g,15.5,14,7.4);
+      outline(g,K);
+      star(g,4,26,1); star(g,28,3,1);
+    } else {
+      // at 16 there is no ground: a ball and two wings is all the cell holds and still reads
+      for(const [s,x0] of [[-1,4],[1,11]]) [[0,0],[s,-1],[2*s,-1],[2*s,-2],[3*s,-2],[3*s,-3],[s,0],[2*s,0]].forEach(([a,b])=>g.put(x0+a,7+b,(b<-1)?WING[3]:WING[1]));
+      ball(g,7.5,9,4.6,{spot:false});
+      g.put(6,7,HIDE[0]);
+      outline(g,K);
+    }
+    return g; }
+
+  /* A park at night: navy sky banded and dithered at every seam like the Tour's dusk, stars, two light
+     towers, the stands as a band of crowd, the outfield wall, and grass mown in stripes down to the clay.
+     `horizon` is where the wall meets the grass, as a share of the height. */
+  function scene(w,h,o){ o=o||{}; const g=grid(w,h), hz=Math.round(h*(o.horizon||0.5));
+    const sky=o.sky||['#070d1c','#0a1428','#0e1b36','#132447','#1a2f58','#23406e','#2e5286'];
+    const top=hz-Math.round(h*0.16), bands=sky.length;
+    for(let y=0;y<top;y++){ const f=y/top*bands, b=Math.floor(f), frac=f-b;
+      for(let x=0;x<w;x++){ let c=sky[Math.min(bands-1,b)]; if(frac>0.7 && (x+y)%2===0 && b+1<bands) c=sky[b+1]; g.put(x,y,c); } }
+    // stars, placed by a fixed hash so every render is the same sky
+    for(let i=0;i<w*top/90;i++){ const x=(i*97+13)%w, y=(i*53+7)%Math.max(1,top-8); if(((i*31)%7)===0) star(g,x,y,1); else g.put(x,y,i%3?'#9fb4d8':'#ffffff'); }
+    // the light towers, one each side, with a bank of lamps and a haze of light below them
+    for(const tx of (o.towers||[Math.round(w*0.07),Math.round(w*0.93)])){ const ty=Math.round(h*0.08);
+      for(let y=ty+5;y<top+2;y++){ g.put(tx,y,'#39455c'); g.put(tx+1,y,'#262f40'); }
+      // the haze is MIXED into the sky under it. A grid cell holds one colour, so a translucent one would
+      // replace the sky rather than sit over it, and a card drawn on nothing shows it as a grey checker
+      for(let y=ty+6;y<top;y++) for(let x=tx-10;x<=tx+11;x++){ const d=Math.abs(x-tx)/(10+(y-ty)*0.25); if(d<1 && (x*3+y)%(d<0.5?2:3)===0) g.put(x,y,mix(g.get(x,y),'#ffe9b0',0.16)); }
+      g.rect(tx-5,ty,12,6,'#39455c');
+      for(let r=0;r<2;r++) for(let c=0;c<5;c++){ g.put(tx-4+c*2,ty+1+r*2,'#fffbe0'); g.put(tx-3+c*2,ty+1+r*2,'#ffe89a'); } }
+    // the stands: a band of crowd, lit from the field
+    for(let y=top;y<hz-5;y++) for(let x=0;x<w;x++){ const row=(y-top)%3;
+      let c=row===2?'#141a2a':'#1f2940';
+      const hsh=(x*73+y*151)%11; if(row!==2 && hsh<4) c=['#c9483c','#e8d9b0','#3f6fb0','#e0a94a'][hsh];
+      g.put(x,y,c); }
+    // the wall, padded, with a yellow home run line along its top
+    for(let y=hz-5;y<hz;y++) for(let x=0;x<w;x++) g.put(x,y,y===hz-5?'#ffd23a':((Math.floor(x/14)%2)?'#12452e':'#0f3d28'));
+    // the grass, mown in stripes that widen toward the camera, and the clay arc at the foot
+    for(let y=hz;y<h;y++) for(let x=0;x<w;x++){ const depth=(y-hz)/(h-hz);
+      const band=Math.floor((x-w/2)*(0.35+depth*0.9)/(6+depth*10)+100);
+      let c=band%2?'#2f8a3e':'#277a36'; if(depth>0.55) c=band%2?'#256e31':'#1f622b'; if(y===hz) c='#4fae52';
+      const e=((x-w*(o.clayX||0.72))/(w*0.5))**2+((y-h*1.18)/(h*0.5))**2;
+      if(e<1 && !(e>0.93 && (x+y)%2)) c=e<0.6?CLAY[2]:CLAY[3];
+      g.put(x,y,c); }
+    return g; }
+
+  function toCanvas(g,scale){ const c=document.createElement('canvas'); c.width=g.w*scale; c.height=g.h*scale;
+    const x=c.getContext('2d'); for(let y=0;y<g.h;y++) for(let i=0;i<g.w;i++){ const col=g.px[y*g.w+i]; if(!col) continue; x.fillStyle=col; x.fillRect(i*scale,y*scale,scale,scale); } return c; }
+  function draw(ctx,g,x,y,scale){ for(let j=0;j<g.h;j++) for(let i=0;i<g.w;i++){ const col=g.px[j*g.w+i]; if(!col) continue; ctx.fillStyle=col; ctx.fillRect(x+i*scale,y+j*scale,scale,scale); } }
+  return {K,GOLD,EXT,CREAM,HIDE,LACE,GRASS,CLAY,CHALK,WING,NAVY,SPARK,grid,outline,stamp,text,textW,norm,ball,star,wing,infield,lockup,icon,scene,toCanvas,draw};
+})();
+/* ==================== MYPIX END ==================== */
+(function brandMark(){
+  const slot = document.querySelector('.brand .mark-slot');
+  if (!slot) return;
+  /* ON ITS PLATE, the navy the app icon sits on. Straight onto the cream the wings are cream on cream and
+     the mark reads as a red smudge. BOTH SIZES ARE BUILT and CSS picks one, because the header changes size
+     when a game starts and a bitmap chosen at boot would be scaled by three quarters over the live field.
+     The kit draws each size by hand, which is the reason there are two rather than one scaled. */
+  const plate = (N) => {
+    const c = document.createElement('canvas'); c.width = c.height = N;
+    const x = c.getContext('2d');
+    const r = x.createRadialGradient(N / 2, N * 0.38, 0, N / 2, N * 0.38, N * 0.75);
+    r.addColorStop(0, '#23406e'); r.addColorStop(0.55, '#132447'); r.addColorStop(1, '#070d1c');
+    x.fillStyle = r; x.fillRect(0, 0, N, N);
+    MYPIX.draw(x, MYPIX.icon(N, 0), 0, 0, 1);
+    c.className = 'bmark m' + N;
+    c.setAttribute('aria-hidden', 'true');
+    return c;
+  };
+  slot.replaceWith(plate(32), plate(16));
+})();
 
 /* ============================================================================
    ROSTER
