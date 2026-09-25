@@ -400,7 +400,16 @@ check_rows(sort, migration, what, breaks, ok) as (
       (select count(*) > 0 from proc where name = 'rtf_submit_trade')
       and (select count(*) > 0 from col where tbl = 'rtf_plays' and name = 'fix_ins')
       and (select count(*) > 0 from col where tbl = 'rtf_plays' and name = 'fix_outs')
-      and (select count(*) > 0 from col where tbl = 'rtf_plays' and name = 'fix_with'))
+      and (select count(*) > 0 from col where tbl = 'rtf_plays' and name = 'fix_with')),
+
+  -- FIX HISTORY AS A SEASON of trade windows. Same shape as row 27 one step
+  -- on: the page files through rtf_submit_fix_season, which 117 does not have,
+  -- and a database on 117 plays every window and files nothing.
+  (28, '118_hoops_fix_season',
+      'rtf_submit_fix_season and fix_trades, so a season of Fix History trades reaches the board',
+      'Fix History plays all four windows and no result is ever filed: no place on the result screen and no row on today''s board. It looks like a quiet day.',
+      (select count(*) > 0 from proc where name = 'rtf_submit_fix_season')
+      and (select count(*) > 0 from col where tbl = 'rtf_plays' and name = 'fix_trades'))
 )
 -- The summary has to come LAST, and a UNION can only be ordered by an output
 -- column, so the sort key is carried through a subquery rather than sorted on

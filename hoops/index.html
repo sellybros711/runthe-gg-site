@@ -17,7 +17,7 @@
      ready to be reviewed. -->
 <meta name="robots" content="noindex, nofollow">
 <title>Run The Floor: NBA History Games | RunThe.GG</title>
-<meta name="description" content="Run The Floor: fix a real NBA team with one trade, pass the ball through real teammates, hold the court against history, or draft a starting five under a $120M cap.">
+<meta name="description" content="Run The Floor: fix a real NBA team at the trade deadline, pass the ball through real teammates, hold the court against history, or draft a starting five under a $120M cap.">
 <meta name="theme-color" content="#0d1117">
 <link rel="canonical" href="https://runthe.gg/hoops/">
 <!-- THE SHARE CARD.
@@ -35,7 +35,7 @@
 
      hoops/og.png is built by hoops/build/og.mjs from hoops/og-source.html. -->
 <meta property="og:title" content="Run The Floor: NBA History Games">
-<meta property="og:description" content="Run The Floor: fix a real NBA team with one trade, pass the ball through real teammates, hold the court against history, or draft a starting five under a $120M cap.">
+<meta property="og:description" content="Run The Floor: fix a real NBA team at the trade deadline, pass the ball through real teammates, hold the court against history, or draft a starting five under a $120M cap.">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="RunThe.GG">
 <meta property="og:url" content="https://runthe.gg/hoops/">
@@ -46,7 +46,7 @@
 <meta property="og:image:alt" content="Run The Floor: draft an NBA starting five under a $120M cap and play all 82 games. The five roster spots shown as PG, SG, SF, PF and C.">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Run The Floor: Free NBA History Games">
-<meta name="twitter:description" content="Fix a real NBA team with one trade, pass the ball through real teammates, hold the court against history, or draft a starting five under a $120M cap.">
+<meta name="twitter:description" content="Fix a real NBA team at the trade deadline, pass the ball through real teammates, hold the court against history, or draft a starting five under a $120M cap.">
 <meta name="twitter:image" content="https://runthe.gg/hoops/og.png?v=2">
 <meta name="twitter:image:alt" content="Run The Floor: draft an NBA starting five under a $120M cap and play all 82 games.">
 <link rel="manifest" href="manifest.webmanifest">
@@ -543,12 +543,21 @@
   .ptab span{font-family:var(--num);font-variant-numeric:tabular-nums;font-weight:700;opacity:.75;}
   .badgegrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(108px,1fr));gap:8px;
     max-height:44vh;overflow-y:auto;padding-right:2px;}
-  .bdg{border:1px solid var(--cardb);border-radius:10px;padding:9px 9px 8px;background:#10151f;
-    min-width:0;}
+  .bdg{border:1px solid var(--cardb);border-radius:10px;padding:10px 8px 9px;background:#10151f;
+    min-width:0;text-align:center;}
+  /* EVERY BADGE IS A BASKETBALL, and it is the same drawing as the logo in
+     the top bar: badgeBall() runs the logo's own grid rules in a metal. The
+     21 cell ball at 42px is two pixels a cell, a whole number on every
+     screen, so the cells stay cells. 15 cells was tried at 45px and read as a
+     waffle: at that size the four seams are most of the ball. */
+  .bdg .bb{display:block;width:42px;height:42px;margin:0 auto 7px;}
+  .bdg .bb svg{display:block;width:100%;height:100%;}
   /* LOCKED IS DIM, NOT HIDDEN. A cabinet of empty squares is a list of things
      to go and do; a cabinet that hides what you have not earned is a cabinet
-     that looks finished on day one. */
-  .bdg.off{opacity:.42;}
+     that looks finished on day one. The ball goes to slate rather than
+     vanishing, so the shape of the whole cabinet is readable before any of it
+     is won. */
+  .bdg.off{opacity:.5;}
   .bdg .bn{display:block;font-size:11.5px;font-weight:800;line-height:1.25;color:var(--ink);}
   .bdg .bw{display:block;font-size:10px;line-height:1.35;color:var(--dim);margin-top:3px;}
   .bdg .bp{display:block;margin-top:6px;height:4px;border-radius:99px;
@@ -556,12 +565,39 @@
   .bdg .bp i{display:block;height:100%;border-radius:99px;background:var(--mut);}
   .bdg .bnum{display:block;font-family:var(--num);font-variant-numeric:tabular-nums;font-size:9.5px;color:var(--dim);margin-top:4px;}
   /* Four metals, so a cabinet reads at a glance as mostly-bronze or
-     mostly-gold rather than as a wall of identical squares. */
+     mostly-gold rather than as a wall of identical squares. The ball carries
+     the metal and the tile only echoes it. */
   .bdg.on.bronze{border-color:#a1662f;background:linear-gradient(180deg,rgba(161,102,47,.2),#10151f);}
   .bdg.on.silver{border-color:#9aa6b8;background:linear-gradient(180deg,rgba(154,166,184,.2),#10151f);}
   .bdg.on.gold{border-color:#d19410;background:linear-gradient(180deg,rgba(209,148,16,.22),#10151f);}
   .bdg.on.ring{border-color:#f2c14e;background:linear-gradient(180deg,rgba(242,193,78,.28),#10151f);
     box-shadow:0 0 0 1px rgba(242,193,78,.25);}
+  .bdg.on.ring .bb{filter:drop-shadow(0 0 6px rgba(242,193,78,.55));}
+  /* THE CABINET IS AN ACCOUNT'S. A guest sees what is in it and the one
+     thing that opens it, rather than an empty tab or a tab that is missing. */
+  /* SHELVES THAT FOLD. A hundred and seventy tiles drawn flat is a sheet that
+     opens on the same first screen whether somebody has played once or a
+     thousand times. A shelf with something on it is open; the rest are one tap
+     away and say how many are on them. */
+  .bshelf{grid-column:1/-1;border-top:1px solid var(--cardb);padding-top:6px;}
+  .bshelf:first-child{border-top:0;padding-top:0;}
+  .bshelf>summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:8px;
+    min-height:36px;font-size:12.5px;font-weight:800;color:var(--ink);letter-spacing:.02em;}
+  .bshelf>summary::-webkit-details-marker{display:none;}
+  .bshelf>summary::before{content:'';width:7px;height:7px;border-right:2px solid var(--mut);
+    border-bottom:2px solid var(--mut);transform:rotate(-45deg);transition:transform .15s;flex:none;}
+  .bshelf[open]>summary::before{transform:rotate(45deg);}
+  .bshelf>summary .n{margin-left:auto;font-family:var(--num);font-variant-numeric:tabular-nums;
+    font-weight:700;font-size:11px;color:var(--dim);}
+  .bshelf>summary .n.full{color:#f2c14e;}
+  .bshelf .bgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(108px,1fr));gap:8px;
+    padding:4px 0 10px;}
+  .bdg-guest{grid-column:1/-1;text-align:center;padding:16px 10px 6px;}
+  .bdg-guest .bbrow{display:flex;justify-content:center;gap:8px;margin-bottom:12px;}
+  .bdg-guest .bbrow span{width:42px;height:42px;display:block;}
+  .bdg-guest .bbrow svg{display:block;width:100%;height:100%;}
+  .bdg-guest b{display:block;font-size:14.5px;font-weight:800;color:var(--ink);margin-bottom:5px;}
+  .bdg-guest p{margin:0 auto 12px;font-size:12px;line-height:1.45;color:var(--dim);max-width:30em;}
   .bdg.on .bp i{background:var(--gold);}
 
   /* ── WHAT A RUN EARNED ─────────────────────────────────────────────────
@@ -575,6 +611,12 @@
   .ern .em{flex:0 0 auto;width:26px;height:26px;border-radius:50%;
     display:flex;align-items:center;justify-content:center;
     font-family:var(--num);font-variant-numeric:tabular-nums;font-size:12px;font-weight:700;color:#0d1117;}
+  /* A BADGE IS A BALL HERE TOO, at two pixels a cell. The career bests keep
+     their round marks, so a ball on this card always means a badge. */
+  .ern .em.ball{width:30px;height:30px;border-radius:0;background:none !important;}
+  .ern .em.ball svg{display:block;width:100%;height:100%;}
+  .ern.ring .em.ball{filter:drop-shadow(0 0 5px rgba(242,193,78,.55));}
+  .ern .et button{margin-top:7px;height:32px;min-height:32px;font-size:12px;padding:0 14px;}
   .ern .et{min-width:0;}
   .ern .et b{display:block;font-size:13.5px;font-weight:800;line-height:1.3;color:var(--ink);}
   .ern .et span{display:block;font-size:11.5px;line-height:1.35;color:var(--dim);margin-top:2px;}
@@ -1720,6 +1762,24 @@
      data files as each parses, the league index, and the first paint. The bar
      reports rather than performs. A bar that always fills in two seconds is a
      worse lie than three dots, because it looks like information. */
+  /* ── the front page, three tiers ─────────────────────────────────────────
+     Today, Play, and a quiet row. The draft's four doors are in a sheet. */
+  .quietrow{display:flex;justify-content:center;gap:4px 18px;flex-wrap:wrap;margin:18px 0 6px;}
+  .qlink{background:none;border:0;padding:8px 2px;width:auto;color:var(--mut);font-family:var(--body);
+    font-size:14px;font-weight:800;text-decoration:underline;text-decoration-color:rgba(255,255,255,.2);
+    text-underline-offset:4px;cursor:pointer;box-shadow:none;}
+  .qlink:hover{color:var(--ink);filter:none;}
+  .lgfacts{font-size:12.5px;color:var(--dim);margin:0 0 12px;}
+  .lgfacts b{color:var(--mut);font-family:var(--num);font-variant-numeric:tabular-nums;}
+  .qd-sheet{position:fixed;inset:0;z-index:70;background:rgba(3,5,9,.74);display:flex;align-items:flex-end;
+    justify-content:center;padding:12px;overflow-y:auto;}
+  .qd-sheet[hidden]{display:none;}
+  .qd-panel{width:100%;max-width:560px;max-height:calc(100vh - 24px);overflow-y:auto;background:#101522;
+    border:1px solid #2a3a4a;border-radius:18px;padding:14px 14px 16px;margin:auto 0 0;}
+  .qd-top{display:flex;align-items:center;justify-content:space-between;margin:0 2px 10px;}
+  .qd-top h2{margin:0;}
+  .qd-panel .card.qd{margin:0;}
+  @media (min-width:700px){ .qd-sheet{align-items:center;} .qd-panel{margin:auto;} }
   .lgstrip{display:flex;flex-wrap:wrap;justify-content:center;gap:4px 12px;margin:-4px 0 14px;
     font-size:12px;color:var(--dim);font-weight:700;text-align:center;}
   .lgstrip b{color:var(--mut);font-family:var(--num);font-variant-numeric:tabular-nums;}
@@ -1948,16 +2008,11 @@
     </div>
   </div>
 
-  <!-- WHAT EVERY MODE IS BUILT FROM, in one line. It was a card of its own
-       when the draft was the whole game; with four ways to play it is the
-       thing all four share, so it sits above them and costs one line rather
-       than a card. The numbers are the file's, filled once it loads, and the
-       loading bar under them goes when the data is in. -->
+  <!-- THE LOADING BAR, and only that. The league's numbers used to sit here as a
+       strip of their own, above every mode, and a returning player read
+       "16,460 player-seasons" before the one thing they came for. They are a
+       fact about the data, so they live in How to play now. -->
   <div class="lgstrip" id="lgstrip">
-    <span><b id="ls-players">-</b> player-seasons</span>
-    <span><b id="ls-clubs">-</b> team seasons</span>
-    <span><b id="ls-teams">-</b> franchises</span>
-    <span id="home-era">1974 to 2026</span>
     <div class="boot" id="boot">
       <div class="boottrack"><i id="boot-bar"></i></div>
       <p class="dim" id="loadmsg">Loading the league...</p>
@@ -1973,10 +2028,27 @@
   <!-- THE MODES, drawn by modes-ui.js once the league has loaded. -->
   <div class="mhome" id="modes-home"></div>
 
+  <!-- THE QUIET ROW. Everything a returning player might want that is not a
+       game: the boards for every mode in one sheet, the career, the rules. -->
+  <nav class="quietrow" id="home-quiet" aria-label="More">
+    <button class="qlink" id="b-home-boards">Leaderboards</button>
+    <button class="qlink" id="b-home-career">Career</button>
+    <button class="qlink" id="b-home-howto">How to play</button>
+  </nav>
+
+  <!-- QUICK DRAFT IS A SHEET, opened from its tile. It is four ways to play one
+       game, and on the front page they were four doors at the weight of the
+       three games above them. The court and the reels come with it, because
+       they are a picture of this mode and nothing else, and they only spin
+       while the sheet is open. `hidden` needs its own rule below, because the
+       sheet sets display:flex. -->
+  <div class="qd-sheet" id="qd-sheet" hidden>
+  <div class="qd-panel" role="dialog" aria-modal="true" aria-labelledby="qd-title">
+  <div class="qd-top"><h2 id="qd-title">Quick Draft</h2>
+    <button class="ghost sm" id="qd-x">Close</button></div>
   <!-- QUICK DRAFT: the game this page started as, now one way to play of four.
        The court and the reels that used to open the page live in its card,
        because they are a picture of exactly this mode and nothing else. -->
-  <h2 class="mhome-h" id="qd-h">Quick Draft</h2>
   <div class="card qd" id="qd-card">
   <div class="hero" id="hero">
     <div class="reels heroreels">
@@ -2081,6 +2153,9 @@
       <button class="ghost sm" id="b-home-board" style="flex:1">Leaderboard</button>
     </div>
   </div>
+  </div>
+  </div>
+
 
   <!-- ONE FOLDED CARD, AND IT WAS FIFTY-FIVE PER CENT OF THE SCREEN.
        "How a run goes" and "Why five stars lose" were two open cards at the
@@ -2104,6 +2179,9 @@
   <details class="card howto" id="home-howto">
     <summary><h2>How to play <span class="sub">five spins, one cap</span></h2>
       <span class="ht-chev" aria-hidden="true"></span></summary>
+
+    <p class="lgfacts">Built from <b id="ls-players">-</b> player-seasons, <b id="ls-clubs">-</b>
+      team seasons and <b id="ls-teams">-</b> franchises, <span id="home-era">1974 to 2026</span>.</p>
 
     <h3>How a run goes</h3>
     <p class="dim" style="font-size:14px;margin:0 0 10px">
@@ -2753,8 +2831,8 @@
      CI checks it on any push touching an .html or .js file. See CLAUDE.md. -->
 <script src="engine.js?v=23"></script>
 <script src="run.js?v=11"></script>
-<script src="badges.js?v=1"></script>
-<script src="modes.js?v=2"></script>
+<script src="badges.js?v=2"></script>
+<script src="modes.js?v=5"></script>
 <!-- ACCOUNTS AND THE LEADERBOARD. All three are OPTIONAL: if the CDN is blocked
      or either file fails to load, the game runs exactly as it did, with runs
      kept in this browser and the board reporting itself unreachable. An account
@@ -2763,7 +2841,7 @@
      for it rather than reading window.supabase once: on a repeat visit the data
      comes out of cache in milliseconds while this is still in flight. -->
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="board.js?v=4"></script>
+<script src="board.js?v=5"></script>
 <script src="auth.js?v=1"></script>
 <!-- THE SHELF. cloudsave.js is the transport and is shared with the football and
      college games; cloud.js is this game's own policy about slots, progress and
@@ -2771,7 +2849,7 @@
      for a token at CALL time rather than at load, so the order here is for a
      reader rather than for the browser. -->
 <script src="/assets/cloudsave.js?v=2"></script>
-<script src="cloud.js?v=1"></script>
+<script src="cloud.js?v=2"></script>
 <script>
 (function(){
 'use strict';
@@ -2886,7 +2964,7 @@ var DAILY_DARE = 'Everyone got the same ' + NUMWORD(E.SLOTS.length) + ' spins.';
  * handle. It is also what carries the diagnosis: `lastError` says which of the
  * two halves is missing, in words, on the screen that would otherwise just be
  * empty. */
-var NEED_BOARD = 4;
+var NEED_BOARD = 5;
 var B = (window.RTF_BOARD && window.RTF_BOARD.API_VERSION === NEED_BOARD)
   ? window.RTF_BOARD
   : {
@@ -2929,7 +3007,7 @@ var A = window.RTF_AUTH || {
  * renders, and the only symptom is a cabinet that comes back slightly wrong.
  * `null` is the honest answer when either half is missing, and every caller
  * below is written to do nothing at all when it is. */
-var NEED_CLOUD = 1;
+var NEED_CLOUD = 2;
 var CL = (window.RTF_CLOUD && window.RTF_CLOUD.API_VERSION === NEED_CLOUD)
   ? window.RTF_CLOUD : null;
 var SV = window.RTG_SAVE || null;
@@ -2986,7 +3064,10 @@ function show(id){
      bracket is still at that game, so coming back offers the same door. */
   if (id !== 's-live' && LV && LV.timer) { clearTimeout(LV.timer); LV.timer = null; }
   if (id !== 's-brk') stopBracket();
-  if (id === 's-home') heroStart(); else heroStop();
+  /* The reels spin inside the Quick Draft sheet and only while it is open, so
+     any change of screen shuts the sheet and stops them. */
+  closeQuickDraft();
+  heroStop();
   if (window.RTF_MODES_UI) window.RTF_MODES_UI.leave(id);
   /* The club belongs to the draft. The season, the results and the home screen
      have no club, and a results screen still wearing the last team you spun is
@@ -3166,7 +3247,13 @@ function boot(){
       window.RTF_BADGES.setTotals({
         seasons: yrs.length,
         clubs: Object.keys(franchises).length,
-        shapes: (E.SYSTEMS && E.SYSTEMS.length) || 0
+        shapes: (E.SYSTEMS && E.SYSTEMS.length) || 0,
+        franchises: E.franchises().length,
+        mvps: (function(){
+          var m = {};
+          DATA.players.forEach(function(p){ if ((p.aw || []).indexOf('mvp') >= 0) m[p.s] = 1; });
+          return Object.keys(m).length;
+        })()
       });
     }
     $('ls-players').textContent = DATA.players.length.toLocaleString();
@@ -3183,9 +3270,6 @@ function boot(){
     restore();
     if (window.RTF_MODES_UI) window.RTF_MODES_UI.onData();
     renderHome();
-    /* The front page can only play the game once the game has data to play
-       with, which is here and not at boot. */
-    heroStart();
     /* A RELOAD RESTORES THE OLD SCROLL POSITION, and the old position was
        somewhere down a draft board. Landing on the home page already scrolled
        past its own masthead reads as a broken page rather than a restored one. */
@@ -3197,7 +3281,16 @@ function boot(){
        surfaces is open when it lands. */
     A.boot();
     A.onChange(function(){
-      if ($('sheet').classList.contains('open')) renderAccount();
+      if ($('sheet').classList.contains('open')) {
+        renderAccount();
+        /* The cabinet opens and shuts with the account, on the sheet the
+           player is looking at. */
+        showProfileTab(badgeTab);
+      }
+      /* And the results card, which tells a guest what the run lit and
+         turns into the badges themselves the moment they sign in. */
+      var ov = $('s-over');
+      if (ov && ov.classList.contains('active')) renderEarned();
       /* THE SHELF IS ASKED ON EVERY CHANGE OF ACCOUNT, and the boot is one of
          them: nothing is signed in at parse time, so a pull started beside
          A.boot() would always find no token and answer nothing. Signing IN is
@@ -3596,7 +3689,7 @@ function frgFill(){
      it. Every number is read off the constants, never typed. */
   var steps = [
     '<b>Fix History</b>, every day. One real team that fell short. '
-      + 'Make one trade and see if they win it.',
+      + 'Work the phones through four trade windows and see if they win it.',
     '<b>Six Passes</b>, every day. Get the ball from one legend to another '
       + 'through real teammates.',
     '<b>Conquest.</b> Winners stay on. Beat real teams and take their best guys.',
@@ -3843,6 +3936,18 @@ function dailyIsToday(){
    the day number alone, so it cannot drift with a clock: yesterday's day plus
    one continues, anything else starts again at one. A day replayed is not a
    second day, which is why the guard is on the day and not on the count. */
+/* What the daily streak WILL be once today is filed, asked before it is. The
+   career is written first and the daily record after it, on purpose (see the
+   note in recordRun), so the badge for a streak reads this rather than the
+   record. Same arithmetic as dailyRecord, and a day already filed answers the
+   streak it already has. */
+function dailyStreakAfter(){
+  if (!dailyIsToday()) return 0;
+  var n = todayNumber(), s = dailyState();
+  if (s && s.done && s.day === n) return s.streak || 0;
+  return (s && s.lastDone === n - 1) ? (s.streak || 0) + 1 : 1;
+}
+
 function dailyRecord(out){
   var n = todayNumber();
   var s = dailyState() || { v: 1, played: 0, streak: 0, bestStreak: 0, lastDone: 0, best: -1 };
@@ -7407,9 +7512,16 @@ function renderEarned(){
   var card = $('o-earnedcard'), list = $('o-earned'), sub = $('o-earnedsub');
   if (!card || !list) return;
   var got = (run && run.earned) || { fresh: [], bests: [] };
-  var fresh = got.fresh || [], bests = got.bests || [];
+  var bests = got.bests || [];
+  /* A GUEST IS TOLD WHAT THE RUN WOULD HAVE LIT, NOT HANDED IT. The badges
+     are real (they are derived from the career, which the account adopts on
+     sign in), so the count is true, and the row is the one way to collect
+     them. The career bests are the record and stay for everybody. */
+  var member = badgesOn();
+  var fresh = member ? (got.fresh || []) : [];
+  var waiting = member ? 0 : (got.fresh || []).length;
   list.textContent = '';
-  if (!fresh.length && !bests.length) { card.hidden = true; return; }
+  if (!fresh.length && !bests.length && !waiting) { card.hidden = true; return; }
   card.hidden = false;
   sub.textContent = fresh.length
     ? fresh.length + (fresh.length === 1 ? ' new badge' : ' new badges')
@@ -7420,7 +7532,12 @@ function renderEarned(){
     el.className = 'ern ' + metal;
     var m = document.createElement('span');
     m.className = 'em';
-    m.textContent = mark;
+    if (mark === 'ball') {
+      m.className = 'em ball';
+      m.innerHTML = badgeBall(metal, 15);
+    } else {
+      m.textContent = mark;
+    }
     /* The mark is decoration on top of the words beside it, so it is taken
        out of the accessibility tree rather than read out as a stray letter
        before every row. */
@@ -7438,6 +7555,7 @@ function renderEarned(){
     el.appendChild(m);
     el.appendChild(t);
     list.appendChild(el);
+    return t;
   };
 
   /* THE MARKS COME FIRST. A career best is about the run on the screen; a
@@ -7450,7 +7568,18 @@ function renderEarned(){
       mk.text, '');
   }
   for (var j = 0; j < fresh.length; j++) {
-    row(fresh[j].tier || 'bronze', '★', fresh[j].name, fresh[j].why);
+    row(fresh[j].tier || 'bronze', 'ball', fresh[j].name, fresh[j].why);
+  }
+  if (waiting) {
+    var gt = row('bronze', 'ball', 'Sign in to collect badges',
+      'This run lit ' + waiting + (waiting === 1 ? ' badge' : ' badges')
+      + '. Sign in and ' + (waiting === 1 ? "it's" : "they're") + ' yours.');
+    gt.parentNode.className += ' ern-guest';
+    var gb = document.createElement('button');
+    gb.id = 'b-earned-signin';
+    gb.textContent = 'Sign in';
+    gb.onclick = badgeSignIn;
+    gt.appendChild(gb);
   }
 
   /* SAID OUT LOUD, ONCE, and only for the badges. The record and the verdict
@@ -8503,6 +8632,20 @@ function recordRun(out){
      against a career that stops saving at all. */
   if (c.rows.length > 250) c.rows = c.rows.slice(-250);
 
+  /* THE FEATS, which is where every badge added after the rows lives. The rule
+     for what a run proves is badges.js' draftFeats, the same function
+     check-badges.mjs plays the game through, so the page and the checker
+     cannot disagree about what a Game 7 is. A blocked badges.js costs the
+     feats and nothing else. */
+  var BG = window.RTF_BADGES;
+  if (BG && typeof BG.draftFeats === 'function') {
+    try {
+      BG.applyFeats(c, BG.draftFeats(run));
+      var dStreak = dailyStreakAfter();
+      if (dStreak) BG.applyFeats(c, { max: { 'daily.streak': dStreak } });
+    } catch (e) {}
+  }
+
   try { localStorage.setItem(PKEY, JSON.stringify(c)); } catch (e) {}
   cloudPushCareer(c);
 
@@ -8792,8 +8935,8 @@ function renderAccount(){
   }
 
   if (!st.signedIn) {
-    say('Sign in to put your name on the leaderboard and keep your career on '
-      + 'every device. Your runs count either way.');
+    say('Sign in to put your name on the leaderboard, collect badges and keep '
+      + 'your career on every device. Your runs count either way.');
     var r1 = row();
     var email = document.createElement('input');
     email.type = 'email'; email.placeholder = 'Email'; email.autocomplete = 'email';
@@ -8881,15 +9024,138 @@ function esc(s){
  */
 var badgeTab = 'record';
 
+/* ── THE BALL EVERY BADGE IS ───────────────────────────────────────────────
+ *
+ * The logo's own drawing (build/logo-art.mjs), run here in a metal. The rules
+ * are the same few: a one cell outline found as the inside cells touching the
+ * outside, an upright and a level seam through the middle, two side seams
+ * that step out once near the rim, and the light cut into diagonal bands off
+ * the top left. Copied rather than fetched, because the page draws forty of
+ * these at once and a round trip per cabinet is a cabinet that pops in.
+ *
+ * Bronze IS the ball, in the logo's own orange: the first step is a
+ * basketball. Silver and gold are the trophy versions of it, and a ring is
+ * the gold one with a glow in CSS. Locked is slate, with the seams lighter
+ * than the body so the shape still reads on the dark tile.
+ */
+var BALL_PAL = {
+  bronze: { ink: '#2a1206', hl: '#ffc27a', lt: '#ff9e45', base: '#f07a22', mid: '#d25e16', dk: '#a8430e' },
+  silver: { ink: '#1b2029', hl: '#ffffff', lt: '#e3e8f0', base: '#bcc5d2', mid: '#949fb0', dk: '#6b7585' },
+  gold:   { ink: '#2a1a02', hl: '#fff3bf', lt: '#ffd766', base: '#f0b429', mid: '#cf920f', dk: '#9a6806' },
+  ring:   { ink: '#2a1a02', hl: '#fffbe6', lt: '#ffe38a', base: '#f7c23a', mid: '#dca01a', dk: '#a8750a' },
+  off:    { ink: '#3a4251', hl: '#2b3342', lt: '#262d3b', base: '#222935', mid: '#1e242f', dk: '#1a1f28' },
+};
+
+function badgeBall(tier, N){
+  N = N || 15;
+  var key = tier + ':' + N;
+  if (!badgeBall.cache) badgeBall.cache = {};
+  if (badgeBall.cache[key]) return badgeBall.cache[key];
+  var P = BALL_PAL[tier] || BALL_PAL.bronze;
+  var c = (N - 1) / 2, R = c + 0.35;
+  var inside = function(x, y){
+    return x >= 0 && y >= 0 && x < N && y < N && Math.hypot(x - c, y - c) <= R;
+  };
+  var side = Math.round(c / 2), step1 = Math.round(c * 0.62), step2 = Math.round(c * 0.84);
+  /* Not `out`: verify.mjs reads every `out.<field>` in this page as a field
+     the results screen expects an outcome to carry. */
+  var rects = [];
+  for (var y = 0; y < N; y++) {
+    var row = [];
+    for (var x = 0; x < N; x++) {
+      if (!inside(x, y)) { row.push(null); continue; }
+      var dx = x - c, dy = y - c, ady = Math.abs(dy);
+      var edge = !inside(x - 1, y) || !inside(x + 1, y) || !inside(x, y - 1) || !inside(x, y + 1);
+      var sd = side + (ady >= step2 ? 2 : ady >= step1 ? 1 : 0);
+      if (edge || dx === 0 || dy === 0 || Math.abs(dx) === sd) { row.push(P.ink); continue; }
+      var k = (dx + dy) / c;
+      row.push(k < -0.95 ? P.hl : k < -0.4 ? P.lt : k > 0.95 ? P.dk : k > 0.5 ? P.mid : P.base);
+    }
+    /* One rect per run of one colour, which is what logo-art's toSvg does. */
+    for (var x2 = 0; x2 < N;) {
+      var col = row[x2], w = 1;
+      while (x2 + w < N && row[x2 + w] === col) w++;
+      if (col) rects.push('<rect x="' + x2 + '" y="' + y + '" width="' + w + '" height="1" fill="' + col + '"/>');
+      x2 += w;
+    }
+  }
+  var svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + N + ' ' + N
+    + '" shape-rendering="crispEdges" aria-hidden="true">' + rects.join('') + '</svg>';
+  badgeBall.cache[key] = svg;
+  return svg;
+}
+
+/* ── WHO HAS A CABINET ─────────────────────────────────────────────────────
+ *
+ * AN ACCOUNT, AND NOBODY ELSE. The career is still kept for a guest, in this
+ * browser, because it is what the account adopts on the way in: the shelf
+ * MERGES a career nobody owns into the account that signs in (cloud.js), and
+ * every badge is derived from the career, so the runs a guest plays light
+ * their badges the moment they sign in. What a guest does not get is the
+ * cabinet itself, and the page says why rather than drawing an empty tab.
+ *
+ * READ LIVE, never cached. Sign in and out both happen with the sheet open. */
+function badgesOn(){
+  var st = A.state();
+  return !!(st && st.signedIn);
+}
+
+/* The sign-in form is the top of the career sheet already, so the way into
+   the cabinet is to go there and put the cursor in it. A second form would
+   be a second place for the account to be wrong. */
+function badgeSignIn(){
+  if (!$('sheet').classList.contains('open')) openProfile();
+  var inp = $('pf-acct') && $('pf-acct').querySelector('input');
+  if (inp) { try { inp.focus(); inp.scrollIntoView({ block: 'center' }); } catch (e) {} }
+}
+
 function renderBadges(){
   var grid = $('pf-badges'), note = $('pf-badgenote'), B = window.RTF_BADGES;
   if (!grid || !B) return;
   var c = loadCareer() || {};
   var all = B.evaluate(c);
   var got = all.filter(function(b){ return b.got; }).length;
+  grid.textContent = '';
+
+  if (!badgesOn()) {
+    if ($('pt-count')) $('pt-count').textContent = '';
+    var st = A.state();
+    var g = document.createElement('div');
+    g.className = 'bdg-guest';
+    var balls = document.createElement('div');
+    balls.className = 'bbrow';
+    ['bronze', 'silver', 'gold', 'ring'].forEach(function(t){
+      var sp = document.createElement('span');
+      sp.innerHTML = badgeBall(t, 21);
+      balls.appendChild(sp);
+    });
+    g.appendChild(balls);
+    var h = document.createElement('b');
+    var p = document.createElement('p');
+    if (!st.ready && st.waiting) {
+      h.textContent = 'Checking for your account';
+      p.textContent = 'Your badges show here once it answers.';
+      g.appendChild(h); g.appendChild(p);
+    } else if (!st.ready) {
+      h.textContent = 'Badges need an account';
+      p.textContent = 'Accounts are down right now. Your runs still count toward them.';
+      g.appendChild(h); g.appendChild(p);
+    } else {
+      h.textContent = 'Badges are for accounts';
+      p.textContent = all.length + ' to collect. Sign in and the runs on this device count toward them.';
+      g.appendChild(h); g.appendChild(p);
+      var go = document.createElement('button');
+      go.id = 'b-badge-signin';
+      go.textContent = 'Sign in';
+      go.onclick = badgeSignIn;
+      g.appendChild(go);
+    }
+    grid.appendChild(g);
+    if (note) note.hidden = true;
+    return;
+  }
   if ($('pt-count')) $('pt-count').textContent = got + '/' + all.length;
 
-  grid.textContent = '';
   /* EARNED FIRST, BEST FIRST. Then the ones NOT earned, CLOSEST first.
      Those two halves want opposite orders and the first version used one for
      both, so the locked half opened on "Win five titles" and "Every season
@@ -8905,10 +9171,44 @@ function renderBadges(){
     return (rank[b.tier] || 9) - (rank[a.tier] || 9);
   });
 
+  /* ONE SHELF A GROUP, in badges.js' order, each keeping the sort above. */
+  var shelves = {}, order = (B.GROUPS || [['all', 'Badges']]);
+  order.forEach(function(gr){
+    var mine = all.filter(function(b){ return (b.g || 'all') === gr[0]; });
+    if (!mine.length) return;
+    var have = mine.filter(function(b){ return b.got; }).length;
+    var d = document.createElement('details');
+    d.className = 'bshelf';
+    d.setAttribute('data-g', gr[0]);
+    if (have > 0) d.open = true;
+    var sm = document.createElement('summary');
+    var t = document.createElement('span');
+    t.textContent = gr[1];
+    var n = document.createElement('span');
+    n.className = 'n' + (have === mine.length ? ' full' : '');
+    n.textContent = have + '/' + mine.length;
+    sm.appendChild(t); sm.appendChild(n);
+    d.appendChild(sm);
+    var inner = document.createElement('div');
+    inner.className = 'bgrid';
+    d.appendChild(inner);
+    grid.appendChild(d);
+    shelves[gr[0]] = inner;
+  });
+  /* A shelf nobody has opened yet still opens on the first one, so a new
+     account does not meet thirteen closed boxes. */
+  if (!grid.querySelector('.bshelf[open]') && grid.firstChild) grid.firstChild.open = true;
+
   for (var i = 0; i < all.length; i++) {
     var b = all[i];
+    var home = shelves[b.g || 'all'];
+    if (!home) continue;
     var el = document.createElement('div');
     el.className = 'bdg ' + (b.got ? 'on ' + b.tier : 'off');
+    var ball = document.createElement('span');
+    ball.className = 'bb';
+    ball.innerHTML = badgeBall(b.got ? b.tier : 'off', 21);
+    el.appendChild(ball);
     var nm = document.createElement('span');
     nm.className = 'bn';
     nm.textContent = b.name;
@@ -8932,7 +9232,7 @@ function renderBadges(){
       n.textContent = b.have + ' of ' + b.need;
       el.appendChild(n);
     }
-    grid.appendChild(el);
+    home.appendChild(el);
   }
 
   /* WHAT IS AND IS NOT RETROACTIVE, said out loud. The career has always
@@ -8963,7 +9263,7 @@ function showProfileTab(which){
   var record = which === 'record';
   $('pf-list').hidden = !record;
   $('pf-badges').hidden = record;
-  $('pf-badgenote').hidden = record;
+  $('pf-badgenote').hidden = record || !badgesOn();
   $('pt-record').className = 'ptab' + (record ? ' on' : '');
   $('pt-badges').className = 'ptab' + (record ? '' : ' on');
   $('pt-record').setAttribute('aria-selected', record ? 'true' : 'false');
@@ -9585,8 +9885,77 @@ document.addEventListener('keydown', function(ev){
  * to reach, and it is deliberately a list of verbs rather than the page's
  * state: the modes have their own saves and never touch `run`, so a Conquest
  * run and a draft in progress can both be alive without either knowing. */
+/* ── the Quick Draft sheet ────────────────────────────────────────────────
+   Four ways to play one game, behind its tile on the front page. Any door
+   inside it that is pressed shuts it, because each one either changes screen
+   (and show() shuts it anyway) or opens a picker of its own that has to be on
+   top of the front page rather than stacked on this. */
+function openQuickDraft(){
+  var sh = $('qd-sheet');
+  if (!sh) return;
+  sh.hidden = false;
+  document.body.classList.add('sheeted');
+  heroStart();
+}
+function closeQuickDraft(){
+  var sh = $('qd-sheet');
+  if (!sh || sh.hidden) return;
+  sh.hidden = true;
+  document.body.classList.remove('sheeted');
+  heroStop();
+}
+(function wireQuickDraft(){
+  var sh = $('qd-sheet');
+  if (!sh) return;
+  $('qd-x').onclick = closeQuickDraft;
+  sh.addEventListener('click', function(ev){
+    if (ev.target === sh) { closeQuickDraft(); return; }
+    var b = ev.target.closest && ev.target.closest('button');
+    if (b && b.id !== 'qd-x' && (b.id === 'b-start' || b.id === 'b-home-board' || b.closest('.modedoor'))) setTimeout(closeQuickDraft, 0);
+  });
+  document.addEventListener('keydown', function(ev){ if (ev.key === 'Escape') closeQuickDraft(); });
+  $('b-home-career').onclick = function(){ openProfile(); };
+  /* The rules card is folded at the foot of this page, so the link opens it
+     rather than leaving for a second page that says the same thing. */
+  $('b-home-howto').onclick = function(){
+    var ht = $('home-howto');
+    if (!ht) return;
+    ht.open = true;
+    ht.scrollIntoView({ block: 'start', behavior: 'smooth' });
+  };
+  $('b-home-boards').onclick = function(){
+    if (window.RTF_MODES_UI) window.RTF_MODES_UI.openBoards(); else openBoard();
+  };
+})();
+
+/* THE OTHER MODES' FEATS. Conquest, Fix History and Six Passes file no row,
+   so what they prove lands here instead: modes-ui.js asks badges.js for the
+   feats and hands them over, and this writes them onto the career the same
+   way recordRun does. What lit is said once, as a toast, and only to an
+   account, because the cabinet is an account's. */
+function recordFeats(f){
+  var BG = window.RTF_BADGES;
+  if (!BG || !f) return [];
+  var before = loadCareer() || blankCareer();
+  var c = loadCareer() || blankCareer();
+  BG.applyFeats(c, f);
+  try { localStorage.setItem(PKEY, JSON.stringify(c)); } catch (e) {}
+  cloudPushCareer(c);
+  var fresh = freshBadges(before, c);
+  /* AFTER whatever the mode says about the moment itself, which is usually a
+     toast of its own fired in the same tick. Said at once, the badge would be
+     written over before anybody read it. */
+  if (fresh.length && badgesOn()) {
+    var line = fresh.length === 1 ? 'Badge: ' + fresh[0].name
+      : fresh.length + ' badges: ' + fresh.map(function(b){ return b.name; }).join(', ');
+    setTimeout(function(){ toast(line); }, 2300);
+  }
+  return fresh;
+}
+
 window.RTF_PAGE = {
   get data(){ return DATA; },
+  feats: recordFeats,
   show: show,
   money: money,
   esc: esc,
@@ -9597,6 +9966,8 @@ window.RTF_PAGE = {
   board: function(){ return B; },
   auth: function(){ return A; },
   openProfile: openProfile,
+  openBoard: function(){ openBoard(); },
+  openQuickDraft: openQuickDraft,
   goHome: function(){ show('s-home'); renderHome(); },
   /* The chip in the top bar, for a screen that is not the draft's. */
   bar: function(text){
@@ -9630,6 +10001,6 @@ boot();
 </script>
 <!-- AFTER the page, because it draws through window.RTF_PAGE, which the script
      above publishes. -->
-<script src="modes-ui.js?v=2"></script>
+<script src="modes-ui.js?v=6"></script>
 </body>
 </html>

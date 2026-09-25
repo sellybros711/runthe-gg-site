@@ -41,6 +41,17 @@ const QUICK = process.argv.includes('--quick');
 
 const CL = require(path.join(HERE, 'cloud.js'));
 const BADGES = require(path.join(HERE, 'badges.js'));
+/* Every feat key the catalog can read, off its own source: the plain keys, and
+   a real member of each collection a prefix names. */
+const FEAT_KEYS = (() => {
+  const src = fs.readFileSync(path.join(HERE, 'badges.js'), 'utf8');
+  const plain = [...src.matchAll(/has\('([a-z0-9.]+)'/g)].map((m) => m[1]);
+  return [...new Set(plain.concat(
+    BADGES.REUNIONS.map((x) => 're:' + x[0]),
+    BADGES.DREAM_TEAM.map((i) => 'id:' + i),
+    ['mvp:1996', 'mvp:2016', 'mvp:1987', 'fmvp:1998', 'fmvp:2014', 'fring:CHI', 'fring:BOS',
+      'ering:eighties', 'aw:roy', 'aw:dpoy', 'aw:smoy', 'aw:mip', 'aw:an1', 'aw:fmvp']))];
+})();
 const R = require(path.join(HERE, 'run.js'));
 
 let pass = 0;
@@ -95,6 +106,10 @@ function fakeCareer(seed) {
     bestLabel: '60-22',
     clubs: pick(Math.floor(r() * 40), 'club'), shapes: pick(Math.floor(r() * 14), 'shape'),
     seasons: pick(Math.floor(r() * 50), '19'), colleges: pick(Math.floor(r() * 25), 'col'),
+    /* The feats the catalog reads, drawn off the real keys so the fuzz lights the
+       feat badges too: a merge that dropped the map would lose them, and a fuzz
+       that never produced one could not see it. */
+    feats: FEAT_KEYS.reduce((o, k) => { if (r() < 0.35) o[k] = 1 + Math.floor(r() * 30); return o; }, {}),
     byClub: { CHI: { runs: Math.floor(r() * 9), rings: Math.floor(r() * 3),
       bestWins: Math.floor(r() * 74), bestLabel: '70-12' } },
     rows,
@@ -435,7 +450,7 @@ async function newPage(browser, boom) {
   await page.route('**/*', serve);
   await page.addInitScript(() => { window.RTF_BOARD_URL = 'http://board.test'; });
   await page.goto('http://local.test/hoops/', { waitUntil: 'domcontentloaded' });
-  await page.waitForSelector('#b-start:not([disabled])', { timeout: 30000 });
+  await page.waitForSelector('#b-start:not([disabled])', { state: 'attached', timeout: 30000 });
   await page.evaluate(() => { const b = document.querySelector('#frg-x'); if (b) b.click(); });
   await page.waitForTimeout(200);
   return { page, ctx };

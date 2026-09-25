@@ -73,7 +73,7 @@ async function homePage(browser, width, height) {
   page.on('pageerror', (e) => boom.push(String(e).slice(0, 200)));
   await page.route('**/*', serve);
   await page.goto('http://local.test/hoops/', { waitUntil: 'domcontentloaded' });
-  await page.waitForSelector('#b-start:not([disabled])', { timeout: 30000 });
+  await page.waitForSelector('#b-today:not([disabled])', { timeout: 30000 });
   /* The first-time guide is a scrim over the whole page and it is correct: it
      is not what this file is about, and it is dismissed the same way a reader
      dismisses it. */
@@ -85,7 +85,7 @@ async function homePage(browser, width, height) {
 const browser = await pw.chromium.launch({ executablePath: CHROME });
 
 // ── 1. the front page fits ──────────────────────────────────────────────────
-section('1. the front page is under three screens, on the widths that bind');
+section('1. the front page is under two screens, on the widths that bind');
 {
   /* 360 is narrower AND shorter, so it is the worst case and not 320: what
      costs screens here is prose reflowing into more lines against a viewport
@@ -98,17 +98,14 @@ section('1. the front page is under three screens, on the widths that bind');
       over: document.documentElement.scrollWidth - document.documentElement.clientWidth,
     }));
     const screens = g.page / h;
-    /* 2.8 SINCE THE PAGE BECAME FOUR GAMES, and that is a move made on
-       purpose rather than to get a run through. The budget was 2.4 while the
-       front page held one mode, and the complaint it answered was an essay
-       nobody asked for: that essay is still folded, and a check that it stays
-       folded is section 2. What grew is Fix History, Six Passes and Conquest,
-       each a door, and the page was compacted first: the league card became
-       one line, the cards and the Quick Draft court were tightened, and the
-       blurbs lost a sentence each. Measured after: 2.30 at 390x844 and 2.67
-       at 360x740. An unfolded essay is about a screen and a half on its own,
-       so this still fails on the regression it exists for. */
-    ok(screens < 2.8, `${w}x${h}: ${screens.toFixed(2)} screens (${g.page}px)`);
+    /* 1.8 SINCE THE FRONT PAGE BECAME ONE GAME IN THREE TIERS. It was 2.8
+       while it held seven doors, and the complaint was that nothing said where
+       to start. Today's two puzzles are one card, Conquest and Quick Draft are
+       two tiles, and the draft's four doors are in a sheet. Measured after:
+       1.33 at 390x844, 1.64 at 360x740 and 1.11 at 1512x950, against 2.30 and
+       2.67 before. The draft's card and doors put back on the page are about
+       700px, so this fails on that. */
+    ok(screens < 1.8, `${w}x${h}: ${screens.toFixed(2)} screens (${g.page}px)`);
     ok(g.over === 0, `${w}x${h}: nothing hangs off the side`);
     ok(boom.length === 0, `${w}x${h}: no page errors (${boom.join(' | ') || 'none'})`);
     await ctx.close();
@@ -238,6 +235,75 @@ section('3. the first run guide names the games you get to call');
        whole of its design and the thing an extra line could cover. */
     ok(g.startLive, `${w}x${h}: today's play is still the element at its own centre`);
     ok(boom.length === 0, `${w}x${h}: no page errors (${boom.join(' | ') || 'none'})`);
+    await ctx.close();
+  }
+}
+
+// ── 4. one game, three tiers ────────────────────────────────────────────────
+section('4. Today, Play, and the draft behind a sheet');
+/*
+ * The redesign is a HIERARCHY, and every way it rots renders perfectly: a door
+ * put back on the page at the weight of the tiles, a second big button saying
+ * what the dock already says, a mode colour back on a primary button. So the
+ * claims are about structure and colour, not about pixels.
+ */
+{
+  for (const [w, h] of [[390, 844], [1440, 900]]) {
+    const { page, ctx, boom } = await homePage(browser, w, h);
+    const g = await page.evaluate(() => {
+      const vis = (el) => !!el && !!el.offsetParent;
+      const bgOf = (el) => getComputedStyle(el).backgroundImage + ' ' + getComputedStyle(el).backgroundColor;
+      const today = document.querySelector('#today');
+      const tiles = [...document.querySelectorAll('.ptiles .ptile')].map((t) => t.id);
+      const bigs = [...document.querySelectorAll('#s-home button.big')].filter(vis).map((b) => b.id);
+      const dockBtn = document.querySelector('#dock #b-today');
+      return {
+        rows: today ? [...today.querySelectorAll('.td-row')].map((r) => r.id) : [],
+        tiles,
+        draftVisible: ['b-start', 'b-daily-go', 'b-franchise-go', 'b-decade-go'].filter((id) => vis(document.getElementById(id))),
+        bigs,
+        docked: !!dockBtn,
+        dockBg: dockBtn ? bgOf(dockBtn) : '',
+        orange: getComputedStyle(document.documentElement).getPropertyValue('--orange').trim(),
+        topOfToday: today ? Math.round(today.getBoundingClientRect().top) : 9999,
+        facts: !!document.querySelector('#home-howto #ls-players'),
+      };
+    });
+    ok(g.rows.join() === 'mc-fix,mc-ps', `${w}: today is one card holding both dailies (${g.rows.join()})`);
+    ok(g.tiles.join() === 'mc-cq,mc-qd', `${w}: play is two tiles, Conquest and Quick Draft (${g.tiles.join()})`);
+    ok(g.draftVisible.length === 0, `${w}: the draft's four doors are not on the page (${g.draftVisible.join() || 'none'})`);
+    ok(g.bigs.length === 0 && g.docked, `${w}: the one big button on the front page is the docked one (${g.bigs.join() || 'none'} on the page)`);
+    /* ONE COLOUR FOR ACTION. The docked button used to take the teal of Fix
+       History and the gold of Six Passes. It is the brand orange whatever it
+       points at, read off the computed style against the token. */
+    ok(/240, 120, 45|f0782d/i.test(g.dockBg), `${w}: the primary button is the brand orange (${g.dockBg.slice(0, 80)})`);
+    ok(g.topOfToday < h * 0.45, `${w}: today's card starts in the top half of the screen (${g.topOfToday}px)`);
+    ok(g.facts, `${w}: the league's numbers moved into How to play rather than off the page`);
+
+    /* THE SHEET: it opens from its tile, the reels spin only while it is open,
+       and pressing a door inside it shuts it. */
+    /* Pressed in the page rather than through Playwright's pointer, so a
+       sheet stuck open over the tile reports as the failure it is instead of
+       a thirty second click timeout that takes the whole file down. */
+    const press = (sel) => page.evaluate((q) => document.querySelector(q).click(), sel);
+    await press('#mc-qd');
+    await page.waitForTimeout(300);
+    const open = await page.evaluate(() => ({
+      shown: !document.querySelector('#qd-sheet').hidden,
+      doors: ['b-start', 'b-daily-go', 'b-franchise-go', 'b-decade-go'].filter((id) => !!document.getElementById(id).offsetParent).length,
+      startInView: (() => { const r = document.querySelector('#b-start').getBoundingClientRect(); return r.bottom <= innerHeight && r.top >= 0; })(),
+    }));
+    ok(open.shown && open.doors === 4, `${w}: the Quick Draft tile opens a sheet with all four ways in (${open.doors})`);
+    ok(open.startInView, `${w}: and Start a draft is on screen without scrolling the sheet`);
+    await page.keyboard.press('Escape');
+    await page.waitForTimeout(150);
+    ok(await page.evaluate(() => document.querySelector('#qd-sheet').hidden), `${w}: Escape shuts it`);
+    await press('#mc-qd');
+    await page.waitForTimeout(200);
+    await press('#b-start');
+    await page.waitForSelector('#s-draft.active', { timeout: 10000 });
+    ok(await page.evaluate(() => document.querySelector('#qd-sheet').hidden), `${w}: starting a draft from it shuts it`);
+    ok(boom.length === 0, `${w}: no page errors (${boom.join(' | ') || 'none'})`);
     await ctx.close();
   }
 }

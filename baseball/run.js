@@ -183,6 +183,10 @@ function openSlots(run) {
 
 function slotForPlayer(run, player) {
   const open = openSlots(run);
+  /* His own position first, because it is the one slot where he is worth his
+     whole WAR (E.primaryAt). Then any other dedicated slot, then DH. */
+  const own = open.find(i => fills(run, player, slotsOf(run)[i]) && E.primaryAt(player, slotsOf(run)[i]));
+  if (own !== undefined) return own;
   // Prefer a dedicated slot first
   const dedicated = open.find(i => fills(run, player, slotsOf(run)[i]) && !isDhOrFlex(slotsOf(run)[i]));
   if (dedicated !== undefined) return dedicated;
@@ -673,12 +677,19 @@ function chemOpts(run) {
   return { suppress, staff: !!run.staff };
 }
 /* The chemistry of a run's roster (or any roster, under that run's rules). */
+/* The roster with each man's slot on him. The double-play combo and the battery
+   read the slot a man is PLAYING, so chemistry has to be asked of a tagged roster
+   or a shortstop drafted and stood at first would still count at short. */
+function placed(run, roster) {
+  const r = roster || run.roster;
+  if (r !== run.roster) return r;
+  return r.map((p, k) => (p._slot ? p : { ...p, _slot: slotsOf(run)[run.slotIndex[k]] }));
+}
 function chemOf(run, roster) {
-  return E.resolveChemistry(roster || run.roster, chemOpts(run));
+  return E.resolveChemistry(placed(run, roster), chemOpts(run));
 }
 function chemByPlayer(run, roster, resolved) {
-  const r = roster || run.roster;
-  return E.chemistryByPlayer(r, resolved, chemOpts(run));
+  return E.chemistryByPlayer(placed(run, roster), resolved, chemOpts(run));
 }
 function chemWorth(run) {
   return E.chemistryWorth(run.roster, run.slotIndex.map(i => slotsOf(run)[i]), chemOpts(run));
@@ -687,8 +698,11 @@ function chemWorth(run) {
 /* Preview chemistry if you were to sign this player. */
 function previewSigning(run, player) {
   const o = chemOpts(run);
-  const before = E.resolveChemistry(run.roster, o);
-  const after = E.resolveChemistry(run.roster.concat([player]), o);
+  const mine = placed(run);
+  const at = slotForPlayer(run, player);
+  const cand = at === null ? player : { ...player, _slot: slotsOf(run)[at] };
+  const before = E.resolveChemistry(mine, o);
+  const after = E.resolveChemistry(mine.concat([cand]), o);
   const seen = new Set(before.links.map(l => l.a + '|' + l.b + '|' + l.type));
   return {
     multiplier: after.multiplier,

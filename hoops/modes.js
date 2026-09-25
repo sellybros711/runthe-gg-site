@@ -23,7 +23,7 @@ const E = (typeof require !== 'undefined')
   ? require('./engine.js')
   : window.RTF_ENGINE;
 
-const MODES_API_VERSION = 2;
+const MODES_API_VERSION = 3;
 const C = E.CONSTANTS;
 
 // ─── shared ────────────────────────────────────────────────────────────────
@@ -197,12 +197,16 @@ function cqCrew(data, seed) {
   return crew;
 }
 
-function cqCreate(data, seed) {
+function cqCreate(data, seed, opts) {
   const s = String(seed);
+  const draft = !!(opts && opts.draft);
   return {
     v: 1,
     seed: s,
-    roster: cqCrew(data, s),        // pkeys, in E.SLOTS order
+    /* pkeys, in E.SLOTS order. A drafted run starts empty and fills one slot
+       a pick; the dealt crew is kept for anything that asks without a draft. */
+    roster: draft ? [] : cqCrew(data, s),
+    drafting: draft,
     ladder: cqLadder(data, s),
     rung: 0,                        // the next challenger is ladder[rung]
     wins: [],                       // one per beaten team: {ts, you, opp, ot, took, dropped}
@@ -212,6 +216,43 @@ function cqCreate(data, seed) {
     tries: 0,                       // games played against the current rung
     lost: null,                     // the game that ended it
   };
+}
+
+/* THE OPENING DRAFT: five picks, one a position, three cards each.
+ *
+ * Every card comes from the SAME TIER the dealt crew is drawn from, three to
+ * six win shares, so choosing your five changes who they are and not how good
+ * the start is. The ladder is tuned to that start, and the steal is still how
+ * a run gets good. A cap draft was the other option and it would have made the
+ * first ten rungs a formality.
+ *
+ * The cards are drawn off the run's seed and the slot, so a reload shows the
+ * same three, and nobody already picked is offered again. */
+const CQ_CARDS = 3;
+function cqDraftCards(state, data) {
+  if (!state.drafting || state.roster.length >= E.SLOTS.length) return [];
+  const k = state.roster.length, slot = E.SLOTS[k];
+  const rng = rngFor(state.seed, 'draft:' + k);
+  const taken = new Set(state.roster.map(key => data.allPlayers[key].i));
+  const pool = data.players.filter(p => p.t !== 'TOT' && !taken.has(p.i)
+    && p.w >= CQ.CREW_MIN_WS && p.w <= CQ.CREW_MAX_WS && E.canFillSlot(p, slot));
+  const out = [], seen = new Set();
+  let guard = 0;
+  while (out.length < CQ_CARDS && guard++ < 400 && pool.length) {
+    const p = pool[Math.floor(rng() * pool.length)];
+    if (seen.has(p.i)) continue;
+    seen.add(p.i);
+    out.push(E.pkey(p));
+  }
+  return out;
+}
+
+function cqDraftPick(state, data, key) {
+  if (!state.drafting) throw new Error('not drafting');
+  if (cqDraftCards(state, data).indexOf(key) < 0) throw new Error('not one of the cards');
+  state.roster.push(key);
+  if (state.roster.length === E.SLOTS.length) state.drafting = false;
+  return state;
 }
 
 /* The roster as rows carrying their slots, which is what the engine reads. */
@@ -246,7 +287,7 @@ const cqIsBoss = (rung) => (rung + 1) % CQ.BOSS_EVERY === 0 || rung === CQ.RUNGS
    a reload in the middle cannot reroll a loss. `result` lets a game played
    on the live board be recorded instead of resolved here. */
 function cqPlay(state, data, result) {
-  if (state.lost || state.pending) throw new Error('not ready to play');
+  if (state.lost || state.pending || state.drafting) throw new Error('not ready to play');
   const pv = cqPreview(state, data);
   /* A REMATCH IS A NEW GAME, so the attempt is in the tag. Without it a
      loss would replay itself identically until the lives ran out. */
@@ -513,73 +554,315 @@ function fiveOf(rows, depth) {
 
 const seasonOfTs = (tsId) => Number(String(tsId).slice(-4));
 
-/* THE ROSTER AFTER A TRADE: the men sent out leave, the men taken in arrive. */
-function fxAfter(data, tsId, outKeys, inKeys) {
-  const out = new Set(outKeys);
-  return fxRoster(data, tsId).filter(p => !out.has(E.pkey(p)))
-    .concat(inKeys.map(k => data.allPlayers[k]));
+// ─── Fix History, a season of trade windows ────────────────────────────────
+
+/* FOUR WINDOWS, NOT ONE TRADE. Asked for in as many words: three or four
+ * chances up to the deadline. The season is played between them, so a trade
+ * made in preseason plays all 82 and one made at the deadline plays the last
+ * 27 and the playoffs. `at` is the number of games already played when the
+ * window opens. The NBA's deadline falls around game 55.
+ *
+ * ONE OFFER PER CLUB, IF ANY. Every club that is calling this window makes
+ * the single best fair offer it can for your package: by MARKET PRICE it
+ * sends no more than it receives, the salaries match both ways, and both
+ * rosters can still field a five. Which clubs call is drawn off the day and
+ * the window, never off the package, so reshaping a package cannot reshuffle
+ * who is on the phone.
+ *
+ * PICKS ARE VALUE WITHOUT SALARY. A club counts a pick at market value and it
+ * carries no salary, so adding one lets you take back more than you send, up
+ * to the 125% the salary rule allows. That is what a pick is for in a real
+ * deadline deal. This game is one season, so a pick is worth nothing to YOU
+ * except what it buys, and you have five to spend across four windows. */
+const FX_WINDOWS = [
+  { at: 0,  name: 'Preseason',      short: 'Preseason' },
+  { at: 20, name: 'Game 20',        short: 'Game 20' },
+  { at: 40, name: 'Game 40',        short: 'Game 40' },
+  { at: 55, name: 'Trade deadline', short: 'Deadline' },
+];
+Object.assign(TRADE, {
+  MAX_OUT: 3,           // your package, players
+  MAX_IN: 3,            // theirs
+  ROSTER_MAX: 15,
+  PICK1: 7,             // market value of a first-round pick, $M
+  PICK2: 2,             // and a second
+  BODY: 1,              // a club's offer pays this per extra man it sends, so it prefers fewer
+  INTEREST: 0.7,        // share of clubs on the phone in a window
+});
+
+/* THE FRANCHISE PLAYER IS NOT FOR SALE. Market price is points, so without
+   this a club gives up its star for anything that adds up to his salary, and
+   the first probe traded Pierce and Garnett for LeBron's 2009 and Booker for
+   Durant's 2021. A club's dearest man is untouchable, which is what a real
+   club's answer to that phone call is. */
+function untouchable(data, tsId) {
+  const r = fxRoster(data, tsId);
+  return r.length ? E.pkey(r[0]) : null;
 }
 
-/* WHETHER A TRADE IS LEGAL. Returns null when it is and a reason when it is
-   not, because the page prints the reason. `withTs` is the partner club's
-   team-season. */
-function fxTradeRefusal(data, tsId, outKeys, withTs, inKeys) {
-  if (!Array.isArray(outKeys) || !outKeys.length) return 'put somebody on the block';
-  if (!Array.isArray(inKeys) || !inKeys.length) return 'take somebody back';
-  if (outKeys.length > TRADE.MAX || inKeys.length > TRADE.MAX) return 'two players a side at most';
+/* A club's picks: its own firsts for the next three drafts and its seconds
+   for the next two. There is no record of who owned what in 1987, so every
+   club owns its own, which is the default the league starts from. */
+function fxPicks(tsId) {
+  const s = seasonOfTs(tsId), out = [];
+  for (let y = 1; y <= 3; y++) out.push('R1Y' + (s + y));
+  for (let y = 1; y <= 2; y++) out.push('R2Y' + (s + y));
+  return out;
+}
+const pickValue = (id) => (/^R1/.test(id) ? TRADE.PICK1 : TRADE.PICK2);
+const pickOk = (id) => /^R[12]Y[0-9]{4}$/.test(String(id));
+
+function fxSeasonCreate(data, day) {
+  const f = fxDaily(data, day);
+  return { v: 2, day: f.day, ts: f.ts, win: 0, trades: [], done: false };
+}
+
+/* Your roster once every trade made at or before window k has gone through. */
+function fxRosterAt(data, st, k) {
+  let rows = fxRoster(data, st.ts);
+  st.trades.filter(t => t.w <= k).forEach((t) => {
+    const out = new Set(t.outs);
+    rows = rows.filter(p => !out.has(E.pkey(p))).concat(t.ins.map(key => data.allPlayers[key]));
+  });
+  return rows;
+}
+function fxPicksLeft(st) {
+  const gone = new Set();
+  st.trades.forEach(t => (t.picks || []).forEach(id => gone.add(id)));
+  return fxPicks(st.ts).filter(id => !gone.has(id));
+}
+function fxLineup(rows) { return fiveOf(rows) || fiveOf(rows, rows.length); }
+
+function clubCalls(st, win, tsId) {
+  return rngFor('fix:' + st.day, 'call:' + win + ':' + tsId)() < TRADE.INTEREST;
+}
+
+/* WHETHER A TRADE IS LEGAL in window `st.win`. null when it is, a reason when
+   it is not. `outKeys` are players on your roster now, `picks` picks you still
+   own, `withTs` a club from the same season, `inKeys` men on its roster. */
+function fxDealRefusal(data, st, outKeys, picks, withTs, inKeys) {
+  picks = picks || [];
+  if (st.done || st.win >= FX_WINDOWS.length) return 'the deadline has passed';
+  if (!Array.isArray(outKeys) || !outKeys.length) return 'put a player on the block';
+  if (outKeys.length > TRADE.MAX_OUT) return 'three players at most';
+  if (!Array.isArray(inKeys) || !inKeys.length || inKeys.length > TRADE.MAX_IN) return 'one to three players back';
   if (new Set(outKeys).size !== outKeys.length || new Set(inKeys).size !== inKeys.length) return 'the same man twice';
-  if (!withTs || withTs === tsId) return 'no partner';
-  if (seasonOfTs(withTs) !== seasonOfTs(tsId)) return 'partners are from the same season';
-  const mine = fxRoster(data, tsId), mineKeys = new Set(mine.map(p => E.pkey(p)));
+  if (!withTs || withTs === st.ts || seasonOfTs(withTs) !== seasonOfTs(st.ts)) return 'partners are other clubs from the same season';
+  const mine = fxRosterAt(data, st, st.win), mineKeys = new Set(mine.map(p => E.pkey(p)));
   if (!outKeys.every(k => mineKeys.has(k))) return 'not on your roster';
-  const theirs = new Set((data.byTeamSeason[withTs] || []).map(p => E.pkey(p)));
-  if (!inKeys.every(k => theirs.has(k))) return 'not on their roster';
-  const ins = inKeys.map(k => data.allPlayers[k]);
+  const left = new Set(fxPicksLeft(st));
+  if (!picks.every(id => left.has(id)) || new Set(picks).size !== picks.length) return 'not a pick you own';
+  const theirs = fxRoster(data, withTs), theirKeys = new Set(theirs.map(p => E.pkey(p)));
+  if (!inKeys.every(k => theirKeys.has(k))) return 'not on their roster';
+  if (inKeys.indexOf(untouchable(data, withTs)) >= 0) return 'their franchise player is not for sale';
   const ids = new Set(mine.map(p => p.i));
+  const ins = inKeys.map(k => data.allPlayers[k]), outs = outKeys.map(k => data.allPlayers[k]);
   if (ins.some(p => ids.has(p.i))) return 'already on your team';
-  if (!salaryOk(sumPrice(outKeys.map(k => data.allPlayers[k])), sumPrice(ins))) return 'the salaries do not match';
-  if (!canCover(fxAfter(data, tsId, outKeys, inKeys))) return 'leaves you nobody to play a position';
+  const outSal = sumPrice(outs), inSal = sumPrice(ins);
+  if (!salaryOk(outSal, inSal)) return 'the salaries do not match';
+  const got = outSal + picks.reduce((s, id) => s + pickValue(id), 0);
+  if (inSal > got + 1e-9) return 'they want more back';
+  const after = mine.filter(p => outKeys.indexOf(E.pkey(p)) < 0).concat(ins);
+  if (after.length > TRADE.ROSTER_MAX) return 'too many players';
+  if (!canCover(after)) return 'leaves you nobody to play a position';
+  const theirAfter = theirs.filter(p => inKeys.indexOf(E.pkey(p)) < 0).concat(outs);
+  if (!canCover(theirAfter)) return 'leaves them nobody to play a position';
   return null;
 }
 
-/* EVERY OFFER THE LEAGUE MAKES FOR A BLOCK: each other club that season, every
-   one or two of its men that pass the salary rule and leave you a five. The
-   list is the whole market rather than a curated few, because finding the deal
-   is the game; the page sorts and filters it. */
-function fxOffers(data, tsId, outKeys) {
-  const season = seasonOfTs(tsId);
+/* THE PHONE: one offer from each club that is calling, for this package. A
+   club sends the dearest package it can that is still fair to it, paying
+   TRADE.BODY a man for every extra body so it prefers to send fewer. */
+function fxCalls(data, st, outKeys, picks) {
+  picks = picks || [];
+  const season = seasonOfTs(st.ts), offers = [];
+  if (!outKeys.length || st.done) return offers;
   const outs = outKeys.map(k => data.allPlayers[k]);
-  if (!outs.length || outs.some(p => !p)) return [];
-  const outSal = sumPrice(outs);
-  const mine = fxRoster(data, tsId), ids = new Set(mine.map(p => p.i));
+  const outSal = sumPrice(outs), got = outSal + picks.reduce((s, id) => s + pickValue(id), 0);
+  const mine = fxRosterAt(data, st, st.win), ids = new Set(mine.map(p => p.i));
   const keep = mine.filter(p => outKeys.indexOf(E.pkey(p)) < 0);
-  const offers = [];
   data.teamSeasons.forEach((t) => {
     const ts = t.team_season_id;
-    if (t.season !== season || ts === tsId) return;
-    const rows = fxRoster(data, ts).filter(p => !ids.has(p.i));
-    const packs = [];
-    rows.forEach((a, i) => {
-      packs.push([a]);
-      rows.slice(i + 1).forEach(b => { if (b.i !== a.i) packs.push([a, b]); });
+    if (t.season !== season || ts === st.ts || !clubCalls(st, st.win, ts) || fxHungUp(st, ts)) return;
+    const star = untouchable(data, ts);
+    const rows = fxRoster(data, ts).filter(p => !ids.has(p.i) && E.pkey(p) !== star);
+    const theirs = fxRoster(data, ts);
+    const cand = [];
+    const n = rows.length;
+    for (let a = 0; a < n; a++) {
+      cand.push([rows[a]]);
+      for (let b = a + 1; b < n; b++) {
+        if (rows[b].i === rows[a].i) continue;
+        cand.push([rows[a], rows[b]]);
+        for (let c = b + 1; c < n; c++) {
+          if (rows[c].i === rows[a].i || rows[c].i === rows[b].i) continue;
+          cand.push([rows[a], rows[b], rows[c]]);
+        }
+      }
+    }
+    const scored = [];
+    cand.forEach((ins) => {
+      const inSal = sumPrice(ins);
+      if (inSal > got + 1e-9 || !salaryOk(outSal, inSal)) return;
+      if (keep.length + ins.length > TRADE.ROSTER_MAX) return;
+      scored.push({ ins, inSal, score: inSal - TRADE.BODY * (ins.length - 1) });
     });
-    packs.forEach((ins) => {
-      if (!salaryOk(outSal, sumPrice(ins))) return;
-      if (!canCover(keep.concat(ins))) return;
-      offers.push({ with: ts, ins: ins.map(p => E.pkey(p)), sal: Math.round(sumPrice(ins) * 10) / 10 });
-    });
+    scored.sort((x, y) => y.score - x.score || x.ins.length - y.ins.length);
+    for (const c of scored) {
+      if (!canCover(keep.concat(c.ins))) continue;
+      const inKeys = c.ins.map(p => E.pkey(p));
+      const theirAfter = theirs.filter(p => inKeys.indexOf(E.pkey(p)) < 0).concat(outs);
+      if (!canCover(theirAfter)) continue;
+      offers.push({ with: ts, ins: inKeys, sal: Math.round(c.inSal * 10) / 10 });
+      break;
+    }
   });
   return offers;
 }
 
-/* THE FIVE THAT PLAYS AFTER A TRADE. Nine deep first, the same as the five
-   as built. A trade can send away the only guard in that nine while a guard
-   sits tenth on the bench, and canCover (which reads the whole roster) calls
-   that legal, so the coach then looks down the whole bench rather than leave
-   a legal trade with no lineup. */
-function fxFiveAfter(data, tsId, outKeys, inKeys) {
-  const rows = fxAfter(data, tsId, outKeys, inKeys);
-  return fiveOf(rows) || fiveOf(rows, rows.length);
+/* NEGOTIATING. An offer is the club's opening position, not the only deal
+ * there is: you can ask for different men (never the franchise player) and
+ * reshape your side, and the club answers each proposal.
+ *
+ * COUNTERING COSTS YOU. A club's offer is fair at market price; a proposal is
+ * you asking for something, so proposal k wants TRADE.PREMIUM * k more value
+ * than it gives. That is what makes a counter a decision rather than a free
+ * menu: taking the offer is cheaper, and the men you actually want cost a
+ * sweetener.
+ *
+ * TWO PROPOSALS A CLUB A WINDOW, then it hangs up for the window. A proposal
+ * that breaks a rule (salaries, a side left without a five, too many men)
+ * gets the reason and costs no patience, because that is the general manager
+ * saying it does not work under the rules rather than saying no.
+ *
+ * WHEN IT IS SHORT, THE CLUB NAMES ITS PRICE: the single cheapest thing from
+ * your side (a pick or a player) that would get it done. Deterministic, like
+ * everything else here, so two people who make the same proposal hear the
+ * same answer. */
+Object.assign(TRADE, { PATIENCE: 2, PREMIUM: 0.05 });
+
+function talksOf(st, withTs) {
+  const w = String(st.win);
+  st.talks = st.talks || {};
+  st.talks[w] = st.talks[w] || {};
+  return st.talks[w][withTs] || { tries: 0, hung: false };
+}
+function fxHungUp(st, withTs) { return !!talksOf(st, withTs).hung; }
+function fxTriesLeft(st, withTs) { const t = talksOf(st, withTs); return t.hung ? 0 : TRADE.PATIENCE - t.tries; }
+
+/* What a club wants back for sending `inKeys`, on proposal `attempt`. */
+function fxAsking(data, inKeys, attempt) {
+  return sumPrice(inKeys.map(k => data.allPlayers[k])) * (1 + TRADE.PREMIUM * attempt);
+}
+
+/* THE RULES WITHOUT THE PRICE: everything fxDealRefusal checks except whether
+   the club gets enough back, which is what a proposal is haggling over. */
+function fxRulesRefusal(data, st, outKeys, picks, withTs, inKeys) {
+  const why = fxDealRefusal(data, st, outKeys, picks, withTs, inKeys);
+  return why === 'they want more back' ? null : why;
+}
+
+function fxPropose(data, st, withTs, outKeys, picks, inKeys) {
+  picks = picks || [];
+  if (fxHungUp(st, withTs)) return { verdict: 'gone', reason: 'they hung up' };
+  const illegal = fxRulesRefusal(data, st, outKeys, picks, withTs, inKeys);
+  if (illegal) return { verdict: 'illegal', reason: illegal };
+  const t = talksOf(st, withTs);
+  const attempt = t.tries + 1;
+  t.tries = attempt;
+  st.talks[String(st.win)][withTs] = t;
+  const need = fxAsking(data, inKeys, attempt);
+  const value = (outs, pk) => sumPrice(outs.map(k => data.allPlayers[k])) + pk.reduce((s, id) => s + pickValue(id), 0);
+  const got = value(outKeys, picks);
+  if (got >= need - 1e-9) return { verdict: 'yes', attempt, need, got };
+  // The cheapest single addition that closes it and keeps every rule.
+  const mine = fxRosterAt(data, st, st.win);
+  const adds = [];
+  fxPicksLeft(st).filter(id => picks.indexOf(id) < 0)
+    .forEach(id => adds.push({ kind: 'pick', key: id, v: pickValue(id), outs: outKeys, picks: picks.concat([id]) }));
+  if (outKeys.length < TRADE.MAX_OUT) {
+    mine.filter(p => outKeys.indexOf(E.pkey(p)) < 0).forEach(p =>
+      adds.push({ kind: 'player', key: E.pkey(p), v: p.p, outs: outKeys.concat([E.pkey(p)]), picks }));
+  }
+  adds.sort((a, b) => a.v - b.v || (a.kind === 'pick' ? -1 : 1));
+  for (const a of adds) {
+    if (value(a.outs, a.picks) < need - 1e-9) continue;
+    if (fxRulesRefusal(data, st, a.outs, a.picks, withTs, inKeys)) continue;
+    return { verdict: 'counter', attempt, need, got, add: { kind: a.kind, key: a.key }, outs: a.outs, picks: a.picks };
+  }
+  if (attempt >= TRADE.PATIENCE) { t.hung = true; st.talks[String(st.win)][withTs] = t; }
+  return { verdict: 'no', attempt, need, got, hung: !!t.hung };
+}
+
+function fxDeal(data, st, outKeys, picks, withTs, inKeys) {
+  const why = fxDealRefusal(data, st, outKeys, picks, withTs, inKeys);
+  if (why) throw new Error(why);
+  st.trades.push({ w: st.win, with: withTs, outs: outKeys.slice(), picks: (picks || []).slice(), ins: inKeys.slice() });
+  return st;
+}
+/* Close the window, with or without a deal. After the last one the season is
+   done. */
+function fxNextWindow(st) {
+  st.win++;
+  if (st.win >= FX_WINDOWS.length) st.done = true;
+  return st;
+}
+
+/* THE LINEUP FOR EACH STRETCH OF THE SEASON: the five the coach starts from
+   the roster as it stood when that window closed. Stretch k runs from window
+   k's game to the next window's, and the last one runs to the end and the
+   playoffs. A window not yet reached keeps the roster you have now. */
+function fxStretches(data, st) {
+  return FX_WINDOWS.map((w, k) => ({
+    from: w.at,
+    to: k + 1 < FX_WINDOWS.length ? FX_WINDOWS[k + 1].at : E.CONSTANTS.REGULAR_SEASON_GAMES,
+    five: fxLineup(fxRosterAt(data, st, k)),
+  }));
+}
+
+/* ONE SEASON PLAYED THROUGH THE STRETCHES. It draws from the rng in exactly
+   the order playRun does (the schedule, then each game, then the playoffs),
+   so a season with no trades is the season as built, draw for draw, and the
+   games before a window never depend on anything decided at it. */
+function fxPlayStretches(data, stretches, rng) {
+  const rate = stretches.map((sg) => {
+    const rows = sg.five.map((p, i) => ({ ...p, _slot: E.SLOTS[i] }));
+    const chem = E.resolveChemistry(rows), fit = E.rosterFit(rows);
+    return { ortg: E.rosterOffense(rows, chem.bonus, fit.bonus), drtg: E.rosterDefense(rows, chem.bonus) };
+  });
+  const schedule = E.generateSchedule(rng, E.CONSTANTS.REGULAR_SEASON_GAMES, data.oppPool);
+  const games = [];
+  let wins = 0;
+  schedule.forEach((game, i) => {
+    let k = 0;
+    while (k + 1 < stretches.length && i >= stretches[k + 1].from) k++;
+    const m = E.gameMeans(rate[k].ortg, rate[k].drtg, game);
+    const r = E.resolveGame(m.pointsFor, m.pointsAgainst, rng, E.homeAdvantage(game));
+    games.push(r.won);
+    if (r.won) wins++;
+  });
+  const last = rate[rate.length - 1];
+  const seed = E.seedFromRecord(wins);
+  const rating = E.overallRating(E.teamWinPct(last.ortg, last.drtg));
+  const playoffs = E.generatePlayoffs(seed, last.ortg, last.drtg, rng, wins, rating);
+  return { games, wins, losses: games.length - wins, playoffs, titleWon: !!(playoffs && playoffs.won) };
+}
+
+/* The odds as the season stands, over seasons [from, to) of the day's seeds.
+   Same seeds as fxOddsStep, so standing pat all season scores the odds as
+   built exactly. */
+function fxSeasonOddsStep(data, st, from, to) {
+  const sg = fxStretches(data, st);
+  let titles = 0, wins = 0;
+  for (let i = from; i < to; i++) {
+    const r = fxPlayStretches(data, sg, rngFor('fix:' + st.day, 'odds:' + i));
+    if (r.titleWon) titles++;
+    wins += r.wins;
+  }
+  return { titles, wins };
+}
+function fxSeasonReplay(data, st) {
+  return fxPlayStretches(data, fxStretches(data, st), rngFor('fix:' + st.day, 'replay'));
 }
 
 /* The one-for-one move the first version filed, kept so a result saved by it
@@ -722,10 +1005,13 @@ const publicAPI = {
   API_VERSION: MODES_API_VERSION,
   strengthOf, bestFive, meansOf, winChance, phi,
   CQ, cqAim, cqLadder, cqChallenger, cqCrew, cqCreate, cqRoster, cqStrength,
+  cqDraftCards, cqDraftPick, CQ_CARDS,
   cqPreview, cqIsBoss, cqPlay, cqSteals, cqSteal, cqStreak, cqOver, cqCleared,
   DAILY_EPOCH, dayNumberOf, dailyOrder,
   FX, TRADE, salaryOk, slotFive, startingFive, fiveOf, canCover, fxCandidates, fxDaily, fxOdds, fxOddsStep, fxReplay,
-  fxRoster, fxAfter, fxTradeRefusal, fxOffers, fxFiveAfter, fxApply,
+  fxRoster, fxApply,
+  FX_WINDOWS, fxPicks, pickValue, pickOk, fxSeasonCreate, fxRosterAt, fxPicksLeft, fxLineup, clubCalls,
+  untouchable, fxDealRefusal, fxCalls, fxPropose, fxAsking, fxRulesRefusal, fxHungUp, fxTriesLeft, fxDeal, fxNextWindow, fxStretches, fxPlayStretches, fxSeasonOddsStep, fxSeasonReplay,
   PS, psGraph, psBfs, psPath, psFamous, psDaily, psShared, psCanPass,
 };
 

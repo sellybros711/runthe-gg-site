@@ -82,7 +82,7 @@ async function draftPage(browser, width, height) {
   page.on('pageerror', (e) => boom.push(String(e).slice(0, 200)));
   await page.route('**/*', serve);
   await page.goto('http://local.test/hoops/', { waitUntil: 'domcontentloaded' });
-  await page.waitForSelector('#b-start:not([disabled])', { timeout: 30000 });
+  await page.waitForSelector('#b-start:not([disabled])', { state: 'attached', timeout: 30000 });
   /* The first-time guide covers the button it points at. */
   await page.evaluate(() => { const b = document.querySelector('#frg-x'); if (b) b.click(); });
   await page.evaluate(() => document.querySelector('#b-start').click());

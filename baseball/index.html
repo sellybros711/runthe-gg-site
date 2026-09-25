@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Run The Diamond: MLB Draft Game | RunThe.GG</title>
-<meta name="description" content="Run The Diamond: Draft an all-time MLB roster from 1901-2025 under a $170M cap, simulate a 162-game season, and chase the World Series. Free, no download.">
+<meta name="description" content="Run The Diamond: Draft an all-time MLB roster from 1901-2025 under a $190M cap, simulate a 162-game season, and chase the World Series. Free, no download.">
 <meta name="theme-color" content="#e8dcc8" id="themeMeta">
 <script>
 /* THEME BOOT, BEFORE FIRST PAINT, and it is the arcade's script rather than a
@@ -26,21 +26,21 @@
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png?v=3">
 <link rel="apple-touch-icon" href="apple-touch-icon.png?v=3">
 <meta property="og:title" content="Run The Diamond: MLB Draft Game">
-<meta property="og:description" content="Draft an all-time MLB roster under a $170M cap. Simulate 162 games. Win the World Series.">
+<meta property="og:description" content="Draft an all-time MLB roster under a $190M cap. Simulate 162 games. Win the World Series.">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="RunThe.GG">
 <meta property="og:url" content="https://runthe.gg/baseball/">
-<meta property="og:image" content="https://runthe.gg/baseball/og.png?v=4">
+<meta property="og:image" content="https://runthe.gg/baseball/og.png?v=5">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="Run The Diamond: draft an all-time MLB roster and chase the perfect season.">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Run The Diamond: MLB Draft Game">
-<meta name="twitter:description" content="Draft an all-time MLB roster under a $170M cap. Simulate 162 games. Win the World Series.">
-<meta name="twitter:image" content="https://runthe.gg/baseball/og.png?v=4">
+<meta name="twitter:description" content="Draft an all-time MLB roster under a $190M cap. Simulate 162 games. Win the World Series.">
+<meta name="twitter:image" content="https://runthe.gg/baseball/og.png?v=5">
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"VideoGame","name":"Run The Diamond","url":"https://runthe.gg/baseball/",
-"description":"Draft an all-time MLB roster from 1901 to 2025 under a $170M salary cap, then simulate a 162-game season and chase the World Series.",
+"description":"Draft an all-time MLB roster from 1901 to 2025 under a $190M salary cap, then simulate a 162-game season and chase the World Series.",
 "genre":["Sports","Simulation","Strategy"],"gamePlatform":["Web browser"],"applicationCategory":"Game",
 "playMode":"SinglePlayer","inLanguage":"en","isAccessibleForFree":true,
 "publisher":{"@type":"Organization","name":"RunThe.GG","url":"https://runthe.gg/"}}
@@ -1135,23 +1135,44 @@ body:has(#s-intro.on) header .lockup{visibility:hidden}
 .ach .ach-d{font-size:11px;color:var(--dim);margin-top:1px}
 .trophy-note{text-align:center;font-size:11px;color:var(--dim-2);margin:10px 0 0}
 
-/* ─── position chooser ─── */
-.pos-sub{font-size:13px;color:var(--dim);margin:0 0 12px}
-.pos-opts{display:flex;flex-direction:column;gap:8px}
-.pos-opt{display:flex;align-items:center;gap:12px;background:var(--panel);border:1px solid rgba(var(--edge),.10);
-  border-radius:11px;padding:12px 14px;cursor:pointer;text-align:left;width:100%;
-  transition:border-color .12s,transform .1s}
-.pos-opt:active{transform:scale(.99)}
-.pos-opt.natural{border-color:rgba(46,125,50,.4);box-shadow:0 0 0 1px rgba(46,125,50,.15)}
-.pos-opt .pchip{flex:0 0 auto;min-width:42px;text-align:center;padding:6px 0;border-radius:8px;
-  color:#fff;font-family:var(--fn);font-size:13px;font-weight:800;letter-spacing:.04em}
-.pos-opt .pmeta{flex:1;min-width:0}
-/* Blocks, or the pair is one run-on line: a span is inline, so the note sat
-   flush against the name ("Second BasePrimary position") and its margin-top
-   was doing nothing. The stack this was drawn as needs saying out loud. */
-.pos-opt .pmeta .pname{display:block;font-family:var(--fn);font-size:14px;font-weight:700;color:var(--ink)}
-.pos-opt .pmeta .pnote{display:block;font-size:11px;color:var(--dim-2);margin-top:1px}
-.pos-opt .pgo{font-size:20px;color:var(--dim-2)}
+/* ─── placing a man who fits more than one slot ───
+   It was a sheet over the page listing the slots as rows. The field already draws
+   every slot, so the choice is made ON it now: the open slots he can take glow gold,
+   everything else steps back, and a tap on a glowing spot signs him there. The same
+   targets light on the staff strip and the lineup card, because the mound is one
+   disc and a starter who can also close has two places on it. */
+.pickbar{position:fixed;left:50%;bottom:calc(14px + env(safe-area-inset-bottom));
+  transform:translateX(-50%);z-index:90;display:flex;align-items:center;gap:12px;
+  width:min(520px,calc(100% - 24px));padding:10px 10px 10px 16px;border-radius:14px;
+  background:var(--ink);color:var(--bg);box-shadow:0 10px 30px -8px rgba(0,0,0,.55);
+  animation:pbin .22s ease-out both}
+.pickbar[hidden]{display:none}
+.pickbar .pb-txt{flex:1;min-width:0;font-size:13.5px;line-height:1.3}
+.pickbar .pb-txt b{font-weight:800}
+.pickbar .btn{flex:0 0 auto;width:auto;color:var(--bg);border-color:rgba(var(--edge),.35)}
+@keyframes pbin{from{transform:translate(-50%,16px);opacity:0}to{transform:translate(-50%,0);opacity:1}}
+#s-draft.picking .field .chip{transition:opacity .18s}
+#s-draft.picking .field .chip:not(.target){opacity:.35;pointer-events:none}
+.chip.target .disc{background:linear-gradient(180deg,#ffe29a,#f0b93c);border:2px solid #fff;color:#3a2a00;
+  animation:tgpulse 1.2s ease-in-out infinite}
+@keyframes tgpulse{0%,100%{box-shadow:0 0 0 3px rgba(240,185,60,.55),0 6px 16px -4px #000}
+  50%{box-shadow:0 0 0 9px rgba(240,185,60,.12),0 6px 16px -4px #000}}
+.chip.target .who{color:#ffe29a;font-style:italic}
+/* The primary spot is the bright pulsing one. Any other spot is still gold, and
+   still pressable, but quieter and carries the cost under it. */
+.chip.target:not(.natural) .disc{background:linear-gradient(180deg,#f3e3b8,#d9bd72);animation:none;
+  box-shadow:0 0 0 2px rgba(240,185,60,.5),0 6px 16px -4px #000}
+.chip.target:not(.natural) .who{color:#f3d9a0;font-style:normal;font-weight:700}
+.chip.target.natural .who{font-weight:700}
+.chip.filled.offpos .disc{box-shadow:0 0 0 2px #e39b2d,0 4px 10px -3px #000}
+.lc-row.offpos .lc-war{color:#c67a10}
+.lc-row.target:not(.natural){opacity:.85;outline-style:dashed}
+.chip.target{z-index:6}
+.sl-arm.target,.lc-row.target{cursor:pointer;opacity:1;outline:2px solid var(--gold);outline-offset:-2px;
+  background:rgba(240,185,60,.14)}
+.lc-row.target .lc-nm{color:var(--ink);font-style:italic}
+.tile.picking{outline:3px solid var(--gold);outline-offset:-3px}
+@media (prefers-reduced-motion:reduce){.chip.target .disc,.pickbar{animation:none}}
 
 /* ─── era picker ─── */
 /* The same track the franchise grid runs on, because they hold the same card. */
@@ -1760,7 +1781,7 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
       <p>Run The Diamond is a free daily-style draft game built on every MLB season from
         1901 to 2025. Each spin lands on a real team-season and you take one player off
         that roster, twelve times, filling a full lineup and pitching staff under a
-        $170M budget.</p>
+        $190M budget.</p>
       <h3>Where the numbers come from</h3>
       <p>Player value is Wins Above Replacement from Baseball-Reference. A player's price
         is set by their WAR that season, so the great years cost what they were worth and
@@ -1826,7 +1847,7 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
   <h2 class="display" style="font-size:27px;margin:0 0 12px">How to play</h2>
   <div style="font-size:14px;line-height:1.6;color:var(--dim)">
     <p><b style="color:var(--ink)">Spin.</b> Each spin draws a random team-season from MLB history (1901-2025). Draft one player from that roster who fits an open spot.</p>
-    <p><b style="color:var(--ink)">Budget.</b> You have $170M for all twelve spots. Prices come from WAR, so you can't afford a star every spin. Spend wisely and don't blow it early. Scarce spots like catcher and closer are worth grabbing when a good one appears.</p>
+    <p><b style="color:var(--ink)">Budget.</b> You have $190M for all twelve spots. Prices come from WAR, so you can't afford a star every spin. Spend wisely and don't blow it early. Scarce spots like catcher and closer are worth grabbing when a good one appears.</p>
     <p><b style="color:var(--ink)">Positions.</b> C, 1B, 2B, 3B, SS, LF, CF, RF, DH, two starters, and a closer. Many players fit several spots, so you choose where to play them and your DH slot is a flex.</p>
     <p><b style="color:var(--ink)">Chemistry.</b> Teammates who share a real bond play better together. Every bond pays <b>both</b> players, and a player wears the color of their strongest one:</p>
     <div class="chemkey" id="how-chem-key"></div>
@@ -1847,7 +1868,7 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
       <span class="eyebrow" id="d-count">Spin 1 of 12</span>
     </div>
     <div class="capline">
-      <div class="amt num" id="c-amt">$170.0M</div>
+      <div class="amt num" id="c-amt">$190.0M</div>
       <div class="chem"><button class="ck ck-btn" id="b-chemkey" title="What counts as chemistry?">Chemistry <i>?</i></button><span class="chemval num zero" id="c-chem">None</span></div>
     </div>
     <div class="bar"><i id="c-bar" style="width:100%"></i></div>
@@ -1872,6 +1893,10 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
       <div class="reelbox team" id="box-t"><div class="strip" id="reel-t"></div><span class="band"></span><span class="wash"></span></div></div>
   </div>
   <div id="d-respin"></div>
+  <div class="pickbar" id="pick-bar" role="status" aria-live="polite" hidden>
+    <span class="pb-txt" id="pick-txt"></span>
+    <button class="btn ghost sm" id="b-pick-x">Cancel</button>
+  </div>
 
   <div id="tabs" class="tabs"></div>
   <div id="sortrow" class="sortrow"></div>
@@ -2034,19 +2059,6 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
 
 </div><!-- .wrap -->
 
-<div class="sheet" id="sheet-pos" aria-hidden="true">
-  <div class="sheet-scrim" data-close-pos></div>
-  <div class="sheet-inner">
-    <div class="sheet-grab"></div>
-    <div class="sheet-hd">
-      <h3 class="sheet-title" id="pos-title">Where to play</h3>
-      <button class="sheet-x" data-close-pos aria-label="Close">&times;</button>
-    </div>
-    <p class="pos-sub" id="pos-sub"></p>
-    <div class="pos-opts" id="pos-opts"></div>
-  </div>
-</div>
-
 <div class="sheet" id="sheet-cut" aria-hidden="true">
   <div class="sheet-scrim"></div>
   <div class="sheet-inner">
@@ -2109,7 +2121,7 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
     <div class="fr-steps">
       <div class="fr-step"><span class="n">1</span><p>Every spin lands on a real team-season.
         Take one player off that roster. Twelve times, filling a lineup and a staff.</p></div>
-      <div class="fr-step"><span class="n">2</span><p>All twelve share a $170M budget.
+      <div class="fr-step"><span class="n">2</span><p>All twelve share a $190M budget.
         That is the puzzle: prices come from how good the season actually was, so the last
         few spots are always the hard ones.</p></div>
       <div class="fr-step"><span class="n">3</span><p>Then 162 games play out against real
@@ -2151,9 +2163,9 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
   </div>
 </div>
 
-<script src="engine.js?v=28"></script>
-<script src="run.js?v=23"></script>
-<script src="achievements.js?v=8"></script>
+<script src="engine.js?v=31"></script>
+<script src="run.js?v=24"></script>
+<script src="achievements.js?v=10"></script>
 <script src="board.js?v=1"></script>
 <script>
 (function(){
@@ -2276,7 +2288,19 @@ const $=id=>document.getElementById(id);
    so nothing in the UI may read E.SLOTS directly once a run is live. */
 const SLOTS_NOW=()=>R.slotsOf(typeof RUN!=='undefined'?RUN:null);
 const esc=s=>{const d=document.createElement('div');d.textContent=s;return d.innerHTML;};
-const show=id=>{document.querySelectorAll('.screen').forEach(s=>s.classList.remove('on'));$(id).classList.add('on');};
+/* The man being placed on the field, or null. Declared up here rather than beside
+   the functions that use it, because show() and the field painters run at boot and a
+   `let` read before its own line throws. See startPick. */
+var PICK=null;
+/* The off-position cost, said the way the engine charges it. Read, never typed,
+   so tuning POSITION_FIT rewrites every label that names it. */
+const OFF_PCT=Math.round(E.POSITION_FIT.OFF*100)+'%';
+const OFF_TAG='-'+OFF_PCT;
+const show=id=>{
+  /* A placing left open on the draft would be a gold board waiting on the next
+     screen's clicks, so any screen change drops it. */
+  if(PICK&&id!=='s-draft'){PICK=null;paintPickBar();}
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('on'));$(id).classList.add('on');};
 const M=v=>'$'+v.toFixed(1)+'M';
 /* ── A NUMBER A PLAYER READS HAS TO BE THE NUMBER THE GAME PLAYS ──
    The cap is written out by hand a dozen times across this page and how-to-play.html,
@@ -2325,10 +2349,11 @@ const reduceMotion=()=>!!(RM&&RM.matches);
    first, which is also the order the legend prints. */
 const CHEM_TYPES=[
   {type:'family',   label:'Family',        color:'#b8860b', note:'Brothers, fathers and sons'},
-  {type:'reunion',  label:'Reunion',       color:'#c0392b', note:'Same club, same season'},
-  {type:'battery',  label:'Battery',       color:'#1a5276', note:'A catcher and his pitcher'},
-  {type:'dp_combo', label:'DP combo',      color:'#6a4c93', note:'A second baseman and his shortstop'},
-  {type:'franchise',label:'Franchise',     color:'#2e7d32', note:'Same club, different seasons'},
+  {type:'reunion',  label:'Reunion',       color:'#c0392b', note:'Drafted from the same club and season'},
+  {type:'battery',  label:'Battery',       color:'#1a5276', note:'A catcher and a pitcher who played together'},
+  {type:'dp_combo', label:'DP combo',      color:'#6a4c93', note:'A second baseman and a shortstop who played together'},
+  {type:'teammates',label:'Teammates',     color:'#1f7a8c', note:'Played together, drafted from other seasons'},
+  {type:'franchise',label:'Franchise',     color:'#2e7d32', note:'Same club, never together'},
   {type:'era',      label:'Same era',      color:'#8a7e6e', note:'Contemporaries, a faint bond'},
 ];
 const CHEM_BY_TYPE={};for(const c of CHEM_TYPES)CHEM_BY_TYPE[c.type]=c;
@@ -2718,12 +2743,14 @@ function drawLineupCard(el){
     (left?left+' to fill':'Set')+'</span></div>'+
     slots.map((slot,i)=>{
       const p=bySlot[i];
-      return '<div class="lc-row'+(p?'':' open')+(i===firstArm?' arm1':'')+'">'+
+      const ch=PICK&&PICK.choices.find(c=>c.slotIdx===i);
+      const off=p&&!E.primaryAt(p,slot);
+      return '<div class="lc-row'+(p?'':' open')+(i===firstArm?' arm1':'')+(ch?' target':'')+(ch&&ch.natural?' natural':'')+(off?' offpos':'')+'" data-i="'+i+'">'+
         '<span class="lc-pos" style="'+posPaint(slot)+'">'+esc(slot)+'</span>'+
         (p?'<span class="lc-nm">'+esc(p.n)+'</span>'+
             '<span class="lc-yr">'+tcPlate(p.t,p.s)+' '+p.s+'</span>'+
-            '<span class="lc-war">'+warHtml(p.w)+'</span>'
-          :'<span class="lc-nm">Open</span>')+
+            '<span class="lc-war"'+(off?' title="Off his position. '+OFF_TAG+' of his WAR."':'')+'>'+warHtml(E.slotWar(p,slot))+'</span>'
+          :'<span class="lc-nm">'+(ch?(ch.natural?'\u2605 His position':ch.off?OFF_TAG+' here':'Open'):'Open')+'</span>')+
         '</div>';
     }).join('');
 }
@@ -2742,7 +2769,8 @@ function drawStaffLine(el){
   RUN.roster.forEach((p,i)=>{bySlot[RUN.slotIndex[i]]=p;});
   el.innerHTML=PITCHER_SLOTS.map(i=>{
     const p=bySlot[i];
-    return '<div class="sl-arm'+(p?' filled':'')+'">'+
+    const ch=PICK&&PICK.choices.find(c=>c.slotIdx===i);
+    return '<div class="sl-arm'+(p?' filled':'')+(ch?' target':'')+(ch&&ch.natural?' natural':'')+'" data-i="'+i+'">'+
       '<span class="sl-pos" style="'+posPaint(slots[i])+'">'+esc(slots[i])+'</span>'+
       (p?'<span class="sl-nm">'+esc(lastName(p.n))+'</span>'+
           '<span class="sl-yr">'+tcPlate(p.t,p.s)+' '+p.s+'</span>'
@@ -2794,7 +2822,13 @@ function drawField(el,live){
 
   const pitchersFilled=PITCHER_SLOTS.filter(i=>bySlot[i]);
   const pitchersOpen=PITCHER_SLOTS.filter(i=>!bySlot[i]);
-  const activePitcher=pitchersOpen.length>0?pitchersOpen[0]:
+  /* While a man is being placed, the mound shows the arm slot he could take, so a
+     starter lands on a disc reading SP and a closer on one reading CP. */
+  const targets=el.id==='field'&&PICK?new Set(PICK.choices.map(c=>c.slotIdx)):null;
+  const natural=el.id==='field'&&PICK?new Set(PICK.choices.filter(c=>c.natural).map(c=>c.slotIdx)):null;
+  const offAt=el.id==='field'&&PICK?new Set(PICK.choices.filter(c=>c.off).map(c=>c.slotIdx)):new Set();
+  const pitchTarget=targets?PITCHER_SLOTS.find(i=>targets.has(i)):undefined;
+  const activePitcher=pitchTarget!=null?pitchTarget:pitchersOpen.length>0?pitchersOpen[0]:
     pitchersFilled.length>0?pitchersFilled[pitchersFilled.length-1]:9;
 
   st.chips.forEach((c,i)=>{
@@ -2804,12 +2838,17 @@ function drawField(el,live){
     if(isPitcher) c.style.display='';
     const wasFilled=c.classList.contains('filled');
     const justFilled=!!p&&!wasFilled;
-    c.className='chip '+(p?'filled':'empty')+((live&&!p&&openCount===1)?' now':'')+(justFilled?' pop':'');
+    const tgt=!!targets&&targets.has(i);
+    c.className='chip '+(p?'filled':'empty')+((live&&!p&&openCount===1&&!targets)?' now':'')+
+      (justFilled?' pop':'')+(tgt?' target':'')+(tgt&&natural.has(i)?' natural':'')+
+      (p&&!E.primaryAt(p,E.SLOTS[i])?' offpos':'');
     const disc=c.querySelector('.disc');
     const pitcherLabel=isPitcher&&!p?(i===11?'CP':'SP'):E.SLOTS[i];
     disc.querySelector('.dl').textContent=isPitcher&&!p?pitcherLabel:E.SLOTS[i];
     disc.style.cssText=p?posPaint(E.SLOTS[i]):'';
-    c.querySelector('.who').textContent=p?lastName(p.n):'';
+    c.querySelector('.who').textContent=p?lastName(p.n):
+      tgt?(natural.has(i)?'\u2605 '+lastName(PICK.p.n):offAt.has(i)?OFF_TAG:lastName(PICK.p.n)+'?'):'';
+    c.title=p&&!E.primaryAt(p,E.SLOTS[i])?'Off his position. '+OFF_TAG+' of his WAR.':'';
     c.querySelector('.yr').innerHTML=p?tcPlate(p.t,p.s)+' '+p.s:'';
     const pip=c.querySelector('.pip');
     const ce=p?chemBySlot[i]:null;
@@ -3522,7 +3561,6 @@ $('b-share').addEventListener('click',shareResult);
 $('b-trophy').addEventListener('click',openTrophy);
 $('b-trophy-2').addEventListener('click',openTrophy);
 document.querySelectorAll('[data-close]').forEach(el=>el.addEventListener('click',()=>closeSheet('sheet-trophy')));
-document.querySelectorAll('[data-close-pos]').forEach(el=>el.addEventListener('click',()=>closeSheet('sheet-pos')));
 document.querySelectorAll('[data-close-chem]').forEach(el=>el.addEventListener('click',()=>closeSheet('sheet-chem')));
 $('b-chemkey').addEventListener('click',openChemKey);
 document.addEventListener('visibilitychange',heroSync);
@@ -3755,6 +3793,7 @@ function paintTop(){
 }
 
 function nextSpin(){
+  PICK=null;paintPickBar();
   paintTop();drawField($('field'),true);drawStaffLine($('field-staff'));drawLineupCard($('field-card'));watchFold();
   $('opts').innerHTML='';$('tabs').innerHTML='';$('d-respin').innerHTML='';
   activeTab='ALL';
@@ -3849,9 +3888,11 @@ function paintOpts(draw){
          the rotation until it is full, a reliever takes the bullpen, and the slots
          re-rank themselves best first as the board fills. */
       if(RUN.staff){ signPlayer(p); return; }
+      /* Pressing the tile that is being placed puts it back. */
+      if(PICK&&PICK.key===key){ endPick(); return; }
       const choices=signChoices(p);
-      if(choices.length<=1){ signPlayer(p, choices.length?choices[0].slotIdx:undefined); }
-      else openPosChooser(p, choices);
+      if(choices.length<=1){ endPick(true); signPlayer(p, choices.length?choices[0].slotIdx:undefined); }
+      else startPick(p, choices, key);
     });
   });
 
@@ -3925,6 +3966,7 @@ function paintRespins(){
   if(check.ok){
     el.innerHTML='<div class="respin-row"><button class="btn ghost sm" id="b-respin">Re-spin ('+M(check.cost)+')</button></div>';
     $('b-respin').addEventListener('click',()=>{
+      PICK=null;paintPickBar();
       R.respin(RUN,DATA);
       const draw=RUN.currentDraw;
       buildDrawExtras(draw);
@@ -3958,8 +4000,11 @@ function openJobs(p){
     const name=SLOTS_NOW()[i];const base=slotBase(name);
     const group=E.slotGroup(name,staff);
     if(seen.has(group))continue;seen.add(group);
-    const natural=(p.pp===name)||(p.pp&&base===p.pp)||(name==='CL'&&p.r==='p');
-    out.push({slotIdx:i,name,base,group,natural});
+    /* E.primaryAt is the rule the season rates him by, so the gold star and the
+       number agree: his own position is his whole WAR, anywhere else costs OFF. */
+    const off=!E.primaryAt(p,name);
+    const natural=p.r==='p'?((p.pp===name)||(p.pp&&base===p.pp)||name==='CL'):!off;
+    out.push({slotIdx:i,name,base,group,natural,off});
   }
   return out;
 }
@@ -3975,48 +4020,69 @@ function signChoices(p){
 }
 function afterSign(){ if(RUN.phase===R.PHASES.SEASON) showSquad(); else nextSpin(); }
 function signPlayer(p,slotIdx){
+  PICK=null;paintPickBar();
   try{R.sign(RUN,p,slotIdx);}catch(e){console.error(e);return;}
-  closeSheet('sheet-pos');
   afterSign();
 }
-function openPosChooser(p,choices){
-  $('pos-title').textContent=lastName(p.n);
-  $('pos-sub').textContent='Where do you want to play '+p.n+'? ('+seasonText(p)+')';
-  $('pos-opts').innerHTML=choices.map((ch)=>{
-    return '<button class="pos-opt'+(ch.natural?' natural':'')+'" data-slot="'+ch.slotIdx+'">'+
-      '<span class="pchip" style="'+posPaint(slotBase(ch.name))+'">'+esc(ch.name)+'</span>'+
-      '<span class="pmeta"><span class="pname">'+esc(posLabel(ch.name))+'</span>'+
-      '<span class="pnote">'+esc(slotNote(p,ch))+'</span></span>'+
-      '<span class="pgo">&rsaquo;</span></button>';
-  }).join('');
-  $('pos-opts').querySelectorAll('.pos-opt').forEach(btn=>{
-    btn.addEventListener('click',()=>signPlayer(p,parseInt(btn.dataset.slot,10)));
-  });
-  openSheet('sheet-pos');
+/* ─── placing him on the field ───
+   A man who fits more than one open slot is placed by tapping the field, which is
+   the picture of those slots the page already draws. PICK is the one piece of state:
+   the man, the jobs he can take (signChoices, the same list the tile prints) and the
+   tile he came from. Everything that draws a slot reads it, so the diamond, the staff
+   strip and the lineup card cannot offer three different sets. */
+function startPick(p,choices,key){
+  PICK={p,choices,key};
+  repaintPick();
+  /* On a phone the field is above the board, so the man tapped is a scroll away
+     from where he is going. Only when the field is not already whole on screen. */
+  const f=$('field');
+  if(f){
+    const r=f.getBoundingClientRect();
+    if(r.top<0||r.bottom>innerHeight-70)
+      f.scrollIntoView({block:'center',behavior:matchMedia('(prefers-reduced-motion:reduce)').matches?'auto':'smooth'});
+  }
 }
-/* Every slot either game plays, by its BASE, so a five man rotation and a six man
-   pen are covered without listing eleven names. SU is a bullpen job wearing its own
-   word, which is why it is spelled out rather than left to fall through to itself.  */
-function posLabel(name){
-  if(name==='SU')return 'Reliever';
-  const L={C:'Catcher','1B':'First Base','2B':'Second Base','3B':'Third Base',SS:'Shortstop',
-    LF:'Left Field',CF:'Center Field',RF:'Right Field',DH:'Designated Hitter',
-    SP:'Starting Pitcher',RP:'Reliever',CL:'Closer'};
-  return L[slotBase(name)]||name;
+function endPick(quiet){
+  if(!PICK)return;
+  const key=PICK.key;PICK=null;
+  if(quiet){paintPickBar();return;}
+  repaintPick();
+  const t=[...document.querySelectorAll('#opts .tile')].find(x=>x.dataset.key===key);
+  if(t){const r=t.getBoundingClientRect();if(r.top<0||r.bottom>innerHeight)t.scrollIntoView({block:'center'});}
 }
-/* What taking this slot would MEAN, which is the half the name cannot say. A
-   pitcher offered a relief job used to be told "Pitcher", under a heading already
-   reading Reliever: the same fact twice, and no answer to the question the sheet
-   is asking. */
-function slotNote(p,ch){
-  if(ch.base==='DH')return 'Designated hitter';
-  if(ch.natural)return 'Primary position';
-  if(ch.group==='ROTATION')return 'In the rotation';
-  if(ch.group==='BULLPEN')return 'Out of the bullpen';
-  if(ch.name==='CL')return 'Closing games';
-  return 'Also played here';
+function repaintPick(){
+  if(!RUN)return;
+  drawField($('field'),true);drawStaffLine($('field-staff'));drawLineupCard($('field-card'));
+  paintPickBar();
 }
-
+function paintPickBar(){
+  const bar=$('pick-bar'),scr=$('s-draft');
+  if(scr)scr.classList.toggle('picking',!!PICK);
+  document.querySelectorAll('#opts .tile').forEach(t=>t.classList.toggle('picking',!!PICK&&t.dataset.key===PICK.key));
+  if(!bar)return;
+  if(!PICK){bar.hidden=true;return;}
+  const own=PICK.choices.filter(c=>c.natural).map(c=>c.name);
+  const others=PICK.choices.filter(c=>c.off).length;
+  let say='Where does <b>'+esc(PICK.p.n)+'</b> play?';
+  if(PICK.p.r==='p')say+=' Tap a gold spot.';
+  else if(own.length&&others)say+=' \u2605 '+own.join(', ')+(own.length>1?' are his spots.':' is his spot.')+' Anywhere else costs '+OFF_PCT+'.';
+  else if(own.length)say+=' Tap a gold spot.';
+  else say+=' His spot is taken. Here he costs '+OFF_PCT+'.';
+  $('pick-txt').innerHTML=say;
+  bar.hidden=false;
+}
+function pickAt(e){
+  if(!PICK)return;
+  const hit=e.target.closest('[data-i]');
+  if(!hit)return;
+  const i=parseInt(hit.dataset.i,10);
+  if(!PICK.choices.some(c=>c.slotIdx===i))return;
+  e.stopPropagation();
+  signPlayer(PICK.p,i);
+}
+['field','field-staff','field-card'].forEach(id=>{const el=$(id);if(el)el.addEventListener('click',pickAt);});
+$('b-pick-x').addEventListener('click',()=>endPick());
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&PICK)endPick();});
 /* ─── squad review (no pre-play odds) ─── */
 /* The coach's take for a staff. The main one reads a lineup, a batting order and a
    bench, none of which exist here. */

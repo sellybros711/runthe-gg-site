@@ -9800,6 +9800,31 @@ pipeline a drafted five runs through, every game is `resolveGame` and every
 season is `playRun`. The modes decide who plays, never how a game goes, so the
 calibration the draft is balanced on carries over untouched.
 
+#### Conquest: you draft your five, from the tier the ladder is tuned to
+
+Asked for, and option A of two. Five picks, one a position, **three cards each,
+every card from the dealt crew's own tier** (3 to 6 win shares). So choosing
+changes who your five are and not how good the start is. The other option was
+a draft under a small cap, which would have made the first ten rungs a
+formality and meant retuning the ladder.
+
+Measured over 200 runs a strategy, with the best steal after each win:
+
+| how you pick | start rating | median wins | clears |
+|---|---|---|---|
+| dealt crew | 24.5 | 7 | 5.5% |
+| first card every time | 24.3 | 7 | 5.5% |
+| most points | 29.1 | 8 | 5.5% |
+| most win shares (never shown) | 34.5 | 9 | 8.5% |
+
+So reading past points is worth about two wins and three points of clear rate,
+which is skill paying without breaking the ladder. `check-modes` holds the best
+possible draft inside the same band; with the tier filter removed it reads a
+median of 16 and 25% clears. **Just deal me five** keeps the old start for
+anybody who wants to skip the draft. The cards show the stat line and minutes,
+never win shares, and a reload shows the same three (`cqDraftCards` draws off
+the run's seed and the slot).
+
 #### Conquest: one loss and out could not carry it
 
 The first version was one loss and the run is over, and a single NBA game is too
@@ -9853,56 +9878,125 @@ to the same answer, and the guard says so.
 positions.** The best five by win shares alone fit PG, SG, SF, PF and C on only
 533 of 1,433 team-seasons, because plenty of great teams had three bigs.
 
-#### Fix History is a TRADE, with a club from the same season
+#### Fix History is a season of trade windows
 
 ```
-node hoops/check-modes.mjs            section 4 holds the market, section 7 walks it
-psql -d hoops_trade -f supabase/117_hoops_trade.sql
-psql -d hoops_trade -f supabase/test/hoops_trade_test.sql
+node hoops/check-modes.mjs            section 4 holds the windows, section 7 walks one
+psql -d hoops_season -f supabase/118_hoops_fix_season.sql
+psql -d hoops_season -f supabase/test/hoops_fix_season_test.sql
 ```
 
-The first version traded one starter for anybody since 1974 who cost no more.
-Asked for instead: a trade finder like The Perfect Season's Trade Machine, only
-with teams from that year, a realistic rebuild, and the bench tradable. So:
+Asked for, in two rounds. First a trade finder like The Perfect Season's Trade
+Machine, same season only, bench included. Then: one trade was too few, it
+should be three or four windows up to the deadline, each club should make one
+offer at most for a package, a package can be three players, and the team's
+draft picks can move too.
 
-- **One or two of your men on the block**, starters or bench, and `fxOffers` is
-  every one or two men on every other club THAT SEASON who pass the rule.
-- **The salary rule is the NBA's shape**: each side takes back no more than 125%
-  of what it sends, plus $0.1M. `salaryOk` is the one copy and the page's "offers
-  take back $X to $Y" line is the same arithmetic said as money.
-- **The finder is the whole market**, not a curated few, because finding the deal
-  is the game. On the 2021 Suns a star on the block draws about 420 offers from
-  29 clubs. The page sorts (points by default, which is the market's own trap)
-  and filters by spot, club and name. The guard rebuilds the market by brute
-  force and asserts the two lists are the same set.
-- **The bench is currency.** The engine plays five men, so a bench man matters as
-  salary that makes a bigger deal work, or as a man better than a starter.
+| window | opens after | a trade made here plays |
+|---|---|---|
+| Preseason | game 0 | all 82 and the playoffs |
+| Game 20 | 20 | games 21 to 82 and the playoffs |
+| Game 40 | 40 | 41 to 82 |
+| Trade deadline | 55 | the last 27 and the playoffs |
 
-**The coach starts the best five after the deal, and nobody sees it first.** The
-lineup is chosen by win shares, so previewing it for each offer would print the
-answer key a tap at a time. It appears once the trade is made.
+One trade or stand pat in each window, then the season plays to the next.
+
+**One offer per club, and it is the club's best FAIR one.** A club counts value
+at MARKET PRICE (points), so it sends the dearest package it can that is still
+no more than it receives. Salaries also match both ways (125% plus $0.1M), both
+rosters must still field a five, and each extra body it sends costs it
+`TRADE.BODY` so it prefers to send fewer. `check-modes` rebuilds one club's
+offer by brute force and asserts nothing legal beats it.
+
+**Picks are value without salary.** Three firsts at $7M and two seconds at $2M.
+Adding one lets you take back more than you send, up to what the salary rule
+allows, which is what a pick is for in a real deadline deal. There is no record
+of who owned what in 1987, so every club owns its own.
+
+**Who calls is drawn off the day and the window, never the package**, at 70% of
+clubs. Reshaping a package cannot reshuffle who is on the phone.
+
+**THE FRANCHISE PLAYER IS NOT FOR SALE.** Market price is points, so without it
+a club gave up its star for anything that added up to his salary: the first
+probe traded Pierce and Garnett for LeBron's 2009 and Booker for Durant's 2021,
+and a perfect-knowledge bot took the 2009 Celtics from 22% to 84%. A club's
+dearest man is untouchable.
+
+**The balance**, bots over five days with the star rule in:
+
+| day | as built | trading for points | trading for win shares (never shown) |
+|---|---|---|---|
+| 2011 Bulls | 8% | 0% | 58% |
+| 2021 Suns | 5% | 0% | 31% |
+| 2009 Celtics | 21% | 12% | 62% |
+| 2019 Bucks | 14% | 1% | 56% |
+| 2025 Nuggets | 11% | 0% | 48% |
+
+Chasing points makes every team worse, which is the trap, and reading value is
+the puzzle. The full `check-modes` run asserts both halves on three days.
+
+**The season is played in stretches.** `fxPlayStretches` draws from the rng in
+exactly playRun's order (the schedule, each game, the playoffs), with each
+stretch's games rated off the five who started then. So standing pat all
+season is the team as built, season for season (asserted), and **the games
+before a window never depend on what is done at it** (asserted), which is what
+lets the screen show a record between windows and keep it. The score is still
+the title odds over the day's 1,000 seeds; the one replay is the story.
+
+#### And you can negotiate
+
+Asked for next: counter and negotiate with the clubs. An offer is the club's
+opening position. **Counter** opens a table: ask for any of their men (never the
+franchise player, drawn locked) and reshape your side, then propose.
+`fxPropose` answers, deterministically, so two people who make the same
+proposal hear the same answer.
+
+| answer | when | what it costs |
+|---|---|---|
+| yes | you send at least what they give plus the premium | a proposal |
+| counter | you are short, and ONE cheapest thing on your side closes it | a proposal; the club names it |
+| no | short, and nothing single closes it | a proposal; the second no hangs up |
+| illegal | a rule breaks (salaries, a five, too many men) | nothing: the reason is shown |
+
+**Countering costs you.** Proposal k wants `TRADE.PREMIUM * k` (5%, then 10%)
+more market value than the club gives. That is what keeps it a decision rather
+than a free menu: the offer is cheaper, and the men you actually want cost a
+sweetener. Measured with a bot that targets the most valuable players by true
+value and pays the premium, the same five days land 26% to 62%, the range the
+offer-taking bot reached, so negotiating is a way to get the man you want and
+not a way around the balance.
+
+**Two proposals a club a window, then it hangs up** and stops calling until the
+next window, which starts a fresh conversation (`st.talks` is keyed by window
+and saved with the season). The server never sees any of this: what is filed is
+the trade that came out of it, which 118 already checks.
+
+**The hang-up test needed a fixture that is legal, short and cannot be closed**,
+and the first attempt was illegal, which (correctly) costs no patience, so the
+club never hung up. It searches for three men out (no room for a fourth) short
+by more than the dearest pick. Both the hang-up and the cheapest counter were
+proved by mutation.
+
+**Who starts after a trade is not shown before it is made.** The lineup is
+chosen by win shares, so previewing it per offer would print the answer key.
 
 **A LEGAL TRADE COULD HAVE NO LINEUP, and it shipped for one run of the walk.**
 `canCover` (a bipartite match over the whole roster) decides legality, and the
-lineup was `fiveOf` over the top NINE by win shares. Trade away the only guard in
-that nine and a guard sitting tenth makes the trade legal while the nine has no
-five, so the page hung on "Replaying history" for ever. `fxFiveAfter` looks down
-the whole bench when nine is not enough. The daily five stays nine deep, because
-widening it would move the calendar of teams. Section 4 asserts every star offer
-over twelve days has a lineup: 2,051 of 8,579 did not before the fix.
+lineup was `fiveOf` over the top NINE. Trade away the only guard in that nine
+while a guard sits tenth and the trade is legal with no five, so the page hung
+on "Replaying history" for ever. `fxLineup` looks down the whole bench when
+nine is not enough. The daily five stays nine deep, because widening it would
+move the calendar of teams.
 
-**Offers show the stat line and minutes, never win shares.** The market prices
-points, value is win shares, and knowing who was worth more than he was paid is
-the puzzle. Your OWN roster shows win shares, because you know your own team.
-Minutes are there because 4.3 rebounds in fourteen minutes and in thirty are
-different players.
+**Offers show the stat line and minutes, never win shares.** Your own roster
+shows win shares, because you know your own team.
 
-On the 2021 Suns the base odds are 5% and the best trade found by a quick search
-is about 27%: Booker and Crowder to Milwaukee for Giannis and Pat Connaughton.
-
-**A result saved by the first version still draws.** `fxNorm` reads the old
-`slot, out, inKey` shape as a one-for-one, and it files through 116's
-`rtf_submit_fix` rather than the new submit. The walk plants one and asserts both.
+**THREE SHAPES OF RESULT ARE READ AS ONE** by `fxNorm`: the first version's
+one-for-one (`slot, out, inKey`), the second's single trade (`with, outs, ins`)
+and this season (`trades`). Each files through the submit it was made for:
+116's `rtf_submit_fix`, 117's `rtf_submit_trade`, and 118's
+`rtf_submit_fix_season`. A season in progress lives under `rtf.fix.run.v2`, so a
+reload lands in the same window with the same trades.
 
 #### Six Passes: the ends are All-Stars, and the gap sets the par
 
@@ -9945,6 +10039,16 @@ par, and one account files one of each daily with the first standing.
 on the device, and every place line and leaderboard is empty, which looks like a
 network that is down. Row 26 of `launch_preflight.sql` asks for it.
 
+**Deploy 118 by hand as well**, row 28 of the preflight. A season of trades
+files through `rtf_submit_fix_season` and its `fix_trades` column, so without it
+every window plays and nothing reaches the board. The board's read drops a
+missing column group and asks again (`PLAY_OPTIONAL` in board.js), so no
+migration missing takes the other boards down with it. The server checks every
+shape it can (four trades at most, one a window, a man sent out was on the team
+or taken back earlier, a pick is one of the five and never sent twice, the
+headline was taken back) and cannot check the salary rule, the value rule or
+the odds.
+
 **Deploy 117 by hand too.** A trade files through `rtf_submit_trade`, which 116
 does not have, so without 117 every trade plays and nothing reaches the board.
 It is row 27, its own row, because 116 answering yes is exactly the state it
@@ -9962,20 +10066,67 @@ WHERE ran once per row scanned and filed a play each time; a rename checked in
 the statement that made it read the snapshot from before it. Both are two
 statements now.
 
-#### The front page, and the button the dock carries
+#### The front page is one game in three tiers
 
-The dock carries **today's play**, `#b-today`: whichever daily is still open,
-then Conquest. The first-time guide points at it and names all four modes;
-`check-home` holds both. The draft's own button, `#b-start`, lives in the Quick
-Draft card now, with the court and reels that used to open the page, because
-they are a picture of that mode and nothing else.
+```
+node hoops/check-home.mjs     section 4 holds the hierarchy, section 1 the length
+```
 
-**The league card became one line under the tagline**, holding the same ids and
-the loading bar, which goes when the data is in. **`check-home`'s budget moved
-from 2.4 to 2.8 screens, on purpose.** The page holds four games where it held
-one, and it was compacted first: 2.30 screens at 390x844 and 2.67 at 360x740
-after. An unfolded essay is about a screen and a half, so it still fails on the
-regression it exists for.
+Asked for: make it feel like one game, with a clear direction and hierarchy,
+and move what does not need to be on the page into sheets. It was seven doors
+at one weight in four colours (Fix History, Six Passes, Conquest, a Quick Draft
+card with its own court, then Daily Draft, One Franchise and Decades), with the
+dock repeating the first card's button.
+
+| tier | what | where |
+|---|---|---|
+| Today | both dailies as one checklist card, "0 of 2" and the streak | `todayHtml()` in modes-ui.js |
+| Play | Conquest and Quick Draft as two tiles | `playTilesHtml()` |
+| Quiet | Leaderboards, Career, How to play as links | `#home-quiet` in index.html |
+
+**The dock carries the one primary button**, `#b-today`, pointed at whichever
+daily is still open and then Conquest. The Today rows are rows, not two more big
+buttons. **It is the brand orange whatever it points at.** It used to take Fix
+History's teal and Six Passes' gold, and four accents on one screen is what made
+the page read as four apps. A mode's colour is on its icon and nowhere else.
+
+**Quick Draft's four ways in live in a sheet**, `#qd-sheet`, with the court and
+reels, which spin only while it is open (`openQuickDraft` starts the hero,
+`closeQuickDraft` stops it, and `show()` shuts the sheet on any change of
+screen). Every id the draft's code and the checkers reach for (`#b-start`,
+`#b-daily-go`, `#b-franchise-go`, `#b-decade-go`, `#home-career`) is the same
+element, moved, so nothing downstream changed. **A checker waiting on
+`#b-start` needs `state: 'attached'` now**, because Playwright's default wait is
+for a VISIBLE element and a shut sheet is not one.
+
+`.qd-sheet[hidden]` carries its own `display:none`, because the sheet sets
+`display:flex`, which is the football file's `[hidden]` lesson arriving here.
+Removed, the sheet sits open over the whole front page and section 4 fails on
+five claims.
+
+**The league's numbers moved into How to play** (`.lgfacts`), because a
+returning player read "16,460 player-seasons" before the one thing they came
+for. `#home-era` moved with them and verify's check still reads it.
+
+**Leaderboards is one sheet with a chip per mode.** The three new modes draw in
+it; the Quick Draft chip hands over to the draft's own board sheet rather than
+drawing a thinner copy, because that board has its own competitions and axes.
+
+**`check-home`'s budget came down from 2.8 to 1.8 screens.** Measured after:
+1.33 at 390x844, 1.64 at 360x740 and 1.11 at 1512x950, against 2.30 and 2.67
+before. The draft's card and doors back on the page are about 700px.
+
+**Section 4's first draft had teeth and no voice.** With the sheet stuck open
+it clicked the tile through Playwright's pointer, the sheet intercepted, and the
+file died on a thirty second timeout before printing anything. It presses in
+the page now, so the same defect reports as five named failures.
+
+**`check-bracket`'s door walk needs a SEEDED run.** It took any run that
+reached the bracket, and a play-in run is one game: it can never open the series
+door, and losing it ends the run before the bracket proper. So about one run in
+eight failed sections 6 and 7 together and read as a flake. `toPlayoffs(page,
+true)` keeps drafting until the run has a bye; section 8 still takes play-in
+runs, because the play-in is its subject.
 
 **`check-bracket` had been failing on every run since Game 7 became the only
 door**, because a door comes about one run in five and the walk waited for one
@@ -11004,6 +11155,143 @@ career already holds all of them.
 **A first run sets no record**, and neither does a first run on a club or in a
 decade. It is trivially the best of one, and a screen congratulating somebody
 for beating nobody is the unearnable badge in reverse.
+
+#### Every badge is a basketball, and the cabinet is an account's
+
+```
+node hoops/check-board.mjs     section 6b, both sides on one page
+```
+
+**The ball is the logo's own drawing.** `badgeBall(tier, N)` in the page runs
+`build/logo-art.mjs`'s grid rules in a metal: bronze is the logo's orange, silver and
+gold are the trophy versions, a ring is the gold one with a glow, and a locked badge is
+slate. It is copied into the page rather than fetched, because forty of them draw at
+once. **21 cells at 42px, two pixels a cell**, which is whole on every screen. 15 cells
+at 45px was tried first and read as a waffle: at that size the four seams are most of
+the ball. The results card uses 15 at 30px, and the career bests keep their round marks
+so a ball on that card always means a badge.
+
+**A guest keeps a career and does not get a cabinet.** `badgesOn()` reads
+`A.state().signedIn` live. Signed out, the Badges tab is a teaser with a Sign in button
+and the results card says how many badges the run lit and offers the sign in instead of
+listing them. **The count is true and so is the promise**: every badge is derived from
+the career, and the shelf merges a career nobody owns into the account that signs in, so
+those runs light their badges the moment somebody signs in. The career bests stay for
+everybody, because they are the record and not the cabinet.
+
+**The guard asks one page both questions.** It plays a run signed out, checks the teaser
+and the offer, fakes the account after `auth.js` has run, and checks the same tab is now a
+cabinet of balls. Proved by mutation: `badgesOn()` always true fails five claims, and a
+tile with no ball fails two.
+
+**A local array here cannot be called `out`.** `verify.mjs` reads every `out.<field>` in
+the page as a field the results screen expects an outcome to carry, and `out.join` failed
+it.
+
+#### A cabinet for somebody who knows the sport, and every square is proved
+
+```
+node hoops/check-badges.mjs            every badge reached by a bot, or excused with a proof
+node hoops/check-badges.mjs --reunions how many One Franchise drafts each reunion took
+```
+
+Asked for as "a ton of badges that are exciting and niche goals that would make
+basketball fans appreciate the dedication behind this game". The cabinet went from
+37 to **171 on thirteen shelves**, and the ones worth reading about are the ones a
+fan recognises: Bird, McHale and Parish on one roster; Stockton to Malone; a man
+who averaged 35 (four seasons since 1974 qualify); a triple-double season; "Fo',
+fo', fo'" for a title that lost one playoff game; Down 3-1; the 2007 Mavericks as a
+heartbreak badge; every MVP since 1974; the Dream Team; the classes of '84, '96 and
+'03. Conquest, Fix History and Six Passes each got a shelf of their own.
+
+**THE REUNIONS ARE THE DEDICATION, AND THEY ARE ONE CLUB EACH ON PURPOSE.** Off
+the whole league the wheel lands on one team-season about once in fourteen hundred
+spins, so three named men on one roster is a lottery ticket. Locked to their club
+in One Franchise it is a hunt: which seasons overlap, which fit under the cap
+together, and when to spend a re-spin. Measured with a bot that signs a target
+when one is on the board and re-spins when none is, over 100 drafts each: 57 in
+100 for Stockton and Malone, 2 for Webber, Bibby and Divac and for LeBron, Wade
+and Bosh. The tier is that measurement: 30 or more silver, 7 to 29 gold, under 7 a
+ring. The badge text never says to use One Franchise. Working that out is the
+point.
+
+**THE FEATS MAP IS THE ONE PLACE A MODE WRITES.** Every badge is still derived, but
+three modes file no row (a row is a finished season) and the rows are capped at
+250, so a badge about one roster read off the rows could be lit on run 12 and gone
+again by run 263. `career.feats` is a count per thing that happened, and the badge
+reads the count. What writes it is four pure functions in `badges.js`
+(`draftFeats`, `conquestFeats`, `fixFeats`, `passesFeats`), called by the page,
+by `modes-ui.js` through `RTF_PAGE.feats`, and by the checker, so a rule is never
+restated. `applyFeats` is the one writer: `add` sums, `max` keeps the high-water
+mark.
+
+**`feats` IS ON `CAREER_COUNTS` IN cloud.js, AND THAT IS THE LOAD-BEARING LINE.**
+The career merge is an allowlist, so a key on none of its three lists is DROPPED on
+merge, silently: the badge lights on the device that earned it and goes dark the
+first time another device syncs. Every feat value is a count or a high-water mark,
+so a maximum per key is right for both and never takes a badge away (it can
+under-count across devices, which only delays one). `cloud.js` moved to API 2 with
+it, so a cached page cannot run the old merge. `check-cloudsave`'s fuzz draws real
+feat keys off the catalog's own source; with `feats` taken off the list it fails on
+the first seed.
+
+**Conquest's feats are maximums of the run as it stands**, so `cqRecordBest` asks
+after every steal and again at the end without counting anything twice. The one
+count, runs finished, rides on `final`, which is passed once and marked on the run
+(`featsFiled`) so a reload cannot pass it again. **A negotiated deal is the one feat
+only a screen knows**, so `fxAcceptAndMeasure` writes `fx.talk` after the deal is
+made and legal, never on the press.
+
+**The daily streak is read BEFORE today is filed.** `recordRun` writes the career
+and then `dailyRecord` files the day, in that order for a reason written there, so
+the streak badge reads `dailyStreakAfter()`, which is `dailyRecord`'s arithmetic
+asked a step early.
+
+**Mode badges toast 2.3 seconds late**, because the mode fires a toast of its own
+in the same tick ("Boss beaten: a life back") and a badge said at once is written
+over before anybody reads it. check-board asserts the order, and fails when the
+delay is removed.
+
+**The cabinet folds into shelves, one a group, open exactly when something on it
+is earned.** A shelf that opened empty is a wall of grey; one that stayed shut over
+a badge somebody just earned hides the thing they came to see. With nothing earned
+anywhere, the first shelf opens so a new account does not meet thirteen closed
+boxes.
+
+##### What the measurement cut, before it could ship as content
+
+Six ideas were written, measured over 1,500 runs, and changed, because a badge
+nobody can earn throws nothing:
+
+| asked for | measured | became |
+|---|---|---|
+| win a double overtime game | overtime is only ever one period (`ot` is 0 or 1) | cut |
+| go unbeaten at home | never fewer than four home losses | 36 home wins |
+| win 34 straight | best seen 21 | 20 straight |
+| sixteen and oh in the playoffs | never; the fewest losses on a title run was 1 | cut, "Fo', fo', fo'" kept |
+| five 20-point scorers | never more than three; the cap cannot hold five | three |
+| plus 15 a night | best seen 13.1 | plus 10 |
+
+##### Every badge lit, or excused WITH A PROOF
+
+`check-badges` plays the league six ways as before, then plays the way a person
+chasing each shelf would: a reunion hunter per trio in One Franchise, a stat hunter
+per line, a hunter per named man, locked and daily title runs, three Conquest bots,
+five Fix History bots and two Six Passes solvers. **The Fix History bot that
+matters is the negotiator**, which asks other clubs for their best non-franchise
+men and pays the sweetener: the one-for-one value bot tops out near 35% title odds,
+and the negotiator took the 2025 Nuggets from 11% to 56%.
+
+What is still dark must be on `EXCUSED` with one of three reasons, and each carries
+a proof that runs: **grind** (a bigger count of something the sweep did produce, so
+the count must have moved), **page** (the page writes the key, asserted off its
+source), **skill** (a hand-built run lights it through the real rule, so it is not
+dead code). Three more guards hold the list honest: an excuse for a badge that lit
+anyway fails, so it cannot rot into a blanket; every feat a badge reads must be
+written somewhere; and every named man is a real id who played for his reunion's
+club. **The full sweep is the strict one and it is what CI runs**; a short
+`--runs` sweep prints what it did not reach instead of failing, because the list is
+a record of one sweep and can only be tuned to that one.
 
 #### Run it back means the same game, and two buttons could not keep that promise
 
@@ -12660,7 +12948,52 @@ the submit's BODY calls `rtd_board_day(`, so that is what the row asks. The fix
 is re-running 97, which is idempotent and was driven over an old copy with no
 error.
 
-### The $170M cap is right, and the per-slot dollar is the wrong comparison
+### The cap is $190M now, because $170M made October a coin flip for most drafts
+
+Reported by players: the cap felt too low and it was hard to make the playoffs.
+It was measured before anything moved, 200 drafts a bot, after the primary
+position and teammate chemistry pass:
+
+| cap | best available | careful | chases chemistry |
+|---|---|---|---|
+| $170M | 81.4 wins, **29%** Octobers, 1% titles | 90.1, 59%, 2.5% | 89.2, 60%, 5% |
+| $180M | 84.8, 46%, 3% | 92.2, 69%, 9.5% | 92.9, 72%, 9% |
+| **$190M** | **89.1, 56%, 7.5%** | **93.7, 73%, 11.5%** | **96.2, 80%, 14%** |
+| $200M | 92.7, 65%, 13% | 97.2, 83%, 17% | 98.5, 88%, 24% |
+
+**Taking the best man every time is how a new player drafts**, and at $170M
+it missed October seven runs in ten. At $190M it makes it more often than not,
+and careful play still beats it by about five wins and seventeen points of
+Octobers, so the budget is still the decision. A random draft is 56 wins at
+every cap, because the board it is offered does not depend on the cap.
+
+**What moved with it:**
+
+- **`bargain_title` went $160M to $180M**, the same $10M under the cap.
+  Loosening strips nobody.
+- **All-Time Staff's top anchor went 2.91 to 2.77 ERA.** The best staff any
+  strategy reached went 2.916 to 2.775, and nine staffs pinned at 100 until it
+  moved. The floor is the worst man on every board and no cap touches it.
+- **The team rating was deliberately NOT re-anchored.** It is projected wins on
+  a line from 31 to 106, so it still says how many wins a roster is worth. About
+  3% of chemistry-chasing drafts now reach the 99 ceiling, against none before.
+  Re-anchoring would lower every rating a player sees on the day the cap went
+  up, and move what the rating badges mean.
+- **The quick badge sweep's excuses moved**: seven title and legend rungs light
+  now and three Survivor and draft rungs went the other way. The full sweep
+  lights all of them.
+- **The share card was re-rendered** (`og.png?v=5`), and every `$170M` a reader
+  sees says `$190M`. `baseball/check-numbers.mjs` holds them to `CAP_MUSD`.
+
+**Board rows filed before this sit low** against rows filed after. That is the
+price of changing the cap on a live board, the same as the football game's
+Full Team retune.
+
+The section below is the $170M argument, kept because its method is how the
+next move should be measured, and its crossover (holding money back stops
+paying somewhere between $230M and $300M) still says where the cap must not go.
+
+### The $170M cap WAS right on its own terms, and the per-slot dollar is the wrong comparison
 
 Asked, because football gives $140M for 6 and $280M for 12 and hoops gives $126M for
 6, which is about $23M and $21M a slot against this game's **$14.2M**. That reads as
@@ -13852,10 +14185,93 @@ SP2, CL and RP and not SP3 to SP5, RP1 to RP5 or SU. So the lineup card drew the
 whole back of the rotation and the whole bullpen in the fallback grey that means
 "no position", beside two blue starters. `posColor` falls through to the base.
 
-**And the sheet said the same thing twice.** A pitcher offered a relief slot read
-`Reliever` over a note reading `Pitcher`, which answers nothing the sheet is asking.
-`slotNote()` says what taking it would MEAN: in the rotation, out of the bullpen,
-closing games.
+### A man who fits two spots is placed ON THE FIELD, not in a sheet
+
+Asked for: the chooser should be the field we already built, not a pop up. The
+`#sheet-pos` sheet is gone, and with it `slotNote()` and `posLabel()`. Pressing a
+tile whose man has more than one open job starts a PLACEMENT (`startPick`): every
+spot he can take glows gold on the diamond, the pitcher strip and the lineup card,
+the rest dim and stop taking presses, and a bar at the foot of the screen names him
+with a Cancel. Tapping a gold spot signs him there. Pressing the same tile again,
+Cancel or Escape backs out and costs nothing.
+
+**`openJobs` is still the one answer**, so the gold spots are exactly the doors the
+sheet used to list and no second copy of the rule exists for display.
+
+**`PICK` is cleared on every way off the board**: a signing, a re-spin, the next
+spin and any screen change. A placement left standing across a re-spin would offer
+spots for a man who is no longer on the board.
+
+**The page script is an IIFE, so `PICK` is not on `window`.** A walker reads the
+DOM instead: `#s-draft.picking` says a placement is up, `.target` marks every gold
+spot, and `.natural` marks the one at his own position, which is what
+`check-run` taps.
+
+### His own position is his whole WAR, and chemistry means they played together
+
+Asked for from the placement screen: putting a man at his own position should
+give his best rating before chemistry, and anywhere else should cost a little.
+And every kind of chemistry should actually be in use.
+
+**`slotWar(p, slot)` is the one reading.** A batter at his primary position
+(`pp`, with `OF` covering LF, CF and RF) is his season WAR. Anywhere else costs
+`POSITION_FIT.OFF`, **8%**. DH counts as off position for everybody but a DH.
+Pitchers and replacement bodies are never charged. `rosterOffense` and the
+defence term in `rosterRunPrevention` read it, so it moves the shown rating and
+the season. **`teamStrength` deliberately does not**, for the same reason it
+still reads the raw season line: it is the yardstick against real clubs, and a
+real club played its men wherever it played them.
+
+**`slotForPlayer` tries his own position first**, then a dedicated slot, then
+DH. The page's `openJobs` asks `E.primaryAt` for the star, so the gold star and
+the number the season plays are one rule. On the field his own spot pulses and
+wears a star; every other spot is quieter and prints the cost, read off
+`POSITION_FIT` so tuning it rewrites the label. A man fielded off his position
+wears an amber ring on the diamond and an amber WAR on the lineup card, and the
+card prints the charged figure rather than the season line.
+
+About two batters a run end up off position, because their own spot was taken.
+
+**THREE OF THE SIX LINKS NEVER ASKED WHETHER TWO MEN PLAYED TOGETHER.** The
+battery and the double-play combo needed the same club AND the same drafted
+season, which almost never happens across a twelve-man draft (battery lit on 3%
+of chemistry-chasing rosters, the DP combo on well under that). A catcher and
+the pitcher he caught for four years were strangers if you drafted them from
+different seasons. Now:
+
+| link | value | asks |
+|---|---|---|
+| family | 0.09 | a curated pair |
+| reunion | 0.08 | same club, same drafted season |
+| battery | 0.07 | a catcher and a pitcher who shared a franchise-season, at C and a pitching slot |
+| dp_combo | 0.06 | a 2B and a SS who shared a franchise-season, at those slots |
+| **teammates** | **0.05** | **new**: shared any franchise-season in their careers |
+| franchise | 0.03 (was 0.04) | same club, never together |
+| era | 0.005 | same era |
+
+`setCareers` builds, per player id, every franchise-season he appears in,
+through `franchiseOf` so a Montreal Expo and a Washington National are one
+club. `sharedSeason` answers the earliest shared one. Battery and DP ask the
+SLOT a man is placed in (`_slot`), not his listed positions, so a shortstop
+fielded at DH is not half a double-play combo.
+
+**Measured over 120 drafts a bot:**
+
+| | wins before | wins after |
+|---|---|---|
+| best available | 81.8 | 83.7 |
+| chases chemistry | 82.2 | **90.3** |
+
+Chasing chemistry used to be worth 0.4 wins over taking the best man and is
+worth about 6.6 now, which is what makes it a strategy. Teammates links land on
+89% of chemistry-chasing rosters, battery on 19%. **0.03 for teammates was
+tried and rejected**: it would have made playing together worth less than a
+bare shared shirt. The franchise tie came down to keep that order.
+
+**`link_teammates` ("Played together") is a new silver badge**, and the quick
+badge sweep moved: eight excuses came off because the chemistry bot now
+reaches them, and `rank_one` and `one_franchise_8` went on, because the bot
+chases team-mates rather than stacking eight from one club.
 
 ### The desktop page is football's, and the two columns have to be the same length
 
@@ -14794,7 +15210,7 @@ quietly stopped submitting looks exactly like one that works.
 | | |
 |---|---|
 | the board | `#opts` is EMPTY until the reels land, because `paintOpts` is `spinBoth`'s callback. Waiting on the container waits on nothing. |
-| a tile | is not always a signing. A man who fits two open slots opens the position chooser, and a walk that does not answer it clicks the same tile for ever at "Spin 1 of 12". |
+| a tile | is not always a signing. A man who fits two open slots starts a placement on the field (`#s-draft.picking`), and a walk that does not tap a gold `.target` clicks the same tile for ever at "Spin 1 of 12". |
 | a sheet | is a scrim over the whole page, so the press after the cabinet lands on the scrim and retries against a sheet nobody closed. It reads as a button that cannot be clicked. |
 | the panel | lists at most six badges and then says how many more, so its count comes from the headline. |
 

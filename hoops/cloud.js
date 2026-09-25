@@ -183,7 +183,14 @@
 
   var CAREER_MAX = ['runs', 'rings', 'playoffs', 'bestWins', 'bestRating',
     'totalWins', 'totalLosses', 'beat72'];
-  var CAREER_COUNTS = ['clubs', 'shapes', 'seasons', 'colleges'];
+  /* `feats` is badges.js' map of things a run or a mode proved (a Game 7 won, a
+     reunion, a Conquest streak). Every value is a count or a high-water mark,
+     so a maximum per key is right for both and never takes a badge away. It is
+     on this list because a key missing from all three lists is DROPPED on
+     merge, silently: the badge lights on the device that earned it and goes
+     dark the first time another device syncs. That is why API_VERSION moved
+     to 2 with it, so a page cached from before this cannot run this merge. */
+  var CAREER_COUNTS = ['clubs', 'shapes', 'seasons', 'colleges', 'feats'];
   var CAREER_SHELVES = ['byClub', 'byEra'];
 
   /*
@@ -254,7 +261,7 @@
   }
 
   var publicAPI = {
-    API_VERSION: 1,
+    API_VERSION: 2,
     GAME: GAME,
     SLOT_RUN: SLOT_RUN, SLOT_CAREER: SLOT_CAREER, SLOT_DAILY: SLOT_DAILY,
     ROW_CAP: ROW_CAP,

@@ -1901,16 +1901,16 @@
   },
   "baseball/index.html": {
     "engine.js": {
-      "v": "28",
-      "sha": "cd82547acf27a6a6"
+      "v": "31",
+      "sha": "47897506c6e7503d"
     },
     "run.js": {
-      "v": "23",
-      "sha": "a50545934203f601"
+      "v": "24",
+      "sha": "80a27d5c4bacfcfc"
     },
     "achievements.js": {
-      "v": "8",
-      "sha": "5eec38c284f724da"
+      "v": "10",
+      "sha": "f268a1163b3ff5fa"
     },
     "board.js": {
       "v": "1",
@@ -2183,16 +2183,16 @@
       "sha": "5f6c878f376382a4"
     },
     "badges.js": {
-      "v": "1",
-      "sha": "0b4588cf96acbdd3"
+      "v": "2",
+      "sha": "f290ee9f926679f1"
     },
     "modes.js": {
-      "v": "2",
-      "sha": "322ab38a313e1d5e"
+      "v": "5",
+      "sha": "ff9b5f214c37c70b"
     },
     "board.js": {
-      "v": "4",
-      "sha": "7e7e648fe62e7ef7"
+      "v": "5",
+      "sha": "e377af19fb95be50"
     },
     "auth.js": {
       "v": "1",
@@ -2203,12 +2203,12 @@
       "sha": "db78661bbd724b47"
     },
     "cloud.js": {
-      "v": "1",
-      "sha": "d401cefb277986c4"
+      "v": "2",
+      "sha": "31e8a7be1e03a4c1"
     },
     "modes-ui.js": {
-      "v": "2",
-      "sha": "81fb3790eea2fcaa"
+      "v": "6",
+      "sha": "17a33d5af9eacea5"
     },
     "data/players.json": {
       "v": "5",
