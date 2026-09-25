@@ -4828,8 +4828,65 @@ caught it. The promo reader's `TONE` lists and the scene lint's `SITS` regex are
 the same shape. Before a wording sweep, grep for `.test(` over prose and write
 both spellings into any regex that reads a sentence the game produced.
 
+### The brand is pixel art, and Run The Tour's title was the lead rather than the template
+
+```
+(nohup python3 -m http.server 8080 &) ; node wrestling/build-logo.mjs
+```
+
+Asked for with golf's pixel title as the inspiration and not as something to copy. Tour stands
+gold letters on a putting green, with a ball for the O and the pin at the end. This is a wrestling
+title card:
+- ROPES in red block letters with a straight drop, and the O is a championship plate.
+- Three ring ropes run behind the word between two turnbuckle posts.
+- It all stands on the ring canvas over a navy apron.
+- RUN THE sits on a black and gold nameplate.
+
+The icon is a ring corner with the plate in front of it.
+
+**One kit, one drawing.** The palette, a 5 x 7 font, the title, the icon and an arena scene live in
+the game between `RPK BEGIN` and `RPK END`. `logo-source.html` and `og-source.html` lift that block
+out by those markers, which is golf's arrangement. So the home title, the site bar mark, the logo
+files, the link card and the share card can never become five versions of one mark.
+
+| | where |
+|---|---|
+| the home title and the site bar mark | `paintBrand()`, painting every `canvas[data-rpk]` |
+| the logo files | `lockup.png`, `logo.png`, `favicon-16/32/48.png` |
+| the phone icons | `icon-180`, `-192`, `-512`, `icon-maskable-512.png`, and `manifest.webmanifest` |
+| the link card | `og.png`, from `og-source.html` |
+| the share card | `drawShareCard()`, behind Share card on the flip card |
+
+**A cell is a whole number of device pixels, never CSS pixels.** On a 2.625 phone a 3x title in CSS
+is 7.875 device pixels a cell, which is two widths of pixel and mush. `paintBrand()` picks the device
+cell first and lets the CSS size follow, so the title can come out a pixel off a round number and is
+hard edged everywhere.
+
+**The files have to be what the kit draws.** Section 4q of `verify.mjs` repaints the favicon and the
+lockup from the kit and compares them cell for cell with the committed files. An edit to the kit that
+nobody rebuilt fails there, rather than leaving a tab showing last week's mark while the page paints
+this week's.
+
+**The wrestler on the link card is the game's.** The builder opens the real page, draws the look it
+carries with `wrestlerSVGRetro()`, reads the stat names out of `ATTRS`, and works out the OVR with
+`ovr()`. So the figure is one the game draws and the rating is one it would give those stats. The
+card reports a box for every block, and the builder refuses to write if one is over the frame or on
+top of another. `PREVIEW=path` writes the card anyway, for looking at a failure. That is how the url
+strip was caught running under the champion.
+
+**The share card is head and shoulders, never the whole figure.** Golf crops its golfer to a bust
+because a full standing figure can trip a social site's sensitivity filter on upload, and a wrestler
+in trunks is that problem twice over. A champion carries the belt over the shoulder on the card,
+because at the waist the crop cuts it off. The figure reaches the grid through an `Image`, which can
+fail without throwing, so the card records it in `cv._drew` and 4q reads that.
+
+**The tile labels are chosen to fit, not cut.** A 31 cell tile holds five letters of this font, and
+the first version truncated RECORD and EARNED to RECOR and EARNE. They are W-L, BELTS, POP and CASH.
+
 The game is unlisted: not linked from the homepage, nav or sitemap, and
-noindexed. Keep it that way unless asked.
+noindexed. Keep it that way unless asked. **The og tags do not change that.** A
+robots tag tells a crawler not to index and does nothing to a chat app unfurling
+a link somebody was handed, which is how an unlisted game reaches its testers.
 
 ## MythiBall, the baseball game
 
