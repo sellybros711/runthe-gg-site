@@ -191,6 +191,8 @@ def token():
 
 
 pxi()
+from pxmore import build, EMBLEMS  # noqa: E402  the coloured stand-ins for emoji
+build(P)
 P['COINS'] = coins()
 P['TOKEN'] = token()
 for k, v in P.items():

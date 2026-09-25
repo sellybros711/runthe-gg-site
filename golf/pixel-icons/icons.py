@@ -871,6 +871,9 @@ def user():
               '.mmmmmmmmmmmmmmmm.'])
 
 
+from more import *  # noqa: E402,F401  the icons that stand in for emoji
+
+
 for k, v in list(I.items()):
     check(k, v)
     I[k] = bevel(v)
