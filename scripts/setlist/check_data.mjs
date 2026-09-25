@@ -444,6 +444,23 @@ check(!/\.topbar:after\{[^}]*var\(--dye\)[^}]*\}/.test(game),
    destinations, the songs list among them by name, hides itself during the
    draft (where the game owns the bottom of the screen), and the page leaves
    room so the last row is not stranded behind it. */
+/* A NEW SCREEN STARTS AT THE TOP. Nothing reset the scroll, so "See the
+   scorecard" at the foot of a long playback landed half way down it, and each
+   round's reveal opened wherever the last song list was left. Only on a real
+   change, because setScreen is also how a screen re-renders itself. */
+{
+  const ss = gameBare.slice(gameBare.indexOf('function setScreen('), gameBare.indexOf('\n}', gameBare.indexOf('function setScreen(')));
+  check(/const changed = S\.screen !== name;/.test(ss) && /if \(changed\) window\.scrollTo\(0, 0\);/.test(ss),
+    'a new screen starts at the top, and a re-render does not');
+}
+
+/* The show owns the page while it is on: the site footer stands down for
+   every screen of the play flow, playback included, and only the button goes,
+   so the about sheet stays in the markup a crawler reads. */
+check(/body\.inshow \.sfoot\{display:none;?\}/.test(game)
+   && /classList\.toggle\('inshow', \[[^\]]*'show'[^\]]*\]\.includes\(name\)\)/.test(gameBare),
+  'the site footer stands down for the whole show, playback included');
+
 console.log('the tab bar');
 check(/\.tabbar\{[^}]*position:fixed/.test(game) && /\.tabbar\{[^}]*bottom:0/.test(game),
       'the tab bar is pinned to the foot of the screen, not scrolled with the page');
@@ -675,8 +692,16 @@ for (const [sel, what] of [['scorebox', 'the final score'], ['sim-head', 'the ru
     `${what} closes on a dye rule`);
 }
 // The sticky one has to hide what scrolls under it.
-check(/\.sim-head\{[^}]*background:var\(--bg\)/.test(game),
-  'the sticky running score is opaque');
+/* OPAQUE means the last layer of the background is a solid colour. The
+   washes above it are translucent, which is fine; a stack that ends on
+   transparent is what lets song titles scroll through the score. */
+{
+  const head = (game.match(/\.sim-head\{[^}]*\}/) || [''])[0];
+  const bg = (head.match(/background:([\s\S]*?);/) || [])[1] || '';
+  const last = bg.split(/,(?![^(]*\))/).pop().trim();
+  check(/^#[0-9A-Fa-f]{6}$/.test(last) || last === 'var(--bg)',
+    `the sticky running score is opaque (ends on ${last || 'nothing'})`);
+}
 /* THE GRADE COLOURS ARE MEASURED, and the measurement is the comment above
    them. Both scores now sit on --bg rather than on --card, where the old green
    fell to 2.93:1: below even the 3:1 large-text floor, on the largest thing in
