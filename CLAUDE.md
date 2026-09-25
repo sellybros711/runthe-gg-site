@@ -4966,6 +4966,43 @@ fail without throwing, so the card records it in `cv._drew` and 4q reads that.
 **The tile labels are chosen to fit, not cut.** A 31 cell tile holds five letters of this font, and
 the first version truncated RECORD and EARNED to RECOR and EARNE. They are W-L, BELTS, POP and CASH.
 
+### The menus and the match got a production pass, and none of it can fail loudly
+
+```
+node wrestling/verify.mjs --quick   the section named "the building, the menus and the match mode"
+```
+
+**The building is the LIGHT, not the tint.** Every venue used to be one dim crowd texture
+over a black box, so a bingo hall and a stadium differed only by a colour. `venueHTML()`
+builds a rig scaled off the building's `seats`: a pipe with two cans and two still washes
+for an indie basement, a truss with sweeping coloured beams for a national room, and a
+screen over the stage once there is money for one (`seats >= 4`, a banner on two ropes
+below that). Camera flashes, a pool of light on the canvas and the promotion's name on the
+apron come with it. It is seeded off the promotion id, so a building is the same building
+every time.
+
+**Two pieces live INSIDE `.ringback`**, the mat pool and the apron lettering, because the
+ring shrinks toward the floor when a spot spills outside (`.wide`), and anything painted
+beside it would stay put while the ring moved.
+
+**A match takes the rails off.** `go()` sets `body.inmatch` on the fight and promo screens,
+which hides the header rail, the number strip and the tab bar. They are all ways to leave,
+and mid match there is nowhere to go (Skip is on the screen). The ring gets the height
+back. The call box sits ABOVE the play by play (`order:-1`), because under a full log it
+opened below the bottom of a phone and the match sat paused on a question nobody could see.
+
+**One rail per device.** A phone steers with the tab bar, a desktop with the header rail.
+Both used to show at once, which was the same six buttons twice on every screen.
+
+**A screen header's icon is a CSS variable on the `h2`, never a child of it.** The career
+title is rewritten with `innerHTML` every week, so a child icon would be wiped with it.
+`decorateHeader()` sets `--h2ico` once per screen and the rewrite cannot touch it. A new
+screen with a direct `h2` needs a line in `SCREEN_ICO`, and the verify section asks.
+
+**The entrance motion is opacity on the screen and a `backwards` fill on its children.**
+A transform left filling `forwards` on a screen makes it the containing block for anything
+fixed inside it, and the stagger would then move overlays that have nothing to do with it.
+
 The game is unlisted: not linked from the homepage, nav or sitemap, and
 noindexed. Keep it that way unless asked. **The og tags do not change that.** A
 robots tag tells a crawler not to index and does nothing to a chat app unfurling
