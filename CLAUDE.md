@@ -5949,6 +5949,8 @@ node mythiball/check-runs.mjs      runs per game, with a defence that turns up (
 node mythiball/check-bat.mjs       the swing's own curves, and that skill pays
 node mythiball/check-skill.mjs     what a PERSON hits, four rungs of skill, both swings
 node mythiball/check-firstpitch.mjs  whether a stranger can READ one pitch
+node mythiball/whiff.mjs 3000      what the other dugout does with a swing, at a
+                                   sample that can answer (a meter, not a guard)
 node scripts/check-dashes.mjs      mythiball is on the GUARDED list
 ```
 
@@ -7746,9 +7748,33 @@ at bat at all is a RULE and it lives in those functions.
 #### A swing that misses half the time is not a backyard game
 
 ```
-node scratchpad/whiff.mjs 3000 medium     the tuning instrument
+node mythiball/whiff.mjs 3000 medium      the tuning instrument
+node mythiball/whiff.mjs 3000             all three tiers
 node mythiball/calibrate.mjs              the tripwire
 ```
+
+**IT LIVED IN A SCRATCH FILE AND THE SCRATCH FILE WENT.** This section pointed
+at `scratchpad/whiff.mjs`, which is not in the repo and had not survived, so the
+one instrument that can answer the question this section is about did not exist.
+A later session lost the better part of an hour to a `calibrate` reading of
+**14.0 against a band floor of 15**, ran seven of them, read the spread as a
+regression, and built the file again from this paragraph. It is in `mythiball/`
+now, beside the tripwire it is the micrometer for.
+
+**AND THE REGRESSION WAS NOT THERE, which is the part worth copying.** Seven
+`calibrate` runs on that build read 14.0, 25.3, 22.6, 21.2, 27.4, 20.9 and 19.3;
+three on the build before it read 27.0, 25.3 and 26.9. Three against seven, means
+of 26.4 and 21.5, reads as a five point drop at three standard errors and is
+**entirely the sample**: the micrometer at 3000 swings a tier puts the two builds
+at 22.3 / 24.5 / 25.0 against 23.0 / 26.1 / 24.4, inside 1.6 points everywhere.
+The CPU's swing was **identical by construction** the whole time, because the
+window split left `CPU_SWEET` holding the exact numbers `sweetWidth` used to
+carry and nothing else the other dugout reads was touched.
+
+**A CHEAP MEASUREMENT REPEATED IS NOT A BIG MEASUREMENT.** Seven readings of a
+sample that cannot resolve the question average to a confident wrong answer, and
+the temptation at the end of them is to go and tune a dial. Two runs of the right
+instrument settled it.
 
 The CPU whiffed on **about 47 swings in every hundred**, against MLB's 25, and
 the note in `calibrate.mjs` called that "still arcade-hot". It is the wrong way
@@ -7771,6 +7797,22 @@ The instrument that can answer stubs `setTimeout` into a queue, calls the game's
 own `throwPitch` and `scheduleCpuSwing`, then drains the queue once. **Nothing
 about the jitter model is copied**, which is the whole point: a second copy of
 that arithmetic would measure itself. 3000 swings an arm, in seconds.
+
+**AND THE SAMPLE IS WORSE THAN BINOMIAL, WHICH IS WHY 3000 IS THE NUMBER.** The
+batter turns over every few pitches, so consecutive swings share one man's CON
+and are correlated: the effective sample is smaller than the count. Measured on
+one build, 600 swings read 28.7 and 1200 read 24.8, which is about 1.8 standard
+errors apart on a binomial and ordinary here. Two arms compared at anything under
+a couple of thousand is a reading of the batters.
+
+**IT TAKES `MYTHIBALL_PAGE`, because a single column means nothing.** The whole
+value of this file is the A/B, and the arms have to be two files on disk rather
+than two runs either side of an edit.
+
+**WHAT IT READS TODAY IS 22 TO 26 AND THIS SECTION SAYS 28.** That gap is on the
+pre-session build too, so it is the rebuilt fixture rather than the game, and the
+two are not the same measurement. Compare arms with each other, never a number
+here against a number in this paragraph.
 
 **WHIFF WAS ALREADY FLAT ACROSS THE TIERS AND THAT IS THE DESIGN, NOT AN
 ACCIDENT.** 47.4 / 47.8 / 46.2 on easy, medium and hard. Those numbers were
