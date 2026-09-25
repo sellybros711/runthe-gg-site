@@ -9451,6 +9451,42 @@ tagline.** `verify.mjs` asserts all four are different and that no locked mode
 falls through to the league's, so a fifth door cannot inherit the fourth's
 words either.
 
+#### The share carries the draft, as squares
+
+A shared result said how the season went and nothing about how it was built,
+and the build is the half this game is about. So the text carries a row of
+five squares in slot order, one a man, coloured by the verdict his tile wore
+on the board: green for a bargain, white for the going rate, red for paying
+for points, black for a man under three win shares. Under it is the playoff
+path a series at a time (`R1 4-3 · R2 2-4`), with a trophy only for a
+champion.
+
+**The squares are the one place emoji are allowed in this game's copy**, and
+the reason is the medium: a chat app shows text and nothing else, so a row of
+colours is the only picture a shared result can carry. They are data rather
+than prose. The card draws the same two things with no emoji at all: the path
+under the verdict, and each man's verdict under his price in the chip's own
+colours, because an emoji in a canvas is whatever the machine's emoji font is.
+
+**`draftCells()` is the one walk** the share text, the card and the results
+screen all read, and every verdict is `dealOf`'s. A second walk would be a
+screen and a share that disagree about a man. `verify.mjs` lifts `gridLine`
+and `pathLine` out of the page and asserts four different squares, one square
+a man, a square for every key `dealOf` can answer (read out of its source, so
+a verdict renamed there cannot fall through to black), and a short name for
+every round the engine plays. Merging two squares fails it.
+
+**A signing is stamped.** The verdict used to be answered only on the tile
+BEFORE the press, so the one decision the draft is built around got no answer
+after it. `stampDeal()` puts the verdict over the court for about a second,
+off the same `dealOf`, restarted rather than queued so two quick signings show
+the second one. It takes no pointer, so a thumb heading for the reels goes
+straight through it.
+
+**The results screen shows the row too**, with what it counted, and each count
+is one unbreakable piece. Without that a 390px phone left "role player" alone
+on a line under a "1".
+
 #### A badge earned in silence is a badge nobody has
 
 `badges.js` computes forty-odd badges off the whole career and the only surface
@@ -10348,11 +10384,28 @@ it**, which is why the sweep and the guard both walk four.
 
 #### Which games are offered
 
-A game the series can END in, either way, plus every Finals game. One rule
-rather than a list, and the two halves of it are the elimination game and the
-closeout. Measured over 170 playoff runs: **mean 2.6 a run, median 2, p90 5**,
-and a year that reaches a game seven Finals can offer thirteen, which is the
-run that deserves them. The play-in is one game, so it is always one.
+**A Game 7, and nothing else.** `big` in `poNext` is `bestOf > 1 && facing
+&& closing`, which is the same test as `decider`.
+
+**It used to be every game a series could END in, plus every Finals game**,
+measured at a mean of 2.6 stops a run and up to thirteen. Reported by a player
+as too many pauses in the quick draft, and timed through the real page it was:
+a first round exit met FIVE doors, and the bracket walk that is meant to take
+twelve to nineteen seconds became a sequence of the same question. A stop that
+comes every series is a pause; one that comes one run in five is an event.
+Measured after, over 200 runs: **mean 0.2, max 1**.
+
+**The play-in is NOT a Game 7**, although both `elimination` and `closeout` are
+true there by arithmetic, so it plays through with everything else.
+
+**The browser half of `check-live` widens the door on purpose.** Waiting for a
+one-in-five event makes every screen behind the door a coin toss on whether the
+walk gets to see it, which is the badge nothing can light. So `widenDoor()`
+wraps `RTF_ENGINE.poNext` inside the page to flag any SERIES game that can end
+it, and has to be applied again after a reload. Section 4 is where the real rule
+is asserted, exactly, off the engine, and section 5 plays every series-ending
+game forward rather than only the Game 7s, because what it asserts is the
+record and not the door.
 
 #### The bracket is one loop, and it is the loop that already existed
 
@@ -10666,8 +10719,9 @@ proxy and the page's own `<link>` arrives empty, and a refusal to write if a
 display face is missing, read off the loaded FontFace set rather than
 `document.fonts.check()`.
 
-**The ball is drawn rather than an image file**, because this game ships no
-logo and a card waiting on one would not exist. **The tags go in while the page
+**The ball on the card is `hoops/logo.png` at exactly half size**, so each of its
+22 pixel cells lands on 11 and the pixel art stays crisp. The build waits for the
+image and refuses to write a card without it. **The tags go in while the page
 is still noindexed**, deliberately: a robots tag tells a crawler not to index
 and does nothing to a chat app unfurling a link somebody was handed, which is
 how an unlaunched game reaches its testers.
@@ -10688,6 +10742,40 @@ thing. A bare "NNNN to NNNN" means several things here: `how-to-play.html`
 lists the seven era bands, and 1980 to 1986 is a correct sentence about the
 eighties. Scanning for the shape reported all seven as defects, which is the
 trap that kept "times" and "players" off the roster-count noun list.
+
+### The logo is an 8-bit ball, and every size is a whole multiple of one grid
+
+```
+node hoops/build/logo.mjs     the favicons, the icons, the mark, the wordmark and the lockup
+node hoops/build/og.mjs       the share card, which uses logo.png (needs :8080)
+```
+
+`hoops/build/logo-art.mjs` is the drawing, as a grid of cells built from a few rules:
+a one cell outline, an upright seam and a level seam through the middle, two side seams
+that step out once near the rim, and light cut into diagonal bands off the top left.
+`logo.mjs` lays it out at every size, under the football game's file names.
+
+**THE GRID IS ODD.** The first draft was 20 cells, which has no middle column, so the
+upright seam sat a cell right of centre and the ball leaned. 21 for the mark and 15 for
+the favicon are symmetric.
+
+**EVERY SIZE IS A WHOLE MULTIPLE OF THE GRID, AND THE SHADOW IS ONE CELL.** A pixel ball
+scaled by 1.3 has cells one and two pixels wide at random, which reads as a rendering
+fault. So `favicon-16` is fifteen cells and a one pixel shadow, 32 and 48 are that at 2x
+and 3x, and `mark.png` is the 21 cell ball at 1x (22px with its shadow), drawn at 22 CSS
+pixels in the top bar with `image-rendering:pixelated` so a phone scales it by 2 or 3.
+
+**THE NAME IS SET IN PRESS START 2P, and only the name.** The top bar, the home title,
+the rules page's title and the share card. It is drawn on an 8 pixel grid, so it is set
+at multiples of 8 (the top bar's 10px is the one exception, measured to fit a 360px bar
+beside the Career button). `--pixel` falls back to the display face and **never to a
+monospace**, because `verify.mjs` keeps a code face off these pages and a fallback stack
+ending in `monospace` fails it. Paragraphs stay in Archivo: a sentence in the pixel face
+is hard to read on a phone.
+
+**Google Fonts does not load in the sandbox**, so a screenshot of the page shows the
+fallback. Inline the face with `addStyleTag`, the way `og.mjs` does, before judging the
+title by eye.
 
 ### The board is in the preflight now, and the helper under it could only say NO
 
