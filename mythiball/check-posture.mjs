@@ -536,6 +536,31 @@ if (!opponentsMatch) {
   }
 }
 
+/* 8. EVERY PARK HAS SCENERY THE GAME CAN DRAW. A theme names its horizon, its
+   sun or moon and its landmark as strings, and `drawLandmark` answers them with
+   a switch. A name the switch does not know draws NOTHING and throws nothing, so
+   a park added with a typo is a park with an empty sky and no report. The
+   franchise parks are here too: they had no landmark at all until this pass. */
+{
+  const game = fs.readFileSync(new URL('./index.html', import.meta.url), 'utf8');
+  const a = game.indexOf('function drawLandmark('), b = game.indexOf('function drawScenery(');
+  const cases = a < 0 || b < 0 ? new Set() : new Set([...game.slice(a, b).matchAll(/case '([a-z]+)':/g)].map(m => m[1]));
+  const fars = new Set(['hills', 'forest', 'city', 'sea', 'crags', 'dunes', 'ice']);
+  const bodies = new Set(['sun', 'lowsun', 'moon', 'bloodmoon', 'null']);
+  const themes = [...game.matchAll(/far:'([a-z]+)', body:(?:'([a-z]+)'|(null)), mark:'([a-z]+)'/g)];
+  if (!cases.size) problems.push('could not find drawLandmark() and drawScenery() in mythiball/index.html.');
+  /* 12 opponents, the default, and 6 franchise parks. A count that fell would
+     mean a theme lost its scenery line, and the regex would pass it silently. */
+  if (themes.length < 19) problems.push(`only ${themes.length} parks declare scenery (far, body, mark). Nineteen do.`);
+  for (const [, far, body, nul, mark] of themes) {
+    if (!fars.has(far)) problems.push(`a park asks for horizon "${far}", which drawFarHorizon does not draw.`);
+    if (!bodies.has(body || nul)) problems.push(`a park asks for sky body "${body}", which drawSkyDressing does not draw.`);
+    if (!cases.has(mark)) problems.push(`a park asks for landmark "${mark}", which drawLandmark has no case for.`);
+  }
+  if (/landmark\(ctx, w, h\)/.test(game)) problems.push('an old landmark(ctx, w, h) function is back in the page. '
+    + 'Landmarks are drawLandmark cases now, so one written the old way is never called.');
+}
+
 if (problems.length) {
   console.error(`MythiBall posture: ${problems.length} problem(s)\n`);
   for (const p of problems) console.error('  ' + p);

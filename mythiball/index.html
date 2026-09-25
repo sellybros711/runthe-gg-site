@@ -2441,238 +2441,435 @@ const ROSTER_BY_KEY = Object.fromEntries(ROSTER.map(c => [c.k, c]));
 /* -------- Stadium themes --------
    Every opponent team plays in a stadium themed to who they are: a park
    name, a sky mood, a wall color, a warning track tint, crowd colors, and
-   a landmark drawn behind the outfield wall. drawField reads this by the
-   current opponent's name. `landmark` is a function drawn onto the crowd
-   strip in the sky area, so it reads as a silhouette on the horizon. */
+   the scenery behind the wall: `far` is the horizon (hills, a city, the
+   sea...), `body` the sun or the moon, and `mark` the one landmark that
+   says whose park this is. drawScenery draws all three, below. */
 const STADIUM_THEMES = {
   'Ironsides': {
     park:'The Iron Yard', sky:'#86bdd8', wall:'#4a5058', wallLine:'#f2ead4',
     marker:'#f2ead4', track:'#b08a58', grass:'#3f9145',
     crowd:['#8a97a4','#b06a4a','#6a7684','#c9a256','#9aa8b6'],
-    landmark(ctx, w, h) {
-      /* Gothic iron gate silhouette behind the wall */
-      ctx.fillStyle = '#050508';
-      for (let i = 0; i < 5; i++) {
-        const x = w * (0.20 + i * 0.15);
-        ctx.fillRect(x, h * 0.05, 6, h * 0.11);
-        ctx.beginPath();
-        ctx.arc(x + 3, h * 0.05, 8, Math.PI, 0);
-        ctx.fill();
-      }
-      ctx.fillRect(w * 0.18, h * 0.11, w * 0.64, 3);
-    },
+    far:'city', body:'sun', mark:'gate',
   },
   'Storybook Nine': {
     park:'Fable Field', sky:'#a9caf2', wall:'#8f5f9f', wallLine:'#f8e6b0',
     marker:'#fffaf0', track:'#d8b070', grass:'#4aa452',
     crowd:['#f0a8c8','#a8c8f0','#f8dc90','#c0a0e0','#a0e0c0'],
-    landmark(ctx, w, h) {
-      /* Storybook castle spires */
-      ctx.fillStyle = '#08050f';
-      ctx.fillRect(w * 0.42, h * 0.03, 10, h * 0.13);
-      ctx.beginPath(); ctx.moveTo(w*0.42, h*0.03); ctx.lineTo(w*0.47, h*0.0); ctx.lineTo(w*0.52, h*0.03); ctx.fill();
-      ctx.fillRect(w * 0.36, h * 0.07, 6, h * 0.09);
-      ctx.fillRect(w * 0.56, h * 0.07, 6, h * 0.09);
-    },
+    far:'hills', body:'sun', mark:'castle',
   },
   'The Timekeepers': {
     park:'Detective Downs', sky:'#dbbd86', wall:'#6f5030', wallLine:'#f4e8c8',
     marker:'#fffaf0', track:'#c09a60', grass:'#4a9a48',
     crowd:['#c9a256','#8b6a3a','#e0c898','#a08050','#d8c0a0'],
-    landmark(ctx, w, h) {
-      /* A giant clock face in the wall */
-      ctx.fillStyle = '#0a0806';
-      ctx.beginPath(); ctx.arc(w*0.5, h*0.09, 14, 0, Math.PI*2); ctx.fill();
-      ctx.fillStyle = '#c9a256';
-      ctx.beginPath(); ctx.arc(w*0.5, h*0.09, 12, 0, Math.PI*2); ctx.fill();
-      ctx.strokeStyle = '#0a0806'; ctx.lineWidth = 2;
-      ctx.beginPath(); ctx.moveTo(w*0.5, h*0.09); ctx.lineTo(w*0.5, h*0.09 - 8); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(w*0.5, h*0.09); ctx.lineTo(w*0.5 + 6, h*0.09); ctx.stroke();
-    },
+    far:'city', body:'sun', mark:'clock',
   },
   'Nightshift': {
     park:'Midnight Park', sky:'#f2a25e', wall:'#5a3a5e', wallLine:'#ffe8a8',
     marker:'#fffaf0', track:'#ab7c5c', grass:'#357f48',
     crowd:['#f0c070','#e08858','#c06888','#f8d8a0','#a06898'],
-    landmark(ctx, w, h) {
-      /* Bat silhouettes flying across the sky */
-      ctx.fillStyle = '#050508';
-      const bat = (bx, by) => {
-        ctx.fillRect(bx, by, 4, 2);
-        ctx.fillRect(bx - 3, by + 1, 10, 1);
-        ctx.fillRect(bx - 5, by + 2, 14, 1);
-        ctx.fillRect(bx - 7, by + 3, 6, 1); ctx.fillRect(bx + 1, by + 3, 6, 1);
-      };
-      bat(w*0.15, h*0.05); bat(w*0.32, h*0.02); bat(w*0.62, h*0.03); bat(w*0.82, h*0.06);
-      /* Blood moon */
-      ctx.fillStyle = '#8a1a1a';
-      ctx.beginPath(); ctx.arc(w*0.5, h*0.055, 12, 0, Math.PI*2); ctx.fill();
-      ctx.fillStyle = '#c94b1a';
-      ctx.beginPath(); ctx.arc(w*0.5, h*0.055, 10, 0, Math.PI*2); ctx.fill();
-    },
+    far:'crags', body:'bloodmoon', mark:'spire',
   },
   'The Cartographers': {
     park:'Explorer Grounds', sky:'#a2d3ea', wall:'#b28c52', wallLine:'#f6ecd4',
     marker:'#fffaf0', track:'#d8b070', grass:'#4a9e46',
     crowd:['#d8c098','#a8c8d8','#c9a256','#e8d8b0','#90b0c0'],
-    landmark(ctx, w, h) {
-      /* Parchment map billboard */
-      ctx.fillStyle = '#d4b878';
-      ctx.fillRect(w*0.40, h*0.02, 80, 14);
-      ctx.fillStyle = '#5a3a1c';
-      ctx.fillText('N', w*0.44, h*0.09);
-      /* Rocket ship in the sky */
-      ctx.fillStyle = '#eaeaea';
-      ctx.fillRect(w*0.72, h*0.04, 3, 8);
-      ctx.fillStyle = '#c94b1a';
-      ctx.fillRect(w*0.72, h*0.11, 3, 2);
-    },
+    far:'sea', body:'sun', mark:'lighthouse',
   },
   'Fields and Fables': {
     park:'Emerald Meadows', sky:'#93d3ea', wall:'#3f9c54', wallLine:'#f8f0d2',
     marker:'#fffaf0', track:'#d8b878', grass:'#51b257',
     crowd:['#a8d8a0','#f0e0a0','#88c8b0','#d8f0b0','#b8e0d0'],
-    landmark(ctx, w, h) {
-      /* Emerald City tower */
-      ctx.fillStyle = '#0a2a1a';
-      ctx.fillRect(w*0.44, h*0.02, 14, h*0.14);
-      ctx.fillStyle = '#3a8a4a';
-      ctx.fillRect(w*0.46, h*0.03, 10, h*0.13);
-      ctx.fillStyle = '#f4c25a';
-      ctx.beginPath(); ctx.arc(w*0.51, h*0.02, 4, 0, Math.PI*2); ctx.fill();
-    },
+    far:'hills', body:'sun', mark:'emerald',
   },
   'The Marauders': {
     park:'Pirate Bay', sky:'#74c3e2', wall:'#6f4f2f', wallLine:'#f6e2a8',
     marker:'#fffaf0', track:'#d0a878', grass:'#3f9c51',
     crowd:['#d8c8a0','#8a6a4a','#e0b070','#a8c8d8','#c05050'],
-    landmark(ctx, w, h) {
-      /* Ship silhouette with sail */
-      ctx.fillStyle = '#050508';
-      ctx.fillRect(w*0.40, h*0.10, 80, 6);
-      ctx.fillRect(w*0.48, h*0.02, 3, h*0.10);
-      ctx.fillStyle = '#eaeaea';
-      ctx.beginPath(); ctx.moveTo(w*0.48, h*0.03); ctx.lineTo(w*0.60, h*0.09); ctx.lineTo(w*0.48, h*0.09); ctx.fill();
-      /* Jolly Roger */
-      ctx.fillStyle = '#050508';
-      ctx.beginPath(); ctx.arc(w*0.54, h*0.06, 2, 0, Math.PI*2); ctx.fill();
-    },
+    far:'sea', body:'sun', mark:'ship',
   },
   'The Kids Table': {
     park:'Little League Park', sky:'#72c7f0', wall:'#dd5c2c', wallLine:'#fff4dc',
     marker:'#fffaf0', track:'#d8b070', grass:'#51b257',
     crowd:['#f05a5a','#f0c040','#50b0f0','#60d080','#f090c0'],
-    landmark(ctx, w, h) {
-      /* Day sky: a sun and a few clouds. */
-      ctx.fillStyle = '#f4c25a';
-      ctx.beginPath(); ctx.arc(w*0.85, h*0.05, 8, 0, Math.PI*2); ctx.fill();
-      ctx.fillStyle = 'rgba(234,234,234,.8)';
-      ctx.fillRect(w*0.20, h*0.06, 26, 4); ctx.fillRect(w*0.22, h*0.04, 22, 4);
-      ctx.fillRect(w*0.55, h*0.08, 30, 4); ctx.fillRect(w*0.58, h*0.06, 24, 4);
-    },
+    far:'hills', body:'sun', mark:'treehouse',
   },
   'The Holiday Nine': {
     park:'North Pole Yard', sky:'#c3e7f6', wall:'#cc3434', wallLine:'#ffffff',
     marker:'#ffffff', track:'#f0f2f6', grass:'#50b263', snow:true,
     crowd:['#e05050','#f8f8fa','#40a060','#f0d060','#c0d8e8'],
-    landmark(ctx, w, h) {
-      /* Big evergreen tree on the horizon, garland lights, snow atop the
-         wall track. */
-      ctx.fillStyle = '#08120a';
-      const tx = w * 0.50;
-      ctx.beginPath();
-      ctx.moveTo(tx, h * 0.005); ctx.lineTo(tx - 20, h * 0.09); ctx.lineTo(tx + 20, h * 0.09); ctx.closePath(); ctx.fill();
-      ctx.beginPath();
-      ctx.moveTo(tx, h * 0.03); ctx.lineTo(tx - 28, h * 0.13); ctx.lineTo(tx + 28, h * 0.13); ctx.closePath(); ctx.fill();
-      /* Tree lights */
-      const lightCols = ['#c93030','#f4c25a','#3aaa5a','#5cb6e5'];
-      for (let i = 0; i < 6; i++) {
-        ctx.fillStyle = lightCols[i % 4];
-        ctx.fillRect(tx - 22 + i * 8, h * 0.10, 2, 2);
-      }
-      /* Falling snow across the sky (procedural static) */
-      ctx.fillStyle = '#f5efe8';
-      for (let i = 0; i < 22; i++) {
-        const sx = (i * 137) % w;
-        const sy = ((i * 41 + Math.floor(performance.now() / 80)) % (h * 0.12));
-        ctx.fillRect(sx, sy, 2, 2);
-      }
-    },
+    far:'ice', body:null, mark:'tree',
   },
   'Cryptids': {
     park:'Crater Field', sky:'#accfb9', wall:'#5f4f70', wallLine:'#f4e8b0',
     marker:'#fffaf0', track:'#a89078', grass:'#4a9a5a',
     crowd:['#8fa890','#b0a0c0','#c8b890','#90b8a8','#a89078'],
-    landmark(ctx, w, h) {
-      /* Bone-white full moon behind ragged crater rim silhouette. */
-      ctx.fillStyle = '#f5efe8';
-      ctx.beginPath(); ctx.arc(w * 0.72, h * 0.055, 14, 0, Math.PI*2); ctx.fill();
-      /* Crater rim: jagged black shapes rising along the horizon */
-      ctx.fillStyle = '#050508';
-      ctx.beginPath();
-      ctx.moveTo(0, h * 0.115);
-      const points = [ [0.06, 0.09], [0.14, 0.11], [0.22, 0.075], [0.30, 0.10], [0.38, 0.06],
-                       [0.46, 0.09], [0.55, 0.08], [0.64, 0.10], [0.75, 0.07],
-                       [0.85, 0.10], [0.94, 0.08], [1.0, 0.10] ];
-      for (const [px, py] of points) ctx.lineTo(w * px, h * py);
-      ctx.lineTo(w, h * 0.13); ctx.lineTo(0, h * 0.13);
-      ctx.closePath(); ctx.fill();
-      /* Glowing eyes scattered in the shadows */
-      ctx.fillStyle = '#c94b1a';
-      const eyes = [ [0.10, 0.098], [0.28, 0.108], [0.42, 0.10], [0.58, 0.105], [0.90, 0.105] ];
-      for (const [ex, ey] of eyes) {
-        ctx.fillRect(w * ex, h * ey, 1, 1);
-        ctx.fillRect(w * ex + 3, h * ey, 1, 1);
-      }
-    },
+    far:'forest', body:'moon', mark:'saucer',
   },
   'The Ancients': {
     park:'Colossus Coliseum', sky:'#f2cb92', wall:'#d8c898', wallLine:'#ffffff',
     marker:'#ffffff', track:'#d8b878', grass:'#4b9c49',
     crowd:['#f0e4c8','#d8c090','#c0a878','#e8d8b8','#b09868'],
-    landmark(ctx, w, h) {
-      /* Marble columns behind the wall */
-      ctx.fillStyle = '#eaeaea';
-      for (let i = 0; i < 8; i++) {
-        const x = w * (0.10 + i * 0.10);
-        ctx.fillRect(x, h * 0.02, 6, h * 0.11);
-        ctx.fillRect(x - 2, h * 0.02, 10, 3);
-        ctx.fillRect(x - 2, h * 0.115, 10, 3);
-      }
-      /* Setting sun between columns */
-      ctx.fillStyle = '#e88a3a';
-      ctx.beginPath(); ctx.arc(w * 0.5, h * 0.07, 8, 0, Math.PI * 2); ctx.fill();
-    },
+    far:'dunes', body:'lowsun', mark:'temple',
   },
   'Folklore': {
     park:'Whispering Grove', sky:'#f2ba7c', wall:'#8f5f2f', wallLine:'#fadfa6',
     marker:'#fffaf0', track:'#c09060', grass:'#51a046',
     crowd:['#e08840','#f0b860','#c06830','#d8a870','#a85828'],
-    landmark(ctx, w, h) {
-      /* Autumn-forest silhouette: sparse tree crowns */
-      ctx.fillStyle = '#0a0806';
-      const trees = [0.10, 0.22, 0.34, 0.44, 0.56, 0.68, 0.80, 0.92];
-      for (const tf of trees) {
-        const x = w * tf;
-        ctx.fillRect(x, h * 0.04, 3, h * 0.10);
-        ctx.beginPath(); ctx.arc(x + 1.5, h * 0.04, 9, 0, Math.PI * 2); ctx.fill();
-      }
-      /* Fireflies dotting the woods */
-      ctx.fillStyle = '#f4c25a';
-      for (let i = 0; i < 12; i++) {
-        const fx = ((i * 173) + Math.floor(performance.now() / 200)) % w;
-        const fy = h * (0.06 + ((i * 31) % 60) / 1000);
-        ctx.fillRect(fx, fy, 1, 1);
-      }
-    },
+    far:'forest', body:'lowsun', mark:'oak',
   },
 };
 const DEFAULT_THEME = {
   park:'The Sandlot', sky:'#72c7f0', wall:'#2f8a44', wallLine:'#fff4dc',
   marker:'#fffaf0', track:'#d0a060', grass:'#47ab52',
   crowd:['#e05a5a','#f0c050','#5aa8e0','#60c880','#e88ac0'],
-  landmark(){},
+  far:'hills', body:'sun', mark:'watertower',
 };
+
+/* ------------------------- THE SCENERY -------------------------
+   What stands BEHIND the park: the sky's sun or moon, clouds that drift,
+   a far horizon, and one landmark that says whose park this is. It is
+   drawn by both cameras from one set of functions, because a park that
+   looked like two places depending on the camera would be two parks.
+
+   It used to be a landmark function per park, written in fractions of the
+   field (`w * 0.44, h * 0.03`) and drawn as a few black rectangles: a
+   castle was three bars, a clock was a disc, and in the plate camera the
+   whole thing was squeezed into the top of the sky where the line score
+   sits over it on a phone. Two faults in one.
+
+   EVERYTHING HERE IS COUNTED IN BLOCKS. `u` is one block of the world
+   (PIX logical pixels), and every rectangle is a whole number of them, so
+   in retro mode the scenery lands on the same grid as the field, and in
+   smooth mode it is still art rather than smears.
+
+   THE LANDMARK STANDS ON A BASELINE, not at a height in the sky. Each
+   camera hands in where the stands' top edge is, and the landmark rises
+   from behind them, which is how a real one reads over a real outfield.
+
+   THE TOP ROWS OF THE WORLD STAY SKY. `fieldBand` reads the world's top
+   row at the midline for the letterbox colour, so nothing here reaches
+   above y 14: a cloud or a spire across that row would paint the band
+   above the picture its colour. */
+function sceneMix(a, b, t) {
+  const p = h => { const c = h.replace('#', ''); return [0, 2, 4].map(i => parseInt(c.substr(i, 2), 16)); };
+  const x = p(a), y = p(b);
+  return '#' + x.map((v, i) => clamp(Math.round(v + (y[i] - v) * t), 0, 255)
+    .toString(16).padStart(2, '0')).join('');
+}
+/* A deterministic 0..1 per integer, so a skyline is the same skyline on
+   every frame and every visit. */
+function sceneHash(n) { const s = Math.sin(n * 127.1 + 311.7) * 43758.5453; return s - Math.floor(s); }
+
+/* The sun or the moon, and the clouds. `x0` and `x1` are the stretch of
+   sky the camera can actually see, so the sun is always in the picture
+   rather than wherever a fraction of the field put it. */
+function drawSkyDressing(ctx, x0, x1, top, base, bodyX, theme) {
+  const u = PIX, now = performance.now();
+  const span = x1 - x0;
+  const body = theme.body;
+  if (body) {
+    const moon = body === 'moon' || body === 'bloodmoon';
+    const bx = Math.round(bodyX / u) * u;
+    const by = Math.round((top + (base - top) * (body === 'lowsun' ? 0.62 : 0.34)) / u) * u;
+    const r = u * (moon ? 6 : 7);
+    const core = body === 'bloodmoon' ? '#c9452a' : moon ? '#f4efe0' : body === 'lowsun' ? '#ffb45a' : '#fff1b8';
+    const halo = ctx.createRadialGradient(bx, by, r * 0.6, bx, by, r * 4);
+    halo.addColorStop(0, body === 'bloodmoon' ? 'rgba(201,69,42,.32)' : moon ? 'rgba(244,239,224,.26)' : 'rgba(255,241,184,.42)');
+    halo.addColorStop(1, 'rgba(255,241,184,0)');
+    ctx.fillStyle = halo;
+    ctx.fillRect(bx - r * 4, Math.max(14, by - r * 4), r * 8, r * 8);
+    /* a disc of whole blocks: rows of a circle, so it is round on the grid */
+    for (let j = -r; j < r; j += u) {
+      const half = Math.floor(Math.sqrt(r * r - (j + u / 2) * (j + u / 2)) / u) * u;
+      ctx.fillStyle = core;
+      ctx.fillRect(bx - half, by + j, half * 2, u);
+    }
+    if (moon) {   /* craters, which is what makes a disc a moon */
+      ctx.fillStyle = body === 'bloodmoon' ? '#9a2e1c' : '#d8d0bc';
+      for (const [cx, cy, s] of [[-2, -2, 2], [1, 1, 2], [2, -3, 1], [-3, 2, 1]])
+        ctx.fillRect(bx + cx * u, by + cy * u, s * u, s * u);
+    } else {      /* a hot core, a block smaller */
+      ctx.fillStyle = body === 'lowsun' ? '#ffd37a' : '#fffbe6';
+      ctx.fillRect(bx - r + 3 * u, by - r + 3 * u, (r - 3 * u) * 2, (r - 3 * u) * 2);
+    }
+  }
+  /* CLOUDS DRIFT, slowly, and they are shaded: a lit top, a body, and a
+     flat grey belly, which is the difference between a cloud and a white
+     rectangle. They wrap across the visible sky, so there is always sky
+     between them. */
+  if (!theme.snowStorm) {
+    const drift = now / 1400;
+    const room = base - top;
+    for (let i = 0; i < 4; i++) {
+      const cw = u * (8 + Math.floor(sceneHash(i + 3) * 8));
+      const cx = x0 + (((sceneHash(i) * span + drift * (0.5 + i * 0.18) * u) % (span + cw)) + span + cw) % (span + cw) - cw;
+      const cy = Math.max(16, Math.round((top + room * (0.14 + sceneHash(i + 9) * 0.34)) / u) * u);
+      const X = Math.round(cx / u) * u;
+      ctx.fillStyle = 'rgba(210,222,232,.55)';
+      ctx.fillRect(X, cy + 3 * u, cw, u);
+      ctx.fillStyle = 'rgba(255,255,255,.78)';
+      ctx.fillRect(X, cy + u, cw, 2 * u);
+      ctx.fillRect(X + Math.round(cw * 0.2 / u) * u, cy - u, Math.round(cw * 0.45 / u) * u, 2 * u);
+      ctx.fillRect(X + Math.round(cw * 0.55 / u) * u, cy, Math.round(cw * 0.3 / u) * u, u);
+    }
+  }
+  if (theme.snow) {   /* snow falling across the whole sky, a block a flake */
+    ctx.fillStyle = 'rgba(255,255,255,.85)';
+    const fall = now / 60;
+    for (let i = 0; i < 40; i++) {
+      const fx = x0 + ((sceneHash(i) * span + Math.sin(now / 900 + i) * 6 * u) % span + span) % span;
+      const fy = 16 + (sceneHash(i + 50) * (base - 16) + fall * (0.6 + sceneHash(i + 7) * 0.6)) % (base - 16);
+      ctx.fillRect(Math.round(fx / u) * u, Math.round(fy / u) * u, u, u);
+    }
+  }
+}
+
+/* THE FAR HORIZON, in two layers, both fading into the sky: the far one is
+   mostly haze and the near one is a little darker. `baseAt(x)` is where
+   the stands' top edge is in that column, so on the wide camera the
+   horizon rides the curve of the wall. */
+function drawFarHorizon(ctx, x0, x1, baseAt, theme) {
+  const u = PIX, kind = theme.far || 'hills', sky = theme.sky;
+  const tone = {
+    hills: '#2f6a3c', forest: '#1f4a2c', city: '#34404e', sea: '#2c6a86',
+    crags: '#3a2c3c', dunes: '#b8844e', ice: '#8aa8c0',
+  }[kind] || '#2f6a3c';
+  const start = Math.floor(x0 / u) - 1, end = Math.ceil(x1 / u) + 1;
+  for (const layer of [0, 1]) {
+    const col = sceneMix(tone, sky, layer ? 0.42 : 0.66);
+    ctx.fillStyle = col;
+    for (let b = start; b <= end; b++) {
+      const x = b * u, base = Math.round(baseAt(x) / u) * u;
+      const n = b + layer * 71;
+      let hb;   /* the height in blocks for this column */
+      if (kind === 'hills') hb = 3 + Math.round(3 * Math.sin(n / 11) + 2 * Math.sin(n / 5.3 + 1));
+      else if (kind === 'forest') hb = 3 + Math.round(2 * Math.sin(n / 9)) + ((n % 4 === 0) ? 3 : (n % 2) ? 1 : 2);
+      else if (kind === 'crags') hb = 4 + Math.round(4 * Math.abs(Math.sin(n / 6.1)) + 2 * sceneHash(n));
+      else if (kind === 'dunes') hb = 2 + Math.round(2.5 * (1 + Math.sin(n / 13 + layer)));
+      else if (kind === 'ice') hb = 3 + Math.round(5 * Math.abs(Math.sin(n / 8.3)));
+      else if (kind === 'sea') hb = layer ? 0 : 2;
+      else { /* city: a building is several columns of one height */
+        const blk = Math.floor(n / 4);
+        hb = 3 + Math.floor(sceneHash(blk) * (layer ? 7 : 10));
+      }
+      if (hb <= 0) continue;
+      ctx.fillRect(x, base - hb * u, u, hb * u);
+      if (kind === 'ice' && hb >= 6) {           /* snow on the peaks */
+        ctx.fillStyle = sceneMix('#ffffff', sky, 0.25);
+        ctx.fillRect(x, base - hb * u, u, 2 * u);
+        ctx.fillStyle = col;
+      }
+      if (kind === 'city' && layer && (b + Math.floor(n / 4)) % 3 === 0) {   /* lit windows */
+        ctx.fillStyle = sceneMix('#f6e3a0', sky, 0.4);
+        for (let k = 2; k < hb - 1; k += 2) ctx.fillRect(x, base - k * u, u, u);
+        ctx.fillStyle = col;
+      }
+    }
+    if (kind === 'sea' && !layer) {              /* sun glints on the water */
+      ctx.fillStyle = sceneMix('#ffffff', sky, 0.3);
+      for (let b = start; b <= end; b += 7) {
+        const x = b * u, base = Math.round(baseAt(x) / u) * u;
+        if (sceneHash(b) > 0.4) ctx.fillRect(x, base - 2 * u, 2 * u, u);
+      }
+    }
+  }
+}
+
+/* THE LANDMARKS. Each is drawn on a grid of blocks with the origin at the
+   middle of its foot and y counting UP, lit from the left. `R` takes block
+   units, so a landmark is a small piece of pixel art rather than a set of
+   fractions. They are hazed toward the sky a little, because they are
+   further away than anything else in the picture. */
+function drawLandmark(ctx, x, base, theme) {
+  const u = PIX, sky = theme.sky, mark = theme.mark;
+  if (!mark) return;
+  const X = Math.round(x / u) * u, B = Math.round(base / u) * u;
+  const hz = c => sceneMix(c, sky, 0.10);
+  const R = (bx, by, bw, bh, c) => { ctx.fillStyle = hz(c); ctx.fillRect(X + bx * u, B - (by + bh) * u, bw * u, bh * u); };
+  const tri = (bx, by, half, bh, c) => {   /* a stepped cone, one row a block */
+    for (let j = 0; j < bh; j++) { const hw = Math.max(0, Math.round(half * (1 - j / bh))); R(bx - hw, by + j, hw * 2 + 1, 1, c); } };
+  switch (mark) {
+    case 'castle': {
+      const st = '#a898c4', sh = '#76649a', rf = '#5a3a8a', dk = '#3a2a56';
+      R(-9, 0, 18, 9, sh); R(-9, 0, 8, 9, st);
+      for (let i = -9; i < 9; i += 2) R(i, 9, 1, 1, sh);            /* crenels */
+      R(-2, 0, 4, 4, dk); R(-1, 4, 2, 1, dk);                          /* the gate */
+      for (const [tx, th] of [[-12, 13], [9, 13], [-3, 18]]) {
+        R(tx, 0, 4 + (tx === -3 ? 2 : 0), th, tx < 0 ? st : sh);
+        tri(tx + 2 + (tx === -3 ? 1 : 0), th, 3, 5, rf);
+        R(tx + 2 + (tx === -3 ? 1 : 0), th + 5, 1, 3, dk);
+        R(tx + 3 + (tx === -3 ? 1 : 0), th + 7, 2, 1, '#f4c25a');     /* a pennant */
+        R(tx + 1, th - 4, 1, 2, dk);                                     /* a window */
+      }
+      break; }
+    case 'clock': {
+      const br = '#a07a50', bs = '#7a5a3a', gd = '#d8b060', dk = '#3a2a1a';
+      R(-4, 0, 8, 22, bs); R(-4, 0, 4, 22, br);
+      R(-5, 14, 10, 8, bs); R(-5, 14, 5, 8, br);
+      for (let j = 0; j < 7; j++) { const hw = Math.round(4 * (1 - j / 7)); R(-hw, 22 + j, hw * 2 + 1, 1, '#5a6a5a'); }
+      R(0, 29, 1, 3, dk);
+      /* the clock face, and hands that really do go round */
+      R(-3, 15, 7, 6, '#f4ead0'); R(-2, 14, 5, 1, '#f4ead0'); R(-2, 21, 5, 1, '#f4ead0');
+      const a = performance.now() / 4000;
+      R(0, 18, 1, 1, dk);
+      R(Math.round(Math.cos(a) * 2), 18 + Math.round(Math.sin(a) * 2), 1, 1, dk);
+      R(Math.round(Math.cos(a / 12) * 1), 18 + Math.round(Math.sin(a / 12) * 1), 1, 1, dk);
+      for (let j = 2; j < 13; j += 3) { R(-2, j, 1, 2, dk); R(1, j, 1, 2, dk); }
+      R(-6, 0, 12, 1, bs);
+      break; }
+    case 'gate': {
+      const ir = '#3a3e46', hi = '#6a707a';
+      R(-12, 0, 3, 16, hi); R(9, 0, 3, 16, ir);
+      tri(-10, 16, 2, 3, hi); tri(10, 16, 2, 3, ir);
+      for (let i = -8; i <= 8; i += 2) {
+        const top = 10 + Math.round(4 * Math.cos(i / 8 * Math.PI / 2));
+        R(i, 0, 1, top, i < 0 ? hi : ir); R(i, top, 1, 1, '#c9a256');
+      }
+      R(-9, 4, 18, 1, ir); R(-9, 9, 18, 1, ir);
+      /* a chimney behind it, smoking: this is the Iron Yard */
+      R(13, 0, 3, 24, '#5a4a44'); R(13, 22, 3, 1, '#a0402a');
+      const s = performance.now() / 500;
+      for (let k = 0; k < 4; k++) R(14 + Math.round(Math.sin(s + k) + k), 25 + k * 2, 2 + (k > 1 ? 1 : 0), 2, '#9aa4ac');
+      break; }
+    case 'spire': {
+      const st = '#4a3a56', hi = '#6a5478', gl = '#f6c86a';
+      R(-8, 0, 16, 10, st); R(-8, 0, 7, 10, hi);
+      R(-3, 0, 6, 19, st); R(-3, 0, 3, 19, hi);
+      tri(0, 19, 3, 8, st); R(0, 27, 1, 2, st);
+      tri(-6, 10, 2, 5, hi); tri(6, 10, 2, 5, st);
+      R(-1, 14, 2, 3, gl); R(-6, 4, 2, 2, gl); R(5, 5, 1, 2, gl); /* lit windows */
+      /* bats, which move */
+      const s = performance.now() / 300;
+      for (let k = 0; k < 4; k++) {
+        const bx = -18 + ((k * 13 + Math.floor(s * 0.6 * (k + 1))) % 40), by = 20 + k * 3 + Math.round(Math.sin(s + k) * 2);
+        const up = Math.floor(s * 2 + k) % 2, c = '#1a1020';
+        R(bx, by, 1, 1, c);                                       /* a body, two wings that beat */
+        R(bx - 1, by + up, 1, 1, c); R(bx + 1, by + up, 1, 1, c);
+        R(bx - 2, by + up * 2, 1, 1, c); R(bx + 2, by + up * 2, 1, 1, c);
+      }
+      break; }
+    case 'lighthouse': {
+      tri(0, 0, 7, 3, '#6a6458');
+      for (let j = 0; j < 18; j++) { const hw = 3 - Math.floor(j / 9);
+        R(-hw, 3 + j, hw * 2 + 1, 1, Math.floor(j / 3) % 2 ? '#c8402a' : '#f4ecdc'); }
+      R(-3, 21, 7, 1, '#2a2a30'); R(-2, 22, 5, 3, '#f6e08a'); R(-3, 25, 7, 1, '#2a2a30');
+      tri(0, 26, 3, 3, '#c8402a');
+      /* the beam sweeps */
+      const a = Math.sin(performance.now() / 700);
+      ctx.fillStyle = 'rgba(255,240,170,.22)';
+      ctx.beginPath(); ctx.moveTo(X, B - 23.5 * u);
+      ctx.lineTo(X + a * 40 * u, B - 20 * u); ctx.lineTo(X + a * 40 * u, B - 27 * u); ctx.closePath(); ctx.fill();
+      break; }
+    case 'emerald': {
+      const e1 = '#5ad07a', e2 = '#2f9a52', e3 = '#1c6a38';
+      for (const [tx, th, w] of [[-10, 12, 3], [-5, 20, 4], [1, 26, 4], [7, 16, 3], [11, 10, 3]]) {
+        R(tx, 0, w, th, e2); R(tx, 0, 1, th, e1);
+        tri(tx + Math.floor(w / 2), th, Math.ceil(w / 2), 4, e3);
+        R(tx + 1, th - 3, 1, 1, '#d8ffe0');
+      }
+      R(2, 30, 1, 3, '#f4c25a');
+      break; }
+    case 'ship': {
+      const hl = '#6a4a2a', hh = '#8a6a3a', dk = '#3a2616', sl = '#f4ecdc';
+      for (let j = 0; j < 4; j++) R(-12 + (3 - j), j, 24 - (3 - j) * 2 + j, 1, j === 3 ? hh : hl);
+      R(-13, 4, 3, 2, hh); R(10, 4, 3, 1, dk);
+      for (const [mx, mh] of [[-4, 18], [4, 14]]) {
+        R(mx, 4, 1, mh, dk);
+        const sw = performance.now() / 600;
+        for (let j = 0; j < mh - 5; j++) R(mx - 4 + (j > (mh - 5) / 2 ? Math.round(Math.sin(sw) * 0.6) : 0), 7 + j, 8, 1, j % 5 === 4 ? '#e0d8c8' : sl);
+      }
+      R(-4, 22, 3, 2, '#1a1a1e'); R(-3, 23, 1, 1, '#f4ecdc');       /* the flag */
+      break; }
+    case 'treehouse': {
+      R(-1, 0, 3, 12, '#7a5030'); R(-1, 0, 1, 12, '#9a6a40');
+      R(-4, 10, 9, 5, '#c85a3a'); R(-4, 10, 4, 5, '#e07a50');
+      tri(0, 15, 6, 3, '#3a6ab0');
+      R(-1, 11, 2, 2, '#3a2a1a');                                        /* a door */
+      for (const [bx, by, r] of [[-8, 16, 5], [7, 14, 5], [0, 21, 6]])
+        for (let j = -r; j <= r; j++) { const hw = Math.round(Math.sqrt(r * r - j * j)); R(bx - hw, by + j, hw * 2 + 1, 1, j < 0 ? '#3f8a40' : '#5aa850'); }
+      R(-5, 0, 1, 10, '#b09060');                                        /* a ladder */
+      for (let j = 1; j < 10; j += 2) R(-6, j, 3, 1, '#b09060');
+      break; }
+    case 'tree': {
+      for (let k = 0; k < 4; k++) tri(0, 3 + k * 6, 11 - k * 2, 9, k % 2 ? '#1f6a3a' : '#2a7a44');
+      R(-1, 0, 3, 3, '#6a4a2a');
+      R(-1, 27, 3, 3, '#f4c25a'); R(0, 30, 1, 1, '#fff3b0');
+      const tw = Math.floor(performance.now() / 400);
+      const lights = ['#e04a40', '#f4c25a', '#5cb6e5', '#fff3f0'];
+      for (let i = 0; i < 14; i++) {
+        const j = 4 + (i * 7) % 22, hw = Math.round(10 * (1 - (j % 9) / 9) * 0.8);
+        R(((i * 5) % (hw * 2 + 1)) - hw, j, 1, 1, lights[(i + tw) % 4]);
+      }
+      /* snow on the boughs */
+      for (let k = 0; k < 4; k++) R(-(9 - k * 2), 3 + k * 6, 3, 1, '#ffffff');
+      break; }
+    case 'saucer': {
+      const bob = Math.round(Math.sin(performance.now() / 500) * 1.5);
+      R(-1, 0, 2, 3, '#1f3a2a'); R(-2, 3, 4, 3, '#1f3a2a');            /* a lone pine */
+      tri(0, 6, 4, 8, '#1f4a30');
+      R(-9, 18 + bob, 18, 2, '#8a94a4'); R(-7, 20 + bob, 14, 1, '#b8c2d0');
+      R(-4, 21 + bob, 8, 2, '#9ad8c0'); R(-3, 23 + bob, 6, 1, '#c8f0e0');
+      for (let i = -7; i <= 7; i += 3) R(i, 18 + bob, 1, 1, Math.floor(performance.now() / 250 + i) % 2 ? '#f6e08a' : '#e05a5a');
+      ctx.fillStyle = 'rgba(180,255,210,.18)';                           /* the beam */
+      ctx.beginPath(); ctx.moveTo(X - 4 * u, B - (18 + bob) * u); ctx.lineTo(X + 4 * u, B - (18 + bob) * u);
+      ctx.lineTo(X + 7 * u, B); ctx.lineTo(X - 7 * u, B); ctx.closePath(); ctx.fill();
+      break; }
+    case 'temple': {
+      const mb = '#f0e6cc', ms = '#cbbf9e';
+      R(-13, 0, 26, 2, ms); R(-12, 2, 24, 1, mb);
+      for (let i = -11; i <= 9; i += 4) { R(i, 3, 2, 11, mb); R(i + 1, 3, 1, 11, ms); }
+      R(-12, 14, 24, 2, mb); R(-12, 14, 24, 1, ms);
+      for (let j = 0; j < 5; j++) R(-12 + j * 2, 16 + j, 24 - j * 4, 1, j % 2 ? ms : mb);
+      R(-1, 18, 2, 1, '#c9a256');
+      break; }
+    case 'oak': {
+      const tk = '#5a3a22', th = '#7a5232';
+      R(-2, 0, 5, 10, tk); R(-2, 0, 2, 10, th);
+      R(-6, 8, 4, 2, tk); R(3, 9, 4, 2, tk);
+      const leaves = ['#d86a2a', '#e8963a', '#c04a24', '#f0b050'];
+      for (const [bx, by, r] of [[-7, 13, 5], [7, 13, 5], [0, 17, 7], [-3, 22, 4], [4, 21, 4]])
+        for (let j = -r; j <= r; j++) { const hw = Math.round(Math.sqrt(r * r - j * j));
+          for (let i = -hw; i <= hw; i++) R(bx + i, by + j, 1, 1, leaves[Math.floor(sceneHash(bx * 31 + i * 7 + j * 13) * 4)]); }
+      /* a leaf falls */
+      const f = (performance.now() / 70) % 60;
+      R(-6 + Math.round(Math.sin(f / 6) * 3), 14 - Math.floor(f / 4), 1, 1, '#f0b050');
+      break; }
+    case 'watertower': {
+      R(-5, 0, 1, 12, '#6a7078'); R(4, 0, 1, 12, '#6a7078');
+      R(-5, 5, 10, 1, '#6a7078');
+      R(-6, 12, 12, 8, '#c8ccd0'); R(-6, 12, 5, 8, '#e4e6ea');
+      R(-4, 15, 8, 2, '#cf3229');                                        /* a stripe in the arcade red */
+      tri(0, 20, 6, 3, '#9aa0a8');
+      break; }
+    case 'windmill': {
+      R(-2, 0, 4, 16, '#b0703a'); R(-2, 0, 2, 16, '#c88a4a'); tri(0, 16, 3, 3, '#7a4a2a');
+      const a = performance.now() / 900;
+      for (let k = 0; k < 4; k++) { const ang = a + k * Math.PI / 2;
+        for (let r = 1; r <= 8; r++) R(Math.round(Math.cos(ang) * r), 17 + Math.round(Math.sin(ang) * r), 1, 1, r > 2 ? '#f0e6cc' : '#7a4a2a'); }
+      break; }
+    case 'pines': {
+      for (const [px, ph] of [[-10, 14], [-4, 20], [3, 16], [9, 12]]) { R(px, 0, 1, 2, '#4a3a2a'); tri(px, 2, Math.round(ph / 4), ph, px < 0 ? '#2a6a40' : '#1f5a36'); }
+      break; }
+    case 'scoreboard': {
+      R(-2, 0, 2, 10, '#3a3e46'); R(4, 0, 2, 10, '#3a3e46');
+      R(-10, 10, 20, 12, '#1a2a22'); R(-10, 21, 20, 1, '#f4c25a');
+      for (let i = 0; i < 6; i++) R(-8 + i * 3, 13, 2, 3, i % 3 ? '#f6e08a' : '#e05a5a');
+      R(-8, 17, 16, 2, '#6ab0e0');
+      break; }
+  }
+}
+
+/* One call per camera. `x0` and `x1` are the sky the camera shows, `top`
+   and `base(x)` where it starts and where the stands' top edge is, and
+   `markX` and `bodyX` where the landmark and the sun or moon stand. Both
+   are the caller's call because only the caller knows what is laid over
+   its sky: the line score on a phone, the park's name on a desktop. */
+function drawScenery(ctx, x0, x1, top, baseAt, markX, bodyX, theme) {
+  drawSkyDressing(ctx, x0, x1, top, baseAt(markX), bodyX, theme);
+  drawFarHorizon(ctx, x0, x1, baseAt, theme);
+  drawLandmark(ctx, markX, baseAt(markX), theme);
+}
+
 function currentTheme() {
   /* You are at HOME in your own park. The theme used to be the opponent's
      in every game, so a franchise could pick a stadium and never play in
@@ -4537,7 +4734,8 @@ const PARKS = {
     effect:'Home runs +32% · extra base hits -8%',
     theme:{ sky:'#7fb8d8', wall:'#9e3a2a', wallLine:'#f6ead2', marker:'#fffaf0',
             track:'#c08a58', grass:'#43a049',
-            crowd:['#e05a5a','#f0c050','#5aa8e0','#d8b070','#c06888'] },
+            crowd:['#e05a5a','#f0c050','#5aa8e0','#d8b070','#c06888'],
+            far:'city', body:'sun', mark:'watertower' },
   },
   cavern: {
     name:'Cavern Park', hr:0.68, xbh:1.28, crowd:0,
@@ -4545,7 +4743,8 @@ const PARKS = {
     effect:'Home runs -32% · extra base hits +28%',
     theme:{ sky:'#8fd0e8', wall:'#22643a', wallLine:'#f8f0d2', marker:'#fffaf0',
             track:'#b8945e', grass:'#2f8a44',
-            crowd:['#6a9a7a','#8fbfa0','#c8d8b0','#4a7a58','#a8c898'] },
+            crowd:['#6a9a7a','#8fbfa0','#c8d8b0','#4a7a58','#a8c898'],
+            far:'crags', body:'sun', mark:'pines' },
   },
   sandlot: {
     name:'Sandlot Common', hr:1.0, xbh:1.0, crowd:0,
@@ -4553,7 +4752,8 @@ const PARKS = {
     effect:'Plays completely straight',
     theme:{ sky:'#72c7f0', wall:'#8a5f36', wallLine:'#fff4dc', marker:'#fffaf0',
             track:'#d0a060', grass:'#4fb055',
-            crowd:['#e0b070','#c8a880','#e8d8b0','#b09060','#d8c8a0'] },
+            crowd:['#e0b070','#c8a880','#e8d8b0','#b09060','#d8c8a0'],
+            far:'hills', body:'sun', mark:'watertower' },
   },
   icebox: {
     name:'The Icebox', hr:0.78, xbh:0.94, crowd:0,
@@ -4561,7 +4761,8 @@ const PARKS = {
     effect:'Home runs -22% · extra base hits -6%',
     theme:{ sky:'#c3e7f6', wall:'#4a6a80', wallLine:'#ffffff', marker:'#ffffff',
             track:'#c8ccd4', grass:'#5aa87a', snow:true,
-            crowd:['#c0d8e8','#f8f8fa','#9ab8cc','#e0eef6','#8aa8bc'] },
+            crowd:['#c0d8e8','#f8f8fa','#9ab8cc','#e0eef6','#8aa8bc'],
+            far:'ice', body:'sun', mark:'lighthouse' },
   },
   bowl: {
     name:'The Thunder Bowl', hr:1.0, xbh:1.0, crowd:4,
@@ -4569,7 +4770,8 @@ const PARKS = {
     effect:'No park factor · your hitters get a real home crowd bump',
     theme:{ sky:'#86bdd8', wall:'#38404c', wallLine:'#ffd44a', marker:'#fffaf0',
             track:'#b08a58', grass:'#3f9145',
-            crowd:['#cf3229','#f0c050','#1566ae','#eeeeee','#cf3229'] },
+            crowd:['#cf3229','#f0c050','#1566ae','#eeeeee','#cf3229'],
+            far:'city', body:'sun', mark:'scoreboard' },
   },
   flats: {
     name:'Sunset Flats', hr:1.18, xbh:1.12, crowd:0,
@@ -4577,7 +4779,8 @@ const PARKS = {
     effect:'Home runs +18% · extra base hits +12%',
     theme:{ sky:'#f2ba7c', wall:'#a8703a', wallLine:'#fadfa6', marker:'#fffaf0',
             track:'#d8a860', grass:'#63a84a',
-            crowd:['#e08840','#f0b860','#c06830','#d8a870','#f0d0a0'] },
+            crowd:['#e08840','#f0b860','#c06830','#d8a870','#f0d0a0'],
+            far:'dunes', body:'lowsun', mark:'windmill' },
   },
 };
 const PARK_KEYS = Object.keys(PARKS);
@@ -4585,7 +4788,7 @@ const PARK_KEYS = Object.keys(PARKS);
 /* The franchise's own park, as a full theme the field renderer can use. */
 function franchiseTheme(F) {
   const P = PARKS[F && F.park] || PARKS.sandlot;
-  return Object.assign({ park: F && F.parkName ? F.parkName : P.name, landmark(){} }, P.theme);
+  return Object.assign({ park: F && F.parkName ? F.parkName : P.name }, P.theme);
 }
 /* The factors in force for the game being played: your park when you are
    home, otherwise none. A visiting club does not carry its fences with it. */
@@ -13347,19 +13550,14 @@ function drawPlateView(ctx, w, h, t, pitch, inWindup, theme) {
   sky.addColorStop(1, plateTint(theme.sky, night ? 0.05 : 0.22));
   ctx.fillStyle = sky;
   ctx.fillRect(0, 0, w, P.horizon);
-  /* Daylight gets the wide camera's cloud banks: flat pixel slabs, no
-     gradients, above the roofline so they never touch the stands. */
-  if (!night) {
-    ctx.fillStyle = 'rgba(255,255,255,.72)';
-    for (const [cxf, cyf, cw2] of [[0.10, 44, 52], [0.40, 22, 34],
-                                   [0.66, 56, 42], [0.88, 30, 58]]) {
-      const bx = w * cxf, by = cyf;
-      ctx.fillRect(bx, by + 6, cw2, 7);
-      ctx.fillRect(bx + cw2 * 0.18, by, cw2 * 0.5, 7);
-      ctx.fillRect(bx + cw2 * 0.55, by + 2, cw2 * 0.32, 6);
-    }
-  }
-  if (theme.landmark) { ctx.save(); ctx.globalAlpha = 0.9; theme.landmark(ctx, w, h * 0.9); ctx.restore(); }
+  /* THE SCENERY STANDS WHERE THE CAMERA CAN SEE IT. This camera shows a
+     third of the world's width on a phone, and the right of that third is
+     under the line score, so the landmark stands a quarter of the way into
+     whatever the crop is, on the roofline. On a desktop the crop starts
+     below the sky altogether and the wide camera carries the park. */
+  { const cx0 = FIELD_CAM.sx * PIX, cx1 = (FIELD_CAM.sx + FIELD_CAM.sw) * PIX;
+    drawScenery(ctx, cx0, cx1, Math.max(14, FIELD_CAM.sy * PIX), () => 128,
+                cx0 + (cx1 - cx0) * 0.30, cx0 + (cx1 - cx0) * 0.09, theme); }
   /* THE STANDS ARE A FAR STRIP NOW, not a wall the game is played against,
      and they are TIERED rather than confetti. The first strip was a flat
      slab with 300 random flecks over it, which reads as static; the wide
@@ -14184,20 +14382,20 @@ function drawField(ctx, w, h, t, pitch, inWindup) {
   if (theme.night) {
     ctx.fillStyle = 'rgba(234,234,234,.5)';
     for (let x = 13; x < w; x += 61) ctx.fillRect(x, 6 + (x * 7) % 18, 2, 2);
-  } else {
-    /* Daylight gets clouds instead: flat pixel banks, no gradients. */
-    ctx.fillStyle = 'rgba(255,255,255,.72)';
-    for (const [cxf, cyf, cw] of [[0.13, 0.30, 46], [0.37, 0.16, 30],
-                                  [0.62, 0.34, 38], [0.86, 0.20, 52]]) {
-      const bx = w * cxf, by = skyH * cyf + 6;
-      ctx.fillRect(bx, by + 5, cw, 6);
-      ctx.fillRect(bx + cw * 0.18, by, cw * 0.5, 6);
-      ctx.fillRect(bx + cw * 0.55, by + 2, cw * 0.3, 5);
-    }
   }
 
-  /* Landmark: theme-specific silhouette in the sky area. */
-  if (theme.landmark) theme.landmark(ctx, w, h);
+  /* The scenery behind the stands: the sun, the clouds, the far horizon
+     riding the wall's curve, and the park's landmark, left of centre so
+     the park's name and the line score never sit on it. */
+  const wallH = 24, trackH = 13, crowdH = 34;
+  const wallTopAt = (x) => {
+    const u = (x / w) * 2 - 1;
+    return skyH + 4 + u * u * 56;
+  };
+  /* `top` is 30 rather than the sky's real top, because a desktop's crop
+     starts a little into the sky and a sun placed off the whole of it came
+     out with its top sliced off. */
+  drawScenery(ctx, 0, w, 30, x => wallTopAt(x) - crowdH, w * 0.30, w * 0.66, theme);
 
   /* Light towers, glowing */
   const tower = (tx) => {
@@ -14228,11 +14426,6 @@ function drawField(ctx, w, h, t, pitch, inWindup) {
      the warning track and the top of the grass all follow the same
      curve, which is most of what makes the top of the frame read as a
      ballpark instead of a wallpaper strip. */
-  const wallH = 24, trackH = 13, crowdH = 34;
-  const wallTopAt = (x) => {
-    const u = (x / w) * 2 - 1;
-    return skyH + 4 + u * u * 56;
-  };
   /* Stands: tiered rows of fans stepping down toward the wall, riding
      the wall's curve. A wave rolls through, and during a home run's
      camera shake the whole crowd is on its feet. */

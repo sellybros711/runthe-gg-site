@@ -5054,6 +5054,63 @@ private.
 the way `Wrestling/` and `Tour/` answer theirs, because the capitalised URL is
 the one that gets typed and pasted. It carries its own robots tag.
 
+### Behind the wall: every park has a sky, a horizon and a landmark
+
+```
+node mythiball/check-posture.mjs   section 8: every park's scenery is one the game can draw
+```
+
+Asked for as better scenery during play. What stood behind the wall was the
+oldest drawing on the page: a `landmark(ctx, w, h)` per park, written in
+fractions of the field and drawn as a few black rectangles. A castle was three
+bars and a clock was a disc. The plate camera drew it at the top of the sky,
+which on a phone is exactly where the line score sits. So the one thing that said
+whose park this was sat under a table. **The six franchise parks had no
+landmark at all.**
+
+**It is `drawScenery` now, one set of functions for both cameras**, and a park
+names what stands behind it rather than drawing it:
+
+| | what it is | drawn by |
+|---|---|---|
+| `body` | `sun`, `lowsun`, `moon`, `bloodmoon` or null | `drawSkyDressing`, with the drifting clouds and the snow |
+| `far` | `hills`, `forest`, `city`, `sea`, `crags`, `dunes`, `ice` | `drawFarHorizon`, two layers hazed into the sky |
+| `mark` | one of seventeen landmarks | `drawLandmark`, a `switch` |
+
+**Everything is counted in blocks.** `R()` takes block units with the origin at
+the landmark's foot and y counting up, so in retro mode the scenery lands on the
+field's own grid. In smooth mode it is still pixel art rather than smears.
+
+**The landmark stands on a baseline, not at a height.** Each camera hands in
+where the stands' top edge is. On the wide camera that follows the wall's curve.
+On the plate camera it is the roofline at 128.
+
+**Where it stands is the CALLER's call**, because only the caller knows what is
+laid over its sky. The plate camera puts the landmark 30% into whatever the crop
+is and the sun 9% in, because the right of a phone's crop is under the line
+score. The wide camera puts the landmark at 0.30 and the sun at 0.66 of the
+world, which clears both the park's name and the score. **A desktop's plate crop
+starts below the sky altogether**, so there the wide camera carries the park.
+That is accepted rather than fought: getting the sky into that crop would mean
+moving the camera every guard in this file is written against.
+
+**Nothing reaches above y 14, and the wide sun is placed as if the sky began at
+30.** `fieldBand` reads the world's top row at the midline for the letterbox
+colour, so a spire or a cloud across that row paints the band above the picture.
+And a desktop's wide crop starts a little into the sky, which sliced the top off
+a sun placed against the whole of it.
+
+**A name the switch does not know draws nothing and throws nothing.** A park
+added with a typo is a park with an empty sky and no report, so check-posture's
+section 8 reads every `far`, `body` and `mark` out of the page. It holds them to
+what the three functions answer, and it counts the themes: a theme that lost its
+scenery line would otherwise drop out of the regex and pass. Both halves were
+proved by mutation, with a misspelt landmark and a deleted `far`.
+
+**The haze is 0.10 and was 0.18.** Hazing is what puts a landmark behind the
+stands rather than on them. At 0.18 the lavender castle vanished into a pale
+blue sky, which a screenshot said and no guard can.
+
 ### The brand shares Run The Tour's plumbing and deliberately not its look
 
 ```
@@ -6682,7 +6739,7 @@ demanded zero would be holding the page to a design it no longer has.
 The regression suite, which is the thing to run after editing:
 
 ```
-node mythiball/check-posture.mjs   unlisted, the capital alias still lands, and the brand holds
+node mythiball/check-posture.mjs   unlisted, the capital alias still lands, the brand holds, and every park's scenery exists
 node mythiball/check-rules.mjs     whole games, and the sport's own arithmetic
 node mythiball/check-reach.mjs      every control a game offers is inside the window,
                                    including the two sheets that open over the field
