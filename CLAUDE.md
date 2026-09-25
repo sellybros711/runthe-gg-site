@@ -13874,6 +13874,72 @@ DOM instead: `#s-draft.picking` says a placement is up, `.target` marks every go
 spot, and `.natural` marks the one at his own position, which is what
 `check-run` taps.
 
+### His own position is his whole WAR, and chemistry means they played together
+
+Asked for from the placement screen: putting a man at his own position should
+give his best rating before chemistry, and anywhere else should cost a little.
+And every kind of chemistry should actually be in use.
+
+**`slotWar(p, slot)` is the one reading.** A batter at his primary position
+(`pp`, with `OF` covering LF, CF and RF) is his season WAR. Anywhere else costs
+`POSITION_FIT.OFF`, **8%**. DH counts as off position for everybody but a DH.
+Pitchers and replacement bodies are never charged. `rosterOffense` and the
+defence term in `rosterRunPrevention` read it, so it moves the shown rating and
+the season. **`teamStrength` deliberately does not**, for the same reason it
+still reads the raw season line: it is the yardstick against real clubs, and a
+real club played its men wherever it played them.
+
+**`slotForPlayer` tries his own position first**, then a dedicated slot, then
+DH. The page's `openJobs` asks `E.primaryAt` for the star, so the gold star and
+the number the season plays are one rule. On the field his own spot pulses and
+wears a star; every other spot is quieter and prints the cost, read off
+`POSITION_FIT` so tuning it rewrites the label. A man fielded off his position
+wears an amber ring on the diamond and an amber WAR on the lineup card, and the
+card prints the charged figure rather than the season line.
+
+About two batters a run end up off position, because their own spot was taken.
+
+**THREE OF THE SIX LINKS NEVER ASKED WHETHER TWO MEN PLAYED TOGETHER.** The
+battery and the double-play combo needed the same club AND the same drafted
+season, which almost never happens across a twelve-man draft (battery lit on 3%
+of chemistry-chasing rosters, the DP combo on well under that). A catcher and
+the pitcher he caught for four years were strangers if you drafted them from
+different seasons. Now:
+
+| link | value | asks |
+|---|---|---|
+| family | 0.09 | a curated pair |
+| reunion | 0.08 | same club, same drafted season |
+| battery | 0.07 | a catcher and a pitcher who shared a franchise-season, at C and a pitching slot |
+| dp_combo | 0.06 | a 2B and a SS who shared a franchise-season, at those slots |
+| **teammates** | **0.05** | **new**: shared any franchise-season in their careers |
+| franchise | 0.03 (was 0.04) | same club, never together |
+| era | 0.005 | same era |
+
+`setCareers` builds, per player id, every franchise-season he appears in,
+through `franchiseOf` so a Montreal Expo and a Washington National are one
+club. `sharedSeason` answers the earliest shared one. Battery and DP ask the
+SLOT a man is placed in (`_slot`), not his listed positions, so a shortstop
+fielded at DH is not half a double-play combo.
+
+**Measured over 120 drafts a bot:**
+
+| | wins before | wins after |
+|---|---|---|
+| best available | 81.8 | 83.7 |
+| chases chemistry | 82.2 | **90.3** |
+
+Chasing chemistry used to be worth 0.4 wins over taking the best man and is
+worth about 6.6 now, which is what makes it a strategy. Teammates links land on
+89% of chemistry-chasing rosters, battery on 19%. **0.03 for teammates was
+tried and rejected**: it would have made playing together worth less than a
+bare shared shirt. The franchise tie came down to keep that order.
+
+**`link_teammates` ("Played together") is a new silver badge**, and the quick
+badge sweep moved: eight excuses came off because the chemistry bot now
+reaches them, and `rank_one` and `one_franchise_8` went on, because the bot
+chases team-mates rather than stacking eight from one club.
+
 ### The desktop page is football's, and the two columns have to be the same length
 
 Asked for: on desktop baseball should look like football, with the lineup card kept

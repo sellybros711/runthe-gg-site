@@ -440,6 +440,49 @@ function canFillSlot(player, slotName, elig) {
   return positions.some(pos => eligible.includes(pos));
 }
 
+/* ─── PRIMARY POSITION ───
+ *
+ * A hitter is worth his full WAR at the position he actually played that season
+ * (`pp`) and a little less anywhere else he is eligible. Before this the slot a man
+ * stood in changed nothing: offense and defense both summed raw WAR, so putting a
+ * shortstop at first cost exactly what putting him at short did, and the choice
+ * the field asks for was not a choice.
+ *
+ * `pp` of OF is Baseball-Reference's "outfield" without a corner named, so any of
+ * the three outfield spots is his. DH is the slot for anybody, and a fielder
+ * standing there has given up his glove, so it is off-position for everyone but a
+ * man whose season WAS the DH. Pitchers are placed by the staff rules and are never
+ * off-position. A row with no `pp` is a Negro Leagues season Lahman cannot place,
+ * so there is nothing to be off of.
+ *
+ * `slotWar` is the one reading, used by the offense and the defense the season runs
+ * on. `squadRating` deliberately does NOT use it: that is the yardstick against real
+ * clubs, whose men all played their own positions. */
+const POSITION_FIT = {
+  /* The share of a hitter's WAR lost off his position. A 10 WAR season loses 0.8,
+   * about a win; a role player loses a tenth. Slight on purpose: the eligibility
+   * list already says he really played there. */
+  OFF: 0.08,
+};
+
+function slotBase(slotName) { return String(slotName || '').replace(/\d+$/, ''); }
+
+function primaryAt(player, slotName) {
+  if (!player || player.r !== 'b' || player._repl) return true;
+  if (!player.pp || !slotName) return true;
+  const base = slotBase(slotName);
+  if (player.pp === base) return true;
+  if (player.pp === 'OF' && (base === 'LF' || base === 'CF' || base === 'RF')) return true;
+  return false;
+}
+
+function slotWar(player, slotName) {
+  if (!player) return 0;
+  const s = slotName || player._slot;
+  if (primaryAt(player, s)) return player.w;
+  return player.w - Math.abs(player.w) * POSITION_FIT.OFF;
+}
+
 /* Build the team-season ID from team + season. */
 function teamSeasonId(team, season) {
   return `${team}_${season}`;
@@ -480,6 +523,7 @@ function indexData(players) {
   for (const p of players) {
     if (sideSeen[`${p.i}|${p.s}`] === 'both') p.half = p.r === 'b' ? 'batting' : 'pitching';
   }
+  setCareers(players);
 
   // Only real rosters are spinnable: skip TOT (Baseball-Reference's
   // multi-team season totals, not an actual club) and team-seasons with
@@ -741,7 +785,11 @@ const CHEMISTRY = {
     reunion:   0.08,
     battery:   0.07,
     dp_combo:  0.06,
-    franchise: 0.04,
+    /* Real team-mates drafted from different seasons: Ted Williams '46 and
+     * Johnny Pesky '50 wore the same shirt the same summers. Between a reunion
+     * (the same drafted season) and a bare franchise tie. */
+    teammates: 0.05,
+    franchise: 0.03,
     /* Era is a weak ambient link, kept small so the deliberate links
      * (family/reunion/battery/DP) are what actually move the needle. */
     era:       0.005,
@@ -766,6 +814,55 @@ function setCuratedChemistry(json) {
     }
   }
 }
+/* WHO ACTUALLY PLAYED TOGETHER.
+ *
+ * Reunion, battery and the double-play combo used to need the two men drafted
+ * from the SAME team-season. A board is one team-season and a pick uses it up, so
+ * the only way to meet that was the same club being drawn twice: measured over 120
+ * drafts, reunion lit on 3% of rosters and the battery and the DP combo on 1%.
+ * Three of six links were decoration.
+ *
+ * A career is every franchise-season a man has a row in. Two men who share one
+ * were real team-mates, whichever of their seasons was drafted, and that is the
+ * bond the battery and the DP combo were always about. The pool is the build's own
+ * WAR floor, so a season a man barely played is not in it and does not count;
+ * that under-counts a little and never invents a pairing. */
+let CAREERS = {};
+function setCareers(players) {
+  CAREERS = {};
+  for (const p of players) {
+    if (p.t === 'TOT' || p.t === 'FA') continue;
+    (CAREERS[p.i] = CAREERS[p.i] || new Set()).add(franchiseOf(p.t, p.s) + '|' + p.s);
+  }
+}
+/* The first franchise-season two players shared, or null. */
+function sharedSeason(a, b) {
+  if (!a || !b || a.i === b.i) return null;
+  const A = CAREERS[a.i], B = CAREERS[b.i];
+  if (!A || !B) return null;
+  let first = null;
+  const [small, big] = A.size <= B.size ? [A, B] : [B, A];
+  for (const k of small) {
+    if (!big.has(k)) continue;
+    const yr = +k.split('|')[1];
+    if (!first || yr < first.yr) first = { key: k, yr };
+  }
+  return first;
+}
+
+/* What a player is doing on this roster, for the links that name positions. A
+ * placed man is read off his slot, so a shortstop drafted and put at first is not
+ * half of a double-play combo; an unplaced one (a preview) off his eligibility. */
+function playsAs(p, pos) {
+  if (p._slot) {
+    const base = slotBase(p._slot);
+    if (pos === 'P') return p.r === 'p';
+    return base === pos;
+  }
+  if (pos === 'P') return p.r === 'p';
+  return playerPositions(p).includes(pos);
+}
+
 function familyLink(a, b) {
   const m = CURATED_FAMILY[a.i];
   return m && m[b.i] ? m[b.i] : null;
@@ -828,7 +925,16 @@ function pairLinks(a, b, opts) {
       label: `${a.s} ${a.t} reunion` });
   }
 
-  if (sameTeam && !sameSeason) {
+  /* Real team-mates from different drafted seasons. Checked before the bare
+     franchise tie, which it replaces: two men who shared a clubhouse are more
+     than two men who wore the same shirt decades apart. */
+  const shared = (sameTeam && sameSeason) ? { yr: a.s } : sharedSeason(a, b);
+  if (shared && !(sameTeam && sameSeason)) {
+    links.push({ type: 'teammates', value: CHEMISTRY.VALUES.teammates,
+      label: `Team-mates in ${shared.yr}` });
+  }
+
+  if (sameTeam && !sameSeason && !shared) {
     /* Name the code they actually shared when they shared one, and the franchise
        only when they did not. Two 1950s Boston Braves reading "ATL franchise"
        would be a link telling a reader something that never happened to them. */
@@ -836,30 +942,16 @@ function pairLinks(a, b, opts) {
       label: `${a.t === b.t ? a.t : franA} franchise` });
   }
 
-  // DP combo: 2B + SS from same team-season
-  if (sameTeam && sameSeason) {
-    const aPos = playerPositions(a);
-    const bPos = playerPositions(b);
-    const has2B = aPos.includes('2B') || bPos.includes('2B');
-    const hasSS = aPos.includes('SS') || bPos.includes('SS');
-    if (has2B && hasSS) {
-      links.push({ type: 'dp_combo', value: CHEMISTRY.VALUES.dp_combo,
-        label: 'Double-play combo' });
-    }
+  // DP combo: a second baseman and a shortstop who really played together.
+  if (shared && ((playsAs(a, '2B') && playsAs(b, 'SS')) || (playsAs(a, 'SS') && playsAs(b, '2B')))) {
+    links.push({ type: 'dp_combo', value: CHEMISTRY.VALUES.dp_combo,
+      label: 'Double-play combo' });
   }
 
-  // Battery: C + pitcher from same team-season
-  if (sameTeam && sameSeason) {
-    const aPos = playerPositions(a);
-    const bPos = playerPositions(b);
-    const hasC = aPos.includes('C');
-    const hasPitcher = bPos.includes('SP') || bPos.includes('CL') || bPos.includes('RP');
-    const hasCReverse = bPos.includes('C');
-    const hasPitcherReverse = aPos.includes('SP') || aPos.includes('CL') || aPos.includes('RP');
-    if ((hasC && hasPitcher) || (hasCReverse && hasPitcherReverse)) {
-      links.push({ type: 'battery', value: CHEMISTRY.VALUES.battery,
-        label: 'Batterymates' });
-    }
+  // Battery: a catcher and a pitcher who really played together.
+  if (shared && ((playsAs(a, 'C') && playsAs(b, 'P')) || (playsAs(a, 'P') && playsAs(b, 'C')))) {
+    links.push({ type: 'battery', value: CHEMISTRY.VALUES.battery,
+      label: 'Batterymates' });
   }
 
   // Era: within 3 years
@@ -992,7 +1084,7 @@ const WAR_TO_RPG = 0.062;
 
 function rosterOffense(roster, chemMultiplier, battingOrderBonus) {
   const hitters = roster.filter(p => p.r === 'b');
-  const totalWar = hitters.reduce((s, p) => s + p.w, 0);
+  const totalWar = hitters.reduce((s, p) => s + slotWar(p), 0);
   const baseRPG = REPLACEMENT_RPG + totalWar * WAR_TO_RPG;
   return baseRPG * chemMultiplier * (battingOrderBonus || 1.0);
 }
@@ -1066,7 +1158,7 @@ function rosterRunPrevention(roster, chemMultiplier) {
   const baseRA = staffEra * 1.08; // unearned run factor
 
   // Defense modifier from fielders' WAR (each WAR saves ~10 runs/162 games)
-  const defWar = fielders.reduce((s, p) => s + Math.max(0, p.w - 2) * 0.15, 0);
+  const defWar = fielders.reduce((s, p) => s + Math.max(0, slotWar(p) - 2) * 0.15, 0);
   const defMod = Math.max(0.85, 1.0 - defWar * 0.005);
 
   return baseRA * defMod * (2 - chemMultiplier);
@@ -2455,7 +2547,8 @@ const publicAPI = {
   hashSeed, createSeededRNG, sampleGamma,
   playerPositions, canFillSlot, teamSeasonId,
   indexData, buildCheapBy,
-  pairLinks, resolveChemistry, setCuratedChemistry,
+  pairLinks, resolveChemistry, setCuratedChemistry, setCareers, sharedSeason,
+  POSITION_FIT, primaryAt, slotWar, slotBase,
   chemPoints, chemistryByPlayer, chemistryWorth,
   teamStrength, teamWinPct, overallRating, squadRating, nationalRank,
   PROJ, projectedWins, teamRating,

@@ -1158,6 +1158,15 @@ body:has(#s-intro.on) header .lockup{visibility:hidden}
 @keyframes tgpulse{0%,100%{box-shadow:0 0 0 3px rgba(240,185,60,.55),0 6px 16px -4px #000}
   50%{box-shadow:0 0 0 9px rgba(240,185,60,.12),0 6px 16px -4px #000}}
 .chip.target .who{color:#ffe29a;font-style:italic}
+/* The primary spot is the bright pulsing one. Any other spot is still gold, and
+   still pressable, but quieter and carries the cost under it. */
+.chip.target:not(.natural) .disc{background:linear-gradient(180deg,#f3e3b8,#d9bd72);animation:none;
+  box-shadow:0 0 0 2px rgba(240,185,60,.5),0 6px 16px -4px #000}
+.chip.target:not(.natural) .who{color:#f3d9a0;font-style:normal;font-weight:700}
+.chip.target.natural .who{font-weight:700}
+.chip.filled.offpos .disc{box-shadow:0 0 0 2px #e39b2d,0 4px 10px -3px #000}
+.lc-row.offpos .lc-war{color:#c67a10}
+.lc-row.target:not(.natural){opacity:.85;outline-style:dashed}
 .chip.target{z-index:6}
 .sl-arm.target,.lc-row.target{cursor:pointer;opacity:1;outline:2px solid var(--gold);outline-offset:-2px;
   background:rgba(240,185,60,.14)}
@@ -2154,9 +2163,9 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
   </div>
 </div>
 
-<script src="engine.js?v=28"></script>
-<script src="run.js?v=23"></script>
-<script src="achievements.js?v=8"></script>
+<script src="engine.js?v=29"></script>
+<script src="run.js?v=24"></script>
+<script src="achievements.js?v=9"></script>
 <script src="board.js?v=1"></script>
 <script>
 (function(){
@@ -2283,6 +2292,10 @@ const esc=s=>{const d=document.createElement('div');d.textContent=s;return d.inn
    the functions that use it, because show() and the field painters run at boot and a
    `let` read before its own line throws. See startPick. */
 var PICK=null;
+/* The off-position cost, said the way the engine charges it. Read, never typed,
+   so tuning POSITION_FIT rewrites every label that names it. */
+const OFF_PCT=Math.round(E.POSITION_FIT.OFF*100)+'%';
+const OFF_TAG='-'+OFF_PCT;
 const show=id=>{
   /* A placing left open on the draft would be a gold board waiting on the next
      screen's clicks, so any screen change drops it. */
@@ -2336,10 +2349,11 @@ const reduceMotion=()=>!!(RM&&RM.matches);
    first, which is also the order the legend prints. */
 const CHEM_TYPES=[
   {type:'family',   label:'Family',        color:'#b8860b', note:'Brothers, fathers and sons'},
-  {type:'reunion',  label:'Reunion',       color:'#c0392b', note:'Same club, same season'},
-  {type:'battery',  label:'Battery',       color:'#1a5276', note:'A catcher and his pitcher'},
-  {type:'dp_combo', label:'DP combo',      color:'#6a4c93', note:'A second baseman and his shortstop'},
-  {type:'franchise',label:'Franchise',     color:'#2e7d32', note:'Same club, different seasons'},
+  {type:'reunion',  label:'Reunion',       color:'#c0392b', note:'Drafted from the same club and season'},
+  {type:'battery',  label:'Battery',       color:'#1a5276', note:'A catcher and a pitcher who played together'},
+  {type:'dp_combo', label:'DP combo',      color:'#6a4c93', note:'A second baseman and a shortstop who played together'},
+  {type:'teammates',label:'Teammates',     color:'#1f7a8c', note:'Played together, drafted from other seasons'},
+  {type:'franchise',label:'Franchise',     color:'#2e7d32', note:'Same club, never together'},
   {type:'era',      label:'Same era',      color:'#8a7e6e', note:'Contemporaries, a faint bond'},
 ];
 const CHEM_BY_TYPE={};for(const c of CHEM_TYPES)CHEM_BY_TYPE[c.type]=c;
@@ -2730,12 +2744,13 @@ function drawLineupCard(el){
     slots.map((slot,i)=>{
       const p=bySlot[i];
       const ch=PICK&&PICK.choices.find(c=>c.slotIdx===i);
-      return '<div class="lc-row'+(p?'':' open')+(i===firstArm?' arm1':'')+(ch?' target':'')+(ch&&ch.natural?' natural':'')+'" data-i="'+i+'">'+
+      const off=p&&!E.primaryAt(p,slot);
+      return '<div class="lc-row'+(p?'':' open')+(i===firstArm?' arm1':'')+(ch?' target':'')+(ch&&ch.natural?' natural':'')+(off?' offpos':'')+'" data-i="'+i+'">'+
         '<span class="lc-pos" style="'+posPaint(slot)+'">'+esc(slot)+'</span>'+
         (p?'<span class="lc-nm">'+esc(p.n)+'</span>'+
             '<span class="lc-yr">'+tcPlate(p.t,p.s)+' '+p.s+'</span>'+
-            '<span class="lc-war">'+warHtml(p.w)+'</span>'
-          :'<span class="lc-nm">Open</span>')+
+            '<span class="lc-war"'+(off?' title="Off his position. '+OFF_TAG+' of his WAR."':'')+'>'+warHtml(E.slotWar(p,slot))+'</span>'
+          :'<span class="lc-nm">'+(ch?(ch.natural?'\u2605 His position':ch.off?OFF_TAG+' here':'Open'):'Open')+'</span>')+
         '</div>';
     }).join('');
 }
@@ -2811,6 +2826,7 @@ function drawField(el,live){
      starter lands on a disc reading SP and a closer on one reading CP. */
   const targets=el.id==='field'&&PICK?new Set(PICK.choices.map(c=>c.slotIdx)):null;
   const natural=el.id==='field'&&PICK?new Set(PICK.choices.filter(c=>c.natural).map(c=>c.slotIdx)):null;
+  const offAt=el.id==='field'&&PICK?new Set(PICK.choices.filter(c=>c.off).map(c=>c.slotIdx)):new Set();
   const pitchTarget=targets?PITCHER_SLOTS.find(i=>targets.has(i)):undefined;
   const activePitcher=pitchTarget!=null?pitchTarget:pitchersOpen.length>0?pitchersOpen[0]:
     pitchersFilled.length>0?pitchersFilled[pitchersFilled.length-1]:9;
@@ -2824,12 +2840,15 @@ function drawField(el,live){
     const justFilled=!!p&&!wasFilled;
     const tgt=!!targets&&targets.has(i);
     c.className='chip '+(p?'filled':'empty')+((live&&!p&&openCount===1&&!targets)?' now':'')+
-      (justFilled?' pop':'')+(tgt?' target':'')+(tgt&&natural.has(i)?' natural':'');
+      (justFilled?' pop':'')+(tgt?' target':'')+(tgt&&natural.has(i)?' natural':'')+
+      (p&&!E.primaryAt(p,E.SLOTS[i])?' offpos':'');
     const disc=c.querySelector('.disc');
     const pitcherLabel=isPitcher&&!p?(i===11?'CP':'SP'):E.SLOTS[i];
     disc.querySelector('.dl').textContent=isPitcher&&!p?pitcherLabel:E.SLOTS[i];
     disc.style.cssText=p?posPaint(E.SLOTS[i]):'';
-    c.querySelector('.who').textContent=p?lastName(p.n):tgt?lastName(PICK.p.n)+'?':'';
+    c.querySelector('.who').textContent=p?lastName(p.n):
+      tgt?(natural.has(i)?'\u2605 '+lastName(PICK.p.n):offAt.has(i)?OFF_TAG:lastName(PICK.p.n)+'?'):'';
+    c.title=p&&!E.primaryAt(p,E.SLOTS[i])?'Off his position. '+OFF_TAG+' of his WAR.':'';
     c.querySelector('.yr').innerHTML=p?tcPlate(p.t,p.s)+' '+p.s:'';
     const pip=c.querySelector('.pip');
     const ce=p?chemBySlot[i]:null;
@@ -3981,8 +4000,11 @@ function openJobs(p){
     const name=SLOTS_NOW()[i];const base=slotBase(name);
     const group=E.slotGroup(name,staff);
     if(seen.has(group))continue;seen.add(group);
-    const natural=(p.pp===name)||(p.pp&&base===p.pp)||(name==='CL'&&p.r==='p');
-    out.push({slotIdx:i,name,base,group,natural});
+    /* E.primaryAt is the rule the season rates him by, so the gold star and the
+       number agree: his own position is his whole WAR, anywhere else costs OFF. */
+    const off=!E.primaryAt(p,name);
+    const natural=p.r==='p'?((p.pp===name)||(p.pp&&base===p.pp)||name==='CL'):!off;
+    out.push({slotIdx:i,name,base,group,natural,off});
   }
   return out;
 }
@@ -4039,7 +4061,14 @@ function paintPickBar(){
   document.querySelectorAll('#opts .tile').forEach(t=>t.classList.toggle('picking',!!PICK&&t.dataset.key===PICK.key));
   if(!bar)return;
   if(!PICK){bar.hidden=true;return;}
-  $('pick-txt').innerHTML='Where does <b>'+esc(PICK.p.n)+'</b> play? Tap a gold spot.';
+  const own=PICK.choices.filter(c=>c.natural).map(c=>c.name);
+  const others=PICK.choices.filter(c=>c.off).length;
+  let say='Where does <b>'+esc(PICK.p.n)+'</b> play?';
+  if(PICK.p.r==='p')say+=' Tap a gold spot.';
+  else if(own.length&&others)say+=' \u2605 '+own.join(', ')+(own.length>1?' are his spots.':' is his spot.')+' Anywhere else costs '+OFF_PCT+'.';
+  else if(own.length)say+=' Tap a gold spot.';
+  else say+=' His spot is taken. Here he costs '+OFF_PCT+'.';
+  $('pick-txt').innerHTML=say;
   bar.hidden=false;
 }
 function pickAt(e){
