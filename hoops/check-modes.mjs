@@ -569,6 +569,22 @@ if (!QUICK) {
   // Conquest: a game, and the count is not spoiled while it is on.
   await page.evaluate(() => window.RTF_MODES_UI.openConquest());
   await page.click('#cq-new');
+  /* THE OPENING DRAFT, through the cards a player taps. A reload in the
+     middle has to come back to the same pick with the same three cards. */
+  await page.waitForSelector('.cqd-card');
+  await page.click('.cqd-card');
+  await page.click('.cqd-card');
+  const mid = await page.$$eval('.cqd-card', (b) => b.map((x) => x.getAttribute('data-k')).join());
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await page.waitForSelector('#b-today:not([disabled])', { timeout: 60000 });
+  await page.evaluate(() => window.RTF_MODES_UI.openConquest());
+  await page.waitForSelector('.cqd-card');
+  const back = await page.$$eval('.cqd-card', (b) => b.map((x) => x.getAttribute('data-k')).join());
+  ok(back === mid, 'a reload mid-draft comes back to the same pick and the same three cards');
+  for (let i = 0; i < 3; i++) await page.click('.cqd-card');
+  await page.waitForSelector('#cq-go');
+  const drafted = await page.evaluate(() => window.RTF_MODES_UI._cq().roster.length);
+  ok(drafted === 5, `five taps draft five (${drafted})`);
   const before = await page.textContent('#cq-wins');
   await page.click('#cq-go');
   const during = await page.textContent('#cq-wins');
