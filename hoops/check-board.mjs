@@ -647,7 +647,7 @@ const main = async () => {
       standing: document.querySelector('#o-stand').textContent.replace(/\s+/g, ' ').trim(),
     }));
     ok(/^\d+-\d+$/.test(after.record), 'the season still finishes with the board missing');
-    ok(after.earned, 'the badges it earned are still announced');
+    ok(after.earned, 'what it earned is still announced');
     ok(after.career && after.career.runs >= 1, 'and it is still in the career');
     ok(/not reachable|not set up/i.test(after.standing),
       'while the standing says the board is the thing that is missing');
@@ -655,6 +655,61 @@ const main = async () => {
       'and never reports an unreachable board as an empty one');
     is(boom6.filter((b) => !/console:/.test(b)), [],
       'and nothing threw with every request failing');
+
+    /* ── 6b. THE CABINET IS AN ACCOUNT'S ──────────────────────────────────
+       This run was played signed out, so its results card has to offer the
+       badges rather than hand them over, and the career sheet's Badges tab has
+       to be the sign-in teaser rather than a cabinet. Then the same page signs
+       in and the same tab has to be the cabinet, every tile a ball. Both
+       halves are asked on one page, because the claim is that the SAME career
+       is read differently by who is holding it. */
+    const guest = await page.evaluate(() => {
+      const card = document.querySelector('#o-earned');
+      const out = {
+        ballRows: card.querySelectorAll('.ern:not(.ern-guest) .em.ball').length,
+        offer: !!card.querySelector('.ern-guest #b-earned-signin'),
+        offerText: (card.querySelector('.ern-guest') || {}).textContent || '',
+      };
+      document.querySelector('#b-home-career') && document.querySelector('#b-home-career').click();
+      document.querySelector('#pt-badges').click();
+      const grid = document.querySelector('#pf-badges');
+      out.tiles = grid.querySelectorAll('.bdg').length;
+      out.teaser = !!grid.querySelector('.bdg-guest');
+      out.teaserBalls = grid.querySelectorAll('.bdg-guest svg rect').length > 0;
+      out.count = document.querySelector('#pt-count').textContent;
+      out.note = !document.querySelector('#pf-badgenote').hidden;
+      return out;
+    });
+    is(guest.ballRows, 0, 'a guest\'s results card hands over no badges');
+    ok(guest.offer && /Sign in/.test(guest.offerText) && /\d+ badge/.test(guest.offerText),
+      'and instead says how many the run lit and offers the sign in');
+    is(guest.tiles, 0, 'a guest\'s Badges tab draws no cabinet');
+    ok(guest.teaser && guest.teaserBalls, 'it draws the teaser, balls and all');
+    ok(guest.count === '' && !guest.note, 'with no count and no storage note');
+
+    const member = await page.evaluate(() => {
+      window.RTF_AUTH.state = () => ({ ready: true, waiting: false, signedIn: true,
+        name: 'tester', userId: '00000000-0000-0000-0000-000000000001' });
+      document.querySelector('#pt-record').click();
+      document.querySelector('#pt-badges').click();
+      const grid = document.querySelector('#pf-badges');
+      const tiles = [...grid.querySelectorAll('.bdg')];
+      return {
+        tiles: tiles.length,
+        balls: tiles.filter((t) => t.querySelector('.bb svg rect')).length,
+        on: grid.querySelectorAll('.bdg.on').length,
+        teaser: !!grid.querySelector('.bdg-guest'),
+        count: document.querySelector('#pt-count').textContent,
+        ballPx: (() => { const b = grid.querySelector('.bdg .bb'); return b ? b.getBoundingClientRect().width : 0; })(),
+        cells: (() => { const v = grid.querySelector('.bdg .bb svg'); return v ? v.viewBox.baseVal.width : 0; })(),
+      };
+    });
+    ok(member.tiles > 20 && !member.teaser, 'signed in, the same tab is the cabinet');
+    is(member.balls, member.tiles, 'and every badge in it is a ball');
+    ok(member.on >= 1, 'the run played signed out lit badges the account now shows');
+    ok(/^\d+\/\d+$/.test(member.count), 'and the tab counts them');
+    ok(member.cells > 0 && Number.isInteger(member.ballPx / member.cells),
+      'a ball is a whole number of pixels a cell (' + member.ballPx + 'px over ' + member.cells + ' cells)');
     await page.context().close();
   }
 

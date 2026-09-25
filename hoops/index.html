@@ -543,12 +543,21 @@
   .ptab span{font-family:var(--num);font-variant-numeric:tabular-nums;font-weight:700;opacity:.75;}
   .badgegrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(108px,1fr));gap:8px;
     max-height:44vh;overflow-y:auto;padding-right:2px;}
-  .bdg{border:1px solid var(--cardb);border-radius:10px;padding:9px 9px 8px;background:#10151f;
-    min-width:0;}
+  .bdg{border:1px solid var(--cardb);border-radius:10px;padding:10px 8px 9px;background:#10151f;
+    min-width:0;text-align:center;}
+  /* EVERY BADGE IS A BASKETBALL, and it is the same drawing as the logo in
+     the top bar: badgeBall() runs the logo's own grid rules in a metal. The
+     21 cell ball at 42px is two pixels a cell, a whole number on every
+     screen, so the cells stay cells. 15 cells was tried at 45px and read as a
+     waffle: at that size the four seams are most of the ball. */
+  .bdg .bb{display:block;width:42px;height:42px;margin:0 auto 7px;}
+  .bdg .bb svg{display:block;width:100%;height:100%;}
   /* LOCKED IS DIM, NOT HIDDEN. A cabinet of empty squares is a list of things
      to go and do; a cabinet that hides what you have not earned is a cabinet
-     that looks finished on day one. */
-  .bdg.off{opacity:.42;}
+     that looks finished on day one. The ball goes to slate rather than
+     vanishing, so the shape of the whole cabinet is readable before any of it
+     is won. */
+  .bdg.off{opacity:.5;}
   .bdg .bn{display:block;font-size:11.5px;font-weight:800;line-height:1.25;color:var(--ink);}
   .bdg .bw{display:block;font-size:10px;line-height:1.35;color:var(--dim);margin-top:3px;}
   .bdg .bp{display:block;margin-top:6px;height:4px;border-radius:99px;
@@ -556,12 +565,22 @@
   .bdg .bp i{display:block;height:100%;border-radius:99px;background:var(--mut);}
   .bdg .bnum{display:block;font-family:var(--num);font-variant-numeric:tabular-nums;font-size:9.5px;color:var(--dim);margin-top:4px;}
   /* Four metals, so a cabinet reads at a glance as mostly-bronze or
-     mostly-gold rather than as a wall of identical squares. */
+     mostly-gold rather than as a wall of identical squares. The ball carries
+     the metal and the tile only echoes it. */
   .bdg.on.bronze{border-color:#a1662f;background:linear-gradient(180deg,rgba(161,102,47,.2),#10151f);}
   .bdg.on.silver{border-color:#9aa6b8;background:linear-gradient(180deg,rgba(154,166,184,.2),#10151f);}
   .bdg.on.gold{border-color:#d19410;background:linear-gradient(180deg,rgba(209,148,16,.22),#10151f);}
   .bdg.on.ring{border-color:#f2c14e;background:linear-gradient(180deg,rgba(242,193,78,.28),#10151f);
     box-shadow:0 0 0 1px rgba(242,193,78,.25);}
+  .bdg.on.ring .bb{filter:drop-shadow(0 0 6px rgba(242,193,78,.55));}
+  /* THE CABINET IS AN ACCOUNT'S. A guest sees what is in it and the one
+     thing that opens it, rather than an empty tab or a tab that is missing. */
+  .bdg-guest{grid-column:1/-1;text-align:center;padding:16px 10px 6px;}
+  .bdg-guest .bbrow{display:flex;justify-content:center;gap:8px;margin-bottom:12px;}
+  .bdg-guest .bbrow span{width:42px;height:42px;display:block;}
+  .bdg-guest .bbrow svg{display:block;width:100%;height:100%;}
+  .bdg-guest b{display:block;font-size:14.5px;font-weight:800;color:var(--ink);margin-bottom:5px;}
+  .bdg-guest p{margin:0 auto 12px;font-size:12px;line-height:1.45;color:var(--dim);max-width:30em;}
   .bdg.on .bp i{background:var(--gold);}
 
   /* ── WHAT A RUN EARNED ─────────────────────────────────────────────────
@@ -575,6 +594,12 @@
   .ern .em{flex:0 0 auto;width:26px;height:26px;border-radius:50%;
     display:flex;align-items:center;justify-content:center;
     font-family:var(--num);font-variant-numeric:tabular-nums;font-size:12px;font-weight:700;color:#0d1117;}
+  /* A BADGE IS A BALL HERE TOO, at two pixels a cell. The career bests keep
+     their round marks, so a ball on this card always means a badge. */
+  .ern .em.ball{width:30px;height:30px;border-radius:0;background:none !important;}
+  .ern .em.ball svg{display:block;width:100%;height:100%;}
+  .ern.ring .em.ball{filter:drop-shadow(0 0 5px rgba(242,193,78,.55));}
+  .ern .et button{margin-top:7px;height:32px;min-height:32px;font-size:12px;padding:0 14px;}
   .ern .et{min-width:0;}
   .ern .et b{display:block;font-size:13.5px;font-weight:800;line-height:1.3;color:var(--ink);}
   .ern .et span{display:block;font-size:11.5px;line-height:1.35;color:var(--dim);margin-top:2px;}
@@ -3233,7 +3258,16 @@ function boot(){
        surfaces is open when it lands. */
     A.boot();
     A.onChange(function(){
-      if ($('sheet').classList.contains('open')) renderAccount();
+      if ($('sheet').classList.contains('open')) {
+        renderAccount();
+        /* The cabinet opens and shuts with the account, on the sheet the
+           player is looking at. */
+        showProfileTab(badgeTab);
+      }
+      /* And the results card, which tells a guest what the run lit and
+         turns into the badges themselves the moment they sign in. */
+      var ov = $('s-over');
+      if (ov && ov.classList.contains('active')) renderEarned();
       /* THE SHELF IS ASKED ON EVERY CHANGE OF ACCOUNT, and the boot is one of
          them: nothing is signed in at parse time, so a pull started beside
          A.boot() would always find no token and answer nothing. Signing IN is
@@ -7443,9 +7477,16 @@ function renderEarned(){
   var card = $('o-earnedcard'), list = $('o-earned'), sub = $('o-earnedsub');
   if (!card || !list) return;
   var got = (run && run.earned) || { fresh: [], bests: [] };
-  var fresh = got.fresh || [], bests = got.bests || [];
+  var bests = got.bests || [];
+  /* A GUEST IS TOLD WHAT THE RUN WOULD HAVE LIT, NOT HANDED IT. The badges
+     are real (they are derived from the career, which the account adopts on
+     sign in), so the count is true, and the row is the one way to collect
+     them. The career bests are the record and stay for everybody. */
+  var member = badgesOn();
+  var fresh = member ? (got.fresh || []) : [];
+  var waiting = member ? 0 : (got.fresh || []).length;
   list.textContent = '';
-  if (!fresh.length && !bests.length) { card.hidden = true; return; }
+  if (!fresh.length && !bests.length && !waiting) { card.hidden = true; return; }
   card.hidden = false;
   sub.textContent = fresh.length
     ? fresh.length + (fresh.length === 1 ? ' new badge' : ' new badges')
@@ -7456,7 +7497,12 @@ function renderEarned(){
     el.className = 'ern ' + metal;
     var m = document.createElement('span');
     m.className = 'em';
-    m.textContent = mark;
+    if (mark === 'ball') {
+      m.className = 'em ball';
+      m.innerHTML = badgeBall(metal, 15);
+    } else {
+      m.textContent = mark;
+    }
     /* The mark is decoration on top of the words beside it, so it is taken
        out of the accessibility tree rather than read out as a stray letter
        before every row. */
@@ -7474,6 +7520,7 @@ function renderEarned(){
     el.appendChild(m);
     el.appendChild(t);
     list.appendChild(el);
+    return t;
   };
 
   /* THE MARKS COME FIRST. A career best is about the run on the screen; a
@@ -7486,7 +7533,18 @@ function renderEarned(){
       mk.text, '');
   }
   for (var j = 0; j < fresh.length; j++) {
-    row(fresh[j].tier || 'bronze', '★', fresh[j].name, fresh[j].why);
+    row(fresh[j].tier || 'bronze', 'ball', fresh[j].name, fresh[j].why);
+  }
+  if (waiting) {
+    var gt = row('bronze', 'ball', 'Sign in to collect badges',
+      'This run lit ' + waiting + (waiting === 1 ? ' badge' : ' badges')
+      + '. Sign in and ' + (waiting === 1 ? "it's" : "they're") + ' yours.');
+    gt.parentNode.className += ' ern-guest';
+    var gb = document.createElement('button');
+    gb.id = 'b-earned-signin';
+    gb.textContent = 'Sign in';
+    gb.onclick = badgeSignIn;
+    gt.appendChild(gb);
   }
 
   /* SAID OUT LOUD, ONCE, and only for the badges. The record and the verdict
@@ -8828,8 +8886,8 @@ function renderAccount(){
   }
 
   if (!st.signedIn) {
-    say('Sign in to put your name on the leaderboard and keep your career on '
-      + 'every device. Your runs count either way.');
+    say('Sign in to put your name on the leaderboard, collect badges and keep '
+      + 'your career on every device. Your runs count either way.');
     var r1 = row();
     var email = document.createElement('input');
     email.type = 'email'; email.placeholder = 'Email'; email.autocomplete = 'email';
@@ -8917,15 +8975,138 @@ function esc(s){
  */
 var badgeTab = 'record';
 
+/* ── THE BALL EVERY BADGE IS ───────────────────────────────────────────────
+ *
+ * The logo's own drawing (build/logo-art.mjs), run here in a metal. The rules
+ * are the same few: a one cell outline found as the inside cells touching the
+ * outside, an upright and a level seam through the middle, two side seams
+ * that step out once near the rim, and the light cut into diagonal bands off
+ * the top left. Copied rather than fetched, because the page draws forty of
+ * these at once and a round trip per cabinet is a cabinet that pops in.
+ *
+ * Bronze IS the ball, in the logo's own orange: the first step is a
+ * basketball. Silver and gold are the trophy versions of it, and a ring is
+ * the gold one with a glow in CSS. Locked is slate, with the seams lighter
+ * than the body so the shape still reads on the dark tile.
+ */
+var BALL_PAL = {
+  bronze: { ink: '#2a1206', hl: '#ffc27a', lt: '#ff9e45', base: '#f07a22', mid: '#d25e16', dk: '#a8430e' },
+  silver: { ink: '#1b2029', hl: '#ffffff', lt: '#e3e8f0', base: '#bcc5d2', mid: '#949fb0', dk: '#6b7585' },
+  gold:   { ink: '#2a1a02', hl: '#fff3bf', lt: '#ffd766', base: '#f0b429', mid: '#cf920f', dk: '#9a6806' },
+  ring:   { ink: '#2a1a02', hl: '#fffbe6', lt: '#ffe38a', base: '#f7c23a', mid: '#dca01a', dk: '#a8750a' },
+  off:    { ink: '#3a4251', hl: '#2b3342', lt: '#262d3b', base: '#222935', mid: '#1e242f', dk: '#1a1f28' },
+};
+
+function badgeBall(tier, N){
+  N = N || 15;
+  var key = tier + ':' + N;
+  if (!badgeBall.cache) badgeBall.cache = {};
+  if (badgeBall.cache[key]) return badgeBall.cache[key];
+  var P = BALL_PAL[tier] || BALL_PAL.bronze;
+  var c = (N - 1) / 2, R = c + 0.35;
+  var inside = function(x, y){
+    return x >= 0 && y >= 0 && x < N && y < N && Math.hypot(x - c, y - c) <= R;
+  };
+  var side = Math.round(c / 2), step1 = Math.round(c * 0.62), step2 = Math.round(c * 0.84);
+  /* Not `out`: verify.mjs reads every `out.<field>` in this page as a field
+     the results screen expects an outcome to carry. */
+  var rects = [];
+  for (var y = 0; y < N; y++) {
+    var row = [];
+    for (var x = 0; x < N; x++) {
+      if (!inside(x, y)) { row.push(null); continue; }
+      var dx = x - c, dy = y - c, ady = Math.abs(dy);
+      var edge = !inside(x - 1, y) || !inside(x + 1, y) || !inside(x, y - 1) || !inside(x, y + 1);
+      var sd = side + (ady >= step2 ? 2 : ady >= step1 ? 1 : 0);
+      if (edge || dx === 0 || dy === 0 || Math.abs(dx) === sd) { row.push(P.ink); continue; }
+      var k = (dx + dy) / c;
+      row.push(k < -0.95 ? P.hl : k < -0.4 ? P.lt : k > 0.95 ? P.dk : k > 0.5 ? P.mid : P.base);
+    }
+    /* One rect per run of one colour, which is what logo-art's toSvg does. */
+    for (var x2 = 0; x2 < N;) {
+      var col = row[x2], w = 1;
+      while (x2 + w < N && row[x2 + w] === col) w++;
+      if (col) rects.push('<rect x="' + x2 + '" y="' + y + '" width="' + w + '" height="1" fill="' + col + '"/>');
+      x2 += w;
+    }
+  }
+  var svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + N + ' ' + N
+    + '" shape-rendering="crispEdges" aria-hidden="true">' + rects.join('') + '</svg>';
+  badgeBall.cache[key] = svg;
+  return svg;
+}
+
+/* ── WHO HAS A CABINET ─────────────────────────────────────────────────────
+ *
+ * AN ACCOUNT, AND NOBODY ELSE. The career is still kept for a guest, in this
+ * browser, because it is what the account adopts on the way in: the shelf
+ * MERGES a career nobody owns into the account that signs in (cloud.js), and
+ * every badge is derived from the career, so the runs a guest plays light
+ * their badges the moment they sign in. What a guest does not get is the
+ * cabinet itself, and the page says why rather than drawing an empty tab.
+ *
+ * READ LIVE, never cached. Sign in and out both happen with the sheet open. */
+function badgesOn(){
+  var st = A.state();
+  return !!(st && st.signedIn);
+}
+
+/* The sign-in form is the top of the career sheet already, so the way into
+   the cabinet is to go there and put the cursor in it. A second form would
+   be a second place for the account to be wrong. */
+function badgeSignIn(){
+  if (!$('sheet').classList.contains('open')) openProfile();
+  var inp = $('pf-acct') && $('pf-acct').querySelector('input');
+  if (inp) { try { inp.focus(); inp.scrollIntoView({ block: 'center' }); } catch (e) {} }
+}
+
 function renderBadges(){
   var grid = $('pf-badges'), note = $('pf-badgenote'), B = window.RTF_BADGES;
   if (!grid || !B) return;
   var c = loadCareer() || {};
   var all = B.evaluate(c);
   var got = all.filter(function(b){ return b.got; }).length;
+  grid.textContent = '';
+
+  if (!badgesOn()) {
+    if ($('pt-count')) $('pt-count').textContent = '';
+    var st = A.state();
+    var g = document.createElement('div');
+    g.className = 'bdg-guest';
+    var balls = document.createElement('div');
+    balls.className = 'bbrow';
+    ['bronze', 'silver', 'gold', 'ring'].forEach(function(t){
+      var sp = document.createElement('span');
+      sp.innerHTML = badgeBall(t, 21);
+      balls.appendChild(sp);
+    });
+    g.appendChild(balls);
+    var h = document.createElement('b');
+    var p = document.createElement('p');
+    if (!st.ready && st.waiting) {
+      h.textContent = 'Checking for your account';
+      p.textContent = 'Your badges show here once it answers.';
+      g.appendChild(h); g.appendChild(p);
+    } else if (!st.ready) {
+      h.textContent = 'Badges need an account';
+      p.textContent = 'Accounts are down right now. Your runs still count toward them.';
+      g.appendChild(h); g.appendChild(p);
+    } else {
+      h.textContent = 'Badges are for accounts';
+      p.textContent = all.length + ' to collect. Sign in and the runs on this device count toward them.';
+      g.appendChild(h); g.appendChild(p);
+      var go = document.createElement('button');
+      go.id = 'b-badge-signin';
+      go.textContent = 'Sign in';
+      go.onclick = badgeSignIn;
+      g.appendChild(go);
+    }
+    grid.appendChild(g);
+    if (note) note.hidden = true;
+    return;
+  }
   if ($('pt-count')) $('pt-count').textContent = got + '/' + all.length;
 
-  grid.textContent = '';
   /* EARNED FIRST, BEST FIRST. Then the ones NOT earned, CLOSEST first.
      Those two halves want opposite orders and the first version used one for
      both, so the locked half opened on "Win five titles" and "Every season
@@ -8945,6 +9126,10 @@ function renderBadges(){
     var b = all[i];
     var el = document.createElement('div');
     el.className = 'bdg ' + (b.got ? 'on ' + b.tier : 'off');
+    var ball = document.createElement('span');
+    ball.className = 'bb';
+    ball.innerHTML = badgeBall(b.got ? b.tier : 'off', 21);
+    el.appendChild(ball);
     var nm = document.createElement('span');
     nm.className = 'bn';
     nm.textContent = b.name;
@@ -8999,7 +9184,7 @@ function showProfileTab(which){
   var record = which === 'record';
   $('pf-list').hidden = !record;
   $('pf-badges').hidden = record;
-  $('pf-badgenote').hidden = record;
+  $('pf-badgenote').hidden = record || !badgesOn();
   $('pt-record').className = 'ptab' + (record ? ' on' : '');
   $('pt-badges').className = 'ptab' + (record ? '' : ' on');
   $('pt-record').setAttribute('aria-selected', record ? 'true' : 'false');

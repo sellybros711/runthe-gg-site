@@ -11156,6 +11156,38 @@ career already holds all of them.
 decade. It is trivially the best of one, and a screen congratulating somebody
 for beating nobody is the unearnable badge in reverse.
 
+#### Every badge is a basketball, and the cabinet is an account's
+
+```
+node hoops/check-board.mjs     section 6b, both sides on one page
+```
+
+**The ball is the logo's own drawing.** `badgeBall(tier, N)` in the page runs
+`build/logo-art.mjs`'s grid rules in a metal: bronze is the logo's orange, silver and
+gold are the trophy versions, a ring is the gold one with a glow, and a locked badge is
+slate. It is copied into the page rather than fetched, because forty of them draw at
+once. **21 cells at 42px, two pixels a cell**, which is whole on every screen. 15 cells
+at 45px was tried first and read as a waffle: at that size the four seams are most of
+the ball. The results card uses 15 at 30px, and the career bests keep their round marks
+so a ball on that card always means a badge.
+
+**A guest keeps a career and does not get a cabinet.** `badgesOn()` reads
+`A.state().signedIn` live. Signed out, the Badges tab is a teaser with a Sign in button
+and the results card says how many badges the run lit and offers the sign in instead of
+listing them. **The count is true and so is the promise**: every badge is derived from
+the career, and the shelf merges a career nobody owns into the account that signs in, so
+those runs light their badges the moment somebody signs in. The career bests stay for
+everybody, because they are the record and not the cabinet.
+
+**The guard asks one page both questions.** It plays a run signed out, checks the teaser
+and the offer, fakes the account after `auth.js` has run, and checks the same tab is now a
+cabinet of balls. Proved by mutation: `badgesOn()` always true fails five claims, and a
+tile with no ball fails two.
+
+**A local array here cannot be called `out`.** `verify.mjs` reads every `out.<field>` in
+the page as a field the results screen expects an outcome to carry, and `out.join` failed
+it.
+
 #### Run it back means the same game, and two buttons could not keep that promise
 
 The results screen's Run it back really does replay the mode. **The daily is the
