@@ -261,3 +261,154 @@ body:has(.a-gametitle) .brand.logo .sub{display:none;}
 @media (prefers-reduced-motion: reduce){
   .gj > summary,.gj-chev{transition:none;}
 }
+
+/* ============================================================================
+   CHROME V2: one header, one scoreboard, one control language
+   ----------------------------------------------------------------------------
+   Every game page used to open with two rows of controls (the site banner,
+   then back, ?, sound, theme and a streak box in a row of their own) and a
+   third element, a big underlined word-art title, before the game itself.
+   On a phone that was about 230px of chrome above the first thing you could
+   play, and it was drawn differently on almost every page.
+
+   Now: the site banner, then ONE game header. The game's own mark in a tinted
+   tile, its name, and the tools grouped into a single pill. The word-art
+   title is retired; the name is in the header, which is where every games app
+   puts it.
+
+   These rules are written `html body ...` on purpose. Each page carries its
+   own inline <style> AFTER this file, and a plain `.topbar` here would lose to
+   the page's `.topbar` on order. Two type selectors are enough to win without
+   an !important anywhere.
+   ============================================================================ */
+
+/* ---- the room: a soft stage light behind every page ---------------------- */
+html body{
+  background:
+    radial-gradient(900px 420px at 50% -160px, color-mix(in srgb, var(--brand, #FF8A3D) 9%, transparent), transparent 72%),
+    radial-gradient(700px 380px at 100% 0, color-mix(in srgb, var(--blue, #2F6BFF) 7%, transparent), transparent 70%),
+    var(--bg);
+  background-repeat:no-repeat;
+}
+
+/* ---- the game header ----------------------------------------------------- */
+/* It wraps on purpose. The name keeps a floor of width, and when a page has
+   more controls than the row can hold (the crossword carries a clock as well
+   as a streak, and a 320px phone holds less of everything) the tools drop to
+   a second row, right aligned, rather than crushing the name to two letters. */
+html body .topbar{display:flex; align-items:center; gap:8px 6px; padding:6px 0 14px; min-height:0; flex-wrap:wrap;}
+/* The back chevron and the name were two links to the same place. They are
+   one now: the chevron sits in front of the game's mark, and the whole
+   thing, chevron, tile and name, is the way home. That gives the name the
+   width it needs on a phone. */
+html body .topbar .icon-btn{display:none;}
+html body .topbar .brand.logo::before{content:""; flex:0 0 auto; width:8px; height:8px; margin:0 1px 0 5px;
+  border-left:2.4px solid var(--mut); border-bottom:2.4px solid var(--mut); transform:rotate(45deg);
+  transition:border-color .12s, transform .12s;}
+html body .topbar .brand.logo:hover::before{border-color:var(--ink); transform:translateX(-2px) rotate(45deg);}
+html body .topbar .brand.logo{display:inline-flex; flex-direction:row; align-items:center; gap:10px;
+  min-width:0; flex:1 1 150px; line-height:1; text-decoration:none; color:var(--ink);}
+html body .topbar .brand.logo img{display:none;}
+html body .topbar .brand.logo .sub{display:block; margin:0; min-width:0;
+  font-family:var(--hero, 'Anton', Impact, sans-serif); font-weight:400; text-transform:uppercase;
+  font-size:21px; line-height:1.02; letter-spacing:.015em; color:var(--ink);
+  white-space:normal; overflow-wrap:normal; word-break:normal; overflow:hidden; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;}
+html body .topbar .spacer{flex:0 1 0; min-width:0;}
+
+/* the game's own mark, in a tile tinted with its colour */
+html body .gh-mark{--gc:var(--gac, var(--blue, #2F6BFF));
+  flex:0 0 auto; width:38px; height:38px; border-radius:11px; display:grid; place-items:center;
+  background:
+    radial-gradient(circle at 30% 20%, color-mix(in srgb, #fff 16%, transparent), transparent 60%),
+    color-mix(in srgb, var(--gc) 22%, var(--card));
+  border:1px solid color-mix(in srgb, var(--gc) 42%, transparent);
+  box-shadow:0 6px 14px -8px color-mix(in srgb, var(--gc) 70%, transparent);}
+html body .gh-mark svg{width:26px; height:26px; display:block;}
+html body .gh-mark svg.jrot{width:28px; height:28px;}
+/* One accent per game, set on the root so the header tile, the scoreboard and
+   anything else can read it. :has() keys it off the mark the page carries, so
+   a page opts in by carrying the mark and nothing else. */
+:root:has(.gh-mark[data-mark="almamater"]), :root:has(.gh-mark[data-mark="chain"]){--gac:#96B93C;}
+:root:has(.gh-mark[data-mark="career"]){--gac:#48D17A;}
+:root:has(.gh-mark[data-mark="sportegories"]){--gac:#DA6BE6;}
+:root:has(.gh-mark[data-mark="crossword"]){--gac:#7C8DA3;}
+:root:has(.gh-mark[data-mark="rankit"]){--gac:#F65C9C;}
+:root:has(.gh-mark[data-mark="guess"]){--gac:#FF5A4E;}
+:root:has(.gh-mark[data-mark="rollcall"]){--gac:#37C5D5;}
+:root:has(.gh-mark[data-mark="match"]){--gac:#2F6BFF;}
+:root:has(.gh-mark[data-mark="oddone"]){--gac:#A982F3;}
+:root:has(.gh-mark[data-mark="highlow"]){--gac:#FF8A3D;}
+:root:has(.gh-mark[data-mark="table"]){--gac:#F2B632;}
+
+/* The tools are one control, not four: ?, sound and theme share a single pill
+   with hairlines between them. Adjacent-sibling selectors do the joining, so
+   it holds whatever order a page (or howto.js, which inserts the ?) puts
+   them in. */
+html body .topbar .themeBtn{width:36px; height:38px; flex:0 0 auto; margin:0; padding:0;
+  border-radius:0; border:1px solid var(--line2); border-left-width:0;
+  background:var(--card); color:var(--mut); box-shadow:none; font-weight:900; font-size:15px;
+  display:inline-flex; align-items:center; justify-content:center; cursor:pointer;
+  transition:color .12s, background .12s;}
+html body .topbar .themeBtn:hover{color:var(--ink); background:var(--card2);}
+html body .topbar :not(.themeBtn) + .themeBtn,
+html body .topbar .themeBtn:first-child{border-left-width:1px; border-radius:12px 0 0 12px; margin-left:auto;}
+html body .topbar .themeBtn:has(+ :not(.themeBtn)),
+html body .topbar .themeBtn:last-child{border-radius:0 12px 12px 0;}
+html body .topbar :not(.themeBtn) + .themeBtn:has(+ :not(.themeBtn)),
+html body .topbar :not(.themeBtn) + .themeBtn:last-child{border-radius:12px;}
+html body .topbar .themeBtn svg{width:16px; height:16px;}
+html body .topbar:has(.rtgHowto-btn) .helpBtn{display:none;}
+html body .topbar .themeBtn.rtgHowto-btn{font-family:var(--f); font-size:15px; color:var(--ink);}
+
+/* streak (and the crossword's clock): a scoreboard digit, not a form field */
+html body .topbar .chip{flex:0 0 auto; min-width:0; height:38px; padding:0 8px; margin:0;
+  display:inline-flex; flex-direction:column; align-items:center; justify-content:center; gap:3px;
+  border-radius:12px; border:1px solid color-mix(in srgb, var(--gold, #F2B632) 38%, var(--line2));
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--gold, #F2B632) 13%, var(--card)), var(--card));
+  box-shadow:none;}
+html body .topbar .chip .n{font-family:var(--hero, 'Anton', Impact, sans-serif); font-weight:400;
+  font-size:17px; line-height:1; color:var(--goldT, #F2B632); font-variant-numeric:tabular-nums;}
+html body .topbar .chip .l{font-size:7.5px; font-weight:900; letter-spacing:.08em; line-height:1;
+  text-transform:uppercase; color:var(--mut); margin:0;}
+html body .topbar .chip.timer{border-color:var(--line2); background:var(--card);}
+html body .topbar .chip.timer .n{color:var(--ink);}
+
+/* the word-art title is now the header's job */
+html body .a-gametitle{display:none;}
+
+@media (max-width:420px){
+  html body .topbar{gap:6px;}
+  html body .topbar .brand.logo{gap:8px;}
+  html body .topbar .brand.logo .sub{font-size:18px;}
+  html body .gh-mark{width:34px; height:34px; border-radius:10px;}
+  html body .gh-mark svg{width:23px; height:23px;}
+  html body .topbar .themeBtn{width:32px; height:36px;}
+  html body .topbar .chip{height:36px; padding:0 7px;}
+}
+@media (max-width:360px){
+  html body .gh-mark{display:none;}
+}
+
+/* ---- the scoreboard ------------------------------------------------------
+   The run bar keeps its markup; it loses the thick left stripe and reads as
+   one lit panel with the score as its biggest figure. */
+html body .runbar{border:1px solid var(--line2); border-left-width:4px; border-radius:16px;
+  background:
+    linear-gradient(120deg, color-mix(in srgb, var(--gac, var(--gold, #F2B632)) 11%, transparent), transparent 58%),
+    var(--card);
+  box-shadow:0 12px 28px -20px rgba(0,0,0,.6);}
+
+/* ---- sport switcher: one track, one lit segment -------------------------- */
+html body .modesw:not(:empty){gap:3px; padding:4px; border-radius:14px;
+  background:var(--card2); border:1px solid var(--line);}
+html body .modesw:not(:empty) button{border:0; border-radius:10px; min-height:36px;
+  font-size:11.5px; letter-spacing:.06em;}
+html body .modesw:not(:empty) button:not(.on){background:transparent;}
+html body .modesw:not(:empty) button:not(.on):hover{background:color-mix(in srgb, var(--ink) 6%, transparent);}
+html body .modesw:not(:empty) button.on{box-shadow:0 4px 12px -6px rgba(0,0,0,.5);}
+
+/* ---- how to play tab, quieter --------------------------------------------- */
+html body .gj{border-top:0; margin-top:26px; padding-top:0;}
+html body .gj > summary{border-radius:14px; background:var(--card); border-color:var(--line2);}
+html body .gj > summary h2{font-size:15px; letter-spacing:.03em;}
