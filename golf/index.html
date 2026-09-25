@@ -949,6 +949,10 @@ window.GA_ID='G-L29P5MRWKE';
   .home-nav.compact .nichip svg{width:24px; height:24px}
   .home-nav.compact .nl{font-size:10px; letter-spacing:0; line-height:1.05}
   .home-nav.compact .ndot{top:5px; right:5px; width:9px; height:9px; border-width:1.5px}
+  /* the home screen's pixel scene runs behind these, so the tiles and the credit line carry their own
+     backing: a flagpole or a bunker showing through a tile read as a rendering fault */
+  .home-nav.compact .navtile{background-color:rgba(8,22,15,.78)!important; -webkit-backdrop-filter:blur(5px); backdrop-filter:blur(5px)}
+  .homecredit{opacity:.82; text-shadow:0 1px 2px rgba(0,0,0,.95), 0 0 8px rgba(0,0,0,.8)}
   .navtile{position:relative; display:flex; flex-direction:column; align-items:center; justify-content:flex-start; text-align:center; gap:8px;
     padding:14px 8px 12px; border-radius:14px; color:var(--oncard); font-family:var(--body); cursor:pointer;
     box-shadow:0 6px 14px -9px rgba(0,0,0,.55); transition:transform .12s ease, border-color .12s ease, box-shadow .12s ease}
@@ -994,6 +998,38 @@ window.GA_ID='G-L29P5MRWKE';
     animation:nwdotp 2.2s ease-in-out infinite}
   @keyframes nwdotp{0%,100%{box-shadow:0 0 0 0 rgba(229,72,77,.55)}50%{box-shadow:0 0 0 6px rgba(229,72,77,0)}}
   @media(prefers-reduced-motion:reduce){.howtop.news .nwdot{animation:none}}
+  /* THE QUICK BAR on the home screen (Spin / How to play / What's new / Rosters): one strip, four equal
+     tiles, so nothing wraps onto a line of its own at any width. */
+  .hqbar{display:grid; grid-auto-flow:column; grid-auto-columns:minmax(0,1fr); gap:0; margin:10px 0 13px; padding:4px;
+    border-radius:16px; background:linear-gradient(180deg,rgba(255,255,255,.07),rgba(0,0,0,.30));
+    border:1px solid rgba(255,255,255,.11); box-shadow:0 8px 18px -10px rgba(0,0,0,.7), inset 0 1px 0 rgba(255,255,255,.06)}
+  .hq{position:relative; display:flex; flex-direction:column; align-items:center; justify-content:flex-start; gap:6px;
+    padding:8px 2px 8px; min-height:62px; border:0; border-radius:12px; background:transparent; cursor:pointer;
+    color:#e7efe9; font:800 11px/1.1 var(--body); letter-spacing:.02em; text-align:center; transition:background .12s ease}
+  .hq+.hq::before{content:''; position:absolute; left:0; top:13px; bottom:13px; width:1px; background:rgba(255,255,255,.09)}
+  .hq:hover{background:rgba(255,255,255,.07)}
+  .hq:active .hqi{transform:translateY(1px) scale(.96)}
+  .hq:focus-visible{outline:2px solid var(--gold); outline-offset:-2px}
+  .hq .hqi{position:relative; width:32px; height:32px; border-radius:10px; display:flex; align-items:center; justify-content:center;
+    background:rgba(255,255,255,.07); border:1px solid rgba(255,255,255,.14); transition:transform .12s ease}
+  .hq .hqi svg{width:22px; height:22px; display:block}
+  .hq .hql{white-space:nowrap; max-width:100%; overflow:hidden; text-overflow:ellipsis}
+  .hq.howto .hqi{background:rgba(241,208,74,.14); border-color:rgba(241,208,74,.42)}
+  .hq.news .hqi{background:rgba(244,227,201,.11); border-color:rgba(244,227,201,.36)}
+  .hq.roster .hqi{background:rgba(111,211,255,.12); border-color:rgba(111,211,255,.4)}
+  .hq.wheel .hqi{background:rgba(255,122,184,.12); border-color:rgba(255,122,184,.4)}
+  .hq.wheel:not(.ready){opacity:.78}
+  .hq.wheel.ready{color:#ffd3e8}
+  .hq.wheel.ready .hqi{border-color:#ff7ab8; background:rgba(255,122,184,.22); animation:hqGlow 2.2s ease-in-out infinite}
+  .hq.wheel.ready .hqi .wbi{animation:wbSpin 5.5s linear infinite; transform-origin:50% 50%}
+  @keyframes hqGlow{0%,100%{box-shadow:0 0 0 0 rgba(255,122,184,.55)}50%{box-shadow:0 0 0 6px rgba(255,122,184,0),0 0 14px rgba(255,122,184,.5)}}
+  .hq .hqn{position:absolute; top:-6px; right:-8px; min-width:17px; height:17px; padding:0 4px; border-radius:9px; background:#e5484d;
+    color:#fff; font:900 10px/17px var(--body); letter-spacing:0; box-shadow:0 0 0 2px #0e1f17}
+  .hq .hqd{position:absolute; top:-3px; right:-3px; width:10px; height:10px; border-radius:50%; background:#e5484d;
+    box-shadow:0 0 0 2px #0e1f17; animation:nwdotp 2.2s ease-in-out infinite}
+  @media(prefers-reduced-motion:reduce){ .hq.wheel.ready .hqi, .hq.wheel.ready .hqi .wbi, .hq .hqd{animation:none} }
+  @media(max-width:380px){ .hq{font-size:10px; letter-spacing:0; padding-left:0; padding-right:0} }
+  @media(min-width:920px){ .hqbar{min-width:372px; margin:0} .hq{min-height:66px; font-size:11.5px; padding:9px 6px} }
   /* Prize Wheel: a compact pill in the hero row instead of a full mode card (owner). The little wheel
      spins and the pill glows only when a spin is actually waiting, so it reads as "there's something
      here for you" without eating a screenful. */
@@ -2286,6 +2322,12 @@ window.GA_ID='G-L29P5MRWKE';
   .hvhole.sig .hvsigblurb{margin-top:5px;font:600 10.5px/1.32 var(--body);letter-spacing:0;color:#dfeade;opacity:.92;
     text-transform:none}
   @media (max-width:430px){ .hvhole.sig{max-width:66%} .hvhole.sig .hvsigblurb{font-size:10px} }
+  /* the introduction folds: the description closes up after HV_SIG_HOLD, leaving the name and the numbers */
+  .hvhole.sig.hvsigfold .hvsigblurb{overflow:hidden; animation:hvSigFold .55s cubic-bezier(.4,0,.2,1) var(--sigd,3.6s) both}
+  /* the width goes too, so the card closes up to its two lines instead of leaving an empty box: a child's
+     max-width caps what it asks of the card, and it only starts to bind once the text has already faded */
+  @keyframes hvSigFold{from{max-height:5.4em; opacity:.92; max-width:40em} 45%{opacity:0} to{max-height:0; opacity:0; margin-top:0; max-width:0}}
+  @media (prefers-reduced-motion:reduce){ .hvhole.sig.hvsigfold .hvsigblurb{animation-duration:.01s} }
   .hvhole.sigmini{border-color:rgba(241,208,74,.55);color:#f4e9c8}
   .hvhole.sigmini .hvsigstar{color:var(--gold)}
   /* board sits BOTTOM-right, above the shot-description bar - the green is always near the TOP of the
@@ -2502,7 +2544,7 @@ window.GA_ID='G-L29P5MRWKE';
   /* near the top of the frame there is no room above the ring, so the label drops underneath it and the
      pointer turns over to keep pointing AT the ring */
   .dctarget.lo .dtw{bottom:auto;top:calc(100% + var(--dtgap,9px));flex-direction:column-reverse}
-  .dctarget.lo .dtp{transform:rotate(180deg);margin-top:0;margin-bottom:-1px}
+  .dctarget.lo .dtp{transform:translateX(var(--dtpx,0px)) rotate(180deg);margin-top:0;margin-bottom:-1px}
   .dctarget .dtl,.dctarget .dtr{pointer-events:auto}
   /* the chip carries a colour-coded DOT, not an inline icon: an emoji-derived <svg class="ic"> inside a
      chip is what iOS was drawing as a full-width bar with the text pushed under it. */
@@ -2511,7 +2553,7 @@ window.GA_ID='G-L29P5MRWKE';
      for a colourblind player and without leaning on a glyph. */
   .dctarget .dtl::before{content:'';width:7px;height:7px;border-radius:50%;flex:0 0 auto;background:currentColor}
   .dctarget.safe .dtl::before{background:transparent;box-shadow:inset 0 0 0 2px currentColor}
-  .dctarget .dtp{width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-top:8px solid;margin-top:-1px}
+  .dctarget .dtp{width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-top:8px solid;margin-top:-1px;transform:translateX(var(--dtpx,0px))}
   .dctarget .dtr{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:26px;height:14px;
     border:2.5px solid;border-radius:50%;margin:0;opacity:.9;animation:dtRing 1.15s ease-in-out infinite}
   .dctarget.agg .dtl{background:rgba(180,26,26,.94);border-color:#ff5a4d}
@@ -3073,16 +3115,37 @@ window.GA_ID='G-L29P5MRWKE';
     box-shadow:0 12px 14px -12px rgba(0,0,0,.7)}
   /* the shop overlay's sticky handles its own top spacing, so drop the .ov top padding to raise the frozen block */
   .ov.ov-shop{padding-top:0}
-  .shop-bar{display:flex; align-items:flex-start; justify-content:space-between; gap:10px}
+  /* ONE ROW: the title, the balance with its buy button attached, and the close. The buy button used to
+     hang under the balance on a line of its own, which pushed the tabs down a whole button's height. It is
+     still always on screen, which is the rule that put it there. */
+  .shop-bar{display:flex; align-items:center; gap:8px}
   .shop-bar h3{margin:0; font-size:22px; line-height:1.1}
-  /* wallet block: the balance with a Buy Coins button right under it, so buying coins is ALWAYS on
-     screen (it used to be the last tab in a row that scrolled off the right edge on a phone). */
-  .shop-wallet{display:flex; flex-direction:column; align-items:flex-end; gap:5px; flex:0 0 auto}
-  .buycoins{border:0; cursor:pointer; border-radius:9px; padding:7px 12px; white-space:nowrap;
-    font:900 11.5px/1 var(--body); letter-spacing:.04em; color:#2a1e05; background:var(--gold-grad-d);
+  .shop-title{display:flex; align-items:center; gap:8px; flex:1 1 auto; min-width:0; white-space:nowrap;
+    background:linear-gradient(180deg,#fff3c4,#f1d04a 60%,#c99a24); -webkit-background-clip:text; background-clip:text; color:transparent;
+    letter-spacing:.02em; text-shadow:none}
+  .shop-title>span:last-child{overflow:hidden; text-overflow:ellipsis}
+  .shop-title .st-ic{width:30px; height:30px; flex:0 0 auto; border-radius:9px; padding:3px; box-sizing:border-box;
+    background:rgba(241,208,74,.14); border:1px solid rgba(241,208,74,.42); display:flex}
+  .shop-title .st-ic svg{width:100%; height:100%}
+  .shop-wallet{display:flex; align-items:stretch; flex:0 0 auto}
+  .shop-wallet .coinpill{border-top-right-radius:0; border-bottom-right-radius:0; border-right:0; padding-right:10px}
+  .shop-wallet .coinpill:only-child{border-radius:999px; border-right:1px solid rgba(241,208,74,.4)}
+  .buycoins{border:0; cursor:pointer; border-radius:0 999px 999px 0; padding:0 12px 0 10px; white-space:nowrap;
+    font:900 15px/1 var(--body); letter-spacing:.02em; color:#2a1e05; background:var(--gold-grad-d);
     box-shadow:0 5px 14px -7px rgba(241,208,74,.95), inset 0 1px 0 rgba(255,255,255,.35)}
+  .buycoins .bc-t{font-size:11.5px; letter-spacing:.04em}
+  @media (max-width:520px){ .buycoins .bc-t{display:none} .buycoins{padding:0 11px 0 9px; font-size:17px} }
   .buycoins:hover{filter:brightness(1.07)}
   .buycoins.on{box-shadow:0 0 0 2px rgba(255,255,255,.55), 0 5px 14px -7px rgba(241,208,74,.95)}
+  /* the header is a full-width band, edge to edge, rather than a dark block with the page showing either side */
+  .ov-shop .shop-sticky::before{content:''; position:absolute; top:0; bottom:0; left:-100vmax; right:-100vmax; z-index:-1; background:#06200f;
+    box-shadow:0 12px 14px -12px rgba(0,0,0,.7); pointer-events:none}
+  .ov-shop{overflow-x:hidden}
+  .shop-wallet .coinpill{font-size:15px}
+  @media (max-width:430px){ .shop-title .st-ic{display:none} .shop-bar h3.shop-title{font-size:20px} }
+  @media (max-width:360px){ .shop-wallet .coinpill{font-size:13.5px; padding-left:6px} .shop-bar h3.shop-title{font-size:18px} }
+  .shop-x{width:38px!important; height:38px; padding:0!important; flex:0 0 auto; border-radius:50%!important; font-size:15px!important;
+    display:flex; align-items:center; justify-content:center}
   /* customize: active boosts + Pro Shop button under the golfer */
   .setup-under{margin:8px 2px 2px; display:flex; flex-direction:column; gap:9px}
   .setup-shopbtn{display:inline-flex; align-items:center; justify-content:center; gap:8px; width:100%; border-radius:12px;
@@ -3096,14 +3159,19 @@ window.GA_ID='G-L29P5MRWKE';
   button.coinpill{cursor:pointer; font-family:var(--body)}
   button.coinpill:hover{background:rgba(241,208,74,.2); border-color:var(--gold)}
   .cp-log{font-size:11px; opacity:.75; margin-left:1px}
-  .shop-refcta{display:flex; align-items:center; gap:9px; width:100%; text-align:left; margin:0 0 8px; padding:9px 12px; border-radius:11px; cursor:pointer;
-    border:1px solid rgba(241,208,74,.4); background:linear-gradient(180deg,rgba(241,208,74,.13),rgba(10,22,38,.28)); color:var(--gold); font:800 13px var(--body); line-height:1.25}
-  .shop-refcta .small{font-weight:600; color:var(--pagemut)}
+  /* the closet and invite links, at the FOOT of the page as one compact row */
+  .shop-promos{display:flex; gap:8px; margin:18px 0 0}
+  .shop-refcta,.shop-closetcta{flex:1 1 0; min-width:0; display:flex; align-items:center; gap:9px; text-align:left; margin:0;
+    padding:9px 11px; border-radius:12px; cursor:pointer; font:800 12.5px/1.2 var(--body)}
+  .shop-refcta{border:1px solid rgba(241,208,74,.4); background:linear-gradient(180deg,rgba(241,208,74,.12),rgba(10,22,38,.28)); color:var(--gold)}
   .shop-refcta:hover{border-color:var(--gold); background:linear-gradient(180deg,rgba(241,208,74,.2),rgba(10,22,38,.3))}
-  .shop-closetcta{display:flex; align-items:center; gap:9px; width:100%; text-align:left; margin:0 0 8px; padding:9px 12px; border-radius:11px; cursor:pointer;
-    border:1px solid rgba(22,181,166,.5); background:linear-gradient(180deg,rgba(22,181,166,.16),rgba(10,22,38,.28)); color:#4fe0d0; font:800 13px var(--body); line-height:1.25}
-  .shop-closetcta .small{font-weight:600; color:var(--pagemut)}
+  .shop-closetcta{border:1px solid rgba(22,181,166,.5); background:linear-gradient(180deg,rgba(22,181,166,.15),rgba(10,22,38,.28)); color:#4fe0d0}
   .shop-closetcta:hover{border-color:#4fe0d0; background:linear-gradient(180deg,rgba(22,181,166,.24),rgba(10,22,38,.3))}
+  .shop-promos .spc-ic{width:20px; height:20px; flex:0 0 auto; display:flex; align-items:center; justify-content:center; font-size:17px}
+  .shop-promos .spc-t{display:flex; flex-direction:column; gap:2px; min-width:0}
+  .shop-promos .spc-t b{white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .shop-promos .spc-t span{font:600 11px/1.2 var(--body); color:var(--pagemut)}
+  .shop-promos .spc-go{margin-left:auto; opacity:.8}
   /* CS440: shorter preview box so the item grid shows more (owner: box too tall, wasted space). The golfer
      is width-constrained, so give the avatarfig an explicit width to fill the shorter box instead of floating
      tiny in a big empty area. */
@@ -3153,12 +3221,18 @@ window.GA_ID='G-L29P5MRWKE';
   .segrow button{flex:1; border:0; background:transparent; color:var(--muted); font:800 12px/1 var(--body);
     padding:8px 4px; border-radius:8px; cursor:pointer; letter-spacing:.02em}
   .segrow button.on{background:var(--gold); color:#3a2708}
-  /* SHOP tabs: a fixed 4-across grid that wraps to a second row instead of one long row that ran off
-     the right edge of a phone. Labels wrap rather than overflow, so every section is always reachable. */
-  .segrow.shopseg{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:5px}
-  .segrow.shopseg button{flex:none; min-width:0; white-space:normal; line-height:1.14; font-size:11.5px;
-    padding:8px 3px; min-height:42px; display:flex; align-items:center; justify-content:center; text-align:center}
-  @media (max-width:360px){ .segrow.shopseg button{font-size:10.5px} }
+  /* SHOP tabs: ONE ROW that scrolls sideways, the way every store in a phone game works. The 4-across grid
+     it replaces was three rows deep (ten tabs), about a sixth of a phone screen before a single item. The
+     tab you are on is scrolled into view on every render, and a fade at the edge shows there is more, so no
+     tab can sit unreachable off the side, which is what the grid was protecting against. */
+  .segrow.shopseg{display:flex; gap:4px; overflow-x:auto; overflow-y:hidden; -webkit-overflow-scrolling:touch; scrollbar-width:none;
+    scroll-behavior:smooth; overscroll-behavior-x:contain}
+  .segrow.shopseg::-webkit-scrollbar{display:none}
+  .segrow.shopseg.fr{-webkit-mask-image:linear-gradient(90deg,#000 84%,transparent); mask-image:linear-gradient(90deg,#000 84%,transparent)}
+  .segrow.shopseg.fl{-webkit-mask-image:linear-gradient(90deg,transparent,#000 16%); mask-image:linear-gradient(90deg,transparent,#000 16%)}
+  .segrow.shopseg.fl.fr{-webkit-mask-image:linear-gradient(90deg,transparent,#000 14%,#000 86%,transparent); mask-image:linear-gradient(90deg,transparent,#000 14%,#000 86%,transparent)}
+  .segrow.shopseg button{flex:0 0 auto; min-width:0; white-space:nowrap; line-height:1; font-size:12px;
+    padding:10px 13px; min-height:38px; display:flex; align-items:center; justify-content:center; gap:4px; text-align:center}
   .catrow{display:flex; gap:7px; overflow-x:auto; overflow-y:hidden; -webkit-overflow-scrolling:touch; padding:9px 2px 3px; scrollbar-width:none}
   .catrow::-webkit-scrollbar{display:none}
   .catchip{flex:0 0 auto; border:1px solid rgba(255,255,255,.14); background:rgba(255,255,255,.03); color:var(--muted);
@@ -3198,7 +3272,8 @@ window.GA_ID='G-L29P5MRWKE';
     .ov.ov-wide{ padding-left:max(20px, calc((100% - 940px)/2)); padding-right:max(20px, calc((100% - 940px)/2)) }
     .ov.ov-wide .x{ right:max(16px, calc((100% - 940px)/2)) }
     .ov.ov-shop{ padding-left:max(20px, calc((100% - 900px)/2)); padding-right:max(20px, calc((100% - 900px)/2)) }
-    .segrow.shopseg{ grid-template-columns:repeat(auto-fit,minmax(118px,1fr)) }
+    .segrow.shopseg{ flex-wrap:wrap; overflow:visible; -webkit-mask-image:none!important; mask-image:none!important }
+    .segrow.shopseg button{ flex:1 1 auto }
     .ov-shop .catrow{ flex-wrap:wrap; overflow:visible; row-gap:6px }
     .ov-shop .sgrid{ grid-template-columns:repeat(auto-fill,minmax(110px,1fr)) }
   }
@@ -14761,18 +14836,28 @@ function scrTitle(){
   // CS287: the "30-Year Career Simulation" badge is replaced by the How to Play button in this spot (owner)
   // CS303: a "Daily Quests" button sits beside it (owner: no auto-pop-up - open the challenges panel here)
   // Skip this row on the first-run screen so the intro panel stands alone, uncluttered (owner).
-  { const hw=$(`<div class="center homehead-act" style="margin:9px 0 11px;display:flex;gap:7px;justify-content:center;flex-wrap:wrap"></div>`);
-    // Prize Wheel lives here as a compact glowing pill (owner: no full-size tile for it)
-    if(wheelEnabled()) hw.appendChild(wheelMiniBtn());
-    const hb=$(`<button type="button" class="howtop" aria-label="How to Play">📖 How to Play</button>`);
-    hb.onclick=openRules; hw.appendChild(hb);
-    // the newsletter sits beside How to Play, and pulses with a count while there is something unread
+  /* THE QUICK BAR: four equal tiles in one strip, each an icon over a short label. These used to be
+     four pills of three different designs (a pink wheel pill, a gold How to Play, two cream newspaper
+     boxes) that wrapped three and one on a phone, so the last one sat alone on a line of its own and
+     the row read as leftovers rather than a control (owner). One shape, one row, at every width: the
+     colour lives in each icon, and the wheel alone glows when a spin is waiting. */
+  { const hw=$(`<div class="homehead-act hqbar" role="group" aria-label="Quick links"></div>`);
+    const qb=(cls,icon,label,aria,fn,badge)=>{ const b=$(`<button type="button" class="hq${cls?' '+cls:''}" aria-label="${esc(aria)}"><span class="hqi" aria-hidden="true">${icon}${badge||''}</span><span class="hql">${label}</span></button>`); b.onclick=fn; hw.appendChild(b); return b; };
+    // Prize Wheel lives here too (owner: no full-size tile for it)
+    if(wheelEnabled()){ const avail=wheelAvail(), free=wheelFreeReady(), on=sbSignedIn();
+      const lab=!on?'Prize wheel':avail>0?(free&&avail===1?'Free spin':'Spin'):'Wheel';
+      qb('wheel'+(avail>0?' ready':''), wheelMiniSVG(), lab,
+         'Prize Wheel'+(avail>0?', '+avail+' spin'+(avail>1?'s':'')+' ready':', next free spin tomorrow'), openWheel,
+         (on&&avail>1)?`<span class="hqn">${avail}</span>`:''); }
+    qb('howto', pxMedalSVG(PXICONS.book,'#F1D04A'), 'How to play', 'How to Play', openRules);
+    // the newsletter carries its unread count on the icon
     { const nn=newsUnseenCount();
-      const nb=$(`<button type="button" class="howtop news" aria-label="What's New${nn?', '+nn+' unread':''}">${nn?'<span class="nwdot"></span>':''}What's New${nn?' · '+nn:''}</button>`);
-      nb.onclick=openWhatsNew; hw.appendChild(nb); }
-    // Roster Updates: the weekly in-season rating refresh, beside What's New (owner)
-    { const ru=$(`<button type="button" class="howtop news" data-rosterbtn aria-label="Roster Updates">${rosterUpdUnseen()?'<span class="nwdot"></span>':''}Roster Updates</button>`);
-      ru.onclick=openRosterUpdates; hw.appendChild(ru); }
+      qb('news', pxMedalSVG(PXICONS.scroll,'#f4e3c9'), "What's new", "What's New"+(nn?', '+nn+' unread':''), openWhatsNew,
+         nn?`<span class="hqn">${nn}</span>`:''); }
+    // Roster Updates: the weekly in-season rating refresh (owner)
+    { const ru=qb('roster', pxMedalSVG(PXICONS.chartup,'#6fd3ff'), 'Rosters', 'Roster Updates', openRosterUpdates,
+         rosterUpdUnseen()?'<span class="hqd"></span>':'');
+      ru.setAttribute('data-rosterbtn',''); }
     (head||w).appendChild(hw); }   // (daily quests moved to the compact nav row below, which carries the "still to do" dot)
   // (career bests moved off the top onto the new-career card, see careerHeroCard)
   const stack=$(`<div class="stack"></div>`);
@@ -14863,7 +14948,7 @@ function scrTitle(){
   // (How to Play moved up under the hero, CS287)
   w.appendChild(sec);
   // CS303: the once-a-day challenges pop-up is removed (owner) - the "🎯 Daily Quests" button under the hero opens it.
-  const credit=$(`<div class="small muted center" style="margin-top:11px;line-height:1.5;opacity:.7">Player ratings derived from DataGolf data. Not affiliated with the PGA Tour, DataGolf, or any player.</div>`);
+  const credit=$(`<div class="small muted center homecredit" style="margin-top:11px;line-height:1.5">Player ratings derived from DataGolf data. Not affiliated with the PGA Tour, DataGolf, or any player.</div>`);
   w.appendChild(credit);
   add(w);
 }
@@ -30028,14 +30113,26 @@ function hvSigHoles(courseKey){
 // the in-round floating hole chip, with the SIGNATURE treatment when the hole is one of the three.
 // `compact` collapses it to a single gold line - used while the on-course decision targets are up, since
 // on a short hole the green (and so both targets) sits high enough to run into the full card.
-function hvHoleChipHTML(courseKey, hole, compact){
+/* `key` names the hole on screen. With one, the SIGNATURE card is an introduction rather than a fixture:
+   it reads in full as the hole comes up and then folds its description away, so the card is two short
+   lines for the rest of the hole. At full size it covered the top of the window, which is where the green
+   is on nearly every hole (owner: on the 18th at the Causeway the card sat right on the flag all hole).
+   The window re-renders on every shot, so the fold is timed from when the hole FIRST showed, not from
+   this render: a re-render lands on the fold already in progress, or already done, instead of replaying
+   the card. The corner never changes (owner: hole info stays in a fixed corner all round). */
+const HV_SIG_HOLD=3600;
+const _hvSigT={};
+function hvHoleChipHTML(courseKey, hole, compact, key){
   const base=`HOLE ${hole.n} · PAR ${hole.par} · ${hole.yards}Y`;
   const s=hvSig(courseKey, hole.n);
   if(!s) return `<div class="hvob hvhole">${base}</div>`;
   if(compact) return `<div class="hvob hvhole sigmini"><span class="hvsigstar">★</span> ${base}</div>`;
   const nm=s.name?`<span class="hvsigname">${esc(s.name)}</span>`:'';
   const bl=s.blurb?`<div class="hvsigblurb">${esc(s.blurb)}</div>`:'';
-  return `<div class="hvob hvhole sig"><div class="hvsigtop"><span class="hvsigstar">★ SIGNATURE</span>${nm}</div><div class="hvsigmeta">${base}</div>${bl}</div>`;
+  let fold='', st='';
+  if(key && bl){ const now=Date.now(); if(_hvSigT[key]==null) _hvSigT[key]=now;
+    fold=' hvsigfold'; st=` style="--sigd:${Math.round(HV_SIG_HOLD-(now-_hvSigT[key]))}ms"`; }
+  return `<div class="hvob hvhole sig${fold}"${st}><div class="hvsigtop"><span class="hvsigstar">★ SIGNATURE</span>${nm}</div><div class="hvsigmeta">${base}</div>${bl}</div>`;
 }
 // the wind chip (item 04). The map is always drawn with the hole playing UP the screen, so the arrow is
 // simply the wind's travel direction rotated by its angle to the hole: straight up = behind you, straight
@@ -34100,15 +34197,37 @@ function dPlaceTargets(shell, g, sc, pick, ball){
       put('.ls', at(ms[1]), '#22c7a6');
       put('.la', at(ms[0]), '#ff5a4d');
     }
-    const hole=shell.querySelector('.hvhole'); if(!hole) return;
-    const hr=hole.getBoundingClientRect();
-    shell.querySelectorAll('.dctarget').forEach(c=>{
-      const w=c.querySelector('.dtw'); if(!w) return;
-      const r=w.getBoundingClientRect();
-      if(r.right<hr.left-4||r.left>hr.right+4||r.bottom<hr.top-4||r.top>hr.bottom+4) return;
-      if(c.classList.contains('lo')) c.style.setProperty('--dtx',((parseFloat(c.style.getPropertyValue('--dtx'))||0)+(hr.right-r.left+8))+'px');
-      else c.classList.add('lo');
-    });
+    /* A LABEL MAY NEVER LEAVE ITS MARKER. Every move below is either a flip (above the marker or below it)
+       or a sideways slide limited so the label still spans the marker it names, and the little pointer is
+       walked back along the label to stay on the marker. The old passes slid a label by however far it
+       took to clear something, with no limit, and the pointer went with it: on a layup the "Safe" chip
+       ended up floating over the water a hundred pixels from its ring, pointing at nothing (owner). */
+    const hole=shell.querySelector('.hvhole');
+    const reach=w=>Math.max(0, w.getBoundingClientRect().width/2-14);   // how far a label may slide and still cover its marker
+    const hit=(p,q,m)=>!(p.right<q.left-m||p.left>q.right+m||p.bottom<q.top-m||p.top>q.bottom+m);
+    if(hole){
+      const hr=hole.getBoundingClientRect();
+      shell.querySelectorAll('.dctarget').forEach(c=>{
+        const w=c.querySelector('.dtw'); if(!w) return;
+        if(!hit(w.getBoundingClientRect(),hr,4)) return;
+        c.classList.toggle('lo');                                   // the other side of its marker first
+        if(!hit(w.getBoundingClientRect(),hr,4)) return;
+        c.classList.toggle('lo');
+        // then a slide clear of the chip, but only as far as the label can go and still cover its marker
+        const r=w.getBoundingClientRect(), x=parseFloat(c.style.getPropertyValue('--dtx'))||0, lim=reach(w);
+        const dx=hr.right+6-r.left;
+        if(Math.abs(x+dx)<=lim) c.style.setProperty('--dtx',(x+dx)+'px');
+      });
+    }
+    /* Still under it once everything has settled: the CHIP gives way, not the label. While a decision is up
+       the scoreboard and the wind are both off the window, so the top-right corner is empty and the chip
+       crosses to it for this frame only. If a label is up there too, the chip steps out for the frame: the
+       hole is named in the round header, and a label is the thing being asked about. */
+    const yieldChip=()=>{ if(!hole || hole.style.display==='none') return;
+      const under=()=>{ const r=hole.getBoundingClientRect();
+        return Array.prototype.some.call(shell.querySelectorAll('.dctarget .dtw'),w=>hit(w.getBoundingClientRect(),r,2)); };
+      if(under()){ hole.classList.toggle('right');
+        if(under()){ hole.classList.toggle('right'); hole.style.display='none'; } } };
     /* And the two labels, against the WINDOW and then against each other, MEASURED. Alternating them above
        and below their markers handles almost everything, but a long label on a narrow gap can still reach
        across, and a threshold in percent cannot know how wide a word is once it has a font.
@@ -34132,21 +34251,39 @@ function dPlaceTargets(shell, g, sc, pick, ball){
     if(ls.length===2){
       const clash2=()=>{ const a=ls[0].getBoundingClientRect(), b=ls[1].getBoundingClientRect();
         return !(a.right<=b.left||b.right<=a.left||a.bottom<=b.top||b.bottom<=a.top); };
+      const fits=w=>Math.abs(dtx(w))<=reach(w)+0.5;
       if(clash2()){
-        const r0=ls[0].getBoundingClientRect(), r1=ls[1].getBoundingClientRect();
-        const lower=(r0.top>=r1.top)?0:1;
-        const tries=[[lower,-1],[lower,1],[1-lower,-1],[1-lower,1]];
-        for(let t=0; t<tries.length; t++){
-          const w=ls[tries[t][0]], d=tries[t][1], other=ls[1-tries[t][0]];
-          const wr=w.getBoundingClientRect(), orr=other.getBoundingClientRect();
-          const keep=dtx(w);
-          slide(w, (d<0 ? (orr.left-wr.right) : (orr.right-wr.left)) + d*10);
-          const f=escapes(w); if(f) slide(w,f);
-          if(!clash2() && !escapes(w)) break;
-          w.parentElement.style.setProperty('--dtx',keep+'px');
+        /* Flips first, because a flip never moves a label off its marker: either label to the other side,
+           then both. Only then a sideways slide, and only as far as the label can go and still cover the
+           marker. If nothing clears, the labels overlap a little rather than one of them wandering off. */
+        const flips=[[1],[0],[0,1]];
+        let done=false;
+        for(let t=0; t<flips.length && !done; t++){
+          flips[t].forEach(i=>ls[i].parentElement.classList.toggle('lo'));
+          if(!clash2() && !escapes(ls[0]) && !escapes(ls[1])) done=true;
+          else flips[t].forEach(i=>ls[i].parentElement.classList.toggle('lo'));
+        }
+        if(!done){
+          const r0=ls[0].getBoundingClientRect(), r1=ls[1].getBoundingClientRect();
+          const lower=(r0.top>=r1.top)?0:1;
+          const tries=[[lower,-1],[lower,1],[1-lower,-1],[1-lower,1]];
+          for(let t=0; t<tries.length; t++){
+            const w=ls[tries[t][0]], d=tries[t][1], other=ls[1-tries[t][0]];
+            const wr=w.getBoundingClientRect(), orr=other.getBoundingClientRect();
+            const keep=dtx(w);
+            slide(w, (d<0 ? (orr.left-wr.right) : (orr.right-wr.left)) + d*10);
+            const f=escapes(w); if(f) slide(w,f);
+            if(!clash2() && !escapes(w) && fits(w)) break;
+            w.parentElement.style.setProperty('--dtx',keep+'px');
+          }
         }
       }
     }
+    // clamp every label to its reach, and walk its pointer back onto the marker
+    ls.forEach(w=>{ const c=w.parentElement, r=reach(w), x=dtx(w);
+      if(Math.abs(x)>r){ c.style.setProperty('--dtx',(Math.sign(x)*r)+'px'); }
+      c.style.setProperty('--dtpx',(-dtx(w))+'px'); });
+    yieldChip();   // last, once every label has settled
   });
 }
 
@@ -34397,7 +34534,7 @@ function scrDailyRound(){
     const hudCls=s2=>hudNew?s2.replace('class="hvob ','class="hvob hvnew '):s2;
     // (CS246: the themed accent frame now lives on the svg itself via hvFrameStyle, so the whole window is framed)
     // hole info + scoreboard stay in FIXED corners all round (owner: they must not flip between holes)
-    shell.appendChild($(hudCls(hvHoleChipHTML(S.dailyCourse, h, !!dec))));
+    shell.appendChild($(hudCls(hvHoleChipHTML(S.dailyCourse, h, !!dec, (S.dailySeed||'')+':'+hudK))));
     // (item 07: while a decision is docked at the bottom, the wind moves INTO the panel's header -
     // the standalone chip lives bottom-left, which the panel now occupies)
     if(!dec){ const wc=hvWindChipHTML(h.i!=null?h.i:(h.n-1), !(descShot && descShot.d && !holePauseFlag));
@@ -37407,9 +37544,9 @@ function packShopNode(){
   packStyleOnce();
   var p=packState(), free=packIsFree(), credits=packCredits(), bal=coinBalance();
   var wrap=$('<div style="padding:6px 2px 4px"></div>');
-  wrap.appendChild($('<div class="small muted" style="text-align:center;max-width:380px;margin:6px auto 2px;line-height:1.5">Spin the wheel and land something from the whole locker. Better packs, better odds. (Earned Legend gear never drops.)</div>'));
+  wrap.appendChild($('<div class="small muted" style="text-align:center;max-width:380px;margin:2px auto 2px;line-height:1.45;font-size:12px">Spin the wheel and land something from the whole locker. Better packs, better odds. (Earned Legend gear never drops.)</div>'));
   if(free||credits>0){
-    wrap.appendChild($('<div style="max-width:380px;margin:8px auto 0;text-align:center;font:800 12.5px var(--body);color:var(--gold)">'
+    wrap.appendChild($('<div style="max-width:380px;margin:10px auto 0;text-align:center;font:800 12.5px/1.35 var(--body);color:var(--gold);padding:8px 12px;border-radius:12px;border:1px solid rgba(241,208,74,.45);background:linear-gradient(180deg,rgba(241,208,74,.16),rgba(241,208,74,.04));box-shadow:0 0 18px -8px rgba(241,208,74,.7)">'
       +(free?'🎁 First pack is on the house. Open the Base pack free!':('🎁 '+credits+' free pack'+(credits>1?'s':'')+' ready from your challenges &amp; streak. Rip a Base pack!'))+'</div>'));
   }
   // CS406: tier cards (base / tour / champion) + any live seasonal pack, escalating odds + price
@@ -37447,7 +37584,11 @@ function packShopNode(){
         +'<div style="font-family:var(--display);font-size:20px;color:'+pt.col+'">'+esc(pt.name)+'</div>'
         +'<div class="small" style="color:#cfe6d8;margin-top:3px">Epic+ <b style="color:'+PACK_RCOL.epic+'">'+Math.round(epicPlus*100)+'%</b> · Legendary <b style="color:'+PACK_RCOL.legendary+'">'+Math.round(legPct*100)+'%</b></div>'
         +(pt.seasonal&&seasonD?'<div style="font:800 10.5px var(--body);color:'+pt.col+';margin-top:3px">✦ Boosted odds for the '+seasonD.items.length+' '+esc(seasonD.name)+' items</div>':'')
-        +'<div class="small muted" style="margin-top:2px">Guaranteed Epic+ in '+Math.max(0,pt.pityEpic-p.sinceEpic)+' · Legendary in '+Math.max(0,pt.pityLeg-p.sinceLeg)+'</div>'
+        /* The pity counter is shared by every tier and each tier has its own threshold, so a count run up on
+           one pack can already be past another pack's line. That printed "Guaranteed Epic+ in 0", which reads
+           as a broken number. The roll's own rule is since+1 >= pity, so one or less means THE NEXT ONE. */
+        +'<div class="small muted" style="margin-top:2px">'+(function(){ var e=pt.pityEpic-p.sinceEpic, l=pt.pityLeg-p.sinceLeg;
+            return (l<=1?'Next pack is a guaranteed Legendary':e<=1?'Next pack is a guaranteed Epic+ · Legendary in '+l:'Guaranteed Epic+ in '+e+' · Legendary in '+l); })()+'</div>'
         +(cr>0?'<div style="font:800 10.5px var(--body);color:var(--gold);margin-top:3px">🎁 '+cr+' free '+(cr>1?'packs':'pack')+' ready</div>':'')
       +'</div></div>'));
     var openBtn=$('<button class="btn" style="width:100%;margin:10px 0 0;background:'+(afford?pt.col:'#2a3a30')+';color:'+(afford?'#0c1f16':'#7f978b')+';display:flex;align-items:center;justify-content:center;gap:6px"'+(afford?'':' disabled')+'>'
@@ -37529,15 +37670,14 @@ function overlayShop(screen){
   let cat=S.shopCat; if(cats && !cats.some(c=>c[0]===cat)){ cat=cats[0][0]; } S.shopCat=cat;
   // sticky: bar (title+coins+close) → live preview → section segment → category chips
   const sticky=$(`<div class="shop-sticky">
-    <div class="shop-bar"><h3>Pro Shop</h3>
-      <div style="display:flex;align-items:flex-start;gap:8px">
-        <div class="shop-wallet">
-          <button class="coinpill" data-coinlog title="Coin history" aria-label="Coin history"><span style="width:18px;height:18px">${ic('coin',{size:'18px'})}</span>${coinFmt(coinBalance())}<span class="cp-log">🧾</span></button>
-          ${BUCKETS_ENABLED?`<button class="buycoins ${sec==='buckets'?'on':''}" data-sec="buckets">＋ Buy Coins</button>`:''}
-        </div>
-        <button class="btn ghost x2" style="width:auto;padding:7px 11px;font-size:14px">✕</button></div></div>
+    <div class="shop-bar"><h3 class="shop-title"><span class="st-ic" aria-hidden="true">${pxMedalSVG(PXICONS.cart,'#F1D04A')}</span><span>Pro Shop</span></h3>
+      <div class="shop-wallet">
+        <button class="coinpill" data-coinlog title="Coin history" aria-label="Coin history, ${coinFmt(coinBalance())} coins"><span style="width:18px;height:18px">${ic('coin',{size:'18px'})}</span>${coinFmt(coinBalance())}</button>
+        ${BUCKETS_ENABLED?`<button class="buycoins ${sec==='buckets'?'on':''}" data-sec="buckets" aria-label="Buy Coins">＋<span class="bc-t"> Buy Coins</span></button>`:''}
+      </div>
+      <button class="btn ghost x2 shop-x" aria-label="Close">✕</button></div>
     ${(['apparel','accessories','effects','bag','owned','drops'].indexOf(sec)>=0)?`<div class="shop-preview">${avatarFullHTML()}</div>`:''}
-    <div class="segrow shopseg">
+    <div class="segrow shopseg" role="tablist" aria-label="Pro Shop sections">
       ${TOURPASS_ENABLED?`<button data-sec="tourpass" class="${sec==='tourpass'?'on':''}" style="color:${sec==='tourpass'?'':'#c98bf0'}">🎟️ Tour Pass</button>`:''}
       ${TOKENS_ENABLED?`<button data-sec="tokens" class="${sec==='tokens'?'on':''}" style="color:${sec==='tokens'?'':'#7fdcef'}">Tokens</button>`:''}
       ${packsOn()?`<button data-sec="packs" class="${sec==='packs'?'on':''}">Packs</button>`:''}
@@ -37551,12 +37691,22 @@ function overlayShop(screen){
     ${cats?`<div class="catrow">${cats.map(c=>`<button class="catchip ${c[0]===cat?'on':''}" data-cat="${c[0]}">${esc(c[1])}${(c[0]!==cat && cosCatNew(c[0])>0)?NDOT:''}</button>`).join('')}</div>`:''}
   </div>`);
   ov.appendChild(sticky);
-  // The two house CTAs (closet + invite) live in the SCROLL flow, not the pinned header: the sticky
-  // block stays short (bar + wallet + golfer + tabs) so the shop is easy to navigate on a phone.
+  /* The two house CTAs (closet + invite) used to sit at the TOP of every tab, two full-width cards of
+     three lines each between the tabs and the thing the tab was opened for: on a phone the Packs tab
+     showed no pack at all above the fold (owner). They go to the FOOT of the page now, as one compact
+     row, and the closet link only shows on the tabs about how your golfer looks. */
+  const lookTab=(['apparel','accessories','effects','bag','owned','drops'].indexOf(sec)>=0);
   const promos=$(`<div class="shop-promos">
-    <button class="shop-closetcta" data-closet><span style="font-size:18px;flex:0 0 auto">🚪</span><span><b>Customize your golfer in your closet</b><br><span class="small" style="opacity:.85">Equip everything you own: colors, patterns, gear &amp; effects</span></span><span style="margin-left:auto">▸</span></button>
-    <button class="shop-refcta" data-refshare><span style="width:18px;height:18px;flex:0 0 auto">${ic('coins',{size:'18px'})}</span><span><b>Invite a friend, get a free pack</b><br><span class="small" style="opacity:.85">They sign up with your link, you both score a pack</span></span><span style="margin-left:auto">↗</span></button></div>`);
-  ov.appendChild(promos);
+    ${lookTab?`<button class="shop-closetcta" data-closet><span class="spc-ic" aria-hidden="true">🚪</span><span class="spc-t"><b>Open your closet</b><span>Equip what you own</span></span><span class="spc-go" aria-hidden="true">▸</span></button>`:''}
+    <button class="shop-refcta" data-refshare><span class="spc-ic" aria-hidden="true">${ic('coins',{size:'18px'})}</span><span class="spc-t"><b>Invite a friend</b><span>You both get a free pack</span></span><span class="spc-go" aria-hidden="true">↗</span></button></div>`);
+  // placed just above the Done button once the tab's content is in, so it trails the content
+  const placePromos=()=>{ const d=ov.querySelector(':scope > .btn.red'); if(d) ov.insertBefore(promos,d); else ov.appendChild(promos); };
+  // keep the tab you are on in view: the strip scrolls sideways on a phone
+  const tabStrip=()=>{ try{ const row=sticky.querySelector('.shopseg'), on=row&&row.querySelector('button.on'); if(!row) return;
+      const edge=()=>{ row.classList.toggle('fl', row.scrollLeft>4); row.classList.toggle('fr', row.scrollLeft+row.clientWidth<row.scrollWidth-4); };
+      requestAnimationFrame(()=>{ if(on && row.scrollWidth>row.clientWidth) row.scrollLeft=Math.max(0,on.offsetLeft-(row.clientWidth-on.offsetWidth)/2); edge(); });
+      row.addEventListener('scroll',edge,{passive:true}); }catch(e){} };
+  tabStrip();
   sticky.querySelectorAll('[data-coinlog]').forEach(x=>x.onclick=()=>{ openCoinLog('shop'); });   // the balance opens the coin ledger (it lives with the coins, not with the packs)
   promos.querySelectorAll('[data-refshare]').forEach(x=>x.onclick=()=>{ try{ referralShare(); }catch(e){} });   // CS412: invite-a-friend referral CTA
   // CS452: clear link from the STORE to the CLOSET (edit-your-golfer). If the shop was opened from the closet
@@ -37570,7 +37720,7 @@ function overlayShop(screen){
     ov.appendChild($(`<button class="btn red" style="margin-top:14px">Done</button>`));
     sticky.querySelectorAll('[data-sec]').forEach(x=>x.onclick=()=>{ S.shopSec=x.getAttribute('data-sec'); render(); });
     ov.querySelectorAll('.x2,.red').forEach(el=>el.onclick=()=>{S.shopPreview=null;S.overlay=null;render();});
-    screen.appendChild(ov); return;
+    placePromos(); screen.appendChild(ov); return;
   }
   if(sec==='packs'){
     try{ const ld=liveThemedDrop();
@@ -37583,7 +37733,7 @@ function overlayShop(screen){
     ov.appendChild($(`<button class="btn red" style="margin-top:14px">Done</button>`));
     sticky.querySelectorAll('[data-sec]').forEach(x=>x.onclick=()=>{ S.shopSec=x.getAttribute('data-sec'); render(); });
     ov.querySelectorAll('.x2,.red').forEach(el=>el.onclick=()=>{S.shopPreview=null;S.overlay=null;render();});
-    screen.appendChild(ov); return;
+    placePromos(); screen.appendChild(ov); return;
   }
   if(sec==='shards'){
     ov.appendChild($(`<div style="text-align:center;margin:2px 0 4px"><div style="font-family:var(--display);font-size:20px;color:var(--gold)">◆ Shard Exchange</div></div>`));
@@ -37591,7 +37741,7 @@ function overlayShop(screen){
     ov.appendChild($(`<button class="btn red" style="margin-top:14px">Done</button>`));
     sticky.querySelectorAll('[data-sec]').forEach(x=>x.onclick=()=>{ S.shopSec=x.getAttribute('data-sec'); render(); });
     ov.querySelectorAll('.x2,.red').forEach(el=>el.onclick=()=>{S.shopPreview=null;S.overlay=null;render();});
-    screen.appendChild(ov); return;
+    placePromos(); screen.appendChild(ov); return;
   }
   // ===== DROPS section: collection banners -> per-drop item grid =====
   if(sec==='drops'){
@@ -37657,7 +37807,7 @@ function overlayShop(screen){
     // a pending buy-preview from a drop tile shows the confirm card below the grid
     if(S.shopPreview){ ov.insertBefore(shopPreviewNode(), ov.lastChild);
       if(S._shopPreviewScroll){ S._shopPreviewScroll=false; requestAnimationFrame(()=>{ const el=document.getElementById('pv-buy'); if(el) el.scrollIntoView({behavior:'smooth',block:'center'}); }); } }
-    screen.appendChild(ov); return;
+    placePromos(); screen.appendChild(ov); return;
   }
   try{ ov.appendChild(accBoostSummaryNode()); }catch(e){}   // live "equipment boost" summary from your worn gear
   const grid=$(`<div class="sgrid"></div>`); const tiles=[];
@@ -37685,7 +37835,7 @@ function overlayShop(screen){
     ov.querySelectorAll('.x2').forEach(el=>el.onclick=()=>{S.shopPreview=null;S.overlay=null;render();});
     // CS483g: scroll the confirm card into view (render restores the overlay's old scroll, so override next frame)
     if(S._shopPreviewScroll){ S._shopPreviewScroll=false; requestAnimationFrame(()=>{ const el=document.getElementById('pv-buy'); if(el) el.scrollIntoView({behavior:'smooth',block:'center'}); }); }
-    screen.appendChild(ov); return;
+    placePromos(); screen.appendChild(ov); return;
   }
   grid.innerHTML = tiles.length?tiles.join('')
     : `<div class="shop-empty">${sec==='owned'?'Nothing unlocked yet. Browse Apparel & Accessories to kit out your golfer.':'Nothing here yet.'}</div>`;
@@ -37700,7 +37850,7 @@ function overlayShop(screen){
   sticky.querySelectorAll('[data-cat]').forEach(x=>x.onclick=()=>{ S.shopCat=x.getAttribute('data-cat'); render(); });
   grid.querySelectorAll('[data-tile]').forEach(x=>x.onclick=()=>shopTileClick(x));
   ov.querySelectorAll('.x2,.red').forEach(el=>el.onclick=()=>{S.shopPreview=null;S.overlay=null;render();});
-  screen.appendChild(ov);
+  placePromos(); screen.appendChild(ov);
 }
 function overlayCourseRecords(screen){
   if(sb) proLoad();
@@ -40227,7 +40377,7 @@ function scrH2HWatch(){
     const hvn=h2hCourseKey?hvNode(h, R.step, R.hole, h2hCourseKey(S.h2h.seed), multi):null;
     if(hvn){
       const shell=hvn.querySelector('.hvshell');
-      shell.appendChild($(hvHoleChipHTML(h2hCourseKey?h2hCourseKey(S.h2h.seed):null, h)));
+      shell.appendChild($(hvHoleChipHTML(h2hCourseKey?h2hCourseKey(S.h2h.seed):null, h, false, 'h2h:'+S.h2h.seed+':'+h.n)));
       const holed=h2hHoledUnits(h, R.step);
       const curW=h.order[Math.max(0,Math.min(R.step||1,h.order.length)-1)], stW=curW?h.shots[curW.u][curW.i]:null;
       const bd=$(`<div class="hvob hvboard${(stW&&stW.d)?'':' nodesc'}"><div class="hvbcap">HOLE ${h.n}</div></div>`);
@@ -40260,7 +40410,7 @@ function scrH2HWatch(){
     if(hvn){
       const shell=hvn.querySelector('.hvshell');
       // hole info + scoreboard stay in FIXED corners all round (owner: they must not flip between holes)
-      shell.appendChild($(hvHoleChipHTML(h2hCourseKey?h2hCourseKey(S.h2h.seed):null, h)));
+      shell.appendChild($(hvHoleChipHTML(h2hCourseKey?h2hCourseKey(S.h2h.seed):null, h, false, 'h2h:'+S.h2h.seed+':'+h.n)));
       const curW=h.order[Math.max(0,Math.min(S.h2h.wStep||1,h.order.length)-1)], stW=curW?h.shots[curW.u][curW.i]:null;
       const bd=$(`<div class="hvob hvboard${(stW&&stW.d)?'':' nodesc'}"><div class="hvbcap">HOLE ${h.n} · PAR ${h.par} · THRU ${played}/${holes}</div></div>`);
       // the scoreboard updates the MOMENT a ball drops, not when the hole advances (owner) - add the
