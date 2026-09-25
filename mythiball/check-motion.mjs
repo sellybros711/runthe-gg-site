@@ -215,6 +215,10 @@ console.log('\nthe tilt follows a mouse and ignores a finger');
   const { ctx, pg } = await open({ viewport: { width: 1280, height: 900 }, isMobile: false, hasTouch: false });
   await pg.waitForTimeout(1500);
   const tile = await pg.$('.hmode');
+  /* The locker row sits above the tiles, so on a 900px window the first
+     tile starts below the fold, and a mouse moved to coordinates off the
+     window hovers nothing. */
+  await tile.scrollIntoViewIfNeeded();
   const box = await tile.boundingBox();
   await pg.mouse.move(box.x + box.width * 0.9, box.y + box.height * 0.2);
   await pg.mouse.move(box.x + box.width * 0.85, box.y + box.height * 0.25);

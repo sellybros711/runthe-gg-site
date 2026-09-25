@@ -10,6 +10,8 @@ name: MythiBall checks
 #                                     plus men left on base
 #   node mythiball/check-reach.mjs     every control a game offers is inside the
 #                                     window, on the shortest phone anybody holds
+#   node mythiball/check-collection.mjs  the ten starters, the packs, the ladder
+#                                     and your own player, held to their rules
 #   node mythiball/check-skill.mjs    what a PERSON hits, four rungs of skill,
 #                                     against the bands the dials were set to
 #   node mythiball/verify-rules.mjs    walk-offs, the mercy rule, extra innings,
@@ -78,6 +80,12 @@ jobs:
       # screen that throws nothing.
       - name: The menus move, settle and stay off the game
         run: node mythiball/check-motion.mjs
+
+      # Under a minute. Every rule of the collection fails silently: a pack
+      # that sells a legend, a save that loses a veteran's players, or your
+      # own player turning up in the other dugout all render perfectly.
+      - name: The collection keeps its rules
+        run: node mythiball/check-collection.mjs
 
       # The batting model, at a sample this job can afford. 450 plate
       # appearances a rung is about a minute and holds every claim in that

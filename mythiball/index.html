@@ -1192,6 +1192,155 @@
   .bp-mark{width:0;height:0;border-style:solid;border-width:9px 0 9px 15px;
     border-color:transparent transparent transparent #fff6ea;flex:0 0 auto;}
 
+  /* ------------------------------------------------------------- the locker
+     YOUR PLAYER AND THE PACKS, one row under the franchise. It is the thing
+     a returning player comes back to spend, so it sits above the modes,
+     and a ring pulses on whichever half has something waiting. */
+  .locker{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:12px auto 0;max-width:880px;}
+  .lk-btn{display:flex;align-items:center;gap:12px;text-align:left;min-width:0;position:relative;
+    background:var(--panel);border:var(--bd-strong);box-shadow:var(--shadow);border-radius:var(--r);
+    padding:10px 12px;cursor:pointer;font-family:inherit;color:var(--text);}
+  .lk-btn:hover{background:var(--panel-2);}
+  .lk-btn:active{transform:translateY(1px);box-shadow:var(--shadow-press);}
+  .lk-btn:focus-visible{outline:3px solid var(--gold);outline-offset:3px;}
+  .lk-art{flex:0 0 auto;width:56px;height:56px;display:grid;place-items:center;
+    background:#f7ecd0;border:var(--bd);border-radius:var(--r-sm);overflow:hidden;}
+  .lk-art canvas{display:block;image-rendering:var(--pxr);}
+  .lk-me .lk-art canvas{width:56px;height:56px;}
+  .lk-txt{min-width:0;}
+  .lk-txt b{display:block;font-size:13px;font-weight:900;letter-spacing:.1em;text-transform:uppercase;
+    color:var(--gold);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .lk-txt span{display:block;margin-top:3px;font-size:11px;line-height:1.35;color:var(--text-dim);}
+  .lk-btn.ping::after{content:'';position:absolute;top:8px;right:8px;width:9px;height:9px;border-radius:50%;
+    background:var(--gold);box-shadow:0 0 0 2px var(--panel);}
+  @media (prefers-reduced-motion: no-preference){
+    .lk-btn.ping::after{animation:mo-lkping 1.6s ease-out infinite;}
+  }
+  @keyframes mo-lkping{0%{transform:scale(1);opacity:1}70%{transform:scale(1.5);opacity:.35}100%{transform:scale(1);opacity:1}}
+  .lk-col{grid-column:1 / -1;display:flex;flex-direction:column;gap:5px;font-size:11px;color:var(--text-dim);}
+  .lk-col b{color:var(--text);font-size:13px;}
+  .lk-col i{display:block;height:6px;border-radius:3px;background:rgba(27,58,92,.14);position:relative;overflow:hidden;}
+  .lk-col i::before{content:'';position:absolute;inset:0;width:var(--p);background:linear-gradient(90deg,var(--gold),#f4c25a);border-radius:3px;}
+  .coin{display:inline-block;width:.95em;height:.95em;border-radius:50%;vertical-align:-.12em;margin-right:.3em;
+    background:radial-gradient(circle at 35% 30%,#fff1b8 0 18%,#f4c25a 40%,#c48a1e 100%);
+    box-shadow:inset 0 0 0 1.5px #a8741c;}
+  body.roomfill .locker{gap:9px;}
+  body.roomfill .lk-btn{flex-direction:column;align-items:center;text-align:center;gap:7px;padding:10px 7px;}
+  body.roomfill .lk-txt b{font-size:14px;letter-spacing:.04em;}
+  .rchip{display:inline-block;font-size:9px;font-weight:900;letter-spacing:.12em;text-transform:uppercase;
+    padding:2px 6px;border-radius:99px;background:var(--rc);color:#fff;vertical-align:middle;}
+  .charcard .rchip{margin-top:6px;}
+  .charcard.me{border-color:var(--gold);box-shadow:var(--shadow),inset 0 0 0 2px rgba(207,50,41,.25);}
+
+  /* -------------------------------------------------------------- the shop */
+  .pk-top .pk-bank{display:flex;align-items:baseline;gap:6px;font-family:var(--font-display);}
+  .pk-bank .coin{width:22px;height:22px;align-self:center;}
+  .pk-bank b{font-size:34px;font-weight:800;color:var(--text);}
+  .pk-bank span{font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-dim);}
+  .pk-how{margin:6px 0 10px;font-size:12px;color:var(--text-dim);}
+  .pk-tiers{display:flex;flex-wrap:wrap;gap:10px 16px;margin-top:10px;}
+  .pk-tier{display:inline-flex;align-items:center;gap:6px;font-size:12px;}
+  .pk-note{font-size:11px;color:var(--text-dim);margin-top:8px;}
+  .pk-free{display:flex;align-items:center;gap:14px;border-color:var(--gold);}
+  .pk-free > div{flex:1;min-width:0;}
+  .pk-free b{display:block;font-size:14px;letter-spacing:.06em;text-transform:uppercase;color:var(--gold);}
+  .pk-free span{font-size:12px;color:var(--text-dim);}
+  .pk-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin-top:12px;}
+  .pk-grid .card{margin-top:0;}
+  .pk-card{display:flex;flex-direction:column;align-items:center;text-align:center;gap:6px;}
+  .pk-card.gold{background:linear-gradient(180deg,#fff8e1,var(--panel));}
+  .pk-card h3{margin:4px 0 0;}
+  .pk-card p{font-size:12px;color:var(--text-dim);margin:0;}
+  .pk-card .btn{margin-top:auto;width:100%;}
+  .pk-card .btn:disabled{opacity:.55;cursor:not-allowed;}
+  .pk-art canvas{display:block;filter:drop-shadow(0 6px 8px rgba(20,40,63,.3));}
+  .pk-odds{list-style:none;margin:4px 0 8px;padding:0;font-size:11px;color:var(--text-dim);line-height:1.6;}
+  .pk-odds b{color:var(--text);}
+
+  /* ------------------------------------------------------------ the reveal */
+  .pk-scrim{position:fixed;inset:0;z-index:80;display:grid;place-items:center;padding:16px;
+    background:rgba(12,22,36,.72);}
+  .pk-box{background:var(--panel);border-radius:var(--r-lg);box-shadow:var(--shadow);padding:18px 16px 16px;
+    width:min(620px,100%);max-height:100%;overflow:auto;text-align:center;}
+  .pk-box h3{margin:0 0 12px;}
+  .pk-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+  .pk-flip{border:0;background:none;padding:0;cursor:pointer;perspective:700px;font-family:inherit;color:var(--text);}
+  .pk-in{position:relative;aspect-ratio:3 / 4.4;transform-style:preserve-3d;transition:transform .5s cubic-bezier(.3,1.3,.5,1);}
+  .pk-flip.on .pk-in{transform:rotateY(180deg);}
+  .pk-face{position:absolute;inset:0;backface-visibility:hidden;border-radius:var(--r);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:8px 6px;}
+  .pk-back{background:linear-gradient(160deg,#2f5fb3,#122840);box-shadow:var(--shadow);}
+  .pk-front{transform:rotateY(180deg);background:#fffcf2;border:3px solid var(--rc,#8aa0b8);box-shadow:var(--shadow);}
+  .pk-front b{font-size:12px;line-height:1.2;}
+  .pk-front .pk-sub{font-size:10px;color:var(--text-dim);line-height:1.3;}
+  /* The one rule `.btn` loses to: it sets a display, so `hidden` never took. */
+  .pk-box .btn[hidden]{display:none;}
+  .pk-pic canvas{display:block;width:72px;height:72px;image-rendering:var(--pxr);}
+  .pk-big{font-family:var(--font-display);font-size:28px;font-weight:800;color:var(--text);min-height:72px;display:grid;place-items:center;}
+  .pk-new{position:absolute;top:6px;left:6px;font-size:9px;font-weight:900;letter-spacing:.12em;
+    background:var(--gold);color:#fff;padding:2px 6px;border-radius:99px;text-transform:uppercase;}
+  .pk-flip.glow-rare .pk-front{box-shadow:0 0 0 3px rgba(21,102,174,.25),0 0 22px rgba(21,102,174,.45);}
+  .pk-flip.glow-epic .pk-front{box-shadow:0 0 0 3px rgba(107,66,150,.3),0 0 30px rgba(107,66,150,.6);}
+  .pk-box .btn-row{justify-content:center;margin-top:14px;}
+  @media (prefers-reduced-motion: reduce){ .pk-in{transition:none;} }
+
+  /* ---------------------------------------------------------- your player */
+  .me-hero{display:flex;gap:16px;align-items:flex-start;}
+  .me-stage{flex:0 0 auto;width:144px;height:144px;border-radius:var(--r);
+    background:radial-gradient(ellipse at 50% 92%,rgba(20,40,63,.22) 0 22%,transparent 23%),linear-gradient(180deg,#bfe0f5,#8fcf7f 70%);}
+  .me-stage canvas{display:block;width:144px;height:144px;image-rendering:var(--pxr);}
+  .me-info{flex:1;min-width:0;}
+  .me-info > p{font-size:13px;color:var(--text-dim);margin:4px 0;}
+  .me-name{font-family:var(--font-display);font-size:24px;font-weight:800;line-height:1.1;overflow-wrap:anywhere;}
+  .me-sub{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-dim);margin-top:2px;}
+  .me-level{display:grid;grid-template-columns:auto 1fr;gap:4px 10px;align-items:baseline;margin-top:8px;font-size:12px;}
+  .me-level span{color:var(--text-dim);text-align:right;}
+  .me-level i{grid-column:1 / -1;height:7px;border-radius:4px;background:rgba(27,58,92,.14);position:relative;overflow:hidden;}
+  .me-level i::before{content:'';position:absolute;inset:0;width:var(--p);background:var(--green);}
+  .me-pts{font-size:12px;margin:8px 0 4px;color:var(--text-dim);}
+  .me-pts b{color:var(--gold);font-size:15px;}
+  .me-stats{display:flex;flex-direction:column;gap:5px;}
+  .me-row{display:grid;grid-template-columns:34px 1fr 26px 30px;align-items:center;gap:8px;font-size:12px;}
+  .me-lab{font-weight:900;letter-spacing:.08em;color:var(--text-dim);}
+  .me-bar{display:block;height:8px;border-radius:4px;background:rgba(27,58,92,.14);overflow:hidden;}
+  .me-bar i{display:block;height:100%;background:var(--blue);border-radius:4px;}
+  .me-row b{text-align:right;}
+  .me-plus{width:30px;height:26px;border-radius:8px;border:var(--bd-strong);background:var(--gold);color:#fff;
+    font-weight:900;font-size:16px;line-height:1;cursor:pointer;}
+  .me-plus:disabled{background:var(--panel);color:rgba(27,58,92,.35);cursor:default;}
+  .me-cap{font-size:10px;color:var(--text-dim);margin-top:6px;}
+  .me-sect + .me-sect{margin-top:12px;}
+  .me-sect h3{margin:0 0 6px;font-size:12px;}
+  .me-chips{display:flex;flex-wrap:wrap;gap:6px;}
+  .me-chip{border:var(--bd-strong);background:var(--panel);border-radius:99px;padding:6px 11px;font:inherit;font-size:12px;
+    cursor:pointer;color:var(--text);display:inline-flex;align-items:center;gap:6px;}
+  .me-chip.on{background:var(--line);color:#fffcf2;}
+  .me-chip.lk{opacity:.55;cursor:not-allowed;}
+  .me-sw{display:flex;flex-wrap:wrap;gap:7px;margin-top:6px;}
+  .me-dot{width:28px;height:28px;border-radius:50%;background:var(--c);border:2px solid rgba(27,58,92,.35);cursor:pointer;padding:0;}
+  .me-dot.on{box-shadow:0 0 0 3px var(--panel),0 0 0 5px var(--gold);}
+  .me-input{background:#fffcf2;border:var(--bd-strong);border-radius:8px;padding:8px 10px;font:inherit;font-size:14px;color:var(--text);width:min(260px,100%);}
+  .me-num{width:90px;}
+  .me-builds{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px;}
+  .me-build{text-align:left;border:var(--bd-strong);background:var(--panel);border-radius:var(--r-sm);padding:8px 10px;cursor:pointer;font:inherit;color:var(--text);}
+  .me-build b{display:block;font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--gold);}
+  .me-build span{display:block;font-size:10px;color:var(--text-dim);margin-top:3px;}
+  .me-build.on{background:var(--panel-2);box-shadow:inset 0 0 0 2px var(--gold);}
+  @media (max-width: 520px){
+    .me-hero{flex-direction:column;align-items:center;}
+    .me-info{width:100%;}
+  }
+
+  /* ------------------------------------------------------ the result receipt */
+  .coin-card .cc-total{display:flex;align-items:baseline;gap:6px;font-family:var(--font-display);}
+  .coin-card .cc-total .coin{width:22px;height:22px;align-self:center;}
+  .coin-card .cc-total b{position:relative;font-size:32px;font-weight:800;font-variant-numeric:tabular-nums;}
+  .coin-card .cc-total span{font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-dim);}
+  .cc-lines{list-style:none;padding:0;margin:8px 0;font-size:12px;}
+  .cc-lines li{display:flex;justify-content:space-between;border-bottom:1px dashed rgba(27,58,92,.18);padding:3px 0;}
+  .cc-lines b{color:var(--green);}
+  .cc-xp{font-size:13px;margin:6px 0 0;}
+
   /* -------------------------------------------------------------- the modes
      TWO COLUMNS, AND EACH TILE IS THE OBJECT IT OPENS. The art is the
      room's own furniture at another size, so nothing here was drawn twice. */
@@ -3666,8 +3815,12 @@ function saveProgress() {
   } catch (e) {}
 }
 function isUnlocked(k) {
-  if (!UNLOCKS[k]) return true;              /* not a locked character */
-  return PROGRESS.unlocked.indexOf(k) !== -1;
+  if (k === 'me') return !!PROGRESS.me;       /* your own player, once made */
+  if (UNLOCKS[k]) return PROGRESS.unlocked.indexOf(k) !== -1;
+  /* Not a roster key at all, or one of the ten everybody starts with. */
+  if (!ROSTER_BY_KEY[k] || STARTER_SET.has(k)) return true;
+  /* Everybody else is a pack character, and is yours once pulled. */
+  return (PROGRESS.owned || []).indexOf(k) !== -1;
 }
 /* Re-evaluate every locked character against current progress. Returns the
    list of keys newly unlocked by this call, so the caller can celebrate. */
@@ -3682,6 +3835,721 @@ function refreshUnlocks() {
   if (fresh.length) saveProgress();
   return fresh;
 }
+/* YOUR PLAYER IS DRAWN, NOT PICKED. Every other character on this roster is
+   hand drawn art out of the handoff pack, and a figure the player builds for
+   themselves cannot be, because the pack has no idea what they chose. So it
+   is drawn here, at the pack's own 64 pixel grid and in its own grammar: a
+   big head, a one pixel near black outline around every part, light from the
+   upper left, and the action poses facing right the way every strip in the
+   pack faces. It writes the same `{b, f, p}` record the table holds, so the
+   draft, the field, the EPX smoothing and every cache read it exactly as they
+   read Tom Sawyer.
+
+   EVERY PART IS OUTLINED ON ITS OWN, which is what gives the pack its look:
+   an arm across a chest is a line between them rather than one blob of
+   colour. A part paints its outline first and its fill over it, so a part
+   drawn later draws a line where it crosses one drawn earlier. */
+function meSpriteBuild(look) {
+  const L = Object.assign({}, ME_LOOK_DEFAULT, look || {});
+  const pal = {
+    o: '#1d1622', s: L.skin, S: shadeHex(L.skin, -0.18), h: L.hairColor, H: shadeHex(L.hairColor, -0.28),
+    c: L.cap, C: shadeHex(L.cap, -0.24), v: shadeHex(L.cap, -0.42),
+    j: L.jersey, J: shadeHex(L.jersey, -0.2), n: L.trim,
+    p: L.pants, P: shadeHex(L.pants, -0.2), k: L.cap, K: shadeHex(L.cap, -0.3),
+    x: '#2a2230', X: '#5c5566', l: '#3b2a1e',
+    e: '#1d1622', w: '#ffffff', m: '#7a2e2e',
+    b: L.bat, B: shadeHex(L.bat, -0.3),
+    g: '#8a5a2b', G: '#5e3a18',
+    y: '#f4c25a', Y: '#c48a1e', a: L.gearA || '#e8e2d0', A: shadeHex(L.gearA || '#e8e2d0', -0.25),
+  };
+  const W = 64, H = 64;
+  const mk = () => Array.from({ length: H }, () => new Array(W).fill('.'));
+
+  /* THE PAINTER. A shape is a predicate over a cell centre; `part` paints
+     every cell within one pixel of it in outline, then every cell inside it
+     in its fill, the shade side chosen by a second predicate. */
+  function painter(g) {
+    const set = (x, y, ch) => { x = Math.floor(x); y = Math.floor(y); if (x >= 0 && y >= 0 && x < W && y < H) g[y][x] = ch; };
+    const part = (inside, box, fill, shade, isShade, noLine) => {
+      const x0 = Math.floor(box[0]), y0 = Math.floor(box[1]), x1 = Math.ceil(box[2]), y1 = Math.ceil(box[3]);
+      if (!noLine) {
+        for (let y = y0 - 1; y <= y1 + 1; y++) for (let x = x0 - 1; x <= x1 + 1; x++) {
+          if (inside(x + .5, y + .5)) continue;
+          if (inside(x + 1.5, y + .5) || inside(x - .5, y + .5) || inside(x + .5, y + 1.5) || inside(x + .5, y - .5)) set(x, y, 'o');
+        }
+      }
+      for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
+        if (inside(x + .5, y + .5)) set(x, y, shade && isShade && isShade(x + .5, y + .5) ? shade : fill);
+      }
+    };
+    const ell = (cx, cy, rx, ry, fill, shade, noLine) => part(
+      (x, y) => ((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2 <= 1,
+      [Math.floor(cx - rx), Math.floor(cy - ry), Math.ceil(cx + rx), Math.ceil(cy + ry)],
+      fill, shade, (x, y) => (x - cx) * 0.6 + (y - cy) * 0.8 > Math.min(rx, ry) * 0.35, noLine);
+    const rect = (x0, y0, x1, y1, fill, shade, r, noLine) => part(
+      (x, y) => {
+        if (x < x0 || x > x1 || y < y0 || y > y1) return false;
+        const rr = r || 0;
+        const dx = x < x0 + rr ? x0 + rr - x : x > x1 - rr ? x - (x1 - rr) : 0;
+        const dy = y < y0 + rr ? y0 + rr - y : y > y1 - rr ? y - (y1 - rr) : 0;
+        return dx * dx + dy * dy <= rr * rr;
+      },
+      [Math.floor(x0), Math.floor(y0), Math.ceil(x1), Math.ceil(y1)],
+      fill, shade, (x) => x > x0 + (x1 - x0) * 0.66, noLine);
+    /* A limb: a capsule between two points, shaded on its lower right. */
+    const seg = (ax, ay, bx, by, r, fill, shade, noLine) => {
+      const dx = bx - ax, dy = by - ay, len2 = dx * dx + dy * dy || 1;
+      const inside = (x, y) => {
+        const t = Math.max(0, Math.min(1, ((x - ax) * dx + (y - ay) * dy) / len2));
+        const px = ax + dx * t - x, py = ay + dy * t - y;
+        return px * px + py * py <= r * r;
+      };
+      const nx = -dy, ny = dx;
+      part(inside, [Math.floor(Math.min(ax, bx) - r), Math.floor(Math.min(ay, by) - r),
+        Math.ceil(Math.max(ax, bx) + r), Math.ceil(Math.max(ay, by) + r)],
+        fill, shade, (x, y) => ((x - ax) * nx + (y - ay) * ny) * (nx + ny >= 0 ? 1 : -1) > 0.8 * Math.sqrt(len2) * r * 0.25, noLine);
+    };
+    return { set, part, ell, rect, seg };
+  }
+
+  /* ---- the head, in either view ---- */
+  function head(P, side, cx, cy) {
+    const hr = L.hair;
+    const back = (hr === 'long' || hr === 'pony' || hr === 'afro');
+    if (back) {
+      if (hr === 'afro') P.ell(cx - (side ? 2 : 0), cy - 1, 13.5, 12, 'h', 'H');
+      else if (hr === 'long') P.rect(cx - (side ? 12 : 11), cy - 4, cx + (side ? 2 : 11), cy + 11, 'h', 'H', 3);
+      else P.ell(cx - (side ? 12 : 0), cy + (side ? 4 : 9), side ? 4 : 5, side ? 6 : 4, 'h', 'H');
+    }
+    P.ell(cx, cy, 11, 10.5, 's', 'S');
+    if (side) P.ell(cx - 3, cy + 1.5, 2.2, 2.6, 's', 'S');          /* the ear */
+    /* hair under the brim: sideburns front on, the back of the head in profile */
+    if (hr !== 'buzz' || L.hat === 'none') {
+      if (side) P.rect(cx - 10, cy - 6, cx - 5, cy + 3, 'h', 'H', 2);
+      else { P.rect(cx - 11, cy - 4, cx - 8, cy + 2, 'h', 'H', 1); P.rect(cx + 8, cy - 4, cx + 11, cy + 2, 'h', 'H', 1); }
+    }
+    if (hr === 'curly' && !side) for (const dx of [-9, -5, 5, 9]) P.ell(cx + dx, cy - 6, 2.6, 2.6, 'h', 'H');
+    /* the face */
+    const ex = side ? [cx + 5] : [cx - 4.5, cx + 3.5];
+    for (const x of ex) {
+      P.rect(x, cy, x + 1.99, cy + 3.99, 'e', null, 0, true);
+      P.set(Math.floor(x + 1), Math.floor(cy), 'w');
+    }
+    if (L.face === 'shades') {
+      if (side) P.rect(cx + 2, cy, cx + 9.9, cy + 2.9, 'e', null, 0, true);
+      else P.rect(cx - 7, cy, cx + 7.9, cy + 2.9, 'e', null, 0, true);
+    }
+    if (L.face === 'eyeblack') for (const x of ex) P.rect(x - (side ? 0 : 1), cy + 5, x + 2.9, cy + 5.9, 'e', null, 0, true);
+    const my = cy + 6;
+    if (L.face === 'mustache') P.rect(side ? cx + 3 : cx - 4, my - 1, side ? cx + 9.9 : cx + 3.9, my + .9, 'h', null, 0, true);
+    else if (L.face === 'beard') {
+      if (side) P.rect(cx - 2, my - 2, cx + 9, cy + 10, 'h', 'H', 3);
+      else P.rect(cx - 9, my - 3, cx + 8.9, cy + 10.5, 'h', 'H', 4);
+      P.rect(side ? cx + 5 : cx - 2, my, side ? cx + 7.9 : cx + 1.9, my + .9, 'm', null, 0, true);
+    } else P.rect(side ? cx + 6 : cx - 2, my, side ? cx + 7.9 : cx + 1.9, my + .9, 'm', null, 0, true);
+    /* what is on it */
+    hat(P, side, cx, cy);
+  }
+  function hat(P, side, cx, cy) {
+    const t = L.hat;
+    if (t === 'none') {
+      const hr = L.hair;
+      if (hr === 'mohawk') { P.rect(cx - 2, cy - 16, cx + 2, cy - 6, 'h', 'H', 1); return; }
+      if (hr === 'afro') return;
+      P.part((x, y) => ((x - cx) / 11.2) ** 2 + ((y - cy + 1) / 10.2) ** 2 <= 1 && y < cy - 3.5 + (side && x < cx - 3 ? 7 : 0),
+        [cx - 12, cy - 12, cx + 12, cy + 4], 'h', 'H', (x) => x > cx + 3);
+      return;
+    }
+    if (t === 'helmet') {
+      P.part((x, y) => ((x - cx) / 12) ** 2 + ((y - cy + 1) / 11.5) ** 2 <= 1 && y < cy - 1 + (x < cx - 4 ? 6 : 0),
+        [cx - 13, cy - 13, cx + 13, cy + 6], 'c', 'C', (x) => x > cx + 4);
+      if (side) P.rect(cx - 6, cy - 2, cx - 1, cy + 4, 'c', 'C', 2);     /* the ear flap */
+      P.rect(side ? cx + 4 : cx - 12, cy - 3, side ? cx + 15 : cx + 12, cy - 1.1, 'v', null, 1);
+      return;
+    }
+    /* a ball cap is the base of the crown and the halo too: they sit on it */
+    const capped = t === 'cap' || t === 'halo' || t === 'horns' || t === 'crown';
+    if (capped && t !== 'crown') {
+      P.part((x, y) => ((x - cx) / 11.4) ** 2 + ((y - cy + 1.5) / 11) ** 2 <= 1 && y < cy - 3,
+        [cx - 12, cy - 13, cx + 12, cy - 2], 'c', 'C', (x) => x > cx + 4);
+      P.rect(side ? cx + 3 : cx - 12, cy - 4.5, side ? cx + 15 : cx + 11.9, cy - 2.6, 'v', null, 1);
+      if (!side) P.rect(cx - 2, cy - 10, cx + 1.9, cy - 7.1, 'n', null, 1, true);
+    }
+    if (t === 'horns') {
+      P.seg(cx - 8, cy - 9, cx - 13, cy - 17, 2.1, 'a', 'A');
+      P.seg(cx + 8, cy - 9, cx + 13, cy - 17, 2.1, 'a', 'A');
+    }
+    if (t === 'halo') P.ell(cx, cy - 16, 8, 2.2, 'y', 'Y');
+    if (t === 'crown') {
+      P.rect(cx - 10, cy - 11, cx + 10, cy - 4, 'y', 'Y', 0);
+      for (const dx of [-9, -3, 3, 9]) P.seg(cx + dx, cy - 11, cx + dx, cy - 15, 1.6, 'y', 'Y');
+      P.rect(cx - 1, cy - 9, cx + 1.9, cy - 6.1, 'm', null, 0, true);
+      P.rect(cx - 12, cy - 5, cx + 12, cy - 3, 'h', 'H', 0);
+    }
+    if (t === 'wizard') {
+      P.part((x, y) => y < cy - 3 && y > cy - 26 && Math.abs(x - cx - (cy - 3 - y) * 0.18) < (y - (cy - 26)) * 0.52,
+        [cx - 13, cy - 27, cx + 14, cy - 2], 'a', 'A', (x) => x > cx + 2);
+      P.rect(cx - 14, cy - 5, cx + 14, cy - 2.2, 'A', null, 1);
+      P.ell(cx + 1, cy - 14, 1.6, 1.6, 'y', null, true);
+    }
+    if (t === 'bandana') {
+      P.part((x, y) => ((x - cx) / 11.4) ** 2 + ((y - cy + 1.5) / 11) ** 2 <= 1 && y < cy - 3,
+        [cx - 12, cy - 13, cx + 12, cy - 2], 'c', 'C', (x) => x > cx + 4);
+      P.seg(cx - 11, cy - 4, cx - 16, cy + 1, 1.8, 'c', 'C');
+      for (const dx of [-6, 0, 6]) P.set(cx + dx, cy - 8, 'n');
+    }
+  }
+
+  /* ---- the body ---- */
+  function number(P, x, y) {
+    const D = ['111101101101111', '010110010010111', '111001111100111', '111001111001111', '101101111001001',
+      '111100111001111', '111100111101111', '111001001001001', '111101111101111', '111101111001111'];
+    const s = String(Math.max(0, Math.min(99, L.num | 0)));
+    const w = s.length * 4 - 1;
+    [...s].forEach((d, i) => {
+      const m = D[+d];
+      for (let r = 0; r < 5; r++) for (let q = 0; q < 3; q++) if (m[r * 3 + q] === '1') P.set(x - Math.floor(w / 2) + i * 4 + q, y + r, 'n');
+    });
+  }
+  function torso(P, side, cx, top) {
+    if (side) P.rect(cx - 6.5, top, cx + 6.5, top + 16, 'j', 'J', 3);
+    else { P.rect(cx - 9, top, cx + 9, top + 16, 'j', 'J', 3); number(P, cx, top + 5); }
+    P.rect(cx - (side ? 6.5 : 9), top + 15, cx + (side ? 6.5 : 9), top + 16.99, 'l', null, 0, true);
+  }
+  function leg(P, hx, hy, kx, ky, fx, fy, dir, far) {
+    const f = far ? 'P' : 'p';
+    P.seg(hx, hy, kx, ky, 3.4, f, 'P');
+    P.seg(kx, ky, fx, fy - 3, 3.1, f, 'P');
+    P.seg(fx, fy - 4, fx, fy - 1.5, 2.6, far ? 'K' : 'k', 'K');
+    P.ell(fx + dir * 2.4, fy, 4.4, 2.4, 'x', 'x');
+  }
+  function arm(P, sx, sy, hx, hy, far, glove) {
+    const ex = (sx + hx) / 2, ey = (sy + hy) / 2;
+    P.seg(sx, sy, ex, ey, 3, far ? 'J' : 'j', 'J');
+    P.seg(ex, ey, hx, hy, 2.4, far ? 'S' : 's', 'S');
+    if (glove) P.ell(hx, hy, 4, 3.6, 'g', 'G');
+    else P.ell(hx, hy, 2.6, 2.6, far ? 'S' : 's', 'S');
+  }
+  function bat(P, hx, hy, tx, ty) {
+    const dx = tx - hx, dy = ty - hy, len = Math.hypot(dx, dy) || 1;
+    const ux = dx / len, uy = dy / len;
+    P.seg(hx - ux * 3, hy - uy * 3, hx + ux * len * 0.45, hy + uy * len * 0.45, 1.3, 'b', 'B');
+    P.seg(hx + ux * len * 0.4, hy + uy * len * 0.4, tx, ty, 2.5, 'b', 'B');
+  }
+
+  /* ---- the poses ---- */
+  const HY = 16;        /* head centre y */
+  function front(kind) {
+    const g = mk(), P = painter(g);
+    const cx = 32;
+    const armsUp = kind === 'cheer';
+    const glove = kind === 'catch';
+    if (armsUp) { arm(P, 24, 31, 17, 12, true); }
+    else arm(P, 24, 31, 21, 45, true, false);
+    leg(P, 28, 46, 28, 53, 27, 61, -1, true);
+    leg(P, 36, 46, 36, 53, 37, 61, 1, false);
+    torso(P, false, cx, 28);
+    head(P, false, cx, HY);
+    if (armsUp) arm(P, 40, 31, 47, 12, false);
+    else if (glove) arm(P, 40, 31, 36, 38, false, true);
+    else arm(P, 40, 31, 43, 45, false, false);
+    return g;
+  }
+  /* side view, facing right. Hips at (31,46). */
+  function side(kind, t) {
+    const g = mk(), P = painter(g);
+    const lean = { ready: 1, load: 2, swing: 3, swing1: 4, follow: 2, run: 4, windup: 0, kick: -1, release: 4 }[kind] || 0;
+    const cx = 31 + lean * 0.4, top = 28;
+    const hx = 31, hy = 46;
+    /* legs */
+    if (kind === 'run') {
+      const C = [[18, 60, 42, 58], [27, 55, 36, 61], [42, 58, 18, 60], [36, 61, 27, 55]][t];
+      const [bx, by, fx, fy] = C;
+      leg(P, hx - 1, hy, (hx + bx) / 2 - 1, (hy + by) / 2 - 3, bx, Math.min(61, by), 1, true);
+      leg(P, hx + 1, hy, (hx + fx) / 2 + 3, (hy + fy) / 2 - 2, fx, Math.min(61, fy), 1, false);
+    } else if (kind === 'kick') {
+      leg(P, hx, hy, hx - 1, 53, hx - 2, 61, 1, true);
+      leg(P, hx + 1, hy, hx + 7, hy - 4, hx + 4, 50, 1, false);
+    } else {
+      const spread = kind === 'swing' || kind === 'swing1' || kind === 'release' ? 13 : 10;
+      leg(P, hx - 1, hy, hx - 4, 54, hx - spread + 2, 61, 1, true);
+      leg(P, hx + 1, hy, hx + 5, 54, hx + spread - 1, 61, 1, false);
+    }
+    /* far arm, torso, head, near arm, bat */
+    const A = {
+      ready:  { far: [cx - 1, 31, cx - 5, 27], near: [cx + 2, 31, cx - 3, 26], bat: [cx - 4, 26, cx - 14, 3] },
+      load:   { far: [cx - 1, 31, cx - 8, 29], near: [cx + 2, 31, cx - 6, 28], bat: [cx - 7, 28, cx - 21, 8] },
+      swing:  { far: [cx - 1, 31, cx + 9, 36], near: [cx + 2, 31, cx + 10, 35], bat: [cx + 10, 35, cx + 31, 35] },
+      swing1: { far: [cx - 1, 31, cx + 10, 33], near: [cx + 2, 31, cx + 11, 32], bat: [cx + 11, 32, cx + 30, 24] },
+      follow: { far: [cx - 1, 31, cx + 5, 24], near: [cx + 2, 31, cx + 6, 23], bat: [cx + 5, 24, cx - 16, 16] },
+      run:    t === 0 || t === 2
+              ? { far: [cx - 1, 31, cx + 7, 36], near: [cx + 1, 31, cx - 7, 37] }
+              : { far: [cx - 1, 31, cx + 1, 40], near: [cx + 1, 31, cx + 2, 40] },
+      windup: { far: [cx - 1, 31, cx + 5, 22], near: [cx + 2, 31, cx + 4, 21] },
+      kick:   { far: [cx - 1, 31, cx + 5, 30], near: [cx + 2, 31, cx - 9, 24] },
+      release:{ far: [cx - 1, 31, cx - 6, 37], near: [cx + 2, 31, cx + 13, 26] },
+    }[kind];
+    if (kind === 'run' && (t === 2)) { const f = A.far; A.far = [f[0], f[1], cx - 7, 37]; A.near = [cx + 1, 31, cx + 7, 36]; }
+    if (A.bat && (kind === 'ready' || kind === 'load' || kind === 'follow')) bat(P, ...A.bat);
+    arm(P, ...A.far, true, kind === 'windup' || kind === 'kick' || kind === 'release' ? false : false);
+    torso(P, true, cx, top);
+    head(P, true, cx + 1, HY + (kind === 'run' ? 1 : 0));
+    if (kind === 'release' || kind === 'windup' || kind === 'kick') {
+      arm(P, ...A.near, false);
+      P.ell(A.near[2] + 1, A.near[3] - 1, 1.8, 1.8, 'w', null);
+    } else arm(P, ...A.near, false);
+    if (A.bat && (kind === 'swing' || kind === 'swing1')) bat(P, ...A.bat);
+    return g;
+  }
+  /* A FIGURE STANDS ON y 62, which is where the builder seats every pack
+     frame. Seated here by measurement rather than by trusting the numbers
+     above, so a hat that grows does not lift the feet off the dirt. */
+  function seat(g) {
+    let bot = -1;
+    for (let y = H - 1; y >= 0 && bot < 0; y--) if (g[y].some(ch => ch !== '.')) bot = y;
+    const sh = 62 - bot;
+    for (let i = 0; i < sh; i++) { g.pop(); g.unshift(new Array(W).fill('.')); }
+    for (let i = 0; i < -sh; i++) { g.shift(); g.push(new Array(W).fill('.')); }
+    return g.map(r => r.join(''));
+  }
+  const f = {
+    idle: seat(front('idle')), cheer: seat(front('cheer')), catch: seat(front('catch')),
+    ready: seat(side('ready')), load: seat(side('load')), swing: seat(side('swing')),
+    swing1: seat(side('swing1')), follow: seat(side('follow')),
+    run1: seat(side('run', 0)), run2: seat(side('run', 1)), run3: seat(side('run', 2)), run4: seat(side('run', 3)),
+    windup: seat(side('windup')), kick: seat(side('kick')), release: seat(side('release')),
+  };
+  f.throw = '@idle'; f.back = '@idle'; f.slump = '@idle'; f.backrun1 = '@idle'; f.backrun2 = '@idle';
+  return { b: ['follow', 'load', 'ready', 'swing', 'swing1'], f, p: pal };
+}
+function shadeHex(hex, amt) {
+  const n = parseInt(String(hex).replace('#', ''), 16);
+  let r = n >> 16 & 255, g = n >> 8 & 255, b = n & 255;
+  const f = (v) => Math.max(0, Math.min(255, Math.round(amt < 0 ? v * (1 + amt) : v + (255 - v) * amt)));
+  r = f(r); g = f(g); b = f(b);
+  return '#' + ((1 << 24) | (r << 16) | (g << 8) | b).toString(16).slice(1);
+}
+const ME_LOOK_DEFAULT = {
+  skin: '#e8b48a', hair: 'short', hairColor: '#4a2e1a', hat: 'cap', face: 'none',
+  cap: '#1b3a5c', jersey: '#f2ede0', trim: '#b0302a', pants: '#e6e0d0', bat: '#c89a5a', num: 7,
+};
+
+/* ============================================================================
+   THE COLLECTION
+   Everybody starts with the same ten. The rest of the roster is earned, and
+   there are two ways in, and which one depends on how good the character is:
+
+     the ten starters       on the bench from the first game, for everybody
+     the pack pool          the middle of the roster, pulled from packs
+     the ladder             the twenty one best, earned by doing something
+
+   THE BEST ARE NEVER FOR SALE, and that is the rule the whole split hangs
+   on. A pack is luck and the ladder is a feat, so a player who pulls a
+   thousand packs still has to strike out two thousand batters to field
+   Zeus. It also means a pack can never be the fastest way to the best
+   player in the game, which is what keeps a grind from turning into a
+   lottery.
+
+   PACKS COST COINS AND COINS COME FROM PLAYING. There is no money in any of
+   this and there must never be: the site has one store, `/assets/store.js`,
+   and a second payment path belonging to one game is the thing that store
+   exists to prevent. A coin is time spent at the plate.
+   ============================================================================ */
+/* THE TEN. A team you could actually take the field with: arms on the
+   mound (Scarecrow, Tom Sawyer, the Pirate), speed at the top (Huck Finn,
+   Jack), and power in the middle (Paul Bunyan, Frankenstein, Humpty
+   Dumpty). They are the storybook core, the characters a stranger already
+   knows, which is the Mario Kart rule: the base roster is the famous one. */
+const STARTERS = ['scarecrow', 'tom', 'huck', 'pirate', 'jack', 'lion', 'paulbunyan', 'franky', 'humpty', 'pooh'];
+const STARTER_SET = new Set(STARTERS);
+/* THE POOL IS DERIVED, never listed. Everybody who is neither a starter nor
+   on the ladder, so a character added to the roster is in the packs the day
+   he is written, and nothing can be in two places. */
+const PACK_POOL = ROSTER.filter(c => !UNLOCKS[c.k] && !STARTER_SET.has(c.k))
+  .slice().sort((a, b) => charValue(a) - charValue(b));
+/* RARITY IS THE GAME'S OWN VALUE, cut into three. The bottom 45% of the pool
+   is common, the next 35% rare, the top 20% epic. `charValue` is what the
+   ladder is ordered by too, so the two halves of the collection agree about
+   who is good. */
+const RARITY = {
+  common: { label: 'Common', color: '#6c7f95', dup: 15 },
+  rare:   { label: 'Rare',   color: '#1566ae', dup: 30 },
+  epic:   { label: 'Epic',   color: '#6b4296', dup: 60 },
+  legend: { label: 'Legend', color: '#cf3229', dup: 0 },
+};
+const PACK_RARITY = (() => {
+  const out = {}, n = PACK_POOL.length;
+  PACK_POOL.forEach((c, i) => { out[c.k] = i < n * 0.45 ? 'common' : i < n * 0.80 ? 'rare' : 'epic'; });
+  return out;
+})();
+function rarityOf(k) {
+  if (UNLOCKS[k]) return 'legend';
+  return PACK_RARITY[k] || null;
+}
+/* What a locked card says. A ladder character says what to do and a pack
+   character says where to find him, and one function answers both so the
+   draft card, the photo and the popup cannot disagree. */
+function lockHow(k) {
+  if (UNLOCKS[k]) return UNLOCKS[k].how;
+  const r = rarityOf(k);
+  return 'Pull from a pack. ' + (r ? RARITY[r].label + '.' : '');
+}
+
+/* ---- your player ---- */
+/* FIVE WAYS TO START, and they all start below the starters. A rookie is
+   worth about 48 on the sim's own scale where the ten average 56, so your
+   player is the weakest man on your bench on day one and the strongest one
+   you ever own if you keep at it. Every build sums to the same 240. */
+const ME_BUILDS = {
+  slugger: { label: 'Slugger',   role: 'Power',    pow: 62, con: 48, spd: 42, def: 46, pit: 42 },
+  contact: { label: 'Contact',   role: 'Contact',  pow: 44, con: 62, spd: 50, def: 44, pit: 40 },
+  speed:   { label: 'Speedster', role: 'Speed',    pow: 40, con: 50, spd: 64, def: 46, pit: 40 },
+  ace:     { label: 'Ace',       role: 'Balanced', pow: 42, con: 46, spd: 44, def: 46, pit: 62 },
+  glove:   { label: 'Glove',     role: 'Defense',  pow: 44, con: 48, spd: 46, def: 62, pit: 40 },
+};
+const ME_STATS = ['pow', 'con', 'spd', 'def', 'pit'];
+/* THE CEILINGS ARE WHAT MAKE IT A GRIND AND NOT A CHEAT. A hundred and
+   twenty points over five stats is about 72 on the sim's scale, which is
+   Father Time: a legend, reached in months, and still under Zeus. */
+const ME_POINT_CAP = 120;
+const ME_STAT_CAP = 95;
+const ME_LEVEL_CAP = 60;
+/* XP to go from level L to L+1. The first level is a game and a half; the
+   last is about ten games. */
+function meXpFor(level) { return 30 + 6 * level; }
+
+/* THE GEAR. What a pack can hand you for your player, and what is free.
+   Every item is a change to the LOOK and nothing else: a crown does not hit
+   the ball further, because a cosmetic that moved a rating would be a
+   rating for sale by another name. */
+const ME_COLORS_FREE = ['#1b3a5c', '#b0302a', '#2f5fb3', '#2e7d4f', '#23202a', '#f2ede0',
+  '#8f98a3', '#d9722a', '#6b1f2a', '#6aaee0'];
+const ME_GEAR = [
+  { id: 'hat:cap',      slot: 'hat',  v: 'cap',      label: 'Ball cap',      r: null },
+  { id: 'hat:helmet',   slot: 'hat',  v: 'helmet',   label: 'Batting helmet', r: null },
+  { id: 'hat:none',     slot: 'hat',  v: 'none',     label: 'Bare head',     r: null },
+  { id: 'hat:bandana',  slot: 'hat',  v: 'bandana',  label: 'Bandana',       r: 'common' },
+  { id: 'hat:wizard',   slot: 'hat',  v: 'wizard',   label: 'Wizard hat',    r: 'rare' },
+  { id: 'hat:horns',    slot: 'hat',  v: 'horns',    label: 'Horns',         r: 'rare' },
+  { id: 'hat:halo',     slot: 'hat',  v: 'halo',     label: 'Halo',          r: 'epic' },
+  { id: 'hat:crown',    slot: 'hat',  v: 'crown',    label: 'Crown',         r: 'epic' },
+  { id: 'face:none',    slot: 'face', v: 'none',     label: 'Clean',         r: null },
+  { id: 'face:eyeblack',slot: 'face', v: 'eyeblack', label: 'Eye black',     r: null },
+  { id: 'face:mustache',slot: 'face', v: 'mustache', label: 'Mustache',      r: 'common' },
+  { id: 'face:shades',  slot: 'face', v: 'shades',   label: 'Shades',        r: 'common' },
+  { id: 'face:beard',   slot: 'face', v: 'beard',    label: 'Beard',         r: 'rare' },
+  { id: 'bat:wood',     slot: 'bat',  v: '#c89a5a',  label: 'Ash',           r: null },
+  { id: 'bat:maple',    slot: 'bat',  v: '#ead7a8',  label: 'Maple',         r: 'common' },
+  { id: 'bat:black',    slot: 'bat',  v: '#34303a',  label: 'Black',         r: 'common' },
+  { id: 'bat:ice',      slot: 'bat',  v: '#9fd8f0',  label: 'Ice',           r: 'rare' },
+  { id: 'bat:crimson',  slot: 'bat',  v: '#b0302a',  label: 'Crimson',       r: 'rare' },
+  { id: 'bat:gold',     slot: 'bat',  v: '#f4c25a',  label: 'Gold',          r: 'epic' },
+  { id: 'color:sunset', slot: 'color',v: '#e8743b',  label: 'Sunset',        r: 'common' },
+  { id: 'color:mint',   slot: 'color',v: '#5fbf9a',  label: 'Mint',          r: 'common' },
+  { id: 'color:rose',   slot: 'color',v: '#d8698a',  label: 'Rose',          r: 'common' },
+  { id: 'color:purple', slot: 'color',v: '#5b2c83',  label: 'Royal purple',  r: 'rare' },
+  { id: 'color:teal',   slot: 'color',v: '#1f7f86',  label: 'Teal',          r: 'rare' },
+  { id: 'color:gold',   slot: 'color',v: '#d8a93a',  label: 'Gold',          r: 'epic' },
+];
+const ME_GEAR_BY_ID = Object.fromEntries(ME_GEAR.map(x => [x.id, x]));
+const ME_HAIR = ['short', 'buzz', 'curly', 'long', 'pony', 'afro', 'mohawk'];
+const ME_HAIR_COLORS = ['#1d1622', '#4a2e1a', '#8a5a2b', '#d9a441', '#b8431e', '#c9c3bb'];
+const ME_SKIN = ['#f1c9a5', '#e8b48a', '#c98f62', '#8d5a3b', '#6b4028', '#4a2c1c'];
+function gearOwned(id) {
+  const g = ME_GEAR_BY_ID[id];
+  return !!g && (!g.r || (PROGRESS.gear || []).indexOf(id) !== -1);
+}
+function colorsOwned() {
+  return ME_COLORS_FREE.concat(ME_GEAR.filter(x => x.slot === 'color' && gearOwned(x.id)).map(x => x.v));
+}
+
+/* ---- the save ---- */
+/* ADDED BESIDE THE LADDER'S OWN FIELDS, under the key the game has always
+   used. `allstars.prefs.v1` is invisible to the player and renaming it
+   would throw away every tester's save, so the collection rides inside
+   PROGRESS like the rest of the ladder does. */
+(function migrateCollection() {
+  if (Array.isArray(PROGRESS.owned)) return;
+  /* A PLAYER WHO WAS HERE BEFORE PACKS KEEPS EVERYBODY THEY HAD. Before
+     this, the whole middle of the roster was open to anybody, so a tester
+     with a franchise already has men on it who are now pack characters.
+     Taking them away would be the game deleting a club somebody built, and
+     it would do it silently the first time they opened the draft. */
+  let vet = (PROGRESS.games | 0) > 0;
+  try {
+    vet = vet || !!localStorage.getItem('allstars.season.v1') || !!localStorage.getItem('allstars.cup.v1');
+  } catch (e) {}
+  PROGRESS.owned = vet ? PACK_POOL.map(c => c.k) : [];
+  PROGRESS.veteran = vet;
+  PROGRESS.coins = PROGRESS.coins | 0;
+  PROGRESS.coinsEarned = PROGRESS.coinsEarned | 0;
+  PROGRESS.packsOpened = PROGRESS.packsOpened | 0;
+  /* EVERYBODY GETS ONE PACK FOR NOTHING, on the way in. The first thing a
+     new player should meet is the thing they will be playing toward. */
+  PROGRESS.freePacks = 1;
+  PROGRESS.gear = PROGRESS.gear || [];
+  saveProgress();
+})();
+if (!Array.isArray(PROGRESS.gear)) PROGRESS.gear = [];
+PROGRESS.coins = Math.max(0, PROGRESS.coins | 0);
+
+/* ONE OBJECT, KEPT IN PLACE. The lineup, the draft card and every rating
+   read go through `ROSTER_BY_KEY`, so your player has to be a roster entry
+   like any other, and it is mutated rather than replaced when you spend a
+   point, so anything already holding it sees the change. */
+let ME = null;
+function meStats() {
+  const m = PROGRESS.me;
+  const B = ME_BUILDS[m.build] || ME_BUILDS.slugger;
+  const out = {};
+  for (const s of ME_STATS) out[s] = Math.min(ME_STAT_CAP, B[s] + ((m.add && m.add[s]) | 0));
+  return out;
+}
+function meSync() {
+  const m = PROGRESS.me;
+  if (!m) { ME = null; delete ROSTER_BY_KEY.me; return; }
+  const B = ME_BUILDS[m.build] || ME_BUILDS.slugger;
+  const st = meStats();
+  if (!ME) ME = { k: 'me', quirk: null };
+  Object.assign(ME, st, {
+    n: m.name || 'Rookie',
+    role: B.role,
+    note: 'Your player. Level ' + (m.level | 0 || 1) + ' ' + B.label.toLowerCase() + '.',
+    isMe: true,
+  });
+  ROSTER_BY_KEY.me = ME;
+  meSpriteRefresh();
+}
+/* THE DRAWING IS REBUILT WHEN THE LOOK CHANGES, and every cache that holds
+   an old one is emptied for this key alone. `spriteStore` keys on the
+   character, so a hat bought mid session would otherwise go on wearing the
+   old hat on every screen that had already drawn it. */
+function meSpriteRefresh() {
+  if (!PROGRESS.me) return;
+  V2_SPRITES.me = meSpriteBuild(PROGRESS.me.look);
+  for (const k of [...v2FrameCache.keys()]) if (k.startsWith('me/')) v2FrameCache.delete(k);
+  for (const k of [...spriteStore.keys()]) if (k.startsWith('me|')) spriteStore.delete(k);
+}
+function meCreate(opts) {
+  PROGRESS.me = {
+    name: String(opts.name || 'Rookie').replace(/[<>&"'`]/g, '').slice(0, 14) || 'Rookie',
+    bats: opts.bats === 'L' ? 'L' : 'R',
+    build: ME_BUILDS[opts.build] ? opts.build : 'slugger',
+    look: Object.assign({}, ME_LOOK_DEFAULT, opts.look || {}),
+    add: { pow: 0, con: 0, spd: 0, def: 0, pit: 0 },
+    level: 1, xp: 0,
+    /* Points banked from packs opened before the player existed carry in. */
+    points: PROGRESS.bankPoints | 0,
+    earned: PROGRESS.bankPoints | 0,
+  };
+  PROGRESS.bankPoints = 0;
+  saveProgress();
+  meSync();
+  /* The clubhouse picks its cast once a visit; let it pick again. */
+  CAST = null;
+}
+/* How many points could still be earned. A level or a training card past
+   the cap turns into coins rather than into nothing. */
+function mePointRoom() {
+  const m = PROGRESS.me;
+  return m ? ME_POINT_CAP - (m.earned | 0) : ME_POINT_CAP - (PROGRESS.bankPoints | 0);
+}
+function meGrantPoint() {
+  if (mePointRoom() <= 0) return false;
+  if (PROGRESS.me) { PROGRESS.me.points = (PROGRESS.me.points | 0) + 1; PROGRESS.me.earned = (PROGRESS.me.earned | 0) + 1; }
+  else PROGRESS.bankPoints = (PROGRESS.bankPoints | 0) + 1;
+  return true;
+}
+function meSpend(stat) {
+  const m = PROGRESS.me;
+  if (!m || (m.points | 0) <= 0 || ME_STATS.indexOf(stat) === -1) return false;
+  if (meStats()[stat] >= ME_STAT_CAP) return false;
+  m.add[stat] = (m.add[stat] | 0) + 1;
+  m.points -= 1;
+  saveProgress();
+  meSync();
+  return true;
+}
+function meXpGain(n) {
+  const m = PROGRESS.me;
+  if (!m || n <= 0) return 0;
+  m.xp = (m.xp | 0) + n;
+  let ups = 0;
+  while ((m.level | 0) < ME_LEVEL_CAP && m.xp >= meXpFor(m.level | 0)) {
+    m.xp -= meXpFor(m.level | 0);
+    m.level = (m.level | 0) + 1;
+    ups++;
+    if (!meGrantPoint()) addCoins(25);
+  }
+  if ((m.level | 0) >= ME_LEVEL_CAP) m.xp = 0;
+  return ups;
+}
+
+/* ---- coins ---- */
+function addCoins(n) {
+  n = Math.max(0, Math.round(n));
+  PROGRESS.coins = (PROGRESS.coins | 0) + n;
+  PROGRESS.coinsEarned = (PROGRESS.coinsEarned | 0) + n;
+  return n;
+}
+function localDay() {
+  const d = new Date();
+  return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate();
+}
+/* WHAT A GAME IS WORTH. Paid by the INNING rather than by the game, so a
+   nine inning afternoon is worth what it costs to play, and harder dugouts
+   pay more, because a grind that pays the same for the easy setting is a
+   grind that tells everybody to play it. A forfeit pays nothing: leaving a
+   game early must never be the quick way to a pack.
+
+   The first win of each day pays a bonus. That is the reason to come back
+   tomorrow, and it is once a day rather than once a game so it rewards
+   showing up rather than sitting there. */
+const COIN_DIFF = { easy: 0.8, medium: 1, hard: 1.3 };
+function gameCoins(g, win, you, foe, title) {
+  if (g.forfeit) return [];
+  const inn = Math.max(1, g.innings | 0);
+  const lines = [['Played', 4 * inn]];
+  if (win) lines.push(['Win', 4 * inn]);
+  const runs = Math.min(4 * inn, (you.score | 0) * 2);
+  if (runs) lines.push(['Runs scored', runs]);
+  if (win && (foe.score | 0) === 0) lines.push(['Shutout', 15]);
+  const m = COIN_DIFF[State.difficulty] || 1;
+  for (const l of lines) l[1] = Math.round(l[1] * m);
+  if (title) lines.push(['Title', 200]);
+  const today = localDay();
+  if (win && PROGRESS.dayWin !== today) { PROGRESS.dayWin = today; lines.push(['First win today', 60]); }
+  return lines;
+}
+/* What your player earned by being out there. Nothing if he was not in the
+   lineup: XP is for playing, not for owning. */
+function gameXp(g, win, you) {
+  if (g.forfeit || !you.batters.some(b => b.k === 'me')) return 0;
+  const st = (col) => ((g.stats[col] || {}).me) | 0;
+  return 10 + (win ? 6 : 0) + st('hits') * 3 + st('hr') * 5 + st('sb') * 3
+    + (((g.kBy || {}).me) | 0) * 2;
+}
+/* Called once from finishGame. Returns what the result screen shows. */
+function settleCollection(g, win, you, foe, title) {
+  const lines = gameCoins(g, win, you, foe, title);
+  const coins = lines.reduce((a, l) => a + l[1], 0);
+  addCoins(coins);
+  const xp = gameXp(g, win, you);
+  const ups = meXpGain(xp);
+  saveProgress();
+  if (ups) meSync();
+  return { lines, coins, xp, ups };
+}
+
+/* ---- packs ---- */
+/* TWO PACKS AND THE ODDS PRINTED ON BOTH. A pack is luck, and luck a player
+   cannot see is a slot machine; the shop says exactly what each slot can
+   hold before anybody spends a coin. */
+const PACKS = {
+  sandlot: {
+    label: 'Sandlot Pack', price: 150, blurb: 'One character and two extras.',
+    slots: [
+      { kind: 'char', odds: { common: 70, rare: 25, epic: 5 } },
+      { kind: 'extra', odds: { gear: 40, point: 35, coins: 25 } },
+      { kind: 'extra', odds: { gear: 40, point: 35, coins: 25 } },
+    ],
+  },
+  gold: {
+    label: 'Gold Pack', price: 450, blurb: 'Two characters, rare or better, and a training card.',
+    slots: [
+      { kind: 'char', odds: { rare: 75, epic: 25 } },
+      { kind: 'char', odds: { rare: 75, epic: 25 } },
+      { kind: 'extra', odds: { point: 100 } },
+    ],
+  },
+};
+function rollOdds(odds, rnd) {
+  const tot = Object.values(odds).reduce((a, b) => a + b, 0);
+  let r = rnd() * tot;
+  for (const [k, w] of Object.entries(odds)) { if ((r -= w) < 0) return k; }
+  return Object.keys(odds)[0];
+}
+/* A CHARACTER SLOT ROLLS THE RARITY FIRST, THEN HANDS YOU SOMEBODY YOU DO
+   NOT HAVE. Rolling a character straight out of the pool makes the last
+   few of a tier a coupon collector's tail: the final epic would take
+   hundreds of packs and every one of them a duplicate. So a duplicate only
+   happens when that whole tier is already yours, and it pays coins back.
+   When the whole pool is yours the slot pays a training card instead, which
+   is what keeps a pack worth opening after the collection is done. */
+function drawCard(slot, rnd) {
+  if (slot.kind === 'char') {
+    const all = PACK_POOL.filter(c => PROGRESS.owned.indexOf(c.k) === -1);
+    if (!all.length) return drawExtra('point', rnd);
+    const tier = rollOdds(slot.odds, rnd);
+    const fresh = PACK_POOL.filter(c => PACK_RARITY[c.k] === tier && PROGRESS.owned.indexOf(c.k) === -1);
+    if (!fresh.length) {
+      const pool = PACK_POOL.filter(c => PACK_RARITY[c.k] === tier);
+      const c = pool[Math.floor(rnd() * pool.length)];
+      return { type: 'dup', k: c.k, r: tier, coins: RARITY[tier].dup };
+    }
+    const c = fresh[Math.floor(rnd() * fresh.length)];
+    return { type: 'char', k: c.k, r: tier };
+  }
+  return drawExtra(rollOdds(slot.odds, rnd), rnd);
+}
+function drawExtra(kind, rnd) {
+  if (kind === 'gear') {
+    const tier = rollOdds({ common: 65, rare: 27, epic: 8 }, rnd);
+    let open = ME_GEAR.filter(x => x.r === tier && !gearOwned(x.id));
+    if (!open.length) open = ME_GEAR.filter(x => x.r && !gearOwned(x.id));
+    if (!open.length) return { type: 'coins', coins: 20 };
+    const x = open[Math.floor(rnd() * open.length)];
+    return { type: 'gear', id: x.id, r: x.r };
+  }
+  if (kind === 'point') {
+    if (mePointRoom() <= 0) return { type: 'coins', coins: 20 };
+    return { type: 'point' };
+  }
+  return { type: 'coins', coins: 20 + Math.floor(rnd() * 6) * 5 };
+}
+/* A PACK NEVER PAYS BACK WHAT IT COST. Every coin a pack can hand out, a
+   repeat, a coin card and the fallbacks for a finished collection, is held
+   so that three cards of it are at most the price. The first version paid
+   a coin card of up to sixty and a fallback of sixty, so once somebody
+   owned everything a Sandlot Pack returned 160 for 150: an endless coin
+   machine, found by the economy sweep running away with itself. */
+/* Opening a pack is the one write. It is decided and SAVED before a card is
+   shown, so a reload in the middle of the reveal cannot open it twice or
+   lose what was in it. */
+function openPack(id, free) {
+  const P = PACKS[id];
+  if (!P) return null;
+  if (free) {
+    if ((PROGRESS.freePacks | 0) <= 0) return null;
+    PROGRESS.freePacks -= 1;
+  } else {
+    if ((PROGRESS.coins | 0) < P.price) return null;
+    PROGRESS.coins -= P.price;
+  }
+  const cards = [];
+  for (const slot of P.slots) {
+    const c = drawCard(slot, Math.random);
+    if (c.type === 'char') PROGRESS.owned.push(c.k);
+    else if (c.type === 'gear') PROGRESS.gear.push(c.id);
+    else if (c.type === 'point') meGrantPoint();
+    if (c.coins) addCoins(c.coins);
+    cards.push(c);
+  }
+  PROGRESS.packsOpened = (PROGRESS.packsOpened | 0) + 1;
+  saveProgress();
+  if (PROGRESS.me) meSync();
+  return cards;
+}
+function collectionCount() {
+  return DRAFTABLE().filter(c => isUnlocked(c.k)).length;
+}
+/* EVERYBODY A DRAFT CAN SHOW: your player first, then the roster. Kept as
+   a function rather than folded into ROSTER, because ROSTER is also the
+   pool every opponent is built from, and your player must never turn up
+   in the other dugout. */
+function DRAFTABLE() { return ME ? [ME].concat(ROSTER) : ROSTER; }
+
+meSync();
 
 const State = {
   screen: 'menu',
@@ -4036,6 +4904,8 @@ function render() {
   else if (s === 'cup') renderCup();
   else if (s === 'cutscene') renderCutscene();
   else if (s === 'franchise') renderFranchise();
+  else if (s === 'packs') renderPacks();
+  else if (s === 'me') renderMe();
   motionAfterRender(s);
 }
 $('#btn-home').addEventListener('click', () => {
@@ -4199,7 +5069,7 @@ const ROLE_COLOR = {
    their role, so the clubhouse reads as a different room to the press box. */
 function pressSpeaker(key) {
   if (PRESS_CAST[key]) return PRESS_CAST[key];
-  const c = ROSTER.find(r => r.k === key);
+  const c = ROSTER_BY_KEY[key];
   if (!c) return PRESS_CAST.longjohn;
   return {
     name: c.n,
@@ -5125,7 +5995,7 @@ function clubhouseThings() {
       label: seasonOn ? 'Resume Franchise' : 'Start Franchise',
       note: seasonOn
         ? `Year ${State.season.year || 1}, ${rec.w}-${rec.l}, game ${State.season.results.length + 1} of 7.`
-        : 'Select your team and run it. Unlock players and either add them to your group, or roll with what you already have.',
+        : 'Found a club and run it. Pull and earn players, then draft them in or roll with what you have.',
       blurb: seasonOn
         ? `Year ${State.season.year || 1} · ${rec.w}-${rec.l}, game ${State.season.results.length + 1} of 7`
         : 'Run a club for seven games',
@@ -5643,6 +6513,8 @@ function clubhouseCast(n) {
       const j = Math.floor(Math.random() * (i + 1));
       const t = bag[i]; bag[i] = bag[j]; bag[j] = t;
     }
+    /* Your own player is always in the room: it is their clubhouse. */
+    if (ME) bag.splice(1, 0, ME);
     /* EVERY ONE ON HIS OWN CLOCK. A cast that shares a period is four
        people doing the same thing on the same beat, which reads as a
        machine rather than as a room. The period and the offset are both
@@ -5725,6 +6597,507 @@ function runCast(ctx, spots, w) {
 function stopCast() {
   if (castTimer) cancelAnimationFrame(castTimer);
   castTimer = 0;
+}
+
+
+/* ============================================================================
+   THE LOCKER, THE PACKS AND YOUR PLAYER
+   ============================================================================ */
+function rarityChip(r) {
+  const c = el('span', 'rchip', RARITY[r].label);
+  c.style.setProperty('--rc', RARITY[r].color);
+  return c;
+}
+/* A look drawn straight off its grid, for the editor and the pack reveal.
+   Built on demand rather than cached: it is a preview of something that is
+   not anybody's saved look yet, and caching it under 'me' would put a hat
+   the player is only trying on onto every screen in the game. */
+function lookCanvas(look, px, pose) {
+  const spr = meSpriteBuild(look);
+  let rows = spr.f[pose] || spr.f.idle;
+  if (typeof rows === 'string') rows = spr.f[rows.slice(1)];
+  const base = document.createElement('canvas');
+  base.width = V2_W; base.height = V2_H;
+  const c = base.getContext('2d', { willReadFrequently: true });
+  for (let y = 0; y < V2_H; y++) for (let x = 0; x < V2_W; x++) {
+    const ch = rows[y][x];
+    if (ch === '.' || !spr.p[ch]) continue;
+    c.fillStyle = spr.p[ch]; c.fillRect(x, y, 1, 1);
+  }
+  const src = graphicsSmooth() ? epxUp(epxUp(base)) : base;
+  const cv = document.createElement('canvas');
+  cv.width = px; cv.height = px;
+  const o = cv.getContext('2d');
+  o.imageSmoothingEnabled = graphicsSmooth();
+  o.drawImage(src, 0, 0, px, px);
+  return cv;
+}
+function coinGlyph() { return '<i class="coin" aria-hidden="true"></i>'; }
+/* Something is waiting to be spent: a free pack, enough coins for one, or
+   points your player has not used. That is the dot, and it is the one
+   thing on the menu that says there is something to do besides play. */
+function packReady() {
+  return (PROGRESS.freePacks | 0) > 0 || (PROGRESS.coins | 0) >= PACKS.sandlot.price;
+}
+
+function lockerPanel() {
+  const wrap = el('div', 'locker');
+  const me = el('button', 'lk-btn lk-me');
+  me.type = 'button';
+  const art = el('div', 'lk-art');
+  if (ME) art.appendChild(spriteCanvas(ME, 56));
+  else art.appendChild(lookCanvas(ME_LOOK_DEFAULT, 56, 'idle'));
+  me.appendChild(art);
+  const mt = el('div', 'lk-txt');
+  if (ME) {
+    const m = PROGRESS.me;
+    mt.appendChild(el('b', null, ME.n));
+    mt.appendChild(el('span', null, 'Level ' + m.level + ((m.points | 0) ? ' · ' + m.points + ' to spend' : '')));
+    if (m.points | 0) me.classList.add('ping');
+  } else {
+    mt.appendChild(el('b', null, 'Your player'));
+    mt.appendChild(el('span', null, 'Make one. They draft like anybody.'));
+    me.classList.add('ping');
+  }
+  me.appendChild(mt);
+  me.onclick = () => { State.screen = 'me'; render(); };
+
+  const pk = el('button', 'lk-btn lk-packs');
+  pk.type = 'button';
+  const pa = el('div', 'lk-art');
+  pa.appendChild(packArt('sandlot', 40));
+  pk.appendChild(pa);
+  const pt = el('div', 'lk-txt');
+  pt.appendChild(el('b', null, 'Packs'));
+  pt.appendChild(el('span', null, (PROGRESS.freePacks | 0) ? 'A free pack is waiting'
+    : coinGlyph() + (PROGRESS.coins | 0) + ' coins'));
+  pk.appendChild(pt);
+  if (packReady()) pk.classList.add('ping');
+  pk.onclick = () => { State.screen = 'packs'; render(); };
+
+  wrap.append(me, pk);
+  wrap.appendChild(collectionBar());
+  return wrap;
+}
+/* HOW MUCH OF THE ROSTER IS YOURS, counted rather than typed. */
+function collectionBar() {
+  const all = DRAFTABLE();
+  const have = all.filter(c => isUnlocked(c.k)).length;
+  const bar = el('div', 'lk-col');
+  bar.innerHTML = `<span><b>${have}</b> of ${all.length} in your clubhouse</span>`
+    + `<i style="--p:${Math.round(have / all.length * 100)}%"></i>`;
+  return bar;
+}
+/* A pack is drawn, not an image file: a foil wrapper in the game's own ink,
+   crimped at both ends, with the ball on the front. */
+function packArt(id, px) {
+  const cv = document.createElement('canvas');
+  const k = 2;
+  cv.width = px * k; cv.height = Math.round(px * 1.3) * k;
+  const c = cv.getContext('2d');
+  c.scale(k, k);
+  const w = px, h = Math.round(px * 1.3);
+  const gold = id === 'gold';
+  const g = c.createLinearGradient(0, 0, w, h);
+  if (gold) { g.addColorStop(0, '#f7d57a'); g.addColorStop(.5, '#d8a93a'); g.addColorStop(1, '#a8741c'); }
+  else { g.addColorStop(0, '#2f5fb3'); g.addColorStop(.55, '#1b3a5c'); g.addColorStop(1, '#122840'); }
+  c.fillStyle = g;
+  c.beginPath(); c.roundRect(w * .08, h * .06, w * .84, h * .88, w * .08); c.fill();
+  c.fillStyle = 'rgba(255,255,255,.18)';
+  for (let x = w * .12; x < w * .88; x += w * .08) { c.fillRect(x, h * .06, w * .03, h * .07); c.fillRect(x, h * .87, w * .03, h * .07); }
+  c.fillStyle = 'rgba(255,255,255,.22)';
+  c.beginPath(); c.moveTo(w * .1, h * .7); c.lineTo(w * .9, h * .25); c.lineTo(w * .9, h * .38); c.lineTo(w * .1, h * .83); c.fill();
+  c.fillStyle = '#fffcf2'; c.beginPath(); c.arc(w / 2, h * .48, w * .2, 0, Math.PI * 2); c.fill();
+  c.strokeStyle = '#cf3229'; c.lineWidth = Math.max(1, w * .03);
+  c.beginPath(); c.arc(w * .16, h * .48, w * .2, -.75, .75); c.stroke();
+  c.beginPath(); c.arc(w * .84, h * .48, w * .2, Math.PI - .75, Math.PI + .75); c.stroke();
+  cv.style.width = w + 'px'; cv.style.height = h + 'px';
+  return cv;
+}
+
+/* ---- the shop ---- */
+function renderPacks() {
+  const s = el('div', 'screen');
+  s.appendChild(el('h2', null, 'Packs'));
+  const top = el('div', 'card pk-top');
+  top.innerHTML = `<div class="pk-bank">${coinGlyph()}<b>${PROGRESS.coins | 0}</b><span>coins</span></div>`
+    + '<p class="pk-how">Every game pays coins. Wins pay more, and so does the first win each day.</p>';
+  top.appendChild(collectionBar());
+  const tiers = el('div', 'pk-tiers');
+  for (const r of ['common', 'rare', 'epic']) {
+    const pool = PACK_POOL.filter(c => PACK_RARITY[c.k] === r);
+    const got = pool.filter(c => isUnlocked(c.k)).length;
+    const t = el('span', 'pk-tier');
+    t.appendChild(rarityChip(r));
+    t.appendChild(el('b', null, got + ' / ' + pool.length));
+    tiers.appendChild(t);
+  }
+  const lg = el('span', 'pk-tier');
+  lg.appendChild(rarityChip('legend'));
+  lg.appendChild(el('b', null, Object.keys(UNLOCKS).filter(k => isUnlocked(k)).length + ' / ' + Object.keys(UNLOCKS).length));
+  tiers.appendChild(lg);
+  top.appendChild(tiers);
+  top.appendChild(el('p', 'pk-note', 'Legends are never in packs. You earn them on the field.'));
+  s.appendChild(top);
+
+  if ((PROGRESS.freePacks | 0) > 0) {
+    const fr = el('div', 'card pk-free');
+    fr.appendChild(packArt('sandlot', 44));
+    const tx = el('div', null, '<b>Opening day pack</b><span>On the house. One character and two extras.</span>');
+    fr.appendChild(tx);
+    const b = el('button', 'btn', 'Open it');
+    b.type = 'button';
+    b.onclick = () => revealPack('sandlot', openPack('sandlot', true));
+    fr.appendChild(b);
+    s.appendChild(fr);
+  }
+
+  const grid = el('div', 'pk-grid');
+  for (const [id, P] of Object.entries(PACKS)) {
+    const c = el('div', 'card pk-card' + (id === 'gold' ? ' gold' : ''));
+    const art = el('div', 'pk-art');
+    art.appendChild(packArt(id, 64));
+    c.appendChild(art);
+    c.appendChild(el('h3', null, P.label));
+    c.appendChild(el('p', null, P.blurb));
+    const odds = el('ul', 'pk-odds');
+    const seen = new Set();
+    P.slots.forEach(sl => {
+      const key = JSON.stringify(sl);
+      if (seen.has(key)) return;
+      seen.add(key);
+      const n = P.slots.filter(x => JSON.stringify(x) === key).length;
+      const parts = Object.entries(sl.odds).map(([k, v]) => `${oddsName(k)} ${v}%`).join(' · ');
+      odds.appendChild(el('li', null, `<b>${n > 1 ? n + ' cards' : '1 card'}</b> ${parts}`));
+    });
+    c.appendChild(odds);
+    const short = P.price - (PROGRESS.coins | 0);
+    const b = el('button', 'btn', short > 0 ? `Need ${short} more` : `Open for ${P.price}`);
+    b.type = 'button';
+    b.disabled = short > 0;
+    b.onclick = () => revealPack(id, openPack(id, false));
+    c.appendChild(b);
+    grid.appendChild(c);
+  }
+  s.appendChild(grid);
+  s.appendChild(el('p', 'pk-note pk-foot',
+    'A character card never repeats until you own every one of that rarity. A repeat pays coins back.'));
+  const row = el('div', 'btn-row');
+  const back = el('button', 'btn ghost', 'Back');
+  back.onclick = () => { State.screen = 'menu'; render(); };
+  const mb = el('button', 'btn ghost', 'Your player');
+  mb.onclick = () => { State.screen = 'me'; render(); };
+  row.append(back, mb);
+  s.appendChild(row);
+  app.appendChild(s);
+}
+function oddsName(k) {
+  return { common: 'Common', rare: 'Rare', epic: 'Epic', gear: 'Gear', point: 'Training', coins: 'Coins' }[k] || k;
+}
+
+/* THE REVEAL. Three cards face down, turned one at a time, the rarest last.
+   Everything that moves is a transform or an opacity, which is the rule
+   every other animation on this page is held to. Under reduced motion the
+   cards arrive face up. */
+function revealPack(id, cards) {
+  if (!cards) { render(); return; }
+  const order = cards.slice().sort((a, b) => cardRank(a) - cardRank(b));
+  const scrim = el('div', 'pk-scrim');
+  scrim.setAttribute('role', 'dialog');
+  scrim.setAttribute('aria-label', PACKS[id].label + ' opened');
+  const box = el('div', 'pk-box');
+  box.appendChild(el('h3', null, PACKS[id].label));
+  const row = el('div', 'pk-row');
+  const flips = order.map((cd, i) => {
+    const f = el('button', 'pk-flip');
+    f.type = 'button';
+    const inner = el('div', 'pk-in');
+    const back = el('div', 'pk-face pk-back');
+    back.appendChild(packArt(id, 46));
+    const face = el('div', 'pk-face pk-front');
+    fillCardFace(face, cd);
+    inner.append(back, face);
+    f.appendChild(inner);
+    f.onclick = () => turn(i);
+    row.appendChild(f);
+    return f;
+  });
+  box.appendChild(row);
+  const foot = el('div', 'btn-row');
+  const again = el('button', 'btn', 'Open another');
+  const done = el('button', 'btn ghost', 'Done');
+  const canAgain = () => (PROGRESS.freePacks | 0) > 0 && id === 'sandlot'
+    || (PROGRESS.coins | 0) >= PACKS[id].price;
+  again.hidden = true; done.hidden = true;
+  again.onclick = () => {
+    scrim.remove();
+    const free = (PROGRESS.freePacks | 0) > 0 && id === 'sandlot';
+    render();
+    revealPack(id, openPack(id, free));
+  };
+  done.onclick = () => { scrim.remove(); render(); };
+  foot.append(done, again);
+  box.appendChild(foot);
+  scrim.appendChild(box);
+  document.body.appendChild(scrim);
+  let shown = 0;
+  function turn(i) {
+    if (flips[i].classList.contains('on')) return;
+    flips[i].classList.add('on');
+    const r = order[i].r;
+    if (r === 'epic' || r === 'rare') flips[i].classList.add('glow-' + r);
+    Sound.play && Sound.play(r === 'epic' ? 'homer' : 'catch');
+    if (++shown === flips.length) {
+      done.hidden = false;
+      again.hidden = !canAgain();
+      if (order.some(c => c.r === 'epic') && !REDUCED.matches) celebrate(['#6b4296', '#f4c25a', '#fffcf2'], 1.2);
+      done.focus();
+    }
+  }
+  if (REDUCED.matches) flips.forEach((_, i) => turn(i));
+  else flips.forEach((_, i) => setTimeout(() => { if (scrim.isConnected) turn(i); }, 520 + i * 620));
+}
+function cardRank(cd) {
+  const r = { common: 1, rare: 2, epic: 3 }[cd.r] || 0;
+  return (cd.type === 'char' ? 10 : cd.type === 'dup' ? 5 : 0) + r;
+}
+function fillCardFace(face, cd) {
+  if (cd.r) face.style.setProperty('--rc', RARITY[cd.r].color);
+  const pic = el('div', 'pk-pic');
+  let title = '', sub = '';
+  if (cd.type === 'char' || cd.type === 'dup') {
+    const c = ROSTER_BY_KEY[cd.k];
+    pic.appendChild(spriteCanvas(c, 72));
+    title = c.n;
+    sub = cd.type === 'char' ? 'New. Ready to draft.' : `Repeat. +${cd.coins} coins`;
+    if (cd.type === 'char') face.appendChild(el('span', 'pk-new', 'New'));
+  } else if (cd.type === 'gear') {
+    const x = ME_GEAR_BY_ID[cd.id];
+    const look = Object.assign({}, (PROGRESS.me && PROGRESS.me.look) || ME_LOOK_DEFAULT);
+    if (x.slot === 'hat') look.hat = x.v;
+    else if (x.slot === 'face') look.face = x.v;
+    else if (x.slot === 'bat') look.bat = x.v;
+    else if (x.slot === 'color') look.jersey = x.v;
+    pic.appendChild(lookCanvas(look, 72, x.slot === 'bat' ? 'ready' : 'idle'));
+    title = x.label;
+    sub = 'Gear for your player';
+  } else if (cd.type === 'point') {
+    pic.appendChild(el('div', 'pk-big', '+1'));
+    title = 'Training card';
+    sub = 'A stat point for your player';
+  } else {
+    pic.appendChild(el('div', 'pk-big', coinGlyph() + cd.coins));
+    title = 'Coins';
+    sub = '+' + cd.coins + ' in the bank';
+  }
+  face.appendChild(pic);
+  if (cd.r) face.appendChild(rarityChip(cd.r));
+  face.appendChild(el('b', null, title));
+  face.appendChild(el('span', 'pk-sub', sub));
+}
+
+/* ---- your player ---- */
+const ME_DRAFT = { name: '', build: 'slugger', bats: 'R', look: Object.assign({}, ME_LOOK_DEFAULT) };
+function renderMe() {
+  const s = el('div', 'screen');
+  const making = !PROGRESS.me;
+  s.appendChild(el('h2', null, making ? 'Make your player' : 'Your player'));
+  const look = making ? ME_DRAFT.look : PROGRESS.me.look;
+  /* THE PREVIEW IS THE WHOLE POINT OF THE SCREEN, so it stays in view and
+     it moves: stance, swing, a jog, a cheer, on a loop that stops itself
+     the moment the screen is left. */
+  const hero = el('div', 'card me-hero');
+  const stage = el('div', 'me-stage');
+  hero.appendChild(stage);
+  const info = el('div', 'me-info');
+  hero.appendChild(info);
+  s.appendChild(hero);
+  const poses = ['idle', 'ready', 'load', 'swing', 'follow', 'run1', 'run2', 'run3', 'run4', 'cheer'];
+  let pi = 0;
+  const draw = () => {
+    stage.innerHTML = '';
+    const cv = lookCanvas(look, 144, poses[pi]);
+    if ((making ? ME_DRAFT.bats : PROGRESS.me.bats) === 'L' && poses[pi] !== 'idle' && poses[pi] !== 'cheer') cv.style.transform = 'scaleX(-1)';
+    stage.appendChild(cv);
+  };
+  draw();
+  if (!REDUCED.matches) {
+    const tick = () => {
+      if (!stage.isConnected) return;
+      pi = (pi + 1) % poses.length;
+      draw();
+      setTimeout(tick, poses[pi].startsWith('run') ? 160 : 700);
+    };
+    setTimeout(tick, 700);
+  }
+  const save = () => {
+    if (!making) { saveProgress(); meSync(); }
+    draw();
+    paintInfo();
+  };
+
+  function paintInfo() {
+    info.innerHTML = '';
+    if (making) {
+      info.appendChild(el('p', null, 'A rookie. The weakest player on your bench today, and the one who grows the most.'));
+      return;
+    }
+    const m = PROGRESS.me;
+    info.appendChild(el('div', 'me-name', ME.n));
+    info.appendChild(el('div', 'me-sub', ME_BUILDS[m.build].label + ' · bats ' + (m.bats === 'L' ? 'left' : 'right')));
+    const need = meXpFor(m.level);
+    const lv = el('div', 'me-level');
+    lv.innerHTML = m.level >= ME_LEVEL_CAP ? `<b>Level ${m.level}</b><span>Top level</span>`
+      : `<b>Level ${m.level}</b><span>${m.xp} of ${need} XP</span><i style="--p:${Math.round(m.xp / need * 100)}%"></i>`;
+    info.appendChild(lv);
+    info.appendChild(el('p', 'me-pts', (m.points | 0)
+      ? `<b>${m.points}</b> point${m.points > 1 ? 's' : ''} to spend.`
+      : 'Level up or pull a training card for points.'));
+    const st = meStats();
+    const rows = el('div', 'me-stats');
+    for (const k of ME_STATS) {
+      const r = el('div', 'me-row');
+      r.appendChild(el('span', 'me-lab', k.toUpperCase()));
+      r.appendChild(el('i', 'me-bar', `<i style="width:${st[k]}%"></i>`));
+      r.appendChild(el('b', null, String(st[k])));
+      const plus = el('button', 'me-plus', '+');
+      plus.type = 'button';
+      plus.setAttribute('aria-label', 'Add a point to ' + k.toUpperCase());
+      plus.disabled = !(m.points | 0) || st[k] >= ME_STAT_CAP;
+      plus.onclick = () => { meSpend(k); paintInfo(); };
+      r.appendChild(plus);
+      rows.appendChild(r);
+    }
+    info.appendChild(rows);
+    info.appendChild(el('p', 'me-cap', `${m.earned | 0} of ${ME_POINT_CAP} points earned. Each stat stops at ${ME_STAT_CAP}.`));
+  }
+  paintInfo();
+
+  const ed = el('div', 'card me-edit');
+  const sect = (title) => { const d = el('div', 'me-sect'); d.appendChild(el('h3', null, title)); ed.appendChild(d); return d; };
+  const chips = (parent, items, cur, pick, locked) => {
+    const row = el('div', 'me-chips');
+    for (const it of items) {
+      const b = el('button', 'me-chip' + (it.v === cur() ? ' on' : ''), it.label);
+      b.type = 'button';
+      const lk = locked && locked(it);
+      if (lk) { b.disabled = true; b.classList.add('lk'); if (it.r) b.appendChild(rarityChip(it.r)); b.title = 'Found in packs'; }
+      b.onclick = () => { pick(it.v); for (const x of row.children) x.classList.toggle('on', x === b); save(); };
+      row.appendChild(b);
+    }
+    parent.appendChild(row);
+  };
+  const swatches = (parent, colors, cur, pick) => {
+    const row = el('div', 'me-sw');
+    for (const col of colors) {
+      const b = el('button', 'me-dot' + (col === cur() ? ' on' : ''));
+      b.type = 'button';
+      b.style.setProperty('--c', col);
+      b.setAttribute('aria-label', col);
+      b.onclick = () => { pick(col); for (const x of row.children) x.classList.toggle('on', x === b); save(); };
+      row.appendChild(b);
+    }
+    parent.appendChild(row);
+  };
+
+  if (making) {
+    const n = sect('Name');
+    const inp = el('input', 'me-input');
+    inp.type = 'text'; inp.maxLength = 14; inp.placeholder = 'Rookie';
+    inp.value = ME_DRAFT.name;
+    inp.oninput = () => { ME_DRAFT.name = inp.value; };
+    n.appendChild(inp);
+    const b = sect('Build');
+    const bl = el('div', 'me-builds');
+    for (const [k, B] of Object.entries(ME_BUILDS)) {
+      const btn = el('button', 'me-build' + (ME_DRAFT.build === k ? ' on' : ''));
+      btn.type = 'button';
+      btn.innerHTML = `<b>${B.label}</b><span>POW ${B.pow} · CON ${B.con} · SPD ${B.spd} · DEF ${B.def} · PIT ${B.pit}</span>`;
+      btn.onclick = () => { ME_DRAFT.build = k; for (const x of bl.children) x.classList.toggle('on', x === btn); };
+      bl.appendChild(btn);
+    }
+    b.appendChild(bl);
+  }
+  const ba = sect('Bats');
+  chips(ba, [{ v: 'R', label: 'Right' }, { v: 'L', label: 'Left' }],
+    () => making ? ME_DRAFT.bats : PROGRESS.me.bats,
+    (v) => { if (making) ME_DRAFT.bats = v; else PROGRESS.me.bats = v; });
+  swatches(sect('Skin'), ME_SKIN, () => look.skin, (v) => { look.skin = v; });
+  const hr = sect('Hair');
+  chips(hr, ME_HAIR.map(v => ({ v, label: v[0].toUpperCase() + v.slice(1) })), () => look.hair, (v) => { look.hair = v; });
+  swatches(hr, ME_HAIR_COLORS, () => look.hairColor, (v) => { look.hairColor = v; });
+  const gearChips = (slot, key) => chips(sect({ hat: 'Headwear', face: 'Face', bat: 'Bat' }[slot]),
+    ME_GEAR.filter(x => x.slot === slot), () => look[key], (v) => { look[key] = v; }, (it) => !gearOwned(it.id));
+  gearChips('hat', 'hat');
+  gearChips('face', 'face');
+  const cols = colorsOwned();
+  swatches(sect('Jersey'), cols, () => look.jersey, (v) => { look.jersey = v; });
+  swatches(sect('Cap and socks'), cols, () => look.cap, (v) => { look.cap = v; });
+  swatches(sect('Trim and number'), cols.concat(['#f4c25a']), () => look.trim, (v) => { look.trim = v; });
+  swatches(sect('Pants'), ['#f2ede0', '#c9c3bb', '#8f98a3', '#23202a'].concat(cols.filter(c => c !== '#f2ede0' && c !== '#8f98a3' && c !== '#23202a')),
+    () => look.pants, (v) => { look.pants = v; });
+  gearChips('bat', 'bat');
+  const nm = sect('Number');
+  const num = el('input', 'me-input me-num');
+  num.type = 'number'; num.min = 0; num.max = 99;
+  num.value = look.num;
+  num.oninput = () => { look.num = Math.max(0, Math.min(99, parseInt(num.value, 10) || 0)); save(); };
+  nm.appendChild(num);
+  const locked = ME_GEAR.filter(x => x.r && !gearOwned(x.id)).length;
+  if (locked) ed.appendChild(el('p', 'pk-note', `${locked} more pieces of gear are in packs.`));
+  s.appendChild(ed);
+
+  const row = el('div', 'btn-row');
+  const back = el('button', 'btn ghost', 'Back');
+  back.onclick = () => { State.screen = 'menu'; render(); };
+  row.appendChild(back);
+  if (making) {
+    const go = el('button', 'btn', 'Create player');
+    go.onclick = () => {
+      meCreate({ name: (ME_DRAFT.name || '').trim() || 'Rookie', build: ME_DRAFT.build, bats: ME_DRAFT.bats, look: ME_DRAFT.look });
+      render();
+    };
+    row.appendChild(go);
+  } else {
+    const pk = el('button', 'btn ghost', 'Packs');
+    pk.onclick = () => { State.screen = 'packs'; render(); };
+    row.appendChild(pk);
+  }
+  s.appendChild(row);
+  app.appendChild(s);
+}
+
+/* THE RESULT SCREEN'S RECEIPT. What the game paid, line by line, and what
+   your player got out of it. A number with no working is a number nobody
+   can learn from, and learning what pays is how a grind is played well. */
+function collectCard(g) {
+  const C = g.collect;
+  if (!C || (!C.coins && !C.xp)) return null;
+  const card = el('div', 'card coin-card');
+  card.appendChild(el('h3', null, 'Earned'));
+  const tot = el('div', 'cc-total', coinGlyph() + '<b class="countup" style="--to:' + C.coins + '">' + C.coins + '</b><span>coins</span>');
+  card.appendChild(tot);
+  const ul = el('ul', 'cc-lines');
+  for (const [lab, n] of C.lines) ul.appendChild(el('li', null, `<span>${lab}</span><b>+${n}</b>`));
+  card.appendChild(ul);
+  if (C.xp && ME) {
+    const m = PROGRESS.me;
+    card.appendChild(el('p', 'cc-xp', `<b>${ME.n}</b> +${C.xp} XP`
+      + (C.ups ? `. Level ${m.level}. ${C.ups > 1 ? C.ups + ' points' : 'A point'} to spend.` : '.')));
+  } else if (ME) {
+    card.appendChild(el('p', 'cc-xp', `${ME.n} sat this one out. Draft your player to earn XP.`));
+  }
+  const row = el('div', 'btn-row');
+  const pk = el('button', 'btn ghost', packReady() ? 'Open a pack' : 'Packs');
+  pk.onclick = () => { State.screen = 'packs'; render(); };
+  row.appendChild(pk);
+  if (ME && (PROGRESS.me.points | 0)) {
+    const mb = el('button', 'btn ghost', 'Spend points');
+    mb.onclick = () => { State.screen = 'me'; render(); };
+    row.appendChild(mb);
+  }
+  card.appendChild(row);
+  return card;
 }
 
 /* THE FRANCHISE IS THE PRIMARY ACTION, and the status above it is read off
@@ -5916,6 +7289,7 @@ function renderPhoneMenu() {
      franchise was the second of them, no louder than How To Play. It is
      the thing a returning player came back for, so it is the button. */
   card.appendChild(franchisePanel(things));
+  card.appendChild(lockerPanel());
   card.appendChild(modeGrid(things));
   card.appendChild(clubhouseWire());
   /* The status sentence that used to sit down here said exactly what the
@@ -6040,6 +7414,7 @@ function renderMenu() {
      the wall with no more weight than the chalkboard, and the save's state
      was a sentence at the very bottom of the page under a Delete button. */
   card.appendChild(franchisePanel(things));
+  card.appendChild(lockerPanel());
   card.appendChild(modeGrid(things));
   card.appendChild(clubhouseWire());
 
@@ -6122,7 +7497,9 @@ function sortedRoster(key) {
   /* Sort a copy: ROSTER's own order is the authored one and other screens
      read it. Ties break on name so the grid does not reshuffle under a
      player who sorted by POW twice. */
-  return ROSTER.slice().sort((a, b) => {
+  return DRAFTABLE().slice().sort((a, b) => {
+    /* Your own player leads the cabinet whatever it is sorted by. */
+    if (a.k === 'me' || b.k === 'me') return a.k === 'me' ? -1 : 1;
     const la = isUnlocked(a.k) ? 0 : 1, lb = isUnlocked(b.k) ? 0 : 1;
     if (la !== lb) return la - lb;
     const va = S.val(a), vb = S.val(b);
@@ -6142,6 +7519,13 @@ let LOCKPOP = null;
    nothing. So a character you can pick raises nothing at all. */
 function lockPopHTML(c) {
   const u = UNLOCKS[c.k];
+  if (!u) {
+    const r = rarityOf(c.k) || 'common';
+    return `<div class="pop-name">${c.n}</div>`
+      + `<span class="pop-chip lk">Locked</span> <span class="pop-chip" style="background:${RARITY[r].color};color:#fff">${RARITY[r].label}</span>`
+      + '<div class="pop-how">Found in packs. Packs cost coins, and every game you play pays coins.</div>'
+      + `<div class="pop-count">${PROGRESS.coins | 0} coins in the bank</div>`;
+  }
   const pr = unlockProgress(c.k);
   const band = UNLOCK_BANDS[u.band] || UNLOCK_BANDS.short;
   return `<div class="pop-name">${c.n}</div>`
@@ -6236,8 +7620,9 @@ function renderRoster() {
 
   const grid = el('div','roster');
   const cards = new Map();
-  ROSTER.forEach(c => {
+  DRAFTABLE().forEach(c => {
     const cc = el('div','charcard');
+    if (c.k === 'me') cc.classList.add('me');
     const cv = spriteCanvas(c, 56);
     cc.appendChild(cv);
     cc.appendChild(el('div','name', c.n));
@@ -6276,7 +7661,9 @@ function renderRoster() {
     const locked = !isUnlocked(c.k);
     if (locked) {
       cc.classList.add('locked');
-      const lk = el('div','quirk lockhint', 'LOCKED: ' + UNLOCKS[c.k].how);
+      const lk = el('div','quirk lockhint', 'LOCKED: ' + lockHow(c.k));
+      const r = rarityOf(c.k);
+      if (r) cc.appendChild(rarityChip(r));
       cc.appendChild(lk);
     }
     cc.tabIndex = 0;
@@ -6371,7 +7758,7 @@ function renderRoster() {
      choice, and the note above the grid tells them what it costs. */
   rand.onclick = () => {
     picked.clear();
-    const bag = ROSTER.filter(c => isUnlocked(c.k)).sort(() => Math.random() - 0.5);
+    const bag = DRAFTABLE().filter(c => isUnlocked(c.k)).sort(() => Math.random() - 0.5);
     const nine = bag.slice(0, 9);
     let ace = 0;
     for (let i = 1; i < nine.length; i++) if ((nine[i].pit | 0) > (nine[ace].pit | 0)) ace = i;
@@ -6405,7 +7792,7 @@ function renderRoster() {
 
   function redraw() {
     let n = 0;
-    for (const c of ROSTER) {
+    for (const c of DRAFTABLE()) {
       const cc = cards.get(c.k);
       if (picked.has(c.k)) { n++; cc.classList.add('picked'); cc.querySelector('.pickno')?.remove(); const b = el('div','pickno', [...picked].indexOf(c.k)+1); cc.appendChild(b); }
       else { cc.classList.remove('picked'); cc.querySelector('.pickno')?.remove(); }
@@ -12922,6 +14309,8 @@ function finishGame() {
   const you = g.away.isYou ? g.away : g.home;
   const foe = g.away.isYou ? g.home : g.away;
   const win = you.score > foe.score && !g.forfeit;
+  /* Read before the modes below count a title, so the coins can pay it. */
+  const titlesBefore = PROGRESS.titles | 0;
 
   if (State.mode === 'season' && State.season && !State.season.playoffs) {
     State.season.results.push({
@@ -13047,6 +14436,9 @@ function finishGame() {
     saveSeason(State.season);
   }
   saveProgress();
+  /* Coins for the game and XP for your player, settled once, here, in the
+     one function that already guards a game against being filed twice. */
+  g.collect = settleCollection(g, win, you, foe, (PROGRESS.titles | 0) > titlesBefore);
   g.freshUnlocks = refreshUnlocks();
 
   const toResult = () => { State.screen = 'result'; render(); };
@@ -15620,6 +17012,7 @@ function drawBatSwing(ctx, x, y, t, sc) {
    no roster data, never flips between visits, and survives every
    roster edit. Three in ten bat left, which is the real game's share. */
 function batsLeft(k) {
+  if (k === 'me') return !!(PROGRESS.me && PROGRESS.me.bats === 'L');
   let h = 0;
   for (let i = 0; i < k.length; i++) h = (h * 31 + k.charCodeAt(i)) >>> 0;
   return h % 10 < 3;
@@ -16976,6 +18369,8 @@ function renderResult() {
     uc.appendChild(grid);
     s.appendChild(uc);
   }
+  const earned = collectCard(g);
+  if (earned) s.appendChild(earned);
 
   /* Line score: runs per inning for both sides, the way a real board reads. */
   const lsCard = el('div','card');
@@ -17384,11 +18779,17 @@ function renderMeet() {
     body.appendChild(st);
     if (c.note) body.appendChild(el('div','mbio', c.note));
     if (!isUnlocked(c.k)) {
-      const pr = unlockProgress(c.k);
       const u = UNLOCKS[c.k];
-      const band = UNLOCK_BANDS[u.band] || UNLOCK_BANDS.short;
-      body.appendChild(el('div','mlock',
-        `Locked: ${u.how} <i>${pr.have} of ${pr.goal} ${pr.unit} · ${band.label}</i>`));
+      if (u) {
+        const pr = unlockProgress(c.k);
+        const band = UNLOCK_BANDS[u.band] || UNLOCK_BANDS.short;
+        body.appendChild(el('div','mlock',
+          `Locked: ${u.how} <i>${pr.have} of ${pr.goal} ${pr.unit} · ${band.label}</i>`));
+      } else {
+        const got = PACK_POOL.filter(x => isUnlocked(x.k)).length;
+        body.appendChild(el('div','mlock',
+          `Locked: ${lockHow(c.k)} <i>${got} of ${PACK_POOL.length} pulled so far</i>`));
+      }
     }
     bar.append(mug, body);
   };
@@ -17406,7 +18807,7 @@ function renderMeet() {
     b.textContent = sp.c.n;
     b.setAttribute('aria-label', isUnlocked(sp.c.k)
       ? `${sp.c.n}. ${sp.c.role}. ${sp.c.note || ''}`
-      : `${sp.c.n}, locked. ${UNLOCKS[sp.c.k].how}`);
+      : `${sp.c.n}, locked. ${lockHow(sp.c.k)}`);
     const on = () => { paint(sp.c.k); show(sp.c); };
     b.onmouseenter = b.onfocus = on;
     /* A tap is the only hover a phone has, so a click reads the player
@@ -17687,7 +19088,7 @@ function renderHowTo() {
     + 'inning the game ends on the spot: a walk-off.</p>'
     + '<h3>Exhibition</h3>'
     + '<p>One game against a random club, about ten minutes at five innings. '
-    + 'Nothing is saved and nothing counts, except unlock progress.</p>'
+    + 'Nothing is saved and nothing counts, except coins and unlock progress.</p>'
     + '<h3>Season</h3>'
     + '<p>Found a club (city, name, colours, home park), pick nine, and play seven '
     + 'games, four of them at home. Every club has its own park and its own batting '
@@ -17702,9 +19103,21 @@ function renderHowTo() {
     + '<p>A short, high stakes alternative: eight teams, single elimination, three '
     + 'rounds. Lose once and you are out. It has its own save, so a cup run never '
     + 'disturbs a season in progress.</p>'
-    + '<h3>Unlocks</h3>'
-    + '<p>A few characters start locked. Their card says exactly what to do to earn '
-    + 'them, and progress carries across every game you play in any mode.</p>');
+    /* COUNTED, NEVER TYPED: the starters, the ladder and the caps are all
+       read off the tables, so a tuning pass cannot leave this page
+       promising the old numbers. */
+    + '<h3>Your clubhouse</h3>'
+    + `<p>Everybody starts with the same ${STARTERS.length}. The rest you earn. `
+    + 'The middle of the roster comes out of <b>packs</b>. Packs cost coins, and '
+    + 'every game pays coins. A win pays more. So do nine innings and a harder '
+    + 'dugout. Your first win each day pays a bonus. Leaving a game early pays nothing.</p>'
+    + `<p>The best ${Object.keys(UNLOCKS).length} are <b>never in packs</b>. Each card says `
+    + 'what to do to earn them. Progress counts in every mode.</p>'
+    + '<h3>Your player</h3>'
+    + '<p>Build your own. Pick a build, a look and a number. They start as a rookie '
+    + 'and draft like anybody else. Put them in the lineup to earn XP. Each level is a '
+    + `stat point, up to ${ME_POINT_CAP}. Training cards from packs are points too. `
+    + 'Gear from packs changes the look and never the ratings.</p>');
   s.appendChild(season);
 
   const row = el('div','btn-row');

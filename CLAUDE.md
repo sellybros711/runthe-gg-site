@@ -5148,6 +5148,96 @@ proved by mutation, with a misspelt landmark and a deleted `far`.
 stands rather than on them. At 0.18 the lavender castle vanished into a pale
 blue sky, which a screenshot said and no guard can.
 
+### The collection: ten to start, packs for the middle, feats for the best
+
+```
+node mythiball/check-collection.mjs     the split, the migration, the packs, your player
+```
+
+Asked for as a long term grind in the Mario Kart shape: everybody starts with the
+same base team and unlocks the rest. Built on the unlock ladder that was already
+there rather than beside it.
+
+| | who | how you get them |
+|---|---|---|
+| `STARTERS` | ten, the storybook core | on the bench from the first game |
+| `PACK_POOL` | the middle of the roster, derived | pulled from packs bought with coins |
+| `UNLOCKS` | the best, unchanged | earned on the field, the ladder as it was |
+
+**THE BEST ARE NEVER FOR SALE**, and the guard asserts it as a property rather
+than a list: every ladder character outranks every pack character on
+`charValue`, which is the number the ladder was already ordered by. A pack is
+luck and a rung is a feat, so no amount of pulling can be the fastest way to the
+best player in the game.
+
+**`PACK_POOL` and its rarity are derived, never listed.** Everybody who is neither
+a starter nor on the ladder, split 45/35/20 by value into common, rare and epic. A
+character added to the roster is in the packs the day it is written.
+
+**COINS COME FROM PLAYING AND FROM NOWHERE ELSE.** There is no money in any of
+this and there must not be: the site has one store and a second payment path
+belonging to one game is what it exists to prevent. A game pays by the inning,
+more for a win and a harder dugout, 200 for a title and a bonus for the first
+win each day. **A forfeit pays nothing**, or quitting is the quick way to a pack.
+
+**A PACK NEVER PAYS BACK ITS PRICE.** The first version paid a coin card of up
+to sixty and a fallback of sixty for a finished collection, so a Sandlot Pack
+returned 160 for 150 once somebody owned everything. Found by the economy sweep
+running away with itself rather than by reading. Every coin a pack can hand out
+is capped so three cards are at most the price, and the guard opens four hundred
+packs with the collection and the point cap both finished to say so.
+
+**A character slot rolls the rarity first, then hands you somebody you do not
+have.** A straight draw makes the last epic a coupon collector's tail of hundreds
+of duplicates. So a repeat only happens once that whole tier is yours, and pays
+coins back. When the whole pool is yours the slot pays a training card instead.
+
+What that makes of the grind, measured through the real `openPack` at about 45
+coins a game: half the pack pool in about 54 games, all of it in about 181 if
+Gold Packs are bought once the commons are done, 331 on Sandlot alone. The
+ladder's legends and your player's top level are the months long tail.
+
+#### A player who was here before packs keeps everybody
+
+The whole middle of the roster used to be open to anybody, so a tester with a
+franchise has men on it who are now pack characters. `migrateCollection` runs
+once: any save with games played, a season or a cup is granted the entire pack
+pool and flagged `veteran`. Everything rides inside `PROGRESS` under the key the
+game has always used, because renaming a save key throws away every tester's
+save. Everybody, veteran or not, gets one free pack on the way in.
+
+#### Your player is a roster entry, drawn at runtime
+
+`ME` is a roster shaped object in `ROSTER_BY_KEY.me`, mutated in place when a
+point is spent so nothing holding it goes stale, and **deliberately not in
+`ROSTER`**. `ROSTER` is also the pool every opponent is built from, so the draft
+reads `DRAFTABLE()` and nothing else does. The guard's hard case is your player
+NOT in your lineup and rated exactly like the man a club must replace, because
+that is the one arrangement in which a leak would actually be picked.
+
+**The sprite is drawn by `meSpriteBuild`** at the pack's 64 pixel grid and in its
+grammar: big head, a one pixel near black line around every part, action poses
+facing right. It writes the same `{b, f, p}` record the table holds, so the EPX
+pass, the caches and every camera read it like any other character. **Each part
+outlines itself**, which is what draws the line where an arm crosses a chest.
+
+**A painter that takes fractional coordinates writes a property, not a pixel.**
+`g[y][12.4] = 'c'` is legal JavaScript and paints nothing, so the side view lost
+its whole cap the first time a body leaned. Every box and every `set` is floored.
+
+**Gear changes the look and never a rating**, or a cosmetic would be a rating for
+sale by another name. Growth is XP from games your player is in (a point a level,
+top level 60), training cards from packs, a cap of 120 points and 95 a stat.
+Changing the look rebuilds the drawing and drops the `me` entries from
+`v2FrameCache` and `spriteStore`, or a hat bought mid session is only on the
+screens drawn after it.
+
+**Two things only a screenshot said**, both caught before shipping: `.pk-front span`
+turned the rarity chips' white text into the chip's own colour, and "Open another"
+showed with no coins because `.btn` sets a display and `hidden` never took (this
+repo's `[hidden]` pair, again). The guard reads the computed colour and the
+computed display for both.
+
 ### The brand shares Run The Tour's plumbing and deliberately not its look
 
 ```
@@ -6777,6 +6867,7 @@ The regression suite, which is the thing to run after editing:
 
 ```
 node mythiball/check-posture.mjs   unlisted, the capital alias still lands, the brand holds, and every park's scenery exists
+node mythiball/check-collection.mjs  the ten starters, the packs, the ladder and your own player
 node mythiball/check-rules.mjs     whole games, and the sport's own arithmetic
 node mythiball/check-reach.mjs      every control a game offers is inside the window,
                                    including the two sheets that open over the field
