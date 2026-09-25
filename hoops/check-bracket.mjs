@@ -430,7 +430,12 @@ async function widenDoor(page) {
    CHILDREN and sets pointer-events none on the tile, so the tile itself is a
    visible box and a scripted click lands on a board still mid-spin, which
    leaves reelBusy true and the draft on an empty board for ever. */
-async function toPlayoffs(page){
+/* `needBye` asks for a run SEEDED into the first round. A play-in run is one
+   game, so it can never open the series door, and losing it ends the run
+   before the bracket proper: section 6 then reports no door and section 7 a
+   run that is over. That came up about one run in eight and read as a flake;
+   it is the fixture taking any run that reached the bracket. */
+async function toPlayoffs(page, needBye){
   await page.evaluate(() => { try { localStorage.removeItem('runthefloor_run_v1'); } catch (e) {} });
   await page.evaluate(() => document.querySelector('#b-start').click());
   /* HOW MANY TO SIGN IS THE ENGINE'S ANSWER, never a literal. Written 6 this
@@ -461,7 +466,13 @@ async function toPlayoffs(page){
       brk: !!document.querySelector('#s-brk.active'),
       over: !!document.querySelector('#s-over.active'),
     }));
-    if (st.brk) return true;
+    if (st.brk) {
+      if (!needBye) return true;
+      return await page.evaluate(() => {
+        try { const r = JSON.parse(localStorage.getItem('runthefloor_run_v1')); return !!(r && r.po && r.po.bye); }
+        catch (e) { return false; }
+      });
+    }
     if (st.over) return false;
     await page.waitForTimeout(100);
   }
@@ -475,8 +486,8 @@ async function toPlayoffs(page){
 async function findBracket(browser, boom){
   const page = await newPage(browser, boom);
   await boot(page);
-  for (let a = 0; a < 12; a++) {
-    if (await toPlayoffs(page)) return page;
+  for (let a = 0; a < 16; a++) {
+    if (await toPlayoffs(page, true)) return page;
     await page.evaluate(() => { const h = document.querySelector('#b-home'); if (h) h.click(); });
     await page.waitForSelector('#b-start', { state: 'attached', timeout: 10000 });
     await page.waitForTimeout(120);

@@ -348,6 +348,85 @@ section('4. Fix History: one team a day, four trade windows, one score everywher
     ok(/franchise player/.test(M.fxDealRefusal(D, M.fxSeasonCreate(D, 11), [E.pkey(f.five[0])], [], o1.with,
       [M.untouchable(D, o1.with)]) || ''), 'a club\'s franchise player is not for sale');
   }
+  /* NEGOTIATING. Every answer is asked of a real proposal, and the club's
+     counter is checked against a brute force over everything on your side. */
+  {
+    const n = M.fxSeasonCreate(D, 11), mine = M.fxRosterAt(D, n, 0);
+    const star = [...f.five].sort((x, y) => y.p - x.p)[0], sk = E.pkey(star);
+    const off = M.fxCalls(D, n, [sk], [])[0];
+    // A proposal asking exactly for the offer: it is fair at price, and a
+    // counter wants the premium on top, so it is short and the club names a price.
+    const r1 = M.fxPropose(D, n, off.with, [sk], [], off.ins);
+    const got = star.p, need = M.fxAsking(D, off.ins, 1);
+    ok(r1.verdict === (got >= need - 1e-9 ? 'yes' : r1.verdict === 'counter' ? 'counter' : 'no') && r1.attempt === 1,
+      `a first proposal is answered and counts (${r1.verdict})`);
+    ok(Math.abs(need - off.sal * (1 + M.TRADE.PREMIUM)) < 0.06, 'the first proposal wants the premium on top of what they give');
+    ok(M.fxTriesLeft(n, off.with) === M.TRADE.PATIENCE - 1, 'and costs one proposal');
+    if (r1.verdict === 'counter') {
+      const val = (outs, pk) => outs.reduce((x, k) => x + D.allPlayers[k].p, 0) + pk.reduce((x, id) => x + M.pickValue(id), 0);
+      ok(val(r1.outs, r1.picks) >= r1.need - 1e-9 && M.fxDealRefusal(D, n, r1.outs, r1.picks, off.with, off.ins) === null,
+        'the club\'s counter closes the gap and is a legal deal');
+      let cheaper = 0;
+      const opts = M.fxPicksLeft(n).map((id) => ({ outs: [sk], picks: [id], v: M.pickValue(id) }))
+        .concat(mine.filter((p) => E.pkey(p) !== sk).map((p) => ({ outs: [sk, E.pkey(p)], picks: [], v: p.p })));
+      const addV = r1.add.kind === 'pick' ? M.pickValue(r1.add.key) : D.allPlayers[r1.add.key].p;
+      opts.forEach((o) => {
+        if (o.v < addV - 1e-9 && val(o.outs, o.picks) >= r1.need - 1e-9
+          && M.fxRulesRefusal(D, n, o.outs, o.picks, off.with, off.ins) === null) cheaper++;
+      });
+      ok(cheaper === 0, `and it is the cheapest single thing that does (${cheaper} cheaper)`);
+    }
+    // An illegal proposal is explained and costs nothing.
+    const cheap = M.fxRoster(D, off.with).filter((p) => E.pkey(p) !== M.untouchable(D, off.with)).slice(-1)[0];
+    const before = M.fxTriesLeft(n, off.with);
+    const r2 = M.fxPropose(D, n, off.with, [sk], [], [E.pkey(cheap)]);
+    ok(r2.verdict === 'illegal' && /salar/.test(r2.reason) && M.fxTriesLeft(n, off.with) === before,
+      `a proposal the rules refuse is explained and costs no patience (${r2.reason})`);
+    // Their star is never on the table.
+    ok(M.fxPropose(D, n, off.with, [sk], [], [M.untouchable(D, off.with)]).verdict === 'illegal', 'asking for the franchise player is refused');
+    // Out of patience, they hang up, stop calling this window, and call again at the next.
+    /* A 'no' needs a proposal that is legal, short, and has nothing on your
+       side that closes it: three men out, so no room for a fourth, and short by
+       more than the dearest pick. Found by search rather than assumed. */
+    const allPicks = [], pv = M.TRADE.PICK1;
+    let fixture = null;
+    const trios = [];
+    for (let a = 0; a < mine.length; a++) for (let b = a + 1; b < mine.length; b++) for (let c = b + 1; c < mine.length; c++)
+      trios.push([mine[a], mine[b], mine[c]]);
+    trios.sort((x, y) => y.reduce((q, p) => q + p.p, 0) - x.reduce((q, p) => q + p.p, 0));
+    for (const trio of trios.slice(0, 40)) {
+      if (fixture) break;
+      const outs = trio.map(E.pkey), got2 = trio.reduce((q, p) => q + p.p, 0) + pv;
+      for (const t of D.teamSeasons) {
+        if (fixture) break;
+        if (t.season !== Number(f.ts.slice(-4)) || t.team_season_id === f.ts) continue;
+        const rs = M.fxRoster(D, t.team_season_id).filter((p) => E.pkey(p) !== M.untouchable(D, t.team_season_id));
+        for (let a = 0; a < rs.length && !fixture; a++) for (let b = a + 1; b < rs.length && !fixture; b++) for (let c = b + 1; c < rs.length && !fixture; c++) {
+          const ins = [rs[a], rs[b], rs[c]].map(E.pkey), sal = rs[a].p + rs[b].p + rs[c].p;
+          if (sal * (1 + M.TRADE.PREMIUM) > got2 && M.fxRulesRefusal(D, n, outs, allPicks, t.team_season_id, ins) === null) {
+            fixture = { club: t.team_season_id, outs, ins };
+          }
+        }
+      }
+    }
+    ok(!!fixture, 'a legal proposal nothing on your side can close exists to test with');
+    const club = fixture ? fixture.club : off.with;
+    for (let i = 0; i < 4 && fixture && !M.fxHungUp(n, club); i++) {
+      const r = M.fxPropose(D, n, club, fixture.outs, allPicks, fixture.ins);
+      if (i === 0) ok(r.verdict === 'no' && !r.hung, `short with nothing to add is a no, and the first no is not a hang-up (${r.verdict})`);
+    }
+    ok(M.fxHungUp(n, club) && M.fxTriesLeft(n, club) === 0, 'a club out of patience hangs up');
+    ok(!M.fxCalls(D, n, [sk], []).some((o) => o.with === club), 'and does not call again this window');
+    ok(M.fxPropose(D, n, club, [sk], [], off.ins).verdict === 'gone', 'or take another proposal');
+    M.fxNextWindow(n);
+    ok(!M.fxHungUp(n, club) && M.fxTriesLeft(n, club) === M.TRADE.PATIENCE, 'a new window is a new conversation');
+    // A yes is a deal the engine will make.
+    const n2 = M.fxSeasonCreate(D, 11);
+    const rich = [sk, E.pkey(mine.filter((p) => E.pkey(p) !== sk).sort((a, b) => b.p - a.p)[0])];
+    const yes = M.fxPropose(D, n2, off.with, rich.slice(0, 1), M.fxPicksLeft(n2).slice(0, 2), off.ins);
+    if (yes.verdict === 'yes') ok(M.fxDealRefusal(D, n2, rich.slice(0, 1), M.fxPicksLeft(n2).slice(0, 2), off.with, off.ins) === null, 'a yes is a legal deal');
+    else ok(yes.verdict === 'counter', `adding picks gets a yes or a named price (${yes.verdict})`);
+  }
   /* canCover is a bipartite match; fiveOf is a brute force over the same rule.
      They must agree on every roster, or an offer could leave a team the coach
      cannot start. */
@@ -542,7 +621,7 @@ if (!QUICK) {
   const wsOnMarket = await page.$$eval('.fx-offer', (b) => b.some((x) => /\bWS\b/.test(x.textContent)));
   ok(!wsOnMarket, 'no win shares on an offer: that is the answer');
   const pickWith = await page.getAttribute('.fx-offer', 'data-w');
-  await page.click('.fx-offer');
+  await page.click('.fo-take');
   await page.click('#fx-yes');
   await page.waitForSelector('#fx-on', { timeout: 30000 });
   const run = await page.evaluate(() => JSON.parse(localStorage.getItem('rtf.fix.run.v2')));
@@ -561,6 +640,30 @@ if (!QUICK) {
   const steps2 = await page.$$eval('.fxw-s', (b) => b.map((x) => x.textContent));
   ok(/Traded/.test(steps2[0]) && /Open now/.test(steps2[1]), 'a reload lands in the game 20 window with the deal marked');
   ok(await page.$(`.fx-pick[data-pk="${fx.pick}"]`) === null, 'and the traded pick is gone from the shelf');
+  /* A COUNTER at game 20: the table opens on the club's offer, a proposal is
+     answered, and it costs a proposal. Then back out and stand pat. */
+  await page.click('#s-fix .fx-man[data-k]');
+  await page.click('#fx-find');
+  await page.waitForSelector('.fo-talk');
+  await page.click('.fo-talk');
+  await page.waitForSelector('#tk-go');
+  const asked = await page.$$eval('.tk-p.on[data-side="theirs"]', (b) => b.length);
+  ok(asked > 0, `the table opens on the club's own offer (${asked} asked for)`);
+  const locked = await page.$$eval('.tk-p.lock', (b) => b.length);
+  ok(locked === 1, 'with their franchise player shown and not for sale');
+  if (await page.$('#tk-go:not([disabled])')) {
+    await page.click('#tk-go');
+    await page.waitForSelector('.tk-reply');
+    const reply = await page.textContent('.tk-reply');
+    ok(/said yes|want more|No\.|hung up/.test(reply), `the club answers ("${reply.trim().slice(0, 60)}")`);
+    const pat = await page.textContent('.tk-pat');
+    ok(/1 proposal left/.test(pat), `and the proposal is spent ("${pat.trim()}")`);
+  } else ok(false, 'the club\'s own offer can be proposed back to it');
+  await page.click('#tk-back');
+  await page.waitForSelector('#fx-back');
+  await page.click('#fx-back');
+  await page.waitForSelector('#fx-pat');
+  await page.click('#s-fix .fx-man.out[data-k]');
   for (let i = 0; i < 3; i++) {
     if (i) { await page.click('#fx-on'); await page.waitForSelector('#fx-pat'); }
     await page.click('#fx-pat');

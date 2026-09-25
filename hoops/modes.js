@@ -683,7 +683,7 @@ function fxCalls(data, st, outKeys, picks) {
   const keep = mine.filter(p => outKeys.indexOf(E.pkey(p)) < 0);
   data.teamSeasons.forEach((t) => {
     const ts = t.team_season_id;
-    if (t.season !== season || ts === st.ts || !clubCalls(st, st.win, ts)) return;
+    if (t.season !== season || ts === st.ts || !clubCalls(st, st.win, ts) || fxHungUp(st, ts)) return;
     const star = untouchable(data, ts);
     const rows = fxRoster(data, ts).filter(p => !ids.has(p.i) && E.pkey(p) !== star);
     const theirs = fxRoster(data, ts);
@@ -718,6 +718,80 @@ function fxCalls(data, st, outKeys, picks) {
     }
   });
   return offers;
+}
+
+/* NEGOTIATING. An offer is the club's opening position, not the only deal
+ * there is: you can ask for different men (never the franchise player) and
+ * reshape your side, and the club answers each proposal.
+ *
+ * COUNTERING COSTS YOU. A club's offer is fair at market price; a proposal is
+ * you asking for something, so proposal k wants TRADE.PREMIUM * k more value
+ * than it gives. That is what makes a counter a decision rather than a free
+ * menu: taking the offer is cheaper, and the men you actually want cost a
+ * sweetener.
+ *
+ * TWO PROPOSALS A CLUB A WINDOW, then it hangs up for the window. A proposal
+ * that breaks a rule (salaries, a side left without a five, too many men)
+ * gets the reason and costs no patience, because that is the general manager
+ * saying it does not work under the rules rather than saying no.
+ *
+ * WHEN IT IS SHORT, THE CLUB NAMES ITS PRICE: the single cheapest thing from
+ * your side (a pick or a player) that would get it done. Deterministic, like
+ * everything else here, so two people who make the same proposal hear the
+ * same answer. */
+Object.assign(TRADE, { PATIENCE: 2, PREMIUM: 0.05 });
+
+function talksOf(st, withTs) {
+  const w = String(st.win);
+  st.talks = st.talks || {};
+  st.talks[w] = st.talks[w] || {};
+  return st.talks[w][withTs] || { tries: 0, hung: false };
+}
+function fxHungUp(st, withTs) { return !!talksOf(st, withTs).hung; }
+function fxTriesLeft(st, withTs) { const t = talksOf(st, withTs); return t.hung ? 0 : TRADE.PATIENCE - t.tries; }
+
+/* What a club wants back for sending `inKeys`, on proposal `attempt`. */
+function fxAsking(data, inKeys, attempt) {
+  return sumPrice(inKeys.map(k => data.allPlayers[k])) * (1 + TRADE.PREMIUM * attempt);
+}
+
+/* THE RULES WITHOUT THE PRICE: everything fxDealRefusal checks except whether
+   the club gets enough back, which is what a proposal is haggling over. */
+function fxRulesRefusal(data, st, outKeys, picks, withTs, inKeys) {
+  const why = fxDealRefusal(data, st, outKeys, picks, withTs, inKeys);
+  return why === 'they want more back' ? null : why;
+}
+
+function fxPropose(data, st, withTs, outKeys, picks, inKeys) {
+  picks = picks || [];
+  if (fxHungUp(st, withTs)) return { verdict: 'gone', reason: 'they hung up' };
+  const illegal = fxRulesRefusal(data, st, outKeys, picks, withTs, inKeys);
+  if (illegal) return { verdict: 'illegal', reason: illegal };
+  const t = talksOf(st, withTs);
+  const attempt = t.tries + 1;
+  t.tries = attempt;
+  st.talks[String(st.win)][withTs] = t;
+  const need = fxAsking(data, inKeys, attempt);
+  const value = (outs, pk) => sumPrice(outs.map(k => data.allPlayers[k])) + pk.reduce((s, id) => s + pickValue(id), 0);
+  const got = value(outKeys, picks);
+  if (got >= need - 1e-9) return { verdict: 'yes', attempt, need, got };
+  // The cheapest single addition that closes it and keeps every rule.
+  const mine = fxRosterAt(data, st, st.win);
+  const adds = [];
+  fxPicksLeft(st).filter(id => picks.indexOf(id) < 0)
+    .forEach(id => adds.push({ kind: 'pick', key: id, v: pickValue(id), outs: outKeys, picks: picks.concat([id]) }));
+  if (outKeys.length < TRADE.MAX_OUT) {
+    mine.filter(p => outKeys.indexOf(E.pkey(p)) < 0).forEach(p =>
+      adds.push({ kind: 'player', key: E.pkey(p), v: p.p, outs: outKeys.concat([E.pkey(p)]), picks }));
+  }
+  adds.sort((a, b) => a.v - b.v || (a.kind === 'pick' ? -1 : 1));
+  for (const a of adds) {
+    if (value(a.outs, a.picks) < need - 1e-9) continue;
+    if (fxRulesRefusal(data, st, a.outs, a.picks, withTs, inKeys)) continue;
+    return { verdict: 'counter', attempt, need, got, add: { kind: a.kind, key: a.key }, outs: a.outs, picks: a.picks };
+  }
+  if (attempt >= TRADE.PATIENCE) { t.hung = true; st.talks[String(st.win)][withTs] = t; }
+  return { verdict: 'no', attempt, need, got, hung: !!t.hung };
 }
 
 function fxDeal(data, st, outKeys, picks, withTs, inKeys) {
@@ -937,7 +1011,7 @@ const publicAPI = {
   FX, TRADE, salaryOk, slotFive, startingFive, fiveOf, canCover, fxCandidates, fxDaily, fxOdds, fxOddsStep, fxReplay,
   fxRoster, fxApply,
   FX_WINDOWS, fxPicks, pickValue, pickOk, fxSeasonCreate, fxRosterAt, fxPicksLeft, fxLineup, clubCalls,
-  untouchable, fxDealRefusal, fxCalls, fxDeal, fxNextWindow, fxStretches, fxPlayStretches, fxSeasonOddsStep, fxSeasonReplay,
+  untouchable, fxDealRefusal, fxCalls, fxPropose, fxAsking, fxRulesRefusal, fxHungUp, fxTriesLeft, fxDeal, fxNextWindow, fxStretches, fxPlayStretches, fxSeasonOddsStep, fxSeasonReplay,
   PS, psGraph, psBfs, psPath, psFamous, psDaily, psShared, psCanPass,
 };
 

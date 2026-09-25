@@ -517,6 +517,34 @@ var CSS = [
   '.fx-log{background:#141a26;border:1px solid var(--cardb);border-radius:10px;padding:8px 12px;margin:0 0 6px;}',
   '.fx-log p{margin:3px 0 0;font-size:14px;color:var(--mut);}',
   '.fx-log b{color:var(--ink);}',
+  '.fx-offer{cursor:default;}',
+  '.fo-act{display:flex;gap:8px;margin-top:8px;}',
+  '.fo-act button{flex:1 1 0;width:auto;padding:9px 10px;font-size:13px;}',
+  '.tk-top{display:flex;align-items:center;gap:12px;background:#141a26;border:1px solid var(--cardb);border-radius:12px;padding:10px 12px;}',
+  '.tk-top b{display:block;font-family:var(--display);font-weight:400;font-size:20px;text-transform:uppercase;line-height:1.1;margin-top:2px;}',
+  '.tk-pat{margin-left:auto;text-align:right;font-size:11px;font-weight:800;color:var(--mut);}',
+  '.tk-dots{display:flex;gap:4px;justify-content:flex-end;margin-top:4px;}',
+  '.tk-dots i{width:10px;height:10px;border-radius:50%;background:#243049;}',
+  '.tk-dots i.on{background:#5eead4;}',
+  '.tk-list{display:grid;gap:5px;}',
+  '.tk-p{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;text-align:left;background:#141a26;',
+  '  border:1px solid var(--cardb);border-radius:10px;padding:7px 12px;color:var(--ink);font-family:var(--body);}',
+  '.tk-p .hn{font-weight:800;font-size:13.5px;min-width:0;}',
+  '.tk-p .hn em{font-style:normal;color:#5eead4;font-size:11px;margin-left:4px;}',
+  '.tk-p .hn small{display:block;color:var(--dim);font-weight:600;font-size:11px;}',
+  '.tk-p .hp{font-family:var(--num);font-variant-numeric:tabular-nums;font-weight:800;font-size:13.5px;text-align:right;}',
+  '.tk-p .hp small{display:block;font-size:10.5px;color:var(--dim);}',
+  '.tk-p.on{border-color:#5eead4;background:#10221f;box-shadow:0 0 0 1px #5eead4 inset;}',
+  '.tk-p.lock{opacity:.45;}',
+  '.tk-short{color:var(--red);} .tk-ok{color:var(--green);}',
+  '.tk-reply{border-radius:12px;padding:12px 14px;margin:10px 0 4px;border:1px solid var(--cardb);background:#141a26;}',
+  '.tk-reply b{display:block;font-family:var(--display);font-weight:400;font-size:20px;text-transform:uppercase;}',
+  '.tk-reply p{margin:4px 0 10px;color:var(--mut);font-size:14px;}',
+  '.tk-reply button{width:100%;}',
+  '.tk-reply.yes{border-color:rgba(74,222,128,.5);background:#0d1512;} .tk-reply.yes b{color:var(--green);margin-bottom:10px;}',
+  '.tk-reply.counter{border-color:rgba(242,193,78,.5);background:#1e1a10;} .tk-reply.counter b{color:var(--gold);}',
+  '.tk-reply.no{border-color:rgba(239,68,68,.45);background:#241416;} .tk-reply.no b{color:var(--red);}',
+  '.tk-reply.no p{margin-bottom:0;}',
   '.fx-q{width:100%;background:#0b0f17;border:1px solid #2f3b52;border-radius:10px;padding:13px 14px;',
   '  color:var(--ink);font-family:var(--body);font-size:16px;font-weight:600;outline:none;}',
   '.fx-q:focus{border-color:#5eead4;box-shadow:0 0 0 3px rgba(94,234,212,.15);}',
@@ -1149,6 +1177,7 @@ var fxSort = 'pts', fxPos = 'all';
 var fxCallsMemo = null;             // { key, offers }
 var fxOddsMemo = null;              // { key, odds }
 var fxPending = null;               // the offer awaiting confirm
+var fxTalk = null;                  // a negotiation: { with, ins, outs, picks, reply }
 var fxBusy = false;
 
 function today(){ return P.dayNumberOf(P.easternISO()); }
@@ -1348,7 +1377,7 @@ function fxDeskHtml(){
 
 function fxCallsNow(){
   var st = fxSeason();
-  var key = fxStKey(st) + '|' + fxBlock.slice().sort().join(',') + '|' + fxPicksOn.slice().sort().join(',');
+  var key = fxStKey(st) + '|' + JSON.stringify(st.talks || {}) + '|' + fxBlock.slice().sort().join(',') + '|' + fxPicksOn.slice().sort().join(',');
   if (!fxCallsMemo || fxCallsMemo.key !== key) fxCallsMemo = { key: key, offers: M.fxCalls(data(), st, fxBlock, fxPicksOn) };
   return fxCallsMemo.offers;
 }
@@ -1373,7 +1402,7 @@ function fxFiltered(){
 }
 function fxOfferHtml(x){
   var t = tsParts(x.o.with);
-  var h = '<button class="fx-offer" data-w="' + esc(x.o.with) + '">'
+  var h = '<div class="fx-offer" data-w="' + esc(x.o.with) + '">'
     + '<div class="fo-h">' + jersey(t.code, 2) + '<span>' + esc(E.teamName(t.code)) + '</span><em>' + money(x.o.sal) + '</em></div>';
   x.ins.forEach(function(p){
     /* MINUTES ARE ON THE ROW because a stat line alone hides a man who barely
@@ -1382,8 +1411,106 @@ function fxOfferHtml(x){
     h += '<div class="fo-p"><span class="hn">' + esc(p.n) + ' <em>' + esc(posTxt(p)) + '</em><small>'
       + esc(lineOf(p)) + ' · ' + (p.mp || 0).toFixed(0) + ' min</small></span><span class="hp">' + money(p.p) + '</span></div>';
   });
-  return h + '</button>';
+  var left = M.fxTriesLeft(fxSeason(), x.o.with);
+  return h + '<div class="fo-act"><button class="ghost fo-talk" data-w="' + esc(x.o.with) + '">Counter'
+    + (left < M.TRADE.PATIENCE ? ' (' + left + ' left)' : '') + '</button>'
+    + '<button class="fx-go fo-take" data-w="' + esc(x.o.with) + '">Take it</button></div></div>';
 }
+
+/* THE TABLE: what you ask for from their roster, what you send, and where the
+   club stands. The club counts market price, wants more than it gives on a
+   proposal (that is the cost of countering), and names its price when you
+   come up short. */
+function fxTalkHtml(){
+  var d = data(), st = fxSeason(), tk = fxTalk, t = tsParts(tk.with);
+  var star = M.untouchable(d, tk.with), left = M.fxTriesLeft(st, tk.with);
+  var theirs = M.fxRoster(d, tk.with), mine = M.fxRosterAt(d, st, st.win), picks = M.fxPicksLeft(st);
+  var gets = tk.outs.reduce(function(s, k){ return s + d.allPlayers[k].p; }, 0)
+    + tk.picks.reduce(function(s, id){ return s + M.pickValue(id); }, 0);
+  var gives = tk.ins.reduce(function(s, k){ return s + d.allPlayers[k].p; }, 0);
+  var tries = M.TRADE.PATIENCE - left;
+  var need = tk.ins.length ? M.fxAsking(d, tk.ins, Math.min(M.TRADE.PATIENCE, tries + 1)) : 0;
+  var rules = tk.ins.length && tk.outs.length ? M.fxRulesRefusal(d, st, tk.outs, tk.picks, tk.with, tk.ins) : null;
+  var row = function(p, side, on, locked){
+    return '<button class="tk-p' + (on ? ' on' : '') + (locked ? ' lock' : '') + '" data-side="' + side + '" data-k="' + esc(E.pkey(p)) + '"'
+      + (locked ? ' disabled' : '') + '><span class="hn">' + esc(p.n) + ' <em>' + esc(posTxt(p)) + '</em><small>'
+      + (locked ? 'Not for sale' : esc(lineOf(p)) + ' · ' + (p.mp || 0).toFixed(0) + ' min') + '</small></span>'
+      + '<span class="hp">' + money(p.p) + (side === 'mine' ? '<small>' + p.w.toFixed(1) + ' WS</small>' : '') + '</span></button>';
+  };
+  var dots = '';
+  for (var i = 0; i < M.TRADE.PATIENCE; i++) dots += '<i class="' + (i < left ? 'on' : '') + '"></i>';
+  var h = fxHead() + fxStepper(st)
+    + '<div class="tk-top">' + jersey(t.code, 3) + '<div><span class="mx-eyebrow">Talking to</span><b>' + esc(E.team(t.code).full || E.teamName(t.code)) + '</b></div>'
+    + '<div class="tk-pat"><span>' + plural(left, 'proposal') + ' left</span><span class="tk-dots">' + dots + '</span></div></div>';
+  if (tk.reply) h += fxReplyHtml();
+  h += '<h3 class="fx-step">You ask for</h3><div class="tk-list">'
+    + theirs.map(function(p){ var k = E.pkey(p); return row(p, 'theirs', tk.ins.indexOf(k) >= 0, k === star); }).join('') + '</div>'
+    + '<h3 class="fx-step">You send</h3><div class="tk-list">'
+    + mine.map(function(p){ return row(p, 'mine', tk.outs.indexOf(E.pkey(p)) >= 0, false); }).join('') + '</div>'
+    + '<div class="fx-picks" style="margin-top:8px">' + picks.map(function(id){
+        return '<button class="fx-pick' + (tk.picks.indexOf(id) >= 0 ? ' on' : '') + '" data-tpk="' + id + '">' + pickLabel(id)
+          + '<small>' + money(M.pickValue(id)) + '</small></button>';
+      }).join('') + '</div>';
+  var short = gets < need - 1e-9;
+  h += '<div class="fx-dock tk-dock"><div class="fx-dk">'
+    + '<span class="mx-eyebrow">They get ' + money(gets) + ' · they give ' + money(gives) + '</span>'
+    + (tk.ins.length ? '<b class="' + (short ? 'tk-short' : 'tk-ok') + '">' + (left ? 'They want at least ' + money(need) : 'Out of proposals') + '</b>' : '<b>Pick who you want from them</b>')
+    + '<small>' + (rules ? esc(rules.charAt(0).toUpperCase() + rules.slice(1)) + '.' : tk.ins.length && tk.outs.length ? 'Works under the salary rules.' : 'Up to three a side.') + '</small></div>'
+    + '<div class="fx-dkb"><button class="ghost" id="tk-back">Back to offers</button>'
+    + '<button class="fx-go" id="tk-go"' + (left && tk.ins.length && tk.outs.length && !rules ? '' : ' disabled') + '>Propose</button></div></div>';
+  return h;
+}
+function fxReplyHtml(){
+  var d = data(), r = fxTalk.reply, t = tsParts(fxTalk.with), club = esc(E.teamName(t.code));
+  if (r.verdict === 'yes') return '<div class="tk-reply yes"><b>The ' + club + ' said yes.</b>'
+    + '<button class="fx-go" id="tk-deal">Make the trade</button></div>';
+  if (r.verdict === 'counter') {
+    var what = r.add.kind === 'pick' ? 'the ' + pickLabel(r.add.key) + ' pick' : d.allPlayers[r.add.key].n;
+    return '<div class="tk-reply counter"><b>The ' + club + ' want more.</b><p>Add ' + esc(what) + ' and it\'s a deal.</p>'
+      + '<button class="fx-go" id="tk-deal">Add ' + (r.add.kind === 'pick' ? 'it' : esc(surname(d.allPlayers[r.add.key].n))) + ' and make the trade</button></div>';
+  }
+  if (r.verdict === 'no') return '<div class="tk-reply no"><b>' + (r.hung ? 'The ' + club + ' hung up.' : 'No.') + '</b><p>'
+    + (r.hung ? 'They will not call again this window.' : 'They wanted ' + money(r.need) + ' and got ' + money(r.got) + '. Nothing on your side closes it.') + '</p></div>';
+  return '<div class="tk-reply no"><b>That does not work.</b><p>' + esc(r.reason.charAt(0).toUpperCase() + r.reason.slice(1)) + '.</p></div>';
+}
+function fxTalkOpen(withTs){
+  var o = fxCallsNow().filter(function(x){ return x.with === withTs; })[0];
+  fxTalk = { with: withTs, ins: o ? o.ins.slice() : [], outs: fxBlock.slice(), picks: fxPicksOn.slice(), reply: null };
+  fxView = 'talk';
+  fxRender();
+  window.scrollTo({ top: 0 });
+}
+function fxTalkWire(box){
+  var tk = fxTalk, st = fxSeason();
+  var keepY = function(fn){ return function(){ var y = window.scrollY; fn.apply(this, arguments); tk.reply = null; fxRender(); window.scrollTo({ top: y }); }; };
+  box.querySelectorAll('.tk-p[data-k]').forEach(function(b){
+    b.onclick = keepY(function(){
+      var k = b.getAttribute('data-k'), list = b.getAttribute('data-side') === 'theirs' ? tk.ins : tk.outs, at = list.indexOf(k);
+      if (at >= 0) list.splice(at, 1); else if (list.length < 3) list.push(k);
+    });
+  });
+  box.querySelectorAll('.fx-pick[data-tpk]').forEach(function(b){
+    b.onclick = keepY(function(){ var id = b.getAttribute('data-tpk'), at = tk.picks.indexOf(id); if (at >= 0) tk.picks.splice(at, 1); else tk.picks.push(id); });
+  });
+  $('tk-back').onclick = function(){ fxTalk = null; fxView = 'phone'; fxRender(); };
+  $('tk-go').onclick = function(){
+    var r = M.fxPropose(data(), st, tk.with, tk.outs, tk.picks, tk.ins);
+    r.deal = { outs: (r.outs || tk.outs).slice(), picks: (r.picks || tk.picks).slice(), ins: tk.ins.slice() };
+    tk.reply = r;
+    fxSaveSeason();
+    fxCallsMemo = null;
+    fxRender();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+  var deal = $('tk-deal');
+  if (deal) deal.onclick = function(){
+    var r = tk.reply;
+    fxBlock = r.deal.outs; fxPicksOn = r.deal.picks;
+    fxTalk = null;
+    fxAcceptAndMeasure({ with: tk.with, ins: r.deal.ins });
+  };
+}
+
 function fxPhoneHtml(){
   var d = data(), st = fxSeason(), all = fxCallsNow(), win = M.FX_WINDOWS[st.win];
   var h = fxHead() + fxStepper(st)
@@ -1393,6 +1520,7 @@ function fxPhoneHtml(){
     + plural(all.length, 'club') + ' called with an offer.</small></div>'
     + '<button class="ghost" id="fx-back">Change</button></div>'
     + '<h3 class="fx-step">One offer from each club</h3>'
+    + '<p class="mx-say" style="margin-top:0">Take it, or counter. A counter costs you: they want more than they give, and they hang up after two.</p>'
     + '<div class="fx-chips" id="fx-sorts">' + FX_SORTS.map(function(s){
         return '<button class="fx-chip' + (s[0] === fxSort ? ' on' : '') + '" data-s="' + s[0] + '">' + s[1] + '</button>';
       }).join('') + '</div>'
@@ -1613,14 +1741,22 @@ function fxRender(){
     return;
   }
   if (st.done) { fxFinish(); return; }
+  if (fxView === 'talk' && fxTalk) {
+    box.innerHTML = fxTalkHtml();
+    fxTalkWire(box);
+    return;
+  }
   if (fxView === 'phone' && fxBlock.length) {
     box.innerHTML = fxPhoneHtml() + (fxPending ? fxConfirmHtml() : '');
-    box.querySelectorAll('.fx-offer').forEach(function(b){
+    box.querySelectorAll('.fo-take').forEach(function(b){
       b.onclick = function(){
         var w = b.getAttribute('data-w');
         fxPending = fxCallsNow().filter(function(o){ return o.with === w; })[0] || null;
         fxRender();
       };
+    });
+    box.querySelectorAll('.fo-talk').forEach(function(b){
+      b.onclick = function(){ fxTalkOpen(b.getAttribute('data-w')); };
     });
     box.querySelectorAll('#fx-sorts .fx-chip').forEach(function(b){
       b.onclick = function(){ fxSort = b.getAttribute('data-s'); fxRender(); };
@@ -1660,7 +1796,8 @@ function fxRender(){
 function fxOpen(){
   if (!data()) return;
   fxPending = null;
-  if (fxView === 'phone') fxView = 'desk';
+  if (fxView === 'phone' || fxView === 'talk') fxView = 'desk';
+  fxTalk = null;
   P.show('s-fix');
   fxRender();
 }

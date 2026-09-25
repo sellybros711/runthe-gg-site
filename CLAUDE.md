@@ -9943,6 +9943,40 @@ before a window never depend on what is done at it** (asserted), which is what
 lets the screen show a record between windows and keep it. The score is still
 the title odds over the day's 1,000 seeds; the one replay is the story.
 
+#### And you can negotiate
+
+Asked for next: counter and negotiate with the clubs. An offer is the club's
+opening position. **Counter** opens a table: ask for any of their men (never the
+franchise player, drawn locked) and reshape your side, then propose.
+`fxPropose` answers, deterministically, so two people who make the same
+proposal hear the same answer.
+
+| answer | when | what it costs |
+|---|---|---|
+| yes | you send at least what they give plus the premium | a proposal |
+| counter | you are short, and ONE cheapest thing on your side closes it | a proposal; the club names it |
+| no | short, and nothing single closes it | a proposal; the second no hangs up |
+| illegal | a rule breaks (salaries, a five, too many men) | nothing: the reason is shown |
+
+**Countering costs you.** Proposal k wants `TRADE.PREMIUM * k` (5%, then 10%)
+more market value than the club gives. That is what keeps it a decision rather
+than a free menu: the offer is cheaper, and the men you actually want cost a
+sweetener. Measured with a bot that targets the most valuable players by true
+value and pays the premium, the same five days land 26% to 62%, the range the
+offer-taking bot reached, so negotiating is a way to get the man you want and
+not a way around the balance.
+
+**Two proposals a club a window, then it hangs up** and stops calling until the
+next window, which starts a fresh conversation (`st.talks` is keyed by window
+and saved with the season). The server never sees any of this: what is filed is
+the trade that came out of it, which 118 already checks.
+
+**The hang-up test needed a fixture that is legal, short and cannot be closed**,
+and the first attempt was illegal, which (correctly) costs no patience, so the
+club never hung up. It searches for three men out (no room for a fourth) short
+by more than the dearest pick. Both the hang-up and the cheapest counter were
+proved by mutation.
+
 **Who starts after a trade is not shown before it is made.** The lineup is
 chosen by win shares, so previewing it per offer would print the answer key.
 
@@ -10086,6 +10120,13 @@ before. The draft's card and doors back on the page are about 700px.
 it clicked the tile through Playwright's pointer, the sheet intercepted, and the
 file died on a thirty second timeout before printing anything. It presses in
 the page now, so the same defect reports as five named failures.
+
+**`check-bracket`'s door walk needs a SEEDED run.** It took any run that
+reached the bracket, and a play-in run is one game: it can never open the series
+door, and losing it ends the run before the bracket proper. So about one run in
+eight failed sections 6 and 7 together and read as a flake. `toPlayoffs(page,
+true)` keeps drafting until the run has a bye; section 8 still takes play-in
+runs, because the play-in is its subject.
 
 **`check-bracket` had been failing on every run since Game 7 became the only
 door**, because a door comes about one run in five and the walk waited for one
