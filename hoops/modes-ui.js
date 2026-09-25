@@ -257,36 +257,57 @@ var CSS = [
   '@media (prefers-reduced-motion:reduce){.mx-rise,.mx-stamp{animation:none}}',
 
   /* the mode cards on the front page */
-  '.mhome{display:grid;gap:10px;margin:0 0 14px;}',
-  '.mcard{display:block;width:100%;text-align:left;cursor:pointer;color:var(--ink);font-family:var(--body);',
+  '.mhome{display:grid;gap:10px;margin:0 0 6px;}',
+  '.today{border-radius:16px;border:1px solid rgba(255,255,255,.12);padding:14px 14px 10px;',
+  '  background:radial-gradient(120% 90% at 0% 0%,rgba(240,120,45,.16),transparent 60%),linear-gradient(180deg,#171e2d,#111624);',
+  '  box-shadow:0 10px 30px rgba(0,0,0,.35);}',
+  '.td-h{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin:0 2px 10px;}',
+  '.td-eye{display:block;font-size:10px;letter-spacing:.2em;text-transform:uppercase;font-weight:800;color:var(--orange);}',
+  '.td-title{display:block;font-family:var(--display);font-weight:400;font-size:22px;line-height:1.1;text-transform:uppercase;margin-top:4px;}',
+  '.td-prog{display:flex;align-items:center;gap:5px;margin-top:4px;}',
+  '.td-n{font-size:11px;font-weight:800;color:var(--mut);margin-right:3px;white-space:nowrap;}',
+  '#b-today.today,.dock #b-today.today{background:linear-gradient(180deg,var(--orange),var(--orange-dk));border-color:var(--orange);color:#fff;}',
+  '.td-prog i{width:12px;height:12px;border-radius:3px;background:#243049;box-shadow:inset 0 0 0 1px rgba(255,255,255,.1);}',
+  '.td-prog i.on{background:var(--green);box-shadow:none;}',
+  '.td-row{display:grid;grid-template-columns:44px 1fr auto;gap:12px;align-items:center;width:100%;text-align:left;',
+  '  background:#0f1420;border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:10px 12px;margin:0 0 8px;',
+  '  color:var(--ink);font-family:var(--body);cursor:pointer;}',
+  '.td-row:hover{filter:none;border-color:rgba(240,120,45,.5);}',
+  '.td-ico{width:44px;height:44px;border-radius:10px;background:#070a12;display:grid;place-items:center;}',
+  '.td-txt{min-width:0;}',
+  '.td-txt b{display:block;font-family:var(--pixel);font-weight:400;font-size:12px;text-transform:uppercase;line-height:1.4;}',
+  '.td-txt small{display:block;font-size:13px;color:var(--mut);font-weight:600;margin-top:3px;line-height:1.35;}',
+  '.td-st{font-family:var(--display);font-size:15px;letter-spacing:.04em;text-transform:uppercase;color:var(--orange);',
+  '  display:flex;align-items:center;gap:6px;white-space:nowrap;}',
+  '.td-row.done{background:#0d1512;border-color:rgba(74,222,128,.25);}',
+  '.td-row.done .td-st{color:var(--green);font-family:var(--num);font-variant-numeric:tabular-nums;font-weight:800;font-size:13px;text-transform:none;letter-spacing:0;}',
+  '.td-ck{width:14px;height:14px;border-radius:50%;background:var(--green);position:relative;flex:0 0 auto;}',
+  '.td-ck::after{content:"";position:absolute;left:4px;top:2px;width:4px;height:7px;border:solid #06140c;border-width:0 2px 2px 0;transform:rotate(45deg);}',
+  '.td-foot{font-size:12px;font-weight:800;color:var(--gold);text-align:center;margin:2px 0 2px;letter-spacing:.04em;}',
+  '.ptiles{display:grid;grid-template-columns:1fr 1fr;gap:10px;}',
+  '.ptile{display:flex;flex-direction:column;align-items:flex-start;gap:6px;width:100%;text-align:left;cursor:pointer;',
+  '  background:linear-gradient(180deg,#171e2d,#121826);border:1px solid rgba(255,255,255,.1);border-radius:14px;',
+  '  padding:12px;color:var(--ink);font-family:var(--body);min-width:0;}',
+  '.ptile:hover{filter:none;border-color:rgba(240,120,45,.5);transform:translateY(-1px);}',
+  '.pt-ico{height:34px;display:flex;align-items:center;}',
+  '.pt-name{font-family:var(--pixel);font-weight:400;font-size:12px;text-transform:uppercase;line-height:1.4;margin-top:2px;}',
+  '.pt-sub{font-size:12.5px;color:var(--mut);font-weight:600;line-height:1.35;flex:1 1 auto;}',
+  '.pt-foot{display:flex;align-items:center;justify-content:space-between;gap:6px;width:100%;margin-top:4px;}',
+  '.pt-foot .mx-chip{font-size:10.5px;padding:2px 8px;white-space:nowrap;}',
+  '.pt-go{font-family:var(--display);font-size:15px;letter-spacing:.04em;text-transform:uppercase;color:var(--orange);}',
+  '.mb-modes{display:flex;gap:6px;overflow-x:auto;margin:0 0 10px;scrollbar-width:none;}',
+  '.mb-modes::-webkit-scrollbar{display:none;}',
+  '.mb-mode{flex:0 0 auto;width:auto;border-radius:999px;padding:6px 12px;font-size:12.5px;font-weight:800;',
+  '  background:#141a26;border:1px solid var(--cardb);color:var(--mut);}',
+  '.mb-mode.on{background:var(--orange);border-color:var(--orange);color:#fff;}',
+
   '  position:relative;overflow:hidden;border-radius:14px;padding:13px 14px;border:1px solid var(--cardb);',
   '  background:linear-gradient(180deg,#171d2a,#10151f);transition:transform .12s,border-color .12s;}',
-  '.mcard:hover{transform:translateY(-1px);border-color:rgba(255,255,255,.2);filter:none;}',
-  '.mcard .mc-top{display:flex;align-items:center;gap:12px;}',
-  '.mcard .mc-ico{flex:0 0 auto;width:46px;height:46px;border-radius:10px;display:grid;place-items:center;',
   '  background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.08);}',
-  '.mcard .mc-name{font-family:var(--pixel);font-size:14px;line-height:1.3;text-transform:uppercase;}',
-  '.mcard .mc-tag{font-size:10px;letter-spacing:.18em;text-transform:uppercase;font-weight:800;margin-top:6px;}',
-  '.mcard .mc-sub{font-size:13.5px;color:var(--mut);margin:9px 0 0;line-height:1.42;}',
-  '.mcard .mc-sub b{color:var(--ink);}',
-  '.mcard .mc-foot{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:10px;}',
-  '.mcard .mc-go{margin-left:auto;font-family:var(--display);font-size:16px;letter-spacing:.04em;',
   '  text-transform:uppercase;border-radius:8px;padding:7px 14px;color:#fff;}',
-  '.mcard.fix{border-color:rgba(94,234,212,.35);background:',
   '  radial-gradient(420px 160px at 90% -20%,rgba(94,234,212,.18),transparent 70%),linear-gradient(180deg,#132024,#0e151b);}',
-  '.mcard.fix .mc-name,.mcard.fix .mc-tag{color:#5eead4;}',
-  '.mcard.fix .mc-go{background:linear-gradient(180deg,#14b8a6,#0f766e);}',
-  '.mcard.cq{border-color:rgba(240,120,45,.45);background:',
   '  radial-gradient(420px 160px at 90% -20%,rgba(240,120,45,.22),transparent 70%),linear-gradient(180deg,#221710,#130f0c);}',
-  '.mcard.cq .mc-name,.mcard.cq .mc-tag{color:#ffae3d;}',
-  '.mcard.cq .mc-go{background:linear-gradient(180deg,var(--orange),var(--orange-dk));}',
-  '.mcard.ps{border-color:rgba(242,193,78,.4);background:',
   '  radial-gradient(420px 160px at 90% -20%,rgba(242,193,78,.18),transparent 70%),linear-gradient(180deg,#1f1b10,#12110c);}',
-  '.mcard.ps .mc-name,.mcard.ps .mc-tag{color:var(--gold);}',
-  '.mcard.ps .mc-go{background:linear-gradient(180deg,#d9a52a,#a8781a);}',
-  '.mcard .mc-done{color:var(--green);}',
-  '#b-today.fix,.dock #b-today.fix{background:linear-gradient(180deg,#14b8a6,#0f766e);border-color:#14b8a6;}',
-  '#b-today.ps,.dock #b-today.ps{background:linear-gradient(180deg,#d9a52a,#a8781a);border-color:#d9a52a;}',
   /* The Quick Draft card's court is a picture of the mode, not a stage, so it
      is shorter than it was when it opened the page. */
   '.qd .hero{margin:0 0 10px;}',
@@ -328,6 +349,24 @@ var CSS = [
   '  text-transform:uppercase;letter-spacing:.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}',
   '.cq-side .rt{font-size:11px;color:var(--mut);font-weight:700;margin-bottom:8px;}',
   '.cq-side .rt b{color:var(--ink);font-family:var(--num);font-variant-numeric:tabular-nums;}',
+  '.cqd-slots{display:grid;grid-template-columns:repeat(5,1fr);gap:5px;margin:0 0 6px;}',
+  '.cqd-slot{background:#141a26;border:1px solid var(--cardb);border-radius:9px;padding:6px 4px;text-align:center;min-width:0;}',
+  '.cqd-slot .s{display:block;font-family:var(--display);font-size:12px;color:var(--orange);}',
+  '.cqd-slot b{display:block;font-size:11.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}',
+  '.cqd-slot b.open{color:var(--dim);font-weight:600;}',
+  '.cqd-slot.now{border-color:var(--orange);box-shadow:0 0 0 1px var(--orange) inset;}',
+  '.cqd-slot.done b{color:var(--ink);}',
+  '.cqd-cards{display:grid;gap:8px;}',
+  '.cqd-card{display:block;width:100%;text-align:left;background:#141a26;border:1px solid var(--cardb);',
+  '  border-left:4px solid var(--c-acc);border-radius:12px;padding:12px 14px;color:var(--ink);font-family:var(--body);cursor:pointer;}',
+  '.cqd-card:hover{filter:none;border-color:var(--orange);border-left-color:var(--c-acc);}',
+  '.cqd-top{display:flex;align-items:center;gap:8px;}',
+  '.cqd-club{font-weight:800;font-size:13px;color:var(--mut);}',
+  '.cqd-pos{margin-left:auto;font-family:var(--display);font-size:13px;color:var(--orange);}',
+  '.cqd-name{font-family:var(--display);font-weight:400;font-size:22px;line-height:1.1;text-transform:uppercase;margin:6px 0 8px;}',
+  '.cqd-line{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;}',
+  '.cqd-line span{font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--dim);font-weight:800;text-align:center;}',
+  '.cqd-line b{display:block;font-family:var(--num);font-variant-numeric:tabular-nums;font-size:16px;color:var(--ink);letter-spacing:0;}',
   '.cq-man{display:grid;grid-template-columns:22px 1fr;gap:6px;align-items:baseline;padding:4px 0;',
   '  border-top:1px solid rgba(255,255,255,.06);font-size:12.5px;min-width:0;}',
   '.cq-man .s{font-family:var(--display);font-size:11px;color:var(--orange);}',
@@ -587,8 +626,8 @@ function later(fn, ms){ cqTimers.push(setTimeout(fn, ms)); }
 
 function cqNew(){
   var seed = Date.now().toString(36) + Math.floor(Math.random() * 1e9).toString(36);
-  cq = M.cqCreate(data(), seed);
-  cqView = 'preview';
+  cq = M.cqCreate(data(), seed, { draft: true });
+  cqView = 'draft';
   cqSave();
   cqRender();
   window.scrollTo(0, 0);
@@ -600,6 +639,7 @@ function cqOpen(){
   cqLivesHeld = null;
   if (!cq) cqLoad();
   if (!cq) cqView = 'intro';
+  else if (cq.drafting) cqView = 'draft';
   else if (M.cqOver(cq)) cqView = 'over';
   else if (cq.pending) cqView = 'steal';
   else cqView = 'preview';
@@ -968,17 +1008,54 @@ function cqShareText(){
     + P.SHARE_URL;
 }
 
+/* THE OPENING DRAFT. One position at a time, three cards, tap one. Every pick
+   is final, the same as a steal. The cards show the stat line and minutes and
+   never win shares, because reading past points is what a good pick is. */
+function cqDraftHtml(){
+  var d = data(), k = cq.roster.length, slot = E.SLOTS[k], cards = M.cqDraftCards(cq, d);
+  var h = '<div class="cq-head">' + pix(ART.crown, { g: '#f2c14e', r: '#ef4444', b: '#60a5fa', d: '#a8781a' }, 3)
+    + '<div><div class="mh">Conquest</div><div class="cq-rung">Draft your five · Pick ' + (k + 1) + ' of ' + E.SLOTS.length + '</div></div></div>';
+  h += '<div class="cqd-slots">';
+  E.SLOTS.forEach(function(s, i){
+    var key = cq.roster[i], p = key ? d.allPlayers[key] : null;
+    h += '<div class="cqd-slot' + (i === k ? ' now' : p ? ' done' : '') + '"><span class="s">' + s + '</span>'
+      + (p ? '<b>' + esc(surname(p.n)) + '</b>' : '<b class="open">' + (i === k ? 'Picking' : 'Open') + '</b>') + '</div>';
+  });
+  h += '</div>';
+  h += '<h3 class="fx-step">Pick your ' + slotWord(slot) + '</h3>'
+    + '<p class="mx-say" style="margin-top:0">Three role players. Points are loud. Look at the rest of the line too.</p>'
+    + '<div class="cqd-cards">';
+  cards.forEach(function(key, i){
+    var p = d.allPlayers[key], skin = E.clubSkin(p.t);
+    h += '<button class="cqd-card mx-rise" style="animation-delay:' + (i * 60) + 'ms;--c-acc:' + skin.accent + '" data-k="' + esc(key) + '">'
+      + '<div class="cqd-top">' + jersey(p.t, 3) + '<span class="cqd-club">' + esc(shortClub(p.t, p.s)) + '</span>'
+      + '<span class="cqd-pos">' + esc(posTxt(p) || slot) + '</span></div>'
+      + '<div class="cqd-name">' + esc(p.n) + '</div>'
+      + '<div class="cqd-line"><span><b>' + (p.pts || 0).toFixed(1) + '</b>pts</span><span><b>' + (p.reb || 0).toFixed(1) + '</b>reb</span>'
+      + '<span><b>' + (p.ast || 0).toFixed(1) + '</b>ast</span><span><b>' + ((p.stl || 0) + (p.blk || 0)).toFixed(1) + '</b>stl+blk</span>'
+      + '<span><b>' + (p.mp || 0).toFixed(0) + '</b>min</span></div></button>';
+  });
+  h += '</div>'
+    + '<div class="mx-row" style="margin-top:12px"><button class="ghost" id="cq-deal">Just deal me five</button></div>';
+  return h;
+}
+/* "SF;SG" is the data's spelling. A reader wants "SF / SG". */
+function posTxt(p){ return String(p.ep || p.pp || '').split(';').join(' / '); }
+function slotWord(s){
+  return { PG: 'point guard', SG: 'shooting guard', SF: 'small forward', PF: 'power forward', C: 'center' }[s] || s;
+}
+
 function cqIntroHtml(){
   var b = cqBest();
   return '<div class="cq-head">' + pix(ART.crown, { g: '#f2c14e', r: '#ef4444', b: '#60a5fa', d: '#a8781a' }, 3)
     + '<div><div class="mh">Conquest</div><div class="cq-rung">Winners stay on</div></div></div>'
     + '<div class="mx-card mx-scan" style="padding:20px 16px">'
     + '<div style="display:flex;gap:6px;margin-bottom:12px">' + ball(22) + ball(22) + ball(22) + '</div>'
-    + '<p class="mx-say" style="margin:0"><b>You get five role players and the court.</b> Real teams line up to take it off you, weakest first. The 1996 Bulls are waiting at the top.</p>'
+    + '<p class="mx-say" style="margin:0"><b>Draft five role players and take the court.</b> Real teams line up to take it off you, weakest first. The 1996 Bulls are waiting at the top.</p>'
     + '<p class="mx-say"><b>Beat a team and take one of their guys.</b> He takes the spot of the man you drop, so he has to be able to play it.</p>'
     + '<p class="mx-say"><b>Three lives.</b> Lose and the same team stays on for a rematch. Beat a boss and you get a life back.</p>'
     + (b.best ? '<p class="mx-say">Your best run: <b>' + plural(b.best, 'win') + '</b>.</p>' : '')
-    + '</div><div class="mx-row"><button class="big" id="cq-new">Take the court</button></div>';
+    + '</div><div class="mx-row"><button class="big" id="cq-new">Draft your five</button></div>';
 }
 
 function cqRender(){
@@ -987,6 +1064,7 @@ function cqRender(){
   if (!box) return;
   var h;
   if (cqView === 'intro' || !cq) h = cqIntroHtml();
+  else if (cq.drafting) { cqView = 'draft'; h = cqDraftHtml(); }
   else if (cqView === 'over') h = cqOverHtml();
   else if (cqView === 'game') h = cqGameHtml();
   else if (cqView === 'steal') {
@@ -996,7 +1074,26 @@ function cqRender(){
   }
   else h = cqPreviewHtml();
   box.innerHTML = h;
-  P.bar('Conquest · ' + (cq ? cqWinsShown() + 'W' : ''));
+  P.bar('Conquest · ' + (cq && cq.drafting ? 'Draft' : cq ? cqWinsShown() + 'W' : ''));
+  box.querySelectorAll('.cqd-card[data-k]').forEach(function(b){
+    b.onclick = function(){
+      if (!cq || !cq.drafting) return;
+      M.cqDraftPick(cq, data(), b.getAttribute('data-k'));
+      if (!cq.drafting) cqView = 'preview';
+      cqSave();
+      cqRender();
+      window.scrollTo(0, 0);
+    };
+  });
+  var deal = $('cq-deal');
+  if (deal) deal.onclick = function(){
+    /* The same run, with the crew the seed would have dealt. */
+    cq = M.cqCreate(data(), cq.seed);
+    cqView = 'preview';
+    cqSave();
+    cqRender();
+    window.scrollTo(0, 0);
+  };
   var go = $('cq-go'); if (go) go.onclick = cqTipOff;
   var nw = $('cq-new'); if (nw) nw.onclick = cqNew;
   var sh = $('cq-share'); if (sh) sh.onclick = function(){ share(cqShareText()); };
@@ -1204,7 +1301,7 @@ function fxOfferHtml(x){
        played: 4.3 rebounds in fourteen minutes is a different player from 4.3
        in thirty. Win shares are not, deliberately. Knowing who was worth more
        than he was paid is the puzzle, and printing it is the answer. */
-    h += '<div class="fo-p"><span class="hn">' + esc(p.n) + ' <em>' + esc(p.ep || p.pp || '') + '</em><small>'
+    h += '<div class="fo-p"><span class="hn">' + esc(p.n) + ' <em>' + esc(posTxt(p)) + '</em><small>'
       + esc(lineOf(p)) + ' · ' + (p.mp || 0).toFixed(0) + ' min</small></span><span class="hp">' + money(p.p) + '</span></div>';
   });
   return h + '</button>';
@@ -1452,23 +1549,6 @@ function fxOpen(){
   fxPending = null;
   P.show('s-fix');
   fxRender();
-}
-
-function fxCardHtml(){
-  var p = fxPuzzle(), t = tsParts(p.ts), r = fxResult(p.day), st = fxStreak();
-  var sub, foot = '<span class="mx-chip">Day ' + p.day + '</span>';
-  if (r) {
-    sub = 'You moved the <b>' + esc(t.name) + '</b> from <b>' + pct1(r.base) + '</b> to <b>' + pct1(r.odds) + '</b>. A new team tomorrow.';
-    foot += '<span class="mx-chip mc-done">Done</span>';
-  } else {
-    sub = 'The <b>' + esc(t.name) + '</b> should have won it. <b>Make one trade</b> with a team from ' + t.season + ' and fix it.';
-  }
-  if (st > 1) foot += '<span class="mx-chip">' + st + ' days</span>';
-  return '<button class="mcard fix" id="mc-fix"><div class="mc-top"><div class="mc-ico">'
-    + pix(ART.rewind, { t: '#5eead4' }, 4)
-    + '</div><div><div class="mc-name">Fix History</div><div class="mc-tag">Today\'s daily</div></div></div>'
-    + '<p class="mc-sub">' + sub + '</p><div class="mc-foot">' + foot
-    + '<span class="mc-go">' + (r ? 'See it' : 'Make your move') + '</span></div></button>';
 }
 
 // ═══ SIX PASSES ═════════════════════════════════════════════════════════════
@@ -1734,44 +1814,76 @@ function psOpen(){
   psRender(false);
 }
 
-function psCardHtml(){
-  var pz = psPuzzle(), g = graph(), st = psState(), streak = psStreak();
-  var sub, foot = '<span class="mx-chip">Par ' + pz.par + '</span>';
-  if (st.done) {
-    sub = st.solved ? 'You got it from <b>' + esc(g.nameOf[pz.from]) + '</b> to <b>' + esc(g.nameOf[pz.to]) + '</b> in <b>'
-      + plural(passesOf(st), 'pass', 'passes') + '</b>.' : 'The shot clock beat you today. A new puzzle tomorrow.';
-    foot += '<span class="mx-chip mc-done">Done</span>';
-  } else {
-    sub = 'Get the ball from <b>' + esc(g.nameOf[pz.from]) + '</b> to <b>' + esc(g.nameOf[pz.to]) + '</b> through real teammates.';
-    if (passesOf(st)) foot += '<span class="mx-chip">' + plural(passesOf(st), 'pass', 'passes') + ' so far</span>';
-  }
-  if (streak > 1) foot += '<span class="mx-chip">' + streak + ' days</span>';
-  return '<button class="mcard ps" id="mc-ps"><div class="mc-top"><div class="mc-ico">'
-    + pix(ART.hoop, HOOP_PAL, 4)
-    + '</div><div><div class="mc-name">Six Passes</div><div class="mc-tag">Today\'s puzzle</div></div></div>'
-    + '<p class="mc-sub">' + sub + '</p><div class="mc-foot">' + foot
-    + '<span class="mc-go">' + (st.done ? 'See it' : passesOf(st) ? 'Continue' : 'Play') + '</span></div></button>';
-}
-
 // ═══ FRONT PAGE ═════════════════════════════════════════════════════════════
 
+/* ── THE FRONT PAGE: one game, three tiers ─────────────────────────────────
+ *
+ * It was seven doors at one weight in four colours, and a returning player had
+ * to read all of them to find the one thing that changed since yesterday. Now:
+ *
+ *   TODAY   the two dailies as one checklist, which is the reason to open the
+ *           app on any given day. The dock carries the one primary button,
+ *           pointed at whichever is still open, so the rows are rows and not
+ *           two more big buttons saying the same thing.
+ *   PLAY    Conquest and Quick Draft, side by side. Quick Draft's four ways in
+ *           live in a sheet behind its tile.
+ *   QUIET   boards, career, rules, as a row of links under everything.
+ *
+ * ONE COLOUR FOR ACTION. Every primary button is the brand orange; a mode's own
+ * colour is on its icon and nowhere else. Four accents on one screen is what
+ * made it read as four apps. */
+function todayRow(id, ico, name, sub, done, doneTxt){
+  return '<button class="td-row' + (done ? ' done' : '') + '" id="' + id + '"><span class="td-ico">' + ico + '</span>'
+    + '<span class="td-txt"><b>' + name + '</b><small>' + sub + '</small></span>'
+    + '<span class="td-st">' + (done ? '<i class="td-ck" aria-hidden="true"></i>' + doneTxt : 'Play') + '</span></button>';
+}
+function todayHtml(){
+  var p = fxPuzzle(), t = tsParts(p.ts), r = fxResult(p.day);
+  var pz = psPuzzle(), st = psState(), g = graph();
+  var n = (r ? 1 : 0) + (st.done ? 1 : 0);
+  var streak = Math.max(fxStreak(), psStreak());
+  var title = n === 2 ? 'Both done. New ones tomorrow.' : n === 1 ? 'One down, one to go.' : 'Two puzzles. One shot each.';
+  var h = '<section class="today" id="today"><div class="td-h"><div><span class="td-eye">Today · Day ' + p.day + '</span>'
+    + '<b class="td-title">' + title + '</b></div>'
+    + '<span class="td-prog"><span class="td-n">' + n + ' of 2</span><i class="' + (r ? 'on' : '') + '"></i><i class="' + (st.done ? 'on' : '') + '"></i></span></div>';
+  h += todayRow('mc-fix', pix(ART.rewind, { t: '#5eead4' }, 3), 'Fix History',
+    esc(t.name) + '. One trade to win it.', !!r, r ? pct1(r.odds) : '');
+  h += todayRow('mc-ps', pix(ART.hoop, HOOP_PAL, 3), 'Six Passes',
+    esc(surname(g.nameOf[pz.from])) + ' to ' + esc(surname(g.nameOf[pz.to])) + '. Par ' + pz.par + '.',
+    st.done, st.done ? (st.solved ? plural(passesOf(st), 'pass', 'passes') : 'Missed') : '');
+  if (streak > 1) h += '<div class="td-foot">' + streak + ' days in a row</div>';
+  return h + '</section>';
+}
+function playTilesHtml(){
+  if (!cq) cqLoad();
+  var b = cqBest(), live = cq && !M.cqOver(cq);
+  var cqSub = live ? (cq.drafting ? 'Finish your draft.' : plural(M.cqStreak(cq), 'win') + ' and counting.')
+    : 'Winners stay on. Take a guy off every team you beat.';
+  var cqChip = live ? ball(14) + ' ' + plural(cq.lives, 'life', 'lives') : b.best ? 'Best ' + b.best + 'W' : '3 lives';
+  return '<h2 class="mhome-h">Play</h2><div class="ptiles">'
+    + '<button class="ptile cq" id="mc-cq"><span class="pt-ico">' + pix(ART.crown, { g: '#f2c14e', r: '#ef4444', b: '#60a5fa', d: '#a8781a' }, 3) + '</span>'
+    + '<b class="pt-name">Conquest</b><small class="pt-sub">' + cqSub + '</small>'
+    + '<span class="pt-foot"><span class="mx-chip">' + cqChip + '</span><span class="pt-go">' + (live ? 'Continue' : 'Play') + '</span></span></button>'
+    + '<button class="ptile qd" id="mc-qd"><span class="pt-ico">' + ball(34) + '</span>'
+    + '<b class="pt-name">Quick Draft</b><small class="pt-sub">Spin a team and a season. Sign five under ' + money(E.CONSTANTS.CAP_MUSD) + '.</small>'
+    + '<span class="pt-foot"><span class="mx-chip">4 ways</span><span class="pt-go">Draft</span></span></button>'
+    + '</div>';
+}
 function renderHome(){
   var box = $('modes-home');
   if (!box || !data()) return;
-  var h = '<h2 class="mhome-h">Today</h2>';
-  h += fxCardHtml();
-  h += psCardHtml();
-  h += '<h2 class="mhome-h">Any time</h2>';
-  h += cqCardHtml();
-  box.innerHTML = h;
+  box.innerHTML = todayHtml() + playTilesHtml();
   paintToday();
   var c = $('mc-cq'); if (c) c.onclick = cqOpen;
   var f = $('mc-fix'); if (f) f.onclick = fxOpen;
   var ps = $('mc-ps'); if (ps) ps.onclick = psOpen;
+  var qd = $('mc-qd'); if (qd) qd.onclick = function(){ if (P.openQuickDraft) P.openQuickDraft(); };
 }
 
 /* THE DOCKED BUTTON: whichever daily is still open, then Conquest. One
-   button, so what it says is always the next thing worth doing. */
+   button, so what it says is always the next thing worth doing. It is the
+   brand orange whatever it points at: the colour means "the next thing",
+   and the mode it opens is in its words. */
 function paintToday(){
   var b = $('b-today');
   if (!b) return;
@@ -1783,29 +1895,8 @@ function paintToday(){
     b.textContent = live ? 'Back to Conquest' : 'Play Conquest';
     b.onclick = cqOpen;
   }
-  b.className = 'big today ' + (!fxDone ? 'fix' : !psDone ? 'ps' : 'cq');
+  b.className = 'big today';
   b.disabled = false;
-}
-
-function cqCardHtml(){
-  if (!cq) cqLoad();
-  var b = cqBest();
-  var live = cq && !M.cqOver(cq);
-  var sub, foot = '';
-  if (live) {
-    var t = tsParts(M.cqChallenger(cq, data(), cq.rung));
-    sub = '<b>' + plural(M.cqStreak(cq), 'win') + '</b> and counting. The <b>' + esc(t.name) + '</b> '
-      + (cq.pending ? 'just lost to you. Take one of their guys.' : 'are next.');
-  } else {
-    sub = 'Real teams line up to take the court. Beat one and <b>take one of their guys.</b>';
-  }
-  foot += '<span class="mx-chip">' + (live ? ball(14) + ' ' + plural(cq.lives, 'life', 'lives') : '3 lives') + '</span>';
-  if (b.best) foot += '<span class="mx-chip">Best ' + b.best + 'W</span>';
-  return '<button class="mcard cq" id="mc-cq"><div class="mc-top"><div class="mc-ico">'
-    + pix(ART.crown, { g: '#f2c14e', r: '#ef4444', b: '#60a5fa', d: '#a8781a' }, 4)
-    + '</div><div><div class="mc-name">Conquest</div><div class="mc-tag">Winners stay on</div></div></div>'
-    + '<p class="mc-sub">' + sub + '</p><div class="mc-foot">' + foot
-    + '<span class="mc-go">' + (live ? 'Continue' : 'Play') + '</span></div></button>';
 }
 
 // ═══ LEADERBOARDS ═══════════════════════════════════════════════════════════
@@ -1944,7 +2035,6 @@ function mbValue(row){
 function paintModeBoard(){
   var sh = $('mb-sheet');
   if (!sh || sh.hidden) return;
-  var name = { fix: 'Fix History', passes: 'Six Passes', conquest: 'Conquest' }[mbMode];
   var tabs = mbMode === 'conquest' ? ['Today', 'All time'] : ['Today', 'Yesterday'];
   var d = today();
   var day = mbMode === 'conquest' ? (mbTab === 0 ? d : null) : (mbTab === 0 ? d : d - 1);
@@ -1952,11 +2042,23 @@ function paintModeBoard(){
   if (mbMode === 'fix') { var fr = fxResult(d); if (fr && fr.boardId) mine[fr.boardId] = 1; var fy = fxResult(d - 1); if (fy && fy.boardId) mine[fy.boardId] = 1; }
   if (mbMode === 'passes') { var pd = psStore().days; Object.keys(pd).forEach(function(k){ if (pd[k].boardId) mine[pd[k].boardId] = 1; }); }
   if (mbMode === 'conquest' && cq && cq.boardId) mine[cq.boardId] = 1;
-  sh.innerHTML = '<div class="fx-card mb-card"><div class="mb-top"><h2 style="margin:0">' + esc(name)
-    + '</h2><button class="ghost sm" id="mb-x">Close</button></div><div class="mb-tabs">'
+  var modes = [['fix', 'Fix History'], ['passes', 'Six Passes'], ['conquest', 'Conquest'], ['draft', 'Quick Draft']];
+  sh.innerHTML = '<div class="fx-card mb-card"><div class="mb-top"><h2 style="margin:0">Leaderboards'
+    + '</h2><button class="ghost sm" id="mb-x">Close</button></div><div class="mb-modes">'
+    + modes.map(function(m){ return '<button class="mb-mode' + (m[0] === mbMode ? ' on' : '') + '" data-m="' + m[0] + '">' + m[1] + '</button>'; }).join('')
+    + '</div><div class="mb-tabs">'
     + tabs.map(function(t, i){ return '<button class="mb-tab' + (i === mbTab ? ' on' : '') + '" data-i="' + i + '">' + t + '</button>'; }).join('')
     + '</div><div id="mb-rows" class="mb-rows"><p class="fx-hint">Loading the board...</p></div></div>';
   $('mb-x').onclick = closeModeBoard;
+  /* THE DRAFT'S BOARD IS ITS OWN SHEET, with its own competitions and axes,
+     so its chip hands over to it rather than drawing a thinner copy here. */
+  sh.querySelectorAll('.mb-mode').forEach(function(b){
+    b.onclick = function(){
+      var m = b.getAttribute('data-m');
+      if (m === 'draft') { closeModeBoard(); if (P.openBoard) P.openBoard(); return; }
+      mbMode = m; mbTab = 0; paintModeBoard();
+    };
+  });
   sh.querySelectorAll('.mb-tab').forEach(function(b){
     b.onclick = function(){ mbTab = Number(b.getAttribute('data-i')); paintModeBoard(); };
   });
@@ -2004,6 +2106,8 @@ window.RTF_MODES_UI = {
   openConquest: cqOpen,
   openFix: fxOpen,
   openPasses: psOpen,
+  /* Every board in one sheet, from the front page's quiet row. */
+  openBoards: function(){ openModeBoard('fix'); },
   /* The doors the draft's results screen offers: the dailies still open
      today, and Conquest. Built here because only this file knows whether a
      daily is done. */

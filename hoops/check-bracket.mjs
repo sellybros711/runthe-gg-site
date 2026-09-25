@@ -399,7 +399,7 @@ async function newPage(browser, boom){
 
 async function boot(page){
   await page.goto('http://local.test/hoops/', { waitUntil: 'domcontentloaded' });
-  await page.waitForSelector('#b-start:not([disabled])', { timeout: 30000 });
+  await page.waitForSelector('#b-start:not([disabled])', { state: 'attached', timeout: 30000 });
   await page.evaluate(() => { const b = document.querySelector('#frg-x'); if (b) b.click(); });
   await widenDoor(page);
   await page.waitForTimeout(200);
@@ -478,7 +478,7 @@ async function findBracket(browser, boom){
   for (let a = 0; a < 12; a++) {
     if (await toPlayoffs(page)) return page;
     await page.evaluate(() => { const h = document.querySelector('#b-home'); if (h) h.click(); });
-    await page.waitForSelector('#b-start', { timeout: 10000 });
+    await page.waitForSelector('#b-start', { state: 'attached', timeout: 10000 });
     await page.waitForTimeout(120);
   }
   return null;
@@ -698,7 +698,7 @@ const main = async () => {
     ok(before.phase === 'playoffs', `the saved run is in the playoffs (${before.phase})`);
 
     await page.reload({ waitUntil: 'domcontentloaded' });
-    await page.waitForSelector('#b-start:not([disabled])', { timeout: 30000 });
+    await page.waitForSelector('#b-start:not([disabled])', { state: 'attached', timeout: 30000 });
     await page.evaluate(() => document.querySelector('#b-resume').click());
     await page.waitForTimeout(700);
     const st = await page.evaluate(() => ({
@@ -767,7 +767,7 @@ const main = async () => {
     for (; tries < 14 && !geo; tries++) {
       if (!(await toPlayoffs(pip))) {
         await pip.evaluate(() => { const h = document.querySelector('#b-home'); if (h) h.click(); });
-        await pip.waitForSelector('#b-start', { timeout: 10000 });
+        await pip.waitForSelector('#b-start', { state: 'attached', timeout: 10000 });
         await pip.waitForTimeout(120);
         continue;
       }
@@ -796,7 +796,7 @@ const main = async () => {
       if (read) geo = read;
       else {
         await pip.evaluate(() => { const h = document.querySelector('#b-home'); if (h) h.click(); });
-        await pip.waitForSelector('#b-start', { timeout: 10000 });
+        await pip.waitForSelector('#b-start', { state: 'attached', timeout: 10000 });
         await pip.waitForTimeout(120);
       }
     }

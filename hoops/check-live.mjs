@@ -506,7 +506,7 @@ const unhidden = (page, sel, ms) => page.waitForFunction(
 
 async function boot(page) {
   await page.goto('http://local.test/hoops/', { waitUntil: 'domcontentloaded' });
-  await page.waitForSelector('#b-start:not([disabled])', { timeout: 30000 });
+  await page.waitForSelector('#b-start:not([disabled])', { state: 'attached', timeout: 30000 });
   await page.evaluate(() => { const b = document.querySelector('#frg-x'); if (b) b.click(); });
   /* THE DOOR OPENS ON A GAME 7 ALONE, about one run in five, and the page's
      own walk drafts badly enough that it is rarer again. Waiting for one is a
@@ -624,7 +624,7 @@ async function findRunWithDoor(browser, boom, existing) {
     /* Back to the front page for another go. The run that just finished is
        left where it is: the next Start replaces it. */
     await page.evaluate(() => { const b = document.querySelector('#b-home'); if (b) b.click(); });
-    await page.waitForSelector('#b-start', { timeout: 10000 });
+    await page.waitForSelector('#b-start', { state: 'attached', timeout: 10000 });
     await page.waitForTimeout(120);
   }
   return null;
@@ -883,7 +883,7 @@ const main = async () => {
       ok(saved.hasPo, 'and carries its bracket, which means it survives JSON');
 
       await p2.reload({ waitUntil: 'domcontentloaded' });
-      await p2.waitForSelector('#b-start:not([disabled])', { timeout: 30000 });
+      await p2.waitForSelector('#b-start:not([disabled])', { state: 'attached', timeout: 30000 });
       await widenDoor(p2);
       const home = await p2.evaluate(() => ({
         title: document.querySelector('#rz-title').textContent,

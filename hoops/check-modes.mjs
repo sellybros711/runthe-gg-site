@@ -109,6 +109,39 @@ section('1. Conquest: the ladder, the steal and the lives');
   ok(losses > 0 && differ === losses, `every rematch is a new game (${differ} of ${losses})`);
 }
 
+// ── 1b. the opening draft ─────────────────────────────────────────────────
+section('1b. Conquest: you draft your five, from the tier the ladder is tuned to');
+{
+  const st = M.cqCreate(D, 'checkdraft08', { draft: true });
+  ok(st.drafting && st.roster.length === 0, 'a drafted run starts with nobody');
+  let threw = false;
+  try { M.cqPlay(st, D); } catch (e) { threw = true; }
+  ok(threw, 'and cannot tip off until the five are picked');
+  let good = true, again = true;
+  for (let k = 0; k < E.SLOTS.length; k++) {
+    const cards = M.cqDraftCards(st, D);
+    const rows = cards.map((c) => D.allPlayers[c]);
+    const taken = new Set(st.roster.map((c) => D.allPlayers[c].i));
+    if (cards.length !== M.CQ_CARDS || new Set(rows.map((p) => p.i)).size !== cards.length) good = false;
+    if (!rows.every((p) => p.t !== 'TOT' && p.w >= M.CQ.CREW_MIN_WS && p.w <= M.CQ.CREW_MAX_WS
+      && E.canFillSlot(p, E.SLOTS[k]) && !taken.has(p.i))) good = false;
+    if (JSON.stringify(M.cqDraftCards(JSON.parse(JSON.stringify(st)), D)) !== JSON.stringify(cards)) again = false;
+    if (k === 0) {
+      let refused = false;
+      const outsider = D.players.find((p) => p.t !== 'TOT' && cards.indexOf(E.pkey(p)) < 0);
+      try { M.cqDraftPick(JSON.parse(JSON.stringify(st)), D, E.pkey(outsider)); } catch (e) { refused = true; }
+      ok(refused, 'a man who is not one of the three cards is refused');
+    }
+    M.cqDraftPick(st, D, cards[k % cards.length]);
+  }
+  ok(good, `every pick offers ${M.CQ_CARDS} different men, in the crew's tier, who can play the slot and are not picked yet`);
+  ok(again, 'a reload shows the same three cards');
+  ok(!st.drafting && st.roster.length === 5 && st.roster.every((c, i) => E.canFillSlot(D.allPlayers[c], E.SLOTS[i])),
+    'five picks end the draft with a legal five');
+  ok(new Set(st.roster.map((c) => D.allPlayers[c].i)).size === 5, 'five different men');
+  ok(M.cqPlay(st, D) && true, 'and the run tips off');
+}
+
 // ── 2. the chance printed before tip-off is the chance the game plays ───────
 section('2. the win chance is the one resolveGame plays');
 {
@@ -149,6 +182,32 @@ section('3. the steal decides the run');
     return { median: wins[Math.floor(N / 2)], clear: clear / N, mean: wins.reduce((s, x) => s + x, 0) / N };
   };
   const a = play(smart), b = play(() => null);
+  /* THE DRAFT MUST NOT BREAK THE LADDER. A player who picks the best man on
+     every card by win shares (which the screen never shows) is the most a
+     draft can add, and it must stay inside the same band. */
+  const drafted = (i) => {
+    const st = M.cqCreate(D, 'band' + i, { draft: true });
+    while (st.drafting) {
+      const c = M.cqDraftCards(st, D).sort((x, y) => D.allPlayers[y].w - D.allPlayers[x].w);
+      M.cqDraftPick(st, D, c[0]);
+    }
+    return st;
+  };
+  const dr = (() => {
+    const wins = []; let clear = 0;
+    for (let i = 0; i < N; i++) {
+      const st = drafted(i); let g = 0;
+      while (!st.lost && g++ < 80) {
+        M.cqPlay(st, D);
+        if (st.pending) { const x = smart(st); M.cqSteal(st, D, x ? x.take : null, x ? x.slot : null); }
+      }
+      wins.push(M.cqStreak(st)); if (M.cqCleared(st)) clear++;
+    }
+    wins.sort((x, y) => x - y);
+    return { median: wins[Math.floor(N / 2)], clear: clear / N };
+  })();
+  console.log(`  best draft + best steal: median ${dr.median}, clears ${(dr.clear * 100).toFixed(1)}%`);
+  ok(dr.median <= 12 && dr.clear < 0.2, `the best possible draft stays in the band (median ${dr.median}, clears ${(dr.clear * 100).toFixed(1)}%)`);
   console.log(`  best steal: median ${a.median}, mean ${a.mean.toFixed(1)}, clears ${(a.clear * 100).toFixed(1)}%`);
   console.log(`  no steals:  median ${b.median}, mean ${b.mean.toFixed(1)}, clears ${(b.clear * 100).toFixed(1)}%`);
   ok(a.median >= 4 && a.median <= 12, `a good run is a handful of wins, not one and not fifty (median ${a.median})`);

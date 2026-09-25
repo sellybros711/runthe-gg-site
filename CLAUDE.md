@@ -9800,6 +9800,31 @@ pipeline a drafted five runs through, every game is `resolveGame` and every
 season is `playRun`. The modes decide who plays, never how a game goes, so the
 calibration the draft is balanced on carries over untouched.
 
+#### Conquest: you draft your five, from the tier the ladder is tuned to
+
+Asked for, and option A of two. Five picks, one a position, **three cards each,
+every card from the dealt crew's own tier** (3 to 6 win shares). So choosing
+changes who your five are and not how good the start is. The other option was
+a draft under a small cap, which would have made the first ten rungs a
+formality and meant retuning the ladder.
+
+Measured over 200 runs a strategy, with the best steal after each win:
+
+| how you pick | start rating | median wins | clears |
+|---|---|---|---|
+| dealt crew | 24.5 | 7 | 5.5% |
+| first card every time | 24.3 | 7 | 5.5% |
+| most points | 29.1 | 8 | 5.5% |
+| most win shares (never shown) | 34.5 | 9 | 8.5% |
+
+So reading past points is worth about two wins and three points of clear rate,
+which is skill paying without breaking the ladder. `check-modes` holds the best
+possible draft inside the same band; with the tier filter removed it reads a
+median of 16 and 25% clears. **Just deal me five** keeps the old start for
+anybody who wants to skip the draft. The cards show the stat line and minutes,
+never win shares, and a reload shows the same three (`cqDraftCards` draws off
+the run's seed and the slot).
+
 #### Conquest: one loss and out could not carry it
 
 The first version was one loss and the run is over, and a single NBA game is too
@@ -9962,20 +9987,60 @@ WHERE ran once per row scanned and filed a play each time; a rename checked in
 the statement that made it read the snapshot from before it. Both are two
 statements now.
 
-#### The front page, and the button the dock carries
+#### The front page is one game in three tiers
 
-The dock carries **today's play**, `#b-today`: whichever daily is still open,
-then Conquest. The first-time guide points at it and names all four modes;
-`check-home` holds both. The draft's own button, `#b-start`, lives in the Quick
-Draft card now, with the court and reels that used to open the page, because
-they are a picture of that mode and nothing else.
+```
+node hoops/check-home.mjs     section 4 holds the hierarchy, section 1 the length
+```
 
-**The league card became one line under the tagline**, holding the same ids and
-the loading bar, which goes when the data is in. **`check-home`'s budget moved
-from 2.4 to 2.8 screens, on purpose.** The page holds four games where it held
-one, and it was compacted first: 2.30 screens at 390x844 and 2.67 at 360x740
-after. An unfolded essay is about a screen and a half, so it still fails on the
-regression it exists for.
+Asked for: make it feel like one game, with a clear direction and hierarchy,
+and move what does not need to be on the page into sheets. It was seven doors
+at one weight in four colours (Fix History, Six Passes, Conquest, a Quick Draft
+card with its own court, then Daily Draft, One Franchise and Decades), with the
+dock repeating the first card's button.
+
+| tier | what | where |
+|---|---|---|
+| Today | both dailies as one checklist card, "0 of 2" and the streak | `todayHtml()` in modes-ui.js |
+| Play | Conquest and Quick Draft as two tiles | `playTilesHtml()` |
+| Quiet | Leaderboards, Career, How to play as links | `#home-quiet` in index.html |
+
+**The dock carries the one primary button**, `#b-today`, pointed at whichever
+daily is still open and then Conquest. The Today rows are rows, not two more big
+buttons. **It is the brand orange whatever it points at.** It used to take Fix
+History's teal and Six Passes' gold, and four accents on one screen is what made
+the page read as four apps. A mode's colour is on its icon and nowhere else.
+
+**Quick Draft's four ways in live in a sheet**, `#qd-sheet`, with the court and
+reels, which spin only while it is open (`openQuickDraft` starts the hero,
+`closeQuickDraft` stops it, and `show()` shuts the sheet on any change of
+screen). Every id the draft's code and the checkers reach for (`#b-start`,
+`#b-daily-go`, `#b-franchise-go`, `#b-decade-go`, `#home-career`) is the same
+element, moved, so nothing downstream changed. **A checker waiting on
+`#b-start` needs `state: 'attached'` now**, because Playwright's default wait is
+for a VISIBLE element and a shut sheet is not one.
+
+`.qd-sheet[hidden]` carries its own `display:none`, because the sheet sets
+`display:flex`, which is the football file's `[hidden]` lesson arriving here.
+Removed, the sheet sits open over the whole front page and section 4 fails on
+five claims.
+
+**The league's numbers moved into How to play** (`.lgfacts`), because a
+returning player read "16,460 player-seasons" before the one thing they came
+for. `#home-era` moved with them and verify's check still reads it.
+
+**Leaderboards is one sheet with a chip per mode.** The three new modes draw in
+it; the Quick Draft chip hands over to the draft's own board sheet rather than
+drawing a thinner copy, because that board has its own competitions and axes.
+
+**`check-home`'s budget came down from 2.8 to 1.8 screens.** Measured after:
+1.33 at 390x844, 1.64 at 360x740 and 1.11 at 1512x950, against 2.30 and 2.67
+before. The draft's card and doors back on the page are about 700px.
+
+**Section 4's first draft had teeth and no voice.** With the sheet stuck open
+it clicked the tile through Playwright's pointer, the sheet intercepted, and the
+file died on a thirty second timeout before printing anything. It presses in
+the page now, so the same defect reports as five named failures.
 
 **`check-bracket` had been failing on every run since Game 7 became the only
 door**, because a door comes about one run in five and the walk waited for one

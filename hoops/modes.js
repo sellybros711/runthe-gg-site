@@ -197,12 +197,16 @@ function cqCrew(data, seed) {
   return crew;
 }
 
-function cqCreate(data, seed) {
+function cqCreate(data, seed, opts) {
   const s = String(seed);
+  const draft = !!(opts && opts.draft);
   return {
     v: 1,
     seed: s,
-    roster: cqCrew(data, s),        // pkeys, in E.SLOTS order
+    /* pkeys, in E.SLOTS order. A drafted run starts empty and fills one slot
+       a pick; the dealt crew is kept for anything that asks without a draft. */
+    roster: draft ? [] : cqCrew(data, s),
+    drafting: draft,
     ladder: cqLadder(data, s),
     rung: 0,                        // the next challenger is ladder[rung]
     wins: [],                       // one per beaten team: {ts, you, opp, ot, took, dropped}
@@ -212,6 +216,43 @@ function cqCreate(data, seed) {
     tries: 0,                       // games played against the current rung
     lost: null,                     // the game that ended it
   };
+}
+
+/* THE OPENING DRAFT: five picks, one a position, three cards each.
+ *
+ * Every card comes from the SAME TIER the dealt crew is drawn from, three to
+ * six win shares, so choosing your five changes who they are and not how good
+ * the start is. The ladder is tuned to that start, and the steal is still how
+ * a run gets good. A cap draft was the other option and it would have made the
+ * first ten rungs a formality.
+ *
+ * The cards are drawn off the run's seed and the slot, so a reload shows the
+ * same three, and nobody already picked is offered again. */
+const CQ_CARDS = 3;
+function cqDraftCards(state, data) {
+  if (!state.drafting || state.roster.length >= E.SLOTS.length) return [];
+  const k = state.roster.length, slot = E.SLOTS[k];
+  const rng = rngFor(state.seed, 'draft:' + k);
+  const taken = new Set(state.roster.map(key => data.allPlayers[key].i));
+  const pool = data.players.filter(p => p.t !== 'TOT' && !taken.has(p.i)
+    && p.w >= CQ.CREW_MIN_WS && p.w <= CQ.CREW_MAX_WS && E.canFillSlot(p, slot));
+  const out = [], seen = new Set();
+  let guard = 0;
+  while (out.length < CQ_CARDS && guard++ < 400 && pool.length) {
+    const p = pool[Math.floor(rng() * pool.length)];
+    if (seen.has(p.i)) continue;
+    seen.add(p.i);
+    out.push(E.pkey(p));
+  }
+  return out;
+}
+
+function cqDraftPick(state, data, key) {
+  if (!state.drafting) throw new Error('not drafting');
+  if (cqDraftCards(state, data).indexOf(key) < 0) throw new Error('not one of the cards');
+  state.roster.push(key);
+  if (state.roster.length === E.SLOTS.length) state.drafting = false;
+  return state;
 }
 
 /* The roster as rows carrying their slots, which is what the engine reads. */
@@ -246,7 +287,7 @@ const cqIsBoss = (rung) => (rung + 1) % CQ.BOSS_EVERY === 0 || rung === CQ.RUNGS
    a reload in the middle cannot reroll a loss. `result` lets a game played
    on the live board be recorded instead of resolved here. */
 function cqPlay(state, data, result) {
-  if (state.lost || state.pending) throw new Error('not ready to play');
+  if (state.lost || state.pending || state.drafting) throw new Error('not ready to play');
   const pv = cqPreview(state, data);
   /* A REMATCH IS A NEW GAME, so the attempt is in the tag. Without it a
      loss would replay itself identically until the lives ran out. */
@@ -722,6 +763,7 @@ const publicAPI = {
   API_VERSION: MODES_API_VERSION,
   strengthOf, bestFive, meansOf, winChance, phi,
   CQ, cqAim, cqLadder, cqChallenger, cqCrew, cqCreate, cqRoster, cqStrength,
+  cqDraftCards, cqDraftPick, CQ_CARDS,
   cqPreview, cqIsBoss, cqPlay, cqSteals, cqSteal, cqStreak, cqOver, cqCleared,
   DAILY_EPOCH, dayNumberOf, dailyOrder,
   FX, TRADE, salaryOk, slotFive, startingFive, fiveOf, canCover, fxCandidates, fxDaily, fxOdds, fxOddsStep, fxReplay,

@@ -1720,6 +1720,24 @@
      data files as each parses, the league index, and the first paint. The bar
      reports rather than performs. A bar that always fills in two seconds is a
      worse lie than three dots, because it looks like information. */
+  /* ── the front page, three tiers ─────────────────────────────────────────
+     Today, Play, and a quiet row. The draft's four doors are in a sheet. */
+  .quietrow{display:flex;justify-content:center;gap:4px 18px;flex-wrap:wrap;margin:18px 0 6px;}
+  .qlink{background:none;border:0;padding:8px 2px;width:auto;color:var(--mut);font-family:var(--body);
+    font-size:14px;font-weight:800;text-decoration:underline;text-decoration-color:rgba(255,255,255,.2);
+    text-underline-offset:4px;cursor:pointer;box-shadow:none;}
+  .qlink:hover{color:var(--ink);filter:none;}
+  .lgfacts{font-size:12.5px;color:var(--dim);margin:0 0 12px;}
+  .lgfacts b{color:var(--mut);font-family:var(--num);font-variant-numeric:tabular-nums;}
+  .qd-sheet{position:fixed;inset:0;z-index:70;background:rgba(3,5,9,.74);display:flex;align-items:flex-end;
+    justify-content:center;padding:12px;overflow-y:auto;}
+  .qd-sheet[hidden]{display:none;}
+  .qd-panel{width:100%;max-width:560px;max-height:calc(100vh - 24px);overflow-y:auto;background:#101522;
+    border:1px solid #2a3a4a;border-radius:18px;padding:14px 14px 16px;margin:auto 0 0;}
+  .qd-top{display:flex;align-items:center;justify-content:space-between;margin:0 2px 10px;}
+  .qd-top h2{margin:0;}
+  .qd-panel .card.qd{margin:0;}
+  @media (min-width:700px){ .qd-sheet{align-items:center;} .qd-panel{margin:auto;} }
   .lgstrip{display:flex;flex-wrap:wrap;justify-content:center;gap:4px 12px;margin:-4px 0 14px;
     font-size:12px;color:var(--dim);font-weight:700;text-align:center;}
   .lgstrip b{color:var(--mut);font-family:var(--num);font-variant-numeric:tabular-nums;}
@@ -1948,16 +1966,11 @@
     </div>
   </div>
 
-  <!-- WHAT EVERY MODE IS BUILT FROM, in one line. It was a card of its own
-       when the draft was the whole game; with four ways to play it is the
-       thing all four share, so it sits above them and costs one line rather
-       than a card. The numbers are the file's, filled once it loads, and the
-       loading bar under them goes when the data is in. -->
+  <!-- THE LOADING BAR, and only that. The league's numbers used to sit here as a
+       strip of their own, above every mode, and a returning player read
+       "16,460 player-seasons" before the one thing they came for. They are a
+       fact about the data, so they live in How to play now. -->
   <div class="lgstrip" id="lgstrip">
-    <span><b id="ls-players">-</b> player-seasons</span>
-    <span><b id="ls-clubs">-</b> team seasons</span>
-    <span><b id="ls-teams">-</b> franchises</span>
-    <span id="home-era">1974 to 2026</span>
     <div class="boot" id="boot">
       <div class="boottrack"><i id="boot-bar"></i></div>
       <p class="dim" id="loadmsg">Loading the league...</p>
@@ -1973,10 +1986,27 @@
   <!-- THE MODES, drawn by modes-ui.js once the league has loaded. -->
   <div class="mhome" id="modes-home"></div>
 
+  <!-- THE QUIET ROW. Everything a returning player might want that is not a
+       game: the boards for every mode in one sheet, the career, the rules. -->
+  <nav class="quietrow" id="home-quiet" aria-label="More">
+    <button class="qlink" id="b-home-boards">Leaderboards</button>
+    <button class="qlink" id="b-home-career">Career</button>
+    <button class="qlink" id="b-home-howto">How to play</button>
+  </nav>
+
+  <!-- QUICK DRAFT IS A SHEET, opened from its tile. It is four ways to play one
+       game, and on the front page they were four doors at the weight of the
+       three games above them. The court and the reels come with it, because
+       they are a picture of this mode and nothing else, and they only spin
+       while the sheet is open. `hidden` needs its own rule below, because the
+       sheet sets display:flex. -->
+  <div class="qd-sheet" id="qd-sheet" hidden>
+  <div class="qd-panel" role="dialog" aria-modal="true" aria-labelledby="qd-title">
+  <div class="qd-top"><h2 id="qd-title">Quick Draft</h2>
+    <button class="ghost sm" id="qd-x">Close</button></div>
   <!-- QUICK DRAFT: the game this page started as, now one way to play of four.
        The court and the reels that used to open the page live in its card,
        because they are a picture of exactly this mode and nothing else. -->
-  <h2 class="mhome-h" id="qd-h">Quick Draft</h2>
   <div class="card qd" id="qd-card">
   <div class="hero" id="hero">
     <div class="reels heroreels">
@@ -2081,6 +2111,9 @@
       <button class="ghost sm" id="b-home-board" style="flex:1">Leaderboard</button>
     </div>
   </div>
+  </div>
+  </div>
+
 
   <!-- ONE FOLDED CARD, AND IT WAS FIFTY-FIVE PER CENT OF THE SCREEN.
        "How a run goes" and "Why five stars lose" were two open cards at the
@@ -2104,6 +2137,9 @@
   <details class="card howto" id="home-howto">
     <summary><h2>How to play <span class="sub">five spins, one cap</span></h2>
       <span class="ht-chev" aria-hidden="true"></span></summary>
+
+    <p class="lgfacts">Built from <b id="ls-players">-</b> player-seasons, <b id="ls-clubs">-</b>
+      team seasons and <b id="ls-teams">-</b> franchises, <span id="home-era">1974 to 2026</span>.</p>
 
     <h3>How a run goes</h3>
     <p class="dim" style="font-size:14px;margin:0 0 10px">
@@ -2754,7 +2790,7 @@
 <script src="engine.js?v=23"></script>
 <script src="run.js?v=11"></script>
 <script src="badges.js?v=1"></script>
-<script src="modes.js?v=2"></script>
+<script src="modes.js?v=3"></script>
 <!-- ACCOUNTS AND THE LEADERBOARD. All three are OPTIONAL: if the CDN is blocked
      or either file fails to load, the game runs exactly as it did, with runs
      kept in this browser and the board reporting itself unreachable. An account
@@ -2986,7 +3022,10 @@ function show(id){
      bracket is still at that game, so coming back offers the same door. */
   if (id !== 's-live' && LV && LV.timer) { clearTimeout(LV.timer); LV.timer = null; }
   if (id !== 's-brk') stopBracket();
-  if (id === 's-home') heroStart(); else heroStop();
+  /* The reels spin inside the Quick Draft sheet and only while it is open, so
+     any change of screen shuts the sheet and stops them. */
+  closeQuickDraft();
+  heroStop();
   if (window.RTF_MODES_UI) window.RTF_MODES_UI.leave(id);
   /* The club belongs to the draft. The season, the results and the home screen
      have no club, and a results screen still wearing the last team you spun is
@@ -3183,9 +3222,6 @@ function boot(){
     restore();
     if (window.RTF_MODES_UI) window.RTF_MODES_UI.onData();
     renderHome();
-    /* The front page can only play the game once the game has data to play
-       with, which is here and not at boot. */
-    heroStart();
     /* A RELOAD RESTORES THE OLD SCROLL POSITION, and the old position was
        somewhere down a draft board. Landing on the home page already scrolled
        past its own masthead reads as a broken page rather than a restored one. */
@@ -9585,6 +9621,49 @@ document.addEventListener('keydown', function(ev){
  * to reach, and it is deliberately a list of verbs rather than the page's
  * state: the modes have their own saves and never touch `run`, so a Conquest
  * run and a draft in progress can both be alive without either knowing. */
+/* ── the Quick Draft sheet ────────────────────────────────────────────────
+   Four ways to play one game, behind its tile on the front page. Any door
+   inside it that is pressed shuts it, because each one either changes screen
+   (and show() shuts it anyway) or opens a picker of its own that has to be on
+   top of the front page rather than stacked on this. */
+function openQuickDraft(){
+  var sh = $('qd-sheet');
+  if (!sh) return;
+  sh.hidden = false;
+  document.body.classList.add('sheeted');
+  heroStart();
+}
+function closeQuickDraft(){
+  var sh = $('qd-sheet');
+  if (!sh || sh.hidden) return;
+  sh.hidden = true;
+  document.body.classList.remove('sheeted');
+  heroStop();
+}
+(function wireQuickDraft(){
+  var sh = $('qd-sheet');
+  if (!sh) return;
+  $('qd-x').onclick = closeQuickDraft;
+  sh.addEventListener('click', function(ev){
+    if (ev.target === sh) { closeQuickDraft(); return; }
+    var b = ev.target.closest && ev.target.closest('button');
+    if (b && b.id !== 'qd-x' && (b.id === 'b-start' || b.id === 'b-home-board' || b.closest('.modedoor'))) setTimeout(closeQuickDraft, 0);
+  });
+  document.addEventListener('keydown', function(ev){ if (ev.key === 'Escape') closeQuickDraft(); });
+  $('b-home-career').onclick = function(){ openProfile(); };
+  /* The rules card is folded at the foot of this page, so the link opens it
+     rather than leaving for a second page that says the same thing. */
+  $('b-home-howto').onclick = function(){
+    var ht = $('home-howto');
+    if (!ht) return;
+    ht.open = true;
+    ht.scrollIntoView({ block: 'start', behavior: 'smooth' });
+  };
+  $('b-home-boards').onclick = function(){
+    if (window.RTF_MODES_UI) window.RTF_MODES_UI.openBoards(); else openBoard();
+  };
+})();
+
 window.RTF_PAGE = {
   get data(){ return DATA; },
   show: show,
@@ -9597,6 +9676,8 @@ window.RTF_PAGE = {
   board: function(){ return B; },
   auth: function(){ return A; },
   openProfile: openProfile,
+  openBoard: function(){ openBoard(); },
+  openQuickDraft: openQuickDraft,
   goHome: function(){ show('s-home'); renderHome(); },
   /* The chip in the top bar, for a screen that is not the draft's. */
   bar: function(text){
@@ -9630,6 +9711,6 @@ boot();
 </script>
 <!-- AFTER the page, because it draws through window.RTF_PAGE, which the script
      above publishes. -->
-<script src="modes-ui.js?v=2"></script>
+<script src="modes-ui.js?v=3"></script>
 </body>
 </html>

@@ -435,7 +435,7 @@ async function newPage(browser, boom) {
   await page.route('**/*', serve);
   await page.addInitScript(() => { window.RTF_BOARD_URL = 'http://board.test'; });
   await page.goto('http://local.test/hoops/', { waitUntil: 'domcontentloaded' });
-  await page.waitForSelector('#b-start:not([disabled])', { timeout: 30000 });
+  await page.waitForSelector('#b-start:not([disabled])', { state: 'attached', timeout: 30000 });
   await page.evaluate(() => { const b = document.querySelector('#frg-x'); if (b) b.click(); });
   await page.waitForTimeout(200);
   return { page, ctx };
