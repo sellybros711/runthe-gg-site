@@ -5382,6 +5382,25 @@ roundness, width, height, top and jaw, so Frankenstein is a block, Humpty is an 
 Dracula narrows to a point and Popeye's jaw is wider than his crown. The bodies
 vary the same way. Asked for in as many words: more chibi, and not one body.
 
+**AND THEN THE HEADS CAME DOWN, which reverses the chibi half of that.** Reported by
+the owner: the heads were far too big, make them more realistic and keep the pixels.
+`PROP` in the rig turns every build at once: the head to 0.64 of its written size,
+the torso 1.28x, legs 1.48x, arms 1.42x, a longer neck and slightly thicker limbs.
+The figure stands about the same height, so the head went from roughly half of it to
+roughly a quarter, and no cast spec had to be edited. **It is one table on purpose**:
+a proportion written into sixty eight specs is sixty eight places to drift.
+
+- **Eyes shrink less than the head does** (`eye: 1.25`), or a face at this size is two
+  single pixels and reads as nobody.
+- **Side pose hands are scaled by arm length now**, as the front poses and the feet
+  already were. The pose table was written for arms nine units long, so fixed hand
+  offsets on a longer arm folded every elbow.
+- **The cheer is narrower** (arms up rather than out). `fitScale` shrinks a whole
+  character to fit its widest pose, and longer arms thrown sideways cost the big
+  bodies (Kong, the golem) a fifth of their size in every pose.
+- **Humpty is exempt** (`spec.egg`). His head is his body, and a small one would be a
+  different character.
+
 **The grid is 96, up from 64.** `V2_W` and `V2_H` carry it and nothing in the page
 should say 64 about a sprite. It costs about 170KB compressed on the page, which was
 measured before choosing it.
