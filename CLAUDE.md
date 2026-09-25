@@ -5330,10 +5330,52 @@ upscaling the old frames was tried first and could not be told apart at game siz
 **Every character is a spec, posed and turned into pixels.** `sprites/cast.js`
 holds one per character: a build (kid, stocky, giant, lanky, round, small) with any
 of its numbers moved, a head shape, and what they wear. The rig between `RIG BEGIN`
-and `RIG END` in the page poses it, draws each shape with an outline and three cel
-bands, draws it at several times the grid and gives each pixel the colour covering
-most of it. **No pixel is a blend of two colours**, which is what keeps it pixel art
-rather than a small drawing.
+and `RIG END` in the page poses it, draws it flat at several times the grid and
+gives each pixel the colour covering most of it. **No pixel is a blend of two
+colours**, which is what keeps it pixel art rather than a small drawing.
+
+#### The ink and the light are done in pixels, per body part
+
+Reported next by the owner: the body parts looked like individual pieces. They
+were. The first rig inked and shaded every SHAPE: an upper arm, a forearm and a
+round hand each carried their own black ring and their own shine, so an arm read as
+three capsules and a leg as two plus a lozenge. That is what a vector puppet looks
+like, and no pixel artist draws a figure that way.
+
+**So the drawing is flat and every shape is filed under a body part.** `part()`
+names what is being drawn (`armN`, `legF`, `torso`, `head`, `hairF`, `hat`, `bat`,
+and so on). The figure is drawn twice at the big size, once in colour and once
+through `idCtx()`, a proxy that paints the current part's id instead of any colour.
+Both are reduced by majority, and `light()` does the rest at the target size:
+
+| | what it does |
+|---|---|
+| the outline | ONE pixel round the whole silhouette, a dark shade of the colour it borders, lighter on the lit top and left |
+| a part in front of another | the part BEHIND gets a one pixel line in its own dark shade. A joint inside one part gets nothing, because an arm and its hand are one part |
+| shadow | a part is lit as one mass from the upper left: a pixel is in shadow when the part runs out a little way toward the lower right, how far read off the part's own thickness |
+| highlight | a rim along the top left edge of the colour a part is mostly made of |
+
+**A part's z is the order it was first named**, which is draw order, and that is
+what decides which side of a crossing gets the line. A part in front counts as more
+of the part behind it for the shadow test, or an arm laid across a chest would cut a
+false shadow edge into the chest.
+
+**Two things only looking at it said.** A shadow that only takes value away turns
+skin grey and reads as dirt, so `ramp()` turns the hue toward blue the short way
+round and HOLDS CHROMA (holding HSL saturation instead turned a pale face orange the
+moment it was darkened). And a black coat drawn black has nowhere darker to put the
+line where an arm crosses it, so near black is lifted to a dark blue grey everywhere
+except the face, where a pupil is meant to be the darkest thing on the figure.
+
+**`G` was the obvious name and is a local in `draw()`**: the figure's scale is
+`const G`, so a function called `G` threw a TDZ error on the first call. It is
+`part()`.
+
+**An ink underlay is skipped rather than deleted at every call site.** Props drew a
+thick `INK` stroke and then the colour over it, which was their outline; `line()`
+drops an `INK` stroke at `OW * 2` or wider, and the outline pass draws it instead.
+The table came out a little SMALLER (667KB gzipped against 699KB), because a flat
+part with one shadow runs longer than three bands and a shine.
 
 **The heads are not one shape, on purpose.** A head is a superellipse with its own
 roundness, width, height, top and jaw, so Frankenstein is a block, Humpty is an egg,
