@@ -56,13 +56,14 @@ const fromIdx = args.indexOf('--from');
 const [S, W, N, E] = C.bbox;
 const bb = `${S},${W},${N},${E}`;
 
-const QUERY = `[out:json][timeout:180];
-(
-  way["highway"~"^(${Object.keys(HW).join('|')})$"](${bb});
-)->.roads;
-.roads out body;
-.roads >;
-out skel qt;
+const Q_ROADS = `[out:json][timeout:180];
+way["highway"~"^(${Object.keys(HW).join('|')})$"](${bb});
+out body;
+>;
+out skel qt;`;
+// A SEPARATE REQUEST. Asked in the same query as the roads, this half came
+// back empty on the first runner build: 4,600 streets and no river at all.
+const Q_AREAS = `[out:json][timeout:180];
 (
   way["natural"="water"](${bb});
   relation["natural"="water"](${bb});
@@ -75,7 +76,7 @@ out skel qt;
 );
 out geom;`;
 
-async function fetchOverpass() {
+async function fetchOverpass(QUERY) {
   let last;
   for (const ep of ENDPOINTS) {
     for (let attempt = 0; attempt < 2; attempt++) {
@@ -99,12 +100,19 @@ async function fetchOverpass() {
   throw last;
 }
 
-const raw = fromIdx >= 0 ? JSON.parse(fs.readFileSync(args[fromIdx + 1], 'utf8')) : await fetchOverpass();
-if (fromIdx < 0) {
+let raw;
+if (fromIdx >= 0) raw = JSON.parse(fs.readFileSync(args[fromIdx + 1], 'utf8'));
+else {
+  const a = await fetchOverpass(Q_ROADS);
+  const b = await fetchOverpass(Q_AREAS);
+  raw = { elements: a.elements.concat(b.elements) };
   const dir = path.join('globe', 'build', 'raw');
   fs.mkdirSync(dir, { recursive: true });
   fs.writeFileSync(path.join(dir, `overpass-${id}.json`), JSON.stringify(raw));
 }
+const tally = {};
+for (const el of raw.elements) { const t = el.type + (el.tags ? ':' + (el.tags.highway ? 'road' : el.tags.natural || el.tags.waterway || el.tags.leisure || (el.tags.building ? 'building' : 'other')) : ''); tally[t] = (tally[t] || 0) + 1; }
+console.log('elements:', JSON.stringify(tally));
 
 // ---- projection: equirectangular about the box centre, metres ----
 const lat0 = (S + N) / 2, lon0 = (W + E) / 2;
