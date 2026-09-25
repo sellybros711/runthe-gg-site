@@ -1,0 +1,89 @@
+<!doctype html>
+<!-- THE LINK PREVIEW (mythiball/og.png), IN PIXELS. `node mythiball/build-logo.mjs` renders it along with the
+     logo files.
+
+     It is what a chat app draws when somebody pastes a link to the game, so for most people it is the first
+     thing they ever see of it, and while the game is unlisted a pasted link is the ONLY way anybody reaches
+     it. It is painted with the same kit as the logo (read out of mythiball/index.html, between MYPIX BEGIN
+     and MYPIX END), on a 400 x 210 grid at 6x = 2400 x 1260.
+
+     IT IS A SCORECARD, NOT A SCENE, and that is what keeps it from being Run The Tour's card with a
+     baseball in it. Cream stock ruled in navy with a scorer's diamond in every box, the wordmark and the
+     motto on the left, and the draft sold as three trading cards on the right.
+
+     THE THREE CARDS ARE THE GAME'S OWN, sprite, name and role: decoded by the game's own v2Frame out of the game's
+     own V2_SPRITES, both lifted from the page the same way the kit is. A card with a drawing of a vampire
+     on it would be a picture of a character the game does not have. Each is drawn at one grid cell a pixel,
+     which is the scale the art was made at, so the card is one pixel grid from edge to edge.
+
+     IT CARRIES NO COUNT, deliberately. The roster size is the one number a pitch for this game wants to
+     say, and a picture cannot be re-interpolated: the day a character is added the card would go on
+     promising the old number with no page to correct. "Nine" is the sport rather than a setting. -->
+<html><head><meta charset="utf-8"><meta name="robots" content="noindex, nofollow"><title>MythiBall link preview</title>
+<style>html,body{margin:0;background:#000} canvas{display:block;width:1200px;image-rendering:pixelated}</style></head>
+<body>
+<script>
+(async function(){
+  const src=await (await fetch('/mythiball/index.html',{cache:'no-store'})).text();
+  const a=src.indexOf('/* ==================== MYPIX BEGIN'), b=src.indexOf('/* ==================== MYPIX END ==================== */');
+  if(a<0||b<0) throw new Error('the pixel kit markers are missing from mythiball/index.html');
+  const P=new Function(src.slice(a,b)+'\nreturn MYPIX;')();
+
+  // the game's sprite table and its decoder, lifted rather than copied
+  const lineOf=head=>{ const i=src.indexOf(head); if(i<0) throw new Error('missing from the game: '+head); return src.slice(i,src.indexOf('\n',i)); };
+  const fnOf=head=>{ const i=src.indexOf(head); if(i<0) throw new Error('missing from the game: '+head);
+    let d=0,j=src.indexOf('{',i); for(;j<src.length;j++){ if(src[j]==='{') d++; else if(src[j]==='}'&&--d===0) break; } return src.slice(i,j+1); };
+  const S=new Function(lineOf('const V2_SPRITES = ')+'\nconst v2FrameCache = new Map();\n'+fnOf('function v2Frame(')+'\nreturn {V2_SPRITES, v2Frame};')();
+  const sprite=(key,pose)=>{ const spr=S.V2_SPRITES[key]; if(!spr) throw new Error('no sprite for '+key);
+    const rows=S.v2Frame(key,pose), g=P.grid(64,64);
+    rows.forEach((r,y)=>{ for(let x=0;x<r.length;x++){ const c=spr.p[r[x]]; if(c) g.put(x,y,c); } });
+    return g; };
+  const roster=key=>{ const m=src.match(new RegExp("\\{ k:'"+key+"', n:'([^']*)', role:'([^']*)'"));
+    if(!m) throw new Error('no roster row for '+key); return {n:m[1],role:m[2]}; };
+
+  const GW=400, GH=210, U=6;
+  const cv=document.createElement('canvas'); cv.width=GW*U; cv.height=GH*U; const ctx=cv.getContext('2d');
+  ctx.imageSmoothingEnabled=false;
+
+  // the scorecard, full bleed: the card stock the game's own pages are printed on
+  const g=P.scorecard(GW,GH);
+  // the frame: navy, a cream rule, and a red running stitch sewn round it, the patch's own border
+  for(let y=0;y<GH;y++) for(let x=0;x<GW;x++){ const d=Math.min(x,y,GW-1-x,GH-1-y);
+    if(d===0||d===7) g.put(x,y,P.K); else if(d<=6) g.put(x,y,P.INK[2]);
+    if(d===3 && (((x+y)>>2)%2===0)) g.put(x,y,P.CREAM[0]); }
+  const top=P.grid(GW,GH);
+
+  // the wordmark, at 2x
+  const lk=P.lockup(0), big=P.grid(lk.w*2,lk.h*2);
+  for(let y=0;y<big.h;y++) for(let x=0;x<big.w;x++){ const c=lk.get(x>>1,y>>1); if(c) big.put(x,y,c); }
+  P.stamp(top,big,8,8);
+  // the promise, which is the game's own motto, in navy ink with one word in red
+  const nav={scale:2,bold:true,color:P.INK[3]};
+  P.text(top,'LEGENDS.',22,110,nav);
+  P.text(top,'MONSTERS.',22,130,Object.assign({},nav,{color:P.RED[3]}));
+  P.text(top,'ONE DIAMOND.',22,150,nav);
+
+  // the right: three of the roster as trading cards, the centre one stood forward
+  // a row rather than a fan: fanned, the card in front covered the name plates of the two behind it, and a
+  // card whose name you cannot read is a picture of somebody
+  const W0=56, H0=92, mid=305;
+  const label='DRAFT YOUR NINE', lw=P.textW(label,{bold:true});
+  P.text(top,label,Math.round(mid-lw/2),14,{bold:true,color:P.INK[3]});
+  const deck=[['alice',220,36,['#9fd0f0','#79b8e6','#5a9fd6']],['dracula',278,28,['#f6b3a6','#ec8a79','#d4634f']],['medusa',336,36,['#b9e39a','#8ecb73','#69ad55']]];
+  const shadow=P.grid(GW,GH);
+  for(const [key,x0,y0] of deck) for(let y=y0+2;y<y0+H0+2;y++) for(let x=x0+2;x<x0+W0+2;x++) shadow.put(x,y,'rgba(27,58,92,.28)');
+  for(const [key,x0,y0,fill] of deck){ const who=roster(key);
+    P.card(top,x0,y0,{w:W0,h:H0,portrait:sprite(key,'cheer'),name:who.n,role:who.role,fill}); }
+
+  // the address, on a navy strip across the foot, the one dark thing on the card
+  { const t='PLAY AT ', u='RUNTHE.GG/MYTHIBALL', o={scale:2,color:P.CREAM[0]}, w=P.textW(t+u,o), bx=Math.round((GW-w)/2)-10, by=176;
+    for(let y=by;y<by+20;y++) for(let x=bx;x<bx+w+20;x++){ if((y===by||y===by+19)&&(x===bx||x===bx+w+19)) continue; top.put(x,y,P.INK[3]); }
+    P.text(top,t,bx+10,by+4,o);
+    P.text(top,u,bx+10+P.textW(t,o)+2*o.scale,by+4,Object.assign({},o,{color:'#ff8a6a'})); }
+  P.outline(top,P.K);
+  P.draw(ctx,g,0,0,U); P.draw(ctx,shadow,0,0,U); P.draw(ctx,top,0,0,U);
+  document.body.appendChild(cv);
+  window.OG=cv; window.OG_CAST=deck.map(c=>c[0]); window.__ogReady=true;
+})();
+</script>
+</body></html>

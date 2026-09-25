@@ -577,6 +577,75 @@
   .foot .sep{margin:0 6px;color:#3c4c60;}
   .foot .footsub{margin-top:5px;font-size:11px;color:var(--mut);font-weight:600;letter-spacing:.02em;}
   .foot .footsub a{color:var(--globe);font-weight:800;}
+  /* Daily Route card on the home screen */
+  .daily{position:relative;overflow:hidden;border-radius:18px;padding:16px 16px 14px;margin-bottom:14px;
+    background:radial-gradient(120% 140% at 100% 0%,rgba(238,90,68,.22),transparent 55%),linear-gradient(180deg,#2a2152,#1b1640);
+    border:1px solid rgba(236,181,80,.45);box-shadow:0 18px 40px -26px #000;}
+  .daily .dhd{display:flex;align-items:center;gap:8px;}
+  .daily .dk{font-size:11px;font-weight:900;letter-spacing:.14em;text-transform:uppercase;color:var(--goldhi);}
+  .daily .dd{margin-left:auto;font-size:11px;font-weight:800;color:var(--mut);letter-spacing:.06em;text-transform:uppercase;}
+  .daily h3{font-size:21px;margin:6px 0 2px;}
+  .daily .dfin{font-size:13px;color:var(--mut);line-height:1.5;}
+  .daily .dfin b{color:var(--ink);}
+  .daily .dgrid{font-size:20px;letter-spacing:2px;line-height:1.35;margin:10px 0 2px;}
+  .daily .dline{font-size:13px;color:var(--mut);margin-top:6px;line-height:1.5;}
+  .daily .dline b{color:var(--ink);}
+  .daily .dstreak{display:inline-flex;gap:4px;align-items:center;font-size:11px;font-weight:900;color:#ffb86b;
+    background:rgba(255,140,40,.12);border:1px solid rgba(255,140,40,.4);padding:3px 9px;border-radius:999px;}
+  .daily .btnrow{margin-top:12px;}
+  /* carry-on picker on the setup screen */
+  .carry{display:grid;gap:8px;margin-top:10px;}
+  .carry button{display:flex;align-items:center;gap:10px;width:100%;text-align:left;cursor:pointer;color:var(--ink);font:inherit;
+    background:rgba(255,255,255,.04);border:1px solid var(--cardb);border-radius:13px;padding:11px 13px;transition:border-color .15s,background .15s;}
+  .carry button .ci{font-size:20px;width:26px;text-align:center;}
+  .carry button .cn{flex:1;font-weight:800;font-size:14px;}
+  .carry button .cn small{display:block;font-weight:600;font-size:11.5px;color:var(--mut);margin-top:2px;}
+  .carry button .cc{font-weight:900;font-size:13px;color:var(--goldhi);white-space:nowrap;}
+  .carry button.on{border-color:var(--ok);background:rgba(63,206,134,.1);}
+  .carry button.on .cc{color:#8ff0bf;}
+  .carry button:disabled{opacity:.45;cursor:default;}
+  .milesbal{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--mut);}
+  .milesbal b{color:var(--goldhi);font-size:16px;}
+  /* miles earned at the checkpoint */
+  .milesrow{margin-top:12px;display:inline-flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:center;
+    background:rgba(236,181,80,.1);border:1px solid rgba(236,181,80,.4);border-radius:12px;padding:8px 13px;font-size:12.5px;color:var(--mut);}
+  .milesrow b{color:var(--goldhi);font-size:17px;font-variant-numeric:tabular-nums;}
+  .verdict span.warn{background:rgba(238,90,68,.14);border-color:rgba(238,90,68,.45);color:#ffab9c;}
+  .lbrow .nm .rv{font-size:9.5px;font-weight:900;letter-spacing:.08em;color:#ffab9c;background:rgba(238,90,68,.14);
+    border:1px solid rgba(238,90,68,.45);padding:1px 6px;border-radius:5px;}
+  .rivalchip{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:900;margin-left:6px;
+    padding:2px 8px;border-radius:999px;border:1px solid rgba(255,255,255,.18);color:var(--mut);}
+  .rivalchip.up{color:#8ff0bf;border-color:rgba(63,206,134,.45);} .rivalchip.dn{color:#ffab9c;border-color:rgba(238,90,68,.45);}
+  .rivalchip.ko{color:var(--mut);text-decoration:line-through;}
+  /* race-end haul: new passport stamps + miles */
+  .haul{margin-top:14px;border:1px dashed rgba(236,181,80,.45);border-radius:14px;padding:12px;text-align:center;background:rgba(236,181,80,.05);}
+  .haul .hh{font-size:11px;font-weight:900;letter-spacing:.12em;text-transform:uppercase;color:var(--goldhi);}
+  .haul .hs{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:10px;}
+  .haul .stamp{width:54px;height:54px;border-radius:50%;border:2px solid rgba(238,90,68,.75);display:flex;align-items:center;justify-content:center;
+    overflow:hidden;transform:rotate(-8deg);animation:rtgStamp .45s cubic-bezier(.2,1.4,.4,1) both;background:rgba(0,0,0,.25);}
+  .haul .stamp:nth-child(2n){transform:rotate(7deg);}
+  .haul .hm{font-size:13px;color:var(--mut);margin-top:10px;} .haul .hm b{color:var(--goldhi);}
+  @keyframes rtgStamp{0%{opacity:0;scale:2.2;}70%{opacity:1;scale:.92;}100%{scale:1;}}
+  /* Passport */
+  #pmap{width:100%;height:auto;aspect-ratio:2/1;border:1px solid var(--cardb);border-radius:12px;touch-action:manipulation;
+    background:radial-gradient(120% 120% at 50% 40%,rgba(26,74,134,.5),rgba(10,8,26,.92));}
+  #pmap .ppin{cursor:pointer;}
+  #pmap .ppin .hit{fill:transparent;}
+  #pmap .ppin .dot{fill:rgba(255,255,255,.28);}
+  #pmap .ppin.v .dot{fill:#ECB550;stroke:#EE5A44;stroke-width:.7;}
+  #pmap .ppin.sel .dot{fill:#fff;stroke:#EE5A44;stroke-width:1.1;}
+  .pdet{display:flex;gap:13px;align-items:center;margin-top:12px;padding:12px;border-radius:13px;background:rgba(255,255,255,.04);border:1px solid var(--cardb);min-height:78px;}
+  .pdet .pn{font-weight:900;font-size:17px;} .pdet .pm{font-size:12.5px;color:var(--mut);line-height:1.5;margin-top:2px;}
+  .pdet .pm b{color:var(--ink);}
+  .preg{display:grid;gap:8px;margin-top:12px;}
+  .preg .rr{display:grid;grid-template-columns:110px 1fr 46px;gap:10px;align-items:center;font-size:12.5px;}
+  .preg .rr .rn{font-weight:800;} .preg .rr .rc{text-align:right;color:var(--mut);font-variant-numeric:tabular-nums;}
+  .preg .rt{height:8px;border-radius:999px;background:rgba(255,255,255,.07);overflow:hidden;}
+  .preg .rt span{display:block;height:100%;background:linear-gradient(90deg,#46A56C,#ECB550);border-radius:999px;}
+  .pflags{display:flex;flex-wrap:wrap;gap:7px;margin-top:12px;}
+  .pflags button{padding:0;border:1px solid var(--cardb);border-radius:6px;overflow:hidden;background:none;cursor:pointer;line-height:0;}
+  .pflags button.sel{outline:2px solid var(--globe);outline-offset:1px;}
+  .stat.link{cursor:pointer;transition:border-color .15s;} .stat.link:hover{border-color:rgba(236,181,80,.5);}
 </style>
 </head>
 <body>
@@ -914,6 +983,8 @@
       return b;
     }
     b.push({ kick:'Stage '+S.round+' of '+ROUNDS, title:esc(d.name), sub:esc(d.region)+' · '+alive+' teams left', sfx:'checkpoint' });
+    var rvT=rivalTeam();
+    if(S.round===1 && rvT) b.push({ who:'host', text:'Your rival this race is <b>'+esc(rvT.flag)+' '+esc(rvT.name)+'</b>. They\'re fast. Finish ahead of them.' });
     if(S.round<=2) b.push({ who:'pilot', text:'We\'re landing in <b>'+esc(d.name)+'</b>. Get to the mat as fast as you can.' });
     var f=countryFact(d.country); if(f) b.push({ who:'host', text:f+(S.round===1?' Slowest team here goes home. <b>Don\'t let it be you.</b>':' Only '+(alive-1)+' teams move on. '+(S.streak>=2?'That\'s <b>'+S.streak+' perfect stages</b> in a row. Keep it going.':'Go.')) });
     return b;
@@ -931,6 +1002,10 @@
     if(groundedTeam.id==='you')
       return [{ who:'control', text:'Everyone\'s checked in at <b>'+esc(S.dest.name)+'</b>. Last team in is…' },
               { kick:'Grounded', title:esc(S.teamName), sub:'Slowest at '+esc(S.dest.name)+'. You\'re out.', sfx:'lose' }];
+    if(groundedTeam.id===S.rivalId)
+      return [{ who:'control', text:'Everyone\'s checked in at <b>'+esc(S.dest.name)+'</b>. You came in <b>#'+you+' of '+n+'</b>.' },
+              { kick:'Rival Out', title:esc(groundedTeam.name), sub:'Your rival came in last. +75 miles', sfx:'win', fx:'celebrate' },
+              { who:'host', text:'That\'s your rival gone. <b>You\'re still in.</b>' }];
     return [{ who:'control', text:'Everyone\'s checked in at <b>'+esc(S.dest.name)+'</b>. You came in <b>#'+you+' of '+n+'</b>.' },
             { who:'host', text:'<b>'+esc(groundedTeam.name)+'</b> came in last. They\'re out. <b>You\'re still in.</b>', sfx:'checkpoint', fx:'burst' }];
   }
@@ -1027,6 +1102,8 @@
     s.perfectStages=s.perfectStages||0; s.stagesPlayed=s.stagesPlayed||0;
     s.kinds=s.kinds||{}; s.winStreak=s.winStreak||0; s.longestStreak=s.longestStreak||0;
     s.badgeSeen=s.badgeSeen||0;   // total badge tiers the player has already been shown
+    s.cfirst=s.cfirst||{}; s.cbest=s.cbest||{};   // passport: first stamp date + best stage time per country
+    s.miles=s.miles||0; s.milesTotal=s.milesTotal||0; s.rivalsBeaten=s.rivalsBeaten||0;
     return s;
   }
   function visitedCount(){ var s=statsDefault(); return Object.keys(s.countries||{}).length; }
@@ -1058,6 +1135,12 @@
       tiers:[{n:2,l:'Bronze'},{n:3,l:'Silver'},{n:5,l:'Gold'}] },
     { id:'survivor', name:'Marathoner', icon:'🧭', metric:function(s){return s.stagesPlayed;}, unit:'stages',
       tiers:[{n:20,l:'Bronze'},{n:100,l:'Silver'},{n:300,l:'Gold'}] },
+    { id:'nemesis', name:'Rival Slayer', icon:'⚔️', metric:function(s){return s.rivalsBeaten;}, unit:'rivals beaten',
+      tiers:[{n:1,l:'Bronze'},{n:5,l:'Silver'},{n:20,l:'Gold'}] },
+    { id:'miles', name:'High Flyer', icon:'✈️', metric:function(s){return s.milesTotal;}, unit:'miles',
+      tiers:[{n:1000,l:'Bronze'},{n:5000,l:'Silver'},{n:20000,l:'Gold'}] },
+    { id:'daily', name:'Daily Driver', icon:'🗓️', metric:function(s){return dailyDays();}, unit:'daily routes',
+      tiers:[{n:3,l:'Bronze'},{n:10,l:'Silver'},{n:30,l:'Gold'}] },
   ];
   function tierReached(b, s){ var v=b.metric(s), n=0; for(var i=0;i<b.tiers.length;i++){ if(v>=b.tiers[i].n) n=i+1; } return n; }
   function totalBadges(s){ s=s||statsDefault(); var t=0; BADGES.forEach(function(b){ t+=tierReached(b,s); }); return t; }
@@ -1121,6 +1204,7 @@
     if(S.screen==='online')    return renderDuoMenu();
     if(S.screen==='lobby')     return renderDuoLobby();
     if(S.screen==='trophies')  return renderTrophies();
+    if(S.screen==='passport')  return renderPassport();
     if(S.screen==='howto')     return renderHowTo();
     if(S.screen==='stage')     return renderStage();
     renderHome();
@@ -1150,6 +1234,7 @@
           + '<button class="btn ghost sm" id="howto" style="margin-top:12px">📖 How to play</button>'
         + '</div>'
       + '</div>'
+      + dailyCard()
       + '<div class="card">'
         + '<h3 style="font-size:16px;margin-bottom:4px">How do you want to play?</h3>'
         + '<p class="muted" style="font-size:12.5px;margin:0 0 12px">You race 11 teams either way. Pick who\'s on <b>your</b> team.</p>'
@@ -1162,17 +1247,20 @@
         + '<div class="stats">'
           + statTile(st.races,'Races')
           + statTile(st.wins,'Wins')
-          + statTile(st.top3,'Top 3')
-          + statTile(visitedCount(),'Countries')
+          + statTile(visitedCount()+'<small style="font-size:13px;color:var(--mut)">/'+COUNTRIES.length+'</small>','Countries','pstat')
           + statTile(st.bestPlace?('#'+st.bestPlace):'-','Best finish')
+          + statTile(st.miles,'Miles')
           + statTile(totalBadges(st),'Badges')
         + '</div>'
-        + '<button class="btn ghost" id="trophies" style="margin-top:12px">🏆 Trophy Room</button>'
+        + '<div class="btnrow"><button class="btn ghost" id="passport">🛂 Passport</button><button class="btn ghost" id="trophies">🏆 Trophy Room</button></div>'
       + '</div>'
       + foot();
-    var m1=$('mode-solo'); if(m1) m1.onclick=function(){ S.coop=null; S.screen='setup'; render(); };
-    var m2=$('mode-duo_same'); if(m2) m2.onclick=function(){ S.coop={ same:true }; S.screen='setup'; render(); };
-    var m3=$('mode-duo_two'); if(m3) m3.onclick=function(){ S.coop=null; S.screen='online'; render(); };
+    var m1=$('mode-solo'); if(m1) m1.onclick=function(){ S.daily=null; S.coop=null; S.screen='setup'; render(); };
+    var m2=$('mode-duo_same'); if(m2) m2.onclick=function(){ S.daily=null; S.coop={ same:true }; S.screen='setup'; render(); };
+    var m3=$('mode-duo_two'); if(m3) m3.onclick=function(){ S.daily=null; S.coop=null; S.screen='online'; render(); };
+    var pp=$('passport'); if(pp) pp.onclick=function(){ S.screen='passport'; render(); };
+    var ps=$('pstat'); if(ps) ps.onclick=function(){ S.screen='passport'; render(); };
+    wireDailyCard();
     var tr=$('trophies'); if(tr) tr.onclick=function(){ S.screen='trophies'; render(); };
     var ht=$('howto'); if(ht) ht.onclick=function(){ S.screen='howto'; render(); };
     renderAcct();
@@ -1203,6 +1291,10 @@
       + howPanel('green', illoFinal, '6 · Win the Final', 'Make it to Stage '+ROUNDS+'. That\'s the Final. The last 3 teams race to a famous landmark. Fastest team wins.')
       + '<div class="card"><h3 style="font-size:15px;margin-bottom:6px">🤝 Solo or team up</h3>'
         + '<p class="muted" style="font-size:13px;line-height:1.6;margin:0">Play <b>Solo</b> or with a friend. <b>Same Screen</b> is two of you on one phone, taking turns. <b>Two Devices</b> is you and a friend on your own phones, and your times get added up. Either way you race a full field of teams.</p></div>'
+      + '<div class="card"><h3 style="font-size:15px;margin-bottom:6px">🗓️ Daily Route, rivals and miles</h3>'
+        + '<p class="muted" style="font-size:13px;line-height:1.6;margin:0">The <b>Daily Route</b> is one race a day that everybody plays the same. Your first run counts and you get a grid to share. '
+        + 'Every race you get a <b>rival</b>. Finish ahead of them for bonus miles. '
+        + 'You earn <b>miles</b> every stage. Spend them on extra power-ups before a race. Every country you land in gets stamped in your <b>Passport</b>.</p></div>'
       + '<div class="btnrow"><button class="btn ghost" id="htback">‹ Back</button><button class="btn globe" id="htplay">Start the race 🌍</button></div>'
       + foot();
     $('htback').onclick=function(){ S.screen='home'; render(); };
@@ -1252,7 +1344,7 @@
       + (tag?'<span class="tag'+(tag!=='Beta'?' soon':'')+'">'+tag+'</span>':'')
       + '<span class="chev">›</span></div>';
   }
-  function statTile(v,k){ return '<div class="stat"><div class="v">'+v+'</div><div class="k">'+k+'</div></div>'; }
+  function statTile(v,k,id){ return '<div class="stat'+(id?' link':'')+'"'+(id?' id="'+id+'"':'')+'><div class="v">'+v+'</div><div class="k">'+k+'</div></div>'; }
   function foot(){
     return '<div class="foot">'
       + '<div class="footnav">'
@@ -1274,23 +1366,30 @@
         + '<div style="margin-top:10px"><label class="fld" for="p2">Player 2</label>'
         + '<input type="text" id="p2" maxlength="14" placeholder="Player 2" value="'+esc((S.coop&&S.coop.p2)||'')+'" /></div>'
       : '';
+    var daily = !!S.daily;
     app.innerHTML = topbar()
       + '<div class="card">'
-        + '<h1 style="font-size:24px">'+(duo?'Name your duo':'Name your team')+'</h1>'
-        + '<p class="lede">'+(duo?'Two of you, one screen, one team':'You')+' vs '+FIELD_SIZE+' teams over '+ROUNDS+' Stages. '
+        + '<h1 style="font-size:24px">'+(daily?'🗓️ Today\'s Daily Route':duo?'Name your duo':'Name your team')+'</h1>'
+        + (daily
+          ? '<p class="lede">Everybody gets the same '+ROUNDS+' stages today. Same countries, same challenges, same teams. '
+            + (S.daily.practice?'<b>You already played today.</b> This one is practice and won\'t change your result.':'<b>Your first run is the one that counts.</b>')+'</p>'
+          : '<p class="lede">'+(duo?'Two of you, one screen, one team':'You')+' vs '+FIELD_SIZE+' teams over '+ROUNDS+' Stages. '
           + 'Slowest team each Stage is Grounded. The last 3 teams race the Final. Don\'t be last.'
-          + (duo?' You\'ll take turns. The game says who\'s up each Stage.':'')+'</p>'
+          + (duo?' You\'ll take turns. The game says who\'s up each Stage.':'')+'</p>')
         + '<div style="margin-top:16px"><label class="fld" for="tn">Team name</label>'
         + '<input type="text" id="tn" maxlength="18" placeholder="'+(duo?'Our Team':'Your Team')+'" value="'+esc(S.teamName||'')+'" /></div>'
         + duoFields
+        + carryCard(daily)
         + '<div class="btnrow">'
           + '<button class="btn ghost sm" id="back" style="flex:0 0 auto">‹ Back</button>'
           + '<button class="btn globe" id="go">Start the race 🌍</button>'
         + '</div>'
       + '</div>' + foot();
     $('back').onclick=function(){ S.screen='home'; render(); };
+    wireCarry();
     $('go').onclick=function(){
       S.teamName=($('tn').value||'').trim().slice(0,18) || (duo?'Our Team':'Your Team');
+      payCarry();
       if(duo){
         S.coop.p1=($('p1').value||'').trim().slice(0,14) || 'Player 1';
         S.coop.p2=($('p2').value||'').trim().slice(0,14) || 'Player 2';
@@ -1306,22 +1405,28 @@
     // ghost pace spread: a few sharp ghosts, several beatable ones. Skewed a
     // touch slower than before so a competent player has a fair, winnable field.
     var skills = []; for(var i=0;i<GHOSTS.length;i++){ skills.push(0.92 + (i*(1.75-0.92)/(GHOSTS.length-1))); }
-    skills = shuffle(skills);
+    if(S.daily){ S.daily.practice = S.daily.practice || !!dailyToday(); }
+    skills = S.daily ? withRng(dailyRng(0,1), function(){ return shuffle(skills); }) : shuffle(skills);
     var teams = [{ id:'you', name:S.teamName, flag:'🧭', isGhost:false, startedAsGhost:false, skill:1, alive:true, eff:0 }];
     for(var g=0; g<GHOSTS.length; g++){
       teams.push({ id:'g'+g, name:GHOSTS[g].n, flag:GHOSTS[g].f, isGhost:true, startedAsGhost:true,
                    skill:skills[g], alive:true, eff:0 });
     }
     S.teams = teams;
+    pickRival(teams);
     S.round = 1;
     S.usedCountries = {};
     S.skipUsed = false;
-    S.boosts = { fifty:1, shield:1 };    // one of each power-up per race
+    var pk=S.packed||{};
+    S.boosts = { fifty:1+(pk.fifty?1:0), shield:1+(pk.shield?1:0) };    // one of each power-up per race, plus any carry-on
+    S.extraSkip = pk.skip?1:0; S.packed=null;
+    S.stageLog=[]; S.raceMiles=0; S.newStamps=[]; S._logged=0; S.lastMiles=null;
+    if(S.daily){ S.daily.order=withRng(dailyRng(0,3), function(){ return shuffle(COUNTRIES); }); S.daily.recent=[]; }
     S.spectating = false;
     S._runPend=null; S._runDone=false;   // City Run guards
     S._lastLL = null;   // no origin yet → first Flight Leg departs from HOME_LL (player's area, or US east coast)
     requestHome();      // ask for location so the opening leg departs from near the player
-    S.finishLine = pick(FINISH);   // GDD §11: the Final's location, locked at race start
+    S.finishLine = S.daily ? withRng(dailyRng(0,2), function(){ return pick(FINISH); }) : pick(FINISH);   // GDD §11: the Final's location, locked at race start
     S.streak = 0; S._cutLb = 0;
     S.screen='stage';
     // opening cutscene (once per session): the host sets the stakes, then wheels up
@@ -1343,15 +1448,23 @@
     } else {
       var pool = COUNTRIES.filter(function(c){ return !S.usedCountries[c.id]; });
       if(!pool.length){ S.usedCountries={}; pool=COUNTRIES.slice(); }
-      var c = pick(pool);
+      var c = S.daily ? S.daily.order[(S.round-1)%S.daily.order.length] : pick(pool);
       // TEMP (Street Scout testing): force stage 1 to a dense-coverage city so imagery loads
       if(FORCE_STREET_FIRST && streetEnabled() && S.round===1){ c = countryById('FR') || c; }
       S.usedCountries[c.id]=1;
       S.dest = { name:c.name, region:c.region, flag:c.flag, final:false, country:c };
-      var st=statsDefault(); st.countries[c.id]=1; saveStats(st);
+      var st=statsDefault(), was=+st.countries[c.id]||0; st.countries[c.id]=was+1;
+      if(!was){ st.cfirst[c.id]=dailyKey(); (S.newStamps=S.newStamps||[]).push(c.id); }
+      saveStats(st);
     }
     // build the challenge: Split Path (choose 1 of 2) or Solo Call (1 assigned). GDD §5-6.
-    buildChallenge();
+    // The Daily builds off its own seeded stream, and remembers the OFFERED kinds rather than
+    // the chosen one, so two players who picked differently still meet the same next stage.
+    if(S.daily){
+      var svR=S.recentKinds; S.recentKinds=S.daily.recent||[];
+      withRng(dailyRng(S.round,1), function(){ buildChallenge(); });
+      S.recentKinds=svR; S.daily.recent=(S.daily.recent||[]).concat(S.offered.map(taskKind)).slice(-3);
+    } else buildChallenge();
     // fly the leg to this destination first (skipped on the Final / no-coord dests),
     // then reveal the draw. The reveal is the payoff after the flight's suspense.
     var toLL = (S.dest.country && S.dest.country.ll) || null;
@@ -1638,7 +1751,7 @@
     var alive = aliveTeams().length;
     return '<div class="hud"><div class="pips">'+pips+'</div>'
       + '<div class="remain">Stage <b>'+S.round+'</b>/'+ROUNDS+' · <b>'+alive+'</b> left'
-      + (S.streak>=2?'<span class="streakchip">🔥 '+S.streak+'</span>':'')+'</div></div>';
+      + (S.streak>=2?'<span class="streakchip">🔥 '+S.streak+'</span>':'')+rivalChip()+'</div></div>';
   }
 
   /* --- phase: Flight Leg (watch the plane travel to the next country) ----------
@@ -1752,7 +1865,8 @@
     // Skip Pass (GDD §2, Fast Forward analog): once per race, take the field median
     // time. Offline only: online timing is server-authoritative.
     if(!S.skipUsed && !isFinal() && !onlineActive()){
-      html += '<div class="skiprow"><div class="sx"><b>⏩ Skip Pass</b>: skip this one. You can use it once per race. You get the average time, so it\'s safe but you won\'t move up.</div>'
+      var skN=1+(S.extraSkip||0);
+      html += '<div class="skiprow"><div class="sx"><b>⏩ Skip Pass</b>: skip this one. '+(skN>1?'You have '+skN+' left this race.':'You can use it once per race.')+' You get the average time, so it\'s safe but you won\'t move up.</div>'
         + '<button class="btn ghost sm" id="skip" style="flex:0 0 auto">Use</button></div>';
     }
     html += '</div>' + foot();
@@ -1830,8 +1944,8 @@
     var bar=$('boostbar'); if(!bar) return;
     if(!S.boosts) S.boosts={ fifty:1, shield:1 };
     var html='';
-    if(MCQ_KINDS[kind]) html+='<button class="boost" id="bfifty"'+((S.boosts.fifty>0&&!S.play.done)?'':' disabled')+'>🔍 50 / 50</button>';
-    html+='<button class="boost'+(S.play.shield?' armed':'')+'" id="bshield"'+(((S.boosts.shield>0||S.play.shield)&&!S.play.done)?'':' disabled')+'>'+(S.play.shield?'🛡️ Shield armed':'🛡️ Shield')+'</button>';
+    if(MCQ_KINDS[kind]) html+='<button class="boost" id="bfifty"'+((S.boosts.fifty>0&&!S.play.done)?'':' disabled')+'>🔍 50 / 50'+(S.boosts.fifty>1?' ×'+S.boosts.fifty:'')+'</button>';
+    html+='<button class="boost'+(S.play.shield?' armed':'')+'" id="bshield"'+(((S.boosts.shield>0||S.play.shield)&&!S.play.done)?'':' disabled')+'>'+(S.play.shield?'🛡️ Shield armed':'🛡️ Shield'+(S.boosts.shield>1?' ×'+S.boosts.shield:''))+'</button>';
     bar.innerHTML=html;
     var bf=$('bfifty'); if(bf) bf.onclick=deployFifty;
     var bs=$('bshield'); if(bs) bs.onclick=deployShield;
@@ -3345,7 +3459,7 @@
 
   /* -------------------------------------------------- Skip Pass (field median) */
   function useSkipPass(){
-    S.skipUsed=true;
+    if(S.extraSkip>0) S.extraSkip--; else S.skipUsed=true;
     var ghosts = simulateGhosts();       // pace the field first
     var med = median(ghosts.map(function(x){ return x.eff; }));
     resolveRound(med, 0, true, ghosts);  // player checks in at the median
@@ -3358,6 +3472,9 @@
   // difficulty ramps without a hand-tuned curve.
   function simulateGhosts(){
     var kind = (S.chosen&&taskKind(S.chosen)) || 'mcq';
+    // the Daily paces the field off the date and the game type, so everybody who
+    // picked the same challenge races the same times
+    if(S.daily && !S._dailySim){ S._dailySim=true; try{ return withRng(dailyRng(S.round, 9+strHash(kind)%997), simulateGhosts); } finally{ S._dailySim=false; } }
     var base = BASE[kind] || 8;
     var pen  = PENALTY[(S.chosen&&S.chosen.cat) || 'trivia'];
     return aliveTeams().filter(function(t){ return t.isGhost; }).map(function(t){
@@ -3405,9 +3522,11 @@
       if(playerMisses===0 && k!=='reaction' && k!=='sequence' && k!=='mapfind'
          && (!st.fastestStage || act<st.fastestStage)) st.fastestStage=act;
       if(playerMisses===0) st.perfectStages++;
+      if(S.dest && S.dest.country && !S.dest.final){ var cid=S.dest.country.id; if(!st.cbest[cid] || playerEff<st.cbest[cid]) st.cbest[cid]=playerEff; }
     }
     saveStats(st);
     S.streak = (!skipped && playerMisses===0) ? (S.streak||0)+1 : 0;   // clean-stage streak (HUD 🔥)
+    awardStageMiles(S.lastResult);
 
     S.phase='checkpoint';
     renderStage();
@@ -3587,6 +3706,12 @@
     if(S._shieldSaved) chips+='<span class="good">🛡️ Shield save</span>';
     if(med!=null && r.eff<med) chips+='<span class="good">'+fmtTime(med-r.eff)+'s faster than most</span>';
     if(you===0 && n>1) chips+='<span class="gold">🥇 Fastest team</span>';
+    var rv=rivalTeam();
+    if(rv && rv.alive && rv.eff!=null){
+      var gap=rv.eff-r.eff;
+      chips += gap>=0 ? '<span class="good">⚔️ Beat '+esc(rv.name)+' by '+fmtTime(gap)+'s</span>'
+                      : '<span class="warn">⚔️ '+esc(rv.name)+' beat you by '+fmtTime(-gap)+'s</span>';
+    }
     var pct=n>1?Math.round(beat/(n-1)*100):100;
     return (chips?'<div class="verdict">'+chips+'</div>':'')
       + '<div class="fieldbar"><div class="lbl"><span>Field</span><b>Beat '+beat+' of '+(n-1)+' teams</b></div>'
@@ -3612,11 +3737,13 @@
         + '<div class="muted" style="font-size:12px;margin-top:4px">your time</div>'
         + body
         + checkpointVerdict(r)
+        + milesRow()
         + '<button class="btn globe" id="lb" style="margin-top:16px">See the leaderboard ›</button>'
       + '</div>' + foot();
     // count the time up to the locked value, which makes the payoff land
     (function(){
       var fb=$('fbfil'); if(fb) requestAnimationFrame(function(){ fb.style.width=fb.getAttribute('data-w')+'%'; });
+      countUp($('milesn'), (S.lastMiles&&S.lastMiles.total)||0, 700, '+');
       var el=$('bigt'); if(!el || reduceMotion() || !(r.eff>0)) return;
       var t0=performance.now(), DUR=620;
       (function tick(){
@@ -3641,6 +3768,7 @@
     var youRank = ranked.findIndex(function(t){ return t.id==='you'; }) + 1;
     // the verdict plays as a cutscene first (Race Control checks the mat), once per stage
     if(S._cutLb!==S.round && !S.spectating){ S._cutLb=S.round; return cut(verdictBeats(ranked, groundedTeam, final), viewLeaderboard, destScene(S.dest)); }
+    if(S._logged!==S.round){ S._logged=S.round; logStage(ranked, groundedTeam, final); }
 
     var rowsHtml='';
     ranked.forEach(function(t,i){
@@ -3650,7 +3778,7 @@
       var place = win?'🏆':(i===0?'🥇':i===1?'🥈':i===2?'🥉':(i+1));
       rowsHtml += '<div class="'+cls+'" style="animation-delay:'+(i*55)+'ms">'
         + '<span class="p">'+place+'</span>'
-        + '<span class="nm">'+esc(t.name)+''+'</span>'
+        + '<span class="nm">'+esc(t.name)+(t.id===S.rivalId?' <span class="rv">RIVAL</span>':'')+'</span>'
         + '<span class="tm">'+fmtTime(t.eff)+'s'+(out?' · Grounded':'')+'</span></div>';
     });
 
@@ -3670,6 +3798,7 @@
       + '<div class="card">'
         + banner
         + '<div class="lb">'+rowsHtml+'</div>'
+        + ((final || groundedTeam.id==='you') ? haulHtml() : '')
         + '<div id="lbbtns"></div>'
       + '</div>' + foot();
 
@@ -3681,8 +3810,9 @@
       recordRaceEnd(ranked);
       btns.innerHTML='<div class="btnrow"><button class="btn ghost" id="home">Home</button><button class="btn ghost" id="share">📋 Share</button><button class="btn globe" id="again">Race again 🌍</button></div>';
       $('home').onclick=function(){ S.screen='home'; render(); };
-      $('again').onclick=function(){ S.screen='setup'; render(); };
+      $('again').onclick=function(){ S.daily=null; S.screen='setup'; render(); };
       $('share').onclick=function(){
+        if(S.daily){ return shareResult(dailyShareText(S.daily.key, S.daily.practice?null:dailyToday())); }
         shareResult(youWon2
           ? ('🌍 I just won RunTheGlobe. Beat '+(FIELD_SIZE-1)+' teams to '+(S.dest.landmark||S.dest.name)+'. Play at runthe.gg/globe')
           : ('🌍 I finished #'+youRank+' of '+FIELD_SIZE+' in RunTheGlobe\'s Final at '+S.dest.name+'. Think you can beat that? runthe.gg/globe'));
@@ -3691,7 +3821,8 @@
       sfx('lose');
       recordRaceEnd(ranked);   // record now (idempotent) so an abandon still counts
       // GDD §10: binary Grounded choice: watch live, or return home. No reward for watching.
-      btns.innerHTML='<div class="btnrow"><button class="btn ghost" id="home">Home</button><button class="btn globe" id="watch">Watch the rest ▶</button></div>';
+      btns.innerHTML='<div class="btnrow"><button class="btn ghost" id="home">Home</button>'+(S.daily&&!S.daily.practice?'<button class="btn ghost" id="dshare">📋 Share</button>':'')+'<button class="btn globe" id="watch">Watch the rest ▶</button></div>';
+      if($('dshare')) $('dshare').onclick=function(){ shareResult(dailyShareText(S.daily.key, dailyToday())); };
       $('home').onclick=function(){ S.screen='home'; render(); };
       $('watch').onclick=function(){ S.phase='grounded'; S.spectating=true; groundAndAdvance(groundedTeam); render(); };
     } else {
@@ -3730,10 +3861,11 @@
         + '<div class="banner"><h2 style="color:var(--globe)">🏁 The Final · '+esc(S.finishLine.city)+'</h2>'
         + '<p>You were Grounded, but here\'s how the race finished at '+esc(S.finishLine.landmark)+'.</p></div>'
         + '<div class="lb">'+rows+'</div>'
+        + haulHtml()
         + '<div class="btnrow"><button class="btn ghost" id="home">Home</button><button class="btn globe" id="again">Race again 🌍</button></div>'
       + '</div>' + foot();
     $('home').onclick=function(){ S.screen='home'; render(); };
-    $('again').onclick=function(){ S.screen='setup'; render(); };
+    $('again').onclick=function(){ S.daily=null; S.screen='setup'; render(); };
     renderAcct();
   }
   function simSpectatorStage(){
@@ -3742,6 +3874,288 @@
     var res=ghosts.map(function(t){ return {team:t, eff: (base+RUN_BASE)*t.skill*rnd(0.9,1.12)}; });
     res.sort(function(a,b){ return a.eff-b.eff; });
     var slow=res[res.length-1]; if(slow) slow.team.alive=false;
+  }
+
+  /* ======================================================================
+     THE DAILY ROUTE: one race a day, the same for everybody. Same finish
+     line, same nine countries, same challenge pairs, same rival field and
+     the same ghost times for a given game type. Only your own play differs.
+     It is keyed on the Eastern date so one group chat plays one board, and
+     the FIRST finished run of the day is the one that is kept. Anything
+     after it is practice and never touches the record.
+     ====================================================================== */
+  var MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  function dailyKey(d){
+    d=d||new Date();
+    try{
+      var p=new Intl.DateTimeFormat('en-CA',{ timeZone:'America/New_York', year:'numeric', month:'2-digit', day:'2-digit' }).format(d);
+      if(/^\d{4}-\d{2}-\d{2}$/.test(p)) return p;
+    }catch(e){}
+    return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2);
+  }
+  function fmtDay(key){ var p=String(key||'').split('-'); return p.length===3 ? MONTHS[(+p[1]-1)%12]+' '+(+p[2]) : ''; }
+  function strHash(str){ var h=2166136261; str=String(str||''); for(var i=0;i<str.length;i++){ h^=str.charCodeAt(i); h=Math.imul(h,16777619); } return h>>>0; }
+  function dailySeed(key){ return strHash('rtg-daily-'+key); }
+  function dailyRng(round, salt, seed){
+    var sd=(seed!=null?seed:S.daily.seed)>>>0;
+    return _mulberry32((sd ^ Math.imul((round+1)>>>0,2654435761>>>0) ^ Math.imul((salt+1)>>>0,40503>>>0))>>>0);
+  }
+  function dailyLoad(){ try{ return JSON.parse(localStorage.getItem('rtg_daily')||'{}')||{}; }catch(e){ return {}; } }
+  function dailySave(d){ try{ localStorage.setItem('rtg_daily', JSON.stringify(d)); }catch(e){} }
+  function dailyToday(){ return dailyLoad()[dailyKey()] || null; }
+  function dailyDays(){ return Object.keys(dailyLoad()).length; }
+  // day arithmetic in UTC on the date string, so a clock change cannot skip or repeat a day
+  function dayNum(key){ var p=key.split('-'); return Math.floor(Date.UTC(+p[0],+p[1]-1,+p[2])/86400000); }
+  function keyFromDay(n){ var d=new Date(n*86400000); return d.getUTCFullYear()+'-'+('0'+(d.getUTCMonth()+1)).slice(-2)+'-'+('0'+d.getUTCDate()).slice(-2); }
+  function dailyStreak(){
+    var d=dailyLoad(), today=dayNum(dailyKey()), n=0;
+    // an unplayed today does not break the streak yet: count back from yesterday
+    for(var k=(d[dailyKey()]?today:today-1); d[keyFromDay(k)]; k--) n++;
+    return n;
+  }
+  function dailyFinishFor(key){ return withRng(dailyRng(0,2,dailySeed(key)), function(){ return pick(FINISH); }); }
+  function untilNextRoute(){
+    try{
+      var p=new Intl.DateTimeFormat('en-US',{ timeZone:'America/New_York', hour:'numeric', minute:'numeric', hour12:false }).formatToParts(new Date());
+      var g=function(k){ for(var i=0;i<p.length;i++) if(p[i].type===k) return +p[i].value; return 0; };
+      var left=1440-((g('hour')%24)*60+g('minute')), h=Math.floor(left/60), m=left%60;
+      return h ? h+'h '+m+'m' : m+'m';
+    }catch(e){ return null; }
+  }
+  function startDaily(){
+    var key=dailyKey();
+    S.daily={ key:key, seed:dailySeed(key), practice:!!dailyToday() };
+    S.coop=null; S.screen='setup'; render();
+  }
+  function stageGrid(){
+    return (S.stageLog||[]).map(function(x){
+      var m = x.fin ? (x.r===1?'🏆':x.r===2?'🥈':'🥉')
+            : x.out ? '✈️'
+            : x.r<=Math.ceil(x.n/3) ? '🟩' : x.r>=x.n-1 ? '🟧' : '🟨';
+      return x.f+m;
+    });
+  }
+  function gridRows(cells){ var out=[]; for(var i=0;i<cells.length;i+=3) out.push(cells.slice(i,i+3).join(' ')); return out; }
+  function placeLine(rec){ return rec.won ? '🏆 Won the whole race' : 'Finished #'+rec.place+' of '+FIELD_SIZE; }
+  function dailyShareText(key, rec){
+    var cells = rec ? rec.grid : stageGrid();
+    var lines = ['RunTheGlobe Daily · '+fmtDay(key)].concat(gridRows(cells));
+    if(rec){ lines.push(placeLine(rec)); var sk=dailyStreak(); if(sk>=2) lines.push('🔥 '+sk+' days in a row'); }
+    else lines.push('Practice run');
+    lines.push('runthe.gg/globe');
+    return lines.join('\n');
+  }
+  function dailyRecord(place, won){
+    if(!S.daily || S.daily.practice) return;
+    var d=dailyLoad();
+    if(d[S.daily.key]){ S.daily.practice=true; return; }
+    d[S.daily.key]={ place:place, won:!!won, grid:stageGrid() };
+    dailySave(d);
+    addMiles(100,'Daily Route');
+  }
+  function dailyCard(){
+    var key=dailyKey(), rec=dailyToday(), sk=dailyStreak(), fl=dailyFinishFor(key);
+    var streak = sk>=1 ? '<span class="dstreak">🔥 '+sk+' day'+(sk>1?'s':'')+' in a row</span>' : '';
+    if(rec){
+      var nx=untilNextRoute();
+      return '<div class="daily"><div class="dhd"><span class="dk">🗓️ Daily Route</span><span class="dd">'+fmtDay(key)+'</span></div>'
+        + '<h3>'+(rec.won?'You won today\'s route':'Today\'s route is done')+'</h3>'
+        + '<div class="dgrid">'+gridRows(rec.grid).map(esc).join('<br>')+'</div>'
+        + '<div class="dline"><b>'+esc(placeLine(rec))+'</b>.'+(nx?' New route in '+nx+'.':'')+'</div>'
+        + (streak?'<div style="margin-top:8px">'+streak+'</div>':'')
+        + '<div class="btnrow"><button class="btn globe" id="dshare">📋 Share</button><button class="btn ghost" id="dplay">Practice run</button></div></div>';
+    }
+    return '<div class="daily"><div class="dhd"><span class="dk">🗓️ Daily Route</span><span class="dd">'+fmtDay(key)+'</span></div>'
+      + '<h3>Race today\'s route</h3>'
+      + '<div class="dfin">Finish line: '+esc(fl.flag||'🏁')+' <b>'+esc(fl.landmark)+'</b>, '+esc(fl.city)+'. Same '+ROUNDS+' stages for everybody today. Your first run counts.</div>'
+      + (streak?'<div style="margin-top:9px">'+streak+'</div>':'')
+      + '<div class="btnrow"><button class="btn globe" id="dplay">Play today\'s route 🌍</button></div></div>';
+  }
+  function wireDailyCard(){
+    var p=$('dplay'); if(p) p.onclick=startDaily;
+    var s=$('dshare'); if(s) s.onclick=function(){ shareResult(dailyShareText(dailyKey(), dailyToday())); };
+  }
+
+  /* ======================================================================
+     RIVAL: every race one strong ghost team is named as yours. Not the
+     fastest team in the field, one of the next few, so it is a fight you
+     can win. Beat them on a stage and you get miles, knock them out and
+     you get more, and finishing ahead of them counts toward a badge.
+     ====================================================================== */
+  function pickRival(teams){
+    var gs=teams.filter(function(t){ return t.isGhost; }).sort(function(a,b){ return a.skill-b.skill; });
+    var r=S.daily ? withRng(dailyRng(0,4), function(){ return Math.random(); }) : Math.random();
+    var t=gs[Math.min(gs.length-1, 2+Math.floor(r*3))];
+    S.rivalId=t?t.id:null; S.rivalBeat=false; S.rivalLast=null;
+  }
+  function rivalTeam(){
+    if(!S.rivalId || !S.teams || onlineActive()) return null;
+    for(var i=0;i<S.teams.length;i++) if(S.teams[i].id===S.rivalId) return S.teams[i];
+    return null;
+  }
+  function rivalChip(){
+    var rv=rivalTeam(); if(!rv || S.spectating) return '';
+    var cls=!rv.alive?' ko':S.rivalLast==='up'?' up':S.rivalLast==='dn'?' dn':'';
+    return '<span class="rivalchip'+cls+'" title="Your rival">⚔️ '+esc(rv.flag)+' '+esc(rv.name.replace(/^Team /,''))+'</span>';
+  }
+
+  /* ======================================================================
+     TRAVEL MILES: earned every stage, banked across races, spent on
+     carry-ons before a race. Carry-ons are off in the Daily Route, because
+     a board everybody shares has to start everybody level.
+     ====================================================================== */
+  function addMiles(n, label){
+    if(!(n>0)) return;
+    var st=statsDefault(); st.miles+=n; st.milesTotal+=n; saveStats(st);
+    S.raceMiles=(S.raceMiles||0)+n;
+    if(label){ (S.milesBonus=S.milesBonus||[]).push([n,label]); }
+  }
+  function awardStageMiles(r){
+    var parts=[];
+    function add(n,l){ parts.push([n,l]); }
+    if(r.skipped) add(10,'skipped');
+    else {
+      add(40,'cleared');
+      if(r.misses===0) add(25,'no misses');
+      if(S.streak>=2) add(10*Math.min(S.streak,5),'streak');
+    }
+    var field=aliveTeams().filter(function(t){ return t.eff!=null; }).sort(function(a,b){ return a.eff-b.eff; });
+    if(!r.skipped && field.length>1 && field[0].id==='you') add(50,'fastest');
+    var rv=rivalTeam(); S.rivalLast=null;
+    if(rv && rv.alive && rv.eff!=null){
+      S.rivalLast = r.eff<=rv.eff ? 'up' : 'dn';
+      if(S.rivalLast==='up' && !r.skipped) add(30,'beat your rival');
+    }
+    var tot=0; parts.forEach(function(p){ tot+=p[0]; });
+    S.lastMiles={ total:tot, parts:parts };
+    addMiles(tot);
+  }
+  function milesRow(){
+    var m=S.lastMiles; if(!m || !m.total) return '';
+    return '<div><div class="milesrow">✈️ <b id="milesn">+'+m.total+'</b> miles'
+      + '<span>· '+m.parts.map(function(p){ return p[0]+' '+esc(p[1]); }).join(' · ')+'</span></div></div>';
+  }
+  function countUp(el, to, dur, prefix){
+    if(!el) return; prefix=prefix||'';
+    if(reduceMotion() || !(to>0)){ el.textContent=prefix+to; return; }
+    var t0=performance.now();
+    (function tick(){ if(!el.isConnected) return;
+      var k=Math.min(1,(performance.now()-t0)/dur), v=Math.round(to*(1-Math.pow(1-k,3)));
+      el.textContent=prefix+v; if(k<1) requestAnimationFrame(tick); })();
+  }
+  var CARRY=[
+    { id:'shield', ic:'🛡️', n:'Extra Shield',     d:'Forgive one more miss this race',        c:300 },
+    { id:'fifty',  ic:'🔍', n:'Extra 50/50',      d:'Knock out two wrong answers once more',  c:300 },
+    { id:'skip',   ic:'⏩', n:'Second Skip Pass', d:'Skip one more challenge this race',      c:500 }
+  ];
+  function packCost(){ var t=0, pk=S.pack||{}; CARRY.forEach(function(x){ if(pk[x.id]) t+=x.c; }); return t; }
+  function carryCard(daily){
+    if(daily) return '<p class="muted" style="font-size:12.5px;margin:14px 0 0">✈️ Carry-ons are off in the Daily Route. Everybody starts with the same power-ups.</p>';
+    S.pack=S.pack||{};
+    var bal=statsDefault().miles;
+    return '<div style="margin-top:16px"><div class="milesbal">✈️ <span>Carry-on</span><span style="margin-left:auto" id="milesleft"><b>'+(bal-packCost())+'</b> miles</span></div>'
+      + '<div class="carry">'+CARRY.map(function(x){
+          return '<button type="button" data-c="'+x.id+'"><span class="ci">'+x.ic+'</span><span class="cn">'+esc(x.n)+'<small>'+esc(x.d)+'</small></span><span class="cc">'+x.c+'</span></button>';
+        }).join('')+'</div>'
+      + (bal<300?'<p class="muted" style="font-size:12px;margin:8px 0 0">You earn miles every stage. Spend them here.</p>':'')
+      + '</div>';
+  }
+  function paintCarry(){
+    var bal=statsDefault().miles, left=bal-packCost(), pk=S.pack||{};
+    each('.carry button', function(b){
+      var id=b.getAttribute('data-c'), x=CARRY.filter(function(c){ return c.id===id; })[0];
+      b.classList.toggle('on', !!pk[id]);
+      b.disabled = !pk[id] && x.c>left;
+    });
+    var ml=$('milesleft'); if(ml) ml.innerHTML='<b>'+left+'</b> miles';
+  }
+  function wireCarry(){
+    if(!document.querySelector('.carry')) return;
+    each('.carry button', function(b){ b.onclick=function(){
+      var id=b.getAttribute('data-c'); S.pack=S.pack||{}; S.pack[id]=!S.pack[id]; sfx('tap'); paintCarry(); }; });
+    paintCarry();
+  }
+  function payCarry(){
+    S.packed=null;
+    if(S.daily || !S.pack) return;
+    var cost=packCost(), st=statsDefault();
+    if(cost>0 && cost<=st.miles){ st.miles-=cost; saveStats(st); S.packed=S.pack; }
+    S.pack={};
+  }
+
+  /* ---- per-stage log (drives the Daily grid) and the race-end haul ---- */
+  function logStage(ranked, grounded, final){
+    var you=ranked.findIndex(function(t){ return t.id==='you'; })+1;
+    (S.stageLog=S.stageLog||[]).push({ f:S.dest.flag||'🏁', r:you, n:ranked.length, out:!final && grounded.id==='you', fin:!!final });
+    if(!final && grounded.id===S.rivalId && grounded.id!=='you') addMiles(75,'Rival out');
+    // record now, before the screen is drawn, so the haul can show the race-end bonuses
+    if(final || grounded.id==='you') recordRaceEnd(ranked);
+  }
+  function haulHtml(){
+    var st=statsDefault(), stamps=(S.newStamps||[]).map(countryById).filter(Boolean), rv=rivalTeam(), h='';
+    if(stamps.length){
+      h+='<div class="hs">'+stamps.map(function(c,i){ return '<div class="stamp" title="'+esc(c.name)+'" style="animation-delay:'+(i*110)+'ms">'+flagImg(c.flag,{ fill:true, fit:'cover' })+'</div>'; }).join('')+'</div>'
+        + '<div class="hm">'+stamps.length+' new passport stamp'+(stamps.length>1?'s':'')+'</div>';
+    }
+    h+='<div class="hm">✈️ You earned <b>'+(S.raceMiles||0)+'</b> miles. You have <b>'+st.miles+'</b>.</div>';
+    if(rv) h+='<div class="hm">'+(S.rivalBeat?'⚔️ You beat your rival, <b>'+esc(rv.name)+'</b>.':'⚔️ <b>'+esc(rv.name)+'</b> beat you this time.')+'</div>';
+    if(S.daily) h+='<div class="hm">🗓️ '+(S.daily.practice?'Practice run. Your first run today is the one that counts.':'Daily Route saved. Share your grid.')+'</div>';
+    return '<div class="haul"><div class="hh">This race</div>'+h+'</div>';
+  }
+
+  /* ======================================================================
+     PASSPORT: every country you have landed in, on the same world map the
+     flights use. Tap near a dot (or a flag below) to see how you did there.
+     The tap picks the NEAREST country rather than relying on hit circles,
+     because Europe is thirty dots in a thumb's width.
+     ====================================================================== */
+  var PREGIONS=['Europe','Asia','Middle East','Africa','North America','South America','Oceania'];
+  function regionOf(c){ return String(c.region).split('/')[0]; }
+  function renderPassport(){
+    var s=statsDefault(), vis=s.countries||{}, n=visitedCount();
+    var order=COUNTRIES.slice().sort(function(a,b){ return (vis[a.id]?1:0)-(vis[b.id]?1:0); });   // stamped dots drawn on top
+    var pins=order.map(function(c){ var p=llToXY(c.ll), v=!!vis[c.id];
+      return '<g class="ppin'+(v?' v':'')+'" data-id="'+c.id+'"><circle class="dot" cx="'+p[0]+'" cy="'+p[1]+'" r="'+(v?2.6:1.4)+'"/></g>'; }).join('');
+    var regs=PREGIONS.map(function(r){
+      var all=COUNTRIES.filter(function(c){ return regionOf(c)===r; }), got=all.filter(function(c){ return vis[c.id]; }).length;
+      if(!all.length) return '';
+      return '<div class="rr"><span class="rn">'+esc(r)+'</span><span class="rt"><span style="width:'+Math.round(got/all.length*100)+'%"></span></span><span class="rc">'+got+'/'+all.length+'</span></div>';
+    }).join('');
+    var mine=COUNTRIES.filter(function(c){ return vis[c.id]; }).sort(function(a,b){ return a.name<b.name?-1:1; });
+    app.innerHTML = topbar()
+      + '<div class="card"><h1 style="font-size:24px">🛂 Passport</h1>'
+        + '<p class="lede"><b style="color:var(--globe)">'+n+'</b> of '+COUNTRIES.length+' countries stamped. Tap the map to look around.</p>'
+        + '<svg id="pmap" viewBox="0 0 360 180" preserveAspectRatio="none" style="margin-top:12px">'+worldSVGInner()+pins+'</svg>'
+        + '<div class="pdet" id="pdet"></div>'
+        + '<div class="preg">'+regs+'</div>'
+        + (mine.length
+          ? '<h3 style="font-size:14px;margin-top:16px">Your stamps</h3><div class="pflags">'+mine.map(function(c){ return '<button type="button" data-id="'+c.id+'" title="'+esc(c.name)+'">'+flagImg(c.flag,{ w:36, rad:0 })+'</button>'; }).join('')+'</div>'
+          : '<p class="muted" style="font-size:13px;margin-top:14px">No stamps yet. Every country you land in during a race gets stamped here.</p>')
+        + '<button class="btn ghost sm" id="pback" style="width:auto;margin-top:16px">‹ Back</button>'
+      + '</div>' + foot();
+    $('pback').onclick=function(){ S.screen='home'; render(); };
+    $('pmap').addEventListener('click', function(ev){
+      var r=this.getBoundingClientRect(), x=(ev.clientX-r.left)/r.width*360, y=(ev.clientY-r.top)/r.height*180, best=null, bd=1e9;
+      COUNTRIES.forEach(function(c){ var p=llToXY(c.ll), d=(p[0]-x)*(p[0]-x)+(p[1]-y)*(p[1]-y); if(d<bd){ bd=d; best=c; } });
+      if(best && bd<14*14){ sfx('tap'); passSel(best.id); }
+    });
+    each('.pflags button', function(b){ b.onclick=function(){ sfx('tap'); passSel(b.getAttribute('data-id')); }; });
+    passSel(S.passSel || (mine[0] && mine[0].id) || null);
+    renderAcct();
+  }
+  function passSel(id){
+    S.passSel=id;
+    var s=statsDefault(), c=id?countryById(id):null, box=$('pdet'); if(!box) return;
+    each('#pmap .ppin', function(g){ g.classList.toggle('sel', g.getAttribute('data-id')===id); });
+    each('.pflags button', function(b){ b.classList.toggle('sel', b.getAttribute('data-id')===id); });
+    if(!c){ box.innerHTML='<div class="pm">Tap a dot on the map to see a country.</div>'; return; }
+    var v=+s.countries[id]||0, best=s.cbest[id], first=s.cfirst[id];
+    box.innerHTML='<span style="flex:0 0 auto;'+(v?'':'filter:grayscale(1);opacity:.5')+'">'+flagImg(c.flag,{ w:64 })+'</span>'
+      + '<div><div class="pn">'+esc(c.name)+'</div><div class="pm">'+esc(c.region)+' · Capital <b>'+esc(c.capital)+'</b><br>'
+      + (v ? 'Landed here <b>'+v+'</b> time'+(v>1?'s':'')+(best?' · Best stage <b>'+fmtTime(best)+'s</b>':'')+(first?' · First stamp '+esc(fmtDay(first)):'')
+           : 'Not stamped yet. Land here in a race to get it.')
+      + '</div></div>';
+    retrig(box,'pop-in');
   }
 
   /* --------------------------------------------------------- record a race */
@@ -3760,7 +4174,15 @@
     if(isFinal() && youRank<=3) st.top3++;
     if(won){ st.winStreak=(st.winStreak||0)+1; if(st.winStreak>st.longestStreak) st.longestStreak=st.winStreak; }
     else { st.winStreak=0; }
+    // rival: you beat them if they went out before you, or finished behind you in the Final
+    var rv=rivalTeam();
+    if(rv){ var rvRank=ranked.findIndex(function(t){ return t.id===rv.id; })+1;
+      S.rivalBeat = !rv.alive || (rvRank>0 && youRank>0 && youRank<rvRank && isFinal());
+      if(S.rivalBeat) st.rivalsBeaten++; }
     saveStats(st);
+    if(won) addMiles(300,'Race won'); else if(isFinal() && youRank<=3) addMiles(120,'Made the podium');
+    if(S.rivalBeat) addMiles(100,'Beat your rival');
+    if(S.daily) dailyRecord(place, won);
     announceNewBadges(before);
   }
   // reset the per-race guard whenever a new race starts
@@ -4005,6 +4427,7 @@
   function duoDestLL(){ return (S.dest && S.dest.country && S.dest.country.ll) || null; }
   function duoStart(){
     S._recorded=false; S._runPend=null; S._runDone=false; S.boosts={ fifty:1, shield:1 };
+    S.rivalId=null; S.daily=null; S.stageLog=[]; S.newStamps=[]; S.raceMiles=0; S.milesBonus=[];
     duoRebuild(); S.online.started=true; S.online.view='race';
     S.screen='stage'; S._lastLL=null; duoSetStage(1);
     flightTo(duoDestLL(), function(){ S.phase='draw'; renderStage(); }); duoSave();

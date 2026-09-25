@@ -1364,6 +1364,45 @@ section('the pixel brand draws');
   await page.close();
 }
 
+/* ---------- 4s. the building, the menus and the match mode ----------
+   Everything here renders perfectly when it is wrong. A venue that forgot the
+   promotion draws an anonymous room; a header icon that lost its id falls back
+   to nothing; a match that kept the rails on still plays, in a ring a third
+   of the height. So each is asked of the page, in every building. */
+section('the building, the menus and the match mode');
+{
+  const {page, errs} = await fresh(URL+'/wrestling/');
+  await page.evaluate(()=>{ quickStart(); try{ endTour(); }catch(_){} closeModal(); });
+  await page.waitForTimeout(400);
+  const r = await page.evaluate(()=>{
+    const out={venues:[], heads:[], inmatch:null, back:null, hero:{}};
+    const ar=document.getElementById('arena');
+    PROMOS.forEach(p=>{ dressArena(ar,p.id); const T=arenaOf(p.id);
+      const v=ar.querySelector(':scope > .venue');
+      out.venues.push({id:p.id, one: ar.querySelectorAll(':scope > .venue').length===1,
+        named: !!(v && [...v.querySelectorAll('.v-tron b,.v-banner b')].some(b=>b.textContent===p.short)),
+        screen: T.seats>=4 ? !!(v&&v.querySelector('.v-tron')) : !!(v&&v.querySelector('.v-banner')),
+        beams: v?v.querySelectorAll('.v-beam').length:0,
+        apron: (ar.querySelector('.ringback .v-full')||{}).textContent===p.name }); });
+    document.querySelectorAll('.screen').forEach(sc=>{ const h=sc.querySelector(':scope > h2'); if(!h) return;
+      const id=sc.id.replace('s-',''); out.heads.push({id, mapped: !!SCREEN_ICO[id], drawn: !!pico(SCREEN_ICO[id]||'',16)}); });
+    go('fight'); out.inmatch=document.body.classList.contains('inmatch') && getComputedStyle(document.getElementById('botnav')).display==='none';
+    go('career'); out.back=!document.body.classList.contains('inmatch');
+    ['win','loss','draw'].forEach(k=>{ const h=resultHero({oppName:'Test Opponent',oppId:null},{win:k==='win',draw:k==='draw'},k==='draw');
+      out.hero[k]=/mh-stamp/.test(h) && /Test Opponent/.test(h) && !/undefined|NaN/.test(h) && (h.match(/<svg/g)||[]).length>=2; });
+    return out;
+  });
+  const vbad=r.venues.filter(v=>!(v.one&&v.named&&v.screen&&v.apron&&v.beams>=2));
+  vbad.length ? bad('a building is missing part of itself: '+JSON.stringify(vbad)) : ok(`all ${r.venues.length} buildings carry their own name on the screen or banner and the apron, with a rig of lights`);
+  const hbad=r.heads.filter(h=>!(h.mapped&&h.drawn));
+  hbad.length ? bad('a screen header has no icon: '+hbad.map(h=>h.id).join(', ')) : ok(`every screen header (${r.heads.length}) hangs its own icon`);
+  r.inmatch ? ok('a match takes the rails off') : bad('the match screen kept the nav rails');
+  r.back ? ok('leaving the match puts them back') : bad('inmatch stuck after leaving the match');
+  for(const [k,v] of Object.entries(r.hero)) v ? ok(`the result shot draws a ${k}`) : bad(`the result shot is broken for a ${k}`);
+  if(errs.length) bad('menu pass page errors: '+errs.slice(0,2).join(' | '));
+  await page.close();
+}
+
 /* ---------- 5. careers play out ---------- */
 const KINDS_SEEN={};
 if(!QUICK){

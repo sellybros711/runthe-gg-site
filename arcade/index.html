@@ -38,7 +38,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:ital,wght@0,600;0,700;0,800;0,900;1,800;1,900&display=swap" rel="stylesheet" />
-<link rel="stylesheet" href="/arcade/arcade.css?v=3" />
+<link rel="stylesheet" href="/arcade/arcade.css?v=5" />
 <script src="/arcade/icons.js?v=3"></script>
 <script src="/arcade/gamemarks.js?v=4"></script>
 <style>
@@ -656,6 +656,109 @@
   .foot .h{color:var(--coralT); font-weight:800; text-decoration:none;} .foot a.h:hover{text-decoration:underline;}
   .foot .footlinks{margin-top:8px; font-size:11.5px;}
   .foot .footlinks a{color:var(--mut); text-decoration:none;} .foot .footlinks a:hover{color:var(--coralT); text-decoration:underline;}
+
+  /* ==========================================================================
+     HUB V2: the menu reads as a menu
+     --------------------------------------------------------------------------
+     What changed and why, in one place, so the rules above can be read as the
+     history they are:
+       - The theme button moved into the site banner (data-banner-slot). It sat
+         alone in a row of its own at the top of the page.
+       - The day header is a real title: today's date under it, the ring beside.
+       - A card is a lit tile, the game's mark on a colour field, then its name
+         in ink rather than in a dozen different accents, then one compact
+         Play button. Twelve full-width coloured pills was the loudest thing on
+         the page twelve times over, and it made every card the same weight.
+       - The offers below the grid share one surface and one radius.
+     ========================================================================== */
+  .top[hidden]{display:none;}
+  .wrap{padding-top:calc(18px + env(safe-area-inset-top,0));}
+
+  /* kicker, then the title across the whole width, then the tour link and
+     the day's ring sharing the last row. The ring used to sit beside the
+     title and squeezed it onto two lines on every phone. */
+  .zone-head{display:grid; grid-template-columns:1fr auto; align-items:center; gap:6px 14px; margin:4px 2px 18px;}
+  .zone-head .kicker{grid-column:1 / -1; grid-row:1; margin:0 0 4px;}
+  .zone-head .day{grid-column:1 / -1; grid-row:2;}
+  .zone-head .dprog{grid-column:2; grid-row:3; justify-self:end; white-space:nowrap;}
+  @media (max-width:370px){ .zone-head .dprog{grid-column:1 / -1; grid-row:4; justify-self:start; margin-top:6px;} }
+  .zone-head .day{font-size:clamp(32px, 7vw, 44px); letter-spacing:.01em; line-height:.95; text-transform:uppercase;}
+  .zone-head .dayd{display:block; margin-top:8px; font-family:var(--f); font-size:13px; font-weight:800;
+    letter-spacing:.02em; text-transform:none; color:var(--mut);}
+  .zone-head .dprog{margin:4px 0 0; padding:6px 12px 6px 7px; border-radius:999px;
+    background:var(--card); border:1px solid var(--line2);}
+  /* the tour is a quiet link under the date, not a second button competing
+     with the day's ring for the same row */
+  .zone-head .rtgtour-open{grid-column:1; grid-row:3; justify-self:start; min-width:0; margin:4px 0 0 !important;
+    border:0 !important; background:transparent !important; padding:4px 0 !important; box-shadow:none !important;
+    font-size:12.5px !important; text-align:left; white-space:normal; color:var(--mut) !important;}
+  .zone-head .rtgtour-open:hover{color:var(--ink) !important;}
+
+  .tiles{gap:14px;}
+  .tsec{margin:10px 0 -2px;}
+  .tsec b{font-size:15px; letter-spacing:.08em;}
+
+  .tile{border-radius:20px; border:1px solid var(--line2); background:var(--card);
+    box-shadow:0 1px 0 color-mix(in srgb, #fff 4%, transparent) inset, 0 14px 30px -22px rgba(0,0,0,.7);}
+  .tile:hover{transform:translateY(-3px); box-shadow:0 1px 0 color-mix(in srgb, #fff 4%, transparent) inset, 0 22px 40px -22px rgba(0,0,0,.75);
+    border-color:color-mix(in srgb, var(--c) 45%, var(--line2));}
+  .tile .cap{height:104px; border-bottom:0;
+    background:
+      radial-gradient(circle at 50% 120%, color-mix(in srgb, var(--c) 34%, transparent), transparent 62%),
+      radial-gradient(color-mix(in srgb, var(--c) 30%, transparent) 1px, transparent 1.4px) 0 0 / 14px 14px,
+      linear-gradient(160deg, color-mix(in srgb, var(--c) 24%, var(--card)), color-mix(in srgb, var(--c) 7%, var(--card)));}
+  .tile .cap svg{width:56px; height:56px; filter:drop-shadow(0 8px 14px rgba(0,0,0,.28));}
+  .tile .body{padding:14px 16px 16px;}
+  .tile .nm{font-style:normal; font-size:20px; letter-spacing:-.015em;}
+  .tile.match .nm,.tile.cross .nm,.tile.guess .nm,.tile.table .nm,.tile.oddone .nm,.tile.career .nm,
+  .tile.rankit .nm,.tile.alma .nm,.tile.highlow .nm,.tile.spg .nm,.tile.roll .nm,.tile.chain .nm{color:var(--ink);}
+  .tile .desc{font-size:13px; margin:7px 0 14px;}
+  .tile .foot{display:flex; justify-content:flex-end;}
+  .tile .play{min-height:38px; padding:0 18px; font-style:normal; font-size:13px; letter-spacing:.08em;
+    border-radius:12px; box-shadow:0 8px 18px -10px color-mix(in srgb, var(--c) 80%, transparent);}
+  .tile .play .arw{font-size:15px;}
+  .tile.locked .play{font-size:11px; box-shadow:none;}
+  .tile .play.hollow{min-width:0; padding:0 14px; box-shadow:none;}
+  .tile .status{font-size:9px; padding:4px 8px; border-width:1px; backdrop-filter:blur(4px);}
+  .tile .status.ready{background:color-mix(in srgb, var(--card) 70%, transparent);}
+
+  @media (max-width:640px){
+    .zone-head{margin-bottom:14px;}
+    .tiles{gap:10px;}
+    .tile{border-radius:16px;}
+    .tile .cap{flex:0 0 82px; height:auto;}
+    .tile .cap svg{width:46px; height:46px;}
+    .tile .body{padding:12px 13px 12px 14px;}
+    .tile .nm{font-size:17px;}
+    .tile .desc{font-size:12.5px; margin-top:4px;}
+    .tile .play{min-height:32px; padding:0 14px; font-size:11.5px; border-radius:10px;}
+  }
+  @media (max-width:360px){ .tile .cap{flex:0 0 66px;} .tile .nm{font-size:15.5px;} }
+
+  /* ---- the lower sections: one surface, one radius ---- */
+  .vaultbtn{border-radius:18px; border-left-width:1px; padding:14px 16px;
+    background:linear-gradient(120deg, color-mix(in srgb, var(--gold) 10%, var(--card)), var(--card));}
+  .vaultbtn .vb-ic{width:40px; height:40px; border-radius:12px;}
+  .vaultbtn.locked{background:var(--card);}
+
+  .cardpitch{border-radius:22px; padding:24px 20px 20px; position:relative; overflow:hidden;
+    background:
+      radial-gradient(520px 220px at 50% -40px, color-mix(in srgb, var(--coral) 26%, transparent), transparent 70%),
+      var(--card);
+    border:1px solid color-mix(in srgb, var(--coral) 40%, var(--line2));}
+  .cp-kicker{font-family:var(--f); font-size:10.5px; font-weight:900; letter-spacing:.18em;}
+  .cp-head{font-size:clamp(30px, 8vw, 44px); margin:8px 0 6px;}
+  .cp-head s{font-size:.62em; vertical-align:.18em; opacity:.8;}
+  .cp-perks{gap:9px; margin-top:16px;}
+  .cp-perks li i{display:inline-grid; place-items:center; width:18px; height:18px; border-radius:50%;
+    background:color-mix(in srgb, var(--green) 18%, transparent); font-size:11px;}
+  .cp-cta{border-radius:14px; background:linear-gradient(180deg, color-mix(in srgb, var(--coral) 88%, #fff), var(--coral));
+    box-shadow:0 14px 28px -14px color-mix(in srgb, var(--coral) 90%, transparent);}
+
+  .editions,.invite{border-radius:22px;}
+  .ed-chip{border-radius:12px;}
+  .iv-kicker{font-family:var(--f); font-size:10.5px; font-weight:900; letter-spacing:.18em;}
+  .double{border-radius:20px;}
   @media (prefers-reduced-motion:reduce){ *{transition:none !important; animation:none !important;} }
 </style>
 <script>
@@ -683,8 +786,8 @@ window.GA_ID='G-L29P5MRWKE';
 <body>
 <div class="stage">
   <div class="wrap">
-    <div class="top">
-      <span class="topR">
+    <div class="top" data-banner-host>
+      <span class="topR" data-banner-slot>
         <button class="themeBtn" id="themeBtn" type="button" aria-label="Toggle light or dark theme" title="Light / dark">
           <svg class="ic-moon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
           <svg class="ic-sun" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8"/></svg>
@@ -705,7 +808,7 @@ window.GA_ID='G-L29P5MRWKE';
             </i>
             <span>Daily <b>sports</b> puzzles &middot; NBA &middot; NFL &middot; MLB</span>
           </span>
-          <span class="day">Today's Games</span>
+          <span class="day">Today's Games<span class="dayd" id="dayDate"></span></span>
           <span class="dprog" id="dprog"><span class="dring" id="dring" aria-hidden="true"></span><span class="dstreak" id="dstreak" hidden></span><span class="pips"><span class="pip" id="pipT"></span><span class="pip" id="pipM"></span><span class="pip" id="pipR"></span><span class="pip" id="pipO"></span><span class="pip" id="pipK"></span><span class="pip" id="pipA"></span><span class="pip" id="pipG"></span><span class="pip" id="pipC"></span><span class="pip" id="pipS"></span><span class="pip" id="pipL"></span><span class="pip" id="pipN"></span><span class="pip" id="pipH"></span></span><span id="dprogT">0 / 9 played</span></span>
         </div>
 
@@ -1034,11 +1137,11 @@ window.GA_ID='G-L29P5MRWKE';
 <script src="/arcade/board.js?v=21"></script>
 <script src="/arcade/auth.js?v=4"></script>
 <script src="/arcade/mycard.js?v=14"></script>
-<script src="/arcade/topbanner.js?v=9"></script>
+<script src="/arcade/topbanner.js?v=10"></script>
 <script src="/arcade/auth-ui.js?v=7"></script>
 <script src="/arcade/card.js?v=22"></script>
 <script src="/arcade/referral.js?v=11"></script>
-<script src="/arcade/nav.js?v=2"></script>
+<script src="/arcade/nav.js?v=3"></script>
 <script src="/arcade/calendar.js?v=15"></script>
 <script src="/arcade/tour.js?v=1"></script>
 <script src="/arcade/tourdata.js?v=6"></script>
@@ -1398,27 +1501,44 @@ window.GA_ID='G-L29P5MRWKE';
     var perfect=doneN===GAMES.length;
     var css=document.createElement('style');
     css.textContent=
-      // ticket body: dashed rim + a notched "torn edge" on each side, like a
-      // stub ripped off the roll. The notches are just two masked circles.
-      '.aticket{position:relative; background:var(--card); border:2px '+(perfect?'solid var(--gold)':'dashed var(--line2)')+'; border-radius:12px; padding:12px 14px 12px 18px; margin:18px 0 0; box-shadow:var(--shadow);}'+
-      '.aticket:before,.aticket:after{content:""; position:absolute; top:50%; width:14px; height:14px; border-radius:50%; background:var(--bg); border:2px '+(perfect?'solid var(--gold)':'dashed var(--line2)')+';}'+
-      '.aticket:before{left:-9px; transform:translateY(-50%);}'+
-      '.aticket:after{right:-9px; transform:translateY(-50%);}'+
-      '.aticket .tk-top{display:flex; align-items:center; gap:10px; margin-bottom:10px;}'+
-      '.aticket .tk-h{font-family:var(--hero); font-weight:400; letter-spacing:.06em; text-transform:uppercase; font-size:15px; color:var(--ink);}'+
-      '.aticket .tk-n{font-size:11px; font-weight:900; letter-spacing:.08em; color:'+(perfect?'var(--goldT)':'var(--mut)')+';}'+
-      '.aticket .tk-share{margin-left:auto; border:1px solid var(--line2); background:var(--card2); color:var(--ink); font-weight:800; font-size:11px; border-radius:8px; padding:6px 11px; cursor:pointer; font-family:inherit;}'+
-      '.aticket .tk-row{display:flex; flex-wrap:wrap; gap:6px 10px;}'+
-      '.aticket .tk-g{display:inline-flex; align-items:center; gap:5px; font-size:10.5px; font-weight:800; color:var(--mut);}'+
-      '.aticket .tk-g i{width:16px; height:16px; border-radius:50%; border:2px dashed var(--line2); display:inline-flex; align-items:center; justify-content:center; font-style:normal; font-size:9px;}'+
+      // A stub torn off the roll: a header, a perforated seam with a notch
+      // bitten out of each side, then one punch hole per game. A punched hole
+      // shows that game's own mark in colour; an open one is the same mark,
+      // greyed, behind a dashed ring, so the ticket reads as the day's line-up
+      // before you have played any of it.
+      '.aticket{position:relative; margin:18px 0 0; border-radius:18px; overflow:hidden;'+
+        'background:linear-gradient(135deg, color-mix(in srgb, var(--gold) '+(perfect?'22':'9')+'%, var(--card)), var(--card) 65%);'+
+        'border:'+(perfect?'2px solid var(--gold)':'1px solid color-mix(in srgb, var(--gold) 28%, var(--line2))')+'; box-shadow:var(--shadow);}'+
+      '.aticket .tk-top{display:flex; align-items:center; gap:10px; padding:14px 16px 12px;}'+
+      '.aticket .tk-h{font-family:var(--hero); font-weight:400; letter-spacing:.05em; text-transform:uppercase; font-size:19px; line-height:1; color:var(--ink); white-space:nowrap;}'+
+      '.aticket .tk-n{font-size:10.5px; font-weight:900; letter-spacing:.1em; text-transform:uppercase; color:'+(perfect?'var(--goldT)':'var(--mut)')+';'+
+        'border:1px solid var(--line2); border-radius:999px; padding:4px 8px; white-space:nowrap;}'+
+      '.aticket .tk-share{margin-left:auto; border:1px solid color-mix(in srgb, var(--gold) 45%, var(--line2)); background:color-mix(in srgb, var(--gold) 12%, transparent); color:var(--ink); font-weight:900; font-size:11px; letter-spacing:.06em; text-transform:uppercase; border-radius:10px; padding:7px 12px; cursor:pointer; font-family:inherit;}'+
+      '.aticket .tk-seam{position:relative; height:0; border-top:2px dashed color-mix(in srgb, var(--gold) 30%, var(--line2)); margin:0 14px;}'+
+      '.aticket .tk-seam:before,.aticket .tk-seam:after{content:""; position:absolute; top:-10px; width:18px; height:18px; border-radius:50%; background:var(--bg);'+
+        'border:1px solid color-mix(in srgb, var(--gold) 28%, var(--line2));}'+
+      '.aticket .tk-seam:before{left:-24px;} .aticket .tk-seam:after{right:-24px;}'+
+      '.aticket .tk-row{display:grid; grid-template-columns:repeat(var(--cols,4), minmax(0,1fr)); gap:12px 6px; padding:14px 12px 16px;}'+
+      '.aticket .tk-g{display:flex; flex-direction:column; align-items:center; gap:6px; min-width:0; font-size:10px; font-weight:800; color:var(--mut); text-align:center;}'+
+      '.aticket .tk-g .tk-lab{max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}'+
+      '.aticket .tk-hole{position:relative; width:44px; height:44px; border-radius:50%; display:grid; place-items:center;'+
+        'border:2px dashed var(--line2); background:color-mix(in srgb, var(--ink) 3%, transparent);}'+
+      '.aticket .tk-hole svg{width:26px; height:26px; filter:grayscale(1); opacity:.35;}'+
       '.aticket .tk-g.on{color:var(--ink);}'+
-      '.aticket .tk-g.on i{border:2px solid var(--tc); background:color-mix(in srgb, var(--tc) 24%, var(--card)); color:var(--tc);}'+
-      '.aticket .tk-perf{font-family:var(--hero); font-weight:400; letter-spacing:.14em; color:var(--goldT); font-size:13px; margin-top:9px; text-align:center; animation:tkpop .5s ease;}'+
-      '@keyframes tkpop{0%{transform:scale(.7); opacity:0;}60%{transform:scale(1.08);}100%{transform:scale(1); opacity:1;}}';
+      '.aticket .tk-g.on .tk-hole{border:2px solid var(--tc); background:color-mix(in srgb, var(--tc) 20%, var(--card)); box-shadow:0 0 0 4px color-mix(in srgb, var(--tc) 12%, transparent);}'+
+      '.aticket .tk-g.on .tk-hole svg{filter:none; opacity:1;}'+
+      '.aticket .tk-tick{position:absolute; right:-4px; bottom:-4px; width:17px; height:17px; border-radius:50%; background:var(--tc); color:var(--card);'+
+        'display:grid; place-items:center; font-size:10px; font-weight:900; box-shadow:0 0 0 2px var(--card);}'+
+      '@media (max-width:380px){.aticket .tk-hole{width:38px; height:38px;} .aticket .tk-hole svg{width:22px; height:22px;} .aticket .tk-h{font-size:17px;}}'+
+      '.aticket .tk-perf{font-family:var(--hero); font-weight:400; letter-spacing:.14em; color:var(--goldT); font-size:14px; padding:0 12px 14px; text-align:center; animation:tkpop .5s ease;}'+
+      '@keyframes tkpop{0%{transform:scale(.7); opacity:0;}60%{transform:scale(1.08);}100%{transform:scale(1); opacity:1;}}'+
+      '@media (prefers-reduced-motion:reduce){.aticket .tk-perf{animation:none;}}';
     document.head.appendChild(css);
     var el=document.createElement('div'); el.className='aticket';
+    var cols = N<=6 ? N : Math.ceil(N/2);
     el.innerHTML='<div class="tk-top"><span class="tk-h">Today\u2019s Ticket</span><span class="tk-n">'+doneN+' / '+N+' punched</span><button class="tk-share" type="button">Share</button></div>'+
-      '<div class="tk-row">'+GAMES.map(function(x){return '<span class="tk-g'+(x[1]?' on':'')+'" style="--tc:'+x[2]+'"><i>'+(x[1]?'\u2713':'')+'</i>'+x[0]+'</span>';}).join('')+'</div>'+
+      '<div class="tk-seam" aria-hidden="true"></div>'+
+      '<div class="tk-row" style="--cols:'+cols+'">'+GAMES.map(function(x){return '<span class="tk-g'+(x[1]?' on':'')+'" style="--tc:'+x[2]+'"><span class="tk-hole" data-mark="'+x[3]+'">'+(x[1]?'<span class="tk-tick" aria-hidden="true">\u2713</span>':'')+'</span><span class="tk-lab">'+x[0]+'</span></span>';}).join('')+'</div>'+
       (perfect?'<div class="tk-perf">\u2605 PERFECT DAY - ALL '+N+' CLEARED \u2605</div>':'');
     /* Below the games, not above them. As the first thing on the page it was a
        punch-card of nine names you had not learned yet, the most overwhelming
@@ -1428,6 +1548,7 @@ window.GA_ID='G-L29P5MRWKE';
     var after=host && host.querySelector('.tiles');
     if(after) after.parentNode.insertBefore(el, after.nextSibling);
     else if(host) host.appendChild(el);
+    try{ if(window.RTGGameMarks) RTGGameMarks.fill(el); }catch(e){}
     el.querySelector('.tk-share').addEventListener('click', function(){
       var bar=GAMES.map(function(x){return x[1]?'\ud83c\udfab':'\u2b1c';}).join('');
       var txt='Run The Arcade \u00b7 Today\u2019s Ticket\n'+bar+'\n'+doneN+' / '+N+' games punched'+(perfect?' \u00b7 PERFECT DAY':'')+'\nrunthe.gg/arcade/';
@@ -1760,6 +1881,11 @@ window.GA_ID='G-L29P5MRWKE';
     setTimeout(sync, 1200);          // re-check once the membership state settles
     window.addEventListener('focus', sync);
   })();
+</script>
+<script>
+/* the date under Today's Games, in the reader's own words for it */
+(function(){ var el=document.getElementById('dayDate'); if(!el) return;
+  try{ el.textContent=new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'}); }catch(e){} })();
 </script>
 </body>
 </html>

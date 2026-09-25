@@ -2,21 +2,19 @@
  *
  *   node baseball/check-home.mjs
  *
- * THE PHONE AND THE DESKTOP ARE TWO DESIGNS RATHER THAN TWO SIZES OF ONE, which is
- * the clubhouse's own lesson in mythiball. What differs is the STAGE: a phone stacks
- * the two reels over the field because there is no room beside it, and a desktop
- * stands them either side of it. The name of the game is a caption under the picture
- * on both. What the two widths really disagree about is the DAILY: on a phone it is
- * the markup's own order, under the name, and on a desktop it leads, because it is
- * the offer with a clock on it and the only thing on this page that is different
- * today from yesterday.
+ * THE PHONE AND THE DESKTOP SHARE ONE ORDER AND DIFFER IN ONE PLACE. Both read the
+ * logo, the picture, the Draft button, one line of tagline, the daily, and the doors.
+ * What differs is the STAGE: a phone stacks the two reels over the field because there
+ * is no room beside it, and a desktop stands them either side of it.
  *
- * The order is CSS `order` over the phone's markup, so EVERY WAY THIS BREAKS IS
- * SILENT. A block that leaks under the breakpoint renders a perfectly good page in
- * the wrong order. A `display:contents` that stops applying puts the two reels back
- * above the field and leaves two empty side columns, and nothing throws. An element
- * added to the screen with no `order` lands at the very top, above the title, which
- * is also a page that renders.
+ * THE BUTTON IS ON THE FIRST SCREEN OF A PHONE, and that is the claim this layout was
+ * built for. Before it, the Draft button started 865px down a 390x844 phone, under a
+ * logo 230px tall and a tagline card, so the one control the page is for needed a
+ * scroll to find. Nothing threw. Every piece rendered, and the page read as a poster.
+ *
+ * The header's own name is hidden on this screen and only this one, because the logo
+ * under it already says it: two names stacked 60px apart read as a page that has not
+ * decided what it is called.
  *
  * AND THE REEL IS THE ONE WITH TEETH. A reel box is three rows and the middle one is
  * the band the pick lands in, and until this pass that was six copies of the number
@@ -108,7 +106,10 @@ async function open(w, h, extra) {
 
 const box = (p, sel) => p.evaluate((s) => {
   const e = document.querySelector(s);
-  if (!e) return null;
+  /* A missing element answers NaN everywhere rather than null, so every comparison
+     against it is false and the claim is reported by name. A null here made the
+     first old-layout run die on a TypeError, which is a guard with teeth and no voice. */
+  if (!e) return { x: NaN, y: NaN, w: NaN, h: NaN, top: NaN, left: NaN, right: NaN, bottom: NaN, missing: s };
   const r = e.getBoundingClientRect();
   return { x: +r.x.toFixed(2), y: +r.y.toFixed(2), w: +r.width.toFixed(2), h: +r.height.toFixed(2),
            top: +r.top.toFixed(2), left: +r.left.toFixed(2), right: +r.right.toFixed(2), bottom: +r.bottom.toFixed(2) };
@@ -196,14 +197,18 @@ for (const [label, w, h] of [['phone 390', 390, 844], ['desktop 1440', 1440, 900
     `${a} / ${b2}`);
 }
 
-/* ══ 2. the phone is untouched ════════════════════════════════════════════════ */
-head('2. THE PHONE READS FIELD FIRST AND NAME AFTER');
+/* ══ 2. the phone: logo, picture, button, and the button on the first screen ══ */
+head('2. THE PHONE READS LOGO, PICTURE, BUTTON, AND THE BUTTON FITS');
 
-for (const [w, h] of [[390, 844], [360, 740], [320, 568], [768, 1024], [999, 900]]) {
+for (const [w, h] of [[390, 844], [360, 740], [375, 667], [320, 568], [768, 1024], [999, 900]]) {
   const { ctx, p } = await open(w, h);
+  const logo = await box(p, '.htitle');
   const hero = await box(p, '.hero');
-  const title = await box(p, '.htitle');
+  const start = await box(p, '#b-start');
+  const tag = await box(p, '.htag');
   const daily = await box(p, '.dailycard');
+  const modes = await box(p, '#b-modes');
+  const row = await box(p, '.hrow');
   const y = await box(p, '#h-box-y');
   const t = await box(p, '#h-box-t');
   const field = await box(p, '.field.hero-field');
@@ -211,14 +216,24 @@ for (const [w, h] of [[390, 844], [360, 740], [320, 568], [768, 1024], [999, 900
     const e = document.querySelector('.dc-go');
     return e ? getComputedStyle(e).display : 'missing';
   });
-  claim(hero.top < title.top, `${w}px: the field comes before the name`,
-    `hero ${hero.top}, title ${title.top}`);
-  /* THE DAILY IS WHAT THE TWO WIDTHS DISAGREE ABOUT, now that the name sits under
-     the picture on both. On a phone it is the markup's own order, under the name;
-     on a desktop it leads. Without this the phone section would assert only things
-     that are true of the desktop too, and could not catch the block leaking down. */
-  claim(title.top < daily.top, `${w}px: the daily sits under the name`,
-    `title ${title.top}, daily ${daily.top}`);
+  claim(logo.bottom <= hero.top && hero.bottom <= start.top && start.bottom <= tag.top
+        && tag.bottom <= daily.top && daily.bottom <= modes.top && modes.bottom <= row.top,
+    `${w}px: logo, picture, button, tagline, daily, more ways, doors`,
+    `logo ${logo.top}, hero ${hero.top}, start ${start.top}, tag ${tag.top}, daily ${daily.top}, modes ${modes.top}, row ${row.top}`);
+  /* The claim the layout exists for. Read against the window, with no scroll. */
+  claim(start.bottom <= h, `${w}x${h}: the Draft button is on the first screen`,
+    `button ends at ${start.bottom} in a ${h}px window`);
+  /* The tagline is one line, or it is a paragraph between the button and the daily. */
+  claim(tag.h < 26, `${w}px: the tagline holds one line`, tag.missing ? 'no .htag' : `${tag.h}px tall`);
+  /* The three doors hold one line each. "How to play" wrapped to two in a third of
+     a phone and "Leaderboard" ran edge to edge, so a phone takes the short word. */
+  const doors = await p.evaluate(() => [...document.querySelectorAll('.hrow .hp-util-btn b')].map((b) => {
+    const r = b.getBoundingClientRect();
+    return { h: Math.round(r.height), lh: parseFloat(getComputedStyle(b).lineHeight) || r.height,
+             fits: b.scrollWidth <= b.parentElement.clientWidth };
+  }));
+  claim(doors.length === 3 && doors.every((d) => d.h <= d.lh * 1.3 && d.fits),
+    `${w}px: the three doors hold one line each`, JSON.stringify(doors));
   /* The two reels share a row above the field, which is what the game's own draft
      screen does and is what a phone was asked to keep. */
   claim(Math.abs(y.top - t.top) < 2 && y.bottom <= field.top + 1,
@@ -291,31 +306,27 @@ for (const [w, h] of [[390, 844], [360, 740], [320, 568], [768, 1024], [999, 900
   await ctx.close();
 }
 
-/* ══ 3. the desktop flanks the field, and leads with the daily ════════════════ */
-head('3. THE DESKTOP LEADS WITH THE DAILY AND FLANKS THE FIELD');
+/* ══ 3. the desktop: the same order, with the reels flanking the field ═══════ */
+head('3. THE DESKTOP READS LOGO, PICTURE, BUTTON, AND FLANKS THE FIELD');
 
-for (const [w, h] of [[1000, 900], [1280, 900], [1440, 900], [1680, 1050]]) {
+for (const [w, h] of [[1000, 900], [1280, 720], [1280, 900], [1440, 900], [1680, 1050]]) {
   const { ctx, p } = await open(w, h);
-  const title = await box(p, '.htitle');
-  const daily = await box(p, '.dailycard');
+  const logo = await box(p, '.htitle');
   const field = await box(p, '.field.hero-field');
-  const note = await box(p, '.hnote');
   const start = await box(p, '.hp-start');
+  const tag = await box(p, '.htag');
+  const daily = await box(p, '.dailycard');
   const row = await box(p, '.hrow');
   const legal = await box(p, '.legal');
   const y = await box(p, '#h-box-y');
   const t = await box(p, '#h-box-t');
 
-  /* THE DAILY IS THE ONLY THING ABOVE THE PICTURE. It is the offer with a clock on
-     it, so it leads; the name of the game is a caption on something already looked
-     at and sits under the field here exactly as it does on a phone. */
-  claim(daily.top < field.top && field.bottom <= title.top,
-    `${w}px: the daily, then the field, then the name`,
-    `daily ${daily.top}, field ${field.top}-${field.bottom}, title ${title.top}`);
-  claim(field.bottom <= note.top && note.bottom <= title.top && title.bottom <= start.top
-        && start.top < row.top && row.top < legal.top,
-    `${w}px: the tagline, the name, the button and the three doors follow the field`,
-    `field ${field.bottom}, note ${note.top}, title ${title.top}, start ${start.top}, row ${row.top}`);
+  claim(logo.bottom <= field.top && field.bottom <= start.top && start.bottom <= tag.top
+        && tag.bottom <= daily.top && daily.bottom <= row.top && row.top < legal.top,
+    `${w}px: logo, field, button, tagline, daily, doors`,
+    `logo ${logo.top}, field ${field.top}-${field.bottom}, start ${start.top}, tag ${tag.top}, daily ${daily.top}, row ${row.top}`);
+  claim(start.bottom <= h, `${w}x${h}: the Draft button is on the first screen`,
+    `button ends at ${start.bottom} in a ${h}px window`);
   /* THE REELS FLANK IT, which is the claim `display:contents` carries. Asked as a
      SIDE rather than as a coordinate: the year is entirely left of the field and the
      team entirely right of it, at any width. */
@@ -364,24 +375,24 @@ claim(globalThis.__openText !== globalThis.__playedText,
   'and the two states do not share one sentence',
   `${JSON.stringify(globalThis.__openText)} / ${JSON.stringify(globalThis.__playedText)}`);
 
-/* ══ 5. nothing on the screen is unplaced ═════════════════════════════════════ */
-head('5. EVERY CHILD OF THE SCREEN HAS A PLACE');
+/* ══ 5. one name on the front page ═══════════════════════════════════════════ */
+head('5. THE HEADER HIDES ITS NAME ON THE FRONT PAGE AND ONLY THERE');
 
-/* An element added later with no `order` takes 0 and jumps to the very top of the
-   screen, which is a page that renders and reads wrong. The default is 9, so the
-   claim is that every child carries one and that none of them is 0. */
-{
-  const { ctx, p } = await open(1440, 900);
-  const orders = await p.evaluate(() => [...document.querySelectorAll('#s-intro.on > *')]
-    .map((e) => ({ tag: e.className || e.id || e.tagName, order: getComputedStyle(e).order })));
-  claim(orders.length >= 8, `the screen has its children (${orders.length})`);
-  claim(orders.every((o) => o.order !== '0' && o.order !== 'auto'),
-    'no child of the front page falls back to order 0',
-    JSON.stringify(orders));
-  const daily = orders.find((o) => /dailycard/.test(o.tag));
-  claim(daily && Math.min(...orders.map((o) => +o.order)) === +daily.order,
-    'and the daily challenge is the first of them',
-    JSON.stringify(orders));
+/* The rule keys on #s-intro being on, so the same page is asked twice: once as it
+   boots, and once with the front page switched off, which is what every other
+   screen looks like to that selector. A rule that hid the name everywhere would
+   pass the first half and leave every draft with no name on it. */
+for (const [w, h] of [[390, 844], [1440, 900]]) {
+  const { ctx, p } = await open(w, h);
+  const seen = await p.evaluate(() => {
+    const l = document.querySelector('header .lockup');
+    const a = getComputedStyle(l).visibility;
+    document.querySelector('#s-intro').classList.remove('on');
+    const b = getComputedStyle(l).visibility;
+    return { a, b };
+  });
+  claim(seen.a === 'hidden', `${w}px: the header's name is hidden under the logo`, seen.a);
+  claim(seen.b === 'visible', `${w}px: and it comes back on any other screen`, seen.b);
   await ctx.close();
 }
 

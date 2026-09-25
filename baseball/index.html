@@ -22,22 +22,22 @@
 })();
 </script>
 <link rel="canonical" href="https://runthe.gg/baseball/">
-<link rel="manifest" href="manifest.webmanifest?v=2">
-<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png?v=2">
-<link rel="apple-touch-icon" href="apple-touch-icon.png?v=2">
+<link rel="manifest" href="manifest.webmanifest?v=3">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png?v=3">
+<link rel="apple-touch-icon" href="apple-touch-icon.png?v=3">
 <meta property="og:title" content="Run The Diamond: MLB Draft Game">
 <meta property="og:description" content="Draft an all-time MLB roster under a $170M cap. Simulate 162 games. Win the World Series.">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="RunThe.GG">
 <meta property="og:url" content="https://runthe.gg/baseball/">
-<meta property="og:image" content="https://runthe.gg/baseball/og.png?v=3">
+<meta property="og:image" content="https://runthe.gg/baseball/og.png?v=4">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="Run The Diamond: draft an all-time MLB roster and chase the perfect season.">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Run The Diamond: MLB Draft Game">
 <meta name="twitter:description" content="Draft an all-time MLB roster under a $170M cap. Simulate 162 games. Win the World Series.">
-<meta name="twitter:image" content="https://runthe.gg/baseball/og.png?v=3">
+<meta name="twitter:image" content="https://runthe.gg/baseball/og.png?v=4">
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"VideoGame","name":"Run The Diamond","url":"https://runthe.gg/baseball/",
 "description":"Draft an all-time MLB roster from 1901 to 2025 under a $170M salary cap, then simulate a 162-game season and chase the World Series.",
@@ -289,18 +289,22 @@ h1,h2,h3{margin:0}
 .hero-field .chip.pop .who,.hero-field .chip.pop .yr{animation:signin .34s ease-out .1s both}
 @keyframes signin{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
 .hero-field.clearing .chip{transition:opacity .32s ease;opacity:0}
-.htitle{text-align:center;margin-bottom:16px}
-.htitle h1{font-family:'Righteous',var(--fd);font-size:clamp(34px,10vw,52px);text-transform:uppercase;letter-spacing:.03em;line-height:1.05}
-/* The sibling games all carry one word of the name in the game's own color. Flat
-   black on cream read as a document heading rather than a wordmark. */
-.htitle h1 em{font-style:normal;color:var(--leather);
-  text-shadow:0 2px 0 rgba(255,255,255,.4),0 3px 6px rgba(107,82,58,.22)}
-.htitle p{color:var(--dim);font-size:14px;margin:8px 0 0}
-.htitle .kicker{font-family:var(--fn);font-size:11px;font-weight:600;letter-spacing:.24em;
-  text-transform:uppercase;color:var(--gold);display:flex;align-items:center;justify-content:center;gap:8px}
-.htitle .kicker::before,.htitle .kicker::after{content:'';display:inline-block;width:32px;height:1px;
-  background:linear-gradient(90deg,transparent,var(--gold),transparent)}
-.hnote{margin:11px 0 0;text-align:center;font-size:12.5px;color:var(--dim-2)}
+/* THE LOGO IS THE MASTHEAD, at the top of the front page on every width. It sat under
+   the field for a day, 230px tall on a phone, and read as an advert dropped into the
+   middle of the page: the biggest thing on the screen, two screens below the header
+   that already spelled the name out in text, with three taglines round it and the
+   Draft button pushed off the first screen. Now it is the first thing, small, and the
+   header hides its own text name on this screen so the brand is said once.
+
+   It stays inside the h1 with the name as its alt text, so a crawler and a screen
+   reader still get the page's title in words. build/logo.py cuts it off its cream
+   stock, so it sits on either theme. */
+.htitle{text-align:center;margin:0 0 8px}
+.htitle h1{margin:0;line-height:0}
+.htitle h1 .hlogo{display:block;width:min(210px,56vw);height:auto;margin:0 auto}
+body:has(#s-intro.on) header .lockup{visibility:hidden}
+/* One tagline, under the button, short enough to hold one line on a 320 phone. */
+.htag{margin:0 0 16px;text-align:center;font-size:13.5px;color:var(--dim)}
 .hp-start{margin-bottom:10px}
 .hp-secondary{margin-bottom:10px}
 .mode-row{display:flex;gap:8px;margin-bottom:10px}
@@ -310,11 +314,20 @@ h1,h2,h3{margin:0}
   text-transform:none;color:var(--dim-2)}
 .hrow{display:flex;gap:8px;justify-content:center;margin-bottom:16px}
 .hp-util-btn{width:auto;flex:1}
-/* The phone keeps the three plain buttons it has always had. The icon and the line
-   under the name are the DESKTOP card, and they are in the markup rather than built
-   there because a door that only exists at one width is a door that gets forgotten. */
+/* The line under the name is the DESKTOP card's, and it is in the markup rather than
+   built there because a door that only exists at one width gets forgotten. */
 .hp-util-btn b{font-weight:inherit}
-.hp-util-btn .hu-i,.hp-util-btn .hu-s{display:none}
+.hp-util-btn .hu-s{display:none}
+/* A phone door is a third of the width, so it takes the short word. "How to play"
+   and "Trophy case" wrapped to two lines and "Leaderboard" ran edge to edge. */
+.hp-util-btn .hu-long{display:none}
+/* Three doors three across. As bare labels they wrapped ("HOW TO / PLAY") and the
+   middle one touched its own edges, so a phone gets the desktop's icon over a
+   shorter label, which holds one line at 320. */
+.hrow{display:grid;grid-template-columns:repeat(3,minmax(0,1fr))}
+.hp-util-btn{flex-direction:column;gap:6px;padding:12px 6px;font-size:12.5px;letter-spacing:.05em;line-height:1.1}
+.hp-util-btn .hu-i{display:block;width:22px;height:22px;fill:none;stroke:currentColor;
+  stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;color:var(--gold)}
 
 /* ─── reels ─── */
 .reels{display:grid;grid-template-columns:120px 1fr;gap:10px;margin-top:11px}
@@ -1285,7 +1298,7 @@ h1,h2,h3{margin:0}
 .rm-door:active{transform:scale(.985)}
 .rm-door .rm-dot{width:9px;height:9px;border-radius:99px;flex:0 0 auto}
 .rm-door .rm-t{font-family:var(--fn);font-size:12px;font-weight:700;color:var(--ink);
-  min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  min-width:0;line-height:1.25}
 .cutlist{display:grid;gap:7px;margin:12px 0 4px;max-height:46vh;overflow-y:auto}
 /* 46vh on an 844 phone is 388px, which is nine 43px rows EXACTLY: the list
    clipped on a row boundary with the footnote right below, so three of twelve
@@ -1402,7 +1415,7 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
   box-shadow:0 1px 0 var(--line)}
 .lockup{display:flex;align-items:center;gap:9px;text-decoration:none;color:inherit;
   flex:0 1 auto;min-width:0;border-radius:10px}
-.lockup .mark{flex:0 0 auto;width:28px;height:28px;border-radius:7px;display:block}
+.lockup .mark{flex:0 0 auto;width:26px;height:26px;display:block}
 .brand{flex:0 1 auto;min-width:0;font-family:var(--fd);font-size:clamp(13px,4vw,18px);
   letter-spacing:.03em;text-transform:uppercase;line-height:1.02;color:var(--ink)}
 .brand em{font-style:normal;color:var(--leather)}
@@ -1476,6 +1489,35 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
 .modecard.mc-soon .mc-icon{filter:grayscale(1);opacity:.55}
 .modecard.mc-soon .mc-title{color:var(--dim-2)}
 .mc-sticker.soon{background:none;color:var(--dim-2);border:1px solid var(--line-2)}
+/* The sheet's modes are a GRID of tiles rather than a list, asked for by the owner.
+   Icon on top, title under it, one short line under that, and the NEW sticker pinned
+   to the corner. The line says plainly what the mode IS, asked for by the owner: a
+   flavour line (the dead-ball years are all arms) was tried first and rejected,
+   because a tile a stranger taps has to tell them what they are tapping. The chevron goes: a tile is obviously a thing to press, and on a list
+   it was the only thing saying so. Two across on a phone, three once the sheet is wide
+   enough to give each one room. It is a modifier on .modecards, so the division
+   picker, which also draws .modecards, stays a list. A grid row stretches its cells,
+   so the tiles in a row are one height whatever their sentences run to. */
+.modecards.mc-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.mc-grid .modecard{position:relative;display:flex;flex-direction:column;padding:14px 13px}
+.mc-grid .modecard .mc-head{flex-direction:column;align-items:flex-start;gap:10px;margin-bottom:6px}
+.mc-grid .modecard .mc-icon{width:40px;height:40px;border-radius:10px}
+.mc-grid .modecard .mc-icon svg{width:22px;height:22px}
+.mc-grid .modecard .mc-icon-img img{border-radius:10px}
+.mc-grid .modecard .mc-title{font-size:14.5px}
+.mc-grid .modecard .mc-arrow{display:none}
+.mc-grid .modecard .mc-sticker{position:absolute;top:12px;right:12px;float:none;margin:0}
+.mc-grid .modecard p{font-size:12px}
+/* A centred sheet is left:50% with right:0, so it is HALF the window wide until the
+   600px cap binds at a 1200px window: a 1000px laptop got a 500px sheet. A grid needs
+   the width a list did not, so this one sheet sizes itself off the window instead. */
+@media(min-width:600px){
+  #sheet-modes .sheet-inner{right:auto;width:min(600px,calc(100vw - 48px));max-width:none}
+}
+@media(min-width:900px){
+  #sheet-modes .sheet-inner{width:min(860px,calc(100vw - 64px))}
+  .modecards.mc-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
 .div-clubs{display:flex;flex-wrap:wrap;gap:5px;margin-top:2px}
 .div-clubs .dc{font-family:var(--fn);font-size:10px;font-weight:800;letter-spacing:.03em;
   color:var(--dci,#fff);background:var(--dc);padding:2px 7px;border-radius:99px;
@@ -1552,26 +1594,15 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
      Two designs rather than two sizes of one, which is the clubhouse's own lesson.
      What differs is the STAGE, not the running order: a phone stacks the two reels
      over the field because there is no room beside it, and a desktop stands them
-     either side of it. The name of the game sits under the picture on both, where it
-     is a caption on something the reader has already looked at.
+     either side of it. The order is the markup's on both widths: the logo, the
+     picture, the Draft button, one tagline, then the daily and the other doors.
 
-     THE DAILY IS THE ONE THING THAT MOVES UP. It is the offer with a clock on it and
-     the only thing on this page that is different today from yesterday, so on a screen
-     with a whole band to spare it goes above the field rather than below the name,
-     where a reader has to scroll past the game to find out there is one.
-
-     THE ORDER IS CSS AND THE MARKUP IS THE PHONE'S. Written into the DOM instead, the
-     reels and the field would have to live in two different parents to get side by
-     side here, and every JS handle on this screen would then depend on which width it
-     was built at. `order` on a flex column costs nothing and the phone is byte for
-     byte what it was.
-
-     Every child is given one, and the default is 9 rather than 0: an element added
-     later with no order lands just above the footer, which is where a new thing on
-     this page belongs. At 0 it would jump silently to the very top. */
-  #s-intro.on{display:flex;flex-direction:column}
-  #s-intro.on>*{order:9}
-  #s-intro .dailycard{order:1;margin-bottom:22px;
+     THE DAILY USED TO LEAD HERE, above the field, and the name sat under the picture as
+     a caption. Once the name became the owner's logo that order put a 340px piece of
+     artwork between the field and the button, and the one control this page exists
+     for fell under the fold on a 900px monitor. The logo leads now and the daily sits
+     directly under the button, still on the first screen. */
+  #s-intro .dailycard{margin-bottom:22px;
     display:flex;align-items:center;gap:20px;padding:18px 18px 18px 20px}
   #s-intro .dc-txt{flex:1 1 auto;min-width:0}
   #s-intro .dc-go{display:block;flex:0 0 auto;font-family:var(--fd);font-size:17px;
@@ -1581,35 +1612,21 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
   #s-intro .dailycard.played .dc-go{background:none;border:1.5px solid var(--line-2);
     border-bottom-width:1.5px;color:var(--dim);font-size:15px;padding:11px 18px}
   #s-intro .dc-sub{font-size:13.5px}
-  #s-intro .hero{order:2}
-  #s-intro .htitle{order:3;margin-bottom:20px}
-  #s-intro #b-start{order:4}
-  #s-intro #b-modes{order:5}
-  #s-intro .hrow{order:6}
-  #s-intro .legal{order:10}
-
-  /* The title carries the rule the kicker above it already draws, because at this
-     width the name has a whole band of page to itself and needs an edge to sit in. */
-  .htitle h1{font-size:62px;display:flex;align-items:center;justify-content:center;gap:24px}
-  .htitle h1::before,.htitle h1::after{content:'';flex:0 0 62px;height:2px;border-radius:2px;
-    background:linear-gradient(90deg,transparent,var(--gold),transparent)}
-  .htitle p{font-size:15px;letter-spacing:.02em}
+  .htitle{margin-bottom:14px}
+  .htitle h1 .hlogo{width:250px}
+  .htag{font-size:15px;letter-spacing:.02em;margin-bottom:22px}
 
   /* THE REELS FLANK THE FIELD, and `display:contents` is what lets them, without the
      markup moving: the two columns stop being a grid of their own and become items of
      the hero's. A fixed side column rather than a fraction, because these are two
      wheels of a fixed size and what should take the width a wider window brings is the
      picture of the ballpark between them. */
-  /* 30px under the picture rather than 20: the tagline is the last line of the hero
-     and the kicker is the first of the title, so at the phone's spacing the two read
-     as one four line block with the wordmark buried in the middle of it. */
   .hero{display:grid;grid-template-columns:150px minmax(0,1fr) 150px;
-    gap:0 24px;align-items:center;margin-bottom:30px}
+    gap:0 24px;align-items:center;margin-bottom:20px}
   .hero-reels{display:contents}
   .hero .reelcol:first-child{grid-column:1;grid-row:1}
   .hero .reelcol:last-child{grid-column:3;grid-row:1}
   .hero-field{grid-column:2;grid-row:1;margin-top:0}
-  .hnote{grid-column:1/-1;grid-row:2;margin-top:16px;font-size:13.5px}
   /* One property, because the box is three rows by construction and the script reads
      the row back off the box. A 114px reel beside a 480px field reads as a postage
      stamp, which is what the first pass at this looked like. */
@@ -1625,24 +1642,30 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
      room this width has. The icon and the line under the name are already in the
      markup and hidden on a phone, so nothing here builds a control. */
   #s-intro .hrow{gap:14px}
-  #s-intro .hp-util-btn{flex-direction:column;gap:7px;padding:20px 16px;border-radius:12px;
+  #s-intro .hp-util-btn{gap:7px;padding:20px 16px;border-radius:12px;
     text-align:center;background:var(--panel);border-color:var(--line)}
   #s-intro .hp-util-btn:hover{border-color:var(--gold);color:var(--ink)}
-  #s-intro .hp-util-btn .hu-i{display:block;width:26px;height:26px;fill:none;stroke:currentColor;
-    stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;color:var(--gold)}
+  #s-intro .hp-util-btn .hu-i{width:26px;height:26px}
+  #s-intro .hp-util-btn .hu-long{display:inline}
+  #s-intro .hp-util-btn .hu-short{display:none}
   #s-intro .hp-util-btn b{font-size:15px;letter-spacing:.05em;color:var(--ink)}
   #s-intro .hp-util-btn .hu-s{display:block;font-family:var(--fn);font-size:11.5px;font-weight:600;
     text-transform:none;letter-spacing:0;color:var(--dim-2)}
 }
+/* SHORT SCREENS KEEP THE DRAFT BUTTON ON THE FIRST SCREEN. The logo gives way first,
+   because it is the one thing on this page that is only decoration. A short desktop
+   also caps the field, which at that width would otherwise be 470px tall on its own. */
 @media(max-height:800px){
-  .field.hero-field{aspect-ratio:auto;height:280px}
+  .htitle h1 .hlogo{width:min(170px,46vw)}
   .hero{margin-bottom:10px}
-  .hnote{margin-top:7px;font-size:11.5px}
+}
+@media(max-height:800px) and (min-width:1000px){
+  .field.hero-field{aspect-ratio:auto;height:300px}
 }
 @media(max-height:640px){
-  .field.hero-field{height:150px}
+  .htitle h1 .hlogo{width:130px}
+  .field.hero-field{aspect-ratio:auto;height:150px}
   .chip .yr{display:none}
-  .htitle h1{font-size:min(10.5vw,40px)}
 }
 @media(prefers-reduced-motion:reduce){
   *{animation-duration:.01ms !important;animation-iteration-count:1 !important;transition-duration:.01ms !important}
@@ -1672,7 +1695,7 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
 
 <header>
   <a class="lockup" href="." aria-label="Run The Diamond, back to the start">
-    <img class="mark" src="mark.svg?v=1" alt="" width="28" height="28" decoding="async">
+    <img class="mark" src="mark.svg?v=2" alt="" width="26" height="26" decoding="async">
     <span class="brand">Run The <em>Diamond</em></span>
   </a>
   <div class="hdr-r">
@@ -1696,6 +1719,10 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
 </div>
 
 <div class="screen" id="s-intro">
+  <div class="htitle">
+    <h1><img class="hlogo" src="logo.webp?v=1" alt="Run The Diamond" width="822" height="631" decoding="async" fetchpriority="high"></h1>
+  </div>
+
   <div class="hero" id="hero">
     <div class="reels hero-reels">
       <div class="reelcol"><span class="rlabel">&starf; Year &starf;</span>
@@ -1704,32 +1731,27 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
         <div class="reelbox team waiting" id="h-box-t"><div class="strip" id="h-reel-t"></div><span class="band"></span><span class="wash"></span></div></div>
     </div>
     <div class="field hero-field" id="h-field"></div>
-    <p class="hnote">&starf; Twelve spins, twelve spots, one shot at all of them. &starf;</p>
   </div>
 
-  <div class="htitle">
-    <div class="kicker">1901 to 2025</div>
-    <h1>Run The <em>Diamond</em></h1>
-    <p>Draft twelve MLB legends. Build your lineup. Win the World Series.</p>
-  </div>
+  <button class="btn ball hp-start" id="b-start"><svg class="bs bs-l" viewBox="0 0 100 100" aria-hidden="true"><use href="#seam"/></svg><svg class="bs bs-r" viewBox="0 0 100 100" aria-hidden="true"><use href="#seam"/></svg><span>Draft your team</span></button>
+  <p class="htag">Draft twelve legends. Win the World Series.</p>
 
   <button class="dailycard" id="daily-card"></button>
-  <button class="btn ball hp-start" id="b-start"><svg class="bs bs-l" viewBox="0 0 100 100" aria-hidden="true"><use href="#seam"/></svg><svg class="bs bs-r" viewBox="0 0 100 100" aria-hidden="true"><use href="#seam"/></svg><span>Draft your team</span></button>
   <button class="btn ghost hp-secondary" id="b-modes">More ways to play</button>
   <div class="hrow">
     <button class="btn ghost hp-util-btn" id="b-how-play">
       <svg class="hu-i" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5.2h6a3 3 0 0 1 3 3v11a2.4 2.4 0 0 0-2.4-2.4H3z"/>
         <path d="M21 5.2h-6a3 3 0 0 0-3 3v11a2.4 2.4 0 0 1 2.4-2.4H21z"/></svg>
-      <b>How to play</b><span class="hu-s">Learn the rules and scoring.</span></button>
+      <b><span class="hu-long">How to play</span><span class="hu-short">Rules</span></b><span class="hu-s">Learn the rules and scoring.</span></button>
     <button class="btn ghost hp-util-btn" id="b-board">
       <svg class="hu-i" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V12"/><path d="M10 20V4"/>
         <path d="M16 20v-6"/><path d="M22 20H2"/></svg>
-      <b>Leaderboard</b><span class="hu-s">See how you stack up.</span></button>
+      <b><span class="hu-long">Leaderboard</span><span class="hu-short">Leaders</span></b><span class="hu-s">See how you stack up.</span></button>
     <button class="btn ghost hp-util-btn" id="b-trophy">
       <svg class="hu-i" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4h10v5a5 5 0 0 1-10 0z"/>
         <path d="M7 6H4.5v1.5A3.5 3.5 0 0 0 8 11"/><path d="M17 6h2.5v1.5A3.5 3.5 0 0 1 16 11"/>
         <path d="M12 14v3"/><path d="M8.5 20h7"/><path d="M10 17h4l.6 3h-5.2z"/></svg>
-      <b>Trophy case</b><span class="hu-s">Past winners and top scores.</span></button>
+      <b><span class="hu-long">Trophy case</span><span class="hu-short">Trophies</span></b><span class="hu-s">Past winners and top scores.</span></button>
   </div>
 
   <details class="about">
@@ -2131,7 +2153,7 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
 
 <script src="engine.js?v=28"></script>
 <script src="run.js?v=23"></script>
-<script src="achievements.js?v=7"></script>
+<script src="achievements.js?v=8"></script>
 <script src="board.js?v=1"></script>
 <script>
 (function(){
@@ -3103,34 +3125,34 @@ const MODE_CARDS=[
       forty, dead centre of a range running 7 to 28. The 2000s are the bats
       decade (7), and the picker now derives that line per card rather than
       taking anybody's word for it. */
-   text:'Pick a decade and draft only from it. Every era plays differently: the dead-ball years are all arms, the 2000s are all bats.'},
+   text:'Pick a decade and draft only from it. Every era plays differently.'},
   {id:'fran',mode:'franchise',tint:'var(--green)',cls:'mc-club',title:'One Franchise',
    icon:'<path d="M12 2.2 3.4 6.6v6c0 5.2 3.7 9.9 8.6 11.1 4.9-1.2 8.6-5.9 8.6-11.1v-6z"/>',
    /* NO COUNT IN THIS SENTENCE. It said "from 44 franchises" while the picker it
       opens is the thirty clubs playing today with its count interpolated beside
       the heading: a hand-written number one screen from the screen that knows.
       This repo's oldest rule, and the sheet is the one surface that broke it. */
-   text:'Draft one club\'s all-time roster, from every club playing today. A century of Yankees or three decades of Marlins, and you live with the one you picked.'},
+   text:'Pick one club and draft only from its all-time roster.'},
   {id:'div',mode:'division',tint:'var(--gold)',cls:'mc-div',title:'Division Draft',
    icon:'<path d="M4 4h16"/><path d="M4 4v16"/><path d="M8 8h8v4H8z"/><path d="M8 16h8"/>',
-   text:'Pick a division and draft only from the clubs that were really in it, 1994 to today. The map moves with history: Houston is NL Central until 2013 and AL West after.',
+   text:'Pick a division and draft only from the clubs that were in it, 1994 to today.',
    sticker:'New'},
   {id:'cap',mode:'capsurvivor',tint:'var(--red)',cls:'mc-cap',title:'Salary Cap Survivor',
    icon:'<path d="M12 2.6v18.8"/><path d="M16.6 6.4H9.8a2.9 2.9 0 0 0 0 5.8h4.4a2.9 2.9 0 0 1 0 5.8H6.8"/>',
-   text:'Contracts inflate as the season runs. Stay under the cap or cut somebody, every time the market moves against you.',
+   text:'Contracts inflate as the season runs. Stay under the cap or cut somebody.',
    sticker:'New'},
-  {id:'staff',mode:'staff',tint:'var(--purple)',cls:'mc-staff',title:'All-Time Staff',
+  {id:'staff',mode:'staff',tint:'var(--purple)',cls:'mc-staff',title:'All-Time Pitching Staff',
    icon:'<path d="M12 2.8a9.2 9.2 0 1 0 0 18.4 9.2 9.2 0 0 0 0-18.4Z"/><path d="M6.2 5.6c3.4 3 3.4 9.8 0 12.8"/><path d="M17.8 5.6c-3.4 3-3.4 9.8 0 12.8"/>',
-   text:'Forget the bats. Draft a five-man rotation and a bullpen, and win on run prevention alone with a league-average lineup behind you.',
+   text:'Draft a five-man rotation and a bullpen. Your lineup is league average.',
    sticker:'New'},
   {id:'trade',mode:'trade',tint:'var(--orange)',cls:'mc-trade',title:'The Trade Machine',
    icon:'<path d="M4.4 9.4V8.2a3.2 3.2 0 0 1 3.2-3.2h9.6V2.2l4.4 3.9-4.4 3.9V7.4H7.6a.8.8 0 0 0-.8.8v1.2z"/><path opacity=".55" d="M19.6 14.6v1.2a3.2 3.2 0 0 1-3.2 3.2H6.8v2.8l-4.4-3.9 4.4-3.9v2.6h9.6a.8.8 0 0 0 .8-.8v-1.2z"/>',
-   text:'You are handed a roster you did not pick and a deadline. Trade your way to a contender, or find out you were never close.',
+   text:'You get a roster you did not pick. Make trades before the deadline.',
    sticker:'New'},
 ];
 function openModes(){
   $('modes-in').innerHTML=
-    '<div class="modecards">'+
+    '<div class="modecards mc-grid">'+
     MODE_CARDS.map(m=>
       '<button class="modecard '+m.cls+(m.soon?' mc-soon':'')+'" data-mode="'+m.id+'"'+
         (m.soon?' disabled':'')+'>'+
@@ -3140,18 +3162,18 @@ function openModes(){
         '</svg></div><div class="mc-title">'+esc(m.title)+'</div>'+(m.soon?'':ARROW)+'</div>'+
         '<p>'+esc(m.text)+'</p></button>').join('')+
     '</div>'+
-    '<div class="xpromo"><p class="xp-h">More games like this one</p>'+
+    '<div class="xpromo"><p class="xp-h">More games like this one</p><div class="modecards mc-grid">'+
       '<a class="modecard" href="/football/">'+
         '<div class="mc-head"><div class="mc-icon mc-icon-img">'+
         '<img src="/football/icon-192.png" alt="" width="32" height="32" loading="lazy">'+
         '</div><div class="mc-title">The Perfect Season</div>'+ARROW+'</div>'+
-        '<p>The same idea in the NFL. Six legends under a $140M cap, then all 17 games.</p></a>'+
-      '<a class="modecard" style="margin-top:12px" href="/cfb/">'+
+        '<p>The same idea in the NFL. Six legends, all 17 games.</p></a>'+
+      '<a class="modecard" href="/cfb/">'+
         '<div class="mc-head"><div class="mc-icon mc-icon-img">'+
         '<img src="/cfb/icon-192.png" alt="" width="32" height="32" loading="lazy">'+
         '</div><div class="mc-title">Perfect College Season</div>'+ARROW+'</div>'+
-        '<p>College football, 2005 to 2025. Six players under an NIL budget, twelve games.</p></a>'+
-    '</div>';
+        '<p>College football, 2005 to 2025. Six players, twelve games.</p></a>'+
+    '</div></div>';
   $('modes-in').querySelectorAll('[data-mode]').forEach(btn=>{
     btn.addEventListener('click',()=>{closeSheet('sheet-modes');pickMode(btn.dataset.mode);});
   });
@@ -3187,7 +3209,7 @@ function runModeOf(r){
 }
 function runModeLabel(m){
   return {free:'Classic',era:'Eras Draft',franchise:'One Franchise',
-    division:'Division Draft',capsurvivor:'Cap Survivor',staff:'All-Time Staff',
+    division:'Division Draft',capsurvivor:'Cap Survivor',staff:'All-Time Pitching Staff',
     trade:'Trade Machine'}[m]||'Classic';
 }
 /* A per-browser id, so the daily board can keep one result per device without
@@ -4977,7 +4999,7 @@ function showResult(){
   if(RUN.daily)modeLabel='Daily Challenge #'+dailyNo();
   else if(RUN.tradeMachine){const n=(RUN.trades||[]).filter(t=>t.accepted).length;
     modeLabel='Trade Machine \u00b7 '+n+' deal'+(n===1?'':'s');}
-  else if(RUN.staff)modeLabel='All-Time Staff';
+  else if(RUN.staff)modeLabel='All-Time Pitching Staff';
   else if(RUN.capSurvivor)modeLabel='Cap Survivor \u00b7 '+(RUN.cuts||[]).length+' cut';
   else if(RUN.franchise)modeLabel='The all-time '+teamFullName(RUN.franchise);
   else if(RUN.division)modeLabel=RUN.division;
@@ -5198,7 +5220,7 @@ function shareLines(o){
      Its dare is different for the same reason: every other dare asks somebody
      to go play a game, this one asks them to play the SAME twelve spins, which
      is the only dare here with one answer. The hoops card learned both. */
-  const tag=RUN.daily?' (Daily #'+dailyNo()+')':RUN.tradeMachine?' (Trade Machine)':RUN.staff?' (All-Time Staff)':RUN.capSurvivor?' (Cap Survivor)':RUN.franchise?' ('+teamFullName(RUN.franchise)+')':RUN.division?' ('+RUN.division+')':(RUN.era?' ('+RUN.era+')':'');
+  const tag=RUN.daily?' (Daily #'+dailyNo()+')':RUN.tradeMachine?' (Trade Machine)':RUN.staff?' (All-Time Pitching Staff)':RUN.capSurvivor?' (Cap Survivor)':RUN.franchise?' ('+teamFullName(RUN.franchise)+')':RUN.division?' ('+RUN.division+')':(RUN.era?' ('+RUN.era+')':'');
   let t='Run The Diamond'+tag+': '+o.wins+'-'+o.losses+'. '+shareVerdict(o)+'.';
   const grid=seasonGrid();
   if(grid)t+='\n'+grid;
@@ -5218,7 +5240,7 @@ function crownedRank(o){
   const rank=o&&o.allTimeRank;
   return rank&&rank<=100&&o.madePlayoffs?rank:null;
 }
-const SHARE_MARK=new Image();SHARE_MARK.src='mark-256.png?v=1';
+const SHARE_MARK=new Image();SHARE_MARK.src='mark-256.png?v=2';
 function drawShareCard(o){
   const W=1080,H=1350,cv=document.createElement('canvas');cv.width=W;cv.height=H;
   const c=cv.getContext('2d');

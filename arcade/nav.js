@@ -85,19 +85,28 @@
     if (document.getElementById('rtgnav-css')) return;
     var s = document.createElement('style'); s.id = 'rtgnav-css';
     s.textContent = [
-      '.rtgnav{position:fixed;left:0;right:0;bottom:0;z-index:9400;display:flex;align-items:stretch;',
-      '  padding:6px 4px calc(6px + env(safe-area-inset-bottom,0px));',
-      '  background:color-mix(in srgb, var(--bg,#0B1826) 94%, transparent);backdrop-filter:blur(12px);',
-      '  border-top:1px solid var(--line,rgba(255,255,255,.09));}',
+      /* A floating dock rather than a strip welded to the bottom edge: it reads
+         as the game's controller, and it stops the last card on the page
+         looking cut off by a hard line. Centred and capped on a wide screen,
+         where four targets spread across 1400px are four targets nobody finds. */
+      '.rtgnav{position:fixed;left:10px;right:10px;bottom:calc(8px + env(safe-area-inset-bottom,0px));',
+      '  z-index:9400;display:flex;align-items:stretch;gap:4px;padding:6px;margin:0 auto;max-width:460px;',
+      '  border-radius:22px;background:color-mix(in srgb, var(--card,#12233A) 88%, transparent);',
+      '  backdrop-filter:blur(14px) saturate(1.3);-webkit-backdrop-filter:blur(14px) saturate(1.3);',
+      '  border:1px solid var(--line2,rgba(255,255,255,.14));',
+      '  box-shadow:0 12px 30px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.06);}',
       /* Four equal targets. No horizontal scroll: if it does not fit, it is the
          wrong number of tabs, not a scrolling problem. */
       '.rtgnav a,.rtgnav button{flex:1 1 0;min-width:0;display:flex;flex-direction:column;align-items:center;',
-      '  justify-content:center;gap:4px;padding:6px 2px;border:0;background:none;cursor:pointer;',
+      '  justify-content:center;gap:4px;padding:7px 2px 6px;border:0;background:none;cursor:pointer;',
+      '  border-radius:16px;transition:background .15s,color .15s;',
       '  color:var(--dim,#7C8DA3);font:900 9.5px/1 var(--f,system-ui,sans-serif);letter-spacing:.06em;',
       '  text-transform:uppercase;text-decoration:none;-webkit-tap-highlight-color:transparent;}',
       '.rtgnav .ic{position:relative;display:block;width:23px;height:23px;}',
       '.rtgnav .ic svg{width:100%;height:100%;display:block;}',
-      '.rtgnav a.on,.rtgnav button.on{color:var(--coralT,#F06A5F);}',
+      '.rtgnav a.on,.rtgnav button.on{color:var(--coralT,#F06A5F);',
+      '  background:color-mix(in srgb, var(--coral,#F06A5F) 15%, transparent);}',
+      '.rtgnav a:hover:not(.on),.rtgnav button:hover:not(.on){color:var(--ink,#F4F7FB);}',
       '.rtgnav a:active,.rtgnav button:active{transform:translateY(1px);}',
       '.rtgnav .lab{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}',
       /* the count of puzzles still open today */
@@ -197,8 +206,9 @@
      replacing it, and do it on <body> so nothing inside has to know we exist. */
   function reserve() {
     try {
-      var h = (el && el.offsetHeight) || 58;
-      document.body.style.paddingBottom = 'calc(' + h + 'px + var(--rtgnav-extra, 0px))';
+      // the dock floats 8px up, and gets 10px of air above it
+      var h = ((el && el.offsetHeight) || 58) + 18;
+      document.body.style.paddingBottom = 'calc(' + h + 'px + env(safe-area-inset-bottom, 0px) + var(--rtgnav-extra, 0px))';
     } catch (e) {}
   }
 

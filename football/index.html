@@ -2047,8 +2047,10 @@ window.GA_ID='G-L29P5MRWKE';
      flat utility buttons below it, while sharing their edges. */
   .hp-more{display:flex;width:100%;justify-content:center;
     margin-top:20px;gap:9px;font-size:13px;letter-spacing:.05em;
-    border-radius:12px;border:1px solid var(--line-2);
-    background:linear-gradient(180deg,rgba(255,255,255,.062),rgba(255,255,255,.018));
+    border-radius:14px;border:1px solid rgba(255,255,255,.14);
+    background:linear-gradient(180deg,rgba(255,255,255,.07),rgba(255,255,255,.02));
+    -webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.09);
     color:rgba(238,242,249,.92);
     transition:border-color .15s ease,background .15s ease,transform .07s ease}
   .hp-more:hover{border-color:rgba(255,255,255,.28);
@@ -2512,8 +2514,11 @@ window.GA_ID='G-L29P5MRWKE';
   #s-intro.hm-full{--gl:#c62828;--gr:#1d4ed8;--glow:rgba(139,92,246,.5)}
 
   .hp-mode{position:relative;display:grid;grid-template-columns:repeat(var(--n,3),minmax(0,1fr));
-    gap:6px;padding:5px;margin:4px 0 0;border-radius:14px;background:#0f1628;
-    border:1px solid var(--line-2)}
+    gap:6px;padding:5px;margin:4px 0 0;border-radius:16px;
+    background:linear-gradient(180deg,rgba(255,255,255,.07),rgba(255,255,255,.025));
+    border:1px solid rgba(255,255,255,.13);
+    -webkit-backdrop-filter:blur(14px) saturate(1.4);backdrop-filter:blur(14px) saturate(1.4);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.1),0 10px 26px -18px #000}
   .hp-mode[hidden]{display:none}
   /* ONE PILL SLIDING UNDER THE TABS, rather than a background on whichever tab is checked.
      It moves by its own width plus the gap, so it lands on each column exactly whatever the
@@ -2522,7 +2527,8 @@ window.GA_ID='G-L29P5MRWKE';
     width:calc((100% - 10px - (var(--n,3) - 1) * 6px) / var(--n,3));
     transform:translateX(calc(var(--i,0) * (100% + 6px)));
     background:linear-gradient(115deg,var(--gl) 0%,var(--gl) 46%,var(--gr) 54%,var(--gr) 100%);
-    box-shadow:0 6px 16px -8px var(--glow);
+    border:1px solid rgba(255,255,255,.28);box-sizing:border-box;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.4),0 6px 16px -8px var(--glow);
     transition:transform .5s cubic-bezier(.22,1.2,.36,1),box-shadow .4s ease}
   #s-intro:not(.hm-full) .hp-mode-pill{background:linear-gradient(135deg,var(--gl),var(--gr))}
   .hp-tab{position:relative;z-index:1;min-height:48px;border:0;border-radius:10px;
@@ -2540,12 +2546,55 @@ window.GA_ID='G-L29P5MRWKE';
   .hp-slots{margin:9px 0 9px;text-align:center;font-family:var(--fn);font-size:11.5px;
     font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--dim-2)}
   .hp-mode[hidden]+.hp-slots{margin-top:2px}
-  /* The Spin button wears the switcher's colour. */
-  .hp-start{font-family:var(--fd);font-size:min(25px,7vw);white-space:nowrap;font-weight:400;letter-spacing:.06em;
-    padding:17px 18px;border-radius:14px;background:linear-gradient(115deg,var(--gl),var(--gr));
-    box-shadow:0 14px 30px -14px var(--glow),0 2px 8px rgba(0,0,0,.35);
-    transition:box-shadow .45s ease}
-  #s-intro.hm-full .hp-start{background:linear-gradient(115deg,var(--gl) 0%,var(--gl) 44%,var(--gr) 56%,var(--gr) 100%)}
+  /* THE START BUTTON IS FROSTED GLASS, tinted with the switcher's colour.
+     Real backdrop-filter has nothing to blur here: the button sits on the page's flat dark,
+     and a blur of flat dark is flat dark. So what is "behind the glass" is drawn INSIDE it:
+     two soft lights in the mode's colours in .hp-go-fx, under a translucent tint, a frost
+     sheen, a little grain and a bright hairline edge. The backdrop-filter is still set, so
+     anything that ever does pass behind it (the page scrolling under a sticky header, a
+     glow) frosts properly. isolation keeps the z-index:-1 layer inside the button and
+     above its own background, which is what lets the label sit on top of it. */
+  .hp-start{isolation:isolate;display:flex;align-items:center;justify-content:center;gap:10px;
+    font-family:var(--fd);font-size:min(25px,7vw);white-space:nowrap;font-weight:400;letter-spacing:.06em;
+    padding:17px 18px;border-radius:16px;color:#fff;
+    background:linear-gradient(115deg,var(--gl),var(--gr));
+    background:linear-gradient(115deg,color-mix(in srgb,var(--gl) 58%,transparent),color-mix(in srgb,var(--gr) 52%,transparent));
+    border:1px solid rgba(255,255,255,.32);
+    -webkit-backdrop-filter:blur(16px) saturate(1.6);backdrop-filter:blur(16px) saturate(1.6);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.55),inset 0 -1px 0 rgba(255,255,255,.1),
+      0 18px 38px -16px var(--glow),0 3px 12px rgba(0,0,0,.4);
+    text-shadow:0 1px 2px rgba(0,0,0,.3);
+    transition:box-shadow .45s ease,border-color .3s ease,transform .07s ease}
+  #s-intro.hm-full .hp-start{background:linear-gradient(115deg,
+    color-mix(in srgb,var(--gl) 58%,transparent) 0%,color-mix(in srgb,var(--gl) 58%,transparent) 42%,
+    color-mix(in srgb,var(--gr) 55%,transparent) 58%,color-mix(in srgb,var(--gr) 55%,transparent) 100%)}
+  .hp-start:hover{border-color:rgba(255,255,255,.5)}
+  .hp-go-fx{position:absolute;inset:0;z-index:-1;border-radius:inherit;overflow:hidden;pointer-events:none}
+  .hp-go-fx i{position:absolute;width:70%;aspect-ratio:1;border-radius:50%;filter:blur(18px);opacity:.85}
+  .hp-go-fx i:nth-child(1){left:-12%;top:-95%;background:radial-gradient(circle,var(--gl),transparent 68%)}
+  .hp-go-fx i:nth-child(2){right:-14%;bottom:-100%;background:radial-gradient(circle,var(--gr),transparent 68%)}
+  /* The frost: a brighter top half, the way light catches the upper face of a pane. */
+  .hp-go-fx:before{content:'';position:absolute;inset:0;
+    background:linear-gradient(180deg,rgba(255,255,255,.26) 0%,rgba(255,255,255,.08) 46%,rgba(255,255,255,0) 54%,rgba(255,255,255,.05) 100%)}
+  /* Grain, which is the difference between frosted glass and tinted plastic. */
+  .hp-go-fx:after{content:'';position:absolute;inset:0;opacity:.16;mix-blend-mode:overlay;
+    background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)'/%3E%3C/svg%3E")}
+  @media (prefers-reduced-motion:no-preference){
+    .hp-go-fx i:nth-child(1){animation:hpgoA 9s ease-in-out infinite alternate}
+    .hp-go-fx i:nth-child(2){animation:hpgoB 11s ease-in-out infinite alternate}
+  }
+  @keyframes hpgoA{to{transform:translate(38%,22%)}}
+  @keyframes hpgoB{to{transform:translate(-36%,-18%)}}
+  .hp-go-l{position:relative}
+  .hp-go-l.swap{animation:hpswap .38s ease-out}
+  .hp-go-ar{flex:0 0 auto;width:.8em;height:.8em;fill:none;stroke:currentColor;stroke-width:3;
+    stroke-linecap:round;stroke-linejoin:round;opacity:.9;filter:drop-shadow(0 1px 2px rgba(0,0,0,.3));
+    transition:transform .2s ease}
+  .hp-start:hover .hp-go-ar{transform:translateX(3px)}
+  .hp-start.hp-loading .hp-go-ar{visibility:hidden}
+  /* Under 360 the longest label, "Draft your full team", has about eleven pixels to spare
+     in Anton. The padding and the tracking give a little back for a fallback face. */
+  @media (max-width:359px){.hp-start{padding-left:12px;padding-right:12px;letter-spacing:.04em;gap:8px}}
   .hp-start.hp-loading{opacity:.7;pointer-events:none}
   .hp-start.hp-loading .hp-go-l{visibility:hidden}
   .hp-start.hp-loading:after{content:'';position:absolute;left:50%;top:50%;width:20px;
@@ -7112,7 +7161,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
          paintHomeStart is the only thing that decides which. Both are in the markup rather
          than one being built at runtime so the first-run guide, the landscape ordering and
          the focus ring all have something real to attach to before any script runs. -->
-    <button class="btn hp-start m-off" id="b-start"><span class="hp-go-l">Spin your first pick</span></button>
+    <button class="btn hp-start m-off" id="b-start"><span class="hp-go-fx" aria-hidden="true"><i></i><i></i></span><span class="hp-go-l">Draft your offense</span><svg class="hp-go-ar" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></button>
     <p class="hp-rule" id="hp-rule"></p>
     <!-- Shown and hidden with the split, not with the page: it is a caption for the pair of
          buttons and says nothing about the single Start a run. -->
@@ -11397,6 +11446,8 @@ function homeRule(m){
   return 'Six spins. '+M0(E.CONSTANTS.CAP_MUSD)+' cap.'+
     (m==='def'&&!oneTeamReady()?' Needs a free account.':'');
 }
+/* The button names what it drafts, so the switcher's answer is on the thing you press. */
+const HOME_GO={off:'Draft your offense',def:'Draft your defense',full:'Draft your full team'};
 function homeSwap(el,html){
   if(!el||el.innerHTML===html) return;
   el.innerHTML=html;
@@ -11434,7 +11485,11 @@ function paintHomeMode(animate){
   const ru=$('hp-rule');
   if(animate) homeSwap(ru,homeRule(m)); else if(ru) ru.textContent=homeRule(m);
   const go=document.querySelector('#b-start .hp-go-l');
-  if(go) go.textContent=(m==='full'&&fullRead())?'Resume Full Team':'Spin your first pick';
+  const goTxt=(m==='full'&&fullRead())?'Resume Full Team':HOME_GO[m]||HOME_GO.off;
+  if(go&&go.textContent!==goTxt){
+    go.textContent=goTxt;
+    if(animate&&!reduceMotion()){ go.classList.remove('swap'); void go.offsetWidth; go.classList.add('swap'); }
+  }
   heroSwitch();
 }
 /* Wired once. Arrow keys move between the tabs the way a radio group does. */

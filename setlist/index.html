@@ -537,6 +537,12 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
   .band-hd h2{font-family:var(--ui); font-weight:400; font-size:44px; line-height:.9;
     margin:0; text-transform:uppercase; letter-spacing:.02em;}
   .band-meta{font-size:12.5px; color:var(--mut); font-weight:700; margin-bottom:2px;}
+  /* A draft in hand: Resume is the big button, what it holds sits under it,
+     and starting over is the quiet one. The two buttons never look alike, so
+     the one that throws the night away is never pressed by mistake. */
+  .resume-note{margin:8px 0 10px; text-align:center; font-family:var(--ui);
+    font-size:15px; letter-spacing:.04em; color:var(--mut);}
+  .band [data-fresh]{width:100%;}
   .warn{margin-top:12px; padding:11px 13px; border-radius:var(--r-sm); font-size:13px;
     font-weight:700; line-height:1.5; background:color-mix(in srgb,var(--gold) 12%, transparent);
     border:1px solid color-mix(in srgb,var(--gold) 34%, transparent); color:var(--goldT);}
@@ -2728,8 +2734,8 @@ window.GA_ID='G-L29P5MRWKE';
       point of the game. A setlist isn't just a list of good songs. It's an order.</p>
 
     <h3>Where the shows come from</h3>
-    <p>Every show, song and running time is real. Right now the band is Goose, with 7,725
-      recorded performances across 671 shows between 2014 and 2026, pulled from the community
+    <p>Every show, song and running time is real. Right now the band is Goose, with 7,732
+      recorded performances across 672 shows between 2014 and 2026, pulled from the community
       archive at <a href="https://elgoose.net" target="_blank" rel="noopener noreferrer">elgoose.net</a>.
       Nothing is made up. If a show is in the game, it happened, in that order, at that
       length.</p>
@@ -2998,7 +3004,7 @@ const BANDS = [
   { id: 'goose',  label: 'Goose',  csv: '/setlist/data/goose.csv',
     shows: '/setlist/data/goose_shows.csv',
     latest: '/setlist/data/goose_latest.json',
-    note: '671 shows from the elgoose.net archive' },
+    note: '672 shows from the elgoose.net archive' },
   { id: 'sample', label: 'Sample Band', csv: '/setlist/data/sample.csv',
     note: 'Made-up data, for testing', sample: true },
 ];
@@ -3019,7 +3025,7 @@ const BANDS = [
  * Now written by scripts/setlist/sync_counts.mjs from a hash of the data
  * itself, in the same step of the daily refresh that already updates the
  * counts. It changes when, and only when, the data does. Do not edit by hand. */
-const DATA_VERSION = 'e9ae4376';
+const DATA_VERSION = '766fa0f3';
 
 // A round is only a decision if there is a setlist to read, and — now that time
 // is the currency — only if the songs have durations to spend. 17% of songs in
@@ -3237,6 +3243,61 @@ const S = {
   ranks: null,
 };
 
+/* ── a draft survives a refresh ───────────────────────────────────────────────
+ *
+ * The whole night lived in S and nowhere else, so a reload, a phone that
+ * dropped the tab in the background, or a thumb on the wrong gesture threw away
+ * every pick. Nothing said so: the page came back on the home screen as if the
+ * player had never started.
+ *
+ * WHAT IS STORED IS REFERENCES, NEVER SONGS. A pick is [show_id, position in
+ * that show's songs, set], and the position is what tells the two halves of a
+ * sandwich apart, which song_id alone cannot. Everything else (the segues, the
+ * lengths, the scoring inputs) is looked up again in the archive on the way
+ * back in, so a stored draft can never disagree with the data it is scored on.
+ * The archive only ever APPENDS (data_drift.mjs enforces it), so a reference
+ * written yesterday still resolves today; if one ever does not, the draft is
+ * dropped and the player is told, rather than resumed with a hole in it.
+ *
+ * Declared up here, beside S, because render() reads it on the first paint and
+ * a const declared further down would still be in its TDZ at that moment.
+ */
+const DRAFT_KEY = 'segue_draft_v1';
+
+function readDraft(){
+  try {
+    const d = JSON.parse(localStorage.getItem(DRAFT_KEY) || 'null');
+    return d && d.v === 1 && Array.isArray(d.picks) ? d : null;
+  } catch { return null; }
+}
+function clearDraft(){ try { localStorage.removeItem(DRAFT_KEY); } catch {} }
+
+function saveDraft(){
+  if (!S.band || !S.show || !S.data || S.result) return;
+  const d = {
+    v: 1,
+    band: S.band.id,
+    show: String(S.show.show_id),
+    round: S.round,
+    closed: S.closed.slice(),
+    spent: S.spent.slice(),
+    respins: S.respins,
+    seen: [...S.seenShows].map(String),
+    picks: S.drafted.map(p => [String(p.show.show_id), p.show.songs.indexOf(p.perf), p.si]),
+  };
+  try { localStorage.setItem(DRAFT_KEY, JSON.stringify(d)); } catch {}
+}
+
+/* What the home screen says about a draft in hand: which set is open and how
+   many songs are in. Read off the stored draft rather than S, because on a
+   fresh load S is empty and the draft is the only record there is. */
+function draftSummary(d){
+  const si = d.closed.findIndex(c => !c);
+  const n = d.picks.length;
+  const where = si === -1 ? 'Encore' : SETS[si].label;
+  return `${where} · ${n} song${n === 1 ? '' : 's'} in`;
+}
+
 /* What fills the time bar. See the .tbar rule for why 25 minutes and not 20.
    Here rather than in scoring.js because it changes nothing about the score:
    it is how long a bar is drawn, and no rule reads it. */
@@ -3266,6 +3327,11 @@ function setScreen(name){
   /* The whole play flow, playback included, is a show in progress: the site's
      footer has no business under it. */
   document.body.classList.toggle('inshow', ['reveal', 'draft', 'show', 'loading'].includes(name));
+  /* Every pick, respin and new round passes through here on its way to the
+     reveal or the draft, so this one line is what keeps the stored draft
+     level with the screen. closeSet() is the one change that re-renders
+     without coming through here, and it saves for itself. */
+  if (name === 'reveal' || name === 'draft') saveDraft();
   render();
   if (changed) window.scrollTo(0, 0);
 }
@@ -3529,6 +3595,8 @@ function renderHome(){
     const last = live && live.last;
     const days = next ? daysUntil(next.date) : null;
     const place = s => [s.city, s.state || s.country].filter(Boolean).join(', ');
+    const draft = readDraft();
+    const saved = draft && draft.band === b.id ? draft : null;
 
     return `
       <section class="card band">
@@ -3542,7 +3610,10 @@ function renderHome(){
               whose whole job is to be pressed. The countdown was 91px of that,
               and it is the one thing in the card that nobody came here to
               press. Rules, then the button, then what the band is up to. */''}
-        <button class="btn primary big" data-start="${b.id}">Build a setlist</button>
+        ${saved ? `<button class="btn primary big" data-resume="${b.id}">Resume your setlist</button>
+        <div class="resume-note">${esc(draftSummary(saved))}</div>
+        <button class="btn ghost" data-start="${b.id}" data-fresh="1">Start a new one</button>`
+        : `<button class="btn primary big" data-start="${b.id}">Build a setlist</button>`}
 
         ${next ? `<div class="nextline">
           <span class="nl-k">Next show</span>
@@ -5458,7 +5529,10 @@ document.querySelector('.lockup').addEventListener('click', e => {
       + "until the encore's done.",
     confirm: 'Leave the show',
     cancel: 'Keep building',
-    onYes: () => { window.location.href = '/setlist/'; },
+    // Leaving is the one way out that means it, so the stored draft goes too.
+    // Without this the reload below would land on a Resume button for the
+    // very show the player just chose to throw away.
+    onYes: () => { clearDraft(); window.location.href = '/setlist/'; },
   });
 });
 
@@ -6110,6 +6184,9 @@ async function start(bandId){
     return;
   }
 
+  // A new night replaces whatever draft was in hand. The home screen asks
+  // before it gets here, so this is the player's choice rather than an accident.
+  clearDraft();
   // Fresh draw every run — there is no shared/seeded mode yet.
   S.rng = mulberry32(hash32(`${bandId}|${Date.now()}|${Math.random()}`));
   S.round = 0;
@@ -6125,6 +6202,65 @@ async function start(bandId){
   S.hint = ''; S.hintBad = false; S.result = null;
   drawShow();
   setScreen('reveal');
+}
+
+/* Put a stored draft back exactly where it was left. It lands on the DRAFT
+   screen rather than the reveal: the show was already drawn and the player has
+   seen it, so spinning the wheel again would be theatre for a result that is
+   already known. The rng is fresh, which is fine: it only ever decides the
+   NEXT draw, and a draw nobody has seen yet has nothing to be consistent with. */
+async function resumeDraft(bandId){
+  const d = readDraft();
+  const band = BANDS.find(b => b.id === bandId);
+  if (!d || !band || d.band !== bandId) return;
+
+  S.band = band; S.error = '';
+  setScreen('loading');
+  renderLoading(`Loading the ${band.label} archive…`);
+  try {
+    S.data = await fetchBand(band);
+  } catch (e){
+    S.error = e.message;
+    setScreen('home');
+    return;
+  }
+
+  const byId = new Map(S.data.shows.map(x => [String(x.show_id), x]));
+  const show = byId.get(String(d.show));
+  const sets = [[], [], []];
+  const drafted = [];
+  let ok = !!show && d.closed.length === 3 && d.spent.length === 3;
+  for (const [sid, idx, si] of d.picks){
+    const sh = byId.get(String(sid));
+    const perf = sh && sh.songs[idx];
+    if (!perf || !sets[si]){ ok = false; break; }
+    sets[si].push(perf);
+    drafted.push({ show: sh, perf, si });
+  }
+  if (!ok){
+    clearDraft();
+    S.error = "That setlist couldn't be restored. Start a new one.";
+    setScreen('home');
+    return;
+  }
+
+  S.rng = mulberry32(hash32(`${bandId}|${Date.now()}|${Math.random()}`));
+  S.round = d.round | 0;
+  S.sets = sets;
+  S.closed = d.closed.map(Boolean);
+  S.spent = d.spent.map(Number);
+  S.respins = d.respins | 0;
+  S.drafted = drafted;
+  S.best = null;
+  S.seenShows = new Set(d.seen.filter(id => byId.has(id)).map(id => byId.get(id).show_id));
+  S.seenShows.add(show.show_id);
+  S.seenSongs = [];
+  S.seenShows.forEach(id => byId.get(String(id)).songs.forEach(p => S.seenSongs.push(p)));
+  S.show = show;
+  S.showNote = false;
+  S.pickedSong = null; S.sheetForced = false; S.closeConfirm = null;
+  S.hint = ''; S.hintBad = false; S.result = null;
+  setScreen('draft');
 }
 
 /** Draw tonight's show — never the same one twice in a run. */
@@ -6227,6 +6363,7 @@ function closeSet(){
   S.closeConfirm = null;
   S.pickedSong = null; S.hint = ''; S.hintBad = false; S.sheetForced = false;
   if (currentSet() === -1){ finishShow(); return; }
+  saveDraft();
   renderDraft();
 }
 
@@ -6255,6 +6392,8 @@ function nextRound(){
 }
 
 function finishShow(){
+  // The night is over and scored, so there is nothing left to come back to.
+  clearDraft();
   S.result = scoreShow(S.sets, S.data.segues, S.spent, S.data.segueCounts, S.data.suites);
   // The ceiling: the same shows, in the same order, played as well as we can
   // find. Guaranteed reachable, so it is a target rather than a taunt.
@@ -7524,8 +7663,26 @@ function renderProfile(){
 
 // ── events ───────────────────────────────────────────────────────────────────
 app.addEventListener('click', e => {
+  const resumeBtn = e.target.closest('[data-resume]');
+  if (resumeBtn && !resumeBtn.disabled){
+    resumeDraft(resumeBtn.dataset.resume);
+    return;
+  }
+
   const startBtn = e.target.closest('[data-start]');
   if (startBtn && !startBtn.disabled){
+    /* Starting over while a draft is in hand throws it away, so that press
+       asks first. One thumb slip should not cost somebody a half-built night. */
+    if (startBtn.dataset.fresh){
+      ask({
+        title: 'Start a new setlist?',
+        body: "The one you have going will be gone.",
+        confirm: 'Start a new one',
+        cancel: 'Keep it',
+        onYes: () => start(startBtn.dataset.start),
+      });
+      return;
+    }
     start(startBtn.dataset.start);
     return;
   }
