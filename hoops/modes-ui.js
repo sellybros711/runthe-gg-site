@@ -94,22 +94,100 @@ var ART = {
     '.rrrrr.',
     '..rrr..',
     '...r...'
-  ],
-  target: [
-    '..wwww..',
-    '.wrrrrw.',
-    'wrwwwwrw',
-    'wrwrrwrw',
-    'wrwrrwrw',
-    'wrwwwwrw',
-    '.wrrrrw.',
-    '..wwww..'
   ]
 };
 
 function jersey(code, cell){
   var s = E.clubSkin(code);
   return pix(ART.jersey, { P: s.bg, S: s.accent, k: '#05060b' }, cell || 3, 'jersey');
+}
+
+/* THE HOOP, which is what the ball is going to. Six Passes used a bullseye and
+   a golf flag, which are two other sports. */
+ART.hoop = [
+  'wwwwwwwwwww',
+  'w.........w',
+  'w..rrrrr..w',
+  'w..r...r..w',
+  'wwwwwwwwwww',
+  '..ooooooo..',
+  '...n.n.n...',
+  '....n.n....',
+  '...n.n.n...',
+  '....nnn....'
+];
+var HOOP_PAL = { w: '#f5f5f5', r: '#ef4444', o: '#f97316', n: '#cbd5e1' };
+
+/* Two colours mixed, as hex. t is the share of b. */
+function mixHex(a, b, t){
+  var pa = parseInt(a.slice(1), 16), pb = parseInt(b.slice(1), 16), o = '#';
+  [16, 8, 0].forEach(function(sh){
+    var x = Math.round(((pa >> sh) & 255) * (1 - t) + ((pb >> sh) & 255) * t);
+    o += (x < 16 ? '0' : '') + x.toString(16);
+  });
+  return o;
+}
+
+/* A PLAYER CARD IN PIXELS: head and shoulders, in the jersey of the club he
+ * did the most for.
+ *
+ * IT IS A SILHOUETTE ON PURPOSE. This game has no licensed art, and a face
+ * drawn from a hash would put a guess about somebody's hair, build and skin on
+ * a real person, and be wrong about most of them. So the figure is the one
+ * true thing it can be: a dark shape in a real club's colours. The two things
+ * it does read off the data are the CLUB (where his win shares were earned)
+ * and his FRAME, because a center really is broader across the shoulders than
+ * a point guard. `light` is the side the rim light comes from, so the two
+ * ends of a puzzle face each other. */
+var portraitMemo = {};
+function portraitFacts(id){
+  if (portraitMemo[id]) return portraitMemo[id];
+  var ws = {}, mins = {};
+  data().players.forEach(function(p){
+    if (p.i !== id || p.t === 'TOT') return;
+    ws[p.t] = (ws[p.t] || 0) + p.w;
+    var pos = p.pp || 'SF';
+    mins[pos] = (mins[pos] || 0) + (p.mp || 0) * (p.g || 1);
+  });
+  var club = Object.keys(ws).sort(function(a, b){ return ws[b] - ws[a]; })[0] || 'NBA';
+  var pos = Object.keys(mins).sort(function(a, b){ return mins[b] - mins[a]; })[0] || 'SF';
+  return (portraitMemo[id] = { club: club, big: pos === 'C' || pos === 'PF', guard: pos === 'PG' || pos === 'SG' });
+}
+function portraitRows(big, guard, light){
+  var W = 20, H = 22, cx = 9.5, HW = big ? 9.6 : guard ? 7.4 : 8.5, JW = HW - 2.6;
+  var g = [];
+  for (var y = 0; y < H; y++) {
+    var row = [];
+    for (var x = 0; x < W; x++) {
+      var dx = x - cx, c = y < 11 ? 'B' : 'D';
+      if ((dx * dx) / 64 + ((y - 7.5) * (y - 7.5)) / 64 <= 1) c = 'L';
+      var head = (dx * dx) / (3.9 * 3.9) + ((y - 6.8) * (y - 6.8)) / (4.8 * 4.8) <= 1;
+      var neck = y >= 10 && y <= 13 && Math.abs(dx) <= 1.6;
+      var sh = y >= 13 && Math.abs(dx) <= Math.min(HW, 2 + (y - 12) * 3);
+      if (head || neck || sh) c = 'h';
+      if (y >= 14 && Math.abs(dx) <= JW && !(y <= 15 && Math.abs(dx) <= (y === 14 ? 2.6 : 1.6))) c = 'P';
+      row.push(c);
+    }
+    g.push(row);
+  }
+  var at = function(x, y){ return (y < 0 || y >= H || x < 0 || x >= W) ? null : g[y][x]; };
+  var out = g.map(function(r){ return r.slice(); });
+  for (var y2 = 0; y2 < H; y2++) for (var x2 = 0; x2 < W; x2++) {
+    var c2 = g[y2][x2], lit = at(x2 + (light < 0 ? -1 : 1), y2);
+    if (c2 === 'P') {
+      var n = [at(x2 - 1, y2), at(x2 + 1, y2), at(x2, y2 - 1)];
+      if (n.some(function(v){ return v === 'h'; })) out[y2][x2] = 'S';
+    }
+    if (c2 === 'h' && (lit === 'B' || lit === 'D' || lit === 'L')) out[y2][x2] = 'r';
+  }
+  return out.map(function(r){ return r.join(''); });
+}
+function portrait(id, cell, light){
+  var f = portraitFacts(id), sk = E.clubSkin(f.club);
+  return pix(portraitRows(f.big, f.guard, light || -1), {
+    B: mixHex(sk.bg, '#0b0f17', 0.5), D: mixHex(sk.bg, '#0b0f17', 0.7), L: mixHex(sk.bg, '#0b0f17', 0.3),
+    h: '#0a0d14', r: sk.accent, P: sk.bg, S: sk.accent
+  }, cell || 3, 'portrait');
 }
 
 /* The ball from the logo, as an image, so a life on screen is the same ball as
@@ -341,6 +419,36 @@ var CSS = [
   '.fx-tag{position:absolute;right:10px;top:-8px;font-size:9.5px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;',
   '  background:var(--red);color:#fff;border-radius:999px;padding:2px 8px;}',
   '.fx-tag.in{background:#14b8a6;}',
+  '.fx-man.bn{padding:7px 12px;background:#10151f;}',
+  '.fx-man.bn .fs{color:var(--dim);font-size:12px;}',
+  '.fx-benchh{font-size:10px;letter-spacing:.2em;text-transform:uppercase;font-weight:800;color:var(--dim);margin:12px 2px 6px;}',
+  '.fx-dock{position:sticky;bottom:calc(var(--dock, 0px) + 8px + env(safe-area-inset-bottom,0px));z-index:5;display:flex;gap:10px;align-items:center;',
+  '  margin-top:14px;padding:10px 12px;border-radius:12px;background:#0f1a1a;border:1px solid rgba(94,234,212,.45);box-shadow:0 8px 24px rgba(0,0,0,.45);}',
+  '.fx-dock.top{position:static;box-shadow:none;margin:0 0 4px;}',
+  '.fx-dk{flex:1 1 auto;min-width:0;}',
+  '.fx-dk b{display:block;font-size:15px;line-height:1.25;margin-top:2px;}',
+  '.fx-dk small{display:block;font-size:12px;color:var(--mut);margin-top:2px;}',
+  '.fx-dock > button{flex:0 0 auto;width:auto;padding:10px 14px;}',
+  '.fx-dock > button:disabled{opacity:.5;}',
+  '.fx-chips{display:flex;gap:6px;overflow-x:auto;padding:2px 2px 8px;scrollbar-width:none;}',
+  '.fx-chips::-webkit-scrollbar{display:none;}',
+  '.fx-chip{flex:0 0 auto;width:auto;border-radius:999px;padding:6px 12px;font-size:12.5px;font-weight:800;',
+  '  background:#141a26;border:1px solid var(--cardb);color:var(--mut);}',
+  '.fx-chip.on{background:#0f766e;border-color:#5eead4;color:#fff;}',
+  '.fx-fil{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:2px 0 4px;}',
+  '.fx-fil .fx-q{padding:10px 12px;font-size:14px;}',
+  '.fx-offer{display:block;width:100%;text-align:left;background:#141a26;border:1px solid var(--cardb);border-radius:12px;',
+  '  padding:10px 12px;color:var(--ink);font-family:var(--body);cursor:pointer;}',
+  '.fx-offer:hover{filter:none;border-color:rgba(94,234,212,.5);}',
+  '.fo-h{display:flex;align-items:center;gap:8px;font-weight:800;font-size:13px;color:var(--mut);margin-bottom:6px;}',
+  '.fo-h em{margin-left:auto;font-style:normal;font-family:var(--num);font-variant-numeric:tabular-nums;color:var(--dim);font-size:12px;}',
+  '.fo-p{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:4px 0;border-top:1px solid rgba(255,255,255,.05);}',
+  '.fo-p .hn{font-weight:800;font-size:14px;min-width:0;}',
+  '.fo-p .hn em{font-style:normal;color:#5eead4;font-size:11px;margin-left:4px;}',
+  '.fo-p .hn small{display:block;color:var(--dim);font-weight:600;font-size:11.5px;}',
+  '.fo-p .hp{font-family:var(--num);font-variant-numeric:tabular-nums;font-weight:800;font-size:14px;}',
+  '.fx-more{margin-top:4px;}',
+  '.fx-swap b + span{display:block;margin-bottom:6px;}',
   '.fx-q{width:100%;background:#0b0f17;border:1px solid #2f3b52;border-radius:10px;padding:13px 14px;',
   '  color:var(--ink);font-family:var(--body);font-size:16px;font-weight:600;outline:none;}',
   '.fx-q:focus{border-color:#5eead4;box-shadow:0 0 0 3px rgba(94,234,212,.15);}',
@@ -397,6 +505,9 @@ var CSS = [
   '.ps-end small{font-size:11.5px;color:var(--dim);font-weight:700;}',
   '.ps-end.tgt{border-color:rgba(242,193,78,.55);background:#1e1a10;text-align:right;}',
   '.ps-end.tgt b{color:var(--gold);}',
+  '.ps-pic{display:flex;margin:0 0 8px;}',
+  '.ps-end.tgt .ps-pic{justify-content:flex-end;}',
+  '.ps-pic .portrait{border-radius:8px;border:1px solid rgba(255,255,255,.14);box-shadow:0 3px 0 rgba(0,0,0,.35);}',
   '.ps-tlw{position:relative;background:linear-gradient(180deg,#0d1220,#090c14);border:1px solid #232c40;',
   '  border-radius:12px;padding:6px 6px 0;margin:0 0 10px;}',
   '.ps-tl{display:block;width:100%;height:auto;}',
@@ -904,15 +1015,26 @@ function cqRender(){
 var FX_KEY = 'rtf.fix.v1';          // { days: { [day]: result } }
 var fx = null;                      // today's puzzle: { day, ts, five }
 var fxBase = null;                  // today's odds as built
-var fxOut = null;                   // the slot being traded away
-var fxQuery = '';
-var fxPending = null;               // { slot, key } awaiting confirm
-var fxIndex = null;                 // the search index, built on first use
+var fxBlock = [];                   // pkeys on the block, at most two
+var fxView = 'roster';              // 'roster' or 'market'
+var fxSort = 'pts', fxPos = 'all', fxClub = 'all', fxQuery = '', fxShown = 25;
+var fxMarket = null;                // { key, offers } for the block as it stands
+var fxPending = null;               // the offer awaiting confirm
 var fxBusy = false;
 
 function today(){ return P.dayNumberOf(P.easternISO()); }
 function fxStore(){ return lsGet(FX_KEY) || { days: {} }; }
-function fxResult(day){ return fxStore().days[day] || null; }
+/* A result from the first version was one man for one man, filed as a slot,
+   an out and an in. It is read in the new shape so the done screen, the share
+   and the board all have one thing to draw. */
+function fxNorm(r){
+  if (!r || r.ins) return r;
+  r.outs = [r.out];
+  r.ins = [r.inKey];
+  r.legacy = true;
+  return r;
+}
+function fxResult(day){ return fxNorm(fxStore().days[day] || null); }
 function fxKeep(day, r){
   var s = fxStore();
   s.days[day] = r;
@@ -934,7 +1056,7 @@ function fxStreak(){
 
 function fxPuzzle(){
   var d = today();
-  if (!fx || fx.day !== d) { fx = M.fxDaily(data(), d); fxBase = null; }
+  if (!fx || fx.day !== d) { fx = M.fxDaily(data(), d); fxBase = null; fxMarket = null; fxBlock = []; fxView = 'roster'; }
   return fx;
 }
 function fxBaseOdds(){
@@ -946,38 +1068,16 @@ function fxBaseOdds(){
 function fold(s){
   return String(s).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 }
-function fxBuildIndex(){
-  if (fxIndex) return fxIndex;
-  fxIndex = data().players.filter(function(p){ return p.t !== 'TOT'; })
-    .map(function(p){ return { p: p, k: E.pkey(p), f: fold(p.n) }; });
-  return fxIndex;
-}
 
-/* NAME WORDS, PLUS A YEAR IF THERE IS ONE. "rodman 92" is the 1992 season and
-   "kerr" is every Steve Kerr season. A two digit year means the one that ends
-   in it, which in this data is never ambiguous. */
-function fxSearch(q){
-  var toks = fold(q).split(/\s+/).filter(Boolean);
-  var words = toks.filter(function(t){ return !/^\d{2}(\d{2})?$/.test(t); });
-  var years = toks.filter(function(t){ return /^\d{2}(\d{2})?$/.test(t); });
-  if (!words.length || words.join('').length < 2) return null;
-  var hits = fxBuildIndex().filter(function(r){
-    for (var i = 0; i < words.length; i++) if (r.f.indexOf(words[i]) < 0) return false;
-    for (var j = 0; j < years.length; j++) {
-      var y = String(r.p.s);
-      if (years[j].length === 4 ? y !== years[j] : y.slice(-2) !== years[j]) return false;
-    }
-    return true;
-  });
-  hits.sort(function(a, b){
-    return a.p.n < b.p.n ? -1 : a.p.n > b.p.n ? 1 : b.p.s - a.p.s;
-  });
-  var five = fxPuzzle().five, legal = [], refused = [];
-  hits.forEach(function(r){
-    var why = M.fxRefusal(data(), five, fxOut, r.k);
-    (why ? refused : legal).push({ r: r, why: why });
-  });
-  return { legal: legal, refused: refused };
+/* THE ROSTER, IN THE ORDER A FAN READS ONE: the five who start, by slot, then
+   the bench by minutes. `five` names the starters. */
+function fxOrdered(rows, five){
+  var starters = five.slice();
+  var keys = {};
+  five.forEach(function(p){ keys[E.pkey(p)] = 1; });
+  var bench = rows.filter(function(p){ return !keys[E.pkey(p)]; })
+    .sort(function(a, b){ return (b.mp || 0) - (a.mp || 0); });
+  return { starters: starters, bench: bench };
 }
 
 function fxHead(){
@@ -993,76 +1093,171 @@ function fxHead(){
     + '<div class="fx-note">Good enough to win it. They didn\'t.</div></div></div>';
 }
 
-function fxFiveHtml(five, pick, swapped){
-  var h = '<div class="fx-five">';
-  five.forEach(function(p, i){
-    var cls = i === pick ? ' out' : (swapped === i ? ' in' : '');
-    h += '<button class="fx-man' + cls + '" data-slot="' + i + '"' + (swapped != null ? ' disabled' : '') + '>'
-      + '<span class="fs">' + E.SLOTS[i] + '</span>'
-      + '<span class="fn">' + esc(p.n) + '<small>' + esc(shortClub(p.t, p.s)) + ' · ' + esc(lineOf(p)) + '</small></span>'
-      + '<span class="fp"><b>' + money(p.p) + '</b>' + p.w.toFixed(1) + ' WS</span>'
-      + (i === pick ? '<span class="fx-tag">Trading</span>' : swapped === i ? '<span class="fx-tag in">New</span>' : '')
-      + '</button>';
-  });
-  return h + '</div>';
+/* One man on a roster. `mark` is 'out', 'in' or nothing; `label` is his slot,
+   or BN for the bench. Win shares show on YOUR men only: you know your own
+   team, and who the market underpaid elsewhere is the puzzle. */
+function fxManHtml(p, label, mark, tap, showWs){
+  var k = E.pkey(p);
+  return '<button class="fx-man' + (mark ? ' ' + mark : '') + (label === 'BN' ? ' bn' : '') + '" data-k="' + esc(k) + '"'
+    + (tap ? '' : ' disabled') + '>'
+    + '<span class="fs">' + label + '</span>'
+    + '<span class="fn">' + esc(p.n) + '<small>' + esc(lineOf(p)) + ' · ' + (p.mp || 0).toFixed(0) + ' min</small></span>'
+    + '<span class="fp"><b>' + money(p.p) + '</b>' + (showWs ? p.w.toFixed(1) + ' WS' : esc(shortClub(p.t, p.s))) + '</span>'
+    + (mark === 'out' ? '<span class="fx-tag">' + (tap ? 'On the block' : 'Traded') + '</span>'
+      : mark === 'in' ? '<span class="fx-tag in">New</span>' : '')
+    + '</button>';
 }
 
-function fxPlayHtml(){
+function fxRosterHtml(rows, five, opts){
+  var o = fxOrdered(rows, five), h = '<div class="fx-five">';
+  var out = opts.out || {}, inn = opts.inn || {};
+  o.starters.forEach(function(p, i){
+    var k = E.pkey(p);
+    h += fxManHtml(p, E.SLOTS[i], out[k] ? 'out' : inn[k] ? 'in' : '', opts.tap, !inn[k]);
+  });
+  h += '</div>';
+  if (o.bench.length) {
+    h += '<div class="fx-benchh">Bench</div><div class="fx-five">';
+    o.bench.forEach(function(p){
+      var k = E.pkey(p);
+      h += fxManHtml(p, 'BN', out[k] ? 'out' : inn[k] ? 'in' : '', opts.tap, !inn[k]);
+    });
+    h += '</div>';
+  }
+  return h;
+}
+
+function blockSal(){
+  return fxBlock.reduce(function(s, k){ return s + data().allPlayers[k].p; }, 0);
+}
+function fxSetOf(keys){ var o = {}; keys.forEach(function(k){ o[k] = 1; }); return o; }
+
+/* THE RANGE A BLOCK CAN TAKE BACK, said as money so the rule is readable
+   without the percentage: the same arithmetic as M.salaryOk, both sides. */
+function fxRange(sal){
+  var lo = Math.max(0, (sal - M.TRADE.SLACK) / M.TRADE.MATCH), hi = sal * M.TRADE.MATCH + M.TRADE.SLACK;
+  return money(lo) + ' to ' + money(hi);
+}
+
+function fxRosterView(){
   var p = fxPuzzle(), base = fxBaseOdds();
   var h = fxHead()
     + '<div class="fx-odds"><span class="mx-eyebrow">Title odds as built</span>'
     + '<b class="mx-num">' + pct1(base.odds) + '</b><span class="dim">over ' + base.sims.toLocaleString()
     + ' replayed seasons</span></div>'
-    + '<h3 class="fx-step">' + (fxOut == null ? '1. Pick the man to trade away' : '1. Trading ' + esc(p.five[fxOut].n)) + '</h3>'
-    + fxFiveHtml(p.five, fxOut, null);
-  if (fxOut != null) {
-    var out = p.five[fxOut];
-    h += '<h3 class="fx-step">2. Bring in anybody since 1974</h3>'
-      + '<p class="mx-say" style="margin-top:0">He has to cost <b>' + money(out.p) + ' or less</b> and be able to play <b>'
-      + E.SLOTS[fxOut] + '</b>. One move, and it is final.</p>'
-      + '<input class="fx-q" id="fx-q" type="search" autocomplete="off" spellcheck="false" placeholder="Search a name, add a year: rodman 92" value="' + esc(fxQuery) + '">'
-      + '<div id="fx-res" class="fx-res"></div>';
+    + '<h3 class="fx-step">1. Put one or two players on the block</h3>'
+    + '<p class="mx-say" style="margin-top:0">Starters or bench. Every club in the league that season can make an offer.</p>'
+    + fxRosterHtml(M.fxRoster(data(), p.ts), p.five, { tap: true, out: fxSetOf(fxBlock) });
+  var n = fxBlock.length ? fxOffersNow().length : 0;
+  h += '<div class="fx-dock">';
+  if (fxBlock.length) {
+    h += '<div class="fx-dk"><span class="mx-eyebrow">On the block · ' + money(blockSal()) + '</span>'
+      + '<b>' + fxBlock.map(function(k){ return esc(surname(data().allPlayers[k].n)); }).join(' and ') + '</b>'
+      + '<small>Offers take back ' + fxRange(blockSal()) + '.</small></div>'
+      + '<button class="fx-go" id="fx-find"' + (n ? '' : ' disabled') + '>' + (n ? 'See ' + n + ' offer' + (n === 1 ? '' : 's') : 'No offers') + '</button>';
+  } else {
+    h += '<div class="fx-dk"><span class="mx-eyebrow">The block is empty</span><small>Tap a player to shop him.</small></div>';
   }
-  return h;
+  return h + '</div>';
 }
 
-function fxResultsHtml(){
-  var res = fxQuery.trim() ? fxSearch(fxQuery) : null;
-  if (!res) return '<p class="fx-hint">Type two letters of a name. The market pays for points. The bargains are the guys who rebound, defend and pass.</p>';
-  var h = '';
-  if (!res.legal.length && !res.refused.length) return '<p class="fx-hint">Nobody by that name since 1974.</p>';
-  res.legal.slice(0, 40).forEach(function(x){
-    var p = x.r.p;
+function fxOffersNow(){
+  var key = fxBlock.slice().sort().join(',');
+  if (!fxMarket || fxMarket.key !== key) fxMarket = { key: key, offers: M.fxOffers(data(), fxPuzzle().ts, fxBlock) };
+  return fxMarket.offers;
+}
+
+var FX_SORTS = [
+  ['pts', 'Points', function(p){ return p.pts || 0; }],
+  ['reb', 'Rebounds', function(p){ return p.reb || 0; }],
+  ['ast', 'Assists', function(p){ return p.ast || 0; }],
+  ['def', 'Steals + blocks', function(p){ return (p.stl || 0) + (p.blk || 0); }],
+  ['mp', 'Minutes', function(p){ return p.mp || 0; }]
+];
+
+/* THE MARKET, sorted and filtered. Every offer is kept; the sort puts an
+   offer where its best man on that measure would put it, and a single comes
+   ahead of a pair carrying the same man, because the extra body is filler. */
+function fxFiltered(){
+  var d = data(), f = fold(fxQuery.trim());
+  var stat = (FX_SORTS.filter(function(s){ return s[0] === fxSort; })[0] || FX_SORTS[0])[2];
+  var list = fxOffersNow().filter(function(o){
+    if (fxClub !== 'all' && o.with !== fxClub) return false;
+    var ins = o.ins.map(function(k){ return d.allPlayers[k]; });
+    if (fxPos !== 'all' && !ins.some(function(p){ return E.canFillSlot(p, fxPos); })) return false;
+    if (f && !ins.some(function(p){ return fold(p.n).indexOf(f) >= 0; })) return false;
+    return true;
+  }).map(function(o){
+    var ins = o.ins.map(function(k){ return d.allPlayers[k]; });
+    return { o: o, ins: ins, v: Math.max.apply(null, ins.map(stat)) };
+  });
+  list.sort(function(a, b){ return b.v - a.v || a.ins.length - b.ins.length || b.o.sal - a.o.sal; });
+  return list;
+}
+
+function fxOfferHtml(x){
+  var t = tsParts(x.o.with);
+  var h = '<button class="fx-offer" data-i="' + esc(x.o.with + '|' + x.o.ins.join(',')) + '">'
+    + '<div class="fo-h">' + jersey(t.code, 2) + '<span>' + esc(E.teamName(t.code)) + '</span><em>' + money(x.o.sal) + '</em></div>';
+  x.ins.forEach(function(p){
     /* MINUTES ARE ON THE ROW because a stat line alone hides a man who barely
        played: 4.3 rebounds in fourteen minutes is a different player from 4.3
        in thirty. Win shares are not, deliberately. Knowing who was worth more
        than he was paid is the puzzle, and printing it is the answer. */
-    h += '<button class="fx-hit" data-k="' + esc(x.r.k) + '"><span class="hn">' + esc(p.n)
-      + ' <em>' + esc(shortClub(p.t, p.s)) + '</em><small>' + esc(lineOf(p)) + ' · '
-      + (p.mp || 0).toFixed(0) + ' min</small></span>'
-      + '<span class="hp">' + money(p.p) + '</span></button>';
+    h += '<div class="fo-p"><span class="hn">' + esc(p.n) + ' <em>' + esc(p.ep || p.pp || '') + '</em><small>'
+      + esc(lineOf(p)) + ' · ' + (p.mp || 0).toFixed(0) + ' min</small></span><span class="hp">' + money(p.p) + '</span></div>';
   });
-  if (res.legal.length > 40) h += '<p class="fx-hint">' + (res.legal.length - 40) + ' more. Add a year to narrow it.</p>';
-  if (!res.legal.length) {
-    res.refused.slice(0, 6).forEach(function(x){
-      var p = x.r.p;
-      h += '<div class="fx-hit no"><span class="hn">' + esc(p.n) + ' <em>' + esc(shortClub(p.t, p.s))
-        + '</em><small>' + esc(x.why.charAt(0).toUpperCase() + x.why.slice(1)) + '</small></span><span class="hp">' + money(p.p) + '</span></div>';
-    });
-  } else if (res.refused.length) {
-    h += '<p class="fx-hint">' + plural(res.refused.length, 'more season') + ' by that name cost too much or cannot play ' + E.SLOTS[fxOut] + '.</p>';
-  }
+  return h + '</button>';
+}
+
+function fxMarketView(){
+  var d = data(), p = fxPuzzle(), all = fxOffersNow();
+  var clubs = {};
+  all.forEach(function(o){ clubs[o.with] = (clubs[o.with] || 0) + 1; });
+  var clubList = Object.keys(clubs).sort(function(a, b){ return E.teamName(tsParts(a).code) < E.teamName(tsParts(b).code) ? -1 : 1; });
+  var h = fxHead()
+    + '<div class="fx-dock top"><div class="fx-dk"><span class="mx-eyebrow">Shopping · ' + money(blockSal()) + '</span><b>'
+    + fxBlock.map(function(k){ return esc(surname(d.allPlayers[k].n)); }).join(' and ') + '</b><small>'
+    + all.length + ' offers from ' + plural(clubList.length, 'club') + ' in ' + tsParts(p.ts).season + '.</small></div>'
+    + '<button class="ghost" id="fx-back">Change</button></div>'
+    + '<h3 class="fx-step">2. Take the deal that wins it</h3>'
+    + '<div class="fx-chips" id="fx-sorts">' + FX_SORTS.map(function(s){
+        return '<button class="fx-chip' + (s[0] === fxSort ? ' on' : '') + '" data-s="' + s[0] + '">' + s[1] + '</button>';
+      }).join('') + '</div>'
+    + '<div class="fx-chips" id="fx-poss">' + ['all'].concat(E.SLOTS).map(function(s){
+        return '<button class="fx-chip' + (s === fxPos ? ' on' : '') + '" data-p="' + s + '">' + (s === 'all' ? 'Any spot' : s) + '</button>';
+      }).join('') + '</div>'
+    + '<div class="fx-fil"><select id="fx-club" class="fx-q"><option value="all">Every club</option>'
+    + clubList.map(function(ts){
+        return '<option value="' + esc(ts) + '"' + (ts === fxClub ? ' selected' : '') + '>' + esc(E.teamName(tsParts(ts).code)) + ' (' + clubs[ts] + ')</option>';
+      }).join('') + '</select>'
+    + '<input class="fx-q" id="fx-q" type="search" autocomplete="off" spellcheck="false" placeholder="Find a name" value="' + esc(fxQuery) + '"></div>'
+    + '<div id="fx-res" class="fx-res"></div>';
+  return h;
+}
+
+function fxMarketListHtml(){
+  var list = fxFiltered();
+  if (!list.length) return '<p class="fx-hint">Nothing on the market matches. Loosen a filter.</p>';
+  var h = list.slice(0, fxShown).map(fxOfferHtml).join('');
+  if (list.length > fxShown) h += '<button class="ghost fx-more" id="fx-more">Show ' + Math.min(25, list.length - fxShown) + ' more of ' + list.length + '</button>';
   return h;
 }
 
 function fxConfirmHtml(){
-  var p = fxPuzzle(), out = p.five[fxPending.slot], inn = data().allPlayers[fxPending.key];
+  var d = data(), o = fxPending, t = tsParts(o.with), mine = tsParts(fxPuzzle().ts);
+  var side = function(keys){
+    return keys.map(function(k){ var p = d.allPlayers[k];
+      return '<b>' + esc(p.n) + '</b><span>' + money(p.p) + '</span>'; }).join('');
+  };
+  var outSal = blockSal(), inSal = o.ins.reduce(function(s, k){ return s + d.allPlayers[k].p; }, 0);
   return '<div class="fx-sheet" id="fx-sheet"><div class="fx-card mx-rise">'
     + '<div class="mx-eyebrow">The trade</div>'
-    + '<div class="fx-swap"><div><small>Out</small><b>' + esc(out.n) + '</b><span>' + esc(shortClub(out.t, out.s)) + ' · ' + money(out.p) + '</span></div>'
+    + '<div class="fx-swap"><div><small>To ' + esc(E.teamName(t.code)) + '</small>' + side(fxBlock) + '</div>'
     + '<div class="fx-arrow">' + pix(ART.rewind, { t: '#5eead4' }, 2) + '</div>'
-    + '<div><small>In</small><b>' + esc(inn.n) + '</b><span>' + esc(shortClub(inn.t, inn.s)) + ' · ' + money(inn.p) + '</span></div></div>'
-    + '<p class="mx-say">' + esc(lineOf(inn)) + '. This is your one move today.</p>'
+    + '<div><small>To ' + esc(E.teamName(mine.code)) + '</small>' + side(o.ins) + '</div></div>'
+    + '<p class="mx-say">' + money(outSal) + ' out, ' + money(inSal) + ' in. The salaries match. '
+    + 'The coach starts his best five after the deal. This is your one trade today.</p>'
     + '<div class="mx-row" style="margin-top:12px"><button class="ghost" id="fx-no">Not yet</button>'
     + '<button id="fx-yes" class="fx-go">Make the trade</button></div></div></div>';
 }
@@ -1070,10 +1265,17 @@ function fxConfirmHtml(){
 /* A THOUSAND SEASONS, PLAYED WHERE YOU CAN SEE THEM. The meter settles as the
    seasons come in, which is the only honest way to show a number that is
    genuinely being worked out rather than looked up. */
-function fxRun(slot, key){
+function fxRun(offer){
   if (fxBusy) return;
   fxBusy = true;
-  var p = fxPuzzle(), d = data(), five = M.fxApply(p.five, slot, d.allPlayers[key]);
+  var p = fxPuzzle(), d = data();
+  /* The dearest man in comes first, because the board keeps him as the
+     headline of the move and counts who else traded for him. */
+  var ins = offer.ins.slice().sort(function(a, b){ return d.allPlayers[b].p - d.allPlayers[a].p; });
+  var outs = fxBlock.slice().sort(function(a, b){ return d.allPlayers[b].p - d.allPlayers[a].p; });
+  if (M.fxTradeRefusal(d, p.ts, outs, offer.with, ins)) { fxBusy = false; return; }
+  var five = M.fxFiveAfter(d, p.ts, outs, ins);
+  if (!five) { fxBusy = false; return; }
   var base = fxBaseOdds(), n = M.FX.SIMS, done = 0, titles = 0, wins = 0;
   var box = $('s-fix');
   box.innerHTML = fxHead() + '<div class="mx-card mx-scan fx-sim">'
@@ -1081,7 +1283,8 @@ function fxRun(slot, key){
     + '<div class="fx-big"><span id="fx-live">0%</span></div>'
     + '<div class="fx-meter"><i class="base" style="left:' + (base.odds * 100) + '%"></i><i class="fill" id="fx-fill"></i></div>'
     + '<div class="fx-count"><span id="fx-n">0</span> of ' + n.toLocaleString() + ' seasons</div></div>'
-    + fxFiveHtml(five, null, slot);
+    + fxRosterHtml(M.fxAfter(d, p.ts, outs, ins), five, { inn: fxSetOf(ins) });
+  window.scrollTo({ top: 0 });
   var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   var chunk = reduce ? n : 40;
   function step(){
@@ -1099,13 +1302,14 @@ function fxRun(slot, key){
     var odds = titles / n;
     var rep = M.fxReplay(d, five, p.day);
     var r = {
-      day: p.day, ts: p.ts, slot: slot, out: E.pkey(p.five[slot]), inKey: key,
+      day: p.day, ts: p.ts, with: offer.with, outs: outs, ins: ins,
       odds: odds, base: base.odds, avgWins: wins / n,
       replay: { w: rep.record.wins, l: rep.record.losses, title: !!rep.titleWon, story: replayStory(rep) },
       at: Date.now()
     };
     fxKeep(p.day, r);
     fxBusy = false;
+    fxBlock = []; fxMarket = null; fxView = 'roster';
     fxRender();
   }
   requestAnimationFrame(step);
@@ -1120,39 +1324,62 @@ function replayStory(run){
   return 'Lost in the ' + last.round + ', ' + last.yourWins + '-' + last.oppWins + '.';
 }
 
+function names(keys){
+  var d = data();
+  return keys.map(function(k){ var p = d.allPlayers[k]; return p ? surname(p.n) : '?'; });
+}
+function andList(a){ return a.length < 2 ? a.join('') : a.slice(0, -1).join(', ') + ' and ' + a[a.length - 1]; }
+
+/* The roster a result plays with. A first-version result swapped one of the
+   five, so it is drawn that way. */
+function fxResultRoster(r){
+  var d = data(), p = fxPuzzle();
+  if (r.legacy) {
+    var five = M.fxApply(p.five, r.slot, d.allPlayers[r.inKey]);
+    return { rows: five, five: five };
+  }
+  return { rows: M.fxAfter(d, r.ts, r.outs, r.ins), five: M.fxFiveAfter(d, r.ts, r.outs, r.ins) };
+}
+
+function fxDealLine(r){
+  var d = data(), inn = d.allPlayers[r.ins[0]];
+  var club = r.with ? E.teamName(tsParts(r.with).code) : shortClub(inn.t, inn.s);
+  return '<b>' + esc(andList(names(r.outs))) + '</b> to the ' + esc(club) + ' for <b>' + esc(andList(names(r.ins))) + '</b>.';
+}
+
 function fxDoneHtml(r){
-  var d = data(), p = fxPuzzle(), inn = d.allPlayers[r.inKey], out = d.allPlayers[r.out];
-  var five = M.fxApply(p.five, r.slot, inn);
   var delta = Math.round((r.odds - r.base) * 1000) / 10;
-  var up = delta > 0;
+  var up = delta > 0, ro = fxResultRoster(r);
   return fxHead()
     + '<div class="mx-card mx-scan fx-sim" style="text-align:center">'
     + '<div class="mx-eyebrow">Title odds</div>'
     + '<div class="fx-big"><span class="was">' + pct1(r.base) + '</span><span class="to">' + pct1(r.odds) + '</span></div>'
     + '<div class="fx-meter"><i class="base" style="left:' + (r.base * 100) + '%"></i><i class="fill" style="width:' + (r.odds * 100) + '%"></i></div>'
     + '<div class="fx-delta ' + (up ? 'up' : delta < 0 ? 'dn' : '') + '">' + (up ? '+' : '') + delta.toFixed(1) + ' points</div>'
-    + '<p class="mx-say"><b>' + esc(surname(out.n)) + '</b> out, <b>' + esc(inn.n) + ' ' + esc(shortClub(inn.t, inn.s)) + '</b> in.</p>'
+    + '<p class="mx-say">' + fxDealLine(r) + '</p>'
     + '<div class="fx-replay"><span class="mx-eyebrow">The replay</span><b class="mx-num">' + r.replay.w + '-' + r.replay.l + '</b>'
     + '<span>' + esc(r.replay.story) + (r.replay.title ? ' 🏆' : '') + '</span></div>'
     + '<div id="fx-place" class="fx-place"></div></div>'
-    + fxFiveHtml(five, null, r.slot)
+    + '<h3 class="fx-step">The team after the deal</h3>'
+    + fxRosterHtml(ro.rows, ro.five, { inn: fxSetOf(r.ins) })
     + '<div class="mx-row" style="margin-top:12px"><button class="big fx-go" id="fx-share">Share</button></div>'
     + '<div class="mx-row" style="margin-top:8px"><button class="ghost" id="fx-board">Today\'s leaderboard</button></div>'
     + '<p class="fx-hint" style="text-align:center">A new team tomorrow.</p>';
 }
 
 function fxShareText(r){
-  var d = data(), t = tsParts(r.ts), inn = d.allPlayers[r.inKey], out = d.allPlayers[r.out];
+  var t = tsParts(r.ts);
   var delta = Math.round((r.odds - r.base) * 1000) / 10;
   var bars = Math.max(0, Math.min(10, Math.round(r.odds * 10)));
   var meter = '';
   for (var i = 0; i < 10; i++) meter += i < bars ? '🟩' : '⬛';
+  var club = r.with ? ' (' + tsParts(r.with).code + ')' : '';
   return 'Run The Floor · Fix History #' + r.day + '\n'
     + t.name + '\n'
-    + surname(out.n) + ' ➡️ ' + surname(inn.n) + ' ' + shortClub(inn.t, inn.s) + '\n'
+    + names(r.outs).join(', ') + ' ➡️ ' + names(r.ins).join(', ') + club + '\n'
     + meter + ' ' + pct1(r.odds) + ' (' + (delta >= 0 ? '+' : '') + delta.toFixed(1) + ')\n'
     + (r.replay.title ? '🏆 Won it in the replay\n' : '')
-    + 'One move. Can you fix it better?\n' + P.SHARE_URL;
+    + 'One trade. Can you fix it better?\n' + P.SHARE_URL;
 }
 
 function fxRender(){
@@ -1167,37 +1394,62 @@ function fxRender(){
     fxSubmit(r).then(function(){ fxFillPlace(r); });
     return;
   }
-  box.innerHTML = fxPlayHtml() + (fxPending ? fxConfirmHtml() : '');
-  box.querySelectorAll('.fx-man').forEach(function(b){
+  if (fxView === 'market' && fxBlock.length) {
+    box.innerHTML = fxMarketView() + (fxPending ? fxConfirmHtml() : '');
+    var paint = function(){
+      $('fx-res').innerHTML = fxMarketListHtml();
+      $('fx-res').querySelectorAll('.fx-offer').forEach(function(b){
+        b.onclick = function(){
+          var id = b.getAttribute('data-i'), bar = id.indexOf('|');
+          var w = id.slice(0, bar), ins = id.slice(bar + 1).split(',');
+          fxPending = fxOffersNow().filter(function(o){ return o.with === w && o.ins.join(',') === ins.join(','); })[0] || null;
+          fxRender();
+        };
+      });
+      var more = $('fx-more');
+      if (more) more.onclick = function(){ fxShown += 25; paint(); };
+    };
+    box.querySelectorAll('#fx-sorts .fx-chip').forEach(function(b){
+      b.onclick = function(){ fxSort = b.getAttribute('data-s'); fxShown = 25; fxRender(); };
+    });
+    box.querySelectorAll('#fx-poss .fx-chip').forEach(function(b){
+      b.onclick = function(){ fxPos = b.getAttribute('data-p'); fxShown = 25; fxRender(); };
+    });
+    $('fx-club').onchange = function(){ fxClub = $('fx-club').value; fxShown = 25; paint(); };
+    $('fx-q').oninput = function(){ fxQuery = $('fx-q').value; fxShown = 25; paint(); };
+    $('fx-back').onclick = function(){ fxView = 'roster'; fxPending = null; fxRender(); };
+    paint();
+    if (fxPending) {
+      $('fx-no').onclick = function(){ fxPending = null; fxRender(); };
+      $('fx-yes').onclick = function(){ var x = fxPending; fxPending = null; fxRun(x); };
+      $('fx-sheet').onclick = function(ev){ if (ev.target === $('fx-sheet')) { fxPending = null; fxRender(); } };
+    }
+    return;
+  }
+  fxView = 'roster';
+  box.innerHTML = fxRosterView();
+  box.querySelectorAll('.fx-man[data-k]').forEach(function(b){
     b.onclick = function(){
-      var s = Number(b.getAttribute('data-slot'));
-      fxOut = fxOut === s ? null : s;
+      var k = b.getAttribute('data-k'), at = fxBlock.indexOf(k);
+      if (at >= 0) fxBlock.splice(at, 1);
+      else if (fxBlock.length < M.TRADE.MAX) fxBlock.push(k);
+      else fxBlock = [fxBlock[1], k];
+      var y = window.scrollY;
       fxRender();
-      var q = $('fx-q');
-      if (q) { q.focus({ preventScroll: true }); q.scrollIntoView({ block: 'center', behavior: 'smooth' }); }
+      window.scrollTo({ top: y });
     };
   });
-  var q = $('fx-q');
-  if (q) {
-    var paint = function(){
-      $('fx-res').innerHTML = fxResultsHtml();
-      $('fx-res').querySelectorAll('.fx-hit[data-k]').forEach(function(b){
-        b.onclick = function(){ fxPending = { slot: fxOut, key: b.getAttribute('data-k') }; fxRender(); };
-      });
-    };
-    q.oninput = function(){ fxQuery = q.value; paint(); };
-    paint();
-  }
-  if (fxPending) {
-    $('fx-no').onclick = function(){ fxPending = null; fxRender(); };
-    $('fx-yes').onclick = function(){ var x = fxPending; fxPending = null; fxRun(x.slot, x.key); };
-    $('fx-sheet').onclick = function(ev){ if (ev.target === $('fx-sheet')) { fxPending = null; fxRender(); } };
-  }
+  var find = $('fx-find');
+  if (find) find.onclick = function(){
+    fxView = 'market'; fxSort = 'pts'; fxPos = 'all'; fxClub = 'all'; fxQuery = ''; fxShown = 25;
+    fxRender();
+    window.scrollTo({ top: 0 });
+  };
 }
 
 function fxOpen(){
   if (!data()) return;
-  fxOut = null; fxPending = null;
+  fxPending = null;
   P.show('s-fix');
   fxRender();
 }
@@ -1209,7 +1461,7 @@ function fxCardHtml(){
     sub = 'You moved the <b>' + esc(t.name) + '</b> from <b>' + pct1(r.base) + '</b> to <b>' + pct1(r.odds) + '</b>. A new team tomorrow.';
     foot += '<span class="mx-chip mc-done">Done</span>';
   } else {
-    sub = 'The <b>' + esc(t.name) + '</b> should have won it. <b>Make one trade</b> and fix it.';
+    sub = 'The <b>' + esc(t.name) + '</b> should have won it. <b>Make one trade</b> with a team from ' + t.season + ' and fix it.';
   }
   if (st > 1) foot += '<span class="mx-chip">' + st + ' days</span>';
   return '<button class="mcard fix" id="mc-fix"><div class="mc-top"><div class="mc-ico">'
@@ -1281,9 +1533,18 @@ function psTimeline(st){
   st.chain.forEach(function(id, i){
     h += '<circle cx="' + X(mid(id)) + '" cy="' + base + '" r="' + (i === 0 ? 5 : 4) + '" fill="' + (i === 0 ? '#fff' : '#f2c14e') + '" stroke="#05060b" stroke-width="2"/>';
   });
+  /* The hoop at the target's career, drawn in the same pixels as the icon:
+     a stanchion, a backboard with its square, the rim and the net. */
   var tx = X(mid(pz.to));
-  h += '<g transform="translate(' + (tx - 8) + ',' + (base - 30) + ')"><rect x="7" y="0" width="2" height="30" fill="#f2c14e"/>'
-    + '<path d="M9 1 L20 5 L9 9 Z" fill="#ef4444"/></g>';
+  h += '<g class="ps-hoop" transform="translate(' + (tx - 8) + ',' + (base - 40) + ')" shape-rendering="crispEdges">'
+    + '<rect x="7" y="10" width="2" height="30" fill="#8a93a6"/>'
+    + '<rect x="0" y="0" width="16" height="10" fill="#f5f5f5"/>'
+    + '<rect x="1" y="1" width="14" height="8" fill="#dfe6f0"/>'
+    + '<rect x="5" y="3" width="6" height="1" fill="#ef4444"/><rect x="5" y="3" width="1" height="5" fill="#ef4444"/>'
+    + '<rect x="10" y="3" width="1" height="5" fill="#ef4444"/>'
+    + '<rect x="3" y="10" width="10" height="2" fill="#f97316"/>'
+    + '<path d="M4 12 L6 19 M8 12 L8 19 M12 12 L10 19 M6 15 L10 15 M6 19 L10 19" stroke="#e2e8f0" stroke-width="1" fill="none"/>'
+    + '</g>';
   var hx = X(mid(st.chain[st.chain.length - 1]));
   h += '</svg><img class="ps-ball pxball" src="mark.png?v=1" width="22" height="22" alt="" style="left:calc('
     + (hx / W * 100) + '% - 11px)">';
@@ -1299,13 +1560,14 @@ function psClock(n){
 function psEnds(st){
   var g = graph(), pz = psPuzzle();
   /* Once the ball is there the left card is where it started, or both cards
-     would name the same man. */
+     would name the same man. The portraits are the two ends of the puzzle and
+     never move, so the left one is always the man who started with it. */
   var holder = st.done ? pz.from : st.chain[st.chain.length - 1];
-  return '<div class="ps-ends"><div class="ps-end"><span class="mx-eyebrow">'
+  return '<div class="ps-ends"><div class="ps-end"><div class="ps-pic">' + portrait(pz.from, 3, -1) + '</div><span class="mx-eyebrow">'
     + (st.done ? 'Started with' : st.chain.length === 1 ? 'Starts with the ball' : 'Has the ball') + '</span><b>'
     + esc(g.nameOf[holder]) + '</b><small>' + spanTxt(holder) + '</small></div>'
-    + '<div class="ps-to">' + pix(ART.target, { w: '#f5f5f5', r: '#ef4444' }, 3) + '</div>'
-    + '<div class="ps-end tgt"><span class="mx-eyebrow">Get it to</span><b>' + esc(g.nameOf[pz.to])
+    + '<div class="ps-to">' + pix(ART.hoop, HOOP_PAL, 3) + '</div>'
+    + '<div class="ps-end tgt"><div class="ps-pic">' + portrait(pz.to, 3, 1) + '</div><span class="mx-eyebrow">Get it to</span><b>' + esc(g.nameOf[pz.to])
     + '</b><small>' + spanTxt(pz.to) + '</small></div></div>';
 }
 
@@ -1429,7 +1691,7 @@ function psRender(animate){
   var pz = psPuzzle(), st = psState(), g = graph(), streak = psStreak();
   P.bar('Six Passes · Day ' + pz.day);
   var holder = st.chain[st.chain.length - 1];
-  var h = '<div class="cq-head">' + pix(ART.target, { w: '#f5f5f5', r: '#ef4444' }, 3)
+  var h = '<div class="cq-head">' + pix(ART.hoop, HOOP_PAL, 3)
     + '<div><div class="mh ps-mh">Six Passes</div><div class="cq-rung">Day ' + pz.day + ' · Par ' + pz.par
     + (streak > 1 ? ' · ' + streak + ' days in a row' : '') + '</div></div>'
     + (st.done ? '' : psClock(passesOf(st))) + '</div>'
@@ -1485,7 +1747,7 @@ function psCardHtml(){
   }
   if (streak > 1) foot += '<span class="mx-chip">' + streak + ' days</span>';
   return '<button class="mcard ps" id="mc-ps"><div class="mc-top"><div class="mc-ico">'
-    + pix(ART.target, { w: '#f5f5f5', r: '#ef4444' }, 4)
+    + pix(ART.hoop, HOOP_PAL, 4)
     + '</div><div><div class="mc-name">Six Passes</div><div class="mc-tag">Today\'s puzzle</div></div></div>'
     + '<p class="mc-sub">' + sub + '</p><div class="mc-foot">' + foot
     + '<span class="mc-go">' + (st.done ? 'See it' : passesOf(st) ? 'Continue' : 'Play') + '</span></div></button>';
@@ -1594,12 +1856,13 @@ function fxSubmit(r){
 function fxFillPlace(r){
   var el = $('fx-place');
   if (!el) return;
-  Promise.all([BB().playPlace('fix', r.day, Math.round(r.odds * 10000) / 10000), BB().moveCount(r.day, r.inKey)])
+  Promise.all([BB().playPlace('fix', r.day, Math.round(r.odds * 10000) / 10000), BB().moveCount(r.day, r.ins[0])])
     .then(function(a){
       if (!$('fx-place')) return;
       var h = placeLine(a[0], 'today');
-      if (a[1] != null && a[1] > 1) h += ' ' + plural(a[1] - 1, 'other') + ' made the same move.';
-      else if (a[1] === 1) h += ' Nobody else has made this move yet.';
+      var who = esc(surname((data().allPlayers[r.ins[0]] || { n: '' }).n));
+      if (a[1] != null && a[1] > 1) h += ' ' + plural(a[1] - 1, 'other') + ' traded for ' + who + '.';
+      else if (a[1] === 1) h += ' Nobody else has traded for ' + who + ' yet.';
       $('fx-place').innerHTML = h;
     });
 }
@@ -1662,9 +1925,12 @@ function closeModeBoard(){ var sh = $('mb-sheet'); if (sh) sh.hidden = true; }
 function mbDetail(row){
   var d = data();
   if (row.mode === 'fix') {
-    var inn = d.allPlayers[row.fix_in], out = d.allPlayers[row.fix_out];
-    return (inn ? esc(surname(inn.n)) + ' ' + esc(shortClub(inn.t, inn.s)) : '?')
-      + ' for ' + (out ? esc(surname(out.n)) : '?') + (row.replay_title ? ' 🏆' : '');
+    var ins = row.fix_ins || [row.fix_in], outs = row.fix_outs || [row.fix_out];
+    var nm = function(k){ var p = d.allPlayers[k]; return p ? esc(surname(p.n)) : '?'; };
+    var inn = d.allPlayers[ins[0]];
+    var from = row.fix_with ? E.teamName(tsParts(row.fix_with).code) : inn ? shortClub(inn.t, inn.s) : '';
+    return ins.map(nm).join(', ') + (from ? ' ' + esc(from) : '') + ' for ' + outs.map(nm).join(', ')
+      + (row.replay_title ? ' 🏆' : '');
   }
   if (row.mode === 'passes') return row.solved ? plural(row.passes, 'pass', 'passes') + ' · par ' + row.par : 'Shot clock';
   var took = (row.cq_took || []).slice(-2).map(function(k){ var p = d.allPlayers[k]; return p ? esc(surname(p.n)) : ''; }).filter(Boolean);

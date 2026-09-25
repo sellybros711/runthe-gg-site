@@ -8672,15 +8672,56 @@ to the same answer, and the guard says so.
 positions.** The best five by win shares alone fit PG, SG, SF, PF and C on only
 533 of 1,433 team-seasons, because plenty of great teams had three bigs.
 
-**The search shows the stat line and minutes, never win shares.** The market
-prices points, value is win shares, and knowing who was worth more than he was
-paid is the puzzle. Printing win shares prints the answer. Minutes are there
-because 4.3 rebounds in fourteen minutes and in thirty are different players.
+#### Fix History is a TRADE, with a club from the same season
 
-Base odds run about 2% to 24% and the best move is worth about twenty points.
-The best moves found by brute force are the fan-knowledge answers (Rodman or
-Kevon Looney into the 2009 Celtics, Sidney Moncrief for Devin Booker), which is
-the evidence the puzzle is the one intended.
+```
+node hoops/check-modes.mjs            section 4 holds the market, section 7 walks it
+psql -d hoops_trade -f supabase/117_hoops_trade.sql
+psql -d hoops_trade -f supabase/test/hoops_trade_test.sql
+```
+
+The first version traded one starter for anybody since 1974 who cost no more.
+Asked for instead: a trade finder like The Perfect Season's Trade Machine, only
+with teams from that year, a realistic rebuild, and the bench tradable. So:
+
+- **One or two of your men on the block**, starters or bench, and `fxOffers` is
+  every one or two men on every other club THAT SEASON who pass the rule.
+- **The salary rule is the NBA's shape**: each side takes back no more than 125%
+  of what it sends, plus $0.1M. `salaryOk` is the one copy and the page's "offers
+  take back $X to $Y" line is the same arithmetic said as money.
+- **The finder is the whole market**, not a curated few, because finding the deal
+  is the game. On the 2021 Suns a star on the block draws about 420 offers from
+  29 clubs. The page sorts (points by default, which is the market's own trap)
+  and filters by spot, club and name. The guard rebuilds the market by brute
+  force and asserts the two lists are the same set.
+- **The bench is currency.** The engine plays five men, so a bench man matters as
+  salary that makes a bigger deal work, or as a man better than a starter.
+
+**The coach starts the best five after the deal, and nobody sees it first.** The
+lineup is chosen by win shares, so previewing it for each offer would print the
+answer key a tap at a time. It appears once the trade is made.
+
+**A LEGAL TRADE COULD HAVE NO LINEUP, and it shipped for one run of the walk.**
+`canCover` (a bipartite match over the whole roster) decides legality, and the
+lineup was `fiveOf` over the top NINE by win shares. Trade away the only guard in
+that nine and a guard sitting tenth makes the trade legal while the nine has no
+five, so the page hung on "Replaying history" for ever. `fxFiveAfter` looks down
+the whole bench when nine is not enough. The daily five stays nine deep, because
+widening it would move the calendar of teams. Section 4 asserts every star offer
+over twelve days has a lineup: 2,051 of 8,579 did not before the fix.
+
+**Offers show the stat line and minutes, never win shares.** The market prices
+points, value is win shares, and knowing who was worth more than he was paid is
+the puzzle. Your OWN roster shows win shares, because you know your own team.
+Minutes are there because 4.3 rebounds in fourteen minutes and in thirty are
+different players.
+
+On the 2021 Suns the base odds are 5% and the best trade found by a quick search
+is about 27%: Booker and Crowder to Milwaukee for Giannis and Pat Connaughton.
+
+**A result saved by the first version still draws.** `fxNorm` reads the old
+`slot, out, inKey` shape as a one-for-one, and it files through 116's
+`rtf_submit_fix` rather than the new submit. The walk plants one and asserts both.
 
 #### Six Passes: the ends are All-Stars, and the gap sets the par
 
@@ -8700,6 +8741,14 @@ locker room ten times. The ten best known show first and the rest are a tap away
 Every pass is final and the shot clock is ten passes. An undo turns it into a
 map to be searched at leisure.
 
+**The two ends wear pixel portraits, and they are silhouettes on purpose.** There
+is no licensed art, and a face drawn from a hash would put a guess about a real
+person's hair, build and skin on him, wrong about most of them. So `portrait()`
+draws the true parts: the jersey of the club he earned the most win shares with,
+and a broader frame for a center or power forward. The timeline ends at a pixel
+hoop, and the mode icon is the same hoop. It used to be a bullseye and a golf
+flag, which are two other sports.
+
 #### The boards, and `supabase/116_hoops_modes.sql`
 
 One table, `rtf_plays`, and not `rtf_runs`: that table is a finished SEASON and
@@ -8714,6 +8763,14 @@ par, and one account files one of each daily with the first standing.
 **Deploy 116 by hand.** Without it all three modes play and keep their results
 on the device, and every place line and leaderboard is empty, which looks like a
 network that is down. Row 26 of `launch_preflight.sql` asks for it.
+
+**Deploy 117 by hand too.** A trade files through `rtf_submit_trade`, which 116
+does not have, so without 117 every trade plays and nothing reaches the board.
+It is row 27, its own row, because 116 answering yes is exactly the state it
+misses. The board's READ does not need it: `playTop` asks for the three new
+columns, and on a 400 naming them asks again without and remembers. Otherwise a
+database still on 116 would take every board on the page dark over three columns
+that one detail line reads. `rtf_submit_fix` stays for pages cached from before.
 
 **A place never prints past its field.** The two counts are separate requests
 and the play being placed can land between them, so "42nd of 41" was a reachable

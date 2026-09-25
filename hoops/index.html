@@ -2754,7 +2754,7 @@
 <script src="engine.js?v=23"></script>
 <script src="run.js?v=11"></script>
 <script src="badges.js?v=1"></script>
-<script src="modes.js?v=1"></script>
+<script src="modes.js?v=2"></script>
 <!-- ACCOUNTS AND THE LEADERBOARD. All three are OPTIONAL: if the CDN is blocked
      or either file fails to load, the game runs exactly as it did, with runs
      kept in this browser and the board reporting itself unreachable. An account
@@ -2763,7 +2763,7 @@
      for it rather than reading window.supabase once: on a repeat visit the data
      comes out of cache in milliseconds while this is still in flight. -->
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="board.js?v=3"></script>
+<script src="board.js?v=4"></script>
 <script src="auth.js?v=1"></script>
 <!-- THE SHELF. cloudsave.js is the transport and is shared with the football and
      college games; cloud.js is this game's own policy about slots, progress and
@@ -2886,7 +2886,7 @@ var DAILY_DARE = 'Everyone got the same ' + NUMWORD(E.SLOTS.length) + ' spins.';
  * handle. It is also what carries the diagnosis: `lastError` says which of the
  * two halves is missing, in words, on the screen that would otherwise just be
  * empty. */
-var NEED_BOARD = 3;
+var NEED_BOARD = 4;
 var B = (window.RTF_BOARD && window.RTF_BOARD.API_VERSION === NEED_BOARD)
   ? window.RTF_BOARD
   : {
@@ -9630,6 +9630,6 @@ boot();
 </script>
 <!-- AFTER the page, because it draws through window.RTF_PAGE, which the script
      above publishes. -->
-<script src="modes-ui.js?v=1"></script>
+<script src="modes-ui.js?v=2"></script>
 </body>
 </html>

@@ -386,7 +386,21 @@ check_rows(sort, migration, what, breaks, ok) as (
       and (select count(*) > 0 from proc where name = 'rtf_submit_conquest')
       and (select count(*) > 0 from proc where name = 'rtf_claim_play')
       and (select count(*) > 0 from idx
-            where name = 'rtf_plays_daily_one_idx' and tbl = 'rtf_plays'))
+            where name = 'rtf_plays_daily_one_idx' and tbl = 'rtf_plays')),
+
+  -- FIX HISTORY AS A TRADE. The page files a trade through rtf_submit_trade,
+  -- which 116 does not have, and board.js fails soft, so against a database on
+  -- 116 alone every trade plays, the result screen draws, and nothing reaches
+  -- the board. The leaderboard itself still reads: board.js asks for the new
+  -- columns and falls back without them. So this row is its own rather than a
+  -- clause on 26, because 26 answering yes is exactly the state it misses.
+  (27, '117_hoops_trade',
+      'rtf_submit_trade and the trade columns, so a Fix History trade reaches the board',
+      'Fix History plays and no trade is ever filed: no place on the result screen, and today''s board holds only players on a page cached from before the trade finder. It looks like a quiet day.',
+      (select count(*) > 0 from proc where name = 'rtf_submit_trade')
+      and (select count(*) > 0 from col where tbl = 'rtf_plays' and name = 'fix_ins')
+      and (select count(*) > 0 from col where tbl = 'rtf_plays' and name = 'fix_outs')
+      and (select count(*) > 0 from col where tbl = 'rtf_plays' and name = 'fix_with'))
 )
 -- The summary has to come LAST, and a UNION can only be ordered by an output
 -- column, so the sort key is carried through a subquery rather than sorted on

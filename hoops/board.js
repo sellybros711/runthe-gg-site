@@ -37,7 +37,7 @@
 (function () {
   'use strict';
 
-  const BOARD_API_VERSION = 3;
+  const BOARD_API_VERSION = 4;
 
   const SB_URL = 'https://jcrrxqfpdelrmvjuihnm.supabase.co';
   const SB_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpjcnJ4cWZwZGVscm12anVpaG5tIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA3OTY5NjIsImV4cCI6MjA5NjM3Mjk2Mn0.wyjoZpa2yRW-l38-KMGqBvEgTlW9v1KheNye7csWAlM';
@@ -165,7 +165,7 @@
     /* A 404 is the table or the function missing. A message naming either is
        the same thing arriving as a 400 from a stale schema cache, which is a
        real state a Supabase project sits in for a minute after a migration. */
-    if (res.status === 404 || /rtf_runs|rtf_submit_run|rtf_board_modes|record_score|depth|rtf_plays|rtf_submit_(fix|passes|conquest)/.test(msg)) {
+    if (res.status === 404 || /rtf_runs|rtf_submit_run|rtf_board_modes|record_score|depth|rtf_plays|rtf_submit_(fix|trade|passes|conquest)/.test(msg)) {
       needsMigration = true;
     }
     lastError = { where, status: res.status, code: (body && body.code) || '', message: msg };
@@ -475,9 +475,16 @@
      derives the score from the result. Higher is better on all three boards,
      so every read below is the same query with a different mode. */
   const PLAYS = 'rtf_plays';
-  const PLAY_COLS = 'id,created_at,display_name,mode,day,score,' +
+  const PLAY_COLS_116 = 'id,created_at,display_name,mode,day,score,' +
     'fix_ts,fix_slot,fix_out,fix_in,fix_odds,fix_base,replay_wins,replay_title,' +
     'passes,par,solved,chain,cq_wins,cq_lives,cq_cleared,cq_lost_to,cq_roster,cq_took';
+  /* 117 adds the trade's partner and both sides. SQL is deployed by hand and
+     this file by a push, so a database still on 116 answers a select naming
+     those columns with a 400, and every board on the page would go dark over
+     three columns only one detail line reads. So the read asks for them, and
+     on a refusal NAMING them asks again without and remembers. */
+  const PLAY_COLS_117 = PLAY_COLS_116 + ',fix_with,fix_outs,fix_ins';
+  let playCols117 = true;
   const MODES = ['fix', 'passes', 'conquest'];
   const modeOk = (m) => MODES.indexOf(m) >= 0;
   const dayOk = (d) => d == null || (Number.isFinite(Number(d)) && Number(d) >= 1);
@@ -492,14 +499,25 @@
     } catch (e) { return failThrown(where, e); }
   }
 
+  /* A Fix History result is a TRADE now: one or two men out to a club from the
+     same season, one or two back (supabase/117_hoops_trade.sql). A result
+     saved by the first version was one man for one man and still files the
+     way it always did, through 116's function. */
   async function submitFix(r) {
-    const id = await rpc('submitFix', 'rtf_submit_fix', {
-      p_day: Math.round(r.day), p_ts: r.ts, p_slot: Math.round(r.slot),
-      p_out: r.out, p_in: r.inKey,
+    const tail = {
       p_odds: roundTo(r.odds, 4), p_base: roundTo(r.base, 4),
       p_replay_wins: r.replay ? Math.round(r.replay.w) : null,
       p_replay_title: r.replay ? !!r.replay.title : null,
-    });
+    };
+    const id = r.legacy || !r.ins
+      ? await rpc('submitFix', 'rtf_submit_fix', Object.assign({
+          p_day: Math.round(r.day), p_ts: r.ts, p_slot: Math.round(r.slot),
+          p_out: r.out, p_in: r.inKey,
+        }, tail))
+      : await rpc('submitFix', 'rtf_submit_trade', Object.assign({
+          p_day: Math.round(r.day), p_ts: r.ts, p_with: r.with,
+          p_outs: r.outs, p_ins: r.ins,
+        }, tail));
     return typeof id === 'number' ? id : null;
   }
   async function submitPasses(day, chain, par, solved) {
@@ -533,10 +551,18 @@
   async function playTop(mode, day, limit) {
     if (!modeOk(mode) || !dayOk(day)) return null;
     const n = Math.min(100, Math.max(1, Math.round(Number(limit) || 25)));
+    const ask = (cols) => timed(base() + PLAYS + '?select=' + cols +
+      '&order=score.desc,created_at.asc&limit=' + n + playScope(mode, day, true), { headers: headers() });
     try {
-      const q = base() + PLAYS + '?select=' + PLAY_COLS +
-        '&order=score.desc,created_at.asc&limit=' + n + playScope(mode, day, true);
-      const res = await timed(q, { headers: headers() });
+      let res = await ask(playCols117 ? PLAY_COLS_117 : PLAY_COLS_116);
+      if (!res.ok && playCols117 && res.status === 400) {
+        let body = null;
+        try { body = await res.clone().json(); } catch (e) { body = null; }
+        if (/fix_(with|outs|ins)/.test(String(body && body.message))) {
+          playCols117 = false;
+          res = await ask(PLAY_COLS_116);
+        }
+      }
       if (!res.ok) return await fail('playTop', res);
       const rows = await res.json();
       return Array.isArray(rows) ? rows : null;

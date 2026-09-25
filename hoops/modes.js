@@ -23,7 +23,7 @@ const E = (typeof require !== 'undefined')
   ? require('./engine.js')
   : window.RTF_ENGINE;
 
-const MODES_API_VERSION = 1;
+const MODES_API_VERSION = 2;
 const C = E.CONSTANTS;
 
 // ─── shared ────────────────────────────────────────────────────────────────
@@ -344,11 +344,12 @@ function dailyOrder(n, tag) {
 
 // ─── Fix History ───────────────────────────────────────────────────────────
 
-/* ONE REAL TEAM THAT FELL SHORT, AND ONE MOVE.
+/* ONE REAL TEAM THAT FELL SHORT, AND ONE TRADE.
  *
  * Every day the same club for everybody: a good team that did not win it. You
- * trade one of its five for anybody in history who costs no more, and the
- * season is played again.
+ * put one or two of its players on the block, starters or bench, and the rest
+ * of the league that season makes offers. Take one and the season is played
+ * again.
  *
  * THE SCORE IS THE TITLE ODDS, NOT THE REPLAY. One replayed season is a coin
  * with a ring on one side, so two people who made the same move would land on
@@ -357,12 +358,24 @@ function dailyOrder(n, tag) {
  * five always score the same number for everybody. The replay is the story: it
  * is played once, off the day's seed, and it is what the results screen shows.
  *
- * THE MOVE IS SALARY MATCHED. The new man may cost no more than the man he
- * replaces, which is the rule a real trade lives under and what stops the
- * answer being "swap anybody for 1996 Jordan". Price in this game is what the
- * market pays for points, and value is win shares, so the good moves are the
- * men the market underpaid: the rebounders, the defenders, the guy who made
- * everybody else better. That is fan knowledge, and that is the puzzle.
+ * IT IS A REAL TRADE IN A REAL SEASON. The first version let a starter go for
+ * anybody since 1974 who cost no more, which is a history quiz rather than a
+ * rebuild: the answer was always a bargain from another decade. Now every
+ * partner is a club from the SAME season, and the deal has to pass the rule a
+ * real one lives under: each side takes back no more than 125% of the salary
+ * it sends, plus $0.1M. Price here is what the market pays for points and
+ * value is win shares, so the good deals are still the men the market
+ * underpaid. Now they have to be found in one year's league.
+ *
+ * THE BENCH IS CURRENCY. The engine plays five men, so a bench player matters
+ * two ways: as salary to make a bigger deal work, and as a man who might be
+ * better than a starter. After a trade the coach starts the best five who can
+ * cover the positions, the same rule that picked the five as built, so a deal
+ * that leaves nobody able to play center is refused before it is made.
+ *
+ * WHO STARTS AFTER A TRADE IS NOT SHOWN UNTIL IT IS DONE. The lineup is chosen
+ * by win shares, so previewing it for every offer would print the answer key a
+ * tap at a time.
  */
 const FX = {
   SIMS: 1000,         // seasons per score; about 1.4 points of standard error at 20%
@@ -392,20 +405,7 @@ function slotFive(five) {
    positions on only 533 of 1433 team-seasons, because plenty of great teams
    had three bigs among their five best men. */
 function startingFive(data, tsId) {
-  const nine = [...(data.byTeamSeason[tsId] || [])].sort((a, b) => b.w - a.w)
-    .slice(0, FX.POOL_DEPTH);
-  let best = null, bestW = -1;
-  const n = nine.length;
-  for (let a = 0; a < n; a++) for (let b = a + 1; b < n; b++) for (let c = b + 1; c < n; c++)
-    for (let d = c + 1; d < n; d++) for (let e = d + 1; e < n; e++) {
-      const five = [nine[a], nine[b], nine[c], nine[d], nine[e]];
-      const w = five.reduce((s, p) => s + p.w, 0);
-      if (w <= bestW) continue;
-      if (new Set(five.map(p => p.i)).size < 5) continue;
-      const slotted = slotFive(five);
-      if (slotted) { best = slotted; bestW = w; }
-    }
-  return best;
+  return fiveOf(data.byTeamSeason[tsId] || []);
 }
 
 /* The teams a day can land on: contenders that did not win it. Sorted by id so
@@ -456,23 +456,134 @@ function fxReplay(data, five, day) {
   return E.playRun(rows, rngFor('fix:' + day, 'replay'), E.SLOTS, data.oppPool);
 }
 
-/* WHETHER A MOVE IS LEGAL: `inKey` replaces the man in slot `slot`, costs no
-   more than him, can play the slot, is a real club's row rather than a
-   traded-player total, and is not already one of the other four in some other
-   season. Returns null when legal and a reason when not, because the page
-   prints the reason. */
-function fxRefusal(data, five, slot, inKey) {
-  const p = data.allPlayers[inKey];
-  if (!p || p.t === 'TOT') return 'not a player';
-  const out = five[slot];
-  if (!out) return 'no such slot';
-  if (p.i === out.i && p.s === out.s && p.t === out.t) return 'that is the man you are trading';
-  if (!E.canFillSlot(p, E.SLOTS[slot])) return 'cannot play ' + E.SLOTS[slot];
-  if (p.p > out.p + 1e-9) return 'costs more than ' + E.lastNameOf(out.n);
-  if (five.some((q, i) => i !== slot && q.i === p.i)) return 'already on this team';
+/* THE SALARY RULE, one function so the finder, the refusal and the guard
+   cannot disagree about it: each side takes back no more than 125% of what it
+   sends, plus $0.1M. */
+const TRADE = { MATCH: 1.25, SLACK: 0.1, MAX: 2 };
+function salaryOk(outSal, inSal) {
+  return inSal <= outSal * TRADE.MATCH + TRADE.SLACK + 1e-9
+    && outSal <= inSal * TRADE.MATCH + TRADE.SLACK + 1e-9;
+}
+const sumPrice = (rows) => rows.reduce((s, p) => s + p.p, 0);
+
+/* A club's roster that season, dearest first. */
+function fxRoster(data, tsId) {
+  return [...(data.byTeamSeason[tsId] || [])].sort((a, b) => b.p - a.p || b.mp - a.mp);
+}
+
+/* WHETHER SOME FIVE OF THESE MEN CAN COVER PG, SG, SF, PF AND C, one man a
+   slot. A bipartite match, which is exact and cheap, so the finder can ask it
+   of every offer without choosing a lineup it would then have to hide. */
+function canCover(rows) {
+  const owner = {};           // slot index -> row index
+  const tryRow = (r, seen) => {
+    for (let s = 0; s < E.SLOTS.length; s++) {
+      if (seen[s] || !E.canFillSlot(rows[r], E.SLOTS[s])) continue;
+      seen[s] = true;
+      if (owner[s] === undefined || tryRow(owner[s], seen)) { owner[s] = r; return true; }
+    }
+    return false;
+  };
+  let filled = 0;
+  for (let r = 0; r < rows.length && filled < E.SLOTS.length; r++) {
+    if (tryRow(r, {})) filled++;
+  }
+  return filled === E.SLOTS.length;
+}
+
+/* The best five of any roster, by the rule the daily five was chosen with:
+   the best five of the top `depth` men by win shares who can cover the
+   positions. The daily five looks nine deep and must stay that way, or the
+   calendar of teams would move. */
+function fiveOf(rows, depth) {
+  const nine = [...rows].sort((a, b) => b.w - a.w).slice(0, depth || FX.POOL_DEPTH);
+  let best = null, bestW = -1;
+  const n = nine.length;
+  for (let a = 0; a < n; a++) for (let b = a + 1; b < n; b++) for (let c = b + 1; c < n; c++)
+    for (let d = c + 1; d < n; d++) for (let e = d + 1; e < n; e++) {
+      const five = [nine[a], nine[b], nine[c], nine[d], nine[e]];
+      const w = five.reduce((s, p) => s + p.w, 0);
+      if (w <= bestW) continue;
+      if (new Set(five.map(p => p.i)).size < 5) continue;
+      const slotted = slotFive(five);
+      if (slotted) { best = slotted; bestW = w; }
+    }
+  return best;
+}
+
+const seasonOfTs = (tsId) => Number(String(tsId).slice(-4));
+
+/* THE ROSTER AFTER A TRADE: the men sent out leave, the men taken in arrive. */
+function fxAfter(data, tsId, outKeys, inKeys) {
+  const out = new Set(outKeys);
+  return fxRoster(data, tsId).filter(p => !out.has(E.pkey(p)))
+    .concat(inKeys.map(k => data.allPlayers[k]));
+}
+
+/* WHETHER A TRADE IS LEGAL. Returns null when it is and a reason when it is
+   not, because the page prints the reason. `withTs` is the partner club's
+   team-season. */
+function fxTradeRefusal(data, tsId, outKeys, withTs, inKeys) {
+  if (!Array.isArray(outKeys) || !outKeys.length) return 'put somebody on the block';
+  if (!Array.isArray(inKeys) || !inKeys.length) return 'take somebody back';
+  if (outKeys.length > TRADE.MAX || inKeys.length > TRADE.MAX) return 'two players a side at most';
+  if (new Set(outKeys).size !== outKeys.length || new Set(inKeys).size !== inKeys.length) return 'the same man twice';
+  if (!withTs || withTs === tsId) return 'no partner';
+  if (seasonOfTs(withTs) !== seasonOfTs(tsId)) return 'partners are from the same season';
+  const mine = fxRoster(data, tsId), mineKeys = new Set(mine.map(p => E.pkey(p)));
+  if (!outKeys.every(k => mineKeys.has(k))) return 'not on your roster';
+  const theirs = new Set((data.byTeamSeason[withTs] || []).map(p => E.pkey(p)));
+  if (!inKeys.every(k => theirs.has(k))) return 'not on their roster';
+  const ins = inKeys.map(k => data.allPlayers[k]);
+  const ids = new Set(mine.map(p => p.i));
+  if (ins.some(p => ids.has(p.i))) return 'already on your team';
+  if (!salaryOk(sumPrice(outKeys.map(k => data.allPlayers[k])), sumPrice(ins))) return 'the salaries do not match';
+  if (!canCover(fxAfter(data, tsId, outKeys, inKeys))) return 'leaves you nobody to play a position';
   return null;
 }
 
+/* EVERY OFFER THE LEAGUE MAKES FOR A BLOCK: each other club that season, every
+   one or two of its men that pass the salary rule and leave you a five. The
+   list is the whole market rather than a curated few, because finding the deal
+   is the game; the page sorts and filters it. */
+function fxOffers(data, tsId, outKeys) {
+  const season = seasonOfTs(tsId);
+  const outs = outKeys.map(k => data.allPlayers[k]);
+  if (!outs.length || outs.some(p => !p)) return [];
+  const outSal = sumPrice(outs);
+  const mine = fxRoster(data, tsId), ids = new Set(mine.map(p => p.i));
+  const keep = mine.filter(p => outKeys.indexOf(E.pkey(p)) < 0);
+  const offers = [];
+  data.teamSeasons.forEach((t) => {
+    const ts = t.team_season_id;
+    if (t.season !== season || ts === tsId) return;
+    const rows = fxRoster(data, ts).filter(p => !ids.has(p.i));
+    const packs = [];
+    rows.forEach((a, i) => {
+      packs.push([a]);
+      rows.slice(i + 1).forEach(b => { if (b.i !== a.i) packs.push([a, b]); });
+    });
+    packs.forEach((ins) => {
+      if (!salaryOk(outSal, sumPrice(ins))) return;
+      if (!canCover(keep.concat(ins))) return;
+      offers.push({ with: ts, ins: ins.map(p => E.pkey(p)), sal: Math.round(sumPrice(ins) * 10) / 10 });
+    });
+  });
+  return offers;
+}
+
+/* THE FIVE THAT PLAYS AFTER A TRADE. Nine deep first, the same as the five
+   as built. A trade can send away the only guard in that nine while a guard
+   sits tenth on the bench, and canCover (which reads the whole roster) calls
+   that legal, so the coach then looks down the whole bench rather than leave
+   a legal trade with no lineup. */
+function fxFiveAfter(data, tsId, outKeys, inKeys) {
+  const rows = fxAfter(data, tsId, outKeys, inKeys);
+  return fiveOf(rows) || fiveOf(rows, rows.length);
+}
+
+/* The one-for-one move the first version filed, kept so a result saved by it
+   still draws its five. */
 function fxApply(five, slot, p) {
   const next = five.slice();
   next[slot] = p;
@@ -613,7 +724,8 @@ const publicAPI = {
   CQ, cqAim, cqLadder, cqChallenger, cqCrew, cqCreate, cqRoster, cqStrength,
   cqPreview, cqIsBoss, cqPlay, cqSteals, cqSteal, cqStreak, cqOver, cqCleared,
   DAILY_EPOCH, dayNumberOf, dailyOrder,
-  FX, slotFive, startingFive, fxCandidates, fxDaily, fxOdds, fxOddsStep, fxReplay, fxRefusal, fxApply,
+  FX, TRADE, salaryOk, slotFive, startingFive, fiveOf, canCover, fxCandidates, fxDaily, fxOdds, fxOddsStep, fxReplay,
+  fxRoster, fxAfter, fxTradeRefusal, fxOffers, fxFiveAfter, fxApply,
   PS, psGraph, psBfs, psPath, psFamous, psDaily, psShared, psCanPass,
 };
 

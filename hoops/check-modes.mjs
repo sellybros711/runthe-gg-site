@@ -158,7 +158,7 @@ section('3. the steal decides the run');
 }
 
 // ── 4. Fix History ──────────────────────────────────────────────────────────
-section('4. Fix History: one team a day, one legal move, one score everywhere');
+section('4. Fix History: one team a day, a real trade market, one score everywhere');
 {
   const list = M.fxCandidates(D);
   ok(list.length > 300, `enough teams that a year never repeats one (${list.length})`);
@@ -183,16 +183,114 @@ section('4. Fix History: one team a day, one legal move, one score everywhere');
   ok(Math.abs(whole - t / 240) < 1e-12, 'the odds come out the same played in slices as all at once');
   ok(M.fxOdds(D, f.five, 11, 120).odds === M.fxOdds(D, f.five, 11, 120).odds, 'and the same twice');
 
-  const out = f.five[0];
-  const dear = D.players.find((p) => p.t !== 'TOT' && p.p > out.p + 1 && E.canFillSlot(p, 'PG'));
-  const wrong = D.players.find((p) => p.t !== 'TOT' && p.p < out.p && !E.canFillSlot(p, 'PG'));
-  const twin = f.five[1];
-  ok(/costs more/.test(M.fxRefusal(D, f.five, 0, E.pkey(dear)) || ''), 'a dearer man is refused');
-  ok(/cannot play/.test(M.fxRefusal(D, f.five, 0, E.pkey(wrong)) || ''), 'a man who cannot play the slot is refused');
-  ok(!!M.fxRefusal(D, f.five, 0, E.pkey(twin)), 'a man already on the team is refused');
-  const cheap = D.players.find((p) => p.t !== 'TOT' && p.p <= out.p && E.canFillSlot(p, 'PG')
-    && !f.five.some((q) => q.i === p.i));
-  ok(M.fxRefusal(D, f.five, 0, E.pkey(cheap)) === null, 'a cheaper man who can play it is allowed');
+
+  /* THE TRADE FINDER. Every property is asked of the real market for real
+     blocks, because every way the finder goes wrong is an offer list that
+     renders: one from the wrong season, one that breaks the salary rule, one
+     that leaves nobody at center. */
+  const ros = M.fxRoster(D, f.ts), season = Number(f.ts.slice(-4));
+  const starterKeys = new Set(f.five.map((p) => E.pkey(p)));
+  const bench = ros.filter((p) => !starterKeys.has(E.pkey(p)));
+  ok(bench.length >= 3, `${f.ts} has a bench to trade from (${bench.length})`);
+  ok(JSON.stringify(M.fiveOf(ros).map(E.pkey)) === JSON.stringify(f.five.map(E.pkey)),
+    'the five a roster starts is the daily five, so a trade is judged by the rule that built it');
+  const blocks = [[E.pkey(f.five[0])], [E.pkey(bench[bench.length - 1])], [E.pkey(f.five[1]), E.pkey(bench[0])]];
+  const mineIds = new Set(ros.map((p) => p.i));
+  blocks.forEach((blk) => {
+    const offers = M.fxOffers(D, f.ts, blk);
+    const label = blk.map((k) => D.allPlayers[k].n).join(' + ');
+    ok(offers.length > 0, `${label}: the league makes offers (${offers.length})`);
+    const outSal = blk.reduce((s, k) => s + D.allPlayers[k].p, 0);
+    let bad = 0;
+    offers.forEach((o) => {
+      const ins = o.ins.map((k) => D.allPlayers[k]);
+      const inSal = ins.reduce((s, p) => s + p.p, 0);
+      if (M.fxTradeRefusal(D, f.ts, blk, o.with, o.ins) !== null) bad++;
+      else if (Number(o.with.slice(-4)) !== season || o.with === f.ts) bad++;
+      else if (ins.some((p) => p.s !== season || E.teamSeasonId(p.t, p.s) !== o.with || mineIds.has(p.i))) bad++;
+      else if (inSal > outSal * 1.25 + 0.1 + 1e-9 || outSal > inSal * 1.25 + 0.1 + 1e-9) bad++;
+      else if (!M.fxFiveAfter(D, f.ts, blk, o.ins)) bad++;
+    });
+    ok(bad === 0, `${label}: every offer is the same season, salary matched and leaves a five (${bad} not)`);
+  });
+  /* EVERY OFFER HAS A LINEUP, on many days rather than one. The first cut
+     picked the coach's five from the top nine only, and trading the one guard
+     in that nine for a big left a legal offer with no five: the page hung on
+     "Replaying history" for ever. Found by the browser walk on day 8, where
+     the day 11 fixture above had never met it. */
+  {
+    let offers = 0, noFive = 0;
+    for (let d = 1; d <= 12; d++) {
+      const g = M.fxDaily(D, d);
+      [...g.five].sort((x, y) => y.p - x.p).slice(0, 2).forEach((star) => {
+        M.fxOffers(D, g.ts, [E.pkey(star)]).forEach((o) => {
+          offers++;
+          if (!M.fxFiveAfter(D, g.ts, [E.pkey(star)], o.ins)) noFive++;
+        });
+      });
+    }
+    ok(noFive === 0, `every offer for a star over twelve days leaves a lineup (${noFive} of ${offers} do not)`);
+  }
+  /* THE FINDER IS THE WHOLE MARKET, not a sample of it: every one or two men
+     on every club that season who pass the refusal are on the list. */
+  {
+    const blk = blocks[0], want = new Set();
+    D.teamSeasons.filter((t) => t.season === season && t.team_season_id !== f.ts).forEach((t) => {
+      const rows = M.fxRoster(D, t.team_season_id);
+      rows.forEach((a, i) => {
+        [[a]].concat(rows.slice(i + 1).map((b) => [a, b])).forEach((pk) => {
+          const ks = pk.map(E.pkey);
+          if (M.fxTradeRefusal(D, f.ts, blk, t.team_season_id, ks) === null) want.add(t.team_season_id + '|' + ks.join(','));
+        });
+      });
+    });
+    const got = new Set(M.fxOffers(D, f.ts, blk).map((o) => o.with + '|' + o.ins.join(',')));
+    ok(want.size === got.size && [...want].every((k) => got.has(k)),
+      `the finder lists every legal deal and nothing else (${got.size} of ${want.size})`);
+  }
+  /* canCover is a bipartite match; fiveOf is a brute force over the same rule.
+     They must agree on every roster, or an offer the finder shows could leave
+     a team the coach cannot start. */
+  {
+    const rng = E.createSeededRNG(E.hashSeed('cover'));
+    let disagree = 0;
+    for (let n = 0; n < 400; n++) {
+      const rows = M.fxRoster(D, D.teamSeasons[Math.floor(rng() * D.teamSeasons.length)].team_season_id)
+        .filter(() => rng() < 0.55).slice(0, 9);
+      if (M.canCover(rows) !== !!M.fiveOf(rows)) disagree++;
+    }
+    ok(disagree === 0, `canCover and the brute force agree on 400 rosters (${disagree} disagree)`);
+  }
+  const other = D.teamSeasons.find((t) => t.season === season - 1 && t.team_season_id !== f.ts);
+  const oldMan = M.fxRoster(D, other.team_season_id)[0];
+  ok(/same season/.test(M.fxTradeRefusal(D, f.ts, blocks[0], other.team_season_id, [E.pkey(oldMan)]) || ''),
+    'a partner from another season is refused');
+  const peer = D.teamSeasons.find((t) => t.season === season && t.team_season_id !== f.ts).team_season_id;
+  const cheapest = M.fxRoster(D, peer).slice(-1)[0];
+  ok(/salaries/.test(M.fxTradeRefusal(D, f.ts, blocks[0], peer, [E.pkey(cheapest)]) || ''),
+    'a star for the cheapest man in the league is refused on salary');
+  ok(/two players/.test(M.fxTradeRefusal(D, f.ts, ros.slice(0, 3).map(E.pkey), peer, [E.pkey(cheapest)]) || ''),
+    'three out is refused');
+  // A trade that leaves nobody at a position, found rather than assumed.
+  let hole = null;
+  for (let d = 1; d <= 60 && !hole; d++) {
+    const g = M.fxDaily(D, d), r = M.fxRoster(D, g.ts);
+    const cs = r.filter((p) => E.canFillSlot(p, 'C'));
+    if (cs.length > 2 || !cs.length) continue;
+    const blk = cs.map(E.pkey), sal = cs.reduce((s, p) => s + p.p, 0);
+    const pr = D.teamSeasons.find((t) => t.season === g.five[0].s && t.team_season_id !== g.ts
+      && M.fxRoster(D, t.team_season_id).some((p) => !E.canFillSlot(p, 'C') && Math.abs(p.p - sal) < sal * 0.2));
+    if (!pr) continue;
+    const guard = M.fxRoster(D, pr.team_season_id).find((p) => !E.canFillSlot(p, 'C') && Math.abs(p.p - sal) < sal * 0.2);
+    hole = { ts: g.ts, blk, pr: pr.team_season_id, ins: [E.pkey(guard)] };
+  }
+  ok(!!hole, 'a team whose centers can all be traded away exists to test with');
+  if (hole) {
+    ok(/nobody to play/.test(M.fxTradeRefusal(D, hole.ts, hole.blk, hole.pr, hole.ins) || ''),
+      `trading away every center for a man who cannot play it is refused (${hole.ts})`);
+    ok(!M.fxOffers(D, hole.ts, hole.blk).some((o) => o.with === hole.pr && o.ins.join() === hole.ins.join()),
+      'and the finder never offers it');
+  }
 }
 
 // ── 5. Six Passes ───────────────────────────────────────────────────────────
@@ -237,6 +335,12 @@ section('6. the copy and the SQL agree with the constants');
   ok(sql.includes('p_slot > ' + (E.SLOTS.length - 1)), 'and a slot past the last one');
   ok(sql.includes('p_par > 6') && M.PS.PAR_MAX <= 6, 'and a par past what the puzzle ever sets');
   ok(M.dayNumberOf(M.DAILY_EPOCH) === 1, 'the epoch is day 1');
+  const sql117 = fs.readFileSync(path.join(ROOT, 'supabase/117_hoops_trade.sql'), 'utf8');
+  ok(sql117.includes('v_nout > ' + M.TRADE.MAX) && sql117.includes('v_nin > ' + M.TRADE.MAX),
+    `117 refuses more than ${M.TRADE.MAX} a side, as the finder does`);
+  const pre = fs.readFileSync(path.join(ROOT, 'supabase/test/launch_preflight.sql'), 'utf8');
+  ok(pre.includes("'117_hoops_trade'") && pre.includes("name = 'rtf_submit_trade'"), 'the preflight asks for 117');
+
 }
 
 // ── 7. the page ─────────────────────────────────────────────────────────────
@@ -296,48 +400,96 @@ if (!QUICK) {
   ok(home.cards.every(Boolean), 'the front page has a card for each of the three');
   ok(/Fix History/.test(home.dock), `the dock offers today's Fix History first ("${home.dock}")`);
 
-  // Fix History, end to end.
+  // Fix History, end to end: a starter on the block, the market, a deal.
   await page.click('#mc-fix');
-  await page.waitForSelector('.fx-man');
-  const five = await page.evaluate(() => {
-    const M = window.RTF_MODES, D = window.RTF_PAGE.data;
+  await page.waitForSelector('.fx-man[data-k]');
+  const fx = await page.evaluate(() => {
+    const M = window.RTF_MODES, D = window.RTF_PAGE.data, E = window.RTF_ENGINE;
     const d = window.RTF_PAGE.dayNumberOf(window.RTF_PAGE.easternISO());
     const f = M.fxDaily(D, d);
-    const out = f.five[4];
-    const cand = D.players.find((p) => p.t !== 'TOT' && M.fxRefusal(D, f.five, 4, window.RTF_ENGINE.pkey(p)) === null
-      && p.n.split(' ').length === 2 && p.w > 4);
-    return { day: d, name: cand.n, season: cand.s, key: window.RTF_ENGINE.pkey(cand), out: out.n };
+    const ros = M.fxRoster(D, f.ts), fiveK = new Set(f.five.map(E.pkey));
+    return { day: d, ts: f.ts, star: E.pkey(f.five[1]), benchN: ros.filter((p) => !fiveK.has(E.pkey(p))).length,
+      offers: M.fxOffers(D, f.ts, [E.pkey(f.five[1])]).length };
   });
-  await page.click('.fx-man[data-slot="4"]');
-  await page.fill('#fx-q', five.name.split(' ')[1] + ' ' + String(five.season).slice(-2));
-  await page.waitForTimeout(100);
-  const hit = await page.$(`.fx-hit[data-k="${five.key}"]`);
-  ok(!!hit, `searching "${five.name.split(' ')[1]} ${String(five.season).slice(-2)}" finds ${five.name} ${five.season}`);
-  if (hit) {
-    await hit.click();
-    await page.click('#fx-yes');
-    await page.waitForSelector('#fx-share', { timeout: 30000 });
-    await page.waitForTimeout(300);
-    const saved = await page.evaluate((d) => JSON.parse(localStorage.getItem('rtf.fix.v1')).days[d], five.day);
-    ok(!!saved && saved.inKey === five.key, 'the move is kept for the day');
-    const sub = posts.find((p) => p.fn === 'rtf_submit_fix');
-    ok(!!sub && sub.body.p_in === five.key && sub.body.p_day === five.day, 'and filed with the board, the move and the day');
-    ok(sub && Math.abs(sub.body.p_odds - saved.odds) < 1e-4, 'with the odds the screen shows');
-    const place = await page.textContent('#fx-place');
-    ok(/3rd of 41 today/.test(place), `the place comes off the board ("${place.trim()}")`);
-    ok(/4 others made the same move/.test(place), 'and so does how many made the same move');
-    await page.reload({ waitUntil: 'domcontentloaded' });
-    await page.waitForSelector('#b-today:not([disabled])', { timeout: 60000 });
-    await page.click('#mc-fix');
-    ok(await page.$('#fx-share') !== null && await page.$('.fx-man:not([disabled])') === null,
-      'a reload lands on the result: one move a day');
-    const dock = await page.evaluate(() => { window.RTF_PAGE.goHome(); return document.querySelector('#dock').textContent.trim(); });
-    ok(/Six Passes/.test(dock), `with Fix done, the dock moves on to Six Passes ("${dock}")`);
-  }
+  const rows = await page.$$eval('.fx-man[data-k]', (b) => b.length);
+  ok(rows === 5 + fx.benchN, `the whole roster is on the screen, bench too (${rows} of ${5 + fx.benchN})`);
+  ok(await page.$('#fx-find') === null, 'with an empty block there is nothing to find');
+  await page.click(`.fx-man[data-k="${fx.star}"]`);
+  const find = await page.textContent('#fx-find');
+  ok(find.includes(String(fx.offers)), `the dock counts the market ("${find.trim()}" for ${fx.offers})`);
+  await page.click('#fx-find');
+  await page.waitForSelector('.fx-offer');
+  const shown = await page.$$eval('.fx-offer', (b) => b.length);
+  ok(shown === Math.min(25, fx.offers), `the market shows its first page (${shown})`);
+  const wsOnMarket = await page.$$eval('.fx-offer', (b) => b.some((x) => /\bWS\b/.test(x.textContent)));
+  ok(!wsOnMarket, 'no win shares on an offer: that is the answer');
+  await page.click('.fx-chip[data-p="C"]');
+  await page.waitForSelector('.fx-offer, .fx-hint');
+  const allC = await page.evaluate(() => {
+    const D = window.RTF_PAGE.data, E = window.RTF_ENGINE;
+    return [...document.querySelectorAll('.fx-offer')].every((b) => b.getAttribute('data-i').split('|').slice(1).join('|')
+      .split(',').some((k) => E.canFillSlot(D.allPlayers[k], 'C')));
+  });
+  ok(allC, 'the C filter keeps only offers carrying a man who can play center');
+  const pick = await page.getAttribute('.fx-offer', 'data-i');
+  await page.click('.fx-offer');
+  await page.click('#fx-yes');
+  await page.waitForSelector('#fx-share', { timeout: 30000 });
+  await page.waitForTimeout(300);
+  const saved = await page.evaluate((d) => JSON.parse(localStorage.getItem('rtf.fix.v1')).days[d], fx.day);
+  const pickWith = pick.split('|')[0];
+  ok(!!saved && saved.with === pickWith && saved.outs.join() === fx.star, 'the trade is kept for the day');
+  const sub = posts.find((p) => p.fn === 'rtf_submit_trade');
+  ok(!!sub && sub.body.p_with === pickWith && sub.body.p_outs.join() === fx.star && sub.body.p_day === fx.day,
+    'and filed with the board as a trade: the partner, both sides and the day');
+  ok(sub && sub.body.p_ins.join() === saved.ins.join() && Math.abs(sub.body.p_odds - saved.odds) < 1e-4,
+    'with the odds the screen shows');
+  ok(!posts.some((p) => p.fn === 'rtf_submit_fix'), 'and never through the one-for-one submit');
+  const place = await page.textContent('#fx-place');
+  ok(/3rd of 41 today/.test(place), `the place comes off the board ("${place.trim()}")`);
+  ok(/4 others traded for/.test(place), 'and so does how many traded for the same man');
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await page.waitForSelector('#b-today:not([disabled])', { timeout: 60000 });
+  await page.click('#mc-fix');
+  ok(await page.$('#fx-share') !== null && await page.$('.fx-man:not([disabled])') === null,
+    'a reload lands on the result: one trade a day');
+  const dock = await page.evaluate(() => { window.RTF_PAGE.goHome(); return document.querySelector('#dock').textContent.trim(); });
+  ok(/Six Passes/.test(dock), `with Fix done, the dock moves on to Six Passes ("${dock}")`);
+
+  /* A RESULT SAVED BY THE FIRST VERSION is one man for one man, and somebody
+     who played it this morning comes back to it after the page changes. */
+  const legacy = await page.evaluate((d) => {
+    const M = window.RTF_MODES, D = window.RTF_PAGE.data, E = window.RTF_ENGINE;
+    const f = M.fxDaily(D, d);
+    const inn = D.players.find((p) => p.t !== 'TOT' && p.p < f.five[4].p && E.canFillSlot(p, 'C') && p.s < 1990);
+    const st = JSON.parse(localStorage.getItem('rtf.fix.v1'));
+    st.days[d] = { day: d, ts: f.ts, slot: 4, out: E.pkey(f.five[4]), inKey: E.pkey(inn), odds: 0.2, base: 0.1,
+      avgWins: 50, replay: { w: 50, l: 32, title: false, story: 'Lost in the Second Round, 2-4.' }, at: 1 };
+    localStorage.setItem('rtf.fix.v1', JSON.stringify(st));
+    return { name: inn.n };
+  }, fx.day);
+  posts.length = 0;
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await page.waitForSelector('#b-today:not([disabled])', { timeout: 60000 });
+  await page.click('#mc-fix');
+  await page.waitForSelector('#fx-share');
+  const lt = await page.textContent('#s-fix');
+  ok(lt.includes(legacy.name), `a first-version result still draws its man (${legacy.name})`);
+  await page.waitForTimeout(300);
+  ok(posts.some((p) => p.fn === 'rtf_submit_fix') && !posts.some((p) => p.fn === 'rtf_submit_trade'),
+    'and files through the submit it was made for');
+  await page.evaluate(() => window.RTF_PAGE.goHome());
 
   // Six Passes, along a shortest chain, through the filter a player uses.
   await page.click('#mc-ps');
   await page.waitForSelector('#ps-q');
+  const art = await page.evaluate(() => ({
+    pics: document.querySelectorAll('#s-pass .ps-pic svg.portrait').length,
+    hoop: !!document.querySelector('#s-pass .ps-tl .ps-hoop'),
+    flag: [...document.querySelectorAll('#s-pass .ps-tl path')].some((p) => /Z\s*$/.test(p.getAttribute('d') || '')),
+  }));
+  ok(art.pics === 2, `both ends of the puzzle wear a pixel portrait (${art.pics})`);
+  ok(art.hoop && !art.flag, 'the timeline ends at a hoop, not a golf flag');
   const chain = await page.evaluate(() => {
     const M = window.RTF_MODES, g = M.psGraph(window.RTF_PAGE.data);
     const d = window.RTF_PAGE.dayNumberOf(window.RTF_PAGE.easternISO());
