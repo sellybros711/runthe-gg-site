@@ -678,17 +678,21 @@
      the day's ring sharing the last row. The ring used to sit beside the
      title and squeezed it onto two lines on every phone. */
   .zone-head{display:grid; grid-template-columns:1fr auto; align-items:center; gap:6px 14px; margin:4px 2px 18px;}
-  .zone-head .kicker{grid-column:1 / -1; margin:0 0 4px;}
-  .zone-head .day{grid-column:1 / -1; white-space:nowrap;}
-  .zone-head .dprog{grid-column:2; grid-row:3; justify-self:end;}
+  .zone-head .kicker{grid-column:1 / -1; grid-row:1; margin:0 0 4px;}
+  .zone-head .day{grid-column:1 / -1; grid-row:2;}
+  .zone-head .dprog{grid-column:2; grid-row:3; justify-self:end; white-space:nowrap;}
+  @media (max-width:370px){ .zone-head .dprog{grid-column:1 / -1; grid-row:4; justify-self:start; margin-top:6px;} }
   .zone-head .day{font-size:clamp(32px, 7vw, 44px); letter-spacing:.01em; line-height:.95; text-transform:uppercase;}
   .zone-head .dayd{display:block; margin-top:8px; font-family:var(--f); font-size:13px; font-weight:800;
     letter-spacing:.02em; text-transform:none; color:var(--mut);}
-  .zone-head .dprog{margin:8px 0 0; padding:6px 12px 6px 7px; border-radius:999px;
+  .zone-head .dprog{margin:4px 0 0; padding:6px 12px 6px 7px; border-radius:999px;
     background:var(--card); border:1px solid var(--line2);}
-  .zone-head .rtgtour-open{grid-column:1; grid-row:3; justify-self:start; margin:8px 0 0 !important;
-    border-style:solid !important; background:transparent !important; padding:7px 13px !important;
-    font-size:12px !important; white-space:nowrap;}
+  /* the tour is a quiet link under the date, not a second button competing
+     with the day's ring for the same row */
+  .zone-head .rtgtour-open{grid-column:1; grid-row:3; justify-self:start; min-width:0; margin:4px 0 0 !important;
+    border:0 !important; background:transparent !important; padding:4px 0 !important; box-shadow:none !important;
+    font-size:12.5px !important; text-align:left; white-space:normal; color:var(--mut) !important;}
+  .zone-head .rtgtour-open:hover{color:var(--ink) !important;}
 
   .tiles{gap:14px;}
   .tsec{margin:10px 0 -2px;}
