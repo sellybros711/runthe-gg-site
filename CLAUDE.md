@@ -12660,7 +12660,52 @@ the submit's BODY calls `rtd_board_day(`, so that is what the row asks. The fix
 is re-running 97, which is idempotent and was driven over an old copy with no
 error.
 
-### The $170M cap is right, and the per-slot dollar is the wrong comparison
+### The cap is $190M now, because $170M made October a coin flip for most drafts
+
+Reported by players: the cap felt too low and it was hard to make the playoffs.
+It was measured before anything moved, 200 drafts a bot, after the primary
+position and teammate chemistry pass:
+
+| cap | best available | careful | chases chemistry |
+|---|---|---|---|
+| $170M | 81.4 wins, **29%** Octobers, 1% titles | 90.1, 59%, 2.5% | 89.2, 60%, 5% |
+| $180M | 84.8, 46%, 3% | 92.2, 69%, 9.5% | 92.9, 72%, 9% |
+| **$190M** | **89.1, 56%, 7.5%** | **93.7, 73%, 11.5%** | **96.2, 80%, 14%** |
+| $200M | 92.7, 65%, 13% | 97.2, 83%, 17% | 98.5, 88%, 24% |
+
+**Taking the best man every time is how a new player drafts**, and at $170M
+it missed October seven runs in ten. At $190M it makes it more often than not,
+and careful play still beats it by about five wins and seventeen points of
+Octobers, so the budget is still the decision. A random draft is 56 wins at
+every cap, because the board it is offered does not depend on the cap.
+
+**What moved with it:**
+
+- **`bargain_title` went $160M to $180M**, the same $10M under the cap.
+  Loosening strips nobody.
+- **All-Time Staff's top anchor went 2.91 to 2.77 ERA.** The best staff any
+  strategy reached went 2.916 to 2.775, and nine staffs pinned at 100 until it
+  moved. The floor is the worst man on every board and no cap touches it.
+- **The team rating was deliberately NOT re-anchored.** It is projected wins on
+  a line from 31 to 106, so it still says how many wins a roster is worth. About
+  3% of chemistry-chasing drafts now reach the 99 ceiling, against none before.
+  Re-anchoring would lower every rating a player sees on the day the cap went
+  up, and move what the rating badges mean.
+- **The quick badge sweep's excuses moved**: seven title and legend rungs light
+  now and three Survivor and draft rungs went the other way. The full sweep
+  lights all of them.
+- **The share card was re-rendered** (`og.png?v=5`), and every `$170M` a reader
+  sees says `$190M`. `baseball/check-numbers.mjs` holds them to `CAP_MUSD`.
+
+**Board rows filed before this sit low** against rows filed after. That is the
+price of changing the cap on a live board, the same as the football game's
+Full Team retune.
+
+The section below is the $170M argument, kept because its method is how the
+next move should be measured, and its crossover (holding money back stops
+paying somewhere between $230M and $300M) still says where the cap must not go.
+
+### The $170M cap WAS right on its own terms, and the per-slot dollar is the wrong comparison
 
 Asked, because football gives $140M for 6 and $280M for 12 and hoops gives $126M for
 6, which is about $23M and $21M a slot against this game's **$14.2M**. That reads as

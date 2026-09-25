@@ -11,10 +11,13 @@
 
 const CONSTANTS = {
   /* The budget has to say no, or there's no decision in the draft. At $245M
-   * best-available was priced out on ~1.7 of 12 spins (it barely bit); $170M
-   * makes the budget bite hard. You can't afford a star most spins, and a
-   * strong roster takes real draft skill, not just best-available. */
-  CAP_MUSD: 170,
+   * best-available was priced out on ~1.7 of 12 spins (it barely bit). $170M
+   * bit too hard: players reported they could barely make the playoffs, and
+   * measured over 200 drafts a bot, taking the best man every time reached
+   * October on 29% of runs. $190M puts that at 56% and a careful draft at 73%,
+   * and careful still beats greedy by about five wins, so the budget is still
+   * the decision. See CLAUDE.md for the sweep. */
+  CAP_MUSD: 190,
   REGULAR_SEASON_GAMES: 162,
 
   RESPIN_LADDER_MUSD: [5, 10, 15],
@@ -1199,9 +1202,13 @@ const STAFF = {
   SP_ERA_BASE: 5.0, SP_ERA_PER_WAR: 0.386, SP_ERA_FLOOR: 1.60,
   RP_ERA_BASE: 4.60, RP_ERA_PER_WAR: 0.55, RP_ERA_FLOOR: 1.35,
   /* The two ends of the rating scale, in blended ERA. See staffRating for how
-   * they were measured and for what went wrong when only one end was. */
+   * they were measured and for what went wrong when only one end was.
+   * The TOP moved with the cap: at $170M the best staff any strategy reached
+   * was 2.916, and at $190M it is 2.775 (200 drafts, best arm every board),
+   * which pinned nine staffs at 100 until it was re-anchored. The floor is the
+   * worst man on every board, which no cap touches. */
   FLOOR_ERA: 4.63, FLOOR_RATING: 1,
-  TOP_ERA: 2.91, TOP_RATING: 99,
+  TOP_ERA: 2.77, TOP_RATING: 99,
 };
 function staffOffense() { return STAFF.LINEUP_RPG; }
 

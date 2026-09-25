@@ -242,9 +242,14 @@ shelf('Roster craft', [
      rosters spent a minimum of $147.8M and a median of $168.9M: the cap binds, so
      winning cheap is a narrow thing rather than a big one. $160M leaves $10M of
      the cap unspent, which is a league-minimum slot, and it is about a fifth of
-     titles. A badge is not allowed to name a saving the game cannot make. */
-  ['bargain_title', 'Moneyball', 'Win the title spending under $160M.', 'gold',
-    (c) => c.rows.some((r) => r.titleWon && r.spend != null && r.spend < 160)],
+     titles. A badge is not allowed to name a saving the game cannot make.
+
+     THE CAP WENT TO $190M AND THIS FOLLOWED IT TO $180M, the same $10M under.
+     Loosening strips nobody: every roster that won under $160M is also under
+     $180M. Left at $160M it would be $30M under a cap that binds, which is the
+     $140M mistake above arriving from the other side. */
+  ['bargain_title', 'Moneyball', 'Win the title spending under $180M.', 'gold',
+    (c) => c.rows.some((r) => r.titleWon && r.spend != null && r.spend < 180)],
   ['no_respin_title', 'No do-overs', 'Win the title using no re-spins.', 'gold',
     (c) => c.rows.some((r) => r.titleWon && (r.respins || 0) === 0)],
   /* THREE IS THE CEILING, not a number picked to be hard: CONSTANTS.MAX_RESPINS
