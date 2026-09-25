@@ -64,7 +64,7 @@ const ratio = (a, b) => (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
    two sections that are about the MACHINERY rather than the picture name
    their mode, because "a block is a whole number of device pixels" is a
    sentence retro means and smooth does not. */
-async function game(browser, w, h, dpr, mode) {
+async function game(browser, w, h, dpr, mode, youHome) {
   const ctx = await browser.newContext({ viewport: { width: w, height: h },
     deviceScaleFactor: dpr, isMobile: w < 900, hasTouch: w < 900 });
   const pg = await ctx.newPage();
@@ -74,13 +74,13 @@ async function game(browser, w, h, dpr, mode) {
   await pg.evaluate(() => localStorage.clear());
   await pg.goto(URL);
   await pg.waitForTimeout(400);
-  await pg.evaluate((m) => {
+  await pg.evaluate(([m, yh]) => {
     Sound.muted = true; PREFS.cutscenes = false; PREFS.coach = false;
     if (m) { PREFS.smooth = m === 'smooth'; document.body.classList.toggle('smooth', PREFS.smooth); }
     State.team = ROSTER.slice(0, 9).map(c => c.k); State.teamName = 'Testers';
     State.opponent = OPPONENTS[0]; State.innings = 5; State.mode = 'exhibition';
-    startGame({ mode: 'exhibition', youHome: false });
-  }, mode || null);
+    startGame({ mode: 'exhibition', youHome: !!yh });
+  }, [mode || null, youHome]);
   return { ctx, pg, errors };
 }
 
@@ -370,12 +370,26 @@ const main = async () => {
        So both claims are read off the GLASS: where the zone lands in CSS
        pixels, and where the deck starts. Neither is derived from the camera
        twice. */
-    for (const [label, w, h, dpr] of [['phone upright', 390, 844, 3],
+    /* AND THE PITCHING HALF, WHICH THIS SECTION NEVER ASKED. The deck is
+       TALLER while pitching (a pitch name, a row of types and the two action
+       buttons against a single swing row), and the camera cannot always pay
+       for it: `deckCoverBlocks` is honoured and then `sy` is clamped to the
+       world's own bottom edge, which is the one clamp that cannot be argued
+       with, so what the deck cannot be paid for it covers. Measured before the
+       fix, 22 pixels of a 200 pixel zone at 1440 by 900 and 47 of 160 at 1280
+       by 800, which is the bottom of the box a pitcher aims INTO. The batting
+       half was clear on every screen the whole time, which is exactly why it
+       survived: the zone was solved for, and only against the deck that was
+       measured. Six pixels of the smallest desktop are still covered and that
+       is the world running out rather than a layout to tighten. */
+    for (const [label, w, h, dpr, yh] of [['phone upright', 390, 844, 3],
                                       ['small phone', 320, 568, 2],
                                       ['phone sideways', 844, 390, 3],
                                       ['desktop', 1280, 800, 1],
-                                      ['desktop, tall', 1512, 900, 1]]) {
-      const { ctx, pg, errors } = await game(browser, w, h, dpr);
+                                      ['desktop, tall', 1512, 900, 1],
+                                      ['desktop pitching', 1440, 900, 1, true],
+                                      ['phone pitching', 390, 844, 3, true]]) {
+      const { ctx, pg, errors } = await game(browser, w, h, dpr, null, yh);
       await pg.waitForFunction(() => State.game && plateViewActive(State.game),
         { timeout: 25000 });
       await pg.waitForTimeout(250);
@@ -538,7 +552,11 @@ const main = async () => {
                          dead: Math.round((box.height - r2.height) * 100 / box.height),
                          top: at(0), bottom: at(cv.height - 1),
                          sky: parse(cs.getPropertyValue('--sky')),
-                         turf: parse(cs.getPropertyValue('--turf')) });
+                         turf: parse(cs.getPropertyValue('--turf')),
+                         /* where the page says the picture's edges are,
+                            against where they actually are */
+                         pic: parseFloat(cs.getPropertyValue('--pic')),
+                         half: r2.height / box.height * 50 });
               step();
             });
           }));
@@ -567,6 +585,21 @@ const main = async () => {
         || (x.sky[0] < 30 && x.sky[1] < 40 && x.sky[2] < 45));
       ok(dark.length === 0, `${label}: never the near black it used to be`,
         `${dark.length} parks fall back to the arena's own colour`);
+      /* AND THE SHADE IS ANCHORED ON THE PICTURE'S OWN EDGE. The band is
+         that park's colour at the seam and is shaded away from it, because
+         two flat slabs is what 48% of a phone's wide view was. The overlay
+         has to be ZERO where it meets the canvas: anchored on half the
+         arena instead there is a step at the canvas edge, growing with the
+         band, which is the flatness this fixes arriving by its own back
+         door. Nothing else here can see it, because the colour claims above
+         read the custom properties rather than the glass and a step is a
+         perfectly valid gradient.
+
+         A tenth of a percent, which on the tallest arena in the sweep is
+         under a pixel. */
+      const slip = banded.filter(x => !(Math.abs(x.pic - x.half) < 0.1));
+      ok(slip.length === 0, `${label}: and the shade is zero where it meets the picture`,
+        slip.slice(0, 3).map(x => `${x.park}: --pic ${x.pic} against a real half of ${x.half.toFixed(2)}`).join('; '));
       ok(errors.length === 0, `${label}: no page errors`, errors.join(' | '));
       await pg.close(); await ctx.close();
     }

@@ -5091,6 +5091,139 @@ private.
 the way `Wrestling/` and `Tour/` answer theirs, because the capitalised URL is
 the one that gets typed and pasted. It carries its own robots tag.
 
+### Behind the wall: every park has a sky, a horizon and a landmark
+
+```
+node mythiball/check-posture.mjs   section 8: every park's scenery is one the game can draw
+```
+
+Asked for as better scenery during play. What stood behind the wall was the
+oldest drawing on the page: a `landmark(ctx, w, h)` per park, written in
+fractions of the field and drawn as a few black rectangles. A castle was three
+bars and a clock was a disc. The plate camera drew it at the top of the sky,
+which on a phone is exactly where the line score sits. So the one thing that said
+whose park this was sat under a table. **The six franchise parks had no
+landmark at all.**
+
+**It is `drawScenery` now, one set of functions for both cameras**, and a park
+names what stands behind it rather than drawing it:
+
+| | what it is | drawn by |
+|---|---|---|
+| `body` | `sun`, `lowsun`, `moon`, `bloodmoon` or null | `drawSkyDressing`, with the drifting clouds and the snow |
+| `far` | `hills`, `forest`, `city`, `sea`, `crags`, `dunes`, `ice` | `drawFarHorizon`, two layers hazed into the sky |
+| `mark` | one of seventeen landmarks | `drawLandmark`, a `switch` |
+
+**Everything is counted in blocks.** `R()` takes block units with the origin at
+the landmark's foot and y counting up, so in retro mode the scenery lands on the
+field's own grid. In smooth mode it is still pixel art rather than smears.
+
+**The landmark stands on a baseline, not at a height.** Each camera hands in
+where the stands' top edge is. On the wide camera that follows the wall's curve.
+On the plate camera it is the roofline at 128.
+
+**Where it stands is the CALLER's call**, because only the caller knows what is
+laid over its sky. The plate camera puts the landmark 30% into whatever the crop
+is and the sun 9% in, because the right of a phone's crop is under the line
+score. The wide camera puts the landmark at 0.30 and the sun at 0.66 of the
+world, which clears both the park's name and the score. **A desktop's plate crop
+starts below the sky altogether**, so there the wide camera carries the park.
+That is accepted rather than fought: getting the sky into that crop would mean
+moving the camera every guard in this file is written against.
+
+**Nothing reaches above y 14, and the wide sun is placed as if the sky began at
+30.** `fieldBand` reads the world's top row at the midline for the letterbox
+colour, so a spire or a cloud across that row paints the band above the picture.
+And a desktop's wide crop starts a little into the sky, which sliced the top off
+a sun placed against the whole of it.
+
+**A name the switch does not know draws nothing and throws nothing.** A park
+added with a typo is a park with an empty sky and no report, so check-posture's
+section 8 reads every `far`, `body` and `mark` out of the page. It holds them to
+what the three functions answer, and it counts the themes: a theme that lost its
+scenery line would otherwise drop out of the regex and pass. Both halves were
+proved by mutation, with a misspelt landmark and a deleted `far`.
+
+**The haze is 0.10 and was 0.18.** Hazing is what puts a landmark behind the
+stands rather than on them. At 0.18 the lavender castle vanished into a pale
+blue sky, which a screenshot said and no guard can.
+
+### The brand shares Run The Tour's plumbing and deliberately not its look
+
+```
+(nohup python3 -m http.server 8099 &) ; node mythiball/build-logo.mjs
+```
+
+Asked for: new branding with Run The Tour's as the reference. **The first pass took "reference" as "copy",
+and the owner's verdict was that it was too similar.** It used the Tour's six golds and its extrude, a small
+cream word stacked over a big gold one on a grass oval, sparkles, and the Tour's card layout on a dark
+night sky. That is the Tour's mark with a baseball in it.
+
+**What is shared now is the pipeline and nothing you can see.** The grid, the outline pass, the 5x7 font and
+`toCanvas` at whole scales are the Tour's PIXK. The look is the game's own cabinet palette (scorecard cream,
+navy ink, arcade red, the same three colours the page's UI uses) and baseball's own shapes:
+
+| | Run The Tour | MythiBall |
+|---|---|---|
+| wordmark | gold, extruded, small word over big | red varsity letters on an arch like a jersey, cream ring, navy drop |
+| flourish | a waving flag | a script tail that is a pitch's trail, ending in the ball |
+| icon | a ball and flag on a green | a stitched sleeve patch, a gold bolt through the ball |
+| link card | a dusk course, left and right halves | a cream scorecard and three trading cards |
+
+**If this ever drifts back toward the Tour, that table is the thing to check.** Gold letters, grass under
+the wordmark, sparkles and a dark scene are each a step toward the other game.
+
+**The drawing lives in the game**, between `MYPIX BEGIN` and `MYPIX END`, and `logo-source.html` and
+`og-source.html` read that block out of the page by its markers. The header draws the patch with the same
+kit at boot rather than fetching a file, so the header, the icons and the link preview are one drawing.
+
+**What the builder writes**, every file one of the kit's grids at a whole scale: `logo.png` (the wordmark at
+4x), `lockup.png` and `lockup-spin.png` (the ball spinning, four frames side by side), four icons on a cream
+plate, three favicons, `mark.png`, `manifest.webmanifest` by hand, and `og.png` at 2400x1260.
+
+**The trading cards are the game's own**: `og-source.html` lifts `V2_SPRITES` and `v2Frame` out of the page
+and decodes with the game's own function, and reads each card's name and role off its `ROSTER` row. Each
+sprite is drawn at one grid cell a pixel, so the card is one pixel grid edge to edge. **They stand in a row,
+not a fan**: fanned, the front card covered the name plates of the two behind it.
+
+**The card carries no count, deliberately.** The roster size is the number a pitch for this game wants to
+say, and a picture cannot be re-interpolated: the day a character is added it would go on promising the
+old number. "Nine" is the sport rather than a setting.
+
+**Link tags on an unlisted game are right, not a leak.** Robots tells a crawler not to index and does
+nothing to a chat app unfurling a link somebody was handed, and while the game is unlisted a handed link
+is the only way anybody reaches it. Hoops made the same call. **The capital alias carries the same tags,
+tag for tag**, because `runthe.gg/Mythiball` is the URL that gets pasted and a chat app reads the head
+without following the refresh.
+
+#### Things only looking could say
+
+- **Bold is every column drawn twice**, which fills the one cell gaps inside M and N. A bold M came out as
+  a solid block and a bold N as an H, so DRAFT YOUR NINE read as HIHE. Run The Tour has the same font and
+  never met it, because no Tour card sets an M or an N in bold. `BOLDG` draws those two by hand at seven
+  wide. Do not go back to doubling them.
+- **A grid cell holds one colour**, so a translucent colour `put` into a grid replaces what is under it
+  rather than sitting over it. `mix` exists for that.
+- **At a radius under 9 the laces cover the ball.** Stitches both sides of the seam read as a baseball at
+  the wordmark's size and as an egg with a rash on a 32px icon. Under 9 they go inside only.
+- **Stitches across the patch band read as gear teeth.** The patch is sewn with a one pixel running stitch
+  along the middle of its band, which is what a sewn patch looks like.
+- **`.mark` was already a class on this page** (a small inline badge with a border), so the header mark
+  arrived wearing its border and shadow. It is `.bmark`.
+
+**Two bitmaps for the header and CSS picks one.** The header changes size when a game starts, and a
+bitmap chosen at boot would be scaled by three quarters over the live field. The kit draws the 32 and
+the 16 by hand, which is why there are two rather than one scaled.
+
+#### What check-posture holds
+
+Every `?v=` on one file agrees across the game, the alias and the manifest; every file named exists; both
+pages carry identical previews; `og.png`'s real size, read off the PNG header, matches its tags; the
+markers exist; the source pages are noindexed; and the header draws with the kit. **What it cannot say is
+that the number moved when the bytes did**, because there is no earlier version to compare with. After a
+rebuild, bump every reference to a file that changed. A drifted version and a renamed marker were each
+reintroduced to prove the check bites.
+
 The sprites came from a generator and now come from a HANDOFF PACK, and the
 generator is kept because the pack cannot answer everything:
 
@@ -5922,7 +6055,350 @@ to 750, so a crop centred on the canvas cut his bat off at the frame's edge.
   with its table painted over the swing buttons. It is absolutely positioned
   on the left now and the deck flows in the padding it leaves.
 
-##### THE DECK IS TOO TALL FOR A SHORT PHONE, and this is the open one
+##### FOUR CONTROLS WERE OFF THE WINDOW, AND THE ARENA'S OWN FLOOR PUT ONE OF THEM THERE
+
+```
+node mythiball/check-reach.mjs          six screens, two minutes of play each
+node mythiball/check-reach.mjs --quick  one screen of play, and every sheet
+```
+
+`--quick` cuts the screens it PLAYS from six to one. It does not cut the sheet
+section, which walks five viewports either way, because opening a plaque costs
+seconds where playing a screen costs two minutes.
+
+Measured across eleven viewports, both halves of the game, reading every
+pressable control's rectangle against the window rather than looking at a
+screenshot. `body.ingame` sets `overflow:hidden`, so a control past the edge is
+not a scroll away, it is **gone**.
+
+| | what was off the screen |
+|---|---|
+| 320x568, batting | `Bunt`, 24px off the right: the third swing was unreachable |
+| 320x568, pitching | `End Game`, 24px below the bottom |
+| 667x375 sideways, pitching | `Mound`, 18px below the bottom |
+| 844x390 sideways, pitching | `Slowball`, 30px off the right |
+
+**A ROW OF CONTROLS THAT DOES NOT WRAP DOES NOT GET SHORTER, IT RUNS OFF THE
+SIDE.** `.swing-modes` and `.pitch-select .type-row` were both `display:flex`
+with no wrap, so three buttons that want 318 pixels in a 268 pixel deck simply
+hung off the end. Wrapping is on the base rule now: it costs nothing when there
+is room, and it is the net rather than the plan, because a wrapped row is a
+second line of deck and the deck is what the camera pays for.
+
+**THE SWING LABEL NAMED THREE KEYS A PHONE DOES NOT HAVE**, and it was 43 of the
+50 pixels that row was over by. `Swing (1/2/3)` is an instruction for a
+keyboard, on the row a thumb uses most. It is a POINTER question rather than a
+width one, the same way the coach notes are: a narrow desktop window still has
+the keys and a 768 tablet still does not, so it reads `COARSE`.
+
+**AND THE TIGHTENING IS NOT BEHIND A WIDTH QUERY, which the first version was.**
+What is narrow is the COLUMN and not the window: held sideways the deck is a 253
+pixel column beside the field in a 667 pixel window, so a query on the viewport
+tightened the phone that needed it and missed the one that needed it more. The
+deck's own End Game and Mound buttons have been at ten pixels since the
+redesign, so the two pressed rows join them rather than getting a new size.
+
+**THE ARENA'S FLOOR WAS PUSHING A CONTROL OFF THE SCREEN, and it was dead
+everywhere else.** It read `min-height:min(56vh, 480px)`. The arena is the one
+child of that column with grow, so on any window with spare pixels it takes
+everything the deck does not want and the floor is never reached. **The only
+window where the floor did anything was one with no spare pixels**, and a flex
+box cannot shrink a child below its min-height: at 320x568 the deck wanted 231
+of 536, the floor held 318, and the Mound row was laid out 13 pixels below the
+bottom of the window.
+
+What the floor is actually for is the plate camera's COVER, which only zooms
+once the box is taller than its width over 1.4545; under that the field is width
+limited and the zone collapses to something a thumb cannot aim at. **So the
+floor is that threshold and nothing else**, written against the WIDTH because
+that is what it is a fact about: `69vw` is 220 at 320 wide and 269 at 390, which
+is the 268 the threshold was measured at. Above it the arena still takes
+everything going, so no screen that fitted before moves: the one arena that
+changed is 320x568 while pitching, 318 to 305.
+
+**AND THE SELECTOR FOR THE TIGHTENING WAS WRONG FIRST, which the measurement
+caught and reading would not have.** The swing buttons are `.mode-btn` and the
+rule asked for `.btn`, so it matched nothing, and the row passed only because
+the wrap it had just been given caught it. Under a fine pointer that is the
+right answer and on a phone it is a line of deck bought for nothing.
+
+**What the row was really doing is worth seeing**, because `flex-shrink` hides
+it: with no wrap the label was being CRUSHED from 90 pixels to 43, its own text
+cut, and Bunt still hung off the edge. Two faults in one row, and the crushed
+label is invisible in any rule.
+
+**Measured as a touch device, which is the one that ships**, the label reads
+`Swing`, the row is 253 of 268 and holds one line, and the deck is smaller than
+it was before any of this: the field GREW on every phone. 320x568 batting 421 to
+458, 390x844 batting 702 to 705. Under a fine pointer the label keeps its key
+names, the row wraps rather than overflowing, and everything still fits.
+
+**Eleven viewports, both halves, both pointer kinds: nothing off the window and
+nothing overflowing.** The one arena that got smaller is 320x568 while pitching,
+318 to 305, which is the half where you aim a reticle that is floored in CSS
+pixels anyway.
+
+##### A CONTROL UNDER ANOTHER ONE IS THE WORSE HALF OF THE SAME FAULT
+
+Off the screen it does nothing. Underneath something else it does the WRONG
+thing, and that is the one that cost a game. Measured by asking every pair of
+visible controls whether their rectangles meet:
+
+| | what was on top of what |
+|---|---|
+| 320x568, batting | `End Game` over the whole width of `Bunt` and a sliver of `Power` |
+| 667x375 sideways, pitching | `End Game` over ten pixels of `Mound` |
+
+**THE FIRST WAS MINE, ONE COMMIT OLD, AND THE WIDE BRANCH'S OWN NOTE PREDICTED
+IT.** Pinning the End Game row to the corner won back the 24 pixels a 320x568
+phone was over by while pitching, and then landed it on the swing buttons: the
+note above says in as many words that a chip pinned to the bottom of a tall
+window lands there. **What actually fixed the overflow is the arena's floor**,
+and the pin was redundant the moment that landed. Two fixes for one fault, and
+the one that keeps every control apart is the one to keep.
+
+**The second predates all of this.** Out of the flow, the chip lands in the
+bottom right corner of whatever is there, and sideways the deck is a column
+about a third of the window wide, so `Mound` ran to 572 and the chip started at
+562. A tap meaning "change my pitcher" opened the sheet that abandons the game.
+
+**The row keeps its height and its panel colour and gives up side padding**,
+because Mound and Steal are pressed and a control has to look like one, and what
+a narrow column is short of is width. Twenty pixels: the gap goes minus ten to
+plus ten at 667, plus 28 at 720, plus 70 at 844, and nothing wider moves at all.
+Four candidates were measured; the two that moved the chip instead bought nothing
+or made it worse (putting the row back in the flow at that width pushes the chip
+off the bottom).
+
+**AND THE SIDEWAYS DECK HAS A FLOOR, which is recorded rather than fixed.** It is
+a fixed 339 pixels of content whatever the window is (a line score, the meter and
+its rows, and the controls), so landscape needs 371 pixels of window height.
+667x375 makes it by four. **568x320, an iPhone 5 held sideways, is 51 over and
+`Mound` is off the bottom**, and it was before any of this. Capping the play by
+play there buys nothing, because the play by play is not what is over: the column
+is about 170 pixels wide, the three pitch buttons wrap to three lines in it, and
+the meter alone is 214. That is a redesign of the sideways deck rather than a
+rule, so `check-reach` does not list that screen and this paragraph says why.
+
+##### AND THE LAYOUT CLASS DID NOT FOLLOW A PHONE BEING TURNED
+
+`roomfill` is what the stylesheet keys off, and it is toggled in `render()`.
+`onRoomResize` returned early on any screen but the menu, so **a window turned
+mid-game kept whichever answer it had at kickoff.** The media queries beside it
+follow the window on their own, so what a rotated tablet got was one branch's
+CSS with the other branch's class: two halves of one layout describing different
+windows, and nothing anywhere saying so.
+
+**It is the rule the menu already runs on, arriving at the game.** The section on
+the phone menu says a rotation is not a render and that the listener is what
+keeps the two in step; the listener was there and its first statement was a
+return. The class is one line and costs nothing to keep current, and the menu
+still only repaints on the menu, because that is a canvas redraw and this is not.
+
+**`check-reach` turns every screen sideways mid-game now**, which is a thing a
+player does with a phone and nothing here had ever done, and asserts both halves:
+that the class agrees with the query, and that no control has left the window or
+landed on another one in the new shape.
+
+##### THE GUARD FOR ALL THREE, and nothing else here could see the class
+
+`check-firstpitch` measures the glass and asks whether one pitch can be READ;
+`verify-rules` puts the game in a situation and asks whether the rule is right. A
+button off the side of the window is neither: the rule is right, the picture is
+right, and the control is not there.
+
+**IT PLAYS RATHER THAN POSING, and the first draft of it posed.** Measuring the
+first frame of a game would have passed every one of the four faults, because the
+deck GROWS: the play by play fills up all game, a pitching deck is taller than a
+batting one, and the mound offer and the send button come and go with the
+situation. So it plays at each screen and keeps the WORST reading of every
+control. **It asks both pointer kinds**, because one of the four was a label
+naming keys and the label is shorter on a touch screen.
+
+**IT IS BOUNDED IN WALL CLOCK RATHER THAN IN PRESSES, and it does not wait a game
+out.** A press budget is a guess about how fast the game runs. The result screen
+has controls of its own and nothing about them depends on how the game got there,
+so it is reached by ENDING the game rather than by playing to the last out.
+
+**AND IT PLAYED A SECOND GAME WITHOUT NOTICING.** Pressing Space all game is a
+dreadful pitcher, so the other side can reach the mercy rule inside two minutes.
+The walk asked for a Continue button BEFORE it asked whether the game was over,
+found `Play again` on the result screen, clicked it, and every reading at the end
+belonged to a game four pitches old: it reported a play by play of nought lines
+on a screen that had just played a whole game. **The final whistle is asked
+first now**, and the button list no longer matches anything that starts a game.
+
+**AND ITS COVERAGE CLAIM ASKED THE WRONG THING TWICE.** It wanted two innings
+first, which two minutes of a Fast game does not reach, and innings are not what
+this is about: the deck grows because the PLAY BY PLAY fills up. Counted in LINES
+instead, the threshold is a guess about the font and the phone, and it guessed
+sixteen against a measured thirteen. **The cap is the claim**: the log is held to
+16vh in a game and scrolls past it, so the deck is as tall as it will ever get
+the moment that box OVERFLOWS, and asked of the box there is nothing to guess.
+That box is 91 pixels on the shortest phone and holds about five lines, so
+thirteen is well past it. Measured on one screen in two minutes: 344 samples,
+twelve controls, a full log.
+
+**AND SIDEWAYS THE BOX IS NOT THERE AT ALL NOW**, so that claim reads the game's
+own state instead on those two screens. A box that is hidden by design and a box
+that never filled are the same reading of `scrollHeight`, which is exactly the
+shape of a claim that goes quiet.
+
+##### THE WALK COULD NOT PITCH, AND THEN ITS SPAM ANSWERED EVERY FIELDING WINDOW
+
+Two coverage failures, found by asserting coverage rather than by reading.
+
+**A PITCH IS THREE PRESSES AND SPACE IS ONLY THE THIRD.** Pick a type, press
+Throw, then release. Space answers the release meter and nothing else, so a walk
+that pressed Space sat on the selection screen for its whole budget: two minutes
+of the pitching half produced nought pitches, nought log lines and an inning that
+never ended, and it read as the play by play failing to fill rather than as a
+pitch never being thrown.
+
+**AND THE FIELDING WINDOWS BELONG TO THE WATCHER, NOT TO THE BLIND PRESS.** The
+walk has an rAF watcher that arms each window and presses at its ideal, which is
+what makes the fielding realistic; the loop then pressed Space as fast as it could
+and resolved every window at a t near nought before that timer fired. Measured:
+**nought answered at the ideal across all six screens**, with games finishing 12-0,
+because a throw at t=0 is a throw away. Now the loop leaves an open window alone,
+and the two halves are asserted separately because they fail differently: a window
+that never OPENS means no ball was put in play, and one that opens and is never
+ANSWERED means something else got to it first. Scores went to 0-1, 1-0 and 3-0.
+
+##### THE REPLAY CHIP HAD A ROW OF ITS OWN, AND HALF THE SWEEP NEVER SAW IT
+
+Replay is offered while a highlight is stored, which means after a double, a
+triple or a home run, so whether a walk ever measures it is a fact about the dice:
+it appeared on **two of the six screens and both of those reported it off the
+window**. A control half the sweep never looks at is the badge nothing can light,
+so the page's own `rememberHighlight` is called at the half way mark with the
+longest of the three labels, which is the widest the chip ever gets.
+
+**What it found is that one optional control cost the deck a whole row**, because
+it was built beside Steal, Send and the mound offer, and sideways the row it was in
+WRAPPED. Measured at 667 by 375, the row was laid out 52 pixels below the bottom of
+the window and the page ran 180 pixels long; at 844 by 390 it landed ON the End
+Game chip, 32 pixels by 23, so a tap meaning "show me that again" opened the sheet
+that abandons the game. It sits with End Game now, in a row that already exists and
+that already leaves the flow on a wide window, so a stored highlight costs the deck
+nothing and the camera nothing. **The portrait phone's field grew 44 pixels** for
+it.
+
+##### AND SIDEWAYS THE PLAY BY PLAY WAS GIVEN 34vh OF A WINDOW WITH NOTHING LEFT
+
+The sideways branch made the screen `display:block`, which is all that was ever
+needed to keep the arena out of a grid column and is NOT the same thing as keeping
+it out of the flow. What the block cost is that nothing in the deck could shrink,
+so the play by play took its share of the window whatever was above it: measured
+at 844 by 390 while pitching, the deck's fixed part ended at 344 of 390, the log
+took 133 more, and the page ran 87 pixels long with `overflow:hidden` cutting the
+rest. At 667 by 375 it was 128 and the log started exactly at the bottom edge, so
+the record of the game was not on the screen at all.
+
+**Three things fix it and two of them are the at bat card's own argument.**
+
+- **The column is a flex column**, so the deck's parts can give way.
+- **The play by play is HIDDEN sideways**, like the at bat card above it. A 217
+  pixel column on a 375 tall phone holds the line score, the pitch rows and the
+  way out, and that is all: shrunk instead it is 14 pixels of empty panel, which
+  is worse than absent, because a box that is always empty teaches a reader that
+  the game has stopped narrating. What it narrates is on the screen anyway, in the
+  callout, the placards and the line score, and it comes back the moment the phone
+  is turned upright.
+- **End Game comes back into the flow**, which is the tall window's own rule
+  arriving sideways: the pin exists because every pixel of deck is a pixel the
+  camera pushes the picture down by, and sideways the deck is a column BESIDE the
+  field and is not standing on the picture at all. Pinned, the flow did not know
+  the chips were there and the row above them was laid out to the window's bottom.
+
+**AND THE PITCH TYPES ARE A TWO COLUMN GRID NOW RATHER THAN A WRAPPED ROW.**
+Whether three buttons came out as two rows or three depended on how long that
+pitcher's pitch NAMES were: The Heat and Fastball pair inside the column and
+Curveball and Changeup do not, so the deck was 31 pixels taller against some arms
+than others. A grid is two rows whatever the names are, and the NAME is what gives.
+Same lesson as the fantasy row's named areas.
+
+**The chip row holds one line by construction too**, and the chip that can lose
+letters is the one nobody needs: End Game is the way out of a run and never
+shrinks, Replay is an offer to watch something again.
+
+##### AND THE TWO SHEETS THAT OPEN OVER THE FIELD HAD NEVER BEEN OPENED
+
+`check-reach` plays with Space and presses the deck, so the bullpen and the coach
+plaque were the two surfaces in this game nothing had ever measured. `.arena` sets
+`overflow:hidden`, which is the part that makes this worse than a control off the
+side of the window: a plaque taller than the arena is not a scroll away and it is
+not merely off screen, it is CUT, by a box two levels up that has nothing to do
+with sheets. Both halves of that file's own fault were there:
+
+| | what was gone |
+|---|---|
+| 320x568 | the sheet is 445px against a 341px arena, so it hung **52px off the TOP** and the heading and the whole note explaining the rule were not drawn |
+| 667x375 sideways | **Stay with him**, which is the only way out that does not change your pitcher, ran 23px past the bottom |
+
+So a reader who opened the bullpen sideways to look and not to change anything had
+no press left that did not change something. **Nothing threw**, the sheet rendered,
+and every arm on it was correct.
+
+**The cap is a percentage of the arena and the middle of the sheet scrolls.** The
+heading and the bar stay outside the scroller, because the title says which sheet
+this is and the bar is the control the game is waiting on. It is measured after the
+sheet is on the page, since a box with no layout box answers zero for
+`scrollHeight` and `clientHeight` alike and a read at build time says every sheet
+fits.
+
+**THE STATE LINE AND THE RULE WERE ONE PARAGRAPH, and that is what made 320 bad.**
+Who is on the mound and how tired he is changes on every open and is the reason
+anybody came, so it stays above the scroller. The three sentences after it are a
+RULE, and printed first they were 70px of a 178px scrollport: a first look at a 320
+by 568 phone met **none of the eight arms**. The rule goes BELOW the arms now,
+which is the boss battle's order arriving at a sheet, since the arms are the
+decision and the rule is the reference. Visible arms went 0 to 3 there, 4 to 8 at
+360x640, and 3 to 6 sideways.
+
+**It is a footnote and deliberately NOT a one shot.** Keying it to a first open the
+way the coach cards are keyed was tried and is the worse trade: it hides a rule for
+ever to save a scroll, and the how to play page carries the same rule in more
+detail anyway, including the recovery rate this sheet never mentioned.
+
+**The shade is the cut sheet's, from the baseball game, for the same reason and
+with the same two sided claim.** A row clipped on the scrollport's own edge reads
+as the last row, and a cue still showing at the end of the list is the lie the
+other way, so it is toggled off the real scroll state and asserted in both
+directions. A sticky zero height overlay rather than an inset shadow, because an
+inset shadow paints under opaque children and the arms are opaque.
+
+**WHAT THE GUARD ASKS IS REACHABILITY AND NOT CONTAINMENT**, which is the
+distinction the play by play claim in the same file already makes. An arm's
+rectangle legitimately sits outside the window when it is scrolled away, so what
+may never be outside it is the BOX, the heading and the bar; and the scroller has
+to actually reach its own last row.
+
+**ITS FIRST DRAFT OPENED THE SHEET IN THE FRAME THE COACH WAS DISMISSED IN**, so
+the pitch deck was still being painted and the arena was transiently TALLER than it
+ever is in play. With the cap deliberately removed the sheet then FITTED at
+320x568 and the guard reported only the sideways arm of its own defect. The arena
+is shortest when the deck is tallest, so the pessimistic reading needs the deck
+drawn and the log started. Three seconds of play, and both arms are named.
+
+**The coach plaque is measured and is correct today**, 196 to 250px against every
+arena in the sweep. It is in the guard because it is the first thing a stranger
+meets and a fourth step would break it in silence.
+
+##### THE DECK WAS TOO TALL FOR A SHORT PHONE, and it took three passes to close
+
+**IT IS CLOSED. What follows is the history**, kept because the two things it
+rules out are still ruled out and the third pass only worked because they were.
+The at bat card is gone from the deck, End Game left the flow, and the section
+above finishes it: no control is off the window on any of eleven viewports.
+
+**The one line here that the fix contradicts is the one about the arena's
+floor**, so read them together. Capping the floor to RESERVE room for the deck
+is still wrong, for the reason given below. What was done instead is that the
+floor stopped being a viewport-height number at all: `min(56vh, 480px)` was dead
+on every window with spare pixels and harmful on the one without, and it is the
+cover threshold in `vw` now, which is the thing it was always standing in for.
+The zone on the 360 phone this paragraph worries about does not move.
 
 Measured through the real page while pitching, which is the tallest the deck
 gets:
@@ -6013,6 +6489,158 @@ spare, and 100 more of windup took the spare away: the umpire had not called
 it, the count had not moved, and the section reported the mechanic as gone.
 It waits on the pitch being resolved now. A fixed wait past a beat somebody
 is allowed to tune is a test that fails on the next tuning pass.
+
+### Every screen that is not the game MOVES, and only in two properties
+
+```
+node mythiball/check-motion.mjs
+```
+
+Asked for: the menus, the pop ups and everything that is not gameplay should be
+immersive and exciting, with smooth animation. Before this pass the page had
+**two keyframes in sixteen thousand lines**, and the biggest reward in the game
+was 26 bits of confetti clipped inside a 55px heading.
+
+**EVERYTHING ANIMATES A TRANSFORM OR AN OPACITY AND NOTHING ELSE.** Those are
+the two properties a browser composites, so a card rising costs no layout and
+no paint on the frame it moves. The guard READS the stylesheet for it: every
+`@keyframes mo-*` block is brace matched and may declare `transform`,
+`opacity` and the count-up's `--n`, and nothing else. A breathing ring that
+animated its `box-shadow` instead would be a repaint every frame, and it
+renders perfectly.
+
+**A SCREEN RISES IN ONCE, ON ARRIVAL, and that rule is the one easiest to
+lose.** Most screens here re-render whole on every choice (a city, a colour,
+a setting), so an entrance keyed to `render()` replays on every tap and the
+page flinches whenever it is touched. `motionAfterRender` runs the
+choreography only when the screen CHANGES; a same-screen render pops the
+control that was pressed instead. The pressed control is remembered on
+`pointerdown` in the capture phase, because the render it causes has emptied
+the page before any later handler could look. **A caller that renders a
+screen the starter already rendered gets no entrance**, which is the rule
+working: `startSeason` and `startCup` render their own hubs.
+
+**NEVER ON THE GAME.** Every rule that could reach a control over the field is
+written under `body:not(.ingame)`, and `motionAfterRender` returns on
+`'game'`. Six checkers measure rectangles while a pitch is live, and a
+position or a transform added to a deck button by a rule written for the menus
+is a control that moves off the window with nothing saying so. The coach
+plaque and the bullpen get an ENTRANCE, which is over by the time anything is
+measured, and nothing that keeps moving.
+
+**A FINISHED ENTRANCE TAKES ITS CLASS WITH IT.** `animation-fill-mode: both`
+holds the last keyframe, and a held keyframe beats every ordinary declaration,
+so a card that kept `mo-in` could never lift on hover or tilt again. One
+`animationend` listener removes it. **And a hidden element gets none**: it
+cannot run the animation, so it would keep the class and the first keyframe
+until whenever it is shown. The roster's infobox was the case that found
+it.
+
+**THE SCOREBOARD COUNTS, AND THE NUMBER IN THE DOM IS THE RESULT FROM THE FIRST
+FRAME.** The figure is the element's `::after`, drawn off a registered `--n`
+the browser animates, and the element's own text is the score, set
+transparent. So a reader, a screen reader and `verify-rules` reading
+`#app .card p` all get the answer, while the eye gets the count. **`--n` is
+registered `inherits: true` and that is the whole of it working**: a pseudo
+element only sees a registered property its host passes down, so registered
+`inherits: false` the host counted to 7 and the figure read 0 for ever. It
+rendered perfectly, and the guard reads the pseudo element's `counter-reset`
+for that reason.
+
+**THE CELEBRATION IS ONE CANVAS, NOT TWO HUNDRED NODES.** Two hundred animated
+nodes is two hundred layers. It takes no pointer, stops when its pieces are
+down, when the screen changes (`render()` stops it before it empties the
+page), or when another starts, and a win screen calls it AFTER the screen is
+built, because a celebration started inside the render it belongs to would be
+stopped by that same render's check. The cup and the season champion defer
+theirs by a timer for the same reason.
+
+**The old trophy's three rectangles were `.trophy` pseudo elements** and they
+still matched the drawn cup, so a navy slab hung off its base and the rays drew
+at the old bowl's size in the corner. `.trophy.cup` takes every box property
+back. Found by looking.
+
+**The tilt and the glare are for a mouse.** They sit under
+`(hover: hover) and (pointer: fine)`, in the stylesheet and in the listener,
+because a finger has no hover: on a phone a tilt is a card that leans after it
+has been let go of. The listener writes custom properties and never a
+transform, so the stylesheet stays the one place that says what a tilted card
+looks like.
+
+**REDUCED MOTION IS A FULL STOP.** No entrance, no count, no confetti, no
+wire ticker, no infinite sheen, and the guard asserts
+`document.getAnimations()` is empty on three screens under
+`reducedMotion: 'reduce'`, plus that the scoreboard still reads the score with
+nothing counting.
+
+**A slam and a rise start outside the box they end in**, and a transformed box
+adds to the page's scrollable width: a verdict at twice its size put a
+sideways scrollbar under a phone for the half second it took to land. `#app`
+is `overflow: clip` off the game, which makes no scroll container (so sticky
+still sticks), with a clip margin that keeps the cards' shadows. The guard
+samples `scrollWidth` three times during every entrance.
+
+**Proved by mutation**: keeping the entrance class, replaying on the same
+screen, a keyframe animating `box-shadow`, and `inherits: false` each fail
+their own claims.
+
+#### How to play opens by SHOWING how to play
+
+Asked for: clear animations with simple instructions at the top, before all
+the text. The page opened on eight hundred words, so a stranger met the rules
+before the controls. `howtoQuickStart()` is four loops above everything else:
+**aim, swing, pitch, field**. Each is a picture, a name and one line.
+
+**It is SVG and CSS, not the game's canvas drawers**, and that is the one
+place this page departs from "the figures are drawn by the game's own
+functions". A canvas repainted every frame would be a second render loop on a
+menu screen, running for as long as somebody reads, needing its own stop on
+every way off the page. A CSS animation stops with its node. The colours are
+the game's (the bat's green oval, the white reticle, the release bar's bands,
+the catch ring over its sweet ring), and the drawn figures further down still
+hold the detail.
+
+**THE RESTING STATE IS THE LESSON.** Every moving part is drawn at the one
+frame that explains its step (the bat on the ball, the cursor stopped in the
+green, the ring at its tightest) and the keyframes animate AWAY from that. So
+reduced motion is not a blank or a frame zero, it is the answer. The guard
+asserts it as relations between drawn things rather than as coordinates, so a
+restyle that keeps the lesson keeps passing.
+
+**Every keyframe is `mo-qs-*`**, which puts the loops under the
+compositor-only rule the first section of `check-motion` already reads. That
+rule now allows `animation-timing-function` inside a keyframe, which is the
+easing of the segment starting there rather than an animated property: it is
+how the release cursor sweeps linearly and then stops dead.
+
+**The copy is device neutral**, like the rest of this page: "click, tap or
+press Space", "the mouse, a finger or the arrow keys". `check-posture` scans
+the quick start for stale controls too, because it teaches the same controls
+in fewer words and a stale one there is the same lie told first.
+
+**Proved by mutation**: the card moved below the batting card, every loop
+stopped, the ring's resting scale removed, and the release cursor resting
+outside the green each fail their own claims.
+
+##### And writing its guard found an at bat that started in the wrong game
+
+Every beat before the next batter was `setTimeout(startAtBat, ms)`, which
+starts an at bat in whatever game is current when it lands. Six sites: the
+first pitch, a hit, two paths to an out, a walk and the break between half
+innings. `check-motion` starts games fast enough to leave one inside its first
+400ms, and one run in several threw `Cannot read properties of null (reading
+'over')`.
+
+**THE THROW IS THE LOUD HALF.** Replace the game inside the beat instead,
+which Play again on a result screen can do inside a home run's, and the old
+timer begins a SECOND at bat in the new game on top of its own. Driven with a
+spy on `startAtBat`: two calls into the replacing game before, one after.
+Nothing throws in that case, which is why it had never been seen.
+
+`atBatIn(ms)` captures the game and fires only into it. This is the throw
+window's rule, the catch window's and the robbery's, arriving a fourth time at
+the one timer every plate appearance goes through. `verify-rules` drives both
+halves in "an at bat starts in its own game".
 
 ### A phone gets a MENU, a desktop gets the room
 
@@ -6148,13 +6776,21 @@ demanded zero would be holding the page to a design it no longer has.
 The regression suite, which is the thing to run after editing:
 
 ```
-node mythiball/check-posture.mjs   unlisted, and the capital alias still lands
+node mythiball/check-posture.mjs   unlisted, the capital alias still lands, the brand holds, and every park's scenery exists
+node mythiball/check-rules.mjs     whole games, and the sport's own arithmetic
+node mythiball/check-reach.mjs      every control a game offers is inside the window,
+                                   including the two sheets that open over the field
 node mythiball/verify-rules.mjs    the rules replayed in a headless browser
 node mythiball/calibrate.mjs       the pitch duel's rates against TARGETS bands (minutes; --quick for a loop, --easy/--hard for a tier)
 node mythiball/check-frames.mjs 70 normal --phone --cpu=4   frame times, on the machine that matters
 node mythiball/check-runs.mjs      runs per game, with a defence that turns up (--jobs=N to run several at once)
 node mythiball/check-bat.mjs       the swing's own curves, and that skill pays
+node mythiball/check-skill.mjs     what a PERSON hits, four rungs of skill, both swings
 node mythiball/check-firstpitch.mjs  whether a stranger can READ one pitch
+node mythiball/check-motion.mjs    the menus move, every entrance finishes, and
+                                   none of it reaches the game
+node mythiball/whiff.mjs 3000      what the other dugout does with a swing, at a
+                                   sample that can answer (a meter, not a guard)
 node scripts/check-dashes.mjs      mythiball is on the GUARDED list
 ```
 
@@ -6168,6 +6804,191 @@ itself once: it measured the CPU at 55 whiffs per hundred swings, the swing
 jitter tiers came down about a fifth, and it measures in the mid forties
 now (MLB runs about 25). The file's header records the procedure, and any
 further move repeats it: measure, touch the jitter, measure again.
+
+### A SITUATION IS NOT A GAME, AND THREE RULES DID NOT SURVIVE ONE
+
+```
+node mythiball/check-rules.mjs          120 games
+node mythiball/check-rules.mjs 400      more of them
+```
+
+`verify-rules.mjs` asks whether a SITUATION is handled, and every scenario in it
+is one the audit found the game getting wrong: a walk-off walk, a mercy rule, a
+tag on a caught fly. So each of its claims is about one line. **Nothing had ever
+asked whether the sport's arithmetic holds over a WHOLE GAME**, which is a
+different question with a different shape: a property of every state the game
+can reach rather than of a state somebody thought to set up.
+
+**THE CLAIM IS THE IDENTITY.** Every batter who comes to the plate in a half
+inning either makes an out, scores, or is standing on a base when it ends, so
+
+```
+plate appearances = outs + runs + men left on base
+```
+
+exactly, every half inning, with no tolerance. It is violated by any runner
+duplicated, dropped, advanced twice or put out twice, which is most of the ways
+a base-running rule can be wrong, and **not one of them throws**: a runner who
+quietly vanishes off second leaves a game that renders perfectly and is missing
+a man.
+
+**IT DRIVES THE REAL FUNCTIONS AND NEVER A COPY**, in the order
+`scheduleContactPlay` calls them, and what it leaves out is the ANIMATION layer:
+a plate appearance here is the outcome applied and the transition taken, which
+is what the play timers do once the ball has landed. Timers are suppressed for
+the sweep, or a game would take its own eight minutes and the sweep would be a
+reading of one.
+
+**Three rules were wrong, and one of them was wrong in every half inning of
+every game ever played here.** None of them threw and none of them drew
+anything odd.
+
+- **THE HOME TEAM NEVER BATTED IN AN EXTRA INNING IT WAS BEHIND IN.**
+  `checkGameOver`'s regulation clause asked `inning > innings` alone, and
+  `endHalfInning` flips the half BEFORE it asks, so the clause also fired at the
+  end of the TOP of an extra inning, where the number has already passed
+  regulation and the home team has not come to the plate. Every extra-inning
+  game the away team scored in ended on the spot with a legal-looking final
+  score. **What ends a game is a COMPLETED inning, and that is read off the half
+  rather than off the number.**
+- **THE MAN WHO MADE THE THIRD OUT LED OFF THE NEXT INNING.** Three functions
+  ended a half by handing straight to `endHalfInning` and not one advanced the
+  order first, so the batter who had just been rung up was standing back in the
+  box. **The inning board said so out loud and nobody read it**: `Due up` is
+  three names off `bat.idx`, so it led with the man who had just made the third
+  out, every half inning, on the one screen between the halves. **Putting the
+  advance inside `endHalfInning` is the wrong fix and it is the obvious one**,
+  because a half inning can also end on a runner caught stealing, and that
+  plate appearance is NOT finished: the batter at the plate
+  leads off the next inning, which is the real rule and is what the steal path
+  already does. Advancing there would skip a man. So the advance belongs to the
+  end of an APPEARANCE, which is what `endPlateAppearance` is.
+- **A HIT COULD BE THE THIRD OUT AND THE INNING DID NOT END.** A runner waved
+  round and gunned down at the plate is an out charged to a man who came to the
+  plate an at bat ago, so the batter is safe, the play is a hit, and `wasOut` is
+  false: `afterHitTransition` had no test for three, and the game carried on
+  with three outs on the board, a fourth batter and a fifth. **What ends a half
+  inning is the third out and never what produced it.**
+
+**A GROUND OUT NOW MOVES THE MEN IT FORCED, and that one is a rule the game
+never had rather than a rule it got wrong.** A runner on first stayed on first
+for ever, so the fielder's choice, the run-scoring grounder and the whole idea
+of a productive out were missing, and what the screen showed was a legal play no
+defence would ever choose. The batter is retired at first and everybody on an
+unbroken chain of bases behind him moves up; a man on second or third with first
+EMPTY was never forced and holds, which is why it walks the chain rather than
+shoving every runner along. **Nobody moves on the third out**, because no run
+may score on a play whose third out is the batter retired before he reaches
+first.
+
+**It is worth +0.58 runs a nine innings a side**, measured through the sweep
+against a copy of the page with the rule alone removed, over 200 games an arm on
+one seed, which is the controlled comparison: one build, one distribution, the
+rule the only difference. That is a real move and it is recorded rather than
+compensated, because the old behaviour was not cheaper, it was wrong.
+
+**WHAT WAS NOT RE-MEASURED IS THE ABSOLUTE FIGURE.** `check-runs.mjs` is the
+instrument for that, it plays real games through the real buttons, and it takes
+the better part of an hour for a sample that its own header says cannot resolve
+half a run. So the 6.2 a nine recorded above is now a LOWER BOUND, and the
+sweep's +14% says the real number is somewhere near seven. Read it that way, and
+if the mode ever needs the run environment settled, that is the file to run
+rather than this one: the sweep's outcome distribution is the harness's, not the
+game's, so its absolute number means nothing and its difference means everything.
+
+**AN X IS NOT A BLANK, AND THE BOARD HAD A COLUMN TOO MANY.** A home team ahead
+when the top of the last inning ends does not bat, and the board wrote the same
+empty cell there that it writes for an inning nobody has reached: two different
+facts under one blank, and a reader cannot tell a game that stopped early from
+one still to be played. It is an X now, the way every line score in this sport
+writes it, on the home side and only once the game is finished.
+
+**Writing it exposed a column that was never played.** The board sized itself on
+`Math.max(g.innings, g.inning, ...)`, and `endHalfInning` advances the inning
+BEFORE it asks whether the game is over, so after the last out of a five inning
+game the number reads six and the board drew a sixth column. Empty, it read as a
+rendering quirk; with an X in it, it read as a statement that the home team did
+not bat in an inning that did not exist. `boardInnings()` leaves `g.inning` out
+once the game is over, and keeps it while the game is live because that is the
+one moment the lengths do not cover it: the gap between half innings, which is
+exactly when the inning board is on screen.
+
+**A SACRIFICE IS NOT AN AT BAT**, which is the whole reason a man who gives
+himself up for the runner does not pay for it in his average. Both kinds were
+charged one. The sacrifice fly has to be read off the SCORE and never off the
+fact that somebody moved, because a man tagging to third is not one; and **a
+bunt with nobody on is not a sacrifice at all**, so it is an ordinary out, an
+ordinary at bat, and the screen no longer calls it something it was not.
+
+**`recordHit` IS GONE.** Fifty lines nobody called: a second copy of the runner
+rule, written before `applyHitMutation` existed, with no send, no hold and no
+tag in it. A dead copy of a rule is the worst kind of comment, because the next
+person to fix a base-running bug finds two answers and fixes the one that is not
+running.
+
+**And extra innings announced themselves every inning.** `inning > innings` is
+true of the eleventh and the twelfth as well, so a long game said "tied after
+nine, extra innings" at the top of each of them, by which point it had not been
+tied for three innings.
+
+#### And on a play the PLAYER fields, the picture never followed the book
+
+`scheduleContactPlay` calls `simReconcile` after the mutation, for the reason
+that function's own header gives: the book can send a runner further than the
+plan did, so his run is extended from where he is now and the picture agrees.
+**The two resolvers a FIELDED play goes through never called it.** An infield
+single moves every runner up, a throwing error moves them two, and a caught fly
+runs the tag, and in all three the sim left them standing where the plan put
+them. It is not a new gap, and the ground out's force made it a third case, so
+it is closed rather than worked around.
+
+**AND "NOT ON A BASE" MEANT "HE SCORED", WHICH IS WRONG FOR A MAN PUT OUT ON
+ONE.** `simReconcile` reads `g.bases`, so a runner who is off it was assumed to
+have reached home. That is right for the two cases it was written for, a runner
+waved round and one gunned down at the plate, who really did run there. It is
+wrong for a man thrown out at THIRD tagging up from second, and for a man forced
+at second on a double play: the picture carried both of them past the bag they
+were tagged at and slid them into home. A caller that knows the bag records it
+now, in `p.outAt`.
+
+**And the plate marker drew a play at the plate for an out at third.** It puts
+the catcher on home with the ball and the runner sliding into him, and `tagUp`
+set it for both of its outs, so a man thrown out at third was a picture of a
+play at a base nobody was near.
+
+#### Three ways the harness was wrong, and two of them read as the page being wrong
+
+- **OUTS ARE READ ABSOLUTE AND NEVER AS A DELTA.** The outs made in a half ARE
+  `g.outs` at the moment it ends, because that counter is what `endHalfInning`
+  resets. A delta over one plate appearance is the outs that appearance made,
+  which is never three, and the first draft reported every half inning in the
+  game as unbalanced.
+- **IT DID THE PAGE'S JOB AND HID THE DEFECT IT SHOULD HAVE FOUND.** Every
+  branch carried its own `if (g.outs >= 3) endHalfInning()` before handing on,
+  so the hit whose third out is a runner gunned down at the plate ended the
+  inning HERE and not there, and the third defect above was invisible until the
+  branch was replaced by `scheduleContactPlay`'s own four lines verbatim.
+- **THE SACRIFICE FLY SCENARIO RACED THE DICE.** `tagUp` reads the SEND button
+  only for the team you are managing and the other dugout is always on auto, so
+  a scenario that sets the rule on a game you are playing at HOME sets a rule
+  nobody consults, and then rolls for the throw. Written that way it passed or
+  failed on how fast the man on third happened to be.
+
+**Every guard was proved by reintroducing its defect in a copy of the page**
+(`MYTHIBALL_PAGE`, which both browser suites here already take). The extra
+innings clause fails two claims, the order fails four, and the third out fails
+one, naming itself: `an at bat starts with 3 out`.
+
+**COVERAGE IS HALF OF IT.** A sweep that never reached an extra inning says
+nothing about extra innings, and one with no runner thrown out at the plate
+never tested the one out charged to a man who came to the plate an at bat ago,
+so the counts are asserted. The two claims a random sweep can only meet by luck
+are set by hand beside it.
+
+**Both new guards run in CI** (`.github/workflows/mythiball-checks.yml`), and
+`check-rules` goes BEFORE `verify-rules` because it is the cheap one and the
+broad one: it sweeps games rather than posing situations, so it names a broken
+rule in a minute where the other takes the best part of an hour.
 
 ### EVERY OTHER CHECKER HERE ASKS WHETHER SOMETHING IS CORRECT
 
@@ -6711,6 +7532,48 @@ back along the flight, dark edge first and then the colour, wide at the ball and
 the tail. Found by rendering a home run at five instants and looking, which is how the
 contact burst's rays got their dark ring the same afternoon: pale rays on pale dirt were
 not there over the keyhole.
+
+#### And the PITCH had no streak at all, on the camera the game is played from
+
+That pass gave the ball a floor, a dark ring and a comet on a big hit, and it was all
+about the WIDE camera. The plate camera's pitch kept the trail it shipped with: three
+discs at 26, 18 and 10 percent white, no dark edge, at nine tenths of the ball's own
+radius. Photographed on a desktop, they are three tan blobs on the tan keyhole, which
+the composition pass laid down the middle of this exact picture, with a gap between the
+last one and the ball. **The streak is what makes a pitch's SPEED read, and speed is
+the whole of what a batter is timing.**
+
+It is the comet's shape now, so a moving ball has one language wherever this game draws
+one: sampled back along the flight, dark edge first and then the white, wide at the ball
+and gone at the tail. Sampled through `platePitchPos`, which is the one flight function
+that camera has, so a curveball's trail bends with the curveball.
+
+**THERE ARE TWO PITCH BALLS AND THE OBVIOUS ONE IS THE ONE NOBODY SEES.** `drawField`
+has its own, after the early return that hands the picture to `drawPlateView`, and it
+looks exactly like the one to fix. An afternoon went into improving it before a
+screenshot showed the discs unchanged. **Its ghosts really were on the straight line
+between the release point and the plate while the ball itself broke off it**, so a
+curveball there trailed like a fastball, and that is fixed too: one function of `e` for
+both, the way the plate camera already had it.
+
+**IT IS NOT DEAD, WHICH WAS MEASURED RATHER THAN ASSUMED**, because this repo's own
+`recordHit` lesson is that a dead copy of a rule is where the next person spends their
+afternoon. `plateViewActive` hands the picture back to the wide camera during a steal, a
+tail or a jog, and a pitch can be live in all three. Counted through a real inning with
+a probe in the branch: **219 frames**.
+
+**IT COSTS NOTHING, and the single run said otherwise.** `check-frames` came back 47ms
+mean with 98% of frames over 33, which reads as a render that has doubled. Interleaved,
+two runs an arm against the same build without the trail: **52.84 and 47.41 against
+51.54 and 45.51**, a difference smaller than the spread between two passes of one arm.
+
+**AND THE BANDS IN THAT FILE ARE STALE, which is the more useful half.** Run against
+`origin/main`, which is what is deployed and has none of this session in it, the same
+machine reads **51.47 and 53.13**. Same bytes, and the file's own header records 20ms.
+So the numbers are a fact about the box on the day, the bands were anchored two
+rendering passes ago, and `check-frames` is a METER for an A/B rather than a verdict on
+a build. Do not move those bands to make a run pass, and do not read a red one as a
+regression without running both arms.
 
 **THE CONTACT FRAME WAS NEVER SHOWN.** `plateViewActive` returned false the instant
 `g.play` existed, and `HITSTOP_MS` shifted every play timer by 80 without holding the
@@ -7278,6 +8141,34 @@ first: a screen with nothing to fill proves nothing about the fill. **Its
 counted as the fallback, which is exactly what a missing custom property is.
 Proved by removing the sampler: four failures, the colours reported as null.
 
+##### THE COLOUR WAS RIGHT AND THE FLATNESS WAS THE FAULT
+
+Everything above is about the band being the park's own colour, and it is. What
+it never asked is what the band looks like once it is more than a seam. Measured
+during a ball in play at 390x844: the picture is 293 CSS pixels of a 570 pixel
+arena, so **48% of the wide view was two unchanging colours**, and at 320x568 it
+is 35%. A sampled slab is still a slab.
+
+**A sky deepens toward the top and near ground falls into shadow**, so the band
+is shaded away from the picture and is exactly the sampled colour where it meets
+it. That is the whole of the change: one overlay on the arena, nothing in the
+canvas, no camera moved. Desktop and sideways have a band of one or two pixels,
+so `--pic` reads about 49.9 there and the overlay collapses to nothing.
+
+**`--pic` IS THE PICTURE'S OWN HALF HEIGHT AND NOT HALF THE ARENA.** Anchored at
+50% the overlay is zero at the arena's midpoint rather than at the canvas's edge,
+so there is a STEP where the band meets the picture, and the bigger the band the
+bigger the step: the flatness this fixes, arriving by its own back door. It is
+written in `fitFieldCanvas`, where the canvas height and the arena height are
+both already in hand and the line runs only when the fit changes.
+
+**Nothing else here could see it.** The colour claims above read `--sky` and
+`--turf` rather than the glass, which is right on their own terms, and a step is
+a perfectly valid gradient. So the guard reads `--pic` against the rectangles it
+is supposed to describe, at a tenth of a percent, which on the tallest arena in
+the sweep is under a pixel. Anchored back at 50% it names every park on both
+phones: `--pic 50 against a real half of 20.80`.
+
 #### The guard measures the glass, and it found two things the eye did not
 
 `check-firstpitch.mjs`'s fourth section reads where the zone lands in CSS
@@ -7489,12 +8380,241 @@ pitched around would be a punishment rather than a hitter.
 opponent knows is invisible otherwise: the player just meets hard contact and
 reads it as luck.
 
+#### AND THE HUMAN HAD THE WHOLE READ FOR NOTHING, ON THE LOUDEST LINE OF THE DECK
+
+Everything above is a dial that decides how much the other dugout KNOWS about
+what is coming, earned over twenty pitches and worth a hard bat's timing error
+from .082 to .024. A human batter was simply told. `pt-name` names the live
+pitch, and measured through the real page it did so **about seven tenths of a
+pitch duration BEFORE the ball left the hand**, on every pitch, from the first
+of the game: `label first names it at t=-0.76 (during the windup)`.
+
+**It lives in the PITCHER's own meter block**, where `meter-side` and
+`meter-hint` beside it are already gated on which side is up, and it alone was
+not. The at bat card three lines away in the same function already gates the
+weak pitch tell on `!playerIsBatting()`. So the convention was in this
+function twice and this line missed it, which is why nothing looked wrong: it
+is a correct label for the side it was written for.
+
+**IT IS A RECORD RATHER THAN A TELL NOW.** Pitching, you chose it, so it names
+it at once, unchanged. Batting, it names the pitch once the ball has arrived
+or been swung at, which is after the decision is made. That is what a
+broadcast does, it teaches a repertoire over an at bat, and it costs no read.
+
+**The waiting word is shorter than the longest pitch name, on purpose.** The
+first draft read `HERE IT COMES`, four characters past `Curveball`, on the one
+deck row a 320 by 568 phone was already fifty pixels over. `ON THE WAY` is ten
+against nine, and measured rather than argued.
+
+**No band moved, and that is worth stating.** `check-skill` and `calibrate`
+drive the engine rather than the deck, so every rate in both is untouched. What
+changed is what a PERSON knows, which no harness here measures and which is the
+one thing the difficulty model was already built around.
+
+**Guarded on both sides, because gating it on the pitch rather than on the side
+loses the half that must stay.** `verify-rules` reads the deck while batting at
+the moment a batter is deciding and again with the ball in the mitt, and reads
+it while pitching, where it must name the pitch at once. Each was proved by
+mutation. **The batting claim reads against whatever pitch is LIVE, never
+against the one the fixture asked for**: the CPU is the one pitching there, so
+its next throw can replace `g.pitch` between the two reads, and pinned to a
+curveball the claim failed on a page doing the right thing, naming a knuckler
+it had correctly just been handed.
+
+### NOTHING HAD EVER MEASURED THE HALF A PERSON PLAYS
+
+```
+node mythiball/check-skill.mjs                    four rungs, three tiers, both swings
+node mythiball/check-skill.mjs --pa 300           a faster read
+node mythiball/check-skill.mjs --tier medium --mode contact --sweet 0.12 --bat HIT_Q=0.30
+```
+
+`calibrate.mjs` measures the OTHER dugout: its swing rate, its whiffs, its
+chases. `check-bat.mjs` sweeps the swing's own curves and asserts worse never
+helps. Neither of them answers the question a player is actually asking, which is
+what somebody LIKE THEM ends up hitting, and the only written answer was a comment
+over the home run gate claiming a perfect player hits about .67 and a careless one
+about .30, "tuned against a simulation of full plate appearances (scratch
+tune.mjs)". That file does not exist, so the claim was unverifiable, and it was
+wrong about the end that matters.
+
+**It is a model of a PERSON in the box, not of the game.** Four rungs, each a pair
+of standard deviations: how far off the ball the bat is put (in zone units) and how
+late or early the hands are (in milliseconds). It reads the pitch's own landing
+spot and sweet moment out of `g.pitch`, adds its error to both, decides whether the
+pitch looks like a strike (protecting with two strikes, which is what a person
+does), and then calls the page's own `resolveSwing`.
+
+**Measured through it, in the mode the game defaults to, the game was too easy at
+every rung and had no chase in it:** somebody who had NEVER PLAYED hit .372, one
+game in .453, a competent player .591, and the ceiling .667. So the whole distance
+between having played once and being unbeatable was .45 to .67, and the mode a
+player is in the moment they press Contact hit better than a real Hall of Famer.
+
+**IT MEASURED A SWING MODE NOBODY CAN SELECT FOR THE FIRST TWO PASSES**, and that
+is the finding to read before trusting any number here. The buttons are Contact,
+Power and Bunt; `normal` is the word `resolveSwing` uses for the OTHER dugout, and
+the harness set it. It is not a spelling difference: Contact widens the timing
+window by a quarter and then takes 55 per cent of the home run chance away, Power
+narrows it and pays 1.75 times. Read in `normal` a competent player showed 14.7 per
+cent of plate appearances as home runs; in Contact it is 11.4 and in Power 16.9.
+Same lesson as this repo's SQL fixture inventing a column, arriving at a game
+state.
+
+#### The window is the player's dial, and the other dugout keeps its own
+
+`DIFF.sweetWidth` sits in the half of that table which is about BATTING, beside the
+ball speed and the arm's accuracy, and the other dugout's difficulty is `chase`,
+`read` and its own timing jitter. It reached the CPU anyway, because `swingGeometry`
+is one function and read the table directly. **So the CPU's rates were a measurement
+of the player's dial as well, and the player's dial could not be moved.**
+`calibrate.mjs` holds that dugout to about 28 whiffs per hundred swings, solved per
+tier against those exact widths, and the jitter clamps under it are absolute times,
+so narrowing the window to make a person's timing matter would have raised the CPU's
+whiff rate, broken that band, and on hard walked into the floor that has already
+killed the pattern read once.
+
+`CPU_SWEET` is that dugout's window and it holds the numbers the table shipped with,
+so nothing about the other side moves when the player's column does. **That is what
+made the rest of this a single-instrument job.**
+
+#### THE CEILING IS NOT THE WINDOW, WHICH IS WHY THE FIRST SWEEP WENT NOWHERE
+
+The window was the obvious dial and it was swept first, from 0.20 down to 0.07, a
+cut of nearly two thirds. The top rung moved from **.667 to .682**. A 22 millisecond
+error is inside any window this game could offer, so the best player is untouched;
+what a narrow window does is take balls in play away from a BEGINNER, whose average
+falls through STRIKEOUTS while a competent player's balls in play go on being hits.
+On its own it made the game harder at the end that was already hard enough.
+
+**The dominant term is the ladder's FLOOR.** `HIT_BASE` plus `CONTACT_HIT` plus the
+speed term is what a ball in play is worth on the worst swing that still connects,
+and at 0.13 and 0.09 that floor was .26, which is real baseball's average on every
+ball in play. The ceiling was double it. Those eight coefficients are in `BAT` now
+rather than loose in the middle of `resolveSwing`, and the checker can run any of
+them, which is how the shipped ones were picked.
+
+**What shipped**, in Contact mode at 700 plate appearances a rung:
+
+| who | was | easy | medium | hard |
+|---|---|---|---|---|
+| never played | .372 | .291 | .266 | .220 |
+| one game in | .453 | .337 | .335 | .297 |
+| knows it | .591 | .449 | .430 | .410 |
+| cannot lose | .667 | .573 | .585 | .556 |
+
+The shared coefficients came down about a fifth, `CONTACT_HIT` went 0.09 to 0.03,
+and `sweetWidth` went 0.26/0.20/0.16 to 0.20/0.15/0.12.
+
+**WHAT IT COSTS THE OTHER DUGOUT IS REAL, and it is the one part of this that is not
+free.** Six of the eight coefficients are shared, and the CPU sits at a contact
+quality near 0.64 where a competent person reaches 1.0, so a cut is worth less to it
+than to the player and is not worth nothing: its hits per ball in play come down
+about a sixth. That is the direction the run environment wanted anyway, since
+`check-runs.mjs` measured 6.2 a nine before the forced runner was fixed against a
+real game's 4.5, and this file's own note says a backyard game should sit a LITTLE
+over it rather than half again.
+
+#### A tier claim written on the batting average is a coin toss
+
+**The averages barely separate the tiers and the whiffs separate them cleanly**,
+which is what the dial actually does. Easy to hard for a competent player is about
+.03 of average against a standard error near .02 at 700 plate appearances, so it
+inverted between medium and hard on a page with nothing wrong with it. Getting that
+to three sigma needs five thousand appearances a rung, which is minutes a tier in CI
+for a claim about a side effect. Whiffs per swing at medium run 25.6 for somebody who
+has never played against 34.8 on hard, and nine points of a rate over four hundred
+swings is four sigma. **The sample moves or the claim moves; the band does not.**
+
+#### THE PROP BAT WAS A HAIRLINE ACROSS THE BATTER'S FACE
+
+The handoff pack draws a real bat in the swing and batting stance strips, so the
+page's own three rectangle bat is only drawn for a character whose art has none.
+**That is 31 of the 68**, including whoever is at the plate about half the time.
+
+**Its LENGTH is a share of the figure and its THICKNESS was five pixels**, so it
+was the right bat on the field, where a runner is thirty pixels wide, and a
+thirtieth as thick as it was long on the plate camera, where the batter is six
+times that. Rendered and looked at, what a player sees is a twig floating beside
+the hitter. That is the strike zone's own hairline one screen along: a length
+written in the wrong unit, invisible in the source, and it is the frame a player
+looks at longest. The floor is what the field always drew, so nothing under about
+90 pixels wide moves at all.
+
+**And it was drawn ACROSS HIS FACE.** A quarter turn anticlockwise from the chest
+sweeps the barrel up over the head. Four placements were rendered at plate scale
+and looked at: two read as a bat, and the one that ships is the only one that
+touches nothing, which is a bat held up over the back shoulder.
+
+#### THE PITCHING DECK COVERED THE STRIKE ZONE, AND ONLY THE BATTING ONE WAS SOLVED
+
+`deckCoverBlocks` is honoured and then `sy` is clamped to the world's own bottom
+edge, which is the one of the three clamps that cannot be argued with, so what the
+deck cannot be paid for it simply COVERS. The batting deck was measured and the
+camera's budget was solved against it. The pitching deck is a pitch name, a row of
+types and the two action buttons as a COLUMN, which is 148 pixels against the
+batting deck's 57, and nothing had ever measured it: 22 pixels of a 200 pixel zone
+at 1440 by 900 and **47 of 160 at 1280 by 800**, which is the bottom third of the
+box a pitcher is aiming into.
+
+Walk him and Throw sit beside each other on a wide window now, which is the swing
+row's own fix arriving at the other half, and the last few pixels come off the
+spacing rather than the type, because Throw is what that deck is FOR. Six pixels
+of the smallest desktop are still covered and that is the world running out rather
+than a layout to tighten. `check-firstpitch` walks the pitching half now.
+
+#### `calibrate.mjs` COLLECTS PAGE ERRORS AND ONE WAS REAL
+
+`Cannot read properties of undefined (reading 'weakPitch')`, twice in 150 pitches.
+`batterCtx` is built when a batter steps in and `scheduleCpuSwing` can be reached
+before it is, so **two of the four reads in that one function tested it and two did
+not**. A throw there aborts the swing being scheduled, so what a player sees is a
+pitch nobody swings at and nothing on screen to say why. Every rate target was in
+band either side of it, which is the point: the rates are what that file bands and
+the page errors are what it happens to notice.
+
+#### A fixture that suppresses timers has to book the at bat itself
+
+Every timer is stubbed so a plate appearance costs nothing, and
+`scheduleContactPlay` decides the ball and then BOOKS it on a timer. So the first
+version counted hits itself off `g.play.kind` and then read the game's own
+`g.stats` over the top of its own tally: every rate came back **.000 with the in
+play column reading 88 to 100 per cent**, which is a batting line that cannot
+happen. Two copies of one answer, and the one that was right was the one being
+overwritten. It calls the mutation itself now, which is that function's own tail,
+and that matters beyond the totals: whether a bunt or a fly ball is charged as an
+at bat at all is a RULE and it lives in those functions.
+
 #### A swing that misses half the time is not a backyard game
 
 ```
-node scratchpad/whiff.mjs 3000 medium     the tuning instrument
+node mythiball/whiff.mjs 3000 medium      the tuning instrument
+node mythiball/whiff.mjs 3000             all three tiers
 node mythiball/calibrate.mjs              the tripwire
 ```
+
+**IT LIVED IN A SCRATCH FILE AND THE SCRATCH FILE WENT.** This section pointed
+at `scratchpad/whiff.mjs`, which is not in the repo and had not survived, so the
+one instrument that can answer the question this section is about did not exist.
+A later session lost the better part of an hour to a `calibrate` reading of
+**14.0 against a band floor of 15**, ran seven of them, read the spread as a
+regression, and built the file again from this paragraph. It is in `mythiball/`
+now, beside the tripwire it is the micrometer for.
+
+**AND THE REGRESSION WAS NOT THERE, which is the part worth copying.** Seven
+`calibrate` runs on that build read 14.0, 25.3, 22.6, 21.2, 27.4, 20.9 and 19.3;
+three on the build before it read 27.0, 25.3 and 26.9. Three against seven, means
+of 26.4 and 21.5, reads as a five point drop at three standard errors and is
+**entirely the sample**: the micrometer at 3000 swings a tier puts the two builds
+at 22.3 / 24.5 / 25.0 against 23.0 / 26.1 / 24.4, inside 1.6 points everywhere.
+The CPU's swing was **identical by construction** the whole time, because the
+window split left `CPU_SWEET` holding the exact numbers `sweetWidth` used to
+carry and nothing else the other dugout reads was touched.
+
+**A CHEAP MEASUREMENT REPEATED IS NOT A BIG MEASUREMENT.** Seven readings of a
+sample that cannot resolve the question average to a confident wrong answer, and
+the temptation at the end of them is to go and tune a dial. Two runs of the right
+instrument settled it.
 
 The CPU whiffed on **about 47 swings in every hundred**, against MLB's 25, and
 the note in `calibrate.mjs` called that "still arcade-hot". It is the wrong way
@@ -7517,6 +8637,22 @@ The instrument that can answer stubs `setTimeout` into a queue, calls the game's
 own `throwPitch` and `scheduleCpuSwing`, then drains the queue once. **Nothing
 about the jitter model is copied**, which is the whole point: a second copy of
 that arithmetic would measure itself. 3000 swings an arm, in seconds.
+
+**AND THE SAMPLE IS WORSE THAN BINOMIAL, WHICH IS WHY 3000 IS THE NUMBER.** The
+batter turns over every few pitches, so consecutive swings share one man's CON
+and are correlated: the effective sample is smaller than the count. Measured on
+one build, 600 swings read 28.7 and 1200 read 24.8, which is about 1.8 standard
+errors apart on a binomial and ordinary here. Two arms compared at anything under
+a couple of thousand is a reading of the batters.
+
+**IT TAKES `MYTHIBALL_PAGE`, because a single column means nothing.** The whole
+value of this file is the A/B, and the arms have to be two files on disk rather
+than two runs either side of an edit.
+
+**WHAT IT READS TODAY IS 22 TO 26 AND THIS SECTION SAYS 28.** That gap is on the
+pre-session build too, so it is the rebuilt fixture rather than the game, and the
+two are not the same measurement. Compare arms with each other, never a number
+here against a number in this paragraph.
 
 **WHIFF WAS ALREADY FLAT ACROSS THE TIERS AND THAT IS THE DESIGN, NOT AN
 ACCIDENT.** 47.4 / 47.8 / 46.2 on easy, medium and hard. Those numbers were

@@ -5,11 +5,27 @@ name: MythiBall checks
 # Both commands run locally, unchanged:
 #
 #   node mythiball/check-posture.mjs   the game stays out of the indexed site
+#   node mythiball/check-rules.mjs     whole games, and the arithmetic every half
+#                                     inning owes: batters equal outs plus runs
+#                                     plus men left on base
+#   node mythiball/check-reach.mjs     every control a game offers is inside the
+#                                     window, on the shortest phone anybody holds
+#   node mythiball/check-skill.mjs    what a PERSON hits, four rungs of skill,
+#                                     against the bands the dials were set to
 #   node mythiball/verify-rules.mjs    walk-offs, the mercy rule, extra innings,
 #                                     one standings order, abandoned games
 #
-# The second needs Playwright's Chromium, installed here and nowhere else.
+# All but the first need Playwright's Chromium, installed here and nowhere else.
 # No secrets, no deploy.
+#
+# check-rules runs BEFORE verify-rules because it is the cheap one and the
+# broad one: it sweeps games rather than posing situations, so it names a
+# broken rule in a minute where the other takes the best part of an hour.
+# check-reach takes its one screen, which is the 320 by 568 phone three of the
+# four unreachable controls were found on. Its sheet section is NOT cut by
+# --quick and walks five viewports either way: opening a plaque costs seconds
+# where playing a screen costs two minutes, and the phone those two defects
+# were on is the one a shortened list would drop.
 
 on:
   pull_request:
@@ -50,6 +66,26 @@ jobs:
         run: |
           npm install --no-save playwright@1.47.2
           npx playwright install --with-deps chromium
+
+      - name: The sport's own arithmetic
+        run: node mythiball/check-rules.mjs 120
+
+      - name: Every control is inside the window
+        run: node mythiball/check-reach.mjs --quick
+
+      # About a minute. It is the only thing that asks whether an entrance
+      # FINISHES, and a card stuck at its first keyframe is a hole in a
+      # screen that throws nothing.
+      - name: The menus move, settle and stay off the game
+        run: node mythiball/check-motion.mjs
+
+      # The batting model, at a sample this job can afford. 450 plate
+      # appearances a rung is about a minute and holds every claim in that
+      # file: the rung ordering, the floor, the ceiling and the gap between
+      # them are all worth more than the noise at that size, and the tier
+      # claim is written on the whiffs for exactly that reason.
+      - name: What a person actually hits
+        run: node mythiball/check-skill.mjs --pa 450 --mode contact
 
       - name: The rules, replayed
         run: node mythiball/verify-rules.mjs

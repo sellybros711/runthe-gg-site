@@ -5,8 +5,33 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>MythiBall</title>
 <meta name="robots" content="noindex, nofollow" />
-<meta name="theme-color" content="#0b1015" />
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230b1015'/%3E%3Ctext x='16' y='23' font-size='20' text-anchor='middle'%3E%E2%9A%BE%3C/text%3E%3C/svg%3E" />
+<meta name="theme-color" content="#1b3a5c" />
+<!-- THE BRAND, painted by the pixel kit between MYPIX BEGIN and MYPIX END below and rendered by
+     mythiball/build-logo.mjs. The game is unlisted, so a pasted link is the only way anybody reaches it,
+     and without these tags that link unfurls as a bare line of text. Tags on a noindexed page are not a
+     contradiction: robots tells a crawler not to index, and does nothing to a chat app unfurling a link
+     somebody was handed. Every ?v= on one file must agree, here, in the alias stub and in the manifest:
+     node mythiball/check-posture.mjs holds them. -->
+<link rel="icon" type="image/png" sizes="32x32" href="/mythiball/favicon-32.png?v=2" />
+<link rel="icon" type="image/png" sizes="16x16" href="/mythiball/favicon-16.png?v=2" />
+<link rel="icon" type="image/png" sizes="48x48" href="/mythiball/favicon-48.png?v=2" />
+<link rel="apple-touch-icon" href="/mythiball/icon-180.png?v=2" />
+<link rel="manifest" href="/mythiball/manifest.webmanifest" />
+<meta name="description" content="Public domain baseball. Draft nine legends and monsters, then play them in an arcade game you aim, swing and pitch yourself." />
+<meta property="og:title" content="MythiBall | Public domain baseball" />
+<meta property="og:description" content="Public domain baseball. Draft nine legends and monsters, then play them in an arcade game you aim, swing and pitch yourself." />
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="RunThe.GG" />
+<meta property="og:url" content="https://runthe.gg/mythiball/" />
+<meta property="og:image" content="https://runthe.gg/mythiball/og.png?v=2" />
+<meta property="og:image:width" content="2400" />
+<meta property="og:image:height" content="1260" />
+<meta property="og:image:alt" content="MythiBall in red varsity letters on a baseball scorecard. Alice, Dracula and Medusa on three trading cards." />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:site" content="@RunTheGG" />
+<meta name="twitter:title" content="MythiBall | Public domain baseball" />
+<meta name="twitter:description" content="Public domain baseball. Draft nine legends and monsters, then play them in an arcade game you aim, swing and pitch yourself." />
+<meta name="twitter:image" content="https://runthe.gg/mythiball/og.png?v=2" />
 <style>
   :root{
     /* A 1980s baseball cabinet, not a dashboard. Scorecard cream, navy
@@ -127,7 +152,14 @@
   body.smooth{--pxr:auto;}
 
   .wrap{max-width:920px;margin:0 auto;padding:14px 14px 60px;}
-  .swing-modes{display:flex;align-items:center;gap:8px;margin:8px 0 2px;}
+  /* WRAPPING IS THE NET AND NOT THE PLAN. A row of controls that does not
+     wrap does not get shorter when it runs out of width, it runs off the
+     side of the window, and a control off the side of the window is one
+     nobody can press. It is written on the base rule rather than inside a
+     query because it costs nothing when there is room, and because the two
+     places that had to add it later (the sideways column and the phone deck)
+     were both discovering the same thing about the same row. */
+  .swing-modes{display:flex;align-items:center;gap:8px;margin:8px 0 2px;flex-wrap:wrap;}
   .swing-modes .lbl{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--text-dim);}
   .mode-btn{font:inherit;font-size:12px;letter-spacing:.06em;text-transform:uppercase;
     background:var(--panel);color:var(--text);border:var(--bd);border-radius:var(--r-sm);
@@ -155,6 +187,8 @@
     height:100vh;height:100dvh;display:flex;flex-direction:column;}
   body.ingame .brand{flex:0 0 auto;margin:0;padding:5px 12px;border-bottom-width:2px;}
   body.ingame .brand h1{font-size:17px;}
+  body.ingame .brand .bmark.m32{display:none;}
+  body.ingame .brand .bmark.m16{display:block;width:24px;height:24px;}
   /* `#app` is the mount every screen is built into and it is an ordinary
      block, so a flex child two levels down inherits nothing from the wrap
      and is simply content sized: the screen measured 515 of a 900 tall
@@ -247,10 +281,54 @@
      canvas is centred, so the split at half is exactly where the picture
      is whatever size the band comes out. The near black is the fallback
      for the frame before the first sample and for a park that has not
-     drawn yet. */
-  body.ingame .arena{flex:5 1 0;min-height:min(56vh, 480px);width:100%;
+     drawn yet.
+
+     AND IT IS SHADED AWAY FROM THE PICTURE, because two flat slabs is what
+     a phone actually got: measured at 390x844 the park is 269 CSS pixels of
+     a 665 pixel arena, so 61% of the wide view was one of two unchanging
+     colours. The colour was right and the FLATNESS was the fault. A sky
+     deepens toward the top and near ground falls into shadow, so the
+     overlay is nothing at the seam and grows outward from it.
+
+     `--pic` is the picture's own half height as a share of the arena,
+     written by `fitFieldCanvas` where both numbers are already in hand, so
+     the overlay is zero exactly where the band meets the canvas rather
+     than at some fraction that happens to be close. Anchored on 50%
+     instead there is a visible STEP at the canvas edge, and the bigger the
+     band the bigger the step, which is the fault this fixes arriving by
+     its own back door. A screen with no band writes 50% and the whole
+     overlay collapses to nothing.
+
+     `check-firstpitch` reads `--sky` and `--turf` rather than the glass, so
+     it is untouched by this, and that is the right way round: the claim it
+     makes is that the band is the park's own colour, and the seam still is
+     that colour to the channel. */
+  /* THE FLOOR IS THE COVER THRESHOLD AND NOTHING ELSE, which is a
+     correction. It was `min(56vh, 480px)`, and on a tall window that number
+     is never reached: the arena is the one child with grow, so it takes every
+     pixel the deck does not want and the floor is dead. The ONLY window where
+     it did anything was one with no spare pixels, and there it did the wrong
+     thing: at 320 by 568 while pitching the deck wanted 231, the floor held
+     318 of 536, and the flex box cannot shrink a child below its min-height,
+     so the Mound row was laid out 13 pixels BELOW the bottom of the window
+     and `overflow:hidden` cut it off. A field floor that pushes a control off
+     the screen is a floor arguing with the game.
+
+     What the floor is actually for is the plate camera's COVER: it only zooms
+     once the box is taller than its width over 1.4545, and under that the
+     field is width limited and the strike zone collapses to something a thumb
+     cannot aim at. So that is the number, written against the WIDTH because
+     that is what it is a fact about: 69vw is 220 at 320 wide and 269 at 390,
+     which is the 268 that threshold was measured at. Above it the arena still
+     takes everything going. */
+  body.ingame .arena{flex:5 1 0;min-height:min(56vh, 480px, 69vw);width:100%;
     max-width:none;margin:0;border:0;border-radius:var(--r-sm);box-shadow:none;
-    background:linear-gradient(to bottom, var(--sky, #0b1015) 0 50%,
+    background:
+      linear-gradient(to bottom, rgba(6,10,20,.30) 0,
+        rgba(6,10,20,0) calc(50% - var(--pic, 50%)),
+        rgba(6,10,20,0) calc(50% + var(--pic, 50%)),
+        rgba(6,10,20,.34) 100%),
+      linear-gradient(to bottom, var(--sky, #0b1015) 0 50%,
       var(--turf, #0b1015) 50% 100%);position:relative;overflow:hidden;}
   @media (min-aspect-ratio: 3/4){
     body.ingame .arena{position:absolute;inset:0;width:auto;min-height:0;}
@@ -266,6 +344,27 @@
     body.ingame .meter-wrap .label{margin:0;flex:0 0 auto;gap:12px;}
     body.ingame .meter-wrap .hint{margin:0;}
     body.ingame .swing-modes{margin:0;}
+    /* AND THE PITCHING DECK PAYS THE SAME BUDGET THE SWING ROW DOES, which is
+       the paragraph above arriving at the half nobody measured. Walk him and
+       Throw are a COLUMN, so the pitching deck is a row of pitch types beside
+       a two high stack, and that stack is what sets its height: measured on a
+       desktop it is 148 pixels against the batting deck's 57.
+
+       The world runs out before the camera can pay for that. `deckCoverBlocks`
+       is honoured and then `sy` is clamped to the world's own bottom edge,
+       which is the one of the three clamps that cannot be argued with, so what
+       the deck cannot be paid for it simply covers: measured, 22 pixels of a
+       200 pixel strike zone at 1440 by 900 and 47 of 160 at 1280 by 800, which
+       is the bottom third of the box a pitcher is aiming INTO. The batting half
+       is clear on every screen, which is why this survived: the zone is the
+       thing that was solved for, and only for the deck that was measured. */
+    body.ingame .pitch-select .col{flex-direction:row;}
+    /* The last few pixels come off the spacing rather than the type, because
+       Throw is what this deck is for and a smaller Throw is a worse deck than
+       a tighter one. At 1280 by 800 they are the difference between the zone's
+       bottom edge being covered and being clear. */
+    body.ingame .pitch-select{margin-top:4px;}
+    body.ingame .meter-wrap{padding-top:6px;padding-bottom:6px;}
     /* AND END GAME LEAVES THE FLOW HERE AND ONLY HERE. Its own row was 33
        pixels of a 22 block budget spent on the one control nobody is
        looking for. Under a tall window there is no budget to spend, the
@@ -274,6 +373,37 @@
     body.ingame .screen > .controls:last-child{position:absolute;right:10px;
       bottom:6px;left:auto;margin:0;z-index:7;}
   }
+  /* THE END GAME ROW STAYS IN THE FLOW ON A TALL WINDOW, and it was pinned to
+     the corner here for one commit. The way out of a game really was off the
+     bottom of a 320 by 568 phone while pitching, and pinning the row won the
+     24 pixels back, and then it landed on the swing buttons: measured, the
+     chip covered the whole width of Bunt and a sliver of Power. A control
+     that abandons the game sitting on top of the one that bunts is worse than
+     a control off the screen, because the tap does something, and the note on
+     the wide branch above says so in as many words.
+
+     WHAT ACTUALLY FIXED THE OVERFLOW IS THE ARENA'S FLOOR, one rule up, and
+     this was redundant the moment that landed: with the floor at the cover
+     threshold the arena gives the deck whatever it asks for, so the row fits
+     where it always was. Two fixes for one fault, and the one that keeps
+     every control apart is the one to keep. */
+  /* AND THE TWO ROWS THAT ARE PRESSED MATCH THE CONTROLS BESIDE THEM. Both
+     wrap now, so nothing can leave the window, and this is what keeps them
+     from needing to: a wrapped row is a second line of deck, and the deck is
+     what the camera pays for.
+
+     IT IS NOT BEHIND A WIDTH QUERY, and the first version was. What is
+     narrow here is the COLUMN and not the window: held sideways the deck is
+     a 253 pixel column beside the field in a 667 pixel window, so a query on
+     the viewport tightens the phone that needed it and misses the one that
+     needed it more. The End Game chip has been at ten pixels and this padding
+     since the redesign, so this is the two pressed rows joining it rather
+     than a new size. The MOUND row is not part of that and keeps its own
+     height and colour, because it is pressed and a control has to look like
+     one: see the rule that gives it a narrower gutter instead. */
+  body.ingame .swing-modes{gap:6px;}
+  body.ingame .swing-modes .mode-btn,
+  body.ingame .pitch-select .type-row .btn{padding:6px 9px;font-size:10px;}
   /* Absolutely positioned so the arena's size never depends on the
      canvas's: a canvas whose bitmap is derived from its own layout width
      and whose layout width came from its intrinsic size is a feedback
@@ -364,6 +494,21 @@
   body.ingame .screen > .controls:last-child .btn{font-size:10px;padding:5px 9px;
     background:rgba(8,16,26,.72);color:rgba(244,234,214,.8);
     border-color:rgba(11,16,21,.9);box-shadow:none;}
+  /* AND THE ROW IT IS PINNED OVER HAS TO KEEP CLEAR OF IT. Out of the flow,
+     the chip lands in the bottom right corner of whatever is there, and
+     sideways the deck is a column about a third of the window wide: measured
+     on a 667 by 375 phone, Mound ran to 572 and the chip started at 562, so
+     ten pixels of the button that changes your pitcher opened the sheet that
+     abandons the game instead. A control that does the wrong thing is worse
+     than one off the screen.
+
+     The row keeps its height and its panel colour, because Mound and Steal
+     are pressed and a control has to look like one; only the side padding
+     comes in, which is what a narrow column is short of. It buys 20 pixels,
+     so the gap goes from minus ten to plus ten at 667, plus 28 at 720 and
+     plus 70 at 844, and nothing wider moves at all. */
+  body.ingame.roomfill .screen > .controls:not(:last-child) .btn{
+    padding-left:10px;padding-right:10px;}
   /* The play by play is the least urgent thing on the screen and the only
      one that grows without limit, so it is the one that gets a box and a
      scrollbar rather than pushing the field out of the window. */
@@ -387,7 +532,13 @@
     border-bottom:3px solid var(--line);margin-bottom:4px;}
   .brand h1{margin:0;font-family:var(--font-display);font-size:25px;letter-spacing:.02em;
     text-transform:uppercase;white-space:nowrap;flex:0 0 auto;
-    color:var(--gold);font-weight:900;text-shadow:2px 2px 0 var(--navy);}
+    color:var(--gold);font-weight:900;text-shadow:2px 2px 0 var(--navy);
+    display:inline-flex;align-items:center;gap:8px;}
+  /* THE MARK IS PIXEL ART IN BOTH RENDERERS. Smooth mode is about the field; the mark is the same 16 by 16
+     grid as the favicon, drawn by the kit at boot rather than fetched, so the header and the logo files are
+     one drawing. It is sized in whole multiples of 16 wherever the room allows. */
+  .brand .bmark{width:32px;height:32px;flex:0 0 auto;image-rendering:pixelated;display:block;border:0;}
+  .brand .bmark.m16{display:none;}
   /* THE TWO STRAPLINES SHRINK AND THE CONTROLS DO NOT. A monospace held
      this row together by accident: every glyph was one width, so the line
      happened to fit. In a proportional face the same words are wider and
@@ -718,6 +869,8 @@
     .arena .corner.bl{left:6px;} .arena .corner.br{right:6px;}
     .brand{padding:6px 0 8px;gap:6px;}
     .brand h1{font-size:16px;letter-spacing:.02em;}
+    .brand .bmark.m32{display:none;}
+    .brand .bmark.m16{display:block;width:24px;height:24px;}
     .brand .tag{display:none;}
     .brand button{font-size:9px;padding:4px 7px;margin-left:4px;white-space:nowrap;}
     .wrap{padding:8px 8px 40px;}
@@ -743,7 +896,11 @@
   .pitch-select .col{display:flex;flex-direction:column;gap:4px;align-items:center;}
   .pitch-select .throw-hint{font-size:10px;letter-spacing:.12em;text-transform:uppercase;
     color:var(--text-dim);}
-  .pitch-select .type-row{display:flex;gap:6px;}
+  /* And the pitch picker, for the same reason. Three of this arm's own
+     pitches come to 281 pixels, and sideways the deck is a 253 pixel column
+     beside the field, so the third one hung 30 pixels off the right of the
+     window: the whole point of the row is choosing between them. */
+  .pitch-select .type-row{display:flex;gap:6px;flex-wrap:wrap;}
   .zone-grid{display:grid;grid-template-columns:repeat(3,32px);grid-template-rows:repeat(3,32px);
     gap:2px;background:var(--navy);padding:3px;border:var(--bd);
     border-radius:var(--r-sm);box-shadow:var(--shadow-sm);}
@@ -810,12 +967,38 @@
   .controls .btn.selected{background:var(--gold);color:#fff6ea;}
   /* The bullpen: a plaque over the field with the eight arms on the
      bench, each with the one number that matters on the mound. */
+  /* CAPPED TO THE FIELD IT SITS OVER, and the middle of it scrolls. The
+     arena sets overflow:hidden, so a plaque taller than the arena is not a
+     scroll away, it is CUT. Uncapped this one is 445px against a 341px
+     arena on a 320 by 568 phone, so it hung 52px off the top and the
+     heading and the whole note explaining the rule were gone; held
+     sideways on a 667 by 375 phone the way OUT, Stay with him, ran 23px
+     past the bottom, so a reader who did not want to change pitchers had
+     no press left that did not change one. Nothing here had measured it:
+     check-reach plays with Space and never opens this sheet.
+
+     The heading and the bar sit OUTSIDE the scroller, because the title
+     says which sheet this is and the bar is the control the game is
+     waiting on. Only the note and the arms move. */
   .pen{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
     width:min(560px,94%);background:var(--panel);border:var(--bd-strong);
     box-shadow:var(--shadow);padding:12px 14px;z-index:10;
-    font-size:12px;color:var(--text);}
+    font-size:12px;color:var(--text);
+    max-height:calc(100% - 16px);display:flex;flex-direction:column;}
   .pen h4{margin:0 0 4px;font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);}
   .pen .note{font-size:10px;color:var(--text-dim);margin-bottom:8px;line-height:1.5;}
+  .pen .pen-rule{margin:8px 0 0;}
+  .pen-body{overflow-y:auto;min-height:0;}
+  /* A row clipped on the scrollport's own edge reads as the last row. Zero
+     height, sticky, and toggled off the real scroll state rather than
+     painted always, because a cue still showing at the end of the list is
+     the lie in the other direction. A sticky overlay and not an inset
+     shadow: an inset shadow paints UNDER opaque children, and the arms
+     are opaque. */
+  .pen-body .pen-shade{position:sticky;bottom:0;height:0;display:none;pointer-events:none;}
+  .pen-body.more .pen-shade{display:block;}
+  .pen-body .pen-shade::before{content:'';position:absolute;left:0;right:0;bottom:0;height:22px;
+    background:linear-gradient(rgba(27,58,92,0),rgba(27,58,92,.30));}
   .pen-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:6px;}
   .pen-arm{border:var(--bd);background:var(--panel-2);padding:5px 4px;text-align:center;
     cursor:pointer;font:inherit;color:inherit;box-shadow:var(--shadow-sm);}
@@ -1158,6 +1341,8 @@
   @media (max-height: 560px){
     .brand{padding:2px 0 4px;margin-bottom:2px;}
     .brand h1{font-size:14px;letter-spacing:.1em;text-shadow:1px 1px 0 var(--navy);}
+    .brand .bmark.m32{display:none;}
+    .brand .bmark.m16{display:block;width:16px;height:16px;}
     .brand .tag{display:none;}
     .brand button{font-size:9px;padding:3px 7px;}
     body.roomfill .clubtabs{margin:4px auto 0;}
@@ -1187,8 +1372,31 @@
        Absolute on the left, and the deck flows normally in the padding it
        leaves. The arena's height is the window's, which is what
        fitFieldCanvas needs, and it cannot size anything else. */
-    body.ingame.roomfill .screen{display:block;position:relative;height:100%;
-      padding:4px 0 0 calc(66% + 10px);}
+    /* A COLUMN, NOT A BLOCK, AND THE PLAY BY PLAY IS WHAT GIVES WAY. The
+       arena is out of the flow either way, which is all `display:block` was
+       ever for: it is not the two column grid the note above rejected. What
+       the block cost is that nothing in the deck could shrink, so the play by
+       play took its 34vh whatever was left above it and ran off the bottom of
+       the window. Measured at 844 by 390 while pitching: the deck's fixed part
+       ended at 344, the log took 133 more, and the page was 87 pixels longer
+       than the window with `overflow:hidden` cutting the rest. At 667 by 375 it
+       was 128 and the log started exactly at the bottom edge, so the record of
+       the game was not on the screen at all.
+
+       AND THE END GAME ROW COMES BACK INTO THE FLOW HERE, which is the tall
+       window's own argument arriving sideways. It is pinned to the bottom right
+       corner on a wide window because every pixel the deck is tall is a pixel
+       the camera pushes the picture down by. Sideways the deck is a COLUMN
+       BESIDE the field: it is not standing on the picture at all, so there is no
+       budget to buy and nothing to spend it on. What the pin cost is that the
+       flow did not know the chips were there, so the row above them was laid
+       out to the window's own bottom and they landed on it. Measured at 667 by
+       375, Mound was under Replay by 90 pixels of 23, which is a tap meaning
+       "change my pitcher" opening the sheet that abandons the game. */
+    body.ingame.roomfill .screen{display:flex;flex-direction:column;
+      position:relative;height:100%;padding:4px 0 0 calc(66% + 10px);}
+    body.ingame.roomfill .screen > .controls:last-child{position:static;
+      right:auto;bottom:auto;margin:6px 12px 6px 0;justify-content:flex-start;}
     body.ingame.roomfill .arena{position:absolute;left:0;top:0;width:66%;
       height:100%;margin:0;}
     /* SIDEWAYS STILL PUTS THE FURNITURE BESIDE THE FIELD, and that is not
@@ -1215,14 +1423,57 @@
        Who is up is the biggest thing on the screen, holding a bat. */
     body.ingame.roomfill .atbat{display:none;}
     body.ingame.roomfill .controls{margin-top:8px;}
-    /* The play by play grows without limit and is the least urgent thing
-       on the screen, so it is the one that gets a box to live in. */
-    body.ingame.roomfill .log{max-height:34vh;overflow-y:auto;}
+    /* AND THE PLAY BY PLAY GOES TOO, which is the at bat card's own argument one
+       row down. A 217 pixel column on a 375 tall phone holds the line score, the
+       pitch or swing rows and the way out, and that is all it holds: measured
+       while pitching, the deck's fixed part ends at 344 of 375 and the log was
+       given 34vh of the window regardless, so it ran 128 pixels off the bottom
+       and `overflow:hidden` cut every line of it. Shrunk to nothing instead it
+       is 14 pixels of empty panel, which is worse than absent: a box that is
+       always empty teaches a reader that the game has stopped narrating.
+
+       What it narrates is on the screen anyway. The callout says what just
+       happened over the field, the placards carry the count and the inning, and
+       the line score carries the runs. It comes back the moment the phone is
+       turned upright, where it has the room to be read. */
+    body.ingame.roomfill .log{display:none;}
+    /* THE WAY OUT HAS TO HOLD ONE LINE. Replay and End Game together want 224
+       pixels of a 217 pixel column, so the row wrapped and the deck grew by 31
+       pixels for two chips that fit beside each other everywhere else. The side
+       padding is what a narrow column is short of, which is the same 20 pixels
+       the steal row's own rule buys above. */
+    body.ingame.roomfill .screen > .controls:last-child{flex-wrap:nowrap;
+      margin-right:0;}
+    body.ingame.roomfill .screen > .controls:last-child .btn{padding:5px 6px;
+      min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+    /* AND THE ONE THAT GIVES IS THE OPTIONAL ONE. End Game is the way out of a
+       run and has to be readable whatever else is on the row; Replay is an offer
+       to watch something again. So the chip that can lose letters is the chip
+       nobody needs, which is the fantasy row's rule about the club giving way
+       rather than the name. */
+    body.ingame.roomfill .screen > .controls:last-child .btn:last-child{
+      flex:0 0 auto;}
+    /* And the line score's cells, for the same reason and in the same place:
+       sideways the deck is short of height, and a two row table at 4 pixels of
+       cell padding is 67 of it. */
+    body.ingame.roomfill .linescore th,
+    body.ingame.roomfill .linescore td{padding:3px 7px;}
     /* A column a third of a phone wide does not hold a label and three
        buttons on one line, and the row does not wrap on its own: the third
        button hung off the panel with its name cut in half. */
     body.ingame.roomfill .swing-modes{flex-wrap:wrap;gap:6px;}
     body.ingame.roomfill .swing-modes .lbl{width:100%;}
+    /* AND THE PITCH TYPES ARE TWO COLUMNS BY CONSTRUCTION RATHER THAN BY
+       MEASUREMENT. Wrapped, whether three buttons come out as two rows or three
+       depends on how long this pitcher's pitch NAMES are: The Heat and Fastball
+       pair inside the column and Curveball and Changeup do not, so the deck was
+       31 pixels taller against some arms than others and the play by play was
+       squeezed out of the window against those. A grid is two rows whatever the
+       names are, and the name is what gives rather than the layout. */
+    body.ingame.roomfill .pitch-select .type-row{display:grid;
+      grid-template-columns:1fr 1fr;}
+    body.ingame.roomfill .pitch-select .type-row .btn{overflow:hidden;
+      text-overflow:ellipsis;white-space:nowrap;padding-left:6px;padding-right:6px;}
   }
 
   /* THE TEAM PHOTO. Fifty five cards in a grid is a spreadsheet: it is how
@@ -1286,12 +1537,353 @@
     .row-2{grid-template-columns:1fr;}
     .plate-row{grid-template-columns:1fr;}
   }
+
+  /* ================================================================== MOTION
+     EVERYTHING HERE MOVES A TRANSFORM OR AN OPACITY AND NOTHING ELSE. Those
+     two are the properties a browser hands to the compositor, so a card
+     rising into place costs no layout and no paint on the frame it moves.
+     A height, a margin or a box-shadow animated instead is a repaint of the
+     whole card on every frame, which is exactly the stutter this block
+     exists to take off the screens between games.
+
+     IT IS NEVER ON THE GAME. `body.ingame` is the one screen where a frame
+     is spent on the field and where six checkers measure rectangles while a
+     pitch is live, so every rule that could reach a control over the field
+     is written under `body:not(.ingame)`. The plaques over the field get
+     their own ENTRANCE and nothing that keeps moving after it.
+
+     A SCREEN RISES IN ONCE, ON ARRIVAL. `motionAfterRender` adds `mo-in`
+     only when the screen CHANGES. Most screens here re-render whole on
+     every choice (a city, a colour, a setting), and replaying the entrance
+     on each tap is a page that flinches every time somebody touches it.
+     A re-render of the same screen pops the control that was pressed
+     instead, which is the answer to the tap.
+
+     REDUCED MOTION IS A FULL STOP, NOT A SHORTER VERSION. See the block at
+     the end. */
+  /* A slam and a rise both start outside the box they end in, and a
+     transformed box still adds to the page's scrollable width: a verdict
+     at twice its size put a sideways scrollbar under a phone for the half
+     second it took to land. `clip` makes no scroll container, so sticky
+     children still stick, and the margin keeps the cards' own shadows. */
+  body:not(.ingame) #app{overflow:clip;overflow-clip-margin:28px;}
+  :root{
+    --ease-out:cubic-bezier(.16,1,.3,1);
+    --ease-spring:cubic-bezier(.34,1.56,.64,1);
+  }
+  .mo-in{animation:mo-rise .64s var(--ease-out) both;}
+  @keyframes mo-rise{
+    from{opacity:0;transform:translate3d(0,24px,0) scale(.975);}
+    to{opacity:1;transform:none;}
+  }
+  /* A table row slides rather than rises: a column of numbers arriving from
+     the left reads as a board being filled in. */
+  .mo-row{animation:mo-slide .5s var(--ease-out) both;}
+  @keyframes mo-slide{
+    from{opacity:0;transform:translate3d(-14px,0,0);}
+    to{opacity:1;transform:none;}
+  }
+  .mo-pop{animation:mo-pop .46s var(--ease-spring);}
+  @keyframes mo-pop{0%{transform:scale(1);}32%{transform:scale(1.09);}100%{transform:scale(1);}}
+
+  /* ------------------------------------------------------------ the controls
+     A button answers on the frame it is pressed: down and a little smaller,
+     in 90ms with no easing tail, which is the cabinet's own rule kept. What
+     is new is the way BACK up, which is a spring, and the hover, which
+     lifts. */
+  body:not(.ingame) :is(.btn,.bigplay,.toggle,.sb,.hmode,.park-card){
+    transition:transform .44s var(--ease-spring), box-shadow .24s ease,
+      filter .2s ease, background-color .2s ease, color .2s ease;
+  }
+  @media (hover:hover) and (pointer:fine){
+    body:not(.ingame) :is(.btn:not(:disabled),.toggle,.sb):hover{transform:translate3d(0,-2px,0);}
+    body:not(.ingame) .bigplay:hover{transform:translate3d(0,-3px,0) scale(1.012);
+      box-shadow:0 2px 3px rgba(20,40,63,.10), 0 18px 32px -10px rgba(158,30,24,.55);}
+  }
+  body:not(.ingame) :is(.btn:not(:disabled),.bigplay,.toggle,.sb,.hmode,.park-card):active{
+    transform:translate3d(0,1px,0) scale(.965);transition-duration:.09s;
+    box-shadow:var(--shadow-press);}
+  body:not(.ingame) .toggle.on{box-shadow:0 1px 2px rgba(20,40,63,.12), 0 8px 16px -8px rgba(158,30,24,.6);}
+
+  /* THE SHEEN. A band of light crosses a solid button on hover, and crosses
+     the franchise button on its own every few seconds, because that button
+     is the one thing on the front page that is waiting for somebody. It is
+     a pseudo element moved by transform, clipped by the button's own
+     radius. */
+  body:not(.ingame) :is(.btn:not(.ghost),.bigplay){position:relative;overflow:hidden;isolation:isolate;}
+  body:not(.ingame) :is(.btn:not(.ghost),.bigplay)::after{content:'';position:absolute;
+    top:-4px;bottom:-4px;left:-10%;width:60%;pointer-events:none;z-index:1;
+    background:linear-gradient(100deg,rgba(255,255,255,0) 20%,rgba(255,255,255,.34) 50%,rgba(255,255,255,0) 80%);
+    transform:translate3d(-130%,0,0) skewX(-12deg);
+    transition:transform .75s var(--ease-out);}
+  @media (hover:hover) and (pointer:fine){
+    body:not(.ingame) :is(.btn:not(.ghost):not(:disabled),.bigplay):hover::after{
+      transform:translate3d(260%,0,0) skewX(-12deg);}
+  }
+  body:not(.ingame) .bigplay::before{content:'';position:absolute;inset:0;pointer-events:none;
+    z-index:1;border-radius:inherit;
+    background:linear-gradient(100deg,rgba(255,255,255,0) 40%,rgba(255,236,190,.42) 50%,rgba(255,255,255,0) 60%);
+    transform:translate3d(-100%,0,0);animation:mo-sheen 5.6s var(--ease-out) 1.6s infinite;}
+  @keyframes mo-sheen{0%{transform:translate3d(-100%,0,0);}28%,100%{transform:translate3d(100%,0,0);}}
+  /* The play mark breathes, which is the second hint the button is live. */
+  body:not(.ingame) .bigplay .bp-mark{animation:mo-nudge 1.8s ease-in-out infinite;}
+  @keyframes mo-nudge{0%,100%{transform:translate3d(0,0,0);}50%{transform:translate3d(4px,0,0);}}
+
+  /* ---------------------------------------------------------------- the cards
+     A tile tips toward the pointer and a glare follows it. `--rx`, `--ry`
+     and the glare's `--mx`/`--my` are written by one pointermove listener
+     (`motionTilt`), and ONLY under a fine pointer: a finger has no hover,
+     so on a phone a tilt would be a card that leans after you have already
+     let go of it. */
+  body:not(.ingame) :is(.hmode,.park-card){position:relative;overflow:hidden;}
+  @media (hover:hover) and (pointer:fine){
+    body:not(.ingame) :is(.hmode,.park-card,.charcard:not(.locked),.potg,.award){
+      transform:perspective(900px) rotateX(var(--rx,0deg)) rotateY(var(--ry,0deg))
+        translate3d(0,var(--ty,0px),0);}
+    body:not(.ingame) :is(.hmode,.park-card,.charcard:not(.locked),.potg,.award):hover{--ty:-4px;
+      box-shadow:0 2px 4px rgba(20,40,63,.08), 0 22px 34px -14px rgba(20,40,63,.42);}
+    body:not(.ingame) :is(.hmode,.park-card,.charcard:not(.locked),.potg,.award).tilting{
+      transition:transform .14s ease-out, box-shadow .24s ease;}
+    body:not(.ingame) :is(.hmode,.park-card,.charcard:not(.locked))::after{content:'';
+      position:absolute;inset:0;pointer-events:none;border-radius:inherit;opacity:0;
+      background:radial-gradient(220px circle at var(--mx,50%) var(--my,50%),
+        rgba(255,255,255,.55), rgba(255,255,255,0) 60%);
+      transition:opacity .3s ease;}
+    body:not(.ingame) :is(.hmode,.park-card,.charcard:not(.locked)):hover::after{opacity:1;}
+  }
+  body:not(.ingame) .charcard{transition:transform .44s var(--ease-spring), box-shadow .24s ease,
+    background-color .2s ease;}
+  /* The pick number lands with a bounce, and the card it lands on pops. */
+  .charcard .pickno.fresh{animation:mo-stamp .5s var(--ease-spring) both;}
+  @keyframes mo-stamp{from{opacity:0;transform:scale(2.2) rotate(-18deg);}to{opacity:1;transform:none;}}
+
+  /* ------------------------------------------------------------- the verdict
+     A WIN IS STAMPED ON, A LOSS SETTLES. The same heading used to arrive the
+     same way either side of the result, which made the reward moment and
+     the consolation one feel identical. */
+  body:not(.ingame) h2.verdict{font-size:clamp(30px,8vw,52px);line-height:1;letter-spacing:.02em;
+    padding:6px 0 14px;transform-origin:0 60%;}
+  body:not(.ingame) h2.verdict.win{animation:mo-slam .7s var(--ease-spring) both;
+    text-shadow:0 2px 0 rgba(20,40,63,.25), 0 10px 24px rgba(27,138,74,.35);}
+  body:not(.ingame) h2.verdict:not(.win){animation:mo-settle .9s var(--ease-out) both;}
+  @keyframes mo-slam{0%{opacity:0;transform:scale(1.9) rotate(-4deg);}
+    55%{opacity:1;transform:scale(.94) rotate(1deg);}100%{opacity:1;transform:none;}}
+  @keyframes mo-settle{from{opacity:0;transform:translate3d(0,-18px,0);}to{opacity:1;transform:none;}}
+
+  /* THE FINAL, AS A SCOREBOARD. The score was one line of body text in a
+     card, which is the least a result can be. The digits count up, and
+     they are PAINT: the real number is the element's own text from the
+     first frame (so a reader, a screen reader and a checker all get the
+     result), set transparent, and the counting figure is drawn over it
+     from a registered `--n` the browser animates. Where `@property` is
+     not supported the property does not interpolate, and the figure simply
+     lands on the answer. */
+  /* INHERITS, and that is the whole of it working. The figure is drawn by
+     the element's `::after`, and a pseudo element only sees a registered
+     property its host passes down: registered `inherits:false`, the host
+     counted to 7 and the figure on screen read 0 for ever. */
+  @property --n{syntax:'<integer>';inherits:true;initial-value:0;}
+  .fboard{margin:4px 0 2px;background:var(--line);border-radius:var(--r);
+    padding:6px 6px;box-shadow:inset 0 2px 0 rgba(255,255,255,.06), var(--shadow);}
+  .fb-row{display:flex;align-items:center;gap:12px;padding:8px 12px;border-radius:10px;
+    color:#c8d6e6;}
+  .fb-row + .fb-row{border-top:1px solid rgba(255,255,255,.08);}
+  .fb-row.won{color:#fff6ea;background:rgba(255,255,255,.06);}
+  .fb-kit{flex:0 0 auto;width:10px;height:26px;border-radius:4px;background:var(--k,#8aa0b8);
+    box-shadow:0 0 0 1.5px rgba(255,255,255,.25);}
+  .fb-team{flex:1 1 auto;min-width:0;font-family:var(--font-display);font-weight:800;
+    font-size:17px;letter-spacing:.04em;text-transform:uppercase;overflow:hidden;
+    text-overflow:ellipsis;white-space:nowrap;}
+  .fb-you{font-size:10px;letter-spacing:.16em;color:#ffd98a;margin-left:6px;vertical-align:2px;}
+  .fb-runs{position:relative;flex:0 0 auto;min-width:1.6em;text-align:right;
+    font-family:var(--font-display);font-weight:800;font-size:40px;line-height:1;
+    font-variant-numeric:tabular-nums;}
+  .fb-row.won .fb-runs{color:#ffd98a;}
+  .countup{--n:var(--to);-webkit-text-fill-color:transparent;}
+  .countup::after{content:counter(n);counter-reset:n var(--n);position:absolute;
+    inset:0;text-align:inherit;-webkit-text-fill-color:currentColor;}
+  .countup.go{animation:mo-count 1.15s var(--ease-out) both;}
+  @keyframes mo-count{from{--n:0;}to{--n:var(--to);}}
+
+  /* The celebration canvas. Over everything, under nothing, and never in
+     the way: it takes no pointer and it is removed when it is done. */
+  .confetti-cv{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:9000;}
+
+  /* ----------------------------------------------------------------- trophy
+     A drawn cup rather than three rectangles, standing in a slow turn of
+     light, floating. The rays are one conic gradient turned by a transform,
+     so the only thing that moves every frame is a composited layer. */
+  .trophy.cup{display:inline-grid;place-items:center;position:relative;width:96px;height:96px;
+    margin:0 16px 0 0;vertical-align:middle;}
+  /* The old cup's three rectangles were the `.trophy` pseudo elements, and
+     they still match this one: every box property they set is taken back
+     here, or a navy slab hangs off the new base and the rays are drawn at
+     the old bowl's size in its corner. */
+  .trophy.cup::after{content:none;}
+  .trophy.cup::before{content:'';position:absolute;left:-18px;right:-18px;top:-18px;bottom:-18px;
+    width:auto;height:auto;border:0;border-radius:50%;
+    background:repeating-conic-gradient(from 0deg,rgba(244,194,90,.38) 0 10deg,rgba(244,194,90,0) 10deg 30deg);
+    -webkit-mask:radial-gradient(circle,#000 30%,transparent 70%);
+            mask:radial-gradient(circle,#000 30%,transparent 70%);
+    animation:mo-spin 14s linear infinite;}
+  .has-cup{display:flex;align-items:center;gap:6px;}
+  .has-cup > div:last-child{min-width:0;}
+  .trophy.cup svg{position:relative;width:78px;height:auto;overflow:visible;
+    filter:drop-shadow(0 8px 10px rgba(20,40,63,.35));
+    animation:mo-rise-cup .9s var(--ease-spring) both, mo-float 3.2s ease-in-out .9s infinite;}
+  @keyframes mo-spin{to{transform:rotate(360deg);}}
+  @keyframes mo-rise-cup{from{opacity:0;transform:translate3d(0,30px,0) scale(.4) rotate(-12deg);}
+    to{opacity:1;transform:none;}}
+  @keyframes mo-float{0%,100%{transform:translate3d(0,0,0);}50%{transform:translate3d(0,-6px,0);}}
+  .trophy.cup .shine{animation:mo-glint 3.6s ease-in-out 1.2s infinite;}
+  @keyframes mo-glint{0%{transform:translate3d(-60px,0,0);}35%,100%{transform:translate3d(90px,0,0);}}
+
+  /* ---------------------------------------------------------- over the field
+     The coach plaque and the bullpen ARRIVE, and the next note on a plaque
+     crossfades in. Both are positioned by a centring transform, so the
+     keyframes carry it. */
+  .coach{animation:mo-plaque .5s var(--ease-spring) both;}
+  .pen{animation:mo-plaque .46s var(--ease-spring) both;}
+  @keyframes mo-plaque{from{opacity:0;transform:translate(-50%,-44%) scale(.9);}
+    to{opacity:1;transform:translate(-50%,-50%) scale(1);}}
+  .coach-text.mo-note{animation:mo-note .34s var(--ease-out) both;}
+  @keyframes mo-note{from{opacity:0;transform:translate3d(10px,0,0);}to{opacity:1;transform:none;}}
+  .pen .pen-arm{transition:transform .3s var(--ease-spring), background-color .15s ease;}
+  @media (hover:hover) and (pointer:fine){.pen .pen-arm:hover{transform:translate3d(0,-2px,0);}}
+
+  /* The press conference: a new speaker slides in, the box lifts. These run
+     on every beat on purpose, because a beat IS a new node. */
+  .press-portrait{animation:mo-speaker .5s var(--ease-out) both;}
+  .press-box{animation:mo-rise .46s var(--ease-out) .06s both;}
+  @keyframes mo-speaker{from{opacity:0;transform:translate3d(-22px,0,0) scale(.96);}to{opacity:1;transform:none;}}
+  .press-choices > *{animation:mo-rise .4s var(--ease-out) both;}
+  .press-choices > *:nth-child(2){animation-delay:.06s;}
+  .press-choices > *:nth-child(3){animation-delay:.12s;}
+  .press-more{animation:mo-bob 1s ease-in-out infinite;}
+  @keyframes mo-bob{0%,100%{transform:translate3d(0,0,0);}50%{transform:translate3d(0,4px,0);}}
+
+  /* YOUR MATCH IN A BRACKET BREATHES. A ring round it fades in and out,
+     which is an opacity on a pseudo element with a fixed shadow, so the
+     shadow is painted once and only its visibility moves. */
+  body:not(.ingame) :is(.cupbracket,.bracket) .match:has(.row.you){position:relative;}
+  body:not(.ingame) :is(.cupbracket,.bracket) .match:has(.row.you)::after{content:'';position:absolute;
+    inset:-3px;border-radius:calc(var(--r-sm) + 3px);pointer-events:none;
+    box-shadow:0 0 0 2px var(--gold), 0 0 18px 2px rgba(207,50,41,.35);
+    animation:mo-breathe 2.2s ease-in-out infinite;}
+  @keyframes mo-breathe{0%,100%{opacity:.35;}50%{opacity:1;}}
+
+  /* The wire changes line, and the old one leaves before the new arrives. */
+  .wire span{display:inline-block;transition:opacity .35s ease, transform .35s var(--ease-out);}
+  .wire span.out{opacity:0;transform:translate3d(0,-6px,0);}
+  .wire span.pre{opacity:0;transform:translate3d(0,6px,0);transition:none;}
+
+  /* The banner at the top of a hub is the headline of the screen. */
+  body:not(.ingame) .banner.mo-in{animation-name:mo-banner;}
+  @keyframes mo-banner{from{opacity:0;transform:translate3d(0,-12px,0) scale(.98);}to{opacity:1;transform:none;}}
+
+  /* THE QUICK START. Four loops at the top of How To Play, one per thing a
+     player does with their hands: aim, swing, pitch, field. Each is an
+     SVG whose moving parts are drawn round their own origin inside a
+     translated group, so every keyframe is a translate, a scale, a rotate
+     or an opacity and nothing is ever re-laid out.
+
+     THE RESTING STATE IS THE LESSON. Written with no animation, every part
+     sits at the one frame that explains the step: the bat on the ball, the
+     cursor stopped in the green, the ring at its tightest. That is what a
+     reader with reduced motion gets, and it is why the keyframes animate
+     AWAY from the base rather than the base being frame zero. */
+  .qs{border-color:rgba(207,50,41,.45);}
+  .qs .qs-lead{margin:2px 0 12px;}
+  .qs-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
+  @media (max-width:760px){ .qs-grid{grid-template-columns:repeat(2,1fr);gap:10px;} }
+  .qs-step{display:flex;flex-direction:column;gap:6px;min-width:0;}
+  .qs-step svg{display:block;width:100%;height:auto;border-radius:var(--r-sm);
+    box-shadow:var(--shadow-sm);background:#2d5f2c;}
+  .qs-step h4{margin:2px 0 0;font-size:14px;letter-spacing:.06em;text-transform:uppercase;
+    display:flex;align-items:center;gap:7px;}
+  .qs-step h4 i{font-style:normal;display:inline-grid;place-items:center;width:20px;height:20px;
+    border-radius:50%;background:var(--gold);color:#fff;font-size:11px;flex:none;}
+  .qs-step p{margin:0;font-size:12px;line-height:1.45;}
+  .qs svg .mv{transform-box:view-box;transform-origin:0 0;}
+  .qs svg .ring{vector-effect:non-scaling-stroke;}
+  .qs svg text{font-family:inherit;}
+
+  .qs .aim-ball{animation:mo-qs-aim-ball 3.2s ease-in infinite;}
+  .qs .aim-bat{animation:mo-qs-aim-bat 3.2s ease-in-out infinite;}
+  .qs .aim-glow{opacity:0;animation:mo-qs-aim-glow 3.2s ease-out infinite;}
+  @keyframes mo-qs-aim-ball{0%{opacity:0;transform:translate(-13px,-52px) scale(.3);}
+    10%{opacity:1;} 62%,88%{opacity:1;transform:none;} 96%,100%{opacity:0;transform:none;}}
+  @keyframes mo-qs-aim-bat{0%,18%{transform:translate(-13px,-18px);} 56%,90%{transform:none;}
+    100%{transform:translate(-13px,-18px);}}
+  @keyframes mo-qs-aim-glow{0%,60%{opacity:0;transform:scale(.8);} 66%{opacity:.6;transform:scale(1.25);}
+    86%,100%{opacity:0;transform:scale(1.4);}}
+
+  .qs .sw-ball{animation:mo-qs-sw-ball 3s linear infinite;}
+  .qs .sw-bat{animation:mo-qs-sw-bat 3s ease-in-out infinite;}
+  .qs .sw-burst{animation:mo-qs-sw-burst 3s ease-out infinite;}
+  @keyframes mo-qs-sw-ball{0%{opacity:0;transform:translate(0,-40px) scale(.3);}
+    8%{opacity:1;} 46%{transform:none;animation-timing-function:ease-out;}
+    80%{opacity:1;transform:translate(-58px,-48px) scale(.35);} 86%,100%{opacity:0;transform:translate(-58px,-48px) scale(.35);}}
+  @keyframes mo-qs-sw-bat{0%,36%{transform:rotate(110deg);} 46%{transform:none;}
+    56%,80%{transform:rotate(-28deg);} 100%{transform:rotate(110deg);}}
+  @keyframes mo-qs-sw-burst{0%,44%{opacity:0;transform:scale(.4);} 49%{opacity:1;transform:scale(.8);}
+    68%,100%{opacity:0;transform:scale(1.6);}}
+
+  .qs .pi-ret{animation:mo-qs-pi-ret 3.6s ease-in-out infinite;}
+  .qs .pi-btn{animation:mo-qs-pi-btn 3.6s ease-out infinite;}
+  .qs .pi-cur{animation:mo-qs-pi-cur 3.6s infinite;}
+  .qs .pi-hit{animation:mo-qs-pi-hit 3.6s infinite;}
+  .qs .pi-ball{animation:mo-qs-pi-ball 3.6s ease-in infinite;}
+  @keyframes mo-qs-pi-ret{0%,4%{opacity:0;transform:translate(10px,-14px);} 8%{opacity:1;transform:translate(10px,-14px);}
+    20%,90%{opacity:1;transform:none;} 96%,100%{opacity:0;transform:none;}}
+  @keyframes mo-qs-pi-btn{0%,22%{transform:none;} 25%{transform:scale(.88);} 30%,100%{transform:none;}}
+  @keyframes mo-qs-pi-cur{0%{opacity:0;transform:translateY(-35px);} 24%{opacity:1;transform:translateY(-35px);animation-timing-function:linear;}
+    52%,92%{opacity:1;transform:none;} 97%,100%{opacity:0;transform:none;}}
+  @keyframes mo-qs-pi-hit{0%,51%{opacity:0;} 54%,90%{opacity:1;} 96%,100%{opacity:0;}}
+  @keyframes mo-qs-pi-ball{0%,53%{opacity:0;transform:translate(10px,-54px) scale(.3);} 56%{opacity:1;}
+    80%,90%{opacity:1;transform:none;} 96%,100%{opacity:0;transform:none;}}
+
+  .qs .fi-ring{transform:scale(.34);animation:mo-qs-fi-ring 3.2s ease-in infinite;}
+  .qs .fi-ball{animation:mo-qs-fi-ball 3.2s ease-in infinite;}
+  .qs .fi-out{animation:mo-qs-fi-out 3.2s ease-out infinite;}
+  @keyframes mo-qs-fi-ring{0%{opacity:1;transform:none;} 50%{opacity:1;transform:scale(.34);}
+    58%,100%{opacity:0;transform:scale(.34);}}
+  @keyframes mo-qs-fi-ball{0%{opacity:0;transform:translate(46px,-50px) scale(.6);} 8%{opacity:1;}
+    50%,86%{opacity:1;transform:none;} 94%,100%{opacity:0;transform:none;}}
+  @keyframes mo-qs-fi-out{0%,50%{opacity:0;transform:scale(.5);} 56%{opacity:1;transform:scale(1.15);}
+    62%,86%{opacity:1;transform:none;} 94%,100%{opacity:0;transform:none;}}
+
+  /* The press. A ripple where the finger or the click lands, at the moment
+     it should land, so "when" is drawn as well as said. */
+  .qs .tap{opacity:0;}
+  .qs .sw-tap{animation:mo-qs-tap 3s ease-out infinite;}
+  .qs .pi-tap{animation:mo-qs-tap-pi 3.6s ease-out infinite;}
+  .qs .pi-tap2{animation:mo-qs-tap-pi2 3.6s ease-out infinite;}
+  .qs .fi-tap{animation:mo-qs-tap-fi 3.2s ease-out infinite;}
+  @keyframes mo-qs-tap{0%,45%{opacity:0;transform:scale(.3);} 47%{opacity:.95;transform:scale(.45);} 62%,100%{opacity:0;transform:scale(1.5);}}
+  @keyframes mo-qs-tap-pi{0%,22%{opacity:0;transform:scale(.3);} 24%{opacity:.95;transform:scale(.45);} 38%,100%{opacity:0;transform:scale(1.5);}}
+  @keyframes mo-qs-tap-pi2{0%,51%{opacity:0;transform:scale(.3);} 53%{opacity:.95;transform:scale(.45);} 67%,100%{opacity:0;transform:scale(1.5);}}
+  @keyframes mo-qs-tap-fi{0%,49%{opacity:0;transform:scale(.3);} 51%{opacity:.95;transform:scale(.45);} 66%,100%{opacity:0;transform:scale(1.5);}}
+
+  @media (prefers-reduced-motion: reduce){
+    .qs svg *{animation:none !important;}
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    .mo-in,.mo-row,.mo-pop,.pickno.fresh,h2.verdict,.countup.go,.coach,.pen,
+    .coach-text.mo-note,.press-portrait,.press-box,.press-choices > *,.press-more,
+    .trophy.cup::before,.trophy.cup svg,.trophy.cup .shine,
+    body:not(.ingame) :is(.cupbracket,.bracket) .match::after,
+    body:not(.ingame) .bigplay::before,body:not(.ingame) .bigplay .bp-mark{animation:none !important;}
+    body:not(.ingame) *{transition-duration:0s !important;}
+    body:not(.ingame) :is(.hmode,.park-card,.charcard,.potg,.award){transform:none !important;}
+  }
 </style>
 </head>
 <body>
 <div class="wrap">
   <div class="brand">
-    <h1>MythiBall</h1>
+    <h1><span class="mark-slot" aria-hidden="true"></span>MythiBall</h1>
     <span class="tag">Public domain baseball</span>
     <span class="tag motto" aria-hidden="true">Legends. Monsters. One diamond.</span>
     <span class="spacer"></span>
@@ -1303,6 +1895,230 @@
 
 <script>
 "use strict";
+
+/* ==================== MYPIX BEGIN: the pixel kit ====================
+   One source for MythiBall's pixel branding: the palette, a 5 x 7 bitmap font, the MYTHIBALL wordmark, the
+   stitched patch icon, a scorecard and a trading card. The header draws its mark with it here, and
+   mythiball/logo-source.html and mythiball/og-source.html read THIS block out of this file, so the logo
+   files, the link preview and the page can never drift into three versions of one mark.
+   The PLUMBING is Run The Tour's (golf/index.html, PIXK): the grid, the outline, the font and toCanvas at
+   whole scales. The LOOK deliberately is not. The Tour is gold extruded letters on a green at dusk; this is
+   the game's own cabinet palette (scorecard cream, navy ink, arcade red) and baseball's own shapes: a
+   varsity arch, a script tail, a sleeve patch, a trading card.
+   Self-contained on purpose: no game state is read, which is what lets the other two files lift it. */
+const MYPIX=(function(){
+  const K='#120b04';
+  const CREAM=['#fffaf0','#f4e3c9','#d9c3a0'];
+  // a baseball's hide is off white rather than a golf ball's cold grey, and its seam is red thread
+  const HIDE=['#ffffff','#fdf8ec','#f1e8d4','#dccfb2','#bba98a','#8f7d60'];
+  const LACE=['#ff6a52','#e0301f','#a8180f'];
+  const SPARK=['#ffffff','#fff3b0'];
+
+  function grid(w,h){ const px=new Array(w*h).fill(null); const g={w,h,px,
+    put(x,y,c){ x=Math.round(x); y=Math.round(y); if(x>=0&&y>=0&&x<w&&y<h&&c) px[y*w+x]=c; },
+    get(x,y){ return (x>=0&&y>=0&&x<w&&y<h)?px[y*w+x]:null; },
+    rect(x,y,ww,hh,c){ for(let j=0;j<hh;j++) for(let i=0;i<ww;i++) g.put(x+i,y+j,c); } };
+    return g; }
+  // a dark ring round everything painted so far (4-neighbour); `mask` limits which cells count as solid
+  function outline(g,c,mask){ const s=g.px.slice(); for(let y=0;y<g.h;y++) for(let x=0;x<g.w;x++){ if(s[y*g.w+x]) continue;
+    if([[1,0],[-1,0],[0,1],[0,-1]].some(([a,b])=>{ const X=x+a,Y=y+b; return X>=0&&Y>=0&&X<g.w&&Y<g.h&&s[Y*g.w+X]&&(!mask||mask[Y*g.w+X]); })) g.px[y*g.w+x]=c; } }
+  // two #rrggbb colours, t of the way from a to b
+  function mix(a,b,t){ if(!a) return b; const p=(h,i)=>parseInt(h.slice(1+2*i,3+2*i),16);
+    return '#'+[0,1,2].map(i=>Math.round(p(a,i)+(p(b,i)-p(a,i))*t).toString(16).padStart(2,'0')).join(''); }
+  function stamp(a,b,x,y){ for(let j=0;j<b.h;j++) for(let i=0;i<b.w;i++){ const c=b.px[j*b.w+i]; if(c) a.put(x+i,y+j,c); } }
+
+  /* ---- the 5 x 7 font, Run The Tour's glyph for glyph. Lower case is drawn as upper case, accents are
+     dropped, and anything else becomes a question mark rather than a gap nobody can read. */
+  const F={
+  A:[".111.","1...1","1...1","11111","1...1","1...1","1...1"], B:["1111.","1...1","1...1","1111.","1...1","1...1","1111."],
+  C:[".111.","1...1","1....","1....","1....","1...1",".111."], D:["1111.","1...1","1...1","1...1","1...1","1...1","1111."],
+  E:["11111","1....","1....","1111.","1....","1....","11111"], F:["11111","1....","1....","1111.","1....","1....","1...."],
+  G:[".1111","1....","1....","1..11","1...1","1...1",".111."], H:["1...1","1...1","1...1","11111","1...1","1...1","1...1"],
+  I:["111",".1.",".1.",".1.",".1.",".1.","111"], J:["..111","...1.","...1.","...1.","...1.","1..1.",".11.."],
+  K:["1...1","1..1.","1.1..","11...","1.1..","1..1.","1...1"], L:["1....","1....","1....","1....","1....","1....","11111"],
+  M:["1...1","11.11","1.1.1","1.1.1","1...1","1...1","1...1"], N:["1...1","11..1","1.1.1","1..11","1...1","1...1","1...1"],
+  O:[".111.","1...1","1...1","1...1","1...1","1...1",".111."], P:["1111.","1...1","1...1","1111.","1....","1....","1...."],
+  Q:[".111.","1...1","1...1","1...1","1.1.1","1..1.",".11.1"], R:["1111.","1...1","1...1","1111.","1.1..","1..1.","1...1"],
+  S:[".1111","1....","1....",".111.","....1","....1","1111."], T:["11111","..1..","..1..","..1..","..1..","..1..","..1.."],
+  U:["1...1","1...1","1...1","1...1","1...1","1...1",".111."], V:["1...1","1...1","1...1","1...1","1...1",".1.1.","..1.."],
+  W:["1...1","1...1","1...1","1.1.1","1.1.1","1.1.1",".1.1."], X:["1...1","1...1",".1.1.","..1..",".1.1.","1...1","1...1"],
+  Y:["1...1","1...1",".1.1.","..1..","..1..","..1..","..1.."], Z:["11111","....1","...1.","..1..",".1...","1....","11111"],
+  '0':[".111.","1...1","1..11","1.1.1","11..1","1...1",".111."], '1':[".1.","11.",".1.",".1.",".1.",".1.","111"],
+  '2':[".111.","1...1","....1","...1.","..1..",".1...","11111"], '3':["11111","...1.","..1..","...1.","....1","1...1",".111."],
+  '4':["...1.","..11.",".1.1.","1..1.","11111","...1.","...1."], '5':["11111","1....","1111.","....1","....1","1...1",".111."],
+  '6':["..11.",".1...","1....","1111.","1...1","1...1",".111."], '7':["11111","....1","...1.","..1..",".1...",".1...",".1..."],
+  '8':[".111.","1...1","1...1",".111.","1...1","1...1",".111."], '9':[".111.","1...1","1...1",".1111","....1","...1.",".11.."],
+  '.':["..","..","..","..","..","11","11"], ',':["..","..","..","..",".1",".1","1."], "'":["1","1",".",".",".",".","."],
+  '-':["....","....","....","1111","....","....","...."], '+':["...","...",".1.","111",".1.","...","..."],
+  '/':["....1","...1.","...1.","..1..",".1...",".1...","1...."], ':':["..","11","11","..","11","11",".."],
+  '!':["1","1","1","1","1",".","1"], '?':[".111.","1...1","....1","...1.","..1..",".....","..1.."],
+  '&':[".11..","1..1.","1.1..",".1...","1.1.1","1..1.",".11.1"],
+  ' ':["...","...","...","...","...","...","..."], '·':["..","..","..","11","..","..",".."],
+  };
+  // any minus or long dash comes out as the plain hyphen this font draws (the class is built from char
+  // codes because this file may not contain those characters, even escaped)
+  const LONGDASH=new RegExp('['+String.fromCharCode(0x2212,0x2013,0x2014)+']','g');
+  function norm(s){ return String(s==null?'':s).normalize('NFD').replace(/[̀-ͯ]/g,'').toUpperCase().replace(LONGDASH,'-'); }
+  const glyph=ch=>F[ch]||F['?'];
+  /* BOLD IS EVERY COLUMN DRAWN TWICE, which fills the one-cell gaps inside M and N: a bold M came out as
+     a solid block and a bold N as an H with a smear in it, so NINE read as HIHE. Those two are drawn at
+     bold weight by hand instead, seven wide, and are not doubled. */
+  const BOLDG={M:["11...11","111.111","1111111","11.1.11","11...11","11...11","11...11"],
+               N:["11...11","111..11","1111.11","11.1111","11..111","11...11","11...11"]};
+  const cellOf=(ch,b)=>b&&BOLDG[ch]?{gl:BOLDG[ch],dbl:0}:{gl:glyph(ch),dbl:b};
+  function textW(str,o){ o=o||{}; const s=o.scale||1, gap=o.gap==null?1:o.gap, b=o.bold?1:0; let w=0;
+    for(const ch of norm(str)){ const {gl,dbl}=cellOf(ch,b); w+=(gl[0].length+dbl+gap)*s; } return Math.max(0,w-gap*s); }
+  function text(g,str,x,y,o){ o=o||{}; const s=o.scale||1, gap=o.gap==null?1:o.gap, b=o.bold?1:0, col=o.color||CREAM[1];
+    for(const ch of norm(str)){ const {gl,dbl}=cellOf(ch,b), gw=gl[0].length;
+      gl.forEach((row,j)=>{ for(let i=0;i<gw;i++) if(row[i]==='1'){ const c=typeof col==='function'?col(j):col;
+        g.rect(x+i*s,y+j*s,s,s,c); if(dbl) g.rect(x+(i+1)*s,y+j*s,s,s,c); } });
+      x+=(gw+dbl+gap)*s; }
+    return x; }
+
+  /* A BASEBALL. Lit from the upper left, and its two seams are arcs of circles set off either side of the
+     ball, which is the shape a real seam makes seen face on: two curves bowing toward each other. A stitch
+     sits beside the seam on every other row. `turn` slides the seams sideways, so a run of turns is the
+     ball spinning. */
+  function ball(g,cx,cy,r,o){ o=o||{}; const turn=o.turn||0, laces=o.laces!==false;
+    const off=r*1.28, R=r*0.93;
+    for(let y=Math.floor(cy-r-1);y<=Math.ceil(cy+r+1);y++) for(let x=Math.floor(cx-r-1);x<=Math.ceil(cx+r+1);x++){
+      const dx=x-cx, dy=y-cy; if(dx*dx+dy*dy>r*r) continue;
+      const nx=dx/r, ny=dy/r, nz=Math.sqrt(Math.max(0,1-nx*nx-ny*ny)), L=-0.52*nx-0.6*ny+0.6*nz;
+      let c=HIDE[L>0.9?0:L>0.7?1:L>0.42?2:L>0.12?3:L>-0.2?4:5];
+      if(laces){ for(const sd of [-1,1]){ const sx=cx+sd*(off-turn*sd), d=Math.hypot(x-sx,y-cy);
+          if(Math.abs(d-R)<0.62) c=LACE[L>0.3?1:2];
+          // under r 9 there is no room for both rows: the stitches go on the inside only, or the laces
+          // cover the ball and it reads as an egg with a rash
+          else if(r>=5 && Math.abs(d-R)<1.75 && ((y-Math.floor(cy)+100)%2===0) && (r>=9 || d<R)) c=LACE[L>0.5?0:1]; } }
+      g.put(x,y,c); }
+    if(o.spot!==false){ const hx=Math.round(cx-r*0.42), hy=Math.round(cy-r*0.46);
+      (r>=6?[[0,0],[1,0],[0,1],[-1,0],[0,-1]]:[[0,0]]).forEach(([a,b])=>g.put(hx+a,hy+b,HIDE[0])); } }
+
+  function star(g,x,y,s){ g.put(x,y,SPARK[0]); for(let i=1;i<=s;i++){ const c=i===s?SPARK[1]:SPARK[0]; g.put(x+i,y,c); g.put(x-i,y,c); g.put(x,y+i,c); g.put(x,y-i,c); } }
+
+  /* ---- THE VARSITY LETTERS of MYTHIBALL, drawn by hand on a 13 row grid with three pixel strokes: the
+     block letter every baseball jersey and pennant is set in. Nothing about them is shared with Run The
+     Tour's title, on purpose: that one is gold and extruded, this one is red on cream on navy. ---- */
+  const VAR={
+  M:["111.....111","1111...1111","11111.11111","111.111.111","111..1..111","111.....111","111.....111","111.....111","111.....111","111.....111","111.....111","111.....111","111.....111"],
+  Y:["111.....111","111.....111",".111...111.",".111...111.","..111.111..","...11111...","....111....","....111....","....111....","....111....","....111....","....111....","....111...."],
+  T:["11111111111","11111111111","11111111111","....111....","....111....","....111....","....111....","....111....","....111....","....111....","....111....","....111....","....111...."],
+  H:["111....111","111....111","111....111","111....111","111....111","1111111111","1111111111","1111111111","111....111","111....111","111....111","111....111","111....111"],
+  I:["11111","11111",".111.",".111.",".111.",".111.",".111.",".111.",".111.",".111.",".111.","11111","11111"],
+  B:["111111111.","1111111111","111....111","111....111","111...111.","11111111..","111111111.","111....111","111....111","111....111","111....111","1111111111","111111111."],
+  A:["...11111...","..1111111..",".111...111.","111.....111","111.....111","111.....111","11111111111","11111111111","111.....111","111.....111","111.....111","111.....111","111.....111"],
+  L:["111......","111......","111......","111......","111......","111......","111......","111......","111......","111......","111......","111111111","111111111"],
+  };
+  const RED=['#ff9a7e','#ff6a52','#ec3d2f','#cf3229','#a8231c','#7e1712'];
+  const INK=['#2a4d7a','#1f3f6a','#1b3a5c','#132b47','#0c1c30'];
+
+  /* face: a mask of cells, painted as a varsity letter is: a red face lit from the top, a cream ring round
+     it, a navy drop down and to the right, and a dark outline round everything. */
+  function varsity(g,face,W,H,top,rows){
+    const isF=(x,y)=>x>=0&&y>=0&&x<W&&y<H&&face[y*W+x];
+    const ring=new Array(W*H).fill(false);
+    for(let y=0;y<H;y++) for(let x=0;x<W;x++) if(!isF(x,y) && [[1,0],[-1,0],[0,1],[0,-1],[1,1],[-1,-1],[1,-1],[-1,1]].some(([a,b])=>isF(x+a,y+b))) ring[y*W+x]=true;
+    const body=(x,y)=>isF(x,y)||(x>=0&&y>=0&&x<W&&y<H&&ring[y*W+x]);
+    for(let d=3;d>=1;d--) for(let y=0;y<H;y++) for(let x=0;x<W;x++) if(body(x-d,y-d) && !body(x,y)) g.put(x,y,INK[d]);
+    for(let y=0;y<H;y++) for(let x=0;x<W;x++) if(ring[y*W+x]) g.put(x,y,(!body(x,y-1)||!body(x-1,y))?CREAM[0]:CREAM[1]);
+    for(let y=0;y<H;y++) for(let x=0;x<W;x++){ if(!isF(x,y)) continue;
+      const t=(y-top(x))/rows; let c=RED[t<0.12?1:t<0.4?2:t<0.8?3:4];
+      if(!isF(x,y-1)) c=RED[0]; else if(!isF(x,y+1)) c=RED[5];
+      g.put(x,y,c); } }
+
+  /* THE TITLE. MYTHIBALL in varsity letters set on an ARCH, the way a team name runs across a jersey, and
+     under it the script tail every classic baseball wordmark swings out of its last letter. Here the tail
+     is a ball's trail: it thickens left to right and ends in the baseball itself, so the swash is a pitch
+     crossing under the name. `phase` turns the ball, so four phases are four frames of it spinning. */
+  function lockup(phase){
+    const W=104, H=48, g=grid(W,H), face=new Array(W*H).fill(false);
+    const word='MYTHIBALL', ROWS=13, AMP=7, top0=4+AMP;
+    const widths=[...word].map(ch=>VAR[ch][0].length), total=widths.reduce((a,b)=>a+b,0)+(word.length-1);
+    let x=Math.round((W-total)/2);
+    const arch=cx=>Math.round(top0-AMP*(1-((cx-W/2)/(W/2))**2));
+    const tops=new Array(W).fill(top0);
+    [...word].forEach((ch,i)=>{ const L=VAR[ch], w=widths[i], y0=arch(x+w/2);
+      for(let c=0;c<w;c++) tops[x+c]=y0;
+      L.forEach((row,j)=>{ for(let c=0;c<w;c++) if(row[c]==='1') face[(y0+j)*W+x+c]=true; });
+      x+=w+1; });
+    // the tail: it rides the arch a little under the letters, thin at the start and full at the ball
+    const bx=W-9, by=arch(W-9)+ROWS+10;
+    for(let px=6;px<=bx;px+=0.5){ const t=(px-6)/(bx-6), cy=arch(px)+ROWS+5+Math.round(5*t*t), th=0.6+t*2.2;
+      for(let y=Math.floor(cy-th);y<=Math.ceil(cy+th);y++) if(Math.abs(y-cy)<=th) face[y*W+Math.round(px)]=true; }
+    varsity(g,face,W,H,x=>tops[x]||top0,ROWS);
+    ball(g,bx,by,6.4,{turn:(phase||0)/(Math.PI*2)*1.6});
+    outline(g,K);
+    return g; }
+
+  /* THE PATCH. A round team patch, the thing sewn on a sleeve: a navy field and a cream band round it, sewn
+     down with a red running stitch, and in the middle a baseball struck through with a gold bolt for the
+     myth. Drawn again at 16 rather than scaled down: no stitch and no bolt, because at that size both are
+     noise and the ball on its patch is what a tab has room to say. */
+  function bolt(g,pts,w){
+    // a thick zigzag through the points, lit on its upper edge
+    for(let i=0;i<pts.length-1;i++){ const [x1,y1]=pts[i], [x2,y2]=pts[i+1], n=Math.ceil(Math.hypot(x2-x1,y2-y1)*3);
+      for(let k=0;k<=n;k++){ const t=k/n, x=x1+(x2-x1)*t, y=y1+(y2-y1)*t, tw=w*(0.55+0.45*(1-Math.abs(i+t-(pts.length-1)/2)/((pts.length-1)/2)));
+        for(let yy=Math.floor(y-tw);yy<=Math.ceil(y+tw);yy++) for(let xx=Math.floor(x-tw);xx<=Math.ceil(x+tw);xx++)
+          if((xx-x)**2+(yy-y)**2<=tw*tw) g.put(xx,yy,(yy<y-tw*0.3)?'#fff6c2':'#ffc928'); } } }
+  function icon(N,phase){
+    const g=grid(N,N), c=N/2-0.5, R=N/2-0.6, band=N>=32?3.4:1.7, mid=R-band/2;
+    for(let y=0;y<N;y++) for(let x=0;x<N;x++){ const d=Math.hypot(x-c,y-c); if(d>R) continue;
+      let col=d>R-band?CREAM[(y<c)?0:1]:(d>R-band-1?INK[4]:INK[y<c*0.8?1:2]);
+      if(N>=32 && Math.abs(d-mid)<0.55){ const a=Math.atan2(y-c,x-c), k=Math.floor((a+Math.PI)/(Math.PI*2)*30); if(k%2===0) col=LACE[1]; }
+      g.put(x,y,col); }
+    ball(g,c,c,N>=32?8.4:4.4,{turn:(phase||0)/(Math.PI*2)*1.2,spot:N>=32});
+    if(N>=32){ const inner=grid(N,N); bolt(inner,[[21.5,5.5],[14,15],[18.5,15.5],[10,25.5]],1.35); outline(inner,K); stamp(g,inner,0,0); }
+    outline(g,K);
+    return g; }
+
+  /* A SCORECARD: the card stock this game's own pages are printed on, ruled in faint navy, with the little
+     diamond a scorer pencils in every box. A few are filled in red, which is a run. Drawn by a fixed hash,
+     so every render is the same card. */
+  function scorecard(w,h,o){ o=o||{}; const g=grid(w,h), cell=o.cell||22;
+    for(let y=0;y<h;y++) for(let x=0;x<w;x++){ let c=((x>>2)+(y>>2))%2?'#f1e2bb':'#efdfb6';
+      if(x%cell===0||y%cell===0) c='#d9c79a';
+      const cx=x%cell-cell/2, cy=y%cell-cell/2, bx=Math.floor(x/cell), by=Math.floor(y/cell);
+      if(Math.abs(Math.abs(cx)+Math.abs(cy)-5)<0.6) c=((bx*7+by*13)%9===0)?'#e0a193':'#dccb9f';
+      if(((bx*7+by*13)%9===0) && Math.abs(cx)+Math.abs(cy)<4.6) c='#ebc0b0';
+      g.put(x,y,c); }
+    return g; }
+
+  /* A TRADING CARD, the way the draft is sold: a portrait in a colour, a name plate, and the role. The
+     portrait is whatever grid the caller hands in, drawn at one cell a pixel. */
+  function card(g,x0,y0,o){ const w=o.w||64, h=o.h||90, pw=w-8, ph=h-30;
+    for(let y=y0;y<y0+h;y++) for(let x=x0;x<x0+w;x++){ const e=Math.min(x-x0,y-y0,x0+w-1-x,y0+h-1-y);
+      if((x-x0<2||x0+w-1-x<2)&&(y-y0<2||y0+h-1-y<2)&&e===0) continue;
+      g.put(x,y,e===0?K:e<3?INK[2]:CREAM[0]); }
+    for(let y=y0+4;y<y0+4+ph;y++) for(let x=x0+4;x<x0+4+pw;x++){ const t=(y-y0-4)/ph; g.put(x,y,(o.fill||INK)[t<0.35?0:t<0.7?1:2]); }
+    if(o.portrait){ const P=o.portrait; let lo=P.h,hi=0; for(let i=0;i<P.px.length;i++) if(P.px[i]){ const yy=(i/P.w)|0; lo=Math.min(lo,yy); hi=Math.max(hi,yy); }
+      const ox=x0+4+Math.round((pw-P.w)/2), oy=y0+4+ph-(hi+1);
+      for(let j=0;j<P.h;j++) for(let i=0;i<P.w;i++){ const cc=P.px[j*P.w+i]; const X=ox+i, Y=oy+j;
+        if(cc && X>=x0+4 && X<x0+4+pw && Y>=y0+4) g.put(X,Y,cc); } }
+    g.rect(x0+4,y0+5+ph,pw,1,INK[4]);
+    const nm=norm(o.name), nw=textW(nm); text(g,nm,x0+Math.round((w-nw)/2),y0+ph+8,{color:INK[3]});
+    const rl=norm(o.role||''), rw=textW(rl); text(g,rl,x0+Math.round((w-rw)/2),y0+ph+18,{color:RED[3]}); }
+
+  function toCanvas(g,scale){ const c=document.createElement('canvas'); c.width=g.w*scale; c.height=g.h*scale;
+    const x=c.getContext('2d'); for(let y=0;y<g.h;y++) for(let i=0;i<g.w;i++){ const col=g.px[y*g.w+i]; if(!col) continue; x.fillStyle=col; x.fillRect(i*scale,y*scale,scale,scale); } return c; }
+  function draw(ctx,g,x,y,scale){ for(let j=0;j<g.h;j++) for(let i=0;i<g.w;i++){ const col=g.px[j*g.w+i]; if(!col) continue; ctx.fillStyle=col; ctx.fillRect(x+i*scale,y+j*scale,scale,scale); } }
+  return {K,CREAM,HIDE,LACE,RED,INK,SPARK,VAR,grid,outline,stamp,mix,text,textW,norm,ball,star,bolt,varsity,lockup,icon,scorecard,card,toCanvas,draw};
+})();
+/* ==================== MYPIX END ==================== */
+(function brandMark(){
+  const slot = document.querySelector('.brand .mark-slot');
+  if (!slot) return;
+  /* THE PATCH, straight onto the card stock: it brings its own navy field and cream band, so it needs no
+     plate. BOTH SIZES ARE BUILT and CSS picks one, because the header changes size when a game starts and a
+     bitmap chosen at boot would be scaled by three quarters over the live field. The kit draws each size by
+     hand, which is the reason there are two rather than one scaled. */
+  const patch = (N) => {
+    const c = MYPIX.toCanvas(MYPIX.icon(N, 0), 1);
+    c.className = 'bmark m' + N;
+    c.setAttribute('aria-hidden', 'true');
+    return c;
+  };
+  slot.replaceWith(patch(32), patch(16));
+})();
 
 /* ============================================================================
    ROSTER
@@ -1625,238 +2441,435 @@ const ROSTER_BY_KEY = Object.fromEntries(ROSTER.map(c => [c.k, c]));
 /* -------- Stadium themes --------
    Every opponent team plays in a stadium themed to who they are: a park
    name, a sky mood, a wall color, a warning track tint, crowd colors, and
-   a landmark drawn behind the outfield wall. drawField reads this by the
-   current opponent's name. `landmark` is a function drawn onto the crowd
-   strip in the sky area, so it reads as a silhouette on the horizon. */
+   the scenery behind the wall: `far` is the horizon (hills, a city, the
+   sea...), `body` the sun or the moon, and `mark` the one landmark that
+   says whose park this is. drawScenery draws all three, below. */
 const STADIUM_THEMES = {
   'Ironsides': {
     park:'The Iron Yard', sky:'#86bdd8', wall:'#4a5058', wallLine:'#f2ead4',
     marker:'#f2ead4', track:'#b08a58', grass:'#3f9145',
     crowd:['#8a97a4','#b06a4a','#6a7684','#c9a256','#9aa8b6'],
-    landmark(ctx, w, h) {
-      /* Gothic iron gate silhouette behind the wall */
-      ctx.fillStyle = '#050508';
-      for (let i = 0; i < 5; i++) {
-        const x = w * (0.20 + i * 0.15);
-        ctx.fillRect(x, h * 0.05, 6, h * 0.11);
-        ctx.beginPath();
-        ctx.arc(x + 3, h * 0.05, 8, Math.PI, 0);
-        ctx.fill();
-      }
-      ctx.fillRect(w * 0.18, h * 0.11, w * 0.64, 3);
-    },
+    far:'city', body:'sun', mark:'gate',
   },
   'Storybook Nine': {
     park:'Fable Field', sky:'#a9caf2', wall:'#8f5f9f', wallLine:'#f8e6b0',
     marker:'#fffaf0', track:'#d8b070', grass:'#4aa452',
     crowd:['#f0a8c8','#a8c8f0','#f8dc90','#c0a0e0','#a0e0c0'],
-    landmark(ctx, w, h) {
-      /* Storybook castle spires */
-      ctx.fillStyle = '#08050f';
-      ctx.fillRect(w * 0.42, h * 0.03, 10, h * 0.13);
-      ctx.beginPath(); ctx.moveTo(w*0.42, h*0.03); ctx.lineTo(w*0.47, h*0.0); ctx.lineTo(w*0.52, h*0.03); ctx.fill();
-      ctx.fillRect(w * 0.36, h * 0.07, 6, h * 0.09);
-      ctx.fillRect(w * 0.56, h * 0.07, 6, h * 0.09);
-    },
+    far:'hills', body:'sun', mark:'castle',
   },
   'The Timekeepers': {
     park:'Detective Downs', sky:'#dbbd86', wall:'#6f5030', wallLine:'#f4e8c8',
     marker:'#fffaf0', track:'#c09a60', grass:'#4a9a48',
     crowd:['#c9a256','#8b6a3a','#e0c898','#a08050','#d8c0a0'],
-    landmark(ctx, w, h) {
-      /* A giant clock face in the wall */
-      ctx.fillStyle = '#0a0806';
-      ctx.beginPath(); ctx.arc(w*0.5, h*0.09, 14, 0, Math.PI*2); ctx.fill();
-      ctx.fillStyle = '#c9a256';
-      ctx.beginPath(); ctx.arc(w*0.5, h*0.09, 12, 0, Math.PI*2); ctx.fill();
-      ctx.strokeStyle = '#0a0806'; ctx.lineWidth = 2;
-      ctx.beginPath(); ctx.moveTo(w*0.5, h*0.09); ctx.lineTo(w*0.5, h*0.09 - 8); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(w*0.5, h*0.09); ctx.lineTo(w*0.5 + 6, h*0.09); ctx.stroke();
-    },
+    far:'city', body:'sun', mark:'clock',
   },
   'Nightshift': {
     park:'Midnight Park', sky:'#f2a25e', wall:'#5a3a5e', wallLine:'#ffe8a8',
     marker:'#fffaf0', track:'#ab7c5c', grass:'#357f48',
     crowd:['#f0c070','#e08858','#c06888','#f8d8a0','#a06898'],
-    landmark(ctx, w, h) {
-      /* Bat silhouettes flying across the sky */
-      ctx.fillStyle = '#050508';
-      const bat = (bx, by) => {
-        ctx.fillRect(bx, by, 4, 2);
-        ctx.fillRect(bx - 3, by + 1, 10, 1);
-        ctx.fillRect(bx - 5, by + 2, 14, 1);
-        ctx.fillRect(bx - 7, by + 3, 6, 1); ctx.fillRect(bx + 1, by + 3, 6, 1);
-      };
-      bat(w*0.15, h*0.05); bat(w*0.32, h*0.02); bat(w*0.62, h*0.03); bat(w*0.82, h*0.06);
-      /* Blood moon */
-      ctx.fillStyle = '#8a1a1a';
-      ctx.beginPath(); ctx.arc(w*0.5, h*0.055, 12, 0, Math.PI*2); ctx.fill();
-      ctx.fillStyle = '#c94b1a';
-      ctx.beginPath(); ctx.arc(w*0.5, h*0.055, 10, 0, Math.PI*2); ctx.fill();
-    },
+    far:'crags', body:'bloodmoon', mark:'spire',
   },
   'The Cartographers': {
     park:'Explorer Grounds', sky:'#a2d3ea', wall:'#b28c52', wallLine:'#f6ecd4',
     marker:'#fffaf0', track:'#d8b070', grass:'#4a9e46',
     crowd:['#d8c098','#a8c8d8','#c9a256','#e8d8b0','#90b0c0'],
-    landmark(ctx, w, h) {
-      /* Parchment map billboard */
-      ctx.fillStyle = '#d4b878';
-      ctx.fillRect(w*0.40, h*0.02, 80, 14);
-      ctx.fillStyle = '#5a3a1c';
-      ctx.fillText('N', w*0.44, h*0.09);
-      /* Rocket ship in the sky */
-      ctx.fillStyle = '#eaeaea';
-      ctx.fillRect(w*0.72, h*0.04, 3, 8);
-      ctx.fillStyle = '#c94b1a';
-      ctx.fillRect(w*0.72, h*0.11, 3, 2);
-    },
+    far:'sea', body:'sun', mark:'lighthouse',
   },
   'Fields and Fables': {
     park:'Emerald Meadows', sky:'#93d3ea', wall:'#3f9c54', wallLine:'#f8f0d2',
     marker:'#fffaf0', track:'#d8b878', grass:'#51b257',
     crowd:['#a8d8a0','#f0e0a0','#88c8b0','#d8f0b0','#b8e0d0'],
-    landmark(ctx, w, h) {
-      /* Emerald City tower */
-      ctx.fillStyle = '#0a2a1a';
-      ctx.fillRect(w*0.44, h*0.02, 14, h*0.14);
-      ctx.fillStyle = '#3a8a4a';
-      ctx.fillRect(w*0.46, h*0.03, 10, h*0.13);
-      ctx.fillStyle = '#f4c25a';
-      ctx.beginPath(); ctx.arc(w*0.51, h*0.02, 4, 0, Math.PI*2); ctx.fill();
-    },
+    far:'hills', body:'sun', mark:'emerald',
   },
   'The Marauders': {
     park:'Pirate Bay', sky:'#74c3e2', wall:'#6f4f2f', wallLine:'#f6e2a8',
     marker:'#fffaf0', track:'#d0a878', grass:'#3f9c51',
     crowd:['#d8c8a0','#8a6a4a','#e0b070','#a8c8d8','#c05050'],
-    landmark(ctx, w, h) {
-      /* Ship silhouette with sail */
-      ctx.fillStyle = '#050508';
-      ctx.fillRect(w*0.40, h*0.10, 80, 6);
-      ctx.fillRect(w*0.48, h*0.02, 3, h*0.10);
-      ctx.fillStyle = '#eaeaea';
-      ctx.beginPath(); ctx.moveTo(w*0.48, h*0.03); ctx.lineTo(w*0.60, h*0.09); ctx.lineTo(w*0.48, h*0.09); ctx.fill();
-      /* Jolly Roger */
-      ctx.fillStyle = '#050508';
-      ctx.beginPath(); ctx.arc(w*0.54, h*0.06, 2, 0, Math.PI*2); ctx.fill();
-    },
+    far:'sea', body:'sun', mark:'ship',
   },
   'The Kids Table': {
     park:'Little League Park', sky:'#72c7f0', wall:'#dd5c2c', wallLine:'#fff4dc',
     marker:'#fffaf0', track:'#d8b070', grass:'#51b257',
     crowd:['#f05a5a','#f0c040','#50b0f0','#60d080','#f090c0'],
-    landmark(ctx, w, h) {
-      /* Day sky: a sun and a few clouds. */
-      ctx.fillStyle = '#f4c25a';
-      ctx.beginPath(); ctx.arc(w*0.85, h*0.05, 8, 0, Math.PI*2); ctx.fill();
-      ctx.fillStyle = 'rgba(234,234,234,.8)';
-      ctx.fillRect(w*0.20, h*0.06, 26, 4); ctx.fillRect(w*0.22, h*0.04, 22, 4);
-      ctx.fillRect(w*0.55, h*0.08, 30, 4); ctx.fillRect(w*0.58, h*0.06, 24, 4);
-    },
+    far:'hills', body:'sun', mark:'treehouse',
   },
   'The Holiday Nine': {
     park:'North Pole Yard', sky:'#c3e7f6', wall:'#cc3434', wallLine:'#ffffff',
     marker:'#ffffff', track:'#f0f2f6', grass:'#50b263', snow:true,
     crowd:['#e05050','#f8f8fa','#40a060','#f0d060','#c0d8e8'],
-    landmark(ctx, w, h) {
-      /* Big evergreen tree on the horizon, garland lights, snow atop the
-         wall track. */
-      ctx.fillStyle = '#08120a';
-      const tx = w * 0.50;
-      ctx.beginPath();
-      ctx.moveTo(tx, h * 0.005); ctx.lineTo(tx - 20, h * 0.09); ctx.lineTo(tx + 20, h * 0.09); ctx.closePath(); ctx.fill();
-      ctx.beginPath();
-      ctx.moveTo(tx, h * 0.03); ctx.lineTo(tx - 28, h * 0.13); ctx.lineTo(tx + 28, h * 0.13); ctx.closePath(); ctx.fill();
-      /* Tree lights */
-      const lightCols = ['#c93030','#f4c25a','#3aaa5a','#5cb6e5'];
-      for (let i = 0; i < 6; i++) {
-        ctx.fillStyle = lightCols[i % 4];
-        ctx.fillRect(tx - 22 + i * 8, h * 0.10, 2, 2);
-      }
-      /* Falling snow across the sky (procedural static) */
-      ctx.fillStyle = '#f5efe8';
-      for (let i = 0; i < 22; i++) {
-        const sx = (i * 137) % w;
-        const sy = ((i * 41 + Math.floor(performance.now() / 80)) % (h * 0.12));
-        ctx.fillRect(sx, sy, 2, 2);
-      }
-    },
+    far:'ice', body:null, mark:'tree',
   },
   'Cryptids': {
     park:'Crater Field', sky:'#accfb9', wall:'#5f4f70', wallLine:'#f4e8b0',
     marker:'#fffaf0', track:'#a89078', grass:'#4a9a5a',
     crowd:['#8fa890','#b0a0c0','#c8b890','#90b8a8','#a89078'],
-    landmark(ctx, w, h) {
-      /* Bone-white full moon behind ragged crater rim silhouette. */
-      ctx.fillStyle = '#f5efe8';
-      ctx.beginPath(); ctx.arc(w * 0.72, h * 0.055, 14, 0, Math.PI*2); ctx.fill();
-      /* Crater rim: jagged black shapes rising along the horizon */
-      ctx.fillStyle = '#050508';
-      ctx.beginPath();
-      ctx.moveTo(0, h * 0.115);
-      const points = [ [0.06, 0.09], [0.14, 0.11], [0.22, 0.075], [0.30, 0.10], [0.38, 0.06],
-                       [0.46, 0.09], [0.55, 0.08], [0.64, 0.10], [0.75, 0.07],
-                       [0.85, 0.10], [0.94, 0.08], [1.0, 0.10] ];
-      for (const [px, py] of points) ctx.lineTo(w * px, h * py);
-      ctx.lineTo(w, h * 0.13); ctx.lineTo(0, h * 0.13);
-      ctx.closePath(); ctx.fill();
-      /* Glowing eyes scattered in the shadows */
-      ctx.fillStyle = '#c94b1a';
-      const eyes = [ [0.10, 0.098], [0.28, 0.108], [0.42, 0.10], [0.58, 0.105], [0.90, 0.105] ];
-      for (const [ex, ey] of eyes) {
-        ctx.fillRect(w * ex, h * ey, 1, 1);
-        ctx.fillRect(w * ex + 3, h * ey, 1, 1);
-      }
-    },
+    far:'forest', body:'moon', mark:'saucer',
   },
   'The Ancients': {
     park:'Colossus Coliseum', sky:'#f2cb92', wall:'#d8c898', wallLine:'#ffffff',
     marker:'#ffffff', track:'#d8b878', grass:'#4b9c49',
     crowd:['#f0e4c8','#d8c090','#c0a878','#e8d8b8','#b09868'],
-    landmark(ctx, w, h) {
-      /* Marble columns behind the wall */
-      ctx.fillStyle = '#eaeaea';
-      for (let i = 0; i < 8; i++) {
-        const x = w * (0.10 + i * 0.10);
-        ctx.fillRect(x, h * 0.02, 6, h * 0.11);
-        ctx.fillRect(x - 2, h * 0.02, 10, 3);
-        ctx.fillRect(x - 2, h * 0.115, 10, 3);
-      }
-      /* Setting sun between columns */
-      ctx.fillStyle = '#e88a3a';
-      ctx.beginPath(); ctx.arc(w * 0.5, h * 0.07, 8, 0, Math.PI * 2); ctx.fill();
-    },
+    far:'dunes', body:'lowsun', mark:'temple',
   },
   'Folklore': {
     park:'Whispering Grove', sky:'#f2ba7c', wall:'#8f5f2f', wallLine:'#fadfa6',
     marker:'#fffaf0', track:'#c09060', grass:'#51a046',
     crowd:['#e08840','#f0b860','#c06830','#d8a870','#a85828'],
-    landmark(ctx, w, h) {
-      /* Autumn-forest silhouette: sparse tree crowns */
-      ctx.fillStyle = '#0a0806';
-      const trees = [0.10, 0.22, 0.34, 0.44, 0.56, 0.68, 0.80, 0.92];
-      for (const tf of trees) {
-        const x = w * tf;
-        ctx.fillRect(x, h * 0.04, 3, h * 0.10);
-        ctx.beginPath(); ctx.arc(x + 1.5, h * 0.04, 9, 0, Math.PI * 2); ctx.fill();
-      }
-      /* Fireflies dotting the woods */
-      ctx.fillStyle = '#f4c25a';
-      for (let i = 0; i < 12; i++) {
-        const fx = ((i * 173) + Math.floor(performance.now() / 200)) % w;
-        const fy = h * (0.06 + ((i * 31) % 60) / 1000);
-        ctx.fillRect(fx, fy, 1, 1);
-      }
-    },
+    far:'forest', body:'lowsun', mark:'oak',
   },
 };
 const DEFAULT_THEME = {
   park:'The Sandlot', sky:'#72c7f0', wall:'#2f8a44', wallLine:'#fff4dc',
   marker:'#fffaf0', track:'#d0a060', grass:'#47ab52',
   crowd:['#e05a5a','#f0c050','#5aa8e0','#60c880','#e88ac0'],
-  landmark(){},
+  far:'hills', body:'sun', mark:'watertower',
 };
+
+/* ------------------------- THE SCENERY -------------------------
+   What stands BEHIND the park: the sky's sun or moon, clouds that drift,
+   a far horizon, and one landmark that says whose park this is. It is
+   drawn by both cameras from one set of functions, because a park that
+   looked like two places depending on the camera would be two parks.
+
+   It used to be a landmark function per park, written in fractions of the
+   field (`w * 0.44, h * 0.03`) and drawn as a few black rectangles: a
+   castle was three bars, a clock was a disc, and in the plate camera the
+   whole thing was squeezed into the top of the sky where the line score
+   sits over it on a phone. Two faults in one.
+
+   EVERYTHING HERE IS COUNTED IN BLOCKS. `u` is one block of the world
+   (PIX logical pixels), and every rectangle is a whole number of them, so
+   in retro mode the scenery lands on the same grid as the field, and in
+   smooth mode it is still art rather than smears.
+
+   THE LANDMARK STANDS ON A BASELINE, not at a height in the sky. Each
+   camera hands in where the stands' top edge is, and the landmark rises
+   from behind them, which is how a real one reads over a real outfield.
+
+   THE TOP ROWS OF THE WORLD STAY SKY. `fieldBand` reads the world's top
+   row at the midline for the letterbox colour, so nothing here reaches
+   above y 14: a cloud or a spire across that row would paint the band
+   above the picture its colour. */
+function sceneMix(a, b, t) {
+  const p = h => { const c = h.replace('#', ''); return [0, 2, 4].map(i => parseInt(c.substr(i, 2), 16)); };
+  const x = p(a), y = p(b);
+  return '#' + x.map((v, i) => clamp(Math.round(v + (y[i] - v) * t), 0, 255)
+    .toString(16).padStart(2, '0')).join('');
+}
+/* A deterministic 0..1 per integer, so a skyline is the same skyline on
+   every frame and every visit. */
+function sceneHash(n) { const s = Math.sin(n * 127.1 + 311.7) * 43758.5453; return s - Math.floor(s); }
+
+/* The sun or the moon, and the clouds. `x0` and `x1` are the stretch of
+   sky the camera can actually see, so the sun is always in the picture
+   rather than wherever a fraction of the field put it. */
+function drawSkyDressing(ctx, x0, x1, top, base, bodyX, theme) {
+  const u = PIX, now = performance.now();
+  const span = x1 - x0;
+  const body = theme.body;
+  if (body) {
+    const moon = body === 'moon' || body === 'bloodmoon';
+    const bx = Math.round(bodyX / u) * u;
+    const by = Math.round((top + (base - top) * (body === 'lowsun' ? 0.62 : 0.34)) / u) * u;
+    const r = u * (moon ? 6 : 7);
+    const core = body === 'bloodmoon' ? '#c9452a' : moon ? '#f4efe0' : body === 'lowsun' ? '#ffb45a' : '#fff1b8';
+    const halo = ctx.createRadialGradient(bx, by, r * 0.6, bx, by, r * 4);
+    halo.addColorStop(0, body === 'bloodmoon' ? 'rgba(201,69,42,.32)' : moon ? 'rgba(244,239,224,.26)' : 'rgba(255,241,184,.42)');
+    halo.addColorStop(1, 'rgba(255,241,184,0)');
+    ctx.fillStyle = halo;
+    ctx.fillRect(bx - r * 4, Math.max(14, by - r * 4), r * 8, r * 8);
+    /* a disc of whole blocks: rows of a circle, so it is round on the grid */
+    for (let j = -r; j < r; j += u) {
+      const half = Math.floor(Math.sqrt(r * r - (j + u / 2) * (j + u / 2)) / u) * u;
+      ctx.fillStyle = core;
+      ctx.fillRect(bx - half, by + j, half * 2, u);
+    }
+    if (moon) {   /* craters, which is what makes a disc a moon */
+      ctx.fillStyle = body === 'bloodmoon' ? '#9a2e1c' : '#d8d0bc';
+      for (const [cx, cy, s] of [[-2, -2, 2], [1, 1, 2], [2, -3, 1], [-3, 2, 1]])
+        ctx.fillRect(bx + cx * u, by + cy * u, s * u, s * u);
+    } else {      /* a hot core, a block smaller */
+      ctx.fillStyle = body === 'lowsun' ? '#ffd37a' : '#fffbe6';
+      ctx.fillRect(bx - r + 3 * u, by - r + 3 * u, (r - 3 * u) * 2, (r - 3 * u) * 2);
+    }
+  }
+  /* CLOUDS DRIFT, slowly, and they are shaded: a lit top, a body, and a
+     flat grey belly, which is the difference between a cloud and a white
+     rectangle. They wrap across the visible sky, so there is always sky
+     between them. */
+  if (!theme.snowStorm) {
+    const drift = now / 1400;
+    const room = base - top;
+    for (let i = 0; i < 4; i++) {
+      const cw = u * (8 + Math.floor(sceneHash(i + 3) * 8));
+      const cx = x0 + (((sceneHash(i) * span + drift * (0.5 + i * 0.18) * u) % (span + cw)) + span + cw) % (span + cw) - cw;
+      const cy = Math.max(16, Math.round((top + room * (0.14 + sceneHash(i + 9) * 0.34)) / u) * u);
+      const X = Math.round(cx / u) * u;
+      ctx.fillStyle = 'rgba(210,222,232,.55)';
+      ctx.fillRect(X, cy + 3 * u, cw, u);
+      ctx.fillStyle = 'rgba(255,255,255,.78)';
+      ctx.fillRect(X, cy + u, cw, 2 * u);
+      ctx.fillRect(X + Math.round(cw * 0.2 / u) * u, cy - u, Math.round(cw * 0.45 / u) * u, 2 * u);
+      ctx.fillRect(X + Math.round(cw * 0.55 / u) * u, cy, Math.round(cw * 0.3 / u) * u, u);
+    }
+  }
+  if (theme.snow) {   /* snow falling across the whole sky, a block a flake */
+    ctx.fillStyle = 'rgba(255,255,255,.85)';
+    const fall = now / 60;
+    for (let i = 0; i < 40; i++) {
+      const fx = x0 + ((sceneHash(i) * span + Math.sin(now / 900 + i) * 6 * u) % span + span) % span;
+      const fy = 16 + (sceneHash(i + 50) * (base - 16) + fall * (0.6 + sceneHash(i + 7) * 0.6)) % (base - 16);
+      ctx.fillRect(Math.round(fx / u) * u, Math.round(fy / u) * u, u, u);
+    }
+  }
+}
+
+/* THE FAR HORIZON, in two layers, both fading into the sky: the far one is
+   mostly haze and the near one is a little darker. `baseAt(x)` is where
+   the stands' top edge is in that column, so on the wide camera the
+   horizon rides the curve of the wall. */
+function drawFarHorizon(ctx, x0, x1, baseAt, theme) {
+  const u = PIX, kind = theme.far || 'hills', sky = theme.sky;
+  const tone = {
+    hills: '#2f6a3c', forest: '#1f4a2c', city: '#34404e', sea: '#2c6a86',
+    crags: '#3a2c3c', dunes: '#b8844e', ice: '#8aa8c0',
+  }[kind] || '#2f6a3c';
+  const start = Math.floor(x0 / u) - 1, end = Math.ceil(x1 / u) + 1;
+  for (const layer of [0, 1]) {
+    const col = sceneMix(tone, sky, layer ? 0.42 : 0.66);
+    ctx.fillStyle = col;
+    for (let b = start; b <= end; b++) {
+      const x = b * u, base = Math.round(baseAt(x) / u) * u;
+      const n = b + layer * 71;
+      let hb;   /* the height in blocks for this column */
+      if (kind === 'hills') hb = 3 + Math.round(3 * Math.sin(n / 11) + 2 * Math.sin(n / 5.3 + 1));
+      else if (kind === 'forest') hb = 3 + Math.round(2 * Math.sin(n / 9)) + ((n % 4 === 0) ? 3 : (n % 2) ? 1 : 2);
+      else if (kind === 'crags') hb = 4 + Math.round(4 * Math.abs(Math.sin(n / 6.1)) + 2 * sceneHash(n));
+      else if (kind === 'dunes') hb = 2 + Math.round(2.5 * (1 + Math.sin(n / 13 + layer)));
+      else if (kind === 'ice') hb = 3 + Math.round(5 * Math.abs(Math.sin(n / 8.3)));
+      else if (kind === 'sea') hb = layer ? 0 : 2;
+      else { /* city: a building is several columns of one height */
+        const blk = Math.floor(n / 4);
+        hb = 3 + Math.floor(sceneHash(blk) * (layer ? 7 : 10));
+      }
+      if (hb <= 0) continue;
+      ctx.fillRect(x, base - hb * u, u, hb * u);
+      if (kind === 'ice' && hb >= 6) {           /* snow on the peaks */
+        ctx.fillStyle = sceneMix('#ffffff', sky, 0.25);
+        ctx.fillRect(x, base - hb * u, u, 2 * u);
+        ctx.fillStyle = col;
+      }
+      if (kind === 'city' && layer && (b + Math.floor(n / 4)) % 3 === 0) {   /* lit windows */
+        ctx.fillStyle = sceneMix('#f6e3a0', sky, 0.4);
+        for (let k = 2; k < hb - 1; k += 2) ctx.fillRect(x, base - k * u, u, u);
+        ctx.fillStyle = col;
+      }
+    }
+    if (kind === 'sea' && !layer) {              /* sun glints on the water */
+      ctx.fillStyle = sceneMix('#ffffff', sky, 0.3);
+      for (let b = start; b <= end; b += 7) {
+        const x = b * u, base = Math.round(baseAt(x) / u) * u;
+        if (sceneHash(b) > 0.4) ctx.fillRect(x, base - 2 * u, 2 * u, u);
+      }
+    }
+  }
+}
+
+/* THE LANDMARKS. Each is drawn on a grid of blocks with the origin at the
+   middle of its foot and y counting UP, lit from the left. `R` takes block
+   units, so a landmark is a small piece of pixel art rather than a set of
+   fractions. They are hazed toward the sky a little, because they are
+   further away than anything else in the picture. */
+function drawLandmark(ctx, x, base, theme) {
+  const u = PIX, sky = theme.sky, mark = theme.mark;
+  if (!mark) return;
+  const X = Math.round(x / u) * u, B = Math.round(base / u) * u;
+  const hz = c => sceneMix(c, sky, 0.10);
+  const R = (bx, by, bw, bh, c) => { ctx.fillStyle = hz(c); ctx.fillRect(X + bx * u, B - (by + bh) * u, bw * u, bh * u); };
+  const tri = (bx, by, half, bh, c) => {   /* a stepped cone, one row a block */
+    for (let j = 0; j < bh; j++) { const hw = Math.max(0, Math.round(half * (1 - j / bh))); R(bx - hw, by + j, hw * 2 + 1, 1, c); } };
+  switch (mark) {
+    case 'castle': {
+      const st = '#a898c4', sh = '#76649a', rf = '#5a3a8a', dk = '#3a2a56';
+      R(-9, 0, 18, 9, sh); R(-9, 0, 8, 9, st);
+      for (let i = -9; i < 9; i += 2) R(i, 9, 1, 1, sh);            /* crenels */
+      R(-2, 0, 4, 4, dk); R(-1, 4, 2, 1, dk);                          /* the gate */
+      for (const [tx, th] of [[-12, 13], [9, 13], [-3, 18]]) {
+        R(tx, 0, 4 + (tx === -3 ? 2 : 0), th, tx < 0 ? st : sh);
+        tri(tx + 2 + (tx === -3 ? 1 : 0), th, 3, 5, rf);
+        R(tx + 2 + (tx === -3 ? 1 : 0), th + 5, 1, 3, dk);
+        R(tx + 3 + (tx === -3 ? 1 : 0), th + 7, 2, 1, '#f4c25a');     /* a pennant */
+        R(tx + 1, th - 4, 1, 2, dk);                                     /* a window */
+      }
+      break; }
+    case 'clock': {
+      const br = '#a07a50', bs = '#7a5a3a', gd = '#d8b060', dk = '#3a2a1a';
+      R(-4, 0, 8, 22, bs); R(-4, 0, 4, 22, br);
+      R(-5, 14, 10, 8, bs); R(-5, 14, 5, 8, br);
+      for (let j = 0; j < 7; j++) { const hw = Math.round(4 * (1 - j / 7)); R(-hw, 22 + j, hw * 2 + 1, 1, '#5a6a5a'); }
+      R(0, 29, 1, 3, dk);
+      /* the clock face, and hands that really do go round */
+      R(-3, 15, 7, 6, '#f4ead0'); R(-2, 14, 5, 1, '#f4ead0'); R(-2, 21, 5, 1, '#f4ead0');
+      const a = performance.now() / 4000;
+      R(0, 18, 1, 1, dk);
+      R(Math.round(Math.cos(a) * 2), 18 + Math.round(Math.sin(a) * 2), 1, 1, dk);
+      R(Math.round(Math.cos(a / 12) * 1), 18 + Math.round(Math.sin(a / 12) * 1), 1, 1, dk);
+      for (let j = 2; j < 13; j += 3) { R(-2, j, 1, 2, dk); R(1, j, 1, 2, dk); }
+      R(-6, 0, 12, 1, bs);
+      break; }
+    case 'gate': {
+      const ir = '#3a3e46', hi = '#6a707a';
+      R(-12, 0, 3, 16, hi); R(9, 0, 3, 16, ir);
+      tri(-10, 16, 2, 3, hi); tri(10, 16, 2, 3, ir);
+      for (let i = -8; i <= 8; i += 2) {
+        const top = 10 + Math.round(4 * Math.cos(i / 8 * Math.PI / 2));
+        R(i, 0, 1, top, i < 0 ? hi : ir); R(i, top, 1, 1, '#c9a256');
+      }
+      R(-9, 4, 18, 1, ir); R(-9, 9, 18, 1, ir);
+      /* a chimney behind it, smoking: this is the Iron Yard */
+      R(13, 0, 3, 24, '#5a4a44'); R(13, 22, 3, 1, '#a0402a');
+      const s = performance.now() / 500;
+      for (let k = 0; k < 4; k++) R(14 + Math.round(Math.sin(s + k) + k), 25 + k * 2, 2 + (k > 1 ? 1 : 0), 2, '#9aa4ac');
+      break; }
+    case 'spire': {
+      const st = '#4a3a56', hi = '#6a5478', gl = '#f6c86a';
+      R(-8, 0, 16, 10, st); R(-8, 0, 7, 10, hi);
+      R(-3, 0, 6, 19, st); R(-3, 0, 3, 19, hi);
+      tri(0, 19, 3, 8, st); R(0, 27, 1, 2, st);
+      tri(-6, 10, 2, 5, hi); tri(6, 10, 2, 5, st);
+      R(-1, 14, 2, 3, gl); R(-6, 4, 2, 2, gl); R(5, 5, 1, 2, gl); /* lit windows */
+      /* bats, which move */
+      const s = performance.now() / 300;
+      for (let k = 0; k < 4; k++) {
+        const bx = -18 + ((k * 13 + Math.floor(s * 0.6 * (k + 1))) % 40), by = 20 + k * 3 + Math.round(Math.sin(s + k) * 2);
+        const up = Math.floor(s * 2 + k) % 2, c = '#1a1020';
+        R(bx, by, 1, 1, c);                                       /* a body, two wings that beat */
+        R(bx - 1, by + up, 1, 1, c); R(bx + 1, by + up, 1, 1, c);
+        R(bx - 2, by + up * 2, 1, 1, c); R(bx + 2, by + up * 2, 1, 1, c);
+      }
+      break; }
+    case 'lighthouse': {
+      tri(0, 0, 7, 3, '#6a6458');
+      for (let j = 0; j < 18; j++) { const hw = 3 - Math.floor(j / 9);
+        R(-hw, 3 + j, hw * 2 + 1, 1, Math.floor(j / 3) % 2 ? '#c8402a' : '#f4ecdc'); }
+      R(-3, 21, 7, 1, '#2a2a30'); R(-2, 22, 5, 3, '#f6e08a'); R(-3, 25, 7, 1, '#2a2a30');
+      tri(0, 26, 3, 3, '#c8402a');
+      /* the beam sweeps */
+      const a = Math.sin(performance.now() / 700);
+      ctx.fillStyle = 'rgba(255,240,170,.22)';
+      ctx.beginPath(); ctx.moveTo(X, B - 23.5 * u);
+      ctx.lineTo(X + a * 40 * u, B - 20 * u); ctx.lineTo(X + a * 40 * u, B - 27 * u); ctx.closePath(); ctx.fill();
+      break; }
+    case 'emerald': {
+      const e1 = '#5ad07a', e2 = '#2f9a52', e3 = '#1c6a38';
+      for (const [tx, th, w] of [[-10, 12, 3], [-5, 20, 4], [1, 26, 4], [7, 16, 3], [11, 10, 3]]) {
+        R(tx, 0, w, th, e2); R(tx, 0, 1, th, e1);
+        tri(tx + Math.floor(w / 2), th, Math.ceil(w / 2), 4, e3);
+        R(tx + 1, th - 3, 1, 1, '#d8ffe0');
+      }
+      R(2, 30, 1, 3, '#f4c25a');
+      break; }
+    case 'ship': {
+      const hl = '#6a4a2a', hh = '#8a6a3a', dk = '#3a2616', sl = '#f4ecdc';
+      for (let j = 0; j < 4; j++) R(-12 + (3 - j), j, 24 - (3 - j) * 2 + j, 1, j === 3 ? hh : hl);
+      R(-13, 4, 3, 2, hh); R(10, 4, 3, 1, dk);
+      for (const [mx, mh] of [[-4, 18], [4, 14]]) {
+        R(mx, 4, 1, mh, dk);
+        const sw = performance.now() / 600;
+        for (let j = 0; j < mh - 5; j++) R(mx - 4 + (j > (mh - 5) / 2 ? Math.round(Math.sin(sw) * 0.6) : 0), 7 + j, 8, 1, j % 5 === 4 ? '#e0d8c8' : sl);
+      }
+      R(-4, 22, 3, 2, '#1a1a1e'); R(-3, 23, 1, 1, '#f4ecdc');       /* the flag */
+      break; }
+    case 'treehouse': {
+      R(-1, 0, 3, 12, '#7a5030'); R(-1, 0, 1, 12, '#9a6a40');
+      R(-4, 10, 9, 5, '#c85a3a'); R(-4, 10, 4, 5, '#e07a50');
+      tri(0, 15, 6, 3, '#3a6ab0');
+      R(-1, 11, 2, 2, '#3a2a1a');                                        /* a door */
+      for (const [bx, by, r] of [[-8, 16, 5], [7, 14, 5], [0, 21, 6]])
+        for (let j = -r; j <= r; j++) { const hw = Math.round(Math.sqrt(r * r - j * j)); R(bx - hw, by + j, hw * 2 + 1, 1, j < 0 ? '#3f8a40' : '#5aa850'); }
+      R(-5, 0, 1, 10, '#b09060');                                        /* a ladder */
+      for (let j = 1; j < 10; j += 2) R(-6, j, 3, 1, '#b09060');
+      break; }
+    case 'tree': {
+      for (let k = 0; k < 4; k++) tri(0, 3 + k * 6, 11 - k * 2, 9, k % 2 ? '#1f6a3a' : '#2a7a44');
+      R(-1, 0, 3, 3, '#6a4a2a');
+      R(-1, 27, 3, 3, '#f4c25a'); R(0, 30, 1, 1, '#fff3b0');
+      const tw = Math.floor(performance.now() / 400);
+      const lights = ['#e04a40', '#f4c25a', '#5cb6e5', '#fff3f0'];
+      for (let i = 0; i < 14; i++) {
+        const j = 4 + (i * 7) % 22, hw = Math.round(10 * (1 - (j % 9) / 9) * 0.8);
+        R(((i * 5) % (hw * 2 + 1)) - hw, j, 1, 1, lights[(i + tw) % 4]);
+      }
+      /* snow on the boughs */
+      for (let k = 0; k < 4; k++) R(-(9 - k * 2), 3 + k * 6, 3, 1, '#ffffff');
+      break; }
+    case 'saucer': {
+      const bob = Math.round(Math.sin(performance.now() / 500) * 1.5);
+      R(-1, 0, 2, 3, '#1f3a2a'); R(-2, 3, 4, 3, '#1f3a2a');            /* a lone pine */
+      tri(0, 6, 4, 8, '#1f4a30');
+      R(-9, 18 + bob, 18, 2, '#8a94a4'); R(-7, 20 + bob, 14, 1, '#b8c2d0');
+      R(-4, 21 + bob, 8, 2, '#9ad8c0'); R(-3, 23 + bob, 6, 1, '#c8f0e0');
+      for (let i = -7; i <= 7; i += 3) R(i, 18 + bob, 1, 1, Math.floor(performance.now() / 250 + i) % 2 ? '#f6e08a' : '#e05a5a');
+      ctx.fillStyle = 'rgba(180,255,210,.18)';                           /* the beam */
+      ctx.beginPath(); ctx.moveTo(X - 4 * u, B - (18 + bob) * u); ctx.lineTo(X + 4 * u, B - (18 + bob) * u);
+      ctx.lineTo(X + 7 * u, B); ctx.lineTo(X - 7 * u, B); ctx.closePath(); ctx.fill();
+      break; }
+    case 'temple': {
+      const mb = '#f0e6cc', ms = '#cbbf9e';
+      R(-13, 0, 26, 2, ms); R(-12, 2, 24, 1, mb);
+      for (let i = -11; i <= 9; i += 4) { R(i, 3, 2, 11, mb); R(i + 1, 3, 1, 11, ms); }
+      R(-12, 14, 24, 2, mb); R(-12, 14, 24, 1, ms);
+      for (let j = 0; j < 5; j++) R(-12 + j * 2, 16 + j, 24 - j * 4, 1, j % 2 ? ms : mb);
+      R(-1, 18, 2, 1, '#c9a256');
+      break; }
+    case 'oak': {
+      const tk = '#5a3a22', th = '#7a5232';
+      R(-2, 0, 5, 10, tk); R(-2, 0, 2, 10, th);
+      R(-6, 8, 4, 2, tk); R(3, 9, 4, 2, tk);
+      const leaves = ['#d86a2a', '#e8963a', '#c04a24', '#f0b050'];
+      for (const [bx, by, r] of [[-7, 13, 5], [7, 13, 5], [0, 17, 7], [-3, 22, 4], [4, 21, 4]])
+        for (let j = -r; j <= r; j++) { const hw = Math.round(Math.sqrt(r * r - j * j));
+          for (let i = -hw; i <= hw; i++) R(bx + i, by + j, 1, 1, leaves[Math.floor(sceneHash(bx * 31 + i * 7 + j * 13) * 4)]); }
+      /* a leaf falls */
+      const f = (performance.now() / 70) % 60;
+      R(-6 + Math.round(Math.sin(f / 6) * 3), 14 - Math.floor(f / 4), 1, 1, '#f0b050');
+      break; }
+    case 'watertower': {
+      R(-5, 0, 1, 12, '#6a7078'); R(4, 0, 1, 12, '#6a7078');
+      R(-5, 5, 10, 1, '#6a7078');
+      R(-6, 12, 12, 8, '#c8ccd0'); R(-6, 12, 5, 8, '#e4e6ea');
+      R(-4, 15, 8, 2, '#cf3229');                                        /* a stripe in the arcade red */
+      tri(0, 20, 6, 3, '#9aa0a8');
+      break; }
+    case 'windmill': {
+      R(-2, 0, 4, 16, '#b0703a'); R(-2, 0, 2, 16, '#c88a4a'); tri(0, 16, 3, 3, '#7a4a2a');
+      const a = performance.now() / 900;
+      for (let k = 0; k < 4; k++) { const ang = a + k * Math.PI / 2;
+        for (let r = 1; r <= 8; r++) R(Math.round(Math.cos(ang) * r), 17 + Math.round(Math.sin(ang) * r), 1, 1, r > 2 ? '#f0e6cc' : '#7a4a2a'); }
+      break; }
+    case 'pines': {
+      for (const [px, ph] of [[-10, 14], [-4, 20], [3, 16], [9, 12]]) { R(px, 0, 1, 2, '#4a3a2a'); tri(px, 2, Math.round(ph / 4), ph, px < 0 ? '#2a6a40' : '#1f5a36'); }
+      break; }
+    case 'scoreboard': {
+      R(-2, 0, 2, 10, '#3a3e46'); R(4, 0, 2, 10, '#3a3e46');
+      R(-10, 10, 20, 12, '#1a2a22'); R(-10, 21, 20, 1, '#f4c25a');
+      for (let i = 0; i < 6; i++) R(-8 + i * 3, 13, 2, 3, i % 3 ? '#f6e08a' : '#e05a5a');
+      R(-8, 17, 16, 2, '#6ab0e0');
+      break; }
+  }
+}
+
+/* One call per camera. `x0` and `x1` are the sky the camera shows, `top`
+   and `base(x)` where it starts and where the stands' top edge is, and
+   `markX` and `bodyX` where the landmark and the sun or moon stand. Both
+   are the caller's call because only the caller knows what is laid over
+   its sky: the line score on a phone, the park's name on a desktop. */
+function drawScenery(ctx, x0, x1, top, baseAt, markX, bodyX, theme) {
+  drawSkyDressing(ctx, x0, x1, top, baseAt(markX), bodyX, theme);
+  drawFarHorizon(ctx, x0, x1, baseAt, theme);
+  drawLandmark(ctx, markX, baseAt(markX), theme);
+}
+
 function currentTheme() {
   /* You are at HOME in your own park. The theme used to be the opponent's
      in every game, so a franchise could pick a stadium and never play in
@@ -2722,7 +3735,281 @@ const el = (tag, cls, html) => {
   return n;
 };
 
+/* ============================================================================
+   MOTION
+   The choreography for every screen that is not the game. The stylesheet
+   says what moves and how (transform and opacity only); this says WHEN.
+   ============================================================================ */
+let MOTION_SCREEN = null;   /* the screen the last render drew */
+let MOTION_PRESS = null;    /* the label of the control pressed last */
+
+/* Remembered on the way DOWN, because the render the press causes empties
+   the page before any click handler that ran afterwards could look. */
+document.addEventListener('pointerdown', (e) => {
+  const b = e.target && e.target.closest
+    && e.target.closest('button, .toggle, .park-card, .sb');
+  MOTION_PRESS = b ? (b.textContent || '').trim() : null;
+}, true);
+
+/* WHICH THINGS RISE, IN ORDER. A unit is one thing a reader sees arrive: a
+   heading, a card, a tile. A wrapper that is the only card on its screen is
+   opened up, because a whole menu rising as one slab is no choreography at
+   all. A grid is opened up to its first cells and no further: a roster of
+   sixty eight is not sixty eight entrances, and the ones below the fold
+   are never seen arriving anyway. */
+const MO_OPEN = '.hmodes, .roster, .park-grid, .award-grid';
+const MO_MAX = 26;
+function motionUnits(root) {
+  const out = [];
+  const take = (node, depth) => {
+    for (const ch of node.children) {
+      if (out.length >= MO_MAX) return;
+      /* A hidden thing gets no entrance: it cannot run one, so it would keep
+         the class and the held first keyframe until whenever it is shown. */
+      if (ch.hidden || ch.matches('h2.verdict, script, style')) continue;
+      const lone = ch.matches('.card') && node.matches('.screen')
+        && node.querySelectorAll(':scope > .card').length === 1;
+      if (depth < 3 && (ch.matches('.screen') || lone)) { take(ch, depth + 1); continue; }
+      if (depth < 3 && ch.matches(MO_OPEN)) {
+        let n = 0;
+        for (const cell of ch.children) {
+          if (out.length >= MO_MAX || n++ >= 12) break;
+          out.push(cell);
+        }
+        continue;
+      }
+      out.push(ch);
+    }
+  };
+  take(root, 0);
+  return out;
+}
+
+/* The delay compresses: the first dozen units are 46ms apart and the rest
+   16ms, so a long screen is still all in within a second rather than
+   trailing its last card in two seconds after the first. */
+function motionDelay(i) { return Math.min(i, 12) * 46 + Math.max(0, i - 12) * 16; }
+
+function choreograph(root) {
+  const units = motionUnits(root);
+  units.forEach((u, i) => {
+    u.style.animationDelay = motionDelay(i) + 'ms';
+    u.classList.add('mo-in');
+  });
+  /* Table rows fill in behind the card that holds them. */
+  let t = 0;
+  for (const tb of root.querySelectorAll('table tbody')) {
+    if (t++ > 5) break;
+    const host = units.findIndex(u => u.contains(tb));
+    const base = motionDelay(Math.max(0, host)) + 120;
+    [...tb.rows].slice(0, 20).forEach((r, j) => {
+      r.style.animationDelay = (base + j * 28) + 'ms';
+      r.classList.add('mo-row');
+    });
+  }
+  /* A bracket fills in round by round, left to right, the way it is read. */
+  for (const br of root.querySelectorAll('.cupbracket, .bracket')) {
+    const host = units.findIndex(u => u.contains(br));
+    const base = motionDelay(Math.max(0, host)) + 140;
+    [...br.querySelectorAll(':scope > .col')].forEach((col, c) => {
+      [...col.querySelectorAll('.match')].forEach((m, j) => {
+        m.style.animationDelay = (base + c * 150 + j * 45) + 'ms';
+        m.classList.add('mo-in');
+      });
+    });
+  }
+  /* The counting figures start when the board they sit on has arrived. */
+  for (const c of root.querySelectorAll('.countup')) {
+    const host = units.findIndex(u => u.contains(c));
+    c.style.animationDelay = (motionDelay(Math.max(0, host)) + 260) + 'ms';
+    c.classList.add('go');
+  }
+}
+
+/* A FINISHED ENTRANCE TAKES ITS CLASS WITH IT. `animation-fill-mode: both`
+   holds the last keyframe, and a held keyframe wins over every ordinary
+   declaration, so a card that kept `mo-in` could never lift on hover or
+   tilt toward the pointer again. */
+document.addEventListener('animationend', (e) => {
+  const t = e.target;
+  if (!t || !t.classList) return;
+  if (e.animationName === 'mo-rise' || e.animationName === 'mo-banner') t.classList.remove('mo-in');
+  else if (e.animationName === 'mo-slide') t.classList.remove('mo-row');
+  else if (e.animationName === 'mo-pop') t.classList.remove('mo-pop');
+  if (e.animationName === 'mo-rise' || e.animationName === 'mo-slide' || e.animationName === 'mo-banner') {
+    t.style.animationDelay = '';
+  }
+});
+
+function motionPop(node) {
+  if (!node || REDUCED.matches) return;
+  node.classList.remove('mo-pop');
+  void node.offsetWidth;   /* the one forced reflow: it restarts the keyframes */
+  node.classList.add('mo-pop');
+}
+
+function motionAfterRender(s) {
+  const changed = s !== MOTION_SCREEN;
+  MOTION_SCREEN = s;
+  const press = MOTION_PRESS;
+  MOTION_PRESS = null;
+  if (s === 'game' || REDUCED.matches) return;
+  if (changed) { choreograph(app); return; }
+  /* The same screen again: the control that caused it answers. */
+  if (press) {
+    const hit = [...app.querySelectorAll('.toggle, .park-card, .sb, .btn')]
+      .find(b => (b.textContent || '').trim() === press);
+    if (hit) motionPop(hit);
+  }
+}
+
+/* THE TILT. One listener for every tile, and only under a fine pointer. It
+   writes four custom properties and never a transform, so the stylesheet
+   stays the one place that decides what a tilted card looks like. */
+const MO_FINE = window.matchMedia('(hover: hover) and (pointer: fine)');
+const MO_TILT = '.hmode, .park-card, .charcard:not(.locked), .potg, .award';
+let moTilted = null;
+function motionUntilt(n) {
+  if (!n) return;
+  n.classList.remove('tilting');
+  n.style.removeProperty('--rx'); n.style.removeProperty('--ry');
+}
+document.addEventListener('pointermove', (e) => {
+  if (!MO_FINE.matches || REDUCED.matches || document.body.classList.contains('ingame')) return;
+  const card = e.target && e.target.closest && e.target.closest(MO_TILT);
+  if (card !== moTilted) { motionUntilt(moTilted); moTilted = card; }
+  if (!card) return;
+  const r = card.getBoundingClientRect();
+  const x = (e.clientX - r.left) / r.width, y = (e.clientY - r.top) / r.height;
+  /* Smaller cards tip further: the same angle on a wide tile swings its far
+     edge through more pixels than it does on a narrow one. */
+  const amp = r.width > 300 ? 3.5 : 7;
+  card.classList.add('tilting');
+  card.style.setProperty('--ry', ((x - 0.5) * amp).toFixed(2) + 'deg');
+  card.style.setProperty('--rx', ((0.5 - y) * amp).toFixed(2) + 'deg');
+  card.style.setProperty('--mx', (x * 100).toFixed(1) + '%');
+  card.style.setProperty('--my', (y * 100).toFixed(1) + '%');
+}, { passive: true });
+document.addEventListener('pointerleave', () => { motionUntilt(moTilted); moTilted = null; });
+
+/* THE CELEBRATION. A burst from both bottom corners and a shower from the
+   top, in the colours the caller hands it, on one canvas laid over the
+   window. It is drawn by hand rather than as two hundred DOM nodes because
+   two hundred animated nodes is two hundred layers, and a canvas is one. It
+   stops itself: when the pieces are down, when the screen changes, or when
+   another celebration starts. */
+let CELEBRATION = null;
+function celebrate(colors, power) {
+  if (CELEBRATION) CELEBRATION.stop();
+  if (REDUCED.matches) return;
+  power = power || 1;
+  const cv = document.createElement('canvas');
+  cv.className = 'confetti-cv';
+  cv.setAttribute('aria-hidden', 'true');
+  document.body.appendChild(cv);
+  const ctx = cv.getContext('2d');
+  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  let W = 0, H = 0;
+  const size = () => {
+    W = window.innerWidth; H = window.innerHeight;
+    cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  };
+  size();
+  window.addEventListener('resize', size);
+  const pal = (colors && colors.length ? colors : ['#cf3229', '#f4c25a', '#1566ae', '#1b8a4a'])
+    .concat(['#fff6ea']);
+  const bits = [];
+  const add = (x, y, vx, vy) => bits.push({
+    x, y, vx, vy,
+    w: 6 + Math.random() * 6, h: 9 + Math.random() * 9,
+    rot: Math.random() * 6.28, vr: (Math.random() - 0.5) * 0.35,
+    flip: Math.random() * 6.28, vf: 0.08 + Math.random() * 0.14,
+    c: pal[Math.floor(Math.random() * pal.length)],
+    round: Math.random() < 0.18,
+    sway: Math.random() * 6.28,
+  });
+  /* Scaled to the window: a phone gets a handful fewer than a monitor, so
+     the density reads the same on both. */
+  const per = Math.round((34 + Math.min(W, 1600) / 1600 * 46) * power);
+  for (let i = 0; i < per; i++) {
+    const sp = (0.55 + Math.random() * 0.75) * Math.max(1, H / 900);
+    add(-10, H + 10, (5 + Math.random() * 9) * sp, -(13 + Math.random() * 11) * sp);
+    add(W + 10, H + 10, -(5 + Math.random() * 9) * sp, -(13 + Math.random() * 11) * sp);
+  }
+  const shower = Math.round(per * 0.7);
+  let showered = 0;
+  const screenAt = State.screen;
+  const t0 = performance.now();
+  let last = t0, raf = 0;
+  const stop = () => {
+    cancelAnimationFrame(raf);
+    window.removeEventListener('resize', size);
+    cv.remove();
+    if (CELEBRATION && CELEBRATION.cv === cv) CELEBRATION = null;
+  };
+  const step = (now) => {
+    if (State.screen !== screenAt || !cv.isConnected) { stop(); return; }
+    /* Frame time, clamped, so a stalled tab does not fire every piece off
+       the screen in one step when it comes back. */
+    const k = Math.min(2.5, (now - last) / 16.67);
+    last = now;
+    const age = (now - t0) / 1000;
+    /* The shower trickles in over the first second and a half. */
+    while (showered < shower && showered < shower * age / 1.5) {
+      add(Math.random() * W, -20, (Math.random() - 0.5) * 3, 2 + Math.random() * 3);
+      showered++;
+    }
+    ctx.clearRect(0, 0, W, H);
+    let alive = 0;
+    for (const b of bits) {
+      b.vy += 0.34 * k;
+      b.vx *= Math.pow(0.985, k); b.vy *= Math.pow(0.985, k);
+      /* Terminal velocity, then a flutter: paper does not fall like a ball. */
+      if (b.vy > 4.2) b.vy = 4.2;
+      b.sway += 0.06 * k;
+      b.x += (b.vx + Math.sin(b.sway) * 0.9) * k;
+      b.y += b.vy * k;
+      b.rot += b.vr * k; b.flip += b.vf * k;
+      if (b.y > H + 40) continue;
+      alive++;
+      const fade = age > 3.4 ? Math.max(0, 1 - (age - 3.4) / 0.9) : 1;
+      ctx.save();
+      ctx.globalAlpha = fade;
+      ctx.translate(b.x, b.y);
+      ctx.rotate(b.rot);
+      ctx.scale(1, Math.cos(b.flip));
+      ctx.fillStyle = b.c;
+      if (b.round) { ctx.beginPath(); ctx.arc(0, 0, b.w * 0.45, 0, 6.2832); ctx.fill(); }
+      else ctx.fillRect(-b.w / 2, -b.h / 2, b.w, b.h);
+      ctx.restore();
+    }
+    if ((alive === 0 && showered >= shower) || age > 4.4) { stop(); return; }
+    raf = requestAnimationFrame(step);
+  };
+  raf = requestAnimationFrame(step);
+  CELEBRATION = { stop, cv };
+}
+
+/* A DRAWN CUP. It replaced three rectangles, and its light and its float
+   are the stylesheet's; this is only the shape. */
+function trophyArt() {
+  return '<div class="trophy cup" aria-hidden="true"><svg viewBox="0 0 80 92" width="78" height="90">'
+    + '<defs><linearGradient id="tg" x1="0" x2="1"><stop offset="0" stop-color="#b8861f"/>'
+    + '<stop offset=".45" stop-color="#ffe08a"/><stop offset="1" stop-color="#c99526"/></linearGradient>'
+    + '<clipPath id="tc"><path d="M18 6h44v20c0 16-10 28-22 28S18 42 18 26z"/></clipPath></defs>'
+    + '<path d="M18 12H8c0 14 6 22 14 23M62 12h10c0 14-6 22-14 23" fill="none" stroke="#b8861f" stroke-width="5" stroke-linecap="round"/>'
+    + '<path d="M18 6h44v20c0 16-10 28-22 28S18 42 18 26z" fill="url(#tg)" stroke="#8a6212" stroke-width="2"/>'
+    + '<g clip-path="url(#tc)"><rect class="shine" x="10" y="0" width="12" height="60" fill="#fff" opacity=".55" transform="skewX(-18)"/></g>'
+    + '<path d="M40 16l3 6 7 1-5 5 1 7-6-3-6 3 1-7-5-5 7-1z" fill="#fff6ea" opacity=".9"/>'
+    + '<rect x="35" y="53" width="10" height="14" fill="url(#tg)" stroke="#8a6212" stroke-width="2"/>'
+    + '<rect x="22" y="66" width="36" height="9" rx="2" fill="url(#tg)" stroke="#8a6212" stroke-width="2"/>'
+    + '<rect x="16" y="75" width="48" height="12" rx="3" fill="#1b3a5c" stroke="#0f2238" stroke-width="2"/>'
+    + '</svg></div>';
+}
+
 function render() {
+  if (CELEBRATION) CELEBRATION.stop();
   app.innerHTML = '';
   const s = State.screen;
   document.body.classList.toggle('ingame', s === 'game');
@@ -2749,6 +4036,7 @@ function render() {
   else if (s === 'cup') renderCup();
   else if (s === 'cutscene') renderCutscene();
   else if (s === 'franchise') renderFranchise();
+  motionAfterRender(s);
 }
 $('#btn-home').addEventListener('click', () => {
   if (State.game && State.game.live) {
@@ -3446,7 +4734,8 @@ const PARKS = {
     effect:'Home runs +32% · extra base hits -8%',
     theme:{ sky:'#7fb8d8', wall:'#9e3a2a', wallLine:'#f6ead2', marker:'#fffaf0',
             track:'#c08a58', grass:'#43a049',
-            crowd:['#e05a5a','#f0c050','#5aa8e0','#d8b070','#c06888'] },
+            crowd:['#e05a5a','#f0c050','#5aa8e0','#d8b070','#c06888'],
+            far:'city', body:'sun', mark:'watertower' },
   },
   cavern: {
     name:'Cavern Park', hr:0.68, xbh:1.28, crowd:0,
@@ -3454,7 +4743,8 @@ const PARKS = {
     effect:'Home runs -32% · extra base hits +28%',
     theme:{ sky:'#8fd0e8', wall:'#22643a', wallLine:'#f8f0d2', marker:'#fffaf0',
             track:'#b8945e', grass:'#2f8a44',
-            crowd:['#6a9a7a','#8fbfa0','#c8d8b0','#4a7a58','#a8c898'] },
+            crowd:['#6a9a7a','#8fbfa0','#c8d8b0','#4a7a58','#a8c898'],
+            far:'crags', body:'sun', mark:'pines' },
   },
   sandlot: {
     name:'Sandlot Common', hr:1.0, xbh:1.0, crowd:0,
@@ -3462,7 +4752,8 @@ const PARKS = {
     effect:'Plays completely straight',
     theme:{ sky:'#72c7f0', wall:'#8a5f36', wallLine:'#fff4dc', marker:'#fffaf0',
             track:'#d0a060', grass:'#4fb055',
-            crowd:['#e0b070','#c8a880','#e8d8b0','#b09060','#d8c8a0'] },
+            crowd:['#e0b070','#c8a880','#e8d8b0','#b09060','#d8c8a0'],
+            far:'hills', body:'sun', mark:'watertower' },
   },
   icebox: {
     name:'The Icebox', hr:0.78, xbh:0.94, crowd:0,
@@ -3470,7 +4761,8 @@ const PARKS = {
     effect:'Home runs -22% · extra base hits -6%',
     theme:{ sky:'#c3e7f6', wall:'#4a6a80', wallLine:'#ffffff', marker:'#ffffff',
             track:'#c8ccd4', grass:'#5aa87a', snow:true,
-            crowd:['#c0d8e8','#f8f8fa','#9ab8cc','#e0eef6','#8aa8bc'] },
+            crowd:['#c0d8e8','#f8f8fa','#9ab8cc','#e0eef6','#8aa8bc'],
+            far:'ice', body:'sun', mark:'lighthouse' },
   },
   bowl: {
     name:'The Thunder Bowl', hr:1.0, xbh:1.0, crowd:4,
@@ -3478,7 +4770,8 @@ const PARKS = {
     effect:'No park factor · your hitters get a real home crowd bump',
     theme:{ sky:'#86bdd8', wall:'#38404c', wallLine:'#ffd44a', marker:'#fffaf0',
             track:'#b08a58', grass:'#3f9145',
-            crowd:['#cf3229','#f0c050','#1566ae','#eeeeee','#cf3229'] },
+            crowd:['#cf3229','#f0c050','#1566ae','#eeeeee','#cf3229'],
+            far:'city', body:'sun', mark:'scoreboard' },
   },
   flats: {
     name:'Sunset Flats', hr:1.18, xbh:1.12, crowd:0,
@@ -3486,7 +4779,8 @@ const PARKS = {
     effect:'Home runs +18% · extra base hits +12%',
     theme:{ sky:'#f2ba7c', wall:'#a8703a', wallLine:'#fadfa6', marker:'#fffaf0',
             track:'#d8a860', grass:'#63a84a',
-            crowd:['#e08840','#f0b860','#c06830','#d8a870','#f0d0a0'] },
+            crowd:['#e08840','#f0b860','#c06830','#d8a870','#f0d0a0'],
+            far:'dunes', body:'lowsun', mark:'windmill' },
   },
 };
 const PARK_KEYS = Object.keys(PARKS);
@@ -3494,7 +4788,7 @@ const PARK_KEYS = Object.keys(PARKS);
 /* The franchise's own park, as a full theme the field renderer can use. */
 function franchiseTheme(F) {
   const P = PARKS[F && F.park] || PARKS.sandlot;
-  return Object.assign({ park: F && F.parkName ? F.parkName : P.name, landmark(){} }, P.theme);
+  return Object.assign({ park: F && F.parkName ? F.parkName : P.name }, P.theme);
 }
 /* The factors in force for the game being played: your park when you are
    home, otherwise none. A visiting club does not carry its fences with it. */
@@ -3798,6 +5092,16 @@ function roomForWindow() { return landscapeRoom(); }
    to be the room that went stale; now it is the choice between the two. */
 let roomRedrawT = 0;
 function onRoomResize() {
+  /* THE LAYOUT CLASS HAS TO FOLLOW THE WINDOW, AND IT STOPPED AT THE MENU.
+     `roomfill` is toggled in `render()`, and this handler returned early on
+     any screen but the menu, so a window turned mid-game kept whichever
+     answer it had when the game started. The media queries beside it update
+     on their own, so what a rotated tablet got was the wide branch's CSS with
+     the narrow branch's class: two halves of one layout disagreeing, and
+     nothing anywhere saying so. The class is one line and costs nothing to
+     keep current; the menu still only repaints on the menu, because that is a
+     redraw of a canvas and this is not. */
+  document.body.classList.toggle('roomfill', ROOMFILL.matches);
   if (State.screen !== 'menu') return;
   clearTimeout(roomRedrawT);
   roomRedrawT = setTimeout(() => { if (State.screen === 'menu') render(); }, 120);
@@ -4553,7 +5857,32 @@ function clubhouseWire() {
   }
   const wrap = el('div', 'wire');
   wrap.appendChild(el('b', null, 'Clubhouse wire'));
-  wrap.appendChild(el('span', null, lines[Math.floor(Math.random() * lines.length)]));
+  let at = Math.floor(Math.random() * lines.length);
+  const line = el('span', null, lines[at]);
+  wrap.appendChild(line);
+  /* THE WIRE RUNS. One line out, the next one in, every few seconds, so the
+     clubhouse has something happening in it while somebody decides. The
+     loop is a timer that checks the line is still on the page and stops
+     itself the moment the menu is left, which is the rule every loop here
+     keeps. Held still under reduced motion: a line that changes on its
+     own is motion whether or not it slides. */
+  if (lines.length > 1 && !REDUCED.matches) {
+    const tick = () => {
+      if (!line.isConnected) return;
+      line.classList.add('out');
+      setTimeout(() => {
+        if (!line.isConnected) return;
+        at = (at + 1) % lines.length;
+        line.textContent = lines[at];
+        line.classList.remove('out');
+        line.classList.add('pre');
+        void line.offsetWidth;
+        line.classList.remove('pre');
+        setTimeout(tick, 6200);
+      }, 380);
+    };
+    setTimeout(tick, 6200);
+  }
   return wrap;
 }
 
@@ -4965,6 +6294,14 @@ function renderRoster() {
         picked.add(c.k);
       }
       redraw();
+      /* The card that was pressed answers, and only that one: `redraw`
+         rebuilds every pick number, so a stamp on all of them would be the
+         whole roster flinching at each pick. */
+      if (picked.has(c.k)) {
+        const pn = cc.querySelector('.pickno');
+        if (pn) pn.classList.add('fresh');
+        motionPop(cc);
+      }
       /* Ninth pick rolls straight into settings, per the design ask. The
          Continue button stays for the case where a player rearranges picks
          and it never fires. */
@@ -5333,10 +6670,16 @@ function renderCup() {
   const banner = el('div','banner');
   if (C.done) {
     const champ = C.entrants[C.champion];
+    if (champ.you) banner.classList.add('has-cup');
     banner.innerHTML = champ.you
-      ? `<div class="trophy"><i></i></div><b>You win the Cup.</b> Eight teams in, one left standing.`
+      ? `${trophyArt()}<div><b>You win the Cup.</b> Eight teams in, one left standing.</div>`
       : `<b>${champ.name} wins the Cup.</b> Better luck next draw.`;
-    if (champ.you && !C.fanfared) { C.fanfared = true; Sound.play('title'); }
+    if (champ.you && !C.fanfared) {
+      C.fanfared = true; Sound.play('title');
+      /* After this render has built the screen, or the celebration would be
+         stopped by the render check it was started inside. */
+      setTimeout(() => { if (State.screen === 'cup') celebrate([teamKitColor(), '#f4c25a', '#ffe08a'], 1.8); }, 0);
+    }
   } else {
     const nm = nextCupMatch(C);
     const seed = C.entrants.findIndex(e => e.you);
@@ -6483,7 +7826,7 @@ function startGame(opts) {
   State.screen = 'game';
   render();
   Sound.music.start(Sound);
-  setTimeout(startAtBat, 400);
+  atBatIn(400);
 }
 
 function currentBattingTeam() {
@@ -6647,9 +7990,94 @@ function pitcherRepertoire(p) {
 
    `read` is memory. See the pattern note on patternRead below. */
 const DIFF = {
-  easy:   { speed: 2.7, sweetWidth: 0.26, pitcherSkill: 0.85, chase:  0.06, read: 0.02 },
-  medium: { speed: 2.3, sweetWidth: 0.20, pitcherSkill: 1.00, chase:  0.00, read: 0.05 },
-  hard:   { speed: 1.9, sweetWidth: 0.16, pitcherSkill: 1.12, chase: -0.12, read: 0.11 },
+  easy:   { speed: 2.7, sweetWidth: 0.20, pitcherSkill: 0.85, chase:  0.06, read: 0.02 },
+  medium: { speed: 2.3, sweetWidth: 0.15, pitcherSkill: 1.00, chase:  0.00, read: 0.05 },
+  hard:   { speed: 1.9, sweetWidth: 0.12, pitcherSkill: 1.12, chase: -0.12, read: 0.11 },
+};
+/* `sweetWidth` came down about a quarter (0.26/0.20/0.16 before) and it is what
+   a TIER buys the player: the window is the only one of these three that a
+   person's own timing is measured against, and `check-skill.mjs` reads the
+   effect as whiffs per swing, which at medium runs 25.6 for somebody who has
+   never played against 5.3 for somebody who knows the game. The batting average
+   moves too and by less than a 700 plate appearance sample can resolve, which is
+   why the tier claim in that file is written on the whiffs. */
+
+/* THE OTHER DUGOUT KEEPS ITS OWN WINDOW, AND THE SHARING WAS AN ACCIDENT
+   RATHER THAN A RULE. `sweetWidth` is the PLAYER's timing window: it is in
+   the half of `DIFF` that is about batting, beside the ball speed and the
+   arm's accuracy, and the CPU's own difficulty is `chase` and `read` and its
+   own timing jitter. It reached the CPU only because `swingGeometry` is one
+   function and it read the table directly, so every measurement of the other
+   dugout was a measurement of the player's dial as well.
+
+   What that coupling costs is that the two halves cannot be tuned at all.
+   `calibrate.mjs` holds the CPU to a whiff rate of about 28 per hundred
+   swings, solved per tier against these exact numbers, and the jitter clamps
+   under it are ABSOLUTE times (nobody times a pitch perfectly just by being
+   good), so narrowing the window to make the player's timing matter would
+   raise the CPU's whiff, break that band, and on hard walk straight into the
+   floor that already killed the pattern read once.
+
+   So this is the CPU's window and it is the number the CPU has always had.
+   Nothing about the other dugout moves when the player's column does, which
+   is what makes the player's column a dial. */
+const CPU_SWEET = { easy: 0.26, medium: 0.20, hard: 0.16 };
+
+/* WHAT A BATTED BALL IS WORTH, and it was eight magic numbers in the middle of
+   `resolveSwing` under a comment claiming they were "tuned against a simulation
+   of full plate appearances (scratch tune.mjs)" to give "a perfect player about
+   .67 with 18% homers, a sloppy one about .50, a careless one about .30". That
+   scratch file does not exist, so the claim was unverifiable, and measured
+   through `check-skill.mjs` it was wrong about the thing that matters: in the
+   mode a player is actually in, somebody who had NEVER PLAYED hit .372 and
+   somebody who knew the game hit .591.
+
+   THE DOMINANT TERM IS THE FLOOR AND NOT THE CONTACT, which is the measurement
+   worth keeping. `HIT_BASE` plus `CONTACT_HIT` plus the speed term is what a
+   ball in play is worth on the WORST swing that still connects, and at 0.13 and
+   0.09 that floor was .26, which is real baseball's average on every ball in
+   play. The ceiling was double it. So the window was swept first and moved the
+   top two rungs almost nothing (.591 to .521 across a cut of more than half),
+   because a beginner's average falls through STRIKEOUTS while a competent
+   player's balls in play go on being hits.
+
+   TWO OF THESE ARE THE PLAYER'S ALONE. `CONTACT_HIT` rides on the Contact
+   swing, which only a person can pick (`cpuBatPlan` answers normal, power or
+   bunt), and `sweetWidth` above is the player's window. The rest are shared
+   with the other dugout, so moving them moves the run environment
+   `check-runs.mjs` measures, and they are not to be moved without it.
+
+   WHAT SHIPPED, and the four rungs it was chosen against, in Contact mode at
+   700 plate appearances a rung:
+
+   | who              | was  | easy | medium | hard |
+   |------------------|------|------|--------|------|
+   | never played     | .372 | .294 | .266   | .229 |
+   | one game in      | .453 | .375 | .335   | .324 |
+   | knows it         | .591 | .468 | .430   | .437 |
+   | cannot lose      | .667 | .561 | .585   | .572 |
+
+   The shared coefficients came down about a fifth and `CONTACT_HIT` went 0.09
+   to 0.03. THE CEILING IS THE PART THAT COULD NOT BE FIXED WITH THE PLAYER'S
+   OWN DIALS: the window was swept from 0.20 down to 0.07 first and moved the
+   top rung from .667 to .682, because a 22 millisecond error is inside any
+   window this game could offer. What a narrower window does is take balls in
+   play away from a BEGINNER, so on its own it made the game harder at the end
+   that was already hard enough.
+
+   WHAT IT COSTS THE OTHER DUGOUT IS REAL AND IS THE THING TO WATCH. The CPU
+   sits at a contact quality around 0.64 rather than the 1.0 a competent person
+   reaches, so a cut here is worth less to it than to the player, but it is not
+   worth nothing: its hits per ball in play come down about a sixth. That is
+   the direction the run environment wanted anyway (`check-runs.mjs` measured
+   6.2 a nine before the forced runner was fixed, against a real game's 4.5 and
+   this file's own note that a backyard game should sit a LITTLE over it), and
+   it is measured rather than assumed. */
+const BAT = {
+  HR_BASE: 0.018, HR_Q: 0.135,
+  XBH_BASE: 0.035, XBH_Q: 0.090,
+  HIT_BASE: 0.10, HIT_Q: 0.30,
+  CONTACT_HIT: 0.03, POWER_HIT: -0.04,
 };
 
 /* THE PATTERN. Calling pitches was free of consequence: fastball,
@@ -7288,6 +8716,13 @@ function fitFieldCanvas(cv) {
      measured there, because this is where the two heights are already in
      hand and it writes only when the fit changes. */
   FIELD_CAM.band = ch0 < bh - 1;
+  /* AND WHERE THE PICTURE'S OWN EDGES ARE, as a share of the arena, so the
+     band can be shaded away from them and be EXACTLY the sampled colour
+     where it meets the canvas. Written as a half height because the canvas
+     is centred, so one number places both seams. 50% means the picture
+     fills the arena and the shading is nothing at all, which is every
+     screen that has no band. See the arena's own rule. */
+  box.style.setProperty('--pic', (Math.min(50, ch0 / bh * 50)).toFixed(2) + '%');
   fieldBandAt = '';
 }
 
@@ -7603,9 +9038,24 @@ function stopFieldLoop() {
   fieldRafId = 0;
 }
 
+/* A TIMER FIRES INTO ITS OWN GAME OR NOT AT ALL, which is the rule the
+   throw window, the catch window and the robbery already carry, arriving at
+   the one timer every plate appearance goes through. Every beat before the
+   next batter (a hit, an out, a walk, the break between half innings, the
+   first pitch) used to be `setTimeout(startAtBat, ms)`, which starts an at
+   bat in whatever game is current when it lands. Leave inside the beat and
+   it throws on a game that is gone. Start another game inside it, which a
+   Play again on the result screen can do inside a home run's beat, and the
+   old timer begins a SECOND at bat in the new game on top of its own. Found
+   by `check-motion`, which starts games quickly enough to land in the gap. */
+function atBatIn(ms) {
+  const g = State.game;
+  setTimeout(() => { if (State.game === g) startAtBat(); }, ms);
+}
+
 function startAtBat() {
   const g = State.game;
-  if (g.over) return;
+  if (!g || g.over) return;
   /* Belt and braces: nothing starts an at bat after a walk-off, whichever
      path scored the run. */
   if (g.walkoff) { g.over = true; g.winner = 'home'; return finishGame(); }
@@ -7749,6 +9199,11 @@ function coachShow(kind, steps, then) {
   const show = () => {
     text.innerHTML = `<span class="coach-step">${i + 1} of ${steps.length}</span>` + steps[i];
     next.textContent = i === steps.length - 1 ? 'Play ball' : 'Got it';
+    /* The next note slides in rather than swapping under the reader's eye.
+       The first note arrives with the plaque, so it is left alone. */
+    if (i > 0 && !REDUCED.matches) {
+      text.classList.remove('mo-note'); void text.offsetWidth; text.classList.add('mo-note');
+    }
   };
   const done = () => { box.remove(); PREFS['coach_' + kind] = true; savePrefs(); then(); };
   next.onclick = (e) => { e.stopPropagation(); if (++i >= steps.length) done(); else show(); };
@@ -8389,8 +9844,10 @@ function scheduleCpuSwing() {
 
      WHIFF WAS ALREADY FLAT ACROSS THE TIERS AND THAT IS THE DESIGN.
      47.4 / 47.8 / 46.2 on easy, medium and hard: these numbers were
-     cancelling DIFF.sweetWidth, which runs .26 / .20 / .16, so a
-     harder dugout was not a dugout that missed less. What the tier
+     cancelling this dugout's own window, which was `DIFF.sweetWidth` at
+     .26 / .20 / .16 when they were solved and is `CPU_SWEET` at those
+     same three numbers now, so a harder dugout was not a dugout that
+     missed less. What the tier
      actually bought was CONTACT: balls in play per swing ran 24.0 /
      27.9 / 31.5.
 
@@ -8411,7 +9868,14 @@ function scheduleCpuSwing() {
   const diffJitter = { easy: 0.115, medium: 0.068, hard: 0.030 }[State.difficulty];
   let jitter = conJitter + diffJitter;
   /* Weak pitch: CPU whiffs badly on their weak pitch. */
-  if (p.pt === g.batterCtx.weakPitch) jitter += 0.14;
+  /* GUARDED, LIKE THE OTHER TWO READS IN THIS FUNCTION. `batterCtx` is built
+     when a batter steps in and this can be reached before it is, so two of the
+     four reads here tested it and two did not: `calibrate.mjs` collects page
+     errors and reported "Cannot read properties of undefined (reading
+     weakPitch)" twice in 150 pitches. A throw here aborts the swing that was
+     being scheduled, so what a player would see is a pitch that nobody swings
+     at and nothing on screen to say why. */
+  if (g.batterCtx && p.pt === g.batterCtx.weakPitch) jitter += 0.14;
   /* Corner / edge pitches are harder to square up. */
   if (p.zoneAim) {
     if (p.zoneAim.isCorner) jitter += 0.12;
@@ -8482,7 +9946,7 @@ function scheduleCpuSwing() {
   const loc = p.loc || { x: 0, y: 0 };
   let locJ = (0.10 + (100 - batter.con) / 320)
     * ({ easy: 1.35, medium: 1.0, hard: 0.8 }[State.difficulty] || 1)
-    + (p.pt === g.batterCtx.weakPitch ? 0.14 : 0);
+    + (g.batterCtx && p.pt === g.batterCtx.weakPitch ? 0.14 : 0);
   /* A pitch he is sitting on is one he knows the shape of, so his barrel
      starts nearer it. Timing alone would make the read a whiff knob;
      what it should buy is squaring the ball up. */
@@ -8589,9 +10053,12 @@ function swingReach(con, mode) {
    swing more than a bat's width off the ball finds nothing whatever the
    timing was. `lift` is how far under the ball the barrel went, which is
    what puts a ball in the air or on the ground. Pure, for the suite. */
-function swingGeometry(cursorT, aim, pitch, ctx, mode) {
+function swingGeometry(cursorT, aim, pitch, ctx, mode, sweet) {
   const diff = DIFF[State.difficulty];
-  let half = diff.sweetWidth / 2;
+  /* The window, which is the player's dial and the CPU's constant. The
+     default is the player's, so a caller measuring the swing's own curves
+     measures the curve a person swings on. */
+  let half = (sweet == null ? diff.sweetWidth : sweet) / 2;
   if (mode === 'contact') half *= 1.25;
   if (mode === 'power') half *= 0.75;
   const perfectDist = Math.abs(cursorT - pitch.ideal);
@@ -8665,7 +10132,8 @@ function resolveSwing(cursorT, aim) {
      so the difficulty setting (which sets that width) finally matters.
      Since the plate camera it is also keyed to WHERE the bat was: see
      swingGeometry. */
-  const geo = swingGeometry(cursorT, swungAt, p, ctx, mode);
+  const geo = swingGeometry(cursorT, swungAt, p, ctx, mode,
+    playerIsBatting() ? diff.sweetWidth : CPU_SWEET[State.difficulty]);
   const half = geo.half, perfectDist = geo.perfectDist;
   let contact = geo.contact;
   let inZone = geo.inZone;
@@ -8785,12 +10253,10 @@ function resolveSwing(cursorT, aim) {
      then ball trajectory then runners then callout. All of that happens
      in scheduleContactPlay below. */
   /* The homer is gated on q SQUARED: dead-center contact is what clears
-     the wall, and power scales it. These constants were tuned against a
-     simulation of full plate appearances (scratch tune.mjs): a perfect
-     player hits about .67 with 18% homers, a sloppy one about .50, a
-     careless one about .30, which is the arcade band this game wants. */
-  let hrChance = (0.018 + 0.155 * contact * contact) * (0.45 + powForRoll / 110);
-  let xbhChance = (0.045 + 0.115 * contact) * (0.55 + powForRoll / 150);
+     the wall, and power scales it. Every coefficient is in `BAT`, which
+     carries the measurement they were chosen against. */
+  let hrChance = (BAT.HR_BASE + BAT.HR_Q * contact * contact) * (0.45 + powForRoll / 110);
+  let xbhChance = (BAT.XBH_BASE + BAT.XBH_Q * contact) * (0.55 + powForRoll / 150);
   if (mode === 'power') { hrChance *= 1.75; xbhChance *= 1.45; }
   if (mode === 'contact') { hrChance *= 0.45; xbhChance *= 0.8; }
   /* The park, for both clubs, only while you are at home. */
@@ -8802,9 +10268,9 @@ function resolveSwing(cursorT, aim) {
   if (Math.random() < xbhChance) {
     return scheduleContactPlay(Math.random() < 0.35 ? 'triple' : 'double', batter, swingInfo);
   }
-  let hitOdds = 0.13 + contact * 0.36 + (ctx.spd - 50)/450;
-  if (mode === 'contact') hitOdds += 0.09;
-  if (mode === 'power') hitOdds -= 0.04;
+  let hitOdds = BAT.HIT_BASE + contact * BAT.HIT_Q + (ctx.spd - 50)/450;
+  if (mode === 'contact') hitOdds += BAT.CONTACT_HIT;
+  if (mode === 'power') hitOdds += BAT.POWER_HIT;
   if (batter.k === 'invisible') hitOdds += 0.05;
   if (Math.random() < hitOdds) return scheduleContactPlay('single', batter, swingInfo);
   /* Out on contact: same staging, the callout fires when the fielder gets
@@ -10306,7 +11772,12 @@ function scheduleContactPlay(kind, batter, info) {
     /* Check for a walk-off: home team leads at the end of a play in the
        bottom of the final inning or later. */
     if (checkWalkOff()) return finishGame();
-    if (wasDP && g.outs >= 3) return endHalfInning();
+    /* A double play that also ended the half. afterOutTransition below
+       reaches the same place, and this line is kept only so a future play
+       kind that is a double play without being an out cannot fall past it.
+       It goes through endPlateAppearance for the reason every other door
+       does: the order is continuous. */
+    if (wasDP && g.outs >= 3) return void endPlateAppearance();
     if (wasOut) afterOutTransition();
     else        afterHitTransition(g && g.away && g.home ? kind : kind);
   }, finishMs);
@@ -10323,7 +11794,15 @@ function simReconcile(p) {
   for (const r of sim.runners) {
     if (r.isBatter) continue;
     const still = g.bases.indexOf(r.c);
-    const dest = still >= 0 ? still : 3;          /* not on a base: he scored, or was put out at home */
+    /* NOT ON A BASE MEANS HE SCORED, UNLESS SOMEBODY SAID WHERE HE WAS PUT
+       OUT. A man off the bases was assumed to have reached home, which is
+       right for the two cases this was written for: a runner waved round who
+       scored, and one gunned down at the plate, who really did run there.
+       It is wrong for a man thrown out at THIRD tagging up from second, and
+       the picture ran him past the bag he was tagged at and slid him into
+       home. So a caller that knows the bag records it. */
+    const marked = p.outAt ? p.outAt.get(r.c) : undefined;
+    const dest = still >= 0 ? still : (marked == null ? 3 : marked);
     if (dest === r.toIdx) continue;
     const here = simSample(r.run, now).uv;
     /* waved further: run on through the bags. Held short: turn and get
@@ -10344,6 +11823,11 @@ function applyDoublePlayMutation(batter) {
   noteForm(batter.k, false);
   const preRunner = g.bases[0];
   g.bases[0] = null;
+  /* He was forced at SECOND. Off the bases and unmarked, the reconcile reads
+     him as a man who scored and runs him all the way to the plate. */
+  if (preRunner && g.play) {
+    (g.play.outAt || (g.play.outAt = new Map())).set(preRunner, 1);
+  }
   addOuts(2);
   addLog(`Double play. ${batter.n} and ${preRunner.n} both out. ${g.outs} out.`);
   showCallout('DOUBLE PLAY', 'strike');
@@ -10506,25 +11990,98 @@ function applyHitMutation(kind, batter, opts) {
   }
 }
 
+/* A GROUND OUT MOVES THE MEN IT FORCED.
+
+   The batter is retired at first, and everybody standing on an unbroken
+   chain of bases behind him was running on contact, so he moves up: a man
+   on first takes second, first and second take second and third, and the
+   bases loaded send one home. A man on second or third with first EMPTY was
+   never forced and holds, which is why this walks the chain rather than
+   shoving every runner along. Before it existed a runner on first stayed on
+   first for ever: the fielder's choice, the run-scoring grounder and the
+   whole idea of a productive out were missing from the mode, and the
+   picture was a legal one the defence would never actually play.
+
+   NOBODY MOVES ON THE THIRD OUT, and that is the rule rather than
+   tidiness: no run may score on a play whose third out is the batter
+   retired before he reaches first base. Read after addOuts, so the test is
+   the board's own. */
+function groundOutForce(batter) {
+  const g = State.game;
+  /* It answers whether a run came in, so the callout can say so. Every exit
+     returns that answer rather than falling out undefined: a caller reading a
+     missing return as "no run" happens to be right here and is one edit from
+     not being. */
+  if (g.outs >= 3) return false;
+  if (!g.bases[0]) return false;
+  let top = 0;
+  while (top < 2 && g.bases[top + 1]) top++;
+  const nb = g.bases.slice();
+  let scorer = null;
+  if (top === 2) { scorer = nb[2]; }
+  for (let i = top; i >= 0; i--) {
+    if (i + 1 <= 2) nb[i + 1] = nb[i];
+    nb[i] = null;
+  }
+  g.bases = nb;
+  if (!scorer) return false;
+  scoreRuns(1, { rbi: batter ? batter.k : null, scorers: [scorer.k] });
+  addLog(`${scorer.n} scores on the play.`);
+  return true;
+}
+
 function applyOutMutation(kind, batter) {
   const g = State.game;
-  statBump(batter.k,'ab');
   noteForm(batter.k, false);
   noteFragileOut(batter);
   if (kind === 'bunt out') {
     /* The sacrifice: the batter is out, everybody else moves up. */
     const fromThird = g.bases[2];
+    /* A BUNT WITH NOBODY ON IS NOT A SACRIFICE. There is nothing to
+       sacrifice for, so it is an ordinary out and an ordinary at bat, and
+       calling it a sacrifice put a word on the screen that was not true of
+       the play the reader had just watched. */
+    const sac = !!(g.bases[0] || g.bases[1] || g.bases[2]);
     g.bases = [null, g.bases[0], g.bases[1]];
     addOuts(1);
     if (fromThird) scoreRuns(1, { rbi: batter.k, scorers: [fromThird.k] });
-    addLog(`${batter.n} lays down a sacrifice bunt${fromThird ? ', a run scores' : ''}. ${g.outs} out.`);
-    showCallout(fromThird ? 'SQUEEZE! RUN SCORES' : 'SACRIFICE BUNT', fromThird ? 'homer' : 'sub');
+    /* A SACRIFICE IS NOT AN AT BAT, which is the whole reason a man who
+       gives himself up for the runner does not pay for it in his average.
+       It is a plate appearance either way. */
+    if (!sac) statBump(batter.k, 'ab');
+    addLog(sac
+      ? `${batter.n} lays down a sacrifice bunt${fromThird ? ', a run scores' : ''}. ${g.outs} out.`
+      : `${batter.n} bunts, out at first. ${g.outs} out.`);
+    showCallout(fromThird ? 'SQUEEZE! RUN SCORES' : (sac ? 'SACRIFICE BUNT' : 'BUNT OUT'),
+                fromThird ? 'homer' : 'sub');
     return;
   }
   addOuts(1);
   addLog(`${batter.n} out (${kind}) to the ${randPos(kind)}. ${g.outs} out.`);
-  showCallout(kind === 'ground out' ? 'GROUND OUT' : 'FLY OUT', 'sub');
-  if (kind === 'fly out') tagUp();
+  if (kind === 'ground out') {
+    /* THE PLAQUE HAS TO SAY THE RUN CAME IN. A grounder that forces one home
+       is the productive out the rule was added for, and a plaque reading
+       GROUND OUT over a scoreboard that just moved is the screen arguing
+       with itself. So the force runs first and the callout reads its
+       answer. */
+    const drove = groundOutForce(batter);
+    showCallout(drove ? 'GROUND OUT · 1 IN' : 'GROUND OUT', drove ? 'homer' : 'sub');
+    statBump(batter.k, 'ab');
+    return;
+  }
+  showCallout('FLY OUT', 'sub');
+  if (kind === 'fly out') {
+    /* A SACRIFICE FLY IS NOT AN AT BAT EITHER, and the only way to know
+       whether this one was is to run the tag and see whether a run came in.
+       A man tagging to third is not a sacrifice fly: the exemption is for
+       driving a run home, so it is read off the score and never off the
+       fact that somebody moved. */
+    const before = currentBattingTeam().score;
+    tagUp();
+    if (currentBattingTeam().score === before) statBump(batter.k, 'ab');
+    return;
+  }
+  statBump(batter.k, 'ab');
 }
 
 /* THE TAG. The one place in baseball where making an out moves a runner,
@@ -10578,7 +12135,16 @@ function tagUp() {
       addOuts(1);
       addLog(`${runner.n} tags and is thrown out${from === 2 ? ' at the plate' : ' at third'}. ${g.outs} out.`);
       showCallout('THROWN OUT', 'strike');
-      if (g.play) g.play.plateOut = { runner, at: performance.now() };
+      /* THE PLATE MARKER IS FOR A PLAY AT THE PLATE. It draws the catcher
+         standing on home with the ball and the runner sliding into him, so on
+         a man thrown out at THIRD it was a picture of a play that did not
+         happen, at a base nobody was near. `outAt` is the other half: it tells
+         the reconcile which bag he was tagged at, so the sim runs him there
+         and stops rather than carrying him home. */
+      if (g.play) {
+        if (from === 2) g.play.plateOut = { runner, at: performance.now() };
+        (g.play.outAt || (g.play.outAt = new Map())).set(runner, from + 1);
+      }
     }
   }
   /* Show the legs. The walk's jog already knows how to trot a man from
@@ -10756,6 +12322,15 @@ function resolveThrow(outcome, kind, batter) {
     Sound.play('aww');
     applyErrorMutation(batter);
   }
+  /* THE PICTURE HAS TO FOLLOW THE BOOK HERE TOO, and on the two plays the
+     PLAYER fields it never did. `scheduleContactPlay` reconciles and these
+     two resolvers, which are the paths a fielded grounder and a fielded fly
+     take, did not: an infield single moves every runner up and a throwing
+     error moves them two, so the book had them on the next bag and the sim
+     left them standing where the plan put them. It is not a new gap, but the
+     ground out's force makes it a third case, so it is closed rather than
+     worked around. */
+  simReconcile(g.play);
   refreshHud();
   /* Complete the play: clear the animation state and advance to the next
      batter (or end the half). Without this the game freezes right here,
@@ -10991,6 +12566,9 @@ function resolveCatch(outcome, kind, batter, landingX, landingY) {
     Sound.play('aww');
     applyHitMutation('triple', batter);
   }
+  /* And the same here: a caught fly runs the tag, which sends a man from
+     third home and a man from second to third. */
+  simReconcile(g.play);
   refreshHud();
   /* Complete the play: same freeze guard as the throw minigame. */
   const wasOut = outcome === 'catch';
@@ -11026,23 +12604,54 @@ function applyErrorMutation(batter) {
   if (scored) scoreRuns(scored, { scorers: crossed });
 }
 
+/* THE ORDER IS CONTINUOUS, AND THAT IS WHY THIS IS ITS OWN FUNCTION.
+
+   A plate appearance that FINISHES advances the order, whether or not it also
+   ended the half inning. Three functions used to end a half by handing
+   straight to endHalfInning, and not one of them advanced first, so the man
+   who made the third out led off the next inning: measured through the real
+   engine, it happened on essentially every half inning of every game ever
+   played here. Nothing threw, every lineup was legal, and the only symptom was
+   that the batter who had just been rung up was standing back in the box.
+
+   PUTTING THE ADVANCE INSIDE endHalfInning IS THE WRONG FIX, and it is the
+   obvious one because it is one line in one place. A half inning can also end
+   on a runner caught stealing, and that plate appearance is NOT finished: the
+   batter who was at the plate leads off the next inning, which is the real
+   rule and is what the steal path already does. Advancing there would skip a
+   man. So the advance belongs to the end of an APPEARANCE, which is here.
+
+   It answers whether the half inning went with it, so a caller can stop. */
+function endPlateAppearance() {
+  const g = State.game;
+  nextBatter();
+  if (g.outs >= 3) { endHalfInning(); return true; }
+  return false;
+}
+
 function afterHitTransition(kind) {
   const g = State.game;
   if (g.walkoff) {
     g.over = true; g.winner = 'home';
     return setTimeout(finishGame, BEAT.afterHomer);
   }
-  nextBatter();
+  /* A HIT CAN BE THE THIRD OUT, which this branch did not know. A runner
+     waved round and gunned down at the plate is an out charged to a man who
+     came to the plate an at bat ago, so the batter is safe, the play is a
+     hit, and `wasOut` is false: scheduleContactPlay sends it here, and here
+     there was no test for three. The game carried on with three outs on the
+     board, a fourth batter, and a fifth. It needs the same test the out path
+     has always had, because what ends a half inning is the third out and
+     never what produced it. */
+  if (endPlateAppearance()) return;
   refreshHud();
-  setTimeout(startAtBat, kind === 'home run' ? BEAT.afterHomer : BEAT.afterHit);
+  atBatIn(kind === 'home run' ? BEAT.afterHomer : BEAT.afterHit);
 }
 
 function afterOutTransition() {
-  const g = State.game;
-  if (g.outs >= 3) return endHalfInning();
-  nextBatter();
+  if (endPlateAppearance()) return;
   refreshHud();
-  setTimeout(startAtBat, BEAT.afterOut);
+  atBatIn(BEAT.afterOut);
 }
 
 function randPos(out) {
@@ -11050,47 +12659,12 @@ function randPos(out) {
   return ['left','center','right'][Math.floor(Math.random()*3)];
 }
 
-function recordHit(kind, batter) {
-  const g = State.game;
-  statBump(batter.k,'ab');
-  statBump(batter.k,'hits');
-  if (kind === 'double') statBump(batter.k, 'd');
-  if (kind === 'triple') statBump(batter.k, 't');
-  const bases = { 'single':1,'double':2,'triple':3,'home run':4,'bunt single':1 }[kind];
-  if (kind === 'home run') {
-    statBump(batter.k,'hr');
-    let scored = 1;   /* the batter */
-    const crossed = [batter.k];
-    for (let i=0;i<3;i++) if (g.bases[i]) { scored++; crossed.push(g.bases[i].k); }
-    g.bases = [null,null,null];
-    scoreRuns(scored, { rbi: batter.k, scorers: crossed });
-    addLog(`${batter.n} crushes it. HOME RUN. ${scored} run${scored>1?'s':''} score.`, true);
-    showCallout(`HOME RUN · ${scored} RUN${scored>1?'S':''}`, 'homer');
-  } else {
-    /* Advance existing runners by `bases`, then place batter */
-    let scored = 0;
-    const crossed = [];
-    const newBases = [null,null,null];
-    for (let i=2;i>=0;i--) {
-      const runner = g.bases[i];
-      if (!runner) continue;
-      const dest = i + bases;   /* 0=first, 1=second, 2=third; dest>=3 scores */
-      if (dest >= 3) { scored++; crossed.push(runner.k); }
-      else newBases[dest] = runner;
-    }
-    if (bases < 4) newBases[bases-1] = batter;
-    g.bases = newBases;
-    if (scored) scoreRuns(scored, { rbi: batter.k, scorers: crossed });
-    const verb = kind === 'bunt single' ? 'drops a bunt and beats it out'
-               : `lines a ${kind}`;
-    addLog(`${batter.n} ${verb}${scored ? `, ${scored} run${scored>1?'s':''} score` : ''}.`);
-    showCallout(kind.toUpperCase() + (scored ? ` · ${scored} IN` : ''), scored ? 'homer' : 'hit');
-  }
-  nextBatter();
-  refreshHud();
-  setTimeout(startAtBat, kind === 'home run' ? BEAT.afterHomer : BEAT.afterHit);
-}
-
+/* `recordHit` USED TO LIVE HERE AND IS GONE. It was fifty lines nobody
+   called: a second copy of the runner rule, written before applyHitMutation
+   existed, with no send, no hold and no tag in it. A dead copy of a rule is
+   the worst kind of comment, because the next person to fix a base-running
+   bug reads the file, finds two answers, and fixes the one that is not
+   running. The live one is applyHitMutation, above. */
 function recordWalk() {
   const g = State.game;
   const batter = currentBatter();
@@ -11139,7 +12713,7 @@ function recordWalk() {
   }
   nextBatter();
   refreshHud();
-  setTimeout(startAtBat, BEAT.afterWalk);
+  atBatIn(BEAT.afterWalk);
 }
 
 function recordOut(reason, isStrikeout) {
@@ -11199,10 +12773,9 @@ function recordOut(reason, isStrikeout) {
       g.koVerdict = null;
     }
   }
-  if (g.outs >= 3) return endHalfInning();
-  nextBatter();
+  if (endPlateAppearance()) return;
   refreshHud();
-  setTimeout(startAtBat, BEAT.afterOut);
+  atBatIn(BEAT.afterOut);
 }
 
 function nextBatter() {
@@ -11272,8 +12845,12 @@ function endHalfInning() {
      final inning, in case the home team is already ahead. */
   if (checkWalkOff()) return finishGame();
   /* Into extra innings: the board grows a column and the plaque says so,
-     after SIDE RETIRED has had its moment. */
-  if (g.half === 'top' && g.inning > g.innings) {
+     after SIDE RETIRED has had its moment. ONCE, ON THE WAY IN. Asked as
+     `inning > innings` it is true of the eleventh and the twelfth as well,
+     so a long game announced extra innings at the top of every one of them
+     and told the reader it was tied after nine each time, which by then it
+     had not been for three innings. */
+  if (g.half === 'top' && g.inning === g.innings + 1) {
     addLog(`Tied after ${g.innings}. Extra innings.`, true);
     /* after SIDES CHANGE has had its moment and before the next batter
        takes the plaque back: at Fast the whole beat is fourteen hundred
@@ -11289,38 +12866,31 @@ function endHalfInning() {
      of the beat. startAtBat takes it down. */
   boardTimer = setTimeout(() => { if (State.game === g && !g.over) showInningBoard(); },
                           Math.min(900, Math.round(BEAT.betweenHalfInnings * 0.3)));
-  setTimeout(startAtBat, BEAT.betweenHalfInnings);
+  atBatIn(BEAT.betweenHalfInnings);
 }
 
 function checkGameOver() {
   const g = State.game;
-  /* Walk-off in real time: home team is batting in the bottom of the
-     final (or later) inning and takes the lead, the game ends on the
-     spot. checkForWalkoff runs after every scoring play so the game can
-     end mid-inning. */
-  /* After 9 (or configured) full innings, tied continues; unless capped for arcade. */
-  if (g.inning > g.innings) {
-    if (g.away.score !== g.home.score) {
-      g.over = true;
-      g.winner = g.home.score > g.away.score ? 'home' : 'away';
-      return true;
-    }
+  /* WHAT ENDS A GAME IS A COMPLETED INNING, AND THAT IS READ OFF THE HALF
+     RATHER THAN OFF THE INNING NUMBER.
+
+     endHalfInning flips the half before it asks, so `top` here means the
+     inning that just finished was a whole one and both sides have had their
+     half of it. Asked as `inning > innings` alone, this clause ALSO fired at
+     the end of the top of an extra inning, where the number has already
+     passed regulation and the home team has not batted: an away run in the
+     tenth ended the game on the spot and the home team never came to the
+     plate. Every extra-inning game the away team scored in was decided that
+     way, the board read a legal final score, and nothing threw. */
+  if (g.half === 'top' && g.inning > g.innings && g.away.score !== g.home.score) {
+    g.over = true;
+    g.winner = g.home.score > g.away.score ? 'home' : 'away';
+    return true;
   }
-  /* Walk off: home leads at end of top after regulation */
-  if (g.inning > g.innings && g.half === 'bottom' && g.home.score > g.away.score) {
-    g.over = true; g.winner = 'home'; return true;
-  }
-  /* If we're in bottom of last inning and home leads, skip */
-  if (g.inning === g.innings && g.half === 'top' && g.home.score > g.away.score && g.outs === 0 && g.away.idx === 0) {
-    /* We just wrapped, home already leads, no need to bat bottom */
-    /* Not triggered normally; the natural flow handles this */
-  }
-  /* End of top of final inning: if home is ahead, home does not bat */
-  if (g.inning > g.innings && g.half === 'bottom') {
-    /* We flipped past regulation with home leading or tied is handled above */
-  }
-  /* Skip bottom half if home leads after top of final inning */
-  if (g.half === 'bottom' && g.inning === g.innings && g.home.score > g.away.score) {
+  /* THE HOME TEAM DOES NOT BAT WHEN IT CANNOT MATTER: ahead at the end of
+     the top of the last inning, or of any inning after it. One clause covers
+     regulation and extras, because it is one rule. */
+  if (g.half === 'bottom' && g.inning >= g.innings && g.home.score > g.away.score) {
     g.over = true; g.winner = 'home'; return true;
   }
   /* Mercy rule: a lead of MERCY_RUNS from the second last inning on ends it.
@@ -11980,19 +13550,14 @@ function drawPlateView(ctx, w, h, t, pitch, inWindup, theme) {
   sky.addColorStop(1, plateTint(theme.sky, night ? 0.05 : 0.22));
   ctx.fillStyle = sky;
   ctx.fillRect(0, 0, w, P.horizon);
-  /* Daylight gets the wide camera's cloud banks: flat pixel slabs, no
-     gradients, above the roofline so they never touch the stands. */
-  if (!night) {
-    ctx.fillStyle = 'rgba(255,255,255,.72)';
-    for (const [cxf, cyf, cw2] of [[0.10, 44, 52], [0.40, 22, 34],
-                                   [0.66, 56, 42], [0.88, 30, 58]]) {
-      const bx = w * cxf, by = cyf;
-      ctx.fillRect(bx, by + 6, cw2, 7);
-      ctx.fillRect(bx + cw2 * 0.18, by, cw2 * 0.5, 7);
-      ctx.fillRect(bx + cw2 * 0.55, by + 2, cw2 * 0.32, 6);
-    }
-  }
-  if (theme.landmark) { ctx.save(); ctx.globalAlpha = 0.9; theme.landmark(ctx, w, h * 0.9); ctx.restore(); }
+  /* THE SCENERY STANDS WHERE THE CAMERA CAN SEE IT. This camera shows a
+     third of the world's width on a phone, and the right of that third is
+     under the line score, so the landmark stands a quarter of the way into
+     whatever the crop is, on the roofline. On a desktop the crop starts
+     below the sky altogether and the wide camera carries the park. */
+  { const cx0 = FIELD_CAM.sx * PIX, cx1 = (FIELD_CAM.sx + FIELD_CAM.sw) * PIX;
+    drawScenery(ctx, cx0, cx1, Math.max(14, FIELD_CAM.sy * PIX), () => 128,
+                cx0 + (cx1 - cx0) * 0.30, cx0 + (cx1 - cx0) * 0.09, theme); }
   /* THE STANDS ARE A FAR STRIP NOW, not a wall the game is played against,
      and they are TIERED rather than confetti. The first strip was a flat
      slab with 300 random flecks over it, which reads as static; the wide
@@ -12520,11 +14085,38 @@ function drawPlateView(ctx, w, h, t, pitch, inWindup, theme) {
       ballDrawn = true;
     } else {
       drawTarget(mitt[0], mitt[1]);
-      for (let gi = 3; gi >= 1; gi--) {
-        const gp = platePitchPos(P, pitch, t - gi * 0.035);
-        if (gp.e <= 0) continue;
-        ctx.fillStyle = `rgba(255,255,255,${0.34 - gi * 0.08})`;
-        ctx.beginPath(); ctx.arc(gp.x, gp.y, gp.r * 0.9, 0, Math.PI * 2); ctx.fill();
+      /* A TAPERED STROKE, NOT THREE DISCS, which is the comet the wide
+         camera already draws on a big hit, arriving at the view this game
+         is actually played from. Three ghosts at 26, 18 and 10 percent
+         white with no dark edge read as three separate balls on grass and
+         as NOTHING over the keyhole, which the composition pass laid down
+         the middle of this exact picture: photographed on a desktop, three
+         tan blobs on tan ground with a gap between the last one and the
+         ball. The streak is what makes a pitch's SPEED read, and speed is
+         the whole of what a batter is timing.
+
+         It is sampled through `platePitchPos`, so it is the path the ball
+         actually took: a curveball's trail bends with the curveball. Dark
+         edge first and then the white, wide at the ball and gone at the
+         tail, so it reads as motion rather than as a string of balls. */
+      {
+        const pts = [];
+        for (let k = 8; k >= 0; k--) {
+          const gp = platePitchPos(P, pitch, t - k * 0.016);
+          if (gp.e <= 0) continue;
+          pts.push([gp.x, gp.y, gp.r, 1 - k / 9]);
+        }
+        if (pts.length > 1) {
+          ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+          for (const [edge, col] of [[true, '10,20,30'], [false, '255,255,255']]) {
+            for (let k = 1; k < pts.length; k++) {
+              const [ax, ay] = pts[k - 1], [bx2, by2, br, bu] = pts[k];
+              ctx.strokeStyle = `rgba(${col},${(edge ? 0.30 : 0.60) * (0.08 + 0.92 * bu)})`;
+              ctx.lineWidth = br * (0.30 + 0.95 * bu) + (edge ? 2 : 0);
+              ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(bx2, by2); ctx.stroke();
+            }
+          }
+        }
       }
       ctx.fillStyle = 'rgba(0,0,0,.25)';
       ctx.beginPath(); ctx.arc(bp.x + 1.5, bp.y + 1.5, bp.r, 0, Math.PI * 2); ctx.fill();
@@ -12790,20 +14382,20 @@ function drawField(ctx, w, h, t, pitch, inWindup) {
   if (theme.night) {
     ctx.fillStyle = 'rgba(234,234,234,.5)';
     for (let x = 13; x < w; x += 61) ctx.fillRect(x, 6 + (x * 7) % 18, 2, 2);
-  } else {
-    /* Daylight gets clouds instead: flat pixel banks, no gradients. */
-    ctx.fillStyle = 'rgba(255,255,255,.72)';
-    for (const [cxf, cyf, cw] of [[0.13, 0.30, 46], [0.37, 0.16, 30],
-                                  [0.62, 0.34, 38], [0.86, 0.20, 52]]) {
-      const bx = w * cxf, by = skyH * cyf + 6;
-      ctx.fillRect(bx, by + 5, cw, 6);
-      ctx.fillRect(bx + cw * 0.18, by, cw * 0.5, 6);
-      ctx.fillRect(bx + cw * 0.55, by + 2, cw * 0.3, 5);
-    }
   }
 
-  /* Landmark: theme-specific silhouette in the sky area. */
-  if (theme.landmark) theme.landmark(ctx, w, h);
+  /* The scenery behind the stands: the sun, the clouds, the far horizon
+     riding the wall's curve, and the park's landmark, left of centre so
+     the park's name and the line score never sit on it. */
+  const wallH = 24, trackH = 13, crowdH = 34;
+  const wallTopAt = (x) => {
+    const u = (x / w) * 2 - 1;
+    return skyH + 4 + u * u * 56;
+  };
+  /* `top` is 30 rather than the sky's real top, because a desktop's crop
+     starts a little into the sky and a sun placed off the whole of it came
+     out with its top sliced off. */
+  drawScenery(ctx, 0, w, 30, x => wallTopAt(x) - crowdH, w * 0.30, w * 0.66, theme);
 
   /* Light towers, glowing */
   const tower = (tx) => {
@@ -12834,11 +14426,6 @@ function drawField(ctx, w, h, t, pitch, inWindup) {
      the warning track and the top of the grass all follow the same
      curve, which is most of what makes the top of the frame read as a
      ballpark instead of a wallpaper strip. */
-  const wallH = 24, trackH = 13, crowdH = 34;
-  const wallTopAt = (x) => {
-    const u = (x / w) * 2 - 1;
-    return skyH + 4 + u * u * 56;
-  };
   /* Stands: tiered rows of fans stepping down toward the wall, riding
      the wall's curve. A wave rolls through, and during a home run's
      camera shake the whole crowd is on its feet. */
@@ -13497,35 +15084,66 @@ function drawField(ctx, w, h, t, pitch, inWindup) {
     /* Per-pitch flight character: fastball rides straight and hard, the
        curveball bends late and big, the changeup floats then dies. */
     if (pitch.pt === 'changeup') e = Math.pow(e, 1.45);
-    let ballX = bx + (px - bx) * e;
-    let ballY = by + (py - by) * e;
-    if (pitch.pt === 'curveball') {
-      /* Late break: barely moves early, sweeps hard in the last third. */
-      const bend = Math.pow(e, 2.2) * Math.sin(e * Math.PI);
-      ballX += bend * 34 * (pitch.ideal < 0.5 ? -1 : 1);
-    } else if (pitch.pt === 'screwball') {
-      /* The curveball's mirror: it breaks the other way. */
-      const bend = Math.pow(e, 2.2) * Math.sin(e * Math.PI);
-      ballX -= bend * 34 * (pitch.ideal < 0.5 ? -1 : 1);
-    } else if (pitch.pt === 'changeup') {
-      /* Small fade plus a visible dip at the end. */
-      ballX += Math.sin(e * Math.PI) * 8;
-      ballY += Math.pow(e, 3) * 10;
-    } else if (pitch.pt === 'slowball') {
-      /* Floats up on a rainbow, drops in lazily. */
-      ballY -= Math.sin(e * Math.PI) * 14;
-    } else if (pitch.pt === 'knuckler') {
-      /* It flutters. Even the pitcher does not know. */
-      ballX += Math.sin(e * 17) * 4 + Math.sin(e * 7) * 3;
-      ballY += Math.sin(e * 11) * 2;
-    }
-    /* Trail: three ghosts behind the ball so speed reads. */
-    for (let gi = 1; gi <= 3; gi++) {
-      const ge = clamp(e - gi * 0.05, 0, 1);
-      const gx = bx + (px - bx) * ge;
-      let gyy = by + (py - by) * ge;
-      ctx.fillStyle = `rgba(255,255,255,${0.22 - gi * 0.06})`;
-      ctx.beginPath(); ctx.arc(gx, gyy, ballRadiusMin() * (0.8 - gi * 0.15), 0, Math.PI*2); ctx.fill();
+    /* THE FLIGHT IS ONE FUNCTION OF e, AND IT WAS TWO. The ball's break
+       was applied to the ball and the trail was three ghosts on the
+       STRAIGHT line between the release point and the plate, so a
+       curveball's trail showed no curve: the one thing that pitch is
+       about, drawn as though it were a fastball. One function, and the
+       trail is the path the ball actually took. */
+    const flightAt = (ee) => {
+      let X = bx + (px - bx) * ee;
+      let Y = by + (py - by) * ee;
+      if (pitch.pt === 'curveball') {
+        /* Late break: barely moves early, sweeps hard in the last third. */
+        X += Math.pow(ee, 2.2) * Math.sin(ee * Math.PI) * 34 * (pitch.ideal < 0.5 ? -1 : 1);
+      } else if (pitch.pt === 'screwball') {
+        /* The curveball's mirror: it breaks the other way. */
+        X -= Math.pow(ee, 2.2) * Math.sin(ee * Math.PI) * 34 * (pitch.ideal < 0.5 ? -1 : 1);
+      } else if (pitch.pt === 'changeup') {
+        /* Small fade plus a visible dip at the end. */
+        X += Math.sin(ee * Math.PI) * 8;
+        Y += Math.pow(ee, 3) * 10;
+      } else if (pitch.pt === 'slowball') {
+        /* Floats up on a rainbow, drops in lazily. */
+        Y -= Math.sin(ee * Math.PI) * 14;
+      } else if (pitch.pt === 'knuckler') {
+        /* It flutters. Even the pitcher does not know. */
+        X += Math.sin(ee * 17) * 4 + Math.sin(ee * 7) * 3;
+        Y += Math.sin(ee * 11) * 2;
+      }
+      return [X, Y];
+    };
+    const [ballX, ballY] = flightAt(e);
+    /* A TAPERED STROKE, NOT THREE DISCS, the same shape the plate camera
+       and the big hit comet use, so a moving ball has one language in
+       this game wherever it is drawn. What was here was white at 16, 10
+       and 4 percent alpha with no dark edge at all.
+
+       THIS BRANCH IS NOT DEAD, which was worth measuring rather than
+       assuming: `plateViewActive` hands the picture back to the wide
+       camera during a steal, a tail or a jog, and a pitch can be live in
+       all three. Counted through a real inning, it drew 219 frames. */
+    {
+      const gr = ballRadiusMin();
+      const pts = [];
+      for (let k = 7; k >= 1; k--) {
+        const ee = e - k * 0.022;
+        if (ee <= 0) continue;
+        const [gx, gy] = flightAt(ee);
+        pts.push([gx, gy, 1 - k / 8]);
+      }
+      pts.push([ballX, ballY, 1]);
+      if (pts.length > 1) {
+        ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+        for (const [edge, col] of [[true, '10,20,30'], [false, '255,255,255']]) {
+          for (let k = 1; k < pts.length; k++) {
+            const [ax, ay] = pts[k - 1], [bx2, by2, bu] = pts[k];
+            ctx.strokeStyle = `rgba(${col},${(edge ? 0.34 : 0.62) * (0.1 + 0.9 * bu)})`;
+            ctx.lineWidth = gr * (0.2 + 0.85 * bu) + (edge ? 2 : 0);
+            ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(bx2, by2); ctx.stroke();
+          }
+        }
+      }
     }
     drawBaseball(ctx, ballX, ballY);
   }
@@ -14250,6 +15868,26 @@ function drawRunnerAt(ctx, x, y, character, scale, pose) {
        nothing in a 64x64 bitmap says whether there is a bat in it. */
     const spr = V2_SPRITES[character.k];
     const drawn = !!(spr && spr.b && spr.b.indexOf(frame) >= 0);
+    /* THE BAT'S THICKNESS WAS A NUMBER OF PIXELS WHERE ITS LENGTH IS A SHARE
+       OF THE FIGURE, so it was the right bat on the field and a HAIR at the
+       plate. `bl` scales with the character and the barrel was a flat 5, so a
+       runner 30 pixels wide got a bat a sixth as thick as it was long and the
+       batter, who is drawn about six times that, got one a thirtieth. Rendered
+       and looked at, what a player sees at the plate is a twig floating beside
+       the hitter. Same class as the strike zone's own hairline: a length
+       written in the wrong unit, invisible in the source.
+
+       The floor is what the field always drew, so nothing under about 90
+       pixels wide moves at all and only the plate camera's batter changes. */
+    const bw = Math.max(5, dw * 0.055);
+    const bat = (bl) => {
+      ctx.fillStyle = '#6b4a24';                       /* grip */
+      ctx.fillRect(-bw * 0.3, 0, bw * 0.6, -bl * 0.35);
+      ctx.fillStyle = '#a97f46';                       /* barrel */
+      ctx.fillRect(-bw / 2, -bl * 0.30, bw, -bl * 0.62);
+      ctx.fillStyle = '#c9a06a';                       /* barrel light edge */
+      ctx.fillRect(-bw / 2, -bl * 0.30, bw * 0.4, -bl * 0.62);
+    };
     if (!drawn && (pose === 'load' || pose === 'follow')) {
       const bl = dw * 0.58;
       ctx.save();
@@ -14260,25 +15898,23 @@ function drawRunnerAt(ctx, x, y, character, scale, pose) {
         ctx.translate(x - dw * 0.34, y - dh * 0.58);
         ctx.rotate(2.35);
       }
-      ctx.fillStyle = '#6b4a24';
-      ctx.fillRect(-1.5, 0, 3, -bl * 0.35);
-      ctx.fillStyle = '#a97f46';
-      ctx.fillRect(-2.5, -bl * 0.30, 5, -bl * 0.62);
-      ctx.fillStyle = '#c9a06a';
-      ctx.fillRect(-2.5, -bl * 0.30, 2, -bl * 0.62);
+      bat(bl);
       ctx.restore();
     }
+    /* AND IT LEANS AWAY FROM HIM RATHER THAN ACROSS HIS FACE. At a quarter
+       turn anticlockwise from the chest the barrel swept up over the head, so
+       the one frame a player looks at longest was a hitter with a stick
+       through his face. Four placements were rendered at the size the plate
+       camera draws a batter and looked at: upright beside the head and this
+       one both read as a bat, and this one is the only one that touches
+       nothing. It is a bat held up over the back shoulder, which is how
+       somebody waits on a pitch. */
     if (!drawn && pose === 'batting') {
       const bl = dw * 0.58;
       ctx.save();
-      ctx.translate(x + dw * 0.30, y - dh * 0.55 + dy);
-      ctx.rotate(-0.75);
-      ctx.fillStyle = '#6b4a24';                       /* grip */
-      ctx.fillRect(-1.5, 0, 3, -bl * 0.35);
-      ctx.fillStyle = '#a97f46';                       /* barrel */
-      ctx.fillRect(-2.5, -bl * 0.30, 5, -bl * 0.62);
-      ctx.fillStyle = '#c9a06a';                       /* barrel light edge */
-      ctx.fillRect(-2.5, -bl * 0.30, 2, -bl * 0.62);
+      ctx.translate(x + dw * 0.26, y - dh * 0.52 + dy);
+      ctx.rotate(0.22);
+      bat(bl);
       ctx.restore();
     }
     return;
@@ -14480,7 +16116,14 @@ function renderGame() {
      Bunt lays it down. Keys 1/2/3 work too. */
   const modes = el('div','swing-modes');
   modes.id = 'swing-modes';
-  modes.innerHTML = `<span class="lbl">Swing (1/2/3)</span>`
+  /* THE LABEL NAMED THREE KEYS A PHONE DOES NOT HAVE. `Swing (1/2/3)` is an
+     instruction for a keyboard, on the one row a thumb uses most, and it is
+     also 43 of the 50 pixels this row was over by at 320 wide: measured on
+     that phone the Bunt button ran 24 pixels off the right of the window, so
+     the third swing was not reachable at all. It is a pointer question
+     rather than a width one, the same way the coach notes are: a narrow
+     desktop window still has the keys, and a 768 tablet still does not. */
+  modes.innerHTML = `<span class="lbl">${COARSE ? 'Swing' : 'Swing (1/2/3)'}</span>`
     + `<button class="mode-btn selected" data-mode="contact">Contact</button>`
     + `<button class="mode-btn" data-mode="power">Power</button>`
     + `<button class="mode-btn" data-mode="bunt">Bunt</button>`;
@@ -14572,11 +16215,6 @@ function renderGame() {
   };
   stealRow.appendChild(sendBtn);
 
-  const replayBtn = el('button','btn ghost','Replay');
-  replayBtn.id = 'replay-btn';
-  replayBtn.style.display = 'none';
-  replayBtn.onclick = (e) => { e.stopPropagation(); playHighlight(); };
-  stealRow.appendChild(replayBtn);
   s.appendChild(stealRow);
 
   const atbat = el('div','atbat');
@@ -14592,7 +16230,31 @@ function renderGame() {
   }
   s.appendChild(log);
 
+  /* REPLAY SITS WITH END GAME, and it used to have a row of its own. Both are
+     optional, both are occasional, and neither is a control the game is waiting
+     on, so one row holds them and the deck is a row shorter every time a
+     highlight is stored. It had a row because it was built beside Steal, Send
+     and the mound offer, which come and go with the situation; Replay comes and
+     goes with the last big hit, and in the sideways column the two together
+     WRAPPED, so one optional control cost the deck two lines.
+
+     What that cost, measured: sideways on a 667 by 375 phone the row was laid
+     out 52 pixels below the bottom of the window, so the button offering to
+     show the home run you just hit was not on the screen at all, and the page
+     ran 180 pixels longer than the window. At 844 by 390 it landed ON the End
+     Game chip, 32 pixels by 23, so a tap meaning "show me that again" opened
+     the sheet that abandons the game. Nothing threw either way.
+
+     The row this joins already leaves the flow on a wide window (it pins to the
+     bottom right corner), so on every screen a stored highlight now costs the
+     deck nothing at all and the camera nothing at all. End Game stays last, so
+     it stays in the corner it has always been in. */
   const ctrl = el('div','controls');
+  const replayBtn = el('button','btn ghost','Replay');
+  replayBtn.id = 'replay-btn';
+  replayBtn.style.display = 'none';
+  replayBtn.onclick = (e) => { e.stopPropagation(); playHighlight(); };
+  ctrl.appendChild(replayBtn);
   const abort = el('button','btn ghost','End Game');
   abort.onclick = () => {
     if (!abandonGame()) return;
@@ -14768,11 +16430,22 @@ function openBullpen() {
   const box = el('div', 'pen');
   box.id = 'pen';
   box.appendChild(el('h4', null, 'Who pitches'));
-  box.appendChild(el('div', 'note',
+  /* THE STATE LINE IS NOT THE RULE, and they were one paragraph. Who is out
+     there and how tired he is changes on every open and is the reason
+     anybody came, so it stays above the scroller with the heading. The
+     three sentences after it are a RULE, so they go BELOW the arms: the
+     arms are the decision this sheet is waiting on and the rule is the
+     reference, which is the boss battle's own order arriving at a sheet.
+     Written the other way round they were 70px of a 178px scrollport on a
+     320 by 568 phone, so a first look there met NONE of the eight arms.
+
+     It is a footnote and not a one shot. Keying it to a first open the way
+     the coach cards are keyed hides a rule for ever to save a scroll,
+     which is the worse trade. */
+  box.appendChild(el('div', 'note pen-state',
     `<b>${on.n}</b> is <b>${st.label}</b> (PIT ${on.pit}) after ${st.worked} inning`
-    + `${st.worked === 1 ? '' : 's'} of work. Anyone can take the mound: he walks in from `
-    + 'his position and <b>' + on.n + '</b> walks out to it. Nobody leaves the game and '
-    + 'the batting order does not move, so an arm you rest is one you get back.'));
+    + `${st.worked === 1 ? '' : 's'} of work.`));
+  const body = el('div', 'pen-body');
   const grid = el('div', 'pen-grid');
   for (const x of opts) {
     const b = el('button', 'pen-arm');
@@ -14783,13 +16456,27 @@ function openBullpen() {
     b.onclick = (e) => { e.stopPropagation(); closeBullpen(); swapToMound(team, x.i); };
     grid.appendChild(b);
   }
-  box.appendChild(grid);
+  body.appendChild(grid);
+  body.appendChild(el('div', 'note pen-rule',
+    'Anyone can take the mound: he walks in from his position and <b>'
+    + on.n + '</b> walks out to it. Nobody leaves the game and the batting '
+    + 'order does not move, so an arm you rest is one you get back.'));
+  const shade = el('div', 'pen-shade');
+  body.appendChild(shade);
+  box.appendChild(body);
   const bar = el('div', 'pen-bar');
   const stay = el('button', 'btn ghost', `Stay with ${on.n}`);
   stay.onclick = (e) => { e.stopPropagation(); closeBullpen(); };
   bar.appendChild(stay);
   box.appendChild(bar);
   arena.appendChild(box);
+  /* MEASURED AFTER THE SHEET IS ON THE PAGE. A box with no layout box
+     answers zero for scrollHeight and clientHeight alike, so a read at
+     build time would say every sheet fits. */
+  const more = () => body.classList.toggle('more',
+    body.scrollHeight - body.scrollTop - body.clientHeight > 8);
+  body.onscroll = more;
+  requestAnimationFrame(more);
 }
 function closeBullpen() {
   penOpen = false;
@@ -14827,19 +16514,50 @@ function refreshAtBatCard(node) {
   node.appendChild(count);
 }
 
+/* HOW MANY COLUMNS THE BOARD HAS. The scheduled count, whatever the line
+   score has actually filled, and while the game is LIVE the inning in
+   progress. `g.inning` is excluded once it is over, because endHalfInning
+   advances it before it asks whether the game has ended: after the last out
+   of a five inning game the number reads six, and the board drew a sixth
+   column nobody played. Live it costs nothing to include, because startAtBat
+   opens the batting side's bucket up to the current inning, so the lengths
+   already cover it except in the gap between half innings, which is exactly
+   when the board is on screen.
+
+   AN X IS NOT A BLANK, AND A SCOREBOARD SAYS SO. A home team that is ahead
+   when the top of the last inning ends does not bat, and the board wrote the
+   same empty cell there that it writes for an inning nobody has reached. Two
+   different facts under one blank: the reader cannot tell a game that stopped
+   early from one still to be played. The convention is an X, everywhere this
+   sport keeps a line score, and it is only ever the home side and only once
+   the game is finished. */
+function boardInnings(g) {
+  return Math.max(g.innings, g.over ? 0 : g.inning,
+                  g.lineScore.away.length, g.lineScore.home.length);
+}
+function lineBlank(isHome, i) {
+  const g = State.game;
+  if (!isHome || !g.over) return '';
+  return (i + 1) <= g.inning ? 'X' : '';
+}
+
 function renderLineScore(node) {
   const g = State.game;
   if (!g) return;
   /* Extra innings grow the board. It used to stop at the scheduled count,
-     so a tenth inning was played on a nine column board. */
-  const innings = Math.max(g.innings, g.inning, g.lineScore.away.length, g.lineScore.home.length);
-  const rowFor = (label, arr, score, isYou) => {
+     so a tenth inning was played on a nine column board.
+     AND `g.inning` OVERSHOOTS BY ONE THE MOMENT A GAME ENDS, which is what
+     `boardInnings` is for: endHalfInning advances the number before it asks
+     whether the game is over, so every completed regulation game finished on
+     inning six of a five inning game and drew a sixth, empty column. */
+  const innings = boardInnings(g);
+  const rowFor = (label, arr, score, isYou, isHome) => {
     let html = `<td class="team">${label}${isYou?' *':''}</td>`;
     for (let i = 0; i < innings; i++) {
       const cell = arr[i];
       const isCur = (i + 1) === g.inning;
       const cls = isCur ? 'cur' : '';
-      html += `<td class="${cls}">${cell == null ? '' : cell}</td>`;
+      html += `<td class="${cls}">${cell == null ? lineBlank(isHome, i) : cell}</td>`;
     }
     html += `<td class="r">${score}</td>`;
     return html;
@@ -14848,8 +16566,8 @@ function renderLineScore(node) {
   for (let i = 1; i <= innings; i++) header += `<th>${i}</th>`;
   header += '<th>R</th>';
   node.innerHTML = `<table><thead><tr>${header}</tr></thead><tbody>`
-    + `<tr>${rowFor(g.away.name.slice(0,10), g.lineScore.away, g.away.score, g.away.isYou)}</tr>`
-    + `<tr>${rowFor(g.home.name.slice(0,10), g.lineScore.home, g.home.score, g.home.isYou)}</tr>`
+    + `<tr>${rowFor(g.away.name.slice(0,10), g.lineScore.away, g.away.score, g.away.isYou, false)}</tr>`
+    + `<tr>${rowFor(g.home.name.slice(0,10), g.lineScore.home, g.home.score, g.home.isYou, true)}</tr>`
     + `</tbody></table>`;
 }
 
@@ -14902,10 +16620,33 @@ function refreshHud() {
       log.scrollTop = log.scrollHeight;
     }
   }
+  /* THE LOUDEST LINE ON THE DECK WAS TELLING THE BATTER WHAT WAS COMING.
+     This label lives in the pitcher's own meter block, where `meter-side`
+     and `meter-hint` beside it are already gated on which side is up, and
+     it alone was not: measured, it named the pitch about seven tenths of a
+     pitch duration BEFORE the ball left the hand, on every pitch, from the
+     first of the game.
+
+     That is the whole read, given away. The game MODELS a read as a
+     difficulty dial for the other dugout (`DIFF.read`, earned over twenty
+     pitches and worth a hard bat's timing error from .082 down to .024),
+     and a human had the complete answer for nothing. The at bat card three
+     lines from here already gates exactly this class of information on
+     `!playerIsBatting()`, for the weak pitch tell, so the convention was
+     already in this function.
+
+     IT IS A RECORD RATHER THAN A TELL NOW. Pitching, you chose it, so it
+     names it as it always did. Batting, it names the pitch once the ball
+     has ARRIVED or been swung at, which is after the decision is made:
+     that is what a broadcast does, it teaches a repertoire over an at bat,
+     and it costs no read. */
   const ptName = document.getElementById('pt-name');
   if (ptName && g.pitch) {
+    const told = !playerIsBatting() || g.pitch.swung || g.pitch.arrivedAt;
     const info = PITCHES[g.pitch.pt];
-    ptName.textContent = String(info ? info.label : (g.pitch.pt || 'Pitch')).toUpperCase();
+    ptName.textContent = told
+      ? String(info ? info.label : (g.pitch.pt || 'Pitch')).toUpperCase()
+      : 'ON THE WAY';
   }
   refreshStealButton();
   /* Show swing controls only when the player is batting; show the
@@ -15150,19 +16891,12 @@ function renderResult() {
   h2.className = win && !g.forfeit ? 'verdict win' : 'verdict';
   s.appendChild(h2);
   if (!g.forfeit) Sound.play(win ? 'win' : 'loss');
-  if (win && !g.forfeit) {
-    const kit = teamKitColor();
-    const burst = el('div','confetti');
-    for (let i = 0; i < 26; i++) {
-      const bit = el('i');
-      bit.style.left = (4 + Math.random() * 92) + '%';
-      bit.style.background = i % 3 === 0 ? kit : i % 3 === 1 ? '#f4c25a' : '#fff6ea';
-      bit.style.animationDelay = (Math.random() * 0.8) + 's';
-      bit.style.animationDuration = (1.6 + Math.random() * 1.2) + 's';
-      burst.appendChild(bit);
-    }
-    h2.appendChild(burst);
-  }
+  /* THE CONFETTI WAS 26 BITS INSIDE THE HEADING, clipped to its own 55px
+     box, so the biggest moment in the game was a flutter behind two words.
+     It is the whole window now, in the club's kit colour. It is called
+     after the screen is built, below, because a celebration started while
+     `app` is still empty would be stopped by the next render check. */
+  const party = win && !g.forfeit;
   /* Win number, at the round numbers, from PROGRESS. */
   if (g.winNo && [1, 5, 10, 25, 50, 100, 250].includes(g.winNo)) {
     const wn = el('div','banner');
@@ -15204,11 +16938,22 @@ function renderResult() {
     : g.mercy ? `Mercy rule: a lead of ${MERCY_RUNS} from the ${ordinal(mercyFrom(g))} inning on ends the game.`
     : g.inning > g.innings ? `Decided in ${g.inning} innings.`
     : '';
+  /* A SCOREBOARD, away over home the way every board in the sport reads,
+     with the winning row lit and the figures counting up. See `.countup`
+     for why the number in the DOM is the result from the first frame. */
+  const kit = teamKitColor();
+  const fbRow = (t) => {
+    const won = t.score > (t === g.away ? g.home : g.away).score;
+    return `<div class="fb-row${won ? ' won' : ''}">`
+      + `<span class="fb-kit" style="--k:${t.isYou ? kit : '#8aa0b8'}"></span>`
+      + `<span class="fb-team">${t.name}${t.isYou ? '<span class="fb-you">You</span>' : ''}</span>`
+      + `<b class="fb-runs countup" style="--to:${t.score | 0}">${t.score}</b></div>`;
+  };
+  head.classList.add('final-card');
   head.innerHTML =
     `<h3>Final</h3>`
-    + `<p style="font-size:18px;color:var(--text)">${you.name} <b style="color:var(--gold)">${you.score}</b>`
-    + ` &nbsp;·&nbsp; ${foe.name} <b>${foe.score}</b></p>`
-    + (note ? `<p style="color:var(--gold)">${note}</p>` : '');
+    + `<div class="fboard">${fbRow(g.away)}${fbRow(g.home)}</div>`
+    + (note ? `<p style="color:var(--gold);margin-top:10px">${note}</p>` : '');
   s.appendChild(head);
 
   /* Anything unlocked by this game gets its own celebration card. */
@@ -15235,7 +16980,7 @@ function renderResult() {
   /* Line score: runs per inning for both sides, the way a real board reads. */
   const lsCard = el('div','card');
   lsCard.appendChild(el('h3', null, 'Line score'));
-  const innCount = Math.max(g.innings, g.lineScore.away.length, g.lineScore.home.length);
+  const innCount = boardInnings(g);
   const lsWrap = el('div','linescore');
   const lsT = document.createElement('table');
   let head1 = '<thead><tr><th></th>';
@@ -15247,7 +16992,7 @@ function renderResult() {
     body += `<tr><td class="team">${team.name}${team.isYou ? ' *' : ''}</td>`;
     for (let i = 0; i < innCount; i++) {
       const v = g.lineScore[side][i];
-      body += `<td>${v == null ? '' : v}</td>`;
+      body += `<td>${v == null ? lineBlank(side === 'home', i) : v}</td>`;
     }
     body += `<td class="r">${team.score}</td></tr>`;
   }
@@ -15368,6 +17113,7 @@ function renderResult() {
   s.appendChild(row);
 
   app.appendChild(s);
+  if (party) celebrate([teamKitColor(), '#f4c25a', '#1b8a4a'], g.round === 'final' ? 1.6 : 1);
 }
 
 /* ============================================================================
@@ -15684,12 +17430,123 @@ function renderMeet() {
   app.appendChild(s);
 }
 
+/* THE QUICK START: the four things a player does with their hands, drawn
+   moving, above everything else on this page. The prose below is the
+   reference; this is the part a stranger reads before their first pitch,
+   so it says one thing a step and shows the moment to press.
+
+   It is SVG rather than the game's own canvas drawers, deliberately. A
+   loop that repainted a canvas every frame would be a second render loop
+   on a menu screen, running for as long as somebody reads, and it would
+   need its own stop on every way off the page. CSS animations stop with
+   the node. The colours are the game's: the bat's green oval with its dark
+   halo, the white reticle, the release bar's green and yellow bands, the
+   catch ring's dark green over its orange sweet ring. The drawn figures
+   further down are still the game's own functions and still hold the
+   detail. */
+function howtoQuickStart() {
+  const ball = '<circle r="4.2" fill="#eaeaea" stroke="#1b3a5c" stroke-width="1"/>'
+    + '<path d="M-2.6 -1.5 A2.8 2.8 0 0 1 1.8 -2.2" fill="none" stroke="#c94b1a" stroke-width=".9"/>';
+  const oval = '<ellipse rx="15" ry="11" fill="none" stroke="rgba(255,255,255,.35)" stroke-width="1"/>'
+    + '<ellipse rx="8.5" ry="6.2" fill="none" stroke="rgba(10,20,30,.55)" stroke-width="4"/>'
+    + '<ellipse rx="8.5" ry="6.2" fill="none" stroke="#8ef0b0" stroke-width="2.2"/>'
+    + '<circle r="1.6" fill="#8ef0b0"/>';
+  const tap = (cls, x, y) => `<g transform="translate(${x} ${y})"><circle class="mv tap ${cls}" r="12" `
+    + 'fill="rgba(255,255,255,.18)" stroke="#fff" stroke-width="2"/></g>';
+  const at = (x, y, cls, inner) => `<g transform="translate(${x} ${y})"><g class="mv ${cls}">${inner}</g></g>`;
+  /* The plate camera, reduced to what the step needs: the wall, the grass,
+     the dirt round home, and the zone with its gold corners. */
+  const plate = (zx, zy, zw, zh) => {
+    let stripes = '';
+    for (let x = 0; x < 160; x += 20) stripes += `<rect x="${x}" y="24" width="10" height="86" fill="rgba(0,0,0,.06)"/>`;
+    const c = 7, g = '#f4c25a';
+    const corner = (x, y, dx, dy) => `<path d="M${x + dx * c} ${y} H${x} V${y + dy * c}" fill="none" stroke="${g}" stroke-width="2.6"/>`;
+    return '<rect width="160" height="110" fill="#3f8a3c"/>' + stripes
+      + '<rect width="160" height="22" fill="#1f3d2a"/><rect y="22" width="160" height="2" fill="#10261a"/>'
+      + '<path d="M14 110 Q80 72 146 110 Z" fill="#9a6a3c"/>'
+      + '<path d="M72 99 h16 v4 l-8 5 l-8 -5 z" fill="#f5ecc8"/>'
+      + `<rect x="${zx}" y="${zy}" width="${zw}" height="${zh}" fill="rgba(255,255,255,.07)" stroke="rgba(10,20,30,.5)" stroke-width="4.5"/>`
+      + `<rect x="${zx}" y="${zy}" width="${zw}" height="${zh}" fill="none" stroke="#fff" stroke-width="2"/>`
+      + corner(zx, zy, 1, 1) + corner(zx + zw, zy, -1, 1) + corner(zx, zy + zh, 1, -1) + corner(zx + zw, zy + zh, -1, -1);
+  };
+  const svg = (label, body) => `<svg viewBox="0 0 160 110" role="img" aria-label="${label}">${body}</svg>`;
+  const pointer = '<path d="M9 6 v11 l3 -3 l2.5 5 l2.2 -1 l-2.5 -5 h4.2 z" fill="#fff" stroke="#10261a" stroke-width=".9"/>';
+  const reticle = '<g fill="none" stroke-linecap="round">'
+    + '<circle r="6" stroke="rgba(10,20,30,.55)" stroke-width="4"/>'
+    + '<path d="M3.6 0 H8.5 M-3.6 0 H-8.5 M0 3.6 V8.5 M0 -3.6 V-8.5" stroke="rgba(10,20,30,.55)" stroke-width="4"/>'
+    + '<circle r="6" stroke="#fff" stroke-width="2"/>'
+    + '<path d="M3.6 0 H8.5 M-3.6 0 H-8.5 M0 3.6 V8.5 M0 -3.6 V-8.5" stroke="#fff" stroke-width="2"/>'
+    + '</g><circle r="1.6" fill="#fff"/>';
+  let rays = '';
+  for (let i = 0; i < 8; i++) {
+    const a = i * Math.PI / 4, c = Math.cos(a), s = Math.sin(a);
+    rays += `<path d="M${(c * 8).toFixed(1)} ${(s * 8).toFixed(1)} L${(c * 14).toFixed(1)} ${(s * 14).toFixed(1)}"/>`;
+  }
+
+  const aim = svg('The bat oval moves onto the pitch as it arrives', plate(58, 26, 44, 54)
+    + at(93, 70, 'aim-glow', '<ellipse rx="12" ry="9" fill="#8ef0b0"/>')
+    + at(93, 70, 'aim-ball', ball)
+    + at(93, 70, 'aim-bat', oval + pointer));
+
+  const swing = svg('The bat swings as the ball reaches the oval and the ball flies away', plate(58, 26, 44, 54)
+    + at(118, 60, 'sw-bat', '<path d="M0 -2 L-38 -4 Q-42 0 -38 4 L0 2 Z" fill="#c8924f" stroke="#5a3a1a" stroke-width="1"/>')
+    + `<g class="sw-oval" transform="translate(80 58)">${oval}</g>`
+    + at(80, 58, 'sw-burst', `<g stroke="rgba(10,20,30,.5)" stroke-width="4" stroke-linecap="round">${rays}</g>`
+      + `<g stroke="#8ef0b0" stroke-width="2" stroke-linecap="round">${rays}</g>`)
+    + at(80, 58, 'sw-ball', ball)
+    + tap('sw-tap', 80, 58));
+
+  const pitch = svg('Aim the pitch, press Throw, and stop the release bar in the green', plate(40, 26, 40, 54)
+    + '<rect x="93" y="23" width="16" height="60" rx="2" fill="rgba(11,16,21,.85)"/>'
+    + '<rect x="96" y="54" width="10" height="17" fill="rgba(244,194,90,.55)"/>'
+    + '<rect class="pi-green" x="96" y="59" width="10" height="7" fill="rgba(91,176,131,.95)"/>'
+    + at(0, 62.5, 'pi-cur', '<rect x="93" y="-1.5" width="16" height="3" fill="#fff"/>')
+    + '<rect class="pi-hit" x="93" y="61" width="16" height="3" fill="#8ef0b0"/>'
+    + tap('pi-tap2', 101, 62.5)
+    + at(50, 68, 'pi-ret', reticle)
+    + at(50, 68, 'pi-ball', ball)
+    + at(26, 96, 'pi-btn', '<rect x="-20" y="-7.5" width="40" height="15" rx="7.5" fill="#cf3229"/>'
+      + '<text y="3" text-anchor="middle" font-size="8" font-weight="800" fill="#fff" letter-spacing=".6">THROW</text>')
+    + tap('pi-tap', 26, 96));
+
+  let mow = '';
+  for (let x = 0; x < 160; x += 22) mow += `<rect x="${x}" y="20" width="11" height="90" fill="rgba(255,255,255,.05)"/>`;
+  const field = svg('A ring shrinks over the landing spot and a press at its tightest makes the catch',
+    '<rect width="160" height="110" fill="#4c9a48"/>' + mow
+    + '<rect width="160" height="13" fill="#1f3d2a"/><rect y="13" width="160" height="7" fill="#9a6a3c"/>'
+    + '<ellipse cx="80" cy="70" rx="6" ry="2.4" fill="rgba(0,0,0,.25)"/>'
+    + '<circle class="fi-sweet" cx="80" cy="66" r="9" fill="none" stroke="rgba(232,150,12,.95)" stroke-width="2"/>'
+    + at(80, 66, 'fi-ring', '<circle class="ring" r="28" fill="none" stroke="rgba(255,255,255,.55)" stroke-width="5"/>'
+      + '<circle class="ring" r="28" fill="none" stroke="#0f6b39" stroke-width="3"/>')
+    + at(80, 66, 'fi-ball', ball)
+    + tap('fi-tap', 80, 66)
+    + at(80, 34, 'fi-out', '<text y="5" text-anchor="middle" font-size="15" font-weight="900" fill="#fff" '
+      + 'stroke="#1b3a5c" stroke-width="3" paint-order="stroke">OUT!</text>')
+    + '<text x="80" y="105" text-anchor="middle" font-size="8" font-weight="800" fill="#f4c25a" letter-spacing=".6">CATCH IT!</text>');
+
+  const card = el('div', 'card qs');
+  card.innerHTML = '<h3>Quick start</h3>'
+    + '<p class="qs-lead">Draft nine. Bat when you are up. Pitch when they are. Most runs wins.</p>'
+    + '<div class="qs-grid">'
+    + `<div class="qs-step">${aim}<h4><i>1</i>Aim</h4>`
+    + '<p>Move the green oval onto the ball. Use the mouse, a finger or the arrow keys.</p></div>'
+    + `<div class="qs-step">${swing}<h4><i>2</i>Swing</h4>`
+    + '<p>Click, tap or press Space as it arrives. On a phone one tap aims and swings.</p></div>'
+    + `<div class="qs-step">${pitch}<h4><i>3</i>Pitch</h4>`
+    + '<p>Pick a pitch and a spot. Press Throw. Stop the bar in the green.</p></div>'
+    + `<div class="qs-step">${field}<h4><i>4</i>Field</h4>`
+    + '<p>Press when the ring is tightest. A grounder shows a bar. Stop it in the green.</p></div>'
+    + '</div>';
+  return card;
+}
+
 function renderHowTo() {
   const s = el('div','screen');
   /* Appended as nodes, never innerHTML +=: that re-parses the card and
      hands back a fresh, blank canvas in place of every drawn figure. */
   const add = (card, html) => card.appendChild(el('div', null, html));
   s.appendChild(el('h2', null, 'How to play'));
+  s.appendChild(howtoQuickStart());
 
   const bat = el('div','card');
   add(bat,
@@ -15873,12 +17730,14 @@ function renderSeasonEnd() {
   s.appendChild(h2);
   if (youWon) {
     Sound.play('title');
+    setTimeout(() => { if (State.screen === 'season-end') celebrate([teamKitColor(), '#f4c25a', '#ffe08a'], 1.8); }, 0);
     const tcard = el('div','card');
     tcard.style.borderColor = 'var(--gold)';
-    tcard.innerHTML = `<div class="trophy"><i></i></div>`
-      + `<span style="font-size:18px;font-weight:900;letter-spacing:.08em;vertical-align:middle">`
+    tcard.classList.add('has-cup');
+    tcard.innerHTML = trophyArt()
+      + `<div><span style="font-size:18px;font-weight:900;letter-spacing:.08em">`
       + `${S.teamName}, champions</span>`
-      + `<p style="margin-top:8px">Title number ${PROGRESS.titles | 0} on this browser.</p>`;
+      + `<p style="margin-top:8px">Title number ${PROGRESS.titles | 0} on this browser.</p></div>`;
     s.appendChild(tcard);
   }
   const card = el('div','card');
