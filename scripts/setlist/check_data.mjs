@@ -256,16 +256,40 @@ check(!game.includes('runthe-r-games.png'), 'the top bar is the game\'s, not the
    The song list was fourteen identical rounded cards and the home page was a
    centred stack with numbered circles; both are the shapes a component
    library hands you, and both are one careless edit away from coming back. */
-check(/\.hero\{[^}]*var\(--dye\)/.test(game),
-      'the hero is a dye field, not a flat background');
-/* The scrim that makes the hero type legible has to sit UNDER the type. In
-   ::after it paints over the glyphs and washes them along with the field,
-   which puts the contrast straight back where it was while still looking
-   like a fix. */
-check(/\.hero\{[^}]*linear-gradient\(rgba\(255,255,255/.test(game),
-      'the contrast lift is in the hero background, below the content');
-check(!/\.hero:after\{[^}]*rgba\(255,255,255/.test(game),
-      'and not in an ::after that would cover the type');
+/* THE HERO IS A NIGHT-STAGE POSTER, and it replaced a full-strength dye
+   field with black type knocked into it, which needed a white wash to be
+   legible at all and read as a colourful rectangle rather than a show.
+   Asserted as the things that make it work rather than as its exact paint:
+   a fixed dark ground in BOTH themes (a poster is a printed object with its
+   own stock, so it does not follow the page), lit by the dye as coloured
+   washes, with its type in fixed ink measured against the brightest wash. */
+{
+  const heroRule = (game.match(/\n  \.hero\{[^}]*\}/) || [''])[0];
+  const ground = (heroRule.match(/(#[0-9A-Fa-f]{6});\}$/) || [])[1];
+  check(!!ground && !/var\(--bg\)/.test(heroRule),
+    `the hero has its own dark ground, not the page's (${ground})`);
+  const washes = [...heroRule.matchAll(/rgba\((\d+),(\d+),(\d+),\.(\d+)\)/g)]
+    .map(m => ({ rgb: [+m[1], +m[2], +m[3]], a: Number('.' + m[4]) }));
+  check(washes.length >= 3, `lit by ${washes.length} coloured washes, not a flat fill`);
+  const hx = h => [0, 2, 4].map(i => parseInt(h.slice(1).slice(i, i + 2), 16));
+  const L = c => { c /= 255; return c <= .03928 ? c / 12.92 : ((c + .055) / 1.055) ** 2.4; };
+  const lumOf = ([r, g, b]) => .2126 * L(r) + .7152 * L(g) + .0722 * L(b);
+  /* The worst case for light type is the BRIGHTEST point of the field, which
+     is the strongest wash composited over the ground. Every wash is summed at
+     full strength, which is more light than any one pixel really gets. */
+  let px = hx(ground || '#000000');
+  for (const w of washes) px = px.map((c, i) => c + (w.rgb[i] - c) * w.a);
+  const inks = [...game.matchAll(/\.hero (?:\.tagline, \.hero )?p\{[^}]*color:(#[0-9A-Fa-f]{6})/g)].map(m => m[1]);
+  check(inks.length >= 1, `the hero copy is set in fixed ink (${inks.join(', ')})`);
+  for (const ink of inks) {
+    const a = lumOf(hx(ink)), b = lumOf(px);
+    const r = (Math.max(a, b) + .05) / (Math.min(a, b) + .05);
+    check(r >= 4.5, `  ${ink} clears 4.5:1 on the brightest wash (${r.toFixed(2)})`);
+  }
+  /* The type must never follow the theme: it sits on the poster's ground. */
+  check(!/\.hero (?:\.eyebrow|\.tagline|p)[^{]*\{[^}]*color:var\(--ink\)/.test(game),
+    'and never in the page ink, which would go dark on the light theme');
+}
 /* EACH SONG IS A BUBBLE YOU PICK ONE OF. It was a sheet row: no box, a
    hairline between lines, on the argument that a set list is typed rather than
    stacked in cards. That describes a set list and not this screen, which is a
@@ -420,6 +444,23 @@ check(!/\.topbar:after\{[^}]*var\(--dye\)[^}]*\}/.test(game),
    destinations, the songs list among them by name, hides itself during the
    draft (where the game owns the bottom of the screen), and the page leaves
    room so the last row is not stranded behind it. */
+/* A NEW SCREEN STARTS AT THE TOP. Nothing reset the scroll, so "See the
+   scorecard" at the foot of a long playback landed half way down it, and each
+   round's reveal opened wherever the last song list was left. Only on a real
+   change, because setScreen is also how a screen re-renders itself. */
+{
+  const ss = gameBare.slice(gameBare.indexOf('function setScreen('), gameBare.indexOf('\n}', gameBare.indexOf('function setScreen(')));
+  check(/const changed = S\.screen !== name;/.test(ss) && /if \(changed\) window\.scrollTo\(0, 0\);/.test(ss),
+    'a new screen starts at the top, and a re-render does not');
+}
+
+/* The show owns the page while it is on: the site footer stands down for
+   every screen of the play flow, playback included, and only the button goes,
+   so the about sheet stays in the markup a crawler reads. */
+check(/body\.inshow \.sfoot\{display:none;?\}/.test(game)
+   && /classList\.toggle\('inshow', \[[^\]]*'show'[^\]]*\]\.includes\(name\)\)/.test(gameBare),
+  'the site footer stands down for the whole show, playback included');
+
 console.log('the tab bar');
 check(/\.tabbar\{[^}]*position:fixed/.test(game) && /\.tabbar\{[^}]*bottom:0/.test(game),
       'the tab bar is pinned to the foot of the screen, not scrolled with the page');
@@ -444,8 +485,18 @@ check(/function paintTabs\(\)/.test(gameBare) && /paintTabs\(\);/.test(gameBare)
 /* The hero fade resolves to --bg, which is near-black on the dark theme, and
    the hero ink is pinned dark. Any type inside the faded zone is dark on
    dark: at 58% the blurb measured 2.55:1. It must start below the copy. */
-check(/linear-gradient\(to bottom, transparent 7\d%, var\(--bg\)/.test(game),
-      'the hero fade begins below the last line of type');
+/* The rig and the print screen are both pseudo-elements BEHIND the type
+   (z-index:-1 inside an isolated hero). Painted over it, the beams would wash
+   the glyphs, which is the old ::after mistake in a new coat. */
+{
+  /* The LAST z-index in the rule is the one that applies; asking whether the
+     rule merely contains -1 passes on a later override that puts it on top. */
+  const zOf = sel => { const r = (game.match(new RegExp(sel.replace(/[.:]/g, '\\$&') + '\\{[^}]*\\}')) || [''])[0];
+    const all = [...r.matchAll(/z-index:(-?\d+)/g)]; return all.length ? all[all.length - 1][1] : null; };
+  var heroLayersBehind = zOf('.hero:before') === '-1' && zOf('.hero:after') === '-1';
+}
+check(heroLayersBehind && /\.hero\{[^}]*isolation:isolate/.test(game),
+      'the light rig and the print screen sit behind the type');
 
 /* The hero wordmark is the same face as the top bar's, and it needs tracking:
    Alfa Slab One's slabs collide at zero letter-spacing above about 80px, so
@@ -454,8 +505,22 @@ check(/\.hero h1\{[^}]*font-family:var\(--hero\)/.test(game),
       'the hero wordmark uses the same face as the top bar');
 check(/\.brand\{[^}]*font-family:var\(--hero\)/.test(game),
       'and the top bar still uses it too');
-check(/\.hero h1\{[^}]*letter-spacing:\.0[5-9]em/.test(game),
-      'the hero wordmark is tracked so the slabs do not collide');
+/* THE WORDMARK IS LIT: the dye clipped to the letters. background-clip:text
+   clips to the element's box and Shrikhand's swashes run outside it, so
+   without padding the tail of the S and the g are cut off square. */
+{
+  const h1 = (game.match(/\.hero h1\{[^}]*\}/) || [''])[0];
+  check(/background-clip:text/.test(h1) && /color:transparent/.test(h1),
+    'the wordmark is lit with the dye');
+  check(/padding:0 \.\d+em \.\d+em/.test(h1), 'with room for the swashes the clip would cut');
+  check(/drop-shadow/.test(h1), 'and a shadow that lifts it off the stage');
+  /* Gold is for mid ratings and song tags and nothing else, by request. The
+     dye has a gold stop; the wordmark's sweep deliberately does not. */
+  const golds = [...h1.matchAll(/#([0-9A-Fa-f]{6})/g)].map(m => m[1])
+    .filter(h => { const [r, g, b] = [0, 2, 4].map(i => parseInt(h.slice(i, i + 2), 16));
+      return r > 200 && g > 150 && b < 110; });
+  check(!golds.length, 'and carries no gold', golds.join(', '));
+}
 
 /* The band request goes to the address the rest of the site already uses, and
    there is no backend behind it, so the mailto is the delivery mechanism and
@@ -478,7 +543,9 @@ try { manifest = JSON.parse(read('setlist/manifest.webmanifest')); ok('the manif
 catch (e) { fail(`the manifest parses: ${e.message}`); }
 if (manifest) {
   check(manifest.start_url === './' && manifest.scope === './', 'it is scoped to /setlist/');
-  check(manifest.theme_color === '#071426', 'the theme colour is the game\'s navy');
+  check(manifest.theme_color === '#0E0B1C', 'the theme colour is the game\'s night');
+  check(/name="theme-color" content="#0E0B1C"/.test(game)
+     && /--bg:#0E0B1C;/.test(game), 'and the page agrees with it');
   const byPurpose = p => (manifest.icons || []).filter(i => (i.purpose || 'any').split(/\s+/).includes(p));
   const any = byPurpose('any'), maskable = byPurpose('maskable');
   check(any.length > 0, 'it declares a normal icon');
@@ -625,8 +692,16 @@ for (const [sel, what] of [['scorebox', 'the final score'], ['sim-head', 'the ru
     `${what} closes on a dye rule`);
 }
 // The sticky one has to hide what scrolls under it.
-check(/\.sim-head\{[^}]*background:var\(--bg\)/.test(game),
-  'the sticky running score is opaque');
+/* OPAQUE means the last layer of the background is a solid colour. The
+   washes above it are translucent, which is fine; a stack that ends on
+   transparent is what lets song titles scroll through the score. */
+{
+  const head = (game.match(/\.sim-head\{[^}]*\}/) || [''])[0];
+  const bg = (head.match(/background:([\s\S]*?);/) || [])[1] || '';
+  const last = bg.split(/,(?![^(]*\))/).pop().trim();
+  check(/^#[0-9A-Fa-f]{6}$/.test(last) || last === 'var(--bg)',
+    `the sticky running score is opaque (ends on ${last || 'nothing'})`);
+}
 /* THE GRADE COLOURS ARE MEASURED, and the measurement is the comment above
    them. Both scores now sit on --bg rather than on --card, where the old green
    fell to 2.93:1: below even the 3:1 large-text floor, on the largest thing in
@@ -1575,8 +1650,19 @@ console.log('the descriptors');
 check(/\.chip\{[^}]*background:color-mix\(in srgb, var\(--chipHue/.test(game),
   'the base chip is a pill again');
 check(/var\(--pillBase\)\)/.test(game), 'filled onto an opaque base');
-check(/--pillBase:#0A1A2E/.test(game) && /--pillBase:#FFFFFF/.test(game),
-  'which sits back from the page in both themes');
+/* Back from the page, which is what "sits back" means in numbers: darker
+   than the dark ground, and lighter than the light one. */
+{
+  const L = h => { const v = [0, 2, 4].map(i => parseInt(h.slice(i, i + 2), 16) / 255)
+    .map(c => c <= .03928 ? c / 12.92 : ((c + .055) / 1.055) ** 2.4);
+    return .2126 * v[0] + .7152 * v[1] + .0722 * v[2]; };
+  const pd = (game.match(/:root\{ --pillBase:#([0-9A-Fa-f]{6}); \}/) || [])[1];
+  const pl = (game.match(/:root\[data-theme="light"\]\{ --pillBase:#([0-9A-Fa-f]{6}); \}/) || [])[1];
+  const bd = (game.match(/:root\{\s*\n\s*--bg:#([0-9A-Fa-f]{6});/) || [])[1];
+  const bl = (game.match(/:root\[data-theme="light"\]\{\s*\n\s*--bg:#([0-9A-Fa-f]{6});/) || [])[1];
+  check(!!(pd && pl && bd && bl) && L(pd) <= L(bd) && L(pl) >= L(bl),
+    'which sits back from the page in both themes', `pill ${pd}/${pl}, page ${bd}/${bl}`);
+}
 check(/\.chip\{[^}]*padding:2px 7px/.test(game), 'with padding to be a box at all');
 check(/\.chip\{[^}]*border-color:color-mix\(in srgb, var\(--chipHue/.test(game),
   'and the hue on a border, which cannot touch the text contrast');
@@ -1633,7 +1719,7 @@ console.log('the descriptors are readable');
     for (const m of block.matchAll(/--([a-zA-Z]+T):\s*(#[0-9A-Fa-f]{6})/g)) t[m[1]] = m[2];
     return t;
   };
-  const darkRoot  = (game.match(/:root\{\s*\n\s*--bg:#071426;[\s\S]*?\n  \}/) || [''])[0];
+  const darkRoot  = (game.match(/:root\{\s*\n\s*--bg:#[0-9A-Fa-f]{6};[\s\S]*?\n  \}/) || [''])[0];
   const lightRoot = (game.match(/:root\[data-theme="light"\]\{\s*\n\s*--bg:[\s\S]*?\n  \}/) || [''])[0];
   check(!!darkRoot && !!lightRoot, 'both theme palettes are readable');
   const tokDark = palette(darkRoot);

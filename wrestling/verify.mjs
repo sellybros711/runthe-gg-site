@@ -72,6 +72,44 @@ for(const f of files){
   if(hits.length) bad(`${f}: ${hits.join(', ')}`); else ok(f);
 }
 
+/* ---------- 2b. the brand holds together ----------
+   The pixel title, the icon and the arena live in one kit inside the game, between RPK BEGIN and RPK
+   END, and two pages lift it out by those markers to build the logo files and the link card. Rename a
+   marker and both pages throw at build time, which is loud; what is quiet is everything else here: a
+   favicon pointing at a file that is not there, a manifest icon at the wrong size, or the link card
+   named under two versions on two pages. None of those throws. */
+section('the brand holds together');
+{
+  const game = fs.readFileSync(path.join(ROOT,'wrestling/index.html'),'utf8');
+  const MB='/* ==================== RPK BEGIN', ME='/* ==================== RPK END ==================== */';
+  (game.includes(MB) && game.includes(ME) && game.indexOf(MB)<game.indexOf(ME)) ? ok('the pixel kit is in the game, between its markers') : bad('the pixel kit markers are missing or out of order');
+  for(const f of ['wrestling/logo-source.html','wrestling/og-source.html']){
+    const src = fs.readFileSync(path.join(ROOT,f),'utf8');
+    (src.includes("'"+MB+"'") && src.includes("'"+ME+"'")) ? ok(`${f} lifts the kit by the same markers`) : bad(`${f} looks for markers the game does not carry`);
+  }
+  const size = (f)=>{ const b=fs.readFileSync(path.join(ROOT,f)); return [b.readUInt32BE(16), b.readUInt32BE(20)]; };
+  const vs = new Set();
+  for(const p of pages){
+    const html = fs.readFileSync(path.join(ROOT,p),'utf8');
+    const links = [...html.matchAll(/<link rel="(?:icon|apple-touch-icon)"[^>]*href="([^"]+)"/g)].map(m=>m[1]);
+    (links.length>=3) ? ok(`${p} carries ${links.length} icon links`) : bad(`${p} carries ${links.length} icon links`);
+    for(const l of links){ const f=path.join(path.dirname(p),l); fs.existsSync(path.join(ROOT,f)) ? ok(`${p} -> ${l}`) : bad(`${p} -> ${l} is missing`); }
+    const imgs = [...html.matchAll(/<meta (?:property="og:image"|name="twitter:image") content="([^"]+)"/g)].map(m=>m[1]);
+    (imgs.length===2) ? ok(`${p} names the link card twice`) : bad(`${p} names the link card ${imgs.length} times, not 2`);
+    imgs.forEach(u=>vs.add(u));
+    /<meta name="robots" content="noindex/.test(html) ? ok(`${p} is still noindexed`) : bad(`${p} lost its noindex; this game is unlisted`);
+  }
+  (vs.size===1) ? ok('every og:image and twitter:image is the same url and version') : bad('the link card is named under different urls: '+[...vs].join(' , '));
+  const [ow,oh] = size('wrestling/og.png');
+  (ow*630===oh*1200 && ow>=1200) ? ok(`og.png is ${ow}x${oh}, the 1200x630 shape`) : bad(`og.png is ${ow}x${oh}, not the 1200x630 shape`);
+  const man = JSON.parse(fs.readFileSync(path.join(ROOT,'wrestling/manifest.webmanifest'),'utf8'));
+  for(const ic of man.icons.concat([{src:'icon-180.png',sizes:'180x180'},{src:'favicon-16.png',sizes:'16x16'},{src:'favicon-32.png',sizes:'32x32'}])){
+    const f='wrestling/'+ic.src;
+    if(!fs.existsSync(path.join(ROOT,f))){ bad(`${f} is missing`); continue; }
+    const [w,h]=size(f); (`${w}x${h}`===ic.sizes) ? ok(`${f} is ${ic.sizes}`) : bad(`${f} is ${w}x${h}, the manifest says ${ic.sizes}`);
+  }
+}
+
 /* ---------- a tiny static server for the browser checks ---------- */
 const MIME = {'.html':'text/html','.js':'text/javascript','.css':'text/css','.json':'application/json','.png':'image/png','.svg':'image/svg+xml'};
 const server = http.createServer((req,res)=>{
@@ -1277,6 +1315,52 @@ section('two styles, one rig');
     : bad(`the Retro switch did not take: ${JSON.stringify({now:r.retroNow, stored:r.stored})}`);
   (after.retro && after.cls) ? ok('Retro survives a reload') : bad('Retro did not survive a reload: '+JSON.stringify(after));
   after.back ? ok('and switching back returns the smooth figure') : bad('switching back did not return the smooth figure');
+  await page.close();
+}
+
+/* ---------- 4q. the pixel brand draws, and the files are what the kit draws ----------
+   The logo files are built from the kit by wrestling/build-logo.mjs, so an edit to the kit that nobody
+   rebuilt leaves a favicon and a lockup showing yesterday's mark while the page paints today's. They are
+   repainted here and compared cell for cell.
+
+   The share card's figure reaches it through an Image, which can fail without throwing, and the card
+   catches that so a player still gets something to post. It records what it drew in cv._drew, and this
+   reads that rather than trusting a canvas that came back. */
+section('the pixel brand draws');
+{
+  const {page, errs} = await fresh(URL+'/wrestling/');
+  const files = await page.evaluate(async ()=>{
+    const same = async (src, g)=>{ const im=new Image(); im.src=src+'?t='+Date.now(); await im.decode();
+      const a=document.createElement('canvas'); a.width=im.width; a.height=im.height; a.getContext('2d').drawImage(im,0,0);
+      const b=RPK.toCanvas(g,1); if(a.width!==b.width||a.height!==b.height) return `size ${a.width}x${a.height} against ${b.width}x${b.height}`;
+      const da=a.getContext('2d').getImageData(0,0,a.width,a.height).data, db=b.getContext('2d').getImageData(0,0,b.width,b.height).data;
+      let off=0; for(let i=0;i<da.length;i+=4){ if(Math.abs(da[i]-db[i])+Math.abs(da[i+1]-db[i+1])+Math.abs(da[i+2]-db[i+2])+Math.abs(da[i+3]-db[i+3])>8) off++; }
+      return off; };
+    return { fav32: await same('favicon-32.png', RPK.icon(32)), fav16: await same('favicon-16.png', RPK.icon(16)), lockup: await same('lockup.png', RPK.lockup()),
+      painted: [...document.querySelectorAll('canvas[data-rpk]')].map(c=>c.width>0) };
+  });
+  for(const k of ['fav32','fav16','lockup']) (files[k]===0) ? ok(`${k} is exactly what the kit draws`) : bad(`${k} has drifted from the kit (${files[k]} cells); run node wrestling/build-logo.mjs`);
+  (files.painted.length>=2 && files.painted.every(Boolean)) ? ok(`the page painted its ${files.painted.length} brand canvases`) : bad('a brand canvas on the page was never painted: '+JSON.stringify(files.painted));
+  await page.evaluate(()=>{ quickStart(); });
+  await page.waitForTimeout(500);
+  const r = await page.evaluate(async ()=>{
+    const one = async ()=>{ const cv=document.createElement('canvas'); await drawShareCard(cv);
+      const d=cv.getContext('2d').getImageData(0,0,cv.width,cv.height).data; const cols=new Set();
+      for(let i=0;i<d.length;i+=4*97) cols.add(d[i]<<16|d[i+1]<<8|d[i+2]);
+      return {w:cv.width, h:cv.height, drew:cv._drew, colors:cols.size, head:cardHeadline(G.car), text:shareCardText()}; };
+    const rookie = await one();
+    G.car.title=beltName(); G.car.reigns=[{title:G.car.title,year:1,week:2},{title:G.car.title,year:2,week:5}];
+    const champ = await one();
+    return {rookie, champ};
+  });
+  for(const [k,c] of Object.entries(r)){
+    (c.w===1120 && c.h===1600) ? ok(`${k}: the card is ${c.w}x${c.h}`) : bad(`${k}: the card is ${c.w}x${c.h}`);
+    (c.drew && c.drew.figure) ? ok(`${k}: the wrestler drew`) : bad(`${k}: the wrestler failed to draw: ${JSON.stringify(c.drew)}`);
+    (c.colors>40) ? ok(`${k}: the card has ${c.colors} colors in it, not a blank`) : bad(`${k}: the card is nearly blank (${c.colors} colors)`);
+    (!/undefined|NaN|null/.test(c.text+c.head)) ? ok(`${k}: "${c.head}" · ${c.text}`) : bad(`${k}: a missing field reached the card: ${c.head} · ${c.text}`);
+  }
+  (r.champ.head==='2-TIME CHAMPION') ? ok('a two-time champion is called one') : bad('a two-time champion reads '+r.champ.head);
+  if(errs.length) bad('brand page errors: '+errs.slice(0,2).join(' | '));
   await page.close();
 }
 
