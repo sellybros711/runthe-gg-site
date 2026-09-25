@@ -14,7 +14,7 @@
 <meta property="og:url" content="https://runthe.gg/golf/">
 <meta property="og:title" content="Run The Tour, Free Daily Golf Simulation Game">
 <meta property="og:description" content="A free daily golf simulation game. Draft a skill from each real pro to build your own golfer, then beat the pro on a new course every day, run a full career, and play head-to-head online.">
-<meta property="og:image" content="https://runthe.gg/golf/og.png?v=8">
+<meta property="og:image" content="https://runthe.gg/golf/og.png?v=9">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="Run The Tour, a free daily golf simulation game. Draft skills from real pro golfers and beat the daily course.">
@@ -22,7 +22,7 @@
 <meta name="twitter:site" content="@RunTheGG">
 <meta name="twitter:title" content="Run The Tour, Free Daily Golf Simulation Game">
 <meta name="twitter:description" content="A free daily golf simulation game. Draft a skill from each real pro to build your own golfer, then beat the pro on a new course every day, run a full career, and play head-to-head online.">
-<meta name="twitter:image" content="https://runthe.gg/golf/og.png?v=8">
+<meta name="twitter:image" content="https://runthe.gg/golf/og.png?v=9">
 <!-- Structured data: a VideoGame + BreadcrumbList graph so search engines and AI crawlers can render
      rich results (free-game price signal, genre/platform) for the game's marquee page. -->
 <script type="application/ld+json">
@@ -33,8 +33,10 @@
 {"@type":"ListItem","position":2,"name":"Run The Tour","item":"https://runthe.gg/golf/"}]}
 ]}
 </script>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 76'%3E%3Cpath d='M32 2 L60 12 V40 C60 58 47 68 32 74 C17 68 4 58 4 40 V12 Z' fill='%2311432f' stroke='%23cda24a' stroke-width='3'/%3E%3Cpath d='M26 17 v36' stroke='%23e9d8ac' stroke-width='2.6' stroke-linecap='round'/%3E%3Cpath d='M26 18 h16 l-4 5 4 5 h-16 z' fill='%23EBA61F'/%3E%3Cellipse cx='32' cy='57' rx='17' ry='5.4' fill='none' stroke='%23cda54a' stroke-width='1.6'/%3E%3Ccircle cx='38' cy='57' r='2.2' fill='%23f4ecd9'/%3E%3C/svg%3E">
-<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png?v=3">
+<link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png?v=3">
+<link rel="icon" type="image/png" sizes="48x48" href="favicon-48.png?v=3">
+<link rel="apple-touch-icon" href="icon-180.png?v=3">
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -151,19 +153,14 @@ window.GA_ID='G-L29P5MRWKE';
     background:#06200f; background-image:var(--pagebg);
     opacity:1; transition:opacity .42s ease}
   #rtt-boot.gone{opacity:0; pointer-events:none}
+  @media (max-width:359px){ .boot-crest{width:208px!important; height:108px!important} }
   .boot-in{display:flex; flex-direction:column; align-items:center; text-align:center; width:100%; max-width:340px}
-  .boot-crest{width:86px; height:102px; display:block;
+  /* the pixel title, at a whole multiple of its 104 x 54 grid (3x, or 2x on a narrow phone), with nearest
+     neighbour scaling so every pixel stays square */
+  .boot-crest{width:312px; height:162px; display:block; image-rendering:crisp-edges; image-rendering:pixelated;
     filter:drop-shadow(0 0 14px rgba(241,208,74,.20)) drop-shadow(0 8px 20px rgba(0,0,0,.5));
     animation:bootRise .5s cubic-bezier(.22,.9,.26,1) both,
               bootFloat 3.8s cubic-bezier(.4,0,.2,1) .5s infinite}
-  .boot-wm{margin-top:16px; line-height:1;
-    animation:bootRise .5s cubic-bezier(.22,.9,.26,1) .06s both}
-  .boot-wm b{display:block; font-family:var(--display); font-weight:400; font-size:15px;
-    letter-spacing:.30em; text-indent:.30em; color:var(--cream); opacity:.9}
-  .boot-wm i{display:block; margin-top:3px; font-family:var(--display); font-style:normal; font-weight:400;
-    font-size:clamp(38px,12vw,50px); letter-spacing:.06em; text-indent:.06em;
-    background:var(--gold-grad); -webkit-background-clip:text; background-clip:text;
-    -webkit-text-fill-color:transparent; color:transparent}
   .boot-bar{position:relative; width:min(228px,64vw); height:5px; margin-top:24px; border-radius:99px;
     background:rgba(244,227,201,.10); overflow:hidden;
     animation:bootRise .5s cubic-bezier(.22,.9,.26,1) .12s both}
@@ -188,11 +185,10 @@ window.GA_ID='G-L29P5MRWKE';
   }
   @keyframes bootSweep{from{transform:translateX(-100%)} to{transform:translateX(100%)}}
   @media (prefers-reduced-motion:reduce){
-    .boot-crest,.boot-bar,.boot-say,.boot-wm{animation:none}
+    .boot-crest,.boot-bar,.boot-say{animation:none}
     .boot-bar > i::after{animation:none; opacity:0}
     .boot-bar > i{transition:none}
     #rtt-boot{transition:none}
-    .boot-wm{transition:none}
   }
   #app{max-width:none; margin:0; padding:0 env(safe-area-inset-right, 0px) calc(36px + env(safe-area-inset-bottom, 0px)) env(safe-area-inset-left, 0px)}
 
@@ -259,6 +255,9 @@ window.GA_ID='G-L29P5MRWKE';
   .banner{display:flex; align-items:center; gap:10px; max-width:780px; margin:0 auto; position:relative}
   .banner .icobtn{width:36px;height:36px;font-size:17px; flex:0 0 auto}
   .bnbrand{flex:1 1 auto; min-width:0; display:flex; justify-content:center; align-items:center; overflow:hidden; background:none;border:0;padding:0;cursor:pointer}
+  .bnmark{width:24px; height:24px; flex:0 0 auto; margin-right:7px; image-rendering:crisp-edges; image-rendering:pixelated}
+  @media (max-width:380px){ .bnmark{width:20px; height:20px; margin-right:5px} }
+  .bnbrand.nomark .bnmark{display:none}
   .bnwm{display:inline-flex; align-items:baseline; gap:5px; font-family:var(--serif); text-transform:uppercase; white-space:nowrap; line-height:1; max-width:100%; overflow:hidden}
   .bnwm b{font-weight:700; font-size:17px; letter-spacing:.05em; color:var(--oncard)}   /* CS424: match "Tour" size */
   .bnwm i{font-style:normal; font-weight:700; font-size:17px; letter-spacing:.05em; color:var(--gold)}
@@ -1708,7 +1707,7 @@ window.GA_ID='G-L29P5MRWKE';
   .avatarfig canvas{border-radius:50%}
   /* CS353: retro pixel golfer, crisp scaling, no border-radius crop, contain within the sized box */
   .pxfig{filter:none}
-  .pxfig .pximg{width:100%; height:100%; object-fit:contain; image-rendering:pixelated; image-rendering:crisp-edges; border-radius:0; filter:drop-shadow(0 3px 5px rgba(0,0,0,.45))}
+  .pxfig .pximg{width:100%; height:100%; object-fit:contain; image-rendering:crisp-edges; image-rendering:pixelated; border-radius:0; filter:drop-shadow(0 3px 5px rgba(0,0,0,.45))}
   /* CS410, the EFFECT LAYER: animated glow auras. The glow is a drop-shadow, so it hugs the golfer's silhouette
      and works on any avatar img (the wrapped .pximg and the bare .pxfigsm). --fxc = per-effect glow color. */
   .pxfig .pximg[class*="fx-"], .pxfigsm[class*="fx-"], img.fxa[class*="fx-"]{ animation:fxGlow 2.4s ease-in-out infinite; }
@@ -3513,16 +3512,7 @@ h2{font-size:11px;letter-spacing:.04em}
      than the game's crestSVG(), which lives inside that script) so it needs nothing to be ready. -->
 <div id="rtt-boot" role="status" aria-live="polite">
   <div class="boot-in">
-    <svg class="boot-crest" viewBox="0 0 64 76" fill="none" aria-hidden="true">
-      <path d="M32 2 L60 12 V40 C60 58 47 68 32 74 C17 68 4 58 4 40 V12 Z" fill="#0b2e1f" stroke="#d3bd53" stroke-width="2.6"/>
-      <path d="M32 5 L57 14 V40 C57 56 45.5 65 32 70.5 C18.5 65 7 56 7 40 V14 Z" fill="none" stroke="#cda54a" stroke-width="0.8" opacity="0.55"/>
-      <path d="M26 17 v36" stroke="#e9d8ac" stroke-width="2.6" stroke-linecap="round"/>
-      <path d="M26 18 h16 l-4 5 4 5 h-16 z" fill="#F1D04A"/>
-      <ellipse cx="32" cy="57" rx="17" ry="5.4" fill="none" stroke="#cda54a" stroke-width="1.6"/>
-      <circle cx="26" cy="57" r="1.7" fill="#0a2a20"/>
-      <circle cx="38" cy="57" r="2.2" fill="#f4ecd9"/>
-    </svg>
-    <div class="boot-wm" id="boot-wm"><b>RUN THE</b><i>TOUR</i></div>
+    <img class="boot-crest" src="lockup.png?v=1" width="104" height="54" alt="Run The Tour" decoding="async">
     <div class="boot-bar" id="boot-bar" role="progressbar" aria-label="Loading Run The Tour"
          aria-valuemin="0" aria-valuemax="100" aria-valuenow="8"><i id="boot-fill" style="width:8%"></i></div>
     <p class="boot-say" id="boot-say">Loading the course</p>
@@ -11760,7 +11750,15 @@ function header(){
   left.appendChild(pl);
   bar.appendChild(left);
   // brand wordmark, absolutely centered horizontally across the banner → home
-  const brand=$(`<button class="bnbrand" aria-label="Home"><span class="bnwm"><b>Run The</b><i>Tour</i></span></button>`);
+  const brand=$(`<button class="bnbrand" aria-label="Home"><img class="bnmark" src="mark.png?v=3" width="24" height="24" alt="" decoding="async"><span class="bnwm"><b>Run The</b><i>Tour</i></span></button>`);
+  /* The mark sits beside the wordmark, as the football header carries its helmet. The words come first,
+     though: when the pills on either side leave no room for both (a guest with a Legend token AND coins on
+     a 390 phone), the mark steps out rather than cutting "TOUR" in half. Measured, because it depends on
+     the pills and on the font the page actually got. */
+  const fitMark=()=>{ try{ if(!brand.isConnected) return; brand.classList.remove('nomark'); const wm=brand.querySelector('.bnwm');
+    if(wm && wm.scrollWidth>wm.clientWidth+1) brand.classList.add('nomark'); }catch(e){} };
+  requestAnimationFrame(fitMark);
+  try{ document.fonts && document.fonts.ready.then(fitMark); }catch(e){}   // the display face can land later and be wider
   brand.onclick=()=>{ S.screen='title'; S.overlay=null; render(); };
   bar.appendChild(brand);
   // right group: legends-token counter + coin pill. CS433: shown for GUESTS too (as "0"), where a tap leads
