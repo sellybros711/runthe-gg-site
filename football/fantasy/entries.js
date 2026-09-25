@@ -182,6 +182,22 @@
   }
 
   /*
+   * WHAT EVERY MAN HAS SCORED SO FAR THIS WEEK, which is what the lineups under the board's
+   * rows read. `fantasy_results` is public on purpose (110 grants it): a man's points are a
+   * fact about a football game rather than about anybody's entry. A plain table read, one
+   * row a man who has played, about four hundred at the most. Fails soft like every read.
+   */
+  async function results(season, week) {
+    try {
+      const res = await timed(base() + 'fantasy_results?select=player_id,half_ppr'
+        + '&season=eq.' + Number(season) + '&week=eq.' + Number(week), { headers: headers() });
+      if (!res.ok) return null;
+      const j = await res.json();
+      return Array.isArray(j) ? j : null;
+    } catch (e) { return null; }
+  }
+
+  /*
    * ─── WHERE YOU FINISHED, ONCE THE WEEK IS OVER ─────────────────────────────────────
    *
    * One call answers the whole popup: whether this reader entered, where they came, out of
@@ -221,9 +237,11 @@
     /* 1: the entry, the board and the two ways to ask where you came.
        2: `board`, one call for a board that polls while the games are on.
        3: where you finished once it is settled, the ack that shows it once, and the wins a
-          profile carries. */
+          profile carries.
+       `results` rides on 3 rather than bumping it: the page asks for it only if it is
+       there, so a page a version ahead of a cached copy of this file still draws. */
     API_VERSION: 3,
-    submit, mine, standings, myPlace, entryCount, board,
+    submit, mine, standings, myPlace, entryCount, board, results,
     myResult, ackResult, myWins,
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = root.PS_FANTASY;

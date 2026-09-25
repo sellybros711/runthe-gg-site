@@ -3,9 +3,6 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<!-- Not for search: an unlaunched preview: real code and data, but linked from nowhere and absent from sitemap.xml.
-     Kept out of the index so the site is not crawled as a set of near-empty pages. -->
-<meta name="robots" content="noindex, nofollow">
 <title>Run The Diamond: MLB Draft Game | RunThe.GG</title>
 <meta name="description" content="Run The Diamond: Draft an all-time MLB roster from 1901-2025 under a $170M cap, simulate a 162-game season, and chase the World Series. Free, no download.">
 <meta name="theme-color" content="#e8dcc8" id="themeMeta">
@@ -48,6 +45,19 @@
 "playMode":"SinglePlayer","inLanguage":"en","isAccessibleForFree":true,
 "publisher":{"@type":"Organization","name":"RunThe.GG","url":"https://runthe.gg/"}}
 </script>
+<!-- CONSENT DEFAULTS FIRST, THEN THE AD TAG, and the order is the whole of it.
+     privacy.html promises no advertising cookie is set before the CMP answers, so
+     a page that loads adsbygoogle.js with nothing in front of it breaks that
+     promise silently. scripts/check-adsense.mjs asserts the two indexes as well as
+     their presence. This block sits above the GA loader below deliberately: that
+     one reassigns window.gtag, which is harmless because both push into the same
+     window.dataLayer and this call has already queued by then. -->
+<script>
+window.dataLayer=window.dataLayer||[];
+window.gtag=window.gtag||function(){dataLayer.push(arguments);};
+gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personalization:'denied',analytics_storage:'granted',wait_for_update:500});
+</script>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5952069078178257" crossorigin="anonymous"></script>
 <script>
 window.GA_ID='G-L29P5MRWKE';
 (function(){var id=window.GA_ID;if(!id||id.indexOf('G-')!==0||/X{4,}/.test(id))return;

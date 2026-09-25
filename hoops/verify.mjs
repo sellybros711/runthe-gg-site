@@ -1396,7 +1396,7 @@ ok(bestWins > worstWins + 20,
      assertion below pass vacuously, which is how an extractor in this repo
      has been silently wrong three times. */
   const WANT = ['cardTag', 'dayNumberOf', 'dailySeed', 'dailyRecord',
-    'freshBadges', 'bestsSet', 'shareDare'];
+    'freshBadges', 'bestsSet', 'shareDare', 'gridLine', 'pathLine'];
   /* NUMWORD is not in WANT because it is not a `function` declaration but a
      `var` holding one, and it is lifted separately below. It is the page's one
      place that turns a roster count into an English word, so every tagline
@@ -1464,6 +1464,47 @@ ok(bestWins > worstWins + 20,
     ok(plain !== day, 'the daily dares differently from an ordinary run');
     ok(mk(null)({ isGOAT: true, titleWon: true }) !== plain,
       'a 74 win run is dared differently from an ordinary one');
+  }
+
+  /* ---- the share grid ---- */
+  if (fnSource('gridLine') && fnSource('pathLine')) {
+    /* The squares ride in the share text, so the thing that has to hold is
+       that they say what the tiles said: one square a man, a DIFFERENT square
+       for each verdict, and an unknown key never printing nothing. The table
+       is lifted with the function, never restated. */
+    const sqSrc = /var DEAL_SQ = (\{[^}]*\});/.exec(pageSrc);
+    ok(!!sqSrc, 'the page declares the deal squares');
+    const DEAL_SQ = sqSrc ? new Function('return ' + sqSrc[1] + ';')() : {};
+    const gridLine = lift('gridLine', ['DEAL_SQ'], [DEAL_SQ]);
+    const keys = ['good', 'fair', 'bad', 'none'];
+    is(new Set(keys.map(k => DEAL_SQ[k])).size, keys.length,
+      'every verdict gets its own square');
+    is([...gridLine(['good', 'bad', 'fair', 'none', 'good'])].length,
+      [...gridLine(['good', 'good', 'good', 'good', 'good'])].length,
+      'one square a man, whatever the verdicts');
+    is(gridLine(['mystery']), DEAL_SQ.none, 'an unknown verdict still draws a square');
+    /* THE KEYS ARE dealOf's OWN, read out of its source, so a verdict renamed
+       there cannot quietly fall through to the black square here. */
+    const dealKeys = [...(fnSource('dealOf') || '').matchAll(/key: '(\w+)'/g)].map(m => m[1]);
+    ok(dealKeys.length >= 3 && dealKeys.every(k => DEAL_SQ[k]),
+      `every key dealOf can answer has a square (${dealKeys.join(', ')})`);
+
+    const rsSrc = /var ROUND_SHORT = (\{[^}]*\});/.exec(pageSrc);
+    const ROUND_SHORT = rsSrc ? new Function('return ' + rsSrc[1] + ';')() : {};
+    const pathLine = lift('pathLine', ['ROUND_SHORT'], [ROUND_SHORT]);
+    ok(!!rsSrc && E.PLAYOFF_ROUND_NAMES.every(r => ROUND_SHORT[r]),
+      'every round the engine plays has a short name');
+    is(pathLine([], false), null, 'no playoffs, no path line');
+    const run = [
+      { round: 'Play-In', won: true, yourWins: 1, oppWins: 0 },
+      { round: 'First Round', won: true, yourWins: 4, oppWins: 3 },
+      { round: 'Conference Semifinals', won: false, yourWins: 2, oppWins: 4 },
+    ];
+    const p = pathLine(run, false);
+    ok(/Play-in W/.test(p) && /4-3/.test(p) && /2-4/.test(p),
+      `the path reads a series at a time (${p})`);
+    ok(!/\uD83C\uDFC6/.test(p) && /\uD83C\uDFC6/.test(pathLine(run, true)),
+      'and only a champion gets the trophy');
   }
 
   /* ---- the day number ---- */

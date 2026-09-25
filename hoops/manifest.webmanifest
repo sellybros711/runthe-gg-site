@@ -1,0 +1,20 @@
+{
+  "name": "Run The Floor",
+  "short_name": "Run The Floor",
+  "description": "Spin a season and a team, sign five players under the cap, then play all 82 games and chase a ring.",
+  "id": "/hoops/",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0d1117",
+  "theme_color": "#0d1117",
+  "categories": ["games", "sports"],
+  "lang": "en",
+  "icons": [
+    { "src": "icon-192.png?v=1", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png?v=1", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-maskable-512.png?v=1", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "apple-touch-icon.png?v=1", "sizes": "180x180", "type": "image/png", "purpose": "any" }
+  ]
+}

@@ -163,7 +163,7 @@ section('3. the first run guide names the games you get to call');
 /*
  * The guide is the one screen a stranger cannot skip, and its three steps
  * said "then the season plays itself" and stopped. The most distinctive thing
- * this game does is hand you the playoff games that can end a series, and a
+ * this game does is hand you every Game 7 to play yourself, and a
  * first-timer was told the opposite in as many words.
  *
  * A WORD LIST IS THE ONLY CLAIM THAT FITS. No measurement of the glass can
@@ -200,9 +200,13 @@ section('3. the first run guide names the games you get to call');
 
     ok(g.up, `${w}x${h}: the guide is up on a first visit`);
     const all = g.steps.join(' ');
-    ok(/end a series/i.test(all),
-      `${w}x${h}: it says you call the games that can end a series`);
-    ok(/finals/i.test(all), `${w}x${h}: and that the Finals are yours too`);
+    /* GAME 7 AND NOTHING WIDER. The door used to open on any game that could
+       end a series plus every Finals game, which met a first round exit with
+       five stops. It opens on a Game 7 alone now (poNext's `big`), so a guide
+       still promising the wider rule is a guide that lies. */
+    ok(/game 7/i.test(all), `${w}x${h}: it says every Game 7 is yours to play`);
+    ok(!/end a series|every game of the finals/i.test(all),
+      `${w}x${h}: and no longer promises the wider rule it replaced`);
     /* THE OLD SENTENCE ON ITS OWN IS THE DEFECT. "The season plays itself" is
        still true of the 82 and stays; what may not come back is that clause
        standing alone as the whole of what happens after the draft. */

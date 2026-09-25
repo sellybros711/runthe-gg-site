@@ -83,7 +83,8 @@ create table if not exists rtd_runs (
   era           text,                        -- decade label, Eras Draft only
   division      text,                        -- division name, Division Draft only
 
-  -- The daily board. Null for an ordinary run, the UTC date for a daily one.
+  -- The daily board. Null for an ordinary run, the EASTERN date for a daily one,
+  -- because that is the calendar the page draws the board from (easternISO()).
   daily_key     date,
   -- One daily run per browser. Not an account check on purpose: the daily is
   -- playable signed out and an account requirement is the wrong friction, so
@@ -148,6 +149,25 @@ end $$;
 
 revoke all on rtd_runs from anon, authenticated;
 grant select on rtd_runs to anon, authenticated;
+
+-- ---------------------------------------------------------------------------
+-- rtd_board_day(): which daily board an instant belongs to
+-- ---------------------------------------------------------------------------
+-- The page names a daily by the date in America/New_York, which is when every
+-- other calendar day on this site rolls. This was first written as the UTC date,
+-- and the two disagree for four or five hours every evening (from 8pm Eastern in
+-- summer, 7pm in winter): the page sent today, the server read tomorrow, and
+-- every daily finished in that window was refused as backdated. The board fails
+-- soft, so the only symptom was an evening's dailies missing from the board.
+--
+-- A function of its own so the rule can be tested at a fixed instant, since
+-- nothing lets a test move now().
+create or replace function rtd_board_day(p_at timestamptz default now())
+returns date
+language sql stable
+set search_path = public
+as $$ select (p_at at time zone 'America/New_York')::date $$;
+revoke all on function rtd_board_day(timestamptz) from public;
 
 -- ---------------------------------------------------------------------------
 -- rtd_submit_run()
@@ -322,7 +342,7 @@ begin
   if p_daily_key is not null then
     v_daily := p_daily_key::date;
     -- A daily is today's board. Backdating one is the cheapest possible forgery.
-    if v_daily <> (now() at time zone 'utc')::date then
+    if v_daily <> rtd_board_day(now()) then
       raise exception 'the daily board is today only';
     end if;
     if v_mode <> 'free' then

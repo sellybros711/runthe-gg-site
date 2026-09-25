@@ -4249,6 +4249,60 @@ having scored nobody: the one failure here that looks exactly like a quiet after
 has no rows for the week, and an emitter that threw there would take the workflow red every
 single week for the one condition that is certain.
 
+#### The cron never fired, so the job is a loop now
+
+**Not one of the six scheduled firings inside the first Thursday's game window ran.** GitHub's
+cron is best effort and drops runs under load, which it is allowed to do. The board read 0.0
+for all 27 entrants with nothing red anywhere, because a job that never starts cannot fail.
+
+So a firing only has to WAKE the job. `fantasy-live.yml` loops: every two minutes while ESPN
+says a game is on, every ten while a kickoff is inside three hours or a club's stats are
+missing, and it stops when there is nothing to watch. `live-results.mjs --status FILE` is what
+decides, written as a file because the exit code already means "failed". A loop still going at
+five and a half hours dispatches itself (the one event the job's own token may start) and the
+concurrency group queues the new run behind it. The repository is public, so the minutes are
+free. One failed tick does not end the loop; three in a row do, and any failure takes the run
+red when it ends.
+
+#### And nflverse is hours late, so the points during a game are ESPN's box score
+
+```
+node football/build/test/test_box.mjs
+```
+
+The second half of the same 0.0. nflverse writes a game's player rows hours after the whistle
+(still missing at 11:25pm ET after Thursday's game), so even a job that ran had nobody to
+score. `football/build/espn-box.mjs` reads ESPN's per game summary for every game that has
+started and whose clubs nflverse has not written, joins each athlete on `espn_id` to the pool's
+gsis id through `players.csv`, and scores him.
+
+**IT NEVER PAYS.** It fills only men nflverse has no row for, nflverse replaces them by upsert
+the moment it lands, and a week is only marked final off nflverse. The rule is written out
+(nflverse ships totals, never the rule) and it matches `fantasy_points` on **18,443 of 18,443**
+2025 regular season rows with no two point conversion. That is the one thing a box score cannot
+see: a man who scores one reads two points low until nflverse lands.
+
+The "N of 16 games" count takes ESPN's finished games when that is more than `games.csv` has.
+It is display only; `final` stays nflverse's alone.
+
+#### A row opens into its lineup, and the leader wears the prize
+
+```
+node football/check-fantasy.mjs   the section named A ROW OPENS INTO ITS LINEUP
+```
+
+Every row on the live board is a button, and pressing it folds out the six men with each one's
+points and whether his game is on. `fantasy_standings` already returned `picks` after the lock
+and nothing drew them. What each man has scored is one plain read of `fantasy_results`, which
+110 made public (a man's points are a fact about a game, not about anybody's entry), asked
+beside the board on every poll so the two are one instant. No migration.
+
+**Open lineups stay open across polls** (`BOARD_OPEN`, by row key), or a lineup somebody was
+reading would fold shut every twenty seconds. **The leader is green with a PRO pill** only once
+somebody has a point: straight after the lock the order is who entered first, and marking that
+row as winning a prize would invent a leader. Green rather than gold, because gold on this page
+already means a podium AFTER the week. All four claims were proved by mutation.
+
 #### The rows are keyed on the ENTRY, and the key is not the entry's id
 
 A board that animates cannot do without a stable row key. Keyed on PLACE, row one is always
@@ -9397,6 +9451,42 @@ tagline.** `verify.mjs` asserts all four are different and that no locked mode
 falls through to the league's, so a fifth door cannot inherit the fourth's
 words either.
 
+#### The share carries the draft, as squares
+
+A shared result said how the season went and nothing about how it was built,
+and the build is the half this game is about. So the text carries a row of
+five squares in slot order, one a man, coloured by the verdict his tile wore
+on the board: green for a bargain, white for the going rate, red for paying
+for points, black for a man under three win shares. Under it is the playoff
+path a series at a time (`R1 4-3 · R2 2-4`), with a trophy only for a
+champion.
+
+**The squares are the one place emoji are allowed in this game's copy**, and
+the reason is the medium: a chat app shows text and nothing else, so a row of
+colours is the only picture a shared result can carry. They are data rather
+than prose. The card draws the same two things with no emoji at all: the path
+under the verdict, and each man's verdict under his price in the chip's own
+colours, because an emoji in a canvas is whatever the machine's emoji font is.
+
+**`draftCells()` is the one walk** the share text, the card and the results
+screen all read, and every verdict is `dealOf`'s. A second walk would be a
+screen and a share that disagree about a man. `verify.mjs` lifts `gridLine`
+and `pathLine` out of the page and asserts four different squares, one square
+a man, a square for every key `dealOf` can answer (read out of its source, so
+a verdict renamed there cannot fall through to black), and a short name for
+every round the engine plays. Merging two squares fails it.
+
+**A signing is stamped.** The verdict used to be answered only on the tile
+BEFORE the press, so the one decision the draft is built around got no answer
+after it. `stampDeal()` puts the verdict over the court for about a second,
+off the same `dealOf`, restarted rather than queued so two quick signings show
+the second one. It takes no pointer, so a thumb heading for the reels goes
+straight through it.
+
+**The results screen shows the row too**, with what it counted, and each count
+is one unbreakable piece. Without that a 390px phone left "role player" alone
+on a line under a "1".
+
 #### A badge earned in silence is a badge nobody has
 
 `badges.js` computes forty-odd badges off the whole career and the only surface
@@ -10294,11 +10384,28 @@ it**, which is why the sweep and the guard both walk four.
 
 #### Which games are offered
 
-A game the series can END in, either way, plus every Finals game. One rule
-rather than a list, and the two halves of it are the elimination game and the
-closeout. Measured over 170 playoff runs: **mean 2.6 a run, median 2, p90 5**,
-and a year that reaches a game seven Finals can offer thirteen, which is the
-run that deserves them. The play-in is one game, so it is always one.
+**A Game 7, and nothing else.** `big` in `poNext` is `bestOf > 1 && facing
+&& closing`, which is the same test as `decider`.
+
+**It used to be every game a series could END in, plus every Finals game**,
+measured at a mean of 2.6 stops a run and up to thirteen. Reported by a player
+as too many pauses in the quick draft, and timed through the real page it was:
+a first round exit met FIVE doors, and the bracket walk that is meant to take
+twelve to nineteen seconds became a sequence of the same question. A stop that
+comes every series is a pause; one that comes one run in five is an event.
+Measured after, over 200 runs: **mean 0.2, max 1**.
+
+**The play-in is NOT a Game 7**, although both `elimination` and `closeout` are
+true there by arithmetic, so it plays through with everything else.
+
+**The browser half of `check-live` widens the door on purpose.** Waiting for a
+one-in-five event makes every screen behind the door a coin toss on whether the
+walk gets to see it, which is the badge nothing can light. So `widenDoor()`
+wraps `RTF_ENGINE.poNext` inside the page to flag any SERIES game that can end
+it, and has to be applied again after a reload. Section 4 is where the real rule
+is asserted, exactly, off the engine, and section 5 plays every series-ending
+game forward rather than only the Game 7s, because what it asserts is the
+record and not the door.
 
 #### The bracket is one loop, and it is the loop that already existed
 
@@ -10612,8 +10719,9 @@ proxy and the page's own `<link>` arrives empty, and a refusal to write if a
 display face is missing, read off the loaded FontFace set rather than
 `document.fonts.check()`.
 
-**The ball is drawn rather than an image file**, because this game ships no
-logo and a card waiting on one would not exist. **The tags go in while the page
+**The ball on the card is `hoops/logo.png` at exactly half size**, so each of its
+22 pixel cells lands on 11 and the pixel art stays crisp. The build waits for the
+image and refuses to write a card without it. **The tags go in while the page
 is still noindexed**, deliberately: a robots tag tells a crawler not to index
 and does nothing to a chat app unfurling a link somebody was handed, which is
 how an unlaunched game reaches its testers.
@@ -10634,6 +10742,40 @@ thing. A bare "NNNN to NNNN" means several things here: `how-to-play.html`
 lists the seven era bands, and 1980 to 1986 is a correct sentence about the
 eighties. Scanning for the shape reported all seven as defects, which is the
 trap that kept "times" and "players" off the roster-count noun list.
+
+### The logo is an 8-bit ball, and every size is a whole multiple of one grid
+
+```
+node hoops/build/logo.mjs     the favicons, the icons, the mark, the wordmark and the lockup
+node hoops/build/og.mjs       the share card, which uses logo.png (needs :8080)
+```
+
+`hoops/build/logo-art.mjs` is the drawing, as a grid of cells built from a few rules:
+a one cell outline, an upright seam and a level seam through the middle, two side seams
+that step out once near the rim, and light cut into diagonal bands off the top left.
+`logo.mjs` lays it out at every size, under the football game's file names.
+
+**THE GRID IS ODD.** The first draft was 20 cells, which has no middle column, so the
+upright seam sat a cell right of centre and the ball leaned. 21 for the mark and 15 for
+the favicon are symmetric.
+
+**EVERY SIZE IS A WHOLE MULTIPLE OF THE GRID, AND THE SHADOW IS ONE CELL.** A pixel ball
+scaled by 1.3 has cells one and two pixels wide at random, which reads as a rendering
+fault. So `favicon-16` is fifteen cells and a one pixel shadow, 32 and 48 are that at 2x
+and 3x, and `mark.png` is the 21 cell ball at 1x (22px with its shadow), drawn at 22 CSS
+pixels in the top bar with `image-rendering:pixelated` so a phone scales it by 2 or 3.
+
+**THE NAME IS SET IN PRESS START 2P, and only the name.** The top bar, the home title,
+the rules page's title and the share card. It is drawn on an 8 pixel grid, so it is set
+at multiples of 8 (the top bar's 10px is the one exception, measured to fit a 360px bar
+beside the Career button). `--pixel` falls back to the display face and **never to a
+monospace**, because `verify.mjs` keeps a code face off these pages and a fallback stack
+ending in `monospace` fails it. Paragraphs stay in Archivo: a sentence in the pixel face
+is hard to read on a phone.
+
+**Google Fonts does not load in the sandbox**, so a screenshot of the page shows the
+fallback. Inline the face with `addStyleTag`, the way `og.mjs` does, before judging the
+title by eye.
 
 ### The board is in the preflight now, and the helper under it could only say NO
 
@@ -10833,6 +10975,7 @@ account. Redirecting the board redirects the shelf with it.
 so **read the cache-busting section above before editing any of them**.
 
 ```
+node baseball/check-posture.mjs   the four facts, against two declarations
 node baseball/check-atbats.mjs    the at-bat simulator, against real brackets
 node baseball/check-bracket.mjs   the playoff field, against real runs
 node baseball/check-labels.mjs    what a player-season row says it is
@@ -10842,6 +10985,183 @@ node baseball/check-staff.mjs     the All-Time Staff assignment and its blast ra
 node baseball/check-badges.mjs    every badge is reachable, against real runs
 node baseball/check-run.mjs       a whole run, in a browser, to the screen it ends on
 ```
+
+### IT IS SERVED AND UNLISTED, and a launch is four edits rather than one
+
+```
+node baseball/check-posture.mjs   the four rows, against INDEXED and LINKED
+```
+
+Run The Diamond is indexable, in `sitemap.xml` and carrying the AdSense tag
+behind its Consent Mode defaults, and **the home page does not link it**. That is
+Segue's row in the table under the setlist game, not hoops' and not the full
+launch. It was launched with a home page link for a day and the owner took the
+link back off, so what follows describes a launch that was made, and undone
+by one half.
+
+**SO THE GUARD HAS TWO DECLARATIONS RATHER THAN ONE.** `INDEXED` holds the
+first three rows (robots, sitemap, ad tag), which move together. `LINKED` holds
+the fourth: the phone tile, the desktop card, the JSON-LD `ItemList` entry and
+any nav link. Each group is all or nothing, and `LINKED` without `INDEXED` is
+refused outright, because it sends visitors to a page that tells a crawler to
+stay away. Driven four ways: the launched home page against `LINKED = false`
+names the nav link, the tile and card, and the JSON-LD; the unlisted page against
+`LINKED = true` names all four; the launched page against `LINKED = true` passes;
+and `LINKED` without `INDEXED` names the contradiction.
+
+**RELAUNCHING ON THE HOME PAGE IS ONE LINE AND ONE FILE.** Set `LINKED = true`
+and restore `index.html` from the launch commit (`e1b7ec63`), which carries the
+tile, the card, the prose paragraph, the FAQ line and the JSON-LD entry in one
+piece. Then `node scripts/check-numbers.mjs --update`, because the home page's
+cap and season claims come back with it (4 each against 6). The `MLB` import in
+that file was left in for exactly this: it allows two values and claims nothing
+while no page states them.
+
+**IT IS FOUR EDITS AND EVERY ONE OF THEM IS INVISIBLE ALONE.** A page dropped
+from the sitemap is still indexable and still linked, so nothing breaks and it
+quietly stops being crawled. A page that keeps its robots tag while sitting in
+the sitemap is a contradiction a crawler reports back weeks later. A launched
+game with no ad tag is a page in the reviewed surface that cannot serve one,
+which is what two AdSense rejections were already traced to. So the four move
+together or they do not move.
+
+**THE HOLE THE POSTURE GUARD COVERS IS ONE `check-adsense` CANNOT.** That file
+walks every INDEXABLE page and SKIPS anything noindexed, so putting the robots
+tag back here does not fail it: it stops auditing this game at all, and the ad
+tag, the consent ordering and the policy links go unasked with it. **A guard
+that goes quiet when a thing is half reverted is worse than no guard**, so the
+state is declared ONCE, as `LIVE` at the top of `check-posture.mjs`, and the
+rows are asked against the declaration rather than against whatever the files
+happen to say. Un-launching means editing that line, which is the whole point.
+
+**THE HOME PAGE REACHES A VISITOR TWICE AND THE TWO DO NOT OVERLAP.**
+`.gtiles` is `display:none` until 640px and `.games > .feat` is hidden from 640
+down, so tiles are the phone home screen and cards are the desktop one. A link
+added to only one of them is a game that exists on one kind of device, renders
+perfectly, and is invisible to every other check on the site. Both are
+asserted. **And the JSON-LD is a third answer**: the `ItemList` in the home
+page's graph is what a search engine reads as the list of games here, so a game
+launched in the markup and missing from that block is the stale-number trap in
+its worst place. Asserted too, by parsing the block rather than matching text.
+
+**AN ODD NUMBER OF TILES IN TWO COLUMNS LEAVES ONE ALONE**, and the gap beside
+it reads as a tile that failed to load. `.gtile.newest` takes the whole row,
+which costs nothing because the row was half empty. The class is on the NEWEST
+tile and not on baseball, so the seventh game inherits it with no rule to
+remember. It is deliberately not `.hero`, which is the arcade's marquee and a
+claim about being the flagship.
+
+**The card is `noshots`, which is the one place this launch is visibly thinner
+than its siblings.** That modifier has sat unused in the stylesheet since it was
+written for a game being redesigned, and this is the first card to want it: info
+full width, no showcase rail. Golf has a CSS showcase, football and college have
+a live drive canvas, soccer has phone clips. Baseball has none of those and a
+bad showcase is worse than an honest empty column, so the right hand third is
+open. The share card is NOT the thing to drop in there: `og.png` is a 1200x630
+link preview whose headline is sized to be read in a feed, and at 250px its text
+is illegible.
+
+**`og-source.html` stays noindexed either way**, and that is asserted on its own
+branch rather than folded into the pages. It is the template `build/og.mjs`
+renders the share card from and is never served to anybody, so a launch is about
+the game and this is a build input. Left indexable it becomes a page with a
+headline, no navigation and no reason to exist, and `check-adsense` would then
+correctly start demanding an ad tag on it.
+
+**Eight mutations were reintroduced one at a time** and each names exactly one
+thing: the robots tag back on, the ad tag off, both sitemap entries gone, the
+tile gone, the card gone, the `ItemList` entry gone, the ad tag moved above its
+consent defaults, and `og-source.html` made indexable. The `LIVE = false` arm
+was driven too, against the launched tree, and reports all seven in the other
+direction.
+
+#### The home page describes three games now, so `check-numbers` knows three engines
+
+The moment the game was linked, `index.html` started stating `$170M` and `all
+162 games`, and that file knew two engines. It called four correct sentences
+defects, which is the right failure: a page claiming a number no game plays is
+exactly what it is for, and the fix is to teach it rather than to silence it.
+`MLB` is the third `CONSTANTS` import, and the cap and the season are widened.
+
+**THE COLLISION CHECK FIRED ON THE SAME RUN, which is the first time it has.**
+That file's own header records the accepted weakening (a claim is allowed if it
+matches EITHER game) and the standing warning that two games sharing a value
+would hide a stale claim about one behind the other. Baseball's re-spin ladder
+is `$5M, $10M, $15M`, which is the NFL game's ladder **exactly**, so adding it
+put two games on one set of values. **It is left out**, because it buys nothing
+to pay for: the baseball pages are not on `PAGES`, and no guarded page prices a
+baseball re-spin. The cap and the season are in because the home page really
+does state both and neither collides (170 against 11, 140 and 280; 162 against
+12 and 17). The counts are re-recorded: 88 claims across 7 pages.
+
+### The leaderboard is in the preflight now, and it is three rows rather than one
+
+```
+psql ... -f supabase/test/launch_preflight.sql     or paste it into the SQL editor
+```
+
+`97_baseball_leaderboard.sql` was named zero times in that file. The board fails
+soft exactly as every board here does, so an undeployed migration is
+**indistinguishable from a network that is down**: every call in
+`baseball/board.js` resolves to null, the screen says the board is not
+reachable, and it says that on every device for ever while twelve modes play
+perfectly, the career records and every badge lights. There is no state in which
+a player can tell the two apart. That was survivable while the game was
+unlaunched and stops being survivable the day the home page links it.
+
+**TWO ROWS, because they are two failures rather than one at two sizes**, which
+is the fantasy chain's own argument arriving inside a single file. Row 23 is the
+board not existing. Row 24 is `rtd_runs_daily_once`, the partial unique index
+that is the whole of the rule that a browser files one result per puzzle:
+without it the board draws, the scores are real, and the daily quietly stops
+being a competition because one person can file the same day repeatedly and
+every copy ranks. Folded together, the row would answer NO about the board on a
+day the board is fine.
+
+**AN INDEX CAN FAIL ON ITS OWN WHERE THE TABLE BESIDE IT CANNOT**, which is why
+`idx` was added as a third catalog helper. A unique index is refused outright by
+data that already breaks it, and `if not exists` does not save it: that skips on
+a name that is taken, never on a duplicate row. Applied through
+`--single-transaction` the whole file rolls back and the table is missing too,
+which the existing block already catches; pasted into the SQL editor statement
+by statement it is 114's trigger all over again, an object whose absence is
+invisible from every side. Like `col` and `trg` and **unlike `has_table`**, it
+asks the catalog for everything and lets the row filter, so it can never read
+false for ever about something nobody added to a list.
+
+`rtd_runs` went on the `has_table` allowlist in the same edit, because that
+block is a trap rather than a convenience and the last row added after it was
+written read NO against a database where the table was sitting right there.
+
+**Driven against a real Postgres 16, both ways.** Bare database: 24 rows, no
+error, both new rows NO and named in the summary. With `97` loaded: both yes.
+Then each was proved to bite alone, which is the whole argument for two rows:
+dropping the index alone leaves row 23 yes and takes row 24 to NO, and dropping
+`rtd_claim_run` takes row 23 to NO on its own.
+
+#### The daily was checked against the UTC date, and the page names it by the Eastern one
+
+Found reading the migration before handing it over to be pasted, and nothing
+here could have caught it. `rtd_submit_run` refused a daily whose key was not
+`(now() at time zone 'utc')::date`, and `easternISO()` in the page is what
+builds the key. The two disagree from **8pm Eastern to midnight in summer and
+from 7pm in winter**, so every daily finished in that window, which is when most
+people play, was refused as backdated. The board fails soft, so what a player
+saw was an evening with nobody on the daily.
+
+**The SQL test encoded the same wrong calendar**, which is why it passed:
+`baseball_board_test.sql` built its "today" off UTC too, and a suite that shares
+the defect it is testing cannot see it. It asks `rtd_board_day()` at three fixed
+instants now (a September evening, a January evening, just past midnight),
+because nothing lets a test move `now()`, and asserts the submit reads that
+function rather than a calendar of its own. Against the old file it fails
+exactly that claim and nothing else.
+
+**Row 25 exists because an early copy of 97 reads as fully deployed.** Every
+object rows 23 and 24 ask for is in that copy. What tells it apart is whether
+the submit's BODY calls `rtd_board_day(`, so that is what the row asks. The fix
+is re-running 97, which is idempotent and was driven over an old copy with no
+error.
 
 ### The $170M cap is right, and the per-slot dollar is the wrong comparison
 
@@ -11802,6 +12122,34 @@ labelled as such.** A roster is drafted across every era from 71 clubs, half of
 which no longer exist and some of which were never in either league, so filing the
 1931 Homestead Grays under the AL would be a tidy-looking lie. They are the
 player's side and the other one.
+
+#### And its determinism section pinned three magic seeds, which the pool ate
+
+`check-bracket.mjs` went red on a pass that touched no engine, no run loop and no
+data file: `DETERMINISM: a run to check determinism against`. It reads exactly
+three files and not one of them had changed, so it was pre-existing by
+construction, and it is **the magic seed trap this file already documents twice**
+arriving in a third game.
+
+The section needs a run that reached October, and asked for one as
+`octoberRun(20000) || octoberRun(20001) || octoberRun(20002)`. `octoberRun`
+drafts by taking the first man on every board, which is a careless draft:
+measured against the shipped pool, **about 30% of seeds reach the playoffs at
+all**, so three pins had roughly a **one in three chance of all failing** on any
+change to the data. Splitting traded stints back out took the pool 44,344 rows to
+45,379, every seeded draw reshuffled, and all three stopped qualifying.
+
+**Measured rather than re-run until green**: the three pinned seeds come back
+false deterministically, and **60 of the 200 seeds from 20000 reach October**,
+the first being 20005. So the page was right the whole time and the file had no
+fixture.
+
+**The seed is not part of the claim**, which is what makes searching the fix
+rather than a loosening. What is being asserted is a property of `createBracket`,
+that the same run always draws the same field, and ANY October run supplies it.
+The search is bounded at two hundred and the failure still means something: no
+run in two hundred seeds reaching October would be a real finding about the mode
+rather than a missing fixture.
 
 ### The at-bat simulator
 

@@ -1066,6 +1066,15 @@ async function openPage(browser, url, opts = {}) {
       const a = RPC[call[1]](body);
       return r.fulfill({ status: a.status, contentType: 'application/json', body: a.body });
     }
+    /* THE ONE PLAIN TABLE READ, what each man has scored. Answered from the fixture like the
+       rpcs are, and aborted like everything else when the fixture has nothing to say, so no
+       request ever leaves for the live project. */
+    if (/\/rest\/v1\/fantasy_results$/.test(u.pathname)) {
+      posted.push({ fn: 'fantasy_results', body: Object.fromEntries(u.searchParams) });
+      if (!server || !server.results) return r.abort();
+      return r.fulfill({ status: 200, contentType: 'application/json',
+        body: JSON.stringify(server.results) });
+    }
     if (u.hostname !== 'local.test') return r.abort();
     let rel = decodeURIComponent(u.pathname);
     if (rel.endsWith('/')) rel += 'index.html';
@@ -2659,6 +2668,128 @@ console.log('\nTHE BOARD MOVES, AND YOU CAN SEE WHO MOVED');
 
   ok('  nothing threw', !boom.length, boom.join(' | ') || 'clean');
   await page.close();
+}
+
+/* ----------------------------------------------------------------
+ * A ROW OPENS INTO ITS LINEUP, AND THE LEADER WEARS THE PRIZE
+ *
+ * Asked for by the owner the first night the board was live. Everything here renders
+ * perfectly when it is wrong: a lineup that folds shut on every poll, a leader marked on a
+ * board of zeroes, a man's points read off the wrong id. So it presses the rows and reads the
+ * glass rather than the markup.
+ * ---------------------------------------------------------------- */
+console.log('\nA ROW OPENS INTO ITS LINEUP, AND THE LEADER WEARS THE PRIZE');
+{
+  const ENTRY = { picks: POOL.pool.slice(0, 6).map((m) => m.player_id),
+    spend: 80, projected: 50, score: 0, scored: false };
+  /* One of each slot, drawn from the real pool so the names and clubs are real. Listed OUT
+     of position order on purpose, so a lineup drawn in pick order is caught. */
+  const byPos = (pos, n) => POOL.pool.filter((m) => m.position === pos).slice(n, n + 1)[0];
+  const SIX = [byPos('TE', 0), byPos('WR', 0), byPos('RB', 0), byPos('QB', 0),
+    byPos('WR', 1), byPos('RB', 1)];
+  const ADA = SIX.map((m) => m.player_id);
+  const YOU = POOL.pool.slice(0, 6).map((m) => m.player_id);
+  const r = (place, name, score, picks, me, played) => ({ place, display_name: name, score,
+    projected: 58, spend: 88, picks, is_me: !!me, entry_no: name.charCodeAt(0), played });
+  /* Ada's quarterback has 21.4 and her tight end nothing yet: one number to find and one
+     man who has not played. */
+  const results = [{ player_id: byPos('QB', 0).player_id, half_ppr: 21.4 },
+    { player_id: byPos('RB', 0).player_id, half_ppr: 9.1 }];
+  const B = boardOf({
+    rows: [r(1, 'Ada', 30.5, ADA, false, 2), r(2, 'You', 12.0, YOU, true, 1),
+      r(3, 'Bo', 0, YOU, false, 0)],
+    me: { place: 2, entries: 3, score: 12.0, lines: [] },
+  });
+  const { page, posted, boom } = await openPage(browser, FANTASY,
+    { who: TESTER, at: LIVE_AT, server: { mine: ENTRY, boards: [B], results } });
+  await openBoard(page);
+  await page.waitForSelector('#lv-board .brow .bhd', { timeout: 15000 });
+  await page.waitForTimeout(200);
+
+  const lead = await page.evaluate(() => {
+    const rows = [...document.querySelectorAll('#lv-board .brow')];
+    return rows.map((e) => ({ name: e.querySelector('.bn').textContent,
+      lead: e.classList.contains('lead'), pro: !!e.querySelector('.bpro'),
+      proText: (e.querySelector('.bpro') || {}).textContent || '',
+      score: getComputedStyle(e.querySelector('.bs')).color }));
+  });
+  ok('the leader is marked, and only the leader', lead[0].lead && lead[0].pro
+    && lead.slice(1).every((x) => !x.lead && !x.pro), JSON.stringify(lead.map((x) => x.lead)));
+  ok('  the marker names the prize', /PRO/.test(lead[0].proText), lead[0].proText);
+  ok('  the leader\'s score is green', /34, 197, 94/.test(lead[0].score), lead[0].score);
+  ok('  and the name is still just the name', lead[0].name === 'Ada', lead[0].name);
+  ok('  the board says what first place wins', await page.evaluate(() => {
+    const el = document.getElementById('lv-boardhow');
+    return !el.hidden && /Pro account/.test(el.textContent);
+  }));
+
+  const closed = await page.evaluate(() => {
+    const e = document.querySelector('#lv-board .brow');
+    const inner = e.querySelector('.broster > div');
+    return { open: e.classList.contains('open'), h: inner.getBoundingClientRect().height,
+      vis: getComputedStyle(inner).visibility };
+  });
+  ok('a row starts shut', !closed.open && closed.h < 1 && closed.vis === 'hidden',
+    JSON.stringify(closed));
+
+  await page.click('#lv-board .brow:first-child .bhd');
+  await page.waitForTimeout(400);
+  const opened = await page.evaluate(() => {
+    const e = document.querySelector('#lv-board .brow');
+    const inner = e.querySelector('.broster > div');
+    const men = [...e.querySelectorAll('.bm')].map((m) => ({
+      pos: m.querySelector('.bmp').textContent,
+      name: m.querySelector('.bmn').textContent,
+      pts: m.querySelector('.bmpts').textContent,
+      h: m.getBoundingClientRect().height }));
+    return { open: e.classList.contains('open'),
+      aria: e.querySelector('.bhd').getAttribute('aria-expanded'),
+      h: inner.getBoundingClientRect().height, men,
+      wide: document.getElementById('lv-board').scrollWidth
+        - document.getElementById('lv-board').clientWidth };
+  });
+  ok('pressing a row opens its lineup', opened.open && opened.aria === 'true' && opened.h > 100,
+    JSON.stringify({ open: opened.open, aria: opened.aria, h: Math.round(opened.h) }));
+  ok('  all six men are there', opened.men.length === 6, String(opened.men.length));
+  ok('  in the order a lineup is read, quarterback to tight end',
+    opened.men.map((m) => m.pos).join(' ') === 'QB RB RB WR WR TE',
+    opened.men.map((m) => m.pos).join(' '));
+  const qb = opened.men.find((m) => m.pos === 'QB');
+  ok('  each man carries his own points', qb && qb.pts === '21.4'
+    && qb.name.startsWith(byPos('QB', 0).name), qb && `${qb.name} ${qb.pts}`);
+  const rb2 = opened.men.filter((m) => m.pos === 'RB')[1];
+  ok('  and a man with no number yet is not shown as a zero he has not scored',
+    rb2 && (rb2.pts === '-' || rb2.pts === '0.0'), rb2 && rb2.pts);
+  ok('  and nothing runs off the side at a phone', opened.wide <= 1, opened.wide + 'px');
+  ok('  the points were asked for, and nowhere but the stub',
+    posted.some((x) => x.fn === 'fantasy_results'));
+
+  /* THE POLL REBUILDS THE LIST, and an open lineup that folded shut every twenty seconds
+     would be a lineup nobody could read. */
+  await page.evaluate(() => window.__rtgPoll());
+  await page.waitForTimeout(200);
+  ok('a poll leaves an open lineup open', await page.evaluate(() =>
+    document.querySelector('#lv-board .brow').classList.contains('open')));
+
+  await page.click('#lv-board .brow:first-child .bhd');
+  await page.waitForTimeout(400);
+  ok('pressing it again shuts it', await page.evaluate(() =>
+    !document.querySelector('#lv-board .brow').classList.contains('open')));
+  ok('  nothing threw', !boom.length, boom.join(' | ') || 'clean');
+  await page.close();
+
+  /* A BOARD OF ZEROES HAS AN ORDER AND NO LEADER. Right after the lock the top row is just
+     whoever entered first, and telling them they are winning a prize would be the page
+     inventing it. */
+  const Z = boardOf({ rows: [r(1, 'Ada', 0, ADA, false, 0), r(2, 'You', 0, YOU, true, 0)],
+    me: { place: 2, entries: 2, score: 0, lines: [] } });
+  const z = await openPage(browser, FANTASY,
+    { who: TESTER, at: LIVE_AT, server: { mine: ENTRY, boards: [Z], results: [] } });
+  await openBoard(z.page);
+  await z.page.waitForSelector('#lv-board .brow .bhd', { timeout: 15000 });
+  ok('a board where nobody has scored marks no leader', await z.page.evaluate(() =>
+    !document.querySelector('#lv-board .brow.lead, #lv-board .bpro')));
+  await z.page.close();
 }
 
 /* ----------------------------------------------------------------
