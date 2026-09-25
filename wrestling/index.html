@@ -3,10 +3,28 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<title>RunTheRopes: Build A Wrestler</title>
+<title>Run The Ropes: Build A Wrestler | RunThe.GG</title>
 <meta name="robots" content="noindex, nofollow" />
 <meta name="theme-color" content="#0c0b0b" />
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230c0b0b'/%3E%3Ctext x='16' y='23' font-size='20' text-anchor='middle'%3E%F0%9F%A4%BC%3C/text%3E%3C/svg%3E" />
+<meta name="description" content="Build a wrestler and run a whole career. Start on the indies, cut promos, pick feuds, sign with bigger companies and win the belt." />
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="RunThe.GG">
+<meta property="og:url" content="https://runthe.gg/wrestling/">
+<meta property="og:title" content="Run The Ropes: Build A Wrestler">
+<meta property="og:description" content="Build a wrestler and run a whole career. Start on the indies, cut promos, pick feuds, sign with bigger companies and win the belt.">
+<meta property="og:image" content="https://runthe.gg/wrestling/og.png?v=1">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Run The Ropes. Build a wrestler, book your career and win the belt.">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:site" content="@RunTheGG">
+<meta name="twitter:title" content="Run The Ropes: Build A Wrestler">
+<meta name="twitter:description" content="Build a wrestler and run a whole career. Start on the indies, cut promos, pick feuds, sign with bigger companies and win the belt.">
+<meta name="twitter:image" content="https://runthe.gg/wrestling/og.png?v=1">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="manifest" href="manifest.webmanifest">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Barlow+Semi+Condensed:wght@500;600;700;800;900&family=Cinzel:wght@600;700;800&display=swap" rel="stylesheet">
@@ -84,9 +102,12 @@
     box-shadow:0 4px 12px -6px rgba(0,0,0,.5);}
   .sb-home span{color:var(--brandred);font-weight:800;}
   .sb-home:active{transform:translateY(1px);}
-  .sb-mark{flex:1;text-align:center;font-family:var(--display);font-size:16px;letter-spacing:.09em;
-    color:var(--cream);cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1;}
-  .sb-mark b{color:var(--brandred);font-weight:inherit;}
+  .sb-mark{flex:1;min-width:0;display:flex;align-items:center;justify-content:center;gap:7px;
+    font-family:var(--display);font-size:16px;letter-spacing:.09em;
+    color:var(--cream);cursor:pointer;white-space:nowrap;line-height:1;}
+  .sb-mark span{min-width:0;overflow:hidden;text-overflow:ellipsis;}
+  .sb-mark b{color:var(--brandred-bright);font-weight:inherit;}
+  .sbm-mark{flex:0 0 auto;display:block;image-rendering:pixelated;}
   .sb-right{flex:0 0 auto;display:flex;align-items:center;gap:7px;}
   /* the wallet, always visible, the way golf keeps coins on screen everywhere */
   .sb-coin{display:inline-flex;align-items:center;gap:6px;height:34px;padding:0 12px 0 8px;
@@ -155,7 +176,7 @@
   .navfab.on .nf-disc{box-shadow:0 6px 16px -4px rgba(0,0,0,.75), 0 0 0 2px var(--gold), 0 0 22px -1px rgba(224,179,65,.75);}
   .navfab .navdot{top:-2px!important;left:auto!important;right:4px;}
   @media(max-width:520px){
-    .sb-mark{font-size:13px;letter-spacing:.05em;}
+    .sb-mark{font-size:13px;letter-spacing:.05em;gap:5px;}
     .sb-prof .pf-n{display:none;}
     .sb-prof{padding:0 4px 0 3px;}
     .sb-home{padding:0 8px;font-size:10px;}
@@ -291,6 +312,9 @@
   .pcx{position:absolute;top:14px;right:16px;background:transparent;border:1px solid var(--line);color:var(--text-dim);border-radius:999px;width:36px;height:36px;padding:0;font-size:15px;}
   .pcwrap{text-align:center;animation:pcIn .45s cubic-bezier(.2,.9,.3,1);}
   @keyframes pcIn{0%{opacity:0;transform:scale(.82) translateY(18px)}100%{opacity:1;transform:none}}
+  .pcshare{display:flex;gap:9px;justify-content:center;margin-top:12px;}
+  .pcshare button{height:40px;padding:0 18px;border-radius:999px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;font-size:12px;}
+  .pcshare .pcs-go{background:linear-gradient(180deg,#f2d27a,#c69a2c);color:#241706;border:0;box-shadow:0 6px 16px -6px rgba(224,179,65,.6);}
   .pchint{margin-top:12px;font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:var(--text-faint);font-weight:800;}
   .pcard3d{width:min(340px,86vw);height:min(500px,72vh);perspective:1300px;cursor:pointer;margin:0 auto;}
   .pcard-inner{position:relative;width:100%;height:100%;transform-style:preserve-3d;transition:transform .62s cubic-bezier(.3,.9,.3,1);}
@@ -967,8 +991,11 @@
     background:radial-gradient(ellipse at 50% 30%,rgba(198,57,44,.16),transparent 62%),
                radial-gradient(ellipse at 50% 10%,rgba(244,232,219,.06),transparent 55%);
     pointer-events:none;}
-  .homehero .beltlogo{position:relative;margin:0 auto;animation:beltFloat 5.5s ease-in-out infinite;}
-  @keyframes beltFloat{0%,100%{transform:translateY(0);}50%{transform:translateY(-6px);}}
+  /* the title is pixel art from the kit (RPK), painted at a whole number of device pixels a cell by
+     paintBrand(), which also sets its size. image-rendering keeps a browser from smoothing it. */
+  .homelogo{position:relative;display:block;margin:4px auto 0;image-rendering:pixelated;
+    filter:drop-shadow(0 10px 24px rgba(0,0,0,.55));animation:logoFloat 5.5s ease-in-out infinite;}
+  @keyframes logoFloat{0%,100%{transform:translateY(0);}50%{transform:translateY(-5px);}}
   .home-kick{position:relative;display:flex;align-items:center;justify-content:center;gap:14px;margin:14px 0 16px;}
   .home-kick span{font-size:12px;letter-spacing:.26em;text-transform:uppercase;color:var(--text-faint);font-weight:800;white-space:nowrap;}
   .home-kick::before,.home-kick::after{content:"";height:2px;width:min(110px,16vw);border-radius:2px;
@@ -1545,7 +1572,6 @@
   .ruletbl td:first-child{color:var(--cream);font-weight:700;}
   .ruletbl td:not(:first-child){font-family:var(--mono);}
 
-  .beltlogo{width:100%;max-width:420px;height:auto;display:block;filter:drop-shadow(0 10px 30px rgba(0,0,0,.5));}
   @media(max-width:640px){ .topbar h1{font-size:18px;} .hud .value{font-size:14px;} main{padding:16px 12px 90px;} }
 </style>
 </head>
@@ -1559,7 +1585,7 @@
 <div class="sitebar" id="sitebar">
   <div class="sb-row">
     <a class="sb-home" href="https://runthe.gg" title="RunThe.GG">RunThe<span>.GG</span></a>
-    <div class="sb-mark" onclick="go('home')">RUN <b>THE</b> ROPES</div>
+    <div class="sb-mark" onclick="go('home')"><canvas class="sbm-mark" data-rpk="icon16" aria-hidden="true"></canvas><span>RUN THE <b>ROPES</b></span></div>
     <div class="sb-right">
       <button class="sb-coin" id="sbCoin" onclick="go('shop')" title="Coins"></button>
       <button class="sb-prof" id="sbProf" onclick="openProfile()" title="Your wrestler"></button>
@@ -1587,34 +1613,7 @@
 <div class="screen active" id="s-home">
   <div class="homewrap">
     <div class="homehero">
-    <svg class="beltlogo" viewBox="0 0 1080 470" role="img" aria-label="Run The Ropes">
-      <defs><style>
-        .rtr-plate{fill:#100d0d;stroke:#F4E8DB;stroke-width:7;stroke-linejoin:round;}
-        .rtr-inner{fill:none;stroke:#F4E8DB;stroke-width:2.5;stroke-linejoin:round;opacity:.85;}
-        .rtr-rope{stroke:#C6392C;stroke-width:12;stroke-linecap:round;stroke-dasharray:14 9;}
-        .rtr-snap{fill:#F4E8DB;}
-        .rtr-wm{font-family:'Anton',Impact,sans-serif;fill:#F4E8DB;}
-        .rtr-wmred{font-family:'Anton',Impact,sans-serif;fill:#C6392C;}
-        .rtr-acc{stroke:#C6392C;stroke-width:10;stroke-linecap:round;fill:none;}
-      </style></defs>
-      <path class="rtr-plate" d="M300 192 L392 206 L392 264 L300 278 Z"/>
-      <path class="rtr-plate" d="M780 192 L688 206 L688 264 L780 278 Z"/>
-      <path class="rtr-plate" d="M200 120 L300 176 L300 294 L200 350 L100 294 L100 176 Z"/>
-      <path class="rtr-inner" d="M200 142 L282 188 L282 282 L200 328 L118 282 L118 188 Z"/>
-      <circle class="rtr-snap" cx="200" cy="152" r="6"/><circle class="rtr-snap" cx="200" cy="318" r="6"/>
-      <line class="rtr-rope" x1="140" y1="205" x2="260" y2="205"/><line class="rtr-rope" x1="140" y1="235" x2="260" y2="235"/><line class="rtr-rope" x1="140" y1="265" x2="260" y2="265"/>
-      <path class="rtr-plate" d="M880 120 L980 176 L980 294 L880 350 L780 294 L780 176 Z"/>
-      <path class="rtr-inner" d="M880 142 L962 188 L962 282 L880 328 L798 282 L798 188 Z"/>
-      <circle class="rtr-snap" cx="880" cy="152" r="6"/><circle class="rtr-snap" cx="880" cy="318" r="6"/>
-      <line class="rtr-rope" x1="820" y1="205" x2="940" y2="205"/><line class="rtr-rope" x1="820" y1="235" x2="940" y2="235"/><line class="rtr-rope" x1="820" y1="265" x2="940" y2="265"/>
-      <path class="rtr-plate" d="M462 55 H618 L690 127 V343 L618 415 H462 L390 343 V127 Z"/>
-      <path class="rtr-inner" d="M472 74 H608 L671 137 V333 L608 396 H472 L409 333 V137 Z"/>
-      <path class="rtr-acc" d="M498 106 L540 92 L582 106"/><path class="rtr-acc" d="M498 364 L540 378 L582 364"/>
-      <text class="rtr-wm" x="540" y="192" text-anchor="middle" font-size="96">RUN</text>
-      <line class="rtr-acc" x1="452" y1="228" x2="494" y2="228" stroke-width="8"/><line class="rtr-acc" x1="586" y1="228" x2="628" y2="228" stroke-width="8"/>
-      <text class="rtr-wmred" x="540" y="252" text-anchor="middle" font-size="62" letter-spacing="2">THE</text>
-      <text class="rtr-wm" x="540" y="352" text-anchor="middle" font-size="96">ROPES</text>
-    </svg>
+    <canvas class="homelogo" data-rpk="lockup" role="img" aria-label="Run The Ropes"></canvas>
     <div class="home-kick"><span>Build A Wrestler · Career Simulator</span></div>
     </div>
 
@@ -2014,7 +2013,8 @@
 <nav class="botnav" id="botnav" style="display:none;"></nav>
 
 <div class="pcov" id="cardOv"><button class="pcx" onclick="closeCard()" aria-label="Close">✕</button>
-  <div class="pcwrap"><div id="cardHost"></div><div class="pchint">TAP TO FLIP</div></div></div>
+  <div class="pcwrap"><div id="cardHost"></div><div class="pchint">TAP TO FLIP</div>
+    <div class="pcshare"><button class="pcs-go" onclick="shareMyCard(false)">Share card</button><button class="ghost" onclick="shareMyCard(true)">Save</button></div></div></div>
 
 <div class="modalback" id="modalBack"><div class="modal"><h3 id="modalTitle"></h3><div id="modalBody"></div><div class="row" style="justify-content:flex-end;margin-top:16px;" id="modalBtns"></div></div></div>
 <!-- Backstage scene overlay: full-screen cinematic takeover for pre-match segments. -->
@@ -14787,6 +14787,336 @@ function drawCard(){
         </div>
       </div>
     </div></div>`;
+}
+
+/* ==================== RPK BEGIN: the pixel kit ====================
+   One source for the game's pixel branding: the palette, a 5 x 7 bitmap font, the RUN THE ROPES
+   title, the belt-and-ropes icon, and an arena scene. The share card draws with it here, and
+   wrestling/logo-source.html and wrestling/og-source.html read THIS block out of this file, so the
+   logo files, the link preview and the card in the game can never become three versions of one mark.
+
+   It is Run The Tour's pixel title taken as a lead, not as a template. Tour stands gold letters on a
+   putting green with a ball for the O and the pin at the end. This one is a wrestling title card: red
+   block letters with a straight drop, the O is a championship plate, three ring ropes run behind the
+   word between two turnbuckle posts, and it all stands on the ring canvas over the apron.
+
+   Everything paints onto a grid of colour cells, and toCanvas() blows a grid up by a WHOLE number, so
+   no cell is ever drawn at 1.5x. Self contained on purpose: no game state is read, which is what lets
+   the other two files lift it. */
+const RPK=(function(){
+  const K='#160707';
+  const RED=['#ffd9cf','#ff8d78','#f5503f','#dd3326','#b9221a','#8f1711'];
+  const DROP=['#5e0d0a','#4a0a08','#360706'];
+  const GOLD=['#fff6c8','#ffe27a','#f6c53d','#e0a126','#b97a14','#8a560c'];
+  const CREAM=['#fffaf2','#f4e8db','#d6c5b0'];
+  const ROPE=['#ffffff','#e6ddd0','#a99c8a'];
+  const PAD=['#ff6f5c','#d8392b','#8f1711'];
+  const POST=['#f0ece6','#b9b2a8','#77706a'];
+  const MAT={top:'#e9e3d6', mid:'#cfc6b6', line:'#a79c8a'};
+  const APRON=['#1c2b52','#16223f','#0f172c'];
+  const GEM=['#ffd0cc','#ff4a3a','#b3140d','#6e0906'];
+  const SPARK=['#ffffff','#fff3b0'];
+
+  function grid(w,h){ const px=new Array(w*h).fill(null); const g={w,h,px,
+    put(x,y,c){ x=Math.round(x); y=Math.round(y); if(x>=0&&y>=0&&x<w&&y<h&&c) px[y*w+x]=c; },
+    get(x,y){ return (x>=0&&y>=0&&x<w&&y<h)?px[y*w+x]:null; },
+    rect(x,y,ww,hh,c){ for(let j=0;j<hh;j++) for(let i=0;i<ww;i++) g.put(x+i,y+j,c); } };
+    return g; }
+  function outline(g,c,mask){ const s=g.px.slice(); for(let y=0;y<g.h;y++) for(let x=0;x<g.w;x++){ if(s[y*g.w+x]) continue;
+    if([[1,0],[-1,0],[0,1],[0,-1]].some(([a,b])=>{ const X=x+a,Y=y+b; return X>=0&&Y>=0&&X<g.w&&Y<g.h&&s[Y*g.w+X]&&(!mask||mask[Y*g.w+X]); })) g.px[y*g.w+x]=c; } }
+  function stamp(a,b,x,y){ for(let j=0;j<b.h;j++) for(let i=0;i<b.w;i++){ const c=b.px[j*b.w+i]; if(c) a.put(x+i,y+j,c); } }
+
+  /* ---- a 5 x 7 font. Lower case is drawn as upper case, accents are dropped, and anything it has no
+     glyph for becomes a question mark rather than a gap nobody can read. */
+  const F={
+  A:[".111.","1...1","1...1","11111","1...1","1...1","1...1"], B:["1111.","1...1","1...1","1111.","1...1","1...1","1111."],
+  C:[".111.","1...1","1....","1....","1....","1...1",".111."], D:["1111.","1...1","1...1","1...1","1...1","1...1","1111."],
+  E:["11111","1....","1....","1111.","1....","1....","11111"], F:["11111","1....","1....","1111.","1....","1....","1...."],
+  G:[".1111","1....","1....","1..11","1...1","1...1",".111."], H:["1...1","1...1","1...1","11111","1...1","1...1","1...1"],
+  I:["111",".1.",".1.",".1.",".1.",".1.","111"], J:["..111","...1.","...1.","...1.","...1.","1..1.",".11.."],
+  K:["1...1","1..1.","1.1..","11...","1.1..","1..1.","1...1"], L:["1....","1....","1....","1....","1....","1....","11111"],
+  M:["1...1","11.11","1.1.1","1.1.1","1...1","1...1","1...1"], N:["1...1","11..1","1.1.1","1..11","1...1","1...1","1...1"],
+  O:[".111.","1...1","1...1","1...1","1...1","1...1",".111."], P:["1111.","1...1","1...1","1111.","1....","1....","1...."],
+  Q:[".111.","1...1","1...1","1...1","1.1.1","1..1.",".11.1"], R:["1111.","1...1","1...1","1111.","1.1..","1..1.","1...1"],
+  S:[".1111","1....","1....",".111.","....1","....1","1111."], T:["11111","..1..","..1..","..1..","..1..","..1..","..1.."],
+  U:["1...1","1...1","1...1","1...1","1...1","1...1",".111."], V:["1...1","1...1","1...1","1...1","1...1",".1.1.","..1.."],
+  W:["1...1","1...1","1...1","1.1.1","1.1.1","1.1.1",".1.1."], X:["1...1","1...1",".1.1.","..1..",".1.1.","1...1","1...1"],
+  Y:["1...1","1...1",".1.1.","..1..","..1..","..1..","..1.."], Z:["11111","....1","...1.","..1..",".1...","1....","11111"],
+  '0':[".111.","1...1","1..11","1.1.1","11..1","1...1",".111."], '1':[".1.","11.",".1.",".1.",".1.",".1.","111"],
+  '2':[".111.","1...1","....1","...1.","..1..",".1...","11111"], '3':["11111","...1.","..1..","...1.","....1","1...1",".111."],
+  '4':["...1.","..11.",".1.1.","1..1.","11111","...1.","...1."], '5':["11111","1....","1111.","....1","....1","1...1",".111."],
+  '6':["..11.",".1...","1....","1111.","1...1","1...1",".111."], '7':["11111","....1","...1.","..1..",".1...",".1...",".1..."],
+  '8':[".111.","1...1","1...1",".111.","1...1","1...1",".111."], '9':[".111.","1...1","1...1",".1111","....1","...1.",".11.."],
+  '.':["..","..","..","..","..","11","11"], ',':["..","..","..","..",".1",".1","1."], "'":["1","1",".",".",".",".","."],
+  '"':["1.1","1.1","...","...","...","...","..."],
+  '-':["....","....","....","1111","....","....","...."], '+':["...","...",".1.","111",".1.","...","..."],
+  '#':[".1.1.",".1.1.","11111",".1.1.","11111",".1.1.",".1.1."], '$':["..1..",".1111","1.1..",".111.","..1.1","1111.","..1.."],
+  '/':["....1","...1.","...1.","..1..",".1...",".1...","1...."], ':':["..","11","11","..","11","11",".."],
+  '!':["1","1","1","1","1",".","1"], '?':[".111.","1...1","....1","...1.","..1..",".....","..1.."],
+  '&':[".11..","1..1.","1.1..",".1...","1.1.1","1..1.",".11.1"],
+  '%':["11..1","11..1","...1.","..1..",".1...","1..11","1..11"], '(':[".1","1.","1.","1.","1.","1.",".1"], ')':["1.",".1",".1",".1",".1",".1","1."],
+  ' ':["...","...","...","...","...","...","..."], '·':["..","..","..","11","..","..",".."],
+  };
+  const MARKS=new RegExp('['+String.fromCharCode(0x300)+'-'+String.fromCharCode(0x36f)+']','g');
+  const LONGDASH=new RegExp('['+String.fromCharCode(0x2212,0x2013,0x2014)+']','g');
+  function norm(s){ return String(s==null?'':s).normalize('NFD').replace(MARKS,'').toUpperCase().replace(LONGDASH,'-'); }
+  const glyph=ch=>F[ch]||F['?'];
+  function textW(str,o){ o=o||{}; const s=o.scale||1, gap=o.gap==null?1:o.gap, b=o.bold?1:0; let w=0;
+    for(const ch of norm(str)) w+=(glyph(ch)[0].length+b+gap)*s; return Math.max(0,w-gap*s); }
+  function text(g,str,x,y,o){ o=o||{}; const s=o.scale||1, gap=o.gap==null?1:o.gap, b=o.bold?1:0, col=o.color||CREAM[1];
+    for(const ch of norm(str)){ const gl=glyph(ch), gw=gl[0].length;
+      gl.forEach((row,j)=>{ for(let i=0;i<gw;i++) if(row[i]==='1'){ const c=typeof col==='function'?col(j):col;
+        g.rect(x+i*s,y+j*s,s,s,c); if(b) g.rect(x+(i+1)*s,y+j*s,s,s,c); } });
+      x+=(gw+b+gap)*s; }
+    return x; }
+  function star(g,x,y,s){ g.put(x,y,SPARK[0]); for(let i=1;i<=s;i++){ const c=i===s?SPARK[1]:SPARK[0]; g.put(x+i,y,c); g.put(x-i,y,c); g.put(x,y+i,c); g.put(x,y-i,c); } }
+
+  /* the championship plate: a gold disc lit from the top left, a darker engraved ring, four studs and
+     a cut red stone. It is the O of the title and the whole of the icon. */
+  function plate(g,cx,cy,r){
+    for(let y=Math.floor(cy-r-1);y<=Math.ceil(cy+r+1);y++) for(let x=Math.floor(cx-r-1);x<=Math.ceil(cx+r+1);x++){
+      const dx=x-cx, dy=y-cy, d=Math.sqrt(dx*dx+dy*dy); if(d>r) continue;
+      const L=(-dx-dy)/(r*1.4);
+      let t=L>0.55?0:L>0.25?1:L>-0.1?2:L>-0.4?3:4;
+      if(d>r-1.2) t=Math.min(5,t+1);
+      if(Math.abs(d-r*0.68)<0.7) t=Math.min(5,t+2);
+      g.put(x,y,GOLD[t]); }
+    const gr=Math.max(1.6,r*0.33);
+    for(let y=Math.floor(cy-gr);y<=Math.ceil(cy+gr);y++) for(let x=Math.floor(cx-gr);x<=Math.ceil(cx+gr);x++){
+      const dx=x-cx, dy=y-cy; if(Math.abs(dx)+Math.abs(dy)>gr*1.25 || dx*dx+dy*dy>gr*gr*1.1) continue;
+      const L=(-dx-dy)/gr; g.put(x,y,GEM[L>0.6?0:L>0?1:L>-0.6?2:3]); }
+    if(r>=7){ const sr=r*0.84; [[0,-1],[1,0],[0,1],[-1,0]].forEach(([a,b])=>{ g.put(cx+a*sr,cy+b*sr,GOLD[0]); }); }
+  }
+
+  /* ---- the big letters, built from blocks rather than typed as strings, so a stroke is always five
+     cells and a corner is always the same bite ---- */
+  const LH=22;
+  function bigLetter(ch){
+    const w={R:15,P:14,E:13,S:14}[ch], f=grid(w,LH), R=(x,y,ww,hh)=>f.rect(x,y,ww,hh,'F');
+    const bite=(x,y)=>{ f.px[y*w+x]=null; };
+    if(ch==='R'||ch==='P'){ R(0,0,5,LH); R(0,0,w-3,5); R(w-5,2,5,10); R(0,10,w-3,5);
+      bite(w-4,0); bite(w-1,2); bite(w-1,11); bite(w-4,14);
+      if(ch==='R'){ for(let y=15;y<LH;y++){ const x0=Math.round(6+(y-15)*0.62); R(x0,y,5,1); } } }
+    if(ch==='E'){ R(0,0,5,LH); R(0,0,w,5); R(0,9,w-2,5); R(0,LH-5,w,5); }
+    if(ch==='S'){ R(1,0,w-1,5); R(0,1,5,12); R(1,9,w-2,5); R(w-5,10,5,11); R(0,LH-5,w-1,5);
+      bite(0,0); bite(w-5,LH-1); bite(w-1,LH-1); bite(0,LH-1); bite(w-1,9); bite(0,13); }
+    return f; }
+
+  const LW=112, LHT=58;
+  function lockup(){
+    const g=grid(LW,LHT);
+    const base=50;
+    // the ring canvas and the apron under it
+    for(let y=base-4;y<=base+1;y++){ const inset=Math.round((base+1-y)*1.5); for(let x=inset+1;x<LW-inset-1;x++) g.put(x,y,y===base+1?MAT.line:(y<base-2?MAT.top:MAT.mid)); }
+    for(let y=base+2;y<LHT-1;y++) for(let x=2;x<LW-2;x++){ const j=y-base-2; g.put(x,y,j===0?'#e0b341':j<3?APRON[0]:j<5?APRON[1]:APRON[2]); }
+    for(let x=4;x<LW-4;x+=6) g.put(x,base+4,'#2b3d6b');
+    // two posts and three ropes strung between them
+    const postX=[4,LW-8], topY=14;
+    const ropeY=[20,29,38];
+    ropeY.forEach(y=>{ for(let x=postX[0]+2;x<=postX[1]+2;x++){ const sag=Math.round(Math.sin((x-postX[0])/(postX[1]-postX[0])*Math.PI)*1.2);
+      g.put(x,y+sag,ROPE[0]); g.put(x,y+sag+1,ROPE[1]); g.put(x,y+sag+2,ROPE[2]); } });
+    postX.forEach(px=>{ for(let y=topY;y<base-2;y++){ g.put(px,y,POST[1]); g.put(px+1,y,POST[0]); g.put(px+2,y,POST[1]); g.put(px+3,y,POST[2]); }
+      g.rect(px-1,topY-1,6,2,POST[0]);
+      ropeY.forEach(y=>{ g.rect(px-1,y-1,6,5,PAD[1]); g.rect(px-1,y-1,6,1,PAD[0]); g.rect(px-1,y+3,6,1,PAD[2]); }); });
+    outline(g,K);
+    // ROPES: R, the plate, P, E, S
+    const letters=[['R',0],['O',17],['P',44],['E',60],['S',75]], x0=Math.round((LW-89)/2), LT=base-LH-1;
+    const face=grid(LW,LHT);
+    letters.forEach(([ch,dx])=>{ if(ch==='O') return; const f=bigLetter(ch);
+      for(let j=0;j<f.h;j++) for(let i=0;i<f.w;i++) if(f.px[j*f.w+i]) face.put(x0+dx+i,LT+j,'F'); });
+    const isF=(x,y)=>face.get(x,y)==='F';
+    for(let d=3;d>=1;d--) for(let y=0;y<LHT;y++) for(let x=0;x<LW;x++) if(isF(x,y-d)&&!isF(x,y)) g.put(x,y,DROP[d-1]);
+    for(let y=0;y<LHT;y++) for(let x=0;x<LW;x++){ if(!isF(x,y)) continue;
+      const j=y-LT; let t=j<3?1:j<7?2:j<12?3:j<17?4:5;
+      if(!isF(x,y-1)) t=0; else if(!isF(x-1,y)) t=Math.max(1,t-1);
+      if(!isF(x+1,y) && j>1) t=Math.min(5,t+1);
+      g.put(x,y,RED[t]); }
+    // the plate stands where the O goes, a little bigger than the letters, on its own drop
+    const pcx=x0+17+12.5, pcy=LT+LH/2;
+    for(let y=0;y<LHT;y++) for(let x=0;x<LW;x++){ const dx=x-pcx, dy=y-pcy-3; if(dx*dx+dy*dy<=12.4*12.4 && !isF(x,y)) g.put(x,y,DROP[1]); }
+    plate(g,pcx,pcy,12.4);
+    // RUN THE, cream on a black nameplate with gold edges and cut ends
+    const t='RUN THE', o={bold:true}, tw=textW(t,o), nx=Math.round((LW-tw)/2)-6, ny=2, nw=tw+12, nh=11;
+    for(let y=ny;y<ny+nh;y++) for(let x=nx-3;x<nx+nw+3;x++){ const e=(x<nx)?(nx-x):(x>=nx+nw?x-(nx+nw-1):0);
+      if(e && Math.abs(y-(ny+nh/2-0.5))<e*1.2-0.5) continue;
+      const edge=(y===ny||y===ny+nh-1); g.put(x,y,edge?GOLD[2]:'#1a0f0c'); }
+    text(g,t,nx+6,ny+2,{bold:true,color:j=>j<2?CREAM[0]:j<5?CREAM[1]:CREAM[2]});
+    outline(g,K);
+    star(g,LW-12,6,1); star(g,12,8,1);
+    return g; }
+
+  /* the icon: a ring corner with the plate in front of it. 32 is the app icon; 16 is drawn again at
+     that size rather than scaled down, because a shrink of pixel art is mush. */
+  function icon(N){
+    const g=grid(N,N), k=N/32;
+    if(N>=32){
+      for(let y=24;y<30;y++) for(let x=2;x<30;x++) g.put(x,y,y===24?MAT.top:y<27?MAT.mid:APRON[y<28?0:1]);
+      g.rect(2,27,28,1,'#e0b341');
+      [8,13,18].forEach(y=>{ for(let x=5;x<30;x++){ g.put(x,y,ROPE[0]); g.put(x,y+1,ROPE[2]); } });
+      for(let y=4;y<25;y++){ g.put(3,y,POST[0]); g.put(4,y,POST[1]); g.put(5,y,POST[2]); }
+      [8,13,18].forEach(y=>{ g.rect(2,y-1,5,4,PAD[1]); g.rect(2,y-1,5,1,PAD[0]); });
+      outline(g,K);
+      plate(g,19.5,17.5,9.2);
+      outline(g,K);
+      star(g,27,4,1);
+    } else {
+      [4,8].forEach(y=>{ for(let x=2;x<16;x++) g.put(x,y,ROPE[1]); });
+      for(let y=1;y<13;y++) g.put(1,y,POST[0]);
+      [4,8].forEach(y=>{ g.rect(0,y-1,3,3,PAD[1]); });
+      outline(g,K);
+      plate(g,9.5,9,5.2);
+      outline(g,K);
+    }
+    return g; }
+
+  /* an arena: a dark house with the crowd as dithered dots and camera flashes, two spotlights coming
+     down, and the ring in front. `ringTop` is where the canvas starts, as a share of the height. */
+  function arena(w,h,o){ o=o||{}; const g=grid(w,h), rt=Math.round(h*(o.ringTop||0.72));
+    let seed=o.seed||7; const rnd=()=>{ seed=(seed*1103515245+12345)&0x7fffffff; return seed/0x7fffffff; };
+    for(let y=0;y<h;y++) for(let x=0;x<w;x++){ const t=y/h; g.put(x,y,t<0.2?'#0d0710':t<0.45?'#140a12':'#1b0c10'); }
+    // the crowd: rows of heads that get bigger toward the ring
+    for(let y=Math.round(h*0.22);y<rt;y+=3){ const depth=(y-h*0.22)/(rt-h*0.22), step=depth>0.6?3:4;
+      for(let x=(y/3)%2?0:2;x<w;x+=step){ const c=rnd(); g.put(x,y,c<0.15?'#4a2a36':c<0.55?'#33202b':'#2a1822'); if(depth>0.5) g.put(x,y+1,'#1e1119'); } }
+    for(let i=0;i<(o.flashes||26);i++){ const x=Math.floor(rnd()*w), y=Math.round(h*0.25+rnd()*(rt-h*0.3)); g.put(x,y,SPARK[0]); if(rnd()<0.4){ g.put(x+1,y,SPARK[1]); g.put(x-1,y,SPARK[1]); g.put(x,y-1,SPARK[1]); g.put(x,y+1,SPARK[1]); } }
+    // two spotlights, dithered so they stay pixel
+    (o.spots||[[0.72,0.08]]).forEach(([sx,spread])=>{ const cx=w*sx;
+      for(let y=0;y<rt+6;y++){ const half=6+y*spread*1.6; for(let x=Math.floor(cx-half);x<=cx+half;x++){ const edge=Math.abs(x-cx)/half;
+        if(edge>0.8 && (x+y)%2) continue; if(edge>0.55 && (x+y)%4===1) continue;
+        const c=g.get(x,y); if(c) g.put(x,y,y<rt?'#3a2020':'#4a2a26'); } } });
+    return g; }
+
+  function toCanvas(g,scale){ const c=document.createElement('canvas'); c.width=g.w*scale; c.height=g.h*scale;
+    const x=c.getContext('2d'); for(let y=0;y<g.h;y++) for(let i=0;i<g.w;i++){ const col=g.px[y*g.w+i]; if(!col) continue; x.fillStyle=col; x.fillRect(i*scale,y*scale,scale,scale); } return c; }
+  function draw(ctx,g,x,y,scale){ for(let j=0;j<g.h;j++) for(let i=0;i<g.w;i++){ const col=g.px[j*g.w+i]; if(!col) continue; ctx.fillStyle=col; ctx.fillRect(x+i*scale,y+j*scale,scale,scale); } }
+  /* an image (the game's own pixel figure, drawn to a canvas at one cell a unit) into a grid */
+  function fromCanvas(cv){ const g=grid(cv.width,cv.height), d=cv.getContext('2d').getImageData(0,0,cv.width,cv.height).data;
+    for(let i=0;i<cv.width*cv.height;i++){ if(d[i*4+3]<128) continue; g.px[i]='rgb('+d[i*4]+','+d[i*4+1]+','+d[i*4+2]+')'; } return g; }
+  return {K,RED,DROP,GOLD,CREAM,ROPE,PAD,POST,MAT,APRON,GEM,SPARK,LW,LHT,grid,outline,stamp,text,textW,norm,star,plate,lockup,icon,arena,toCanvas,draw,fromCanvas};
+})();
+/* ==================== RPK END ==================== */
+/* Paints every [data-rpk] canvas on the page: the home title and the site bar mark. A cell is a WHOLE
+   number of device pixels, so on a 2.625 phone the art is still hard edged; the css size follows from
+   that rather than the other way round, which is why it can come out a pixel off a round number. */
+function paintBrand(){
+  const dpr=window.devicePixelRatio||1;
+  document.querySelectorAll('canvas[data-rpk]').forEach(cv=>{
+    const kind=cv.dataset.rpk, g=kind==='lockup'?RPK.lockup():RPK.icon(16);
+    let css;
+    if(kind==='lockup'){ const room=(cv.parentElement&&cv.parentElement.clientWidth)||360; css=room>=g.w*4+160?4:room>=g.w*3+8?3:2; }
+    else css=1.4;
+    const cell=Math.max(1,Math.round(css*dpr));
+    if(cv.width!==g.w*cell){ cv.width=g.w*cell; cv.height=g.h*cell; RPK.draw(cv.getContext('2d'),g,0,0,cell); }
+    cv.style.width=(g.w*cell/dpr)+'px'; cv.style.height=(g.h*cell/dpr)+'px';
+  });
+}
+try{ paintBrand(); window.addEventListener('resize',()=>{ try{ paintBrand(); }catch(_){} }); }catch(_){}
+
+/* ---- the share card ----
+   The kit's pixel art on a 140 x 200 grid at 8x = 1120 x 1600: the title, a gold ribbon saying what you
+   are, you in a frame with your rating beside it, your name, four numbers and the url. It's what a player
+   posts, so after og.png it's the most public thing this game makes.
+
+   HEAD AND SHOULDERS, NEVER THE WHOLE FIGURE. Golf crops its golfer to a bust because a full standing
+   figure can trip a social site's sensitivity filter on upload, and a wrestler in trunks is that problem
+   twice over. The figure is the game's own retro pixel one, one cell a unit, with the viewBox cropped. A
+   champion carries the belt over the shoulder on the card, because at the waist the crop would cut it.
+
+   The figure reaches the grid through an Image, which can fail without throwing. The card catches that
+   so a player still gets something to post, and records it in cv._drew so a check can tell. */
+function cardShortMoney(n){ n=Math.round(n||0);
+  return n>=1e6?'$'+(n/1e6).toFixed(n>=1e7?0:1)+'M':n>=1e3?'$'+Math.round(n/1e3)+'K':'$'+n; }
+function cardHeadline(c){
+  const n=(c.reigns||[]).length;
+  if(c.title) return n>1?n+'-TIME CHAMPION':'CHAMPION';
+  if(n) return n>1?n+'-TIME CHAMPION':'FORMER CHAMPION';
+  if(c.retired) return 'RETIRED';
+  const fr=CARD_FRAMES[tierOf(c.rep).id]||CARD_FRAMES.indie;
+  return fr.label.toUpperCase();
+}
+function svgImage(svg){ return new Promise((ok,no)=>{ const im=new Image();
+  im.onload=()=>ok(im); im.onerror=no;
+  im.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg); }); }
+const CARD_GW=140, CARD_GH=200, CARD_U=8;
+async function drawShareCard(cv){
+  const P=RPK, GW=CARD_GW, GH=CARD_GH, U=CARD_U, c=G.car, w=G.w;
+  cv.width=GW*U; cv.height=GH*U; const ctx=cv.getContext('2d'); ctx.imageSmoothingEnabled=false;
+  cv._drew={figure:false};
+  P.draw(ctx,P.arena(GW,GH,{ringTop:0.96, spots:[[0.5,0.14]], flashes:18, seed:11}),0,0,U);
+  const top=P.grid(GW,GH), txt=P.grid(GW,GH);
+  for(let y=0;y<GH;y++) for(let x=0;x<GW;x++){ const d=Math.min(x,y,GW-1-x,GH-1-y);
+    if(d===0||d===3) top.put(x,y,P.K); else if(d<=2) top.put(x,y,(x+y<(GW+GH)/2)?P.GOLD[2]:P.RED[3]); }
+  P.stamp(top,P.lockup(),Math.round((GW-P.LW)/2),5);
+  const cen=(g,t,y,o)=>P.text(g,t,Math.round(GW/2-P.textW(t,o)/2),y,o);
+  // the ribbon
+  const head=cardHeadline(c), ho={bold:true}, hw=P.textW(head,ho)+14, hx=Math.round(GW/2-hw/2);
+  for(let y=66;y<78;y++) for(let x=hx;x<hx+hw;x++){ const j=y-66; top.put(x,y,j<1?P.GOLD[0]:j<5?P.GOLD[1]:j<9?P.GOLD[2]:P.GOLD[3]); }
+  cen(top,head,68,Object.assign({color:'#2a1604'},ho));
+  const fr=CARD_FRAMES[tierOf(c.rep).id]||CARD_FRAMES.indie;
+  /* the ribbon already says the tier when there's no belt to say, so the line under it doesn't */
+  const yl=[head===fr.label.toUpperCase()?null:fr.label, 'YEAR '+c.year].filter(Boolean).join(' · ');
+  cen(txt,yl,81,{color:P.GOLD[1]});
+  // the portrait frame
+  const fx0=40, fy0=92, fw=52, fh=46;
+  for(let y=fy0;y<fy0+fh;y++) for(let x=fx0;x<fx0+fw;x++){ const e=(x===fx0||x===fx0+fw-1||y===fy0||y===fy0+fh-1);
+    const gear=hex6(w.look.gear||'#C6392C'), t=(y-fy0)/fh; top.put(x,y,e?P.GOLD[2]:shade(gear,-30-Math.round(t*34))); }
+  const fb=myFigBelt(); const belt=fb?{art:fb.art,carry:fb.carry==='waist'?'shoulder':fb.carry}:null;
+  try{
+    let svg=wrestlerSVGRetro(w.look,{frame:'full',belt});
+    svg=svg.replace(/viewBox="[^"]*"/,'viewBox="8 -5 '+(fw-2)+' '+(fh-2)+'"');
+    if(!/xmlns=/.test(svg)) svg=svg.replace('<svg','<svg xmlns="http://www.w3.org/2000/svg"');
+    const im=await svgImage(svg), fc=document.createElement('canvas'); fc.width=fw-2; fc.height=fh-2;
+    const fx=fc.getContext('2d'); fx.imageSmoothingEnabled=false; fx.drawImage(im,0,0,fc.width,fc.height);
+    P.stamp(top,P.fromCanvas(fc),fx0+1,fy0+1); cv._drew.figure=true;
+  }catch(_){}
+  // the rating, on a plate beside the frame
+  // the plate on one side of the frame and the rating on the other, so neither crowds the name
+  P.plate(top,Math.round(fx0/2)+1,fy0+fh/2,10);
+  const ov=String(ovr(w)), rc=fx0+fw+Math.round((GW-fx0-fw)/2)-1, oo={scale:2,bold:true};
+  P.text(txt,ov,rc-Math.round(P.textW(ov,oo)/2),fy0+12,Object.assign({color:j=>j<2?P.GOLD[0]:j<4?P.GOLD[1]:P.GOLD[2]},oo));
+  P.text(txt,'OVR',rc-Math.round(P.textW('OVR',{})/2),fy0+29,{color:P.CREAM[0]});
+  // the name, then the nickname and style
+  const nm=w.name||'Your Wrestler', no=P.textW(nm,{scale:2,bold:true})<=GW-14?{scale:2,bold:true}:{bold:true};
+  cen(txt,nm,142,Object.assign({color:P.CREAM[0]},no));
+  let sub=[w.nick?'"'+w.nick+'"':null, styleOf().name].filter(Boolean).join(' · ');
+  while(P.textW(sub,{})>GW-12 && sub.length>4) sub=sub.slice(0,-1);
+  cen(txt,sub,no.scale===2?160:153,{color:P.CREAM[2]});
+  // four numbers
+  /* five letters is all a 31 cell tile holds in this font, so the labels are chosen to fit, not cut */
+  const cells=[['W-L',`${c.rec.w}-${c.rec.l}`],['BELTS',String((c.reigns||[]).length)],['POP',String(Math.round(c.pop))],['CASH',cardShortMoney(c.earnings)]];
+  const tw=31, gap=2, tx0=Math.round((GW-(tw*4+gap*3))/2), ty=168;
+  cells.forEach(([k,v],i)=>{ const x0=tx0+i*(tw+gap);
+    for(let y=ty;y<ty+17;y++) for(let x=x0;x<x0+tw;x++){ const e=(y===ty||y===ty+16||x===x0||x===x0+tw-1); if((y===ty||y===ty+16)&&(x===x0||x===x0+tw-1)) continue;
+      top.put(x,y,e?'rgba(246,197,61,.55)':'rgba(10,4,6,.85)'); }
+    const label=k;
+    P.text(txt,label,x0+Math.round((tw-P.textW(label,{}))/2),ty+1,{color:P.CREAM[2]});
+    let val=v; while(P.textW(val,{gap:0})>tw-2 && val.length>1) val=val.slice(0,-1);
+    P.text(txt,val,x0+Math.round((tw-P.textW(val,{gap:0}))/2),ty+9,{gap:0,color:i===3?P.GOLD[1]:P.CREAM[0]}); });
+  cen(txt,'RUNTHE.GG/WRESTLING',188,{color:P.GOLD[2]});
+  P.outline(top,P.K); P.draw(ctx,top,0,0,U);
+  P.outline(txt,P.K); P.draw(ctx,txt,0,0,U);
+  return cv;
+}
+function shareCardText(){
+  const c=G.car, w=G.w, n=(c.reigns||[]).length;
+  const lead=c.title?`${w.name}, champion.`:n?`${w.name}, ${n}-time champion.`:`${w.name}.`;
+  return `${lead} ${ovr(w)} OVR, ${c.rec.w}-${c.rec.l}. Build yours at runthe.gg/wrestling`;
+}
+async function shareMyCard(save){
+  if(!G||!G.w) return;
+  const cv=document.createElement('canvas');
+  try{ await drawShareCard(cv); }catch(e){ toast("Couldn't build the card."); return; }
+  cv.toBlob(async b=>{
+    if(!b){ toast("Couldn't build the card."); return; }
+    const fname=((G.w.name||'wrestler').replace(/\s+/g,'-'))+'-card.png';
+    const file=new File([b],fname,{type:'image/png'});
+    if(!save && navigator.canShare && navigator.canShare({files:[file]})){
+      try{ await navigator.share({files:[file], text:shareCardText(), url:'https://runthe.gg/wrestling/'}); return; }
+      catch(e){ if(e&&e.name==='AbortError') return; }
+    }
+    const u=URL.createObjectURL(b); const a=document.createElement('a'); a.href=u; a.download=fname; a.click();
+    setTimeout(()=>URL.revokeObjectURL(u),2000);
+    toast(save?'Card saved.':'Card saved. Attach it to your post.');
+  },'image/png');
 }
 
 /* ============================================================
