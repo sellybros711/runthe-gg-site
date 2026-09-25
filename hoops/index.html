@@ -40,16 +40,24 @@
 <meta property="og:site_name" content="RunThe.GG">
 <meta property="og:url" content="https://runthe.gg/hoops/">
 <meta property="og:locale" content="en_US">
-<meta property="og:image" content="https://runthe.gg/hoops/og.png?v=1">
+<meta property="og:image" content="https://runthe.gg/hoops/og.png?v=2">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="Run The Floor: draft an NBA starting five under a $120M cap and play all 82 games. The five roster spots shown as PG, SG, SF, PF and C.">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Run The Floor: Free NBA Roster Draft Game">
 <meta name="twitter:description" content="Spin a season and a team, draft an NBA starting five under a $120M cap, then play all 82 games and chase a ring.">
-<meta name="twitter:image" content="https://runthe.gg/hoops/og.png?v=1">
+<meta name="twitter:image" content="https://runthe.gg/hoops/og.png?v=2">
 <meta name="twitter:image:alt" content="Run The Floor: draft an NBA starting five under a $120M cap and play all 82 games.">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230d1117'/%3E%3Ctext x='16' y='24' font-size='20' text-anchor='middle'%3E%F0%9F%8F%80%3C/text%3E%3C/svg%3E">
+<link rel="manifest" href="manifest.webmanifest">
+<!-- THE MARK IS AN 8-BIT BALL, built by hoops/build/logo.mjs from one pixel grid. The
+     favicons are the 15 cell ball at 1x, 2x and 3x rather than one image scaled, because a
+     pixel ball scaled by anything but a whole number stops being pixel art. It replaced an
+     emoji in an SVG, which drew whatever the visitor's emoji font drew. -->
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png?v=1">
+<link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png?v=1">
+<link rel="icon" type="image/png" sizes="48x48" href="favicon-48.png?v=1">
+<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=1">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <!-- THE FONT DOES NOT GET TO HOLD THE GAME HOSTAGE.
@@ -62,9 +70,9 @@
      face below has a real fallback stack, so text paints immediately in the fallback
      and swaps when Anton and Archivo arrive. -->
 <link rel="stylesheet" media="print" onload="this.media='all';this.onload=null"
-  href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@400;600;700;800;900&display=swap">
+  href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@400;600;700;800;900&family=Press+Start+2P&display=swap">
 <noscript><link rel="stylesheet"
-  href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@400;600;700;800;900&display=swap"></noscript>
+  href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@400;600;700;800;900&family=Press+Start+2P&display=swap"></noscript>
 
 <style>
   :root{
@@ -73,6 +81,11 @@
     --green:#22c55e; --red:#ef4444; --line:rgba(255,255,255,.09);
     --display:'Anton',Impact,'Arial Narrow',sans-serif;
     --body:'Archivo',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+    /* The brand face: the pixel type the logo is set in, used for the name and nothing
+       else. It falls back to the display face rather than to a monospace, because the
+       code face this page was once set in is the thing verify.mjs keeps out. It is drawn
+       on an 8 pixel grid, so every size it is set at is a multiple of 8. */
+    --pixel:'Press Start 2P',var(--display);
     /* ── ALIGNED DIGITS ARE A FONT FEATURE, NOT A TYPEFACE ──────────────────
      *
      * This game was set in a code face. `--mono` was `ui-monospace` and it was
@@ -123,9 +136,18 @@
   header.mast{text-align:center;margin:0 0 16px;}
   header.mast .eyebrow{font-size:11px;letter-spacing:.22em;text-transform:uppercase;
     color:var(--orange);font-weight:800;}
-  header.mast h1{font-family:var(--display);font-weight:400;text-transform:uppercase;
-    font-size:clamp(30px,8vw,46px);line-height:1;margin:4px 0 6px;letter-spacing:.01em;}
-  header.mast h1 span{color:var(--orange);}
+  /* The name is the logo's own lockup: RUN THE small and white over FLOOR large in
+     the ball's orange, with the stepped shadow the wordmark is built from. */
+  header.mast h1{font-family:var(--pixel);font-weight:400;text-transform:uppercase;
+    line-height:1;margin:12px 0 12px;letter-spacing:0;}
+  header.mast h1 .l1{display:block;font-size:16px;color:#e8edf7;text-shadow:2px 2px 0 #3a4466;}
+  header.mast h1 .l2{display:block;font-size:32px;color:#ffae3d;margin-top:8px;
+    text-shadow:0 3px 0 #e8632a,0 6px 0 #a8341f,4px 9px 0 #05060b;}
+  @media(min-width:600px){
+    header.mast h1 .l1{font-size:24px;text-shadow:3px 3px 0 #3a4466;}
+    header.mast h1 .l2{font-size:48px;margin-top:10px;
+      text-shadow:0 4px 0 #e8632a,0 8px 0 #a8341f,6px 13px 0 #05060b;}
+  }
   header.mast p{margin:0;color:var(--mut);font-size:14px;}
 
   .card{background:linear-gradient(180deg,var(--card),#10151f);border:1px solid var(--cardb);
@@ -1797,15 +1819,13 @@
   .appbar .mark{display:flex;align-items:center;gap:7px;min-width:0;height:100%;
     background:none;border:0;padding:0 6px 0 0;color:inherit;font-family:inherit;
     cursor:pointer;min-height:0;}
-  .appbar .ball{flex:0 0 auto;width:22px;height:22px;border-radius:50%;
-    border:2px solid var(--orange);position:relative;}
-  .appbar .ball:before,.appbar .ball:after{content:'';position:absolute;background:var(--orange);}
-  .appbar .ball:before{left:50%;top:0;bottom:0;width:1.5px;margin-left:-.75px;}
-  .appbar .ball:after{top:50%;left:0;right:0;height:1.5px;margin-top:-.75px;}
-  .appbar .wm{font-family:var(--display);font-weight:400;text-transform:uppercase;
-    font-size:15px;letter-spacing:.02em;line-height:1;white-space:nowrap;overflow:hidden;
-    text-overflow:ellipsis;}
-  .appbar .wm span{color:var(--orange);}
+  /* The logo's ball at 1x. It is 22 pixels drawn at 22 CSS pixels, so a phone scales
+     it by 2 or 3, which pixelated keeps as whole cells rather than blurring. */
+  .appbar .ball{flex:0 0 auto;width:22px;height:22px;image-rendering:pixelated;display:block;}
+  .appbar .wm{font-family:var(--pixel);font-weight:400;text-transform:uppercase;
+    font-size:10px;letter-spacing:0;line-height:1.3;white-space:nowrap;overflow:hidden;
+    text-overflow:ellipsis;color:#e8edf7;}
+  .appbar .wm span{color:#ffae3d;}
   .appbar .right{display:flex;align-items:center;gap:6px;flex:0 0 auto;}
   .appbar button.link{background:transparent;border:1px solid var(--cardb);color:var(--mut);
     font-size:12px;font-weight:700;padding:0 11px;height:34px;min-height:34px;border-radius:8px;}
@@ -1825,7 +1845,7 @@
   /* The mark is the way home from every screen, so it has to read as a control
      rather than as a logo printed on the page. */
   .appbar .mark:active{opacity:.6;}
-  @media(max-width:374px){ .appbar .wm{font-size:13.5px;} }
+  @media(max-width:374px){ .appbar .wm{font-size:8px;} }
 
   /* The capwrap now sticks UNDER the bar rather than over it. */
   .capwrap{top:var(--hdr);}
@@ -1878,7 +1898,7 @@
      record, which is why neither of those is a button on a screen any more. -->
 <div class="appbar">
   <button class="mark" id="b-mark" aria-label="Run The Floor, back to the home screen">
-    <span class="ball" aria-hidden="true"></span>
+    <img class="ball" src="mark.png?v=1" width="22" height="22" alt="" decoding="async">
     <span class="wm">Run The <span>Floor</span></span>
   </button>
   <div class="right">
@@ -1923,7 +1943,7 @@
     </div>
   </div>
   <div class="eyebrow">RunThe.GG</div>
-  <h1>Run The <span>Floor</span></h1>
+  <h1><span class="l1">Run The</span> <span class="l2">Floor</span></h1>
   <p>Spin a season and a team. Draft a starting five. Play 82 and chase a ring.</p>
 </header>
 

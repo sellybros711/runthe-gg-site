@@ -10719,8 +10719,9 @@ proxy and the page's own `<link>` arrives empty, and a refusal to write if a
 display face is missing, read off the loaded FontFace set rather than
 `document.fonts.check()`.
 
-**The ball is drawn rather than an image file**, because this game ships no
-logo and a card waiting on one would not exist. **The tags go in while the page
+**The ball on the card is `hoops/logo.png` at exactly half size**, so each of its
+22 pixel cells lands on 11 and the pixel art stays crisp. The build waits for the
+image and refuses to write a card without it. **The tags go in while the page
 is still noindexed**, deliberately: a robots tag tells a crawler not to index
 and does nothing to a chat app unfurling a link somebody was handed, which is
 how an unlaunched game reaches its testers.
@@ -10741,6 +10742,40 @@ thing. A bare "NNNN to NNNN" means several things here: `how-to-play.html`
 lists the seven era bands, and 1980 to 1986 is a correct sentence about the
 eighties. Scanning for the shape reported all seven as defects, which is the
 trap that kept "times" and "players" off the roster-count noun list.
+
+### The logo is an 8-bit ball, and every size is a whole multiple of one grid
+
+```
+node hoops/build/logo.mjs     the favicons, the icons, the mark, the wordmark and the lockup
+node hoops/build/og.mjs       the share card, which uses logo.png (needs :8080)
+```
+
+`hoops/build/logo-art.mjs` is the drawing, as a grid of cells built from a few rules:
+a one cell outline, an upright seam and a level seam through the middle, two side seams
+that step out once near the rim, and light cut into diagonal bands off the top left.
+`logo.mjs` lays it out at every size, under the football game's file names.
+
+**THE GRID IS ODD.** The first draft was 20 cells, which has no middle column, so the
+upright seam sat a cell right of centre and the ball leaned. 21 for the mark and 15 for
+the favicon are symmetric.
+
+**EVERY SIZE IS A WHOLE MULTIPLE OF THE GRID, AND THE SHADOW IS ONE CELL.** A pixel ball
+scaled by 1.3 has cells one and two pixels wide at random, which reads as a rendering
+fault. So `favicon-16` is fifteen cells and a one pixel shadow, 32 and 48 are that at 2x
+and 3x, and `mark.png` is the 21 cell ball at 1x (22px with its shadow), drawn at 22 CSS
+pixels in the top bar with `image-rendering:pixelated` so a phone scales it by 2 or 3.
+
+**THE NAME IS SET IN PRESS START 2P, and only the name.** The top bar, the home title,
+the rules page's title and the share card. It is drawn on an 8 pixel grid, so it is set
+at multiples of 8 (the top bar's 10px is the one exception, measured to fit a 360px bar
+beside the Career button). `--pixel` falls back to the display face and **never to a
+monospace**, because `verify.mjs` keeps a code face off these pages and a fallback stack
+ending in `monospace` fails it. Paragraphs stay in Archivo: a sentence in the pixel face
+is hard to read on a phone.
+
+**Google Fonts does not load in the sandbox**, so a screenshot of the page shows the
+fallback. Inline the face with `addStyleTag`, the way `og.mjs` does, before judging the
+title by eye.
 
 ### The board is in the preflight now, and the helper under it could only say NO
 

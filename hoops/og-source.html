@@ -3,7 +3,7 @@
 <!-- Internal build asset (renders the 1200x630 share image). Never a reader-facing page,
      so keep it out of search and out of any AdSense crawl. -->
 <meta name="robots" content="noindex, nofollow">
-<link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@600;700;800&family=Press+Start+2P&display=swap" rel="stylesheet">
 <style>
   /* 1200x630, the size every platform crops a share preview from.
      The game's own language: the dark card stock, the orange the doors wear, Anton on
@@ -17,68 +17,46 @@
      brown rectangle with four white outlines is a DIAGRAM of a court, and a floor is
      what the sport is played on. */
   *{margin:0;padding:0;box-sizing:border-box}
-  body{width:1200px;height:630px;overflow:hidden;background:#0d1117;color:#eef2f9;
+  /* THE CARD IS THE LOGO'S OWN SCREEN: the navy tile, the scanlines, the pixel ball with
+     its hard one cell shadow, and the name set the way the lockup sets it. The ball is
+     hoops/logo.png at exactly half size, so each of its 22 pixel cells lands on 11 and
+     none falls between two. The paragraph and the eyebrow stay in Archivo, because the
+     pixel face is for the name and a paragraph set in it is hard to read in a feed. */
+  body{width:1200px;height:630px;overflow:hidden;background:#10131f;color:#eef2f9;
     font-family:'Archivo',system-ui,sans-serif;position:relative;
     background-image:
-      radial-gradient(880px 520px at 50% -14%, rgba(240,120,45,.20), transparent 70%),
-      radial-gradient(720px 460px at 102% 112%, rgba(242,193,78,.14), transparent 70%);}
-  /* The boards, running away from the reader the way a floor is laid, at a period that
-     divides into nothing else on the card so the eye never finds the repeat. */
-  .floor{position:absolute;inset:0;opacity:.5;
-    background-image:
-      repeating-linear-gradient(90deg, rgba(255,255,255,.035) 0 1px, transparent 1px 61px),
-      repeating-linear-gradient(90deg, rgba(0,0,0,.20) 0 2px, transparent 2px 217px);}
-  /* The arc, bottom left, off the corner of the card: the one line that says basketball
-     without drawing a whole half court nobody can read at thumbnail size. */
-  .arc{position:absolute;left:-190px;bottom:-330px;width:660px;height:660px;
-    border:3px solid rgba(255,255,255,.07);border-radius:50%;}
+      radial-gradient(760px 480px at 82% 30%, rgba(240,120,45,.16), transparent 70%),
+      radial-gradient(720px 460px at 0% 110%, rgba(58,68,102,.35), transparent 70%);}
+  .scan{position:absolute;inset:0;z-index:5;pointer-events:none;
+    background:repeating-linear-gradient(0deg,rgba(0,0,0,.22) 0 2px,transparent 2px 4px)}
   .wrap{position:relative;height:100%;display:flex;flex-direction:column;
-    justify-content:center;padding:0 74px 46px}
-  .eyebrow{font-family:'Archivo',sans-serif;font-weight:800;font-size:22px;
-    letter-spacing:.2em;text-transform:uppercase;color:#94a3b8;margin-bottom:16px}
-  .eyebrow b{color:#f0782d}
-  h1{font-family:'Anton',Impact,sans-serif;font-weight:400;
-    text-transform:uppercase;font-size:118px;line-height:.86;letter-spacing:.008em}
+    justify-content:center;padding:0 74px 40px}
+  .eyebrow{font-weight:800;font-size:22px;letter-spacing:.2em;text-transform:uppercase;
+    color:#94a3b8;margin-bottom:26px}
+  .eyebrow b{color:#ffae3d}
+  h1{font-family:'Press Start 2P',Anton,sans-serif;font-weight:400;text-transform:uppercase;line-height:1}
   h1 span{display:block}
-  h1 .two{background:linear-gradient(135deg,#f9a35f 0%,#c25916 100%);
-    -webkit-background-clip:text;background-clip:text;color:transparent}
-  p{font-size:28px;line-height:1.34;color:#cbd5e1;margin-top:24px;max-width:720px}
+  h1 .one{font-size:40px;color:#e8edf7;text-shadow:4px 4px 0 #3a4466}
+  h1 .two{font-size:80px;color:#ffae3d;margin-top:14px;
+    text-shadow:0 6px 0 #e8632a,0 12px 0 #a8341f,8px 18px 0 #05060b}
+  p{font-size:27px;line-height:1.34;color:#cbd5e1;margin-top:36px;max-width:700px}
   p b{color:#eef2f9;font-weight:700}
-  /* The five spots, in the draft board's own position colours. */
-  .slots{display:flex;gap:11px;margin-top:32px}
-  .slot{font-family:'Anton',sans-serif;font-weight:400;font-size:26px;
-    letter-spacing:.1em;padding:12px 22px;border-radius:12px;color:#fff;
-    box-shadow:0 10px 26px -10px rgba(0,0,0,.85)}
-  .pg{background:linear-gradient(160deg,#3b82f6,rgba(0,0,0,.42))}
-  .sg{background:linear-gradient(160deg,#06b6d4,rgba(0,0,0,.42))}
-  .sf{background:linear-gradient(160deg,#22c55e,rgba(0,0,0,.42))}
-  .pf{background:linear-gradient(160deg,#f59e0b,rgba(0,0,0,.42))}
-  .c {background:linear-gradient(160deg,#ef4444,rgba(0,0,0,.42))}
-  .url{position:absolute;right:74px;bottom:52px;text-align:right;
-    font-family:'Anton',sans-serif;font-weight:400;font-size:30px;
-    letter-spacing:.14em;color:#64748b}
-  .url b{color:#eef2f9}
-  .url b i{color:#f0782d;font-style:normal}
-  /* The ball, top right, clear of the type. Drawn rather than an image file, because
-     this game ships no logo and a card that waited on one would not exist. The seams
-     are the two things a ball needs to read as one at thumbnail size: the vertical
-     meridian and the two hooks off it. */
-  .ball{position:absolute;right:86px;top:84px;width:208px;height:208px;border-radius:50%;
-    background:radial-gradient(circle at 34% 28%, #f2914a 0%, #e0722a 46%, #a8480f 100%);
-    box-shadow:0 26px 60px -22px rgba(0,0,0,.9), inset 0 0 0 3px rgba(0,0,0,.22)}
-  .ball i{position:absolute;display:block;border:3px solid rgba(0,0,0,.42)}
-  .ball .v{left:50%;top:0;bottom:0;width:0;margin-left:-1.5px;border-width:0 0 0 3px}
-  .ball .h{left:0;right:0;top:50%;height:0;margin-top:-1.5px;border-width:3px 0 0 0}
-  .ball .l{left:-34%;top:0;bottom:0;width:100%;border-radius:50%;border-width:0 3px 0 0}
-  .ball .r{right:-34%;top:0;bottom:0;width:100%;border-radius:50%;border-width:0 0 0 3px}
+  /* The five spots, in the draft board's own position colours, as pixel buttons. */
+  .slots{display:flex;gap:12px;margin-top:30px}
+  .slot{font-family:'Press Start 2P',sans-serif;font-size:16px;padding:14px 16px;color:#fff;
+    box-shadow:4px 4px 0 #05060b;border:3px solid rgba(0,0,0,.35)}
+  .pg{background:#3b82f6}.sg{background:#0891b2}.sf{background:#16a34a}.pf{background:#d97706}.c{background:#dc2626}
+  .url{position:absolute;right:74px;bottom:50px;text-align:right;
+    font-family:'Press Start 2P',sans-serif;font-size:16px;color:#64748b}
+  .url b{color:#e8edf7;font-weight:400}
+  .url b i{color:#ffae3d;font-style:normal}
+  .ball{position:absolute;right:92px;top:74px;width:256px;height:256px;image-rendering:pixelated}
 </style></head>
 <body>
-  <div class="floor"></div>
-  <div class="arc"></div>
   <div class="wrap">
-    <div class="ball"><i class="v"></i><i class="h"></i><i class="l"></i><i class="r"></i></div>
+    <img class="ball" src="logo.png" alt="">
     <div class="eyebrow">Free &middot; No download &middot; Five spins, <b>one season</b></div>
-    <h1><span>Run The</span><span class="two">Floor</span></h1>
+    <h1><span class="one">Run The</span><span class="two">Floor</span></h1>
     <p>Spin for a season and a club. Sign one player off each of five draws, under a
        <b>$120M cap</b>. Then play all 82 games and chase a ring.</p>
     <div class="slots">
@@ -88,4 +66,5 @@
     </div>
   </div>
   <div class="url"><b>RUNTHE<i>.GG</i></b>/HOOPS</div>
+  <div class="scan"></div>
 </body></html>

@@ -31,7 +31,7 @@ import { createRequire } from 'node:module';
 const { chromium } = createRequire('/opt/node22/lib/node_modules/')('playwright');
 
 const CSS = 'https://fonts.googleapis.com/css2?family=Anton'
-  + '&family=Archivo:wght@600;700;800&display=swap';
+  + '&family=Archivo:wght@600;700;800&family=Press+Start+2P&display=swap';
 /* Google serves woff2 only to a UA it believes supports it. */
 const UA = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) '
   + 'Chrome/126.0.0.0 Safari/537.36';
@@ -63,19 +63,32 @@ await page.waitForTimeout(400);
 const fonts = await page.evaluate(() => {
   const loaded = new Set();
   document.fonts.forEach((f) => { if (f.status === 'loaded') loaded.add(f.family.replace(/["']/g, '')); });
-  return { anton: loaded.has('Anton'), archivo: loaded.has('Archivo') };
+  return { pixel: loaded.has('Press Start 2P'), archivo: loaded.has('Archivo') };
 });
 console.log('faces loaded:', JSON.stringify(fonts));
-if (!fonts.anton || !fonts.archivo) {
+if (!fonts.pixel || !fonts.archivo) {
   console.log('REFUSING TO WRITE: a display face is missing and the card would be set in a fallback.');
   await browser.close();
   process.exit(1);
 }
 
-/* THE HEADLINE HAS TO FIT, AND A HEADLESS BROWSER IS THE PLACE THAT CAN SAY SO. Anton is
-   a condensed face and the fallback here is about a third wider, so a card that fits in
-   the sandbox fits on a real render with room; the reverse is not true, which is why this
-   is asserted AFTER the face check above and never instead of it. */
+/* THE BALL IS AN IMAGE NOW, hoops/logo.png, and a screenshot taken before it decodes is a
+   card with a hole where the logo goes. So it waits for it, and refuses if it never came. */
+const ballOk = await page.evaluate(async () => {
+  const img = document.querySelector('img.ball');
+  if (!img) return false;
+  if (!img.complete) await new Promise((r) => { img.onload = img.onerror = r; });
+  return img.naturalWidth > 0;
+});
+if (!ballOk) {
+  console.log('REFUSING TO WRITE: hoops/logo.png did not load, so the card would have no logo.');
+  await browser.close();
+  process.exit(1);
+}
+
+/* THE HEADLINE HAS TO FIT, AND A HEADLESS BROWSER IS THE PLACE THAT CAN SAY SO. It is
+   asserted AFTER the face check above and never instead of it: measured in a fallback,
+   the headline is a different width from the one that ships. */
 const fit = await page.evaluate(() => {
   const h1 = document.querySelector('h1');
   const wrap = document.querySelector('.wrap');
