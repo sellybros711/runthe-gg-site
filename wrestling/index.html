@@ -544,6 +544,47 @@
     .frules.open{display:block;-webkit-line-clamp:unset;overflow:visible;}
   }
   .fclock{font-family:var(--display);font-size:24px;color:var(--brandred-bright);line-height:1;}
+  /* ---- the broadcast package: a nameplate each side, a clock in the middle ----
+     A face beside each name, the bar set on a slant the way a fight broadcast
+     sets it, and a white trail behind the bar that holds for a beat after a hit
+     (setBar moves both; the trail is simply slower). */
+  .fs{display:flex;align-items:center;gap:10px;min-width:0;}
+  .fs.right{flex-direction:row-reverse;}
+  .fsin{flex:1;min-width:0;}
+  .fpt{flex:none;width:52px;height:52px;border-radius:10px;overflow:hidden;position:relative;
+    background:radial-gradient(circle at 50% 30%,#2a2f3a,#0d0f14);border:2px solid #5b9fd1;
+    box-shadow:0 0 0 2px rgba(0,0,0,.55),0 0 18px -4px rgba(91,159,209,.8);}
+  .fs.right .fpt{border-color:#e0685a;box-shadow:0 0 0 2px rgba(0,0,0,.55),0 0 18px -4px rgba(224,104,90,.8);
+    background:radial-gradient(circle at 50% 30%,#3a2a2a,#140d0d);}
+  .fpt svg{position:absolute;left:-4%;top:4%;width:108%;height:auto;image-rendering:var(--pxr);}
+  .fs.right .fpt svg{transform:scaleX(-1);}
+  .fbar{position:relative;height:14px;border:0;border-radius:2px;background:rgba(0,0,0,.6);transform:skewX(-20deg);
+    box-shadow:inset 0 0 0 1.5px rgba(244,232,219,.22),0 2px 0 rgba(0,0,0,.5);}
+  .fbar.rev{transform:skewX(20deg);}
+  .fbar i{position:relative;z-index:1;}
+  .fbar .lag{position:absolute;left:0;top:0;bottom:0;width:100%;background:rgba(255,248,236,.85);
+    transition:width .7s cubic-bezier(.3,.7,.3,1) .38s;}
+  .fbar.rev .lag{left:auto;right:0;}
+  .fbar i::after{content:"";position:absolute;left:0;right:0;top:0;height:40%;background:rgba(255,255,255,.28);}
+  .fmid{min-width:0;}
+  .fclock{display:inline-block;margin-top:3px;padding:3px 10px 2px;border-radius:6px;background:#0b0909;
+    border:1px solid rgba(244,232,219,.16);box-shadow:inset 0 -2px 0 var(--brandred),0 4px 10px rgba(0,0,0,.5);
+    font-variant-numeric:tabular-nums;}
+  .fphase{margin-top:4px;}
+  /* a phone has no room for three columns: the clock goes on its own row above
+     the two plates, so each name gets half the screen instead of a third */
+  @media(max-width:640px){
+    .fhud{grid-template-columns:1fr 1fr;grid-template-areas:"mid mid" "l r";gap:6px 12px;}
+    .fmid{grid-area:mid;display:flex;flex-wrap:wrap;align-items:center;justify-content:center;column-gap:10px;}
+    .fstip{flex-basis:100%;} .frules{order:3;flex-basis:100%;margin:2px auto 0;}
+    .fclock{margin:2px 0 0;font-size:20px;} .fphase{margin:2px 0 0;}
+    .fs.left{grid-area:l;} .fs.right{grid-area:r;}
+    .fs{gap:7px;}
+    .fpt{width:40px;height:40px;border-radius:8px;}
+    .fs .fnm{font-size:16px;}
+    .fsub{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    .fbar{height:11px;}
+  }
 
   .momwrap{margin-bottom:10px;}
   .momhead{font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--text-faint);font-weight:800;text-align:center;margin-bottom:3px;}
@@ -566,6 +607,60 @@
   .ringback svg,.ringfront svg{width:100%;height:100%;display:block;}
   .arena .ringback,.arena .ringfront{height:78%;}
   .arena .ringback{z-index:1;} .arena .ringfront{z-index:4;}
+  /* ---- the building: rig, beams, flashes, the screen (see venueHTML) ---- */
+  .arena,.homering{container-type:inline-size;}
+  .venue{position:absolute;inset:0;pointer-events:none;overflow:hidden;}
+  .v-truss{position:absolute;left:3%;right:3%;top:0;height:10px;border-top:2px solid #3b3437;border-bottom:2px solid #3b3437;
+    background:repeating-linear-gradient(60deg,#3b3437 0 1.5px,transparent 1.5px 10px),repeating-linear-gradient(-60deg,#3b3437 0 1.5px,transparent 1.5px 10px);
+    box-shadow:0 3px 8px rgba(0,0,0,.6);}
+  .v-truss.pipe{height:4px;border:0;background:#3b3437;left:18%;right:18%;border-radius:2px;}
+  .v-can{position:absolute;top:7px;width:13px;height:11px;margin-left:-6.5px;border-radius:2px 2px 6px 6px;
+    background:linear-gradient(180deg,#342d30,#141113);border:1px solid #0a0809;}
+  .v-can::after{content:"";position:absolute;left:2px;right:2px;bottom:-3px;height:4px;border-radius:50%;
+    background:var(--vc);box-shadow:0 0 8px 2px var(--vc);}
+  .v-beam{position:absolute;top:10px;width:30%;height:125%;margin-left:-15%;transform-origin:50% 0;opacity:.17;
+    background:linear-gradient(180deg,var(--vc) 0%,color-mix(in srgb,var(--vc) 40%,transparent) 45%,transparent 82%);
+    clip-path:polygon(47% 0,53% 0,100% 100%,0 100%);mix-blend-mode:screen;filter:blur(6px);
+    animation:vsweep var(--vd,9s) ease-in-out infinite alternate;}
+  .v-beam.still{animation:none;transform:rotate(var(--va));opacity:.12;}
+  @keyframes vsweep{from{transform:rotate(var(--va,-10deg))}to{transform:rotate(var(--vb,10deg))}}
+  .v-flash{position:absolute;width:3px;height:3px;border-radius:50%;background:#fff;opacity:0;
+    box-shadow:0 0 7px 3px rgba(255,255,255,.75);animation:vflash var(--vd,6s) linear infinite;}
+  @keyframes vflash{0%,95%,100%{opacity:0}96%{opacity:1}97.5%{opacity:.15}}
+  .v-tron{position:absolute;left:50%;top:5%;width:min(30%,250px);aspect-ratio:16/7;transform:translateX(-50%);
+    border-radius:4px;border:2px solid #2b2528;overflow:hidden;display:flex;align-items:center;justify-content:center;
+    background:radial-gradient(ellipse at 50% 45%,color-mix(in srgb,var(--vc) 55%,#000) 0%,#060506 78%);
+    box-shadow:0 0 26px -2px var(--vg),0 6px 14px rgba(0,0,0,.7),inset 0 0 16px rgba(0,0,0,.75);}
+  .v-tron b{position:relative;z-index:1;font-family:var(--display);font-weight:400;font-size:clamp(15px,6cqi,34px);
+    letter-spacing:.1em;color:#fff;text-shadow:0 0 14px var(--vc),0 2px 0 rgba(0,0,0,.6);}
+  .v-tron s{position:absolute;inset:0;text-decoration:none;
+    background:repeating-linear-gradient(0deg,rgba(0,0,0,.28) 0 1px,transparent 1px 3px),
+      linear-gradient(100deg,transparent 30%,rgba(255,255,255,.16) 48%,transparent 60%) 0 0/250% 100%;
+    animation:vsheen 5.5s linear infinite;}
+  @keyframes vsheen{from{background-position:0 0,160% 0}to{background-position:0 0,-100% 0}}
+  .v-banner{position:absolute;left:50%;top:7%;transform:translateX(-50%) rotate(-1deg);padding:3px 14px 4px;
+    background:linear-gradient(180deg,var(--a0),var(--a1));border:1px solid rgba(0,0,0,.55);border-radius:2px;
+    box-shadow:0 5px 10px rgba(0,0,0,.6);}
+  .v-banner::before,.v-banner::after{content:"";position:absolute;bottom:100%;width:1px;height:40px;background:rgba(226,211,186,.45);}
+  .v-banner::before{left:12%;} .v-banner::after{right:12%;}
+  .v-banner b{font-family:var(--display);font-weight:400;font-size:clamp(12px,4cqi,22px);letter-spacing:.14em;color:#fff5e6;text-shadow:0 2px 0 rgba(0,0,0,.45);}
+  /* inside the ring's own layer, so both scale with it when the camera pulls back */
+  .ringback .v-pool{position:absolute;left:8%;right:8%;top:40%;height:50%;pointer-events:none;
+    background:radial-gradient(ellipse 52% 48% at 50% 58%,rgba(255,246,228,.20),transparent 72%);mix-blend-mode:screen;}
+  .ringback .v-apron{position:absolute;left:4%;right:4%;bottom:0;height:12%;display:flex;align-items:center;justify-content:center;
+    font-family:var(--display);font-size:clamp(9px,2.5cqi,19px);letter-spacing:.34em;text-transform:uppercase;
+    color:rgba(255,245,230,.82);text-shadow:0 1px 0 rgba(0,0,0,.5);white-space:nowrap;overflow:hidden;}
+  .ringback .v-apron .v-short{display:none;}
+  @container (max-width:560px){ .ringback .v-apron .v-full{display:none;} .ringback .v-apron .v-short{display:inline;} }
+  /* a body stands on the canvas: a soft pool of shadow under its feet */
+  .fighter::before,.hr-fig::before{content:"";position:absolute;left:27%;right:27%;bottom:9%;height:6%;border-radius:50%;
+    background:radial-gradient(ellipse at 50% 50%,rgba(0,0,0,.6),transparent 70%);z-index:-1;pointer-events:none;}
+  /* retro: the same rig with hard edges, as the pixel game would draw it */
+  html.gfx-retro .v-beam{filter:none;opacity:.12;background:linear-gradient(180deg,var(--vc) 0 40%,color-mix(in srgb,var(--vc) 45%,transparent) 40% 70%,transparent 70%);}
+  html.gfx-retro .v-flash{border-radius:0;box-shadow:0 0 0 2px rgba(255,255,255,.5);}
+  html.gfx-retro .v-can::after{box-shadow:none;}
+  html.gfx-retro .ringback .v-pool{background:radial-gradient(ellipse 52% 48% at 50% 58%,rgba(255,246,228,.14) 0 45%,transparent 46%);}
+  @media (prefers-reduced-motion: reduce){ .v-beam,.v-flash,.v-tron s{animation:none;} }
   /* The steel cage: four bar columns on the back apron, a chain-link mesh
      overlay across the front, and a bar frame around the ring. Only visible
      when the arena carries .cage; every other stipulation ignores it. */
@@ -712,11 +807,92 @@
     background:rgba(255,255,255,.9);animation:slapA .3s ease-out forwards;}
   @keyframes slapA{0%{transform:scaleX(.2);opacity:1}100%{transform:scaleX(2.6);opacity:0}}
   @keyframes pinA{0%{opacity:0;transform:scale(2.2)}30%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(.9)}}
+  /* ---- tonight's poster on the hub (bookPoster) ---- */
+  .bk-poster{position:relative;height:178px;margin:-2px -2px 12px;border-radius:12px;overflow:hidden;
+    background:radial-gradient(ellipse 50% 70% at 50% 0%,var(--pg),transparent 70%),
+      radial-gradient(ellipse 40% 60% at 18% 110%,rgba(91,159,209,.22),transparent 70%),
+      radial-gradient(ellipse 40% 60% at 82% 110%,rgba(224,104,90,.22),transparent 70%),
+      linear-gradient(180deg,#1a1315,#0b0909);
+    border:1px solid rgba(244,232,219,.10);}
+  .bk-poster::before{content:"";position:absolute;inset:0;pointer-events:none;
+    background:linear-gradient(115deg,transparent 48%,rgba(255,255,255,.07) 49.5%,transparent 51%);}
+  .bkp-fig{position:absolute;bottom:-10px;width:140px;}
+  .bkp-fig.me{left:6%;} .bkp-fig.opp{right:6%;}
+  .bkp-flip{transform:scaleX(-1);}
+  .bkp-fig svg{width:100%;height:auto;display:block;image-rendering:var(--pxr);filter:drop-shadow(0 6px 10px rgba(0,0,0,.7));}
+  .bkp-fig.me{animation:bkpL .6s cubic-bezier(.2,1,.3,1) both;} .bkp-fig.opp{animation:bkpR .6s cubic-bezier(.2,1,.3,1) both;}
+  @keyframes bkpL{from{transform:translateX(-40px);opacity:0}} @keyframes bkpR{from{transform:translateX(40px);opacity:0}}
+  .bkp-vs{position:absolute;left:50%;top:38%;transform:translate(-50%,-50%) skewX(-8deg);font-family:var(--display);font-size:46px;
+    line-height:1;color:var(--cream);letter-spacing:.02em;text-shadow:0 0 22px var(--pp),0 4px 0 #000;animation:bkpV .5s .25s cubic-bezier(.2,1.6,.4,1) both;}
+  @keyframes bkpV{from{transform:translate(-50%,-50%) skewX(-8deg) scale(2.2);opacity:0}}
+  .bkp-names{position:absolute;left:0;right:0;bottom:0;display:flex;justify-content:space-between;gap:10px;padding:18px 12px 8px;
+    background:linear-gradient(180deg,transparent,rgba(0,0,0,.85));font-family:var(--display);font-size:15px;letter-spacing:.05em;
+    text-transform:uppercase;color:var(--cream);}
+  .bkp-names span{max-width:48%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .bkp-names span:last-child{text-align:right;color:#f3b3a8;} .bkp-names span:first-child{color:#b9dcf2;}
+  @media(max-width:640px){ .bk-poster{height:150px;} .bkp-fig{width:112px;} .bkp-vs{font-size:38px;} }
+  @media (prefers-reduced-motion: reduce){ .bkp-fig,.bkp-vs{animation:none;} }
+  /* ---- the result shot (resultHero) ---- */
+  .mhero{margin:0 0 16px;}
+  .mh-stage{position:relative;height:230px;border-radius:16px;overflow:hidden;border:1px solid var(--line);
+    background:radial-gradient(ellipse 60% 50% at 50% 100%,rgba(255,240,215,.10),transparent 70%),
+      radial-gradient(ellipse at 50% 0%,rgba(198,57,44,.20),transparent 60%),linear-gradient(180deg,#171113,#0a0909);}
+  .mh-stage.mh-win{border-color:rgba(224,179,65,.55);box-shadow:0 0 40px -14px rgba(224,179,65,.6);}
+  .mh-stage::after{content:"";position:absolute;left:0;right:0;bottom:0;height:24%;
+    background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(0,0,0,.35));border-top:1px solid rgba(255,255,255,.07);}
+  .mh-beam{position:absolute;top:-10%;width:46%;height:120%;left:27%;opacity:.28;pointer-events:none;
+    background:linear-gradient(180deg,#fff1dc,transparent 85%);clip-path:polygon(44% 0,56% 0,100% 100%,0 100%);filter:blur(8px);mix-blend-mode:screen;}
+  .mh-win .mh-beam{left:3%;background:linear-gradient(180deg,#f6d97a,transparent 85%);}
+  .mh-loss .mh-beam{left:51%;}
+  .mh-fig{position:absolute;bottom:8%;width:150px;margin-left:-75px;z-index:1;}
+  @media(min-width:900px){ .mh-stage{height:290px;} .mh-fig{width:196px;margin-left:-98px;} .mh-fig.me{left:28%;} .mh-fig.opp{left:72%;} }
+  .mh-fig.me{left:22%;} .mh-fig.opp{left:78%;}
+  .mh-fig.opp .mh-in{transform:scaleX(-1);}
+  .mh-fig svg{width:100%;height:auto;display:block;image-rendering:var(--pxr);filter:drop-shadow(0 6px 8px rgba(0,0,0,.6));}
+  .mh-fig.down svg{filter:brightness(.55) saturate(.7) drop-shadow(0 6px 8px rgba(0,0,0,.6));}
+  .mh-fig.up{animation:mhUp .7s cubic-bezier(.2,1.3,.4,1) .15s both;}
+  @keyframes mhUp{from{transform:translateY(16px);opacity:0}to{transform:none;opacity:1}}
+  .mh-plate{position:absolute;left:50%;top:38%;transform:translate(-50%,-50%);z-index:3;text-align:center;white-space:nowrap;}
+  .mh-stamp{display:inline-block;font-family:var(--display);font-size:54px;line-height:1;letter-spacing:.06em;text-transform:uppercase;
+    padding:4px 16px 2px;border:3px solid currentColor;border-radius:8px;transform:rotate(-6deg);
+    background:rgba(8,6,6,.55);animation:mhStamp .5s cubic-bezier(.2,1.5,.4,1) both;}
+  .mh-win .mh-stamp{color:#f6d97a;text-shadow:0 0 18px rgba(224,179,65,.7);}
+  .mh-loss .mh-stamp{color:#f0907f;}
+  .mh-draw .mh-stamp{color:var(--cream);}
+  @keyframes mhStamp{0%{transform:scale(2.6) rotate(-14deg);opacity:0}60%{transform:scale(.94) rotate(-6deg);opacity:1}100%{transform:rotate(-6deg)}}
+  .mh-vs{position:absolute;left:50%;bottom:-86px;transform:translateX(-50%);padding:4px 12px;border-radius:999px;
+    background:rgba(8,6,6,.8);border:1px solid var(--line);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--text-dim);font-weight:800;}
+  .mh-vs b{color:var(--cream);}
+  .mh-conf i{position:absolute;top:-8px;width:6px;height:10px;border-radius:1px;z-index:2;opacity:0;
+    animation:mhConf 2.4s linear forwards;}
+  @keyframes mhConf{0%{opacity:1;transform:translateY(0) rotate(0)}100%{opacity:0;transform:translateY(240px) rotate(var(--cr))}}
+  @media(max-width:640px){ .mh-stage{height:200px;} .mh-fig{width:112px;margin-left:-56px;} .mh-fig.me{left:19%;} .mh-fig.opp{left:81%;}
+    .mh-stamp{font-size:36px;padding:3px 11px 1px;} .mh-vs{bottom:-74px;font-size:10px;letter-spacing:.12em;} }
+  @media (prefers-reduced-motion: reduce){ .mh-conf{display:none;} .mh-stamp,.mh-fig.up{animation:none;} }
+  /* the big hit: a starburst behind the contact point */
+  .pow{position:absolute;width:92px;height:92px;margin:-46px 0 0 -46px;pointer-events:none;
+    background:radial-gradient(circle,#fffbe8 0 26%,#f6d97a 27% 44%,transparent 45%);
+    clip-path:polygon(50% 0,59% 30%,90% 12%,70% 40%,100% 50%,70% 60%,90% 88%,59% 70%,50% 100%,41% 70%,10% 88%,30% 60%,0 50%,30% 40%,10% 12%,41% 30%);
+    animation:powA .5s cubic-bezier(.2,1.4,.4,1) forwards;}
+  @keyframes powA{0%{transform:scale(.2) rotate(var(--pr,0deg));opacity:1}35%{transform:scale(1.1) rotate(var(--pr,0deg));opacity:1}100%{transform:scale(1.35) rotate(var(--pr,0deg));opacity:0}}
+  html.gfx-retro .pow{background:radial-gradient(circle,#fffbe8 0 30%,#f6d97a 30% 46%,transparent 46%);}
+  .arena .venue .v-beam,.arena .crowd{transition:opacity .25s,filter .25s;}
+  .arena.lit .v-beam{opacity:.34;}
+  .arena.lit .crowd{filter:brightness(1.45);}
+  .arena.entering .v-beam{opacity:.3;animation-duration:1.6s;}
+  .arena.entering .v-flash{animation-duration:1.2s;}
+  .pyro{position:absolute;bottom:28%;width:0;height:0;z-index:6;pointer-events:none;}
+  .pyro i{position:absolute;left:0;top:0;width:4px;height:4px;border-radius:50%;background:#fff3c4;opacity:0;
+    box-shadow:0 0 6px 2px rgba(255,190,70,.9);animation:pyroA 1s cubic-bezier(.15,.7,.4,1) forwards;}
+  @keyframes pyroA{0%{opacity:1;transform:translate(0,0)}70%{opacity:1}100%{opacity:0;transform:translate(var(--px),var(--py)) scale(.4)}}
   .flash{position:absolute;inset:0;background:#fff;opacity:0;z-index:8;pointer-events:none;}
   .flash.go{animation:flashA .3s ease-out;}
   @keyframes flashA{0%{opacity:.85}100%{opacity:0}}
 
   .fbottom{margin-top:12px;display:grid;grid-template-columns:1fr;gap:10px;}
+  /* the call the match is waiting on goes above the record of it: under a full
+     log it opened below the bottom of a phone, and the match sat paused on it */
+  .fbottom .fdec{order:-1;}
   .flog{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 14px;height:96px;overflow-y:auto;font-size:13.5px;line-height:1.6;}
   .flog div{opacity:0;animation:logA .3s forwards;}
   @keyframes logA{to{opacity:1}}
@@ -740,6 +916,17 @@
   .dp.good{color:var(--green);} .dp.mid{color:var(--gold);} .dp.bad{color:#f0907f;}
   .frow{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;justify-content:flex-end;}
   @media(max-width:640px){ .arena{height:250px;} .fighter{width:176px;margin-left:-88px;} .callout{font-size:28px;} .pincount{font-size:84px;} }
+  /* THE MATCH TAKES THE SCREEN. The six tab rail, the four number strip and the
+     bottom bar are all ways to LEAVE, and there is nothing to leave to mid match
+     (Skip is on the screen). With them off, the ring gets the room back. */
+  body.inmatch .sb-nav,body.inmatch #topbar,body.inmatch #botnav{display:none!important;}
+  body.hasnav.inmatch{padding-top:calc(env(safe-area-inset-top,0px) + 58px);}
+  body.hasnav.inmatch main{padding-bottom:calc(20px + env(safe-area-inset-bottom,0px));}
+  body.inmatch .arena:not(.promo){height:420px;}
+  @media(max-width:640px){
+    body.inmatch .arena:not(.promo){height:clamp(250px,42vh,360px);}
+    body.inmatch .arena:not(.promo) .fighter{width:196px;margin-left:-98px;}
+  }
 
   /* the business: contract, act, standing, mileage */
   .bizgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:9px;}
@@ -1573,6 +1760,66 @@
   .ruletbl td:not(:first-child){font-family:var(--mono);}
 
   @media(max-width:640px){ .topbar h1{font-size:18px;} .hud .value{font-size:14px;} main{padding:16px 12px 90px;} }
+
+  /* ==================== THE MENU PASS ====================
+     Every screen used to open on a line of caps over a rule. It opens on a
+     header now: the page's own icon hung in the corner, the house light
+     behind the title, and three ring ropes running off the right edge, so a
+     menu reads as part of the same building as the match.
+
+     The icon is a CSS variable set by decorateHeader() on the h2 itself,
+     never a child of it: the career title is rewritten with innerHTML on
+     every week, and a child would be wiped with it. */
+  .screen > h2{position:relative;overflow:hidden;min-height:92px;margin:6px 0 18px;padding:20px 118px 16px 18px;
+    flex-direction:column;align-items:flex-start;justify-content:flex-end;gap:7px;
+    font-size:clamp(28px,6.4vw,40px);line-height:.95;border:1px solid var(--line);border-radius:16px;
+    background:radial-gradient(ellipse 70% 130% at 0% 0%,rgba(198,57,44,.30),transparent 60%),
+      radial-gradient(ellipse 45% 100% at 100% 100%,rgba(224,179,65,.13),transparent 72%),
+      linear-gradient(180deg,#1c1416,#100c0d);
+    box-shadow:inset 4px 0 0 var(--brandred),inset 0 1px 0 rgba(255,255,255,.06),0 16px 30px -22px #000;}
+  .screen > h2::before{content:"";position:absolute;right:-6%;top:22%;width:58%;height:48%;pointer-events:none;transform:skewY(-4deg);
+    background:linear-gradient(180deg,transparent 0 12%,rgba(244,232,219,.12) 12% 16%,transparent 16% 46%,rgba(244,232,219,.10) 46% 50%,transparent 50% 80%,rgba(244,232,219,.08) 80% 84%,transparent 84%);
+    -webkit-mask:linear-gradient(90deg,transparent,#000 40%);mask:linear-gradient(90deg,transparent,#000 40%);}
+  .screen > h2::after{content:"";position:absolute;right:16px;top:50%;width:84px;height:84px;margin-top:-42px;pointer-events:none;
+    background:var(--h2ico,none) center/contain no-repeat;transform:rotate(-8deg);opacity:.95;
+    filter:drop-shadow(0 6px 10px rgba(0,0,0,.6)) drop-shadow(0 0 16px rgba(224,179,65,.18));image-rendering:var(--pxr);}
+  .screen > h2 .sub2{font-size:12.5px;line-height:1.35;}
+  .screen > h2 .ppvchip{margin-top:2px;}
+  @media(max-width:640px){ .screen > h2{min-height:84px;padding:16px 92px 14px 16px;}
+    .screen > h2::after{width:64px;height:64px;margin-top:-32px;right:12px;} }
+
+  /* a screen arrives rather than appearing: a short fade, and the first few
+     blocks on it step in one after another. Opacity only on the screen, so
+     nothing measured during the fade is in the wrong place. */
+  .screen.active:not(#s-fight):not(#s-promo){animation:scrIn .28s ease-out;}
+  @keyframes scrIn{from{opacity:0}}
+  .screen.active:not(#s-fight):not(#s-promo) > :is(h2,.card,.grid,div):nth-child(-n+6){animation:blkIn .42s cubic-bezier(.2,.8,.3,1) backwards;}
+  .screen.active > :nth-child(2){animation-delay:.03s!important;} .screen.active > :nth-child(3){animation-delay:.07s!important;}
+  .screen.active > :nth-child(4){animation-delay:.11s!important;} .screen.active > :nth-child(5){animation-delay:.15s!important;}
+  .screen.active > :nth-child(6){animation-delay:.19s!important;}
+  @keyframes blkIn{from{opacity:0;transform:translateY(10px)}}
+  @media (prefers-reduced-motion: reduce){ .screen.active,.screen.active > *{animation:none!important;} }
+
+  /* surfaces: a lit top edge and a soft drop, so a card sits ON the page
+     rather than being a slightly lighter patch of it */
+  .card,.tile,.bizcard,.crewcard,.wk-alt,.goal,.promocard,.rankcard,.bs-room,.rooms,.slot,.movecard,.bkg,.pmmode,.hcard,.bksheet{
+    background-image:linear-gradient(180deg,rgba(255,255,255,.035),rgba(255,255,255,0) 46%);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.055),0 12px 26px -20px rgba(0,0,0,.95);}
+  :is(.wk-alt,.slot,.bkg,.pmmode,.hcard,.crewcard):hover{border-color:rgba(224,179,65,.45);}
+
+  /* ONE RAIL PER DEVICE. A phone steers with the tab bar under the thumb, so
+     the same six destinations again in the header was a second row of the
+     same buttons eating 34px of every screen. A desktop has no thumb: it
+     keeps the header rail, and the phone-shaped bar at the bottom goes. */
+  @media(max-width:760px){
+    body.hasnav .sb-nav{display:none;}
+    body.hasnav{padding-top:calc(env(safe-area-inset-top,0px) + 48px);}
+  }
+  @media(min-width:761px){
+    body.hasnav #botnav{display:none!important;}
+    body.hasnav main{padding-bottom:28px;}
+    body.hasnav .topbar{top:calc(env(safe-area-inset-top,0px) + 82px);}
+  }
 </style>
 </head>
 <body>
@@ -1814,9 +2061,12 @@
 <div class="screen" id="s-fight">
   <div class="fhud">
     <div class="fs left">
+      <div class="fpt" id="fMePt"></div>
+      <div class="fsin">
       <div class="fnm" id="fMeName">YOU</div>
-      <div class="fbar"><i id="hpMe" style="width:100%"></i></div>
+      <div class="fbar"><b class="lag"></b><i id="hpMe" style="width:100%"></i></div>
       <div class="fsub" id="fMeSub">-</div>
+      </div>
     </div>
     <div class="fmid">
       <div class="fstip" id="fStip">SINGLES MATCH</div>
@@ -1825,9 +2075,12 @@
       <div class="fphase" id="fPhase">BELL</div>
     </div>
     <div class="fs right">
+      <div class="fpt" id="fOppPt"></div>
+      <div class="fsin">
       <div class="fnm" id="fOppName">OPPONENT</div>
-      <div class="fbar rev"><i id="hpOpp" style="width:100%"></i></div>
+      <div class="fbar rev"><b class="lag"></b><i id="hpOpp" style="width:100%"></i></div>
       <div class="fsub" id="fOppSub">-</div>
+      </div>
     </div>
   </div>
 
@@ -1873,7 +2126,7 @@
 
 <!-- ============ MATCH RESULT ============ -->
 <div class="screen" id="s-match">
-  <h2 id="mTitle">Match Result</h2>
+  <div class="mhero" id="mTitle">Match Result</div>
   <div class="grid g2">
     <div class="card"><div id="mBody" class="log"></div></div>
     <div>
@@ -6908,6 +7161,8 @@ function go(s){
   const el=$('s-'+s); if(el) el.classList.add('active');
   paintNav(s);
   $('topbar').style.display=(G&&s!=='home'&&s!=='create'&&s!=='start')?'flex':'none';
+  // a match is a broadcast, not a menu: the rails come off so the ring gets the screen
+  document.body.classList.toggle('inmatch', s==='fight'||s==='promo');
   window.scrollTo(0,0);
   if(G){ refreshHud();
     if(s==='career') renderCareer();
@@ -6926,6 +7181,16 @@ function go(s){
     save();
   }
   if(s==='home') renderHome();
+  decorateHeader(el,s);
+}
+// the icon in the corner of each screen's header (see THE MENU PASS)
+const SCREEN_ICO={career:'starBig',moves:'fist',train:'dumbbell',mentors:'brain',locker:'mask',shop:'money',pass:'ticket',
+  crew:'handshake',deal:'pen',world:'swords',backstage:'microphone',record:'trophy',hof:'crown',start:'star',create:'mask'};
+function decorateHeader(el,s){
+  try{ if(!el) return; const h=el.querySelector(':scope > h2'); if(!h||h._ico===s) return;
+    const svg=pico(SCREEN_ICO[s]||'star',64).replace('<svg ','<svg xmlns="http://www.w3.org/2000/svg" ');
+    h.style.setProperty('--h2ico',`url("data:image/svg+xml,${encodeURIComponent(svg)}")`); h._ico=s;
+  }catch(_){}
 }
 function refreshHud(){ if(!G) return;
   try{ paintProfile(); }catch(_){}    // the banner wallet follows every spend
@@ -7049,11 +7314,65 @@ function venueCSS(T){
   L.push(T.wall);
   return L.join(',');
 }
+/* ---- THE BUILDING AROUND THE RING ----
+   The house used to be a dim texture over a black box, the same room with a
+   different tint. What tells a bingo hall from a stadium on television is the
+   LIGHT: a bare pair of cans on a pipe over a basement, a rig of moving heads
+   over an arena, and a screen over the stage once there is money for one. So
+   the scale of the rig follows the building (`seats`), and the name on the
+   banner, the screen and the apron is the promotion's own.
+
+   Two pieces live INSIDE `.ringback` rather than beside it: the pool of light
+   on the canvas and the lettering on the apron. The ring shrinks when a spot
+   spills to the floor (`.wide`), and anything painted beside it would stay put
+   while the ring it belongs to moved.
+
+   It is seeded off the promotion, so a building is the same building every
+   time you walk into it. */
+function venueRng(s){ let h=2166136261; for(const ch of String(s)){ h^=ch.charCodeAt(0); h=Math.imul(h,16777619); }
+  return ()=>{ h^=h<<13; h^=h>>>17; h^=h<<5; return ((h>>>0)%100000)/100000; }; }
+function venueHTML(T,pid){
+  const P=promoById(pid)||{short:'',name:''};
+  const r=venueRng(pid), n=T.seats;                    // 2 indie · 3 regional · 4 national · 6 global
+  const warm='#fff1dc', col=T.pad;
+  const beams=n<=2?2:n<=3?3:n<=4?4:6, cans=n<=2?2:n<=3?4:n<=4?6:8, flashes=n<=2?3:n<=3?8:n<=4?14:22;
+  const o=[];
+  // the rig, and the cans on it
+  o.push(`<div class="v-truss${n<=2?' pipe':''}"></div>`);
+  for(let i=0;i<cans;i++){ const x=cans===1?50:8+i*(84/(cans-1));
+    o.push(`<i class="v-can" style="left:${x.toFixed(1)}%;--vc:${i%2&&n>2?col:warm}"></i>`); }
+  // the beams: the cheap rooms get two fixed white washes, the big ones sweep in colour
+  for(let i=0;i<beams;i++){
+    const x=beams===1?50:12+i*(76/(beams-1)), c=(n>2&&i%2)?col:warm;
+    const a=(-14+r()*10).toFixed(1), b=(4+r()*10).toFixed(1), d=(7+r()*6).toFixed(1);
+    const still=n<=2?' still':'';
+    o.push(`<i class="v-beam${still}" style="left:${x.toFixed(1)}%;--vc:${c};--va:${i<beams/2?a:-b}deg;--vb:${i<beams/2?b:-a}deg;--vd:${d}s;animation-delay:-${(r()*6).toFixed(2)}s"></i>`);
+  }
+  // somebody in the crowd always has a camera
+  for(let i=0;i<flashes;i++){
+    o.push(`<i class="v-flash" style="left:${(4+r()*92).toFixed(1)}%;top:${(12+r()*26).toFixed(1)}%;--vd:${(3.5+r()*7).toFixed(2)}s;animation-delay:-${(r()*9).toFixed(2)}s"></i>`);
+  }
+  // money buys a screen; before that it is a banner on two ropes
+  if(P.short){
+    o.push(n>=4
+      ? `<div class="v-tron" style="--vc:${col};--vg:${T.glow}"><b>${P.short}</b><s></s></div>`
+      : `<div class="v-banner" style="--a0:${T.apron[0]};--a1:${T.apron[1]}"><b>${P.short}</b></div>`);
+  }
+  return `<div class="venue">${o.join('')}</div>`;
+}
+function ringDressHTML(T,pid){
+  const P=promoById(pid)||{short:'',name:''};
+  return `<div class="v-pool"></div>`
+    + (P.short?`<div class="v-apron"><span class="v-full">${P.name}</span><span class="v-short">${P.short}</span></div>`:'');
+}
 function dressArena(root,pid){
   if(!root) return;
   const T=arenaOf(pid);
   const back=root.querySelector('.ringback'), front=root.querySelector('.ringfront');
-  if(back) back.innerHTML=ringSVG(false,T);
+  if(back) back.innerHTML=ringSVG(false,T)+ringDressHTML(T,pid);
+  { const old=root.querySelector(':scope > .venue'); if(old) old.remove();
+    const cr0=root.querySelector('.crowd,.hr-crowd');
+    if(cr0) cr0.insertAdjacentHTML('afterend',venueHTML(T,pid)); }
   if(front) front.innerHTML=ringSVG(true,T);
   const cage=root.querySelector('.cagelayer');
   if(cage) cage.innerHTML=cageSVG(true);
@@ -7779,7 +8098,8 @@ function renderWeek(){
   // so on every fresh week the header read "Off Week · Nothing on the card"
   // directly above a booking sheet that said "Singles Match · Your Debut".
   bookWeek();
-  const arc = dailyPanel() + fxStrip() + weekArcHeader() + seasonChip();
+  const _daily = dailyPanel(), _fx = fxStrip(), _wk = weekArcHeader(), _season = seasonChip();
+  const arc = _daily + _fx + _wk + _season;
   if(c.freeAgent){
     el.innerHTML=`${arc}<p class="log">Your deal with <b>${myPromo().name}</b> has expired. You're a <b style="color:var(--gold)">free agent</b>.</p>
       <button class="big" onclick="go('deal')">See Who Wants You →</button>`; return;
@@ -7874,6 +8194,7 @@ function renderWeek(){
       } catch(_){}
     }
     sheet=`<div class="bksheet ${o.ppv?'ppv':''}">
+      ${bookPoster(o)}
       ${debutIntro}
       ${ppvCard}
       <div class="bs-headline">
@@ -7933,15 +8254,20 @@ function renderWeek(){
   const catOpt=(sel,other)=>MCATS.map(x=>`<option value="${x.id}" ${sel===x.id?'selected':''}>${x.name}${x.id===other?' (already picked)':''}</option>`).join('');
   const catA=catById(c.plan.a)||MCATS[0], catB=catById(c.plan.b)||MCATS[1];
   const wkOpen = G.car._wkExtras;
+  // TONIGHT GOES FIRST. The card is the reason anybody opens this screen, and
+  // it sat under three panels of chores: on a phone the match you were booked
+  // in started below the fold. The arc header stays above it, because that is
+  // the context the match is played in (the PPV, the build, the farewell).
   el.innerHTML=`
-    ${arc}
+    ${_fx}${_wk}
+    ${sheet}
     <div class="advice ${adv.sev}">
       <span class="ad-i">${adv.ico}</span>
       <span class="ad-t">${adv.t}</span>
       ${adv.cta?`<button class="ad-b" onclick="${adv.cta.f}">${adv.cta.l} →</button>`:''}
     </div>
-    ${sheet}
     ${prep}
+    ${_daily}${_season}
     <div class="wk-extras-toggle"><button class="ghost" onclick="toggleWkExtras()">${wkOpen?'Hide':'Show'} game plan &amp; goals</button></div>
     ${wkOpen ? `
       <div class="flab" style="margin-top:12px;">Game plan <span class="hint" style="text-transform:none;letter-spacing:0;">(the two things you emphasize in every match)</span></div>
@@ -8873,6 +9199,9 @@ function commLine(cat, phase){
   el.appendChild(d); el.scrollTop = el.scrollHeight;
 }
 function setBar(id,pct){ const el=$(id); el.style.width=clamp(pct)+'%';
+  // the white trail behind a bar: it holds where the bar was for a beat, then
+  // catches up, so a big hit reads as a chunk taken rather than a width change
+  const lag=el.parentNode&&el.parentNode.querySelector('.lag'); if(lag) lag.style.width=clamp(pct)+'%';
   el.classList.toggle('low',pct<=45&&pct>20); el.classList.toggle('crit',pct<=20); }
 function setMom(){ const m=MS.mom; // -100..100
   $('momMe').style.width=(m>0?m/2:0)+'%'; $('momOpp').style.width=(m<0?-m/2:0)+'%'; }
@@ -9023,8 +9352,23 @@ async function playEntrance(nameEl, themeText, nameText, nickText){
   $('fEntName').textContent  = nameText;
   $('fEntNick').textContent  = nickText||'';
   el.classList.remove('show'); void el.offsetWidth; el.classList.add('show');
+  // the lights go to work for an entrance, and anybody with music gets pyro
+  const ar=$('arena');
+  if(ar){ ar.classList.add('entering'); if(!/lights out/.test(themeText||'')) pyro(ar); }
   await sleep(1000);
-  el.classList.remove('show'); await sleep(220);
+  el.classList.remove('show'); if(ar) ar.classList.remove('entering'); await sleep(220);
+}
+// two fountains of sparks off the near posts. Cosmetic, and gone in a second.
+function pyro(ar){
+  try{ if(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches) return; }catch(_){}
+  [6,94].forEach(left=>{
+    const f=document.createElement('div'); f.className='pyro'; f.style.left=left+'%';
+    for(let i=0;i<14;i++){ const p=document.createElement('i');
+      p.style.setProperty('--px',(Math.round(Math.random()*60)-30)+'px');
+      p.style.setProperty('--py',-(90+Math.round(Math.random()*120))+'px');
+      p.style.animationDelay=Math.round(Math.random()*380)+'ms'; f.appendChild(p); }
+    ar.appendChild(f); setTimeout(()=>f.remove(),1500);
+  });
 }
 // A video package: the story boiled down to a screen. Only for the matches
 // that deserve it: a title match, a rivalry blow-off, or any PPV main event.
@@ -9150,6 +9494,11 @@ function burst(x,txt){ const d=fxEl('burst',x,26,700); d.textContent=txt; d.styl
 function dmgNum(x,n){ const d=fxEl('dmgnum',x+(rnd()*14-7),30+rnd()*8,900); d.textContent='-'+n; }
 function impact(x,topPct,power){
   fxEl('ring',x,topPct,500);
+  if(power>=2){
+    // a big one: a starburst on the contact, and the house lights jump with the crowd
+    const pw=fxEl('pow',x,topPct,520); pw.style.setProperty('--pr',(Math.round(rnd()*40)-20)+'deg');
+    const a=$('arena'); if(a){ a.classList.remove('lit'); void a.offsetWidth; a.classList.add('lit'); clearTimeout(a._lit); a._lit=setTimeout(()=>a.classList.remove('lit'),650); }
+  }
   const n=power>=2?11:6, r=power>=2?58:34;
   for(let i=0;i<n;i++){ const a=(i/n)*6.2832+rnd(), d=fxEl('spark',x,topPct,560);
     d.style.setProperty('--dx',(Math.cos(a)*r*(0.6+rnd()*0.7)).toFixed(0)+'px');
@@ -10422,6 +10771,7 @@ async function startFight(o){
   const oc=charById(o.oppId);
   $('fMeName').textContent=G.w.name; $('fOppName').textContent=o.oppName;
   $('fMeSub').textContent='OVR '+meOvr; $('fOppSub').textContent='OVR '+o.oppOvr;
+  try{ $('fMePt').innerHTML=wrestlerSVG(G.w.look,{frame:'head'}); $('fOppPt').innerHTML=wrestlerSVG(MS.opp.look,{frame:'head'}); }catch(_){}
   const beltIco = pico('trophy',12);
   const _tm = (o.tag && myTeam()) ? myTeam() : null;
   const _tmTag = _tm ? ` · ${_tm.name.toUpperCase()}` : '';
@@ -13056,12 +13406,46 @@ function showDirtSheet(o,res,onDone){
     </div>`;
   modal('The dirt sheet', body, [{label:'On to next week',cls:'primary',fn:()=>{ closeModal(); if(onDone) onDone(); }}]);
 }
+/* Tonight's card as a poster: the two of you squared up under the lights, the
+   way a match graphic sells it, before any of the numbers. */
+function bookPoster(o){
+  let me='', them='';
+  try{ me=wrestlerSVG(G.w.look,{pose:'ready'}); }catch(_){}
+  try{ const oc=o.oppId?charById(o.oppId):null; them=wrestlerSVG((oc&&oc.look)||oppLook(o.oppId||'x',o.oppName||'x'),{pose:'ready'}); }catch(_){}
+  const T=arenaOf(myPromoId());
+  return `<div class="bk-poster" style="--pg:${T.glow};--pp:${T.pad}">
+    <div class="bkp-fig me">${me}</div>
+    <div class="bkp-vs">VS</div>
+    <div class="bkp-fig opp"><div class="bkp-flip">${them}</div></div>
+    <div class="bkp-names"><span>${G.w.name}</span><span>${o.oppName}</span></div>
+  </div>`;
+}
+/* The payoff shot. A line of text reading LOSS was the whole reward for a
+   match; this is the picture the broadcast would cut to: the winner up in the
+   light, the other one on a knee, and the result stamped across it. */
+function resultHero(o,res,draw){
+  const kind=draw?'draw':res.win?'win':'loss';
+  const oc=o.oppId?charById(o.oppId):null;
+  const oLook=(oc&&oc.look)||oppLook(o.oppId||'x',o.oppName||'x');
+  const pose=w=>draw?'stagger':w?'celebrate':'kneel';
+  const fig=(look,p,cls)=>{ let svg=''; try{ svg=wrestlerSVG(look,{pose:p}); }catch(_){}
+    return `<div class="mh-fig ${cls}"><div class="mh-in">${svg}</div></div>`; };
+  const conf=kind==='win'?`<div class="mh-conf">${Array.from({length:22},(_,i)=>
+    `<i style="left:${(i*4.6+2).toFixed(1)}%;animation-delay:${(i%7)*0.13+0.2}s;--cr:${i*47%360}deg;background:${['#f6d97a','#e0b341','#fff3d6','#c6392c'][i%4]}"></i>`).join('')}</div>`:'';
+  const word=kind==='win'?'Win':kind==='loss'?'Loss':'Draw';
+  return `<div class="mh-stage mh-${kind}">
+      <div class="mh-beam"></div>
+      ${fig(G.w.look,pose(res.win&&!draw),'me'+(res.win||draw?' up':' down'))}
+      ${fig(oLook,pose(!res.win&&!draw),'opp'+(!res.win||draw?' up':' down'))}
+      ${conf}
+      <div class="mh-plate"><div class="mh-stamp">${word}</div><div class="mh-vs">vs <b>${o.oppName}</b></div></div>
+    </div>`;
+}
 function renderMatch(o,res){
   const c=G.car;
   LAST_RESULT={o,res};
   const draw=res.draw||res.win===null;
-  $('mTitle').innerHTML=(draw?'<span style="color:var(--gold)">DRAW</span>'
-    :res.win?'<span style="color:var(--green)">WIN</span>':'<span style="color:#f0907f">LOSS</span>')+` vs ${o.oppName}`;
+  $('mTitle').innerHTML=resultHero(o,res,draw);
 
   // every number in the tiles ticks up instead of sitting there
   const tileOf=(l,id,col,band)=>`<div class="tile"><div class="lab">${termLabel(l)}</div><div class="val"><span id="${id}" ${col?`style="color:${col}"`:''}>0</span>${band?`<span class="numband">${band}</span>`:''}</div></div>`;
