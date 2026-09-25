@@ -111,6 +111,9 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
        your setlist, last night's setlist and the share card. Used anywhere else
        it stops meaning "this is a setlist" and starts meaning "casual". */
     --hand:'Permanent Marker', 'Marker Felt', 'Comic Sans MS', cursive;
+    /* THE SWEEP: the dye as a straight run of stops, for rules and bands.
+       No gold in it: gold is kept for mid ratings and song tags. */
+    --sweep:var(--coral) 0%, #FF6FC1 25%, var(--violet) 50%, var(--teal) 75%, var(--green) 100%;
     /* The ground a stage setlist is written on. Warm, not white, in both
        themes, because it is a piece of paper and not a panel of the app. */
     --paper:#F7F1E3; --paper-ink:#1B1726; --paper-mut:#7A6E5C;
@@ -171,6 +174,11 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
      and the About button clear it rather than hiding behind it. Only there:
      the draft has no bar and wants every pixel back. */
   body.hasTabs .wrap{padding-bottom:calc(70px + env(safe-area-inset-bottom,0));}
+  /* Mid-show, the page ends where the show does. "About & legal" under a
+     reel or a playing setlist is the site talking over the band. It is on
+     every screen you browse from, and the about sheet is still in the markup
+     for a crawler either way, since only the button is hidden. */
+  body.inshow .sfoot{display:none;}
 
   /* Sticky and short. The draft screen is the one a player sits on eight times
      a game, so every fixed pixel here is a pixel of song list they lose. */
@@ -194,9 +202,9 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
   .topbar:after{content:''; position:absolute; left:0; right:0; bottom:-1px; height:3px;
     opacity:.9;
     background-image:linear-gradient(90deg,
-      var(--coral) 0%, var(--gold) 10%, var(--green) 20%, var(--teal) 30%,
-      var(--violet) 40%, var(--coral) 50%, var(--gold) 60%, var(--green) 70%,
-      var(--teal) 80%, var(--violet) 90%, var(--coral) 100%);
+      var(--coral) 0%, #FF6FC1 10%, var(--violet) 20%, var(--teal) 30%,
+      var(--green) 40%, var(--coral) 50%, #FF6FC1 60%, var(--violet) 70%,
+      var(--teal) 80%, var(--green) 90%, var(--coral) 100%);
     background-size:200% 100%;
     animation:dyeSlide 26s linear infinite;}
   @keyframes dyeSlide{ from{background-position:0% 50%;} to{background-position:100% 50%;} }
@@ -539,19 +547,47 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
   /* ---------------- reveal ---------------- */
   .reveal{min-height:70dvh; display:flex; flex-direction:column; align-items:center;
     justify-content:center; gap:22px; text-align:center;}
-  .reveal-win{width:100%; max-width:520px; border-radius:var(--r-lg); overflow:hidden;
-    border:2px solid var(--line2); background:var(--card); box-shadow:var(--shadow);
-    transition:border-color var(--t-slow) var(--ease), box-shadow var(--t-slow) var(--ease);}
-  .reveal-win.landed{border-color:transparent;
-    background:linear-gradient(var(--card),var(--card)) padding-box,
-               var(--dye) border-box;
-    background-size:auto, 100% 100%;
-    box-shadow:0 12px 44px -16px color-mix(in srgb,var(--violet) 55%, transparent);}
-  .reveal-bar{display:flex; align-items:center; justify-content:space-between; gap:10px;
-    padding:10px 16px; background:var(--card2); border-bottom:1px solid var(--line);}
-  .reveal-bar .n{font-weight:900; font-size:13px; color:var(--mut); font-variant-numeric:tabular-nums;}
-  .reveal-body{padding:34px 22px; min-height:186px; display:flex; flex-direction:column;
-    align-items:center; justify-content:center; gap:7px;}
+  /* THE WHEEL PRINTS A TICKET. The reveal was a card with two slot reels in
+     it floating in the middle of an empty screen, which said "loading" more
+     than it said "tonight's show". It is a ticket stub now: printed stock,
+     ADMIT ONE across the top, the reels where the date and the room go, and a
+     perforated stub carrying the pick number. It is the same paper as the
+     setlist, because a ticket and a setlist are the two things a fan keeps
+     from a night, and both are fixed colours in both themes for that reason.
+     The notches are two discs of the page's own colour sitting on the
+     perforation, which is cheaper and sturdier than masking the card: a mask
+     would cut the shadow away with the notch. */
+  .reveal-win{position:relative; width:100%; max-width:470px; display:grid;
+    grid-template-columns:minmax(0,1fr) 72px; grid-template-rows:auto 1fr;
+    border-radius:12px; background:var(--paper); color:var(--paper-ink);
+    border:1px solid rgba(27,23,38,.12);
+    box-shadow:0 24px 44px -22px rgba(0,0,0,.85);
+    transition:box-shadow var(--t-slow) var(--ease);}
+  .reveal-win.landed{box-shadow:0 24px 54px -18px rgba(169,130,243,.6),
+    0 24px 44px -22px rgba(0,0,0,.85);}
+  .tk-stub{grid-column:2; grid-row:1 / span 2; position:relative;
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px;
+    border-left:2px dashed rgba(27,23,38,.28);}
+  .tk-stub:before{content:''; position:absolute; left:-12px; top:-12px; width:22px;
+    height:22px; border-radius:50%; background:var(--bg);}
+  .tk-stub:after{content:''; position:absolute; left:-12px; bottom:-12px; width:22px;
+    height:22px; border-radius:50%; background:var(--bg);}
+  .tk-stub .n{font-family:var(--ui); font-size:34px; line-height:1; color:var(--paper-ink);
+    font-variant-numeric:tabular-nums;}
+  .tk-stub i{font-style:normal; font-size:9px; font-weight:900; letter-spacing:2px;
+    text-transform:uppercase; color:var(--paper-mut);}
+  /* The dye runs across the top of the ticket the way a colour band runs
+     across a printed stub, and it is the only colour on the paper. */
+  .reveal-bar{grid-column:1; display:flex; align-items:baseline; justify-content:space-between;
+    gap:10px; padding:14px 16px 10px; border-bottom:1px dashed rgba(27,23,38,.2);
+    background:linear-gradient(90deg, var(--coral), #FF6FC1, var(--violet), var(--teal),
+      var(--green)) top / 100% 5px no-repeat; border-radius:12px 0 0 0;}
+  .tk-admit{font-family:var(--ui); font-size:20px; letter-spacing:.06em; text-transform:uppercase;
+    color:var(--paper-ink); line-height:1;}
+  .reveal-bar .eyebrow{color:var(--paper-mut); font-size:9.5px; letter-spacing:1.8px;
+    text-align:right;}
+  .reveal-body{grid-column:1; padding:18px 16px 18px; min-height:186px; display:flex;
+    flex-direction:column; align-items:stretch; justify-content:center; gap:7px;}
   .reveal-date{font-family:var(--ui); font-size:clamp(28px,7vw,40px); line-height:1.02;
     color:var(--dim); transition:color var(--t-base) var(--ease);}
   .landed .reveal-date{color:var(--ink);}
@@ -559,10 +595,10 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
     transition:color var(--t-base) var(--ease);}
   .landed .reveal-venue{color:var(--tealT);}
   .reveal-city{font-size:13px; font-weight:600; color:var(--dim);}
-  .reveal-count{margin-top:8px; font-size:12px; font-weight:800; letter-spacing:1.6px;
-    text-transform:uppercase; color:var(--mut);}
-  .reveal-cue{font-size:13px; font-weight:800; letter-spacing:2px; text-transform:uppercase;
-    color:var(--mut);}
+  .reveal-count{margin-top:6px; font-size:11px; font-weight:900; letter-spacing:1.6px;
+    text-transform:uppercase; color:var(--paper-mut); text-align:center;}
+  .reveal-cue{font-size:13px; font-weight:900; letter-spacing:2px; text-transform:uppercase;
+    color:var(--tealT);}
   /* THE RECEIPT for the song you just added, above the next show. Green and
      ticked, because the one thing this screen has to say before it says
      anything else is "that worked, it went in". */
@@ -581,7 +617,16 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
   /* ---------------- draft ---------------- */
   /* THE CLOCK IS THE GAME. Everything here exists to say one thing: this is
      draining and you are spending it. */
-  .hud{display:block; padding:10px 14px 11px; margin-bottom:10px;}
+  /* THE CLOCK STAYS ON SCREEN. It scrolled away with the page, so by the
+     fifth song down the list the thing every pick is weighed against was
+     gone, and the only way to see it again was to scroll back up. The HUD is
+     sticky with a NEGATIVE reach past the top bar: its first row (the set
+     label and the two buttons) slides up under the bar, and the clock and the
+     two meters hold just below it. No script, no second copy of the clock. */
+  .hud{display:block; padding:10px 14px 11px; margin-bottom:12px;
+    position:sticky; z-index:30; top:calc(env(safe-area-inset-top,0px) + 53px - 44px);
+    background:color-mix(in srgb, var(--card) 94%, transparent);
+    -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px);}
   .hud-row{display:flex; align-items:center; justify-content:space-between; gap:10px;}
   .hud-where{font-size:11px; font-weight:900; letter-spacing:2px; text-transform:uppercase;
     color:var(--dim); min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
@@ -678,14 +723,22 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
      became the loudest thing on it. It is the marquee line for the sheet
      below, so it is set like one: date large, venue and city beneath, and a
      rule holding it to the list rather than a border floating it above. */
-  .showcard{padding:2px 0 9px; margin-bottom:8px; background:transparent; border:0;
-    border-bottom:3px solid var(--ink); box-shadow:none; border-radius:0;}
-  .showcard .d{font-family:var(--ui); font-size:29px; line-height:1; letter-spacing:.2px;
-    text-transform:uppercase;}
+  /* THE SHOW IS THE TICKET YOU JUST PRINTED. The reveal hands you a stub,
+     and this is that stub landed at the top of the list: same stock, same
+     colour band, the date in the scoreboard face. It is fixed paper in both
+     themes for the reason the reveal gives. */
+  .showcard{position:relative; padding:15px 16px 12px; margin-bottom:12px; border:0;
+    border-radius:12px; background:var(--paper); color:var(--paper-ink);
+    box-shadow:0 14px 30px -20px rgba(0,0,0,.8), 0 0 0 1px rgba(27,23,38,.1);
+    background-image:linear-gradient(90deg, var(--coral), #FF6FC1, var(--violet),
+      var(--teal), var(--green));
+    background-size:100% 5px; background-repeat:no-repeat; background-position:top;}
+  .showcard .d{font-family:var(--ui); font-size:30px; line-height:1; letter-spacing:.2px;
+    text-transform:uppercase; color:var(--paper-ink);}
+  /* Violet, not gold: gold is kept for mid ratings and song tags. */
   .showcard .night{display:inline-block; margin-left:7px; font-size:10px; font-weight:900;
-    letter-spacing:1.1px; text-transform:uppercase; color:var(--goldT); vertical-align:2px;
-    padding:1px 5px; border-radius:4px;
-    background:color-mix(in srgb,var(--gold) 18%, transparent);}
+    letter-spacing:1.1px; text-transform:uppercase; color:#5B2FC0; vertical-align:2px;
+    padding:2px 6px; border-radius:4px; background:rgba(109,59,214,.12);}
   /* The mark a fan put on this show themselves. Dyed, because it is the one
      thing on the screen that came from them rather than from the archive. */
   .werethere{display:inline-block; vertical-align:middle; margin-left:9px;
@@ -693,23 +746,23 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
     text-transform:uppercase; color:#0E0B1C; padding:3px 7px; border-radius:99px;
     background:var(--dye-line);}
   .wtbtn{margin-top:7px; padding:0; background:none; border:0; font:inherit;
-    font-size:11.5px; font-weight:800; letter-spacing:.4px; color:var(--dim);
+    font-size:11.5px; font-weight:800; letter-spacing:.4px; color:var(--paper-mut);
     text-decoration:underline; text-underline-offset:3px; cursor:pointer;}
-  .wtbtn:hover{color:var(--ink);}
-  .wtbtn[aria-pressed="true"]{color:var(--mut);}
-  .showcard .v{font-size:14px; font-weight:700; color:var(--tealT); margin-top:3px;}
-  .showcard .c{font-size:13px; font-weight:600; color:var(--dim);}
+  .wtbtn:hover{color:var(--paper-ink);}
+  .wtbtn[aria-pressed="true"]{color:var(--paper-mut);}
+  .showcard .v{font-size:15px; font-weight:800; color:#0E7884; margin-top:4px;}
+  .showcard .c{font-size:13px; font-weight:700; color:var(--paper-mut);}
   /* WHAT HAPPENED THAT NIGHT, from the archive. Clamped to three lines and
      tappable to open, because these run from a sentence to 851 characters and
      the song list is what the screen is for. A left rule rather than a box:
      it is a quotation, not another control. */
   .snote{display:block; width:100%; margin-top:10px; padding:0 0 0 10px; text-align:left;
-    background:none; border:0; border-left:2px solid var(--line2); font:inherit;
-    font-size:12px; font-weight:600; font-style:italic; color:var(--mut);
+    background:none; border:0; border-left:2px solid rgba(27,23,38,.2); font:inherit;
+    font-size:12px; font-weight:600; font-style:italic; color:#4E4459;
     line-height:1.5; cursor:pointer;
     display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden;}
   .snote.open{-webkit-line-clamp:unset; display:block;}
-  .snote:hover{border-left-color:var(--teal); color:var(--ink);}
+  .snote:hover{border-left-color:#0E7884; color:var(--paper-ink);}
 
   /* The way into the glossary, above the first set heading: the terms it
      explains are all in the list below it. */
@@ -963,25 +1016,39 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
     border-color:transparent; padding-right:12px;
     clip-path:polygon(0 0, calc(100% - 6px) 0, 100% 50%, calc(100% - 6px) 100%, 0 100%);}
   /* ---------------- the setlist so far ---------------- */
-  .sofar{margin-bottom:10px; padding:9px 12px 7px; border-radius:var(--r-md);
-    background:var(--card); border:1px solid var(--line); box-shadow:var(--shadow);}
+  /* YOUR SETLIST IS WRITTEN ON PAPER, the same object the home screen shows
+     for last night and the share card hands you at the end. The songs go on
+     in marker as you pick them, which is exactly what happens to the real one
+     taped to the stage. */
+  .sofar{margin:4px 3px 14px; padding:12px 14px 10px; border-radius:3px;
+    background:var(--paper); color:var(--paper-ink); position:relative;
+    transform:rotate(-.5deg); box-shadow:0 12px 24px -16px rgba(0,0,0,.75);
+    background-image:repeating-linear-gradient(180deg, transparent 0 25px,
+      rgba(27,23,38,.05) 25px 26px);}
+  .sofar:before{content:''; position:absolute; top:-8px; left:50%; width:64px; height:17px;
+    transform:translateX(-50%) rotate(-2deg); background:rgba(255,241,200,.62);
+    box-shadow:0 1px 2px rgba(0,0,0,.18);}
   .sf-hd{display:flex; align-items:baseline; justify-content:space-between; gap:10px;
     margin-bottom:5px;}
   .sf-hd b{font-size:10.5px; font-weight:900; letter-spacing:1.6px; text-transform:uppercase;
-    color:var(--dim);}
-  .sf-tog{font-size:10.5px; font-weight:800; color:var(--tealT); background:none; border:0;
+    color:var(--paper-mut);}
+  .sf-tog{font-size:10.5px; font-weight:900; color:#0E7884; background:none; border:0;
     padding:2px 0;}
   .sf-set + .sf-set{margin-top:6px;}
   .sf-lbl{font-size:9.5px; font-weight:900; letter-spacing:1.3px; text-transform:uppercase;
-    color:var(--dim); margin:4px 0 2px;}
-  .sf-row{display:flex; align-items:baseline; gap:8px; padding:2px 0; font-size:12.5px;}
-  .sf-n{flex:0 0 14px; color:var(--dim); font-weight:800; font-size:10px;
+    color:var(--paper-mut); margin:4px 0 2px;}
+  .sf-row{display:flex; align-items:baseline; gap:8px; padding:1px 0; font-size:12.5px;}
+  .sf-n{flex:0 0 14px; color:var(--paper-mut); font-weight:800; font-size:10px;
     font-variant-numeric:tabular-nums;}
-  .sf-song{flex:1; min-width:0; font-weight:700; overflow:hidden; text-overflow:ellipsis;
-    white-space:nowrap;}
-  .sf-seg{font-style:normal; color:var(--greenT); font-weight:900; margin-left:3px;}
-  .sf-len{color:var(--mut); font-weight:700; font-variant-numeric:tabular-nums; font-size:11.5px;}
-  .sf-none{font-size:12px; font-weight:600; color:var(--dim); padding:2px 0 3px;}
+  .sf-song{flex:1; min-width:0; font-family:var(--hand); font-size:15px; line-height:1.45;
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .sofar .sf-seg{background:#6D3BD6; margin-left:5px;}
+  .sf-len{color:var(--paper-mut); font-weight:700; font-variant-numeric:tabular-nums; font-size:11.5px;}
+  .sf-none{font-family:var(--hand); font-size:14px; color:var(--paper-mut); padding:2px 0 3px;}
+  /* A phone has no room for the Tonight panel, so the paper stands in for it.
+     A desktop has the panel beside the list, and the same setlist twice on one
+     screen is one copy too many. Same breakpoint the panel becomes a column at. */
+  @media (min-width:861px){ .board .sofar{display:none;} }
 
   /* The one instruction the draft screen was missing, and only until the first
      song lands. Teal because it is guidance rather than a warning, and it sits
@@ -1381,26 +1448,40 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
      both: the dye stops meaning identity and the grade stops being legible.
      The dye appears here the one way it can, as the rule, which is exactly how
      it appears in the header. */
+  /* AND THE BAND IS THE STAGE. The night ends where the home screen began:
+     the same lit, fixed-dark poster ground, so the last screen of a show looks
+     like the house lights on a room rather than a form. Still no dye FIELD
+     behind the number, for the reason above: the washes are low and dark
+     enough that the grade colour is the brightest thing in the band.
+     Being dark in both themes, it carries the dark theme's grade colours in
+     both, which is also what keeps them legible without a light-theme set. */
   .scorebox{position:relative; text-align:center; border:0; border-radius:0;
-    box-shadow:none; background:transparent;
+    box-shadow:none; color:#F6F2EA; isolation:isolate; overflow:hidden;
+    --gradeHot:#48D17A; --gradeWarm:#F2B632; --gradeCold:#FF625F;
+    background:
+      radial-gradient(60% 70% at 10% 0%, rgba(240,106,95,.24), transparent 70%),
+      radial-gradient(60% 70% at 92% 0%, rgba(55,197,213,.22), transparent 70%),
+      radial-gradient(70% 80% at 50% 80%, rgba(169,130,243,.26), transparent 72%),
+      #140D2A;
     margin:0 calc(var(--gut) * -1) var(--sp-2);
-    padding:var(--sp-2) var(--gut) var(--sp-3);}
+    padding:var(--sp-3) var(--gut) var(--sp-3);}
+  .scorebox .eyebrow{color:#CFC4E6;}
+  .scorebox .headline{color:#E4DCF2;}
+  .scorebox .band-meta{color:#B8AFCB;}
   /* ONE STATIC CYCLE, not the header's two moving ones. The header's rule
      animates because it is chrome you look past; this one closes a screen you
      are reading, and a crawling rainbow under a final score is a distraction
      with nothing to say. --dye-line is a 180deg gradient, so the sweep is
      written out here at 90deg rather than reused. */
   .scorebox:after{content:''; position:absolute; left:0; right:0; bottom:0; height:3px;
-    background-image:linear-gradient(90deg,
-      var(--coral) 0%, var(--gold) 25%, var(--green) 50%,
-      var(--teal) 75%, var(--violet) 100%);}
+    background-image:linear-gradient(90deg, var(--sweep));}
   .scorebox .n{font-family:var(--hero); font-size:clamp(76px,23vw,124px); line-height:.86;
     letter-spacing:.01em; font-variant-numeric:tabular-nums;}
   /* Under the score and above the headline. The percentage is set in the UI
      face rather than the display one so it reads as a statement about the
      number above it and not as a second score competing with it. */
   .sb-pct{margin:9px auto 0; max-width:26ch; font-size:15px; line-height:1.35;
-    font-weight:800; color:var(--mut);}
+    font-weight:800; color:#D9D0EA;}
   /* The grade colour lands on the figure alone. Carrying it across the whole
      sentence made a red line of prose under a red number, which reads as an
      error message rather than as a score. */
@@ -1717,14 +1798,16 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
      swaps — the GPU interpolates it, so it stays smooth on a phone under load.
      Each reel is a fixed-height window over a tall strip; landing is just
      translating the strip so the target row sits in the window. */
-  .reels{display:flex; flex-direction:column; gap:10px; margin-top:6px;}
-  .reel{position:relative; overflow:hidden; border-radius:var(--r-md);
-    background:var(--card2); border:1px solid var(--line2);
+  .reels{display:flex; flex-direction:column; gap:10px; margin-top:0; width:100%;}
+  /* The reels are printed onto the ticket, so they are paper too: a lighter
+     window of the same stock, and the same fade into it. */
+  .reel{position:relative; overflow:hidden; border-radius:8px; --reelBg:#FFFCF4;
+    background:var(--reelBg); border:1px solid rgba(27,23,38,.16); color:var(--paper-ink);
     transition:border-color var(--t-base) var(--ease);}
   .reel.year{height:52px;}
   .reel.show{height:84px;}
   .reel:after{content:''; position:absolute; inset:0; pointer-events:none;
-    background:linear-gradient(var(--card2), transparent 34%, transparent 66%, var(--card2));}
+    background:linear-gradient(var(--reelBg), transparent 34%, transparent 66%, var(--reelBg));}
   .reel-strip{will-change:transform;}
   .reel-item{display:flex; flex-direction:column; align-items:center; justify-content:center;
     text-align:center; padding:0 10px;}
@@ -1732,14 +1815,16 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
   .reel.show .reel-item{height:84px;}
   .ri-year{font-family:var(--ui); font-size:30px; line-height:1; letter-spacing:1px;}
   .ri-date{font-family:var(--ui); font-size:20px; line-height:1.1;}
-  .ri-venue{font-size:12px; font-weight:700; color:var(--mut); margin-top:3px;
+  .ri-venue{font-size:12px; font-weight:700; color:var(--paper-mut); margin-top:3px;
     max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
   /* Landed reels go bright and neutral. The dye belongs to the frame around
      them; two dyed edges inside one card fought each other. */
-  .reel.locked{border-color:color-mix(in srgb,var(--ink) 42%, transparent);}
-  .reel.locked .ri-year, .reel.locked .ri-date{color:var(--tealT);}
+  .reel.locked{border-color:rgba(27,23,38,.45);}
+  /* Teal ink on paper is the light theme's teal, which is the one that
+     clears 4.5:1 on a light ground. */
+  .reel.locked .ri-year, .reel.locked .ri-date{color:#0E7884;}
   .reel-lbl{font-size:9.5px; font-weight:900; letter-spacing:1.6px; text-transform:uppercase;
-    color:var(--dim); margin-bottom:4px;}
+    color:var(--paper-mut); margin-bottom:4px; text-align:left;}
   .skip{margin-top:12px; font-size:11px; font-weight:700; color:var(--dim);}
   .btn.small{font-size:13px; padding:9px 14px; margin-top:7px;}
 
@@ -1817,17 +1902,23 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
 
      OPAQUE, not translucent. It is sticky over a list that scrolls under it,
      and anything less than a solid ground puts song titles through the score. */
+  /* The stage again, as the playback's own sticky band. Opaque: the washes
+     sit on a solid ground colour, so nothing scrolls through the score. */
   .sim-head{position:sticky; top:52px; z-index:20; text-align:center;
-    border:0; border-radius:0; box-shadow:none; background:var(--bg);
+    border:0; border-radius:0; box-shadow:none; color:#F6F2EA;
+    --gradeHot:#48D17A; --gradeWarm:#F2B632; --gradeCold:#FF625F;
+    background:
+      radial-gradient(50% 120% at 12% 0%, rgba(240,106,95,.22), transparent 70%),
+      radial-gradient(50% 120% at 90% 0%, rgba(55,197,213,.20), transparent 70%),
+      #140D2A;
     margin:0 calc(var(--gut) * -1) var(--sp-2);
-    padding:10px var(--gut) 11px;}
+    padding:12px var(--gut) 12px;}
+  .sim-head .eyebrow{color:#CFC4E6;}
   .sim-head:after{content:''; position:absolute; left:0; right:0; bottom:0; height:3px;
-    background-image:linear-gradient(90deg,
-      var(--coral) 0%, var(--gold) 25%, var(--green) 50%,
-      var(--teal) 75%, var(--violet) 100%);}
+    background-image:linear-gradient(90deg, var(--sweep));}
   .sim-score{font-family:var(--hero); font-size:42px; line-height:1;
     font-variant-numeric:tabular-nums; transition:color var(--t-slow) var(--ease);}
-  .sim-sub{font-size:12.5px; font-weight:700; color:var(--dim); margin-top:4px;
+  .sim-sub{font-size:12.5px; font-weight:700; color:#B8AFCB; margin-top:4px;
     min-height:1.2em; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
   /* THE FEED IS A SETLIST BEING WRITTEN, so it is the same sheet the draft and
      the scorecard use. It was seventeen rounded, shadowed cards stacked down
@@ -3127,11 +3218,21 @@ function backFrom(){
 
 function setScreen(name){
   clearTimeout(S.revealTimer);
+  /* A NEW SCREEN STARTS AT THE TOP. Nothing reset the scroll, so "See the
+     scorecard" at the foot of a long playback landed half way down the
+     scorecard, and every round after the first opened its reveal wherever the
+     previous song list had been left. Only on a real change: setScreen is also
+     how the current screen re-renders, and that must not yank the page. */
+  const changed = S.screen !== name;
   S.screen = name;
   // The sheet belongs to the draft screen only — never let it survive a screen change.
   if (name !== 'draft') document.body.classList.remove('sheet-on');
   document.body.classList.toggle('playing', name === 'draft' || name === 'reveal');
+  /* The whole play flow, playback included, is a show in progress: the site's
+     footer has no business under it. */
+  document.body.classList.toggle('inshow', ['reveal', 'draft', 'show', 'loading'].includes(name));
   render();
+  if (changed) window.scrollTo(0, 0);
 }
 
 /* THE TAB BAR, kept in step with the screen from one place.
@@ -3655,10 +3756,12 @@ function renderReveal(){
         esc(SETS[si].label)} &middot; pick ${S.round + 1}</div>
       <div class="reveal-win landed" id="revealWin">
         <div class="reveal-bar">
+          <span class="tk-admit">Admit one</span>
           <span class="eyebrow" id="revealLbl">${just
             ? 'Spinning for your next show' : 'Spinning the wheel'}</span>
-          <span class="n">${String(S.round + 1).padStart(2, '0')}</span>
         </div>
+        <div class="tk-stub" aria-hidden="true"><i>Pick</i>
+          <span class="n">${String(S.round + 1).padStart(2, '0')}</span></div>
         <div class="reveal-body">
           <div class="reels">
             <div>
