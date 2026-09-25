@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<title>Segue: The Setlist Builder Game | RunThe.GG</title>
+<title>Segue: The Setlist Game for Jam Band Fans | RunThe.GG</title>
 <link rel="canonical" href="https://runthe.gg/setlist/" />
-<meta name="theme-color" content="#071426" id="themeMeta" />
+<meta name="theme-color" content="#0E0B1C" id="themeMeta" />
 <script>
 /* theme boot: runs before first paint. Manual choice persists in
    runthegrid_theme (shared across the suite); otherwise follow the system. */
@@ -37,25 +37,25 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
 <meta property="og:type" content="website" />
 <meta property="og:url" content="https://runthe.gg/setlist/" />
 <meta property="og:site_name" content="RunThe.GG" />
-<meta property="og:title" content="Segue: The Setlist Builder Game | RunThe.GG" />
-<meta property="og:description" content="Build a setlist from real concerts. Two sets, an encore, and a curfew, then watch the show play back." />
+<meta property="og:title" content="Segue: The Setlist Game for Jam Band Fans | RunThe.GG" />
+<meta property="og:description" content="Build the show that never happened. Real Goose shows, one song from each. Two sets and an encore. Then the crowd decides." />
 <meta property="og:image" content="https://runthe.gg/assets/segue-og_1200x630.png" />
 <meta property="og:image:width" content="1200" />
 <meta property="og:image:height" content="630" />
-<meta property="og:image:alt" content="Segue: The Setlist Builder Game" />
+<meta property="og:image:alt" content="Segue, the setlist game for jam fans. A handwritten setlist taped beside the lit wordmark." />
 <meta name="twitter:card" content="summary_large_image" />
-<meta name="twitter:title" content="Segue: The Setlist Builder Game" />
-<meta name="twitter:description" content="Build a setlist from real concerts. Two sets, an encore, and a curfew, then watch the show play back." />
+<meta name="twitter:title" content="Segue: The Setlist Game for Jam Band Fans" />
+<meta name="twitter:description" content="Build the show that never happened. Real Goose shows, one song from each. Two sets and an encore. Then the crowd decides." />
 <meta name="twitter:image" content="https://runthe.gg/assets/segue-og_1200x630.png" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Alfa+Slab+One&family=Anton&family=Archivo:wght@500;600;700;800;900&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@500;600;700;800;900&family=Permanent+Marker&family=Shrikhand&display=swap" rel="stylesheet" />
 <style>
   /* ---------------- design tokens (dark default + light override) ---------------- */
   :root{
-    --bg:#071426; --card:#10233A; --card2:#162B44; --card3:#1A3350;
-    --ink:#F4F7FB; --mut:#A9B8CB; --dim:#7C8DA3;
-    --line:rgba(244,247,251,.08); --line2:rgba(244,247,251,.15);
+    --bg:#0E0B1C; --card:#19142E; --card2:#211B3B; --card3:#2A2349;
+    --ink:#F6F2EA; --mut:#B8AFCB; --dim:#8C83A2;
+    --line:rgba(246,242,234,.08); --line2:rgba(246,242,234,.15);
     --teal:#37C5D5; --violet:#A982F3; --gold:#F2B632; --coral:#F06A5F;
     --blue:#2F6BFF; --green:#48D17A; --red:#FF625F;
     --tealT:#37C5D5; --goldT:#F2B632; --coralT:#F06A5F; --violetT:#B79BF6;
@@ -104,17 +104,26 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
     /* The melted bottom edge, shared by anything that should look like it is
        running. preserveAspectRatio=none so one path fits any chip width. */
     --melt:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 60 26' preserveAspectRatio='none'%3E%3Cpath d='M0 0h60v19c-2.4 0-2 4-5 4s-2.6-4-5-4-1.8 2.6-4 2.6-2.2-2.6-4.6-2.6-2 5-5 5-2.8-5-5-5-1.8 2.4-4 2.4-2-2.4-4.4-2.4-1.8 3-4 3-2.2-3-4.6-3-1.6 1.8-3.4 1.8S1.2 19 0 19z' fill='%23000'/%3E%3C/svg%3E");
-    --hero:'Alfa Slab One', Rockwell, Georgia, serif;
+    --hero:'Shrikhand', 'Cooper Black', Georgia, serif;
+    /* THE SETLIST IS HANDWRITTEN, because a real one is. The paper taped to the
+       stage floor is written in Sharpie, and so is the one a fan writes on the
+       back of a ticket stub. This face is for that one object and nothing else:
+       your setlist, last night's setlist and the share card. Used anywhere else
+       it stops meaning "this is a setlist" and starts meaning "casual". */
+    --hand:'Permanent Marker', 'Marker Felt', 'Comic Sans MS', cursive;
+    /* The ground a stage setlist is written on. Warm, not white, in both
+       themes, because it is a piece of paper and not a panel of the app. */
+    --paper:#F7F1E3; --paper-ink:#1B1726; --paper-mut:#7A6E5C;
     --ui:'Anton', Impact, sans-serif;
     --body:'Archivo', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   }
   :root[data-theme="light"]{
-    --bg:#EEF2F7; --card:#FFFFFF; --card2:#F1F5FA; --card3:#E3EDF8;
-    --ink:#0D1B2C; --mut:#51637A; --dim:#8B98A6;
-    --line:rgba(13,27,44,.10); --line2:rgba(13,27,44,.18);
+    --bg:#F4EFE4; --card:#FFFCF6; --card2:#F1EADC; --card3:#E8DECB;
+    --ink:#1D1828; --mut:#564D67; --dim:#80768E;
+    --line:rgba(29,24,40,.10); --line2:rgba(29,24,40,.18);
     --tealT:#0E7C89; --goldT:#A87508; --coralT:#D8452F; --violetT:#6D3BD6;
     --greenT:#17A34A; --redT:#C4372C; --blueT:#2358E0; --pinkT:#BE2E86;
-    --shadow:0 6px 18px -12px rgba(13,27,44,.25);
+    --shadow:0 6px 18px -12px rgba(40,28,10,.28);
   }
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent; touch-action:manipulation;}
   /* The hero's tie-dye spiral is deliberately larger than the hero and bleeds
@@ -202,7 +211,7 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
   .lockup{display:flex; align-items:center; gap:9px; text-decoration:none; color:inherit;
     flex:0 1 auto; min-width:0; border-radius:10px;}
   .lockup:focus-visible{outline:2px solid var(--teal); outline-offset:3px;}
-  .brand{font-family:var(--hero); font-size:19px; line-height:1; text-transform:uppercase;
+  .brand{font-family:var(--hero); font-size:21px; line-height:1.15;
     white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:var(--ink);
     padding-top:2px;}
   .hdr-r{display:flex; align-items:center; gap:8px; min-width:0; margin-left:auto;}
@@ -250,10 +259,12 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
   .btn.listclose:hover{background:var(--card2);}
   .btn.listclose .lc-t{font-weight:800; font-size:14px;}
   .btn.listclose .lc-s{font-size:11.5px; font-weight:600; color:var(--dim);}
-  .btn.primary{background:var(--teal); border-color:var(--teal); color:#04121F;}
+  .btn.primary{background:var(--teal); border-color:var(--teal); color:#07121C;}
   .btn.primary:hover{filter:brightness(1.08);}
-  /* The one thing a first visit is here to press. */
-  .btn.big{font-size:16px; padding:14px 16px; margin-top:12px;}
+  /* The one thing a first visit is here to press. It glows in its own colour,
+     because on a dark page a button without light behind it is a flat plate. */
+  .btn.big{font-size:17px; padding:15px 16px; margin-top:12px; border-radius:12px;
+    box-shadow:0 10px 26px -12px color-mix(in srgb, var(--teal) 80%, transparent);}
   .btn:disabled{opacity:.45; cursor:not-allowed; transform:none;}
   .btn.ghost{background:transparent;}
 
@@ -276,40 +287,49 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
      It sits in the background stack rather than in a pseudo-element, because
      ::after paints OVER the content and would wash the glyphs along with the
      field, putting the contrast straight back. */
+  /* THE HERO IS A GIG POSTER, AND THE POSTER IS FOR A NIGHT SHOW.
+     It used to be the dye as a full-strength field with black type knocked
+     into it, which read as a colourful rectangle rather than as anything to do
+     with a concert, and it had to be lifted with a white wash to get the type
+     legible at all. The dye is LIGHT now: coloured washes on a dark stage, the
+     way a light rig paints a room, with the wordmark lit in it.
+     It is dark in BOTH themes on purpose. A poster is a printed object with
+     its own ground, so it does not follow the page, and a stage at noon is not
+     a stage. Everything inside it is therefore set in fixed colours rather
+     than the theme tokens, which is the same argument the old knocked-out ink
+     made in the other direction. */
   .hero{position:relative; isolation:isolate; overflow:hidden; text-align:center;
-    margin:0 calc(var(--gut) * -1) var(--sp-1); padding:24px var(--gut) 64px;
-    /* The bottom edge dissolves into the page instead of stopping dead against
-       it. The fade is the FIRST layer of the background stack, under the type
-       and over the dye, so it softens the field without touching the glyphs.
-       It has to begin BELOW the last line of type, not near it. The fade
-       resolves to --bg, which is near-black on the dark theme, and the hero's
-       ink is pinned dark: any type sitting in the faded zone is dark on dark.
-       Measured, the blurb ends at 69% of the hero, so the fade starts at 74%
-       and the extra bottom padding gives it somewhere to happen. Started at
-       58% it put the blurb at 2.55:1 on the dark theme. */
-    background:linear-gradient(to bottom, transparent 74%, var(--bg) 100%),
-      linear-gradient(rgba(255,255,255,.20), rgba(255,255,255,.20)), var(--dye);
-    background-size:auto, auto, 150% 150%;
-    background-position:50% 50%, 50% 50%, 50% 50%;
-    animation:dyeDrift 22s ease-in-out infinite;}
-  /* Halftone. A flat gradient reads as a CSS gradient; the dot screen is what
-     makes it look printed. Sized in px so it stays a screen rather than
-     scaling into stripes on a wide viewport. */
-  /* Finer and lighter. At 30% black on a 4px grid the dots were themselves
-     the darkest pixels behind the type, so the screen meant to add texture
-     was a third of the contrast problem. */
-  .hero:before{content:''; position:absolute; inset:0; pointer-events:none;
-    background-image:radial-gradient(circle at 1px 1px, rgba(0,0,0,.16) .8px, transparent 1.4px);
-    background-size:4px 4px; mix-blend-mode:multiply;}
+    margin:0 calc(var(--gut) * -1) 0; padding:34px var(--gut) 30px;
+    color:#F6F2EA;
+    background:
+      radial-gradient(90% 55% at 50% 118%, rgba(6,4,15,.85), transparent 70%),
+      radial-gradient(55% 60% at 12% 8%, rgba(240,106,95,.34), transparent 70%),
+      radial-gradient(50% 58% at 90% 6%, rgba(55,197,213,.30), transparent 70%),
+      radial-gradient(70% 70% at 50% 58%, rgba(169,130,243,.34), transparent 72%),
+      #140D2A;}
+  /* THE RIG. Five beams of the dye swinging down from the truss, blurred into
+     washes. A conic from above the frame is exactly the geometry of a fan of
+     lights, and the slow sway is what makes it read as a rig rather than as a
+     background image. Screen blend so a beam can only ever add light. */
+  .hero:before{content:''; position:absolute; left:50%; top:-40%; width:180%; height:160%;
+    transform:translateX(-50%); transform-origin:50% 0; z-index:-1; pointer-events:none;
+    background:conic-gradient(from 150deg at 50% 0%,
+      transparent 0deg, rgba(240,106,95,.22) 6deg, transparent 13deg,
+      transparent 20deg, rgba(255,111,193,.20) 26deg, transparent 33deg,
+      transparent 40deg, rgba(169,130,243,.24) 46deg, transparent 53deg,
+      transparent 60deg, rgba(55,197,213,.22) 66deg, transparent 73deg,
+      transparent 80deg, rgba(72,209,122,.18) 86deg, transparent 93deg, transparent 360deg);
+    filter:blur(14px); mix-blend-mode:screen; animation:rigSway 16s ease-in-out infinite;}
+  @keyframes rigSway{ 0%,100%{transform:translateX(-50%) rotate(-4deg);} 50%{transform:translateX(-50%) rotate(4deg);} }
+  /* Print. A flat gradient reads as CSS; the dot screen is what makes it a
+     poster. Light dots now, since the ground is dark. */
+  .hero:after{content:''; position:absolute; inset:0; z-index:-1; pointer-events:none;
+    background-image:radial-gradient(circle at 1px 1px, rgba(255,255,255,.07) .7px, transparent 1.3px);
+    background-size:4px 4px;}
   .hero > *{position:relative;}
-  /* Ink, not --ink. The field underneath is the dye in both themes, so the
-     type on it cannot follow the theme or it turns white-on-yellow in light. */
-  .hero .eyebrow, .hero .tagline, .hero p{color:#12100E;}
-  /* A solid ink rather than opacity:.72. Translucent type blends with whatever
-     is behind it, so its real contrast changes across the dye and cannot be
-     measured from its declared colour: this one reads the same everywhere. */
-  .hero .eyebrow{color:#2A241E;}
-  .hero p{max-width:32ch; font-weight:800;}
+  .hero .eyebrow{color:#CFC4E6; letter-spacing:3px;}
+  .hero .tagline, .hero p{color:#F6F2EA;}
+  .hero p{max-width:34ch; font-weight:700; color:#F2EDF8;}
   /* No added tracking: the slab carries its own sidebearings, and at 40px on a
      320px screen the extra half-pixel per letter is the difference between
      filling the line and running past the gutter. */
@@ -322,7 +342,7 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
   .segmark-tile{position:relative; width:var(--ms,54px); height:var(--ms,54px);
     border-radius:22%; background:var(--dye); background-size:150% 150%;
     background-position:50% 50%; flex:0 0 auto;}
-  .segmark-tile:after{content:''; position:absolute; inset:0; background:#071426;
+  .segmark-tile:after{content:''; position:absolute; inset:0; background:#0E0B1C;
     -webkit-mask:url('data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20100%20100%22%3E%3Cpath%20d%3D%22M38%2026%20L66%2050%20L38%2074%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%2215%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%2F%3E%3C%2Fsvg%3E') center/100% 100% no-repeat;
     mask:url('data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20100%20100%22%3E%3Cpath%20d%3D%22M38%2026%20L66%2050%20L38%2074%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%2215%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%2F%3E%3C%2Fsvg%3E') center/100% 100% no-repeat;}
 
@@ -343,27 +363,31 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
      rather than as a gap; .06em is the first value where every pair is clear.
      It is paid for in size, since tracking adds about 0.3em of width across
      five letters. */
-  .hero h1{font-family:var(--hero); font-size:clamp(56px,22.5vw,98px); line-height:.92;
-    letter-spacing:.06em; margin:2px 0 6px; text-transform:uppercase; color:#12100E;}
+  /* THE WORDMARK IS LIT, NOT PRINTED. Shrikhand is the groovy lettering
+     of the lot shirt and the gig poster, and it leans forward, which is what
+     a segue does. The fill is the dye run top to bottom (a straight sweep, for
+     the reason --dye-line gives: a conic across a word lands on one or two
+     hues), minus the gold, which this game keeps for ratings and song tags.
+     The hard offset shadow is the poster's second ink; the soft one is the
+     light spilling off it. The padding is there because background-clip:text
+     clips to the box, and Shrikhand's swashes run outside it. */
+  .hero h1{font-family:var(--hero); font-weight:400; font-size:clamp(78px,27vw,138px);
+    line-height:.98; letter-spacing:.005em; margin:0 auto; padding:0 .12em .1em;
+    width:max-content; max-width:100%;
+    background:linear-gradient(180deg, #FF8A6B 10%, #FF6FC1 34%, #B794FF 56%,
+      #4FD3E0 76%, #5FE39A 94%);
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+    filter:drop-shadow(0 5px 0 #07040F) drop-shadow(0 14px 26px rgba(169,130,243,.45));}
   .hero h1 .accent{color:inherit;}
   @keyframes dyeDrift{
     0%,100%{ background-position:44% 46%; }
     50%    { background-position:56% 54%; }
   }
-  .tagline{font-family:var(--ui); font-size:19px; letter-spacing:.5px; text-transform:uppercase;
-    line-height:1.05; margin:0 0 8px;}
-  @media (max-width:420px){ .tagline{font-size:17px;} }
-  /* THE SHORTHAND IS WHY THIS HAS TO BE ONE RULE.
-     The blurb is capped at 32ch and centred by auto side margins, and that
-     was declared in its own `.hero p{margin-left:auto; margin-right:auto}`
-     two hundred lines up. This rule then said `margin:0`, same specificity
-     and later in the file, so the shorthand quietly reset both sides to zero
-     and the sentence sat 10px left of the wordmark above it. Nothing errors,
-     nothing looks broken in isolation, and text-align:center still reported
-     `center` because the TEXT was centred inside a box that was not.
-     Both declarations now live here, so a future `margin:` cannot land
-     between them. */
-  .hero p{margin:0 auto; font-size:14px; line-height:1.45;}
+  /* The promise, in the display face at a size it reads at. One line on a
+     phone, which is why it is this long and no longer. */
+  .tagline{font-family:var(--hero); font-size:clamp(19px,5.6vw,26px); line-height:1.1;
+    margin:4px 0 10px;}
+  .hero p{margin:0 auto; font-size:13.5px; line-height:1.45;}
 
   /* Three columns even on a phone: the copy is short, and stacked they cost
      three times the height for the same three sentences. */
@@ -377,17 +401,17 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
      every line as a bold fragment followed by a supporting fragment, five
      times running, which is a rhythm nobody uses out loud. */
   /* Above the band panel now, so the margin runs below it rather than above. */
-  .how{margin:var(--sp-3) 0 var(--sp-3);}
+  .how{margin:var(--sp-2) 0 var(--sp-2);}
   /* A heading with a rule running off the end of it, so the section reads as
      a block on a poster rather than as a label floating above a list. */
-  .how h3{font-family:var(--ui); font-size:15px; letter-spacing:3px; text-transform:uppercase;
-    color:var(--ink); margin:0 0 12px; font-weight:400;
+  .how h3{font-family:var(--body); font-size:11px; font-weight:900; letter-spacing:2.4px;
+    text-transform:uppercase; color:var(--mut); margin:0 0 10px;
     display:flex; align-items:center; gap:10px;}
   /* The rule runs between the heading and the button, so the button is ordered
      past the pseudo-element rather than the pseudo-element being moved. */
-  .how h3:after{content:''; flex:1; height:3px; background:var(--ink); opacity:.85; order:1;}
+  .how h3:after{content:''; flex:1; height:1px; background:var(--line2); order:1;}
   .how h3 .btn{order:2; flex:0 0 auto; letter-spacing:.2px; text-transform:none;
-    font-family:var(--body, inherit);}
+    font-family:var(--body, inherit); font-size:12px; padding:6px 11px; border-radius:99px;}
   /* ---------------- THE LOOP, DRAWN ----------------
      Five numbered sentences, 84 words, describing three beats that the game
      itself draws on its own screens a tap later: a setlist, a row with a clock
@@ -401,7 +425,7 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
     line-height:1.2;}
   .loop span{font-size:11px; font-weight:600; color:var(--dim); line-height:1.35;}
   /* Each panel is a small picture of the real screen, not an icon. */
-  .lp-art{display:flex; height:44px; padding:6px; border-radius:8px;
+  .lp-art{display:flex; height:40px; padding:6px; border-radius:10px;
     background:var(--card); border:1px solid var(--line2);}
   .lp-take{flex-direction:column; justify-content:space-between;}
   .lp-take i{display:block; height:5px; border-radius:99px; background:var(--line2);}
@@ -449,9 +473,27 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
   /* The count wraps as one unit, so it never breaks mid-phrase into a
      dangling "were at" on its own line. */
   .band-meta .mine{color:var(--tealT); font-weight:900; white-space:nowrap;}
-  .band.soon{border-style:dashed; box-shadow:none;}
-  .band.soon .band-hd h2{font-size:26px; color:var(--mut);}
-  .band.soon .band-meta{margin-bottom:11px;}
+  /* One line and a button, not a second marquee. It is a request form. */
+  .band.soon{border-style:dashed; box-shadow:none; background:transparent;
+    display:flex; align-items:center; gap:12px; padding:12px 14px;}
+  .band.soon .band-hd{margin:0;}
+  .band.soon .band-hd h2{font-family:var(--body); font-weight:900; font-size:14px;
+    text-transform:none; letter-spacing:0; line-height:1.2; color:var(--ink);}
+  .band.soon .band-meta{margin:2px 0 0; font-size:12px; color:var(--dim);}
+  .band.soon > div:first-child{flex:1; min-width:0;}
+  .band.soon .btn{width:auto; margin:0; flex:0 0 auto; font-size:13px; padding:9px 13px;}
+  /* ON A DESKTOP THE PAPER GOES BESIDE THE MARQUEE, not under it. Full width,
+     a setlist is a banner 1400px across with four songs on a line, which is a
+     shape no setlist has ever been. Beside the button it is the size of the
+     sheet of paper it is drawing, and the button stays in the first screen. */
+  @media (min-width:880px){
+    .band:not(.soon){display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+      column-gap:34px; align-items:start; padding:22px 24px 20px;}
+    .band:not(.soon) > *{grid-column:1;}
+    .band:not(.soon) > .lastset{grid-column:2; grid-row:1 / span 6; margin:14px 6px 6px;}
+    .band-hd h2{font-size:56px;}
+    .how, .bands, .wrap .youlinks{max-width:960px; margin-left:auto; margin-right:auto;}
+  }
 
   .reqform{display:flex; flex-direction:column; gap:4px;}
   .reqform label{font-size:11px; font-weight:900; letter-spacing:1.6px;
@@ -471,16 +513,22 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
   .tryout span{display:block; margin-top:7px; font-size:11.5px; font-weight:600;
     color:var(--dim);}
 
-  .bands{display:flex; flex-direction:column; gap:11px;}
-  .band{padding:14px 16px 14px;}
-  .bands .card{border-radius:var(--r-sm); border-width:2px; border-color:var(--ink);
-    box-shadow:6px 6px 0 0 color-mix(in srgb, var(--ink) 16%, transparent);}
-  .band-hd{display:flex; align-items:baseline; justify-content:space-between; gap:12px;
-    margin-bottom:4px;}
-  .band-hd h2{font-family:var(--ui); font-size:40px; line-height:.92; letter-spacing:-.5px;
-    margin:0; text-transform:uppercase;
-    letter-spacing:.5px;}
-  .band-meta{font-size:12.5px; color:var(--dim); font-weight:700; margin-bottom:11px;}
+  .bands{display:flex; flex-direction:column; gap:12px;}
+  /* THE BAND PANEL IS THE MARQUEE. The venue sign reads NOW PLAYING over the
+     act in condensed caps, and that is what this is: the band the game is
+     dealing tonight, and the one button that starts it. A thin dye rule along
+     the top ties it to the poster above without shouting. */
+  .band{padding:16px 16px 14px; position:relative; overflow:hidden;}
+  .bands .card{border-radius:var(--r-lg);}
+  .band:not(.soon):before{content:''; position:absolute; left:0; right:0; top:0; height:3px;
+    background:linear-gradient(90deg, var(--coral), var(--pinkT),
+      var(--violet), var(--teal), var(--green));}
+  .band-hd{display:flex; flex-direction:column; align-items:flex-start; gap:2px;
+    margin-bottom:5px;}
+  .band-hd .eyebrow{font-size:10px; letter-spacing:2.6px;}
+  .band-hd h2{font-family:var(--ui); font-weight:400; font-size:44px; line-height:.9;
+    margin:0; text-transform:uppercase; letter-spacing:.02em;}
+  .band-meta{font-size:12.5px; color:var(--mut); font-weight:700; margin-bottom:2px;}
   .warn{margin-top:12px; padding:11px 13px; border-radius:var(--r-sm); font-size:13px;
     font-weight:700; line-height:1.5; background:color-mix(in srgb,var(--gold) 12%, transparent);
     border:1px solid color-mix(in srgb,var(--gold) 34%, transparent); color:var(--goldT);}
@@ -504,7 +552,7 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
   .reveal-bar .n{font-weight:900; font-size:13px; color:var(--mut); font-variant-numeric:tabular-nums;}
   .reveal-body{padding:34px 22px; min-height:186px; display:flex; flex-direction:column;
     align-items:center; justify-content:center; gap:7px;}
-  .reveal-date{font-family:var(--hero); font-size:clamp(28px,7vw,40px); line-height:1.02;
+  .reveal-date{font-family:var(--ui); font-size:clamp(28px,7vw,40px); line-height:1.02;
     color:var(--dim); transition:color var(--t-base) var(--ease);}
   .landed .reveal-date{color:var(--ink);}
   .reveal-venue{font-size:15px; font-weight:800; color:var(--dim);
@@ -642,7 +690,7 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
      thing on the screen that came from them rather than from the archive. */
   .werethere{display:inline-block; vertical-align:middle; margin-left:9px;
     font-family:var(--body); font-size:10px; font-weight:900; letter-spacing:1.3px;
-    text-transform:uppercase; color:#071426; padding:3px 7px; border-radius:99px;
+    text-transform:uppercase; color:#0E0B1C; padding:3px 7px; border-radius:99px;
     background:var(--dye-line);}
   .wtbtn{margin-top:7px; padding:0; background:none; border:0; font:inherit;
     font-size:11.5px; font-weight:800; letter-spacing:.4px; color:var(--dim);
@@ -1166,7 +1214,7 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
    * contrast at all. The fill carries just enough hue to tint it: 11% is the
    * most every one of the eight hues can take and still clear 4.5:1 in both
    * themes, the binding case being pink. Worst measured cell is 4.54. */
-  :root{ --pillBase:#0A1A2E; }
+  :root{ --pillBase:#0B0918; }
   @media (prefers-color-scheme: light){ :root:not([data-theme="dark"]){ --pillBase:#FFFFFF; } }
   :root[data-theme="light"]{ --pillBase:#FFFFFF; }
 
@@ -1280,7 +1328,7 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
 
   /* ---------------- setlist panel ---------------- */
   .setlist{position:sticky; top:66px; padding:14px 16px 12px;}
-  .setlist h2{font-family:var(--hero); font-size:22px; margin:0 0 2px; text-transform:uppercase;
+  .setlist h2{font-family:var(--hero); font-size:22px; margin:0 0 2px;
     letter-spacing:.5px;}
   .setlist .sub{font-size:11.5px; font-weight:700; color:var(--dim); margin-bottom:12px;}
   .slotgrp{margin-bottom:10px;}
@@ -1356,7 +1404,7 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
   /* The grade colour lands on the figure alone. Carrying it across the whole
      sentence made a red line of prose under a red number, which reads as an
      error message rather than as a score. */
-  .sb-pct b{font-family:var(--hero); font-size:26px; line-height:1;
+  .sb-pct b{font-family:var(--ui); font-size:26px; line-height:1;
     letter-spacing:.01em; font-variant-numeric:tabular-nums;}
 
   /* A score's colour is a rating and nothing else — green good, yellow middling,
@@ -1393,7 +1441,7 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
   .ceil-lbl{font-size:10px; font-weight:900; letter-spacing:1.8px; text-transform:uppercase;
     color:var(--dim); margin-bottom:6px;}
   .ceil-row{display:flex; align-items:baseline; gap:12px;}
-  .ceil-n{font-family:var(--hero); font-size:38px; line-height:1; color:var(--tealT);
+  .ceil-n{font-family:var(--ui); font-size:38px; line-height:1; color:var(--tealT);
     flex:0 0 auto; font-variant-numeric:tabular-nums;}
   .ceiling.maxed .ceil-n{color:var(--greenT);}
   .ceil-say{font-size:13px; font-weight:700; color:var(--mut); line-height:1.45;}
@@ -1443,7 +1491,7 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
     flex:0 0 auto;}
   .wherefrom{padding:16px 15px; margin-top:14px;}
   .wherefrom h2{font-family:var(--hero); font-size:21px; margin:0 0 3px;
-    text-transform:uppercase;}
+   }
   .actions{display:flex; flex-direction:column; gap:9px; margin-top:14px;}
 
   /* ---------------- bottom sheet ----------------
@@ -1512,7 +1560,7 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
   .g-eyebrow{font-family:var(--ui); font-size:11px; letter-spacing:2.6px;
     text-transform:uppercase; color:var(--tealT); margin-bottom:5px;}
   .g-card h3{font-family:var(--hero); font-size:20px; line-height:1.12; margin:0 0 8px;
-    text-transform:uppercase; letter-spacing:.02em;}
+    letter-spacing:.02em;}
   .g-card p{margin:0 0 9px; font-size:13.5px; line-height:1.5; font-weight:600;
     color:var(--mut);}
   .g-card p:last-of-type{margin-bottom:0;}
@@ -1541,7 +1589,7 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
     font-weight:900; font-size:13.5px; padding:10px 15px; white-space:nowrap;}
   .sheet-hd{display:flex; align-items:baseline; justify-content:space-between; gap:12px;
     margin-bottom:10px;}
-  .sheet-hd h2{font-family:var(--hero); font-size:21px; margin:0; text-transform:uppercase;
+  .sheet-hd h2{font-family:var(--hero); font-size:21px; margin:0;
     letter-spacing:.5px;}
   .sheet-hd .x{font-size:12px; font-weight:800; color:var(--dim); background:none; border:0;
     padding:4px 2px;}
@@ -1629,7 +1677,7 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
     font-size:10.5px; letter-spacing:1.1px; text-transform:uppercase;}
   .rr-len{font-size:12px; font-weight:700; color:var(--dim);
     font-variant-numeric:tabular-nums; flex:0 0 auto;}
-  .rr-pts{font-family:var(--hero); font-size:17px; color:var(--ink);
+  .rr-pts{font-family:var(--ui); font-size:17px; color:var(--ink);
     font-variant-numeric:tabular-nums; flex:0 0 auto; min-width:2.2em; text-align:right;}
   /* WHAT THE SEGUE WAS WORTH, and nothing else.
      It started as a second line reading "> Echo of a Rose +32" under the title,
@@ -1654,7 +1702,7 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
     color:var(--redT); background:color-mix(in srgb,var(--red) 10%, transparent);}
   .btn.tiny.spin:disabled{border-color:var(--line2); color:var(--dim); background:transparent;}
   .btn.danger{background:var(--red); color:#2A0906; border-color:transparent; font-weight:900;}
-  .respin-hd{font-family:var(--hero); font-size:22px; text-transform:uppercase; margin:2px 0 4px;}
+  .respin-hd{font-family:var(--hero); font-size:22px; margin:2px 0 4px;}
   .respin-why{font-size:14px; font-weight:700; color:var(--mut); font-style:italic;
     margin-bottom:8px; line-height:1.4;}
   .respin-cost{font-size:13px; font-weight:700; color:var(--mut); line-height:1.5;
@@ -1682,8 +1730,8 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
     text-align:center; padding:0 10px;}
   .reel.year .reel-item{height:52px;}
   .reel.show .reel-item{height:84px;}
-  .ri-year{font-family:var(--hero); font-size:30px; line-height:1; letter-spacing:1px;}
-  .ri-date{font-family:var(--hero); font-size:20px; line-height:1.1;}
+  .ri-year{font-family:var(--ui); font-size:30px; line-height:1; letter-spacing:1px;}
+  .ri-date{font-family:var(--ui); font-size:20px; line-height:1.1;}
   .ri-venue{font-size:12px; font-weight:700; color:var(--mut); margin-top:3px;
     max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
   /* Landed reels go bright and neutral. The dye belongs to the frame around
@@ -1804,7 +1852,7 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
      it belongs on the row that reports what the decision was worth. */
   .sim-len{font-size:12px; font-weight:700; color:var(--dim); flex:0 0 auto;
     font-variant-numeric:tabular-nums;}
-  .sim-pts{font-family:var(--hero); font-size:18px; color:var(--ink); flex:0 0 auto;
+  .sim-pts{font-family:var(--ui); font-size:18px; color:var(--ink); flex:0 0 auto;
     font-variant-numeric:tabular-nums;}
   .sim-react{font-size:12.5px; font-weight:600; color:var(--mut); margin-top:3px; font-style:italic;}
   .sim-badge{margin-top:6px;}
@@ -1831,7 +1879,7 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
 
   /* ---------------- result: how this scored ---------------- */
   .scoresheet{padding:18px; margin-top:14px;}
-  .scoresheet h2{font-family:var(--hero); font-size:24px; margin:0 0 4px; text-transform:uppercase;}
+  .scoresheet h2{font-family:var(--hero); font-size:24px; margin:0 0 4px;}
   .scoresheet .sub{font-size:13px; color:var(--mut); font-weight:600; line-height:1.55;
     margin-bottom:16px;}
   /* FOLDED SHUT. Open, this block is over half the page: four groups, a row per
@@ -1855,7 +1903,7 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
   .sheetgrp h3{display:flex; justify-content:space-between; align-items:baseline;
     font-size:12px; font-weight:900; letter-spacing:1.8px; text-transform:uppercase;
     color:var(--dim); margin:0 0 9px; padding-bottom:7px; border-bottom:1px solid var(--line);}
-  .sheetgrp h3 span{font-family:var(--hero); font-size:20px; letter-spacing:0; color:var(--ink);}
+  .sheetgrp h3 span{font-family:var(--ui); font-size:20px; letter-spacing:0; color:var(--ink);}
 
   .bdrow{padding:11px 0; border-bottom:1px solid var(--line);}
   .bdrow:last-child{border-bottom:0;}
@@ -1863,7 +1911,7 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
   .bdslot{font-size:10.5px; font-weight:900; letter-spacing:1.4px; text-transform:uppercase;
     color:var(--dim);}
   .bdsong{font-size:15px; font-weight:800; margin-top:1px;}
-  .bdpts{font-family:var(--hero); font-size:22px; color:var(--ink); flex:0 0 auto;}
+  .bdpts{font-family:var(--ui); font-size:22px; color:var(--ink); flex:0 0 auto;}
   .bdmath{display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-top:8px;}
   .bdterm{display:inline-flex; flex-direction:column; align-items:center; gap:1px;
     padding:4px 9px; border-radius:var(--r-sm); background:var(--card2);
@@ -1903,12 +1951,12 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
   .fl b{display:block; font-size:14px; font-weight:800;}
   .fl i{display:block; font-style:normal; font-size:12px; color:var(--mut); font-weight:600;
     line-height:1.5; margin-top:2px;}
-  .fp{font-family:var(--hero); font-size:20px; color:var(--ink); flex:0 0 auto;}
+  .fp{font-family:var(--ui); font-size:20px; color:var(--ink); flex:0 0 auto;}
   .sheettot{display:flex; justify-content:space-between; align-items:baseline;
     padding-top:13px; border-top:2px solid var(--line2);}
   .sheettot span{font-size:12px; font-weight:900; letter-spacing:1.8px; text-transform:uppercase;
     color:var(--dim);}
-  .sheettot b{font-family:var(--hero); font-size:30px; color:var(--ink);}
+  .sheettot b{font-family:var(--ui); font-size:30px; color:var(--ink);}
 
   .loading{min-height:60dvh; display:flex; flex-direction:column; align-items:center;
     justify-content:center; gap:12px; color:var(--mut); font-weight:800;}
@@ -2040,35 +2088,52 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
      block with its own header and reads perfectly well underneath. Measured:
      this puts "Draft a setlist" at 470px rather than the 665px it reached when
      the whole live section sat on top of it. */
-  .nextline{display:flex; align-items:baseline; flex-wrap:wrap; gap:4px 8px;
-    padding:9px 0 11px; margin-bottom:2px; border-top:1px solid var(--line);
-    padding-top:11px;}
-  .nl-k{font-family:var(--ui); font-size:10px; letter-spacing:1.8px;
-    text-transform:uppercase; color:var(--dim); flex:0 0 100%;}
-  .nl-v{font-family:var(--hero); font-size:19px; line-height:1; color:var(--tealT);
-    text-transform:uppercase; letter-spacing:.01em;}
-  .nl-p{font-size:11.5px; font-weight:600; color:var(--mut); line-height:1.4;}
+  /* THE NEXT SHOW IS A TICKET: a dashed perforation down the stub side, the
+     countdown in the display face, and the date and room beside it. */
+  .nextline{display:grid; grid-template-columns:auto 1fr; align-items:center; gap:2px 12px;
+    margin-top:12px; padding:10px 12px; border-radius:10px; background:var(--card2);
+    border:1px solid var(--line); position:relative;}
+  .nl-k{grid-column:1; grid-row:1; font-family:var(--body); font-weight:900; font-size:9.5px;
+    letter-spacing:2px; text-transform:uppercase; color:var(--dim);
+    padding-right:12px; border-right:2px dashed var(--line2);}
+  .nl-v{grid-column:1; grid-row:2; font-family:var(--hero); font-size:20px; line-height:1.05;
+    color:var(--tealT); letter-spacing:.01em; padding-right:12px;
+    border-right:2px dashed var(--line2);}
+  .nl-p{grid-column:2; grid-row:1 / span 2; font-size:12px; font-weight:700;
+    color:var(--mut); line-height:1.4;}
 
   /* THE SETLIST IN THE FORM FANS ACTUALLY READ IT: titles run on, commas
      between songs, a caret where the band segued. Anybody who reads setlists
      parses this at a glance and a table of rows would say less in more room. */
-  .lastset{margin-top:13px; padding-top:11px; border-top:1px solid var(--line);
-    font-size:12.5px; line-height:1.6;}
+  /* LAST NIGHT'S SETLIST IS THE PAPER TAPED TO THE STAGE. Warm stock, a strip
+     of tape, a slight skew, and the songs in marker. It is the one object on
+     this screen a Goose fan recognises before reading a word of it, and it is
+     the same object the game hands you at the end. */
+  .lastset{margin:16px 4px 4px; padding:14px 15px 12px; border-radius:3px;
+    background:var(--paper); color:var(--paper-ink); position:relative;
+    transform:rotate(-.7deg); box-shadow:0 14px 26px -16px rgba(0,0,0,.7),
+      0 1px 0 rgba(0,0,0,.06);
+    background-image:repeating-linear-gradient(180deg, transparent 0 25px,
+      rgba(27,23,38,.05) 25px 26px);}
+  .lastset:before{content:''; position:absolute; top:-9px; left:50%; width:76px; height:20px;
+    transform:translateX(-50%) rotate(2deg); background:rgba(255,241,200,.62);
+    box-shadow:0 1px 2px rgba(0,0,0,.18);}
   /* The heading the setlist belongs to, kept with it. */
-  .ls-hd{margin-bottom:6px; line-height:1.45;}
-  .ls-hk{font-family:var(--ui); font-size:10px; letter-spacing:1.8px;
-    text-transform:uppercase; color:var(--dim); margin-right:7px;}
-  .ls-hd b{font-weight:900; font-size:13px;}
-  .ls-hp{display:block; font-size:11.5px; font-weight:600; color:var(--dim);}
-  .ls-row{display:flex; gap:9px; padding:2px 0;}
-  .ls-k{flex:0 0 42px; font-family:var(--ui); font-size:10px; letter-spacing:1.2px;
-    text-transform:uppercase; color:var(--dim); padding-top:3px;}
-  .ls-v{flex:1; min-width:0; font-weight:700; color:var(--mut);}
+  .ls-hd{margin-bottom:8px; line-height:1.4;}
+  .ls-hk{font-family:var(--body); font-weight:900; font-size:9.5px; letter-spacing:2px;
+    text-transform:uppercase; color:var(--paper-mut); margin-right:7px;}
+  .ls-hd b{font-weight:900; font-size:13px; color:var(--paper-ink);}
+  .ls-hp{display:block; font-size:11.5px; font-weight:700; color:var(--paper-mut);}
+  .ls-row{display:flex; gap:9px; padding:3px 0;}
+  .ls-k{flex:0 0 44px; font-family:var(--body); font-weight:900; font-size:9.5px;
+    letter-spacing:1.6px; text-transform:uppercase; color:var(--paper-mut); padding-top:5px;}
+  .ls-v{flex:1; min-width:0; font-family:var(--hand); font-size:15.5px; line-height:1.45;
+    color:var(--paper-ink);}
   /* The comma HUGS its song and the caret stands off it, which is the spacing
      every setlist uses: "A > B, C". The single space between titles comes from
      the join, so only the caret needs a margin of its own. */
-  .ls-sep{font-style:normal; color:var(--dim);}
-  .ls-seg{font-style:normal; color:var(--violetT); font-weight:900; margin-left:4px;}
+  .ls-sep{font-style:normal; color:var(--paper-mut);}
+  .ls-seg{font-style:normal; color:#6D3BD6; margin-left:4px;}
 
   /* Inside the panel and under the primary button, so they read as more of
      this band rather than as more of the site. */
@@ -2096,7 +2161,7 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
   .bhd{display:flex; align-items:flex-end; justify-content:space-between;
     gap:12px; margin:var(--sp-2) 0 var(--sp-1);}
   .bhd h2{font-family:var(--hero); font-size:clamp(30px,9vw,42px); margin:0;
-    text-transform:uppercase; letter-spacing:.02em; line-height:.94;}
+    letter-spacing:.02em; line-height:.94;}
   /* Two axes and three windows, as two rows of segmented control. Buttons and
      not a <select>, because the whole point of the percentage axis is that a
      player has to SEE it to know it is there. */
@@ -2115,14 +2180,14 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
   .brow{display:grid; grid-template-columns:34px 1fr auto; gap:10px;
     align-items:center; padding:11px 2px; border-bottom:1px solid var(--line);}
   .brow:last-child{border-bottom:0;}
-  .brow .pl{font-family:var(--hero); font-size:17px; color:var(--dim);
+  .brow .pl{font-family:var(--ui); font-size:17px; color:var(--dim);
     text-align:right; font-variant-numeric:tabular-nums;}
   .brow.top1 .pl, .brow.top2 .pl, .brow.top3 .pl{color:var(--ink);}
   .brow .who{min-width:0;}
   .brow .nm{font-weight:900; font-size:14.5px; overflow:hidden;
     text-overflow:ellipsis; white-space:nowrap;}
   .brow .sub{font-size:11.5px; color:var(--dim); font-weight:600; margin-top:2px;}
-  .brow .val{font-family:var(--hero); font-size:20px; text-align:right;
+  .brow .val{font-family:var(--ui); font-size:20px; text-align:right;
     font-variant-numeric:tabular-nums; line-height:1;}
   .brow .val i{display:block; font-family:var(--ui); font-style:normal;
     font-size:10.5px; letter-spacing:1.4px; color:var(--dim); font-weight:800;
@@ -2144,7 +2209,7 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
   .nextshow{padding:16px 16px 15px; margin-bottom:var(--sp-2);
     border-color:color-mix(in srgb, var(--teal) 40%, var(--line2));}
   .ns-when{font-family:var(--hero); font-size:34px; line-height:1.02;
-    color:var(--tealT); text-transform:uppercase; letter-spacing:.01em;}
+    color:var(--tealT); letter-spacing:.01em;}
   .ns-date{font-family:var(--ui); font-size:15px; letter-spacing:1.6px;
     text-transform:uppercase; color:var(--mut); margin:5px 0 9px;}
   .ns-venue{font-size:17px; font-weight:800; line-height:1.25;}
@@ -2325,13 +2390,13 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
      its own, so without this the band name and the "14x" sit ON the border. */
   .fanband{padding:14px 15px 15px;}
   .fanband + .fanband{border-top:1px solid var(--line);}
-  .fanhd{font-family:var(--hero); font-size:22px; text-transform:uppercase;
+  .fanhd{font-family:var(--hero); font-size:22px;
     letter-spacing:.02em; margin:0 0 12px;}
   .fanwait{font-size:13px; font-weight:600; color:var(--dim); line-height:1.55;}
   /* The headline number, because "129 of 367 songs heard live" is the thing a
      tracker actually wants and nothing else can tell them. */
   .fanbig{margin:var(--sp-2) 0 var(--sp-1);}
-  .fanbig > b{font-family:var(--hero); font-size:44px; line-height:1;
+  .fanbig > b{font-family:var(--ui); font-size:44px; line-height:1;
     font-variant-numeric:tabular-nums; color:var(--tealT);}
   .fanbig > i{font-style:normal; font-size:13px; font-weight:800; color:var(--mut);
     margin-left:9px;}
@@ -2415,7 +2480,7 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
     background:var(--line); border-radius:var(--r-md); overflow:hidden;
     margin:0 0 var(--sp-2);}
   .pstat{background:var(--card); padding:13px 8px; text-align:center;}
-  .pstat b{display:block; font-family:var(--hero); font-size:23px; line-height:1;
+  .pstat b{display:block; font-family:var(--ui); font-size:23px; line-height:1;
     font-variant-numeric:tabular-nums;}
   .pstat span{display:block; font-size:10px; font-weight:800; letter-spacing:1.3px;
     text-transform:uppercase; color:var(--dim); margin-top:5px;}
@@ -2538,7 +2603,7 @@ window.GA_ID='G-L29P5MRWKE';
       point of the game. A setlist isn't just a list of good songs. It's an order.</p>
 
     <h3>Where the shows come from</h3>
-    <p>Every show, song and running time is real. Right now the band is goosetheband, with 7,725
+    <p>Every show, song and running time is real. Right now the band is Goose, with 7,725
       recorded performances across 671 shows between 2014 and 2026, pulled from the community
       archive at <a href="https://elgoose.net" target="_blank" rel="noopener noreferrer">elgoose.net</a>.
       Nothing is made up. If a show is in the game, it happened, in that order, at that
@@ -2805,7 +2870,7 @@ const DEV_MODE = (() => {
 })();
 
 const BANDS = [
-  { id: 'goose',  label: 'goosetheband',  csv: '/setlist/data/goose.csv',
+  { id: 'goose',  label: 'Goose',  csv: '/setlist/data/goose.csv',
     shows: '/setlist/data/goose_shows.csv',
     latest: '/setlist/data/goose_latest.json',
     note: '671 shows from the elgoose.net archive' },
@@ -3331,7 +3396,7 @@ function renderHome(){
 
     return `
       <section class="card band">
-        <div class="band-hd"><h2>${esc(b.label)}</h2></div>
+        <div class="band-hd"><span class="eyebrow">Now playing</span><h2>${esc(b.label)}</h2></div>
         <div class="band-meta">${esc(b.note)}${mine
           ? ` <b class="mine">&middot; you've been to ${mine}</b>` : ''}</div>
 
@@ -3387,11 +3452,11 @@ function renderHome(){
      AFTER you have been told what pressing it does. */
   app.innerHTML = `
     <div class="hero">
-      <div class="eyebrow">RunThe.GG presents</div>
+      <div class="eyebrow">The setlist game for jam fans</div>
       <h1><span class="accent">Segue</span></h1>
-      <div class="tagline">The Setlist Builder Game</div>
+      <div class="tagline">Build the show that never happened.</div>
       <p>Real shows, one at a time. Take one song from each and pay its
-        running time. Build the night they never played.</p>
+        running time.</p>
     </div>
 
     ${S.error ? `<div class="err">${esc(S.error)}</div>` : ''}
@@ -3486,9 +3551,9 @@ function renderHome(){
 
     <div class="bands">${real.map(card).join('')}
       <section class="card band soon">
-        <div class="band-hd"><h2>More bands coming soon</h2></div>
-        <div class="band-meta">Just one band for now. Tell us who you want next.</div>
-        <button class="btn big ghost" type="button" id="reqBand">Request a band</button>
+        <div><div class="band-hd"><h2>More bands coming soon</h2></div>
+        <div class="band-meta">Tell us who you want next.</div></div>
+        <button class="btn ghost" type="button" id="reqBand">Request a band</button>
       </section></div>
 
     <!-- WHAT IS LEFT IS ABOUT THE PLAYER, not the band, and it is quieter than
@@ -5399,7 +5464,12 @@ document.addEventListener('keydown', e => {
  * own, so the card and the app cannot disagree.
  */
 const CARD_W = 1080, CARD_H = 1350, CARD_PAD = 64;
-const CARD_INK = '#F4F7FB', CARD_MUT = '#A9B8CB', CARD_DIM = '#7C8DA3', CARD_NAVY = '#071426';
+const CARD_INK = '#F6F2EA', CARD_MUT = '#B8AFCB', CARD_DIM = '#8C83A2', CARD_NAVY = '#0E0B1C';
+/* The poster's ground and the paper, the same fixed colours the page uses for
+   the same two objects, so a card and a screenshot of the game match. */
+const CARD_STAGE = '#140D2A', CARD_PAPER = '#F7F1E3', CARD_PINK = '#1B1726',
+  CARD_PMUT = '#7A6E5C', CARD_ARROW = '#6D3BD6', CARD_NOTE = '#C73A25';
+const CARD_LIT = [[0.10, '#FF8A6B'], [0.34, '#FF6FC1'], [0.56, '#B794FF'], [0.76, '#4FD3E0'], [0.94, '#5FE39A']];
 const GRADE_HEX = { hot: '#48D17A', warm: '#F2B632', cold: '#FF625F' };
 const DYE_STOPS = [[0,'#F06A5F'],[62,'#F2B632'],[128,'#48D17A'],[196,'#37C5D5'],[268,'#A982F3'],[360,'#F06A5F']];
 
@@ -5542,12 +5612,20 @@ function letterspaceCard(x, text, sx, y, gap){
   for (const ch of text){ x.fillText(ch, cx, y); cx += x.measureText(ch).width + gap; }
 }
 
+/* THE CARD IS THE POSTER AND THE PAPER, the same two objects the home screen
+   is built from. It used to be a dark panel of typed titles with a dye spiral
+   in the corner: correct, and it looked like a stats screen. What people post
+   from a show is a photo of the setlist, so the setlist is drawn as one, in
+   marker on taped paper, with the band's own notation: an arrow where they
+   segued and a numbered note where something happened. */
 async function renderShareCard(r){
   /* Canvas paints whatever is loaded at the moment of the call, silently, so
      an unloaded face comes out as the default sans and the card ships wrong. */
   await document.fonts.ready;
   await Promise.all([
-    document.fonts.load('130px "Alfa Slab One"'),
+    document.fonts.load('130px Shrikhand'),
+    document.fonts.load('40px "Permanent Marker"'),
+    document.fonts.load('140px Anton'),
     document.fonts.load('700 30px Archivo'),
     document.fonts.load('900 30px Archivo'),
   ]);
@@ -5555,46 +5633,38 @@ async function renderShareCard(r){
   const c = document.createElement('canvas');
   c.width = CARD_W; c.height = CARD_H;
   const x = c.getContext('2d');
-  x.fillStyle = CARD_NAVY; x.fillRect(0, 0, CARD_W, CARD_H);
-
-  // The dye spiral, bled off the bottom-right corner.
-  const sp = document.createElement('canvas'); sp.width = CARD_W; sp.height = CARD_H;
-  const spx = sp.getContext('2d');
-  const SCX = CARD_W + 60, SCY = CARD_H - 40;
-  dyeDisc(spx, SCX, SCY, 720);
-  const rg = document.createElement('canvas'); rg.width = CARD_W; rg.height = CARD_H;
-  const rgx = rg.getContext('2d');
-  rgx.strokeStyle = '#000'; rgx.lineWidth = 15;
-  /* One destination-in at the end. Compositing ring by ring intersects each
-     new ring with what is left, so the mask empties out after a few strokes. */
-  for (let rr = 700; rr > 10; rr -= 42){
-    rgx.globalAlpha = Math.max(0.10, 1 - rr / 720);
-    rgx.beginPath(); rgx.arc(SCX, SCY, rr, 0, Math.PI * 2); rgx.stroke();
+  x.fillStyle = CARD_STAGE; x.fillRect(0, 0, CARD_W, CARD_H);
+  // The light rig: the hero's four coloured washes.
+  for (const [cx, cy, rad, col, a] of [
+    [80, 0, 700, '240,106,95', .32], [CARD_W, 40, 680, '55,197,213', .28],
+    [CARD_W / 2, 560, 820, '169,130,243', .30], [CARD_W - 80, CARD_H, 600, '255,111,193', .20]]){
+    const g = x.createRadialGradient(cx, cy, 0, cx, cy, rad);
+    g.addColorStop(0, `rgba(${col},${a})`); g.addColorStop(1, `rgba(${col},0)`);
+    x.fillStyle = g; x.fillRect(0, 0, CARD_W, CARD_H);
   }
-  spx.globalCompositeOperation = 'destination-in';
-  spx.drawImage(rg, 0, 0);
-  x.save(); x.globalAlpha = 0.34; x.drawImage(sp, 0, 0); x.restore();
+  x.fillStyle = 'rgba(255,255,255,.05)';
+  for (let yy = 3; yy < CARD_H; yy += 7) for (let xx = 3; xx < CARD_W; xx += 7) x.fillRect(xx, yy, 1.6, 1.6);
 
-  // ── masthead ──
-  drawCardMark(x, CARD_PAD, CARD_PAD, 88);
+  // ── masthead: the mark, the lit wordmark, and whose shows these were ──
+  drawCardMark(x, CARD_PAD, CARD_PAD, 84);
   x.textBaseline = 'alphabetic';
-  x.font = '68px "Alfa Slab One"'; x.fillStyle = CARD_INK;
-  x.fillText('SEGUE', CARD_PAD + 110, CARD_PAD + 68);
-  x.font = '900 24px Archivo'; x.fillStyle = CARD_DIM;
-  x.fillText(String(S.band.label || '').toUpperCase(), CARD_PAD + 112, CARD_PAD + 100);
+  x.font = '96px Shrikhand';
+  const wy = CARD_PAD + 86, wx = CARD_PAD + 104;
+  x.fillStyle = '#07040F'; x.fillText('Segue', wx, wy + 6);
+  const lit = x.createLinearGradient(0, wy - 82, 0, wy + 20);
+  CARD_LIT.forEach(([o, col]) => lit.addColorStop(o, col));
+  x.fillStyle = lit; x.fillText('Segue', wx, wy);
+  x.font = '900 22px Archivo'; x.fillStyle = CARD_MUT;
+  letterspaceCard(x, String(S.band.label || '').toUpperCase() + ' · MY SETLIST', CARD_PAD + 4, CARD_PAD + 138, 3);
 
   // ── the score, which is the reason anybody posts this ──
   const grade = gradeScore(r.total);
   x.textAlign = 'right';
-  x.font = '150px "Alfa Slab One"'; x.fillStyle = GRADE_HEX[grade] || CARD_INK;
-  x.fillText(String(r.total), CARD_W - CARD_PAD, CARD_PAD + 128);
+  x.font = '150px Anton'; x.fillStyle = GRADE_HEX[grade] || CARD_INK;
+  x.fillText(String(r.total), CARD_W - CARD_PAD, CARD_PAD + 124);
   x.font = '900 22px Archivo'; x.fillStyle = CARD_MUT;
-  x.fillText('POINTS', CARD_W - CARD_PAD, CARD_PAD + 160);
+  x.fillText('POINTS', CARD_W - CARD_PAD, CARD_PAD + 158);
   x.textAlign = 'left';
-
-  let y = CARD_PAD + 214;
-  x.strokeStyle = 'rgba(244,247,251,.14)'; x.lineWidth = 2;
-  x.beginPath(); x.moveTo(CARD_PAD, y); x.lineTo(CARD_W - CARD_PAD, y); x.stroke();
 
   /* The setlist IS the card, so it gets the room the fan headline used to
      take. The headline is still on the result screen and still in the copied
@@ -5602,101 +5672,114 @@ async function renderShareCard(r){
   const notes = showNotes(S.sets);
   const noteOf = perf => (notes.find(n => n.perf === perf) || {}).n;
 
-  // ── the setlist, two columns so eight and eight sit side by side ──
-  const COL_GAP = 44, COL_W = (CARD_W - CARD_PAD * 2 - COL_GAP) / 2;
+  // ── the paper ──
+  const PX = 50, PY = 262, PW = CARD_W - 100, PH = CARD_H - PY - 150;
+  x.save();
+  x.translate(PX + PW / 2, PY + PH / 2); x.rotate(-1.1 * Math.PI / 180);
+  x.translate(-PW / 2, -PH / 2);
+  x.shadowColor = 'rgba(0,0,0,.55)'; x.shadowBlur = 44; x.shadowOffsetY = 20;
+  x.fillStyle = CARD_PAPER; x.fillRect(0, 0, PW, PH);
+  x.shadowColor = 'transparent';
+  // Tape, one strip each side of the top edge.
+  x.fillStyle = 'rgba(255,241,200,.7)';
+  for (const [tx, rot] of [[PW * .18, -5], [PW * .82, 6]]){
+    x.save(); x.translate(tx, 2); x.rotate(rot * Math.PI / 180); x.fillRect(-70, -20, 140, 40); x.restore();
+  }
+
+  const IN = 44, COL_GAP = 40, COL_W = (PW - IN * 2 - COL_GAP) / 2;
   /* Centre the setlist in the room it actually has. A fourteen-song night is
      half the height of a nineteen-song one, and anchoring it to the top left
-     a third of the card empty above the footer. */
-  const ROW = 52, HEAD = 46;
-  const notesH = notes.length ? 34 + 36 * Math.ceil(notes.length / 2) : 0;
+     a third of the paper empty. */
+  const ROW = 50, HEAD = 44;
+  const notesH = notes.length ? 44 + 38 * Math.ceil(notes.length / 2) : 0;
   const mainRows = Math.max(S.sets[0].length, S.sets[1].length);
   const blockH = (mainRows ? HEAD + mainRows * ROW : 0)
-    + (S.sets[2].length ? 30 + HEAD + S.sets[2].length * ROW : 0);
-  const bandTop = y + 46, bandBottom = CARD_H - CARD_PAD - 96 - notesH;
-  y = bandTop + Math.max(0, (bandBottom - bandTop - blockH) / 2);
+    + (S.sets[2].length ? 26 + HEAD + S.sets[2].length * ROW : 0);
+  const bandTop = 64, bandBottom = PH - 30 - notesH;
+  const y = bandTop + Math.max(0, (bandBottom - bandTop - blockH) / 2);
+  /* Ruled like a pad, and ruled to the HANDWRITING: each line sits just under
+     a song's baseline, so the titles are written on the lines rather than
+     drifting across them. */
+  x.strokeStyle = 'rgba(27,23,38,.06)'; x.lineWidth = 2;
+  for (let ly = (y + HEAD + 12) % ROW; ly < PH; ly += ROW){
+    x.beginPath(); x.moveTo(0, ly); x.lineTo(PW, ly); x.stroke();
+  }
   const drawSet = (songs, si, cx, cy, width) => {
     if (!songs.length) return cy;
-    x.font = '900 24px Archivo'; x.fillStyle = CARD_DIM;
-    x.fillText(SETS[si].label.toUpperCase(), cx, cy);
+    x.font = '900 21px Archivo'; x.fillStyle = CARD_PMUT;
+    letterspaceCard(x, SETS[si].label.toUpperCase(), cx, cy, 4);
     let ly = cy + HEAD;
     songs.forEach((p, j) => {
       const nxt = songs[j + 1];
       const seg = nxt && String(p.is_segue) === 'true'
         && S.data.segues.has(`${p.song_id}|${nxt.song_id}`);
       const n = noteOf(p);
-      /* THE RUNNING TIME, and on a card about versions it is not optional.
-         The card listed titles, which describes a set of SONGS; the length is
-         what says which take of each one you got, and across the songs with
-         five or more plays the longest version is a median of 2.7 times the
-         shortest. Right-aligned to the column so the times form a readable
-         edge instead of trailing each title at a different x. */
-      x.font = '700 27px Archivo';
+      /* THE RUNNING TIME, and on a card about versions it is not optional:
+         the length is what says which take of each song you got. Right
+         aligned to the column so the times form a readable edge. */
+      x.font = '700 22px Archivo';
       const time = fmtClock(lenOf(p));
       const timeW = x.measureText(time).width;
       // Reserve the room the marks AND the clock need before truncating.
-      const tail = (n ? 22 : 0) + (seg ? 28 : 0) + timeW + 18;
-      x.font = '700 35px Archivo'; x.fillStyle = CARD_INK;
+      x.font = '31px "Permanent Marker"';
+      const tail = (n ? 24 : 0) + (seg ? x.measureText(' >').width + 4 : 0) + timeW + 16;
+      x.fillStyle = CARD_PINK;
       const label = fitText(x, p.song, width - tail);
       x.fillText(label, cx, ly);
-      /* MEASURED WHILE THE TITLE'S FONT IS STILL SET. Drawing the clock first
-         and measuring after would measure the label at 27px and put the
-         footnote marker inside the title. */
-      let tx = cx + x.measureText(label).width + 10;
-      x.textAlign = 'right';
-      x.font = '700 27px Archivo'; x.fillStyle = CARD_MUT;
-      x.fillText(time, cx + width, ly);
-      x.textAlign = 'left';
+      /* MEASURED WHILE THE TITLE'S FONT IS STILL SET, or the marker lands
+         inside the title. */
+      let tx = cx + x.measureText(label).width + 6;
+      if (seg){ x.fillStyle = CARD_ARROW; x.fillText('>', tx + 4, ly); tx += x.measureText(' >').width + 4; }
       if (n){
-        // Raised to the cap line, the way a footnote marker sits on paper.
-        x.font = '900 20px Archivo'; x.fillStyle = GRADE_HEX.hot;
-        x.fillText(String(n), tx, ly - 16);
-        tx += x.measureText(String(n)).width + 8;
+        // Raised to the cap line and in red marker, how a note is written on paper.
+        x.font = '26px "Permanent Marker"'; x.fillStyle = CARD_NOTE;
+        x.fillText(String(n), tx + 2, ly - 14);
       }
-      if (seg) drawChevron(x, tx, ly, 26);
+      x.textAlign = 'right';
+      x.font = '700 22px Archivo'; x.fillStyle = CARD_PMUT;
+      x.fillText(time, cx + width, ly - 2);
+      x.textAlign = 'left';
       ly += ROW;
     });
     return ly;
   };
-  const leftEnd = drawSet(S.sets[0], 0, CARD_PAD, y, COL_W);
-  const rightEnd = drawSet(S.sets[1], 1, CARD_PAD + COL_W + COL_GAP, y, COL_W);
-  let ey = Math.max(leftEnd, rightEnd) + 30;
-  /* ONE COLUMN WIDE, like the sets above it. Drawn across the full card the
-     encore's titles sat on the left and its clocks on the far right, half a
-     card apart, while every other row had them a few characters apart. */
-  ey = drawSet(S.sets[2], ENCORE_INDEX, CARD_PAD, ey, COL_W);
+  const leftEnd = drawSet(S.sets[0], 0, IN, y, COL_W);
+  const rightEnd = drawSet(S.sets[1], 1, IN + COL_W + COL_GAP, y, COL_W);
+  /* ONE COLUMN WIDE, like the sets above it, or the encore's titles and clocks
+     sit half a card apart while every other row has them a few words apart. */
+  drawSet(S.sets[2], ENCORE_INDEX, IN, Math.max(leftEnd, rightEnd) + 26, COL_W);
 
   // ── show notes, keyed to the numbers on the songs ──
   if (notes.length){
-    const top = CARD_H - CARD_PAD - 96 - notesH;
-    x.font = '900 21px Archivo'; x.fillStyle = CARD_DIM;
-    letterspaceCard(x, 'SHOW NOTES', CARD_PAD, top, 4);
-    // Two columns, filled down the left then the right, so the numbers read
-    // in order rather than zig-zagging across the card.
+    const top = PH - 30 - notesH + 30;
+    x.strokeStyle = 'rgba(27,23,38,.16)'; x.lineWidth = 2;
+    x.beginPath(); x.moveTo(IN, top - 30); x.lineTo(PW - IN, top - 30); x.stroke();
+    x.font = '900 19px Archivo'; x.fillStyle = CARD_PMUT;
+    letterspaceCard(x, 'SHOW NOTES', IN, top, 4);
+    // Down the left then the right, so the numbers read in order.
     const half = Math.ceil(notes.length / 2);
     notes.forEach((n, i) => {
       const col = i < half ? 0 : 1;
       const row = i < half ? i : i - half;
-      const nx = CARD_PAD + col * (COL_W + COL_GAP);
-      const ny = top + 42 + row * 36;
-      x.font = '900 21px Archivo'; x.fillStyle = GRADE_HEX.hot;
+      const nx = IN + col * (COL_W + COL_GAP);
+      const ny = top + 40 + row * 38;
+      x.font = '26px "Permanent Marker"'; x.fillStyle = CARD_NOTE;
       x.fillText(String(n.n), nx, ny);
       const numW = x.measureText(String(n.n)).width + 12;
-      x.font = '700 24px Archivo'; x.fillStyle = CARD_MUT;
+      x.font = '700 22px Archivo'; x.fillStyle = CARD_PINK;
       x.fillText(fitText(x, n.note, COL_W - numW), nx + numW, ny);
     });
   }
+  x.restore();
 
-  /* The footer's job is the URL. It was the same size and the same grey as
-     the stats beside it, which made the one thing that brings anybody back
-     the least visible thing on the card. */
-  const fy = CARD_H - CARD_PAD - 6;
-  x.strokeStyle = 'rgba(244,247,251,.14)'; x.lineWidth = 2;
-  x.beginPath(); x.moveTo(CARD_PAD, fy - 54); x.lineTo(CARD_W - CARD_PAD, fy - 54); x.stroke();
-  x.font = '38px "Alfa Slab One"'; x.fillStyle = CARD_INK;
-  x.fillText('RUNTHE.GG/SETLIST', CARD_PAD, fy);
+  /* The footer's job is the URL: it is the one thing on the card that brings
+     anybody back, so it is the loudest thing after the score. */
+  const fy = CARD_H - CARD_PAD + 8;
+  x.font = '44px Shrikhand'; x.fillStyle = CARD_INK;
+  x.fillText('runthe.gg/setlist', CARD_PAD, fy);
   x.textAlign = 'right';
-  x.font = '900 21px Archivo'; x.fillStyle = CARD_DIM;
-  x.fillText(`${r.stats.songs} SONGS · ${fmtClock(r.totalUsed)} ON STAGE`, CARD_W - CARD_PAD, fy - 4);
+  x.font = '900 21px Archivo'; x.fillStyle = CARD_MUT;
+  x.fillText(`${r.stats.songs} SONGS · ${fmtClock(r.totalUsed)} ON STAGE`, CARD_W - CARD_PAD, fy - 6);
   x.textAlign = 'left';
   return c;
 }
@@ -7432,7 +7515,7 @@ document.getElementById('themeBtn').addEventListener('click', () => {
   document.documentElement.setAttribute('data-theme', next);
   try { localStorage.setItem('runthegrid_theme', next); } catch(e){}
   const meta = document.getElementById('themeMeta');
-  if (meta) meta.setAttribute('content', next === 'light' ? '#EEF2F7' : '#071426');
+  if (meta) meta.setAttribute('content', next === 'light' ? '#F4EFE4' : '#0E0B1C');
 });
 
 render();
