@@ -114,7 +114,16 @@
 
   /* pro upsell */
   .gate{background:var(--card); border:1px solid var(--line2); border-radius:18px; box-shadow:var(--shadow); padding:24px 20px; text-align:center; max-width:460px; margin:8px auto;}
-  .gate .crown{width:56px; height:56px; border-radius:16px; margin:0 auto 14px; display:flex; align-items:center; justify-content:center; background:linear-gradient(150deg,var(--coral),#D8452F); box-shadow:0 10px 26px -10px rgba(240,106,95,.8);}
+  .gate{position:relative; overflow:hidden; background:radial-gradient(120% 70% at 50% 0%, color-mix(in srgb,var(--coral) 16%,var(--card)), var(--card) 62%);}
+  .gate .vwall{position:relative; display:grid; grid-template-columns:repeat(6,40px); justify-content:center; gap:8px; margin:4px auto 20px; padding-bottom:6px;}
+  .gate .vwall .vt{width:40px; height:40px; border-radius:11px; display:grid; place-items:center;
+    background:color-mix(in srgb,var(--ink) 5%,var(--card2)); border:1px solid var(--line2);}
+  .gate .vwall .vt:nth-child(n+7){transform:translateX(24px);}
+  .gate .vwall .vt svg{width:24px; height:24px; opacity:.5; filter:saturate(.6);}
+  .gate .crown{position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); width:48px; height:48px; border-radius:15px;
+    display:flex; align-items:center; justify-content:center; background:linear-gradient(150deg,var(--coral),#D8452F);
+    box-shadow:0 0 0 5px var(--card),0 12px 26px -8px rgba(240,106,95,.8);}
+  @media (max-width:360px){ .gate .vwall{grid-template-columns:repeat(6,34px); gap:6px;} .gate .vwall .vt{width:34px; height:34px;} .gate .vwall .vt:nth-child(n+7){transform:translateX(20px);} }
   .gate h2{font-family:var(--hero); font-weight:400; letter-spacing:.02em; text-transform:uppercase; font-size:22px; margin:0 0 6px;}
   .gate p{font-size:13px; color:var(--mut); margin:0 0 16px; line-height:1.55;}
   .gate ul{list-style:none; padding:0; margin:0 0 20px; text-align:left; display:inline-block;}
@@ -253,7 +262,7 @@ window.GA_ID='G-L29P5MRWKE';
 <script src="/arcade/auth-ui.js?v=7"></script>
 <script src="/arcade/card.js?v=22"></script>
 <script src="/arcade/referral.js?v=11"></script>
-<script src="/arcade/nav.js?v=2"></script>
+<script src="/arcade/nav.js?v=3"></script>
 <script src="/arcade/calendar.js?v=15"></script>
 <script>
 (function(){
@@ -273,7 +282,13 @@ window.GA_ID='G-L29P5MRWKE';
   function renderGate(){
     content.innerHTML =
       '<div class="gate">'+
-        '<div class="crown"><svg width="28" height="28" viewBox="0 0 24 24" fill="#20140a" aria-hidden="true"><path d="M3 7l4.5 4L12 4l4.5 7L21 7l-1.6 11H4.6L3 7z"/></svg></div>'+
+        // What is in the Vault, drawn: the eleven games that keep past days,
+        // each behind glass, with the Card's crown on the door.
+        '<div class="vwall" aria-hidden="true">'+
+          ['match','sportegories','crossword','rollcall','chain','rankit','guess','almamater','career','oddone','table']
+            .map(function(k){ return '<span class="vt" data-mark="'+k+'"></span>'; }).join('')+
+          '<span class="crown"><svg width="22" height="22" viewBox="0 0 24 24" fill="#20140a"><path d="M3 7l4.5 4L12 4l4.5 7L21 7l-1.6 11H4.6L3 7z"/></svg></span>'+
+        '</div>'+
         // the day count is live: an abstract perk becomes a specific pile
         '<h2>' + (VAULTD > 0 ? (VAULTD + ' days are waiting') : 'The Vault is an Arcade Card perk') + '</h2>'+
         '<p>' + (VAULTD > 0
@@ -287,6 +302,7 @@ window.GA_ID='G-L29P5MRWKE';
         '<button class="btn" id="goPro">Get Arcade Card</button>'+
         '<p class="fine" id="gateFine">$4.17/mo billed annually (save 30%) or $5.99/month. Cancel anytime.</p>'+
       '</div>';
+    try{ if(window.RTGGameMarks) RTGGameMarks.fill(content); }catch(e){}
     // Open the shared Arcade Card paywall (handles plan choice and
     // sign-in-first if needed). Falls back to the old inline checkout only if
     // card.js somehow isn't present.

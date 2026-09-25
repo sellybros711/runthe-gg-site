@@ -219,8 +219,8 @@
       "sha": "6ce91876969d0a6e"
     },
     "/arcade/nav.js": {
-      "v": "2",
-      "sha": "358c7f3a3bb3e52f"
+      "v": "3",
+      "sha": "e779f73f6de62243"
     },
     "/arcade/calendar.js": {
       "v": "15",
@@ -999,8 +999,8 @@
       "sha": "6ce91876969d0a6e"
     },
     "/arcade/nav.js": {
-      "v": "2",
-      "sha": "358c7f3a3bb3e52f"
+      "v": "3",
+      "sha": "e779f73f6de62243"
     },
     "/arcade/calendar.js": {
       "v": "15",
@@ -1023,6 +1023,10 @@
     "/arcade/icons.js": {
       "v": "3",
       "sha": "96ddcdb15ea90ca2"
+    },
+    "/arcade/gamemarks.js": {
+      "v": "4",
+      "sha": "51637c7e8598cb9d"
     },
     "/arcade/tokens.js": {
       "v": "13",
