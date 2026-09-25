@@ -138,17 +138,17 @@ async function draft(p) {
       pick.click();
       return name;
     });
-    /* A TILE IS NOT ALWAYS A SIGNING. A man who fits more than one open slot opens
-       the position chooser instead, and the walk has to answer it: without this the
-       sheet sat there, the next pass read the same board, clicked the same tile,
-       and the draft never left "Spin 1 of 12". It is the natural slot where the
-       sheet marks one, which is what the sheet itself leads with. */
+    /* A TILE IS NOT ALWAYS A SIGNING. A man who fits more than one open slot is
+       placed on the field instead: his open slots glow and the walk has to tap one.
+       Without this the board sat there, the next pass read the same board, clicked
+       the same tile, and the draft never left "Spin 1 of 12". It taps his natural slot
+       where he has one, which the page marks. */
     await p.waitForTimeout(60);
     await p.evaluate(() => {
-      const sheet = document.getElementById('sheet-pos');
-      if (!sheet || !sheet.classList.contains('on')) return;
-      const opts = [...sheet.querySelectorAll('.pos-opt')];
-      (opts.find((o) => o.classList.contains('natural')) || opts[0]).click();
+      if (!document.querySelector('#s-draft.picking')) return;
+      const t = document.querySelector('#field .target.natural, #field-card .target.natural')
+        || document.querySelector('#field .target, #field-staff .target, #field-card .target');
+      if (t) t.click();
     });
     if (took == null) {
       /* No signable tile: the re-spin is the way on, and it is what a player does. */

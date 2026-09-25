@@ -13852,10 +13852,27 @@ SP2, CL and RP and not SP3 to SP5, RP1 to RP5 or SU. So the lineup card drew the
 whole back of the rotation and the whole bullpen in the fallback grey that means
 "no position", beside two blue starters. `posColor` falls through to the base.
 
-**And the sheet said the same thing twice.** A pitcher offered a relief slot read
-`Reliever` over a note reading `Pitcher`, which answers nothing the sheet is asking.
-`slotNote()` says what taking it would MEAN: in the rotation, out of the bullpen,
-closing games.
+### A man who fits two spots is placed ON THE FIELD, not in a sheet
+
+Asked for: the chooser should be the field we already built, not a pop up. The
+`#sheet-pos` sheet is gone, and with it `slotNote()` and `posLabel()`. Pressing a
+tile whose man has more than one open job starts a PLACEMENT (`startPick`): every
+spot he can take glows gold on the diamond, the pitcher strip and the lineup card,
+the rest dim and stop taking presses, and a bar at the foot of the screen names him
+with a Cancel. Tapping a gold spot signs him there. Pressing the same tile again,
+Cancel or Escape backs out and costs nothing.
+
+**`openJobs` is still the one answer**, so the gold spots are exactly the doors the
+sheet used to list and no second copy of the rule exists for display.
+
+**`PICK` is cleared on every way off the board**: a signing, a re-spin, the next
+spin and any screen change. A placement left standing across a re-spin would offer
+spots for a man who is no longer on the board.
+
+**The page script is an IIFE, so `PICK` is not on `window`.** A walker reads the
+DOM instead: `#s-draft.picking` says a placement is up, `.target` marks every gold
+spot, and `.natural` marks the one at his own position, which is what
+`check-run` taps.
 
 ### The desktop page is football's, and the two columns have to be the same length
 
@@ -14794,7 +14811,7 @@ quietly stopped submitting looks exactly like one that works.
 | | |
 |---|---|
 | the board | `#opts` is EMPTY until the reels land, because `paintOpts` is `spinBoth`'s callback. Waiting on the container waits on nothing. |
-| a tile | is not always a signing. A man who fits two open slots opens the position chooser, and a walk that does not answer it clicks the same tile for ever at "Spin 1 of 12". |
+| a tile | is not always a signing. A man who fits two open slots starts a placement on the field (`#s-draft.picking`), and a walk that does not tap a gold `.target` clicks the same tile for ever at "Spin 1 of 12". |
 | a sheet | is a scrim over the whole page, so the press after the cabinet lands on the scrim and retries against a sheet nobody closed. It reads as a button that cannot be clicked. |
 | the panel | lists at most six badges and then says how many more, so its count comes from the headline. |
 
