@@ -324,6 +324,48 @@ that it could not tell which module `E` was on a hoops page that is entirely cor
 The rule keys on the comparison rather than on the word, because the stub below it writes
 `API_VERSION:BOARD_VERSION` into itself and would otherwise count as a pin.
 
+## The Perfect Season front page is one switcher and one button
+
+`#s-intro` in `football/index.html`. The quick drafts are one question with three answers,
+so they are one control: `#hp-mode` (Offense, Defense, Full Team), then `#b-start`, which
+says Spin your first pick and calls whichever door the switcher names. The longer modes sit
+under it as a two-column shelf in `#hp-longer`.
+
+**THE OLD DOORS ARE STILL IN THE MARKUP AND STILL DO THE WORK.** `#b-start` calls
+`beginDraft`, `beginDefenseDraft` or `fullDoor`, the same functions `#b-start-off`,
+`#b-start-def` and `#b-start-full` always called, so the account wall, the day's allowance
+and a saved Full Team season are all decided exactly where they were. `#hp-split` and
+`#b-start-full` are kept and never drawn: the pair for anything that presses it directly,
+the Full Team door because `ensureFullButton` is where that mode's save and meter state
+lives, and `paintHomeMode` reads it into the tab note, the button label and the line under
+the button. Delete either and nothing throws; the Full Team tab just stops knowing whether
+there is a run to resume.
+
+**A TAB IS DRAWN ONLY FOR A MODE THIS ACCOUNT CAN PLAY**, asked of `canPlayDefense` and
+`canPlayFull`, the two calls that used to decide whether those doors existed. With Offense
+alone there is no question and the switcher goes. The choice is remembered on the device
+(`ps_home_mode`), and a remembered mode the account can no longer play falls back to
+Offense rather than to a hidden tab.
+
+**THE FIELD FOLLOWS THE SWITCHER, and it is twelve chips that are never torn down.** Six a
+side, updated in place by `heroChips`, so a switch changes where each one stands and the
+CSS transition on `left` and `top` does the rest: the side you left runs off its own end,
+the side you picked runs on, and Full Team folds both toward one line with the draft's own
+`fullY()`. Rebuilt instead, a switch is a cut. The markings are the draft field's own
+(`fieldMarkings`) in a `.hmk` layer that fades, so the grass never repaints under men who
+are mid-run. On Full Team the hero only signs where a name has room (`HERO_FULL_OK`): a
+lineman's name lands on the receiver across the line, and the back's runs off the bottom.
+
+**SHORT SCREENS KEEP THE BUTTON ABOVE THE FOLD**, which this page has always measured. The
+switcher costs about sixty pixels the old pair did not, so under 760 tall the name goes
+back to one line and the slot list stands down, under 640 the subtitle goes, and under 600
+the kicker. Measured: 320x568, 360x640, 375x667, 390x664 and 844x390 all land Spin on
+screen. Re-measure after touching anything above it.
+
+**The name is two lines on a tall phone and on a desktop**, "Season" in red, and back to
+one line on a short phone. Its size is `min(14vw,84px)` rather than the old one-line fit,
+because "THE PERFECT" is eleven of the eighteen characters.
+
 ## The football game's badge cabinet
 
 `football/achievements.js` is the badge catalog for The Perfect Season, and every badge in

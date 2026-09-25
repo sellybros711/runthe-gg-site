@@ -2381,7 +2381,8 @@ window.GA_ID='G-L29P5MRWKE';
        a flex container's DIRECT children, so a descendant selector that still matches has no
        effect at all and the group would silently fall to the catch-all order:5, landing
        under the utility row. */
-    #s-intro #b-start,#s-intro #hp-split,#s-intro #hp-longer{order:2}
+    #s-intro #hp-mode,#s-intro #hp-slots,#s-intro #b-start,#s-intro #hp-rule,
+    #s-intro #hp-split,#s-intro #hp-longer{order:2}
     #s-intro #b-teams{order:3}
     #s-intro .hp-util{order:4}
     #s-intro .hero{order:6;margin-top:16px;margin-bottom:0}
@@ -2488,6 +2489,145 @@ window.GA_ID='G-L29P5MRWKE';
   .htitle h1{font-family:var(--fd);font-size:min(11vw,70px);line-height:.9;
     letter-spacing:.005em;margin:7px 0 0;text-transform:uppercase;white-space:nowrap}
   .htitle p{margin:11px auto 0;max-width:23em;font-size:14px;color:var(--dim);line-height:1.45}
+  /* ─── THE FRONT PAGE, REDESIGNED ────────────────────────────────────────────────────────
+     The name on two lines, one switcher, one button, and the longer modes on a shelf.
+
+     THE NAME IS TWO LINES NOW, so the one-line sizing above no longer binds. "THE PERFECT"
+     is eleven of the eighteen characters, so the same 7.79px-per-px measure gives it about
+     4.8em: 14vw fits it at 320 with room even in the wider fallback face, and the cap holds it
+     at 84 once the column stops growing. nowrap stays on each line for the reason written above. */
+  .htitle h1{font-size:min(14vw,84px);line-height:.88}
+  .htitle p{max-width:27em}
+  .htitle h1 .l2{display:block;color:var(--red)}
+
+  /* COLOURS THAT CAN TRANSITION. A gradient cannot be tweened, but its stops can when they
+     are registered custom properties, so the switcher's pill and the Spin button slide from
+     red to blue to the red-and-blue of Full Team instead of snapping. A browser without
+     @property simply swaps the colours, which is the same information. */
+  @property --gl{syntax:'<color>';inherits:true;initial-value:#d93a3a}
+  @property --gr{syntax:'<color>';inherits:true;initial-value:#a01f1f}
+  #s-intro{--gl:#d93a3a;--gr:#a01f1f;--glow:rgba(239,68,68,.55);
+    transition:--gl .45s ease,--gr .45s ease}
+  #s-intro.hm-def{--gl:#2f63e4;--gr:#153aa4;--glow:rgba(59,130,246,.55)}
+  #s-intro.hm-full{--gl:#c62828;--gr:#1d4ed8;--glow:rgba(139,92,246,.5)}
+
+  .hp-mode{position:relative;display:grid;grid-template-columns:repeat(var(--n,3),minmax(0,1fr));
+    gap:6px;padding:5px;margin:4px 0 0;border-radius:14px;background:#0f1628;
+    border:1px solid var(--line-2)}
+  .hp-mode[hidden]{display:none}
+  /* ONE PILL SLIDING UNDER THE TABS, rather than a background on whichever tab is checked.
+     It moves by its own width plus the gap, so it lands on each column exactly whatever the
+     screen is. --i is the checked tab's place among the ones that are showing. */
+  .hp-mode-pill{position:absolute;top:5px;bottom:5px;left:5px;border-radius:10px;
+    width:calc((100% - 10px - (var(--n,3) - 1) * 6px) / var(--n,3));
+    transform:translateX(calc(var(--i,0) * (100% + 6px)));
+    background:linear-gradient(115deg,var(--gl) 0%,var(--gl) 46%,var(--gr) 54%,var(--gr) 100%);
+    box-shadow:0 6px 16px -8px var(--glow);
+    transition:transform .5s cubic-bezier(.22,1.2,.36,1),box-shadow .4s ease}
+  #s-intro:not(.hm-full) .hp-mode-pill{background:linear-gradient(135deg,var(--gl),var(--gr))}
+  .hp-tab{position:relative;z-index:1;min-height:48px;border:0;border-radius:10px;
+    background:transparent;cursor:pointer;font-family:var(--fn);font-size:15px;font-weight:800;
+    letter-spacing:.08em;text-transform:uppercase;line-height:1.05;color:var(--dim);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+    transition:color .3s ease;-webkit-tap-highlight-color:transparent}
+  .hp-tab[hidden]{display:none}
+  .hp-tab[data-m="off"]{color:#fca5a5}
+  .hp-tab[data-m="def"]{color:#a5c4fb}
+  .hp-tab[aria-checked="true"]{color:#fff}
+  .hp-tab small{font-size:9px;letter-spacing:.1em;font-weight:700;color:inherit;opacity:.72}
+  .hp-tab small:empty{display:none}
+  .hp-tab:focus-visible{outline:2px solid #fff;outline-offset:-2px}
+  .hp-slots{margin:9px 0 9px;text-align:center;font-family:var(--fn);font-size:11.5px;
+    font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--dim-2)}
+  .hp-mode[hidden]+.hp-slots{margin-top:2px}
+  /* The Spin button wears the switcher's colour. */
+  .hp-start{font-family:var(--fd);font-size:min(25px,7vw);white-space:nowrap;font-weight:400;letter-spacing:.06em;
+    padding:17px 18px;border-radius:14px;background:linear-gradient(115deg,var(--gl),var(--gr));
+    box-shadow:0 14px 30px -14px var(--glow),0 2px 8px rgba(0,0,0,.35);
+    transition:box-shadow .45s ease}
+  #s-intro.hm-full .hp-start{background:linear-gradient(115deg,var(--gl) 0%,var(--gl) 44%,var(--gr) 56%,var(--gr) 100%)}
+  .hp-start.hp-loading{opacity:.7;pointer-events:none}
+  .hp-start.hp-loading .hp-go-l{visibility:hidden}
+  .hp-start.hp-loading:after{content:'';position:absolute;left:50%;top:50%;width:20px;
+    height:20px;margin:-10px 0 0 -10px;border-radius:50%;border:2.5px solid rgba(255,255,255,.3);
+    border-top-color:#fff;animation:hpSpin .7s linear infinite}
+  .hp-rule{margin:9px 0 0;text-align:center;font-size:12.5px;color:var(--dim);min-height:1.45em}
+  .hp-rule:empty{display:none}
+  .hp-slots.swap,.hp-rule.swap{animation:hpswap .38s ease-out}
+  @keyframes hpswap{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
+  /* THE OLD PAIR IS KEPT AND NEVER SHOWN. Its buttons still own beginDraft and
+     beginDefenseDraft and their loading states, and scripts that already press them keep
+     working, but the page has one way to start now. */
+  #s-intro #hp-split,#s-intro #hp-pick{display:none}
+  /* Full Team lives in the switcher now, so its door stays in the group for its state (the
+     save, the meter) and is not drawn. The Spin button reads both. */
+  #s-intro #b-start-full{display:none}
+
+  /* ─── THE SHELF ─── The longer modes side by side rather than one full-width block each.
+     The store card and the dynasty's footnote still take the whole row. */
+  .hp-longer{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;align-items:stretch}
+  .hp-longer>*{margin:0!important;min-width:0}
+  .hp-longer>.pw-card,.hp-longer>#b-dyn-new,.hp-longer>:only-child{grid-column:1/-1}
+  .hp-longer>.hp-full{justify-content:center;min-height:118px;padding:28px 10px 14px;border-radius:14px}
+  .hp-longer>.hp-full .hp-full-name{font-size:21px;line-height:1.02;white-space:normal;text-align:center}
+  .hp-longer>.hp-full .hp-full-sub{font-size:9.5px;letter-spacing:.06em}
+  .hp-longer>.hp-dyn .hp-full-name{font-size:24px}
+  @media (max-width:360px){
+    .hp-longer>.hp-full .hp-full-name{font-size:18px}
+    .hp-longer>.hp-dyn .hp-full-name{font-size:20px}
+  }
+
+  /* ─── THE FIELD FOLLOWS THE SWITCHER ─── Twelve chips live on the hero field for good,
+     six a side, and a switch MOVES them rather than redrawing: the side you left runs off
+     its own end of the field and the side you picked comes on, one man at a time. */
+  .hero-field .chip{transition:left .62s cubic-bezier(.22,1.2,.36,1),top .62s cubic-bezier(.22,1.2,.36,1),
+    opacity .38s ease}
+  .hero-field .chip.gone{opacity:0;pointer-events:none}
+  .hero-field .hmk{position:absolute;inset:0;transition:opacity .35s ease}
+  .hero-field .hmk.out{opacity:0}
+  .hero-field .hsweep{position:absolute;top:0;bottom:0;left:-45%;width:40%;z-index:3;pointer-events:none;
+    background:linear-gradient(100deg,transparent,rgba(255,255,255,.14),transparent);
+    animation:hsweep .8s ease-out forwards}
+  @keyframes hsweep{to{left:110%}}
+  .field.hero-field.fullfield{aspect-ratio:1/0.54}
+  .hero-field.fullfield .chip .yr{display:none}
+  .hero-field.fullfield .chip .disc{width:30px;height:30px;font-size:10px}
+  .hero-field.fullfield .chip{--discr:15px}
+  .hero-field.fullfield .halfglow.up,.hero-field.fullfield .halfglow.down{opacity:.55}
+  @media (max-height:800px){
+    .hero-field.fullfield .chip .lab{display:none}
+    .hero-field.fullfield .chip .disc{width:24px;height:24px;font-size:8.5px}
+    .hero-field.fullfield .chip{--discr:12px}
+  }
+  /* SHORT SCREENS KEEP THE BUTTON ABOVE THE FOLD, which is the rule this page has always kept
+     and measured. The switcher costs about sixty pixels the old pair did not, so under 760 the
+     name goes back to one line (SEASON still red), the slot list stands down (the tabs already
+     say which side), and under 640 the subtitle goes too. */
+  @media (max-height:760px){
+    .htitle h1{font-size:min(11vw,70px);line-height:.9}
+    .htitle h1 .l2{display:inline}
+    .hp-slots{display:none}
+    .hp-mode{margin-bottom:10px}
+  }
+  @media (max-height:640px){
+    .htitle h1{font-size:min(10.5vw,40px)}
+    .htitle p{display:none}
+    .hp-tab{min-height:44px}
+  }
+  /* An iPhone SE is the tight one: 568 tall, and everything above has already come off. */
+  @media (max-height:600px){
+    .htitle .kicker{display:none}
+    .hp-start{padding:14px 18px}
+    .field.hero-field{height:108px}
+  }
+  @media (max-height:400px){
+    .htitle h1{font-size:min(8.5vw,31px)}
+  }
+  @media (prefers-reduced-motion:reduce){
+    .hero-field .chip,.hero-field .hmk,.hp-mode-pill,.hp-tab,#s-intro,.hp-start{transition:none}
+    .hero-field .hsweep,.hp-slots.swap,.hp-rule.swap{animation:none}
+    .hero-field .hsweep{display:none}
+  }
   .hrow{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:9px}
 
   /* WHERE THIS RUN RANKS
@@ -5326,6 +5466,22 @@ window.GA_ID='G-L29P5MRWKE';
   @media (min-width:1200px) and (min-height:560px){
     .wrap:has(#s-intro.on){max-width:min(1040px,calc(100vw - 400px))}
   }
+  /* THE REDESIGN ON A WIDE SCREEN: the field on the left, and the name, the switcher, the
+     button and the shelf stacked in the right column. The title moves into that column too,
+     so the first thing the eye meets on the right is the name and directly under it the one
+     decision. */
+  @media (min-width:920px) and (min-height:560px){
+    #s-intro>.hero{grid-row:1/span 9}
+    #s-intro>.htitle,#s-intro>#hp-mode,#s-intro>#hp-slots,#s-intro>#hp-rule{grid-column:2}
+    #s-intro>.htitle{margin-bottom:18px}
+    #s-intro>.htitle h1{font-size:70px}
+    #s-intro>.htitle h1 .l2{display:block}
+    #s-intro>.htitle p{display:block}
+    #s-intro>#b-start{margin-top:0}
+    .hp-longer{margin-top:18px}
+    .hp-start{font-size:28px;padding:19px 18px}
+    .hp-tab{min-height:52px;font-size:16px}
+  }
   /* Tiles arrive as a consequence of the reels landing, so they come in on a short
      stagger rather than all at once out of nowhere. */
   @keyframes optin{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
@@ -6924,16 +7080,37 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
       <div class="kicker">1999 to 2025</div>
       <!-- No <br>. The break was hardcoded, so the headline was two lines no matter what
            size it was set at, and the clamp below could never have fixed it on its own. -->
-      <h1>The Perfect Season</h1>
-      <p>Draft six NFL legends. Build your lineup. Chase a perfect season.</p>
+      <!-- TWO LINES NOW, ON PURPOSE. One line had to be sized to fit 390px and read as a
+           caption; broken after "Perfect" the name can be set twice as large and still clear
+           the narrowest phone, and "Season" carries the red the header wordmark already uses. -->
+      <h1>The Perfect <span class="l2">Season</span></h1>
+      <p>Spin a year and a team. Sign one. Beat the cap.</p>
     </div>
+
+    <!-- THE SWITCHER AND THE ONE BUTTON.
+         The front page used to ask for a decision in five separate places: an Offense and
+         Defense pair, then Full Team, Dynasty and Fantasy each as a door of their own, every
+         one of them a full-width block. The three quick drafts are one question with three
+         answers, so they are one control: pick a side here, press Spin, and the field above
+         changes to show what you picked.
+         The old doors are still in the markup (#hp-split) and still own their handlers and
+         their loading states. The Spin button only decides which of them to call, so nothing
+         about how a run starts has moved. paintHomeMode is the one painter. -->
+    <div class="hp-mode" id="hp-mode" role="radiogroup" aria-label="Pick your roster" hidden>
+      <span class="hp-mode-pill" aria-hidden="true"></span>
+      <button class="hp-tab" type="button" role="radio" data-m="off" id="hp-tab-off" aria-checked="true">Offense</button>
+      <button class="hp-tab" type="button" role="radio" data-m="def" id="hp-tab-def" aria-checked="false">Defense</button>
+      <button class="hp-tab" type="button" role="radio" data-m="full" id="hp-tab-full" aria-checked="false">Full Team<small id="hp-tab-full-note"></small></button>
+    </div>
+    <p class="hp-slots" id="hp-slots">QB &middot; RB &middot; WR &middot; WR &middot; TE &middot; FLEX</p>
 
     <!-- TWO CONTROLS, ONE OF THEM ON SCREEN AT A TIME. Everybody gets the single Start a
          run button below; testers get the Offense and Defense pair instead, and
          paintHomeStart is the only thing that decides which. Both are in the markup rather
          than one being built at runtime so the first-run guide, the landscape ordering and
          the focus ring all have something real to attach to before any script runs. -->
-    <button class="btn hp-start" id="b-start">Start a run</button>
+    <button class="btn hp-start m-off" id="b-start"><span class="hp-go-l">Spin your first pick</span></button>
+    <p class="hp-rule" id="hp-rule"></p>
     <!-- Shown and hidden with the split, not with the page: it is a caption for the pair of
          buttons and says nothing about the single Start a run. -->
     <p class="hp-pick" id="hp-pick" hidden>Which side of the ball will you draft?</p>
@@ -9745,7 +9922,7 @@ async function boot(){
     LEAGUE=lg.league_avg_pts_allowed_by_season; CAL=cal;
     BYKEY=new Map(pl.map(p=>[p.player_id+'|'+p.season,p]));
     bootStep('Building the league');
-    $('h-field').innerHTML=fieldMarkings();
+    heroMode=homeModeNow(); heroMarkings(heroMode,false);
     authBoot(); watchTabs(); wireDealNav(); paintHomeStart();
     /* AFTER the page is up and deliberately not awaited: the walk back from Stripe polls
        for a webhook and must never hold the game behind it. */
@@ -10406,7 +10583,15 @@ function beginDraft(opts){
   }
   show('s-draft'); nextSpin();
 }
-$('b-start').onclick=()=>{ beginDraft({}); };
+/* THE ONE BUTTON, AND WHICH DOOR IT OPENS IS THE SWITCHER'S ANSWER. Each branch calls the
+   same function its old door called, so the account wall, the day's allowance and a saved
+   Full Team season are all decided exactly where they always were. */
+$('b-start').onclick=()=>{
+  const m=homeModeNow();
+  if(m==='def') return beginDefenseDraft();
+  if(m==='full') return fullDoor();
+  return beginDraft({});
+};
 $('b-start-off').onclick=()=>{ beginDraft({}); };
 $('b-start-def').onclick=()=>{ beginDefenseDraft(); };
 /* NO BINDING HERE FOR FULL TEAM. The node does not exist at load: ensureFullButton() makes
@@ -11115,8 +11300,12 @@ function paintHomeStart(){
   const split=$('hp-split'), one=$('b-start');
   if(!split||!one) return;
   const on=canPlayDefense();
-  split.hidden=!on;
-  one.hidden=on;
+  /* THE PAIR IS NEVER SHOWN NOW and the one button always is: the switcher above it is
+     where the side of the ball is chosen. The pair keeps its handlers for anything that
+     presses it directly. */
+  split.hidden=true;
+  one.hidden=false;
+  homeBusy(false);
   /* The caption belongs to the pair, so it comes and goes with the pair. Over a lone Start a
      run it would be telling somebody to choose between one thing. */
   const pick=$('hp-pick');
@@ -11147,7 +11336,119 @@ function paintHomeStart(){
   ensureFantasyButton();
   trimLongGroup();
   ensurePremiumCard();
+  paintHomeMode();
 }
+
+/* ─── THE SWITCHER ────────────────────────────────────────────────────────────────────────
+ *
+ * Three answers to one question, and only the ones this account can play are drawn: Defense
+ * asks canPlayDefense and Full Team asks canPlayFull, the same two calls that used to decide
+ * whether those doors existed. With only Offense left there is no question, so the control
+ * goes and the button simply starts a draft.
+ *
+ * THE CHOICE IS REMEMBERED on this device. Somebody who plays Defense every time should not
+ * have to say so every visit. A remembered mode this account can no longer play falls back
+ * to Offense rather than to a hidden tab. */
+const HOME_MODE_KEY='ps_home_mode';
+let homeMode=null;
+function homeModeList(){
+  const m=['off'];
+  if(canPlayDefense()) m.push('def');
+  if(canPlayFull()) m.push('full');
+  return m;
+}
+function homeModeNow(){
+  if(homeMode===null){
+    try{ homeMode=localStorage.getItem(HOME_MODE_KEY)||'off'; }catch(_){ homeMode='off'; }
+  }
+  return homeModeList().includes(homeMode)?homeMode:'off';
+}
+function setHomeMode(m){
+  if(m===homeModeNow()) return;
+  homeMode=m;
+  try{ localStorage.setItem(HOME_MODE_KEY,m); }catch(_){}
+  /* Asked for as soon as a side that needs it is picked, so the Spin that follows is warm. */
+  if(m!=='off') loadDefensePool().catch(()=>{});
+  paintHomeMode(true);
+}
+/* The Spin button's loading state, for the two sides that fetch a second pool first. */
+function homeBusy(on){
+  const b=$('b-start');
+  if(!b) return;
+  b.classList.toggle('hp-loading',!!on);
+  b.disabled=!!on;
+}
+/* WHAT THE LINE UNDER THE BUTTON SAYS. The numbers are read out of the constants, so a cap
+   that moves moves here too. Full Team's line is its old door's line: a saved season, a spent
+   day, or the shape of the run. */
+function homeRule(m){
+  if(m==='full'){
+    if(fullRead()) return 'Your season is saved. Pick up where you left off.';
+    if(dailyShut('full')){
+      const t=dailyCountdown(dailyResetsAt('full'));
+      return t?('Used today. Next run in '+t+'.'):'Used today. Next run tomorrow.';
+    }
+    return 'Twelve spins. '+M0(E.FULL_CAP_MUSD)+' cap.'+(dailyOn()?' One run a day.':'')+
+      (oneTeamReady()?'':' Needs a free account.');
+  }
+  return 'Six spins. '+M0(E.CONSTANTS.CAP_MUSD)+' cap.'+
+    (m==='def'&&!oneTeamReady()?' Needs a free account.':'');
+}
+function homeSwap(el,html){
+  if(!el||el.innerHTML===html) return;
+  el.innerHTML=html;
+  if(reduceMotion()) return;
+  el.classList.remove('swap'); void el.offsetWidth; el.classList.add('swap');
+}
+function paintHomeMode(animate){
+  const box=$('hp-mode'), intro=$('s-intro');
+  if(!box||!intro||typeof E==='undefined') return;
+  const list=homeModeList();
+  const m=homeModeNow();
+  box.hidden=list.length<2;
+  box.style.setProperty('--n',String(list.length));
+  box.style.setProperty('--i',String(Math.max(0,list.indexOf(m))));
+  box.querySelectorAll('.hp-tab').forEach((t)=>{
+    const on=list.includes(t.dataset.m);
+    t.hidden=!on;
+    t.setAttribute('aria-checked',t.dataset.m===m?'true':'false');
+    t.tabIndex=t.dataset.m===m?0:-1;
+  });
+  intro.classList.toggle('hm-off',m==='off');
+  intro.classList.toggle('hm-def',m==='def');
+  intro.classList.toggle('hm-full',m==='full');
+  /* The Full Team tab says what state its run is in, the way its door did. */
+  const note=$('hp-tab-full-note');
+  if(note){
+    note.textContent=list.includes('full')
+      ?(fullRead()?'Resume':(dailyShut('full')?'Used today':(dailyOn()?'1 a day':'')))
+      :'';
+  }
+  const slots=m==='def'?E.DEFENSE_SLOTS:(m==='full'?null:E.SLOTS);
+  const sl=$('hp-slots');
+  const slHtml=slots?slots.join(' &middot; '):'Six on offense &middot; six on defense';
+  if(animate) homeSwap(sl,slHtml); else if(sl) sl.innerHTML=slHtml;
+  const ru=$('hp-rule');
+  if(animate) homeSwap(ru,homeRule(m)); else if(ru) ru.textContent=homeRule(m);
+  const go=document.querySelector('#b-start .hp-go-l');
+  if(go) go.textContent=(m==='full'&&fullRead())?'Resume Full Team':'Spin your first pick';
+  heroSwitch();
+}
+/* Wired once. Arrow keys move between the tabs the way a radio group does. */
+(function(){
+  const box=$('hp-mode');
+  if(!box) return;
+  box.querySelectorAll('.hp-tab').forEach((t)=>{ t.onclick=()=>setHomeMode(t.dataset.m); });
+  box.addEventListener('keydown',(e)=>{
+    if(e.key!=='ArrowRight'&&e.key!=='ArrowLeft') return;
+    const list=homeModeList();
+    const i=list.indexOf(homeModeNow());
+    const n=list[(i+(e.key==='ArrowRight'?1:list.length-1))%list.length];
+    e.preventDefault();
+    setHomeMode(n);
+    const t=$('hp-tab-'+n); if(t) t.focus();
+  });
+})();
 
 /*
  * WHO IS OFFERED THE STORE, and the answer is the same rule the doors use: somebody who
@@ -11309,8 +11610,8 @@ function ensureLongGroup(){
   /* AFTER WHICHEVER STARTER IS SHOWING. The split and the lone Start a run are the same
      slot wearing two faces and only one is ever in the layout, so this anchors to the one
      that is rather than to a fixed id. */
-  const split=$('hp-split'), one=$('b-start');
-  const top=(split&&!split.hidden)?split:one;
+  /* UNDER THE LINE BELOW THE SPIN BUTTON, which is the last thing that belongs to it. */
+  const top=$('hp-rule')||$('b-start');
   if(!top||!top.parentNode) return box;
   if(box.previousSibling!==top) top.parentNode.insertBefore(box,top.nextSibling);
   return box;
@@ -12979,6 +13280,7 @@ function beginFullDraft(){
   if(dailyShut('full')) return dailyStop('full');
   const b=$('b-start-full');
   if(b){ b.disabled=true; b.classList.add('hp-loading'); }
+  homeBusy(true);
   /* THE CATCH IS ON THE FETCH AND NOTHING ELSE.
      Chained as .then(...).catch(...) it also caught anything beginDraft threw, and the
      first thing beginDraft threw was the field renderer reading a coordinate for a chip
@@ -12991,6 +13293,7 @@ function beginFullDraft(){
     beginDraft({full:true});
   },()=>{
     if(b){ b.disabled=false; b.classList.remove('hp-loading'); }
+    homeBusy(false);
     toast('Couldn\'t load the defensive players. Check your connection and try again.');
   });
 }
@@ -13008,6 +13311,7 @@ function beginDefenseDraft(){
   }
   const b=$('b-start-def');
   if(b){ b.disabled=true; b.classList.add('hp-loading'); }
+  homeBusy(true);
   /* Two arguments rather than a chained .catch, for the reason written out in
      beginFullDraft: a chained catch reports a bug in the draft as a failed download. */
   loadDefensePool().then(()=>{
@@ -13015,6 +13319,7 @@ function beginDefenseDraft(){
     beginDraft({defense:true});
   },()=>{
     if(b){ b.disabled=false; b.classList.remove('hp-loading'); }
+    homeBusy(false);
     toast('Couldn\'t load the defensive players. Check your connection and try again.');
   });
 }
@@ -22634,41 +22939,86 @@ const HERO_SPOTS=[
    player-seasons mostly surfaces people nobody recognizes, which makes the game look like it
    is about obscure players when it is about the famous ones. */
 const HERO_TOP_N=20;
-let heroPoolCache=null;
+/* ONE CACHE PER SIDE OF THE BALL. The defensive pool is a second download, so its half is
+   built the first time the switcher asks for it and not before. */
+const heroPoolCache={};
 
-function heroPool(){
-  if(heroPoolCache) return heroPoolCache;
+function heroPool(side){
+  side=side||'off';
+  if(heroPoolCache[side]) return heroPoolCache[side];
+  const src=side==='def'?(DDATA&&DDATA.players):(DATA&&DATA.players);
+  if(!src) return null;
   const by={};
-  for(const p of DATA.players)(by[p.position] ??= []).push(p);
+  for(const p of src)(by[p.position] ??= []).push(p);
   for(const k in by){
     by[k].sort((a,b)=>b.ppr_ppg_mean-a.ppr_ppg_mean);
     by[k]=by[k].slice(0,HERO_TOP_N);
   }
-  heroPoolCache=by;
-  return heroPoolCache;
+  heroPoolCache[side]=by;
+  return by;
 }
 
-/* Three signings, on three different spots, each filled by somebody who can actually play
-   there. The FLEX spot takes a back, a receiver or a tight end, which is the same rule the
-   real draft enforces. */
-function heroPicks(){
-  const pool=heroPool();
-  const spots=HERO_SPOTS.map((sp,i)=>i);
+/* ─── THE HERO FIELD FOLLOWS THE SWITCHER ─────────────────────────────────────────────────
+ *
+ * TWELVE CHIPS, SIX A SIDE, and they are never torn down. A switch changes where each one
+ * STANDS, and the CSS transition on left and top does the rest: the side you left runs off
+ * its own end of the field, the side you picked runs on, and on Full Team both line up either
+ * side of one line of scrimmage. Rebuilt instead, a switch would be a cut, and the whole
+ * point of the control is that you watch your answer arrive.
+ *
+ * The offensive spots are HERO_SPOTS, unchanged. The defensive ones are SPOT_FALLBACK_DEF's
+ * own coordinates, which is the formation the defense draft opens on. On Full Team both are
+ * folded toward the middle by fullY(), the same mapping the Full Team draft field uses, so
+ * the front page draws the picture that mode actually draws. */
+const HERO_DEF_SPOTS=[
+  {label:'DL',   left:30, top:64},
+  {label:'DL',   left:70, top:64},
+  {label:'LB',   left:50, top:44},
+  {label:'DB',   left:12, top:24},
+  {label:'DB',   left:88, top:24},
+  {label:'FLEX', left:32, top:24},
+];
+const HERO_ALL=[
+  ...HERO_SPOTS.map((sp,i)=>({k:'o'+i,side:'off',sp})),
+  ...HERO_DEF_SPOTS.map((sp,i)=>({k:'d'+i,side:'def',sp})),
+];
+/* WHERE A SIGNING CAN STAND ON A FULL FIELD. Twelve men on a field this short means a
+   lineman's name lands on the receiver across the line from him, and the back's runs off the
+   bottom. So on Full Team the front page only signs where a name has room; the other chips
+   are still on the field, empty, so the formation reads whole. */
+const HERO_FULL_OK=new Set(['o0','o2','o3','o4','o5','d3','d4','d5']);
+let heroMode='off';
+
+function heroAt(h,mode){
+  if(mode==='full') return {left:h.sp.left, top:fullY(h.sp.top,h.side==='def'), shown:true};
+  if(mode===h.side) return {left:h.sp.left, top:h.sp.top, shown:true};
+  /* Off its own end of the field: the offense leaves by the bottom, the defense by the top. */
+  return {left:h.sp.left, top:h.side==='off'?122:-22, shown:false};
+}
+
+/* Three signings, on three different spots in the formation on screen, each filled by
+   somebody who can actually play there. A FLEX takes any position on its own side, which is
+   the same rule the real draft enforces. */
+function heroPicks(mode){
+  mode=mode||heroMode;
+  const spots=HERO_ALL.filter(h=>mode==='full'?HERO_FULL_OK.has(h.k):h.side===mode);
   for(let i=spots.length-1;i>0;i--){
     const j=Math.floor(Math.random()*(i+1)); [spots[i],spots[j]]=[spots[j],spots[i]];
   }
   const out=[];
-  for(const at of spots){
+  for(const h of spots){
     if(out.length>=3) break;
-    const label=HERO_SPOTS[at].label;
-    const allowed=label==='FLEX'?['RB','WR','TE']:[label];
+    const pool=heroPool(h.side);
+    if(!pool) continue;
+    const label=h.sp.label;
+    const allowed=label==='FLEX'?(h.side==='def'?['DL','LB','DB']:['RB','WR','TE']):[label];
     const pos=allowed[Math.floor(Math.random()*allowed.length)];
     const cand=pool[pos];
     if(!cand||!cand.length) continue;
     const p=cand[Math.floor(Math.random()*cand.length)];
     const ts=DATA.byTeamSeasonId[p.team_season_id];
     if(!ts) continue;
-    out.push({at, season:p.season, team:ts.display.replace(/^\d{4}\s+/,''),
+    out.push({k:h.k, season:p.season, team:ts.display.replace(/^\d{4}\s+/,''),
       fr:p.franchise, pos, last:lastName(p.name)});
   }
   return out;
@@ -22697,25 +23047,89 @@ function heroFaces(){
 
 function heroChips(){
   const f=$('h-field');
-  f.querySelectorAll('.chip').forEach(c=>c.remove());
-  /* Spots are used exactly as designed. An earlier version squeezed them into a "safe band"
-     computed from the field's height so labels always fit, and that was the wrong trade: it
-     moved every bubble, and pushed the top row hard against the field's edge. Nothing moves
-     now; the chips whose label would not fit below flip it above instead. */
-  HERO_SPOTS.forEach((sp,i)=>{
-    const on=heroFilled.find(x=>x.at===i);
-    const el=document.createElement('div');
-    el.className='chip '+(on?'filled':'empty')+(on&&on.fresh?' pop':'');
-    el.style.left=sp.left+'%'; el.style.top=sp.top+'%';
+  if(!f) return;
+  /* Spots are used exactly as designed, and every chip is updated in place rather than
+     rebuilt, so a chip that changes position slides there instead of reappearing. */
+  HERO_ALL.forEach((h)=>{
+    let el=f.querySelector('.chip[data-k="'+h.k+'"]');
+    const at=heroAt(h,heroMode);
+    if(!el){
+      el=document.createElement('div');
+      el.dataset.k=h.k;
+      el.style.left=at.left+'%'; el.style.top=at.top+'%';
+      f.appendChild(el);
+    }
+    const on=at.shown?heroFilled.find(x=>x.k===h.k):null;
+    el.className='chip '+(on?'filled':'empty')+(on&&on.fresh?' pop':'')+(at.shown?'':' gone');
+    el.style.left=at.left+'%'; el.style.top=at.top+'%';
     const style=on?' style="background:linear-gradient(160deg,var(--'+on.pos.toLowerCase()+
       '),rgba(0,0,0,.45))"':'';
-    el.innerHTML='<div class="disc"'+style+'><span class="dl">'+(on?on.pos:sp.label)+
+    el.innerHTML='<div class="disc"'+style+'><span class="dl">'+(on?on.pos:h.sp.label)+
       '</span></div>'+(on?'<div class="lab"><div class="who">'+esc(on.last)+
       '</div><div class="yr">'+tcPlate(on.fr,on.season)+' '+on.season+
       '</div></div>':'');
-    f.appendChild(el);
     if(on) on.fresh=false;
   });
+}
+
+/* THE MARKINGS FOR EACH SIDE ARE THE DRAFT FIELD'S OWN: an end zone for the offense, the same
+   plus a line of scrimmage for the defense, and the open field with both units for Full
+   Team. They sit in a layer of their own under the chips so a switch can fade one set out
+   and the next in, rather than repainting the grass under twelve men who are mid-run. */
+function heroMarkings(mode,fade){
+  const f=$('h-field');
+  if(!f) return;
+  const kind=mode==='full'?'full':mode==='def';
+  const old=[...f.querySelectorAll('.hmk')];
+  /* Anything else a previous boot wrote straight into the field goes too. */
+  [...f.children].forEach(c=>{ if(!c.classList.contains('hmk')&&!c.classList.contains('chip')) c.remove(); });
+  const mk=document.createElement('div');
+  mk.className='hmk'+(fade&&old.length?' out':'');
+  mk.innerHTML=fieldMarkings(kind);
+  f.insertBefore(mk,f.firstChild);
+  f.classList.toggle('fullfield',mode==='full');
+  f.classList.toggle('pick-off',mode==='full');
+  f.classList.toggle('pick-def',mode==='full');
+  if(fade&&old.length){
+    requestAnimationFrame(()=>requestAnimationFrame(()=>{
+      mk.classList.remove('out');
+      old.forEach(o=>o.classList.add('out'));
+      setTimeout(()=>old.forEach(o=>o.remove()),420);
+    }));
+  }else old.forEach(o=>o.remove());
+}
+
+/* THE SWITCH ITSELF. Called by the switcher, and by paintHomeMode whenever the mode the page
+   is showing stops matching the one that is allowed (a signed out visitor's saved choice of
+   Defense, say, before the account has answered). */
+function heroSwitch(){
+  if(!DATA) return;
+  const want=homeModeNow();
+  if(want===heroMode) return;
+  heroMode=want;
+  const f=$('h-field');
+  if(!f) return;
+  heroMarkings(want,true);
+  /* One man at a time rather than all six together: the cascade is what reads as a unit
+     running on, where a block moving as one reads as a slide changing. */
+  const chips=[...f.querySelectorAll('.chip')];
+  chips.forEach((c,i)=>{ c.style.transitionDelay=(HERO_REDUCE?0:(i%6)*45)+'ms'; });
+  heroChips();
+  setTimeout(()=>chips.forEach(c=>{ c.style.transitionDelay=''; }),1100);
+  if(!HERO_REDUCE){
+    const sw=document.createElement('div');
+    sw.className='hsweep';
+    f.appendChild(sw);
+    setTimeout(()=>sw.remove(),900);
+  }
+  /* AND THE LOOP STARTS AGAIN ON THE NEW SIDE, once the runners have arrived. heroStop
+     bumps heroRun, which is what cancels a loop in the middle of a spin. */
+  if(HERO_REDUCE){ heroStatic(); return; }
+  if(heroRunning){
+    heroStop();
+    const seq=++heroRun;
+    setTimeout(()=>{ if(seq===heroRun&&heroRunning) heroLoop(seq); },650);
+  }
 }
 
 /* A reel with nothing in it yet. Three faces and no transform, so the placeholder
@@ -22744,10 +23158,11 @@ function heroReset(){
 /* No animation at all for anyone who has asked their device for less of it. They
    get the end of the sequence held still, which is the same information. */
 function heroStatic(){
-  const picks=heroPicks();
-  const last=picks[picks.length-1];
+  const picks=heroPicks(heroMode);
   heroFilled=picks.map(p=>({...p}));
   heroChips();
+  const last=picks[picks.length-1];
+  if(!last) return;
   heroSettle($('h-reel-y'),['2004',String(last.season),'2019'],String(last.season));
   heroSettle($('h-reel-t'),['Tennessee Titans',last.team,'Indianapolis Colts'],last.team);
   $('h-box-y').className='reelbox year done';
@@ -22760,10 +23175,16 @@ async function heroLoop(seq){
   const live=()=>seq===heroRun;
   while(live()){
     heroFilled=[]; heroChips(); heroReset();
+    /* A side of the ball whose people have not arrived yet waits for them. The download is
+       the defense draft's own, so the wait is paid once and the draft then starts warm. */
+    if(heroMode!=='off'&&!DDATA){
+      try{ await loadDefensePool(); }catch(_){ return; }
+      if(!live()) return;
+    }
     await heroNap(HERO.gap);
     /* Drawn per loop, not per page load, so the animation is different the second time
        round rather than only different between visits. */
-    for(const pk of heroPicks()){
+    for(const pk of heroPicks(heroMode)){
       if(!live()) return;
       const spinYear=heroSpin($('h-reel-y'),faces.years,String(pk.season),HERO.year);
       await heroNap(HERO.stagger);
