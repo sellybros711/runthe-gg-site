@@ -37,7 +37,7 @@
 (function () {
   'use strict';
 
-  const BOARD_API_VERSION = 4;
+  const BOARD_API_VERSION = 5;
 
   const SB_URL = 'https://jcrrxqfpdelrmvjuihnm.supabase.co';
   const SB_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpjcnJ4cWZwZGVscm12anVpaG5tIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA3OTY5NjIsImV4cCI6MjA5NjM3Mjk2Mn0.wyjoZpa2yRW-l38-KMGqBvEgTlW9v1KheNye7csWAlM';
@@ -165,7 +165,7 @@
     /* A 404 is the table or the function missing. A message naming either is
        the same thing arriving as a 400 from a stale schema cache, which is a
        real state a Supabase project sits in for a minute after a migration. */
-    if (res.status === 404 || /rtf_runs|rtf_submit_run|rtf_board_modes|record_score|depth|rtf_plays|rtf_submit_(fix|trade|passes|conquest)/.test(msg)) {
+    if (res.status === 404 || /rtf_runs|rtf_submit_run|rtf_board_modes|record_score|depth|rtf_plays|rtf_submit_(fix|fix_season|trade|passes|conquest)/.test(msg)) {
       needsMigration = true;
     }
     lastError = { where, status: res.status, code: (body && body.code) || '', message: msg };
@@ -478,13 +478,18 @@
   const PLAY_COLS_116 = 'id,created_at,display_name,mode,day,score,' +
     'fix_ts,fix_slot,fix_out,fix_in,fix_odds,fix_base,replay_wins,replay_title,' +
     'passes,par,solved,chain,cq_wins,cq_lives,cq_cleared,cq_lost_to,cq_roster,cq_took';
-  /* 117 adds the trade's partner and both sides. SQL is deployed by hand and
-     this file by a push, so a database still on 116 answers a select naming
-     those columns with a 400, and every board on the page would go dark over
-     three columns only one detail line reads. So the read asks for them, and
-     on a refusal NAMING them asks again without and remembers. */
-  const PLAY_COLS_117 = PLAY_COLS_116 + ',fix_with,fix_outs,fix_ins';
-  let playCols117 = true;
+  /* LATER MIGRATIONS ADD COLUMNS, and SQL is deployed by hand while this file
+     ships by a push. A select naming a column the database does not have is a
+     400, and every board on the page would go dark over a column one detail
+     line reads. So the read asks for everything, and a refusal NAMING one of
+     these groups drops that group, asks again, and remembers. 117 added the
+     one-trade columns and 118 the season. */
+  const PLAY_OPTIONAL = [
+    { cols: ',fix_trades', test: /fix_trades/ },
+    { cols: ',fix_with,fix_outs,fix_ins', test: /fix_(with|outs|ins)/ },
+  ];
+  const playMissing = new Set();
+  const playCols = () => PLAY_COLS_116 + PLAY_OPTIONAL.filter((g, i) => !playMissing.has(i)).map((g) => g.cols).join('');
   const MODES = ['fix', 'passes', 'conquest'];
   const modeOk = (m) => MODES.indexOf(m) >= 0;
   const dayOk = (d) => d == null || (Number.isFinite(Number(d)) && Number(d) >= 1);
@@ -503,21 +508,34 @@
      same season, one or two back (supabase/117_hoops_trade.sql). A result
      saved by the first version was one man for one man and still files the
      way it always did, through 116's function. */
+  /* A Fix History result is a SEASON of trades now (118): up to four, each
+     one to three men and any picks out, one to three men back. A result
+     saved by an earlier version files the way it always did: one trade
+     through 117, one man for one man through 116. */
   async function submitFix(r) {
     const tail = {
       p_odds: roundTo(r.odds, 4), p_base: roundTo(r.base, 4),
       p_replay_wins: r.replay ? Math.round(r.replay.w) : null,
       p_replay_title: r.replay ? !!r.replay.title : null,
     };
-    const id = r.legacy || !r.ins
-      ? await rpc('submitFix', 'rtf_submit_fix', Object.assign({
-          p_day: Math.round(r.day), p_ts: r.ts, p_slot: Math.round(r.slot),
-          p_out: r.out, p_in: r.inKey,
-        }, tail))
-      : await rpc('submitFix', 'rtf_submit_trade', Object.assign({
-          p_day: Math.round(r.day), p_ts: r.ts, p_with: r.with,
-          p_outs: r.outs, p_ins: r.ins,
-        }, tail));
+    let id;
+    if (r.v === 2) {
+      id = await rpc('submitFix', 'rtf_submit_fix_season', Object.assign({
+        p_day: Math.round(r.day), p_ts: r.ts,
+        p_trades: (r.trades || []).map((t) => ({ w: t.w, with: t.with, outs: t.outs, picks: t.picks || [], ins: t.ins })),
+        p_headline: r.headline || null,
+      }, tail));
+    } else if (r.legacy || !r.with) {
+      id = await rpc('submitFix', 'rtf_submit_fix', Object.assign({
+        p_day: Math.round(r.day), p_ts: r.ts, p_slot: Math.round(r.slot),
+        p_out: r.out, p_in: r.inKey,
+      }, tail));
+    } else {
+      id = await rpc('submitFix', 'rtf_submit_trade', Object.assign({
+        p_day: Math.round(r.day), p_ts: r.ts, p_with: r.with,
+        p_outs: r.outs, p_ins: r.ins,
+      }, tail));
+    }
     return typeof id === 'number' ? id : null;
   }
   async function submitPasses(day, chain, par, solved) {
@@ -554,14 +572,15 @@
     const ask = (cols) => timed(base() + PLAYS + '?select=' + cols +
       '&order=score.desc,created_at.asc&limit=' + n + playScope(mode, day, true), { headers: headers() });
     try {
-      let res = await ask(playCols117 ? PLAY_COLS_117 : PLAY_COLS_116);
-      if (!res.ok && playCols117 && res.status === 400) {
+      let res = await ask(playCols());
+      for (let tries = 0; !res.ok && res.status === 400 && tries < PLAY_OPTIONAL.length; tries++) {
         let body = null;
         try { body = await res.clone().json(); } catch (e) { body = null; }
-        if (/fix_(with|outs|ins)/.test(String(body && body.message))) {
-          playCols117 = false;
-          res = await ask(PLAY_COLS_116);
-        }
+        const msg = String(body && body.message);
+        const hit = PLAY_OPTIONAL.findIndex((g, i) => !playMissing.has(i) && g.test.test(msg));
+        if (hit < 0) break;
+        playMissing.add(hit);
+        res = await ask(playCols());
       }
       if (!res.ok) return await fail('playTop', res);
       const rows = await res.json();

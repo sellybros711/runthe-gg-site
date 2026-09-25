@@ -2187,12 +2187,12 @@
       "sha": "0b4588cf96acbdd3"
     },
     "modes.js": {
-      "v": "3",
-      "sha": "ac8686ef5476bbc8"
+      "v": "4",
+      "sha": "00c2e520a7284d1e"
     },
     "board.js": {
-      "v": "4",
-      "sha": "7e7e648fe62e7ef7"
+      "v": "5",
+      "sha": "e377af19fb95be50"
     },
     "auth.js": {
       "v": "1",
@@ -2207,8 +2207,8 @@
       "sha": "d401cefb277986c4"
     },
     "modes-ui.js": {
-      "v": "3",
-      "sha": "b3f65abf28d52e36"
+      "v": "4",
+      "sha": "4e9868829eca480c"
     },
     "data/players.json": {
       "v": "5",

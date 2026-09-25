@@ -17,7 +17,7 @@
      ready to be reviewed. -->
 <meta name="robots" content="noindex, nofollow">
 <title>Run The Floor: NBA History Games | RunThe.GG</title>
-<meta name="description" content="Run The Floor: fix a real NBA team with one trade, pass the ball through real teammates, hold the court against history, or draft a starting five under a $120M cap.">
+<meta name="description" content="Run The Floor: fix a real NBA team at the trade deadline, pass the ball through real teammates, hold the court against history, or draft a starting five under a $120M cap.">
 <meta name="theme-color" content="#0d1117">
 <link rel="canonical" href="https://runthe.gg/hoops/">
 <!-- THE SHARE CARD.
@@ -35,7 +35,7 @@
 
      hoops/og.png is built by hoops/build/og.mjs from hoops/og-source.html. -->
 <meta property="og:title" content="Run The Floor: NBA History Games">
-<meta property="og:description" content="Run The Floor: fix a real NBA team with one trade, pass the ball through real teammates, hold the court against history, or draft a starting five under a $120M cap.">
+<meta property="og:description" content="Run The Floor: fix a real NBA team at the trade deadline, pass the ball through real teammates, hold the court against history, or draft a starting five under a $120M cap.">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="RunThe.GG">
 <meta property="og:url" content="https://runthe.gg/hoops/">
@@ -46,7 +46,7 @@
 <meta property="og:image:alt" content="Run The Floor: draft an NBA starting five under a $120M cap and play all 82 games. The five roster spots shown as PG, SG, SF, PF and C.">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Run The Floor: Free NBA History Games">
-<meta name="twitter:description" content="Fix a real NBA team with one trade, pass the ball through real teammates, hold the court against history, or draft a starting five under a $120M cap.">
+<meta name="twitter:description" content="Fix a real NBA team at the trade deadline, pass the ball through real teammates, hold the court against history, or draft a starting five under a $120M cap.">
 <meta name="twitter:image" content="https://runthe.gg/hoops/og.png?v=2">
 <meta name="twitter:image:alt" content="Run The Floor: draft an NBA starting five under a $120M cap and play all 82 games.">
 <link rel="manifest" href="manifest.webmanifest">
@@ -2790,7 +2790,7 @@
 <script src="engine.js?v=23"></script>
 <script src="run.js?v=11"></script>
 <script src="badges.js?v=1"></script>
-<script src="modes.js?v=3"></script>
+<script src="modes.js?v=4"></script>
 <!-- ACCOUNTS AND THE LEADERBOARD. All three are OPTIONAL: if the CDN is blocked
      or either file fails to load, the game runs exactly as it did, with runs
      kept in this browser and the board reporting itself unreachable. An account
@@ -2799,7 +2799,7 @@
      for it rather than reading window.supabase once: on a repeat visit the data
      comes out of cache in milliseconds while this is still in flight. -->
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="board.js?v=4"></script>
+<script src="board.js?v=5"></script>
 <script src="auth.js?v=1"></script>
 <!-- THE SHELF. cloudsave.js is the transport and is shared with the football and
      college games; cloud.js is this game's own policy about slots, progress and
@@ -2922,7 +2922,7 @@ var DAILY_DARE = 'Everyone got the same ' + NUMWORD(E.SLOTS.length) + ' spins.';
  * handle. It is also what carries the diagnosis: `lastError` says which of the
  * two halves is missing, in words, on the screen that would otherwise just be
  * empty. */
-var NEED_BOARD = 4;
+var NEED_BOARD = 5;
 var B = (window.RTF_BOARD && window.RTF_BOARD.API_VERSION === NEED_BOARD)
   ? window.RTF_BOARD
   : {
@@ -3632,7 +3632,7 @@ function frgFill(){
      it. Every number is read off the constants, never typed. */
   var steps = [
     '<b>Fix History</b>, every day. One real team that fell short. '
-      + 'Make one trade and see if they win it.',
+      + 'Work the phones through four trade windows and see if they win it.',
     '<b>Six Passes</b>, every day. Get the ball from one legend to another '
       + 'through real teammates.',
     '<b>Conquest.</b> Winners stay on. Beat real teams and take their best guys.',
@@ -9711,6 +9711,6 @@ boot();
 </script>
 <!-- AFTER the page, because it draws through window.RTF_PAGE, which the script
      above publishes. -->
-<script src="modes-ui.js?v=3"></script>
+<script src="modes-ui.js?v=4"></script>
 </body>
 </html>

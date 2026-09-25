@@ -9878,56 +9878,91 @@ to the same answer, and the guard says so.
 positions.** The best five by win shares alone fit PG, SG, SF, PF and C on only
 533 of 1,433 team-seasons, because plenty of great teams had three bigs.
 
-#### Fix History is a TRADE, with a club from the same season
+#### Fix History is a season of trade windows
 
 ```
-node hoops/check-modes.mjs            section 4 holds the market, section 7 walks it
-psql -d hoops_trade -f supabase/117_hoops_trade.sql
-psql -d hoops_trade -f supabase/test/hoops_trade_test.sql
+node hoops/check-modes.mjs            section 4 holds the windows, section 7 walks one
+psql -d hoops_season -f supabase/118_hoops_fix_season.sql
+psql -d hoops_season -f supabase/test/hoops_fix_season_test.sql
 ```
 
-The first version traded one starter for anybody since 1974 who cost no more.
-Asked for instead: a trade finder like The Perfect Season's Trade Machine, only
-with teams from that year, a realistic rebuild, and the bench tradable. So:
+Asked for, in two rounds. First a trade finder like The Perfect Season's Trade
+Machine, same season only, bench included. Then: one trade was too few, it
+should be three or four windows up to the deadline, each club should make one
+offer at most for a package, a package can be three players, and the team's
+draft picks can move too.
 
-- **One or two of your men on the block**, starters or bench, and `fxOffers` is
-  every one or two men on every other club THAT SEASON who pass the rule.
-- **The salary rule is the NBA's shape**: each side takes back no more than 125%
-  of what it sends, plus $0.1M. `salaryOk` is the one copy and the page's "offers
-  take back $X to $Y" line is the same arithmetic said as money.
-- **The finder is the whole market**, not a curated few, because finding the deal
-  is the game. On the 2021 Suns a star on the block draws about 420 offers from
-  29 clubs. The page sorts (points by default, which is the market's own trap)
-  and filters by spot, club and name. The guard rebuilds the market by brute
-  force and asserts the two lists are the same set.
-- **The bench is currency.** The engine plays five men, so a bench man matters as
-  salary that makes a bigger deal work, or as a man better than a starter.
+| window | opens after | a trade made here plays |
+|---|---|---|
+| Preseason | game 0 | all 82 and the playoffs |
+| Game 20 | 20 | games 21 to 82 and the playoffs |
+| Game 40 | 40 | 41 to 82 |
+| Trade deadline | 55 | the last 27 and the playoffs |
 
-**The coach starts the best five after the deal, and nobody sees it first.** The
-lineup is chosen by win shares, so previewing it for each offer would print the
-answer key a tap at a time. It appears once the trade is made.
+One trade or stand pat in each window, then the season plays to the next.
+
+**One offer per club, and it is the club's best FAIR one.** A club counts value
+at MARKET PRICE (points), so it sends the dearest package it can that is still
+no more than it receives. Salaries also match both ways (125% plus $0.1M), both
+rosters must still field a five, and each extra body it sends costs it
+`TRADE.BODY` so it prefers to send fewer. `check-modes` rebuilds one club's
+offer by brute force and asserts nothing legal beats it.
+
+**Picks are value without salary.** Three firsts at $7M and two seconds at $2M.
+Adding one lets you take back more than you send, up to what the salary rule
+allows, which is what a pick is for in a real deadline deal. There is no record
+of who owned what in 1987, so every club owns its own.
+
+**Who calls is drawn off the day and the window, never the package**, at 70% of
+clubs. Reshaping a package cannot reshuffle who is on the phone.
+
+**THE FRANCHISE PLAYER IS NOT FOR SALE.** Market price is points, so without it
+a club gave up its star for anything that added up to his salary: the first
+probe traded Pierce and Garnett for LeBron's 2009 and Booker for Durant's 2021,
+and a perfect-knowledge bot took the 2009 Celtics from 22% to 84%. A club's
+dearest man is untouchable.
+
+**The balance**, bots over five days with the star rule in:
+
+| day | as built | trading for points | trading for win shares (never shown) |
+|---|---|---|---|
+| 2011 Bulls | 8% | 0% | 58% |
+| 2021 Suns | 5% | 0% | 31% |
+| 2009 Celtics | 21% | 12% | 62% |
+| 2019 Bucks | 14% | 1% | 56% |
+| 2025 Nuggets | 11% | 0% | 48% |
+
+Chasing points makes every team worse, which is the trap, and reading value is
+the puzzle. The full `check-modes` run asserts both halves on three days.
+
+**The season is played in stretches.** `fxPlayStretches` draws from the rng in
+exactly playRun's order (the schedule, each game, the playoffs), with each
+stretch's games rated off the five who started then. So standing pat all
+season is the team as built, season for season (asserted), and **the games
+before a window never depend on what is done at it** (asserted), which is what
+lets the screen show a record between windows and keep it. The score is still
+the title odds over the day's 1,000 seeds; the one replay is the story.
+
+**Who starts after a trade is not shown before it is made.** The lineup is
+chosen by win shares, so previewing it per offer would print the answer key.
 
 **A LEGAL TRADE COULD HAVE NO LINEUP, and it shipped for one run of the walk.**
 `canCover` (a bipartite match over the whole roster) decides legality, and the
-lineup was `fiveOf` over the top NINE by win shares. Trade away the only guard in
-that nine and a guard sitting tenth makes the trade legal while the nine has no
-five, so the page hung on "Replaying history" for ever. `fxFiveAfter` looks down
-the whole bench when nine is not enough. The daily five stays nine deep, because
-widening it would move the calendar of teams. Section 4 asserts every star offer
-over twelve days has a lineup: 2,051 of 8,579 did not before the fix.
+lineup was `fiveOf` over the top NINE. Trade away the only guard in that nine
+while a guard sits tenth and the trade is legal with no five, so the page hung
+on "Replaying history" for ever. `fxLineup` looks down the whole bench when
+nine is not enough. The daily five stays nine deep, because widening it would
+move the calendar of teams.
 
-**Offers show the stat line and minutes, never win shares.** The market prices
-points, value is win shares, and knowing who was worth more than he was paid is
-the puzzle. Your OWN roster shows win shares, because you know your own team.
-Minutes are there because 4.3 rebounds in fourteen minutes and in thirty are
-different players.
+**Offers show the stat line and minutes, never win shares.** Your own roster
+shows win shares, because you know your own team.
 
-On the 2021 Suns the base odds are 5% and the best trade found by a quick search
-is about 27%: Booker and Crowder to Milwaukee for Giannis and Pat Connaughton.
-
-**A result saved by the first version still draws.** `fxNorm` reads the old
-`slot, out, inKey` shape as a one-for-one, and it files through 116's
-`rtf_submit_fix` rather than the new submit. The walk plants one and asserts both.
+**THREE SHAPES OF RESULT ARE READ AS ONE** by `fxNorm`: the first version's
+one-for-one (`slot, out, inKey`), the second's single trade (`with, outs, ins`)
+and this season (`trades`). Each files through the submit it was made for:
+116's `rtf_submit_fix`, 117's `rtf_submit_trade`, and 118's
+`rtf_submit_fix_season`. A season in progress lives under `rtf.fix.run.v2`, so a
+reload lands in the same window with the same trades.
 
 #### Six Passes: the ends are All-Stars, and the gap sets the par
 
@@ -9969,6 +10004,16 @@ par, and one account files one of each daily with the first standing.
 **Deploy 116 by hand.** Without it all three modes play and keep their results
 on the device, and every place line and leaderboard is empty, which looks like a
 network that is down. Row 26 of `launch_preflight.sql` asks for it.
+
+**Deploy 118 by hand as well**, row 28 of the preflight. A season of trades
+files through `rtf_submit_fix_season` and its `fix_trades` column, so without it
+every window plays and nothing reaches the board. The board's read drops a
+missing column group and asks again (`PLAY_OPTIONAL` in board.js), so no
+migration missing takes the other boards down with it. The server checks every
+shape it can (four trades at most, one a window, a man sent out was on the team
+or taken back earlier, a pick is one of the five and never sent twice, the
+headline was taken back) and cannot check the salary rule, the value rule or
+the odds.
 
 **Deploy 117 by hand too.** A trade files through `rtf_submit_trade`, which 116
 does not have, so without 117 every trade plays and nothing reaches the board.
