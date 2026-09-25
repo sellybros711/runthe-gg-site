@@ -1045,7 +1045,7 @@ function spin(run, data, constraint) {
 function respin(run, data, kind) {
   const which = kind === 'year' ? 'year' : 'team';
   const check = canRespin(run, which, data);
-  if (!check.ok) throw new Error(`cannot re-spin: ${check.reason}`);
+  if (!check.ok) throw new Error(`can't re-spin: ${check.reason}`);
   const draw = run.currentDraw;
   run.respinsUsed++;
   // The drawn team-season is consumed, you saw it and rejected it.
@@ -1075,7 +1075,7 @@ function sign(run, player, want) {
   if (!run.currentDraw) throw new Error('nothing drawn');
   if (!run.currentDraw.options.includes(pkey(player))) throw new Error('player not on this team');
   /* The same predicate the board uses, so a tile you can see is a tile you can take. */
-  if (!canFinishAfter(run, player, run.currentDraw.team_season_id)) throw new Error('cannot afford');
+  if (!canFinishAfter(run, player, run.currentDraw.team_season_id)) throw new Error('can\'t afford');
   const slot = (want === undefined || want === null)
     ? slotForPlayer(run, player)
     : (slotChoices(run, player).indexOf(want) >= 0 ? want : null);
@@ -1153,7 +1153,7 @@ function hireCoach(run, coach) {
     /* Checked against remaining() with any PREVIOUS hire already refunded, so changing your
        mind between two coaches is not blocked by the one you have not confirmed. */
     const had = (run.coach && run.coach.price_musd) || 0;
-    if (coach.price_musd > money(remaining(run) + had)) throw new Error('cannot afford him');
+    if (coach.price_musd > money(remaining(run) + had)) throw new Error('can\'t afford him');
   }
   run.coach = coach || null;
   /* HIS SCHEME COMES WITH HIM, always. It used to respect a plan the player had already
@@ -1219,7 +1219,7 @@ function finishHiring(run) {
 function beginOffseason(run, byKey, lastSeason) {
   if (!run.dynasty) throw new Error('not a dynasty');
   if (run.fired) throw new Error('you were fired');
-  if (run.phase !== PHASES.OVER) throw new Error('the season is not over');
+  if (run.phase !== PHASES.OVER) throw new Error('the season isn\'t over');
 
   /*
    * EVERY MAN HAS HIS OWN CLOCK, and that is the whole mode.
@@ -1461,7 +1461,7 @@ function finishOffseason(run) {
  */
 function ownerVerdict(run) {
   if (!run.dynasty) return null;
-  if (run.phase !== PHASES.OVER) throw new Error('the season is not over');
+  if (run.phase !== PHASES.OVER) throw new Error('the season isn\'t over');
   const o = run.outcome || {};
   const wins = o.regularWins ?? 0;
   /* THE EFFECTIVE BAR, so a lost boss's extra win is charged here and not just shown. */
@@ -1981,7 +1981,7 @@ function seasonChem(run) {
 /** Leave SEEDING and start the playoffs. */
 function startPlayoffs(run) {
   if (run.phase !== PHASES.SEEDING) throw new Error('not at seeding');
-  if (!run.playoffSeed.made) throw new Error('did not make the playoffs');
+  if (!run.playoffSeed.made) throw new Error('didn\'t make the playoffs');
   run.season.playoffRound = 0;
   run.phase = PHASES.PLAYOFFS;
   return run;

@@ -237,7 +237,7 @@
       var n = note('Letter D'), t = tiles('DUNCAN', { small: true, blank: true }), f = field('Type a name');
       var word = 'DUNCAN';
       return {
-        cap: ['First OR last name starts with the letter.', 'Rarer names score more. Two minutes, eight categories.'],
+        cap: ['First OR last name has to start with the letter.', 'Rarer names score more. Two minutes, eight categories.'],
         nodes: [n, t, f],
         acts: [{ at: 300, fn: function () { n.text('NBA · Power forwards'); } }]
           .concat(typeInto(f, 'Duncan', 700, 130))
@@ -269,9 +269,9 @@
       };
     },
     almamater: function () {
-      var n = note('NFL · Indianapolis Colts'), r = rows([{ t: 'Philip Rivers' }]), f = field('Name the school');
+      var n = note('NFL · Indianapolis Colts'), r = rows([{ t: 'Philip Rivers' }]), f = field('Type the school');
       return {
-        cap: ['Where did they go to college? Type it.', 'NC State, North Carolina State, either one counts.'],
+        cap: ['Where did they go to college? Type it.', 'NC State or North Carolina State. Either one counts.'],
         nodes: [n, r, f],
         acts: typeInto(f, 'NC State', 500, 120).concat([
           { at: 1900, fn: function () { f.good(true); r.cls(0, 'hit'); } },
@@ -284,7 +284,7 @@
     career: function () {
       var n = note('Career path'), r = rows([{ k: '1', t: '· · ·' }, { k: '2', t: '· · ·' }, { k: '3', t: '· · ·' }]), f = field('Name the player');
       return {
-        cap: ['A career, one club at a time.', 'Name him off the first club and it is worth 5.'],
+        cap: ['A career, one team at a time.', 'Name him off the first team and it’s worth 5.'],
         nodes: [n, r, f],
         acts: [
           { at: 400, fn: function () { r.text(0, 'Seattle Mariners'); } },
@@ -299,11 +299,11 @@
       };
     },
     match: function () {
-      var n = note('Find four that belong'), t = tiles('ABCDEFGH', { small: true });
+      var n = note('Find four that go together'), t = tiles('ABCDEFGH', { small: true });
       var NAMES = ['Bird', 'Rice', 'Ruth', 'Ali', 'Magic', 'Judge', 'Brady', 'Kobe'];
       var t2 = tiles('        ', { small: true });
       return {
-        cap: ['Sixteen names hide four secret groups.', 'Lock four that share a thread. Four wrong ends the day.'],
+        cap: ['Sixteen names. Four hidden groups.', 'Lock in four that go together. 4 wrong and your day’s over.'],
         nodes: [n, t, t2],
         acts: [
           { at: 200, fn: function () { for (var i = 0; i < 8; i++) t.set(i, NAMES[i][0], null); } },
@@ -321,7 +321,7 @@
     rollcall: function () {
       var n = note('Spurs · 2009-10 · 0:90'), r = rows([{ k: '1', t: '· · ·' }, { k: '2', t: '· · ·' }, { k: '3', t: '· · ·' }]), f = field('Name a player');
       return {
-        cap: ['One club, one season, ninety seconds.', 'Name as many of that roster as you can.'],
+        cap: ['One team, one season, 90 seconds.', 'Name as many players on that roster as you can.'],
         nodes: [n, r, f],
         acts: typeInto(f, 'Tim Duncan', 300, 90).concat([
           { at: 1300, fn: function () { r.text(0, 'Tim Duncan'); r.val(0, '#21'); r.cls(0, 'hit'); f.text(''); } }
@@ -337,7 +337,7 @@
       var r = rows([{ k: 'A', t: 'LeBron James' }, { k: '', t: '· · ·' }, { k: '', t: '· · ·' }, { k: 'B', t: 'Ray Allen' }]);
       var f = field('Name a teammate');
       return {
-        cap: ['Get from one player to the other through teammates.', 'Each name has to have played alongside the one above.'],
+        cap: ['Get from one player to the other through teammates.', 'Each name has to have played with the one above.'],
         nodes: [r, f],
         acts: typeInto(f, 'Dwyane Wade', 400, 85).concat([
           { at: 1450, fn: function () { r.text(1, 'Dwyane Wade'); r.cls(1, 'hit'); f.text(''); } },
@@ -352,7 +352,7 @@
       var n = note('Most career home runs');
       var r = rows([{ k: '1', t: 'Babe Ruth', v: '714' }, { k: '2', t: 'Barry Bonds', v: '762' }, { k: '3', t: 'Hank Aaron', v: '755' }]);
       return {
-        cap: ['Five players, one career stat, most at the top.', 'Tap two to swap them. Five tries.'],
+        cap: ['Five players, one career stat. Most goes on top.', 'Tap two to swap them. You get 5 tries.'],
         nodes: [n, r],
         acts: [
           { at: 500, fn: function () { r.cls(0, 'out'); r.cls(1, 'out'); n.text('Swap these two'); } },
@@ -369,7 +369,7 @@
       var t = tiles('PSDCH', { small: true });
       var f = field('Guess any NBA player');
       return {
-        cap: ['One mystery player. Every guess tells you more.', 'Green matches, gold is close, arrows point up or down.'],
+        cap: ['One mystery player. Every guess tells you more.', 'Green means a match. Gold means close. Arrows point up or down.'],
         nodes: [n, f, t],
         acts: typeInto(f, 'Kevin Durant', 300, 85).concat([
           { at: 1400, fn: function () { t.set(0, 'F', 'hit'); } },
@@ -385,7 +385,7 @@
     table: function () {
       var n = note('Michael Jordan · Bulls'), t = tiles('  ', { blank: true }), f = field('What number?');
       return {
-        cap: ['What number did he wear for that club?', 'Exact is a bullseye. Within two still counts.'],
+        cap: ['What number did he wear for that team?', 'Exact is a bullseye. Off by 2 or less still counts.'],
         nodes: [n, t, f],
         acts: [
           { at: 600, fn: function () { t.set(0, '2', 'on'); } },
@@ -398,10 +398,10 @@
       };
     },
     oddone: function () {
-      var n = note('Four share a thread');
+      var n = note('Four go together');
       var r = rows([{ t: 'Tom Brady' }, { t: 'Joe Montana' }, { t: 'Jerry Rice' }, { t: 'Peyton Manning' }]);
       return {
-        cap: ['Four belong together, one does not.', 'Spot it, then name the link for a second point.'],
+        cap: ['Four have something in common. One doesn’t.', 'Spot it, then name the link for a second point.'],
         nodes: [n, r],
         acts: [
           { at: 900, fn: function () { r.cls(2, 'out'); } },
@@ -416,7 +416,7 @@
       var n = note('Career points');
       var r = rows([{ t: 'Kobe Bryant', v: '33,643' }, { t: 'Dirk Nowitzki', v: '?' }]);
       return {
-        cap: ['One stat, two players. Higher or lower?', 'Call every athlete that follows until you miss.'],
+        cap: ['One stat, two players. Higher or lower?', 'Keep calling it until you miss.'],
         nodes: [n, r],
         acts: [
           { at: 800, fn: function () { n.text('Higher or lower?'); r.cls(1, 'out'); } },

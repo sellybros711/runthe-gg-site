@@ -93,7 +93,7 @@ head('1. the field is a field: seeded, ordered, and its own shape');
   /* COVERAGE IS HALF THE CHECK. A reader that finds nothing lets every
      assertion below pass vacuously, which is how an extractor in this repo
      has been silently wrong three times. */
-  const WANT = ['brkSeedOf', 'brkColumnWins', 'brkOdds', 'brkResolve',
+  const WANT = ['brkSeedOf', 'brkColumnWins', 'brkLadder', 'brkOdds', 'brkResolve',
     'BRK_TREE', 'BRK_OVER'];
   const missing = WANT.filter((n) => !fnSource(n));
   is(missing, [], 'every function this section reads is still in the page');
@@ -102,7 +102,7 @@ head('1. the field is a field: seeded, ordered, and its own shape');
   const src = WANT.map(fnSource).join('\n');
   const lift = new Function('E', src + '\nreturn {'
     + WANT.join(', ') + '};')(E);
-  const { brkSeedOf, brkColumnWins, brkOdds, brkResolve, BRK_TREE } = lift;
+  const { brkSeedOf, brkColumnWins, brkLadder, brkOdds, brkResolve, BRK_TREE } = lift;
 
   /* THE TREE IS THE REAL ONE. No reseeding in the NBA, so 1/8 meets 4/5 and
      2/7 meets 3/6, and every seed appears exactly once. */
@@ -146,6 +146,33 @@ head('1. the field is a field: seeded, ordered, and its own shape');
   ok(cols > 300, `the sweep ran (${cols} columns)`);
   is0(anchored, "the player's own seat keeps the player's own record");
   is0(mono, 'no seat in a column has more wins than the seat above it');
+
+  /* A CONFERENCE IS AS WIDE AS A REAL ONE. The walk used to step one to three
+     wins a seed and nothing else, so a far conference anchored on a 67 win top
+     seed drew a 56 win 8 seed and every club in it was better than every club
+     in the player's own. Driven the way brkBuild anchors the far side, and the
+     near side from a player at every seed, the 8 seed has to sit in play-in
+     territory and the column has to be about as wide as the NBA's. */
+  let narrow = 0, fat8 = 0, farCols = 0;
+  for (let i = 0; i < 400; i++) {
+    const rng = E.createSeededRNG(90000 + i);
+    const top = brkLadder(1) - 1 + Math.floor(rng() * 5);
+    const col = brkColumnWins(1, top, rng);
+    farCols++;
+    if (col[0] - col[7] < 14) narrow++;
+    if (col[7] > E.CONSTANTS.TOP_SIX_WINS) fat8++;
+  }
+  let nearFat8 = 0;
+  for (let seed = 1; seed <= 7; seed++) {
+    for (let w = 43; w <= 70; w++) {
+      const col = brkColumnWins(seed, w, E.createSeededRNG(seed * 77 + w));
+      if (seed < 8 && col[7] > E.CONSTANTS.TOP_SIX_WINS + 2) nearFat8++;
+    }
+  }
+  ok(farCols === 400, 'the far conference sweep ran');
+  is0(narrow, 'the far conference runs at least fourteen wins from its 1 seed to its 8');
+  is0(fat8, 'and its 8 seed never has a top six record');
+  is0(nearFat8, "and the player's own conference never draws an 8 seed well clear of the top six line");
 
   /* The reveal's own odds. Nothing downstream reads them, so what matters is
      that they are a probability and that the better seed is never the
@@ -215,7 +242,7 @@ head('3. the whole field, driven through the runs that break it');
      rebuild of the join rather than a test of it. Its only outside
      dependencies are the engine and the run, so the run is the fixture. */
   const WANT = ['BRK_CONFS', 'BRK_TREE', 'BRK_OVER', 'brkWins', 'brkSeedOf',
-    'brkColumnWins', 'brkOdds', 'brkResolve', 'brk', 'brkBuild', 'brkEntrant',
+    'brkColumnWins', 'brkLadder', 'brkOdds', 'brkResolve', 'brk', 'brkBuild', 'brkEntrant',
     'brkGame', 'brkMine', 'brkColumn', 'brkKnown'];
   const missing = WANT.filter((n) => !fnSource(n));
   is(missing, [], 'the whole field is still in the page');

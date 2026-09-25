@@ -388,10 +388,13 @@ console.log('\nTHE FIELD AND THE BOARD AGREE ABOUT WHICH SIDE IS PICKING');
   const { page, boom } = await open(browser);
   ok('the door is built', await page.evaluate(() =>
     !!document.getElementById('b-start-full')));
-  /* THE FILL IS PART OF THE DOOR, not decoration to be dropped in a refactor. Without
-     hp-ft this card is the neutral grey shared with the Trade Machine, which on a phone
-     between a saturated pair and a gold card reads as a control you cannot press. */
-  ok('  and carries its own fill', await page.evaluate(() =>
+  /* ITS OWN COLOUR IS PART OF THE DOOR, not decoration to be dropped in a refactor.
+     Without hp-ft this card is the neutral grey shared with the Trade Machine, which on a
+     phone between a saturated pair and a gold card reads as a control you cannot press.
+     Since the front page's calm pass the colour is on the EDGE rather than the fill (one
+     filled door on the page, the pair; every other mode outlined in its own colour), and
+     the class is still what carries it. */
+  ok('  and carries its own colour', await page.evaluate(() =>
     (document.getElementById('b-start-full') || {}).classList.contains('hp-ft')));
 
   await page.evaluate(() => window.__t.beginFullDraft());
@@ -1777,7 +1780,7 @@ console.log('\nONE RUN A DAY, AND A RUN IN PROGRESS IS NEVER TAKEN');
           const txt = (document.getElementById('sheet-in').innerText || '')
             .replace(/\s+/g, ' ');
           return { n: rows.length, txt,
-            note: (txt.match(/\d+ of the \w+ could not be looked up here/) || [''])[0] };
+            note: (txt.match(/\d+ of the \w+ could(?:n't| not) be looked up here/) || [''])[0] };
         };
         T.runDetail(r);
         /* Synchronous, so this is the sheet before the download can possibly have landed. */

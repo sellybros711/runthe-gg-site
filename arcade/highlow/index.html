@@ -12,20 +12,20 @@
   if(t!=='light'&&t!=='dark'){ t=(window.matchMedia&&matchMedia('(prefers-color-scheme: light)').matches)?'light':'dark'; try{localStorage.setItem('runthegrid_theme',t);}catch(e){} }
   document.documentElement.setAttribute('data-theme',t); })();
 </script>
-<meta name="description" content="High Low: an endless higher-or-lower streak game for Arcade Card members. Pick a category, then call every next player higher or lower." />
+<meta name="description" content="High Low is an endless higher-or-lower streak game for Arcade Card members. Pick a category. Then call each next player higher or lower." />
 <link rel="icon" type="image/png" href="/arcade/assets/arcade-icon.png?v=3" />
 <link rel="apple-touch-icon" href="/arcade/assets/arcade-apple-180.png?v=2" />
 <meta property="og:type" content="website" />
 <meta property="og:site_name" content="RunThe.GG" />
 <meta property="og:title" content="High Low: Endless Sports Streak Game" />
-<meta property="og:description" content="Pick a category, then call every next player higher or lower. Card members only." />
+<meta property="og:description" content="Pick a category. Call each next player higher or lower. Card members only." />
 <meta property="og:url" content="https://runthe.gg/arcade/highlow/" />
 <meta property="og:image" content="https://runthe.gg/arcade/assets/arcade-share.png?v=3" />
 <meta property="og:image:width" content="1200" />
 <meta property="og:image:height" content="630" />
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:title" content="High Low: Endless Sports Streak Game" />
-<meta name="twitter:description" content="Pick a category, then call every next player higher or lower. Card members only." />
+<meta name="twitter:description" content="Pick a category. Call each next player higher or lower. Card members only." />
 <meta name="twitter:image" content="https://runthe.gg/arcade/assets/arcade-share.png?v=3" />
 <link rel="canonical" href="https://runthe.gg/arcade/highlow/" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -279,7 +279,7 @@ window.GA_ID='G-L29P5MRWKE';
       </div>
       <div class="kick" id="gateKick">Arcade Card exclusive</div>
       <h1 id="gateTitle">Members only</h1>
-      <p id="gateCopy">High Low is an endless higher-or-lower streak game reserved for Arcade Card members. Pick a category, then call every next player higher or lower for as long as you can.</p>
+      <p id="gateCopy">High Low is an endless higher-or-lower streak game for Arcade Card members. Pick a category. Then call each next player higher or lower for as long as you can.</p>
       <button class="getbtn" id="gateGet" type="button">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="5" width="19" height="14" rx="2.5"/><path d="M2.5 9.5h19"/></svg>
         <span id="gateGetLab">Get the Arcade Card</span>
@@ -293,7 +293,7 @@ window.GA_ID='G-L29P5MRWKE';
     <!-- step 1: pick a category -->
     <div class="setup" id="stepCategory">
       <div class="setuphead">Pick a category</div>
-      <div class="setupsub">Choose a stat or metric. You'll then pick your starting player from everyone we have for it, and call every next player higher or lower.</div>
+      <div class="setupsub">Pick a stat. Then pick your starting player and call each next player higher or lower.</div>
       <div id="catList"></div>
     </div>
 
@@ -309,7 +309,7 @@ window.GA_ID='G-L29P5MRWKE';
           <input id="searchInput" type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Search this category…" aria-label="Search for a player" aria-controls="results" />
         </div>
         <ul class="results" id="results" role="listbox" aria-label="Player matches"></ul>
-        <div class="noresults" id="noResults" style="display:none">No players match that. Try another name.</div>
+        <div class="noresults" id="noResults" style="display:none">No one by that name. Try another.</div>
       </div>
     </div>
   </section>
@@ -349,7 +349,7 @@ window.GA_ID='G-L29P5MRWKE';
           <span class="arr" aria-hidden="true">▼</span>LOWER<span class="sub">smaller number</span>
         </button>
       </div>
-      <div class="hint" id="playHint">Higher or lower than the baseline? Build the longest streak you can.</div>
+      <div class="hint" id="playHint">Higher or lower than the baseline? See how long you can go.</div>
     </div>
 
     <div class="lb" id="lb">
@@ -364,7 +364,7 @@ window.GA_ID='G-L29P5MRWKE';
         <div class="row"><span class="rk">2</span><span class="who">high_roller</span><span class="tm">19 in a row</span></div>
         <div class="row"><span class="rk">3</span><span class="who">card_shark</span><span class="tm">15 in a row</span></div>
       </div>
-      <div class="note" id="lbNote">Sample board. Sign in on RunThe.GG to post your run.</div>
+      <div class="note" id="lbNote">These are sample names. Sign in on RunThe.GG to get on the board.</div>
     </div>
   </section>
 
@@ -375,30 +375,30 @@ window.GA_ID='G-L29P5MRWKE';
   <span class="gj-chev" aria-hidden="true">▾</span>
 </summary>
 <div class="gj-body">
-<p>High Low is the Arcade's endless streak game. Pick a category, then face players two at a time and make one call over and over: is the next player higher or lower on that stat? Every correct call extends the run. One miss ends it.</p>
+<p>High Low is the Arcade’s endless streak game. Pick a category. You see players two at a time. Every time, it’s the same call: is the next player higher or lower on that stat? Every right call keeps your run going. Miss once and it’s over.</p>
 <ul>
-  <li>Choose your lane: NBA, NFL or MLB stat pools.</li>
-  <li>Each correct call reveals the real value and deals the next player.</li>
-  <li>There is no finish line. The run ends on your first wrong call.</li>
+  <li>Pick your sport: NBA, NFL or MLB stats.</li>
+  <li>Get it right and you see the real number. Then the next player comes up.</li>
+  <li>There’s no finish line. Your run ends on your first miss.</li>
 </ul>
-<h3>An endless game with a daily heartbeat</h3>
-<p>Your longest run is the score that matters, and the daily board resets the bragging rights every midnight local time. High Low is an Arcade Card game. A free RunThe.GG account gets one play of it, once ever. The Daily Crossword, Sportegories, Alma Mater and Career Path are free every day, with no account at all. The Card opens all twelve with no limit, plus the <a href="/arcade/archive/">Archive</a> of every past day. Five of the games also have NBA, NFL and MLB editions.</p>
-<h3>Surviving longer</h3>
+<h3>Scores and the daily board</h3>
+<p>Your longest run is your score. The daily board resets at midnight your time. High Low is an Arcade Card game. A free RunThe.GG account gets one play of it, once ever. The Daily Crossword, Sportegories, Alma Mater and Career Path are free every day, no account needed. The Card opens all twelve with no limit, plus the <a href="/arcade/archive/">Archive</a> of every past day. Five of the games also have NBA, NFL and MLB editions.</p>
+<h3>Tips</h3>
 <ul>
-  <li>Every correct call reveals the real value, and that number is the baseline for the next one. Play the gap, not the name.</li>
-  <li>Career totals reward long careers over great ones. Eighteen seasons usually beats nine, whoever the nine belonged to.</li>
-  <li>Eras do not compare on raw totals. Check when each player played before you back the bigger name.</li>
+  <li>Every right call shows you the real number. That number is the baseline for the next one. Play the gap, not the name.</li>
+  <li>Career totals favor long careers over great ones. 18 seasons usually beats 9, no matter who played the 9.</li>
+  <li>Different eras don’t line up on raw totals. Check when each guy played before you go with the bigger name.</li>
 </ul>
-<p>Warm up with the <a href="/arcade/table/">Number Game</a>, or test your radar in <a href="/arcade/guess/">Guess the Player</a>.</p>
+<p>Want more? Try the <a href="/arcade/table/">Number Game</a> or <a href="/arcade/guess/">Guess the Player</a>.</p>
 </div>
 </details>
-  <div class="foot">An Arcade Card exclusive inside <b>Run The Arcade</b> · <a href="/">RunThe.GG</a> · <a href="mailto:RunTheGames@outlook.com?subject=Run%20The%20Arcade%20data%20error">Spot a data error? Tell us</a> · <a href="/about.html">About</a> · <a href="/privacy.html">Privacy</a> · <a href="/terms.html">Terms</a></div>
+  <div class="foot">An Arcade Card exclusive inside <b>Run The Arcade</b> · <a href="/">RunThe.GG</a> · <a href="mailto:RunTheGames@outlook.com?subject=Run%20The%20Arcade%20data%20error">See something wrong? Let us know</a> · <a href="/about.html">About</a> · <a href="/privacy.html">Privacy</a> · <a href="/terms.html">Terms</a></div>
 </div>
 
 <div class="scrim hidden" id="scrim">
   <div class="sheet">
     <button class="x" id="mClose" type="button" aria-label="Close">✕</button>
-    <div class="sub-h" id="mSub">Your run ended</div>
+    <div class="sub-h" id="mSub">Your run’s over</div>
     <div class="runbig" id="mRun">0</div>
     <h2 id="mTitle">IN A ROW</h2>
     <div class="a-runline">
@@ -430,24 +430,24 @@ window.GA_ID='G-L29P5MRWKE';
 <script src="/arcade/dayroll.js?v=1"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="/arcade/board.js?v=21"></script>
-<script src="/arcade/leaderboard.js?v=14"></script>
+<script src="/arcade/leaderboard.js?v=15"></script>
 <script src="/arcade/alltime.js?v=3"></script>
 <script src="/arcade/auth.js?v=4"></script>
-<script src="/arcade/mycard.js?v=13"></script>
+<script src="/arcade/mycard.js?v=14"></script>
 <script src="/arcade/topbanner.js?v=9"></script>
-<script src="/arcade/auth-ui.js?v=6"></script>
-<script src="/arcade/card.js?v=20"></script>
-<script src="/arcade/referral.js?v=10"></script>
+<script src="/arcade/auth-ui.js?v=7"></script>
+<script src="/arcade/card.js?v=22"></script>
+<script src="/arcade/referral.js?v=11"></script>
 <script src="/arcade/sfx.js?v=2"></script>
-<script src="/arcade/share.js?v=8"></script>
+<script src="/arcade/share.js?v=9"></script>
 <script src="/arcade/result.js?v=1"></script>
 <script src="/arcade/resultart.js?v=2"></script>
-<script src="/arcade/gamemarks.js?v=3"></script>
+<script src="/arcade/gamemarks.js?v=4"></script>
 <!-- pregame.js gates the one free play of this Arcade Card game; calendar.js
      is what gives that gate the game's name and accent. -->
 <script src="/arcade/calendar.js?v=15"></script>
-<script src="/arcade/demo.js?v=3"></script>
-<script src="/arcade/pregame.js?v=25"></script>
+<script src="/arcade/demo.js?v=4"></script>
+<script src="/arcade/pregame.js?v=26"></script>
 <script src="/arcade/resultstats.js?v=2"></script>
 <script src="/arcade/modal-a11y.js?v=1"></script>
 <script>
@@ -622,8 +622,8 @@ window.GA_ID='G-L29P5MRWKE';
   function paintGate(){
     var out = signedIn();
     document.getElementById('gateCopy').textContent = out
-      ? 'High Low is an endless higher-or-lower streak game reserved for Arcade Card members. Pick a category, then call every next player higher or lower for as long as you can.'
-      : 'High Low is an endless higher-or-lower streak game reserved for Arcade Card members. A free account gets you one play of it, and the Daily Crossword, Sportegories, Alma Mater and Career Path are free every day with no account at all.';
+      ? 'High Low is an endless higher-or-lower streak game for Arcade Card members. Pick a category. Then call each next player higher or lower for as long as you can.'
+      : 'High Low is an endless higher-or-lower streak game for Arcade Card members. A free account gets you one play of it. The Daily Crossword, Sportegories, Alma Mater and Career Path are free every day, no account needed.';
     document.getElementById('gateGetLab').textContent = out ? 'Get the Arcade Card' : 'Create a free account';
   }
 
@@ -746,12 +746,12 @@ window.GA_ID='G-L29P5MRWKE';
   // active (their number is a moving total) - drawing the eye when it matters.
   function updateAsof(e){
     var el=document.getElementById('asofNote'); if(!el) return;
-    el.style.display=''; el.textContent='All numbers are updated through the end of the 2025 season.';
+    el.style.display=''; el.textContent='All numbers go through the end of the 2025 season.';
     el.classList.toggle('hot', isActive(e));
   }
   function nextOpponent(){
     var drawn=drawOpponent(cat, baseline);
-    if(!drawn){ toast('Out of fair matchups. Nice run!'); finish(); return; }
+    if(!drawn){ toast('No more fair matchups. Nice run!'); finish(); return; }
     opp=drawn.ent; oppVal=drawn.val;
     oppCard.classList.remove('revealed','correct','wrong');
     document.getElementById('oppName').textContent=opp.name;
@@ -817,9 +817,9 @@ window.GA_ID='G-L29P5MRWKE';
       prevBest:(prevBest>0?prevBest:null), isBest:(run>0 && run>prevBest), streak:(s.streak||0) }; }catch(e){}
     var sub;
     if(NEWBEST) sub='NEW PERSONAL BEST';
-    else if(prevBest>0 && run===prevBest) sub='Tied your best';
+    else if(prevBest>0 && run===prevBest) sub='Tied your best!';
     else if(run===0) sub='Better luck next run';
-    else sub='Your run ended';
+    else sub='Your run’s over';
     var subEl=document.getElementById('mSub'); subEl.textContent=sub; subEl.classList.toggle('newbest', NEWBEST);
     document.getElementById('lb').classList.add('on');
     setTimeout(function(){
@@ -850,7 +850,7 @@ window.GA_ID='G-L29P5MRWKE';
     try{
       if(window.RTGShare && RTGShare.send){ RTGShare.send(cardSpec()); return; }
     }catch(e){}
-    toast('Sharing unavailable');
+    toast('Can’t share from here');
   });
 
   // ---------- leaderboard rail ----------
@@ -861,13 +861,13 @@ window.GA_ID='G-L29P5MRWKE';
         if(rows===null) return;
         var pill=document.getElementById('lbPill'); if(pill) pill.textContent='Live';
         var samp=document.getElementById('lbSample'); if(!samp) return;
-        if(!rows.length){ samp.innerHTML='<div class="samplab">Today’s board</div><div class="note" style="margin:2px 0 0">Be the first to post a run today.</div>'; }
-        else{ var me=(RTG_BOARD.state().name||'').toLowerCase(), h='<div class="samplab">Longest runs today</div>';
+        if(!rows.length){ samp.innerHTML='<div class="samplab">Today’s board</div><div class="note" style="margin:2px 0 0">Nobody’s posted yet today. Be the first.</div>'; }
+        else{ var me=(RTG_BOARD.state().name||'').toLowerCase(), h='<div class="samplab">Top runs today</div>';
           for(var i=0;i<rows.length;i++){ var r=rows[i], nm=r.display_name||'Player', mine=me&&nm.toLowerCase()===me;
             h+='<div class="row'+(mine?' you':'')+'"><span class="rk">'+(i+1)+'</span><span class="who">'+esc(nm)+'</span><span class="tm">'+(r.run_len||0)+' in a row</span></div>'; }
           samp.innerHTML=h;
         }
-        var note=document.getElementById('lbNote'); if(note) note.textContent='Live board: longest run today wins. Sign in on RunThe.GG to post yours.';
+        var note=document.getElementById('lbNote'); if(note) note.textContent='Longest run today wins. Sign in to get on the board.';
       });
     }catch(e){}
   }
@@ -917,7 +917,7 @@ window.GA_ID='G-L29P5MRWKE';
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',go); else go();
 })();
 </script>
-<script src="/arcade/howto.js?v=22"></script>
+<script src="/arcade/howto.js?v=24"></script>
 <script>if (window.RTGHowto) RTGHowto.init('highlow');</script>
 </body>
 </html>

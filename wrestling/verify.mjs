@@ -56,7 +56,7 @@ const BLOCK = [
   'Elimination Chamber','Hell in a Cell','Survivor Series','Wrestle Kingdom','Premium Live Event',
   // ring names the roster, the mentors and the personalities moved off
   'Stone Cold','The Undertaker','Triple H','Karrion Kross',"'The Rock'",'Mistico','Effy','Hulk Hogan','Hulkamania',
-  'Ultimate Warrior','El Santo','Rey Mysterio','Cero Miedo','Tribal Chief',
+  'Ultimate Warrior','El Santo','Rey Mysterio','Cero Miedo','Tribal Chief','The Bloodline',
   // trademarked move and catchphrase names
   'Rock Bottom','Sweet Chin Music','Tombstone Piledriver','Attitude Adjustment','Austin 3:16','One Winged Angel',
   'Styles Clash','Rainmaker','Batista Bomb','Sharpshooter',
@@ -166,6 +166,29 @@ section('pages load');
   if(errs.length) bad('booking sim: '+errs.slice(0,3).join(' | '));
   else if(!r || r.week!==2 || !r.grade) bad('booking sim did not run a show: '+JSON.stringify(r));
   else ok(`booking sim starts a career (${r.promos} promotions, ${r.roster} on the roster, ${r.pool} in the pool) and runs a show (grade ${r.grade}, ${r.title})`);
+  await page.close();
+}
+/* The booking sim follows the career page's graphics setting. It has no toggle
+   of its own, so the only way it can drift is by forgetting to read the key,
+   and what that looks like is the pixel game's terminal face on one page of a
+   game that is smooth on the other. Asked of the face actually applied, in
+   both styles, because a rule that is present and loses the cascade renders
+   exactly like a rule that is missing. */
+{
+  const {page, errs} = await fresh(URL+'/wrestling/booking/');
+  const face = async (mode)=>{
+    await page.evaluate(m=>{ try{ localStorage.setItem('rtr_gfx', m); }catch(_){} }, mode);
+    await page.reload({waitUntil:'domcontentloaded'}); await page.waitForTimeout(300);
+    return page.evaluate(()=>{ const s=document.createElement('span'); s.className='mono'; s.textContent='0-0';
+      document.body.appendChild(s); const f=getComputedStyle(s).fontFamily; s.remove();
+      return {f, retro:document.documentElement.classList.contains('gfx-retro')}; });
+  };
+  const sm=await face('smooth'), rt=await face('retro');
+  if(errs.length) bad('booking styles: '+errs.slice(0,2).join(' | '));
+  (/Barlow/.test(sm.f) && !sm.retro) ? ok('the booking sim speaks in the body face under Smooth')
+    : bad(`the booking sim kept the terminal face under Smooth: ${JSON.stringify(sm)}`);
+  (/monospace/.test(rt.f) && rt.retro) ? ok('and keeps the monospace under Retro, the same setting as the career page')
+    : bad(`the booking sim ignored Retro: ${JSON.stringify(rt)}`);
   await page.close();
 }
 
@@ -753,7 +776,7 @@ section('a scene that says you are not going out takes you off the card');
     try{ endTour(); closeModal(); }catch(_){}
     const out={liars:[], pulled:null, started:null};
     // any outcome whose prose says you did not work that night
-    const SITS=/\b(sit it out|sat it out|sits it out|cannot go|could not go|not going out|pulled? (yourself )?out|off the card|miss(ed)? the show|somebody else (works|worked) your spot)\b/i;
+    const SITS=/\b(sit it out|sat it out|sits it out|cannot go|can't go|could not go|couldn't go|not going out|pulled? (yourself )?out|off the card|miss(ed)? the show|somebody else (works|worked) your spot)\b/i;
     // Many scenes build their options around a cast member and throw without
     // one, so each is attempted on its own and the skipped count is reported
     // rather than swallowed: a lint that silently covers nothing is worse than
@@ -1142,6 +1165,118 @@ section('the body heals, and old damage stops compounding');
   (r.topOfTable===0)
     ? ok('within two years of a long layoff the worst injuries are off the table')
     : bad(`${r.topOfTable} of 300 draws still reached the top of the injury table`);
+  await page.close();
+}
+
+/* ---------- 4r. two styles, one rig ----------
+   The game draws in Smooth (the default) or Retro, and both are drawn on the
+   SAME skeleton: the joints in JOINT and the angles in POSES. That is the only
+   reason a suplex lands on the same marks in either style, so it is asserted
+   as a property of the markup rather than trusted: for every pose, the ordered
+   list of transforms the two figures emit has to be identical. Everything
+   else here is the ways the smooth figure fails without throwing. */
+section('two styles, one rig');
+{
+  const {page, errs} = await fresh(URL+'/wrestling/');
+  const r = await page.evaluate(()=>{
+    const out={poses:0, rigDiff:[], smoothCrisp:0, retroNotCrisp:0, leaks:[], looks:0, dupIds:0, icons:[], shapes:[]};
+    const tfl=s=>(s.match(/transform="[^"]*"/g)||[]);
+    const tf=s=>tfl(s).join('|');
+    /* Retro draws the rig twice (an outline pass, then the fills); smooth draws
+       it once, with no outline. So smooth is held to Retro's fill pass, which
+       is the second half of its list and must equal the first. */
+    // the whole-body move wraps both passes once and comes first, so it is set aside
+    const fillHalf=s=>{ let l=tfl(s); const pre=(l[0]&&/translate\(/.test(l[0]))?[l.shift()]:[];
+      const h=l.length/2; return l.slice(0,h).join('|')===l.slice(h).join('|') ? pre.concat(l.slice(h)).join('|') : 'UNEVEN:'+l.join('|'); };
+    const pool=sl=>COSM.filter(c=>c.slot===sl).map(c=>c.v);
+    const L0=Object.assign({},DEFLOOK,{hairStyle:'long',face:'beard'});
+    Object.keys(POSES).forEach(k=>{
+      out.poses++;
+      const a=wrestlerSVGRetro(L0,{pose:k}), b=wrestlerSVGSmooth(L0,{pose:k});
+      if(fillHalf(a)!==tf(b)) out.rigDiff.push(k);
+      if(b.indexOf('crispEdges')>=0) out.smoothCrisp++;
+      if(a.indexOf('crispEdges')<0) out.retroNotCrisp++;
+    });
+    // every value of every slot draws, and the behind-the-head marker never leaks
+    ['hair','face','mask','attire','boots','acc','pattern'].forEach(sl=>pool(sl).forEach(v=>{
+      const key=sl==='hair'?'hairStyle':sl;
+      ['ready','prone'].forEach(pose=>{
+        out.looks++;
+        let svg=''; try{ svg=wrestlerSVGSmooth(Object.assign({},DEFLOOK,{[key]:v}),{pose}); }catch(e){ out.leaks.push(sl+':'+v+' threw '+e); return; }
+        if(svg.indexOf('@@HB@@')>=0) out.leaks.push(sl+':'+v+' left the hair marker in');
+        if(/NaN|undefined/.test(svg)) out.leaks.push(sl+':'+v+' printed NaN or undefined');
+      });
+    }));
+    /* hair that hangs behind the head is gathered and dropped in UNDER the face.
+       Forget to drop it in and nothing throws: the rig split keeps shapes only,
+       so the marker is discarded and the tail simply is not there. So the claim
+       is that the hair is drawn, and drawn before the face is. */
+    out.backHair=[];
+    ['pony','mullet','dreads'].forEach(h=>{
+      const svg=wrestlerSVGSmooth(Object.assign({},DEFLOOK,{hairStyle:h,hair:'#123456'}),{});
+      // the hair's own gradients: the colour itself, and the shade a tail is drawn in
+      const cols=['#123456', shade('#123456',-36)];
+      const ids=[...svg.matchAll(/<linearGradient id="([^"]+)"[^>]*><stop[^>]*\/><stop offset=".38" stop-color="([^"]+)"/g)]
+        .filter(g=>cols.indexOf(g[2])>=0).map(g=>g[1]);
+      const body=svg.slice(svg.indexOf('</defs>'));
+      const hairAt = ids.length ? Math.min(...ids.map(id=>{ const k=body.indexOf('url(#'+id+')'); return k<0?1e9:k; })) : -1;
+      const firstFaceFill = body.search(/<path d="M24,14 C24,7\.4[^"]*" fill="url/);
+      if(hairAt<0||hairAt===1e9) out.backHair.push(h+': no hair drawn at all');
+      else if(!(hairAt<firstFaceFill)) out.backHair.push(h+': drawn over the face');
+    });
+    // two wrestlers on one page never share a gradient id
+    const ids=s=>(s.match(/id="([^"]+)"/g)||[]);
+    const x=ids(wrestlerSVGSmooth(DEFLOOK,{})), y=ids(wrestlerSVGSmooth(DEFLOOK,{}));
+    out.dupIds=x.filter(i=>y.indexOf(i)>=0).length; out.idCount=x.length;
+    // every icon and every plate shape has a smooth drawing, so no screen mixes the two
+    Object.keys(PICO).filter(k=>k[0]!=='_').forEach(k=>{ if(!PICO_SM[k]) out.icons.push(k); });
+    Object.keys(BELT_PLATE).forEach(sh=>{ const m=beltPlateSmooth(Object.assign({},BELT_ART_DEFAULT,{shape:sh}),0,0,1,c=>c);
+      if(!/<path/.test(m)||/NaN/.test(m)) out.shapes.push(sh); });
+    /* the trunks cover the crotch. The torso's skin ends at y 53.6 and the first
+       trunks cut a notch up to 51.4 between the legs, so skin showed there on
+       every bare legged attire. Asked of the drawn shape rather than of its
+       source: the trunks are the fill spanning both hips at the waist and not
+       the chest, and the middle of the crotch has to be inside it. */
+    out.crotch=[]; out.trunksSeen=0;
+    const host=document.createElement('div'); host.style.cssText='position:absolute;left:-9999px;width:200px'; document.body.appendChild(host);
+    const inF=(el,x,y)=>el.isPointInFill(new DOMPoint(x,y));
+    pool('attire').forEach(a=>{
+      host.innerHTML=wrestlerSVGSmooth(Object.assign({},DEFLOOK,{attire:a,gear:'#111111',pattern:'none'}),{pose:'ready'});
+      const tr=[...host.querySelectorAll('path')].filter(p=>/^url/.test(p.getAttribute('fill')||'')
+        && inF(p,23.6,45.2) && inF(p,40.4,45.2) && !inF(p,32,36));
+      if(!tr.length) return;
+      out.trunksSeen++;
+      if(!tr.some(p=>inF(p,32,55))) out.crotch.push(a);
+    });
+    host.remove();
+    // the switch: Retro really is the pixel game, and it sticks
+    setGfx(false);
+    out.retroNow = wrestlerSVG(DEFLOOK,{}).indexOf('crispEdges')>=0 && pico('trophy',20).indexOf('crispEdges')>=0
+      && beltSVG(BELT_ART_DEFAULT,30).indexOf('crispEdges')>=0 && document.documentElement.classList.contains('gfx-retro');
+    out.stored = localStorage.getItem('rtr_gfx');
+    return out;
+  });
+  await page.reload(); await page.waitForTimeout(600);
+  const after = await page.evaluate(()=>{ const v={retro:!gfxSmooth(), cls:document.documentElement.classList.contains('gfx-retro')};
+    setGfx(true); v.back=gfxSmooth() && wrestlerSVG(DEFLOOK,{}).indexOf('crispEdges')<0; return v; });
+  if(errs.length) bad('styles: page errors: '+errs.slice(0,2).join(' | '));
+  r.rigDiff.length ? bad(`the two styles pose differently: ${r.rigDiff.join(', ')}`)
+                   : ok(`all ${r.poses} poses emit the same rig in both styles`);
+  (r.smoothCrisp===0 && r.retroNotCrisp===0) ? ok('smooth never asks for crisp edges, retro always does')
+    : bad(`crisp edges in the wrong style: smooth ${r.smoothCrisp}, retro missing ${r.retroNotCrisp}`);
+  r.leaks.length ? bad(`${r.leaks.length} looks draw wrong: `+r.leaks.slice(0,6).join('; '))
+                 : ok(`every value of every gear slot draws clean in smooth (${r.looks} figures)`);
+  r.backHair.length ? bad('back hair wrong: '+r.backHair.join('; ')) : ok('a tail, a mullet and dreads are drawn, and drawn behind the face');
+  (r.idCount>0 && r.dupIds===0) ? ok(`two figures on one page share none of their ${r.idCount} gradient ids`)
+    : bad(`gradient ids collide between figures (${r.dupIds} of ${r.idCount})`);
+  (r.trunksSeen>=3 && !r.crotch.length) ? ok(`the trunks cover the crotch on all ${r.trunksSeen} bare legged attires`)
+    : bad(`trunks leave skin between the legs on: ${r.crotch.join(', ')||'(no trunks found, '+r.trunksSeen+')'}`);
+  r.icons.length ? bad('icons with no smooth drawing: '+r.icons.join(', ')) : ok('every icon has a smooth drawing');
+  r.shapes.length ? bad('belt plates that do not draw smooth: '+r.shapes.join(', ')) : ok('every belt plate shape draws smooth');
+  (r.retroNow && r.stored==='retro') ? ok('the Retro switch puts the pixel figure, icons and belts back')
+    : bad(`the Retro switch did not take: ${JSON.stringify({now:r.retroNow, stored:r.stored})}`);
+  (after.retro && after.cls) ? ok('Retro survives a reload') : bad('Retro did not survive a reload: '+JSON.stringify(after));
+  after.back ? ok('and switching back returns the smooth figure') : bad('switching back did not return the smooth figure');
   await page.close();
 }
 

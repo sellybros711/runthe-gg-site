@@ -264,10 +264,10 @@ const TEN = [
   await p.click('#b-stand');
   await p.waitForTimeout(1600);
   const t = await txt(p, '#st-board');
-  ok('it says it could not reach the board', /Could not reach the board/.test(t), t.slice(0, 80));
+  ok('it says it could not reach the board', /Could(?:n't| not) reach the board/.test(t), t.slice(0, 80));
   ok('  and that your terms are kept anyway', /still recorded/.test(t));
   ok('  rather than sitting on a spinner', !/Reading the board/.test(t));
-  ok('the tenure board says so too', /Could not reach/.test(await txt(p, '#st-tenure')));
+  ok('the tenure board says so too', /Could(?:n't| not) reach/.test(await txt(p, '#st-tenure')));
   /* THE SCREEN IS STILL A SCREEN. You can leave it. */
   await p.click('#b-stback');
   await p.waitForTimeout(800);

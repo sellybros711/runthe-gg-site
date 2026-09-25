@@ -88,7 +88,7 @@ window.RTR_COSMETICS = [
   // ---------- GEAR PATTERNS ----------
   { id:'g_solid',   slot:'pattern', name:'Solid',        rarity:'common', v:'solid',  owned:true },
   { id:'g_stripe',  slot:'pattern', name:'Side Stripe',  rarity:'common', v:'stripe', owned:true },
-  { id:'g_split',   slot:'pattern', name:'Split Colour', rarity:'rare',   v:'split' },
+  { id:'g_split',   slot:'pattern', name:'Split Color', rarity:'rare',   v:'split' },
   { id:'g_flame',   slot:'pattern', name:'Flames',       rarity:'epic',   v:'flame' },
   { id:'g_stars',   slot:'pattern', name:'Stars',        rarity:'epic',   v:'stars' },
   { id:'g_gold',    slot:'pattern', name:'Gold Trim',    rarity:'legendary', v:'gold'},
@@ -124,7 +124,7 @@ window.RTR_COSMETICS.push(
   { id:'a_shorts',  slot:'attire', name:'Fight Shorts',  rarity:'common',    v:'shorts', owned:true },
   { id:'a_vest',    slot:'attire', name:'Leather Vest',  rarity:'rare',      v:'vest' },
   { id:'a_bodysuit',slot:'attire', name:'Full Bodysuit', rarity:'epic',      v:'bodysuit' },
-  { id:'a_armor',   slot:'attire', name:'Ring Armour',   rarity:'legendary', v:'armor' },
+  { id:'a_armor',   slot:'attire', name:'Ring Armor',   rarity:'legendary', v:'armor' },
   // BOOTS
   { id:'b_wraps',   slot:'boots', name:'Foot Wraps',     rarity:'common',    v:'wraps', owned:true },
   { id:'b_platform',slot:'boots', name:'Platform Boots', rarity:'epic',      v:'platform' },

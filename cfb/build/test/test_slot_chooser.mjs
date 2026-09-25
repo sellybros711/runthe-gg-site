@@ -111,7 +111,7 @@ ok('tapping him asks where he plays', kind === 'slot', String(kind));
 const t = (await p.textContent('#sheet-in')).replace(/\s+/g, ' ').trim();
 console.log('  copy: ' + t);
 ok('the question names him', /Where does Ryan Tannehill play\?/.test(t));
-ok('the explanation is the short one', /Pick a spot\. The one you use decides what is left for the rest of your picks\./.test(t));
+ok('the explanation is the short one', /Pick a spot\. The one you use decides what(?:'s| is) left for the rest of your picks\./.test(t));
 ok('every option is labelled by the spot and not by a pronoun',
   /Play at (QB|RB|WR|FLEX)/.test(t) && !/Play him at/.test(t));
 ok('each option says what it leaves behind', /Leaves .* to fill|Fills your last spot/.test(t));

@@ -121,6 +121,35 @@ four commas and exactly right. And it does not look for the rule of three: three
 is the number of kinds of special college season there are, and whether a group of
 three is information or padding is a person's job.
 
+**An escaped quote was the third way it went wrong.** A contraction in a
+single-quoted literal is `you\'re`, and the backslash counted against the
+prose-shape filter. A line of copy full of markup and digits sat just over that
+threshold, so the escape pushed it out of every checker that reads copy. Found when
+a contraction pass took one "all 17 games" claim out of `check-numbers`' count
+without changing a word the player sees. `tidy()` unescapes quotes now.
+
+### The football and college games talk like the owner
+
+Casual, with hype saved for the big moments. The Perfect Season, College Football,
+Commissioner Mode, both how-to pages and the store all use contractions now
+(`don't`, `you're`, `it's`). The results verdicts, the rank lines and the purchase
+thank-you were rewritten by hand. Commissioner Mode's characters kept their own
+voices and only picked up the contractions, the same call the Segue pass made about
+the crowd's slang.
+
+**A contraction pass has to know a subject from an object.** "The six that can
+remove you are on the strip" is not "you're", and "the one before it is still
+here" is not "it's". A regex cannot tell those apart, so the pass only contracts
+`it is`, `you are` and the rest when the pronoun opens a clause: at the start of a
+sentence, or after `and`, `but`, `so`, `if`, `when` and the like. It also leaves
+`what there is to`, `it is its own` and `of it is` alone. Read the diff for
+anything that slipped through before shipping one.
+
+**Two checkers read the old spelling and had to take both.** `check-fullteam`
+matched "could not be looked up here" and `test_store` asserted the page never
+says "could not". Before a sweep, grep the checkers for the phrases being
+contracted, as well as the page's own `.test(` calls.
+
 ### A number a player reads has to be the number the game plays
 
 ```
@@ -2704,6 +2733,16 @@ cannot see is another device, and that is recorded rather than fixed: asking the
 out and a green door telling a stranger they are in is the one thing this light must never
 say.
 
+**SO IT IS THE ONLY FILLED, GLOWING DOOR ON THE FRONT PAGE, and that is what makes it read.**
+Reported as the home screen feeling crowded, and the cause was that every door shouted: a
+saturated red and blue pair, a solid red and blue Full Team slab, a gold Dynasty card and a
+neon sign, one under the other. The Offense and Defense pair stays filled because it is the
+game. Full Team carries its red and blue as a gradient EDGE on a dark card (the dark seam
+between the two is kept, so it is still the pair joined), Dynasty is shorter, and Tutorial,
+How to play and Leaderboard are underlined text rather than three more boxes. A neon door
+among filled doors is one more loud thing; among outlined ones it is the sign.
+`check-fullteam.mjs` still asserts `hp-ft` carries its own colour, which is now the edge.
+
 **THREE ACCESS FILES NOW, AND THEY ARE STILL THREE FILES.** `fullteam-access.js` says in as
 many words "when a third mode wants this, merge them". This is the third and the merge is
 DEFERRED. It was deferred while this one was unlaunched, for the obvious reason, and it is
@@ -2759,6 +2798,28 @@ the injury file are both `no-cache` and this was not, which cost nothing while a
 filename only ever appeared with its final contents. It stopped costing nothing the moment
 the pool grew a cap: the name does not change when the file does, so a returning visitor
 would be served their own cached copy, find no cap on it and fall back to the constant.
+
+**AND THE LINEUPS ALREADY DRAFTED AT THE WRONG CAP ARE REOPENED, NOT SUBMITTED.** Fixing the
+cap stopped new over-cap drafts and did nothing about the ones in people's browsers. The
+owner's own review screen read "$106.7M of $90M spent" under SENDING..., and the page had no
+check of its own: it posted a lineup `fantasy_submit` was always going to refuse. Only
+testers were affected, because the launch and the fix went out in one commit, so the public
+has only ever drafted at $90M.
+
+Asked "raise the week to $110M, or reopen the over-cap drafts", the owner chose to reopen.
+`reopenOverCap()` runs at boot: any unsubmitted draft spending more than the week's cap
+becomes a fresh draft in the same chance, so nobody loses one of their five, and the home
+note names which. **The new seed is DERIVED from the old one**, never drawn, or a reload
+would be a re-roll. A legal draft is untouched, a submitted one is never touched (the row is
+the server's and was accepted under the cap), and a partial draft over the cap is reopened
+too because its next board would have negative money. It **fails open** in a try, since it
+runs before anything is drawn for every visitor with a saved week.
+
+**The submit button checks the cap as well**, which reopening makes unreachable. That is the
+point of it. The guard proves it from both sides: with reopening removed the second line
+refuses the press and nothing is sent, and with both removed the leak is reported the moment
+it happens rather than after the page has moved on to the board, which is where the first
+draft of that check crashed before it could say anything.
 
 ### The price is what he has done. The projection is the same number.
 
@@ -3484,16 +3545,67 @@ lineup was legal, and it was worth nought.
 | `players.csv` | is he on a roster at all | injured reserve is not a designation to read |
 | `injuries.csv` | what did his club file this week | Out, Doubtful, Questionable, the body part, the practice |
 
-**Injured reserve takes a man OFF THE BOARD and a designation does not.** There is no
-decision to make about somebody on IR and no news to read, so he leaves the pool the way a
-man whose club is idle was never in it. An Out or Doubtful designation is the opposite: it is
-this week's news and it is the most useful thing the board can say about a man a reader was
-about to take, so he is **drawn, in red, and cannot be picked**. Questionable is a real
-decision and is left alone.
+**Injured reserve, Out and Doubtful all take a man OFF THE BOARD.** That is a reversal, made
+by the site's owner on launch day, and the old argument is worth keeping so nobody restores
+it by accident. An Out or Doubtful man used to be **drawn in red and refused on the press**,
+on the ground that the report is the most useful thing a board can say about a man a reader
+was about to take. The answer to that is arithmetic: a board is five seats, and a seat
+holding a man nobody can take offered the reader nothing. It was a choice that was not a
+choice. **Doubtful goes with Out because the data says it is Out**: 99.2% of doubtful men
+blank, against 47.7% of questionable ones. Questionable is a real decision and stays.
 
-Measured on the live week 3 board: 5 priced men on reserve, 7 Out, 2 Doubtful, 11
-Questionable. Only two of the designated men are inside the wheel's reach at all, which is
-why the guard searches boards rather than assuming one.
+It is done in `applyInjuries` in the page, beside injured reserve, and `D.hurt()` in
+`draft.js` still refuses both as a second line. **`BY_ID` is never filtered**, so a man
+signed before he was ruled out stays in that reader's lineup and his chip still opens the
+report.
+
+The guard's non vacuous half is the COUNT: the front page prints how many men are on the
+board, and that number is asked for with all three removed, while the live file is required
+to hold at least one Out or Doubtful man. Without that second clause the old rule and the
+new one give the same count and the assertion says nothing.
+
+#### The report cannot say Out until Friday, so the site can
+
+```
+football/data/fantasy_ruled_out.json     keyed "season-week", id and name
+node football/build/injuries.mjs --write the list is applied here, and by the workflow
+```
+
+**Found by the owner on launch day: Jayden Daniels was offered, unmarked, and was not
+going to play.** Every row in the file was correct. nflverse had him as `Elbow, Did Not
+Participate In Practice` with NO designation, because for a Sunday game the Wednesday and
+Thursday reports are PRACTICE reports and Out, Doubtful and Questionable are only filed on
+the Friday. So a man his club has already ruled out reads, in the one source this trusts,
+exactly like a man having a rest day, for two of the four days a week is open.
+
+**The list is applied in the BUILDER and not the page**, so there is still one file saying
+who cannot play and the twice daily refresh keeps it. The workflow runs the builder, the
+builder reads the list, and the bytes stay identical until the report or the list moves.
+
+**The name is written beside the id and both must match the board, or it throws.** A hand
+edited list of opaque ids is how the wrong man is ruled out: one transposed digit and a fit
+receiver leaves every board with nothing to say why. A name alone is worse, for the reason
+`check-namesakes` exists.
+
+**It never softens a roster** (injured reserve stays `off`), and **it does not pretend to be
+the report**: the entry carries `by: 'site'` and the sheet says RunThe.GG ruled him out,
+because every other sheet names the official NFL report as its source and that would be
+false about exactly him. **A ruling outranks the report**, so an entry for a man who is
+cleared has to be deleted by hand.
+
+#### And a designation expires when his club files without him
+
+Rebuilding for Daniels turned up the opposite fault. The builder kept the LATEST ROW per
+man, so Kyler Murray and Jauan Jennings came out "out (week 2)" off a Minnesota that had
+already filed week 3 with eight names and neither of theirs. The report lists the men a
+club is worried about; a man it leaves off is practising in full. It was already wrong (they
+were drawn red and refused) and it went invisible the same afternoon, when Out stopped
+being drawn: two healthy players would simply have left every board.
+
+**The rule is per CLUB and not per calendar.** A row is dropped once its club has filed a
+newer week. On a Tuesday no club has filed the coming week, so every carry forward the
+header argues for is untouched. It is keyed on the row's own club, which is the one that
+filed it.
 
 **THE SPLIT IS MADE IN `draft.js` AND NOT IN THE PAGE**, because four separate things ask a
 version of "can this man fill this slot": what greys a row, what refuses the press, what the
@@ -3577,6 +3689,11 @@ in the page, because a row nothing can draw is a row nothing can open. The ten w
 practise fully keep their chip, which on a Tuesday is the most useful thing the report has.
 
 #### The chip, and the press it takes
+
+**The red chip is now only ever seen in a LINEUP**, on a man somebody signed before he was
+ruled out, because the wheel no longer offers Out or Doubtful men at all (see above). On the
+board a chip is gold (`Q`) or the quiet `INJ` of a man who did not practise and has no
+designation yet, and both of those are real picks.
 
 **Red for a man who will probably not play, gold for a man who might.** Two decisions, two
 colours; one colour for both would be the board saying the same thing about a hamstring that
@@ -4481,6 +4598,50 @@ those. Whatever holds a win has to be its own record.
 are small.** An automated path from "won a week" to "owns the product" is a second way to obtain
 the thing the store sells, and the store has exactly one on purpose.
 
+**The result sheet says something kind to everybody and throws confetti for one.** Second
+is "so close", third is a podium finish, the top half had a good week, and everybody else
+is told every week starts from zero, plus that they beat their projection when the PRINTED
+difference says they did. No line promises anything about the next board, because the
+sheet can open after that week has locked. Confetti is first place only, skipped under
+reduced motion, sits above the sheet with no pointer events, and goes when the sheet
+closes. `check-fantasy.mjs` asserts all of it, including that a tap on the code still
+lands on the code, and each claim was proved by reintroducing its defect.
+
+#### Nobody is told the result until the winner's code exists
+
+```
+psql -d fantasy -f supabase/115_fantasy_result_when_ready.sql
+psql -d fantasy -f supabase/test/fantasy_ready_test.sql
+node scripts/stripe/mint-winner-code.mjs --pending          what it would do
+```
+
+Asked for by the owner. Under 114 the popup answered the moment a week was scored and the
+code arrived whenever somebody minted it, so a winner could open the page in that gap, be
+told "1st" with no code, and close a sheet that only opens by itself once. **115 holds
+EVERY entrant's result back** until first place has left `none`, so the whole field hears it
+at the moment the winner can be paid. `void` counts as ready.
+
+**The code is made by the live job, on the tick that closes the week.** `fantasy-live.yml`
+runs `mint-winner-code.mjs --pending --mint` after it scores, and the scoring write that
+marks a week final (Monday night game played and every club's stats in) settles the top
+three by trigger in the same tick. `fantasy-pool.yml` runs it again after its commit, for
+the week whose stats landed after the live window closed. `--pending` asks the database
+which weeks are unpaid, so a missed tick is picked up by the next one.
+
+**A field of one is voided unattended**, which releases that entrant's result with no code
+and a sentence saying why, and no confetti. `--force` still pays one by hand.
+
+**The page asks about THIS week first, then last week**, because the week that closed on
+Monday night is still `POOL.week` until Tuesday's build rolls the board. The ack is keyed
+on the week, so a reader told on Monday is not told again on Tuesday.
+
+**It needs two repository secrets it did not have**: `STRIPE_SECRET_KEY` (a restricted key
+with write on coupons and promotion codes and read on prices is enough) and
+`STRIPE_PRICE_PS_PREMIUM_BUNDLE`. Without them a week with a real winner fails the live job
+every tick, loudly, and nobody is told the result, which is the intended failure. The
+success path has only ever run against a local stand-in (`STRIPE_API_BASE`, refused unless
+it is loopback), because api.stripe.com is blocked from the dev sandbox.
+
 **A profile image only a winner has is a claim about an account, so it is the board's own
 problem**: `display_pro` is already the pattern, a derived boolean written by a trigger rather
 than typed, because a mark anybody can set is a mark that means nothing.
@@ -4574,10 +4735,127 @@ The distribution needs a dozen careers and lives in a probe. What is in `verify.
 each of the three mechanisms still bites, because a green distribution would pass just as
 well on a fix that had quietly stopped working.
 
+### Smooth and Retro, and why the smooth figure is the pixel rig
+
+```
+node wrestling/verify.mjs --quick   the section named "two styles, one rig"
+```
+
+The game draws in two styles and **Smooth is the default**. Retro is the pixel
+game exactly as it was, kept whole behind a toggle on the home screen rather than
+deleted: `wrestlerSVGRetro` is byte for byte the old `wrestlerSVG`. It is a device
+setting (`rtr_gfx` in localStorage), not part of a save, because it is about the
+screen in front of you. Switching reloads the page, because figures, icons and
+belts drawn in the old style are sitting in markup all over it (the inbox, the
+news, the locker) and a reload is the one repaint that cannot miss any of them.
+
+**THE SMOOTH FIGURE IS THE SAME RIG, AND THAT IS THE WHOLE DESIGN.** Every bone
+sits on the joints in `JOINT`, every pose is the bag of angles in `POSES`, and the
+rig is assembled by the same transforms. So a suplex, a pin or a ref's count lands
+on exactly the same marks in either style and nothing in the match engine knows
+which one it is drawing. The guard asserts that as a property of the markup: for
+all 43 poses, the ordered list of transforms the two figures emit is identical.
+Pointing one knee at the hip joint fails 26 of them.
+
+What changes is the ink. The body is tapered tubes, a real torso and a real head,
+each lit by a cylindrical gradient.
+
+**THERE IS NO BLACK OUTLINE, and that was asked for after the first version had
+one.** The pixel figure needs its border to read as a figure at all; round an
+illustration it is the sticker look. The outline pass is still BUILT (the gear code
+draws its own borders in `OUTLINE` and they route there) and then left out, so what
+separates the figure from the ring is its own shading and the drop shadow the page
+already puts under it. **Every fill carries a thin translucent inner line instead**
+(`FIG_INK`, a shadow at .30 rather than an ink line): without it an arm crossing a
+chest of the same skin disappears into it, because a smooth gradient has no shading
+steps to tell them apart.
+
+**So the rig guard compares against HALF of Retro.** Retro emits the rig twice (the
+outline pass, then the fills) and smooth once. The whole-body move wraps both passes
+and comes first, so it is set aside before the halves are split; the first draft did
+not and failed 39 poses on a correct page.
+
+**The long tail of gear is the pixel code, read smooth.** About a hundred and fifty
+patterns, masks, boots and accessories are each a handful of `P()` and `LIMB()`
+calls in figure space. Inside `wrestlerSVGSmooth` those two names are shadowed by
+rounded, gradient versions, so every item keeps its placement. The pieces a reader
+looks at first (the body, the face, twenty four hairstyles, the beards, the three
+masks an opponent can roll, boots and trunks) are drawn by hand. **A new gear item
+written in `P()` works in both styles on day one**, and the guard draws every value
+of every slot in two poses and fails on a throw, a NaN or an undefined.
+
+**Hair that hangs behind the head has its own layer**, `HB`, dropped in under the
+neck and face. The first version drew a mullet and dreads straight across the face.
+**The first guard for it could not fail**: it looked for the marker leaking into the
+output, and the rig split keeps shapes only, so a forgotten marker is discarded
+silently and the tail simply is not there. What it asserts now is that a pony, a
+mullet and dreads are drawn at all AND drawn before the face fill, proved by
+deleting the drop-in and by moving the pony to the front.
+
+**The trunks come down through the middle.** The first smooth trunks cut a notch
+up between the legs to y 51.4 while the torso's skin ends at 53.6, so every bare
+legged attire showed skin at the crotch. Reported with a screenshot. The guard asks
+the drawn shape (`isPointInFill` at the middle of the crotch) on every attire that
+draws trunks, and with the notch back it names all twelve.
+
+**Gradient ids carry the figure's own counter.** Two wrestlers on one screen with
+the same id would paint each other, and a def inside a `display:none` screen does
+not resolve for anybody else. Asserted.
+
+**What else went smooth, and the rule for each:**
+
+| surface | smooth | retro |
+|---|---|---|
+| wrestlers | `wrestlerSVGSmooth` | `wrestlerSVGRetro` |
+| icons | `PICO_SM`, one per `PICO` id, same 16 unit square | `PICO` |
+| belts | `beltPlateSmooth`, the same six plate shapes as real outlines | `beltPlate`'s 11x9 masks |
+| pundit sets | no crisp edges, props get rounded corners | crisp |
+| the crowd | soft blobs | hard dots |
+| `image-rendering` | `--pxr: auto` | `html.gfx-retro` sets `pixelated` |
+
+**Every icon has a smooth drawing and the guard says so**, because an id falling
+back to its pixel square is a pixel icon on a smooth screen, the one resolution rule
+MythiBall already carries. The fallback exists so a NEW id can never render as
+nothing; the guard is what stops that fallback being used in anger.
+
+**The belt keeps what makes the twenty four tell apart.** Shape, metal, stone and
+strap are unchanged, so the existing "no two belts share a design" guard is still
+the one that matters.
+
+**The page chrome follows the figure.** Seventy odd rules set labels and stats in a
+system monospace, the pixel game's terminal voice. Smooth points `--mono` at the
+body face and turns `tabular-nums` on page wide, which is the column the monospace
+was really there for (Run The Floor's lesson). Retro keeps the monospace.
+
+**The booking sim follows the same setting and has no toggle of its own.**
+`wrestling/booking/` reads `rtr_gfx` in a head script, before first paint, and
+takes the same `--mono` override: it has no figures to redraw, so what Smooth
+changes there is the voice. It had been left in the terminal face while the career
+page went smooth, which is one game showing two styles. The guard reads the face
+actually applied, in both styles, because a rule that loses the cascade renders
+exactly like a rule that is missing.
+
 The roster, the mentors in `legends.js`, the free agents in `personalities.js` and the
 booking sim's promotions all use LEGAL names and invented companies. No ring names,
 no trademarked match or event names, no catchphrases. The suite's second section
 carries the blocklist; add to it when you remove something.
+
+### The voice is a fan talking, and the game reads some of its own sentences
+
+Everything a player reads is written the way a wrestling fan talks to a friend:
+contractions, American spelling, short lines. It used to say "you are not going
+out tonight" and "cheque" and "half four". A rulebook entry explains the rule in
+one breath and keeps every real number.
+
+**Rewording can break the game, because a few functions match its own prose.**
+`inferStoryKind` picks a feud's story type by regex over the reason sentence the
+loss trigger wrote, and it looked for "not ready" and "does not consider you".
+Contracted, those read "aren't ready" and "doesn't consider you", the match
+missed, and a two loss underdog story started as a title story ten times in
+twelve. Nothing threw. The `underdog did not start` check in `verify.mjs` is what
+caught it. The promo reader's `TONE` lists and the scene lint's `SITS` regex are
+the same shape. Before a wording sweep, grep for `.test(` over prose and write
+both spellings into any regex that reads a sentence the game produced.
 
 The game is unlisted: not linked from the homepage, nav or sitemap, and
 noindexed. Keep it that way unless asked.
@@ -9279,6 +9557,56 @@ for a release**, and the section above on `BOARD_VERSION` tells the whole
 story. `check-cachebust.mjs` found this pin on its own, by who SETS the global,
 and there are eight pins across the site now.
 
+#### A ring outranks a record, because the game says the ring is the goal
+
+**The board ranked on the regular season alone, and a champion sat 98th.** `score`
+was wins then point differential, so over 1,800 simulated league runs the median
+champion was 98th on the board, under a pile of 60 win teams that went out in the
+first round. The guide says "your goal: win the ring" and hands the player the
+playoff games to call themselves, and the one list that ranks them filed the title
+as decoration. Nothing failed: every row was right and the order was a different
+game's.
+
+`depth` is how far a run went, 0 to 6, derived by `rtf_submit_run()` and never
+sent: missed, lost the play-in, out in each of the four rounds, champions. A
+seeded run starts at 2 and a play-in run at 1, so a ring is 6 from either door.
+**`score` leads with it** (`depth * 1000000` over the old key), so a 45 win
+champion outranks a 68 win Finals loser and a Finals loss outranks a second round
+one. **The record is a board of its own**, `record_score`, because chasing 72 is
+its own sport. Three tabs: Best run, Best record, Team rating.
+
+**It shipped undeployed, which is what made it cheap.** A generated column cannot
+be altered, so a table created by the first version gets `score` dropped and
+re-added in an idempotent block that also backfills `depth` from columns that
+version already derived. Dropping the column drops its two indexes and the
+`create index if not exists` below puts them back. Applied twice over rows from
+the old file, verified on Postgres 16. The preflight row asks for `record_score`,
+so a database still on the first cut reads NO.
+
+**Made the playoffs means the bracket.** A play-in loss is not the playoffs in the
+NBA, and `made_playoffs`, the career's playoff count and the "In the field" badge
+all counted one. `madePlayoffs()` in the page is the rule, and `check-badges`
+restates it in `rowOf` beside the page's.
+
+**One daily per account per day, and the first stands.** The page refuses a
+replay, but a browser is not a wall: a cleared jar or a second device before the
+cloud save lands filed the day again with the board in hand. The function hands
+back the first entry, a unique partial index holds it, and `rtf_claim_run` will
+not turn a signed out daily into a second entry for a day already filed.
+
+**A board row opens to its five.** The picks rode on every row from day one and
+nothing drew them, so the board said who won and never what they built. They are
+drawn against this browser's own `DATA.allPlayers`, with no request.
+
+**A signed out run is placed in a field that counts it.** Its row is not on a named
+list, so the standing read "313th of 312" at the bottom. It says "Would be 41st of
+313" now, and a signed in standing waits for its own submit before it counts.
+
+**The SQL test had been dead since the roster went to five.** Its fixture sent six
+picks, the function has refused six since that change, and the file died at its
+first submit. Nothing ran it. It is five now and asserts both four and six are
+refused.
+
 #### Accounts are the site's, and nothing here is a gate
 
 `hoops/auth.js` adds NO new account system: `profiles` from
@@ -9346,6 +9674,16 @@ every team-season in the data. A bracket that picked the opponent instead
 would quietly rebuild the difficulty curve. What is drawn here is the field
 AROUND that path, and the fourteen games the player is not in are simulated
 for the reveal alone.
+
+#### A conference is twenty wins wide, and the walk made it fourteen
+
+Every seat was the player's record stepped one to three wins a seed, and the far
+conference stepped down from a 62 to 68 win top seed the same way. So an East 8
+seed won 56 and every club in it was better than every club in the player's West,
+which a fan reads in one glance. `brkLadder()` holds each seed within two wins of
+where it usually lands, off `BRK_OVER` and the play-in line, and the player's own
+record is still never moved. `check-bracket` asserts the far conference runs at
+least fourteen wins top to bottom and that no 8 seed has a top six record.
 
 #### It names nobody, and that is this game's rule rather than a shortcut
 
@@ -9546,6 +9884,50 @@ disappeared into it, which is the flat court arriving by a different door. At
 .42 it is a floor lit in the club's colours. **The layer count and the layer
 types are identical in both states**, so the .35s fade between clubs still
 interpolates.
+
+### The game talks like a broadcast, not like its own source
+
+Reported by the owner: most of the text did not read like basketball. It read
+like the comments above it, which are allowed to argue at length. A sentence a
+player reads is a TV graphic or a play-by-play call, and it is written that way
+now across every screen.
+
+| was | is |
+|---|---|
+| The bracket got stiffer than the roster. | Ran into a better team. |
+| Unspent cap is production you never fielded. | You left $14M on the table. |
+| projected 56-26 · title odds 5% | Vegas: 56 wins · Dark horse, 5% |
+| 4.2 off / 4.7 def win shares | 18.1 pts · 4.1 reb · 7.3 ast |
+| Out in the First Round | Bounced in round one |
+| Nobody on this board can play there. | No centers on this roster. |
+| Spacing 0.73x | Spacing: Cramped |
+
+**American spelling and American words.** Center, color, parking lot, team
+rather than club, guys as well as men. `Point Centre` is `Point Center`; its key
+stays `point_centre` because a key can be stored and a name cannot.
+
+**A round is said the way a fan says it.** `roundPhrase()` turns the bracket's
+labels into "round one", "round two" and "the conference finals", and the
+headline, the bracket note, the resume chip and the board rows all read it.
+The gauge line under the headline no longer repeats the round.
+
+**Two sentences were false and are fixed rather than reworded.** The sign-in
+line said the career stays in this browser "whatever you do", and the badge
+note said the cabinet is "kept in this browser". Both have been on the account
+since the cloud save shipped. They ask `cloudReady()` now.
+
+**Win shares stay on the draft tile and leave the roster row.** The tile is a
+price decision and win shares are what the game rates on. The roster row is
+the man, and a man is his points, rebounds and assists.
+
+### The 1988 to 2002 Hornets are Charlotte's
+
+`CHH` pointed at the Pelicans, which is the legal entity that moved. The NBA handed
+that history back to Charlotte in 2014, and it is the history a Hornets fan means:
+Mourning, Larry Johnson and Muggsy. A Charlotte run in One Franchise had none of
+them and the draft note said "later the New Orleans Pelicans". It is `became:
+'CHO'` in `fetch-teams.mjs` and in `teams.json`, and `verify.mjs` asserts both
+directions.
 
 ### Playing all four modes, which is a different question from checking them
 

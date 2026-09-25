@@ -358,7 +358,7 @@
        that is one line from existing. See frontier.js. */
     if (e.opens) {
       const F = frontier();
-      if (!F) throw new Error('ledger: frontier.js is not loaded, cannot open "' + e.opens + '"');
+      if (!F) throw new Error('ledger: frontier.js isn\'t loaded, can\'t open "' + e.opens + '"');
       next = F.cross(next, e.opens);
     }
 
@@ -506,7 +506,7 @@
     }
     if (hostileWeight(world) > totalWeight() / 2) {
       return { removed: true, reason: 'vote',
-        say: 'The presidents called a vote. It was not close, and two of them had the statement '
+        say: 'The presidents called a vote. It wasn\'t close, and two of them had the statement '
           + 'written before the meeting started.' };
     }
     return { removed: false, angry };

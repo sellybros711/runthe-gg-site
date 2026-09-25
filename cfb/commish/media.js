@@ -62,7 +62,7 @@
     student: { name: 'A student paper', tone: 'the only person in the room the same age as the players' },
     tv: { name: 'Your own broadcaster', tone: 'works for the network that pays for all of this' },
     wire: { name: 'A wire reporter', tone: 'no adjectives, and it runs in four hundred papers' },
-    legal: { name: 'A reporter who covers the courts', tone: 'has read every filing and does not care about football' },
+    legal: { name: 'A reporter who covers the courts', tone: 'has read every filing and doesn\'t care about football' },
     local: { name: 'A local television reporter', tone: 'here for a ninety second package that leads the six' },
   };
 
@@ -140,18 +140,18 @@
       cast: (w, L) => biggestLoser(w, L),
       desk: (c) => 'from the ' + c.conf + ' footprint',
       ask: (c) => 'You took ' + Math.round(Math.abs(c.by) * 1000) / 10 + ' points of the pool off the '
-        + c.conf + '. That is real money in towns where the athletic department is the third '
+        + c.conf + '. That\'s real money in towns where the athletic department is the third '
         + 'biggest employer. What do I tell them tonight?',
       answers: [
         { id: 'own', label: 'Own it',
           body: 'Say the quiet part at the microphone: the money went where the audience went, '
-            + 'you decided that, and you would decide it again.',
+            + 'you decided that, and you\'d decide it again.',
           wrote: 'The commissioner said the money follows the audience and declined to soften it.',
           effects: { money: 1.4, autonomy: 1.2, access: -1.2, tradition: -0.8 },
           aimed: { SEC: { autonomy: 1.4 }, 'Big Ten': { autonomy: 1.2 },
             'Group of Five': { access: -1.6 }, Fans: { tradition: -1.2 } } },
         { id: 'process', label: 'Point at the formula',
-          body: 'It was not a decision about anybody, it was a formula, and the formula is '
+          body: 'It wasn\'t a decision about anybody, it was a formula, and the formula is '
             + 'published. Nobody has ever been comforted by this answer and nobody has ever '
             + 'been able to argue with it either.',
           wrote: 'Asked about the cut, the commissioner described the process twice and the effect never.',
@@ -176,8 +176,8 @@
       cast: (w, L) => ({ up: biggestWinner(w, L), down: biggestLoser(w, L) }),
       desk: () => 'and has written the same column for three commissioners',
       ask: (c) => 'The ' + c.up.conf + ' is up and the ' + c.down.conf + ' is down, and the '
-        + c.up.conf + ' is also the league that can end your term with a phone call. I am not '
-        + 'accusing you of anything. I am asking you to hear how it sounds.',
+        + c.up.conf + ' is also the league that can end your term with a phone call. I\'m not '
+        + 'accusing you of anything. I\'m asking you to hear how it sounds.',
       answers: [
         { id: 'hear', label: 'Say you hear it',
           body: 'Agree that it sounds exactly like that, and say the alternative was a league '
@@ -194,7 +194,7 @@
           aimed: { SEC: { autonomy: -1 }, 'Big Ten': { autonomy: -1 },
             Presidents: { exposure: -1.4 }, Fans: { tradition: -0.8 } } },
         { id: 'numbers', label: 'Give them the arithmetic',
-          body: 'Windows, ratings, households. It is the true reason and it is also the reason '
+          body: 'Windows, ratings, households. It\'s the true reason and it\'s also the reason '
             + 'that sounds most like a company. Both of those things are usually the case.',
           wrote: 'The commissioner answered a question about influence with four ratings numbers.',
           effects: { money: 1.2, inventory: 0.8, tradition: -0.6 },
@@ -215,24 +215,24 @@
          the signature that also gets the world, which almost nothing needs. */
       askOf: (c, q, sit, w) => 'The sport made ' + bn(w.money.pool) + ' this year and not one '
         + 'cent of it is shared with the people playing it. I have to write this piece either '
-        + 'way. What is the sentence you want in it?',
+        + 'way. What\'s the sentence you want in it?',
       answers: [
-        { id: 'coming', label: 'Say it is coming',
+        { id: 'coming', label: 'Say it\'s coming',
           body: 'Not a number and not a date, but the direction, said out loud by the person '
             + 'who decides it. Everyone in the room writes it down.',
-          wrote: 'The commissioner said revenue sharing is coming and would not say when.',
+          wrote: 'The commissioner said revenue sharing is coming and wouldn\'t say when.',
           effects: { labour: 1.6, cost: 0.8 },
           aimed: { Players: { labour: 2.2 }, Presidents: { cost: -1.2 }, SEC: { cost: -0.8 } },
           promise: { id: 'said-share', wait: [7, 13],
             note: 'A revenue share you said out loud was coming' } },
         { id: 'model', label: 'Defend the model',
-          body: 'Scholarships, facilities, coaching, a degree. It is all true and it has never '
+          body: 'Scholarships, facilities, coaching, a degree. It\'s all true and it has never '
             + 'once worked as an answer to this question.',
           wrote: 'The commissioner listed what players already receive. The student asked the follow-up.',
           effects: { labour: -1.4, cost: -1.2, tradition: 1 },
           aimed: { Players: { labour: -2.4 }, Presidents: { cost: 1.6 }, Fans: { tradition: 0.8 } } },
         { id: 'congress', label: 'Blame Washington',
-          body: 'You cannot write a share without an antitrust exemption and you have been '
+          body: 'You can\'t write a share without an antitrust exemption and you\'ve been '
             + 'asking for one for two years. True, and it reads as a man pointing at a door.',
           wrote: 'Asked about paying players, the commissioner talked about an antitrust exemption.',
           effects: { exposure: 1.2, labour: -0.6, autonomy: -0.8 },
@@ -246,13 +246,13 @@
       when: (w) => (w.labour.revShare || 0) > 0.001,
       cast: (w) => ({ share: w.labour.revShare, pool: w.money.pool }),
       desk: () => 'and files the version four hundred papers run',
-      ask: (c) => 'You are sending ' + pct(c.share) + ' of a ' + bn(c.pool) + ' pool to the '
+      ask: (c) => 'You\'re sending ' + pct(c.share) + ' of a ' + bn(c.pool) + ' pool to the '
         + 'players. Two questions and I need both on the record. Is that a floor or a '
         + 'ceiling, and who told you that number?',
       answers: [
         { id: 'floor', label: 'A floor',
-          body: 'The number goes up from here. It is the answer the players want and it is a '
-            + 'commitment the presidents have not agreed to.',
+          body: 'The number goes up from here. It\'s the answer the players want and it\'s a '
+            + 'commitment the presidents haven\'t agreed to.',
           wrote: 'The commissioner called the current share a floor, not a ceiling.',
           effects: { labour: 1.8, cost: 1.4, money: -0.8 },
           aimed: { Players: { labour: 2.4 }, Presidents: { cost: -1.8 }, SEC: { cost: -1.2 } } },
@@ -264,7 +264,7 @@
           aimed: { Players: { labour: -2.2 }, Presidents: { cost: 1.8 }, 'Big Ten': { cost: 1 } } },
         { id: 'room', label: 'Say who was in the room',
           body: 'Name the process: the presidents, the two leagues with the inventory, and no '
-            + 'players. It is the honest answer and it is an admission.',
+            + 'players. It\'s the honest answer and it\'s an admission.',
           wrote: 'The commissioner confirmed no player was in the room when the share was set.',
           effects: { labour: 0.8, exposure: 1.4, autonomy: -1 },
           aimed: { Players: { labour: 1.8 }, Presidents: { exposure: -2 },
@@ -289,13 +289,13 @@
           wrote: 'The commissioner said the employment consequences were understood and intended.',
           effects: { labour: 1.6, exposure: 1, autonomy: 0.8 },
           aimed: { Players: { labour: 2 }, Presidents: { exposure: -1.8 }, SEC: { labour: -1 } } },
-        { id: 'narrow', label: 'Say it is narrower than that',
-          body: 'It is a contract for a specific thing and not a job. Lawyers will decide '
-            + 'whether that is true and it will not be you.',
+        { id: 'narrow', label: 'Say it\'s narrower than that',
+          body: 'It\'s a contract for a specific thing and not a job. Lawyers will decide '
+            + 'whether that is true and it won\'t be you.',
           wrote: 'The commissioner said the arrangement is narrower than employment. The reporter asked who decides.',
           effects: { labour: -1, exposure: -0.8, autonomy: 0.6 },
           aimed: { Players: { labour: -1.4 }, Presidents: { exposure: 1.2 } } },
-        { id: 'union', label: 'Say you would sit with a union',
+        { id: 'union', label: 'Say you\'d sit with a union',
           body: 'Not that there is one. That if there were, this office would sit across from '
             + 'it. Nobody in this job has said that in a ballroom before.',
           wrote: 'The commissioner said the office would negotiate with a players association if one existed.',
@@ -318,7 +318,7 @@
       cast: (w) => ({ years: w.labour.proYears == null ? 1 : w.labour.proYears,
         window: (w.labour.reentry || 'open') === 'window' }),
       desk: () => 'and has covered the same locker room since before any of them were born',
-      ask: (c) => 'There is a man on a roster this August who spent last August in a '
+      ask: (c) => 'There\'s a man on a roster this August who spent last August in a '
         + 'professional camp. He is ' + (c.years >= 2 ? 'twenty-five' : 'twenty-four') + '. He is '
         + 'going to line up opposite an eighteen-year-old who graduated in May. Is that the sport '
         + 'you wanted?',
@@ -332,13 +332,13 @@
             SEC: { labour: -0.6 } } },
         { id: 'age', label: 'Say the age is the problem',
           body: 'Not the door, the calendar. Concede that a twenty-five-year-old against a '
-            + 'freshman is a different sport, and say you will look at the limit.',
+            + 'freshman is a different sport, and say you\'ll look at the limit.',
           wrote: 'The commissioner said the age gap, not the door, is what needs looking at.',
           effects: { tradition: 1.2, labour: -0.4, cost: 0.4 },
           aimed: { Fans: { tradition: 1.6 }, Players: { labour: -0.8 } } },
         { id: 'roster', label: 'Turn it into a roster question',
           body: 'There are eighty-five places and every one taken by a returning professional '
-            + 'is one not offered to a seventeen-year-old. It is the answer that moves the '
+            + 'is one not offered to a seventeen-year-old. It\'s the answer that moves the '
             + 'argument to a room the coaches are in.',
           wrote: 'The commissioner reframed the return rule as a question about roster limits.',
           effects: { access: 1.2, labour: -1, tradition: 0.6 },
@@ -359,16 +359,16 @@
         + 'those two leagues is following your rule?',
       answers: [
         { id: 'both', label: 'Say both are',
-          body: 'You devolved it, they wrote it, that is the system working. It is defensible '
-            + 'and it is the sound of a national office admitting it is not one.',
-          wrote: 'The commissioner said both conferences are following the rule, because there is no rule.',
+          body: 'You devolved it, they wrote it, that\'s the system working. It\'s defensible '
+            + 'and it\'s the sound of a national office admitting it isn\'t one.',
+          wrote: 'The commissioner said both conferences are following the rule, because there\'s no rule.',
           effects: { autonomy: 1.6, access: -1, exposure: 1 },
           aimed: { SEC: { autonomy: 1.8 }, 'Big Ten': { autonomy: 1.6 },
             'Group of Five': { access: -1.4 }, Presidents: { exposure: -1.4 } } },
         { id: 'take', label: 'Take it back',
           body: 'Say at the microphone that eligibility is going to be national again, before '
             + 'you have the votes. Two leagues are going to find out about this from a phone.',
-          wrote: 'The commissioner said eligibility will be written nationally again. Two conferences had not been told.',
+          wrote: 'The commissioner said eligibility will be written nationally again. Two conferences hadn\'t been told.',
           effects: { autonomy: -2, access: 1.6, exposure: 0.8 },
           aimed: { SEC: { autonomy: -2.2 }, 'Big Ten': { autonomy: -2 },
             'Group of Five': { access: 2 }, Fans: { tradition: 1 } },
@@ -389,27 +389,27 @@
       when: (w) => (w.labour.portalWindows || 0) >= 2 && Object.keys(w.membership || {}).length > 8,
       cast: (w) => pairOf(w, 'portal'),
       desk: () => 'and takes forty calls a morning about exactly this',
-      ask: (c) => 'A quarterback started nine games for ' + c.from + ' in November. He is on '
-        + c.to + '\'s roster in July. Third school in three years. My callers do not want '
+      ask: (c) => 'A quarterback started nine games for ' + c.from + ' in November. He\'s on '
+        + c.to + '\'s roster in July. Third school in three years. My callers don\'t want '
         + 'to hear about freedom of movement, they want to know who they are supposed to buy '
         + 'a jersey for.',
       answers: [
         { id: 'free', label: 'Defend the movement',
           body: 'Coaches have always left in December for more money and nobody made them sit '
             + 'a year. Say that, in that order, on the radio.',
-          wrote: 'The commissioner compared player movement to coaching contracts and did not blink.',
+          wrote: 'The commissioner compared player movement to coaching contracts and didn\'t blink.',
           effects: { labour: 1.6, tradition: -1.4 },
           aimed: { Players: { labour: 2.2 }, Fans: { tradition: -2 },
             'Group of Five': { access: -0.8 } } },
         { id: 'windows', label: 'Blame the calendar',
-          body: 'It is not the movement, it is that the windows sit on top of signing day and '
+          body: 'It isn\'t the movement, it\'s that the windows sit on top of signing day and '
             + 'the playoff. Fix the calendar and half of this goes away. Mostly true.',
           wrote: 'The commissioner said the transfer calendar, not transfers, is the problem.',
           effects: { inventory: 0.6, tradition: 0.8, labour: -0.4 },
           aimed: { Fans: { tradition: 1.2 }, Networks: { inventory: 0.8 } } },
         { id: 'jersey', label: 'Answer the question he asked',
           body: 'Tell his callers to buy the school\'s jersey, because the school is the '
-            + 'thing that is still there in ten years. It is a sentimental answer and it is '
+            + 'thing that is still there in ten years. It\'s a sentimental answer and it is '
             + 'the one that gets clipped and shared.',
           wrote: 'The commissioner told fans to buy the school on the front, not the name on the back.',
           effects: { tradition: 2, labour: -0.8 },
@@ -434,7 +434,7 @@
         + '. At what number does a postseason stop being a postseason and start being a '
         + 'second season?',
       answers: [
-        { id: 'more', label: 'Say there is room for more',
+        { id: 'more', label: 'Say there\'s room for more',
           body: 'The professional league plays twenty and nobody calls it a second season. It '
             + 'is the answer the networks came to hear.',
           wrote: 'The commissioner said the field could still grow.',
@@ -469,16 +469,16 @@
         + 'big leagues actually have to do?',
       answers: [
         { id: 'win', label: 'Tell them to win out',
-          body: 'Go unbeaten and beat somebody in September. It is what the committee says and '
-            + 'it is not quite what the committee does.',
+          body: 'Go unbeaten and beat somebody in September. It\'s what the committee says and '
+            + 'it isn\'t quite what the committee does.',
           wrote: 'The commissioner said an unbeaten season and a September win are the path.',
           effects: { access: -1, tradition: 0.4 },
           aimed: { 'Group of Five': { access: -2 }, SEC: { access: 0.8 },
             'Big 12': { access: -0.6 } } },
         { id: 'admit', label: 'Admit the math',
           body: 'Say the true thing: with this many bids, an unbeaten season outside the four '
-            + 'is not enough on its own and everybody in the sport knows it.',
-          wrote: 'The commissioner conceded that an unbeaten outsider is not guaranteed a place.',
+            + 'isn\'t enough on its own and everybody in the sport knows it.',
+          wrote: 'The commissioner conceded that an unbeaten outsider isn\'t guaranteed a place.',
           effects: { access: 1.2, exposure: 0.8, tradition: 0.6 },
           aimed: { 'Group of Five': { access: 2.2 }, 'Big 12': { access: 1 },
             SEC: { access: -0.8 }, Presidents: { exposure: -1 } },
@@ -486,7 +486,7 @@
             note: 'An automatic bid you as good as promised' } },
         { id: 'committee', label: 'Defend the committee',
           body: 'Twelve people in a room for four days, and they get it right more often than '
-            + 'a formula would. It is the institutional answer and it is not indefensible.',
+            + 'a formula would. It\'s the institutional answer and it isn\'t indefensible.',
           wrote: 'The commissioner defended selection by committee and named no criteria.',
           effects: { autonomy: 1, access: -0.6, tradition: 0.8 },
           aimed: { Presidents: { autonomy: 0.8 }, 'Group of Five': { access: -1.2 },
@@ -506,18 +506,18 @@
       desk: () => 'and counted them on the walk in',
       ask: (c) => 'I counted ' + c.n + ' company names on the way into this building. On the '
         + 'trophy, on the jersey, on the bowl my grandfather went to. Is there anything in this '
-        + 'sport that is not for sale?',
+        + 'sport that isn\'t for sale?',
       answers: [
         { id: 'pays', label: 'Say what it pays for',
           body: 'Name the thing the money does: the sports that lose money, the scholarships, '
-            + 'the buildings. It is the honest answer and it sounds like a brochure.',
-          wrote: 'The commissioner said sponsorship pays for the sports that do not pay for themselves.',
+            + 'the buildings. It\'s the honest answer and it sounds like a brochure.',
+          wrote: 'The commissioner said sponsorship pays for the sports that don\'t pay for themselves.',
           effects: { money: 1.2, tradition: -0.8, cost: -0.6 },
           aimed: { Presidents: { cost: 1.4 }, Fans: { tradition: -1.2 },
             Networks: { money: 0.8 } } },
         { id: 'line', label: 'Say the trophy is never for sale',
           body: 'One thing, named out loud, that will never carry a company on it: the '
-            + 'national championship trophy. It is a small promise and it is the only '
+            + 'national championship trophy. It\'s a small promise and it\'s the only '
             + 'sentence from this press conference anybody remembers.',
           wrote: 'The commissioner promised the national championship trophy will never carry a sponsor.',
           effects: { tradition: 2.2, money: -1, inventory: -0.8 },
@@ -546,7 +546,7 @@
         + 'about?',
       answers: [
         { id: 'both', label: 'Say you thought about both',
-          body: 'And that the money funds the monitoring that catches it. It is circular, it is '
+          body: 'And that the money funds the monitoring that catches it. It\'s circular, it is '
             + 'what every league says, and it happens to be how it actually works.',
           wrote: 'The commissioner said betting revenue funds the integrity monitoring.',
           effects: { money: 1, exposure: 0.8, tradition: -0.6 },
@@ -560,7 +560,7 @@
           aimed: { Players: { labour: 2.6 }, Fans: { tradition: 0.8 },
             Presidents: { exposure: -1.2 } } },
         { id: 'legal', label: 'Point at the states',
-          body: 'It is legal in forty of them and it is happening whether this office has a '
+          body: 'It\'s legal in forty of them and it\'s happening whether this office has a '
             + 'partner or not. Being inside it is the only way to see it.',
           wrote: 'The commissioner said the sport is safer inside the betting market than outside it.',
           effects: { money: 1.2, autonomy: 0.8, exposure: 0.6 },
@@ -579,15 +579,15 @@
       when: (w, L, sit) => !!(sit && sit.gone && sit.gone.length),
       cast: (w, L, sit) => ({ conf: sit.gone[0] }),
       desk: (c) => 'who covered the ' + c.conf + ' for nineteen years',
-      ask: (c) => 'The ' + c.conf + ' does not exist any more. I am not going to ask you '
-        + 'whether that is sad. I am going to ask whether this office killed it or watched it '
+      ask: (c) => 'The ' + c.conf + ' doesn\'t exist any more. I\'m not going to ask you '
+        + 'whether that is sad. I\'m going to ask whether this office killed it or watched it '
         + 'happen, because those are different jobs and only one of them is yours.',
       answers: [
         { id: 'watched', label: 'Say you watched',
-          body: 'This office does not own the schools and cannot stop one leaving. It is true, '
-            + 'it is the whole problem with the job, and saying it out loud is an admission '
+          body: 'This office doesn\'t own the schools and can\'t stop one leaving. It\'s true, '
+            + 'it\'s the whole problem with the job, and saying it out loud is an admission '
             + 'that the office is weaker than the leagues in it.',
-          wrote: 'The commissioner said the office could not have stopped it and would not pretend otherwise.',
+          wrote: 'The commissioner said the office couldn\'t have stopped it and wouldn\'t pretend otherwise.',
           effects: { autonomy: -1.6, tradition: 0.8, exposure: 0.4 },
           aimed: { SEC: { autonomy: 1.2 }, 'Big Ten': { autonomy: 1 },
             Fans: { tradition: 1 }, 'Group of Five': { access: -0.8 } } },
@@ -600,7 +600,7 @@
             Presidents: { exposure: -2.2 }, SEC: { money: -0.8 } } },
         { id: 'forward', label: 'Refuse the frame',
           body: 'Say the sport is bigger than any one league and turn to the next question. It '
-            + 'works in the room and it is the answer that runs under his photograph.',
+            + 'works in the room and it\'s the answer that runs under his photograph.',
           wrote: 'Asked about a dead conference, the commissioner said the sport is bigger than any one league.',
           effects: { tradition: -1.6, autonomy: 0.8 },
           aimed: { Fans: { tradition: -2 }, 'Group of Five': { access: -1.2 },
@@ -619,22 +619,22 @@
         + 'been told by somebody that it is fine. Is it fine?',
       answers: [
         { id: 'no', label: 'Say no',
-          body: 'It is not fine, and the schools in it should hear that from this office before '
-            + 'they hear it from an agent. Cruel, and it is the useful answer.',
-          wrote: 'The commissioner said publicly that a conference is not viable at its current size.',
+          body: 'It isn\'t fine, and the schools in it should hear that from this office before '
+            + 'they hear it from an agent. Cruel, and it\'s the useful answer.',
+          wrote: 'The commissioner said publicly that a conference isn\'t viable at its current size.',
           effects: { exposure: 1.2, access: 0.8, tradition: -0.6, autonomy: 1 },
           aimed: { Presidents: { exposure: -1.4 }, Fans: { tradition: -0.8 },
             'Group of Five': { access: 1 } } },
-        { id: 'yes', label: 'Say it is fine',
-          body: 'Steady the market. If you are wrong, this clip runs on the day it folds, with '
+        { id: 'yes', label: 'Say it\'s fine',
+          body: 'Steady the market. If you\'re wrong, this clip runs on the day it folds, with '
             + 'the date in the corner.',
           wrote: 'The commissioner said the conference is stable. The clip has a date in the corner.',
           effects: { tradition: 1, exposure: -0.6, access: 0.4 },
           aimed: { ACC: { tradition: 1.2 }, 'Big 12': { access: 0.8 },
             Presidents: { exposure: 0.8 } } },
         { id: 'help', label: 'Say the office will help',
-          body: 'A scheduling agreement, a bid path, something with a shape. You have not '
-            + 'cleared it with anybody and you are about to.',
+          body: 'A scheduling agreement, a bid path, something with a shape. You haven\'t '
+            + 'cleared it with anybody and you\'re about to.',
           wrote: 'The commissioner promised the office would intervene to keep a conference alive.',
           effects: { access: 1.6, cost: 1, autonomy: -0.8 },
           aimed: { ACC: { access: 1.8 }, 'Big 12': { access: 1.4 },
@@ -660,7 +660,7 @@
         + 'want to know who asked you to.',
       answers: [
         { id: 'safety', label: 'Say it was the doctors',
-          body: 'Fewer plays, fewer collisions, a shorter afternoon. It is the reason and it is '
+          body: 'Fewer plays, fewer collisions, a shorter afternoon. It\'s the reason and it is '
             + 'the reason nobody wants.',
           wrote: 'The commissioner said the rule changes came from medical advice.',
           effects: { labour: 1.4, tradition: -1, inventory: -0.6 },
@@ -673,7 +673,7 @@
           effects: { inventory: 1.4, money: 0.8, tradition: -1.6 },
           aimed: { Networks: { inventory: 2 }, Fans: { tradition: -2.2 } } },
         { id: 'defend', label: 'Say the game is better',
-          body: 'No committee, no network, no doctor. You watched it and it is better. It is '
+          body: 'No committee, no network, no doctor. You watched it and it\'s better. It is '
             + 'the answer with no cover behind it.',
           wrote: 'The commissioner said the game is simply better this way and offered no other reason.',
           effects: { autonomy: 1.6, tradition: 0.6 },
@@ -687,7 +687,7 @@
       who: 'wire',
       when: (w) => w.posture.nonRevGuarantee === false,
       desk: () => 'and has the sponsorship numbers from every athletic department',
-      ask: () => 'The guarantee for the sports that do not make money is gone. Somewhere this '
+      ask: () => 'The guarantee for the sports that don\'t make money is gone. Somewhere this '
         + 'fall a swimming program gets a letter. Does this office count that as a cost of '
         + 'the decision or as somebody else\'s decision entirely?',
       answers: [
@@ -699,15 +699,15 @@
           aimed: { Presidents: { cost: -1.6 }, Fans: { tradition: 1.2 },
             Players: { labour: 0.8 } } },
         { id: 'theirs', label: 'Call it theirs',
-          body: 'Every school chooses its own sports and always has. Accurate, and it is a man '
+          body: 'Every school chooses its own sports and always has. Accurate, and it\'s a man '
             + 'describing a hole he dug as weather.',
           wrote: 'The commissioner said program cuts are decisions made on campus.',
           effects: { cost: -1, autonomy: 0.8, tradition: -1.2 },
           aimed: { Presidents: { cost: 1.4 }, Fans: { tradition: -1.4 },
             Players: { labour: -0.8 } } },
-        { id: 'fund', label: 'Say you will fund them centrally',
-          body: 'A line in the distribution for the sports that lose money. It is the right '
-            + 'answer and it is a bill you have just written for two leagues who are listening.',
+        { id: 'fund', label: 'Say you\'ll fund them centrally',
+          body: 'A line in the distribution for the sports that lose money. It\'s the right '
+            + 'answer and it\'s a bill you have just written for two leagues who are listening.',
           wrote: 'The commissioner floated central funding for non-revenue sports.',
           effects: { cost: 1.8, money: -1, tradition: 1.4, access: 0.6 },
           aimed: { Presidents: { cost: -1.2 }, Fans: { tradition: 1.8 },
@@ -724,19 +724,19 @@
       who: 'national',
       when: (w, L, sit) => !!(sit && sit.shaky) && !(sit && sit.firstYear),
       desk: () => 'who has already been briefed against you by two people in this building',
-      ask: () => 'Two presidents have told me on background that you will not finish your term. '
-        + 'They are in this hotel. I am giving you the chance to say something to them with a '
+      ask: () => 'Two presidents have told me on background that you won\'t finish your term. '
+        + 'They\'re in this hotel. I\'m giving you the chance to say something to them with a '
         + 'microphone on, which is more than they gave you.',
       answers: [
         { id: 'name', label: 'Dare them to say it out loud',
-          body: 'Invite them to put a name on it. It is the most watched forty seconds of the '
+          body: 'Invite them to put a name on it. It\'s the most watched forty seconds of the '
             + 'summer and it makes the vote a public thing rather than a private one.',
           wrote: 'The commissioner challenged anonymous critics to speak on the record.',
           effects: { autonomy: 2, exposure: 1.6 },
           aimed: { Presidents: { exposure: -2.4, autonomy: -1.4 },
             Fans: { tradition: 1.4 }, Players: { labour: 0.6 } } },
         { id: 'work', label: 'Refuse to engage',
-          body: 'You have a job to do and you are doing it. It is the correct answer and it is '
+          body: 'You have a job to do and you\'re doing it. It\'s the correct answer and it is '
             + 'the one that lets them keep briefing.',
           wrote: 'The commissioner declined to respond to anonymous criticism.',
           effects: { exposure: -1, autonomy: -0.4 },
@@ -757,8 +757,8 @@
       who: 'wire',
       when: (w, L, sit) => !!(sit && sit.firstYear),
       desk: () => 'and will file whatever you say in eleven minutes',
-      ask: () => 'Nobody in this room voted for you and most of them could not have picked you '
-        + 'out of a line-up in March. First question of your first media days, and it is the '
+      ask: () => 'Nobody in this room voted for you and most of them couldn\'t have picked you '
+        + 'out of a line-up in March. First question of your first media days, and it\'s the '
         + 'only one anybody will remember: what are you actually for?',
       answers: [
         { id: 'players', label: 'The people playing it',
@@ -769,15 +769,15 @@
           aimed: { Players: { labour: 2.8 }, Presidents: { cost: -1.4 },
             SEC: { labour: -1 }, Fans: { tradition: 0.6 } } },
         { id: 'game', label: 'The game',
-          body: 'Saturdays, rivalries, the thing that was there before the money. It is the '
-            + 'safest answer in this building and it is not empty.',
+          body: 'Saturdays, rivalries, the thing that was there before the money. It\'s the '
+            + 'safest answer in this building and it isn\'t empty.',
           wrote: 'The new commissioner said the job is to protect Saturdays.',
           effects: { tradition: 2.2, money: -0.6, inventory: -0.4 },
           aimed: { Fans: { tradition: 3 }, ACC: { tradition: 1 },
             Networks: { inventory: -0.6 } } },
         { id: 'stable', label: 'Holding it together',
           body: 'The sport is one bad year from breaking into two and your job is to stop that. '
-            + 'It is the true answer and nobody has ever cheered for it.',
+            + 'It\'s the true answer and nobody has ever cheered for it.',
           wrote: 'The new commissioner said the job is to stop the sport splitting in two.',
           effects: { autonomy: 1.2, access: 0.8, exposure: -1 },
           aimed: { Presidents: { exposure: 1.6 }, ACC: { access: 1.2 },
@@ -798,7 +798,7 @@
         + 'So: what did you not get done, and who stopped you?',
       answers: [
         { id: 'name', label: 'Name who stopped you',
-          body: 'Say the league, in the room, in your last summer. It is the most honest thing '
+          body: 'Say the league, in the room, in your last summer. It\'s the most honest thing '
             + 'anybody has said from this lectern and it costs you the vote you need in December.',
           wrote: 'At a final media days the commissioner named the conference that had '
             + 'blocked them.',
@@ -807,14 +807,14 @@
             Fans: { tradition: 1.6 }, Players: { labour: 1.2 },
             'Group of Five': { access: 1.4 } } },
         { id: 'own', label: 'Say it was you',
-          body: 'Nobody stopped you. You did not have the votes and you did not go and get '
-            + 'them. It is a graceful answer and it is also, usually, accurate.',
+          body: 'Nobody stopped you. You didn\'t have the votes and you didn\'t go and get '
+            + 'them. It\'s a graceful answer and it\'s also, usually, accurate.',
           wrote: 'The commissioner said the coalition was never built, and blamed nobody else.',
           effects: { tradition: 1.4, autonomy: -1, exposure: -0.6 },
           aimed: { Presidents: { exposure: 1.4 }, SEC: { autonomy: 1 },
             Fans: { tradition: 1.2 } } },
         { id: 'nothing', label: 'Say you got it done',
-          body: 'Claim the term. It is what the office would want and it is the one answer in '
+          body: 'Claim the term. It\'s what the office would want and it\'s the one answer in '
             + 'this room that nobody believes, including the person giving it.',
           wrote: 'The commissioner said the term achieved what it set out to and took no more questions.',
           effects: { autonomy: 0.8, tradition: -1.4 },
@@ -835,7 +835,7 @@
         + 'this office says the process worked. Did it?',
       answers: [
         { id: 'worked', label: 'Say it worked',
-          body: 'A line has to be somewhere and somebody is always just under it. It is the '
+          body: 'A line has to be somewhere and somebody is always just under it. It\'s the '
             + 'answer every commissioner gives and it has the advantage of being true.',
           wrote: 'The commissioner said the selection process worked and named no team.',
           effects: { tradition: 0.8, access: -1, autonomy: 0.8 },
@@ -849,8 +849,8 @@
           aimed: { 'Group of Five': { access: 2.4 }, Networks: { inventory: 2 },
             'Big 12': { access: 1.4 }, Fans: { tradition: -1.4 } } },
         { id: 'october', label: 'Say the regular season decided it',
-          body: 'They lost in October and that is what October is for. It is the most '
-            + 'traditional answer available and it is the one that defends the sport rather '
+          body: 'They lost in October and that\'s what October is for. It\'s the most '
+            + 'traditional answer available and it\'s the one that defends the sport rather '
             + 'than the committee.',
           wrote: 'The commissioner said the regular season, not the committee, left them out.',
           effects: { tradition: 2, access: -0.8, inventory: -0.6 },
@@ -866,16 +866,16 @@
       desk: () => 'and knows exactly what the categories are worth',
       ask: () => 'Not one thing in this sport carries a company name. Every league you compete '
         + 'with has sold the ball, the jersey and the halftime. Is that a decision or is it a '
-        + 'sales department that has not called anybody?',
+        + 'sales department that hasn\'t called anybody?',
       answers: [
-        { id: 'decision', label: 'Say it is a decision',
-          body: 'The sport looks the way it looks and that is worth something you cannot put '
+        { id: 'decision', label: 'Say it\'s a decision',
+          body: 'The sport looks the way it looks and that\'s worth something you can\'t put '
             + 'in a contract. Say it on the network that would like to sell you the contract.',
           wrote: 'The commissioner said keeping the sport unsponsored is deliberate.',
           effects: { tradition: 2, money: -1.2, inventory: -0.8 },
           aimed: { Fans: { tradition: 2.6 }, Networks: { money: -1.2 },
             Presidents: { cost: -1 } } },
-        { id: 'open', label: 'Say you are listening',
+        { id: 'open', label: 'Say you\'re listening',
           body: 'Open for business, in a room full of people whose job is to report that. Nine '
             + 'category heads will have called the office by Friday.',
           wrote: 'The commissioner said the office is open to title sponsorship.',
@@ -883,8 +883,8 @@
           aimed: { Networks: { money: 1.6 }, Presidents: { cost: 1.4 },
             Fans: { tradition: -1.8 }, SEC: { money: 1.2 } } },
         { id: 'players', label: 'Say it depends where the money goes',
-          body: 'You will sell anything if the money reaches the players, and nothing if it '
-            + 'reaches the buildings. That is a condition, in public, with witnesses.',
+          body: 'You\'ll sell anything if the money reaches the players, and nothing if it '
+            + 'reaches the buildings. That\'s a condition, in public, with witnesses.',
           wrote: 'The commissioner said sponsorship money would have to reach players first.',
           effects: { labour: 1.8, money: 0.8, cost: 1 },
           aimed: { Players: { labour: 2.4 }, Presidents: { cost: -1.4 },
@@ -901,16 +901,16 @@
         + 'takes none of the money and gets none of the data. Two other leagues found their '
         + 'integrity cases through partner monitoring. How are you going to find yours?',
       answers: [
-        { id: 'partner', label: 'Say you are going to partner',
+        { id: 'partner', label: 'Say you\'re going to partner',
           body: 'Take the money and the monitoring together, because the second only comes '
-            + 'with the first. It is the practical answer and the clip is you saying yes to a '
+            + 'with the first. It\'s the practical answer and the clip is you saying yes to a '
             + 'sportsbook.',
           wrote: 'The commissioner said a betting partnership is coming, for the monitoring.',
           effects: { money: 1.6, exposure: 1.2, tradition: -1.4 },
           aimed: { Networks: { money: 1.4 }, Presidents: { exposure: -1.4 },
             Fans: { tradition: -1.6 }, Players: { labour: -0.8 } } },
-        { id: 'ban', label: 'Say you would ban it if you could',
-          body: 'You cannot. It is legal in most of the country. Saying it anyway tells '
+        { id: 'ban', label: 'Say you\'d ban it if you could',
+          body: 'You can\'t. It\'s legal in most of the country. Saying it anyway tells '
             + 'everybody exactly where this office stands, and some of them will be relieved.',
           wrote: 'The commissioner said betting on the sport would be banned if this office '
             + 'could ban it.',
@@ -934,7 +934,7 @@
       desk: () => 'and covered the last three negotiations',
       ask: (c) => 'You have ' + c.years + ' years of certainty and ' + bn(c.pool) + ' a year, '
         + 'which is the most comfortable position anybody in this chair has ever been in. Every '
-        + 'commissioner who has been comfortable has been replaced by somebody who was not. '
+        + 'commissioner who has been comfortable has been replaced by somebody who wasn\'t. '
         + 'What are you doing with the time?',
       answers: [
         { id: 'fix', label: 'Fixing the things nobody will pay for',
@@ -946,15 +946,15 @@
             Fans: { tradition: 1.4 }, Presidents: { cost: -0.8 } } },
         { id: 'grow', label: 'Making the next one bigger',
           body: 'Four years of building inventory so the next negotiation starts from a better '
-            + 'place. It is what the job is measured on and everybody in the room knows it.',
+            + 'place. It\'s what the job is measured on and everybody in the room knows it.',
           wrote: 'The commissioner said the years of certainty will be spent building for the next deal.',
           effects: { money: 1.6, inventory: 1.4, tradition: -1 },
           aimed: { Networks: { inventory: 1.6 }, SEC: { money: 1.4 },
             'Big Ten': { money: 1.2 }, Fans: { tradition: -1.2 } } },
-        { id: 'nothing', label: 'Say the job is not to break it',
-          body: 'The sport is working. Do not touch it. It is an unfashionable answer and it '
+        { id: 'nothing', label: 'Say the job isn\'t to break it',
+          body: 'The sport is working. Don\'t touch it. It\'s an unfashionable answer and it '
             + 'is the one most of your predecessors would have given.',
-          wrote: 'The commissioner said the priority is not breaking a sport that works.',
+          wrote: 'The commissioner said the priority isn\'t breaking a sport that works.',
           effects: { tradition: 1.4, autonomy: -0.8, access: -1 },
           aimed: { Fans: { tradition: 1.6 }, SEC: { autonomy: 1.2 },
             'Group of Five': { access: -1.6 }, Players: { labour: -0.8 } } },
@@ -1001,27 +1001,27 @@
       when: () => true,
       desk: () => 'and looked up the salaries before coming in',
       ask: () => 'The highest paid public employee in thirty-nine states is a football coach. '
-        + 'Some of them are in this hotel. They are paid by the same institutions that spent a '
-        + 'decade arguing the people they coach cannot be paid anything at all. How do you '
+        + 'Some of them are in this hotel. They\'re paid by the same institutions that spent a '
+        + 'decade arguing the people they coach can\'t be paid anything at all. How do you '
         + 'hold both of those?',
       answers: [
-        { id: 'cant', label: 'Say you cannot',
-          body: 'Admit it does not hold, in front of forty coaches. It is the only honest '
-            + 'answer to this question and it is not what anybody in the room expects.',
-          wrote: 'The commissioner said the coaching market and the amateurism argument do not hold together.',
+        { id: 'cant', label: 'Say you can\'t',
+          body: 'Admit it doesn\'t hold, in front of forty coaches. It\'s the only honest '
+            + 'answer to this question and it isn\'t what anybody in the room expects.',
+          wrote: 'The commissioner said the coaching market and the amateurism argument don\'t hold together.',
           effects: { labour: 2, exposure: 1.2, cost: 0.8, tradition: -0.8 },
           aimed: { Players: { labour: 2.6 }, Presidents: { exposure: -1.6 },
             SEC: { labour: -1.2 }, Fans: { tradition: 0.8 } } },
         { id: 'market', label: 'Call it a market',
           body: 'Forty schools bidding for twelve people produces those numbers, and no rule '
-            + 'this office writes changes arithmetic. True, and it is the answer of a man who '
+            + 'this office writes changes arithmetic. True, and it\'s the answer of a man who '
             + 'has read the question and declined it.',
           wrote: 'The commissioner described coaching salaries as a market outcome.',
           effects: { money: 0.8, labour: -1.2, autonomy: 0.8 },
           aimed: { Players: { labour: -1.8 }, Presidents: { cost: 0.8 },
             SEC: { autonomy: 1 } } },
         { id: 'cap', label: 'Float a cap on the staff',
-          body: 'A limit on what a program can spend on people who are not playing. It has '
+          body: 'A limit on what a program can spend on people who aren\'t playing. It has '
             + 'never survived a court and saying it here starts the argument.',
           wrote: 'The commissioner floated a limit on what programs spend on coaching staff.',
           effects: { cost: -1.6, exposure: 1.8, access: 1.4, labour: 0.6 },
@@ -1049,7 +1049,7 @@
             'Group of Five': { access: -2.2 } } },
         { id: 'checks', label: 'Defend the checks',
           body: 'Those games fund entire athletic departments, and one of them is why a school '
-            + 'in his own market still has a team. It is the answer that wins the argument and '
+            + 'in his own market still has a team. It\'s the answer that wins the argument and '
             + 'loses the room.',
           wrote: 'The commissioner defended guarantee games as the funding model for smaller programs.',
           effects: { access: 1.6, money: 0.6, tradition: -1.4 },
@@ -1057,7 +1057,7 @@
             Networks: { inventory: -0.8 } } },
         { id: 'mandate', label: 'Promise a non-conference standard',
           body: 'Everybody plays one real opponent outside the league or the committee counts '
-            + 'it against them. It is a rule and you have just announced it on the radio.',
+            + 'it against them. It\'s a rule and you have just announced it on the radio.',
           wrote: 'The commissioner said a non-conference standard is coming for every program.',
           effects: { tradition: 1.6, access: 0.8, autonomy: -1, inventory: 1 },
           aimed: { Fans: { tradition: 2 }, Networks: { inventory: 1.2 },
@@ -1079,22 +1079,22 @@
       ask: () => 'Everybody here knows what college football is worth. Nobody has said what it '
         + 'is for. Not what it pays for. What it is for.',
       answers: [
-        { id: 'school', label: 'It is the school',
+        { id: 'school', label: 'It\'s the school',
           body: 'Forty thousand people who went to the same place, in one afternoon, once a '
-            + 'week. It is the answer that is true and unfashionable.',
+            + 'week. It\'s the answer that is true and unfashionable.',
           wrote: 'The commissioner said the sport exists to be the front porch of a university.',
           effects: { tradition: 2, money: -0.8 },
           aimed: { Fans: { tradition: 2.6 }, Presidents: { cost: 0.6 },
             Networks: { inventory: -0.6 } } },
-        { id: 'players', label: 'It is for the players',
+        { id: 'players', label: 'It\'s for the players',
           body: 'Four years, a degree if they want it, and the only stage most of them will '
             + 'ever have. Say that in front of the people who set the share.',
           wrote: 'The commissioner said the sport is for the people playing it.',
           effects: { labour: 1.8, cost: 0.6, tradition: 0.4 },
           aimed: { Players: { labour: 2.4 }, Presidents: { cost: -0.8 },
             Fans: { tradition: 0.6 } } },
-        { id: 'honest', label: 'Say it is an industry now',
-          body: 'It is a television business with a campus attached and pretending otherwise is '
+        { id: 'honest', label: 'Say it\'s an industry now',
+          body: 'It\'s a television business with a campus attached and pretending otherwise is '
             + 'how people get lied to. Nobody has ever said this on the first day of July.',
           wrote: 'The commissioner called college football a television business with a campus attached.',
           effects: { money: 1.6, tradition: -2, exposure: 0.8 },
@@ -1115,15 +1115,15 @@
       answers: [
         { id: 'more', label: 'Talk up the inventory',
           body: 'More windows, more games worth watching, and a postseason that sells itself. '
-            + 'It is a negotiation conducted in public and it is what he came for.',
+            + 'It\'s a negotiation conducted in public and it\'s what he came for.',
           wrote: 'The commissioner spent the answer describing the inventory. Analysts raised their projections.',
           effects: { inventory: 1.8, money: 1.4, tradition: -0.8 },
           aimed: { Networks: { inventory: 2 }, SEC: { money: 1.2 },
             Fans: { tradition: -1 } } },
-        { id: 'less', label: 'Say the number is not the point',
+        { id: 'less', label: 'Say the number isn\'t the point',
           body: 'A bigger number that costs another Saturday night is a worse deal. Refuse the '
             + 'frame on the network\'s own broadcast.',
-          wrote: 'The commissioner told the network\'s own reporter that the rights number is not the measure.',
+          wrote: 'The commissioner told the network\'s own reporter that the rights number isn\'t the measure.',
           effects: { tradition: 1.8, inventory: -1.2, money: -0.8 },
           aimed: { Fans: { tradition: 2.2 }, Networks: { inventory: -1.6 },
             'Big Ten': { money: -0.8 } } },

@@ -204,6 +204,7 @@
   .przcode:disabled{cursor:default}
   /* display:flex, so the attribute needs its own rule. Ninth time in this repo. */
   #prz-win[hidden]{display:none}
+  .confetti-cv{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:41}
   .ibox{width:100%;max-width:560px;border-radius:16px;border:1px solid var(--line-2);
     background:var(--grad-panel);box-shadow:var(--shadow);padding:16px 16px 14px}
 
@@ -791,7 +792,7 @@
 <!-- Accounts, exactly as the football page loads them. Optional: with the CDN blocked
      PS_AUTH never appears, nobody resolves as a tester, and the page says so. -->
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script defer src="/football/auth.js?v=6"></script>
+<script defer src="/football/auth.js?v=7"></script>
 <script src="clubs.js?v=2"></script>
 <script src="draft.js?v=5"></script>
 <script src="entries.js?v=4"></script>
@@ -992,6 +993,17 @@
     if (e.p) bits.push(e.p + '.');
     $('inj-line').textContent = bits.join(' ');
     var when;
+    /* A RULING BY THE SITE IS NOT THE REPORT AND DOES NOT SAY IT IS. The report files no
+       Out until Friday for a Sunday game, so a man his club has already ruled out is
+       ruled out HERE, and the sentence below that names the official NFL report as the
+       source would be false about exactly him. The body part and the practice line above
+       are still the report's, so they stay. */
+    if (e.by === 'site'){
+      $('inj-when').textContent = 'Ruled out for week ' + POOL.week + ' by RunThe.GG. '
+        + 'The official report files game designations on Friday.';
+      $('inj-sheet').hidden = false;
+      return;
+    }
     if (e.st === 'off') when = 'Read off the roster, as it stands now.';
     else if (e.w === POOL.week) when = 'From this week\'s report.';
     else when = 'From the week ' + e.w + ' report. Week ' + POOL.week
@@ -1057,6 +1069,59 @@
     return { seed: c.seed, ids: c.men.map(function(m){ return m.player_id; }) };
   }
   var chanceAt = function(i){ return hydrate(state.chances[i]); };
+
+  /*
+   * A DRAFT OVER THE WEEK'S CAP IS REOPENED, NOT KEPT, AND NOT SUBMITTED.
+   *
+   * For a morning the page drafted week 3 at $110M while the server held it at $90M, so a
+   * tester could finish a lineup spending $106.7M that `fantasy_submit` refuses with "that
+   * lineup is over the cap". Nothing on the review screen said so: it printed "$106.7M of
+   * $90M spent" under a Submit button that sent it anyway. Reported by the owner with a
+   * screenshot of exactly that, SENDING... over a lineup the server was always going to
+   * turn away.
+   *
+   * THE WEEK KEEPS ITS $90M, which the owner chose twice, and the lineup gives way. It is
+   * replaced by a FRESH draft in the same chance, so nobody loses one of their five. Its
+   * seed is DERIVED from the old one rather than drawn, so a reload cannot re-roll it: the
+   * rule a chance lives by (store the seed, never re-draw it) holds for the reopened one
+   * the moment it is saved, and holds even where storage is blocked, because the same old
+   * seed always gives the same new one.
+   *
+   * ONLY A LINEUP THE SERVER WOULD REFUSE IS TOUCHED. A legal draft stays exactly as it
+   * is, and a submitted one is never reopened: the row is the server's and it was accepted
+   * under the cap, so if it reads over now the cap is what moved, and taking a reader's
+   * entry away on the strength of that would be this page overruling the competition.
+   * A PARTIAL draft over the cap is reopened too, because the next board would have
+   * negative money to spend and the draft would strand.
+   */
+  function reopenOverCap(){
+    var hit = [];
+    for (var i = 0; i < state.chances.length; i++){
+      if (i === state.submitted) continue;
+      var c = chanceAt(i);
+      if (!c || D.spent(c) <= CAP + 1e-9) continue;
+      var old = state.chances[i];
+      state.chances[i] = { seed: ((old.seed >>> 0) ^ 0x5bd1e995) >>> 0, ids: [],
+        reopened: true };
+      if (state.pick === i) state.pick = null;
+      hit.push(i + 1);
+    }
+    if (hit.length) save();
+  }
+  /* "Draft 3 was" or "Drafts 3 and 4 were". Short, because it is read on the way past. */
+  function reopenedLine(){
+    var open = [];
+    for (var i = 0; i < state.chances.length; i++){
+      var c = state.chances[i];
+      if (c && c.reopened && (c.ids || []).length < D.SLOTS.length) open.push(i + 1);
+    }
+    if (!open.length) return '';
+    var list = open.length === 1 ? String(open[0])
+      : open.slice(0, -1).join(', ') + ' and ' + open[open.length - 1];
+    return (open.length === 1 ? 'Draft ' + list + ' was' : 'Drafts ' + list + ' were')
+      + ' over the ' + money(CAP) + ' cap. '
+      + (open.length === 1 ? 'It is' : 'They are') + ' open to draft again. ';
+  }
 
   /* ---- the clock ---- */
   var locked = function(){ return Date.now() >= Date.parse(POOL.locks_at); };
@@ -1547,6 +1612,15 @@
     clearRefused();
     var c = chanceAt(state.pick);
     if (!D.full(c)){ sayRefused('That lineup is not finished.'); return; }
+    /* AND NEVER SEND ONE THE SERVER WILL REFUSE ON MONEY. Reopening at boot means this
+       should not happen, which is exactly why it is checked here as well: the review
+       screen printing "$106.7M of $90M spent" over a Submit button that sent it anyway is
+       what the owner reported. */
+    if (D.spent(c) > CAP + 1e-9){
+      sayRefused('That lineup is over the ' + money(CAP) + ' cap. Pick another, or draft '
+        + 'again.');
+      return;
+    }
     var ids = c.men.map(function(m){ return m.player_id; });
     var why = '';
     submitting = true;
@@ -2449,9 +2523,12 @@
       && done >= D.CHANCES;
     $('b-draft').textContent = done ? 'Draft ' + (done+1) + ' of ' + D.CHANCES : 'Start drafting';
     $('b-review').hidden = !done;
+    /* THE REOPENED DRAFTS ARE NAMED WHERE THE READER LANDS, so nobody opens their five
+       and finds one gone with nothing to say why. */
     $('home-note').textContent = locked()
       ? 'Week ' + POOL.week + ' has kicked off. Nothing more can be submitted.'
-      : 'Draft as many as you like. One lineup goes in, on your account, and it is final.';
+      : reopenedLine()
+        + 'Draft as many as you like. One lineup goes in, on your account, and it is final.';
     lastWeekCard();
     /* AND THE DOOR BACK TO IT, if the answer has already landed. The ASK is at boot rather
        than here, because the reader most likely to have a result is the one who entered
@@ -2515,12 +2592,18 @@
    * only thing on the site that tells an entrant the competition finished, so the rule is
    * that it arrives on its own rather than being gone looking for.
    *
-   * IT ASKS ABOUT LAST WEEK AND NOT THIS ONE. The week rolls over on the Tuesday, so by the
-   * time a result exists the page is already serving the next board: `POOL.week - 1` is the
-   * week that was just played, which is the same week `lastWeekCard` reads. Asking about
-   * `POOL.week` would be asking about a competition that has not been played yet, for ever.
+   * IT ASKS ABOUT THIS WEEK FIRST, THEN LAST WEEK. The server answers nothing about a week
+   * until it is scored AND the winner's code exists (115_fantasy_result_when_ready.sql), and
+   * the live job makes that code on the tick that closes the week, which is normally Monday
+   * night. The board does not roll over until the Tuesday build, so for those hours the week
+   * that just finished is still `POOL.week`. Asking only about `POOL.week - 1` made every
+   * entrant wait for Tuesday's board to be told how Monday went. Once the board has rolled,
+   * the finished week is `POOL.week - 1`, which is the same week `lastWeekCard` reads, and
+   * asking the new `POOL.week` first costs one call that answers nothing.
    *
-   * SHOWN ONCE, AND THE SERVER IS WHAT REMEMBERS. See `ackResult` in entries.js.
+   * SHOWN ONCE, AND THE SERVER IS WHAT REMEMBERS. See `ackResult` in entries.js. So a reader
+   * told on Monday night is not told again on Tuesday, when the same week has become
+   * `POOL.week - 1`: the ack is keyed on the week, not on which question found it.
    */
   var PRZ = null;      /* the answer, kept so the sheet can be reopened within a visit */
   var PRZ_ASKED = false;
@@ -2540,19 +2623,25 @@
 
   function prizeCheck(){
     if (PRZ_ASKED) return;
-    var wk = POOL.week - 1;
-    if (wk < 1) return;
     PRZ_ASKED = true;
-    F.myResult(POOL.season, wk).then(function(r){
-      /* NULL IS "NOBODY KNOWS" AND FALSE IS "YOU DID NOT ENTER". Only the second one is an
-         answer, and neither opens the sheet by itself: a reader who has already seen it is
-         not told again. The ask is re-armed on a null, because a popup lost to one bad
-         request is a result somebody is never told about. */
-      if (r == null){ PRZ_ASKED = false; return; }
-      if (r === false || !r.entered) return;
+    /* NULL IS "NOBODY KNOWS" AND FALSE IS "NOTHING TO SAY". Only the second one is an
+       answer, and neither opens the sheet by itself: a reader who has already seen it is
+       not told again. The ask is re-armed on a null, because a popup lost to one bad
+       request is a result somebody is never told about. */
+    var take = function(wk, r){
       PRZ = { week: wk, r: r };
       drawPrizeDoor();
       if (!r.seen) showPrize();
+    };
+    F.myResult(POOL.season, POOL.week).then(function(r){
+      if (r == null){ PRZ_ASKED = false; return; }
+      if (r && r.entered) return take(POOL.week, r);
+      var prev = POOL.week - 1;
+      if (prev < 1) return;
+      return F.myResult(POOL.season, prev).then(function(r2){
+        if (r2 == null){ PRZ_ASKED = false; return; }
+        if (r2 && r2.entered) take(prev, r2);
+      });
     });
   }
 
@@ -2586,11 +2675,30 @@
     /* WHAT IT SAYS IS ABOUT THEIR OWN WEEK AND NEVER ABOUT ANYBODY ELSE'S. The board is one
        press away and carries the rest; a sheet that listed the people above them would be
        the leaderboard, badly, on a screen that is already the width of a phone. */
+    /* EVERYBODY WHO DID NOT WIN IS TOLD SOMETHING TRUE AND KIND, in that order. "Better luck
+       next week" was the line under ninth of twelve, which is a shrug at somebody who spent
+       five drafts on it. None of these promises anything about the NEXT board, because this
+       sheet can open after that week has already locked, and a line telling somebody to go
+       and draft into a shut week is the one encouraging sentence that would be false. */
     var say;
-    if (place === 1) say = 'You won the week.';
-    else if (place <= 3) say = 'You finished on the podium.';
-    else if (entries > 1 && place <= Math.ceil(entries / 2)) say = 'Top half of the field.';
-    else say = 'Better luck next week.';
+    /* A WIN WITH NO CODE IS A FIELD OF ONE, which the minting script voids rather than
+       pays. Said plainly, because "you won" over a sheet with no prize on it reads as the
+       prize going missing. The win itself is real and stays on their profile. */
+    if (place === 1 && !r.promo_code && entries < 2)
+      say = 'You were the only entry this week, so there is no prize. The win still counts.';
+    else if (place === 1) say = 'You won the week. Nobody drafted better.';
+    else if (place === 2) say = 'So close. One spot off the top.';
+    else if (place === 3) say = 'Top three. That is a podium finish.';
+    else if (entries > 1 && place <= Math.ceil(entries / 2)) say = 'Top half of the field. That is a good week.';
+    else say = 'Not your week. Every week starts from zero.';
+
+    /* THE PROJECTION IS THE ONE OTHER THING THIS READER CAN BE PROUD OF, and it is theirs
+       alone rather than a comparison with anybody. Said only when it is true, and decided on
+       the PRINTED difference, so a lineup that beat its projection by 0.04 is never told it
+       beat it by 0.0. */
+    var beat = Number(r.score) - Number(r.projected);
+    if (place > 1 && isFinite(beat) && Number(beat.toFixed(1)) > 0)
+      say += ' You beat your projection by ' + beat.toFixed(1) + ' points.';
     $('prz-say').textContent = say + ' The full board is on the live screen.';
 
     /* THE CODE IS DRAWN ONLY FOR THE ACCOUNT IT BELONGS TO, and the server is what decides
@@ -2607,6 +2715,61 @@
         + 'the account you entered with. Paste the code at checkout. It works once.';
     }
     $('prz-sheet').hidden = false;
+    /* The winner and nobody else, and only a winner holding a prize: confetti over "there is
+       no prize" is a party for nothing. After the sheet is on the glass, so the confetti
+       falls over a screen that is already telling them why. */
+    if (place === 1 && code) requestAnimationFrame(function(){ requestAnimationFrame(winConfetti); });
+  }
+
+  /* CONFETTI FOR FIRST PLACE, lifted from the football game's own `fireConfetti` so a win
+     looks like a win on both pages. Strips and a few discs rain from above the top, drift,
+     spin, fade over the last stretch, and the canvas removes itself.
+     It sits ABOVE the sheet (z 41 against 40) and takes no pointer events, so it falls over
+     the code without ever being the thing a tap lands on. Skipped entirely for a reader who
+     has asked for reduced motion, and only ever one canvas: reopening the sheet from the
+     door replaces a burst rather than stacking a second one on it. */
+  function winConfetti(){
+    if (REDUCE) return;
+    var old = document.querySelector('.confetti-cv');
+    if (old) old.remove();
+    var colors = ['#fde68a', '#fcd34d', '#f59e0b', '#ffffff', '#ef4444', '#3b82f6'];
+    var duration = 3800, count = 170;
+    var dpr = Math.min(2, window.devicePixelRatio || 1);
+    var cv = document.createElement('canvas');
+    cv.className = 'confetti-cv';
+    cv.setAttribute('aria-hidden', 'true');
+    cv.width = Math.floor(innerWidth * dpr); cv.height = Math.floor(innerHeight * dpr);
+    document.body.appendChild(cv);
+    var cx = cv.getContext('2d'), W = cv.width, H = cv.height, parts = [];
+    for (var i = 0; i < count; i++){
+      parts.push({
+        x: Math.random() * W, y: -Math.random() * H * 0.5 - 20 * dpr,
+        w: (5 + Math.random() * 7) * dpr, h: (9 + Math.random() * 13) * dpr,
+        vx: (-1.1 + Math.random() * 2.2) * dpr, vy: (2.2 + Math.random() * 3.4) * dpr,
+        g: (0.028 + Math.random() * 0.02) * dpr,
+        rot: Math.random() * Math.PI, vr: -0.22 + Math.random() * 0.44,
+        sway: Math.random() * Math.PI * 2, swA: (0.4 + Math.random() * 0.7) * dpr,
+        col: colors[(Math.random() * colors.length) | 0], round: Math.random() < 0.28
+      });
+    }
+    var t0 = performance.now();
+    (function step(){
+      if (!cv.isConnected) return;
+      var life = Math.min(1, (performance.now() - t0) / duration);
+      cx.clearRect(0, 0, W, H);
+      cx.globalAlpha = life < 0.82 ? 1 : Math.max(0, 1 - (life - 0.82) / 0.18);
+      for (var j = 0; j < parts.length; j++){
+        var p = parts[j];
+        p.sway += 0.035; p.x += p.vx + Math.sin(p.sway) * p.swA;
+        p.vy += p.g; p.y += p.vy; p.rot += p.vr;
+        if (p.y - p.h > H) continue;
+        cx.save(); cx.translate(p.x, p.y); cx.rotate(p.rot); cx.fillStyle = p.col;
+        if (p.round){ cx.beginPath(); cx.arc(0, 0, p.w * 0.6, 0, 6.2832); cx.fill(); }
+        else cx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+        cx.restore();
+      }
+      if (life < 1) requestAnimationFrame(step); else cv.remove();
+    })();
   }
 
   /* CLOSING IS WHAT ACKNOWLEDGES IT, and the write is not awaited. Every allowance on this
@@ -2615,6 +2778,8 @@
      lost ack is being told once more next visit. */
   function closePrize(){
     $('prz-sheet').hidden = true;
+    var cf = document.querySelector('.confetti-cv');
+    if (cf) cf.remove();
     if (PRZ && !PRZ.r.seen){ PRZ.r.seen = true; F.ackResult(POOL.season, PRZ.week); }
   }
   $('prz-close').onclick = closePrize;
@@ -2714,6 +2879,10 @@
       state = { season: POOL.season, week: POOL.week, chances: [], pick: null,
         submitted: null };
     }
+    /* FAILS OPEN. This runs for every visitor holding a saved week, before anything is
+       drawn, so a malformed save must cost the reopen and never the page. The submit
+       guard is still there behind it. */
+    try { reopenOverCap(); } catch (e) {}
     F.mine(POOL.season, POOL.week).then(function(row){
       if (row) SERVER_IN = { week: POOL.week, row: row };
       /* ASKED AT BOOT AND NOT INSIDE `paintHome`, which is where it was first written and
@@ -2750,11 +2919,22 @@
   function applyInjuries(inj){
     if (!inj || !inj.men) return;
     INJ = inj;
+    /* A MAN WHO WILL NOT PLAY IS NOT OFFERED AT ALL, and that is a reversal of how this
+       used to work. Out and Doubtful were drawn on the wheel in red and refused on the
+       press, on the argument that the report is the most useful thing the board can say
+       about a man somebody was about to take. Asked to change by the site's owner, and the
+       argument against it is better: a board is five seats, and a seat holding a man
+       nobody can take is a seat that offered the reader nothing. He was a choice that was
+       not a choice. Doubtful goes with Out because the measurement says it is Out: 99.2%
+       of doubtful men blank, against 47.7% of questionable ones.
+       QUESTIONABLE STAYS, because that one really is a decision.
+       A ruling by the site (`by: 'site'`) is an Out like any other here. */
+    var GONE = { off: 1, out: 1, doubtful: 1 };
     var men = POOL.pool, keep = [], i, e;
     for (i=0;i<men.length;i++){
       e = inj.men[men[i].player_id];
       if (e) men[i].inj = e;
-      if (!e || e.st !== 'off') keep.push(men[i]);
+      if (!e || !GONE[e.st]) keep.push(men[i]);
     }
     POOL.pool = keep;
   }

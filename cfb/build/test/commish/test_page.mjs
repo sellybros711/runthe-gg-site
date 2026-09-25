@@ -610,7 +610,7 @@ console.log('\n=== nine settings you cannot set, and can put on the agenda ===')
   ok('    without out-sizing the name above it', card.size<=card.head&&card.size>=18,
     card.size+'px value, '+card.head+'px name');
   ok('  saying you do not set it directly',
-    /do not set this directly/i.test(await txt(p,'#fact-body')));
+    /do(?:n't| not) set this directly/i.test(await txt(p,'#fact-body')));
   /* A SECOND SETTING OPENS AT THE TOP OF ITSELF. One pane serves every one of these and it
      scrolls, so it used to keep wherever the last one was left: read one to the bottom, tap
      the next row, and you land in the middle of a sheet that has only just opened, under the

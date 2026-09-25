@@ -115,7 +115,7 @@
         return;
       }
     } catch (e) {}
-    note('Sharing isn’t supported here');
+    note('Sharing doesn’t work here');
   }
 
   // ---------- visual card ----------
