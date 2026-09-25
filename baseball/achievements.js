@@ -76,7 +76,7 @@ const MODES = [
   ['franchise', 'One Franchise'],
   ['division', 'Division Draft'],
   ['survivor', 'Salary Cap Survivor'],
-  ['staff', 'All-Time Staff'],
+  ['staff', 'All-Time Pitching Staff'],
   ['trade', 'The Trade Machine'],
 ];
 function modeKeyOf(r) {
@@ -408,7 +408,7 @@ shelf('The modes', MODES.reduce((out, [key, label]) => out.concat([
      On the old anchors the best staff anybody reached was 77, so 70 was a little
      better than a median good draft; against a scale whose top is now reachable
      a median good draft is 92, and 70 would be handed out for turning up. */
-  ['staff_90', 'A staff for the ages', 'Field an All-Time Staff rated 90 or better.', 'gold',
+  ['staff_90', 'A staff for the ages', 'Field an All-Time Pitching Staff rated 90 or better.', 'gold',
     (c) => c.rows.some((r) => r.staff && (r.rating || 0) >= 90)],
 ])),
 

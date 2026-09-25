@@ -1285,7 +1285,7 @@ h1,h2,h3{margin:0}
 .rm-door:active{transform:scale(.985)}
 .rm-door .rm-dot{width:9px;height:9px;border-radius:99px;flex:0 0 auto}
 .rm-door .rm-t{font-family:var(--fn);font-size:12px;font-weight:700;color:var(--ink);
-  min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  min-width:0;line-height:1.25}
 .cutlist{display:grid;gap:7px;margin:12px 0 4px;max-height:46vh;overflow-y:auto}
 /* 46vh on an 844 phone is 388px, which is nine 43px rows EXACTLY: the list
    clipped on a row boundary with the footnote right below, so three of twelve
@@ -1476,6 +1476,34 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
 .modecard.mc-soon .mc-icon{filter:grayscale(1);opacity:.55}
 .modecard.mc-soon .mc-title{color:var(--dim-2)}
 .mc-sticker.soon{background:none;color:var(--dim-2);border:1px solid var(--line-2)}
+/* The sheet's modes are a GRID of tiles rather than a list, asked for by the owner.
+   Icon on top, title under it, one short line under that, and the NEW sticker pinned
+   to the corner. The line is flavour rather than rules, asked for by the owner: the
+   title says what the mode is, and the screen it opens explains it. The chevron goes: a tile is obviously a thing to press, and on a list
+   it was the only thing saying so. Two across on a phone, three once the sheet is wide
+   enough to give each one room. It is a modifier on .modecards, so the division
+   picker, which also draws .modecards, stays a list. A grid row stretches its cells,
+   so the tiles in a row are one height whatever their sentences run to. */
+.modecards.mc-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.mc-grid .modecard{position:relative;display:flex;flex-direction:column;padding:14px 13px}
+.mc-grid .modecard .mc-head{flex-direction:column;align-items:flex-start;gap:10px;margin-bottom:6px}
+.mc-grid .modecard .mc-icon{width:40px;height:40px;border-radius:10px}
+.mc-grid .modecard .mc-icon svg{width:22px;height:22px}
+.mc-grid .modecard .mc-icon-img img{border-radius:10px}
+.mc-grid .modecard .mc-title{font-size:14.5px}
+.mc-grid .modecard .mc-arrow{display:none}
+.mc-grid .modecard .mc-sticker{position:absolute;top:12px;right:12px;float:none;margin:0}
+.mc-grid .modecard p{font-size:12px}
+/* A centred sheet is left:50% with right:0, so it is HALF the window wide until the
+   600px cap binds at a 1200px window: a 1000px laptop got a 500px sheet. A grid needs
+   the width a list did not, so this one sheet sizes itself off the window instead. */
+@media(min-width:600px){
+  #sheet-modes .sheet-inner{right:auto;width:min(600px,calc(100vw - 48px));max-width:none}
+}
+@media(min-width:900px){
+  #sheet-modes .sheet-inner{width:min(860px,calc(100vw - 64px))}
+  .modecards.mc-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
 .div-clubs{display:flex;flex-wrap:wrap;gap:5px;margin-top:2px}
 .div-clubs .dc{font-family:var(--fn);font-size:10px;font-weight:800;letter-spacing:.03em;
   color:var(--dci,#fff);background:var(--dc);padding:2px 7px;border-radius:99px;
@@ -2131,7 +2159,7 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
 
 <script src="engine.js?v=28"></script>
 <script src="run.js?v=23"></script>
-<script src="achievements.js?v=7"></script>
+<script src="achievements.js?v=8"></script>
 <script src="board.js?v=1"></script>
 <script>
 (function(){
@@ -3103,34 +3131,34 @@ const MODE_CARDS=[
       forty, dead centre of a range running 7 to 28. The 2000s are the bats
       decade (7), and the picker now derives that line per card rather than
       taking anybody's word for it. */
-   text:'Pick a decade and draft only from it. Every era plays differently: the dead-ball years are all arms, the 2000s are all bats.'},
+   text:'The dead-ball years are all arms. The 2000s are all bats.'},
   {id:'fran',mode:'franchise',tint:'var(--green)',cls:'mc-club',title:'One Franchise',
    icon:'<path d="M12 2.2 3.4 6.6v6c0 5.2 3.7 9.9 8.6 11.1 4.9-1.2 8.6-5.9 8.6-11.1v-6z"/>',
    /* NO COUNT IN THIS SENTENCE. It said "from 44 franchises" while the picker it
       opens is the thirty clubs playing today with its count interpolated beside
       the heading: a hand-written number one screen from the screen that knows.
       This repo's oldest rule, and the sheet is the one surface that broke it. */
-   text:'Draft one club\'s all-time roster, from every club playing today. A century of Yankees or three decades of Marlins, and you live with the one you picked.'},
+   text:'A century of Yankees or three decades of Marlins. You live with your pick.'},
   {id:'div',mode:'division',tint:'var(--gold)',cls:'mc-div',title:'Division Draft',
    icon:'<path d="M4 4h16"/><path d="M4 4v16"/><path d="M8 8h8v4H8z"/><path d="M8 16h8"/>',
-   text:'Pick a division and draft only from the clubs that were really in it, 1994 to today. The map moves with history: Houston is NL Central until 2013 and AL West after.',
+   text:'The map moves with history. Houston is NL Central until 2013 and AL West after.',
    sticker:'New'},
   {id:'cap',mode:'capsurvivor',tint:'var(--red)',cls:'mc-cap',title:'Salary Cap Survivor',
    icon:'<path d="M12 2.6v18.8"/><path d="M16.6 6.4H9.8a2.9 2.9 0 0 0 0 5.8h4.4a2.9 2.9 0 0 1 0 5.8H6.8"/>',
-   text:'Contracts inflate as the season runs. Stay under the cap or cut somebody, every time the market moves against you.',
+   text:'Contracts inflate all season. Stay under the cap or cut somebody.',
    sticker:'New'},
-  {id:'staff',mode:'staff',tint:'var(--purple)',cls:'mc-staff',title:'All-Time Staff',
+  {id:'staff',mode:'staff',tint:'var(--purple)',cls:'mc-staff',title:'All-Time Pitching Staff',
    icon:'<path d="M12 2.8a9.2 9.2 0 1 0 0 18.4 9.2 9.2 0 0 0 0-18.4Z"/><path d="M6.2 5.6c3.4 3 3.4 9.8 0 12.8"/><path d="M17.8 5.6c-3.4 3-3.4 9.8 0 12.8"/>',
-   text:'Forget the bats. Draft a five-man rotation and a bullpen, and win on run prevention alone with a league-average lineup behind you.',
+   text:'Forget the bats. Win on run prevention alone.',
    sticker:'New'},
   {id:'trade',mode:'trade',tint:'var(--orange)',cls:'mc-trade',title:'The Trade Machine',
    icon:'<path d="M4.4 9.4V8.2a3.2 3.2 0 0 1 3.2-3.2h9.6V2.2l4.4 3.9-4.4 3.9V7.4H7.6a.8.8 0 0 0-.8.8v1.2z"/><path opacity=".55" d="M19.6 14.6v1.2a3.2 3.2 0 0 1-3.2 3.2H6.8v2.8l-4.4-3.9 4.4-3.9v2.6h9.6a.8.8 0 0 0 .8-.8v-1.2z"/>',
-   text:'You are handed a roster you did not pick and a deadline. Trade your way to a contender, or find out you were never close.',
+   text:'A roster you did not pick and a deadline. Trade your way to a contender.',
    sticker:'New'},
 ];
 function openModes(){
   $('modes-in').innerHTML=
-    '<div class="modecards">'+
+    '<div class="modecards mc-grid">'+
     MODE_CARDS.map(m=>
       '<button class="modecard '+m.cls+(m.soon?' mc-soon':'')+'" data-mode="'+m.id+'"'+
         (m.soon?' disabled':'')+'>'+
@@ -3140,18 +3168,18 @@ function openModes(){
         '</svg></div><div class="mc-title">'+esc(m.title)+'</div>'+(m.soon?'':ARROW)+'</div>'+
         '<p>'+esc(m.text)+'</p></button>').join('')+
     '</div>'+
-    '<div class="xpromo"><p class="xp-h">More games like this one</p>'+
+    '<div class="xpromo"><p class="xp-h">More games like this one</p><div class="modecards mc-grid">'+
       '<a class="modecard" href="/football/">'+
         '<div class="mc-head"><div class="mc-icon mc-icon-img">'+
         '<img src="/football/icon-192.png" alt="" width="32" height="32" loading="lazy">'+
         '</div><div class="mc-title">The Perfect Season</div>'+ARROW+'</div>'+
-        '<p>The same idea in the NFL. Six legends under a $140M cap, then all 17 games.</p></a>'+
-      '<a class="modecard" style="margin-top:12px" href="/cfb/">'+
+        '<p>The same idea in the NFL. Six legends, all 17 games.</p></a>'+
+      '<a class="modecard" href="/cfb/">'+
         '<div class="mc-head"><div class="mc-icon mc-icon-img">'+
         '<img src="/cfb/icon-192.png" alt="" width="32" height="32" loading="lazy">'+
         '</div><div class="mc-title">Perfect College Season</div>'+ARROW+'</div>'+
-        '<p>College football, 2005 to 2025. Six players under an NIL budget, twelve games.</p></a>'+
-    '</div>';
+        '<p>College football, 2005 to 2025. Six players, twelve games.</p></a>'+
+    '</div></div>';
   $('modes-in').querySelectorAll('[data-mode]').forEach(btn=>{
     btn.addEventListener('click',()=>{closeSheet('sheet-modes');pickMode(btn.dataset.mode);});
   });
@@ -3187,7 +3215,7 @@ function runModeOf(r){
 }
 function runModeLabel(m){
   return {free:'Classic',era:'Eras Draft',franchise:'One Franchise',
-    division:'Division Draft',capsurvivor:'Cap Survivor',staff:'All-Time Staff',
+    division:'Division Draft',capsurvivor:'Cap Survivor',staff:'All-Time Pitching Staff',
     trade:'Trade Machine'}[m]||'Classic';
 }
 /* A per-browser id, so the daily board can keep one result per device without
@@ -4977,7 +5005,7 @@ function showResult(){
   if(RUN.daily)modeLabel='Daily Challenge #'+dailyNo();
   else if(RUN.tradeMachine){const n=(RUN.trades||[]).filter(t=>t.accepted).length;
     modeLabel='Trade Machine \u00b7 '+n+' deal'+(n===1?'':'s');}
-  else if(RUN.staff)modeLabel='All-Time Staff';
+  else if(RUN.staff)modeLabel='All-Time Pitching Staff';
   else if(RUN.capSurvivor)modeLabel='Cap Survivor \u00b7 '+(RUN.cuts||[]).length+' cut';
   else if(RUN.franchise)modeLabel='The all-time '+teamFullName(RUN.franchise);
   else if(RUN.division)modeLabel=RUN.division;
@@ -5198,7 +5226,7 @@ function shareLines(o){
      Its dare is different for the same reason: every other dare asks somebody
      to go play a game, this one asks them to play the SAME twelve spins, which
      is the only dare here with one answer. The hoops card learned both. */
-  const tag=RUN.daily?' (Daily #'+dailyNo()+')':RUN.tradeMachine?' (Trade Machine)':RUN.staff?' (All-Time Staff)':RUN.capSurvivor?' (Cap Survivor)':RUN.franchise?' ('+teamFullName(RUN.franchise)+')':RUN.division?' ('+RUN.division+')':(RUN.era?' ('+RUN.era+')':'');
+  const tag=RUN.daily?' (Daily #'+dailyNo()+')':RUN.tradeMachine?' (Trade Machine)':RUN.staff?' (All-Time Pitching Staff)':RUN.capSurvivor?' (Cap Survivor)':RUN.franchise?' ('+teamFullName(RUN.franchise)+')':RUN.division?' ('+RUN.division+')':(RUN.era?' ('+RUN.era+')':'');
   let t='Run The Diamond'+tag+': '+o.wins+'-'+o.losses+'. '+shareVerdict(o)+'.';
   const grid=seasonGrid();
   if(grid)t+='\n'+grid;
