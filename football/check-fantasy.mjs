@@ -936,6 +936,20 @@ const serverStub = (server) => {
       return { status: 204, body: '' };
     },
     fantasy_my_entry: () => ({ status: 200, body: JSON.stringify(entry ? [entry] : []) }),
+    /* THE SWAP, WHICH REWRITES THE ENTRY IT REMEMBERS, because the real one does and a
+       stub that took a swap and went on answering the old six to `mine` would be a server
+       that cannot exist. `s.swap` is a refusal sentence, or 'lost' for an answer that goes
+       missing after the row is rewritten. */
+    fantasy_swap: (body) => {
+      if (s.swap && s.swap !== 'lost') {
+        return { status: 400, body: JSON.stringify({ code: 'P0001', message: s.swap }) };
+      }
+      if (entry && Array.isArray(entry.picks)) {
+        entry = { ...entry,
+          picks: entry.picks.map((id) => (id === body.p_out ? body.p_in : id)) };
+      }
+      return s.swap === 'lost' ? { status: 503, body: '' } : { status: 204, body: '' };
+    },
     /* WHERE THE READER FINISHED, AND THE ACK THAT SHOWS IT ONCE.
        `s.result` undefined is the server having no opinion, which the page must not read as
        "you did not enter": the two are different answers and a stub that could not express
@@ -1029,7 +1043,8 @@ async function signOne(page, nth = 0) {
 
 async function openPage(browser, url, opts = {}) {
   const { who = null, viewport = { width: 390, height: 844 }, at = null,
-    results = null, storage = null, server = null, reduced = false } = opts;
+    results = null, storage = null, server = null, reduced = false,
+    injuries = null } = opts;
   const page = await browser.newPage({ viewport,
     reducedMotion: reduced ? 'reduce' : 'no-preference' });
   const boom = [];
@@ -1088,6 +1103,13 @@ async function openPage(browser, url, opts = {}) {
        fixture. What is under test here is what the PAGE does with an answer.
        A MISS IS SERVED AS A 404, deliberately: that is the state the page spends most of
        its life in, and a route that answered `{}` instead would never exercise it. */
+    /* AN INJURY REPORT CAN BE FABRICATED TOO, for the swap: which men are out and when
+       they play is the whole of what that section is about, and the live file changes twice
+       a day. A fixture that read it would be testing whatever the report said this morning. */
+    if (injuries && /^\/football\/data\/injuries_/.test(rel)) {
+      return r.fulfill({ status: 200, contentType: 'application/json',
+        body: JSON.stringify(injuries) });
+    }
     if (/^\/football\/data\/results_/.test(rel)) {
       if (!results) return r.fulfill({ status: 404, body: 'no' });
       return r.fulfill({ status: 200, contentType: 'application/json',
@@ -3884,6 +3906,146 @@ console.log('\nA LINEUP OVER THE CAP IS REOPENED, AND ONE UNDER IT STILL GOES IN
     !sent.includes(OVER.map((m) => m.player_id).join()));
   ok('  nothing threw', !boom.length, boom.join(' | ') || 'clean');
   await page.close();
+}
+
+/* ================================================================
+   A MAN RULED OUT CAN BE SWAPPED, BEFORE HIS GAME
+   ================================================================
+ *
+ * `supabase/119_fantasy_swap.sql` decides, and `supabase/test/fantasy_swap_test.sql` proves
+ * every clause of that against a real Postgres. What is asked here is the half only the glass
+ * can answer: that the call is drawn for exactly the men the server would take, that the
+ * sheet lists only men the server would take in, and that a swap that lands repaints the six
+ * and a refusal says the server's own sentence.
+ *
+ * THE REPORT IS FABRICATED, from the real pool, so the fixture is the same every week. Two
+ * men in the lineup are ruled out: one whose game is still to come at LIVE_AT, and one whose
+ * game has already started. The second is the claim that needs a fixture at all, because a
+ * page that offered a swap for every man marked out would pass any walk without him.
+ */
+console.log('\nA MAN RULED OUT CAN BE SWAPPED, BEFORE HIS GAME');
+{
+  const kickOf = (m) => Date.parse(m.kick);
+  const LATER = POOL.pool.filter((m) => kickOf(m) > LIVE_AT);
+  const EARLIER = POOL.pool.filter((m) => kickOf(m) <= LIVE_AT);
+  const byPos = (list, pos) => list.filter((m) => m.position === pos)
+    .sort((a, b) => a.price_musd - b.price_musd);
+  /* A CHEAP LINEUP, so the money is never the reason a list is short. The QB who is out plays
+     later; the WR who is out has already kicked off. */
+  const QB = byPos(LATER, 'QB')[Math.floor(byPos(LATER, 'QB').length / 2)];
+  const WR_GONE = byPos(EARLIER, 'WR')[0];
+  const rest = [byPos(LATER, 'RB')[0], byPos(LATER, 'RB')[1], byPos(LATER, 'WR')[0],
+    byPos(LATER, 'TE')[0]];
+  const SIX = [QB, rest[0], rest[1], WR_GONE, rest[2], rest[3]];
+  ok('the fixture has a lineup to swap in', SIX.every(Boolean) && new Set(SIX).size === 6,
+    SIX.map((m) => m && m.name).join(', '));
+  /* And somebody else out at QB whose game is still to come, so the list has a man to refuse
+     for being out as well as men to refuse for having kicked off. */
+  const QB_OUT_TOO = byPos(LATER, 'QB').find((m) => m !== QB);
+  const INJ = { season: POOL.season, week: POOL.week, report_week: POOL.week, men: {
+    [QB.player_id]: { st: 'out', w: POOL.week, d: 'Elbow', p: 'Did not practise' },
+    [WR_GONE.player_id]: { st: 'out', w: POOL.week, d: 'Knee', p: 'Did not practise' },
+    [QB_OUT_TOO.player_id]: { st: 'doubtful', w: POOL.week, d: 'Ankle', p: 'Limited' },
+  } };
+  const spend = SIX.reduce((a, m) => a + m.price_musd, 0);
+  const CAPW = D.capFor(POOL);
+  const ENTRY = { picks: SIX.map((m) => m.player_id), spend, projected: 50, score: 0,
+    scored: false };
+  const call = (page) => page.evaluate(() => [...document.querySelectorAll('#in-swap [data-swap]')]
+    .map((b) => b.dataset.swap));
+
+  {
+    const { page, boom, posted } = await openPage(browser, FANTASY,
+      { who: TESTER, at: LIVE_AT, injuries: INJ, server: { mine: ENTRY } });
+    await page.waitForSelector('#s-in.on', { timeout: 15000 });
+    await page.waitForFunction(() => !document.getElementById('in-swap').hidden,
+      null, { timeout: 5000 }).catch(() => {});
+    const offered = await call(page);
+    ok('the call is drawn for the man who is out and still to play',
+      offered.length === 1 && offered[0] === QB.player_id, offered.join(', ') || 'nothing');
+    ok('  and not for the man whose game has started', !offered.includes(WR_GONE.player_id));
+
+    await page.click('#in-swap [data-swap]');
+    await page.waitForSelector('#sw-sheet:not([hidden])', { timeout: 5000 });
+    const listed = await page.evaluate(() => [...document.querySelectorAll('#sw-list [data-in]')]
+      .map((b) => b.dataset.in));
+    const room = Math.round((CAPW - spend + QB.price_musd) * 100) / 100;
+    const inIt = new Set(SIX.map((m) => m.player_id));
+    const legal = (m) => m.position === 'QB' && !inIt.has(m.player_id)
+      && !INJ.men[m.player_id] && kickOf(m) > LIVE_AT && m.price_musd <= room + 1e-9;
+    const BY = new Map(POOL.pool.map((m) => [m.player_id, m]));
+    const wrong = listed.filter((id) => !legal(BY.get(id)));
+    ok('the sheet lists only men the server would take in', listed.length && !wrong.length,
+      wrong.length ? 'illegal: ' + wrong.map((id) => BY.get(id).name).join(', ')
+        : listed.length + ' listed');
+    ok('  as many as there are, up to a dozen',
+      listed.length === Math.min(12, POOL.pool.filter(legal).length),
+      listed.length + ' of ' + POOL.pool.filter(legal).length);
+    /* NON-VACUOUS: the pool has QBs this list had to leave out for having kicked off, and one
+       it had to leave out for being out himself. Without them "only legal men" says nothing. */
+    ok('  and it had men to refuse for both reasons',
+      POOL.pool.some((m) => m.position === 'QB' && kickOf(m) <= LIVE_AT)
+        && !listed.includes(QB_OUT_TOO.player_id));
+    ok('  the button waits for a pick',
+      await page.evaluate(() => document.getElementById('sw-go').disabled));
+
+    const pick = listed[0];
+    await page.click(`#sw-list [data-in="${pick}"]`);
+    await page.click('#sw-go');
+    /* By the attribute and not by visibility: a hidden sheet is exactly what is awaited, and
+       Playwright's own wait is for it to be SEEN. */
+    await page.waitForFunction(() => document.getElementById('sw-sheet').hidden,
+      null, { timeout: 5000 });
+    const sent = posted.filter((x) => x.fn === 'fantasy_swap');
+    ok('the press sends one swap, out for in',
+      sent.length === 1 && sent[0].body.p_out === QB.player_id && sent[0].body.p_in === pick,
+      JSON.stringify(sent.map((x) => x.body)));
+    const names = await page.evaluate(() =>
+      [...document.querySelectorAll('#in-roster .rn')].map((e) => e.textContent));
+    ok('  the six repaint with the new man in his place',
+      names.includes(BY.get(pick).name) && !names.includes(QB.name), names.join(', '));
+    ok('  and the call is gone', (await call(page)).length === 0);
+    ok('  nothing threw', !boom.length, boom.join(' | ') || 'clean');
+    await page.close();
+  }
+
+  /* ---- a refusal says the server's sentence, and changes nothing ---- */
+  {
+    const { page, boom } = await openPage(browser, FANTASY, { who: TESTER, at: LIVE_AT,
+      injuries: INJ, server: { mine: ENTRY, swap: 'his game has started, so he cannot be swapped' } });
+    await page.waitForSelector('#s-in.on', { timeout: 15000 });
+    await page.waitForSelector('#in-swap [data-swap]', { timeout: 5000 });
+    await page.click('#in-swap [data-swap]');
+    await page.waitForSelector('#sw-sheet:not([hidden])', { timeout: 5000 });
+    await page.click('#sw-list [data-in]');
+    await page.click('#sw-go');
+    await page.waitForSelector('#sw-refuse:not([hidden])', { timeout: 5000 });
+    const seen = await page.evaluate(() => ({
+      say: document.getElementById('sw-refuse').textContent,
+      names: [...document.querySelectorAll('#in-roster .rn')].map((e) => e.textContent),
+    }));
+    ok('a refusal is the server\'s own sentence',
+      seen.say === 'Not swapped. His game has started, so he cannot be swapped.', seen.say);
+    ok('  and the six are as they were', seen.names.includes(QB.name), seen.names.join(', '));
+    ok('  nothing threw', !boom.length, boom.join(' | ') || 'clean');
+    await page.close();
+  }
+
+  /* ---- a lineup the server does not hold has nothing to swap ---- */
+  {
+    const { page, boom } = await openPage(browser, FANTASY, { who: TESTER, at: LIVE_AT,
+      injuries: INJ, server: { mine: false }, storage: { key: `ps_fantasy_${POOL.season}_w${POOL.week}`,
+        value: JSON.stringify({ season: POOL.season, week: POOL.week, pick: 0, submitted: 0,
+          chances: [{ seed: 1, ids: ENTRY.picks }] }) } });
+    await page.waitForSelector('#s-in.on', { timeout: 15000 }).catch(() => {});
+    await page.waitForTimeout(400);
+    /* On the entry screen, or the claim is about a screen that never drew the call at all. */
+    ok('an entry only this browser remembers is offered no swap',
+      (await screenOn(page)) === 's-in' && (await call(page)).length === 0,
+      await screenOn(page));
+    ok('  nothing threw', !boom.length, boom.join(' | ') || 'clean');
+    await page.close();
+  }
 }
 
 await browser.close();

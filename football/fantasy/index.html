@@ -176,6 +176,29 @@
     justify-content:center;background:rgba(4,7,14,.74);padding:12px}
   .isheet[hidden]{display:none}
 
+  /* ---- the swap ----
+     A CALL AND A LIST. The call sits on the entry screen under the six, one line per man who
+     is ruled out and still has a game to miss; the list is the sheet it opens. Red is the
+     report's own colour for Out, so the call reads as the chip it is about. */
+  #in-swap[hidden]{display:none}
+  .swapcall{display:flex;align-items:center;gap:10px;margin-top:10px;padding:10px 12px;
+    border-radius:12px;border:1px solid rgba(239,68,68,.45);background:rgba(239,68,68,.10)}
+  .swapcall p{flex:1 1 auto;min-width:0;margin:0;font-size:13px;line-height:1.35}
+  .swapcall button{flex:0 0 auto;padding:8px 14px;border-radius:999px;cursor:pointer;
+    font:inherit;font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;
+    color:#fff;background:var(--red);border:0}
+  /* A BUTTON DOES NOT INHERIT THE PAGE'S INK. The UA sheet gives it `buttontext`, which is
+     black, so a row built out of buttons with no colour of its own is black on this panel. */
+  .swlist{display:flex;flex-direction:column;gap:6px;margin-top:10px;max-height:44vh;
+    overflow:auto}
+  .swrow{width:100%;padding:9px 10px;border-radius:10px;border:1px solid var(--line-2);
+    background:rgba(255,255,255,.03);color:inherit;font:inherit;text-align:left;
+    cursor:pointer}
+  .swrow.on{border-color:var(--gold);background:rgba(240,201,107,.10)}
+  .swrow .rc{font-size:11.5px}
+  #sw-refuse{color:var(--red)}
+  #sw-refuse[hidden]{display:none}
+
   /* ---- where you finished ----
      The place is the loudest thing on the sheet, because it is the one fact a reader opened
      it for. Everything else is a caption on it. */
@@ -698,6 +721,11 @@
         <span id="in-livesay"></span>
       </div>
       <div class="roster" id="in-roster" style="margin-top:12px"></div>
+      <!-- THE SWAP. A man ruled out after the lineup went in can be replaced before his
+           game, and this is where the page says so. Drawn only for a man who is out AND
+           still has a game to miss: once it kicks off the zero is his, and a call about a
+           game already under way would be a button the server refuses. -->
+      <div id="in-swap" hidden></div>
       <!-- AND A WAY TO THE BOARD, drawn only once there is a board to go to. The pinned
            button reaches the same screen while the games are on; this is what is left when
            they are over, because a leaderboard whose only door was a live one would
@@ -801,6 +829,24 @@
   </div>
 </div>
 
+<!-- THE SWAP SHEET. It lists the men who can take his place and nobody else, so the one
+     press that spends anything is a press the server should take. It still might not: a
+     game can kick off while the sheet is open, and the server's sentence is shown here when
+     it does. The scrim closes it, because closing costs nothing. -->
+<div class="isheet" id="sw-sheet" hidden>
+  <div class="ibox">
+    <div class="eyebrow" id="sw-slot"></div>
+    <h3 class="display" id="sw-name" style="font-size:23px;margin:5px 0 0"></h3>
+    <p class="lede" id="sw-say" style="margin-top:8px"></p>
+    <div class="swlist" id="sw-list"></div>
+    <p class="note" id="sw-refuse" hidden></p>
+    <div class="stack">
+      <button class="btn" id="sw-go" disabled>Pick a player</button>
+      <button class="btn quiet" id="sw-no">Keep my lineup</button>
+    </div>
+  </div>
+</div>
+
 <!-- WHERE YOU FINISHED. One sheet for the whole field, because a podium and a mid table are
      the same fact told at different volumes, and two sheets would be two places describing
      one week. What changes is the place, the line under it, and whether there is a code.
@@ -850,7 +896,7 @@
 <script defer src="/football/auth.js?v=7"></script>
 <script src="clubs.js?v=2"></script>
 <script src="draft.js?v=5"></script>
-<script src="entries.js?v=5"></script>
+<script src="entries.js?v=6"></script>
 <script>
 (function(){
   'use strict';
@@ -1754,6 +1800,7 @@
     return (!state || state.submitted == null) ? [] : chanceAt(state.submitted).men;
   }
   function paintIn(res, lookingBack){
+    LAST_IN = { res: res, lookingBack: lookingBack };
     var c = { men: entryMen() };
     var done = !!res;
     $('b-in-back').hidden = !lookingBack;
@@ -1829,6 +1876,7 @@
         + s.half.toFixed(1) + '</span></div>';
     }
     $('in-roster').innerHTML = rows;
+    paintSwapCall(res, lookingBack);
 
     /* "The week closes" was wrong about both halves. The week ENDS on Monday night, and
        what happens at the Thursday kickoff is that entries stop. Shown in the reader's own
@@ -1852,6 +1900,163 @@
       : 'Saved in this browser. It is not on your account, so it will not count.';
     show('s-in');
   }
+
+  /* ---- the swap ----
+   *
+   * A MAN RULED OUT AFTER THE LINEUP WENT IN CAN BE REPLACED, BEFORE HIS GAME. Reported by a
+   * player: a lineup submitted on the Tuesday is holding a man his club rules out on the
+   * Friday, and the only thing the mode used to do about it was score him zero.
+   *
+   * `supabase/119_fantasy_swap.sql` is the rule and it decides every clause from rows: he is
+   * in your lineup, he is on the server's out list, his game has not started, the man coming
+   * in plays the same position, is on this week's board, is not out himself, has not kicked
+   * off, and keeps the six under the cap. This page only OFFERS what it expects the server
+   * to take, and asks the same questions of the same two files the server was filled from
+   * (`publish-out.mjs` reads them both). What it never does is decide: a swap is a write.
+   *
+   * IT WORKS AFTER THE LOCK, which is when it matters. The report goes final on the Friday
+   * and the week locks on the Thursday, so a swap that stopped at the lock would help almost
+   * nobody.
+   *
+   * ONLY AN ENTRY ON THE ACCOUNT. A lineup this browser remembers and the server does not
+   * has nothing to swap, and the note under it already says it will not count.
+   */
+  var LAST_IN = { res: null, lookingBack: false };
+  var SWAP = null;   /* { out, pick, busy } while the sheet is open */
+  var SWAP_GONE = { off: 1, out: 1, doubtful: 1 };
+  var SWAP_SHOWN = 12;
+
+  function kicksLater(m, now){
+    var t = Date.parse(m && m.kick);
+    return Number.isFinite(t) && t > now;
+  }
+  function isOut(m){ return !!(m && m.inj && SWAP_GONE[m.inj.st]); }
+  function swappable(res, lookingBack){
+    if (lookingBack || !F || typeof F.swap !== 'function' || !serverEntry()) return [];
+    if (res && res.final) return [];
+    var now = Date.now();
+    return entryMen().filter(function(m){ return isOut(m) && kicksLater(m, now); });
+  }
+  /* WHAT HE CAN SPEND IS HIS OWN PRICE PLUS WHAT THE LINEUP LEFT, rounded to the cent the
+     way the server's numeric is, so a float sum of six prices cannot refuse a legal swap. */
+  function swapRoom(out){
+    var spend = 0;
+    entryMen().forEach(function(m){ spend += m.price_musd; });
+    return Math.round((CAP - spend + out.price_musd) * 100) / 100;
+  }
+  function swapChoices(out){
+    var inIt = {}, now = Date.now(), room = swapRoom(out);
+    entryMen().forEach(function(m){ inIt[m.player_id] = 1; });
+    return POOL.pool.filter(function(p){
+      return p.position === out.position && !inIt[p.player_id] && !isOut(p)
+        && kicksLater(p, now) && p.price_musd <= room + 1e-9;
+    }).sort(function(a, b){ return (b.proj - a.proj) || (a.price_musd - b.price_musd); })
+      .slice(0, SWAP_SHOWN);
+  }
+  function paintSwapCall(res, lookingBack){
+    var men = swappable(res, lookingBack);
+    $('in-swap').innerHTML = men.map(function(m){
+      return '<div class="swapcall"><p><b>' + esc(m.name) + '</b> is '
+        + (m.inj.st === 'doubtful' ? 'doubtful' : 'out') + '. Swap him before '
+        + esc(kickLabel(m.kick)) + '.</p>'
+        + '<button type="button" data-swap="' + esc(m.player_id) + '">Swap</button></div>';
+    }).join('');
+    $('in-swap').hidden = !men.length;
+  }
+  function swapRefused(t){
+    var el = $('sw-refuse');
+    el.textContent = t || '';
+    el.hidden = !t;
+  }
+  function paintSwapSheet(){
+    var out = BY_ID[SWAP.out];
+    var list = swapChoices(out);
+    $('sw-slot').textContent = 'Swap at ' + out.position;
+    $('sw-name').textContent = out.name;
+    $('sw-say').textContent = list.length
+      ? 'Pick a ' + out.position + ' whose game has not started. You have '
+        + money(swapRoom(out)) + ' to spend on him.'
+      : 'No ' + out.position + ' fits the money and is still to play.';
+    if (SWAP.pick && !list.some(function(p){ return p.player_id === SWAP.pick; })){
+      SWAP.pick = null;
+    }
+    $('sw-list').innerHTML = list.map(function(p){
+      return '<button type="button" class="rrow swrow' + (p.player_id === SWAP.pick ? ' on' : '')
+        + '" data-in="' + esc(p.player_id) + '">'
+        + '<span class="rp ' + esc(p.position) + '">' + esc(p.position) + '</span>'
+        + '<span class="rn">' + esc(p.name) + '</span>' + injChip(p)
+        + '<span class="rc">' + esc(kickLabel(p.kick)) + ' · ' + money(p.price_musd) + '</span>'
+        + '<span class="rs">' + p.proj.toFixed(1) + '</span></button>';
+    }).join('');
+    var pick = SWAP.pick && BY_ID[SWAP.pick];
+    $('sw-go').disabled = !pick || SWAP.busy;
+    $('sw-go').textContent = SWAP.busy ? 'Swapping...'
+      : (pick ? 'Swap in ' + pick.name : 'Pick a player');
+  }
+  function openSwap(id){
+    if (!BY_ID[id]) return;
+    SWAP = { out: id, pick: null, busy: false };
+    swapRefused('');
+    paintSwapSheet();
+    $('sw-sheet').hidden = false;
+  }
+  function closeSwap(){
+    if (SWAP && SWAP.busy) return;
+    $('sw-sheet').hidden = true;
+    SWAP = null;
+  }
+  /* THE ROW IS REWRITTEN IN PLACE, and so is this browser's memory of it, so the six on
+     screen are the six the server now holds with no second round trip to ask. */
+  function applySwap(outId, inId){
+    var row = serverEntry();
+    if (row && Array.isArray(row.picks)){
+      row.picks = row.picks.map(function(id){ return id === outId ? inId : id; });
+    }
+    if (state && state.submitted != null && state.chances[state.submitted]){
+      var c = state.chances[state.submitted];
+      c.ids = (c.ids || []).map(function(id){ return id === outId ? inId : id; });
+      save();
+    }
+  }
+  $('in-swap').addEventListener('click', function(ev){
+    var b = ev.target.closest && ev.target.closest('[data-swap]');
+    if (b) openSwap(b.dataset.swap);
+  });
+  $('sw-list').addEventListener('click', function(ev){
+    var b = ev.target.closest && ev.target.closest('[data-in]');
+    if (!b || !SWAP || SWAP.busy) return;
+    SWAP.pick = b.dataset.in;
+    swapRefused('');
+    paintSwapSheet();
+  });
+  $('sw-no').onclick = closeSwap;
+  $('sw-sheet').addEventListener('click', function(ev){
+    if (ev.target === $('sw-sheet')) closeSwap();
+  });
+  $('sw-go').onclick = function(){
+    var s = SWAP;
+    if (!s || !s.pick || s.busy) return;
+    s.busy = true;
+    swapRefused('');
+    paintSwapSheet();
+    F.swap(POOL.season, POOL.week, s.out, s.pick).then(function(r){
+      s.busy = false;
+      /* A SWAP THAT LANDED IS APPLIED WHETHER OR NOT ITS SHEET IS STILL OPEN. The server
+         already holds it, so a screen that forgot it would be describing a lineup that no
+         longer exists. */
+      if (r.ok){
+        applySwap(s.out, s.pick);
+        if (SWAP === s){ $('sw-sheet').hidden = true; SWAP = null; }
+        if ($('s-in').classList.contains('on')) paintIn(LAST_IN.res, LAST_IN.lookingBack);
+        return;
+      }
+      if (SWAP !== s) return;
+      swapRefused(r.ok === false
+        ? 'Not swapped. ' + asSentence(r.why || 'That swap was not accepted.')
+        : 'The server did not answer. Reload to see if it went through.');
+      paintSwapSheet();
+    });
+  };
 
   /* ---- where everybody came ----
    *

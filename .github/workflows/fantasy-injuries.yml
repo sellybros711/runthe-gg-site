@@ -109,3 +109,51 @@ jobs:
             echo "push rejected, rebasing onto latest main (attempt $i)"
             git pull --rebase origin main || exit 1
           done
+
+      # THE SERVER'S COPY OF WHO IS OUT, AND WHEN EVERY MAN PLAYS. `119_fantasy_swap.sql`
+      # lets an entrant replace a man ruled out before his game, and it answers both halves
+      # from rows: `fantasy_out` and `fantasy_prices.kick`. `publish-out.mjs` fills both off
+      # the same two files the page reads, so the page offering a swap and the server taking
+      # it are asking one question of one set of data.
+      #
+      # IT RUNS ON EVERY FIRING, not only when the report moved. The kickoffs are worth
+      # writing on the first run of a week, and a site ruling in `fantasy_ruled_out.json`
+      # arrives by a push rather than by the report, so "the file did not move" is not the
+      # same claim as "the server already has it". Both writes are idempotent.
+      #
+      # A MISSING SECRET OR A DATABASE WITHOUT 119 IS A WARNING, NOT A RED RUN. This job's
+      # real work is the file above, and it has already been committed by here: taking the
+      # run red over a migration nobody has applied would teach everybody to ignore it. The
+      # swap fails closed on the server either way, so nothing is ever wrongly allowed.
+      - name: Install psql
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends postgresql-client
+
+      - name: Tell the server who is out
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          set -o pipefail
+          if [ -z "$SUPABASE_DB_URL" ]; then
+            echo "::warning::SUPABASE_DB_URL is not set, so the swap has no out list to read."
+            exit 0
+          fi
+          HAS=$(psql -tA -v ON_ERROR_STOP=1 "$SUPABASE_DB_URL" \
+                -c "select to_regclass('public.fantasy_out') is not null")
+          if [ "$HAS" != "t" ]; then
+            echo "::warning::119_fantasy_swap.sql is not applied, so there is nowhere to write."
+            exit 0
+          fi
+          WEEK_ARG=""
+          if [ -n "${{ inputs.week }}" ]; then WEEK_ARG="--week ${{ inputs.week }}"; fi
+          node football/build/publish-out.mjs $WEEK_ARG \
+            | psql -q -v ON_ERROR_STOP=1 "$SUPABASE_DB_URL"
+          # Read back the week that was written, so the log says what the server now holds.
+          SW=$(node -e '
+            const n = require("./football/data/fantasy_now.json");
+            process.stdout.write(n.season + " " + ("${{ inputs.week }}" || n.week));')
+          set -- $SW
+          psql -tA "$SUPABASE_DB_URL" -c "
+            select 'week $2: ' || (select count(*) from public.fantasy_out
+                                     where season = $1 and week = $2) || ' ruled out, '
+                   || (select count(*) from public.fantasy_prices
+                        where season = $1 and week = $2 and kick is not null) || ' kickoffs'"

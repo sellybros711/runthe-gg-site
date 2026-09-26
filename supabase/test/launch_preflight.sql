@@ -409,7 +409,21 @@ check_rows(sort, migration, what, breaks, ok) as (
       'rtf_submit_fix_season and fix_trades, so a season of Fix History trades reaches the board',
       'Fix History plays all four windows and no result is ever filed: no place on the result screen and no row on today''s board. It looks like a quiet day.',
       (select count(*) > 0 from proc where name = 'rtf_submit_fix_season')
-      and (select count(*) > 0 from col where tbl = 'rtf_plays' and name = 'fix_trades'))
+      and (select count(*) > 0 from col where tbl = 'rtf_plays' and name = 'fix_trades')),
+
+  -- A MAN RULED OUT CAN BE SWAPPED BEFORE HIS GAME. The page offers the swap
+  -- off the injury file and the server decides it off fantasy_out and each
+  -- man's kickoff, so without this file the button is there and every press
+  -- is refused with a sentence about a missing function. Asked of the columns
+  -- and the table through `col`, which asks the catalog for everything,
+  -- rather than through `has_table`, which is an allowlist.
+  (29, '119_fantasy_swap',
+      'fantasy_swap, the out list and each man''s kickoff',
+      'An entrant holding a man who is ruled out is offered a swap the server cannot make. Every press is refused, and the man scores nothing.',
+      (select count(*) > 0 from proc where name = 'fantasy_swap')
+      and (select count(*) > 0 from col where tbl = 'fantasy_out' and name = 'player_id')
+      and (select count(*) > 0 from col where tbl = 'fantasy_prices' and name = 'kick')
+      and (select count(*) > 0 from col where tbl = 'fantasy_entries' and name = 'swaps'))
 )
 -- The summary has to come LAST, and a UNION can only be ordered by an output
 -- column, so the sort key is carried through a subquery rather than sorted on

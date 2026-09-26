@@ -2,7 +2,7 @@
  *
  * `supabase/109_fantasy_challenge.sql` is the record and this is the only thing that talks
  * to it. Five calls: submit a lineup, read your own, read the board, read your place, count
- * the entries.
+ * the entries. And since 119, one more write: swap a man who is ruled out.
  *
  * ─── IT IS NOT board.js AND MUST NOT BECOME IT ────────────────────────────────────────
  *
@@ -132,6 +132,42 @@
     return { ok: false, why: SAY(j, 'That lineup was not accepted.') };
   }
 
+  /* ─── the swap ──────────────────────────────────────────────────────────────────── */
+
+  /* THE SECOND WRITE, AND IT HAS THE SAME THREE ANSWERS AS THE FIRST. `fantasy_swap` (119)
+     replaces a man who is ruled out, before his game, with a man at his position whose game
+     has not started, and every clause of that is decided from rows on the server. The page
+     only offers what it expects the server to take.
+
+     A LOST ANSWER IS RECONCILED BY ASKING, exactly as a submit is. A swap that landed and
+     lost its reply is a lineup already holding the new man, and pressing again would be
+     refused as "that player is not in your lineup", which reads as the mode being broken.
+     So `{ok:null}` asks `mine()` and answers from the picks. */
+  async function swap(season, week, outId, inId) {
+    let res;
+    try {
+      res = await timed(base() + 'rpc/fantasy_swap', {
+        method: 'POST',
+        headers: headers(),
+        body: JSON.stringify({ p_season: season, p_week: week, p_out: outId, p_in: inId }),
+      });
+    } catch (e) {
+      res = null;
+    }
+    if (res && res.ok) return { ok: true };
+    if (res && res.status < 500) {
+      let j = null;
+      try { j = await res.json(); } catch (e) {}
+      return { ok: false, why: SAY(j, 'That swap was not accepted.') };
+    }
+    const m = await mine(season, week);
+    if (m && Array.isArray(m.picks)) {
+      if (m.picks.includes(inId) && !m.picks.includes(outId)) return { ok: true };
+      if (m.picks.includes(outId)) return { ok: null };
+    }
+    return { ok: null };
+  }
+
   /* ─── the reads ─────────────────────────────────────────────────────────────────── */
 
   /** Your own entry, or null for "no opinion", or false for "you have not entered". */
@@ -239,10 +275,12 @@
        3: where you finished once it is settled, the ack that shows it once, and the wins a
           profile carries.
        `results` rides on 3 rather than bumping it: the page asks for it only if it is
-       there, so a page a version ahead of a cached copy of this file still draws. */
+       there, so a page a version ahead of a cached copy of this file still draws.
+       `swap` rides on 3 for the same reason: the page offers a swap only if `F.swap` is
+       there, so a stale copy of this file costs the offer and never the page. */
     API_VERSION: 3,
     submit, mine, standings, myPlace, entryCount, board, results,
-    myResult, ackResult, myWins,
+    myResult, ackResult, myWins, swap,
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = root.PS_FANTASY;
 })(typeof self !== 'undefined' ? self : this);

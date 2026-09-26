@@ -4214,6 +4214,52 @@ than designed around quietly.
 in a prize competition is a different kind of product and this mode has no paid tier at all,
 which is why there is no `fantasySold()` beside `fullTeamSold()`.
 
+#### A man ruled out can be swapped, before his game
+
+```
+psql -d fantasy -f supabase/119_fantasy_swap.sql
+psql -d fantasy -f supabase/test/fantasy_swap_test.sql
+node football/build/publish-out.mjs | psql "$SUPABASE_DB_URL"
+node football/check-fantasy.mjs   the section named A MAN RULED OUT CAN BE SWAPPED
+```
+
+Reported by a player: a lineup that went in on the Tuesday holds a man his club rules out
+on the Friday, and the only thing the mode did about it was score him zero. The report goes
+final on the Friday and the week locks on the Thursday, so **the swap works after the lock**.
+A swap that stopped at the lock would help almost nobody.
+
+**The rule is the server's and every clause is a row.** The man going out is in your lineup,
+is on `fantasy_out`, and his game has not kicked off. The man coming in plays the same
+position, is on this week's board, is not out himself, has not kicked off, and keeps the six
+under the week's cap. Each refusal is its own sentence and the SQL test asserts each by its
+sentence. **An unknown kickoff is refused, never read as not started**, which is the same
+fail-closed rule the submit runs on.
+
+**Nothing downstream needed changing, and that is the reason it is a rewrite of `picks`.**
+Every score on the site is derived from `picks` at read time: the board, your place, the
+settle in 114. So a swap is one `array_replace` and the new man is scored from then on.
+`spend` and `projected` move with it, and `swaps` keeps the history on the row.
+
+**`publish-out.mjs` fills the two things the server needs** off the two files the page
+already reads: `fantasy_out` from the injury file (off, Out and Doubtful, the same three the
+page takes off the wheel, and a site ruling counts), and `team` and `kick` on
+`fantasy_prices`. **It never touches a price.** `fantasy-injuries.yml` runs it on every
+firing, because a site ruling arrives by a push rather than by the report. A missing secret
+or a database without 119 is a warning there, not a red run: the file has already been
+committed, and the swap fails closed either way.
+
+**The page only offers what it expects the server to take.** The call is drawn on the entry
+screen for a man who is out and still to play, and only for an entry on the account. The
+sheet lists the men the server would take in, best projection first, twelve at most. A
+refusal shows the server's own sentence, because a game can kick off while the sheet is
+open. `swap` rides on `API_VERSION` 3, so a stale `entries.js` costs the offer and never the
+page.
+
+**What it cannot do, said plainly.** A late inactive on Sunday morning is not in the Friday
+report, so he is only swappable once he is on `football/data/fantasy_ruled_out.json`. After
+the lock a swapper can see the field's lineups, which is a small edge. And a man out whose
+owner never comes back still scores zero: nothing swaps for somebody who is not there.
+
 ### The board moves while the games are being played
 
 ```
