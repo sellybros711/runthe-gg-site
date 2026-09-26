@@ -5148,6 +5148,96 @@ proved by mutation, with a misspelt landmark and a deleted `far`.
 stands rather than on them. At 0.18 the lavender castle vanished into a pale
 blue sky, which a screenshot said and no guard can.
 
+### The collection: ten to start, packs for the middle, feats for the best
+
+```
+node mythiball/check-collection.mjs     the split, the migration, the packs, your player
+```
+
+Asked for as a long term grind in the Mario Kart shape: everybody starts with the
+same base team and unlocks the rest. Built on the unlock ladder that was already
+there rather than beside it.
+
+| | who | how you get them |
+|---|---|---|
+| `STARTERS` | ten, the storybook core | on the bench from the first game |
+| `PACK_POOL` | the middle of the roster, derived | pulled from packs bought with coins |
+| `UNLOCKS` | the best, unchanged | earned on the field, the ladder as it was |
+
+**THE BEST ARE NEVER FOR SALE**, and the guard asserts it as a property rather
+than a list: every ladder character outranks every pack character on
+`charValue`, which is the number the ladder was already ordered by. A pack is
+luck and a rung is a feat, so no amount of pulling can be the fastest way to the
+best player in the game.
+
+**`PACK_POOL` and its rarity are derived, never listed.** Everybody who is neither
+a starter nor on the ladder, split 45/35/20 by value into common, rare and epic. A
+character added to the roster is in the packs the day it is written.
+
+**COINS COME FROM PLAYING AND FROM NOWHERE ELSE.** There is no money in any of
+this and there must not be: the site has one store and a second payment path
+belonging to one game is what it exists to prevent. A game pays by the inning,
+more for a win and a harder dugout, 200 for a title and a bonus for the first
+win each day. **A forfeit pays nothing**, or quitting is the quick way to a pack.
+
+**A PACK NEVER PAYS BACK ITS PRICE.** The first version paid a coin card of up
+to sixty and a fallback of sixty for a finished collection, so a Sandlot Pack
+returned 160 for 150 once somebody owned everything. Found by the economy sweep
+running away with itself rather than by reading. Every coin a pack can hand out
+is capped so three cards are at most the price, and the guard opens four hundred
+packs with the collection and the point cap both finished to say so.
+
+**A character slot rolls the rarity first, then hands you somebody you do not
+have.** A straight draw makes the last epic a coupon collector's tail of hundreds
+of duplicates. So a repeat only happens once that whole tier is yours, and pays
+coins back. When the whole pool is yours the slot pays a training card instead.
+
+What that makes of the grind, measured through the real `openPack` at about 45
+coins a game: half the pack pool in about 54 games, all of it in about 181 if
+Gold Packs are bought once the commons are done, 331 on Sandlot alone. The
+ladder's legends and your player's top level are the months long tail.
+
+#### A player who was here before packs keeps everybody
+
+The whole middle of the roster used to be open to anybody, so a tester with a
+franchise has men on it who are now pack characters. `migrateCollection` runs
+once: any save with games played, a season or a cup is granted the entire pack
+pool and flagged `veteran`. Everything rides inside `PROGRESS` under the key the
+game has always used, because renaming a save key throws away every tester's
+save. Everybody, veteran or not, gets one free pack on the way in.
+
+#### Your player is a roster entry, drawn at runtime
+
+`ME` is a roster shaped object in `ROSTER_BY_KEY.me`, mutated in place when a
+point is spent so nothing holding it goes stale, and **deliberately not in
+`ROSTER`**. `ROSTER` is also the pool every opponent is built from, so the draft
+reads `DRAFTABLE()` and nothing else does. The guard's hard case is your player
+NOT in your lineup and rated exactly like the man a club must replace, because
+that is the one arrangement in which a leak would actually be picked.
+
+**The sprite is drawn by `meSpriteBuild`** at the pack's 64 pixel grid and in its
+grammar: big head, a one pixel near black line around every part, action poses
+facing right. It writes the same `{b, f, p}` record the table holds, so the EPX
+pass, the caches and every camera read it like any other character. **Each part
+outlines itself**, which is what draws the line where an arm crosses a chest.
+
+**A painter that takes fractional coordinates writes a property, not a pixel.**
+`g[y][12.4] = 'c'` is legal JavaScript and paints nothing, so the side view lost
+its whole cap the first time a body leaned. Every box and every `set` is floored.
+
+**Gear changes the look and never a rating**, or a cosmetic would be a rating for
+sale by another name. Growth is XP from games your player is in (a point a level,
+top level 60), training cards from packs, a cap of 120 points and 95 a stat.
+Changing the look rebuilds the drawing and drops the `me` entries from
+`v2FrameCache` and `spriteStore`, or a hat bought mid session is only on the
+screens drawn after it.
+
+**Two things only a screenshot said**, both caught before shipping: `.pk-front span`
+turned the rarity chips' white text into the chip's own colour, and "Open another"
+showed with no coins because `.btn` sets a display and `hidden` never took (this
+repo's `[hidden]` pair, again). The guard reads the computed colour and the
+computed display for both.
+
 ### The brand shares Run The Tour's plumbing and deliberately not its look
 
 ```
@@ -5224,15 +5314,141 @@ that the number moved when the bytes did**, because there is no earlier version 
 rebuild, bump every reference to a file that changed. A drifted version and a renamed marker were each
 reintroduced to prove the check bites.
 
-The sprites came from a generator and now come from a HANDOFF PACK, and the
-generator is kept because the pack cannot answer everything:
+### The roster is drawn by a rig, and the pack is only the reference now
+
+```
+node mythiball/sprites/tools/build_rig.mjs           bake the roster into the page
+node mythiball/sprites/tools/build_rig.mjs --sheet   a contact sheet of every idle
+```
+
+Reported by the owner as looking low quality and low production value, with the
+pixel style kept. They were right, and no filter could fix it: the pack's
+characters were rectangles with square heads, about fifty near identical colours
+each, and a batting stance that grew a bat in the frame it swung in. Cleaning and
+upscaling the old frames was tried first and could not be told apart at game size.
+
+**Every character is a spec, posed and turned into pixels.** `sprites/cast.js`
+holds one per character: a build (kid, stocky, giant, lanky, round, small) with any
+of its numbers moved, a head shape, and what they wear. The rig between `RIG BEGIN`
+and `RIG END` in the page poses it, draws it flat at several times the grid and
+gives each pixel the colour covering most of it. **No pixel is a blend of two
+colours**, which is what keeps it pixel art rather than a small drawing.
+
+#### The ink and the light are done in pixels, per body part
+
+Reported next by the owner: the body parts looked like individual pieces. They
+were. The first rig inked and shaded every SHAPE: an upper arm, a forearm and a
+round hand each carried their own black ring and their own shine, so an arm read as
+three capsules and a leg as two plus a lozenge. That is what a vector puppet looks
+like, and no pixel artist draws a figure that way.
+
+**So the drawing is flat and every shape is filed under a body part.** `part()`
+names what is being drawn (`armN`, `legF`, `torso`, `head`, `hairF`, `hat`, `bat`,
+and so on). The figure is drawn twice at the big size, once in colour and once
+through `idCtx()`, a proxy that paints the current part's id instead of any colour.
+Both are reduced by majority, and `light()` does the rest at the target size:
+
+| | what it does |
+|---|---|
+| the outline | ONE pixel round the whole silhouette, a dark shade of the colour it borders, lighter on the lit top and left |
+| a part in front of another | the part BEHIND gets a one pixel line in its own dark shade. A joint inside one part gets nothing, because an arm and its hand are one part |
+| shadow | a part is lit as one mass from the upper left: a pixel is in shadow when the part runs out a little way toward the lower right, how far read off the part's own thickness |
+| highlight | a rim along the top left edge of the colour a part is mostly made of |
+
+**A part's z is the order it was first named**, which is draw order, and that is
+what decides which side of a crossing gets the line. A part in front counts as more
+of the part behind it for the shadow test, or an arm laid across a chest would cut a
+false shadow edge into the chest.
+
+**Two things only looking at it said.** A shadow that only takes value away turns
+skin grey and reads as dirt, so `ramp()` turns the hue toward blue the short way
+round and HOLDS CHROMA (holding HSL saturation instead turned a pale face orange the
+moment it was darkened). And a black coat drawn black has nowhere darker to put the
+line where an arm crosses it, so near black is lifted to a dark blue grey everywhere
+except the face, where a pupil is meant to be the darkest thing on the figure.
+
+**`G` was the obvious name and is a local in `draw()`**: the figure's scale is
+`const G`, so a function called `G` threw a TDZ error on the first call. It is
+`part()`.
+
+**An ink underlay is skipped rather than deleted at every call site.** Props drew a
+thick `INK` stroke and then the colour over it, which was their outline; `line()`
+drops an `INK` stroke at `OW * 2` or wider, and the outline pass draws it instead.
+The table came out a little SMALLER (667KB gzipped against 699KB), because a flat
+part with one shadow runs longer than three bands and a shine.
+
+**The heads are not one shape, on purpose.** A head is a superellipse with its own
+roundness, width, height, top and jaw, so Frankenstein is a block, Humpty is an egg,
+Dracula narrows to a point and Popeye's jaw is wider than his crown. The bodies
+vary the same way. Asked for in as many words: more chibi, and not one body.
+
+**AND THEN THE HEADS CAME DOWN, which reverses the chibi half of that.** Reported by
+the owner: the heads were far too big, make them more realistic and keep the pixels.
+`PROP` in the rig turns every build at once: the head to 0.64 of its written size,
+the torso 1.28x, legs 1.48x, arms 1.42x, a longer neck and slightly thicker limbs.
+The figure stands about the same height, so the head went from roughly half of it to
+roughly a quarter, and no cast spec had to be edited. **It is one table on purpose**:
+a proportion written into sixty eight specs is sixty eight places to drift.
+
+- **Eyes shrink less than the head does** (`eye: 1.25`), or a face at this size is two
+  single pixels and reads as nobody.
+- **Side pose hands are scaled by arm length now**, as the front poses and the feet
+  already were. The pose table was written for arms nine units long, so fixed hand
+  offsets on a longer arm folded every elbow.
+- **The cheer is narrower** (arms up rather than out). `fitScale` shrinks a whole
+  character to fit its widest pose, and longer arms thrown sideways cost the big
+  bodies (Kong, the golem) a fifth of their size in every pose.
+- **Humpty is exempt** (`spec.egg`). His head is his body, and a small one would be a
+  different character.
+
+**The grid is 96, up from 64.** `V2_W` and `V2_H` carry it and nothing in the page
+should say 64 about a sprite. It costs about 170KB compressed on the page, which was
+measured before choosing it.
+
+**The rig lives in the page because the custom player is drawn by it live.** The
+roster is baked; the player's look is chosen in the page, so `meSpriteBuild` hands
+`meSpec(look)` to `RIG.lazy`, which draws a pose the first time something reads it.
+One rig for both is what keeps the player's own character in the same style as
+everybody they play with. The builder runs the page's own rig for the same reason:
+a baked table and a live player drawn by two copies of one rig would drift.
+
+**Three rules the builder enforces, all of which failed silently first:**
+
+- **One size per character.** A top hat, rabbit ears or both arms up in a cheer
+  leave the frame, so `fitScale` finds the largest scale at which no pose does and
+  uses it for every pose. Fitting per pose would make a figure shrink when it cheers.
+- **Seated.** The lowest pixel of every frame is the second row from the bottom,
+  whatever the pose did with the feet, because the camera draws the bottom of the
+  cell on the dirt. A run stride with both feet up would otherwise hover.
+- **52 colours.** The table format is palette letters, so a character's colours
+  past 52 fold into the nearest kept one, by use.
+
+**The pitcher's delivery is front facing now.** The wide camera draws him in
+`windup` and `release`, and the pack's were a side profile, which is the same
+throwing to third base the plate camera was fixed for. The rig draws them facing the
+reader: hands together, the knee up, the arm coming down toward the camera.
+
+**The stance bat is drawn in front of the head.** A chibi head is big enough to hide
+a bat held behind it, so `ready` and `load` carry `batFront`. At the plate the bat is
+the thing a player looks at.
+
+**The guard that expected some characters with no bat was rewritten, not loosened.**
+It was a fact about the pack. Now every character draws one, the check asks for all
+of them, and the prop bat fallback is exercised on a fixture with its bat list taken
+away, because no real sprite reaches it any more.
+
+**The link card still shows the pack's art.** `og-source.html` reads the grid size
+off the rows now, so a rebuild works, but its trading cards were laid out for 64
+pixel portraits and were not rebuilt in this pass.
+
+The history below is the pack's, and it is kept because the specs follow its looks.
+
+The sprites came from a generator and then from a HANDOFF PACK. The pack's tools
+that wrote the table (`build_table.py`, `install.py`) and both generators are
+deleted, because any of them would overwrite the rig's table:
 
 ```
 python3 mythiball/sprites/tools/audit.py        what is in the pack
-python3 mythiball/sprites/tools/build_table.py  build V2_SPRITES from it
-python3 mythiball/sprites/tools/install.py      swap it into the page
-python3 mythiball/sprites/tools/install.py --revert   put the generator back
-python3 mythiball/gen_sprites_v2.py > sprites.js      the old parametric one
 ```
 
 **THE STILLS ARE WHAT MADE THE SWAP POSSIBLE, NOT THE ANIMATION STRIPS.**
@@ -6777,6 +6993,8 @@ The regression suite, which is the thing to run after editing:
 
 ```
 node mythiball/check-posture.mjs   unlisted, the capital alias still lands, the brand holds, and every park's scenery exists
+node mythiball/check-collection.mjs  the ten starters, the packs, the ladder and your own player
+node mythiball/sprites/tools/build_rig.mjs --dry   the roster still bakes from its specs
 node mythiball/check-rules.mjs     whole games, and the sport's own arithmetic
 node mythiball/check-reach.mjs      every control a game offers is inside the window,
                                    including the two sheets that open over the field
