@@ -259,7 +259,7 @@ const TUNE = {
   LANE_WIDTH:     5.5,      // when the carrier enters a container's lane, that defender steps up to attack
 
   // ---- CAMERA ----
-  CAM_DIST: 10.5, CAM_HEIGHT: 5.4, CAM_LOOKAHEAD: 5, CAM_LERP: 5.5,
+  CAM_DIST: 18, CAM_HEIGHT: 13, CAM_LOOKAHEAD: 16, CAM_LERP: 5.5,   // high and far enough to see the defense over your own carrier
   LOOSE_CAM_DIST: 17, LOOSE_CAM_HEIGHT: 15, LOOSE_CAM_LERP: 3.4,
 
   // ---- JUICE ----
@@ -399,7 +399,7 @@ function applyPark(park){
    MythiBall's own, decoded from the same run length strings its page draws. */
 const CAST=window.FUMBLE_CAST;
 const SPR_PAD=1, SPR_N=CAST.w+2*SPR_PAD;
-const SPR_H=3.8;                  // world height of a whole 64px frame; the figure itself is most of it
+const SPR_H=3.4;                  // world height of a whole 64px frame; the figure itself is most of it
 const rowCache=new Map();
 function frameRows(key,pose){ const ck=key+'/'+pose; let rows=rowCache.get(ck); if(rows) return rows;
   const c=CAST.chars[key]; let raw=c.f[pose]!=null?c.f[pose]:c.f.idle;
@@ -434,7 +434,7 @@ function makePlayer(team){ const g=new THREE.Group();
   core.rotation.x=-Math.PI/2; core.position.y=0.035; g.add(core);
   const ringMat=new THREE.MeshBasicMaterial({color:TEAM[team],side:THREE.DoubleSide,transparent:true,opacity:.75,depthWrite:false});
   const tring=new THREE.Mesh(new THREE.RingGeometry(0.95,1.18,22), ringMat); tring.rotation.x=-Math.PI/2; tring.position.y=0.045; g.add(tring);
-  const sprite=new THREE.Sprite(new THREE.SpriteMaterial({transparent:true,alphaTest:0.5}));
+  const sprite=new THREE.Sprite(new THREE.SpriteMaterial({transparent:true,alphaTest:0.05}));
   sprite.center.set(0.5,(SPR_PAD+1.5)/SPR_N); sprite.scale.set(SPR_H*SPR_N/CAST.w,SPR_H*SPR_N/CAST.w,1); g.add(sprite);
   g.userData={ sprite, ringMat, tring, key:null, pose:null, flip:false, stride:0, act:0, actPose:null, cheer:0,
     knock:new THREE.Vector3(), knockT:0, engaged:false, facing:0, spdF:1, powF:1 };
@@ -454,7 +454,16 @@ function castTeam(team,keys){ const ps=teamPlayers(team);
    or the figure would flip on every wobble of the stick. */
 function updateSprites(dt){
   const camYaw=Math.atan2(camA.x-camP.x,camA.z-camP.z), rx=-Math.cos(camYaw), rz=Math.sin(camYaw);
+  /* ANYONE BETWEEN THE CAMERA AND THE PLAY IS A GHOST. A chaser two yards
+     behind your carrier is twice as close to the lens and draws twice as big,
+     right over the stick. Depth is measured along the camera's view, and a
+     player nearer than the one you follow fades so the play reads through him. */
+  const fx=Math.sin(camYaw), fz=Math.cos(camYaw), depth=q=>(q.x-camP.x)*fx+(q.z-camP.z)*fz;
+  let near=-Infinity; if(phase==='PLAY' && controlled>=0){ near=depth(PL[controlled].position);
+    if(carrier>=0) near=Math.min(near,depth(PL[carrier].position)); }
   for(let i=0;i<PL.length;i++){ const p=PL[i], u=p.userData; if(!u.key) continue;
+    const ghost = i!==controlled && i!==carrier && depth(p.position) < near-2.5;
+    const m=u.sprite.material; m.opacity += ((ghost?0.3:1)-m.opacity)*Math.min(1,dt*10);
     let pose='idle';
     const moving = phase==='PLAY' && running;
     const vx=moving?(u.vx||0):0, vz=moving?(u.vz||0):0, sp=Math.hypot(vx,vz);
@@ -602,6 +611,7 @@ function updateCues(){
 
 /* ---- SETUP phase: aerial view, drag your pieces, a landing circle that moves each possession ---- */
 function beginSetup(recv){
+  document.getElementById('dir').style.display='none';
   recvTeam=recv; phase='SETUP'; running=true; possession='NONE'; carrier=-1; truck=null; grabbed=-1; latCd=0; jukeCd=0; jukeT=0; stamina=1;
   // landing spot in the receiving team's return area: RANDOM every possession
   // like a real kickoff: the returner catches DEEP near their OWN goal line and runs the field back
@@ -658,7 +668,7 @@ function kickoff(){ if(!canKick())return; phase='KICK'; audioResume(); sfx.kick(
   document.getElementById('mode').style.display='none';
   document.getElementById('setupHint').style.display='none'; showControls(true); grabbed=-1; }
 function updateKick(dt){ ballVel.y-=TUNE.GRAVITY*dt; ball.position.y+=ballVel.y*dt; ball.rotation.x+=6*dt;
-  if(ball.position.y<=1.5){ ball.position.y=1.5; possession=recvTeam; carrier=kickReceiver; truckCd=TUNE.TRUCK_COOLDOWN_S;
+  if(ball.position.y<=1.5){ ball.position.y=1.5; possession=recvTeam; carrier=kickReceiver; PL[kickReceiver].userData.shrugged=false; truckCd=TUNE.TRUCK_COOLDOWN_S;
     phase='PLAY'; pickControlled(); updateHighlights(); camReady=false; flash(); sfx.catch(); crowdSwell(0.12,700);
     if(recvTeam==='BLUE') possStartZ=landing.z;
     msg(recvTeam==='BLUE'?'YOUR BALL':shortClub(CLUB.name)+' RETURN', recvTeam==='BLUE'?'good':'bad', 650); } }
@@ -685,10 +695,11 @@ function updateContact(dt){
   } else {                                  // CPU carrier tackled by your team -> pop, unless he shrugs it off
     const cu=PL[carrier].userData;
     if(cu.brkCd>0) return;
+    if(cu.shrugged) return popBall(PL[carrier].position, near);   // one shrug a possession
     const c=CAST.chars[cu.key], brk=c?Math.max(0,c.pow-55)/100*0.6:0;
     if(Math.random()<brk){ const f=PL[near], away=f.position.clone().sub(PL[carrier].position).setY(0).normalize().multiplyScalar(TUNE.TRUCK_KNOCKBACK*0.8);
-      f.userData.knock.copy(away); f.userData.knockT=0.4; cu.brkCd=1.0; cu.boost=0.35; sfx.truck(); shake(0.4,220);
-      msg(shortName(cu.name)+' SHRUGS HIM OFF','bad',800); return; }
+      f.userData.knock.copy(away); f.userData.knockT=0.4; cu.brkCd=1.0; cu.shrugged=true; cu.boost=0.35; sfx.truck(); shake(0.4,220);
+      msg(shortName(cu.name).toUpperCase()+' SHRUGS HIM OFF','bad',800); return; }
     popBall(PL[carrier].position, near);
   }
 }
@@ -733,7 +744,7 @@ function updateLooseBall(dt){
   if(ball.position.y<=TUNE.RECOVER_MAX_HEIGHT){
     let best=-1,bd=1e9; for(let i=0;i<PL.length;i++){ const d=Math.hypot(PL[i].position.x-ball.position.x,PL[i].position.z-ball.position.z); if(d<bd){bd=d;best=i;} }
     if(bd<TUNE.RECOVER_RADIUS && best>=0){ const t=PL[best].userData.team;
-      possession=t; carrier=best; truckCd=TUNE.TRUCK_COOLDOWN_S; pickControlled(); updateHighlights(); camReady=false;
+      PL[best].userData.shrugged=false; possession=t; carrier=best; truckCd=TUNE.TRUCK_COOLDOWN_S; pickControlled(); updateHighlights(); camReady=false;
       PL[best].userData.act=0.3; PL[best].userData.actPose='catch';
       if(lastFumbleTeam && t!==lastFumbleTeam){ if(t==='BLUE') STATS.takeaways++; else STATS.giveaways++; }
       if(t==='BLUE') possStartZ=ball.position.z;
@@ -924,19 +935,43 @@ function endGame(){ gameOver=true; const win=scoreB>scoreR;
   document.getElementById('over').style.display='flex'; }
 
 /* ---------------- camera + hud ---------------- */
+/* THE SETUP CAMERA IS FITTED TO YOUR SEVEN, not set at a distance. A portrait
+   phone sees about 45 yards across a 64 yard field from a fixed height, so the
+   wide men on your own side were off the screen, and a player you cannot see
+   is a player you cannot drag. The angle is fixed (behind and above the play,
+   centred on the field) and only the distance is solved: the nearest distance
+   at which all seven, head to feet, and the landing circle are inside the
+   frame, clear of the score bar at the top and the kick button at the bottom. */
+const setupFit={ p:new THREE.Vector3(), a:new THREE.Vector3(), aspect:0 };
+function fitSetupCamera(){ const d=dirOf(recvTeam), mine=teamPlayers('BLUE');
+  let z0=landing.z, z1=landing.z; for(const p of mine){ z0=Math.min(z0,p.position.z); z1=Math.max(z1,p.position.z); }
+  const a=new THREE.Vector3(0, 0, (z0+z1)/2 + 4*d), back=new THREE.Vector3(0, 50, -52*d).normalize();
+  const pts=[]; for(const p of mine){ pts.push(p.position.clone(), p.position.clone().setY(SPR_H*0.9)); }
+  pts.push(landing.clone().add(new THREE.Vector3(3,0,0)), landing.clone().add(new THREE.Vector3(-3,0,0)));
+  const cam=camera.clone(); cam.aspect=camera.aspect; cam.updateProjectionMatrix();
+  const fits=D=>{ cam.position.copy(a).addScaledVector(back,D); cam.lookAt(a); cam.updateMatrixWorld(true);
+    for(const q of pts){ const v=q.clone().project(cam); if(Math.abs(v.x)>0.9||v.y>0.72||v.y<-0.62||v.z>1) return false; } return true; };
+  let lo=25, hi=320; if(fits(lo)) hi=lo; else for(let i=0;i<18;i++){ const m=(lo+hi)/2; if(fits(m)) hi=m; else lo=m; }
+  setupFit.a.copy(a); setupFit.p.copy(a).addScaledVector(back,hi); setupFit.aspect=camera.aspect; }
 function updateCamera(dt){ let tp,ta;
   if(phase==='SETUP'||phase==='KICK'){                     // aerial bird's-eye, centered on the field (x=0) so it never skews
-    tp=new THREE.Vector3(0, 50, landing.z - 30*dirOf(recvTeam));   // behind & above the deep returner
-    ta=new THREE.Vector3(0, 2, landing.z + 22*dirOf(recvTeam));    // look upfield so the wall + coverage are framed
+    if(!camReady||setupFit.aspect!==camera.aspect) fitSetupCamera();
+    tp=setupFit.p; ta=setupFit.a;
     const a=camReady?Math.min(1,4*dt):(camReady=true,1); camP.lerp(tp,a); camA.lerp(ta,a); camera.position.copy(camP); camera.lookAt(camA); return;
   }
   if(possession==='LOOSE'){ const mid=ball.position.clone().add(PL[controlled].position).multiplyScalar(0.5);
     tp=new THREE.Vector3(mid.x,TUNE.LOOSE_CAM_HEIGHT,mid.z-TUNE.LOOSE_CAM_DIST); ta=ball.position.clone(); }
-  else { const c=PL[controlled];
-    // fixed DOWNFIELD axis: the camera tracks the player but never spins when you steer left/right
-    const dir=dirOf(possession==='BLUE'?'BLUE':'RED');
-    tp=new THREE.Vector3(c.position.x, TUNE.CAM_HEIGHT, c.position.z - TUNE.CAM_DIST*dir);
-    ta=new THREE.Vector3(c.position.x, 1.4, c.position.z + TUNE.CAM_LOOKAHEAD*dir); }
+  else if(possession==='BLUE'){ const c=PL[controlled];
+    // fixed DOWNFIELD axis: the camera tracks the player but never spins when you steer left/right.
+    // High and far enough back that the tacklers coming at you are ABOVE your carrier's head, not behind him.
+    tp=new THREE.Vector3(c.position.x, TUNE.CAM_HEIGHT, c.position.z - TUNE.CAM_DIST);
+    ta=new THREE.Vector3(c.position.x, 0, c.position.z + TUNE.CAM_LOOKAHEAD); }
+  else { const c=PL[controlled].position, k=PL[carrier].position;
+    // DEFENSE: the same fixed axis, looking the way their carrier runs (toward -z), but framed on BOTH
+    // your chaser and the man you are chasing. Behind your own chaser alone, the carrier was off screen.
+    const sep=Math.min(30,Math.hypot(c.x-k.x,c.z-k.z)), back=Math.max(c.z,k.z), front=Math.min(c.z,k.z), mx=(c.x+k.x)/2;
+    tp=new THREE.Vector3(mx, TUNE.CAM_HEIGHT+sep*0.35, back + TUNE.CAM_DIST + sep*0.2);
+    ta=new THREE.Vector3(mx, 0, front - 6); }
   const l=possession==='LOOSE'?TUNE.LOOSE_CAM_LERP:TUNE.CAM_LERP;
   if(!camReady){ camP.copy(tp); camA.copy(ta); camReady=true; } else { const a=Math.min(1,l*dt); camP.lerp(tp,a); camA.lerp(ta,a); }
   camera.position.copy(camP); camera.lookAt(camA);
@@ -966,7 +1001,7 @@ let CLUB=null, PARK=null, MINE=[];
 const pick=a=>a[(Math.random()*a.length)|0];
 function sample(a,n){ const c=a.slice(); for(let i=c.length-1;i>0;i--){ const j=(Math.random()*(i+1))|0; [c[i],c[j]]=[c[j],c[i]]; } return c.slice(0,n); }
 /* "The Great Ape" is the name; "Ape" is what fits on a pill. */
-function shortName(n){ if(!n) return ''; const w=n.replace(/^The /,'').split(' '); return w.length>1&&w[0].length<4 ? w.slice(0,2).join(' ') : w[0]; }
+function shortName(n){ if(!n) return ''; const t=n.replace(/^The /,''); return t.length<=11 ? t : t.split(' ')[0]; }
 function shortClub(n){ return n.replace(/^The /,'').split(' ')[0].toUpperCase(); }
 /* The club is the club's colour, lifted until it reads on grass. Your side
    is sky blue unless the club is blue too, in which case you are gold. */
@@ -1080,7 +1115,7 @@ document.getElementById('mode').addEventListener('click',()=>{ setupMode = setup
   const m=document.getElementById('mode'); m.classList.toggle('draw',setupMode==='DRAW');
   m.textContent = setupMode==='DRAW'?'✋ MOVE PLAYERS':'✎ DRAW BLOCKS';
   document.getElementById('setupHint').textContent = setupMode==='DRAW'
-    ? (recvTeam==='BLUE'?'DRAG FROM A BLOCKER TO SET HIS FIRST BLOCK':'DRAG FROM A DEFENDER TO SET HIS FIRST MOVE')
+    ? (recvTeam==='BLUE'?'DRAG FROM A BLOCKER TO AIM HIM':'DRAG FROM A DEFENDER TO AIM HIM')
     : 'DRAG YOUR PLAYERS INTO POSITION'; });
 
 /* ---------------- boot ---------------- */
