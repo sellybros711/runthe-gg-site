@@ -14287,6 +14287,12 @@ six modes behind a click. Now:
 - the phone's door is not drawn (`#s-intro #b-modes{display:none}`);
 - How to play, Leaderboard and Trophy case are one row of text links.
 
+Each tile carries a baseball outline in its corner (the ring, both seams and their
+stitches), drawn as a CSS mask over the tile's own colour so one drawing wears six
+tints. The SVG inside the mask's data URI must percent-encode its double quotes:
+left raw, the `"` closes `url("...")` early, the mask silently fails, and what draws
+is a tinted square. The text sits at `z-index:1` so the ball stays behind it.
+
 `check-home` section 3 asserts all four at five desktop sizes, and 3b presses the
 Eras tile and waits for the decade picker. Hiding the door and the grid were each
 reverted to prove the claims bite.
