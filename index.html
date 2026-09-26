@@ -59,150 +59,506 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 
 <style>
+  /* =====================================================================
+     RunThe.GG home, v2. One stylesheet, built on tokens.
+
+     The page is a LIBRARY now rather than a list: the grid below takes a
+     sixth, eighth or twelfth game without a new layout, and the filter row
+     grows a chip per sport. Every id and class the account, install, clip,
+     drive-chart, slot and golfer scripts reach for is kept by name.
+     ===================================================================== */
   :root{
-    --bg:#0d1b2e; --bg2:#102439; --card:#152e4a; --cardb:#234669;
-    --ink:#eaf1f8; --mut:#9bb0c6; --gold:#6EE84E; --teal:#66D3DE; --green:#6EE84E; --line:rgba(255,255,255,.1);
+    --bg:#060a13; --bg-2:#0a101d; --surf:#0e1626; --surf-2:#132035; --surf-3:#1a2a44;
+    --line:rgba(255,255,255,.08); --line-2:rgba(255,255,255,.14);
+    --ink:#f1f5fb; --ink-2:#c3cedd; --mut:#8e9bb1; --mut-2:#6b7890;
+    --brand:#6EE84E; --brand-2:#3fcf6b; --teal:#66D3DE; --gold:#6EE84E; --green:#6EE84E;
+    --cfb:#18c38a; --nfl:#ef4a4a; --golf:#f2b63c; --arcade:#ff8a3d; --pitch:#3fd0d8;
+    --r-lg:20px; --r-md:14px; --r-sm:10px;
+    --maxw:1200px; --nav-h:64px;
+    --display:'Anton',Impact,'Arial Narrow',sans-serif;
+    --title:'Russo One','Archivo',system-ui,sans-serif;
+    --body:'Archivo',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+    --ease:cubic-bezier(.2,.7,.2,1);
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html{scroll-behavior:smooth;}
   html,body{margin:0;padding:0;}
-  body{
-    font-family:'Archivo',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
-    color:var(--ink); min-height:100vh; -webkit-font-smoothing:antialiased;
+  body{font-family:var(--body);color:var(--ink);background:var(--bg);min-height:100vh;
+    -webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;overflow-x:hidden;}
+  a{color:inherit;}
+  img{max-width:100%;}
+  .sr{position:absolute!important;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;}
+  .shell{max-width:var(--maxw);margin:0 auto;padding:0 28px;}
+  @media (max-width:640px){ .shell{padding:0 16px;} }
+
+  /* ---------- announcement bar ---------- */
+  .ann{position:relative;z-index:51;background:linear-gradient(90deg,#0b2a1a,#0c2230 50%,#0b2a1a);
+    border-bottom:1px solid rgba(110,232,78,.18);font-size:12.5px;font-weight:600;color:#cfe8d6;}
+  .ann .shell{display:flex;align-items:center;justify-content:center;gap:10px;min-height:38px;padding-top:6px;padding-bottom:6px;text-align:center;}
+  .ann .tagnew{flex:0 0 auto;font-size:10px;font-weight:900;letter-spacing:.14em;text-transform:uppercase;
+    color:#06230c;background:var(--brand);border-radius:999px;padding:3px 8px;}
+  .ann a{color:#fff;font-weight:800;text-decoration:none;border-bottom:1px solid rgba(255,255,255,.35);}
+  .ann a:hover{border-color:#fff;}
+
+  /* ---------- nav ---------- */
+  .nav{position:sticky;top:0;z-index:50;background:rgba(6,10,19,.72);
+    backdrop-filter:saturate(1.6) blur(16px);-webkit-backdrop-filter:saturate(1.6) blur(16px);
+    border-bottom:1px solid var(--line);}
+  .nav-in{max-width:var(--maxw);margin:0 auto;height:var(--nav-h);display:flex;align-items:center;gap:28px;padding:0 28px;}
+  .nav-brand{display:flex;align-items:center;text-decoration:none;flex:0 0 auto;}
+  .nav-logo{height:24px;width:auto;display:block;}
+  .nav-links{display:flex;align-items:center;gap:4px;margin-right:auto;}
+  .nav-links a{font-size:14px;font-weight:700;color:var(--ink-2);text-decoration:none;padding:8px 12px;border-radius:8px;transition:color .15s,background .15s;}
+  .nav-links a:hover{color:#fff;background:rgba(255,255,255,.06);}
+  .nav-acct{display:flex;align-items:center;gap:8px;margin-left:auto;}
+  .nav-btn{appearance:none;border:0;cursor:pointer;font-family:inherit;font-weight:800;font-size:13.5px;line-height:1;
+    padding:10px 16px;border-radius:10px;transition:transform .15s var(--ease),filter .15s,border-color .15s,background .15s;}
+  .nav-btn:hover{transform:translateY(-1px);}
+  .nav-btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line-2);}
+  .nav-btn.ghost:hover{background:rgba(255,255,255,.06);}
+  .nav-btn.solid{background:linear-gradient(180deg,#8af06a,#4ec335);color:#05220b;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.45),0 8px 24px -10px rgba(110,232,78,.7);}
+  .nav-btn.solid:hover{filter:brightness(1.06);}
+  .nav-chip{display:inline-flex;align-items:center;gap:9px;background:rgba(255,255,255,.05);border:1px solid var(--line-2);
+    border-radius:999px;padding:5px 14px 5px 5px;color:var(--ink);text-decoration:none;font-weight:800;font-size:13.5px;}
+  .nav-chip:hover{border-color:var(--teal);}
+  .nav-chip .av{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex:0 0 auto;
+    background:linear-gradient(180deg,#66D3DE,#1c8d97);color:#04241f;font-weight:900;font-size:13px;}
+  .nav-chip .nm{max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  @media (max-width:860px){ .nav-links{display:none;} }
+  @media (max-width:520px){
+    .nav-in{padding:0 16px;gap:10px;height:58px;}
+    .nav-logo{height:21px;}
+    .nav-btn{padding:9px 12px;font-size:12.5px;}
+    .nav.signed-in .nav-chip .nm{display:none;}
+    .nav.signed-in .nav-chip{padding:5px;}
+  }
+
+  /* ---------- hero ---------- */
+  .hero{position:relative;overflow:hidden;isolation:isolate;padding:84px 0 70px;border-bottom:1px solid var(--line);}
+  .hero-bg{position:absolute;inset:0;z-index:-1;pointer-events:none;}
+  .hero-bg:before{content:"";position:absolute;inset:-20%;
     background:
-      radial-gradient(1100px 520px at 50% -8%, rgba(53,196,205,.16), transparent 60%),
-      radial-gradient(900px 460px at 88% 4%, rgba(110,232,78,.10), transparent 55%),
-      linear-gradient(180deg,#0e2036 0%, var(--bg) 46%, #0b1626 100%);
-    background-attachment:fixed;
+      radial-gradient(38% 42% at 18% 28%, rgba(110,232,78,.20), transparent 70%),
+      radial-gradient(34% 40% at 82% 18%, rgba(102,211,222,.20), transparent 70%),
+      radial-gradient(30% 36% at 70% 88%, rgba(239,74,74,.14), transparent 70%),
+      radial-gradient(30% 34% at 30% 92%, rgba(242,182,60,.12), transparent 70%);
+    filter:blur(10px);animation:drift 22s ease-in-out infinite alternate;}
+  @keyframes drift{0%{transform:translate3d(0,0,0) scale(1);}100%{transform:translate3d(3%,-2%,0) scale(1.08);}}
+  /* a broadcast-booth grid, fading out toward the edges */
+  .hero-bg:after{content:"";position:absolute;inset:0;
+    background-image:linear-gradient(rgba(255,255,255,.045) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.045) 1px,transparent 1px);
+    background-size:56px 56px;
+    -webkit-mask-image:radial-gradient(70% 70% at 50% 40%,#000 30%,transparent 80%);mask-image:radial-gradient(70% 70% at 50% 40%,#000 30%,transparent 80%);}
+  .hero-grid{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr);gap:56px;align-items:center;}
+  .eyebrow{display:inline-flex;align-items:center;gap:10px;font-size:12px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;
+    color:#d8f5d0;background:rgba(110,232,78,.08);border:1px solid rgba(110,232,78,.25);border-radius:999px;padding:7px 14px 7px 10px;}
+  .eyebrow .dot{width:8px;height:8px;border-radius:50%;background:var(--brand);box-shadow:0 0 0 0 rgba(110,232,78,.6);animation:livePulse 2.4s ease-out infinite;}
+  @keyframes livePulse{0%{box-shadow:0 0 0 0 rgba(110,232,78,.55);}70%{box-shadow:0 0 0 9px rgba(110,232,78,0);}100%{box-shadow:0 0 0 0 rgba(110,232,78,0);}}
+  .hero h1{font-family:var(--display);font-weight:400;text-transform:uppercase;letter-spacing:.005em;line-height:.92;
+    font-size:clamp(54px,8.2vw,112px);margin:22px 0 0;}
+  .hero h1 .l1{display:block;color:#fff;}
+  .hero h1 .l2{display:block;background:linear-gradient(92deg,#8af06a 0%,#66D3DE 55%,#9fb8ff 100%);
+    -webkit-background-clip:text;background-clip:text;color:transparent;}
+  .hero h1 .rot{display:inline-block;min-width:4ch;}
+  .hero h1 .rot.swap{animation:rotIn .5s var(--ease);}
+  @keyframes rotIn{0%{opacity:0;transform:translateY(.35em);filter:blur(6px);}100%{opacity:1;transform:none;filter:none;}}
+  .hero .lede{font-size:clamp(16px,1.6vw,19px);line-height:1.6;color:var(--ink-2);max-width:540px;margin:24px 0 0;}
+  .hero .lede b{color:#fff;}
+  .cta-row{display:flex;flex-wrap:wrap;gap:12px;margin-top:32px;}
+  .cta{display:inline-flex;align-items:center;gap:10px;text-decoration:none;font-weight:800;font-size:15.5px;line-height:1;
+    padding:16px 24px;border-radius:12px;transition:transform .18s var(--ease),filter .18s,background .18s,border-color .18s;}
+  .cta:hover{transform:translateY(-2px);}
+  .cta.primary{color:#05220b;background:linear-gradient(180deg,#8af06a,#46bd30);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.5),0 14px 34px -14px rgba(110,232,78,.85);}
+  .cta.primary:hover{filter:brightness(1.05);}
+  .cta.secondary{color:#fff;background:rgba(255,255,255,.05);border:1px solid var(--line-2);}
+  .cta.secondary:hover{background:rgba(255,255,255,.09);}
+  .cta .arw{transition:transform .18s var(--ease);}
+  .cta:hover .arw{transform:translateX(3px);}
+  .stats{display:grid;grid-template-columns:repeat(4,auto);justify-content:start;gap:0;margin-top:44px;
+    border-top:1px solid var(--line);padding-top:22px;}
+  .stat{padding:0 26px 0 0;margin-right:26px;border-right:1px solid var(--line);}
+  .stat:last-child{border-right:0;margin-right:0;padding-right:0;}
+  .stat .v{font-family:var(--display);font-size:34px;line-height:1;color:#fff;letter-spacing:.01em;}
+  .stat .k{font-size:11.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--mut);margin-top:6px;}
+
+  /* hero visual: a stack of live game screens */
+  .stage{position:relative;height:520px;}
+  .screen{position:absolute;border-radius:var(--r-lg);overflow:hidden;border:1px solid var(--line-2);
+    background:var(--surf);box-shadow:0 40px 80px -30px rgba(0,0,0,.9),0 0 0 1px rgba(0,0,0,.4);}
+  .screen .bar{display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid var(--line);
+    background:rgba(255,255,255,.03);}
+  .screen .bar img{width:30px;height:30px;border-radius:8px;flex:0 0 auto;}
+  .screen .bar .nm{font-family:var(--title);font-size:14px;letter-spacing:.03em;}
+  .screen .bar .live{margin-left:auto;display:inline-flex;align-items:center;gap:6px;font-size:10px;font-weight:900;letter-spacing:.12em;color:#ffb3b3;}
+  .screen .bar .live:before{content:"";width:7px;height:7px;border-radius:50%;background:#ff5a5a;animation:livePulse 2s ease-out infinite;}
+  .screen.s-main{left:4%;right:0;top:40px;z-index:3;
+    background:linear-gradient(160deg,#2a0f14,#140a10 60%,#0e1626);}
+  .screen.s-main .drivecanvas{height:236px;border-radius:0;}
+  .screen.s-main .sfoot{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;}
+  .screen.s-main .sfoot .t{font-size:13px;color:var(--ink-2);}
+  .screen.s-main .sfoot .t b{color:#fff;}
+  .screen.s-main .sfoot a{font-size:13px;font-weight:800;color:#fff;text-decoration:none;background:var(--nfl);border-radius:9px;padding:9px 14px;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.35);}
+  .screen.s-back{z-index:1;width:56%;height:230px;background:linear-gradient(160deg,#0f3a2a,#0b2218);}
+  .screen.s-back.a{left:-4%;top:300px;transform:rotate(-5deg);}
+  .screen.s-back.b{right:-6%;top:0;transform:rotate(5deg);background:linear-gradient(160deg,#0f2f45,#0a1b2c);}
+  .screen.s-back .body{display:flex;align-items:flex-end;justify-content:center;gap:4px;height:170px;padding:0 10px 10px;}
+  .screen.s-back .golfer-slot{width:62px;}
+  .screen.s-back .pbody{height:180px;display:flex;align-items:center;justify-content:flex-end;padding-right:40px;
+    background:repeating-linear-gradient(90deg,rgba(255,255,255,.03) 0 26px,transparent 26px 52px);}
+  .screen.s-back .pbody img{width:110px;height:110px;opacity:.55;transform:rotate(-5deg);}
+  .float-badge{position:absolute;z-index:4;display:flex;align-items:center;gap:12px;background:rgba(14,22,38,.86);
+    backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid var(--line-2);border-radius:14px;padding:12px 16px;
+    box-shadow:0 20px 40px -18px rgba(0,0,0,.9);}
+  .float-badge .ic{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;
+    background:rgba(110,232,78,.12);border:1px solid rgba(110,232,78,.3);}
+  .float-badge .ic .pico{width:20px;height:20px;}
+  .float-badge .t1{font-weight:900;font-size:14px;}
+  .float-badge .t2{font-size:12px;color:var(--mut);margin-top:2px;}
+  .float-badge.fb1{right:-10px;bottom:74px;animation:bob 6s ease-in-out infinite;}
+  .float-badge.fb2{left:-26px;top:210px;animation:bob 7s ease-in-out -2s infinite;}
+  @keyframes bob{0%,100%{transform:translateY(0);}50%{transform:translateY(-8px);}}
+  @media (max-width:980px){
+    .hero{padding:56px 0 48px;}
+    .hero-grid{grid-template-columns:1fr;gap:40px;}
+    .stage{height:430px;max-width:560px;width:100%;margin:0 auto;}
   }
-  .wrap{max-width:640px;margin:0 auto;padding:calc(30px + env(safe-area-inset-top,0px)) 18px 46px;}
-
-  /* ---- masthead / wordmark ---- */
-  .brand{position:relative;text-align:center;margin:2px 0 6px;}
-  /* soft animated glow behind the wordmark so the hero reads as designed, not just a logo dropped on a gradient */
-  .brand:before{content:"";position:absolute;left:50%;top:40%;transform:translate(-50%,-50%);
-    width:min(600px,92%);height:230px;z-index:-1;pointer-events:none;
-    background:radial-gradient(closest-side, rgba(53,196,205,.22), rgba(110,232,78,.12) 52%, transparent 72%);
-    filter:blur(8px);animation:heroGlow 7s ease-in-out infinite;}
-  @keyframes heroGlow{0%,100%{opacity:.7;transform:translate(-50%,-50%) scale(1);}
-    50%{opacity:1;transform:translate(-50%,-50%) scale(1.05);}}
-  /* 600px of pixel wordmark pushed the games below the fold and read as the
-     whole page rather than its title. At 430 it is still the loudest thing up
-     there, just not the only thing. */
-  .wordmark{display:block;width:100%;max-width:430px;height:auto;margin:0 auto;
-    filter:drop-shadow(0 8px 34px rgba(0,0,0,.5));}
-  .rule{display:flex;align-items:center;justify-content:center;gap:12px;margin:2px auto 0;max-width:260px;color:var(--gold);}
-  .rule .ln{height:2px;flex:1;background:linear-gradient(90deg,transparent,rgba(110,232,78,.6));}
-  .rule .ln.r{background:linear-gradient(270deg,transparent,rgba(110,232,78,.6));}
-  /* at 460 this wrapped to three lines with a two-word rag on the last. The
-     sentence is 17 words; give it room to sit on two. */
-  .tag{text-align:center;color:var(--ink);font-weight:600;margin:20px auto 0;max-width:600px;
-    line-height:1.55;font-size:16.5px;letter-spacing:.004em;}
-  .tag b{color:var(--teal);}
-  /* live status pill: tells a first-time visitor what the site is at a glance */
-  .hero-status{display:inline-flex;align-items:center;gap:9px;margin:16px auto 2px;
-    padding:2px;font-size:11.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;
-    color:#cfe0f0;}
-  .hero-status .dot{width:8px;height:8px;border-radius:50%;background:#6EE84E;flex:0 0 auto;
-    box-shadow:0 0 0 0 rgba(110,232,78,.6);animation:livePulse 2.4s ease-out infinite;}
-  .hero-status b{color:var(--ink);}
-  @keyframes livePulse{0%{box-shadow:0 0 0 0 rgba(110,232,78,.5);}70%{box-shadow:0 0 0 8px rgba(110,232,78,0);}100%{box-shadow:0 0 0 0 rgba(110,232,78,0);}}
-
-  /* ---- section label ---- */
-  .seclab{display:flex;align-items:center;gap:10px;margin:30px 2px 12px;
-    font-weight:900;letter-spacing:.16em;text-transform:uppercase;font-size:12px;color:var(--mut);}
-  .seclab:before{content:"";width:9px;height:9px;border-radius:2px;background:var(--gold);flex:0 0 auto;}
-
-  /* ---- game cards: each carries its own sport identity ---- */
-  .games{display:grid;gap:16px;}
-  .game{position:relative;display:block;text-decoration:none;color:inherit;overflow:hidden;
-    border-radius:10px;border:1px solid var(--cardb);isolation:isolate;
-    transition:transform .18s ease, border-color .18s ease, box-shadow .18s ease;}
-  .game:hover{transform:translateY(-3px);box-shadow:0 20px 44px -20px rgba(0,0,0,.8);}
-  .game:active{transform:translateY(-1px);}
-  /* themed art layer (behind content): greens for golf, navy/teal for pitch */
-  .game .art{position:absolute;inset:0;z-index:-1;overflow:hidden;}
-  .game.golf{border-color:rgba(235,166,31,.34);}
-  /* golf: warm green wash + faint topographic "green" contour rings from the corner */
-  .game.golf .art{background:
-    repeating-radial-gradient(circle at 84% 118%, rgba(235,166,31,.06) 0 1.5px, transparent 1.5px 30px),
-    radial-gradient(130% 130% at 88% -10%, rgba(235,166,31,.24), transparent 52%),
-    linear-gradient(150deg,#134734 0%, #0e3826 46%, #0a2418 100%);}
-  .game.soccer{border-color:rgba(53,196,205,.34);}
-  /* soccer: navy/teal wash + faint mowed-pitch stripes */
-  .game.soccer .art{background:
-    repeating-linear-gradient(115deg, rgba(255,255,255,.025) 0 28px, transparent 28px 56px),
-    radial-gradient(130% 130% at 88% -10%, rgba(53,196,205,.24), transparent 52%),
-    linear-gradient(150deg,#123152 0%, #0e2740 46%, #0a1b2e 100%);}
-  .game:hover.golf{border-color:rgba(235,166,31,.75);}
-  .game:hover.soccer{border-color:rgba(53,196,205,.75);}
-  /* big sport-motif watermark that makes each card unmistakably its sport */
-  .sport-motif{position:absolute;pointer-events:none;height:auto;}
-  .game.golf .sport-motif{right:-14px;bottom:-24px;width:min(52%,255px);opacity:.5;}
-  .game.soccer .sport-motif{right:-26px;top:50%;transform:translateY(-48%);width:min(42%,205px);opacity:.42;}
-  .game:hover .sport-motif{opacity:.62;transition:opacity .18s ease;}
-  /* golf motif: the ball chips onto the green, rolls in, then a new ball comes in, looped */
-  .feat.golf .sport-motif .gball{transform-box:fill-box;transform-origin:center;
-    animation:golfChip 6s linear infinite;}
-  @keyframes golfChip{
-    /* falls in from above the frame (clipped off-screen), accelerating like gravity */
-    0%{transform:translate(48px,-215px);animation-timing-function:cubic-bezier(.5,0,.9,.42);}
-    17%{transform:translate(0,0);animation-timing-function:cubic-bezier(.22,0,.35,1);}   /* lands on the green */
-    22%{transform:translate(-3px,-15px);animation-timing-function:cubic-bezier(.5,0,.9,.5);}   /* bounce */
-    28%{transform:translate(-6px,0);animation-timing-function:cubic-bezier(.25,0,.4,1);}
-    32%{transform:translate(-8px,-5px);animation-timing-function:cubic-bezier(.5,0,.9,.5);}
-    36%{transform:translate(-9px,0);}                              /* settled */
-    48%{transform:translate(-9px,0);animation-timing-function:cubic-bezier(.45,0,.6,1);}   /* rests a beat */
-    60%{transform:translate(-44px,0);animation-timing-function:ease-in;}   /* rolls to the hole lip */
-    66%{transform:translate(-44px,4px) scale(.55);}
-    70%{transform:translate(-44px,8px) scale(0);opacity:1;}        /* drops in */
-    70.5%{opacity:0;}                                              /* hide, then reset off-screen */
-    71%{transform:translate(48px,-215px);opacity:0;}
-    100%{transform:translate(48px,-215px);opacity:0;}
+  @media (max-width:640px){
+    .ann{font-size:12px;} .ann-more{display:none;} .ann .shell{min-height:34px;}
+    .ann a{white-space:nowrap;}
+    .hero{padding:28px 0 30px;}
+    .eyebrow{font-size:10.5px;letter-spacing:.1em;padding:6px 12px 6px 9px;}
+    .hero h1{margin-top:16px;font-size:64px;}
+    .hero .lede{margin-top:14px;font-size:15.5px;line-height:1.55;}
+    .cta-row{margin-top:20px;gap:10px;flex-wrap:nowrap;}
+    .cta{flex:1 1 0;justify-content:center;padding:15px 12px;font-size:14.5px;white-space:nowrap;}
+    .cta.primary .arw{display:none;}
+    .stats{grid-template-columns:repeat(4,auto);justify-content:space-between;margin-top:24px;padding-top:18px;}
+    .stat{border-right:0;margin-right:0;padding-right:0;}
+    .stat .v{font-size:24px;}
+    .stat .k{font-size:9.5px;letter-spacing:.06em;}
+    .stage{display:none;}
   }
 
-  .g-head{display:flex;align-items:center;gap:16px;padding:18px 17px 0;}
-  .crest{flex:0 0 auto;width:76px;height:76px;position:relative;}
-  .crest img{width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 7px 16px rgba(0,0,0,.55));}
-  /* golf crest ships with a solid green background, so round it to read as a deliberate app tile */
-  .game.golf .crest img{border-radius:8px;border:1px solid rgba(235,166,31,.3);}
-  .crest:before{content:"";position:absolute;inset:-16%;border-radius:50%;z-index:-1;
-    background:radial-gradient(circle, rgba(255,255,255,.14), transparent 66%);}
-  .game.golf .crest:before{background:radial-gradient(circle, rgba(235,166,31,.22), transparent 66%);}
+  /* ---------- sport ticker ---------- */
+  .ticker{border-bottom:1px solid var(--line);background:var(--bg-2);overflow:hidden;position:relative;}
+  .ticker:before,.ticker:after{content:"";position:absolute;top:0;bottom:0;width:120px;z-index:2;pointer-events:none;}
+  .ticker:before{left:0;background:linear-gradient(90deg,var(--bg-2),transparent);}
+  .ticker:after{right:0;background:linear-gradient(270deg,var(--bg-2),transparent);}
+  .ticker-track{display:flex;width:max-content;animation:tick 42s linear infinite;}
+  .ticker-set{display:flex;align-items:center;gap:40px;padding:16px 20px;}
+  .tk{display:inline-flex;align-items:center;gap:10px;font-family:var(--title);font-size:14px;letter-spacing:.06em;color:var(--ink-2);white-space:nowrap;text-transform:uppercase;}
+  .tk img{width:26px;height:26px;border-radius:7px;}
+  .tk.soon{color:var(--mut-2);}
+  .tk.soon em{font-style:normal;font-family:var(--body);font-weight:800;font-size:9.5px;letter-spacing:.14em;color:#9fb0c6;
+    border:1px solid var(--line-2);border-radius:999px;padding:3px 7px;}
+  .tk-sep{width:5px;height:5px;border-radius:50%;background:var(--line-2);}
+  @keyframes tick{to{transform:translateX(-50%);}}
+
+  /* ---------- sections ---------- */
+  .sec{padding-top:88px;}
+  .sec-head{display:flex;align-items:flex-end;justify-content:space-between;gap:24px;flex-wrap:wrap;margin-bottom:30px;}
+  .kicker{font-size:12px;font-weight:900;letter-spacing:.16em;text-transform:uppercase;color:var(--brand);}
+  .sec h2{font-family:var(--display);font-weight:400;text-transform:uppercase;font-size:clamp(36px,4.6vw,58px);line-height:.95;margin:10px 0 0;letter-spacing:.01em;}
+  .sec .sub{color:var(--mut);font-size:15.5px;line-height:1.6;max-width:520px;margin:12px 0 0;}
+  @media (max-width:640px){ .sec{padding-top:60px;} .sec-head{margin-bottom:22px;} }
+
+  /* filter row */
+  .filters{display:flex;gap:8px;flex-wrap:wrap;}
+  .fchip{appearance:none;cursor:pointer;font-family:inherit;font-size:13px;font-weight:800;color:var(--ink-2);
+    background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:999px;padding:9px 15px;
+    display:inline-flex;align-items:center;gap:8px;transition:all .15s;}
+  .fchip:hover{color:#fff;border-color:var(--line-2);}
+  .fchip .n{font-size:11px;color:var(--mut);font-weight:800;}
+  .fchip[aria-pressed="true"]{color:#05220b;background:#fff;border-color:#fff;}
+  .fchip[aria-pressed="true"] .n{color:#4a5568;}
+  @media (max-width:640px){
+    .filters{flex-wrap:nowrap;overflow-x:auto;margin:0 -16px;padding:0 16px 4px;scrollbar-width:none;}
+    .filters::-webkit-scrollbar{display:none;}
+    .fchip{flex:0 0 auto;}
+  }
+
+  /* ---------- game library ---------- */
+  .games{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px;}
+  .feat{--c:#66D3DE;position:relative;display:flex;flex-direction:column;border-radius:var(--r-lg);overflow:hidden;isolation:isolate;
+    background:linear-gradient(180deg,var(--surf-2),var(--surf));border:1px solid var(--line);
+    transition:transform .3s var(--ease),border-color .3s,box-shadow .3s;}
+  .feat.is-hidden{display:none;}
+  .feat:hover{transform:translateY(-4px);border-color:color-mix(in srgb,var(--c) 55%,transparent);
+    box-shadow:0 30px 60px -30px color-mix(in srgb,var(--c) 45%,#000),0 0 0 1px color-mix(in srgb,var(--c) 25%,transparent);}
+  .feat.cfb{--c:var(--cfb);} .feat.football{--c:var(--nfl);} .feat.golf{--c:var(--golf);}
+  .feat.arcade{--c:var(--arcade);} .feat.soccer{--c:var(--pitch);}
+  .feat.wide{grid-column:span 2;}
+  .feat-link{position:absolute;inset:0;z-index:1;}
+  /* the stage: every card opens on its own live motif */
+  .media{position:relative;height:220px;overflow:hidden;display:flex;align-items:center;justify-content:center;
+    border-bottom:1px solid var(--line);
+    background:
+      radial-gradient(120% 90% at 50% 0%, color-mix(in srgb,var(--c) 30%,transparent), transparent 70%),
+      linear-gradient(180deg,color-mix(in srgb,var(--c) 14%,#0b1322),#0b1322);}
+  .media:after{content:"";position:absolute;inset:0;pointer-events:none;
+    background-image:linear-gradient(rgba(255,255,255,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.04) 1px,transparent 1px);
+    background-size:28px 28px;-webkit-mask-image:linear-gradient(180deg,#000,transparent);mask-image:linear-gradient(180deg,#000,transparent);}
+  .feat.wide .media{height:260px;}
+  .media .tagline{position:absolute;left:14px;top:14px;z-index:3;display:flex;gap:6px;}
+  .pill{font-size:10px;font-weight:900;letter-spacing:.12em;text-transform:uppercase;border-radius:999px;padding:5px 9px;
+    background:rgba(6,10,19,.7);border:1px solid var(--line-2);color:#e6edf7;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);}
+  .pill.hot{background:var(--c);border-color:transparent;color:#06101c;}
+  .drive-wrap,.slot-wrap{position:relative;z-index:2;pointer-events:none;width:100%;display:flex;align-items:center;justify-content:center;padding:0 22px;}
+  .drivecanvas{display:block;width:100%;height:160px;border-radius:12px;background:#0a1626;
+    box-shadow:0 18px 36px -18px rgba(0,0,0,.9),0 0 0 1px rgba(255,255,255,.08);}
+  .feat.wide .drivecanvas{height:250px;}
+  .slot{width:250px;max-width:100%;text-align:center;}
+  .slot-top{font-family:var(--display);font-size:14px;letter-spacing:.16em;color:#ffd1a8;text-shadow:0 0 14px rgba(255,138,61,.6);margin-bottom:8px;}
+  .slot-frame{position:relative;height:96px;border-radius:12px;overflow:hidden;background:linear-gradient(180deg,#341806,#1c0e04);
+    border:2px solid rgba(255,138,61,.6);box-shadow:inset 0 0 0 1px rgba(0,0,0,.4),0 0 30px -6px rgba(255,138,61,.7);}
+  .slot-reel{position:absolute;left:0;right:0;top:0;will-change:transform;}
+  .slot-item{height:32px;display:flex;align-items:center;justify-content:center;font-family:var(--display);font-size:18px;letter-spacing:.05em;color:#ffdcb8;}
+  .slot-line{position:absolute;left:0;right:0;top:32px;height:32px;border-top:1px solid rgba(251,191,36,.5);border-bottom:1px solid rgba(255,94,58,.5);
+    background:linear-gradient(90deg,rgba(251,191,36,.08),rgba(242,113,28,.14),rgba(255,94,58,.08));}
+  .slot-frame.win .slot-line{animation:slotwin .5s ease 2;}
+  @keyframes slotwin{50%{background:linear-gradient(90deg,rgba(251,191,36,.35),rgba(242,113,28,.5),rgba(255,94,58,.35));}}
+  .slot-glass{position:absolute;inset:0;pointer-events:none;background:linear-gradient(180deg,rgba(255,255,255,.10),transparent 22%,transparent 78%,rgba(0,0,0,.35));}
+  .golf-showcase{position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;gap:10px;width:100%;}
+  .gshow-green{display:flex;align-items:flex-end;justify-content:center;gap:4px;width:100%;max-width:300px;min-height:110px;
+    background:radial-gradient(70% 30% at 50% 100%,rgba(58,160,70,.55),transparent 75%);}
+  .golfer-slot{width:62px;flex:0 0 auto;display:block;line-height:0;}
+  .golfer-slot img{width:100%;height:auto;display:block;image-rendering:pixelated;filter:drop-shadow(0 6px 6px rgba(0,0,0,.5));transition:opacity .2s;}
+  .golfer-slot.rolling img{opacity:.1;}
+  .gshow-cap{font-size:10px;font-weight:900;letter-spacing:.14em;text-transform:uppercase;color:#f6cf7b;}
+  .shots{position:relative;z-index:2;display:flex;gap:12px;align-items:flex-start;justify-content:center;text-decoration:none;padding-top:26px;}
+  .phone{flex:0 0 auto;width:92px;aspect-ratio:440/954;border-radius:12px;overflow:hidden;background:#0a1626;
+    border:2px solid rgba(255,255,255,.16);box-shadow:0 18px 34px -16px rgba(0,0,0,.9);transition:transform .3s var(--ease);}
+  .phone:nth-child(2){transform:translateY(-14px);}
+  .phone img,.phone video{display:block;width:100%;height:100%;object-fit:cover;background:#0a1626;}
+  .feat:hover .phone{transform:translateY(-6px);} .feat:hover .phone:nth-child(2){transform:translateY(-20px);}
+
+  .feat-info{position:relative;display:flex;flex-direction:column;flex:1;padding:20px 22px 22px;}
+  .g-head{display:flex;align-items:center;gap:14px;}
+  .crest{flex:0 0 auto;width:52px;height:52px;border-radius:13px;overflow:hidden;background:#0b1322;
+    box-shadow:0 0 0 1px var(--line-2),0 10px 20px -10px rgba(0,0,0,.8);}
+  .crest img{width:100%;height:100%;object-fit:contain;display:block;}
   .g-title{min-width:0;flex:1;}
-  /* Russo One, squared and a little motorsport, in place of Anton. It sets wider
-     per character, so the size comes down from 31 to 27 to hold the same measure,
-     and the tracking goes up because the letterforms are close-fitted by default. */
-  .g-title .nm{font-family:'Russo One','Anton',Impact,sans-serif;font-weight:400;font-size:27px;line-height:1.06;letter-spacing:.04em;display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
-  /* 2-tone for legibility: "RunThe" in cream, the sport word in the card's theme colour */
-  .g-title .nm .r,.g-title .nm .t{color:var(--ink);}
-  .game.golf .g-title .nm .g{color:#F2C14E;}
-  .game.soccer .g-title .nm .g{color:var(--teal);}
-  .g-desc{display:block;color:#b9c9db;font-size:13.5px;line-height:1.5;padding:11px 17px 0;}
-  .badge-new,.badge-mode{font-size:10px;font-weight:900;letter-spacing:.1em;text-transform:uppercase;
-    padding:2px 0 2px 8px;flex:0 0 auto;line-height:1.15;background:none;border:0;}
-  /* NEW: the one filled call-out, a raised pixel-green block (keeps it louder than the bar labels) */
-  .badge-new{color:#06230c;background:var(--green);border-radius:2px;padding:4px 8px;
-    box-shadow:inset 0 1px 0 rgba(255,255,255,.4),0 2px 0 #3fa32e;}
-  /* mode labels: thin accent bar so they read as info, not a call-out */
-  .badge-mode{color:#9fb2c6;border-left:2px solid var(--line);}
-  .game.golf .badge-mode{color:#e6c98a;border-left-color:rgba(235,166,31,.65);}
-  .game.soccer .badge-mode{color:#a7ddd6;border-left-color:rgba(102,211,222,.6);}
-  /* keep the Solo + H2H pair together so they wrap to the next line as a unit */
-  .g-title .nm .modes{display:inline-flex;gap:14px;flex:0 0 auto;}
+  .g-title .nm{font-family:var(--title);font-size:21px;line-height:1.1;letter-spacing:.02em;display:block;}
+  .g-title .nm .g{color:var(--c);}
+  .modes{display:flex;flex-wrap:wrap;gap:6px;margin-top:7px;}
+  .badge-mode{font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--mut);
+    border:1px solid var(--line-2);border-radius:6px;padding:3px 7px;}
+  .g-desc{color:var(--ink-2);font-size:14.5px;line-height:1.6;margin:14px 0 0;}
+  .g-chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:14px;}
+  .chip{display:inline-flex;align-items:center;gap:7px;font-size:11.5px;font-weight:700;color:#dce5f0;
+    background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:8px;padding:6px 10px;}
+  .chip .ico{width:12px;height:12px;flex:0 0 auto;display:block;shape-rendering:crispEdges;}
+  .g-foot{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:auto;padding-top:20px;}
+  .g-foot .meta{font-size:12px;font-weight:700;color:var(--mut);}
+  .play{position:relative;z-index:2;display:inline-flex;align-items:center;gap:8px;text-decoration:none;font-weight:800;font-size:14px;line-height:1;
+    padding:12px 18px;border-radius:10px;color:#06101c;background:var(--c);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.4),0 10px 24px -12px var(--c);transition:transform .18s var(--ease),filter .18s;}
+  .play:hover{filter:brightness(1.08);transform:translateY(-1px);}
+  .play .arw{transition:transform .18s var(--ease);}
+  .feat:hover .play .arw{transform:translateX(3px);}
+  /* the wide card lays its words beside its picture */
+  @media (min-width:981px){
+    .feat.wide{flex-direction:row;}
+    .feat.wide .media{order:2;flex:1.15;height:auto;min-height:360px;border-bottom:0;border-left:1px solid var(--line);}
+    .feat.wide .feat-info{flex:1;padding:30px 30px 28px;}
+    .feat.wide .g-title .nm{font-size:28px;}
+    .feat.wide .crest{width:64px;height:64px;}
+    .feat.wide .g-desc{font-size:15.5px;}
+  }
+  @media (max-width:980px){
+    .games{grid-template-columns:repeat(2,minmax(0,1fr));}
+    .feat.wide{grid-column:1 / -1;}
+  }
+  @media (max-width:640px){
+    .games{grid-template-columns:1fr;gap:14px;}
+    .media,.feat.wide .media{height:164px;}
+    .drivecanvas,.feat.wide .drivecanvas{height:132px;}
+    .feat-info{padding:16px 16px 18px;}
+    .g-desc{font-size:14px;margin-top:11px;}
+    .g-chips{display:none;}
+    .g-foot{padding-top:16px;}
+    .phone{width:74px;}
+    .shots{padding-top:30px;}
+    .media{padding-top:30px;}
+    .slot-top{display:none;}
+    .gshow-cap{display:none;}
+  }
 
-  /* Three 3px accent bars in a row, each in front of 10.5px uppercase set at
-     800 with .06em of tracking. Same outline habit the tiles just lost, and the
-     type was small enough that the weight and tracking fought legibility.
-     They are pills now: a faint fill, a hairline, and the accent carried by the
-     text colour instead of a rule. Gap drops because a pill already has edges. */
-  .g-chips{display:flex;gap:8px;flex-wrap:wrap;padding:14px 17px 0;}
-  .chip{display:inline-flex;align-items:center;gap:7px;font-size:11px;font-weight:700;letter-spacing:.04em;
-    line-height:1.15;text-transform:uppercase;border-radius:999px;
-    color:#cfe7ea;background:rgba(255,255,255,.055);border:1px solid rgba(255,255,255,.09);
-    padding:6px 12px 6px 10px;}
-  .chip .ico{width:13px;height:13px;flex:0 0 auto;display:block;shape-rendering:crispEdges;image-rendering:pixelated;}
+  /* ---------- on deck ---------- */
+  .deck{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;}
+  .dk{position:relative;border-radius:var(--r-md);overflow:hidden;border:1px solid var(--line);padding:22px 20px 20px;
+    background:linear-gradient(180deg,rgba(255,255,255,.035),rgba(255,255,255,.01));isolation:isolate;min-height:218px;display:flex;flex-direction:column;}
+  .dk:before{content:"";position:absolute;inset:0;z-index:-1;opacity:.5;
+    background:radial-gradient(90% 70% at 100% 0%,color-mix(in srgb,var(--c) 30%,transparent),transparent 70%);}
+  .dk .lg{width:58px;height:58px;border-radius:14px;overflow:hidden;box-shadow:0 0 0 1px var(--line-2);filter:saturate(.9);}
+  .dk .lg img{width:100%;height:100%;object-fit:cover;display:block;}
+  .dk .sport{font-size:11px;font-weight:900;letter-spacing:.14em;text-transform:uppercase;color:var(--c);margin-top:18px;}
+  .dk .nm{font-family:var(--title);font-size:19px;margin-top:5px;}
+  .dk p{font-size:13.5px;line-height:1.55;color:var(--mut);margin:8px 0 0;}
+  .dk .st{margin-top:auto;padding-top:16px;display:inline-flex;align-items:center;gap:8px;font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#cdd6e3;}
+  .dk .st i{display:block;height:4px;width:70px;border-radius:4px;background:rgba(255,255,255,.08);overflow:hidden;position:relative;}
+  .dk .st i:after{content:"";position:absolute;left:0;top:0;bottom:0;width:var(--p,50%);background:var(--c);border-radius:4px;}
+  .dk.hoops{--c:#ff7a2e;} .dk.base{--c:#e8394a;} .dk.wrest{--c:#c78bff;} .dk.myth{--c:#ffd24a;}
+  .deck-foot{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-top:18px;
+    border:1px dashed var(--line-2);border-radius:var(--r-md);padding:16px 20px;color:var(--mut);font-size:14px;}
+  .deck-foot b{color:#fff;}
+  .deck-foot a{display:inline-flex;align-items:center;gap:8px;color:#fff;font-weight:800;font-size:13.5px;text-decoration:none;
+    border:1px solid var(--line-2);border-radius:10px;padding:10px 14px;background:rgba(255,255,255,.04);}
+  .deck-foot a:hover{background:rgba(255,255,255,.08);}
+  @media (max-width:980px){ .deck{grid-template-columns:repeat(2,minmax(0,1fr));} }
+  @media (max-width:520px){ .deck{gap:10px;} .dk{padding:16px 14px;min-height:0;} .dk .lg{width:46px;height:46px;border-radius:11px;} .dk p{display:none;} .dk .nm{font-size:16px;} .dk .sport{margin-top:12px;} }
 
-  /* ---- custom pixel-art icons (replace stock emoji) ---- */
+  /* ---------- account band ---------- */
+  .acct{position:relative;overflow:hidden;border-radius:24px;padding:44px 44px 40px;scroll-margin-top:calc(var(--nav-h) + 20px);
+    border:1px solid rgba(110,232,78,.22);
+    background:
+      radial-gradient(60% 90% at 0% 0%, rgba(110,232,78,.16), transparent 70%),
+      radial-gradient(60% 90% at 100% 100%, rgba(102,211,222,.16), transparent 70%),
+      linear-gradient(180deg,#0f1c30,#0b1526);}
+  .acct:after{content:"";position:absolute;right:-60px;top:-60px;width:320px;height:320px;border-radius:50%;
+    border:1px solid rgba(255,255,255,.06);box-shadow:0 0 0 40px rgba(255,255,255,.015),0 0 0 80px rgba(255,255,255,.01);pointer-events:none;}
+  .acct .a-tag{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;
+    color:#b6f0a3;border-radius:999px;border:1px solid rgba(110,232,78,.3);background:rgba(110,232,78,.08);padding:6px 12px;}
+  .acct .a-hd{font-family:var(--display);font-weight:400;text-transform:uppercase;font-size:clamp(34px,4.4vw,56px);line-height:.95;margin:16px 0 0;}
+  .acct .a-hd .t{color:#fff;} .acct .a-hd .g{color:var(--brand);}
+  .acct .a-sub{color:var(--ink-2);font-size:15.5px;line-height:1.6;margin:14px 0 0;max-width:560px;}
+  .acct .a-sub b{color:#fff;}
+  .acct .perks{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:28px 0 0;}
+  .acct .perk{display:flex;align-items:center;gap:10px;font-size:14px;font-weight:700;color:#e3eaf4;
+    background:rgba(6,10,19,.45);border:1px solid var(--line);border-radius:12px;padding:14px 14px;}
+  .acct .perk .pico{width:20px;height:20px;}
+  .acct .perk b{color:#fff;font-weight:800;} .acct .perk .amp{color:var(--mut);} .acct .perk .tl{color:#e3eaf4;}
+  .acct .a-cta{display:flex;gap:12px;flex-wrap:wrap;margin:26px 0 0;}
+  .btn{appearance:none;border:0;cursor:pointer;font-family:inherit;font-weight:800;font-size:15px;border-radius:12px;padding:15px 22px;
+    text-decoration:none;display:inline-flex;align-items:center;justify-content:center;gap:8px;line-height:1;
+    transition:transform .15s var(--ease),filter .15s,background .15s,border-color .15s;}
+  .btn:active{transform:translateY(1px);}
+  .btn.gold{background:linear-gradient(180deg,#8af06a,#46bd30);color:#05220b;box-shadow:inset 0 1px 0 rgba(255,255,255,.5),0 14px 30px -14px rgba(110,232,78,.8);}
+  .btn.gold:hover{filter:brightness(1.05);}
+  .btn.ghost{background:rgba(255,255,255,.05);color:var(--ink);border:1px solid var(--line-2);}
+  .btn.ghost:hover{background:rgba(255,255,255,.09);}
+  .btn.gbtn{background:#fff;color:#1f1f1f;border:1px solid #dcdcdc;width:100%;}
+  .btn[disabled]{opacity:.6;cursor:default;}
+  .acct .flex1{flex:0 0 auto;min-width:240px;} .acct .flexa{flex:0 0 auto;}
+  .acct.in{display:flex;align-items:center;gap:18px;padding:28px 32px;}
+  .acct .who{min-width:0;flex:1;}
+  .acct .who .hi{font-family:var(--title);font-size:22px;color:#fff;}
+  .acct .who .hi .u{color:var(--brand);}
+  .acct .who .lo{color:var(--ink-2);font-size:14px;margin-top:6px;line-height:1.5;}
+  .acct .who .lo a{color:var(--teal);font-weight:700;text-decoration:none;white-space:nowrap;}
+  .avatar{flex:0 0 auto;width:60px;height:60px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+    background:linear-gradient(180deg,#66D3DE,#1c8d97);color:#04241f;font-weight:900;font-size:24px;box-shadow:0 0 0 4px rgba(102,211,222,.15);}
+  @media (max-width:860px){ .acct .perks{grid-template-columns:repeat(2,minmax(0,1fr));} }
+  @media (max-width:640px){
+    .acct{padding:26px 20px 22px;border-radius:18px;}
+    .acct .perks{gap:8px;margin-top:20px;}
+    .acct .perk{font-size:12.5px;padding:11px 10px;gap:8px;}
+    .acct .flex1{flex:1 1 auto;min-width:0;}
+    .acct.in{padding:20px;flex-wrap:wrap;}
+  }
+
+  /* ---------- how it works + editorial ---------- */
+  .steps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;}
+  .step{position:relative;border-radius:var(--r-md);border:1px solid var(--line);background:rgba(255,255,255,.025);padding:24px 22px;}
+  .step .n{font-family:var(--display);font-size:46px;line-height:1;color:transparent;-webkit-text-stroke:1px rgba(110,232,78,.7);}
+  .step .tx{display:block;margin-top:14px;font-size:14.5px;line-height:1.6;color:var(--mut);}
+  .step .tx b{display:block;color:#fff;font-size:17px;font-weight:800;margin-bottom:4px;}
+  @media (max-width:760px){ .steps{grid-template-columns:1fr;gap:10px;} .step{display:flex;gap:16px;padding:18px;} .step .n{font-size:36px;} .step .tx{margin-top:0;} }
+  .content{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:56px;}
+  .content h3{font-family:var(--display);font-weight:400;text-transform:uppercase;font-size:26px;letter-spacing:.01em;margin:0 0 14px;color:#fff;}
+  .content p{color:var(--mut);font-size:15px;line-height:1.7;margin:0 0 14px;}
+  .content p b{color:var(--ink);}
+  .content p a{color:var(--teal);font-weight:700;text-decoration:none;white-space:nowrap;}
+  .content p a:hover{text-decoration:underline;}
+  .faq details{border-bottom:1px solid var(--line);}
+  .faq details:first-of-type{border-top:1px solid var(--line);}
+  .faq summary{cursor:pointer;list-style:none;padding:18px 0;font-weight:800;font-size:15.5px;color:var(--ink);
+    display:flex;justify-content:space-between;align-items:center;gap:14px;}
+  .faq summary::-webkit-details-marker{display:none;}
+  .faq summary:after{content:"";width:22px;height:22px;flex:0 0 auto;border-radius:50%;border:1px solid var(--line-2);
+    background:
+      linear-gradient(#cfd8e6,#cfd8e6) center/10px 1.5px no-repeat,
+      linear-gradient(#cfd8e6,#cfd8e6) center/1.5px 10px no-repeat;transition:transform .2s var(--ease);}
+  .faq details[open] summary:after{transform:rotate(45deg);}
+  .faq p{margin:-4px 0 18px;font-size:14.5px;color:var(--mut);line-height:1.65;}
+  .faq a{color:var(--teal);font-weight:700;}
+  @media (max-width:860px){ .content{grid-template-columns:1fr;gap:40px;} }
+
+  /* ---------- install + ad ---------- */
+  .installrow{display:flex;justify-content:center;margin:56px 0 0;}
+  .rtp-ad-inline{max-width:728px;margin:36px auto 0;text-align:center;}
+  .rtp-ad-inline .adsbygoogle{display:block;}
+  .rtp-ad-inline .rtp-ad-label{display:none;font-size:9.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--mut-2);margin-bottom:6px;}
+  .rtp-ad-inline:has(ins[data-ad-status="filled"]) .rtp-ad-label{display:block;}
+
+  /* ---------- footer ---------- */
+  .foot{margin-top:80px;border-top:1px solid var(--line);background:var(--bg-2);padding:56px 0 calc(34px + env(safe-area-inset-bottom,0px));}
+  .foot-grid{display:grid;grid-template-columns:1.6fr 1fr 1fr 1fr;gap:40px;}
+  .foot-brand img{height:24px;width:auto;display:block;}
+  .foot-brand p{color:var(--mut);font-size:14px;line-height:1.6;margin:16px 0 18px;max-width:320px;}
+  .foot-actions{display:flex;flex-wrap:wrap;gap:10px;}
+  .kofi{display:inline-flex;align-items:center;gap:7px;font-weight:800;font-size:13px;line-height:1;color:#fff;
+    background:linear-gradient(180deg,#ff7a6b,#ec4863);border-radius:10px;padding:11px 16px;text-decoration:none;box-shadow:0 10px 22px -12px rgba(236,72,99,.9);}
+  .xlink{display:inline-flex;align-items:center;gap:8px;font-weight:800;font-size:13px;line-height:1;color:#fff;text-decoration:none;
+    border:1px solid var(--line-2);border-radius:10px;padding:10px 14px;background:rgba(255,255,255,.04);}
+  .xlink:hover{background:rgba(255,255,255,.08);}
+  .foot h4{font-size:12px;font-weight:900;letter-spacing:.14em;text-transform:uppercase;color:#fff;margin:4px 0 14px;}
+  .foot ul{list-style:none;margin:0;padding:0;display:grid;gap:10px;}
+  .foot ul a{color:var(--mut);text-decoration:none;font-size:14px;font-weight:600;}
+  .foot ul a:hover{color:#fff;}
+  .foot-base{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-top:44px;padding-top:22px;border-top:1px solid var(--line);
+    color:var(--mut-2);font-size:12.5px;}
+  @media (max-width:860px){ .foot-grid{grid-template-columns:1fr 1fr;gap:32px;} .foot-brand{grid-column:1 / -1;} }
+
+  /* ---------- reveal on scroll ---------- */
+  .rv{opacity:0;transform:translateY(18px);transition:opacity .7s var(--ease),transform .7s var(--ease);}
+  .rv.in{opacity:1;transform:none;}
+
+  /* ---------- modals (auth + install), carried over ---------- */
+  .modal{position:fixed;inset:0;z-index:60;display:flex;align-items:flex-start;justify-content:center;
+    padding:max(28px,env(safe-area-inset-top)) 16px 28px;overflow:auto;background:rgba(3,6,12,.72);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);}
+  .modal[hidden]{display:none;}
+  .sheet{width:100%;max-width:420px;background:linear-gradient(180deg,#132035,#0e1626);border:1px solid var(--line-2);border-radius:18px;
+    padding:24px 24px 26px;position:relative;box-shadow:0 40px 90px -20px rgba(0,0,0,.9);margin:auto 0;}
+  .sheet h2{font-family:var(--display);font-weight:400;letter-spacing:.01em;text-transform:uppercase;font-size:30px;margin:2px 0 4px;padding-right:40px;}
+  .sheet .lede{color:var(--mut);font-size:13.5px;line-height:1.55;margin:0 0 16px;}
+  .sheet .x{position:absolute;top:14px;right:14px;width:34px;height:34px;border-radius:50%;border:1px solid var(--line-2);
+    background:rgba(255,255,255,.05);color:var(--ink);font-size:15px;cursor:pointer;line-height:1;}
+  .sheet input[type=text],.sheet input[type=email],.sheet input[type=password]{width:100%;background:#070c17;border:1px solid var(--line-2);
+    border-radius:10px;color:var(--ink);font-family:inherit;font-size:15px;padding:13px 14px;margin-top:10px;outline:none;}
+  .sheet input:focus{border-color:var(--brand);box-shadow:0 0 0 3px rgba(110,232,78,.15);}
+  .sheet .or{display:flex;align-items:center;gap:10px;color:var(--mut);font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;margin:16px 0 4px;}
+  .sheet .or:before,.sheet .or:after{content:"";height:1px;flex:1;background:var(--line);}
+  .sheet .remember{display:flex;align-items:center;gap:9px;margin-top:12px;font-size:12.5px;color:var(--mut);cursor:pointer;}
+  .sheet .remember input{width:17px;height:17px;accent-color:var(--brand);flex:0 0 auto;}
+  .sheet .go{width:100%;margin-top:16px;}
+  .sheet .swap{text-align:center;color:var(--mut);font-size:12.5px;margin-top:14px;}
+  .sheet .swap a{color:var(--brand);font-weight:800;text-decoration:none;cursor:pointer;}
+  .sheet .err{background:rgba(225,74,51,.12);border:1px solid rgba(225,74,51,.4);color:#ffb4a6;font-size:12.5px;line-height:1.45;border-radius:8px;padding:9px 11px;margin-top:12px;}
+  .sheet .note{background:rgba(110,232,78,.1);border:1px solid rgba(110,232,78,.35);color:#a8f090;font-size:12.5px;line-height:1.45;border-radius:8px;padding:9px 11px;margin-top:12px;}
+  .sheet .fine{color:var(--mut-2);font-size:11px;line-height:1.5;margin-top:14px;text-align:center;}
+  .sheet .fine a{color:#9db2c8;}
+  #ins-native{width:100%;margin:0 0 14px;}
+  .ins-lead{color:var(--mut);font-size:13px;line-height:1.5;margin:0 0 14px;}
+  .ins-card{background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:12px;padding:14px 15px;margin:0 0 11px;}
+  .ins-card.me{border-color:rgba(102,211,222,.55);background:rgba(102,211,222,.07);}
+  .ins-card h3{font-family:var(--display);font-weight:400;letter-spacing:.02em;text-transform:uppercase;font-size:16px;margin:0;color:var(--ink);display:flex;align-items:center;gap:9px;}
+  .ins-card .badge{font-family:var(--body);font-size:10px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:#04241f;background:var(--teal);padding:3px 7px;border-radius:6px;margin-left:auto;}
+  .ins-card ol{margin:11px 0 0;padding-left:20px;color:var(--mut);font-size:13.5px;line-height:1.55;}
+  .ins-card ol li{margin:0 0 6px;} .ins-card ol li b{color:var(--ink);}
+  .ins-card .hint{color:#7d8fa6;font-size:12.5px;line-height:1.5;margin:10px 0 0;}
+  .shr{display:inline-flex;vertical-align:-4px;}
+
+  @media (prefers-reduced-motion: reduce){
+    .hero-bg:before,.eyebrow .dot,.screen .bar .live:before,.float-badge,.ticker-track,.hero h1 .rot.swap{animation:none!important;}
+    .rv{opacity:1;transform:none;transition:none;}
+    .feat,.play,.cta,.phone{transition:none;}
+    .slot-frame.win .slot-line{animation:none!important;} .slot-reel{transition:none!important;}
+  }
+  :focus-visible{outline:2px solid var(--brand);outline-offset:3px;border-radius:6px;}
   .pico{display:inline-block;width:1.05em;height:1.05em;vertical-align:-0.16em;background-size:contain;background-repeat:no-repeat;background-position:center;flex:0 0 auto}
   .pico-trophy{background-image:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' shape-rendering='crispEdges'><rect x='2' y='3' width='1' height='3' fill='%236EE84E'/><rect x='9' y='3' width='1' height='3' fill='%236EE84E'/><rect x='3' y='2' width='6' height='1' fill='%236EE84E'/><rect x='3' y='3' width='6' height='1' fill='%236EE84E'/><rect x='3' y='4' width='6' height='1' fill='%236EE84E'/><rect x='4' y='5' width='4' height='1' fill='%236EE84E'/><rect x='5' y='6' width='2' height='1' fill='%236EE84E'/><rect x='5' y='7' width='2' height='1' fill='%236EE84E'/><rect x='4' y='8' width='4' height='1' fill='%236EE84E'/><rect x='3' y='9' width='6' height='1' fill='%236EE84E'/></svg>")}
   .pico-chart{background-image:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' shape-rendering='crispEdges'><rect x='2' y='8' width='2' height='2' fill='%2366D3DE'/><rect x='5' y='6' width='2' height='4' fill='%2366D3DE'/><rect x='8' y='3' width='2' height='7' fill='%236EE84E'/></svg>")}
@@ -215,207 +571,8 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
   .pico-phone{background-image:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' shape-rendering='crispEdges'><rect x='3' y='1' width='6' height='1' fill='%2366D3DE'/><rect x='3' y='10' width='6' height='1' fill='%2366D3DE'/><rect x='3' y='1' width='1' height='10' fill='%2366D3DE'/><rect x='8' y='1' width='1' height='10' fill='%2366D3DE'/><rect x='4' y='2' width='4' height='8' fill='%230a1626'/><rect x='5' y='9' width='2' height='1' fill='%23cfe0f0'/></svg>")}
   .pico-android{background-image:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' shape-rendering='crispEdges'><rect x='4' y='2' width='1' height='2' fill='%2366D3DE'/><rect x='7' y='2' width='1' height='2' fill='%2366D3DE'/><rect x='3' y='4' width='6' height='1' fill='%2366D3DE'/><rect x='3' y='5' width='6' height='3' fill='%2366D3DE'/><rect x='4' y='8' width='4' height='1' fill='%2366D3DE'/><rect x='4' y='6' width='1' height='1' fill='%230a1626'/><rect x='7' y='6' width='1' height='1' fill='%230a1626'/></svg>")}
   .pico-laptop{background-image:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' shape-rendering='crispEdges'><rect x='3' y='2' width='6' height='1' fill='%2366D3DE'/><rect x='3' y='2' width='1' height='5' fill='%2366D3DE'/><rect x='8' y='2' width='1' height='5' fill='%2366D3DE'/><rect x='3' y='6' width='6' height='1' fill='%2366D3DE'/><rect x='4' y='3' width='4' height='3' fill='%230a1626'/><rect x='2' y='8' width='8' height='1' fill='%2366D3DE'/><rect x='1' y='9' width='10' height='1' fill='%2366D3DE'/></svg>")}
-  .game.golf .chip{color:#e6c98a;}
-
-  /* RunThePitch online promo strip, which puts the multiplayer modes front and centre.
-     display:block is required: this <span> holds block-level (flex) children, and
-     leaving it inline makes the browser split the box and paint stray border slivers. */
-  .online-strip{display:block;margin:13px 17px 0;padding:11px 13px;border-radius:7px;
-    background:rgba(110,232,78,.08);border:1px solid rgba(110,232,78,.28);}
-  .online-strip .ol-hd{display:flex;align-items:center;gap:8px;font-size:11px;font-weight:900;
-    letter-spacing:.1em;text-transform:uppercase;color:#7ff0d0;}
-  .online-strip .ol-dot{width:8px;height:8px;border-radius:50%;background:#6EE84E;flex:0 0 auto;
-    box-shadow:0 0 0 0 rgba(110,232,78,.6);animation:livePulse 2.4s ease-out infinite;}
-  .online-strip .ol-modes{display:flex;gap:8px;flex-wrap:wrap;margin-top:9px;}
-  .online-strip .ol-mode{flex:1 1 150px;min-width:0;background:rgba(6,20,26,.4);border:1px solid rgba(110,232,78,.2);
-    border-radius:6px;padding:8px 11px;}
-  .online-strip .ol-mode .m-nm{display:block;font-weight:900;font-size:13px;color:#eafff8;}
-  .online-strip .ol-mode .m-sub{display:block;font-size:11px;color:#9fd9c9;margin-top:2px;font-weight:700;letter-spacing:.02em;}
-
-  .g-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:15px 17px 16px;margin-top:2px;}
-  /* The button carried no depth at all, so on the darker cards it read as a
-     coloured rectangle sitting on top of another coloured rectangle. A top
-     highlight, a dark rim and a cast shadow give it an edge to catch light on. */
-  .play{display:inline-flex;align-items:center;gap:8px;font-weight:900;font-size:14.5px;letter-spacing:.01em;
-    padding:13px 22px;border-radius:9px;color:#fff;line-height:1;
-    box-shadow:inset 0 1px 0 rgba(255,255,255,.32), 0 0 0 1px rgba(0,0,0,.22), 0 10px 22px -14px rgba(0,0,0,.95);
-    transition:gap .18s ease, filter .12s ease, transform .12s ease;}
-  .play:hover{transform:translateY(-1px);}
-  .game.golf .play{background:linear-gradient(180deg,#EEB23E,#D9931A);color:#1b1204;box-shadow:0 8px 20px -12px rgba(235,166,31,.9);}
-  .game.soccer .play{background:linear-gradient(180deg,#33D3B8,#17A891);color:#04231d;box-shadow:0 8px 20px -12px rgba(53,196,205,.9);}
-  .play .arw{transition:transform .18s ease;}
-  .game:hover .play{filter:brightness(1.06);}
-  .game:hover .play .arw{transform:translateX(4px);}
-  .g-foot .free{font-size:11.5px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:#8ba0b6;}
-
-  /* ---- account note ---- */
-  .note{margin-top:22px;background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:8px;
-    padding:13px 15px;color:var(--mut);font-size:13px;line-height:1.5;text-align:center;}
-  .note b{color:var(--ink);}
-
-  /* ---- "more games" teaser: reads like a real (locked) next slot, not an apology ---- */
-  .teaser{position:relative;display:flex;align-items:center;gap:15px;margin-top:16px;overflow:hidden;
-    border-radius:10px;padding:16px 17px;border:1px dashed rgba(255,255,255,.16);
-    background:linear-gradient(150deg,rgba(255,255,255,.035),rgba(255,255,255,.015));}
-  .teaser .t-tile{flex:0 0 auto;width:60px;height:60px;border-radius:8px;display:flex;align-items:center;justify-content:center;
-    background:rgba(255,255,255,.04);border:1px solid var(--line);font-size:26px;filter:grayscale(.2);}
-  .teaser .t-meta{min-width:0;flex:1;}
-  .teaser .t-hd{display:flex;align-items:center;gap:9px;font-weight:900;font-size:16px;color:var(--ink);}
-  .teaser .t-tag{flex:0 0 auto;white-space:nowrap;font-size:10px;font-weight:900;letter-spacing:.09em;text-transform:uppercase;color:#9db2c8;
-    background:rgba(255,255,255,.06);border:1px solid var(--line);padding:3px 8px;border-radius:6px;}
-  .teaser .t-sub{color:var(--mut);font-size:13px;margin-top:4px;line-height:1.4;}
-  .teaser .t-sub a{color:var(--teal);font-weight:800;text-decoration:none;}
-  .teaser .t-sub a:hover{text-decoration:underline;}
-
-  @media (prefers-reduced-motion: reduce){
-    .brand:before, .hero-status .dot, .online-strip .ol-dot, .sport-motif .gball{animation:none;}
-    .game, .play, .play .arw{transition:none;}
-  }
-
-  /* ---- footer ---- */
-  .foot{margin-top:30px;text-align:center;color:#6f829a;font-size:12.5px;line-height:1.9;}
-  .foot a{color:#9db2c8;text-decoration:none;font-weight:700;}
-  .foot a:hover{color:var(--ink);}
-  .foot .sep{margin:0 7px;color:#3c4c60;}
-  .foot .follow{display:block;margin-bottom:8px;}
-  .foot .follow a{color:var(--teal);}
-
-  /* ---- account panel (one account, every game) ---- */
-  .acct{margin:20px 0 4px;border-radius:9px;padding:18px 18px 17px;position:relative;overflow:hidden;
-    background:
-      radial-gradient(420px 200px at 12% -30%, rgba(53,196,205,.18), transparent 70%),
-      radial-gradient(420px 200px at 100% 130%, rgba(110,232,78,.14), transparent 70%),
-      linear-gradient(180deg,#193453,#132842);
-    border:1px solid var(--cardb);}
-  /* "optional / free" tag makes it unmistakable that an account is a bonus, not a wall */
-  .acct .a-tag{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;
-    letter-spacing:.06em;text-transform:uppercase;color:#8fe07a;border-radius:999px;
-    border:1px solid rgba(110,232,78,.28);background:rgba(110,232,78,.07);
-    padding:6px 13px;margin:0 0 14px;}
-  /* headline set in the same pixel type as the wordmark: "One account." white, "Every game." green */
-  .acct .a-hd{font-family:'Press Start 2P','Anton',Impact,sans-serif;font-weight:400;letter-spacing:0;
-    text-transform:uppercase;font-size:clamp(13px,3.6vw,18px);line-height:1.5;margin:0;
-    text-shadow:0 3px 0 rgba(0,0,0,.35);}
-  .acct .a-hd .g{color:var(--green);} .acct .a-hd .t{color:var(--ink);}
-  .acct .a-sub{color:var(--mut);font-size:13.5px;line-height:1.5;margin:8px 0 0;max-width:460px;}
-  .acct .a-sub b{color:var(--ink);}
-  /* Four coloured rules in a row was the busiest thing in this panel. Same
-     pills as the game chips, with the colour moved into a 5px dot so the four
-     still read apart without four bars competing. */
-  .acct .perks{display:flex;flex-wrap:wrap;gap:8px;margin:16px 0 0;}
-  .acct .perk{font-size:11px;font-weight:700;letter-spacing:.035em;color:#dbe6f2;
-    display:inline-flex;align-items:center;gap:7px;border-radius:999px;
-    border:1px solid rgba(255,255,255,.09);background:rgba(255,255,255,.05);padding:6px 12px;}
-  .acct .perk:before{content:"";width:5px;height:5px;border-radius:50%;flex:0 0 auto;
-    background:rgba(255,255,255,.35);}
-  .acct .perks .perk:nth-child(1):before{background:var(--green);}
-  .acct .perks .perk:nth-child(2):before{background:#66D3DE;}
-  .acct .perks .perk:nth-child(3):before{background:#F85858;}
-  .acct .perks .perk:nth-child(4):before{background:#66D3DE;}
-  .acct .perk b{color:var(--gold);font-weight:800;}
-  .acct .perk .amp{color:#fff;} .acct .perk .tl{color:var(--teal);}
-  .acct .a-cta{display:flex;gap:10px;flex-wrap:wrap;margin:15px 0 0;}
-  .btn{appearance:none;border:0;cursor:pointer;font-family:inherit;font-weight:800;font-size:14px;
-    border-radius:7px;padding:12px 18px;text-decoration:none;display:inline-flex;align-items:center;
-    justify-content:center;gap:8px;transition:transform .1s ease,filter .1s ease,background .1s ease;line-height:1;}
-  .btn:active{transform:translateY(1px);}
-  .btn.gold{background:linear-gradient(180deg,#84F262,#4EC335);color:#06230c;
-    box-shadow:0 2px 0 #2f8a22, 0 10px 22px -12px rgba(110,232,78,.7);}
-  .btn.gold:hover{filter:brightness(1.05);}
-  .btn.ghost{background:rgba(255,255,255,.06);color:var(--ink);border:1px solid var(--cardb);}
-  .btn.ghost:hover{border-color:var(--gold);}
-  .btn.gbtn{background:#fff;color:#1f1f1f;border:1px solid #dcdcdc;width:100%;}
-  .btn.gbtn:hover{filter:brightness(.97);}
-  .btn[disabled]{opacity:.6;cursor:default;}
-  .acct .flex1{flex:1 1 170px;} .acct .flexa{flex:0 0 auto;}
-  /* signed-in variant */
-  .acct.in{display:flex;align-items:center;gap:14px;}
-  .acct .who{min-width:0;flex:1;}
-  .acct .who .hi{font-weight:900;font-size:16px;color:var(--ink);}
-  .acct .who .hi .u{color:var(--gold);}
-  .acct .who .lo{color:var(--mut);font-size:12.5px;margin-top:2px;line-height:1.45;}
-  .acct .who .lo a{color:var(--teal);font-weight:700;text-decoration:none;white-space:nowrap;}
-  .acct .who .lo a:hover{text-decoration:underline;}
-  .avatar{flex:0 0 auto;width:46px;height:46px;border-radius:50%;display:flex;align-items:center;justify-content:center;
-    background:linear-gradient(180deg,#66D3DE,#1c8d97);color:#04241f;font-weight:900;font-size:19px;border:1px solid rgba(255,255,255,.15);}
-
-  /* ---- auth modal ---- */
-  .modal{position:fixed;inset:0;z-index:60;display:flex;align-items:flex-start;justify-content:center;
-    padding:max(28px,env(safe-area-inset-top)) 16px 28px;overflow:auto;
-    background:rgba(4,10,18,.72);backdrop-filter:blur(4px);}
-  .modal[hidden]{display:none;}
-  .sheet{width:100%;max-width:400px;background:linear-gradient(180deg,#17304e,#122540);
-    border:1px solid var(--cardb);border-radius:10px;padding:20px 20px 22px;position:relative;
-    box-shadow:0 30px 80px -20px rgba(0,0,0,.8);margin:auto 0;}
-  .sheet h2{font-family:'Anton',Impact,sans-serif;font-weight:400;letter-spacing:.02em;text-transform:uppercase;
-    font-size:26px;margin:2px 0 3px;padding-right:40px;}
-  .sheet .lede{color:var(--mut);font-size:13px;line-height:1.5;margin:0 0 15px;}
-  .sheet .x{position:absolute;top:12px;right:12px;width:34px;height:34px;border-radius:50%;border:1px solid var(--line);
-    background:rgba(255,255,255,.05);color:var(--ink);font-size:15px;cursor:pointer;line-height:1;}
-  .sheet input[type=text],.sheet input[type=email],.sheet input[type=password]{
-    width:100%;background:#0d1b2e;border:1px solid var(--cardb);border-radius:6px;color:var(--ink);
-    font-family:inherit;font-size:15px;padding:12px 13px;margin-top:9px;outline:none;}
-  .sheet input:focus{border-color:var(--gold);}
-  .sheet .or{display:flex;align-items:center;gap:10px;color:var(--mut);font-size:11px;font-weight:800;
-    letter-spacing:.12em;text-transform:uppercase;margin:14px 0 4px;}
-  .sheet .or:before,.sheet .or:after{content:"";height:1px;flex:1;background:var(--line);}
-  .sheet .remember{display:flex;align-items:center;gap:9px;margin-top:12px;font-size:12.5px;color:var(--mut);cursor:pointer;}
-  .sheet .remember input{width:17px;height:17px;accent-color:var(--gold);flex:0 0 auto;}
-  .sheet .go{width:100%;margin-top:14px;}
-  .sheet .swap{text-align:center;color:var(--mut);font-size:12.5px;margin-top:14px;}
-  .sheet .swap a{color:var(--gold);font-weight:800;text-decoration:none;cursor:pointer;}
-  .sheet .err{background:rgba(225,74,51,.12);border:1px solid rgba(225,74,51,.4);color:#ffb4a6;
-    font-size:12.5px;line-height:1.45;border-radius:6px;padding:9px 11px;margin-top:12px;}
-  .sheet .note{background:rgba(110,232,78,.1);border:1px solid rgba(110,232,78,.35);color:#a8f090;
-    font-size:12.5px;line-height:1.45;border-radius:6px;padding:9px 11px;margin-top:12px;}
-  .sheet .fine{color:#6f829a;font-size:11px;line-height:1.5;margin-top:14px;text-align:center;}
-  .sheet .fine a{color:#9db2c8;}
-
-  /* ---- content sections (about / how it works / faq) ---- */
-  .content{margin:30px 0 0;}
-  /* section headings in the wordmark's pixel type, with a pixel-square tick */
-  .content h3{font-family:'Press Start 2P','Anton',Impact,sans-serif;font-weight:400;letter-spacing:0;text-transform:uppercase;
-    font-size:12.5px;line-height:1.7;margin:28px 0 12px;color:var(--ink);display:flex;align-items:baseline;gap:10px;}
-  .content h3:before{content:"";width:9px;height:9px;background:var(--green);flex:0 0 auto;align-self:center;
-    box-shadow:inset 0 1px 0 rgba(255,255,255,.4);}
-  .content h3:first-child{margin-top:6px;}
-  .content p{color:var(--mut);font-size:14px;line-height:1.65;margin:0 0 12px;}
-  .content p b{color:#cfe0f0;}
-  .steps{display:grid;gap:10px;margin:0 0 6px;}
-  .step{display:flex;gap:13px;align-items:flex-start;background:rgba(255,255,255,.05);
-    border:1px solid var(--line);border-radius:7px;padding:12px 14px;}
-  .step .n{flex:0 0 auto;width:26px;height:26px;border-radius:3px;background:var(--green);color:#06230c;
-    font-family:'Press Start 2P',monospace;font-size:11px;display:flex;align-items:center;justify-content:center;
-    box-shadow:inset 0 1px 0 rgba(255,255,255,.4),0 2px 0 #3fa32e;}
-  .step .tx{font-size:13.5px;line-height:1.5;color:var(--mut);}
-  .step .tx b{color:var(--ink);font-weight:800;}
-  .faq details{background:rgba(255,255,255,.05);border:1px solid var(--line);border-radius:7px;
-    padding:0 14px;margin:0 0 9px;overflow:hidden;}
-  .faq summary{cursor:pointer;list-style:none;padding:13px 0;font-weight:800;font-size:14px;color:var(--ink);
-    display:flex;justify-content:space-between;align-items:center;gap:10px;}
-  .faq summary::-webkit-details-marker{display:none;}
-  .faq summary:after{content:"+";color:var(--gold);font-size:20px;font-weight:800;line-height:1;flex:0 0 auto;}
-  .faq details[open] summary:after{content:"\2212";}
-  .faq p{margin:0 0 14px;font-size:13.5px;}
-  .faq a{color:var(--teal);font-weight:700;}
-
-  /* ---- add to home screen: button + instructions ---- */
-  .installrow{display:flex;justify-content:center;margin:16px 0 2px;}
-  .installrow .btn{width:auto;padding:12px 20px;}
-  #ins-native{width:100%;margin:0 0 14px;}
-  .ins-lead{color:var(--mut);font-size:13px;line-height:1.5;margin:0 0 14px;}
-  .ins-card{background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:8px;padding:14px 15px;margin:0 0 11px;}
-  .ins-card.me{border-color:rgba(53,196,205,.55);background:rgba(53,196,205,.07);}
-  .ins-card h3{font-family:'Anton',Impact,sans-serif;font-weight:400;letter-spacing:.02em;text-transform:uppercase;
-    font-size:15px;margin:0;color:var(--ink);display:flex;align-items:center;gap:9px;}
-  .ins-card .badge{font-family:'Archivo',sans-serif;font-size:10px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;
-    color:#04241f;background:var(--teal);padding:3px 7px;border-radius:6px;margin-left:auto;}
-  .ins-card ol{margin:11px 0 0;padding-left:20px;color:var(--mut);font-size:13.5px;line-height:1.55;}
-  .ins-card ol li{margin:0 0 6px;}
-  .ins-card ol li b{color:var(--ink);}
-  .ins-card .hint{color:#7d8fa6;font-size:12.5px;line-height:1.5;margin:10px 0 0;}
-  .shr{display:inline-flex;vertical-align:-4px;}
 </style>
+
 <!-- Analytics (GA4). Set GA_ID to your Measurement ID (G-L29P5MRWKE) to activate; inert while placeholder (no gtag.js request, no cookies). -->
 <script>
 window.GA_ID='G-L29P5MRWKE';
@@ -426,510 +583,23 @@ window.GA_ID='G-L29P5MRWKE';
   s.src='https://www.googletagmanager.com/gtag/js?id='+encodeURIComponent(id);
   document.head.appendChild(s);})();
 </script>
-<style>
-  /* ===================== PORTAL REVAMP ===================== */
-  :root{ --nav-h:58px; --maxw:1060px; --col:720px; }
-
-  /* ---- sticky top navigation ---- */
-  .nav{position:sticky;top:0;z-index:50;background:rgba(9,20,36,.85);
-    backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
-    border-bottom:1px solid var(--line);padding-top:env(safe-area-inset-top,0px);}
-  .nav-in{max-width:var(--maxw);margin:0 auto;height:var(--nav-h);display:flex;align-items:center;gap:12px;
-    padding:0 max(16px,env(safe-area-inset-left,0px));}
-  .nav-brand{display:flex;align-items:center;text-decoration:none;color:var(--ink);margin-right:auto;min-width:0;}
-  .nav-logo{height:26px;width:auto;display:block;}
-  .nav-acct{display:flex;align-items:center;gap:8px;}
-  .nav-btn{appearance:none;border:0;cursor:pointer;font-family:inherit;font-weight:800;font-size:13.5px;line-height:1;
-    border-radius:8px;padding:10px 17px;text-decoration:none;display:inline-flex;align-items:center;gap:7px;
-    transition:filter .12s ease,border-color .12s ease,transform .12s ease;}
-  .nav-btn:hover{transform:translateY(-1px);}
-  .nav-btn.ghost{background:rgba(255,255,255,.06);color:var(--ink);border:1px solid var(--cardb);}
-  .nav-btn.ghost:hover{border-color:var(--teal);}
-  .nav-btn.solid{background:linear-gradient(180deg,#84F262,#4EC335);color:#06230c;
-    box-shadow:inset 0 1px 0 rgba(255,255,255,.45), 0 0 0 1px rgba(0,0,0,.18), 0 10px 22px -12px rgba(110,232,78,.75);}
-  .nav-btn.solid:hover{filter:brightness(1.06);}
-  .nav-chip{display:inline-flex;align-items:center;gap:9px;background:rgba(255,255,255,.05);border:1px solid var(--cardb);
-    border-radius:6px;padding:4px 13px 4px 4px;color:var(--ink);text-decoration:none;font-weight:800;font-size:13.5px;}
-  .nav-chip:hover{border-color:var(--teal);}
-  .nav-chip .av{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex:0 0 auto;
-    background:linear-gradient(180deg,#66D3DE,#1c8d97);color:#04241f;font-weight:900;font-size:14px;}
-  .nav-chip .nm{max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-  @media (max-width:640px){
-    /* compact top bar: Runthe.GG wordmark + slim account buttons */
-    .nav-logo{height:22px;}
-    .nav-btn{padding:8px 11px;font-size:12.5px;}
-    /* drop the oversized hero so the page opens on PLAY NOW + the games */
-    .brand.hero{display:none;}
-    /* ...but keep a one-line purpose statement visible (Google OAuth branding review reads the page
-       for the app name + what the app does; the hero carries both on desktop, this covers mobile) */
-    .m-purpose{display:block;}
-    .games-head{margin-top:14px;}
-    .nav.signed-in .nav-chip .nm{display:none;}
-    .nav.signed-in .nav-chip{padding:5px;}
-    /* RunThePitch on phones: title → description → animated phones → Play now. The widget chips are a desktop-only
-       feature for this card (the phones are its mobile visual). display:contents lets the phones, a sibling of
-       .feat-info, interleave with the title/description/Play now via order. */
-    .feat.soccer .feat-info{display:contents;}
-    .feat.soccer .g-head{order:1;}
-    .feat.soccer .g-desc{order:2;margin:0;}
-    .feat.soccer .g-chips{display:none;}
-    .feat.soccer .shots{order:3;gap:9px;padding:2px 2px 0;}
-    .feat.soccer .phone{width:100px;}
-    .feat.soccer .g-foot{order:4;padding-top:0;}
-    .feat .g-chips{padding-top:2px;}
-  }
-
-  /* ---- wider portal layout; keep text columns readable + centered ---- */
-  .wrap{max-width:var(--maxw);padding:6px 16px 46px;}
-  .brand.hero{max-width:var(--col);margin:0 auto;padding-top:18px;}
-  .brand.hero .wordmark{max-width:480px;}
-  .brand.hero .tag{margin-top:12px;}
-  .m-purpose{display:none;color:var(--mut);font-size:13px;line-height:1.55;margin:12px auto 0;max-width:520px;text-align:center;padding:0 6px;}
-  .m-purpose b{color:var(--ink);}
-
-  /* ---- games section header ---- */
-  .games-head{max-width:var(--maxw);margin:22px auto 12px;display:flex;align-items:center;justify-content:flex-start;gap:12px 14px;flex-wrap:wrap;}
-  .games-head h2{font-family:'Press Start 2P','Anton',Impact,sans-serif;font-weight:400;text-transform:uppercase;letter-spacing:0;
-    font-size:15px;line-height:1.4;margin:0;display:flex;align-items:center;gap:11px;color:var(--ink);}
-  .games-head h2:before{content:"";width:11px;height:11px;border-radius:2px;background:var(--green);flex:0 0 auto;
-    box-shadow:inset 0 1px 0 rgba(255,255,255,.4);}
-  .games-head .note{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#8fe07a;flex:0 0 auto;
-    margin-left:auto;border:1px solid rgba(110,232,78,.28);border-radius:999px;
-    padding:6px 13px;background:rgba(110,232,78,.07);}
-
-  /* ---- featured game blocks: lead with real gameplay screenshots ---- */
-  .games{display:block;}
-  /* A lit panel, not a rectangle with a line round it. The inset hairline along
-     the top edge is the light catching it, the black ring keeps the colour from
-     bleeding into the page behind, and the long soft shadow gives it somewhere
-     to sit. Radius up to 14 because 10 on a card this wide reads as square. */
-  .feat{position:relative;overflow:hidden;border-radius:14px;border:1px solid var(--cardb);
-    padding:24px 24px 26px;margin:0 0 18px;isolation:isolate;
-    box-shadow:
-      inset 0 1px 0 rgba(255,255,255,.07),
-      0 0 0 1px rgba(0,0,0,.3),
-      0 26px 50px -34px rgba(0,0,0,.95);
-    transition:transform .18s ease, box-shadow .18s ease;}
-  .feat:hover{transform:translateY(-2px);
-    box-shadow:
-      inset 0 1px 0 rgba(255,255,255,.09),
-      0 0 0 1px rgba(0,0,0,.3),
-      0 34px 60px -34px rgba(0,0,0,.95);}
-  @media (prefers-reduced-motion:reduce){.feat,.feat:hover{transform:none;transition:none;}}
-  .feat .art{position:absolute;inset:0;z-index:-1;}
-  .feat.golf{border-color:rgba(235,166,31,.34);}
-  .feat.golf .art{background:radial-gradient(130% 120% at 92% -12%, rgba(235,166,31,.20), transparent 55%),
-    linear-gradient(150deg,#134734 0%,#0e3826 48%,#0a2418 100%);}
-  .feat.soccer{border-color:rgba(53,196,205,.34);}
-  .feat.soccer .art{background:radial-gradient(130% 120% at 92% -12%, rgba(53,196,205,.20), transparent 55%),
-    linear-gradient(150deg,#123152 0%,#0e2740 48%,#0a1b2e 100%);}
-  .feat-in{display:grid;gap:18px;align-items:center;}
-  /* no-screenshots state (temporary, while a game is being redesigned): info full width + a sport watermark */
-  .feat.noshots .feat-in{grid-template-columns:1fr;}
-  .feat.noshots .feat-info{max-width:620px;}
-  .feat.golf .sport-motif{right:-10px;bottom:-26px;width:min(42%,300px);opacity:.5;}
-  @media (min-width:820px){
-    .feat-in{grid-template-columns:322px 1fr;}
-    /* smaller phones in a tighter column so RunThePitch matches RunTheTour's height */
-    .feat.soccer .feat-in{grid-template-columns:1fr 210px;}
-    .feat.soccer .phone{width:96px;}
-    .feat.soccer .shots{order:2;padding-bottom:2px;}
-  }
-  /* screenshot "phones" */
-  .shots{display:flex;gap:12px;align-items:flex-start;text-decoration:none;
-    overflow-x:auto;scroll-snap-type:x proximity;padding:2px 2px 9px;
-    scrollbar-width:none;-webkit-overflow-scrolling:touch;}
-  .shots::-webkit-scrollbar{display:none;}
-  /* fixed aspect box so the frame is correct even before the video reports its size (iOS Safari) */
-  .phone{flex:0 0 auto;width:148px;aspect-ratio:440/954;scroll-snap-align:center;border-radius:10px;overflow:hidden;background:#0a1626;
-    border:2px solid rgba(255,255,255,.15);box-shadow:0 16px 34px -16px rgba(0,0,0,.85);transition:transform .18s ease;}
-  .phone img,.phone video{display:block;width:100%;height:100%;object-fit:cover;background:#0a1626;}
-  .feat:hover .phone{transform:translateY(-3px);}
-  /* info side reuses the .g-* classes; strip their card paddings + add per-sport colours */
-  .feat .g-head{padding:0;}
-  .feat .g-desc{padding:0;margin:9px 0 0;}
-  .feat .g-chips{padding:12px 0 0;}
-  .feat .online-strip{margin:12px 0 0;}
-  .feat .g-foot{padding:16px 0 0;display:flex;align-items:center;gap:12px;}
-  .feat .play{text-decoration:none;}
-  .feat.golf .g-title .nm .g{color:#F2C14E;}
-  .feat.golf .crest img{border-radius:8px;border:1px solid rgba(235,166,31,.3);}
-  .feat.golf .crest:before{background:radial-gradient(circle, rgba(235,166,31,.22), transparent 66%);}
-  .feat.golf .chip{color:#e6c98a;border-left-color:rgba(235,166,31,.65);}
-  .feat.golf .badge-mode{color:#e6c98a;border-left-color:rgba(235,166,31,.65);}
-  .feat.golf .play{background:linear-gradient(180deg,#EEB23E,#D9931A);color:#1b1204;box-shadow:0 8px 20px -12px rgba(235,166,31,.9);}
-  .feat.soccer .g-title .nm .g{color:var(--teal);}
-  .feat.soccer .crest img{border-radius:8px;border:1px solid rgba(235,166,31,.5);}
-  .feat.soccer .badge-mode{color:#a7ddd6;border-left-color:rgba(102,211,222,.6);}
-  .feat.soccer .play{background:linear-gradient(180deg,#33D3B8,#17A891);color:#04231d;box-shadow:0 8px 20px -12px rgba(53,196,205,.9);}
-  /* ---- The Perfect Season: red, the third sport identity on the page ----
-     Red is the game's own colour: its field, its buttons and its share card are all
-     red and blue on near-black, so the card and the game agree. */
-  .feat.football{border-color:rgba(220,60,60,.34);}
-  .feat.football .art{background:radial-gradient(130% 120% at 92% -12%, rgba(220,60,60,.20), transparent 55%),
-    linear-gradient(150deg,#4a1519 0%,#331014 48%,#1b0a0d 100%);}
-  .feat.football .sport-motif{right:-14px;bottom:-30px;width:min(44%,300px);opacity:.45;}
-  .feat.football .g-title .nm .g{color:#F2706B;}
-  .feat.football .crest img{border-radius:8px;border:1px solid rgba(220,60,60,.3);}
-  .feat.football .crest:before{background:radial-gradient(circle, rgba(220,60,60,.22), transparent 66%);}
-  .feat.football .chip{color:#f0b3b0;border-left-color:rgba(220,60,60,.65);}
-  .feat.football .badge-mode{color:#f0b3b0;border-left-color:rgba(220,60,60,.65);}
-  .feat.football .play{background:linear-gradient(180deg,#EF5350,#C0272B);color:#2a0708;box-shadow:0 8px 20px -12px rgba(220,60,60,.9);}
-
-  /* ---- Run The Arcade: neon-arcade look in orange to match the logo. Warm cabinet lights
-       and CRT scanlines, so the daily-puzzle hub reads as an arcade, not another sport sim. ---- */
-  .feat.arcade{border-color:rgba(242,113,28,.42);box-shadow:0 0 0 1px rgba(242,113,28,.12),0 22px 54px -32px rgba(194,65,12,.55);}
-  .feat.arcade .art{background:
-    repeating-linear-gradient(0deg, transparent 0 3px, rgba(255,255,255,.022) 3px 4px),
-    radial-gradient(120% 120% at 88% -10%, rgba(242,113,28,.30), transparent 55%),
-    radial-gradient(110% 130% at 3% 118%, rgba(251,146,60,.16), transparent 55%),
-    radial-gradient(90% 120% at 108% 60%, rgba(255,94,58,.14), transparent 55%),
-    linear-gradient(150deg,#3a1c0a 0%,#2a1408 48%,#180b04 100%);}
-  .feat.arcade .g-title .nm .g{background:linear-gradient(92deg,#FFC46B 0%,#FB923C 52%,#F2530E 100%);
-    -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:#FB923C;
-    text-shadow:0 0 18px rgba(242,113,28,.5);}
-  .feat.arcade .crest img{border-radius:8px;border:1px solid rgba(242,113,28,.35);}
-  .feat.arcade .crest:before{background:radial-gradient(circle, rgba(242,113,28,.30), transparent 66%);}
-  .feat.arcade .badge-mode{color:#fbcfa0;border-left-color:rgba(242,113,28,.7);}
-  .feat.arcade .chip{color:#fbcfa0;border-left-color:rgba(242,113,28,.7);}
-  .feat.arcade .chip:nth-of-type(1){color:#FBBF24;border-left-color:rgba(251,191,36,.75);}
-  .feat.arcade .chip:nth-of-type(2){color:#FB923C;border-left-color:rgba(251,146,60,.8);}
-  .feat.arcade .chip:nth-of-type(3){color:#FB7185;border-left-color:rgba(251,113,133,.8);}
-  .feat.arcade .play{background:linear-gradient(180deg,#FB923C,#D2570A);color:#2a1206;
-    box-shadow:0 10px 26px -10px rgba(242,113,28,.95),0 0 22px -6px rgba(251,146,60,.6);}
-
-  /* ---- animated card motifs: gamecast (Perfect Season + CFB) and slot machine (Arcade).
-       The widget lives in its own column so it never sits on top of the copy, the way
-       RunThePitch keeps its phones clear of the text; on phones it drops below instead. ---- */
-  .feat.football .feat-in,.feat.cfb .feat-in,.feat.arcade .feat-in{grid-template-columns:1fr;}
-  .drive-wrap,.slot-wrap{position:relative;z-index:2;pointer-events:none;display:flex;align-items:center;justify-content:flex-start;}
-  .drive-wrap{width:100%;max-width:250px;margin:0 auto;}
-  .drivecanvas{display:block;width:100%;height:150px;border-radius:12px;border:0;background:#0a1626;
-    box-shadow:inset 0 1px 0 rgba(255,255,255,.10), 0 0 0 1px rgba(0,0,0,.45), 0 20px 40px -24px rgba(0,0,0,.95);}
-  .slot{width:210px;max-width:100%;text-align:center;}
-  .slot-top{font-family:'Anton',Impact,sans-serif;font-size:13px;letter-spacing:.14em;color:#fbcfa0;text-shadow:0 0 12px rgba(242,113,28,.6);margin-bottom:7px;}
-  .slot-frame{position:relative;height:96px;border-radius:12px;overflow:hidden;background:linear-gradient(180deg,#341806,#1c0e04);border:2px solid rgba(242,113,28,.6);box-shadow:0 0 0 1px rgba(0,0,0,.4) inset,0 0 24px -6px rgba(251,146,60,.7),0 0 0 4px rgba(194,65,12,.12);}
-  .slot-reel{position:absolute;left:0;right:0;top:0;will-change:transform;}
-  .slot-item{height:32px;display:flex;align-items:center;justify-content:center;font-family:'Anton',Impact,sans-serif;font-size:17px;letter-spacing:.04em;color:#ffd9b0;}
-  .slot-line{position:absolute;left:0;right:0;top:32px;height:32px;border-top:1px solid rgba(251,191,36,.5);border-bottom:1px solid rgba(255,94,58,.5);background:linear-gradient(90deg,rgba(251,191,36,.08),rgba(242,113,28,.14),rgba(255,94,58,.08));box-shadow:0 0 18px -4px rgba(251,146,60,.7) inset;}
-  .slot-frame.win .slot-line{animation:slotwin .5s ease 2;}
-  @keyframes slotwin{50%{background:linear-gradient(90deg,rgba(251,191,36,.35),rgba(242,113,28,.5),rgba(255,94,58,.35));}}
-  .slot-glass{position:absolute;inset:0;pointer-events:none;background:linear-gradient(180deg,rgba(255,255,255,.10),transparent 22%,transparent 78%,rgba(0,0,0,.35));}
-  .slot-wrap{justify-content:center;}
-  @media (min-width:820px){
-    .feat.football .feat-in,.feat.cfb .feat-in{grid-template-columns:1fr 250px;}
-    .feat.arcade .feat-in{grid-template-columns:1fr 232px;}
-    .drive-wrap,.slot-wrap{justify-content:center;}
-  }
-  @media (prefers-reduced-motion: reduce){
-    .slot-frame.win .slot-line{animation:none!important;}
-    .slot-reel{transition:none!important;}
-  }
-  /* ---- Perfect Season: College Football: green and gold ----
-     The sister game to The Perfect Season, so the card is built the same way and only
-     the colour changes: green and gold on near-black, which is what the game itself
-     runs on and what its mark is drawn in. */
-  .feat.cfb{border-color:rgba(16,185,129,.34);}
-  .feat.cfb .art{background:radial-gradient(130% 120% at 92% -12%, rgba(16,185,129,.20), transparent 55%),
-    linear-gradient(150deg,#0c3b2c 0%,#0a2d22 48%,#071a14 100%);}
-  .feat.cfb .sport-motif{right:-14px;bottom:-30px;width:min(44%,300px);opacity:.45;}
-  .feat.cfb .g-title .nm .g{color:#5eead4;}
-  .feat.cfb .crest img{border-radius:8px;border:1px solid rgba(16,185,129,.3);}
-  .feat.cfb .crest:before{background:radial-gradient(circle, rgba(16,185,129,.22), transparent 66%);}
-  .feat.cfb .chip{color:#9be3cd;border-left-color:rgba(16,185,129,.65);}
-  .feat.cfb .badge-mode{color:#9be3cd;border-left-color:rgba(16,185,129,.65);}
-  .feat.cfb .play{background:linear-gradient(180deg,#10b981,#047857);color:#04231a;box-shadow:0 8px 20px -12px rgba(16,185,129,.9);}
-  /* full-card clickable overlay; play button + shots stay above it via z-index:2 */
-  .feat-link{position:absolute;inset:0;z-index:1;}
-  .feat .play,.feat .shots{position:relative;z-index:2;}
-  .play:hover{filter:brightness(1.06);} .play:hover .arw{transform:translateX(4px);}
-
-  /* ---- "coming soon" tile styled as a game slot ---- */
-  .game.soon{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:9px;
-    min-height:170px;padding:26px 22px;border:1px dashed rgba(255,255,255,.18);
-    background:linear-gradient(150deg,rgba(255,255,255,.035),rgba(255,255,255,.012));}
-  .game.soon:hover{transform:none;box-shadow:none;border-color:rgba(255,255,255,.28);}
-  .game.soon .emoji{font-size:32px;filter:grayscale(.15);}
-  .game.soon .st{font-weight:900;color:var(--ink);font-size:16px;}
-  .game.soon .sd{font-size:13px;line-height:1.5;color:var(--mut);max-width:340px;}
-  .game.soon .sd a{color:var(--teal);font-weight:800;text-decoration:none;}
-  .game.soon .sd a:hover{text-decoration:underline;}
-  @media (min-width:760px){ .game.soon{grid-column:1 / -1;flex-direction:row;min-height:0;gap:16px;text-align:left;} .game.soon .sd{max-width:none;} }
-
-  /* ---- centered/constrained text sections in the wide wrap ---- */
-  .acct{max-width:var(--col);margin-left:auto;margin-right:auto;scroll-margin-top:calc(var(--nav-h) + 14px);}
-  .content{max-width:var(--col);margin-left:auto;margin-right:auto;}
-  .foot{max-width:var(--col);margin-left:auto;margin-right:auto;}
-  .installrow{max-width:var(--col);margin:24px auto 0;}
-  .installrow .btn{opacity:.85;font-size:13px;}
-  .installrow .btn:hover{opacity:1;}
-
-  /* ---- THE AD SLOT, ABOVE THE FOOTER ----
-     Takes no space until it is filled: the ins collapses when AdSense declines, so an
-     unsold page is pixel-identical to one with no ad markup at all. The label and its rule
-     are on the same condition, because "Advertisement" over an empty box is worse than no
-     label. Browsers without :has get the ad and no label, which is fine: the unit is
-     visibly an ad either way. */
-  .rtp-ad-inline{max-width:728px;margin:26px auto 0;text-align:center;}
-  .rtp-ad-inline .adsbygoogle{display:block;}
-  .rtp-ad-inline .rtp-ad-label{display:none;font-size:9.5px;font-weight:700;
-    letter-spacing:.14em;text-transform:uppercase;color:var(--mut);opacity:.7;
-    margin:0 0 6px;padding-top:16px;border-top:1px solid var(--line);}
-  .rtp-ad-inline:has(ins[data-ad-status="filled"]) .rtp-ad-label{display:block;}
-
-  /* ---- Golf card: a line of four golfers, rendered by the game's own pixel-golfer engine
-       (golf/pxgolfer.js), whose looks reshuffle every few seconds to show off the exact same
-       characters, outfits and accessories players can design in RunTheTour. ---- */
-  .feat.golf .feat-in{grid-template-columns:1fr;}
-  .golf-showcase{position:relative;z-index:2;pointer-events:none;display:flex;flex-direction:column;align-items:center;gap:8px;width:100%;}
-  .gshow-green{position:relative;display:flex;align-items:flex-end;justify-content:center;gap:2px;width:100%;max-width:250px;min-height:96px;
-    background:linear-gradient(180deg,#1e7a47 0%,#125230 58%,#0b3d25 100%);
-    border:1px solid rgba(235,166,31,.28);border-radius:12px;padding:12px 6px 8px;
-    box-shadow:inset 0 2px 14px rgba(0,0,0,.38);overflow:hidden;}
-  .golfer-slot{width:56px;flex:0 0 auto;display:block;line-height:0;}
-  .golfer-slot img{width:100%;height:auto;display:block;image-rendering:pixelated;
-    transition:opacity .22s ease;animation:gbob 3.6s ease-in-out infinite;}
-  .golfer-slot:nth-child(2) img{animation-delay:.45s;}
-  .golfer-slot:nth-child(3) img{animation-delay:.9s;}
-  .golfer-slot:nth-child(4) img{animation-delay:1.35s;}
-  .golfer-slot.rolling img{opacity:.1;}
-  @keyframes gbob{0%,100%{transform:translateY(0);}50%{transform:translateY(-3px);}}
-  .gshow-cap{font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#EBA61F;}
-  @media (min-width:820px){ .feat.golf .feat-in{grid-template-columns:1fr 250px;} }
-  @media (prefers-reduced-motion: reduce){ .golfer-slot img{animation:none;} }
-
-  /* ---- Phones: a grid of games, and a sheet for the one you pick ----------
-       The home screen used to be a one-card snap rail, which meant the page
-       opened on a single game and everything else was a swipe the visitor had
-       to guess at. Tiles show all five at once. Tapping one promotes that
-       game's own card to a full-screen sheet: same element, same copy, same
-       live motif, just given the whole screen. Desktop keeps the stacked cards
-       and never renders a tile. */
-  .gtiles{display:none;}
-  .gx{display:none;}
-  @media (max-width:640px){
-    .games{display:block;}
-    /* the cards are the detail view now, so they only exist when opened */
-    .games > .feat{display:none;}
-    .games > .game.soon{display:none;}
-
-    .gtiles{
-      display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:stretch;
-    }
-    /* A tile is a cabinet, not a card. Everything here is the vocabulary the
-       rest of the page already speaks: Anton names split two-tone the way the
-       game cards split them, the chip's 3px accent bar under them, the NEW
-       badge reused wholesale, and hard offset shadows with no blur, which is
-       the same trick the badges pull at 2px. Nothing rounds past 4px and
-       nothing fades: this site is pixels. */
-    /* An <a> to the game, not a button that opens a sheet about the game. The
-       sheet was a second tap and a second read of copy the tile had already
-       given you, in front of the thing you had just asked for. text-decoration
-       and color are reset because these are links now. */
-    /* The outline was doing all the work and none of it well: a 2px bar of the
-       accent at full strength around every tile, a second 2px bar around the
-       crest inside it, and a hard 4px offset shadow with no blur. Three hard
-       edges stacked inside 174px, which is what read as cheap.
-       The colour stays, it just stops being a cartoon outline: a hairline at
-       low alpha, a wider ring of the accent for the glow the outline was
-       standing in for, and a real shadow underneath with depth to it. The tile
-       reads as a lit panel instead of a sticker. */
-    .gtile{
-      position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:11px;
-      padding:15px 14px 14px;margin:0;text-align:left;cursor:pointer;
-      border:1px solid var(--acq);border-radius:10px;background:var(--card);
-      box-shadow:
-        inset 0 1px 0 rgba(255,255,255,.07),
-        0 0 0 1px rgba(0,0,0,.35),
-        0 14px 28px -20px rgba(0,0,0,.95);
-      text-decoration:none;
-      -webkit-appearance:none;appearance:none;font:inherit;color:var(--ink);
-      transition:transform .12s ease, box-shadow .12s ease;
-    }
-    /* pressed still moves, it just settles instead of clacking */
-    .gtile:active{transform:translateY(2px);
-      box-shadow:inset 0 1px 0 rgba(255,255,255,.05), 0 0 0 1px rgba(0,0,0,.4), 0 6px 14px -12px rgba(0,0,0,.9);}
-
-    /* The crest used to sit in the top-left corner, which is where reading
-       starts, so the name was the SECOND thing found on its own tile and the
-       tagline underneath was set nearly as loud as it. The crest is still a
-       logo, it just moved off the top of the tile and onto the side of it, so
-       the name is what the eye meets at the top. The Arcade bar already worked
-       this way, which is why it was the one tile that never had the problem. */
-    .gt-txt,.gt-scr{position:relative;z-index:1;}
-    .gt-scr{display:grid;place-items:center;flex:0 0 auto;
-      width:54px;height:54px;border-radius:9px;overflow:hidden;
-      background:rgba(255,255,255,.045);
-      box-shadow:inset 0 0 0 1px rgba(255,255,255,.09), 0 6px 14px -10px rgba(0,0,0,.9);}
-    .gt-crest{width:38px;height:38px;object-fit:contain;image-rendering:pixelated;
-      filter:drop-shadow(0 2px 4px rgba(0,0,0,.45));}
-
-    /* The app logo, kept as a logo, moved to the left of the words instead of
-       sitting above them. The tile becomes a two-column grid: icon and name on
-       the first row, tagline spanning both columns underneath, so the tagline
-       still gets the full width instead of being squeezed into a 92px gutter.
-       .gt-txt goes display:contents so its two children become grid items
-       directly, which is what lets the tagline span without touching markup. */
-    .gtile:not(.hero):not(.soonTile){
-      display:grid;grid-template-columns:46px minmax(0,1fr);
-      gap:9px 11px;align-items:center;}
-    .gtile:not(.hero):not(.soonTile) .gt-txt{display:contents;}
-    .gtile:not(.hero):not(.soonTile) .gt-scr{width:46px;height:46px;grid-column:1;}
-    .gtile:not(.hero):not(.soonTile) .gt-crest{width:34px;height:34px;}
-    .gtile:not(.hero):not(.soonTile) .gt-nm{grid-column:2;font-size:16px;}
-    /* Rows are not numbered. The qualifier exists on one tile out of four, and
-       auto-placement puts it on its own row there and skips the row entirely
-       everywhere else, which a fixed grid-row cannot do without a rule per case. */
-    .gtile:not(.hero):not(.soonTile) .gt-sub,
-    .gtile:not(.hero):not(.soonTile) .gt-tag{grid-column:1 / -1;margin-top:0;}
-
-    .gt-txt{display:flex;flex-direction:column;gap:6px;min-width:0;}
-    .gt-nm{font-family:'Russo One','Anton',Impact,sans-serif;font-weight:400;letter-spacing:.04em;
-      font-size:15px;line-height:1.16;color:var(--ink);text-transform:uppercase;}
-    .gt-nm b{font-weight:400;color:var(--ac);}
-    /* the college edition needs its qualifier, but not at the size of a name */
-    .gt-nm i{display:block;font-style:normal;font-size:11px;letter-spacing:.06em;
-      color:var(--mut);margin-top:3px;}
-    .gt-sub{font-family:'Russo One','Anton',Impact,sans-serif;font-size:11px;letter-spacing:.06em;
-      text-transform:uppercase;color:var(--mut);margin-top:-2px;}
-    /* A tagline, not a spec sheet. No accent bar: the colour lives in the tile
-       itself, and a rule down the middle of one this small only chopped it in
-       two. Set at 700 rather than 800 and given real leading, because bold
-       small text packed tight is the other half of what looked cheap. */
-    .gt-tag{font-size:11.5px;font-weight:600;line-height:1.5;color:var(--mut);
-      margin-top:auto;letter-spacing:.005em;}
-    /* one step lighter on the grid tiles, so the name and its caption are a
-       real step apart rather than half a one */
-    .gtile:not(.hero):not(.soonTile) .gt-tag{font-weight:500;}
-    /* the badge belongs to the tile, so it sits inside it and not in the gutter */
-    .gt-new{position:absolute;top:9px;right:9px;z-index:2;font-size:9px;letter-spacing:.08em;
-      text-transform:uppercase;font-weight:900;}
-    /* the marquee reads left to right, so its badge ends the line instead */
-    .gtile.hero .gt-new{position:static;margin-left:auto;align-self:center;}
-
-    /* Each tile is painted with its game's own card background, the exact
-       gradients .feat.<game> .art uses on desktop, so the phone shows the same
-       five colours the wide layout does. The CSS field scraps that used to live
-       here (mown bands, an end zone, fairway stripes, a centre circle) are gone:
-       at tile width they read as stripes across the words rather than as a
-       pitch, and the colour now does that job on its own. */
-
-    .gtile.arcade{background:
-      repeating-linear-gradient(0deg, transparent 0 3px, rgba(255,255,255,.022) 3px 4px),
-      radial-gradient(120% 120% at 88% -10%, rgba(242,113,28,.30), transparent 55%),
-      radial-gradient(110% 130% at 3% 118%, rgba(251,146,60,.16), transparent 55%),
-      radial-gradient(90% 120% at 108% 60%, rgba(255,94,58,.14), transparent 55%),
-      linear-gradient(150deg,#3a1c0a 0%,#2a1408 48%,#180b04 100%);}
-
-    .gtile.cfb{background:
-      radial-gradient(130% 120% at 92% -12%, rgba(16,185,129,.20), transparent 55%),
-      linear-gradient(150deg,#0c3b2c 0%,#0a2d22 48%,#071a14 100%);}
-
-    .gtile.football{background:
-      radial-gradient(130% 120% at 92% -12%, rgba(220,60,60,.20), transparent 55%),
-      linear-gradient(150deg,#4a1519 0%,#331014 48%,#1b0a0d 100%);}
-
-    .gtile.golf{background:
-      radial-gradient(130% 120% at 92% -12%, rgba(235,166,31,.20), transparent 55%),
-      linear-gradient(150deg,#134734 0%,#0e3826 48%,#0a2418 100%);}
-
-    .gtile.soccer{background:
-      radial-gradient(130% 120% at 92% -12%, rgba(53,196,205,.20), transparent 55%),
-      linear-gradient(150deg,#123152 0%,#0e2740 48%,#0a1b2e 100%);}
-
-    /* One colour per game, the same one its card, its Play button and its sheet
-       use: --ac paints it, --acd is the shadow it casts, --acq the quiet edges. */
-    .gtile.arcade  {--ac:#F2711C;--acd:#7A2E04;--acq:rgba(242,113,28,.45);}
-    .gtile.cfb     {--ac:#10B981;--acd:#065F46;--acq:rgba(16,185,129,.42);}
-    .gtile.football{--ac:#DC3C3C;--acd:#6E1B1B;--acq:rgba(220,60,60,.42);}
-    .gtile.golf    {--ac:#EBA61F;--acd:#7A5406;--acq:rgba(235,166,31,.42);}
-    .gtile.soccer  {--ac:#35C4CD;--acd:#0B5A61;--acq:rgba(53,196,205,.42);}
-
-    /* The Arcade is the flagship and the newest thing here, so it gets the top
-       row to itself and reads sideways, like a cabinet marquee. It also does
-       the arithmetic: five games minus the marquee is four, which is exactly
-       two clean rows. */
-    .gtile.hero{grid-column:1 / -1;flex-direction:row;align-items:center;gap:14px;padding:14px 13px;}
-    .gtile.hero .gt-scr{width:62px;height:62px;}
-    .gtile.hero .gt-crest{width:46px;height:46px;}
-    .gtile.hero .gt-nm{font-size:22px;}
-    .gtile.hero .gt-tag{margin:0;font-size:12.5px;}
-    .gtile.hero .gt-txt{flex:1;}
-
-    /* Add a sixth game and the bottom row is left one short, so the last tile
-       takes the whole row instead. Counting is on child position, not on
-       anyone remembering to add a class. */
-    .gtile:not(.hero):not(.soonTile):last-of-type:nth-child(even){
-      grid-column:1 / -1;flex-direction:row;align-items:center;gap:13px;}
-    .gtile:not(.hero):not(.soonTile):last-of-type:nth-child(even) .gt-txt{flex:1;}
-    .gtile:not(.hero):not(.soonTile):last-of-type:nth-child(even) .gt-tag{margin:0;}
-
-    /* "coming soon" is not a game, so it does not pretend to be one: no colour,
-       no shadow to press, and a dashed edge like the card it replaces. */
-    /* quiet, not broken: a dashed 2px rule looked like a validation error. A
-       hairline at low alpha over a barely-there fill reads as a placeholder
-       that belongs to the set. */
-    .gtile.soonTile{grid-column:1 / -1;cursor:default;gap:5px;padding:15px 14px;border-radius:10px;
-      border:1px dashed rgba(255,255,255,.14);box-shadow:none;
-      background:rgba(255,255,255,.018);}
-    .gtile.soonTile .gt-nm{font-size:14px;color:var(--mut);}
-    .gtile.soonTile .gt-tag{margin-top:0;border-left-color:rgba(255,255,255,.18);}
-
-    /* ---- the sheet ---- */
-    body.gopen{overflow:hidden;}
-    .games > .feat.open{
-      display:block;position:fixed;inset:0;z-index:70;margin:0;border:0;border-radius:0;
-      overflow-y:auto;-webkit-overflow-scrolling:touch;background:var(--bg);
-      padding:calc(14px + env(safe-area-inset-top)) 16px calc(26px + env(safe-area-inset-bottom));
-      animation:gsheet .18s ease-out;
-    }
-    @keyframes gsheet{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:none;}}
-    /* the whole-card link is for the desktop stack. In a sheet it would swallow
-       every tap that is not the close button. */
-    .games > .feat.open .feat-link{display:none;}
-    /* square, hard shadow, presses in: the same button the tiles are */
-    .games > .feat.open .gx{
-      display:flex;align-items:center;justify-content:center;position:sticky;top:0;margin-left:auto;
-      width:38px;height:38px;border-radius:4px;border:2px solid var(--cardb);background:var(--card);
-      box-shadow:3px 3px 0 rgba(0,0,0,.45);
-      color:var(--ink);font-size:14px;line-height:1;cursor:pointer;z-index:2;
-      -webkit-appearance:none;appearance:none;}
-    .games > .feat.open .gx:active{transform:translate(2px,2px);box-shadow:1px 1px 0 rgba(0,0,0,.45);}
-    .games > .feat.open .play{min-width:100%;justify-content:center;padding:14px 20px;font-size:15px;}
-    .games > .feat.open .g-foot{padding-top:18px;}
-    /* Reading order for a sheet: what it is, what it does, what you get, what it
-       looks like, then the button. The card's motif is a sibling of .feat-info,
-       so display:contents lifts the text out to sit in the same flex column and
-       the two can interleave. */
-    /* the base .feat-in is a centered grid, and centring is what shrank the
-       button to its text width once this became a column */
-    .games > .feat.open .feat-in{display:flex;flex-direction:column;align-items:stretch;gap:0;}
-    .games > .feat.open .feat-info{display:contents;}
-    .games > .feat.open .feat-in > *{order:4;}
-    .games > .feat.open .g-head{order:1;}
-    .games > .feat.open .g-desc{order:2;margin:10px 0 0;}
-    .games > .feat.open .g-chips{order:3;display:flex;padding:14px 0 0;}
-    .games > .feat.open .g-foot{order:5;}
-    /* the motif is a 250px column on a desktop card; here it has the screen */
-    .games > .feat.open .drive-wrap{max-width:none;margin:16px 0 0;}
-    .games > .feat.open .drivecanvas{height:172px;}
-    .games > .feat.open .slot-wrap,
-    .games > .feat.open .golf-showcase{margin:16px 0 0;}
-    .games > .feat.open .shots{padding:16px 0 0;}
-    .games > .feat.open .phone{width:112px;}
-  }
-  @media (max-width:640px) and (prefers-reduced-motion: reduce){
-    .games > .feat.open{animation:none;}
-    .gtile{transition:none;}
-  }
-</style>
 </head>
 <body>
+  <div class="ann" role="note">
+    <div class="shell"><span class="tagnew">New</span><span>The new RunThe.GG is here.<span class="ann-more"> Basketball, baseball and more are on deck.</span></span> <a href="#on-deck">See what's next</a></div>
+  </div>
+
   <nav class="nav">
     <div class="nav-in">
       <a class="nav-brand" href="/" aria-label="RunThe.GG home">
         <img class="nav-logo" src="/assets/wm-runthegg.png?v=1" alt="Runthe.GG" width="1200" height="171" />
       </a>
+      <div class="nav-links">
+        <a href="#games">Games</a>
+        <a href="#on-deck">On deck</a>
+        <a href="#how">How it works</a>
+        <a href="#faq">FAQ</a>
+      </div>
       <div class="nav-acct" id="nav-acct" aria-live="polite">
         <button class="nav-btn ghost" type="button" data-open="signin">Sign in</button>
         <button class="nav-btn solid" type="button" data-open="signup">Sign up</button>
@@ -937,151 +607,149 @@ window.GA_ID='G-L29P5MRWKE';
     </div>
   </nav>
 
-  <div class="wrap">
-    <header class="brand hero">
-      <h1 style="margin:0;"><img class="wordmark" src="/assets/wm-stacked.png?v=1" alt="Run The Games: free online sports simulation games" width="1200" height="431" /></h1>
-      <p class="tag">Free, data-driven sports games you play <b>right in your browser</b>. Pick one and jump in. No downloading necessary.</p>
-      <div class="hero-status"><span class="dot"></span><b>5&nbsp;games live</b> · more on the way</div>
-    </header>
-    <p class="m-purpose"><b>Run The Games</b> (RunThe.GG) is a collection of free, data-driven sports simulation games you play right in your browser. A free account saves your progress, trophies and leaderboard rank across every game.</p>
-
-    <div class="games-head">
-      <h2>Play now</h2>
-      <span class="note">Free · No download</span>
-    </div>
-    <main class="games">
-      <!-- Phone home screen: every game at once.
-           The page used to open as a one-card-wide snap rail, so a visitor's first
-           impression was a single game and a hint that something sat off screen to
-           the right. These tiles show all of them in a glance; tapping one opens
-           that game's full card as a sheet, which is the same markup below, so
-           there is one description per game and it lives in one place. Desktop
-           never sees the tiles: it has the room for the cards themselves. -->
-      <div class="gtiles">
-        <a class="gtile cfb" href="/cfb/">
-          <span class="gt-scr"><img class="gt-crest" src="/cfb/icon-192.png" alt="" width="76" height="76" loading="lazy" /></span>
-          <span class="gt-txt">
-            <span class="gt-nm">Perfect <b>Season</b></span>
-            <span class="gt-sub">College Football</span>
-            <span class="gt-tag">Sign six stars, chase the national title.</span>
-          </span>
-        </a>
-        <a class="gtile football" href="/football/">
-          <span class="gt-scr"><img class="gt-crest" src="/football/icon-192.png" alt="" width="76" height="76" loading="lazy" /></span>
-          <span class="gt-txt">
-            <span class="gt-nm">The Perfect <b>Season</b></span>
-            <span class="gt-tag">Sign six legends, play a full NFL season.</span>
-          </span>
-        </a>
-        <a class="gtile golf" href="/golf/">
-          <span class="gt-scr"><img class="gt-crest" src="/golf/icon-192.png?v=3" alt="" width="76" height="76" loading="lazy" /></span>
-          <span class="gt-txt">
-            <span class="gt-nm">Run The <b>Tour</b></span>
-            <span class="gt-tag">A new 18-hole course every single day.</span>
-          </span>
-        </a>
-        <a class="gtile soccer" href="/soccer/">
-          <span class="gt-scr"><img class="gt-crest" src="/assets/runthepitch-crest_badge_transparent.png" alt="" width="76" height="76" loading="lazy" /></span>
-          <span class="gt-txt">
-            <span class="gt-nm">Run The <b>Pitch</b></span>
-            <span class="gt-tag">Draft a squad, simulate a World Cup run.</span>
-          </span>
-        </a>
-        <a class="gtile hero arcade" href="/arcade/">
-          <span class="gt-scr"><img class="gt-crest" src="/arcade/assets/arcade-icon.png?v=3" alt="" width="76" height="76" loading="lazy" /></span>
-          <span class="gt-txt">
-            <span class="gt-nm">Run The <b>Arcade</b></span>
-            <span class="gt-tag">Twelve quick sports puzzles, new every day.</span>
-          </span>
-        </a>
-        <div class="gtile soonTile">
-          <span class="gt-nm">More games coming soon</span>
-          <span class="gt-tag">One account plays them all.</span>
+  <header class="hero">
+    <div class="hero-bg" aria-hidden="true"></div>
+    <div class="shell hero-grid">
+      <div class="hero-copy">
+        <span class="eyebrow"><span class="dot"></span>5 games live · Free · No download</span>
+        <h1><span class="sr">Run The Games: free online sports simulation games</span><span aria-hidden="true"><span class="l1">Run the</span><span class="l2"><span class="rot" data-words="Games|Season|Tour|Pitch|Arcade">Games</span>.</span></span></h1>
+        <p class="lede">Free, data-driven sports games you play <b>right in your browser</b>. Draft legends, play full seasons, chase titles. Pick one and you're playing in seconds.</p>
+        <div class="cta-row">
+          <a class="cta primary" href="#games">Browse the games <span class="arw">&rarr;</span></a>
+          <a class="cta secondary" href="/arcade/">Play today's Arcade</a>
+        </div>
+        <div class="stats">
+          <div class="stat"><div class="v">5</div><div class="k">Games live</div></div>
+          <div class="stat"><div class="v">Daily</div><div class="k">New puzzles</div></div>
+          <div class="stat"><div class="v">$0</div><div class="k">To play</div></div>
+          <div class="stat"><div class="v">1</div><div class="k">Account for all</div></div>
         </div>
       </div>
 
+      <div class="stage" aria-hidden="true">
+        <div class="screen s-back b">
+          <div class="bar"><img src="/assets/runthepitch-crest_badge_transparent.png" alt="" width="30" height="30" /><span class="nm">Run The Pitch</span></div>
+          <div class="pbody"><img src="/assets/runthepitch-crest_badge_transparent.png" alt="" width="120" height="120" /></div>
+        </div>
+        <div class="screen s-back a">
+          <div class="bar"><img src="/golf/icon-192.png?v=3" alt="" width="30" height="30" /><span class="nm">Run The Tour</span></div>
+          <div class="body"><span class="golfer-slot"></span><span class="golfer-slot"></span><span class="golfer-slot"></span></div>
+        </div>
+        <div class="screen s-main">
+          <div class="bar"><img src="/football/icon-192.png" alt="" width="30" height="30" /><span class="nm">The Perfect Season</span><span class="live">LIVE SIM</span></div>
+          <canvas class="drivecanvas" data-league="nfl"></canvas>
+          <div class="sfoot"><span class="t"><b>Six legends.</b> One cap. A full season.</span><a href="/football/" tabindex="-1">Play</a></div>
+        </div>
+        <div class="float-badge fb1"><span class="ic"><i class="pico pico-trophy"></i></span><span><div class="t1">Trophies &amp; streaks</div><div class="t2">One account, every game</div></span></div>
+        <div class="float-badge fb2"><span class="ic"><i class="pico pico-bolt"></i></span><span><div class="t1">Instant play</div><div class="t2">Runs in your browser</div></span></div>
+      </div>
+    </div>
+  </header>
+  <p class="sr"><b>Run The Games</b> (RunThe.GG) is a collection of free, data-driven sports simulation games you play right in your browser. A free account saves your progress, trophies and leaderboard rank across every game.</p>
 
-      <article class="feat cfb">
-        <button class="gx" type="button" data-close-game aria-label="Close">&#10005;</button>
-        <span class="art"></span>
+  <div class="ticker" aria-hidden="true">
+    <div class="ticker-track">
+      <div class="ticker-set">
+        <span class="tk"><img src="/cfb/icon-192.png" alt="" width="26" height="26" />College Football</span><span class="tk-sep"></span>
+        <span class="tk"><img src="/football/icon-192.png" alt="" width="26" height="26" />NFL</span><span class="tk-sep"></span>
+        <span class="tk"><img src="/golf/icon-192.png?v=3" alt="" width="26" height="26" />Golf</span><span class="tk-sep"></span>
+        <span class="tk"><img src="/assets/runthepitch-crest_badge_transparent.png" alt="" width="26" height="26" />World Cup</span><span class="tk-sep"></span>
+        <span class="tk"><img src="/arcade/assets/arcade-icon.png?v=3" alt="" width="26" height="26" />Daily Puzzles</span><span class="tk-sep"></span>
+        <span class="tk soon">Basketball <em>Soon</em></span><span class="tk-sep"></span>
+        <span class="tk soon">Baseball <em>Soon</em></span><span class="tk-sep"></span>
+        <span class="tk soon">Wrestling <em>Soon</em></span><span class="tk-sep"></span>
+      </div>
+      <div class="ticker-set">
+        <span class="tk"><img src="/cfb/icon-192.png" alt="" width="26" height="26" />College Football</span><span class="tk-sep"></span>
+        <span class="tk"><img src="/football/icon-192.png" alt="" width="26" height="26" />NFL</span><span class="tk-sep"></span>
+        <span class="tk"><img src="/golf/icon-192.png?v=3" alt="" width="26" height="26" />Golf</span><span class="tk-sep"></span>
+        <span class="tk"><img src="/assets/runthepitch-crest_badge_transparent.png" alt="" width="26" height="26" />World Cup</span><span class="tk-sep"></span>
+        <span class="tk"><img src="/arcade/assets/arcade-icon.png?v=3" alt="" width="26" height="26" />Daily Puzzles</span><span class="tk-sep"></span>
+        <span class="tk soon">Basketball <em>Soon</em></span><span class="tk-sep"></span>
+        <span class="tk soon">Baseball <em>Soon</em></span><span class="tk-sep"></span>
+        <span class="tk soon">Wrestling <em>Soon</em></span><span class="tk-sep"></span>
+      </div>
+    </div>
+  </div>
+
+  <section class="sec shell" id="games">
+    <div class="sec-head">
+      <div>
+        <div class="kicker">The lineup</div>
+        <h2>Play now</h2>
+        <p class="sub">Every game is free and runs right here. No download, no sign-up wall.</p>
+      </div>
+      <div class="filters" role="group" aria-label="Filter games by sport">
+        <button class="fchip" type="button" data-f="all" aria-pressed="true">All <span class="n">5</span></button>
+        <button class="fchip" type="button" data-f="football" aria-pressed="false">Football <span class="n">2</span></button>
+        <button class="fchip" type="button" data-f="golf" aria-pressed="false">Golf <span class="n">1</span></button>
+        <button class="fchip" type="button" data-f="soccer" aria-pressed="false">Soccer <span class="n">1</span></button>
+        <button class="fchip" type="button" data-f="puzzles" aria-pressed="false">Puzzles <span class="n">1</span></button>
+      </div>
+    </div>
+
+    <main class="games">
+      <article class="feat cfb wide rv" data-sport="football">
         <a class="feat-link" href="/cfb/" aria-hidden="true" tabindex="-1"></a>
-        <div class="feat-in">
-          <div class="feat-info">
-            <span class="g-head">
-              <span class="crest"><img src="/cfb/icon-192.png" alt="Perfect Season: College Football crest" width="76" height="76" loading="lazy" /></span>
-              <span class="g-title">
-                <span class="nm"><span><span class="t">Perfect </span><span class="g">Season</span><span class="t">: College Football</span></span><span class="modes"><span class="badge-mode">Solo</span></span></span>
-              </span>
-            </span>
-            <p class="g-desc">Spin a year and a school, sign six players from any season since 2005 under an $11M NIL budget, then play all 12 games and chase the national title through the 12-team playoff.</p>
-            <span class="g-chips"><span class="chip"><svg class="ico" viewBox="0 0 12 12" aria-hidden="true"><rect x="1" y="1" width="10" height="10" fill="#10b981"/><rect x="2" y="2" width="8" height="8" fill="#a7f3d0"/><rect x="4" y="4" width="4" height="4" fill="#10b981"/><rect x="5" y="5" width="2" height="2" fill="#F2C14E"/></svg>Every FBS School</span><span class="chip"><svg class="ico" viewBox="0 0 12 12" aria-hidden="true"><rect x="3" y="4" width="6" height="1" fill="#a7f3d0"/><rect x="2" y="5" width="8" height="2" fill="#10b981"/><rect x="3" y="7" width="6" height="1" fill="#a7f3d0"/><rect x="5" y="5" width="2" height="2" fill="#f4ecd9"/></svg>$11M NIL Budget</span><span class="chip"><svg class="ico" viewBox="0 0 12 12" aria-hidden="true"><rect x="1" y="7" width="3" height="4" fill="#10b981"/><rect x="4" y="4" width="3" height="7" fill="#F2C14E"/><rect x="7" y="6" width="3" height="5" fill="#10b981"/><rect x="4" y="2" width="3" height="1" fill="#F2C14E"/></svg>12-Team Playoff</span></span>
-            <div class="g-foot"><a class="play" href="/cfb/">Play now <span class="arw">&rarr;</span></a></div>
-          </div>
+        <div class="media">
+          <span class="tagline"><span class="pill hot">College</span><span class="pill">Draft + Season</span></span>
           <div class="drive-wrap" aria-hidden="true"><canvas class="drivecanvas" data-league="cfb"></canvas></div>
         </div>
-      </article>
-
-      <article class="feat football">
-        <button class="gx" type="button" data-close-game aria-label="Close">&#10005;</button>
-        <span class="art"></span>
-        <a class="feat-link" href="/football/" aria-hidden="true" tabindex="-1"></a>
-        <div class="feat-in">
-          <div class="feat-info">
-            <span class="g-head">
-              <span class="crest"><img src="/football/icon-192.png" alt="The Perfect Season crest" width="76" height="76" loading="lazy" /></span>
-              <span class="g-title">
-                <span class="nm"><span><span class="t">The Perfect </span><span class="g">Season</span></span><span class="modes"><span class="badge-mode">Solo</span><span class="badge-mode">One Franchise</span></span></span>
-              </span>
-            </span>
-            <p class="g-desc">Spin a year and a team, sign six all-time legends under the $140M cap, then play the full 17-game season and playoffs. Or lock the wheel to one franchise and build its best team ever.</p>
-            <span class="g-chips"><span class="chip"><svg class="ico" viewBox="0 0 12 12" aria-hidden="true"><rect x="1" y="1" width="10" height="10" fill="#DC3C3C"/><rect x="2" y="2" width="8" height="8" fill="#f3c4c2"/><rect x="4" y="4" width="4" height="4" fill="#DC3C3C"/><rect x="5" y="5" width="2" height="2" fill="#F2C14E"/></svg>NFL All-Time Legends</span><span class="chip"><svg class="ico" viewBox="0 0 12 12" aria-hidden="true"><rect x="3" y="4" width="6" height="1" fill="#f3c4c2"/><rect x="2" y="5" width="8" height="2" fill="#DC3C3C"/><rect x="3" y="7" width="6" height="1" fill="#f3c4c2"/><rect x="5" y="5" width="2" height="2" fill="#f4ecd9"/></svg>$140M Salary Cap</span><span class="chip"><svg class="ico" viewBox="0 0 12 12" aria-hidden="true"><rect x="1" y="7" width="3" height="4" fill="#DC3C3C"/><rect x="4" y="4" width="3" height="7" fill="#F2C14E"/><rect x="7" y="6" width="3" height="5" fill="#DC3C3C"/><rect x="4" y="2" width="3" height="1" fill="#F2C14E"/></svg>Season + Playoffs</span></span>
-            <div class="g-foot"><a class="play" href="/football/">Play now <span class="arw">&rarr;</span></a></div>
-          </div>
-          <div class="drive-wrap" aria-hidden="true"><canvas class="drivecanvas" data-league="nfl"></canvas></div>
+        <div class="feat-info">
+          <span class="g-head">
+            <span class="crest"><img src="/cfb/icon-192.png" alt="Perfect Season: College Football crest" width="76" height="76" loading="lazy" /></span>
+            <span class="g-title"><span class="nm">Perfect <span class="g">Season</span>: College Football</span>
+              <span class="modes"><span class="badge-mode">Solo</span></span></span>
+          </span>
+          <p class="g-desc">Spin a year and a school, sign six players from any season since 2005 under an $11M NIL budget, then play all 12 games and chase the national title through the 12-team playoff.</p>
+          <span class="g-chips"><span class="chip"><svg class="ico" viewBox="0 0 12 12" aria-hidden="true"><rect x="1" y="1" width="10" height="10" fill="#10b981"/><rect x="2" y="2" width="8" height="8" fill="#a7f3d0"/><rect x="4" y="4" width="4" height="4" fill="#10b981"/><rect x="5" y="5" width="2" height="2" fill="#F2C14E"/></svg>Every FBS School</span><span class="chip"><svg class="ico" viewBox="0 0 12 12" aria-hidden="true"><rect x="3" y="4" width="6" height="1" fill="#a7f3d0"/><rect x="2" y="5" width="8" height="2" fill="#10b981"/><rect x="3" y="7" width="6" height="1" fill="#a7f3d0"/><rect x="5" y="5" width="2" height="2" fill="#f4ecd9"/></svg>$11M NIL Budget</span><span class="chip"><svg class="ico" viewBox="0 0 12 12" aria-hidden="true"><rect x="1" y="7" width="3" height="4" fill="#10b981"/><rect x="4" y="4" width="3" height="7" fill="#F2C14E"/><rect x="7" y="6" width="3" height="5" fill="#10b981"/><rect x="4" y="2" width="3" height="1" fill="#F2C14E"/></svg>12-Team Playoff</span></span>
+          <div class="g-foot"><span class="meta">Free · Plays in seconds</span><a class="play" href="/cfb/">Play now <span class="arw">&rarr;</span></a></div>
         </div>
       </article>
 
-      <article class="feat golf">
-        <button class="gx" type="button" data-close-game aria-label="Close">&#10005;</button>
-        <span class="art"></span>
+      <article class="feat football rv" data-sport="football">
+        <a class="feat-link" href="/football/" aria-hidden="true" tabindex="-1"></a>
+        <div class="media">
+          <span class="tagline"><span class="pill hot">NFL</span><span class="pill">Draft + Season</span></span>
+          <div class="drive-wrap" aria-hidden="true"><canvas class="drivecanvas" data-league="nfl"></canvas></div>
+        </div>
+        <div class="feat-info">
+          <span class="g-head">
+            <span class="crest"><img src="/football/icon-192.png" alt="The Perfect Season crest" width="76" height="76" loading="lazy" /></span>
+            <span class="g-title"><span class="nm">The Perfect <span class="g">Season</span></span>
+              <span class="modes"><span class="badge-mode">Solo</span><span class="badge-mode">One Franchise</span></span></span>
+          </span>
+          <p class="g-desc">Spin a year and a team, sign six all-time legends under the $140M cap, then play the full 17-game season and playoffs. Or lock the wheel to one franchise and build its best team ever.</p>
+          <span class="g-chips"><span class="chip"><svg class="ico" viewBox="0 0 12 12" aria-hidden="true"><rect x="1" y="1" width="10" height="10" fill="#DC3C3C"/><rect x="2" y="2" width="8" height="8" fill="#f3c4c2"/><rect x="4" y="4" width="4" height="4" fill="#DC3C3C"/><rect x="5" y="5" width="2" height="2" fill="#F2C14E"/></svg>NFL All-Time Legends</span><span class="chip"><svg class="ico" viewBox="0 0 12 12" aria-hidden="true"><rect x="3" y="4" width="6" height="1" fill="#f3c4c2"/><rect x="2" y="5" width="8" height="2" fill="#DC3C3C"/><rect x="3" y="7" width="6" height="1" fill="#f3c4c2"/><rect x="5" y="5" width="2" height="2" fill="#f4ecd9"/></svg>$140M Salary Cap</span><span class="chip"><svg class="ico" viewBox="0 0 12 12" aria-hidden="true"><rect x="1" y="7" width="3" height="4" fill="#DC3C3C"/><rect x="4" y="4" width="3" height="7" fill="#F2C14E"/><rect x="7" y="6" width="3" height="5" fill="#DC3C3C"/><rect x="4" y="2" width="3" height="1" fill="#F2C14E"/></svg>Season + Playoffs</span></span>
+          <div class="g-foot"><span class="meta">Free · Plays in seconds</span><a class="play" href="/football/">Play now <span class="arw">&rarr;</span></a></div>
+        </div>
+      </article>
+
+      <article class="feat golf rv" data-sport="golf">
         <a class="feat-link" href="/golf/" aria-hidden="true" tabindex="-1"></a>
-        <div class="feat-in">
-          <div class="feat-info">
-            <span class="g-head">
-              <span class="crest"><img src="/golf/icon-192.png?v=3" alt="RunTheTour crest" width="76" height="76" loading="lazy" /></span>
-              <span class="g-title">
-                <span class="nm"><span><span class="r">Run</span> <span class="t">The</span> <span class="g">Tour</span></span><span class="modes"><span class="badge-mode">Solo</span><span class="badge-mode">Head-to-Head</span></span></span>
-              </span>
-            </span>
-            <p class="g-desc">Interactive golf simulation video game. Play 18 at a new course each day, play Head-to-Head or in a Scramble, or start your 30-season Career Mode.</p>
-            <span class="g-chips"><span class="chip"><svg class="ico" viewBox="0 0 12 12" aria-hidden="true"><rect x="1" y="1" width="10" height="10" fill="#EBA61F"/><rect x="2" y="2" width="8" height="8" fill="#f3dca0"/><rect x="4" y="4" width="4" height="4" fill="#EBA61F"/><rect x="5" y="5" width="2" height="2" fill="#E5402A"/></svg>Daily 18 Holes</span><span class="chip"><svg class="ico" viewBox="0 0 12 12" aria-hidden="true"><rect x="5" y="2" width="1" height="8" fill="#f3dca0"/><rect x="6" y="2" width="4" height="1" fill="#EBA61F"/><rect x="6" y="3" width="3" height="1" fill="#EBA61F"/><rect x="6" y="4" width="2" height="1" fill="#EBA61F"/><rect x="6" y="5" width="1" height="1" fill="#EBA61F"/><rect x="3" y="10" width="6" height="1" fill="#cda24a"/></svg>30-Season Career</span><span class="chip"><svg class="ico" viewBox="0 0 12 12" aria-hidden="true"><rect x="4" y="1" width="4" height="1" fill="#EBA61F"/><rect x="3" y="2" width="6" height="1" fill="#EBA61F"/><rect x="2" y="3" width="8" height="1" fill="#EBA61F"/><rect x="2" y="4" width="8" height="1" fill="#EBA61F"/><rect x="2" y="5" width="8" height="1" fill="#EBA61F"/><rect x="2" y="6" width="8" height="1" fill="#EBA61F"/><rect x="2" y="7" width="8" height="1" fill="#EBA61F"/><rect x="3" y="8" width="6" height="1" fill="#EBA61F"/><rect x="4" y="9" width="4" height="1" fill="#EBA61F"/><rect x="3" y="5" width="6" height="1" fill="#35C4CD"/><rect x="5" y="2" width="1" height="7" fill="#35C4CD"/><rect x="3" y="4" width="1" height="3" fill="#35C4CD"/><rect x="8" y="4" width="1" height="3" fill="#35C4CD"/></svg>Online Scramble</span></span>
-            <div class="g-foot"><a class="play" href="/golf/">Play now <span class="arw">→</span></a></div>
-          </div>
+        <div class="media">
+          <span class="tagline"><span class="pill hot">Daily</span><span class="pill">Career</span></span>
           <div class="golf-showcase" aria-hidden="true">
-            <div class="gshow-green">
-              <span class="golfer-slot"></span><span class="golfer-slot"></span><span class="golfer-slot"></span><span class="golfer-slot"></span>
-            </div>
+            <div class="gshow-green"><span class="golfer-slot"></span><span class="golfer-slot"></span><span class="golfer-slot"></span><span class="golfer-slot"></span></div>
             <div class="gshow-cap">Design your golfer</div>
           </div>
         </div>
+        <div class="feat-info">
+          <span class="g-head">
+            <span class="crest"><img src="/golf/icon-192.png?v=3" alt="RunTheTour crest" width="76" height="76" loading="lazy" /></span>
+            <span class="g-title"><span class="nm">Run The <span class="g">Tour</span></span>
+              <span class="modes"><span class="badge-mode">Solo</span><span class="badge-mode">Head-to-Head</span></span></span>
+          </span>
+          <p class="g-desc">Interactive golf simulation video game. Play 18 at a new course each day, play Head-to-Head or in a Scramble, or start your 30-season Career Mode.</p>
+          <span class="g-chips"><span class="chip"><svg class="ico" viewBox="0 0 12 12" aria-hidden="true"><rect x="1" y="1" width="10" height="10" fill="#EBA61F"/><rect x="2" y="2" width="8" height="8" fill="#f3dca0"/><rect x="4" y="4" width="4" height="4" fill="#EBA61F"/><rect x="5" y="5" width="2" height="2" fill="#E5402A"/></svg>Daily 18 Holes</span><span class="chip"><svg class="ico" viewBox="0 0 12 12" aria-hidden="true"><rect x="5" y="2" width="1" height="8" fill="#f3dca0"/><rect x="6" y="2" width="4" height="1" fill="#EBA61F"/><rect x="6" y="3" width="3" height="1" fill="#EBA61F"/><rect x="6" y="4" width="2" height="1" fill="#EBA61F"/><rect x="6" y="5" width="1" height="1" fill="#EBA61F"/><rect x="3" y="10" width="6" height="1" fill="#cda24a"/></svg>30-Season Career</span><span class="chip"><svg class="ico" viewBox="0 0 12 12" aria-hidden="true"><rect x="2" y="3" width="8" height="6" fill="#EBA61F"/><rect x="3" y="5" width="6" height="1" fill="#35C4CD"/><rect x="5" y="2" width="1" height="7" fill="#35C4CD"/></svg>Online Scramble</span></span>
+          <div class="g-foot"><span class="meta">New course every day</span><a class="play" href="/golf/">Play now <span class="arw">&rarr;</span></a></div>
+        </div>
       </article>
 
-      <article class="feat arcade">
-        <button class="gx" type="button" data-close-game aria-label="Close">&#10005;</button>
-        <span class="art"></span>
+      <article class="feat arcade rv" data-sport="puzzles">
         <a class="feat-link" href="/arcade/" aria-hidden="true" tabindex="-1"></a>
-        <div class="feat-in">
-          <div class="feat-info">
-            <span class="g-head">
-              <span class="crest"><img src="/arcade/assets/arcade-icon.png?v=3" alt="Run The Arcade crest" width="76" height="76" loading="lazy" /></span>
-              <span class="g-title">
-                <span class="nm"><span><span class="r">Run</span> <span class="t">The</span> <span class="g">Arcade</span></span><span class="modes"><span class="badge-mode">Solo</span><span class="badge-mode">Daily</span></span></span>
-              </span>
-            </span>
-            <p class="g-desc">A daily set of quick sports brain-games. Take on Common Ground, find the Odd One Out, guess the Alma Mater, and more.</p>
-            <span class="g-chips"><span class="chip"><svg class="ico" viewBox="0 0 12 12" aria-hidden="true"><rect x="1" y="1" width="4" height="4" fill="#FBBF24"/><rect x="7" y="1" width="4" height="4" fill="#FDE1B0"/><rect x="1" y="7" width="4" height="4" fill="#FDE1B0"/><rect x="7" y="7" width="4" height="4" fill="#FBBF24"/></svg>12 Daily Puzzles</span><span class="chip"><svg class="ico" viewBox="0 0 12 12" aria-hidden="true"><rect x="5" y="1" width="2" height="2" fill="#F2B632"/><rect x="4" y="3" width="4" height="2" fill="#FB923C"/><rect x="3" y="5" width="6" height="4" fill="#FB923C"/><rect x="4" y="6" width="4" height="3" fill="#F2B632"/><rect x="3" y="9" width="6" height="1" fill="#FB923C"/></svg>Daily Streaks</span><span class="chip"><svg class="ico" viewBox="0 0 12 12" aria-hidden="true"><rect x="1" y="7" width="3" height="4" fill="#FB7185"/><rect x="4" y="4" width="3" height="7" fill="#FFC46B"/><rect x="7" y="6" width="3" height="5" fill="#FB7185"/><rect x="4" y="2" width="3" height="1" fill="#FFC46B"/></svg>Leaderboards</span></span>
-            <div class="g-foot"><a class="play" href="/arcade/">Play now <span class="arw">&rarr;</span></a></div>
-          </div>
+        <div class="media">
+          <span class="tagline"><span class="pill hot">Daily</span><span class="pill">Puzzles</span></span>
           <div class="slot-wrap" aria-hidden="true">
             <div class="slot">
               <div class="slot-top">RUN THE ARCADE</div>
@@ -1089,42 +757,64 @@ window.GA_ID='G-L29P5MRWKE';
             </div>
           </div>
         </div>
+        <div class="feat-info">
+          <span class="g-head">
+            <span class="crest"><img src="/arcade/assets/arcade-icon.png?v=3" alt="Run The Arcade crest" width="76" height="76" loading="lazy" /></span>
+            <span class="g-title"><span class="nm">Run The <span class="g">Arcade</span></span>
+              <span class="modes"><span class="badge-mode">Solo</span><span class="badge-mode">Daily</span></span></span>
+          </span>
+          <p class="g-desc">A daily set of quick sports brain-games. Take on Common Ground, find the Odd One Out, guess the Alma Mater, and more.</p>
+          <span class="g-chips"><span class="chip"><svg class="ico" viewBox="0 0 12 12" aria-hidden="true"><rect x="1" y="1" width="4" height="4" fill="#FBBF24"/><rect x="7" y="1" width="4" height="4" fill="#FDE1B0"/><rect x="1" y="7" width="4" height="4" fill="#FDE1B0"/><rect x="7" y="7" width="4" height="4" fill="#FBBF24"/></svg>12 Daily Puzzles</span><span class="chip"><svg class="ico" viewBox="0 0 12 12" aria-hidden="true"><rect x="5" y="1" width="2" height="2" fill="#F2B632"/><rect x="4" y="3" width="4" height="2" fill="#FB923C"/><rect x="3" y="5" width="6" height="4" fill="#FB923C"/><rect x="4" y="6" width="4" height="3" fill="#F2B632"/></svg>Daily Streaks</span><span class="chip"><svg class="ico" viewBox="0 0 12 12" aria-hidden="true"><rect x="1" y="7" width="3" height="4" fill="#FB7185"/><rect x="4" y="4" width="3" height="7" fill="#FFC46B"/><rect x="7" y="6" width="3" height="5" fill="#FB7185"/></svg>Leaderboards</span></span>
+          <div class="g-foot"><span class="meta">New set every day</span><a class="play" href="/arcade/">Play now <span class="arw">&rarr;</span></a></div>
+        </div>
       </article>
-      <article class="feat soccer">
-        <button class="gx" type="button" data-close-game aria-label="Close">&#10005;</button>
-        <span class="art"></span>
+
+      <article class="feat soccer rv" data-sport="soccer">
         <a class="feat-link" href="/soccer/" aria-hidden="true" tabindex="-1"></a>
-        <div class="feat-in">
+        <div class="media">
+          <span class="tagline"><span class="pill hot">World Cup</span><span class="pill">Draft</span></span>
           <a class="shots" href="/soccer/" aria-label="Play RunThePitch">
             <span class="phone"><video class="clip" poster="/assets/screens/soccer-clip2.jpg" width="440" height="954" muted loop autoplay playsinline preload="metadata" aria-label="Building your starting XI in RunThePitch"><source src="/assets/screens/soccer-clip2.webm" type="video/webm" /><source src="/assets/screens/soccer-clip2.mp4" type="video/mp4" /></video></span>
             <span class="phone"><video class="clip" poster="/assets/screens/soccer-clip1.jpg" width="440" height="954" muted loop autoplay playsinline preload="metadata" aria-label="Spinning a nation and year in RunThePitch"><source src="/assets/screens/soccer-clip1.webm" type="video/webm" /><source src="/assets/screens/soccer-clip1.mp4" type="video/mp4" /></video></span>
             <span class="phone"><video class="clip" poster="/assets/screens/soccer-clip3.jpg" width="440" height="954" muted loop autoplay playsinline preload="metadata" aria-label="Simulating a World Cup match in RunThePitch"><source src="/assets/screens/soccer-clip3.webm" type="video/webm" /><source src="/assets/screens/soccer-clip3.mp4" type="video/mp4" /></video></span>
           </a>
-          <div class="feat-info">
-            <span class="g-head">
-              <span class="crest"><img src="/assets/runthepitch-crest_badge_transparent.png" alt="RunThePitch crest" width="76" height="76" loading="lazy" /></span>
-              <span class="g-title">
-                <span class="nm"><span><span class="r">Run</span> <span class="t">The</span> <span class="g">Pitch</span></span><span class="modes"><span class="badge-mode">Solo</span><span class="badge-mode">Head-to-Head</span></span></span>
-              </span>
-            </span>
-            <p class="g-desc">Spin a nation &amp; year, draft a legend each round, build your dream squad, then simulate your World Cup run.</p>
-            <span class="g-chips"><span class="chip"><svg class="ico" viewBox="0 0 12 12" aria-hidden="true"><rect x="1" y="1" width="10" height="10" fill="#35C4CD"/><rect x="2" y="2" width="8" height="8" fill="#bfe9df"/><rect x="4" y="4" width="4" height="4" fill="#35C4CD"/><rect x="5" y="5" width="2" height="2" fill="#EF4E50"/></svg>Draft Legends</span><span class="chip"><svg class="ico" viewBox="0 0 12 12" aria-hidden="true"><rect x="5" y="1" width="2" height="1" fill="#EBA61F"/><rect x="5" y="2" width="2" height="1" fill="#EBA61F"/><rect x="1" y="3" width="10" height="1" fill="#EBA61F"/><rect x="2" y="4" width="8" height="1" fill="#EBA61F"/><rect x="3" y="5" width="6" height="1" fill="#EBA61F"/><rect x="4" y="6" width="4" height="1" fill="#EBA61F"/><rect x="3" y="7" width="3" height="1" fill="#EBA61F"/><rect x="6" y="7" width="3" height="1" fill="#EBA61F"/><rect x="2" y="8" width="2" height="1" fill="#EBA61F"/><rect x="8" y="8" width="2" height="1" fill="#EBA61F"/></svg>World Cup Sim</span><span class="chip"><svg class="ico" viewBox="0 0 12 12" aria-hidden="true"><rect x="4" y="1" width="4" height="1" fill="#35C4CD"/><rect x="3" y="2" width="6" height="1" fill="#35C4CD"/><rect x="2" y="3" width="8" height="1" fill="#35C4CD"/><rect x="2" y="4" width="8" height="1" fill="#35C4CD"/><rect x="2" y="5" width="8" height="1" fill="#35C4CD"/><rect x="2" y="6" width="8" height="1" fill="#35C4CD"/><rect x="2" y="7" width="8" height="1" fill="#35C4CD"/><rect x="3" y="8" width="6" height="1" fill="#35C4CD"/><rect x="4" y="9" width="4" height="1" fill="#35C4CD"/><rect x="3" y="5" width="6" height="1" fill="#EBA61F"/><rect x="5" y="2" width="1" height="7" fill="#EBA61F"/><rect x="3" y="4" width="1" height="3" fill="#EBA61F"/><rect x="8" y="4" width="1" height="3" fill="#EBA61F"/></svg>Daily Challenge</span></span>
-            <div class="g-foot"><a class="play" href="/soccer/">Play now <span class="arw">→</span></a></div>
-          </div>
+        </div>
+        <div class="feat-info">
+          <span class="g-head">
+            <span class="crest"><img src="/assets/runthepitch-crest_badge_transparent.png" alt="RunThePitch crest" width="76" height="76" loading="lazy" /></span>
+            <span class="g-title"><span class="nm">Run The <span class="g">Pitch</span></span>
+              <span class="modes"><span class="badge-mode">Solo</span><span class="badge-mode">Head-to-Head</span></span></span>
+          </span>
+          <p class="g-desc">Spin a nation &amp; year, draft a legend each round, build your dream squad, then simulate your World Cup run.</p>
+          <span class="g-chips"><span class="chip"><svg class="ico" viewBox="0 0 12 12" aria-hidden="true"><rect x="1" y="1" width="10" height="10" fill="#35C4CD"/><rect x="2" y="2" width="8" height="8" fill="#bfe9df"/><rect x="4" y="4" width="4" height="4" fill="#35C4CD"/><rect x="5" y="5" width="2" height="2" fill="#EF4E50"/></svg>Draft Legends</span><span class="chip"><svg class="ico" viewBox="0 0 12 12" aria-hidden="true"><rect x="1" y="3" width="10" height="1" fill="#EBA61F"/><rect x="2" y="4" width="8" height="1" fill="#EBA61F"/><rect x="3" y="5" width="6" height="1" fill="#EBA61F"/><rect x="4" y="6" width="4" height="1" fill="#EBA61F"/><rect x="3" y="8" width="6" height="2" fill="#EBA61F"/></svg>World Cup Sim</span><span class="chip"><svg class="ico" viewBox="0 0 12 12" aria-hidden="true"><rect x="2" y="3" width="8" height="6" fill="#35C4CD"/><rect x="3" y="5" width="6" height="1" fill="#EBA61F"/><rect x="5" y="2" width="1" height="7" fill="#EBA61F"/></svg>Daily Challenge</span></span>
+          <div class="g-foot"><span class="meta">Free · Plays in seconds</span><a class="play" href="/soccer/">Play now <span class="arw">&rarr;</span></a></div>
         </div>
       </article>
-
-      <div class="game soon">
-        <span class="emoji"><i class="pico pico-pad" aria-hidden="true"></i></span>
-        <span class="st">More games coming soon</span>
-        <span class="sd">New free sports games are in the works, and your one RunThe.GG account plays them all. <a href="https://x.com/RunTheGG" target="_blank" rel="noopener noreferrer">Follow @RunTheGG</a> to hear what's next.</span>
-      </div>
     </main>
+  </section>
 
+  <section class="sec shell" id="on-deck">
+    <div class="sec-head">
+      <div>
+        <div class="kicker">On deck</div>
+        <h2>More sports are coming</h2>
+        <p class="sub">New games are in the works. Your one RunThe.GG account will play every one of them.</p>
+      </div>
+    </div>
+    <div class="deck">
+      <div class="dk hoops rv"><div class="lg"><img src="/hoops/icon-192.png" alt="" width="58" height="58" loading="lazy" /></div><div class="sport">Basketball</div><div class="nm">Run The Floor</div><p>Draft a starting five from fifty years of the league and chase the ring.</p><div class="st">Coming soon</div></div>
+      <div class="dk base rv"><div class="lg"><img src="/baseball/icon-192.png" alt="" width="58" height="58" loading="lazy" /></div><div class="sport">Baseball</div><div class="nm">Run The Diamond</div><p>Build a lineup and a rotation from every era, then play a full season.</p><div class="st">Coming soon</div></div>
+      <div class="dk wrest rv"><div class="lg"><img src="/wrestling/icon-192.png" alt="" width="58" height="58" loading="lazy" /></div><div class="sport">Wrestling</div><div class="nm">Run The Ropes</div><p>Book a career from the bingo halls to the main event.</p><div class="st">Coming soon</div></div>
+      <div class="dk myth rv"><div class="lg"><img src="/mythiball/icon-192.png" alt="" width="58" height="58" loading="lazy" /></div><div class="sport">Arcade Baseball</div><div class="nm">MythiBall</div><p>Legends and monsters step up to the plate. Arcade baseball with a twist.</p><div class="st">Coming soon</div></div>
+    </div>
+    <div class="deck-foot rv"><span><b>Want to know first?</b> We announce every new game on X.</span><a href="https://x.com/RunTheGG" target="_blank" rel="noopener noreferrer">Follow @RunTheGG &rarr;</a></div>
+  </section>
+
+  <section class="sec shell">
     <!-- Account panel sits BELOW the games on purpose: playing requires no account,
          so the games come first. Signed-out CTA is the default so it shows even if the
          accounts script fails to load; JS swaps in the signed-in bar on session. -->
-    <section id="acct" class="acct" aria-live="polite">
+    <div id="acct" class="acct rv" aria-live="polite">
       <div class="a-tag">✓ Free &amp; optional</div>
       <h2 class="a-hd">One <span class="t">account.</span> Every <span class="g">game.</span></h2>
       <p class="a-sub"><b>No account needed to play</b>. Everything above is free, right now. An account is just for keeping score: it saves your progress and carries your trophies, streaks and leaderboard rank into every game on the site.</p>
@@ -1138,25 +828,29 @@ window.GA_ID='G-L29P5MRWKE';
         <button class="btn gold flex1" id="acct-signup">Create free account</button>
         <button class="btn ghost flexa" id="acct-signin">Sign in</button>
       </div>
-    </section>
+    </div>
+  </section>
 
-    <section class="content">
+  <section class="sec shell" id="how">
+    <div class="sec-head"><div><div class="kicker">How it works</div><h2>Three steps. Zero installs.</h2></div></div>
+    <div class="steps">
+      <div class="step rv"><span class="n">01</span><span class="tx"><b>Pick a game.</b> The Perfect Season, Run The Arcade, Perfect Season: College Football, RunTheTour and RunThePitch are all live above, and new games join the lineup over time.</span></div>
+      <div class="step rv"><span class="n">02</span><span class="tx"><b>Play on the spot.</b> It all runs in your browser: no app store, no install, no waiting around.</span></div>
+      <div class="step rv"><span class="n">03</span><span class="tx"><b>Keep score.</b> Sign in once and your progress, streaks and leaderboard rank travel with you across every game.</span></div>
+    </div>
+  </section>
+
+  <section class="sec shell content">
+    <div>
       <h3>What is RunThe.GG?</h3>
       <p>RunThe.GG is a collection of quick, data-driven sports sims that run right in your browser. Nothing to download, nothing to install and no sign-up wall, so pick a game and you're playing in seconds on your phone, tablet or computer. Make one free account if you like, and your trophies, streaks, saves and leaderboard rank follow you from game to game.</p>
-
-      <h3>How it works</h3>
-      <div class="steps">
-        <div class="step"><span class="n">1</span><span class="tx"><b>Pick a game.</b> The Perfect Season, Run The Arcade, Perfect Season: College Football, RunTheTour and RunThePitch are all live above, and new games join the lineup over time.</span></div>
-        <div class="step"><span class="n">2</span><span class="tx"><b>Play on the spot.</b> It all runs in your browser: no app store, no install, no waiting around.</span></div>
-        <div class="step"><span class="n">3</span><span class="tx"><b>Keep score.</b> Sign in once and your progress, streaks and leaderboard rank travel with you across every game.</span></div>
-      </div>
-
-      <h3>The games</h3>
+      <h3 style="margin-top:34px">The games</h3>
       <p><b>The Perfect Season</b> is our NFL roster draft game. A wheel gives you a year and a team, you sign one player off it, and six spins later you have a roster built under a $140M salary cap. Then you play all 17 games and, if you're good enough, the playoffs. Win everything and you finish 20-0. <a href="/football/how-to-play.html">Read the full guide →</a></p>
       <p><b>Perfect Season: College Football</b> is the college edition. Same wheel, a year and a school this time, and six players signed under an $11M NIL budget out of every season since 2005. Then all 12 games, and if you finish in the top 12 of the country, the College Football Playoff. <a href="/cfb/how-to-play.html">Read the full guide &rarr;</a></p>
       <p><b>RunTheTour</b> is our golf sim. Build a golfer one skill at a time, then play 18 at a brand-new course every day, take a rival on head-to-head or in a Scramble, or start a Career Mode of up to 30 years and chase majors as your golfer rises, peaks and finally hangs up the clubs. <a href="/golf/how-to-play.html">Read the full guide →</a></p>
       <p><b>RunThePitch</b> is a World Cup squad builder. Spin a nation and a year, draft a legend each round, then simulate the tournament and find out how deep your dream squad can run. <a href="/soccer/how-to-play.html">Read the full guide →</a></p>
-
+    </div>
+    <div id="faq">
       <h3>FAQ</h3>
       <div class="faq">
         <details><summary>Is there an app?</summary><p>There is no app to download. RunThe.GG runs right in your browser. If you would like it to open like an app from your Home Screen, you can <a href="#" id="faq-install">add it to your Home Screen</a> in a couple of taps, no App Store required.</p></details>
@@ -1168,8 +862,10 @@ window.GA_ID='G-L29P5MRWKE';
         <details><summary>What kind of games are on RunThe.GG?</summary><p>RunThe.GG makes free, data-driven sports games you play right in your browser. Right now that is The Perfect Season, an NFL roster draft game, Run The Arcade, a set of daily sports puzzles, Perfect Season: College Football, its college edition, RunThePitch, a World Cup squad-drafting game, and RunTheTour, a daily golf simulation and career game, with more sports on the way.</p></details>
         <details><summary>Can I play on my phone?</summary><p>Yes. Every RunThe.GG game works in any modern mobile browser, with no App Store or Play Store download. You can also add RunThe.GG to your Home Screen so it opens full screen like an app.</p></details>
       </div>
-    </section>
+    </div>
+  </section>
 
+  <div class="shell">
     <div class="installrow">
       <button class="btn ghost" id="install-btn" type="button"><i class="pico pico-install" aria-hidden="true"></i> Add RunThe.GG to your Home Screen</button>
     </div>
@@ -1188,20 +884,49 @@ window.GA_ID='G-L29P5MRWKE';
            data-ad-format="horizontal"
            data-full-width-responsive="true"></ins>
     </div>
-    <footer class="foot">
-      <div style="display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:11px;margin-bottom:18px;">
-        <span style="font-size:13px;opacity:.72;">Free to play, funded by players. Help us keep building.</span>
-        <a href="https://ko-fi.com/runthegames" target="_blank" rel="noopener noreferrer" aria-label="Support RunThe.GG on Ko-fi" style="display:inline-flex;align-items:center;gap:7px;font-weight:800;font-size:12.5px;line-height:1;color:#fff;background:linear-gradient(180deg,#ff7a6b,#ec4863);border-radius:999px;padding:9px 16px;text-decoration:none;box-shadow:0 8px 18px -10px rgba(236,72,99,.85);white-space:nowrap;">&#9829; Support us</a>
-      </div>
-      <span class="follow"><a href="https://x.com/RunTheGG" target="_blank" rel="noopener noreferrer">Follow <b>@RunTheGG</b> on X for news &amp; updates</a></span>
-      <a href="/about.html">About</a><span class="sep">·</span>
-      <a href="/privacy.html">Privacy</a><span class="sep">·</span>
-      <a href="/terms.html">Terms</a><span class="sep">·</span>
-      <a href="/disclaimer.html">Disclaimer</a><span class="sep">·</span>
-      <a href="/ideas/">Ideas</a><span class="sep">·</span>
-      <a href="/contact.html">Contact</a>
-    </footer>
   </div>
+
+  <footer class="foot">
+    <div class="shell">
+      <div class="foot-grid">
+        <div class="foot-brand">
+          <img src="/assets/wm-runthegg.png?v=1" alt="Runthe.GG" width="1200" height="171" loading="lazy" />
+          <p>Free to play, funded by players. Help us keep building.</p>
+          <div class="foot-actions">
+            <a class="kofi" href="https://ko-fi.com/runthegames" target="_blank" rel="noopener noreferrer" aria-label="Support RunThe.GG on Ko-fi">&#9829; Support us</a>
+            <a class="xlink follow" href="https://x.com/RunTheGG" target="_blank" rel="noopener noreferrer">Follow <b>@RunTheGG</b></a>
+          </div>
+        </div>
+        <div>
+          <h4>Games</h4>
+          <ul>
+            <li><a href="/football/">The Perfect Season</a></li>
+            <li><a href="/cfb/">College Football</a></li>
+            <li><a href="/golf/">Run The Tour</a></li>
+            <li><a href="/soccer/">Run The Pitch</a></li>
+            <li><a href="/arcade/">Run The Arcade</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4>Company</h4>
+          <ul>
+            <li><a href="/about.html">About</a></li>
+            <li><a href="/contact.html">Contact</a></li>
+            <li><a href="/ideas/">Ideas</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4>Legal</h4>
+          <ul>
+            <li><a href="/privacy.html">Privacy</a></li>
+            <li><a href="/terms.html">Terms</a></li>
+            <li><a href="/disclaimer.html">Disclaimer</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="foot-base"><span>© RunThe.GG · Free sports games in your browser</span><span>Not affiliated with any league or team.</span></div>
+    </div>
+  </footer>
 
   <!-- Auth modal -->
   <div class="modal" id="modal" hidden>
@@ -1749,69 +1474,6 @@ document.querySelectorAll('.feat-link').forEach(function(a){
 })();
 </script>
 
-<script>
-/* Phone home screen: tile grid to game sheet.
- *
- * The tiles are static markup, so the grid is painted by the first frame and
- * nothing shifts under a thumb. All this does is promote one existing card to
- * a full-screen sheet and put it back afterwards. The card is never cloned or
- * moved, so its slot machine, drive chart and golfers keep running exactly as
- * they were; the only thing they need is to be told the size changed, because
- * the drive canvas measured itself while the card was hidden.
- *
- * Desktop never runs a line of this: the tiles are display:none, so no tile is
- * ever clicked. */
-(function(){
-  var games=document.querySelector('main.games');
-  if(!games) return;
-  var openCard=null, opener=null;
-
-  function close(){
-    if(!openCard) return;
-    openCard.classList.remove('open');
-    openCard.removeAttribute('role');
-    openCard.removeAttribute('aria-modal');
-    document.body.classList.remove('gopen');
-    var was=opener; openCard=null; opener=null;
-    if(was){ try{ was.focus({preventScroll:true}); }catch(e){ was.focus(); } }
-  }
-
-  function open(key, from){
-    var card=games.querySelector('.feat.'+key);
-    if(!card) return;
-    openCard=card; opener=from||null;
-    card.classList.add('open');
-    card.setAttribute('role','dialog');
-    card.setAttribute('aria-modal','true');
-    document.body.classList.add('gopen');
-    card.scrollTop=0;
-    /* the drive chart sized itself against a hidden card, so it is 0px wide
-       until something tells it to measure again. Its own listener is debounced
-       by 150ms, which is well inside the time it takes to look at a sheet. */
-    try{ window.dispatchEvent(new Event('resize')); }catch(e){}
-    var x=card.querySelector('.gx');
-    if(x){ try{ x.focus({preventScroll:true}); }catch(e){ x.focus(); } }
-    /* Android back should close the sheet, not leave the site. */
-    try{ history.pushState({rtgSheet:key},''); }catch(e){}
-  }
-
-  games.addEventListener('click', function(e){
-    var t=e.target.closest('[data-open-game]');
-    if(t){ open(t.getAttribute('data-open-game'), t); return; }
-    if(e.target.closest('[data-close-game]')){ e.preventDefault(); back(); }
-  });
-
-  function back(){
-    /* pop the entry open() pushed; popstate does the closing, so the two paths
-       can never disagree about how deep the history is */
-    if(openCard){ try{ history.back(); return; }catch(e){} }
-    close();
-  }
-  window.addEventListener('popstate', close);
-  document.addEventListener('keydown', function(e){ if(e.key==='Escape' && openCard) back(); });
-})();
-</script>
-
 <script src="/golf/pxgolfer.js?v=2"></script>
 <script>
 /* Golf card: four golfers rendered by RunTheTour's own pixel-golfer engine (golf/pxgolfer.js),
@@ -1835,6 +1497,46 @@ document.querySelectorAll('.feat-link').forEach(function(a){
     }, i*150); });
   }
   setInterval(rerollAll, 5000);
+})();
+</script>
+<script>
+/* Home v2: the rotating word in the headline, the sport filter over the
+   library, and cards that settle in as they scroll into view. All three are
+   decoration over static markup: with this script blocked, every game is
+   still on the page and every link still works. */
+(function(){
+  var reduce=false; try{ reduce=window.matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){}
+
+  var rot=document.querySelector('.hero h1 .rot');
+  if(rot && !reduce){
+    var words=(rot.getAttribute('data-words')||'').split('|').filter(Boolean), i=0;
+    if(words.length>1) setInterval(function(){
+      i=(i+1)%words.length; rot.textContent=words[i];
+      rot.classList.remove('swap'); void rot.offsetWidth; rot.classList.add('swap');
+    },2600);
+  }
+
+  var chips=[].slice.call(document.querySelectorAll('.fchip'));
+  var cards=[].slice.call(document.querySelectorAll('main.games .feat'));
+  chips.forEach(function(c){ c.addEventListener('click',function(){
+    var f=c.getAttribute('data-f');
+    chips.forEach(function(o){ o.setAttribute('aria-pressed', o===c?'true':'false'); });
+    cards.forEach(function(card){
+      var on = f==='all' || card.getAttribute('data-sport')===f;
+      card.classList.toggle('is-hidden',!on);
+      /* the wide card only spans two columns when it has company */
+      card.classList.toggle('wide', on && f==='all' && card.classList.contains('cfb'));
+    });
+    /* a drive chart measured while hidden is 0px wide until told to look again */
+    try{ window.dispatchEvent(new Event('resize')); }catch(e){}
+  }); });
+
+  var rv=[].slice.call(document.querySelectorAll('.rv'));
+  if(reduce || !('IntersectionObserver' in window)){ rv.forEach(function(el){ el.classList.add('in'); }); return; }
+  var io=new IntersectionObserver(function(ents){ ents.forEach(function(en){
+    if(en.isIntersecting){ en.target.classList.add('in'); io.unobserve(en.target); }
+  }); },{rootMargin:'0px 0px -8% 0px',threshold:.08});
+  rv.forEach(function(el,k){ el.style.transitionDelay=(k%3)*70+'ms'; io.observe(el); });
 })();
 </script>
 
