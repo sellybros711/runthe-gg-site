@@ -426,12 +426,19 @@ function eligibleFranchises(data) {
 function eligibleEras(data) {
   const bounds = Object.keys(E.ERAS).map(era => ({ era, from: E.ERAS[era][0], to: E.ERAS[era][1] }));
   const bucket = {};
-  for (const b of bounds) bucket[b.era] = { clubs: new Set(), lo: Infinity, hi: 0, rows: [] };
+  for (const b of bounds) bucket[b.era] = { clubs: new Set(), seasons: 0, lo: Infinity, hi: 0, rows: [] };
   for (const ts of data.teamSeasons) {
     const b = bounds.find(x => ts.season >= x.from && ts.season <= x.to);
     if (!b) continue;
     const e = bucket[b.era];
-    e.clubs.add(ts.team);
+    /* A CLUB IS A FRANCHISE, NOT A CODE. Counting codes called the 2020s 31 clubs,
+       because the Athletics are OAK and then ATH, and the 1950s 21, because the
+       Braves, the A's, the Browns, the Dodgers and the Giants all moved and changed
+       letters. Counted through `franchiseOf` a decade reads what the league really
+       was: 16 clubs from 1901 to 1960, 24 by 1969, 30 now, with the Federal League
+       in the 1910s and the Negro Leagues from the 1920s to the 1940s on top. */
+    e.clubs.add(E.franchiseOf(ts.team, ts.season));
+    e.seasons++;
     if (ts.season < e.lo) e.lo = ts.season;
     if (ts.season > e.hi) e.hi = ts.season;
     for (const p of (data.byTeamSeason[ts.team_season_id] || [])) e.rows.push(p);
@@ -453,7 +460,7 @@ function eligibleEras(data) {
       : arms <= ERA_ARMS_LO ? 'Hitters’ decade: the bats rule'
       : '';
     out.push({
-      era: b.era, lo: e.lo, hi: e.hi, clubs: e.clubs.size,
+      era: b.era, lo: e.lo, hi: e.hi, clubs: e.clubs.size, seasons: e.seasons,
       depth: e.rows.length, arms, note, best: top[0] || null,
     });
   }

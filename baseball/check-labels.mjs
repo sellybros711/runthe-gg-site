@@ -481,5 +481,26 @@ console.log('\n7. A trade offer is a subtraction the reader can do on screen');
     + 'and only two of twelve are starters.');
 }
 
+/* ─── THE DH NEVER CHARGES ───
+   Another position costs a hitter POSITION_FIT.OFF of his WAR. The DH costs
+   nobody anything, and it is still not his OWN position unless his season was
+   the DH, so the star and the charge are two different questions. Asked of the
+   real pool rather than a fixture, and it has to find a real off-position case
+   first or it proves nothing. */
+{
+  console.log('\nthe DH never charges a hitter');
+  const bats = players.filter(p => p.r === 'b' && p.pp && p.pp !== 'DH');
+  const dhFull = bats.every(p => E.slotWar(p, 'DH') === p.w && !E.offPosition(p, 'DH'));
+  claim(bats.length > 0 && dhFull,
+    `all ${bats.length} hitters keep their whole WAR at DH`,
+    'somebody paid the off-position cost for batting at DH');
+  claim(bats.every(p => !E.primaryAt(p, 'DH')),
+    'DH is not a fielder\'s own position, so it never wears his star');
+  const ss = bats.find(p => p.pp === 'SS' && p.w > 3);
+  claim(!!ss && E.offPosition(ss, '1B') && E.slotWar(ss, '1B') < ss.w,
+    'a shortstop at first base still pays for it',
+    ss ? `${ss.n} ${ss.s} read ${E.slotWar(ss, '1B')} against ${ss.w}` : 'no shortstop found');
+}
+
 console.log(failures ? `\n${failures} failed.\n` : '\nAll checks passed.\n');
 process.exit(failures ? 1 : 0);

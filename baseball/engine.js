@@ -277,10 +277,17 @@ function inDivision(division, team, season) {
   return false;
 }
 
-/* The clubs a division has ever held, newest membership first, for the picker. */
+/* The clubs a division holds TODAY, for the picker. It used to list every code the
+ * division had ever held, so the NL East card showed FLA beside MIA and MON beside
+ * WSN, and Detroit, Milwaukee and Houston each wore two divisions. A card is the
+ * division as a fan knows it now. The DRAFT still reaches every season the
+ * division really held (`inDivision`), so the Florida Marlins and the Expos are on
+ * the wheel; only the chips are current. "Today" is the latest season any row
+ * reaches, read off the table rather than typed, so a new season moves it. */
+const DIVISION_LAST_SEASON = Math.max(...Object.values(DIVISIONS).flat().map(r => r[2]));
 function divisionClubs(division) {
   const rows = DIVISIONS[division] || [];
-  return rows.slice().sort((a, b) => b[2] - a[2]).map(r => r[0]);
+  return rows.filter(r => r[2] === DIVISION_LAST_SEASON).map(r => r[0]);
 }
 
 /* 12 roster slots per GDD §3. */
@@ -452,9 +459,11 @@ function canFillSlot(player, slotName, elig) {
  * the field asks for was not a choice.
  *
  * `pp` of OF is Baseball-Reference's "outfield" without a corner named, so any of
- * the three outfield spots is his. DH is the slot for anybody, and a fielder
- * standing there has given up his glove, so it is off-position for everyone but a
- * man whose season WAS the DH. Pitchers are placed by the staff rules and are never
+ * the three outfield spots is his. DH is the slot for anybody and it costs nobody
+ * anything: a hitter there is only asked to hit, which is the half of his season
+ * that was never tied to a position. So DH is never charged, and it is still not
+ * anybody's OWN position unless his season was the DH, which is why `primaryAt`
+ * and `offPosition` are two questions. Pitchers are placed by the staff rules and are never
  * off-position. A row with no `pp` is a Negro Leagues season Lahman cannot place,
  * so there is nothing to be off of.
  *
@@ -479,10 +488,17 @@ function primaryAt(player, slotName) {
   return false;
 }
 
+/* Whether a slot CHARGES him. Off his own position and not the DH. */
+function offPosition(player, slotName) {
+  const s = slotName || (player && player._slot);
+  if (primaryAt(player, s)) return false;
+  return slotBase(s) !== 'DH';
+}
+
 function slotWar(player, slotName) {
   if (!player) return 0;
   const s = slotName || player._slot;
-  if (primaryAt(player, s)) return player.w;
+  if (!offPosition(player, s)) return player.w;
   return player.w - Math.abs(player.w) * POSITION_FIT.OFF;
 }
 
@@ -2555,7 +2571,7 @@ const publicAPI = {
   playerPositions, canFillSlot, teamSeasonId,
   indexData, buildCheapBy,
   pairLinks, resolveChemistry, setCuratedChemistry, setCareers, sharedSeason,
-  POSITION_FIT, primaryAt, slotWar, slotBase,
+  POSITION_FIT, primaryAt, offPosition, slotWar, slotBase,
   chemPoints, chemistryByPlayer, chemistryWorth,
   teamStrength, teamWinPct, overallRating, squadRating, nationalRank,
   PROJ, projectedWins, teamRating,

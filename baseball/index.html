@@ -306,7 +306,28 @@ body:has(#s-intro.on) header .lockup{visibility:hidden}
 /* One tagline, under the button, short enough to hold one line on a 320 phone. */
 .htag{margin:0 0 16px;text-align:center;font-size:13.5px;color:var(--dim)}
 .hp-start{margin-bottom:10px}
-.hp-secondary{margin-bottom:10px}
+/* MORE WAYS TO PLAY IS THE SECOND DOOR, AND IT HAS TO LOOK LIKE ONE. As a ghost
+   button it read quieter than the three utility cards under it, so the six modes
+   were one tap away and easy to miss. It is a filled card now with a gold edge, a
+   dot in each mode's own colour and the modes named under it, so it clearly
+   outranks How to play, the Leaderboard and the Trophy case. */
+.hp-modes{display:flex;align-items:center;gap:12px;width:100%;margin:0 0 12px;padding:13px 14px;
+  background:var(--panel);color:var(--ink);border:2px solid var(--gold);border-radius:12px;
+  cursor:pointer;text-align:left;font:inherit;box-shadow:0 2px 0 rgba(0,0,0,.08)}
+.hp-modes:hover{background:var(--panel-2,var(--panel));transform:translateY(-1px)}
+.hm-dots{display:grid;grid-template-columns:repeat(3,9px);gap:4px;flex:0 0 auto}
+.hm-dots i{width:9px;height:9px;border-radius:50%;display:block}
+.hm-txt{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.hm-txt b{font-family:var(--fd);font-weight:400;font-size:19px;letter-spacing:.05em;
+  text-transform:uppercase;line-height:1.05}
+.hm-sub{font-family:var(--fn);font-size:11.5px;font-weight:600;color:var(--dim);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hm-sub .hm-long{display:none}
+/* An iPhone SE is 320 and two names still overflowed there, so the narrowest
+   phones set the name and the caption a step smaller. */
+@media(max-width:359px){.hp-modes{gap:10px;padding:12px}.hm-txt b{font-size:17px}.hm-sub{font-size:10.5px}}
+.hm-arrow{width:20px;height:20px;flex:0 0 auto;fill:none;stroke:var(--gold);stroke-width:2.4;
+  stroke-linecap:round;stroke-linejoin:round}
 .mode-row{display:flex;gap:8px;margin-bottom:10px}
 .mode-btn{flex:1;width:auto;flex-direction:column;gap:2px;padding:11px 8px;line-height:1.15}
 .mode-btn b{font-weight:400;font-size:14px;letter-spacing:.05em}
@@ -1683,19 +1704,25 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
   .hero .rlabel{font-size:10px;letter-spacing:.2em;margin-bottom:8px}
 
   #s-intro #b-start{font-size:24px;padding:22px 28px}
-  #s-intro #b-modes{margin-bottom:22px}
+  #s-intro #b-modes{margin-bottom:22px;padding:18px 22px;gap:16px}
+  #s-intro .hm-txt b{font-size:24px}
+  #s-intro .hm-sub{font-size:13px}
+  #s-intro .hm-sub .hm-long{display:inline}
+  #s-intro .hm-sub .hm-short{display:none}
+  #s-intro .hm-dots{grid-template-columns:repeat(3,11px);gap:5px}
+  #s-intro .hm-dots i{width:11px;height:11px}
 
   /* Three cards rather than three buttons, which is the same three doors wearing the
      room this width has. The icon and the line under the name are already in the
      markup and hidden on a phone, so nothing here builds a control. */
   #s-intro .hrow{gap:14px}
-  #s-intro .hp-util-btn{gap:7px;padding:20px 16px;border-radius:12px;
+  #s-intro .hp-util-btn{gap:6px;padding:14px 14px;border-radius:12px;
     text-align:center;background:var(--panel);border-color:var(--line)}
   #s-intro .hp-util-btn:hover{border-color:var(--gold);color:var(--ink)}
-  #s-intro .hp-util-btn .hu-i{width:26px;height:26px}
+  #s-intro .hp-util-btn .hu-i{width:22px;height:22px}
   #s-intro .hp-util-btn .hu-long{display:inline}
   #s-intro .hp-util-btn .hu-short{display:none}
-  #s-intro .hp-util-btn b{font-size:15px;letter-spacing:.05em;color:var(--ink)}
+  #s-intro .hp-util-btn b{font-size:14px;letter-spacing:.05em;color:var(--ink)}
   #s-intro .hp-util-btn .hu-s{display:block;font-family:var(--fn);font-size:11.5px;font-weight:600;
     text-transform:none;letter-spacing:0;color:var(--dim-2)}
 }
@@ -1784,7 +1811,7 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
   <p class="htag">Draft twelve legends. Win the World Series.</p>
 
   <button class="dailycard" id="daily-card"></button>
-  <button class="btn ghost hp-secondary" id="b-modes">More ways to play</button>
+  <button class="hp-modes" id="b-modes"><span class="hm-dots" id="hm-dots" aria-hidden="true"></span><span class="hm-txt"><b>More ways to play</b><span class="hm-sub" id="hm-sub"></span></span><svg class="hm-arrow" viewBox="0 0 24 24" aria-hidden="true"><polyline points="9 6 15 12 9 18"/></svg></button>
   <div class="hrow">
     <button class="btn ghost hp-util-btn" id="b-how-play">
       <svg class="hu-i" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5.2h6a3 3 0 0 1 3 3v11a2.4 2.4 0 0 0-2.4-2.4H3z"/>
@@ -2190,8 +2217,8 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
   </div>
 </div>
 
-<script src="engine.js?v=31"></script>
-<script src="run.js?v=24"></script>
+<script src="engine.js?v=32"></script>
+<script src="run.js?v=25"></script>
 <script src="achievements.js?v=10"></script>
 <script src="board.js?v=1"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
@@ -2887,13 +2914,13 @@ function drawLineupCard(el){
     slots.map((slot,i)=>{
       const p=bySlot[i];
       const ch=PICK&&PICK.choices.find(c=>c.slotIdx===i);
-      const off=p&&!E.primaryAt(p,slot);
+      const off=p&&E.offPosition(p,slot);
       return '<div class="lc-row'+(p?'':' open')+(i===firstArm?' arm1':'')+(ch?' target':'')+(ch&&ch.natural?' natural':'')+(off?' offpos':'')+'" data-i="'+i+'">'+
         '<span class="lc-pos" style="'+posPaint(slot)+'">'+esc(slot)+'</span>'+
         (p?'<span class="lc-nm">'+esc(p.n)+'</span>'+
             '<span class="lc-yr">'+tcPlate(p.t,p.s)+' '+p.s+'</span>'+
             '<span class="lc-war"'+(off?' title="Off his position. '+OFF_TAG+' of his WAR."':'')+'>'+warHtml(E.slotWar(p,slot))+'</span>'
-          :'<span class="lc-nm">'+(ch?(ch.natural?'\u2605 His position':ch.off?OFF_TAG+' here':'Open'):'Open')+'</span>')+
+          :'<span class="lc-nm">'+(ch?(ch.natural?'\u2605 His position':ch.off?OFF_TAG+' here':'No cost'):'Open')+'</span>')+
         '</div>';
     }).join('');
 }
@@ -2984,14 +3011,14 @@ function drawField(el,live){
     const tgt=!!targets&&targets.has(i);
     c.className='chip '+(p?'filled':'empty')+((live&&!p&&openCount===1&&!targets)?' now':'')+
       (justFilled?' pop':'')+(tgt?' target':'')+(tgt&&natural.has(i)?' natural':'')+
-      (p&&!E.primaryAt(p,E.SLOTS[i])?' offpos':'');
+      (p&&E.offPosition(p,E.SLOTS[i])?' offpos':'');
     const disc=c.querySelector('.disc');
     const pitcherLabel=isPitcher&&!p?(i===11?'CP':'SP'):E.SLOTS[i];
     disc.querySelector('.dl').textContent=isPitcher&&!p?pitcherLabel:E.SLOTS[i];
     disc.style.cssText=p?posPaint(E.SLOTS[i]):'';
     c.querySelector('.who').textContent=p?lastName(p.n):
       tgt?(natural.has(i)?'\u2605 '+lastName(PICK.p.n):offAt.has(i)?OFF_TAG:lastName(PICK.p.n)+'?'):'';
-    c.title=p&&!E.primaryAt(p,E.SLOTS[i])?'Off his position. '+OFF_TAG+' of his WAR.':'';
+    c.title=p&&E.offPosition(p,E.SLOTS[i])?'Off his position. '+OFF_TAG+' of his WAR.':'';
     c.querySelector('.yr').innerHTML=p?tcPlate(p.t,p.s)+' '+p.s:'';
     const pip=c.querySelector('.pip');
     const ce=p?chemBySlot[i]:null;
@@ -3229,6 +3256,7 @@ function heroSync(){
 
 /* ─── boot ─── */
 async function boot(){
+  try{paintModesDoor();}catch(e){console.error(e);}
   /* ACCOUNTS, BOOTED HERE. supabase-js is deferred, so boot() may find no library
      yet and keeps polling; every change hands board.js the live token, so a
      season submitted signed in is filed under the account. */
@@ -3296,6 +3324,18 @@ $('b-theme').addEventListener('click',()=>{
   ga('theme_set',{theme:next});
 });
 $('b-modes').addEventListener('click',openModes);
+/* The door names what is behind it, read off MODE_CARDS so a mode added there
+   shows up here without anybody remembering. Called from boot(), because
+   MODE_CARDS is a const declared below this line and reading it here throws. */
+function paintModesDoor(){
+  const live=MODE_CARDS.filter(m=>!m.soon);
+  $('hm-dots').innerHTML=live.map(m=>'<i style="background:'+m.tint+'"></i>').join('');
+  const short=live.map(m=>m.title.replace(/^The |^All-Time /,'').replace(/ Draft$/,''));
+  /* Three names on a desktop, two on a phone: three wrapped at 390 and a door
+     with a two line caption reads as a paragraph. */
+  const say=n=>short.length>n?short.slice(0,n).join(', ')+' and '+(short.length-n)+' more':short.join(', ');
+  $('hm-sub').innerHTML='<span class="hm-long">'+esc(say(3))+'</span><span class="hm-short">'+esc(say(2))+'</span>';
+}
 $('b-board').addEventListener('click',openBoard);
 $('b-board-back').addEventListener('click',()=>{show('s-intro');heroSync();});
 $('daily-card').addEventListener('click',startDaily);
@@ -3758,10 +3798,10 @@ function eraCard(e){
   btn.className='fran-card';
   btn.style.setProperty('--c1','var(--blue)');
   btn.innerHTML='<div class="fran-name">'+esc(e.era)+'</div>'+
-    '<div class="fran-yrs">'+e.lo+'-'+e.hi+' &middot; '+e.clubs+' clubs</div>'+
+    '<div class="fran-yrs">'+e.lo+'-'+e.hi+' &middot; '+e.clubs+' clubs &middot; '+e.seasons+' team seasons</div>'+
     (e.note?'<div class="fran-was">'+esc(e.note)+'</div>':'')+
     (e.best?'<div class="fran-best">Best Player: '+esc(e.best.n)+' '+e.best.s+'</div>':'');
-  btn.setAttribute('aria-label',e.era+', '+e.lo+' to '+e.hi+', '+e.clubs+' clubs'+
+  btn.setAttribute('aria-label',e.era+', '+e.lo+' to '+e.hi+', '+e.clubs+' clubs, '+e.seasons+' team seasons'+
     (e.note?', '+e.note:'')+(e.best?', best player '+e.best.n+' '+e.best.s:''));
   btn.addEventListener('click',()=>startRun({era:e.era}));
   return btn;
@@ -4154,9 +4194,10 @@ function openJobs(p){
     const group=E.slotGroup(name,staff);
     if(seen.has(group))continue;seen.add(group);
     /* E.primaryAt is the rule the season rates him by, so the gold star and the
-       number agree: his own position is his whole WAR, anywhere else costs OFF. */
-    const off=!E.primaryAt(p,name);
-    const natural=p.r==='p'?((p.pp===name)||(p.pp&&base===p.pp)||name==='CL'):!off;
+       number agree: his own position is his whole WAR, another position costs OFF,
+       and DH costs nothing (E.offPosition) without being his star. */
+    const off=E.offPosition(p,name);
+    const natural=p.r==='p'?((p.pp===name)||(p.pp&&base===p.pp)||name==='CL'):E.primaryAt(p,name);
     out.push({slotIdx:i,name,base,group,natural,off});
   }
   return out;
@@ -4216,11 +4257,16 @@ function paintPickBar(){
   if(!PICK){bar.hidden=true;return;}
   const own=PICK.choices.filter(c=>c.natural).map(c=>c.name);
   const others=PICK.choices.filter(c=>c.off).length;
+  const dh=PICK.choices.some(c=>!c.natural&&!c.off&&c.base==='DH');
   let say='Where does <b>'+esc(PICK.p.n)+'</b> play?';
   if(PICK.p.r==='p')say+=' Tap a gold spot.';
-  else if(own.length&&others)say+=' \u2605 '+own.join(', ')+(own.length>1?' are his spots.':' is his spot.')+' Anywhere else costs '+OFF_PCT+'.';
-  else if(own.length)say+=' Tap a gold spot.';
-  else say+=' His spot is taken. Here he costs '+OFF_PCT+'.';
+  else{
+    if(own.length)say+=' \u2605 '+own.join(', ')+(own.length>1?' are his spots.':' is his spot.');
+    else if(others)say+=' His spot is taken.';
+    if(others)say+=' Another position costs '+OFF_PCT+'.';
+    if(dh&&others)say+=' DH is free.';
+    if(!others)say+=' Tap a gold spot.';
+  }
   $('pick-txt').innerHTML=say;
   bar.hidden=false;
 }

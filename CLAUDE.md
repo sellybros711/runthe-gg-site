@@ -14154,8 +14154,14 @@ give his best rating before chemistry, and anywhere else should cost a little.
 And every kind of chemistry should actually be in use.
 
 **`slotWar(p, slot)` is the one reading.** A batter at his primary position
-(`pp`, with `OF` covering LF, CF and RF) is his season WAR. Anywhere else costs
-`POSITION_FIT.OFF`, **8%**. DH counts as off position for everybody but a DH.
+(`pp`, with `OF` covering LF, CF and RF) is his season WAR. Another fielding
+position costs `POSITION_FIT.OFF`, **8%**. **The DH costs nobody anything**, which
+was asked for after it first shipped charging every fielder there: a hitter at DH
+is only asked to hit. So there are two questions. `primaryAt` says whether a slot is
+his OWN (it wears the star, and DH is only a DH's own), and `offPosition` says
+whether it CHARGES him (never at DH). `slotWar`, the offpos ring and the pick bar
+read `offPosition`; the star reads `primaryAt`. `check-labels` holds both over the
+whole pool, and a shortstop at first still pays.
 Pitchers and replacement bodies are never charged. `rosterOffense` and the
 defence term in `rosterRunPrevention` read it, so it moves the shown rating and
 the season. **`teamStrength` deliberately does not**, for the same reason it
@@ -14212,6 +14218,45 @@ bare shared shirt. The franchise tie came down to keep that order.
 badge sweep moved: eight excuses came off because the chemistry bot now
 reaches them, and `rank_one` and `one_franchise_8` went on, because the bot
 chases team-mates rather than stacking eight from one club.
+
+### An era card counts FRANCHISES, and says how deep the wheel is
+
+Reported by a player as "shouldn't we have more teams than this from each decade".
+The first answer is the league's own shape: MLB had **16 clubs from 1901 to 1960**,
+20 in 1961, 24 by 1969, 26 in 1977, 28 in 1993 and 30 from 1998. Anything over that
+on a card is the Federal League (1914-15) or the Negro Leagues (1920s to 1940s).
+
+**The second answer is that the card was counting CODES**, so it overstated where it
+looked low. The 1950s read 21 because the Braves, A's, Browns, Dodgers and Giants
+moved and changed letters; the 2020s read 31 because the Athletics are OAK then ATH.
+`eligibleEras` counts `franchiseOf` now, and the card also prints how many team
+seasons the wheel can land on (118 in the 1900s, 300 in the 2010s), which is the
+number a reader asking about depth actually wants. `check-franchise`'s last section
+holds both against the pool, plus 16 for the 1950s and 30 for the 2020s.
+
+### A division card lists the clubs in it TODAY
+
+`divisionClubs` listed every code a division had ever held, so the NL East card
+showed FLA beside MIA and MON beside WSN, and Detroit, Milwaukee and Houston each
+sat on two cards. Reported by a player. It answers the rows that reach the latest
+season in `DIVISIONS` now (read off the table, never typed), so the six cards
+name the thirty clubs once each. **The draft is unchanged**: `inDivision` still
+reaches every season the division really held, so the Florida Marlins and the
+Expos are on the NL East wheel. Only the chips are current. `check-franchise`
+asserts thirty, no franchise twice, every one a club playing today, and that the
+old names are still drawable.
+
+### More ways to play is the second door and has to look like one
+
+As a ghost button it read quieter than the three utility cards under it, and it is
+the only way to six modes. It is a filled card with a gold edge, a dot in each
+mode's own colour and the modes named under it (three on a desktop, two on a phone,
+read off `MODE_CARDS` in `paintModesDoor()`, called from `boot()` because
+`MODE_CARDS` is a const declared further down and a top-level read threw on load).
+The three doors under it came down a step on the desktop. `check-home` asserts the
+property at every phone width: a gold edge the doors lack, a larger name, and a
+caption on one line. 320 failed that last clause on the first run, which is why the
+narrowest phones take a smaller caption.
 
 ### The desktop page is football's, and the two columns have to be the same length
 

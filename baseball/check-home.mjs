@@ -240,6 +240,29 @@ for (const [w, h] of [[390, 844], [360, 740], [375, 667], [320, 568], [768, 1024
     `${w}px: the two reels share one line above the field`,
     `year ${y.top}-${y.bottom}, team ${t.top}, field ${field.top}`);
   claim(go === 'none', `${w}px: the daily card carries no second control`, `display ${go}`);
+  /* MORE WAYS TO PLAY OUTRANKS THE THREE DOORS UNDER IT. As a ghost button it
+     read quieter than How to play, the Leaderboard and the Trophy case, and it is
+     the only way to six modes. So it is asked for as a PROPERTY: a gold edge the
+     doors do not have, a caption naming modes on ONE line, and a name set larger
+     than any door's. */
+  const rank = await p.evaluate(() => {
+    const m = document.querySelector('#b-modes');
+    const name = m && m.querySelector('.hm-txt b');
+    const sub = m && m.querySelector('.hm-sub');
+    const door = document.querySelector('.hrow .hp-util-btn');
+    const doorB = door && door.querySelector('b');
+    if (!m || !name || !door) return null;
+    const cm = getComputedStyle(m), cd = getComputedStyle(door);
+    return { edge: cm.borderTopColor, doorEdge: cd.borderTopColor,
+      nameFs: parseFloat(getComputedStyle(name).fontSize), doorFs: parseFloat(getComputedStyle(doorB).fontSize),
+      subText: sub ? sub.innerText.trim() : '', subH: sub ? sub.getBoundingClientRect().height : 0,
+      subLh: sub ? parseFloat(getComputedStyle(sub).lineHeight) || 16 : 0,
+      subFits: sub ? sub.scrollWidth <= sub.clientWidth + 1 : false };
+  });
+  claim(rank && rank.edge !== rank.doorEdge && rank.nameFs > rank.doorFs,
+    `${w}px: More ways to play outranks the doors under it`, JSON.stringify(rank));
+  claim(rank && /more|,/.test(rank.subText) && rank.subH <= rank.subLh * 1.3 && rank.subFits,
+    `${w}px: its caption names the modes on one line`, JSON.stringify(rank));
   /* THE SEAMS STAND INSIDE THE BALL, AND THE LABEL KEEPS THE MIDDLE. The seam
      strip is one button-height square positioned by a share of the button, and
      the label does not shrink while the button does, so there is a width where

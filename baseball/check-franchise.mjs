@@ -506,6 +506,48 @@ if (browser) {
   await browser.close();
 }
 
+/* ── the era picker counts franchises, not codes ──────────────────────────── */
+section('THE ERA CARDS COUNT CLUBS, NOT THEIR CODES');
+{
+  /* A decade card said the 1950s held 21 clubs and the 2020s 31. Both counted
+     three-letter codes, and a franchise that moved or renamed wears two. Held to
+     the league's real shape: 16 clubs for the whole of the 1950s (every code
+     that decade belongs to one of the original sixteen), and 30 today. */
+  const eras = Object.fromEntries(R.eligibleEras(DATA).map(e => [e.era, e]));
+  for (const e of Object.values(eras)) {
+    const f = new Set();
+    let n = 0;
+    for (const ts of DATA.teamSeasons) {
+      if (ts.season < e.lo || ts.season > e.hi) continue;
+      f.add(E.franchiseOf(ts.team, ts.season)); n++;
+    }
+    ok(e.clubs === f.size, `${e.era} says ${e.clubs} clubs and holds ${f.size} franchises`);
+    ok(e.seasons === n, `${e.era} says ${e.seasons} team seasons and holds ${n}`);
+  }
+  ok(eras['1950s'] && eras['1950s'].clubs === 16, `the 1950s read ${eras['1950s'] && eras['1950s'].clubs} clubs, and the league had 16`);
+  ok(eras['2020s'] && eras['2020s'].clubs === 30, `the 2020s read ${eras['2020s'] && eras['2020s'].clubs} clubs, and the league has 30`);
+  console.log('  ' + Object.values(eras).map(e => e.era + ' ' + e.clubs).join(', '));
+}
+
+/* ── a division card lists today's clubs, once each ─────────────────────── */
+section('THE DIVISION CARDS LIST TODAY\'S CLUBS');
+{
+  /* The NL East card listed FLA beside MIA and MON beside WSN, and Detroit,
+     Milwaukee and Houston each sat on two cards. Asked as a property: the six
+     cards together name thirty codes, no franchise twice, every one of them a
+     club playing today. And the draft still reaches the old names. */
+  const all = Object.keys(E.DIVISIONS).flatMap(d => E.divisionClubs(d));
+  const last = Math.max(...Object.values(E.DIVISIONS).flat().map(r => r[2]));
+  const frans = all.map(c => E.franchiseOf(c, last));
+  ok(all.length === 30, `the division cards name ${all.length} clubs, and the league has 30`);
+  ok(new Set(frans).size === all.length, `a franchise appears on two division chips: ${all.join(' ')}`);
+  const current = new Set(E.CURRENT_FRANCHISES.map(f => Array.isArray(f) ? f[0] : (f.code || f.key || f)));
+  ok(frans.every(f => current.has(f)), `a division chip is not a club playing today: ${frans.filter(f => !current.has(f)).join(' ')}`);
+  ok(E.inDivision('NL East', 'FLA', 2000) && E.inDivision('NL East', 'MON', 2000),
+    'the NL East draft still reaches the Florida Marlins and the Expos');
+  console.log('  ' + Object.keys(E.DIVISIONS).map(d => d + ': ' + E.divisionClubs(d).join(' ')).join('\n  '));
+}
+
 console.log('\n' + (problems
   ? problems + ' PROBLEMS of ' + checks + ' checks'
   : 'all ' + checks + ' checks passed'));
