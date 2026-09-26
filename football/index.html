@@ -3604,6 +3604,48 @@ window.GA_ID='G-L29P5MRWKE';
   /* Full strength, restated here so nothing above or below can dim it by accident. */
   .modecard.mc-cfb.mc-preview .mc-soon-tag.gold{opacity:1;filter:none}
 
+  /* ── MORE WAYS TO PLAY IS A GRID OF TILES ON A WIDE SCREEN ─────────
+     Asked for by the owner, to match the baseball game's sheet: icon on top, the name under
+     it, a sentence under that. Two across once the sheet has the room and three once it is
+     wide, so a 1440 monitor stops showing a phone column of cards in the middle of the
+     window.
+     PHONES ARE UNTOUCHED, deliberately. Every rule is inside the media query, and .mc-grid
+     has no base rule at all, so under 600px the sheet is the list it has always been.
+     THE WIDTH IS KEYED ON THE CONTENT, NOT ON data-kind. Every sheet on this page draws into
+     one #sheet-in and several never set a kind, so a flag written by modeMenu would leak into
+     the next sheet and widen a sign-in form. :has(.mc-grid) is true of this sheet and of
+     nothing else, and it stops being true the moment the pane is redrawn.
+     A grid row stretches its cells, so tiles in a row are one height whatever their
+     sentences run to, and the One Franchise doors sit at the bottom of theirs. */
+  @media (min-width:600px){
+    .sheet .inner:has(.mc-grid){max-width:600px}
+    .mc-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+    .mc-grid .modecard{display:flex;flex-direction:column;padding:15px 14px}
+    .mc-grid .modecard .mc-head{flex-direction:column;align-items:flex-start;gap:10px;
+      margin-bottom:7px}
+    .mc-grid .modecard .mc-icon{width:40px;height:40px;border-radius:10px}
+    .mc-grid .modecard .mc-icon svg{width:22px;height:22px}
+    .mc-grid .modecard .mc-icon-img img{border-radius:10px}
+    .mc-grid .modecard .mc-title{font-size:15.5px}
+    .mc-grid .modecard .mc-arrow{display:none}
+    .mc-grid .modecard p{font-size:12.5px}
+    /* The sticker overhung the card's top edge so it could never meet a title on the same
+       row. A tile's title is under the icon, so the corner is free and the sticker comes
+       inside it, clear of the tile above. */
+    .mc-grid .modecard .mc-sticker{top:12px;right:12px}
+    .xpromo .xp-h{margin-bottom:12px}
+    .mc-grid .mc-ways{margin-top:auto;padding-top:12px}
+    /* A CLOSE BUTTON THE WIDTH OF AN 860px SHEET is the loudest thing on it. The baseball
+       sheet sizes it to its label and so does this one. The sign-in button above it keeps
+       its width: that one is the thing the sheet is asking somebody to do. */
+    .sheet .inner:has(.mc-grid) #b-mc-x{display:inline-block;width:auto;min-width:160px;
+      padding-left:28px;padding-right:28px}
+  }
+  @media (min-width:900px){
+    .sheet .inner:has(.mc-grid){max-width:860px}
+    .mc-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+  }
+
   /* ---- THE RUNTHE.GG HOUSE AD ----
      The little platform banner the other games carry in their footer -- "more games, one
      free account", the R GAMES app icon, and a Play pill that sends you to the hub. Ported
@@ -13651,7 +13693,7 @@ function modeMenu(){
   $('sheet-in').innerHTML=
     '<h2 class="display mtitle" style="font-size:25px;margin:4px 0 8px">More ways to play</h2>'+
     (locked?'<p class="dim" style="font-size:13px;line-height:1.4;margin:0 0 12px">'+esc(lockNote)+'</p>':'')+
-    '<div class="modecards">'+
+    '<div class="modecards mc-grid">'+
       /* TWO SHAPES FOR ONE CARD, and which one you get is whether the Dynasty half exists
          for you. It is a premium mode with no premium behind it yet, so to everybody except
          a tester this card is exactly the button it has always been: one destination, one
@@ -13751,6 +13793,7 @@ function modeMenu(){
        it, so the only thing that decides its state is whether it has launched. */
     '<div class="xpromo">'+
       '<p class="xp-h">Love college football?</p>'+
+      '<div class="mc-grid">'+
       '<button class="modecard mc-cfb'+(CFB_LIVE?'':' mc-preview')+'" id="b-mc-cfb"'+
         (CFB_LIVE?'':' disabled')+'>'+
         /* THE FLAG SAYS ONE OF TWO THINGS AND NEVER BOTH, because they answer the same
@@ -13779,6 +13822,7 @@ function modeMenu(){
         '<p>Spin for a year and a school, sign six players under an NIL budget, and chase a '+
         'perfect twelve-game season. The college edition of this game.</p>'+
       '</button>'+
+      '</div>'+
     '</div>'+
     (locked&&authState.ready
       ? '<div style="margin-top:14px"><button class="btn" id="b-mc-signin">'+

@@ -1408,6 +1408,34 @@ straight after paying apologised for a slow webhook that had already delivered. 
 when it is this site. The same trap has bitten a link in the CFB header. Never write an
 absolute `https://runthe.gg` url in anything a player follows.
 
+### More ways to play is a grid on a wide screen, in both football games
+
+```
+node scripts/check-modes-grid.mjs     both sheets, three widths, and the leak
+```
+
+Asked for by the owner, to match the baseball game's sheet: tiles with the icon on top, two
+across from 600px and three from 900px. **Phones are untouched**: every rule is inside the
+media query and `.mc-grid` has no base rule, so under 600px the sheet is the list it was.
+
+**THE WIDTH IS KEYED ON THE CONTENT, NOT ON A FLAG.** Every sheet on both pages draws into one
+`#sheet-in`, and several never set a `data-kind` (the college conference picker this sheet
+opens is one). A width written by `modeMenu` would leak into the next sheet and widen a
+sign-in form. `.sheet .inner:has(.mc-grid)` is true of this sheet and stops being true the
+moment the pane is redrawn. The guard presses Close and How to play to prove it, and a
+reintroduced flag that is never cleared reads `860px, then 860px`.
+
+**A tile has no title row, so the corner is free.** The stickers that overhung the card's top
+edge come inside it, and the college game's padlock takes the same corner. The college
+sign-in card is not a mode, so it spans the row under the tiles rather than being one. The
+college game's two cross-promo sections sit side by side as columns of one row, each keeping
+its heading, so their tiles line up under the ones above.
+
+**The guard counts columns off the tiles' own left edges and rows off `offsetTop`**, which is
+the laid out box and ignores the press transform. Four defects were reintroduced one at a
+time (the class dropped, the grid reaching phones, a leaking flag, tiles not stretched to
+their row) and each fails its own claim.
+
 ### Full Team, and the screen that has to say the most
 
 ```

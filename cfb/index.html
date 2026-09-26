@@ -2738,6 +2738,52 @@ window.GA_ID='G-L29P5MRWKE';
   .modecard .mc-pro{margin:7px 0 0;font-family:var(--fn);font-size:11.5px;font-weight:700;
     color:#fbbf24;line-height:1.35}
 
+  /* ── MORE WAYS TO PLAY IS A GRID OF TILES ON A WIDE SCREEN ─────────
+     Asked for by the owner, to match the baseball game's sheet: icon on top, the name under
+     it, a sentence under that. Two across once the sheet has the room and three once it is
+     wide. The NFL game's sheet carries the same block.
+     PHONES ARE UNTOUCHED, deliberately. Every rule is inside the media query, and neither
+     .mc-grid nor .xp-row has a base rule, so under 600px the sheet is the list it has always
+     been.
+     THE WIDTH IS KEYED ON THE CONTENT, NOT ON data-kind. Every sheet here draws into one
+     #sheet-in and several never set a kind (the conference picker this sheet opens is one),
+     so a flag written by modeMenu would leak into the next sheet. :has(.mc-grid) stops being
+     true the moment the pane is redrawn.
+     The two cross-promo sections sit side by side as columns of one row, so their tiles line
+     up under the tiles above and each keeps its own heading. */
+  @media (min-width:600px){
+    .sheet .inner:has(.mc-grid){max-width:600px}
+    .mc-grid,.xp-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+    .xp-row{margin-top:20px;padding-top:16px;border-top:1px solid var(--line-2)}
+    .xp-row>.xpromo{margin:0;padding:0;border:0;display:flex;flex-direction:column}
+    .xp-row .xpromo .xp-h{margin-bottom:12px}
+    .xp-row .modecard{flex:1}
+    :is(.mc-grid,.xp-row) .modecard{display:flex;flex-direction:column;padding:15px 14px}
+    :is(.mc-grid,.xp-row) .modecard .mc-head{flex-direction:column;align-items:flex-start;
+      gap:10px;margin-bottom:7px}
+    :is(.mc-grid,.xp-row) .modecard .mc-icon{width:40px;height:40px;border-radius:10px}
+    :is(.mc-grid,.xp-row) .modecard .mc-icon svg{width:22px;height:22px}
+    :is(.mc-grid,.xp-row) .modecard .mc-icon-img img{border-radius:10px}
+    :is(.mc-grid,.xp-row) .modecard .mc-title{font-size:15.5px}
+    :is(.mc-grid,.xp-row) .modecard .mc-arrow{display:none}
+    :is(.mc-grid,.xp-row) .modecard p{font-size:12.5px}
+    /* The sticker overhung the card's top edge so it could never meet a title on the same
+       row. A tile's title is under the icon, so the corner is free, and the padlock on a
+       locked tile takes the same corner rather than a line of its own under the name. */
+    :is(.mc-grid,.xp-row) .modecard .mc-sticker{top:12px;right:12px}
+    .mc-grid .modecard .mc-head .mc-pad{position:absolute;top:16px;right:15px;margin:0}
+    /* The sign-in card is not a mode, so it is not a tile: it spans the row under them. */
+    .mc-grid>.gate{grid-column:1/-1;order:9;margin-top:0}
+    /* A CLOSE BUTTON THE WIDTH OF AN 860px SHEET is the loudest thing on it. The baseball
+       sheet sizes it to its label and so does this one. */
+    .sheet .inner:has(.mc-grid) #mm-x{display:inline-block;width:auto;min-width:160px;
+      padding-left:28px;padding-right:28px}
+  }
+  @media (min-width:900px){
+    .sheet .inner:has(.mc-grid){max-width:860px}
+    .mc-grid,.xp-row{grid-template-columns:repeat(3,minmax(0,1fr))}
+  }
+
   /* The five conferences, once the card is tapped. */
   .confgrid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:12px}
   .confbtn{padding:15px 10px;border-radius:12px;border:1.5px solid var(--line);
@@ -5488,7 +5534,7 @@ function modeMenu(){
   $('sheet-in').dataset.kind='modes';
   $('sheet-in').innerHTML=
     '<h2 class="display mtitle" style="font-size:25px;margin:4px 0 8px">More ways to play</h2>'+
-    '<div class="modecards">'+
+    '<div class="modecards mc-grid">'+
       '<'+(locked?'div':'button')+' class="modecard mc-conf'+(locked?' locked':'')+'"'+
         (locked?'':' id="b-mc-conf"')+'>'+
         '<div class="mc-head"><div class="mc-icon"><svg viewBox="0 0 24 24">'+
@@ -5557,6 +5603,10 @@ function modeMenu(){
             'whole term at your own pace, and it unlocks the NFL game too.</p>':'')+
         '</a>':'')+
     '</div>'+
+    /* ONE ROW ON A WIDE SCREEN, two columns of it. Each section keeps its own heading,
+       because they are two different kinds of thing, and on a phone this wrapper is a plain
+       block so the two sections stack exactly as they always have. */
+    '<div class="xp-row">'+
     '<div class="xpromo">'+
       '<p class="xp-h">Love pro football?</p>'+
       /* An anchor and not a button: it goes to another page, so it should behave
@@ -5599,7 +5649,8 @@ function modeMenu(){
         'lasts.</p>'+
       '</a>'+
     '</div>'+
-    '<div style="margin-top:14px"><button class="btn ghost sm" id="mm-x" style="width:100%">Close</button></div>';
+    '</div>'+
+    '<div style="margin-top:14px"><button class="btn ghost sm" id="mm-x">Close</button></div>';
   openSheet();
   const conf=$('b-mc-conf'); if(conf) conf.onclick=conferenceMenu;
   const gin=$('sheet-in').querySelector('#gate-in');
