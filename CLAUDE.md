@@ -14234,6 +14234,26 @@ seasons the wheel can land on (118 in the 1900s, 300 in the 2010s), which is the
 number a reader asking about depth actually wants. `check-franchise`'s last section
 holds both against the pool, plus 16 for the 1950s and 30 for the 2020s.
 
+### An era card is a decade, so the decade is the biggest thing on it
+
+The era picker wore the franchise card whole: "1920s" in 13px body type over three
+lines of small grey facts, thirteen cards of one texture. It is its own card now.
+The decade in the display face, a colour per decade off one ramp from sepia (1900s)
+to cobalt (2020s), clubs and team seasons as two stat blocks, and the decade's top
+forty seasons drawn as a bats against arms bar, which is the thing that actually
+changes how a decade drafts. The Pitchers' or Hitters' chip and the best season sit
+under it.
+
+**The sample size and the lean are the engine's.** `eligibleEras` returns `top` and
+`lean` off `ERA_TOP_N` and its two bands, so the page never restates 40, 22 or 12.
+
+**`.fran-card.era-card`, two classes, is load-bearing.** `.fran-card` sets
+`display:block` later in the sheet at equal weight, and the first draft lost to it:
+a block rather than a column, the chip stretched full width, and nothing threw.
+`check-franchise` section 6 asks every era card for flex, a distinct rail colour, a
+bar that fills its track and label rows that hold one line. Removing the second
+class fails the flex claim.
+
 ### A division card lists the clubs in it TODAY
 
 `divisionClubs` listed every code a division had ever held, so the NL East card

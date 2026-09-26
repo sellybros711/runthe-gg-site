@@ -503,6 +503,46 @@ if (browser) {
   } catch (e) {
     ok(false, 'the picker could not be driven: ' + e.message.split('\n')[0]);
   }
+
+  /* THE ERA CARDS, as a property of each one on the glass. `.fran-card` sets
+     display:block later in the sheet at equal weight, and the first draft of the
+     era card lost to it: a block rather than a column, the chip stretched full
+     width, nothing thrown. So the layout is asked, and so are the bar and the
+     label rows, which are the parts that wrap on a 390px phone. */
+  try {
+    await page.goto('http://127.0.0.1:8080/baseball/', { waitUntil: 'load', timeout: 30000 });
+    await page.waitForSelector('#s-intro.on', { timeout: 30000 });
+    await page.click('#b-modes');
+    await page.click('[data-mode="era"]');
+    await page.waitForSelector('#s-era.on .era-card', { timeout: 20000 });
+    const eras = await page.evaluate(() => [...document.querySelectorAll('#s-era .era-card')].map(c => {
+      const bar = c.querySelector('.era-mix'), segs = [...bar.children];
+      const lines = el => el ? Math.round(el.getBoundingClientRect().height / parseFloat(getComputedStyle(el).lineHeight || 12)) : 0;
+      const chip = c.querySelector('.era-tag');
+      return {
+        dec: c.querySelector('.era-dec').textContent,
+        display: getComputedStyle(c).display,
+        rail: getComputedStyle(c, '::before').backgroundColor,
+        barW: bar.getBoundingClientRect().width,
+        segW: segs.reduce((a, s) => a + s.getBoundingClientRect().width, 0),
+        mixl: c.querySelector('.era-mixl').getBoundingClientRect().height,
+        mixlFont: parseFloat(getComputedStyle(c.querySelector('.era-mixl')).fontSize),
+        chipW: chip ? chip.getBoundingClientRect().width : 0,
+        cardW: c.getBoundingClientRect().width,
+        overflow: c.scrollWidth > c.clientWidth + 1,
+      };
+    }));
+    ok(eras.length >= 12, `${eras.length} era cards`);
+    ok(eras.every(e => e.display === 'flex'), `an era card is not a flex column: ${eras.filter(e => e.display !== 'flex').map(e => e.dec + ' ' + e.display).join(', ')}`);
+    ok(new Set(eras.map(e => e.rail)).size === eras.length, 'two decades share a rail colour, so the ramp is not a ramp');
+    ok(eras.every(e => Math.abs(e.barW - e.segW) < 1.5), 'a bats and arms bar does not fill its own track');
+    ok(eras.every(e => e.mixl < e.mixlFont * 2), `a bats and arms label wrapped: ${eras.filter(e => e.mixl >= e.mixlFont * 2).map(e => e.dec).join(', ')}`);
+    ok(eras.every(e => !e.chipW || e.chipW < e.cardW * 0.9), 'a decade chip stretched across its card');
+    ok(eras.every(e => !e.overflow), 'an era card overflows sideways');
+    console.log(`  ${eras.length} era cards, ${new Set(eras.map(e => e.rail)).size} rail colours`);
+  } catch (e) {
+    ok(false, 'the era picker could not be driven: ' + e.message.split('\n')[0]);
+  }
   await browser.close();
 }
 

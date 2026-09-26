@@ -462,6 +462,7 @@ function eligibleEras(data) {
     out.push({
       era: b.era, lo: e.lo, hi: e.hi, clubs: e.clubs.size, seasons: e.seasons,
       depth: e.rows.length, arms, note, best: top[0] || null,
+      top: top.length, lean: arms >= ERA_ARMS_HI ? 'arms' : arms <= ERA_ARMS_LO ? 'bats' : '',
     });
   }
   return out;

@@ -1281,7 +1281,51 @@ body:has(#s-intro.on) header .lockup{visibility:hidden}
 
 /* ─── era picker ─── */
 /* The same track the franchise grid runs on, because they hold the same card. */
-.era-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(158px,1fr));gap:8px;margin:12px 0}
+.era-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(158px,1fr));gap:10px;margin:14px 0}
+/* AN ERA CARD IS A DECADE, SO THE DECADE IS THE BIGGEST THING ON IT. It wore the
+   franchise card whole, which put "1920s" in 13px body type over three lines of
+   small grey facts: thirteen cards of one texture, and a reader choosing between
+   two eras had to read both to tell them apart. Now:
+   - the decade in the display face, the one word a scanning eye lands on;
+   - a colour per decade, off one ramp from sepia (1900s) to cobalt (2020s), set as
+     `--c1` by the builder so the rail, the wash and the numeral share it. It is a
+     sequence and not a set of team colours, so neighbours read as neighbours;
+   - the top forty of the decade as a bar, bats against arms, which is the thing
+     that actually changes how a decade drafts, drawn rather than only named.
+   It still carries `.fran-card` for the shell, the rail and the hover, because
+   those are measured and wrap-safe. Everything inside is its own. */
+/* Two classes, because `.fran-card` sets display:block further down the sheet at
+   the same weight and would win on order: the card came out a block, the chip
+   stretched full width and the best season stopped sitting at the foot. */
+.fran-card.era-card{padding:11px 12px 12px 18px;display:flex;flex-direction:column;gap:7px;
+  background:linear-gradient(135deg,color-mix(in srgb,var(--c1) 13%,var(--panel)) 0%,var(--panel) 62%)}
+.era-top{display:flex;flex-direction:column;gap:3px}
+.era-dec{font-family:var(--fd);font-size:34px;line-height:.9;letter-spacing:.02em;
+  color:color-mix(in srgb,var(--c1) 55%,var(--ink))}
+.era-span{font-size:10.5px;font-weight:700;color:var(--dim-2);font-variant-numeric:tabular-nums}
+.era-facts{display:grid;grid-template-columns:auto 1fr;gap:12px}
+.era-facts span{display:flex;flex-direction:column;font-size:9px;font-weight:800;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--dim-2);line-height:1.15}
+.era-facts b{font-size:16px;font-weight:800;letter-spacing:0;color:var(--ink);font-variant-numeric:tabular-nums}
+.era-mix{display:flex;height:6px;border-radius:3px;overflow:hidden;background:rgba(var(--edge),.08)}
+.era-mix i{display:block;height:100%}
+.era-mix .bats{background:var(--leather)}
+.era-mix .arms{background:var(--blue)}
+.era-mixh{font-size:9px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--dim-2);margin-bottom:4px}
+.era-mixl{margin-top:4px;display:flex;justify-content:space-between;gap:6px;font-size:9.5px;font-weight:700;
+  letter-spacing:.06em;text-transform:uppercase;color:var(--dim-2);font-variant-numeric:tabular-nums}
+.era-tag{align-self:flex-start;font-size:9.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;
+  padding:3px 7px;border-radius:99px;border:1px solid rgba(var(--edge),.14);color:var(--ink);
+  background:rgba(var(--edge),.05)}
+.era-tag.arms::before,.era-tag.bats::before{content:'';display:inline-block;width:7px;height:7px;
+  border-radius:50%;margin-right:5px;vertical-align:0}
+.era-tag.arms::before{background:var(--blue)}
+.era-tag.bats::before{background:var(--leather)}
+.era-best{margin-top:auto;padding-top:7px;border-top:1px solid rgba(var(--edge),.10);line-height:1.25}
+.era-best small{display:block;font-size:9px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--dim-2)}
+.era-best span{font-size:12.5px;font-weight:800;color:var(--ink)}
+.era-best em{font-style:normal;font-size:10.5px;font-weight:700;color:var(--dim-2);margin-left:4px;
+  font-variant-numeric:tabular-nums}
 /* `.era-btn` is DELETED rather than left sitting here. The decade buttons it
    styled are cards now, nothing carries the class, and an unused rule is the
    next person's invitation to style something with it. */
@@ -2297,7 +2341,7 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
 </div>
 
 <script src="engine.js?v=32"></script>
-<script src="run.js?v=25"></script>
+<script src="run.js?v=26"></script>
 <script src="achievements.js?v=10"></script>
 <script src="board.js?v=1"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
@@ -3872,22 +3916,38 @@ function openChemKey(){
    It wears the franchise card's own classes rather than new ones: those rules
    are wrap-safe and their line clamps were measured at the narrowest card this
    grid draws, and a second card shape is a second set of the same bugs. */
-function eraCard(e){
+/* The ramp: sepia to cobalt, one hue a decade. Hue and saturation only, the
+   lightness is left to color-mix against the theme's own panel and ink, so the
+   same ramp reads on cream and on charcoal. */
+function eraHue(i,n){
+  const t=n>1?i/(n-1):0;
+  return 'hsl('+Math.round(32+t*180)+','+Math.round(48+t*12)+'%,46%)';
+}
+function eraCard(e,i,n){
   const btn=document.createElement('button');
-  btn.className='fran-card';
-  btn.style.setProperty('--c1','var(--blue)');
-  btn.innerHTML='<div class="fran-name">'+esc(e.era)+'</div>'+
-    '<div class="fran-yrs">'+e.lo+'-'+e.hi+' &middot; '+e.clubs+' clubs &middot; '+e.seasons+' team seasons</div>'+
-    (e.note?'<div class="fran-was">'+esc(e.note)+'</div>':'')+
-    (e.best?'<div class="fran-best">Best Player: '+esc(e.best.n)+' '+e.best.s+'</div>':'');
-  btn.setAttribute('aria-label',e.era+', '+e.lo+' to '+e.hi+', '+e.clubs+' clubs, '+e.seasons+' team seasons'+
-    (e.note?', '+e.note:'')+(e.best?', best player '+e.best.n+' '+e.best.s:''));
+  btn.className='fran-card era-card';
+  btn.style.setProperty('--c1',eraHue(i,n));
+  /* The sample size and the lean are the engine's (ERA_TOP_N and its two bands),
+     so retuning either moves the bar and the chip with it. */
+  const top=e.top, bats=top-e.arms;
+  const tag=e.lean==='arms'?'<div class="era-tag arms">Pitchers’ decade</div>'
+    :e.lean==='bats'?'<div class="era-tag bats">Hitters’ decade</div>':'';
+  btn.innerHTML=
+    '<div class="era-top"><div class="era-dec">'+esc(e.era)+'</div><div class="era-span">'+e.lo+'-'+e.hi+'</div></div>'+
+    '<div class="era-facts"><span><b>'+e.clubs+'</b>clubs</span><span><b>'+e.seasons+'</b>team seasons</span></div>'+
+    '<div><div class="era-mixh">Top '+top+' seasons</div><div class="era-mix" aria-hidden="true"><i class="bats" style="width:'+(bats/top*100)+'%"></i><i class="arms" style="width:'+(e.arms/top*100)+'%"></i></div>'+
+    '<div class="era-mixl"><span>'+bats+' bats</span><span>'+e.arms+' arms</span></div></div>'+
+    tag+
+    (e.best?'<div class="era-best"><small>Best season</small><span>'+esc(e.best.n)+'</span><em>'+e.best.s+'</em></div>':'');
+  btn.setAttribute('aria-label',e.era+', '+e.lo+' to '+e.hi+', '+e.clubs+' clubs, '+e.seasons+' team seasons, top forty is '+bats+' bats and '+e.arms+' arms'+
+    (e.note?', '+e.note:'')+(e.best?', best season '+e.best.n+' '+e.best.s:''));
   btn.addEventListener('click',()=>startRun({era:e.era}));
   return btn;
 }
 function buildEraGrid(){
   const grid=$('era-grid');grid.innerHTML='';
-  for(const e of R.eligibleEras(DATA)) grid.appendChild(eraCard(e));
+  const eras=R.eligibleEras(DATA);
+  eras.forEach((e,i)=>grid.appendChild(eraCard(e,i,eras.length)));
 }
 
 /* ─── franchise mode ─── */
