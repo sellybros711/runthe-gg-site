@@ -306,7 +306,28 @@ body:has(#s-intro.on) header .lockup{visibility:hidden}
 /* One tagline, under the button, short enough to hold one line on a 320 phone. */
 .htag{margin:0 0 16px;text-align:center;font-size:13.5px;color:var(--dim)}
 .hp-start{margin-bottom:10px}
-.hp-secondary{margin-bottom:10px}
+/* MORE WAYS TO PLAY IS THE SECOND DOOR, AND IT HAS TO LOOK LIKE ONE. As a ghost
+   button it read quieter than the three utility cards under it, so the six modes
+   were one tap away and easy to miss. It is a filled card now with a gold edge, a
+   dot in each mode's own colour and the modes named under it, so it clearly
+   outranks How to play, the Leaderboard and the Trophy case. */
+.hp-modes{display:flex;align-items:center;gap:12px;width:100%;margin:0 0 12px;padding:13px 14px;
+  background:var(--panel);color:var(--ink);border:2px solid var(--gold);border-radius:12px;
+  cursor:pointer;text-align:left;font:inherit;box-shadow:0 2px 0 rgba(0,0,0,.08)}
+.hp-modes:hover{background:var(--panel-2,var(--panel));transform:translateY(-1px)}
+.hm-dots{display:grid;grid-template-columns:repeat(3,9px);gap:4px;flex:0 0 auto}
+.hm-dots i{width:9px;height:9px;border-radius:50%;display:block}
+.hm-txt{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.hm-txt b{font-family:var(--fd);font-weight:400;font-size:19px;letter-spacing:.05em;
+  text-transform:uppercase;line-height:1.05}
+.hm-sub{font-family:var(--fn);font-size:11.5px;font-weight:600;color:var(--dim);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hm-sub .hm-long{display:none}
+/* An iPhone SE is 320 and two names still overflowed there, so the narrowest
+   phones set the name and the caption a step smaller. */
+@media(max-width:359px){.hp-modes{gap:10px;padding:12px}.hm-txt b{font-size:17px}.hm-sub{font-size:10.5px}}
+.hm-arrow{width:20px;height:20px;flex:0 0 auto;fill:none;stroke:var(--gold);stroke-width:2.4;
+  stroke-linecap:round;stroke-linejoin:round}
 .mode-row{display:flex;gap:8px;margin-bottom:10px}
 .mode-btn{flex:1;width:auto;flex-direction:column;gap:2px;padding:11px 8px;line-height:1.15}
 .mode-btn b{font-weight:400;font-size:14px;letter-spacing:.05em}
@@ -591,30 +612,88 @@ body:has(#s-intro.on) header .lockup{visibility:hidden}
 .respin-row .btn{flex:1;font-size:13px;padding:10px 12px}
 
 /* ─── season sim ─── */
-.sim-header{text-align:center;margin:20px 0 16px}
+.sim-header{text-align:center;margin:20px 0 14px}
 .sim-header h2{font-family:var(--fd);font-size:36px;text-transform:uppercase}
 .record-big{font-family:var(--fd);font-size:64px;text-align:center;letter-spacing:.02em;
-  text-transform:uppercase;margin:8px 0}
+  text-transform:uppercase;margin:0;line-height:1}
 .record-big .w{color:var(--green)} .record-big .l{color:var(--red)}
 .record-big .sep{color:var(--dim);margin:0 4px}
 .record-line{font-family:var(--fn);font-size:12px;color:var(--dim);text-align:center}
-.sim-feed{max-height:400px;overflow-y:auto;margin:12px 0}
-.sim-game{display:flex;align-items:center;justify-content:space-between;padding:6px 0;
+/* THE SCOREBOARD CARD. One panel holding the record, the four standings numbers
+   and the race meter, so the numbers a reader checks every few seconds sit
+   together instead of being strewn down the page. */
+.ssb{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px 14px 12px;
+  box-shadow:0 1px 0 rgba(var(--edge),.04)}
+.ss-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin:14px 0 12px}
+.ss-t{display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 2px;border-radius:9px;
+  background:rgba(var(--edge),.04)}
+.ss-t b{font-family:var(--fd);font-weight:400;font-size:24px;line-height:1;letter-spacing:.02em;
+  font-variant-numeric:tabular-nums;color:var(--ink)}
+.ss-t b.up{color:var(--green)} .ss-t b.dn{color:var(--red)}
+.ss-t span{font-family:var(--fn);font-size:9.5px;font-weight:700;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--dim-2)}
+.ss-race{margin:4px 0 8px}
+.ss-rhd{display:flex;justify-content:space-between;align-items:baseline;font-family:var(--fn);
+  font-size:10.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--dim-2);margin-bottom:6px}
+.ss-rhd #ss-rstate{letter-spacing:.04em;color:var(--dim)}
+.ss-rhd #ss-rstate.in{color:var(--green)} .ss-rhd #ss-rstate.out{color:var(--red)}
+.ss-bar{position:relative;height:12px;border-radius:6px;background:rgba(var(--edge),.08);overflow:hidden}
+.ss-fill{position:absolute;left:0;top:0;bottom:0;width:0;border-radius:6px;
+  background:var(--grad-gold,var(--gold));transition:width .25s ease}
+.ss-bar.in .ss-fill{background:var(--grad-green,var(--green))}
+.ss-tick{position:absolute;top:-2px;bottom:-2px;width:2px;background:var(--ink);opacity:.55}
+.ss-legend{position:relative;height:14px;margin-top:4px;font-family:var(--fn);font-size:10px;
+  font-weight:700;color:var(--dim)}
+.ss-legend span{position:absolute;white-space:nowrap}
+/* The two lines are seven wins apart, which is about thirty pixels on a phone, so
+   the labels lean AWAY from each other off their ticks instead of centring on them. */
+.ss-legend #ss-lg-wc{transform:translateX(-100%);padding-right:5px}
+.ss-legend #ss-lg-dv{padding-left:5px}
+.sim-feed{max-height:420px;overflow-y:auto;margin:6px 0 12px}
+.ss-loghd{display:flex;justify-content:space-between;font-family:var(--fn);font-size:10.5px;
+  font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--dim-2);margin:14px 2px 2px}
+.sim-game{display:flex;align-items:center;gap:8px;padding:7px 2px;
   border-bottom:1px solid rgba(var(--edge),.06);font-family:var(--fn);font-size:13px}
-.sim-game .gnum{color:var(--dim-2);width:34px;font-weight:700;flex:0 0 auto}
-.sim-game .gopp{flex:1;color:var(--dim);font-weight:600;white-space:nowrap;overflow:hidden;
-  text-overflow:ellipsis;padding:0 8px}
-.sim-game .gscore{font-weight:800;width:22px;text-align:right;flex:0 0 auto}
-.sim-game .gw{color:var(--green)} .sim-game .gl{color:var(--red)}
-.sim-game .gruns{width:54px;text-align:center;flex:0 0 auto;font-weight:700}
-.sim-game.marquee{background:rgba(184,134,11,.07);margin:0 -8px;padding:6px 8px;border-radius:6px}
-.sim-game.marquee .gopp{color:var(--gold);font-weight:700}
-/* 162 pips laid out as a fixed 54x3 block. Wrapping a centred flex row left the
-   last row indented and the row lengths at the mercy of the viewport width. */
-.sim-progress{display:grid;grid-template-columns:repeat(54,1fr);gap:2px;margin:12px 0}
-@media (max-width:360px){.sim-progress{grid-template-columns:repeat(27,1fr);gap:1.5px}}
-.sim-pip{width:auto;height:14px;border-radius:2px;background:rgba(var(--edge),.08)}
+.sim-game .gnum{color:var(--dim-2);width:34px;font-weight:700;flex:0 0 auto;font-variant-numeric:tabular-nums}
+.sim-game .gopp{flex:1;min-width:0;display:flex;align-items:center;gap:6px;color:var(--dim);font-weight:600;
+  white-space:nowrap;overflow:hidden}
+.sim-game .gopp .gnm{overflow:hidden;text-overflow:ellipsis}
+.sim-game .tc{flex:0 0 auto;display:inline-block;min-width:32px;text-align:center;padding:2px 5px;border-radius:5px;
+  font-size:10px;font-weight:800;letter-spacing:.04em;line-height:13px;background:var(--tcbg);color:var(--tcon)}
+.sim-game .gtag{flex:0 0 auto;font-size:9px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;
+  padding:2px 6px;border-radius:999px;background:rgba(var(--edge),.07);color:var(--dim)}
+.sim-game .gtag.big{background:rgba(184,134,11,.14);color:var(--gold)}
+.sim-game .gscore{font-weight:800;width:22px;height:22px;border-radius:6px;display:inline-flex;
+  align-items:center;justify-content:center;flex:0 0 auto;font-size:11px;color:#fff}
+.sim-game .gw{background:var(--green)} .sim-game .gl{background:var(--red)}
+.sim-game .gruns{width:46px;text-align:right;flex:0 0 auto;font-weight:700;color:var(--ink);
+  font-variant-numeric:tabular-nums}
+.sim-game.marquee{background:rgba(184,134,11,.07);border-radius:8px;padding:7px 8px;margin:0 -6px}
+.sim-game.marquee .gnm{color:var(--gold);font-weight:700}
+/* A milestone the season crossed, written into the log where it happened. */
+.sim-note{display:flex;align-items:center;gap:8px;padding:8px 10px;margin:6px 0;border-radius:9px;
+  font-family:var(--fn);font-size:12.5px;font-weight:700;color:var(--ink);
+  background:rgba(var(--edge),.05);border-left:3px solid var(--gold)}
+.sim-note.good{border-left-color:var(--green)} .sim-note.bad{border-left-color:var(--red)}
+.sim-note b{font-family:var(--fd);font-weight:400;font-size:15px;letter-spacing:.04em;color:var(--dim-2)}
+/* THE CALENDAR IS SIX MONTHS OF 27, which is what 162 is. A month to a row, labelled,
+   reads as a season; a 54 by 3 block read as a barcode. */
+.ss-cal{display:grid;grid-template-columns:34px repeat(27,minmax(0,1fr));gap:3px 2px;margin:14px 0 12px;
+  align-items:center}
+.ss-cal .ss-mo{font-family:var(--fn);font-size:9.5px;font-weight:800;letter-spacing:.08em;
+  text-transform:uppercase;color:var(--dim-2)}
+.sim-pip{width:auto;height:12px;border-radius:2px;background:rgba(var(--edge),.08)}
 .sim-pip.w{background:var(--green)} .sim-pip.l{background:var(--red)}
+.sim-pip.now{box-shadow:0 0 0 1.5px var(--gold)}
+.ss-ctl{display:flex;gap:8px;align-items:stretch;margin:4px 0}
+.ss-ctl .ss-cbtn{flex:0 0 auto;width:auto;padding:12px 16px;font-size:13px}
+.ss-ctl #b-sim-fast{flex:1;margin:0;font-size:17px;padding:12px 14px;white-space:nowrap}
+@media(min-width:1000px){
+  #s-season .ssb{padding:20px 22px 14px}
+  #s-season .record-big{font-size:76px}
+  #s-season .ss-t b{font-size:30px}
+  #s-season .sim-pip{height:14px}
+}
 
 /* ─── the bracket ───
    Four columns, one per round, on a rail that scrolls sideways when the screen is
@@ -1067,22 +1146,48 @@ body:has(#s-intro.on) header .lockup{visibility:hidden}
 .btn.trophy-cta{margin-top:10px}
 
 /* ─── badge medallion ─── */
-.bdg-ic{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;flex:0 0 auto;
-  font-size:15px;border:2px solid rgba(var(--edge),.15);box-shadow:0 2px 5px -1px rgba(0,0,0,.3)}
-.bdg-ic.bronze{background:linear-gradient(160deg,#c88a4a,#8a5a2a)}
-.bdg-ic.silver{background:linear-gradient(160deg,#cfd4da,#9aa2ab)}
-.bdg-ic.gold{background:linear-gradient(160deg,#f0c850,#b8860b)}
-.bdg-ic.legend{background:linear-gradient(160deg,#8e6aad,#5a3d7a)}
-.bdg-ic.off{background:rgba(var(--edge),.06);border-color:rgba(var(--edge),.10);box-shadow:none;filter:grayscale(1);opacity:.5}
+.bdg-ic{width:40px;height:40px;border-radius:50%;display:block;flex:0 0 auto;position:relative;
+  background:radial-gradient(circle at 34% 28%,#fffdf6 0,#f3ecdc 45%,#dcd0b2 100%);
+  border:3px solid var(--tier,#b0a58c);box-shadow:0 3px 7px -2px rgba(0,0,0,.4),inset 0 -2px 4px rgba(90,60,20,.18)}
+/* A BADGE IS A BASEBALL, and the ball is the same white whatever the tier, the
+   way a real commemorative ball is. The tier is the RIM, which is where a
+   trophy ball's display ring would be, and the seams are the one piece of the
+   drawing every badge shares. The ball does not flip in the dark theme, for the
+   same reason the draft button's hide does not: it is the sport, not the page. */
+.bdg-ic.bronze{--tier:#b0763b}
+.acct{margin:0 0 14px;padding:12px;border:1px solid rgba(var(--edge),.12);border-radius:12px;background:rgba(var(--edge),.03)}
+.acct p{font-size:13px;color:var(--dim);margin:0 0 8px}
+.acct p b{color:var(--ink)}
+.acct .arow{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.acct .arow.who{align-items:center;justify-content:space-between;margin-top:0;font-size:13px;color:var(--dim)}
+.acct .arow.who b{color:var(--ink)}
+.acct input{flex:1 1 100%;min-width:0;padding:10px 12px;border-radius:9px;border:1px solid rgba(var(--edge),.2);
+  background:var(--panel,#fff);color:var(--ink);font:inherit;font-size:14px}
+.acct .btn{flex:1 1 auto;width:auto;margin:0;padding:10px 12px;font-size:13px}
+.acct .aerr{font-size:12px;color:#c0392b;margin:8px 0 0}
+.acct .aerr.ok{color:var(--green)}
+.trophy-locked{text-align:center;padding:14px 6px 4px}
+.trophy-locked .tl-balls{display:flex;gap:10px;justify-content:center;margin-bottom:12px}
+.trophy-locked .tl-t{font-family:var(--fp);font-weight:700;font-size:15px;color:var(--ink);margin-bottom:6px}
+.trophy-locked p{font-size:13px;color:var(--dim);margin:0}
+.newbadges.guest .nb-d{margin:4px 0 10px}
+.newbadges.guest .nb-go{width:auto;margin:0}
+.bdg-ic.silver{--tier:#a9b0b8}
+.bdg-ic.gold{--tier:#d9a521}
+.bdg-ic.legend{--tier:#7a55a0}
+.bdg-ic.off{background:radial-gradient(circle at 34% 28%,#eeece7,#cfccc4);--tier:#b9b5ac;
+  box-shadow:none;opacity:.5}
+.bdg-ic svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+.bdg-ic .bs{fill:none;stroke:#c8232c;stroke-width:1.15;stroke-linecap:round}
+.bdg-ic.off .bs{stroke:#9a958c}
+.bdg-ic .bg{fill:none;stroke:#2b2116;stroke-width:2.8;stroke-linecap:round;stroke-linejoin:round}
+.bdg-ic.off .bg{stroke:#7d786f}
 /* THE DISC IS THE TIER AND THE GLYPH IS THE SUBJECT, which is two facts in two
    places rather than one carrying both badly. The glyph used to be the tier too
    (a crown, a trophy, and a black dot for everything else), so a cabinet of two
    hundred badges was two hundred identical brown discs and the only one a reader
    could tell apart at a glance was the one they had already read. The colour
    still says bronze, silver, gold, legend. */
-.bdg-ic svg{width:17px;height:17px;fill:none;stroke:#fff;stroke-width:2;
-  stroke-linecap:round;stroke-linejoin:round}
-.bdg-ic.off svg{stroke:var(--dim-2)}
 
 /* ─── bottom sheet ─── */
 .sheet{position:fixed;inset:0;z-index:120;display:none}
@@ -1176,7 +1281,51 @@ body:has(#s-intro.on) header .lockup{visibility:hidden}
 
 /* ─── era picker ─── */
 /* The same track the franchise grid runs on, because they hold the same card. */
-.era-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(158px,1fr));gap:8px;margin:12px 0}
+.era-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(158px,1fr));gap:10px;margin:14px 0}
+/* AN ERA CARD IS A DECADE, SO THE DECADE IS THE BIGGEST THING ON IT. It wore the
+   franchise card whole, which put "1920s" in 13px body type over three lines of
+   small grey facts: thirteen cards of one texture, and a reader choosing between
+   two eras had to read both to tell them apart. Now:
+   - the decade in the display face, the one word a scanning eye lands on;
+   - a colour per decade, off one ramp from sepia (1900s) to cobalt (2020s), set as
+     `--c1` by the builder so the rail, the wash and the numeral share it. It is a
+     sequence and not a set of team colours, so neighbours read as neighbours;
+   - the top forty of the decade as a bar, bats against arms, which is the thing
+     that actually changes how a decade drafts, drawn rather than only named.
+   It still carries `.fran-card` for the shell, the rail and the hover, because
+   those are measured and wrap-safe. Everything inside is its own. */
+/* Two classes, because `.fran-card` sets display:block further down the sheet at
+   the same weight and would win on order: the card came out a block, the chip
+   stretched full width and the best season stopped sitting at the foot. */
+.fran-card.era-card{padding:11px 12px 12px 18px;display:flex;flex-direction:column;gap:7px;
+  background:linear-gradient(135deg,color-mix(in srgb,var(--c1) 13%,var(--panel)) 0%,var(--panel) 62%)}
+.era-top{display:flex;flex-direction:column;gap:3px}
+.era-dec{font-family:var(--fd);font-size:34px;line-height:.9;letter-spacing:.02em;
+  color:color-mix(in srgb,var(--c1) 55%,var(--ink))}
+.era-span{font-size:10.5px;font-weight:700;color:var(--dim-2);font-variant-numeric:tabular-nums}
+.era-facts{display:grid;grid-template-columns:auto 1fr;gap:12px}
+.era-facts span{display:flex;flex-direction:column;font-size:9px;font-weight:800;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--dim-2);line-height:1.15}
+.era-facts b{font-size:16px;font-weight:800;letter-spacing:0;color:var(--ink);font-variant-numeric:tabular-nums}
+.era-mix{display:flex;height:6px;border-radius:3px;overflow:hidden;background:rgba(var(--edge),.08)}
+.era-mix i{display:block;height:100%}
+.era-mix .bats{background:var(--leather)}
+.era-mix .arms{background:var(--blue)}
+.era-mixh{font-size:9px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--dim-2);margin-bottom:4px}
+.era-mixl{margin-top:4px;display:flex;justify-content:space-between;gap:6px;font-size:9.5px;font-weight:700;
+  letter-spacing:.06em;text-transform:uppercase;color:var(--dim-2);font-variant-numeric:tabular-nums}
+.era-tag{align-self:flex-start;font-size:9.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;
+  padding:3px 7px;border-radius:99px;border:1px solid rgba(var(--edge),.14);color:var(--ink);
+  background:rgba(var(--edge),.05)}
+.era-tag.arms::before,.era-tag.bats::before{content:'';display:inline-block;width:7px;height:7px;
+  border-radius:50%;margin-right:5px;vertical-align:0}
+.era-tag.arms::before{background:var(--blue)}
+.era-tag.bats::before{background:var(--leather)}
+.era-best{margin-top:auto;padding-top:7px;border-top:1px solid rgba(var(--edge),.10);line-height:1.25}
+.era-best small{display:block;font-size:9px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--dim-2)}
+.era-best span{font-size:12.5px;font-weight:800;color:var(--ink)}
+.era-best em{font-style:normal;font-size:10.5px;font-weight:700;color:var(--dim-2);margin-left:4px;
+  font-variant-numeric:tabular-nums}
 /* `.era-btn` is DELETED rather than left sitting here. The decade buttons it
    styled are cards now, nothing carries the class, and an unused rule is the
    next person's invitation to style something with it. */
@@ -1657,19 +1806,25 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
   .hero .rlabel{font-size:10px;letter-spacing:.2em;margin-bottom:8px}
 
   #s-intro #b-start{font-size:24px;padding:22px 28px}
-  #s-intro #b-modes{margin-bottom:22px}
+  #s-intro #b-modes{margin-bottom:22px;padding:18px 22px;gap:16px}
+  #s-intro .hm-txt b{font-size:24px}
+  #s-intro .hm-sub{font-size:13px}
+  #s-intro .hm-sub .hm-long{display:inline}
+  #s-intro .hm-sub .hm-short{display:none}
+  #s-intro .hm-dots{grid-template-columns:repeat(3,11px);gap:5px}
+  #s-intro .hm-dots i{width:11px;height:11px}
 
   /* Three cards rather than three buttons, which is the same three doors wearing the
      room this width has. The icon and the line under the name are already in the
      markup and hidden on a phone, so nothing here builds a control. */
   #s-intro .hrow{gap:14px}
-  #s-intro .hp-util-btn{gap:7px;padding:20px 16px;border-radius:12px;
+  #s-intro .hp-util-btn{gap:6px;padding:14px 14px;border-radius:12px;
     text-align:center;background:var(--panel);border-color:var(--line)}
   #s-intro .hp-util-btn:hover{border-color:var(--gold);color:var(--ink)}
-  #s-intro .hp-util-btn .hu-i{width:26px;height:26px}
+  #s-intro .hp-util-btn .hu-i{width:22px;height:22px}
   #s-intro .hp-util-btn .hu-long{display:inline}
   #s-intro .hp-util-btn .hu-short{display:none}
-  #s-intro .hp-util-btn b{font-size:15px;letter-spacing:.05em;color:var(--ink)}
+  #s-intro .hp-util-btn b{font-size:14px;letter-spacing:.05em;color:var(--ink)}
   #s-intro .hp-util-btn .hu-s{display:block;font-family:var(--fn);font-size:11.5px;font-weight:600;
     text-transform:none;letter-spacing:0;color:var(--dim-2)}
 }
@@ -1758,7 +1913,7 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
   <p class="htag">Draft twelve legends. Win the World Series.</p>
 
   <button class="dailycard" id="daily-card"></button>
-  <button class="btn ghost hp-secondary" id="b-modes">More ways to play</button>
+  <button class="hp-modes" id="b-modes"><span class="hm-dots" id="hm-dots" aria-hidden="true"></span><span class="hm-txt"><b>More ways to play</b><span class="hm-sub" id="hm-sub"></span></span><svg class="hm-arrow" viewBox="0 0 24 24" aria-hidden="true"><polyline points="9 6 15 12 9 18"/></svg></button>
   <div class="hrow">
     <button class="btn ghost hp-util-btn" id="b-how-play">
       <svg class="hu-i" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5.2h6a3 3 0 0 1 3 3v11a2.4 2.4 0 0 0-2.4-2.4H3z"/>
@@ -1930,22 +2085,43 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
 
 <div class="screen" id="s-season">
   <div class="sim-header">
-    <div class="eyebrow">162-game season</div>
+    <div class="eyebrow" id="s-eye">162-game season</div>
     <h2 class="display" style="font-size:32px;margin:4px 0">Play ball</h2>
   </div>
-  <div class="record-big" id="s-record"><span class="w">0</span><span class="sep">-</span><span class="l">0</span></div>
+  <!-- THE SCOREBOARD. The record, then the four numbers a fan reads off a standings
+       page: where the season is heading, the streak, the last ten and the run
+       differential. The race meter under them is the one question the whole
+       regular season answers, which is whether it reaches October. -->
+  <div class="ssb">
+    <div class="record-big" id="s-record"><span class="w">0</span><span class="sep">-</span><span class="l">0</span></div>
+    <div class="ss-stats">
+      <div class="ss-t"><b id="ss-pace">-</b><span>Win pace</span></div>
+      <div class="ss-t"><b id="ss-streak">-</b><span>Streak</span></div>
+      <div class="ss-t"><b id="ss-l10">-</b><span>Last 10</span></div>
+      <div class="ss-t"><b id="ss-rd">-</b><span>Run diff</span></div>
+    </div>
+    <div class="ss-race">
+      <div class="ss-rhd"><span>Race to October</span><span id="ss-rstate"></span></div>
+      <div class="ss-bar" id="ss-bar"><i class="ss-fill" id="ss-fill"></i>
+        <i class="ss-tick wc" id="ss-tick-wc"></i><i class="ss-tick dv" id="ss-tick-dv"></i></div>
+      <div class="ss-legend"><span id="ss-lg-wc"></span><span id="ss-lg-dv"></span></div>
+    </div>
+    <div class="record-line" id="s-pace"></div>
+  </div>
   <div class="captrack" id="cap-track" hidden>
     <div class="ct-hd"><span class="ct-l">Payroll</span>
       <span class="ct-v" id="ct-total">$0.0M</span>
       <span class="ct-shocks" id="ct-shocks"></span></div>
     <div class="ct-bar"><i id="ct-fill"></i></div>
   </div>
-  <div class="sim-progress" id="s-pips"></div>
-  <div class="record-line" id="s-pace"></div>
-  <div class="sim-feed" id="s-feed"></div>
-  <div id="s-actions" style="display:none">
-    <button class="btn" id="b-sim-fast">Simulate remaining</button>
+  <div class="ss-cal sim-progress" id="s-pips"></div>
+  <div class="ss-ctl" id="s-actions" style="display:none">
+    <button class="btn ghost ss-cbtn" id="b-sim-pause">Pause</button>
+    <button class="btn ghost ss-cbtn" id="b-sim-speed">Faster</button>
+    <button class="btn" id="b-sim-fast">Sim to end</button>
   </div>
+  <div class="ss-loghd"><span>Game log</span><span id="ss-logn"></span></div>
+  <div class="sim-feed" id="s-feed"></div>
 </div>
 
 <!-- The bracket, between rounds. The field is drawn once and walked forward a round
@@ -2157,16 +2333,19 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
       <h3 class="sheet-title">Trophy case</h3>
       <button class="sheet-x" data-close aria-label="Close">&times;</button>
     </div>
+    <div class="acct" id="trophy-acct"></div>
     <div class="trophy-career" id="trophy-career"></div>
     <div class="trophy-body" id="trophy-body"></div>
-    <p class="trophy-note">Badges are kept in this browser. Play more seasons to unlock them all.</p>
+    <p class="trophy-note" id="trophy-note"></p>
   </div>
 </div>
 
-<script src="engine.js?v=31"></script>
-<script src="run.js?v=24"></script>
+<script src="engine.js?v=32"></script>
+<script src="run.js?v=26"></script>
 <script src="achievements.js?v=10"></script>
 <script src="board.js?v=1"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="auth.js?v=1"></script>
 <script>
 (function(){
 'use strict';
@@ -2177,6 +2356,15 @@ let sortKey='war', sortAsc=false;
 
 /* analytics helper (no-op if GA not present) */
 function ga(ev,params){try{if(window.gtag)window.gtag('event',ev,params||{});}catch(_){}}
+
+/* Accounts, with a stub in front so a blocked CDN or a missing file costs the
+   cabinet rather than the page. `ready` false and `waiting` false is the honest
+   answer when the file itself is not here. */
+var A=window.RTD_AUTH||{
+  boot:()=>false,
+  state:()=>({ready:false,waiting:false,signedIn:false}),
+  onChange:()=>()=>{},token:()=>null,
+};
 
 /* ─── history persistence (derive-everything: store compact rows only) ─── */
 const HIST_KEY='rtd_history', HIST_MAX=400;
@@ -2192,7 +2380,7 @@ function rowFromRun(o){
   let bps=null;try{bps=R.bestPossibleSquad(RUN,DATA);}catch(_){}
   const last=(RUN.playoffs&&RUN.playoffs.rounds)?RUN.playoffs.rounds[RUN.playoffs.rounds.length-1]:null;
   return {
-    ts:Date.now(),wins:o.wins,losses:o.losses,titleWon:!!o.titleWon,madePlayoffs:!!o.madePlayoffs,
+    ts:Date.now(),u:acctId(),wins:o.wins,losses:o.losses,titleWon:!!o.titleWon,madePlayoffs:!!o.madePlayoffs,
     seedLabel:o.seedLabel||null,isGOAT:!!o.isGOAT,beatRecord:!!o.beatRecord,
     rating:shownRating(o)!=null?Math.round(shownRating(o)):null,allTimeRank:o.allTimeRank!=null?o.allTimeRank:null,
     chemPct:o.chemistry?Math.round((o.chemistry.multiplier-1)*1000)/10:null,
@@ -2208,15 +2396,34 @@ function rowFromRun(o){
     picks:RUN.roster.map((p,i)=>({i:p.i,s:p.s,t:p.t,slot:SLOTS_NOW()[RUN.slotIndex[i]],w:p.w})),
   };
 }
+/* ── BADGES ARE FOR ACCOUNTS ──
+   Asked for in as many words: guests do not earn or collect badges. Every row
+   still goes into the history, signed in or not, because the career line
+   (seasons, titles) is the player's whatever they are. What a row carries is
+   `u`, the account it was PLAYED on, and the cabinet reads only the rows whose
+   `u` is the account signed in now.
+
+   THREE THINGS FOLLOW, and each is the rule rather than a side effect:
+   - A season played signed out never counts, even after signing in. Signing in
+     afterwards is not how a guest collects what they played for.
+   - Two accounts on one browser keep two cabinets, because the filter is the
+     id and not "anybody signed in".
+   - Rows filed before this shipped carry no `u`, so nobody's old browser
+     history turns into badges on the day they first sign in. */
+function acctId(){try{const st=A.state();return st&&st.signedIn&&st.userId||null;}catch(_){return null;}}
+function badgeRows(rows){const u=acctId();return u?(rows||loadHistory()).filter(r=>r.u===u):[];}
 let lastNewBadges=[];
+/* null is a guest season: the results screen says what signing in is for,
+   rather than listing badges nobody is allowed to keep. */
 function recordRun(o){
   if(!ACH){lastNewBadges=[];return;}
   const prev=loadHistory();
   const row=rowFromRun(o);
-  try{lastNewBadges=ACH.newlyEarned(prev,row);}catch(_){lastNewBadges=[];}
+  if(row.u){try{lastNewBadges=ACH.newlyEarned(badgeRows(prev),row);}catch(_){lastNewBadges=[];}}
+  else lastNewBadges=null;
   saveHistory(prev.concat([row]));
   try{ga('run_complete',{outcome:o.titleWon?'title':o.madePlayoffs?'playoffs':'missed',wins:o.wins,rating:o.rating!=null?Math.round(o.rating):0,rank:o.allTimeRank||0});}catch(_){}
-  lastNewBadges.forEach(a=>{try{ga('achievement_earned',{id:a.id,tier:a.tier,group:a.group});}catch(_){}});
+  (lastNewBadges||[]).forEach(a=>{try{ga('achievement_earned',{id:a.id,tier:a.tier,group:a.group});}catch(_){}});
 }
 /* One glyph a shelf, drawn rather than set in emoji, because the medallion is
    34px and an emoji at that size is whatever the reader's phone thinks it is.
@@ -2235,15 +2442,44 @@ const BDG_GLYPH={
 };
 const BDG_FALLBACK='<circle cx="12" cy="12" r="8"/><path d="M8.2 6.6c2.3 2.7 2.3 8.1 0 10.8"/><path d="M15.8 6.6c-2.3 2.7-2.3 8.1 0 10.8"/>';
 const BDG_LOCK='<rect x="4.5" y="10.5" width="15" height="10" rx="2.2"/><path d="M8 10.5V7.8a4 4 0 0 1 8 0v2.7"/>';
+/* The two seams and their stitches, worked out once. Each seam is a curve
+   bowing in from the edge of the ball, the way the ball on the draft button
+   is drawn, and each stitch is a short tick leaning out from the curve, in
+   mirror pairs so the two sides meet as the chevrons a real seam makes. */
+const BALL_SEAMS=(()=>{
+  const out=[];
+  for(const side of[-1,1]){
+    const x0=20+side*10.5, xm=20+side*5.5, y0=5.5, y1=34.5;
+    const P=t=>{const u=1-t;return[u*u*x0+2*u*t*xm+t*t*x0, y0+(y1-y0)*t];};
+    out.push('<path class="bs" d="M'+x0+' '+y0+'Q'+xm+' 20 '+x0+' '+y1+'"/>');
+    for(let k=1;k<=6;k++){
+      const t=k/7,[x,y]=P(t);
+      const dx=2*(1-t)*(xm-x0)+2*t*(x0-xm), dy=y1-y0;
+      const L=Math.hypot(dx,dy), tx=dx/L, ty=dy/L, nx=-ty, ny=tx;
+      const f=v=>v.toFixed(2), w=1.7, back=1.1, tip=.5;
+      out.push('<path class="bs" d="M'+f(x+nx*w-tx*back)+' '+f(y+ny*w-ty*back)+
+        'L'+f(x+tx*tip)+' '+f(y+ty*tip)+'L'+f(x-nx*w-tx*back)+' '+f(y-ny*w-ty*back)+'"/>');
+    }
+  }
+  return out.join('');
+})();
 function badgeIc(a,earned){
   const g=earned?(BDG_GLYPH[a.group]||BDG_FALLBACK):BDG_LOCK;
   return '<span class="bdg-ic '+a.tier+(earned?'':' off')+'" aria-hidden="true">'+
-    '<svg viewBox="0 0 24 24">'+g+'</svg></span>';
+    '<svg viewBox="0 0 40 40">'+BALL_SEAMS+
+    '<g class="bg" transform="translate(14 14) scale(.5)">'+g+'</g></svg></span>';
 }
 
 /* ─── new-badges panel on the results screen ─── */
 function paintNewBadges(){
   const el=$('ro-newbadges');el.innerHTML='';
+  if(lastNewBadges===null&&ACH){
+    el.innerHTML='<div class="newbadges guest"><div class="nb-hd">Badges are for signed-in players</div>'+
+      '<p class="nb-d">Sign in and every season you play counts toward '+ACH.CATALOGUE.length+' badges.</p>'+
+      '<button class="btn sm nb-go" id="b-nb-signin">Sign in to collect</button></div>';
+    $('b-nb-signin').addEventListener('click',openTrophy);
+    return;
+  }
   if(!lastNewBadges||!lastNewBadges.length)return;
   const show=lastNewBadges.slice(0,6);
   el.innerHTML='<div class="newbadges"><div class="nb-hd">'+lastNewBadges.length+
@@ -2257,8 +2493,13 @@ function paintNewBadges(){
 function openSheet(id){const s=$(id);s.classList.add('on');s.setAttribute('aria-hidden','false');}
 function closeSheet(id){const s=$(id);s.classList.remove('on');s.setAttribute('aria-hidden','true');}
 function renderTrophy(){
-  const rows=loadHistory();const ev=ACH.evaluate(rows);
+  renderAccount();
+  const signed=!!acctId();
+  const rows=signed?badgeRows():loadHistory();const ev=ACH.evaluate(rows);
   const st=ev.stats;
+  $('trophy-note').textContent=signed
+    ?'Every season you play signed in counts. Seasons played as a guest do not.'
+    :'Your seasons are kept in this browser. Badges need an account.';
   $('trophy-career').innerHTML=[
     ['Seasons',st.runs],['Titles',st.titles],
     ['Best rank',st.bestRank?('#'+st.bestRank):'n/a'],['Day streak',ev.play.best],
@@ -2266,6 +2507,13 @@ function renderTrophy(){
   const byGroup={};ACH.GROUPS.forEach(g=>byGroup[g]={earned:[],locked:[]});
   ev.earned.forEach(a=>byGroup[a.group]&&byGroup[a.group].earned.push(a));
   ev.locked.forEach(a=>byGroup[a.group]&&byGroup[a.group].locked.push(a));
+  if(!signed){
+    $('trophy-body').innerHTML='<div class="trophy-locked">'+
+      '<div class="tl-balls">'+['bronze','silver','gold','legend'].map(t=>badgeIc({tier:t,group:'Winning'},true)).join('')+'</div>'+
+      '<div class="tl-t">'+ACH.CATALOGUE.length+' badges, for players with an account</div>'+
+      '<p>Guests can play every mode. Badges are earned only by seasons played signed in.</p></div>';
+    return;
+  }
   $('trophy-body').innerHTML='<div style="text-align:center;font-family:var(--fn);font-size:12px;'+
     'font-weight:700;color:var(--gold);margin-bottom:12px">'+ev.earned.length+' of '+ev.total+' badges</div>'+
     ACH.GROUPS.map(g=>{
@@ -2280,6 +2528,51 @@ function renderTrophy(){
       return '<div class="trophy-group"><div class="tg-hd"><span class="tg-name">'+g+
         '</span><span class="tg-count">'+grp.earned.length+'/'+total+'</span></div>'+got+left+'</div>';
     }).join('');
+}
+/* THE ACCOUNT PANEL, in the trophy sheet because that is the one thing an
+   account buys here. Five states, the same five hoops draws: checking,
+   unavailable, signed out, signed in with no name yet, and signed in. Built
+   rather than written into the markup, because markup for five states is
+   markup for whichever one somebody last looked at. */
+function renderAccount(){
+  const el=$('trophy-acct');if(!el)return;
+  const st=A.state();el.textContent='';
+  const say=html=>{const p=document.createElement('p');p.innerHTML=html;el.appendChild(p);return p;};
+  const row=()=>{const d=document.createElement('div');d.className='arow';el.appendChild(d);return d;};
+  const btn=(into,label,cls,fn)=>{const b=document.createElement('button');b.className='btn '+(cls||'');
+    b.textContent=label;b.onclick=fn;into.appendChild(b);return b;};
+  const err=(msg,good)=>{const p=document.createElement('p');p.className='aerr'+(good?' ok':'');p.textContent=msg;el.appendChild(p);};
+  const inp=(into,type,ph,ac)=>{const i=document.createElement('input');i.type=type;i.placeholder=ph;
+    if(ac)i.autocomplete=ac;into.appendChild(i);return i;};
+  if(!st.ready&&st.waiting){say('Checking for your account.');return;}
+  if(!st.ready){say('Accounts are down right now. You can still play. Badges wait until they are back.');return;}
+  if(!st.signedIn){
+    say('<b>Sign in to collect badges.</b> A RunThe.GG account works on every game here.');
+    const email=inp(row(),'email','Email','email');
+    const pass=inp(row(),'password','Password','current-password');
+    const r3=row();let busy=false;
+    const go=fn=>()=>{if(busy)return;busy=true;fn().then(res=>{busy=false;
+      if(res&&res.error)err(res.error);else renderTrophy();});};
+    btn(r3,'Sign in','',go(()=>A.signIn(email.value,pass.value)));
+    btn(r3,'Create account','ghost',()=>{
+      const name=prompt('Pick a name for the leaderboard. Letters, numbers and underscores only.');
+      if(!name||busy)return;busy=true;
+      A.signUp(email.value,pass.value,name.trim()).then(res=>{busy=false;
+        if(res&&res.error)err(res.error);else err('Check your email to confirm the account.',true);});
+    });
+    btn(row(),'Sign in with Google','ghost',()=>A.signInGoogle());
+    return;
+  }
+  if(!st.name){
+    say('Signed in as <b>'+esc(st.email||'your account')+'</b>. Pick a name for the leaderboard.');
+    const rn=row();const nm=inp(rn,'text','Name on the board');
+    btn(rn,'Save','',()=>A.setName(nm.value.trim()).then(res=>{if(res&&res.error)err(res.error);else renderTrophy();}));
+    btn(row(),'Sign out','ghost sm',()=>A.signOut().then(renderTrophy));
+    return;
+  }
+  const r=row();r.classList.add('who');
+  const p=document.createElement('span');p.innerHTML='Signed in as <b>'+esc(st.name)+'</b>';r.appendChild(p);
+  btn(r,'Sign out','ghost sm',()=>A.signOut().then(renderTrophy));
 }
 function openTrophy(){if(!ACH)return;renderTrophy();openSheet('sheet-trophy');ga('trophy_opened');}
 
@@ -2744,13 +3037,13 @@ function drawLineupCard(el){
     slots.map((slot,i)=>{
       const p=bySlot[i];
       const ch=PICK&&PICK.choices.find(c=>c.slotIdx===i);
-      const off=p&&!E.primaryAt(p,slot);
+      const off=p&&E.offPosition(p,slot);
       return '<div class="lc-row'+(p?'':' open')+(i===firstArm?' arm1':'')+(ch?' target':'')+(ch&&ch.natural?' natural':'')+(off?' offpos':'')+'" data-i="'+i+'">'+
         '<span class="lc-pos" style="'+posPaint(slot)+'">'+esc(slot)+'</span>'+
         (p?'<span class="lc-nm">'+esc(p.n)+'</span>'+
             '<span class="lc-yr">'+tcPlate(p.t,p.s)+' '+p.s+'</span>'+
             '<span class="lc-war"'+(off?' title="Off his position. '+OFF_TAG+' of his WAR."':'')+'>'+warHtml(E.slotWar(p,slot))+'</span>'
-          :'<span class="lc-nm">'+(ch?(ch.natural?'\u2605 His position':ch.off?OFF_TAG+' here':'Open'):'Open')+'</span>')+
+          :'<span class="lc-nm">'+(ch?(ch.natural?'\u2605 His position':ch.off?OFF_TAG+' here':'No cost'):'Open')+'</span>')+
         '</div>';
     }).join('');
 }
@@ -2841,14 +3134,14 @@ function drawField(el,live){
     const tgt=!!targets&&targets.has(i);
     c.className='chip '+(p?'filled':'empty')+((live&&!p&&openCount===1&&!targets)?' now':'')+
       (justFilled?' pop':'')+(tgt?' target':'')+(tgt&&natural.has(i)?' natural':'')+
-      (p&&!E.primaryAt(p,E.SLOTS[i])?' offpos':'');
+      (p&&E.offPosition(p,E.SLOTS[i])?' offpos':'');
     const disc=c.querySelector('.disc');
     const pitcherLabel=isPitcher&&!p?(i===11?'CP':'SP'):E.SLOTS[i];
     disc.querySelector('.dl').textContent=isPitcher&&!p?pitcherLabel:E.SLOTS[i];
     disc.style.cssText=p?posPaint(E.SLOTS[i]):'';
     c.querySelector('.who').textContent=p?lastName(p.n):
       tgt?(natural.has(i)?'\u2605 '+lastName(PICK.p.n):offAt.has(i)?OFF_TAG:lastName(PICK.p.n)+'?'):'';
-    c.title=p&&!E.primaryAt(p,E.SLOTS[i])?'Off his position. '+OFF_TAG+' of his WAR.':'';
+    c.title=p&&E.offPosition(p,E.SLOTS[i])?'Off his position. '+OFF_TAG+' of his WAR.':'';
     c.querySelector('.yr').innerHTML=p?tcPlate(p.t,p.s)+' '+p.s:'';
     const pip=c.querySelector('.pip');
     const ce=p?chemBySlot[i]:null;
@@ -3086,6 +3379,17 @@ function heroSync(){
 
 /* ─── boot ─── */
 async function boot(){
+  try{paintModesDoor();}catch(e){console.error(e);}
+  /* ACCOUNTS, BOOTED HERE. supabase-js is deferred, so boot() may find no library
+     yet and keeps polling; every change hands board.js the live token, so a
+     season submitted signed in is filed under the account. */
+  try{
+    A.boot();
+    A.onChange(()=>{
+      window.RTD_ACCESS_TOKEN=A.token()||null;
+      if($('sheet-trophy').classList.contains('on'))renderTrophy();
+    });
+  }catch(_){}
   try{
     const res=await fetch('data/players.json?v=4');
     if(!res.ok) throw new Error('Failed to load player data');
@@ -3143,6 +3447,18 @@ $('b-theme').addEventListener('click',()=>{
   ga('theme_set',{theme:next});
 });
 $('b-modes').addEventListener('click',openModes);
+/* The door names what is behind it, read off MODE_CARDS so a mode added there
+   shows up here without anybody remembering. Called from boot(), because
+   MODE_CARDS is a const declared below this line and reading it here throws. */
+function paintModesDoor(){
+  const live=MODE_CARDS.filter(m=>!m.soon);
+  $('hm-dots').innerHTML=live.map(m=>'<i style="background:'+m.tint+'"></i>').join('');
+  const short=live.map(m=>m.title.replace(/^The |^All-Time /,'').replace(/ Draft$/,''));
+  /* Three names on a desktop, two on a phone: three wrapped at 390 and a door
+     with a two line caption reads as a paragraph. */
+  const say=n=>short.length>n?short.slice(0,n).join(', ')+' and '+(short.length-n)+' more':short.join(', ');
+  $('hm-sub').innerHTML='<span class="hm-long">'+esc(say(3))+'</span><span class="hm-short">'+esc(say(2))+'</span>';
+}
 $('b-board').addEventListener('click',openBoard);
 $('b-board-back').addEventListener('click',()=>{show('s-intro');heroSync();});
 $('daily-card').addEventListener('click',startDaily);
@@ -3600,22 +3916,38 @@ function openChemKey(){
    It wears the franchise card's own classes rather than new ones: those rules
    are wrap-safe and their line clamps were measured at the narrowest card this
    grid draws, and a second card shape is a second set of the same bugs. */
-function eraCard(e){
+/* The ramp: sepia to cobalt, one hue a decade. Hue and saturation only, the
+   lightness is left to color-mix against the theme's own panel and ink, so the
+   same ramp reads on cream and on charcoal. */
+function eraHue(i,n){
+  const t=n>1?i/(n-1):0;
+  return 'hsl('+Math.round(32+t*180)+','+Math.round(48+t*12)+'%,46%)';
+}
+function eraCard(e,i,n){
   const btn=document.createElement('button');
-  btn.className='fran-card';
-  btn.style.setProperty('--c1','var(--blue)');
-  btn.innerHTML='<div class="fran-name">'+esc(e.era)+'</div>'+
-    '<div class="fran-yrs">'+e.lo+'-'+e.hi+' &middot; '+e.clubs+' clubs</div>'+
-    (e.note?'<div class="fran-was">'+esc(e.note)+'</div>':'')+
-    (e.best?'<div class="fran-best">Best Player: '+esc(e.best.n)+' '+e.best.s+'</div>':'');
-  btn.setAttribute('aria-label',e.era+', '+e.lo+' to '+e.hi+', '+e.clubs+' clubs'+
-    (e.note?', '+e.note:'')+(e.best?', best player '+e.best.n+' '+e.best.s:''));
+  btn.className='fran-card era-card';
+  btn.style.setProperty('--c1',eraHue(i,n));
+  /* The sample size and the lean are the engine's (ERA_TOP_N and its two bands),
+     so retuning either moves the bar and the chip with it. */
+  const top=e.top, bats=top-e.arms;
+  const tag=e.lean==='arms'?'<div class="era-tag arms">Pitchers’ decade</div>'
+    :e.lean==='bats'?'<div class="era-tag bats">Hitters’ decade</div>':'';
+  btn.innerHTML=
+    '<div class="era-top"><div class="era-dec">'+esc(e.era)+'</div><div class="era-span">'+e.lo+'-'+e.hi+'</div></div>'+
+    '<div class="era-facts"><span><b>'+e.clubs+'</b>clubs</span><span><b>'+e.seasons+'</b>team seasons</span></div>'+
+    '<div><div class="era-mixh">Top '+top+' seasons</div><div class="era-mix" aria-hidden="true"><i class="bats" style="width:'+(bats/top*100)+'%"></i><i class="arms" style="width:'+(e.arms/top*100)+'%"></i></div>'+
+    '<div class="era-mixl"><span>'+bats+' bats</span><span>'+e.arms+' arms</span></div></div>'+
+    tag+
+    (e.best?'<div class="era-best"><small>Best season</small><span>'+esc(e.best.n)+'</span><em>'+e.best.s+'</em></div>':'');
+  btn.setAttribute('aria-label',e.era+', '+e.lo+' to '+e.hi+', '+e.clubs+' clubs, '+e.seasons+' team seasons, top forty is '+bats+' bats and '+e.arms+' arms'+
+    (e.note?', '+e.note:'')+(e.best?', best season '+e.best.n+' '+e.best.s:''));
   btn.addEventListener('click',()=>startRun({era:e.era}));
   return btn;
 }
 function buildEraGrid(){
   const grid=$('era-grid');grid.innerHTML='';
-  for(const e of R.eligibleEras(DATA)) grid.appendChild(eraCard(e));
+  const eras=R.eligibleEras(DATA);
+  eras.forEach((e,i)=>grid.appendChild(eraCard(e,i,eras.length)));
 }
 
 /* ─── franchise mode ─── */
@@ -4001,9 +4333,10 @@ function openJobs(p){
     const group=E.slotGroup(name,staff);
     if(seen.has(group))continue;seen.add(group);
     /* E.primaryAt is the rule the season rates him by, so the gold star and the
-       number agree: his own position is his whole WAR, anywhere else costs OFF. */
-    const off=!E.primaryAt(p,name);
-    const natural=p.r==='p'?((p.pp===name)||(p.pp&&base===p.pp)||name==='CL'):!off;
+       number agree: his own position is his whole WAR, another position costs OFF,
+       and DH costs nothing (E.offPosition) without being his star. */
+    const off=E.offPosition(p,name);
+    const natural=p.r==='p'?((p.pp===name)||(p.pp&&base===p.pp)||name==='CL'):E.primaryAt(p,name);
     out.push({slotIdx:i,name,base,group,natural,off});
   }
   return out;
@@ -4063,11 +4396,16 @@ function paintPickBar(){
   if(!PICK){bar.hidden=true;return;}
   const own=PICK.choices.filter(c=>c.natural).map(c=>c.name);
   const others=PICK.choices.filter(c=>c.off).length;
+  const dh=PICK.choices.some(c=>!c.natural&&!c.off&&c.base==='DH');
   let say='Where does <b>'+esc(PICK.p.n)+'</b> play?';
   if(PICK.p.r==='p')say+=' Tap a gold spot.';
-  else if(own.length&&others)say+=' \u2605 '+own.join(', ')+(own.length>1?' are his spots.':' is his spot.')+' Anywhere else costs '+OFF_PCT+'.';
-  else if(own.length)say+=' Tap a gold spot.';
-  else say+=' His spot is taken. Here he costs '+OFF_PCT+'.';
+  else{
+    if(own.length)say+=' \u2605 '+own.join(', ')+(own.length>1?' are his spots.':' is his spot.');
+    else if(others)say+=' His spot is taken.';
+    if(others)say+=' Another position costs '+OFF_PCT+'.';
+    if(dh&&others)say+=' DH is free.';
+    if(!others)say+=' Tap a gold spot.';
+  }
   $('pick-txt').innerHTML=say;
   bar.hidden=false;
 }
@@ -4166,20 +4504,129 @@ $('b-squad-quit').addEventListener('click',()=>{
   RUN=null;show('s-intro');heroSync();
 });
 
-/* ─── season sim ─── */
+/* ─── season sim ───
+   (ss-prefixed, because this file already has a paintBoard and a paintFeed for
+   October, and a second declaration of either silently replaces the first.)
+   The screen is DRAWN FROM THE SEASON'S OWN STATE (RUN._simState), never kept as a
+   second tally beside it. ssBoard and ssFeed both walk st.results, so a pause
+   for a cut, a trade sheet, a fast forward and the animated sim all show the same
+   season, and a milestone in the log is where it really happened. */
+const SS_MONTHS=['Apr','May','Jun','Jul','Aug','Sep'];
+const SS_WC=E.CONSTANTS.WILD_CARD_WINS, SS_DV=E.CONSTANTS.DIVISION_WINS;
+let simSpeed=1, simPaused=false;
 function startSeason(){
   show('s-season');
-  $('s-feed').innerHTML='';$('s-pips').innerHTML='';
-  $('s-record').innerHTML='<span class="w">0</span><span class="sep">-</span><span class="l">0</span>';
-  $('s-pace').textContent='';
-  const pips=$('s-pips');
-  for(let i=0;i<E.CONSTANTS.REGULAR_SEASON_GAMES;i++){
+  $('s-feed').innerHTML='';
+  $('s-eye').textContent=E.CONSTANTS.REGULAR_SEASON_GAMES+'-game season'+
+    (RUN.daily?' \u00b7 Daily':RUN.era?' \u00b7 '+RUN.era:RUN.franchise?' \u00b7 '+teamFullName(RUN.franchise):
+     RUN.division?' \u00b7 '+RUN.division:RUN.capSurvivor?' \u00b7 Cap Survivor':RUN.staff?' \u00b7 All-Time Staff':
+     RUN.tradeMachine?' \u00b7 Trade Machine':'');
+  const pips=$('s-pips');pips.innerHTML='';
+  const G=E.CONSTANTS.REGULAR_SEASON_GAMES,per=Math.ceil(G/SS_MONTHS.length);
+  for(let i=0;i<G;i++){
+    if(i%per===0){const m=document.createElement('span');m.className='ss-mo';m.textContent=SS_MONTHS[i/per]||'';pips.appendChild(m);}
     const pip=document.createElement('div');pip.className='sim-pip';pip.id='pip-'+i;pips.appendChild(pip);
   }
+  simSpeed=1;simPaused=false;
+  $('b-sim-pause').textContent='Pause';$('b-sim-speed').textContent='Faster';
   $('s-actions').style.display='';
-  $('b-sim-fast').onclick=()=>{$('s-actions').style.display='none';simRemaining();};
+  $('b-sim-fast').onclick=()=>{$('s-actions').style.display='none';simPaused=false;simRemaining();};
+  $('b-sim-pause').onclick=()=>{
+    const st=RUN&&RUN._simState;
+    if(simPaused){simPaused=false;$('b-sim-pause').textContent='Pause';simGame(st?st.results.length:0);}
+    else{simPaused=true;if(simTimer){clearTimeout(simTimer);simTimer=null;}$('b-sim-pause').textContent='Resume';}
+  };
+  $('b-sim-speed').onclick=()=>{
+    simSpeed=simSpeed===1?0.25:1;
+    $('b-sim-speed').textContent=simSpeed===1?'Faster':'Slower';
+  };
   paintCapTrack();
+  ssBoard();
   simGame(0);
+}
+/* The four standings numbers, the race meter and the line under them. */
+function ssBoard(){
+  const st=RUN&&RUN._simState;
+  const res=st?st.results:[];
+  const G=E.CONSTANTS.REGULAR_SEASON_GAMES;
+  const w=st?st.wins:0,l=st?st.losses:0,gp=res.length;
+  $('s-record').innerHTML='<span class="w">'+w+'</span><span class="sep">-</span><span class="l">'+l+'</span>';
+  const pace=gp?Math.round(w/gp*G):null;
+  const set=(id,t,cls)=>{const e=$(id);e.textContent=t;e.className=cls||'';};
+  set('ss-pace',pace==null?'-':String(pace),pace==null?'':pace>=SS_WC?'up':'dn');
+  let k=0;const last=gp?res[gp-1].won:null;
+  for(let i=gp-1;i>=0&&res[i].won===last;i--)k++;
+  set('ss-streak',gp?(last?'W':'L')+k:'-',gp?(last?'up':'dn'):'');
+  const t10=res.slice(-10),w10=t10.filter(r=>r.won).length;
+  set('ss-l10',gp?w10+'-'+(t10.length-w10):'-',gp?(w10>=6?'up':w10<=4?'dn':''):'');
+  const rd=st?st.totalRS-st.totalRA:0;
+  set('ss-rd',gp?(rd>0?'+':'')+rd:'-',gp?(rd>0?'up':rd<0?'dn':''):'');
+  /* The meter runs from LO to HI wins, which holds every season a draft has
+     produced, and the two ticks are the engine's own lines, read rather than typed. */
+  const LO=55,HI=115,pos=v=>Math.max(0,Math.min(100,(v-LO)/(HI-LO)*100));
+  const shown=pace==null?LO:pace;
+  $('ss-fill').style.width=pos(Math.max(w,shown))+'%';
+  $('ss-tick-wc').style.left=pos(SS_WC)+'%';$('ss-tick-dv').style.left=pos(SS_DV)+'%';
+  $('ss-lg-wc').style.left=pos(SS_WC)+'%';$('ss-lg-wc').textContent='Wild card '+SS_WC;
+  $('ss-lg-dv').style.left=pos(SS_DV)+'%';$('ss-lg-dv').textContent='Division '+SS_DV;
+  const left=G-gp,out=w+left<SS_WC,inn=w>=SS_WC;
+  $('ss-bar').classList.toggle('in',inn||(pace!=null&&pace>=SS_WC));
+  const rs=$('ss-rstate');
+  rs.className=inn?'in':out?'out':'';
+  rs.textContent=w>=SS_DV?'Division clinched':inn?'In the playoffs':out?'Out of the race':
+    pace==null?'':pace>=SS_DV?'Division pace':pace>=SS_WC?'Wild card pace':'Behind the pace';
+  $('s-pace').innerHTML=gp?'Game '+gp+' of '+G+(gp<G?' &middot; On pace for <b>'+pace+' wins</b>':''):'';
+  document.querySelectorAll('#s-pips .sim-pip.now').forEach(x=>x.classList.remove('now'));
+  if(gp&&gp<G){const n=$('pip-'+gp);if(n)n.classList.add('now');}
+}
+/* The log, as a walk over the season: every game, and a milestone wherever the
+   season crossed one. Walked from the start each time rather than appended, so a
+   fast forward and the animated sim write the same log. */
+function feedEntries(st){
+  const out=[];const G=E.CONSTANTS.REGULAR_SEASON_GAMES,per=Math.ceil(G/SS_MONTHS.length);
+  let w=0,l=0,k=0,last=null,wasOut=false,mw=0,ml=0;
+  const word=n=>['','','Two','Three','Four','Five','Six','Seven','Eight','Nine','Ten'][n]||String(n);
+  st.results.forEach((r,i)=>{
+    const g=st.schedule[i]||{};
+    out.push({type:'game',i,r,g});
+    if(r.won){w++;mw++;}else{l++;ml++;}
+    k=(last===r.won)?k+1:1;last=r.won;
+    if(r.won&&(k===5||k===8||k===10||k===15))out.push({type:'note',cls:'good',t:word(k)+' straight wins.'});
+    if(!r.won&&(k===5||k===8))out.push({type:'note',cls:'bad',t:word(k)+' straight losses.'});
+    if(r.won&&w===SS_WC)out.push({type:'note',cls:'good',t:'Win '+SS_WC+'. October is yours.'});
+    if(r.won&&w===SS_DV)out.push({type:'note',cls:'good',t:'Win '+SS_DV+'. The division is yours.'});
+    if(r.won&&w===100)out.push({type:'note',cls:'good',t:'A hundred wins.'});
+    const left=G-(i+1);
+    if(!wasOut&&w+left<SS_WC){wasOut=true;out.push({type:'note',cls:'bad',t:SS_WC+' wins is out of reach.'});}
+    if((i+1)%per===0){out.push({type:'note',cls:'',t:'<b>'+SS_MONTHS[(i+1)/per-1]+'</b> '+mw+'-'+ml});mw=0;ml=0;}
+  });
+  return out;
+}
+function gameRow(e){
+  const r=e.r,g=e.g,row=document.createElement('div');
+  row.className='sim-game'+(g.marquee?' marquee':'');
+  const m=/^(\d{4})\s+(\S+)$/.exec(g.oppName||'');
+  const opp=m?tcPlate(m[2],+m[1])+'<span class="gnm">'+(g.marquee?'&starf; ':'')+m[1]+' '+esc(teamFullName(m[2],+m[1]))+'</span>'
+    :'<span class="gnm">'+(g.oppName?'vs '+esc(g.oppName):'')+'</span>';
+  const mg=Math.abs(r.yourRuns-r.oppRuns);
+  const tag=r.won&&r.oppRuns===0?'<span class="gtag big">Shutout</span>':
+    !r.won&&r.yourRuns===0?'<span class="gtag">Shut out</span>':
+    mg>=8?'<span class="gtag'+(r.won?' big':'')+'">Rout</span>':
+    mg===1?'<span class="gtag">1 run</span>':'';
+  row.innerHTML='<span class="gnum">G'+(e.i+1)+'</span><span class="gopp">'+opp+'</span>'+tag+
+    '<span class="gruns">'+r.yourRuns+'-'+r.oppRuns+'</span>'+
+    '<span class="gscore '+(r.won?'gw':'gl')+'">'+(r.won?'W':'L')+'</span>';
+  return row;
+}
+function ssFeed(){
+  const st=RUN&&RUN._simState;const feed=$('s-feed');feed.innerHTML='';
+  if(!st)return;
+  const all=feedEntries(st).slice(-30).reverse();
+  for(const e of all){
+    if(e.type==='game')feed.appendChild(gameRow(e));
+    else{const n=document.createElement('div');n.className='sim-note '+e.cls;n.innerHTML=e.t;feed.appendChild(n);}
+  }
+  $('ss-logn').textContent=st.results.length?'Latest first':'';
 }
 
 /* ─── salary cap survivor, in play ───
@@ -4341,31 +4788,17 @@ function simGame(idx){
   if(!result){finishSeason();return;}
   const pip=$('pip-'+idx);
   if(pip) pip.className='sim-pip '+(result.won?'w':'l');
-  $('s-record').innerHTML='<span class="w">'+result.record.wins+'</span><span class="sep">-</span><span class="l">'+result.record.losses+'</span>';
-  const gp=idx+1;
-  $('s-pace').innerHTML='Game '+gp+' of 162 &middot; On pace for <b>'+Math.round(result.record.wins/gp*162)+' wins</b>';
-  const feed=$('s-feed');
-  const row=document.createElement('div');row.className='sim-game'+(result.marquee?' marquee':'');
-  const opp=result.oppName?'<span class="gopp">'+(result.marquee?'&starf; ':'')+'vs '+esc(result.oppName)+'</span>':'';
-  row.innerHTML='<span class="gnum">G'+result.game+'</span>'+opp+
-    '<span class="gruns">'+result.yourRuns+'-'+result.oppRuns+'</span>'+
-    '<span class="gscore '+(result.won?'gw':'gl')+'">'+(result.won?'W':'L')+'</span>';
-  feed.insertBefore(row,feed.firstChild);
-  if(feed.children.length>18) feed.removeChild(feed.lastChild);
+  ssBoard();ssFeed();
   if(RUN.capSurvivor&&idx%9===0) paintCapTrack();
-  const speed=idx<10?120:idx<40?60:idx<100?30:15;
+  if(simPaused)return;
+  const speed=(idx<10?120:idx<40?60:idx<100?30:15)*simSpeed;
   simTimer=setTimeout(()=>simGame(idx+1),speed);
 }
 
 /* Fast-forward stops for a decision, so the screen behind the sheet has to agree
    with where the season actually is. It was showing the record from the pause and
    the game number from wherever the animated sim had got to. */
-function paintPause(st,i){
-  $('s-record').innerHTML='<span class="w">'+st.wins+'</span><span class="sep">-</span><span class="l">'+st.losses+'</span>';
-  const gp=st.results.length;
-  if(gp>0)$('s-pace').innerHTML='Game '+gp+' of 162 &middot; On pace for <b>'+
-    Math.round(st.wins/gp*162)+' wins</b>';
-}
+function paintPause(st,i){ ssBoard();ssFeed(); }
 
 function simRemaining(){
   if(simTimer){clearTimeout(simTimer);simTimer=null;}
@@ -4398,8 +4831,8 @@ function simRemaining(){
     if(pip) pip.className='sim-pip '+(result.won?'w':'l');
   }
   paintCapTrack();
-  $('s-record').innerHTML='<span class="w">'+st.wins+'</span><span class="sep">-</span><span class="l">'+st.losses+'</span>';
-  $('s-pace').textContent='162 games complete';
+  ssBoard();ssFeed();
+  $('s-pace').textContent=E.CONSTANTS.REGULAR_SEASON_GAMES+' games complete';
   finishSeason();
 }
 

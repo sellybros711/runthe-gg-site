@@ -13223,6 +13223,51 @@ the submit's BODY calls `rtd_board_day(`, so that is what the row asks. The fix
 is re-running 97, which is idempotent and was driven over an old copy with no
 error.
 
+### Badges are for accounts, and a badge is a baseball
+
+```
+node baseball/check-run.mjs      the Classic walk signed in, the daily walk as a guest
+```
+
+Asked for: guests do not get to earn or collect badges. **This game had no
+sign-in at all**, so the first half was porting one: `baseball/auth.js` is
+`hoops/auth.js` pointed at `rtd_*`, on the site's one account system. Nothing
+server side was needed, because `97_baseball_leaderboard.sql` already reads
+`auth.uid()` in its submit, claim and rename. `board.js` had always read a
+`window.RTD_ACCESS_TOKEN` that nothing set; the page sets it on every auth
+change now, so a season submitted signed in is filed under the account.
+
+**A row carries `u`, the account it was PLAYED on, and the cabinet reads only
+rows whose `u` is the account signed in now.** Every row is still filed, so
+a guest's seasons and titles are still counted on the career line. Three rules
+follow, and each is the design rather than a side effect:
+
+- **A season played as a guest never counts**, even after signing in. Signing
+  in afterwards is not how a guest collects what they played for.
+- **Two accounts on one browser keep two cabinets**, because the filter is the
+  id and not "somebody is signed in".
+- **Rows filed before this shipped carry no `u`**, so no browser's old history
+  turns into badges on the day it first signs in. That was a conscious call:
+  every cabinet anybody had before this is empty until they play signed in.
+
+**The results screen says what signing in is for** instead of listing badges
+nobody may keep (`lastNewBadges === null` is a guest season), and its button
+opens the trophy sheet, which carries the account panel at the TOP: five
+states, the same five hoops draws.
+
+**Where this is weakest, said plainly**: the cabinet is still derived from
+`localStorage` rows, so it is a gate a determined person could edit. It is the
+same trust the whole badge design already makes (no server keeps badges), and
+it is enough for what was asked, which is that playing as a guest does not
+earn them.
+
+**A badge is drawn as a baseball.** A cream ball with two red seams,
+chevron stitches, the shelf's glyph in the middle, and the TIER as the rim
+(bronze, silver, gold, purple), the way a trophy ball sits in a display ring.
+The ball does not flip in the dark theme, for the same reason the draft
+button's hide does not. `BALL_SEAMS` is computed once and shared by every
+badge.
+
 ### The cap is $190M now, because $170M made October a coin flip for most drafts
 
 Reported by players: the cap felt too low and it was hard to make the playoffs.
@@ -14489,8 +14534,14 @@ give his best rating before chemistry, and anywhere else should cost a little.
 And every kind of chemistry should actually be in use.
 
 **`slotWar(p, slot)` is the one reading.** A batter at his primary position
-(`pp`, with `OF` covering LF, CF and RF) is his season WAR. Anywhere else costs
-`POSITION_FIT.OFF`, **8%**. DH counts as off position for everybody but a DH.
+(`pp`, with `OF` covering LF, CF and RF) is his season WAR. Another fielding
+position costs `POSITION_FIT.OFF`, **8%**. **The DH costs nobody anything**, which
+was asked for after it first shipped charging every fielder there: a hitter at DH
+is only asked to hit. So there are two questions. `primaryAt` says whether a slot is
+his OWN (it wears the star, and DH is only a DH's own), and `offPosition` says
+whether it CHARGES him (never at DH). `slotWar`, the offpos ring and the pick bar
+read `offPosition`; the star reads `primaryAt`. `check-labels` holds both over the
+whole pool, and a shortstop at first still pays.
 Pitchers and replacement bodies are never charged. `rosterOffense` and the
 defence term in `rosterRunPrevention` read it, so it moves the shown rating and
 the season. **`teamStrength` deliberately does not**, for the same reason it
@@ -14547,6 +14598,107 @@ bare shared shirt. The franchise tie came down to keep that order.
 badge sweep moved: eight excuses came off because the chemistry bot now
 reaches them, and `rank_one` and `one_franchise_8` went on, because the bot
 chases team-mates rather than stacking eight from one club.
+
+### An era card counts FRANCHISES, and says how deep the wheel is
+
+Reported by a player as "shouldn't we have more teams than this from each decade".
+The first answer is the league's own shape: MLB had **16 clubs from 1901 to 1960**,
+20 in 1961, 24 by 1969, 26 in 1977, 28 in 1993 and 30 from 1998. Anything over that
+on a card is the Federal League (1914-15) or the Negro Leagues (1920s to 1940s).
+
+**The second answer is that the card was counting CODES**, so it overstated where it
+looked low. The 1950s read 21 because the Braves, A's, Browns, Dodgers and Giants
+moved and changed letters; the 2020s read 31 because the Athletics are OAK then ATH.
+`eligibleEras` counts `franchiseOf` now, and the card also prints how many team
+seasons the wheel can land on (118 in the 1900s, 300 in the 2010s), which is the
+number a reader asking about depth actually wants. `check-franchise`'s last section
+holds both against the pool, plus 16 for the 1950s and 30 for the 2020s.
+
+### An era card is a decade, so the decade is the biggest thing on it
+
+The era picker wore the franchise card whole: "1920s" in 13px body type over three
+lines of small grey facts, thirteen cards of one texture. It is its own card now.
+The decade in the display face, a colour per decade off one ramp from sepia (1900s)
+to cobalt (2020s), clubs and team seasons as two stat blocks, and the decade's top
+forty seasons drawn as a bats against arms bar, which is the thing that actually
+changes how a decade drafts. The Pitchers' or Hitters' chip and the best season sit
+under it.
+
+**The sample size and the lean are the engine's.** `eligibleEras` returns `top` and
+`lean` off `ERA_TOP_N` and its two bands, so the page never restates 40, 22 or 12.
+
+**`.fran-card.era-card`, two classes, is load-bearing.** `.fran-card` sets
+`display:block` later in the sheet at equal weight, and the first draft lost to it:
+a block rather than a column, the chip stretched full width, and nothing threw.
+`check-franchise` section 6 asks every era card for flex, a distinct rail colour, a
+bar that fills its track and label rows that hold one line. Removing the second
+class fails the flex claim.
+
+### A division card lists the clubs in it TODAY
+
+`divisionClubs` listed every code a division had ever held, so the NL East card
+showed FLA beside MIA and MON beside WSN, and Detroit, Milwaukee and Houston each
+sat on two cards. Reported by a player. It answers the rows that reach the latest
+season in `DIVISIONS` now (read off the table, never typed), so the six cards
+name the thirty clubs once each. **The draft is unchanged**: `inDivision` still
+reaches every season the division really held, so the Florida Marlins and the
+Expos are on the NL East wheel. Only the chips are current. `check-franchise`
+asserts thirty, no franchise twice, every one a club playing today, and that the
+old names are still drawable.
+
+### More ways to play is the second door and has to look like one
+
+As a ghost button it read quieter than the three utility cards under it, and it is
+the only way to six modes. It is a filled card with a gold edge, a dot in each
+mode's own colour and the modes named under it (three on a desktop, two on a phone,
+read off `MODE_CARDS` in `paintModesDoor()`, called from `boot()` because
+`MODE_CARDS` is a const declared further down and a top-level read threw on load).
+The three doors under it came down a step on the desktop. `check-home` asserts the
+property at every phone width: a gold edge the doors lack, a larger name, and a
+caption on one line. 320 failed that last clause on the first run, which is why the
+narrowest phones take a smaller caption.
+
+### The season screen is a scoreboard, and it is drawn from the season's own state
+
+It was a record, a strip of 162 squares and a list of scores. It is now one
+scoreboard card (the record, then win pace, streak, last ten and run differential,
+then a race-to-October meter with the engine's own wild card and division lines on
+it), a calendar of six month rows of 27, pause, speed and sim-to-end controls, and a
+game log with each opponent's club chip, tags for a shutout, a rout and a one run
+game, and milestones written where they happened (streaks, the wild card and
+division wins, a hundred wins, out of the race, each month's record).
+
+**`ssBoard` and `ssFeed` walk `RUN._simState` and keep no tally of their own**, so the
+animated sim, a fast forward and a pause for a cut or a trade all show one season.
+The log is rebuilt from the start of the season on every game rather than appended,
+which is what lets a fast forward write the same milestones the slow sim would.
+
+**They are ss-prefixed because the obvious names were taken.** The first draft called
+them `paintBoard` and `paintFeed`, which are the leaderboard's and October's. A
+function declared twice in this one-script page is not an error: the later one
+replaces the earlier everywhere, so the leaderboard would have painted the season and
+the live October game threw on every pitch. `check-labels` now fails on any function
+declared twice in the page, and `check-run` reads the season screen the instant the
+fast forward lands.
+
+### Is $190M enough? Measured per mode, and the cap is not the lever
+
+Asked because $190M over twelve is $15.8M a slot against football's $23.3M and the
+college game's $1.8M. **Dollars a slot do not compare across games**, because each
+game's price curve is its own. What compares is what a slot's share buys: here
+$15.8M is 89% of every player-season in the pool and the median price of a 3 WAR
+season ($14.3M). A 5 WAR season medians $24.5M and a 9 WAR one $52.7M, so a roster
+holds a handful of stars and fills around them, which is the decision the draft is.
+
+At $190M, 40 runs a cell, October rate for best-available / a spread drafter / a
+chemistry chaser: Classic 68/70/85%, Eras 90/93/88%, One Franchise 98/95/100%,
+Division 90/95/95%, All-Time Staff 78/68/85%, Trade Machine 53%. **Cap Survivor is the
+one low mode**: 18% best-available, 68% spread, 20% chemistry, because the market
+raises push a roster that spent the cap into cuts. Raising the cap lifts every mode
+together (Classic best goes 30% at $170M, 68% at $190M, 78% at $210M, 90% at $230M)
+and past about $230M holding money back stops paying at all. So the cap stays, and if
+Cap Survivor needs help the dial is `E.MARKET` (the size of the raises), which moves
+that mode alone.
 
 ### The desktop page is football's, and the two columns have to be the same length
 
