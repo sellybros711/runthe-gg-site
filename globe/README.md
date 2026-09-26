@@ -88,6 +88,28 @@ auto-paired **online solo** matchmaking (GDD §7); **preset-phrase quick chat** 
 mid-race ghost **substitution** on quit/timeout (GDD §8); **Layover / Reroute** opponent
 mechanics; anti-cheat **detection** logic beyond the timing guard (GDD §9).
 
+## Street Hunt (prototype, Paris)
+
+A second way to play, from its own card on the home screen (or `?hunt=paris`).
+You're dropped on a real Paris street and follow three clues to three
+landmarks. The last one holds the Checkpoint mat.
+
+- **The streets are real.** `globe/build/osm-city.mjs` pulls the roads, the
+  river, the parks and the notable buildings from OpenStreetMap and writes
+  `globe/data/city-paris.json` (metres from the box centre, junctions kept so
+  the graph stays connected). Overpass is refused from the dev sandbox, so it
+  runs on a runner: `.github/workflows/globe-city.yml` fires when the builder
+  changes and commits the file back. Map data is credited on screen.
+- **You walk the graph.** Tap the map and the runner takes the shortest street
+  path there. Arrow keys pick the street at each corner. Drag to look around.
+- **Help costs different things.** Locals point a direction and a distance
+  (never the name). A ping costs 10s. Every croissant takes 1s off.
+- **Today's hunt** is seeded from the date, so everybody gets the same drop and
+  stops on the same data file. Random drop is a fresh seed.
+- **Adding a city** is a `CITIES` entry in the builder (a bounding box) and a
+  `HUNT` entry in the page (stops with a clue and a hint each). A stop needs a
+  street within 260m or it is dropped.
+
 ## Deferred (scaffolded or noted, not built)
 
 - **Local co-op** (pass-and-play): shown as a "Soon" card.
