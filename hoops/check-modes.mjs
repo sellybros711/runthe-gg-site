@@ -216,6 +216,94 @@ section('3. the steal decides the run');
   ok(a.mean > b.mean + 1.5, `stealing is worth wins (${a.mean.toFixed(1)} against ${b.mean.toFixed(1)})`);
 }
 
+// ── 3b. the game plan is a read, and a read pays ──────────────────────────
+section('3b. Conquest: the game plan');
+{
+  /* THE RULES, as properties of the real cqPlans and cqPlay. */
+  const st = M.cqCreate(D, 'checkplan09');
+  let bounded = true, oneBest = true, signed = true, keys = new Set();
+  for (const rung of [0, 5, 11, 18, 24]) {
+    st.rung = rung; st.tries = 0;
+    const ps = M.cqPlans(st, D);
+    ps.forEach((p) => keys.add(p.key));
+    if (ps.some((p) => Math.abs(p.edge) > 2 * M.CQ.PLAN + 1e-9)) bounded = false;
+    const best = ps.filter((p) => p.best);
+    if (best.length !== 1 || best[0].edge < Math.max(...ps.map((p) => p.edge))) oneBest = false;
+    /* The edge is the gap, so it has the gap's sign. */
+    if (ps.some((p) => p.you !== p.them && Math.sign(p.edge) !== Math.sign(p.you - p.them))) signed = false;
+  }
+  ok(keys.size === M.CQ_PLANS.length, `every plan is offered (${keys.size})`);
+  ok(bounded, `no plan is worth more than ${2 * M.CQ.PLAN} points a night either way`);
+  ok(oneBest, 'exactly one plan is the best read, and it has the biggest edge');
+  ok(signed, 'an edge points the way the two fives do');
+
+  let refused = false;
+  try { M.cqSetPlan(M.cqCreate(D, 'x1'), 'zone'); } catch (e) { refused = true; }
+  ok(refused, 'a plan that does not exist is refused');
+
+  /* THE SAME GAME, THREE WAYS. cqPlay draws its noise off the run's seed and
+     the rung, so the only thing that differs is the plan, and the margin has
+     to move the way the edge says. */
+  let up = 0, down = 0, tested = 0, cleared = true;
+  for (let i = 0; i < 60; i++) {
+    const base = M.cqCreate(D, 'planmargin' + i);
+    base.rung = i % 20;
+    const ps = M.cqPlans(base, D);
+    const best = ps.find((p) => p.best), worst = ps.slice().sort((a, b) => a.edge - b.edge)[0];
+    if (best.edge <= 0 || worst.edge >= 0) continue;
+    /* An overtime draws more noise than regulation, so a game that reaches
+       one in any arm is a different path through the rng rather than the
+       same game with a different plan, and it is left out. */
+    let ot = false;
+    const margin = (k) => { const c = JSON.parse(JSON.stringify(base)); M.cqSetPlan(c, k); const r = M.cqPlay(c, D);
+      if (c.plan != null) cleared = false; if (r.ot) ot = true; return r.you - r.opp; };
+    const m0 = margin(null), mb = margin(best.key), mw = margin(worst.key);
+    if (ot) continue;
+    tested++;
+    if (mb >= m0) up++;
+    if (mw <= m0) down++;
+  }
+  ok(tested >= 10, `enough matchups had a plan each way to test (${tested})`);
+  ok(up === tested && down === tested, `the best read never costs and the worst never helps (${up}, ${down} of ${tested})`);
+  ok(cleared, 'a plan is for one game');
+
+  /* THE LADDER OF SKILL. A random plan is roughly the mode without plans,
+     and the best read is clearly more. Measured at 600 runs in modes.js's
+     header; held here as a shape, because the ladder is drawn off the pool. */
+  const N = QUICK ? 80 : 240;
+  const smart = (st2) => {
+    let b = null;
+    for (const x of M.cqSteals(st2, D)) if (x.delta > 0 && (!b || x.rating > b.rating)) b = x;
+    return b;
+  };
+  const run = (pick) => {
+    const wins = []; let clear = 0;
+    for (let i = 0; i < N; i++) {
+      const s2 = M.cqCreate(D, 'planband' + i);
+      const rng = E.createSeededRNG(E.hashSeed('planpick' + i));
+      let g = 0;
+      while (!s2.lost && g++ < 80) {
+        M.cqSetPlan(s2, pick(M.cqPlans(s2, D), rng));
+        M.cqPlay(s2, D);
+        if (s2.pending) { const x = smart(s2); M.cqSteal(s2, D, x ? x.take : null, x ? x.slot : null); }
+      }
+      wins.push(M.cqStreak(s2)); if (M.cqCleared(s2)) clear++;
+    }
+    return { mean: wins.reduce((a, b) => a + b, 0) / N, clear: clear / N };
+  };
+  const none = run(() => null);
+  const rand = run((ps, rng) => ps[Math.floor(rng() * ps.length)].key);
+  const best = run((ps) => ps.find((p) => p.best).key);
+  const worst = run((ps) => ps.slice().sort((a, b) => a.edge - b.edge)[0].key);
+  for (const [n, r] of [['worst read', worst], ['no plan', none], ['random plan', rand], ['best read', best]]) {
+    console.log(`  ${n.padEnd(12)} mean ${r.mean.toFixed(1)}, clears ${(r.clear * 100).toFixed(1)}%`);
+  }
+  ok(Math.abs(rand.mean - none.mean) < 2, `a random plan is about the mode without plans (${rand.mean.toFixed(1)} against ${none.mean.toFixed(1)})`);
+  ok(best.mean - rand.mean >= 2, `a read is worth two wins or more over a guess (${(best.mean - rand.mean).toFixed(1)})`);
+  ok(worst.mean < none.mean, `a bad read costs (${worst.mean.toFixed(1)} against ${none.mean.toFixed(1)})`);
+  ok(best.clear > rand.clear, `and the read clears the ladder more often (${(best.clear * 100).toFixed(1)}% against ${(rand.clear * 100).toFixed(1)}%)`);
+}
+
 // ── 4. Fix History ──────────────────────────────────────────────────────────
 section('4. Fix History: one team a day, four trade windows, one score everywhere');
 {
@@ -774,6 +862,26 @@ if (!QUICK) {
   await page.waitForSelector('#cq-go');
   const drafted = await page.evaluate(() => window.RTF_MODES_UI._cq().roster.length);
   ok(drafted === 5, `five taps draft five (${drafted})`);
+  /* THE GAME PLAN. Tip off waits on one, and choosing one must not move the
+     odds bar: a chance that moved as you tapped would turn the read into a
+     menu of five numbers. */
+  const gate = await page.evaluate(() => {
+    const go = document.getElementById('cq-go');
+    return { disabled: go.disabled, text: go.textContent, plans: document.querySelectorAll('.cq-plan[data-plan]').length,
+      bar: document.querySelector('.cq-bar i').style.width, odds: document.querySelector('.cq-bar-l').textContent };
+  });
+  ok(gate.disabled && /plan/i.test(gate.text), `tip off waits on a game plan (${gate.disabled}, "${gate.text}")`);
+  ok(gate.plans === M.CQ_PLANS.length, `every plan is offered (${gate.plans})`);
+  const planPage = await page.evaluate(() => document.querySelector('.cq-plans').innerText);
+  ok(!/[+-]\d|edge|%/i.test(planPage), 'the plan card shows the two fives and no edge or chance');
+  await page.click('.cq-plan[data-plan="rim"]');
+  const picked = await page.evaluate(() => ({
+    disabled: document.getElementById('cq-go').disabled,
+    on: [...document.querySelectorAll('.cq-plan.on')].map((b) => b.getAttribute('data-plan')).join(),
+    bar: document.querySelector('.cq-bar i').style.width, odds: document.querySelector('.cq-bar-l').textContent,
+    saved: window.RTF_MODES_UI._cq().plan }));
+  ok(!picked.disabled && picked.on === 'rim' && picked.saved === 'rim', `a tap picks the plan and opens tip off (${picked.on}, ${picked.saved})`);
+  ok(picked.bar === gate.bar && picked.odds === gate.odds, 'and the odds bar does not move');
   const before = await page.textContent('#cq-wins');
   await page.click('#cq-go');
   const during = await page.textContent('#cq-wins');
@@ -781,6 +889,12 @@ if (!QUICK) {
   await page.waitForFunction(() => document.querySelector('.mx-stamp'), null, { timeout: 20000 });
   const st = await page.evaluate(() => window.RTF_MODES_UI._cq());
   ok(!!(st.pending || st.losses.length), 'the game is recorded on the run');
+  const g1 = st.pending || st.losses[st.losses.length - 1];
+  ok(g1 && g1.plan === 'rim' && typeof g1.edge === 'number' && g1.bestPlan, `the game carries its plan and the best read (${g1 && g1.plan})`);
+  ok(st.plan == null, 'and the plan is cleared for the next game');
+  await page.waitForSelector('.cq-verdict', { timeout: 5000 }).catch(() => null);
+  const verdict = await page.evaluate(() => { const v = document.querySelector('.cq-verdict'); return v ? v.textContent : ''; });
+  ok(/Protect the rim:/.test(verdict) && /(right read|Better read)/.test(verdict), `after the game it says how the plan went ("${verdict}")`);
 
   // Play it out and check the end is filed once.
   for (let i = 0; i < 200; i++) {
@@ -788,7 +902,7 @@ if (!QUICK) {
     if (s.lost) break;
     if (await page.$('#cq-again')) { await page.click('#cq-again'); continue; }
     if (await page.$('#cq-keep')) { await page.click('#cq-keep'); continue; }
-    if (await page.$('#cq-go')) { await page.click('#cq-go'); await page.waitForFunction(() => document.querySelector('.mx-stamp'), null, { timeout: 20000 }); continue; }
+    if (await page.$('#cq-go')) { await page.click('.cq-plan'); await page.click('#cq-go'); await page.waitForFunction(() => document.querySelector('.mx-stamp'), null, { timeout: 20000 }); continue; }
     await page.waitForTimeout(100);
   }
   await page.waitForTimeout(500);

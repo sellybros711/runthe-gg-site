@@ -23,7 +23,7 @@ const E = (typeof require !== 'undefined')
   ? require('./engine.js')
   : window.RTF_ENGINE;
 
-const MODES_API_VERSION = 3;
+const MODES_API_VERSION = 4;
 const C = E.CONSTANTS;
 
 // ─── shared ────────────────────────────────────────────────────────────────
@@ -139,6 +139,7 @@ const CQ = {
   BOSS_EVERY: 5,      // every fifth rung is a boss, played on the live board
   LIVES: 3,           // a loss costs one and the challenger stays on
   BOSS_LIFE: true,    // beating a boss gives one back, never past LIVES
+  PLAN: 2.0,          // a game plan's worth, per half standard deviation of edge
 };
 
 /* The aim for rung k, in rating points. */
@@ -282,6 +283,106 @@ function cqPreview(state, data) {
 
 const cqIsBoss = (rung) => (rung + 1) % CQ.BOSS_EVERY === 0 || rung === CQ.RUNGS - 1;
 
+/* THE GAME PLAN, and it is the one thing this mode adds to a game.
+ *
+ * WHY IT EXISTS. Reported as the gauntlet having no control: you tip off,
+ * you watch, and after a win you take whoever makes your rating go up, which
+ * the screen already worked out for you. Ten designs were measured before
+ * this one, 200 to 300 runs a bot, and every roster rule came back the same
+ * way: a single game is close enough to a coin flip that taking the best man
+ * available is nearly optimal, so nothing planned for later pays.
+ *
+ *   load management (a bench, and men who tire)   resting a star bought nothing
+ *   a salary cap that grows with wins              saving money bought nothing
+ *   hiding win shares on the steal                 a strong stat reader got 5.6
+ *                                                  wins against 8.8 for perfect
+ *   three doors, weaker or stronger teams          the weakest door always won
+ *   a stronger door worth two steals               a coin flip either way
+ *   roster continuity                              upgrading always won
+ *   a steal or a life back                         the life always won
+ *
+ * A PLAN IS A READ OF THIS MATCHUP, so the right answer changes every game.
+ * Each plan makes the game about one thing (the glass, the rim, the arc, the
+ * passing lanes, the ball movement) and pays by how much better your five
+ * is at that thing than theirs. Both sides are read off the engine's own
+ * roster profile, pace-adjusted like everything else it reads, and scored
+ * against the league's spread over every real club's best five, because a
+ * six rebound edge is a lot and an eight three edge is not.
+ *
+ * Through cqPlay, 600 runs a bot, every one taking the best steal:
+ *
+ *                          mean wins   clears
+ *   the worst read            6.8       3.2%
+ *   no plan                   8.3       5.2%
+ *   a random plan             9.1       7.0%
+ *   the biggest raw gap      11.8      13.0%
+ *   the best read            12.4      15.2%
+ *
+ * That is the ladder of skill: a new player picking at random meets the mode
+ * about as it was, and a read is worth three wins and twice the clears over
+ * a guess. So the screen shows both fives' numbers and never the edge or a
+ * chance per plan.
+ * A chance that moved as you tapped would let anybody try all five and keep
+ * the best, and the read is the whole decision.
+ *
+ * AND IT IS BOUNDED. An edge is PLAN points per 100 possessions a half
+ * standard deviation, clamped at two, so no plan is worth more than four
+ * points a night either way. resolveGame still decides every game. */
+const CQ_PLANS = [
+  /* `off` is the share of the edge that lands on your offense; the rest takes
+     points off theirs. */
+  { key: 'glass', name: 'Crash the glass', stat: 'Rebounds', off: 0.5, read: (P) => P.reb },
+  { key: 'rim',   name: 'Protect the rim', stat: 'Top shot blocker', off: 0, read: (P) => P.bestRim },
+  { key: 'range', name: 'Let it fly',      stat: 'Threes taken', off: 1, read: (P) => P.tpa },
+  { key: 'hands', name: 'Jump the lanes',  stat: 'Steals', off: 0, read: (P) => P.steals },
+  { key: 'flow',  name: 'Share the ball',  stat: 'Assists', off: 1, read: (P) => P.ast },
+];
+const profileOf = (rows) => E.rosterFit(rows.map((p, i) => ({ ...p, _slot: p._slot || E.SLOTS[i] }))).profile;
+
+/* The league's spread in each area, over every real club's best five. Worked
+   out once per data set, because it is fourteen hundred profiles. */
+const PLAN_NORMS = typeof WeakMap !== 'undefined' ? new WeakMap() : null;
+function planNorms(data) {
+  const hit = PLAN_NORMS && PLAN_NORMS.get(data);
+  if (hit) return hit;
+  const vals = {};
+  for (const pl of CQ_PLANS) vals[pl.key] = [];
+  for (const t of data.teamSeasons) {
+    const P = profileOf(bestFive(data, t.team_season_id));
+    for (const pl of CQ_PLANS) vals[pl.key].push(pl.read(P));
+  }
+  const out = {};
+  for (const k in vals) {
+    const a = vals[k], m = a.reduce((s, x) => s + x, 0) / a.length;
+    out[k] = { m, sd: Math.sqrt(a.reduce((s, x) => s + (x - m) * (x - m), 0) / a.length) || 1 };
+  }
+  if (PLAN_NORMS) PLAN_NORMS.set(data, out);
+  return out;
+}
+
+/* Every plan for the game on the court: what each five does in that area,
+   and the edge. The page prints `you` and `them` and never `edge`. */
+function cqPlans(state, data) {
+  const ts = cqChallenger(state, data, state.rung);
+  const a = profileOf(cqRoster(state, data)), b = profileOf(bestFive(data, ts));
+  const N = planNorms(data);
+  const out = CQ_PLANS.map((pl) => {
+    const you = pl.read(a), them = pl.read(b);
+    const z = (you - them) / N[pl.key].sd;
+    const edge = CQ.PLAN * Math.max(-2, Math.min(2, z / 2));
+    return { key: pl.key, name: pl.name, stat: pl.stat, off: pl.off, you, them, edge };
+  });
+  const best = out.reduce((b, x) => (x.edge > b.edge ? x : b), out[0]);
+  out.forEach((x) => { x.best = x.key === best.key; });
+  return out;
+}
+
+function cqSetPlan(state, key) {
+  if (key != null && !CQ_PLANS.some((p) => p.key === key)) throw new Error('not a game plan');
+  state.plan = key == null ? null : key;
+  return state;
+}
+
 /* PLAY THE NEXT GAME. The rng is the run's seed and the rung, so the same
    run meets the same result whatever order anything else was drawn in, and
    a reload in the middle cannot reroll a loss. `result` lets a game played
@@ -289,13 +390,32 @@ const cqIsBoss = (rung) => (rung + 1) % CQ.BOSS_EVERY === 0 || rung === CQ.RUNGS
 function cqPlay(state, data, result) {
   if (state.lost || state.pending || state.drafting) throw new Error('not ready to play');
   const pv = cqPreview(state, data);
+  /* The plan moves your five's ratings for this game and nothing else. No
+     plan is a legal game and costs nothing, which is what a save written
+     before plans existed plays as. */
+  let plan = null, means = pv.means;
+  if (state.plan) {
+    const all = cqPlans(state, data);
+    plan = all.find((p) => p.key === state.plan);
+    plan.bestKey = all.find((p) => p.best).key;
+    const you = { ortg: pv.you.ortg + plan.edge * plan.off, drtg: pv.you.drtg - plan.edge * (1 - plan.off) };
+    means = meansOf(you, pv.them);
+  }
   /* A REMATCH IS A NEW GAME, so the attempt is in the tag. Without it a
      loss would replay itself identically until the lives ran out. */
-  const r = result || E.resolveGame(pv.means.pointsFor, pv.means.pointsAgainst,
+  const r = result || E.resolveGame(means.pointsFor, means.pointsAgainst,
     rngFor(state.seed, 'game:' + state.rung + ':' + state.tries), pv.adv);
   const rec = { ts: pv.ts, rung: state.rung, you: r.yourPoints, opp: r.oppPoints,
     ot: r.ot || 0, rating: pv.you.rating, oppRating: pv.them.rating, won: !!r.won,
     boss: pv.boss };
+  if (plan) {
+    rec.plan = plan.key;
+    rec.edge = Math.round(plan.edge * 10) / 10;
+    rec.right = !!plan.best;
+    rec.bestPlan = plan.bestKey;
+  }
+  /* A plan is for one game. The next one is a different read. */
+  state.plan = null;
   state.tries++;
   if (r.won) {
     state.pending = rec;
@@ -1007,6 +1127,7 @@ const publicAPI = {
   CQ, cqAim, cqLadder, cqChallenger, cqCrew, cqCreate, cqRoster, cqStrength,
   cqDraftCards, cqDraftPick, CQ_CARDS,
   cqPreview, cqIsBoss, cqPlay, cqSteals, cqSteal, cqStreak, cqOver, cqCleared,
+  CQ_PLANS, planNorms, cqPlans, cqSetPlan,
   DAILY_EPOCH, dayNumberOf, dailyOrder,
   FX, TRADE, salaryOk, slotFive, startingFive, fiveOf, canCover, fxCandidates, fxDaily, fxOdds, fxOddsStep, fxReplay,
   fxRoster, fxApply,

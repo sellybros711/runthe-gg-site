@@ -419,6 +419,20 @@ var CSS = [
   '.cq-drop .d{font-family:var(--num);font-variant-numeric:tabular-nums;font-weight:800;}',
   '.cq-drop .d.up{color:var(--green);} .cq-drop .d.dn{color:var(--red);}',
   '.cq-none{font-size:12.5px;color:var(--dim);margin:6px 0 2px 44px;}',
+  /* the game plan */
+  '.cq-plans{display:grid;gap:6px;margin-top:10px;}',
+  '.cq-plan{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;text-align:left;width:100%;',
+  '  background:#141a26;border:1px solid var(--cardb);border-radius:10px;padding:9px 12px;color:var(--ink);',
+  '  font-family:var(--body);font-weight:600;cursor:pointer;}',
+  '.cq-plan:hover{filter:none;border-color:rgba(255,255,255,.25);}',
+  '.cq-plan.on{border-color:var(--orange);box-shadow:0 0 0 1px var(--orange) inset;background:#221811;}',
+  '.cq-plan .pn{font-weight:800;font-size:14px;line-height:1.2;}',
+  '.cq-plan .pn small{display:block;color:var(--dim);font-weight:600;font-size:11.5px;}',
+  '.cq-plan .pv{font-family:var(--num);font-variant-numeric:tabular-nums;font-size:14px;font-weight:800;white-space:nowrap;}',
+  '.cq-plan .pv .y{color:#ffae3d;} .cq-plan .pv .t{color:var(--mut);} .cq-plan .pv i{font-style:normal;color:var(--dim);font-size:11px;margin:0 5px;}',
+  '.cq-verdict{margin-top:14px;padding:10px 12px;border-radius:10px;background:rgba(255,255,255,.04);border:1px solid var(--cardb);',
+  '  font-size:13.5px;line-height:1.5;color:var(--mut);}',
+  '.cq-verdict b{color:var(--ink);} .cq-verdict .up{color:var(--green);} .cq-verdict .dn{color:var(--red);}',
   /* the end */
   '.cq-trail{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;}',
   '.cq-trail .t{display:flex;flex-direction:column;align-items:center;width:44px;font-size:9.5px;font-weight:800;color:var(--mut);}',
@@ -791,8 +805,64 @@ function cqPreviewHtml(){
     + '<div class="cq-bar-l"><span class="y">You ' + pct(pv.chance) + '</span><span class="t">'
     + esc(t.short) + ' ' + pct(1 - pv.chance) + '</span></div></div>'
     + tries
-    + '<div class="mx-row" style="margin-top:14px"><button class="big" id="cq-go">'
-    + (pv.boss ? 'Face the boss' : 'Tip off') + '</button></div>';
+    + cqPlanHtml()
+    + '<div class="mx-row" style="margin-top:14px"><button class="big" id="cq-go"' + (cq.plan ? '' : ' disabled') + '>'
+    + cqGoLabel(pv) + '</button></div>';
+}
+
+/* THE GAME PLAN. Both fives' numbers in five areas, and nothing else: no
+   edge, and no chance that moves as you tap, because trying all five and
+   keeping the best would be a menu rather than a read. The odds bar above is
+   the game with no plan, which is what it has always said. */
+function cqGoLabel(pv){
+  if (!cq.plan) return 'Pick a game plan';
+  return pv.boss ? 'Face the boss' : 'Tip off';
+}
+function cqPlanNum(key, v){ return (Math.round(v * 10) / 10).toFixed(1); }
+function cqPlanHtml(){
+  var plans = M.cqPlans(cq, data());
+  var h = '<div class="mx-card" style="margin-top:12px"><h3 class="fx-step" style="margin-top:0">Pick your game plan</h3>'
+    + '<p class="mx-say" style="margin-top:0">Make the game about one thing. It pays where you beat them by the most. Numbers are per game, adjusted for pace.</p>'
+    + '<div class="cq-plans">';
+  plans.forEach(function(p){
+    h += '<button class="cq-plan' + (cq.plan === p.key ? ' on' : '') + '" data-plan="' + p.key + '">'
+      + '<span class="pn">' + esc(p.name) + '<small>' + esc(p.stat) + '</small></span>'
+      + '<span class="pv"><span class="y">' + cqPlanNum(p.key, p.you) + '</span><i>vs</i><span class="t">'
+      + cqPlanNum(p.key, p.them) + '</span></span></button>';
+  });
+  return h + '</div></div>';
+}
+function cqWirePlans(){
+  document.querySelectorAll('.cq-plan[data-plan]').forEach(function(b){
+    b.onclick = function(){
+      if (!cq || cq.pending || cq.lost) return;
+      var k = b.getAttribute('data-plan');
+      M.cqSetPlan(cq, cq.plan === k ? null : k);
+      cqSave();
+      document.querySelectorAll('.cq-plan[data-plan]').forEach(function(x){
+        x.classList.toggle('on', x.getAttribute('data-plan') === cq.plan);
+      });
+      var go = $('cq-go');
+      if (go) { go.disabled = !cq.plan; go.textContent = cqGoLabel(M.cqPreview(cq, data())); }
+    };
+  });
+}
+
+/* HOW THE PLAN WENT, and what the better read was. Said after the game and
+   never before it, so the next matchup is still a read. */
+function cqPlanName(k){
+  var pl = M.CQ_PLANS.filter(function(p){ return p.key === k; })[0];
+  return pl ? pl.name : '';
+}
+function cqVerdictHtml(g){
+  if (!g || !g.plan) return '';
+  var edge = g.edge, word, cls = '';
+  if (edge >= 2.5) { word = 'It worked. Big edge.'; cls = 'up'; }
+  else if (edge >= 1) { word = 'It helped.'; cls = 'up'; }
+  else if (edge > -1) { word = 'A wash.'; }
+  else { word = 'It backfired.'; cls = 'dn'; }
+  return '<div class="cq-verdict"><b>' + esc(cqPlanName(g.plan)) + ':</b> <span class="' + cls + '">' + word + '</span>'
+    + (g.right ? ' The right read.' : ' Better read: <b>' + esc(cqPlanName(g.bestPlan)) + '</b>.') + '</div>';
 }
 
 /* THE GAME, QUARTER BY QUARTER. The score is already decided by cqPlay, and
@@ -888,6 +958,9 @@ function leaders(box, n){
 
 function cqTipOff(){
   var d = data();
+  /* No plan, no tip. The button says so, and a stale press is refused here
+     too rather than playing a game nobody planned. */
+  if (!cq.plan) return;
   var pv = M.cqPreview(cq, d);
   cqShown = M.cqStreak(cq);
   cqLivesHeld = cq.lives;
@@ -898,6 +971,7 @@ function cqTipOff(){
   var myBox = E.gameBox(cqRosterRowsFromPreview(pv), rec.you, rng, rec.ot);
   var theirBox = E.gameBox(pv.five, rec.opp, rng, rec.ot);
   cqGame = { ts: rec.ts, won: rec.won, ot: rec.ot, boss: pv.boss, q: q,
+    plan: rec.plan, edge: rec.edge, right: rec.right, bestPlan: rec.bestPlan,
     leadsYou: 'You: ' + leaders(myBox, 3),
     leadsThem: esc(tsParts(rec.ts).short) + ': ' + leaders(theirBox, 3) };
   cqView = 'game';
@@ -909,21 +983,22 @@ function cqRosterRowsFromPreview(){ return cqRosterRows(); }
 function cqAfterGame(){
   var box = $('cq-after');
   if (!box) return;
+  var verdict = cqVerdictHtml(cqGame);
   if (cqGame.won) {
     cqView = 'steal';
     cqSel = null;
-    box.innerHTML = cqStealHtml(true);
+    box.innerHTML = verdict + cqStealHtml(true);
     cqWireSteal();
   } else if (M.cqOver(cq)) {
     cqRecordBest();
-    box.innerHTML = '<div class="mx-row" style="margin-top:14px"><button class="big" id="cq-end">Last life gone. See the run</button></div>';
+    box.innerHTML = verdict + '<div class="mx-row" style="margin-top:14px"><button class="big" id="cq-end">Last life gone. See the run</button></div>';
     $('cq-end').onclick = function(){ cqView = 'over'; cqRender(); };
     cqSubmit();
   } else {
     /* THE BALL POPS where it was, so the loss costs something you can see. */
     var lives = document.querySelector('.cq-lives');
     if (lives) lives.innerHTML = cqLivesHtml(true);
-    box.innerHTML = '<div class="mx-card mx-rise" style="margin-top:14px"><h2 style="margin:0">They stay on</h2>'
+    box.innerHTML = verdict + '<div class="mx-card mx-rise" style="margin-top:14px"><h2 style="margin:0">They stay on</h2>'
       + '<p class="mx-say">That cost a life. <b>' + plural(cq.lives, 'life', 'lives') + ' left.</b> Beat them to move on.'
       + (M.CQ.BOSS_LIFE ? ' Every boss you beat gives one back.' : '') + '</p>'
       + '<div class="mx-row" style="margin-top:12px"><button class="big" id="cq-again">Rematch</button></div></div>';
@@ -980,7 +1055,7 @@ function cqWireSteal(){
     b.onclick = function(){
       var k = b.getAttribute('data-take');
       cqSel = cqSel === k ? null : k;
-      $('cq-after').innerHTML = cqStealHtml(false);
+      $('cq-after').innerHTML = cqVerdictHtml(cq.pending) + cqStealHtml(false);
       cqWireSteal();
     };
   });
@@ -1123,6 +1198,7 @@ function cqIntroHtml(){
     + '<div class="mx-card mx-scan" style="padding:20px 16px">'
     + '<div style="display:flex;gap:6px;margin-bottom:12px">' + ball(22) + ball(22) + ball(22) + '</div>'
     + '<p class="mx-say" style="margin:0"><b>Draft five role players and take the court.</b> Real teams line up to take it off you, weakest first. The 1996 Bulls are waiting at the top.</p>'
+    + '<p class="mx-say"><b>Pick a game plan every game.</b> Read both fives. Make it about what you do better.</p>'
     + '<p class="mx-say"><b>Beat a team and take one of their guys.</b> He takes the spot of the man you drop, so he has to be able to play it.</p>'
     + '<p class="mx-say"><b>Three lives.</b> Lose and the same team stays on for a rematch. Beat a boss and you get a life back.</p>'
     + (b.best ? '<p class="mx-say">Your best run: <b>' + plural(b.best, 'win') + '</b>.</p>' : '')
@@ -1141,7 +1217,7 @@ function cqRender(){
   else if (cqView === 'steal') {
     /* A reload with a win waiting lands here, so the scoreboard is gone and
        the steal stands on its own under the head. */
-    h = cqHead(false) + cqLineHtml() + '<div id="cq-after">' + cqStealHtml(true) + '</div>';
+    h = cqHead(false) + cqLineHtml() + '<div id="cq-after">' + cqVerdictHtml(cq.pending) + cqStealHtml(true) + '</div>';
   }
   else h = cqPreviewHtml();
   box.innerHTML = h;
@@ -1166,6 +1242,7 @@ function cqRender(){
     window.scrollTo(0, 0);
   };
   var go = $('cq-go'); if (go) go.onclick = cqTipOff;
+  cqWirePlans();
   var nw = $('cq-new'); if (nw) nw.onclick = cqNew;
   var sh = $('cq-share'); if (sh) sh.onclick = function(){ share(cqShareText()); };
   var bd = $('cq-board'); if (bd) bd.onclick = function(){ openModeBoard('conquest'); };

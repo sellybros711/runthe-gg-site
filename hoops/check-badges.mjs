@@ -332,7 +332,8 @@ function playRunWith(o, pick) {
 
 /* CONQUEST, played the way check-modes plays it: the best legal steal after
    every win. Plus a crew that never steals, which is the only way to be loyal
-   to it. */
+   to it. Every bot reads the game plan the way a good player does, off
+   cqPlans, which is what lights the Film room shelf. */
 {
   const smart = (st) => {
     let b = null;
@@ -350,6 +351,7 @@ function playRunWith(o, pick) {
     const bot = bots[i % bots.length];
     let g = 0;
     while (!st.lost && g++ < 120) {
+      M.cqSetPlan(st, M.cqPlans(st, data).find((p) => p.best).key);
       M.cqPlay(st, data);
       if (st.pending) { const x = bot(st); M.cqSteal(st, data, x ? x.take : null, x ? x.slot : null); }
       feat(B.conquestFeats(st, M.CQ.RUNGS, (k) => data.allPlayers[k], false));

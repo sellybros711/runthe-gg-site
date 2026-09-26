@@ -9861,6 +9861,63 @@ is added when overtime is reached. The guard reads the counter mid-game.
 The win chance printed before tip-off is read off `resolveGame`'s own
 arithmetic, and `check-modes` holds it to 20,000 simulated games at three rungs.
 
+#### Conquest: the game plan is the skill, and ten other designs were not
+
+```
+node hoops/check-modes.mjs      section 3b holds the ladder of skill
+```
+
+Reported by the owner: the gauntlet had no control. You tip off, you watch, and after
+a win the steal screen has already worked out who to take. **Before any code, ten
+designs were prototyped and measured, 200 to 300 runs a bot**, and all but one failed
+the same way:
+
+| tried | what it measured |
+|---|---|
+| a bench, and men who tire | resting a star bought nothing, and runs got shorter |
+| a salary cap that grows with wins | saving money bought nothing |
+| hiding win shares on the steal | a strong stat reader got 5.6 wins against 8.8 for perfect |
+| three doors, weaker to stronger | the weakest door always won |
+| a stronger door worth two steals | a coin flip either way |
+| roster continuity | upgrading always won |
+| a steal or a life back | the life always won |
+
+**The reason is one fact about the mode.** A single game is close enough to a coin
+flip that taking the best man available is nearly optimal, so any rule that pays
+later is worth nothing. Skill has to live inside the game on the court.
+
+**A game plan is a read of this matchup.** Five plans (the glass, the rim, the arc,
+the passing lanes, the ball movement), each paying by how much better your five is
+in that area than theirs, off the engine's own pace-adjusted roster profile, scored
+against the spread over every real club's best five. So six extra rebounds beats
+eight extra threes, which is the read. Through `cqPlay`, 600 runs a bot:
+
+| | mean wins | clears |
+|---|---|---|
+| the worst read | 6.8 | 3.2% |
+| no plan | 8.3 | 5.2% |
+| a random plan | 9.1 | 7.0% |
+| the biggest raw gap | 11.8 | 13.0% |
+| the best read | 12.4 | 15.2% |
+
+**THE SCREEN SHOWS BOTH FIVES' NUMBERS AND NEVER THE EDGE**, and the odds bar does
+not move when a plan is tapped. A chance per plan would let anybody try all five and
+keep the best, and the read is the whole decision. The verdict after the game says
+how it went and what the better read was, which is how a player learns the scales.
+
+**It is bounded and it is the one thing Conquest adds to a game.** `CQ.PLAN` points
+per 100 possessions a half standard deviation, clamped at two, so no plan moves a
+night by more than four. `resolveGame` still decides it. No plan is a legal game and
+costs nothing, which is what a save from before plans plays as.
+
+**The ordering guard leaves overtime out.** An overtime draws more noise, so a small
+shift that turns a tie into a regulation win is a different path through the rng,
+not the plan misbehaving. Measured: 49 of 49 non-overtime matchups order correctly.
+Proved by mutation: with the plan ignored, three skill claims fail.
+
+**Film room** (`cq.film`, wins on the right read in one run) is the badge for it, at
+three and ten. The badge bots read the plan the way a good player does.
+
 #### Fix History: the score is the odds, not the replay
 
 One replayed season is a coin with a ring on one side, so two people who made

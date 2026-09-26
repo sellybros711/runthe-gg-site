@@ -308,6 +308,9 @@ function conquestFeats(cq, rungs, row, final) {
   m('cq.best', streak);
   m('cq.bosses', bosses);
   m('cq.took', took);
+  /* A game won on the matchup's best plan. The read is the skill in this mode,
+     so it is the one thing counted per game rather than per run. */
+  m('cq.film', wins.filter((w) => w.right).length);
   if (cleared && (cq.losses || []).length === 0) m('cq.flawless', 1);
   if (cleared && num(cq.lives) === 1) m('cq.lastlife', 1);
   if (streak >= 10 && took === 0) m('cq.loyal', 1);
@@ -668,6 +671,10 @@ const CATALOG = [
   ...ladder('conquest', 'cq.bosses', [
     [1, 'cq-boss', 'Boss down', 'Beat a Conquest boss.', 'bronze'],
     [3, 'cq-boss3', 'Boss rush', 'Beat three bosses in one Conquest run.', 'gold'],
+  ]),
+  ...ladder('conquest', 'cq.film', [
+    [3, 'cq-plan3', 'Game planner', 'Win three Conquest games in one run on the right game plan.', 'bronze'],
+    [10, 'cq-film', 'Film room', 'Win ten Conquest games in one run on the right game plan.', 'gold'],
   ]),
   { id: 'cq-flawless', g: 'conquest', name: 'Untouchable', why: 'Clear the Conquest ladder without losing a game.',
     tier: 'ring', got: has('cq.flawless') },

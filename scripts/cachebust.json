@@ -2183,12 +2183,12 @@
       "sha": "5f6c878f376382a4"
     },
     "badges.js": {
-      "v": "2",
-      "sha": "f290ee9f926679f1"
+      "v": "3",
+      "sha": "508a73b49b29f0ff"
     },
     "modes.js": {
-      "v": "5",
-      "sha": "ff9b5f214c37c70b"
+      "v": "6",
+      "sha": "99128654534603d4"
     },
     "board.js": {
       "v": "5",
@@ -2207,8 +2207,8 @@
       "sha": "31e8a7be1e03a4c1"
     },
     "modes-ui.js": {
-      "v": "6",
-      "sha": "17a33d5af9eacea5"
+      "v": "7",
+      "sha": "6f833448a9e4f587"
     },
     "data/players.json": {
       "v": "5",
