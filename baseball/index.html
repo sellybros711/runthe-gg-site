@@ -322,7 +322,6 @@ body:has(#s-intro.on) header .lockup{visibility:hidden}
   text-transform:uppercase;line-height:1.05}
 .hm-sub{font-family:var(--fn);font-size:11.5px;font-weight:600;color:var(--dim);
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.hm-sub .hm-long{display:none}
 /* An iPhone SE is 320 and two names still overflowed there, so the narrowest
    phones set the name and the caption a step smaller. */
 @media(max-width:359px){.hp-modes{gap:10px;padding:12px}.hm-txt b{font-size:17px}.hm-sub{font-size:10.5px}}
@@ -333,6 +332,7 @@ body:has(#s-intro.on) header .lockup{visibility:hidden}
 .mode-btn b{font-weight:400;font-size:14px;letter-spacing:.05em}
 .mode-btn span{font-family:var(--fn);font-size:10px;font-weight:600;letter-spacing:.02em;
   text-transform:none;color:var(--dim-2)}
+.hp-tiles{display:none}
 .hrow{display:flex;gap:8px;justify-content:center;margin-bottom:16px}
 .hp-util-btn{width:auto;flex:1}
 /* The line under the name is the DESKTOP card's, and it is in the markup rather than
@@ -1772,9 +1772,31 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
      artwork between the field and the button, and the one control this page exists
      for fell under the fold on a 900px monitor. The logo leads now and the daily sits
      directly under the button, still on the first screen. */
-  #s-intro .dailycard{margin-bottom:22px;
-    display:flex;align-items:center;gap:20px;padding:18px 18px 18px 20px}
-  #s-intro .dc-txt{flex:1 1 auto;min-width:0}
+  /* THE BENTO. The daily is the tall card on the left and the six modes are tiles
+     beside it, which replaced three full-width bars stacked under the button: a
+     desktop has the width, and a stack of bars spent it on empty space. */
+  #s-intro .hp-bento{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,2fr);gap:14px;margin-bottom:18px}
+  #s-intro .hp-tiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+  #s-intro #b-modes{display:none}
+  .hp-tile{position:relative;overflow:hidden;display:flex;flex-direction:column;gap:5px;
+    min-height:128px;padding:15px 16px 16px;text-align:left;cursor:pointer;font-family:var(--fn);color:var(--ink);
+    border-radius:14px;border:1px solid rgba(var(--edge),.10);
+    background:linear-gradient(150deg,color-mix(in srgb,var(--c) 24%,var(--panel)),var(--panel) 72%);
+    transition:transform .14s ease,box-shadow .14s ease,border-color .14s ease}
+  .hp-tile::after{content:'';position:absolute;right:-34px;bottom:-34px;width:112px;height:112px;
+    border-radius:50%;background:var(--c);opacity:.13;transition:transform .2s ease}
+  .hp-tile:hover,.hp-tile:focus-visible{transform:translateY(-2px);outline:none;
+    border-color:color-mix(in srgb,var(--c) 60%,transparent);box-shadow:0 10px 22px -12px rgba(0,0,0,.45)}
+  .hp-tile:hover::after{transform:scale(1.15)}
+  .hp-tile svg{width:28px;height:28px;margin-bottom:auto;fill:none;stroke:var(--c);stroke-width:2;
+    stroke-linecap:round;stroke-linejoin:round}
+  .hp-tile b{position:relative;margin-top:10px;font-family:var(--fd);font-weight:400;font-size:25px;
+    letter-spacing:.03em;line-height:1}
+  .hp-tile span{position:relative;font-size:12.5px;line-height:1.35;color:var(--dim)}
+  #s-intro .dailycard{margin:0;height:100%;
+    display:flex;flex-direction:column;justify-content:space-between;gap:16px;padding:20px 20px 22px}
+  #s-intro .dailycard .dc-go{align-self:flex-start}
+  #s-intro .dc-txt{min-width:0}
   #s-intro .dc-go{display:block;flex:0 0 auto;font-family:var(--fd);font-size:17px;
     text-transform:uppercase;letter-spacing:.05em;padding:13px 22px;border-radius:9px;
     background:linear-gradient(180deg,var(--gold),#a5791a);color:#1a1205;
@@ -1806,27 +1828,20 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
   .hero .rlabel{font-size:10px;letter-spacing:.2em;margin-bottom:8px}
 
   #s-intro #b-start{font-size:24px;padding:22px 28px}
-  #s-intro #b-modes{margin-bottom:22px;padding:18px 22px;gap:16px}
-  #s-intro .hm-txt b{font-size:24px}
-  #s-intro .hm-sub{font-size:13px}
-  #s-intro .hm-sub .hm-long{display:inline}
-  #s-intro .hm-sub .hm-short{display:none}
-  #s-intro .hm-dots{grid-template-columns:repeat(3,11px);gap:5px}
-  #s-intro .hm-dots i{width:11px;height:11px}
 
   /* Three cards rather than three buttons, which is the same three doors wearing the
      room this width has. The icon and the line under the name are already in the
      markup and hidden on a phone, so nothing here builds a control. */
-  #s-intro .hrow{gap:14px}
-  #s-intro .hp-util-btn{gap:6px;padding:14px 14px;border-radius:12px;
-    text-align:center;background:var(--panel);border-color:var(--line)}
-  #s-intro .hp-util-btn:hover{border-color:var(--gold);color:var(--ink)}
-  #s-intro .hp-util-btn .hu-i{width:22px;height:22px}
+  /* THE THREE DOORS ARE LINKS HERE, not three more cards under six tiles. They are
+     reference rather than play, so they sit quiet under the bento. */
+  #s-intro .hrow{display:flex;justify-content:center;gap:34px;margin:4px 0 20px}
+  #s-intro .hp-util-btn{flex:0 0 auto;flex-direction:row;gap:9px;padding:6px 2px;border:0;
+    border-radius:0;background:none;box-shadow:none;color:var(--dim)}
+  #s-intro .hp-util-btn:hover{color:var(--ink);transform:none}
+  #s-intro .hp-util-btn .hu-i{width:19px;height:19px;stroke:var(--gold)}
   #s-intro .hp-util-btn .hu-long{display:inline}
   #s-intro .hp-util-btn .hu-short{display:none}
-  #s-intro .hp-util-btn b{font-size:14px;letter-spacing:.05em;color:var(--ink)}
-  #s-intro .hp-util-btn .hu-s{display:block;font-family:var(--fn);font-size:11.5px;font-weight:600;
-    text-transform:none;letter-spacing:0;color:var(--dim-2)}
+  #s-intro .hp-util-btn b{font-size:14px;letter-spacing:.07em;color:inherit}
 }
 /* SHORT SCREENS KEEP THE DRAFT BUTTON ON THE FIRST SCREEN. The logo gives way first,
    because it is the one thing on this page that is only decoration. A short desktop
@@ -1912,7 +1927,10 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
   <button class="btn ball hp-start" id="b-start"><svg class="bs bs-l" viewBox="0 0 100 100" aria-hidden="true"><use href="#seam"/></svg><svg class="bs bs-r" viewBox="0 0 100 100" aria-hidden="true"><use href="#seam"/></svg><span>Draft your team</span></button>
   <p class="htag">Draft twelve legends. Win the World Series.</p>
 
+  <div class="hp-bento">
   <button class="dailycard" id="daily-card"></button>
+  <div class="hp-tiles" id="hp-tiles"></div>
+  </div>
   <button class="hp-modes" id="b-modes"><span class="hm-dots" id="hm-dots" aria-hidden="true"></span><span class="hm-txt"><b>More ways to play</b><span class="hm-sub" id="hm-sub"></span></span><svg class="hm-arrow" viewBox="0 0 24 24" aria-hidden="true"><polyline points="9 6 15 12 9 18"/></svg></button>
   <div class="hrow">
     <button class="btn ghost hp-util-btn" id="b-how-play">
@@ -3380,6 +3398,7 @@ function heroSync(){
 /* ─── boot ─── */
 async function boot(){
   try{paintModesDoor();}catch(e){console.error(e);}
+  try{paintModeTiles();}catch(e){console.error(e);}
   /* ACCOUNTS, BOOTED HERE. supabase-js is deferred, so boot() may find no library
      yet and keeps polling; every change hands board.js the live token, so a
      season submitted signed in is filed under the account. */
@@ -3454,10 +3473,25 @@ function paintModesDoor(){
   const live=MODE_CARDS.filter(m=>!m.soon);
   $('hm-dots').innerHTML=live.map(m=>'<i style="background:'+m.tint+'"></i>').join('');
   const short=live.map(m=>m.title.replace(/^The |^All-Time /,'').replace(/ Draft$/,''));
-  /* Three names on a desktop, two on a phone: three wrapped at 390 and a door
-     with a two line caption reads as a paragraph. */
+  /* Two names, because three wrapped at 390 and a door with a two line caption
+     reads as a paragraph. The door is a phone's alone now: a desktop draws the
+     modes as tiles (paintModeTiles), so the three-name caption it used is gone. */
   const say=n=>short.length>n?short.slice(0,n).join(', ')+' and '+(short.length-n)+' more':short.join(', ');
-  $('hm-sub').innerHTML='<span class="hm-long">'+esc(say(3))+'</span><span class="hm-short">'+esc(say(2))+'</span>';
+  $('hm-sub').textContent=say(2);
+}
+/* THE DESKTOP SHOWS THE MODES RATHER THAN A DOOR TO THEM. A phone keeps the
+   "More ways to play" door, because six tiles two across is a screen of scrolling
+   under the one button that matters. A desktop has the room beside the daily, and
+   a bar leading to a sheet of six cards was a click spent finding out what exists.
+   Built from MODE_CARDS, so a mode added there is a tile here with nothing else to
+   remember, and it opens through pickMode, the sheet's own door. */
+function paintModeTiles(){
+  const box=$('hp-tiles');if(!box)return;
+  box.innerHTML=MODE_CARDS.filter(m=>!m.soon).map(m=>
+    '<button class="hp-tile" data-mode="'+m.id+'" style="--c:'+m.tint+'">'+
+      '<svg viewBox="0 0 24 24" aria-hidden="true">'+m.icon+'</svg>'+
+      '<b>'+esc(m.tile||m.title)+'</b><span>'+esc(m.line||m.text)+'</span></button>').join('');
+  box.querySelectorAll('[data-mode]').forEach(b=>b.addEventListener('click',()=>{ga('mode_tile',{mode:b.dataset.mode});pickMode(b.dataset.mode);}));
 }
 $('b-board').addEventListener('click',openBoard);
 $('b-board-back').addEventListener('click',()=>{show('s-intro');heroSync();});
@@ -3473,7 +3507,7 @@ $('b-first-go').addEventListener('click',()=>{closeSheet('sheet-first');markSeen
    home screen was six things competing with the one button that matters. */
 const ARROW='<svg class="mc-arrow" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>';
 const MODE_CARDS=[
-  {id:'era',mode:'era',tint:'var(--blue)',cls:'mc-era',title:'Eras Draft',
+  {id:'era',tile:'Eras Draft',line:'Pick a decade. Every era plays differently.',mode:'era',tint:'var(--blue)',cls:'mc-era',title:'Eras Draft',
    icon:'<path d="M12 2.4a9.6 9.6 0 1 0 0 19.2 9.6 9.6 0 0 0 0-19.2Z"/><path d="M12 6.7V12l3.5 2.1"/>',
    /* THE POOL DISAGREED WITH THE OLD SENTENCE. It said "the nineties are all
       bats", and the 1990s are the flattest decade there is: 19 arms in its top
@@ -3481,26 +3515,26 @@ const MODE_CARDS=[
       decade (7), and the picker now derives that line per card rather than
       taking anybody's word for it. */
    text:'Pick a decade and draft only from it. Every era plays differently.'},
-  {id:'fran',mode:'franchise',tint:'var(--green)',cls:'mc-club',title:'One Franchise',
+  {id:'fran',tile:'One Franchise',line:'One club. Its whole all-time roster.',mode:'franchise',tint:'var(--green)',cls:'mc-club',title:'One Franchise',
    icon:'<path d="M12 2.2 3.4 6.6v6c0 5.2 3.7 9.9 8.6 11.1 4.9-1.2 8.6-5.9 8.6-11.1v-6z"/>',
    /* NO COUNT IN THIS SENTENCE. It said "from 44 franchises" while the picker it
       opens is the thirty clubs playing today with its count interpolated beside
       the heading: a hand-written number one screen from the screen that knows.
       This repo's oldest rule, and the sheet is the one surface that broke it. */
    text:'Pick one club and draft only from its all-time roster.'},
-  {id:'div',mode:'division',tint:'var(--gold)',cls:'mc-div',title:'Division Draft',
+  {id:'div',tile:'Division Draft',line:'The clubs that really shared a division.',mode:'division',tint:'var(--gold)',cls:'mc-div',title:'Division Draft',
    icon:'<path d="M4 4h16"/><path d="M4 4v16"/><path d="M8 8h8v4H8z"/><path d="M8 16h8"/>',
    text:'Pick a division and draft only from the clubs that were in it, 1994 to today.',
    sticker:'New'},
-  {id:'cap',mode:'capsurvivor',tint:'var(--red)',cls:'mc-cap',title:'Salary Cap Survivor',
+  {id:'cap',tile:'Cap Survivor',line:'Contracts inflate. Stay under or cut.',mode:'capsurvivor',tint:'var(--red)',cls:'mc-cap',title:'Salary Cap Survivor',
    icon:'<path d="M12 2.6v18.8"/><path d="M16.6 6.4H9.8a2.9 2.9 0 0 0 0 5.8h4.4a2.9 2.9 0 0 1 0 5.8H6.8"/>',
    text:'Contracts inflate as the season runs. Stay under the cap or cut somebody.',
    sticker:'New'},
-  {id:'staff',mode:'staff',tint:'var(--purple)',cls:'mc-staff',title:'All-Time Pitching Staff',
+  {id:'staff',tile:'Pitching Staff',line:'Twelve arms. Lowest ERA wins.',mode:'staff',tint:'var(--purple)',cls:'mc-staff',title:'All-Time Pitching Staff',
    icon:'<path d="M12 2.8a9.2 9.2 0 1 0 0 18.4 9.2 9.2 0 0 0 0-18.4Z"/><path d="M6.2 5.6c3.4 3 3.4 9.8 0 12.8"/><path d="M17.8 5.6c-3.4 3-3.4 9.8 0 12.8"/>',
    text:'Draft a five-man rotation and a bullpen. Your lineup is league average.',
    sticker:'New'},
-  {id:'trade',mode:'trade',tint:'var(--orange)',cls:'mc-trade',title:'The Trade Machine',
+  {id:'trade',tile:'Trade Machine',line:'A roster handed to you. Deal your way up.',mode:'trade',tint:'var(--orange)',cls:'mc-trade',title:'The Trade Machine',
    icon:'<path d="M4.4 9.4V8.2a3.2 3.2 0 0 1 3.2-3.2h9.6V2.2l4.4 3.9-4.4 3.9V7.4H7.6a.8.8 0 0 0-.8.8v1.2z"/><path opacity=".55" d="M19.6 14.6v1.2a3.2 3.2 0 0 1-3.2 3.2H6.8v2.8l-4.4-3.9 4.4-3.9v2.6h9.6a.8.8 0 0 0 .8-.8v-1.2z"/>',
    text:'You get a roster you did not pick. Make trades before the deadline.',
    sticker:'New'},

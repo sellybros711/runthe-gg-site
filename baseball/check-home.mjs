@@ -360,6 +360,44 @@ for (const [w, h] of [[1000, 900], [1280, 720], [1280, 900], [1440, 900], [1680,
   claim(y.top > field.top && y.bottom < field.bottom && t.top > field.top && t.bottom < field.bottom,
     `${w}px: both reels stand beside the field rather than above or below it`,
     `field ${field.top}-${field.bottom}, year ${y.top}-${y.bottom}, team ${t.top}-${t.bottom}`);
+  /* THE BENTO. A desktop shows the six modes as tiles beside the daily rather than
+     a bar leading to a sheet, and the three doors become one row of links. Asked as
+     properties: every tile on screen and inside the band the daily spans, the daily
+     to the LEFT of all of them, the phone's door gone, and no door drawn as a card. */
+  const bento = await p.evaluate(() => {
+    const d = document.querySelector('.dailycard').getBoundingClientRect();
+    const tiles = [...document.querySelectorAll('#hp-tiles .hp-tile')].map((t) => {
+      const r = t.getBoundingClientRect();
+      const name = t.querySelector('b');
+      return { l: r.left, t: r.top, b: r.bottom, w: r.width,
+        fits: name.scrollWidth <= name.clientWidth + 1 };
+    });
+    const door = document.querySelector('.hrow .hp-util-btn');
+    const cd = getComputedStyle(door);
+    const rows = [...document.querySelectorAll('.hrow .hp-util-btn')].map((e) => Math.round(e.getBoundingClientRect().top));
+    return { d: { l: d.left, r: d.right, t: d.top, b: d.bottom }, tiles,
+      modes: getComputedStyle(document.querySelector('#b-modes')).display,
+      doorBg: cd.backgroundColor, doorBorder: cd.borderTopWidth, rows };
+  });
+  claim(bento.tiles.length === 6 && bento.tiles.every((x) => x.w > 150),
+    `${w}px: six mode tiles are drawn`, JSON.stringify(bento.tiles.map((x) => Math.round(x.w))));
+  claim(bento.tiles.every((x) => x.l >= bento.d.r && x.t >= bento.d.t - 1 && x.b <= bento.d.b + 1),
+    `${w}px: the tiles stand beside the daily, inside the band it spans`,
+    JSON.stringify({ daily: bento.d, tiles: bento.tiles.map((x) => [Math.round(x.l), Math.round(x.t), Math.round(x.b)]) }));
+  claim(bento.tiles.every((x) => x.fits), `${w}px: every tile's name fits its tile`);
+  claim(bento.modes === 'none', `${w}px: the phone's More ways to play door is not drawn`, bento.modes);
+  claim(new Set(bento.rows).size === 1 && bento.doorBorder === '0px' && /rgba\(0, 0, 0, 0\)|transparent/.test(bento.doorBg),
+    `${w}px: the three doors are one row of links, not cards`, JSON.stringify(bento));
+  await ctx.close();
+}
+
+/* ══ 3b. a tile is a door ════════════════════════════════════════════════════ */
+head('3b. A MODE TILE OPENS ITS MODE');
+{
+  const { ctx, p } = await open(1440, 900);
+  await p.click('#hp-tiles [data-mode="era"]');
+  const era = await p.waitForSelector('#s-era.on .era-card', { timeout: 15000 }).then(() => true, () => false);
+  claim(era, 'the Eras tile opens the decade picker, through the sheet\'s own door');
   await ctx.close();
 }
 

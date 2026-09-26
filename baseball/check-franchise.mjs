@@ -360,7 +360,7 @@ if (browser) {
        `window`, so a check that calls `buildFranGrid()` reaches nothing, and
        pressing the control is the thing a player does anyway. */
     await page.click('#b-modes');
-    await page.click('[data-mode="fran"]');
+    await page.click('#modes-in [data-mode="fran"]');
     await page.waitForSelector('#s-fran.on .fran-card', { timeout: 20000 });
     const cards = await page.evaluate(() => {
       return [...document.querySelectorAll('#s-fran .fran-card')].map(c => ({
@@ -513,7 +513,7 @@ if (browser) {
     await page.goto('http://127.0.0.1:8080/baseball/', { waitUntil: 'load', timeout: 30000 });
     await page.waitForSelector('#s-intro.on', { timeout: 30000 });
     await page.click('#b-modes');
-    await page.click('[data-mode="era"]');
+    await page.click('#modes-in [data-mode="era"]');
     await page.waitForSelector('#s-era.on .era-card', { timeout: 20000 });
     const eras = await page.evaluate(() => [...document.querySelectorAll('#s-era .era-card')].map(c => {
       const bar = c.querySelector('.era-mix'), segs = [...bar.children];
