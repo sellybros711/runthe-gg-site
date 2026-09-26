@@ -1776,23 +1776,28 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
      beside it, which replaced three full-width bars stacked under the button: a
      desktop has the width, and a stack of bars spent it on empty space. */
   #s-intro .hp-bento{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,2fr);gap:14px;margin-bottom:18px}
-  #s-intro .hp-tiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+  #s-intro .hp-tiles{--ball-mask:url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22 fill=%22none%22 stroke=%22%23000%22 stroke-width=%223.2%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Ccircle cx=%2250%22 cy=%2250%22 r=%2246%22/%3E%3Cpath d=%22M21 11 C37 33,37 67,21 89%22/%3E%3Cpath d=%22M29.6 15.3 L26.2 19.8 L20.7 19.7%22/%3E%3Cpath d=%22M34.1 25.5 L30.0 29.4 L24.5 28.4%22/%3E%3Cpath d=%22M36.8 36.4 L32.2 39.5 L26.9 37.8%22/%3E%3Cpath d=%22M38.0 47.5 L33.0 50.0 L28.0 47.5%22/%3E%3Cpath d=%22M37.6 58.7 L32.2 60.5 L27.7 57.3%22/%3E%3Cpath d=%22M35.5 69.7 L30.0 70.6 L25.9 66.8%22/%3E%3Cpath d=%22M31.8 80.2 L26.2 80.2 L22.9 75.8%22/%3E%3Cpath d=%22M79 11 C63 33,63 67,79 89%22/%3E%3Cpath d=%22M79.3 19.7 L73.8 19.8 L70.4 15.3%22/%3E%3Cpath d=%22M75.5 28.4 L70.0 29.4 L65.9 25.5%22/%3E%3Cpath d=%22M73.1 37.8 L67.8 39.5 L63.2 36.4%22/%3E%3Cpath d=%22M72.0 47.5 L67.0 50.0 L62.0 47.5%22/%3E%3Cpath d=%22M72.3 57.3 L67.8 60.5 L62.4 58.7%22/%3E%3Cpath d=%22M74.1 66.8 L70.0 70.6 L64.5 69.7%22/%3E%3Cpath d=%22M77.1 75.8 L73.8 80.2 L68.2 80.2%22/%3E%3C/svg%3E");display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
   #s-intro #b-modes{display:none}
   .hp-tile{position:relative;overflow:hidden;display:flex;flex-direction:column;gap:5px;
     min-height:128px;padding:15px 16px 16px;text-align:left;cursor:pointer;font-family:var(--fn);color:var(--ink);
     border-radius:14px;border:1px solid rgba(var(--edge),.10);
     background:linear-gradient(150deg,color-mix(in srgb,var(--c) 24%,var(--panel)),var(--panel) 72%);
     transition:transform .14s ease,box-shadow .14s ease,border-color .14s ease}
-  .hp-tile::after{content:'';position:absolute;right:-34px;bottom:-34px;width:112px;height:112px;
-    border-radius:50%;background:var(--c);opacity:.13;transition:transform .2s ease}
+  /* A BASEBALL IN THE CORNER, drawn as an outline: the ring, both seams and their
+     stitches. It is a MASK over the tile's own colour rather than an image, so one
+     drawing wears six tints and needs nothing for the dark theme. */
+  .hp-tile::after{content:'';position:absolute;z-index:0;right:-26px;bottom:-32px;width:104px;height:104px;
+    background:var(--c);opacity:.28;transform:rotate(-18deg);transition:transform .3s ease,opacity .2s ease;
+    -webkit-mask:var(--ball-mask) center/contain no-repeat;mask:var(--ball-mask) center/contain no-repeat;
+    pointer-events:none}
   .hp-tile:hover,.hp-tile:focus-visible{transform:translateY(-2px);outline:none;
     border-color:color-mix(in srgb,var(--c) 60%,transparent);box-shadow:0 10px 22px -12px rgba(0,0,0,.45)}
-  .hp-tile:hover::after{transform:scale(1.15)}
+  .hp-tile:hover::after{transform:rotate(12deg) scale(1.08);opacity:.42}
   .hp-tile svg{width:28px;height:28px;margin-bottom:auto;fill:none;stroke:var(--c);stroke-width:2;
     stroke-linecap:round;stroke-linejoin:round}
-  .hp-tile b{position:relative;margin-top:10px;font-family:var(--fd);font-weight:400;font-size:25px;
+  .hp-tile b{position:relative;z-index:1;margin-top:10px;font-family:var(--fd);font-weight:400;font-size:25px;
     letter-spacing:.03em;line-height:1}
-  .hp-tile span{position:relative;font-size:12.5px;line-height:1.35;color:var(--dim)}
+  .hp-tile span{position:relative;z-index:1;font-size:12.5px;line-height:1.35;color:var(--dim)}
   #s-intro .dailycard{margin:0;height:100%;
     display:flex;flex-direction:column;justify-content:space-between;gap:16px;padding:20px 20px 22px}
   #s-intro .dailycard .dc-go{align-self:flex-start}
