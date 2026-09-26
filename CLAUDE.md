@@ -435,8 +435,11 @@ tester lists in `dynasty-access.js` and `fullteam-access.js` decide who SEES any
 and are feature flags, never permissions. A signed in account without the row gets the free
 allowance and then the store; the row removes the limit rather than unlocking the door.
 
-**`arcade_card_year` is the one grant that ends.** Twelve months, and it does not renew. No
-copy anywhere may imply it does, and the receipt has to show the end date.
+**`arcade_card_year` is the one grant that is SOLD with an end.** Twelve months, and it does
+not renew. No copy anywhere may imply it does, and the receipt has to show the end date. The
+other row that ends is a PRIZE rather than a sale: the Fantasy Challenge winner's 30 days of
+Pro (see that section), which is the same two game rows with an end date and a `fantasy:`
+source, and the receipt says "Won" and prints the end the same way.
 
 **The prompt card is the store's too, and for the reason everything else here is.** There are
 **four** of them (the football front page, the football profile, the college front page, the
@@ -961,8 +964,7 @@ the preflight row read NO, and psql's own `drop trigger if exists` printed `trig
 **It is the one object in that file whose absence is invisible from every side.** The table
 is there to be read, the popup's `fantasy_my_result` answers, the page draws, and nothing
 anywhere throws. What does not happen is that a week going final settles the top three, so
-there is no placement for any entrant, no winner recorded, and nothing for
-`mint-winner-code.mjs` to read. A competition that runs and pays nobody, reported by no one,
+there is no placement for any entrant, no winner recorded, and nobody paid. A competition that runs and pays nobody, reported by no one,
 because there is nothing on any screen to report.
 
 **Pasting a file into the SQL editor and reading "Success" is not the same claim as the
@@ -4728,8 +4730,8 @@ valid strings, and no assertion in that suite was looking at either.
 
 #### The prize is decided, and one half of it must not go where it looks like it goes
 
-The top three get something. First takes the Pro bundle; all three get a mark on the account and
-a profile image only a winner has.
+The top three get something. First takes 30 days of Pro; all three get a mark on the account
+and a profile image only a winner has.
 
 **A WEEKLY WIN MUST NEVER ENTER `achievements.js`'s CATALOG**, and this is the Full Team gate
 argument arriving from the other side. `CATALOG.length` is the denominator `crest.js` divides by
@@ -4744,9 +4746,12 @@ denominator.
 because every badge is a question about rows in `ps_runs`, and a fantasy entry is not one of
 those. Whatever holds a win has to be its own record.
 
-**The bundle grant is a `premium_unlocks` row and should be written by hand while the numbers
-are small.** An automated path from "won a week" to "owns the product" is a second way to obtain
-the thing the store sells, and the store has exactly one on purpose.
+**The prize is NOT the product the store sells, and that is what lets it be automatic.** It
+used to be a 100% off code for the lifetime bundle, and the rule here was that an automated path
+from "won a week" to "owns the product" is a second way to obtain what the store sells. A pass
+that ends is not that product, so it is granted straight to `premium_unlocks` by the database
+with no Stripe involved (next section). Do not turn it back into a lifetime grant without
+putting the hand back in the loop.
 
 **The result sheet says something kind to everybody and throws confetti for one.** Second
 is "so close", third is a podium finish, the top half had a good week, and everybody else
@@ -4754,43 +4759,70 @@ is told every week starts from zero, plus that they beat their projection when t
 difference says they did. No line promises anything about the next board, because the
 sheet can open after that week has locked. Confetti is first place only, skipped under
 reduced motion, sits above the sheet with no pointer events, and goes when the sheet
-closes. `check-fantasy.mjs` asserts all of it, including that a tap on the code still
-lands on the code, and each claim was proved by reintroducing its defect.
+closes. `check-fantasy.mjs` asserts all of it, including that a tap on Close still lands
+on Close under the confetti, and each claim was proved by reintroducing its defect.
 
-#### Nobody is told the result until the winner's code exists
+#### The winner gets 30 days of Pro, and nobody is told the result until it is on
 
 ```
-psql -d fantasy -f supabase/115_fantasy_result_when_ready.sql
-psql -d fantasy -f supabase/test/fantasy_ready_test.sql
-node scripts/stripe/mint-winner-code.mjs --pending          what it would do
+psql -d pass -f supabase/120_fantasy_pro_pass.sql
+psql -d pass -f supabase/test/fantasy_pass_test.sql      (its header lists the chain)
+node football/check-fantasy.mjs                           the sheet, the door and the copy
+node football/check-premium.mjs                           the receipt says "Won"
 ```
 
-Asked for by the owner. Under 114 the popup answered the moment a week was scored and the
-code arrived whenever somebody minted it, so a winner could open the page in that gap, be
-told "1st" with no code, and close a sheet that only opens by itself once. **115 holds
-EVERY entrant's result back** until first place has left `none`, so the whole field hears it
-at the moment the winner can be paid. `void` counts as ready.
+**115 holds EVERY entrant's result back** until first place has left `none`, so the whole
+field hears it at the moment the winner has been paid. That was asked for by the owner when
+the prize was a Stripe code minted by a separate job, because a winner who looked in the gap
+was told "1st" with nothing on the sheet. `void` and `granted` count as ready.
 
-**The code is made by the live job, on the tick that closes the week.** `fantasy-live.yml`
-runs `mint-winner-code.mjs --pending --mint` after it scores, and the scoring write that
-marks a week final (Monday night game played and every club's stats in) settles the top
-three by trigger in the same tick. `fantasy-pool.yml` runs it again after its commit, for
-the week whose stats landed after the live window closed. `--pending` asks the database
-which weeks are unpaid, so a missed tick is picked up by the next one.
+**THE PRIZE IS 30 DAYS OF PRO NOW, not the lifetime bundle**, asked for by the owner on the
+first week it could be won. `supabase/120_fantasy_pro_pass.sql` writes `ps_premium` and
+`cfb_premium` rows with `expires_at` 30 days out and `source` `fantasy:<season>-w<week>`,
+and `premium_products()` stops answering them when that passes. **Nothing runs on day 30.**
+Every gate on the site already reads the expiry: `premium_products()`, 104's commish clock
+and 106's dynasty meter.
 
-**A field of one is voided unattended**, which releases that entrant's result with no code
-and a sentence saying why, and no confetti. `--force` still pays one by hand.
+**IT IS PAID INSIDE THE SETTLE**, so there is no gap and no second job. `fantasy_settle_week`
+(114's trigger) calls `fantasy_grant_pass` in the same transaction as the live writer's final
+tick. `scripts/stripe/mint-winner-code.mjs` is deleted, both workflows lost their mint step,
+and no Stripe secret is needed for a week to close.
+
+**Four rules in `fantasy_grant_pass`, each proved by breaking it:**
+
+- **A permanent row is never touched.** A winner who already bought the bundle keeps it for
+  good; the sheet says "Pro is already yours" and prints no end date.
+- **A second win adds 30 days to the END of a running pass**, not to today.
+- **A field of one is voided**, not paid, and told so. `p_force` pays one by hand.
+- **It acts only on `none`**, so a re-settle or a re-run of the chain pays nobody twice.
+
+**A PASS IS NEVER A GOLD NAME.** `display_pro` is stamped on a board row when it is filed and
+never taken off, so a pass would leave gold names on rows for ever after it ended. 120
+restates 107's `ps_is_pro` and its backfill trigger to skip a `fantasy:` source. **So
+re-running 107 on its own undoes that** and gilds the next season any pass holder files;
+re-run 120 after it. The backfill now also fires on UPDATE, because a winner who then buys
+has their rows updated by the webhook's upsert rather than inserted.
+
+**Checkout does not count a pass as owning the bundle** (`checkout-bundle.js` filters
+`source=not.like.fantasy:*`). Counted, a winner could never buy the bundle for good, during
+the pass or after it, because the row outlives its end date as the record of the win.
+
+**The receipt says "Won in the Fantasy Challenge"** and "Your Pro pass ends on", never
+"Bought" or "You paid once", on both the football and college profiles.
+
+**The length is one number in SQL and two lines of copy** (the board's "wins 30 days of Pro"
+and the leader pill's title). `check-fantasy.mjs` holds the copy to the `interval` in 120.
+The sheet prints the END DATE the server wrote rather than a count, so it cannot drift.
+
+**114 and 115 drop `fantasy_my_result` before making it** now, because 120 adds two return
+columns (`prize_state`, `pass_until`) and `create or replace` refuses a new return type.
+Without the drop, re-running the chain over a database that has 120 dies at 115 with
+"cannot change return type", which is 109's own lesson. `fantasy_prizes_test.sql` and
+`fantasy_ready_test.sql` describe the code era and run BEFORE 120.
 
 **The page asks about THIS week first, then last week**, because the week that closed on
 Monday night is still `POOL.week` until Tuesday's build rolls the board. The ack is keyed
 on the week, so a reader told on Monday is not told again on Tuesday.
-
-**It needs two repository secrets it did not have**: `STRIPE_SECRET_KEY` (a restricted key
-with write on coupons and promotion codes and read on prices is enough) and
-`STRIPE_PRICE_PS_PREMIUM_BUNDLE`. Without them a week with a real winner fails the live job
-every tick, loudly, and nobody is told the result, which is the intended failure. The
-success path has only ever run against a local stand-in (`STRIPE_API_BASE`, refused unless
-it is loopback), because api.stripe.com is blocked from the dev sandbox.
 
 **A profile image only a winner has is a claim about an account, so it is the board's own
 problem**: `display_pro` is already the pattern, a derived boolean written by a trigger rather

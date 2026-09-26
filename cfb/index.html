@@ -6083,7 +6083,7 @@ async function pfProLoad(){
       'Your Pro modes are unlocked. The list of what is in your bundle couldn\'t be loaded '+
       'just now. Reload the page and it will come back.</p>';
   }else{
-    let ends=null, endedOn=null;
+    let ends=null, endedOn=null, passEnds=null, passEnded=null, paid=false;
     list.innerHTML=owned.map((k)=>{
       const it=PRO_ITEM[k], row=by[k];
       const g=(window.RTG_STORE&&window.RTG_STORE.game(it.game))||{name:'',c:'#94a3b8'};
@@ -6096,14 +6096,20 @@ async function pfProLoad(){
          Telling a customer they hold something they do not hold is the one thing a receipt
          must never do. */
       const gone=!!row.expires_at&&Date.parse(row.expires_at)<Date.now();
-      if(till&&gone) endedOn=till;
-      else if(till) ends=till;
+      /* A FANTASY CHALLENGE PASS WAS WON, NOT BOUGHT. The weekly winner gets 30 days of Pro
+         as these same two rows with an end date and a source naming the week
+         (supabase/120_fantasy_pro_pass.sql). "Bought" on a prize is false, and so is the
+         Arcade Card sentence under the list, which is only ever about an Arcade year. */
+      const won=/^fantasy:/.test(row.source||'');
+      if(!won) paid=true;
+      if(won){ if(till&&gone) passEnded=till; else if(till) passEnds=till; }
+      else if(k==='arcade_card_year'){ if(till&&gone) endedOn=till; else if(till) ends=till; }
       /* NOT EVERYTHING IN A BUNDLE ARRIVES AT ONCE. See the note on PRO_ITEM. Both halves
          are required: the product has to be one that is delivered elsewhere, and it has to
          be still unstamped. */
       const waiting=!!it.wait&&row.fulfilled_at==null&&!gone;
       const dates=till
-        ? 'Bought '+when+'. '+(gone?'Ended ':'Ends ')+till+'.'
+        ? (won?'Won in the Fantasy Challenge on ':'Bought ')+when+'. '+(gone?'Ended ':'Ends ')+till+'.'
         : 'Bought '+when+'. Yours for good.';
       return '<div class="pw-line'+(gone?' ended':'')+'" style="--gc:'+g.c+'"><b>'+esc(g.name)+'</b>'+
         '<span>'+esc(it.text)+'</span>'+
@@ -6117,9 +6123,12 @@ async function pfProLoad(){
          and a customer who thinks they are on a recurring charge cancels the whole account
          to stop it. Nothing here renews, and the sentence says so before they have to ask. */
       '<p class="dim" style="font-size:12px;line-height:1.45;margin:13px 0 0">'+
-        'You paid once. Nothing here renews and nothing charges you again.'+
+        (paid?'You paid once. Nothing here renews and nothing charges you again.'
+             :'You won this. Nothing here renews and nothing charges you.')+
         (ends?' Your Arcade Card year simply ends on '+esc(ends)+'.':'')+
         (endedOn?' Your Arcade Card year ended on '+esc(endedOn)+'.':'')+
+        (passEnds?' Your Pro pass ends on '+esc(passEnds)+'.':'')+
+        (passEnded?' Your Pro pass ended on '+esc(passEnded)+'.':'')+
       '</p>';
       /* AND IT STOPS THERE. Stating that the year ended is the receipt doing its job;
          following it with a way to buy a fresh one is a shop, and a shop for a product

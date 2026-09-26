@@ -423,7 +423,21 @@ check_rows(sort, migration, what, breaks, ok) as (
       (select count(*) > 0 from proc where name = 'fantasy_swap')
       and (select count(*) > 0 from col where tbl = 'fantasy_out' and name = 'player_id')
       and (select count(*) > 0 from col where tbl = 'fantasy_prices' and name = 'kick')
-      and (select count(*) > 0 from col where tbl = 'fantasy_entries' and name = 'swaps'))
+      and (select count(*) > 0 from col where tbl = 'fantasy_entries' and name = 'swaps')),
+
+  -- THE WINNER GETS 30 DAYS OF PRO, paid by the settle itself. Asked of the
+  -- settle's BODY rather than of the grant function existing, because re-running
+  -- 114 on its own puts back a settle that pays nobody while the grant function
+  -- sits there unused, and that database would answer yes to an existence check.
+  (30, '120_fantasy_pro_pass',
+      'the winner of the week gets 30 days of Pro the moment the week is final',
+      'The week settles and first place is never paid. Every entrant''s result popup waits on a prize that nothing will write, so nobody is told how the week went.',
+      (select count(*) > 0 from proc where name = 'fantasy_grant_pass')
+      and (select count(*) > 0 from proc
+            where name = 'fantasy_settle_week' and body like '%fantasy_grant_pass%')
+      and (select count(*) > 0 from proc
+            where name = 'fantasy_my_result' and body like '%granted%')
+      and (select count(*) > 0 from col where tbl = 'fantasy_prizes' and name = 'pass_until'))
 )
 -- The summary has to come LAST, and a UNION can only be ordered by an output
 -- column, so the sort key is carried through a subquery rather than sorted on

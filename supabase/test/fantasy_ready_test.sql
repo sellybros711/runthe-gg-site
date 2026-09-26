@@ -15,6 +15,10 @@
 -- `fantasy_prizes_test.sql` is 114's file and asserts the old behaviour (a result the moment
 -- the week is scored), so it runs BEFORE 115 is applied and is not expected to pass after.
 -- This file uses its own weeks, 21 and 22, so the two never share a row.
+--
+-- AND THIS FILE IS THE CODE ERA TOO. It asserts a first place row waits at 'none' until a
+-- code is minted, and 120 pays first place inside the settle, so it runs BEFORE 120 is
+-- applied. `fantasy_pass_test.sql` is what drives the popup against 120.
 -- ---------------------------------------------------------------------------
 \set ON_ERROR_STOP on
 \pset pager off

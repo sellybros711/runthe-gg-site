@@ -1767,87 +1767,98 @@ console.log('\nTHE BOARD OPENS AT THE LOCK, AND IT IS ITS OWN SCREEN');
 }
 
 /* ================================================================
-   WHERE YOU FINISHED, TOLD ONCE, AND THE ONE CODE THAT IS WORTH MONEY
+   WHERE YOU FINISHED, TOLD ONCE, AND THE PRO PASS FIRST PLACE WINS
    ================================================================
  *
  * `supabase/114_fantasy_prizes.sql` settles the top three when a week is marked scored and
  * `supabase/test/fantasy_prizes_test.sql` drives that end of it: who won, in the board's own
- * ordering, and that a promotion code reaches exactly one account. None of that says
- * anything about the screen.
+ * ordering. `supabase/test/fantasy_pass_test.sql` drives 120: first place is Pro for 30
+ * days and then is not. None of that says anything about the screen.
  *
  * What is asked here is the half only the glass can answer. The sheet opens on its own for
- * somebody who has not seen it, it does not open for somebody who has, the winner's code is
- * on it and NOBODY ELSE'S PAGE CONTAINS ONE, and closing it is what acknowledges it.
+ * somebody who has not seen it, it does not open for somebody who has, the winner is told
+ * the day their pass ends and NOBODY ELSE IS TOLD THEY WON ONE, and closing it is what
+ * acknowledges it.
  *
  * THE FIXTURE IS THE SERVER'S ANSWER AND NOT A LINEUP, deliberately. A result is a fact the
  * server settles, so a walk that drafted its way to one would be testing `fantasy_standings`
  * through a browser, which the SQL suite already does properly and this cannot do at all.
  */
-console.log('\nWHERE YOU FINISHED, AND WHO GETS A CODE');
+console.log('\nWHERE YOU FINISHED, AND WHO GETS PRO');
 {
   const ENTRY = { picks: POOL.pool.slice(0, 6).map((m) => m.player_id),
     spend: 80, projected: 50, score: 0, scored: false };
   const res = (o) => Object.assign({ entered: true, place: 4, entries: 12,
-    score: 71.9, projected: 69.2, prize_place: null, promo_code: null, seen: false }, o);
+    score: 71.9, projected: 69.2, prize_place: null, promo_code: null, seen: false,
+    prize_state: null, pass_until: null }, o);
 
-  const CODE = 'RTG-W3-9QK4ZM';
+  /* Midday UTC, so the date the page prints is the same day in every time zone a CI runner
+     could be in. The sheet prints the END DATE the server wrote, never a count of days. */
+  const UNTIL = '2026-10-28T16:00:00Z', TILL = 'Until October 28';
+  const WON = { place: 1, prize_place: 1, prize_state: 'granted', pass_until: UNTIL };
   for (const [label, result, want] of [
-    /* THE WINNER. The one arm where a string worth $19.99 is on the page at all. */
+    /* THE WINNER. The one arm where a pass and its end date are on the page at all. */
     /* CONFETTI IS THE WINNER'S AND NOBODY ELSE'S, so every open arm asserts it one way or
        the other: a burst on second place would say the podium won the week. */
-    ['a winner is told, and handed their code',
-      res({ place: 1, prize_place: 1, promo_code: CODE }),
-      { open: true, place: '1st', code: CODE, store: true, say: /won the week/i,
+    ['a winner is told they have Pro, and until when',
+      res(WON),
+      { open: true, place: '1st', pass: TILL, store: true, say: /won the week/i,
         confetti: true }],
     /* A REDUCED MOTION READER STILL WINS, and gets everything but the falling paper. */
     ['and a winner who asked for less motion gets no confetti',
-      res({ place: 1, prize_place: 1, promo_code: CODE }),
-      { open: true, place: '1st', code: CODE, store: true, say: /won the week/i,
+      res(WON),
+      { open: true, place: '1st', pass: TILL, store: true, say: /won the week/i,
         confetti: false, reduced: true }],
+    /* A WINNER WHO ALREADY BOUGHT IT is never told their Pro runs out. The server writes no
+       end date for them, and "Until" over a purchase would read as the purchase lapsing. */
+    ['a winner who already owns Pro is told it is theirs for good',
+      res(Object.assign({}, WON, { pass_until: null })),
+      { open: true, place: '1st', pass: 'For good', store: false, say: /won the week/i,
+        confetti: true }],
     ['second is told how close it was',
       res({ place: 2, prize_place: 2 }),
-      { open: true, place: '2nd', code: null, store: false, say: /so close/i,
+      { open: true, place: '2nd', pass: null, store: false, say: /so close/i,
         confetti: false }],
     ['the podium is told, and handed nothing',
       res({ place: 3, prize_place: 3 }),
-      { open: true, place: '3rd', code: null, store: false, say: /podium/i,
+      { open: true, place: '3rd', pass: null, store: false, say: /podium/i,
         confetti: false }],
     ['the top half is told it had a good week',
       res({ place: 5, entries: 12 }),
-      { open: true, place: '5th', code: null, store: false, say: /top half/i,
+      { open: true, place: '5th', pass: null, store: false, say: /top half/i,
         confetti: false }],
     /* THE REST OF THE FIELD, which is most of it, and the arm a popup written for the
        podium alone would be silent for. The fixture scored 71.9 against a projection of
        69.2, so the one thing this reader did better than expected is said to them. */
     ['somebody who placed nowhere is still told where they came',
       res({ place: 9, entries: 12 }),
-      { open: true, place: '9th', code: null, store: false,
+      { open: true, place: '9th', pass: null, store: false,
         say: /starts from zero.*beat your projection by 2\.7 points/i, confetti: false }],
     /* AND IT IS NOT SAID WHEN IT IS NOT TRUE, or the kind line is a lie on a bad week. */
     ['a lineup under its projection is not told it beat it',
       res({ place: 10, entries: 12, score: 60.1 }),
-      { open: true, place: '10th', code: null, store: false,
+      { open: true, place: '10th', pass: null, store: false,
         say: /^(?!.*projection).*starts from zero/i, confetti: false }],
     /* 11th IS THE ONE EVERY NAIVE ORDINAL GETS WRONG, and twelve entrants meet it at once. */
     ['and eleventh is eleventh rather than eleven-st',
       res({ place: 11, entries: 12 }),
-      { open: true, place: '11th', code: null, store: false }],
+      { open: true, place: '11th', pass: null, store: false }],
     /* A FIELD OF ONE IS VOIDED, NOT PAID, and the sheet has to say so rather than "you won"
        over a prize that is not there. No confetti over "there is no prize". */
     ['the only entrant is told there is no prize, and gets no confetti',
-      res({ place: 1, entries: 1, prize_place: 1 }),
-      { open: true, place: '1st', code: null, store: false, say: /only entry.*no prize/i,
+      res({ place: 1, entries: 1, prize_place: 1, prize_state: 'void' }),
+      { open: true, place: '1st', pass: null, store: false, say: /only entry.*no prize/i,
         confetti: false }],
     /* THE WEEK THAT JUST CLOSED IS STILL THE LIVE WEEK UNTIL TUESDAY'S BUILD, and the code
        is made on Monday night, so the result has to be found under THIS week too. Asking
        only about last week made everybody wait a night for the new board. */
     ['a week that closed tonight is told before the board rolls over',
-      { byWeek: { [POOL.week]: res({ place: 1, prize_place: 1, promo_code: CODE }) } },
-      { open: true, place: '1st', code: CODE, store: true, say: /won the week/i,
+      { byWeek: { [POOL.week]: res(WON) } },
+      { open: true, place: '1st', pass: TILL, store: true, say: /won the week/i,
         eye: 'Week ' + POOL.week + ' is settled' }],
     ['and once it has rolled over, last week is still found',
       { byWeek: { [POOL.week - 1]: res({ place: 2, prize_place: 2 }) } },
-      { open: true, place: '2nd', code: null, store: false, say: /so close/i,
+      { open: true, place: '2nd', pass: null, store: false, say: /so close/i,
         eye: 'Week ' + (POOL.week - 1) + ' is settled' }],
     ['a reader who has already seen it is not told again',
       res({ place: 2, prize_place: 2, seen: true }), { open: false }],
@@ -1871,25 +1882,24 @@ console.log('\nWHERE YOU FINISHED, AND WHO GETS A CODE');
         place: document.getElementById('prz-place').textContent.trim(),
         eye: document.getElementById('prz-eye').textContent.trim(),
         say: document.getElementById('prz-say').textContent.trim(),
-        code: document.getElementById('prz-win').hidden
-          ? null : document.getElementById('prz-code-txt').textContent.trim(),
+        pass: document.getElementById('prz-win').hidden
+          ? null : document.getElementById('prz-pass-till').textContent.trim(),
         store: !document.getElementById('prz-store').hidden,
         door: !document.getElementById('b-prize').hidden,
         confetti: !!document.querySelector('.confetti-cv'),
         /* THE CONFETTI MUST NEVER BE WHAT A TAP LANDS ON. It sits over the sheet, so a canvas
-           that took pointer events would make the code and both buttons dead for four
-           seconds, which reads as a prize that will not let itself be claimed. */
+           that took pointer events would make both buttons dead for four seconds, which
+           reads as a prize that will not let itself be used. */
         tapsCode: (function(){
-          const b = document.getElementById('prz-code');
+          const b = document.getElementById('prz-close');
           if (!b || !b.offsetParent) return null;
           const r = b.getBoundingClientRect();
           const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
           return !!hit && b.contains(hit);
         })(),
-        /* THE WHOLE DOCUMENT, because the claim is that a page belonging to somebody who
-           did not win contains no code anywhere, not merely that the box is hidden. A
-           hidden element still ships its text to every reader. */
-        html: document.documentElement.innerHTML,
+        /* THE HIDDEN BOX'S OWN TEXT, because a hidden element still ships its text to every
+           reader: somebody who came second must not have a pass date sitting in the DOM. */
+        hiddenTill: document.getElementById('prz-pass-till').textContent.trim(),
       };
     });
     ok(label, seen.open === want.open, seen.open ? 'sheet open' : 'sheet shut');
@@ -1898,18 +1908,18 @@ console.log('\nWHERE YOU FINISHED, AND WHO GETS A CODE');
       if (want.say) ok('  with a line about it', want.say.test(seen.say), seen.say);
       if (want.eye) ok('  about the right week', seen.eye === want.eye, seen.eye);
       ok('  and a door back to it', seen.door);
-      ok('  the code is ' + (want.code ? 'there' : 'not'),
-        seen.code === want.code, seen.code || 'none');
-      ok('  and the way to spend it is ' + (want.store ? 'shown' : 'hidden'),
+      ok('  the pass is ' + (want.pass ? 'there' : 'not'),
+        seen.pass === want.pass, seen.pass || 'none');
+      ok('  and the way to use it is ' + (want.store ? 'shown' : 'hidden'),
         seen.store === want.store);
       if (want.confetti !== undefined)
         ok('  confetti is ' + (want.confetti ? 'falling' : 'not falling'),
           seen.confetti === want.confetti, seen.confetti + '');
-      if (want.code) ok('  and a tap on the code still lands on the code',
+      if (want.confetti) ok('  and a tap on Close still lands on Close',
         seen.tapsCode === true, seen.tapsCode + '');
       /* NOT ANYWHERE IN THE DOCUMENT for anybody who did not win it. */
-      if (!want.code) ok('  and no code is anywhere on the page',
-        !seen.html.includes(CODE) && !/RTG-W\d/.test(seen.html));
+      if (!want.pass) ok('  and no pass date is anywhere on the page', seen.hiddenTill === '',
+        seen.hiddenTill);
     } else {
       /* A SHUT SHEET IS NOT A MISSING ONE. Somebody who has seen it keeps the door; a
          reader who never entered gets neither. */
@@ -1928,7 +1938,7 @@ console.log('\nWHERE YOU FINISHED, AND WHO GETS A CODE');
        above cover the other reader, who is already in and lands on `s-in`. */
     const { page, boom, posted } = await openPage(browser, FANTASY, { who: TESTER,
       at: BEFORE,
-      server: { result: res({ place: 1, prize_place: 1, promo_code: CODE }) } });
+      server: { result: res(WON) } });
     await page.waitForSelector('#prz-sheet:not([hidden])', { timeout: 15000 });
     await page.click('#prz-close');
     /* `state: 'hidden'` AND NOT A `[hidden]` SELECTOR. `waitForSelector` waits for an
@@ -1944,15 +1954,17 @@ console.log('\nWHERE YOU FINISHED, AND WHO GETS A CODE');
     ok('  and takes the confetti with it',
       !(await page.evaluate(() => !!document.querySelector('.confetti-cv'))));
 
-    /* AND A WINNER CAN GET BACK TO THEIR CODE. The sheet shows once on its own, which is
-       right for something that arrives unasked and would be wrong as the only time a
-       $19.99 code is ever on screen.
+    /* AND A WINNER CAN GET BACK TO THE DATE THEIR PASS ENDS. The sheet shows once on its
+       own, which is right for something that arrives unasked and would be wrong as the only
+       place a winner is ever told what they won.
        THE DOOR IS ON THE HOME SCREEN, beside the last week card, which is the screen a
        reader who has not drafted yet is already looking at. */
     await page.click('#b-prize');
     await page.waitForSelector('#prz-sheet:not([hidden])', { timeout: 5000 });
-    ok('  and the door reopens it with the code still on it',
-      (await page.locator('#prz-code-txt').innerText()).trim() === CODE);
+    ok('  and the door says when the pass ends',
+      /Pro is yours until October 28/.test(await page.locator('#b-prize').innerText()));
+    ok('  and reopens the sheet with the pass still on it',
+      (await page.locator('#prz-pass-till').innerText()).trim() === TILL);
 
     /* CLOSING AGAIN DOES NOT ASK TWICE. The server ignores a second ack, so this is about
        the page not spending a round trip per close for ever. */
@@ -2742,8 +2754,20 @@ console.log('\nA ROW OPENS INTO ITS LINEUP, AND THE LEADER WEARS THE PRIZE');
   ok('  and the name is still just the name', lead[0].name === 'Ada', lead[0].name);
   ok('  the board says what first place wins', await page.evaluate(() => {
     const el = document.getElementById('lv-boardhow');
-    return !el.hidden && /Pro account/.test(el.textContent);
+    return !el.hidden && /30 days of Pro/.test(el.textContent);
   }));
+  /* THE LENGTH IS WRITTEN IN TWO PLACES THAT CANNOT INTERPOLATE: this line and the badge's
+     title, both static copy about a number that lives in `fantasy_grant_pass`. So the copy
+     is held to the SQL, and moving the length in one place fails here until both move. */
+  {
+    const sql = fs.readFileSync(path.join(ROOT, 'supabase/120_fantasy_pro_pass.sql'), 'utf8');
+    const days = [...new Set([...sql.matchAll(/interval '(\d+) days'/g)].map((m) => m[1]))];
+    const copy = [...fs.readFileSync(path.join(ROOT, 'football/fantasy/index.html'), 'utf8').matchAll(/wins (\d+) days of Pro/g)]
+      .map((m) => m[1]);
+    ok('  and the number it names is the one the server grants',
+      days.length === 1 && copy.length >= 2 && copy.every((d) => d === days[0]),
+      'sql ' + days.join(',') + ', copy ' + copy.join(','));
+  }
 
   const closed = await page.evaluate(() => {
     const e = document.querySelector('#lv-board .brow');

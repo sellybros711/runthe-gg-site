@@ -130,15 +130,12 @@ jobs:
       # 2pm should not cost the rest of Sunday), three in a row do, and any failure at all
       # takes the run red when it ends.
       #
-      # THE WINNER'S CODE IS MINTED ON EVERY TICK TOO, because the tick that closes the week
-      # is the one that settles the top three (114's trigger) and every entrant's result
-      # waits on the code (115). `--pending` asks the database which weeks are unpaid, so a
-      # tick with nothing to pay costs one query. Its failures are counted the same way.
+      # THE WINNER IS PAID BY THE DATABASE, on the tick that marks the week final: 114's
+      # trigger settles the top three and 120's settle gives first place 30 days of Pro in
+      # the same transaction. Nothing here holds a Stripe key any more, and nothing needs to.
       - name: Score the games for as long as they are on
         env:
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
-          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
-          STRIPE_PRICE_PS_PREMIUM_BUNDLE: ${{ secrets.STRIPE_PRICE_PS_PREMIUM_BUNDLE }}
           GH_TOKEN: ${{ github.token }}
           FORCE: ${{ inputs.force && '--force' || '' }}
         run: |
@@ -162,8 +159,6 @@ jobs:
               echo "::warning::tick $tick failed to score"
               failed=1; streak=$((streak + 1))
             fi
-            node scripts/stripe/mint-winner-code.mjs --pending --mint \
-              || { echo "::warning::tick $tick failed to mint"; failed=1; }
             echo "::endgroup::"
             FORCE=''
             if [ "$streak" -ge 3 ]; then

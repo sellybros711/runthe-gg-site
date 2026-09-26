@@ -117,7 +117,8 @@ jobs:
                  113_fantasy_submit_username \
                  114_fantasy_prizes \
                  115_fantasy_result_when_ready \
-                 119_fantasy_swap"
+                 119_fantasy_swap \
+                 120_fantasy_pro_pass"
 
           # Checked before anything is concatenated, so a missing file is named
           # rather than producing a chain with a hole in it.
@@ -206,7 +207,7 @@ jobs:
           psql "$SUPABASE_DB_URL" -tA -F '|' -f supabase/test/launch_preflight.sql > /tmp/pre.psv
 
           MISSING=$(awk -F'|' '
-            $1 ~ /^(109_fantasy_challenge|110_fantasy_live|111_nfl_scores|112_fantasy_entrants|113_fantasy_submit_username|114_fantasy_prizes|115_fantasy_result_when_ready|119_fantasy_swap)$/ \
+            $1 ~ /^(109_fantasy_challenge|110_fantasy_live|111_nfl_scores|112_fantasy_entrants|113_fantasy_submit_username|114_fantasy_prizes|115_fantasy_result_when_ready|119_fantasy_swap|120_fantasy_pro_pass)$/ \
               && $3 == "NO" { printf "%s ", $1 }
           ' /tmp/pre.psv)
 

@@ -217,14 +217,12 @@
      Written as text it is fifteen characters somebody has to select by hand on a phone,
      mid sheet, and get exactly right. `user-select:all` is the fallback for a browser that
      refuses the clipboard: one tap selects the whole string rather than a word of it. */
-  .przcode{display:flex;align-items:center;justify-content:space-between;gap:10px;
-    width:100%;margin-top:6px;padding:12px 14px;border-radius:12px;cursor:pointer;
-    text-align:left;background:rgba(212,175,55,.10);border:1px solid rgba(212,175,55,.5)}
-  .przcode span{font-family:var(--fd);font-size:21px;letter-spacing:.04em;color:var(--gold);
-    user-select:all;word-break:break-all}
-  .przcode em{flex:0 0 auto;font-style:normal;font-size:11px;letter-spacing:.06em;
-    text-transform:uppercase;color:var(--dim-2)}
-  .przcode:disabled{cursor:default}
+  .przpass{display:flex;align-items:baseline;justify-content:space-between;gap:10px;
+    flex-wrap:wrap;margin-top:6px;padding:12px 14px;border-radius:12px;
+    background:rgba(212,175,55,.10);border:1px solid rgba(212,175,55,.5)}
+  .przpass b{font-family:var(--fd);font-size:21px;letter-spacing:.04em;color:var(--gold);
+    font-weight:400}
+  .przpass span{font-size:13px;color:var(--ink)}
   /* display:flex, so the attribute needs its own rule. Ninth time in this repo. */
   #prz-win[hidden]{display:none}
   .confetti-cv{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:41}
@@ -654,10 +652,10 @@
         <span class="lw"><b id="last-say"></b><s id="last-sub"></s></span>
         <span class="lp" id="last-pts"></span>
       </button>
-      <!-- A WAY BACK TO THE SHEET, and for the winner it is the way back to their code.
-           The popup shows once and then never again on its own, which is right for
-           something that arrives unasked, and would be wrong as the only time a $19.99
-           promotion code is ever on screen. Drawn only when there is a settled result to
+      <!-- A WAY BACK TO THE SHEET, and for the winner it is the way back to the date their
+           Pro pass ends. The popup shows once and then never again on its own, which is
+           right for something that arrives unasked, and would be wrong as the only place a
+           winner is ever told what they won. Drawn only when there is a settled result to
            reopen, so it is never a control that opens nothing. -->
       <button class="lastwk" id="b-prize" hidden>
         <span class="lw"><b id="prize-say"></b><s id="prize-sub"></s></span>
@@ -780,7 +778,7 @@
              reach all four where the entry screen could only reach two: the reader here has
              not necessarily entered, so "nobody yet" is a sentence that can be true. -->
         <p class="note" id="lv-boardsay"></p>
-        <p class="note" id="lv-boardhow" hidden>Tap a name to see the lineup. First place when the week ends wins a Pro account.</p>
+        <p class="note" id="lv-boardhow" hidden>Tap a name to see the lineup. First place when the week ends wins 30 days of Pro.</p>
       </div>
       <div class="stack">
         <button class="btn quiet" id="b-live-back">Back</button>
@@ -853,9 +851,9 @@
 
      THE SCRIM DOES NOT CLOSE THIS ONE, which is the opposite of the injury sheet directly
      above and is deliberate. That sheet is reference a reader opened on purpose and can
-     reopen any time. This one arrives unasked, shows once, and for one reader carries a
-     promotion code worth $19.99: a stray tap on the edge of the screen must not be the
-     thing that takes it away. The button is the way out and it says so. -->
+     reopen any time. This one arrives unasked, shows once, and for one reader says they
+     have won Pro: a stray tap on the edge of the screen must not be the thing that takes
+     it away. The button is the way out and it says so. -->
 <div class="isheet" id="prz-sheet" hidden>
   <div class="ibox">
     <div class="eyebrow" id="prz-eye">Week 3</div>
@@ -868,19 +866,19 @@
     </div>
     <p class="lede" id="prz-say" style="margin-top:12px"></p>
 
-    <!-- The winner's half. Built rather than revealed, so nobody who did not win ever has a
-         code in their page at all. -->
+    <!-- The winner's half. Nothing to claim: the pass is already on the account, written
+         by the database on the tick that closed the week (120_fantasy_pro_pass.sql). -->
     <div id="prz-win" hidden>
-      <div class="eyebrow" style="margin-top:16px">Your code</div>
-      <button class="przcode" id="prz-code" type="button">
-        <span id="prz-code-txt"></span>
-        <em id="prz-code-hint">tap to copy</em>
-      </button>
+      <div class="eyebrow" style="margin-top:16px">Your prize</div>
+      <div class="przpass">
+        <b id="prz-pass-head">Pro is yours</b>
+        <span id="prz-pass-till"></span>
+      </div>
       <p class="note" id="prz-win-say"></p>
     </div>
 
     <div class="stack">
-      <a class="btn go" id="prz-store" href="/football/" hidden>Go and claim it</a>
+      <a class="btn go" id="prz-store" href="/football/" hidden>Play Pro now</a>
       <button class="btn quiet" id="prz-close">Close</button>
     </div>
   </div>
@@ -896,7 +894,7 @@
 <script defer src="/football/auth.js?v=7"></script>
 <script src="clubs.js?v=2"></script>
 <script src="draft.js?v=5"></script>
-<script src="entries.js?v=6"></script>
+<script src="entries.js?v=7"></script>
 <script>
 (function(){
   'use strict';
@@ -2356,7 +2354,7 @@
         + ' aria-expanded="' + open + '"' : ' disabled') + '>'
       + '<span class="bp">' + esc(String(place)) + '</span>'
       + '<span class="bnw"><span class="bn">' + esc(name) + '</span>'
-      + (o.lead ? '<span class="bpro" title="First place wins a Pro account">' + TROPHY + 'PRO</span>' : '')
+      + (o.lead ? '<span class="bpro" title="First place wins 30 days of Pro">' + TROPHY + 'PRO</span>' : '')
       + '</span>' + dots
       + '<span class="bs">' + esc(score) + '</span>'
       + (o.roster ? CHEVRON : '') + '</button>'
@@ -3037,18 +3035,28 @@
     /* Called from every home paint as well as from the answer, so it has to be safe before
        there is anything to draw: no result is a door that is simply not there. */
     if (!PRZ) return;
-    var place = Number(PRZ.r.place);
-    $('prize-say').textContent = PRZ.r.promo_code
+    var place = Number(PRZ.r.place), won = passWon(PRZ.r);
+    $('prize-say').textContent = won
       ? 'You won week ' + PRZ.week
       : 'Week ' + PRZ.week + ' is settled';
-    $('prize-sub').textContent = PRZ.r.promo_code
-      ? 'Your code is in here'
+    $('prize-sub').textContent = won
+      ? (PRZ.r.pass_until ? 'Pro is yours until ' + passDay(PRZ.r.pass_until) : 'Your win is in here')
       : 'Where you finished, out of ' + PRZ.r.entries;
     $('prize-pl').textContent = ordinal(place);
     $('prize-pl').classList.toggle('pod', place <= 3);
     $('b-prize').hidden = false;
   }
   $('b-prize').onclick = function(){ showPrize(); };
+
+  /* THE PRIZE IS 30 DAYS OF PRO, granted by the server the moment the week is final. A
+     winner is first place on a week whose prize row reads `granted`; `void` is a field of
+     one, which is settled and deliberately not paid. The 30 is never written here: the
+     sheet prints the END DATE the server wrote, so moving the length in SQL moves this. */
+  function passWon(r){ return Number(r.place) === 1 && r.prize_state === 'granted'; }
+  function passDay(iso){
+    var d = new Date(iso);
+    return isNaN(d) ? '' : d.toLocaleDateString(undefined, { month: 'long', day: 'numeric' });
+  }
 
   function showPrize(){
     if (!PRZ) return;
@@ -3068,10 +3076,11 @@
        sheet can open after that week has already locked, and a line telling somebody to go
        and draft into a shut week is the one encouraging sentence that would be false. */
     var say;
-    /* A WIN WITH NO CODE IS A FIELD OF ONE, which the minting script voids rather than
-       pays. Said plainly, because "you won" over a sheet with no prize on it reads as the
-       prize going missing. The win itself is real and stays on their profile. */
-    if (place === 1 && !r.promo_code && entries < 2)
+    /* A WIN WITH NO PASS IS A FIELD OF ONE, which the server voids rather than pays. Said
+       plainly, because "you won" over a sheet with no prize on it reads as the prize going
+       missing. The win itself is real and stays on their profile. */
+    var won = passWon(r);
+    if (place === 1 && !won && entries < 2)
       say = 'You were the only entry this week, so there is no prize. The win still counts.';
     else if (place === 1) say = 'You won the week. Nobody drafted better.';
     else if (place === 2) say = 'So close. One spot off the top.';
@@ -3088,24 +3097,29 @@
       say += ' You beat your projection by ' + beat.toFixed(1) + ' points.';
     $('prz-say').textContent = say + ' The full board is on the live screen.';
 
-    /* THE CODE IS DRAWN ONLY FOR THE ACCOUNT IT BELONGS TO, and the server is what decides
-       that: `fantasy_my_result` hands a code to its owner and a null to everybody else, so
-       there is nothing here that a reader who did not win could reveal by opening the page
-       source. This branch has nothing to hide because it has nothing to draw. */
-    var code = r.promo_code;
-    $('prz-win').hidden = !code;
-    $('prz-store').hidden = !code;
-    if (code){
-      $('prz-code-txt').textContent = code;
-      $('prz-code-hint').textContent = 'tap to copy';
-      $('prz-win-say').textContent = 'That is the Perfect Season Premium Bundle, free, on '
-        + 'the account you entered with. Paste the code at checkout. It works once.';
+    /* THE PASS IS DRAWN ONLY FOR THE ACCOUNT THAT WON IT, and the server decides that:
+       `fantasy_my_result` joins the prize row on `auth.uid()`, so a reader who came second
+       is never handed a state or a date that is not theirs.
+       NO END DATE MEANS THEY ALREADY OWN PRO FOR GOOD, because the server never puts an end
+       on a permanent unlock. Saying "until" over that would be telling a buyer their
+       purchase runs out. */
+    var till = won && r.pass_until ? passDay(r.pass_until) : '';
+    $('prz-win').hidden = !won;
+    $('prz-store').hidden = !won || !till;
+    if (won){
+      $('prz-pass-head').textContent = till ? 'Pro is yours' : 'Pro is already yours';
+      $('prz-pass-till').textContent = till ? 'Until ' + till : 'For good';
+      $('prz-win-say').textContent = till
+        ? 'It is on the account you entered with, right now. Every Pro mode in The Perfect '
+          + 'Season and College Football, with no daily limits. It ends on ' + till
+          + '. Nothing renews and nothing charges you.'
+        : 'You already own Pro for good, so the pass adds nothing. The win is on your profile.';
     }
     $('prz-sheet').hidden = false;
     /* The winner and nobody else, and only a winner holding a prize: confetti over "there is
        no prize" is a party for nothing. After the sheet is on the glass, so the confetti
        falls over a screen that is already telling them why. */
-    if (place === 1 && code) requestAnimationFrame(function(){ requestAnimationFrame(winConfetti); });
+    if (won) requestAnimationFrame(function(){ requestAnimationFrame(winConfetti); });
   }
 
   /* CONFETTI FOR FIRST PLACE, lifted from the football game's own `fireConfetti` so a win
@@ -3170,25 +3184,6 @@
     if (PRZ && !PRZ.r.seen){ PRZ.r.seen = true; F.ackResult(POOL.season, PRZ.week); }
   }
   $('prz-close').onclick = closePrize;
-
-  /* COPYING IS A CONVENIENCE AND NEVER THE ONLY WAY OUT. `navigator.clipboard` needs a
-     secure context and a user gesture and is refused outright by some in-app browsers, so
-     the string is selectable either way (`user-select:all` on the span) and the button says
-     what happened rather than pretending. */
-  $('prz-code').onclick = function(){
-    var txt = $('prz-code-txt').textContent;
-    var done = function(ok){
-      $('prz-code-hint').textContent = ok ? 'copied' : 'select it and copy';
-    };
-    try {
-      if (navigator.clipboard && navigator.clipboard.writeText){
-        navigator.clipboard.writeText(txt).then(function(){ done(true); },
-          function(){ done(false); });
-        return;
-      }
-    } catch (e) {}
-    done(false);
-  };
 
   $('b-draft').onclick = function(){ startChance(); };
   $('b-review').onclick = function(){ toReview(); };

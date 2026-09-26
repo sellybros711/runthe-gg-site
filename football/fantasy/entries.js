@@ -237,7 +237,7 @@
    * ─── WHERE YOU FINISHED, ONCE THE WEEK IS OVER ─────────────────────────────────────
    *
    * One call answers the whole popup: whether this reader entered, where they came, out of
-   * how many, and whether there is a promotion code with their name on it. Everything in it
+   * how many, and whether they won the 30 day Pro pass and when it ends. Everything in it
    * is about `auth.uid()`, so there is nothing here that says anything about anybody else.
    *
    * NULL MEANS "NO OPINION" AND FALSE MEANS "NOTHING TO SAY", which are different answers
