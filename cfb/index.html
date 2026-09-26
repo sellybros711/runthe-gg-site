@@ -2649,6 +2649,60 @@ window.GA_ID='G-L29P5MRWKE';
   .modecard.mc-conf .mc-icon{background:linear-gradient(135deg,#f59e0b 0%,#b45309 100%)}
   .modecard.mc-conf .mc-title{color:#fbbf24}
 
+  /* ---- MORE WAYS TO PLAY IS A GRID ON A DESKTOP ----
+     This sheet is a 526px column of full width rows, and on a 1280px window that is one
+     narrow strip in the middle of a lot of nothing. The baseball game already solved it
+     with a .mc-grid modifier on .modecards, and the NFL game carries the same block as
+     this one, so all three sheets read as the same object.
+
+     IT IS DESKTOP ONLY, which is the difference from baseball. Baseball goes two across on
+     a phone because it has SIX modes and a phone list of six is a scroll. This page has
+     two, so a phone list is already short, already the widest each card can be, and
+     already what a thumb wants. The grid earns its place on a window with spare width and
+     nowhere else, so the whole block sits inside the query.
+
+     TWO COLUMNS, WHICH IS EVERY CARD THIS PAGE HAS. Baseball's third column exists for its
+     fifth and sixth modes. Asking for three here would draw a row of two and a third of a
+     row of nothing, so the count is what the column number answers to.
+
+     THE CROSS-PROMO BLOCKS BELOW ARE NOT TOUCHED, and that is the reason .mc-grid is a
+     modifier rather than a change to .modecards. Each xpromo holds ONE card, and a lone
+     tile in a two column grid is a card that has lost half its width for no reason. They
+     are full width rows and stay that way. */
+  @media(min-width:760px){
+    /* THE SHEET SIZES ITSELF OFF WHAT IS IN IT, and that is the load-bearing choice here.
+       ONE #sheet serves every sheet on this page, so a `wide` class added when this one
+       opens would be a reset the next person adding a sheet forgets, and the store would
+       open 860px wide with a 560px sheet's worth of content in it. That is the seasonTag()
+       lesson: the reset must not be the half somebody can forget. :has() asks the only
+       question that is reliably true at the moment it matters, which is whether there is a
+       grid in here, and it stops being true by itself when the next sheet writes over it.
+       Where :has() is unsupported the sheet stays 560px and the grid has less room to work
+       in, which is a narrower version of this layout rather than a broken one. */
+    .sheet .inner:has(.mc-grid){max-width:min(820px,calc(100vw - 64px))}
+    .modecards.mc-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+    /* A GRID ROW STRETCHES EVERY CELL TO ITS TALLEST, so a card is a column that fills its
+       cell rather than a block ending where its sentence does. Commish Simulator runs
+       longer than Conference Draft, and without this the shorter one draws its border at
+       its own height and leaves a gap under it. */
+    .mc-grid .modecard{display:flex;flex-direction:column;padding:15px 14px}
+    /* THE ICON GOES ABOVE THE NAME rather than beside it, which is what buys the narrower
+       column its room: a 32px icon, a gap and an uppercase mode name on one line is about
+       240px before the name has said anything. */
+    .mc-grid .modecard .mc-head{flex-direction:column;align-items:flex-start;gap:9px;
+      margin-bottom:7px}
+    .mc-grid .modecard .mc-icon{width:40px;height:40px;border-radius:10px}
+    .mc-grid .modecard .mc-icon svg{width:22px;height:22px}
+    /* THE CHEVRON GOES AND THE PADLOCK STAYS, which is not the same decision twice. A
+       chevron says "this is a thing you press", and a tile in a grid says that on its own.
+       A padlock says the opposite and is the only thing on the card that does, so hiding it
+       with the same rule would turn a shut door into one that looks open. Both hang off
+       `margin-left:auto` in a row and that does nothing in a column, so the one that stays
+       is pinned to the corner it was already sitting in. */
+    .mc-grid .modecard .mc-arrow{display:none}
+    .mc-grid .modecard .mc-pad{position:absolute;top:15px;right:14px;margin:0}
+  }
+
   /* ---- THE CROSS-PROMO SECTION ----
      Its own block under the modes rather than another mode card: the pro game is a
      different game on a different page, and dropping it into the same list would
@@ -5488,7 +5542,9 @@ function modeMenu(){
   $('sheet-in').dataset.kind='modes';
   $('sheet-in').innerHTML=
     '<h2 class="display mtitle" style="font-size:25px;margin:4px 0 8px">More ways to play</h2>'+
-    '<div class="modecards">'+
+    /* mc-grid is a MODIFIER and the CSS behind it is entirely inside a min-width query, so
+       this class changes nothing at all on a phone. See the block beside .modecards. */
+    '<div class="modecards mc-grid">'+
       '<'+(locked?'div':'button')+' class="modecard mc-conf'+(locked?' locked':'')+'"'+
         (locked?'':' id="b-mc-conf"')+'>'+
         '<div class="mc-head"><div class="mc-icon"><svg viewBox="0 0 24 24">'+
