@@ -14266,17 +14266,30 @@ Expos are on the NL East wheel. Only the chips are current. `check-franchise`
 asserts thirty, no franchise twice, every one a club playing today, and that the
 old names are still drawable.
 
-### More ways to play is the second door and has to look like one
+### More ways to play is a door on a phone and six tiles on a desktop
 
-As a ghost button it read quieter than the three utility cards under it, and it is
-the only way to six modes. It is a filled card with a gold edge, a dot in each
-mode's own colour and the modes named under it (three on a desktop, two on a phone,
-read off `MODE_CARDS` in `paintModesDoor()`, called from `boot()` because
-`MODE_CARDS` is a const declared further down and a top-level read threw on load).
-The three doors under it came down a step on the desktop. `check-home` asserts the
-property at every phone width: a gold edge the doors lack, a larger name, and a
-caption on one line. 320 failed that last clause on the first run, which is why the
-narrowest phones take a smaller caption.
+**On a phone** it is the second door: a filled card with a gold edge, a dot in each
+mode's own colour and two modes named under it, read off `MODE_CARDS` in
+`paintModesDoor()`. That is called from `boot()` because `MODE_CARDS` is a const
+declared further down and a top-level read threw on load. `check-home` asserts at
+every phone width that it outranks the three doors under it: a gold edge they lack,
+a larger name, a caption on one line.
+
+**On a desktop the front page is a bento**, chosen from three mocks. Everything under
+the Draft button used to be full-width bars stacked on each other (the daily, More
+ways to play, three door cards), which spent a wide screen on empty space and hid the
+six modes behind a click. Now:
+
+- the daily is the tall card on the left (`.hp-bento`, a 1:2 grid);
+- the six modes are tiles beside it (`#hp-tiles`, built by `paintModeTiles()` from
+  `MODE_CARDS`' `tile` and `line` fields, opened through `pickMode`, the sheet's own
+  door), so a mode added to `MODE_CARDS` is a tile with nothing else to remember;
+- the phone's door is not drawn (`#s-intro #b-modes{display:none}`);
+- How to play, Leaderboard and Trophy case are one row of text links.
+
+`check-home` section 3 asserts all four at five desktop sizes, and 3b presses the
+Eras tile and waits for the decade picker. Hiding the door and the grid were each
+reverted to prove the claims bite.
 
 ### The season screen is a scoreboard, and it is drawn from the season's own state
 
