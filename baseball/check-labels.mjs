@@ -502,5 +502,22 @@ console.log('\n7. A trade offer is a subtraction the reader can do on screen');
     ss ? `${ss.n} ${ss.s} read ${E.slotWar(ss, '1B')} against ${ss.w}` : 'no shortstop found');
 }
 
+/* ─── ONE NAME, ONE FUNCTION ───
+   The page is one script, and a function declared twice is not an error: the
+   later declaration silently replaces the earlier everywhere. The season screen's
+   first draft named its painters paintBoard and paintFeed, which were already the
+   leaderboard's and October's, so the leaderboard would have drawn the season and
+   the live game threw on every pitch. Nothing in a build step says so. */
+{
+  console.log('\none name, one function');
+  const page = fs.readFileSync(path.join(DIR, 'index.html'), 'utf8');
+  const names = [...page.matchAll(/^\s*(?:async\s+)?function\s+([A-Za-z_$][\w$]*)\s*\(/gm)].map(m => m[1]);
+  const seen = new Set(), dup = new Set();
+  for (const n of names) { if (seen.has(n)) dup.add(n); seen.add(n); }
+  claim(names.length > 150 && dup.size === 0,
+    `${names.length} function declarations in the page, none declared twice`,
+    dup.size ? 'declared twice: ' + [...dup].join(', ') : `only read ${names.length}`);
+}
+
 console.log(failures ? `\n${failures} failed.\n` : '\nAll checks passed.\n');
 process.exit(failures ? 1 : 0);

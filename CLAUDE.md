@@ -14258,6 +14258,48 @@ property at every phone width: a gold edge the doors lack, a larger name, and a
 caption on one line. 320 failed that last clause on the first run, which is why the
 narrowest phones take a smaller caption.
 
+### The season screen is a scoreboard, and it is drawn from the season's own state
+
+It was a record, a strip of 162 squares and a list of scores. It is now one
+scoreboard card (the record, then win pace, streak, last ten and run differential,
+then a race-to-October meter with the engine's own wild card and division lines on
+it), a calendar of six month rows of 27, pause, speed and sim-to-end controls, and a
+game log with each opponent's club chip, tags for a shutout, a rout and a one run
+game, and milestones written where they happened (streaks, the wild card and
+division wins, a hundred wins, out of the race, each month's record).
+
+**`ssBoard` and `ssFeed` walk `RUN._simState` and keep no tally of their own**, so the
+animated sim, a fast forward and a pause for a cut or a trade all show one season.
+The log is rebuilt from the start of the season on every game rather than appended,
+which is what lets a fast forward write the same milestones the slow sim would.
+
+**They are ss-prefixed because the obvious names were taken.** The first draft called
+them `paintBoard` and `paintFeed`, which are the leaderboard's and October's. A
+function declared twice in this one-script page is not an error: the later one
+replaces the earlier everywhere, so the leaderboard would have painted the season and
+the live October game threw on every pitch. `check-labels` now fails on any function
+declared twice in the page, and `check-run` reads the season screen the instant the
+fast forward lands.
+
+### Is $190M enough? Measured per mode, and the cap is not the lever
+
+Asked because $190M over twelve is $15.8M a slot against football's $23.3M and the
+college game's $1.8M. **Dollars a slot do not compare across games**, because each
+game's price curve is its own. What compares is what a slot's share buys: here
+$15.8M is 89% of every player-season in the pool and the median price of a 3 WAR
+season ($14.3M). A 5 WAR season medians $24.5M and a 9 WAR one $52.7M, so a roster
+holds a handful of stars and fills around them, which is the decision the draft is.
+
+At $190M, 40 runs a cell, October rate for best-available / a spread drafter / a
+chemistry chaser: Classic 68/70/85%, Eras 90/93/88%, One Franchise 98/95/100%,
+Division 90/95/95%, All-Time Staff 78/68/85%, Trade Machine 53%. **Cap Survivor is the
+one low mode**: 18% best-available, 68% spread, 20% chemistry, because the market
+raises push a roster that spent the cap into cuts. Raising the cap lifts every mode
+together (Classic best goes 30% at $170M, 68% at $190M, 78% at $210M, 90% at $230M)
+and past about $230M holding money back stops paying at all. So the cap stays, and if
+Cap Survivor needs help the dial is `E.MARKET` (the size of the raises), which moves
+that mode alone.
+
 ### The desktop page is football's, and the two columns have to be the same length
 
 Asked for: on desktop baseball should look like football, with the lineup card kept

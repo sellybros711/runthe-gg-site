@@ -188,6 +188,29 @@ async function toResults(p) {
   await p.waitForSelector('#s-season.on', { timeout: 20000 });
   await p.waitForSelector('#b-sim-fast', { state: 'visible', timeout: 30000 });
   await p.click('#b-sim-fast');
+  /* THE SEASON SCREEN IS DRAWN FROM THE SEASON'S OWN STATE. Read the instant the
+     fast forward lands, before the page moves on to October or the results: the
+     record, the four standings numbers, a race verdict, a calendar of six months
+     and a log with club chips and at least one month's line. */
+  if (!p.__seasonRead) {
+    p.__seasonRead = true;
+    const ss = await p.evaluate(() => ({
+      rec: document.getElementById('s-record').textContent.trim(),
+      tiles: ['ss-pace', 'ss-streak', 'ss-l10', 'ss-rd'].map((id) => document.getElementById(id).textContent.trim()),
+      race: document.getElementById('ss-rstate').textContent.trim(),
+      months: document.querySelectorAll('#s-pips .ss-mo').length,
+      played: document.querySelectorAll('#s-pips .sim-pip.w, #s-pips .sim-pip.l').length,
+      chips: document.querySelectorAll('#s-feed .sim-game .tc').length,
+      notes: [...document.querySelectorAll('#s-feed .sim-note')].map((n) => n.textContent.trim()),
+    }));
+    const [w, l] = ss.rec.split('-').map(Number);
+    claim(w + l === 162 && ss.played === 162, 'the season screen shows all 162 games on the calendar', JSON.stringify(ss));
+    claim(ss.tiles.every((t) => t && t !== '-') && /^[WL]\d+$/.test(ss.tiles[1]),
+      'the four standings numbers are filled in', JSON.stringify(ss.tiles));
+    claim(ss.race.length > 0 && ss.months === 6, 'the race verdict and the six month rows are drawn', JSON.stringify(ss));
+    claim(ss.chips > 0 && ss.notes.some((n) => /^Sep \d+-\d+$/.test(n)),
+      'the log carries club chips and September\'s record', JSON.stringify(ss.notes));
+  }
   /* October is a bracket that reveals itself, a series card and a live game, and
      which of the three is up depends on how the season went. Press whichever way
      forward is on screen until the results screen is. */

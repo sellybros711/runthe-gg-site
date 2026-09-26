@@ -612,30 +612,88 @@ body:has(#s-intro.on) header .lockup{visibility:hidden}
 .respin-row .btn{flex:1;font-size:13px;padding:10px 12px}
 
 /* ─── season sim ─── */
-.sim-header{text-align:center;margin:20px 0 16px}
+.sim-header{text-align:center;margin:20px 0 14px}
 .sim-header h2{font-family:var(--fd);font-size:36px;text-transform:uppercase}
 .record-big{font-family:var(--fd);font-size:64px;text-align:center;letter-spacing:.02em;
-  text-transform:uppercase;margin:8px 0}
+  text-transform:uppercase;margin:0;line-height:1}
 .record-big .w{color:var(--green)} .record-big .l{color:var(--red)}
 .record-big .sep{color:var(--dim);margin:0 4px}
 .record-line{font-family:var(--fn);font-size:12px;color:var(--dim);text-align:center}
-.sim-feed{max-height:400px;overflow-y:auto;margin:12px 0}
-.sim-game{display:flex;align-items:center;justify-content:space-between;padding:6px 0;
+/* THE SCOREBOARD CARD. One panel holding the record, the four standings numbers
+   and the race meter, so the numbers a reader checks every few seconds sit
+   together instead of being strewn down the page. */
+.ssb{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px 14px 12px;
+  box-shadow:0 1px 0 rgba(var(--edge),.04)}
+.ss-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin:14px 0 12px}
+.ss-t{display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 2px;border-radius:9px;
+  background:rgba(var(--edge),.04)}
+.ss-t b{font-family:var(--fd);font-weight:400;font-size:24px;line-height:1;letter-spacing:.02em;
+  font-variant-numeric:tabular-nums;color:var(--ink)}
+.ss-t b.up{color:var(--green)} .ss-t b.dn{color:var(--red)}
+.ss-t span{font-family:var(--fn);font-size:9.5px;font-weight:700;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--dim-2)}
+.ss-race{margin:4px 0 8px}
+.ss-rhd{display:flex;justify-content:space-between;align-items:baseline;font-family:var(--fn);
+  font-size:10.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--dim-2);margin-bottom:6px}
+.ss-rhd #ss-rstate{letter-spacing:.04em;color:var(--dim)}
+.ss-rhd #ss-rstate.in{color:var(--green)} .ss-rhd #ss-rstate.out{color:var(--red)}
+.ss-bar{position:relative;height:12px;border-radius:6px;background:rgba(var(--edge),.08);overflow:hidden}
+.ss-fill{position:absolute;left:0;top:0;bottom:0;width:0;border-radius:6px;
+  background:var(--grad-gold,var(--gold));transition:width .25s ease}
+.ss-bar.in .ss-fill{background:var(--grad-green,var(--green))}
+.ss-tick{position:absolute;top:-2px;bottom:-2px;width:2px;background:var(--ink);opacity:.55}
+.ss-legend{position:relative;height:14px;margin-top:4px;font-family:var(--fn);font-size:10px;
+  font-weight:700;color:var(--dim)}
+.ss-legend span{position:absolute;white-space:nowrap}
+/* The two lines are seven wins apart, which is about thirty pixels on a phone, so
+   the labels lean AWAY from each other off their ticks instead of centring on them. */
+.ss-legend #ss-lg-wc{transform:translateX(-100%);padding-right:5px}
+.ss-legend #ss-lg-dv{padding-left:5px}
+.sim-feed{max-height:420px;overflow-y:auto;margin:6px 0 12px}
+.ss-loghd{display:flex;justify-content:space-between;font-family:var(--fn);font-size:10.5px;
+  font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--dim-2);margin:14px 2px 2px}
+.sim-game{display:flex;align-items:center;gap:8px;padding:7px 2px;
   border-bottom:1px solid rgba(var(--edge),.06);font-family:var(--fn);font-size:13px}
-.sim-game .gnum{color:var(--dim-2);width:34px;font-weight:700;flex:0 0 auto}
-.sim-game .gopp{flex:1;color:var(--dim);font-weight:600;white-space:nowrap;overflow:hidden;
-  text-overflow:ellipsis;padding:0 8px}
-.sim-game .gscore{font-weight:800;width:22px;text-align:right;flex:0 0 auto}
-.sim-game .gw{color:var(--green)} .sim-game .gl{color:var(--red)}
-.sim-game .gruns{width:54px;text-align:center;flex:0 0 auto;font-weight:700}
-.sim-game.marquee{background:rgba(184,134,11,.07);margin:0 -8px;padding:6px 8px;border-radius:6px}
-.sim-game.marquee .gopp{color:var(--gold);font-weight:700}
-/* 162 pips laid out as a fixed 54x3 block. Wrapping a centred flex row left the
-   last row indented and the row lengths at the mercy of the viewport width. */
-.sim-progress{display:grid;grid-template-columns:repeat(54,1fr);gap:2px;margin:12px 0}
-@media (max-width:360px){.sim-progress{grid-template-columns:repeat(27,1fr);gap:1.5px}}
-.sim-pip{width:auto;height:14px;border-radius:2px;background:rgba(var(--edge),.08)}
+.sim-game .gnum{color:var(--dim-2);width:34px;font-weight:700;flex:0 0 auto;font-variant-numeric:tabular-nums}
+.sim-game .gopp{flex:1;min-width:0;display:flex;align-items:center;gap:6px;color:var(--dim);font-weight:600;
+  white-space:nowrap;overflow:hidden}
+.sim-game .gopp .gnm{overflow:hidden;text-overflow:ellipsis}
+.sim-game .tc{flex:0 0 auto;display:inline-block;min-width:32px;text-align:center;padding:2px 5px;border-radius:5px;
+  font-size:10px;font-weight:800;letter-spacing:.04em;line-height:13px;background:var(--tcbg);color:var(--tcon)}
+.sim-game .gtag{flex:0 0 auto;font-size:9px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;
+  padding:2px 6px;border-radius:999px;background:rgba(var(--edge),.07);color:var(--dim)}
+.sim-game .gtag.big{background:rgba(184,134,11,.14);color:var(--gold)}
+.sim-game .gscore{font-weight:800;width:22px;height:22px;border-radius:6px;display:inline-flex;
+  align-items:center;justify-content:center;flex:0 0 auto;font-size:11px;color:#fff}
+.sim-game .gw{background:var(--green)} .sim-game .gl{background:var(--red)}
+.sim-game .gruns{width:46px;text-align:right;flex:0 0 auto;font-weight:700;color:var(--ink);
+  font-variant-numeric:tabular-nums}
+.sim-game.marquee{background:rgba(184,134,11,.07);border-radius:8px;padding:7px 8px;margin:0 -6px}
+.sim-game.marquee .gnm{color:var(--gold);font-weight:700}
+/* A milestone the season crossed, written into the log where it happened. */
+.sim-note{display:flex;align-items:center;gap:8px;padding:8px 10px;margin:6px 0;border-radius:9px;
+  font-family:var(--fn);font-size:12.5px;font-weight:700;color:var(--ink);
+  background:rgba(var(--edge),.05);border-left:3px solid var(--gold)}
+.sim-note.good{border-left-color:var(--green)} .sim-note.bad{border-left-color:var(--red)}
+.sim-note b{font-family:var(--fd);font-weight:400;font-size:15px;letter-spacing:.04em;color:var(--dim-2)}
+/* THE CALENDAR IS SIX MONTHS OF 27, which is what 162 is. A month to a row, labelled,
+   reads as a season; a 54 by 3 block read as a barcode. */
+.ss-cal{display:grid;grid-template-columns:34px repeat(27,minmax(0,1fr));gap:3px 2px;margin:14px 0 12px;
+  align-items:center}
+.ss-cal .ss-mo{font-family:var(--fn);font-size:9.5px;font-weight:800;letter-spacing:.08em;
+  text-transform:uppercase;color:var(--dim-2)}
+.sim-pip{width:auto;height:12px;border-radius:2px;background:rgba(var(--edge),.08)}
 .sim-pip.w{background:var(--green)} .sim-pip.l{background:var(--red)}
+.sim-pip.now{box-shadow:0 0 0 1.5px var(--gold)}
+.ss-ctl{display:flex;gap:8px;align-items:stretch;margin:4px 0}
+.ss-ctl .ss-cbtn{flex:0 0 auto;width:auto;padding:12px 16px;font-size:13px}
+.ss-ctl #b-sim-fast{flex:1;margin:0;font-size:17px;padding:12px 14px;white-space:nowrap}
+@media(min-width:1000px){
+  #s-season .ssb{padding:20px 22px 14px}
+  #s-season .record-big{font-size:76px}
+  #s-season .ss-t b{font-size:30px}
+  #s-season .sim-pip{height:14px}
+}
 
 /* ─── the bracket ───
    Four columns, one per round, on a rail that scrolls sideways when the screen is
@@ -1983,22 +2041,43 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
 
 <div class="screen" id="s-season">
   <div class="sim-header">
-    <div class="eyebrow">162-game season</div>
+    <div class="eyebrow" id="s-eye">162-game season</div>
     <h2 class="display" style="font-size:32px;margin:4px 0">Play ball</h2>
   </div>
-  <div class="record-big" id="s-record"><span class="w">0</span><span class="sep">-</span><span class="l">0</span></div>
+  <!-- THE SCOREBOARD. The record, then the four numbers a fan reads off a standings
+       page: where the season is heading, the streak, the last ten and the run
+       differential. The race meter under them is the one question the whole
+       regular season answers, which is whether it reaches October. -->
+  <div class="ssb">
+    <div class="record-big" id="s-record"><span class="w">0</span><span class="sep">-</span><span class="l">0</span></div>
+    <div class="ss-stats">
+      <div class="ss-t"><b id="ss-pace">-</b><span>Win pace</span></div>
+      <div class="ss-t"><b id="ss-streak">-</b><span>Streak</span></div>
+      <div class="ss-t"><b id="ss-l10">-</b><span>Last 10</span></div>
+      <div class="ss-t"><b id="ss-rd">-</b><span>Run diff</span></div>
+    </div>
+    <div class="ss-race">
+      <div class="ss-rhd"><span>Race to October</span><span id="ss-rstate"></span></div>
+      <div class="ss-bar" id="ss-bar"><i class="ss-fill" id="ss-fill"></i>
+        <i class="ss-tick wc" id="ss-tick-wc"></i><i class="ss-tick dv" id="ss-tick-dv"></i></div>
+      <div class="ss-legend"><span id="ss-lg-wc"></span><span id="ss-lg-dv"></span></div>
+    </div>
+    <div class="record-line" id="s-pace"></div>
+  </div>
   <div class="captrack" id="cap-track" hidden>
     <div class="ct-hd"><span class="ct-l">Payroll</span>
       <span class="ct-v" id="ct-total">$0.0M</span>
       <span class="ct-shocks" id="ct-shocks"></span></div>
     <div class="ct-bar"><i id="ct-fill"></i></div>
   </div>
-  <div class="sim-progress" id="s-pips"></div>
-  <div class="record-line" id="s-pace"></div>
-  <div class="sim-feed" id="s-feed"></div>
-  <div id="s-actions" style="display:none">
-    <button class="btn" id="b-sim-fast">Simulate remaining</button>
+  <div class="ss-cal sim-progress" id="s-pips"></div>
+  <div class="ss-ctl" id="s-actions" style="display:none">
+    <button class="btn ghost ss-cbtn" id="b-sim-pause">Pause</button>
+    <button class="btn ghost ss-cbtn" id="b-sim-speed">Faster</button>
+    <button class="btn" id="b-sim-fast">Sim to end</button>
   </div>
+  <div class="ss-loghd"><span>Game log</span><span id="ss-logn"></span></div>
+  <div class="sim-feed" id="s-feed"></div>
 </div>
 
 <!-- The bracket, between rounds. The field is drawn once and walked forward a round
@@ -4365,20 +4444,129 @@ $('b-squad-quit').addEventListener('click',()=>{
   RUN=null;show('s-intro');heroSync();
 });
 
-/* ─── season sim ─── */
+/* ─── season sim ───
+   (ss-prefixed, because this file already has a paintBoard and a paintFeed for
+   October, and a second declaration of either silently replaces the first.)
+   The screen is DRAWN FROM THE SEASON'S OWN STATE (RUN._simState), never kept as a
+   second tally beside it. ssBoard and ssFeed both walk st.results, so a pause
+   for a cut, a trade sheet, a fast forward and the animated sim all show the same
+   season, and a milestone in the log is where it really happened. */
+const SS_MONTHS=['Apr','May','Jun','Jul','Aug','Sep'];
+const SS_WC=E.CONSTANTS.WILD_CARD_WINS, SS_DV=E.CONSTANTS.DIVISION_WINS;
+let simSpeed=1, simPaused=false;
 function startSeason(){
   show('s-season');
-  $('s-feed').innerHTML='';$('s-pips').innerHTML='';
-  $('s-record').innerHTML='<span class="w">0</span><span class="sep">-</span><span class="l">0</span>';
-  $('s-pace').textContent='';
-  const pips=$('s-pips');
-  for(let i=0;i<E.CONSTANTS.REGULAR_SEASON_GAMES;i++){
+  $('s-feed').innerHTML='';
+  $('s-eye').textContent=E.CONSTANTS.REGULAR_SEASON_GAMES+'-game season'+
+    (RUN.daily?' \u00b7 Daily':RUN.era?' \u00b7 '+RUN.era:RUN.franchise?' \u00b7 '+teamFullName(RUN.franchise):
+     RUN.division?' \u00b7 '+RUN.division:RUN.capSurvivor?' \u00b7 Cap Survivor':RUN.staff?' \u00b7 All-Time Staff':
+     RUN.tradeMachine?' \u00b7 Trade Machine':'');
+  const pips=$('s-pips');pips.innerHTML='';
+  const G=E.CONSTANTS.REGULAR_SEASON_GAMES,per=Math.ceil(G/SS_MONTHS.length);
+  for(let i=0;i<G;i++){
+    if(i%per===0){const m=document.createElement('span');m.className='ss-mo';m.textContent=SS_MONTHS[i/per]||'';pips.appendChild(m);}
     const pip=document.createElement('div');pip.className='sim-pip';pip.id='pip-'+i;pips.appendChild(pip);
   }
+  simSpeed=1;simPaused=false;
+  $('b-sim-pause').textContent='Pause';$('b-sim-speed').textContent='Faster';
   $('s-actions').style.display='';
-  $('b-sim-fast').onclick=()=>{$('s-actions').style.display='none';simRemaining();};
+  $('b-sim-fast').onclick=()=>{$('s-actions').style.display='none';simPaused=false;simRemaining();};
+  $('b-sim-pause').onclick=()=>{
+    const st=RUN&&RUN._simState;
+    if(simPaused){simPaused=false;$('b-sim-pause').textContent='Pause';simGame(st?st.results.length:0);}
+    else{simPaused=true;if(simTimer){clearTimeout(simTimer);simTimer=null;}$('b-sim-pause').textContent='Resume';}
+  };
+  $('b-sim-speed').onclick=()=>{
+    simSpeed=simSpeed===1?0.25:1;
+    $('b-sim-speed').textContent=simSpeed===1?'Faster':'Slower';
+  };
   paintCapTrack();
+  ssBoard();
   simGame(0);
+}
+/* The four standings numbers, the race meter and the line under them. */
+function ssBoard(){
+  const st=RUN&&RUN._simState;
+  const res=st?st.results:[];
+  const G=E.CONSTANTS.REGULAR_SEASON_GAMES;
+  const w=st?st.wins:0,l=st?st.losses:0,gp=res.length;
+  $('s-record').innerHTML='<span class="w">'+w+'</span><span class="sep">-</span><span class="l">'+l+'</span>';
+  const pace=gp?Math.round(w/gp*G):null;
+  const set=(id,t,cls)=>{const e=$(id);e.textContent=t;e.className=cls||'';};
+  set('ss-pace',pace==null?'-':String(pace),pace==null?'':pace>=SS_WC?'up':'dn');
+  let k=0;const last=gp?res[gp-1].won:null;
+  for(let i=gp-1;i>=0&&res[i].won===last;i--)k++;
+  set('ss-streak',gp?(last?'W':'L')+k:'-',gp?(last?'up':'dn'):'');
+  const t10=res.slice(-10),w10=t10.filter(r=>r.won).length;
+  set('ss-l10',gp?w10+'-'+(t10.length-w10):'-',gp?(w10>=6?'up':w10<=4?'dn':''):'');
+  const rd=st?st.totalRS-st.totalRA:0;
+  set('ss-rd',gp?(rd>0?'+':'')+rd:'-',gp?(rd>0?'up':rd<0?'dn':''):'');
+  /* The meter runs from LO to HI wins, which holds every season a draft has
+     produced, and the two ticks are the engine's own lines, read rather than typed. */
+  const LO=55,HI=115,pos=v=>Math.max(0,Math.min(100,(v-LO)/(HI-LO)*100));
+  const shown=pace==null?LO:pace;
+  $('ss-fill').style.width=pos(Math.max(w,shown))+'%';
+  $('ss-tick-wc').style.left=pos(SS_WC)+'%';$('ss-tick-dv').style.left=pos(SS_DV)+'%';
+  $('ss-lg-wc').style.left=pos(SS_WC)+'%';$('ss-lg-wc').textContent='Wild card '+SS_WC;
+  $('ss-lg-dv').style.left=pos(SS_DV)+'%';$('ss-lg-dv').textContent='Division '+SS_DV;
+  const left=G-gp,out=w+left<SS_WC,inn=w>=SS_WC;
+  $('ss-bar').classList.toggle('in',inn||(pace!=null&&pace>=SS_WC));
+  const rs=$('ss-rstate');
+  rs.className=inn?'in':out?'out':'';
+  rs.textContent=w>=SS_DV?'Division clinched':inn?'In the playoffs':out?'Out of the race':
+    pace==null?'':pace>=SS_DV?'Division pace':pace>=SS_WC?'Wild card pace':'Behind the pace';
+  $('s-pace').innerHTML=gp?'Game '+gp+' of '+G+(gp<G?' &middot; On pace for <b>'+pace+' wins</b>':''):'';
+  document.querySelectorAll('#s-pips .sim-pip.now').forEach(x=>x.classList.remove('now'));
+  if(gp&&gp<G){const n=$('pip-'+gp);if(n)n.classList.add('now');}
+}
+/* The log, as a walk over the season: every game, and a milestone wherever the
+   season crossed one. Walked from the start each time rather than appended, so a
+   fast forward and the animated sim write the same log. */
+function feedEntries(st){
+  const out=[];const G=E.CONSTANTS.REGULAR_SEASON_GAMES,per=Math.ceil(G/SS_MONTHS.length);
+  let w=0,l=0,k=0,last=null,wasOut=false,mw=0,ml=0;
+  const word=n=>['','','Two','Three','Four','Five','Six','Seven','Eight','Nine','Ten'][n]||String(n);
+  st.results.forEach((r,i)=>{
+    const g=st.schedule[i]||{};
+    out.push({type:'game',i,r,g});
+    if(r.won){w++;mw++;}else{l++;ml++;}
+    k=(last===r.won)?k+1:1;last=r.won;
+    if(r.won&&(k===5||k===8||k===10||k===15))out.push({type:'note',cls:'good',t:word(k)+' straight wins.'});
+    if(!r.won&&(k===5||k===8))out.push({type:'note',cls:'bad',t:word(k)+' straight losses.'});
+    if(r.won&&w===SS_WC)out.push({type:'note',cls:'good',t:'Win '+SS_WC+'. October is yours.'});
+    if(r.won&&w===SS_DV)out.push({type:'note',cls:'good',t:'Win '+SS_DV+'. The division is yours.'});
+    if(r.won&&w===100)out.push({type:'note',cls:'good',t:'A hundred wins.'});
+    const left=G-(i+1);
+    if(!wasOut&&w+left<SS_WC){wasOut=true;out.push({type:'note',cls:'bad',t:SS_WC+' wins is out of reach.'});}
+    if((i+1)%per===0){out.push({type:'note',cls:'',t:'<b>'+SS_MONTHS[(i+1)/per-1]+'</b> '+mw+'-'+ml});mw=0;ml=0;}
+  });
+  return out;
+}
+function gameRow(e){
+  const r=e.r,g=e.g,row=document.createElement('div');
+  row.className='sim-game'+(g.marquee?' marquee':'');
+  const m=/^(\d{4})\s+(\S+)$/.exec(g.oppName||'');
+  const opp=m?tcPlate(m[2],+m[1])+'<span class="gnm">'+(g.marquee?'&starf; ':'')+m[1]+' '+esc(teamFullName(m[2],+m[1]))+'</span>'
+    :'<span class="gnm">'+(g.oppName?'vs '+esc(g.oppName):'')+'</span>';
+  const mg=Math.abs(r.yourRuns-r.oppRuns);
+  const tag=r.won&&r.oppRuns===0?'<span class="gtag big">Shutout</span>':
+    !r.won&&r.yourRuns===0?'<span class="gtag">Shut out</span>':
+    mg>=8?'<span class="gtag'+(r.won?' big':'')+'">Rout</span>':
+    mg===1?'<span class="gtag">1 run</span>':'';
+  row.innerHTML='<span class="gnum">G'+(e.i+1)+'</span><span class="gopp">'+opp+'</span>'+tag+
+    '<span class="gruns">'+r.yourRuns+'-'+r.oppRuns+'</span>'+
+    '<span class="gscore '+(r.won?'gw':'gl')+'">'+(r.won?'W':'L')+'</span>';
+  return row;
+}
+function ssFeed(){
+  const st=RUN&&RUN._simState;const feed=$('s-feed');feed.innerHTML='';
+  if(!st)return;
+  const all=feedEntries(st).slice(-30).reverse();
+  for(const e of all){
+    if(e.type==='game')feed.appendChild(gameRow(e));
+    else{const n=document.createElement('div');n.className='sim-note '+e.cls;n.innerHTML=e.t;feed.appendChild(n);}
+  }
+  $('ss-logn').textContent=st.results.length?'Latest first':'';
 }
 
 /* ─── salary cap survivor, in play ───
@@ -4540,31 +4728,17 @@ function simGame(idx){
   if(!result){finishSeason();return;}
   const pip=$('pip-'+idx);
   if(pip) pip.className='sim-pip '+(result.won?'w':'l');
-  $('s-record').innerHTML='<span class="w">'+result.record.wins+'</span><span class="sep">-</span><span class="l">'+result.record.losses+'</span>';
-  const gp=idx+1;
-  $('s-pace').innerHTML='Game '+gp+' of 162 &middot; On pace for <b>'+Math.round(result.record.wins/gp*162)+' wins</b>';
-  const feed=$('s-feed');
-  const row=document.createElement('div');row.className='sim-game'+(result.marquee?' marquee':'');
-  const opp=result.oppName?'<span class="gopp">'+(result.marquee?'&starf; ':'')+'vs '+esc(result.oppName)+'</span>':'';
-  row.innerHTML='<span class="gnum">G'+result.game+'</span>'+opp+
-    '<span class="gruns">'+result.yourRuns+'-'+result.oppRuns+'</span>'+
-    '<span class="gscore '+(result.won?'gw':'gl')+'">'+(result.won?'W':'L')+'</span>';
-  feed.insertBefore(row,feed.firstChild);
-  if(feed.children.length>18) feed.removeChild(feed.lastChild);
+  ssBoard();ssFeed();
   if(RUN.capSurvivor&&idx%9===0) paintCapTrack();
-  const speed=idx<10?120:idx<40?60:idx<100?30:15;
+  if(simPaused)return;
+  const speed=(idx<10?120:idx<40?60:idx<100?30:15)*simSpeed;
   simTimer=setTimeout(()=>simGame(idx+1),speed);
 }
 
 /* Fast-forward stops for a decision, so the screen behind the sheet has to agree
    with where the season actually is. It was showing the record from the pause and
    the game number from wherever the animated sim had got to. */
-function paintPause(st,i){
-  $('s-record').innerHTML='<span class="w">'+st.wins+'</span><span class="sep">-</span><span class="l">'+st.losses+'</span>';
-  const gp=st.results.length;
-  if(gp>0)$('s-pace').innerHTML='Game '+gp+' of 162 &middot; On pace for <b>'+
-    Math.round(st.wins/gp*162)+' wins</b>';
-}
+function paintPause(st,i){ ssBoard();ssFeed(); }
 
 function simRemaining(){
   if(simTimer){clearTimeout(simTimer);simTimer=null;}
@@ -4597,8 +4771,8 @@ function simRemaining(){
     if(pip) pip.className='sim-pip '+(result.won?'w':'l');
   }
   paintCapTrack();
-  $('s-record').innerHTML='<span class="w">'+st.wins+'</span><span class="sep">-</span><span class="l">'+st.losses+'</span>';
-  $('s-pace').textContent='162 games complete';
+  ssBoard();ssFeed();
+  $('s-pace').textContent=E.CONSTANTS.REGULAR_SEASON_GAMES+' games complete';
   finishSeason();
 }
 
