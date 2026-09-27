@@ -9,7 +9,7 @@
  * score. It writes nothing.
  */
 const [season = '2026', week = '6'] = process.argv.slice(2);
-const ESPN = 'https://site.api.espn.com/apis/site/v2/sports/football/college-football';
+const ESPN = 'https://site.web.api.espn.com/apis/site/v2/sports/football/college-football';
 const CORE = 'https://sports.core.api.espn.com/v2/sports/football/leagues/college-football';
 const UA = {
   accept: 'application/json, text/plain, */*',
@@ -39,28 +39,6 @@ const head = (name, res) => console.log(`\n==== ${name}: HTTP ${res.status}`);
 const prev = String(Math.max(1, Number(week) - 1));
 
 async function main() {
-  /* Which forms of the url ESPN answers. The NFL one is the control: the live job reads it
-     from these same runners every two minutes. */
-  const tries = [
-    'https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard?dates=2026&seasontype=2&week=3',
-    `${ESPN}/scoreboard`,
-    `${ESPN}/scoreboard?dates=${season}&seasontype=2&week=${week}`,
-    `${ESPN}/scoreboard?groups=80&dates=${season}&seasontype=2&week=${week}`,
-    `${ESPN}/scoreboard?groups=80&week=${week}`,
-    `${ESPN}/scoreboard?dates=20260926&groups=80`,
-    `${ESPN}/scoreboard?dates=20260926&groups=80&limit=200`,
-    'https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=20260926&groups=80',
-    'https://site.api.espn.com/apis/v2/sports/football/college-football/scoreboard?dates=20260926',
-    `${ESPN}/rankings`,
-    `${ESPN}/teams/61/roster`,
-    `${CORE}/events?dates=20260926&limit=5`,
-  ];
-  for (const u of tries) {
-    const r = await get(u);
-    const n = r.j && r.j.events ? r.j.events.length : (r.j && r.j.items ? r.j.items.length : '-');
-    console.log(`try ${r.status} events=${n} ${u}`);
-    if (r.status !== 200) console.log('   body', String(r.t).slice(0, 200));
-  }
   const sb = await get(`${ESPN}/scoreboard?groups=80&dates=${season}&seasontype=2&week=${week}&limit=300`);
   head(`scoreboard week ${week}`, sb);
   const evs = (sb.j && sb.j.events) || [];
