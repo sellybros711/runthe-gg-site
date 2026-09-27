@@ -1939,8 +1939,8 @@
   },
   "cfb/commish/index.html": {
     "/assets/store.js": {
-      "v": "22",
-      "sha": "8df669f434400d08"
+      "v": "23",
+      "sha": "733a0836581de9eb"
     },
     "/cfb/engine.js": {
       "v": "35",
@@ -2097,8 +2097,8 @@
       "sha": "02a91d5c4391b42b"
     },
     "/assets/store.js": {
-      "v": "22",
-      "sha": "8df669f434400d08"
+      "v": "23",
+      "sha": "733a0836581de9eb"
     },
     "/assets/newsletter.js": {
       "v": "1",
@@ -2123,8 +2123,8 @@
       "sha": "8648d9aa90526509"
     },
     "/football/auth.js": {
-      "v": "7",
-      "sha": "faaf90d29173d163"
+      "v": "8",
+      "sha": "105d260a86068770"
     },
     "clubs.js": {
       "v": "2",
@@ -2173,8 +2173,8 @@
       "sha": "b35bb059c3376a91"
     },
     "/assets/store.js": {
-      "v": "22",
-      "sha": "8df669f434400d08"
+      "v": "23",
+      "sha": "733a0836581de9eb"
     },
     "/assets/cloudsave.js": {
       "v": "2",
@@ -2189,8 +2189,8 @@
       "sha": "6839aa8983b1ae7b"
     },
     "auth.js": {
-      "v": "7",
-      "sha": "faaf90d29173d163"
+      "v": "8",
+      "sha": "105d260a86068770"
     },
     "data/defender_seasons.json": {
       "v": "1",

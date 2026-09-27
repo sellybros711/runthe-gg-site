@@ -891,7 +891,7 @@
 <!-- Accounts, exactly as the football page loads them. Optional: with the CDN blocked
      PS_AUTH never appears, nobody resolves as a tester, and the page says so. -->
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script defer src="/football/auth.js?v=7"></script>
+<script defer src="/football/auth.js?v=8"></script>
 <script src="clubs.js?v=2"></script>
 <script src="draft.js?v=5"></script>
 <script src="entries.js?v=7"></script>
@@ -3112,7 +3112,9 @@
       $('prz-win-say').textContent = till
         ? 'It is on the account you entered with, right now. Every Pro mode in The Perfect '
           + 'Season and College Football, with no daily limits. It ends on ' + till
-          + '. Nothing renews and nothing charges you.'
+          /* ABOUT THE PASS, not the account: a winner who also holds a yearly plan has
+             something that renews, and "nothing renews" would be false about them. */
+          + '. The pass doesn\'t renew and never charges you.'
         : 'You already own Pro for good, so the pass adds nothing. The win is on your profile.';
     }
     $('prz-sheet').hidden = false;

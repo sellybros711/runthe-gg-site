@@ -1,6 +1,6 @@
-/* Run The Arcade Card — Stripe Customer Portal (Cloudflare Pages Function)
+/* Run The Arcade Card : Stripe Customer Portal (Cloudflare Pages Function)
  *
- * POST /api/stripe/portal   body: { user_id, return_path? }
+ * POST /api/stripe/portal   body: { return_path?, scope? }   (scope 'plan': the yearly plan's customer first)
  *   → { url: "https://billing.stripe.com/..." }
  *
  * Lets an Arcade Card member manage/cancel their membership in Stripe's hosted
@@ -10,7 +10,7 @@
  * Env: STRIPE_SECRET_KEY, SITE_URL, SUPABASE_URL, SUPABASE_SERVICE_ROLE.
  *
  * SECURITY: the user is identified from the verified Supabase session token
- * (Authorization: Bearer <access_token>), NOT from the request body — a body
+ * (Authorization: Bearer <access_token>), NOT from the request body. A body
  * user_id would let anyone open another member's billing portal.
  */
 import { verifyUser } from './_verify.js';
@@ -28,12 +28,12 @@ export async function onRequestPost(context) {
     let body = {};
     try { body = await request.json(); } catch (e) {}
 
-    // Authenticated user only, derived from the session token — never the body.
+    // Authenticated user only, derived from the session token, never the body.
     const userId = await verifyUser(env, request);
     if (!userId) return json({ error: 'unauthorized' }, 401);
 
     // find this user's Stripe customer, three ways, in order (see findCustomer)
-    const customer = await findCustomer(env, userId);
+    const customer = await findCustomer(env, userId, body.scope === 'plan');
     if (!customer) return json({ error: 'no_customer' }, 404);
 
     const site = siteBase(env, request);   // the host they came in on. See _site.js.
@@ -95,11 +95,29 @@ export async function onRequestPost(context) {
  * Returns a customer id or null. A failure to read any source is null, which the
  * caller reports as no_customer: there is nothing here worth failing loudly over,
  * because the answer either way is that this account has no billing to show.
+ *
+ * A YEARLY PLAN (supabase/124) keeps its customer on premium_subscriptions. `plan` puts
+ * that source first: the football receipt's "Manage your plan" asks for it, because
+ * that button is about the plan, and if the account also holds an Arcade Card billed
+ * to a different customer, that customer's portal cannot cancel the plan. A database
+ * without 124 answers that read with an error, which is simply a source with nothing
+ * in it.
  */
-async function findCustomer(env, userId) {
-  const sub = await pgFirst(env, 'subscriptions?user_id=eq.' + encodeURIComponent(userId) +
+async function findCustomer(env, userId, plan) {
+  const uid = encodeURIComponent(userId);
+  const planQ = 'premium_subscriptions?user_id=eq.' + uid +
+    '&stripe_customer_id=not.is.null&select=stripe_customer_id&order=updated_at.desc&limit=1';
+  if (plan) {
+    const p = await pgFirst(env, planQ);
+    if (p && p.stripe_customer_id) return p.stripe_customer_id;
+  }
+  const sub = await pgFirst(env, 'subscriptions?user_id=eq.' + uid +
     '&select=stripe_customer_id&limit=1');
   if (sub && sub.stripe_customer_id) return sub.stripe_customer_id;
+  if (!plan) {
+    const p = await pgFirst(env, planQ);
+    if (p && p.stripe_customer_id) return p.stripe_customer_id;
+  }
 
   const rows = await pgRows(env, 'premium_unlocks?user_id=eq.' + encodeURIComponent(userId) +
     '&select=payload&order=granted_at.desc');

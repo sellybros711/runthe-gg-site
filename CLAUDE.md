@@ -534,6 +534,78 @@ compared each with itself, and passed green on the exact defect it was written f
 this pass, 918px after, guarded at under 1000. That is room to add a line and a failure on
 adding a block. Move it when the sheet is meant to grow, never to make a run pass.
 
+### Perfect Season and Run The Bundle can be sold yearly, and a lifetime row does not move
+
+```
+node scripts/stripe/check-checkout.mjs       who may buy what, through the real endpoint
+node scripts/stripe/replay-webhook.mjs       every plan event, through the real webhook, against a real Postgres
+psql -d yr -f supabase/test/premium_yearly_test.sql   (its header lists the chain)
+```
+
+`supabase/124_premium_yearly.sql`, `functions/api/stripe/_offer.js` and one switch,
+`YEARLY_LIVE` in `_bundles.js`, which ships off. Perfect Season $19.99 a year, Run The Bundle
+$34.99 a year for NEW buyers. The runbook is `functions/api/stripe/README.md`.
+
+**THE RULE THAT WINS OVER EVERYTHING: a lifetime row never moves.** A `premium_unlocks` row
+with no end date is never given one, never overwritten and never deleted by a checkout, a
+renewal, a cancel, a refund, a lapse, a portal change or a Fantasy prize. It is held twice:
+every writer says `where expires_at is not null`, and a BEFORE UPDATE trigger hands back the
+old row whatever the update asked for, except for `fulfilled_at` going from null to a time
+once. **Two guards on purpose**, because the first is a clause somebody deletes while
+tidying, and the SQL test proves each one by removing it.
+
+**ONE ROW PER PRODUCT HOLDS BECAUSE THE ROW KEEPS ITS PARTS.** A lifetime unlock, a plan and a
+Fantasy pass for the same product share one row, so the row carries `sub_until` (what plans
+grant, grace included) and `grant_until` (what fixed grants give), and `expires_at` is the
+later of the two. One number cannot hold "the latest of all grants": once a pass is folded
+into a plan's end, a refund cannot take the plan's days back without taking the prize's. Every
+reader already asks `expires_at`, so none of them changed. A writer that sets `expires_at`
+alone (the old webhook, a hand edit) has it filed as the fixed grant by the trigger.
+
+**THE PLANS ARE NOT IN THE ARCADE CARD'S `subscriptions` TABLE**, and that is the finding to
+read before "fixing" it. That table is keyed by user and eight SQL functions plus
+`arcade/board.js` read any active row there as an Arcade Card member, so a Perfect Season plan
+written there hands its buyer unlimited ranked arcade plays. They live in
+`premium_subscriptions`, keyed by `stripe_sub_id`. The webhook tells a plan from an Arcade
+Card by its PRICE first and its metadata second, because a plan changed in the portal keeps the
+metadata it was bought with.
+
+**THE STATUS DECIDES, NOT THE EVENT.** Stripe delivers out of order and more than once, so
+`premium_sub_apply()` reads the plan as it now stands: active extends, past due holds, a
+cancel ends at `ended_at` (no grace after a cancel), a full refund or a chargeback ends it now
+and remembers the period it took back, and a finished plan stays finished whatever arrives
+late. Grace is seven days, the owner's call, in `premium_yearly_grace()` and nowhere else.
+
+**THE BONUS IS INSERT IF ABSENT, AND THAT IS THE WHOLE OF "ONCE PER ACCOUNT, EVER".** The Run
+The Bundle coins and pack are the `runtour_pack` row, written `on conflict do nothing` by any
+paid-for Run The Bundle event. Never a merge: a merge re-sends `fulfilled_at` as null over a
+row the golf side already paid out, and 103's redeem pays the coins again. The old one-time
+path had exactly that merge and now splits the bonus row out too.
+
+**THE PAGE NEVER DECIDES ONCE OR YEARLY.** `/api/stripe/offer` answers from `_offer.js`, which
+says `year` only when the switch is on, both yearly prices are set AND the database answers
+`premium_yearly_ready()`. So the switch before the SQL keeps selling the one-time bundles, which
+is what "correct on both sides of the migration" means here. The page sends the plan it showed,
+and the checkout answers `409 offer_changed` to a mismatch, so nobody is charged for something
+their screen did not say. `RTG_STORE.onPlan` redraws every card and an open store when the
+answer lands.
+
+**Gold names, the owner's call:** a subscriber is gold on rows filed while subscribed, and
+those rows stay gold. Subscribing does not reach back and gild older rows; a lifetime purchase
+still does. **And the backfill trigger answers to the two football products now**: 107 fired on
+any insert, so buying Diamond Pro or Floor Pro gilded every football row the account had.
+
+**What `check-premium` holds**: a lifetime owner reads exactly what they always read (the
+receipt, "nothing to renew", the thank you), a subscriber reads "Renews on" or "Ends on" and a
+Manage your plan button that opens the portal for the plan, a lapsed subscriber reads that it
+ended and is back on the free allowance, the yearly sheet never says lifetime, one payment or no
+subscription, the yearly card sub holds one line at 360 and up, and offer_changed and
+already_subscribed are handled.
+
+**The value claim is two sums.** Sold once, $19.99 + $49.99 + $9.99 = $80, save $45. Sold
+yearly, $19.99 + $49.99 = $70 a year, save $35: the coins come once, so counting them would make
+the struck price true for one year and false for every renewal.
+
 ### What the free allowance actually counts
 
 **Dynasty counts SEASONS, the Trade Machine counts RUNS, and the server says which.**

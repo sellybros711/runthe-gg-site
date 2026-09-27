@@ -14,7 +14,12 @@
  *   RTG_STORE.html(opts)        the offer, as markup. opts.signedOut swaps the two button
  *                               labels for their sign-in-first versions.
  *   RTG_STORE.wire(root, fns)   binds the two buy buttons found inside `root`. fns.buy is
- *                               called with 'perfect-season' or 'run-the-bundle'.
+ *                               called with 'perfect-season' or 'run-the-bundle', the
+ *                               button, and the plan the sheet showed ('once' or 'year'),
+ *                               which the host sends as `plan` to checkout-bundle.
+ *   RTG_STORE.plan()            'once' or 'year': how the two bundles are sold right now.
+ *   RTG_STORE.setPlan(p)        what a 409 offer_changed answer says is on sale.
+ *   RTG_STORE.onPlan(fn)        called when the plan changes, so an open sheet redraws.
  *
  * IT BRINGS ITS OWN CSS and injects it once, so a page only has to load the file. Every
  * colour and face comes from the site's design tokens (--ink, --panel, --line, --fn, --fd
@@ -40,6 +45,33 @@
       return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
     });
   };
+
+  /* ONCE OR YEARLY, and the page never decides which. /api/stripe/offer answers from the
+     one switch in functions/api/stripe/_bundles.js (YEARLY_LIVE), and the checkout acts on
+     the same answer, so the sheet cannot show a price the checkout will not charge.
+     'once' until it answers and whenever it cannot: that is the product that has always
+     been on sale, so a slow or failed request shows the truth rather than a guess. The
+     host sends plan() with every checkout, and a mismatch comes back 409 offer_changed
+     with the plan that IS on sale, which the host hands to setPlan() and redraws. */
+  var PLAN = 'once';
+  var planListeners = [];
+  function setPlan(p) {
+    var next = p === 'year' ? 'year' : 'once';
+    if (next === PLAN) return;
+    PLAN = next;
+    planListeners.slice().forEach(function (f) { try { f(PLAN); } catch (e) {} });
+  }
+  var offerAsked = null;
+  function loadOffer() {
+    if (offerAsked) return offerAsked;
+    offerAsked = (typeof fetch === 'function'
+      ? fetch('/api/stripe/offer', { cache: 'no-store' })
+          .then(function (r) { return r.ok ? r.json() : null; })
+          .then(function (d) { if (d && d.plan) setPlan(d.plan); return PLAN; })
+          .catch(function () { return PLAN; })
+      : Promise.resolve(PLAN));
+    return offerAsked;
+  }
 
   var CSS = '  .pw-hero{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:13px 0 4px}\n' +
     /* FOUR TILES GO TWO BY TWO RATHER THAN THREE AND A STRAY. The hero row is three columns
@@ -498,7 +530,19 @@
   function storeHTML(opts) {
     ensureStyle();
     var o = opts || {};
-    var WORTH = 80, RTB = 34.99;
+    var Y = PLAN === 'year';
+    /* WHAT RUN THE BUNDLE IS WORTH IN PARTS, at prices this site charges. The README says
+       why this claim has to stay true, and it is two different sums:
+         once   $19.99 Perfect Season + $49.99 Arcade Card year + $9.99 Large Bucket
+                = $79.97, shown as $80, save $45
+         year   $19.99 Perfect Season a year + $49.99 Arcade Card a year = $69.98 a
+                year, shown as $70, save $35
+       The yearly sum leaves the coins out on purpose: they are handed over once per
+       account and never again, so they are not part of what each year is worth. Counting
+       them would make the struck price true for one year and false for every renewal. */
+    var WORTH = Y ? 70 : 80, RTB = 34.99;
+    var TERM = Y ? 'Renews yearly' : 'Lifetime access';
+    var CHIP = Y ? 'Per year' : 'One payment';
     return '<div class="eyebrow gold">Pro</div>'+
     /* NOT "GO PRO", AND THE REASON IS LOCAL TO THIS SITE. Going pro is a thing PLAYERS do
     here: Commissioner Mode carries a named rule called "Going pro and coming back", and the
@@ -560,7 +604,7 @@
 
     '<div class="pw-tier">'+
     '<div class="pw-th"><span class="pw-name">Premium Bundle</span></div>'+
-    '<div class="pw-cost"><b>$19.99</b><span class="pw-once">One payment</span></div>'+
+    '<div class="pw-cost"><b>$19.99</b><span class="pw-once">'+CHIP+'</span></div>'+
     /* THE TRADE MACHINE IS NAMED HERE BECAUSE IT IS PROMOTED ABOVE. The hero row sells
     unlimited Trade Machine runs and this is the itemised list of what the money buys,
     so leaving it off would advertise a thing and then not sell it. It is a real part of
@@ -587,8 +631,8 @@
        assert that count. The tiles are the shape of the offer, this is the itemisation. */
     pwGroupText('ps','Unlimited play: Dynasty, One Franchise Dynasty, Trade Machine'+
       (PW_FULL_ON()?', Full Team':''),
-      'Lifetime access')+
-    pwGroupText('cfb','Commissioner Mode','Lifetime access')+
+      TERM)+
+    pwGroupText('cfb','Commissioner Mode',TERM)+
     '<button class="btn" id="b-buy-ps" style="width:100%;margin-top:14px">'+
     /* NAMES ITS OWN TIER, the way the button on the card below names that one. Two buttons
        reading "Unlock everything" and "Get the bundle" would be one verb and one noun for two
@@ -602,7 +646,7 @@
     '<div class="pw-cost"><b>$'+RTB.toFixed(2)+'</b>'+
     '<span class="pw-was">$'+WORTH+'</span>'+
     '<span class="pw-save">Save $'+Math.round(WORTH-RTB)+'</span>'+
-    '<span class="pw-once">One payment</span></div>'+
+    '<span class="pw-once">'+CHIP+'</span></div>'+
     '<p class="pw-note">Everything above, plus two more games.</p>'+
     /* "Everything above" carries the two Lifetime access lines with it, so the Arcade line
     has to say plainly that it is not one. The term column is for the TERM and nothing else:
@@ -613,12 +657,19 @@
     over once and then they are just yours, and a column that reads "Lifetime access,
     No auto-renewal, Tour is the mid pack tier" is a column that has stopped meaning one
     thing. What the Tour tier is worth belongs in Run The Tour, not on a receipt line. */
-    pwGroupText('arcade','1 year of the Arcade Card','No auto-renewal')+
-    pwGroupText('tour','100,000 coins and one Tour Pack')+
+    /* YEARLY, THE ARCADE CARD IS SIMPLY PART OF THE PLAN and renews with it, so the line
+       stops saying it is a year that ends. The coins are the one thing that does not
+       come back each year, and the term says so. */
+    (Y ? pwGroupText('arcade','The Arcade Card','Renews yearly')
+       : pwGroupText('arcade','1 year of the Arcade Card','No auto-renewal'))+
+    (Y ? pwGroupText('tour','100,000 coins and one Tour Pack','One time bonus')
+       : pwGroupText('tour','100,000 coins and one Tour Pack'))+
     /* LAST THING BEFORE THE BUTTON, because it is the only line on this card that changes
        the decision rather than describing what is in it. See the note on .pw-onetime. */
-    '<p class="pw-onetime"><b>One time offer</b>Buy the Premium Bundle on its own and '+
-    'this one closes. It isn\'t offered again.</p>'+
+    /* ONLY WHEN THE BUNDLES ARE SOLD ONCE. A yearly plan can be changed in the billing
+       page rather than closing anything, so the warning would be false. */
+    (Y ? '' : '<p class="pw-onetime"><b>One time offer</b>Buy the Premium Bundle on its own and '+
+    'this one closes. It isn\'t offered again.</p>')+
     /* THE BUNDLE IS ALREADY NAMED, twice, in the heading of this card and in the tag beside
        it. Spelling it out a third time on the button ran to eighteen characters and set at
        the button's own size it filled the width edge to edge on a phone, which reads as a
@@ -630,7 +681,9 @@
 
     /* THE SUBSCRIPTION ANSWER KEEPS ITS LAST WORD HERE, now that the band above is gone. The
        chip beside each price says one payment; this says the thing a chip has no room for. */
-    '<p class="pw-foot">Either one makes your account Pro. No subscription, ever. '+
+    '<p class="pw-foot">'+(Y
+      ? 'Either one makes your account Pro. It renews yearly. Cancel any time. '
+      : 'Either one makes your account Pro. No subscription, ever. ')+
     'Secure checkout by Stripe.</p>';
   }
 
@@ -642,8 +695,8 @@
     var f = fns || {};
     var ps = rootEl.querySelector('#b-buy-ps');
     var rtb = rootEl.querySelector('#b-buy-rtb');
-    if (ps && f.buy) ps.onclick = function () { f.buy('perfect-season', ps); };
-    if (rtb && f.buy) rtb.onclick = function () { f.buy('run-the-bundle', rtb); };
+    if (ps && f.buy) ps.onclick = function () { f.buy('perfect-season', ps, PLAN); };
+    if (rtb && f.buy) rtb.onclick = function () { f.buy('run-the-bundle', rtb, PLAN); };
   }
 
   /*
@@ -730,6 +783,10 @@
      the sheet has the room and this has a third of it. What must not differ is the CLAIM, and
      nothing here promises a different one. */
   var PW_CARD_SUB = 'No daily limits. Pay once.';
+  /* THE YEARLY SUB, measured the same way: it has to hold one line at 360px, and
+     check-premium.mjs asserts that against the real card in both plans. */
+  var PW_CARD_SUB_YEAR = 'No daily limits. Yearly plan.';
+  function cardSub() { return PLAN === 'year' ? PW_CARD_SUB_YEAR : PW_CARD_SUB; }
   function cardMarkKeys() {
     var k = ['trophy', 'swap', 'clipboard'];
     if (PW_FULL_ON()) k.push('shield');
@@ -745,7 +802,7 @@
     ensureStyle();
     return '<span class="pwc-ic">' + pwArt('star') + '</span>' +
       '<span class="pwc-t"><b>' + esc(PW_CARD_TITLE) + '</b>' +
-      '<span>' + esc(PW_CARD_SUB) + '</span></span>' +
+      '<span>' + esc(cardSub()) + '</span></span>' +
       '<span class="pwc-go"><b>' + esc(PW_CARD_VALUE) + '</b>' + cardMarks() + '</span>';
   }
   function cardHTML(id) {
@@ -754,5 +811,11 @@
 
   root.RTG_STORE = { html: storeHTML, wire: wire, art: art, game: game, CFB_NAME: CFB_NAME,
     card: cardHTML, cardInner: cardInner, cardValue: PW_CARD_VALUE,
-    cardTitle: PW_CARD_TITLE, cardSub: PW_CARD_SUB };
+    cardTitle: PW_CARD_TITLE,
+    plan: function () { return PLAN; }, setPlan: setPlan, loadOffer: loadOffer,
+    onPlan: function (f) { planListeners.push(f); } };
+  /* A GETTER, because it depends on the plan and both suites read it off this object to
+     hold the cards to it. A value copied here at load would be the once sentence for ever. */
+  Object.defineProperty(root.RTG_STORE, 'cardSub', { enumerable: true, get: cardSub });
+  loadOffer();
 })(typeof self !== 'undefined' ? self : this);
