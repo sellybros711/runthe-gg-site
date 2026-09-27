@@ -474,6 +474,63 @@ body:has(#s-intro.on) header .lockup{visibility:hidden}
   font-size:9px;font-weight:800;color:#fff;border:1.5px solid rgba(var(--edge),.35);
   font-style:normal;white-space:nowrap;box-shadow:0 1px 3px -1px rgba(0,0,0,.5)}
 
+
+/* ─── ballparks ───
+   A parked field is taller by its sky (parks.js SKY, 10 units over 68). The field
+   and its art are the sport, not the theme: literals, in both themes. */
+.field.parked:not(.staffboard){aspect-ratio:100/78}
+.park-tag{position:absolute;left:8px;top:7px;z-index:5;display:inline-flex;align-items:center;gap:5px;
+  height:22px;padding:0 9px 0 7px;border-radius:99px;border:1px solid rgba(255,255,255,.28);
+  background:rgba(8,14,24,.55);color:#fff;font-family:var(--fn);font-size:10px;font-weight:800;
+  letter-spacing:.06em;text-transform:uppercase;cursor:pointer;-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px)}
+.park-tag svg{width:12px;height:12px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.park-tag:hover{border-color:#f0c14a}
+.trophy-parks{margin:14px 0 6px}
+.pk-hd{display:flex;align-items:baseline;justify-content:space-between}
+.pk-title{font-family:var(--fd);font-size:20px;text-transform:uppercase;letter-spacing:.02em}
+.pk-count{font-family:var(--fn);font-size:11px;font-weight:800;letter-spacing:.08em;color:var(--dim)}
+.pk-sub{font-size:12.5px;color:var(--dim);margin:2px 0 10px}
+.pk-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+@media (min-width:640px){.pk-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.pk-card{--rc:#8a8f98;position:relative;border-radius:12px;overflow:hidden;background:var(--panel);
+  border:1.5px solid rgba(var(--edge),.12);box-shadow:0 2px 8px rgba(0,0,0,.08);display:flex;flex-direction:column}
+.pk-card.r-co{--rc:#5f9e55}.pk-card.r-ra{--rc:#3f7fd0}.pk-card.r-ep{--rc:#8a4fd0}
+.pk-card.r-le{--rc:#d9a02a}.pk-card.r-pr{--rc:#e0487a}.pk-card.r-st{--rc:#8a8f98}
+.pk-card.on{border-color:var(--rc);box-shadow:0 0 0 2px var(--rc),0 6px 18px -6px rgba(0,0,0,.35)}
+/* The card shows the park's top half: the backdrop is the thing that differs, and
+   the infield is the same infield in all thirteen. */
+.pk-view{position:relative;aspect-ratio:100/42;overflow:hidden}
+.pk-view .diamond-svg{position:absolute;left:0;top:0;width:100%;height:auto;aspect-ratio:100/78}
+.newpark .pk-view{aspect-ratio:100/48}
+.pk-view .turf,.pk-view .lit,.pk-view .vig{display:none}
+/* A locked park is shown, not hidden: it is the thing somebody plays toward. */
+.pk-card.locked .pk-view{filter:saturate(.35) brightness(.72)}
+.pk-card.locked .pk-view:after{content:'';position:absolute;inset:0;
+  background:linear-gradient(180deg,rgba(0,0,0,0) 50%,rgba(0,0,0,.35))}
+.pk-body{padding:8px 10px 10px;display:flex;flex-direction:column;gap:2px;flex:1}
+.pk-rar{align-self:flex-start;font-family:var(--fn);font-size:9px;font-weight:800;letter-spacing:.1em;
+  text-transform:uppercase;color:#fff;background:var(--rc);padding:2px 7px;border-radius:99px}
+.pk-name{font-family:var(--fd);font-size:17px;line-height:1.1;margin-top:3px;text-transform:uppercase}
+.pk-nod{font-size:11.5px;color:var(--dim);line-height:1.3}
+.pk-foot{margin-top:auto;padding-top:7px;display:flex;flex-direction:column;gap:4px}
+.pk-on{font-family:var(--fn);font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--rc)}
+.pk-use{height:30px;border-radius:8px;border:1px solid var(--rc);background:transparent;color:var(--ink);
+  font-family:var(--fn);font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;cursor:pointer}
+.pk-use:hover{background:var(--rc);color:#fff}
+.pk-need{display:flex;align-items:flex-start;gap:5px;font-family:var(--fn);font-size:11px;font-weight:700;color:var(--dim);line-height:1.3}
+.pk-need svg{flex:0 0 12px;width:12px;height:12px;margin-top:1px;fill:none;stroke:currentColor;stroke-width:2}
+.pk-bar{display:block;height:4px;border-radius:99px;background:rgba(var(--edge),.1);overflow:hidden}
+.pk-bar i{display:block;height:100%;background:var(--rc)}
+.pk-prog{font-family:var(--fn);font-size:10px;font-weight:700;color:var(--dim-2)}
+.newpark{--rc:#d9a02a;display:grid;grid-template-columns:minmax(0,1fr);border-radius:14px;overflow:hidden;
+  margin:12px 0;border:2px solid var(--rc);background:var(--panel);box-shadow:0 8px 24px -10px rgba(0,0,0,.4);
+  animation:optin .4s ease-out both}
+.newpark.r-co{--rc:#5f9e55}.newpark.r-ra{--rc:#3f7fd0}.newpark.r-ep{--rc:#8a4fd0}.newpark.r-le{--rc:#d9a02a}.newpark.r-pr{--rc:#e0487a}
+.np-body{padding:10px 12px 12px}
+.np-eye{font-family:var(--fn);font-size:10px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--rc)}
+.np-name{font-family:var(--fd);font-size:24px;text-transform:uppercase;line-height:1.1}
+.np-nod{font-size:12.5px;color:var(--dim);margin:2px 0 9px}
+@media (min-width:640px){.newpark{grid-template-columns:260px 1fr;align-items:center}}
 /* ─── cap bar ─── */
 .capwrap{position:sticky;top:0;z-index:30;padding:9px 0 9px;margin:-4px 0 12px;
   background:linear-gradient(180deg,var(--bg) 92%,var(--bg-fade))}
@@ -2343,6 +2400,7 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
     <div class="chemworth" id="ro-chemworth" style="display:none"></div>
   </div>
 
+  <div id="ro-newparks"></div>
   <div id="ro-newbadges"></div>
   <div class="stat-row" id="r-stats"></div>
   <div id="r-roster"></div>
@@ -2467,6 +2525,7 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
     </div>
     <div class="acct" id="trophy-acct"></div>
     <div class="trophy-career" id="trophy-career"></div>
+    <div class="trophy-parks" id="trophy-parks"></div>
     <div class="trophy-body" id="trophy-body"></div>
     <p class="trophy-note" id="trophy-note"></p>
   </div>
@@ -2487,6 +2546,7 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
 <script src="engine.js?v=33"></script>
 <script src="run.js?v=26"></script>
 <script src="achievements.js?v=10"></script>
+<script src="parks.js?v=1"></script>
 <script src="board.js?v=1"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="auth.js?v=2"></script>
@@ -2559,6 +2619,7 @@ function rowFromRun(o){
 function acctId(){try{const st=A.state();return st&&st.signedIn&&st.userId||null;}catch(_){return null;}}
 function badgeRows(rows){const u=acctId();return u?(rows||loadHistory()).filter(r=>r.u===u):[];}
 let lastNewBadges=[];
+let lastNewParks=[];
 /* null is a guest season: the results screen says what signing in is for,
    rather than listing badges nobody is allowed to keep. */
 function recordRun(o){
@@ -2567,6 +2628,11 @@ function recordRun(o){
   const row=rowFromRun(o);
   if(row.u){try{lastNewBadges=ACH.newlyEarned(badgeRows(prev),row);}catch(_){lastNewBadges=[];}}
   else lastNewBadges=null;
+  lastNewParks=[];
+  if(row.u&&window.RTD_PARKS){try{
+    const before=new Set(RTD_PARKS.unlockedIds(parkInfoFor(badgeRows(prev))));
+    lastNewParks=RTD_PARKS.unlockedIds(parkInfoFor(badgeRows(prev).concat([row]))).filter(id=>!before.has(id));
+  }catch(_){lastNewParks=[];}}
   saveHistory(prev.concat([row]));
   try{ga('run_complete',{outcome:o.titleWon?'title':o.madePlayoffs?'playoffs':'missed',wins:o.wins,rating:o.rating!=null?Math.round(o.rating):0,rank:o.allTimeRank||0});}catch(_){}
   (lastNewBadges||[]).forEach(a=>{try{ga('achievement_earned',{id:a.id,tier:a.tier,group:a.group});}catch(_){}});
@@ -2620,9 +2686,23 @@ function badgeIc(a,earned,mini){
     '<g class="bg" transform="translate(14 14) scale(.5)">'+g+'</g></svg></span>';
 }
 
+/* A park one season opened is the biggest reward on the results screen, so it is
+   drawn, not listed: the park itself, and a button that puts it under the next
+   draft. */
+function paintNewParks(){
+  const el=$('ro-newparks');if(!el)return;el.innerHTML='';
+  if(!window.RTD_PARKS||!lastNewParks||!lastNewParks.length)return;
+  const id=lastNewParks[0];const p=RTD_PARKS.BY_ID[id];
+  el.innerHTML='<div class="newpark r-'+PARK_RARITY[p.rarity]+'">'+parkPreview(id,'np')+
+    '<div class="np-body"><div class="np-eye">New ballpark unlocked</div><div class="np-name">'+esc(p.name)+'</div>'+
+    '<div class="np-nod">'+esc(p.nod)+(lastNewParks.length>1?' And '+(lastNewParks.length-1)+' more in your profile.':'')+'</div>'+
+    '<button type="button" class="btn sm" id="b-np-use">Play here next</button></div></div>';
+  $('b-np-use').addEventListener('click',()=>{setPark(id);$('b-np-use').textContent='In use';$('b-np-use').disabled=true;});
+}
 /* ─── new-badges panel on the results screen ─── */
 function paintNewBadges(){
   const el=$('ro-newbadges');el.innerHTML='';
+  paintNewParks();
   if(lastNewBadges===null&&ACH){
     el.innerHTML='<div class="newbadges guest"><div class="nb-hd">Badges are for signed-in players</div>'+
       '<p class="nb-d">Sign in and every season you play counts toward '+ACH.CATALOGUE.length+' badges.</p>'+
@@ -2645,6 +2725,7 @@ function openSheet(id){const s=$(id);s.classList.add('on');s.setAttribute('aria-
 function closeSheet(id){const s=$(id);s.classList.remove('on');s.setAttribute('aria-hidden','true');}
 function renderTrophy(){
   renderAccount();
+  renderParks();
   const signed=!!acctId();
   const rows=signed?badgeRows():loadHistory();const ev=ACH.evaluate(rows);
   const st=ev.stats;
@@ -2744,7 +2825,78 @@ function renderAccount(){
   /* the release newsletter box, /assets/newsletter.js. Absent script, absent box. */
   if(window.RTG_NEWS) el.appendChild(RTG_NEWS.el({source:'baseball'}));
 }
-function openTrophy(){if(!ACH)return;renderTrophy();openSheet('sheet-trophy');ga('trophy_opened');}
+function openTrophy(focus){if(!ACH)return;renderTrophy();openSheet('sheet-trophy');ga('trophy_opened');
+  if(focus==='parks'){const pk=$('trophy-parks');if(pk)requestAnimationFrame(()=>pk.scrollIntoView({block:'start'}));}}
+
+/* ─── ballparks ───
+   The catalogue, the art and the unlock rules are parks.js. What lives here is the
+   account's side: which parks it has, which one it has chosen, and the shelf in the
+   profile. Nothing is stored about an unlock (it is derived from the same rows the
+   badge cabinet reads), and the only thing stored at all is the choice, per account,
+   on this device. A choice the account can no longer back (signed out, or a lapsed
+   Pro park) falls back to the home park rather than to a park it does not have. */
+const PARK_KEY='rtd_park_v1';
+let parkMemo=null;
+function parkInfo(){
+  const uid=acctId();const rows=uid?badgeRows():[];
+  const pro=(()=>{try{return isPro();}catch(_){return false;}})();
+  const key=(uid||'')+'|'+rows.length+'|'+pro;
+  if(parkMemo&&parkMemo.key===key)return parkMemo.info;
+  const info={signed:!!uid,pro,badges:ACH?ACH.evaluate(rows).earned.length:0,ctx:ACH?ACH.buildCtx(rows):{n:0,best:{},modeRuns:{}}};
+  parkMemo={key,info};
+  return info;
+}
+/* The same question asked of a set of rows that is not the stored history, so the
+   results screen can tell which parks one season opened. */
+function parkInfoFor(rows){
+  const pro=(()=>{try{return isPro();}catch(_){return false;}})();
+  return {signed:true,pro,badges:ACH.evaluate(rows).earned.length,ctx:ACH.buildCtx(rows)};
+}
+function parkPrefs(){try{return JSON.parse(localStorage.getItem(PARK_KEY))||{};}catch(_){return {};}}
+function currentPark(){
+  if(!window.RTD_PARKS||!ACH)return 'home';
+  const uid=acctId();if(!uid)return 'home';
+  const want=parkPrefs()[uid];const p=want&&RTD_PARKS.BY_ID[want];
+  if(!p)return 'home';
+  return RTD_PARKS.status(p,parkInfo()).ok?want:'home';
+}
+function setPark(id){
+  const uid=acctId();if(!uid||!RTD_PARKS.BY_ID[id])return;
+  const all=parkPrefs();all[uid]=id;
+  try{localStorage.setItem(PARK_KEY,JSON.stringify(all));}catch(_){}
+  try{ga('park_chosen',{park:id});}catch(_){}
+  refreshParkedFields();
+}
+function refreshParkedFields(){
+  for(const id of Object.keys(PARKED_FIELDS)){const el=$(id);if(el&&el._ps)el._ps=null;}
+  if(RUN){const f=$('field');if(f&&$('s-draft').classList.contains('on'))drawField(f,true);
+    const q=$('sq-field');if(q&&$('s-squad').classList.contains('on'))drawField(q,false);}
+}
+const PARK_RARITY={Starter:'st',Common:'co',Rare:'ra',Epic:'ep',Legendary:'le',Pro:'pr'};
+function parkPreview(id,sfx){
+  return '<div class="pk-view">'+RTD_PARKS.markings(id,sfx,RTD_PARKS.SKY)+'</div>';
+}
+function renderParks(){
+  const el=$('trophy-parks');if(!el)return;
+  if(!window.RTD_PARKS){el.innerHTML='';return;}
+  const info=parkInfo();const cur=currentPark();
+  const got=RTD_PARKS.PARKS.filter(p=>RTD_PARKS.status(p,info).ok).length;
+  el.innerHTML='<div class="pk-hd"><span class="pk-title">Ballparks</span><span class="pk-count">'+got+' of '+RTD_PARKS.PARKS.length+'</span></div>'+
+    '<p class="pk-sub">Your park is the backdrop every draft is played on. Earn more by playing.</p>'+
+    '<div class="pk-grid">'+RTD_PARKS.PARKS.map(p=>{
+      const st=RTD_PARKS.status(p,info);const on=p.id===cur;
+      const foot=on?'<span class="pk-on">In use</span>'
+        :st.ok?'<button type="button" class="pk-use" data-park="'+p.id+'">Use this park</button>'
+        :'<span class="pk-need"><svg viewBox="0 0 24 24" aria-hidden="true">'+BDG_LOCK+'</svg>'+esc(st.label)+'</span>'+
+          (st.of>1?'<span class="pk-bar"><i style="width:'+Math.round(st.have/st.of*100)+'%"></i></span><span class="pk-prog">'+st.have+' / '+st.of+'</span>':'');
+      return '<div class="pk-card r-'+PARK_RARITY[p.rarity]+(on?' on':'')+(st.ok?'':' locked')+'">'+
+        parkPreview(p.id,'pv')+
+        '<div class="pk-body"><span class="pk-rar">'+esc(p.rarity)+'</span>'+
+        '<div class="pk-name">'+esc(p.name)+'</div><div class="pk-nod">'+esc(p.nod)+'</div>'+
+        '<div class="pk-foot">'+foot+'</div></div></div>';
+    }).join('')+'</div>';
+  el.querySelectorAll('.pk-use').forEach(b=>b.addEventListener('click',()=>{setPark(b.dataset.park);renderParks();}));
+}
 
 const $=id=>document.getElementById(id);
 /* The slot list the screen is currently drawing. All-Time Staff fields twelve arms,
@@ -3129,7 +3281,8 @@ function spinBoth(draw,done){
 }
 
 /* ─── diamond field ─── */
-function diamondMarkings(sfx){
+function diamondMarkings(sfx,park,sky){
+  if(window.RTD_PARKS)return RTD_PARKS.markings(park||'home',sfx,sky||0);
   /* A ballpark rather than a diagram of one: stands and a padded wall, a warning
      track, mown fair grass, a grass infield inside a dirt skin, cut-outs at the
      bases, a raised mound, and chalk only where a real field has chalk (the foul
@@ -3252,13 +3405,27 @@ function diamondMarkings(sfx){
     '</svg><div class="vig"></div>';
 }
 
+/* THE DRAFT AND SQUAD FIELDS WEAR THE ACCOUNT'S BALLPARK, with a band of sky above
+   the wall for its skyline. The home page hero always draws the home park and no
+   extra sky, because its heights are measured against the fold. A change of park
+   rebuilds the field, so the cache is keyed on it. */
+const PARKED_FIELDS={'field':1,'sq-field':1};
 function fieldState(el){
-  if(el._ps) return el._ps;
-  el.innerHTML=diamondMarkings(el.id)+
+  const parked=!!PARKED_FIELDS[el.id]&&!!window.RTD_PARKS;
+  const park=parked?currentPark():'home';
+  if(el._ps&&el._ps.park===park) return el._ps;
+  const sky=parked?RTD_PARKS.SKY:0;
+  el.classList.toggle('parked',parked);
+  el.innerHTML=diamondMarkings(el.id,park,sky)+
+    (el.id==='field'&&parked?'<button type="button" class="park-tag" id="park-tag">'+
+      '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 13h12M3.5 13V7.5L8 4l4.5 3.5V13M6.5 13v-3h3v3"/></svg>'+
+      esc(RTD_PARKS.BY_ID[park].name)+'</button>':'')+
     E.SLOTS.map((slot,i)=>'<div class="chip empty" data-i="'+i+'">'+
       '<div class="disc"><span class="dl">'+slot+'</span><i class="pip"></i></div>'+
       '<div class="lab"><div class="who"></div><div class="yr"></div></div></div>').join('');
-  el._ps={chips:[...el.querySelectorAll('.chip')],fresh:true};
+  el._ps={chips:[...el.querySelectorAll('.chip')],fresh:true,park,sky};
+  const tag=el.querySelector('#park-tag');
+  if(tag)tag.addEventListener('click',e=>{e.stopPropagation();openTrophy('parks');});
   return el._ps;
 }
 
@@ -3402,7 +3569,10 @@ function drawField(el,live){
       pip.title=ce.links.filter(l=>l.type!=='era').map(l=>l.label).join(' / ');
     }else{pip.style.display='none';pip.title='';}
     c.style.left=DIAMOND_SPOTS[i].x+'%';
-    c.style.top=DIAMOND_SPOTS[i].y+'%';
+    /* The spots are written in the 68-unit field; a parked field is taller by its
+       sky, so the same spot sits lower in the box. */
+    const k=st.sky||0;
+    c.style.top=(k?(DIAMOND_SPOTS[i].y*0.68+k)/(68+k)*100:DIAMOND_SPOTS[i].y)+'%';
   });
 }
 
@@ -3417,7 +3587,7 @@ const STAFF_GROUPS=[
   {label:'Closer',slots:['CL']},
 ];
 function drawStaffBoard(el,live){
-  el.classList.add('staffboard');
+  el.classList.add('staffboard');el.classList.remove('parked');el._ps=null;
   const slots=SLOTS_NOW();
   const bySlot=new Array(slots.length).fill(null);
   if(RUN) RUN.roster.forEach((p,i)=>{bySlot[RUN.slotIndex[i]]=p;});

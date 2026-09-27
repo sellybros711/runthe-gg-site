@@ -14138,6 +14138,51 @@ Contender read those words twice one line apart. `takesHtml()` drops it from
 the rows on both the squad and results screens. The guest badge panel's
 button is the ball, like every other primary action here.
 
+### Ballparks are earned, and the account's park is the one the draft is played on
+
+```
+node baseball/check-parks.mjs          the catalogue, the art, the unlocks, the page
+node baseball/check-parks.mjs --quick  no browser
+```
+
+Asked for as custom ballparks a fan would love, unlocked to the profile by rewards
+and account tier. `baseball/parks.js` holds thirteen: the home park plus twelve
+nods to famous parks (ivy on brick, a tall green wall in left, fountains, a bay, a
+white frieze, a dome, a cornfield). **None is named for the park it nods to**,
+and none carries a real sign or logo. Those belong to other people, so each is
+drawn from what makes the place itself and given a name of its own.
+
+**Unlocks are DERIVED, never stored**, which is the badge cabinet's design at a
+second shelf. Every rule is a question about the account's own rows (badges
+earned, best wins, Octobers, titles, seasons played, modes played) or about
+`isPro()`. So a park is retroactive, follows the account, and cannot be lost by
+clearing site data. A guest drafts on the home park. The only stored thing is the
+CHOICE, `rtd_park_v1`, keyed by account on the device.
+
+**A choice the account cannot back falls back to the home park**, never to a
+park it does not have: signed out, another account on the browser, or a Pro park
+after Pro lapses. `check-parks` drives all three through the page, and each was
+proved by making `currentPark()` return the stored choice unasked.
+
+**The field keeps its spots and grows a sky.** A park draws the same diamond at
+the same coordinates and changes the grass, the dirt, the wall and everything
+behind it. The draft and squad fields (`PARKED_FIELDS`) extend the SVG's viewBox
+upward by `SKY` (10 units over 68) for the skyline. So `.field.parked` is
+`100/78` and `drawField` maps each chip's 68-unit y into the taller box. The home
+page hero passes no sky and always draws the home park, because its heights are
+measured against the fold.
+
+**Every SVG id carries the field's suffix AND the park's id.** The profile draws
+all thirteen in one sheet beside the draft field. Two parks sharing a gradient id
+paint each other, and an id with no match draws nothing. Neither throws.
+`check-parks` asserts every `url()` resolves and no id repeats across all
+thirteen. Proved by stripping the suffix: every park fails.
+
+The draft field wears a tag naming its park, and pressing it opens the shelf. A
+season that opens a park says so on the results screen (`lastNewParks`, computed
+before and after the row is filed, as `lastNewBadges` is), with the park drawn and
+a button to play on it next.
+
 ### Two ratings, two jobs, and they must not be merged
 
 `squadRating()` reads nine bats and two starters, the same shape a real club
