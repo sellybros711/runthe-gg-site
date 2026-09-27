@@ -2243,8 +2243,8 @@
       "sha": "e377af19fb95be50"
     },
     "auth.js": {
-      "v": "2",
-      "sha": "17b3bedb5b0006a3"
+      "v": "3",
+      "sha": "6d650550b3025b39"
     },
     "/assets/cloudsave.js": {
       "v": "2",
@@ -2255,12 +2255,12 @@
       "sha": "1005aca091f1fc4b"
     },
     "cloud.js": {
-      "v": "2",
-      "sha": "31e8a7be1e03a4c1"
+      "v": "3",
+      "sha": "bd012c3ec2d45f42"
     },
     "modes-ui.js": {
-      "v": "11",
-      "sha": "6e183594d20f585c"
+      "v": "12",
+      "sha": "f62feeee2682decb"
     },
     "data/players.json": {
       "v": "5",

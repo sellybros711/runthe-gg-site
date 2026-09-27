@@ -85,7 +85,7 @@ has_table as (
     'fantasy_weeks','fantasy_prices','fantasy_results','fantasy_entries',
     'nfl_games','fantasy_prizes',
     'rtf_runs','rtd_runs','rtf_plays','rtd_mode_plays','premium_subscriptions',
-    'rtd_profiles','rtd_career'
+    'rtd_profiles','rtd_career','rtf_profiles'
   ]) as t
   where to_regclass('public.' || t) is not null
 ),
@@ -536,7 +536,18 @@ check_rows(sort, migration, what, breaks, ok) as (
       and (select count(*) > 0 from has_table where name = 'rtd_career')
       and (select count(*) > 0 from col where tbl = 'rtd_profiles' and name = 'rung')
       and (select count(*) > 0 from proc where name = 'rtd_career_merge')
-      and (select count(*) > 0 from proc where name = 'rtd_set_profile' and body like '%p_rung%'))
+      and (select count(*) > 0 from proc where name = 'rtd_set_profile' and body like '%p_rung%')),
+
+  -- RUN THE FLOOR PROFILES. Soft by design like 127: the page keeps the jersey,
+  -- the arena, the camera and the door choices in the browser until the server
+  -- can take them and sends them the first time it can. Without it they follow
+  -- nobody to a second phone, and a cleared browser loses them.
+  (39, '128_hoops_profiles',
+      'a hoops jersey, arena and camera are kept on the account, not only in the browser',
+      'The jersey, the chosen arena, the camera and the last club and decade live only in the browser that set them.',
+      (select count(*) > 0 from has_table where name = 'rtf_profiles')
+      and (select count(*) > 0 from col where tbl = 'rtf_profiles' and name = 'guide_seen')
+      and (select count(*) > 0 from proc where name = 'rtf_set_profile'))
 )
 -- The summary has to come LAST, and a UNION can only be ordered by an output
 -- column, so the sort key is carried through a subquery rather than sorted on

@@ -30,8 +30,118 @@ function lsGet(k){
 }
 function lsSet(k, v){
   try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {}
+  syncWrite(k);
 }
-function lsDel(k){ try { localStorage.removeItem(k); } catch (e) {} }
+function lsDel(k){ try { localStorage.removeItem(k); } catch (e) {} syncWrite(k); }
+
+/* ── EVERY MODE IS ON THE ACCOUNT ─────────────────────────────────────────
+ *
+ * Every key this file writes that is a player's record (the Conquest run and
+ * bests, Fix History's days and season, Six Passes' days, both endless
+ * puzzles) is also a slot on the account's shelf. hoops/cloud.js says which
+ * key is which slot and how two copies of it combine; this is the half that
+ * sends and adopts. The browser copy is a cache: a write lands here first,
+ * synchronously, and goes up behind it; a pull on sign in brings the account's
+ * copy down and the account's copy wins wherever the two cannot be combined.
+ *
+ * The clock slots count their own writes (`rtf.rev.v1`), which is the whole of
+ * how a device that played later beats one that played earlier. A write the
+ * shelf refuses answers with what the shelf holds, and that is adopted or
+ * merged on the spot. Guests write the cache and nothing else, and their
+ * records go up with the next sign in. */
+var REV_KEY = 'rtf.rev.v1';
+function revs(){
+  try { var r = JSON.parse(localStorage.getItem(REV_KEY) || '{}'); return (r && typeof r === 'object') ? r : {}; }
+  catch (e) { return {}; }
+}
+function setRev(slot, n){
+  var r = revs();
+  r[slot] = n;
+  try { localStorage.setItem(REV_KEY, JSON.stringify(r)); } catch (e) {}
+}
+function modeCL(){ return (P.cloudMode && P.cloudMode.CL()) || null; }
+function rawGet(k){ try { var v = localStorage.getItem(k); return v ? JSON.parse(v) : null; } catch (e) { return null; } }
+function rawPut(k, v){
+  try { if (v == null) localStorage.removeItem(k); else localStorage.setItem(k, JSON.stringify(v)); } catch (e) {}
+}
+function modePush(key, slot){
+  if (!P.cloudMode || !P.cloudMode.ready()) return;
+  var CLm = modeCL();
+  var sent = P.cloudMode.push(slot, function(){
+    var payload = { rev: revs()[slot] || 0, v: rawGet(key) };
+    return { payload: payload, progress: CLm.modeProgress(slot, payload) };
+  });
+  if (sent && sent.then) sent.then(function(res){
+    /* REFUSED: the shelf is further along. Take what it holds. */
+    if (res && res.ok === false) modeAdopt(key, slot, res, true);
+  });
+}
+function syncWrite(k){
+  var CLm = modeCL();
+  var slot = CLm && CLm.MODE_KEYS[k];
+  if (!slot) return;
+  if (CLm.modeKind(slot) === 'clock') setRev(slot, (revs()[slot] || 0) + 1);
+  modePush(k, slot);
+}
+/* Which screen a key's record is on screen in. A record is never swapped out
+   from under somebody playing it: the device keeps its own and its next write,
+   counted past the shelf's, is the one that stands. */
+var MODE_SCREEN = { cq: 's-cq', fixrun: 's-fix', fixend: 's-fix', psend: 's-pass', passes: 's-pass' };
+function onScreen(slot){
+  var id = MODE_SCREEN[slot], el = id && $(id);
+  return !!(el && el.classList.contains('active'));
+}
+/* One slot, from the shelf. Answers whether the browser copy changed. */
+function modeAdopt(key, slot, row, claim){
+  var CLm = modeCL();
+  var theirs = row && row.payload && typeof row.payload === 'object' ? row.payload : null;
+  var here = rawGet(key), mine = revs()[slot] || 0;
+  if (!claim) {
+    /* ANOTHER ACCOUNT'S BROWSER: the account's own copy stands alone, and
+       no copy at all means nothing, never the previous reader's record. */
+    rawPut(key, theirs ? theirs.v : null);
+    setRev(slot, theirs ? (theirs.rev || 0) : 0);
+    return JSON.stringify(here) !== JSON.stringify(theirs ? theirs.v : null);
+  }
+  if (CLm.modeKind(slot) === 'merge') {
+    var merged = CLm.modeMerge(slot, here, theirs ? theirs.v : null);
+    if (merged == null) return false;
+    var changed = JSON.stringify(merged) !== JSON.stringify(here);
+    if (changed) rawPut(key, merged);
+    if (!theirs || JSON.stringify(merged) !== JSON.stringify(theirs.v)) modePush(key, slot);
+    return changed;
+  }
+  if (!theirs) { if (here != null) modePush(key, slot); return false; }
+  var tr = theirs.rev || 0;
+  /* A TIE GOES TO THE SHELF, so two devices that never wrote after this
+     shipped agree on one copy rather than each keeping its own. */
+  if (tr >= mine) {
+    if (onScreen(slot)) { setRev(slot, Math.max(mine, tr)); return false; }
+    setRev(slot, tr);
+    if (JSON.stringify(here) === JSON.stringify(theirs.v)) return false;
+    rawPut(key, theirs.v);
+    return true;
+  }
+  modePush(key, slot);
+  return false;
+}
+/* Every slot, from a pull. `by` is the shelf's rows by slot name. */
+function cloudAdopt(by, claim){
+  var CLm = modeCL();
+  if (!CLm) return;
+  var changed = false;
+  for (var key in CLm.MODE_KEYS) {
+    var slot = CLm.MODE_KEYS[key];
+    if (modeAdopt(key, slot, by && by[slot], claim)) changed = true;
+  }
+  if (!changed) return;
+  /* What is in memory was read from the old copies. */
+  if (!onScreen('cq')) cq = null;
+  if (!onScreen('fixrun')) { fx = null; fxSt = null; fxDayPz = null; }
+  if (!onScreen('psend')) psPz = null;
+  var home = $('s-home');
+  if (home && home.classList.contains('active')) renderHome();
+}
 
 // ─── pixel art ─────────────────────────────────────────────────────────────
 
@@ -3230,6 +3340,8 @@ function onData(){
 
 window.RTF_MODES_UI = {
   UI_VERSION: UI_VERSION,
+  /* The page's pull hands every row on the shelf to this, see cloudAdopt. */
+  cloudAdopt: cloudAdopt,
   /* Whether this account owns Run The Floor Pro, for the arenas. */
   pro: function(){ return proOwned; },
   onData: onData,

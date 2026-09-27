@@ -253,6 +253,35 @@
     return null;
   }
 
+  /* THE PROFILE, ON THE SERVER. supabase/128_hoops_profiles.sql: one row an
+     account holding what the player chose (the jersey, the arena, the camera,
+     the last club and decade, whether the guide has been seen).
+     getProfile answers the row, `{}` for an account that has none yet, and null
+     for NO OPINION (signed out, offline, or a database without 128), which the
+     page must never read as "you chose nothing". setProfile sends only the
+     fields it is given: the SQL reads a missing argument as leave it alone. */
+  async function getProfile() {
+    if (!sb || !session) return null;
+    const uid = session.user && session.user.id;
+    try {
+      const r = await sb.from('rtf_profiles').select('*').eq('user_id', uid).maybeSingle();
+      if (!r || r.error) return null;
+      return r.data || {};
+    } catch (e) { return null; }
+  }
+  async function setProfile(f) {
+    if (!sb || !session || !f) return null;
+    const args = {};
+    const map = { club: 'p_club', num: 'p_num', arena: 'p_arena', camera: 'p_camera',
+      lastClub: 'p_last_club', lastEra: 'p_last_era', guide: 'p_guide' };
+    for (const k of Object.keys(map)) if (f[k] !== undefined && f[k] !== null) args[map[k]] = f[k];
+    if (!Object.keys(args).length) return null;
+    try {
+      const r = await sb.rpc('rtf_set_profile', args);
+      return (r && !r.error) ? (r.data || {}) : null;
+    } catch (e) { return null; }
+  }
+
   /* board.js signs its requests with the anon key. Once somebody is signed in
      the RPC has to see their JWT instead, or auth.uid() is null and the run
      records as a guest, so this hands the live access token over. */
@@ -287,5 +316,6 @@
     boot, state, onChange: (f) => { listeners.push(f); return () => {}; },
     signIn, signUp, signInGoogle, signOut,
     available, setName, claim, token, deleteAccount, premiumProducts,
+    getProfile, setProfile,
   };
 })();

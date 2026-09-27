@@ -150,7 +150,11 @@ async function serve(route) {
 function fakeAuth(opts) {
   return (o) => {
     window.__acct = o.acct;
+    window.__sent = [];
     const fake = { boot() {}, onChange(f) { window.__authCb = f; setTimeout(f, 30); },
+      /* the profile row, stood in: what the server holds, and every write sent to it */
+      getProfile() { return Promise.resolve(window.__acct ? (o.row === undefined ? {} : o.row) : null); },
+      setProfile(f) { window.__sent.push(f); return Promise.resolve({}); },
       state() { return window.__acct ? { ready: true, signedIn: true, userId: window.__acct, name: 'tester' } : { ready: true, signedIn: false }; } };
     Object.defineProperty(window, 'RTF_AUTH', { get() { return Object.assign(this.__a || {}, fake); }, set(v) { this.__a = v; }, configurable: true });
     if (o.career) localStorage.setItem('runthefloor_career_v1', JSON.stringify(o.career));
@@ -319,6 +323,42 @@ try {
     });
     claim(said.some((s) => /The Fieldhouse/.test(s)), 'ten straight in Conquest names the Fieldhouse', said.join(' | ') || 'nothing said');
     await ctx.close();
+  }
+
+  head('11. THE PROFILE IS THE ACCOUNT\'S: READ ON SIGN IN, WRITTEN ON EVERY CHOICE');
+  {
+    const career = { version: 1, runs: 5, rings: 0, playoffs: 3, bestWins: 50, bestRating: 0, bestLabel: '', totalWins: 0,
+      totalLosses: 0, clubs: {}, shapes: {}, beat72: 0, seasons: {}, colleges: {}, rows: [], byClub: { BOS: { runs: 1, rings: 0, bestWins: 50 } }, feats: {} };
+    const row = { jersey_club: 'BOS', jersey_num: '33', arena: 'parquet', camera: 'top',
+      last_club: 'LAL', last_era: 'eighties', guide_seen: true };
+    let o = await open(browser, 390, 844, { acct: 'u1', career, row });
+    await o.page.waitForTimeout(400);
+    const got = await o.page.evaluate(() => ({
+      arena: window.RTF_PAGE.arena.current(), camera: window.RTF_PAGE.arena.camera(),
+      club: localStorage.getItem('rtf.club.v1'), era: localStorage.getItem('rtf.era.v1'),
+      look: JSON.parse(localStorage.getItem('rtf.look.v1') || '{}').u1,
+      tq: document.querySelector('#court').classList.contains('tq') }));
+    claim(got.arena === 'parquet' && got.camera === 'top' && !got.tq, 'a fresh browser draws the arena and camera the account holds', JSON.stringify(got));
+    claim(got.look && got.look.club === 'BOS' && got.look.num === '33', 'and wears the account\'s jersey');
+    claim(got.club === 'LAL' && got.era === 'eighties', 'and its One Franchise and Decades doors remember the account\'s picks');
+    await o.page.evaluate(() => window.RTF_PAGE.openProfile());
+    await o.page.click('#pt-locker');
+    await o.page.click('#lk-arenas [data-use="rec"]');
+    await o.page.click('.seg [data-cam="tq"]');
+    await o.page.fill('#lk-num', '7');
+    const sent = await o.page.evaluate(() => window.__sent);
+    claim(sent.some((f) => f.arena === 'rec') && sent.some((f) => f.camera === 'tq') && sent.some((f) => f.num === '7'),
+      'every choice in the Locker is written to the account as it is made', JSON.stringify(sent));
+    await o.ctx.close();
+    /* A browser holding choices the account has never heard of sends them up. */
+    o = await open(browser, 390, 844, { acct: 'u1', career, row: {},
+      ls: { 'rtf.arena.v1': JSON.stringify({ u1: 'parquet' }), 'rtf.look.v1': JSON.stringify({ u1: { club: 'BOS', num: '12' } }),
+        'rtf.cam.v1': 'top', 'rtf.club.v1': 'CHI' } });
+    await o.page.waitForTimeout(400);
+    const up = await o.page.evaluate(() => Object.assign({}, ...window.__sent));
+    claim(up.arena === 'parquet' && up.club === 'BOS' && up.num === '12' && up.camera === 'top' && up.lastClub === 'CHI',
+      'choices made before the account had a row go up on the way in', JSON.stringify(up));
+    await o.ctx.close();
   }
 } finally {
   await browser.close();

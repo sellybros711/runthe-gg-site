@@ -13626,8 +13626,8 @@ pull-out bleachers) and **none named for a real arena or carrying a real logo**.
 **Unlocks are derived, never stored.** Every rule asks the career the cabinet
 reads (runs, rings, playoffs, best wins, badges earned, the mode feats `cq.best`,
 `ps.par`, `fx.title`) or whether the account is Pro. A guest gets the home arena
-only. The one stored thing is the choice, `rtf.arena.v1`, keyed by account on the
-device, and a choice the account cannot back (signed out, another account, a Pro
+only. The one stored thing is the choice, on the account's profile row (below),
+and a choice the account cannot back (signed out, another account, a Pro
 arena without Pro) falls back to the home arena. `currentArena()` is the one
 answer and `arenaChanged()` forgets it on every event that can move an unlock: a
 run filed, a feat, a cloud pull, a change of account, Pro.
@@ -13660,17 +13660,68 @@ building. **The three point arc clips itself** (`clip-path`), because tilted, th
 floor's edge is no longer the court's and the upper half of the ellipse drew over
 the crowd.
 
-**The camera is a device preference** (`rtf.cam.v1`), three-quarter by default,
+**The camera is on the profile too**, three-quarter by default,
 Overhead in the Locker. Overhead is the old flat court exactly: no tilt, no scene,
 spots at their flat points.
 
 **The Locker** is the Career sheet's third tab: your jersey, the camera, and the
-arena shelf. The jersey is a club colorway and a number, stored in `rtf.look.v1`
-by account on the device. **A club's colors are earned by playing One Franchise
+arena shelf. The jersey is a club colorway and a number, stored on
+the account's profile row. **A club's colors are earned by playing One Franchise
 with that club** (`career.byClub`), the football crest's rule; the house colors
 are everybody's and Pro wears every club. The identity row at the top of the sheet
 wears it. A results screen names an arena the run opened (`o-arenacard`), and a
 mode that opens one says so in a toast after its badge.
+
+### Everything a signed in player chooses or plays is on the account
+
+```
+psql ... -f supabase/128_hoops_profiles.sql                the profile row, deploy by hand
+psql -d rtf_prof -f supabase/test/hoops_profile_test.sql   (its header lists the chain)
+node hoops/check-arenas.mjs      section 11: read on sign in, written on every choice
+node hoops/check-cloudsave.mjs   the mode slots, two real devices
+```
+
+The owner's rule, in as many words: attached to the profile and the server, not
+the device. Two stores, for the two kinds of thing.
+
+**What the player CHOSE is `rtf_profiles`** (128): the jersey club and number, the
+arena, the camera, the last One Franchise club and decade, and whether the guide
+has been seen. One row an account, **public to read** so a board can draw
+somebody's jersey, written only through `rtf_set_profile`, where null means leave
+it alone and the empty string clears. `hoops/auth.js` has `getProfile` (null is no
+opinion, `{}` is no row yet) and `setProfile`. The page writes on every choice
+(`profileSend`) and reads on every change of account (`profilePull`), where **the
+server's answer wins**, and a choice the server has never heard of goes up on the
+way in. The per-device keys (`rtf.cam.v1`, `rtf.club.v1`, `rtf.era.v1`,
+`rtf.guide.v1`) are claimed only when the browser is this account's, by the cloud
+save's owner rule. The server checks SHAPE and not whether an arena or a club is
+earned, the same trade 127 and the NFL crest make: the page falls back for
+anything the account cannot back, so a forged choice changes only its own screen.
+**Without 128 it fails soft**: every choice still works, cached in the browser,
+and goes up the first sign in after the migration is run. Preflight row 39.
+
+**What the player PLAYED is the shelf** (`ps_saves`, 103, game `rtf`): the career,
+the run and the daily as before, plus **every mode's record as a slot of its own**
+(`MODE_KEYS` in `hoops/cloud.js`): `cq`, `cqbest`, `fix`, `fixrun`, `fixend`,
+`passes`, `psend`. No migration: slots are free-form. Two kinds:
+
+| kind | slots | two copies become |
+|---|---|---|
+| merge | `fix`, `passes`, `cqbest` | the union of days (a finished Fix day keeps the shelf's; a Six Passes day prefers finished, then the longer chain), the larger of each best |
+| clock | `cq`, `fixrun`, `fixend`, `psend` | whichever was written more times |
+
+**The clock is a counter of writes**, kept per slot in `rtf.rev.v1` and taken from
+the shelf on every pull, so it is shared across the account and never a device's
+wall clock. A tie goes to the shelf, so two devices that never wrote after this
+shipped agree on one copy. A clearing is a write (`{ rev, v: null }`), or a stale
+device puts the old run back. Every payload is `{ rev, v }` with `v` exactly what
+the browser keeps. **modes-ui's `lsSet` and `lsDel` are the one hook**: any key on
+`MODE_KEYS` goes up on write, a refused write adopts what the shelf holds, and a
+record is never swapped out from under the screen playing it. cloud.js moved to
+API 3 with this, so a cached page cannot run a shelf it does not know the slots of.
+
+**A guest's records stay in the browser** because there is no account to put them
+on, and they go up with the first sign in. That is the one thing left on a device.
 
 **`RTF_PAGE.arena.force(id)` is the checker's alone**, like `window.RTF_LIVE`:
 nothing on the page calls it.
