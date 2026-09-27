@@ -160,9 +160,6 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
   .hero h1 .l1{display:block;color:#fff;}
   .hero h1 .l2{display:block;background:linear-gradient(92deg,#8af06a 0%,#66D3DE 55%,#9fb8ff 100%);
     -webkit-background-clip:text;background-clip:text;color:transparent;}
-  .hero h1 .rot{display:inline-block;min-width:4ch;}
-  .hero h1 .rot.swap{animation:rotIn .5s var(--ease);}
-  @keyframes rotIn{0%{opacity:0;transform:translateY(.35em);filter:blur(6px);}100%{opacity:1;transform:none;filter:none;}}
   .hero .lede{font-size:clamp(16px,1.6vw,19px);line-height:1.6;color:var(--ink-2);max-width:540px;margin:24px 0 0;}
   .hero .lede b{color:#fff;}
   .cta-row{display:flex;flex-wrap:wrap;gap:12px;margin-top:32px;}
@@ -554,7 +551,7 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
   .shr{display:inline-flex;vertical-align:-4px;}
 
   @media (prefers-reduced-motion: reduce){
-    .hero-bg:before,.eyebrow .dot,.screen .bar .live:before,.float-badge,.ticker-track,.hero h1 .rot.swap{animation:none!important;}
+    .hero-bg:before,.eyebrow .dot,.screen .bar .live:before,.float-badge,.ticker-track{animation:none!important;}
     .rv{opacity:1;transform:none;transition:none;}
     .feat,.play,.cta,.phone{transition:none;}
     .slot-frame.win .slot-line{animation:none!important;} .slot-reel{transition:none!important;}
@@ -613,7 +610,7 @@ window.GA_ID='G-L29P5MRWKE';
     <div class="shell hero-grid">
       <div class="hero-copy">
         <span class="eyebrow"><span class="dot"></span>5 games live · Free · No download</span>
-        <h1><span class="sr">Run The Games: free online sports simulation games</span><span aria-hidden="true"><span class="l1">Run the</span><span class="l2"><span class="rot" data-words="Games|Season|Tour|Pitch|Arcade">Games</span>.</span></span></h1>
+        <h1><span class="sr">Run The Games: free online sports simulation games</span><span aria-hidden="true"><span class="l1">Run the</span><span class="l2">Games.</span></span></h1>
         <p class="lede">Free, data-driven sports games you play <b>right in your browser</b>. Draft legends, play full seasons, chase titles. Pick one and you're playing in seconds.</p>
         <div class="cta-row">
           <a class="cta primary" href="#games">Browse the games <span class="arw">&rarr;</span></a>
@@ -1501,21 +1498,12 @@ document.querySelectorAll('.feat-link').forEach(function(a){
 })();
 </script>
 <script>
-/* Home v2: the rotating word in the headline, the sport filter over the
-   library, and cards that settle in as they scroll into view. All three are
+/* Home v2: the sport filter over the library, and cards that settle in as
+   they scroll into view. Both are
    decoration over static markup: with this script blocked, every game is
    still on the page and every link still works. */
 (function(){
   var reduce=false; try{ reduce=window.matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){}
-
-  var rot=document.querySelector('.hero h1 .rot');
-  if(rot && !reduce){
-    var words=(rot.getAttribute('data-words')||'').split('|').filter(Boolean), i=0;
-    if(words.length>1) setInterval(function(){
-      i=(i+1)%words.length; rot.textContent=words[i];
-      rot.classList.remove('swap'); void rot.offsetWidth; rot.classList.add('swap');
-    },2600);
-  }
 
   var chips=[].slice.call(document.querySelectorAll('.fchip'));
   var cards=[].slice.call(document.querySelectorAll('main.games .feat'));
