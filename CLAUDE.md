@@ -16086,6 +16086,13 @@ are never counted and never sold. The Stripe steps are in
 
 #### It was $9.99 once and is now a yearly subscription
 
+**Run The Floor Pro (basketball) stays $9.99 once, and that is the owner's decision
+(2026-09), not a price the move above forgot.** The instruction was to change every
+$9.99 on the site, and basketball was then kept as it is. `hoops/modes-ui.js` and
+`hoops/how-to-play.html` are right to say $9.99 and "never renews". A sweep for $9.99
+should leave them alone, and the Large Bucket in Run The Tour is a third, unrelated
+$9.99.
+
 ```
 node scripts/stripe/check-recurring.mjs   the checkout and webhook, driven, no network
 ```
