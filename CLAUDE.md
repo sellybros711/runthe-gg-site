@@ -5302,6 +5302,56 @@ on the week, so a reader told on Monday is not told again on Tuesday.
 problem**: `display_pro` is already the pattern, a derived boolean written by a trigger rather
 than typed, because a mark anybody can set is a mark that means nothing.
 
+## College Fantasy Challenge, a competition of its own
+
+```
+node cfb/build/test/test_fantasy.mjs --quick   the builders, no network, no browser
+node cfb/build/test/test_fantasy.mjs           and the page, in a browser, against a stub
+node cfb/build/fantasy/pool.mjs [--week N]     the week about to be played (dry by default)
+node cfb/build/fantasy/injuries.mjs --write    who is out, for the live week
+node cfb/build/fantasy/live.mjs --why          what a live tick would do
+psql -d cfbf -f supabase/test/fantasy_base.sql, 101, 111, then 128, then
+psql -d cfbf -f supabase/test/cfb_fantasy_test.sql
+```
+
+`cfb/fantasy/index.html` is the NFL page ported, and it lives only in the college game
+(the door is on `/cfb/`). **It shares no row with the NFL challenge**: its own tables
+(`cfb_fantasy_*`, `supabase/128_cfb_fantasy.sql`), its own board, its own prize, its own
+localStorage key (`cfb_fantasy_<season>_w<week>`). `football/fantasy/entries.js` serves both
+and reads `window.PS_FANTASY_PREFIX` at call time; absent is the NFL. The page test asserts
+not one call reaches an NFL table and not one key is written under `ps_fantasy_`, because a
+port's quiet failure is keeping a piece of what it was ported from.
+
+**ESPN IS THE ONLY SOURCE.** No CFBD key is set, and nothing else reachable carries college
+box scores. `site.api.espn.com` answers 403 to some runner IPs, so `espn.mjs` asks
+`site.web.api.espn.com` first. ESPN athlete ids are CFBD's, so a man's prior season in
+`cfb_player_seasons.json` joins on `player_id`.
+
+| | how |
+|---|---|
+| the slate | the twenty highest scoring FBS games of the week (`pickSlate`), by rank, spread and total |
+| the season so far | `cfb/data/fantasy/season_<season>.json`, every finished week's box scores, read once |
+| the projection | season to date, a prior from last season, availability and the Vegas implied total |
+| the cap | swept on each week's own board (`cap.mjs`), the round number where greedy and budget cross |
+| the swap | any man, before his game, for a man at his position priced at his price or up to a quarter (and at least $5M) below |
+| settling | ESPN's box score, final once every game is over and the last kicked off 4.5 hours ago |
+
+**THE SWAP IS OPEN TO ANY MAN, not only a flagged one.** College football files no injury
+report, so the page flags what it can find (ESPN's out and suspended roster groups, any
+designation ESPN carries, and who missed his team's last game) and the entrant acts on the
+rest. The band stops it being an upgrade: never above his price. The band rides on the week
+row, so the page and the server read one number.
+
+**THE WEEK LOCKS AT THE FIRST SLATE KICKOFF**, which is often a Thursday or Friday night.
+**THERE IS NO RESULTS FILE**: points live only in `cfb_fantasy_results`, and the page shapes
+the server's answer as the NFL page's file so nothing downstream branches.
+
+Workflows: `cfb-fantasy-pool.yml` (Monday 11am Eastern, dry run by hand), `cfb-fantasy-injuries.yml`
+(twice a day, commits only when the report moved), `cfb-fantasy-live.yml` (a loop woken by a
+wide cron net from Thursday evening to early Sunday UTC). The prize is the NFL's rule
+exactly: 30 days of Pro on the `fantasy:` source prefix (`fantasy:cfb-<season>-w<week>`), so
+the gold name, checkout and receipt filters that already skip a pass skip this one too.
+
 ## The wrestling game
 
 `wrestling/index.html` is the whole career game in one self-contained file, by

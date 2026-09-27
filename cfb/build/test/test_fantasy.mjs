@@ -22,7 +22,7 @@ import {
 import { seasonToDate } from '../fantasy/season.mjs';
 import { sweepCap, DRAFT } from '../fantasy/cap.mjs';
 import { poolSQL, resultsSQL } from '../fantasy/publish.mjs';
-import { buildReport } from '../fantasy/injuries.mjs';
+import { buildReport, desig } from '../fantasy/injuries.mjs';
 import { plan, easternDay } from '../fantasy/live.mjs';
 import { STAT_KEYS } from '../fantasy/espn.mjs';
 
@@ -258,6 +258,16 @@ section('5. the injury report says only what it knows');
     POOL.pool.filter((m) => m.missed_last).every((m) => !rep.men[m.player_id]
       || rep.men[m.player_id].st === 'missed' || m.team_id === tid));
   ok('the report carries no clock', !('built' in rep) && !JSON.stringify(rep).includes('T00:'));
+  /* ESPN's own designations, in the page's words. "Day-To-Day" is college football's
+     questionable, and an unrecognised word is left out rather than guessed at. */
+  ok('a designation ESPN carries is read', desig('Out') === 'out' && desig('Doubtful') === 'doubtful'
+    && desig('Day-To-Day') === 'questionable' && desig('Questionable') === 'questionable');
+  ok('  and an unknown one is not guessed', desig('Active') === null && desig('') === null);
+  const t2 = POOL.pool[1];
+  const rep2 = buildReport(POOL, new Map([[t2.team_id, new Map([[t2.player_id,
+    { name: t2.name, pos: t2.position, inj: { status: 'Day-To-Day', detail: 'Ankle' } }]])]]), []);
+  ok('  and it reaches the report', rep2.men[t2.player_id]
+    && rep2.men[t2.player_id].st === 'questionable' && rep2.men[t2.player_id].d === 'Ankle');
 }
 
 /* ─── 6. the SQL ────────────────────────────────────────────────────────────────── */

@@ -2071,6 +2071,24 @@
       "sha": "80f518fa5e43a93d"
     }
   },
+  "cfb/fantasy/index.html": {
+    "/cfb/auth.js": {
+      "v": "8",
+      "sha": "d81dc7cbc4c21a96"
+    },
+    "/football/fantasy/clubs.js": {
+      "v": "2",
+      "sha": "a52a3937e36e0f9d"
+    },
+    "/football/fantasy/draft.js": {
+      "v": "5",
+      "sha": "a539847ded8a1ba6"
+    },
+    "/football/fantasy/entries.js": {
+      "v": "9",
+      "sha": "c515f4ced7db90fb"
+    }
+  },
   "cfb/index.html": {
     "engine.js": {
       "v": "35",
@@ -2139,8 +2157,8 @@
       "sha": "a539847ded8a1ba6"
     },
     "entries.js": {
-      "v": "8",
-      "sha": "5de8d941e6bb6520"
+      "v": "9",
+      "sha": "c515f4ced7db90fb"
     }
   },
   "football/index.html": {

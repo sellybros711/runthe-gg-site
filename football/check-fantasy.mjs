@@ -443,10 +443,16 @@ console.log('\nA MAN WHO IS NOT PLAYING IS NOT A PICK');
   {
     const inj = JSON.parse(fs.readFileSync(path.join(ROOT, 'football/data',
       `injuries_${NOW.season}_w${NOW.week}.json`), 'utf8'));
+    /* THE BOARD THE PAGE ACTUALLY DRAWS, which takes Out and Doubtful men off the wheel as
+       well as injured reserve (`applyInjuries`, the launch day reversal). This read `off`
+       alone for as long as the report held few enough Out men not to matter, and then the
+       Saturday report stranded 4 of 400 drafts here while the page stranded none: a model
+       of the board that had drifted from the board. Kept in step with `GONE` there. */
+    const GONE = { off: 1, out: 1, doubtful: 1 };
     const live = POOL.pool.map((m) => {
       const e = inj.men[m.player_id];
       return e ? Object.assign({}, m, { inj: e }) : m;
-    }).filter((m) => !m.inj || m.inj.st !== 'off');
+    }).filter((m) => !m.inj || !GONE[m.inj.st]);
     ok('the live report takes men off the board', live.length < POOL.pool.length,
       `${POOL.pool.length} -> ${live.length}`);
     let stranded = 0, hurtSigned = 0, done = 0;

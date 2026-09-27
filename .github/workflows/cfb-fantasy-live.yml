@@ -1,0 +1,114 @@
+name: College fantasy, score the week live
+
+# THE COLLEGE BOARD MOVES WHILE THE GAMES ARE BEING PLAYED, and this is the only thing that
+# moves it. Each tick reads ESPN's scoreboard for the slate's days, writes the twenty games,
+# reads the box score of every game that has started and writes each man's points. See
+# `cfb/build/fantasy/live.mjs`.
+#
+# ESPN'S BOX SCORE IS WHAT PAYS. The NFL mode settles off nflverse hours later; college
+# football has no second source this mode can reach, so the week is marked final once every
+# game is finished and the last kicked off four and a half hours ago. Marking final settles
+# the top three and pays first place 30 days of Pro, inside the database (128's trigger).
+#
+# A LOOP, FOR THE NFL JOB'S REASON: GitHub's cron is best effort and dropped every firing of
+# the first NFL Thursday. So a firing only has to WAKE this, and it keeps itself awake while
+# a game is on: every two minutes during games, every ten while a kickoff is close or a box
+# score is settling, and it stops when there is nothing to watch. A job is capped at six
+# hours, so a loop still watching at five and a half dispatches itself and exits.
+#
+# IT COMMITS NOTHING. The board is a Supabase read, so a score that moves costs one write
+# and no deploy.
+#
+# THE CRON IS A WIDE NET IN UTC and the job decides off the kickoffs. College games are on
+# Thursday and Friday nights and all of Saturday, which in UTC runs from Thursday evening
+# to early Sunday.
+on:
+  schedule:
+    - cron: '7,37 22-23 * * 4'
+    - cron: '7,37 0-6 * * 5'
+    - cron: '7,37 22-23 * * 5'
+    - cron: '7,37 0-6 * * 6'
+    - cron: '7,37 14-23 * * 6'
+    - cron: '7,37 0-8 * * 0'
+  workflow_dispatch:
+    inputs:
+      force:
+        description: 'Write even outside a game window'
+        type: boolean
+        required: false
+        default: false
+
+permissions:
+  contents: read
+  actions: write
+
+concurrency:
+  group: cfb-fantasy-live
+  cancel-in-progress: false
+
+jobs:
+  score:
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install the postgres client
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends postgresql-client
+
+      # `set -o pipefail` IS LOAD BEARING: without it a build that failed outright pipes
+      # nothing into a psql that succeeds, and the tick reads as a quiet afternoon. One failed
+      # tick does not end the loop; three in a row do, and any failure takes the run red.
+      - name: Score the games for as long as they are on
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          GH_TOKEN: ${{ github.token }}
+          FORCE: ${{ inputs.force && '--force' || '' }}
+        run: |
+          set -o pipefail
+          if [ ! -f cfb/data/fantasy/now.json ]; then
+            echo "No live week yet. Nothing to score."
+            exit 0
+          fi
+          if [ -z "$SUPABASE_DB_URL" ]; then
+            echo "SUPABASE_DB_URL is not set, so there is nowhere to write. Failing loudly."
+            exit 1
+          fi
+          st="$RUNNER_TEMP/live-status"
+          deadline=$((SECONDS + 330 * 60))
+          failed=0
+          streak=0
+          tick=0
+          while :; do
+            tick=$((tick + 1))
+            echo "::group::tick $tick at $(date -u +%H:%MZ)"
+            if node cfb/build/fantasy/live.mjs $FORCE --status "$st" \
+                 | psql -q -v ON_ERROR_STOP=1 "$SUPABASE_DB_URL"; then
+              streak=0
+            else
+              echo "::warning::tick $tick failed to score"
+              failed=1; streak=$((streak + 1))
+            fi
+            echo "::endgroup::"
+            FORCE=''
+            if [ "$streak" -ge 3 ]; then
+              echo "::error::three ticks in a row failed to score. Stopping."
+              exit 1
+            fi
+            read -r what wait < "$st" || what=sleep
+            if [ "$what" != "watch" ]; then
+              echo "Nothing left to watch. Stopping after $tick ticks."
+              break
+            fi
+            if [ "$SECONDS" -ge "$deadline" ]; then
+              echo "Still watching at the job's time limit, so handing over to a fresh run."
+              gh workflow run cfb-fantasy-live.yml --ref "$GITHUB_REF_NAME"
+              break
+            fi
+            sleep "${wait:-600}"
+          done
+          exit "$failed"

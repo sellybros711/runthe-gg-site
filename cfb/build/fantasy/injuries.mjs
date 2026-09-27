@@ -49,6 +49,17 @@ export function readRulings(season, week, pool) {
   return list;
 }
 
+/* A DESIGNATION ESPN CARRIES ON A MAN, in the words the page draws. "Day-To-Day" is the
+   college version of questionable. Anything unrecognised is left out rather than guessed:
+   a chip that says something the source did not is worse than no chip. */
+export function desig(status) {
+  const t = String(status || '').toLowerCase();
+  if (/\bout\b/.test(t)) return 'out';
+  if (/doubtful/.test(t)) return 'doubtful';
+  if (/questionable|day.to.day|probable/.test(t)) return 'questionable';
+  return null;
+}
+
 /** The report, off the pool and a fresh read of every slate team's roster. */
 export function buildReport(pool, rosters, rulings) {
   const men = {};
@@ -56,8 +67,8 @@ export function buildReport(pool, rosters, rulings) {
     const r = rosters.get(m.team_id) && rosters.get(m.team_id).get(m.player_id);
     if (r && r.off) {
       men[m.player_id] = { st: r.off, d: r.inj && r.inj.detail || null };
-    } else if (r && r.inj && /out/i.test(String(r.inj.status || ''))) {
-      men[m.player_id] = { st: 'out', d: r.inj.detail || null };
+    } else if (r && r.inj && desig(r.inj.status)) {
+      men[m.player_id] = { st: desig(r.inj.status), d: r.inj.detail || null };
     } else if (m.missed_last) {
       men[m.player_id] = { st: 'missed' };
     }
