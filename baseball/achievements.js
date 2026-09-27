@@ -336,8 +336,8 @@ shelf('The roster', [
     (c) => c.best.rosterWar >= 55],
   ['floor_2', 'No passengers', 'Field twelve players who were all worth 2 WAR.', 'gold',
     (c) => c.best.floorWar >= 2],
-  /* One badge a link type. There are seven and no roster carries them all, so
-     there is deliberately no "all seven" rung: the double-play combo and the
+  /* One badge a link type. There are eight and no roster carries them all, so
+     there is deliberately no "all eight" rung: the double-play combo and the
      battery both need two men who really played together, fielded at the named
      positions, and the family link needs two men out of a curated list. */
   ['link_era', 'Same era', 'Build a roster linked by the years they played.', 'bronze',
@@ -348,6 +348,8 @@ shelf('The roster', [
     (c) => c.linkTypes.has('reunion')],
   ['link_teammates', 'Played together', 'Field two men who were real team-mates.', 'silver',
     (c) => c.linkTypes.has('teammates')],
+  ['link_college', 'Old school', 'Field two players who went to the same college.', 'silver',
+    (c) => c.linkTypes.has('college')],
   ['link_dp', 'Turn two', 'Field a real double-play combination.', 'gold',
     (c) => c.linkTypes.has('dp_combo')],
   ['link_battery', 'Batterymates', 'Field a real catcher and pitcher pairing.', 'gold',

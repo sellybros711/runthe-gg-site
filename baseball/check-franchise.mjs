@@ -588,6 +588,38 @@ section('THE DIVISION CARDS LIST TODAY\'S CLUBS');
   console.log('  ' + Object.keys(E.DIVISIONS).map(d => d + ': ' + E.divisionClubs(d).join(' ')).join('\n  '));
 }
 
+/* ─── One Franchise does not pay for its own rule ─────────────────────────
+   Twelve men from one club almost always overlapped, so the team-mates link fired on
+   nearly every pair and took One Franchise to 14.1% chemistry against Classic's 8.5%,
+   worth about sixteen wins for the same drafting. Asked of real drafts, best available
+   each time, because the claim is about what a player meets: One Franchise may not sit
+   more than three points of chemistry above Classic. Measured after the fix it sits
+   under it (7.7 against 8.5), and before it 5.6 over, so three is the middle of a gap. */
+{
+  console.log('\n7. ONE FRANCHISE CHEMISTRY IS NOT THE MODE TALKING');
+  const D = R.indexData(POOL);
+  const clubs = R.eligibleFranchises(D).map((f) => f.team);
+  const draft = (opts) => {
+    const run = R.createRun(opts);
+    let g = 0;
+    while (run.phase === R.PHASES.DRAFT && g++ < 400) {
+      R.spin(run, D);
+      const ok2 = (run.currentDraw.options || []).map((k) => D.allPlayers[k]).filter(Boolean)
+        .filter((p) => R.canFinishAfter(run, p)).sort((a, b) => b.w - a.w);
+      if (!ok2.length) { if (R.canRespin(run).ok) { R.respin(run, D); continue; } return null; }
+      R.sign(run, ok2[0]);
+    }
+    return run.phase === R.PHASES.SEASON ? (R.chemOf(run).multiplier - 1) * 100 : null;
+  };
+  const mean = (xs) => { const v = xs.filter((x) => x != null); return v.reduce((a, b) => a + b, 0) / v.length; };
+  const N = 60;
+  const classic = mean(Array.from({ length: N }, (_, i) => draft({ seed: E.hashSeed('cc' + i) })));
+  const fran = mean(Array.from({ length: N }, (_, i) => draft({ seed: E.hashSeed('cf' + i), franchise: clubs[i % clubs.length] })));
+  ok(R.chemOpts({ franchise: 'NYY' }).suppress.includes('teammates'), 'One Franchise does not pay the team-mates link');
+  ok(fran <= classic + 3, `One Franchise chemistry ${fran.toFixed(1)}% against Classic ${classic.toFixed(1)}%`);
+  console.log(`  best available: One Franchise ${fran.toFixed(1)}%, Classic ${classic.toFixed(1)}%`);
+}
+
 console.log('\n' + (problems
   ? problems + ' PROBLEMS of ' + checks + ' checks'
   : 'all ' + checks + ' checks passed'));

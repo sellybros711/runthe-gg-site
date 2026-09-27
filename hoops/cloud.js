@@ -260,8 +260,102 @@
     return out;
   }
 
+  /* ── THE MODES, AND EVERY ONE OF THEM IS ON THE ACCOUNT ─────────────────
+   *
+   * Conquest, Fix History and Six Passes each keep their own record in the
+   * browser (modes-ui.js), and the owner's rule is that nothing a player plays
+   * lives on the device alone. So each of those keys is a slot of its own on
+   * the same shelf, under the same game, and the browser copy is a cache.
+   *
+   * TWO KINDS OF SLOT, for the two kinds of record.
+   *
+   *   merge   a set of finished things (Fix History's days, Six Passes' days,
+   *           the Conquest bests). Two devices each hold days the other never
+   *           saw, so the answer is the union, and the progress is a measure
+   *           that only grows under that union.
+   *   clock   a thing in progress (the Conquest run, today's Fix History
+   *           season, the endless puzzles). There is one of it, the last one
+   *           played is the one that counts, and a device that played it
+   *           later has to win. The progress is a counter every write moves on
+   *           by one, kept per slot in the browser (`rtf.rev.v1`) and taken
+   *           from the shelf on every pull, so it is a clock shared across the
+   *           account rather than a device's wall clock.
+   *
+   * Every payload is { rev, v }, where v is exactly what the browser keeps
+   * under the key and null means the record was cleared: a clearing is a
+   * write like any other, or a stale device would put the old run back. */
+  var MODE_KEYS = {
+    'rtf.conquest.v1': 'cq', 'rtf.conquest.best.v1': 'cqbest',
+    'rtf.fix.v1': 'fix', 'rtf.fix.run.v2': 'fixrun', 'rtf.fix.endless.v1': 'fixend',
+    'rtf.passes.v1': 'passes', 'rtf.passes.endless.v1': 'psend'
+  };
+  var DAYS_KEPT = 30;
+
+  /* A day store: { days: { dayNumber: record } }, the newest thirty kept. */
+  function daysProgress(v) {
+    var d = Object.keys(obj(obj(v).days)).map(Number).filter(isFinite);
+    if (!d.length) return 0;
+    return Math.max.apply(null, d) * 64 + Math.min(63, d.length);
+  }
+  function capDays(days) {
+    var keys = Object.keys(days).map(Number).filter(isFinite).sort(function (a, b) { return a - b; });
+    while (keys.length > DAYS_KEPT) delete days[keys.shift()];
+    return days;
+  }
+  /* A Fix History day is a FINISHED result and the board keeps the first one
+     filed, so a day both devices hold keeps the shelf's. */
+  function mergeFix(mine, theirs) {
+    var a = obj(obj(mine).days), b = obj(obj(theirs).days), out = {}, k;
+    for (k in a) out[k] = a[k];
+    for (k in b) out[k] = b[k];
+    var r = Object.assign({}, obj(mine), obj(theirs));
+    r.days = capDays(out);
+    return r;
+  }
+  /* A Six Passes day can be half played. Finished beats unfinished, the shelf
+     wins between two finished chains, and between two unfinished ones the
+     longer chain is the further along. */
+  function mergePasses(mine, theirs) {
+    var a = obj(obj(mine).days), b = obj(obj(theirs).days), out = {}, k;
+    for (k in a) out[k] = a[k];
+    for (k in b) {
+      var x = obj(out[k]), y = obj(b[k]);
+      if (!out[k] || y.done || (!x.done && arr(y.chain).length >= arr(x.chain).length)) out[k] = b[k];
+    }
+    var r = Object.assign({}, obj(mine), obj(theirs));
+    r.days = capDays(out);
+    return r;
+  }
+  function mergeCqBest(mine, theirs) {
+    var a = obj(mine), b = obj(theirs);
+    return { best: Math.max(num(a.best), num(b.best)), runs: Math.max(num(a.runs), num(b.runs)),
+      cleared: Math.max(num(a.cleared), num(b.cleared)) };
+  }
+  function cqBestProgress(v) { v = obj(v); return num(v.runs) * 1000 + Math.min(999, num(v.best)); }
+
+  var MODE_MERGE = {
+    fix: { merge: mergeFix, progress: daysProgress },
+    passes: { merge: mergePasses, progress: daysProgress },
+    cqbest: { merge: mergeCqBest, progress: cqBestProgress },
+  };
+  function modeKind(slot) { return MODE_MERGE[slot] ? 'merge' : 'clock'; }
+  /* The progress a payload is filed at. */
+  function modeProgress(slot, payload) {
+    var p = obj(payload);
+    if (MODE_MERGE[slot]) return p.v == null ? 0 : MODE_MERGE[slot].progress(p.v);
+    return num(p.rev);
+  }
+  /* What two copies of a merge slot come to. Null and null is null. */
+  function modeMerge(slot, mine, theirs) {
+    if (!MODE_MERGE[slot]) return null;
+    if (mine == null) return theirs == null ? null : theirs;
+    if (theirs == null) return mine;
+    return MODE_MERGE[slot].merge(mine, theirs);
+  }
+
   var publicAPI = {
-    API_VERSION: 2,
+    API_VERSION: 3,
+    MODE_KEYS: MODE_KEYS, modeKind: modeKind, modeProgress: modeProgress, modeMerge: modeMerge,
     GAME: GAME,
     SLOT_RUN: SLOT_RUN, SLOT_CAREER: SLOT_CAREER, SLOT_DAILY: SLOT_DAILY,
     ROW_CAP: ROW_CAP,

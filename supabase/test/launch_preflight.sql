@@ -85,7 +85,7 @@ has_table as (
     'fantasy_weeks','fantasy_prices','fantasy_results','fantasy_entries',
     'nfl_games','fantasy_prizes',
     'rtf_runs','rtd_runs','rtf_plays','rtd_mode_plays','premium_subscriptions',
-    'rtd_profiles','rtd_career',
+    'rtd_profiles','rtd_career','rtf_profiles',
     'cfb_fantasy_weeks','cfb_fantasy_entries','cfb_fantasy_prizes'
   ]) as t
   where to_regclass('public.' || t) is not null
@@ -539,11 +539,30 @@ check_rows(sort, migration, what, breaks, ok) as (
       and (select count(*) > 0 from proc where name = 'rtd_career_merge')
       and (select count(*) > 0 from proc where name = 'rtd_set_profile' and body like '%p_rung%')),
 
+  -- THE BALLPARK LADDER. 127's constraint lists thirteen parks and the shelf has
+  -- twenty seven, so without 128 a park chosen from the new ones is refused by the
+  -- server in silence: it works on the device and is gone on the next phone.
+  (39, '128_baseball_parks',
+      'every ballpark on the shelf can be saved to the account',
+      'Choosing a Little League, minor league, seasonal or hidden park works on this device only. The server refuses it and the next device opens on another park.',
+      (select count(*) > 0 from con where name = 'rtd_profiles_park_ck' and def like '%sandlot%' and def like '%golden%')),
+
+  -- RUN THE FLOOR PROFILES. Soft by design like 127: the page keeps the jersey,
+  -- the arena, the camera and the door choices in the browser until the server
+  -- can take them and sends them the first time it can. Without it they follow
+  -- nobody to a second phone, and a cleared browser loses them.
+  (40, '129_hoops_profiles',
+      'a hoops jersey, arena and camera are kept on the account, not only in the browser',
+      'The jersey, the chosen arena, the camera and the last club and decade live only in the browser that set them.',
+      (select count(*) > 0 from has_table where name = 'rtf_profiles')
+      and (select count(*) > 0 from col where tbl = 'rtf_profiles' and name = 'guide_seen')
+      and (select count(*) > 0 from proc where name = 'rtf_set_profile')),
+
   -- THE COLLEGE FANTASY CHALLENGE, a competition of its own with its own tables. Asked
   -- of the tables, the submit, the swap AND the settle trigger, because the trigger is the
   -- one object whose absence is invisible from every side (114's finding): the week plays,
   -- the board draws, and nobody is ever paid.
-  (39, '128_cfb_fantasy',
+  (41, '128_cfb_fantasy',
       'the college Fantasy Challenge: the week, the entries, the swap and the prize',
       'The college page drafts and then refuses every lineup. Without the trigger alone, a finished week settles nobody and first place is never paid.',
       (select count(*) > 0 from has_table where name = 'cfb_fantasy_weeks')

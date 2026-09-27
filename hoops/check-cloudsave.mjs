@@ -639,6 +639,70 @@ async function main() {
     await quiet(one.page);
     ok(!shelf.rows.has('user-one/rtf/run'), 'abandoning a run takes it off the shelf');
 
+    // ---- every mode's record is on the account ------------------------------
+    /* CONQUEST, FIX HISTORY AND SIX PASSES KEPT THEIR RECORDS IN THE BROWSER ALONE
+       until the owner asked for everything to live on the account. Each key is a
+       slot now (hoops/cloud.js MODE_KEYS). The finished-things slots MERGE, so two
+       devices that each played a different day both keep both; the in-progress
+       slots are a CLOCK, so the device that played last wins. Both are asserted
+       from two real pages, the same way the run is. */
+    const seedModes = (page, fix, best, run, rev) => page.evaluate(([fix, best, run, rev]) => {
+      localStorage.setItem('rtf.fix.v1', JSON.stringify(fix));
+      localStorage.setItem('rtf.conquest.best.v1', JSON.stringify(best));
+      localStorage.setItem('rtf.conquest.v1', JSON.stringify(run));
+      localStorage.setItem('rtf.rev.v1', JSON.stringify({ cq: rev }));
+    }, [fix, best, run, rev]);
+    const readLs = (page, k) => page.evaluate((k) => JSON.parse(localStorage.getItem(k) || 'null'), k);
+    await one.page.evaluate(() => { document.querySelector('#b-mark').click(); });
+    await two.page.evaluate(() => { document.querySelector('#b-mark').click(); });
+    await seedModes(one.page, { days: { 500: { odds: 0.4 } } }, { best: 7, runs: 2, cleared: 0 },
+      { v: 0, tag: 'one' }, 3);
+    await one.page.evaluate(() => window.RTF_SYNC.pull());
+    await one.page.waitForTimeout(300);
+    await quiet(one.page);
+    const fixRow = shelf.rows.get('user-one/rtf/fix');
+    ok(fixRow && fixRow.payload.v.days['500'], 'a Fix History day played before sign in goes up to the account');
+    ok(shelf.rows.get('user-one/rtf/cqbest') && shelf.rows.get('user-one/rtf/cqbest').payload.v.best === 7,
+      'and so do the Conquest bests');
+    ok(shelf.rows.get('user-one/rtf/cq') && shelf.rows.get('user-one/rtf/cq').payload.rev === 3,
+      'and the Conquest run in progress, at its own count of writes');
+
+    await seedModes(two.page, { days: { 501: { odds: 0.6 } } }, { best: 9, runs: 1, cleared: 1 },
+      { v: 0, tag: 'two' }, 1);
+    await two.page.evaluate(() => window.RTF_SYNC.pull());
+    await two.page.waitForFunction(() => {
+      try { return !!JSON.parse(localStorage.getItem('rtf.fix.v1')).days['500']; } catch (e) { return false; }
+    }, null, { timeout: 15000 }).catch(() => {});
+    await quiet(two.page);
+    const fix2 = await readLs(two.page, 'rtf.fix.v1');
+    ok(fix2 && fix2.days['500'] && fix2.days['501'], 'the second device holds both days, its own and the first\'s',
+      JSON.stringify(fix2));
+    const best2 = await readLs(two.page, 'rtf.conquest.best.v1');
+    ok(best2 && best2.best === 9 && best2.runs === 2 && best2.cleared === 1,
+      'and the bests are the larger of each, never one device\'s over the other\'s');
+    const shelfFix = shelf.rows.get('user-one/rtf/fix');
+    ok(shelfFix && shelfFix.payload.v.days['500'] && shelfFix.payload.v.days['501'],
+      'and the account now holds both days too');
+    const run2 = await readLs(two.page, 'rtf.conquest.v1');
+    is(run2 && run2.tag, 'one', 'the run in progress is the one written more times, not the one on this device');
+
+    /* A REAL WRITE GOES UP, and counts past the shelf. */
+    await two.page.evaluate(() => window.RTF_MODES_UI.openConquest());
+    await two.page.waitForSelector('#cq-new', { timeout: 15000 });
+    await two.page.evaluate(() => document.querySelector('#cq-new').click());
+    await two.page.waitForTimeout(400);
+    await quiet(two.page);
+    const cqRow = shelf.rows.get('user-one/rtf/cq');
+    ok(cqRow && cqRow.payload.rev === 4 && cqRow.payload.v && cqRow.payload.v.v === 1,
+      `starting a Conquest run writes it to the account, one past the shelf (rev ${cqRow && cqRow.payload.rev})`);
+    await one.page.evaluate(() => window.RTF_SYNC.pull());
+    await one.page.waitForFunction(() => {
+      try { return JSON.parse(localStorage.getItem('rtf.conquest.v1')).v === 1; } catch (e) { return false; }
+    }, null, { timeout: 15000 }).catch(() => {});
+    const run1 = await readLs(one.page, 'rtf.conquest.v1');
+    ok(run1 && run1.v === 1 && Array.isArray(run1.roster), 'and the first device picks that run up on its next pull');
+    await two.page.evaluate(() => { document.querySelector('#b-mark').click(); });
+
     // ---- somebody else's browser -----------------------------------------
     /* TWO ACCOUNTS ON ONE BROWSER. Signing in as somebody else must NOT fold the previous
        reader's runs, rings and streak into their cabinet: that is a disclosure rather than a
@@ -662,6 +726,8 @@ async function main() {
     is(second.career && JSON.parse(second.career).runs, null,
       'a new account on this browser does not inherit the last one\'s career');
     is(second.daily, null, 'nor its daily streak');
+    is(await readLs(two.page, 'rtf.fix.v1'), null, 'nor its Fix History days');
+    is(await readLs(two.page, 'rtf.conquest.v1'), null, 'nor its Conquest run');
     is(second.owner, 'user-two', 'and the browser records whose copy it is now holding');
     ok(!shelf.rows.has('user-two/rtf/career'),
       'and the previous account\'s career was never pushed onto the new one');

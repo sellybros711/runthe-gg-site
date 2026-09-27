@@ -2992,7 +2992,7 @@
      comes out of cache in milliseconds while this is still in flight. -->
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="board.js?v=5"></script>
-<script src="auth.js?v=2"></script>
+<script src="auth.js?v=3"></script>
 <!-- THE SHELF. cloudsave.js is the transport and is shared with the football and
      college games; cloud.js is this game's own policy about slots, progress and
      what happens when two devices disagree. The transport asks window.RTF_AUTH
@@ -3001,7 +3001,7 @@
 <script src="/assets/cloudsave.js?v=2"></script>
 <!-- The release newsletter checkbox on the profile. See supabase/121_newsletter.sql. -->
 <script src="/assets/newsletter.js?v=1"></script>
-<script src="cloud.js?v=2"></script>
+<script src="cloud.js?v=3"></script>
 <script>
 (function(){
 'use strict';
@@ -3159,7 +3159,7 @@ var A = window.RTF_AUTH || {
  * renders, and the only symptom is a cabinet that comes back slightly wrong.
  * `null` is the honest answer when either half is missing, and every caller
  * below is written to do nothing at all when it is. */
-var NEED_CLOUD = 2;
+var NEED_CLOUD = 3;
 var CL = (window.RTF_CLOUD && window.RTF_CLOUD.API_VERSION === NEED_CLOUD)
   ? window.RTF_CLOUD : null;
 var SV = window.RTG_SAVE || null;
@@ -3433,8 +3433,10 @@ function boot(){
        surfaces is open when it lands. */
     A.boot();
     A.onChange(function(){
-      /* A change of account is a change of which arenas are yours. */
+      /* A change of account is a change of which arenas are yours, and of
+         whose profile the page is wearing. */
       arenaChanged();
+      profilePull();
       if ($('sheet').classList.contains('open')) {
         renderIdentity();
         renderAccount();
@@ -3535,6 +3537,7 @@ function lastClub(){
 }
 function rememberClub(code){
   try { localStorage.setItem(CLUBKEY, code); } catch (e) {}
+  profileSend({ lastClub: code });
 }
 
 function openClubs(){
@@ -3830,7 +3833,7 @@ var FRG_KEY = 'rtf.guide.v1';
 function frgSeen(){
   try { return localStorage.getItem(FRG_KEY) === '1'; } catch (e) { return true; }
 }
-function frgMark(){ try { localStorage.setItem(FRG_KEY, '1'); } catch (e) {} }
+function frgMark(){ try { localStorage.setItem(FRG_KEY, '1'); } catch (e) {} profileSend({ guide: true }); }
 
 function frgFill(){
   var C = E.CONSTANTS;
@@ -3900,7 +3903,7 @@ function lastEra(){
     return (e && E.ERAS[e]) ? e : null;
   } catch (e) { return null; }
 }
-function rememberEra(key){ try { localStorage.setItem(ERAKEY, key); } catch (e) {} }
+function rememberEra(key){ try { localStorage.setItem(ERAKEY, key); } catch (e) {} profileSend({ lastEra: key }); }
 
 function openEras(){
   renderEras();
@@ -4722,13 +4725,13 @@ function reelPools(){
  *
  * hoops/courts.js is the catalogue and the art; this is the page's half. Which
  * arena a court wears is ASKED, never stored as earned: the account's choice is
- * the one stored thing (rtf.arena.v1, keyed by account, on this device), and a
- * choice the account cannot back (signed out, another account on this browser,
+ * the one stored thing (on its profile row, 129, with rtf.arena.v1 as the
+ * browser's copy), and a choice the account cannot back (signed out, another account on this browser,
  * a Pro arena after Pro lapses) falls back to the home arena rather than to a
  * floor it does not own. That is baseball's rtd_park_v1, rule for rule.
  *
- * THE CAMERA IS A DEVICE PREFERENCE (rtf.cam.v1) and three-quarter is the
- * default. It is about the screen in front of you, not about the account.
+ * THE CAMERA IS ON THE PROFILE (rtf.cam.v1 is the browser's copy) and
+ * three-quarter is the default. A guest's is the browser's alone.
  *
  * A blocked or stale courts.js draws the home floor flat, which is the court
  * this game had before any of this, so nothing that paints a court needs to
@@ -4744,7 +4747,9 @@ function camera(){
   try { return localStorage.getItem(CAM_KEY) === 'top' ? 'top' : 'tq'; } catch (e) { return 'tq'; }
 }
 function setCamera(c){
-  try { localStorage.setItem(CAM_KEY, c === 'top' ? 'top' : 'tq'); } catch (e) {}
+  c = c === 'top' ? 'top' : 'tq';
+  try { localStorage.setItem(CAM_KEY, c); } catch (e) {}
+  profileSend({ camera: c });
   redressCourts();
 }
 /* What the unlock rules are asked of: the career the cabinet reads, the badges
@@ -4780,6 +4785,7 @@ function setArena(id){
   var m = arenaChoices();
   m[uid] = id;
   try { localStorage.setItem(ARENA_KEY, JSON.stringify(m)); } catch (e) {}
+  profileSend({ arena: id });
   redressCourts();
 }
 /* Anything that can move an unlock (a run filed, a feat, a pull, a sign in, Pro)
@@ -4814,8 +4820,8 @@ function freshArenas(before, after){
  * the football crest's rule arriving here. Read off career.byClub, so it is
  * derived like everything else on this sheet: retroactive, and on the account.
  * The house colours are everybody's, and Pro opens every club. Stored is only
- * the choice (rtf.look.v1, keyed by account, on this device), and a club the
- * account cannot back falls back to the house colours. */
+ * the choice, on the account's profile row (rtf.look.v1 is the browser's
+ * copy), and a club the account cannot back falls back to the house colors. */
 var LOOK_KEY = 'rtf.look.v1';
 var HOUSE_KIT = { code: 'house', name: 'Run The Floor', bg: '#f0782d', accent: '#1a1f2b', on: '#10131a' };
 function lookOwner(){ var st = A.state(); return (st && st.signedIn && st.userId) ? st.userId : 'guest'; }
@@ -4846,7 +4852,75 @@ function setLook(patch){
   var m = lookMap(), k = lookOwner();
   m[k] = Object.assign({}, m[k] || {}, patch);
   try { localStorage.setItem(LOOK_KEY, JSON.stringify(m)); } catch (e) {}
+  profileSend({ club: patch.club, num: patch.num });
   renderIdentity();
+}
+
+/* ── THE PROFILE LIVES ON THE ACCOUNT ─────────────────────────────────────
+ *
+ * supabase/129_hoops_profiles.sql. Every choice on this page that is the
+ * player's (the jersey, the arena, the camera, the last club and decade, the
+ * guide) is written to the account's row the moment it is made, and read back
+ * on every sign in, where the SERVER'S ANSWER WINS. The browser keeps a copy so
+ * the page draws before the round trip lands, and that copy is a cache of the
+ * row rather than the record.
+ *
+ * A CHOICE THE SERVER HAS NEVER HEARD OF GOES UP ON THE WAY IN, which is how
+ * everything chosen before this existed, or while the database was a
+ * migration behind, reaches the account. Only when the browser is this
+ * account's (the same owner rule the cloud save runs on): another account's
+ * leftovers are never claimed.
+ *
+ * FAILS SOFT, both ways. A null answer from getProfile is no opinion and moves
+ * nothing; a write that does not land leaves the choice where it was on screen
+ * and it goes up again on the next sign in. A guest has no row, so a guest's
+ * choices are the one thing that stays on the device, until they sign in. */
+var profileWho = null;
+function profileSend(f){
+  var st = A.state();
+  if (!st || !st.signedIn || typeof A.setProfile !== 'function' || !f) return;
+  var clean = {}, any = false;
+  for (var k in f) if (f[k] !== undefined && f[k] !== null) { clean[k] = f[k]; any = true; }
+  if (!any) return;
+  try { A.setProfile(clean); } catch (e) {}
+}
+function profilePull(){
+  var st = A.state(), uid = st && st.signedIn ? st.userId : null;
+  if (!uid || typeof A.getProfile !== 'function') { profileWho = null; return null; }
+  if (profileWho === uid) return null;
+  profileWho = uid;
+  var mine = !cloudOwner() || cloudOwner() === uid;
+  return A.getProfile().then(function(row){
+    if (!row || profileWho !== uid) return;
+    var up = {};
+    /* the jersey and the arena are keyed by account on the device already */
+    var looks = lookMap(), l = looks[uid] || {};
+    if (row.jersey_club) l.club = row.jersey_club; else if (l.club) up.club = l.club;
+    if (row.jersey_num) l.num = row.jersey_num; else if (l.num) up.num = String(l.num);
+    /* a number picked as a guest on this browser comes with the sign in */
+    else if (mine && looks.guest && looks.guest.num) { l.num = String(looks.guest.num); up.num = l.num; }
+    looks[uid] = l;
+    try { localStorage.setItem(LOOK_KEY, JSON.stringify(looks)); } catch (e) {}
+    var arenas = arenaChoices();
+    if (row.arena) arenas[uid] = row.arena; else if (arenas[uid]) up.arena = arenas[uid];
+    try { localStorage.setItem(ARENA_KEY, JSON.stringify(arenas)); } catch (e) {}
+    /* the rest are one per device, so a previous account's are not claimed */
+    var dev = function(key, col, field, val){
+      var here = null;
+      try { here = localStorage.getItem(key); } catch (e) {}
+      if (row[col] != null && row[col] !== '') {
+        try { localStorage.setItem(key, String(val(row[col]))); } catch (e) {}
+      } else if (mine && here) up[field] = field === 'guide' ? here === '1' : here;
+    };
+    dev(CAM_KEY, 'camera', 'camera', function(v){ return v; });
+    dev(CLUBKEY, 'last_club', 'lastClub', function(v){ return v; });
+    dev(ERAKEY, 'last_era', 'lastEra', function(v){ return v; });
+    dev(FRG_KEY, 'guide_seen', 'guide', function(v){ return v ? '1' : '0'; });
+    if (Object.keys(up).length) profileSend(up);
+    arenaChanged();
+    renderIdentity();
+    renderHome();
+  });
 }
 var jzSeq = 0;
 function jerseySvg(code, num){
@@ -10242,6 +10316,10 @@ function cloudPull(){
     cloudAdoptCareer(by[CL.SLOT_CAREER], mine);
     cloudAdoptDaily(by[CL.SLOT_DAILY], mine);
     cloudAdoptRun(by[CL.SLOT_RUN]);
+    /* And every mode's record, which modes-ui.js keeps and so adopts. */
+    if (window.RTF_MODES_UI && window.RTF_MODES_UI.cloudAdopt) {
+      try { window.RTF_MODES_UI.cloudAdopt(by, mine); } catch (e) {}
+    }
   }, function(){ cloudPulling = false; });
 }
 
@@ -10506,6 +10584,13 @@ window.RTF_PAGE = {
   get data(){ return DATA; },
   feats: recordFeats,
   arenaChanged: arenaChanged,
+  /* The shelf, for modes-ui.js: whether it can be written, the queue that
+     writes it, and the policy that says what a slot means. */
+  cloudMode: {
+    ready: function(){ return !!CL && cloudReady(); },
+    push: function(slot, build){ return cloudPush(slot, build); },
+    CL: function(){ return CL; },
+  },
   /* THE ARENAS, for the profile shelf in this file and for check-arenas.mjs.
      `force` is the checker's alone: it draws an arena whatever the account
      owns, so every floor and every scene can be looked at without playing to
@@ -10564,6 +10649,6 @@ boot();
 </script>
 <!-- AFTER the page, because it draws through window.RTF_PAGE, which the script
      above publishes. -->
-<script src="modes-ui.js?v=11"></script>
+<script src="modes-ui.js?v=12"></script>
 </body>
 </html>
