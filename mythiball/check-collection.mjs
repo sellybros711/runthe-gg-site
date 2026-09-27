@@ -207,7 +207,7 @@ console.log('your player');
       if (lit[lit.length - 1] !== V2_H - 2) out.poseProblems.push(p + ':floor ' + lit[lit.length - 1]);
       for (const row of rows) for (const ch of row) if (ch !== '.' && !spr.p[ch]) { out.poseProblems.push(p + ':key ' + ch); break; }
     }
-    const need = ['idle', 'ready', 'load', 'swing', 'swing1', 'follow', 'run1', 'run2', 'run3', 'run4', 'cheer', 'catch', 'throw', 'back', 'slump', 'windup', 'kick', 'release', 'backrun1', 'backrun2'];
+    const need = ['idle', 'ready', 'load', 'swing', 'swing1', 'follow', 'run1', 'run2', 'run3', 'run4', 'cheer', 'catch', 'throw', 'back', 'slump', 'windup', 'kick', 'release', 'backrun1', 'backrun2', 'field', 'slide'];
     out.missing = need.filter(p => !spr.f[p]);
     const same = (a, b) => v2Frame('me', a).join('/') === v2Frame('me', b).join('/');
     out.actionAsIdle = ['ready', 'swing', 'run1', 'cheer'].filter(p => same(p, 'idle'));

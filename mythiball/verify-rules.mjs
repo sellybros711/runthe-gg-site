@@ -3528,39 +3528,32 @@ async function main() {
     {
       console.log('the pitcher faces the plate');
       /* THE CAMERA IS BEHIND THE CATCHER, so the man on the mound is seen
-         from the FRONT. The pack's `windup`, `kick` and `release` are a
-         LEFT FACING PROFILE, and the plate view used all three, so every
+         from the FRONT. The pack's `windup`, `kick` and `release` were a
+         LEFT FACING PROFILE and the plate view used all three, so every
          pitch was a man throwing sideways toward third base while the ball
-         flew at the reader. Reported as the pitcher throwing to a base
-         instead of to home.
+         flew at the reader. Nothing could report it: each frame was the
+         right frame, present and distinct. They were the wrong VIEW.
 
-         NOTHING COULD REPORT IT. Each frame is the right frame for the
-         right character, present, distinct from its neighbours and
-         correctly seated: every property the guards here ask of a drawing.
-         They are the wrong VIEW, which none of them asks.
-
-         SO THE ALLOWLIST IS WRITTEN OUT, and it was established by
-         rendering all sixty eight and looking. That is not laziness: this
-         file already records TWO automatic matchers written for the pack
-         and thrown away, both of which confidently contradicted the eye,
-         and nothing in a 64x64 bitmap says which way a figure is turned.
-
-         What it really defends against is somebody restoring the pitching
-         animation by reaching for the three poses that are literally NAMED
-         windup, kick and release. That is the obvious edit and it is the
-         wrong one, so the check is on the names.
+         THE ALLOWLIST IS READ OFF THE RIG NOW, not written out. The rig
+         draws every pose from a spec that says which way it faces
+         (`view: 'front'` or `'side'`), so the claim is that nothing the
+         pitcher wears during a pitch is a side view. A list typed here was
+         right about the pack and would be wrong about the rig the day
+         anybody moved a pose, which is the drift a second copy invites.
 
          It reads the PICTURE over a whole real pitch rather than at an
          instant, because the pitcher's branch is a chain of `else if` and
          the way it breaks is one of them winning at a moment nobody
-         sampled. */
+         sampled. And it asks for the delivery as beats: the set, the knee
+         and the stride have to be three different drawings he actually
+         wears, or the windup is a statue. */
       const { pg, errors } = await fresh(browser);
       await exhibition(pg, false);
       const r = await pg.evaluate(async () => {
         const sleep = (ms) => new Promise(r => setTimeout(r, ms));
         const g = State.game;
-        /* every pose the pack draws front on, looked at one at a time */
-        const FRONT = ['idle', 'catch', 'throw', 'ready', 'cheer'];
+        /* every pose the rig draws facing the camera */
+        const FRONT = Object.keys(RIG.POSES).filter(p => RIG.POSES[p].view === 'front');
         /* `exhibition` clears the at bat, so nothing has built batterCtx
            and throwPitch would read weakPitch off undefined. It also
            decides who is up, so the pitcher is read after it. */
@@ -3577,27 +3570,27 @@ async function main() {
         const dur = Math.round((g.pitch.speed || 2) * 1000);
         await sleep(BEAT.windup + dur + 400);
         window.drawRunner = real;
-        /* how many of the roster have a cheer that is its own drawing, so
-           the windup is two frames rather than a statue */
+        /* how many of the roster draw the set, the kick and the stride as
+           three different pictures */
         let own = 0;
         for (const c of ROSTER) {
-          const a = v2Frame(c.k, 'idle'), d = v2Frame(c.k, 'cheer');
-          if (d && (!a || d.join('/') !== a.join('/'))) own++;
+          const d = ['windup', 'kick', 'throw'].map(p => (v2Frame(c.k, p) || []).join('/'));
+          if (d[0] && new Set(d).size === 3) own++;
         }
         return { poses: [...seen], FRONT, own, chars: ROSTER.length };
       });
       const bad = r.poses.filter(p => r.FRONT.indexOf(p) < 0);
       ok(r.poses.length > 0, 'the pitcher really is drawn during a pitch',
          'he was never drawn at all, so this section read nothing');
-      ok(r.poses.indexOf('cheer') >= 0,
-         'and the windup is a second frame rather than a statue',
+      ok(['windup', 'kick', 'throw'].every(p => r.poses.indexOf(p) >= 0),
+         'and the windup is a delivery: the set, the knee and the stride',
          `he wore only: ${r.poses.join(', ')}`);
       ok(bad.length === 0,
          'THE PITCHER IS NEVER TURNED SIDEWAYS: no profile frame reaches the mound',
          `he was drawn with ${bad.join(', ')}, which the pack draws in profile`);
-      ok(r.own >= 60,
-         `and ${r.own} of ${r.chars} have a cheer of their own to wind up with`,
-         `only ${r.own} do, so most of the roster would not animate`);
+      ok(r.own === r.chars,
+         `and all ${r.chars} draw those three beats as three pictures`,
+         `only ${r.own} of ${r.chars} do, so the rest would not animate`);
       ok(errors.length === 0, 'no page errors', errors.join(' | '));
       await pg.close();
     }
@@ -4364,7 +4357,7 @@ async function main() {
         out.orphanSprites = Object.keys(V2_SPRITES).filter(k => !keys.has(k));
         const POSES = ['idle','run1','run2','back','backrun1','backrun2','windup',
                        'release','swing','catch','throw','load','follow','kick',
-                       'ready','slump'];
+                       'ready','slump','field','slide'];
         out.shortPose = ROSTER.filter(c => {
           const f = (V2_SPRITES[c.k] || {}).f || {};
           return POSES.some(p => !f[p]);

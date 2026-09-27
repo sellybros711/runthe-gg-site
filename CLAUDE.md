@@ -5428,6 +5428,64 @@ reference the owner chose, twice.
   and every character here has to stand in a batter's box and throw from a mound. The
   colours, the heads and the marks follow the pack; the stance does not.
 
+#### Every position is a baseball position
+
+Asked for as the characters and all the positions looking like a real retro baseball
+game. The pose table in the rig (`POSES`) was redrawn as baseball mechanics, and the
+figure picked up the kit that says baseball before anything else on it does.
+
+| beat | what it is now |
+|---|---|
+| `ready` | a crouched stance, feet wide, hands up at the back ear, bat up behind the head |
+| `load` | the front knee lifted, the bat laid back |
+| `swing1` | the stride down, the hands at the belt, the bat trailing flat, the blur starting |
+| `swing` | contact: arms out, back heel up, the bat foreshortened toward the plate |
+| `follow` | the bat wrapped over the front shoulder, the back foot on its toe |
+| `run1-4` | a sprint: a hard lean, the knee driven up, the arms bent and pumping |
+| `slide` | NEW. Feet first, leaning back, lead leg out along the dirt |
+| `windup` / `kick` / `throw` / `release` | the pitcher from the plate: set, knee up, ball cocked over the head, the arm swept down across the body |
+| `field` | NEW. The infielder's ready crouch, glove open low |
+
+**THE PITCHER'S DELIVERY IS FOUR BEATS FACING THE CAMERA NOW, and the `cheer` workaround
+is gone.** The pack drew its delivery in profile, so the plate view held his arms up and
+let the ball carry the motion. The rig draws the delivery front on, so both cameras play
+set, kick and stride over the windup (as shares of THAT pitch's `windupMs`, because the
+windup is short when you pitch) and the finish over the first 320ms of the flight. The
+ball is in his hand in the stride's drawing, so the white dot that used to be painted over
+his hands is gone too. `verify-rules`' front-facing guard READS THE RIG for which poses
+face the camera (`view: 'front'`) instead of a written list, and asks that the three
+windup beats are three different pictures for every character.
+
+**THE PLATE VIEW'S VECTOR BAT IS GONE.** It swept two brown strokes across the batter
+through every swing, which was a straight line through the real bat in his hands. The blur
+is baked into `swing1` and `swing` instead: `paintSmear()` runs after the light, paints only
+empty pixels, and joins the figure at the barrel, so the bleed guard sees it as attached.
+
+**The contact bat is drawn at 0.7 of its length (`batL`)**, pointing at the plate. Full
+length it reached past the cell and `fitScale` shrank every character by a fifth to make
+room, which is how this pass first came out: gear right, everybody smaller. Measure with
+the fit before adding reach to any pose. `slide` is shifted right inside its cell (`dx`)
+for the same reason: reclined, the figure sits left of the hip.
+
+**A BATTER WEARS A HELMET, unless he already wears something.** A hat is part of who
+somebody is (Santa, the witch, the top hats), so it stays. Hair that is on fire or alive
+(the phoenix, Hades, Medusa) and Humpty, whose head is his whole body, are exempt too:
+drawn, a helmet swallowed the egg and the flames poked through the shell. The colour is the
+figure's own jersey, **never within a colour distance of 90 of the skin**, or Kong's helmet
+came out as the top of his head.
+
+**The glove is a real glove and the overlay mitt is gone.** Fingers, thumb, laced web,
+dark pocket and heel, sized off the hand and capped at 5 (Kong's covered his face).
+`drawRunnerAt` used to paint a brown disc over the raised hands in `catch`, which would be
+a second glove. The slide is a drawing too, so the brown bar that stood in for a foot is
+gone and only the dust stays.
+
+**Fielders set while the pitch is live** (`field`) and stand between pitches, in both
+cameras. The old comment explaining why there was no crouch was right about the pack and
+is replaced.
+
+**What it cost**: the table went 2140KB to 2578KB for two new poses and the detail.
+
 **The grid is 96, up from 64.** `V2_W` and `V2_H` carry it and nothing in the page
 should say 64 about a sprite. It costs about 170KB compressed on the page, which was
 measured before choosing it.
