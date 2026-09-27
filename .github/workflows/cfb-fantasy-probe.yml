@@ -13,7 +13,7 @@ on:
       week:
         description: 'Week to look at (the week before it is read for box scores)'
         required: false
-        default: '5'
+        default: '6'
 permissions:
   contents: read
 jobs:
@@ -26,6 +26,4 @@ jobs:
         with:
           node-version: 20
       - name: Probe
-        env:
-          CFBD_KEY: ${{ secrets.CFBD_KEY }}
         run: node cfb/build/fantasy/probe.mjs "${{ inputs.season }}" "${{ inputs.week }}"

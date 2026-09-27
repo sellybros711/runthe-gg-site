@@ -1,16 +1,14 @@
 /* WHAT THE REAL FEEDS SEND, printed, for a machine that can reach them.
  *
- *   CFBD_KEY=... node cfb/build/fantasy/probe.mjs 2026 5
+ *   node cfb/build/fantasy/probe.mjs 2026 6
  *
- * Neither CFBD nor ESPN can be reached from the development sandbox (both are refused on
- * the CONNECT), so every builder for the college Fantasy Challenge would otherwise be
- * written against a shape remembered rather than seen. This prints a few rows of every
- * endpoint the mode reads, truncated, so the parsers are written against the real thing.
- * It writes nothing and about a dozen CFBD calls is the whole cost.
+ * ESPN cannot be reached from the development sandbox (refused on the CONNECT), so every
+ * builder for the college Fantasy Challenge would otherwise be written against a shape
+ * remembered rather than seen. This prints a few rows of every endpoint the mode reads,
+ * truncated. `week` is the week about to be played; the one before it is read for a box
+ * score. It writes nothing.
  */
-const [season = '2026', week = '5'] = process.argv.slice(2);
-const KEY = process.env.CFBD_KEY || '';
-const CFBD = 'https://api.collegefootballdata.com';
+const [season = '2026', week = '6'] = process.argv.slice(2);
 const ESPN = 'https://site.api.espn.com/apis/site/v2/sports/football/college-football';
 const CORE = 'https://sports.core.api.espn.com/v2/sports/football/leagues/college-football';
 const UA = {
@@ -22,12 +20,13 @@ const UA = {
 
 const cut = (v, n = 1600) => {
   const s = JSON.stringify(v);
+  if (s === undefined) return 'undefined';
   return s.length > n ? s.slice(0, n) + ` ...(${s.length} chars)` : s;
 };
 
-async function get(url, headers) {
+async function get(url) {
   try {
-    const r = await fetch(url, { headers });
+    const r = await fetch(url, { headers: UA });
     const t = await r.text();
     let j = null;
     try { j = JSON.parse(t); } catch { /* not json */ }
@@ -36,129 +35,101 @@ async function get(url, headers) {
     return { status: 0, j: null, t: String(e && e.message) };
   }
 }
-
-const cfbd = (p) => get(CFBD + p, { Authorization: `Bearer ${KEY}` });
-const espn = (u) => get(u, UA);
-
-function head(name, res) {
-  console.log(`\n==== ${name}: HTTP ${res.status}`
-    + (Array.isArray(res.j) ? ` rows=${res.j.length}` : ''));
-}
-
+const head = (name, res) => console.log(`\n==== ${name}: HTTP ${res.status}`);
 const prev = String(Math.max(1, Number(week) - 1));
-let gp = [];
-if (KEY) {
 
-let r = await cfbd(`/calendar?year=${season}`);
-head('calendar', r); console.log(cut(r.j, 900));
-
-r = await cfbd(`/games?year=${season}&week=${week}&classification=fbs`);
-head('games', r);
-const games = Array.isArray(r.j) ? r.j : [];
-console.log(cut(games.slice(0, 2), 2400));
-
-r = await cfbd(`/rankings?year=${season}&week=${week}`);
-head('rankings', r); console.log(cut(r.j, 1400));
-
-r = await cfbd(`/lines?year=${season}&week=${week}`);
-head('lines', r); console.log(cut((Array.isArray(r.j) ? r.j : []).slice(0, 2), 1800));
-
-r = await cfbd(`/games/players?year=${season}&week=${prev}&classification=fbs`);
-head(`games/players week ${prev}`, r);
-gp = Array.isArray(r.j) ? r.j : [];
-if (gp[0]) {
-  console.log('keys', Object.keys(gp[0]));
-  const t0 = gp[0].teams && gp[0].teams[0];
-  console.log('team keys', t0 && Object.keys(t0));
-  for (const c of (t0 && t0.categories) || []) {
-    console.log('  category', c.name, 'types', (c.types || []).map((x) => x.name).join(','),
-      'sample', cut(c.types && c.types[0] && c.types[0].athletes && c.types[0].athletes[0], 200));
+async function main() {
+  const sb = await get(`${ESPN}/scoreboard?groups=80&dates=${season}&seasontype=2&week=${week}&limit=300`);
+  head(`scoreboard week ${week}`, sb);
+  const evs = (sb.j && sb.j.events) || [];
+  console.log('events', evs.length);
+  const lg = sb.j && sb.j.leagues && sb.j.leagues[0];
+  console.log('calendar', cut(lg && lg.calendar, 1500));
+  for (const ev of evs.slice(0, 2)) {
+    const c = ev.competitions[0];
+    console.log(cut({
+      id: ev.id, date: ev.date, name: ev.name, week: ev.week, status: c.status,
+      competitors: c.competitors.map((x) => ({
+        id: x.id, homeAway: x.homeAway, curatedRank: x.curatedRank, records: x.records,
+        team: x.team && { id: x.team.id, abbreviation: x.team.abbreviation,
+          location: x.team.location, name: x.team.name, color: x.team.color,
+          conferenceId: x.team.conferenceId },
+      })),
+      odds: c.odds, neutral: c.neutralSite, conf: c.conferenceCompetition,
+      broadcasts: c.broadcasts,
+    }, 3500));
   }
-}
+  const ranked = evs.filter((e) => e.competitions[0].competitors
+    .some((x) => x.curatedRank && x.curatedRank.current <= 25));
+  console.log('ranked games', ranked.length,
+    'with odds', evs.filter((e) => e.competitions[0].odds).length);
 
-r = await cfbd(`/roster?year=${season}&team=Georgia`);
-head('roster Georgia', r); console.log(cut((Array.isArray(r.j) ? r.j : []).slice(0, 2), 900));
+  const rk = await get(`${ESPN}/rankings?season=${season}`);
+  head('rankings', rk);
+  console.log(cut(rk.j && rk.j.rankings && rk.j.rankings.map((x) => ({
+    name: x.name, type: x.type, week: x.occurrence,
+    first: x.ranks && x.ranks[0] && { current: x.ranks[0].current, points: x.ranks[0].points,
+      team: x.ranks[0].team && { id: x.ranks[0].team.id, loc: x.ranks[0].team.location } },
+  })), 1500));
 
-r = await cfbd(`/stats/player/season?year=${Number(season) - 1}&category=passing`);
-head('stats/player/season last year passing', r); console.log(cut((Array.isArray(r.j) ? r.j : []).slice(0, 3), 900));
+  /* An upcoming game's summary, for any injuries block before kickoff. */
+  const up = evs.find((e) => e.status && e.status.type && e.status.type.state === 'pre');
+  if (up) {
+    const s = await get(`${ESPN}/summary?event=${up.id}`);
+    head(`summary upcoming ${up.id} ${up.name}`, s);
+    console.log('keys', s.j && Object.keys(s.j));
+    console.log('injuries', cut(s.j && s.j.injuries, 1500));
+    console.log('pickcenter', cut(s.j && s.j.pickcenter, 800));
+    console.log('predictor', cut(s.j && s.j.predictor, 500));
+  }
 
-r = await cfbd(`/player/usage?year=${season}`);
-head('player/usage', r); console.log(cut((Array.isArray(r.j) ? r.j : []).slice(0, 2), 900));
-
-r = await cfbd(`/ratings/sp?year=${season}`);
-head('ratings/sp', r); console.log(cut((Array.isArray(r.j) ? r.j : []).slice(0, 2), 900));
-
-r = await cfbd(`/teams/fbs?year=${season}`);
-head('teams/fbs', r); console.log(cut((Array.isArray(r.j) ? r.j : []).slice(0, 1), 900));
-
-} else console.log('no CFBD_KEY: skipping CFBD');
-
-/* ESPN, which needs no key. */
-r = await espn(`${ESPN}/scoreboard?groups=80&dates=${season}&seasontype=2&week=${week}&limit=300`);
-head('espn scoreboard', r);
-const evs = (r.j && r.j.events) || [];
-console.log('events', evs.length);
-const ev0 = evs[0];
-if (ev0) {
-  const c = ev0.competitions[0];
-  console.log(cut({ id: ev0.id, date: ev0.date, name: ev0.name, status: c.status,
-    competitors: c.competitors.map((x) => ({ id: x.id, homeAway: x.homeAway, team: x.team && {
-      id: x.team.id, abbreviation: x.team.abbreviation, location: x.team.location,
-      displayName: x.team.displayName, conferenceId: x.team.conferenceId }, curatedRank: x.curatedRank,
-      score: x.score })), odds: c.odds, venue: c.venue && c.venue.fullName,
-      neutral: c.neutralSite, conf: c.conferenceCompetition }, 3200));
-  console.log('ranked games', evs.filter((e) => e.competitions[0].competitors.some((x) => x.curatedRank
-    && x.curatedRank.current <= 25)).length, 'with odds', evs.filter((e) => e.competitions[0].odds).length);
-}
-const rk = await espn(`${ESPN}/rankings`);
-head('espn rankings', rk);
-console.log(cut(rk.j && rk.j.rankings && rk.j.rankings.map((x) => ({ name: x.name, type: x.type,
-  first: x.ranks && x.ranks[0] && { current: x.ranks[0].current, team: x.ranks[0].team && {
-    id: x.ranks[0].team.id, loc: x.ranks[0].team.location } } })), 1200));
-
-/* A finished game from last week, for the box score and the injuries block. */
-r = await espn(`${ESPN}/scoreboard?groups=80&dates=${season}&seasontype=2&week=${prev}&limit=300`);
-const done = ((r.j && r.j.events) || []).find((e) => e.status && e.status.type
-  && e.status.type.state === 'post');
-if (done) {
-  const s = await espn(`${ESPN}/summary?event=${done.id}`);
-  head(`espn summary ${done.id} ${done.name}`, s);
-  console.log('summary keys', s.j && Object.keys(s.j));
-  const pl = s.j && s.j.boxscore && s.j.boxscore.players;
-  if (pl && pl[0]) {
-    for (const b of pl[0].statistics || []) {
-      console.log('  block', b.name, 'keys', cut(b.keys, 200), 'labels', cut(b.labels, 200),
-        'athlete', cut(b.athletes && b.athletes[0], 500));
+  /* A finished game from the week before, for the box score. */
+  const pb = await get(`${ESPN}/scoreboard?groups=80&dates=${season}&seasontype=2&week=${prev}&limit=300`);
+  const pevs = (pb.j && pb.j.events) || [];
+  head(`scoreboard week ${prev}`, pb);
+  console.log('events', pevs.length, 'finished',
+    pevs.filter((e) => e.status && e.status.type && e.status.type.state === 'post').length);
+  const done = pevs.find((e) => e.status && e.status.type && e.status.type.state === 'post');
+  if (done) {
+    const s = await get(`${ESPN}/summary?event=${done.id}`);
+    head(`summary ${done.id} ${done.name}`, s);
+    console.log('keys', s.j && Object.keys(s.j));
+    const pl = (s.j && s.j.boxscore && s.j.boxscore.players) || [];
+    console.log('teams in box', pl.length, 'team', cut(pl[0] && pl[0].team, 300));
+    for (const b of (pl[0] && pl[0].statistics) || []) {
+      console.log('  block', b.name, 'keys', cut(b.keys, 300), 'labels', cut(b.labels, 200));
+      console.log('    athlete', cut(b.athletes && b.athletes[0], 700));
     }
-  }
-  console.log('injuries', cut(s.j && s.j.injuries, 1200));
-  /* Is CFBD's athlete id ESPN's? The join the live scoring rests on. */
-  const espnIds = new Map();
-  for (const t of pl || []) for (const b of t.statistics || []) {
-    for (const a of b.athletes || []) espnIds.set(String(a.athlete.id), a.athlete.displayName);
-  }
-  const cfGame = gp.find((g) => String(g.id) === String(done.id));
-  console.log('cfbd game with the same id as the espn event:', !!cfGame);
-  if (cfGame) {
-    let same = 0, tot = 0; const miss = [];
-    for (const t of cfGame.teams) for (const c of t.categories) for (const ty of c.types) {
-      for (const a of ty.athletes) {
-        tot++;
-        if (espnIds.has(String(a.id))) same++; else if (miss.length < 5) miss.push([a.id, a.name]);
-      }
+    console.log('injuries', cut(s.j && s.j.injuries, 800));
+    console.log('header', cut(s.j && s.j.header && s.j.header.competitions, 800));
+
+    const tid = done.competitions[0].competitors[0].team.id;
+    for (const [name, url] of [
+      ['team injuries', `${ESPN}/teams/${tid}/injuries`],
+      ['core team injuries', `${CORE}/teams/${tid}/injuries`],
+      ['core season team injuries', `${CORE}/seasons/${season}/teams/${tid}/injuries`],
+    ]) {
+      const r = await get(url);
+      head(`${name} ${tid}`, r);
+      console.log(cut(r.j || r.t, 900));
     }
-    console.log(`athlete ids shared: ${same} of ${tot}`, cut(miss, 300));
+    const ros = await get(`${ESPN}/teams/${tid}/roster`);
+    head(`roster ${tid}`, ros);
+    const groups = (ros.j && ros.j.athletes) || [];
+    console.log('groups', cut(groups.map((g) => [g.position, g.items && g.items.length]), 400));
+    const items = groups.flatMap((g) => g.items || []);
+    console.log('first athlete', cut(items[0], 1500));
+    const hurt = items.filter((a) => (a.injuries && a.injuries.length) || (a.status
+      && a.status.type && a.status.type !== 'active'));
+    console.log('athletes with an injury or a non active status', hurt.length,
+      cut(hurt.slice(0, 3).map((a) => ({ id: a.id, name: a.displayName, pos: a.position
+        && a.position.abbreviation, injuries: a.injuries, status: a.status })), 1500));
   }
-  const tid = done.competitions[0].competitors[0].team.id;
-  const inj = await espn(`${ESPN}/teams/${tid}/injuries`);
-  head(`espn team ${tid} injuries`, inj); console.log(cut(inj.j, 900));
-  const inj2 = await espn(`${CORE}/teams/${tid}/injuries`);
-  head(`espn core team ${tid} injuries`, inj2); console.log(cut(inj2.j, 900));
-  const ros = await espn(`${ESPN}/teams/${tid}/roster`);
-  head(`espn team ${tid} roster`, ros);
-  const ath = ros.j && ros.j.athletes;
-  console.log('roster groups', cut(ath && ath.map && ath.map((g) => g.position || g.items?.length), 300));
-  const first = ath && ath[0] && (ath[0].items ? ath[0].items[0] : ath[0]);
-  console.log('roster athlete', cut(first, 900));
+  /* Is there a league wide injury list? */
+  const li = await get(`${CORE}/injuries?limit=50`);
+  head('core league injuries', li);
+  console.log(cut(li.j || li.t, 600));
+  console.log('\ndone');
 }
-console.log('\ndone');
+
+main().catch((e) => { console.error(e); process.exit(1); });
