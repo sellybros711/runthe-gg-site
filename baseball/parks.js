@@ -164,7 +164,7 @@ function status(park, info) {
    "had" is the old rule asked of the rows filed before the ladder shipped, never of
    anything played since: a new account climbs the road like everybody else. The
    page builds info.legacy off those rows; with none it is simply the new ladder. */
-const LEGACY_UNTIL = Date.parse('2026-09-28T04:00:00Z');
+const LEGACY_UNTIL = Date.parse('2026-09-28T00:00:00Z');
 const LEGACY = {
   cornfield: (l) => l.ctx.n >= 1,
   ivy: (l) => l.badges >= 5,
