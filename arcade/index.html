@@ -219,6 +219,13 @@
   .ed-chip:hover{background:color-mix(in srgb, var(--ec) 20%, transparent);}
   .ed-chip svg{width:12px; height:12px; flex:0 0 auto; opacity:.85;}
   .ed-nba{--ec:#F0653A;} .ed-nfl{--ec:#5FA052;} .ed-mlb{--ec:#2F6BFF;}
+  /* The chip's own ink is the league colour moved until it reads on the tinted chip
+     (4.5:1 at the hover tint) in each theme. The raw colour stays on the fill and border. */
+  .ed-chip{color:var(--et);}
+  .ed-nba{--et:#FF8A5C;} .ed-nfl{--et:#7FC46F;} .ed-mlb{--et:#7FA6FF;}
+  :root[data-theme="light"] .ed-nba{--et:#A8340F;}
+  :root[data-theme="light"] .ed-nfl{--et:#2E6B24;}
+  :root[data-theme="light"] .ed-mlb{--et:#1F4FD1;}
 
   /* ---- Hub value banner: the Arcade Card pitch, always visible to non-members.
        Leads with the 9 -> 36 games hook (the strongest differentiator) and the annual
