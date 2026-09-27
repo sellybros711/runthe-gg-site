@@ -1166,6 +1166,38 @@ body:has(#s-intro.on) header .lockup{visibility:hidden}
 .acct .btn{flex:1 1 auto;width:auto;margin:0;padding:10px 12px;font-size:13px}
 .acct .aerr{font-size:12px;color:#c0392b;margin:8px 0 0}
 .acct .aerr.ok{color:var(--green)}
+.acct .apro{margin:10px 0 0;padding-top:10px;border-top:1px solid rgba(var(--edge),.10);font-size:13px;color:var(--dim)}
+.acct .apro b{color:var(--gold)}
+.acct .apro button{margin-left:6px;background:none;border:0;padding:0;font:inherit;font-weight:800;
+  color:var(--gold);text-decoration:underline;cursor:pointer}
+
+/* ─── Run The Diamond Pro ───
+   One line on the front page, one sheet, and a chip on each mode that has been
+   played today. Gold, because gold is what every paid thing on this site wears. */
+.hp-pro{margin:0 0 14px;text-align:center;font-size:13px;color:var(--dim)}
+.hp-pro:empty{display:none}
+.hp-pro b{color:var(--gold)}
+.hp-pro button{background:none;border:0;padding:0;font:inherit;font-weight:800;color:var(--gold);
+  text-decoration:underline;text-underline-offset:2px;cursor:pointer}
+.hp-meter{position:absolute;z-index:1;top:10px;right:10px;font-family:var(--fn);font-style:normal;
+  font-size:9.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;padding:3px 8px;
+  border-radius:99px;color:var(--dim);border:1px solid rgba(var(--edge),.18);background:var(--panel)}
+.hp-meter.pro{color:#1a1205;border-color:transparent;background:linear-gradient(180deg,#e2b24a,#c99526)}
+.modecard .mc-sticker.used{background:none;color:var(--dim);border:1px solid rgba(var(--edge),.2)}
+.pro-lead{font-size:14px;line-height:1.5;color:var(--ink);margin:2px 0 12px}
+.pro-list{list-style:none;margin:0 0 14px;padding:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px 12px}
+.pro-list li{font-size:13px;color:var(--ink);display:flex;align-items:center;gap:7px;min-width:0}
+.pro-list li i{flex:0 0 8px;height:8px;border-radius:50%;background:var(--c)}
+.pro-list li span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pro-list li em{margin-left:auto;flex:0 0 auto;font-style:normal;font-size:10.5px;font-weight:800;letter-spacing:.06em;
+  text-transform:uppercase;color:var(--dim-2)}
+.pro-list li em.used{color:var(--red)}
+.pro-price{display:flex;align-items:baseline;gap:10px;margin:0 0 12px}
+.pro-price b{font-family:var(--fd);font-size:34px;font-weight:400;color:var(--ink);line-height:1}
+.pro-price span{font-size:13px;color:var(--dim)}
+.btn.gold{background:linear-gradient(180deg,#e2b24a,#c99526);color:#1a1205;border-bottom-color:#6f4f0d}
+.pro-note{font-size:12px;color:var(--dim);margin:10px 0 0;line-height:1.45}
+.pro-err{font-size:12.5px;color:var(--red);margin:8px 0 0}
 .trophy-locked{text-align:center;padding:14px 6px 4px}
 .trophy-locked .tl-balls{display:flex;gap:10px;justify-content:center;margin-bottom:12px}
 .trophy-locked .tl-t{font-family:var(--fp);font-weight:700;font-size:15px;color:var(--ink);margin-bottom:6px}
@@ -1937,6 +1969,7 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
   <div class="hp-tiles" id="hp-tiles"></div>
   </div>
   <button class="hp-modes" id="b-modes"><span class="hm-dots" id="hm-dots" aria-hidden="true"></span><span class="hm-txt"><b>More ways to play</b><span class="hm-sub" id="hm-sub"></span></span><svg class="hm-arrow" viewBox="0 0 24 24" aria-hidden="true"><polyline points="9 6 15 12 9 18"/></svg></button>
+  <p class="hp-pro" id="hp-pro"></p>
   <div class="hrow">
     <button class="btn ghost hp-util-btn" id="b-how-play">
       <svg class="hu-i" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5.2h6a3 3 0 0 1 3 3v11a2.4 2.4 0 0 0-2.4-2.4H3z"/>
@@ -2363,12 +2396,24 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
   </div>
 </div>
 
+<div class="sheet" id="sheet-pro" aria-hidden="true">
+  <div class="sheet-scrim" data-close-pro></div>
+  <div class="sheet-inner">
+    <div class="sheet-grab"></div>
+    <div class="sheet-hd">
+      <h3 class="sheet-title" id="pro-title">Run The Diamond Pro</h3>
+      <button class="sheet-x" data-close-pro aria-label="Close">&times;</button>
+    </div>
+    <div id="pro-in"></div>
+  </div>
+</div>
+
 <script src="engine.js?v=32"></script>
 <script src="run.js?v=26"></script>
 <script src="achievements.js?v=10"></script>
 <script src="board.js?v=1"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="auth.js?v=1"></script>
+<script src="auth.js?v=2"></script>
 <script>
 (function(){
 'use strict';
@@ -2596,6 +2641,15 @@ function renderAccount(){
   const r=row();r.classList.add('who');
   const p=document.createElement('span');p.innerHTML='Signed in as <b>'+esc(st.name)+'</b>';r.appendChild(p);
   btn(r,'Sign out','ghost sm',()=>A.signOut().then(renderTrophy));
+  const pro=document.createElement('p');pro.className='apro';
+  if(isPro())pro.innerHTML='<b>Pro</b>: every mode, as often as you like.';
+  else{
+    pro.innerHTML='Free: one play of each mode a day.';
+    const b=document.createElement('button');b.type='button';b.textContent='Go Pro for '+PRO_PRICE;
+    b.onclick=()=>{closeSheet('sheet-trophy');ga('pro_opened',{from:'account'});openPro(null);};
+    pro.appendChild(b);
+  }
+  el.appendChild(pro);
 }
 function openTrophy(){if(!ACH)return;renderTrophy();openSheet('sheet-trophy');ga('trophy_opened');}
 
@@ -3404,6 +3458,7 @@ function heroSync(){
 async function boot(){
   try{paintModesDoor();}catch(e){console.error(e);}
   try{paintModeTiles();}catch(e){console.error(e);}
+  try{paintProState();}catch(e){console.error(e);}
   /* ACCOUNTS, BOOTED HERE. supabase-js is deferred, so boot() may find no library
      yet and keeps polling; every change hands board.js the live token, so a
      season submitted signed in is filed under the account. */
@@ -3412,6 +3467,7 @@ async function boot(){
     A.onChange(()=>{
       window.RTD_ACCESS_TOKEN=A.token()||null;
       if($('sheet-trophy').classList.contains('on'))renderTrophy();
+      proRefresh(false).then(()=>{if(A.state().signedIn||!A.state().waiting)checkoutReturn();});
     });
   }catch(_){}
   try{
@@ -3494,7 +3550,7 @@ function paintModeTiles(){
   const box=$('hp-tiles');if(!box)return;
   box.innerHTML=MODE_CARDS.filter(m=>!m.soon).map(m=>
     '<button class="hp-tile" data-mode="'+m.id+'" style="--c:'+m.tint+'">'+
-      '<svg viewBox="0 0 24 24" aria-hidden="true">'+m.icon+'</svg>'+
+      '<svg viewBox="0 0 24 24" aria-hidden="true">'+m.icon+'</svg>'+meterChip(CARD_METER[m.id])+
       '<b>'+esc(m.tile||m.title)+'</b><span>'+esc(m.line||m.text)+'</span></button>').join('');
   box.querySelectorAll('[data-mode]').forEach(b=>b.addEventListener('click',()=>{ga('mode_tile',{mode:b.dataset.mode});pickMode(b.dataset.mode);}));
 }
@@ -3504,6 +3560,7 @@ $('daily-card').addEventListener('click',startDaily);
 document.querySelectorAll('[data-close-daily]').forEach(el=>el.addEventListener('click',()=>closeSheet('sheet-daily')));
 $('b-daily-share').addEventListener('click',shareDaily);
 document.querySelectorAll('[data-close-modes]').forEach(el=>el.addEventListener('click',()=>closeSheet('sheet-modes')));
+document.querySelectorAll('#sheet-pro > [data-close-pro], #sheet-pro .sheet-hd [data-close-pro]').forEach(el=>el.addEventListener('click',()=>closeSheet('sheet-pro')));
 document.querySelectorAll('[data-close-first]').forEach(el=>el.addEventListener('click',()=>{closeSheet('sheet-first');markSeen();}));
 $('b-first-go').addEventListener('click',()=>{closeSheet('sheet-first');markSeen();startRun();});
 
@@ -3551,6 +3608,8 @@ function openModes(){
       '<button class="modecard '+m.cls+(m.soon?' mc-soon':'')+'" data-mode="'+m.id+'"'+
         (m.soon?' disabled':'')+'>'+
         (m.soon?'<span class="mc-sticker soon">Soon</span>'
+              :isPro()?'<span class="mc-sticker">Unlimited</span>'
+              :modeUsed(CARD_METER[m.id])?'<span class="mc-sticker used">Played today</span>'
               :(m.sticker?'<span class="mc-sticker">'+esc(m.sticker)+'</span>':''))+
         '<div class="mc-head"><div class="mc-icon"><svg viewBox="0 0 24 24">'+m.icon+
         '</svg></div><div class="mc-title">'+esc(m.title)+'</div>'+(m.soon?'':ARROW)+'</div>'+
@@ -3578,12 +3637,275 @@ function pickMode(id){
      own button is its only other way in, and the results screen has no front
      page under it. */
   if(id==='free'){startRun();return;}
+  /* ASKED BEFORE THE PICKER, not only when the draft starts. Eras, One Franchise and
+     Division open a grid first, and choosing a decade to be refused at the end of it
+     is a wall with a picker in front. startRun asks again, which is the one that
+     decides: every other way into a mode (Run it back, the result screen's doors)
+     goes through it. */
+  const metered=CARD_METER[id];
+  if(metered&&modeUsed(metered)){openPro(metered);return;}
   if(id==='era'){buildEraGrid();show('s-era');return;}
   if(id==='fran'){buildFranGrid();show('s-fran');return;}
   if(id==='div'){buildDivGrid();show('s-div');return;}
   if(id==='cap'){startRun({capSurvivor:true});return;}
   if(id==='staff'){startRun({staff:true});return;}
   if(id==='trade'){startTrade();return;}
+}
+
+/* ─── Run The Diamond Pro ────────────────────────────────────────────────
+ * Each of the six extra modes gets ONE FREE START A DAY. Pro removes the limit, for
+ * $9.99 once. Classic and the daily are never counted and never sold.
+ *
+ * WHAT IS COUNTED IS A START. A season already under way is never interrupted, and
+ * a run is charged at the moment its draft opens (startRun, startTrade), which is
+ * the one door every path into a mode goes through.
+ *
+ * TWO LEDGERS, AND THE SERVER'S IS THE ONE THAT MATTERS. A signed in account is
+ * counted by rtd_mode_spend (supabase/121_baseball_pro.sql), so clearing site data
+ * or switching phones does not hand out a second play. A guest has no account, so
+ * the device is all this game can count. The device copy is written for everybody,
+ * because it is what answers instantly before the server has.
+ *
+ * IT FAILS OPEN. A server that cannot be reached, or a database without 121, lets
+ * the run through on the device's word: a wrongly granted run costs a fraction of a
+ * sale and a wrongly refused one costs a player who came back.
+ *
+ * THE PRICE IS WRITTEN ONCE, here. The amount charged lives in Stripe (the Price
+ * behind STRIPE_PRICE_RTD_PRO), so a change there has to be matched on this line. */
+const PRO_PRICE='$9.99';
+const PRO_BUNDLE='diamond-pro';
+/* The card id to the mode name the board and the server use. One spelling per
+   mode on the server, which is runModeOf's. */
+const CARD_METER={era:'era',fran:'franchise',div:'division',cap:'capsurvivor',staff:'staff',trade:'trade'};
+const METER_CARD=Object.fromEntries(Object.entries(CARD_METER).map(([k,v])=>[v,k]));
+const PLAYS_KEY='rtd_modeplays_v1';
+let proOwned=false;       // premium_products() includes rtd_premium
+let meter=null;           // rtd_mode_state() for the account signed in now, or null
+function meterOf(opts){
+  if(!opts||opts.daily)return null;
+  if(opts.tradeMachine)return 'trade';
+  if(opts.staff)return 'staff';
+  if(opts.capSurvivor)return 'capsurvivor';
+  if(opts.franchise)return 'franchise';
+  if(opts.division)return 'division';
+  if(opts.era)return 'era';
+  return null;
+}
+/* Keyed on who is playing, so a second account on one browser is not refused
+   over the first account's day. */
+function playsWho(){return acctId()||'guest';}
+function playsLocal(){
+  try{
+    const v=JSON.parse(localStorage.getItem(PLAYS_KEY)||'{}');
+    if(!v||v.day!==easternISO())return [];
+    const u=v.by&&v.by[playsWho()];
+    return Array.isArray(u)?u:[];
+  }catch(_){return [];}
+}
+function playsMark(m){
+  try{
+    const day=easternISO();
+    let v={};try{v=JSON.parse(localStorage.getItem(PLAYS_KEY)||'{}')||{};}catch(_){}
+    if(v.day!==day)v={day,by:{}};
+    v.by=v.by||{};
+    const who=playsWho(),u=Array.isArray(v.by[who])?v.by[who]:[];
+    if(u.indexOf(m)<0)u.push(m);
+    v.by[who]=u;
+    localStorage.setItem(PLAYS_KEY,JSON.stringify(v));
+  }catch(_){}
+}
+function isPro(){return proOwned||!!(meter&&meter.pro);}
+function modeUsed(m){
+  if(!m||isPro())return false;
+  if(playsLocal().indexOf(m)>=0)return true;
+  return !!(meter&&meter.day===easternISO()&&Array.isArray(meter.used)&&meter.used.indexOf(m)>=0);
+}
+/* The gate and the charge, in one place. Answers whether the run may start. */
+function modeBegin(m){
+  if(!m||isPro())return true;
+  if(modeUsed(m)){openPro(m);return false;}
+  playsMark(m);
+  if(meter&&Array.isArray(meter.used)&&meter.used.indexOf(m)<0)meter.used.push(m);
+  if(acctId()&&typeof A.modeSpend==='function'){
+    /* Never awaited: the draft opens now and the server is told behind it. A
+       refusal here means another device spent the play first, and the run in
+       hand is let through rather than taken away mid-draft. */
+    A.modeSpend(m).then(r=>{if(r&&r.pro){proOwned=true;paintProState();}}).catch(()=>{});
+  }
+  ga('mode_free_play',{mode:m});
+  paintProState();
+  return true;
+}
+/* What the page knows about the account signed in now. Both questions at once,
+   because the meter alone says Pro too and either answer is enough. */
+let proAsked=0;
+async function proRefresh(force){
+  const ask=++proAsked;
+  if(!acctId()){proOwned=false;meter=null;paintProState();return;}
+  let prods=null,st=null;
+  try{
+    [prods,st]=await Promise.all([
+      typeof A.premiumProducts==='function'?A.premiumProducts(force):null,
+      typeof A.modeState==='function'?A.modeState():null]);
+  }catch(_){}
+  /* A slower answer for an account that has since changed is dropped. */
+  if(ask!==proAsked)return;
+  if(Array.isArray(prods))proOwned=prods.indexOf('rtd_premium')>=0;
+  meter=st&&st.signed_in?st:null;
+  paintProState();
+}
+function modeLabel(m){return runModeLabel(m);}
+/* How long until the modes come back, off the Eastern clock the day is kept on. */
+function untilReset(){
+  let ms=null;
+  if(meter&&meter.next_at){const t=Date.parse(meter.next_at);if(!isNaN(t))ms=t-Date.now();}
+  if(ms==null){
+    try{
+      const parts=new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',hour:'numeric',
+        minute:'numeric',second:'numeric',hourCycle:'h23'}).formatToParts(new Date());
+      const g=k=>+((parts.find(x=>x.type===k)||{}).value||0);
+      ms=((24-g('hour'))*3600-g('minute')*60-g('second'))*1000;
+    }catch(_){return '';}
+  }
+  if(!(ms>0))return '';
+  const h=Math.floor(ms/3600000),mn=Math.max(1,Math.round((ms%3600000)/60000));
+  return h>0?h+'h '+mn+'m':mn+'m';
+}
+/* Everything that shows the meter, repainted from one call. */
+function paintProState(){
+  const line=$('hp-pro');
+  if(line){
+    if(isPro()){line.innerHTML='<b>Pro</b> \u00b7 every mode, as often as you like.';}
+    else{
+      line.innerHTML='Each mode: one free play a day. <button type="button" id="b-hp-pro">Go Pro for '+
+        PRO_PRICE+'</button> to play without limits.';
+      const b=$('b-hp-pro');if(b)b.onclick=()=>{ga('pro_opened',{from:'home'});openPro(null);};
+    }
+  }
+  try{paintModeTiles();}catch(_){}
+  if($('sheet-modes').classList.contains('on'))try{openModes();}catch(_){}
+  if($('sheet-trophy').classList.contains('on'))try{renderAccount();}catch(_){}
+  if($('sheet-pro').classList.contains('on')&&$('pro-in').dataset.kind==='offer')proSheet(proFor,false);
+}
+function meterChip(m){
+  if(isPro())return '<i class="hp-meter pro">Unlimited</i>';
+  if(modeUsed(m))return '<i class="hp-meter">Played today</i>';
+  return '';
+}
+
+/* THE SHEET. Opened three ways: a mode already played today (`m` names it), the
+   front page's line, and the account panel. What it says first depends on which. */
+let proFor=null;
+function openPro(m){
+  proFor=m||null;
+  if(m)ga('pro_wall',{mode:m});
+  proSheet(proFor,true);
+  openSheet('sheet-pro');
+}
+function proSheet(m,fresh){
+  const box=$('pro-in');box.dataset.kind='offer';
+  const st=A.state();
+  if(isPro()){
+    $('pro-title').textContent='You have Pro';
+    box.innerHTML='<p class="pro-lead">Every mode, as often as you like. Thanks for backing the game.</p>'+
+      '<button class="btn ghost" data-close-pro>Close</button>';
+    wirePro(box);return;
+  }
+  $('pro-title').textContent=m?('You played today\'s '+modeLabel(m)):'Run The Diamond Pro';
+  const back=untilReset();
+  const lead=m
+    ?'Every mode gets one free play a day. '+esc(modeLabel(m))+' comes back at midnight Eastern'+
+      (back?', in <b>'+back+'</b>':'')+'. Or play it now with Pro.'
+    :'Every mode gets one free play a day. Pro takes the limit off.';
+  const list=MODE_CARDS.filter(c=>!c.soon).map(c=>{
+    const mm=CARD_METER[c.id];const used=modeUsed(mm);
+    return '<li style="--c:'+c.tint+'"><i></i><span>'+esc(c.tile||c.title)+'</span>'+
+      '<em'+(used?' class="used"':'')+'>'+(used?'Played':'Free')+'</em></li>';
+  }).join('');
+  const signed=!!acctId();
+  box.innerHTML='<p class="pro-lead">'+lead+'</p>'+
+    '<ul class="pro-list">'+list+'</ul>'+
+    '<div class="pro-price"><b>'+PRO_PRICE+'</b><span>once. Unlimited plays of all six. Yours for good.</span></div>'+
+    '<button class="btn gold" id="b-pro-buy">'+(signed?'Get Pro for '+PRO_PRICE:'Sign in to get Pro')+'</button>'+
+    '<p class="pro-err" id="pro-err" hidden></p>'+
+    '<p class="pro-note">'+(signed
+      ?'One payment through Stripe. Nothing renews. Classic and the daily stay free for everybody.'
+      :'Pro belongs to your RunThe.GG account, so it follows you to every device you sign in on.')+'</p>'+
+    '<div style="margin-top:10px"><button class="btn ghost" data-close-pro>Not now</button></div>';
+  wirePro(box);
+  $('b-pro-buy').onclick=e=>{
+    if(!acctId()){closeSheet('sheet-pro');openTrophy();ga('pro_signin',{});return;}
+    buyPro(e.currentTarget);
+  };
+  if(fresh)ga('pro_sheet_shown',{mode:m||'none',signed:signed?1:0});
+}
+function wirePro(box){box.querySelectorAll('[data-close-pro]').forEach(el=>el.onclick=()=>closeSheet('sheet-pro'));}
+
+/* One POST to the site's one checkout, verdict by the `error` field and never the
+   status, the contract functions/api/stripe/checkout-bundle.js keeps on purpose. */
+async function buyPro(btn){
+  const t=typeof A.token==='function'?A.token():null;
+  if(!t){closeSheet('sheet-pro');openTrophy();return;}
+  ga('checkout_started',{bundle:PRO_BUNDLE,from:'baseball'});
+  const err=$('pro-err');if(err)err.hidden=true;
+  btn.disabled=true;btn.textContent='Opening checkout...';
+  let d={};
+  try{
+    const r=await fetch('/api/stripe/checkout-bundle',{
+      method:'POST',
+      headers:{'Content-Type':'application/json',Authorization:'Bearer '+t},
+      body:JSON.stringify({bundle:PRO_BUNDLE,return_path:'/baseball/',
+        email:(A.state()&&A.state().email)||undefined})
+    });
+    d=await r.json().catch(()=>({}));
+  }catch(_){d={};}
+  if(d&&d.url){location.href=d.url;return;}
+  if(d&&d.error==='already_owned'){proRefresh(true);}
+  btn.disabled=false;
+  btn.textContent='Get Pro for '+PRO_PRICE;
+  if(err){
+    err.hidden=false;
+    err.textContent=d&&d.error==='stripe_not_configured'?'Pro is not on sale yet. Try again soon.'
+      :d&&d.error==='already_owned'?'This account already has Pro.'
+      :d&&d.error==='unauthorized'?'Sign in again, then try once more.'
+      :'Checkout did not open. Try again.';
+  }
+}
+
+/* COMING BACK FROM STRIPE. The grant is written by the webhook, and the redirect
+   races it, so this asks for about ten seconds, past the cache each time, and never
+   says the payment failed: it cannot know that. The flag comes off the URL first,
+   so a reload or a shared link cannot replay it. */
+let checkoutWhat=null;
+try{checkoutWhat=new URLSearchParams(location.search).get('checkout');}catch(_){}
+function checkoutStrip(){
+  try{
+    const u=new URL(location.href);u.searchParams.delete('checkout');
+    history.replaceState(null,'',u.pathname+(u.searchParams.toString()?'?'+u.searchParams.toString():'')+u.hash);
+  }catch(_){}
+}
+let checkoutDone=false;
+async function checkoutReturn(){
+  if(!checkoutWhat||checkoutDone)return;
+  checkoutDone=true;checkoutStrip();
+  if(checkoutWhat!=='success'){ga('checkout_cancelled',{from:'baseball'});return;}
+  ga('checkout_returned',{from:'baseball'});
+  const paint=()=>{
+    const box=$('pro-in');box.dataset.kind='thanks';
+    $('pro-title').textContent=isPro()?'Pro is on':'Thanks for buying Pro';
+    box.innerHTML='<p class="pro-lead">'+(isPro()
+      ?'Every mode, as often as you like. It is on every device you sign in on.'
+      :'Your payment went through. Pro is on its way to your account and usually lands in a few seconds.')+
+      '</p><button class="btn ghost" data-close-pro>'+(isPro()?'Play':'Close')+'</button>';
+    wirePro(box);
+  };
+  paint();openSheet('sheet-pro');
+  for(const ms of [800,1200,2000,3000,3500]){
+    await new Promise(r=>setTimeout(r,ms));
+    await proRefresh(true);
+    if($('pro-in').dataset.kind==='thanks')paint();
+    if(isPro())return;
+  }
 }
 
 /* ─── the board ───────────────────────────────────────────────────────────
@@ -4104,6 +4426,7 @@ function buildDivGrid(){buildDivCards();}
 
 /* ─── start run ─── */
 function startRun(opts={}){
+  if(!modeBegin(meterOf(opts)))return;
   RUN=R.createRun(opts);
   heroStop();heroRunning=false;
   show('s-draft');
@@ -4729,6 +5052,7 @@ function askCut(ev,onDone){
    You did not draft this roster and you cannot re-draft it. Three times the phone
    rings, and the season waits for your answer. */
 function startTrade(){
+  if(!modeBegin('trade'))return;
   RUN=R.createRun({tradeMachine:true});
   heroStop();heroRunning=false;
   if(!R.dealRoster(RUN,DATA)){

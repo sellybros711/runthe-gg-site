@@ -33,6 +33,10 @@
  *                     expires_at; arcade_card_active() reads this table too, so
  *                     no subscriptions row is written and a real Stripe
  *                     subscription is never clobbered by a bundle purchase.
+ *   rtd_premium       Run The Diamond Pro: the six extra baseball modes with
+ *                     no daily limit. Permanent. The page asks
+ *                     premium_products() and the meter (rtd_mode_spend in
+ *                     supabase/121_baseball_pro.sql) reads this table itself.
  *   runtour_pack      Coins + bonus packs in Run The Tour. The wallet that gets
  *                     credited (coin_wallet, runtour_wallet()) belongs to the
  *                     golf backend, so the webhook records the grant here as
@@ -86,6 +90,28 @@ export const BUNDLES = {
     ],
     returnRoots: ['/football/', '/cfb/', '/golf/', '/arcade/'],
     defaultReturn: '/football/',
+  },
+
+  /* Run The Diamond Pro: the baseball game's own tier, $9.99 once, for good.
+   *
+   * THE ONE BUNDLE THAT BELONGS TO ONE GAME, and that is the owner's decision
+   * (2026-09) rather than a slip. CLAUDE.md says never to build a price or an
+   * unlock for one game, and the reason behind it is the second payment path.
+   * That reason still holds and is kept: this is a row in this catalog, sold
+   * through the same checkout-bundle.js and granted by the same webhook, so
+   * there is still exactly one way money reaches the site. What is new is only
+   * that the product is baseball's alone.
+   *
+   * It is NOT in Run The Bundle. That would change what the $34.99 contains and
+   * what its "$80 of value" claim adds up to, which is its own decision. */
+  'diamond-pro': {
+    name: 'Run The Diamond Pro',
+    envPrice: 'STRIPE_PRICE_RTD_PRO',
+    grants: [
+      { product: 'rtd_premium' },
+    ],
+    returnRoots: ['/baseball/'],
+    defaultReturn: '/baseball/',
   },
 };
 

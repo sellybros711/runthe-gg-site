@@ -291,6 +291,50 @@ about the modes opening, since nothing reads `premium_products()` yet.
   feature flag and never a permission. That wiring belongs with each game's
   launch, not here.
 
+## Run The Diamond Pro ($9.99 once, baseball only)
+
+The one bundle that belongs to a single game, by the owner's decision (2026-09). It
+still goes through the one checkout (`checkout-bundle.js`) and the one webhook, so
+there is no second payment path. The catalog row is `diamond-pro` in `_bundles.js`,
+it grants `rtd_premium`, and the page asks `premium_products()` for it.
+
+What it sells: the six extra modes (Eras, One Franchise, Division, Cap Survivor,
+All-Time Pitching Staff, Trade Machine) with no daily limit. Free accounts and
+guests get one start of each mode per Eastern day. Classic and the daily are free
+for everybody and never counted.
+
+### Go-live, in this order
+
+1. **Run the migration** in the Supabase SQL editor:
+   `supabase/121_baseball_pro.sql`. Then paste `supabase/test/launch_preflight.sql`
+   and confirm row 31 (`121_baseball_pro`) reads **yes**. This has to come first:
+   until it runs, the table refuses `rtd_premium` and a paid checkout 500s in the
+   webhook (Stripe retries, so nobody loses money, but nobody gets Pro either).
+2. **Create the Product and Price in Stripe.** Either run the script (it is
+   idempotent and prints the env var line):
+   `STRIPE_SECRET_KEY=sk_live_... node scripts/stripe/setup-premium-bundles.mjs`
+   or do it by hand in the Dashboard: Product catalog, Add product, name
+   **Run The Diamond Pro**, one-time price **$9.99 USD**, and on the price set the
+   lookup key `rtd_pro_once`. Copy the price id (`price_...`).
+3. **Add the env var in Cloudflare Pages** (Settings, Environment variables,
+   Production): `STRIPE_PRICE_RTD_PRO = price_...`. Redeploy (or push any commit)
+   so the function picks it up. Until this is set the Get Pro button answers
+   "Pro is not on sale yet".
+4. **Nothing to change on the webhook.** It already listens for
+   `checkout.session.completed` and `checkout.session.async_payment_succeeded`, and
+   it grants any bundle in `_bundles.js` by `metadata.bundle`.
+5. **Test it** with a 100% off promotion code (Stripe is live, there is no test
+   mode here): open `/baseball/` signed in, press Go Pro, pay with the code, and
+   you land back on the game with "Pro is on". The tiles read Unlimited.
+
+To comp somebody by hand:
+
+```sql
+insert into public.premium_unlocks (user_id, product, source)
+values ('<user uuid>', 'rtd_premium', 'comp')
+on conflict (user_id, product) do update set expires_at = null;
+```
+
 ## Before public launch
 
 - Flip `arcade/tokens.js` `TESTING = false` to enforce the tiers.

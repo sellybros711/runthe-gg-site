@@ -15311,6 +15311,49 @@ club name.
 offered and every one is deep: the thinnest is the 1900s at 102 team-seasons, 17 clubs
 and 1,291 men. What the lineage fixes for Eras is the chemistry, not the pool.
 
+### Run The Diamond Pro, and one free play of each mode a day
+
+```
+node baseball/check-pro.mjs          the gate, the sheet and the checkout, in a browser
+psql -d rtd_pro -f supabase/test/baseball_pro_base.sql
+psql -d rtd_pro -f supabase/101_premium_bundles.sql
+psql -d rtd_pro -f supabase/121_baseball_pro.sql
+psql -d rtd_pro -f supabase/test/baseball_pro_test.sql
+```
+
+Asked for by the owner: the six extra modes (Eras, One Franchise, Division, Cap
+Survivor, All-Time Pitching Staff, Trade Machine) get **one free start each per
+Eastern day**, and **Pro** removes the limit for **$9.99 once**. Classic and the daily
+are never counted and never sold. The Stripe steps are in
+`functions/api/stripe/README.md`.
+
+**IT IS THE ONE PRODUCT THAT BELONGS TO ONE GAME, and the rule it bends is kept.** The
+store section above says never to build a price or an unlock for one game, and the
+reason is a second payment path. `diamond-pro` is a row in `_bundles.js`, sold through
+the same `checkout-bundle.js` and granted by the same webhook, so there is still one way
+money reaches the site. It is NOT in Run The Bundle, because that changes what the
+$34.99 contains and what its "$80 of value" adds up to.
+
+**What is counted is a START**, and `startRun` and `startTrade` are the one door
+(`modeBegin`), so Run it back and the result screen's mode doors are gated by the same
+line. `pickMode` asks too, **before** a picker opens, because choosing a decade and being
+refused at the end of it is a wall with a picker in front.
+
+**Two ledgers.** A signed in account is counted by `rtd_mode_spend` (121), keyed on
+`auth.uid()`, so clearing site data or changing phones gives nothing back. A guest has no
+account and is counted on the device (`rtd_modeplays_v1`, keyed by who is playing so a
+second account on one browser is not refused over the first one's day). **It fails open**:
+no server, or a database without 121, lets the run through on the device's word. A Pro
+account is never written to the ledger at all.
+
+**`verify-bundles.mjs` reads the LAST definition of `premium_unlocks_product_ck`**, in
+numeric migration order, because 121 drops and re-adds it. A text sort puts `99_` after
+`121_`, and reading 101 alone would hold the catalog to a list that no longer exists.
+
+**The Pro sheet's X and backdrop were dead on the first draft**, because they are static
+markup and only the buttons built inside the sheet were wired. The walk caught it as the
+Classic button being unclickable under a sheet that would not close.
+
 ### The draft button IS a baseball, and the one light surface allowed at night
 
 Asked for with two screenshots: drop the ball emoji either side of the words, and
