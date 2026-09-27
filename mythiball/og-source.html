@@ -35,7 +35,7 @@
     let d=0,j=src.indexOf('{',i); for(;j<src.length;j++){ if(src[j]==='{') d++; else if(src[j]==='}'&&--d===0) break; } return src.slice(i,j+1); };
   const S=new Function(lineOf('const V2_SPRITES = ')+'\nconst v2FrameCache = new Map();\n'+fnOf('function v2Frame(')+'\nreturn {V2_SPRITES, v2Frame};')();
   const sprite=(key,pose)=>{ const spr=S.V2_SPRITES[key]; if(!spr) throw new Error('no sprite for '+key);
-    const rows=S.v2Frame(key,pose), g=P.grid(64,64);
+    const rows=S.v2Frame(key,pose), g=P.grid(rows[0].length,rows.length);
     rows.forEach((r,y)=>{ for(let x=0;x<r.length;x++){ const c=spr.p[r[x]]; if(c) g.put(x,y,c); } });
     return g; };
   const roster=key=>{ const m=src.match(new RegExp("\\{ k:'"+key+"', n:'([^']*)', role:'([^']*)'"));

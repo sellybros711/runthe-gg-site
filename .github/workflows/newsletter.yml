@@ -1,0 +1,115 @@
+name: Release newsletter
+
+# Drafts the release newsletter, mails you a preview, and sends it to the list only
+# after you approve. The whole runbook is scripts/newsletter/README.md.
+#
+#   1. DRAFT (automatic). Runs when a GitHub Release is published, or when you press
+#      "Run workflow". Claude reads what shipped to a launched game since the last
+#      issue (scripts/newsletter/games.json), writes the email, and a preview goes to
+#      runthegames@outlook.com. The draft is also attached to the run and printed in
+#      its summary.
+#   2. SEND (waits for you). The send job uses the `newsletter` environment, which has
+#      you as a required reviewer, so it sits at "Waiting for review" until you open
+#      the run and press Approve and deploy. Reject it and nothing is sent.
+#
+# THE SEND JOB CHECKS THE GATE BEFORE IT SENDS. GitHub creates an environment on first
+# use WITHOUT any reviewers, and an unprotected environment does not wait: the job
+# would run the moment the draft finished. So the first step asks the API whether
+# `newsletter` has a required reviewer, and refuses to send if it does not.
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      notes:
+        description: 'What you want this issue to say, in your own words. It leads.'
+        required: false
+        default: ''
+      since:
+        description: 'Start from this commit or tag instead of the last issue sent.'
+        required: false
+        default: ''
+
+permissions:
+  contents: read
+
+concurrency:
+  group: newsletter
+  cancel-in-progress: false
+
+jobs:
+  draft:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install the Anthropic SDK
+        run: npm install --no-save --no-package-lock @anthropic-ai/sdk
+      - name: Draft the issue
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE: ${{ secrets.SUPABASE_SERVICE_ROLE }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          NEWSLETTER_POSTAL_ADDRESS: ${{ vars.NEWSLETTER_POSTAL_ADDRESS }}
+          NEWSLETTER_PREVIEW_TO: ${{ vars.NEWSLETTER_PREVIEW_TO }}
+          NOTES: ${{ github.event.inputs.notes || github.event.release.body }}
+          SINCE: ${{ github.event.inputs.since }}
+        run: node scripts/newsletter/draft.mjs
+      - name: Show the draft in the run summary
+        run: |
+          {
+            echo "## Newsletter draft"
+            echo
+            echo "A preview was emailed. Approve the **send** job to mail it to the list, or reject it to throw it away."
+            echo
+            echo '```'
+            cat newsletter-draft/issue.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: newsletter-draft
+          path: newsletter-draft/
+          retention-days: 14
+
+  send:
+    needs: draft
+    runs-on: ubuntu-latest
+    environment: newsletter
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - name: Refuse unless the newsletter environment requires a reviewer
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          body=$(curl -fsS -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${{ github.repository }}/environments/newsletter")
+          if ! printf '%s' "$body" | grep -q '"type": *"required_reviewers"'; then
+            echo "::error::The 'newsletter' environment has no required reviewer, so nothing held this send for approval. Add yourself under Settings > Environments > newsletter > Required reviewers, then re-run."
+            exit 1
+          fi
+          echo "approved by a required reviewer; sending"
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/download-artifact@v4
+        with:
+          name: newsletter-draft
+          path: newsletter-draft
+      - name: Send to the list
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE: ${{ secrets.SUPABASE_SERVICE_ROLE }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          NEWSLETTER_POSTAL_ADDRESS: ${{ vars.NEWSLETTER_POSTAL_ADDRESS }}
+          RUN_ID: ${{ github.run_id }}
+        run: node scripts/newsletter/send.mjs

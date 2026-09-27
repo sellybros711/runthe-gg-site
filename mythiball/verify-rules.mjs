@@ -1811,7 +1811,6 @@ async function main() {
       const bats = await pg.evaluate(() => {
         const ks = Object.keys(V2_SPRITES);
         const withArt = ks.filter(k => (V2_SPRITES[k].b || []).indexOf('ready') >= 0);
-        const without = ks.filter(k => (V2_SPRITES[k].b || []).indexOf('ready') < 0);
         const cv = document.createElement('canvas');
         cv.width = 200; cv.height = 200;
         const ctx = cv.getContext('2d');
@@ -1823,21 +1822,28 @@ async function main() {
           delete ctx.fillRect;
           return n;
         };
+        /* THE FALLBACK IS ASKED OF A FIXTURE. The rig draws a bat for every
+           character, so no real sprite reaches the prop any more; a copy of
+           one with its bat list taken away is the only way to prove a figure
+           with no bat in its art is still handed one. */
+        V2_SPRITES.__nobat = Object.assign({}, V2_SPRITES[ks[0]], { b: [] });
+        const plain = props('__nobat');
+        delete V2_SPRITES.__nobat;
         return {
-          withArt: withArt.length, without: without.length,
+          roster: ROSTER.length, withArt: withArt.length,
           drawnGotProp: withArt.filter(k => props(k) > 0).length,
-          plainGotNone: without.filter(k => props(k) === 0).length,
+          plainGotOne: plain > 0,
         };
       });
-      ok(bats.withArt > 30 && bats.without > 0,
-         'the pack draws a bat for most of the roster and a still for the rest',
-         `${bats.withArt} with drawn bats, ${bats.without} without`);
+      ok(bats.withArt >= bats.roster,
+         'the rig draws a bat for every character',
+         `${bats.withArt} with drawn bats of ${bats.roster}`);
       ok(bats.drawnGotProp === 0,
          'A MAN HOLDING A DRAWN BAT IS NOT HANDED A SECOND ONE',
          `${bats.drawnGotProp} of ${bats.withArt} got the prop as well`);
-      ok(bats.plainGotNone === 0,
-         'and a man whose art has no bat still gets one to hold',
-         `${bats.plainGotNone} of ${bats.without} were left empty handed`);
+      ok(bats.plainGotOne,
+         'and a figure whose art has no bat still gets one to hold',
+         'the fixture with no drawn bat was left empty handed');
 
       /* ---- nothing is sliced by the side of its own cell ---- */
       /* A strip is one image cut into 64px cells and several characters are

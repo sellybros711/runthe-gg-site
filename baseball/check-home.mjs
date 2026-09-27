@@ -240,6 +240,29 @@ for (const [w, h] of [[390, 844], [360, 740], [375, 667], [320, 568], [768, 1024
     `${w}px: the two reels share one line above the field`,
     `year ${y.top}-${y.bottom}, team ${t.top}, field ${field.top}`);
   claim(go === 'none', `${w}px: the daily card carries no second control`, `display ${go}`);
+  /* MORE WAYS TO PLAY OUTRANKS THE THREE DOORS UNDER IT. As a ghost button it
+     read quieter than How to play, the Leaderboard and the Trophy case, and it is
+     the only way to six modes. So it is asked for as a PROPERTY: a gold edge the
+     doors do not have, a caption naming modes on ONE line, and a name set larger
+     than any door's. */
+  const rank = await p.evaluate(() => {
+    const m = document.querySelector('#b-modes');
+    const name = m && m.querySelector('.hm-txt b');
+    const sub = m && m.querySelector('.hm-sub');
+    const door = document.querySelector('.hrow .hp-util-btn');
+    const doorB = door && door.querySelector('b');
+    if (!m || !name || !door) return null;
+    const cm = getComputedStyle(m), cd = getComputedStyle(door);
+    return { edge: cm.borderTopColor, doorEdge: cd.borderTopColor,
+      nameFs: parseFloat(getComputedStyle(name).fontSize), doorFs: parseFloat(getComputedStyle(doorB).fontSize),
+      subText: sub ? sub.innerText.trim() : '', subH: sub ? sub.getBoundingClientRect().height : 0,
+      subLh: sub ? parseFloat(getComputedStyle(sub).lineHeight) || 16 : 0,
+      subFits: sub ? sub.scrollWidth <= sub.clientWidth + 1 : false };
+  });
+  claim(rank && rank.edge !== rank.doorEdge && rank.nameFs > rank.doorFs,
+    `${w}px: More ways to play outranks the doors under it`, JSON.stringify(rank));
+  claim(rank && /more|,/.test(rank.subText) && rank.subH <= rank.subLh * 1.3 && rank.subFits,
+    `${w}px: its caption names the modes on one line`, JSON.stringify(rank));
   /* THE SEAMS STAND INSIDE THE BALL, AND THE LABEL KEEPS THE MIDDLE. The seam
      strip is one button-height square positioned by a share of the button, and
      the label does not shrink while the button does, so there is a width where
@@ -337,6 +360,44 @@ for (const [w, h] of [[1000, 900], [1280, 720], [1280, 900], [1440, 900], [1680,
   claim(y.top > field.top && y.bottom < field.bottom && t.top > field.top && t.bottom < field.bottom,
     `${w}px: both reels stand beside the field rather than above or below it`,
     `field ${field.top}-${field.bottom}, year ${y.top}-${y.bottom}, team ${t.top}-${t.bottom}`);
+  /* THE BENTO. A desktop shows the six modes as tiles beside the daily rather than
+     a bar leading to a sheet, and the three doors become one row of links. Asked as
+     properties: every tile on screen and inside the band the daily spans, the daily
+     to the LEFT of all of them, the phone's door gone, and no door drawn as a card. */
+  const bento = await p.evaluate(() => {
+    const d = document.querySelector('.dailycard').getBoundingClientRect();
+    const tiles = [...document.querySelectorAll('#hp-tiles .hp-tile')].map((t) => {
+      const r = t.getBoundingClientRect();
+      const name = t.querySelector('b');
+      return { l: r.left, t: r.top, b: r.bottom, w: r.width,
+        fits: name.scrollWidth <= name.clientWidth + 1 };
+    });
+    const door = document.querySelector('.hrow .hp-util-btn');
+    const cd = getComputedStyle(door);
+    const rows = [...document.querySelectorAll('.hrow .hp-util-btn')].map((e) => Math.round(e.getBoundingClientRect().top));
+    return { d: { l: d.left, r: d.right, t: d.top, b: d.bottom }, tiles,
+      modes: getComputedStyle(document.querySelector('#b-modes')).display,
+      doorBg: cd.backgroundColor, doorBorder: cd.borderTopWidth, rows };
+  });
+  claim(bento.tiles.length === 6 && bento.tiles.every((x) => x.w > 150),
+    `${w}px: six mode tiles are drawn`, JSON.stringify(bento.tiles.map((x) => Math.round(x.w))));
+  claim(bento.tiles.every((x) => x.l >= bento.d.r && x.t >= bento.d.t - 1 && x.b <= bento.d.b + 1),
+    `${w}px: the tiles stand beside the daily, inside the band it spans`,
+    JSON.stringify({ daily: bento.d, tiles: bento.tiles.map((x) => [Math.round(x.l), Math.round(x.t), Math.round(x.b)]) }));
+  claim(bento.tiles.every((x) => x.fits), `${w}px: every tile's name fits its tile`);
+  claim(bento.modes === 'none', `${w}px: the phone's More ways to play door is not drawn`, bento.modes);
+  claim(new Set(bento.rows).size === 1 && bento.doorBorder === '0px' && /rgba\(0, 0, 0, 0\)|transparent/.test(bento.doorBg),
+    `${w}px: the three doors are one row of links, not cards`, JSON.stringify(bento));
+  await ctx.close();
+}
+
+/* ══ 3b. a tile is a door ════════════════════════════════════════════════════ */
+head('3b. A MODE TILE OPENS ITS MODE');
+{
+  const { ctx, p } = await open(1440, 900);
+  await p.click('#hp-tiles [data-mode="era"]');
+  const era = await p.waitForSelector('#s-era.on .era-card', { timeout: 15000 }).then(() => true, () => false);
+  claim(era, 'the Eras tile opens the decade picker, through the sheet\'s own door');
   await ctx.close();
 }
 

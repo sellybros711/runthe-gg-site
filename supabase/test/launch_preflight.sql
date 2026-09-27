@@ -84,7 +84,7 @@ has_table as (
     'commish_free_clock','ps_runs','profiles',
     'fantasy_weeks','fantasy_prices','fantasy_results','fantasy_entries',
     'nfl_games','fantasy_prizes',
-    'rtf_runs','rtd_runs','rtf_plays'
+    'rtf_runs','rtd_runs','rtf_plays','rtd_mode_plays'
   ]) as t
   where to_regclass('public.' || t) is not null
 ),
@@ -409,7 +409,69 @@ check_rows(sort, migration, what, breaks, ok) as (
       'rtf_submit_fix_season and fix_trades, so a season of Fix History trades reaches the board',
       'Fix History plays all four windows and no result is ever filed: no place on the result screen and no row on today''s board. It looks like a quiet day.',
       (select count(*) > 0 from proc where name = 'rtf_submit_fix_season')
-      and (select count(*) > 0 from col where tbl = 'rtf_plays' and name = 'fix_trades'))
+      and (select count(*) > 0 from col where tbl = 'rtf_plays' and name = 'fix_trades')),
+
+  -- A MAN RULED OUT CAN BE SWAPPED BEFORE HIS GAME. The page offers the swap
+  -- off the injury file and the server decides it off fantasy_out and each
+  -- man's kickoff, so without this file the button is there and every press
+  -- is refused with a sentence about a missing function. Asked of the columns
+  -- and the table through `col`, which asks the catalog for everything,
+  -- rather than through `has_table`, which is an allowlist.
+  (29, '119_fantasy_swap',
+      'fantasy_swap, the out list and each man''s kickoff',
+      'An entrant holding a man who is ruled out is offered a swap the server cannot make. Every press is refused, and the man scores nothing.',
+      (select count(*) > 0 from proc where name = 'fantasy_swap')
+      and (select count(*) > 0 from col where tbl = 'fantasy_out' and name = 'player_id')
+      and (select count(*) > 0 from col where tbl = 'fantasy_prices' and name = 'kick')
+      and (select count(*) > 0 from col where tbl = 'fantasy_entries' and name = 'swaps')),
+
+  -- THE WINNER GETS 30 DAYS OF PRO, paid by the settle itself. Asked of the
+  -- settle's BODY rather than of the grant function existing, because re-running
+  -- 114 on its own puts back a settle that pays nobody while the grant function
+  -- sits there unused, and that database would answer yes to an existence check.
+  (30, '120_fantasy_pro_pass',
+      'the winner of the week gets 30 days of Pro the moment the week is final',
+      'The week settles and first place is never paid. Every entrant''s result popup waits on a prize that nothing will write, so nobody is told how the week went.',
+      (select count(*) > 0 from proc where name = 'fantasy_grant_pass')
+      and (select count(*) > 0 from proc
+            where name = 'fantasy_settle_week' and body like '%fantasy_grant_pass%')
+      and (select count(*) > 0 from proc
+            where name = 'fantasy_my_result' and body like '%granted%')
+      and (select count(*) > 0 from col where tbl = 'fantasy_prizes' and name = 'pass_until')),
+
+  -- RUN THE DIAMOND PRO. Two halves that fail differently, asked in one row
+  -- because neither is any use without the other. Without the constraint every
+  -- paid Pro checkout 500s in the webhook and Stripe retries it; without the
+  -- meter the six modes stay unlimited for everybody, because the page fails
+  -- open, so nothing is sold at all.
+  (31, '121_baseball_pro',
+      'rtd_premium is a product the webhook may grant, and the six extra modes are metered once a day',
+      'A paid Pro checkout is refused by the table and retried by Stripe until this runs. The daily limit does nothing, so every account plays the extra modes without end.',
+      (select count(*) > 0 from con
+        where name = 'premium_unlocks_product_ck' and def like '%rtd_premium%')
+      and (select count(*) > 0 from has_table where name = 'rtd_mode_plays')
+      and (select count(*) > 0 from proc where name = 'rtd_mode_spend')
+      and (select count(*) > 0 from proc where name = 'rtd_mode_state')),
+
+  -- THE RELEASE NEWSLETTER. Both of its failures look like a working page: the
+  -- profile checkbox removes itself on any error, and the home page email box
+  -- answers a server error with a polite "try again". Asked of the table and the
+  -- five functions, because a guest signup needs a different one from a tick.
+  (32, '121_newsletter',
+      'the release newsletter list, the profile checkbox and the home page signup',
+      'The newsletter checkbox quietly disappears from every profile, and the home page email box refuses every address with "Something went wrong". Nobody gets on the list.',
+      (select count(*) > 0 from col where tbl = 'newsletter_subscribers' and name = 'unsub_token')
+      and (select count(*) > 0 from col where tbl = 'newsletter_issues' and name = 'commit_sha')
+      and (select count(*) = 5 from proc where name in
+            ('newsletter_status','newsletter_set','newsletter_guest_request','newsletter_confirm','newsletter_unsubscribe'))),
+
+  -- THE KEY IS THE RULE. 121 keyed the meter on (user, day), one play a day
+  -- across all six modes; 122 widens it to (user, mode, day), one of each.
+  (33, '122_baseball_pro_per_mode',
+      'a free account gets one play of each extra mode a day, not one in total',
+      'The meter keeps 121''s rule: one play a day across all six modes. The page says one of each, so the second mode a player opens is refused with a sheet that says it is still free.',
+      (select count(*) > 0 from con
+        where name = 'rtd_mode_plays_pkey' and def = 'PRIMARY KEY (user_id, mode, day)'))
 )
 -- The summary has to come LAST, and a UNION can only be ordered by an output
 -- column, so the sort key is carried through a subquery rather than sorted on

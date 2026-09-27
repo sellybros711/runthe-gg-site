@@ -233,21 +233,3 @@ jobs:
             echo "push rejected, rebasing onto latest main (attempt $i)"
             git pull --rebase origin main || exit 1
           done
-
-      # THE WINNER'S CODE, IF THE LIVE JOB HAS NOT ALREADY MADE IT. `fantasy-live.yml` does
-      # this on the tick that marks the week final, which is normally Monday night. It is
-      # here as well because the step above marks the week final too, and it does so when the
-      # overnight stats landed after the live job's Tuesday window closed. Every entrant's
-      # result popup waits on this (115_fantasy_result_when_ready.sql), so a week left unpaid
-      # until Thursday is three days of nobody being told how they did.
-      #
-      # LAST, AFTER THE COMMIT, deliberately. A Stripe failure here must never be the reason
-      # the new week's board was not committed: the board is what everybody drafts on, and a
-      # red run with the board already out is the right shape for "the prize needs a look".
-      - name: Pay the winner of the week that just closed
-        if: steps.when.outputs.go == 'yes'
-        env:
-          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
-          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
-          STRIPE_PRICE_PS_PREMIUM_BUNDLE: ${{ secrets.STRIPE_PRICE_PS_PREMIUM_BUNDLE }}
-        run: node scripts/stripe/mint-winner-code.mjs --pending --mint

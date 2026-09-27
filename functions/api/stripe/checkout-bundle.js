@@ -1,13 +1,14 @@
 /* Premium bundles (one-time) : Stripe Checkout (Cloudflare Pages Function)
  *
  * POST /api/stripe/checkout-bundle
- *   body: { bundle: "perfect-season"|"run-the-bundle", email?, return_path? }
+ *   body: { bundle: "perfect-season"|"run-the-bundle"|"diamond-pro", email?, return_path? }
  *   -> { url: "https://checkout.stripe.com/..." }
  *
  * Required Pages env vars (Settings -> Environment variables):
  *   STRIPE_SECRET_KEY                 sk_live_... / sk_test_...
  *   STRIPE_PRICE_PS_PREMIUM_BUNDLE    price_...  (Perfect Season Premium Bundle, one-time)
  *   STRIPE_PRICE_RUN_THE_BUNDLE       price_...  (Run The Bundle, one-time)
+ *   STRIPE_PRICE_RTD_PRO              price_...  (Run The Diamond Pro, one-time)
  *   SITE_URL                          https://runthe.gg
  *   SUPABASE_URL, SUPABASE_SERVICE_ROLE
  *
@@ -177,11 +178,19 @@ function isMissingCustomer(data) {
 /* This user's existing unlock products. Returns an array, or null when the read
  * itself failed: those are different answers, and treating "couldn't check" as
  * "owns nothing" would let a flaky moment sell a second bundle whose coins then
- * vanish into the upsert. Fail closed with a retryable 503 instead. */
+ * vanish into the upsert. Fail closed with a retryable 503 instead.
+ *
+ * A FANTASY CHALLENGE PASS IS NOT OWNING THE BUNDLE. The weekly winner gets 30 days of
+ * Pro as premium_unlocks rows with source 'fantasy:<season>-w<week>' and an end date
+ * (supabase/120_fantasy_pro_pass.sql). Counted here, a winner could never buy the
+ * bundle for good: not during the pass, and not after it ended either, because the
+ * row outlives its end date as a record of the win. Buying writes the same two rows
+ * with no end date, which is exactly what the webhook's upsert does. */
 async function lookupUnlocks(env, userId) {
   try {
     const r = await fetch(
-      env.SUPABASE_URL + '/rest/v1/premium_unlocks?user_id=eq.' + encodeURIComponent(userId) + '&select=product',
+      env.SUPABASE_URL + '/rest/v1/premium_unlocks?user_id=eq.' + encodeURIComponent(userId) +
+        '&source=not.like.fantasy:*&select=product',
       { headers: { apikey: env.SUPABASE_SERVICE_ROLE, Authorization: 'Bearer ' + env.SUPABASE_SERVICE_ROLE } }
     );
     if (!r.ok) return null;

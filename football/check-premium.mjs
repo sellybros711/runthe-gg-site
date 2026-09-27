@@ -398,6 +398,38 @@ ok('the Arcade year carries its end date', rec.text.includes(rec.ends), 'expecte
 ok('and it says nothing renews', /Nothing here renews/i.test(rec.text));
 ok('the Tour drop, unfulfilled, says it is on its way', /on its way/i.test(rec.text));
 
+/* A FANTASY CHALLENGE PASS WAS WON, NOT BOUGHT (supabase/120_fantasy_pro_pass.sql). The
+   same two rows, with an end date and a source naming the week. "Bought" and "You paid
+   once" are false about it, and the Arcade Card sentence is about something they do not
+   hold. Driven twice: a pass that is running, and one that has ended. */
+const won = await t.page.evaluate(async () => {
+  const T = window.__t;
+  T.setPremium(['ps_premium', 'cfb_premium']);
+  const at = '2026-09-29T04:00:00Z';
+  const read = async (endsAt) => {
+    window.PS_AUTH = Object.assign({}, window.PS_AUTH, {
+      premiumUnlocks: async () => ['ps_premium', 'cfb_premium'].map((product) => ({
+        product, source: 'fantasy:2026-w3', granted_at: at, expires_at: endsAt, fulfilled_at: at })),
+    });
+    document.getElementById('sheet').classList.remove('on');
+    T.pfPro();
+    await new Promise((r) => setTimeout(r, 800));
+    return (document.getElementById('sheet-in').innerText || '').replace(/\s+/g, ' ');
+  };
+  const ends = new Date(Date.now() + 20 * 86400e3).toISOString();
+  return {
+    live: await read(ends), gone: await read(new Date(Date.now() - 86400e3).toISOString()),
+    day: new Date(ends).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }),
+  };
+});
+ok('a won pass says it was won', /Won in the Fantasy Challenge/.test(won.live), won.live);
+ok('  and never that it was bought or paid for',
+  !/Bought|You paid once/.test(won.live + won.gone));
+ok('  and names the day it ends', won.live.includes('Your Pro pass ends on ' + won.day));
+ok('  and is not called an Arcade Card', !/Arcade Card/.test(won.live + won.gone));
+ok('  and once it has run out, says so in the past tense',
+  /Your Pro pass ended on/.test(won.gone) && !/pass ends on/.test(won.gone));
+
 console.log('\nTHE OLD RUN RULE, WHICH IS STILL THE RULE UNTIL 101 IS DEPLOYED');
 /*
  * The game grants a second run for being fired in season one and a third for winning a boss

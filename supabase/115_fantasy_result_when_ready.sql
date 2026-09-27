@@ -35,6 +35,12 @@
 -- sheet with no code on it is something nobody sees except the winner.
 -- ---------------------------------------------------------------------------
 
+/* DROPPED FIRST, because 120 adds two return columns and `create or replace` refuses to
+   change a return type. Without this, re-running the chain over a database that has 120
+   dies here with "cannot change return type of existing function", which is 109's own
+   lesson about `fantasy_standings`. Nothing depends on it in the catalog sense. */
+drop function if exists public.fantasy_my_result(int, int);
+
 create or replace function public.fantasy_my_result(p_season int, p_week int)
 returns table (
   entered boolean, place int, entries int, score numeric, projected numeric,

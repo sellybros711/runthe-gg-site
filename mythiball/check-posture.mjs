@@ -294,7 +294,7 @@ if (!rosterMatch) {
           problems.push(`sprite "${key}" pose "${pose}" carries ${strays.length} detached `
             + `blob(s) clear of the figure: ${strays.map(s => s.n + 'px '
             + s.side).join(', ')}. That is a piece of the frame next door. `
-            + 'Re-run mythiball/sprites/tools/build_table.py and install.py.');
+            + 'Re-run mythiball/sprites/tools/build_rig.mjs.');
         }
 
         /* AND HIS FEET ARE ON THE BOTTOM OF HIS OWN CELL. A sprite is drawn
@@ -302,7 +302,8 @@ if (!rosterMatch) {
            stops short is a figure hovering over its own shadow by however
            many rows are empty.
 
-           `cleaned()` seats every frame at y=62, so the gap is 1 by
+           The rig seats every frame on its second row from the bottom (y=62
+           when the grid was 64, y=94 at 96), so the gap is 1 by
            construction and 0 for a character drawn the full height of the
            canvas. Anything more means the seat was refused, which is what
            left 291 of 1,360 frames floating up to 39 rows: the pitcher's
@@ -321,8 +322,8 @@ if (!rosterMatch) {
         if (gap > 1) {
           problems.push(`sprite "${key}" pose "${pose}" leaves ${gap} empty rows under `
             + 'the figure, so he is drawn hovering that far above the ground. '
-            + 'cleaned() seats every frame on y=62. Re-run '
-            + 'mythiball/sprites/tools/build_table.py and install.py.');
+            + 'The rig seats every frame on its second row from the bottom. Re-run '
+            + 'mythiball/sprites/tools/build_rig.mjs.');
         }
       }
     }
@@ -331,7 +332,7 @@ if (!rosterMatch) {
       const noSprite = rosterCharKeys.filter(k => !spriteKeys.has(k));
       if (noSprite.length) {
         problems.push(`roster characters with no sprite: ${noSprite.join(', ')}. `
-          + 'Build one into the handoff pack and re-run mythiball/sprites/tools/install.py.');
+          + 'Add a spec to mythiball/sprites/cast.js and re-run mythiball/sprites/tools/build_rig.mjs.');
       }
     }
   }

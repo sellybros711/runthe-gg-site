@@ -407,7 +407,11 @@ console.log('\n4. --edge flips, and only --edge');
 
      A tile can also be `.off`, and that one is safe: an unaffordable tile is still
      an --edge border, at a different alpha, and only the channels are compared. */
-  const SEL = ['.hdr-btn', '.btn.ghost', '.tile:not(.hot)', '.lineupcard', '.sbtn:not(.on)', '.tab:not(.on)'];
+  /* `.hp-tile` took `.btn.ghost`'s place. At this width the only ghost button ever
+     painted was the front page's three doors, which are text links on a desktop now
+     with no border at all: a 0px border reports currentColor, the ink, and the ink is
+     SUPPOSED to flip. The mode tiles are the front page's --edge border instead. */
+  const SEL = ['.hdr-btn', '.hp-tile', '.tile:not(.hot)', '.lineupcard', '.sbtn:not(.on)', '.tab:not(.on)'];
   const vals = {};
   for (const theme of ['dark', 'light']) {
     const { ctx, page } = await open(theme);

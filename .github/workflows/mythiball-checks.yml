@@ -10,6 +10,8 @@ name: MythiBall checks
 #                                     plus men left on base
 #   node mythiball/check-reach.mjs     every control a game offers is inside the
 #                                     window, on the shortest phone anybody holds
+#   node mythiball/check-collection.mjs  the ten starters, the packs, the ladder
+#                                     and your own player, held to their rules
 #   node mythiball/check-skill.mjs    what a PERSON hits, four rungs of skill,
 #                                     against the bands the dials were set to
 #   node mythiball/verify-rules.mjs    walk-offs, the mercy rule, extra innings,
@@ -79,13 +81,20 @@ jobs:
       - name: The menus move, settle and stay off the game
         run: node mythiball/check-motion.mjs
 
-      # The batting model, at a sample this job can afford. 450 plate
-      # appearances a rung is about a minute and holds every claim in that
-      # file: the rung ordering, the floor, the ceiling and the gap between
-      # them are all worth more than the noise at that size, and the tier
-      # claim is written on the whiffs for exactly that reason.
+      # Under a minute. Every rule of the collection fails silently: a pack
+      # that sells a legend, a save that loses a veteran's players, or your
+      # own player turning up in the other dugout all render perfectly.
+      - name: The collection keeps its rules
+        run: node mythiball/check-collection.mjs
+
+      # The batting model. 1500 plate appearances a rung, about a minute for
+      # all three tiers. 450 was too thin: easy's bottom rung sits at .294
+      # (measured at 3000) against a band top of .330, and at 450 it read
+      # .311, .342 and .362 on three runs of one build, because the batters
+      # turn over slowly and the swings are correlated. At 1500 it reads .300
+      # to .305. The sample moved, not the band.
       - name: What a person actually hits
-        run: node mythiball/check-skill.mjs --pa 450 --mode contact
+        run: node mythiball/check-skill.mjs --pa 1500 --mode contact
 
       - name: The rules, replayed
         run: node mythiball/verify-rules.mjs

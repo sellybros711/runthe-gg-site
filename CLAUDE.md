@@ -435,8 +435,11 @@ tester lists in `dynasty-access.js` and `fullteam-access.js` decide who SEES any
 and are feature flags, never permissions. A signed in account without the row gets the free
 allowance and then the store; the row removes the limit rather than unlocking the door.
 
-**`arcade_card_year` is the one grant that ends.** Twelve months, and it does not renew. No
-copy anywhere may imply it does, and the receipt has to show the end date.
+**`arcade_card_year` is the one grant that is SOLD with an end.** Twelve months, and it does
+not renew. No copy anywhere may imply it does, and the receipt has to show the end date. The
+other row that ends is a PRIZE rather than a sale: the Fantasy Challenge winner's 30 days of
+Pro (see that section), which is the same two game rows with an end date and a `fantasy:`
+source, and the receipt says "Won" and prints the end the same way.
 
 **The prompt card is the store's too, and for the reason everything else here is.** There are
 **four** of them (the football front page, the football profile, the college front page, the
@@ -961,8 +964,7 @@ the preflight row read NO, and psql's own `drop trigger if exists` printed `trig
 **It is the one object in that file whose absence is invisible from every side.** The table
 is there to be read, the popup's `fantasy_my_result` answers, the page draws, and nothing
 anywhere throws. What does not happen is that a week going final settles the top three, so
-there is no placement for any entrant, no winner recorded, and nothing for
-`mint-winner-code.mjs` to read. A competition that runs and pays nobody, reported by no one,
+there is no placement for any entrant, no winner recorded, and nobody paid. A competition that runs and pays nobody, reported by no one,
 because there is nothing on any screen to report.
 
 **Pasting a file into the SQL editor and reading "Success" is not the same claim as the
@@ -4214,6 +4216,52 @@ than designed around quietly.
 in a prize competition is a different kind of product and this mode has no paid tier at all,
 which is why there is no `fantasySold()` beside `fullTeamSold()`.
 
+#### A man ruled out can be swapped, before his game
+
+```
+psql -d fantasy -f supabase/119_fantasy_swap.sql
+psql -d fantasy -f supabase/test/fantasy_swap_test.sql
+node football/build/publish-out.mjs | psql "$SUPABASE_DB_URL"
+node football/check-fantasy.mjs   the section named A MAN RULED OUT CAN BE SWAPPED
+```
+
+Reported by a player: a lineup that went in on the Tuesday holds a man his club rules out
+on the Friday, and the only thing the mode did about it was score him zero. The report goes
+final on the Friday and the week locks on the Thursday, so **the swap works after the lock**.
+A swap that stopped at the lock would help almost nobody.
+
+**The rule is the server's and every clause is a row.** The man going out is in your lineup,
+is on `fantasy_out`, and his game has not kicked off. The man coming in plays the same
+position, is on this week's board, is not out himself, has not kicked off, and keeps the six
+under the week's cap. Each refusal is its own sentence and the SQL test asserts each by its
+sentence. **An unknown kickoff is refused, never read as not started**, which is the same
+fail-closed rule the submit runs on.
+
+**Nothing downstream needed changing, and that is the reason it is a rewrite of `picks`.**
+Every score on the site is derived from `picks` at read time: the board, your place, the
+settle in 114. So a swap is one `array_replace` and the new man is scored from then on.
+`spend` and `projected` move with it, and `swaps` keeps the history on the row.
+
+**`publish-out.mjs` fills the two things the server needs** off the two files the page
+already reads: `fantasy_out` from the injury file (off, Out and Doubtful, the same three the
+page takes off the wheel, and a site ruling counts), and `team` and `kick` on
+`fantasy_prices`. **It never touches a price.** `fantasy-injuries.yml` runs it on every
+firing, because a site ruling arrives by a push rather than by the report. A missing secret
+or a database without 119 is a warning there, not a red run: the file has already been
+committed, and the swap fails closed either way.
+
+**The page only offers what it expects the server to take.** The call is drawn on the entry
+screen for a man who is out and still to play, and only for an entry on the account. The
+sheet lists the men the server would take in, best projection first, twelve at most. A
+refusal shows the server's own sentence, because a game can kick off while the sheet is
+open. `swap` rides on `API_VERSION` 3, so a stale `entries.js` costs the offer and never the
+page.
+
+**What it cannot do, said plainly.** A late inactive on Sunday morning is not in the Friday
+report, so he is only swappable once he is on `football/data/fantasy_ruled_out.json`. After
+the lock a swapper can see the field's lineups, which is a small edge. And a man out whose
+owner never comes back still scores zero: nothing swaps for somebody who is not there.
+
 ### The board moves while the games are being played
 
 ```
@@ -4682,8 +4730,8 @@ valid strings, and no assertion in that suite was looking at either.
 
 #### The prize is decided, and one half of it must not go where it looks like it goes
 
-The top three get something. First takes the Pro bundle; all three get a mark on the account and
-a profile image only a winner has.
+The top three get something. First takes 30 days of Pro; all three get a mark on the account
+and a profile image only a winner has.
 
 **A WEEKLY WIN MUST NEVER ENTER `achievements.js`'s CATALOG**, and this is the Full Team gate
 argument arriving from the other side. `CATALOG.length` is the denominator `crest.js` divides by
@@ -4698,9 +4746,12 @@ denominator.
 because every badge is a question about rows in `ps_runs`, and a fantasy entry is not one of
 those. Whatever holds a win has to be its own record.
 
-**The bundle grant is a `premium_unlocks` row and should be written by hand while the numbers
-are small.** An automated path from "won a week" to "owns the product" is a second way to obtain
-the thing the store sells, and the store has exactly one on purpose.
+**The prize is NOT the product the store sells, and that is what lets it be automatic.** It
+used to be a 100% off code for the lifetime bundle, and the rule here was that an automated path
+from "won a week" to "owns the product" is a second way to obtain what the store sells. A pass
+that ends is not that product, so it is granted straight to `premium_unlocks` by the database
+with no Stripe involved (next section). Do not turn it back into a lifetime grant without
+putting the hand back in the loop.
 
 **The result sheet says something kind to everybody and throws confetti for one.** Second
 is "so close", third is a podium finish, the top half had a good week, and everybody else
@@ -4708,43 +4759,70 @@ is told every week starts from zero, plus that they beat their projection when t
 difference says they did. No line promises anything about the next board, because the
 sheet can open after that week has locked. Confetti is first place only, skipped under
 reduced motion, sits above the sheet with no pointer events, and goes when the sheet
-closes. `check-fantasy.mjs` asserts all of it, including that a tap on the code still
-lands on the code, and each claim was proved by reintroducing its defect.
+closes. `check-fantasy.mjs` asserts all of it, including that a tap on Close still lands
+on Close under the confetti, and each claim was proved by reintroducing its defect.
 
-#### Nobody is told the result until the winner's code exists
+#### The winner gets 30 days of Pro, and nobody is told the result until it is on
 
 ```
-psql -d fantasy -f supabase/115_fantasy_result_when_ready.sql
-psql -d fantasy -f supabase/test/fantasy_ready_test.sql
-node scripts/stripe/mint-winner-code.mjs --pending          what it would do
+psql -d pass -f supabase/120_fantasy_pro_pass.sql
+psql -d pass -f supabase/test/fantasy_pass_test.sql      (its header lists the chain)
+node football/check-fantasy.mjs                           the sheet, the door and the copy
+node football/check-premium.mjs                           the receipt says "Won"
 ```
 
-Asked for by the owner. Under 114 the popup answered the moment a week was scored and the
-code arrived whenever somebody minted it, so a winner could open the page in that gap, be
-told "1st" with no code, and close a sheet that only opens by itself once. **115 holds
-EVERY entrant's result back** until first place has left `none`, so the whole field hears it
-at the moment the winner can be paid. `void` counts as ready.
+**115 holds EVERY entrant's result back** until first place has left `none`, so the whole
+field hears it at the moment the winner has been paid. That was asked for by the owner when
+the prize was a Stripe code minted by a separate job, because a winner who looked in the gap
+was told "1st" with nothing on the sheet. `void` and `granted` count as ready.
 
-**The code is made by the live job, on the tick that closes the week.** `fantasy-live.yml`
-runs `mint-winner-code.mjs --pending --mint` after it scores, and the scoring write that
-marks a week final (Monday night game played and every club's stats in) settles the top
-three by trigger in the same tick. `fantasy-pool.yml` runs it again after its commit, for
-the week whose stats landed after the live window closed. `--pending` asks the database
-which weeks are unpaid, so a missed tick is picked up by the next one.
+**THE PRIZE IS 30 DAYS OF PRO NOW, not the lifetime bundle**, asked for by the owner on the
+first week it could be won. `supabase/120_fantasy_pro_pass.sql` writes `ps_premium` and
+`cfb_premium` rows with `expires_at` 30 days out and `source` `fantasy:<season>-w<week>`,
+and `premium_products()` stops answering them when that passes. **Nothing runs on day 30.**
+Every gate on the site already reads the expiry: `premium_products()`, 104's commish clock
+and 106's dynasty meter.
 
-**A field of one is voided unattended**, which releases that entrant's result with no code
-and a sentence saying why, and no confetti. `--force` still pays one by hand.
+**IT IS PAID INSIDE THE SETTLE**, so there is no gap and no second job. `fantasy_settle_week`
+(114's trigger) calls `fantasy_grant_pass` in the same transaction as the live writer's final
+tick. `scripts/stripe/mint-winner-code.mjs` is deleted, both workflows lost their mint step,
+and no Stripe secret is needed for a week to close.
+
+**Four rules in `fantasy_grant_pass`, each proved by breaking it:**
+
+- **A permanent row is never touched.** A winner who already bought the bundle keeps it for
+  good; the sheet says "Pro is already yours" and prints no end date.
+- **A second win adds 30 days to the END of a running pass**, not to today.
+- **A field of one is voided**, not paid, and told so. `p_force` pays one by hand.
+- **It acts only on `none`**, so a re-settle or a re-run of the chain pays nobody twice.
+
+**A PASS IS NEVER A GOLD NAME.** `display_pro` is stamped on a board row when it is filed and
+never taken off, so a pass would leave gold names on rows for ever after it ended. 120
+restates 107's `ps_is_pro` and its backfill trigger to skip a `fantasy:` source. **So
+re-running 107 on its own undoes that** and gilds the next season any pass holder files;
+re-run 120 after it. The backfill now also fires on UPDATE, because a winner who then buys
+has their rows updated by the webhook's upsert rather than inserted.
+
+**Checkout does not count a pass as owning the bundle** (`checkout-bundle.js` filters
+`source=not.like.fantasy:*`). Counted, a winner could never buy the bundle for good, during
+the pass or after it, because the row outlives its end date as the record of the win.
+
+**The receipt says "Won in the Fantasy Challenge"** and "Your Pro pass ends on", never
+"Bought" or "You paid once", on both the football and college profiles.
+
+**The length is one number in SQL and two lines of copy** (the board's "wins 30 days of Pro"
+and the leader pill's title). `check-fantasy.mjs` holds the copy to the `interval` in 120.
+The sheet prints the END DATE the server wrote rather than a count, so it cannot drift.
+
+**114 and 115 drop `fantasy_my_result` before making it** now, because 120 adds two return
+columns (`prize_state`, `pass_until`) and `create or replace` refuses a new return type.
+Without the drop, re-running the chain over a database that has 120 dies at 115 with
+"cannot change return type", which is 109's own lesson. `fantasy_prizes_test.sql` and
+`fantasy_ready_test.sql` describe the code era and run BEFORE 120.
 
 **The page asks about THIS week first, then last week**, because the week that closed on
 Monday night is still `POOL.week` until Tuesday's build rolls the board. The ack is keyed
 on the week, so a reader told on Monday is not told again on Tuesday.
-
-**It needs two repository secrets it did not have**: `STRIPE_SECRET_KEY` (a restricted key
-with write on coupons and promotion codes and read on prices is enough) and
-`STRIPE_PRICE_PS_PREMIUM_BUNDLE`. Without them a week with a real winner fails the live job
-every tick, loudly, and nobody is told the result, which is the intended failure. The
-success path has only ever run against a local stand-in (`STRIPE_API_BASE`, refused unless
-it is loopback), because api.stripe.com is blocked from the dev sandbox.
 
 **A profile image only a winner has is a claim about an account, so it is the board's own
 problem**: `display_pro` is already the pattern, a derived boolean written by a trigger rather
@@ -5148,6 +5226,96 @@ proved by mutation, with a misspelt landmark and a deleted `far`.
 stands rather than on them. At 0.18 the lavender castle vanished into a pale
 blue sky, which a screenshot said and no guard can.
 
+### The collection: ten to start, packs for the middle, feats for the best
+
+```
+node mythiball/check-collection.mjs     the split, the migration, the packs, your player
+```
+
+Asked for as a long term grind in the Mario Kart shape: everybody starts with the
+same base team and unlocks the rest. Built on the unlock ladder that was already
+there rather than beside it.
+
+| | who | how you get them |
+|---|---|---|
+| `STARTERS` | ten, the storybook core | on the bench from the first game |
+| `PACK_POOL` | the middle of the roster, derived | pulled from packs bought with coins |
+| `UNLOCKS` | the best, unchanged | earned on the field, the ladder as it was |
+
+**THE BEST ARE NEVER FOR SALE**, and the guard asserts it as a property rather
+than a list: every ladder character outranks every pack character on
+`charValue`, which is the number the ladder was already ordered by. A pack is
+luck and a rung is a feat, so no amount of pulling can be the fastest way to the
+best player in the game.
+
+**`PACK_POOL` and its rarity are derived, never listed.** Everybody who is neither
+a starter nor on the ladder, split 45/35/20 by value into common, rare and epic. A
+character added to the roster is in the packs the day it is written.
+
+**COINS COME FROM PLAYING AND FROM NOWHERE ELSE.** There is no money in any of
+this and there must not be: the site has one store and a second payment path
+belonging to one game is what it exists to prevent. A game pays by the inning,
+more for a win and a harder dugout, 200 for a title and a bonus for the first
+win each day. **A forfeit pays nothing**, or quitting is the quick way to a pack.
+
+**A PACK NEVER PAYS BACK ITS PRICE.** The first version paid a coin card of up
+to sixty and a fallback of sixty for a finished collection, so a Sandlot Pack
+returned 160 for 150 once somebody owned everything. Found by the economy sweep
+running away with itself rather than by reading. Every coin a pack can hand out
+is capped so three cards are at most the price, and the guard opens four hundred
+packs with the collection and the point cap both finished to say so.
+
+**A character slot rolls the rarity first, then hands you somebody you do not
+have.** A straight draw makes the last epic a coupon collector's tail of hundreds
+of duplicates. So a repeat only happens once that whole tier is yours, and pays
+coins back. When the whole pool is yours the slot pays a training card instead.
+
+What that makes of the grind, measured through the real `openPack` at about 45
+coins a game: half the pack pool in about 54 games, all of it in about 181 if
+Gold Packs are bought once the commons are done, 331 on Sandlot alone. The
+ladder's legends and your player's top level are the months long tail.
+
+#### A player who was here before packs keeps everybody
+
+The whole middle of the roster used to be open to anybody, so a tester with a
+franchise has men on it who are now pack characters. `migrateCollection` runs
+once: any save with games played, a season or a cup is granted the entire pack
+pool and flagged `veteran`. Everything rides inside `PROGRESS` under the key the
+game has always used, because renaming a save key throws away every tester's
+save. Everybody, veteran or not, gets one free pack on the way in.
+
+#### Your player is a roster entry, drawn at runtime
+
+`ME` is a roster shaped object in `ROSTER_BY_KEY.me`, mutated in place when a
+point is spent so nothing holding it goes stale, and **deliberately not in
+`ROSTER`**. `ROSTER` is also the pool every opponent is built from, so the draft
+reads `DRAFTABLE()` and nothing else does. The guard's hard case is your player
+NOT in your lineup and rated exactly like the man a club must replace, because
+that is the one arrangement in which a leak would actually be picked.
+
+**The sprite is drawn by `meSpriteBuild`** at the pack's 64 pixel grid and in its
+grammar: big head, a one pixel near black line around every part, action poses
+facing right. It writes the same `{b, f, p}` record the table holds, so the EPX
+pass, the caches and every camera read it like any other character. **Each part
+outlines itself**, which is what draws the line where an arm crosses a chest.
+
+**A painter that takes fractional coordinates writes a property, not a pixel.**
+`g[y][12.4] = 'c'` is legal JavaScript and paints nothing, so the side view lost
+its whole cap the first time a body leaned. Every box and every `set` is floored.
+
+**Gear changes the look and never a rating**, or a cosmetic would be a rating for
+sale by another name. Growth is XP from games your player is in (a point a level,
+top level 60), training cards from packs, a cap of 120 points and 95 a stat.
+Changing the look rebuilds the drawing and drops the `me` entries from
+`v2FrameCache` and `spriteStore`, or a hat bought mid session is only on the
+screens drawn after it.
+
+**Two things only a screenshot said**, both caught before shipping: `.pk-front span`
+turned the rarity chips' white text into the chip's own colour, and "Open another"
+showed with no coins because `.btn` sets a display and `hidden` never took (this
+repo's `[hidden]` pair, again). The guard reads the computed colour and the
+computed display for both.
+
 ### The brand shares Run The Tour's plumbing and deliberately not its look
 
 ```
@@ -5224,15 +5392,141 @@ that the number moved when the bytes did**, because there is no earlier version 
 rebuild, bump every reference to a file that changed. A drifted version and a renamed marker were each
 reintroduced to prove the check bites.
 
-The sprites came from a generator and now come from a HANDOFF PACK, and the
-generator is kept because the pack cannot answer everything:
+### The roster is drawn by a rig, and the pack is only the reference now
+
+```
+node mythiball/sprites/tools/build_rig.mjs           bake the roster into the page
+node mythiball/sprites/tools/build_rig.mjs --sheet   a contact sheet of every idle
+```
+
+Reported by the owner as looking low quality and low production value, with the
+pixel style kept. They were right, and no filter could fix it: the pack's
+characters were rectangles with square heads, about fifty near identical colours
+each, and a batting stance that grew a bat in the frame it swung in. Cleaning and
+upscaling the old frames was tried first and could not be told apart at game size.
+
+**Every character is a spec, posed and turned into pixels.** `sprites/cast.js`
+holds one per character: a build (kid, stocky, giant, lanky, round, small) with any
+of its numbers moved, a head shape, and what they wear. The rig between `RIG BEGIN`
+and `RIG END` in the page poses it, draws it flat at several times the grid and
+gives each pixel the colour covering most of it. **No pixel is a blend of two
+colours**, which is what keeps it pixel art rather than a small drawing.
+
+#### The ink and the light are done in pixels, per body part
+
+Reported next by the owner: the body parts looked like individual pieces. They
+were. The first rig inked and shaded every SHAPE: an upper arm, a forearm and a
+round hand each carried their own black ring and their own shine, so an arm read as
+three capsules and a leg as two plus a lozenge. That is what a vector puppet looks
+like, and no pixel artist draws a figure that way.
+
+**So the drawing is flat and every shape is filed under a body part.** `part()`
+names what is being drawn (`armN`, `legF`, `torso`, `head`, `hairF`, `hat`, `bat`,
+and so on). The figure is drawn twice at the big size, once in colour and once
+through `idCtx()`, a proxy that paints the current part's id instead of any colour.
+Both are reduced by majority, and `light()` does the rest at the target size:
+
+| | what it does |
+|---|---|
+| the outline | ONE pixel round the whole silhouette, a dark shade of the colour it borders, lighter on the lit top and left |
+| a part in front of another | the part BEHIND gets a one pixel line in its own dark shade. A joint inside one part gets nothing, because an arm and its hand are one part |
+| shadow | a part is lit as one mass from the upper left: a pixel is in shadow when the part runs out a little way toward the lower right, how far read off the part's own thickness |
+| highlight | a rim along the top left edge of the colour a part is mostly made of |
+
+**A part's z is the order it was first named**, which is draw order, and that is
+what decides which side of a crossing gets the line. A part in front counts as more
+of the part behind it for the shadow test, or an arm laid across a chest would cut a
+false shadow edge into the chest.
+
+**Two things only looking at it said.** A shadow that only takes value away turns
+skin grey and reads as dirt, so `ramp()` turns the hue toward blue the short way
+round and HOLDS CHROMA (holding HSL saturation instead turned a pale face orange the
+moment it was darkened). And a black coat drawn black has nowhere darker to put the
+line where an arm crosses it, so near black is lifted to a dark blue grey everywhere
+except the face, where a pupil is meant to be the darkest thing on the figure.
+
+**`G` was the obvious name and is a local in `draw()`**: the figure's scale is
+`const G`, so a function called `G` threw a TDZ error on the first call. It is
+`part()`.
+
+**An ink underlay is skipped rather than deleted at every call site.** Props drew a
+thick `INK` stroke and then the colour over it, which was their outline; `line()`
+drops an `INK` stroke at `OW * 2` or wider, and the outline pass draws it instead.
+The table came out a little SMALLER (667KB gzipped against 699KB), because a flat
+part with one shadow runs longer than three bands and a shine.
+
+**The heads are not one shape, on purpose.** A head is a superellipse with its own
+roundness, width, height, top and jaw, so Frankenstein is a block, Humpty is an egg,
+Dracula narrows to a point and Popeye's jaw is wider than his crown. The bodies
+vary the same way. Asked for in as many words: more chibi, and not one body.
+
+**AND THEN THE HEADS CAME DOWN, which reverses the chibi half of that.** Reported by
+the owner: the heads were far too big, make them more realistic and keep the pixels.
+`PROP` in the rig turns every build at once: the head to 0.64 of its written size,
+the torso 1.28x, legs 1.48x, arms 1.42x, a longer neck and slightly thicker limbs.
+The figure stands about the same height, so the head went from roughly half of it to
+roughly a quarter, and no cast spec had to be edited. **It is one table on purpose**:
+a proportion written into sixty eight specs is sixty eight places to drift.
+
+- **Eyes shrink less than the head does** (`eye: 1.25`), or a face at this size is two
+  single pixels and reads as nobody.
+- **Side pose hands are scaled by arm length now**, as the front poses and the feet
+  already were. The pose table was written for arms nine units long, so fixed hand
+  offsets on a longer arm folded every elbow.
+- **The cheer is narrower** (arms up rather than out). `fitScale` shrinks a whole
+  character to fit its widest pose, and longer arms thrown sideways cost the big
+  bodies (Kong, the golem) a fifth of their size in every pose.
+- **Humpty is exempt** (`spec.egg`). His head is his body, and a small one would be a
+  different character.
+
+**The grid is 96, up from 64.** `V2_W` and `V2_H` carry it and nothing in the page
+should say 64 about a sprite. It costs about 170KB compressed on the page, which was
+measured before choosing it.
+
+**The rig lives in the page because the custom player is drawn by it live.** The
+roster is baked; the player's look is chosen in the page, so `meSpriteBuild` hands
+`meSpec(look)` to `RIG.lazy`, which draws a pose the first time something reads it.
+One rig for both is what keeps the player's own character in the same style as
+everybody they play with. The builder runs the page's own rig for the same reason:
+a baked table and a live player drawn by two copies of one rig would drift.
+
+**Three rules the builder enforces, all of which failed silently first:**
+
+- **One size per character.** A top hat, rabbit ears or both arms up in a cheer
+  leave the frame, so `fitScale` finds the largest scale at which no pose does and
+  uses it for every pose. Fitting per pose would make a figure shrink when it cheers.
+- **Seated.** The lowest pixel of every frame is the second row from the bottom,
+  whatever the pose did with the feet, because the camera draws the bottom of the
+  cell on the dirt. A run stride with both feet up would otherwise hover.
+- **52 colours.** The table format is palette letters, so a character's colours
+  past 52 fold into the nearest kept one, by use.
+
+**The pitcher's delivery is front facing now.** The wide camera draws him in
+`windup` and `release`, and the pack's were a side profile, which is the same
+throwing to third base the plate camera was fixed for. The rig draws them facing the
+reader: hands together, the knee up, the arm coming down toward the camera.
+
+**The stance bat is drawn in front of the head.** A chibi head is big enough to hide
+a bat held behind it, so `ready` and `load` carry `batFront`. At the plate the bat is
+the thing a player looks at.
+
+**The guard that expected some characters with no bat was rewritten, not loosened.**
+It was a fact about the pack. Now every character draws one, the check asks for all
+of them, and the prop bat fallback is exercised on a fixture with its bat list taken
+away, because no real sprite reaches it any more.
+
+**The link card still shows the pack's art.** `og-source.html` reads the grid size
+off the rows now, so a rebuild works, but its trading cards were laid out for 64
+pixel portraits and were not rebuilt in this pass.
+
+The history below is the pack's, and it is kept because the specs follow its looks.
+
+The sprites came from a generator and then from a HANDOFF PACK. The pack's tools
+that wrote the table (`build_table.py`, `install.py`) and both generators are
+deleted, because any of them would overwrite the rig's table:
 
 ```
 python3 mythiball/sprites/tools/audit.py        what is in the pack
-python3 mythiball/sprites/tools/build_table.py  build V2_SPRITES from it
-python3 mythiball/sprites/tools/install.py      swap it into the page
-python3 mythiball/sprites/tools/install.py --revert   put the generator back
-python3 mythiball/gen_sprites_v2.py > sprites.js      the old parametric one
 ```
 
 **THE STILLS ARE WHAT MADE THE SWAP POSSIBLE, NOT THE ANIMATION STRIPS.**
@@ -6777,6 +7071,8 @@ The regression suite, which is the thing to run after editing:
 
 ```
 node mythiball/check-posture.mjs   unlisted, the capital alias still lands, the brand holds, and every park's scenery exists
+node mythiball/check-collection.mjs  the ten starters, the packs, the ladder and your own player
+node mythiball/sprites/tools/build_rig.mjs --dry   the roster still bakes from its specs
 node mythiball/check-rules.mjs     whole games, and the sport's own arithmetic
 node mythiball/check-reach.mjs      every control a game offers is inside the window,
                                    including the two sheets that open over the field
@@ -13050,6 +13346,51 @@ the submit's BODY calls `rtd_board_day(`, so that is what the row asks. The fix
 is re-running 97, which is idempotent and was driven over an old copy with no
 error.
 
+### Badges are for accounts, and a badge is a baseball
+
+```
+node baseball/check-run.mjs      the Classic walk signed in, the daily walk as a guest
+```
+
+Asked for: guests do not get to earn or collect badges. **This game had no
+sign-in at all**, so the first half was porting one: `baseball/auth.js` is
+`hoops/auth.js` pointed at `rtd_*`, on the site's one account system. Nothing
+server side was needed, because `97_baseball_leaderboard.sql` already reads
+`auth.uid()` in its submit, claim and rename. `board.js` had always read a
+`window.RTD_ACCESS_TOKEN` that nothing set; the page sets it on every auth
+change now, so a season submitted signed in is filed under the account.
+
+**A row carries `u`, the account it was PLAYED on, and the cabinet reads only
+rows whose `u` is the account signed in now.** Every row is still filed, so
+a guest's seasons and titles are still counted on the career line. Three rules
+follow, and each is the design rather than a side effect:
+
+- **A season played as a guest never counts**, even after signing in. Signing
+  in afterwards is not how a guest collects what they played for.
+- **Two accounts on one browser keep two cabinets**, because the filter is the
+  id and not "somebody is signed in".
+- **Rows filed before this shipped carry no `u`**, so no browser's old history
+  turns into badges on the day it first signs in. That was a conscious call:
+  every cabinet anybody had before this is empty until they play signed in.
+
+**The results screen says what signing in is for** instead of listing badges
+nobody may keep (`lastNewBadges === null` is a guest season), and its button
+opens the trophy sheet, which carries the account panel at the TOP: five
+states, the same five hoops draws.
+
+**Where this is weakest, said plainly**: the cabinet is still derived from
+`localStorage` rows, so it is a gate a determined person could edit. It is the
+same trust the whole badge design already makes (no server keeps badges), and
+it is enough for what was asked, which is that playing as a guest does not
+earn them.
+
+**A badge is drawn as a baseball.** A cream ball with two red seams,
+chevron stitches, the shelf's glyph in the middle, and the TIER as the rim
+(bronze, silver, gold, purple), the way a trophy ball sits in a display ring.
+The ball does not flip in the dark theme, for the same reason the draft
+button's hide does not. `BALL_SEAMS` is computed once and shared by every
+badge.
+
 ### The cap is $190M now, because $170M made October a coin flip for most drafts
 
 Reported by players: the cap felt too low and it was hard to make the playoffs.
@@ -14316,8 +14657,14 @@ give his best rating before chemistry, and anywhere else should cost a little.
 And every kind of chemistry should actually be in use.
 
 **`slotWar(p, slot)` is the one reading.** A batter at his primary position
-(`pp`, with `OF` covering LF, CF and RF) is his season WAR. Anywhere else costs
-`POSITION_FIT.OFF`, **8%**. DH counts as off position for everybody but a DH.
+(`pp`, with `OF` covering LF, CF and RF) is his season WAR. Another fielding
+position costs `POSITION_FIT.OFF`, **8%**. **The DH costs nobody anything**, which
+was asked for after it first shipped charging every fielder there: a hitter at DH
+is only asked to hit. So there are two questions. `primaryAt` says whether a slot is
+his OWN (it wears the star, and DH is only a DH's own), and `offPosition` says
+whether it CHARGES him (never at DH). `slotWar`, the offpos ring and the pick bar
+read `offPosition`; the star reads `primaryAt`. `check-labels` holds both over the
+whole pool, and a shortstop at first still pays.
 Pitchers and replacement bodies are never charged. `rosterOffense` and the
 defence term in `rosterRunPrevention` read it, so it moves the shown rating and
 the season. **`teamStrength` deliberately does not**, for the same reason it
@@ -14374,6 +14721,126 @@ bare shared shirt. The franchise tie came down to keep that order.
 badge sweep moved: eight excuses came off because the chemistry bot now
 reaches them, and `rank_one` and `one_franchise_8` went on, because the bot
 chases team-mates rather than stacking eight from one club.
+
+### An era card counts FRANCHISES, and says how deep the wheel is
+
+Reported by a player as "shouldn't we have more teams than this from each decade".
+The first answer is the league's own shape: MLB had **16 clubs from 1901 to 1960**,
+20 in 1961, 24 by 1969, 26 in 1977, 28 in 1993 and 30 from 1998. Anything over that
+on a card is the Federal League (1914-15) or the Negro Leagues (1920s to 1940s).
+
+**The second answer is that the card was counting CODES**, so it overstated where it
+looked low. The 1950s read 21 because the Braves, A's, Browns, Dodgers and Giants
+moved and changed letters; the 2020s read 31 because the Athletics are OAK then ATH.
+`eligibleEras` counts `franchiseOf` now, and the card also prints how many team
+seasons the wheel can land on (118 in the 1900s, 300 in the 2010s), which is the
+number a reader asking about depth actually wants. `check-franchise`'s last section
+holds both against the pool, plus 16 for the 1950s and 30 for the 2020s.
+
+### An era card is a decade, so the decade is the biggest thing on it
+
+The era picker wore the franchise card whole: "1920s" in 13px body type over three
+lines of small grey facts, thirteen cards of one texture. It is its own card now.
+The decade in the display face, a colour per decade off one ramp from sepia (1900s)
+to cobalt (2020s), clubs and team seasons as two stat blocks, and the decade's top
+forty seasons drawn as a bats against arms bar, which is the thing that actually
+changes how a decade drafts. The Pitchers' or Hitters' chip and the best season sit
+under it.
+
+**The sample size and the lean are the engine's.** `eligibleEras` returns `top` and
+`lean` off `ERA_TOP_N` and its two bands, so the page never restates 40, 22 or 12.
+
+**`.fran-card.era-card`, two classes, is load-bearing.** `.fran-card` sets
+`display:block` later in the sheet at equal weight, and the first draft lost to it:
+a block rather than a column, the chip stretched full width, and nothing threw.
+`check-franchise` section 6 asks every era card for flex, a distinct rail colour, a
+bar that fills its track and label rows that hold one line. Removing the second
+class fails the flex claim.
+
+### A division card lists the clubs in it TODAY
+
+`divisionClubs` listed every code a division had ever held, so the NL East card
+showed FLA beside MIA and MON beside WSN, and Detroit, Milwaukee and Houston each
+sat on two cards. Reported by a player. It answers the rows that reach the latest
+season in `DIVISIONS` now (read off the table, never typed), so the six cards
+name the thirty clubs once each. **The draft is unchanged**: `inDivision` still
+reaches every season the division really held, so the Florida Marlins and the
+Expos are on the NL East wheel. Only the chips are current. `check-franchise`
+asserts thirty, no franchise twice, every one a club playing today, and that the
+old names are still drawable.
+
+### More ways to play is a door on a phone and six tiles on a desktop
+
+**On a phone** it is the second door: a filled card with a gold edge, a dot in each
+mode's own colour and two modes named under it, read off `MODE_CARDS` in
+`paintModesDoor()`. That is called from `boot()` because `MODE_CARDS` is a const
+declared further down and a top-level read threw on load. `check-home` asserts at
+every phone width that it outranks the three doors under it: a gold edge they lack,
+a larger name, a caption on one line.
+
+**On a desktop the front page is a bento**, chosen from three mocks. Everything under
+the Draft button used to be full-width bars stacked on each other (the daily, More
+ways to play, three door cards), which spent a wide screen on empty space and hid the
+six modes behind a click. Now:
+
+- the daily is the tall card on the left (`.hp-bento`, a 1:2 grid);
+- the six modes are tiles beside it (`#hp-tiles`, built by `paintModeTiles()` from
+  `MODE_CARDS`' `tile` and `line` fields, opened through `pickMode`, the sheet's own
+  door), so a mode added to `MODE_CARDS` is a tile with nothing else to remember;
+- the phone's door is not drawn (`#s-intro #b-modes{display:none}`);
+- How to play, Leaderboard and Trophy case are one row of text links.
+
+Each tile carries a baseball outline in its corner (the ring, both seams and their
+stitches), drawn as a CSS mask over the tile's own colour so one drawing wears six
+tints. The SVG inside the mask's data URI must percent-encode its double quotes:
+left raw, the `"` closes `url("...")` early, the mask silently fails, and what draws
+is a tinted square. The text sits at `z-index:1` so the ball stays behind it.
+
+`check-home` section 3 asserts all four at five desktop sizes, and 3b presses the
+Eras tile and waits for the decade picker. Hiding the door and the grid were each
+reverted to prove the claims bite.
+
+### The season screen is a scoreboard, and it is drawn from the season's own state
+
+It was a record, a strip of 162 squares and a list of scores. It is now one
+scoreboard card (the record, then win pace, streak, last ten and run differential,
+then a race-to-October meter with the engine's own wild card and division lines on
+it), a calendar of six month rows of 27, pause, speed and sim-to-end controls, and a
+game log with each opponent's club chip, tags for a shutout, a rout and a one run
+game, and milestones written where they happened (streaks, the wild card and
+division wins, a hundred wins, out of the race, each month's record).
+
+**`ssBoard` and `ssFeed` walk `RUN._simState` and keep no tally of their own**, so the
+animated sim, a fast forward and a pause for a cut or a trade all show one season.
+The log is rebuilt from the start of the season on every game rather than appended,
+which is what lets a fast forward write the same milestones the slow sim would.
+
+**They are ss-prefixed because the obvious names were taken.** The first draft called
+them `paintBoard` and `paintFeed`, which are the leaderboard's and October's. A
+function declared twice in this one-script page is not an error: the later one
+replaces the earlier everywhere, so the leaderboard would have painted the season and
+the live October game threw on every pitch. `check-labels` now fails on any function
+declared twice in the page, and `check-run` reads the season screen the instant the
+fast forward lands.
+
+### Is $190M enough? Measured per mode, and the cap is not the lever
+
+Asked because $190M over twelve is $15.8M a slot against football's $23.3M and the
+college game's $1.8M. **Dollars a slot do not compare across games**, because each
+game's price curve is its own. What compares is what a slot's share buys: here
+$15.8M is 89% of every player-season in the pool and the median price of a 3 WAR
+season ($14.3M). A 5 WAR season medians $24.5M and a 9 WAR one $52.7M, so a roster
+holds a handful of stars and fills around them, which is the decision the draft is.
+
+At $190M, 40 runs a cell, October rate for best-available / a spread drafter / a
+chemistry chaser: Classic 68/70/85%, Eras 90/93/88%, One Franchise 98/95/100%,
+Division 90/95/95%, All-Time Staff 78/68/85%, Trade Machine 53%. **Cap Survivor is the
+one low mode**: 18% best-available, 68% spread, 20% chemistry, because the market
+raises push a roster that spent the cap into cuts. Raising the cap lifts every mode
+together (Classic best goes 30% at $170M, 68% at $190M, 78% at $210M, 90% at $230M)
+and past about $230M holding money back stops paying at all. So the cap stays, and if
+Cap Survivor needs help the dial is `E.MARKET` (the size of the raises), which moves
+that mode alone.
 
 ### The desktop page is football's, and the two columns have to be the same length
 
@@ -14888,6 +15355,93 @@ club name.
 **The Eras side was measured and is not missing anything.** All thirteen decades are
 offered and every one is deep: the thinnest is the 1900s at 102 team-seasons, 17 clubs
 and 1,291 men. What the lineage fixes for Eras is the chemistry, not the pool.
+
+### No stock bars, no emoji, and the season waits for you
+
+Asked for by the owner in one pass, with the trophy case and the bracket.
+
+- **A primary action is the baseball button** (`.btn.ball`, seams and a `<span>` label):
+  Play the season, Sim to end, Play ball, Share result and Share today's result. A
+  share's "Copied" writes into that `<span>`, never over `innerHTML`, or the seams go.
+- **Secondary actions are tiles, not full width outlines.** The results screen's Watch
+  October, Run it back and Trophy case are one `.acts` row of `.act` tiles with a
+  drawn mark each. `.act[hidden]` carries its own `display:none`, which is the
+  `[hidden]` pair again, and check-run still reads Watch October off getComputedStyle.
+- **The chemistry bolt and the streak flame are drawn** (`ICO_BOLT`, `ICO_FLAME`),
+  in the colour of the text they sit in. An emoji is the reader's phone's drawing.
+- **The regular season ends on a button** (`#b-season-go`: On to October, or See how
+  it went). It used to move on 1.5 seconds after the last out, which took away the
+  one screen that tells the story of the 162. Every walker presses it.
+- **The draft grade is gone.** The results cells are team rating, the season's place
+  on its own board (which used to be a line in the hero), and the all-time rank. The
+  Trade Machine's deals and their WAR moved into the subtitle.
+
+**The bracket drew no winner for a series you lost.** `colGames()` built a fresh
+object for the seat across from you on every call, `settleMine()` stored the club
+that beat you as the result, and the page marks a winner by asking whether a seat IS
+the result. So your lost series showed neither side winning and no score, while that
+club carried on into the next column. The seat is one object per column now
+(`B.oppSeats`), and check-bracket asserts the winner is one of the two seats by
+identity: 106 failures with the old engine.
+
+**A bye is not a matchup**: the two bye boxes are dashed and each seat reads Bye.
+
+**The trophy case shelves are cards with the shelf drawn small.** Folded to "15
+still to earn" a new account met nine lines of grey text and no badge anywhere. Each
+shelf shows its progress and a strip of its badges, rim in their tier, and a new
+account's first shelf is open.
+
+### Run The Diamond Pro, and one free play of each mode a day
+
+```
+node baseball/check-pro.mjs          the gate, the sheet and the checkout, in a browser
+psql -d rtd_pro -f supabase/test/baseball_pro_base.sql
+psql -d rtd_pro -f supabase/101_premium_bundles.sql
+psql -d rtd_pro -f supabase/121_baseball_pro.sql
+psql -d rtd_pro -f supabase/122_baseball_pro_per_mode.sql
+psql -d rtd_pro -f supabase/test/baseball_pro_test.sql
+```
+
+Asked for by the owner: the six extra modes (Eras, One Franchise, Division, Cap
+Survivor, All-Time Pitching Staff, Trade Machine) get **one free start each per
+Eastern day**, and **Pro** removes the limit for **$9.99 once**. Classic and the daily
+are never counted and never sold. The Stripe steps are in
+`functions/api/stripe/README.md`.
+
+**The rule went per mode, then shared, then per mode again, and 122 is the last move.**
+121 shipped and was deployed with one token a day shared by all six, keyed on
+(user, day). The owner then asked for one of EACH, so `122_baseball_pro_per_mode.sql`
+widens the key to (user, mode, day) and nothing else: `rtd_mode_spend` counts the row
+its insert wrote, so the key IS the rule. 121's header still describes the shared token
+because that is what it deployed. Preflight row 33 asks for the wider key, and the SQL
+test fails on a database that has 121 without 122.
+
+**IT IS THE ONE PRODUCT THAT BELONGS TO ONE GAME, and the rule it bends is kept.** The
+store section above says never to build a price or an unlock for one game, and the
+reason is a second payment path. `diamond-pro` is a row in `_bundles.js`, sold through
+the same `checkout-bundle.js` and granted by the same webhook, so there is still one way
+money reaches the site. It is NOT in Run The Bundle, because that changes what the
+$34.99 contains and what its "$80 of value" adds up to.
+
+**What is counted is a START**, and `startRun` and `startTrade` are the one door
+(`modeBegin`), so Run it back and the result screen's mode doors are gated by the same
+line. `pickMode` asks too, **before** a picker opens, because choosing a decade and being
+refused at the end of it is a wall with a picker in front.
+
+**Two ledgers.** A signed in account is counted by `rtd_mode_spend` (121), keyed on
+`auth.uid()`, so clearing site data or changing phones gives nothing back. A guest has no
+account and is counted on the device (`rtd_modeplays_v1`, keyed by who is playing so a
+second account on one browser is not refused over the first one's day). **It fails open**:
+no server, or a database without 121, lets the run through on the device's word. A Pro
+account is never written to the ledger at all.
+
+**`verify-bundles.mjs` reads the LAST definition of `premium_unlocks_product_ck`**, in
+numeric migration order, because 121 drops and re-adds it. A text sort puts `99_` after
+`121_`, and reading 101 alone would hold the catalog to a list that no longer exists.
+
+**The Pro sheet's X and backdrop were dead on the first draft**, because they are static
+markup and only the buttons built inside the sheet were wired. The walk caught it as the
+Classic button being unclickable under a sheet that would not close.
 
 ### The draft button IS a baseball, and the one light surface allowed at night
 
@@ -15464,3 +16018,27 @@ but its ceiling is pinned, so adding a show touches the rows it adds plus any
 song a curator wrote up, and nothing else. `data_drift.mjs` enforces that,
 failing any refresh where a derived value moved for a song whose own history
 did not.
+
+## The release newsletter
+
+```
+psql -d news -f supabase/test/newsletter_test.sql     the list's rules, against a real Postgres
+```
+
+`scripts/newsletter/README.md` is the runbook. A player ticks a box in a game's profile or on
+the home page (`/assets/newsletter.js`), or a guest types an address on the home page and
+confirms it. When something big ships, `.github/workflows/newsletter.yml` has Claude draft the
+issue from the commits since the last one, mails a preview, and sends only after a required
+reviewer approves the `send` job.
+
+**The agent only reads commits that touch a game in `scripts/newsletter/games.json`.** That is
+what keeps an unreleased game out of an email, so a game goes on that list the day it goes on
+the home page and not before.
+
+**Addresses are never in `profiles`**, which is world-readable. They are in
+`newsletter_subscribers`, which no browser role can select.
+
+**The reveal animation on the home page adds the class `in`, and so does a signed-in account
+panel.** The nav and the newsletter box read `#acct.in` as "signed in", so `.rv` sits on a
+wrapper around `#acct` and never on `#acct` itself. On `#acct` it drew a signed-in chip in the
+nav for a guest who scrolled.

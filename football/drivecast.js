@@ -263,13 +263,25 @@ function drawDriveChart(ctx,w,h,drives,upTo,youColor,themColor,youName,themName,
     opts=opts||{}; var teams=opts.teams||[['HOME','#3aa0ff'],['AWAY','#ff6a6a']]; var field=opts.field||'';
     var reduce=false; try{ reduce=window.matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){}
     var ctx=canvas.getContext('2d'), GAME=3600, DUR=opts.dur||22000, HOLD=2600;
-    var W,H,drives,youC,themC,youN,themN,startT=null,raf=0;
+    var W,H,drives,youC,themC,youN,themN,startT=null,raf=0,script=[];
+    /* onFrame, optional: the home page draws a TV score bug over the chart from this.
+       It gets the teams, the score as of the moment drawn, the quarter and the clock. */
+    var onFrame=typeof opts.onFrame==='function'?opts.onFrame:null;
+    function report(upTo){
+      if(!onFrame) return;
+      var y=0,th=0;
+      for(var i=0;i<script.length;i++){ var e=script[i], at=(e.q-1)*900+(900-e.sec);
+        if(at<=upTo){ if(e.team==='you') y+=e.points; else th+=e.points; } }
+      var q=Math.min(4,Math.floor(Math.min(upTo,GAME-1)/900)+1), left=Math.max(0,Math.round(q*900-upTo));
+      if(upTo>=GAME) left=0;
+      try{ onFrame({you:y,them:th,youN:youN,themN:themN,youC:youC,themC:themC,q:q,clock:left,final:upTo>=GAME}); }catch(e){}
+    }
     function size(){ var dpr=window.devicePixelRatio||1, r=canvas.getBoundingClientRect();
       W=Math.max(220,Math.round((r.width||220)*dpr)); H=Math.round((r.height||150)*dpr);
       canvas.width=W; canvas.height=H; }
     function newGame(){ var t=pick2(teams); youN=t[0][0]; themN=t[1][0]; youC=t[0][1]; themC=t[1][1];
-      drives=generateDrives(randomScript(), Math.random); startT=null; }
-    function draw(upTo){ drawDriveChart(ctx,W,H,drives,upTo,youC,themC,youN,themN,field); }
+      script=randomScript(); drives=generateDrives(script, Math.random); startT=null; }
+    function draw(upTo){ drawDriveChart(ctx,W,H,drives,upTo,youC,themC,youN,themN,field); report(upTo); }
     size(); newGame();
     if(reduce){ draw(GAME); return; }
     function frame(ts){ if(startT==null) startT=ts; var el=ts-startT;

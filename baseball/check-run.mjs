@@ -43,10 +43,17 @@ import path from 'path';
 import http from 'http';
 
 const require = createRequire(import.meta.url);
-const { chromium } = require('/opt/node22/lib/node_modules/playwright');
+/* Playwright from node_modules first, which is where CI installs it, then the dev
+   sandbox's global copy. Hardcoding the sandbox path failed every CI run. */
+let chromium;
+try { ({ chromium } = require('playwright')); }
+catch (_) { try { ({ chromium } = require('/opt/node22/lib/node_modules/playwright')); } catch (e) { chromium = null; } }
+if (!chromium) { console.error('playwright is not installed'); process.exit(2); }
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, '..');
-const EXE = process.env.CHROMIUM || '/opt/pw-browsers/chromium-1194/chrome-linux/chrome';
+/* A pinned browser only where it exists, or Playwright's own everywhere else. */
+const EXE = process.env.CHROMIUM
+  || ['/opt/pw-browsers/chromium-1194/chrome-linux/chrome'].find((f) => existsSync(f)) || null;
 const PORT = 8137;
 
 /* Served over http rather than file://, because the page fetches its pool and its
@@ -89,6 +96,19 @@ async function openPage(opts) {
     blocked.push(u);
     return route.abort();
   });
+  /* A SIGNED IN PLAYER IS A STUB, NEVER THE LIVE PROJECT. Badges are for
+     accounts, so the Classic walk plays signed in and the daily walk plays as a
+     guest, and each asserts its own half. auth.js is swapped for a module that
+     answers the same shape and says it is signed in, registered after the
+     catch-all so it wins, and the supabase-js library is never fetched. */
+  if (opts && opts.acct) {
+    await ctx.route('**/baseball/auth.js*', (route) => route.fulfill({
+      contentType: 'application/javascript',
+      body: `window.RTD_AUTH={API_VERSION:1,boot:()=>true,
+        state:()=>({ready:true,waiting:false,signedIn:true,userId:${JSON.stringify(opts.acct)},name:'checkrun'}),
+        onChange:()=>()=>{},token:()=>null,signOut:()=>Promise.resolve()};`,
+    }));
+  }
   const p = await ctx.newPage();
   p.on('pageerror', (e) => errors.push(String(e)));
   await p.addInitScript(() => {
@@ -175,6 +195,29 @@ async function toResults(p) {
   await p.waitForSelector('#s-season.on', { timeout: 20000 });
   await p.waitForSelector('#b-sim-fast', { state: 'visible', timeout: 30000 });
   await p.click('#b-sim-fast');
+  /* THE SEASON SCREEN IS DRAWN FROM THE SEASON'S OWN STATE. Read the instant the
+     fast forward lands, before the page moves on to October or the results: the
+     record, the four standings numbers, a race verdict, a calendar of six months
+     and a log with club chips and at least one month's line. */
+  if (!p.__seasonRead) {
+    p.__seasonRead = true;
+    const ss = await p.evaluate(() => ({
+      rec: document.getElementById('s-record').textContent.trim(),
+      tiles: ['ss-pace', 'ss-streak', 'ss-l10', 'ss-rd'].map((id) => document.getElementById(id).textContent.trim()),
+      race: document.getElementById('ss-rstate').textContent.trim(),
+      months: document.querySelectorAll('#s-pips .ss-mo').length,
+      played: document.querySelectorAll('#s-pips .sim-pip.w, #s-pips .sim-pip.l').length,
+      chips: document.querySelectorAll('#s-feed .sim-game .tc').length,
+      notes: [...document.querySelectorAll('#s-feed .sim-note')].map((n) => n.textContent.trim()),
+    }));
+    const [w, l] = ss.rec.split('-').map(Number);
+    claim(w + l === 162 && ss.played === 162, 'the season screen shows all 162 games on the calendar', JSON.stringify(ss));
+    claim(ss.tiles.every((t) => t && t !== '-') && /^[WL]\d+$/.test(ss.tiles[1]),
+      'the four standings numbers are filled in', JSON.stringify(ss.tiles));
+    claim(ss.race.length > 0 && ss.months === 6, 'the race verdict and the six month rows are drawn', JSON.stringify(ss));
+    claim(ss.chips > 0 && ss.notes.some((n) => /^Sep \d+-\d+$/.test(n)),
+      'the log carries club chips and September\'s record', JSON.stringify(ss.notes));
+  }
   /* October is a bracket that reveals itself, a series card and a live game, and
      which of the three is up depends on how the season went. Press whichever way
      forward is on screen until the results screen is. */
@@ -187,7 +230,7 @@ async function toResults(p) {
         if (e && e.offsetParent !== null && !e.disabled) { e.click(); return true; }
         return false;
       };
-      hit('#b-brk-skip') || hit('#sr-simall') || hit('#gm-simall') || hit('#sr-sim');
+      hit('#b-season-go') || hit('#b-brk-skip') || hit('#sr-simall') || hit('#gm-simall') || hit('#sr-sim');
     });
     await p.waitForTimeout(300);
   }
@@ -231,7 +274,7 @@ head('0. THE RIBBON HAS ONE RULE, AND THE SHARE CARD READS IT');
 
 // ══ 1. a Classic run, end to end ═══════════════════════════════════════════
 head('1. A WHOLE RUN REACHES THE SCREEN IT ENDS ON');
-const { ctx, p } = await openPage({});
+const { ctx, p } = await openPage({ acct: 'check-run-user' });
 const drafted = await draft(p);
 claim(drafted.stalled === null, 'twelve picks, with no board the draft could not go on from',
   drafted.stalled != null ? `stalled at pick ${drafted.stalled + 1}` : '');
@@ -248,7 +291,7 @@ const r = await p.evaluate(() => {
   };
   return {
     record: txt('ro-record'), verdict: txt('ro-verdict'),
-    rating: txt('ro-rating'), rank: txt('ro-rank'), eff: txt('ro-eff'),
+    rating: txt('ro-rating'), rank: txt('ro-rank'), eff: txt('ro-place'), effL: txt('ro-place-l'),
     takes: txt('ro-takes'), arch: txt('ro-arch'),
     rosterRows: document.querySelectorAll('#r-roster .rrow, #r-roster .rline, #r-roster li').length,
     rosterText: (document.getElementById('r-roster') || {}).textContent?.trim().length || 0,
@@ -263,12 +306,14 @@ claim(/\w/.test(r.verdict), `a verdict, rather than an empty hero: ${JSON.string
    of the three have failed silently on this page before: the rating was re-anchored
    twice, and a branch beside them read a field outcomeOf has never set, so it was
    dead on every run the game had ever played. An empty cell renders perfectly.
-   THE DRAFT GRADE IS A LETTER AND NOT A NUMBER, which the first draft of this
-   asserted wrongly and reported a correct screen as broken. */
+*/
 for (const [k, label] of [['rating', 'Team rating'], ['rank', 'All-time rank']]) {
   claim(/\d/.test(r[k]), `${label} carries a number: ${JSON.stringify(r[k])}`);
 }
-claim(/^[A-F][+-]?$/.test(r.eff), `the draft grade is a grade: ${JSON.stringify(r.eff)}`);
+/* THE GRADE IS GONE, asked for by the owner, and the middle cell is the season's
+   place on its own board. A letter coming back into that cell is the regression. */
+claim(!/^[A-F][+-]?$/.test(r.eff) && /Leaderboard|Recording|on |board/i.test(r.effL),
+  `the middle cell is the leaderboard, not a grade: ${JSON.stringify(r.eff)} / ${JSON.stringify(r.effL)}`);
 claim(/\w/.test(r.takes), "the coach's take is not blank");
 claim(/\w/.test(r.arch), `the roster has a shape: ${JSON.stringify(r.arch)}`);
 claim(r.rosterText > 100, 'the twelve are listed under it', `roster text ${r.rosterText} chars`);
@@ -437,6 +482,32 @@ claim(stored.daily && typeof stored.daily.n === 'number' && stored.daily.n > 0,
 const dRow = stored.hist[stored.hist.length - 1] || {};
 claim(stored.hist.length === 1 && dRow.daily === true,
   'and it is in the history with its own flag set', `rows ${stored.hist.length}, daily ${dRow.daily}`);
+
+/* BADGES ARE FOR ACCOUNTS. This walk is a guest, so the season is filed with no
+   account on it, the results screen offers a sign in rather than listing badges,
+   and the cabinet draws no badge at all. Each is asked on its own, because a
+   panel that still listed badges and a cabinet that still counted them are two
+   different ways for the rule to leak. */
+claim(dRow.u == null, 'a guest season carries no account', `u ${JSON.stringify(dRow.u)}`);
+const guest = await d1.p.evaluate(() => {
+  const nb = document.getElementById('ro-newbadges');
+  return { text: nb ? nb.textContent : '', listed: nb ? nb.querySelectorAll('.nb-item').length : -1,
+           signin: !!document.getElementById('b-nb-signin') };
+});
+claim(guest.listed === 0 && guest.signin, 'the results screen offers a sign in and lists no badge',
+  JSON.stringify(guest.text.slice(0, 80)));
+await d1.p.click('#b-nb-signin');
+await d1.p.waitForTimeout(350);
+const gcab = await d1.p.evaluate(() => ({
+  tiles: document.querySelectorAll('#trophy-body .ach').length,
+  locked: !!document.querySelector('#trophy-body .trophy-locked'),
+  acct: (document.getElementById('trophy-acct') || {}).textContent || '',
+}));
+claim(gcab.tiles === 0 && gcab.locked, 'and the cabinet a guest opens holds no badge',
+  `${gcab.tiles} tiles`);
+claim(gcab.acct.length > 0, 'with the account panel above it', JSON.stringify(gcab.acct.slice(0, 60)));
+await d1.p.click('#sheet-trophy .sheet-x');
+await d1.p.waitForSelector('#sheet-trophy.on', { state: 'hidden', timeout: 10000 });
 
 /* THE CARD A RETURNING VISITOR MEETS, IN THE SAME JAR THE RUN WAS PLAYED IN, which
    is the half the page's own front screen is for: a daily that recorded itself and

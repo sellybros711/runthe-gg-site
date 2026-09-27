@@ -481,5 +481,43 @@ console.log('\n7. A trade offer is a subtraction the reader can do on screen');
     + 'and only two of twelve are starters.');
 }
 
+/* ─── THE DH NEVER CHARGES ───
+   Another position costs a hitter POSITION_FIT.OFF of his WAR. The DH costs
+   nobody anything, and it is still not his OWN position unless his season was
+   the DH, so the star and the charge are two different questions. Asked of the
+   real pool rather than a fixture, and it has to find a real off-position case
+   first or it proves nothing. */
+{
+  console.log('\nthe DH never charges a hitter');
+  const bats = players.filter(p => p.r === 'b' && p.pp && p.pp !== 'DH');
+  const dhFull = bats.every(p => E.slotWar(p, 'DH') === p.w && !E.offPosition(p, 'DH'));
+  claim(bats.length > 0 && dhFull,
+    `all ${bats.length} hitters keep their whole WAR at DH`,
+    'somebody paid the off-position cost for batting at DH');
+  claim(bats.every(p => !E.primaryAt(p, 'DH')),
+    'DH is not a fielder\'s own position, so it never wears his star');
+  const ss = bats.find(p => p.pp === 'SS' && p.w > 3);
+  claim(!!ss && E.offPosition(ss, '1B') && E.slotWar(ss, '1B') < ss.w,
+    'a shortstop at first base still pays for it',
+    ss ? `${ss.n} ${ss.s} read ${E.slotWar(ss, '1B')} against ${ss.w}` : 'no shortstop found');
+}
+
+/* ─── ONE NAME, ONE FUNCTION ───
+   The page is one script, and a function declared twice is not an error: the
+   later declaration silently replaces the earlier everywhere. The season screen's
+   first draft named its painters paintBoard and paintFeed, which were already the
+   leaderboard's and October's, so the leaderboard would have drawn the season and
+   the live game threw on every pitch. Nothing in a build step says so. */
+{
+  console.log('\none name, one function');
+  const page = fs.readFileSync(path.join(DIR, 'index.html'), 'utf8');
+  const names = [...page.matchAll(/^\s*(?:async\s+)?function\s+([A-Za-z_$][\w$]*)\s*\(/gm)].map(m => m[1]);
+  const seen = new Set(), dup = new Set();
+  for (const n of names) { if (seen.has(n)) dup.add(n); seen.add(n); }
+  claim(names.length > 150 && dup.size === 0,
+    `${names.length} function declarations in the page, none declared twice`,
+    dup.size ? 'declared twice: ' + [...dup].join(', ') : `only read ${names.length}`);
+}
+
 console.log(failures ? `\n${failures} failed.\n` : '\nAll checks passed.\n');
 process.exit(failures ? 1 : 0);

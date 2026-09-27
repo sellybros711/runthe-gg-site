@@ -2849,6 +2849,8 @@
      for a token at CALL time rather than at load, so the order here is for a
      reader rather than for the browser. -->
 <script src="/assets/cloudsave.js?v=2"></script>
+<!-- The release newsletter checkbox on the profile. See supabase/121_newsletter.sql. -->
+<script src="/assets/newsletter.js?v=1"></script>
 <script src="cloud.js?v=2"></script>
 <script>
 (function(){
@@ -9003,6 +9005,8 @@ function renderAccount(){
   var rs = row();
   btn(rs, 'Leaderboard', '', function(){ closeProfile(); openBoard(); });
   btn(rs, 'Sign out', 'ghost', function(){ A.signOut().then(renderAccount); });
+  /* the release newsletter box, /assets/newsletter.js. Absent script, absent box. */
+  if (window.RTG_NEWS) el.appendChild(RTG_NEWS.el({ source: 'hoops' }));
 }
 
 /* The account row is the one thing on this page that prints text somebody
