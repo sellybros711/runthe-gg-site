@@ -4820,6 +4820,32 @@ somebody has a point: straight after the lock the order is who entered first, an
 row as winning a prize would invent a leader. Green rather than gold, because gold on this page
 already means a podium AFTER the week. All four claims were proved by mutation.
 
+#### A man in a lineup shows what he did, and a live one shows where he is headed
+
+```
+psql -d fantasy -f supabase/126_fantasy_results_line.sql
+node football/check-fantasy.mjs   the section named A ROW OPENS INTO ITS LINEUP
+```
+
+Asked for by the owner off a screenshot of the Sunday board: points and nothing about how.
+
+**The stat line was already built and dropped on the floor.** `weekly-results.mjs` and
+`espn-box.mjs` both hand `resultsSQL` a line (`211 pass yds, 2 TD`) as `scores[id][1]`, and
+it wrote the number and threw the sentence away. 126 adds `fantasy_results.line` and
+`resultsSQL` writes it.
+
+**THE WRITER ASKS FOR THE COLUMN BEFORE WRITING IT**, inside a `do` block, because the live
+job pipes that SQL every two minutes during a game and the SQL is deployed by hand. An
+unguarded write to a missing column fails the whole script and freezes the board for the
+afternoon over display text. plpgsql resolves a column when the statement runs, so the
+update inside the `if` is never looked at without 126. Driven both ways against Postgres
+16. The page does the same from its side: a 400 naming `line` is asked again without it.
+
+**The projection is `pts + proj * share of the game left`**, off the `proj` the man was
+priced on and the scoreboard's period and clock. Only while his game is on: before it the
+card already said, and after it the score is the answer. No overtime and no chasing a hot
+half, deliberately. The guard checks it as arithmetic off the pool's own `proj`.
+
 #### The rows are keyed on the ENTRY, and the key is not the entry's id
 
 A board that animates cannot do without a stable row key. Keyed on PLACE, row one is always

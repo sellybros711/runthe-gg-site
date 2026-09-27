@@ -223,10 +223,19 @@
    * fact about a football game rather than about anybody's entry. A plain table read, one
    * row a man who has played, about four hundred at the most. Fails soft like every read.
    */
+  /* `line` is what he did (`277 pass yds, 2 TD`), from 126. A database that has not run
+     that file answers a 400 naming the column, so the read asks once more without it and
+     remembers, rather than taking every lineup's points down over a line of display text. */
+  let noLine = false;
   async function results(season, week) {
     try {
-      const res = await timed(base() + 'fantasy_results?select=player_id,half_ppr'
+      const ask = (cols) => timed(base() + 'fantasy_results?select=' + cols
         + '&season=eq.' + Number(season) + '&week=eq.' + Number(week), { headers: headers() });
+      let res = await ask(noLine ? 'player_id,half_ppr' : 'player_id,half_ppr,line');
+      if (!noLine && res.status === 400) {
+        noLine = true;
+        res = await ask('player_id,half_ppr');
+      }
       if (!res.ok) return null;
       const j = await res.json();
       return Array.isArray(j) ? j : null;

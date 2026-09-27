@@ -513,7 +513,14 @@ check_rows(sort, migration, what, breaks, ok) as (
       'A Run The Bundle buyer is refused their fifth ranked arcade score of the day. And every full refund or chargeback of a yearly plan fails in the webhook and is retried by Stripe until this runs (the plan''s access is still taken back on each try).',
       (select count(*) > 0 from proc
         where name = 'grid_submit_run' and body like '%arcade_card_active%')
-      and (select count(*) > 0 from proc where name = 'premium_reclaim_bonus'))
+      and (select count(*) > 0 from proc where name = 'premium_reclaim_bonus')),
+
+  -- WHAT EACH MAN DID, beside his points on the live board. Display only: the writer
+  -- asks for the column before it writes, so a database without this keeps scoring.
+  (37, '126_fantasy_results_line',
+      'each man''s stat line under his name in a lineup on the live board',
+      'The live board shows every man''s points and nothing about how he got them. Nothing is scored wrong.',
+      (select count(*) > 0 from col where tbl = 'fantasy_results' and name = 'line'))
 )
 -- The summary has to come LAST, and a UNION can only be ordered by an output
 -- column, so the sort key is carried through a subquery rather than sorted on
