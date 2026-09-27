@@ -15368,7 +15368,7 @@ are never counted and never sold. The Stripe steps are in
 (user, day). The owner then asked for one of EACH, so `122_baseball_pro_per_mode.sql`
 widens the key to (user, mode, day) and nothing else: `rtd_mode_spend` counts the row
 its insert wrote, so the key IS the rule. 121's header still describes the shared token
-because that is what it deployed. Preflight row 32 asks for the wider key, and the SQL
+because that is what it deployed. Preflight row 33 asks for the wider key, and the SQL
 test fails on a database that has 121 without 122.
 
 **IT IS THE ONE PRODUCT THAT BELONGS TO ONE GAME, and the rule it bends is kept.** The
@@ -15973,3 +15973,27 @@ but its ceiling is pinned, so adding a show touches the rows it adds plus any
 song a curator wrote up, and nothing else. `data_drift.mjs` enforces that,
 failing any refresh where a derived value moved for a song whose own history
 did not.
+
+## The release newsletter
+
+```
+psql -d news -f supabase/test/newsletter_test.sql     the list's rules, against a real Postgres
+```
+
+`scripts/newsletter/README.md` is the runbook. A player ticks a box in a game's profile or on
+the home page (`/assets/newsletter.js`), or a guest types an address on the home page and
+confirms it. When something big ships, `.github/workflows/newsletter.yml` has Claude draft the
+issue from the commits since the last one, mails a preview, and sends only after a required
+reviewer approves the `send` job.
+
+**The agent only reads commits that touch a game in `scripts/newsletter/games.json`.** That is
+what keeps an unreleased game out of an email, so a game goes on that list the day it goes on
+the home page and not before.
+
+**Addresses are never in `profiles`**, which is world-readable. They are in
+`newsletter_subscribers`, which no browser role can select.
+
+**The reveal animation on the home page adds the class `in`, and so does a signed-in account
+panel.** The nav and the newsletter box read `#acct.in` as "signed in", so `.rv` sits on a
+wrapper around `#acct` and never on `#acct` itself. On `#acct` it drew a signed-in chip in the
+nav for a guest who scrolled.

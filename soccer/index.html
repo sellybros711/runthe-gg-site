@@ -3228,6 +3228,8 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
      crossorigin="anonymous"></script>
 <!-- Supabase JS (auth: email/password + Google OAuth, session persistence) -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<!-- The release newsletter checkbox on the profile. See supabase/121_newsletter.sql. -->
+<script src="/assets/newsletter.js?v=1"></script>
 <!-- Analytics (GA4). Set GA_ID to your Measurement ID (G-L29P5MRWKE) to activate; inert while placeholder (no gtag.js request, no cookies). -->
 <script>
 window.GA_ID='G-L29P5MRWKE';
@@ -3726,6 +3728,7 @@ window.GA_ID='G-L29P5MRWKE';
         <div class="entry-flag-label">Your Flag</div>
         <div class="entry-flag-row" id="acct-flag-row"></div>
         <button class="entry-submit acct-flag-save" id="acct-save-flag">Save flag</button>
+        <div id="acct-news"></div>
         <button class="entry-skip" id="acct-signout">Sign out</button>
       </div>
     </div>
@@ -6720,6 +6723,12 @@ function renderProfilePage(){
   renderAchievements();
   renderTopDrafts();
   renderLegends();
+  // the release newsletter box, /assets/newsletter.js. Absent script, absent box.
+  const nh=$('acct-news');
+  if(nh && sbClient && window.RTG_NEWS){
+    nh.textContent='';
+    nh.appendChild(RTG_NEWS.el({source:'soccer', getToken:()=>sbClient.auth.getSession().then(r=>(r&&r.data&&r.data.session&&r.data.session.access_token)||null)}));
+  }
 }
 function openProfilePage(){
   if(!isSignedIn()){ openAccountModal(); return; }

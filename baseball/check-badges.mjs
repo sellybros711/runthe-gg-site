@@ -142,7 +142,9 @@ function rowOf(run, o, ts) {
   const rounds = (run.playoffs && run.playoffs.rounds) || null;
   const last = rounds ? rounds[rounds.length - 1] : null;
   return {
-    ts, wins: o.wins, losses: o.losses, titleWon: !!o.titleWon, madePlayoffs: !!o.madePlayoffs,
+    /* The account the season was played on. The page files only signed-in rows
+       into the cabinet and achievements.js never reads it, so any id will do. */
+    ts, u: 'bot', wins: o.wins, losses: o.losses, titleWon: !!o.titleWon, madePlayoffs: !!o.madePlayoffs,
     seedLabel: o.seedLabel || null, isGOAT: !!o.isGOAT, beatRecord: !!o.beatRecord,
     rating: o.shownRating != null ? Math.round(o.shownRating) : null,
     allTimeRank: o.allTimeRank != null ? o.allTimeRank : null,
@@ -298,7 +300,6 @@ const SKILL = {
      borderline badges a sweep this size happens to reach. `rank_one` and four
      title rungs came off because they light now; five went the other way, and the
      chemistry pass below took four of those back. The FULL sweep reaches all ten. */
-  mode_trade_title: 'mode_trade_oct',
   /* THE CHEMISTRY PASS MOVED THE BORDERLINE AGAIN, which is the pool-growth note
      above arriving from a different cause. Real team-mates now link at 0.05 and
      a bare franchise tie fell to 0.03, so the chemistry bot chases men who played
@@ -317,7 +318,11 @@ const SKILL = {
      in Survivor becomes a coin toss at three runs a bot. The perfect draft is
      the same coin toss one pass later. The FULL sweep lights all three. */
   perfect_draft: 'eff_95',
-  surv_cut_5: 'surv_cut_3',
+  /* The Pro token pass moved it a fourth time. `mode_trade_title` and
+     `surv_cut_5` light in quick now and came off. Murderers' Row champions went
+     the other way: a title with one named archetype is the coincidence the note
+     at the top of this list describes, and the archetype itself still lights. */
+  murderers_row: 'arch_murderers_row',
   surv_clean_oct: 'mode_survivor_oct',
   /* `daily_100w` HAD AN EXCUSE AND DID NOT NEED ONE. A hundred wins on a daily
      lights in the quick sweep (spread / classic), so the entry was section 5's

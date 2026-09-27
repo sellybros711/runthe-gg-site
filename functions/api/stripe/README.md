@@ -307,7 +307,7 @@ for everybody and never counted.
 
 1. **Run the migrations** in the Supabase SQL editor, in order:
    `supabase/121_baseball_pro.sql`, then `supabase/122_baseball_pro_per_mode.sql`.
-   Then paste `supabase/test/launch_preflight.sql` and confirm rows 31 and 32 read
+   Then paste `supabase/test/launch_preflight.sql` and confirm rows 31 and 33 read
    **yes**. 122 turns 121's one shared play a day into one play of each mode. This has to come first:
    until it runs, the table refuses `rtd_premium` and a paid checkout 500s in the
    webhook (Stripe retries, so nobody loses money, but nobody gets Pro either).
