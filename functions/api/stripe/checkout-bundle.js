@@ -11,7 +11,7 @@
  *   STRIPE_PRICE_RUN_THE_BUNDLE       price_...  (Run The Bundle, one-time)
  *   STRIPE_PRICE_PS_YEAR              price_...  (Perfect Season, $19.99 a year)
  *   STRIPE_PRICE_RTB_YEAR             price_...  (Run The Bundle, $34.99 a year)
- *   STRIPE_PRICE_RTD_PRO              price_...  (Run The Diamond Pro, one-time)
+ *   STRIPE_PRICE_RTD_PRO              price_...  (Run The Diamond Pro, $14.99 a year, RECURRING)
  *   STRIPE_PRICE_RTF_PRO              price_...  (Run The Floor Pro, one-time)
  *   SITE_URL                          https://runthe.gg
  *   SUPABASE_URL, SUPABASE_SERVICE_ROLE
@@ -44,6 +44,13 @@
  * paid) or checkout.session.async_payment_succeeded, keyed by metadata.bundle, and a
  * plan from the same events plus invoice.paid and the subscription's own events, keyed
  * by the subscription's metadata and its price.
+ *
+ * A `recurring` catalog row (Run The Diamond Pro) opens in 'subscription' mode too,
+ * whatever the yearly switch says, because Stripe refuses a recurring Price in payment
+ * mode. It is not a yearly plan in the sense above: it has no one-time twin and no
+ * switch, and the webhook grants it through grantRecurring rather than 124. The bundle
+ * key rides on the SUBSCRIPTION's metadata as well as the session's, since the renewal
+ * and cancellation events carry the subscription and nothing else.
  *
  * ONE BUNDLE PER ACCOUNT, enforced here the way create-checkout refuses a
  * second Tour Pass: if the buyer already holds ANY of the bundle's products we
@@ -121,8 +128,11 @@ async function handle(context) {
   if (!local) ret = bundle.defaultReturn;
   const sep = ret.indexOf('?') >= 0 ? '&' : '?';
 
+  /* A subscription session either way: a yearly plan, or a bundle whose only Price is
+     recurring (Run The Diamond Pro). */
+  const subMode = yearly || !!bundle.recurring;
   const form = new URLSearchParams({
-    mode: yearly ? 'subscription' : 'payment',
+    mode: subMode ? 'subscription' : 'payment',
     'line_items[0][price]': price,
     'line_items[0][quantity]': '1',
     client_reference_id: userId,
@@ -133,7 +143,7 @@ async function handle(context) {
     cancel_url: site + ret + sep + 'checkout=cancelled',
     allow_promotion_codes: 'true'
   });
-  if (yearly) {
+  if (subMode) {
     /* ON THE SUBSCRIPTION, NOT ONLY THE SESSION. Every event after the first one is
        about the subscription (a renewal, a cancel, a refund on its invoice) and never
        sees the session's metadata, so the account and the plan have to ride on the
@@ -180,7 +190,7 @@ async function handle(context) {
    * surfaces as itself rather than as two identical failures. */
   if (!attempt.res.ok && customer && isMissingCustomer(attempt.data)) {
     form.delete('customer');
-    if (!yearly) form.set('customer_creation', 'always');
+    if (!subMode) form.set('customer_creation', 'always');
     if (body.email) form.set('customer_email', String(body.email));
     attempt = await createSession(env, form);
   }

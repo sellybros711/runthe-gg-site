@@ -7,6 +7,8 @@ name: Stripe checks
 #                     the webhook's event list agree
 #   check-checkout    who may buy what, through the real checkout endpoint, with the
 #                     yearly switch on in a scratch copy (it ships off)
+#   check-recurring   Run The Diamond Pro, $14.99 a year, through the real checkout and
+#                     webhook against a fake Stripe and Supabase
 #   replay-webhook    every yearly plan event through the real webhook, against a real
 #                     Postgres built from the migrations, asserting after every event
 #                     that no lifetime row moved and no Fantasy pass was cut short
@@ -15,6 +17,7 @@ name: Stripe checks
 # Runnable locally with the exact same commands:
 #   node scripts/stripe/verify-bundles.mjs
 #   node scripts/stripe/check-checkout.mjs
+#   node scripts/stripe/check-recurring.mjs
 #   node scripts/stripe/replay-webhook.mjs
 #
 # No secrets and no network: every Stripe and Supabase request is answered locally,
@@ -50,11 +53,13 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
       - name: The catalog agrees with the SQL and the webhook
         run: node scripts/stripe/verify-bundles.mjs
       - name: Who may buy what
         run: node scripts/stripe/check-checkout.mjs
+      - name: Run The Diamond Pro renews
+        run: node scripts/stripe/check-recurring.mjs
       # The runner image ships PostgreSQL stopped. Start it, and let the runner's own
       # user create databases, which is all the replay needs.
       - name: Start Postgres

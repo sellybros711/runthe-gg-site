@@ -139,3 +139,10 @@ jobs:
       # fabricated season on it.
       - name: A whole run, to the results screen
         run: node baseball/check-run.mjs
+
+      # THE BALLPARKS. An SVG url() that points at nothing draws nothing, two parks
+      # sharing an id paint each other, a rule nobody can meet is a park nobody
+      # sees, and a chosen park the account cannot back must fall back to the home
+      # park. All four are silent, so all four are asked of the real page.
+      - name: Ballparks, their art and their unlocks
+        run: node baseball/check-parks.mjs

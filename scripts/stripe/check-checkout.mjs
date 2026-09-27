@@ -202,10 +202,20 @@ console.log('\nSOLD YEARLY (the switch on, in a scratch copy)');
 
   const d = await import(join(dir, 'checkout-bundle.js') + '?rtd');
   world = { rows: [], subs: [], ready: true };
-  env.STRIPE_PRICE_RTD_PRO = 'price_rtd';
-  r = await buy(d, 'diamond-pro', 'year');
+  env.STRIPE_PRICE_RTF_PRO = 'price_rtf';
+  r = await buy(d, 'floor-pro', 'year');
   ok('a bundle with no yearly plan ignores the plan it is sent and sells once',
     !!r.body.url && sessions[sessions.length - 1].get('mode') === 'payment');
+
+  /* Run The Diamond Pro renews, but on its own Price rather than as a yearly plan, so
+     it opens a subscription whatever plan it is sent and is never filed as 'year'. */
+  env.STRIPE_PRICE_RTD_PRO = 'price_rtd';
+  r = await buy(d, 'diamond-pro', 'year');
+  const rs = sessions[sessions.length - 1];
+  ok('a recurring bundle opens a subscription', !!r.body.url && rs.get('mode') === 'subscription');
+  ok('  carrying the account and the bundle on the subscription',
+    rs.get('subscription_data[metadata][supabase_user_id]') && rs.get('subscription_data[metadata][bundle]') === 'diamond-pro');
+  ok('  and it is not filed as a yearly plan', rs.get('metadata[plan]') !== 'year', rs.get('metadata[plan]'));
   rmSync(dir, { recursive: true, force: true });
 }
 

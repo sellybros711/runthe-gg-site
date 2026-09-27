@@ -386,7 +386,7 @@ psql -d yr -f supabase/test/premium_yearly_test.sql   (its header lists the chai
 node football/check-premium.mjs              the store, the receipt and the checkout answers, in a browser
 ```
 
-## Run The Diamond Pro ($9.99 once, baseball only)
+## Run The Diamond Pro ($14.99 a year, baseball only)
 
 The one bundle that belongs to a single game, by the owner's decision (2026-09). It
 still goes through the one checkout (`checkout-bundle.js`) and the one webhook, so
@@ -394,9 +394,36 @@ there is no second payment path. The catalog row is `diamond-pro` in `_bundles.j
 it grants `rtd_premium`, and the page asks `premium_products()` for it.
 
 What it sells: the six extra modes (Eras, One Franchise, Division, Cap Survivor,
-All-Time Pitching Staff, Trade Machine) with no daily limit. Free accounts and
-guests get one start of each mode per Eastern day. Classic and the daily are free
-for everybody and never counted.
+All-Time Pitching Staff, Trade Machine) with no daily limit, plus the two Pro
+ballparks. Free accounts and guests get one start of each mode per Eastern day.
+Classic and the daily are free for everybody and never counted.
+
+**It is a yearly subscription.** It launched as $9.99 once and moved to $14.99 a
+year (2026-09). `recurring: true` on the catalog row makes the checkout open in
+subscription mode (Stripe refuses a recurring Price in payment mode) with the
+bundle key on the subscription's metadata. The webhook writes ONE `premium_unlocks`
+row whose `expires_at` follows the subscription:
+
+| subscription | Pro ends |
+|---|---|
+| active, trialing | end of the paid period, plus 3 days of grace |
+| past_due (a renewal failed, Stripe is retrying) | a week from now |
+| cancelled at period end | still active, so the end of the period |
+| canceled, unpaid, incomplete | now |
+
+Every subscription event is read back from Stripe before it is written, so events
+arriving out of order cannot hand a cancelled subscriber another year. **It never
+touches the `subscriptions` table**, which is the Arcade Card's and holds one row a
+user. **A row with no end date is never given one**, so anybody who bought the old
+$9.99, or was comped, keeps Pro for good, and checkout will not sell them a year.
+No migration was needed: `premium_products()` and `rtd_mode_spend` already honour
+`expires_at`. Subscribers manage or cancel through the Customer Portal
+(`/api/stripe/portal`), which the page's Manage billing button opens.
+
+```
+node scripts/stripe/check-recurring.mjs   the checkout and webhook, driven, no network
+node scripts/stripe/verify-bundles.mjs    the catalog against everything that reads it
+```
 
 ### Go-live, in this order
 
@@ -406,24 +433,31 @@ for everybody and never counted.
    **yes**. 122 turns 121's one shared play a day into one play of each mode. This has to come first:
    until it runs, the table refuses `rtd_premium` and a paid checkout 500s in the
    webhook (Stripe retries, so nobody loses money, but nobody gets Pro either).
-2. **Create the Product and Price in Stripe.** Either run the script (it is
-   idempotent and prints the env var line):
+2. **The Price in Stripe is recurring: $14.99 USD per year.** Either run the script
+   (idempotent, prints the env var line, lookup key `rtd_pro_year`):
    `STRIPE_SECRET_KEY=sk_live_... node scripts/stripe/setup-premium-bundles.mjs`
-   or do it by hand in the Dashboard: Product catalog, Add product, name
-   **Run The Diamond Pro**, one-time price **$9.99 USD**, and on the price set the
-   lookup key `rtd_pro_once`. Copy the price id (`price_...`).
-3. **Add the env var in Cloudflare Pages** (Settings, Environment variables,
-   Production): `STRIPE_PRICE_RTD_PRO = price_...`. Redeploy (or push any commit)
-   so the function picks it up. Until this is set the Get Pro button answers
-   "Pro is not on sale yet".
-4. **Nothing to change on the webhook.** It already listens for
-   `checkout.session.completed` and `checkout.session.async_payment_succeeded`, and
-   it grants any bundle in `_bundles.js` by `metadata.bundle`.
-5. **Test it** with a 100% off promotion code (Stripe is live, there is no test
+   or do it by hand: Product catalog, **Run The Diamond Pro**, add a price,
+   **Recurring**, **Yearly**, **$14.99**. Copy the price id (`price_...`). A Price
+   cannot change from one-time to recurring, so the old $9.99 price is a different
+   Price; archive it rather than delete it.
+3. **Point the env var at the yearly price in Cloudflare Pages** (Settings,
+   Environment variables, Production): `STRIPE_PRICE_RTD_PRO = price_...` (the
+   $14.99 yearly one). Redeploy (or push any commit) so the function picks it up.
+   Until this is set the Get Pro button answers "Pro is not on sale yet".
+4. **The webhook endpoint must send the subscription events**:
+   `checkout.session.completed`, `checkout.session.async_payment_succeeded`,
+   `customer.subscription.updated` and `customer.subscription.deleted`. The Arcade
+   Card already needs the last two, so they are usually on; check the endpoint in
+   Developers, Webhooks. Without `customer.subscription.updated` a renewal never
+   moves the end date and every subscriber loses Pro a year in.
+5. **The Customer Portal must be on** (Settings, Billing, Customer portal), with
+   cancellation allowed, for Manage billing to open.
+6. **Test it** with a 100% off promotion code (Stripe is live, there is no test
    mode here): open `/baseball/` signed in, press Go Pro, pay with the code, and
-   you land back on the game with "Pro is on". The tiles read Unlimited.
+   you land back on the game with "Pro is on". The tiles read Unlimited. Then
+   cancel from Manage billing and confirm Pro stays until the period's end.
 
-To comp somebody by hand:
+To comp somebody for good by hand (a row with no end date is never given one):
 
 ```sql
 insert into public.premium_unlocks (user_id, product, source)

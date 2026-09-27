@@ -138,7 +138,13 @@ try {
   {
     const { ctx, page } = await open({ signedIn: false });
     const line = await page.textContent('#hp-pro');
-    claim(/one free play a day/i.test(line) && /\$9\.99/.test(line), 'the front page says the rule and the price', line);
+    /* The price is read off the page's own constant, so a price change is one edit.
+       The TERM is asserted beside it: Pro is a yearly subscription, and a price
+       shown without "a year" reads as once. */
+    const src = readFileSync(new URL('./index.html', import.meta.url), 'utf8');
+    const price = (/const PRO_PRICE='([^']+)'/.exec(src) || [])[1] || '(none)';
+    claim(/one free play a day/i.test(line) && line.includes(price + ' a year'),
+      'the front page says the rule, the price and that it is yearly', line);
     claim((await chip(page, 'cap')) === '', 'an unplayed mode carries no chip');
 
     await tile(page, 'cap');

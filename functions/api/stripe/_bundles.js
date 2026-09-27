@@ -121,7 +121,17 @@ export const BUNDLES = {
     year: { envPrice: 'STRIPE_PRICE_RTB_YEAR', bonus: 'runtour_pack' },
   },
 
-  /* Run The Diamond Pro: the baseball game's own tier, $9.99 once, for good.
+  /* Run The Diamond Pro: the baseball game's own tier, $14.99 A YEAR, renewing.
+   *
+   * IT WAS $9.99 ONCE and became a subscription on the owner's call (2026-09),
+   * because the Stripe Price behind STRIPE_PRICE_RTD_PRO is now recurring.
+   * `recurring: true` is what tells the two files that read this: the checkout
+   * opens in subscription mode (a recurring Price in payment mode is refused by
+   * Stripe outright), and the webhook writes the grant with an end date that
+   * follows the subscription, moved forward on every renewal and pulled in on
+   * a cancellation or a failed payment. It is still ONE premium_unlocks row, so
+   * nothing that reads Pro changed, and it never touches the `subscriptions`
+   * table, which is the Arcade Card's and holds one row a user.
    *
    * THE ONE BUNDLE THAT BELONGS TO ONE GAME, and that is the owner's decision
    * (2026-09) rather than a slip. CLAUDE.md says never to build a price or an
@@ -136,6 +146,7 @@ export const BUNDLES = {
   'diamond-pro': {
     name: 'Run The Diamond Pro',
     envPrice: 'STRIPE_PRICE_RTD_PRO',
+    recurring: true,
     grants: [
       { product: 'rtd_premium' },
     ],

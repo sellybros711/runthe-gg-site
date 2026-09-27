@@ -117,7 +117,23 @@ if (checkout.includes("form.set('customer'")) {
   }
 }
 
-// 8. THE YEARLY PLANS (supabase/124_premium_yearly.sql). Four things that are each written in
+// 8. a recurring bundle is sold, granted and renewed as one
+// A recurring Price in payment mode is refused by Stripe, so the checkout has to
+// open in subscription mode; the renewals carry only the subscription, so the key
+// has to ride on it; and the grant must never reach the `subscriptions` table,
+// which is the Arcade Card's one row a user.
+{
+  const rec = Object.entries(BUNDLES).filter(([, b]) => b.recurring);
+  const setupRec = rec.every(([k, b]) => new RegExp("envVar: '" + b.envPrice + "'[\\s\\S]{0,80}interval: '").test(setup));
+  if (!rec.length) ok('no recurring bundles');
+  else if (!/subMode = [^;]*bundle\.recurring/.test(checkout) || !checkout.includes("mode: subMode ? 'subscription' : 'payment'")) bad('a recurring bundle does not open checkout in subscription mode');
+  else if (!checkout.includes("subscription_data[metadata][bundle]")) bad('a recurring checkout does not put the bundle on the subscription, so renewals cannot be matched');
+  else if (!/if \(userId && bundleKey\) \{[\s\S]{0,600}grantRecurring/.test(webhook)) bad('subscription events for a bundle are not routed to grantRecurring');
+  else if (!setupRec) bad('the setup script mints a recurring bundle as a one-time price');
+  else ok('recurring bundles (' + rec.map(([k]) => k).join(', ') + ') open as subscriptions, carry their key, renew through grantRecurring, and are minted recurring');
+}
+
+// 9. THE YEARLY PLANS (supabase/124_premium_yearly.sql). Four things that are each written in
 // two places, and each pair drifts silently: a plan that keeps alive a different list from the
 // one the catalog sells, a yearly price nobody reads, a bonus that is not a product the table
 // takes, and a plan event the webhook is not subscribed to (a renewal that nothing extends).
