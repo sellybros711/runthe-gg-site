@@ -309,17 +309,6 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
   .drivecanvas{display:block;width:100%;height:160px;border-radius:12px;background:#0a1626;
     box-shadow:0 18px 36px -18px rgba(0,0,0,.9),0 0 0 1px rgba(255,255,255,.08);}
   .feat.wide .drivecanvas{height:250px;}
-  .slot{width:250px;max-width:100%;text-align:center;}
-  .slot-top{font-family:var(--display);font-size:14px;letter-spacing:.16em;color:#ffd1a8;text-shadow:0 0 14px rgba(255,138,61,.6);margin-bottom:8px;}
-  .slot-frame{position:relative;height:96px;border-radius:12px;overflow:hidden;background:linear-gradient(180deg,#341806,#1c0e04);
-    border:2px solid rgba(255,138,61,.6);box-shadow:inset 0 0 0 1px rgba(0,0,0,.4),0 0 30px -6px rgba(255,138,61,.7);}
-  .slot-reel{position:absolute;left:0;right:0;top:0;will-change:transform;}
-  .slot-item{height:32px;display:flex;align-items:center;justify-content:center;font-family:var(--display);font-size:18px;letter-spacing:.05em;color:#ffdcb8;}
-  .slot-line{position:absolute;left:0;right:0;top:32px;height:32px;border-top:1px solid rgba(251,191,36,.5);border-bottom:1px solid rgba(255,94,58,.5);
-    background:linear-gradient(90deg,rgba(251,191,36,.08),rgba(242,113,28,.14),rgba(255,94,58,.08));}
-  .slot-frame.win .slot-line{animation:slotwin .5s ease 2;}
-  @keyframes slotwin{50%{background:linear-gradient(90deg,rgba(251,191,36,.35),rgba(242,113,28,.5),rgba(255,94,58,.35));}}
-  .slot-glass{position:absolute;inset:0;pointer-events:none;background:linear-gradient(180deg,rgba(255,255,255,.10),transparent 22%,transparent 78%,rgba(0,0,0,.35));}
   .golf-showcase{position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;gap:10px;width:100%;}
   .gshow-green{display:flex;align-items:flex-end;justify-content:center;gap:4px;width:100%;max-width:300px;min-height:110px;
     background:radial-gradient(70% 30% at 50% 100%,rgba(58,160,70,.55),transparent 75%);}
@@ -382,7 +371,6 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
     .phone{width:74px;}
     .shots{padding-top:30px;}
     .media{padding-top:30px;}
-    .slot-top{display:none;}
     .gshow-cap{display:none;}
   }
 
@@ -572,7 +560,6 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
     .hero-bg:before,.eyebrow .dot,.screen .bar .live:before,.float-badge,.ticker-track{animation:none!important;}
     .rv{opacity:1;transform:none;transition:none;}
     .feat,.play,.cta,.phone{transition:none;}
-    .slot-frame.win .slot-line{animation:none!important;} .slot-reel{transition:none!important;}
   }
   :focus-visible{outline:2px solid var(--brand);outline-offset:3px;border-radius:6px;}
   .pico{display:inline-block;width:1.05em;height:1.05em;vertical-align:-0.16em;background-size:contain;background-repeat:no-repeat;background-position:center;flex:0 0 auto}
@@ -677,28 +664,50 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
   @keyframes idle{50%{transform:translateY(-2px);}}
   .golf-scene .gshow-cap{color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.6);padding-left:4px;}
 
-  /* ---- arcade: a neon cabinet ---- */
-  .fx-arcade{background:
-      radial-gradient(60% 70% at 50% 45%,rgba(255,120,40,.28),transparent 70%),
-      repeating-linear-gradient(90deg,rgba(255,255,255,.03) 0 2px,transparent 2px 22px),
-      linear-gradient(180deg,#1a0b1f,#0b0d1a);}
-  .fx-arcade .slot-top{animation:neon 2.8s ease-in-out infinite;}
-  @keyframes neon{0%,100%{opacity:1;}46%{opacity:1;}48%{opacity:.35;}50%{opacity:1;}52%{opacity:.5;}54%{opacity:1;}}
-  .cab{position:relative;}
-  .slot-frame.spinning .slot-reel{filter:blur(1.2px);}
-  .bulbs{position:absolute;inset:-9px;pointer-events:none;border-radius:16px;}
-  .bulbs i{position:absolute;width:5px;height:5px;border-radius:50%;background:#ffd27a;box-shadow:0 0 6px 1px rgba(255,190,90,.9);
-    animation:bulb 1.2s steps(1) infinite;}
-  @keyframes bulb{50%{background:#5a2a10;box-shadow:none;}}
-  .slot-frame.win ~ .bulbs i{animation-duration:.2s;}
-  .sparks{position:absolute;left:50%;top:50%;z-index:3;pointer-events:none;}
-  .sparks i{position:absolute;width:6px;height:6px;margin:-3px;border-radius:1px;background:#ffd27a;opacity:0;}
-  .sparks i:nth-child(odd){background:#ff6aa8;} .sparks i:nth-child(3n){background:#7ef0ff;}
-  .slot-frame.win ~ .sparks i{animation:spark .9s ease-out forwards;}
-  @keyframes spark{0%{opacity:1;transform:translate(0,0) rotate(0);}100%{opacity:0;transform:translate(var(--dx),var(--dy)) rotate(260deg);}}
-  .sparks i:nth-child(1){--dx:-120px;--dy:-40px}.sparks i:nth-child(2){--dx:120px;--dy:-44px}.sparks i:nth-child(3){--dx:-90px;--dy:40px}
-  .sparks i:nth-child(4){--dx:96px;--dy:46px}.sparks i:nth-child(5){--dx:-30px;--dy:-66px}.sparks i:nth-child(6){--dx:40px;--dy:-70px}
-  .sparks i:nth-child(7){--dx:-140px;--dy:6px}.sparks i:nth-child(8){--dx:140px;--dy:0}.sparks i:nth-child(9){--dx:-10px;--dy:62px}.sparks i:nth-child(10){--dx:60px;--dy:64px}
+  /* ---- arcade: today's board of twelve ----
+     The Arcade's own animated marks (/arcade/gamemarks.js), one tile a puzzle,
+     worked through the way a player works through a day: each lights up in its
+     own colour, takes a check, and the bar fills to twelve. */
+  .fx-arc{flex-direction:column;align-items:stretch;justify-content:space-between;gap:10px;padding:14px 16px 14px;height:236px;
+    background:radial-gradient(70% 60% at 50% 0%,rgba(255,138,61,.22),transparent 70%),linear-gradient(180deg,#1a1020,#0c0f1c);}
+  .fx-arc:after{display:none;}
+  .arc-top{display:flex;align-items:center;justify-content:space-between;gap:10px;position:relative;z-index:2;}
+  .arc-live{display:inline-flex;align-items:center;gap:7px;font-size:10.5px;font-weight:900;letter-spacing:.14em;text-transform:uppercase;
+    color:#06101c;background:var(--c);border-radius:999px;padding:5px 10px 5px 8px;}
+  .arc-live i{width:7px;height:7px;border-radius:50%;background:#06101c;animation:livePulse 2s ease-out infinite;}
+  .arc-date{font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#c9b8d6;}
+  .arc-grid{position:relative;z-index:2;display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:7px;}
+  .at{position:relative;aspect-ratio:1;border-radius:11px;display:flex;align-items:center;justify-content:center;
+    background:color-mix(in srgb,var(--k) 10%,#141827);border:1px solid color-mix(in srgb,var(--k) 28%,transparent);
+    transition:transform .35s var(--ease),background .35s,box-shadow .35s,opacity .35s;}
+  .at .am{width:64%;height:64%;display:flex;}
+  .at .am svg{width:100%;height:100%;}
+  .at.on{transform:translateY(-4px) scale(1.14);z-index:2;background:color-mix(in srgb,var(--k) 26%,#141827);
+    box-shadow:0 0 0 2px var(--k),0 12px 26px -8px color-mix(in srgb,var(--k) 80%,transparent);}
+  .at.done{opacity:.55;}
+  .at .ok{position:absolute;right:-4px;top:-4px;width:16px;height:16px;border-radius:50%;background:#46bd30;box-shadow:0 0 0 2px #0c0f1c;
+    transform:scale(0);transition:transform .3s var(--ease);}
+  .at .ok::after{content:"";position:absolute;left:5px;top:3px;width:4px;height:7px;border:solid #05220b;border-width:0 2px 2px 0;transform:rotate(45deg);}
+  .at.done .ok{transform:scale(1);}
+  .arc-tick{position:relative;z-index:2;display:flex;align-items:center;gap:14px;background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.08);
+    border-radius:12px;padding:8px 12px;min-height:46px;}
+  .arc-now{flex:1;min-width:0;display:flex;flex-direction:column;}
+  .arc-nm{font-family:var(--title);font-weight:400;font-size:14px;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .arc-ds{font-size:11.5px;color:#b9aac8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .arc-now.swap{animation:arcswap .45s var(--ease);}
+  @keyframes arcswap{0%{opacity:0;transform:translateY(6px);}100%{opacity:1;transform:none;}}
+  .arc-pr{display:flex;align-items:center;gap:8px;flex:0 0 auto;}
+  .arc-bar{width:70px;height:6px;border-radius:6px;background:rgba(255,255,255,.1);overflow:hidden;}
+  .arc-bar i{display:block;height:100%;width:100%;border-radius:6px;background:linear-gradient(90deg,#ff8a3d,#ffd27a);
+    transform-origin:0 50%;transform:scaleX(var(--p,0));transition:transform .45s var(--ease);}
+  .arc-n{font-family:var(--display);font-weight:400;font-size:15px;color:#fff;min-width:34px;text-align:right;font-variant-numeric:tabular-nums;}
+  .fx-arc.all .arc-live{background:#46bd30;}
+  @media (max-width:640px){
+    .fx-arc{height:224px;padding:12px 12px;gap:8px;}
+    .arc-grid{gap:6px;}
+    .arc-bar{width:48px;}
+  }
+  @media (prefers-reduced-motion: reduce){ .at,.arc-bar i{transition:none;} .arc-live i,.arc-now.swap{animation:none!important;} }
 
   /* ---- pitch: a floodlit stadium ---- */
   .fx-pitch{background:linear-gradient(180deg,#04101a 0%,#0a2233 40%,#0c3a2a 100%);perspective:500px;}
@@ -750,7 +759,7 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
   }
   @media (prefers-reduced-motion: reduce){
     .fx-stadium .crowd,.fx-stadium .lights i,.gclouds,.gsun,.gflag,.gball-fly,.gball,.golf-scene .golfer-slot img,
-    .fx-arcade .slot-top,.bulbs i,.pitch-floor,.beams i,.fx-pitch .phone,.an-bounce svg,.an-spin svg,.an-shine::after,.an-pulse svg{animation:none!important;}
+    .pitch-floor,.beams i,.fx-pitch .phone,.an-bounce svg,.an-spin svg,.an-shine::after,.an-pulse svg{animation:none!important;}
     .gball-fly{transform:translate(330px,186px);}
     .feat.tilt{transform:none;}
   }
@@ -953,14 +962,10 @@ window.GA_ID='G-L29P5MRWKE';
 
       <article class="feat arcade rv" data-sport="puzzles">
         <a class="feat-link" href="/arcade/" aria-hidden="true" tabindex="-1"></a>
-        <div class="media fx-arcade">
-          <span class="tagline"><span class="pill hot">Daily</span><span class="pill">Puzzles</span></span>
-          <div class="slot-wrap" aria-hidden="true">
-            <div class="slot">
-              <div class="slot-top">RUN THE ARCADE</div>
-              <div class="cab"><div class="slot-frame"><div class="slot-reel" data-names="Common Ground|Crossword|Sportegories|Odd One Out|Alma Mater|Career|Rank It|Guess|High Low|The Table"></div><div class="slot-line"></div><div class="slot-glass"></div></div><span class="bulbs" aria-hidden="true"></span><span class="sparks" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span></div>
-            </div>
-          </div>
+        <div class="media fx-arc" aria-hidden="true">
+          <div class="arc-top"><span class="arc-live"><i></i>Today's 12</span><span class="arc-date">New puzzles daily</span></div>
+          <div class="arc-grid"><span class="at" data-k="match" style="--k:#2F6BFF"><span class="am" data-mark="match"></span><i class="ok"></i></span><span class="at" data-k="crossword" style="--k:#C9D3DF"><span class="am" data-mark="crossword"></span><i class="ok"></i></span><span class="at" data-k="guess" style="--k:#F06A5F"><span class="am" data-mark="guess"></span><i class="ok"></i></span><span class="at" data-k="table" style="--k:#F2B632"><span class="am" data-mark="table"></span><i class="ok"></i></span><span class="at" data-k="oddone" style="--k:#A982F3"><span class="am" data-mark="oddone"></span><i class="ok"></i></span><span class="at" data-k="career" style="--k:#48D17A"><span class="am" data-mark="career"></span><i class="ok"></i></span><span class="at" data-k="rankit" style="--k:#F65C9C"><span class="am" data-mark="rankit"></span><i class="ok"></i></span><span class="at" data-k="almamater" style="--k:#E9C46A"><span class="am" data-mark="almamater"></span><i class="ok"></i></span><span class="at" data-k="highlow" style="--k:#F5822B"><span class="am" data-mark="highlow"></span><i class="ok"></i></span><span class="at" data-k="sportegories" style="--k:#DA6BE6"><span class="am" data-mark="sportegories"></span><i class="ok"></i></span><span class="at" data-k="rollcall" style="--k:#37C5D5"><span class="am" data-mark="rollcall"></span><i class="ok"></i></span><span class="at" data-k="chain" style="--k:#96B93C"><span class="am" data-mark="chain"></span><i class="ok"></i></span></div>
+          <div class="arc-tick"><span class="arc-now"><b class="arc-nm">Common Ground</b><span class="arc-ds">Four hidden groups. Four mistakes allowed.</span></span><span class="arc-pr"><span class="arc-bar"><i></i></span><b class="arc-n">0/12</b></span></div>
         </div>
         <div class="feat-info">
           <span class="g-head">
@@ -1660,9 +1665,11 @@ document.querySelectorAll('.feat-link').forEach(function(a){
 </script>
 
 <script src="/football/drivecast.js?v=4"></script>
+<!-- The Arcade's own animated puzzle marks, drawn on the Arcade card. -->
+<script src="/arcade/gamemarks.js?v=4"></script>
 <script>
 /* Card motifs: the two Perfect Season cards run the football game's own drive-chart gamecast
-   (football/drivecast.js) in their motif column; the Arcade card runs a slot machine. */
+   (football/drivecast.js) in their motif column. */
 (function(){
   var reduce=false; try{ reduce=window.matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){}
   var NFL=[['KC','#E31837'],['SF','#AA0000'],['DAL','#869397'],['PHI','#14A76C'],['BUF','#1D7FE0'],['MIA','#00C6B7'],['BAL','#7B5CD6'],['GB','#FFB612'],['DET','#4F9BE0'],['SEA','#69BE28'],['DEN','#FB4F14'],['CHI','#E85D2A'],['MIN','#8B5CC7'],['PIT','#FFC20E'],['LV','#C4C9CC'],['NE','#3A6FBF'],['NYG','#2A54D0'],['LAR','#FFD100'],['TB','#D50A0A'],['CIN','#FB6A1E'],['HOU','#E4324B'],['TEN','#4F9BD8'],['JAX','#12A3A3'],['CAR','#1FA9E0']];
@@ -1699,43 +1706,6 @@ document.querySelectorAll('.feat-link').forEach(function(a){
     });
   }
 
-  function slot(el){
-    var reel=el.querySelector('.slot-reel'),frame=el.querySelector('.slot-frame');
-    if(!reel) return;
-    var names=(reel.getAttribute('data-names')||'').split('|').filter(Boolean);
-    if(!names.length) return;
-    var base=names.length,H=32,html='';
-    for(var k=0;k<24;k++){ for(var j=0;j<base;j++){ html+='<div class="slot-item">'+names[j]+'</div>'; } }
-    reel.innerHTML=html;
-    var i=base*10;
-    function setPos(idx,anim){ reel.style.transition=anim?'transform 1.5s cubic-bezier(.16,.84,.3,1)':'none'; reel.style.transform='translateY('+(-(idx-1)*H)+'px)'; }
-    setPos(i,false);
-    if(reduce){ setPos(base*10+4,false); return; }
-    function spin(){
-      var steps=17+Math.floor(Math.random()*13); i+=steps; setPos(i,true);
-      if(frame) frame.classList.add('spinning');
-      reel.addEventListener('transitionend',function te(){
-        reel.removeEventListener('transitionend',te);
-        if(frame) frame.classList.remove('spinning');
-        if(frame){ frame.classList.add('win'); setTimeout(function(){ frame.classList.remove('win'); },1000); }
-        var norm=((i%base)+base)%base; i=norm+base*10; setPos(i,false); void reel.offsetHeight;
-        setTimeout(spin,1700);
-      });
-    }
-    setTimeout(spin,700);
-  }
-  [].forEach.call(document.querySelectorAll('.slot'),slot);
-  /* the cabinet's marquee bulbs, laid round the reel window in the order they chase */
-  [].forEach.call(document.querySelectorAll('.bulbs'),function(b){
-    var pts=[],n=11,m=4,k;
-    for(k=0;k<n;k++) pts.push([k/(n-1),0]);
-    for(k=1;k<=m;k++) pts.push([1,k/(m+1)]);
-    for(k=n-1;k>=0;k--) pts.push([k/(n-1),1]);
-    for(k=m;k>=1;k--) pts.push([0,k/(m+1)]);
-    pts.forEach(function(p,j){ var i=document.createElement('i');
-      i.style.left='calc('+(p[0]*100)+'% - 2.5px)'; i.style.top='calc('+(p[1]*100)+'% - 2.5px)';
-      i.style.animationDelay=(-(j%3)*0.4)+'s'; b.appendChild(i); });
-  });
 })();
 </script>
 
@@ -1863,6 +1833,49 @@ document.querySelectorAll('.feat-link').forEach(function(a){
       var r=hero.getBoundingClientRect(); stage.style.setProperty('--px',((ev2.clientX-r.left)/r.width-.5).toFixed(3)); stage.style.setProperty('--py',((ev2.clientY-r.top)/r.height-.5).toFixed(3)); }); });
     hero.addEventListener('pointerleave',function(){ stage.style.setProperty('--px',0); stage.style.setProperty('--py',0); });
   }
+})();
+</script>
+<script>
+/* The Arcade card's board. It runs the day: one puzzle at a time lights up in its
+   own colour, its name and pitch come up in the ticker, it takes a check, and the
+   bar fills. After the twelfth it holds on "All 12 done" and starts the next day.
+   The marks, names and pitches are the Arcade's own (/arcade/gamemarks.js), so
+   this card can never describe a puzzle the Arcade does not have. */
+(function(){
+  var box=document.querySelector('.fx-arc'); if(!box) return;
+  var reduce=false; try{ reduce=matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){}
+  var tiles=[].slice.call(box.querySelectorAll('.at')), card=box.closest('.feat');
+  var now=box.querySelector('.arc-now'), nm=box.querySelector('.arc-nm'), ds=box.querySelector('.arc-ds'),
+      bar=box.querySelector('.arc-bar i'), n=box.querySelector('.arc-n'), live=box.querySelector('.arc-live');
+  var date=box.querySelector('.arc-date');
+  try{ date.textContent=new Date().toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',timeZone:'America/New_York'}); }catch(e){}
+  function M(){ return window.RTGGameMarks; }
+  function pitch(k){ var d=M()?M().desc(k):''; var parts=d.split(/(?<=[?.])\s+/); return parts.length>1?parts.slice(1).join(' '):d; }
+  function show(i){
+    var t=tiles[i], k=t.getAttribute('data-k');
+    tiles.forEach(function(x,j){ x.classList.toggle('on',j===i); x.classList.toggle('done',j<i); });
+    nm.textContent=M()?M().name(k):k; ds.textContent=pitch(k);
+    now.classList.remove('swap'); void now.offsetWidth; now.classList.add('swap');
+    bar.style.setProperty('--p',i/12); n.textContent=i+'/12';
+  }
+  function finish(){
+    tiles.forEach(function(x){ x.classList.remove('on'); x.classList.add('done'); });
+    bar.style.setProperty('--p',1); n.textContent='12/12'; box.classList.add('all');
+    nm.textContent='All 12 done'; ds.textContent='Come back tomorrow for a new set.';
+    now.classList.remove('swap'); void now.offsetWidth; now.classList.add('swap');
+  }
+  function start(){ show(0); if(reduce) return;
+    var i=0;
+    setInterval(function(){
+      if(card&&card.classList.contains('off')) return;
+      if(document.visibilityState==='hidden') return;
+      i++;
+      if(i<12){ show(i); }
+      else if(i===12){ finish(); }
+      else if(i>=14){ i=0; box.classList.remove('all'); show(0); }
+    },1600);
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',start); else start();
 })();
 </script>
 </body>
