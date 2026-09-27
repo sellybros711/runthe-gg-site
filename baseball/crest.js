@@ -167,126 +167,179 @@ const MARKS={
     note:'Your two letters. It stays the default forever and it is nobody\'s consolation prize.',
     tier:null, draw:function(){ return ''; } },
 
-  /* THE BALL. Two seams bowing away from each other, with the stitches across them. */
+  /* THE BALL. Two seams bowing apart, each laced with a row of V stitches that point
+     away from it, which is the detail that stops a circle with two lines on it from
+     reading as a tennis ball. */
   ball:{ name:'The Ball', t:'The Ball', tier:'bronze',
     draw:function(f,a){
-      let s='<circle cx="50" cy="50" r="36" fill="'+f+'"/>'+
-        '<path d="M31 22 C44 38 44 62 31 78" fill="none" stroke="'+a+'" stroke-width="4"/>'+
-        '<path d="M69 22 C56 38 56 62 69 78" fill="none" stroke="'+a+'" stroke-width="4"/>';
-      [30,40,50,60,70].forEach(function(y){
-        const dx=Math.abs(y-50)*0.18;
-        s+='<path d="M'+(36.5+dx)+' '+(y-3)+' l7 3" stroke="'+a+'" stroke-width="2.6" stroke-linecap="round"/>';
-        s+='<path d="M'+(63.5-dx)+' '+(y-3)+' l-7 3" stroke="'+a+'" stroke-width="2.6" stroke-linecap="round"/>';
+      let s='<circle cx="50" cy="50" r="38" fill="'+f+'"/>'+
+        '<path d="M28 20 C44 36 44 64 28 80" fill="none" stroke="'+a+'" stroke-width="3.2" stroke-linecap="round"/>'+
+        '<path d="M72 20 C56 36 56 64 72 80" fill="none" stroke="'+a+'" stroke-width="3.2" stroke-linecap="round"/>';
+      for(let i=0;i<7;i++){
+        const t=(i+0.5)/7, y=20+t*60;
+        const x=28+3*(1-t)*(1-t)*t*0+ (function(){const u=1-t;return u*u*u*28+3*u*u*t*44+3*u*t*t*44+t*t*t*28;})()-28;
+        s+='<path d="M'+(x+4.5).toFixed(1)+' '+(y-3.2).toFixed(1)+' l-4.5 3.2 l4.5 3.2" fill="none" stroke="'+a+'" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>';
+        s+='<path d="M'+(100-x-4.5).toFixed(1)+' '+(y-3.2).toFixed(1)+' l4.5 3.2 l-4.5 3.2" fill="none" stroke="'+a+'" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>';
+      }
+      return s;
+    } },
+
+  /* THE CAP. Three-quarter view: a six panel crown with its seams running to the
+     button, a band, and a brim that curves toward the camera with its underside shown. */
+  cap:{ name:'The Cap', t:'The Cap', tier:'silver',
+    draw:function(f,a){
+      return '<path d="M14 64 C12 38 28 20 50 18 C70 17 84 30 86 52 L86 64 Z" fill="'+f+'"/>'+
+        '<path d="M50 19 C44 30 42 46 42 64" fill="none" stroke="'+a+'" stroke-width="2.4"/>'+
+        '<path d="M52 19 C62 30 68 44 70 64" fill="none" stroke="'+a+'" stroke-width="2.4"/>'+
+        '<path d="M50 19 C34 28 24 44 22 64" fill="none" stroke="'+a+'" stroke-width="2" opacity=".7"/>'+
+        '<ellipse cx="51" cy="18.5" rx="5" ry="3.2" fill="'+f+'" stroke="'+a+'" stroke-width="2"/>'+
+        '<rect x="13" y="60" width="74" height="6" rx="2" fill="'+a+'"/>'+
+        '<path d="M40 64 C58 60 84 60 96 66 C92 78 70 84 44 78 C38 76 36 68 40 64 Z" fill="'+f+'"/>'+
+        '<path d="M44 76 C62 80 84 78 94 70" fill="none" stroke="'+a+'" stroke-width="2.4" stroke-linecap="round"/>';
+    } },
+
+  /* THE PENNANT. A long flag on a pole, with a bar at the hoist and a star, tied on
+     at two points. October in one shape. */
+  pennant:{ name:'The Pennant', t:'The Pennant', tier:'bronze',
+    draw:function(f,a){
+      return '<rect x="15" y="10" width="7" height="82" rx="3.5" fill="'+f+'"/>'+
+        '<circle cx="18.5" cy="10" r="5" fill="'+f+'"/>'+
+        '<path d="M22 20 L90 38 L22 58 Z" fill="'+f+'" stroke="'+f+'" stroke-width="3" stroke-linejoin="round"/>'+
+        '<rect x="22" y="20" width="11" height="38" fill="'+a+'"/>'+
+        poly(starPts(52,39,9,3.8,5,0),a)+
+        '<rect x="13" y="23" width="11" height="4" rx="2" fill="'+a+'"/>'+
+        '<rect x="13" y="51" width="11" height="4" rx="2" fill="'+a+'"/>';
+    } },
+
+  /* THE FIELD. The whole park from above: the fan of the outfield, the skin, the
+     grass square inside it, the mound and four bags. */
+  diamond:{ name:'The Field', t:'The Field', tier:'bronze',
+    draw:function(f,a){
+      return '<path d="M50 90 L10 50 A 57 57 0 0 1 90 50 Z" fill="'+f+'"/>'+
+        '<path d="M50 84 L25 59 A 30 30 0 0 1 75 59 Z" fill="'+a+'"/>'+
+        '<path d="M50 78 L36 64 L50 50 L64 64 Z" fill="'+f+'"/>'+
+        '<circle cx="50" cy="64" r="3.6" fill="'+a+'"/>'+
+        [[50,80],[34,64],[50,48],[66,64]].map(function(p){
+          return '<rect x="'+(p[0]-3)+'" y="'+(p[1]-3)+'" width="6" height="6" fill="'+f+'" stroke="'+a+'" stroke-width="1.2" transform="rotate(45 '+p[0]+' '+p[1]+')"/>';
+        }).join('')+
+        '<path d="M50 90 L10 50 M50 90 L90 50" stroke="'+a+'" stroke-width="2" opacity=".6"/>';
+    } },
+
+  /* THE GLOVE. A fielder's mitt, palm on: four fingers in their stalls, a thumb, the
+     web laced between them, and the pocket. The lacing is what makes it a glove and
+     not a hand. */
+  glove:{ name:'The Glove', t:'The Glove', tier:'gold',
+    draw:function(f,a){
+      /* the mitt, fingers fused into one rounded crown on the left, the thumb out to
+         the right, the laced web filling the gap between them */
+      let s='<path d="M32 90 C18 82 11 66 12 50 C13 34 20 20 32 14 C42 9 54 10 60 18 L62 36 L76 26 C83 22 91 27 90 36 C89 44 83 49 79 55 C81 71 74 84 62 90 Z" fill="'+f+'"/>'+
+        /* the web: a lattice between the index finger and the thumb */
+        '<path d="M60 18 L62 36 L76 26 C70 20 66 17 60 18 Z" fill="'+a+'"/>'+
+        '<path d="M62 20 L66 32 M66 18.5 L69 29 M71 21 L72 27 M60.5 24 L72 22 M61.5 30 L74 25" stroke="'+f+'" stroke-width="1.7" stroke-linecap="round"/>'+
+        /* the finger seams, radiating from the heel */
+        '<path d="M20 26 C28 36 32 44 34 56 M30 15 C36 28 40 40 41 54 M44 11 C46 26 48 40 48 54 M57 14 C57 28 56 42 55 54" fill="none" stroke="'+a+'" stroke-width="2.4" stroke-linecap="round"/>'+
+        /* the pocket and the heel */
+        '<path d="M28 66 C38 76 56 76 70 62" fill="none" stroke="'+a+'" stroke-width="3" stroke-linecap="round"/>'+
+        '<path d="M30 84 C42 91 56 91 64 86" fill="none" stroke="'+a+'" stroke-width="2.6" stroke-linecap="round"/>';
+      /* lacing round the heel */
+      [[22,74],[26,80],[18,64],[74,76],[78,68]].forEach(function(p){
+        s+='<circle cx="'+p[0]+'" cy="'+p[1]+'" r="1.6" fill="'+a+'"/>';
       });
       return s;
     } },
 
-  /* THE CAP. Side on, which is the only way a cap is a cap and not a bowl. */
-  cap:{ name:'The Cap', t:'The Cap', tier:'silver',
-    draw:function(f,a){
-      return '<path d="M20 64 C20 36 36 22 54 22 C72 22 82 38 82 64 z" fill="'+f+'"/>'+
-        '<path d="M76 60 C84 60 94 62 96 68 C88 72 78 70 70 68 z" fill="'+f+'"/>'+
-        '<rect x="18" y="62" width="66" height="8" rx="3" fill="'+f+'"/>'+
-        '<circle cx="54" cy="21" r="4.5" fill="'+a+'"/>'+
-        '<path d="M52 26 C52 40 50 52 46 62" fill="none" stroke="'+a+'" stroke-width="3.2"/>';
-    } },
-
-  /* THE PENNANT. A long triangle on a pole, which is October in one shape. */
-  pennant:{ name:'The Pennant', t:'The Pennant', tier:'bronze',
-    draw:function(f,a){
-      return '<rect x="18" y="12" width="7" height="78" rx="3.5" fill="'+f+'"/>'+
-        '<path d="M25 18 L88 36 L25 56 z" fill="'+f+'"/>'+
-        '<path d="M32 28 L64 36 L32 44 z" fill="'+a+'"/>';
-    } },
-
-  /* THE DIAMOND. Four bags on a square turned on its point. */
-  diamond:{ name:'The Diamond', t:'The Diamond', tier:'bronze',
-    draw:function(f,a){
-      return '<path d="M50 12 L88 50 L50 88 L12 50 z" fill="'+f+'"/>'+
-        '<path d="M50 28 L72 50 L50 72 L28 50 z" fill="'+a+'"/>'+
-        '<circle cx="50" cy="50" r="7" fill="'+f+'"/>'+
-        [[50,16],[84,50],[50,84],[16,50]].map(function(p){
-          return '<rect x="'+(p[0]-5)+'" y="'+(p[1]-5)+'" width="10" height="10" fill="'+a+'" transform="rotate(45 '+p[0]+' '+p[1]+')"/>';
-        }).join('');
-    } },
-
-  /* THE GLOVE. Four fingers and a thumb, with the web and the pocket laced in. */
-  glove:{ name:'The Glove', t:'The Glove', tier:'gold',
-    draw:function(f,a){
-      return '<rect x="22" y="14" width="12" height="44" rx="6" fill="'+f+'" transform="rotate(-10 28 36)"/>'+
-        '<rect x="36" y="9" width="12" height="46" rx="6" fill="'+f+'"/>'+
-        '<rect x="50" y="10" width="12" height="46" rx="6" fill="'+f+'"/>'+
-        '<rect x="63" y="15" width="12" height="42" rx="6" fill="'+f+'" transform="rotate(8 69 36)"/>'+
-        '<path d="M20 46 C18 72 34 90 54 90 C74 90 84 74 82 52 L20 46 z" fill="'+f+'"/>'+
-        '<rect x="76" y="40" width="12" height="32" rx="6" fill="'+f+'" transform="rotate(38 82 56)"/>'+
-        '<path d="M34 66 C44 74 58 74 66 64" fill="none" stroke="'+a+'" stroke-width="4" stroke-linecap="round"/>'+
-        '<path d="M70 44 L76 58 M66 48 L80 50" stroke="'+a+'" stroke-width="3" stroke-linecap="round"/>';
-    } },
-
-  /* THE BATS. Two, crossed, with the knobs at the bottom. */
+  /* THE BATS. Two, crossed, tapered from barrel to handle, with grip tape at the
+     knob, and a ball riding where they cross. */
   bats:{ name:'The Bats', t:'The Bats', tier:'silver',
     draw:function(f,a){
       const bat=function(rot){
-        return '<g transform="rotate('+rot+' 50 50)">'+
-          '<path d="M46 86 L47.5 44 C47.5 28 45.5 18 46 12 C46.5 8 53.5 8 54 12 C54.5 18 52.5 28 52.5 44 L54 86 z" fill="'+f+'"/>'+
-          '<rect x="43" y="84" width="14" height="6" rx="3" fill="'+f+'"/>'+
-          '<rect x="46.5" y="66" width="7" height="3" fill="'+a+'"/></g>';
+        return '<g transform="rotate('+rot+' 50 54)">'+
+          '<path d="M46.5 90 L47.6 56 C47.6 40 44.4 26 45.4 14 C46 7 54 7 54.6 14 C55.6 26 52.4 40 52.4 56 L53.5 90 Z" fill="'+f+'"/>'+
+          '<rect x="44" y="88" width="12" height="5.5" rx="2.7" fill="'+f+'"/>'+
+          '<path d="M47.2 70 L52.8 72 M47.3 75 L52.7 77 M47.4 80 L52.6 82" stroke="'+a+'" stroke-width="1.6"/>'+
+          '<path d="M48.4 18 C48.4 30 49 40 49 50" stroke="'+a+'" stroke-width="1.4" opacity=".55" fill="none"/></g>';
       };
-      return bat(-32)+bat(32);
+      return bat(-30)+bat(30)+
+        '<circle cx="50" cy="30" r="11" fill="'+f+'" stroke="'+a+'" stroke-width="2"/>'+
+        '<path d="M44 22 C47 27 47 33 44 38 M56 22 C53 27 53 33 56 38" fill="none" stroke="'+a+'" stroke-width="1.8"/>';
     } },
 
-  /* HOME PLATE. The five sided one, which no other sport has. */
+  /* HOME PLATE, with its depth: the white face and the edge below it, so it sits in
+     the dirt rather than floating on it. */
   plate:{ name:'Home Plate', t:'Home Plate', tier:'gold',
     draw:function(f,a){
-      return '<path d="M16 20 H84 V54 L50 86 L16 54 z" fill="'+f+'"/>'+
-        '<path d="M28 32 H72 V50 L50 71 L28 50 z" fill="none" stroke="'+a+'" stroke-width="4" stroke-linejoin="round"/>';
+      return '<path d="M14 26 H86 V56 L50 84 L14 56 Z" fill="'+a+'"/>'+
+        '<path d="M14 20 H86 V50 L50 78 L14 50 Z" fill="'+f+'"/>'+
+        '<path d="M24 29 H76 V47 L50 67 L24 47 Z" fill="none" stroke="'+a+'" stroke-width="2.6" stroke-linejoin="round"/>';
     } },
 
-  /* THE FLAME. A run of days, which is what a streak is. */
+  /* THE FLAME. Three tongues and a hot core. A run of days, which is what a streak is. */
   flame:{ name:'The Flame', t:'The Flame', tier:'gold',
     draw:function(f,a){
-      return '<path d="M50 90 C30 90 18 78 18 60 C18 42 34 34 36 16 C44 24 46 34 46 40 C52 32 56 24 56 12 C70 22 82 40 82 60 C82 78 70 90 50 90 z" fill="'+f+'"/>'+
-        '<path d="M50 84 C41 84 35 78 35 70 C35 60 44 56 46 46 C54 52 65 60 65 70 C65 78 59 84 50 84 z" fill="'+a+'"/>';
+      return '<path d="M50 92 C28 92 16 78 17 60 C18 46 28 38 30 24 C38 32 40 40 40 46 C44 36 48 24 46 8 C62 18 72 34 70 48 C74 44 76 38 76 32 C84 42 86 54 84 64 C82 80 70 92 50 92 Z" fill="'+f+'"/>'+
+        '<path d="M50 86 C38 86 31 78 32 68 C33 58 42 54 44 44 C52 50 54 56 53 62 C56 58 58 54 58 50 C64 56 67 64 66 71 C65 80 58 86 50 86 Z" fill="'+a+'"/>'+
+        '<path d="M50 82 C45 82 42 78 43 74 C44 69 48 67 49 63 C54 67 57 71 56 75 C55 79 53 82 50 82 Z" fill="'+f+'"/>';
     } },
 
-  /* THE STAR. A roster there is nothing better than. */
+  /* THE STAR, faceted: every point split into a lit half and a shaded half, which is
+     what turns a flat star into a struck one. */
   star:{ name:'The Star', t:'The Star', tier:'legend',
     draw:function(f,a){
-      return poly(starPts(50,52,40,17,5,0),f)+poly(starPts(50,52,16,7,5,0),a);
+      const outer=[],inner=[];
+      for(let i=0;i<5;i++){
+        const ao=(-90+i*72)*Math.PI/180, ai=(-90+36+i*72)*Math.PI/180;
+        outer.push([50+42*Math.cos(ao),53+42*Math.sin(ao)]);
+        inner.push([50+17*Math.cos(ai),53+17*Math.sin(ai)]);
+      }
+      let s=poly(starPts(50,53,42,17,5,0),f);
+      for(let i=0;i<5;i++){
+        const o=outer[i], ib=inner[(i+4)%5];
+        s+='<path d="M50 53 L'+o[0].toFixed(1)+' '+o[1].toFixed(1)+' L'+ib[0].toFixed(1)+' '+ib[1].toFixed(1)+' Z" fill="'+a+'" opacity=".55"/>';
+      }
+      return s;
     } },
 
-  /* THE TROPHY, off the football crest: a cup, a stem and a base. */
+  /* THE TROPHY: a cup with two handles, a star struck on the bowl, a stem and a
+     two-step plinth. */
   trophy:{ name:'The Trophy', t:'The Trophy', tier:'gold',
     draw:function(f,a){
-      return '<path d="M26 16 H74 V30 C74 48 64 58 50 58 C36 58 26 48 26 30 z" fill="'+f+'"/>'+
-        '<path d="M26 22 C14 22 12 42 28 46" fill="none" stroke="'+f+'" stroke-width="6"/>'+
-        '<path d="M74 22 C86 22 88 42 72 46" fill="none" stroke="'+f+'" stroke-width="6"/>'+
-        '<path d="M42 28 L50 22 L58 28 L55 40 H45 z" fill="'+a+'"/>'+
-        '<rect x="44" y="56" width="12" height="12" fill="'+f+'"/>'+
-        '<rect x="31" y="68" width="38" height="8" rx="2.5" fill="'+f+'"/>'+
-        '<rect x="24" y="76" width="52" height="10" rx="3" fill="'+f+'"/>';
+      return '<path d="M26 16 C26 26 12 22 12 34 C12 46 26 50 32 50" fill="none" stroke="'+f+'" stroke-width="6" stroke-linecap="round"/>'+
+        '<path d="M74 16 C74 26 88 22 88 34 C88 46 74 50 68 50" fill="none" stroke="'+f+'" stroke-width="6" stroke-linecap="round"/>'+
+        '<path d="M24 12 H76 V28 C76 48 64 60 50 60 C36 60 24 48 24 28 Z" fill="'+f+'"/>'+
+        '<rect x="24" y="12" width="52" height="5" fill="'+a+'"/>'+
+        poly(starPts(50,34,11,4.5,5,0),a)+
+        '<path d="M44 58 H56 L54 70 H46 Z" fill="'+f+'"/>'+
+        '<rect x="34" y="70" width="32" height="7" rx="2" fill="'+f+'"/>'+
+        '<rect x="26" y="78" width="48" height="11" rx="2.5" fill="'+f+'"/>'+
+        '<rect x="34" y="82" width="32" height="3" rx="1.5" fill="'+a+'"/>';
     } },
 
-  /* THE RINGS. Three of them, stacked, for three titles. */
-  rings:{ name:'The Rings', t:'The Rings', tier:'gold',
+  /* THE RING, a championship ring: the band, and a bezel big enough to carry a cut
+     stone with its facets. */
+  rings:{ name:'The Ring', t:'The Ring', tier:'gold',
     draw:function(f,a){
-      return [[32,58],[50,40],[68,58]].map(function(p){
-        return '<circle cx="'+p[0]+'" cy="'+p[1]+'" r="16" fill="none" stroke="'+f+'" stroke-width="8"/>'+
-          '<rect x="'+(p[0]-6)+'" y="'+(p[1]-22)+'" width="12" height="9" rx="2" fill="'+a+'" stroke="'+f+'" stroke-width="2.5"/>';
-      }).join('');
+      return '<ellipse cx="50" cy="64" rx="27" ry="24" fill="none" stroke="'+f+'" stroke-width="9"/>'+
+        '<path d="M27 72 C35 86 65 86 73 72" fill="none" stroke="'+a+'" stroke-width="2.2"/>'+
+        '<path d="M24 34 L34 14 H66 L76 34 L66 48 H34 Z" fill="'+f+'"/>'+
+        '<path d="M34 23 H66 L72 34 L64 42 H36 L28 34 Z" fill="'+a+'"/>'+
+        '<path d="M36 23 L44 34 L36 42 M64 23 L56 34 L64 42 M44 34 H56 M50 23 L44 34 M50 23 L56 34 M50 42 L44 34 M50 42 L56 34" fill="none" stroke="'+f+'" stroke-width="1.6" stroke-linejoin="round"/>';
     } },
 
-  /* THE CROWN, off the football crest. The greatest season there has been. */
+  /* THE CROWN: five points topped with pearls, a jewelled band, and an arch line
+     inside so it reads as metal with depth rather than a zigzag. */
   crown:{ name:'The Crown', t:'The Crown', tier:'legend',
     draw:function(f,a){
-      return '<polygon points="12,70 12,32 26,46 38,26 50,44 62,26 74,46 88,32 88,70" fill="'+f+'"/>'+
-        '<rect x="12" y="66" width="76" height="14" rx="4" fill="'+f+'"/>'+
-        [26,38,50,62,74].map(function(x){
-          return '<circle cx="'+x+'" cy="73" r="3.6" fill="'+a+'"/>';
+      return '<path d="M12 72 L10 32 L28 48 L38 22 L50 44 L62 22 L72 48 L90 32 L88 72 Z" fill="'+f+'" stroke="'+f+'" stroke-width="2" stroke-linejoin="round"/>'+
+        '<path d="M16 64 C30 58 70 58 84 64" fill="none" stroke="'+a+'" stroke-width="2.4"/>'+
+        '<rect x="11" y="68" width="78" height="15" rx="3.5" fill="'+f+'"/>'+
+        '<rect x="11" y="68" width="78" height="15" rx="3.5" fill="none" stroke="'+a+'" stroke-width="2"/>'+
+        '<path d="M50 70.5 L55 75.5 L50 80.5 L45 75.5 Z" fill="'+a+'"/>'+
+        '<circle cx="30" cy="75.5" r="3.4" fill="'+a+'"/><circle cx="70" cy="75.5" r="3.4" fill="'+a+'"/>'+
+        '<circle cx="19" cy="75.5" r="2" fill="'+a+'"/><circle cx="81" cy="75.5" r="2" fill="'+a+'"/>'+
+        [[10,32],[38,22],[62,22],[90,32]].map(function(p){
+          return '<circle cx="'+p[0]+'" cy="'+(p[1]-3)+'" r="5" fill="'+f+'"/>';
         }).join('')+
-        [[12,32],[38,26],[62,26],[88,32]].map(function(p){
-          return '<circle cx="'+p[0]+'" cy="'+p[1]+'" r="4.4" fill="'+f+'"/>';
-        }).join('');
+        '<circle cx="50" cy="40" r="4.2" fill="'+a+'"/>';
     } }
 };
 const MARK_KEYS=['init','ball','pennant','diamond','cap','bats','glove','plate','flame',
@@ -1027,9 +1080,20 @@ function crest(o){
        scale, so no shape has to know how thick the ring is. The measured offset goes on the
        end, in the mark's own coordinate space, so a shape never has to be centred by hand. */
     const off=markOffset(markId);
-    body+='<g transform="translate(50 50) scale(.83) translate(-50 -50) translate('+
-      off.x.toFixed(2)+' '+off.y.toFixed(2)+')" '+
-      'opacity="'+(flat?'1':'.97')+'">'+MARKS[markId].draw(ink,accent,u)+'</g>';
+    const place='translate(50 50) scale(.83) translate(-50 -50) translate('+off.x.toFixed(2)+' '+off.y.toFixed(2)+')';
+    /* DEPTH, which is most of the difference between a stamped badge and a sticker.
+       A soft copy of the mark sits under it, and the ink is lit from above: a
+       gradient from the ink to a touch toward the field. Both are detail, so they
+       obey the size rule, and a board row keeps the flat mark it can read. */
+    let fill=ink;
+    if(rich&&!flat){
+      defs+='<linearGradient id="mi'+u+'" x1="0" y1="0" x2="0" y2="1">'+
+        '<stop offset="0" stop-color="'+ink+'"/><stop offset="1" stop-color="'+mix(ink,base,.2)+'"/></linearGradient>';
+      fill='url(#mi'+u+')';
+      body+='<g transform="translate(0 2.4) '+place+'" opacity=".32">'+MARKS[markId].draw('#000','#000',u+'s')+'</g>';
+    }
+    body+='<g transform="'+place+'" '+
+      'opacity="'+(flat?'1':'.97')+'">'+MARKS[markId].draw(fill,accent,u)+'</g>';
   }
 
   /* ---- THE SHEEN. A band of light crossing the face, above the field, the pattern and the

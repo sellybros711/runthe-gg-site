@@ -1901,24 +1901,24 @@
   },
   "baseball/index.html": {
     "engine.js": {
-      "v": "33",
-      "sha": "6949420adc1ee76c"
+      "v": "34",
+      "sha": "6d18367026845095"
     },
     "run.js": {
-      "v": "26",
-      "sha": "6121a4f0de792f34"
+      "v": "28",
+      "sha": "bb7c0c1f928646e6"
     },
     "achievements.js": {
-      "v": "10",
-      "sha": "f268a1163b3ff5fa"
+      "v": "11",
+      "sha": "52aa262f4109a083"
     },
     "parks.js": {
-      "v": "4",
-      "sha": "f7d3832fc6861472"
+      "v": "8",
+      "sha": "7edb9a98e67de55e"
     },
     "crest.js": {
-      "v": "1",
-      "sha": "f017e5caaff5c93a"
+      "v": "2",
+      "sha": "bb273c0d1a928333"
     },
     "board.js": {
       "v": "2",
@@ -1939,6 +1939,10 @@
     "data/chemistry.json": {
       "v": "1",
       "sha": "73536afeab43b741"
+    },
+    "data/colleges.json": {
+      "v": "1",
+      "sha": "23065dab2aa1c706"
     }
   },
   "cfb/commish/index.html": {
@@ -2244,7 +2248,7 @@
     },
     "auth.js": {
       "v": "3",
-      "sha": "6d650550b3025b39"
+      "sha": "ab78ce530d41a0b0"
     },
     "/assets/cloudsave.js": {
       "v": "2",

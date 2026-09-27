@@ -538,11 +538,19 @@ check_rows(sort, migration, what, breaks, ok) as (
       and (select count(*) > 0 from proc where name = 'rtd_career_merge')
       and (select count(*) > 0 from proc where name = 'rtd_set_profile' and body like '%p_rung%')),
 
+  -- THE BALLPARK LADDER. 127's constraint lists thirteen parks and the shelf has
+  -- twenty seven, so without 128 a park chosen from the new ones is refused by the
+  -- server in silence: it works on the device and is gone on the next phone.
+  (39, '128_baseball_parks',
+      'every ballpark on the shelf can be saved to the account',
+      'Choosing a Little League, minor league, seasonal or hidden park works on this device only. The server refuses it and the next device opens on another park.',
+      (select count(*) > 0 from con where name = 'rtd_profiles_park_ck' and def like '%sandlot%' and def like '%golden%')),
+
   -- RUN THE FLOOR PROFILES. Soft by design like 127: the page keeps the jersey,
   -- the arena, the camera and the door choices in the browser until the server
   -- can take them and sends them the first time it can. Without it they follow
   -- nobody to a second phone, and a cleared browser loses them.
-  (39, '128_hoops_profiles',
+  (40, '129_hoops_profiles',
       'a hoops jersey, arena and camera are kept on the account, not only in the browser',
       'The jersey, the chosen arena, the camera and the last club and decade live only in the browser that set them.',
       (select count(*) > 0 from has_table where name = 'rtf_profiles')

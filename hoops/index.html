@@ -4725,7 +4725,7 @@ function reelPools(){
  *
  * hoops/courts.js is the catalogue and the art; this is the page's half. Which
  * arena a court wears is ASKED, never stored as earned: the account's choice is
- * the one stored thing (on its profile row, 128, with rtf.arena.v1 as the
+ * the one stored thing (on its profile row, 129, with rtf.arena.v1 as the
  * browser's copy), and a choice the account cannot back (signed out, another account on this browser,
  * a Pro arena after Pro lapses) falls back to the home arena rather than to a
  * floor it does not own. That is baseball's rtd_park_v1, rule for rule.
@@ -4858,7 +4858,7 @@ function setLook(patch){
 
 /* ── THE PROFILE LIVES ON THE ACCOUNT ─────────────────────────────────────
  *
- * supabase/128_hoops_profiles.sql. Every choice on this page that is the
+ * supabase/129_hoops_profiles.sql. Every choice on this page that is the
  * player's (the jersey, the arena, the camera, the last club and decade, the
  * guide) is written to the account's row the moment it is made, and read back
  * on every sign in, where the SERVER'S ANSWER WINS. The browser keeps a copy so

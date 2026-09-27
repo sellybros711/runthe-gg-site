@@ -1,9 +1,9 @@
--- Run The Floor profiles (128_hoops_profiles.sql).
+-- Run The Floor profiles (129_hoops_profiles.sql).
 --
 --   createdb rtf_prof
 --   psql -d rtf_prof -f supabase/test/baseball_pro_base.sql
---   psql -d rtf_prof -f supabase/128_hoops_profiles.sql
---   psql -d rtf_prof -f supabase/128_hoops_profiles.sql   (twice: it is idempotent)
+--   psql -d rtf_prof -f supabase/129_hoops_profiles.sql
+--   psql -d rtf_prof -f supabase/129_hoops_profiles.sql   (twice: it is idempotent)
 --   psql -d rtf_prof -v ON_ERROR_STOP=1 -f supabase/test/hoops_profile_test.sql
 --
 -- baseball_pro_base.sql supplies auth.users with two accounts and an auth.uid()

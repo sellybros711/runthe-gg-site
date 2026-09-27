@@ -253,11 +253,11 @@
     return null;
   }
 
-  /* THE PROFILE, ON THE SERVER. supabase/128_hoops_profiles.sql: one row an
+  /* THE PROFILE, ON THE SERVER. supabase/129_hoops_profiles.sql: one row an
      account holding what the player chose (the jersey, the arena, the camera,
      the last club and decade, whether the guide has been seen).
      getProfile answers the row, `{}` for an account that has none yet, and null
-     for NO OPINION (signed out, offline, or a database without 128), which the
+     for NO OPINION (signed out, offline, or a database without 129), which the
      page must never read as "you chose nothing". setProfile sends only the
      fields it is given: the SQL reads a missing argument as leave it alone. */
   async function getProfile() {

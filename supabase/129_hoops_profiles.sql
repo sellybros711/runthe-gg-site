@@ -1,7 +1,7 @@
 -- ---------------------------------------------------------------------------
--- 128_hoops_profiles.sql : Run The Floor profiles, held by the server
+-- 129_hoops_profiles.sql : Run The Floor profiles, held by the server
 --
---   psql ... -f supabase/128_hoops_profiles.sql
+--   psql ... -f supabase/129_hoops_profiles.sql
 --
 -- Needs 10 (profiles). Safe to run more than once.
 --
