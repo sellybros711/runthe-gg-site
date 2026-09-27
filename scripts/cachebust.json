@@ -2201,6 +2201,12 @@
       "sha": "21c57e68b8502972"
     }
   },
+  "fumble/index.html": {
+    "cast.js": {
+      "v": "1",
+      "sha": "e8aeb933203f81b3"
+    }
+  },
   "golf/index.html": {
     "/assets/newsletter.js": {
       "v": "1",
