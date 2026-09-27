@@ -40,58 +40,118 @@ const GROUND_K = 0.85, GROUND_A = 60.5, WALL_H = 6;
    `need` answers how far along the account is; `of` is the target. A park with no
    `of` is a yes or no. `pro` parks are the account tier's.
 
-   A LONG GRIND, ONE AT A TIME, which is the owner's call. The first ladder handed out
-   seven parks inside about ten seasons, so a new account had most of the shelf in an
-   evening and nothing left to play for. Now most of the shelf is one TRACK of seasons
-   played, spaced wider as it climbs (10, 25, 50, 80, 120, 175, 250, 350), so a park
-   arrives on its own every so often for as long as somebody keeps playing, and the
-   last of them is hundreds of seasons away. Two are SPECIAL: a task the track cannot
-   hand you however long you play. The two Pro parks are the account tier's.
+   THE ROAD TO THE SHOW, which is the owner's design. Everybody starts on a sandlot
+   and climbs the real ladder of baseball fields one season count at a time: Little
+   League, a high school field, a college park, then Single-A, Double-A and Triple-A,
+   and at sixty seasons the major league park. The track keeps going from there
+   through the eight big league parks, so a park arrives on its own every so often
+   for as long as somebody plays, and the last is hundreds of seasons away.
 
-   A season is a finished run filed signed in, which is what `ctx.n` counts, so a
-   quit draft earns nothing and a guest season is nobody's. */
+   Off the track: SEASONAL parks open for a few days a year (play a season inside the
+   window and the park is yours for good), SPECIAL parks ask for a task the track can
+   never hand you, HIDDEN parks keep their challenge a secret until they open, and the
+   two Pro parks are the account tier's.
+
+   A season is a finished run filed signed in, which is what `ctx.n` counts, so a quit
+   draft earns nothing and a guest season is nobody's. Every rule reads the account's
+   own rows, so nothing about an unlock is stored and a park cannot be lost. */
+const track = (n) => ({ label: 'Play ' + n + ' seasons', track: true, need: (i) => i.ctx.n, of: n });
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const winLabel = (w) => MONTHS[w[0] - 1] + ' ' + w[1] + ' to ' + MONTHS[w[2] - 1] + ' ' + w[3];
+const seasonal = (w) => ({ label: 'Play a season ' + winLabel(w), seasonal: w, of: 1,
+  need: (i) => (i.rows || []).filter((r) => r && r.ts && inWindow(r.ts, w)).length });
+
 const PARKS = [
-  { id: 'home', name: 'The Diamond', nod: 'The park every run starts in.',
-    rarity: 'Starter', unlock: { label: 'Yours from the first pitch', free: true } },
-  { id: 'cornfield', name: 'The Cornfield', nod: 'Golden hour on a farm in Iowa.',
-    rarity: 'Common', unlock: { label: 'Play 10 seasons', track: true, need: (i) => i.ctx.n, of: 10 } },
-  { id: 'ivy', name: 'Ivy Corner', nod: 'Ivy on brick and rooftop bleachers.',
-    rarity: 'Common', unlock: { label: 'Play 25 seasons', track: true, need: (i) => i.ctx.n, of: 25 } },
-  { id: 'warehouse', name: 'Warehouse Yard', nod: 'A brick warehouse down the right field line.',
-    rarity: 'Rare', unlock: { label: 'Play 50 seasons', track: true, need: (i) => i.ctx.n, of: 50 } },
-  { id: 'fountains', name: 'Fountain Park', nod: 'Water dancing beyond the fence.',
-    rarity: 'Rare', unlock: { label: 'Play 80 seasons', track: true, need: (i) => i.ctx.n, of: 80 } },
-  { id: 'ravine', name: 'The Ravine', nod: 'Palms, hills and a zigzag roof at dusk.',
-    rarity: 'Rare', unlock: { label: 'Play 120 seasons', track: true, need: (i) => i.ctx.n, of: 120 } },
-  { id: 'milehigh', name: 'Mile High', nod: 'Snow on the peaks, pines in center.',
-    rarity: 'Epic', unlock: { label: 'Play 175 seasons', track: true, need: (i) => i.ctx.n, of: 175 } },
-  { id: 'frieze', name: 'The Frieze', nod: 'A white frieze, three decks and the train.',
-    rarity: 'Epic', unlock: { label: 'Play 250 seasons', track: true, need: (i) => i.ctx.n, of: 250 } },
-  { id: 'horseshoe', name: 'The Horseshoe', nod: 'A 1920s bathtub park, in sepia.',
-    rarity: 'Legendary', unlock: { label: 'Play 350 seasons', track: true, need: (i) => i.ctx.n, of: 350 } },
-  { id: 'bayside', name: 'Bayside', nod: 'Splash hits into the bay.',
-    rarity: 'Legendary', special: true,
+  /* the road to the Show */
+  { id: 'sandlot', name: 'The Sandlot', tier: 'Sandlot', group: 'road', nod: 'A dirt lot, a plank fence and the neighbors’ houses.',
+    rarity: 'Starter', unlock: { label: 'Where everybody starts', free: true } },
+  { id: 'littleleague', name: 'Little League', tier: 'Little League', group: 'road', nod: 'Chain link, a snack shack and the parents in the stands.',
+    rarity: 'Common', unlock: track(3) },
+  { id: 'varsity', name: 'Varsity Field', tier: 'High School', group: 'road', nod: 'The school behind the fence and the water tower beyond.',
+    rarity: 'Common', unlock: track(7) },
+  { id: 'campus', name: 'Campus Yard', tier: 'College', group: 'road', nod: 'A bell tower over the stands at dusk.',
+    rarity: 'Common', unlock: track(12) },
+  { id: 'singlea', name: 'Riverside Park', tier: 'Single-A', group: 'road', nod: 'A lawn berm, a lit bridge and the river after dark.',
+    rarity: 'Rare', unlock: track(20) },
+  { id: 'doublea', name: 'Depot Field', tier: 'Double-A', group: 'road', nod: 'An old rail depot, and a freight train rolling by.',
+    rarity: 'Rare', unlock: track(30) },
+  { id: 'triplea', name: 'Capital Park', tier: 'Triple-A', group: 'road', nod: 'The capitol dome lit up past the video board.',
+    rarity: 'Rare', unlock: track(45) },
+  { id: 'home', name: 'The Diamond', tier: 'The Show', group: 'road', nod: 'You made it. Welcome to the big leagues.',
+    rarity: 'Epic', unlock: track(60) },
+  /* the big league parks, still on the track */
+  { id: 'cornfield', name: 'The Cornfield', group: 'majors', nod: 'Golden hour on a farm in Iowa.', rarity: 'Epic', unlock: track(80) },
+  { id: 'ivy', name: 'Ivy Corner', group: 'majors', nod: 'Ivy on brick and rooftop bleachers.', rarity: 'Epic', unlock: track(100) },
+  { id: 'warehouse', name: 'Warehouse Yard', group: 'majors', nod: 'A brick warehouse down the right field line.', rarity: 'Epic', unlock: track(125) },
+  { id: 'fountains', name: 'Fountain Park', group: 'majors', nod: 'Water dancing beyond the fence.', rarity: 'Legendary', unlock: track(155) },
+  { id: 'ravine', name: 'The Ravine', group: 'majors', nod: 'Palms, hills and a zigzag roof at dusk.', rarity: 'Legendary', unlock: track(190) },
+  { id: 'milehigh', name: 'Mile High', group: 'majors', nod: 'Snow on the peaks, pines in center.', rarity: 'Legendary', unlock: track(230) },
+  { id: 'frieze', name: 'The Frieze', group: 'majors', nod: 'A white frieze, three decks and the train.', rarity: 'Legendary', unlock: track(280) },
+  { id: 'horseshoe', name: 'The Horseshoe', group: 'majors', nod: 'A 1920s bathtub park, in sepia.', rarity: 'Legendary', unlock: track(350) },
+  /* seasonal: open a few days a year, kept for good once earned */
+  { id: 'opener', name: 'Opening Day', group: 'seasonal', nod: 'Bunting on the wall and a flyover.', rarity: 'Seasonal', unlock: seasonal([3, 20, 4, 10]) },
+  { id: 'fireworks', name: 'Fireworks Night', group: 'seasonal', nod: 'The Fourth of July, lighting up the sky.', rarity: 'Seasonal', unlock: seasonal([7, 1, 7, 7]) },
+  { id: 'haunted', name: 'Haunted Hollow', group: 'seasonal', nod: 'A harvest moon, bats and a house on the hill.', rarity: 'Seasonal', unlock: seasonal([10, 24, 10, 31]) },
+  { id: 'winter', name: 'Winter Classic', group: 'seasonal', nod: 'Snow on the stands and the pines.', rarity: 'Seasonal', unlock: seasonal([12, 18, 1, 3]) },
+  /* special: a task the track can never hand you */
+  { id: 'bayside', name: 'Bayside', group: 'special', nod: 'Splash hits into the bay.', rarity: 'Legendary', special: true,
     unlock: { label: 'Reach October in all 7 modes', need: (i) => Object.keys(i.ctx.modeOct || {}).length, of: 7 } },
-  { id: 'monster', name: 'The Monster', nod: 'The tall green wall in left.',
-    rarity: 'Legendary', special: true,
+  { id: 'monster', name: 'The Monster', group: 'special', nod: 'The tall green wall in left.', rarity: 'Legendary', special: true,
     unlock: { label: 'Win 5 World Series', need: (i) => i.ctx.titles, of: 5 } },
-  { id: 'dome', name: 'The Dome', nod: 'Turf, a ribbed roof and a light show.',
-    rarity: 'Pro', unlock: { label: 'Run The Diamond Pro', pro: true } },
-  { id: 'neon', name: 'Neon Nights', nod: 'Pink and teal over the water.',
-    rarity: 'Pro', unlock: { label: 'Run The Diamond Pro', pro: true } },
+  /* hidden: the challenge is a secret until the park opens, and the hint is all a
+     player is told */
+  { id: 'moonlight', name: 'Moonlight Park', group: 'hidden', nod: 'A small town field under a full moon.', rarity: 'Hidden', hidden: true,
+    unlock: { label: 'Finish a season between midnight and 4am', hint: 'Some parks only open very late at night.',
+      need: (i) => (i.rows || []).filter((r) => r && r.ts && eastern(r.ts).h < 4).length, of: 1 } },
+  { id: 'rainout', name: 'Rain Delay', group: 'hidden', nod: 'Umbrellas up and puddles on the dirt.', rarity: 'Hidden', hidden: true,
+    unlock: { label: 'Lose 110 games in a season', hint: 'Only the worst season you can manage opens this one.',
+      need: (i) => (i.ctx.worst || {}).losses || 0, of: 110 } },
+  { id: 'golden', name: 'The Golden Diamond', group: 'hidden', nod: 'Everything gold, for the greatest team ever.', rarity: 'Hidden', hidden: true,
+    unlock: { label: 'Win 116 games in a season', hint: 'Match the greatest regular season there has ever been.',
+      need: (i) => (i.ctx.best || {}).wins || 0, of: 116 } },
+  /* the account tier's */
+  { id: 'dome', name: 'The Dome', group: 'pro', nod: 'Turf, a ribbed roof and a light show.', rarity: 'Pro', unlock: { label: 'Run The Diamond Pro', pro: true } },
+  { id: 'neon', name: 'Neon Nights', group: 'pro', nod: 'Pink and teal over the water.', rarity: 'Pro', unlock: { label: 'Run The Diamond Pro', pro: true } },
 ];
 const BY_ID = Object.fromEntries(PARKS.map((p) => [p.id, p]));
+/* The park an account without a better one plays on, and the one a choice it can
+   no longer back falls back to. */
+const START = 'sandlot';
+const GROUPS = [
+  ['road', 'The road to the Show'], ['majors', 'Big league parks'], ['seasonal', 'Seasonal'],
+  ['special', 'Special'], ['hidden', 'Hidden'], ['pro', 'Pro'],
+];
 
-/* info: { signed, pro, badges, ctx } where ctx is RTD_ACH.buildCtx over the
-   account's own rows. Returns { ok, have, of, label }. */
+/* THE CALENDAR IS EASTERN, which is every other day boundary on this site (the
+   daily, the free plays). Asked of Intl, with the device's own clock as the
+   fallback for a browser that has no zone data: a slightly wrong window beats a
+   park nobody can open. */
+let ETF = null;
+function eastern(ts) {
+  try {
+    ETF = ETF || new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', month: 'numeric', day: 'numeric', hour: 'numeric', hourCycle: 'h23' });
+    const o = {};
+    for (const p of ETF.formatToParts(new Date(ts))) if (p.type !== 'literal') o[p.type] = +p.value;
+    return { m: o.month, d: o.day, h: o.hour % 24 };
+  } catch (_) { const d = new Date(ts); return { m: d.getMonth() + 1, d: d.getDate(), h: d.getHours() }; }
+}
+/* [m1, d1, m2, d2], inclusive, and a window may wrap the new year. */
+function inWindow(ts, w) {
+  const e = eastern(ts), k = e.m * 100 + e.d, a = w[0] * 100 + w[1], b = w[2] * 100 + w[3];
+  return a <= b ? (k >= a && k <= b) : (k >= a || k <= b);
+}
+function seasonOpen(park, now) { const w = park && park.unlock.seasonal; return !!w && inWindow(now == null ? Date.now() : now, w); }
+
+/* info: { signed, pro, badges, ctx, rows } where ctx is RTD_ACH.buildCtx over the
+   account's own rows and rows are those rows. Returns { ok, have, of, label }. */
 function status(park, info) {
   const u = park.unlock;
   if (u.free) return { ok: true, label: u.label };
   /* A guest is told the one thing standing between them and every park: an
      account. "Sign in and ..." reads as one step, and a Pro park names Pro
-     rather than lower-casing a product name. */
+     rather than lower-casing a product name. A hidden park keeps its secret. */
   if (!info || !info.signed) return { ok: false, guest: true,
-    label: u.pro ? 'Sign in and get Pro' : 'Sign in and ' + u.label.charAt(0).toLowerCase() + u.label.slice(1) };
+    label: u.pro ? 'Sign in and get Pro' : u.hint ? 'Sign in to hunt for it' : 'Sign in and ' + u.label.charAt(0).toLowerCase() + u.label.slice(1) };
   if (u.pro) return { ok: !!info.pro, label: u.label };
   let have = 0;
   try { have = Math.max(0, Number(u.need(info)) || 0); } catch (_) { have = 0; }
@@ -534,6 +594,413 @@ BACK.neon = (c) => {
   };
 };
 
+/* ─── the road to the Show, and the parks off the track ───
+   A lower-tier field has a LOW fence, so its backdrop is authored with no shift:
+   `lowTop(H)` puts the authoring wall top exactly where a wall H units tall ends up,
+   and everything here stands on `c.wy(x)`, the ground line behind the fence. */
+const lowTop = (H) => [f(18.85 - H) * 1, f(13.41 - H) * 1];
+
+function house(x, base, w, h, wall, roof, R) {
+  const top = base - h;
+  let s = '<rect x="' + f(x) + '" y="' + f(top) + '" width="' + f(w) + '" height="' + f(h + 2) + '" fill="' + wall + '"/>' +
+    '<path d="M ' + f(x - 0.6) + ',' + f(top + 0.2) + ' L ' + f(x + w / 2) + ',' + f(top - h * 0.55) + ' L ' + f(x + w + 0.6) + ',' + f(top + 0.2) + ' Z" fill="' + roof + '"/>';
+  for (let wx = x + 0.7; wx < x + w - 1; wx += 1.9) s += '<rect x="' + f(wx) + '" y="' + f(top + h * 0.3) + '" width="1" height="' + f(h * 0.3) + '" fill="' + (R() < 0.3 ? '#fbe7a3' : '#5d7a93') + '"/>';
+  return s;
+}
+function tree(x, base, s, col, dark) {
+  return '<rect x="' + f(x - 0.25 * s) + '" y="' + f(base - 2.4 * s) + '" width="' + f(0.5 * s) + '" height="' + f(2.6 * s) + '" fill="#5a4128"/>' +
+    '<circle cx="' + f(x) + '" cy="' + f(base - 3.4 * s) + '" r="' + f(1.8 * s) + '" fill="' + dark + '"/>' +
+    '<circle cx="' + f(x - 1.2 * s) + '" cy="' + f(base - 2.7 * s) + '" r="' + f(1.3 * s) + '" fill="' + col + '"/>' +
+    '<circle cx="' + f(x + 1.1 * s) + '" cy="' + f(base - 2.9 * s) + '" r="' + f(1.4 * s) + '" fill="' + col + '"/>' +
+    '<circle cx="' + f(x + 0.2 * s) + '" cy="' + f(base - 4.1 * s) + '" r="' + f(1.2 * s) + '" fill="' + col + '"/>';
+}
+function pine(x, base, s, col, snow) {
+  let g = '<rect x="' + f(x - 0.2 * s) + '" y="' + f(base - 1 * s) + '" width="' + f(0.4 * s) + '" height="' + f(1.2 * s) + '" fill="#4a3522"/>';
+  for (let k = 0; k < 3; k++) {
+    const y = base - 1 * s - k * 1.5 * s, w = (2.4 - k * 0.6) * s;
+    g += '<path d="M ' + f(x - w) + ',' + f(y) + ' L ' + f(x) + ',' + f(y - 2.2 * s) + ' L ' + f(x + w) + ',' + f(y) + ' Z" fill="' + col + '"/>';
+    if (snow) g += '<path d="M ' + f(x - w * 0.45) + ',' + f(y - 1.2 * s) + ' L ' + f(x) + ',' + f(y - 2.2 * s) + ' L ' + f(x + w * 0.45) + ',' + f(y - 1.2 * s) + ' Z" fill="#f4f8fb"/>';
+  }
+  return g;
+}
+function lightTower(x, base, h, on) {
+  return '<line x1="' + f(x) + '" y1="' + f(base) + '" x2="' + f(x) + '" y2="' + f(base - h) + '" stroke="#39414d" stroke-width=".35"/>' +
+    '<rect x="' + f(x - 1.6) + '" y="' + f(base - h - 1.2) + '" width="3.2" height="1.3" rx=".2" fill="#2a3240"/>' +
+    [0, 1, 2, 3].map((k) => '<circle cx="' + f(x - 1.1 + k * 0.73) + '" cy="' + f(base - h - 0.55) + '" r=".28" fill="' + (on ? '#fffbe6' : '#b8c0c8') + '"/>').join('') +
+    (on ? '<ellipse cx="' + f(x) + '" cy="' + f(base - h + 1.6) + '" rx="5" ry="2.6" fill="rgba(255,248,210,.14)"/>' : '');
+}
+/* A fence the page draws as the wall face: boards, chain link or a windscreen with
+   ads. Each one's pattern is defined by the backdrop that uses it. */
+const PLANK_WALL = (c) => '<path d="' + c.wallPath + '" fill="' + c.url('planks') + '"/>';
+const LINK_WALL = (c) => '<path d="' + c.wallPath + '" fill="' + c.url('beyond') + '"/>' +
+  '<path d="' + c.wallPath + '" fill="' + c.url('mesh') + '"/>' + '<path d="' + c.wallPath + '" fill="' + c.url('posts') + '"/>';
+const AD_WALL = (c) => {
+  /* Each sign is a panel between the top and the foot of the wall at its own x, so
+     it follows the curve and fills the face whatever the wall's height. */
+  const cols = c.P.ads || ['#c9483a', '#1f4f8f', '#d9a93a', '#2f6b3f'];
+  let s = '<path d="' + c.wallPath + '" fill="' + c.url('wall') + '"/>';
+  for (let k = 0, x = 1.2; x < 98; k++, x += 8.2) {
+    const x2 = x + 7.2, m = (x + x2) / 2, t = (a) => c.wt(a) + 0.35, b = (a) => c.wb(a) - 0.35;
+    s += '<path d="M ' + f(x) + ',' + f(t(x)) + ' L ' + f(x2) + ',' + f(t(x2)) + ' L ' + f(x2) + ',' + f(b(x2)) + ' L ' + f(x) + ',' + f(b(x)) + ' Z" fill="' + cols[k % cols.length] + '"/>' +
+      '<rect x="' + f(x + 1) + '" y="' + f(t(m) + (b(m) - t(m)) * 0.28) + '" width="' + f(3 + (k % 3)) + '" height="' + f((b(m) - t(m)) * 0.22) + '" fill="rgba(255,255,255,.85)"/>' +
+      '<rect x="' + f(x + 1) + '" y="' + f(t(m) + (b(m) - t(m)) * 0.6) + '" width="' + f(2 + ((k + 1) % 3)) + '" height="' + f((b(m) - t(m)) * 0.14) + '" fill="rgba(255,255,255,.55)"/>';
+  }
+  return s;
+};
+function plankPattern(id, a, b) {
+  return '<pattern id="' + id + '" width="1.6" height="40" patternUnits="userSpaceOnUse"><rect width="1.6" height="40" fill="' + a + '"/>' +
+    '<rect x="1.35" width=".25" height="40" fill="' + b + '"/><rect x=".5" y="3" width=".12" height="2" fill="rgba(0,0,0,.18)"/><rect x=".9" y="9" width=".1" height="2.6" fill="rgba(255,255,255,.08)"/></pattern>';
+}
+function meshPatterns(c, beyond) {
+  return '<pattern id="' + c.id('beyond') + '" width="100" height="40" patternUnits="userSpaceOnUse"><rect width="100" height="40" fill="' + beyond + '"/></pattern>' +
+    '<pattern id="' + c.id('mesh') + '" width=".9" height=".9" patternUnits="userSpaceOnUse"><path d="M 0,0 L .9,.9 M .9,0 L 0,.9" stroke="rgba(225,232,236,.55)" stroke-width=".07"/></pattern>' +
+    '<pattern id="' + c.id('posts') + '" width="8" height="40" patternUnits="userSpaceOnUse"><rect x="7.7" width=".3" height="40" fill="#b9c2c8"/></pattern>';
+}
+
+BACK.sandlot = (c) => {
+  const sky = skyRect(c, '#79b8e8', '#e9f3f8');
+  const R = rng(31);
+  const cols = ['#e8d9b6', '#c9d8e4', '#e4c5a0', '#f1ecde', '#b7c9a2', '#d9b8b0'];
+  const roofs = ['#6a4a3a', '#4f5b66', '#7a3a2c', '#5a4a3a'];
+  let row = '';
+  for (let x = -2, i = 0; x < 102; x += 11 + R() * 3, i++) row += house(x, c.wy(x + 4) - 0.2, 8 + R() * 2, 3.8 + R() * 1.4, cols[i % cols.length], roofs[i % roofs.length], R);
+  const poles = [30, 68].map((x) => '<line x1="' + x + '" y1="' + f(c.wy(x)) + '" x2="' + x + '" y2="' + f(c.wy(x) - 13) + '" stroke="#5a4128" stroke-width=".4"/>' +
+    '<line x1="' + (x - 1.4) + '" y1="' + f(c.wy(x) - 12) + '" x2="' + (x + 1.4) + '" y2="' + f(c.wy(x) - 12) + '" stroke="#5a4128" stroke-width=".3"/>').join('');
+  const wire = (dy) => '<path d="M 0,' + f(c.wy(0) - 12 + dy) + ' Q 15,' + f(c.wy(15) - 9 + dy) + ' 30,' + f(c.wy(30) - 12 + dy) + ' Q 49,' + f(c.wy(49) - 9 + dy) +
+    ' 68,' + f(c.wy(68) - 12 + dy) + ' Q 84,' + f(c.wy(84) - 9 + dy) + ' 100,' + f(c.wy(100) - 12 + dy) + '" fill="none" stroke="rgba(40,30,20,.55)" stroke-width=".12"/>';
+  /* the big oak in left with its treehouse, where every sandlot game ends */
+  const oak = tree(10, c.wy(10) + 0.4, 2.4, '#4f8a3a', '#3a6b2c') +
+    '<g transform="translate(6.6,' + f(c.wy(10) - 8.2) + ')"><rect width="5" height="2.6" fill="#9a6b3e"/><path d="M -0.5,0 L 2.5,-1.8 L 5.5,0 Z" fill="#7a3a2c"/><rect x="1.8" y=".8" width="1.2" height="1.1" fill="#3a2a1a"/></g>';
+  return {
+    defs: sky.defs + plankPattern(c.id('planks'), '#8f6c45', '#6b4f31') +
+      '<radialGradient id="' + c.id('sun') + '"><stop offset="0" stop-color="rgba(255,244,190,.95)"/><stop offset="1" stop-color="rgba(255,244,190,0)"/></radialGradient>',
+    art: sky.art + '<circle cx="82" cy="-5" r="8" fill="' + c.url('sun') + '"/><circle cx="82" cy="-5" r="1.8" fill="#fff8d6"/>' +
+      cloud(30, -6, 1, 0.9) + cloud(58, -3, 0.8, 0.8) + row + poles + wire(0) + wire(0.8) + oak +
+      tree(91, c.wy(91) + 0.3, 1.6, '#5b9642', '#437a30'),
+  };
+};
+
+BACK.littleleague = (c) => {
+  const sky = skyRect(c, '#6fb2e6', '#dff0f9');
+  let trees = '';
+  const R = rng(41);
+  for (let x = 0; x < 102; x += 3 + R() * 2.5) trees += '<circle cx="' + f(x) + '" cy="' + f(c.wy(x) - 3.2 - R() * 1.6) + '" r="' + f(2 + R() * 1.2) + '" fill="' + (R() < 0.5 ? '#3f7a34' : '#356b2c') + '"/>';
+  const shackX = 62, sb = c.wy(66);
+  const shack = '<rect x="' + shackX + '" y="' + f(sb - 4) + '" width="9" height="4.4" fill="#f1ead8"/>' +
+    '<rect x="' + (shackX + 1.4) + '" y="' + f(sb - 3) + '" width="6.2" height="1.6" fill="#3a2a1a"/>' +
+    '<path d="M ' + (shackX - 0.6) + ',' + f(sb - 3.2) + ' L ' + (shackX + 9.6) + ',' + f(sb - 3.2) + ' L ' + (shackX + 9) + ',' + f(sb - 4.8) + ' L ' + shackX + ',' + f(sb - 4.8) + ' Z" fill="url(#' + 'x' + ')"/>';
+  const awn = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((k) => '<rect x="' + f(shackX - 0.4 + k * 1) + '" y="' + f(sb - 4.8) + '" width="1" height="1.6" fill="' + (k % 2 ? '#f7f5ef' : '#c9483a') + '"/>').join('');
+  const flag = '<line x1="46" y1="' + f(c.wy(46)) + '" x2="46" y2="' + f(c.wy(46) - 12) + '" stroke="#d5dbe0" stroke-width=".25"/>' +
+    '<g transform="translate(46,' + f(c.wy(46) - 12) + ')">' + [0, 1, 2, 3, 4].map((k) => '<rect x="0" y="' + f(k * 0.45) + '" width="4" height=".45" fill="' + (k % 2 ? '#f7f5ef' : '#c9483a') + '"/>').join('') +
+    '<rect width="1.7" height="1.35" fill="#2f4a8a"/></g>';
+  const board = '<g transform="translate(80,' + f(c.wy(84) - 7) + ')"><rect x="-.2" y="4" width=".4" height="4" fill="#4a5058"/><rect x="7" y="4" width=".4" height="4" fill="#4a5058"/>' +
+    '<rect width="7.4" height="4.4" fill="#1f4d2e" stroke="#e8e2d2" stroke-width=".2"/>' +
+    [0, 1].map((r) => [0, 1, 2, 3, 4, 5].map((k) => '<rect x="' + f(0.7 + k * 1.1) + '" y="' + f(1 + r * 1.6) + '" width=".8" height="1" fill="' + (k === 5 ? '#f2c12e' : '#f4f1e8') + '"/>').join('')).join('') + '</g>';
+  return {
+    defs: sky.defs + meshPatterns(c, '#4f8a3a') + crowdPattern(c.id('crowd'), SHIRTS, 43, { rows: 3, dx: 1.4, empty: 0.45 }),
+    art: sky.art + cloud(22, -5, 1.1, 0.9) + cloud(74, -7, 0.9, 0.8) + trees +
+      stand(c, 4, 30, 3.2, '#aab4bc', c.url('crowd')) + flag + shack.replace('fill="url(#x)"', 'fill="#c9483a"') + awn + board,
+  };
+};
+
+BACK.varsity = (c) => {
+  const sky = skyRect(c, '#7eb0dc', '#f6d9a8');
+  const R = rng(51);
+  let trees = '';
+  for (let x = 0; x < 102; x += 4 + R() * 3) trees += '<circle cx="' + f(x) + '" cy="' + f(c.wy(x) - 3 - R() * 2) + '" r="' + f(2.1 + R()) + '" fill="' + (R() < 0.5 ? '#46773a' : '#3a6630') + '"/>';
+  /* the school: a long brick block with rows of windows and a doorway */
+  const sx = 22, sw = 50, sb = c.wy(47) - 1.2, sh = 7.5;
+  let school = '<rect x="' + sx + '" y="' + f(sb - sh) + '" width="' + sw + '" height="' + (sh + 3) + '" fill="#a0503a"/>' +
+    '<rect x="' + (sx - 0.4) + '" y="' + f(sb - sh - 0.6) + '" width="' + (sw + 0.8) + '" height=".8" fill="#e6dcc8"/>' +
+    '<rect x="42" y="' + f(sb - sh - 3) + '" width="10" height="3.2" fill="#a0503a"/><rect x="41.6" y="' + f(sb - sh - 3.4) + '" width="10.8" height=".6" fill="#e6dcc8"/>' +
+    '<circle cx="47" cy="' + f(sb - sh - 1.4) + '" r=".9" fill="#f4f1e8" stroke="#3a2a1a" stroke-width=".12"/>';
+  for (let r = 0; r < 2; r++) for (let wx = sx + 1.2; wx < sx + sw - 1; wx += 2.4)
+    school += '<rect x="' + f(wx) + '" y="' + f(sb - sh + 1.3 + r * 3) + '" width="1.4" height="1.7" fill="' + (R() < 0.15 ? '#fbe7a3' : '#5d7a93') + '"/>';
+  const tower = '<g transform="translate(88,' + f(c.wy(88) - 5) + ')"><path d="M -2.4,0 L -1.6,-8 M 2.4,0 L 1.6,-8 M -2,-2.5 L 2,-5.5 M 2,-2.5 L -2,-5.5" stroke="#8d9aa6" stroke-width=".3"/>' +
+    '<ellipse cx="0" cy="-10" rx="3.4" ry="2.6" fill="#b7c3cd"/><rect x="-3.4" y="-10" width="6.8" height="1.2" fill="#b7c3cd"/><ellipse cx="0" cy="-12.4" rx="1" ry=".6" fill="#8d9aa6"/></g>';
+  const board = '<g transform="translate(5,' + f(c.wy(9) - 7.4) + ')"><rect x="1" y="5" width=".4" height="3" fill="#4a5058"/><rect x="7.6" y="5" width=".4" height="3" fill="#4a5058"/>' +
+    '<rect width="9" height="5.2" fill="#1b2230" stroke="#c9a23a" stroke-width=".25"/>' +
+    '<rect x=".9" y="2" width="3" height="2.2" fill="#3a0f0f"/><rect x="5.1" y="2" width="3" height="2.2" fill="#3a0f0f"/>' +
+    '<rect x="1.4" y="2.4" width=".8" height="1.4" fill="#ff5a3a"/><rect x="2.5" y="2.4" width=".8" height="1.4" fill="#ff5a3a"/><rect x="6.1" y="2.4" width=".8" height="1.4" fill="#ff5a3a"/>' +
+    '<rect x=".9" y=".6" width="3" height=".6" fill="rgba(255,255,255,.7)"/><rect x="5.1" y=".6" width="3" height=".6" fill="rgba(255,255,255,.7)"/></g>';
+  return {
+    defs: sky.defs + crowdPattern(c.id('crowd'), SHIRTS, 53, { rows: 3, dx: 1.3, empty: 0.4 }),
+    art: sky.art + cloud(68, -6, 1, 0.8) + trees + school + tower + board +
+      stand(c, 70, 84, 2.8, '#b8c0c6', c.url('crowd')),
+  };
+};
+
+BACK.campus = (c) => {
+  const sky = skyRect(c, '#3a3a6e', '#f0a060');
+  const R = rng(61);
+  const maroon = '#6e1f2c';
+  /* gothic halls either side, arched windows lit for the night game */
+  const hall = (x, w, h) => {
+    const b = c.wy(x + w / 2) - 3.6;
+    let g = '<rect x="' + x + '" y="' + f(b - h) + '" width="' + w + '" height="' + (h + 4) + '" fill="#7d4a36"/>';
+    for (let k = x + 0.6; k < x + w - 0.6; k += 3) g += '<path d="M ' + f(k) + ',' + f(b - h * 0.2) + ' l 0,-' + f(h * 0.4) + ' q .7,-1 1.4,0 l 0,' + f(h * 0.4) + ' Z" fill="' + (R() < 0.6 ? '#f6d88a' : '#3a2a30') + '"/>';
+    for (let k = x; k < x + w; k += 1.6) g += '<rect x="' + f(k) + '" y="' + f(b - h - 0.8) + '" width=".8" height=".8" fill="#7d4a36"/>';
+    return g;
+  };
+  const tb = c.wy(50) - 3.2;
+  const tower = '<rect x="47" y="' + f(tb - 16) + '" width="6" height="17" fill="#8a5540"/>' +
+    '<path d="M 46.4,' + f(tb - 16) + ' L 50,' + f(tb - 23) + ' L 53.6,' + f(tb - 16) + ' Z" fill="#4a3a44"/>' +
+    '<circle cx="50" cy="' + f(tb - 12.4) + '" r="1.9" fill="#f4ecd6" stroke="#3a2a1a" stroke-width=".18"/>' +
+    '<path d="M 50,' + f(tb - 12.4) + ' l 0,-1.3 M 50,' + f(tb - 12.4) + ' l .9,.4" stroke="#1f1a1a" stroke-width=".2"/>' +
+    '<path d="M 48.4,' + f(tb - 6) + ' l 0,-3 q 1.6,-2 3.2,0 l 0,3 Z" fill="#f6d88a"/>';
+  return {
+    defs: sky.defs + crowdPattern(c.id('crowd'), [maroon, '#f2d27a', '#f7f5ef', maroon, '#3a3a3a'], 67) +
+      '<radialGradient id="' + c.id('dusk') + '"><stop offset="0" stop-color="rgba(255,190,110,.6)"/><stop offset="1" stop-color="rgba(255,190,110,0)"/></radialGradient>',
+    art: sky.art + '<ellipse cx="20" cy="0" rx="30" ry="9" fill="' + c.url('dusk') + '"/>' + stars(c, 10, 63) +
+      hall(4, 30, 7) + hall(66, 30, 8) + tower +
+      stand(c, 0, 38, 4.4, maroon, c.url('crowd'), '#2a1a1e') + stand(c, 62, 100, 4.4, maroon, c.url('crowd'), '#2a1a1e') +
+      lightTower(6, c.wy(6) - 3, 9, true) + lightTower(94, c.wy(94) - 3, 9, true),
+  };
+};
+
+BACK.singlea = (c) => {
+  const sky = skyRect(c, '#0f1a33', '#2b3f66');
+  const R = rng(71);
+  const rb = c.wy(50) - 3.8;
+  /* the far bank, the river, then the bridge across it */
+  let hills = '<path d="M 0,' + f(rb - 2) + ' Q 20,' + f(rb - 7) + ' 40,' + f(rb - 3) + ' Q 62,' + f(rb - 8) + ' 80,' + f(rb - 3.4) + ' Q 92,' + f(rb - 6) + ' 100,' + f(rb - 3) + ' L 100,' + f(rb) + ' L 0,' + f(rb) + ' Z" fill="#16233a"/>';
+  for (let i = 0; i < 26; i++) { const x = R() * 100; hills += '<circle cx="' + f(x) + '" cy="' + f(rb - 1 - R() * 2) + '" r=".16" fill="#f7d98a"/>'; }
+  let water = '<rect x="0" y="' + f(rb) + '" width="100" height="3" fill="#1d3558"/>';
+  for (let i = 0; i < 20; i++) water += '<rect x="' + f(R() * 96) + '" y="' + f(rb + 0.4 + R() * 2.2) + '" width="' + f(1 + R() * 2.4) + '" height=".12" fill="rgba(255,226,150,.5)"/>';
+  let bridge = '<rect x="10" y="' + f(rb - 3.2) + '" width="80" height=".6" fill="#3a4a66"/>';
+  for (const [a, b] of [[10, 30], [30, 50], [50, 70], [70, 90]]) bridge += '<path d="M ' + a + ',' + f(rb - 2.6) + ' Q ' + ((a + b) / 2) + ',' + f(rb - 7.4) + ' ' + b + ',' + f(rb - 2.6) + '" fill="none" stroke="#5f7da8" stroke-width=".35"/>';
+  for (let x = 12; x < 90; x += 2.6) bridge += '<circle cx="' + f(x) + '" cy="' + f(rb - 3.3) + '" r=".18" fill="#ffe6a0"/>';
+  /* the lawn berm, fans on blankets */
+  const berm = strip(c, 0, 100, -0.3, 2.8, '#2f5a2c') + strip(c, 0, 100, -0.3, 2.8, c.url('lawn'));
+  return {
+    defs: sky.defs + 
+      crowdPattern(c.id('lawn'), SHIRTS, 73, { rows: 3, dx: 1.6, empty: 0.55, rule: false }),
+    art: sky.art + stars(c, 22, 71) + '<circle cx="84" cy="-6" r="1.4" fill="#f4efd8"/>' + hills + water + bridge + berm +
+      lightTower(8, c.wy(8) - 2.6, 9, true) + lightTower(92, c.wy(92) - 2.6, 9, true),
+  };
+};
+
+BACK.doublea = (c) => {
+  const sky = skyRect(c, '#86b4dc', '#f4dcb0');
+  const R = rng(81);
+  const tb = c.wy(50) - 4;
+  /* the raised track and the freight train on it */
+  let train = '<rect x="0" y="' + f(tb - 0.4) + '" width="100" height="1.2" fill="#5a4a3a"/>';
+  const cars = ['#9a3a2a', '#2f5a7a', '#c9a23a', '#3a5a3a', '#7a3a2a', '#4a4a52', '#a0502a'];
+  for (let k = 0; k < 9; k++) {
+    const x = 6 + k * 7.8;
+    train += '<rect x="' + f(x) + '" y="' + f(tb - 4) + '" width="7" height="3.4" rx=".2" fill="' + (k === 0 ? '#1f2328' : cars[k % cars.length]) + '"/>' +
+      '<circle cx="' + f(x + 1.4) + '" cy="' + f(tb - 0.4) + '" r=".55" fill="#1f1a18"/><circle cx="' + f(x + 5.6) + '" cy="' + f(tb - 0.4) + '" r=".55" fill="#1f1a18"/>';
+    if (k === 0) train += '<rect x="' + f(x + 4.6) + '" y="' + f(tb - 6) + '" width="1.2" height="2" fill="#1f2328"/>';
+  }
+  train += '<circle cx="11.6" cy="' + f(tb - 7.4) + '" r="1.2" fill="rgba(230,230,230,.6)"/><circle cx="9.6" cy="' + f(tb - 8.6) + '" r="1.6" fill="rgba(230,230,230,.45)"/>';
+  /* the old brick depot with its clock tower */
+  const db = c.wy(80) - 2.4, dx = 72;
+  let depot = '<rect x="' + dx + '" y="' + f(db - 7) + '" width="22" height="9" fill="#9a4a32"/>' +
+    '<path d="M ' + (dx - 1) + ',' + f(db - 7) + ' L ' + (dx + 23) + ',' + f(db - 7) + ' L ' + (dx + 20) + ',' + f(db - 9.4) + ' L ' + (dx + 2) + ',' + f(db - 9.4) + ' Z" fill="#4a3a36"/>' +
+    '<rect x="' + (dx + 8) + '" y="' + f(db - 16) + '" width="6" height="7" fill="#a55a3e"/><path d="M ' + (dx + 7.4) + ',' + f(db - 16) + ' L ' + (dx + 11) + ',' + f(db - 19.4) + ' L ' + (dx + 14.6) + ',' + f(db - 16) + ' Z" fill="#4a3a36"/>' +
+    '<circle cx="' + (dx + 11) + '" cy="' + f(db - 13) + '" r="1.6" fill="#f4ecd6" stroke="#3a2a1a" stroke-width=".15"/>';
+  for (let k = 0; k < 7; k++) depot += '<path d="M ' + f(dx + 1.2 + k * 3) + ',' + f(db - 1) + ' l 0,-3.4 q .9,-1.2 1.8,0 l 0,3.4 Z" fill="' + (R() < 0.3 ? '#f6d88a' : '#4a5a6a') + '"/>';
+  return {
+    defs: sky.defs + crowdPattern(c.id('crowd'), SHIRTS, 83),
+    art: sky.art + cloud(40, -7, 1, 0.8) + train + depot +
+      stand(c, 0, 40, 5, '#4a5058', c.url('crowd'), '#2e3238'),
+  };
+};
+
+BACK.triplea = (c) => {
+  const sky = skyRect(c, '#0d1628', '#2a3d63');
+  const R = rng(91);
+  let city = '';
+  for (let x = 0; x < 100; x += 2.5 + R() * 3) {
+    const w = 2 + R() * 3, h = 4 + R() * 9;
+    city += '<rect x="' + f(x) + '" y="' + f(2 - h) + '" width="' + f(w) + '" height="' + f(h + 6) + '" fill="#1c2a44"/>';
+    for (let wy = 2 - h + 1; wy < 2; wy += 1.3) if (R() < 0.45) city += '<rect x="' + f(x + 0.5) + '" y="' + f(wy) + '" width=".6" height=".5" fill="#f5d98a" opacity=".75"/>';
+  }
+  /* the capitol: columns, a drum and a lit dome */
+  const cap = '<g transform="translate(30,1)"><rect x="-8" y="-3" width="16" height="4" fill="#d9dde3"/>' +
+    [-6, -4, -2, 0, 2, 4, 6].map((k) => '<rect x="' + (k - 0.25) + '" y="-2.6" width=".5" height="3.4" fill="#b5bcc6"/>').join('') +
+    '<rect x="-3.4" y="-6.4" width="6.8" height="3.4" fill="#cfd5dc"/><path d="M -3.4,-6.4 Q 0,-12.4 3.4,-6.4 Z" fill="#e8eef4"/>' +
+    '<rect x="-.3" y="-13.6" width=".6" height="1.6" fill="#e8eef4"/><ellipse cx="0" cy="-8" rx="6" ry="4" fill="rgba(255,240,200,.18)"/></g>';
+  const vb = '<g transform="translate(66,' + f(c.wy(72) - 13) + ')"><rect x="2" y="7" width=".6" height="6" fill="#3a404a"/><rect x="10" y="7" width=".6" height="6" fill="#3a404a"/>' +
+    '<rect width="13" height="7.4" fill="#0f141c" stroke="#3a404a" stroke-width=".3"/>' +
+    '<rect x=".7" y=".7" width="7.6" height="6" fill="#1f5fa8"/><circle cx="4.5" cy="3.4" r="1.6" fill="#f2c12e"/><rect x="2" y="5.4" width="5" height=".6" fill="#f7f5ef"/>' +
+    '<rect x="9" y=".7" width="3.3" height="1.4" fill="#c9483a"/><rect x="9" y="2.6" width="3.3" height="1.4" fill="#2f6b3f"/><rect x="9" y="4.5" width="3.3" height="1.4" fill="#e07b39"/></g>';
+  return {
+    defs: sky.defs + crowdPattern(c.id('crowd'), SHIRTS, 93) + crowdPattern(c.id('up'), SHIRTS, 97, { rows: 3 }),
+    art: sky.art + stars(c, 16, 91) + city + cap +
+      stand(c, 0, 44, 4, '#1f4f8f', c.url('crowd')) + strip(c, 0, 40, 5.4, 8, '#173c6e') + strip(c, 0, 40, 5.4, 8, c.url('up')) +
+      stand(c, 84, 100, 4, '#1f4f8f', c.url('crowd')) + vb +
+      lightTower(4, c.wy(4) - 8, 6, true) + lightTower(96, c.wy(96) - 4, 8, true),
+  };
+};
+
+/* ─── seasonal ─── */
+BACK.opener = (c) => {
+  const sky = skyRect(c, '#5aa6e6', '#e2f1fb');
+  let jets = '';
+  for (let k = 0; k < 4; k++) {
+    const x = 34 + k * 5, y = -6 + Math.abs(k - 1.5) * 0.9;
+    jets += '<path d="M ' + f(x - 12) + ',' + f(y + 0.2) + ' L ' + f(x - 1) + ',' + f(y + 0.2) + '" stroke="rgba(255,255,255,.85)" stroke-width=".5"/>' +
+      '<path d="M ' + f(x) + ',' + f(y) + ' l -1.6,-.5 l -.4,.5 l .4,.5 Z" fill="#5a6470"/>';
+  }
+  const flags = [10, 22, 34, 66, 78, 90].map((x) => '<line x1="' + x + '" y1="' + f(-c.sky + 2) + '" x2="' + x + '" y2="' + f(-c.sky + 5.4) + '" stroke="#ddd" stroke-width=".18"/>' +
+    '<path d="M ' + x + ',' + f(-c.sky + 2) + ' l 2.6,.7 l -2.6,.7 Z" fill="' + (x < 50 ? '#c9483a' : '#1f4f8f') + '"/>').join('');
+  return {
+    defs: sky.defs + crowdPattern(c.id('crowd'), SHIRTS.concat(['#c9483a', '#1f4f8f', '#f7f5ef']), 101, { empty: 0.04 }),
+    art: sky.art + jets +
+      '<rect x="0" y="' + f(-c.sky + 5.4) + '" width="100" height="30" fill="#2a3444"/>' +
+      '<rect x="0" y="' + f(-c.sky + 5.4) + '" width="100" height="30" fill="' + c.url('crowd') + '"/>' + flags,
+  };
+};
+/* Red, white and blue fans hung from the top of the wall. */
+const BUNTING = (c) => {
+  let s = '';
+  for (let x = 4; x < 96; x += 8) {
+    const y = c.wy(x) + 0.1;
+    s += '<path d="M ' + f(x) + ',' + f(y) + ' a 3.2,2.4 0 0 0 6.4,0 Z" fill="#1f4f8f"/>' +
+      '<path d="M ' + f(x + 0.8) + ',' + f(y) + ' a 2.4,1.8 0 0 0 4.8,0 Z" fill="#f7f5ef"/>' +
+      '<path d="M ' + f(x + 1.6) + ',' + f(y) + ' a 1.6,1.2 0 0 0 3.2,0 Z" fill="#c9483a"/>';
+  }
+  return s;
+};
+
+BACK.fireworks = (c) => {
+  const sky = skyRect(c, '#070b1c', '#1f2446');
+  const R = rng(111);
+  let bursts = '';
+  const cols = ['#ff4f5a', '#ffd34f', '#5ad1ff', '#b56bff', '#7dff8a', '#ffffff'];
+  for (const [x, y, r] of [[18, -4, 4.2], [42, -7, 3.2], [62, -3, 5], [84, -6, 3.6], [30, 1, 2.6], [74, 2, 2.4]]) {
+    const col = cols[Math.floor(R() * cols.length)];
+    for (let k = 0; k < 16; k++) {
+      const a = k / 16 * Math.PI * 2, rr = r * (0.8 + R() * 0.3);
+      bursts += '<line x1="' + f(x + Math.cos(a) * r * 0.25) + '" y1="' + f(y + Math.sin(a) * r * 0.25) + '" x2="' + f(x + Math.cos(a) * rr) + '" y2="' + f(y + Math.sin(a) * rr) + '" stroke="' + col + '" stroke-width=".22" opacity=".9"/>' +
+        '<circle cx="' + f(x + Math.cos(a) * rr) + '" cy="' + f(y + Math.sin(a) * rr) + '" r=".3" fill="' + col + '"/>';
+    }
+    bursts += '<circle cx="' + x + '" cy="' + y + '" r="' + f(r * 1.3) + '" fill="' + col + '" opacity=".08"/>';
+  }
+  return {
+    defs: sky.defs + crowdPattern(c.id('crowd'), ['#3a3f5a', '#51597a', '#2a2e44', '#6a6f8a'], 113),
+    art: sky.art + stars(c, 18, 117) + bursts +
+      '<rect x="0" y="4" width="100" height="10" fill="rgba(180,170,200,.12)"/>' +
+      stand(c, 0, 100, 5.4, '#1c2030', c.url('crowd')),
+  };
+};
+
+BACK.haunted = (c) => {
+  const sky = skyRect(c, '#241237', '#d8742c');
+  const R = rng(121);
+  const hb = c.wy(70) - 2.6;
+  /* the house on the hill, lit */
+  const house = '<path d="M 56,' + f(hb) + ' Q 70,' + f(hb - 7) + ' 88,' + f(hb) + ' Z" fill="#1a1020"/>' +
+    '<g transform="translate(66,' + f(hb - 11) + ')"><rect width="9" height="6" fill="#140c18"/><path d="M -1,0 L 4.5,-3.6 L 10,0 Z" fill="#140c18"/>' +
+    '<rect x="6.4" y="-4.6" width="1.4" height="3" fill="#140c18"/><path d="M 6,-4.6 L 7.1,-6.2 L 8.2,-4.6 Z" fill="#140c18"/>' +
+    '<rect x="1.2" y="1.4" width="1.3" height="1.5" fill="#f2a53a"/><rect x="6.2" y="1.4" width="1.3" height="1.5" fill="#f2a53a"/><rect x="3.8" y="3" width="1.4" height="3" fill="#f2c05a"/></g>';
+  const bare = (x, s) => { const b = c.wy(x) + 0.2; return '<path d="M ' + f(x) + ',' + f(b) + ' L ' + f(x) + ',' + f(b - 7 * s) + ' M ' + f(x) + ',' + f(b - 4 * s) + ' L ' + f(x - 2.4 * s) + ',' + f(b - 7.4 * s) + ' M ' + f(x) + ',' + f(b - 5 * s) + ' L ' + f(x + 2.6 * s) + ',' + f(b - 8 * s) + ' M ' + f(x - 1.2 * s) + ',' + f(b - 5.6 * s) + ' L ' + f(x - 2.8 * s) + ',' + f(b - 5.4 * s) + '" stroke="#120a14" stroke-width="' + f(0.5 * s) + '" stroke-linecap="round" fill="none"/>'; };
+  let bats = '';
+  for (let k = 0; k < 7; k++) { const x = 10 + R() * 80, y = -8 + R() * 6; bats += '<path d="M ' + f(x - 1) + ',' + f(y) + ' q .5,-.5 1,0 q .5,-.5 1,0 l -.5,.4 l -.5,-.2 l -.5,.2 Z" fill="#140a18"/>'; }
+  let stones = '';
+  for (const x of [8, 14, 22, 34]) stones += '<path d="M ' + x + ',' + f(c.wy(x) + 0.2) + ' l 0,-1.6 q .8,-1 1.6,0 l 0,1.6 Z" fill="#5a5560"/>';
+  return {
+    defs: sky.defs + '<radialGradient id="' + c.id('moon') + '"><stop offset="0" stop-color="rgba(255,190,110,.55)"/><stop offset="1" stop-color="rgba(255,190,110,0)"/></radialGradient>',
+    art: sky.art + '<circle cx="30" cy="-3" r="12" fill="' + c.url('moon') + '"/><circle cx="30" cy="-3" r="5" fill="#f4a24a"/>' +
+      '<circle cx="28" cy="-4.2" r=".9" fill="rgba(160,80,30,.3)"/><circle cx="32" cy="-1.6" r="1.2" fill="rgba(160,80,30,.25)"/>' + bats + house +
+      bare(6, 1) + bare(44, 0.8) + bare(94, 1.1) + stones,
+  };
+};
+/* Jack-o-lanterns along the top of the wall. */
+const PUMPKINS = (c) => {
+  let s = '';
+  for (let x = 6; x < 96; x += 11) {
+    const y = c.wy(x) - 0.9;
+    s += '<ellipse cx="' + f(x) + '" cy="' + f(y) + '" rx="1.3" ry="1" fill="#e07b1a"/><rect x="' + f(x - 0.12) + '" y="' + f(y - 1.3) + '" width=".25" height=".5" fill="#3a5a2a"/>' +
+      '<path d="M ' + f(x - 0.7) + ',' + f(y - 0.2) + ' l .3,-.35 l .3,.35 Z M ' + f(x + 0.1) + ',' + f(y - 0.2) + ' l .3,-.35 l .3,.35 Z M ' + f(x - 0.6) + ',' + f(y + 0.35) + ' l 1.2,0 l -.3,.3 l -.3,-.15 l -.3,.15 Z" fill="#ffd66a"/>';
+  }
+  return s;
+};
+
+BACK.winter = (c) => {
+  const sky = skyRect(c, '#9fb2c6', '#e6edf2');
+  const R = rng(131);
+  let pines = '';
+  for (let x = 0; x < 102; x += 4 + R() * 3) pines += pine(x, c.wy(x) - 3.2, 1.1 + R() * 0.5, R() < 0.5 ? '#2c4a3a' : '#355644', true);
+  let snow = '';
+  for (let i = 0; i < 90; i++) snow += '<circle cx="' + f(R() * 100) + '" cy="' + f(-c.sky + R() * 22) + '" r="' + f(0.12 + R() * 0.2) + '" fill="rgba(255,255,255,.9)"/>';
+  return {
+    defs: sky.defs + crowdPattern(c.id('crowd'), ['#c9483a', '#1f4f8f', '#f7f5ef', '#2f6b3f', '#d9a93a', '#3a3a3a'], 133),
+    art: sky.art + pines + stand(c, 0, 100, 4.6, '#56606c', c.url('crowd'), '#f4f8fb') + snow,
+  };
+};
+/* Snow piled along the top of the wall. */
+const SNOWCAP = (c) => {
+  const pts = [];
+  for (let i = 0; i <= 40; i++) { const x = i * 2.5; pts.push(f(x) + ',' + f(c.wy(x) + 0.2)); }
+  for (let i = 40; i >= 0; i--) { const x = i * 2.5; pts.push(f(x) + ',' + f(c.wy(x) - 0.5 - (i % 3) * 0.25)); }
+  return '<polygon points="' + pts.join(' ') + '" fill="#f4f8fb"/>';
+};
+
+/* ─── hidden ─── */
+BACK.moonlight = (c) => {
+  const sky = skyRect(c, '#050a1c', '#1a2a4c');
+  const R = rng(141);
+  let town = '';
+  for (let x = 0; x < 100; x += 5 + R() * 4) {
+    const w = 4 + R() * 3, h = 2.4 + R() * 2, b = c.wy(x + w / 2) - 1.8;
+    town += '<rect x="' + f(x) + '" y="' + f(b - h) + '" width="' + f(w) + '" height="' + f(h + 3) + '" fill="#0c1426"/>' +
+      '<path d="M ' + f(x - 0.4) + ',' + f(b - h) + ' L ' + f(x + w / 2) + ',' + f(b - h - 2) + ' L ' + f(x + w + 0.4) + ',' + f(b - h) + ' Z" fill="#0c1426"/>' +
+      (R() < 0.6 ? '<rect x="' + f(x + 1) + '" y="' + f(b - h + 0.8) + '" width=".9" height=".9" fill="#f5d98a"/>' : '');
+  }
+  const steeple = '<g transform="translate(58,' + f(c.wy(58) - 3) + ')"><rect x="-1.4" y="-6" width="2.8" height="7" fill="#0c1426"/><path d="M -1.6,-6 L 0,-11 L 1.6,-6 Z" fill="#0c1426"/><rect x="-.08" y="-12.4" width=".16" height="1.6" fill="#0c1426"/><rect x="-.5" y="-12" width="1" height=".16" fill="#0c1426"/></g>';
+  let flies = '';
+  for (let i = 0; i < 26; i++) flies += '<circle cx="' + f(R() * 100) + '" cy="' + f(2 + R() * 7) + '" r=".2" fill="#e8f58a" opacity="' + f(0.4 + R() * 0.6) + '"/>';
+  return {
+    defs: sky.defs + plankPattern(c.id('planks'), '#3a3326', '#262117') +
+      '<radialGradient id="' + c.id('mglow') + '"><stop offset="0" stop-color="rgba(220,230,255,.45)"/><stop offset="1" stop-color="rgba(220,230,255,0)"/></radialGradient>',
+    art: sky.art + stars(c, 40, 143) + '<circle cx="72" cy="-4" r="11" fill="' + c.url('mglow') + '"/><circle cx="72" cy="-4" r="4.2" fill="#eef0e6"/>' +
+      '<circle cx="70.6" cy="-5" r=".8" fill="rgba(160,165,170,.35)"/><circle cx="73.4" cy="-2.6" r="1.1" fill="rgba(160,165,170,.3)"/><circle cx="73" cy="-5.6" r=".5" fill="rgba(160,165,170,.35)"/>' +
+      town + steeple + flies,
+  };
+};
+
+BACK.rainout = (c) => {
+  const sky = skyRect(c, '#4a5460', '#8e98a2');
+  const R = rng(151);
+  let rain = '';
+  for (let i = 0; i < 110; i++) { const x = R() * 104, y = -c.sky + R() * 24; rain += '<line x1="' + f(x) + '" y1="' + f(y) + '" x2="' + f(x - 0.7) + '" y2="' + f(y + 2) + '" stroke="rgba(220,230,240,.45)" stroke-width=".1"/>'; }
+  let umbrellas = '';
+  const ucols = ['#c9483a', '#1f4f8f', '#e0a030', '#2f6b3f', '#7a3a8a', '#f7f5ef', '#1e7a8a'];
+  for (let row = 0; row < 3; row++) for (let x = 1 + row * 0.9; x < 100; x += 2.4 + R() * 1.2) {
+    const b = c.wy(x) - 0.9 - row * 1.5 - R() * 0.4;
+    umbrellas += '<path d="M ' + f(x - 1.2) + ',' + f(b) + ' q 1.2,-1.6 2.4,0 Z" fill="' + ucols[Math.floor(R() * ucols.length)] + '"/>';
+  }
+  return {
+    defs: sky.defs + '<linearGradient id="' + c.id('cloud') + '" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="rgba(60,66,76,.9)"/><stop offset="1" stop-color="rgba(60,66,76,0)"/></linearGradient>',
+    art: sky.art + '<rect x="0" y="' + -c.sky + '" width="100" height="9" fill="' + c.url('cloud') + '"/>' +
+      stand(c, 0, 100, 5, '#3e4650', null, '#2a3038') + umbrellas + rain,
+  };
+};
+/* Puddles on the dirt, in the ground's own coordinates. */
+const PUDDLES = () => [[33, 42, 2.2], [66, 35, 1.8], [50, 52, 2.6], [41, 30, 1.4], [58, 45, 1.5]].map(([x, y, r]) =>
+  '<ellipse cx="' + x + '" cy="' + y + '" rx="' + r + '" ry="' + f(r * 0.45) + '" fill="rgba(150,175,195,.55)"/>' +
+  '<ellipse cx="' + f(x - r * 0.3) + '" cy="' + f(y - r * 0.12) + '" rx="' + f(r * 0.4) + '" ry="' + f(r * 0.1) + '" fill="rgba(235,242,248,.45)"/>').join('');
+
+BACK.golden = (c) => {
+  const sky = skyRect(c, '#f3c64e', '#fbe9b0');
+  let rays = '';
+  for (let k = 0; k < 14; k++) {
+    const a = -Math.PI + k / 13 * Math.PI;
+    rays += '<path d="M 50,6 L ' + f(50 + Math.cos(a - 0.05) * 70) + ',' + f(6 + Math.sin(a - 0.05) * 70) + ' L ' + f(50 + Math.cos(a + 0.05) * 70) + ',' + f(6 + Math.sin(a + 0.05) * 70) + ' Z" fill="rgba(255,255,240,.22)"/>';
+  }
+  const cup = '<g transform="translate(50,' + f(c.wy(50) - 3.4) + ')"><rect x="-2.6" y="-1" width="5.2" height="1.2" fill="#8a6414"/><rect x="-.6" y="-3.6" width="1.2" height="2.8" fill="#c99a2a"/>' +
+    '<path d="M -3.4,-9.6 L 3.4,-9.6 Q 3.2,-4.4 0,-3.6 Q -3.2,-4.4 -3.4,-9.6 Z" fill="#e8b93a" stroke="#8a6414" stroke-width=".18"/>' +
+    '<path d="M -3.3,-8.8 q -2,.2 -1.6,2 q .4,1 1.9,.6 M 3.3,-8.8 q 2,.2 1.6,2 q -.4,1 -1.9,.6" fill="none" stroke="#c99a2a" stroke-width=".35"/>' +
+    '<path d="M -2.2,-9.2 L -1.4,-5 L -.8,-9.2 Z" fill="rgba(255,250,220,.55)"/></g>';
+  return {
+    defs: sky.defs + crowdPattern(c.id('crowd'), ['#e8b93a', '#f7f0d8', '#c99a2a', '#fff4c8', '#8a6414'], 161, { empty: 0.05 }),
+    art: sky.art + rays + stand(c, 0, 40, 6, '#b8862a', c.url('crowd')) + stand(c, 60, 100, 6, '#b8862a', c.url('crowd')) + cup,
+  };
+};
+
 /* Each park's field palette, over BASE. */
 const LOOK = {
   home: { lights: true },
@@ -552,6 +1019,37 @@ const LOOK = {
   dome: { grass: ['#3cae4c', '#35a044', '#2e9140'], foul: '#2e9140', mow: 'none', skin: false,
     dirt: ['#c0704a', '#9c5636'], mound: ['#c77a52', '#9c5636'], track: '#2a7a38', wall: ['#1f4f8f', '#163a6b'] },
   neon: { wall: ['#0f6e70', '#0a4f51'], wallLine: '#ff4fa3', pole: '#2de2d6', night: true, lights: true, grass: ['#3a9a3c', '#308a32', '#277428'] },
+  /* the road to the Show: low fences, worn grass and faint chalk at the bottom,
+     a real big league finish by Triple-A */
+  sandlot: { sun: true, grass: ['#93a95a', '#83994c', '#72893f'], foul: '#7e8f4a', mow: 'none', dirt: ['#caa574', '#a9845a'],
+    mound: ['#cfaa78', '#a47c50'], track: '#7e8f4a', chalk: 0.35, wall: ['#8f6c45', '#6b4f31'], wallArt: PLANK_WALL,
+    wallLine: '#5a4128', pole: '#6b4f31', pads: false, wallH: 3, wallTop: lowTop(3) },
+  littleleague: { sun: true, grass: ['#5fa845', '#509a3a', '#428a31'], foul: '#4e8f38', mow: 'bands', track: '#b99664',
+    wall: ['#4f8a3a', '#3f7a30'], wallArt: LINK_WALL, wallLine: '#f2c12e', pole: '#f2c12e', pads: false, wallH: 2.6, wallTop: lowTop(2.6) },
+  varsity: { sun: true, grass: ['#56a340', '#479436', '#39802c'], mow: 'bands', wall: ['#1f5a3a', '#16442b'], wallArt: AD_WALL, ads: ['#1f5a3a', '#c9483a', '#1f4f8f', '#d9a93a', '#6a3a8a'],
+    wallLine: '#f2c12e', pads: false, wallH: 3.6, wallTop: lowTop(3.6) },
+  campus: { lights: true, night: true, grass: ['#4b9d3b', '#3f8f33', '#337a2a'], wall: ['#6e1f2c', '#4f141e'], wallLine: '#f2d27a',
+    pole: '#f2d27a', wallH: 4.4, wallTop: lowTop(4.4) },
+  singlea: { lights: true, night: true, grass: ['#46993a', '#3a8a32', '#2f7629'], wall: ['#23324a', '#172234'], wallArt: AD_WALL, ads: ['#c9483a', '#1f4f8f', '#e0a030', '#2f6b3f', '#7a3a8a', '#1e7a8a'],
+    wallLine: '#f2c12e', pads: false, wallH: 4, wallTop: lowTop(4) },
+  doublea: { sun: true, grass: ['#52a23e', '#44933a', '#36802d'], mow: 'diag', wall: ['#1f3a5a', '#152a44'], wallArt: AD_WALL, ads: ['#1f4f8f', '#d9a93a', '#c9483a', '#2f6b3f', '#e07b39'],
+    wallLine: '#f7f5ef', pads: false, wallH: 5, wallTop: lowTop(5) },
+  triplea: { lights: true, night: true, wall: ['#1f4f8f', '#163a6b'], wallLine: '#f2c12e' },
+  /* seasonal */
+  opener: { sun: true, front: BUNTING, grass: ['#52a83f', '#449a36', '#37862c'] },
+  fireworks: { night: true, lights: true, wall: ['#1c2a4a', '#121c33'], wallLine: '#f7f5ef', grass: ['#3f9a38', '#338a30', '#2a7427'] },
+  haunted: { night: true, front: PUMPKINS, wall: ['#1b1420', '#0f0a12'], wallLine: '#e07b1a', pole: '#e07b1a',
+    grass: ['#3d7a34', '#33692c', '#2a5a25'], foul: '#2e5a28', dirt: ['#b08a5a', '#8a6a44'], track: '#7a5e3e' },
+  winter: { lights: true, front: SNOWCAP, grass: ['#7aa47a', '#6a966c', '#5a8660'], foul: '#dde6ec', track: '#e4ebf0',
+    dirt: ['#bf9a6c', '#9a7650'], mound: ['#c8a476', '#9a7650'], wall: ['#2a4a6a', '#1c3450'], wallLine: '#f4f8fb', pole: '#f4f8fb', mow: 'none' },
+  /* hidden */
+  moonlight: { night: true, grass: ['#3a7a44', '#2f6a3a', '#255a30'], foul: '#285a33', dirt: ['#9a8a74', '#7a6a58'],
+    mound: ['#a08e76', '#7a6a58'], track: '#2f5a36', chalk: 0.6, wall: ['#3a3326', '#262117'], wallArt: PLANK_WALL,
+    wallLine: '#d8dce6', pole: '#d8dce6', pads: false, wallH: 3, wallTop: lowTop(3) },
+  rainout: { grass: ['#4a8a45', '#3f7c3c', '#346c33'], foul: '#3a6c38', dirt: ['#9a7650', '#7a5a3a'], mound: ['#9a7650', '#7a5a3a'],
+    track: '#6a5238', wall: ['#2e3a44', '#1f2830'], wallLine: '#aeb8c2', pole: '#aeb8c2', ground: PUDDLES, mow: 'none' },
+  golden: { sun: true, grass: ['#8fae3e', '#7f9e34', '#6e8c2c'], foul: '#7a9234', dirt: ['#e0b86a', '#c0944a'], mound: ['#e8c47a', '#b88a44'],
+    track: '#c9a052', wall: ['#c99a2a', '#8a6414'], wallLine: '#fff4c8', pole: '#fff4c8' },
 };
 
 /* ─── the field, for a park ─── */
@@ -584,7 +1082,8 @@ function markings(parkId, sfx, sky) {
      terms. Whatever a backdrop leaves uncovered at the very top is its sky. */
   const [wt0, wtA] = P.wallTop;
   const shift = apt - wtA;
-  const c = { id, url, sky, P, wallPath, wallTopPath: wallTop, wy: (x) => curveY(x, y0t, apt) - shift };
+  const c = { id, url, sky, P, wallPath, wallTopPath: wallTop, wy: (x) => curveY(x, y0t, apt) - shift,
+    wt: (x) => curveY(x, y0t, apt), wb: (x) => curveY(x, y0b, apb) };
   const back = (BACK[park] || BACK.home)(c);
   const infield = 'M 50,57.4 L 68.3,' + bY + ' L 50,23.4 L 31.7,' + bY + ' Z';
   const mow = P.mow === 'diag'
@@ -665,6 +1164,7 @@ function markings(parkId, sfx, sky) {
     /* worn batter's boxes, where the dirt is dug out */
     '<ellipse cx="46.7" cy="62.4" rx="1.3" ry="1.9" fill="rgba(80,50,20,.22)"/>' +
     '<ellipse cx="53.3" cy="62.4" rx="1.3" ry="1.9" fill="rgba(80,50,20,.22)"/>' +
+    (P.ground ? P.ground() : '') +
     '<ellipse cx="50" cy="' + (mY + 0.5) + '" rx="3.7" ry="3.5" fill="rgba(0,0,0,.18)"/>' +
     '<circle cx="50" cy="' + mY + '" r="3.4" fill="' + url('mound') + '"/>' +
     '<rect x="49.1" y="' + (mY - 0.35) + '" width="1.8" height=".5" rx=".1" fill="' + wh + '.95)"/>' +
@@ -714,7 +1214,8 @@ function markings(parkId, sfx, sky) {
     '</svg><div class="vig"></div>';
 }
 
-const api = { PARKS, BY_ID, SKY, GROUND_K, GROUND_A, status, unlockedIds, nextOnTrack, markings, LOOK };
+const api = { PARKS, BY_ID, START, GROUPS, SKY, GROUND_K, GROUND_A, status, unlockedIds, nextOnTrack, markings, LOOK,
+  eastern, inWindow, seasonOpen, winLabel };
 if (typeof module !== 'undefined' && module.exports) module.exports = api;
 if (typeof window !== 'undefined') window.RTD_PARKS = api;
 })();

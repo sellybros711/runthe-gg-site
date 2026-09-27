@@ -30,10 +30,20 @@ const claim = (ok, what, why) => {
 const head = (t) => console.log('\n' + t + '\n' + '-'.repeat(t.length));
 
 // ══ 1. the catalogue ═════════════════════════════════════════════════════════
-head('1. EVERY PARK IS IN THE CATALOGUE ONCE, AND THE HOME PARK IS FREE');
+head('1. EVERY PARK IS IN THE CATALOGUE ONCE, AND EVERYBODY STARTS ON THE SANDLOT');
 const ids = PK.PARKS.map((p) => p.id);
 claim(new Set(ids).size === ids.length, `${ids.length} parks, no id twice`);
-claim(PK.PARKS[0].id === 'home' && PK.status(PK.PARKS[0], null).ok, 'the home park is first and yours as a guest');
+claim(PK.PARKS[0].id === PK.START && PK.START === 'sandlot' && PK.status(PK.PARKS[0], null).ok, 'the sandlot is first and yours as a guest');
+claim(PK.PARKS.every((p) => PK.GROUPS.some((g) => g[0] === p.group)), 'every park sits in one of the shelf\'s groups');
+/* The server keeps the choice, and 128's check constraint is the list it will take. A
+   park the page offers and the server refuses works on this device and is gone on the
+   next, so the two lists are held together here. */
+{
+  const sql = readFileSync(path.join(HERE, '..', 'supabase', '128_baseball_parks.sql'), 'utf8');
+  const listed = [...((/park in \(([\s\S]*?)\)\);/.exec(sql) || [])[1] || '').matchAll(/'([a-z]+)'/g)].map((m) => m[1]).sort();
+  claim(listed.join() === ids.slice().sort().join(), `128 lets the server save exactly the parks the shelf offers (${listed.length})`,
+    'missing ' + ids.filter((i) => !listed.includes(i)).join(',') + '; extra ' + listed.filter((i) => !ids.includes(i)).join(','));
+}
 claim(PK.PARKS.every((p) => p.name && p.nod && p.rarity && p.unlock && p.unlock.label), 'each has a name, a line, a rarity and a rule');
 claim(new Set(PK.PARKS.map((p) => p.name)).size === PK.PARKS.length, 'no two parks share a name');
 
@@ -55,7 +65,7 @@ for (const p of PK.PARKS) {
 {
   const all = PK.PARKS.map((p) => PK.markings(p.id, 'pv', PK.SKY)).join('');
   const list = [...all.matchAll(/\sid="([^"]+)"/g)].map((m) => m[1]);
-  claim(new Set(list).size === list.length, 'all thirteen in one document share no id');
+  claim(new Set(list).size === list.length, `all ${PK.PARKS.length} in one document share no id`);
   const two = PK.markings('ivy', 'field', PK.SKY) + PK.markings('ivy', 'pv', PK.SKY);
   const l2 = [...two.matchAll(/\sid="([^"]+)"/g)].map((m) => m[1]);
   claim(new Set(l2).size === l2.length, 'and one park drawn twice on a page under two suffixes does not either');
@@ -93,9 +103,9 @@ for (const p of PK.PARKS) {
 // ══ 3. the unlocks ═══════════════════════════════════════════════════════════
 head('3. EVERY PARK CAN BE EARNED, AND A GUEST EARNS NOTHING');
 const row = (o) => Object.assign({ ts: Date.now(), wins: 81, losses: 81, madePlayoffs: false, titleWon: false, picks: [] }, o);
-const infoOf = (rows, pro) => ({ signed: true, pro: !!pro, badges: ACH.evaluate(rows).earned.length, ctx: ACH.buildCtx(rows) });
-claim(PK.unlockedIds(null).join() === 'home', 'a guest has the home park and nothing else');
-claim(PK.unlockedIds(infoOf([])).join() === 'home', 'a new account has the home park and nothing else');
+const infoOf = (rows, pro) => ({ signed: true, pro: !!pro, rows, badges: ACH.evaluate(rows).earned.length, ctx: ACH.buildCtx(rows) });
+claim(PK.unlockedIds(null).join() === 'sandlot', 'a guest has the sandlot and nothing else');
+claim(PK.unlockedIds(infoOf([])).join() === 'sandlot', 'a new account has the sandlot and nothing else');
 /* A career that has done every thing the rules ask for: the whole season track (350),
    five titles, and October in every mode, built from the modes the badge file itself
    lists, so it cannot drift from what the game records. */
@@ -107,34 +117,73 @@ for (let i = 0; i < 350; i++) {
   vet.push(row(Object.assign({ ts: 1.7e12 + i * 864e5, wins: 72 + (i % 30), losses: 90 - (i % 30),
     madePlayoffs: i % 7 < 7 && i > 20, titleWon: i >= 340 && i < 345 }, flags[m] || {})));
 }
+/* and the seasons that open the seasonal and hidden parks: one inside each window,
+   one after midnight Eastern, one terrible year and one record year */
+const et = (y, mo, d, h) => Date.UTC(y, mo - 1, d, h + 4, 0, 0);
+for (const [mo, d] of [[3, 25], [7, 4], [10, 30], [12, 24]]) vet.push(row({ ts: et(2025, mo, d, 15) }));
+vet.push(row({ ts: et(2025, 5, 12, 1) }), row({ ts: et(2025, 5, 13, 15), wins: 50, losses: 112 }),
+  row({ ts: et(2025, 5, 14, 15), wins: 116, losses: 46 }));
 const vi = infoOf(vet), vp = infoOf(vet, true);
 const notPro = PK.PARKS.filter((p) => !p.unlock.pro);
 const stuck = notPro.filter((p) => !PK.status(p, vi).ok).map((p) => p.name);
-claim(!stuck.length, 'a career that finished the track and both special tasks has every park that is not Pro', stuck.join(', ') + ` (badges ${vi.badges})`);
+claim(!stuck.length, 'a career that finished the track and every task has every park that is not Pro', stuck.join(', ') + ` (badges ${vi.badges})`);
 claim(PK.PARKS.filter((p) => p.unlock.pro).every((p) => !PK.status(p, vi).ok && PK.status(p, vp).ok), 'a Pro park is Pro and only Pro');
 claim(ACH.MODES.length === 7 && /7 modes/.test(PK.BY_ID.bayside.unlock.label), 'the rule that says "all 7 modes" counts the modes the game has');
 claim(PK.PARKS.filter((p) => p.unlock.of > 1).every((p) => { const s = PK.status(p, infoOf([])); return s.have === 0 && s.of > 1; }),
   'a park with a count reports how far along an account is');
 
-/* THE LONG GRIND, ONE AT A TIME. Asked for by the owner after the first ladder handed
-   out seven parks in about ten seasons. The track is strictly increasing, each step
-   opens exactly one park, nothing opens inside the first nine seasons, the last step
-   is hundreds of seasons out, and the special parks are not on it. */
+/* THE ROAD TO THE SHOW, then the long grind. Everybody starts on the sandlot and
+   climbs Little League, high school, college and the three minor league levels to
+   the Show, and the track goes on through the big league parks. Strictly
+   increasing, each step opens exactly one park, the Show is a real climb and the
+   last step is hundreds of seasons out. */
 const track = PK.PARKS.filter((p) => p.unlock.track);
 const steps = track.map((p) => p.unlock.of);
 claim(steps.every((v, i) => i === 0 || v > steps[i - 1]), 'the season track climbs: ' + steps.join(', '));
-claim(steps[0] >= 10 && steps[steps.length - 1] >= 300, 'it starts at ten seasons and ends hundreds of seasons out');
-claim(track.length >= 7, `most of the shelf is the track (${track.length} of ${PK.PARKS.length})`);
+claim(steps[0] >= 3 && steps[steps.length - 1] >= 300, 'it starts a few seasons in and ends hundreds of seasons out');
+const road = PK.PARKS.filter((p) => p.group === 'road');
+claim(road.map((p) => p.tier).join() === 'Sandlot,Little League,High School,College,Single-A,Double-A,Triple-A,The Show',
+  'the road runs sandlot, Little League, high school, college, A, AA, AAA, the Show', road.map((p) => p.tier).join());
+claim(road.slice(1).every((p) => p.unlock.track), 'every rung past the sandlot is on the track');
+const show = PK.BY_ID.home.unlock.of;
+claim(show >= 40 && show <= 100, `the Show takes a real climb (${show} seasons)`);
+claim(PK.PARKS.filter((p) => p.group === 'majors').every((p) => p.unlock.track && p.unlock.of > show), 'the big league parks come after the Show');
 const seasons = (n) => { const r = []; for (let i = 0; i < n; i++) r.push(row({ ts: 1.6e12 + i * 1000, wins: 85, losses: 77 })); return infoOf(r); };
 const opened = (n) => PK.unlockedIds(seasons(n)).length;
-claim(opened(9) === 1, 'nine seasons in, the home park is still the only one', String(opened(9)));
+claim(opened(steps[0] - 1) === 1, 'before the first step the sandlot is the only park', String(opened(steps[0] - 1)));
 claim(steps.every((v) => opened(v) === opened(v - 1) + 1), 'each step of the track opens exactly one park');
-claim(opened(30) <= 3, `thirty seasons in, three parks at most (${opened(30)})`);
-const specials = PK.PARKS.filter((p) => p.special);
-claim(specials.length >= 2 && specials.every((p) => !p.unlock.track && !PK.status(p, seasons(400)).ok),
-  'the special parks are not on the track, and four hundred plain seasons do not open them');
+const offTrack = PK.PARKS.filter((p) => p.special || p.hidden || p.unlock.seasonal);
+claim(offTrack.length >= 9 && offTrack.every((p) => !p.unlock.track && !PK.status(p, seasons(400)).ok),
+  `the ${offTrack.length} special, seasonal and hidden parks are not on the track, and four hundred plain seasons open none of them`);
 const nx = PK.nextOnTrack(seasons(12));
-claim(nx && nx.park.id === 'ivy' && nx.left === 13, 'the shelf names the next park and how far off it is', JSON.stringify(nx && { id: nx.park.id, left: nx.left }));
+claim(nx && nx.park.id === 'singlea' && nx.left === 8, 'the shelf names the next park and how far off it is', JSON.stringify(nx && { id: nx.park.id, left: nx.left }));
+
+/* SEASONAL PARKS OPEN ON THE EASTERN CALENDAR, and one season inside the window is
+   enough. The winter window wraps the new year, which is the case a naive range test
+   gets wrong. */
+{
+  const one = (ts) => infoOf([row({ ts })]);
+  const has = (id, ts) => PK.status(PK.BY_ID[id], one(ts)).ok;
+  claim(has('fireworks', et(2026, 7, 4, 20)) && !has('fireworks', et(2026, 7, 8, 20)), 'Fireworks Night opens on July 4 and not July 8');
+  claim(has('winter', et(2026, 12, 31, 12)) && has('winter', et(2027, 1, 2, 12)) && !has('winter', et(2027, 1, 5, 12)),
+    'Winter Classic wraps the new year: Dec 31 and Jan 2 yes, Jan 5 no');
+  claim(has('opener', et(2026, 3, 20, 9)) && has('opener', et(2026, 4, 10, 22)) && !has('opener', et(2026, 4, 11, 9)), 'Opening Day holds both ends of its window, inclusive');
+  /* 11pm Eastern on Oct 31 is Nov 1 in UTC. The window is Eastern. */
+  claim(has('haunted', et(2026, 10, 31, 23)), 'the window is the Eastern day, not the UTC one (11pm Oct 31)');
+  claim(PK.seasonOpen(PK.BY_ID.fireworks, et(2026, 7, 3, 12)) && !PK.seasonOpen(PK.BY_ID.fireworks, et(2026, 7, 9, 12)), 'the shelf can tell when a window is open now');
+}
+/* HIDDEN PARKS KEEP THEIR SECRET from a guest, and the page hides it from a signed in
+   account until earned. What opens each is asked of real rows. */
+{
+  const hid = PK.PARKS.filter((p) => p.hidden);
+  claim(hid.length >= 3 && hid.every((p) => p.unlock.hint && !PK.status(p, null).label.includes(p.unlock.label.slice(0, 12))),
+    'every hidden park has a hint, and a guest is not told the rule');
+  const one = (o) => infoOf([row(o)]);
+  claim(PK.status(PK.BY_ID.moonlight, one({ ts: et(2026, 5, 1, 2) })).ok && !PK.status(PK.BY_ID.moonlight, one({ ts: et(2026, 5, 1, 5) })).ok,
+    'Moonlight Park opens on a season finished at 2am Eastern and not at 5am');
+  claim(PK.status(PK.BY_ID.rainout, one({ losses: 110, wins: 52 })).ok && !PK.status(PK.BY_ID.rainout, one({ losses: 109, wins: 53 })).ok, 'Rain Delay opens at 110 losses');
+  claim(PK.status(PK.BY_ID.golden, one({ wins: 116, losses: 46 })).ok && !PK.status(PK.BY_ID.golden, one({ wins: 115, losses: 47 })).ok, 'the Golden Diamond opens at 116 wins');
+}
 
 if (QUICK) { console.log(`\n${fails ? fails + ' of ' + (fails + passes) + ' checks FAILED' : 'All ' + passes + ' checks passed.'}`); process.exit(fails ? 1 : 0); }
 
@@ -183,7 +232,7 @@ const rows = vet.map((r) => Object.assign({ u: 'acct1' }, r));
   await p.waitForSelector('#sheet-profile .pk-card');
   const shelf = await p.evaluate(() => ({ cards: document.querySelectorAll('.pk-card').length,
     locked: document.querySelectorAll('.pk-card.locked').length, on: (document.querySelector('.pk-card.on .pk-name') || {}).textContent }));
-  claim(shelf.cards === 13, `the shelf draws every park (${shelf.cards})`);
+  claim(shelf.cards === PK.PARKS.length, `the shelf draws every park (${shelf.cards})`);
   claim(shelf.locked === 2 && /Ivy/i.test(shelf.on), `the two Pro parks are locked for a free veteran, and the one in use is marked (${shelf.locked})`);
   await p.click('.pk-use[data-park="monster"]');
   await p.evaluate(() => document.querySelector('#sheet-profile .sheet-x').click());
@@ -196,17 +245,17 @@ const rows = vet.map((r) => Object.assign({ u: 'acct1' }, r));
 head('5. A PARK THE ACCOUNT CANNOT BACK IS NEVER DRAWN');
 {
   const { ctx, p } = await openAs({ acct: 'acct1', rows, pref: { acct1: 'dome' } });
-  claim(await parkOn(p) === 'home', 'a Pro park chosen by an account without Pro falls back to the home park');
+  claim(await parkOn(p) === 'home', 'a Pro park chosen by an account without Pro falls back to the highest rung it has reached (the Show)');
   await ctx.close();
 }
 {
   const { ctx, p } = await openAs({ acct: 'acct2', rows, pref: { acct1: 'ivy', acct2: 'ivy' } });
-  claim(await parkOn(p) === 'home', 'another account\'s seasons earn this one nothing');
+  claim(await parkOn(p) === 'sandlot', 'another account\'s seasons earn this one nothing');
   await ctx.close();
 }
 {
   const { ctx, p } = await openAs({ rows, pref: { acct1: 'ivy' } });
-  claim(await parkOn(p) === 'home', 'a guest drafts on the home park');
+  claim(await parkOn(p) === 'sandlot', 'a guest drafts on the sandlot');
   await ctx.close();
 }
 claim(!errors.length, 'no page error', errors.slice(0, 2).join(' | '));

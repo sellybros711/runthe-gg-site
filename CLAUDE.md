@@ -14936,8 +14936,8 @@ node baseball/check-parks.mjs --quick  no browser
 ```
 
 Asked for as custom ballparks a fan would love, unlocked to the profile by rewards
-and account tier. `baseball/parks.js` holds thirteen: the home park plus twelve
-nods to famous parks (ivy on brick, a tall green wall in left, fountains, a bay, a
+and account tier. `baseball/parks.js` holds twenty seven (see the ladder below); the
+big league ones are nods to famous parks (ivy on brick, a tall green wall in left, fountains, a bay, a
 white frieze, a dome, a cornfield). **None is named for the park it nods to**,
 and none carries a real sign or logo. Those belong to other people, so each is
 drawn from what makes the place itself and given a name of its own.
@@ -14946,20 +14946,54 @@ drawn from what makes the place itself and given a name of its own.
 second shelf. Every rule is a question about the account's own rows (badges
 earned, best wins, Octobers, titles, seasons played, modes played) or about
 `isPro()`. So a park is retroactive, follows the account, and cannot be lost by
-clearing site data. A guest drafts on the home park. The only stored thing is the
-CHOICE, `rtd_park_v1`, keyed by account on the device.
+clearing site data. A guest drafts on the sandlot. The only stored thing is the
+CHOICE, on the account (`rtd_profiles.park`) with `rtd_park_v1` as the device's copy.
 
-**THE SHELF IS A LONG GRIND, ONE PARK AT A TIME**, the owner's call after the first ladder
-handed a new account seven parks inside about ten seasons. Eight parks are one TRACK of
-seasons played (10, 25, 50, 80, 120, 175, 250, 350), so a park arrives on its own every so
-often for as long as somebody plays, and the last is hundreds of seasons out. Two are
-SPECIAL, tasks the track can never hand you (October in all seven modes, five World
-Series), and two are Pro. The shelf leads with the next park on the track and how many
-seasons are left (`nextOnTrack`). `check-parks` holds the shape rather than the numbers:
-the track climbs, each step opens exactly one park, nothing opens inside nine seasons,
-and four hundred plain seasons do not open a special park. **Accounts that had parks
-under the old ladder lose the ones the new ladder has not reached yet**, and a chosen park
-they no longer have falls back to the home park, which is the rule below doing its job.
+**THE ROAD TO THE SHOW, which is the owner's design.** Everybody starts on the sandlot and
+climbs the real ladder of fields one season count at a time:
+
+| rung | park | seasons |
+|---|---|---|
+| Sandlot | The Sandlot | from the start |
+| Little League | Little League | 3 |
+| High School | Varsity Field | 7 |
+| College | Campus Yard | 12 |
+| Single-A | Riverside Park | 20 |
+| Double-A | Depot Field | 30 |
+| Triple-A | Capital Park | 45 |
+| The Show | The Diamond (`home`) | 60 |
+
+The track goes on through the eight big league parks (80, 100, 125, 155, 190, 230, 280,
+350), so a park still arrives every so often for as long as somebody plays. Off the track:
+**four SEASONAL parks** (Opening Day Mar 20 to Apr 10, Fireworks Night Jul 1 to 7, Haunted
+Hollow Oct 24 to 31, Winter Classic Dec 18 to Jan 3), each earned for good by finishing one
+season inside its window on the EASTERN calendar; **two SPECIAL** (October in all seven
+modes, five World Series); **three HIDDEN** (a season finished between midnight and 4am
+Eastern, a 110-loss season, a 116-win season) whose card shows a dark preview and a hint
+until earned; and **two Pro**. The shelf is grouped, leads with any seasonal park open
+right now (missing it means a year's wait), then the next rung and how far off it is.
+
+**The winter window wraps the new year and the day is Eastern**, and both are asserted:
+a range test written `k >= a && k <= b` never opens Winter Classic, and one read in UTC
+puts 11pm on Oct 31 on Nov 1. Each was proved by reintroducing it.
+
+**With no choice made, an account plays on the highest rung it has reached**
+(`bestRoadPark`), not on the sandlot: forty seasons in, you play Double-A. A choice the
+account can no longer back falls back the same way.
+
+**`128_baseball_parks.sql` widens 127's check constraint** to the whole list. Without it a
+new park is chosen on the device and refused by the server in silence, so the next phone
+opens on another park. Preflight row 39 asks for it, and `check-parks` holds the SQL list
+to `PARKS` so the two cannot drift. **Accounts lose big league parks the old ladder had
+handed them** until the new track reaches them, which is the owner's ladder doing its job.
+
+**A lower-tier fence is low**, so those backdrops are authored with `lowTop(H)`, which puts
+the authoring wall top exactly where a wall H units tall lands (no shift). Fences are drawn
+as the wall face: boards (`PLANK_WALL`), chain link (`LINK_WALL`) or a row of sign panels
+that follow the wall's curve (`AD_WALL`, using `c.wt`/`c.wb`). A pattern with a fixed tile
+height cannot do the signs: the wall face moves with its height, so the stripes land on
+nothing. `P.front` hangs things on the wall top (bunting, jack-o-lanterns, snow) and
+`P.ground` draws on the dirt in ground coordinates (the rain delay's puddles).
 
 **The field has light and grain, shared by every park.** Grain patterns on the grass, the
 dirt and the track (a pattern, not feTurbulence, because the shelf draws thirteen
@@ -14969,7 +15003,7 @@ across home plate on a day park (`sun`) and a light pool under the towers at nig
 id can collide with a backdrop's own**: Neon Nights already defines `glow`, which is why
 the field's is `lglow`, and check-parks names the collision if it comes back.
 
-**A choice the account cannot back falls back to the home park**, never to a
+**A choice the account cannot back falls back to its highest rung**, never to a
 park it does not have: signed out, another account on the browser, or a Pro park
 after Pro lapses. `check-parks` drives all three through the page, and each was
 proved by making `currentPark()` return the stored choice unasked.
@@ -15550,6 +15584,7 @@ different seasons. Now:
 | battery | 0.07 | a catcher and a pitcher who shared a franchise-season, at C and a pitching slot |
 | dp_combo | 0.06 | a 2B and a SS who shared a franchise-season, at those slots |
 | **teammates** | **0.05** | **new**: shared any franchise-season in their careers |
+| college | 0.04 | went to the same college, any era |
 | franchise | 0.03 (was 0.04) | same club, never together |
 | era | 0.005 | same era |
 
@@ -15576,6 +15611,29 @@ bare shared shirt. The franchise tie came down to keep that order.
 badge sweep moved: eight excuses came off because the chemistry bot now
 reaches them, and `rank_one` and `one_franchise_8` went on, because the bot
 chases team-mates rather than stacking eight from one club.
+
+#### Two men from the same college share a link
+
+```
+python3 baseball/pipeline/build_colleges.py      writes baseball/data/colleges.json
+```
+
+Asked for as "college links". `data/colleges.json` is one entry a man (Lahman's
+CollegePlaying and Schools, joined to the pool's Baseball-Reference ids through People),
+built by the data workflow after the pool and read by `E.setColleges`. A man with several
+schools keeps all of them, and a shared one fires the `college` link, labelled "USC
+alums". It sits beside the team-mates link rather than instead of it, because two Trojans
+who later shared a clubhouse had both.
+
+**The source stops at 2014**, so 3,324 of the pool's 10,254 men have a school and anybody
+who played college ball later has none. It under-counts and never invents a pair. The
+builder refuses to write if under 15% of the pool matches, because a join that matched
+nobody is the one way this fails without an error. `SHORT` holds the names a box score
+uses (USC, LSU, Ole Miss) where trimming the full name would not.
+
+**Measured over 120 drafts a bot: it barely moves balance.** It lands on 8% of
+best-available rosters and 20% of rosters chasing chemistry, and moves wins by 0.1 to 0.2.
+`link_college` ("Old school") is a silver badge.
 
 #### And One Franchise stopped paying the team-mates link
 

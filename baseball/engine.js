@@ -808,6 +808,11 @@ const CHEMISTRY = {
      * Johnny Pesky '50 wore the same shirt the same summers. Between a reunion
      * (the same drafted season) and a bare franchise tie. */
     teammates: 0.05,
+    /* Two men who went to the same college, in any era. Weaker than having played
+     * together in the majors and stronger than a bare shared shirt: a school is
+     * something the two of them really had in common, and a club they wore
+     * decades apart is something that happened to them separately. */
+    college:   0.04,
     franchise: 0.03,
     /* Era is a weak ambient link, kept small so the deliberate links
      * (family/reunion/battery/DP) are what actually move the needle. */
@@ -882,6 +887,34 @@ function playsAs(p, pos) {
   return playerPositions(p).includes(pos);
 }
 
+/* WHERE THEY WENT TO SCHOOL, from data/colleges.json (Lahman's CollegePlaying,
+ * through 2014, built by pipeline/build_colleges.py). player id -> [school ids],
+ * and school id -> the name a box score writes. A man with no entry simply has no
+ * college link: the source stops in 2014, so it under-counts and never invents a
+ * pair. */
+let COLLEGES = {}, SCHOOL_NAMES = {};
+function setColleges(json) {
+  COLLEGES = {}; SCHOOL_NAMES = {};
+  if (!json || !json.p) return;
+  SCHOOL_NAMES = json.schools || {};
+  for (const id of Object.keys(json.p)) {
+    const v = json.p[id];
+    COLLEGES[id] = Array.isArray(v) ? v : [v];
+  }
+}
+/* The first school two players both went to, as its name, or null. */
+function sharedCollege(a, b) {
+  if (!a || !b || a.i === b.i) return null;
+  const A = COLLEGES[a.i], B = COLLEGES[b.i];
+  if (!A || !B) return null;
+  for (const s of A) if (B.indexOf(s) !== -1) return SCHOOL_NAMES[s] || s;
+  return null;
+}
+function collegeOf(p) {
+  const L = p && COLLEGES[p.i];
+  return L ? L.map((s) => SCHOOL_NAMES[s] || s) : [];
+}
+
 function familyLink(a, b) {
   const m = CURATED_FAMILY[a.i];
   return m && m[b.i] ? m[b.i] : null;
@@ -951,6 +984,15 @@ function pairLinks(a, b, opts) {
   if (shared && !(sameTeam && sameSeason)) {
     links.push({ type: 'teammates', value: CHEMISTRY.VALUES.teammates,
       label: `Team-mates in ${shared.yr}` });
+  }
+
+  /* The same college. It sits beside the team-mates link rather than instead of
+     it, because it is a different fact: two Trojans who later shared a clubhouse
+     had both. The same man twice (two seasons of one player) is refused above. */
+  const school = sharedCollege(a, b);
+  if (school) {
+    links.push({ type: 'college', value: CHEMISTRY.VALUES.college,
+      label: school + ' alums' });
   }
 
   if (sameTeam && !sameSeason && !shared) {
@@ -2578,6 +2620,7 @@ const publicAPI = {
   playerPositions, canFillSlot, teamSeasonId,
   indexData, buildCheapBy,
   pairLinks, resolveChemistry, setCuratedChemistry, setCareers, sharedSeason,
+  setColleges, sharedCollege, collegeOf,
   POSITION_FIT, primaryAt, offPosition, slotWar, slotBase,
   chemPoints, chemistryByPlayer, chemistryWorth,
   teamStrength, teamWinPct, overallRating, squadRating, nationalRank,

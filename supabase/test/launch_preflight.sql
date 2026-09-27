@@ -536,7 +536,15 @@ check_rows(sort, migration, what, breaks, ok) as (
       and (select count(*) > 0 from has_table where name = 'rtd_career')
       and (select count(*) > 0 from col where tbl = 'rtd_profiles' and name = 'rung')
       and (select count(*) > 0 from proc where name = 'rtd_career_merge')
-      and (select count(*) > 0 from proc where name = 'rtd_set_profile' and body like '%p_rung%'))
+      and (select count(*) > 0 from proc where name = 'rtd_set_profile' and body like '%p_rung%')),
+
+  -- THE BALLPARK LADDER. 127's constraint lists thirteen parks and the shelf has
+  -- twenty seven, so without 128 a park chosen from the new ones is refused by the
+  -- server in silence: it works on the device and is gone on the next phone.
+  (39, '128_baseball_parks',
+      'every ballpark on the shelf can be saved to the account',
+      'Choosing a Little League, minor league, seasonal or hidden park works on this device only. The server refuses it and the next device opens on another park.',
+      (select count(*) > 0 from con where name = 'rtd_profiles_park_ck' and def like '%sandlot%' and def like '%golden%'))
 )
 -- The summary has to come LAST, and a UNION can only be ordered by an output
 -- column, so the sort key is carried through a subquery rather than sorted on

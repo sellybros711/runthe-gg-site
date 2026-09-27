@@ -43,6 +43,7 @@ const LIST = process.argv.includes('--list');
    family badge as unreachable while the game hands it out perfectly well.
    index.html fetches this beside the pool; nothing in engine.js loads it. */
 E.setCuratedChemistry(require(path.join(HERE, 'data', 'chemistry.json')));
+E.setColleges(require(path.join(HERE, 'data', 'colleges.json')));
 const DATA = R.indexData(require(path.join(HERE, 'data', 'players.json')));
 
 const slotsOf = (run) => (run.staff ? E.STAFF_SLOTS : E.SLOTS);

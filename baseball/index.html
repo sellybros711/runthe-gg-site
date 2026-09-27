@@ -512,6 +512,17 @@ body:has(#s-intro.on) header .lockup{visibility:hidden}
   border:1.5px solid rgba(var(--edge),.12);box-shadow:0 2px 8px rgba(0,0,0,.08);display:flex;flex-direction:column}
 .pk-card.r-co{--rc:#5f9e55}.pk-card.r-ra{--rc:#3f7fd0}.pk-card.r-ep{--rc:#8a4fd0}
 .pk-card.r-le{--rc:#d9a02a}.pk-card.r-pr{--rc:#e0487a}.pk-card.r-st{--rc:#8a8f98}
+.pk-card.r-se{--rc:#1e8a8a}.pk-card.r-hi{--rc:#4a4a5a}
+.pk-card.locked.secret .pk-view{filter:brightness(.1) saturate(0)}
+.pk-card.inseason{border-color:var(--rc);box-shadow:0 0 0 1px var(--rc)}
+.pk-open{font-family:var(--fn);font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--rc)}
+.pk-group{margin-top:14px}
+.pk-gh{display:flex;align-items:baseline;justify-content:space-between;margin:0 0 7px;padding-bottom:4px;border-bottom:1px solid rgba(var(--edge),.1)}
+.pk-gh span{font-family:var(--fn);font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--ink)}
+.pk-gh i{font-style:normal;font-family:var(--fn);font-size:10.5px;font-weight:700;color:var(--dim)}
+.pk-now{display:flex;gap:12px;align-items:center;padding:10px;margin:0 0 10px;border-radius:12px;border:1px solid #1e8a8a;background:rgba(30,138,138,.08)}
+.pk-now .pk-view{flex:0 0 120px;width:120px;border-radius:8px;overflow:hidden}
+.pk-now .pk-next-e{color:#1e8a8a}
 .pk-card.on{border-color:var(--rc);box-shadow:0 0 0 2px var(--rc),0 6px 18px -6px rgba(0,0,0,.35)}
 /* The card shows the park's top half: the backdrop is the thing that differs, and
    the infield is the same infield in all thirteen. */
@@ -541,7 +552,7 @@ body:has(#s-intro.on) header .lockup{visibility:hidden}
 .newpark{--rc:#d9a02a;display:grid;grid-template-columns:minmax(0,1fr);border-radius:14px;overflow:hidden;
   margin:12px 0;border:2px solid var(--rc);background:var(--panel);box-shadow:0 8px 24px -10px rgba(0,0,0,.4);
   animation:optin .4s ease-out both}
-.newpark.r-co{--rc:#5f9e55}.newpark.r-ra{--rc:#3f7fd0}.newpark.r-ep{--rc:#8a4fd0}.newpark.r-le{--rc:#d9a02a}.newpark.r-pr{--rc:#e0487a}
+.newpark.r-co{--rc:#5f9e55}.newpark.r-ra{--rc:#3f7fd0}.newpark.r-ep{--rc:#8a4fd0}.newpark.r-le{--rc:#d9a02a}.newpark.r-pr{--rc:#e0487a}.newpark.r-se{--rc:#1e8a8a}.newpark.r-hi{--rc:#6a6a7a}
 .np-body{padding:10px 12px 12px}
 .np-eye{font-family:var(--fn);font-size:10px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--rc)}
 .np-name{font-family:var(--fd);font-size:24px;text-transform:uppercase;line-height:1.1}
@@ -2678,10 +2689,10 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
   </div>
 </div>
 
-<script src="engine.js?v=33"></script>
+<script src="engine.js?v=34"></script>
 <script src="run.js?v=27"></script>
-<script src="achievements.js?v=10"></script>
-<script src="parks.js?v=5"></script>
+<script src="achievements.js?v=11"></script>
+<script src="parks.js?v=6"></script>
 <script src="crest.js?v=2"></script>
 <script src="board.js?v=2"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
@@ -2833,7 +2844,7 @@ function paintNewParks(){
   if(!window.RTD_PARKS||!lastNewParks||!lastNewParks.length)return;
   const id=lastNewParks[0];const p=RTD_PARKS.BY_ID[id];
   el.innerHTML='<div class="newpark r-'+PARK_RARITY[p.rarity]+'">'+parkPreview(id,'np')+
-    '<div class="np-body"><div class="np-eye">New ballpark unlocked</div><div class="np-name">'+esc(p.name)+'</div>'+
+    '<div class="np-body"><div class="np-eye">'+(p.hidden?'Hidden ballpark found':p.unlock.seasonal?'Seasonal ballpark unlocked':p.tier?'Moved up to '+esc(p.tier):'New ballpark unlocked')+'</div><div class="np-name">'+esc(p.name)+'</div>'+
     '<div class="np-nod">'+esc(p.nod)+(lastNewParks.length>1?' And '+(lastNewParks.length-1)+' more in your profile.':'')+'</div>'+
     '<button type="button" class="btn sm" id="b-np-use">Play here next</button></div></div>';
   $('b-np-use').addEventListener('click',()=>{setPark(id);$('b-np-use').textContent='In use';$('b-np-use').disabled=true;});
@@ -2995,7 +3006,7 @@ function parkInfo(){
   const pro=(()=>{try{return isPro();}catch(_){return false;}})();
   const key=(uid||'')+'|'+rows.length+'|'+pro;
   if(parkMemo&&parkMemo.key===key)return parkMemo.info;
-  const info={signed:!!uid,pro,badges:ACH?ACH.evaluate(rows).earned.length:0,ctx:ACH?ACH.buildCtx(rows):{n:0,best:{},modeRuns:{}}};
+  const info={signed:!!uid,pro,rows,badges:ACH?ACH.evaluate(rows).earned.length:0,ctx:ACH?ACH.buildCtx(rows):{n:0,best:{},modeRuns:{}}};
   parkMemo={key,info};
   return info;
 }
@@ -3003,16 +3014,24 @@ function parkInfo(){
    results screen can tell which parks one season opened. */
 function parkInfoFor(rows){
   const pro=(()=>{try{return isPro();}catch(_){return false;}})();
-  return {signed:true,pro,badges:ACH.evaluate(rows).earned.length,ctx:ACH.buildCtx(rows)};
+  return {signed:true,pro,rows,badges:ACH.evaluate(rows).earned.length,ctx:ACH.buildCtx(rows)};
 }
 function parkPrefs(){try{return JSON.parse(localStorage.getItem(PARK_KEY))||{};}catch(_){return {};}}
+/* Everybody starts on the sandlot. The fallback is the best park the account HAS
+   on the road to the Show rather than the first rung, so an account with forty
+   seasons that never chose a park plays where it has climbed to. */
+function bestRoadPark(){
+  const info=parkInfo();let best=RTD_PARKS.START;
+  for(const p of RTD_PARKS.PARKS){if(p.group!=='road')continue;if(RTD_PARKS.status(p,info).ok)best=p.id;}
+  return best;
+}
 function currentPark(){
   if(!window.RTD_PARKS||!ACH)return 'home';
-  const uid=acctId();if(!uid)return 'home';
+  const uid=acctId();if(!uid)return RTD_PARKS.START;
   /* The server's answer first; this device's old choice only until it lands. */
   const want=myProf().park||parkPrefs()[uid];const p=want&&RTD_PARKS.BY_ID[want];
-  if(!p)return 'home';
-  return RTD_PARKS.status(p,parkInfo()).ok?want:'home';
+  if(!p)return bestRoadPark();
+  return RTD_PARKS.status(p,parkInfo()).ok?want:bestRoadPark();
 }
 function setPark(id){
   const uid=acctId();if(!uid||!RTD_PARKS.BY_ID[id])return;
@@ -3027,35 +3046,55 @@ function refreshParkedFields(){
   if(RUN){const f=$('field');if(f&&$('s-draft').classList.contains('on'))drawField(f,true);
     const q=$('sq-field');if(q&&$('s-squad').classList.contains('on'))drawField(q,false);}
 }
-const PARK_RARITY={Starter:'st',Common:'co',Rare:'ra',Epic:'ep',Legendary:'le',Pro:'pr'};
+const PARK_RARITY={Starter:'st',Common:'co',Rare:'ra',Epic:'ep',Legendary:'le',Pro:'pr',Seasonal:'se',Hidden:'hi'};
 function parkPreview(id,sfx){
   return '<div class="pk-view">'+RTD_PARKS.markings(id,sfx,RTD_PARKS.SKY)+'</div>';
+}
+const MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+function parkCard(p,info,cur){
+  const st=RTD_PARKS.status(p,info);const on=p.id===cur;
+  /* A HIDDEN PARK KEEPS ITS SECRET until it opens: no name, no rule, a dark preview
+     and the hint. Once earned it reads like any other park. */
+  const secret=p.hidden&&!st.ok;
+  const w=p.unlock.seasonal,open=w&&RTD_PARKS.seasonOpen(p);
+  const foot=on?'<span class="pk-on">In use</span>'
+    :st.ok?'<button type="button" class="pk-use" data-park="'+p.id+'">Use this park</button>'
+    :secret?'<span class="pk-need"><svg viewBox="0 0 24 24" aria-hidden="true">'+BDG_LOCK+'</svg>'+esc(st.guest?st.label:p.unlock.hint)+'</span>'
+    :w?'<span class="pk-need"><svg viewBox="0 0 24 24" aria-hidden="true">'+BDG_LOCK+'</svg>'+esc(st.guest?st.label:'Play a season '+RTD_PARKS.winLabel(w))+'</span>'+
+       (open?'<span class="pk-open">Open now until '+MON[w[2]-1]+' '+w[3]+'</span>':'')
+    :'<span class="pk-need"><svg viewBox="0 0 24 24" aria-hidden="true">'+BDG_LOCK+'</svg>'+esc(st.label)+'</span>'+
+      (st.of>1?'<span class="pk-bar"><i style="width:'+Math.round(st.have/st.of*100)+'%"></i></span><span class="pk-prog">'+st.have+' / '+st.of+'</span>':'');
+  const rar=p.tier?p.tier:p.special?p.rarity+' · Special':p.rarity;
+  return '<div class="pk-card r-'+PARK_RARITY[p.rarity]+(on?' on':'')+(st.ok?'':' locked')+(secret?' secret':'')+(p.special?' special':'')+(open&&!st.ok?' inseason':'')+'">'+
+    parkPreview(p.id,'pv')+
+    '<div class="pk-body"><span class="pk-rar">'+esc(secret?'Hidden':rar)+'</span>'+
+    '<div class="pk-name">'+esc(secret?'Hidden park':p.name)+'</div><div class="pk-nod">'+esc(secret?'Its challenge is a secret.':p.nod)+'</div>'+
+    '<div class="pk-foot">'+foot+'</div></div></div>';
 }
 function renderParks(target){
   const el=target||$('pf-parks');if(!el)return;
   if(!window.RTD_PARKS){el.innerHTML='';return;}
   const info=parkInfo();const cur=currentPark();
   const got=RTD_PARKS.PARKS.filter(p=>RTD_PARKS.status(p,info).ok).length;
+  const now=RTD_PARKS.PARKS.filter(p=>RTD_PARKS.seasonOpen(p)&&!RTD_PARKS.status(p,info).ok);
   el.innerHTML='<div class="pk-hd"><span class="pk-title">Ballparks</span><span class="pk-count">'+got+' of '+RTD_PARKS.PARKS.length+'</span></div>'+
-    '<p class="pk-sub">Your park is the backdrop every draft is played on. A new one opens every so often as you keep playing, and two ask for something special.</p>'+
+    '<p class="pk-sub">Your park is the backdrop every draft is played on. Start on the sandlot and climb to the Show. Seasonal parks open a few days a year. Some parks are hidden.</p>'+
+    /* A SEASONAL PARK THAT IS OPEN RIGHT NOW is the most urgent thing on the shelf,
+       because missing the window means waiting a year. */
+    now.map(p=>'<div class="pk-now">'+parkPreview(p.id,'sn')+'<div class="pk-next-b"><span class="pk-next-e">Open now</span><b>'+esc(p.name)+'</b>'+
+      '<span>Finish a season by '+MON[p.unlock.seasonal[2]-1]+' '+p.unlock.seasonal[3]+' and it is yours for good.</span></div></div>').join('')+
     /* THE ONE THING TO PLAY TOWARD. The track hands parks out one at a time over
        hundreds of seasons, so the shelf leads with the next one and how far off it is. */
     (()=>{const nx=RTD_PARKS.nextOnTrack&&RTD_PARKS.nextOnTrack(info);if(!nx)return '';
-      return '<div class="pk-next">'+parkPreview(nx.park.id,'nx')+'<div class="pk-next-b"><span class="pk-next-e">Next ballpark</span>'+
+      return '<div class="pk-next">'+parkPreview(nx.park.id,'nx')+'<div class="pk-next-b"><span class="pk-next-e">Next ballpark'+(nx.park.tier?' · '+esc(nx.park.tier):'')+'</span>'+
         '<b>'+esc(nx.park.name)+'</b><span>'+nx.left+' more '+(nx.left===1?'season':'seasons')+' to go</span>'+
         '<span class="pk-bar"><i style="width:'+Math.round(nx.have/nx.of*100)+'%"></i></span></div></div>';})()+
-    '<div class="pk-grid">'+RTD_PARKS.PARKS.map(p=>{
-      const st=RTD_PARKS.status(p,info);const on=p.id===cur;
-      const foot=on?'<span class="pk-on">In use</span>'
-        :st.ok?'<button type="button" class="pk-use" data-park="'+p.id+'">Use this park</button>'
-        :'<span class="pk-need"><svg viewBox="0 0 24 24" aria-hidden="true">'+BDG_LOCK+'</svg>'+esc(st.label)+'</span>'+
-          (st.of>1?'<span class="pk-bar"><i style="width:'+Math.round(st.have/st.of*100)+'%"></i></span><span class="pk-prog">'+st.have+' / '+st.of+'</span>':'');
-      return '<div class="pk-card r-'+PARK_RARITY[p.rarity]+(on?' on':'')+(st.ok?'':' locked')+(p.special?' special':'')+'">'+
-        parkPreview(p.id,'pv')+
-        '<div class="pk-body"><span class="pk-rar">'+esc(p.special?p.rarity+' \u00b7 Special':p.rarity)+'</span>'+
-        '<div class="pk-name">'+esc(p.name)+'</div><div class="pk-nod">'+esc(p.nod)+'</div>'+
-        '<div class="pk-foot">'+foot+'</div></div></div>';
-    }).join('')+'</div>';
+    RTD_PARKS.GROUPS.map(([g,label])=>{
+      const ps=RTD_PARKS.PARKS.filter(p=>p.group===g);if(!ps.length)return '';
+      const have=ps.filter(p=>RTD_PARKS.status(p,info).ok).length;
+      return '<div class="pk-group"><div class="pk-gh"><span>'+esc(label)+'</span><i>'+have+' of '+ps.length+'</i></div>'+
+        '<div class="pk-grid">'+ps.map(p=>parkCard(p,info,cur)).join('')+'</div></div>';
+    }).join('');
   el.querySelectorAll('.pk-use').forEach(b=>b.addEventListener('click',()=>{setPark(b.dataset.park);renderParks(el);}));
 }
 
@@ -3511,6 +3550,7 @@ const CHEM_TYPES=[
   {type:'battery',  label:'Battery',       color:'#1a5276', note:'A catcher and a pitcher who played together'},
   {type:'dp_combo', label:'DP combo',      color:'#6a4c93', note:'A second baseman and a shortstop who played together'},
   {type:'teammates',label:'Teammates',     color:'#1f7a8c', note:'Played together, drafted from other seasons'},
+  {type:'college',  label:'College',       color:'#a0522d', note:'Went to the same college'},
   {type:'franchise',label:'Franchise',     color:'#2e7d32', note:'Same club, never together'},
   {type:'era',      label:'Same era',      color:'#8a7e6e', note:'Contemporaries, a faint bond'},
 ];
@@ -4363,6 +4403,11 @@ async function boot(){
     try{
       const cres=await fetch('data/chemistry.json?v=1');
       if(cres.ok) E.setCuratedChemistry(await cres.json());
+    }catch(_){}
+    // Where each man went to college, for the college link. Non-fatal the same way.
+    try{
+      const col=await fetch('data/colleges.json?v=1');
+      if(col.ok) E.setColleges(await col.json());
     }catch(_){}
     DATA=R.indexData(players);
     const hasPositions=players.some(p=>p.r==='b'&&p.ep&&p.ep.length>0);
