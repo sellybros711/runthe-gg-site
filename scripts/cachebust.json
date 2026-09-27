@@ -2043,8 +2043,8 @@
       "sha": "f8c8d8db3e957b72"
     },
     "/cfb/auth.js": {
-      "v": "7",
-      "sha": "560799e062cc5d8c"
+      "v": "8",
+      "sha": "d81dc7cbc4c21a96"
     },
     "/assets/cloudsave.js": {
       "v": "2",
@@ -2081,8 +2081,8 @@
       "sha": "f57edd42ef794134"
     },
     "auth.js": {
-      "v": "7",
-      "sha": "560799e062cc5d8c"
+      "v": "8",
+      "sha": "d81dc7cbc4c21a96"
     },
     "board.js": {
       "v": "7",

@@ -606,6 +606,57 @@ already_subscribed are handled.
 yearly, $19.99 + $49.99 = $70 a year, save $35: the coins come once, so counting them would make
 the struck price true for one year and false for every renewal.
 
+#### THE COLLEGE GAME SENT NO PLAN, SO NOBODY COULD BUY IT
+
+```
+node cfb/build/test/test_store.mjs             the offer, the press and the receipt
+node cfb/build/test/commish/test_clock.mjs     the wall's own buy path
+```
+
+`checkout-bundle.js` reads a body with no `plan` on it as `'once'`, and from the day
+`YEARLY_LIVE` went true that is a mismatch, so it answered **409 `offer_changed` to every
+purchase made from the college game**, on both of its buy paths. Neither handled that error,
+so the button read "Checkout couldn't start. Try again" and went on reading it. **Nothing
+threw, the store drew perfectly and every price on it was right**: the only symptom was that
+the game could not be bought, which no screen anywhere reports.
+
+**THE PLAN IS THE ONE `RTG_STORE.wire` HANDS OVER, not the one the module holds now.** Those
+come apart exactly when it matters, which is the switch flipping under an open sheet: the
+wired one is what the buyer READ, and sending anything else charges somebody for a screen
+they were never shown. Both college paths take it as a third argument now, the way the
+football page already did.
+
+**A REFUSAL IS A DOOR RATHER THAN AN ERROR MESSAGE.** `offer_changed` redraws the offer at
+the real price. `already_subscribed` opens the Customer Portal with `scope: 'plan'`, because
+a plan is changed or cancelled there and never bought twice. On the commissioner wall the
+redraw is the WALL'S OWN PAINTER (`wallOffer`), because two walls draw the store into `w-act`
+with two different preambles and a redraw that rebuilt the markup would be a third copy of
+one of them.
+
+**`cfb/auth.js` IS A SECOND COPY OF `football/auth.js` AND HAS TO BE PORTED TO.** It grew
+`premiumPlans()`, `sub_until`/`grant_until` on the unlocks read with the fallback for a
+database without 124, and a `scope` on `billingPortal`. One account holds one plan whichever
+door it was bought through, so a receipt only one of the two games can read is a receipt half
+the buyers cannot find.
+
+**THE RECEIPT'S THREE STATES, and only one of them says "for good".** A row a plan is keeping
+alive says when the plan renews or ends, a Fantasy pass still says Won, and a lifetime row
+reads **exactly** what it read before any of this. The paragraph under the list stops
+promising that nothing renews when a plan is billing, and the button says Manage your plan.
+
+**THE "YOU'RE PRO" SHEET WAS FIXED AND IS UNREACHABLE ON THIS PAGE**, which is worth knowing
+before somebody hunts for a way to test it. All four callers of `openPremium` are shut for an
+owner: `premiumPitch()` excludes them, and `commishShut()` returns false for them on its
+second line. Its own comment claims the branch is reachable and on the football page it is.
+It was fixed anyway, because it is one new door away.
+
+**TWO SUITES WERE WALKING THE ONE-TIME STORE while production sold the yearly one.** Neither
+stubbed `/api/stripe/offer`, so the fetch 404'd and `RTG_STORE` fell back to `'once'`: every
+section in both files was asking questions about a store nobody is being shown. Two
+assertions in `test_store` were pinned to the words "one payment" and would have demanded a
+sheet that lied. **The claim is now "true about the plan it drew"**, read off
+`RTG_STORE.plan()`, so it follows the switch on its own and covers both sides of it.
+
 ### What the free allowance actually counts
 
 **Dynasty counts SEASONS, the Trade Machine counts RUNS, and the server says which.**
