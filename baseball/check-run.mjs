@@ -384,6 +384,21 @@ const cab = await p.evaluate(() => {
     folds: body.querySelectorAll('details.tg-more').length,
     headline: (body.firstElementChild || {}).textContent || '',
     height: Math.round(body.scrollHeight),
+    flat: (() => {
+      const shut = [...body.querySelectorAll('details')].filter((d) => !d.open);
+      shut.forEach((d) => { d.open = true; });
+      const h = Math.round(body.scrollHeight);
+      shut.forEach((d) => { d.open = false; });
+      return h;
+    })(),
+    /* What the badges this account has earned take up: the grids that sit
+       outside every fold, because a locked badge's grid lives INSIDE one. Asked
+       as "inside any fold" and never "inside a shut one": the first draft asked
+       the second, and with every fold forced open it counted the whole locked
+       catalogue as earned and passed. Measured, never counted times a row
+       height, so a layout change to the tiles cannot make this claim lie. */
+    earnedH: Math.round([...body.querySelectorAll('.trophy-grid')].filter((g) => !g.closest('details'))
+      .reduce((n, g) => n + g.getBoundingClientRect().height, 0)),
     career: (document.getElementById('trophy-career') || {}).textContent || '',
   };
 });
@@ -393,9 +408,23 @@ claim(cab && cab.groups >= 9 && cab.folds >= 1, 'on shelves, with the locked hal
 claim(cab && cab.open > 0 && cab.open < cab.total / 2,
   `what you earned is open and the rest is not (${cab && cab.open} of ${cab && cab.total})`);
 /* MEASURED, BECAUSE THE COMPLAINT THIS FOLD ANSWERS IS A NUMBER. Drawn flat the
-   sheet is about nine thousand pixels on a phone; a first season should be a
-   fraction of that and should grow with what you win. */
-claim(cab && cab.height < 4000, `and the sheet is ${cab && cab.height}px rather than nine thousand`);
+   sheet is about fourteen and a half thousand pixels on a phone.
+
+   IT WAS A FIXED 4000px AND THAT WAS A CLAIM ABOUT THE DICE. The sheet is meant to
+   GROW with what you win: every badge earned is an open tile, about 68px on a
+   phone, and a first season lights anywhere from 25 to 50 of them. Measured, the
+   folded sheet was 2800px at 28 open and 4388px at about 50, while everything that
+   is not an earned tile sat at about 890px in every run. So the fixed line failed
+   on seasons that happened to earn a lot, on a layout doing exactly its job.
+
+   What the fold promises is that the LOCKED half costs a small fixed amount,
+   whatever was earned. So the claim is the sheet minus the earned tiles (the
+   shelves, their strips and the summary), held under 1200px, plus the whole folded
+   sheet held under a third of the same sheet opened flat, which is measured in
+   the same run rather than written down. */
+const locked = cab ? cab.height - cab.earnedH : Infinity;
+claim(cab && locked < 1200, `the locked half costs ${locked}px, whatever the season earned (${cab && cab.open} open)`);
+claim(cab && cab.height < cab.flat / 3, `and the sheet is ${cab && cab.height}px against ${cab && cab.flat}px flat`);
 claim(/\d/.test(cab ? cab.career : ''), 'the career line above it carries numbers');
 /* SHUT IT BEHIND US. A sheet is a scrim over the whole screen, so the next section's
    press lands on the scrim and retries for thirty seconds against a sheet nobody
