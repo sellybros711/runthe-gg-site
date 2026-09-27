@@ -5401,6 +5401,33 @@ a proportion written into sixty eight specs is sixty eight places to drift.
 - **Humpty is exempt** (`spec.egg`). His head is his body, and a small one would be a
   different character.
 
+**AND THEN THEY WERE MODELLED ON THE PACK, which moves the numbers above again.** The
+owner handed the pack back with "model the characters after these". Set side by side,
+the pack's figures are not big-headed so much as BLOCKY: a square head about a third
+of the height, a torso half again as wide as the head, short thick legs, and hands and
+feet as big as a fist. Ours had a small head on a thin, long body, so the same
+character read as a different drawing. `PROP` is now head 0.84, torso 1.1, legs 1.0,
+arms 1.05, no added neck, limbs 1.5x as thick, hands and feet 1.3x, width 1.4x, and
+`square` pushes every head's superellipse 1.35x toward a block. The head is bigger
+than the last pass and the figure no longer reads as all head, because the body grew
+with it. **Compare against the pack before moving any of these**: the pack is the
+reference the owner chose, twice.
+
+- **The fit starts at 1.5x the spec's own scale.** It used to START at the spec's
+  scale, so a character with `scale: 1.02` could never be drawn bigger than that
+  however much room the cell had. It still steps down until no pose leaves the frame.
+- **A held thing is held out, at the pack's size.** A bolt, a lyre, a goblet, a wreath
+  and the rest (`HELD`) were drawn at hand size behind the arm, so Zeus had no bolt on
+  screen at all. They are scaled about the hand and drawn in front of it, and the arm
+  holding anything comes away from the body. A pole stays behind the arm.
+- **Specs that had drifted from the pack were put back**: Popeye in a white shirt,
+  the golem's red band, a burlap scarecrow, Robin and Long John clean shaven,
+  Esmeralda's red sleeves, Athena's shield.
+- **The quadrupeds stay upright, deliberately.** The pack draws the dog, the cat, the
+  chupacabra, the centaur, the phoenix, the dragon and Nessie as animals in profile,
+  and every character here has to stand in a batter's box and throw from a mound. The
+  colours, the heads and the marks follow the pack; the stance does not.
+
 **The grid is 96, up from 64.** `V2_W` and `V2_H` carry it and nothing in the page
 should say 64 about a sprite. It costs about 170KB compressed on the page, which was
 measured before choosing it.
