@@ -284,6 +284,18 @@ var CSS = [
   '.td-ck{width:14px;height:14px;border-radius:50%;background:var(--green);position:relative;flex:0 0 auto;}',
   '.td-ck::after{content:"";position:absolute;left:4px;top:2px;width:4px;height:7px;border:solid #06140c;border-width:0 2px 2px 0;transform:rotate(45deg);}',
   '.td-foot{font-size:12px;font-weight:800;color:var(--gold);text-align:center;margin:2px 0 2px;letter-spacing:.04em;}',
+  '.td-end{display:flex;align-items:center;justify-content:center;gap:6px;flex-wrap:wrap;margin:8px 0 0;font-size:12px;}',
+  '.td-end span{font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);}',
+  '.td-end button{background:none;border:1px solid rgba(255,255,255,.18);border-radius:999px;color:var(--ink);font:inherit;font-weight:700;padding:5px 11px;cursor:pointer;}',
+  '.td-end button:hover{border-color:rgba(255,255,255,.4);}',
+  '.td-end span{min-width:58px;text-align:right;}',
+  '.fx-lab{display:block;font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);margin:12px 2px 6px;}',
+  '.fx-sel{appearance:none;-webkit-appearance:none;color:var(--ink);font:inherit;font-weight:700;}',
+  '.ps-slot{margin:12px 0;}',
+  '.ps-slot .ps-mates{margin-top:8px;}',
+  '.ps-chosen{display:flex;align-items:center;gap:10px;background:#161d2b;border:1px solid #2a3450;border-radius:10px;padding:10px 12px;margin-top:6px;}',
+  '.ps-chosen b{flex:1;}',
+  '.ps-chosen small{color:var(--dim);}',
   '.ptiles{display:grid;grid-template-columns:1fr 1fr;gap:10px;}',
   '.ptile{display:flex;flex-direction:column;align-items:flex-start;gap:6px;width:100%;text-align:left;cursor:pointer;',
   '  background:linear-gradient(180deg,#171e2d,#121826);border:1px solid rgba(255,255,255,.1);border-radius:14px;',
@@ -1271,7 +1283,29 @@ var fxPending = null;               // the offer awaiting confirm
 var fxTalk = null;                  // a negotiation: { with, ins, outs, picks, reply }
 var fxBusy = false;
 
+/* ENDLESS: one team after another, off the board. The screens are the daily's
+   screens, so the only question every one of them asks is which puzzle is
+   current, and `fxEnd` is the answer. Its state is under its own key and never
+   the day's: an endless season must not be able to overwrite today's saved
+   one, and today's record, streak and place are read off keys endless never
+   writes. */
+var FX_END = 'rtf.fix.endless.v1';  // { day, run, result, recent:[ts], played }
+var fxEnd = false;
+var fxDayPz = null;                 // today's puzzle, for the screens that are always about today
+
 function today(){ return P.dayNumberOf(P.easternISO()); }
+
+/* ENDLESS IS PRO, AND PRO DOES NOT EXIST YET. While PRO_LIVE is false every
+   reader gets endless play, because there is nothing to sell it through and a
+   lock with no store behind it is a wall. The day the Stripe product ships,
+   flipping this makes it an owner's door; `rtf_premium` is the product key the
+   store work will add. */
+var PRO_LIVE = false;
+function endlessOpen(){
+  if (!PRO_LIVE) return true;
+  var a = P.auth(), st = a && a.state && a.state();
+  return !!(st && st.products && st.products.indexOf('rtf_premium') >= 0);
+}
 function fxStore(){ return lsGet(FX_KEY) || { days: {} }; }
 /* THREE SHAPES OF RESULT, read as one. The first version was one man for one
    man (slot, out, inKey); the second one trade (with, outs, ins); this one a
@@ -1299,9 +1333,41 @@ function fxStreak(){
   return n;
 }
 
+function fxToday(){
+  var d = today();
+  if (!fxDayPz || fxDayPz.day !== d) fxDayPz = M.fxDaily(data(), d);
+  return fxDayPz;
+}
+function fxEndStore(){ return lsGet(FX_END) || { day: null, ts: null, run: null, result: null, recent: [], played: 0 }; }
+/* A PICKED TEAM goes through the same store as an endless one: the number is
+   the hash of the team, so opening the same link twice lands on the season in
+   progress rather than wiping it. */
+function fxEndPick(ts){
+  var f = M.fxCustom(data(), ts);
+  if (!f) return false;
+  var s = fxEndStore();
+  if (s.day !== f.day) {
+    s.day = f.day; s.ts = ts; s.run = null; s.result = null;
+    s.recent = (s.recent || []).concat([ts]).slice(-40);
+    lsSet(FX_END, s);
+  }
+  return true;
+}
+/* A new endless team. Steered off the teams played lately and off today's,
+   so pressing Next never lands on the daily you just finished. */
+function fxEndNew(){
+  var s = fxEndStore();
+  var f = M.fxEndless(data(), Math.random, (s.recent || []).concat([fxToday().ts]));
+  s.day = f.day; s.ts = null; s.run = null; s.result = null;
+  s.recent = (s.recent || []).concat([f.ts]).slice(-40);
+  lsSet(FX_END, s);
+  return s;
+}
 function fxPuzzle(){
   var d = today();
-  if (!fx || fx.day !== d) { fx = M.fxDaily(data(), d); fxBase = null; fxSt = null; fxBlock = []; fxPicksOn = []; fxView = 'desk'; }
+  var picked = null;
+  if (fxEnd) { var s = fxEndStore(); if (s.day == null) s = fxEndNew(); d = s.day; picked = s.ts; }
+  if (!fx || fx.day !== d) { fx = fxEnd ? (picked && M.fxCustom(data(), picked)) || M.fxDaily(data(), d) : fxToday(); fxBase = null; fxSt = null; fxBlock = []; fxPicksOn = []; fxView = 'desk'; }
   return fx;
 }
 function fxBaseOdds(){
@@ -1313,13 +1379,21 @@ function fxBaseOdds(){
 function fxSeason(){
   var p = fxPuzzle();
   if (fxSt && fxSt.day === p.day) return fxSt;
-  var s = lsGet(FX_RUN);
-  fxSt = s && s.day === p.day && s.ts === p.ts ? s : M.fxSeasonCreate(data(), p.day);
+  var s = fxEnd ? fxEndStore().run : lsGet(FX_RUN);
+  fxSt = s && s.day === p.day && s.ts === p.ts ? s : M.fxSeasonCreate(data(), p.day, p.ts);
   return fxSt;
 }
-function fxSaveSeason(){ if (fxSt) lsSet(FX_RUN, fxSt); }
+function fxSaveSeason(){
+  if (!fxSt) return;
+  if (!fxEnd) { lsSet(FX_RUN, fxSt); return; }
+  var s = fxEndStore();
+  if (s.day !== fxSt.day) return;
+  s.run = fxSt;
+  lsSet(FX_END, s);
+}
+/* Today's, always: this is the front page asking. */
 function fxInProgress(){
-  var p = fxPuzzle(), s = lsGet(FX_RUN);
+  var p = fxToday(), s = lsGet(FX_RUN);
   return !!(s && s.day === p.day && (s.win > 0 || (s.trades && s.trades.length)));
 }
 function fxStKey(st){ return st.day + ':' + st.win + ':' + JSON.stringify(st.trades); }
@@ -1346,17 +1420,25 @@ function fxOrdered(rows, five){
   return { starters: five.slice(), bench: bench };
 }
 
+function fxLabel(p){ return !fxEnd ? 'Day ' + p.day : p.custom ? 'Picked team' : 'Endless'; }
 function fxHead(){
-  var p = fxPuzzle(), t = tsParts(p.ts), skin = E.clubSkin(t.code), st = fxStreak();
+  var p = fxPuzzle(), st = fxEnd ? 0 : fxStreak();
   return '<div class="cq-head">'
     + pix(ART.rewind, { t: '#5eead4' }, 3)
-    + '<div><div class="mh fx-mh">Fix History</div><div class="cq-rung">Day ' + p.day
+    + '<div><div class="mh fx-mh">Fix History</div><div class="cq-rung">' + fxLabel(p)
     + (st > 1 ? ' · ' + st + ' days in a row' : '') + '</div></div></div>'
-    + '<div class="fx-banner" style="--c-bg:' + skin.bg + ';--c-acc:' + skin.accent + ';--c-on:' + skin.on + '">'
+    + fxBanner(p.ts);
+}
+/* A picked team can be a champion, so the note says which. A daily or an
+   endless team never is: fxCandidates leaves champions out. */
+function fxBanner(ts){
+  var t = tsParts(ts), skin = E.clubSkin(t.code);
+  var note = E.wonTitle(t.code, t.season) ? 'They won it. Make it a lock.' : 'Good enough to win it. They didn\'t.';
+  return '<div class="fx-banner" style="--c-bg:' + skin.bg + ';--c-acc:' + skin.accent + ';--c-on:' + skin.on + '">'
     + jersey(t.code, 5)
     + '<div class="fx-bt"><div class="fx-yr">' + t.season + '</div>'
     + '<div class="fx-nm">' + esc(E.team(t.code).full || E.teamName(t.code)) + '</div>'
-    + '<div class="fx-note">Good enough to win it. They didn\'t.</div></div></div>';
+    + '<div class="fx-note">' + note + '</div></div></div>';
 }
 
 /* One man on a roster. Win shares show on YOUR men only: you know your own
@@ -1726,9 +1808,16 @@ function fxFinish(){
     at: Date.now()
   };
   r.headline = fxHeadline(r);
-  fxKeep(p.day, r);
-  fxFeats(r);
-  lsDel(FX_RUN);
+  if (fxEnd) {
+    var s = fxEndStore();
+    s.result = r; s.run = null; s.played = (s.played || 0) + 1;
+    lsSet(FX_END, s);
+    fxFeats(r);
+  } else {
+    fxKeep(p.day, r);
+    fxFeats(r);
+    lsDel(FX_RUN);
+  }
   fxSt = null;
   fxView = 'desk';
   fxRender();
@@ -1738,9 +1827,19 @@ function fxFinish(){
 /* A finished day, told to the cabinet. The streak is days in a row finished,
    read off this device's own store because only it knows which days those are;
    it merges by maximum, so a second device can only ever add to it. */
+/* AN ENDLESS SEASON COUNTS FOR EVERYTHING BUT THE CALENDAR. A deal, a gain, a
+   title in the replay are skill whatever puzzle they were made on. Days
+   finished and days in a row are a claim about coming back each day, and a
+   button that deals a new team every press would make both worthless. */
 function fxFeats(r){
   var BD = window.RTF_BADGES;
   if (!BD || !P.feats) return;
+  if (M.isEndless(r.day)) {
+    var f = BD.fixFeats(r, 0);
+    delete f.add['fx.days'];
+    P.feats(f);
+    return;
+  }
   var days = fxStore().days, n = 0;
   for (var d = r.day; days[d]; d--) n++;
   P.feats(BD.fixFeats(r, n));
@@ -1806,9 +1905,23 @@ function fxDoneHtml(r){
     + '<h3 class="fx-step">Your moves</h3>' + log
     + '<h3 class="fx-step">The team that finished the season</h3>'
     + fxRosterHtml(ro.rows, ro.five, { inn: acq })
-    + '<div class="mx-row" style="margin-top:12px"><button class="big fx-go" id="fx-share">Share</button></div>'
-    + '<div class="mx-row" style="margin-top:8px"><button class="ghost" id="fx-board">Today\'s leaderboard</button></div>'
-    + '<p class="fx-hint" style="text-align:center">A new team tomorrow.</p>';
+    + (fxEnd
+      ? (endlessOpen() ? '<div class="mx-row" style="margin-top:12px"><button class="big fx-go" id="fx-next">Next team</button></div>' : '')
+        + '<div class="mx-row" style="margin-top:8px"><button class="' + (endlessOpen() ? 'ghost' : 'big fx-go') + '" id="fx-share">'
+        + (fxPuzzle().custom ? 'Send it to a friend' : 'Share') + '</button></div>'
+        + '<p class="fx-hint" style="text-align:center">' + (fxPuzzle().custom ? 'The link gives them this team and these calls.' : 'Endless. Off the leaderboard.') + '</p>'
+      : '<div class="mx-row" style="margin-top:12px"><button class="big fx-go" id="fx-share">Share</button></div>'
+        + '<div class="mx-row" style="margin-top:8px"><button class="ghost" id="fx-board">Today\'s leaderboard</button></div>'
+        + endlessDoor('fx-endless', 'Play another team')
+        + '<p class="fx-hint" style="text-align:center">A new team tomorrow.</p>');
+}
+
+/* The way into endless play from a finished daily. A reader who cannot open it
+   is told why rather than shown a button that does nothing; while PRO_LIVE is
+   false nobody is that reader. */
+function endlessDoor(id, label){
+  if (endlessOpen()) return '<div class="mx-row" style="margin-top:8px"><button class="ghost" id="' + id + '">' + label + '</button></div>';
+  return '<p class="fx-hint" style="text-align:center">Endless play is part of Pro.</p>';
 }
 
 function fxShareText(r){
@@ -1818,23 +1931,29 @@ function fxShareText(r){
   var meter = '';
   for (var i = 0; i < 10; i++) meter += i < bars ? '🟩' : '⬛';
   var moves = r.trades.map(function(tr){ return names(tr.outs).join(', ') + ' ➡️ ' + names(tr.ins).join(', '); });
-  return 'Run The Floor · Fix History #' + r.day + '\n'
+  return 'Run The Floor · Fix History ' + (M.isEndless(r.day) ? (fxPuzzle().custom ? 'Custom' : 'Endless') : '#' + r.day) + '\n'
     + t.name + '\n'
     + (moves.length ? moves.join('\n') : 'Stood pat') + '\n'
     + meter + ' ' + pct1(r.odds) + ' (' + (delta >= 0 ? '+' : '') + delta.toFixed(1) + ')\n'
     + (r.replay.title ? '🏆 Won it in the replay\n' : '')
-    + 'Four windows. Can you fix it better?\n' + P.SHARE_URL;
+    + 'Four windows. Can you fix it better?\n' + (fxPuzzle().custom ? linkTo('fix=' + r.ts) : P.SHARE_URL);
 }
 
 function fxRender(){
   var box = $('s-fix');
   if (!box || !data()) return;
-  var p = fxPuzzle(), r = fxResult(p.day);
-  P.bar('Fix History · Day ' + p.day);
+  if (fxPicking) { fxPickRender(box); return; }
+  var p = fxPuzzle(), r = fxEnd ? fxEndResult(p) : fxResult(p.day);
+  P.bar('Fix History · ' + fxLabel(p));
   if (r) {
     box.innerHTML = fxDoneHtml(r);
     $('fx-share').onclick = function(){ share(fxShareText(r)); };
+    if (fxEnd) {
+      var nx = $('fx-next'); if (nx) nx.onclick = function(){ fxEndNew(); fx = null; fxRender(); window.scrollTo({ top: 0 }); };
+      return;
+    }
     $('fx-board').onclick = function(){ openModeBoard('fix'); };
+    var en = $('fx-endless'); if (en) en.onclick = fxOpenEndless;
     fxSubmit(r).then(function(){ fxFillPlace(r); });
     return;
   }
@@ -1900,8 +2019,95 @@ function fxRender(){
   $('fx-pat').onclick = function(){ fxCloseWindow(); };
 }
 
+/* ── PICK ANY TEAM ─────────────────────────────────────────────────────────
+   Pro. A club, then a season, then the same four windows. Any team whose best
+   nine can field the five positions, which is 1,385 of them, champions too. */
+var fxPicking = false, fxPickClub = '', fxPickTs = '';
+var fxClubMemo = null;
+function fxClubs(){
+  if (fxClubMemo) return fxClubMemo;
+  var by = {};
+  M.fxTeams(data()).forEach(function(ts){
+    var t = tsParts(ts);
+    (by[t.code] = by[t.code] || []).push(ts);
+  });
+  fxClubMemo = Object.keys(by).map(function(code){
+    var yrs = by[code].map(function(ts){ return tsParts(ts).season; });
+    var lo = Math.min.apply(null, yrs), hi = Math.max.apply(null, yrs);
+    return { code: code, name: E.team(code).full || E.teamName(code), yrs: lo === hi ? String(lo) : lo + '-' + hi,
+      seasons: by[code].sort().reverse() };
+  }).sort(function(a, b){ return a.name < b.name ? -1 : a.name > b.name ? 1 : a.yrs < b.yrs ? -1 : 1; });
+  return fxClubMemo;
+}
+function fxPickHtml(){
+  var clubs = fxClubs(), club = null;
+  clubs.forEach(function(c){ if (c.code === fxPickClub) club = c; });
+  var h = '<div class="cq-head">' + pix(ART.rewind, { t: '#5eead4' }, 3)
+    + '<div><div class="mh fx-mh">Fix History</div><div class="cq-rung">Pick any team</div></div></div>'
+    + '<p class="mx-say">Any club. Any year. Four trade windows to win them the title. Off the leaderboard.</p>'
+    + '<label class="fx-lab" for="fx-pclub">Club</label><select class="fx-q fx-sel" id="fx-pclub"><option value="">Pick a club</option>'
+    + clubs.map(function(c){ return '<option value="' + esc(c.code) + '"' + (c.code === fxPickClub ? ' selected' : '') + '>' + esc(c.name + ' (' + c.yrs + ')') + '</option>'; }).join('')
+    + '</select>';
+  if (club) {
+    h += '<label class="fx-lab" for="fx-pyr">Season</label><select class="fx-q fx-sel" id="fx-pyr"><option value="">Pick a season</option>'
+      + club.seasons.map(function(ts){ var t = tsParts(ts); return '<option value="' + esc(ts) + '"' + (ts === fxPickTs ? ' selected' : '') + '>'
+        + t.season + (E.wonTitle(t.code, t.season) ? ' · champions' : '') + '</option>'; }).join('')
+      + '</select>';
+  }
+  if (fxPickTs) {
+    var five = M.startingFive(data(), fxPickTs);
+    h += '<div style="margin-top:14px">' + fxBanner(fxPickTs) + '</div>'
+      + '<p class="mx-say">' + esc(five.map(function(p){ return p.n; }).join(', ')) + '.</p>'
+      + '<div class="mx-row" style="margin-top:12px"><button class="big fx-go" id="fx-pgo">Rebuild them</button></div>'
+      + '<div class="mx-row" style="margin-top:8px"><button class="ghost" id="fx-psend">Send it to a friend</button></div>';
+  }
+  return h + '<div class="mx-row" style="margin-top:8px"><button class="ghost" id="fx-pback">Back</button></div>';
+}
+function fxPickRender(box){
+  P.bar('Fix History · Pick a team');
+  box.innerHTML = fxPickHtml();
+  $('fx-pclub').onchange = function(){ fxPickClub = this.value; fxPickTs = ''; fxRender(); };
+  var yr = $('fx-pyr'); if (yr) yr.onchange = function(){ fxPickTs = this.value; fxRender(); };
+  var go = $('fx-pgo'); if (go) go.onclick = function(){ fxPlayPicked(fxPickTs); };
+  var sd = $('fx-psend'); if (sd) sd.onclick = function(){
+    share('Run The Floor · Fix History\nRebuild the ' + tsParts(fxPickTs).name + '.\nFour trade windows. Can you win them the title?\n' + linkTo('fix=' + fxPickTs));
+  };
+  $('fx-pback').onclick = function(){ fxPicking = false; P.goHome(); };
+}
+function fxOpenPicker(){
+  if (!data() || !endlessOpen()) return;
+  fxEnd = true; fxPicking = true;
+  P.show('s-fix');
+  fxRender();
+  window.scrollTo({ top: 0 });
+}
+/* A picked team, played. Also the door a friend's link opens, which is why it
+   asks nothing about Pro: whoever made the link paid for the picking. */
+function fxPlayPicked(ts){
+  if (!data() || !fxEndPick(ts)) return false;
+  fxEnd = true; fxPicking = false; fx = null;
+  fxEnter();
+  window.scrollTo({ top: 0 });
+  return true;
+}
+
+function fxEndResult(p){
+  var s = fxEndStore();
+  return s.result && s.result.day === p.day ? fxNorm(s.result) : null;
+}
+function fxOpenEndless(){
+  if (!data() || !endlessOpen()) return;
+  var s = fxEndStore();
+  if (s.ts && s.result) fxEndNew();   // a finished picked team is done; endless deals the next
+  fxEnd = true; fxPicking = false;
+  fxEnter();
+}
 function fxOpen(){
   if (!data()) return;
+  fxEnd = false; fxPicking = false;
+  fxEnter();
+}
+function fxEnter(){
   fxPending = null;
   if (fxView === 'phone' || fxView === 'talk') fxView = 'desk';
   fxTalk = null;
@@ -1915,19 +2121,66 @@ var PS_KEY = 'rtf.passes.v1';        // { days: { [day]: { chain:[ids], done, so
 var psG = null;                      // the teammate graph, built on first use
 var psPz = null;                     // today's puzzle
 var psFilter = '';
+/* Endless, the same shape as Fix History's: its own key, and `psEnd` is which
+   puzzle the screen is on. The puzzle is stored whole rather than rebuilt,
+   because a draw can come back empty and redraw, and a reload has to land on
+   the chain it left. */
+var PS_END = 'rtf.passes.endless.v1'; // { pz, st, recent:[from>to], played }
+var psEnd = false;
+var psDayPz = null;
 
 function graph(){ if (!psG) psG = M.psGraph(data()); return psG; }
-function psPuzzle(){
+function psToday(){
   var d = today();
-  if (!psPz || psPz.day !== d) psPz = M.psDaily(graph(), d);
+  if (!psDayPz || psDayPz.day !== d) psDayPz = M.psDaily(graph(), d);
+  return psDayPz;
+}
+function psEndStore(){ return lsGet(PS_END) || { pz: null, st: null, recent: [], played: 0 }; }
+function psEndNew(){
+  var s = psEndStore(), t = psToday();
+  var pz = M.psEndless(graph(), Math.random, (s.recent || []).concat([t.from + '>' + t.to]));
+  s.pz = pz; s.st = null;
+  s.recent = (s.recent || []).concat([pz.from + '>' + pz.to]).slice(-60);
+  lsSet(PS_END, s);
+  return s;
+}
+function psEndPick(from, to){
+  var pz = M.psCustom(graph(), from, to);
+  if (!pz) return false;
+  var s = psEndStore();
+  if (!s.pz || s.pz.day !== pz.day) {
+    s.pz = pz; s.st = null;
+    s.recent = (s.recent || []).concat([pz.from + '>' + pz.to]).slice(-60);
+    lsSet(PS_END, s);
+  }
+  return true;
+}
+function psPuzzle(){
+  if (!psEnd) return psToday();
+  var s = psEndStore();
+  if (!s.pz) s = psEndNew();
+  if (!psPz || psPz.day !== s.pz.day) psPz = s.pz;
   return psPz;
 }
 function psStore(){ return lsGet(PS_KEY) || { days: {} }; }
 function psState(){
-  var pz = psPuzzle(), s = psStore().days[pz.day];
+  var pz = psPuzzle(), s = psEnd ? psEndStore().st : psStore().days[pz.day];
+  return s || { chain: [pz.from], done: false, solved: false };
+}
+/* Today's chain, always: the front page asking. */
+function psTodayState(){
+  var pz = psToday(), s = psStore().days[pz.day];
   return s || { chain: [pz.from], done: false, solved: false };
 }
 function psKeep(st){
+  if (psEnd) {
+    var e = psEndStore();
+    if (!e.pz || e.pz.day !== psPuzzle().day) return;
+    if (st.done && !(e.st && e.st.done)) e.played = (e.played || 0) + 1;
+    e.st = st;
+    lsSet(PS_END, e);
+    return;
+  }
   var s = psStore(), pz = psPuzzle();
   s.days[pz.day] = st;
   var keys = Object.keys(s.days).map(Number).sort(function(a, b){ return a - b; });
@@ -2086,7 +2339,7 @@ function psPass(to){
   psKeep(st);
   psFilter = '';
   psOpenStints = {};
-  if (st.done) { psSubmit(pz, st); psFeats(pz, st); }
+  if (st.done) { if (!psEnd) psSubmit(pz, st); psFeats(pz, st); }
   psRender(true);
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
@@ -2097,7 +2350,8 @@ function psFeats(pz, st){
   var BD = window.RTF_BADGES;
   if (!BD || !P.feats || st.featsFiled) return;
   var days = psStore().days, n = 0;
-  for (var d = pz.day; days[d] && days[d].solved; d--) n++;
+  /* Endless counts every chain and no streak: see fxFeats. */
+  if (!M.isEndless(pz.day)) for (var d = pz.day; days[d] && days[d].solved; d--) n++;
   P.feats(BD.passesFeats(!!st.solved, passesOf(st), pz.par, M.PS.CLOCK, n));
   st.featsFiled = true;
   psKeep(st);
@@ -2118,10 +2372,16 @@ function psDoneHtml(st){
     + '<div class="cq-big ps-big">' + (st.solved ? passesOf(st) : 'X') + '</div>'
     + '<div class="mx-eyebrow" style="color:var(--ink)">' + (st.solved ? plural(passesOf(st), 'pass', 'passes') + ' · par ' + pz.par : 'The ball never got there') + '</div>'
     + '<p class="mx-say">A shortest chain: ' + bestHtml + '.</p>'
-    + '<div id="ps-place" class="fx-place"></div></div>'
-    + '<div class="mx-row"><button class="big ps-go" id="ps-share">Share</button></div>'
-    + '<div class="mx-row" style="margin-top:8px"><button class="ghost" id="ps-board">Today\'s leaderboard</button></div>'
-    + '<p class="fx-hint" style="text-align:center">A new puzzle tomorrow.</p>';
+    + (psEnd ? '' : '<div id="ps-place" class="fx-place"></div>') + '</div>'
+    + (psEnd
+      ? (endlessOpen() ? '<div class="mx-row"><button class="big ps-go" id="ps-next">Next puzzle</button></div>' : '')
+        + '<div class="mx-row" style="margin-top:8px"><button class="' + (endlessOpen() ? 'ghost' : 'big ps-go') + '" id="ps-share">'
+        + (pz.custom ? 'Send it to a friend' : 'Share') + '</button></div>'
+        + '<p class="fx-hint" style="text-align:center">' + (pz.custom ? 'The link gives them the same two players.' : 'Endless. Off the leaderboard.') + '</p>'
+      : '<div class="mx-row"><button class="big ps-go" id="ps-share">Share</button></div>'
+        + '<div class="mx-row" style="margin-top:8px"><button class="ghost" id="ps-board">Today\'s leaderboard</button></div>'
+        + endlessDoor('ps-endless', 'Play another puzzle')
+        + '<p class="fx-hint" style="text-align:center">A new puzzle tomorrow.</p>');
 }
 
 function psShareText(st){
@@ -2129,20 +2389,21 @@ function psShareText(st){
   var line = '🏀';
   for (var i = 0; i < n - (st.solved ? 1 : 0); i++) line += '➡️';
   line += st.solved ? '🎯' : '❌';
-  return 'Run The Floor · Six Passes #' + pz.day + '\n'
+  return 'Run The Floor · Six Passes ' + (M.isEndless(pz.day) ? (pz.custom ? 'Custom' : 'Endless') : '#' + pz.day) + '\n'
     + surname(g.nameOf[pz.from]) + ' to ' + surname(g.nameOf[pz.to]) + '\n'
     + line + ' ' + (st.solved ? plural(n, 'pass', 'passes') + ' (par ' + pz.par + ')' : 'shot clock') + '\n'
-    + 'Real teammates only. Can you do it in fewer?\n' + P.SHARE_URL;
+    + 'Real teammates only. Can you do it in fewer?\n' + (pz.custom ? linkTo('pass=' + pz.from + '.' + pz.to) : P.SHARE_URL);
 }
 
 function psRender(animate){
   var box = $('s-pass');
   if (!box || !data()) return;
-  var pz = psPuzzle(), st = psState(), g = graph(), streak = psStreak();
-  P.bar('Six Passes · Day ' + pz.day);
+  if (psPicking) { psPickRender(box); return; }
+  var pz = psPuzzle(), st = psState(), g = graph(), streak = psEnd ? 0 : psStreak();
+  P.bar('Six Passes · ' + psLabel(pz));
   var holder = st.chain[st.chain.length - 1];
   var h = '<div class="cq-head">' + pix(ART.hoop, HOOP_PAL, 3)
-    + '<div><div class="mh ps-mh">Six Passes</div><div class="cq-rung">Day ' + pz.day + ' · Par ' + pz.par
+    + '<div><div class="mh ps-mh">Six Passes</div><div class="cq-rung">' + psLabel(pz) + ' · Par ' + pz.par
     + (streak > 1 ? ' · ' + streak + ' days in a row' : '') + '</div></div>'
     + (st.done ? '' : psClock(passesOf(st))) + '</div>'
     + psEnds(st)
@@ -2174,11 +2435,118 @@ function psRender(animate){
   if (q) q.oninput = function(){ psFilter = q.value; $('ps-pick').innerHTML = psPickerHtml(psState()); wire(); };
   var sh = $('ps-share'); if (sh) sh.onclick = function(){ share(psShareText(st)); };
   var bd = $('ps-board'); if (bd) bd.onclick = function(){ openModeBoard('passes'); };
-  if (st.done) psPlace(pz, st);
+  var nx = $('ps-next'); if (nx) nx.onclick = function(){ psEndNew(); psPz = null; psFilter = ''; psOpenStints = {}; psRender(false); window.scrollTo({ top: 0 }); };
+  var en = $('ps-endless'); if (en) en.onclick = psOpenEndless;
+  if (st.done && !psEnd) psPlace(pz, st);
 }
 
+function psLabel(pz){ return !psEnd ? 'Day ' + pz.day : pz.custom ? 'Custom' : 'Endless'; }
+
+/* ── MAKE A PUZZLE ─────────────────────────────────────────────────────────
+   Pro. Any two men in the league since 1974, if a chain of real teammates
+   joins them inside the shot clock. Par is the shortest chain, worked out
+   rather than guessed, so a made puzzle is scored exactly like a daily. */
+var psPicking = false, psPickA = '', psPickB = '', psQA = '', psQB = '';
+function psSearch(q, not){
+  var g = graph(), f = fold(q.trim()), out = [];
+  if (f.length < 2) return out;
+  Object.keys(g.nameOf).forEach(function(id){ if (id !== not && fold(g.nameOf[id]).indexOf(f) >= 0) out.push(id); });
+  return out.sort(function(a, b){ return g.careerWs[b] - g.careerWs[a]; }).slice(0, 8);
+}
+function psSlotHtml(key, label, id, q, other){
+  var g = graph();
+  if (id) return '<div class="ps-slot"><span class="mx-eyebrow">' + label + '</span><div class="ps-chosen"><b>' + esc(g.nameOf[id]) + '</b><small>'
+    + spanTxt(id) + '</small><button class="ghost sm" data-clear="' + key + '">Change</button></div></div>';
+  return '<div class="ps-slot"><span class="mx-eyebrow">' + label + '</span>'
+    + '<input class="fx-q ps-q" id="ps-q' + key + '" type="search" autocomplete="off" spellcheck="false" placeholder="Type a name" value="' + esc(q) + '">'
+    + '<div class="ps-mates" id="ps-r' + key + '">' + psResultsHtml(key, q, other) + '</div></div>';
+}
+function psResultsHtml(key, q, other){
+  var g = graph();
+  return psSearch(q, other).map(function(id){
+    return '<button class="ps-mate" data-pick="' + key + '" data-id="' + esc(id) + '">' + esc(g.nameOf[id]) + '<small>' + spanTxt(id) + '</small></button>';
+  }).join('');
+}
+function psPickHtml(){
+  var h = '<div class="cq-head">' + pix(ART.hoop, HOOP_PAL, 3)
+    + '<div><div class="mh ps-mh">Six Passes</div><div class="cq-rung">Make a puzzle</div></div></div>'
+    + '<p class="mx-say">Pick any two players. Play it yourself, or send it to a friend. They play free.</p>'
+    + psSlotHtml('a', 'Starts with the ball', psPickA, psQA, psPickB)
+    + psSlotHtml('b', 'Get it to', psPickB, psQB, psPickA);
+  if (psPickA && psPickB) {
+    var why = M.psCustomRefusal(graph(), psPickA, psPickB);
+    if (why) h += '<p class="fx-hint" style="text-align:center">Can\'t make that one: ' + esc(why) + '.</p>';
+    else {
+      var pz = M.psCustom(graph(), psPickA, psPickB);
+      h += '<div class="mx-card" style="text-align:center"><span class="mx-eyebrow">Par</span><div class="cq-big ps-big">' + pz.par + '</div></div>'
+        + '<div class="mx-row" style="margin-top:12px"><button class="big ps-go" id="ps-pgo">Play it</button></div>'
+        + '<div class="mx-row" style="margin-top:8px"><button class="ghost" id="ps-psend">Send it to a friend</button></div>';
+    }
+  }
+  return h + '<div class="mx-row" style="margin-top:8px"><button class="ghost" id="ps-pback">Back</button></div>';
+}
+function psPickRender(box){
+  P.bar('Six Passes · Make a puzzle');
+  box.innerHTML = psPickHtml();
+  var wireResults = function(){
+    box.querySelectorAll('[data-pick]').forEach(function(b){
+      b.onclick = function(){
+        if (b.getAttribute('data-pick') === 'a') { psPickA = b.getAttribute('data-id'); psQA = ''; }
+        else { psPickB = b.getAttribute('data-id'); psQB = ''; }
+        psRender(false);
+      };
+    });
+  };
+  wireResults();
+  ['a', 'b'].forEach(function(k){
+    var q = $('ps-q' + k);
+    if (q) q.oninput = function(){
+      if (k === 'a') psQA = q.value; else psQB = q.value;
+      $('ps-r' + k).innerHTML = psResultsHtml(k, q.value, k === 'a' ? psPickB : psPickA);
+      wireResults();
+    };
+  });
+  box.querySelectorAll('[data-clear]').forEach(function(b){
+    b.onclick = function(){ if (b.getAttribute('data-clear') === 'a') psPickA = ''; else psPickB = ''; psRender(false); };
+  });
+  var go = $('ps-pgo'); if (go) go.onclick = function(){ psPlayPicked(psPickA, psPickB); };
+  var sd = $('ps-psend'); if (sd) sd.onclick = function(){
+    var g = graph(), pz = M.psCustom(g, psPickA, psPickB);
+    share('Run The Floor · Six Passes\n' + surname(g.nameOf[pz.from]) + ' to ' + surname(g.nameOf[pz.to]) + '. Par ' + pz.par + '.\n'
+      + 'Real teammates only. Can you get it there?\n' + linkTo('pass=' + pz.from + '.' + pz.to));
+  };
+  $('ps-pback').onclick = function(){ psPicking = false; P.goHome(); };
+}
+function psOpenPicker(){
+  if (!data() || !endlessOpen()) return;
+  psEnd = true; psPicking = true;
+  P.show('s-pass');
+  psRender(false);
+  window.scrollTo({ top: 0 });
+}
+/* A made puzzle, played. Also what a friend's link opens, so it asks nothing
+   about Pro. */
+function psPlayPicked(from, to){
+  if (!data() || !psEndPick(from, to)) return false;
+  psEnd = true; psPicking = false; psPz = null; psFilter = ''; psOpenStints = {};
+  P.show('s-pass');
+  psRender(false);
+  window.scrollTo({ top: 0 });
+  return true;
+}
+
+function psOpenEndless(){
+  if (!data() || !endlessOpen()) return;
+  var s = psEndStore();
+  if (s.pz && s.pz.custom && s.st && s.st.done) psEndNew();
+  psEnd = true; psPicking = false;
+  psFilter = '';
+  P.show('s-pass');
+  psRender(false);
+}
 function psOpen(){
   if (!data()) return;
+  psEnd = false; psPicking = false;
   psFilter = '';
   P.show('s-pass');
   psRender(false);
@@ -2208,8 +2576,8 @@ function todayRow(id, ico, name, sub, done, doneTxt){
     + '<span class="td-st">' + (done ? '<i class="td-ck" aria-hidden="true"></i>' + doneTxt : 'Play') + '</span></button>';
 }
 function todayHtml(){
-  var p = fxPuzzle(), t = tsParts(p.ts), r = fxResult(p.day);
-  var pz = psPuzzle(), st = psState(), g = graph();
+  var p = fxToday(), t = tsParts(p.ts), r = fxResult(p.day);
+  var pz = psToday(), st = psTodayState(), g = graph();
   var n = (r ? 1 : 0) + (st.done ? 1 : 0);
   var streak = Math.max(fxStreak(), psStreak());
   var title = n === 2 ? 'Both done. New ones tomorrow.' : n === 1 ? 'One down, one to go.' : 'Two puzzles. One shot each.';
@@ -2217,12 +2585,15 @@ function todayHtml(){
     + '<b class="td-title">' + title + '</b></div>'
     + '<span class="td-prog"><span class="td-n">' + n + ' of 2</span><i class="' + (r ? 'on' : '') + '"></i><i class="' + (st.done ? 'on' : '') + '"></i></span></div>';
   var fxSub = esc(t.name) + '. Four trade windows to win it.';
-  if (!r && fxInProgress()) fxSub = esc(t.name) + '. ' + esc(M.FX_WINDOWS[Math.min(fxSeason().win, M.FX_WINDOWS.length - 1)].name) + ' window is open.';
+  var dayRun = lsGet(FX_RUN);
+  if (!r && fxInProgress()) fxSub = esc(t.name) + '. ' + esc(M.FX_WINDOWS[Math.min(dayRun.win, M.FX_WINDOWS.length - 1)].name) + ' window is open.';
   h += todayRow('mc-fix', pix(ART.rewind, { t: '#5eead4' }, 3), 'Fix History', fxSub, !!r, r ? pct1(r.odds) : '');
   h += todayRow('mc-ps', pix(ART.hoop, HOOP_PAL, 3), 'Six Passes',
     esc(surname(g.nameOf[pz.from])) + ' to ' + esc(surname(g.nameOf[pz.to])) + '. Par ' + pz.par + '.',
     st.done, st.done ? (st.solved ? plural(passesOf(st), 'pass', 'passes') : 'Missed') : '');
   if (streak > 1) h += '<div class="td-foot">' + streak + ' days in a row</div>';
+  if (endlessOpen()) h += '<div class="td-end"><span>Endless</span><button id="td-efx">Fix History</button><button id="td-eps">Six Passes</button></div>'
+    + '<div class="td-end"><span>Build</span><button id="td-pfx">Any team</button><button id="td-pps">Any two players</button></div>';
   return h + '</section>';
 }
 function playTilesHtml(){
@@ -2248,6 +2619,10 @@ function renderHome(){
   var c = $('mc-cq'); if (c) c.onclick = cqOpen;
   var f = $('mc-fix'); if (f) f.onclick = fxOpen;
   var ps = $('mc-ps'); if (ps) ps.onclick = psOpen;
+  var ef = $('td-efx'); if (ef) ef.onclick = fxOpenEndless;
+  var ep = $('td-eps'); if (ep) ep.onclick = psOpenEndless;
+  var pf = $('td-pfx'); if (pf) pf.onclick = fxOpenPicker;
+  var pp = $('td-pps'); if (pp) pp.onclick = psOpenPicker;
   var qd = $('mc-qd'); if (qd) qd.onclick = function(){ if (P.openQuickDraft) P.openQuickDraft(); };
 }
 
@@ -2258,7 +2633,7 @@ function renderHome(){
 function paintToday(){
   var b = $('b-today');
   if (!b) return;
-  var fxDone = !!fxResult(fxPuzzle().day), psDone = psState().done;
+  var fxDone = !!fxResult(fxToday().day), psDone = psTodayState().done;
   if (!fxDone) { b.textContent = 'Play today\'s Fix History'; b.onclick = fxOpen; }
   else if (!psDone) { b.textContent = 'Play today\'s Six Passes'; b.onclick = psOpen; }
   else {
@@ -2466,6 +2841,28 @@ function paintModeBoard(){
 // ═══ WIRING ═════════════════════════════════════════════════════════════════
 
 var ready = false;
+/* ── LINKS ─────────────────────────────────────────────────────────────────
+   A picked puzzle travels as a hash: #fix=CHI_1996 or #pass=jordami01.jamesle01.
+   A hash never reaches the server, so a link works on any host this page is
+   served from, and the base is the page the SENDER is on rather than a
+   written-out domain (CLAUDE.md: www and the apex are two localStorage jars).
+   Opening one is free: the Pro half is making it. */
+function linkTo(frag){
+  var base = /^https?:$/.test(location.protocol) ? location.origin + location.pathname : P.SHARE_URL;
+  return base + '#' + frag;
+}
+function openLink(){
+  var m = /^#(fix|pass)=([A-Za-z0-9_.'-]+)$/.exec(location.hash || '');
+  if (!m || !data()) return false;
+  var ok = false;
+  if (m[1] === 'fix') ok = fxPlayPicked(m[2]);
+  else { var ab = m[2].split('.'); ok = ab.length === 2 && psPlayPicked(ab[0], ab[1]); }
+  /* The hash has done its job. Left on, a reload after finishing would open
+     the finished puzzle rather than the front page. */
+  try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {}
+  return ok;
+}
+
 function onData(){
   if (ready || !data()) return;
   ready = true;
@@ -2475,6 +2872,8 @@ function onData(){
   var a = P.auth();
   if (a && a.onChange) a.onChange(function(){ claimGuests(); });
   claimGuests();
+  openLink();
+  window.addEventListener('hashchange', openLink);
 }
 
 window.RTF_MODES_UI = {
@@ -2492,9 +2891,9 @@ window.RTF_MODES_UI = {
   doors: function(){
     if (!data()) return [];
     var out = [];
-    if (!fxResult(fxPuzzle().day)) out.push({ title: 'Fix History · Day ' + fxPuzzle().day,
+    if (!fxResult(fxToday().day)) out.push({ title: 'Fix History · Day ' + fxToday().day,
       why: 'One real team. Four trade windows. Can you win them the title?', gold: true, go: fxOpen });
-    if (!psState().done) out.push({ title: 'Six Passes · Par ' + psPuzzle().par,
+    if (!psTodayState().done) out.push({ title: 'Six Passes · Par ' + psToday().par,
       why: 'Get the ball through real teammates.', gold: true, go: psOpen });
     if (!cq) cqLoad();
     out.push({ title: cq && !M.cqOver(cq) ? 'Conquest · ' + M.cqStreak(cq) + ' wins' : 'Conquest',

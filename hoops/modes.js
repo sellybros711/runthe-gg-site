@@ -23,7 +23,7 @@ const E = (typeof require !== 'undefined')
   ? require('./engine.js')
   : window.RTF_ENGINE;
 
-const MODES_API_VERSION = 4;
+const MODES_API_VERSION = 5;
 const C = E.CONSTANTS;
 
 // ─── shared ────────────────────────────────────────────────────────────────
@@ -579,12 +579,70 @@ function fxCandidates(data) {
     .sort();
 }
 
+/* The list and the calendar's order over it, built once per data. It used to
+   be built on every call, which cost nothing while a day was asked for once;
+   endless play asks for a fresh team every time somebody presses Next. */
+const FX_LIST = new WeakMap();
+function fxList(data) {
+  let l = FX_LIST.get(data);
+  if (!l) {
+    const list = fxCandidates(data);
+    l = { list, order: dailyOrder(list.length, 'fix') };
+    FX_LIST.set(data, l);
+  }
+  return l;
+}
+
 /* Today's team. */
 function fxDaily(data, day) {
-  const list = fxCandidates(data);
-  const order = dailyOrder(list.length, 'fix');
+  const { list, order } = fxList(data);
   const ts = list[order[((day % list.length) + list.length) % list.length]];
   return { day, ts, five: startingFive(data, ts) };
+}
+
+/* ENDLESS PLAY: a puzzle off a number that is not a day. A calendar day is 1
+   and up, so an endless puzzle is numbered BELOW ZERO, and every seed built
+   from it ('fix:-812', 'passes:-812') is one no day can ever draw. The team
+   can repeat a day's team (there are only so many), and the calls, the odds
+   and the replay will not, because they are all seeded off the number.
+
+   `avoid` is the teams played lately. It is a preference and never a wall:
+   after enough tries the draw takes what it has rather than looping for ever
+   on a device that has seen every team. */
+function isEndless(day) { return Number(day) < 0; }
+function endlessNumber(rng) { return -(1 + Math.floor(rng() * 2147483646)); }
+/* A PICKED PUZZLE: any team, or any two men, chosen rather than drawn. Its
+   number is a hash of what was picked, so a link to it gives a friend the same
+   calls, the same odds and the same replay: two people who played one link
+   played one puzzle. Still below zero, still never a day's seeds. */
+function customNumber(key) {
+  return -(1 + (E.hashSeed('custom:' + key) % 2147483646));
+}
+/* Every team a rebuild can start from: any club, any year, as long as its
+   best nine can field the five positions. Champions included. Off the board,
+   so the daily's contender window has nothing to protect here. */
+const FX_ALL = new WeakMap();
+function fxTeams(data) {
+  let l = FX_ALL.get(data);
+  if (!l) {
+    l = data.teamSeasons.filter(t => startingFive(data, t.team_season_id)).map(t => t.team_season_id).sort();
+    FX_ALL.set(data, l);
+  }
+  return l;
+}
+function fxCustom(data, ts) {
+  const five = data.byTeamSeason[ts] ? startingFive(data, ts) : null;
+  if (!five) return null;
+  return { day: customNumber('fix:' + ts), ts, five, custom: true };
+}
+function fxEndless(data, rng, avoid) {
+  const seen = new Set(avoid || []);
+  let f = null;
+  for (let i = 0; i < 40; i++) {
+    f = fxDaily(data, endlessNumber(rng));
+    if (!seen.has(f.ts)) break;
+  }
+  return f;
 }
 
 /* THE TITLE ODDS OF A FIVE, on the day's seeds. Deterministic: the same five
@@ -732,8 +790,8 @@ function fxPicks(tsId) {
 const pickValue = (id) => (/^R1/.test(id) ? TRADE.PICK1 : TRADE.PICK2);
 const pickOk = (id) => /^R[12]Y[0-9]{4}$/.test(String(id));
 
-function fxSeasonCreate(data, day) {
-  const f = fxDaily(data, day);
+function fxSeasonCreate(data, day, ts) {
+  const f = ts ? { day, ts } : fxDaily(data, day);
   return { v: 2, day: f.day, ts: f.ts, win: 0, trades: [], done: false };
 }
 
@@ -1111,6 +1169,37 @@ function psDaily(g, day) {
   return null;
 }
 
+/* Any two men, if the ball can get there inside the shot clock. The start is
+   whoever was picked first, because the person making it chose the direction.
+   Answers null with nothing to play; psCustomRefusal says why. */
+function psCustomRefusal(g, from, to) {
+  if (!g.nameOf[from] || !g.nameOf[to]) return 'pick two players';
+  if (from === to) return 'pick two different players';
+  const d = psBfs(g, from)[to];
+  if (d == null) return 'no chain of teammates connects them';
+  if (d > PS.CLOCK) return 'it takes more than ' + PS.CLOCK + ' passes';
+  return null;
+}
+function psCustom(g, from, to) {
+  if (psCustomRefusal(g, from, to)) return null;
+  return { day: customNumber('passes:' + from + '>' + to), from, to, par: psBfs(g, from)[to], custom: true };
+}
+
+/* An endless chain. psDaily can come back empty on an unlucky number, so this
+   keeps drawing, and it steers off the pairs played lately the same way
+   fxEndless does. */
+function psEndless(g, rng, avoid) {
+  const seen = new Set(avoid || []);
+  let pz = null;
+  for (let i = 0; i < 60; i++) {
+    const next = psDaily(g, endlessNumber(rng));
+    if (!next) continue;
+    pz = next;
+    if (!seen.has(pz.from + '>' + pz.to)) break;
+  }
+  return pz;
+}
+
 /* The team-seasons two men shared, which is what a pass is printed with. */
 function psShared(g, a, b) {
   const mine = new Set(g.seasonsOf[a] || []);
@@ -1129,11 +1218,11 @@ const publicAPI = {
   cqPreview, cqIsBoss, cqPlay, cqSteals, cqSteal, cqStreak, cqOver, cqCleared,
   CQ_PLANS, planNorms, cqPlans, cqSetPlan,
   DAILY_EPOCH, dayNumberOf, dailyOrder,
-  FX, TRADE, salaryOk, slotFive, startingFive, fiveOf, canCover, fxCandidates, fxDaily, fxOdds, fxOddsStep, fxReplay,
+  FX, TRADE, salaryOk, slotFive, startingFive, fiveOf, canCover, fxCandidates, fxDaily, isEndless, fxEndless, customNumber, fxTeams, fxCustom, fxOdds, fxOddsStep, fxReplay,
   fxRoster, fxApply,
   FX_WINDOWS, fxPicks, pickValue, pickOk, fxSeasonCreate, fxRosterAt, fxPicksLeft, fxLineup, clubCalls,
   untouchable, fxDealRefusal, fxCalls, fxPropose, fxAsking, fxRulesRefusal, fxHungUp, fxTriesLeft, fxDeal, fxNextWindow, fxStretches, fxPlayStretches, fxSeasonOddsStep, fxSeasonReplay,
-  PS, psGraph, psBfs, psPath, psFamous, psDaily, psShared, psCanPass,
+  PS, psGraph, psBfs, psPath, psFamous, psDaily, psEndless, psCustom, psCustomRefusal, psShared, psCanPass,
 };
 
 if (typeof module !== 'undefined' && module.exports) module.exports = publicAPI;

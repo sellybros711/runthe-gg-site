@@ -597,6 +597,53 @@ section('5. Six Passes: a year of puzzles, every par a real shortest chain');
   ok(Object.keys(pars).length >= 2, 'and the par varies');
 }
 
+// ── 5b. endless and picked puzzles ─────────────────────────────────────────
+/* An endless or picked puzzle is numbered below zero, so every seed built from
+   it is one no calendar day can draw, and a picked one is numbered off what was
+   picked, so a link gives a friend the same calls and the same odds. */
+section('5b. endless and picked puzzles never share a seed with a day');
+{
+  const g = M.psGraph(D);
+  let rs = 1;
+  const rng = () => { rs = (rs * 16807) % 2147483647; return rs / 2147483647; };
+  let fxNeg = 0, fxAvoid = 0, psNeg = 0, psPar = 0;
+  const today = M.dayNumberOf(new Date().toISOString().slice(0, 10));
+  for (let i = 0; i < 40; i++) {
+    const f = M.fxEndless(D, rng, [M.fxDaily(D, today).ts]);
+    if (f.day < 0 && M.isEndless(f.day) && M.fxCandidates(D).includes(f.ts)) fxNeg++;
+    if (f.ts !== M.fxDaily(D, today).ts) fxAvoid++;
+    const p = M.psEndless(g, rng, []);
+    if (p && p.day < 0) psNeg++;
+    if (p && M.psBfs(g, p.from)[p.to] === p.par && p.par >= M.PS.PAR_MIN && p.par <= M.PS.PAR_MAX) psPar++;
+  }
+  ok(fxNeg === 40, `40 endless teams, every one numbered below zero and a real contender (${fxNeg})`);
+  ok(fxAvoid === 40, `and none of them is today's team (${fxAvoid})`);
+  ok(psNeg === 40 && psPar === 40, `40 endless chains, numbered below zero, every par a real shortest chain (${psNeg}, ${psPar})`);
+  ok(!M.isEndless(1) && !M.isEndless(today) && M.isEndless(-1), 'a calendar day is never endless');
+
+  const a = M.fxCustom(D, 'CHI_1996'), b = M.fxCustom(D, 'CHI_1996');
+  ok(a && a.day === b.day && a.day < 0 && a.custom, `a picked team has one number, below zero (${a && a.day})`);
+  ok(M.fxCustom(D, 'CHI_1997').day !== a.day, 'and a different team has a different one');
+  ok(M.fxCustom(D, 'NOPE_1990') === null, 'a team that does not exist is refused');
+  ok(M.fxTeams(D).length > M.fxCandidates(D).length && M.fxTeams(D).includes('CHI_1996'),
+    `pick-any offers every team with a five, champions too (${M.fxTeams(D).length} against ${M.fxCandidates(D).length})`);
+  const st = M.fxSeasonCreate(D, a.day, a.ts);
+  ok(st.ts === 'CHI_1996' && M.fxRosterAt(D, st, 0).length >= 5, 'a picked team plays the season off its own roster');
+  const o1 = M.fxSeasonOddsStep(D, st, 0, 50), o2 = M.fxSeasonOddsStep(D, M.fxSeasonCreate(D, a.day, a.ts), 0, 50);
+  ok(o1.titles === o2.titles && o1.wins === o2.wins, 'and two people who open the same link get the same odds');
+
+  const pz = M.psCustom(g, 'jordami01', 'jamesle01');
+  ok(pz && pz.day < 0 && pz.par === M.psBfs(g, 'jordami01')['jamesle01'] && pz.from === 'jordami01',
+    `a made puzzle starts where it was told to, par the real shortest chain (par ${pz && pz.par})`);
+  ok(M.psCustom(g, 'jordami01', 'jamesle01').day === pz.day, 'and has one number');
+  ok(M.psCustomRefusal(g, 'jordami01', 'jordami01') && M.psCustom(g, 'jordami01', 'jordami01') === null, 'the same man twice is refused');
+  ok(M.psCustomRefusal(g, 'jordami01', 'nobody00') && M.psCustom(g, 'nobody00', 'jordami01') === null, 'and so is a man who is not there');
+  let far = null;
+  const dist = M.psBfs(g, 'jordami01');
+  for (const id of Object.keys(g.nameOf)) if (dist[id] == null || dist[id] > M.PS.CLOCK) { far = id; break; }
+  ok(far === null || M.psCustom(g, 'jordami01', far) === null, 'and a pair the shot clock cannot join');
+}
+
 // ── 6. a number a player reads is the number the game plays ─────────────────
 section('6. the copy and the SQL agree with the constants');
 {
@@ -842,6 +889,108 @@ if (!QUICK) {
   const pssub = posts.find((p) => p.fn === 'rtf_submit_passes');
   ok(!!pssub && pssub.body.p_par === chain.par && pssub.body.p_solved === true, 'and is filed with its par and solved');
   ok(/Perfect pass/i.test(await page.textContent('#s-pass')), 'a chain at par is called a perfect pass');
+
+  /* ENDLESS AND PICKED PUZZLES. None of this may touch today: not the day's
+     saved result, not the board, not the days-played count. */
+  await page.evaluate(() => window.RTF_PAGE.goHome());
+  const doors = await page.evaluate(() => ['td-efx', 'td-eps', 'td-pfx', 'td-pps'].map((id) => !!document.getElementById(id)));
+  ok(doors.every(Boolean), 'the front page offers endless and build for both dailies');
+  const before5 = await page.evaluate(([d, pd]) => ({
+    fx: localStorage.getItem('rtf.fix.v1'), ps: localStorage.getItem('rtf.passes.v1'),
+    days: (JSON.parse(localStorage.getItem('runthefloor_career_v1') || '{}').feats || {})['fx.days'] || 0,
+  }), [fx.day, chain.day]);
+  posts.length = 0;
+  await page.click('#td-efx');
+  await page.waitForSelector('#fx-pat');
+  ok(/Endless/.test(await page.textContent('#s-fix .cq-rung')), 'endless Fix History says so');
+  for (let i = 0; i < 4; i++) {
+    if (i) { await page.click('#fx-on'); await page.waitForSelector('#fx-pat'); }
+    await page.click('#fx-pat');
+    await page.waitForSelector('#fx-on');
+  }
+  await page.click('#fx-on');
+  await page.waitForSelector('#fx-next', { timeout: 30000 });
+  await page.waitForTimeout(300);
+  const after5 = await page.evaluate(() => ({
+    fx: localStorage.getItem('rtf.fix.v1'), ps: localStorage.getItem('rtf.passes.v1'),
+    days: (JSON.parse(localStorage.getItem('runthefloor_career_v1') || '{}').feats || {})['fx.days'] || 0,
+    end: JSON.parse(localStorage.getItem('rtf.fix.endless.v1')),
+  }));
+  ok(after5.fx === before5.fx, "an endless season leaves today's result exactly as it was");
+  ok(after5.end && after5.end.result && after5.end.result.day < 0 && after5.end.run === null, 'and keeps its own result under its own key');
+  ok(!posts.some((p) => /^rtf_submit_/.test(p.fn)), 'and files nothing to the board');
+  ok(after5.days === before5.days, `and does not count as a day played (${before5.days} then ${after5.days})`);
+  ok(await page.$('#fx-board') === null, 'no leaderboard button on an endless result');
+  await page.click('#fx-next');
+  await page.waitForSelector('#fx-pat');
+  const next = await page.evaluate(() => JSON.parse(localStorage.getItem('rtf.fix.endless.v1')));
+  ok(next.day !== after5.end.result.day && next.result === null, 'Next team deals a fresh one');
+
+  // Endless Six Passes, solved along a real shortest chain.
+  await page.evaluate(() => window.RTF_PAGE.goHome());
+  await page.click('#td-eps');
+  await page.waitForSelector('#ps-q');
+  ok(/Endless/.test(await page.textContent('#s-pass .cq-rung')), 'endless Six Passes says so');
+  const ech = await page.evaluate(() => {
+    const M = window.RTF_MODES, g = M.psGraph(window.RTF_PAGE.data), s = JSON.parse(localStorage.getItem('rtf.passes.endless.v1'));
+    const path = M.psPath(g, s.pz.from, s.pz.to);
+    return { path, names: path.map((i) => g.nameOf[i]), par: s.pz.par };
+  });
+  for (let i = 1; i < ech.path.length; i++) {
+    await page.fill('#ps-q', ech.names[i].split(' ').pop());
+    await page.click(`.ps-mate[data-id="${ech.path[i]}"]`);
+    await page.waitForTimeout(50);
+  }
+  const eps = await page.evaluate(() => ({ s: JSON.parse(localStorage.getItem('rtf.passes.endless.v1')), day: localStorage.getItem('rtf.passes.v1') }));
+  ok(eps.s.st && eps.s.st.solved && eps.s.played === 1, 'an endless chain solves and counts once');
+  ok(eps.day === before5.ps, "and today's Six Passes is untouched");
+  ok(!posts.some((p) => /^rtf_submit_/.test(p.fn)), 'and nothing reaches the board');
+  ok(await page.$('#ps-next') !== null && await page.$('#ps-board') === null, 'Next puzzle, and no leaderboard');
+
+  // Build: any two players, through the search a player uses, sent as a link.
+  await page.evaluate(() => { window.RTF_PAGE.goHome(); window.RTF_PAGE.shareText = (t) => { window.__shared = t; }; });
+  await page.click('#td-pps');
+  await page.waitForSelector('#ps-qa');
+  await page.fill('#ps-qa', 'Michael Jordan');
+  await page.click('.ps-mate[data-id="jordami01"]');
+  await page.waitForSelector('#ps-qb');
+  await page.fill('#ps-qb', 'LeBron');
+  await page.click('.ps-mate[data-id="jamesle01"]');
+  await page.waitForSelector('#ps-pgo');
+  await page.click('#ps-psend');
+  const sent = await page.evaluate(() => window.__shared || '');
+  ok(/#pass=jordami01\.jamesle01$/.test(sent.trim()), `Send it to a friend carries the two players in the link ("${sent.trim().split('\n').pop()}")`);
+  ok(!/runthe\.gg/.test(sent), 'and the link is built off the page the sender is on');
+
+  // Build: any team, through the two selects.
+  await page.evaluate(() => window.RTF_PAGE.goHome());
+  await page.click('#td-pfx');
+  await page.waitForSelector('#fx-pclub');
+  await page.selectOption('#fx-pclub', 'CHI');
+  await page.waitForSelector('#fx-pyr');
+  await page.selectOption('#fx-pyr', 'CHI_1996');
+  await page.waitForSelector('#fx-pgo');
+  ok(/They won it/.test(await page.textContent('#s-fix .fx-note')), 'a champion is called one');
+  await page.click('#fx-pgo');
+  await page.waitForSelector('#fx-pat');
+  ok(/Picked team/.test(await page.textContent('#s-fix .cq-rung')) && /1996/.test(await page.textContent('#s-fix .fx-yr')),
+    'Rebuild them opens the four windows on the 1996 Bulls');
+
+  /* A FRIEND'S LINK, opened on a fresh page with nothing stored: it plays,
+     free, and the hash is cleared so a reload goes to the front page. */
+  const friend = await ctx.newPage();
+  friend.on('pageerror', (e) => boom.push(String(e).slice(0, 200)));
+  await friend.route('**/*', serve);
+  await friend.goto('http://local.test/hoops/#pass=jordami01.jamesle01', { waitUntil: 'domcontentloaded' });
+  await friend.waitForSelector('#s-pass #ps-q', { timeout: 60000 });
+  const fr = await friend.evaluate(() => ({ rung: document.querySelector('#s-pass .cq-rung').textContent, hash: location.hash,
+    s: JSON.parse(localStorage.getItem('rtf.passes.endless.v1')) }));
+  ok(/Custom/.test(fr.rung) && fr.s.pz.from === 'jordami01' && fr.s.pz.to === 'jamesle01', `a friend's link opens the made puzzle ("${fr.rung}")`);
+  ok(fr.hash === '', 'and the hash is cleared once it has been read');
+  await friend.goto('http://local.test/hoops/#fix=CHI_1996', { waitUntil: 'domcontentloaded' });
+  await friend.waitForSelector('#s-fix #fx-pat', { timeout: 60000 });
+  ok(/Picked team/.test(await friend.textContent('#s-fix .cq-rung')), 'and a team link opens the picked team');
+  await friend.close();
 
   // Conquest: a game, and the count is not spoiled while it is on.
   await page.evaluate(() => window.RTF_MODES_UI.openConquest());
