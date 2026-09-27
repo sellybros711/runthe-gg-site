@@ -10344,6 +10344,50 @@ move the calendar of teams.
 **Offers show the stat line and minutes, never win shares.** Your own roster
 shows win shares, because you know your own team.
 
+#### You set the five, and a board row opens into the season
+
+```
+node hoops/check-modes.mjs            section 4b the rules, section 7 the drag and the dropdown
+```
+
+Asked for: move players around the lineup by dragging and swapping them, and
+open a Fix History board entry into its final roster.
+
+**The spot label is the drag handle, and only the label.** It carries
+`touch-action:none`, so a thumb anywhere else on a row still scrolls the page
+and a tap on the row still puts the man on the block. Drop one man's label on
+another row and the two swap: two starters trade spots, a bench man starts and
+the starter sits. A tap on a label that does not move picks that man, and the
+next label tapped is who he swaps with, which is the same swap without a drag.
+**Coach's five** appears once the five differs from the coach's and puts it back.
+
+**Any five, any spot, deliberately.** That was the ask, and the fit model already
+charges for a bad shape because it reads what the five do. A man outside his
+listed positions wears his spot label in amber.
+
+**`st.lineups[k]` is the five set at window k, in SLOTS order, and it carries
+forward.** `fxLineupAt` reads the latest one at or before a stretch. A starter
+traded away leaves a hole, filled by the best man left who can play that spot,
+and the other four keep the spots they were put in. No lineup is the coach's
+five, so a season from before this plays exactly as it did, and setting the
+coach's five back deletes the key rather than storing it. The lineup is in
+`fxStKey`, or the odds memo would print the odds of the last five. A lineup set
+at a window never moves a game before it, which section 4b asserts.
+
+**The lineup is not filed.** 118 has no column for it and a migration for one
+line of display was not worth a hand deploy. So the board dropdown rebuilds the
+FINAL ROSTER from `fix_ts` and `fix_trades` in this browser's own data, with no
+request, lists it by win shares with the men who came in marked New, and makes
+no claim about who started. Above it: the title odds, the odds as built, the
+replay record, and each trade by its window. The result screen does draw the
+five you set, because the finished result keeps `lineups`.
+
+**The walk drags with the real pointer, and it has to put both ends on the
+screen first.** Dragged from a bench row to a starter scrolled above the window,
+the pointer left the page and the drop found nothing, which read as the handle
+being broken. Proved by mutation: with the drag unwired, eight claims fail by
+name, and with the hole filler removed the four starters lose their spots.
+
 **THREE SHAPES OF RESULT ARE READ AS ONE** by `fxNorm`: the first version's
 one-for-one (`slot, out, inKey`), the second's single trade (`with, outs, ins`)
 and this season (`trades`). Each files through the submit it was made for:

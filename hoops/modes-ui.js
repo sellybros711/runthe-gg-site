@@ -504,6 +504,16 @@ var CSS = [
   '  background:var(--red);color:#fff;border-radius:999px;padding:2px 8px;}',
   '.fx-tag.in{background:#14b8a6;}',
   '.fx-man.bn{padding:7px 12px;background:#10151f;}',
+  '.fx-man.dr{grid-template-columns:40px 1fr auto;}',
+  '.fx-man.dr .fs{touch-action:none;cursor:grab;align-self:stretch;display:flex;align-items:center;gap:6px;margin:-10px 0 -10px -12px;padding-left:9px;}',
+  '.fx-man.dr .fs::before{content:"";width:6px;height:15px;flex:none;background:radial-gradient(circle,rgba(148,163,184,.75) 1.2px,transparent 1.6px) 0 0/3px 5px;}',
+  '.fx-man.dr.bn .fs{margin:-7px 0 -7px -12px;}',
+  '.fx-man .fs.off{color:#fbbf24;}',
+  '.fx-man.lift{opacity:.35;}',
+  '.fx-man.drop{border-color:#5eead4;box-shadow:0 0 0 2px #5eead4 inset;}',
+  '.fx-man.pick{border-color:#fbbf24;box-shadow:0 0 0 2px #fbbf24 inset;}',
+  '.fx-man.ghost{position:fixed;left:0;top:0;z-index:60;pointer-events:none;box-shadow:0 12px 30px rgba(0,0,0,.55);border-color:#5eead4;}',
+  '.fx-lu{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:12px;color:var(--dim);margin:0 2px 8px;min-height:28px;}',
   '.fx-man.bn .fs{color:var(--dim);font-size:12px;}',
   '.fx-benchh{font-size:10px;letter-spacing:.2em;text-transform:uppercase;font-weight:800;color:var(--dim);margin:12px 2px 6px;}',
   '.fx-dock{position:sticky;bottom:calc(var(--dock, 0px) + 8px + env(safe-area-inset-bottom,0px));z-index:5;display:flex;gap:10px;align-items:center;',
@@ -697,7 +707,23 @@ var CSS = [
   '.mb-who{min-width:0;}',
   '.mb-who b{display:block;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}',
   '.mb-who small{display:block;font-size:11.5px;color:var(--dim);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}',
-  '.mb-v{font-family:var(--display);font-size:18px;font-variant-numeric:tabular-nums;}'
+  '.mb-v{font-family:var(--display);font-size:18px;font-variant-numeric:tabular-nums;}',
+  'button.mb-row{width:100%;text-align:left;color:var(--ink);font:inherit;cursor:pointer;}',
+  'button.mb-row .mb-v::after{content:"";display:inline-block;width:6px;height:6px;margin-left:8px;vertical-align:4px;',
+  '  border-right:2px solid var(--dim);border-bottom:2px solid var(--dim);transform:rotate(45deg);transition:transform .15s;}',
+  'button.mb-row.open .mb-v::after{transform:rotate(-135deg);vertical-align:0;}',
+  'button.mb-row.open{border-color:rgba(94,234,212,.45);}',
+  '.mb-more{margin:-2px 0 4px;padding:10px 12px;border-radius:0 0 8px 8px;background:#0f1520;border:1px solid var(--line);border-top:0;}',
+  '.mb-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:10px;}',
+  '.mb-stats div{background:rgba(255,255,255,.03);border-radius:6px;padding:6px 8px;}',
+  '.mb-stats small{display:block;font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);font-weight:800;}',
+  '.mb-stats b{font-family:var(--num);font-variant-numeric:tabular-nums;font-size:15px;}',
+  '.mb-deals{margin:0 0 10px;padding:0;list-style:none;font-size:12px;color:var(--mut);display:grid;gap:3px;}',
+  '.mb-deals b{color:var(--ink);}',
+  '.mb-ros{display:grid;gap:2px;}',
+  '.mb-man{display:grid;grid-template-columns:1fr auto;gap:8px;font-size:12.5px;padding:3px 0;border-top:1px solid rgba(255,255,255,.04);}',
+  '.mb-man small{color:var(--dim);font-weight:600;}',
+  '.mb-man em{font-style:normal;font-size:9.5px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#5eead4;margin-left:6px;}'
 ].join('\n');
 
 (function inject(){
@@ -1294,6 +1320,91 @@ var fx = null;                      // today's puzzle: { day, ts, five }
 var fxBase = null;                  // today's odds as built
 var fxSt = null;                    // the season in progress
 var fxBlock = [], fxPicksOn = [];   // the package: pkeys and pick ids
+var fxSwapFrom = null;               // a spot tapped, waiting for the one to swap with
+
+/* SWAP TWO MEN. Two starters trade spots. A bench man takes a starter's spot
+   and the starter sits. Two bench men is nothing to do. The five goes to the
+   engine as keys in SLOTS order, and the engine is what says it is legal. */
+function fxSwap(a, b){
+  if (!a || !b || a === b) return false;
+  var d = data(), st = fxSeason();
+  var keys = M.fxLineupAt(d, st, st.win).map(E.pkey);
+  var ia = keys.indexOf(a), ib = keys.indexOf(b);
+  if (ia < 0 && ib < 0) return false;
+  if (ia >= 0 && ib >= 0) { keys[ia] = b; keys[ib] = a; }
+  else if (ia >= 0) keys[ia] = b;
+  else keys[ib] = a;
+  if (M.fxSetLineup(d, st, keys)) return false;
+  fxSaveSeason();
+  return true;
+}
+
+/* DRAG BY THE SPOT LABEL. Only the label takes the drag (touch-action:none),
+   so a thumb anywhere else on the row still scrolls the page and a tap still
+   shops the man. A press that does not move is a tap on the label: it picks
+   that man, and the next label tapped is who he swaps with. */
+function fxWireDrag(box, keepY){
+  var redo = keepY(function(){});
+  box.querySelectorAll('.fx-man.dr [data-grip]').forEach(function(g){
+    g.addEventListener('pointerdown', function(ev){
+      if (ev.button > 0) return;
+      ev.preventDefault();
+      var row = g.closest('.fx-man'), from = row.getAttribute('data-k');
+      var x0 = ev.clientX, y0 = ev.clientY, ghost = null, over = null, raf = 0, lastY = y0;
+      try { g.setPointerCapture(ev.pointerId); } catch (e) {}
+      function target(x, y){
+        var el = document.elementFromPoint(x, y);
+        var m = el && el.closest && el.closest('.fx-man.dr');
+        return m && box.contains(m) && m !== row ? m : null;
+      }
+      function scroll(){
+        if (!ghost) return;
+        var edge = 70, v = lastY < edge ? -10 : lastY > window.innerHeight - edge ? 10 : 0;
+        if (v) window.scrollBy(0, v);
+        raf = requestAnimationFrame(scroll);
+      }
+      function move(e){
+        lastY = e.clientY;
+        if (!ghost) {
+          if (Math.abs(e.clientX - x0) + Math.abs(e.clientY - y0) < 8) return;
+          var r = row.getBoundingClientRect();
+          ghost = row.cloneNode(true);
+          ghost.className += ' ghost';
+          ghost.style.width = r.width + 'px';
+          document.body.appendChild(ghost);
+          row.classList.add('lift');
+          fxSwapFrom = null;
+          raf = requestAnimationFrame(scroll);
+        }
+        ghost.style.transform = 'translate(' + (e.clientX - 24) + 'px,' + (e.clientY - 22) + 'px)';
+        var t = target(e.clientX, e.clientY);
+        if (t !== over) { if (over) over.classList.remove('drop'); over = t; if (over) over.classList.add('drop'); }
+      }
+      function up(e){
+        g.removeEventListener('pointermove', move);
+        g.removeEventListener('pointerup', up);
+        g.removeEventListener('pointercancel', up);
+        cancelAnimationFrame(raf);
+        if (ghost) {
+          ghost.remove();
+          row.classList.remove('lift');
+          if (over) over.classList.remove('drop');
+          if (e.type === 'pointerup' && over) fxSwap(from, over.getAttribute('data-k'));
+          redo();
+          return;
+        }
+        if (e.type !== 'pointerup') return;
+        if (!fxSwapFrom) fxSwapFrom = from;
+        else if (fxSwapFrom === from) fxSwapFrom = null;
+        else { fxSwap(fxSwapFrom, from); fxSwapFrom = null; }
+        redo();
+      }
+      g.addEventListener('pointermove', move);
+      g.addEventListener('pointerup', up);
+      g.addEventListener('pointercancel', up);
+    });
+  });
+}
 var fxView = 'desk';                // 'desk', 'phone', 'stretch'
 var fxSort = 'pts', fxPos = 'all';
 var fxCallsMemo = null;             // { key, offers }
@@ -1385,7 +1496,7 @@ function fxPuzzle(){
   var d = today();
   var picked = null;
   if (fxEnd) { var s = fxEndStore(); if (s.day == null) s = fxEndNew(); d = s.day; picked = s.ts; }
-  if (!fx || fx.day !== d) { fx = fxEnd ? (picked && M.fxCustom(data(), picked)) || M.fxDaily(data(), d) : fxToday(); fxBase = null; fxSt = null; fxBlock = []; fxPicksOn = []; fxView = 'desk'; }
+  if (!fx || fx.day !== d) { fx = fxEnd ? (picked && M.fxCustom(data(), picked)) || M.fxDaily(data(), d) : fxToday(); fxBase = null; fxSt = null; fxBlock = []; fxPicksOn = []; fxSwapFrom = null; fxView = 'desk'; }
   return fx;
 }
 function fxBaseOdds(){
@@ -1414,7 +1525,7 @@ function fxInProgress(){
   var p = fxToday(), s = lsGet(FX_RUN);
   return !!(s && s.day === p.day && (s.win > 0 || (s.trades && s.trades.length)));
 }
-function fxStKey(st){ return st.day + ':' + st.win + ':' + JSON.stringify(st.trades); }
+function fxStKey(st){ return st.day + ':' + st.win + ':' + JSON.stringify(st.trades) + ':' + JSON.stringify(st.lineups || {}); }
 /* The odds as the season stands: every trade so far, and nothing more. */
 function fxOddsNow(){
   var st = fxSeason(), key = fxStKey(st);
@@ -1461,11 +1572,12 @@ function fxBanner(ts){
 
 /* One man on a roster. Win shares show on YOUR men only: you know your own
    team, and who the market underpaid elsewhere is the puzzle. */
-function fxManHtml(p, label, mark, tap, showWs){
+function fxManHtml(p, label, mark, tap, showWs, drag, off){
   var k = E.pkey(p);
-  return '<button class="fx-man' + (mark ? ' ' + mark : '') + (label === 'BN' ? ' bn' : '') + '" data-k="' + esc(k) + '"'
+  return '<button class="fx-man' + (mark ? ' ' + mark : '') + (label === 'BN' ? ' bn' : '') + (drag ? ' dr' : '')
+    + (drag && fxSwapFrom === k ? ' pick' : '') + '" data-k="' + esc(k) + '"'
     + (tap ? '' : ' disabled') + '>'
-    + '<span class="fs">' + label + '</span>'
+    + '<span class="fs' + (off ? ' off' : '') + '"' + (drag ? ' data-grip="1" title="Drag to swap"' : '') + '>' + label + '</span>'
     + '<span class="fn">' + esc(p.n) + '<small>' + esc(lineOf(p)) + ' · ' + (p.mp || 0).toFixed(0) + ' min</small></span>'
     + '<span class="fp"><b>' + money(p.p) + '</b>' + (showWs ? p.w.toFixed(1) + ' WS' : esc(shortClub(p.t, p.s))) + '</span>'
     + (mark === 'out' ? '<span class="fx-tag">On the block</span>'
@@ -1477,14 +1589,14 @@ function fxRosterHtml(rows, five, opts){
   var out = opts.out || {}, inn = opts.inn || {};
   o.starters.forEach(function(p, i){
     var k = E.pkey(p);
-    h += fxManHtml(p, E.SLOTS[i], out[k] ? 'out' : inn[k] ? 'in' : '', opts.tap, !inn[k]);
+    h += fxManHtml(p, E.SLOTS[i], out[k] ? 'out' : inn[k] ? 'in' : '', opts.tap, !inn[k], opts.drag, !E.canFillSlot(p, E.SLOTS[i]));
   });
   h += '</div>';
   if (o.bench.length) {
     h += '<div class="fx-benchh">Bench</div><div class="fx-five">';
     o.bench.forEach(function(p){
       var k = E.pkey(p);
-      h += fxManHtml(p, 'BN', out[k] ? 'out' : inn[k] ? 'in' : '', opts.tap, !inn[k]);
+      h += fxManHtml(p, 'BN', out[k] ? 'out' : inn[k] ? 'in' : '', opts.tap, !inn[k], opts.drag);
     });
     h += '</div>';
   }
@@ -1533,7 +1645,8 @@ function fxRecordTo(st, games){
 function fxDeskHtml(){
   var st = fxSeason(), p = fxPuzzle(), d = data(), win = M.FX_WINDOWS[st.win];
   var base = fxBaseOdds(), now = fxOddsNow(), rec = fxRecordTo(st, win.at);
-  var rows = M.fxRosterAt(d, st, st.win), five = M.fxLineup(rows);
+  var rows = M.fxRosterAt(d, st, st.win), five = M.fxLineupAt(d, st, st.win);
+  var coach = M.fxLineup(rows), custom = five.map(E.pkey).join() !== coach.map(E.pkey).join();
   var h = fxHead() + fxStepper(st)
     + '<div class="fx-now"><div><span class="mx-eyebrow">' + esc(win.name) + (rec ? ' · ' + rec.w + '-' + rec.l : '') + '</span>'
     + '<b>' + (rec ? 'Record ' + rec.w + '-' + rec.l + '.' : 'The season starts after this window.') + '</b></div>'
@@ -1541,7 +1654,9 @@ function fxDeskHtml(){
     + (st.trades.length ? '<small>was ' + pct1(base.odds) + '</small>' : '') + '</div></div>'
     + '<h3 class="fx-step">Put up to three players on the block</h3>'
     + '<p class="mx-say" style="margin-top:0">Add picks to sweeten it. Each club that calls makes one offer. One trade a window.</p>'
-    + fxRosterHtml(rows, five, { tap: true, out: fxSetOf(fxBlock), inn: fxAcquired(st) });
+    + '<div class="fx-lu"><span>Drag a spot to swap two players.</span>'
+    + (custom ? '<button class="ghost sm" id="fx-coach">Coach\'s five</button>' : '') + '</div>'
+    + fxRosterHtml(rows, five, { tap: true, drag: true, out: fxSetOf(fxBlock), inn: fxAcquired(st) });
   var picks = M.fxPicksLeft(st);
   h += '<div class="fx-benchh">Your picks</div><div class="fx-picks">'
     + (picks.length ? picks.map(function(id){
@@ -1821,6 +1936,7 @@ function fxFinish(){
   var o = fxOddsNow(), rep = M.fxSeasonReplay(d, st);
   var r = {
     v: 2, day: p.day, ts: p.ts, trades: st.trades.slice(),
+    lineups: st.lineups ? JSON.parse(JSON.stringify(st.lineups)) : undefined,
     odds: o.odds, base: fxBaseOdds().odds, avgWins: o.wins,
     replay: { w: rep.wins, l: rep.losses, title: !!rep.titleWon, story: replayStory(rep) },
     at: Date.now()
@@ -1891,9 +2007,9 @@ function fxResultRoster(r){
     var five = M.fxApply(p.five, r.slot, d.allPlayers[r.inKey]);
     return { rows: five, five: five };
   }
-  var st = { day: r.day, ts: r.ts, win: M.FX_WINDOWS.length, trades: r.trades, done: true };
-  var rows = M.fxRosterAt(d, st, M.FX_WINDOWS.length);
-  return { rows: rows, five: M.fxLineup(rows) };
+  var st = { day: r.day, ts: r.ts, win: M.FX_WINDOWS.length, trades: r.trades, lineups: r.lineups, done: true };
+  var last = M.FX_WINDOWS.length - 1;
+  return { rows: M.fxRosterAt(d, st, last), five: M.fxLineupAt(d, st, last) };
 }
 /* The dearest man taken back all season: the headline of the moves, and the
    one the board counts who else traded for. */
@@ -2020,11 +2136,21 @@ function fxRender(){
   box.innerHTML = fxDeskHtml();
   var keepY = function(fn){ return function(){ var y = window.scrollY; fn.apply(this, arguments); fxRender(); window.scrollTo({ top: y }); }; };
   box.querySelectorAll('.fx-man[data-k]').forEach(function(b){
-    b.onclick = keepY(function(){
+    var tap = keepY(function(){
       var k = b.getAttribute('data-k'), at = fxBlock.indexOf(k);
       if (at >= 0) fxBlock.splice(at, 1);
       else if (fxBlock.length < M.TRADE.MAX_OUT) fxBlock.push(k);
     });
+    /* The spot label is the drag handle, and its own press is handled on
+       pointerup, so a click that lands on it is never also a trade. */
+    b.onclick = function(ev){ if (ev.target.closest('[data-grip]')) return; tap(); };
+  });
+  fxWireDrag(box, keepY);
+  var coachBtn = $('fx-coach');
+  if (coachBtn) coachBtn.onclick = keepY(function(){
+    var st2 = fxSeason();
+    M.fxSetLineup(data(), st2, M.fxLineup(M.fxRosterAt(data(), st2, st2.win)).map(E.pkey));
+    fxSwapFrom = null; fxSaveSeason();
   });
   box.querySelectorAll('.fx-pick[data-pk]').forEach(function(b){
     b.onclick = keepY(function(){
@@ -2810,6 +2936,49 @@ function mbDetail(row){
   var took = (row.cq_took || []).slice(-2).map(function(k){ var p = d.allPlayers[k]; return p ? esc(surname(p.n)) : ''; }).filter(Boolean);
   return plural(row.cq_wins, 'win') + (row.cq_cleared ? ' 👑' : '') + (took.length ? ' · took ' + took.join(', ') : '');
 }
+/* A FIX HISTORY ROW OPENS INTO THE SEASON IT WAS. The board already carries
+   the club and every trade, so the final roster is rebuilt here from this
+   browser's own data with no request: the club, then each trade in order. What
+   it cannot say is who started, because the lineup is not filed, so it lists
+   the roster by win shares and marks who came in. */
+var mbOpen = null;
+function mbFixTrades(row){
+  if (Array.isArray(row.fix_trades)) return row.fix_trades;
+  var ins = row.fix_ins || (row.fix_in ? [row.fix_in] : []), outs = row.fix_outs || (row.fix_out ? [row.fix_out] : []);
+  return ins.length ? [{ w: 0, with: row.fix_with || null, outs: outs, ins: ins, picks: [] }] : [];
+}
+function mbFixMore(row){
+  var d = data(), trades = mbFixTrades(row);
+  var nm = function(k){ var p = d.allPlayers[k]; return p ? esc(surname(p.n)) : '?'; };
+  var rows = [];
+  try {
+    var ok = trades.filter(function(t){ return (t.ins || []).every(function(k){ return d.allPlayers[k]; }); });
+    rows = M.fxRosterAt(d, { ts: row.fix_ts, trades: ok }, M.FX_WINDOWS.length - 1).filter(Boolean);
+  } catch (e) { rows = []; }
+  var got = {};
+  trades.forEach(function(t){ (t.ins || []).forEach(function(k){ got[k] = 1; }); });
+  var odds = Number(row.fix_odds), base = Number(row.fix_base);
+  var h = '<div class="mb-stats">'
+    + '<div><small>Title odds</small><b>' + pct1(odds) + '</b></div>'
+    + '<div><small>As built</small><b>' + (isFinite(base) ? pct1(base) : '-') + '</b></div>'
+    + '<div><small>Replay</small><b>' + (row.replay_wins != null ? row.replay_wins + '-' + (E.CONSTANTS.REGULAR_SEASON_GAMES - row.replay_wins) : '-')
+    + (row.replay_title ? ' 🏆' : '') + '</b></div></div>';
+  if (trades.length) {
+    h += '<ul class="mb-deals">' + trades.map(function(t){
+      var w = M.FX_WINDOWS[t.w], club = t.with ? E.teamName(tsParts(t.with).code) : '';
+      var gave = (t.outs || []).map(nm).concat((t.picks || []).map(pickLabel));
+      return '<li>' + esc(w ? w.name : 'A trade') + ': <b>' + (t.ins || []).map(nm).join(', ') + '</b>'
+        + (club ? ' from ' + esc(club) : '') + ' for ' + gave.join(', ') + '</li>';
+    }).join('') + '</ul>';
+  } else h += '<ul class="mb-deals"><li>Stood pat all season.</li></ul>';
+  if (rows.length) {
+    h += '<div class="mb-ros">' + rows.slice().sort(function(a, b){ return b.w - a.w; }).map(function(p){
+      return '<div class="mb-man"><span>' + esc(p.n) + (got[E.pkey(p)] ? '<em>New</em>' : '') + '</span>'
+        + '<small>' + (p.pts || 0).toFixed(1) + ' pts · ' + p.w.toFixed(1) + ' WS</small></div>';
+    }).join('') + '</div>';
+  }
+  return h;
+}
 function mbValue(row){
   if (row.mode === 'fix') return pct1(Number(row.fix_odds));
   if (row.mode === 'passes') return row.solved ? String(row.passes) : 'X';
@@ -2857,14 +3026,31 @@ function paintModeBoard(){
       box.innerHTML = '<p class="fx-hint">Nobody with a name on the board yet. Sign in and you are first.</p>';
       return;
     }
-    var h = '', place = 0, last = null;
+    var h = '', place = 0, last = null, fix = mbMode === 'fix';
     rows.forEach(function(r, i){
       if (r.score !== last) { place = i + 1; last = r.score; }
-      h += '<div class="mb-row' + (mine[r.id] ? ' me' : '') + '"><span class="mb-n">' + place + '</span>'
+      var tag = fix ? 'button' : 'div', open = fix && mbOpen === r.id;
+      h += '<' + tag + ' class="mb-row' + (mine[r.id] ? ' me' : '') + (open ? ' open' : '') + '"'
+        + (fix ? ' data-id="' + Number(r.id) + '" aria-expanded="' + open + '"' : '') + '><span class="mb-n">' + place + '</span>'
         + '<span class="mb-who"><b>' + esc(r.display_name || 'Guest') + '</b><small>' + mbDetail(r) + '</small></span>'
-        + '<span class="mb-v">' + mbValue(r) + '</span></div>';
+        + '<span class="mb-v">' + mbValue(r) + '</span></' + tag + '>'
+        + (open ? '<div class="mb-more">' + mbFixMore(r) + '</div>' : '');
     });
     box.innerHTML = h;
+    if (fix) box.querySelectorAll('button.mb-row[data-id]').forEach(function(b){
+      b.onclick = function(){
+        var id = Number(b.getAttribute('data-id')), y = box.scrollTop;
+        mbOpen = mbOpen === id ? null : id;
+        var r = rows.filter(function(x){ return Number(x.id) === id; })[0];
+        box.querySelectorAll('.mb-more').forEach(function(m){ m.remove(); });
+        box.querySelectorAll('button.mb-row.open').forEach(function(o){ o.classList.remove('open'); o.setAttribute('aria-expanded', 'false'); });
+        if (mbOpen != null && r) {
+          b.classList.add('open'); b.setAttribute('aria-expanded', 'true');
+          b.insertAdjacentHTML('afterend', '<div class="mb-more">' + mbFixMore(r) + '</div>');
+        }
+        box.scrollTop = y;
+      };
+    });
   });
 }
 

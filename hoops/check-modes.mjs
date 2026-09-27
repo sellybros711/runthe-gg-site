@@ -574,6 +574,62 @@ section('4. Fix History: one team a day, four trade windows, one score everywher
   }
 }
 
+// ── 4b. your lineup ─────────────────────────────────────────────────────────
+section('4b. Fix History: you set the five, and the five you set is the five that plays');
+{
+  const day = 7, st = M.fxSeasonCreate(D, day);
+  const keys = (fv) => fv.map(p => E.pkey(p)).join();
+  const rows0 = M.fxRosterAt(D, st, 0), coach = M.fxLineup(rows0);
+  ok(keys(M.fxLineupAt(D, st, 0)) === keys(coach), 'no lineup set is the coach\'s five');
+  ok(JSON.stringify(M.fxStretches(D, st).map(g => keys(g.five))) === JSON.stringify(M.FX_WINDOWS.map(() => keys(coach))),
+    'so a season nobody touched plays the team as built');
+  /* The best man on the bench swapped for the best starter: a real change,
+     and the one that has to move the odds downward. */
+  const star = [...coach].sort((a, b) => b.w - a.w)[0];
+  const bench = rows0.filter(p => !coach.some(c => c.i === p.i)).sort((a, b) => a.w - b.w)[0];
+  const sat = coach.map(p => E.pkey(p === star ? bench : p));
+  ok(M.fxSetLineup(D, st, sat) === null, 'a bench man can take a starter\'s spot');
+  ok(keys(M.fxLineupAt(D, st, 0)) === sat.join(), 'and the five is the five set, in the spots set');
+  ok(keys(M.fxStretches(D, st)[0].five) === sat.join(), 'the stretch plays that five, not the coach\'s');
+  const oddsSat = M.fxSeasonOddsStep(D, st, 0, 300).titles, oddsCoach = M.fxSeasonOddsStep(D, M.fxSeasonCreate(D, day), 0, 300).titles;
+  console.log(`  benching the best man: ${oddsCoach} titles in 300 against ${oddsSat}`);
+  ok(oddsSat < oddsCoach, 'benching the best man costs title odds');
+  /* A swap of two starters is legal whatever the positions say. */
+  const flip = coach.map(p => E.pkey(p)); [flip[0], flip[4]] = [flip[4], flip[0]];
+  const st2 = M.fxSeasonCreate(D, day);
+  ok(M.fxSetLineup(D, st2, flip) === null && keys(M.fxLineupAt(D, st2, 0)) === flip.join(), 'two starters swap spots, any spot');
+  ok(M.fxSetLineup(D, st2, flip.slice(0, 4).concat([flip[0]])) !== null, 'the same man twice is refused');
+  ok(M.fxSetLineup(D, st2, flip.slice(0, 4).concat(['nobody|1990|XXX'])) !== null, 'a man not on the roster is refused');
+  ok(M.fxSetLineup(D, st2, coach.map(p => E.pkey(p))) === null && !st2.lineups, 'setting the coach\'s five back clears it');
+  /* It carries forward, and the games before the window it was set at never
+     move: the record the desk prints is the record as played. */
+  const st3 = M.fxSeasonCreate(D, day);
+  M.fxNextWindow(st3);
+  const before = M.fxSeasonReplay(D, st3).games.slice(0, M.FX_WINDOWS[1].at).join();
+  M.fxSetLineup(D, st3, sat);
+  ok(M.fxSeasonReplay(D, st3).games.slice(0, M.FX_WINDOWS[1].at).join() === before, 'a lineup set at a window never moves a game before it');
+  ok(keys(M.fxStretches(D, st3)[0].five) === keys(coach), 'and the stretch before it keeps the coach\'s five');
+  M.fxNextWindow(st3);
+  ok(keys(M.fxLineupAt(D, st3, 2)) === sat.join(), 'the five carries forward to the next window');
+  /* A starter traded away leaves a hole, and the hole is filled from the
+     roster: always five different men, all of them yours. */
+  const st4 = M.fxSeasonCreate(D, day);
+  M.fxSetLineup(D, st4, sat);
+  let holes = 0, tried = 0, moved = 0;
+  for (const p of M.fxLineupAt(D, st4, 0)) {
+    for (const o of M.fxCalls(D, st4, [E.pkey(p)], []).slice(0, 3)) {
+      tried++;
+      const t = { ...st4, trades: [{ w: 0, with: o.with, outs: [E.pkey(p)], ins: o.ins, picks: [] }] };
+      const fv = M.fxLineupAt(D, t, 0), mine = new Set(M.fxRosterAt(D, t, 0).map(x => E.pkey(x)));
+      if (fv.length !== 5 || new Set(fv.map(x => x.i)).size !== 5 || !fv.every(x => mine.has(E.pkey(x))) || fv.some(x => E.pkey(x) === E.pkey(p))) holes++;
+      /* and the four who stayed keep the spots you put them in */
+      if (sat.some((k, i) => k !== E.pkey(p) && E.pkey(fv[i]) !== k)) moved++;
+    }
+  }
+  ok(tried > 3 && holes === 0, `a traded starter's hole is always filled from your roster (${holes} of ${tried} are not)`);
+  ok(moved === 0, `and the four who stayed keep their spots (${moved} of ${tried} moved)`);
+}
+
 // ── 5. Six Passes ───────────────────────────────────────────────────────────
 section('5. Six Passes: a year of puzzles, every par a real shortest chain');
 {
@@ -680,6 +736,7 @@ if (!QUICK) {
   const posts = [];
   const escaped = [];
   const checkouts = [];
+  let boardRows = [];   // what the stand-in answers a board read with
   async function serve(route) {
     const u = new URL(route.request().url());
     /* THE BOARD, stood in for. Submits answer an id; reads answer a row and a
@@ -694,6 +751,9 @@ if (!QUICK) {
            made the same move (fix_in), and the whole field. Answered as
            different numbers so each line can be told apart. */
         const q = u.search;
+        if (/order=score\.desc/.test(q) && /mode=eq\.fix/.test(q)) {
+          return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(boardRows) });
+        }
         const n = /score=gt/.test(q) ? 2 : /fix_in=/.test(q) ? 5 : 41;
         return route.fulfill({ status: 200, contentType: 'application/json',
           headers: { 'content-range': '0-0/' + n, 'access-control-expose-headers': 'content-range' },
@@ -783,6 +843,54 @@ if (!QUICK) {
   const steps2 = await page.$$eval('.fxw-s', (b) => b.map((x) => x.textContent));
   ok(/Traded/.test(steps2[0]) && /Open now/.test(steps2[1]), 'a reload lands in the game 20 window with the deal marked');
   ok(await page.$(`.fx-pick[data-pk="${fx.pick}"]`) === null, 'and the traded pick is gone from the shelf');
+
+  /* YOUR LINEUP, set by hand. Drag a bench man's spot onto a starter's and he
+     starts there; tap two spots and they swap; the coach's five puts it back.
+     All by the real pointer, because the handle is the claim. */
+  const order = () => page.$$eval('#s-fix .fx-five .fx-man.dr', (b) => b.map((x) => ({
+    k: x.getAttribute('data-k'), bn: x.classList.contains('bn') })));
+  const lu = () => page.evaluate(() => (JSON.parse(localStorage.getItem('rtf.fix.run.v2')) || {}).lineups || null);
+  async function dragTo(fromKey, toKey) {
+    const a = await page.$(`#s-fix .fx-man.dr[data-k="${fromKey}"] .fs`), b = await page.$(`#s-fix .fx-man.dr[data-k="${toKey}"]`);
+    /* Both ends on the screen: the one the drag lands on at the top. */
+    await page.evaluate((k) => {
+      const el = document.querySelector('#s-fix .fx-man.dr[data-k="' + k + '"]');
+      window.scrollTo(0, el.getBoundingClientRect().top + window.scrollY - 90);
+    }, toKey);
+    const ra = await a.boundingBox();
+    await page.mouse.move(ra.x + ra.width / 2, ra.y + ra.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(ra.x + ra.width / 2, ra.y + ra.height / 2 + 12, { steps: 3 });
+    const rb = await b.boundingBox();
+    await page.mouse.move(rb.x + rb.width / 2, rb.y + rb.height / 2, { steps: 8 });
+    await page.mouse.up();
+    await page.waitForTimeout(150);
+  }
+  const o0 = await order();
+  const starters0 = o0.filter((x) => !x.bn), bench0 = o0.filter((x) => x.bn);
+  ok(starters0.length === 5 && bench0.length > 0, `five starters and a bench, each with a handle (${starters0.length}, ${bench0.length})`);
+  const oddsBefore = await page.textContent('.fx-now-o b');
+  await dragTo(bench0[0].k, starters0[0].k);
+  const o1 = await order();
+  ok(o1[0].k === bench0[0].k && !o1.some((x) => x.bn && x.k === bench0[0].k) && o1.some((x) => x.bn && x.k === starters0[0].k),
+    'dragging a bench man onto a starter starts him in that spot and sits the starter');
+  const l1 = await lu();
+  ok(!!l1 && Array.isArray(l1['1']) && l1['1'][0] === bench0[0].k, 'and the lineup is kept with the season, for this window');
+  ok(await page.$('#fx-coach') !== null, 'a changed five offers the coach\'s five back');
+  console.log(`  title odds ${oddsBefore.trim()} with the coach's five, ${(await page.textContent('.fx-now-o b')).trim()} with the bench man`);
+  ok(!(await page.$('#s-fix .fx-man.out')), 'moving a man never puts him on the block');
+  const s1 = (await order()).filter((x) => !x.bn);
+  await page.click(`#s-fix .fx-man.dr[data-k="${s1[1].k}"] .fs`);
+  ok(await page.$(`#s-fix .fx-man.pick[data-k="${s1[1].k}"]`) !== null, 'a tap on a spot picks that man');
+  await page.click(`#s-fix .fx-man.dr[data-k="${s1[2].k}"] .fs`);
+  const s2 = (await order()).filter((x) => !x.bn);
+  ok(s2[1].k === s1[2].k && s2[2].k === s1[1].k, 'and a tap on another spot swaps the two');
+  if (await page.$('#fx-coach')) await page.click('#fx-coach');
+  await page.waitForTimeout(100);
+  ok((await order()).filter((x) => !x.bn).map((x) => x.k).join() === starters0.map((x) => x.k).join() && !(await lu()),
+    'the coach\'s five puts it all back, and clears the lineup');
+  await dragTo(bench0[0].k, starters0[4].k);
+  ok(((await lu()) || {})['1'] && (await lu())['1'][4] === bench0[0].k, 'and a lineup set again is kept for the rest of the season');
   /* A COUNTER at game 20: the table opens on the club's offer, a proposal is
      answered, and it costs a proposal. Then back out and stand pat. */
   await page.click('#s-fix .fx-man[data-k]');
@@ -817,6 +925,9 @@ if (!QUICK) {
   await page.waitForTimeout(300);
   const saved = await page.evaluate((d) => JSON.parse(localStorage.getItem('rtf.fix.v1')).days[d], fx.day);
   ok(!!saved && saved.v === 2 && saved.trades.length === 1 && saved.trades[0].with === pickWith, 'the season is kept for the day');
+  ok(!!saved && saved.lineups && saved.lineups['1'] && saved.lineups['1'][4] === bench0[0].k, 'with the lineup that played it');
+  const resFive = await page.$$eval('#s-fix .fx-five .fx-man:not(.bn)', (b) => b.map((x) => x.getAttribute('data-k')));
+  ok(resFive[4] === bench0[0].k, 'and the result draws the five you set, not the coach\'s');
   ok(await page.evaluate(() => localStorage.getItem('rtf.fix.run.v2')) === null, 'and the season in progress is cleared');
   const sub = posts.find((p) => p.fn === 'rtf_submit_fix_season');
   ok(!!sub && sub.body.p_day === fx.day && sub.body.p_trades.length === 1 && sub.body.p_trades[0].picks[0] === fx.pick
@@ -826,6 +937,29 @@ if (!QUICK) {
   const place = await page.textContent('#fx-place');
   ok(/3rd of 41 today/.test(place), `the place comes off the board ("${place.trim()}")`);
   ok(/4 others traded for/.test(place), 'and so does how many traded for the same man');
+
+  /* THE BOARD ROW OPENS INTO THE SEASON IT WAS: the final roster rebuilt from
+     the club and the trades, and the numbers the row does not have room for. */
+  boardRows = [{ id: 501, created_at: '2026-09-27T12:00:00Z', display_name: 'Tester', mode: 'fix', day: fx.day, score: 31,
+    fix_ts: fx.ts, fix_odds: 0.312, fix_base: 0.114, replay_wins: 61, replay_title: true, fix_trades: saved.trades }];
+  await page.click('#fx-board');
+  await page.waitForSelector('#mb-rows button.mb-row[data-id="501"]');
+  ok(await page.$('#mb-rows .mb-more') === null, 'a board row starts shut');
+  await page.click('#mb-rows button.mb-row[data-id="501"]');
+  await page.waitForSelector('#mb-rows .mb-more');
+  const more = await page.evaluate(() => {
+    const m = document.querySelector('#mb-rows .mb-more');
+    return { text: m.textContent, men: m.querySelectorAll('.mb-man').length, newMen: m.querySelectorAll('.mb-man em').length };
+  });
+  const finalRows = await page.evaluate((t) => window.RTF_MODES.fxRosterAt(window.RTF_PAGE.data, { ts: t.ts, trades: t.trades }, 3).length,
+    { ts: fx.ts, trades: saved.trades });
+  ok(more.men === finalRows, `it opens on the final roster, every man (${more.men} of ${finalRows})`);
+  ok(more.newMen === saved.trades[0].ins.length, `with the men who came in marked (${more.newMen})`);
+  ok(/31\.2%/.test(more.text) && /11\.4%/.test(more.text) && /61-21/.test(more.text), 'and the odds, the odds as built and the replay');
+  ok(/Preseason/.test(more.text), 'and each trade, by the window it was made in');
+  await page.click('#mb-rows button.mb-row[data-id="501"]');
+  ok(await page.$('#mb-rows .mb-more') === null, 'a second press shuts it');
+  await page.click('#mb-x');
   await page.reload({ waitUntil: 'domcontentloaded' });
   await page.waitForSelector('#b-today:not([disabled])', { timeout: 60000 });
   await page.click('#mc-fix');

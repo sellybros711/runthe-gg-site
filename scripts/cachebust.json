@@ -2209,8 +2209,8 @@
       "sha": "508a73b49b29f0ff"
     },
     "modes.js": {
-      "v": "7",
-      "sha": "d756322b4632b11b"
+      "v": "8",
+      "sha": "6fa27eb62d346eca"
     },
     "board.js": {
       "v": "5",
@@ -2233,8 +2233,8 @@
       "sha": "31e8a7be1e03a4c1"
     },
     "modes-ui.js": {
-      "v": "9",
-      "sha": "ceff817c666e40be"
+      "v": "10",
+      "sha": "76d765387cdecb53"
     },
     "data/players.json": {
       "v": "5",
