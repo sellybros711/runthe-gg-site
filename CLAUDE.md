@@ -5878,6 +5878,91 @@ a proportion written into sixty eight specs is sixty eight places to drift.
 - **Humpty is exempt** (`spec.egg`). His head is his body, and a small one would be a
   different character.
 
+**AND THEN THEY WERE MODELLED ON THE PACK, which moves the numbers above again.** The
+owner handed the pack back with "model the characters after these". Set side by side,
+the pack's figures are not big-headed so much as BLOCKY: a square head about a third
+of the height, a torso half again as wide as the head, short thick legs, and hands and
+feet as big as a fist. Ours had a small head on a thin, long body, so the same
+character read as a different drawing. `PROP` is now head 0.84, torso 1.1, legs 1.0,
+arms 1.05, no added neck, limbs 1.5x as thick, hands and feet 1.3x, width 1.4x, and
+`square` pushes every head's superellipse 1.35x toward a block. The head is bigger
+than the last pass and the figure no longer reads as all head, because the body grew
+with it. **Compare against the pack before moving any of these**: the pack is the
+reference the owner chose, twice.
+
+- **The fit starts at 1.5x the spec's own scale.** It used to START at the spec's
+  scale, so a character with `scale: 1.02` could never be drawn bigger than that
+  however much room the cell had. It still steps down until no pose leaves the frame.
+- **A held thing is held out, at the pack's size.** A bolt, a lyre, a goblet, a wreath
+  and the rest (`HELD`) were drawn at hand size behind the arm, so Zeus had no bolt on
+  screen at all. They are scaled about the hand and drawn in front of it, and the arm
+  holding anything comes away from the body. A pole stays behind the arm.
+- **Specs that had drifted from the pack were put back**: Popeye in a white shirt,
+  the golem's red band, a burlap scarecrow, Robin and Long John clean shaven,
+  Esmeralda's red sleeves, Athena's shield.
+- **The quadrupeds stay upright, deliberately.** The pack draws the dog, the cat, the
+  chupacabra, the centaur, the phoenix, the dragon and Nessie as animals in profile,
+  and every character here has to stand in a batter's box and throw from a mound. The
+  colours, the heads and the marks follow the pack; the stance does not.
+
+#### Every position is a baseball position
+
+Asked for as the characters and all the positions looking like a real retro baseball
+game. The pose table in the rig (`POSES`) was redrawn as baseball mechanics, and the
+figure picked up the kit that says baseball before anything else on it does.
+
+| beat | what it is now |
+|---|---|
+| `ready` | a crouched stance, feet wide, hands up at the back ear, bat up behind the head |
+| `load` | the front knee lifted, the bat laid back |
+| `swing1` | the stride down, the hands at the belt, the bat trailing flat, the blur starting |
+| `swing` | contact: arms out, back heel up, the bat foreshortened toward the plate |
+| `follow` | the bat wrapped over the front shoulder, the back foot on its toe |
+| `run1-4` | a sprint: a hard lean, the knee driven up, the arms bent and pumping |
+| `slide` | NEW. Feet first, leaning back, lead leg out along the dirt |
+| `windup` / `kick` / `throw` / `release` | the pitcher from the plate: set, knee up, ball cocked over the head, the arm swept down across the body |
+| `field` | NEW. The infielder's ready crouch, glove open low |
+
+**THE PITCHER'S DELIVERY IS FOUR BEATS FACING THE CAMERA NOW, and the `cheer` workaround
+is gone.** The pack drew its delivery in profile, so the plate view held his arms up and
+let the ball carry the motion. The rig draws the delivery front on, so both cameras play
+set, kick and stride over the windup (as shares of THAT pitch's `windupMs`, because the
+windup is short when you pitch) and the finish over the first 320ms of the flight. The
+ball is in his hand in the stride's drawing, so the white dot that used to be painted over
+his hands is gone too. `verify-rules`' front-facing guard READS THE RIG for which poses
+face the camera (`view: 'front'`) instead of a written list, and asks that the three
+windup beats are three different pictures for every character.
+
+**THE PLATE VIEW'S VECTOR BAT IS GONE.** It swept two brown strokes across the batter
+through every swing, which was a straight line through the real bat in his hands. The blur
+is baked into `swing1` and `swing` instead: `paintSmear()` runs after the light, paints only
+empty pixels, and joins the figure at the barrel, so the bleed guard sees it as attached.
+
+**The contact bat is drawn at 0.7 of its length (`batL`)**, pointing at the plate. Full
+length it reached past the cell and `fitScale` shrank every character by a fifth to make
+room, which is how this pass first came out: gear right, everybody smaller. Measure with
+the fit before adding reach to any pose. `slide` is shifted right inside its cell (`dx`)
+for the same reason: reclined, the figure sits left of the hip.
+
+**A BATTER WEARS A HELMET, unless he already wears something.** A hat is part of who
+somebody is (Santa, the witch, the top hats), so it stays. Hair that is on fire or alive
+(the phoenix, Hades, Medusa) and Humpty, whose head is his whole body, are exempt too:
+drawn, a helmet swallowed the egg and the flames poked through the shell. The colour is the
+figure's own jersey, **never within a colour distance of 90 of the skin**, or Kong's helmet
+came out as the top of his head.
+
+**The glove is a real glove and the overlay mitt is gone.** Fingers, thumb, laced web,
+dark pocket and heel, sized off the hand and capped at 5 (Kong's covered his face).
+`drawRunnerAt` used to paint a brown disc over the raised hands in `catch`, which would be
+a second glove. The slide is a drawing too, so the brown bar that stood in for a foot is
+gone and only the dust stays.
+
+**Fielders set while the pitch is live** (`field`) and stand between pitches, in both
+cameras. The old comment explaining why there was no crouch was right about the pack and
+is replaced.
+
+**What it cost**: the table went 2140KB to 2578KB for two new poses and the detail.
+
 **The grid is 96, up from 64.** `V2_W` and `V2_H` carry it and nothing in the page
 should say 64 about a sprite. It costs about 170KB compressed on the page, which was
 measured before choosing it.
@@ -7918,6 +8003,41 @@ nothing else now, and what needs a position is what needs a z-index.
 mound in both cameras: every call in the game was announced across his face.
 Half way down is the band of outfield grass with nothing in it, and it is
 still above the zone.
+
+#### The play by play pushed the swing row onto the zone, a line at a time
+
+Reported from a laptop with a screenshot: a black bar across the middle of the
+field, lying straight over the strike zone. It was the swing row. **The play by
+play sat UNDER it in the flow and grew with every pitch**, so the row rode up the
+window a line at a time: `deckCoverBlocks` measured all of it as deck, the camera
+had nothing left to pay it with, and by the sixth line the zone was covered.
+
+**Nothing here could see it, because every check measured the first pitch of a
+game.** The log is empty then. `check-firstpitch`'s zone section fills it with
+twelve lines before it measures now, which is how every game looks by the second
+inning, and it asks that the log itself is off the zone as well.
+
+On a wide window the log is out of the flow, in the top left corner under the
+score, which is outfield and never the zone or the batter. **The swing row is as
+wide as what is in it** rather than edge to edge: a full-width band is a slab
+over the batter and the plate wherever it sits.
+
+**And the Mound row was under the picture.** It is static, the arena is
+absolutely positioned, so on a wide window the Mound button laid out inside the
+window, clear of every other control, and its centre hit-tested to the field
+canvas. Nobody could see it or press it. Two rectangles cannot report that, so
+`check-reach` hit-tests every control's centre and fails on one that lands in
+the arena.
+
+#### A batter is not shown where the pitch is going
+
+The catcher's target is drawn at `pitch.aim`, which is where the arm is TRYING to
+put the ball. Shown to a batter during the windup it is the answer printed in the
+zone, and a player reported exactly that: a circle saying where the pitch is
+going. **Only the pitcher sees it now**, because they chose the spot and it tells
+them nothing they do not know. `check-firstpitch` reads it off the drawing calls
+(a ring of 11 with a dot of 2 at its centre) in both halves, so a check that never
+sees the pitcher's target drawn cannot pass by accident.
 
 #### There are two batter's boxes and the camera only ever framed one
 
