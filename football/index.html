@@ -6093,7 +6093,7 @@ window.GA_ID='G-L29P5MRWKE';
 
   /* ---- Drive-chart field ---- */
   .pofield{margin-top:10px;border-radius:12px;overflow:hidden;border:1px solid rgba(255,255,255,.08);
-    background:#1a3318}
+    background:#03060c;box-shadow:0 12px 34px rgba(0,0,0,.45),inset 0 0 0 1px rgba(255,255,255,.03)}
   .pofield canvas{display:block;width:100%;height:auto}
 
   .bigrec{text-align:center;padding:6px 0 12px}
@@ -8551,6 +8551,9 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 <script src="/assets/cloudsave.js?v=2"></script>
 <!-- The release newsletter checkbox on the Account page. See supabase/121_newsletter.sql. -->
 <script src="/assets/newsletter.js?v=1"></script>
+<!-- The broadcast field every game is played out on. drawDriveChart hands its drives here and
+     keeps its own body as the fallback, so a blocked copy still draws the old chart. -->
+<script src="/assets/fieldcast.js?v=1"></script>
 <script defer src="auth.js?v=7"></script>
 <script>
 (function(){
@@ -19634,8 +19637,16 @@ const fieldLogo=new Image(); fieldLogo.src='field-r.png?v=1';
  * bar seventeen yards down the field at the moment the call was taken. Given one, the tail
  * sweeps from where the reader was left instead.
  */
-function drawDriveChart(ctx,w,h,drives,upTo,youColor,themColor,youName,themName,anchor){
+function drawDriveChart(ctx,w,h,drives,upTo,youColor,themColor,youName,themName,anchor,extra){
   if(!ctx)return;
+  /* THE BROADCAST FIELD, when /assets/fieldcast.js arrived. Everything below is the chart it
+     replaced, kept whole because a blocked or stale copy of that file must still leave a
+     game with a picture. See the header of fieldcast.js. */
+  if(window.RTG_FIELD&&window.RTG_FIELD.API_VERSION===1&&ctx.canvas){
+    RTG_FIELD.paint(ctx.canvas,Object.assign({drives,upTo,anchor:anchor||null,style:'nfl',
+      you:{color:youColor,name:youName},them:{color:themColor,name:themName}},extra||{}));
+    return;
+  }
   const dpr=window.devicePixelRatio||1;
   ctx.save();ctx.clearRect(0,0,w,h);
 
@@ -19843,6 +19854,7 @@ function drawDriveChart(ctx,w,h,drives,upTo,youColor,themColor,youName,themName,
 function initFieldCanvas(canvasId) {
   const cv = $(canvasId);
   if (!cv) return null;
+  if (window.RTG_FIELD && window.RTG_FIELD.API_VERSION === 1) return RTG_FIELD.prepare(cv);
   const dpr = window.devicePixelRatio || 1;
   const rect = cv.parentElement.getBoundingClientRect();
   const w = Math.max(300, Math.round(rect.width * dpr));
@@ -19969,8 +19981,10 @@ function playPlayoffGame(r,after){
     const sat=Math.max(cr,cg,cb)-Math.min(cr,cg,cb);
     if(sat<50)dcT='#e87461';
   }
+  const oppCode=opp?E.eraCode(opp.franchise,opp.season):'OPP';
+  const ticker=(ROUND_SHORT[round]||round).toUpperCase()+'   YOU VS '+oppCode+'   RUNTHE.GG   ';
   const paintField=fieldCtx?(upTo)=>drawDriveChart(fieldCtx,fcv.width,fcv.height,drives,upTo,
-    dcY,dcT,'YOU',opp?E.eraCode(opp.franchise,opp.season):'OPP'):()=>{};
+    dcY,dcT,'YOU',oppCode,null,{ticker}):()=>{};
   paintField(0);
 
   const setLead=(y,t)=>{
@@ -20930,11 +20944,15 @@ function bossDraw(upTo,live,anchor){
   let ds=bossSim.drives;
   if(live){
     const c=bossSim.cur;
+    /* plays and sit are the drive's REAL snap count and down, so the broadcast field shows
+       the fourth down the card under it is asking about rather than one it invented. */
     if(c) ds=ds.concat([{team:c.team,startYard:c.startAbs,
-      endYard:E_absYard(c.team,c.y),result:'live',tStart:c.tStart,tEnd:bossSim.clock}]);
+      endYard:E_absYard(c.team,c.y),result:'live',tStart:c.tStart,tEnd:bossSim.clock,
+      plays:c.plays,sit:{down:c.down,toGo:Math.max(1,Math.round(c.toGo))}}]);
   }
   drawDriveChart(bossField,bossFcv.width,bossFcv.height,ds,upTo,bossYouCol,bossThemCol,
-    'YOU',bossThreeLetter(bossOppNow),anchor||null);
+    'YOU',bossThreeLetter(bossOppNow),anchor||null,
+    {downs:false,ticker:($('bg-eye').textContent||'Boss battle').toUpperCase()+'   YOU VS '+bossThreeLetter(bossOppNow)+'   RUNTHE.GG   '});
 }
 /* Absolute yard, mirrored for the boss, matching the engine's own frame. */
 function E_absYard(team,y){ const v=team==='you'?y:100-y; return Math.max(0,Math.min(100,v)); }

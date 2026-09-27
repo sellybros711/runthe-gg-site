@@ -2594,6 +2594,56 @@ about a third wider than the condensed one a real visitor gets, so an overflow m
 is not proof of one on a phone. What it asserts is that a podium step never carries a raw
 comma number, which is true in any face, plus the whole ladder including the rounding seam.
 
+### Every game is played out on one broadcast field, in both football games
+
+```
+node scripts/check-fieldcast.mjs     the renderer's rules, and that both pages draw on it
+```
+
+Asked for: the drive charts on the home page's two cards, but bigger, for the real games. So
+`/assets/fieldcast.js` is the picture every game is played on: the playoff broadcast, the bowl,
+the challenge bowl, the boss battle and the Full Team live games. A lit stadium with a dot matrix
+crowd (the home cards' motif), an LED ribbon board, the field in perspective, every drive as a
+lane that recedes as the game goes on, and the drive in progress played out snap by snap with the
+ball, the blue and yellow lines, a formation and the down and distance over the ball. Touchdowns,
+field goals, misses, turnovers and safeties get their own moment.
+
+**IT IS ONE FUNCTION DEEP IN EACH PAGE.** `drawDriveChart` in `football/index.html` and in
+`cfb/index.html` hands its drives to `RTG_FIELD.paint` and returns; the old chart is still below
+that line, whole, because a blocked or stale copy of the file must still leave a game with a
+picture. Every caller was already going through `drawDriveChart`, so no call site learned
+anything new beyond an optional `extra` (the ribbon board's words, and the boss board's flags).
+
+**IT DECIDES NOTHING.** The start, the end, the result and the clock of every drive are the
+page's. What is drawn between them is seeded off the drive itself, so a repaint of one moment is
+one picture and no game stream is touched.
+
+**THE MOMENTS FIRE THEMSELVES**, off the clock crossing the end of a drive, so no page calls
+anything to get a touchdown. A jump crosses too much to be a moment and fires nothing: Sim to the
+end and the final repaint land on 3600 from wherever they were. A clock that goes backwards is a
+new game on the same canvas.
+
+**THE DOWNS ARE INVENTED, SO THE ONE PAGE WITH REAL ONES TURNS THEM OFF.** The playoff broadcast
+builds its drives backwards from a score, so a down and distance made up from the drive is as
+honest as the drive. The boss board plays forward down by down: it passes `downs:false` and puts
+the sim's own `down` and `toGo` on the live drive as `sit`, and at a fourth down the field shows
+exactly the 4th and 1 the card under it is asking about, with the two sides set at the line.
+A made up "2nd and 7" over a real fourth down call would be the two halves of one screen
+disagreeing, which this repo has paid for on every screen it has happened on.
+
+**TWO LOOK-ALIKE COLOURS ARE SPLIT IN THE RENDERER**, not per page. The field paints both sides'
+players, lanes and end zones, and the boss board had no guard: against Seattle every player on
+the field was blue. The playoff broadcast's coral swap is the rule for every caller now.
+
+**It keeps drawing between the page's frames**, which is what lets a score hold the clock while
+the crowd erupts and the banner plays: its own loop runs while the canvas is on screen, at thirty
+frames a second when nothing but the crowd is moving, and stops the moment `offsetParent` is
+null. Reduced motion gets no slides, no shake, no confetti and no ambient loop.
+
+**The canvas is 196 to 320px tall, up from 160**, because a picture with a stadium in it needs the
+room. `check-fullteam.mjs` measures the boss board's calls and Continue against a phone, which is
+the layout that extra height could have broken, and it is green.
+
 ### The boss battle, and the one screen that checks itself
 
 ```

@@ -2100,6 +2100,10 @@
       "v": "1",
       "sha": "1005aca091f1fc4b"
     },
+    "/assets/fieldcast.js": {
+      "v": "1",
+      "sha": "3287647569cfa207"
+    },
     "/cfb/commish/clock.js": {
       "v": "4",
       "sha": "d19df33aadff5118"
@@ -2175,6 +2179,10 @@
     "/assets/newsletter.js": {
       "v": "1",
       "sha": "1005aca091f1fc4b"
+    },
+    "/assets/fieldcast.js": {
+      "v": "1",
+      "sha": "3287647569cfa207"
     },
     "auth.js": {
       "v": "7",
