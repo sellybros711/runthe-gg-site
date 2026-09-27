@@ -23,6 +23,14 @@
  * 'no_payment_required' (a 100% off promotion code); a delayed payment method
  * fires completed unpaid first and async_payment_succeeded later, which is why
  * that event is on the list above.
+ *
+ * AND ONE BUNDLE RENEWS: Run The Diamond Pro is $14.99 a year (`recurring` in
+ * _bundles.js). Its checkout is a subscription whose metadata carries the bundle
+ * key, and every event about it (the first checkout, each renewal, a failed
+ * payment, a cancellation) is written as the same premium_unlocks row with an
+ * end date that follows the subscription. It never reaches upsertSub: the
+ * `subscriptions` table holds ONE row a user and it is the Arcade Card's, so a
+ * baseball renewal written there would overwrite somebody's Arcade membership.
  */
 import { bundleByKey } from './_bundles.js';
 
@@ -70,6 +78,12 @@ export async function onRequestPost(context) {
         if (obj.payment_status === 'paid' || obj.payment_status === 'no_payment_required') {
           await grantBundle(env, userId, bundleKey, obj);
         }
+      } else if (userId && obj.mode === 'subscription' && bundleKey && obj.subscription) {
+        // a recurring bundle's first checkout: the subscription says how long.
+        if (obj.payment_status === 'paid' || obj.payment_status === 'no_payment_required') {
+          const sub = await stripeGet(env, '/v1/subscriptions/' + obj.subscription);
+          await grantRecurring(env, userId, bundleKey, sub);
+        }
       } else if (userId && obj.subscription) {
         // fetch the subscription for status + period end
         const sub = await stripeGet(env, '/v1/subscriptions/' + obj.subscription);
@@ -77,7 +91,16 @@ export async function onRequestPost(context) {
       }
     } else if (type === 'customer.subscription.updated' || type === 'customer.subscription.deleted') {
       const userId = obj.metadata && obj.metadata.supabase_user_id;
-      if (userId) await upsertSub(env, userId, obj.customer, obj);
+      const bundleKey = obj.metadata && obj.metadata.bundle;
+      if (userId && bundleKey) {
+        /* READ BACK FROM STRIPE rather than trusting the event, because events
+           arrive out of order: an old "updated, active" landing after "deleted"
+           would hand a cancelled subscriber another year. The subscription as it
+           stands now is the answer whatever order the news came in. A deleted
+           subscription still answers, with status canceled. */
+        const sub = await stripeGet(env, '/v1/subscriptions/' + obj.id);
+        await grantRecurring(env, userId, bundleKey, sub);
+      } else if (userId) await upsertSub(env, userId, obj.customer, obj);
     }
   } catch (e) {
     // release the claim so Stripe's retry can reprocess this event
@@ -176,6 +199,83 @@ async function grantBundle(env, userId, bundleKey, session) {
     try { detail = await res.text(); } catch (e) {}
     throw new Error('supabase bundle upsert ' + res.status + ' ' + detail);
   }
+}
+
+/* WHEN A RECURRING GRANT RUNS OUT, from the subscription as Stripe has it.
+ *
+ *   active, trialing   the end of the paid period, plus a grace of three days so a
+ *                      renewal that lands a few hours late never locks anybody out
+ *   past_due           a week from now: the renewal failed and Stripe is retrying.
+ *                      The period has already moved forward, so honouring it would
+ *                      hand a failed card a free year. A paid retry comes back
+ *                      as active and moves the date out again.
+ *   anything else      now (canceled, unpaid, incomplete, paused)
+ *
+ * A subscription cancelled at the period's end stays `active` until then, so it
+ * keeps what it paid for and no special case is needed. The period end moved from
+ * the subscription onto its items in newer API versions, so both are read. */
+function recurringEnd(sub, nowMs) {
+  const item = sub.items && sub.items.data && sub.items.data[0];
+  const end = sub.current_period_end || (item && item.current_period_end) || 0;
+  const GRACE = 3 * 86400000;
+  if ((sub.status === 'active' || sub.status === 'trialing') && end) return new Date(end * 1000 + GRACE);
+  if (sub.status === 'past_due') return new Date(nowMs + 7 * 86400000);
+  return new Date(nowMs);
+}
+
+async function grantRecurring(env, userId, bundleKey, sub) {
+  const bundle = bundleByKey(bundleKey);
+  if (!bundle) throw new Error('unknown bundle ' + bundleKey);
+  const now = new Date();
+  const expires = recurringEnd(sub, now.getTime()).toISOString();
+  const customer = typeof sub.customer === 'string' ? sub.customer : (sub.customer && sub.customer.id) || null;
+
+  for (const g of bundle.grants) {
+    /* A GRANT WITH NO END IS NEVER GIVEN ONE. Somebody who bought the $9.99
+       lifetime Pro, or was comped, owns it for good, and a subscription event for
+       the same account (which checkout refuses to sell them, but a dashboard can
+       still create) must not turn forever into a year. */
+    const have = await pgFirst(env, 'premium_unlocks?user_id=eq.' + encodeURIComponent(userId) +
+      '&product=eq.' + encodeURIComponent(g.product) + '&select=expires_at,source&limit=1');
+    if (have && !have.expires_at && String(have.source || '').indexOf('subscription:') !== 0) continue;
+
+    const row = {
+      user_id: userId,
+      product: g.product,
+      source: 'subscription:' + bundleKey,
+      payload: { stripe_subscription: sub.id, stripe_customer: customer, status: sub.status,
+        cancel_at_period_end: !!sub.cancel_at_period_end },
+      expires_at: expires,
+      fulfilled_at: now.toISOString()
+    };
+    /* granted_at is when Pro STARTED, and a renewal is not a start: it is written
+       on the first grant only, so the receipt keeps the day they signed up. */
+    if (!have) row.granted_at = now.toISOString();
+    const res = await fetch(env.SUPABASE_URL + '/rest/v1/premium_unlocks?on_conflict=user_id,product', {
+      method: 'POST',
+      headers: {
+        apikey: env.SUPABASE_SERVICE_ROLE,
+        Authorization: 'Bearer ' + env.SUPABASE_SERVICE_ROLE,
+        'Content-Type': 'application/json',
+        Prefer: 'resolution=merge-duplicates'
+      },
+      body: JSON.stringify([row])
+    });
+    if (!res.ok) {
+      var detail = '';
+      try { detail = await res.text(); } catch (e) {}
+      throw new Error('supabase recurring upsert ' + res.status + ' ' + detail);
+    }
+  }
+}
+
+async function pgFirst(env, q) {
+  const r = await fetch(env.SUPABASE_URL + '/rest/v1/' + q, {
+    headers: { apikey: env.SUPABASE_SERVICE_ROLE, Authorization: 'Bearer ' + env.SUPABASE_SERVICE_ROLE }
+  });
+  if (!r.ok) throw new Error('supabase read ' + r.status);
+  const rows = await r.json();
+  return (rows && rows[0]) || null;
 }
 
 async function upsertSub(env, userId, customerId, sub) {

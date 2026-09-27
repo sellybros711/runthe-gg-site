@@ -14415,7 +14415,8 @@ rule: it asks `E.workloadWar` now, so the sort and the suite cannot drift.
 #### What the tile says, and why the conversion is not on the season line
 
 The tile's big number stays the **whole season**, because that is what a reader looks
-up and what the source note promises. Under it, in green, is what he is worth here.
+up and what the source note promises. Under it, in green, is what he is worth here,
+written `counts as 2.4`. It read `2.4 here` first, and a player asked what "here" meant.
 
 **It is not on the season line, and two things forbid it.** `.of-side .mt` on a trade
 offer is 10px nowrap with an ellipsis at about 28 characters, so everything on that row
@@ -14438,6 +14439,83 @@ band holds the same 97 runs of 360 it held before. Re-anchoring is a change that
 every rating and therefore makes both rating badges easier for ever, and a badge left
 too loose cannot be tightened without stripping it off everybody who earned it. Do not
 reach for it to fix a level: refit the coefficient, which is what the level is.
+
+### The field is a ballpark, and the draft board is on the first screen of a phone
+
+Asked for as the field looking a lot better and the draft screen needing work.
+`diamondMarkings()` draws stands and a crowd, a padded wall with its home run
+line, a warning track, fair grass mown both ways, a grass infield inside a dirt
+skin, cut-outs at the bases, a raised mound, and chalk only where a field has
+it: the foul lines and the boxes at the plate, never the lines between the
+bases. Every colour is a literal, because the field is the sport and stays
+green at night. The crowd is seeded, so a redraw never shimmers.
+`DIAMOND_SPOTS` did not move, except the DH (81 to 78), whose name no longer
+fits under it once it wears a ground.
+
+**A name on the grass has a ground of its own**, a dark pill sized to the
+text. A foul line through white type was the first thing a player saw.
+
+**The board moved up about 150px on a 390 phone**, and three pieces of chrome
+paid for it, none of them a thing a player uses between spins:
+
+- The roster pips only show once the field scrolls under the sticky bar, so
+  they hang below it (`.capwrap .dpips`) instead of holding a 34px blank strip
+  above the field.
+- Re-spin is a pill on the reels' label row, not its own full width row.
+- The position tabs and the sort share one row (`.boardbar`). Under 520px a
+  tab with nothing on it is not drawn, and it is what pushed the row past the
+  width.
+
+**The coach's take lists the archetype once.** It is the pill in the card's
+header, and `coachReport` also returned it as a strength, so a Balanced
+Contender read those words twice one line apart. `takesHtml()` drops it from
+the rows on both the squad and results screens. The guest badge panel's
+button is the ball, like every other primary action here.
+
+### Ballparks are earned, and the account's park is the one the draft is played on
+
+```
+node baseball/check-parks.mjs          the catalogue, the art, the unlocks, the page
+node baseball/check-parks.mjs --quick  no browser
+```
+
+Asked for as custom ballparks a fan would love, unlocked to the profile by rewards
+and account tier. `baseball/parks.js` holds thirteen: the home park plus twelve
+nods to famous parks (ivy on brick, a tall green wall in left, fountains, a bay, a
+white frieze, a dome, a cornfield). **None is named for the park it nods to**,
+and none carries a real sign or logo. Those belong to other people, so each is
+drawn from what makes the place itself and given a name of its own.
+
+**Unlocks are DERIVED, never stored**, which is the badge cabinet's design at a
+second shelf. Every rule is a question about the account's own rows (badges
+earned, best wins, Octobers, titles, seasons played, modes played) or about
+`isPro()`. So a park is retroactive, follows the account, and cannot be lost by
+clearing site data. A guest drafts on the home park. The only stored thing is the
+CHOICE, `rtd_park_v1`, keyed by account on the device.
+
+**A choice the account cannot back falls back to the home park**, never to a
+park it does not have: signed out, another account on the browser, or a Pro park
+after Pro lapses. `check-parks` drives all three through the page, and each was
+proved by making `currentPark()` return the stored choice unasked.
+
+**The field keeps its spots and grows a sky.** A park draws the same diamond at
+the same coordinates and changes the grass, the dirt, the wall and everything
+behind it. The draft and squad fields (`PARKED_FIELDS`) extend the SVG's viewBox
+upward by `SKY` (10 units over 68) for the skyline. So `.field.parked` is
+`100/78` and `drawField` maps each chip's 68-unit y into the taller box. The home
+page hero passes no sky and always draws the home park, because its heights are
+measured against the fold.
+
+**Every SVG id carries the field's suffix AND the park's id.** The profile draws
+all thirteen in one sheet beside the draft field. Two parks sharing a gradient id
+paint each other, and an id with no match draws nothing. Neither throws.
+`check-parks` asserts every `url()` resolves and no id repeats across all
+thirteen. Proved by stripping the suffix: every park fails.
+
+The draft field wears a tag naming its park, and pressing it opens the shelf. A
+season that opens a park says so on the results screen (`lastNewParks`, computed
+before and after the row is filed, as `lastNewBadges` is), with the park drawn and
+a button to play on it next.
 
 ### Two ratings, two jobs, and they must not be merged
 
@@ -15693,9 +15771,47 @@ psql -d rtd_pro -f supabase/test/baseball_pro_test.sql
 
 Asked for by the owner: the six extra modes (Eras, One Franchise, Division, Cap
 Survivor, All-Time Pitching Staff, Trade Machine) get **one free start each per
-Eastern day**, and **Pro** removes the limit for **$9.99 once**. Classic and the daily
+Eastern day**, and **Pro** removes the limit for **$14.99 a year**. Classic and the daily
 are never counted and never sold. The Stripe steps are in
 `functions/api/stripe/README.md`.
+
+#### It was $9.99 once and is now a yearly subscription
+
+```
+node scripts/stripe/check-recurring.mjs   the checkout and webhook, driven, no network
+```
+
+The owner moved the Stripe Price to $14.99 recurring yearly (2026-09), which the code
+could not sell: a recurring Price in payment mode is refused by Stripe outright, so the
+first press of Get Pro after the env var moved would have failed. `recurring: true` on
+the `diamond-pro` catalog row now opens the checkout in subscription mode, with the
+bundle key on the subscription's own metadata, because a renewal event carries the
+subscription and nothing else.
+
+**The grant is still ONE `premium_unlocks` row, now with an end date**, and that is why
+no reader changed: `premium_products()` and `rtd_mode_spend` already honoured
+`expires_at`. `grantRecurring` in the webhook sets it from the subscription: the paid
+period's end plus three days of grace, a week on `past_due` (the period has already moved
+forward, so honouring it would hand a failed card a year), and now for anything dead. A
+cancellation at period end stays `active` until then, so it needs no case of its own.
+
+Four things it must never do, each asserted by driving the real files:
+
+- **Write the `subscriptions` table.** It holds ONE row a user and it is the Arcade
+  Card's, so a baseball renewal there would overwrite somebody's membership. Removing
+  the routing fails six claims.
+- **Trust event order.** Every subscription event is read back from Stripe before it is
+  written, or a stale "active" landing after "deleted" hands back a year. Removing the
+  read-back fails three.
+- **Give a row with no end date an end.** The old $9.99 buyers and comps own Pro for
+  good, and checkout refuses to sell them a year.
+- **Refuse a lapsed subscriber.** Checkout counts only a RUNNING recurring grant as
+  owning it; the row outlives its end as the record.
+
+**The price is written once in the page**, `PRO_PRICE` with `PRO_TERM` (" a year")
+beside it wherever it is shown, because a price with no term on a subscription reads
+as once. Subscribers get **Manage billing**, which opens the Stripe Customer Portal;
+`portal.js` allows `/baseball/` as a return path.
 
 **The rule went per mode, then shared, then per mode again, and 122 is the last move.**
 121 shipped and was deployed with one token a day shared by all six, keyed on

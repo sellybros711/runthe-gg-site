@@ -8,7 +8,7 @@
  *   STRIPE_SECRET_KEY                 sk_live_... / sk_test_...
  *   STRIPE_PRICE_PS_PREMIUM_BUNDLE    price_...  (Perfect Season Premium Bundle, one-time)
  *   STRIPE_PRICE_RUN_THE_BUNDLE       price_...  (Run The Bundle, one-time)
- *   STRIPE_PRICE_RTD_PRO              price_...  (Run The Diamond Pro, one-time)
+ *   STRIPE_PRICE_RTD_PRO              price_...  (Run The Diamond Pro, $14.99 a year, RECURRING)
  *   STRIPE_PRICE_RTF_PRO              price_...  (Run The Floor Pro, one-time)
  *   SITE_URL                          https://runthe.gg
  *   SUPABASE_URL, SUPABASE_SERVICE_ROLE
@@ -18,9 +18,14 @@
  * the Arcade checkout takes and the reason this file can ship ahead of any
  * launch decision.
  *
- * mode is 'payment', not 'subscription': a bundle is bought once. The webhook
- * grants it from checkout.session.completed (payment_status paid) or
+ * mode is 'payment' for a bundle bought once. The webhook grants it from
+ * checkout.session.completed (payment_status paid) or
  * checkout.session.async_payment_succeeded, keyed by metadata.bundle.
+ *
+ * A `recurring` catalog row (Run The Diamond Pro) opens in 'subscription' mode
+ * instead, because Stripe refuses a recurring Price in payment mode. The bundle
+ * key rides on the SUBSCRIPTION's metadata as well as the session's, since the
+ * renewal and cancellation events carry the subscription and nothing else.
  *
  * ONE BUNDLE PER ACCOUNT, enforced here the way create-checkout refuses a
  * second Tour Pass: if the buyer already holds ANY of the bundle's products we
@@ -75,7 +80,18 @@ async function handle(context) {
   // for owners too, but a stale client or direct POST still can't double-sell.
   const owned = await lookupUnlocks(env, userId);
   if (owned === null) return json({ error: 'stripe_not_configured' }, 503);
-  const clash = bundle.grants.some(function (g) { return owned.indexOf(g.product) >= 0; });
+  /* A LAPSED SUBSCRIPTION IS NOT OWNING IT. A recurring grant keeps its row after
+     it ends (the end date is the record), so for a recurring bundle only a row
+     that is still running counts: somebody who cancelled last year can subscribe
+     again. A one-time bundle is unchanged, and counts any row. */
+  const now = Date.now();
+  const clash = bundle.grants.some(function (g) {
+    return owned.some(function (o) {
+      if (o.product !== g.product) return false;
+      if (!bundle.recurring) return true;
+      return !o.expires_at || Date.parse(o.expires_at) > now;
+    });
+  });
   if (clash) return json({ error: 'already_owned' }, 409);
 
   /* THE HOST THEY BOUGHT FROM, not the one in SITE_URL. www.runthe.gg and the apex are
@@ -90,7 +106,7 @@ async function handle(context) {
   const sep = ret.indexOf('?') >= 0 ? '&' : '?';
 
   const form = new URLSearchParams({
-    mode: 'payment',
+    mode: bundle.recurring ? 'subscription' : 'payment',
     'line_items[0][price]': price,
     'line_items[0][quantity]': '1',
     client_reference_id: userId,
@@ -103,6 +119,15 @@ async function handle(context) {
     cancel_url: site + ret + sep + 'checkout=cancelled',
     allow_promotion_codes: 'true'
   });
+
+  if (bundle.recurring) {
+    /* Subscription mode always makes a customer and refuses customer_creation.
+       The bundle and the user go on the subscription too: every event after the
+       first carries only the subscription. */
+    form.delete('customer_creation');
+    form.set('subscription_data[metadata][supabase_user_id]', userId);
+    form.set('subscription_data[metadata][bundle]', key);
+  }
 
   // Reuse the customer we already recorded for this user (no duplicates). If we
   // can't look one up, fall back to prefilling the email and letting Stripe match.
@@ -137,7 +162,7 @@ async function handle(context) {
    * surfaces as itself rather than as two identical failures. */
   if (!attempt.res.ok && customer && isMissingCustomer(attempt.data)) {
     form.delete('customer');
-    form.set('customer_creation', 'always');
+    if (!bundle.recurring) form.set('customer_creation', 'always');
     if (body.email) form.set('customer_email', String(body.email));
     attempt = await createSession(env, form);
   }
@@ -176,7 +201,7 @@ function isMissingCustomer(data) {
   return typeof err.message === 'string' && err.message.indexOf('No such customer') === 0;
 }
 
-/* This user's existing unlock products. Returns an array, or null when the read
+/* This user's existing unlocks, product and end date. Returns an array, or null when the read
  * itself failed: those are different answers, and treating "couldn't check" as
  * "owns nothing" would let a flaky moment sell a second bundle whose coins then
  * vanish into the upsert. Fail closed with a retryable 503 instead.
@@ -191,12 +216,12 @@ async function lookupUnlocks(env, userId) {
   try {
     const r = await fetch(
       env.SUPABASE_URL + '/rest/v1/premium_unlocks?user_id=eq.' + encodeURIComponent(userId) +
-        '&source=not.like.fantasy:*&select=product',
+        '&source=not.like.fantasy:*&select=product,expires_at',
       { headers: { apikey: env.SUPABASE_SERVICE_ROLE, Authorization: 'Bearer ' + env.SUPABASE_SERVICE_ROLE } }
     );
     if (!r.ok) return null;
     const rows = await r.json();
-    return (rows || []).map(function (row) { return row.product; });
+    return (rows || []).map(function (row) { return { product: row.product, expires_at: row.expires_at || null }; });
   } catch (e) { return null; }
 }
 
