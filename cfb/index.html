@@ -2701,6 +2701,14 @@ window.GA_ID='G-L29P5MRWKE';
        is pinned to the corner it was already sitting in. */
     .mc-grid .modecard .mc-arrow{display:none}
     .mc-grid .modecard .mc-pad{position:absolute;top:15px;right:14px;margin:0}
+    /* THE SIGN-IN CARD IS NOT A MODE, SO IT TAKES THE WHOLE ROW. It is drawn between the
+       two tiles for a signed out reader, and as a grid cell it took the second column and
+       pushed Commish Simulator down onto a row of its own: two modes, two rows, and an
+       account form sitting where a mode should be. Spanning, it reads as the note under
+       Conference Draft that it is. Spanning alone still split the two tiles onto two rows,
+       because it sits between them in the markup, so on the grid it goes after them. The
+       phone keeps it directly under the card it is about. */
+    .mc-grid .gate{grid-column:1 / -1;order:1}
   }
 
   /* ---- THE CROSS-PROMO SECTION ----

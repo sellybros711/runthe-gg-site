@@ -4,11 +4,13 @@
  *   node scripts/check-modes-grid.mjs http://localhost:8081
  *
  * The NFL and college games' modes sheets were asked to match the baseball game's: tiles,
- * two across once the sheet has room and three once it is wide. Every way that breaks
+ * two across from 760px, and the list it always was under that. Every way that breaks
  * renders perfectly, so this measures the glass rather than reading the CSS:
  *
- *   - the columns are COUNTED off the tiles' own left edges, at three widths
+ *   - the columns are COUNTED off the tiles' own left edges, at four widths
  *   - a phone is still one column, because the request was desktop only
+ *   - a card that is not a mode (One Franchise's split panel, the college sign-in card)
+ *     takes the whole row rather than a tile's slot
  *   - the tiles in a row are ONE HEIGHT, which is the property a grid buys and a list of
  *     cards of different lengths does not have
  *   - the wider sheet does not LEAK. Every sheet on both pages draws into one #sheet-in, so
@@ -58,13 +60,19 @@ async function openSheet(page, game, w, h) {
    ignores the hover and press transforms. */
 const measure = (page) => page.evaluate(() => {
   const list = document.querySelector('#sheet-in .modecards');
-  const tiles = [...list.children].filter((e) => e.classList.contains('modecard'));
+  const tiles = [...list.children].filter((e) => e.classList.contains('modecard') && !e.classList.contains('mc-split'));
+  const lw = Math.round(list.getBoundingClientRect().width);
+  const wide = [...list.children].filter((e) => !tiles.includes(e)).map((e) => {
+    const w = Math.round(e.getBoundingClientRect().width);
+    return { cls: e.className.split(' ').slice(0, 2).join('.'), w, span: w >= lw - 2 };
+  });
   const lefts = [...new Set(tiles.map((t) => Math.round(t.getBoundingClientRect().left)))];
   const rows = {};
   tiles.forEach((t) => { (rows[t.offsetTop] = rows[t.offsetTop] || []).push(t.offsetHeight); });
   const ragged = Object.values(rows).filter((hs) => hs.length > 1 && Math.max(...hs) - Math.min(...hs) > 1);
   return {
     tiles: tiles.length,
+    wide, list: lw,
     cols: lefts.length,
     ragged: ragged.length,
     sheet: Math.round(document.getElementById('sheet-in').getBoundingClientRect().width),
@@ -80,16 +88,19 @@ for (const game of GAMES) {
   page.on('pageerror', (e) => errs.push(e.message));
   await page.route((u) => !u.href.startsWith(HOST), (r) => r.abort());
 
-  /* EXPECTED COLUMNS ARE CAPPED BY THE TILES THERE ARE. A signed out college visitor gets
-     two mode tiles (the sign-in card spans its own row), so three across is asked of them
-     as "every tile on one row". */
-  for (const [w, h, want, label] of [[1440, 900, 3, 'a desktop'], [700, 900, 2, 'a narrow window'], [390, 844, 1, 'a phone']]) {
+  /* TWO ACROSS FROM 760PX, AND THE LIST UNDER IT. The pages hold three modes and two, so a
+     third column would be a third of a row of nothing. The expected count is capped by the
+     tiles there are, and a row a spanning card takes is not a column. */
+  for (const [w, h, want, label] of [[1440, 900, 2, 'a desktop'], [800, 900, 2, 'a narrow desktop'],
+    [700, 900, 1, 'a tablet under the grid'], [390, 844, 1, 'a phone']]) {
     await openSheet(page, game, w, h);
     const m = await measure(page);
     const expect = Math.min(want, m.tiles);
     ok(`${label} (${w}px) gets ${expect === 1 ? 'the list' : expect + ' across'}`,
       m.cols === expect, `${m.cols} column${m.cols === 1 ? '' : 's'}, ${m.tiles} tiles, sheet ${m.sheet}px`);
     if (want > 1) ok(`  and the tiles in a row are one height`, m.ragged === 0, `${m.ragged} ragged rows`);
+    if (want > 1 && m.wide.length) ok(`  and every card that is not a mode takes the whole row`,
+      m.wide.every((x) => x.span), m.wide.map((x) => `${x.cls} ${x.w} of ${m.list}px`).join(', '));
     if (want === 1) ok(`  and the sheet is the width it always was`, m.sheet <= 560, `${m.sheet}px`);
   }
 

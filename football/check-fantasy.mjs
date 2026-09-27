@@ -737,24 +737,43 @@ console.log('\nTHE PRICE IS THE PROJECTION, AND IT READS THE GAME STATUS REPORT'
   const fac = (m) => injuryFactor(
     { report: m.st, practice: m.p || '', report_at: m.w }, W);
   const ages = new Set(named.map(age));
-  ok('  and it holds men of more than one age', ages.size > 1,
-    `report_week ${W}, men last reported ${[...ages].sort().map((a) => a + ' wk ago').join(', ')}`);
+  ok('  and it names real designations to price', named.length > 0,
+    `report_week ${W}, ${named.length} men, last reported ${[...ages].sort().map((a) => a + ' wk ago').join(', ')}`);
+
+  /*
+   * THE FILE ON DISK DOES NOT HAVE TO HOLD OLD MEN, SO THE OLD MEN ARE MADE BY THE CLOCK.
+   * The first version of this asked the live file for men reported two weeks back, and the
+   * twice daily refresh then rewrote week 3 with every man filed that week: the section went
+   * red on a page with nothing wrong with it, because the fixture had moved rather than the
+   * rule. The same real rows priced one and two weeks later are those men a week and a
+   * fortnight on, which is exactly what a report the club has not refreshed looks like, and
+   * it holds whatever the refresh does to the file.
+   */
+  const aged = [];
+  for (const later of [0, 1, 2, 3]) {
+    for (const m of named) {
+      aged.push({ age: age(m) + later,
+        fac: injuryFactor({ report: m.st, practice: m.p || '', report_at: m.w }, W + later) });
+    }
+  }
 
   /*
    * ASSERTED AS A PROPERTY OVER EVERY MAN IN IT rather than as one hand picked pair, which
    * the first draft did and which would go quiet on any week whose report happens not to
    * contain that pair. The claim is the rule: past one week, the report is not news.
    */
-  const old = named.filter((m) => age(m) >= 2);
+  const old = aged.filter((x) => x.age >= 2);
   ok('  no man more than a week old is discounted at all',
-    old.length > 0 && old.every((m) => fac(m) === 1),
-    old.length ? `${old.length} men, worst x${Math.min(...old.map(fac))}`
-      : 'no man in this report is more than a week old, so this proves nothing');
+    old.length > 0 && old.every((x) => x.fac === 1),
+    old.length ? `${old.length} priced men, worst x${Math.min(...old.map((x) => x.fac))}`
+      : 'no man priced more than a week on, so this proves nothing');
   /* THE OTHER DIRECTION, or the clause above passes on a function that discounts nobody. */
+  const recentAged = aged.filter((x) => x.age <= 1);
+  const cutAged = recentAged.filter((x) => x.fac !== 1);
+  ok('  and the recent ones are', cutAged.length > 0,
+    `${cutAged.length} of ${recentAged.length} men priced within a week of their report are discounted`);
   const recent = named.filter((m) => age(m) <= 1);
   const cut = recent.filter((m) => fac(m) !== 1);
-  ok('  and the recent ones are', cut.length > 0,
-    `${cut.length} of ${recent.length} men within a week of the report are discounted`);
   /* AND THE FILE'S OWN MAX MUST NOT BE WHAT DECIDES. Most of a Tuesday report is older than
      a week, so the count the price discounts is far short of the count the report names. */
   ok('  so most of a Tuesday report is correctly not priced', cut.length < named.length / 2,
