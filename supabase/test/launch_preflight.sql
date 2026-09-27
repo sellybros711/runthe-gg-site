@@ -451,7 +451,19 @@ check_rows(sort, migration, what, breaks, ok) as (
         where name = 'premium_unlocks_product_ck' and def like '%rtd_premium%')
       and (select count(*) > 0 from has_table where name = 'rtd_mode_plays')
       and (select count(*) > 0 from proc where name = 'rtd_mode_spend')
-      and (select count(*) > 0 from proc where name = 'rtd_mode_state'))
+      and (select count(*) > 0 from proc where name = 'rtd_mode_state')),
+
+  -- THE RELEASE NEWSLETTER. Both of its failures look like a working page: the
+  -- profile checkbox removes itself on any error, and the home page email box
+  -- answers a server error with a polite "try again". Asked of the table and the
+  -- five functions, because a guest signup needs a different one from a tick.
+  (32, '121_newsletter',
+      'the release newsletter list, the profile checkbox and the home page signup',
+      'The newsletter checkbox quietly disappears from every profile, and the home page email box refuses every address with "Something went wrong". Nobody gets on the list.',
+      (select count(*) > 0 from col where tbl = 'newsletter_subscribers' and name = 'unsub_token')
+      and (select count(*) > 0 from col where tbl = 'newsletter_issues' and name = 'commit_sha')
+      and (select count(*) = 5 from proc where name in
+            ('newsletter_status','newsletter_set','newsletter_guest_request','newsletter_confirm','newsletter_unsubscribe')))
 )
 -- The summary has to come LAST, and a UNION can only be ordered by an output
 -- column, so the sort key is carried through a subquery rather than sorted on

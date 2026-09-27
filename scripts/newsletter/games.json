@@ -1,0 +1,11 @@
+{
+  "_note": "The games the newsletter may talk about. A game goes on this list the day it launches on the home page, never before: the drafting agent only reads commits that touch these directories, so an unreleased game cannot leak into an email.",
+  "games": [
+    { "dir": "football", "name": "The Perfect Season", "url": "https://runthe.gg/football/" },
+    { "dir": "cfb",      "name": "Perfect Season: College Football", "url": "https://runthe.gg/cfb/" },
+    { "dir": "golf",     "name": "Run The Tour", "url": "https://runthe.gg/golf/" },
+    { "dir": "soccer",   "name": "Run The Pitch", "url": "https://runthe.gg/soccer/" },
+    { "dir": "arcade",   "name": "Run The Arcade", "url": "https://runthe.gg/arcade/" }
+  ],
+  "site": { "dir": "index.html", "name": "RunThe.GG", "url": "https://runthe.gg/" }
+}

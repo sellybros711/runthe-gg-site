@@ -57,6 +57,8 @@
 <!-- RunThe.GG accounts + public leaderboard (same Supabase project as RunThePitch; optional, fails open).
      `defer`ed so a slow/blocked CDN can't parser-block first paint; sbInit() waits for it (see end of script). -->
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<!-- The release newsletter checkbox in the menu's Account section. See supabase/121_newsletter.sql. -->
+<script defer src="/assets/newsletter.js?v=1"></script>
 <!-- Google Consent Mode v2 defaults. Advertising storage is denied until the certified CMP (loaded by
      the AdSense tag below) records the user's choice; the CMP then updates these signals automatically,
      including tightening analytics where local law requires it. Analytics storage defaults to granted so
@@ -14058,6 +14060,8 @@ function overlayMenu(screen){
   acct.appendChild(menuRow('🎁','Invite a Friend','Share your link. You BOTH get a free pack',()=>{ S.overlay=null; render(); referralShare(); }));
   acct.appendChild(menuRow('↺','Reset','Retire your current golfer & start over',go(()=>{S.overlay='confirmReset';})));
   if(signedIn) acct.appendChild(menuRow('↩','Sign Out','End your session on this device',()=>{ S.overlay=null; sbSignOut().then(()=>{ S.screen='title'; render(); toast('Signed out'); }); }));
+  // the release newsletter box, /assets/newsletter.js. Absent script, absent box.
+  if(signedIn&&sb&&window.RTG_NEWS) acct.appendChild(RTG_NEWS.el({source:'golf',getToken:()=>sb.auth.getSession().then(r=>(r&&r.data&&r.data.session&&r.data.session.access_token)||null)}));
   ov.appendChild(acct);
   // CS252: Settings - sound + haptics toggles (device-local, default on)
   const settings=$(`<div style="margin-bottom:16px"></div>`);
