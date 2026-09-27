@@ -13,6 +13,8 @@
  *     lanes and end zones of both sides are one colour
  *   - downs:false (the boss board) never shows an invented down, and a real one (sit) is
  *     shown exactly as the page gave it
+ *   - the stands are the HOME team's, with the away fans a tenth to a seventh of the crowd in
+ *     the corner by their own end zone, and a neutral site split down the middle
  *   - both pages load the file and hand drawDriveChart to it, with the old chart kept as the
  *     fallback for a blocked copy
  *
@@ -53,6 +55,14 @@ const fb = fs.readFileSync(path.join(ROOT, 'football/index.html'), 'utf8');
 const bd = fb.slice(fb.indexOf('function bossDraw('), fb.indexOf('function bossDraw(') + 1600);
 ok('the boss board turns the invented downs off and passes the real one',
   /downs:false/.test(bd) && /sit:\{down:c\.down/.test(bd));
+
+ok('a boss is played in its own building', /eyebrow:'Boss battle[^]{0,200}home:'them'/.test(fb));
+ok('a football playoff game asks the bracket who hosts', /\{ticker,home:crowdHome\(round,r\.opponent_id\)\}/.test(fb)
+  && /home:crowdHome\(round,o\.team_season_id\)/.test(fb) && /round==='Super Bowl'\) return 'neutral'/.test(fb));
+const cf = fs.readFileSync(path.join(ROOT, 'cfb/index.html'), 'utf8');
+ok('a CFP first round is on the better seed\'s campus, and the rest are neutral',
+  /round==='CFP First Round'&&mySeed\?\(mySeed<=8\?'you':'them'\):'neutral'/.test(cf)
+  && (cf.match(/home:'neutral'\}/g) || []).length === 2);
 
 const src = fs.readFileSync(path.join(ROOT, 'assets/fieldcast.js'), 'utf8');
 const browser = await pw.chromium.launch({ executablePath: CHROME });
@@ -118,10 +128,18 @@ const res = await page.evaluate(() => {
   /* Two blues. */
   F.paint(cv, Object.assign(frame(0), { you: { color: '#1d4ed8', name: 'YOU' }, them: { color: '#1e40af', name: 'SEA' } }));
   out.split = st().them.color;
+  /* The crowd, counted as it was seated. */
+  const crowd = (home) => {
+    F.paint(cv, Object.assign(frame(0), { home }));
+    const c = st().crowd, fans = c.home + c.away + c.you + c.them;
+    return { away: c.away / fans, you: c.you / fans, them: c.them / fans, block: st().awayBlock, fans };
+  };
+  out.cYou = crowd('you'); out.cThem = crowd('them'); out.cNeutral = crowd('neutral');
+  F.paint(cv, frame(0));
   /* The picture: dark stands over green turf. */
   const g = cv.getContext('2d');
   const px = (x, y) => Array.from(g.getImageData(Math.round(x * cv.width), Math.round(y * cv.height), 1, 1).data);
-  out.stands = px(0.5, 0.08); out.turf = px(0.5, 0.8);
+  out.stands = px(0.5, 0.03); out.turf = px(0.5, 0.8);
   return out;
 });
 console.log('\nTHE RENDERER');
@@ -138,7 +156,15 @@ ok('the broadcast shows a down and distance', !!res.invented, res.invented || 'n
 ok('downs:false never shows an invented one', res.bossInvented === null, res.bossInvented || 'none');
 ok('  and the real one is shown as the page gave it', res.real === '4TH & 1', res.real || 'none');
 ok('two blues are split', res.split !== '#1e40af', res.split);
-ok('the stands are dark', res.stands[0] + res.stands[1] + res.stands[2] < 180, res.stands.slice(0, 3).join(','));
+const pct = (x) => (x * 100).toFixed(1) + '%';
+ok('a home crowd is the home side with the away fans a tenth to a seventh of it',
+  res.cYou.away >= 0.10 && res.cYou.away <= 0.15 && res.cThem.away >= 0.10 && res.cThem.away <= 0.15,
+  'away ' + pct(res.cYou.away) + ' at your place, ' + pct(res.cThem.away) + ' at theirs, of ' + res.cYou.fans + ' fans');
+ok('  and they sit in the corner by their own end zone',
+  res.cYou.block[0] > 0.5 && res.cThem.block[1] < 0.5, res.cYou.block.join('-') + ' then ' + res.cThem.block.join('-'));
+ok('a neutral site is split down the middle', Math.abs(res.cNeutral.you - res.cNeutral.them) < 0.05,
+  pct(res.cNeutral.you) + ' against ' + pct(res.cNeutral.them));
+ok('the sky over the stands is dark', res.stands[0] + res.stands[1] + res.stands[2] < 180, res.stands.slice(0, 3).join(','));
 ok('the turf is green', res.turf[1] > res.turf[0] && res.turf[1] > res.turf[2], res.turf.slice(0, 3).join(','));
 ok('nothing threw', errs.length === 0, errs.slice(0, 2).join(' | ') || 'clean');
 await browser.close();

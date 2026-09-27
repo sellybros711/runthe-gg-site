@@ -8553,7 +8553,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 <script src="/assets/newsletter.js?v=1"></script>
 <!-- The broadcast field every game is played out on. drawDriveChart hands its drives here and
      keeps its own body as the fallback, so a blocked copy still draws the old chart. -->
-<script src="/assets/fieldcast.js?v=1"></script>
+<script src="/assets/fieldcast.js?v=2"></script>
 <script defer src="auth.js?v=7"></script>
 <script>
 (function(){
@@ -19866,6 +19866,20 @@ function initFieldCanvas(canvasId) {
 
 let poTimer=null, poRaf=0, poSkip=null;
 
+/* WHOSE BUILDING A PLAYOFF GAME IS IN, which is what fills the broadcast field's stands. The
+   engine keeps a home field as an EDGE (homeField in run.js) and never names a host, so this
+   reads the bracket the player was just shown: the better seed hosts, the way the real
+   bracket does, and the Super Bowl is a neutral site. Without a bracket to read it is your
+   crowd, which is the edge the engine is giving you anyway. Decoration only: nothing reads it
+   but the stands. */
+function crowdHome(round,oppId){
+  if(round==='Super Bowl') return 'neutral';
+  const b=nbrk&&nbrk.forSeed===run.seed?nbrk:null;
+  const seat=b?(b.near||[]).find(x=>x&&x.team&&x.team.team_season_id===oppId):null;
+  if(!seat) return 'you';
+  return b.mySeed<=seat.seed?'you':'them';
+}
+
 function playPlayoffGame(r,after){
   const round=r.round||'Playoffs';
   const opp=DATA.byTeamSeasonId[r.opponent_id];
@@ -19984,7 +19998,7 @@ function playPlayoffGame(r,after){
   const oppCode=opp?E.eraCode(opp.franchise,opp.season):'OPP';
   const ticker=(ROUND_SHORT[round]||round).toUpperCase()+'   YOU VS '+oppCode+'   RUNTHE.GG   ';
   const paintField=fieldCtx?(upTo)=>drawDriveChart(fieldCtx,fcv.width,fcv.height,drives,upTo,
-    dcY,dcT,'YOU',oppCode,null,{ticker}):()=>{};
+    dcY,dcT,'YOU',oppCode,null,{ticker,home:crowdHome(round,r.opponent_id)}):()=>{};
   paintField(0);
 
   const setLead=(y,t)=>{
@@ -20164,6 +20178,7 @@ function playLivePlayoffGame(idx,done){
   const coach=coachCalls()?run.coach:null;
   liveBoard(o,sim,rng,{
     eyebrow:round+seasonTag(),
+    home:crowdHome(round,o.team_season_id),
     state:ROUND_SHORT[round]||'LIVE',
     rec:(run.season.wins||0)+'-'+(run.season.losses||0),
     oppRec:'<i class="yr">'+o.season+'</i>'+esc(o.record||''),
@@ -20856,7 +20871,7 @@ function mandateBriefing(){
  * wrapped, so once the reward is taken it survives a reload.
  */
 let bossSim=null, bossRng=null, bossSpecNow=null, bossOppNow=null;
-let bossField=null, bossFcv=null, bossYouCol='#3a7bd5', bossThemCol='#e87461';
+let bossField=null, bossFcv=null, bossYouCol='#3a7bd5', bossThemCol='#e87461', bossHome='you';
 /*
  * TWO COUNTERS, AND THEY ANSWER DIFFERENT QUESTIONS.
  *
@@ -20952,7 +20967,7 @@ function bossDraw(upTo,live,anchor){
   }
   drawDriveChart(bossField,bossFcv.width,bossFcv.height,ds,upTo,bossYouCol,bossThemCol,
     'YOU',bossThreeLetter(bossOppNow),anchor||null,
-    {downs:false,ticker:($('bg-eye').textContent||'Boss battle').toUpperCase()+'   YOU VS '+bossThreeLetter(bossOppNow)+'   RUNTHE.GG   '});
+    {downs:false,home:bossHome,ticker:($('bg-eye').textContent||'Boss battle').toUpperCase()+'   YOU VS '+bossThreeLetter(bossOppNow)+'   RUNTHE.GG   '});
 }
 /* Absolute yard, mirrored for the boss, matching the engine's own frame. */
 function E_absYard(team,y){ const v=team==='you'?y:100-y; return Math.max(0,Math.min(100,v)); }
@@ -21013,6 +21028,7 @@ function liveBoard(o,sim,rng,opts){
   bossOnOver=opts.onOver||null;
   bossAutoCall=opts.autoCall||null;
   bossCallerName=opts.caller||'You';
+  bossHome=opts.home||'you';
   /* The bug and field colors, the same way the playoffs pick them: your side the game's blue
      (or your club), the opponent their real color, nudged apart if they collide on the field. */
   const them=E.washColors(o.franchise), me=youColors(them);
@@ -21067,6 +21083,9 @@ function bossPlay(read){
   liveBoard(o,sim,rng,{
     eyebrow:'Boss battle · Season '+run.seasonNo,
     state:'BOSS',
+    /* A boss is played in its own building: the crowd is theirs, which is half of what makes
+       it a boss. */
+    home:'them',
     narr:sim.readRight
       ? '<b class="good">Good read.</b> Your plan has them on their heels.'
       : sim.readTrap

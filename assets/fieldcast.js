@@ -142,8 +142,26 @@
     /* Three tiers of crowd, each a band of dots over a facade, dots larger on the lower
        tiers because they are nearer. Seeded, so the same crowd is in the same seats on
        every repaint. */
-    var rnd = rngOf(hash('crowd|' + st.you.color + '|' + st.them.color));
-    var NEUT = ['#8f9bb3', '#5f6b86', '#c7cfdd', '#3e4760', '#d9c8ae', '#9c8ea8'];
+    var rnd = rngOf(hash('crowd|' + st.you.color + '|' + st.them.color + '|' + st.home));
+    var NEUT = ['#5f6b86', '#3e4760', '#8f9bb3', '#2c3346'];
+    /* WHOSE BUILDING IT IS. A home crowd is the home team's colours nearly everywhere, worn
+       as the colour itself and as lighter and darker shades of it, with the away fans (about
+       one seat in eight) packed into the corner nearest their own end zone the way a
+       visitors' section is, and a few more scattered through the bowl. A neutral site, a
+       bowl or a Super Bowl, is split down the middle. */
+    var home = st.home, homeTeam = home === 'them' ? st.them : st.you, awayTeam = home === 'them' ? st.you : st.them;
+    var shades = function(c){ return [c, c, mix(c, '#ffffff', 0.35), mix(c, '#000000', 0.25)]; };
+    var homeCols = shades(homeTeam.color), awayCols = shades(awayTeam.color);
+    /* The visitors' end: the away side attacks the end zone on its own side of the picture
+       (you on the left, them on the right), so its fans sit in that corner. */
+    var awayLeft = home === 'them';
+    var inBlock = function(side, ti){
+      if (ti === 0) return false;
+      return awayLeft ? side > 0.02 && side < 0.27 : side > 0.73 && side < 0.98;
+    };
+    st.awayBlock = awayLeft ? [0.02, 0.27] : [0.73, 0.98];
+    /* Counted as the seats are filled, so the mix is a measurement and not a promise. */
+    var count = { home: 0, away: 0, you: 0, them: 0, empty: 0 };
     var dots = [];
     var tiers = [[0.22, 0.46, 1.25], [0.52, 0.74, 1.6], [0.78, 1.0, 2.0]];
     tiers.forEach(function(t, ti){
@@ -155,11 +173,20 @@
       for (var r = 0; r < rows; r++){
         var y = y0 + r * sp + (r % 2 ? sp * 0.1 : 0);
         for (var x = (r % 2) * sp * 0.5; x < W; x += sp){
-          var side = (x - M) / C.w;
-          var tc = side < 0.46 ? st.you.color : side > 0.54 ? st.them.color : null;
-          var fan = tc && rnd() < 0.42;
-          var col = fan ? tc : NEUT[Math.floor(rnd() * NEUT.length)];
-          var a = fan ? 0.5 + rnd() * 0.35 : 0.16 + rnd() * 0.3;
+          var side = (x - M) / C.w, roll = rnd(), col, fan = true;
+          if (home === 'neutral'){
+            var pal = side < 0.5 ? shades(st.you.color) : shades(st.them.color);
+            if (roll < 0.8) col = pal[Math.floor(rnd() * pal.length)]; else fan = false;
+          } else if (inBlock(side, ti)){
+            if (roll < 0.82) col = awayCols[Math.floor(rnd() * awayCols.length)];
+            else if (roll < 0.9) col = homeCols[Math.floor(rnd() * homeCols.length)]; else fan = false;
+          } else if (roll < 0.02){ col = awayCols[Math.floor(rnd() * awayCols.length)]; }
+          else if (roll < 0.86){ col = homeCols[Math.floor(rnd() * homeCols.length)]; }
+          else fan = false;
+          if (!fan){ col = NEUT[Math.floor(rnd() * NEUT.length)]; count.empty++; }
+          else if (home === 'neutral') count[side < 0.5 ? 'you' : 'them']++;
+          else count[awayCols.indexOf(col) >= 0 && homeCols.indexOf(col) < 0 ? 'away' : 'home']++;
+          var a = fan ? 0.5 + rnd() * 0.4 : 0.14 + rnd() * 0.22;
           g.fillStyle = rgba(col, a.toFixed(2));
           g.fillRect(x, y, sz, sz);
           if (rnd() < 0.07) dots.push({ x: x, y: y, s: sz, ph: rnd() * 6.28, sp: 0.6 + rnd() * 1.6, side: side });
@@ -169,7 +196,7 @@
     /* The front wall under the ribbon board. */
     g.fillStyle = '#060a14'; g.fillRect(0, C.Ry, W, C.Ty - C.Ry + 2);
     g.fillStyle = 'rgba(255,255,255,.08)'; g.fillRect(0, C.Ry, W, Math.max(1, dpr));
-    st.stands = cv; st.twinkle = dots;
+    st.stands = cv; st.twinkle = dots; st.crowd = count;
   }
 
   /* ---------- the field ---------- */
@@ -518,11 +545,15 @@
       else if (k > 0){
         var col = er.side === 'you' ? st.you.color : st.them.color;
         var fade = k < 0.1 ? k / 0.1 : 1 - (k - 0.1) / 0.9;
-        var x0 = er.side === 'you' ? 0 : C.w * 0.45, x1 = er.side === 'you' ? C.w * 0.55 : C.w;
-        var gr = ctx.createLinearGradient(x0, 0, x1, 0);
-        gr.addColorStop(er.side === 'you' ? 0 : 1, rgba(col, (0.4 * fade).toFixed(3)));
-        gr.addColorStop(er.side === 'you' ? 1 : 0, rgba(col, 0));
-        ctx.fillStyle = gr; ctx.fillRect(0, 0, C.w, C.Sy);
+        /* Whose fans get up: the whole bowl when the home side scores, the visitors'
+           corner when the away side does, and that side's half at a neutral site. */
+        var x0, x1;
+        if (st.home === 'neutral'){ x0 = er.side === 'you' ? 0 : C.w * 0.5; x1 = er.side === 'you' ? C.w * 0.5 : C.w; }
+        else if (er.side === st.home){ x0 = 0; x1 = C.w; }
+        else { x0 = C.w * st.awayBlock[0] - st.pan * 0.35; x1 = C.w * st.awayBlock[1] - st.pan * 0.35; }
+        var gr = ctx.createLinearGradient(0, C.Sy * 0.2, 0, C.Sy);
+        gr.addColorStop(0, rgba(col, 0)); gr.addColorStop(1, rgba(col, (0.42 * fade).toFixed(3)));
+        ctx.fillStyle = gr; ctx.fillRect(x0, 0, x1 - x0, C.Sy);
         /* Flashbulbs. */
         var r = rngOf(hash('bulbs|' + Math.floor(t / 70)));
         for (var j = 0; j < 26 * fade; j++){
@@ -592,6 +623,7 @@
   function drawDrives(st, ctx, F, t){
     var C = st.C, dpr = C.dpr, drives = F.drives || [], upTo = F.upTo;
     var visible = [], active = null, ai = -1;
+    st.drawn = [];
     for (var i = 0; i < drives.length; i++){
       var d = drives[i];
       if (d.tStart > upTo) break;
@@ -620,7 +652,7 @@
     for (var j = 0; j < shown.length; j++){
       var dv = shown[j], age = shown.length - 1 - j - off;
       if (dv === active) continue;
-      var v = laneV(age), a = clamp(1 - age / (MAX - 0.4), 0.1, 1) * (age < 0 ? 1 + age : 1);
+      var v = laneV(age), a = clamp(1 - age / (MAX - 0.4), 0.1, 1);
       if (v > 0.97) continue;
       drawRibbon1(st, ctx, dv, dv.startYard, clamp(norm(dv.result) === 'touchdown' ? (dv.team === 'you' ? 100 : 0) : dv.endYard, 0, 100), v, a * 0.85, false);
       drawMark(st, ctx, dv, v, a);
@@ -693,6 +725,9 @@
     ctx.restore();
     /* The leading edge, a chevron pointing the way the drive went. */
     var dir = d.team === 'you' ? 1 : -1, tip = C.P(u2, v), s = C.ppy(v) * 1.8;
+    /* Where it was drawn, in screen pixels, for the checks that read the picture back. */
+    st.drawn.push({ team: d.team, result: d.result, live: !!live, from: y1, to: y2, v: v,
+      tip: [tip[0] - st.pan, tip[1]] });
     ctx.fillStyle = rgba(col, Math.min(1, alpha + 0.05).toFixed(3));
     ctx.beginPath(); ctx.moveTo(tip[0] + dir * s * 1.2, tip[1]);
     ctx.lineTo(tip[0], tip[1] - s * 0.9); ctx.lineTo(tip[0], tip[1] + s * 0.9); ctx.closePath(); ctx.fill();
@@ -958,6 +993,7 @@
    *   frame.style    'nfl' or 'college'
    *   frame.downs    false where the page has real downs and the invented ones must not show
    *   frame.ticker   the ribbon board's words, when the page has something better to say
+   *   frame.home     'you', 'them' or 'neutral': whose crowd fills the stands
    */
   function paint(target, frame){
     var cv = target && target.canvas ? target.canvas : target;
@@ -965,6 +1001,7 @@
     var st = stateFor(cv);
     var you = frame.you || { color: '#3a7bd5', name: 'YOU' }, them = frame.them || { color: '#e87461', name: 'OPP' };
     var style = frame.style || 'nfl';
+    var home = frame.home === 'them' || frame.home === 'neutral' ? frame.home : 'you';
     /* TWO SIDES THAT LOOK ALIKE ARE ONE SIDE. The field paints both teams' players, lanes and
        end zones, so two blues (the boss board meeting Seattle, say) is a game nobody can
        follow. The playoff broadcast already swaps a near miss for coral; this is that rule
@@ -973,10 +1010,10 @@
       them = { color: dist(you.color, '#e87461') < 110 ? '#f5c542' : '#e87461', name: them.name };
     }
     if (!st.you || st.you.color !== you.color || st.them.color !== them.color || st.you.name !== you.name
-        || st.them.name !== them.name || st.style !== style){
+        || st.them.name !== them.name || st.style !== style || st.home !== home){
       st.you = { color: you.color, name: String(you.name || 'YOU').toUpperCase() };
       st.them = { color: them.color, name: String(them.name || 'OPP').toUpperCase() };
-      st.style = style; st.stands = null; st.field = null; st.logoIn = false;
+      st.style = style; st.home = home; st.stands = null; st.field = null; st.logoIn = false;
     }
     st.opts = { downs: frame.downs };
     st.ticker = frame.ticker || ('RUNTHE.GG   ' + st.you.name + ' VS ' + st.them.name + '   ');
@@ -1021,5 +1058,17 @@
     return cv.getContext('2d');
   }
 
-  window.RTG_FIELD = { API_VERSION: API_VERSION, paint: paint, prepare: prepare };
+  /* What the last frame drew, and the camera's own mapping from a pixel back to a yard line,
+     so a check can read a drive's end off the canvas and turn it into the number the page
+     called. Nothing in the games reads this. */
+  function inspect(cv){
+    var st = cv && cv.__rtgField;
+    if (!st) return null;
+    return {
+      drawn: (st.drawn || []).slice(),
+      yardAt: function(x, v){ var C = st.C; return ((x + st.pan - C.cx) * C.z(v) / C.Wb + 0.5) * 120 - 10; }
+    };
+  }
+
+  window.RTG_FIELD = { API_VERSION: API_VERSION, paint: paint, prepare: prepare, inspect: inspect };
 })();

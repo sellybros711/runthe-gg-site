@@ -2635,6 +2635,30 @@ disagreeing, which this repo has paid for on every screen it has happened on.
 players, lanes and end zones, and the boss board had no guard: against Seattle every player on
 the field was blue. The playoff broadcast's coral swap is the rule for every caller now.
 
+**THE STANDS ARE THE HOME TEAM'S.** A home crowd is the home side's colours and shades of
+them, with the visitors about one fan in eight (measured, 12%), packed into the corner by their
+own end zone and a few scattered through the bowl. A neutral site is split down the middle.
+The home side scoring lights the whole bowl; the visitors scoring lights their corner and
+nothing else. `frame.home` says whose building it is and the engines never name a host (a home
+field there is an EDGE), so each screen answers it off something a player can see:
+
+| screen | whose crowd |
+|---|---|
+| NFL playoff broadcast, Full Team live games | the better seed, off the bracket just shown; the Super Bowl is neutral |
+| a boss battle | theirs: it is played in the boss's building |
+| the CFP | the better seed in the first round, which is on campus; every round after is neutral |
+| a bowl, the challenge bowl | neutral |
+
+**The crowd is counted as it is seated** (`st.crowd`), so the guard reads the mix rather than
+the arithmetic that was meant to produce it. The first tuning came out at exactly 10.0%, which
+is the edge of the band that was asked for rather than inside it.
+
+**THE PICTURE IS READ BACK, NOT RE-DERIVED.** `test_credits.mjs` holds a field goal's bar to the
+distance the call names, and it used to rebuild the flat chart's geometry to find the bar. A
+camera in perspective has no fixed row, so the renderer records each drive's drawn leading edge
+(`RTG_FIELD.inspect`) and hands back its own pixel to yard mapping; the pixel just behind that
+edge has to be the drive's colour or the record is lying.
+
 **It keeps drawing between the page's frames**, which is what lets a score hold the clock while
 the crowd erupts and the banner plays: its own loop runs while the canvas is on screen, at thirty
 frames a second when nothing but the crowd is moving, and stops the moment `offsetParent` is

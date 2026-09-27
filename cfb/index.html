@@ -3953,7 +3953,7 @@ or endorsed by the NCAA, the CFP or any school.
 <script src="/assets/newsletter.js?v=1"></script>
 <!-- The broadcast field every game is played out on, shared with the NFL game. drawDriveChart
      hands its drives here and keeps its own body as the fallback. -->
-<script src="/assets/fieldcast.js?v=1"></script>
+<script src="/assets/fieldcast.js?v=2"></script>
 <!-- THE FREE TIER'S CLOCK, WHICH THIS PAGE ONLY READS. It is the mode's module and the
      mode is still the thing that decides: seasonWall() spends a season and reads the
      server's answer, because only the server can settle it. All this page wants is to know
@@ -10182,7 +10182,11 @@ function playPlayoffGame(r,afterFn){
   let dcY=me.bg,dcT=them.bg;
   const oppAb=opp?E.teamColors(opp).abbreviation:'OPP';
   const ticker=(ROUND_SHORT[round]||round).toUpperCase()+'   YOU VS '+oppAb+'   RUNTHE.GG   ';
-  const paintField=fieldCtx?(upTo)=>drawDriveChart(fieldCtx,fcv.width,fcv.height,drives,upTo,dcY,dcT,'YOU',oppAb,{ticker}):()=>{};
+  /* WHOSE STANDS. The first round is played on the better seed's campus (5 hosts 12 down to
+     8 hosts 9), and every round after it is at a neutral bowl site, which is the real CFP and
+     is what seedAdvantage in the engine already prices. Decoration: only the crowd reads it. */
+  const home=round==='CFP First Round'&&mySeed?(mySeed<=8?'you':'them'):'neutral';
+  const paintField=fieldCtx?(upTo)=>drawDriveChart(fieldCtx,fcv.width,fcv.height,drives,upTo,dcY,dcT,'YOU',oppAb,{ticker,home}):()=>{};
   paintField(0);
 
   const setLead=(y,t)=>{
@@ -10515,7 +10519,7 @@ function playFeatureBroadcast(cfg){
   const fcv=$('bowl-fcanvas');
   const oppAb=opp?E.teamColors(opp).abbreviation:'OPP';
   const paintField=fieldCtx?(upTo)=>drawDriveChart(fieldCtx,fcv.width,fcv.height,drives,upTo,me.bg,them.bg,'YOU',oppAb,
-    {ticker:String(bowlName).toUpperCase()+'   YOU VS '+oppAb+'   RUNTHE.GG   '}):()=>{};
+    {ticker:String(bowlName).toUpperCase()+'   YOU VS '+oppAb+'   RUNTHE.GG   ',home:'neutral'}):()=>{};
   paintField(0);
   const setLead=(y,t)=>{youEl.classList.toggle('lead',y>=t);themEl.classList.toggle('lead',t>=y);};
   setLead(0,0);
@@ -11485,7 +11489,7 @@ function bowlBroadcast(cfg){
   const fcv=$('bowl-fcanvas');
   const themAbbr=(cfg.themName?cfg.themName.replace(/[^A-Za-z0-9]/g,'').slice(0,4).toUpperCase():'')||'OPP';
   const paintField=fieldCtx?(upTo)=>drawDriveChart(fieldCtx,fcv.width,fcv.height,drives,upTo,me.bg,themWash.bg,'YOU',themAbbr,
-    {ticker:'CHALLENGE BOWL   YOU VS '+themAbbr+'   RUNTHE.GG   '}):()=>{};
+    {ticker:'CHALLENGE BOWL   YOU VS '+themAbbr+'   RUNTHE.GG   ',home:'neutral'}):()=>{};
   paintField(0);
   const setLead=(y,t)=>{ youEl.classList.toggle('lead',y>=t); themEl.classList.toggle('lead',t>=y); };
   setLead(0,0);
