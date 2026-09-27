@@ -15549,6 +15549,26 @@ badge sweep moved: eight excuses came off because the chemistry bot now
 reaches them, and `rank_one` and `one_franchise_8` went on, because the bot
 chases team-mates rather than stacking eight from one club.
 
+#### And One Franchise stopped paying the team-mates link
+
+Reported by a player as chemistry feeling too strong in One Franchise. It was: twelve men
+from one club almost always overlapped somewhere in their careers, so the team-mates link
+fired on nearly every pair. Measured over 100 best-available drafts, One Franchise ran
+**14.1% chemistry against Classic's 8.5%**, and the same drafting won **105 games and
+reached October 96% of the time** against 89 and 59%.
+
+`chemOpts` suppresses `teammates` in One Franchise now, on the rule the franchise link was
+already suppressed under: a link the mode's own rule guarantees is not a choice. After it,
+best available lands at 7.7% and 90.7 wins, and a player chasing bonds still earns more
+(95.3) through the ones that are choices: a reunion from one season, a battery, a
+double-play combo. Those read the shared season directly and are untouched.
+`check-franchise.mjs` section 7 holds One Franchise within three points of Classic, off
+real drafts, and removing the line fails it.
+
+**Eras and Division run hot the same way and were NOT changed**, because the report was
+about One Franchise: best available reaches 99.9 and 101.3 wins there against Classic's
+89.3, again mostly through team-mates. Same fix, same measurement, if it is wanted.
+
 ### An era card counts FRANCHISES, and says how deep the wheel is
 
 Reported by a player as "shouldn't we have more teams than this from each decade".
