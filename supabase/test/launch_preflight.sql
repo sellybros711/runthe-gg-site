@@ -84,7 +84,8 @@ has_table as (
     'commish_free_clock','ps_runs','profiles',
     'fantasy_weeks','fantasy_prices','fantasy_results','fantasy_entries',
     'nfl_games','fantasy_prizes',
-    'rtf_runs','rtd_runs','rtf_plays','rtd_mode_plays','premium_subscriptions'
+    'rtf_runs','rtd_runs','rtf_plays','rtd_mode_plays','premium_subscriptions',
+    'rtd_profiles','rtd_career'
   ]) as t
   where to_regclass('public.' || t) is not null
 ),
@@ -503,7 +504,6 @@ check_rows(sort, migration, what, breaks, ok) as (
             where name = 'premium_unlocks_keep_lifetime_trg' and tbl = 'premium_unlocks')
       and (select count(*) > 0 from proc
             where name = 'fantasy_grant_pass' and body like '%grant_until%')),
-
   -- TWO FOLLOW-UPS TO 124, asked of the BODY and of the function. The cap is asked of
   -- grid_submit_run's body because re-running 85 (or any earlier grid file) on its
   -- own puts back the version that reads the Arcade Card table alone, and that
@@ -520,7 +520,23 @@ check_rows(sort, migration, what, breaks, ok) as (
   (37, '126_fantasy_results_line',
       'each man''s stat line under his name in a lineup on the live board',
       'The live board shows every man''s points and nothing about how he got them. Nothing is scored wrong.',
-      (select count(*) > 0 from col where tbl = 'fantasy_results' and name = 'line'))
+      (select count(*) > 0 from col where tbl = 'fantasy_results' and name = 'line')),
+
+  -- RUN THE DIAMOND PROFILES. Its absence is soft by design: the page keeps every
+  -- season and every choice in the browser until the server can take them, and
+  -- sends them the first time it can. What is lost without it is exactly what this
+  -- file exists to stop losing: a cleared browser, a second phone, a private
+  -- window, each of which is an empty trophy case with nothing said. The rung is
+  -- asked of the function's arguments, because an early copy of 127 had none and
+  -- a board then draws every other player's circle at the bottom rung.
+  (38, '127_baseball_profiles',
+      'a baseball profile and career are kept on the account, not only in the browser',
+      'Seasons, badges and the profile circle live only in the browser that played them. Clearing site data or changing phones empties the trophy case.',
+      (select count(*) > 0 from has_table where name = 'rtd_profiles')
+      and (select count(*) > 0 from has_table where name = 'rtd_career')
+      and (select count(*) > 0 from col where tbl = 'rtd_profiles' and name = 'rung')
+      and (select count(*) > 0 from proc where name = 'rtd_career_merge')
+      and (select count(*) > 0 from proc where name = 'rtd_set_profile' and body like '%p_rung%'))
 )
 -- The summary has to come LAST, and a UNION can only be ordered by an output
 -- column, so the sort key is carried through a subquery rather than sorted on
