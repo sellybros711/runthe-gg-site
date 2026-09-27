@@ -502,7 +502,7 @@ const LOOK = {
   home: {},
   cornfield: { grass: ['#6aa84a', '#5a9a3c', '#4a8a31'], foul: '#4f8a34', mow: 'bands', dirt: ['#c9a06a', '#a98252'],
     wall: ['#e9e3d3', '#cfc6b0'], wallLine: '#f7f5ef', pads: false, pole: '#f7f5ef', wallTop: [12.3, 6.1], wallH: 1.4 },
-  ivy: { wallTop: [10.4, 4.0], wallH: 6.6, wallArt: IVY_WALL, pads: false, wallLine: '#7a3a2a', markInk: 'rgba(255,255,255,.9)' },
+  ivy: { wallTop: [10.4, 4.0], wallH: 6.6, wallArt: IVY_WALL, pads: false, wallLine: '#7a3a2a' },
   warehouse: { grass: ['#52a23e', '#43923a', '#357e2c'], mow: 'bands', wall: ['#1f4a33', '#14331f'] },
   ravine: { dirt: ['#c99a6a', '#a87a4e'], wall: ['#1f4f8f', '#163a6b'], mow: 'bands' },
   fountains: { wall: ['#1f4f8f', '#163a6b'], grass: ['#55a843', '#45963a', '#377e2c'] },
@@ -554,10 +554,6 @@ function markings(parkId, sfx, sky) {
     ? '<rect x="0" y="-60" width="100" height="140" fill="' + url('mowa') + '"/><rect x="0" y="-60" width="100" height="140" fill="' + url('mowb') + '"/>'
     : P.mow === 'bands' ? '<rect x="0" y="-60" width="100" height="140" fill="' + url('bands') + '"/>' : '';
   const chalk = (a) => wh + (a * P.chalk) + ')';
-  /* Distances on the wall face, where it is tall enough to carry them. */
-  const marks = H < 3 ? '' : [[8, '330'], [27, '375'], [50, '400'], [73, '375'], [92, '330']].map(([x, t]) =>
-    '<text x="' + x + '" y="' + f((curveY(x, y0t, apt) + curveY(x, y0b, apb)) / 2 + 0.9) + '" text-anchor="middle" ' +
-    'font-family="Arial,Helvetica,sans-serif" font-weight="700" font-size="' + f(Math.min(2.6, H * 0.42)) + '" fill="' + (P.markInk || 'rgba(255,255,255,.82)') + '">' + t + '</text>').join('');
   return '<div class="turf"></div><div class="lit"></div>' +
     '<svg class="diamond-svg" viewBox="0 ' + -sky + ' 100 ' + (68 + sky) + '" preserveAspectRatio="none" data-park="' + park + '">' +
     '<defs>' +
@@ -636,7 +632,6 @@ function markings(parkId, sfx, sky) {
       '<path d="' + wallPath + '" fill="' + url('wall') + '"/>' + (P.pads ? '<path d="' + wallPath + '" fill="' + url('pads') + '"/>' : '')) +
     '<path d="' + wallTop + '" fill="none" stroke="' + P.wallLine + '" stroke-width="0.4"/>' +
     '<path d="' + wallBot + '" fill="none" stroke="rgba(0,0,0,.45)" stroke-width="0.3"/>' +
-    marks +
     '<path d="' + curve(y0b + 1.2, apb + 1.2) + ' L 100,' + y0b + ' Q 50,' + (2 * apb - y0b) + ' 0,' + y0b + ' Z" fill="' + url('drop') + '"/>' +
     (P.front ? '<g transform="translate(0,' + f(shift) + ')">' + P.front(c) + '</g>' : '') +
     '<line x1="' + fpL + '" y1="' + (-sky) + '" x2="' + fpL + '" y2="' + f(y0b) + '" stroke="' + P.pole + '" stroke-width="1.1"/>' +
