@@ -31,6 +31,10 @@
 (function () {
 
 const SKY = 10;
+/* The lower camera: the ground is squashed toward home by K with home plate at A,
+   and the wall face stands WALL_H units tall. The page's DIAMOND_SPOTS are this
+   same projection, so the three are exported for the checker to hold them. */
+const GROUND_K = 0.85, GROUND_A = 60.5, WALL_H = 6;
 
 /* ─── the catalogue ───
    `need` answers how far along the account is; `of` is the target. A park with no
@@ -245,7 +249,7 @@ BACK.ivy = (c) => {
 };
 /* Ivy Corner's wall IS the ivy. */
 const IVY_WALL = (c) => '<path d="' + c.wallPath + '" fill="' + c.url('ivy') + '"/>' +
-  '<path d="' + curve(c.P.wallTop[0], c.P.wallTop[1]) + '" fill="none" stroke="#7a3a2a" stroke-width=".55"/>';
+  '<path d="' + c.wallTopPath + '" fill="none" stroke="#7a3a2a" stroke-width=".55"/>';
 
 BACK.warehouse = (c) => {
   const sky = skyRect(c, '#8fbde3', '#f2d6ae');
@@ -497,8 +501,8 @@ BACK.neon = (c) => {
 const LOOK = {
   home: {},
   cornfield: { grass: ['#6aa84a', '#5a9a3c', '#4a8a31'], foul: '#4f8a34', mow: 'bands', dirt: ['#c9a06a', '#a98252'],
-    wall: ['#e9e3d3', '#cfc6b0'], wallLine: '#f7f5ef', pads: false, pole: '#f7f5ef', wallTop: [12.3, 6.1] },
-  ivy: { wallTop: [10.4, 4.0], wallArt: IVY_WALL, pads: false, wallLine: '#7a3a2a' },
+    wall: ['#e9e3d3', '#cfc6b0'], wallLine: '#f7f5ef', pads: false, pole: '#f7f5ef', wallTop: [12.3, 6.1], wallH: 1.4 },
+  ivy: { wallTop: [10.4, 4.0], wallH: 6.6, wallArt: IVY_WALL, pads: false, wallLine: '#7a3a2a', markInk: 'rgba(255,255,255,.9)' },
   warehouse: { grass: ['#52a23e', '#43923a', '#357e2c'], mow: 'bands', wall: ['#1f4a33', '#14331f'] },
   ravine: { dirt: ['#c99a6a', '#a87a4e'], wall: ['#1f4f8f', '#163a6b'], mow: 'bands' },
   fountains: { wall: ['#1f4f8f', '#163a6b'], grass: ['#55a843', '#45963a', '#377e2c'] },
@@ -522,18 +526,38 @@ function markings(parkId, sfx, sky) {
   const id = (n) => n + '-' + sfx, url = (n) => 'url(#' + n + '-' + sfx + ')';
   const wh = 'rgba(255,255,255,';
   const fpL = 3, fpR = 97, hx = 50, hy = 62.6, bY = 38.8, bL = 27.15, bR = 72.85, tY = 19, mY = 40.2;
-  const [wt0, wtA] = P.wallTop;
-  const wallBot = curve(13.6, 7.2), wallTop = curve(wt0, wtA), trackIn = curve(15.9, 9.6);
-  const wallPath = wallBot + ' L 100,' + wt0 + ' Q 50,' + (2 * wtA - wt0) + ' 0,' + wt0 + ' Z';
-  const fair = 'M ' + hx + ',' + hy + ' L 0,10.47 L 0,' + -sky + ' L 100,' + -sky + ' L 100,10.47 Z';
+  /* A LOWER CAMERA. The ground is drawn in its own flat coordinates and then
+     squashed toward home plate by GROUND_K, anchored with the plate at GROUND_A:
+     the diamond comes out wider than it is tall, the outfield shallower, and the
+     room that frees at the top goes to a taller wall. Everything on the grass is
+     inside that one transform; the wall, the poles and the backdrop are drawn in
+     screen coordinates around it. The chips in the page's DIAMOND_SPOTS are the
+     same projection, worked out by hand, which check-parks holds together. */
+  const ground = 'translate(0,' + GROUND_A + ') scale(1,' + GROUND_K + ') translate(0,' + -hy + ')';
+  const gy = (y) => GROUND_A - (hy - y) * GROUND_K;
+  const y0b = gy(13.6), apb = gy(7.2);              // the foot of the wall, on screen
+  const H = P.wallH == null ? WALL_H : P.wallH;     // how tall the wall face stands
+  const y0t = y0b - H, apt = apb - H;               // its top
+  const wallBot = curve(y0b, apb), wallTop = curve(y0t, apt), trackIn = curve(15.9, 9.6);
+  const wallPath = wallBot + ' L 100,' + y0t + ' Q 50,' + (2 * apt - y0t) + ' 0,' + y0t + ' Z';
+  const fair = 'M ' + hx + ',' + hy + ' L 0,10.47 L 0,' + (-sky - 40) + ' L 100,' + (-sky - 40) + ' L 100,10.47 Z';
   const above = wallTop + ' L 100,' + -sky + ' L 0,' + -sky + ' Z';
-  const c = { id, url, sky, P, wallPath, wy: (x) => curveY(x, wt0, wtA) };
+  /* The backdrops were authored against the old wall top, so they are shifted
+     down by how far the top moved, and told where the wall is in their own
+     terms. Whatever a backdrop leaves uncovered at the very top is its sky. */
+  const [wt0, wtA] = P.wallTop;
+  const shift = apt - wtA;
+  const c = { id, url, sky, P, wallPath, wallTopPath: wallTop, wy: (x) => curveY(x, y0t, apt) - shift };
   const back = (BACK[park] || BACK.home)(c);
   const infield = 'M 50,57.4 L 68.3,' + bY + ' L 50,23.4 L 31.7,' + bY + ' Z';
   const mow = P.mow === 'diag'
-    ? '<rect x="0" y="' + -sky + '" width="100" height="' + (68 + sky) + '" fill="' + url('mowa') + '"/><rect x="0" y="' + -sky + '" width="100" height="' + (68 + sky) + '" fill="' + url('mowb') + '"/>'
-    : P.mow === 'bands' ? '<rect x="0" y="' + -sky + '" width="100" height="' + (68 + sky) + '" fill="' + url('bands') + '"/>' : '';
+    ? '<rect x="0" y="-60" width="100" height="140" fill="' + url('mowa') + '"/><rect x="0" y="-60" width="100" height="140" fill="' + url('mowb') + '"/>'
+    : P.mow === 'bands' ? '<rect x="0" y="-60" width="100" height="140" fill="' + url('bands') + '"/>' : '';
   const chalk = (a) => wh + (a * P.chalk) + ')';
+  /* Distances on the wall face, where it is tall enough to carry them. */
+  const marks = H < 3 ? '' : [[8, '330'], [27, '375'], [50, '400'], [73, '375'], [92, '330']].map(([x, t]) =>
+    '<text x="' + x + '" y="' + f((curveY(x, y0t, apt) + curveY(x, y0b, apb)) / 2 + 0.9) + '" text-anchor="middle" ' +
+    'font-family="Arial,Helvetica,sans-serif" font-weight="700" font-size="' + f(Math.min(2.6, H * 0.42)) + '" fill="' + (P.markInk || 'rgba(255,255,255,.82)') + '">' + t + '</text>').join('');
   return '<div class="turf"></div><div class="lit"></div>' +
     '<svg class="diamond-svg" viewBox="0 ' + -sky + ' 100 ' + (68 + sky) + '" preserveAspectRatio="none" data-park="' + park + '">' +
     '<defs>' +
@@ -564,9 +588,11 @@ function markings(parkId, sfx, sky) {
     '</defs>' +
     /* foul territory, then fair grass, mown */
     '<rect x="0" y="' + -sky + '" width="100" height="' + (68 + sky) + '" fill="' + P.foul + '"/>' +
+    '<g transform="' + ground + '">' +
+    '<rect x="0" y="-60" width="100" height="140" fill="' + P.foul + '"/>' +
     '<g clip-path="' + url('fair') + '">' +
-      '<rect x="0" y="' + -sky + '" width="100" height="' + (68 + sky) + '" fill="' + url('grass') + '"/>' + mow +
-      '<path d="' + trackIn + ' L 100,' + -sky + ' L 0,' + -sky + ' Z" fill="' + P.track + '"/>' +
+      '<rect x="0" y="-60" width="100" height="140" fill="' + url('grass') + '"/>' + mow +
+      '<path d="' + trackIn + ' L 100,-60 L 0,-60 Z" fill="' + P.track + '"/>' +
       '<path d="' + trackIn + '" fill="none" stroke="rgba(0,0,0,.18)" stroke-width="0.25"/>' +
       (P.skin ? '<circle cx="50" cy="' + mY + '" r="23.2" fill="' + url('dirt') + '"/>' +
         '<circle cx="50" cy="' + mY + '" r="23.2" fill="none" stroke="rgba(90,60,25,.35)" stroke-width="0.3"/>' : '') +
@@ -581,21 +607,9 @@ function markings(parkId, sfx, sky) {
     '<ellipse cx="50" cy="' + (mY + 0.5) + '" rx="3.7" ry="3.5" fill="rgba(0,0,0,.18)"/>' +
     '<circle cx="50" cy="' + mY + '" r="3.4" fill="' + url('mound') + '"/>' +
     '<rect x="49.1" y="' + (mY - 0.35) + '" width="1.8" height=".5" rx=".1" fill="' + wh + '.95)"/>' +
-    (P.night ? '<rect x="0" y="' + -sky + '" width="100" height="' + (68 + sky) + '" fill="' + url('pool') + '"/>' : '') +
-    /* everything behind the wall */
-    '<g clip-path="' + url('above') + '">' + back.art + '</g>' +
-    /* the wall */
-    (P.wallArt ? P.wallArt(c) :
-      '<path d="' + wallPath + '" fill="' + url('wall') + '"/>' + (P.pads ? '<path d="' + wallPath + '" fill="' + url('pads') + '"/>' : '')) +
-    '<path d="' + wallTop + '" fill="none" stroke="' + P.wallLine + '" stroke-width="0.4"/>' +
-    '<path d="' + wallBot + '" fill="none" stroke="rgba(0,0,0,.45)" stroke-width="0.3"/>' +
-    '<path d="' + curve(14.6, 8.3) + ' L 100,13.6 Q 50,0.8 0,13.6 Z" fill="' + url('drop') + '"/>' +
-    (P.front ? P.front(c) : '') +
-    '<line x1="' + fpL + '" y1="' + (-sky) + '" x2="' + fpL + '" y2="13" stroke="' + P.pole + '" stroke-width="1.1"/>' +
-    '<line x1="' + fpR + '" y1="' + (-sky) + '" x2="' + fpR + '" y2="13" stroke="' + P.pole + '" stroke-width="1.1"/>' +
     /* chalk: the foul lines, the boxes at the plate, the on-deck circles */
-    '<line x1="' + hx + '" y1="' + hy + '" x2="' + fpL + '" y2="13.1" stroke="' + chalk(0.9) + '" stroke-width="0.42"/>' +
-    '<line x1="' + hx + '" y1="' + hy + '" x2="' + fpR + '" y2="13.1" stroke="' + chalk(0.9) + '" stroke-width="0.42"/>' +
+    '<line x1="' + hx + '" y1="' + hy + '" x2="' + fpL + '" y2="13.6" stroke="' + chalk(0.9) + '" stroke-width="0.42"/>' +
+    '<line x1="' + hx + '" y1="' + hy + '" x2="' + fpR + '" y2="13.6" stroke="' + chalk(0.9) + '" stroke-width="0.42"/>' +
     '<rect x="45.7" y="60.6" width="2" height="3.8" fill="none" stroke="' + chalk(0.75) + '" stroke-width="0.28"/>' +
     '<rect x="52.3" y="60.6" width="2" height="3.8" fill="none" stroke="' + chalk(0.75) + '" stroke-width="0.28"/>' +
     '<path d="M 48.3,64.6 L 48.3,67.4 L 51.7,67.4 L 51.7,64.6" fill="none" stroke="' + chalk(0.6) + '" stroke-width="0.25"/>' +
@@ -610,10 +624,27 @@ function markings(parkId, sfx, sky) {
     '<rect x="' + (bR - 0.95) + '" y="' + (bY - 0.95) + '" width="1.9" height="1.9" rx=".15" transform="rotate(45 ' + bR + ' ' + bY + ')" fill="#fbfaf5"/>' +
     '<rect x="49.05" y="' + (tY - 0.95) + '" width="1.9" height="1.9" rx=".15" transform="rotate(45 50 ' + tY + ')" fill="#fbfaf5"/>' +
     '<path d="M 48.8,61.8 L 51.2,61.8 L 51.2,62.9 L 50,64 L 48.8,62.9 Z" fill="#fbfaf5" stroke="rgba(0,0,0,.2)" stroke-width="0.12"/>' +
+    '</g>' +
+    (P.night ? '<rect x="0" y="' + -sky + '" width="100" height="' + (68 + sky) + '" fill="' + url('pool') + '"/>' : '') +
+    /* everything behind the wall */
+    '<g clip-path="' + url('above') + '">' +
+      '<rect x="0" y="' + -sky + '" width="100" height="' + (y0b + sky) + '" fill="' + (back.top ||
+        (/stop offset="0" stop-color="([^"]+)"/.exec(back.defs || '') || [])[1] || '#1c2330') + '"/>' +
+      '<g transform="translate(0,' + f(shift) + ')">' + back.art + '</g></g>' +
+    /* the wall */
+    (P.wallArt ? P.wallArt(c) :
+      '<path d="' + wallPath + '" fill="' + url('wall') + '"/>' + (P.pads ? '<path d="' + wallPath + '" fill="' + url('pads') + '"/>' : '')) +
+    '<path d="' + wallTop + '" fill="none" stroke="' + P.wallLine + '" stroke-width="0.4"/>' +
+    '<path d="' + wallBot + '" fill="none" stroke="rgba(0,0,0,.45)" stroke-width="0.3"/>' +
+    marks +
+    '<path d="' + curve(y0b + 1.2, apb + 1.2) + ' L 100,' + y0b + ' Q 50,' + (2 * apb - y0b) + ' 0,' + y0b + ' Z" fill="' + url('drop') + '"/>' +
+    (P.front ? '<g transform="translate(0,' + f(shift) + ')">' + P.front(c) + '</g>' : '') +
+    '<line x1="' + fpL + '" y1="' + (-sky) + '" x2="' + fpL + '" y2="' + f(y0b) + '" stroke="' + P.pole + '" stroke-width="1.1"/>' +
+    '<line x1="' + fpR + '" y1="' + (-sky) + '" x2="' + fpR + '" y2="' + f(y0b) + '" stroke="' + P.pole + '" stroke-width="1.1"/>' +
     '</svg><div class="vig"></div>';
 }
 
-const api = { PARKS, BY_ID, SKY, status, unlockedIds, markings, LOOK };
+const api = { PARKS, BY_ID, SKY, GROUND_K, GROUND_A, status, unlockedIds, markings, LOOK };
 if (typeof module !== 'undefined' && module.exports) module.exports = api;
 if (typeof window !== 'undefined') window.RTD_PARKS = api;
 })();

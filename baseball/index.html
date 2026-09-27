@@ -458,6 +458,13 @@ body:has(#s-intro.on) header .lockup{visibility:hidden}
   padding:1px 5px 2px;border-radius:5px;background:rgba(6,20,8,.5);box-shadow:0 1px 3px rgba(0,0,0,.2)}
 .chip.filled .lab .who,.chip.target .lab .who{width:auto;max-width:100%;margin:0}
 .chip{--labw:min(78px,19vw)}
+/* THE LOWER CAMERA PACKS THE DIAMOND TIGHTER, so a phone's discs come down a size:
+   at 36px the pitcher's name ran into the catcher and the catcher's ran off the
+   bottom. --discr is half the disc less a pixel, which is what seats it on its spot. */
+@media (max-width:520px){
+  .field .chip{--discr:14px}
+  .field .chip .disc{width:30px;height:30px;font-size:9px}
+}
 .chip .who{width:var(--labw);margin:2px 0 1px calc((62px - var(--labw))/2);
   font-size:9px;font-weight:800;line-height:10px;text-shadow:0 1px 4px rgba(0,0,0,.5);color:#fff;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -2546,7 +2553,7 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
 <script src="engine.js?v=33"></script>
 <script src="run.js?v=26"></script>
 <script src="achievements.js?v=10"></script>
-<script src="parks.js?v=2"></script>
+<script src="parks.js?v=3"></script>
 <script src="board.js?v=1"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="auth.js?v=2"></script>
@@ -3060,9 +3067,9 @@ function tcPlate(team,season){
  * corners used to be 18% apart, so 1B covered 2B's name and SS covered 3B's,
  * and the catcher and DH labels were clipped by the boundary. */
 const DIAMOND_SPOTS=[
-  {x:50,y:79},{x:69,y:59},{x:65,y:34},{x:31,y:59},{x:35,y:34},
-  {x:13,y:23},{x:50,y:8},{x:87,y:23},{x:13,y:78},
-  {x:50,y:51},{x:50,y:51},{x:50,y:51},
+  {x:50,y:80.9},{x:70,y:61},{x:66,y:38.5},{x:30,y:61},{x:34,y:38.5},
+  {x:13,y:30.3},{x:50,y:27},{x:87,y:30.3},{x:13,y:77.1},
+  {x:50,y:54.1},{x:50,y:54.1},{x:50,y:54.1},
 ];
 
 /* ─── reel system ─── */

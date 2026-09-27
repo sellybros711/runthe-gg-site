@@ -71,6 +71,25 @@ for (const p of PK.PARKS) {
     'the sky extends the box upward and a hero field gets none');
 }
 
+/* EVERYBODY STANDS ON THE FIELD. The chips are placed by the page's DIAMOND_SPOTS
+   and the grass is drawn by parks.js's lower-camera projection, two copies of one
+   picture. A fielder whose spot sits above the foot of the wall is standing in the
+   stands, which is what a player reported of center field; a catcher far from the
+   plate is not catching. So the spots are held to the projection. */
+{
+  const page = readFileSync(path.join(HERE, 'index.html'), 'utf8');
+  const tbl = (/const DIAMOND_SPOTS=\[([\s\S]*?)\];/.exec(page) || [])[1] || '';
+  const spots = [...tbl.matchAll(/\{x:([\d.]+),y:([\d.]+)\}/g)].map((m) => ({ x: +m[1], y: +m[2] * 0.68 }));
+  const gy = (y) => PK.GROUND_A - (62.6 - y) * PK.GROUND_K;
+  const t = (x) => x / 100, foot = (x) => { const y0 = gy(13.6), c = 2 * gy(7.2) - y0; return (1 - t(x)) ** 2 * y0 + 2 * t(x) * (1 - t(x)) * c + t(x) ** 2 * y0; };
+  claim(spots.length === 12, 'the page has twelve spots to check', String(spots.length));
+  const inStands = spots.slice(0, 9).map((p, i) => ({ i, d: p.y - foot(p.x) })).filter((p) => p.d < 3);
+  claim(!inStands.length, 'every fielder stands on the grass, at least 3 units below the foot of the wall',
+    inStands.map((p) => 'slot ' + p.i + ' at ' + p.d.toFixed(1)).join(', '));
+  const cGap = PK.GROUND_A - spots[0].y;
+  claim(cGap > 3 && cGap < 6.2, `the catcher sits just in front of the plate (${cGap.toFixed(1)} units)`);
+}
+
 // ══ 3. the unlocks ═══════════════════════════════════════════════════════════
 head('3. EVERY PARK CAN BE EARNED, AND A GUEST EARNS NOTHING');
 const row = (o) => Object.assign({ ts: Date.now(), wins: 81, losses: 81, madePlayoffs: false, titleWon: false, picks: [] }, o);
