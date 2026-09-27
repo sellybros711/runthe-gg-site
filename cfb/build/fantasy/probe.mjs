@@ -46,6 +46,8 @@ function head(name, res) {
 }
 
 const prev = String(Math.max(1, Number(week) - 1));
+let gp = [];
+if (KEY) {
 
 let r = await cfbd(`/calendar?year=${season}`);
 head('calendar', r); console.log(cut(r.j, 900));
@@ -59,11 +61,11 @@ r = await cfbd(`/rankings?year=${season}&week=${week}`);
 head('rankings', r); console.log(cut(r.j, 1400));
 
 r = await cfbd(`/lines?year=${season}&week=${week}`);
-head('lines', r); console.log(cut((r.j || []).slice(0, 2), 1800));
+head('lines', r); console.log(cut((Array.isArray(r.j) ? r.j : []).slice(0, 2), 1800));
 
 r = await cfbd(`/games/players?year=${season}&week=${prev}&classification=fbs`);
 head(`games/players week ${prev}`, r);
-const gp = Array.isArray(r.j) ? r.j : [];
+gp = Array.isArray(r.j) ? r.j : [];
 if (gp[0]) {
   console.log('keys', Object.keys(gp[0]));
   const t0 = gp[0].teams && gp[0].teams[0];
@@ -75,19 +77,21 @@ if (gp[0]) {
 }
 
 r = await cfbd(`/roster?year=${season}&team=Georgia`);
-head('roster Georgia', r); console.log(cut((r.j || []).slice(0, 2), 900));
+head('roster Georgia', r); console.log(cut((Array.isArray(r.j) ? r.j : []).slice(0, 2), 900));
 
 r = await cfbd(`/stats/player/season?year=${Number(season) - 1}&category=passing`);
-head('stats/player/season last year passing', r); console.log(cut((r.j || []).slice(0, 3), 900));
+head('stats/player/season last year passing', r); console.log(cut((Array.isArray(r.j) ? r.j : []).slice(0, 3), 900));
 
 r = await cfbd(`/player/usage?year=${season}`);
-head('player/usage', r); console.log(cut((r.j || []).slice(0, 2), 900));
+head('player/usage', r); console.log(cut((Array.isArray(r.j) ? r.j : []).slice(0, 2), 900));
 
 r = await cfbd(`/ratings/sp?year=${season}`);
-head('ratings/sp', r); console.log(cut((r.j || []).slice(0, 2), 900));
+head('ratings/sp', r); console.log(cut((Array.isArray(r.j) ? r.j : []).slice(0, 2), 900));
 
 r = await cfbd(`/teams/fbs?year=${season}`);
-head('teams/fbs', r); console.log(cut((r.j || []).slice(0, 1), 900));
+head('teams/fbs', r); console.log(cut((Array.isArray(r.j) ? r.j : []).slice(0, 1), 900));
+
+} else console.log('no CFBD_KEY: skipping CFBD');
 
 /* ESPN, which needs no key. */
 r = await espn(`${ESPN}/scoreboard?groups=80&dates=${season}&seasontype=2&week=${week}&limit=300`);
@@ -100,8 +104,17 @@ if (ev0) {
   console.log(cut({ id: ev0.id, date: ev0.date, name: ev0.name, status: c.status,
     competitors: c.competitors.map((x) => ({ id: x.id, homeAway: x.homeAway, team: x.team && {
       id: x.team.id, abbreviation: x.team.abbreviation, location: x.team.location,
-      displayName: x.team.displayName }, curatedRank: x.curatedRank, score: x.score })) }, 2400));
+      displayName: x.team.displayName, conferenceId: x.team.conferenceId }, curatedRank: x.curatedRank,
+      score: x.score })), odds: c.odds, venue: c.venue && c.venue.fullName,
+      neutral: c.neutralSite, conf: c.conferenceCompetition }, 3200));
+  console.log('ranked games', evs.filter((e) => e.competitions[0].competitors.some((x) => x.curatedRank
+    && x.curatedRank.current <= 25)).length, 'with odds', evs.filter((e) => e.competitions[0].odds).length);
 }
+const rk = await espn(`${ESPN}/rankings`);
+head('espn rankings', rk);
+console.log(cut(rk.j && rk.j.rankings && rk.j.rankings.map((x) => ({ name: x.name, type: x.type,
+  first: x.ranks && x.ranks[0] && { current: x.ranks[0].current, team: x.ranks[0].team && {
+    id: x.ranks[0].team.id, loc: x.ranks[0].team.location } } })), 1200));
 
 /* A finished game from last week, for the box score and the injuries block. */
 r = await espn(`${ESPN}/scoreboard?groups=80&dates=${season}&seasontype=2&week=${prev}&limit=300`);
@@ -115,7 +128,7 @@ if (done) {
   if (pl && pl[0]) {
     for (const b of pl[0].statistics || []) {
       console.log('  block', b.name, 'keys', cut(b.keys, 200), 'labels', cut(b.labels, 200),
-        'athlete', cut(b.athletes && b.athletes[0], 300));
+        'athlete', cut(b.athletes && b.athletes[0], 500));
     }
   }
   console.log('injuries', cut(s.j && s.j.injuries, 1200));
