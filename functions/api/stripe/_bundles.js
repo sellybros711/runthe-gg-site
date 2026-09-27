@@ -46,9 +46,27 @@
  *                     the bundle sells.
  */
 
+/* THE YEARLY SWITCH. One flag. On since launch (2026-09-27); false is the kill switch.
+ *
+ * Off, the store sells the one-time bundles exactly as it always has. On, it sells
+ * Perfect Season and Run The Bundle as yearly plans (the `year` block on each
+ * below) and stops selling them once. Nothing else on the site reads a flag: the
+ * page asks /api/stripe/offer, which answers from here, so a flip is one line
+ * here and a deploy.
+ *
+ * ON IS NOT ENOUGH ON ITS OWN, deliberately. _offer.js only answers 'year' when
+ * this is true AND both yearly price env vars are set AND the database answers
+ * premium_yearly_ready() (supabase/124_premium_yearly.sql). Any of those missing
+ * and the answer is 'once', so flipping this ahead of the migration keeps selling
+ * the product the database can record rather than a plan it cannot.
+ *
+ * A LIFETIME BUYER IS UNTOUCHED EITHER WAY. Their rows have no end date and 124
+ * refuses any update that would give them one. */
+export const YEARLY_LIVE = true;
+
 export const BUNDLES = {
   /* Perfect Season Premium Bundle: dynasty + one franchise dynasty (NFL) and
-   * commissioner mode (CFB). One-time purchase, permanent unlock. */
+   * commissioner mode (CFB). Sold once and for good, or yearly (see YEARLY_LIVE). */
   'perfect-season': {
     name: 'Perfect Season Premium Bundle',
     envPrice: 'STRIPE_PRICE_PS_PREMIUM_BUNDLE',
@@ -58,10 +76,15 @@ export const BUNDLES = {
     ],
     returnRoots: ['/football/', '/cfb/'],
     defaultReturn: '/football/',
+    /* $19.99 a year. While it is paid for it grants what the one-time bundle grants,
+       and when it stops they stop. The products it keeps alive are the grants above;
+       supabase/124's premium_bundle_products() is the same list and verify-bundles.mjs
+       holds the two together. */
+    year: { envPrice: 'STRIPE_PRICE_PS_YEAR' },
   },
 
   /* Run The Bundle: everything above, plus a year of the Arcade Card and a
-   * Run The Tour coin + pack drop. One-time purchase.
+   * Run The Tour coin + pack drop. Sold once, or yearly (see YEARLY_LIVE).
    *
    * The tour grant is the Large Bucket ($9.99 on its own: 102,000 coins and one
    * Tour Pack) with the coins ROUNDED DOWN to a flat 100,000, an owner call in
@@ -90,9 +113,25 @@ export const BUNDLES = {
     ],
     returnRoots: ['/football/', '/cfb/', '/golf/', '/arcade/'],
     defaultReturn: '/football/',
+    /* $34.99 a year. The two games and the Arcade Card while it is paid for. The Run
+       The Tour coins and pack above are a BONUS, handed over once per account ever:
+       not on a renewal, not on a second plan, and not to an account that already got
+       them from the one-time bundle. 124 writes that row insert-if-absent, so "once"
+       is the database's rule rather than a thing this code has to remember. */
+    year: { envPrice: 'STRIPE_PRICE_RTB_YEAR', bonus: 'runtour_pack' },
   },
 
-  /* Run The Diamond Pro: the baseball game's own tier, $9.99 once, for good.
+  /* Run The Diamond Pro: the baseball game's own tier, $14.99 A YEAR, renewing.
+   *
+   * IT WAS $9.99 ONCE and became a subscription on the owner's call (2026-09),
+   * because the Stripe Price behind STRIPE_PRICE_RTD_PRO is now recurring.
+   * `recurring: true` is what tells the two files that read this: the checkout
+   * opens in subscription mode (a recurring Price in payment mode is refused by
+   * Stripe outright), and the webhook writes the grant with an end date that
+   * follows the subscription, moved forward on every renewal and pulled in on
+   * a cancellation or a failed payment. It is still ONE premium_unlocks row, so
+   * nothing that reads Pro changed, and it never touches the `subscriptions`
+   * table, which is the Arcade Card's and holds one row a user.
    *
    * THE ONE BUNDLE THAT BELONGS TO ONE GAME, and that is the owner's decision
    * (2026-09) rather than a slip. CLAUDE.md says never to build a price or an
@@ -107,6 +146,7 @@ export const BUNDLES = {
   'diamond-pro': {
     name: 'Run The Diamond Pro',
     envPrice: 'STRIPE_PRICE_RTD_PRO',
+    recurring: true,
     grants: [
       { product: 'rtd_premium' },
     ],
@@ -128,6 +168,36 @@ export const BUNDLES = {
     defaultReturn: '/hoops/',
   },
 };
+
+/* WHAT A YEARLY PLAN KEEPS ALIVE: its bundle's grants, minus the bonus, minus any
+   term (the plan's own period is the term). */
+export function yearlyProducts(key) {
+  const b = bundleByKey(key);
+  if (!b || !b.year) return [];
+  return b.grants.map(function (g) { return g.product; })
+    .filter(function (p) { return p !== b.year.bonus; });
+}
+
+/* The payload the bonus row carries, read off the bundle's own grant so the coins
+   are written in one place. Null for a plan with no bonus. */
+export function yearlyBonus(key) {
+  const b = bundleByKey(key);
+  if (!b || !b.year || !b.year.bonus) return null;
+  const g = b.grants.find(function (x) { return x.product === b.year.bonus; });
+  return g ? (g.payload || {}) : null;
+}
+
+/* Which yearly plan a Stripe price belongs to. A plan changed in the Customer Portal
+   keeps the metadata it was bought with, so the PRICE is the truth about what it now
+   is. Null for a price that is not one of ours (the Arcade Card's, say). */
+export function bundleForYearPrice(env, priceId) {
+  if (!priceId) return null;
+  for (const key of Object.keys(BUNDLES)) {
+    const y = BUNDLES[key].year;
+    if (y && env && env[y.envPrice] && env[y.envPrice] === priceId) return key;
+  }
+  return null;
+}
 
 export function bundleByKey(key) {
   return Object.prototype.hasOwnProperty.call(BUNDLES, key) ? BUNDLES[key] : null;

@@ -39,7 +39,12 @@ const day = (n) => new Date(Date.now() + n * 86400000).toISOString();
    separate ways: premium_products() through an RPC for the gates, and the premium_unlocks
    rows through a table read for the receipt. Both are stubbed, and they are allowed to
    disagree, because in life they can: an account comped by hand has products and no rows. */
-const stub = (signedIn, products, unlocks) => `
+/* `plans` is the fourth answer, and it arrived with the yearly plans (supabase/124). A row
+   says a plan keeps it alive; only the plan says whether it renews or has been cancelled,
+   and those are two reads of two tables. Left out, premium_subscriptions falls through to
+   the profile branch below, which has no .order on it, so the read throws and is caught as
+   [] : the right answer for a lifetime owner and no way to express a subscriber at all. */
+const stub = (signedIn, products, unlocks, plans) => `
 window.supabase={createClient(){
   const user={id:'${UID}',email:'c@e.com'};
   const session=${signedIn}?{access_token:'x',user}:null;
@@ -54,6 +59,8 @@ window.supabase={createClient(){
     from(t){
       if(t==='premium_unlocks') return {select(){return{eq(){return{
         order:()=>Promise.resolve({data:${JSON.stringify(unlocks || [])},error:null})}}}}};
+      if(t==='premium_subscriptions') return {select(){return{eq(){return{
+        order:()=>Promise.resolve({data:${JSON.stringify(plans || [])},error:null})}}}}};
       return {select(){return{eq(){return{maybeSingle:()=>Promise.resolve(
         {data:${signedIn ? "{username:'"+TESTER+"'}" : 'null'}})}}}}};
     },
@@ -72,6 +79,33 @@ const FULL = BOUGHT.concat([
 const LAPSED = BOUGHT.concat([
   { product: 'arcade_card_year', source: 'run-the-bundle', granted_at: day(-400), expires_at: day(-35), fulfilled_at: day(-400) },
 ]);
+
+/* ── THE THREE KINDS OF BUYER, which is what the yearly plans made this file need ────────
+ *
+ * BOUGHT above is the LIFETIME owner and is deliberately left exactly as it was: expires_at
+ * null on both rows, no sub_until, no plan. Every assertion about that account has to keep
+ * reading what it read before any of this, because the one rule that wins over everything
+ * else here is that a lifetime row does not move.
+ *
+ * A PLAN'S ROWS CARRY AN END DATE AND `sub_until`, which is how the page tells a row a plan
+ * is keeping alive from a row somebody owns. `expires_at` is the later of sub_until and
+ * grant_until (supabase/124), and for an account with no fixed grant that is sub_until. */
+const SUB_ROWS = [
+  { product: 'ps_premium', source: 'perfect-season', granted_at: day(-20),
+    expires_at: day(352), sub_until: day(352), grant_until: null, fulfilled_at: day(-20) },
+  { product: 'cfb_premium', source: 'perfect-season', granted_at: day(-20),
+    expires_at: day(352), sub_until: day(352), grant_until: null, fulfilled_at: day(-20) },
+];
+const PLAN_ON = [{ bundle: 'perfect-season', status: 'active', current_period_end: day(345),
+  cancel_at_period_end: false, access_until: day(352), ended_at: null }];
+const PLAN_OFF = [{ bundle: 'perfect-season', status: 'active', current_period_end: day(345),
+  cancel_at_period_end: true, access_until: day(352), ended_at: null }];
+/* LAPSED: the plan is over and its rows are left behind with an end date in the past, which
+   is exactly what 124 does rather than deleting them. The account is back on the free
+   allowance, and the receipt has to say the plan ended without calling anything lifetime. */
+const SUB_GONE = SUB_ROWS.map((r) => ({ ...r, expires_at: day(-9), sub_until: day(-9) }));
+const PLAN_DEAD = [{ bundle: 'perfect-season', status: 'canceled', current_period_end: day(-16),
+  cancel_at_period_end: true, access_until: day(-9), ended_at: day(-9) }];
 
 /* PUT A NAME ON THE REAL TESTER LIST, by trapping the assignment commish/access.js makes.
    IT NO LONGER DECIDES ANYTHING, because COMMISH_LIVE is true and commishOn() answers yes
@@ -94,10 +128,18 @@ const b = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-119
 /* `listed` off skips the trap, so nothing is pushed onto the real tester list. That used to
    mean no access to Commissioner Simulator at all; since the launch flag turned it means an
    account that gets in without being named anywhere, which is every visitor. */
-async function open(init, label, listed, clock) {
+async function open(init, label, listed, clock, plan) {
   const p = await b.newPage({ viewport: { width: 390, height: 844 } });
   p.errs = [];
   p.on('pageerror', (e) => p.errs.push(e.message));
+  /* WHAT IS ON SALE, which the page asks the server rather than deciding for itself
+     (functions/api/stripe/_offer.js). Stubbed on every page, because nothing here runs
+     against Cloudflare: unanswered, the fetch 404s and RTG_STORE falls back to 'once', so
+     every section in this file was quietly walking the one-time store while production sells
+     the yearly one. Pass 'once' to walk the other side of the switch, which is a real state:
+     the flag is the kill switch and the page has to stay correct with it off. */
+  await p.route('**/api/stripe/offer', (r) => r.fulfill({ status: 200,
+    contentType: 'application/json', body: JSON.stringify({ plan: plan || 'year' }) }));
   /* THE FREE TIER'S CLOCK, WHICH THIS PAGE NOW READS. It is answered here rather than by a
      database because what is under test is what the page does with an answer, and the two
      answers worth having are awkward to arrange for real: a season spent an hour ago, and a
@@ -323,10 +365,25 @@ const has = (p, sel) => p.$(sel).then((e) => !!e);
       return c ? (c.textContent || '').trim() : null;
     });
   });
-  ok('every price says it is one payment', once.length === 2 && once.every((x) => /one payment/i.test(x || '')),
-    JSON.stringify(once));
-  ok('and the sheet still rules out a subscription', /no subscription/i.test(sheet),
-    /no subscription/i.test(sheet) ? '' : sheet.slice(0, 120));
+  /* AND THE CLAIM IS NOW "TRUE ABOUT THE PLAN IT DREW" RATHER THAN THE WORDS "one payment".
+     This section ran against the yearly store the day the switch went on, so pinned to that
+     phrase it would have demanded a sheet that lied. What has to hold either way is that both
+     prices carry the SAME chip, because a reader comparing two numbers reads one of them, and
+     that the sheet never carries the other plan's vocabulary. The plan is asked of the module
+     rather than assumed, so this arm follows the switch on its own. */
+  const drew = await p.evaluate(() => window.RTG_STORE.plan());
+  ok('both prices carry a chip, and it is the same chip',
+    once.length === 2 && !!once[0] && once[0] === once[1], JSON.stringify(once));
+  ok('and the chip matches what is on sale',
+    drew === 'year' ? /per year/i.test(once[0] || '') : /one payment/i.test(once[0] || ''),
+    drew + ' | ' + once[0]);
+  /* NEVER SAY OR IMPLY A PLAN IS THEIRS FOR GOOD, and never tell a one-time buyer it renews.
+     One list, read in whichever direction the switch points. */
+  const LIFE = /one payment|pay once|paid once|lifetime|no subscription|nothing renews|for good|forever/i;
+  const SUBS = /per year|a year|renews|subscription|yearly/i;
+  ok(drew === 'year' ? 'the yearly sheet never claims a one-off' : 'the one-time sheet rules out a subscription',
+    drew === 'year' ? !LIFE.test(sheet) : /no subscription/i.test(sheet), sheet.slice(0, 160));
+  ok('and it does say which it is', (drew === 'year' ? SUBS : LIFE).test(sheet));
   /* AND THE BAND IS REALLY GONE rather than hidden, so nobody restores half of it later and
      leaves the sheet saying the same thing twice at two volumes. */
   ok('and the old band is not still there', !(await has(p, '#sheet-in .pw-alert')));
@@ -565,7 +622,17 @@ const tapped = (p) => p.evaluate(() => window.__nav || null);
      such sentence looks exactly like a subscription about to bill, and a customer who
      thinks they are on a recurring charge cancels the account to stop it. */
   ok('it says nothing renews', /Nothing here renews/.test(r));
+  /* A LIFETIME ROW READS EXACTLY AS IT ALWAYS DID, which is the rule that wins over
+     everything the yearly plans added. Both halves: the words on the row, and the absence of
+     every word a plan would have put there. */
+  ok('the lifetime rows say Yours for good', (r.match(/Yours for good/g) || []).length >= 2,
+    (r.match(/Yours for good/g) || []).length + ' of them');
+  ok('and nothing on the page renews or ends a plan', !/Renews on|Ends on|Your plan/.test(r));
   ok('and gives the Arcade year an end date', /Arcade Card year simply ends on/.test(r));
+  /* THE BUTTON IS A RECEIPT BUTTON FOR SOMEBODY WITH NOTHING TO CANCEL. "Manage your plan"
+     on a lifetime owner would be offering to end something that does not end. */
+  ok('the billing button offers receipts, not plan management',
+    (await txt(p, '#pf-bill')) === 'Receipts and billing', await txt(p, '#pf-bill'));
   /* NOT EVERYTHING IN A BUNDLE ARRIVES AT ONCE. The Tour coins are credited by the golf
      backend, so an unstamped row is a promise rather than a thing the player has. */
   ok('the unfulfilled item says it is on the way', /On its way to your account/.test(r));
@@ -586,6 +653,93 @@ const tapped = (p) => p.evaluate(() => window.__nav || null);
   ok('it reads Ended', /Ended /.test(r));
   ok('and never claims a future end date', !/Ends /.test(r) && !/simply ends on/.test(r));
   ok('the line is marked ended', (await p.$$('#pf-pro-list .pw-line.ended')).length === 1);
+  ok('no page errors', p.errs.length === 0, p.errs[0]);
+  await p.close();
+}
+
+/* ── a yearly subscriber ─────────────────────────────────────────────────────────────────
+ *
+ * THE RECEIPT IS THE ONE SCREEN THAT HAS TO TELL THE TWO KINDS OF BUYER APART, and every
+ * way it gets this wrong renders perfectly. A plan's rows look like an Arcade year: an end
+ * date and a source. Read as a purchase they say "Bought 7 Sep. Ends 14 Sep 2027", which is
+ * true about the row and says nothing about the charge that is coming, and the paragraph
+ * under them used to promise that nothing renews, which for this account is simply false.
+ *
+ * So `sub_until` on the row is what says a plan is holding it up, and the plan itself is
+ * what says whether it renews or has been cancelled. Two reads, two tables, one sentence.
+ */
+{
+  const p = await open(stub(true, ['ps_premium', 'cfb_premium'], SUB_ROWS, PLAN_ON),
+    'a yearly subscriber is told when it renews');
+  await hub(p);
+  ok('the Pro pill is beside the name', (await txt(p, '.pfid .pw-pill')) === 'Pro');
+  await p.click('#pf-go-pro');
+  await p.waitForTimeout(1100);
+  const r = await txt(p, '#pf-pro-list');
+  ok('both plan rows are on the receipt', (await p.$$('#pf-pro-list .pw-line')).length === 2,
+    (await p.$$('#pf-pro-list .pw-line')).length);
+  ok('each row says when it renews', (r.match(/Renews on/g) || []).length === 2,
+    (r.match(/Renews on/g) || []).length);
+  ok('the paragraph says the plan renews each year', /renews each year until you cancel/.test(r));
+  /* NEVER SAY OR IMPLY A PLAN IS THEIRS FOR GOOD. These four are the whole of the lifetime
+     vocabulary on this page, and every one of them is a lie to a subscriber. */
+  ok('and never calls it lifetime', !/Yours for good|paid once|Nothing here renews|lifetime/i.test(r), r.slice(0, 120));
+  /* CANCELLING IS WHAT A SUBSCRIBER OPENED THIS PAGE TO FIND. */
+  ok('the button says Manage your plan', (await txt(p, '#pf-bill')) === 'Manage your plan',
+    await txt(p, '#pf-bill'));
+  ok('and the note mentions cancelling', /cancel or change your plan/.test(await txt(p, '#pf-pro-bill')));
+  /* THE PORTAL IS ASKED FOR THE PLAN'S OWN CUSTOMER, because an account can hold more than
+     one Stripe customer and only one of them can cancel the plan (portal.js says why). A
+     scope that quietly went missing would open a portal with no plan in it. */
+  let sent = null;
+  await p.route('**/api/stripe/portal', async (route) => {
+    sent = route.request().postData();
+    await route.fulfill({ status: 200, contentType: 'application/json', body: '{"error":"stub"}' });
+  });
+  await p.click('#pf-bill');
+  await p.waitForTimeout(700);
+  ok('the portal is asked with the plan scope', !!sent && /"scope":"plan"/.test(sent), sent);
+  ok('no page errors', p.errs.length === 0, p.errs[0]);
+  await p.close();
+}
+
+/* ── a subscriber who has cancelled ─────────────────────────────────────────────────────
+   STILL PAID FOR, AND STILL THEIRS UNTIL THE PERIOD ENDS. `cancel_at_period_end` is the one
+   field that separates this from the section above, and getting it backwards tells somebody
+   who has cancelled that they will be charged again. */
+{
+  const p = await open(stub(true, ['ps_premium', 'cfb_premium'], SUB_ROWS, PLAN_OFF),
+    'a cancelled plan says when it ends, not when it renews');
+  await hub(p);
+  /* ASKED BEFORE THE RECEIPT IS OPENED, because opening it rewrites the same sheet element
+     and the row is then gone by construction. A cancelled plan is still paid for, so the
+     modes are still unlocked and the receipt row is still on the hub. */
+  ok('the modes are still unlocked', await has(p, '#pf-go-pro'));
+  await p.click('#pf-go-pro');
+  await p.waitForTimeout(1100);
+  const r = await txt(p, '#pf-pro-list');
+  ok('the rows say Ends on', (r.match(/Ends on/g) || []).length === 2, (r.match(/Ends on/g) || []).length);
+  ok('and never say it renews on a date', !/Renews on/.test(r));
+  ok('no page errors', p.errs.length === 0, p.errs[0]);
+  await p.close();
+}
+
+/* ── a plan that has lapsed ──────────────────────────────────────────────────────────────
+   BACK ON THE FREE ALLOWANCE, AND THE RECEIPT STILL TELLS THE TRUTH. supabase/124 leaves the
+   rows behind with an end date in the past rather than deleting them, so this page reads two
+   rows an account no longer benefits from. Two things must hold and they are separate: the
+   page must not crash on a dead plan, and it must not call a lapsed plan lifetime. */
+{
+  const p = await open(stub(true, [], SUB_GONE, PLAN_DEAD),
+    'a lapsed plan is back to free, and says so');
+  /* PREMIUM_PRODUCTS IS THE GATE AND IT ANSWERS NOTHING, so this account is free again: the
+     offer comes back. That is the half a receipt test would otherwise never look at. */
+  await hub(p);
+  ok('the Free pill is back', (await txt(p, '.pfid .pw-pill')) === 'Free', await txt(p, '.pfid .pw-pill'));
+  ok('and the offer card is back', await has(p, '#pf-prem'));
+  /* The receipt row is drawn off the products call, so a lapsed account has none, and the
+     rows are reached by the page's own path rather than invented here. */
+  ok('no Pro access row for an account that owns nothing now', !(await has(p, '#pf-go-pro')));
   ok('no page errors', p.errs.length === 0, p.errs[0]);
   await p.close();
 }
@@ -705,6 +859,170 @@ const tapped = (p) => p.evaluate(() => window.__nav || null);
     ok('  no page errors', p.errs.length === 0, p.errs[0]);
     await p.close();
   }
+}
+
+/* ── the press, and the three answers it can get ─────────────────────────────────────────
+ *
+ * STRIPE IS LIVE AND HAS NO TEST MODE, so every request here is intercepted and NOTHING
+ * reaches the real endpoint. The route is installed before the click, and the section
+ * asserts it caught the request rather than trusting that it did: a walk that let a
+ * checkout out would open a real payment page on somebody's account.
+ *
+ * WHAT IT IS FOR. The page has to send the plan it drew. checkout-bundle.js reads a body
+ * with no `plan` on it as 'once', and once the yearly switch went on that is a mismatch, so
+ * the server answered 409 offer_changed to EVERY college purchase and the button read
+ * "Checkout couldn't start. Try again" for ever. Nothing threw, the store drew perfectly,
+ * every price on it was right, and the only symptom was that nobody could buy the game.
+ * That is why the plan is asserted as a field of the body rather than inferred from the
+ * button working: a body missing it still gets a reply.
+ */
+/* Opens the offer the way a signed in free account reaches it, and hands back the bodies the
+   checkout endpoint was sent. `answer` is the reply every press gets. NOTHING REACHES THE
+   REAL ENDPOINT: the route is installed before the sheet is even opened.
+   A reply carrying a url would navigate, which ends the page mid walk, so every answer here
+   is a refusal. The redirect is not what is under test; the body that went out is. */
+async function pressBuy(label, answer, which, plan) {
+  const bodies = [], portal = [];
+  const p = await open(stub(true, [], []), label, false, undefined, plan);
+  await p.route('**/api/stripe/checkout-bundle', async (route) => {
+    bodies.push(route.request().postData());
+    await route.fulfill({ status: answer.status, contentType: 'application/json', body: answer.body });
+  });
+  /* THE PORTAL GOES IN BEFORE THE PRESS, because already_subscribed asks for it inside the
+     handler: installed afterwards the request is already out and the route catches nothing,
+     which reads as the page failing to open the portal. */
+  await p.route('**/api/stripe/portal', async (route) => {
+    portal.push(route.request().postData());
+    await route.fulfill({ status: 200, contentType: 'application/json', body: '{"error":"stub"}' });
+  });
+  p.portal = portal;
+  await hub(p);
+  await p.click('#pf-prem');
+  await p.waitForTimeout(900);
+  ok('the store sheet is open', await has(p, '#b-buy-ps'));
+  await p.click(which || '#b-buy-ps', { timeout: 8000 }).catch(() => {});
+  await p.waitForTimeout(1100);
+  return { p, bodies };
+}
+
+{
+  const { p, bodies } = await pressBuy('the press sends the plan the sheet drew',
+    { status: 503, body: '{"error":"stripe_not_configured"}' });
+  ok('the store drew the yearly plan, which is what is on sale',
+    (await p.evaluate(() => window.RTG_STORE.plan())) === 'year',
+    await p.evaluate(() => window.RTG_STORE.plan()));
+  ok('the request was intercepted and never went out', bodies.length === 1, bodies.length);
+  const body = bodies[0] ? JSON.parse(bodies[0]) : {};
+  ok('it names the bundle', body.bundle === 'perfect-season', body.bundle);
+  /* THE FIELD ITSELF, not merely a truthy plan: 'once' here is the whole defect. */
+  ok('and it carries the plan the sheet showed', body.plan === 'year', String(body.plan));
+  ok('no page errors', p.errs.length === 0, p.errs[0]);
+  await p.close();
+}
+
+/* THE OTHER SIDE OF THE SWITCH, which is a real state rather than a hypothetical: YEARLY_LIVE
+   is the kill switch and turning it off has to put the one-time bundles back on sale. A page
+   that sent 'year' regardless would then be refused exactly the way it was refused before. */
+{
+  const { p, bodies } = await pressBuy('with the switch off it sends once',
+    { status: 503, body: '{"error":"stripe_not_configured"}' }, '#b-buy-ps', 'once');
+  const body = bodies[0] ? JSON.parse(bodies[0]) : {};
+  ok('the plan follows the server rather than the page', body.plan === 'once', String(body.plan));
+  ok('no page errors', p.errs.length === 0, p.errs[0]);
+  await p.close();
+}
+
+/* ── what is on sale changed under an open sheet ─────────────────────────────────────────
+   The switch being flipped, or a browser holding a store.js from before it. The page must put
+   the real price up rather than send anybody to a checkout the screen did not describe, and it
+   must not sit there saying "try again" about a request that will be refused identically every
+   time. */
+{
+  const { p } = await pressBuy('offer_changed redraws the offer',
+    { status: 409, body: '{"error":"offer_changed","plan":"once"}' }, '#b-buy-rtb');
+  ok('it is not reported as a failure',
+    !/Checkout couldn't start/.test(await txt(p, '#b-buy-rtb')), await txt(p, '#b-buy-rtb'));
+  ok('the store now says what is really on sale',
+    (await p.evaluate(() => window.RTG_STORE.plan())) === 'once',
+    await p.evaluate(() => window.RTG_STORE.plan()));
+  ok('and the offer is still on screen to be read', await has(p, '#b-buy-ps'));
+  ok('no page errors after the redraw', p.errs.length === 0, p.errs[0]);
+  await p.close();
+}
+
+/* ── a plan already running is changed in Stripe, never bought twice ─────────────────────
+   409 already_subscribed is not an error to report, it is a door: the portal is where a plan
+   is changed or cancelled. A page that printed the refusal would leave somebody who wants to
+   upgrade with nowhere to go. */
+{
+  const { p, bodies } = await pressBuy('already_subscribed opens the portal',
+    { status: 409, body: '{"error":"already_subscribed","change":true}' }, '#b-buy-rtb');
+  ok('the checkout was asked and intercepted', bodies.length === 1, bodies.length);
+  ok('the portal was asked', p.portal.length === 1, p.portal.length);
+  /* THE PLAN'S OWN CUSTOMER. An account can hold more than one Stripe customer and only one
+     of them can cancel the plan (portal.js says why), so a scope that quietly went missing
+     would open a portal with no plan in it: a dead end at the exact moment somebody is
+     trying to change what they pay. */
+  ok('and it asked for the plan scope', !!p.portal[0] && /"scope":"plan"/.test(p.portal[0]), p.portal[0]);
+  ok('no page errors', p.errs.length === 0, p.errs[0]);
+  await p.close();
+}
+
+/* ── NOTHING A SUBSCRIBER CAN REACH PROMISES THEM THAT NOTHING RENEWS ────────────────────
+ *
+ * The rule the whole copy pass runs on is that every word has to stay true for both kinds of
+ * buyer, and there is one list of words that cannot be true for a plan: one payment, paid
+ * once, lifetime, for good, nothing renews. Asserted over every screen a subscriber actually
+ * reaches rather than one sentence at a time, because the way this comes back is somebody
+ * adding a sixth screen rather than editing one of the five.
+ *
+ * WHAT IS NOT CHECKED HERE, AND WHY. premiumSheet's "You're Pro" branch carries that sentence
+ * too, and on THIS page an owner cannot reach it: all four callers of openPremium are gated
+ * shut for an owner (premiumPitch excludes them, and commishShut returns false for them by
+ * its second line), so the branch is unreachable from the college game today. It was fixed
+ * anyway, because it is one new door away from being reachable and its own comment claims it
+ * already is. Driving it would mean faking a state the page cannot be in, which is a test of
+ * the fixture rather than of the page.
+ */
+{
+  const LIFETIME = /one payment|pay once|paid once|lifetime|for good|nothing (here )?renews|nothing to renew|charges you again/i;
+  const p = await open(stub(true, ['cfb_premium', 'ps_premium'], SUB_ROWS, PLAN_ON),
+    'a subscriber is never told their plan is theirs for good');
+  /* THE FRONT PAGE, where an owner gets no offer and the door is open. */
+  const home = await p.evaluate(() => (document.body.innerText || '').replace(/\s+/g, ' '));
+  ok('the front page says nothing about a one-off payment', !LIFETIME.test(home),
+    (home.match(LIFETIME) || [''])[0]);
+  await hub(p);
+  const hubTxt = await p.evaluate(() => (document.getElementById('sheet-in').innerText || '').replace(/\s+/g, ' '));
+  ok('nor does the profile hub', !LIFETIME.test(hubTxt), (hubTxt.match(LIFETIME) || [''])[0]);
+  ok('an owner gets no offer card there', !(await has(p, '#pf-prem')));
+  await p.click('#pf-go-pro');
+  await p.waitForTimeout(1200);
+  const rec = await p.evaluate(() => (document.getElementById('sheet-in').innerText || '').replace(/\s+/g, ' '));
+  ok('nor the receipt', !LIFETIME.test(rec), (rec.match(LIFETIME) || [''])[0]);
+  /* AND IT DOES SAY THE TRUE THING, or a page that simply said nothing would pass. */
+  ok('and the receipt does say when it renews', /Renews on/.test(rec));
+  ok('no page errors', p.errs.length === 0, p.errs[0]);
+  await p.close();
+}
+
+/* AND THE SAME SWEEP FOR A LIFETIME OWNER, WHO MUST STILL READ ALL OF IT. The two arms are
+   each other's control: a page that had simply deleted the lifetime vocabulary would pass the
+   section above and fail this one. */
+{
+  const p = await open(stub(true, ['cfb_premium', 'ps_premium', 'arcade_card_year', 'runtour_pack'], FULL),
+    'a lifetime owner still reads every word they read before');
+  await hub(p);
+  await p.click('#pf-go-pro');
+  await p.waitForTimeout(1200);
+  const rec = await p.evaluate(() => (document.getElementById('sheet-in').innerText || '').replace(/\s+/g, ' '));
+  ok('the receipt still says they paid once', /You paid once/.test(rec));
+  ok('and that nothing here renews', /Nothing here renews/.test(rec));
+  ok('and calls the two football rows theirs for good', /Yours for good/.test(rec));
+  ok('and never mentions a plan', !/Renews on|Ends on|Your plan/.test(rec),
+    (rec.match(/Renews on|Ends on|Your plan/) || [''])[0]);
+  ok('no page errors', p.errs.length === 0, p.errs[0]);
+  await p.close();
 }
 
 await b.close();

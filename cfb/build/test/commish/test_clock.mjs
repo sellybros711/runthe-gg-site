@@ -83,6 +83,12 @@ async function open(label, opts) {
     await route.fulfill({ status: 200, contentType: 'application/json',
       body: JSON.stringify({ error: 'stripe_not_configured' }) });
   });
+  /* WHAT IS ON SALE, which the store asks the server rather than deciding for itself
+     (functions/api/stripe/_offer.js). Unanswered the fetch 404s and RTG_STORE falls back to
+     'once', so this file was walking the one-time store while production sells the yearly
+     one, and the body the wall posts could not be checked against what the wall drew. */
+  await p.route('**/api/stripe/offer', (r) => r.fulfill({ status: 200,
+    contentType: 'application/json', body: JSON.stringify({ plan: o.plan || 'year' }) }));
   await p.goto(URL, { waitUntil: 'domcontentloaded', timeout: 40000 });
   await p.waitForTimeout(2600);
   console.log('\n=== ' + label + ' ===');
@@ -301,6 +307,13 @@ const FREE = (terms) => ({ ok: true, pro: false, locked: true,
   ok('and a return path back to the mode',
     posted.every((x) => x.return_path === '/cfb/commish/'),
     posted.map((x) => x.return_path).join(','));
+  /* AND THE PLAN THE WALL DREW, which is not a nicety. checkout-bundle.js reads a body with
+     no `plan` on it as 'once', so once the yearly switch went on every purchase from this
+     wall was refused with 409 offer_changed and the button read "Checkout couldn't start"
+     for ever. Nothing threw and the wall drew perfectly: the only symptom was that the mode
+     could not be bought. Asserted as the field, because 'once' here is the defect. */
+  ok('and the plan the wall was drawn with',
+    posted.every((x) => x.plan === 'year'), posted.map((x) => String(x.plan)).join(','));
   ok('no page errors', p.errs.length === 0, p.errs[0]);
   await p.close();
 }

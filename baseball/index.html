@@ -452,7 +452,19 @@ body:has(#s-intro.on) header .lockup{visibility:hidden}
 .chip.pop .disc{animation:pop .34s cubic-bezier(.2,1.5,.4,1) both}
 @keyframes pop{from{transform:scale(.3);opacity:0}to{transform:scale(1);opacity:1}}
 .chip .lab{display:block}
+/* A name on the grass needs a ground of its own: a foul line or the dirt edge
+   running through white type was the first thing a player noticed. */
+.chip.filled .lab,.chip.target .lab{align-self:center;width:max-content;max-width:var(--labw);margin-top:2px;
+  padding:1px 5px 2px;border-radius:5px;background:rgba(6,20,8,.5);box-shadow:0 1px 3px rgba(0,0,0,.2)}
+.chip.filled .lab .who,.chip.target .lab .who{width:auto;max-width:100%;margin:0}
 .chip{--labw:min(78px,19vw)}
+/* THE LOWER CAMERA PACKS THE DIAMOND TIGHTER, so a phone's discs come down a size:
+   at 36px the pitcher's name ran into the catcher and the catcher's ran off the
+   bottom. --discr is half the disc less a pixel, which is what seats it on its spot. */
+@media (max-width:520px){
+  .field .chip{--discr:14px}
+  .field .chip .disc{width:30px;height:30px;font-size:9px}
+}
 .chip .who{width:var(--labw);margin:2px 0 1px calc((62px - var(--labw))/2);
   font-size:9px;font-weight:800;line-height:10px;text-shadow:0 1px 4px rgba(0,0,0,.5);color:#fff;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -469,6 +481,63 @@ body:has(#s-intro.on) header .lockup{visibility:hidden}
   font-size:9px;font-weight:800;color:#fff;border:1.5px solid rgba(var(--edge),.35);
   font-style:normal;white-space:nowrap;box-shadow:0 1px 3px -1px rgba(0,0,0,.5)}
 
+
+/* ─── ballparks ───
+   A parked field is taller by its sky (parks.js SKY, 10 units over 68). The field
+   and its art are the sport, not the theme: literals, in both themes. */
+.field.parked:not(.staffboard){aspect-ratio:100/78}
+.park-tag{position:absolute;left:8px;top:7px;z-index:5;display:inline-flex;align-items:center;gap:5px;
+  height:22px;padding:0 9px 0 7px;border-radius:99px;border:1px solid rgba(255,255,255,.28);
+  background:rgba(8,14,24,.55);color:#fff;font-family:var(--fn);font-size:10px;font-weight:800;
+  letter-spacing:.06em;text-transform:uppercase;cursor:pointer;-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px)}
+.park-tag svg{width:12px;height:12px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.park-tag:hover{border-color:#f0c14a}
+.trophy-parks{margin:14px 0 6px}
+.pk-hd{display:flex;align-items:baseline;justify-content:space-between}
+.pk-title{font-family:var(--fd);font-size:20px;text-transform:uppercase;letter-spacing:.02em}
+.pk-count{font-family:var(--fn);font-size:11px;font-weight:800;letter-spacing:.08em;color:var(--dim)}
+.pk-sub{font-size:12.5px;color:var(--dim);margin:2px 0 10px}
+.pk-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+@media (min-width:640px){.pk-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.pk-card{--rc:#8a8f98;position:relative;border-radius:12px;overflow:hidden;background:var(--panel);
+  border:1.5px solid rgba(var(--edge),.12);box-shadow:0 2px 8px rgba(0,0,0,.08);display:flex;flex-direction:column}
+.pk-card.r-co{--rc:#5f9e55}.pk-card.r-ra{--rc:#3f7fd0}.pk-card.r-ep{--rc:#8a4fd0}
+.pk-card.r-le{--rc:#d9a02a}.pk-card.r-pr{--rc:#e0487a}.pk-card.r-st{--rc:#8a8f98}
+.pk-card.on{border-color:var(--rc);box-shadow:0 0 0 2px var(--rc),0 6px 18px -6px rgba(0,0,0,.35)}
+/* The card shows the park's top half: the backdrop is the thing that differs, and
+   the infield is the same infield in all thirteen. */
+.pk-view{position:relative;aspect-ratio:100/42;overflow:hidden}
+.pk-view .diamond-svg{position:absolute;left:0;top:0;width:100%;height:auto;aspect-ratio:100/78}
+.newpark .pk-view{aspect-ratio:100/48}
+.pk-view .turf,.pk-view .lit,.pk-view .vig{display:none}
+/* A locked park is shown, not hidden: it is the thing somebody plays toward. */
+.pk-card.locked .pk-view{filter:saturate(.35) brightness(.72)}
+.pk-card.locked .pk-view:after{content:'';position:absolute;inset:0;
+  background:linear-gradient(180deg,rgba(0,0,0,0) 50%,rgba(0,0,0,.35))}
+.pk-body{padding:8px 10px 10px;display:flex;flex-direction:column;gap:2px;flex:1}
+.pk-rar{align-self:flex-start;font-family:var(--fn);font-size:9px;font-weight:800;letter-spacing:.1em;
+  text-transform:uppercase;color:#fff;background:var(--rc);padding:2px 7px;border-radius:99px}
+.pk-name{font-family:var(--fd);font-size:17px;line-height:1.1;margin-top:3px;text-transform:uppercase}
+.pk-nod{font-size:11.5px;color:var(--dim);line-height:1.3}
+.pk-foot{margin-top:auto;padding-top:7px;display:flex;flex-direction:column;gap:4px}
+.pk-on{font-family:var(--fn);font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--rc)}
+.pk-use{height:30px;border-radius:8px;border:1px solid var(--rc);background:transparent;color:var(--ink);
+  font-family:var(--fn);font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;cursor:pointer}
+.pk-use:hover{background:var(--rc);color:#fff}
+.pk-need{display:flex;align-items:flex-start;gap:5px;font-family:var(--fn);font-size:11px;font-weight:700;color:var(--dim);line-height:1.3}
+.pk-need svg{flex:0 0 12px;width:12px;height:12px;margin-top:1px;fill:none;stroke:currentColor;stroke-width:2}
+.pk-bar{display:block;height:4px;border-radius:99px;background:rgba(var(--edge),.1);overflow:hidden}
+.pk-bar i{display:block;height:100%;background:var(--rc)}
+.pk-prog{font-family:var(--fn);font-size:10px;font-weight:700;color:var(--dim-2)}
+.newpark{--rc:#d9a02a;display:grid;grid-template-columns:minmax(0,1fr);border-radius:14px;overflow:hidden;
+  margin:12px 0;border:2px solid var(--rc);background:var(--panel);box-shadow:0 8px 24px -10px rgba(0,0,0,.4);
+  animation:optin .4s ease-out both}
+.newpark.r-co{--rc:#5f9e55}.newpark.r-ra{--rc:#3f7fd0}.newpark.r-ep{--rc:#8a4fd0}.newpark.r-le{--rc:#d9a02a}.newpark.r-pr{--rc:#e0487a}
+.np-body{padding:10px 12px 12px}
+.np-eye{font-family:var(--fn);font-size:10px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--rc)}
+.np-name{font-family:var(--fd);font-size:24px;text-transform:uppercase;line-height:1.1}
+.np-nod{font-size:12.5px;color:var(--dim);margin:2px 0 9px}
+@media (min-width:640px){.newpark{grid-template-columns:260px 1fr;align-items:center}}
 /* ─── cap bar ─── */
 .capwrap{position:sticky;top:0;z-index:30;padding:9px 0 9px;margin:-4px 0 12px;
   background:linear-gradient(180deg,var(--bg) 92%,var(--bg-fade))}
@@ -497,7 +566,12 @@ body:has(#s-intro.on) header .lockup{visibility:hidden}
 .perslot.low{color:#f87171}
 .note{margin-top:8px;font-size:12.5px;font-weight:700;color:#fca5a5;display:none}
 .dpips{display:flex;gap:3px;justify-content:center;flex-wrap:wrap;height:auto;align-items:center;
-  margin-top:8px;opacity:var(--sq);pointer-events:none}
+  opacity:var(--sq);pointer-events:none}
+/* The pips only show once the field has scrolled under the sticky bar, so they
+   hang below it rather than holding a 34px strip open above the field while
+   they are invisible. */
+.capwrap .dpips{position:absolute;left:0;right:0;top:100%;padding:0 0 7px;
+  background:linear-gradient(180deg,var(--bg) 80%,var(--bg-fade))}
 .dpips i{flex:0 0 auto;min-width:22px;height:26px;padding:0 3px;border-radius:5px;
   display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;
   font-family:var(--fn);font-size:8.5px;font-weight:600;line-height:1;letter-spacing:.02em;font-style:normal;
@@ -608,8 +682,35 @@ body:has(#s-intro.on) header .lockup{visibility:hidden}
   box-shadow:0 1px 3px -1px rgba(0,0,0,.4)}
 
 /* ─── respin ─── */
-.respin-row{display:flex;gap:8px;margin:12px 0}
-.respin-row .btn{flex:1;font-size:13px;padding:10px 12px}
+/* The re-spin lives on the reels' label row, top right, because it is a question
+   about the reels. As its own full width row it cost a phone 49px between the
+   picture and the board, which is the board a scroll further away every spin. */
+.reels{position:relative}
+#d-respin{position:absolute;top:0;right:0;z-index:3}
+.reels .reelcol:last-child .rlabel{text-align:left;padding-left:4px}
+.reels .rlabel{line-height:26px;margin-bottom:3px}
+.respin-pill{display:inline-flex;align-items:center;gap:5px;height:26px;padding:0 10px 0 8px;
+  border-radius:99px;border:1px solid rgba(var(--edge),.22);background:var(--panel);color:var(--ink);
+  font-family:var(--fn);font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;cursor:pointer;
+  box-shadow:0 1px 3px rgba(0,0,0,.08);transition:border-color .15s,transform .12s}
+.respin-pill b{color:var(--gold);font-weight:800}
+.respin-pill svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.respin-pill:hover{border-color:var(--gold)}
+.respin-pill:active{transform:scale(.96)}
+/* The position tabs and the sort share one row: two rows of small chips was 38px
+   of a phone spent before the first player. The tabs scroll if a narrow phone
+   cannot hold both. */
+.boardbar{display:flex;gap:8px;align-items:center;margin-top:12px}
+.boardbar .tabs{flex:1 1 auto;min-width:0;margin-top:0}
+.boardbar .sortrow{flex:0 0 auto;margin-top:0}
+@media (max-width:520px){
+  .boardbar .sortrow .sl{display:none}
+  /* A tab with nothing on it has nothing to show a phone, and it is the one that
+     pushed the row past the width. */
+  .boardbar .tab.full{display:none}
+  .boardbar .tab{padding:7px 9px}
+  .boardbar .sbtn{padding:6px 9px}
+}
 
 /* ─── season sim ─── */
 .sim-header{text-align:center;margin:20px 0 14px}
@@ -1226,7 +1327,9 @@ body:has(#s-intro.on) header .lockup{visibility:hidden}
 .trophy-locked .tl-t{font-family:var(--fp);font-weight:700;font-size:15px;color:var(--ink);margin-bottom:6px}
 .trophy-locked p{font-size:13px;color:var(--dim);margin:0}
 .newbadges.guest .nb-d{margin:4px 0 10px}
-.newbadges.guest .nb-go{width:auto;margin:0}
+/* The one thing this panel asks for, so it is the primary control, drawn as the
+   ball every other primary action on this game is, not a stock bar. */
+.newbadges.guest .nb-go{width:100%;margin:0}
 .bdg-ic.silver{--tier:#a9b0b8}
 .bdg-ic.gold{--tier:#d9a521}
 .bdg-ic.legend{--tier:#7a55a0}
@@ -2134,19 +2237,18 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
   <div class="staffline" id="field-staff"></div>
 
   <div class="reels" id="reels">
+    <div id="d-respin"></div>
     <div class="reelcol"><span class="rlabel">&starf; Year &starf;</span>
       <div class="reelbox year" id="box-y"><div class="strip" id="reel-y"></div><span class="band"></span><span class="wash"></span></div></div>
     <div class="reelcol"><span class="rlabel">&starf; Team &starf;</span>
       <div class="reelbox team" id="box-t"><div class="strip" id="reel-t"></div><span class="band"></span><span class="wash"></span></div></div>
   </div>
-  <div id="d-respin"></div>
   <div class="pickbar" id="pick-bar" role="status" aria-live="polite" hidden>
     <span class="pb-txt" id="pick-txt"></span>
     <button class="btn ghost sm" id="b-pick-x">Cancel</button>
   </div>
 
-  <div id="tabs" class="tabs"></div>
-  <div id="sortrow" class="sortrow"></div>
+  <div class="boardbar"><div id="tabs" class="tabs"></div><div id="sortrow" class="sortrow"></div></div>
   <div id="opts" class="opts"></div>
   <p class="srcnote">WAR is Baseball-Reference's, 1901 to 2025. FanGraphs rates the same season differently.
     A starter who threw more than 210 innings is priced and rated on what he did in 210, which his card names.
@@ -2305,6 +2407,7 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
     <div class="chemworth" id="ro-chemworth" style="display:none"></div>
   </div>
 
+  <div id="ro-newparks"></div>
   <div id="ro-newbadges"></div>
   <div class="stat-row" id="r-stats"></div>
   <div id="r-roster"></div>
@@ -2429,6 +2532,7 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
     </div>
     <div class="acct" id="trophy-acct"></div>
     <div class="trophy-career" id="trophy-career"></div>
+    <div class="trophy-parks" id="trophy-parks"></div>
     <div class="trophy-body" id="trophy-body"></div>
     <p class="trophy-note" id="trophy-note"></p>
   </div>
@@ -2449,6 +2553,7 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
 <script src="engine.js?v=33"></script>
 <script src="run.js?v=26"></script>
 <script src="achievements.js?v=10"></script>
+<script src="parks.js?v=4"></script>
 <script src="board.js?v=1"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="auth.js?v=2"></script>
@@ -2521,6 +2626,7 @@ function rowFromRun(o){
 function acctId(){try{const st=A.state();return st&&st.signedIn&&st.userId||null;}catch(_){return null;}}
 function badgeRows(rows){const u=acctId();return u?(rows||loadHistory()).filter(r=>r.u===u):[];}
 let lastNewBadges=[];
+let lastNewParks=[];
 /* null is a guest season: the results screen says what signing in is for,
    rather than listing badges nobody is allowed to keep. */
 function recordRun(o){
@@ -2529,6 +2635,11 @@ function recordRun(o){
   const row=rowFromRun(o);
   if(row.u){try{lastNewBadges=ACH.newlyEarned(badgeRows(prev),row);}catch(_){lastNewBadges=[];}}
   else lastNewBadges=null;
+  lastNewParks=[];
+  if(row.u&&window.RTD_PARKS){try{
+    const before=new Set(RTD_PARKS.unlockedIds(parkInfoFor(badgeRows(prev))));
+    lastNewParks=RTD_PARKS.unlockedIds(parkInfoFor(badgeRows(prev).concat([row]))).filter(id=>!before.has(id));
+  }catch(_){lastNewParks=[];}}
   saveHistory(prev.concat([row]));
   try{ga('run_complete',{outcome:o.titleWon?'title':o.madePlayoffs?'playoffs':'missed',wins:o.wins,rating:o.rating!=null?Math.round(o.rating):0,rank:o.allTimeRank||0});}catch(_){}
   (lastNewBadges||[]).forEach(a=>{try{ga('achievement_earned',{id:a.id,tier:a.tier,group:a.group});}catch(_){}});
@@ -2582,13 +2693,28 @@ function badgeIc(a,earned,mini){
     '<g class="bg" transform="translate(14 14) scale(.5)">'+g+'</g></svg></span>';
 }
 
+/* A park one season opened is the biggest reward on the results screen, so it is
+   drawn, not listed: the park itself, and a button that puts it under the next
+   draft. */
+function paintNewParks(){
+  const el=$('ro-newparks');if(!el)return;el.innerHTML='';
+  if(!window.RTD_PARKS||!lastNewParks||!lastNewParks.length)return;
+  const id=lastNewParks[0];const p=RTD_PARKS.BY_ID[id];
+  el.innerHTML='<div class="newpark r-'+PARK_RARITY[p.rarity]+'">'+parkPreview(id,'np')+
+    '<div class="np-body"><div class="np-eye">New ballpark unlocked</div><div class="np-name">'+esc(p.name)+'</div>'+
+    '<div class="np-nod">'+esc(p.nod)+(lastNewParks.length>1?' And '+(lastNewParks.length-1)+' more in your profile.':'')+'</div>'+
+    '<button type="button" class="btn sm" id="b-np-use">Play here next</button></div></div>';
+  $('b-np-use').addEventListener('click',()=>{setPark(id);$('b-np-use').textContent='In use';$('b-np-use').disabled=true;});
+}
 /* ─── new-badges panel on the results screen ─── */
 function paintNewBadges(){
   const el=$('ro-newbadges');el.innerHTML='';
+  paintNewParks();
   if(lastNewBadges===null&&ACH){
     el.innerHTML='<div class="newbadges guest"><div class="nb-hd">Badges are for signed-in players</div>'+
       '<p class="nb-d">Sign in and every season you play counts toward '+ACH.CATALOGUE.length+' badges.</p>'+
-      '<button class="btn sm nb-go" id="b-nb-signin">Sign in to collect</button></div>';
+      '<button class="btn ball nb-go" id="b-nb-signin"><svg class="bs bs-l" viewBox="0 0 100 100" aria-hidden="true"><use href="#seam"/></svg>'+
+      '<svg class="bs bs-r" viewBox="0 0 100 100" aria-hidden="true"><use href="#seam"/></svg><span>Sign in to collect</span></button></div>';
     $('b-nb-signin').addEventListener('click',openTrophy);
     return;
   }
@@ -2606,6 +2732,7 @@ function openSheet(id){const s=$(id);s.classList.add('on');s.setAttribute('aria-
 function closeSheet(id){const s=$(id);s.classList.remove('on');s.setAttribute('aria-hidden','true');}
 function renderTrophy(){
   renderAccount();
+  renderParks();
   const signed=!!acctId();
   const rows=signed?badgeRows():loadHistory();const ev=ACH.evaluate(rows);
   const st=ev.stats;
@@ -2694,10 +2821,15 @@ function renderAccount(){
   const p=document.createElement('span');p.innerHTML='Signed in as <b>'+esc(st.name)+'</b>';r.appendChild(p);
   btn(r,'Sign out','ghost sm',()=>A.signOut().then(renderTrophy));
   const pro=document.createElement('p');pro.className='apro';
-  if(isPro())pro.innerHTML='<b>Pro</b>: every mode, as often as you like.';
+  if(isPro()){
+    pro.innerHTML='<b>Pro</b>: every mode, as often as you like.';
+    const b=document.createElement('button');b.type='button';b.textContent='Manage billing';
+    b.onclick=()=>openBilling(b,null);
+    pro.appendChild(b);
+  }
   else{
     pro.innerHTML='Free: one play of each mode a day.';
-    const b=document.createElement('button');b.type='button';b.textContent='Go Pro for '+PRO_PRICE;
+    const b=document.createElement('button');b.type='button';b.textContent='Go Pro for '+PRO_PRICE+PRO_TERM;
     b.onclick=()=>{closeSheet('sheet-trophy');ga('pro_opened',{from:'account'});openPro(null);};
     pro.appendChild(b);
   }
@@ -2705,7 +2837,78 @@ function renderAccount(){
   /* the release newsletter box, /assets/newsletter.js. Absent script, absent box. */
   if(window.RTG_NEWS) el.appendChild(RTG_NEWS.el({source:'baseball'}));
 }
-function openTrophy(){if(!ACH)return;renderTrophy();openSheet('sheet-trophy');ga('trophy_opened');}
+function openTrophy(focus){if(!ACH)return;renderTrophy();openSheet('sheet-trophy');ga('trophy_opened');
+  if(focus==='parks'){const pk=$('trophy-parks');if(pk)requestAnimationFrame(()=>pk.scrollIntoView({block:'start'}));}}
+
+/* ─── ballparks ───
+   The catalogue, the art and the unlock rules are parks.js. What lives here is the
+   account's side: which parks it has, which one it has chosen, and the shelf in the
+   profile. Nothing is stored about an unlock (it is derived from the same rows the
+   badge cabinet reads), and the only thing stored at all is the choice, per account,
+   on this device. A choice the account can no longer back (signed out, or a lapsed
+   Pro park) falls back to the home park rather than to a park it does not have. */
+const PARK_KEY='rtd_park_v1';
+let parkMemo=null;
+function parkInfo(){
+  const uid=acctId();const rows=uid?badgeRows():[];
+  const pro=(()=>{try{return isPro();}catch(_){return false;}})();
+  const key=(uid||'')+'|'+rows.length+'|'+pro;
+  if(parkMemo&&parkMemo.key===key)return parkMemo.info;
+  const info={signed:!!uid,pro,badges:ACH?ACH.evaluate(rows).earned.length:0,ctx:ACH?ACH.buildCtx(rows):{n:0,best:{},modeRuns:{}}};
+  parkMemo={key,info};
+  return info;
+}
+/* The same question asked of a set of rows that is not the stored history, so the
+   results screen can tell which parks one season opened. */
+function parkInfoFor(rows){
+  const pro=(()=>{try{return isPro();}catch(_){return false;}})();
+  return {signed:true,pro,badges:ACH.evaluate(rows).earned.length,ctx:ACH.buildCtx(rows)};
+}
+function parkPrefs(){try{return JSON.parse(localStorage.getItem(PARK_KEY))||{};}catch(_){return {};}}
+function currentPark(){
+  if(!window.RTD_PARKS||!ACH)return 'home';
+  const uid=acctId();if(!uid)return 'home';
+  const want=parkPrefs()[uid];const p=want&&RTD_PARKS.BY_ID[want];
+  if(!p)return 'home';
+  return RTD_PARKS.status(p,parkInfo()).ok?want:'home';
+}
+function setPark(id){
+  const uid=acctId();if(!uid||!RTD_PARKS.BY_ID[id])return;
+  const all=parkPrefs();all[uid]=id;
+  try{localStorage.setItem(PARK_KEY,JSON.stringify(all));}catch(_){}
+  try{ga('park_chosen',{park:id});}catch(_){}
+  refreshParkedFields();
+}
+function refreshParkedFields(){
+  for(const id of Object.keys(PARKED_FIELDS)){const el=$(id);if(el&&el._ps)el._ps=null;}
+  if(RUN){const f=$('field');if(f&&$('s-draft').classList.contains('on'))drawField(f,true);
+    const q=$('sq-field');if(q&&$('s-squad').classList.contains('on'))drawField(q,false);}
+}
+const PARK_RARITY={Starter:'st',Common:'co',Rare:'ra',Epic:'ep',Legendary:'le',Pro:'pr'};
+function parkPreview(id,sfx){
+  return '<div class="pk-view">'+RTD_PARKS.markings(id,sfx,RTD_PARKS.SKY)+'</div>';
+}
+function renderParks(){
+  const el=$('trophy-parks');if(!el)return;
+  if(!window.RTD_PARKS){el.innerHTML='';return;}
+  const info=parkInfo();const cur=currentPark();
+  const got=RTD_PARKS.PARKS.filter(p=>RTD_PARKS.status(p,info).ok).length;
+  el.innerHTML='<div class="pk-hd"><span class="pk-title">Ballparks</span><span class="pk-count">'+got+' of '+RTD_PARKS.PARKS.length+'</span></div>'+
+    '<p class="pk-sub">Your park is the backdrop every draft is played on. Earn more by playing.</p>'+
+    '<div class="pk-grid">'+RTD_PARKS.PARKS.map(p=>{
+      const st=RTD_PARKS.status(p,info);const on=p.id===cur;
+      const foot=on?'<span class="pk-on">In use</span>'
+        :st.ok?'<button type="button" class="pk-use" data-park="'+p.id+'">Use this park</button>'
+        :'<span class="pk-need"><svg viewBox="0 0 24 24" aria-hidden="true">'+BDG_LOCK+'</svg>'+esc(st.label)+'</span>'+
+          (st.of>1?'<span class="pk-bar"><i style="width:'+Math.round(st.have/st.of*100)+'%"></i></span><span class="pk-prog">'+st.have+' / '+st.of+'</span>':'');
+      return '<div class="pk-card r-'+PARK_RARITY[p.rarity]+(on?' on':'')+(st.ok?'':' locked')+'">'+
+        parkPreview(p.id,'pv')+
+        '<div class="pk-body"><span class="pk-rar">'+esc(p.rarity)+'</span>'+
+        '<div class="pk-name">'+esc(p.name)+'</div><div class="pk-nod">'+esc(p.nod)+'</div>'+
+        '<div class="pk-foot">'+foot+'</div></div></div>';
+    }).join('')+'</div>';
+  el.querySelectorAll('.pk-use').forEach(b=>b.addEventListener('click',()=>{setPark(b.dataset.park);renderParks();}));
+}
 
 const $=id=>document.getElementById(id);
 /* The slot list the screen is currently drawing. All-Time Staff fields twelve arms,
@@ -2864,9 +3067,9 @@ function tcPlate(team,season){
  * corners used to be 18% apart, so 1B covered 2B's name and SS covered 3B's,
  * and the catcher and DH labels were clipped by the boundary. */
 const DIAMOND_SPOTS=[
-  {x:50,y:79},{x:69,y:59},{x:65,y:34},{x:31,y:59},{x:35,y:34},
-  {x:13,y:23},{x:50,y:8},{x:87,y:23},{x:13,y:81},
-  {x:50,y:51},{x:50,y:51},{x:50,y:51},
+  {x:50,y:80.9},{x:70,y:61},{x:66,y:38.5},{x:30,y:61},{x:34,y:38.5},
+  {x:13,y:30.3},{x:50,y:27},{x:87,y:30.3},{x:13,y:77.1},
+  {x:50,y:54.1},{x:50,y:54.1},{x:50,y:54.1},
 ];
 
 /* ─── reel system ─── */
@@ -3041,7 +3244,7 @@ function warAdjHtml(p){
   const w=E.workloadWar(p);
   if(Math.abs(w-p.w)<0.05)return '';
   return '<i class="wadj" title="What he is worth over '
-    +((E.CONSTANTS&&E.CONSTANTS.ANCHOR_IP)||210)+' innings">'+w.toFixed(1)+' here</i>';
+    +((E.CONSTANTS&&E.CONSTANTS.ANCHOR_IP)||210)+' innings">counts as '+w.toFixed(1)+'</i>';
 }
 /* Season, club, which half of a two-way season this row is, and the innings when
    they are what set the price. Built once from a list so the two spellings below
@@ -3090,61 +3293,151 @@ function spinBoth(draw,done){
 }
 
 /* ─── diamond field ─── */
-function diamondMarkings(sfx){
-  /* Home plate, 1B/3B bases, and foul poles all sit on the same two lines,
-     so the foul lines ARE the baselines (home -> base -> pole).
-     sfx keeps SVG def ids unique per field (duplicate ids resolve to the
-     hidden hero copy and Chrome refuses to paint them). */
+function diamondMarkings(sfx,park,sky){
+  if(window.RTD_PARKS)return RTD_PARKS.markings(park||'home',sfx,sky||0);
+  /* A ballpark rather than a diagram of one: stands and a padded wall, a warning
+     track, mown fair grass, a grass infield inside a dirt skin, cut-outs at the
+     bases, a raised mound, and chalk only where a real field has chalk (the foul
+     lines and the boxes at the plate, never the lines between the bases).
+     Every colour here is a literal, because the field is the SPORT rather than the
+     theme: green at night as well as in the afternoon, like the ball button.
+     Home plate, the corner bases and the foul poles still sit on the same two
+     lines, so the foul lines ARE the baselines (home -> base -> pole), and the
+     chips in DIAMOND_SPOTS stand where they always stood.
+     sfx keeps SVG def ids unique per field (duplicate ids resolve to the hidden
+     hero copy and Chrome refuses to paint them). */
   sfx=sfx||'f';
   /* viewBox height 68 matches the field's 1/0.68 aspect ratio, so one x unit
      renders the same length as one y unit, so strokes, circles and rotated
      squares keep their true shapes instead of being stretched. */
   const wh='rgba(255,255,255,';
-  const wallH=13.6,fpL=3,fpR=97;
+  const id=n=>n+'-'+sfx, url=n=>'url(#'+n+'-'+sfx+')';
+  const fpL=3,fpR=97;
   const hx=50,hy=62.6;
   const bY=38.8,bL=27.15,bR=72.85;
-  const tY=19;
-  const wallBot='M 0,'+wallH+' Q 50,1.4 100,'+wallH;
+  const tY=19, mY=40.2;
+  /* The wall's foot, its top, and the inside edge of the warning track: three
+     curves through the same two corners so the bands keep an even width. */
+  const curve=(y0,apex)=>'M 0,'+y0+' Q 50,'+(2*apex-y0)+' 100,'+y0;
+  const wallBot=curve(13.6,7.2), wallTop=curve(11.4,5.0), trackIn=curve(15.9,9.6);
+  const fair='M '+hx+','+hy+' L 0,10.47 L 0,0 L 100,0 L 100,10.47 Z';
+  /* A seeded crowd, so every field draws the same faces and a redraw never
+     shimmers. Six shirt colours, some empty seats. */
+  let crowd='';
+  const shirts=['#c9483a','#efe4c8','#3d5f94','#d9a93a','#f7f5ef','#2f6b3f','#8a3a8a','#e07b39'];
+  let seed=7;const rnd=()=>{seed=(seed*16807)%2147483647;return seed/2147483647;};
+  for(let r=0;r<6;r++)for(let c=0;c<20;c++){
+    if(rnd()<.18)continue;
+    crowd+='<circle cx="'+(c*1.05+.5+(r%2)*.52).toFixed(2)+'" cy="'+(r*.95+.45).toFixed(2)+'" r=".3" fill="'+shirts[Math.floor(rnd()*shirts.length)]+'" opacity="'+(.55+rnd()*.35).toFixed(2)+'"/>';
+  }
   return '<div class="turf"></div><div class="lit"></div>'+
     '<svg class="diamond-svg" viewBox="0 0 100 68" preserveAspectRatio="none">'+
-    '<defs><linearGradient id="wallg-'+sfx+'" x1="0" y1="0" x2="0" y2="1">'+
-      '<stop offset="0%" stop-color="#5a3a1e"/><stop offset="30%" stop-color="#4a2e14"/>'+
-      '<stop offset="70%" stop-color="#3d2410"/><stop offset="100%" stop-color="#352010"/></linearGradient>'+
-    '<linearGradient id="dirtg-'+sfx+'" x1="0" y1="0" x2="0" y2="1">'+
-      '<stop offset="0%" stop-color="#c9a96b"/><stop offset="100%" stop-color="#b4915a"/></linearGradient>'+
-    '<pattern id="planks-'+sfx+'" width="4" height="68" patternUnits="userSpaceOnUse">'+
-      '<line x1="2" y1="0" x2="2" y2="68" stroke="rgba(0,0,0,.12)" stroke-width="0.3"/></pattern></defs>'+
-    '<path d="'+wallBot+' L 100,0 L 0,0 Z" fill="url(#wallg-'+sfx+')"/>'+
-    '<path d="'+wallBot+' L 100,0 L 0,0 Z" fill="url(#planks-'+sfx+')"/>'+
-    '<path d="M 0,13.4 Q 50,1.2 100,13.4" fill="none" stroke="rgba(200,160,80,.25)" stroke-width="0.35"/>'+
-    '<path d="'+wallBot+'" fill="none" stroke="#2a1808" stroke-width="0.5"/>'+
-    '<line x1="'+fpL+'" y1="0" x2="'+fpL+'" y2="'+wallH+'" stroke="#e8c820" stroke-width="1.5"/>'+
-    '<circle cx="'+fpL+'" cy="0.8" r="1" fill="#e8c820"/>'+
-    '<line x1="'+fpR+'" y1="0" x2="'+fpR+'" y2="'+wallH+'" stroke="#e8c820" stroke-width="1.5"/>'+
-    '<circle cx="'+fpR+'" cy="0.8" r="1" fill="#e8c820"/>'+
-    '<path d="M 50,64.3 L 25.6,'+bY+' L 50,16.9 L 74.4,'+bY+' Z" fill="url(#dirtg-'+sfx+')"/>'+
-    '<circle cx="'+hx+'" cy="'+hy+'" r="4.2" fill="url(#dirtg-'+sfx+')"/>'+
-    '<circle cx="50" cy="'+bY+'" r="5" fill="#b18b50" stroke="'+wh+'.5)" stroke-width="0.4"/>'+
-    '<path d="M '+hx+','+hy+' L '+bL+','+bY+' L 50,'+tY+' L '+bR+','+bY+' Z" '+
-      'fill="none" stroke="'+wh+'.85)" stroke-width="0.45" stroke-linejoin="round"/>'+
-    '<line x1="'+hx+'" y1="'+hy+'" x2="'+fpL+'" y2="'+wallH+'" stroke="'+wh+'.85)" stroke-width="0.45"/>'+
-    '<line x1="'+hx+'" y1="'+hy+'" x2="'+fpR+'" y2="'+wallH+'" stroke="'+wh+'.85)" stroke-width="0.45"/>'+
-    '<rect x="45.9" y="60.8" width="1.7" height="3.4" fill="none" stroke="'+wh+'.65)" stroke-width="0.3"/>'+
-    '<rect x="52.4" y="60.8" width="1.7" height="3.4" fill="none" stroke="'+wh+'.65)" stroke-width="0.3"/>'+
-    '<rect x="'+(hx-1.2)+'" y="'+(hy-1.2)+'" width="2.4" height="2.4" rx=".3" transform="rotate(45 '+hx+' '+hy+')" fill="'+wh+'.92)"/>'+
-    '<rect x="'+(bL-1)+'" y="'+(bY-1)+'" width="2" height="2" rx=".2" transform="rotate(45 '+bL+' '+bY+')" fill="'+wh+'.92)"/>'+
-    '<rect x="'+(bR-1)+'" y="'+(bY-1)+'" width="2" height="2" rx=".2" transform="rotate(45 '+bR+' '+bY+')" fill="'+wh+'.92)"/>'+
-    '<rect x="49" y="'+(tY-1)+'" width="2" height="2" rx=".2" transform="rotate(45 50 '+tY+')" fill="'+wh+'.92)"/>'+
+    '<defs>'+
+      '<clipPath id="'+id('fair')+'"><path d="'+fair+'"/></clipPath>'+
+      '<radialGradient id="'+id('grass')+'" cx="50%" cy="38%" r="70%">'+
+        '<stop offset="0%" stop-color="#4c9e3a"/><stop offset="60%" stop-color="#3f8f31"/>'+
+        '<stop offset="100%" stop-color="#347a29"/></radialGradient>'+
+      '<pattern id="'+id('mowa')+'" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(45 50 62.6)">'+
+        '<rect width="3.5" height="7" fill="rgba(255,255,255,.055)"/></pattern>'+
+      '<pattern id="'+id('mowb')+'" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(-45 50 62.6)">'+
+        '<rect width="3.5" height="7" fill="rgba(0,0,0,.045)"/></pattern>'+
+      '<radialGradient id="'+id('dirt')+'" cx="50%" cy="45%" r="60%">'+
+        '<stop offset="0%" stop-color="#d2ad6e"/><stop offset="100%" stop-color="#b48a52"/></radialGradient>'+
+      '<radialGradient id="'+id('mound')+'" cx="50%" cy="40%" r="60%">'+
+        '<stop offset="0%" stop-color="#dcb97c"/><stop offset="100%" stop-color="#a97f48"/></radialGradient>'+
+      '<linearGradient id="'+id('stands')+'" x1="0" y1="0" x2="0" y2="1">'+
+        '<stop offset="0%" stop-color="#1c2330"/><stop offset="100%" stop-color="#34404f"/></linearGradient>'+
+      '<linearGradient id="'+id('shade')+'" x1="0" y1="0" x2="0" y2="1">'+
+        '<stop offset="0%" stop-color="rgba(0,0,0,.55)"/><stop offset="70%" stop-color="rgba(0,0,0,0)"/></linearGradient>'+
+      '<linearGradient id="'+id('wall')+'" x1="0" y1="0" x2="0" y2="1">'+
+        '<stop offset="0%" stop-color="#23523a"/><stop offset="100%" stop-color="#163826"/></linearGradient>'+
+      '<linearGradient id="'+id('drop')+'" x1="0" y1="0" x2="0" y2="1">'+
+        '<stop offset="0%" stop-color="rgba(0,0,0,.28)"/><stop offset="100%" stop-color="rgba(0,0,0,0)"/></linearGradient>'+
+      '<pattern id="'+id('crowd')+'" width="21" height="5.7" patternUnits="userSpaceOnUse">'+crowd+
+        '<line x1="0" y1="5.68" x2="21" y2="5.68" stroke="rgba(0,0,0,.35)" stroke-width="0.25"/></pattern>'+
+      '<pattern id="'+id('pads')+'" width="5" height="68" patternUnits="userSpaceOnUse">'+
+        '<line x1="4.8" y1="0" x2="4.8" y2="68" stroke="rgba(0,0,0,.35)" stroke-width="0.22"/></pattern>'+
+    '</defs>'+
+    /* foul territory, then fair grass, mown both ways */
+    '<rect width="100" height="68" fill="#2f7026"/>'+
+    '<g clip-path="'+url('fair')+'">'+
+      '<rect width="100" height="68" fill="'+url('grass')+'"/>'+
+      '<rect width="100" height="68" fill="'+url('mowa')+'"/>'+
+      '<rect width="100" height="68" fill="'+url('mowb')+'"/>'+
+      /* the warning track, and the wall's shadow across it */
+      '<path d="'+trackIn+' L 100,0 L 0,0 Z" fill="#a67d4a"/>'+
+      '<path d="'+trackIn+'" fill="none" stroke="rgba(0,0,0,.18)" stroke-width="0.25"/>'+
+      /* the infield skin: an arc round the mound, cut by the foul lines */
+      '<circle cx="50" cy="'+mY+'" r="23.2" fill="'+url('dirt')+'"/>'+
+      '<circle cx="50" cy="'+mY+'" r="23.2" fill="none" stroke="rgba(90,60,25,.35)" stroke-width="0.3"/>'+
+    '</g>'+
+    /* the grass infield inside the base paths */
+    '<path d="M 50,57.4 L 68.3,'+bY+' L 50,23.4 L 31.7,'+bY+' Z" fill="'+url('grass')+'"/>'+
+    '<path d="M 50,57.4 L 68.3,'+bY+' L 50,23.4 L 31.7,'+bY+' Z" fill="'+url('mowa')+'"/>'+
+    '<path d="M 50,57.4 L 68.3,'+bY+' L 50,23.4 L 31.7,'+bY+' Z" fill="none" stroke="rgba(60,40,15,.28)" stroke-width="0.25"/>'+
+    /* cut-outs at the bases and the plate */
+    '<circle cx="'+bL+'" cy="'+bY+'" r="2.6" fill="'+url('dirt')+'"/>'+
+    '<circle cx="'+bR+'" cy="'+bY+'" r="2.6" fill="'+url('dirt')+'"/>'+
+    '<circle cx="'+hx+'" cy="'+hy+'" r="4.8" fill="'+url('dirt')+'"/>'+
+    '<circle cx="50" cy="'+tY+'" r="2.4" fill="'+url('dirt')+'"/>'+
+    /* the mound, raised: a shadow under it and a lit face on top */
+    '<ellipse cx="50" cy="'+(mY+.5)+'" rx="3.7" ry="3.5" fill="rgba(0,0,0,.18)"/>'+
+    '<circle cx="50" cy="'+mY+'" r="3.4" fill="'+url('mound')+'"/>'+
+    '<rect x="49.1" y="'+(mY-.35)+'" width="1.8" height=".5" rx=".1" fill="'+wh+'.95)"/>'+
+    /* stands, the padded wall and its home run line */
+    '<path d="'+wallTop+' L 100,0 L 0,0 Z" fill="'+url('stands')+'"/>'+
+    '<path d="'+wallTop+' L 100,0 L 0,0 Z" fill="'+url('crowd')+'"/>'+
+    '<path d="'+wallTop+' L 100,0 L 0,0 Z" fill="'+url('shade')+'"/>'+
+    '<path d="'+wallBot+' L 100,11.4 Q 50,-1.4 0,11.4 Z" fill="'+url('wall')+'"/>'+
+    '<path d="'+wallBot+' L 100,11.4 Q 50,-1.4 0,11.4 Z" fill="'+url('pads')+'"/>'+
+    '<path d="'+wallTop+'" fill="none" stroke="#e8c820" stroke-width="0.4"/>'+
+    '<path d="'+wallBot+'" fill="none" stroke="rgba(0,0,0,.45)" stroke-width="0.3"/>'+
+    '<path d="'+curve(14.6,8.3)+' L 100,13.6 '+'Q 50,0.8 0,13.6 Z" fill="'+url('drop')+'"/>'+
+    /* foul poles */
+    '<line x1="'+fpL+'" y1="0" x2="'+fpL+'" y2="13" stroke="#e8c820" stroke-width="1.1"/>'+
+    '<line x1="'+fpR+'" y1="0" x2="'+fpR+'" y2="13" stroke="#e8c820" stroke-width="1.1"/>'+
+    /* chalk: the foul lines, the boxes at the plate, the on-deck circles */
+    '<line x1="'+hx+'" y1="'+hy+'" x2="'+fpL+'" y2="13.1" stroke="'+wh+'.9)" stroke-width="0.42"/>'+
+    '<line x1="'+hx+'" y1="'+hy+'" x2="'+fpR+'" y2="13.1" stroke="'+wh+'.9)" stroke-width="0.42"/>'+
+    '<rect x="45.7" y="60.6" width="2" height="3.8" fill="none" stroke="'+wh+'.75)" stroke-width="0.28"/>'+
+    '<rect x="52.3" y="60.6" width="2" height="3.8" fill="none" stroke="'+wh+'.75)" stroke-width="0.28"/>'+
+    '<path d="M 48.3,64.6 L 48.3,67.4 L 51.7,67.4 L 51.7,64.6" fill="none" stroke="'+wh+'.6)" stroke-width="0.25"/>'+
+    '<circle cx="23" cy="61" r="1.5" fill="rgba(0,0,0,.14)" stroke="'+wh+'.55)" stroke-width="0.25"/>'+
+    '<circle cx="77" cy="61" r="1.5" fill="rgba(0,0,0,.14)" stroke="'+wh+'.55)" stroke-width="0.25"/>'+
+    /* bases, each with a shadow so it sits on the dirt */
+    '<g fill="rgba(0,0,0,.22)">'+
+      '<rect x="'+(bL-.9)+'" y="'+(bY-.6)+'" width="1.9" height="1.9" transform="rotate(45 '+bL+' '+(bY+.35)+')"/>'+
+      '<rect x="'+(bR-.9)+'" y="'+(bY-.6)+'" width="1.9" height="1.9" transform="rotate(45 '+bR+' '+(bY+.35)+')"/>'+
+      '<rect x="49.1" y="'+(tY-.6)+'" width="1.9" height="1.9" transform="rotate(45 50 '+(tY+.35)+')"/>'+
+    '</g>'+
+    '<rect x="'+(bL-.95)+'" y="'+(bY-.95)+'" width="1.9" height="1.9" rx=".15" transform="rotate(45 '+bL+' '+bY+')" fill="#fbfaf5"/>'+
+    '<rect x="'+(bR-.95)+'" y="'+(bY-.95)+'" width="1.9" height="1.9" rx=".15" transform="rotate(45 '+bR+' '+bY+')" fill="#fbfaf5"/>'+
+    '<rect x="49.05" y="'+(tY-.95)+'" width="1.9" height="1.9" rx=".15" transform="rotate(45 50 '+tY+')" fill="#fbfaf5"/>'+
+    '<path d="M 48.8,61.8 L 51.2,61.8 L 51.2,62.9 L 50,64 L 48.8,62.9 Z" fill="#fbfaf5" stroke="rgba(0,0,0,.2)" stroke-width="0.12"/>'+
     '</svg><div class="vig"></div>';
 }
 
+/* THE DRAFT AND SQUAD FIELDS WEAR THE ACCOUNT'S BALLPARK, with a band of sky above
+   the wall for its skyline. The home page hero always draws the home park and no
+   extra sky, because its heights are measured against the fold. A change of park
+   rebuilds the field, so the cache is keyed on it. */
+const PARKED_FIELDS={'field':1,'sq-field':1};
 function fieldState(el){
-  if(el._ps) return el._ps;
-  el.innerHTML=diamondMarkings(el.id)+
+  const parked=!!PARKED_FIELDS[el.id]&&!!window.RTD_PARKS;
+  const park=parked?currentPark():'home';
+  if(el._ps&&el._ps.park===park) return el._ps;
+  const sky=parked?RTD_PARKS.SKY:0;
+  el.classList.toggle('parked',parked);
+  el.innerHTML=diamondMarkings(el.id,park,sky)+
+    (el.id==='field'&&parked?'<button type="button" class="park-tag" id="park-tag">'+
+      '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 13h12M3.5 13V7.5L8 4l4.5 3.5V13M6.5 13v-3h3v3"/></svg>'+
+      esc(RTD_PARKS.BY_ID[park].name)+'</button>':'')+
     E.SLOTS.map((slot,i)=>'<div class="chip empty" data-i="'+i+'">'+
       '<div class="disc"><span class="dl">'+slot+'</span><i class="pip"></i></div>'+
       '<div class="lab"><div class="who"></div><div class="yr"></div></div></div>').join('');
-  el._ps={chips:[...el.querySelectorAll('.chip')],fresh:true};
+  el._ps={chips:[...el.querySelectorAll('.chip')],fresh:true,park,sky};
+  const tag=el.querySelector('#park-tag');
+  if(tag)tag.addEventListener('click',e=>{e.stopPropagation();openTrophy('parks');});
   return el._ps;
 }
 
@@ -3288,7 +3581,10 @@ function drawField(el,live){
       pip.title=ce.links.filter(l=>l.type!=='era').map(l=>l.label).join(' / ');
     }else{pip.style.display='none';pip.title='';}
     c.style.left=DIAMOND_SPOTS[i].x+'%';
-    c.style.top=DIAMOND_SPOTS[i].y+'%';
+    /* The spots are written in the 68-unit field; a parked field is taller by its
+       sky, so the same spot sits lower in the box. */
+    const k=st.sky||0;
+    c.style.top=(k?(DIAMOND_SPOTS[i].y*0.68+k)/(68+k)*100:DIAMOND_SPOTS[i].y)+'%';
   });
 }
 
@@ -3303,7 +3599,7 @@ const STAFF_GROUPS=[
   {label:'Closer',slots:['CL']},
 ];
 function drawStaffBoard(el,live){
-  el.classList.add('staffboard');
+  el.classList.add('staffboard');el.classList.remove('parked');el._ps=null;
   const slots=SLOTS_NOW();
   const bySlot=new Array(slots.length).fill(null);
   if(RUN) RUN.roster.forEach((p,i)=>{bySlot[RUN.slotIndex[i]]=p;});
@@ -3713,7 +4009,14 @@ function pickMode(id){
 
 /* ─── Run The Diamond Pro ────────────────────────────────────────────────
  * Each of the six extra modes gets ONE FREE START A DAY. Pro removes the limit, for
- * $9.99 once. Classic and the daily are never counted and never sold.
+ * $14.99 a year, renewing until it is cancelled. Classic and the daily are never
+ * counted and never sold.
+ *
+ * IT WAS $9.99 ONCE AND IS NOW A SUBSCRIPTION, the owner's call (2026-09). The grant
+ * is still one premium_unlocks row, now with an end date the webhook moves forward
+ * on every renewal and pulls in on a cancellation or a failed payment, so every
+ * reader here (premium_products(), rtd_mode_spend) needed no change: both already
+ * honour expires_at. An account that bought the old $9.99 keeps a row with no end.
  *
  * WHAT IS COUNTED IS A START. A season already under way is never interrupted, and
  * a run is charged at the moment its draft opens (startRun, startTrade), which is
@@ -3731,7 +4034,10 @@ function pickMode(id){
  *
  * THE PRICE IS WRITTEN ONCE, here. The amount charged lives in Stripe (the Price
  * behind STRIPE_PRICE_RTD_PRO), so a change there has to be matched on this line. */
-const PRO_PRICE='$9.99';
+const PRO_PRICE='$14.99';
+/* Said beside every price, because a price with no term on a subscription is a
+   price that reads as once. */
+const PRO_TERM=' a year';
 const PRO_BUNDLE='diamond-pro';
 /* The card id to the mode name the board and the server use. One spelling per
    mode on the server, which is runModeOf's. */
@@ -3836,8 +4142,10 @@ function paintProState(){
   if(line){
     if(isPro()){line.innerHTML='<b>Pro</b> \u00b7 every mode, as often as you like.';}
     else{
-      line.innerHTML='Each mode: one free play a day. <button type="button" id="b-hp-pro">Go Pro for '+
-        PRO_PRICE+'</button> to play without limits.';
+      /* The offer and nothing before it, the owner's call. The daily rule is said
+         where it bites: the Pro sheet and the mode tiles' Played today chip. */
+      line.innerHTML='<button type="button" id="b-hp-pro">Go Pro for '+
+        PRO_PRICE+PRO_TERM+'</button> to play without limits.';
       const b=$('b-hp-pro');if(b)b.onclick=()=>{ga('pro_opened',{from:'home'});openPro(null);};
     }
   }
@@ -3867,8 +4175,12 @@ function proSheet(m,fresh){
   if(isPro()){
     $('pro-title').textContent='You have Pro';
     box.innerHTML='<p class="pro-lead">Every mode, as often as you like. Thanks for backing the game.</p>'+
-      '<button class="btn ghost" data-close-pro>Close</button>';
-    wirePro(box);return;
+      '<button class="btn ghost" id="b-pro-billing">Manage billing</button>'+
+      '<p class="pro-err" id="pro-err" hidden></p>'+
+      '<div style="margin-top:10px"><button class="btn ghost" data-close-pro>Close</button></div>';
+    wirePro(box);
+    $('b-pro-billing').onclick=e=>openBilling(e.currentTarget,$('pro-err'));
+    return;
   }
   $('pro-title').textContent=m?('You played today\'s '+modeLabel(m)):'Run The Diamond Pro';
   const back=untilReset();
@@ -3884,11 +4196,11 @@ function proSheet(m,fresh){
   const signed=!!acctId();
   box.innerHTML='<p class="pro-lead">'+lead+'</p>'+
     '<ul class="pro-list">'+list+'</ul>'+
-    '<div class="pro-price"><b>'+PRO_PRICE+'</b><span>once. Unlimited plays of all six. Yours for good.</span></div>'+
-    '<button class="btn gold" id="b-pro-buy">'+(signed?'Get Pro for '+PRO_PRICE:'Sign in to get Pro')+'</button>'+
+    '<div class="pro-price"><b>'+PRO_PRICE+'</b><span>a year. Unlimited plays of all six'+(window.RTD_PARKS?', plus the two Pro ballparks':'')+'. Cancel anytime.</span></div>'+
+    '<button class="btn gold" id="b-pro-buy">'+(signed?'Get Pro for '+PRO_PRICE+PRO_TERM:'Sign in to get Pro')+'</button>'+
     '<p class="pro-err" id="pro-err" hidden></p>'+
     '<p class="pro-note">'+(signed
-      ?'One payment through Stripe. Nothing renews. Classic and the daily stay free for everybody.'
+      ?'Billed yearly through Stripe. It renews until you cancel, which you can do from your account any time. Classic and the daily stay free for everybody.'
       :'Pro belongs to your RunThe.GG account, so it follows you to every device you sign in on.')+'</p>'+
     '<div style="margin-top:10px"><button class="btn ghost" data-close-pro>Not now</button></div>';
   wirePro(box);
@@ -3921,7 +4233,7 @@ async function buyPro(btn){
   if(d&&d.url){location.href=d.url;return;}
   if(d&&d.error==='already_owned'){proRefresh(true);}
   btn.disabled=false;
-  btn.textContent='Get Pro for '+PRO_PRICE;
+  btn.textContent='Get Pro for '+PRO_PRICE+PRO_TERM;
   if(err){
     err.hidden=false;
     err.textContent=d&&d.error==='stripe_not_configured'?'Pro is not on sale yet. Try again soon.'
@@ -3929,6 +4241,25 @@ async function buyPro(btn){
       :d&&d.error==='unauthorized'?'Sign in again, then try once more.'
       :'Checkout did not open. Try again.';
   }
+}
+
+/* THE SUBSCRIPTION IS MANAGED IN STRIPE'S OWN PORTAL: cancelling, a new card, the
+   receipts. Same contract as the checkout, the verdict read off `error`. */
+async function openBilling(btn,err){
+  const t=typeof A.token==='function'?A.token():null;
+  if(!t){closeSheet('sheet-pro');openTrophy();return;}
+  const label=btn.textContent;btn.disabled=true;btn.textContent='Opening billing...';
+  let d={};
+  try{
+    const r=await fetch('/api/stripe/portal',{method:'POST',
+      headers:{'Content-Type':'application/json',Authorization:'Bearer '+t},
+      body:JSON.stringify({return_path:'/baseball/'})});
+    d=await r.json().catch(()=>({}));
+  }catch(_){d={};}
+  if(d&&d.url){ga('billing_opened',{from:'baseball'});location.href=d.url;return;}
+  btn.disabled=false;btn.textContent=label;
+  if(err){err.hidden=false;err.textContent=d&&d.error==='no_customer'
+    ?'There is no billing on this account to show.':'Billing did not open. Try again.';}
 }
 
 /* COMING BACK FROM STRIPE. The grant is written by the webhook, and the redirect
@@ -4717,7 +5048,9 @@ function paintRespins(){
   const el=$('d-respin');
   const check=R.canRespin(RUN);
   if(check.ok){
-    el.innerHTML='<div class="respin-row"><button class="btn ghost sm" id="b-respin">Re-spin ('+M(check.cost)+')</button></div>';
+    el.innerHTML='<button class="respin-pill" id="b-respin" title="Throw this board away and spin again">'+
+      '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M13 8a5 5 0 1 1-1.5-3.6M13 2.5v3.2H9.8"/></svg>'+
+      'Re-spin <b>'+M(check.cost)+'</b></button>';
     $('b-respin').addEventListener('click',()=>{
       PICK=null;paintPickBar();
       R.respin(RUN,DATA);
@@ -4907,10 +5240,7 @@ function showSquad(){
   const sqArch=(structure.archetype&&structure.archetype.name)||'';
   $('sq-arch').textContent=sqArch;
   $('sq-arch').hidden=!sqArch;
-  const takes=cr.strengths.map(s=>({p:true,t:s})).concat(cr.weaknesses.map(w=>({p:false,t:w})));
-  $('sq-takes').innerHTML=takes.length?takes.map(t=>
-    '<div class="ro-take '+(t.p?'pos':'neg')+'"><span class="ic">'+(t.p?'&#10003;':'!')+'</span><span class="tt">'+esc(t.t)+'</span></div>'
-  ).join(''):'<div class="ro-take pos"><span class="ic">&#10003;</span><span class="tt">A balanced roster.</span></div>';
+  $('sq-takes').innerHTML=takesHtml(cr,sqArch);
   const links=(chem.links||[]).filter(l=>l.value>0);
   const uniq=[];const seen=new Set();
   for(const l of links){if(!seen.has(l.label)){seen.add(l.label);uniq.push(l);}}
@@ -4924,6 +5254,19 @@ $('b-squad-quit').addEventListener('click',()=>{
   if(!confirm('Quit this run? Your draft will be lost.'))return;
   RUN=null;show('s-intro');heroSync();
 });
+
+/* The coach's take as rows. The roster's identity is already the pill in the
+   card's header, and coachReport also lists it as a strength, so a Balanced
+   Contender read "Balanced Contender" twice, one line apart. The pill keeps it. */
+function takesHtml(cr,arch){
+  const takes=cr.strengths.filter(s=>s!==arch).map(s=>({p:true,t:s}))
+    .concat(cr.weaknesses.map(w=>({p:false,t:w})));
+  if(!takes.length) return '<div class="ro-take pos"><span class="ic">&#10003;</span><span class="tt">'+
+    (arch?'No glaring holes.':'A balanced roster.')+'</span></div>';
+  return takes.map(t=>
+    '<div class="ro-take '+(t.p?'pos':'neg')+'"><span class="ic">'+(t.p?'&#10003;':'!')+'</span><span class="tt">'+esc(t.t)+'</span></div>'
+  ).join('');
+}
 
 /* ─── season sim ───
    (ss-prefixed, because this file already has a paintBoard and a paintFeed for
@@ -5969,10 +6312,7 @@ function showResult(){
   const roArch=(o.structure&&o.structure.archetype&&o.structure.archetype.name)||'';
   $('ro-arch').textContent=roArch;
   $('ro-arch').hidden=!roArch;
-  const takes=cr.strengths.map(s=>({p:true,t:s})).concat(cr.weaknesses.map(w=>({p:false,t:w})));
-  $('ro-takes').innerHTML=takes.length?takes.map(t=>
-    '<div class="ro-take '+(t.p?'pos':'neg')+'"><span class="ic">'+(t.p?'&#10003;':'!')+'</span><span class="tt">'+esc(t.t)+'</span></div>'
-  ).join(''):'<div class="ro-take pos"><span class="ic">&#10003;</span><span class="tt">A balanced roster.</span></div>';
+  $('ro-takes').innerHTML=takesHtml(cr,roArch);
 
   // Projection line
   if(RUN&&R.projectSeason){

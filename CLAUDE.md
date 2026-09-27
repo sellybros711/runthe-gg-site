@@ -534,6 +534,129 @@ compared each with itself, and passed green on the exact defect it was written f
 this pass, 918px after, guarded at under 1000. That is room to add a line and a failure on
 adding a block. Move it when the sheet is meant to grow, never to make a run pass.
 
+### Perfect Season and Run The Bundle can be sold yearly, and a lifetime row does not move
+
+```
+node scripts/stripe/check-checkout.mjs       who may buy what, through the real endpoint
+node scripts/stripe/replay-webhook.mjs       every plan event, through the real webhook, against a real Postgres
+psql -d yr -f supabase/test/premium_yearly_test.sql   (its header lists the chain)
+```
+
+`supabase/124_premium_yearly.sql`, `functions/api/stripe/_offer.js` and one switch,
+`YEARLY_LIVE` in `_bundles.js`, on since launch (2026-09-27); false is the kill switch. Perfect Season $19.99 a year, Run The Bundle
+$34.99 a year for NEW buyers. The runbook is `functions/api/stripe/README.md`.
+
+**THE RULE THAT WINS OVER EVERYTHING: a lifetime row never moves.** A `premium_unlocks` row
+with no end date is never given one, never overwritten and never deleted by a checkout, a
+renewal, a cancel, a refund, a lapse, a portal change or a Fantasy prize. It is held twice:
+every writer says `where expires_at is not null`, and a BEFORE UPDATE trigger hands back the
+old row whatever the update asked for, except for `fulfilled_at` going from null to a time
+once. **Two guards on purpose**, because the first is a clause somebody deletes while
+tidying, and the SQL test proves each one by removing it.
+
+**ONE ROW PER PRODUCT HOLDS BECAUSE THE ROW KEEPS ITS PARTS.** A lifetime unlock, a plan and a
+Fantasy pass for the same product share one row, so the row carries `sub_until` (what plans
+grant, grace included) and `grant_until` (what fixed grants give), and `expires_at` is the
+later of the two. One number cannot hold "the latest of all grants": once a pass is folded
+into a plan's end, a refund cannot take the plan's days back without taking the prize's. Every
+reader already asks `expires_at`, so none of them changed. A writer that sets `expires_at`
+alone (the old webhook, a hand edit) has it filed as the fixed grant by the trigger.
+
+**THE PLANS ARE NOT IN THE ARCADE CARD'S `subscriptions` TABLE**, and that is the finding to
+read before "fixing" it. That table is keyed by user and eight SQL functions plus
+`arcade/board.js` read any active row there as an Arcade Card member, so a Perfect Season plan
+written there hands its buyer unlimited ranked arcade plays. They live in
+`premium_subscriptions`, keyed by `stripe_sub_id`. The webhook tells a plan from an Arcade
+Card by its PRICE first and its metadata second, because a plan changed in the portal keeps the
+metadata it was bought with.
+
+**THE STATUS DECIDES, NOT THE EVENT.** Stripe delivers out of order and more than once, so
+`premium_sub_apply()` reads the plan as it now stands: active extends, past due holds, a
+cancel ends at `ended_at` (no grace after a cancel), a full refund or a chargeback ends it now
+and remembers the period it took back, and a finished plan stays finished whatever arrives
+late. Grace is seven days, the owner's call, in `premium_yearly_grace()` and nowhere else.
+
+**THE BONUS IS INSERT IF ABSENT, AND THAT IS THE WHOLE OF "ONCE PER ACCOUNT, EVER".** The Run
+The Bundle coins and pack are the `runtour_pack` row, written `on conflict do nothing` by any
+paid-for Run The Bundle event. Never a merge: a merge re-sends `fulfilled_at` as null over a
+row the golf side already paid out, and 103's redeem pays the coins again. The old one-time
+path had exactly that merge and now splits the bonus row out too.
+
+**THE PAGE NEVER DECIDES ONCE OR YEARLY.** `/api/stripe/offer` answers from `_offer.js`, which
+says `year` only when the switch is on, both yearly prices are set AND the database answers
+`premium_yearly_ready()`. So the switch before the SQL keeps selling the one-time bundles, which
+is what "correct on both sides of the migration" means here. The page sends the plan it showed,
+and the checkout answers `409 offer_changed` to a mismatch, so nobody is charged for something
+their screen did not say. `RTG_STORE.onPlan` redraws every card and an open store when the
+answer lands.
+
+**Gold names, the owner's call:** a subscriber is gold on rows filed while subscribed, and
+those rows stay gold. Subscribing does not reach back and gild older rows; a lifetime purchase
+still does. **And the backfill trigger answers to the two football products now**: 107 fired on
+any insert, so buying Diamond Pro or Floor Pro gilded every football row the account had.
+
+**What `check-premium` holds**: a lifetime owner reads exactly what they always read (the
+receipt, "nothing to renew", the thank you), a subscriber reads "Renews on" or "Ends on" and a
+Manage your plan button that opens the portal for the plan, a lapsed subscriber reads that it
+ended and is back on the free allowance, the yearly sheet never says lifetime, one payment or no
+subscription, the yearly card sub holds one line at 360 and up, and offer_changed and
+already_subscribed are handled.
+
+**The value claim is two sums.** Sold once, $19.99 + $49.99 + $9.99 = $80, save $45. Sold
+yearly, $19.99 + $49.99 = $70 a year, save $35: the coins come once, so counting them would make
+the struck price true for one year and false for every renewal.
+
+#### THE COLLEGE GAME SENT NO PLAN, SO NOBODY COULD BUY IT
+
+```
+node cfb/build/test/test_store.mjs             the offer, the press and the receipt
+node cfb/build/test/commish/test_clock.mjs     the wall's own buy path
+```
+
+`checkout-bundle.js` reads a body with no `plan` on it as `'once'`, and from the day
+`YEARLY_LIVE` went true that is a mismatch, so it answered **409 `offer_changed` to every
+purchase made from the college game**, on both of its buy paths. Neither handled that error,
+so the button read "Checkout couldn't start. Try again" and went on reading it. **Nothing
+threw, the store drew perfectly and every price on it was right**: the only symptom was that
+the game could not be bought, which no screen anywhere reports.
+
+**THE PLAN IS THE ONE `RTG_STORE.wire` HANDS OVER, not the one the module holds now.** Those
+come apart exactly when it matters, which is the switch flipping under an open sheet: the
+wired one is what the buyer READ, and sending anything else charges somebody for a screen
+they were never shown. Both college paths take it as a third argument now, the way the
+football page already did.
+
+**A REFUSAL IS A DOOR RATHER THAN AN ERROR MESSAGE.** `offer_changed` redraws the offer at
+the real price. `already_subscribed` opens the Customer Portal with `scope: 'plan'`, because
+a plan is changed or cancelled there and never bought twice. On the commissioner wall the
+redraw is the WALL'S OWN PAINTER (`wallOffer`), because two walls draw the store into `w-act`
+with two different preambles and a redraw that rebuilt the markup would be a third copy of
+one of them.
+
+**`cfb/auth.js` IS A SECOND COPY OF `football/auth.js` AND HAS TO BE PORTED TO.** It grew
+`premiumPlans()`, `sub_until`/`grant_until` on the unlocks read with the fallback for a
+database without 124, and a `scope` on `billingPortal`. One account holds one plan whichever
+door it was bought through, so a receipt only one of the two games can read is a receipt half
+the buyers cannot find.
+
+**THE RECEIPT'S THREE STATES, and only one of them says "for good".** A row a plan is keeping
+alive says when the plan renews or ends, a Fantasy pass still says Won, and a lifetime row
+reads **exactly** what it read before any of this. The paragraph under the list stops
+promising that nothing renews when a plan is billing, and the button says Manage your plan.
+
+**THE "YOU'RE PRO" SHEET WAS FIXED AND IS UNREACHABLE ON THIS PAGE**, which is worth knowing
+before somebody hunts for a way to test it. All four callers of `openPremium` are shut for an
+owner: `premiumPitch()` excludes them, and `commishShut()` returns false for them on its
+second line. Its own comment claims the branch is reachable and on the football page it is.
+It was fixed anyway, because it is one new door away.
+
+**TWO SUITES WERE WALKING THE ONE-TIME STORE while production sold the yearly one.** Neither
+stubbed `/api/stripe/offer`, so the fetch 404'd and `RTG_STORE` fell back to `'once'`: every
+section in both files was asking questions about a store nobody is being shown. Two
+assertions in `test_store` were pinned to the words "one payment" and would have demanded a
+sheet that lied. **The claim is now "true about the plan it drew"**, read off
+`RTG_STORE.plan()`, so it follows the switch on its own and covers both sides of it.
+
 ### What the free allowance actually counts
 
 **Dynasty counts SEASONS, the Trade Machine counts RUNS, and the server says which.**
@@ -1409,6 +1532,41 @@ straight after paying apologised for a slow webhook that had already delivered. 
 `siteBase()` in `functions/api/stripe/_site.js` now, which prefers the request's own origin
 when it is this site. The same trap has bitten a link in the CFB header. Never write an
 absolute `https://runthe.gg` url in anything a player follows.
+
+### More ways to play is a grid on a wide screen, in both football games
+
+```
+node scripts/check-modes-grid.mjs     both sheets, four widths, and the leak
+```
+
+Asked for by the owner, to match the baseball game's sheet: tiles with the icon on top, **two
+across from 760px**, and the list it always was under that. Two and not three, because these
+sheets hold three modes and two: a third column would be a third of a row of nothing. **Phones
+are untouched**: every rule is inside the media query and `.mc-grid` has no base rule.
+
+**THE WIDTH IS KEYED ON THE CONTENT, NOT ON A FLAG.** Every sheet on both pages draws into one
+`#sheet-in`, and several never set a `data-kind` (the college conference picker this sheet
+opens is one). A width written by `modeMenu` would leak into the next sheet and widen a
+sign-in form. `.sheet .inner:has(.mc-grid)` is true of this sheet and stops being true the
+moment the pane is redrawn. The guard presses Close and How to play to prove it.
+
+**A CARD THAT IS NOT A MODE TAKES THE WHOLE ROW.** One Franchise is a panel with two doors in
+it (`.mc-split`), and the college sign-in card is an account form. **The sign-in card sat as a
+grid cell for a day**: it is drawn BETWEEN the two tiles, so it took the second column and put
+Commish Simulator on a row of its own. Spanning alone does not fix that, because it still
+splits the tiles, so on the grid it also takes `order:1` and goes after them. A phone keeps it
+directly under Conference Draft, which is the card it is about.
+
+**THE GUARD SHIPPED MEASURING A DESIGN THAT DID NOT.** Two sessions built this grid in
+parallel and the CSS that landed is the other one's (two across from 760). This checker was
+written against three across from 900, so it went red on main with nothing wrong with the
+page, apart from the sign-in card above. It asks the shipped design now. **A guard merged
+without its page is a guard for a page nobody has.**
+
+**The guard counts columns off the tiles' own left edges and rows off `offsetTop`**, which is
+the laid out box and ignores the press transform. The spanning claim was proved by taking
+each half of the sign-in rule out alone: without the span it names the card at 387 of 786px,
+and without the order both desktop widths come back one column.
 
 ### Full Team, and the screen that has to say the most
 
@@ -2566,6 +2724,83 @@ about a third wider than the condensed one a real visitor gets, so an overflow m
 is not proof of one on a phone. What it asserts is that a podium step never carries a raw
 comma number, which is true in any face, plus the whole ladder including the rounding seam.
 
+### Every game is played out on one broadcast field, in both football games
+
+```
+node scripts/check-fieldcast.mjs     the renderer's rules, and that both pages draw on it
+```
+
+Asked for: the drive charts on the home page's two cards, but bigger, for the real games. So
+`/assets/fieldcast.js` is the picture every game is played on: the playoff broadcast, the bowl,
+the challenge bowl, the boss battle and the Full Team live games. A lit stadium with a dot matrix
+crowd (the home cards' motif), an LED ribbon board, the field in perspective, every drive as a
+lane that recedes as the game goes on, and the drive in progress played out snap by snap with the
+ball, the blue and yellow lines, a formation and the down and distance over the ball. Touchdowns,
+field goals, misses, turnovers and safeties get their own moment.
+
+**IT IS ONE FUNCTION DEEP IN EACH PAGE.** `drawDriveChart` in `football/index.html` and in
+`cfb/index.html` hands its drives to `RTG_FIELD.paint` and returns; the old chart is still below
+that line, whole, because a blocked or stale copy of the file must still leave a game with a
+picture. Every caller was already going through `drawDriveChart`, so no call site learned
+anything new beyond an optional `extra` (the ribbon board's words, and the boss board's flags).
+
+**IT DECIDES NOTHING.** The start, the end, the result and the clock of every drive are the
+page's. What is drawn between them is seeded off the drive itself, so a repaint of one moment is
+one picture and no game stream is touched.
+
+**THE MOMENTS FIRE THEMSELVES**, off the clock crossing the end of a drive, so no page calls
+anything to get a touchdown. A jump crosses too much to be a moment and fires nothing: Sim to the
+end and the final repaint land on 3600 from wherever they were. A clock that goes backwards is a
+new game on the same canvas.
+
+**THE DOWNS ARE INVENTED, SO THE ONE PAGE WITH REAL ONES TURNS THEM OFF.** The playoff broadcast
+builds its drives backwards from a score, so a down and distance made up from the drive is as
+honest as the drive. The boss board plays forward down by down: it passes `downs:false` and puts
+the sim's own `down` and `toGo` on the live drive as `sit`, and at a fourth down the field shows
+exactly the 4th and 1 the card under it is asking about, with the two sides set at the line.
+A made up "2nd and 7" over a real fourth down call would be the two halves of one screen
+disagreeing, which this repo has paid for on every screen it has happened on.
+
+**TWO LOOK-ALIKE COLOURS ARE SPLIT IN THE RENDERER**, not per page. The field paints both sides'
+players, lanes and end zones, and the boss board had no guard: against Seattle every player on
+the field was blue. The playoff broadcast's coral swap is the rule for every caller now.
+
+**THE STANDS ARE THE HOME TEAM'S.** A home crowd is the home side's colours and shades of
+them, with the visitors about one fan in eight (measured, 12%), packed into the corner by their
+own end zone and a few scattered through the bowl. A neutral site is split down the middle.
+The home side scoring lights the whole bowl; the visitors scoring lights their corner and
+nothing else. `frame.home` says whose building it is and the engines never name a host (a home
+field there is an EDGE), so each screen answers it off something a player can see:
+
+| screen | whose crowd |
+|---|---|
+| NFL playoff broadcast, Full Team live games | the better seed, off the bracket just shown; the Super Bowl is neutral |
+| a boss battle | theirs: it is played in the boss's building |
+| the CFP | the better seed in the first round, which is on campus; every round after is neutral |
+| a bowl, the challenge bowl | neutral |
+
+**The crowd is counted as it is seated** (`st.crowd`), so the guard reads the mix rather than
+the arithmetic that was meant to produce it. The first tuning came out at exactly 10.0%, which
+is the edge of the band that was asked for rather than inside it.
+
+**THE PICTURE IS READ BACK, NOT RE-DERIVED.** `test_credits.mjs` holds a field goal's bar to the
+distance the call names, and it used to rebuild the flat chart's geometry to find the bar. A
+camera in perspective has no fixed row, so the renderer records each drive's drawn leading edge
+(`RTG_FIELD.inspect`) and hands back its own pixel to yard mapping; the pixel just behind that
+edge has to be the drive's colour or the record is lying. **It caught a real fault the first time it ran**: the result
+pill (FG, TD, INT) was centred a fixed 2.2 yards past the end of the bar, and on the near lanes
+it is wider than that, so it sat on top of the exact spot the kick was taken from. It is placed
+clear of the chevron by its own half width now.
+
+**It keeps drawing between the page's frames**, which is what lets a score hold the clock while
+the crowd erupts and the banner plays: its own loop runs while the canvas is on screen, at thirty
+frames a second when nothing but the crowd is moving, and stops the moment `offsetParent` is
+null. Reduced motion gets no slides, no shake, no confetti and no ambient loop.
+
+**The canvas is 196 to 320px tall, up from 160**, because a picture with a stadium in it needs the
+room. `check-fullteam.mjs` measures the boss board's calls and Continue against a phone, which is
+the layout that extra height could have broken, and it is green.
+
 ### The boss battle, and the one screen that checks itself
 
 ```
@@ -3152,13 +3387,162 @@ ROW per player-week rather than a history, and **78% of them were last modified 
 so the table above is the report as it FINISHED. There is no way from that archive to measure
 what a Wednesday build would have seen. Said rather than implied.
 
-**SO THE TUESDAY BUILD MOSTLY BUYS NOTHING FROM THIS**, and that is worth knowing before
-reading the 0.70 as something the mode collects today. The report for the coming week is
-first filed on the Wednesday, so on a Tuesday `report_week` is usually the week just played
-and `injuryFactor` correctly returns 1 for every man. What this is worth scales with how late
-the build runs, and a later build is a shorter drafting window, which is a decision about the
-mode and is not taken here. `report_week` and `report_priced` are on the built pool so the
-log says which of the two happened rather than leaving somebody to diff prices.
+##### PRACTICE IS THE SIGNAL, AND IT IS WHAT MAKES THE TUESDAY BUILD WORTH ANYTHING
+
+The first version of this priced off the DESIGNATION alone, and left the Tuesday build
+collecting nothing, on the reading that the report for the coming week is first filed on the
+Wednesday so `injuryFactor` correctly returns 1 for every man. **The live file's own commit
+history says exactly when that happens**: `report_week` was still 2 at 11:10pm Eastern on the
+Tuesday and 3 by 3:05pm on the Wednesday. So a Tuesday 11am build can never see this week's
+report, and the conclusion drawn from that was that the build day would have to move.
+
+**It does not, because PRACTICE PARTICIPATION is a different signal and a better one.**
+Measured over the same 21,291 player-weeks:
+
+| practice | men | actual/proj |
+|---|---|---|
+| full | 1,880 | 1.082 |
+| **limited** | 1,076 | **0.814** |
+| **did not practise** | 1,131 | **0.233** |
+
+Two things follow and both matter. **Practice is filed on the WEDNESDAY with the first
+report**, where a Sunday game status is not final until the Friday, which is after the week
+has already locked, so the designation a build can see is never the one that was measured.
+And **practice survives a week where a designation does not**:
+
+| | a week old designation | a week old practice line |
+|---|---|---|
+| questionable / limited | 0.951 | 0.979 |
+| out / did not practise | 0.336 | **0.511** |
+
+**A man who did not practise at all last week delivers 0.511 of his projection this week**,
+and that is a large, measured discount a Tuesday build can read. So there are two tables,
+`INJ_THIS_WEEK` keyed on the PAIR and `INJ_LAST_WEEK` keyed on practice alone, and which one
+a build gets is decided by the clock rather than by anybody's choice. **The build day did not
+have to move.**
+
+The pair is worth keying on because the spread across it is large: a questionable man who
+practised in full delivers 0.886, one who was limited 0.711, and one who did not practise at
+all 0.448. A table on the designation alone prices all three the same.
+
+**NOTHING IS EVER PRICED ABOVE 1**, and the measured numbers invite it: a man on the report
+practising in full delivers 1.104. That is the projection under-reading good players (their
+projection runs a third higher than the pool's), which is a level bias rather than an
+availability signal, and paying for it here would be fixing one estimator's bias inside
+another.
+
+**And a report more than one week old is not news.** The 0.511 was measured one week apart; a
+man who missed practice in week 3 says nothing about week 7.
+
+###### `report_week` IS A MAX OVER THE MEN, AND THE PRICE WAS READING IT AS A DATE
+
+`injuries.mjs` keeps each man's LATEST report row, so one file holds designations of several
+ages at once, and `report_week` is the highest of them. The live week 3 file reads
+**`report_week: 3` off exactly ONE man**, while 23 of the others were last reported in week 2
+and 7 in week 1.
+
+`injuryFactor` took that one number for the whole file, so **every one of the 31 was priced as
+this week's news**: a fortnight old designation discounted as though the club had said it on
+Wednesday. **Nothing throws.** A stale designation is a real designation, the table lookup
+succeeds, and the price it produces looks exactly like a price.
+
+**The week is a fact about the MAN.** It is on every row already, as `w`, so the fix is to read
+it: `injuryFactor` takes `p.report_at` and the file's own `report_week` is kept for the page's
+sentence and the log and never for a price. Repriced men on the live board go **17 to 6**, and
+the six are the did-not-practise men, which is the signal the whole table is about.
+
+**THE SHEET HAD BEEN SAYING THE RIGHT THING ON SCREEN THE WHOLE TIME.** `injuryReport` reads
+`e.w` and writes `From the week 2 report. Week 3 has not been filed yet, so this is the last
+thing that was said about him.` So a reader tapping a red row was correctly told the news was a
+week old, while the price beside it had discounted him as though it were today's. Two answers to
+one question, one of them on screen and right, and the one that moved money was the wrong one.
+That is the nearest thing this had to a visible symptom and it reads as the page working.
+
+**The guard drives the REAL report rather than rows it invented**, because the defect is a
+property of the file's shape and an invented row cannot have it. Reintroduced, it reports
+`no man more than a week old is discounted at all: 7 men, worst x0.448`.
+
+**It asserts a PROPERTY over every man in the file, which the first draft did not.** That
+version hunted one hand picked pair (a questionable man who did not practise, reported two
+weeks back) and would have gone quiet on any week whose report happens not to contain one.
+And it pinned the filename, which accumulates one a week. It reads the newest report on disk
+and asks the rule of everybody in it.
+
+**Both directions, or the property passes on a function that discounts nobody.** "No man over
+a week old is discounted" is true of an `injuryFactor` that returns 1 for everything, so the
+clause beside it asks that the RECENT men are discounted. Proved: stubbed to return 1, it
+reports `0 of 24 men within a week of the report are discounted`.
+
+**And the first version of its message wrote the expected value in as a literal**, so it failed
+while printing the `x1` it had just refused. A failure that misreports what happened costs the
+next person the round it takes to disbelieve it. Every number is read back now.
+
+**The read-back counts men rather than restating the max**, for the same reason: one fresh row
+made a fortnight old report log as "priced off the report for this same week". It prints how
+many men are reported for this week, how many are a week old, and how many are older.
+
+##### The build was reading a report seventeen hours old, and nothing refreshed it
+
+The price reads `injuries_<season>_w<week>.json`, and that file is written by a DIFFERENT job
+on a different clock: `fantasy-injuries.yml` fires at 11:20am and 6:20pm Eastern, and
+`fantasy-pool.yml` fires at 11:00. **So the board was priced off a report last refreshed at
+twenty past six the previous evening.** Nothing anywhere said so: the prices are ordinary, the
+board drafts, and the one number the whole pricing pass is about is out of date.
+
+The pool job refreshes the report itself now. A refresh that fails carries on and prices on
+availability alone, because a report that cannot be fetched must not stop the week.
+
+**AND THE REFRESH CANNOT GO FIRST, SO THE BOARD IS BUILT TWICE.** `injuries.mjs` scopes the
+report to the men ON THE BOARD, so it reads the week's pool file and exits 1 with
+`no pool for 2026 week 4. Build it first.` **The first version of this put the refresh above the
+build**, where it does nothing at all: no report is written, the board prices off whatever was
+last committed, and the defect is intact behind a step that looks exactly like the fix. Driven
+for a week with no pool file, which is every Tuesday, that is what it reports.
+
+So it is build, refresh, build again. **The ID SET DOES NOT DEPEND ON THE REPORT**, which is
+what makes the first pass a valid scope for the second: `eligible` comes off played games, the
+schedule and `minGames`, and none of those reads a designation. Driven on the live week 3
+board with the report present and with it moved aside, the same 414 men come back in the same
+order and 5 prices differ. A build is under a second against the nflverse cache the first pass
+warms.
+
+Driven end to end for week 4: build 1 prices `0 of 414` with no report, the refresh writes one,
+build 2 prices `1 of 414` with ages `{"older":30,"a week old":1}`. Week 3's own files were put
+back afterwards, because **a published week must never be repriced**, and `fantasy_now.json`
+had to go back with them: the build advances the pointer.
+
+**AND IT COMMITS THE REPORT, WHICH THE FIRST VERSION DELIBERATELY DID NOT.** That version
+scoped the `git add` to the pool, the results and the pointer, on the argument that the
+injuries job owns that file and commits only when it moves, which is the rule that stops a
+hundred Cloudflare deploys a weekend. The rule is real and it is about the CADENCE, and this
+job commits once a week either way, so the report rides in that one commit for nothing.
+
+**What the first version actually cost is the Tuesday job going red.** An uncommitted refresh
+is an UNSTAGED CHANGE, and the push-rejection branch under it runs `git pull --rebase`, which
+refuses outright: `cannot pull with rebase: You have unstaged changes`, exit **128**, straight
+into the loop's `|| exit 1`. That loop is there because other scheduled jobs push to main, so
+the one branch it exists for was the one branch that could not work. Driven both ways against
+a real repo with an unrelated upstream commit: unstaged is exit 128 and a red job, committed is
+exit 0, a clean tree and both files on main.
+
+**The quieter half is the page.** It fetches `injuries_<season>_w<week>.json` for whatever week
+`fantasy_now.json` points at, so a commit that advanced the pointer and left the report behind
+serves a board with no injury chips until the injuries job next runs, twenty minutes later. A
+week with no file is a state the page handles by design, which is exactly why nothing would
+have reported it.
+
+**The two jobs never write the same file.** The injuries job writes the LIVE week's report, and
+on the Tuesday the pointer has not moved yet, so it is still the week just played; this job
+writes the week it is building. Both `git add` with the same glob and both are no-ops on the
+other's file.
+
+**And the log says which report it got**, because a Tuesday build and a Wednesday one are
+priced off different amounts of information and the prices alone do not say which. The
+read-back was driven all four ways (a Wednesday report, a Tuesday one, none at all, and a pool
+built before `report_ages` existed) with its body extracted from the yaml rather than retyped,
+which is how the pool filename in it was found to be wrong: it said `pool_` where the build
+writes `weekly_`, so it would have thrown on a file that does not exist rather than reporting
+anything.
 
 ##### A price cannot be live, and that is the rule rather than a limitation
 
@@ -3204,6 +3588,21 @@ The suite reads the pool FILE on disk, and that file is week 3, published and dr
 so it must not be rebuilt: until the next Tuesday build this runs the OLD board at the NEW
 cap. Week 3's shipped pool reads 8.8%, a pool priced at `PRICE_PROJ_W = 1` reads 19.8%, and
 the same pool at the old $90M cap reads 42.3% and strands.
+
+**And `#b-more` ran out, which is the same lesson from the other side.** The search for a
+grey row drafts again through the real control, and that control was `#b-more`, which takes
+the next of five CHANCES: the search could never look at more than five drafts. Five stopped
+being enough at $110M. Measured over 4,000 greedy drafts on the shipped board, a man out of
+reach appears on **12.1%** of boards, the median search finds one on the FIRST draft, p90 is
+5 and p99 is 16, so **a five draft search fails 9.8% of runs**. A flake reporting its own
+seed, about a feature that was on one board in eight the whole time.
+
+**The answer is to never leave the draft screen.** `#b-abandon` re-seeds the current chance
+and costs nothing, and the only reason it failed when this section was first written is that
+the walk had finished a draft and moved on to the review screen, where that button does not
+exist. So the walk signs at most five of the six, inspects all six boards, and abandons
+rather than completing: the button is always there, chances are never spent, and the search
+runs to 24 against a measured p99 of 16 and a worst case of 33.
 
 **And the first two drafts of the new guard measured the fixture rather than the page.**
 Asserting that discounting one man moves nobody else, it was asked of the DEAREST man and 47
@@ -5479,6 +5878,91 @@ a proportion written into sixty eight specs is sixty eight places to drift.
 - **Humpty is exempt** (`spec.egg`). His head is his body, and a small one would be a
   different character.
 
+**AND THEN THEY WERE MODELLED ON THE PACK, which moves the numbers above again.** The
+owner handed the pack back with "model the characters after these". Set side by side,
+the pack's figures are not big-headed so much as BLOCKY: a square head about a third
+of the height, a torso half again as wide as the head, short thick legs, and hands and
+feet as big as a fist. Ours had a small head on a thin, long body, so the same
+character read as a different drawing. `PROP` is now head 0.84, torso 1.1, legs 1.0,
+arms 1.05, no added neck, limbs 1.5x as thick, hands and feet 1.3x, width 1.4x, and
+`square` pushes every head's superellipse 1.35x toward a block. The head is bigger
+than the last pass and the figure no longer reads as all head, because the body grew
+with it. **Compare against the pack before moving any of these**: the pack is the
+reference the owner chose, twice.
+
+- **The fit starts at 1.5x the spec's own scale.** It used to START at the spec's
+  scale, so a character with `scale: 1.02` could never be drawn bigger than that
+  however much room the cell had. It still steps down until no pose leaves the frame.
+- **A held thing is held out, at the pack's size.** A bolt, a lyre, a goblet, a wreath
+  and the rest (`HELD`) were drawn at hand size behind the arm, so Zeus had no bolt on
+  screen at all. They are scaled about the hand and drawn in front of it, and the arm
+  holding anything comes away from the body. A pole stays behind the arm.
+- **Specs that had drifted from the pack were put back**: Popeye in a white shirt,
+  the golem's red band, a burlap scarecrow, Robin and Long John clean shaven,
+  Esmeralda's red sleeves, Athena's shield.
+- **The quadrupeds stay upright, deliberately.** The pack draws the dog, the cat, the
+  chupacabra, the centaur, the phoenix, the dragon and Nessie as animals in profile,
+  and every character here has to stand in a batter's box and throw from a mound. The
+  colours, the heads and the marks follow the pack; the stance does not.
+
+#### Every position is a baseball position
+
+Asked for as the characters and all the positions looking like a real retro baseball
+game. The pose table in the rig (`POSES`) was redrawn as baseball mechanics, and the
+figure picked up the kit that says baseball before anything else on it does.
+
+| beat | what it is now |
+|---|---|
+| `ready` | a crouched stance, feet wide, hands up at the back ear, bat up behind the head |
+| `load` | the front knee lifted, the bat laid back |
+| `swing1` | the stride down, the hands at the belt, the bat trailing flat, the blur starting |
+| `swing` | contact: arms out, back heel up, the bat foreshortened toward the plate |
+| `follow` | the bat wrapped over the front shoulder, the back foot on its toe |
+| `run1-4` | a sprint: a hard lean, the knee driven up, the arms bent and pumping |
+| `slide` | NEW. Feet first, leaning back, lead leg out along the dirt |
+| `windup` / `kick` / `throw` / `release` | the pitcher from the plate: set, knee up, ball cocked over the head, the arm swept down across the body |
+| `field` | NEW. The infielder's ready crouch, glove open low |
+
+**THE PITCHER'S DELIVERY IS FOUR BEATS FACING THE CAMERA NOW, and the `cheer` workaround
+is gone.** The pack drew its delivery in profile, so the plate view held his arms up and
+let the ball carry the motion. The rig draws the delivery front on, so both cameras play
+set, kick and stride over the windup (as shares of THAT pitch's `windupMs`, because the
+windup is short when you pitch) and the finish over the first 320ms of the flight. The
+ball is in his hand in the stride's drawing, so the white dot that used to be painted over
+his hands is gone too. `verify-rules`' front-facing guard READS THE RIG for which poses
+face the camera (`view: 'front'`) instead of a written list, and asks that the three
+windup beats are three different pictures for every character.
+
+**THE PLATE VIEW'S VECTOR BAT IS GONE.** It swept two brown strokes across the batter
+through every swing, which was a straight line through the real bat in his hands. The blur
+is baked into `swing1` and `swing` instead: `paintSmear()` runs after the light, paints only
+empty pixels, and joins the figure at the barrel, so the bleed guard sees it as attached.
+
+**The contact bat is drawn at 0.7 of its length (`batL`)**, pointing at the plate. Full
+length it reached past the cell and `fitScale` shrank every character by a fifth to make
+room, which is how this pass first came out: gear right, everybody smaller. Measure with
+the fit before adding reach to any pose. `slide` is shifted right inside its cell (`dx`)
+for the same reason: reclined, the figure sits left of the hip.
+
+**A BATTER WEARS A HELMET, unless he already wears something.** A hat is part of who
+somebody is (Santa, the witch, the top hats), so it stays. Hair that is on fire or alive
+(the phoenix, Hades, Medusa) and Humpty, whose head is his whole body, are exempt too:
+drawn, a helmet swallowed the egg and the flames poked through the shell. The colour is the
+figure's own jersey, **never within a colour distance of 90 of the skin**, or Kong's helmet
+came out as the top of his head.
+
+**The glove is a real glove and the overlay mitt is gone.** Fingers, thumb, laced web,
+dark pocket and heel, sized off the hand and capped at 5 (Kong's covered his face).
+`drawRunnerAt` used to paint a brown disc over the raised hands in `catch`, which would be
+a second glove. The slide is a drawing too, so the brown bar that stood in for a foot is
+gone and only the dust stays.
+
+**Fielders set while the pitch is live** (`field`) and stand between pitches, in both
+cameras. The old comment explaining why there was no crouch was right about the pack and
+is replaced.
+
+**What it cost**: the table went 2140KB to 2578KB for two new poses and the detail.
+
 **The grid is 96, up from 64.** `V2_W` and `V2_H` carry it and nothing in the page
 should say 64 about a sprite. It costs about 170KB compressed on the page, which was
 measured before choosing it.
@@ -7519,6 +8003,41 @@ nothing else now, and what needs a position is what needs a z-index.
 mound in both cameras: every call in the game was announced across his face.
 Half way down is the band of outfield grass with nothing in it, and it is
 still above the zone.
+
+#### The play by play pushed the swing row onto the zone, a line at a time
+
+Reported from a laptop with a screenshot: a black bar across the middle of the
+field, lying straight over the strike zone. It was the swing row. **The play by
+play sat UNDER it in the flow and grew with every pitch**, so the row rode up the
+window a line at a time: `deckCoverBlocks` measured all of it as deck, the camera
+had nothing left to pay it with, and by the sixth line the zone was covered.
+
+**Nothing here could see it, because every check measured the first pitch of a
+game.** The log is empty then. `check-firstpitch`'s zone section fills it with
+twelve lines before it measures now, which is how every game looks by the second
+inning, and it asks that the log itself is off the zone as well.
+
+On a wide window the log is out of the flow, in the top left corner under the
+score, which is outfield and never the zone or the batter. **The swing row is as
+wide as what is in it** rather than edge to edge: a full-width band is a slab
+over the batter and the plate wherever it sits.
+
+**And the Mound row was under the picture.** It is static, the arena is
+absolutely positioned, so on a wide window the Mound button laid out inside the
+window, clear of every other control, and its centre hit-tested to the field
+canvas. Nobody could see it or press it. Two rectangles cannot report that, so
+`check-reach` hit-tests every control's centre and fails on one that lands in
+the arena.
+
+#### A batter is not shown where the pitch is going
+
+The catcher's target is drawn at `pitch.aim`, which is where the arm is TRYING to
+put the ball. Shown to a batter during the windup it is the answer printed in the
+zone, and a player reported exactly that: a circle saying where the pitch is
+going. **Only the pitcher sees it now**, because they chose the spot and it tells
+them nothing they do not know. `check-firstpitch` reads it off the drawing calls
+(a ring of 11 with a dot of 2 at its centre) in both halves, so a check that never
+sees the pitcher's target drawn cannot pass by accident.
 
 #### There are two batter's boxes and the camera only ever framed one
 
@@ -14183,7 +14702,8 @@ rule: it asks `E.workloadWar` now, so the sort and the suite cannot drift.
 #### What the tile says, and why the conversion is not on the season line
 
 The tile's big number stays the **whole season**, because that is what a reader looks
-up and what the source note promises. Under it, in green, is what he is worth here.
+up and what the source note promises. Under it, in green, is what he is worth here,
+written `counts as 2.4`. It read `2.4 here` first, and a player asked what "here" meant.
 
 **It is not on the season line, and two things forbid it.** `.of-side .mt` on a trade
 offer is 10px nowrap with an ellipsis at about 28 characters, so everything on that row
@@ -14206,6 +14726,95 @@ band holds the same 97 runs of 360 it held before. Re-anchoring is a change that
 every rating and therefore makes both rating badges easier for ever, and a badge left
 too loose cannot be tightened without stripping it off everybody who earned it. Do not
 reach for it to fix a level: refit the coefficient, which is what the level is.
+
+### The field is a ballpark, and the draft board is on the first screen of a phone
+
+Asked for as the field looking a lot better and the draft screen needing work.
+`diamondMarkings()` draws stands and a crowd, a padded wall with its home run
+line, a warning track, fair grass mown both ways, a grass infield inside a dirt
+skin, cut-outs at the bases, a raised mound, and chalk only where a field has
+it: the foul lines and the boxes at the plate, never the lines between the
+bases. Every colour is a literal, because the field is the sport and stays
+green at night. The crowd is seeded, so a redraw never shimmers.
+`DIAMOND_SPOTS` did not move, except the DH (81 to 78), whose name no longer
+fits under it once it wears a ground.
+
+**A name on the grass has a ground of its own**, a dark pill sized to the
+text. A foul line through white type was the first thing a player saw.
+
+**The board moved up about 150px on a 390 phone**, and three pieces of chrome
+paid for it, none of them a thing a player uses between spins:
+
+- The roster pips only show once the field scrolls under the sticky bar, so
+  they hang below it (`.capwrap .dpips`) instead of holding a 34px blank strip
+  above the field.
+- Re-spin is a pill on the reels' label row, not its own full width row.
+- The position tabs and the sort share one row (`.boardbar`). Under 520px a
+  tab with nothing on it is not drawn, and it is what pushed the row past the
+  width.
+
+**The coach's take lists the archetype once.** It is the pill in the card's
+header, and `coachReport` also returned it as a strength, so a Balanced
+Contender read those words twice one line apart. `takesHtml()` drops it from
+the rows on both the squad and results screens. The guest badge panel's
+button is the ball, like every other primary action here.
+
+### Ballparks are earned, and the account's park is the one the draft is played on
+
+```
+node baseball/check-parks.mjs          the catalogue, the art, the unlocks, the page
+node baseball/check-parks.mjs --quick  no browser
+```
+
+Asked for as custom ballparks a fan would love, unlocked to the profile by rewards
+and account tier. `baseball/parks.js` holds thirteen: the home park plus twelve
+nods to famous parks (ivy on brick, a tall green wall in left, fountains, a bay, a
+white frieze, a dome, a cornfield). **None is named for the park it nods to**,
+and none carries a real sign or logo. Those belong to other people, so each is
+drawn from what makes the place itself and given a name of its own.
+
+**Unlocks are DERIVED, never stored**, which is the badge cabinet's design at a
+second shelf. Every rule is a question about the account's own rows (badges
+earned, best wins, Octobers, titles, seasons played, modes played) or about
+`isPro()`. So a park is retroactive, follows the account, and cannot be lost by
+clearing site data. A guest drafts on the home park. The only stored thing is the
+CHOICE, `rtd_park_v1`, keyed by account on the device.
+
+**A choice the account cannot back falls back to the home park**, never to a
+park it does not have: signed out, another account on the browser, or a Pro park
+after Pro lapses. `check-parks` drives all three through the page, and each was
+proved by making `currentPark()` return the stored choice unasked.
+
+**The field keeps its spots and grows a sky.** A park draws the same diamond at
+the same coordinates and changes the grass, the dirt, the wall and everything
+behind it. The draft and squad fields (`PARKED_FIELDS`) extend the SVG's viewBox
+upward by `SKY` (10 units over 68) for the skyline. So `.field.parked` is
+`100/78` and `drawField` maps each chip's 68-unit y into the taller box. The home
+page hero passes no sky and always draws the home park, because its heights are
+measured against the fold.
+
+**Every SVG id carries the field's suffix AND the park's id.** The profile draws
+all thirteen in one sheet beside the draft field. Two parks sharing a gradient id
+paint each other, and an id with no match draws nothing. Neither throws.
+`check-parks` asserts every `url()` resolves and no id repeats across all
+thirteen. Proved by stripping the suffix: every park fails.
+
+**The camera sits low and the wall stands tall**, asked for by the owner: the
+catcher was far from the plate and center field stood in the stands. The ground
+is drawn flat and squashed toward home by `GROUND_K` (0.85) with the plate at
+`GROUND_A`, so the diamond reads wider than tall. The wall face is `WALL_H` units
+(6, the ivy 6.6, the cornfield fence 1.4). It carried distance markers for one commit and the owner took them off. The
+backdrops were authored against the old wall, so each is shifted down by how far
+its wall top moved (`shift`). **`DIAMOND_SPOTS` is the same projection written by
+hand**, so `check-parks` holds it to `parks.js`: every fielder at least 3 units
+below the foot of the wall, the catcher 3 to 6.2 units in front of the plate.
+Both were proved with the old spots. Under 520px the discs are 30px, because at
+36 the pitcher's name ran into the catcher on the tighter diamond.
+
+The draft field wears a tag naming its park, and pressing it opens the shelf. A
+season that opens a park says so on the results screen (`lastNewParks`, computed
+before and after the row is filed, as `lastNewBadges` is), with the park drawn and
+a button to play on it next.
 
 ### Two ratings, two jobs, and they must not be merged
 
@@ -15196,6 +15805,16 @@ whose first screen is the same on season one and season a hundred. What you earn
 is open and what is left is one tap behind a line saying how much of it there is.
 Measured at 390px on a six season career: 3,535px.
 
+**`check-run` asserts what the fold is FOR, not a height.** It held the sheet under a
+fixed 4,000px and that was a claim about the dice: each earned badge is an open tile of
+about 68px, a first season lights 25 to 50 of them, and the sheet ran 2,800 to 4,388px
+while everything that is not an earned tile sat at about 900px in every run. So it
+failed on lucky seasons, on main, with nothing wrong. It asserts the LOCKED half (the
+sheet minus the earned grids) costs under 1,200px, and the folded sheet is under a
+third of the same sheet opened flat, measured in the same run (about 14,600px now).
+The earned grids are the ones outside every fold: counted as "outside a shut fold",
+forcing every fold open read the whole catalogue as earned and passed.
+
 ### A FRANCHISE OUTLIVES ITS CLUB CODE, and One Franchise offered the code
 
 ```
@@ -15461,9 +16080,47 @@ psql -d rtd_pro -f supabase/test/baseball_pro_test.sql
 
 Asked for by the owner: the six extra modes (Eras, One Franchise, Division, Cap
 Survivor, All-Time Pitching Staff, Trade Machine) get **one free start each per
-Eastern day**, and **Pro** removes the limit for **$9.99 once**. Classic and the daily
+Eastern day**, and **Pro** removes the limit for **$14.99 a year**. Classic and the daily
 are never counted and never sold. The Stripe steps are in
 `functions/api/stripe/README.md`.
+
+#### It was $9.99 once and is now a yearly subscription
+
+```
+node scripts/stripe/check-recurring.mjs   the checkout and webhook, driven, no network
+```
+
+The owner moved the Stripe Price to $14.99 recurring yearly (2026-09), which the code
+could not sell: a recurring Price in payment mode is refused by Stripe outright, so the
+first press of Get Pro after the env var moved would have failed. `recurring: true` on
+the `diamond-pro` catalog row now opens the checkout in subscription mode, with the
+bundle key on the subscription's own metadata, because a renewal event carries the
+subscription and nothing else.
+
+**The grant is still ONE `premium_unlocks` row, now with an end date**, and that is why
+no reader changed: `premium_products()` and `rtd_mode_spend` already honoured
+`expires_at`. `grantRecurring` in the webhook sets it from the subscription: the paid
+period's end plus three days of grace, a week on `past_due` (the period has already moved
+forward, so honouring it would hand a failed card a year), and now for anything dead. A
+cancellation at period end stays `active` until then, so it needs no case of its own.
+
+Four things it must never do, each asserted by driving the real files:
+
+- **Write the `subscriptions` table.** It holds ONE row a user and it is the Arcade
+  Card's, so a baseball renewal there would overwrite somebody's membership. Removing
+  the routing fails six claims.
+- **Trust event order.** Every subscription event is read back from Stripe before it is
+  written, or a stale "active" landing after "deleted" hands back a year. Removing the
+  read-back fails three.
+- **Give a row with no end date an end.** The old $9.99 buyers and comps own Pro for
+  good, and checkout refuses to sell them a year.
+- **Refuse a lapsed subscriber.** Checkout counts only a RUNNING recurring grant as
+  owning it; the row outlives its end as the record.
+
+**The price is written once in the page**, `PRO_PRICE` with `PRO_TERM` (" a year")
+beside it wherever it is shown, because a price with no term on a subscription reads
+as once. Subscribers get **Manage billing**, which opens the Stripe Customer Portal;
+`portal.js` allows `/baseball/` as a return path.
 
 **The rule went per mode, then shared, then per mode again, and 122 is the last move.**
 121 shipped and was deployed with one token a day shared by all six, keyed on

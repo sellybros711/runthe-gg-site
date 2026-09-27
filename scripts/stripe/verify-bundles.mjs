@@ -29,7 +29,7 @@
  *    first live test, with a test-mode customer against a live key.
  */
 import { readFileSync, readdirSync } from 'node:fs';
-import { BUNDLES } from '../../functions/api/stripe/_bundles.js';
+import { BUNDLES, YEARLY_LIVE, yearlyProducts, yearlyBonus } from '../../functions/api/stripe/_bundles.js';
 
 const root = new URL('../../', import.meta.url);
 const read = (p) => readFileSync(new URL(p, root), 'utf8');
@@ -115,6 +115,69 @@ if (checkout.includes("form.set('customer'")) {
   } else {
     ok('a stored customer id Stripe refuses is dropped and the session retried');
   }
+}
+
+// 8. a recurring bundle is sold, granted and renewed as one
+// A recurring Price in payment mode is refused by Stripe, so the checkout has to
+// open in subscription mode; the renewals carry only the subscription, so the key
+// has to ride on it; and the grant must never reach the `subscriptions` table,
+// which is the Arcade Card's one row a user.
+{
+  const rec = Object.entries(BUNDLES).filter(([, b]) => b.recurring);
+  const setupRec = rec.every(([k, b]) => new RegExp("envVar: '" + b.envPrice + "'[\\s\\S]{0,80}interval: '").test(setup));
+  if (!rec.length) ok('no recurring bundles');
+  else if (!/subMode = [^;]*bundle\.recurring/.test(checkout) || !checkout.includes("mode: subMode ? 'subscription' : 'payment'")) bad('a recurring bundle does not open checkout in subscription mode');
+  else if (!checkout.includes("subscription_data[metadata][bundle]")) bad('a recurring checkout does not put the bundle on the subscription, so renewals cannot be matched');
+  else if (!/if \(userId && bundleKey\) \{[\s\S]{0,600}grantRecurring/.test(webhook)) bad('subscription events for a bundle are not routed to grantRecurring');
+  else if (!setupRec) bad('the setup script mints a recurring bundle as a one-time price');
+  else ok('recurring bundles (' + rec.map(([k]) => k).join(', ') + ') open as subscriptions, carry their key, renew through grantRecurring, and are minted recurring');
+}
+
+// 9. THE YEARLY PLANS (supabase/124_premium_yearly.sql). Four things that are each written in
+// two places, and each pair drifts silently: a plan that keeps alive a different list from the
+// one the catalog sells, a yearly price nobody reads, a bonus that is not a product the table
+// takes, and a plan event the webhook is not subscribed to (a renewal that nothing extends).
+const yearly = Object.entries(BUNDLES).filter(([, b]) => b.year);
+let sqlProducts = null, sqlFile = null;
+for (const f of migs) {
+  const m = read('supabase/' + f).match(/function public\.premium_bundle_products[\s\S]*?\$\$([\s\S]*?)\$\$/);
+  if (m) { sqlProducts = m[1]; sqlFile = f; }
+}
+if (!yearly.length) {
+  ok('no yearly plans in the catalog');
+} else if (!sqlProducts) {
+  bad('the catalog has yearly plans and no migration defines premium_bundle_products()');
+} else {
+  for (const [key] of yearly) {
+    const m = sqlProducts.match(new RegExp("when '" + key + "' then array\\[([^\\]]*)\\]"));
+    const inSql = m ? [...m[1].matchAll(/'([^']+)'/g)].map((x) => x[1]).sort() : null;
+    const inJs = yearlyProducts(key).slice().sort();
+    if (!inSql) bad(`${key}: premium_bundle_products() in ${sqlFile} has no row for it`);
+    else if (inSql.join() !== inJs.join()) bad(`${key}: the plan keeps ${inSql.join(', ')} alive in SQL and sells ${inJs.join(', ')} in the catalog`);
+    else ok(`${key}: the yearly plan keeps alive what the catalog sells (${inJs.join(', ')})`);
+  }
+  const years = yearly.map(([, b]) => b.year.envPrice);
+  const readme = read('functions/api/stripe/README.md');
+  const offerSrc = read('functions/api/stripe/_offer.js');
+  if (new Set([...envVars, ...years]).size !== envVars.length + years.length) bad('a yearly price env var is shared with another price');
+  for (const v of years) {
+    if (!checkout.includes(v)) bad(`${v} is not named in checkout-bundle.js's header`);
+    if (!readme.includes(v)) bad(`${v} is not recorded in functions/api/stripe/README.md`);
+  }
+  if (years.every((v) => checkout.includes(v) && readme.includes(v))) ok('yearly price env vars are unique and recorded: ' + years.join(', '));
+  if (!/premium_yearly_ready/.test(offerSrc)) bad('_offer.js sells a plan without asking the database for premium_yearly_ready()');
+  else ok('a plan is only sold once the database answers premium_yearly_ready()');
+  for (const [key] of yearly) {
+    const bonus = yearlyBonus(key);
+    const b = BUNDLES[key];
+    if (b.year.bonus && !bonus) bad(`${key}: the yearly bonus names ${b.year.bonus}, which is not one of the bundle's grants`);
+  }
+  for (const ev of ['invoice.paid', 'customer.subscription.updated', 'customer.subscription.deleted',
+    'charge.refunded', 'charge.dispute.created']) {
+    if (!webhook.includes("'" + ev + "'")) bad(`the webhook does not handle ${ev}, which a yearly plan needs`);
+  }
+  ok('the webhook handles every plan event');
+  console.log('  ..  the yearly switch (YEARLY_LIVE) is ' + (YEARLY_LIVE ? 'ON' : 'off'));
 }
 
 if (failed) {

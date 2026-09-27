@@ -231,7 +231,7 @@ async function playOne(browser, w, h, dpr, touch, youHome) {
           const name = (e.textContent || '').trim().slice(0, 22) || e.id || 'unnamed';
           const over = Math.max(r.bottom - innerHeight, r.right - innerWidth, -r.top, -r.left);
           out.push([name, Math.round(over)]);
-          boxes.push({ name, t: r.top, b: r.bottom, l: r.left, r: r.right });
+          boxes.push({ name, t: r.top, b: r.bottom, l: r.left, r: r.right, e });
         }
         /* AND NO TWO OF THEM MAY OVERLAP, which is the worse half of the same
            fault: a control off the screen does nothing and a control UNDER
@@ -247,6 +247,22 @@ async function playOne(browser, w, h, dpr, touch, youHome) {
             if (ox > 1 && oy > 1) {
               hits.push(`${a.name} under ${c.name} (${Math.round(ox)}x${Math.round(oy)})`);
             }
+          }
+        }
+        /* AND NONE OF THEM MAY BE UNDER THE PICTURE. The arena is absolutely
+           positioned, so a static row of controls in the deck is painted
+           beneath it unless it asks not to be: on a wide window the Mound
+           button laid out perfectly, inside the window and clear of every
+           other control, and the point at its centre hit-tested to the field
+           canvas. Two rectangles cannot see that; only a hit test can. It is
+           asked of the picture alone, because a sheet over a control is the
+           sheet doing its job. */
+        for (const bx of boxes) {
+          const cx = (bx.l + bx.r) / 2, cy = (bx.t + bx.b) / 2;
+          if (cx < 0 || cy < 0 || cx > innerWidth || cy > innerHeight) continue;
+          const top = document.elementFromPoint(cx, cy);
+          if (top && !bx.e.contains(top) && top.closest && top.closest('.arena')) {
+            hits.push(`${bx.name} under the picture (${top.id || top.className || top.tagName})`);
           }
         }
         return { out, hits, page: Math.round(document.documentElement.scrollHeight), win: innerHeight };

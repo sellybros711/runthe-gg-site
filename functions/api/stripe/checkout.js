@@ -1,4 +1,4 @@
-/* Run The Arcade Card — Stripe Checkout (Cloudflare Pages Function)
+/* Run The Arcade Card : Stripe Checkout (Cloudflare Pages Function)
  *
  * POST /api/stripe/checkout
  *   body: { user_id: "<supabase auth uid>", plan: "monthly"|"annual", email?, return_path? }
@@ -12,13 +12,13 @@
  *   SUPABASE_URL, SUPABASE_SERVICE_ROLE   (required: session verification + customer reuse)
  *
  * The Supabase user id rides in as client_reference_id + metadata so the webhook
- * grants the Arcade Card entitlement with no extra lookup. No free trial — the
+ * grants the Arcade Card entitlement with no extra lookup. No free trial: the
  * generous free tier (guest 1/day, free account 3/day) is the try-before-you-buy.
  * Tax is off for launch (no automatic_tax); to enable later, add
  * 'automatic_tax[enabled]':'true' back and configure Stripe Tax in the Dashboard.
  *
  * SECURITY: the buyer is identified from the verified Supabase session token
- * (Authorization: Bearer <access_token>), NOT the request body — otherwise
+ * (Authorization: Bearer <access_token>), NOT the request body. Otherwise
  * anyone could start checkout bound to another user's account.
  */
 import { verifyUser } from './_verify.js';
@@ -35,12 +35,12 @@ export async function onRequestPost(context) {
   if (!env.STRIPE_SECRET_KEY || !price) return json({ error: 'stripe_not_configured' }, 503);
   if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE) return json({ error: 'stripe_not_configured' }, 503);
 
-  // Authenticated user only, derived from the session token — never the body.
+  // Authenticated user only, derived from the session token, never the body.
   const userId = await verifyUser(env, request);
   if (!userId) return json({ error: 'unauthorized' }, 401);
 
   // Never sell a second card to an existing member (mirrors the golf Tour Pass).
-  // This is the authoritative guard — the client hides the buy button too, but a
+  // This is the authoritative guard. The client hides the buy button too, but a
   // stale client or direct POST still can't create a duplicate subscription.
   const sub = await lookupSub(env, userId);
   if (sub && (sub.status === 'active' || sub.status === 'trialing')) {

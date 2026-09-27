@@ -1912,6 +1912,10 @@
       "v": "10",
       "sha": "f268a1163b3ff5fa"
     },
+    "parks.js": {
+      "v": "4",
+      "sha": "f7d3832fc6861472"
+    },
     "board.js": {
       "v": "1",
       "sha": "ca72c43361b377d7"
@@ -1935,8 +1939,8 @@
   },
   "cfb/commish/index.html": {
     "/assets/store.js": {
-      "v": "22",
-      "sha": "8df669f434400d08"
+      "v": "23",
+      "sha": "733a0836581de9eb"
     },
     "/cfb/engine.js": {
       "v": "35",
@@ -2039,8 +2043,8 @@
       "sha": "f8c8d8db3e957b72"
     },
     "/cfb/auth.js": {
-      "v": "7",
-      "sha": "560799e062cc5d8c"
+      "v": "8",
+      "sha": "d81dc7cbc4c21a96"
     },
     "/assets/cloudsave.js": {
       "v": "2",
@@ -2077,8 +2081,8 @@
       "sha": "f57edd42ef794134"
     },
     "auth.js": {
-      "v": "7",
-      "sha": "560799e062cc5d8c"
+      "v": "8",
+      "sha": "d81dc7cbc4c21a96"
     },
     "board.js": {
       "v": "7",
@@ -2093,12 +2097,16 @@
       "sha": "02a91d5c4391b42b"
     },
     "/assets/store.js": {
-      "v": "22",
-      "sha": "8df669f434400d08"
+      "v": "23",
+      "sha": "733a0836581de9eb"
     },
     "/assets/newsletter.js": {
       "v": "1",
       "sha": "1005aca091f1fc4b"
+    },
+    "/assets/fieldcast.js": {
+      "v": "3",
+      "sha": "6839aa8983b1ae7b"
     },
     "/cfb/commish/clock.js": {
       "v": "4",
@@ -2115,8 +2123,8 @@
       "sha": "8648d9aa90526509"
     },
     "/football/auth.js": {
-      "v": "7",
-      "sha": "faaf90d29173d163"
+      "v": "8",
+      "sha": "105d260a86068770"
     },
     "clubs.js": {
       "v": "2",
@@ -2165,8 +2173,8 @@
       "sha": "b35bb059c3376a91"
     },
     "/assets/store.js": {
-      "v": "22",
-      "sha": "8df669f434400d08"
+      "v": "23",
+      "sha": "733a0836581de9eb"
     },
     "/assets/cloudsave.js": {
       "v": "2",
@@ -2176,9 +2184,13 @@
       "v": "1",
       "sha": "1005aca091f1fc4b"
     },
+    "/assets/fieldcast.js": {
+      "v": "3",
+      "sha": "6839aa8983b1ae7b"
+    },
     "auth.js": {
-      "v": "7",
-      "sha": "faaf90d29173d163"
+      "v": "8",
+      "sha": "105d260a86068770"
     },
     "data/defender_seasons.json": {
       "v": "1",
