@@ -337,6 +337,17 @@ claim(oct.visible === !oct.missed,
   `Watch October is ${oct.missed ? 'not offered on a run with no October' : 'offered on a run that had one'}`,
   `visible ${oct.visible}, verdict missed ${oct.missed}`);
 
+/* The two leaderboard cells open the board this season was filed on, and Back
+   comes home to the result rather than to the front page. */
+for (const id of ['#ro-place-go', '#ro-rank-go']) {
+  await p.click(id);
+  const bd = await p.evaluate(() => ({ on: !!document.querySelector('#s-board.on'),
+    tab: (document.querySelector('#bd-tabs .bd-tab.on') || {}).textContent || '' }));
+  claim(bd.on && /classic/i.test(bd.tab), `${id} opens the leaderboard on this season's board (${bd.tab})`);
+  await p.click('#b-board-back');
+  claim(!!(await p.$('#s-over.on')), 'and Back returns to the result');
+}
+
 // ══ 3. the row it files is the row the cabinet reads ═══════════════════════
 head('3. THE SEASON IS FILED, AND THE BADGES IT LIT ARE NAMED');
 claim(r.stored.length === 1, 'exactly one season is in the history', `${r.stored.length} rows`);

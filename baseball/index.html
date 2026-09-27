@@ -1221,6 +1221,11 @@ body:has(#s-intro.on) header .lockup{visibility:hidden}
 .ro-cells{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0}
 .ro-cell{background:var(--panel);border:1px solid rgba(var(--edge),.10);border-radius:12px;
   padding:12px 8px;text-align:center;box-shadow:0 2px 6px rgba(0,0,0,.05)}
+.ro-cell.ro-go{font:inherit;color:inherit;cursor:pointer;position:relative;width:100%;
+  transition:border-color .15s,transform .1s}
+.ro-cell.ro-go:active{transform:scale(.97)}
+.ro-cell.ro-go::after{content:'\203A';position:absolute;top:6px;right:9px;font-size:15px;line-height:1;color:var(--dim-2)}
+@media (hover:hover){.ro-cell.ro-go:hover{border-color:var(--gold)}}
 .ro-cell .cv{font-family:var(--fd);font-size:30px;line-height:1;color:var(--ink)}
 .ro-cell .cv .u{font-size:15px;color:var(--dim-2)}
 .ro-cell .cv.gold{color:var(--gold)} .ro-cell .cv.green{color:var(--green)}
@@ -2579,8 +2584,8 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
   <div class="ro-cells">
     <div class="ro-cell"><div class="cv" id="ro-rating"></div><div class="cl" id="ro-rating-l">Team rating</div>
       <div class="ro-meter"><i id="ro-rating-bar"></i></div></div>
-    <div class="ro-cell"><div class="cv gold" id="ro-place">-</div><div class="cl" id="ro-place-l">Leaderboard</div></div>
-    <div class="ro-cell"><div class="cv gold" id="ro-rank"></div><div class="cl" id="ro-rank-l">All-time rank</div></div>
+    <button type="button" class="ro-cell ro-go" id="ro-place-go"><div class="cv gold" id="ro-place">-</div><div class="cl" id="ro-place-l">Leaderboard</div></button>
+    <button type="button" class="ro-cell ro-go" id="ro-rank-go"><div class="cv gold" id="ro-rank"></div><div class="cl" id="ro-rank-l">All-time rank</div></button>
   </div>
 
   <div class="ro-coach">
@@ -4562,8 +4567,14 @@ function paintModeTiles(){
       '<b>'+esc(m.tile||m.title)+'</b><span>'+esc(m.line||m.text)+'</span></button>').join('');
   box.querySelectorAll('[data-mode]').forEach(b=>b.addEventListener('click',()=>{ga('mode_tile',{mode:b.dataset.mode});pickMode(b.dataset.mode);}));
 }
-$('b-board').addEventListener('click',openBoard);
-$('b-board-back').addEventListener('click',()=>{show('s-intro');heroSync();});
+$('b-board').addEventListener('click',()=>openBoard());
+$('b-board-back').addEventListener('click',()=>{
+  const to=boardFrom;boardFrom='s-intro';
+  if(to==='s-over'&&RUN){show('s-over');return;}
+  show('s-intro');heroSync();
+});
+$('ro-place-go').addEventListener('click',openRunBoard);
+$('ro-rank-go').addEventListener('click',openRunBoard);
 $('daily-card').addEventListener('click',startDaily);
 document.querySelectorAll('[data-close-daily]').forEach(el=>el.addEventListener('click',()=>closeSheet('sheet-daily')));
 $('b-daily-share').addEventListener('click',shareDaily);
@@ -5066,6 +5077,7 @@ async function postToBoard(o){
   if(place==null||tot==null){say('-','On the board');return;}
   const board=payload.dailyKey?('Daily #'+dailyNo()):runModeLabel(payload.mode);
   say('#'+place,'of '+tot.toLocaleString()+' on '+board+(sent.duplicate?' (already recorded)':''));
+  lastBoardPlace={tab:payload.dailyKey?'daily':payload.mode,place};
 }
 
 /* ─── the leaderboard screen ───
@@ -5075,7 +5087,22 @@ let boardTab='daily';
 const BOARD_TABS=[{k:'daily',label:'Today'}].concat(
   ['free','era','franchise','division','capsurvivor','staff','trade']
     .map(m=>({k:m,label:runModeLabel(m)})));
-function openBoard(){show('s-board');paintBoard();}
+/* The screen the board was opened from, so Back goes back to it: a board opened
+   off a finished season returns to that season rather than to the front page. */
+let boardFrom='s-intro';
+/* Where the season just filed landed, so the board it opens on can mark the row. */
+let lastBoardPlace=null;
+function openBoard(tab,from){
+  if(tab&&BOARD_TABS.some(t=>t.k===tab))boardTab=tab;
+  boardFrom=from||'s-intro';
+  show('s-board');paintBoard();
+}
+/* The two leaderboard cells on the results screen open the board this season was
+   filed on. The daily files on today's board; every other mode on its own. */
+function openRunBoard(){
+  const tab=RUN&&RUN.daily?'daily':runModeOf(RUN);
+  openBoard(tab,'s-over');
+}
 /* THE CIRCLES, asked for after the list is drawn, so a slow answer never holds the
    board up. A row filed by nobody, or by somebody with no profile yet, draws their
    initials on slate, which is what a circle is before it has been customized. */
@@ -5124,14 +5151,21 @@ function paintBoard(){
       if(r.era)detail.push(esc(r.era));
       if(r.cuts)detail.push(r.cuts+' cut');
       if(r.trades)detail.push(r.trades+' dealt');
-      return '<div class="bd-row"><div class="bd-pos">'+(i+1)+'</div>'+
+      const me=lastBoardPlace&&lastBoardPlace.tab===boardTab&&lastBoardPlace.place===i+1;
+      return '<div class="bd-row'+(me?' me':'')+'"><div class="bd-pos">'+(i+1)+'</div>'+
         (r.user_id?'<span class="bd-crest" data-uid="'+esc(r.user_id)+'"></span>':'<span class="bd-crest"></span>')+
         '<div class="bd-who"><div class="bd-name">'+
           esc(r.display_name||'Anonymous')+'</div>'+
         '<div class="bd-meta">'+detail.join(' \u00b7 ')+'</div></div>'+
         '<div class="bd-rec"><b>'+r.wins+'-'+r.losses+'</b><span>record</span></div></div>';
     }).join('');
+    /* A season past the top fifty is still yours to find: say where it landed. */
+    if(lastBoardPlace&&lastBoardPlace.tab===boardTab&&lastBoardPlace.place>rows.length)
+      list.insertAdjacentHTML('beforeend','<div class="bd-empty">Your season landed at #'+
+        lastBoardPlace.place.toLocaleString()+'.</div>');
     paintBoardCrests(list,rows);
+    const mine=list.querySelector('.bd-row.me');
+    if(mine&&boardFrom==='s-over')requestAnimationFrame(()=>mine.scrollIntoView({block:'center'}));
   });
 }
 
