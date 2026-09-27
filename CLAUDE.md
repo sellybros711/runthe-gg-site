@@ -14584,6 +14584,18 @@ paint each other, and an id with no match draws nothing. Neither throws.
 `check-parks` asserts every `url()` resolves and no id repeats across all
 thirteen. Proved by stripping the suffix: every park fails.
 
+**The camera sits low and the wall stands tall**, asked for by the owner: the
+catcher was far from the plate and center field stood in the stands. The ground
+is drawn flat and squashed toward home by `GROUND_K` (0.85) with the plate at
+`GROUND_A`, so the diamond reads wider than tall. The wall face is `WALL_H` units
+(6, the ivy 6.6, the cornfield fence 1.4). It carried distance markers for one commit and the owner took them off. The
+backdrops were authored against the old wall, so each is shifted down by how far
+its wall top moved (`shift`). **`DIAMOND_SPOTS` is the same projection written by
+hand**, so `check-parks` holds it to `parks.js`: every fielder at least 3 units
+below the foot of the wall, the catcher 3 to 6.2 units in front of the plate.
+Both were proved with the old spots. Under 520px the discs are 30px, because at
+36 the pitcher's name ran into the catcher on the tighter diamond.
+
 The draft field wears a tag naming its park, and pressing it opens the shelf. A
 season that opens a park says so on the results screen (`lastNewParks`, computed
 before and after the row is filed, as `lastNewBadges` is), with the park drawn and

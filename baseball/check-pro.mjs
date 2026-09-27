@@ -143,8 +143,8 @@ try {
        shown without "a year" reads as once. */
     const src = readFileSync(new URL('./index.html', import.meta.url), 'utf8');
     const price = (/const PRO_PRICE='([^']+)'/.exec(src) || [])[1] || '(none)';
-    claim(/one free play a day/i.test(line) && line.includes(price + ' a year'),
-      'the front page says the rule, the price and that it is yearly', line);
+    claim(/^Go Pro for /.test(line.trim()) && line.includes(price + ' a year'),
+      'the front page offers Pro, with the price and that it is yearly', line);
     claim((await chip(page, 'cap')) === '', 'an unplayed mode carries no chip');
 
     await tile(page, 'cap');
