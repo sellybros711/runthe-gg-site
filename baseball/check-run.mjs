@@ -43,10 +43,17 @@ import path from 'path';
 import http from 'http';
 
 const require = createRequire(import.meta.url);
-const { chromium } = require('/opt/node22/lib/node_modules/playwright');
+/* Playwright from node_modules first, which is where CI installs it, then the dev
+   sandbox's global copy. Hardcoding the sandbox path failed every CI run. */
+let chromium;
+try { ({ chromium } = require('playwright')); }
+catch (_) { try { ({ chromium } = require('/opt/node22/lib/node_modules/playwright')); } catch (e) { chromium = null; } }
+if (!chromium) { console.error('playwright is not installed'); process.exit(2); }
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, '..');
-const EXE = process.env.CHROMIUM || '/opt/pw-browsers/chromium-1194/chrome-linux/chrome';
+/* A pinned browser only where it exists, or Playwright's own everywhere else. */
+const EXE = process.env.CHROMIUM
+  || ['/opt/pw-browsers/chromium-1194/chrome-linux/chrome'].find((f) => existsSync(f)) || null;
 const PORT = 8137;
 
 /* Served over http rather than file://, because the page fetches its pool and its
