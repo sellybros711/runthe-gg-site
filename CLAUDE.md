@@ -15641,6 +15641,16 @@ whose first screen is the same on season one and season a hundred. What you earn
 is open and what is left is one tap behind a line saying how much of it there is.
 Measured at 390px on a six season career: 3,535px.
 
+**`check-run` asserts what the fold is FOR, not a height.** It held the sheet under a
+fixed 4,000px and that was a claim about the dice: each earned badge is an open tile of
+about 68px, a first season lights 25 to 50 of them, and the sheet ran 2,800 to 4,388px
+while everything that is not an earned tile sat at about 900px in every run. So it
+failed on lucky seasons, on main, with nothing wrong. It asserts the LOCKED half (the
+sheet minus the earned grids) costs under 1,200px, and the folded sheet is under a
+third of the same sheet opened flat, measured in the same run (about 14,600px now).
+The earned grids are the ones outside every fold: counted as "outside a shut fold",
+forcing every fold open read the whole catalogue as earned and passed.
+
 ### A FRANCHISE OUTLIVES ITS CLUB CODE, and One Franchise offered the code
 
 ```
