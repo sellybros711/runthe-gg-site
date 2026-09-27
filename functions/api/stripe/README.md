@@ -370,6 +370,45 @@ values ('<user uuid>', 'rtd_premium', 'comp')
 on conflict (user_id, product) do update set expires_at = null;
 ```
 
+## Run The Floor Pro ($9.99 once, basketball only)
+
+The second single-game tier, the same shape as Diamond Pro and by the same owner's
+decision (2026-09). One checkout, one webhook, no second payment path. The catalog
+row is `floor-pro` in `_bundles.js`, it grants `rtf_premium`, and `/hoops/` asks
+`premium_products()` for it through `hoops/auth.js`.
+
+What it sells: endless Fix History and Six Passes, rebuilding any team from any year,
+and making any two player puzzle. Both dailies, Conquest and Quick Draft are free for
+everybody and never metered, and a friend opening a shared puzzle link plays it free.
+There is no server meter: an endless or picked puzzle is built in the browser and
+files nothing to the board, so the gate is `endlessOpen()` in `hoops/modes-ui.js`.
+
+### Go-live, in this order
+
+1. **Run the migration** in the Supabase SQL editor: `supabase/123_hoops_pro.sql`
+   (it needs 121 first). Then paste `supabase/test/launch_preflight.sql` and confirm
+   row 34 reads **yes**. Until it runs, the table refuses `rtf_premium` and a paid
+   checkout 500s in the webhook.
+2. **Create the Product and Price in Stripe**, by hand in the Dashboard: name
+   **Run The Floor Pro**, one-time price **$9.99 USD**, lookup key `rtf_pro_once`.
+   Or `STRIPE_SECRET_KEY=sk_live_... node scripts/stripe/setup-premium-bundles.mjs`,
+   which is idempotent. Copy the price id (`price_...`).
+3. **Add the env var in Cloudflare Pages** (Production):
+   `STRIPE_PRICE_RTF_PRO = price_...`, then redeploy (push any commit). Until it is
+   set the Get Pro button answers "Pro is not on sale yet".
+4. **Nothing to change on the webhook.**
+5. **Test it** with a 100% off promotion code restricted to this product: open
+   `/hoops/` signed in, press Go Pro, pay with the code, and you land back on the game
+   with "Pro is on". The Endless and Build doors lose their Pro tag.
+
+To comp somebody by hand:
+
+```sql
+insert into public.premium_unlocks (user_id, product, source)
+values ('<user uuid>', 'rtf_premium', 'comp')
+on conflict (user_id, product) do update set expires_at = null;
+```
+
 ## Before public launch
 
 - Flip `arcade/tokens.js` `TESTING = false` to enforce the tiers.

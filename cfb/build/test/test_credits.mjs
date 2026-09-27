@@ -524,11 +524,26 @@ window.__CR={
   /* Draw a chart of exactly these drives and measure where the last bar stops, in yards.
      The geometry is recomputed from drawDriveChart's own constants rather than guessed. */
   measure(drives,upTo){
-    const W=680,H=210,dpr=window.devicePixelRatio||1;
+    const W=680,H=window.RTG_FIELD?380:210,dpr=window.devicePixelRatio||1;
     const c=document.createElement('canvas'); c.width=W; c.height=H;
     const ctx=c.getContext('2d',{willReadFrequently:true});
     const YOU='#00aaff', THEM='#ff5522';
     drawDriveChart(ctx,W,H,drives,upTo,YOU,THEM,'YOU','OPP');
+    /* THE BROADCAST FIELD (/assets/fieldcast.js) is a camera in perspective, so there is no
+       fixed row to scan. It records where it drew each drive's leading edge and hands back
+       its own pixel to yard mapping; the claim stays a claim about the PICTURE because the
+       pixel just behind that edge has to be the drive's colour, or the record is lying. The
+       drive in progress is read without that pixel test: the ball sits on its leading edge. */
+    if(window.RTG_FIELD&&RTG_FIELD.inspect){
+      const I=RTG_FIELD.inspect(c), b=I&&I.drawn[I.drawn.length-1];
+      if(!b) return {found:false};
+      const hex=(h)=>[parseInt(h.slice(1,3),16),parseInt(h.slice(3,5),16),parseInt(h.slice(5,7),16)];
+      const tc=hex(b.team==='you'?YOU:THEM), dir=b.team==='you'?1:-1;
+      const p=ctx.getImageData(Math.round(b.tip[0]-dir*2*dpr),Math.round(b.tip[1]),1,1).data;
+      const off=Math.hypot(p[0]-tc[0],p[1]-tc[1],p[2]-tc[2]);
+      if(!b.live&&off>110) return {found:false,pixelOff:Math.round(off)};
+      return {found:true,yards:I.yardAt(b.tip[0],b.v),endYard:b.to,team:b.team};
+    }
     const padL=4*dpr,padT=10*dpr,padB=14*dpr;
     const fw=W-padL-4*dpr, fh=H-padT-padB;
     const ezW=Math.round(fw*0.06), pfL=padL+ezW, pfW=fw-ezW*2;

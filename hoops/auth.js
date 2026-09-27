@@ -22,12 +22,12 @@
  * THE DISPLAY NAME IS NEVER SENT FROM HERE. rtf_submit_run() reads it out of
  * profiles for auth.uid(). Nothing in this file can put a name on a row.
  *
- * WHAT IT DELIBERATELY DOES NOT HAVE, against its two siblings: there is no
- * premium anything. Run The Floor has no paid tier and no store, so the four
- * purchase functions in cfb/auth.js have no caller here. They are not stubbed
- * either: a function that answers "you own nothing" is a door one line from
- * being opened, and the day this game grows a tier it should grow the real
- * call rather than inherit a placeholder nobody re-read.
+ * PRO IS ONE READ. Run The Floor Pro (supabase/123_hoops_pro.sql) is a row in
+ * premium_unlocks, and premiumProducts() is character for character what the
+ * baseball and college games ask. null means "no opinion" on any failure, and
+ * the page then keeps whatever it last knew rather than taking Pro away over a
+ * dropped connection. There is no stub answering "you own nothing": that is a
+ * door one line from being opened.
  */
 (function () {
   'use strict';
@@ -235,6 +235,24 @@
     } catch (e) { return false; }
   }
 
+  /* The caller's live product keys, cached per account. `force` goes past the
+     cache, which the page does coming back from Stripe, because the webhook
+     races the redirect. */
+  let premium = null, premiumFor = null;
+  async function premiumProducts(force) {
+    if (!sb || !session) return [];
+    const uid = session.user && session.user.id;
+    if (!force && premium && premiumFor === uid) return premium;
+    try {
+      const r = await sb.rpc('premium_products');
+      if (r && !r.error && Array.isArray(r.data)) {
+        premium = r.data; premiumFor = uid;
+        return premium;
+      }
+    } catch (e) {}
+    return null;
+  }
+
   /* board.js signs its requests with the anon key. Once somebody is signed in
      the RPC has to see their JWT instead, or auth.uid() is null and the run
      records as a guest, so this hands the live access token over. */
@@ -268,6 +286,6 @@
     API_VERSION: 1,
     boot, state, onChange: (f) => { listeners.push(f); return () => {}; },
     signIn, signUp, signInGoogle, signOut,
-    available, setName, claim, token, deleteAccount,
+    available, setName, claim, token, deleteAccount, premiumProducts,
   };
 })();

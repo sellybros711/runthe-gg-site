@@ -1480,7 +1480,7 @@ window.GA_ID='G-L29P5MRWKE';
 
   /* ── drive chart ────────────────────────────────────────────── */
   .pofield{margin-top:10px;border-radius:12px;overflow:hidden;border:1px solid rgba(255,255,255,.08);
-    background:#1a3318}
+    background:#03060c;box-shadow:0 12px 34px rgba(0,0,0,.45),inset 0 0 0 1px rgba(255,255,255,.03)}
   .pofield canvas{display:block;width:100%;height:auto}
 
   .bigrec{text-align:center;padding:6px 0 12px}
@@ -2701,6 +2701,14 @@ window.GA_ID='G-L29P5MRWKE';
        is pinned to the corner it was already sitting in. */
     .mc-grid .modecard .mc-arrow{display:none}
     .mc-grid .modecard .mc-pad{position:absolute;top:15px;right:14px;margin:0}
+    /* THE SIGN-IN CARD IS NOT A MODE, SO IT TAKES THE WHOLE ROW. It is drawn between the
+       two tiles for a signed out reader, and as a grid cell it took the second column and
+       pushed Commish Simulator down onto a row of its own: two modes, two rows, and an
+       account form sitting where a mode should be. Spanning, it reads as the note under
+       Conference Draft that it is. Spanning alone still split the two tiles onto two rows,
+       because it sits between them in the markup, so on the grid it goes after them. The
+       phone keeps it directly under the card it is about. */
+    .mc-grid .gate{grid-column:1 / -1;order:1}
   }
 
   /* ---- THE CROSS-PROMO SECTION ----
@@ -3951,6 +3959,9 @@ or endorsed by the NCAA, the CFP or any school.
 <script src="/assets/store.js?v=22"></script>
 <!-- The release newsletter checkbox on the account page. See supabase/121_newsletter.sql. -->
 <script src="/assets/newsletter.js?v=1"></script>
+<!-- The broadcast field every game is played out on, shared with the NFL game. drawDriveChart
+     hands its drives here and keeps its own body as the fallback. -->
+<script src="/assets/fieldcast.js?v=3"></script>
 <!-- THE FREE TIER'S CLOCK, WHICH THIS PAGE ONLY READS. It is the mode's module and the
      mode is still the thing that decides: seasonWall() spends a season and reads the
      server's answer, because only the server can settle it. All this page wants is to know
@@ -9992,8 +10003,16 @@ function generateDrives(script,rng){
    once it has arrived, so the synchronous chart never waits on it. */
 const fieldLogo=new Image(); fieldLogo.src='field-r.png?v=1';
 
-function drawDriveChart(ctx,w,h,drives,upTo,youColor,themColor,youName,themName){
+function drawDriveChart(ctx,w,h,drives,upTo,youColor,themColor,youName,themName,extra){
   if(!ctx)return;
+  /* THE BROADCAST FIELD, when /assets/fieldcast.js arrived; the college style is the bolder
+     mowing, the brighter end zones and a striped ball. Everything below is the chart it
+     replaced, kept for a blocked or stale copy of that file. */
+  if(window.RTG_FIELD&&window.RTG_FIELD.API_VERSION===1&&ctx.canvas){
+    RTG_FIELD.paint(ctx.canvas,Object.assign({drives,upTo,style:'college',
+      you:{color:youColor,name:youName},them:{color:themColor,name:themName}},extra||{}));
+    return;
+  }
   const dpr=window.devicePixelRatio||1;
   ctx.save();ctx.clearRect(0,0,w,h);
   const pad={l:4*dpr,r:4*dpr,t:10*dpr,b:14*dpr};
@@ -10094,6 +10113,7 @@ function drawDriveChart(ctx,w,h,drives,upTo,youColor,themColor,youName,themName)
 
 function initFieldCanvas(canvasId){
   const cv=$(canvasId); if(!cv) return null;
+  if(window.RTG_FIELD&&window.RTG_FIELD.API_VERSION===1) return RTG_FIELD.prepare(cv);
   const dpr=window.devicePixelRatio||1;
   const rect=cv.parentElement.getBoundingClientRect();
   const w=Math.max(300,Math.round(rect.width*dpr));
@@ -10168,7 +10188,13 @@ function playPlayoffGame(r,afterFn){
   const fieldCtx=initFieldCanvas('po-fcanvas');
   const fcv=$('po-fcanvas');
   let dcY=me.bg,dcT=them.bg;
-  const paintField=fieldCtx?(upTo)=>drawDriveChart(fieldCtx,fcv.width,fcv.height,drives,upTo,dcY,dcT,'YOU',(opp?E.teamColors(opp).abbreviation:'OPP')):()=>{};
+  const oppAb=opp?E.teamColors(opp).abbreviation:'OPP';
+  const ticker=(ROUND_SHORT[round]||round).toUpperCase()+'   YOU VS '+oppAb+'   RUNTHE.GG   ';
+  /* WHOSE STANDS. The first round is played on the better seed's campus (5 hosts 12 down to
+     8 hosts 9), and every round after it is at a neutral bowl site, which is the real CFP and
+     is what seedAdvantage in the engine already prices. Decoration: only the crowd reads it. */
+  const home=round==='CFP First Round'&&mySeed?(mySeed<=8?'you':'them'):'neutral';
+  const paintField=fieldCtx?(upTo)=>drawDriveChart(fieldCtx,fcv.width,fcv.height,drives,upTo,dcY,dcT,'YOU',oppAb,{ticker,home}):()=>{};
   paintField(0);
 
   const setLead=(y,t)=>{
@@ -10499,7 +10525,9 @@ function playFeatureBroadcast(cfg){
   $('bowl-field').hidden=false;   // unhide before measuring, or the canvas sizes to nothing
   const fieldCtx=initFieldCanvas('bowl-fcanvas');
   const fcv=$('bowl-fcanvas');
-  const paintField=fieldCtx?(upTo)=>drawDriveChart(fieldCtx,fcv.width,fcv.height,drives,upTo,me.bg,them.bg,'YOU',(opp?E.teamColors(opp).abbreviation:'OPP')):()=>{};
+  const oppAb=opp?E.teamColors(opp).abbreviation:'OPP';
+  const paintField=fieldCtx?(upTo)=>drawDriveChart(fieldCtx,fcv.width,fcv.height,drives,upTo,me.bg,them.bg,'YOU',oppAb,
+    {ticker:String(bowlName).toUpperCase()+'   YOU VS '+oppAb+'   RUNTHE.GG   ',home:'neutral'}):()=>{};
   paintField(0);
   const setLead=(y,t)=>{youEl.classList.toggle('lead',y>=t);themEl.classList.toggle('lead',t>=y);};
   setLead(0,0);
@@ -11468,7 +11496,8 @@ function bowlBroadcast(cfg){
   const fieldCtx=initFieldCanvas('bowl-fcanvas');
   const fcv=$('bowl-fcanvas');
   const themAbbr=(cfg.themName?cfg.themName.replace(/[^A-Za-z0-9]/g,'').slice(0,4).toUpperCase():'')||'OPP';
-  const paintField=fieldCtx?(upTo)=>drawDriveChart(fieldCtx,fcv.width,fcv.height,drives,upTo,me.bg,themWash.bg,'YOU',themAbbr):()=>{};
+  const paintField=fieldCtx?(upTo)=>drawDriveChart(fieldCtx,fcv.width,fcv.height,drives,upTo,me.bg,themWash.bg,'YOU',themAbbr,
+    {ticker:'CHALLENGE BOWL   YOU VS '+themAbbr+'   RUNTHE.GG   ',home:'neutral'}):()=>{};
   paintField(0);
   const setLead=(y,t)=>{ youEl.classList.toggle('lead',y>=t); themEl.classList.toggle('lead',t>=y); };
   setLead(0,0);

@@ -1,7 +1,7 @@
 /* Premium bundles (one-time) : Stripe Checkout (Cloudflare Pages Function)
  *
  * POST /api/stripe/checkout-bundle
- *   body: { bundle: "perfect-season"|"run-the-bundle"|"diamond-pro", email?, return_path? }
+ *   body: { bundle: "perfect-season"|"run-the-bundle"|"diamond-pro"|"floor-pro", email?, return_path? }
  *   -> { url: "https://checkout.stripe.com/..." }
  *
  * Required Pages env vars (Settings -> Environment variables):
@@ -9,6 +9,7 @@
  *   STRIPE_PRICE_PS_PREMIUM_BUNDLE    price_...  (Perfect Season Premium Bundle, one-time)
  *   STRIPE_PRICE_RUN_THE_BUNDLE       price_...  (Run The Bundle, one-time)
  *   STRIPE_PRICE_RTD_PRO              price_...  (Run The Diamond Pro, $14.99 a year, RECURRING)
+ *   STRIPE_PRICE_RTF_PRO              price_...  (Run The Floor Pro, one-time)
  *   SITE_URL                          https://runthe.gg
  *   SUPABASE_URL, SUPABASE_SERVICE_ROLE
  *

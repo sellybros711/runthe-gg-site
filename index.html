@@ -280,7 +280,10 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
   }
 
   /* ---------- game library ---------- */
-  .games{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px;}
+  .games{display:flex;flex-wrap:wrap;justify-content:center;gap:20px;}
+  /* Every card is one third of the row. A short last row is centred rather than
+     left with a hole, which also holds when a filter shows two cards. */
+  .games > .feat{flex:0 0 calc((100% - 40px) / 3);min-width:0;}
   .feat{--c:#66D3DE;position:relative;display:flex;flex-direction:column;border-radius:var(--r-lg);overflow:hidden;isolation:isolate;
     background:linear-gradient(180deg,var(--surf-2),var(--surf));border:1px solid var(--line);
     transition:transform .3s var(--ease),border-color .3s,box-shadow .3s;}
@@ -289,7 +292,6 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
     box-shadow:0 30px 60px -30px color-mix(in srgb,var(--c) 45%,#000),0 0 0 1px color-mix(in srgb,var(--c) 25%,transparent);}
   .feat.cfb{--c:var(--cfb);} .feat.football{--c:var(--nfl);} .feat.golf{--c:var(--golf);}
   .feat.arcade{--c:var(--arcade);} .feat.soccer{--c:var(--pitch);}
-  .feat.wide{grid-column:span 2;}
   .feat-link{position:absolute;inset:0;z-index:1;}
   /* the stage: every card opens on its own live motif */
   .media{position:relative;height:220px;overflow:hidden;display:flex;align-items:center;justify-content:center;
@@ -300,7 +302,6 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
   .media:after{content:"";position:absolute;inset:0;pointer-events:none;
     background-image:linear-gradient(rgba(255,255,255,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.04) 1px,transparent 1px);
     background-size:28px 28px;-webkit-mask-image:linear-gradient(180deg,#000,transparent);mask-image:linear-gradient(180deg,#000,transparent);}
-  .feat.wide .media{height:260px;}
   .media .tagline{position:absolute;left:14px;top:14px;z-index:3;display:flex;gap:6px;}
   .pill{font-size:10px;font-weight:900;letter-spacing:.12em;text-transform:uppercase;border-radius:999px;padding:5px 9px;
     background:rgba(6,10,19,.7);border:1px solid var(--line-2);color:#e6edf7;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);}
@@ -308,7 +309,6 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
   .drive-wrap,.slot-wrap{position:relative;z-index:2;pointer-events:none;width:100%;display:flex;align-items:center;justify-content:center;padding:0 22px;}
   .drivecanvas{display:block;width:100%;height:160px;border-radius:12px;background:#0a1626;
     box-shadow:0 18px 36px -18px rgba(0,0,0,.9),0 0 0 1px rgba(255,255,255,.08);}
-  .feat.wide .drivecanvas{height:250px;}
   .golf-showcase{position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;gap:10px;width:100%;}
   .gshow-green{display:flex;align-items:flex-end;justify-content:center;gap:4px;width:100%;max-width:300px;min-height:110px;
     background:radial-gradient(70% 30% at 50% 100%,rgba(58,160,70,.55),transparent 75%);}
@@ -347,23 +347,13 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
   .play:hover{filter:brightness(1.08);transform:translateY(-1px);}
   .play .arw{transition:transform .18s var(--ease);}
   .feat:hover .play .arw{transform:translateX(3px);}
-  /* the wide card lays its words beside its picture */
-  @media (min-width:981px){
-    .feat.wide{flex-direction:row;}
-    .feat.wide .media{order:2;flex:1.15;height:auto;min-height:360px;border-bottom:0;border-left:1px solid var(--line);}
-    .feat.wide .feat-info{flex:1;padding:30px 30px 28px;}
-    .feat.wide .g-title .nm{font-size:28px;}
-    .feat.wide .crest{width:64px;height:64px;}
-    .feat.wide .g-desc{font-size:15.5px;}
-  }
   @media (max-width:980px){
-    .games{grid-template-columns:repeat(2,minmax(0,1fr));}
-    .feat.wide{grid-column:1 / -1;}
+    .games > .feat{flex-basis:calc((100% - 20px) / 2);}
   }
   @media (max-width:640px){
-    .games{grid-template-columns:1fr;gap:14px;}
-    .media,.feat.wide .media{height:164px;}
-    .drivecanvas,.feat.wide .drivecanvas{height:132px;}
+    .games{gap:14px;} .games > .feat{flex-basis:100%;}
+    .media{height:164px;}
+    .drivecanvas{height:132px;}
     .feat-info{padding:16px 16px 18px;}
     .g-desc{font-size:14px;margin-top:11px;}
     .g-chips{display:none;}
@@ -626,11 +616,8 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
   .td-flash.go{animation:tdflash 1.8s var(--ease);}
   @keyframes tdflash{0%{opacity:0;transform:translateY(-50%) scale(.6) skewX(-8deg);}15%{opacity:1;transform:translateY(-50%) scale(1.05) skewX(-8deg);}
     25%,75%{opacity:1;transform:translateY(-50%) scale(1) skewX(-8deg);}100%{opacity:0;transform:translateY(-50%) scale(1.1) skewX(-8deg);}}
-  .feat.wide .fx-stadium .drivecanvas{height:220px;}
   .media.fx-stadium{height:256px;align-items:flex-end;padding-bottom:16px;}
-  .feat.wide .media.fx-stadium{align-items:center;padding-bottom:0;}
   .fx-stadium .drivecanvas{height:150px;}
-  .feat.wide .media.fx-stadium{height:auto;}
 
   /* ---- golf: a course in the afternoon ---- */
   .golf-scene{background:#8cc4e8;align-items:flex-end;}
@@ -751,8 +738,8 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
   @media (max-width:640px){
     .bug{min-width:0;font-size:11px;} .bug .tm .s{font-size:16px;}
     .td-flash b{font-size:32px;}
-    .fx-stadium .drivecanvas,.feat.wide .fx-stadium .drivecanvas{transform:rotateX(10deg);height:124px;}
-    .media.fx-stadium,.feat.wide .media.fx-stadium{height:212px;padding-top:0;align-items:flex-end;padding-bottom:14px;}
+    .fx-stadium .drivecanvas{transform:rotateX(10deg);height:124px;}
+    .media.fx-stadium{height:212px;padding-top:0;align-items:flex-end;padding-bottom:14px;}
     .fx-stadium .tagline{display:none;}
     .golf-scene .golfer-slot{width:46px;}
     .pitch-floor .cc{width:90px;height:90px;margin-left:-45px;}
@@ -881,7 +868,7 @@ window.GA_ID='G-L29P5MRWKE';
     </div>
 
     <main class="games">
-      <article class="feat cfb wide rv" data-sport="football">
+      <article class="feat cfb rv" data-sport="football">
         <a class="feat-link" href="/cfb/" aria-hidden="true" tabindex="-1"></a>
         <div class="media fx-stadium">
           <span class="tagline"><span class="pill hot">College</span><span class="pill">Draft + Season</span></span>
@@ -1750,8 +1737,6 @@ document.querySelectorAll('.feat-link').forEach(function(a){
     cards.forEach(function(card){
       var on = f==='all' || card.getAttribute('data-sport')===f;
       card.classList.toggle('is-hidden',!on);
-      /* the wide card only spans two columns when it has company */
-      card.classList.toggle('wide', on && f==='all' && card.classList.contains('cfb'));
     });
     /* a drive chart measured while hidden is 0px wide until told to look again */
     try{ window.dispatchEvent(new Event('resize')); }catch(e){}
@@ -1820,7 +1805,7 @@ document.querySelectorAll('.feat-link').forEach(function(a){
   cards.forEach(function(c){
     var raf=0,ev=null;
     function apply(){ raf=0; var r=c.getBoundingClientRect(), x=(ev.clientX-r.left)/r.width, y=(ev.clientY-r.top)/r.height;
-      var k=c.classList.contains('wide')?3:5;
+      var k=5;
       c.style.setProperty('--ry',((x-.5)*k)+'deg'); c.style.setProperty('--rx',((.5-y)*k)+'deg');
       c.style.setProperty('--mx',(x*100)+'%'); c.style.setProperty('--my',(y*100)+'%'); }
     c.addEventListener('pointermove',function(e){ ev=e; c.classList.add('tilt'); if(!raf) raf=requestAnimationFrame(apply); });

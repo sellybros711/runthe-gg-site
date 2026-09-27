@@ -1410,6 +1410,41 @@ straight after paying apologised for a slow webhook that had already delivered. 
 when it is this site. The same trap has bitten a link in the CFB header. Never write an
 absolute `https://runthe.gg` url in anything a player follows.
 
+### More ways to play is a grid on a wide screen, in both football games
+
+```
+node scripts/check-modes-grid.mjs     both sheets, four widths, and the leak
+```
+
+Asked for by the owner, to match the baseball game's sheet: tiles with the icon on top, **two
+across from 760px**, and the list it always was under that. Two and not three, because these
+sheets hold three modes and two: a third column would be a third of a row of nothing. **Phones
+are untouched**: every rule is inside the media query and `.mc-grid` has no base rule.
+
+**THE WIDTH IS KEYED ON THE CONTENT, NOT ON A FLAG.** Every sheet on both pages draws into one
+`#sheet-in`, and several never set a `data-kind` (the college conference picker this sheet
+opens is one). A width written by `modeMenu` would leak into the next sheet and widen a
+sign-in form. `.sheet .inner:has(.mc-grid)` is true of this sheet and stops being true the
+moment the pane is redrawn. The guard presses Close and How to play to prove it.
+
+**A CARD THAT IS NOT A MODE TAKES THE WHOLE ROW.** One Franchise is a panel with two doors in
+it (`.mc-split`), and the college sign-in card is an account form. **The sign-in card sat as a
+grid cell for a day**: it is drawn BETWEEN the two tiles, so it took the second column and put
+Commish Simulator on a row of its own. Spanning alone does not fix that, because it still
+splits the tiles, so on the grid it also takes `order:1` and goes after them. A phone keeps it
+directly under Conference Draft, which is the card it is about.
+
+**THE GUARD SHIPPED MEASURING A DESIGN THAT DID NOT.** Two sessions built this grid in
+parallel and the CSS that landed is the other one's (two across from 760). This checker was
+written against three across from 900, so it went red on main with nothing wrong with the
+page, apart from the sign-in card above. It asks the shipped design now. **A guard merged
+without its page is a guard for a page nobody has.**
+
+**The guard counts columns off the tiles' own left edges and rows off `offsetTop`**, which is
+the laid out box and ignores the press transform. The spanning claim was proved by taking
+each half of the sign-in rule out alone: without the span it names the card at 387 of 786px,
+and without the order both desktop widths come back one column.
+
 ### Full Team, and the screen that has to say the most
 
 ```
@@ -2566,6 +2601,83 @@ about a third wider than the condensed one a real visitor gets, so an overflow m
 is not proof of one on a phone. What it asserts is that a podium step never carries a raw
 comma number, which is true in any face, plus the whole ladder including the rounding seam.
 
+### Every game is played out on one broadcast field, in both football games
+
+```
+node scripts/check-fieldcast.mjs     the renderer's rules, and that both pages draw on it
+```
+
+Asked for: the drive charts on the home page's two cards, but bigger, for the real games. So
+`/assets/fieldcast.js` is the picture every game is played on: the playoff broadcast, the bowl,
+the challenge bowl, the boss battle and the Full Team live games. A lit stadium with a dot matrix
+crowd (the home cards' motif), an LED ribbon board, the field in perspective, every drive as a
+lane that recedes as the game goes on, and the drive in progress played out snap by snap with the
+ball, the blue and yellow lines, a formation and the down and distance over the ball. Touchdowns,
+field goals, misses, turnovers and safeties get their own moment.
+
+**IT IS ONE FUNCTION DEEP IN EACH PAGE.** `drawDriveChart` in `football/index.html` and in
+`cfb/index.html` hands its drives to `RTG_FIELD.paint` and returns; the old chart is still below
+that line, whole, because a blocked or stale copy of the file must still leave a game with a
+picture. Every caller was already going through `drawDriveChart`, so no call site learned
+anything new beyond an optional `extra` (the ribbon board's words, and the boss board's flags).
+
+**IT DECIDES NOTHING.** The start, the end, the result and the clock of every drive are the
+page's. What is drawn between them is seeded off the drive itself, so a repaint of one moment is
+one picture and no game stream is touched.
+
+**THE MOMENTS FIRE THEMSELVES**, off the clock crossing the end of a drive, so no page calls
+anything to get a touchdown. A jump crosses too much to be a moment and fires nothing: Sim to the
+end and the final repaint land on 3600 from wherever they were. A clock that goes backwards is a
+new game on the same canvas.
+
+**THE DOWNS ARE INVENTED, SO THE ONE PAGE WITH REAL ONES TURNS THEM OFF.** The playoff broadcast
+builds its drives backwards from a score, so a down and distance made up from the drive is as
+honest as the drive. The boss board plays forward down by down: it passes `downs:false` and puts
+the sim's own `down` and `toGo` on the live drive as `sit`, and at a fourth down the field shows
+exactly the 4th and 1 the card under it is asking about, with the two sides set at the line.
+A made up "2nd and 7" over a real fourth down call would be the two halves of one screen
+disagreeing, which this repo has paid for on every screen it has happened on.
+
+**TWO LOOK-ALIKE COLOURS ARE SPLIT IN THE RENDERER**, not per page. The field paints both sides'
+players, lanes and end zones, and the boss board had no guard: against Seattle every player on
+the field was blue. The playoff broadcast's coral swap is the rule for every caller now.
+
+**THE STANDS ARE THE HOME TEAM'S.** A home crowd is the home side's colours and shades of
+them, with the visitors about one fan in eight (measured, 12%), packed into the corner by their
+own end zone and a few scattered through the bowl. A neutral site is split down the middle.
+The home side scoring lights the whole bowl; the visitors scoring lights their corner and
+nothing else. `frame.home` says whose building it is and the engines never name a host (a home
+field there is an EDGE), so each screen answers it off something a player can see:
+
+| screen | whose crowd |
+|---|---|
+| NFL playoff broadcast, Full Team live games | the better seed, off the bracket just shown; the Super Bowl is neutral |
+| a boss battle | theirs: it is played in the boss's building |
+| the CFP | the better seed in the first round, which is on campus; every round after is neutral |
+| a bowl, the challenge bowl | neutral |
+
+**The crowd is counted as it is seated** (`st.crowd`), so the guard reads the mix rather than
+the arithmetic that was meant to produce it. The first tuning came out at exactly 10.0%, which
+is the edge of the band that was asked for rather than inside it.
+
+**THE PICTURE IS READ BACK, NOT RE-DERIVED.** `test_credits.mjs` holds a field goal's bar to the
+distance the call names, and it used to rebuild the flat chart's geometry to find the bar. A
+camera in perspective has no fixed row, so the renderer records each drive's drawn leading edge
+(`RTG_FIELD.inspect`) and hands back its own pixel to yard mapping; the pixel just behind that
+edge has to be the drive's colour or the record is lying. **It caught a real fault the first time it ran**: the result
+pill (FG, TD, INT) was centred a fixed 2.2 yards past the end of the bar, and on the near lanes
+it is wider than that, so it sat on top of the exact spot the kick was taken from. It is placed
+clear of the chevron by its own half width now.
+
+**It keeps drawing between the page's frames**, which is what lets a score hold the clock while
+the crowd erupts and the banner plays: its own loop runs while the canvas is on screen, at thirty
+frames a second when nothing but the crowd is moving, and stops the moment `offsetParent` is
+null. Reduced motion gets no slides, no shake, no confetti and no ambient loop.
+
+**The canvas is 196 to 320px tall, up from 160**, because a picture with a stadium in it needs the
+room. `check-fullteam.mjs` measures the boss board's calls and Continue against a phone, which is
+the layout that extra height could have broken, and it is green.
+
 ### The boss battle, and the one screen that checks itself
 
 ```
@@ -3152,13 +3264,162 @@ ROW per player-week rather than a history, and **78% of them were last modified 
 so the table above is the report as it FINISHED. There is no way from that archive to measure
 what a Wednesday build would have seen. Said rather than implied.
 
-**SO THE TUESDAY BUILD MOSTLY BUYS NOTHING FROM THIS**, and that is worth knowing before
-reading the 0.70 as something the mode collects today. The report for the coming week is
-first filed on the Wednesday, so on a Tuesday `report_week` is usually the week just played
-and `injuryFactor` correctly returns 1 for every man. What this is worth scales with how late
-the build runs, and a later build is a shorter drafting window, which is a decision about the
-mode and is not taken here. `report_week` and `report_priced` are on the built pool so the
-log says which of the two happened rather than leaving somebody to diff prices.
+##### PRACTICE IS THE SIGNAL, AND IT IS WHAT MAKES THE TUESDAY BUILD WORTH ANYTHING
+
+The first version of this priced off the DESIGNATION alone, and left the Tuesday build
+collecting nothing, on the reading that the report for the coming week is first filed on the
+Wednesday so `injuryFactor` correctly returns 1 for every man. **The live file's own commit
+history says exactly when that happens**: `report_week` was still 2 at 11:10pm Eastern on the
+Tuesday and 3 by 3:05pm on the Wednesday. So a Tuesday 11am build can never see this week's
+report, and the conclusion drawn from that was that the build day would have to move.
+
+**It does not, because PRACTICE PARTICIPATION is a different signal and a better one.**
+Measured over the same 21,291 player-weeks:
+
+| practice | men | actual/proj |
+|---|---|---|
+| full | 1,880 | 1.082 |
+| **limited** | 1,076 | **0.814** |
+| **did not practise** | 1,131 | **0.233** |
+
+Two things follow and both matter. **Practice is filed on the WEDNESDAY with the first
+report**, where a Sunday game status is not final until the Friday, which is after the week
+has already locked, so the designation a build can see is never the one that was measured.
+And **practice survives a week where a designation does not**:
+
+| | a week old designation | a week old practice line |
+|---|---|---|
+| questionable / limited | 0.951 | 0.979 |
+| out / did not practise | 0.336 | **0.511** |
+
+**A man who did not practise at all last week delivers 0.511 of his projection this week**,
+and that is a large, measured discount a Tuesday build can read. So there are two tables,
+`INJ_THIS_WEEK` keyed on the PAIR and `INJ_LAST_WEEK` keyed on practice alone, and which one
+a build gets is decided by the clock rather than by anybody's choice. **The build day did not
+have to move.**
+
+The pair is worth keying on because the spread across it is large: a questionable man who
+practised in full delivers 0.886, one who was limited 0.711, and one who did not practise at
+all 0.448. A table on the designation alone prices all three the same.
+
+**NOTHING IS EVER PRICED ABOVE 1**, and the measured numbers invite it: a man on the report
+practising in full delivers 1.104. That is the projection under-reading good players (their
+projection runs a third higher than the pool's), which is a level bias rather than an
+availability signal, and paying for it here would be fixing one estimator's bias inside
+another.
+
+**And a report more than one week old is not news.** The 0.511 was measured one week apart; a
+man who missed practice in week 3 says nothing about week 7.
+
+###### `report_week` IS A MAX OVER THE MEN, AND THE PRICE WAS READING IT AS A DATE
+
+`injuries.mjs` keeps each man's LATEST report row, so one file holds designations of several
+ages at once, and `report_week` is the highest of them. The live week 3 file reads
+**`report_week: 3` off exactly ONE man**, while 23 of the others were last reported in week 2
+and 7 in week 1.
+
+`injuryFactor` took that one number for the whole file, so **every one of the 31 was priced as
+this week's news**: a fortnight old designation discounted as though the club had said it on
+Wednesday. **Nothing throws.** A stale designation is a real designation, the table lookup
+succeeds, and the price it produces looks exactly like a price.
+
+**The week is a fact about the MAN.** It is on every row already, as `w`, so the fix is to read
+it: `injuryFactor` takes `p.report_at` and the file's own `report_week` is kept for the page's
+sentence and the log and never for a price. Repriced men on the live board go **17 to 6**, and
+the six are the did-not-practise men, which is the signal the whole table is about.
+
+**THE SHEET HAD BEEN SAYING THE RIGHT THING ON SCREEN THE WHOLE TIME.** `injuryReport` reads
+`e.w` and writes `From the week 2 report. Week 3 has not been filed yet, so this is the last
+thing that was said about him.` So a reader tapping a red row was correctly told the news was a
+week old, while the price beside it had discounted him as though it were today's. Two answers to
+one question, one of them on screen and right, and the one that moved money was the wrong one.
+That is the nearest thing this had to a visible symptom and it reads as the page working.
+
+**The guard drives the REAL report rather than rows it invented**, because the defect is a
+property of the file's shape and an invented row cannot have it. Reintroduced, it reports
+`no man more than a week old is discounted at all: 7 men, worst x0.448`.
+
+**It asserts a PROPERTY over every man in the file, which the first draft did not.** That
+version hunted one hand picked pair (a questionable man who did not practise, reported two
+weeks back) and would have gone quiet on any week whose report happens not to contain one.
+And it pinned the filename, which accumulates one a week. It reads the newest report on disk
+and asks the rule of everybody in it.
+
+**Both directions, or the property passes on a function that discounts nobody.** "No man over
+a week old is discounted" is true of an `injuryFactor` that returns 1 for everything, so the
+clause beside it asks that the RECENT men are discounted. Proved: stubbed to return 1, it
+reports `0 of 24 men within a week of the report are discounted`.
+
+**And the first version of its message wrote the expected value in as a literal**, so it failed
+while printing the `x1` it had just refused. A failure that misreports what happened costs the
+next person the round it takes to disbelieve it. Every number is read back now.
+
+**The read-back counts men rather than restating the max**, for the same reason: one fresh row
+made a fortnight old report log as "priced off the report for this same week". It prints how
+many men are reported for this week, how many are a week old, and how many are older.
+
+##### The build was reading a report seventeen hours old, and nothing refreshed it
+
+The price reads `injuries_<season>_w<week>.json`, and that file is written by a DIFFERENT job
+on a different clock: `fantasy-injuries.yml` fires at 11:20am and 6:20pm Eastern, and
+`fantasy-pool.yml` fires at 11:00. **So the board was priced off a report last refreshed at
+twenty past six the previous evening.** Nothing anywhere said so: the prices are ordinary, the
+board drafts, and the one number the whole pricing pass is about is out of date.
+
+The pool job refreshes the report itself now. A refresh that fails carries on and prices on
+availability alone, because a report that cannot be fetched must not stop the week.
+
+**AND THE REFRESH CANNOT GO FIRST, SO THE BOARD IS BUILT TWICE.** `injuries.mjs` scopes the
+report to the men ON THE BOARD, so it reads the week's pool file and exits 1 with
+`no pool for 2026 week 4. Build it first.` **The first version of this put the refresh above the
+build**, where it does nothing at all: no report is written, the board prices off whatever was
+last committed, and the defect is intact behind a step that looks exactly like the fix. Driven
+for a week with no pool file, which is every Tuesday, that is what it reports.
+
+So it is build, refresh, build again. **The ID SET DOES NOT DEPEND ON THE REPORT**, which is
+what makes the first pass a valid scope for the second: `eligible` comes off played games, the
+schedule and `minGames`, and none of those reads a designation. Driven on the live week 3
+board with the report present and with it moved aside, the same 414 men come back in the same
+order and 5 prices differ. A build is under a second against the nflverse cache the first pass
+warms.
+
+Driven end to end for week 4: build 1 prices `0 of 414` with no report, the refresh writes one,
+build 2 prices `1 of 414` with ages `{"older":30,"a week old":1}`. Week 3's own files were put
+back afterwards, because **a published week must never be repriced**, and `fantasy_now.json`
+had to go back with them: the build advances the pointer.
+
+**AND IT COMMITS THE REPORT, WHICH THE FIRST VERSION DELIBERATELY DID NOT.** That version
+scoped the `git add` to the pool, the results and the pointer, on the argument that the
+injuries job owns that file and commits only when it moves, which is the rule that stops a
+hundred Cloudflare deploys a weekend. The rule is real and it is about the CADENCE, and this
+job commits once a week either way, so the report rides in that one commit for nothing.
+
+**What the first version actually cost is the Tuesday job going red.** An uncommitted refresh
+is an UNSTAGED CHANGE, and the push-rejection branch under it runs `git pull --rebase`, which
+refuses outright: `cannot pull with rebase: You have unstaged changes`, exit **128**, straight
+into the loop's `|| exit 1`. That loop is there because other scheduled jobs push to main, so
+the one branch it exists for was the one branch that could not work. Driven both ways against
+a real repo with an unrelated upstream commit: unstaged is exit 128 and a red job, committed is
+exit 0, a clean tree and both files on main.
+
+**The quieter half is the page.** It fetches `injuries_<season>_w<week>.json` for whatever week
+`fantasy_now.json` points at, so a commit that advanced the pointer and left the report behind
+serves a board with no injury chips until the injuries job next runs, twenty minutes later. A
+week with no file is a state the page handles by design, which is exactly why nothing would
+have reported it.
+
+**The two jobs never write the same file.** The injuries job writes the LIVE week's report, and
+on the Tuesday the pointer has not moved yet, so it is still the week just played; this job
+writes the week it is building. Both `git add` with the same glob and both are no-ops on the
+other's file.
+
+**And the log says which report it got**, because a Tuesday build and a Wednesday one are
+priced off different amounts of information and the prices alone do not say which. The
+read-back was driven all four ways (a Wednesday report, a Tuesday one, none at all, and a pool
+built before `report_ages` existed) with its body extracted from the yaml rather than retyped,
+which is how the pool filename in it was found to be wrong: it said `pool_` where the build
+writes `weekly_`, so it would have thrown on a file that does not exist rather than reporting
+anything.
 
 ##### A price cannot be live, and that is the rule rather than a limitation
 
@@ -3204,6 +3465,21 @@ The suite reads the pool FILE on disk, and that file is week 3, published and dr
 so it must not be rebuilt: until the next Tuesday build this runs the OLD board at the NEW
 cap. Week 3's shipped pool reads 8.8%, a pool priced at `PRICE_PROJ_W = 1` reads 19.8%, and
 the same pool at the old $90M cap reads 42.3% and strands.
+
+**And `#b-more` ran out, which is the same lesson from the other side.** The search for a
+grey row drafts again through the real control, and that control was `#b-more`, which takes
+the next of five CHANCES: the search could never look at more than five drafts. Five stopped
+being enough at $110M. Measured over 4,000 greedy drafts on the shipped board, a man out of
+reach appears on **12.1%** of boards, the median search finds one on the FIRST draft, p90 is
+5 and p99 is 16, so **a five draft search fails 9.8% of runs**. A flake reporting its own
+seed, about a feature that was on one board in eight the whole time.
+
+**The answer is to never leave the draft screen.** `#b-abandon` re-seeds the current chance
+and costs nothing, and the only reason it failed when this section was first written is that
+the walk had finished a draft and moved on to the review screen, where that button does not
+exist. So the walk signs at most five of the six, inspects all six boards, and abandons
+rather than completing: the button is always there, chances are never spent, and the search
+runs to 24 against a measured p99 of 16 and a worst case of 33.
 
 **And the first two drafts of the new guard measured the fixture rather than the page.**
 Asserting that discounting one man moves nobody else, it was asked of the DEAREST man and 47
@@ -10376,6 +10652,64 @@ draws the true parts: the jersey of the club he earned the most win shares with,
 and a broader frame for a center or power forward. The timeline ends at a pixel
 hoop, and the mode icon is the same hoop. It used to be a bullseye and a golf
 flag, which are two other sports.
+
+#### Endless and picked puzzles, and the day they are Pro
+
+```
+node hoops/check-modes.mjs            section 5b holds the numbering, section 7 walks every door
+```
+
+The dailies stay one a day and free for everybody. On top of them: **endless** (a fresh
+Fix History team or Six Passes pair every press), **any team** (a club and a season, champions
+included, rebuilt through the same four windows) and **any two players** (a made Six Passes
+puzzle, par worked out). A made puzzle or a picked team travels as a link a friend opens free.
+
+**NEITHER DAILY IS A STORED PUZZLE, which is what made this cheap.** `fxDaily(data, day)` and
+`psDaily(g, day)` build the puzzle off a number, and every seed under them (the calls, the odds,
+the replay) is `'fix:' + day`. **An endless or picked puzzle is numbered BELOW ZERO**, and a
+calendar day is 1 and up, so no seed an extra puzzle builds can ever be a day's. `isEndless()`
+is that test. Random endless numbers come off `Math.random` and are STORED, so a reload lands
+on the same team. A picked one is `customNumber()`, a hash of what was picked, so two people on
+one link get the same calls and the same odds: section 5b plays one link twice and compares.
+
+**Endless never writes a daily key**, and that is the whole safety argument. Its state is
+`rtf.fix.endless.v1` and `rtf.passes.endless.v1`, never `rtf.fix.v1`, `rtf.fix.run.v2` or
+`rtf.passes.v1`, so an endless season cannot overwrite today's saved one and today's result,
+streak and place read keys endless never touches. Nothing endless submits to the board. The
+front page, the dock and the draft's doors ask `fxToday()` and `psTodayState()` rather than the
+screen's current puzzle, because the screen can be on an endless one.
+
+**AN EXTRA PUZZLE COUNTS FOR EVERYTHING BUT THE CALENDAR.** A deal, a gain, a title in the
+replay, a chain at par are skill whatever puzzle they came from, so those feats file. Days
+finished (`fx.days`) and days running are a claim about coming back each day, and a button that
+deals a new team every press would make both worthless, so endless files neither. The walk
+checks `fx.days` does not move.
+
+**A link is a hash** (`#fix=CHI_1996`, `#pass=jordami01.jamesle01`). A hash never reaches the
+server, and the link is built off the SENDER's own page rather than a written-out domain, for
+the www-against-apex reason in the Stripe section. It is read once on boot and on `hashchange`,
+then cleared, so a reload after finishing goes to the front page.
+
+**IT IS RUN THE FLOOR PRO**, $9.99 once, the `floor-pro` bundle granting `rtf_premium`
+(`supabase/123_hoops_pro.sql`, go-live order in `functions/api/stripe/README.md`). Same shape
+as Diamond Pro: one checkout, one webhook, and the page asks `premium_products()` through
+`hoops/auth.js`. `endlessOpen()` in `modes-ui.js` is the one gate. There is no server meter,
+because nothing endless reaches the server: the gate is a convenience rather than a lock, and
+nothing competitive depends on it. `PRO_LIVE = false` is the kill switch that opens it to
+everybody if the store ever has to come down, since a lock with nothing behind it is a wall.
+
+**A LOCKED DOOR OPENS THE OFFER, it is never hidden and never dead.** The four Endless and
+Build chips are drawn for everybody; without Pro they wear a Pro tag and every press lands on
+`#pro-sheet`. A door nobody can see is a mode nobody knows exists. **Only `rtf_premium` opens
+it**: another game's Pro does not, and the walk asserts that from both ends. A null answer
+from the account read is no opinion and changes nothing, so a dropped connection never takes
+Pro away mid-puzzle. **Opening a link never asks**: `fxPlayPicked` and `psPlayPicked` are the
+doors a link uses, because whoever made the link is the one Pro paid for, and the walk opens
+both links on a fresh guest page to prove it.
+
+**The checkout is stood in and never let out**, the same rule as the football store: section 7
+answers `/api/stripe/checkout-bundle` itself with `stripe_not_configured`, asserts the body
+names `floor-pro` and the token rides in the header, and fails if anything else was asked.
 
 #### The boards, and `supabase/116_hoops_modes.sql`
 

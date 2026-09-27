@@ -124,6 +124,20 @@ export const BUNDLES = {
     returnRoots: ['/baseball/'],
     defaultReturn: '/baseball/',
   },
+
+  /* Run The Floor Pro: basketball's own tier, the same shape as Diamond Pro.
+   * $9.99 once. Opens endless Fix History and Six Passes, rebuilding any team,
+   * and making any two player puzzle. The dailies, Conquest and Quick Draft stay
+   * free, and a friend opening a shared link plays free. See 123_hoops_pro.sql. */
+  'floor-pro': {
+    name: 'Run The Floor Pro',
+    envPrice: 'STRIPE_PRICE_RTF_PRO',
+    grants: [
+      { product: 'rtf_premium' },
+    ],
+    returnRoots: ['/hoops/'],
+    defaultReturn: '/hoops/',
+  },
 };
 
 export function bundleByKey(key) {
