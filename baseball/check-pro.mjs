@@ -305,6 +305,20 @@ try {
       return sp.scrollWidth <= sp.clientWidth + 1 && em.getBoundingClientRect().height < 20;
     }));
     claim(oneLine, 'every mode on the sheet holds one line, name uncut');
+    /* The per month figure is arithmetic on the price and the parks are drawn, not
+       described: a new price that left "$1.25 a month" behind would render fine. */
+    const sell = await page.evaluate(() => {
+      const box = document.getElementById('pro-in');
+      const price = parseFloat(box.querySelector('.pro-price b').textContent.replace(/[^0-9.]/g, ''));
+      const m = /about \$([0-9.]+) a month/.exec(box.textContent);
+      return { price, month: m ? parseFloat(m[1]) : null,
+        parks: box.querySelectorAll('.pro-park .pk-view svg').length,
+        icons: box.querySelectorAll('.pro-list li i svg').length };
+    });
+    claim(sell.month != null && Math.abs(sell.month - sell.price / 12) < 0.006,
+      'the monthly figure is the yearly price over twelve', JSON.stringify(sell));
+    claim(sell.parks === 2, 'both Pro ballparks are drawn on the sheet', JSON.stringify(sell));
+    claim(sell.icons === 6, 'every mode wears its own icon', JSON.stringify(sell));
     await ctx.close();
   }
 } catch (e) {
