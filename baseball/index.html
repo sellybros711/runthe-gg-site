@@ -2644,7 +2644,7 @@ function renderAccount(){
   const pro=document.createElement('p');pro.className='apro';
   if(isPro())pro.innerHTML='<b>Pro</b>: every mode, as often as you like.';
   else{
-    pro.innerHTML='Free: one play of each mode a day.';
+    pro.innerHTML='Free: one token a day for any of the six modes.';
     const b=document.createElement('button');b.type='button';b.textContent='Go Pro for '+PRO_PRICE;
     b.onclick=()=>{closeSheet('sheet-trophy');ga('pro_opened',{from:'account'});openPro(null);};
     pro.appendChild(b);
@@ -3609,7 +3609,8 @@ function openModes(){
         (m.soon?' disabled':'')+'>'+
         (m.soon?'<span class="mc-sticker soon">Soon</span>'
               :isPro()?'<span class="mc-sticker">Unlimited</span>'
-              :modeUsed(CARD_METER[m.id])?'<span class="mc-sticker used">Played today</span>'
+              :tokenOn()===CARD_METER[m.id]?'<span class="mc-sticker used">Played today</span>'
+              :tokenOn()?'<span class="mc-sticker used">Tomorrow</span>'
               :(m.sticker?'<span class="mc-sticker">'+esc(m.sticker)+'</span>':''))+
         '<div class="mc-head"><div class="mc-icon"><svg viewBox="0 0 24 24">'+m.icon+
         '</svg></div><div class="mc-title">'+esc(m.title)+'</div>'+(m.soon?'':ARROW)+'</div>'+
@@ -3653,8 +3654,10 @@ function pickMode(id){
 }
 
 /* ─── Run The Diamond Pro ────────────────────────────────────────────────
- * Each of the six extra modes gets ONE FREE START A DAY. Pro removes the limit, for
- * $9.99 once. Classic and the daily are never counted and never sold.
+ * The six extra modes share ONE FREE TOKEN A DAY: play Eras and all six are shut
+ * until the next Eastern day. Pro removes the limit, for $9.99 once. Classic and
+ * the daily are never counted and never sold. (The first draft gave one start of
+ * each mode, six a day. The owner asked for one token across the six.)
  *
  * WHAT IS COUNTED IS A START. A season already under way is never interrupted, and
  * a run is charged at the moment its draft opens (startRun, startTrade), which is
@@ -3715,10 +3718,17 @@ function playsMark(m){
   }catch(_){}
 }
 function isPro(){return proOwned||!!(meter&&meter.pro);}
+/* The mode today's token went on, or null while it is unspent. The device's answer
+   first, then the server's, which knows about other devices. */
+function tokenOn(){
+  const loc=playsLocal();if(loc.length)return loc[0];
+  if(meter&&meter.day===easternISO()&&Array.isArray(meter.used)&&meter.used.length)return meter.used[0];
+  return null;
+}
+/* A mode is shut when the token has gone, on it or on any of the other five. */
 function modeUsed(m){
   if(!m||isPro())return false;
-  if(playsLocal().indexOf(m)>=0)return true;
-  return !!(meter&&meter.day===easternISO()&&Array.isArray(meter.used)&&meter.used.indexOf(m)>=0);
+  return tokenOn()!=null;
 }
 /* The gate and the charge, in one place. Answers whether the run may start. */
 function modeBegin(m){
@@ -3777,8 +3787,11 @@ function paintProState(){
   if(line){
     if(isPro()){line.innerHTML='<b>Pro</b> \u00b7 every mode, as often as you like.';}
     else{
-      line.innerHTML='Each mode: one free play a day. <button type="button" id="b-hp-pro">Go Pro for '+
-        PRO_PRICE+'</button> to play without limits.';
+      const on=tokenOn();
+      line.innerHTML=(on
+        ?'Today\'s free token went on '+esc(modeLabel(on))+'. '
+        :'One free token a day for any of the six modes. ')+
+        '<button type="button" id="b-hp-pro">Go Pro for '+PRO_PRICE+'</button> to play without limits.';
       const b=$('b-hp-pro');if(b)b.onclick=()=>{ga('pro_opened',{from:'home'});openPro(null);};
     }
   }
@@ -3789,7 +3802,9 @@ function paintProState(){
 }
 function meterChip(m){
   if(isPro())return '<i class="hp-meter pro">Unlimited</i>';
-  if(modeUsed(m))return '<i class="hp-meter">Played today</i>';
+  const on=tokenOn();
+  if(on===m)return '<i class="hp-meter">Played today</i>';
+  if(on)return '<i class="hp-meter">Tomorrow</i>';
   return '';
 }
 
@@ -3811,16 +3826,19 @@ function proSheet(m,fresh){
       '<button class="btn ghost" data-close-pro>Close</button>';
     wirePro(box);return;
   }
-  $('pro-title').textContent=m?('You played today\'s '+modeLabel(m)):'Run The Diamond Pro';
+  const on=tokenOn();
+  $('pro-title').textContent=on?'Today\'s free token is used':'Run The Diamond Pro';
   const back=untilReset();
-  const lead=m
-    ?'Every mode gets one free play a day. '+esc(modeLabel(m))+' comes back at midnight Eastern'+
-      (back?', in <b>'+back+'</b>':'')+'. Or play it now with Pro.'
-    :'Every mode gets one free play a day. Pro takes the limit off.';
+  const lead=on
+    ?'You get one free token a day for any of the six modes. Today\'s went on '+
+      esc(modeLabel(on))+'. A new one lands at midnight Eastern'+
+      (back?', in <b>'+back+'</b>':'')+'. Or play '+(m&&m!==on?esc(modeLabel(m)):'any of them')+' now with Pro.'
+    :'You get one free token a day for any of the six modes. Pro takes the limit off.';
   const list=MODE_CARDS.filter(c=>!c.soon).map(c=>{
-    const mm=CARD_METER[c.id];const used=modeUsed(mm);
+    const mm=CARD_METER[c.id];
+    const tag=!on?'Free':on===mm?'Played':'Tomorrow';
     return '<li style="--c:'+c.tint+'"><i></i><span>'+esc(c.tile||c.title)+'</span>'+
-      '<em'+(used?' class="used"':'')+'>'+(used?'Played':'Free')+'</em></li>';
+      '<em'+(on===mm?' class="used"':'')+'>'+tag+'</em></li>';
   }).join('');
   const signed=!!acctId();
   box.innerHTML='<p class="pro-lead">'+lead+'</p>'+

@@ -1,6 +1,6 @@
 -- ---------------------------------------------------------------------------
--- 121_baseball_pro.sql : Run The Diamond Pro, and one free play a day of each
--- extra mode
+-- 121_baseball_pro.sql : Run The Diamond Pro, and one free token a day for
+-- the extra modes
 --
 --   psql ... -f supabase/121_baseball_pro.sql
 --
@@ -18,10 +18,12 @@
 -- never metered and never sold.
 --
 -- WHAT IS COUNTED. Starting a run in one of the six modes: Eras, One Franchise,
--- Division, Cap Survivor, All-Time Pitching Staff and the Trade Machine. One
--- start per mode per Eastern day, so six free plays a day across the six. The
--- key is the mode name the board already files under (runModeOf in the page),
--- so there is one spelling of each mode on the whole server.
+-- Division, Cap Survivor, All-Time Pitching Staff and the Trade Machine. A free
+-- account gets ONE TOKEN a day, shared by all six: play Eras and every one of the
+-- six is shut until the next Eastern day. The owner's call (2026-09), and the
+-- first draft of this file gave one start of EACH mode, six a day. The mode is
+-- still recorded, under the name the board already files it as (runModeOf in the
+-- page), so the page can say which mode the token went on.
 --
 -- WHY THE SERVER HOLDS IT, and not only the browser: 99_daily_attempts.sql says
 -- it at length. A limit that gates a paid tier is worth bypassing, and in a
@@ -50,15 +52,15 @@ alter table public.premium_unlocks
 -- ─────────────────────────────────────────────────────────────────────────────
 -- 2. The ledger
 -- ─────────────────────────────────────────────────────────────────────────────
--- One row per player per mode per day, and the row IS the play: the primary key
--- is the whole rule, so a second start on one day cannot be written at all.
+-- One row per player per day, and the row IS the token: the primary key is the
+-- whole rule, so a second start on one day cannot be written at all, in any mode.
 
 create table if not exists public.rtd_mode_plays (
   user_id   uuid not null references auth.users(id) on delete cascade,
   mode      text not null,
   day       date not null,
   played_at timestamptz not null default now(),
-  primary key (user_id, mode, day),
+  primary key (user_id, day),
   constraint rtd_mode_plays_mode_ck
     check (mode in ('era', 'franchise', 'division', 'capsurvivor', 'staff', 'trade'))
 );
@@ -99,7 +101,9 @@ revoke all on function public.rtd_is_pro(uuid) from public;
 -- ─────────────────────────────────────────────────────────────────────────────
 -- 4. What the page asks
 -- ─────────────────────────────────────────────────────────────────────────────
--- { pro, day, used: [modes played today], next_at } for the caller. `next_at` is
+-- { pro, day, used: [the mode today's token went on, or none], next_at } for
+-- the caller. `used` is a list so a page reads it the same whatever the rule is;
+-- under one token a day it holds at most one mode. `next_at` is
 -- the next Eastern midnight as a real instant, so a countdown runs off the
 -- server's clock rather than the phone's.
 

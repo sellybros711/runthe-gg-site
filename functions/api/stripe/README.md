@@ -300,7 +300,7 @@ it grants `rtd_premium`, and the page asks `premium_products()` for it.
 
 What it sells: the six extra modes (Eras, One Franchise, Division, Cap Survivor,
 All-Time Pitching Staff, Trade Machine) with no daily limit. Free accounts and
-guests get one start of each mode per Eastern day. Classic and the daily are free
+guests get one token per Eastern day, spent on any one of the six. Classic and the daily are free
 for everybody and never counted.
 
 ### Go-live, in this order

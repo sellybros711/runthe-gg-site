@@ -15311,7 +15311,7 @@ club name.
 offered and every one is deep: the thinnest is the 1900s at 102 team-seasons, 17 clubs
 and 1,291 men. What the lineage fixes for Eras is the chemistry, not the pool.
 
-### Run The Diamond Pro, and one free play of each mode a day
+### Run The Diamond Pro, and one free token a day for the six modes
 
 ```
 node baseball/check-pro.mjs          the gate, the sheet and the checkout, in a browser
@@ -15322,8 +15322,12 @@ psql -d rtd_pro -f supabase/test/baseball_pro_test.sql
 ```
 
 Asked for by the owner: the six extra modes (Eras, One Franchise, Division, Cap
-Survivor, All-Time Pitching Staff, Trade Machine) get **one free start each per
-Eastern day**, and **Pro** removes the limit for **$9.99 once**. Classic and the daily
+Survivor, All-Time Pitching Staff, Trade Machine) share **one free token per Eastern
+day**. Play Eras and all six are shut until tomorrow. **Pro** removes the limit for
+**$9.99 once**. The first draft gave one start of EACH mode, six a day, and the owner
+corrected it inside the same session: `rtd_mode_plays` is keyed on (user, day) with
+the mode kept as a record of where the token went, and a per-mode key fails the SQL
+test by name. Classic and the daily
 are never counted and never sold. The Stripe steps are in
 `functions/api/stripe/README.md`.
 
