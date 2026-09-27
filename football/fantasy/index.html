@@ -441,13 +441,20 @@
     color:var(--dim-2)}
   .bm .bmp.QB{color:var(--qb)} .bm .bmp.RB{color:var(--rb)}
   .bm .bmp.WR{color:var(--wr)} .bm .bmp.TE{color:var(--te)}
-  .bm .bmn{flex:1 1 auto;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .bm .bmn{flex:1 1 auto;min-width:0;display:flex;flex-direction:column}
+  .bm .bmnn,.bm .bml{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .bm .bmn .club{margin-left:5px;font-size:10.5px}
+  /* What he did, under his name. Quiet, because the number on the right is the headline. */
+  .bm .bml{text-decoration:none;font-size:10.5px;color:var(--dim-2);margin-top:1px}
   .bm .bmst{flex:0 0 auto;font-size:10px;color:var(--dim-2);text-transform:uppercase;
     letter-spacing:.05em}
   .bm .bmst.live{color:var(--green)}
-  .bm .bmpts{flex:0 0 38px;text-align:right;font-family:var(--fd);font-size:15px;
-    font-variant-numeric:tabular-nums}
+  .bm .bmpts{flex:0 0 auto;min-width:38px;display:flex;flex-direction:column;align-items:flex-end;
+    font-family:var(--fd);font-size:15px;font-variant-numeric:tabular-nums}
+  .bm .bmpts b{font-weight:inherit}
+  /* Where a live man is headed, small under what he has. */
+  .bm .bmlp{text-decoration:none;font-family:var(--fb);font-size:9.5px;letter-spacing:.03em;
+    color:var(--green);white-space:nowrap;margin-top:1px}
   .bm .bmpts.none{color:var(--dim-2)}
   .bm:last-child{padding-bottom:9px}
   /* The gap between the top fifty and a reader below it. A row of dots rather than nothing,
@@ -894,7 +901,7 @@
 <script defer src="/football/auth.js?v=8"></script>
 <script src="clubs.js?v=2"></script>
 <script src="draft.js?v=5"></script>
-<script src="entries.js?v=7"></script>
+<script src="entries.js?v=8"></script>
 <script>
 (function(){
   'use strict';
@@ -2272,6 +2279,9 @@
      poll once the week has locked (see `entries.js`), and read by the lineups under the
      rows. A man with no entry has not put a number up yet. */
   var LIVE_PTS = null;
+  /* What each man has done so far (`277 pass yds, 2 TD`), off the same read. Empty on a
+     database without 126, and the lineup simply shows no line. */
+  var LIVE_LINE = null;
 
   var TROPHY = '<svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="'
     + 'M4 1h8v2h2.5v2.2A3.3 3.3 0 0 1 11.6 8.5 4 4 0 0 1 9 10.7V12h2.5v2h-7v-2H7v-1.3A4 4 0'
@@ -2292,10 +2302,42 @@
       g = served[i];
       if (!g || !g.away || !g.home) continue;
       var had = by[g.away] || by[g.home] || {};
-      g = { away: g.away, home: g.home, kick: g.kick || had.kick, state: g.state };
+      g = { away: g.away, home: g.home, kick: g.kick || had.kick, state: g.state,
+        period: g.period, clock: g.clock };
       by[g.away] = g; by[g.home] = g;
     }
     return by;
+  }
+
+  /*
+   * HOW MUCH OF A GAME IS STILL TO PLAY, as a share of sixty minutes, or null when the
+   * scoreboard cannot say. Regulation only: past the fourth it is 0, because overtime is
+   * ten minutes that most games never reach and projecting into it would promise points
+   * off a period that usually does not happen. Halftime reads as period 2 at 0:00, which
+   * is exactly half.
+   */
+  function gameLeft(g){
+    if (!g || g.state !== 'in') return null;
+    var p = Number(g.period);
+    if (!p) return null;
+    if (p > 4) return 0;
+    var m = String(g.clock || '').match(/^(\d+):(\d+)/);
+    if (!m) return null;
+    var left = Math.min(15, Number(m[1]) + Number(m[2]) / 60);
+    return ((4 - p) * 15 + left) / 60;
+  }
+
+  /*
+   * WHERE A LIVE MAN IS HEADED: what he has, plus his projection for the week scaled to
+   * the share of his game still to play. Deliberately the plainest version. It does not
+   * chase a hot first half, because a man with two touchdowns by the second quarter is not
+   * twice as likely to score again, and it reads the same `proj` the draft priced him on,
+   * so the number is one a reader has already seen on the card.
+   */
+  function liveProj(pts, m, g){
+    var left = gameLeft(g);
+    if (left == null || !m || !(m.proj >= 0)) return null;
+    return (pts || 0) + m.proj * left;
   }
 
   var POS_ORDER = { QB: 0, RB: 1, WR: 2, TE: 3 };
@@ -2311,9 +2353,11 @@
     var html = '';
     for (i=0;i<men.length;i++){
       var m = men[i];
-      var pts = file && file.scores && file.scores[m.player_id]
-        ? Number(file.scores[m.player_id][0])
+      var fromFile = file && file.scores && file.scores[m.player_id];
+      var pts = fromFile ? Number(fromFile[0])
         : (LIVE_PTS && LIVE_PTS[m.player_id] != null ? LIVE_PTS[m.player_id] : null);
+      var line = fromFile ? (fromFile[1] || '')
+        : ((LIVE_LINE && LIVE_LINE[m.player_id]) || '');
       var g = games[m.team];
       var st = '', cls = '';
       if (g && g.state === 'in') { st = 'Live'; cls = ' live'; }
@@ -2331,10 +2375,15 @@
       var started = g && (g.state === 'in' || g.state === 'post'
         || (g.kick && Date.now() >= Date.parse(g.kick)));
       var shown = pts != null ? Number(pts).toFixed(1) : (started ? '0.0' : '-');
+      /* Only while his game is on. Before it the card already said what he was projected
+         for, and after it the score IS the answer. */
+      var lp = liveProj(pts, m, g);
       html += '<div class="bm"><span class="bmp ' + esc(m.position || '') + '">' + esc(m.position || '') + '</span>'
-        + '<span class="bmn">' + esc(m.name) + (m.team ? club(m.team) : '') + '</span>'
+        + '<span class="bmn"><span class="bmnn">' + esc(m.name) + (m.team ? club(m.team) : '') + '</span>'
+        + (line ? '<s class="bml">' + esc(line) + '</s>' : '') + '</span>'
         + '<span class="bmst' + cls + '">' + esc(st) + '</span>'
-        + '<span class="bmpts' + (pts == null ? ' none' : '') + '">' + esc(shown) + '</span></div>';
+        + '<span class="bmpts' + (pts == null ? ' none' : '') + '"><b>' + esc(shown) + '</b>'
+        + (lp != null ? '<s class="bmlp">proj ' + lp.toFixed(1) + '</s>' : '') + '</span></div>';
     }
     return html;
   }
@@ -2643,9 +2692,13 @@
       F.results ? F.results(season, week) : null]).then(function(both){
       var d = both[0];
       if (both[1] && gen === pollGen){
-        var pts = {};
-        for (var pi=0;pi<both[1].length;pi++) pts[both[1][pi].player_id] = Number(both[1][pi].half_ppr);
+        var pts = {}, lines = {};
+        for (var pi=0;pi<both[1].length;pi++){
+          pts[both[1][pi].player_id] = Number(both[1][pi].half_ppr);
+          if (both[1][pi].line) lines[both[1][pi].player_id] = String(both[1][pi].line);
+        }
         LIVE_PTS = pts;
+        LIVE_LINE = lines;
       }
       /* THREE WAYS AN ANSWER CAN BE STALE BY THE TIME IT LANDS, and all three have been
          real on this page: the reader left the screen, the poll was stopped, or the live
@@ -2763,7 +2816,8 @@
     var by = {};
     for (var i=0;i<d.me.lines.length;i++){
       var l = d.me.lines[i];
-      if (l.played) by[l.player_id] = [Number(l.half_ppr), ''];
+      if (l.played) by[l.player_id] = [Number(l.half_ppr),
+        (LIVE_LINE && LIVE_LINE[l.player_id]) || ''];
     }
     /*
      * AND HOW FAR INTO THE WEEK IT IS, which is the half this was missing.

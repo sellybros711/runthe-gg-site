@@ -6,7 +6,7 @@
  * THE SERVER IS A STAND-IN, and it is one server shared by every page this file
  * opens. auth.js is replaced at the route with a module whose profile and career
  * calls go through page.exposeFunction to the object below, so two browser
- * contexts are two devices on one account. It keeps the rules 125 keeps (the
+ * contexts are two devices on one account. It keeps the rules 127 keeps (the
  * career only ever adds, a season already held is never replaced, every row is
  * filed under the caller), and supabase/test/baseball_profile_test.sql proves the
  * real SQL keeps them.

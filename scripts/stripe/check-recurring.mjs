@@ -32,8 +32,8 @@ const DAY = 86400000;
 
 /* THE FAKE. One array of premium_unlocks rows, one of subscriptions rows, the
    Stripe subscriptions by id, and a log of every request. */
-let db, subsTable, stripeSubs, sent;
-function reset() { db = []; subsTable = []; stripeSubs = {}; sent = []; }
+let db, subsTable, stripeSubs, stripeInvoices, stripeCharges, sent;
+function reset() { db = []; subsTable = []; stripeSubs = {}; stripeInvoices = {}; stripeCharges = {}; sent = []; }
 globalThis.fetch = async (url, init = {}) => {
   const u = String(url), method = init.method || 'GET';
   const body = init.body instanceof URLSearchParams ? Object.fromEntries(init.body) :
@@ -63,6 +63,10 @@ globalThis.fetch = async (url, init = {}) => {
   if (u.startsWith('https://api.stripe.com/v1/checkout/sessions')) return J({ url: 'https://checkout.stripe.com/c/x' });
   const m = /\/v1\/subscriptions\/([^/?]+)/.exec(u);
   if (m) return stripeSubs[m[1]] ? J(stripeSubs[m[1]]) : J({ error: { message: 'no such' } }, 404);
+  const mi = /\/v1\/invoices\/([^/?]+)/.exec(u);
+  if (mi) return stripeInvoices[mi[1]] ? J(stripeInvoices[mi[1]]) : J({ error: { message: 'no such' } }, 404);
+  const mc = /\/v1\/charges\/([^/?]+)/.exec(u);
+  if (mc) return stripeCharges[mc[1]] ? J(stripeCharges[mc[1]]) : J({ error: { message: 'no such' } }, 404);
   return J({ error: 'unexpected ' + u }, 500);
 };
 
@@ -155,6 +159,51 @@ const arcade = { id: 'sub_a', customer: 'cus_a', status: 'active', current_perio
   items: { data: [{ price: { id: 'price_arcade' } }] } };
 await deliver('customer.subscription.updated', arcade);
 claim(subsTable.length === 1 && !db.length, 'an Arcade Card subscription still goes to its own table, and grants no baseball Pro');
+
+head('5. A REFUND OR A CHARGEBACK ENDS IT, AND STAYS ENDED');
+/* Stripe does not cancel a subscription when its charge is refunded, so everything
+   after the refund still reads `active` for the period it took back. */
+async function subscribed(end) {
+  reset();
+  stripeSubs.sub_1 = sub({ current_period_end: end });
+  await deliver('checkout.session.completed', { id: 'cs_1', mode: 'subscription', payment_status: 'paid',
+    client_reference_id: USER, customer: 'cus_1', subscription: 'sub_1', metadata: { supabase_user_id: USER, bundle: 'diamond-pro' } });
+  stripeInvoices.in_1 = { id: 'in_1', subscription: 'sub_1' };
+}
+await subscribed(end1);
+res = await deliver('charge.refunded', { id: 'ch_p', invoice: 'in_1', amount: 1499, amount_refunded: 500, refunded: false });
+claim(res.status === 200 && near(pro().expires_at, end1 * 1000 + 3 * DAY), 'a partial refund changes nothing');
+res = await deliver('charge.refunded', { id: 'ch_1', invoice: 'in_1', amount: 1499, amount_refunded: 1499, refunded: true });
+claim(res.status === 200 && near(pro().expires_at, Date.now()), 'a full refund ends Pro now', JSON.stringify(res) + JSON.stringify(pro()));
+claim(pro().payload.refunded_through === end1, 'and remembers the period it took back', JSON.stringify(pro().payload));
+claim(pro().source === 'subscription:diamond-pro' && pro().payload.stripe_customer === 'cus_1',
+  'and keeps the customer, so the receipt can still open the portal');
+await deliver('customer.subscription.updated', sub({ current_period_end: end1 }));
+claim(near(pro().expires_at, Date.now()), 'a later event for the same period, still reading active, grants nothing');
+await deliver('charge.refunded', { id: 'ch_1', invoice: 'in_1', amount: 1499, amount_refunded: 1499, refunded: true });
+claim(near(pro().expires_at, Date.now()) && pro().payload.refunded_through === end1, 'a refund delivered twice is the same answer');
+stripeSubs.sub_1 = sub({ current_period_end: end2 });
+await deliver('invoice.paid', { id: 'in_2', subscription: 'sub_1' });
+await deliver('customer.subscription.updated', sub({ current_period_end: end2 }));
+claim(near(pro().expires_at, end2 * 1000 + 3 * DAY), 'a paid renewal into a LATER period grants that period');
+claim(!subsTable.length, 'none of it touched the subscriptions table');
+
+await subscribed(end1);
+stripeCharges.ch_d = { id: 'ch_d', invoice: 'in_1', amount: 1499, amount_refunded: 0 };
+res = await deliver('charge.dispute.created', { id: 'dp_1', charge: 'ch_d' });
+claim(res.status === 200 && near(pro().expires_at, Date.now()) && pro().payload.refunded_through === end1,
+  'a chargeback ends it the same way, found through the charge', JSON.stringify(res));
+
+reset(); db.push({ user_id: USER, product: 'rtd_premium', source: 'bundle:diamond-pro', expires_at: null, payload: {} });
+stripeSubs.sub_1 = sub({ current_period_end: end1 });
+stripeInvoices.in_1 = { id: 'in_1', subscription: 'sub_1' };
+await deliver('charge.refunded', { id: 'ch_1', invoice: 'in_1', amount: 1499, amount_refunded: 1499, refunded: true });
+claim(pro().expires_at === null, 'a refund on a subscription never reaches a lifetime grant');
+
+reset(); db.push({ user_id: USER, product: 'rtd_premium', source: 'bundle:diamond-pro', expires_at: null, payload: {} });
+res = await deliver('charge.refunded', { id: 'ch_once', invoice: null, amount: 999, amount_refunded: 999, refunded: true });
+claim(res.status === 200 && pro().expires_at === null && !sent.some((x) => x.url.includes('/v1/invoices/')),
+  'a refund of the old $9.99 one-time Pro changes nothing and asks Stripe for nothing');
 
 console.log(`\n${fails ? fails + ' of ' + (fails + passes) + ' checks FAILED' : 'All ' + passes + ' checks passed.'}`);
 process.exit(fails ? 1 : 0);

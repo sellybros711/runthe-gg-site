@@ -504,14 +504,32 @@ check_rows(sort, migration, what, breaks, ok) as (
             where name = 'premium_unlocks_keep_lifetime_trg' and tbl = 'premium_unlocks')
       and (select count(*) > 0 from proc
             where name = 'fantasy_grant_pass' and body like '%grant_until%')),
+  -- TWO FOLLOW-UPS TO 124, asked of the BODY and of the function. The cap is asked of
+  -- grid_submit_run's body because re-running 85 (or any earlier grid file) on its
+  -- own puts back the version that reads the Arcade Card table alone, and that
+  -- database would answer yes to an existence check.
+  (36, '125_arcade_cap_and_bonus_refund',
+      'a bundle''s Arcade year lifts the ranked cap, and a refunded yearly Run The Bundle gives back its bonus',
+      'A Run The Bundle buyer is refused their fifth ranked arcade score of the day. And every full refund or chargeback of a yearly plan fails in the webhook and is retried by Stripe until this runs (the plan''s access is still taken back on each try).',
+      (select count(*) > 0 from proc
+        where name = 'grid_submit_run' and body like '%arcade_card_active%')
+      and (select count(*) > 0 from proc where name = 'premium_reclaim_bonus')),
+
+  -- WHAT EACH MAN DID, beside his points on the live board. Display only: the writer
+  -- asks for the column before it writes, so a database without this keeps scoring.
+  (37, '126_fantasy_results_line',
+      'each man''s stat line under his name in a lineup on the live board',
+      'The live board shows every man''s points and nothing about how he got them. Nothing is scored wrong.',
+      (select count(*) > 0 from col where tbl = 'fantasy_results' and name = 'line')),
+
   -- RUN THE DIAMOND PROFILES. Its absence is soft by design: the page keeps every
   -- season and every choice in the browser until the server can take them, and
   -- sends them the first time it can. What is lost without it is exactly what this
   -- file exists to stop losing: a cleared browser, a second phone, a private
   -- window, each of which is an empty trophy case with nothing said. The rung is
-  -- asked of the function's arguments, because an early copy of 125 had none and
+  -- asked of the function's arguments, because an early copy of 127 had none and
   -- a board then draws every other player's circle at the bottom rung.
-  (36, '125_baseball_profiles',
+  (38, '127_baseball_profiles',
       'a baseball profile and career are kept on the account, not only in the browser',
       'Seasons, badges and the profile circle live only in the browser that played them. Clearing site data or changing phones empties the trophy case.',
       (select count(*) > 0 from has_table where name = 'rtd_profiles')

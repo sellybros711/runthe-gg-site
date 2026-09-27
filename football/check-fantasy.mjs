@@ -1193,8 +1193,17 @@ async function openPage(browser, url, opts = {}) {
     if (/\/rest\/v1\/fantasy_results$/.test(u.pathname)) {
       posted.push({ fn: 'fantasy_results', body: Object.fromEntries(u.searchParams) });
       if (!server || !server.results) return r.abort();
+      /* A DATABASE WITHOUT 126 refuses a select naming `line` with a 400, which is what
+         PostgREST answers for a column it does not know. */
+      if (server.noLine && /(^|,)line(,|$)/.test(u.searchParams.get('select') || '')) {
+        return r.fulfill({ status: 400, contentType: 'application/json',
+          body: JSON.stringify({ code: '42703', message: 'column fantasy_results.line does not exist' }) });
+      }
+      const rows = server.noLine
+        ? server.results.map((x) => ({ player_id: x.player_id, half_ppr: x.half_ppr }))
+        : server.results;
       return r.fulfill({ status: 200, contentType: 'application/json',
-        body: JSON.stringify(server.results) });
+        body: JSON.stringify(rows) });
     }
     if (u.hostname !== 'local.test') return r.abort();
     let rel = decodeURIComponent(u.pathname);
@@ -2832,10 +2841,18 @@ console.log('\nA ROW OPENS INTO ITS LINEUP, AND THE LEADER WEARS THE PRIZE');
   const r = (place, name, score, picks, me, played) => ({ place, display_name: name, score,
     projected: 58, spend: 88, picks, is_me: !!me, entry_no: name.charCodeAt(0), played });
   /* Ada's quarterback has 21.4 and her tight end nothing yet: one number to find and one
-     man who has not played. */
-  const results = [{ player_id: byPos('QB', 0).player_id, half_ppr: 21.4 },
-    { player_id: byPos('RB', 0).player_id, half_ppr: 9.1 }];
-  const B = boardOf({
+     man who has not played. The quarterback's game is LIVE, a third of the way through the
+     third quarter, and the running back's is over: one man with somewhere to go and one
+     whose number is the answer. */
+  const QB0 = byPos('QB', 0), RB0 = byPos('RB', 0);
+  const results = [{ player_id: QB0.player_id, half_ppr: 21.4, line: '211 pass yds, 2 TD' },
+    { player_id: RB0.player_id, half_ppr: 9.1, line: '64 rush yds, 0 TD, 3 rec, 17 yds, 0 TD' }];
+  const games = [
+    { game_id: 'g1', away: QB0.team, home: QB0.opp, kick: new Date(LIVE_AT - 7200e3).toISOString(),
+      state: 'in', away_score: 17, home_score: 10, period: 3, clock: '7:30' },
+    { game_id: 'g2', away: RB0.team, home: RB0.opp, kick: new Date(LIVE_AT - 14400e3).toISOString(),
+      state: 'post', away_score: 24, home_score: 20, period: 4, clock: '0:00' }];
+  const B = boardOf({ games,
     rows: [r(1, 'Ada', 30.5, ADA, false, 2), r(2, 'You', 12.0, YOU, true, 1),
       r(3, 'Bo', 0, YOU, false, 0)],
     me: { place: 2, entries: 3, score: 12.0, lines: [] },
@@ -2891,8 +2908,12 @@ console.log('\nA ROW OPENS INTO ITS LINEUP, AND THE LEADER WEARS THE PRIZE');
     const inner = e.querySelector('.broster > div');
     const men = [...e.querySelectorAll('.bm')].map((m) => ({
       pos: m.querySelector('.bmp').textContent,
-      name: m.querySelector('.bmn').textContent,
-      pts: m.querySelector('.bmpts').textContent,
+      name: m.querySelector('.bmnn').textContent,
+      pts: m.querySelector('.bmpts b').textContent,
+      line: (m.querySelector('.bml') || {}).textContent || '',
+      lp: (m.querySelector('.bmlp') || {}).textContent || '',
+      lineFits: !m.querySelector('.bml') || m.querySelector('.bml').getBoundingClientRect().right
+        <= m.querySelector('.bmst').getBoundingClientRect().left + 1,
       h: m.getBoundingClientRect().height }));
     return { open: e.classList.contains('open'),
       aria: e.querySelector('.bhd').getAttribute('aria-expanded'),
@@ -2909,6 +2930,33 @@ console.log('\nA ROW OPENS INTO ITS LINEUP, AND THE LEADER WEARS THE PRIZE');
   const qb = opened.men.find((m) => m.pos === 'QB');
   ok('  each man carries his own points', qb && qb.pts === '21.4'
     && qb.name.startsWith(byPos('QB', 0).name), qb && `${qb.name} ${qb.pts}`);
+  /*
+   * WHAT HE DID, AND WHERE A LIVE MAN IS HEADED. Asked for by the owner off a screenshot of
+   * this exact board on a Sunday afternoon: points and nothing about how.
+   *
+   * THE PROJECTION IS CHECKED AS ARITHMETIC off the pool's own `proj`, not as a number
+   * typed here, so retuning a projection cannot quietly break it. 7:30 left in the third is
+   * 22.5 of 60 minutes.
+   */
+  ok('  each man who has played shows what he did', qb && qb.line === '211 pass yds, 2 TD',
+    qb && qb.line);
+  const wantLp = 'proj ' + (21.4 + QB0.proj * (22.5 / 60)).toFixed(1);
+  ok('  a man whose game is on shows where he is headed', qb && qb.lp === wantLp,
+    (qb && qb.lp) + ' against ' + wantLp);
+  const rb1 = opened.men.filter((m) => m.pos === 'RB')[0];
+  ok('  a man whose game is over shows no projection, because the score is the answer',
+    rb1 && rb1.pts === '9.1' && !rb1.lp && /rush yds/.test(rb1.line), rb1 && JSON.stringify(rb1));
+  /* The tight end is Allen's team-mate, so he is in the live game with nothing yet: no
+     line, and a projection off zero. The receivers' games have not started, so neither. */
+  const te = opened.men.find((m) => m.pos === 'TE');
+  ok('  a man on the field with nothing yet shows where he is headed and no line',
+    te && !te.line && te.lp === 'proj ' + (byPos('TE', 0).proj * (22.5 / 60)).toFixed(1),
+    te && JSON.stringify({ line: te.line, lp: te.lp }));
+  ok('  and a man whose game has not started shows neither',
+    opened.men.filter((m) => m.pos === 'WR').every((m) => !m.line && !m.lp),
+    JSON.stringify(opened.men.filter((m) => m.pos === 'WR').map((m) => m.lp + m.line)));
+  ok('  the stat line stays in its own column rather than under the game state',
+    opened.men.every((m) => m.lineFits));
   const rb2 = opened.men.filter((m) => m.pos === 'RB')[1];
   ok('  and a man with no number yet is not shown as a zero he has not scored',
     rb2 && (rb2.pts === '-' || rb2.pts === '0.0'), rb2 && rb2.pts);
@@ -2942,6 +2990,27 @@ console.log('\nA ROW OPENS INTO ITS LINEUP, AND THE LEADER WEARS THE PRIZE');
   ok('a board where nobody has scored marks no leader', await z.page.evaluate(() =>
     !document.querySelector('#lv-board .brow.lead, #lv-board .bpro')));
   await z.page.close();
+
+  /* A DATABASE WITHOUT 126 STILL HAS POINTS. SQL is deployed by hand and this page by a
+     push, so the read that names `line` is refused, and the lineups must not lose every
+     man's number over a line of display text. */
+  const n = await openPage(browser, FANTASY,
+    { who: TESTER, at: LIVE_AT, server: { mine: ENTRY, boards: [B], results, noLine: true } });
+  await openBoard(n.page);
+  await n.page.waitForSelector('#lv-board .brow .bhd', { timeout: 15000 });
+  await n.page.waitForTimeout(200);
+  await n.page.click('#lv-board .brow:first-child .bhd');
+  await n.page.waitForTimeout(400);
+  const nl = await n.page.evaluate(() => [...document.querySelectorAll('#lv-board .brow:first-child .bm')]
+    .map((m) => ({ pos: m.querySelector('.bmp').textContent, pts: m.querySelector('.bmpts b').textContent,
+      line: !!m.querySelector('.bml') })));
+  const nqb = nl.find((m) => m.pos === 'QB');
+  ok('without 126 the points are still there, with no stat line', nqb && nqb.pts === '21.4'
+    && nl.every((m) => !m.line), JSON.stringify(nqb));
+  ok('  and the read asked once more without the column',
+    n.posted.filter((x) => x.fn === 'fantasy_results'
+      && !/line/.test(x.body.select || '')).length >= 1);
+  await n.page.close();
 }
 
 /* ----------------------------------------------------------------

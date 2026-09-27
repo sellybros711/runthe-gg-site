@@ -307,13 +307,13 @@
     return null;
   }
 
-  /* ── THE PROFILE, held by the server (supabase/125_baseball_profiles.sql) ──
+  /* ── THE PROFILE, held by the server (supabase/127_baseball_profiles.sql) ──
      Every answer here is null on failure and never a guess: null means "could
      not ask", which the page reads as "keep what you have", and that is what
      stops a dropped connection from ever looking like an empty profile. */
 
   /* This account's choices: the row, {} when there is none yet, null on failure
-     (including a database that has not had 125 run). */
+     (including a database that has not had 127 run). */
   async function myProfile() {
     if (!sb || !session) return null;
     try {

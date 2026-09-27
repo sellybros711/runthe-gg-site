@@ -7473,9 +7473,9 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
       <button class="tab" data-dyn="score">High score</button>
     </div></div>
     <div class="tabwrap"><div class="tabs" id="lb-tabs">
-      <button class="tab on" data-lb="day">Today</button>
+      <button class="tab" data-lb="day">Today</button>
       <button class="tab" data-lb="week">This week</button>
-      <button class="tab" data-lb="all">All time</button>
+      <button class="tab on" data-lb="all">All time</button>
     </div></div>
     <div class="sortbar">
       <div class="seg" id="lb-sort">
@@ -8553,7 +8553,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 <script src="/assets/newsletter.js?v=1"></script>
 <!-- The broadcast field every game is played out on. drawDriveChart hands its drives here and
      keeps its own body as the fallback, so a blocked copy still draws the old chart. -->
-<script src="/assets/fieldcast.js?v=3"></script>
+<script src="/assets/fieldcast.js?v=4"></script>
 <script defer src="auth.js?v=8"></script>
 <script>
 (function(){
@@ -26204,11 +26204,12 @@ async function submitAfterSignIn(){
 
 /* THE BOARD, OPENED ON THE ROW THAT WAS JUST ADDED.
    Forced to the window and the axis where the run is certain to be findable rather than
-   wherever the board was last left: today, by record, best first. A run played in the
-   last few minutes is in today's board by definition, and the pinned-row fallback that
-   catches a run outside the top page only runs on a record board in descending order,
-   so those are the settings that guarantee there is something to point at. A club run goes
-   to that club's board, which is the only board it is on. */
+   wherever the board was last left: the board's own window (All time), by record, best
+   first. A run played in the last few minutes is on the
+   all-time board by definition, and the pinned-row fallback that catches a run outside the top
+   page only runs on a record board in descending order, so those are the settings that
+   guarantee there is something to point at. A club run goes to that club's board, which is
+   the only board it is on. */
 async function showMyRowOnBoard(){
   /* THE PROFILE SHEET HAS TO GO FIRST. The player got here by signing in inside it, and
      the auth handler repaints it rather than closing it, so without this the board is
@@ -26220,7 +26221,7 @@ async function showMyRowOnBoard(){
      has no row in, on an axis the mode is not scored on, when the whole point of this path is
      to show the player their own row. */
   boardFromRun();
-  lbWin='day'; lbSort=defaultSort(); lbDir=sortBestDir(lbSort);
+  lbWin=defaultWin(); lbSort=defaultSort(); lbDir=sortBestDir(lbSort);
   show('s-board');
   await loadBoard();
   /* Your actual row, which the 500-row list will hold unless five hundred people beat
@@ -26641,7 +26642,7 @@ function rankLine(r){
    looking for themselves, which is what the pinned row at the bottom is for. */
 const LB_LIMIT=500;
 
-let lbWin='day', lbSort='record', lbDir='desc', lbRows=null, lbBusy=false;
+let lbWin='all', lbSort='record', lbDir='desc', lbRows=null, lbBusy=false;
 /* WHICH COMPETITION IS SHOWING. 'free', or a club code for one of the thirty-two One Franchise
    boards. Separate from lbWin because it is a separate question: every competition has
    the same three windows, which is why the club boards were given a created_at window
@@ -26837,6 +26838,8 @@ $('lb-comp').addEventListener('change',()=>{
   /* One call instead of a copy of the rule in each branch above. */
   fixSort();
   lbDir=sortBestDir(lbSort);
+  /* Picking a competition lands on its own window: All time for an era or a club. */
+  lbWin=defaultWin();
   ga('board_competition',{mode:lbTrade?'trade':lbDefense?'defense':lbFull?'fullteam':lbEra?'era':lbClub?'club':'free',
     club:lbClub,era:lbEra});
   loadBoard();
@@ -26882,6 +26885,18 @@ function boardFromRun(){
    record. */
 function defaultSort(){ return lbTrade?'gm':lbDefense?'pa':'record'; }  // full team uses record, which is already the fallback
 
+/* THE WINDOW A BOARD OPENS ON is All time, on every competition, asked for by the owner.
+   It started with the era and club boards, where there are forty-odd of them against one free
+   board and Today on a Packers board is usually empty or one row, and then went to all of them.
+   It is still a function rather than a literal because it is applied when the competition
+   CHANGES, never on a repaint, so a window somebody picked stays picked until they move to
+   another board; a board that wants its own default later is one line here. */
+function defaultWin(){ return 'all'; }
+/* Which competition is showing, as one string, so a caller can ask whether it moved. */
+function compKey(){
+  return [lbTrade,lbDynasty,lbDefense,lbFull,lbEra||'',lbClub||''].join('|');
+}
+
 /* WHICH AXES THIS BOARD HAS, in one place. Four callers used to each carry their own copy of
    `if(lbSort==='gm') lbSort='rating'`, which was already one copy too many at one mode-only
    axis and is unmaintainable at three. Anything not offered here falls back to the record,
@@ -26905,7 +26920,11 @@ const sortBestDir=(k)=>k==='pa'?'asc':'desc';
 
 function openBoard(){
   if(run&&run.outcome){
+    const was=compKey();
     boardFromRun();
+    /* Only when the run moved the board to another competition: reopening the same one
+       keeps whatever window was picked on it. */
+    if(compKey()!==was) lbWin=defaultWin();
     if(lbTrade) lbSort='gm'; else if(lbDefense) lbSort='pa';
     fixSort();
     lbDir=sortBestDir(lbSort);

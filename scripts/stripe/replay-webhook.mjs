@@ -22,6 +22,8 @@
  *   - a Fantasy pass's own end (grant_until) is never moved by a plan event
  *   - no row ever ends before its pass does
  *   - the Run The Bundle bonus row exists at most once and, once stamped, stays stamped
+ *     (the one exception is a refund of the payment that bought it, supabase/125, which
+ *     removes it and takes the coins back out of the wallet)
  *   - a Perfect Season plan never writes the Arcade Card's subscriptions table
  */
 import { spawnSync } from 'node:child_process';
@@ -78,7 +80,7 @@ function build() {
     '110_fantasy_live', '111_nfl_scores', '112_fantasy_entrants', '113_fantasy_submit_username',
     '114_fantasy_prizes', '115_fantasy_result_when_ready', '119_fantasy_swap',
     '120_fantasy_pro_pass', '121_baseball_pro', '123_hoops_pro', '103_runtour_bundle_redeem',
-    '65_delete_account', '124_premium_yearly']) {
+    '65_delete_account', '124_premium_yearly', '125_arcade_cap_and_bonus_refund']) {
     sqlFile(repo('supabase/' + f + '.sql'));
   }
 }
@@ -122,6 +124,7 @@ const RPC = {
       p_ended_at => ${lit(b.p_ended_at)}::timestamptz, p_customer => ${lit(b.p_customer)},
       p_price => ${lit(b.p_price)}, p_kind => ${lit(b.p_kind)},
       p_bonus => ${lit(b.p_bonus)}::jsonb)`),
+  premium_reclaim_bonus: (b) => sql(`select public.premium_reclaim_bonus(${lit(b.p_sub_id)}, ${lit(b.p_from)}::timestamptz)`),
   premium_grant_bundle: (b) => sql(`select public.premium_grant_bundle(
       ${lit(b.p_user)}::uuid, ${lit(b.p_bundle)}, ${lit(b.p_grants)}::jsonb, ${lit(b.p_payload)}::jsonb)`),
 };
@@ -284,13 +287,17 @@ await send('checkout.session.completed', { id: 'cs_L2', object: 'checkout.sessio
   metadata: { supabase_user_id: L, bundle: 'run-the-bundle', plan: 'year' } });
 ok('the plan adds the Arcade Card', products(L).includes('arcade_card_year'));
 ok('and hands over the bonus', !!row(L, 'runtour_pack'));
-stripe.invoices.in_L1 = { id: 'in_L1', subscription: 'sub_L' };
+/* A renewal invoice: its LINES are the new year, and its period_start is the year just
+   billed, which is the trap a reader of the wrong field falls into. */
+stripe.invoices.in_L1 = { id: 'in_L1', subscription: 'sub_L', period_start: unix(now - 60000),
+  lines: { data: [{ period: { start: unix(now + 365 * DAY), end: unix(now + 730 * DAY) } }] } };
 subscription('sub_L', { user: L, bundle: 'run-the-bundle', price: 'price_rtb_year', end: now + 730 * DAY, customer: 'cus_L' });
 await send('invoice.paid', stripe.invoices.in_L1);
 stripe.charges.ch_L = { id: 'ch_L', object: 'charge', invoice: 'in_L1', amount: 3499, amount_refunded: 3499, refunded: true };
 await send('charge.refunded', stripe.charges.ch_L);
 ok('a full refund takes the Arcade Card back', !products(L).includes('arcade_card_year'));
 ok('and leaves both games', products(L).includes('ps_premium') && products(L).includes('cfb_premium'));
+ok('refunding a RENEWAL keeps the bonus the first year paid for', !!row(L, 'runtour_pack'));
 subscription('sub_L', { user: L, bundle: 'run-the-bundle', price: 'price_rtb_year', status: 'canceled',
   end: now + 730 * DAY, endedAt: now, customer: 'cus_L' });
 await send('customer.subscription.deleted', stripe.subscriptions.sub_L);
@@ -351,7 +358,8 @@ subscription('sub_B', { user: B, bundle: 'run-the-bundle', price: 'price_rtb_yea
 await send('customer.subscription.updated', stripe.subscriptions.sub_B);
 ok('past due and past its grace: back to the free allowance', products(B).length === 0);
 subscription('sub_B', { user: B, bundle: 'run-the-bundle', price: 'price_rtb_year', end: now + 345 * DAY, newApi: true });
-stripe.invoices.in_B = { id: 'in_B', parent: { subscription_details: { subscription: 'sub_B' } } };
+stripe.invoices.in_B = { id: 'in_B', parent: { subscription_details: { subscription: 'sub_B' } },
+  lines: { data: [{ period: { start: unix(now - 20 * DAY), end: unix(now + 345 * DAY) } }] } };
 await send('invoice.paid', stripe.invoices.in_B);
 ok('a late payment turns all three back on',
   ['ps_premium', 'cfb_premium', 'arcade_card_year'].every((p) => products(B).includes(p)));
@@ -366,7 +374,40 @@ stripe.charges.ch_B = { id: 'ch_B', object: 'charge', invoice: 'in_B', amount: 3
 await send('charge.dispute.created', { id: 'dp_B', object: 'dispute', charge: 'ch_B' });
 ok('a chargeback ends the plan (both games and the Arcade Card)',
   ['ps_premium', 'cfb_premium', 'arcade_card_year'].every((p) => !products(B).includes(p)));
-ok('and the bonus already handed over is not taken back', products(B).includes('runtour_pack'));
+ok('a chargeback on the payment that bought the bonus takes the bonus row away', !row(B, 'runtour_pack'));
+ok('and takes the redeemed coins back out of the wallet',
+  sql(`select paid_coins from public.coin_wallet where user_id = '${B}'`) === '0');
+await send('charge.dispute.created', { id: 'dp_B2', object: 'dispute', charge: 'ch_B' });
+ok('a second chargeback event takes nothing more', sql(`select paid_coins from public.coin_wallet where user_id = '${B}'`) === '0');
+await send('invoice.paid', stripe.invoices.in_B);
+ok('and a late event for the refunded period does not hand it over again', !row(B, 'runtour_pack'));
+
+console.log('\n-- Run The Bundle yearly refunded before the coins were redeemed');
+const R = 'c6000000-0000-0000-0000-000000000006';
+sql(`insert into auth.users(id) values ('${R}')`);
+sql(`insert into public.coin_wallet (user_id, paid_coins, lifetime_granted) values ('${R}', 40000, 40000)`);
+subscription('sub_R', { user: R, bundle: 'run-the-bundle', price: 'price_rtb_year', end: now + 365 * DAY });
+await send('checkout.session.completed', { id: 'cs_R', object: 'checkout.session', mode: 'subscription',
+  subscription: 'sub_R', customer: 'cus_sub_R', client_reference_id: R,
+  metadata: { supabase_user_id: R, bundle: 'run-the-bundle', plan: 'year' } });
+ok('the bonus is waiting, unredeemed', row(R, 'runtour_pack') && row(R, 'runtour_pack').fulfilled_at === null);
+stripe.invoices.in_R = { id: 'in_R', subscription: 'sub_R',
+  lines: { data: [{ period: { start: unix(now - 60000), end: unix(now + 365 * DAY) } }] } };
+await send('charge.refunded', { id: 'ch_R', object: 'charge', invoice: 'in_R', amount: 3499, amount_refunded: 3499, refunded: true });
+ok('a full refund of the first year takes the unredeemed bonus away', !row(R, 'runtour_pack'));
+ok('so the coins are never paid', sql(`select public.become('${R}'); select coalesce(public.runtour_redeem_bundle()::text, 'none');`).split('\n').pop() === 'none');
+ok('and the wallet the buyer already had is untouched', sql(`select paid_coins from public.coin_wallet where user_id = '${R}'`) === '40000');
+
+console.log('\n-- a one-time Run The Bundle keeps its bonus whatever happens to a plan');
+const O = 'c7000000-0000-0000-0000-000000000007';
+sql(`insert into auth.users(id) values ('${O}')`);
+await send('checkout.session.completed', { id: 'cs_O', object: 'checkout.session', mode: 'payment',
+  payment_status: 'paid', client_reference_id: O, customer: 'cus_O',
+  metadata: { supabase_user_id: O, bundle: 'run-the-bundle' } });
+ok('the one-time bundle hands the bonus over', !!row(O, 'runtour_pack'));
+await send('charge.refunded', { id: 'ch_O', object: 'charge', invoice: null, payment_intent: 'pi_O',
+  amount: 3499, amount_refunded: 3499, refunded: true });
+ok('and a refund of it leaves the bonus (a one-time purchase is revoked by hand)', !!row(O, 'runtour_pack'));
 
 console.log('\n-- the Arcade Card still runs through its own table');
 subscription('sub_A', { user: A, bundle: undefined, price: 'price_arcade_monthly', end: now + 30 * DAY, newApi: true });

@@ -1,7 +1,7 @@
 -- ---------------------------------------------------------------------------
--- 125_baseball_profiles.sql : Run The Diamond profiles, held by the server
+-- 127_baseball_profiles.sql : Run The Diamond profiles, held by the server
 --
---   psql ... -f supabase/125_baseball_profiles.sql
+--   psql ... -f supabase/127_baseball_profiles.sql
 --
 -- Needs 10 (profiles) and 97 (rtd_runs). Safe to run more than once.
 --

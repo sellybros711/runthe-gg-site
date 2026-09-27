@@ -1,13 +1,13 @@
--- Run The Diamond profiles and the career (125_baseball_profiles.sql).
+-- Run The Diamond profiles and the career (127_baseball_profiles.sql).
 --
 --   createdb rtd_prof
 --   psql -d rtd_prof -f supabase/test/baseball_pro_base.sql
---   psql -d rtd_prof -f supabase/125_baseball_profiles.sql
---   psql -d rtd_prof -f supabase/125_baseball_profiles.sql   (twice: it is idempotent)
+--   psql -d rtd_prof -f supabase/127_baseball_profiles.sql
+--   psql -d rtd_prof -f supabase/127_baseball_profiles.sql   (twice: it is idempotent)
 --   psql -d rtd_prof -v ON_ERROR_STOP=1 -f supabase/test/baseball_profile_test.sql
 --
 -- baseball_pro_base.sql supplies auth.users with two accounts and an auth.uid()
--- that reads a setting, so each claim sets who is asking. 125 needs nothing else.
+-- that reads a setting, so each claim sets who is asking. 127 needs nothing else.
 
 \set ON_ERROR_STOP 1
 

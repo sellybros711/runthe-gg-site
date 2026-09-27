@@ -540,6 +540,7 @@ adding a block. Move it when the sheet is meant to grow, never to make a run pas
 node scripts/stripe/check-checkout.mjs       who may buy what, through the real endpoint
 node scripts/stripe/replay-webhook.mjs       every plan event, through the real webhook, against a real Postgres
 psql -d yr -f supabase/test/premium_yearly_test.sql   (its header lists the chain)
+psql -d capt -f supabase/test/arcade_cap_test.sql    the ranked cap after 125 (its header lists the chain)
 ```
 
 `supabase/124_premium_yearly.sql`, `functions/api/stripe/_offer.js` and one switch,
@@ -581,6 +582,25 @@ The Bundle coins and pack are the `runtour_pack` row, written `on conflict do no
 paid-for Run The Bundle event. Never a merge: a merge re-sends `fulfilled_at` as null over a
 row the golf side already paid out, and 103's redeem pays the coins again. The old one-time
 path had exactly that merge and now splits the bonus row out too.
+
+**A REFUND OF THE PAYMENT THAT BOUGHT THE BONUS TAKES IT BACK, and nothing else does.**
+`supabase/125_arcade_cap_and_bonus_refund.sql`: after a full refund or a chargeback on a plan,
+`premium_reclaim_bonus()` removes the bonus row if THIS plan wrote it inside the refunded
+invoice's period, and takes redeemed coins back out of the wallet (floored at zero). The
+period is read off the invoice's LINES and never off `invoice.period_start`, which on a
+subscription invoice is the year just billed: read that way, refunding a renewal takes the
+first year's bonus. It is the one null-expiry row anything deletes, because 124's trigger hands
+back every update to such a row. A one-time bundle's bonus is never touched, and the Tour
+Pack cannot be taken back at all (packs live in the golf page).
+
+**Run The Diamond Pro's refund is remembered on its own row.** Stripe does not cancel a
+subscription when a charge is refunded, so everything after still reads `active` for that
+period. `grantRecurring` ends the grant and writes `payload.refunded_through`; an event whose
+period ends on or before it grants nothing, which is `premium_sub_apply`'s rule for the plans.
+
+**The arcade's ranked cap asks `arcade_card_active()`**, since 125. It read the Arcade Card's
+`subscriptions` table alone, so a Run The Bundle buyer, whose card is a `premium_unlocks` row,
+saw unlimited on the page and was refused their fifth score by the server.
 
 **THE PAGE NEVER DECIDES ONCE OR YEARLY.** `/api/stripe/offer` answers from `_offer.js`, which
 says `year` only when the switch is on, both yearly prices are set AND the database answers
@@ -2469,6 +2489,26 @@ Three things that each cost a round, all of them about the harness rather than t
 - **`/Season/i` matches "Regular season complete".** The absence to assert is the TAG, not the
   word.
 
+### Every football board opens on All time
+
+`defaultWin()` in `football/index.html`. Every competition used to open on Today. Asked
+for by the owner in two steps: first the era and One Franchise boards (forty-odd of them
+against one free board, so Today on one club's board is usually empty or one row), then
+all of them. The tab marked `on` in the markup is All time too, so the first paint agrees.
+
+**It is applied when the competition CHANGES, never on a repaint.** Picking one in
+`#lb-comp` lands on All time, and so does `openBoard` when a finished run moves the board
+to another competition (`compKey()` is the before and after). Reopening the same board
+keeps whatever window was picked on it. `showMyRowOnBoard` uses it too, which is safe for
+the reason its comment gives: a run played minutes ago is on the all-time board, and the
+pinned-row fallback depends on the axis rather than the window. A tap on a placing cell on
+the results screen still opens the window that cell names. It stays a function rather
+than a literal so a board that wants its own default later is one line.
+
+**The college game does the same**, asked for right after: `lbWindow` in `cfb/index.html` starts
+at `'all'`, the All time tab is the one marked `on` in the markup, and both ways the competition
+changes (the `#lb-comp` select and `openBoard(mode)` with a different mode) set it back.
+
 ### A leaderboard nobody can open renders perfectly
 
 The Dynasty board had a table, two axes, three queries and no way in. The only thing that
@@ -2733,10 +2773,19 @@ node scripts/check-fieldcast.mjs     the renderer's rules, and that both pages d
 Asked for: the drive charts on the home page's two cards, but bigger, for the real games. So
 `/assets/fieldcast.js` is the picture every game is played on: the playoff broadcast, the bowl,
 the challenge bowl, the boss battle and the Full Team live games. A lit stadium with a dot matrix
-crowd (the home cards' motif), an LED ribbon board, the field in perspective, every drive as a
-lane that recedes as the game goes on, and the drive in progress played out snap by snap with the
-ball, the blue and yellow lines, a formation and the down and distance over the ball. Touchdowns,
-field goals, misses, turnovers and safeties get their own moment.
+crowd (the home cards' motif), an LED ribbon board, the field in perspective, the last three
+drives as lanes that recede as the game goes on, and the drive in progress played out snap by snap
+with the ball, the blue and yellow lines and the down and distance over the ball. Touchdowns, field
+goals, misses, turnovers and safeties get their own moment.
+
+**THE FIELD IS QUIET AND THE STADIUM IS NOT, which is the owner's call.** The first version drew
+six drives with a result pill on each, fifteen players chasing the ball, a banner across the whole
+middle of the field, a white flash, a screen shake, confetti and a blinking ribbon board, all at
+once. Verdict: visually great, a little overwhelming. So the stands keep all their life (the
+crowd, the lights, the ribbon, the eruption on a score) and the field carries what a viewer is
+following: three drives, one result pill on the drive that just ended, the ball, the two lines,
+and a small call plate over the far half. **Add to the field only what replaces something already
+on it.** The kick to the posts stays, because it is the one moment that shows where the ball went.
 
 **IT IS ONE FUNCTION DEEP IN EACH PAGE.** `drawDriveChart` in `football/index.html` and in
 `cfb/index.html` hands its drives to `RTG_FIELD.paint` and returns; the old chart is still below
@@ -2795,7 +2844,7 @@ clear of the chevron by its own half width now.
 **It keeps drawing between the page's frames**, which is what lets a score hold the clock while
 the crowd erupts and the banner plays: its own loop runs while the canvas is on screen, at thirty
 frames a second when nothing but the crowd is moving, and stops the moment `offsetParent` is
-null. Reduced motion gets no slides, no shake, no confetti and no ambient loop.
+null. Reduced motion gets no slides and no ambient loop.
 
 **The canvas is 196 to 320px tall, up from 160**, because a picture with a stadium in it needs the
 room. `check-fullteam.mjs` measures the boss board's calls and Continue against a phone, which is
@@ -4799,6 +4848,32 @@ reading would fold shut every twenty seconds. **The leader is green with a PRO p
 somebody has a point: straight after the lock the order is who entered first, and marking that
 row as winning a prize would invent a leader. Green rather than gold, because gold on this page
 already means a podium AFTER the week. All four claims were proved by mutation.
+
+#### A man in a lineup shows what he did, and a live one shows where he is headed
+
+```
+psql -d fantasy -f supabase/126_fantasy_results_line.sql
+node football/check-fantasy.mjs   the section named A ROW OPENS INTO ITS LINEUP
+```
+
+Asked for by the owner off a screenshot of the Sunday board: points and nothing about how.
+
+**The stat line was already built and dropped on the floor.** `weekly-results.mjs` and
+`espn-box.mjs` both hand `resultsSQL` a line (`211 pass yds, 2 TD`) as `scores[id][1]`, and
+it wrote the number and threw the sentence away. 126 adds `fantasy_results.line` and
+`resultsSQL` writes it.
+
+**THE WRITER ASKS FOR THE COLUMN BEFORE WRITING IT**, inside a `do` block, because the live
+job pipes that SQL every two minutes during a game and the SQL is deployed by hand. An
+unguarded write to a missing column fails the whole script and freezes the board for the
+afternoon over display text. plpgsql resolves a column when the statement runs, so the
+update inside the `if` is never looked at without 126. Driven both ways against Postgres
+16. The page does the same from its side: a 400 naming `line` is asked again without it.
+
+**The projection is `pts + proj * share of the game left`**, off the `proj` the man was
+priced on and the scoreboard's period and clock. Only while his game is on: before it the
+card already said, and after it the score is the answer. No overtime and no chasing a hot
+half, deliberately. The guard checks it as arithmetic off the pool's own `proj`.
 
 #### The rows are keyed on the ENTRY, and the key is not the entry's id
 
@@ -13927,7 +14002,7 @@ error.
 ```
 node baseball/check-profile.mjs     the header circle, the pages, Customize, the career on the server
 psql -d rtd_prof -f supabase/test/baseball_pro_base.sql
-psql -d rtd_prof -f supabase/125_baseball_profiles.sql
+psql -d rtd_prof -f supabase/127_baseball_profiles.sql
 psql -d rtd_prof -f supabase/test/baseball_profile_test.sql
 ```
 
@@ -13938,7 +14013,7 @@ else, and every badge, every career number and every park unlock is DERIVED from
 array. So clearing site data, a private window or a second phone was an empty trophy
 case, with nothing said.
 
-**`supabase/125_baseball_profiles.sql` is two tables.** `rtd_profiles` is what the player
+**`supabase/127_baseball_profiles.sql` is two tables.** `rtd_profiles` is what the player
 CHOSE (club, initials, mark, ballpark) plus what the cabinet EARNED that other people's
 screens need to draw (rank, ring, and the chosen club's rung), and it is public to read
 because every board row draws the circle. `rtd_career` is what the player PLAYED, the
