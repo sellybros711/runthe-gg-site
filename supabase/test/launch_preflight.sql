@@ -84,7 +84,7 @@ has_table as (
     'commish_free_clock','ps_runs','profiles',
     'fantasy_weeks','fantasy_prices','fantasy_results','fantasy_entries',
     'nfl_games','fantasy_prizes',
-    'rtf_runs','rtd_runs','rtf_plays'
+    'rtf_runs','rtd_runs','rtf_plays','rtd_mode_plays'
   ]) as t
   where to_regclass('public.' || t) is not null
 ),
@@ -439,11 +439,25 @@ check_rows(sort, migration, what, breaks, ok) as (
             where name = 'fantasy_my_result' and body like '%granted%')
       and (select count(*) > 0 from col where tbl = 'fantasy_prizes' and name = 'pass_until')),
 
+  -- RUN THE DIAMOND PRO. Two halves that fail differently, asked in one row
+  -- because neither is any use without the other. Without the constraint every
+  -- paid Pro checkout 500s in the webhook and Stripe retries it; without the
+  -- meter the six modes stay unlimited for everybody, because the page fails
+  -- open, so nothing is sold at all.
+  (31, '121_baseball_pro',
+      'rtd_premium is a product the webhook may grant, and the six extra modes are metered once a day',
+      'A paid Pro checkout is refused by the table and retried by Stripe until this runs. The daily limit does nothing, so every account plays the extra modes without end.',
+      (select count(*) > 0 from con
+        where name = 'premium_unlocks_product_ck' and def like '%rtd_premium%')
+      and (select count(*) > 0 from has_table where name = 'rtd_mode_plays')
+      and (select count(*) > 0 from proc where name = 'rtd_mode_spend')
+      and (select count(*) > 0 from proc where name = 'rtd_mode_state')),
+
   -- THE RELEASE NEWSLETTER. Both of its failures look like a working page: the
   -- profile checkbox removes itself on any error, and the home page email box
   -- answers a server error with a polite "try again". Asked of the table and the
   -- five functions, because a guest signup needs a different one from a tick.
-  (31, '121_newsletter',
+  (32, '121_newsletter',
       'the release newsletter list, the profile checkbox and the home page signup',
       'The newsletter checkbox quietly disappears from every profile, and the home page email box refuses every address with "Something went wrong". Nobody gets on the list.',
       (select count(*) > 0 from col where tbl = 'newsletter_subscribers' and name = 'unsub_token')

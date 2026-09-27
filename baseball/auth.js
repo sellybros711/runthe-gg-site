@@ -23,12 +23,13 @@
  * THE DISPLAY NAME IS NEVER SENT FROM HERE. rtd_submit_run() reads it out of
  * profiles for auth.uid(). Nothing in this file can put a name on a row.
  *
- * WHAT IT DELIBERATELY DOES NOT HAVE, against its two siblings: there is no
- * premium anything. Run The Diamond has no paid tier and no store, so the four
- * purchase functions in cfb/auth.js have no caller here. They are not stubbed
- * either: a function that answers "you own nothing" is a door one line from
- * being opened, and the day this game grows a tier it should grow the real
- * call rather than inherit a placeholder nobody re-read.
+ * PRO. Run The Diamond Pro removes the once-a-day limit on the six extra
+ * modes (supabase/121_baseball_pro.sql). Three calls, all real and none of
+ * them a placeholder: premiumProducts() is character for character what the
+ * college game asks, modeState() reads today's meter, and modeSpend() is the
+ * one write. Every one answers null on any failure, and null means "no
+ * opinion": the page falls back to the device and lets the run through,
+ * because every allowance on this site fails open.
  */
 (function () {
   'use strict';
@@ -265,10 +266,52 @@
     } catch (e) { return { error: (e && e.message) || 'that did not work' }; }
   }
 
+  /* WHAT THIS ACCOUNT HAS PAID FOR, from premium_products(). [] when signed
+     out or owning nothing, null when the question could not be asked, because
+     "owns nothing" and "could not tell" are different answers to a gate.
+     `force` skips the cache, which the walk back from Stripe needs: the grant
+     is written by the webhook and races the redirect. */
+  let premium = null, premiumFor = null;
+  async function premiumProducts(force) {
+    if (!sb || !session) return [];
+    const uid = session.user && session.user.id;
+    if (!force && premium && premiumFor === uid) return premium;
+    try {
+      const r = await sb.rpc('premium_products');
+      if (r && !r.error && Array.isArray(r.data)) {
+        premium = r.data; premiumFor = uid;
+        return premium;
+      }
+    } catch (e) {}
+    return null;
+  }
+
+  /* Today's meter: { signed_in, pro, day, used: [...], next_at }. null on any
+     failure, including a database that has not had 121 run. */
+  async function modeState() {
+    if (!sb || !session) return null;
+    try {
+      const r = await sb.rpc('rtd_mode_state');
+      if (r && !r.error && r.data && typeof r.data === 'object') return r.data;
+    } catch (e) {}
+    return null;
+  }
+
+  /* Starting a run in one of the six modes. { ok, pro, reason } or null. */
+  async function modeSpend(mode) {
+    if (!sb || !session) return null;
+    try {
+      const r = await sb.rpc('rtd_mode_spend', { p_mode: mode });
+      if (r && !r.error && r.data && typeof r.data === 'object') return r.data;
+    } catch (e) {}
+    return null;
+  }
+
   window.RTD_AUTH = {
     API_VERSION: 1,
     boot, state, onChange: (f) => { listeners.push(f); return () => {}; },
     signIn, signUp, signInGoogle, signOut,
     available, setName, claim, token, deleteAccount,
+    premiumProducts, modeState, modeSpend,
   };
 })();

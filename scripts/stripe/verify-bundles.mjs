@@ -28,7 +28,7 @@
  *    purchase over an optimisation. This is not hypothetical: it blocked the
  *    first live test, with a test-mode customer against a live key.
  */
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { BUNDLES } from '../../functions/api/stripe/_bundles.js';
 
 const root = new URL('../../', import.meta.url);
@@ -38,18 +38,29 @@ let failed = 0;
 const bad = (msg) => { failed++; console.error('FAIL  ' + msg); };
 const ok = (msg) => console.log('  ok  ' + msg);
 
-// 1. catalog products <-> SQL check constraint, both directions
-const sql = read('supabase/101_premium_bundles.sql');
-const ckMatch = sql.match(/premium_unlocks_product_ck\s*\n?\s*check\s*\(product in \(([^)]*)\)\)/);
+// 1. catalog products <-> SQL check constraint, both directions.
+// THE LAST DEFINITION WINS, because a later migration drops and re-adds the
+// constraint to add a product (121 did, for rtd_premium). So every migration is
+// read in NUMERIC order (a text sort puts 99_ after 121_) and the final match is
+// the one the database holds. Reading 101 alone would compare the catalog to a
+// list that no longer exists.
+const migs = readdirSync(new URL('supabase/', root))
+  .filter((f) => /^\d+_.*\.sql$/.test(f))
+  .sort((a, b) => parseInt(a, 10) - parseInt(b, 10) || a.localeCompare(b));
+let ckMatch = null, ckFile = null;
+for (const f of migs) {
+  const all = [...read('supabase/' + f).matchAll(/premium_unlocks_product_ck\s*\n?\s*check\s*\(product in \(([^)]*)\)\)/g)];
+  if (all.length) { ckMatch = all[all.length - 1]; ckFile = f; }
+}
 if (!ckMatch) {
-  bad('could not find premium_unlocks_product_ck in supabase/101_premium_bundles.sql');
+  bad('could not find premium_unlocks_product_ck in any migration');
 } else {
   const allowed = new Set([...ckMatch[1].matchAll(/'([^']+)'/g)].map((m) => m[1]));
   const granted = new Set(Object.values(BUNDLES).flatMap((b) => b.grants.map((g) => g.product)));
   for (const p of granted) if (!allowed.has(p)) bad(`catalog grants '${p}' but the check constraint rejects it`);
   for (const p of allowed) if (!granted.has(p)) bad(`constraint allows '${p}' but no bundle grants it`);
   if (![...granted].some((p) => !allowed.has(p)) && ![...allowed].some((p) => !granted.has(p))) {
-    ok(`products agree with the constraint: ${[...allowed].sort().join(', ')}`);
+    ok(`products agree with the constraint in ${ckFile}: ${[...allowed].sort().join(', ')}`);
   }
 }
 
