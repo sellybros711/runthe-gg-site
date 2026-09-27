@@ -497,12 +497,32 @@ body:has(#s-intro.on) header .lockup{visibility:hidden}
 .pk-title{font-family:var(--fd);font-size:20px;text-transform:uppercase;letter-spacing:.02em}
 .pk-count{font-family:var(--fn);font-size:11px;font-weight:800;letter-spacing:.08em;color:var(--dim)}
 .pk-sub{font-size:12.5px;color:var(--dim);margin:2px 0 10px}
+.pk-next{display:flex;gap:12px;align-items:center;padding:10px;margin:0 0 12px;border-radius:12px;
+  border:1.5px solid var(--gold);background:rgba(184,134,11,.08)}
+.pk-next .pk-view{flex:0 0 120px;width:120px;border-radius:8px;overflow:hidden;filter:saturate(.55) brightness(.85)}
+.pk-next-b{display:flex;flex-direction:column;gap:3px;min-width:0;flex:1}
+.pk-next-e{font-family:var(--fn);font-size:9.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--gold)}
+.pk-next-b b{font-family:var(--fd);font-size:20px;line-height:1.05;color:var(--ink)}
+.pk-next-b>span:not(.pk-next-e):not(.pk-bar){font-size:12px;color:var(--dim)}
+.pk-next .pk-bar{display:block;height:6px;border-radius:99px;background:rgba(var(--edge),.12);overflow:hidden;margin-top:3px}
+.pk-next .pk-bar i{display:block;height:100%;background:var(--gold);border-radius:99px}
 .pk-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
 @media (min-width:640px){.pk-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
 .pk-card{--rc:#8a8f98;position:relative;border-radius:12px;overflow:hidden;background:var(--panel);
   border:1.5px solid rgba(var(--edge),.12);box-shadow:0 2px 8px rgba(0,0,0,.08);display:flex;flex-direction:column}
 .pk-card.r-co{--rc:#5f9e55}.pk-card.r-ra{--rc:#3f7fd0}.pk-card.r-ep{--rc:#8a4fd0}
 .pk-card.r-le{--rc:#d9a02a}.pk-card.r-pr{--rc:#e0487a}.pk-card.r-st{--rc:#8a8f98}
+.pk-card.r-se{--rc:#1e8a8a}.pk-card.r-hi{--rc:#4a4a5a}
+.pk-card.locked.secret .pk-view{filter:brightness(.1) saturate(0)}
+.pk-card.inseason{border-color:var(--rc);box-shadow:0 0 0 1px var(--rc)}
+.pk-open{font-family:var(--fn);font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--rc)}
+.pk-group{margin-top:14px}
+.pk-gh{display:flex;align-items:baseline;justify-content:space-between;margin:0 0 7px;padding-bottom:4px;border-bottom:1px solid rgba(var(--edge),.1)}
+.pk-gh span{font-family:var(--fn);font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--ink)}
+.pk-gh i{font-style:normal;font-family:var(--fn);font-size:10.5px;font-weight:700;color:var(--dim)}
+.pk-now{display:flex;gap:12px;align-items:center;padding:10px;margin:0 0 10px;border-radius:12px;border:1px solid #1e8a8a;background:rgba(30,138,138,.08)}
+.pk-now .pk-view{flex:0 0 120px;width:120px;border-radius:8px;overflow:hidden}
+.pk-now .pk-next-e{color:#1e8a8a}
 .pk-card.on{border-color:var(--rc);box-shadow:0 0 0 2px var(--rc),0 6px 18px -6px rgba(0,0,0,.35)}
 /* The card shows the park's top half: the backdrop is the thing that differs, and
    the infield is the same infield in all thirteen. */
@@ -532,7 +552,7 @@ body:has(#s-intro.on) header .lockup{visibility:hidden}
 .newpark{--rc:#d9a02a;display:grid;grid-template-columns:minmax(0,1fr);border-radius:14px;overflow:hidden;
   margin:12px 0;border:2px solid var(--rc);background:var(--panel);box-shadow:0 8px 24px -10px rgba(0,0,0,.4);
   animation:optin .4s ease-out both}
-.newpark.r-co{--rc:#5f9e55}.newpark.r-ra{--rc:#3f7fd0}.newpark.r-ep{--rc:#8a4fd0}.newpark.r-le{--rc:#d9a02a}.newpark.r-pr{--rc:#e0487a}
+.newpark.r-co{--rc:#5f9e55}.newpark.r-ra{--rc:#3f7fd0}.newpark.r-ep{--rc:#8a4fd0}.newpark.r-le{--rc:#d9a02a}.newpark.r-pr{--rc:#e0487a}.newpark.r-se{--rc:#1e8a8a}.newpark.r-hi{--rc:#6a6a7a}
 .np-body{padding:10px 12px 12px}
 .np-eye{font-family:var(--fn);font-size:10px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--rc)}
 .np-name{font-family:var(--fd);font-size:24px;text-transform:uppercase;line-height:1.1}
@@ -1156,22 +1176,27 @@ body:has(#s-intro.on) header .lockup{visibility:hidden}
    They get their own row: they are not fielders, and a bullpen is how a real
    broadcast shows them anyway. */
 .staffline{display:flex;gap:7px;margin:8px 0 2px}
-.sl-arm{flex:1;min-width:0;display:flex;align-items:center;gap:7px;padding:7px 9px;
-  border-radius:10px;background:var(--panel);border:1px solid var(--line)}
+.sl-arm{flex:1 1 0;min-width:0;display:flex;flex-direction:column;align-items:stretch;gap:5px;
+  padding:7px 9px 8px;border-radius:10px;background:var(--panel);border:1px solid var(--line)}
 .sl-arm.filled{border-color:rgba(var(--edge),.16)}
+.sl-top{display:flex;align-items:center;justify-content:space-between;gap:5px;min-width:0}
 .sl-pos{flex:0 0 auto;font-family:var(--fn);font-size:9.5px;font-weight:800;
   letter-spacing:.04em;padding:3px 5px;border-radius:5px;color:#fff;
   text-shadow:0 1px 1px rgba(0,0,0,.35)}
-.sl-nm{font-family:var(--fp);font-size:13px;font-weight:700;flex:1;min-width:0;
-  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* The name gets the whole width and may take two lines rather than lose letters. */
+.sl-nm{font-family:var(--fp);font-size:14px;font-weight:700;line-height:1.15;min-width:0;
+  overflow-wrap:anywhere;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .sl-nm.open{color:var(--dim-2);font-weight:600;font-style:italic}
-.sl-yr{font-family:var(--fn);font-size:9.5px;color:var(--dim);font-weight:700;flex:0 0 auto}
+.sl-yr{display:inline-flex;align-items:center;gap:4px;font-family:var(--fn);font-size:9.5px;
+  color:var(--dim);font-weight:700;flex:0 1 auto;min-width:0;white-space:nowrap}
 @media (max-width:400px){
   .staffline{gap:5px}
-  .sl-arm{padding:6px 7px;gap:5px}
-  .sl-nm{font-size:12px}
-  .sl-yr{display:none}
+  .sl-arm{padding:6px 7px 7px}
+  .sl-nm{font-size:13px}
 }
+/* A third of a 360px phone holds the slot and a year, not the club code as well.
+   The name under it is what the strip is for; the club is on the draft tile. */
+@media (max-width:370px){.sl-yr .tc{display:none}}
 
 /* ─── results v2 ─── */
 .ro-hero{position:relative;text-align:center;margin:14px 0 12px;padding:22px 18px 20px;
@@ -1307,18 +1332,76 @@ body:has(#s-intro.on) header .lockup{visibility:hidden}
   font-size:9.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;padding:3px 8px;
   border-radius:99px;color:var(--dim);border:1px solid rgba(var(--edge),.18);background:var(--panel)}
 .hp-meter.pro{color:#1a1205;border-color:transparent;background:linear-gradient(180deg,#e2b24a,#c99526)}
+.hp-meter.free,.modecard .mc-sticker.free{color:var(--green);background:var(--panel);border:1px solid currentColor}
+.modecard .mc-back{margin-top:auto;padding-top:8px;font-size:11.5px;font-weight:700;color:var(--dim)}
+.mc-rule{margin:0 0 12px;padding:11px 13px;border-radius:12px;border:1px solid rgba(var(--edge),.14);
+  background:rgba(var(--edge),.03);font-size:13px;line-height:1.45;color:var(--ink)}
+.mc-rule p{margin:0}
+.mc-rule b{color:var(--ink)}
+.mc-rule.pro b{color:var(--gold)}
+.mc-rule button{margin-top:6px;background:none;border:0;padding:0;font:inherit;font-weight:800;color:var(--gold);
+  text-decoration:underline;text-underline-offset:2px;cursor:pointer;text-align:left}
 .modecard .mc-sticker.used{background:none;color:var(--dim);border:1px solid rgba(var(--edge),.2)}
 .pro-lead{font-size:14px;line-height:1.5;color:var(--ink);margin:2px 0 12px}
-.pro-list{list-style:none;margin:0 0 14px;padding:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px 12px}
-.pro-list li{font-size:13px;color:var(--ink);display:flex;align-items:center;gap:7px;min-width:0}
-.pro-list li i{flex:0 0 8px;height:8px;border-radius:50%;background:var(--c)}
+/* THE OFFER SHEET. A hero that says what Pro is, what it gives in pictures (the six
+   modes and the two parks), the price in a size a reader can find, then the button.
+   The button sits in a sticky foot so it is on screen whatever the sheet holds. */
+.pro-hero{position:relative;overflow:hidden;border-radius:16px;padding:16px 16px 14px;margin:0 0 12px;color:#fff6e0;
+  background:radial-gradient(120% 90% at 85% -10%,rgba(255,214,120,.38),transparent 55%),
+    radial-gradient(90% 80% at 0% 110%,rgba(46,125,50,.55),transparent 60%),linear-gradient(160deg,#1c2b20,#0f1812 70%)}
+.pro-hero:before{content:"";position:absolute;right:-26px;top:-26px;width:120px;height:120px;border-radius:50%;
+  border:2px dashed rgba(255,220,150,.22)}
+.pro-hero .ph-top{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.pro-badge{display:inline-flex;align-items:center;gap:6px;padding:4px 10px 4px 5px;border-radius:99px;
+  background:linear-gradient(180deg,#f0c35a,#c99526);color:#1a1205;font:800 11px/1 var(--fb,inherit);letter-spacing:.12em;text-transform:uppercase;
+  box-shadow:0 2px 10px -2px rgba(240,195,90,.6)}
+.pro-badge svg{width:18px;height:18px}
+.pro-hero h4{margin:0;font-family:var(--fd);font-weight:400;font-size:30px;line-height:1.02;letter-spacing:.01em;text-transform:uppercase}
+.pro-hero h4 em{font-style:normal;color:#f0c35a}
+.pro-hero .pro-lead{color:rgba(255,246,224,.86);font-size:13.5px;margin:8px 0 0}
+.pro-hero .pro-lead b{color:#fff}
+.pro-clock{display:flex;width:max-content;align-items:center;gap:6px;margin-top:10px;padding:5px 10px;border-radius:99px;
+  background:rgba(0,0,0,.32);border:1px solid rgba(255,220,150,.25);font-size:12px;font-weight:700;color:#ffe4a8}
+.pro-clock svg{width:14px;height:14px}
+.pro-sec{font-size:10.5px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);margin:14px 0 7px}
+.pro-list{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+.pro-list li{font-size:13px;font-weight:700;color:var(--ink);display:grid;grid-template-columns:30px minmax(0,1fr);
+  grid-template-rows:auto auto;column-gap:9px;align-items:center;min-width:0;padding:7px 9px;border-radius:11px;background:var(--panel);border:1px solid rgba(var(--edge),.12)}
+.pro-list li i{grid-row:1/3;width:30px;height:30px;border-radius:8px;display:grid;place-items:center;
+  background:color-mix(in srgb,var(--c) 16%,transparent);color:var(--c)}
+.pro-list li i svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .pro-list li span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.pro-list li em{margin-left:auto;flex:0 0 auto;font-style:normal;font-size:10.5px;font-weight:800;letter-spacing:.06em;
-  text-transform:uppercase;color:var(--dim-2)}
+.pro-list li em{font-style:normal;font-size:9.5px;line-height:1.3;font-weight:800;letter-spacing:.06em;
+  text-transform:uppercase;color:var(--green)}
+.pro-list li.used{border-style:dashed}
+.pro-list li.used i{filter:grayscale(1);opacity:.6}
 .pro-list li em.used{color:var(--red)}
-.pro-price{display:flex;align-items:baseline;gap:10px;margin:0 0 12px}
-.pro-price b{font-family:var(--fd);font-size:34px;font-weight:400;color:var(--ink);line-height:1}
-.pro-price span{font-size:13px;color:var(--dim)}
+.pro-vs{margin:0;border-radius:14px;overflow:hidden;border:1px solid rgba(var(--edge),.14)}
+.pro-vs .pv-row{display:grid;grid-template-columns:1fr 64px 84px;align-items:center;gap:6px;padding:8px 10px;font-size:12.5px;color:var(--ink)}
+.pro-vs .pv-row+.pv-row{border-top:1px solid rgba(var(--edge),.1)}
+.pro-vs .pv-head{background:rgba(var(--edge),.04);font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--dim)}
+.pro-vs .pv-row>:nth-child(2),.pro-vs .pv-row>:nth-child(3){text-align:center}
+.pro-vs .pv-head>:nth-child(3){color:var(--gold)}
+.pro-vs .pv-f{color:var(--dim);font-weight:700}
+.pro-vs .pv-p{font-weight:800;color:var(--green)}
+.pro-vs .pv-p svg{width:15px;height:15px;vertical-align:-3px;fill:none;stroke:currentColor;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}
+.pro-parks{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.pro-park{border-radius:12px;overflow:hidden;background:var(--panel);border:1px solid rgba(var(--edge),.12);position:relative}
+.pro-park .pk-view{border-bottom:1px solid rgba(var(--edge),.1)}
+.pro-park b{display:block;font-size:12.5px;padding:6px 8px 0;color:var(--ink)}
+.pro-park span{display:block;font-size:11px;padding:1px 8px 7px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pro-park i{position:absolute;top:6px;left:6px;font:800 9px/1 var(--fb,inherit);letter-spacing:.1em;text-transform:uppercase;
+  padding:3px 6px;border-radius:99px;background:linear-gradient(180deg,#f0c35a,#c99526);color:#1a1205}
+.pro-price{display:flex;align-items:center;gap:12px;margin:14px 0 0;padding:12px 14px;border-radius:14px;
+  background:linear-gradient(135deg,rgba(224,172,60,.16),rgba(224,172,60,.04));border:1px solid rgba(224,172,60,.4)}
+.pro-price b{font-family:var(--fd);font-size:40px;font-weight:400;color:var(--ink);line-height:1}
+.pro-price span{font-size:12.5px;color:var(--dim);line-height:1.35}
+.pro-price span strong{display:block;color:var(--ink);font-size:14px}
+.pro-cta{position:sticky;bottom:calc(-24px - env(safe-area-inset-bottom));margin:12px -16px 0;padding:10px 16px calc(12px + env(safe-area-inset-bottom));
+  background:linear-gradient(180deg,rgba(0,0,0,0),var(--bg) 22%);z-index:2}
+.pro-cta .btn.gold{font-size:17px;box-shadow:0 8px 22px -8px rgba(201,149,38,.75)}
+.pro-cta .pro-later{display:block;margin:8px auto 0;background:none;border:0;padding:4px 10px;font:inherit;font-size:13px;
+  font-weight:700;color:var(--dim);cursor:pointer}
 .btn.gold{background:linear-gradient(180deg,#e2b24a,#c99526);color:#1a1205;border-bottom-color:#6f4f0d}
 .pro-note{font-size:12px;color:var(--dim);margin:10px 0 0;line-height:1.45}
 .pro-err{font-size:12.5px;color:var(--red);margin:8px 0 0}
@@ -1363,6 +1446,8 @@ body:has(#s-intro.on) header .lockup{visibility:hidden}
 @media(min-width:600px){.sheet-inner{left:50%;transform:translateX(-50%);max-width:600px;border-radius:20px;
   bottom:auto;top:50%;animation:none}.sheet.on .sheet-inner{transform:translate(-50%,-50%)}}
 
+.btn.g-btn{gap:10px}
+.btn .g-ic{width:18px;height:18px;flex:0 0 18px}
 /* ─── the profile ─── */
 .pf-btn .pf-in-t{font-family:var(--fn);font-size:12px;font-weight:800;letter-spacing:.02em;white-space:nowrap}
 .hdr-btn.pf-btn.crested{border-color:transparent;overflow:hidden}
@@ -2653,11 +2738,11 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
   </div>
 </div>
 
-<script src="engine.js?v=33"></script>
-<script src="run.js?v=26"></script>
-<script src="achievements.js?v=10"></script>
-<script src="parks.js?v=4"></script>
-<script src="crest.js?v=1"></script>
+<script src="engine.js?v=34"></script>
+<script src="run.js?v=28"></script>
+<script src="achievements.js?v=11"></script>
+<script src="parks.js?v=8"></script>
+<script src="crest.js?v=2"></script>
 <script src="board.js?v=2"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="auth.js?v=3"></script>
@@ -2808,7 +2893,7 @@ function paintNewParks(){
   if(!window.RTD_PARKS||!lastNewParks||!lastNewParks.length)return;
   const id=lastNewParks[0];const p=RTD_PARKS.BY_ID[id];
   el.innerHTML='<div class="newpark r-'+PARK_RARITY[p.rarity]+'">'+parkPreview(id,'np')+
-    '<div class="np-body"><div class="np-eye">New ballpark unlocked</div><div class="np-name">'+esc(p.name)+'</div>'+
+    '<div class="np-body"><div class="np-eye">'+(p.hidden?'Hidden ballpark found':p.unlock.seasonal?'Seasonal ballpark unlocked':p.tier?'Moved up to '+esc(p.tier):'New ballpark unlocked')+'</div><div class="np-name">'+esc(p.name)+'</div>'+
     '<div class="np-nod">'+esc(p.nod)+(lastNewParks.length>1?' And '+(lastNewParks.length-1)+' more in your profile.':'')+'</div>'+
     '<button type="button" class="btn sm" id="b-np-use">Play here next</button></div></div>';
   $('b-np-use').addEventListener('click',()=>{setPark(id);$('b-np-use').textContent='In use';$('b-np-use').disabled=true;});
@@ -2887,6 +2972,11 @@ function renderTrophy(){
    unavailable, signed out, signed in with no name yet, and signed in. Built
    rather than written into the markup, because markup for five states is
    markup for whichever one somebody last looked at. */
+const G_ICON='<svg class="g-ic" viewBox="0 0 24 24" aria-hidden="true">'+
+  '<path fill="#4285F4" d="M23 12.3c0-.8-.1-1.6-.2-2.3H12v4.5h6.2a5.3 5.3 0 01-2.3 3.5v2.9h3.7c2.2-2 3.4-5 3.4-8.6z"/>'+
+  '<path fill="#34A853" d="M12 24c3.1 0 5.7-1 7.6-2.8l-3.7-2.9c-1 .7-2.3 1.1-3.9 1.1-3 0-5.5-2-6.4-4.7H1.8v3C3.7 21.4 7.6 24 12 24z"/>'+
+  '<path fill="#FBBC05" d="M5.6 14.7a7.2 7.2 0 010-4.6v-3H1.8a12 12 0 000 10.6l3.8-3z"/>'+
+  '<path fill="#EA4335" d="M12 4.8c1.7 0 3.2.6 4.4 1.7l3.3-3.3C17.7 1.2 15.1 0 12 0 7.6 0 3.7 2.6 1.8 6.1l3.8 3C6.5 6.7 9 4.8 12 4.8z"/></svg>';
 function renderAccount(target){
   const el=target||$('trophy-acct');if(!el)return;
   const again=()=>{renderTrophy();pfRepaint();paintAvatar();};
@@ -2914,7 +3004,10 @@ function renderAccount(target){
       A.signUp(email.value,pass.value,name.trim()).then(res=>{busy=false;
         if(res&&res.error)err(res.error);else err('Check your email to confirm the account.',true);});
     });
-    btn(row(),'Sign in with Google','ghost',()=>A.signInGoogle());
+    /* The Google G in Google's own four colors, as the other games draw it, because a
+       sign-in button with the brand's mark on it is the one people recognise and trust. */
+    const g=btn(row(),'','ghost g-btn',()=>A.signInGoogle());
+    g.innerHTML=G_ICON+'<span>Sign in with Google</span>';
     return;
   }
   if(!st.name){
@@ -2962,7 +3055,8 @@ function parkInfo(){
   const pro=(()=>{try{return isPro();}catch(_){return false;}})();
   const key=(uid||'')+'|'+rows.length+'|'+pro;
   if(parkMemo&&parkMemo.key===key)return parkMemo.info;
-  const info={signed:!!uid,pro,badges:ACH?ACH.evaluate(rows).earned.length:0,ctx:ACH?ACH.buildCtx(rows):{n:0,best:{},modeRuns:{}}};
+  const info={signed:!!uid,pro,rows,badges:ACH?ACH.evaluate(rows).earned.length:0,ctx:ACH?ACH.buildCtx(rows):{n:0,best:{},modeRuns:{}}};
+  info.legacy=parkLegacy(rows);
   parkMemo={key,info};
   return info;
 }
@@ -2970,16 +3064,32 @@ function parkInfo(){
    results screen can tell which parks one season opened. */
 function parkInfoFor(rows){
   const pro=(()=>{try{return isPro();}catch(_){return false;}})();
-  return {signed:true,pro,badges:ACH.evaluate(rows).earned.length,ctx:ACH.buildCtx(rows)};
+  return {signed:true,pro,rows,badges:ACH.evaluate(rows).earned.length,ctx:ACH.buildCtx(rows),legacy:parkLegacy(rows)};
+}
+/* The rows filed before the road to the Show, which is all the old park ladder may
+   read (parks.js, LEGACY). Nothing from before means the new ladder alone. */
+function parkLegacy(rows){
+  if(!ACH)return null;
+  const old=rows.filter(r=>r&&Number(r.ts)<RTD_PARKS.LEGACY_UNTIL);
+  if(!old.length)return null;
+  return {badges:ACH.evaluate(old).earned.length,ctx:ACH.buildCtx(old)};
 }
 function parkPrefs(){try{return JSON.parse(localStorage.getItem(PARK_KEY))||{};}catch(_){return {};}}
+/* Everybody starts on the sandlot. The fallback is the best park the account HAS
+   on the road to the Show rather than the first rung, so an account with forty
+   seasons that never chose a park plays where it has climbed to. */
+function bestRoadPark(){
+  const info=parkInfo();let best=RTD_PARKS.START;
+  for(const p of RTD_PARKS.PARKS){if(p.group!=='road')continue;if(RTD_PARKS.status(p,info).ok)best=p.id;}
+  return best;
+}
 function currentPark(){
   if(!window.RTD_PARKS||!ACH)return 'home';
-  const uid=acctId();if(!uid)return 'home';
+  const uid=acctId();if(!uid)return RTD_PARKS.START;
   /* The server's answer first; this device's old choice only until it lands. */
   const want=myProf().park||parkPrefs()[uid];const p=want&&RTD_PARKS.BY_ID[want];
-  if(!p)return 'home';
-  return RTD_PARKS.status(p,parkInfo()).ok?want:'home';
+  if(!p)return bestRoadPark();
+  return RTD_PARKS.status(p,parkInfo()).ok?want:bestRoadPark();
 }
 function setPark(id){
   const uid=acctId();if(!uid||!RTD_PARKS.BY_ID[id])return;
@@ -2994,29 +3104,55 @@ function refreshParkedFields(){
   if(RUN){const f=$('field');if(f&&$('s-draft').classList.contains('on'))drawField(f,true);
     const q=$('sq-field');if(q&&$('s-squad').classList.contains('on'))drawField(q,false);}
 }
-const PARK_RARITY={Starter:'st',Common:'co',Rare:'ra',Epic:'ep',Legendary:'le',Pro:'pr'};
+const PARK_RARITY={Starter:'st',Common:'co',Rare:'ra',Epic:'ep',Legendary:'le',Pro:'pr',Seasonal:'se',Hidden:'hi'};
 function parkPreview(id,sfx){
   return '<div class="pk-view">'+RTD_PARKS.markings(id,sfx,RTD_PARKS.SKY)+'</div>';
+}
+const MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+function parkCard(p,info,cur){
+  const st=RTD_PARKS.status(p,info);const on=p.id===cur;
+  /* A HIDDEN PARK KEEPS ITS SECRET until it opens: no name, no rule, a dark preview
+     and the hint. Once earned it reads like any other park. */
+  const secret=p.hidden&&!st.ok;
+  const w=p.unlock.seasonal,open=w&&RTD_PARKS.seasonOpen(p);
+  const foot=on?'<span class="pk-on">In use</span>'
+    :st.ok?'<button type="button" class="pk-use" data-park="'+p.id+'">Use this park</button>'
+    :secret?'<span class="pk-need"><svg viewBox="0 0 24 24" aria-hidden="true">'+BDG_LOCK+'</svg>'+esc(st.guest?st.label:p.unlock.hint)+'</span>'
+    :w?'<span class="pk-need"><svg viewBox="0 0 24 24" aria-hidden="true">'+BDG_LOCK+'</svg>'+esc(st.guest?st.label:'Play a season '+RTD_PARKS.winLabel(w))+'</span>'+
+       (open?'<span class="pk-open">Open now until '+MON[w[2]-1]+' '+w[3]+'</span>':'')
+    :'<span class="pk-need"><svg viewBox="0 0 24 24" aria-hidden="true">'+BDG_LOCK+'</svg>'+esc(st.label)+'</span>'+
+      (st.of>1?'<span class="pk-bar"><i style="width:'+Math.round(st.have/st.of*100)+'%"></i></span><span class="pk-prog">'+st.have+' / '+st.of+'</span>':'');
+  const rar=p.tier?p.tier:p.special?p.rarity+' · Special':p.rarity;
+  return '<div class="pk-card r-'+PARK_RARITY[p.rarity]+(on?' on':'')+(st.ok?'':' locked')+(secret?' secret':'')+(p.special?' special':'')+(open&&!st.ok?' inseason':'')+'">'+
+    parkPreview(p.id,'pv')+
+    '<div class="pk-body"><span class="pk-rar">'+esc(secret?'Hidden':rar)+'</span>'+
+    '<div class="pk-name">'+esc(secret?'Hidden park':p.name)+'</div><div class="pk-nod">'+esc(secret?'Its challenge is a secret.':p.nod)+'</div>'+
+    '<div class="pk-foot">'+foot+'</div></div></div>';
 }
 function renderParks(target){
   const el=target||$('pf-parks');if(!el)return;
   if(!window.RTD_PARKS){el.innerHTML='';return;}
   const info=parkInfo();const cur=currentPark();
   const got=RTD_PARKS.PARKS.filter(p=>RTD_PARKS.status(p,info).ok).length;
+  const now=RTD_PARKS.PARKS.filter(p=>RTD_PARKS.seasonOpen(p)&&!RTD_PARKS.status(p,info).ok);
   el.innerHTML='<div class="pk-hd"><span class="pk-title">Ballparks</span><span class="pk-count">'+got+' of '+RTD_PARKS.PARKS.length+'</span></div>'+
-    '<p class="pk-sub">Your park is the backdrop every draft is played on. Earn more by playing.</p>'+
-    '<div class="pk-grid">'+RTD_PARKS.PARKS.map(p=>{
-      const st=RTD_PARKS.status(p,info);const on=p.id===cur;
-      const foot=on?'<span class="pk-on">In use</span>'
-        :st.ok?'<button type="button" class="pk-use" data-park="'+p.id+'">Use this park</button>'
-        :'<span class="pk-need"><svg viewBox="0 0 24 24" aria-hidden="true">'+BDG_LOCK+'</svg>'+esc(st.label)+'</span>'+
-          (st.of>1?'<span class="pk-bar"><i style="width:'+Math.round(st.have/st.of*100)+'%"></i></span><span class="pk-prog">'+st.have+' / '+st.of+'</span>':'');
-      return '<div class="pk-card r-'+PARK_RARITY[p.rarity]+(on?' on':'')+(st.ok?'':' locked')+'">'+
-        parkPreview(p.id,'pv')+
-        '<div class="pk-body"><span class="pk-rar">'+esc(p.rarity)+'</span>'+
-        '<div class="pk-name">'+esc(p.name)+'</div><div class="pk-nod">'+esc(p.nod)+'</div>'+
-        '<div class="pk-foot">'+foot+'</div></div></div>';
-    }).join('')+'</div>';
+    '<p class="pk-sub">Your park is the backdrop every draft is played on. Start on the sandlot and climb to the Show. Seasonal parks open a few days a year. Some parks are hidden.</p>'+
+    /* A SEASONAL PARK THAT IS OPEN RIGHT NOW is the most urgent thing on the shelf,
+       because missing the window means waiting a year. */
+    now.map(p=>'<div class="pk-now">'+parkPreview(p.id,'sn')+'<div class="pk-next-b"><span class="pk-next-e">Open now</span><b>'+esc(p.name)+'</b>'+
+      '<span>Finish a season by '+MON[p.unlock.seasonal[2]-1]+' '+p.unlock.seasonal[3]+' and it is yours for good.</span></div></div>').join('')+
+    /* THE ONE THING TO PLAY TOWARD. The track hands parks out one at a time over
+       hundreds of seasons, so the shelf leads with the next one and how far off it is. */
+    (()=>{const nx=RTD_PARKS.nextOnTrack&&RTD_PARKS.nextOnTrack(info);if(!nx)return '';
+      return '<div class="pk-next">'+parkPreview(nx.park.id,'nx')+'<div class="pk-next-b"><span class="pk-next-e">Next ballpark'+(nx.park.tier?' · '+esc(nx.park.tier):'')+'</span>'+
+        '<b>'+esc(nx.park.name)+'</b><span>'+nx.left+' more '+(nx.left===1?'season':'seasons')+' to go</span>'+
+        '<span class="pk-bar"><i style="width:'+Math.round(nx.have/nx.of*100)+'%"></i></span></div></div>';})()+
+    RTD_PARKS.GROUPS.map(([g,label])=>{
+      const ps=RTD_PARKS.PARKS.filter(p=>p.group===g);if(!ps.length)return '';
+      const have=ps.filter(p=>RTD_PARKS.status(p,info).ok).length;
+      return '<div class="pk-group"><div class="pk-gh"><span>'+esc(label)+'</span><i>'+have+' of '+ps.length+'</i></div>'+
+        '<div class="pk-grid">'+ps.map(p=>parkCard(p,info,cur)).join('')+'</div></div>';
+    }).join('');
   el.querySelectorAll('.pk-use').forEach(b=>b.addEventListener('click',()=>{setPark(b.dataset.park);renderParks(el);}));
 }
 
@@ -3472,6 +3608,7 @@ const CHEM_TYPES=[
   {type:'battery',  label:'Battery',       color:'#1a5276', note:'A catcher and a pitcher who played together'},
   {type:'dp_combo', label:'DP combo',      color:'#6a4c93', note:'A second baseman and a shortstop who played together'},
   {type:'teammates',label:'Teammates',     color:'#1f7a8c', note:'Played together, drafted from other seasons'},
+  {type:'college',  label:'College',       color:'#a0522d', note:'Went to the same college'},
   {type:'franchise',label:'Franchise',     color:'#2e7d32', note:'Same club, never together'},
   {type:'era',      label:'Same era',      color:'#8a7e6e', note:'Contemporaries, a faint bond'},
 ];
@@ -3980,9 +4117,12 @@ function drawStaffLine(el){
     const p=bySlot[i];
     const ch=PICK&&PICK.choices.find(c=>c.slotIdx===i);
     return '<div class="sl-arm'+(p?' filled':'')+(ch?' target':'')+(ch&&ch.natural?' natural':'')+'" data-i="'+i+'">'+
-      '<span class="sl-pos" style="'+posPaint(slots[i])+'">'+esc(slots[i])+'</span>'+
-      (p?'<span class="sl-nm">'+esc(lastName(p.n))+'</span>'+
-          '<span class="sl-yr">'+tcPlate(p.t,p.s)+' '+p.s+'</span>'
+      /* TWO ROWS, the name on its own. On one row the slot, the club plate and the
+         year took every pixel a third of a phone has, and the name, which is the only
+         thing a reader wants off this strip, was cut to one letter. */
+      '<span class="sl-top"><span class="sl-pos" style="'+posPaint(slots[i])+'">'+esc(slots[i])+'</span>'+
+        (p?'<span class="sl-yr">'+tcPlate(p.t,p.s)+' '+p.s+'</span>':'')+'</span>'+
+      (p?'<span class="sl-nm">'+esc(lastName(p.n))+'</span>'
         :'<span class="sl-nm open">Open</span>')+
       '</div>';
   }).join('');
@@ -4322,6 +4462,11 @@ async function boot(){
       const cres=await fetch('data/chemistry.json?v=1');
       if(cres.ok) E.setCuratedChemistry(await cres.json());
     }catch(_){}
+    // Where each man went to college, for the college link. Non-fatal the same way.
+    try{
+      const col=await fetch('data/colleges.json?v=1');
+      if(col.ok) E.setColleges(await col.json());
+    }catch(_){}
     DATA=R.indexData(players);
     const hasPositions=players.some(p=>p.r==='b'&&p.ep&&p.ep.length>0);
     if(hasPositions) E.setPositionsAvailable(true);
@@ -4432,22 +4577,28 @@ const MODE_CARDS=[
   {id:'div',tile:'Division Draft',line:'The clubs that really shared a division.',mode:'division',tint:'var(--gold)',cls:'mc-div',title:'Division Draft',
    icon:'<path d="M4 4h16"/><path d="M4 4v16"/><path d="M8 8h8v4H8z"/><path d="M8 16h8"/>',
    text:'Pick a division and draft only from the clubs that were in it, 1994 to today.',
-   sticker:'New'},
+  },
   {id:'cap',tile:'Cap Survivor',line:'Contracts inflate. Stay under or cut.',mode:'capsurvivor',tint:'var(--red)',cls:'mc-cap',title:'Salary Cap Survivor',
    icon:'<path d="M12 2.6v18.8"/><path d="M16.6 6.4H9.8a2.9 2.9 0 0 0 0 5.8h4.4a2.9 2.9 0 0 1 0 5.8H6.8"/>',
    text:'Contracts inflate as the season runs. Stay under the cap or cut somebody.',
-   sticker:'New'},
+  },
   {id:'staff',tile:'Pitching Staff',line:'Twelve arms. Lowest ERA wins.',mode:'staff',tint:'var(--purple)',cls:'mc-staff',title:'All-Time Pitching Staff',
    icon:'<path d="M12 2.8a9.2 9.2 0 1 0 0 18.4 9.2 9.2 0 0 0 0-18.4Z"/><path d="M6.2 5.6c3.4 3 3.4 9.8 0 12.8"/><path d="M17.8 5.6c-3.4 3-3.4 9.8 0 12.8"/>',
    text:'Draft a five-man rotation and a bullpen. Your lineup is league average.',
-   sticker:'New'},
+  },
   {id:'trade',tile:'Trade Machine',line:'A roster handed to you. Deal your way up.',mode:'trade',tint:'var(--orange)',cls:'mc-trade',title:'The Trade Machine',
    icon:'<path d="M4.4 9.4V8.2a3.2 3.2 0 0 1 3.2-3.2h9.6V2.2l4.4 3.9-4.4 3.9V7.4H7.6a.8.8 0 0 0-.8.8v1.2z"/><path opacity=".55" d="M19.6 14.6v1.2a3.2 3.2 0 0 1-3.2 3.2H6.8v2.8l-4.4-3.9 4.4-3.9v2.6h9.6a.8.8 0 0 0 .8-.8v-1.2z"/>',
    text:'You get a roster you did not pick. Make trades before the deadline.',
-   sticker:'New'},
+  },
 ];
 function openModes(){
-  $('modes-in').innerHTML=
+  /* THE RULE IS SAID BEFORE THE FIRST PRESS. It used to be said only by the
+     refusal, so a player learned one free draft a day by losing it. */
+  const rule=isPro()?'<p class="mc-rule pro"><b>Pro:</b> every mode, as often as you like.</p>'
+    :'<div class="mc-rule"><p><b>One free draft of each mode a day.</b> '+
+      (untilReset()?'New ones in '+untilReset()+'. ':'')+'Classic and the daily never count.</p>'+
+      '<button type="button" id="b-mc-pro">Go Pro for '+PRO_PRICE+PRO_TERM+' to play without limits</button></div>';
+  $('modes-in').innerHTML=rule+
     '<div class="modecards mc-grid">'+
     MODE_CARDS.map(m=>
       '<button class="modecard '+m.cls+(m.soon?' mc-soon':'')+'" data-mode="'+m.id+'"'+
@@ -4455,10 +4606,12 @@ function openModes(){
         (m.soon?'<span class="mc-sticker soon">Soon</span>'
               :isPro()?'<span class="mc-sticker">Unlimited</span>'
               :modeUsed(CARD_METER[m.id])?'<span class="mc-sticker used">Played today</span>'
-              :(m.sticker?'<span class="mc-sticker">'+esc(m.sticker)+'</span>':''))+
+              :'<span class="mc-sticker free">1 free today</span>')+
         '<div class="mc-head"><div class="mc-icon"><svg viewBox="0 0 24 24">'+m.icon+
         '</svg></div><div class="mc-title">'+esc(m.title)+'</div>'+(m.soon?'':ARROW)+'</div>'+
-        '<p>'+esc(m.text)+'</p></button>').join('')+
+        '<p>'+esc(m.text)+'</p>'+
+        (!m.soon&&modeUsed(CARD_METER[m.id])&&untilReset()?'<p class="mc-back">Free again in '+untilReset()+'</p>':'')+
+        '</button>').join('')+
     '</div>'+
     '<div class="xpromo"><p class="xp-h">More games like this one</p><div class="modecards mc-grid">'+
       '<a class="modecard" href="/football/">'+
@@ -4472,6 +4625,7 @@ function openModes(){
         '</div><div class="mc-title">Perfect College Season</div>'+ARROW+'</div>'+
         '<p>College football, 2005 to 2025. Six players, twelve games.</p></a>'+
     '</div></div>';
+  const mp=$('b-mc-pro');if(mp)mp.onclick=()=>{closeSheet('sheet-modes');ga('pro_opened',{from:'modes'});openPro(null);};
   $('modes-in').querySelectorAll('[data-mode]').forEach(btn=>{
     btn.addEventListener('click',()=>{closeSheet('sheet-modes');pickMode(btn.dataset.mode);});
   });
@@ -4525,6 +4679,7 @@ function pickMode(id){
  * THE PRICE IS WRITTEN ONCE, here. The amount charged lives in Stripe (the Price
  * behind STRIPE_PRICE_RTD_PRO), so a change there has to be matched on this line. */
 const PRO_PRICE='$14.99';
+const ICO_PROBALL='<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="#fff8e8" stroke="#1a1205" stroke-width="1.4"/><path d="M7.2 4.6c2.6 2.2 2.6 12.6 0 14.8M16.8 4.6c-2.6 2.2-2.6 12.6 0 14.8" fill="none" stroke="#c0392b" stroke-width="1.6" stroke-dasharray="1.6 1.4"/></svg>';
 /* Said beside every price, because a price with no term on a subscription is a
    price that reads as once. */
 const PRO_TERM=' a year';
@@ -4635,7 +4790,7 @@ function paintProState(){
       /* The offer and nothing before it, the owner's call. The daily rule is said
          where it bites: the Pro sheet and the mode tiles' Played today chip. */
       line.innerHTML='<button type="button" id="b-hp-pro">Go Pro for '+
-        PRO_PRICE+PRO_TERM+'</button> to play without limits.';
+        PRO_PRICE+PRO_TERM+'</button> to play without limits. Free: one draft of each mode a day.';
       const b=$('b-hp-pro');if(b)b.onclick=()=>{ga('pro_opened',{from:'home'});openPro(null);};
     }
   }
@@ -4647,7 +4802,7 @@ function paintProState(){
 function meterChip(m){
   if(isPro())return '<i class="hp-meter pro">Unlimited</i>';
   if(modeUsed(m))return '<i class="hp-meter">Played today</i>';
-  return '';
+  return '<i class="hp-meter free">1 free today</i>';
 }
 
 /* THE SHEET. Opened three ways: a mode already played today (`m` names it), the
@@ -4675,24 +4830,50 @@ function proSheet(m,fresh){
   $('pro-title').textContent=m?('You played today\'s '+modeLabel(m)):'Run The Diamond Pro';
   const back=untilReset();
   const lead=m
-    ?'Every mode gets one free play a day. '+esc(modeLabel(m))+' comes back at midnight Eastern'+
-      (back?', in <b>'+back+'</b>':'')+'. Or play it now with Pro.'
+    ?'<b>'+esc(modeLabel(m))+'</b> comes back free at midnight Eastern. Or play it now with Pro.'+
+      (back?'<span class="pro-clock"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Back in '+back+'</span>':'')
     :'Every mode gets one free play a day. Pro takes the limit off.';
-  const list=MODE_CARDS.filter(c=>!c.soon).map(c=>{
+  const cards=MODE_CARDS.filter(c=>!c.soon);
+  const list=cards.map(c=>{
     const mm=CARD_METER[c.id];const used=modeUsed(mm);
-    return '<li style="--c:'+c.tint+'"><i></i><span>'+esc(c.tile||c.title)+'</span>'+
-      '<em'+(used?' class="used"':'')+'>'+(used?'Played':'Free')+'</em></li>';
+    return '<li style="--c:'+c.tint+'"'+(used?' class="used"':'')+'><i><svg viewBox="0 0 24 24" aria-hidden="true">'+c.icon+'</svg></i>'+
+      '<span>'+esc(c.tile||c.title)+'</span><em'+(used?' class="used"':'')+'>'+(used?'Played today':'1 free today')+'</em></li>';
   }).join('');
+  const left=cards.filter(c=>!modeUsed(CARD_METER[c.id])).length;
+  /* The per month figure is ARITHMETIC on the price, never written out, so a new
+     price cannot leave the sheet promising the old one. */
+  const yr=parseFloat(String(PRO_PRICE).replace(/[^0-9.]/g,''));
+  const month=yr>0?'$'+(Math.round(yr/12*100)/100).toFixed(2):'';
+  const tick='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
+  const P=window.RTD_PARKS;
+  const proParks=P?P.PARKS.filter(p=>p.unlock&&p.unlock.pro):[];
+  const parks=proParks.length?'<div class="pro-sec">The Pro ballparks</div><div class="pro-parks">'+
+    proParks.map(p=>'<div class="pro-park">'+parkPreview(p.id,'pro')+'<i>Pro</i><b>'+esc(p.name)+'</b><span>'+esc(p.nod)+'</span></div>').join('')+
+    '</div>':'';
   const signed=!!acctId();
-  box.innerHTML='<p class="pro-lead">'+lead+'</p>'+
+  box.innerHTML=
+    '<div class="pro-hero"><div class="ph-top"><span class="pro-badge">'+ICO_PROBALL+'Pro</span></div>'+
+      '<h4>Every mode.<br><em>Every day.</em></h4>'+
+      '<p class="pro-lead">'+lead+'</p>'+
+    '</div>'+
+    '<div class="pro-sec">Today on the free plan: '+left+' of '+cards.length+' left</div>'+
     '<ul class="pro-list">'+list+'</ul>'+
-    '<div class="pro-price"><b>'+PRO_PRICE+'</b><span>a year. Unlimited plays of all six'+(window.RTD_PARKS?', plus the two Pro ballparks':'')+'. Cancel anytime.</span></div>'+
-    '<button class="btn gold" id="b-pro-buy">'+(signed?'Get Pro for '+PRO_PRICE+PRO_TERM:'Sign in to get Pro')+'</button>'+
-    '<p class="pro-err" id="pro-err" hidden></p>'+
+    '<div class="pro-sec">What Pro adds</div>'+
+    '<div class="pro-vs">'+
+      '<div class="pv-row pv-head"><span></span><span>Free</span><span>Pro</span></div>'+
+      '<div class="pv-row"><span>Plays of each of the six modes</span><span class="pv-f">1 a day</span><span class="pv-p">Unlimited</span></div>'+
+      '<div class="pv-row"><span>Run it back after a bad draft</span><span class="pv-f">Tomorrow</span><span class="pv-p">Right now</span></div>'+
+      (proParks.length?'<div class="pv-row"><span>The Pro ballparks</span><span class="pv-f">Locked</span><span class="pv-p">'+tick+' Both</span></div>':'')+
+      '<div class="pv-row"><span>Classic and the daily</span><span class="pv-f">Free</span><span class="pv-p">'+tick+' Free</span></div>'+
+    '</div>'+
+    parks+
+    '<div class="pro-price"><b>'+PRO_PRICE+'</b><span><strong>a year'+(month?', about '+month+' a month':'')+'</strong>Unlimited plays of all six. Cancel anytime.</span></div>'+
     '<p class="pro-note">'+(signed
       ?'Billed yearly through Stripe. It renews until you cancel, which you can do from your account any time. Classic and the daily stay free for everybody.'
       :'Pro belongs to your RunThe.GG account, so it follows you to every device you sign in on.')+'</p>'+
-    '<div style="margin-top:10px"><button class="btn ghost" data-close-pro>Not now</button></div>';
+    '<div class="pro-cta"><button class="btn gold" id="b-pro-buy">'+(signed?'Get Pro for '+PRO_PRICE+PRO_TERM:'Sign in to get Pro')+'</button>'+
+      '<p class="pro-err" id="pro-err" hidden></p>'+
+      '<button type="button" class="pro-later" data-close-pro>Not now</button></div>';
   wirePro(box);
   $('b-pro-buy').onclick=e=>{
     if(!acctId()){closeSheet('sheet-pro');openTrophy();ga('pro_signin',{});return;}

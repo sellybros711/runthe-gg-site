@@ -682,6 +682,21 @@ function chemOpts(run) {
   // few, the pigeonhole alone guarantees repeats, so a franchise link is the mode
   // talking rather than a choice you made.
   if (run.franchise || run.division) suppress.push('franchise');
+  /* AND IN ONE FRANCHISE, TEAM-MATES TOO. Twelve men from one club almost always
+     overlapped somewhere in their careers, so the team-mates link fired on nearly
+     every pair: measured over 100 best-available drafts it carried 45 raw points,
+     took the roster to 14.1% chemistry against Classic's 8.5%, and turned the same
+     drafting into 105 wins and October 96% of the time against 89 and 59%. The mode
+     was paying for its own rule. With it off, the same drafts land at 7.7% and 90.7
+     wins, and a player chasing bonds still earns more (95.3) through the ones that
+     are choices: a reunion from one season, a battery, a double-play combo. Those
+     read the shared seasons directly, so they are untouched.
+
+     ERAS AND DIVISION TOO, the owner's call. Both ran hot the same way: a decade's
+     twelve or a division's four to six clubs overlap in their careers far more than
+     an open draft does, and best available reached 99.9 and 101.3 wins there against
+     Classic's 89.3, mostly through this link. */
+  if (run.franchise || run.era || run.division) suppress.push('teammates');
   return { suppress, staff: !!run.staff };
 }
 /* The chemistry of a run's roster (or any roster, under that run's rules). */

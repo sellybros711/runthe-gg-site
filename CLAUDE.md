@@ -14123,6 +14123,14 @@ load and is live on the NFL game, and teaching it a second sport makes every bas
 change a change to a shipped football file. **The cost is that a renderer fix has to be
 made twice.** The header of each copy says so.
 
+**The marks were redrawn to look struck rather than stuck on.** Every mark has depth now:
+a soft offset copy under it and ink lit from above (a gradient from the ink toward the
+field), both detail, so a board row at 30px keeps the flat mark it can read. The shapes
+carry the details that make them objects: V stitches on the ball, a paneled cap with its
+brim's underside, a whole field from above, a mitt with a laced web (a glove drawn as an
+open hand reads as a hand), bats with grip tape and a ball, a faceted star, a ring with a
+cut stone. The ids did not change, because `rtd_profiles` stores them.
+
 **The club ladder is One Franchise's**: play a club (its colors), reach October with it
 (the ring in its second color), win the World Series with it (its pattern). A club never
 played is drawn locked and a tap on it saves nothing; so is a mark whose badge is not
@@ -14994,8 +15002,8 @@ node baseball/check-parks.mjs --quick  no browser
 ```
 
 Asked for as custom ballparks a fan would love, unlocked to the profile by rewards
-and account tier. `baseball/parks.js` holds thirteen: the home park plus twelve
-nods to famous parks (ivy on brick, a tall green wall in left, fountains, a bay, a
+and account tier. `baseball/parks.js` holds twenty seven (see the ladder below); the
+big league ones are nods to famous parks (ivy on brick, a tall green wall in left, fountains, a bay, a
 white frieze, a dome, a cornfield). **None is named for the park it nods to**,
 and none carries a real sign or logo. Those belong to other people, so each is
 drawn from what makes the place itself and given a name of its own.
@@ -15004,10 +15012,69 @@ drawn from what makes the place itself and given a name of its own.
 second shelf. Every rule is a question about the account's own rows (badges
 earned, best wins, Octobers, titles, seasons played, modes played) or about
 `isPro()`. So a park is retroactive, follows the account, and cannot be lost by
-clearing site data. A guest drafts on the home park. The only stored thing is the
-CHOICE, `rtd_park_v1`, keyed by account on the device.
+clearing site data. A guest drafts on the sandlot. The only stored thing is the
+CHOICE, on the account (`rtd_profiles.park`) with `rtd_park_v1` as the device's copy.
 
-**A choice the account cannot back falls back to the home park**, never to a
+**THE ROAD TO THE SHOW, which is the owner's design.** Everybody starts on the sandlot and
+climbs the real ladder of fields one season count at a time:
+
+| rung | park | seasons |
+|---|---|---|
+| Sandlot | The Sandlot | from the start |
+| Little League | Little League | 3 |
+| High School | Varsity Field | 7 |
+| College | Campus Yard | 12 |
+| Single-A | Riverside Park | 20 |
+| Double-A | Depot Field | 30 |
+| Triple-A | Capital Park | 45 |
+| The Show | The Diamond (`home`) | 60 |
+
+The track goes on through the eight big league parks (80, 100, 125, 155, 190, 230, 280,
+350), so a park still arrives every so often for as long as somebody plays. Off the track:
+**four SEASONAL parks** (Opening Day Mar 20 to Apr 10, Fireworks Night Jul 1 to 7, Haunted
+Hollow Oct 24 to 31, Winter Classic Dec 18 to Jan 3), each earned for good by finishing one
+season inside its window on the EASTERN calendar; **two SPECIAL** (October in all seven
+modes, five World Series); **three HIDDEN** (a season finished between midnight and 4am
+Eastern, a 110-loss season, a 116-win season) whose card shows a dark preview and a hint
+until earned; and **two Pro**. The shelf is grouped, leads with any seasonal park open
+right now (missing it means a year's wait), then the next rung and how far off it is.
+
+**The winter window wraps the new year and the day is Eastern**, and both are asserted:
+a range test written `k >= a && k <= b` never opens Winter Classic, and one read in UTC
+puts 11pm on Oct 31 on Nov 1. Each was proved by reintroducing it.
+
+**With no choice made, an account plays on the highest rung it has reached**
+(`bestRoadPark`), not on the sandlot: forty seasons in, you play Double-A. A choice the
+account can no longer back falls back the same way.
+
+**`128_baseball_parks.sql` widens 127's check constraint** to the whole list. Without it a
+new park is chosen on the device and refused by the server in silence, so the next phone
+opens on another park. Preflight row 39 asks for it, and `check-parks` holds the SQL list
+to `PARKS` so the two cannot drift.
+
+**An account keeps every park the old ladder had already handed it**, the owner's call.
+Unlocks are derived, so "had" is `parks.js`'s `LEGACY` rules (badges, wins, a title, the
+old season counts) asked only of the rows filed before `LEGACY_UNTIL`, which the page
+builds as `info.legacy` in `parkLegacy`. A season played after that earns by the road
+alone, so a new account cannot use the old shortcuts. `check-parks` asserts both halves.
+
+**A lower-tier fence is low**, so those backdrops are authored with `lowTop(H)`, which puts
+the authoring wall top exactly where a wall H units tall lands (no shift). Fences are drawn
+as the wall face: boards (`PLANK_WALL`), chain link (`LINK_WALL`) or a row of sign panels
+that follow the wall's curve (`AD_WALL`, using `c.wt`/`c.wb`). A pattern with a fixed tile
+height cannot do the signs: the wall face moves with its height, so the stripes land on
+nothing. `P.front` hangs things on the wall top (bunting, jack-o-lanterns, snow) and
+`P.ground` draws on the dirt in ground coordinates (the rain delay's puddles).
+
+**The field has light and grain, shared by every park.** Grain patterns on the grass, the
+dirt and the track (a pattern, not feTurbulence, because the shelf draws thirteen
+previews); a lip where the skin meets the grass; worn batter's boxes; a grandstand shadow
+across home plate on a day park (`sun`) and a light pool under the towers at night
+(`lights`); and haze over the backdrop just above the wall on a day park. **A new layer's
+id can collide with a backdrop's own**: Neon Nights already defines `glow`, which is why
+the field's is `lglow`, and check-parks names the collision if it comes back.
+
+**A choice the account cannot back falls back to its highest rung**, never to a
 park it does not have: signed out, another account on the browser, or a Pro park
 after Pro lapses. `check-parks` drives all three through the page, and each was
 proved by making `currentPark()` return the stored choice unasked.
@@ -15588,6 +15655,7 @@ different seasons. Now:
 | battery | 0.07 | a catcher and a pitcher who shared a franchise-season, at C and a pitching slot |
 | dp_combo | 0.06 | a 2B and a SS who shared a franchise-season, at those slots |
 | **teammates** | **0.05** | **new**: shared any franchise-season in their careers |
+| college | 0.04 | went to the same college, any era |
 | franchise | 0.03 (was 0.04) | same club, never together |
 | era | 0.005 | same era |
 
@@ -15614,6 +15682,59 @@ bare shared shirt. The franchise tie came down to keep that order.
 badge sweep moved: eight excuses came off because the chemistry bot now
 reaches them, and `rank_one` and `one_franchise_8` went on, because the bot
 chases team-mates rather than stacking eight from one club.
+
+#### Two men from the same college share a link
+
+```
+python3 baseball/pipeline/build_colleges.py      writes baseball/data/colleges.json
+```
+
+Asked for as "college links". `data/colleges.json` is one entry a man (Lahman's
+CollegePlaying and Schools, joined to the pool's Baseball-Reference ids through People),
+built by the data workflow after the pool and read by `E.setColleges`. A man with several
+schools keeps all of them, and a shared one fires the `college` link, labelled "USC
+alums". It sits beside the team-mates link rather than instead of it, because two Trojans
+who later shared a clubhouse had both.
+
+**The source stops at 2014**, so 3,324 of the pool's 10,254 men have a school and anybody
+who played college ball later has none. It under-counts and never invents a pair. The
+builder refuses to write if under 15% of the pool matches, because a join that matched
+nobody is the one way this fails without an error. `SHORT` holds the names a box score
+uses (USC, LSU, Ole Miss) where trimming the full name would not.
+
+**Measured over 120 drafts a bot: it barely moves balance.** It lands on 8% of
+best-available rosters and 20% of rosters chasing chemistry, and moves wins by 0.1 to 0.2.
+`link_college` ("Old school") is a silver badge.
+
+#### And One Franchise stopped paying the team-mates link
+
+Reported by a player as chemistry feeling too strong in One Franchise. It was: twelve men
+from one club almost always overlapped somewhere in their careers, so the team-mates link
+fired on nearly every pair. Measured over 100 best-available drafts, One Franchise ran
+**14.1% chemistry against Classic's 8.5%**, and the same drafting won **105 games and
+reached October 96% of the time** against 89 and 59%.
+
+`chemOpts` suppresses `teammates` in One Franchise now, on the rule the franchise link was
+already suppressed under: a link the mode's own rule guarantees is not a choice. After it,
+best available lands at 7.7% and 90.7 wins, and a player chasing bonds still earns more
+(95.3) through the ones that are choices: a reunion from one season, a battery, a
+double-play combo. Those read the shared season directly and are untouched.
+`check-franchise.mjs` section 7 holds One Franchise within three points of Classic, off
+real drafts, and removing the line fails it.
+
+**Eras and Division stopped paying it too**, the owner's call. Over 100 best-available
+drafts each, before and after:
+
+| | before | after |
+|---|---|---|
+| Classic | 90.0 wins, 65% Octobers, 8.2% chemistry | unchanged |
+| Eras | 100.6, 91%, 12.8% | **82.5, 37%, 5.1%** |
+| Division | 102.4, 91%, 13.3% | **89.2, 58%, 8.0%** |
+
+Division lands on Classic. **Eras now sits under it**, because that mode already
+suppresses the era link, so it lost two links where the others lost one. Recorded
+rather than compensated; if Eras should come back up, the lever is the era link, not
+team-mates.
 
 ### An era card counts FRANCHISES, and says how deep the wheel is
 
@@ -16363,6 +16484,12 @@ widens the key to (user, mode, day) and nothing else: `rtd_mode_spend` counts th
 its insert wrote, so the key IS the rule. 121's header still describes the shared token
 because that is what it deployed. Preflight row 33 asks for the wider key, and the SQL
 test fails on a database that has 121 without 122.
+
+**THE RULE IS SAID BEFORE THE FIRST PRESS.** It used to be said only by the refusal, so a
+player learned "one a day" by losing their play. The modes sheet opens on a box stating it, with
+the reset time and the Pro link, and every unplayed mode wears `1 free today` (the old `New`
+sticker is gone to make room). A played one says `Played today` and when it comes back. The
+desktop tiles carry the same chip, and `check-pro` asserts all three.
 
 **IT IS THE ONE PRODUCT THAT BELONGS TO ONE GAME, and the rule it bends is kept.** The
 store section above says never to build a price or an unlock for one game, and the
