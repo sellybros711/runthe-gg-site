@@ -170,6 +170,16 @@ try {
     claim(await page.evaluate(() => !!document.querySelector('#pf-in .acct input[type=email]')),
       'and the profile is the sign-in form');
     claim(!SRV.calls.includes('careerMerge'), 'a guest sends nothing to the server');
+    const g = await page.evaluate(() => {
+      const b = [...document.querySelectorAll('#pf-in button')].find((x) => /Google/.test(x.textContent));
+      if (!b) return null;
+      const svg = b.querySelector('svg.g-ic'), r = svg && svg.getBoundingClientRect();
+      return { fills: svg ? [...svg.querySelectorAll('path')].map((p) => p.getAttribute('fill')) : [],
+        w: r ? Math.round(r.width) : 0, oneLine: b.getBoundingClientRect().height < 60 };
+    });
+    claim(g && g.fills.join() === '#4285F4,#34A853,#FBBC05,#EA4335' && g.w >= 16 && g.oneLine,
+      'the Google button carries the Google G in its four colors', JSON.stringify(g));
+    if (process.env.SHOT) await page.screenshot({ path: process.env.SHOT });
     await ctx.close();
   }
   {

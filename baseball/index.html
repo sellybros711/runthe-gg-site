@@ -1363,6 +1363,8 @@ body:has(#s-intro.on) header .lockup{visibility:hidden}
 @media(min-width:600px){.sheet-inner{left:50%;transform:translateX(-50%);max-width:600px;border-radius:20px;
   bottom:auto;top:50%;animation:none}.sheet.on .sheet-inner{transform:translate(-50%,-50%)}}
 
+.btn.g-btn{gap:10px}
+.btn .g-ic{width:18px;height:18px;flex:0 0 18px}
 /* ─── the profile ─── */
 .pf-btn .pf-in-t{font-family:var(--fn);font-size:12px;font-weight:800;letter-spacing:.02em;white-space:nowrap}
 .hdr-btn.pf-btn.crested{border-color:transparent;overflow:hidden}
@@ -2887,6 +2889,11 @@ function renderTrophy(){
    unavailable, signed out, signed in with no name yet, and signed in. Built
    rather than written into the markup, because markup for five states is
    markup for whichever one somebody last looked at. */
+const G_ICON='<svg class="g-ic" viewBox="0 0 24 24" aria-hidden="true">'+
+  '<path fill="#4285F4" d="M23 12.3c0-.8-.1-1.6-.2-2.3H12v4.5h6.2a5.3 5.3 0 01-2.3 3.5v2.9h3.7c2.2-2 3.4-5 3.4-8.6z"/>'+
+  '<path fill="#34A853" d="M12 24c3.1 0 5.7-1 7.6-2.8l-3.7-2.9c-1 .7-2.3 1.1-3.9 1.1-3 0-5.5-2-6.4-4.7H1.8v3C3.7 21.4 7.6 24 12 24z"/>'+
+  '<path fill="#FBBC05" d="M5.6 14.7a7.2 7.2 0 010-4.6v-3H1.8a12 12 0 000 10.6l3.8-3z"/>'+
+  '<path fill="#EA4335" d="M12 4.8c1.7 0 3.2.6 4.4 1.7l3.3-3.3C17.7 1.2 15.1 0 12 0 7.6 0 3.7 2.6 1.8 6.1l3.8 3C6.5 6.7 9 4.8 12 4.8z"/></svg>';
 function renderAccount(target){
   const el=target||$('trophy-acct');if(!el)return;
   const again=()=>{renderTrophy();pfRepaint();paintAvatar();};
@@ -2914,7 +2921,10 @@ function renderAccount(target){
       A.signUp(email.value,pass.value,name.trim()).then(res=>{busy=false;
         if(res&&res.error)err(res.error);else err('Check your email to confirm the account.',true);});
     });
-    btn(row(),'Sign in with Google','ghost',()=>A.signInGoogle());
+    /* The Google G in Google's own four colors, as the other games draw it, because a
+       sign-in button with the brand's mark on it is the one people recognise and trust. */
+    const g=btn(row(),'','ghost g-btn',()=>A.signInGoogle());
+    g.innerHTML=G_ICON+'<span>Sign in with Google</span>';
     return;
   }
   if(!st.name){
