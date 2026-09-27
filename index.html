@@ -93,15 +93,6 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
   .shell{max-width:var(--maxw);margin:0 auto;padding:0 28px;}
   @media (max-width:640px){ .shell{padding:0 16px;} }
 
-  /* ---------- announcement bar ---------- */
-  .ann{position:relative;z-index:51;background:linear-gradient(90deg,#0b2a1a,#0c2230 50%,#0b2a1a);
-    border-bottom:1px solid rgba(110,232,78,.18);font-size:12.5px;font-weight:600;color:#cfe8d6;}
-  .ann .shell{display:flex;align-items:center;justify-content:center;gap:10px;min-height:38px;padding-top:6px;padding-bottom:6px;text-align:center;}
-  .ann .tagnew{flex:0 0 auto;font-size:10px;font-weight:900;letter-spacing:.14em;text-transform:uppercase;
-    color:#06230c;background:var(--brand);border-radius:999px;padding:3px 8px;}
-  .ann a{color:#fff;font-weight:800;text-decoration:none;border-bottom:1px solid rgba(255,255,255,.35);}
-  .ann a:hover{border-color:#fff;}
-
   /* ---------- nav ---------- */
   .nav{position:sticky;top:0;z-index:50;background:rgba(6,10,19,.72);
     backdrop-filter:saturate(1.6) blur(16px);-webkit-backdrop-filter:saturate(1.6) blur(16px);
@@ -208,6 +199,29 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
   .screen.s-back .pbody{height:180px;display:flex;align-items:center;justify-content:flex-end;padding-right:40px;
     background:repeating-linear-gradient(90deg,rgba(255,255,255,.03) 0 26px,transparent 26px 52px);}
   .screen.s-back .pbody img{width:110px;height:110px;opacity:.55;transform:rotate(-5deg);}
+  /* The featured game rotates (script after the hero). --gc is the game's colour. */
+  .screen.s-main .sfoot a{background:var(--gc,var(--nfl));}
+  .screen.s-main.g-cfb{background:linear-gradient(160deg,#0c2a20,#0a1612 60%,#0e1626);}
+  .screen.s-main.g-golf{background:linear-gradient(160deg,#2a2410,#141008 60%,#0e1626);}
+  .screen.s-main.g-arcade{background:linear-gradient(160deg,#2a1a0c,#140d08 60%,#0e1626);}
+  .screen.s-main.g-pitch{background:linear-gradient(160deg,#0c2a2c,#08161a 60%,#0e1626);}
+  .screen .bar .live.calm{color:var(--gc);}
+  .screen .bar .live.calm:before{background:var(--gc);animation:none;}
+  .mbody{height:236px;position:relative;overflow:hidden;display:flex;align-items:flex-end;justify-content:center;}
+  .mbody.golf{gap:6px;padding:0 0 18px 150px;background:linear-gradient(#86c3e6,#bfe3f2 55%,#6aa35c 55%,#2b7a38);}
+  .mbody.golf .golfer-slot{width:74px;}
+  .mbody.pitch{align-items:center;background:repeating-linear-gradient(90deg,#1f7a3a 0 34px,#1a6c33 34px 68px);}
+  .mbody.pitch:before{content:"";position:absolute;left:50%;top:50%;width:120px;height:120px;margin:-60px 0 0 -60px;border:2px solid rgba(255,255,255,.5);border-radius:50%;}
+  .mbody.pitch:after{content:"";position:absolute;left:50%;top:0;bottom:0;border-left:2px solid rgba(255,255,255,.5);}
+  .mbody.pitch img{position:relative;z-index:1;width:110px;height:110px;filter:drop-shadow(0 10px 18px rgba(0,0,0,.5));}
+  .mbody.arcade{flex-wrap:wrap;align-content:flex-end;gap:10px;padding:18px 18px 22px;background:radial-gradient(circle at 50% 40%,rgba(255,138,61,.22),transparent 70%);}
+  .mbody.arcade img{width:84px;height:84px;flex:0 0 100%;object-fit:contain;margin-bottom:4px;}
+  .mbody.arcade span{font-size:12px;font-weight:800;padding:7px 11px;border-radius:9px;background:rgba(255,255,255,.07);border:1px solid rgba(255,138,61,.35);}
+  .screen.s-back.g-nfl{background:linear-gradient(160deg,#3a1418,#1c0c10);}
+  .screen.s-back.g-cfb{background:linear-gradient(160deg,#0f3a2a,#0b2218);}
+  .screen.s-back.g-golf{background:linear-gradient(160deg,#3a3014,#1c170a);}
+  .screen.s-back.g-arcade{background:linear-gradient(160deg,#3a2210,#1c1108);}
+  .screen.s-back.g-pitch{background:linear-gradient(160deg,#0f2f45,#0a1b2c);}
   .float-badge{position:absolute;z-index:4;display:flex;align-items:center;gap:12px;background:rgba(14,22,38,.86);
     backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid var(--line-2);border-radius:14px;padding:12px 16px;
     box-shadow:0 20px 40px -18px rgba(0,0,0,.9);}
@@ -225,8 +239,6 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
     .stage{height:430px;max-width:560px;width:100%;margin:0 auto;}
   }
   @media (max-width:640px){
-    .ann{font-size:12px;} .ann-more{display:none;} .ann .shell{min-height:34px;}
-    .ann a{white-space:nowrap;}
     .hero{padding:28px 0 30px;}
     .eyebrow{font-size:10.5px;letter-spacing:.1em;padding:6px 12px 6px 9px;}
     .hero h1{margin-top:16px;font-size:64px;}
@@ -764,10 +776,6 @@ window.GA_ID='G-L29P5MRWKE';
 </script>
 </head>
 <body>
-  <div class="ann" role="note">
-    <div class="shell"><span class="tagnew">New</span><span>The new RunThe.GG is here.<span class="ann-more"> Basketball, baseball and more are on deck.</span></span> <a href="#on-deck">See what's next</a></div>
-  </div>
-
   <nav class="nav">
     <div class="nav-in">
       <a class="nav-brand" href="/" aria-label="RunThe.GG home">
@@ -800,7 +808,7 @@ window.GA_ID='G-L29P5MRWKE';
         <div class="stats">
           <div class="stat"><div class="v">5</div><div class="k">Games live</div></div>
           <div class="stat"><div class="v">Daily</div><div class="k">New puzzles</div></div>
-          <div class="stat"><div class="v">$0</div><div class="k">To play</div></div>
+          <div class="stat"><div class="v">Free</div><div class="k">To play</div></div>
           <div class="stat"><div class="v">1</div><div class="k">Account for all</div></div>
         </div>
       </div>
@@ -824,6 +832,42 @@ window.GA_ID='G-L29P5MRWKE';
       </div>
     </div>
   </header>
+<script>
+/* The hero's front card rotates: every visit features the next live game, so
+   returning visitors see a different one each time. The two cards behind it
+   are the next two in line. With this script blocked, the static markup above
+   (The Perfect Season) stays. It runs before the drive and golfer scripts
+   below, so the canvas and golfer slots it writes are picked up by them. */
+(function(){
+  var stage=document.querySelector('.hero .stage'); if(!stage) return;
+  var G=[
+    {k:'nfl',n:'The Perfect Season',ic:'/football/icon-192.png',href:'/football/',c:'var(--nfl)',chip:'LIVE SIM',live:1,
+     t:'<b>Six legends.</b> One cap. A full season.',body:'<canvas class="drivecanvas" data-league="nfl"></canvas>'},
+    {k:'cfb',n:'College Football',ic:'/cfb/icon-192.png',href:'/cfb/',c:'var(--cfb)',chip:'LIVE SIM',live:1,
+     t:'<b>Six players.</b> One NIL budget. A title run.',body:'<canvas class="drivecanvas" data-league="cfb"></canvas>'},
+    {k:'golf',n:'Run The Tour',ic:'/golf/icon-192.png?v=3',href:'/golf/',c:'var(--golf)',chip:'DAILY',
+     t:'<b>A new course</b> every day.',body:'<div class="mbody golf"><span class="golfer-slot"></span><span class="golfer-slot"></span><span class="golfer-slot"></span></div>'},
+    {k:'arcade',n:'Run The Arcade',ic:'/arcade/assets/arcade-icon.png?v=3',href:'/arcade/',c:'var(--arcade)',chip:'DAILY',
+     t:'<b>Quick sports puzzles.</b> A new set daily.',body:'<div class="mbody arcade"><img src="/arcade/assets/arcade-icon.png?v=3" alt="" /><span>Common Ground</span><span>Odd One Out</span><span>Alma Mater</span></div>'},
+    {k:'pitch',n:'Run The Pitch',ic:'/assets/runthepitch-crest_badge_transparent.png',href:'/soccer/',c:'var(--pitch)',chip:'WORLD CUP',
+     t:'<b>Draft a legend</b> each round.',body:'<div class="mbody pitch"><img src="/assets/runthepitch-crest_badge_transparent.png" alt="" /></div>'}
+  ];
+  var i;
+  try{ var last=parseInt(localStorage.getItem('rtg_hero_game'),10); i=isNaN(last)?Math.floor(Math.random()*G.length):(last+1)%G.length; localStorage.setItem('rtg_hero_game',String(i)); }
+  catch(e){ i=Math.floor(Date.now()/864e5)%G.length; }
+  function bar(g,chip){ return '<div class="bar"><img src="'+g.ic+'" alt="" width="30" height="30" /><span class="nm">'+g.n+'</span>'+(chip?'<span class="live'+(g.live?'':' calm')+'">'+g.chip+'</span>':'')+'</div>'; }
+  function back(g,side){
+    var body=g.k==='golf'?'<div class="body"><span class="golfer-slot"></span><span class="golfer-slot"></span><span class="golfer-slot"></span></div>'
+      :'<div class="pbody"><img src="'+g.ic+'" alt="" width="120" height="120" /></div>';
+    return '<div class="screen s-back '+side+' g-'+g.k+'" style="--gc:'+g.c+'">'+bar(g)+body+'</div>';
+  }
+  var f=G[i], b1=G[(i+1)%G.length], b2=G[(i+2)%G.length];
+  var badges=[].slice.call(stage.querySelectorAll('.float-badge')).map(function(el){return el.outerHTML;}).join('');
+  stage.innerHTML=back(b1,'b')+back(b2,'a')
+    +'<div class="screen s-main g-'+f.k+'" style="--gc:'+f.c+'">'+bar(f,1)+f.body
+    +'<div class="sfoot"><span class="t">'+f.t+'</span><a href="'+f.href+'" tabindex="-1">Play</a></div></div>'+badges;
+})();
+</script>
   <p class="sr"><b>Run The Games</b> (RunThe.GG) is a collection of free, data-driven sports simulation games you play right in your browser. A free account saves your progress, trophies and leaderboard rank across every game.</p>
 
   <div class="ticker" aria-hidden="true">
