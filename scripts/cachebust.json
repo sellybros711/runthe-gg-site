@@ -2217,16 +2217,16 @@
       "sha": "508a73b49b29f0ff"
     },
     "modes.js": {
-      "v": "6",
-      "sha": "99128654534603d4"
+      "v": "7",
+      "sha": "d756322b4632b11b"
     },
     "board.js": {
       "v": "5",
       "sha": "e377af19fb95be50"
     },
     "auth.js": {
-      "v": "1",
-      "sha": "f4d23b1fe32fff3a"
+      "v": "2",
+      "sha": "17b3bedb5b0006a3"
     },
     "/assets/cloudsave.js": {
       "v": "2",
@@ -2241,8 +2241,8 @@
       "sha": "31e8a7be1e03a4c1"
     },
     "modes-ui.js": {
-      "v": "7",
-      "sha": "6f833448a9e4f587"
+      "v": "9",
+      "sha": "ceff817c666e40be"
     },
     "data/players.json": {
       "v": "5",

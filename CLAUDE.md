@@ -10646,6 +10646,64 @@ and a broader frame for a center or power forward. The timeline ends at a pixel
 hoop, and the mode icon is the same hoop. It used to be a bullseye and a golf
 flag, which are two other sports.
 
+#### Endless and picked puzzles, and the day they are Pro
+
+```
+node hoops/check-modes.mjs            section 5b holds the numbering, section 7 walks every door
+```
+
+The dailies stay one a day and free for everybody. On top of them: **endless** (a fresh
+Fix History team or Six Passes pair every press), **any team** (a club and a season, champions
+included, rebuilt through the same four windows) and **any two players** (a made Six Passes
+puzzle, par worked out). A made puzzle or a picked team travels as a link a friend opens free.
+
+**NEITHER DAILY IS A STORED PUZZLE, which is what made this cheap.** `fxDaily(data, day)` and
+`psDaily(g, day)` build the puzzle off a number, and every seed under them (the calls, the odds,
+the replay) is `'fix:' + day`. **An endless or picked puzzle is numbered BELOW ZERO**, and a
+calendar day is 1 and up, so no seed an extra puzzle builds can ever be a day's. `isEndless()`
+is that test. Random endless numbers come off `Math.random` and are STORED, so a reload lands
+on the same team. A picked one is `customNumber()`, a hash of what was picked, so two people on
+one link get the same calls and the same odds: section 5b plays one link twice and compares.
+
+**Endless never writes a daily key**, and that is the whole safety argument. Its state is
+`rtf.fix.endless.v1` and `rtf.passes.endless.v1`, never `rtf.fix.v1`, `rtf.fix.run.v2` or
+`rtf.passes.v1`, so an endless season cannot overwrite today's saved one and today's result,
+streak and place read keys endless never touches. Nothing endless submits to the board. The
+front page, the dock and the draft's doors ask `fxToday()` and `psTodayState()` rather than the
+screen's current puzzle, because the screen can be on an endless one.
+
+**AN EXTRA PUZZLE COUNTS FOR EVERYTHING BUT THE CALENDAR.** A deal, a gain, a title in the
+replay, a chain at par are skill whatever puzzle they came from, so those feats file. Days
+finished (`fx.days`) and days running are a claim about coming back each day, and a button that
+deals a new team every press would make both worthless, so endless files neither. The walk
+checks `fx.days` does not move.
+
+**A link is a hash** (`#fix=CHI_1996`, `#pass=jordami01.jamesle01`). A hash never reaches the
+server, and the link is built off the SENDER's own page rather than a written-out domain, for
+the www-against-apex reason in the Stripe section. It is read once on boot and on `hashchange`,
+then cleared, so a reload after finishing goes to the front page.
+
+**IT IS RUN THE FLOOR PRO**, $9.99 once, the `floor-pro` bundle granting `rtf_premium`
+(`supabase/123_hoops_pro.sql`, go-live order in `functions/api/stripe/README.md`). Same shape
+as Diamond Pro: one checkout, one webhook, and the page asks `premium_products()` through
+`hoops/auth.js`. `endlessOpen()` in `modes-ui.js` is the one gate. There is no server meter,
+because nothing endless reaches the server: the gate is a convenience rather than a lock, and
+nothing competitive depends on it. `PRO_LIVE = false` is the kill switch that opens it to
+everybody if the store ever has to come down, since a lock with nothing behind it is a wall.
+
+**A LOCKED DOOR OPENS THE OFFER, it is never hidden and never dead.** The four Endless and
+Build chips are drawn for everybody; without Pro they wear a Pro tag and every press lands on
+`#pro-sheet`. A door nobody can see is a mode nobody knows exists. **Only `rtf_premium` opens
+it**: another game's Pro does not, and the walk asserts that from both ends. A null answer
+from the account read is no opinion and changes nothing, so a dropped connection never takes
+Pro away mid-puzzle. **Opening a link never asks**: `fxPlayPicked` and `psPlayPicked` are the
+doors a link uses, because whoever made the link is the one Pro paid for, and the walk opens
+both links on a fresh guest page to prove it.
+
+**The checkout is stood in and never let out**, the same rule as the football store: section 7
+answers `/api/stripe/checkout-bundle` itself with `stripe_not_configured`, asserts the body
+names `floor-pro` and the token rides in the header, and fails if anything else was asked.
+
 #### The boards, and `supabase/116_hoops_modes.sql`
 
 One table, `rtf_plays`, and not `rtf_runs`: that table is a finished SEASON and

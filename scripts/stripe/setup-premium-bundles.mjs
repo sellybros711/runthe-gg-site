@@ -67,6 +67,18 @@ const CATALOG = [
       metadata: { site_bundle: 'diamond-pro' },
     },
   },
+  /* $9.99, one-time, the owner's decision (2026-09). Basketball's own tier:
+   * endless puzzles and picked ones. The dailies stay free. */
+  {
+    lookupKey: 'rtf_pro_once',
+    envVar: 'STRIPE_PRICE_RTF_PRO',
+    amountCents: 999,
+    product: {
+      name: 'Run The Floor Pro',
+      description: 'Endless Fix History and Six Passes. Rebuild any team from any year. Make any two player puzzle and send it to friends. One purchase, yours for good.',
+      metadata: { site_bundle: 'floor-pro' },
+    },
+  },
 ];
 
 const KEY = process.env.STRIPE_SECRET_KEY;
