@@ -13922,6 +13922,92 @@ the submit's BODY calls `rtd_board_day(`, so that is what the row asks. The fix
 is re-running 97, which is idempotent and was driven over an old copy with no
 error.
 
+### The profile, and everything on it is the server's
+
+```
+node baseball/check-profile.mjs     the header circle, the pages, Customize, the career on the server
+psql -d rtd_prof -f supabase/test/baseball_pro_base.sql
+psql -d rtd_prof -f supabase/125_baseball_profiles.sql
+psql -d rtd_prof -f supabase/test/baseball_profile_test.sql
+```
+
+Asked for as the NFL game's profile, with every customization it has, and with one rule
+from the owner in as many words: run it through the server, so players don't lose
+anything. Before this, a baseball career was `rtd_history` in localStorage and nothing
+else, and every badge, every career number and every park unlock is DERIVED from that
+array. So clearing site data, a private window or a second phone was an empty trophy
+case, with nothing said.
+
+**`supabase/125_baseball_profiles.sql` is two tables.** `rtd_profiles` is what the player
+CHOSE (club, initials, mark, ballpark) plus what the cabinet EARNED that other people's
+screens need to draw (rank, ring, and the chosen club's rung), and it is public to read
+because every board row draws the circle. `rtd_career` is what the player PLAYED, the
+page's own compact rows, private to its owner.
+
+**THE CAREER ONLY EVER ADDS.** `rtd_career_merge` takes the seasons a device holds and
+hands back every season the account has, from every device. A season is keyed by `ts`,
+a season the server already holds is never replaced by a later copy, every row is
+stamped with the caller as `u` whatever it claimed, and the newest thousand are kept.
+That is hoops' cloud save argument (two devices hold two SETS of seasons, not one run
+at two points) held in SQL rather than in the page.
+
+**THE BROWSER KEEPS A COPY AND IT IS ONLY EVER A COPY.** It paints the first frame
+before the server answers, and it is how a season played in a tunnel reaches the
+server later: on every sign-in the device sends every season it holds for the account.
+`adoptCareer` then replaces the account's rows with the server's union and leaves the
+guest's seasons and other accounts' seasons on the browser exactly where they were.
+**A null from the server is "could not ask", never "you have nothing"**, so a dropped
+connection can never paint an empty career or send one back. `check-profile.mjs`
+section 4 holds that, and removing the null check fails it.
+
+**`HIST_MAX` is 1400**: the server's thousand plus room for guest seasons, which never
+leave the browser because guests do not earn badges.
+
+**The ballpark moved onto the account too.** `currentPark` reads the server's choice
+first, and a park chosen on a device before this is carried over ONCE, never over a
+choice the account has since made. The picker left the trophy case for Customize, which
+is where the owner wanted it, and the field's park tag opens Customize.
+
+#### The crest is football's renderer, copied
+
+`baseball/crest.js` is `football/crest.js` with every sport-shaped table replaced: the
+thirty clubs playing today off `RTD_ENGINE.TEAM_COLORS` (the Athletics are `ATH` in the
+franchise table and their colors are still filed as `OAK`), one field pattern per club
+drawn from football's own primitives (pinstripes for the Yankees, ivy for the Cubs, a
+halo for the Angels), twelve baseball marks each opened by a baseball badge, and rings
+for a title, back to back titles and a season of 117 wins.
+
+**IT IS A COPY ON PURPOSE**, because football's file reads `PS_ENGINE` and `PS_ACH` at
+load and is live on the NFL game, and teaching it a second sport makes every baseball
+change a change to a shipped football file. **The cost is that a renderer fix has to be
+made twice.** The header of each copy says so.
+
+**The club ladder is One Franchise's**: play a club (its colors), reach October with it
+(the ring in its second color), win the World Series with it (its pattern). A club never
+played is drawn locked and a tap on it saves nothing; so is a mark whose badge is not
+earned. **The rank and the ring are derived and pushed, never chosen**, and they are
+pushed only when they move.
+
+**`TIER_AT` is football's ladder scaled to a cabinet of about two hundred**, because no
+baseball player has worn a rank yet. Refit it against real profiles once there are some.
+
+**What the server cannot check, said plainly.** plpgsql cannot run `achievements.js`, so
+a mark or a rank is checked for SHAPE (one of the known ids) and not for the badge behind
+it. It is the same trust `ps_set_crest` makes, and a circle decides nothing.
+
+#### Three things to know before touching it
+
+- **The header's icon rule strokes every svg it holds.** A crest is filled, so
+  `.pf-btn.crested svg` and the other crest holders take `fill` and `stroke` back, or
+  every shape in the circle grows an outline.
+- **`.hdr-btn` is declared later in the sheet than the profile rules**, so a profile rule
+  at one class loses to it. That is how "Sign in" as text shipped for one pass overflowing
+  a 34px circle; it is a person icon now, labelled Sign in, because the header holds five
+  things at 320px.
+- **The board rows now select `user_id`**, which 97 has always had and nothing read, and
+  the circles are asked for after the list is drawn, so a slow answer never holds the
+  board up.
+
 ### Badges are for accounts, and a badge is a baseball
 
 ```

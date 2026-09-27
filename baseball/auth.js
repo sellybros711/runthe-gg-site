@@ -307,11 +307,74 @@
     return null;
   }
 
+  /* ── THE PROFILE, held by the server (supabase/125_baseball_profiles.sql) ──
+     Every answer here is null on failure and never a guess: null means "could
+     not ask", which the page reads as "keep what you have", and that is what
+     stops a dropped connection from ever looking like an empty profile. */
+
+  /* This account's choices: the row, {} when there is none yet, null on failure
+     (including a database that has not had 125 run). */
+  async function myProfile() {
+    if (!sb || !session) return null;
+    try {
+      const r = await sb.from('rtd_profiles').select('club,initials,mark,park,tier,ring,rung')
+        .eq('user_id', session.user.id).maybeSingle();
+      if (r && !r.error) return r.data || {};
+    } catch (e) {}
+    return null;
+  }
+
+  /* Save some of the choices. Only the keys passed are sent; the server leaves
+     every other field alone, and '' clears one. { row } or { error }. */
+  async function saveProfile(fields) {
+    if (!sb || !session) return { error: 'Sign in to save your profile.' };
+    const o = fields || {};
+    const args = {};
+    ['club', 'initials', 'mark', 'park', 'tier', 'ring'].forEach((k) => {
+      if (o[k] !== undefined) args['p_' + k] = o[k] == null ? '' : String(o[k]);
+    });
+    if (o.rung !== undefined && o.rung !== null) args.p_rung = Math.max(0, Math.min(3, o.rung | 0));
+    try {
+      const r = await sb.rpc('rtd_set_profile', args);
+      if (r && !r.error) return { row: r.data || null };
+      return { error: (r && r.error && r.error.message) || 'That did not save.' };
+    } catch (e) { return { error: (e && e.message) || 'That did not save.' }; }
+  }
+
+  /* Send the seasons this device has and get back every season the account
+     has, from every device. The server only ever ADDS. null on failure. */
+  async function careerMerge(rows) {
+    if (!sb || !session) return null;
+    try {
+      const r = await sb.rpc('rtd_career_merge', { p_rows: Array.isArray(rows) ? rows : [] });
+      if (r && !r.error && Array.isArray(r.data)) return r.data;
+    } catch (e) {}
+    return null;
+  }
+
+  /* The circles for a page of board rows: { user_id: {club, initials, mark,
+     tier, ring} }. Public to read, so this works signed out too. */
+  async function profilesOf(ids) {
+    const list = [...new Set((ids || []).filter(Boolean))].slice(0, 200);
+    if (!sb || !list.length) return {};
+    try {
+      const r = await sb.from('rtd_profiles').select('user_id,club,initials,mark,tier,ring,rung')
+        .in('user_id', list);
+      if (r && !r.error && Array.isArray(r.data)) {
+        const out = {};
+        r.data.forEach((x) => { out[x.user_id] = x; });
+        return out;
+      }
+    } catch (e) {}
+    return null;
+  }
+
   window.RTD_AUTH = {
-    API_VERSION: 1,
+    API_VERSION: 2,
     boot, state, onChange: (f) => { listeners.push(f); return () => {}; },
     signIn, signUp, signInGoogle, signOut,
     available, setName, claim, token, deleteAccount,
     premiumProducts, modeState, modeSpend,
+    myProfile, saveProfile, careerMerge, profilesOf,
   };
 })();

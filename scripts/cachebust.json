@@ -1916,13 +1916,17 @@
       "v": "4",
       "sha": "f7d3832fc6861472"
     },
-    "board.js": {
+    "crest.js": {
       "v": "1",
-      "sha": "ca72c43361b377d7"
+      "sha": "f017e5caaff5c93a"
+    },
+    "board.js": {
+      "v": "2",
+      "sha": "bc6d85fae3995fc5"
     },
     "auth.js": {
-      "v": "2",
-      "sha": "c9d2e207af9fc9cf"
+      "v": "3",
+      "sha": "5bc1e43a3686bd1b"
     },
     "/assets/newsletter.js": {
       "v": "1",

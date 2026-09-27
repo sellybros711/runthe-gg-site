@@ -1363,6 +1363,97 @@ body:has(#s-intro.on) header .lockup{visibility:hidden}
 @media(min-width:600px){.sheet-inner{left:50%;transform:translateX(-50%);max-width:600px;border-radius:20px;
   bottom:auto;top:50%;animation:none}.sheet.on .sheet-inner{transform:translate(-50%,-50%)}}
 
+/* ─── the profile ─── */
+.pf-btn .pf-in-t{font-family:var(--fn);font-size:12px;font-weight:800;letter-spacing:.02em;white-space:nowrap}
+.hdr-btn.pf-btn.crested{border-color:transparent;overflow:hidden}
+/* The header's icon rule strokes every svg it holds. A crest is filled, not stroked,
+   so it takes the rule back, or every shape in the circle grows an outline. */
+.pf-btn.crested svg,.pf-av svg,.pf-mark svg,.bd-crest svg{width:100%;height:100%;fill:initial;stroke:none;stroke-width:initial;display:block}
+.pf-id{display:flex;align-items:center;gap:14px;margin:0 0 12px}
+.pf-av{flex:0 0 64px;width:64px;height:64px;display:block}
+.pf-av.big{width:112px;height:112px;flex-basis:112px;margin:0 auto}
+.pf-nm{display:flex;flex-direction:column;gap:3px;min-width:0}
+.pf-nm b{font-family:var(--fd);font-size:24px;line-height:1.05;color:var(--ink);display:flex;align-items:center;gap:8px;flex-wrap:wrap;word-break:break-all}
+.pf-nm>span{font-size:12px;color:var(--dim)}
+.pf-pill{font-style:normal;font-family:var(--fn);font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;
+  padding:3px 8px;border-radius:99px;border:1px solid rgba(var(--edge),.2);color:var(--dim)}
+.pf-pill.pro{background:var(--gold);border-color:var(--gold);color:#1a1206}
+.pf-rank{display:flex;justify-content:space-between;align-items:baseline;gap:10px;font-size:13px;
+  padding:9px 12px;border-radius:10px;background:rgba(var(--edge),.04);margin:0 0 12px}
+.pf-rank b{color:var(--ink)}.pf-rank span{color:var(--dim);font-size:12px}
+.pf-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:0 0 12px}
+.pf-stats .stk{background:var(--panel);border:1px solid rgba(var(--edge),.08);border-radius:10px;padding:10px 4px;text-align:center;min-width:0}
+.pf-stats .sv{font-family:var(--fd);font-size:21px;line-height:1;color:var(--ink);font-variant-numeric:tabular-nums}
+.pf-stats .sl{font-family:var(--fn);font-size:8.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--dim-2);margin-top:4px}
+.pf-nav{display:flex;flex-direction:column;border:1px solid rgba(var(--edge),.1);border-radius:12px;overflow:hidden;margin:0 0 12px}
+.pf-row{display:flex;align-items:center;justify-content:space-between;gap:10px;text-align:left;padding:12px 14px;
+  background:var(--panel);border:0;border-top:1px solid rgba(var(--edge),.08);color:var(--ink);cursor:pointer;font:inherit}
+.pf-row:first-child{border-top:0}
+.pf-row:hover{background:rgba(var(--edge),.05)}
+.pf-row>span{display:flex;flex-direction:column;gap:2px;min-width:0}
+.pf-row b{font-size:15px;display:flex;align-items:center;gap:6px}
+.pf-row>span>span{font-size:12px;color:var(--dim)}
+.pf-chev{font-style:normal;font-size:22px;color:var(--dim-2)}
+.pf-dot{width:7px;height:7px;border-radius:50%;background:var(--gold);display:inline-block}
+.pf-pro{font-size:13px;color:var(--dim);margin:0 0 10px}
+.pf-pro b{color:var(--gold)}
+.pf-pro button,.pf-back{background:none;border:0;padding:0;font:inherit;font-weight:800;color:var(--gold);cursor:pointer;text-decoration:underline}
+.pf-back{text-decoration:none;font-size:14px;margin:0 0 10px;display:inline-block}
+.pf-note,.pf-p{font-size:12.5px;color:var(--dim);margin:0 0 8px;line-height:1.45}
+.pf-p b{color:var(--ink)}
+.pf-sec{margin:0 0 18px}
+.pf-sec .arow{display:flex;gap:8px;flex-wrap:wrap}
+.pf-sec input{flex:1 1 160px;min-width:0;padding:10px 12px;border-radius:9px;border:1px solid rgba(var(--edge),.2);
+  background:var(--panel);color:var(--ink);font:inherit;font-size:15px}
+.pf-sec .btn{width:auto;margin:0;padding:10px 14px;font-size:13px}
+.pf-h{font-family:var(--fn);font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--ink);
+  margin:0 0 6px;display:flex;justify-content:space-between;align-items:baseline}
+.pf-ct{font-weight:700;color:var(--dim-2);letter-spacing:.02em}
+.pf-danger .pf-h{color:#c0392b}
+.pf-look-hd{text-align:center;margin:0 0 14px}
+.pf-clubs{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:6px}
+.pf-club{display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 4px;border-radius:10px;cursor:pointer;
+  border:1.5px solid rgba(var(--edge),.1);background:var(--panel);color:var(--ink);font:inherit}
+.pf-club.on{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold) inset}
+.pf-club.locked{opacity:.5}
+.pf-sw{width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,var(--c1) 55%,var(--c2) 55%);
+  box-shadow:0 0 0 1px rgba(var(--edge),.15)}
+.pf-cn{font-size:11px;font-weight:700;line-height:1.1;text-align:center}
+.pf-rg{display:flex;gap:3px;font-size:9px;color:var(--dim-2);font-weight:700;letter-spacing:.04em;text-transform:uppercase}
+.pf-rg i{width:7px;height:7px;border-radius:50%;background:rgba(var(--edge),.15)}
+.pf-rg i.got{background:var(--gold)}
+.pf-marks{display:grid;grid-template-columns:repeat(auto-fill,minmax(132px,1fr));gap:6px}
+.pf-mark{display:grid;grid-template-columns:44px 1fr;grid-template-rows:auto auto;column-gap:8px;align-items:center;text-align:left;
+  padding:8px;border-radius:10px;cursor:pointer;border:1.5px solid rgba(var(--edge),.1);background:var(--panel);color:var(--ink);font:inherit}
+.pf-mark svg{grid-row:1 / span 2;width:44px;height:44px}
+.pf-mark b{font-size:12.5px;align-self:end}
+.pf-mark span{font-size:10.5px;color:var(--dim);line-height:1.25;align-self:start}
+.pf-mark.on{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold) inset}
+.pf-mark.locked svg{opacity:.35;filter:grayscale(1)}
+.pf-rings{display:grid;gap:6px}
+.pf-ring{padding:8px 10px;border-radius:10px;border:1px solid rgba(var(--edge),.1);font-size:12px;color:var(--dim)}
+.pf-ring b{display:block;color:var(--ink);font-size:13px}
+.pf-ring.on{border-color:var(--gold)}
+.pf-modes{display:grid;gap:4px}
+.pf-modes div{display:flex;justify-content:space-between;font-size:13px;padding:6px 10px;border-radius:8px;background:rgba(var(--edge),.04)}
+.pf-tabs{display:flex;gap:6px;margin:0 0 10px;flex-wrap:wrap}
+.pf-tab{padding:7px 12px;border-radius:99px;border:1px solid rgba(var(--edge),.15);background:transparent;color:var(--dim);font:inherit;font-size:12.5px;font-weight:700;cursor:pointer}
+.pf-tab.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.pf-seasons{display:grid;gap:6px}
+.pf-season{display:flex;gap:12px;align-items:center;padding:9px 12px;border-radius:10px;background:var(--panel);border:1px solid rgba(var(--edge),.08)}
+.pf-season.won{border-color:var(--gold)}
+.pf-rec{flex:0 0 64px;display:flex;flex-direction:column}
+.pf-rec b{font-family:var(--fd);font-size:20px;line-height:1;color:var(--ink);font-variant-numeric:tabular-nums}
+.pf-rec span,.pf-sw2 span{font-size:11px;color:var(--dim)}
+.pf-sw2{display:flex;flex-direction:column;gap:1px;min-width:0}
+.pf-sw2 b{font-size:13px;color:var(--ink)}
+.pf-when{color:var(--dim-2)!important}
+.pf-toast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,20px);opacity:0;z-index:200;max-width:min(92vw,420px);
+  padding:10px 14px;border-radius:10px;background:var(--ink);color:var(--bg);font-size:13px;pointer-events:none;
+  transition:opacity .2s,transform .2s;text-align:center}
+.pf-toast.on{opacity:1;transform:translate(-50%,0)}
+.bd-crest{flex:0 0 30px;width:30px;height:30px}
+@media(max-width:380px){.pf-stats .sv{font-size:18px}.pf-nm b{font-size:21px}}
 /* ─── trophy case ─── */
 .trophy-career{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px}
 .trophy-career .stk{background:var(--panel);border:1px solid rgba(var(--edge),.08);border-radius:10px;
@@ -2072,6 +2163,7 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
         <path d="M12 2.6v2.2M12 19.2v2.2M2.6 12h2.2M19.2 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M18.7 5.3l-1.6 1.6M6.9 17.1l-1.6 1.6"/></svg>
       <svg viewBox="0 0 24 24" aria-hidden="true" class="th-moon"><path d="M20 14.2A8.2 8.2 0 0 1 9.8 4 8.4 8.4 0 1 0 20 14.2z"/></svg>
     </button>
+    <button class="hdr-btn pf-btn" id="b-profile" aria-label="Sign in" title="Sign in"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8.5" r="3.6"/><path d="M4.5 20a7.5 7.5 0 0 1 15 0"/></svg></button>
     <button class="hdr-btn" id="b-trophy-hd" aria-label="Trophy case" title="Trophy case">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4h10v5a5 5 0 0 1-10 0z"/>
         <path d="M7 6H4.5v1.5A3.5 3.5 0 0 0 8 11"/><path d="M17 6h2.5v1.5A3.5 3.5 0 0 1 16 11"/>
@@ -2532,9 +2624,20 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
     </div>
     <div class="acct" id="trophy-acct"></div>
     <div class="trophy-career" id="trophy-career"></div>
-    <div class="trophy-parks" id="trophy-parks"></div>
     <div class="trophy-body" id="trophy-body"></div>
     <p class="trophy-note" id="trophy-note"></p>
+  </div>
+</div>
+
+<div class="sheet" id="sheet-profile" aria-hidden="true">
+  <div class="sheet-scrim" data-close-pf></div>
+  <div class="sheet-inner">
+    <div class="sheet-grab"></div>
+    <div class="sheet-hd">
+      <h3 class="sheet-title" id="pf-title">Your profile</h3>
+      <button class="sheet-x" data-close-pf aria-label="Close">&times;</button>
+    </div>
+    <div id="pf-in"></div>
   </div>
 </div>
 
@@ -2554,9 +2657,10 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
 <script src="run.js?v=26"></script>
 <script src="achievements.js?v=10"></script>
 <script src="parks.js?v=4"></script>
-<script src="board.js?v=1"></script>
+<script src="crest.js?v=1"></script>
+<script src="board.js?v=2"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="auth.js?v=2"></script>
+<script src="auth.js?v=3"></script>
 <!-- The release newsletter checkbox under the account in the trophy sheet. See supabase/121_newsletter.sql. -->
 <script src="/assets/newsletter.js?v=1"></script>
 <script>
@@ -2580,7 +2684,9 @@ var A=window.RTD_AUTH||{
 };
 
 /* ─── history persistence (derive-everything: store compact rows only) ─── */
-const HIST_KEY='rtd_history', HIST_MAX=400;
+/* 1400: the server keeps an account's newest thousand seasons (125), and the rest is
+   room for the seasons played here as a guest, which never leave this browser. */
+const HIST_KEY='rtd_history', HIST_MAX=1400;
 function loadHistory(){
   try{const raw=localStorage.getItem(HIST_KEY);const a=raw?JSON.parse(raw):[];return Array.isArray(a)?a:[];}
   catch(_){return [];}
@@ -2641,6 +2747,7 @@ function recordRun(o){
     lastNewParks=RTD_PARKS.unlockedIds(parkInfoFor(badgeRows(prev).concat([row]))).filter(id=>!before.has(id));
   }catch(_){lastNewParks=[];}}
   saveHistory(prev.concat([row]));
+  careerPush(row);
   try{ga('run_complete',{outcome:o.titleWon?'title':o.madePlayoffs?'playoffs':'missed',wins:o.wins,rating:o.rating!=null?Math.round(o.rating):0,rank:o.allTimeRank||0});}catch(_){}
   (lastNewBadges||[]).forEach(a=>{try{ga('achievement_earned',{id:a.id,tier:a.tier,group:a.group});}catch(_){}});
 }
@@ -2732,7 +2839,6 @@ function openSheet(id){const s=$(id);s.classList.add('on');s.setAttribute('aria-
 function closeSheet(id){const s=$(id);s.classList.remove('on');s.setAttribute('aria-hidden','true');}
 function renderTrophy(){
   renderAccount();
-  renderParks();
   const signed=!!acctId();
   const rows=signed?badgeRows():loadHistory();const ev=ACH.evaluate(rows);
   const st=ev.stats;
@@ -2781,8 +2887,9 @@ function renderTrophy(){
    unavailable, signed out, signed in with no name yet, and signed in. Built
    rather than written into the markup, because markup for five states is
    markup for whichever one somebody last looked at. */
-function renderAccount(){
-  const el=$('trophy-acct');if(!el)return;
+function renderAccount(target){
+  const el=target||$('trophy-acct');if(!el)return;
+  const again=()=>{renderTrophy();pfRepaint();paintAvatar();};
   const st=A.state();el.textContent='';
   const say=html=>{const p=document.createElement('p');p.innerHTML=html;el.appendChild(p);return p;};
   const row=()=>{const d=document.createElement('div');d.className='arow';el.appendChild(d);return d;};
@@ -2799,7 +2906,7 @@ function renderAccount(){
     const pass=inp(row(),'password','Password','current-password');
     const r3=row();let busy=false;
     const go=fn=>()=>{if(busy)return;busy=true;fn().then(res=>{busy=false;
-      if(res&&res.error)err(res.error);else renderTrophy();});};
+      if(res&&res.error)err(res.error);else again();});};
     btn(r3,'Sign in','',go(()=>A.signIn(email.value,pass.value)));
     btn(r3,'Create account','ghost',()=>{
       const name=prompt('Pick a name for the leaderboard. Letters, numbers and underscores only.');
@@ -2813,13 +2920,15 @@ function renderAccount(){
   if(!st.name){
     say('Signed in as <b>'+esc(st.email||'your account')+'</b>. Pick a name for the leaderboard.');
     const rn=row();const nm=inp(rn,'text','Name on the board');
-    btn(rn,'Save','',()=>A.setName(nm.value.trim()).then(res=>{if(res&&res.error)err(res.error);else renderTrophy();}));
-    btn(row(),'Sign out','ghost sm',()=>A.signOut().then(renderTrophy));
+    btn(rn,'Save','',()=>A.setName(nm.value.trim()).then(res=>{if(res&&res.error)err(res.error);else again();}));
+    btn(row(),'Sign out','ghost sm',()=>A.signOut().then(again));
     return;
   }
   const r=row();r.classList.add('who');
   const p=document.createElement('span');p.innerHTML='Signed in as <b>'+esc(st.name)+'</b>';r.appendChild(p);
-  btn(r,'Sign out','ghost sm',()=>A.signOut().then(renderTrophy));
+  /* The profile is where the account lives now. This panel says who is signed in
+     and hands over; it does not keep a second copy of the account page. */
+  btn(r,'Your profile','ghost sm',()=>{closeSheet('sheet-trophy');openProfile();});
   const pro=document.createElement('p');pro.className='apro';
   if(isPro()){
     pro.innerHTML='<b>Pro</b>: every mode, as often as you like.';
@@ -2837,8 +2946,7 @@ function renderAccount(){
   /* the release newsletter box, /assets/newsletter.js. Absent script, absent box. */
   if(window.RTG_NEWS) el.appendChild(RTG_NEWS.el({source:'baseball'}));
 }
-function openTrophy(focus){if(!ACH)return;renderTrophy();openSheet('sheet-trophy');ga('trophy_opened');
-  if(focus==='parks'){const pk=$('trophy-parks');if(pk)requestAnimationFrame(()=>pk.scrollIntoView({block:'start'}));}}
+function openTrophy(){if(!ACH)return;renderTrophy();openSheet('sheet-trophy');ga('trophy_opened');}
 
 /* ─── ballparks ───
    The catalogue, the art and the unlock rules are parks.js. What lives here is the
@@ -2868,7 +2976,8 @@ function parkPrefs(){try{return JSON.parse(localStorage.getItem(PARK_KEY))||{};}
 function currentPark(){
   if(!window.RTD_PARKS||!ACH)return 'home';
   const uid=acctId();if(!uid)return 'home';
-  const want=parkPrefs()[uid];const p=want&&RTD_PARKS.BY_ID[want];
+  /* The server's answer first; this device's old choice only until it lands. */
+  const want=myProf().park||parkPrefs()[uid];const p=want&&RTD_PARKS.BY_ID[want];
   if(!p)return 'home';
   return RTD_PARKS.status(p,parkInfo()).ok?want:'home';
 }
@@ -2876,6 +2985,7 @@ function setPark(id){
   const uid=acctId();if(!uid||!RTD_PARKS.BY_ID[id])return;
   const all=parkPrefs();all[uid]=id;
   try{localStorage.setItem(PARK_KEY,JSON.stringify(all));}catch(_){}
+  saveProf({park:id});
   try{ga('park_chosen',{park:id});}catch(_){}
   refreshParkedFields();
 }
@@ -2888,8 +2998,8 @@ const PARK_RARITY={Starter:'st',Common:'co',Rare:'ra',Epic:'ep',Legendary:'le',P
 function parkPreview(id,sfx){
   return '<div class="pk-view">'+RTD_PARKS.markings(id,sfx,RTD_PARKS.SKY)+'</div>';
 }
-function renderParks(){
-  const el=$('trophy-parks');if(!el)return;
+function renderParks(target){
+  const el=target||$('pf-parks');if(!el)return;
   if(!window.RTD_PARKS){el.innerHTML='';return;}
   const info=parkInfo();const cur=currentPark();
   const got=RTD_PARKS.PARKS.filter(p=>RTD_PARKS.status(p,info).ok).length;
@@ -2907,8 +3017,385 @@ function renderParks(){
         '<div class="pk-name">'+esc(p.name)+'</div><div class="pk-nod">'+esc(p.nod)+'</div>'+
         '<div class="pk-foot">'+foot+'</div></div></div>';
     }).join('')+'</div>';
-  el.querySelectorAll('.pk-use').forEach(b=>b.addEventListener('click',()=>{setPark(b.dataset.park);renderParks();}));
+  el.querySelectorAll('.pk-use').forEach(b=>b.addEventListener('click',()=>{setPark(b.dataset.park);renderParks(el);}));
 }
+
+/* ─── the profile ───────────────────────────────────────────────────────────
+   Modelled on the NFL game's: a circle in the header that opens a profile, and a
+   profile with an Account page, a Customize page, the badges, the career and the
+   seasons, and the Pro receipt.
+
+   THE SERVER HOLDS ALL OF IT (supabase/125_baseball_profiles.sql), the owner's
+   instruction, so a player never loses anything:
+
+     the choices   club, initials, mark, ballpark, and the rank and ring the
+                   cabinet has earned, in rtd_profiles
+     the career    every season played signed in, in rtd_career, which is what
+                   every badge, career number, club rung and park unlock is
+                   derived from
+
+   The browser keeps a COPY of both, and it is only ever a copy: it is what paints
+   the first frame before the server answers, and it is how a season played on a
+   train reaches the server once the train is out of the tunnel. On every sign-in
+   the device sends every season it holds for the account and gets back every
+   season the account has, from every device. The server only ever adds.
+
+   EVERY FAILURE KEEPS WHAT IS THERE. A null from the server is "could not ask",
+   never "you have nothing", so a dropped connection can never paint an empty
+   profile or send one back. */
+const PROFILE_CACHE='rtd_profile_v1';
+let PROF=null,PROF_FOR=null;
+function profCache(){try{return JSON.parse(localStorage.getItem(PROFILE_CACHE))||{};}catch(_){return {};}}
+function profCachePut(uid,row){
+  try{const all=profCache();all[uid]=row;localStorage.setItem(PROFILE_CACHE,JSON.stringify(all));}catch(_){}
+}
+/* The choices for the account signed in: the server's answer once it has landed,
+   the last one this device saw before that, and nothing for a guest. */
+function myProf(){
+  const u=acctId();if(!u)return {};
+  if(PROF_FOR===u&&PROF)return PROF;
+  return profCache()[u]||{};
+}
+function hasProfileApi(){return typeof A.myProfile==='function'&&typeof A.careerMerge==='function';}
+
+/* Fold the server's career into this device's history. Guest seasons and other
+   accounts' seasons on this browser are left exactly where they are; the account's
+   own are replaced by the server's, which is the union of every device. */
+function adoptCareer(uid,serverRows){
+  const keep=loadHistory().filter(r=>r.u!==uid);
+  const mine=new Map();
+  serverRows.forEach(r=>{if(r&&r.ts)mine.set(r.ts,r);});
+  saveHistory(keep.concat([...mine.values()]).sort((a,b)=>(a.ts||0)-(b.ts||0)));
+  parkMemo=null;
+}
+let syncAsk=0;
+async function profileSync(){
+  const uid=acctId();const ask=++syncAsk;
+  if(!uid){PROF=null;PROF_FOR=null;paintAvatar();pfRepaint();return;}
+  paintAvatar();
+  if(!hasProfileApi())return;
+  let merged=null,row=null;
+  try{merged=await A.careerMerge(loadHistory().filter(r=>r.u===uid));}catch(_){}
+  if(ask!==syncAsk||acctId()!==uid)return;
+  if(Array.isArray(merged))adoptCareer(uid,merged);
+  try{row=await A.myProfile();}catch(_){}
+  if(ask!==syncAsk||acctId()!==uid)return;
+  if(row){
+    PROF=row;PROF_FOR=uid;profCachePut(uid,row);
+    /* A park chosen on this device before the profile moved to the server is carried
+       over once, rather than lost. */
+    if(!row.park){
+      const legacy=parkPrefs()[uid];
+      if(legacy&&window.RTD_PARKS&&RTD_PARKS.BY_ID[legacy])saveProf({park:legacy});
+    }
+  }
+  pushEarned();
+  paintAvatar();refreshParkedFields();pfRepaint();
+  if($('sheet-trophy').classList.contains('on'))renderTrophy();
+}
+/* A finished season goes to the server the moment it is filed. If it cannot, it
+   stays on the device and the next sign-in sends it with everything else. */
+function careerPush(row){
+  if(!row||!row.u||!hasProfileApi())return;
+  A.careerMerge([row]).then(m=>{
+    if(Array.isArray(m)&&acctId()===row.u){adoptCareer(row.u,m);pushEarned();paintAvatar();}
+  }).catch(()=>{});
+}
+/* Save some of the choices. The copy moves at once so the screen answers the tap,
+   and the server's reply replaces it. A refusal puts the old value back. */
+function saveProf(fields){
+  const u=acctId();if(!u||typeof A.saveProfile!=='function')return Promise.resolve({error:'Sign in to save your profile.'});
+  const before=Object.assign({},myProf());
+  PROF=Object.assign({},before,fields);PROF_FOR=u;
+  return A.saveProfile(fields).then(res=>{
+    if(acctId()!==u)return res;
+    if(res&&res.row){PROF=res.row;profCachePut(u,res.row);}
+    else{PROF=before;}
+    paintAvatar();
+    return res;
+  });
+}
+
+/* What this account has earned, off its own seasons. */
+function myEarned(){
+  const u=acctId();if(!u||!ACH)return null;
+  const rows=badgeRows();
+  const C=window.RTD_CREST;
+  const ev=ACH.evaluate(rows);
+  const un=C?C.unlocks(rows,ev,myProf().club):null;
+  return {rows,ev,un,rungs:C?C.clubRungs(rows):{}};
+}
+/* The rank and the ring are derived, never chosen, and pushed only when they move,
+   so every other board can draw them. The club rung goes with them. */
+function pushEarned(){
+  const e=myEarned();if(!e||!e.un)return;
+  const p=myProf();const want={};
+  if(e.un.tier&&e.un.tier!==p.tier)want.tier=e.un.tier;
+  if(e.un.ring&&e.un.ring!==p.ring)want.ring=e.un.ring;
+  const rung=p.club?(e.rungs[p.club]||0):null;
+  if(rung!=null&&rung!==p.rung)want.rung=rung;
+  if(Object.keys(want).length)saveProf(want);
+}
+
+/* ── the circle ── */
+function initialsOf(name,chosen){
+  if(chosen)return String(chosen).toUpperCase().slice(0,2);
+  const s=String(name||'').toUpperCase().replace(/[^A-Z0-9]/g,'');
+  return s.slice(0,2)||'RT';
+}
+/* One circle for anybody: the account signed in (rows known, so everything is
+   derived here) or a board row's owner (what the server says they have earned). */
+function crestSvg(p,name,size,rungKnown){
+  const C=window.RTD_CREST;if(!C)return '';
+  const club=p&&p.club&&C.CLUBS[p.club]?p.club:null;
+  const rung=club?(rungKnown!=null?rungKnown:(p.rung||1)):0;
+  try{
+    return C.crest({club:club||'NYY',rung:club?rung:0,mark:p&&p.mark||'init',
+      text:initialsOf(name,p&&p.initials),tier:p&&p.tier||null,ring:p&&p.ring||'club',size:size});
+  }catch(_){return '';}
+}
+function myCrest(size){
+  const st=A.state();const e=myEarned();const p=Object.assign({},myProf());
+  if(e&&e.un){p.tier=e.un.tier;p.ring=e.un.ring;
+    if(p.mark&&e.un.marks.indexOf(p.mark)<0)p.mark='init';}
+  const rung=p.club&&e?(e.rungs[p.club]||0):null;
+  if(p.club&&rung===0)p.club=null;
+  return crestSvg(p,st.name,size,rung);
+}
+function paintAvatar(){
+  const b=$('b-profile');if(!b)return;
+  const st=A.state();
+  b.classList.remove('signed','crested');
+  /* A person, not the words: the header holds five things at 320px and a pill reading
+     Sign in is the one that does not fit. The label still says it. */
+  const person='<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8.5" r="3.6"/><path d="M4.5 20a7.5 7.5 0 0 1 15 0"/></svg>';
+  if(!st.signedIn){b.innerHTML=person;b.title='Sign in';b.setAttribute('aria-label','Sign in');return;}
+  b.setAttribute('aria-label','Your profile');
+  if(!st.name){b.innerHTML=person;b.title='Your profile';b.classList.add('signed');return;}
+  const svg=myCrest(34);
+  b.classList.add('signed','crested');b.title='Your profile';
+  b.innerHTML=svg||'<span class="pf-in-t">'+esc(initialsOf(st.name,myProf().initials))+'</span>';
+}
+
+/* ── the sheet ── */
+let pfPageNow='hub';
+function openProfile(page){pfPageNow=page||'hub';pfRender();openSheet('sheet-profile');ga('profile_opened',{page:pfPageNow});
+  if(page==='look'){const pk=$('pf-parks');if(pk)requestAnimationFrame(()=>pk.scrollIntoView({block:'start'}));}}
+function pfRepaint(){if($('sheet-profile')&&$('sheet-profile').classList.contains('on'))pfRender();}
+function pfGo(page){pfPageNow=page;pfRender();const i=$('sheet-profile').querySelector('.sheet-inner');if(i)i.scrollTop=0;}
+function pfRender(){
+  const el=$('pf-in');if(!el)return;
+  const st=A.state();
+  if(!st.signedIn||!st.name){$('pf-title').textContent=st.signedIn?'Pick a name':'Sign in';
+    el.innerHTML='<div class="acct" id="pf-acct"></div>';renderAccount($('pf-acct'));return;}
+  const pages={hub:pfHub,account:pfAccount,look:pfLook,career:pfCareer,seasons:pfSeasons};
+  (pages[pfPageNow]||pfHub)(el);
+}
+function pfBack(){return '<button type="button" class="pf-back" data-go="hub">‹ Profile</button>';}
+function pfWire(el){el.querySelectorAll('[data-go]').forEach(b=>b.addEventListener('click',()=>pfGo(b.dataset.go)));}
+function pfRow(go,title,sub,dot){
+  return '<button type="button" class="pf-row" data-go="'+go+'"><span><b>'+esc(title)+
+    (dot?'<i class="pf-dot" aria-label="new"></i>':'')+'</b><span>'+esc(sub)+'</span></span><i class="pf-chev">›</i></button>';
+}
+function tierName(id){const C=window.RTD_CREST;const t=C&&id?C.tierAt(id):null;return t?t.name:'Bronze 1';}
+
+function pfHub(el){
+  $('pf-title').textContent='Your profile';
+  const st=A.state();const e=myEarned();const ev=e?e.ev:null;const s=ev?ev.stats:{};
+  const C=window.RTD_CREST;
+  let rank='';
+  if(C&&e&&e.un){
+    const i=C.TIERS.findIndex(t=>t.id===e.un.tier);
+    const next=i>=0&&i<C.TIERS.length-1?C.nextTierAt(i):null;
+    rank='<div class="pf-rank"><b>'+esc(tierName(e.un.tier))+'</b>'+
+      (next!=null?'<span>'+Math.max(0,next-e.un.badges)+' badges to '+esc(C.TIERS[i+1].name)+'</span>':'<span>Every badge in the game</span>')+'</div>';
+  }
+  el.innerHTML='<div class="pf-id"><span class="pf-av">'+myCrest(64)+'</span>'+
+    '<span class="pf-nm"><b>'+esc(st.name)+'<i class="pf-pill'+(isPro()?' pro':'')+'">'+(isPro()?'Pro':'Free')+'</i></b>'+
+    '<span>Your RunThe.GG account</span></span></div>'+rank+
+    '<div class="pf-stats">'+[['Seasons',s.runs||0],['Titles',s.titles||0],
+      ['Best rating',s.bestRating!=null?Math.round(s.bestRating):'-'],
+      ['Badges',ev?ev.earned.length+'/'+ev.total:'-']]
+      .map(x=>'<div class="stk"><div class="sv">'+x[1]+'</div><div class="sl">'+x[0]+'</div></div>').join('')+'</div>'+
+    '<div class="pf-nav">'+
+      pfRow('account','Account','Your name, signing out')+
+      pfRow('look','Customize','Your circle, club colors and ballpark')+
+      '<button type="button" class="pf-row" id="pf-go-badges"><span><b>Badges</b><span>What you have earned so far</span></span><i class="pf-chev">›</i></button>'+
+      pfRow('career','Career','Every number, and your streaks')+
+      pfRow('seasons','Your seasons','Recent, best rated and best record')+
+    '</div>'+
+    '<div class="pf-pro">'+(isPro()
+      ?'<b>Pro</b>: every mode, as often as you like. <button type="button" id="pf-bill">Manage billing</button>'
+      :'Free: one play of each mode a day. <button type="button" id="pf-gopro">Go Pro for '+PRO_PRICE+PRO_TERM+'</button>')+
+    '<p class="aerr" id="pf-bill-err" hidden></p></div>'+
+    '<p class="pf-note">Your profile and every season you play signed in are kept on your account, on every device.</p>';
+  pfWire(el);
+  $('pf-go-badges').onclick=()=>{closeSheet('sheet-profile');openTrophy();};
+  const bill=$('pf-bill');if(bill)bill.onclick=()=>openBilling(bill,$('pf-bill-err'));
+  const gp=$('pf-gopro');if(gp)gp.onclick=()=>{closeSheet('sheet-profile');ga('pro_opened',{from:'profile'});openPro(null);};
+}
+
+function pfAccount(el,msg,ok){
+  el=el||$('pf-in');
+  $('pf-title').textContent='Account';
+  const st=A.state();
+  el.innerHTML=pfBack()+(msg?'<p class="aerr'+(ok?' ok':'')+'">'+msg+'</p>':'')+
+    '<div class="pf-sec"><div class="pf-h">Your name</div>'+
+    '<p class="pf-p">Shown on the leaderboard and on every season you have filed. Letters, numbers and underscores.</p>'+
+    '<div class="arow"><input id="pf-name" type="text" maxlength="20" autocomplete="off" value="'+esc(st.name||'')+'">'+
+    '<button type="button" class="btn" id="pf-rename">Change my name</button></div></div>'+
+    '<div class="pf-sec" id="pf-news"></div>'+
+    '<div class="pf-sec"><div class="arow"><button type="button" class="btn ghost" id="pf-out">Sign out</button></div></div>'+
+    '<div class="pf-sec pf-danger"><div class="pf-h">Delete my account</div>'+
+    '<p class="pf-p">This deletes your RunThe.GG account on every game here, with your profile, your seasons and your badges. It cannot be undone.</p>'+
+    '<div class="arow"><button type="button" class="btn ghost" id="pf-del">Delete my account</button></div></div>';
+  pfWire(el);
+  if(window.RTG_NEWS)$('pf-news').appendChild(RTG_NEWS.el({source:'baseball'}));else $('pf-news').remove();
+  $('pf-rename').onclick=()=>{
+    const v=$('pf-name').value.trim();
+    if(!v||v===st.name)return;
+    $('pf-rename').disabled=true;
+    A.setName(v).then(res=>{
+      if(res&&res.error)pfAccount(null,esc(res.error));
+      else{paintAvatar();pfAccount(null,'Your name is '+esc(v)+' now.',true);}
+    });
+  };
+  $('pf-out').onclick=()=>A.signOut().then(()=>{closeSheet('sheet-profile');paintAvatar();});
+  let step=0;
+  $('pf-del').onclick=async()=>{
+    const del=$('pf-del');
+    if(step===0){
+      step=1;
+      del.insertAdjacentHTML('beforebegin','<input id="pf-delname" type="text" autocomplete="off" placeholder="Type '+esc(st.name)+' to confirm">');
+      del.textContent='Delete it for good';del.disabled=true;
+      const f=$('pf-delname');f.oninput=()=>{del.disabled=f.value.trim()!==st.name;};
+      try{f.focus();}catch(_){}
+      return;
+    }
+    const f=$('pf-delname');if(!f||f.value.trim()!==st.name){del.disabled=true;return;}
+    del.disabled=true;del.textContent='Deleting...';
+    const r=typeof A.deleteAccount==='function'?await A.deleteAccount():{error:'Accounts are not available right now.'};
+    if(r&&r.ok){PROF=null;PROF_FOR=null;closeSheet('sheet-profile');paintAvatar();return;}
+    if(r&&r.reason==='active_subscription'){
+      pfAccount(null,'You have a Pro subscription that is still '+esc(r.status||'active')+'. Cancel it in Manage billing first, so you are not charged for an account you no longer have.');return;}
+    pfAccount(null,esc((r&&r.error)||'That did not work. Nothing has been deleted.'));
+  };
+}
+
+/* ── Customize ── */
+function pfLook(el){
+  $('pf-title').textContent='Customize';
+  const C=window.RTD_CREST;const e=myEarned();
+  if(!C||!e||!e.un){el.innerHTML=pfBack()+'<p class="pf-p">Customizing is not available right now.</p>';pfWire(el);return;}
+  const p=myProf();const st=A.state();
+  const rungs=e.rungs;const clubs=Object.keys(C.CLUBS).sort((a,b)=>C.CLUBS[a][3].localeCompare(C.CLUBS[b][3]));
+  const openClubs=clubs.filter(k=>rungs[k]>0).length;
+  const markUn=new Set(e.un.marks);
+  const ringNow=C.RINGS.filter(r=>r.id===e.un.ring)[0];
+  el.innerHTML=pfBack()+
+    '<div class="pf-look-hd"><span class="pf-av big">'+myCrest(112)+'</span></div>'+
+    '<div class="pf-sec"><div class="pf-h">Club colors <span class="pf-ct">'+openClubs+' of '+clubs.length+'</span></div>'+
+    '<p class="pf-p">Play One Franchise with a club and its colors are yours. Reach October with it for the ring in its second color, and win the World Series with it for its pattern.</p>'+
+    '<div class="pf-clubs">'+clubs.map(k=>{
+      const c=C.CLUBS[k];const r=rungs[k]||0;const on=p.club===k;
+      return '<button type="button" class="pf-club'+(on?' on':'')+(r?'':' locked')+'" data-club="'+k+'" '+
+        'style="--c1:'+c[0]+';--c2:'+c[1]+'" aria-label="'+esc(c[3])+(r?'':' (locked)')+'">'+
+        '<span class="pf-sw"></span><span class="pf-cn">'+esc(c[3])+'</span>'+
+        '<span class="pf-rg">'+(r?[1,2,3].map(n=>'<i class="'+(n<=r?'got':'')+'"></i>').join(''):'Locked')+'</span></button>';
+    }).join('')+'</div></div>'+
+    '<div class="pf-sec"><div class="pf-h">Initials</div>'+
+    '<p class="pf-p">Two letters or numbers for the middle of your circle. Leave it empty to use your name.</p>'+
+    '<div class="arow"><input id="pf-init" type="text" maxlength="2" autocomplete="off" placeholder="'+esc(initialsOf(st.name))+'" value="'+esc(p.initials||'')+'">'+
+    '<button type="button" class="btn" id="pf-init-save">Save</button></div></div>'+
+    '<div class="pf-sec"><div class="pf-h">Mark <span class="pf-ct">'+e.un.marks.length+' of '+C.MARK_KEYS.length+'</span></div>'+
+    '<p class="pf-p">The shape inside your circle. Each one is opened by a badge.</p>'+
+    '<div class="pf-marks">'+C.MARK_KEYS.map(k=>{
+      const got=markUn.has(k);const on=(p.mark||'init')===k;const u=C.markUnlock(k);
+      const face=C.crest({club:'NYY',rung:0,mark:k,text:initialsOf(st.name,p.initials),size:48});
+      return '<button type="button" class="pf-mark'+(on?' on':'')+(got?'':' locked')+'" data-mark="'+k+'">'+face+
+        '<b>'+esc(C.MARKS[k].name)+'</b><span>'+esc(got?(k==='init'?'Yours from the start':(u.name||'')):(u.desc||''))+'</span></button>';
+    }).join('')+'</div></div>'+
+    '<div class="pf-sec"><div class="pf-h">Ring and rank</div>'+
+    '<p class="pf-p">These are earned, not picked. Your ring is <b>'+esc(ringNow?ringNow.name:'Club colors')+'</b> and your rank is <b>'+
+      esc(tierName(e.un.tier))+'</b>, from '+e.un.badges+' badges.</p>'+
+    '<div class="pf-rings">'+C.RINGS.map(r=>'<div class="pf-ring'+(r.id===e.un.ring?' on':'')+'"><b>'+esc(r.name)+'</b><span>'+esc(r.note)+'</span></div>').join('')+'</div></div>'+
+    '<div class="pf-sec" id="pf-parks"></div>'+
+    '<p class="aerr" id="pf-look-err" hidden></p>';
+  pfWire(el);
+  const fail=res=>{if(res&&res.error){const x=$('pf-look-err');x.hidden=false;x.textContent=res.error;}};
+  el.querySelectorAll('.pf-club').forEach(b=>b.addEventListener('click',()=>{
+    const k=b.dataset.club;
+    if(!(rungs[k]>0)){showToast('Play One Franchise with the '+C.CLUBS[k][3]+' to wear their colors.');return;}
+    const next=myProf().club===k?'':k;
+    saveProf({club:next,rung:next?rungs[k]:0}).then(fail);ga('crest_club',{club:next||'none'});pfLook(el);
+  }));
+  el.querySelectorAll('.pf-mark').forEach(b=>b.addEventListener('click',()=>{
+    const k=b.dataset.mark;
+    if(!markUn.has(k)){const u=C.markUnlock(k);showToast(u.desc||'Earn the badge to use this.');return;}
+    saveProf({mark:k}).then(fail);ga('crest_mark',{mark:k});pfLook(el);
+  }));
+  const inp=$('pf-init');
+  inp.oninput=()=>{const v=inp.value.toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,2);if(v!==inp.value)inp.value=v;};
+  $('pf-init-save').onclick=()=>{saveProf({initials:inp.value}).then(fail);pfLook(el);};
+  renderParks($('pf-parks'));
+}
+/* A small note for a tap on something locked. */
+function showToast(msg){
+  let t=$('pf-toast');
+  if(!t){t=document.createElement('div');t.id='pf-toast';t.className='pf-toast';document.body.appendChild(t);}
+  t.textContent=msg;t.classList.add('on');clearTimeout(showToast.t);
+  showToast.t=setTimeout(()=>t.classList.remove('on'),2600);
+}
+
+/* ── Career ── */
+function pfCareer(el){
+  $('pf-title').textContent='Career';
+  const e=myEarned();const rows=e?e.rows:[];const ev=e?e.ev:null;
+  const s=ev?ev.stats:{};
+  const w=rows.reduce((a,r)=>a+(r.wins||0),0),l=rows.reduce((a,r)=>a+(r.losses||0),0);
+  const oct=rows.filter(r=>r.madePlayoffs).length;
+  const mode=r=>r.staff?'staff':r.tradeMachine?'trade':r.capSurvivor?'capsurvivor':r.division?'division':r.franchise?'franchise':r.era?'era':'free';
+  const byMode={};rows.forEach(r=>{const m=mode(r);byMode[m]=(byMode[m]||0)+1;});
+  const tile=(v,k)=>'<div class="stk"><div class="sv">'+v+'</div><div class="sl">'+k+'</div></div>';
+  el.innerHTML=pfBack()+
+    '<div class="pf-stats">'+tile(s.runs||0,'Seasons')+tile(s.titles||0,'Titles')+tile(oct,'Octobers')+
+      tile(rows.length?Math.round(oct/rows.length*100)+'%':'-','October rate')+'</div>'+
+    '<div class="pf-stats">'+tile(w+'-'+l,'Career record')+tile(s.bestWins||'-','Most wins')+
+      tile(s.bestRating!=null?Math.round(s.bestRating):'-','Best rating')+tile(s.bestRank?'#'+s.bestRank:'-','Best all-time')+'</div>'+
+    '<div class="pf-stats">'+tile(ev?ev.play.best:0,'Best day streak')+tile(ev?ev.play.current||0:0,'Day streak now')+
+      tile(ev&&ev.title?ev.title.best||0:0,'Titles in a row')+tile(ev?ev.earned.length:0,'Badges')+'</div>'+
+    '<div class="pf-sec"><div class="pf-h">By mode</div>'+
+    (rows.length?'<div class="pf-modes">'+Object.keys(byMode).sort((a,b)=>byMode[b]-byMode[a])
+      .map(m=>'<div><span>'+esc(runModeLabel(m))+'</span><b>'+byMode[m]+'</b></div>').join('')+'</div>'
+      :'<p class="pf-p">Play a season signed in and it starts here.</p>')+'</div>';
+  pfWire(el);
+}
+
+/* ── Your seasons ── */
+let pfSeasonTab='recent';
+function pfSeasons(el){
+  $('pf-title').textContent='Your seasons';
+  const e=myEarned();const rows=(e?e.rows:[]).slice();
+  const sorts={recent:(a,b)=>(b.ts||0)-(a.ts||0),rating:(a,b)=>(b.rating||0)-(a.rating||0)||(b.ts-a.ts),
+    record:(a,b)=>(b.wins||0)-(a.wins||0)||(b.ts-a.ts)};
+  rows.sort(sorts[pfSeasonTab]);
+  const mode=r=>r.staff?'staff':r.tradeMachine?'trade':r.capSurvivor?'capsurvivor':r.division?'division':r.franchise?'franchise':r.era?'era':'free';
+  const out=r=>r.titleWon?'World Series champions':r.eliminatedWS?'Lost the World Series':r.madePlayoffs?(r.seedLabel||'October'):'Missed October';
+  el.innerHTML=pfBack()+
+    '<div class="pf-tabs">'+[['recent','Recent'],['rating','Best rating'],['record','Best record']]
+      .map(t=>'<button type="button" class="pf-tab'+(t[0]===pfSeasonTab?' on':'')+'" data-tab="'+t[0]+'">'+t[1]+'</button>').join('')+'</div>'+
+    (rows.length?'<div class="pf-seasons">'+rows.slice(0,25).map(r=>{
+      const d=new Date(r.ts);
+      const extra=[r.daily?'Daily':runModeLabel(mode(r)),r.franchise?teamFullName(r.franchise):null,r.era||null,r.division||null]
+        .filter(Boolean).map(esc).join(' · ');
+      return '<div class="pf-season'+(r.titleWon?' won':'')+'"><div class="pf-rec"><b>'+r.wins+'-'+r.losses+'</b><span>'+
+        (r.rating!=null?'Rating '+r.rating:'')+'</span></div><div class="pf-sw2"><b>'+esc(out(r))+'</b><span>'+extra+'</span>'+
+        '<span class="pf-when">'+d.toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'})+'</span></div></div>';
+    }).join('')+'</div>':'<p class="pf-p">No seasons yet. Play one signed in and it is kept here for good.</p>');
+  pfWire(el);
+  el.querySelectorAll('.pf-tab').forEach(b=>b.addEventListener('click',()=>{pfSeasonTab=b.dataset.tab;pfSeasons(el);}));
+}
+
 
 const $=id=>document.getElementById(id);
 /* The slot list the screen is currently drawing. All-Time Staff fields twelve arms,
@@ -3437,7 +3924,7 @@ function fieldState(el){
       '<div class="lab"><div class="who"></div><div class="yr"></div></div></div>').join('');
   el._ps={chips:[...el.querySelectorAll('.chip')],fresh:true,park,sky};
   const tag=el.querySelector('#park-tag');
-  if(tag)tag.addEventListener('click',e=>{e.stopPropagation();openTrophy('parks');});
+  if(tag)tag.addEventListener('click',e=>{e.stopPropagation();acctId()?openProfile('look'):openTrophy();});
   return el._ps;
 }
 
@@ -3822,6 +4309,7 @@ async function boot(){
     A.onChange(()=>{
       window.RTD_ACCESS_TOKEN=A.token()||null;
       if($('sheet-trophy').classList.contains('on'))renderTrophy();
+      profileSync();
       proRefresh(false).then(()=>{if(A.state().signedIn||!A.state().waiting)checkoutReturn();});
     });
   }catch(_){}
@@ -3859,6 +4347,8 @@ $('b-how-play').addEventListener('click',()=>{
   show('s-how');
 });
 $('b-trophy-hd').addEventListener('click',openTrophy);
+$('b-profile').addEventListener('click',()=>openProfile());
+document.querySelectorAll('[data-close-pf]').forEach(el=>el.addEventListener('click',()=>closeSheet('sheet-profile')));
 /* The theme, written to the key the whole suite shares, so the choice follows the
    reader to the arcade and back. The meta tag moves with it or the phone's own
    browser chrome stays cream around a dark page, which on iOS is a bright bar at
@@ -4387,6 +4877,20 @@ const BOARD_TABS=[{k:'daily',label:'Today'}].concat(
   ['free','era','franchise','division','capsurvivor','staff','trade']
     .map(m=>({k:m,label:runModeLabel(m)})));
 function openBoard(){show('s-board');paintBoard();}
+/* THE CIRCLES, asked for after the list is drawn, so a slow answer never holds the
+   board up. A row filed by nobody, or by somebody with no profile yet, draws their
+   initials on slate, which is what a circle is before it has been customized. */
+function paintBoardCrests(list,rows){
+  const byUid={};rows.forEach(r=>{if(r.user_id)byUid[r.user_id]=r.display_name;});
+  const draw=map=>list.querySelectorAll('.bd-crest').forEach(el=>{
+    const uid=el.dataset.uid;
+    const nm=uid?byUid[uid]:null;
+    el.innerHTML=crestSvg(uid&&map&&map[uid]||{},nm||'?',30);
+  });
+  draw(null);
+  if(typeof A.profilesOf!=='function')return;
+  A.profilesOf(Object.keys(byUid)).then(map=>{if(map&&list.isConnected)draw(map);});
+}
 function paintBoard(){
   $('bd-tabs').innerHTML=BOARD_TABS.map(t=>
     '<button class="bd-tab'+(t.k===boardTab?' on':'')+'" data-k="'+t.k+'">'+
@@ -4422,11 +4926,13 @@ function paintBoard(){
       if(r.cuts)detail.push(r.cuts+' cut');
       if(r.trades)detail.push(r.trades+' dealt');
       return '<div class="bd-row"><div class="bd-pos">'+(i+1)+'</div>'+
+        (r.user_id?'<span class="bd-crest" data-uid="'+esc(r.user_id)+'"></span>':'<span class="bd-crest"></span>')+
         '<div class="bd-who"><div class="bd-name">'+
           esc(r.display_name||'Anonymous')+'</div>'+
         '<div class="bd-meta">'+detail.join(' \u00b7 ')+'</div></div>'+
         '<div class="bd-rec"><b>'+r.wins+'-'+r.losses+'</b><span>record</span></div></div>';
     }).join('');
+    paintBoardCrests(list,rows);
   });
 }
 
