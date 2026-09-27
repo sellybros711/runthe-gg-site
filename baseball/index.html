@@ -1321,6 +1321,15 @@ body:has(#s-intro.on) header .lockup{visibility:hidden}
   font-size:9.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;padding:3px 8px;
   border-radius:99px;color:var(--dim);border:1px solid rgba(var(--edge),.18);background:var(--panel)}
 .hp-meter.pro{color:#1a1205;border-color:transparent;background:linear-gradient(180deg,#e2b24a,#c99526)}
+.hp-meter.free,.modecard .mc-sticker.free{color:var(--green);background:var(--panel);border:1px solid currentColor}
+.modecard .mc-back{margin-top:auto;padding-top:8px;font-size:11.5px;font-weight:700;color:var(--dim)}
+.mc-rule{margin:0 0 12px;padding:11px 13px;border-radius:12px;border:1px solid rgba(var(--edge),.14);
+  background:rgba(var(--edge),.03);font-size:13px;line-height:1.45;color:var(--ink)}
+.mc-rule p{margin:0}
+.mc-rule b{color:var(--ink)}
+.mc-rule.pro b{color:var(--gold)}
+.mc-rule button{margin-top:6px;background:none;border:0;padding:0;font:inherit;font-weight:800;color:var(--gold);
+  text-decoration:underline;text-underline-offset:2px;cursor:pointer;text-align:left}
 .modecard .mc-sticker.used{background:none;color:var(--dim);border:1px solid rgba(var(--edge),.2)}
 .pro-lead{font-size:14px;line-height:1.5;color:var(--ink);margin:2px 0 12px}
 .pro-list{list-style:none;margin:0 0 14px;padding:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px 12px}
@@ -4465,22 +4474,28 @@ const MODE_CARDS=[
   {id:'div',tile:'Division Draft',line:'The clubs that really shared a division.',mode:'division',tint:'var(--gold)',cls:'mc-div',title:'Division Draft',
    icon:'<path d="M4 4h16"/><path d="M4 4v16"/><path d="M8 8h8v4H8z"/><path d="M8 16h8"/>',
    text:'Pick a division and draft only from the clubs that were in it, 1994 to today.',
-   sticker:'New'},
+  },
   {id:'cap',tile:'Cap Survivor',line:'Contracts inflate. Stay under or cut.',mode:'capsurvivor',tint:'var(--red)',cls:'mc-cap',title:'Salary Cap Survivor',
    icon:'<path d="M12 2.6v18.8"/><path d="M16.6 6.4H9.8a2.9 2.9 0 0 0 0 5.8h4.4a2.9 2.9 0 0 1 0 5.8H6.8"/>',
    text:'Contracts inflate as the season runs. Stay under the cap or cut somebody.',
-   sticker:'New'},
+  },
   {id:'staff',tile:'Pitching Staff',line:'Twelve arms. Lowest ERA wins.',mode:'staff',tint:'var(--purple)',cls:'mc-staff',title:'All-Time Pitching Staff',
    icon:'<path d="M12 2.8a9.2 9.2 0 1 0 0 18.4 9.2 9.2 0 0 0 0-18.4Z"/><path d="M6.2 5.6c3.4 3 3.4 9.8 0 12.8"/><path d="M17.8 5.6c-3.4 3-3.4 9.8 0 12.8"/>',
    text:'Draft a five-man rotation and a bullpen. Your lineup is league average.',
-   sticker:'New'},
+  },
   {id:'trade',tile:'Trade Machine',line:'A roster handed to you. Deal your way up.',mode:'trade',tint:'var(--orange)',cls:'mc-trade',title:'The Trade Machine',
    icon:'<path d="M4.4 9.4V8.2a3.2 3.2 0 0 1 3.2-3.2h9.6V2.2l4.4 3.9-4.4 3.9V7.4H7.6a.8.8 0 0 0-.8.8v1.2z"/><path opacity=".55" d="M19.6 14.6v1.2a3.2 3.2 0 0 1-3.2 3.2H6.8v2.8l-4.4-3.9 4.4-3.9v2.6h9.6a.8.8 0 0 0 .8-.8v-1.2z"/>',
    text:'You get a roster you did not pick. Make trades before the deadline.',
-   sticker:'New'},
+  },
 ];
 function openModes(){
-  $('modes-in').innerHTML=
+  /* THE RULE IS SAID BEFORE THE FIRST PRESS. It used to be said only by the
+     refusal, so a player learned one free draft a day by losing it. */
+  const rule=isPro()?'<p class="mc-rule pro"><b>Pro:</b> every mode, as often as you like.</p>'
+    :'<div class="mc-rule"><p><b>One free draft of each mode a day.</b> '+
+      (untilReset()?'New ones in '+untilReset()+'. ':'')+'Classic and the daily never count.</p>'+
+      '<button type="button" id="b-mc-pro">Go Pro for '+PRO_PRICE+PRO_TERM+' to play without limits</button></div>';
+  $('modes-in').innerHTML=rule+
     '<div class="modecards mc-grid">'+
     MODE_CARDS.map(m=>
       '<button class="modecard '+m.cls+(m.soon?' mc-soon':'')+'" data-mode="'+m.id+'"'+
@@ -4488,10 +4503,12 @@ function openModes(){
         (m.soon?'<span class="mc-sticker soon">Soon</span>'
               :isPro()?'<span class="mc-sticker">Unlimited</span>'
               :modeUsed(CARD_METER[m.id])?'<span class="mc-sticker used">Played today</span>'
-              :(m.sticker?'<span class="mc-sticker">'+esc(m.sticker)+'</span>':''))+
+              :'<span class="mc-sticker free">1 free today</span>')+
         '<div class="mc-head"><div class="mc-icon"><svg viewBox="0 0 24 24">'+m.icon+
         '</svg></div><div class="mc-title">'+esc(m.title)+'</div>'+(m.soon?'':ARROW)+'</div>'+
-        '<p>'+esc(m.text)+'</p></button>').join('')+
+        '<p>'+esc(m.text)+'</p>'+
+        (!m.soon&&modeUsed(CARD_METER[m.id])&&untilReset()?'<p class="mc-back">Free again in '+untilReset()+'</p>':'')+
+        '</button>').join('')+
     '</div>'+
     '<div class="xpromo"><p class="xp-h">More games like this one</p><div class="modecards mc-grid">'+
       '<a class="modecard" href="/football/">'+
@@ -4505,6 +4522,7 @@ function openModes(){
         '</div><div class="mc-title">Perfect College Season</div>'+ARROW+'</div>'+
         '<p>College football, 2005 to 2025. Six players, twelve games.</p></a>'+
     '</div></div>';
+  const mp=$('b-mc-pro');if(mp)mp.onclick=()=>{closeSheet('sheet-modes');ga('pro_opened',{from:'modes'});openPro(null);};
   $('modes-in').querySelectorAll('[data-mode]').forEach(btn=>{
     btn.addEventListener('click',()=>{closeSheet('sheet-modes');pickMode(btn.dataset.mode);});
   });
@@ -4668,7 +4686,7 @@ function paintProState(){
       /* The offer and nothing before it, the owner's call. The daily rule is said
          where it bites: the Pro sheet and the mode tiles' Played today chip. */
       line.innerHTML='<button type="button" id="b-hp-pro">Go Pro for '+
-        PRO_PRICE+PRO_TERM+'</button> to play without limits.';
+        PRO_PRICE+PRO_TERM+'</button> to play without limits. Free: one draft of each mode a day.';
       const b=$('b-hp-pro');if(b)b.onclick=()=>{ga('pro_opened',{from:'home'});openPro(null);};
     }
   }
@@ -4680,7 +4698,7 @@ function paintProState(){
 function meterChip(m){
   if(isPro())return '<i class="hp-meter pro">Unlimited</i>';
   if(modeUsed(m))return '<i class="hp-meter">Played today</i>';
-  return '';
+  return '<i class="hp-meter free">1 free today</i>';
 }
 
 /* THE SHEET. Opened three ways: a mode already played today (`m` names it), the

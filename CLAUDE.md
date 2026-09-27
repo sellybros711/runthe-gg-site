@@ -16346,6 +16346,12 @@ its insert wrote, so the key IS the rule. 121's header still describes the share
 because that is what it deployed. Preflight row 33 asks for the wider key, and the SQL
 test fails on a database that has 121 without 122.
 
+**THE RULE IS SAID BEFORE THE FIRST PRESS.** It used to be said only by the refusal, so a
+player learned "one a day" by losing their play. The modes sheet opens on a box stating it, with
+the reset time and the Pro link, and every unplayed mode wears `1 free today` (the old `New`
+sticker is gone to make room). A played one says `Played today` and when it comes back. The
+desktop tiles carry the same chip, and `check-pro` asserts all three.
+
 **IT IS THE ONE PRODUCT THAT BELONGS TO ONE GAME, and the rule it bends is kept.** The
 store section above says never to build a price or an unlock for one game, and the
 reason is a second payment path. `diamond-pro` is a row in `_bundles.js`, sold through

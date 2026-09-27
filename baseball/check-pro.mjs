@@ -145,7 +145,7 @@ try {
     const price = (/const PRO_PRICE='([^']+)'/.exec(src) || [])[1] || '(none)';
     claim(/^Go Pro for /.test(line.trim()) && line.includes(price + ' a year'),
       'the front page offers Pro, with the price and that it is yearly', line);
-    claim((await chip(page, 'cap')) === '', 'an unplayed mode carries no chip');
+    claim((await chip(page, 'cap')) === '1 free today', 'an unplayed mode says it has one free draft today');
 
     await tile(page, 'cap');
     claim(await onScreen(page, 's-draft'), 'the first Cap Survivor start opens the draft');
@@ -201,7 +201,7 @@ try {
   {
     const { ctx, page } = await open({ signedIn: false },
       { plays: { day: '2000-01-01', by: { guest: ['capsurvivor', 'era', 'trade'] } } });
-    claim((await chip(page, 'cap')) === '', 'a ledger from another day draws no chip');
+    claim((await chip(page, 'cap')) === '1 free today', 'a ledger from another day leaves the mode free today');
     await tile(page, 'cap');
     claim(await onScreen(page, 's-draft'), 'and the mode opens');
     await ctx.close();
@@ -281,6 +281,13 @@ try {
       return s ? s.textContent : '';
     });
     claim(sticker === 'Played today', 'the mode card says it was played today', sticker);
+    const rule = await page.evaluate(() => (document.querySelector('#modes-in .mc-rule') || {}).textContent || '');
+    claim(/One free draft of each mode a day/.test(rule), 'the sheet says the daily rule before anybody presses a mode', rule);
+    const other = await page.evaluate(() => {
+      const s = document.querySelector('#modes-in [data-mode="cap"] .mc-sticker');
+      return s ? s.textContent : '';
+    });
+    claim(other === '1 free today', 'an unplayed mode card says it has one free draft today', other);
     await page.evaluate(() => document.querySelector('#modes-in [data-mode="div"]').click());
     await page.waitForTimeout(120);
     claim(!(await onScreen(page, 's-div')) && await page.evaluate(() => document.getElementById('sheet-pro').classList.contains('on')),
