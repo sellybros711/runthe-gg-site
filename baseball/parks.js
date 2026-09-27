@@ -38,30 +38,43 @@ const GROUND_K = 0.85, GROUND_A = 60.5, WALL_H = 6;
 
 /* ─── the catalogue ───
    `need` answers how far along the account is; `of` is the target. A park with no
-   `of` is a yes or no. `pro` parks are the account tier's. */
+   `of` is a yes or no. `pro` parks are the account tier's.
+
+   A LONG GRIND, ONE AT A TIME, which is the owner's call. The first ladder handed out
+   seven parks inside about ten seasons, so a new account had most of the shelf in an
+   evening and nothing left to play for. Now most of the shelf is one TRACK of seasons
+   played, spaced wider as it climbs (10, 25, 50, 80, 120, 175, 250, 350), so a park
+   arrives on its own every so often for as long as somebody keeps playing, and the
+   last of them is hundreds of seasons away. Two are SPECIAL: a task the track cannot
+   hand you however long you play. The two Pro parks are the account tier's.
+
+   A season is a finished run filed signed in, which is what `ctx.n` counts, so a
+   quit draft earns nothing and a guest season is nobody's. */
 const PARKS = [
   { id: 'home', name: 'The Diamond', nod: 'The park every run starts in.',
     rarity: 'Starter', unlock: { label: 'Yours from the first pitch', free: true } },
   { id: 'cornfield', name: 'The Cornfield', nod: 'Golden hour on a farm in Iowa.',
-    rarity: 'Common', unlock: { label: 'Play a season', need: (i) => i.ctx.n, of: 1 } },
+    rarity: 'Common', unlock: { label: 'Play 10 seasons', track: true, need: (i) => i.ctx.n, of: 10 } },
   { id: 'ivy', name: 'Ivy Corner', nod: 'Ivy on brick and rooftop bleachers.',
-    rarity: 'Common', unlock: { label: 'Earn 5 badges', need: (i) => i.badges, of: 5 } },
+    rarity: 'Common', unlock: { label: 'Play 25 seasons', track: true, need: (i) => i.ctx.n, of: 25 } },
   { id: 'warehouse', name: 'Warehouse Yard', nod: 'A brick warehouse down the right field line.',
-    rarity: 'Rare', unlock: { label: 'Reach October', need: (i) => i.ctx.octobers, of: 1 } },
-  { id: 'ravine', name: 'The Ravine', nod: 'Palms, hills and a zigzag roof at dusk.',
-    rarity: 'Rare', unlock: { label: 'Win 90 games in a season', need: (i) => i.ctx.best.wins, of: 90 } },
+    rarity: 'Rare', unlock: { label: 'Play 50 seasons', track: true, need: (i) => i.ctx.n, of: 50 } },
   { id: 'fountains', name: 'Fountain Park', nod: 'Water dancing beyond the fence.',
-    rarity: 'Rare', unlock: { label: 'Earn 15 badges', need: (i) => i.badges, of: 15 } },
-  { id: 'bayside', name: 'Bayside', nod: 'Splash hits into the bay.',
-    rarity: 'Epic', unlock: { label: 'Play all 7 modes', need: (i) => Object.keys(i.ctx.modeRuns || {}).length, of: 7 } },
+    rarity: 'Rare', unlock: { label: 'Play 80 seasons', track: true, need: (i) => i.ctx.n, of: 80 } },
+  { id: 'ravine', name: 'The Ravine', nod: 'Palms, hills and a zigzag roof at dusk.',
+    rarity: 'Rare', unlock: { label: 'Play 120 seasons', track: true, need: (i) => i.ctx.n, of: 120 } },
   { id: 'milehigh', name: 'Mile High', nod: 'Snow on the peaks, pines in center.',
-    rarity: 'Epic', unlock: { label: 'Win 100 games in a season', need: (i) => i.ctx.best.wins, of: 100 } },
+    rarity: 'Epic', unlock: { label: 'Play 175 seasons', track: true, need: (i) => i.ctx.n, of: 175 } },
   { id: 'frieze', name: 'The Frieze', nod: 'A white frieze, three decks and the train.',
-    rarity: 'Epic', unlock: { label: 'Win the World Series', need: (i) => i.ctx.titles, of: 1 } },
-  { id: 'monster', name: 'The Monster', nod: 'The tall green wall in left.',
-    rarity: 'Legendary', unlock: { label: 'Earn 40 badges', need: (i) => i.badges, of: 40 } },
+    rarity: 'Epic', unlock: { label: 'Play 250 seasons', track: true, need: (i) => i.ctx.n, of: 250 } },
   { id: 'horseshoe', name: 'The Horseshoe', nod: 'A 1920s bathtub park, in sepia.',
-    rarity: 'Legendary', unlock: { label: 'Play 25 seasons', need: (i) => i.ctx.n, of: 25 } },
+    rarity: 'Legendary', unlock: { label: 'Play 350 seasons', track: true, need: (i) => i.ctx.n, of: 350 } },
+  { id: 'bayside', name: 'Bayside', nod: 'Splash hits into the bay.',
+    rarity: 'Legendary', special: true,
+    unlock: { label: 'Reach October in all 7 modes', need: (i) => Object.keys(i.ctx.modeOct || {}).length, of: 7 } },
+  { id: 'monster', name: 'The Monster', nod: 'The tall green wall in left.',
+    rarity: 'Legendary', special: true,
+    unlock: { label: 'Win 5 World Series', need: (i) => i.ctx.titles, of: 5 } },
   { id: 'dome', name: 'The Dome', nod: 'Turf, a ribbed roof and a light show.',
     rarity: 'Pro', unlock: { label: 'Run The Diamond Pro', pro: true } },
   { id: 'neon', name: 'Neon Nights', nod: 'Pink and teal over the water.',
@@ -85,6 +98,17 @@ function status(park, info) {
   return { ok: have >= u.of, have: Math.min(have, u.of), of: u.of, label: u.label };
 }
 function unlockedIds(info) { return PARKS.filter((p) => status(p, info).ok).map((p) => p.id); }
+/* The next park the season track will hand this account, or null when the track is
+   done. What the shelf leads with, so there is always one thing to play toward. */
+function nextOnTrack(info) {
+  if (!info || !info.signed) return null;
+  for (const p of PARKS) {
+    if (!p.unlock.track) continue;
+    const st = status(p, info);
+    if (!st.ok) return { park: p, have: st.have, of: st.of, left: st.of - st.have };
+  }
+  return null;
+}
 
 /* ─── drawing helpers ─── */
 const f = (n) => (Math.round(n * 100) / 100).toString();
@@ -112,6 +136,19 @@ function crowdPattern(id, colors, seed, opts) {
   }
   const rule = opts.rule === false ? '' : '<line x1="0" y1="' + f(rows * dy - 0.02) + '" x2="' + w + '" y2="' + f(rows * dy - 0.02) + '" stroke="rgba(0,0,0,.35)" stroke-width="0.25"/>';
   return '<pattern id="' + id + '" width="' + w + '" height="' + f(rows * dy) + '" patternUnits="userSpaceOnUse">' + s + rule + '</pattern>';
+}
+/* GRAIN. Flat fills are what make a field read as a diagram. A small tile of specks, a
+   little lighter and a little darker than whatever is under it, is what grass, dirt and
+   a warning track look like from the upper deck, and it costs a pattern rather than a
+   filter: thirteen previews on one shelf each running feTurbulence is a slow shelf. */
+function grain(id, seed, size, n, light, dark, rmin, rmax) {
+  const R = rng(seed); let g = '';
+  for (let i = 0; i < n; i++) {
+    const x = R() * size, y = R() * size, w = rmin + R() * (rmax - rmin);
+    g += '<rect x="' + f(x) + '" y="' + f(y) + '" width="' + f(w) + '" height="' + f(w * (0.5 + R())) + '" fill="' +
+      (R() < 0.5 ? light : dark) + '"/>';
+  }
+  return '<pattern id="' + id + '" width="' + size + '" height="' + size + '" patternUnits="userSpaceOnUse">' + g + '</pattern>';
 }
 const SHIRTS = ['#c9483a', '#efe4c8', '#3d5f94', '#d9a93a', '#f7f5ef', '#2f6b3f', '#8a3a8a', '#e07b39'];
 
@@ -499,22 +536,22 @@ BACK.neon = (c) => {
 
 /* Each park's field palette, over BASE. */
 const LOOK = {
-  home: {},
-  cornfield: { grass: ['#6aa84a', '#5a9a3c', '#4a8a31'], foul: '#4f8a34', mow: 'bands', dirt: ['#c9a06a', '#a98252'],
+  home: { lights: true },
+  cornfield: { sun: true, grass: ['#6aa84a', '#5a9a3c', '#4a8a31'], foul: '#4f8a34', mow: 'bands', dirt: ['#c9a06a', '#a98252'],
     wall: ['#e9e3d3', '#cfc6b0'], wallLine: '#f7f5ef', pads: false, pole: '#f7f5ef', wallTop: [12.3, 6.1], wallH: 1.4 },
-  ivy: { wallTop: [10.4, 4.0], wallH: 6.6, wallArt: IVY_WALL, pads: false, wallLine: '#7a3a2a' },
-  warehouse: { grass: ['#52a23e', '#43923a', '#357e2c'], mow: 'bands', wall: ['#1f4a33', '#14331f'] },
+  ivy: { sun: true, wallTop: [10.4, 4.0], wallH: 6.6, wallArt: IVY_WALL, pads: false, wallLine: '#7a3a2a' },
+  warehouse: { sun: true, grass: ['#52a23e', '#43923a', '#357e2c'], mow: 'bands', wall: ['#1f4a33', '#14331f'] },
   ravine: { dirt: ['#c99a6a', '#a87a4e'], wall: ['#1f4f8f', '#163a6b'], mow: 'bands' },
-  fountains: { wall: ['#1f4f8f', '#163a6b'], grass: ['#55a843', '#45963a', '#377e2c'] },
-  bayside: { wall: ['#1f3a2e', '#142a20'], dirt: ['#caa57a', '#a98556'] },
-  milehigh: { wall: ['#233148', '#172234'], mow: 'bands', grass: ['#4fa43e', '#419534', '#337c2a'] },
-  frieze: { wall: ['#1c2a4a', '#121c33'], night: true, grass: ['#3f9a38', '#338a30', '#2a7427'] },
-  monster: { front: MONSTER_FRONT, wall: ['#1f5a3a', '#16442b'] },
-  horseshoe: { grass: ['#8fa55a', '#7d9448', '#6a8038'], foul: '#6a7e3c', dirt: ['#cdb488', '#aa9064'], mound: ['#d6bf92', '#a88f64'],
+  fountains: { sun: true, wall: ['#1f4f8f', '#163a6b'], grass: ['#55a843', '#45963a', '#377e2c'] },
+  bayside: { sun: true, wall: ['#1f3a2e', '#142a20'], dirt: ['#caa57a', '#a98556'] },
+  milehigh: { sun: true, wall: ['#233148', '#172234'], mow: 'bands', grass: ['#4fa43e', '#419534', '#337c2a'] },
+  frieze: { wall: ['#1c2a4a', '#121c33'], night: true, lights: true, grass: ['#3f9a38', '#338a30', '#2a7427'] },
+  monster: { sun: true, front: MONSTER_FRONT, wall: ['#1f5a3a', '#16442b'] },
+  horseshoe: { sun: true, grass: ['#8fa55a', '#7d9448', '#6a8038'], foul: '#6a7e3c', dirt: ['#cdb488', '#aa9064'], mound: ['#d6bf92', '#a88f64'],
     track: '#9a8666', wall: ['#4c5534', '#353d24'], wallLine: '#e8dcc0', pole: '#e8dcc0', mow: 'none', pads: false },
   dome: { grass: ['#3cae4c', '#35a044', '#2e9140'], foul: '#2e9140', mow: 'none', skin: false,
     dirt: ['#c0704a', '#9c5636'], mound: ['#c77a52', '#9c5636'], track: '#2a7a38', wall: ['#1f4f8f', '#163a6b'] },
-  neon: { wall: ['#0f6e70', '#0a4f51'], wallLine: '#ff4fa3', pole: '#2de2d6', night: true, grass: ['#3a9a3c', '#308a32', '#277428'] },
+  neon: { wall: ['#0f6e70', '#0a4f51'], wallLine: '#ff4fa3', pole: '#2de2d6', night: true, lights: true, grass: ['#3a9a3c', '#308a32', '#277428'] },
 };
 
 /* ─── the field, for a park ─── */
@@ -578,6 +615,16 @@ function markings(parkId, sfx, sky) {
         '<stop offset="0%" stop-color="rgba(0,0,0,.28)"/><stop offset="100%" stop-color="rgba(0,0,0,0)"/></linearGradient>' +
       '<radialGradient id="' + id('pool') + '" cx="50%" cy="55%" r="65%">' +
         '<stop offset="0%" stop-color="rgba(0,0,0,0)"/><stop offset="100%" stop-color="rgba(0,8,30,.32)"/></radialGradient>' +
+      grain(id('ggrain'), 11, 6, 70, 'rgba(255,255,230,.07)', 'rgba(0,30,0,.09)', 0.08, 0.2) +
+      grain(id('dgrain'), 23, 5, 60, 'rgba(255,240,210,.12)', 'rgba(70,40,15,.16)', 0.07, 0.18) +
+      '<linearGradient id="' + id('shade') + '" x1="0" y1="1" x2="1" y2="0">' +
+        '<stop offset="0" stop-color="rgba(10,25,45,.3)"/><stop offset="1" stop-color="rgba(10,25,45,.18)"/></linearGradient>' +
+      '<linearGradient id="' + id('haze') + '" x1="0" y1="1" x2="0" y2="0">' +
+        '<stop offset="0" stop-color="rgba(255,250,235,.26)"/><stop offset="1" stop-color="rgba(255,250,235,0)"/></linearGradient>' +
+      '<radialGradient id="' + id('lglow') + '" cx="50%" cy="58%" r="55%">' +
+        '<stop offset="0" stop-color="rgba(255,250,215,.16)"/><stop offset="1" stop-color="rgba(255,250,215,0)"/></radialGradient>' +
+      '<linearGradient id="' + id('trk') + '" x1="0" y1="0" x2="0" y2="1">' +
+        '<stop offset="0" stop-color="rgba(0,0,0,.22)"/><stop offset="1" stop-color="rgba(0,0,0,0)"/></linearGradient>' +
       '<pattern id="' + id('pads') + '" width="5" height="68" patternUnits="userSpaceOnUse">' +
         '<line x1="4.8" y1="0" x2="4.8" y2="68" stroke="rgba(0,0,0,.35)" stroke-width="0.22"/></pattern>' +
       (back.defs || '') +
@@ -586,20 +633,38 @@ function markings(parkId, sfx, sky) {
     '<rect x="0" y="' + -sky + '" width="100" height="' + (68 + sky) + '" fill="' + P.foul + '"/>' +
     '<g transform="' + ground + '">' +
     '<rect x="0" y="-60" width="100" height="140" fill="' + P.foul + '"/>' +
+    (P.mow === 'diag' ? '<rect x="0" y="-60" width="100" height="140" fill="' + url('mowa') + '" opacity=".6"/>' : '') +
+    '<rect x="0" y="-60" width="100" height="140" fill="' + url('ggrain') + '"/>' +
     '<g clip-path="' + url('fair') + '">' +
       '<rect x="0" y="-60" width="100" height="140" fill="' + url('grass') + '"/>' + mow +
+      '<rect x="0" y="-60" width="100" height="140" fill="' + url('ggrain') + '"/>' +
       '<path d="' + trackIn + ' L 100,-60 L 0,-60 Z" fill="' + P.track + '"/>' +
-      '<path d="' + trackIn + '" fill="none" stroke="rgba(0,0,0,.18)" stroke-width="0.25"/>' +
+      '<path d="' + trackIn + ' L 100,-60 L 0,-60 Z" fill="' + url('dgrain') + '"/>' +
+      '<path d="' + trackIn + ' L 100,-60 L 0,-60 Z" fill="' + url('trk') + '"/>' +
+      '<path d="' + trackIn + '" fill="none" stroke="rgba(0,0,0,.22)" stroke-width="0.3"/>' +
+      '<path d="' + curve(16.3, 10) + '" fill="none" stroke="rgba(255,255,255,.07)" stroke-width="0.5"/>' +
       (P.skin ? '<circle cx="50" cy="' + mY + '" r="23.2" fill="' + url('dirt') + '"/>' +
-        '<circle cx="50" cy="' + mY + '" r="23.2" fill="none" stroke="rgba(90,60,25,.35)" stroke-width="0.3"/>' : '') +
+        '<circle cx="50" cy="' + mY + '" r="23.2" fill="' + url('dgrain') + '"/>' +
+        /* THE LIP, where the grass is cut back and the dirt piles against it: a
+           darker band just inside the edge, which is what makes the skin a surface
+           rather than a sticker. */
+        '<circle cx="50" cy="' + mY + '" r="22.7" fill="none" stroke="rgba(90,55,20,.28)" stroke-width="1"/>' +
+        '<circle cx="50" cy="' + mY + '" r="23.2" fill="none" stroke="rgba(60,40,15,.45)" stroke-width="0.3"/>' : '') +
     '</g>' +
     (P.skin ? '<path d="' + infield + '" fill="' + url('grass') + '"/>' +
       (P.mow === 'diag' ? '<path d="' + infield + '" fill="' + url('mowa') + '"/>' : '') +
+      '<path d="' + infield + '" fill="' + url('ggrain') + '"/>' +
       '<path d="' + infield + '" fill="none" stroke="rgba(60,40,15,.28)" stroke-width="0.25"/>' : '') +
     '<circle cx="' + bL + '" cy="' + bY + '" r="2.6" fill="' + url('dirt') + '"/>' +
     '<circle cx="' + bR + '" cy="' + bY + '" r="2.6" fill="' + url('dirt') + '"/>' +
     '<circle cx="' + hx + '" cy="' + hy + '" r="4.8" fill="' + url('dirt') + '"/>' +
     '<circle cx="50" cy="' + tY + '" r="2.4" fill="' + url('dirt') + '"/>' +
+    [[bL, bY, 2.6], [bR, bY, 2.6], [hx, hy, 4.8], [50, tY, 2.4]].map((b) =>
+      '<circle cx="' + b[0] + '" cy="' + b[1] + '" r="' + b[2] + '" fill="' + url('dgrain') + '"/>' +
+      '<circle cx="' + b[0] + '" cy="' + b[1] + '" r="' + f(b[2] - 0.25) + '" fill="none" stroke="rgba(90,55,20,.25)" stroke-width="0.45"/>').join('') +
+    /* worn batter's boxes, where the dirt is dug out */
+    '<ellipse cx="46.7" cy="62.4" rx="1.3" ry="1.9" fill="rgba(80,50,20,.22)"/>' +
+    '<ellipse cx="53.3" cy="62.4" rx="1.3" ry="1.9" fill="rgba(80,50,20,.22)"/>' +
     '<ellipse cx="50" cy="' + (mY + 0.5) + '" rx="3.7" ry="3.5" fill="rgba(0,0,0,.18)"/>' +
     '<circle cx="50" cy="' + mY + '" r="3.4" fill="' + url('mound') + '"/>' +
     '<rect x="49.1" y="' + (mY - 0.35) + '" width="1.8" height=".5" rx=".1" fill="' + wh + '.95)"/>' +
@@ -622,15 +687,25 @@ function markings(parkId, sfx, sky) {
     '<path d="M 48.8,61.8 L 51.2,61.8 L 51.2,62.9 L 50,64 L 48.8,62.9 Z" fill="#fbfaf5" stroke="rgba(0,0,0,.2)" stroke-width="0.12"/>' +
     '</g>' +
     (P.night ? '<rect x="0" y="' + -sky + '" width="100" height="' + (68 + sky) + '" fill="' + url('pool') + '"/>' : '') +
+    /* THE LIGHT. A day game carries the grandstand's shadow across the corner by third,
+       with a hard edge because the sun is a point; a night game pools under the
+       towers. Either one is what tells the eye the field is a place and not a plan. */
+    (P.sun ? '<path d="M 0,68 L 0,32 L 64,68 Z" fill="' + url('shade') + '"/>' : '') +
+    (P.lights ? '<rect x="0" y="' + -sky + '" width="100" height="' + (68 + sky) + '" fill="' + url('lglow') + '"/>' : '') +
     /* everything behind the wall */
     '<g clip-path="' + url('above') + '">' +
       '<rect x="0" y="' + -sky + '" width="100" height="' + (y0b + sky) + '" fill="' + (back.top ||
         (/stop offset="0" stop-color="([^"]+)"/.exec(back.defs || '') || [])[1] || '#1c2330') + '"/>' +
-      '<g transform="translate(0,' + f(shift) + ')">' + back.art + '</g></g>' +
+      '<g transform="translate(0,' + f(shift) + ')">' + back.art + '</g>' +
+      /* distance. What stands behind the wall is a long way off, and on a day game
+         the air between is lighter than the thing it is in front of. */
+      (P.sun ? '<rect x="0" y="' + f(apt - 12) + '" width="100" height="' + f(y0t - apt + 12.5) + '" fill="' + url('haze') + '"/>' : '') +
+    '</g>' +
     /* the wall */
     (P.wallArt ? P.wallArt(c) :
       '<path d="' + wallPath + '" fill="' + url('wall') + '"/>' + (P.pads ? '<path d="' + wallPath + '" fill="' + url('pads') + '"/>' : '')) +
     '<path d="' + wallTop + '" fill="none" stroke="' + P.wallLine + '" stroke-width="0.4"/>' +
+    '<path d="' + curve(y0t + 0.55, apt + 0.55) + '" fill="none" stroke="rgba(255,255,255,.1)" stroke-width="0.35"/>' +
     '<path d="' + wallBot + '" fill="none" stroke="rgba(0,0,0,.45)" stroke-width="0.3"/>' +
     '<path d="' + curve(y0b + 1.2, apb + 1.2) + ' L 100,' + y0b + ' Q 50,' + (2 * apb - y0b) + ' 0,' + y0b + ' Z" fill="' + url('drop') + '"/>' +
     (P.front ? '<g transform="translate(0,' + f(shift) + ')">' + P.front(c) + '</g>' : '') +
@@ -639,7 +714,7 @@ function markings(parkId, sfx, sky) {
     '</svg><div class="vig"></div>';
 }
 
-const api = { PARKS, BY_ID, SKY, GROUND_K, GROUND_A, status, unlockedIds, markings, LOOK };
+const api = { PARKS, BY_ID, SKY, GROUND_K, GROUND_A, status, unlockedIds, nextOnTrack, markings, LOOK };
 if (typeof module !== 'undefined' && module.exports) module.exports = api;
 if (typeof window !== 'undefined') window.RTD_PARKS = api;
 })();

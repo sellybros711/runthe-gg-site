@@ -255,7 +255,9 @@ try {
   head('5. CUSTOMIZE SAVES ONLY WHAT IS EARNED');
   {
     resetServer();
+    /* ten seasons, so the season track has opened the first park after the home one */
     const mine = [row({ franchise: 'NYY', madePlayoffs: true, titleWon: true, wins: 100 })];
+    for (let i = 0; i < 9; i++) mine.push(row({ wins: 80 + i }));
     const { ctx, page } = await open({ signedIn: true }, { history: mine });
     await settle(page);
     await openPf(page);

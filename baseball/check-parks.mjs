@@ -96,26 +96,45 @@ const row = (o) => Object.assign({ ts: Date.now(), wins: 81, losses: 81, madePla
 const infoOf = (rows, pro) => ({ signed: true, pro: !!pro, badges: ACH.evaluate(rows).earned.length, ctx: ACH.buildCtx(rows) });
 claim(PK.unlockedIds(null).join() === 'home', 'a guest has the home park and nothing else');
 claim(PK.unlockedIds(infoOf([])).join() === 'home', 'a new account has the home park and nothing else');
-/* A career that has done every thing the rules ask for, built from the modes the
-   badge file itself lists, so it cannot drift from what the game records. */
+/* A career that has done every thing the rules ask for: the whole season track (350),
+   five titles, and October in every mode, built from the modes the badge file itself
+   lists, so it cannot drift from what the game records. */
 const flags = { era: { era: '1950s' }, franchise: { franchise: 'NYY' }, division: { division: 'AL East' },
   survivor: { capSurvivor: true }, staff: { staff: true }, trade: { tradeMachine: true }, classic: {} };
 const vet = [];
-for (let i = 0; i < 30; i++) {
+for (let i = 0; i < 350; i++) {
   const m = ACH.MODES[i % ACH.MODES.length][0];
-  vet.push(row(Object.assign({ ts: Date.now() - i * 864e5, wins: 72 + i, losses: 90 - i, madePlayoffs: i > 5, titleWon: i === 29 }, flags[m] || {})));
+  vet.push(row(Object.assign({ ts: 1.7e12 + i * 864e5, wins: 72 + (i % 30), losses: 90 - (i % 30),
+    madePlayoffs: i % 7 < 7 && i > 20, titleWon: i >= 340 && i < 345 }, flags[m] || {})));
 }
 const vi = infoOf(vet), vp = infoOf(vet, true);
 const notPro = PK.PARKS.filter((p) => !p.unlock.pro);
 const stuck = notPro.filter((p) => !PK.status(p, vi).ok).map((p) => p.name);
-claim(!stuck.length, 'a thirty season veteran has every park that is not Pro', stuck.join(', ') + ` (badges ${vi.badges})`);
+claim(!stuck.length, 'a career that finished the track and both special tasks has every park that is not Pro', stuck.join(', ') + ` (badges ${vi.badges})`);
 claim(PK.PARKS.filter((p) => p.unlock.pro).every((p) => !PK.status(p, vi).ok && PK.status(p, vp).ok), 'a Pro park is Pro and only Pro');
 claim(ACH.MODES.length === 7 && /7 modes/.test(PK.BY_ID.bayside.unlock.label), 'the rule that says "all 7 modes" counts the modes the game has');
 claim(PK.PARKS.filter((p) => p.unlock.of > 1).every((p) => { const s = PK.status(p, infoOf([])); return s.have === 0 && s.of > 1; }),
   'a park with a count reports how far along an account is');
-/* A badge count may not ask for more badges than exist. */
-const maxBadge = Math.max(...PK.PARKS.filter((p) => /badges/.test(p.unlock.label)).map((p) => p.unlock.of));
-claim(maxBadge < ACH.CATALOGUE.length / 3, `the most badges a park asks for (${maxBadge}) is a fraction of the ${ACH.CATALOGUE.length} there are`);
+
+/* THE LONG GRIND, ONE AT A TIME. Asked for by the owner after the first ladder handed
+   out seven parks in about ten seasons. The track is strictly increasing, each step
+   opens exactly one park, nothing opens inside the first nine seasons, the last step
+   is hundreds of seasons out, and the special parks are not on it. */
+const track = PK.PARKS.filter((p) => p.unlock.track);
+const steps = track.map((p) => p.unlock.of);
+claim(steps.every((v, i) => i === 0 || v > steps[i - 1]), 'the season track climbs: ' + steps.join(', '));
+claim(steps[0] >= 10 && steps[steps.length - 1] >= 300, 'it starts at ten seasons and ends hundreds of seasons out');
+claim(track.length >= 7, `most of the shelf is the track (${track.length} of ${PK.PARKS.length})`);
+const seasons = (n) => { const r = []; for (let i = 0; i < n; i++) r.push(row({ ts: 1.6e12 + i * 1000, wins: 85, losses: 77 })); return infoOf(r); };
+const opened = (n) => PK.unlockedIds(seasons(n)).length;
+claim(opened(9) === 1, 'nine seasons in, the home park is still the only one', String(opened(9)));
+claim(steps.every((v) => opened(v) === opened(v - 1) + 1), 'each step of the track opens exactly one park');
+claim(opened(30) <= 3, `thirty seasons in, three parks at most (${opened(30)})`);
+const specials = PK.PARKS.filter((p) => p.special);
+claim(specials.length >= 2 && specials.every((p) => !p.unlock.track && !PK.status(p, seasons(400)).ok),
+  'the special parks are not on the track, and four hundred plain seasons do not open them');
+const nx = PK.nextOnTrack(seasons(12));
+claim(nx && nx.park.id === 'ivy' && nx.left === 13, 'the shelf names the next park and how far off it is', JSON.stringify(nx && { id: nx.park.id, left: nx.left }));
 
 if (QUICK) { console.log(`\n${fails ? fails + ' of ' + (fails + passes) + ' checks FAILED' : 'All ' + passes + ' checks passed.'}`); process.exit(fails ? 1 : 0); }
 

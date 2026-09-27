@@ -497,6 +497,15 @@ body:has(#s-intro.on) header .lockup{visibility:hidden}
 .pk-title{font-family:var(--fd);font-size:20px;text-transform:uppercase;letter-spacing:.02em}
 .pk-count{font-family:var(--fn);font-size:11px;font-weight:800;letter-spacing:.08em;color:var(--dim)}
 .pk-sub{font-size:12.5px;color:var(--dim);margin:2px 0 10px}
+.pk-next{display:flex;gap:12px;align-items:center;padding:10px;margin:0 0 12px;border-radius:12px;
+  border:1.5px solid var(--gold);background:rgba(184,134,11,.08)}
+.pk-next .pk-view{flex:0 0 120px;width:120px;border-radius:8px;overflow:hidden;filter:saturate(.55) brightness(.85)}
+.pk-next-b{display:flex;flex-direction:column;gap:3px;min-width:0;flex:1}
+.pk-next-e{font-family:var(--fn);font-size:9.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--gold)}
+.pk-next-b b{font-family:var(--fd);font-size:20px;line-height:1.05;color:var(--ink)}
+.pk-next-b>span:not(.pk-next-e):not(.pk-bar){font-size:12px;color:var(--dim)}
+.pk-next .pk-bar{display:block;height:6px;border-radius:99px;background:rgba(var(--edge),.12);overflow:hidden;margin-top:3px}
+.pk-next .pk-bar i{display:block;height:100%;background:var(--gold);border-radius:99px}
 .pk-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
 @media (min-width:640px){.pk-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
 .pk-card{--rc:#8a8f98;position:relative;border-radius:12px;overflow:hidden;background:var(--panel);
@@ -2663,8 +2672,8 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
 <script src="engine.js?v=33"></script>
 <script src="run.js?v=27"></script>
 <script src="achievements.js?v=10"></script>
-<script src="parks.js?v=4"></script>
-<script src="crest.js?v=1"></script>
+<script src="parks.js?v=5"></script>
+<script src="crest.js?v=2"></script>
 <script src="board.js?v=2"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="auth.js?v=3"></script>
@@ -3019,16 +3028,22 @@ function renderParks(target){
   const info=parkInfo();const cur=currentPark();
   const got=RTD_PARKS.PARKS.filter(p=>RTD_PARKS.status(p,info).ok).length;
   el.innerHTML='<div class="pk-hd"><span class="pk-title">Ballparks</span><span class="pk-count">'+got+' of '+RTD_PARKS.PARKS.length+'</span></div>'+
-    '<p class="pk-sub">Your park is the backdrop every draft is played on. Earn more by playing.</p>'+
+    '<p class="pk-sub">Your park is the backdrop every draft is played on. A new one opens every so often as you keep playing, and two ask for something special.</p>'+
+    /* THE ONE THING TO PLAY TOWARD. The track hands parks out one at a time over
+       hundreds of seasons, so the shelf leads with the next one and how far off it is. */
+    (()=>{const nx=RTD_PARKS.nextOnTrack&&RTD_PARKS.nextOnTrack(info);if(!nx)return '';
+      return '<div class="pk-next">'+parkPreview(nx.park.id,'nx')+'<div class="pk-next-b"><span class="pk-next-e">Next ballpark</span>'+
+        '<b>'+esc(nx.park.name)+'</b><span>'+nx.left+' more '+(nx.left===1?'season':'seasons')+' to go</span>'+
+        '<span class="pk-bar"><i style="width:'+Math.round(nx.have/nx.of*100)+'%"></i></span></div></div>';})()+
     '<div class="pk-grid">'+RTD_PARKS.PARKS.map(p=>{
       const st=RTD_PARKS.status(p,info);const on=p.id===cur;
       const foot=on?'<span class="pk-on">In use</span>'
         :st.ok?'<button type="button" class="pk-use" data-park="'+p.id+'">Use this park</button>'
         :'<span class="pk-need"><svg viewBox="0 0 24 24" aria-hidden="true">'+BDG_LOCK+'</svg>'+esc(st.label)+'</span>'+
           (st.of>1?'<span class="pk-bar"><i style="width:'+Math.round(st.have/st.of*100)+'%"></i></span><span class="pk-prog">'+st.have+' / '+st.of+'</span>':'');
-      return '<div class="pk-card r-'+PARK_RARITY[p.rarity]+(on?' on':'')+(st.ok?'':' locked')+'">'+
+      return '<div class="pk-card r-'+PARK_RARITY[p.rarity]+(on?' on':'')+(st.ok?'':' locked')+(p.special?' special':'')+'">'+
         parkPreview(p.id,'pv')+
-        '<div class="pk-body"><span class="pk-rar">'+esc(p.rarity)+'</span>'+
+        '<div class="pk-body"><span class="pk-rar">'+esc(p.special?p.rarity+' \u00b7 Special':p.rarity)+'</span>'+
         '<div class="pk-name">'+esc(p.name)+'</div><div class="pk-nod">'+esc(p.nod)+'</div>'+
         '<div class="pk-foot">'+foot+'</div></div></div>';
     }).join('')+'</div>';

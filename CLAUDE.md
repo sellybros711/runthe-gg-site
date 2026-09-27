@@ -14057,6 +14057,14 @@ load and is live on the NFL game, and teaching it a second sport makes every bas
 change a change to a shipped football file. **The cost is that a renderer fix has to be
 made twice.** The header of each copy says so.
 
+**The marks were redrawn to look struck rather than stuck on.** Every mark has depth now:
+a soft offset copy under it and ink lit from above (a gradient from the ink toward the
+field), both detail, so a board row at 30px keeps the flat mark it can read. The shapes
+carry the details that make them objects: V stitches on the ball, a paneled cap with its
+brim's underside, a whole field from above, a mitt with a laced web (a glove drawn as an
+open hand reads as a hand), bats with grip tape and a ball, a faceted star, a ring with a
+cut stone. The ids did not change, because `rtd_profiles` stores them.
+
 **The club ladder is One Franchise's**: play a club (its colors), reach October with it
 (the ring in its second color), win the World Series with it (its pattern). A club never
 played is drawn locked and a tap on it saves nothing; so is a mark whose badge is not
@@ -14940,6 +14948,26 @@ earned, best wins, Octobers, titles, seasons played, modes played) or about
 `isPro()`. So a park is retroactive, follows the account, and cannot be lost by
 clearing site data. A guest drafts on the home park. The only stored thing is the
 CHOICE, `rtd_park_v1`, keyed by account on the device.
+
+**THE SHELF IS A LONG GRIND, ONE PARK AT A TIME**, the owner's call after the first ladder
+handed a new account seven parks inside about ten seasons. Eight parks are one TRACK of
+seasons played (10, 25, 50, 80, 120, 175, 250, 350), so a park arrives on its own every so
+often for as long as somebody plays, and the last is hundreds of seasons out. Two are
+SPECIAL, tasks the track can never hand you (October in all seven modes, five World
+Series), and two are Pro. The shelf leads with the next park on the track and how many
+seasons are left (`nextOnTrack`). `check-parks` holds the shape rather than the numbers:
+the track climbs, each step opens exactly one park, nothing opens inside nine seasons,
+and four hundred plain seasons do not open a special park. **Accounts that had parks
+under the old ladder lose the ones the new ladder has not reached yet**, and a chosen park
+they no longer have falls back to the home park, which is the rule below doing its job.
+
+**The field has light and grain, shared by every park.** Grain patterns on the grass, the
+dirt and the track (a pattern, not feTurbulence, because the shelf draws thirteen
+previews); a lip where the skin meets the grass; worn batter's boxes; a grandstand shadow
+across home plate on a day park (`sun`) and a light pool under the towers at night
+(`lights`); and haze over the backdrop just above the wall on a day park. **A new layer's
+id can collide with a backdrop's own**: Neon Nights already defines `glow`, which is why
+the field's is `lglow`, and check-parks names the collision if it comes back.
 
 **A choice the account cannot back falls back to the home park**, never to a
 park it does not have: signed out, another account on the browser, or a Pro park
