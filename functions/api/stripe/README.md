@@ -300,14 +300,15 @@ it grants `rtd_premium`, and the page asks `premium_products()` for it.
 
 What it sells: the six extra modes (Eras, One Franchise, Division, Cap Survivor,
 All-Time Pitching Staff, Trade Machine) with no daily limit. Free accounts and
-guests get one token per Eastern day, spent on any one of the six. Classic and the daily are free
+guests get one start of each mode per Eastern day. Classic and the daily are free
 for everybody and never counted.
 
 ### Go-live, in this order
 
-1. **Run the migration** in the Supabase SQL editor:
-   `supabase/121_baseball_pro.sql`. Then paste `supabase/test/launch_preflight.sql`
-   and confirm row 31 (`121_baseball_pro`) reads **yes**. This has to come first:
+1. **Run the migrations** in the Supabase SQL editor, in order:
+   `supabase/121_baseball_pro.sql`, then `supabase/122_baseball_pro_per_mode.sql`.
+   Then paste `supabase/test/launch_preflight.sql` and confirm rows 31 and 32 read
+   **yes**. 122 turns 121's one shared play a day into one play of each mode. This has to come first:
    until it runs, the table refuses `rtd_premium` and a paid checkout 500s in the
    webhook (Stripe retries, so nobody loses money, but nobody gets Pro either).
 2. **Create the Product and Price in Stripe.** Either run the script (it is

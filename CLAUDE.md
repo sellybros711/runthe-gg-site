@@ -15311,25 +15311,65 @@ club name.
 offered and every one is deep: the thinnest is the 1900s at 102 team-seasons, 17 clubs
 and 1,291 men. What the lineage fixes for Eras is the chemistry, not the pool.
 
-### Run The Diamond Pro, and one free token a day for the six modes
+### No stock bars, no emoji, and the season waits for you
+
+Asked for by the owner in one pass, with the trophy case and the bracket.
+
+- **A primary action is the baseball button** (`.btn.ball`, seams and a `<span>` label):
+  Play the season, Sim to end, Play ball, Share result and Share today's result. A
+  share's "Copied" writes into that `<span>`, never over `innerHTML`, or the seams go.
+- **Secondary actions are tiles, not full width outlines.** The results screen's Watch
+  October, Run it back and Trophy case are one `.acts` row of `.act` tiles with a
+  drawn mark each. `.act[hidden]` carries its own `display:none`, which is the
+  `[hidden]` pair again, and check-run still reads Watch October off getComputedStyle.
+- **The chemistry bolt and the streak flame are drawn** (`ICO_BOLT`, `ICO_FLAME`),
+  in the colour of the text they sit in. An emoji is the reader's phone's drawing.
+- **The regular season ends on a button** (`#b-season-go`: On to October, or See how
+  it went). It used to move on 1.5 seconds after the last out, which took away the
+  one screen that tells the story of the 162. Every walker presses it.
+- **The draft grade is gone.** The results cells are team rating, the season's place
+  on its own board (which used to be a line in the hero), and the all-time rank. The
+  Trade Machine's deals and their WAR moved into the subtitle.
+
+**The bracket drew no winner for a series you lost.** `colGames()` built a fresh
+object for the seat across from you on every call, `settleMine()` stored the club
+that beat you as the result, and the page marks a winner by asking whether a seat IS
+the result. So your lost series showed neither side winning and no score, while that
+club carried on into the next column. The seat is one object per column now
+(`B.oppSeats`), and check-bracket asserts the winner is one of the two seats by
+identity: 106 failures with the old engine.
+
+**A bye is not a matchup**: the two bye boxes are dashed and each seat reads Bye.
+
+**The trophy case shelves are cards with the shelf drawn small.** Folded to "15
+still to earn" a new account met nine lines of grey text and no badge anywhere. Each
+shelf shows its progress and a strip of its badges, rim in their tier, and a new
+account's first shelf is open.
+
+### Run The Diamond Pro, and one free play of each mode a day
 
 ```
 node baseball/check-pro.mjs          the gate, the sheet and the checkout, in a browser
 psql -d rtd_pro -f supabase/test/baseball_pro_base.sql
 psql -d rtd_pro -f supabase/101_premium_bundles.sql
 psql -d rtd_pro -f supabase/121_baseball_pro.sql
+psql -d rtd_pro -f supabase/122_baseball_pro_per_mode.sql
 psql -d rtd_pro -f supabase/test/baseball_pro_test.sql
 ```
 
 Asked for by the owner: the six extra modes (Eras, One Franchise, Division, Cap
-Survivor, All-Time Pitching Staff, Trade Machine) share **one free token per Eastern
-day**. Play Eras and all six are shut until tomorrow. **Pro** removes the limit for
-**$9.99 once**. The first draft gave one start of EACH mode, six a day, and the owner
-corrected it inside the same session: `rtd_mode_plays` is keyed on (user, day) with
-the mode kept as a record of where the token went, and a per-mode key fails the SQL
-test by name. Classic and the daily
+Survivor, All-Time Pitching Staff, Trade Machine) get **one free start each per
+Eastern day**, and **Pro** removes the limit for **$9.99 once**. Classic and the daily
 are never counted and never sold. The Stripe steps are in
 `functions/api/stripe/README.md`.
+
+**The rule went per mode, then shared, then per mode again, and 122 is the last move.**
+121 shipped and was deployed with one token a day shared by all six, keyed on
+(user, day). The owner then asked for one of EACH, so `122_baseball_pro_per_mode.sql`
+widens the key to (user, mode, day) and nothing else: `rtd_mode_spend` counts the row
+its insert wrote, so the key IS the rule. 121's header still describes the shared token
+because that is what it deployed. Preflight row 32 asks for the wider key, and the SQL
+test fails on a database that has 121 without 122.
 
 **IT IS THE ONE PRODUCT THAT BELONGS TO ONE GAME, and the rule it bends is kept.** The
 store section above says never to build a price or an unlock for one game, and the

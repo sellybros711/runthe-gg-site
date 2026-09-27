@@ -1,11 +1,12 @@
--- Run The Diamond Pro and the daily mode meter (121_baseball_pro.sql).
+-- Run The Diamond Pro and the daily mode meter (121_baseball_pro.sql, then 122).
 --
 --   createdb rtd_pro
 --   psql -d rtd_pro -c 'create role authenticated; create role anon;'
 --   psql -d rtd_pro -f supabase/test/baseball_pro_base.sql
 --   psql -d rtd_pro -f supabase/101_premium_bundles.sql
 --   psql -d rtd_pro -f supabase/121_baseball_pro.sql
---   psql -d rtd_pro -f supabase/121_baseball_pro.sql      (twice: it is idempotent)
+--   psql -d rtd_pro -f supabase/122_baseball_pro_per_mode.sql
+--   psql -d rtd_pro -f supabase/122_baseball_pro_per_mode.sql   (twice: it is idempotent)
 --   psql -d rtd_pro -v ON_ERROR_STOP=1 -f supabase/test/baseball_pro_test.sql
 --
 -- auth.uid() is the stand-in in baseball_pro_base.sql, which reads a setting, so
@@ -26,16 +27,16 @@ begin
   assert (r->>'ok')::boolean = false and r->>'reason' = 'signed_out', 'a guest is refused a server play';
   assert (public.rtd_mode_state()->>'signed_in')::boolean = false, 'a guest reads signed out';
 
-  -- a free account: one token a day, shared by all six modes
+  -- a free account: one play of each mode a day
   perform set_config('test.uid', a::text, true);
   r := public.rtd_mode_spend('era');
-  assert (r->>'ok')::boolean, 'the first play of the day is allowed';
+  assert (r->>'ok')::boolean, 'the first era play of the day is allowed';
   r := public.rtd_mode_spend('era');
-  assert not (r->>'ok')::boolean and r->>'reason' = 'used_today', 'a second era play is refused';
+  assert not (r->>'ok')::boolean and r->>'reason' = 'used_today', 'the second era play is refused';
   r := public.rtd_mode_spend('trade');
-  assert not (r->>'ok')::boolean, 'and so is any other mode: the token is shared';
+  assert (r->>'ok')::boolean, 'a different mode is its own allowance';
   r := public.rtd_mode_state();
-  assert r->'used' = '["era"]'::jsonb, 'state names the mode the token went on: ' || (r->'used')::text;
+  assert r->'used' = '["era", "trade"]'::jsonb, 'state lists what was played: ' || (r->'used')::text;
   assert not (r->>'pro')::boolean, 'a free account is not Pro';
   assert (r->>'next_at')::timestamptz > now(), 'the next day is in the future';
   assert (r->>'next_at')::timestamptz <= now() + interval '25 hours', 'and it is at most a day away';
@@ -48,8 +49,8 @@ begin
 
   -- yesterday's play does not count today
   update public.rtd_mode_plays set day = day - 1 where user_id = a and mode = 'era';
-  r := public.rtd_mode_spend('trade');
-  assert (r->>'ok')::boolean, 'a token spent yesterday leaves today open';
+  r := public.rtd_mode_spend('era');
+  assert (r->>'ok')::boolean, 'a play from yesterday leaves today open';
 
   -- Pro: unlimited, and never written to the ledger
   perform set_config('test.uid', b::text, true);

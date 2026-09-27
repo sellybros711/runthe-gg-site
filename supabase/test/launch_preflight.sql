@@ -451,7 +451,15 @@ check_rows(sort, migration, what, breaks, ok) as (
         where name = 'premium_unlocks_product_ck' and def like '%rtd_premium%')
       and (select count(*) > 0 from has_table where name = 'rtd_mode_plays')
       and (select count(*) > 0 from proc where name = 'rtd_mode_spend')
-      and (select count(*) > 0 from proc where name = 'rtd_mode_state'))
+      and (select count(*) > 0 from proc where name = 'rtd_mode_state')),
+
+  -- THE KEY IS THE RULE. 121 keyed the meter on (user, day), one play a day
+  -- across all six modes; 122 widens it to (user, mode, day), one of each.
+  (32, '122_baseball_pro_per_mode',
+      'a free account gets one play of each extra mode a day, not one in total',
+      'The meter keeps 121''s rule: one play a day across all six modes. The page says one of each, so the second mode a player opens is refused with a sheet that says it is still free.',
+      (select count(*) > 0 from con
+        where name = 'rtd_mode_plays_pkey' and def = 'PRIMARY KEY (user_id, mode, day)'))
 )
 -- The summary has to come LAST, and a UNION can only be ordered by an output
 -- column, so the sort key is carried through a subquery rather than sorted on

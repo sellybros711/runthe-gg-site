@@ -1782,7 +1782,7 @@ function createBracket(opts) {
 
   const B = {
     mySeed, bye, firstCol, near, far, ladder,
-    results: {}, scores: {}, revealed: {},
+    results: {}, scores: {}, revealed: {}, oppSeats: {},
     colOf: (i) => firstCol + i,
   };
 
@@ -1854,11 +1854,18 @@ function createBracket(opts) {
     /* THE PLAYER'S OPPONENT IS THE RUN'S, not the bracket's. Every other seat is
      * filled by the reseed above; the seat across from them carries whatever seed
      * the pairing gave it and the club the run really scheduled. */
+    /* ONE OBJECT PER COLUMN, NEVER A FRESH ONE PER CALL. settleMine() stores the club
+     * that beat the player as a result, and the page draws a winner by asking whether
+     * a seat IS that result. A new object on every call is never the same one, so a
+     * lost series drew neither side as the winner and printed no score, while the
+     * club that won it carried on into the next column. */
     const opp = ladder[col - firstCol] || null;
     if (opp) for (const g of out) if (g.me) {
       const seat = g.pair[0] && g.pair[0].you ? 1 : 0;
       const cur = g.pair[seat];
-      g.pair[seat] = { team: opp, seed: (cur && cur.seed) || 1 };
+      const s = B.oppSeats[col] || (B.oppSeats[col] = { team: opp, seed: 1 });
+      s.seed = (cur && cur.seed) || 1;
+      g.pair[seat] = s;
     }
     return out;
   };
