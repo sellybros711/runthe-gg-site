@@ -292,10 +292,8 @@ const SKILL = {
      over-valued, so a season is decided by the roster the market leaves you rather
      than by two arms. An excuse on a badge that lights is not harmless, it is the
      check quietly agreeing not to look at that badge again. */
-  /* Two men from a curated family, which needs the draft to offer both and the
-     drafter to want them. Five rosters in 1,750 had one. The anchor is the other
-     link that has to be gone looking for rather than fallen into. */
-  family: 'link_battery',
+  /* `family` came off: it lights in quick now. See the Eras and Division note
+     at the end of this list. */
   /* THESE FIVE AND THE FIVE THAT CAME OFF ARE ONE EVENT: the pool grew. Splitting
      a traded season into one row per club added 1,035 rows and moved which
      borderline badges a sweep this size happens to reach. `rank_one` and four
@@ -325,6 +323,14 @@ const SKILL = {
      at the top of this list describes, and the archetype itself still lights. */
   murderers_row: 'arch_murderers_row',
   surv_clean_oct: 'mode_survivor_oct',
+  /* ERAS AND DIVISION STOPPED PAYING THE TEAM-MATES LINK, the owner's call, and
+     those two modes had been handing the bots about eleven wins a season through
+     it. So titles got rarer and three and four in a row went back behind the
+     line a sweep this size reaches. Anchored on back to back, which still
+     lights. The chemistry bot, no longer paid for team-mates there, now chases
+     the curated pairs instead, so `family` lights and its excuse came off. */
+  threepeat: 'btb_title',
+  fourpeat: 'btb_title',
   /* `daily_100w` HAD AN EXCUSE AND DID NOT NEED ONE. A hundred wins on a daily
      lights in the quick sweep (spread / classic), so the entry was section 5's
      own target: an excuse written for something that turned out to be reachable,

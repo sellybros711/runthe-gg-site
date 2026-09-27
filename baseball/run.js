@@ -690,8 +690,13 @@ function chemOpts(run) {
      was paying for its own rule. With it off, the same drafts land at 7.7% and 90.7
      wins, and a player chasing bonds still earns more (95.3) through the ones that
      are choices: a reunion from one season, a battery, a double-play combo. Those
-     read the shared seasons directly, so they are untouched. */
-  if (run.franchise) suppress.push('teammates');
+     read the shared seasons directly, so they are untouched.
+
+     ERAS AND DIVISION TOO, the owner's call. Both ran hot the same way: a decade's
+     twelve or a division's four to six clubs overlap in their careers far more than
+     an open draft does, and best available reached 99.9 and 101.3 wins there against
+     Classic's 89.3, mostly through this link. */
+  if (run.franchise || run.era || run.division) suppress.push('teammates');
   return { suppress, staff: !!run.staff };
 }
 /* The chemistry of a run's roster (or any roster, under that run's rules). */

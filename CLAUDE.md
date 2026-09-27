@@ -14984,8 +14984,13 @@ account can no longer back falls back the same way.
 **`128_baseball_parks.sql` widens 127's check constraint** to the whole list. Without it a
 new park is chosen on the device and refused by the server in silence, so the next phone
 opens on another park. Preflight row 39 asks for it, and `check-parks` holds the SQL list
-to `PARKS` so the two cannot drift. **Accounts lose big league parks the old ladder had
-handed them** until the new track reaches them, which is the owner's ladder doing its job.
+to `PARKS` so the two cannot drift.
+
+**An account keeps every park the old ladder had already handed it**, the owner's call.
+Unlocks are derived, so "had" is `parks.js`'s `LEGACY` rules (badges, wins, a title, the
+old season counts) asked only of the rows filed before `LEGACY_UNTIL`, which the page
+builds as `info.legacy` in `parkLegacy`. A season played after that earns by the road
+alone, so a new account cannot use the old shortcuts. `check-parks` asserts both halves.
 
 **A lower-tier fence is low**, so those backdrops are authored with `lowTop(H)`, which puts
 the authoring wall top exactly where a wall H units tall lands (no shift). Fences are drawn
@@ -15651,9 +15656,19 @@ double-play combo. Those read the shared season directly and are untouched.
 `check-franchise.mjs` section 7 holds One Franchise within three points of Classic, off
 real drafts, and removing the line fails it.
 
-**Eras and Division run hot the same way and were NOT changed**, because the report was
-about One Franchise: best available reaches 99.9 and 101.3 wins there against Classic's
-89.3, again mostly through team-mates. Same fix, same measurement, if it is wanted.
+**Eras and Division stopped paying it too**, the owner's call. Over 100 best-available
+drafts each, before and after:
+
+| | before | after |
+|---|---|---|
+| Classic | 90.0 wins, 65% Octobers, 8.2% chemistry | unchanged |
+| Eras | 100.6, 91%, 12.8% | **82.5, 37%, 5.1%** |
+| Division | 102.4, 91%, 13.3% | **89.2, 58%, 8.0%** |
+
+Division lands on Classic. **Eras now sits under it**, because that mode already
+suppresses the era link, so it lost two links where the others lost one. Recorded
+rather than compensated; if Eras should come back up, the lever is the era link, not
+team-mates.
 
 ### An era card counts FRANCHISES, and says how deep the wheel is
 

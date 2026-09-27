@@ -153,9 +153,34 @@ function status(park, info) {
   if (!info || !info.signed) return { ok: false, guest: true,
     label: u.pro ? 'Sign in and get Pro' : u.hint ? 'Sign in to hunt for it' : 'Sign in and ' + u.label.charAt(0).toLowerCase() + u.label.slice(1) };
   if (u.pro) return { ok: !!info.pro, label: u.label };
+  if (legacyOk(park, info)) return { ok: true, kept: true, label: 'Kept from before the road to the Show' };
   let have = 0;
   try { have = Math.max(0, Number(u.need(info)) || 0); } catch (_) { have = 0; }
   return { ok: have >= u.of, have: Math.min(have, u.of), of: u.of, label: u.label };
+}
+/* WHAT AN ACCOUNT ALREADY EARNED IS KEPT. Before the road to the Show, eleven
+   parks were handed out for badges, wins and a title rather than for seasons, and
+   the owner's call is that nobody loses one they had. Every unlock is derived, so
+   "had" is the old rule asked of the rows filed before the ladder shipped, never of
+   anything played since: a new account climbs the road like everybody else. The
+   page builds info.legacy off those rows; with none it is simply the new ladder. */
+const LEGACY_UNTIL = Date.parse('2026-09-28T04:00:00Z');
+const LEGACY = {
+  cornfield: (l) => l.ctx.n >= 1,
+  ivy: (l) => l.badges >= 5,
+  warehouse: (l) => l.ctx.octobers >= 1,
+  ravine: (l) => ((l.ctx.best || {}).wins || 0) >= 90,
+  fountains: (l) => l.badges >= 15,
+  bayside: (l) => Object.keys(l.ctx.modeRuns || {}).length >= 7,
+  milehigh: (l) => ((l.ctx.best || {}).wins || 0) >= 100,
+  frieze: (l) => l.ctx.titles >= 1,
+  monster: (l) => l.badges >= 40,
+  horseshoe: (l) => l.ctx.n >= 25,
+};
+function legacyOk(park, info) {
+  const f = LEGACY[park.id], l = info && info.legacy;
+  if (!f || !l || !l.ctx) return false;
+  try { return !!f(l); } catch (_) { return false; }
 }
 function unlockedIds(info) { return PARKS.filter((p) => status(p, info).ok).map((p) => p.id); }
 /* The next park the season track will hand this account, or null when the track is
@@ -1214,7 +1239,7 @@ function markings(parkId, sfx, sky) {
     '</svg><div class="vig"></div>';
 }
 
-const api = { PARKS, BY_ID, START, GROUPS, SKY, GROUND_K, GROUND_A, status, unlockedIds, nextOnTrack, markings, LOOK,
+const api = { LEGACY_UNTIL, LEGACY, PARKS, BY_ID, START, GROUPS, SKY, GROUND_K, GROUND_A, status, unlockedIds, nextOnTrack, markings, LOOK,
   eastern, inWindow, seasonOpen, winLabel };
 if (typeof module !== 'undefined' && module.exports) module.exports = api;
 if (typeof window !== 'undefined') window.RTD_PARKS = api;

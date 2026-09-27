@@ -185,6 +185,25 @@ claim(nx && nx.park.id === 'singlea' && nx.left === 8, 'the shelf names the next
   claim(PK.status(PK.BY_ID.golden, one({ wins: 116, losses: 46 })).ok && !PK.status(PK.BY_ID.golden, one({ wins: 115, losses: 47 })).ok, 'the Golden Diamond opens at 116 wins');
 }
 
+{
+  /* WHAT AN ACCOUNT EARNED UNDER THE OLD LADDER IS KEPT, and only that. The old
+     rules are asked of the rows filed before the road to the Show; a season played
+     after it earns by the new ladder alone. The page's parkLegacy is mirrored here. */
+  const legacyOf = (rows) => { const old = rows.filter((r) => Number(r.ts) < PK.LEGACY_UNTIL);
+    return old.length ? { badges: ACH.evaluate(old).earned.length, ctx: ACH.buildCtx(old) } : null; };
+  const withLegacy = (rows) => Object.assign(infoOf(rows), { legacy: legacyOf(rows) });
+  const before = PK.LEGACY_UNTIL - 86400000, after = PK.LEGACY_UNTIL + 86400000;
+  const champ = (ts) => [row({ ts, wins: 101, losses: 61, madePlayoffs: true, titleWon: true })];
+  const kept = (rows) => ['cornfield', 'warehouse', 'ravine', 'milehigh', 'frieze'].filter((id) => PK.status(PK.BY_ID[id], withLegacy(rows)).ok);
+  claim(kept(champ(before)).length === 5, 'a title season filed before the ladder keeps the five big league parks it opened', kept(champ(before)).join());
+  claim(kept(champ(after)).length === 0, 'the same season filed after it keeps none of them: the road decides', kept(champ(after)).join());
+  claim(Object.keys(PK.LEGACY).every((id) => PK.BY_ID[id] && !['road', 'pro', 'seasonal', 'hidden'].includes(PK.BY_ID[id].group)),
+    'the old rules only reach parks the old ladder handed out', Object.keys(PK.LEGACY).map((id) => id + ':' + (PK.BY_ID[id] || {}).group).join());
+  const page = readFileSync(path.join(HERE, 'index.html'), 'utf8');
+  claim(/function parkLegacy\(rows\)[\s\S]{0,200}LEGACY_UNTIL/.test(page) && (page.match(/parkLegacy\(rows\)/g) || []).length >= 3,
+    'the page hands the old rows to both park readers');
+}
+
 if (QUICK) { console.log(`\n${fails ? fails + ' of ' + (fails + passes) + ' checks FAILED' : 'All ' + passes + ' checks passed.'}`); process.exit(fails ? 1 : 0); }
 
 // ══ 4. the page ══════════════════════════════════════════════════════════════
