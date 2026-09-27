@@ -2489,6 +2489,22 @@ Three things that each cost a round, all of them about the harness rather than t
 - **`/Season/i` matches "Regular season complete".** The absence to assert is the TAG, not the
   word.
 
+### An era board and a club board open on All time
+
+`defaultWin()` in `football/index.html`. Every competition used to open on Today. Asked
+for by the owner: the era boards and the One Franchise boards open on All time, because
+there are forty-odd of them against one free board, each holds a small share of a day's
+runs, and Today on one club's board is usually empty or one row. Every other competition
+still opens on Today.
+
+**It is applied when the competition CHANGES, never on a repaint.** Picking one in
+`#lb-comp` lands on its window, and so does `openBoard` when a finished run moves the
+board to another competition (`compKey()` is the before and after). Reopening the same
+board keeps whatever window was picked on it. `showMyRowOnBoard` uses it too, which is
+safe for the reason its comment gives: a run played minutes ago is in both windows, and the
+pinned-row fallback depends on the axis rather than the window. A tap on a placing cell on
+the results screen still opens the window that cell names.
+
 ### A leaderboard nobody can open renders perfectly
 
 The Dynasty board had a table, two axes, three queries and no way in. The only thing that
