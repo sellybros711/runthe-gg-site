@@ -84,7 +84,7 @@ has_table as (
     'commish_free_clock','ps_runs','profiles',
     'fantasy_weeks','fantasy_prices','fantasy_results','fantasy_entries',
     'nfl_games','fantasy_prizes',
-    'rtf_runs','rtd_runs','rtf_plays','rtd_mode_plays'
+    'rtf_runs','rtd_runs','rtf_plays','rtd_mode_plays','premium_subscriptions'
   ]) as t
   where to_regclass('public.' || t) is not null
 ),
@@ -480,7 +480,29 @@ check_rows(sort, migration, what, breaks, ok) as (
       'rtf_premium is a product the webhook may grant',
       'A paid Run The Floor Pro checkout is refused by the table and retried by Stripe until this runs. The buyer is charged and sees no Pro.',
       (select count(*) > 0 from con
-        where name = 'premium_unlocks_product_ck' and def like '%rtf_premium%'))
+        where name = 'premium_unlocks_product_ck' and def like '%rtf_premium%')),
+
+  -- PERFECT SEASON AND RUN THE BUNDLE YEARLY. Its absence is safe on its own: the
+  -- server asks premium_yearly_ready() before it sells a plan, so the store goes on
+  -- selling the one-time bundles. What this row is for is the day the switch is on,
+  -- when a NO here means the store is still one-time and nobody can say why. The
+  -- lifetime guard is asked of the trigger, because the functions can be restated
+  -- by a later file and the trigger is the half nobody would think to check. And
+  -- the Fantasy prize is asked of its BODY, because re-running 120 on its own puts
+  -- back a prize that stacks on a paid plan's end rather than on its own.
+  (35, '124_premium_yearly',
+      'yearly plans are recorded, and a lifetime row cannot be given an end date',
+      'The store keeps selling the one-time bundles even with the yearly switch on. If only 120 was re-run after it, a Fantasy prize won during a paid plan is added to the plan''s end and a refund takes the prize with it.',
+      (select count(*) > 0 from has_table where name = 'premium_subscriptions')
+      and (select count(*) > 0 from col where tbl = 'premium_unlocks' and name = 'sub_until')
+      and (select count(*) > 0 from col where tbl = 'premium_unlocks' and name = 'grant_until')
+      and (select count(*) > 0 from proc where name = 'premium_sub_apply')
+      and (select count(*) > 0 from proc where name = 'premium_grant_bundle')
+      and (select count(*) > 0 from proc where name = 'premium_yearly_ready')
+      and (select count(*) > 0 from trg
+            where name = 'premium_unlocks_keep_lifetime_trg' and tbl = 'premium_unlocks')
+      and (select count(*) > 0 from proc
+            where name = 'fantasy_grant_pass' and body like '%grant_until%'))
 )
 -- The summary has to come LAST, and a UNION can only be ordered by an output
 -- column, so the sort key is carried through a subquery rather than sorted on
