@@ -2657,7 +2657,10 @@ is the edge of the band that was asked for rather than inside it.
 distance the call names, and it used to rebuild the flat chart's geometry to find the bar. A
 camera in perspective has no fixed row, so the renderer records each drive's drawn leading edge
 (`RTG_FIELD.inspect`) and hands back its own pixel to yard mapping; the pixel just behind that
-edge has to be the drive's colour or the record is lying.
+edge has to be the drive's colour or the record is lying. **It caught a real fault the first time it ran**: the result
+pill (FG, TD, INT) was centred a fixed 2.2 yards past the end of the bar, and on the near lanes
+it is wider than that, so it sat on top of the exact spot the kick was taken from. It is placed
+clear of the chevron by its own half width now.
 
 **It keeps drawing between the page's frames**, which is what lets a score hold the clock while
 the crowd erupts and the banner plays: its own loop runs while the canvas is on screen, at thirty

@@ -743,10 +743,13 @@
 
   /* How a finished drive ended, where it ended. */
   function drawMark(st, ctx, d, v, alpha){
-    var C = st.C, dpr = C.dpr, res = norm(d.result), y;
-    if (res === 'touchdown') y = d.team === 'you' ? 104 : -4;
-    else y = clamp(d.endYard, 0, 100) + (d.team === 'you' ? 2.2 : -2.2);
-    var p = C.P(U(y), v), s = Math.max(5.5 * dpr, C.ppy(v) * 3);
+    var C = st.C, dpr = C.dpr, res = norm(d.result);
+    /* CLEAR OF THE BAR, ALWAYS. The pill sits past the chevron by its own half width, so the
+       end of the drive stays on screen: centred a fixed distance ahead, it was wider than that
+       distance on the near lanes and covered exactly the spot the kick was taken from. */
+    var dir = d.team === 'you' ? 1 : -1;
+    var end = res === 'touchdown' ? (d.team === 'you' ? 100 : 0) : clamp(d.endYard, 0, 100);
+    var tip = C.P(U(end), v), s = Math.max(5.5 * dpr, C.ppy(v) * 3);
     var txt = res === 'touchdown' ? 'TD' : res === 'field goal' ? 'FG' : res === 'miss' ? 'NG'
       : res === 'turnover' ? (d.takeaway === 'INTERCEPTION' ? 'INT' : d.takeaway === 'FUMBLE' ? 'FUM' : 'TO')
       : res === 'safety' ? 'SAF' : res === 'downs' ? 'DWN' : null;
@@ -756,6 +759,7 @@
     ctx.save(); ctx.globalAlpha = clamp(alpha + 0.15, 0, 1);
     ctx.font = '800 ' + (s * 0.95).toFixed(1) + 'px ' + BODY;
     var tw = ctx.measureText(txt).width + s * 0.9, th = s * 1.35;
+    var p = [tip[0] + dir * (C.ppy(v) * 1.8 * 1.2 + tw / 2 + 2 * dpr), tip[1]];
     roundRect(ctx, p[0] - tw / 2, p[1] - th / 2, tw, th, th / 2);
     ctx.fillStyle = bg; ctx.fill();
     ctx.fillStyle = res === 'turnover' || res === 'downs' ? '#fff' : '#0a0f18';
