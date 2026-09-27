@@ -316,10 +316,44 @@
          policy edited by hand in the dashboard cannot turn a receipt screen into
          somebody else's receipts. Belt and braces, the way every other read here
          checks its own gate twice. */
-      const r = await sb.from('premium_unlocks')
-        .select('product,source,granted_at,expires_at,fulfilled_at')
+      /* sub_until and grant_until arrived with supabase/124_premium_yearly.sql, and SQL
+         is deployed by hand. Asked for against a database without them, the whole select
+         is refused, so it asks again without and a receipt still draws. */
+      const base = 'product,source,granted_at,expires_at,fulfilled_at';
+      let r = await sb.from('premium_unlocks')
+        .select(base + ',sub_until,grant_until')
         .eq('user_id', uid)
         .order('granted_at', { ascending: true });
+      if (r && r.error) {
+        r = await sb.from('premium_unlocks')
+          .select(base)
+          .eq('user_id', uid)
+          .order('granted_at', { ascending: true });
+      }
+      if (r && !r.error && Array.isArray(r.data)) return r.data;
+    } catch (e) {}
+    return [];
+  }
+
+  /* THE YEARLY PLANS THIS ACCOUNT HOLDS, for the receipt: when each renews or ends.
+     supabase/124 keeps one row per Stripe subscription, readable by its owner.
+     [] for signed out, for an error, for a database without 124 and for an account
+     with no plan, which all read the same to a receipt: nothing renews. Not cached,
+     for premiumUnlocks' reason.
+
+     CHARACTER FOR CHARACTER WHAT THE FOOTBALL GAME CALLS, which is the same argument
+     premiumUnlocks above makes at length: one account holds one plan whichever door it
+     was bought through, so a receipt only one of the two games can read is a receipt
+     half the buyers cannot find. */
+  async function premiumPlans() {
+    if (!sb || !session) return [];
+    const uid = session.user && session.user.id;
+    if (!uid) return [];
+    try {
+      const r = await sb.from('premium_subscriptions')
+        .select('bundle,status,current_period_end,cancel_at_period_end,access_until,ended_at')
+        .eq('user_id', uid)
+        .order('updated_at', { ascending: false });
       if (r && !r.error && Array.isArray(r.data)) return r.data;
     } catch (e) {}
     return [];
@@ -329,14 +363,16 @@
      Answers { url } to send the browser to, or { error } naming why not. The
      endpoint identifies the customer from this session's token and never from
      anything sent here, so there is nothing to pass but where to come back to. */
-  async function billingPortal(returnPath) {
+  /* `scope` 'plan' asks for the customer paying for a yearly plan first, which is the
+     one that can cancel it (portal.js says why). */
+  async function billingPortal(returnPath, scope) {
     const t = token();
     if (!t) return { error: 'unauthorized' };
     try {
       const r = await fetch('/api/stripe/portal', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + t },
-        body: JSON.stringify({ return_path: returnPath || '/cfb/' }),
+        body: JSON.stringify({ return_path: returnPath || '/cfb/', scope: scope || null }),
       });
       const d = await r.json().catch(() => ({}));
       if (d && d.url) return { url: d.url };
@@ -345,10 +381,11 @@
   }
 
   window.PS_CFB_AUTH = {
-    API_VERSION: 1,
+    /* 2: `premiumPlans`, and billingPortal takes a scope. */
+    API_VERSION: 2,
     boot, state, onChange: (f) => { listeners.push(f); return () => {}; },
     signIn, signUp, signInGoogle, signOut,
     available, setName, claim, token, deleteAccount,
-    premiumProducts, premiumUnlocks, billingPortal,
+    premiumProducts, premiumUnlocks, premiumPlans, billingPortal,
   };
 })();

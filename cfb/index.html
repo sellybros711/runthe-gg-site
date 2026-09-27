@@ -3932,7 +3932,7 @@ or endorsed by the NCAA, the CFP or any school.
 <script src="engine.js?v=35"></script>
 <script src="run.js?v=15"></script>
 <script src="achievements.js?v=11"></script>
-<script src="auth.js?v=7"></script>
+<script src="auth.js?v=8"></script>
 <script src="board.js?v=7"></script>
 <!-- The tester list for Commish Simulator, which this page reads to decide whether to draw
      the card on the modes sheet and cfb/commish/ reads to decide whether to open at all.
@@ -5848,6 +5848,10 @@ const pwPill=()=>{
    reads as free: without this, the screen thanking somebody for their payment would sit
    directly above a card offering to sell it to them. Session-lived on purpose. */
 let justPaid=false;
+/* AND WHETHER WHAT THEY JUST PAID FOR WAS A PLAN, which the success url says (see below).
+   Declared up here beside justPaid because premiumSheet reads it and sits above the block
+   that sets it. */
+let paidYearly=false;
 /* AND IT IS GATED ON THE SAME ANSWER THE DOOR IS. The thing this card sells on this game
    is Commissioner Simulator, and while the launch flag is false only the tester list can
    see that mode at all: offering it to somebody who would still find nothing after paying
@@ -5891,12 +5895,27 @@ function premiumSheet(){
      just bought is the worst screen in the flow, so it is answered rather than left to
      chance. The receipts are one tap away from here. */
   if(ownsCfb()){
+    /* "NOTHING TO RENEW" IS ONLY TRUE FOR A LIFETIME OWNER. Two things answer it: the
+       success url, which knows a plan was just bought before any row exists, and the plan
+       read below, which rewrites the sentence with the date. So the first frame never
+       promises a subscriber that nothing will charge them again. */
     box.innerHTML='<div class="eyebrow gold">Your account</div>'+
       '<h2 class="display" style="font-size:26px;margin:4px 0 8px">You\'re Pro</h2>'+
-      '<p class="dim" style="font-size:13.5px;line-height:1.45;margin:0">'+
-        'Every Pro mode is unlocked, on every device you sign in on. There\'s nothing to '+
-        'renew.</p>'+pfClose();
+      '<p class="dim" id="pro-terms" style="font-size:13.5px;line-height:1.45;margin:0">'+
+        'Every Pro mode is unlocked, on every device you sign in on.'+
+        (paidYearly?'':' There\'s nothing to renew.')+'</p>'+pfClose();
     openSheet(); pfWire(box);
+    (async()=>{
+      const a=A();
+      let plans=[];
+      try{ plans=(a&&typeof a.premiumPlans==='function')?await a.premiumPlans():[]; }catch(e){ plans=[]; }
+      const el=$('pro-terms'), lv=livePlans(plans);
+      /* The sheet is one element every page rewrites, so an answer landing after the reader
+         has moved on must not paint over wherever they went. */
+      if(!el||!lv.length||$('sheet-in').dataset.kind!=='premium') return;
+      el.textContent='Every Pro mode is unlocked, on every device you sign in on. '+
+        planDates(lv[0]).replace(/^(Renews|Ends) on/,(m,w)=>'Your plan '+w.toLowerCase()+' on');
+    })();
     ga('premium_sheet_shown',{from:premiumFrom||'profile',tier:'pro'});
     premiumFrom=null;
     return;
@@ -5911,7 +5930,7 @@ function premiumSheet(){
       'not be loaded. Reload the page and try again.</p>')+
     '<div style="margin-top:12px"><button class="btn ghost sm" id="sp-x" '+
       'style="width:100%">Not now</button></div>';
-  if(window.RTG_STORE) window.RTG_STORE.wire(box,{buy:(kind,btn)=>buyBundle(kind,btn)});
+  if(window.RTG_STORE) window.RTG_STORE.wire(box,{buy:(kind,btn,plan)=>buyBundle(kind,btn,plan)});
   openSheet(); pfWire(box);
   ga('premium_sheet_shown',{from:premiumFrom||'profile',tier:acctTier()||'out'});
   premiumFrom=null;
@@ -5921,7 +5940,10 @@ function premiumSheet(){
    functions/api/stripe/checkout-bundle.js keeps on purpose. The verdict lands on the
    button that was pressed. A signed out visitor is sent to the account panel instead:
    the store's own labels already told them that step was coming. */
-async function buyBundle(kind,btn){
+/* `plan` is handed over by RTG_STORE.wire, and it is the plan the sheet was DRAWN with
+   rather than whatever the module thinks now. Those come apart when the switch flips under
+   an open sheet, and the wired one is the honest answer: it is what the buyer read. */
+async function buyBundle(kind,btn,plan){
   if(!authState.signedIn){ openProfile('account'); return; }
   const a=A();
   const t=a&&typeof a.token==='function'?a.token():null;
@@ -5932,10 +5954,36 @@ async function buyBundle(kind,btn){
     const r=await fetch('/api/stripe/checkout-bundle',{
       method:'POST',
       headers:{'Content-Type':'application/json',Authorization:'Bearer '+t},
-      body:JSON.stringify({bundle:kind,return_path:'/cfb/'})
+      /* THE PLAN THE SHEET SHOWED, so the checkout can refuse to charge anything else.
+         NOT OPTIONAL, and leaving it out was not a missing nicety: checkout-bundle.js
+         reads a body with no `plan` as 'once', and once the yearly switch went on that is
+         a mismatch, so it answered 409 offer_changed to every college purchase and the
+         button read "Checkout couldn't start" for ever. Nothing threw, the store drew
+         perfectly, and the only symptom was that nobody could buy the game. */
+      body:JSON.stringify({bundle:kind,return_path:'/cfb/',
+        plan:plan||((window.RTG_STORE&&window.RTG_STORE.plan)?window.RTG_STORE.plan():'once')})
     });
     const d=await r.json().catch(()=>({}));
     if(d&&d.url){ location.href=d.url; return; }
+    /* WHAT IS ON SALE CHANGED UNDER AN OPEN SHEET, which is the switch being flipped or a
+       browser holding a store.js from before it. Redraw the offer with the real price
+       rather than send anybody to a checkout the screen did not describe. */
+    if(d&&d.error==='offer_changed'){
+      if(window.RTG_STORE&&window.RTG_STORE.setPlan) window.RTG_STORE.setPlan(d.plan);
+      if(btn){ btn.disabled=false; btn.textContent='The price just changed'; }
+      premiumSheet();
+      return;
+    }
+    /* A PLAN ALREADY RUNNING IS CHANGED OR CANCELLED IN STRIPE, never bought twice. The
+       portal is where that happens, so this button opens it rather than explaining it. */
+    if(d&&d.error==='already_subscribed'){
+      if(btn) btn.textContent=d.change?'Opening Stripe...':'You already have this plan';
+      const r2=(a&&typeof a.billingPortal==='function')?await a.billingPortal('/cfb/','plan'):null;
+      if(r2&&r2.url){ location.href=r2.url; return; }
+      if(btn){ btn.disabled=false; btn.textContent='Manage your plan in Stripe'; }
+      return;
+    }
+    if(d&&d.error==='already_owned'){ premiumRefresh(true); }
     if(btn){
       btn.disabled=false;
       btn.textContent=
@@ -5964,12 +6012,20 @@ let checkoutPolled=false, checkoutWhat=null;
    justPaid and the profile can be opened before the account has even answered. A screen
    thanking somebody for their payment must never carry a card offering to sell it to
    them, and that is decided the moment the page has a URL. */
-try{ checkoutWhat=new URLSearchParams(location.search).get('checkout'); }catch(e){}
+/* checkout-bundle.js adds plan=year to a yearly plan's success url, so a screen can say the
+   plan renews before the plan row has even been written. The webhook and the redirect race,
+   and the sentence must not wait on that race to stop being wrong. */
+try{
+  const q=new URLSearchParams(location.search);
+  checkoutWhat=q.get('checkout');
+  if(checkoutWhat==='success'&&q.get('plan')==='year') paidYearly=true;
+}catch(e){}
 justPaid=checkoutWhat==='success';
 function checkoutStrip(){
   try{
     const u=new URL(location.href);
     u.searchParams.delete('checkout');
+    u.searchParams.delete('plan');
     history.replaceState(null,'',u.pathname+(u.searchParams.toString()?'?'+u.searchParams.toString():'')+u.hash);
   }catch(e){}
 }
@@ -6059,6 +6115,30 @@ const proDate=(s)=>{
   const d=new Date(s);
   return isNaN(d)?'':d.toLocaleDateString(undefined,{year:'numeric',month:'short',day:'numeric'});
 };
+/* A YEARLY PLAN THAT IS STILL PAID FOR (supabase/124). past_due counts: the grace is
+   running and Stripe is retrying the card, so the plan is still the account's, and saying
+   otherwise would read as Pro being taken away over a card that may yet go through.
+   THE SAME THREE TABLES THE FOOTBALL RECEIPT KEEPS, because one account holds one plan and
+   two receipts that disagreed about what it grants would be the drift this whole page
+   exists to prevent. */
+const PLAN_LIVE=['active','trialing','past_due'];
+const PLAN_PRODUCTS={'perfect-season':['ps_premium','cfb_premium'],
+  'run-the-bundle':['ps_premium','cfb_premium','arcade_card_year']};
+function livePlans(plans){
+  const now=Date.now();
+  return (plans||[]).filter((p)=>p&&PLAN_LIVE.indexOf(p.status)>=0&&
+    (!p.access_until||Date.parse(p.access_until)>now));
+}
+function planFor(live,product){
+  return live.find((p)=>(PLAN_PRODUCTS[p.bundle]||[]).indexOf(product)>=0)||null;
+}
+/* RENEWS OR ENDS, and never "yours for good": a plan is paid for a year at a time. The date
+   is the period end Stripe bills on, which is the date on their card statement. */
+function planDates(p){
+  const d=proDate(p.current_period_end);
+  if(!d) return 'On a yearly plan.';
+  return p.cancel_at_period_end?'Ends on '+d+'.':'Renews on '+d+'.';
+}
 function pfPro(){
   profileTab='pro'; pfPaint++;
   const box=$('sheet-in');
@@ -6086,6 +6166,17 @@ async function pfProLoad(){
   const by={};
   rows.forEach((r)=>{ if(r&&r.product) by[r.product]=r; });
   const owned=PRO_ORDER.filter((k)=>by[k]&&PRO_ITEM[k]);
+  /* THE YEARLY PLANS, read beside the rows rather than instead of them. A row says a plan
+     keeps it alive (sub_until); only the plan says whether it renews or has been cancelled,
+     and that is the sentence a subscriber opens this page for. Asked for defensively,
+     because auth.js is a sibling script and a browser one bump behind has a copy with no
+     premiumPlans on it: no plan read is the same answer as no plan, which is a lifetime
+     receipt, which is exactly what that browser was drawing before today. */
+  let plans=[];
+  try{ plans=(a&&typeof a.premiumPlans==='function')?await a.premiumPlans():[]; }catch(e){ plans=[]; }
+  if(mine!==pfPaint) return;
+  const live=livePlans(plans);
+  let hasPlan=false;
 
   if(!owned.length){
     /* REACHABLE, AND NOT A BUG. The row that opened this page was drawn from
@@ -6114,16 +6205,28 @@ async function pfProLoad(){
          (supabase/120_fantasy_pro_pass.sql). "Bought" on a prize is false, and so is the
          Arcade Card sentence under the list, which is only ever about an Arcade year. */
       const won=/^fantasy:/.test(row.source||'');
-      if(!won) paid=true;
-      if(won){ if(till&&gone) passEnded=till; else if(till) passEnds=till; }
+      /* THREE KINDS OF ROW, and only the lifetime one says "for good". A row a yearly plan
+         is keeping alive says when the plan renews or ends, a Fantasy pass says Won, and
+         nothing that ends is ever called lifetime. A plan wins over a pass on the same row,
+         because the plan is the thing that will charge them. */
+      const plan=row.expires_at?planFor(live,k):null;
+      const planGone=!plan&&!!row.sub_until&&!won;
+      if(plan) hasPlan=true;
+      if(!won&&!plan&&!planGone) paid=true;
+      if(plan||planGone){ /* the plan sentence below covers it */ }
+      else if(won){ if(till&&gone) passEnded=till; else if(till) passEnds=till; }
       else if(k==='arcade_card_year'){ if(till&&gone) endedOn=till; else if(till) ends=till; }
       /* NOT EVERYTHING IN A BUNDLE ARRIVES AT ONCE. See the note on PRO_ITEM. Both halves
          are required: the product has to be one that is delivered elsewhere, and it has to
          be still unstamped. */
       const waiting=!!it.wait&&row.fulfilled_at==null&&!gone;
-      const dates=till
-        ? (won?'Won in the Fantasy Challenge on ':'Bought ')+when+'. '+(gone?'Ended ':'Ends ')+till+'.'
-        : 'Bought '+when+'. Yours for good.';
+      const dates=plan
+        ? planDates(plan)
+        : planGone
+          ? 'Your plan ended on '+till+'.'
+          : till
+            ? (won?'Won in the Fantasy Challenge on ':'Bought ')+when+'. '+(gone?'Ended ':'Ends ')+till+'.'
+            : 'Bought '+when+'. Yours for good.';
       return '<div class="pw-line'+(gone?' ended':'')+'" style="--gc:'+g.c+'"><b>'+esc(g.name)+'</b>'+
         '<span>'+esc(it.text)+'</span>'+
         (when||till
@@ -6136,8 +6239,12 @@ async function pfProLoad(){
          and a customer who thinks they are on a recurring charge cancels the whole account
          to stop it. Nothing here renews, and the sentence says so before they have to ask. */
       '<p class="dim" style="font-size:12px;line-height:1.45;margin:13px 0 0">'+
-        (paid?'You paid once. Nothing here renews and nothing charges you again.'
-             :'You won this. Nothing here renews and nothing charges you.')+
+        /* A PLAN RENEWS, AND THE SENTENCE THAT SAYS NOTHING DOES IS THEN FALSE, so it goes.
+           A lifetime owner with no plan reads exactly what they always read. */
+        (hasPlan
+          ? 'Your plan renews each year until you cancel. Cancel any time below.'
+          : paid?'You paid once. Nothing here renews and nothing charges you again.'
+               :'You won this. Nothing here renews and nothing charges you.')+
         (ends?' Your Arcade Card year simply ends on '+esc(ends)+'.':'')+
         (endedOn?' Your Arcade Card year ended on '+esc(endedOn)+'.':'')+
         (passEnds?' Your Pro pass ends on '+esc(passEnds)+'.':'')+
@@ -6149,10 +6256,16 @@ async function pfProLoad(){
   }
 
   const bill=$('pf-pro-bill'); if(!bill) return;
+  /* CANCELLING IS THE THING A SUBSCRIBER CAME HERE TO FIND, so the button says so rather
+     than hiding it behind "receipts". A lifetime owner has nothing to manage and reads the
+     label they have always read. */
+  const planLive=live.length>0;
   bill.innerHTML='<button class="btn ghost sm" id="pf-bill" style="width:100%">'+
-      'Receipts and billing</button>'+
-    '<p class="dim" style="font-size:11.5px;margin:8px 0 0">Opens Stripe, where your '+
-      'receipts and payment details live.</p>';
+      (planLive?'Manage your plan':'Receipts and billing')+'</button>'+
+    '<p class="dim" style="font-size:11.5px;margin:8px 0 0">'+
+      (planLive
+        ? 'Opens Stripe, where you can cancel or change your plan and see your receipts.'
+        : 'Opens Stripe, where your receipts and payment details live.')+'</p>';
   $('pf-bill').onclick=async()=>{
     const b0=$('pf-bill'); if(b0){ b0.disabled=true; b0.textContent='Opening...'; }
     /* auth.js is a sibling script with its own cache version, so a browser one bump behind
@@ -6161,7 +6274,7 @@ async function pfProLoad(){
        presses. It falls into the same "could not open" answer as any other failure. */
     const a2=A();
     const r=(a2&&typeof a2.billingPortal==='function')
-      ? await a2.billingPortal('/cfb/')
+      ? await a2.billingPortal('/cfb/',planLive?'plan':null)
       : {error:'unavailable'};
     if(r&&r.url){ location.href=r.url; return; }
     /* SAY WHICH KIND OF NOTHING IT IS. no_customer is not a failure: an account comped by
