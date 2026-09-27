@@ -13,6 +13,7 @@ name: Stripe checks
 #                     Postgres built from the migrations, asserting after every event
 #                     that no lifetime row moved and no Fantasy pass was cut short
 #   premium_yearly    supabase/124 driven in SQL, the same database the replay builds
+#   arcade_cap        supabase/125's ranked cap, on the arcade chain it restates
 #
 # Runnable locally with the exact same commands:
 #   node scripts/stripe/verify-bundles.mjs
@@ -73,3 +74,15 @@ jobs:
         run: |
           createdb -T stripe_replay yr
           psql -v ON_ERROR_STOP=1 -q -d yr -f supabase/test/premium_yearly_test.sql
+      - name: supabase/125's ranked cap, on the arcade chain
+        run: |
+          createdb capt
+          P="psql -X -q -v ON_ERROR_STOP=1 -d capt"
+          $P -f supabase/test/fantasy_base.sql
+          $P -c 'create table public.subscriptions(user_id uuid, status text, current_period_end timestamptz);'
+          for f in 101_premium_bundles 52_grid_daily 70_grid_integrity 72_grid_game_keys \
+                   74_arcade_new_games 76_sport_variant_boards 82_grid_submit_idempotent \
+                   85_rollcall_chain 125_arcade_cap_and_bonus_refund; do
+            $P -f supabase/$f.sql
+          done
+          $P -f supabase/test/arcade_cap_test.sql

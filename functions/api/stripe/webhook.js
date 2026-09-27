@@ -6,7 +6,7 @@
  *   customer.subscription.updated
  *   customer.subscription.deleted
  *   invoice.paid                 (a yearly plan renewing)
- *   charge.refunded              (a full refund on a yearly plan's invoice)
+ *   charge.refunded              (a full refund on a yearly plan's or Diamond Pro's invoice)
  *   charge.dispute.created       (a chargeback on one)
  *
  * Required Pages env vars:
@@ -156,10 +156,12 @@ export async function handleEvent(env, type, obj) {
       if (plan) await applyPlan(env, sub, plan, 'renew', null);
     }
   } else if (type === 'charge.refunded' || type === 'charge.dispute.created') {
-    /* A FULL REFUND OR A CHARGEBACK ON A PLAN'S INVOICE ends that plan's access now.
-       A partial refund is a goodwill gesture and changes nothing. A charge that is not
-       a plan's (a one-time bundle, the Arcade Card) is left alone here: a lifetime
-       row is never cut by anything, and the Arcade Card has never been. */
+    /* A FULL REFUND OR A CHARGEBACK ON A SUBSCRIPTION'S INVOICE ends that subscription's
+       access now: a yearly plan through premium_sub_apply, Run The Diamond Pro through
+       grantRecurring. A partial refund is a goodwill gesture and changes nothing. A
+       charge that no subscription made (a one-time bundle, a coin bucket) is left alone
+       here: a lifetime row is never cut by anything. The Arcade Card has never been cut
+       by a refund either, and still is not. */
     let charge = obj;
     if (type === 'charge.dispute.created') {
       charge = obj.charge && typeof obj.charge === 'object'
@@ -167,11 +169,24 @@ export async function handleEvent(env, type, obj) {
     } else if (!fullyRefunded(obj)) {
       return;
     }
-    const subId = await chargeSubId(env, charge);
+    const inv = await chargeInvoice(env, charge);
+    const subId = invoiceSubId(inv);
     if (subId) {
       const sub = await stripeGet(env, '/v1/subscriptions/' + subId);
       const plan = planOf(env, sub, null);
-      if (plan) await applyPlan(env, sub, plan, 'refund', null);
+      const meta = (sub && sub.metadata) || {};
+      const rec = !plan && meta.bundle ? bundleByKey(meta.bundle) : null;
+      if (plan) {
+        await applyPlan(env, sub, plan, 'refund', null);
+        /* AND THE RUN THE BUNDLE BONUS, IF THIS PAYMENT IS WHAT BOUGHT IT. The database
+           decides (supabase/125): the bonus has to be this plan's and written inside the
+           refunded invoice's period, so refunding a renewal keeps what the first year
+           paid for. Asked for every plan, because a Perfect Season plan that was a Run
+           The Bundle plan when the bonus landed is the same subscription. */
+        await reclaimBonus(env, sub.id, invoiceStart(inv));
+      } else if (rec && rec.recurring && meta.supabase_user_id) {
+        await grantRecurring(env, meta.supabase_user_id, meta.bundle, sub, true);
+      }
     }
   }
 }
@@ -220,9 +235,9 @@ function fullyRefunded(charge) {
   return charge.amount > 0 && charge.amount_refunded >= charge.amount;
 }
 
-/* The subscription a charge paid for. Older API versions put the invoice on the charge;
+/* The invoice a charge paid, or null when no invoice made it. Older API versions put the invoice on the charge;
    newer ones only link them through invoice_payments on the payment intent. */
-async function chargeSubId(env, charge) {
+async function chargeInvoice(env, charge) {
   let invId = charge && charge.invoice ? stripeId(charge.invoice) : null;
   /* AN OLDER API VERSION SAYS invoice: null OUTRIGHT for a charge that no invoice made (a
      one-time bundle, a coin bucket), and that is the answer: nothing to look up. Only a
@@ -240,9 +255,49 @@ async function chargeSubId(env, charge) {
     } catch (e) { invId = null; }
   }
   if (!invId) return null;
-  const inv = await stripeGet(env, '/v1/invoices/' + encodeURIComponent(invId));
-  return invoiceSubId(inv);
+  return stripeGet(env, '/v1/invoices/' + encodeURIComponent(invId));
 }
+
+/* WHEN THE PERIOD A REFUNDED INVOICE PAID FOR BEGAN, off its LINES, as an ISO string or
+   null. Never off invoice.period_start: on a subscription invoice that field is the
+   PREVIOUS period (the one just billed in arrears), so on a renewal it would point back
+   at the first year and take its bonus. A first invoice's lines start when the plan
+   did, a renewal's when the new year does, and an upgrade's proration lines when the
+   plan changed. The earliest line is the answer; no lines means the question has no
+   answer and the bonus stays. */
+function invoiceStart(inv) {
+  const lines = (inv && inv.lines && inv.lines.data) || [];
+  let t = null;
+  for (const l of lines) {
+    const s = l && l.period && l.period.start;
+    if (s && (t === null || s < t)) t = s;
+  }
+  return t ? new Date(t * 1000).toISOString() : null;
+}
+
+/* The bonus a refunded plan payment bought, taken back (supabase/125). A database
+   without 125 answers 404, which throws, so Stripe retries until the function exists:
+   that retry loop in the delivery log is the alarm, and the refund itself is already
+   applied, idempotently, on every attempt. */
+async function reclaimBonus(env, subId, from) {
+  const res = await fetch(env.SUPABASE_URL + '/rest/v1/rpc/premium_reclaim_bonus', {
+    method: 'POST',
+    headers: {
+      apikey: env.SUPABASE_SERVICE_ROLE,
+      Authorization: 'Bearer ' + env.SUPABASE_SERVICE_ROLE,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ p_sub_id: subId, p_from: from })
+  });
+  if (!res.ok) {
+    var detail = '';
+    try { detail = await res.text(); } catch (e) {}
+    throw new Error('premium_reclaim_bonus ' + res.status + ' ' + detail);
+  }
+  return res.json().catch(function () { return null; });
+}
+
+
 
 /* ONE CALL, EVERY PLAN EVENT. premium_sub_apply (supabase/124) does the deciding; this
    only reads the subscription out of Stripe's shape. The account comes from the
@@ -419,37 +474,72 @@ async function grantBundle(env, userId, bundleKey, session) {
  * keeps what it paid for and no special case is needed. The period end moved from
  * the subscription onto its items in newer API versions, so both are read. */
 function recurringEnd(sub, nowMs) {
-  const item = sub.items && sub.items.data && sub.items.data[0];
-  const end = sub.current_period_end || (item && item.current_period_end) || 0;
+  const end = subPeriodEnd(sub);
   const GRACE = 3 * 86400000;
   if ((sub.status === 'active' || sub.status === 'trialing') && end) return new Date(end * 1000 + GRACE);
   if (sub.status === 'past_due') return new Date(nowMs + 7 * 86400000);
   return new Date(nowMs);
 }
 
-async function grantRecurring(env, userId, bundleKey, sub) {
+/* THE PERIOD END A SUBSCRIPTION IS ON, in unix seconds, from either place Stripe puts it. */
+function subPeriodEnd(sub) {
+  const item = sub && sub.items && sub.items.data && sub.items.data[0];
+  return (sub && sub.current_period_end) || (item && item.current_period_end) || 0;
+}
+
+/* `refund` is a full refund or a chargeback on one of this subscription's invoices.
+ *
+ * A REFUND ENDS THE GRANT NOW AND IS REMEMBERED, because Stripe does not cancel a
+ * subscription when a charge is refunded: it still reads `active` with the period the
+ * refund took back, and any later event for it (a cancel, a portal change) reads that
+ * back and would hand the year straight back. So the row keeps the period end the
+ * refund covered as payload.refunded_through, and an `active` subscription whose
+ * period ends on or before it grants nothing. A renewal into a LATER period, paid,
+ * grants as usual. That is premium_sub_apply's own rule for the yearly plans (124),
+ * kept here in the row because a recurring bundle has no table of its own. */
+async function grantRecurring(env, userId, bundleKey, sub, refund) {
   const bundle = bundleByKey(bundleKey);
   if (!bundle) throw new Error('unknown bundle ' + bundleKey);
   const now = new Date();
-  const expires = recurringEnd(sub, now.getTime()).toISOString();
+  const periodEnd = subPeriodEnd(sub);
   const customer = typeof sub.customer === 'string' ? sub.customer : (sub.customer && sub.customer.id) || null;
 
   for (const g of bundle.grants) {
     /* A GRANT WITH NO END IS NEVER GIVEN ONE. Somebody who bought the $9.99
        lifetime Pro, or was comped, owns it for good, and a subscription event for
        the same account (which checkout refuses to sell them, but a dashboard can
-       still create) must not turn forever into a year. */
+       still create) must not turn forever into a year. A refund of such a
+       subscription does not reach a lifetime grant either. */
     const have = await pgFirst(env, 'premium_unlocks?user_id=eq.' + encodeURIComponent(userId) +
-      '&product=eq.' + encodeURIComponent(g.product) + '&select=expires_at,source&limit=1');
+      '&product=eq.' + encodeURIComponent(g.product) + '&select=expires_at,source,payload&limit=1');
     if (have && !have.expires_at && String(have.source || '').indexOf('subscription:') !== 0) continue;
 
+    const prior = Number((have && have.payload && have.payload.refunded_through) || 0) || 0;
+    const refundedThrough = refund ? Math.max(prior, periodEnd || Math.floor(now.getTime() / 1000)) : prior;
+    const endedNow = function () {
+      /* Never later than now, and never later than what the row already says. */
+      const was = have && have.expires_at ? Date.parse(have.expires_at) : NaN;
+      return new Date(isFinite(was) ? Math.min(was, now.getTime()) : now.getTime());
+    };
+    let expires;
+    if (refund) {
+      expires = endedNow();
+    } else if (refundedThrough && periodEnd && periodEnd <= refundedThrough &&
+               (sub.status === 'active' || sub.status === 'trialing' || sub.status === 'past_due')) {
+      expires = endedNow();   // the period a refund took back is not granted twice
+    } else {
+      expires = recurringEnd(sub, now.getTime());
+    }
+
+    const payload = { stripe_subscription: sub.id, stripe_customer: customer, status: sub.status,
+      cancel_at_period_end: !!sub.cancel_at_period_end };
+    if (refundedThrough) payload.refunded_through = refundedThrough;
     const row = {
       user_id: userId,
       product: g.product,
       source: 'subscription:' + bundleKey,
-      payload: { stripe_subscription: sub.id, stripe_customer: customer, status: sub.status,
-        cancel_at_period_end: !!sub.cancel_at_period_end },
-      expires_at: expires,
+      payload: payload,
+      expires_at: expires.toISOString(),
       fulfilled_at: now.toISOString()
     };
     /* granted_at is when Pro STARTED, and a renewal is not a start: it is written

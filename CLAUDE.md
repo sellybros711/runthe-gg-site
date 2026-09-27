@@ -540,6 +540,7 @@ adding a block. Move it when the sheet is meant to grow, never to make a run pas
 node scripts/stripe/check-checkout.mjs       who may buy what, through the real endpoint
 node scripts/stripe/replay-webhook.mjs       every plan event, through the real webhook, against a real Postgres
 psql -d yr -f supabase/test/premium_yearly_test.sql   (its header lists the chain)
+psql -d capt -f supabase/test/arcade_cap_test.sql    the ranked cap after 125 (its header lists the chain)
 ```
 
 `supabase/124_premium_yearly.sql`, `functions/api/stripe/_offer.js` and one switch,
@@ -581,6 +582,25 @@ The Bundle coins and pack are the `runtour_pack` row, written `on conflict do no
 paid-for Run The Bundle event. Never a merge: a merge re-sends `fulfilled_at` as null over a
 row the golf side already paid out, and 103's redeem pays the coins again. The old one-time
 path had exactly that merge and now splits the bonus row out too.
+
+**A REFUND OF THE PAYMENT THAT BOUGHT THE BONUS TAKES IT BACK, and nothing else does.**
+`supabase/125_arcade_cap_and_bonus_refund.sql`: after a full refund or a chargeback on a plan,
+`premium_reclaim_bonus()` removes the bonus row if THIS plan wrote it inside the refunded
+invoice's period, and takes redeemed coins back out of the wallet (floored at zero). The
+period is read off the invoice's LINES and never off `invoice.period_start`, which on a
+subscription invoice is the year just billed: read that way, refunding a renewal takes the
+first year's bonus. It is the one null-expiry row anything deletes, because 124's trigger hands
+back every update to such a row. A one-time bundle's bonus is never touched, and the Tour
+Pack cannot be taken back at all (packs live in the golf page).
+
+**Run The Diamond Pro's refund is remembered on its own row.** Stripe does not cancel a
+subscription when a charge is refunded, so everything after still reads `active` for that
+period. `grantRecurring` ends the grant and writes `payload.refunded_through`; an event whose
+period ends on or before it grants nothing, which is `premium_sub_apply`'s rule for the plans.
+
+**The arcade's ranked cap asks `arcade_card_active()`**, since 125. It read the Arcade Card's
+`subscriptions` table alone, so a Run The Bundle buyer, whose card is a `premium_unlocks` row,
+saw unlimited on the page and was refused their fifth score by the server.
 
 **THE PAGE NEVER DECIDES ONCE OR YEARLY.** `/api/stripe/offer` answers from `_offer.js`, which
 says `year` only when the switch is on, both yearly prices are set AND the database answers

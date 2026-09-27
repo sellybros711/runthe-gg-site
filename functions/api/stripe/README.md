@@ -360,13 +360,40 @@ other than what their screen said.
 | `invoice.paid` | a renewal: access to the new period end plus 7 days |
 | `customer.subscription.updated` | active: extends; past due: holds (the grace runs); a plan change in the portal re-grants the new plan's products and takes the old one's back |
 | `customer.subscription.deleted` | access ends at `ended_at`, which for a cancel at period end is the period end, with no grace added |
-| `charge.refunded` (full) / `charge.dispute.created` | access ends now; a late "active" for that same period grants nothing. The bonus coins are not taken back |
+| `charge.refunded` (full) / `charge.dispute.created` | access ends now; a late "active" for that same period grants nothing. If the refunded payment is the one that bought the Run The Bundle bonus, the bonus goes too (125, below) |
 
 Every one goes through `premium_sub_apply()`, which decides from the plan's status rather than
 from which event arrived, because Stripe delivers out of order and more than once. A plan is
 recognised by its PRICE first and its metadata second, so a plan changed in the portal is
 still the right plan, and a yearly plan never reaches the Arcade Card's `subscriptions`
 table, which eight arcade functions read as "this account holds an Arcade Card".
+
+### A refund takes back the bonus it paid for (125)
+
+`supabase/125_arcade_cap_and_bonus_refund.sql`, by hand, after 124. Preflight row 36.
+
+After a full refund or a chargeback on a plan, the webhook calls `premium_reclaim_bonus()`
+with the plan and the date the refunded invoice's period began. The bonus row is removed only
+if this plan wrote it and wrote it inside that period, so refunding the FIRST year (or the
+upgrade that brought the bonus) takes it back and refunding a renewal does not.
+
+| the bonus was | what happens |
+|---|---|
+| not redeemed yet | the row goes, so the coins are never paid |
+| redeemed | the row goes and the coins come back out of the wallet, down to zero; anything already spent is reported as a shortfall, never a negative balance |
+
+The Tour Pack cannot be taken back: packs live in the golf page, not on the server. A
+one-time Run The Bundle's bonus is never touched, because a one-time purchase is revoked by
+hand. With the row gone, a later paid Run The Bundle hands the bonus over again.
+
+**Run 125 before the next refund.** Without it the webhook answers 500 on a plan refund
+(`premium_reclaim_bonus 404`) and Stripe retries for three days. The plan's access is still
+taken back on every attempt, so nothing is lost while it waits.
+
+125 also fixes the arcade's four-a-day ranked cap, which only counted the monthly Arcade Card:
+a Run The Bundle buyer, whose card is a `premium_unlocks` row, was refused their fifth ranked
+score of the day. The cap now asks `arcade_card_active()`, like every other arcade reader.
+`supabase/test/arcade_cap_test.sql` drives both (its header lists the chain).
 
 ### Why the claim is $70 and not $80
 
@@ -410,9 +437,15 @@ row whose `expires_at` follows the subscription:
 | past_due (a renewal failed, Stripe is retrying) | a week from now |
 | cancelled at period end | still active, so the end of the period |
 | canceled, unpaid, incomplete | now |
+| a full refund or a chargeback on one of its invoices | now, and it stays ended |
 
 Every subscription event is read back from Stripe before it is written, so events
-arriving out of order cannot hand a cancelled subscriber another year. **It never
+arriving out of order cannot hand a cancelled subscriber another year. **A refund does not
+cancel the subscription in Stripe**, so the row remembers the period end the refund took
+back (`payload.refunded_through`) and an event that still reads active for that period
+grants nothing. A paid renewal into a later period grants as usual; cancel the subscription
+in the dashboard when you refund it if that should not happen. The webhook needs
+`charge.refunded` and `charge.dispute.created` for this, which the yearly plans already added. **It never
 touches the `subscriptions` table**, which is the Arcade Card's and holds one row a
 user. **A row with no end date is never given one**, so anybody who bought the old
 $9.99, or was comped, keeps Pro for good, and checkout will not sell them a year.
