@@ -537,6 +537,71 @@
     font-weight:600;max-width:34em;}
   /* ── THE BADGE CABINET ─────────────────────────────────────────────── */
   .ptabs{display:flex;gap:6px;margin:14px 0 10px;}
+  /* ── the profile's identity row and the Locker ─────────────────────────── */
+  .pid{display:flex;align-items:center;gap:12px;width:100%;margin:6px 0 12px;padding:10px 12px;
+    background:var(--card);border:1px solid var(--cardb);border-radius:14px;text-align:left;
+    color:var(--ink);cursor:pointer;font:inherit;}
+  .pid .jz{width:54px;height:58px;flex:0 0 auto;}
+  .pid .who{flex:1;min-width:0;}
+  .pid .who b{display:block;font-family:var(--display);font-size:20px;letter-spacing:.02em;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .pid .who span{display:block;font-size:12px;color:var(--mut);margin-top:2px;}
+  .pid .pro{display:inline-block;margin-left:6px;padding:1px 7px;border-radius:99px;font-size:10px;
+    font-weight:800;letter-spacing:.08em;vertical-align:3px;color:#1a1204;
+    background:linear-gradient(135deg,#f2c14e,#e0952a);}
+  .pid .go{font-size:12px;color:var(--orange);font-weight:700;white-space:nowrap;}
+  .jz svg{display:block;width:100%;height:100%;}
+  .locker .lk{margin:4px 0 18px;}
+  .locker .lk h3{display:flex;align-items:baseline;gap:8px;margin:0 0 8px;font-family:var(--display);
+    font-size:17px;letter-spacing:.03em;font-weight:400;}
+  .locker .lk h3 span{font-family:var(--body);font-size:12px;color:var(--mut);letter-spacing:0;}
+  .locker .lknote{font-size:11.5px;color:var(--dim);margin:8px 0 0;line-height:1.45;}
+  .lk-jersey{display:flex;gap:14px;align-items:center;}
+  .lk-jersey .jz{width:92px;height:98px;flex:0 0 auto;}
+  .lk-num{display:flex;flex-direction:column;gap:6px;flex:1;min-width:0;}
+  .lk-num label{font-size:12px;color:var(--mut);}
+  .lk-num input{width:84px;font:inherit;font-family:var(--display);font-size:24px;text-align:center;
+    padding:6px 8px;border-radius:10px;border:1px solid var(--cardb);background:var(--bg2,#0c1119);color:var(--ink);}
+  .sw-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(48px,1fr));gap:8px;margin-top:12px;}
+  .sw{position:relative;padding:0;border:2px solid transparent;border-radius:10px;background:var(--card);
+    cursor:pointer;aspect-ratio:1/1.05;}
+  .sw .jz{width:100%;height:100%;}
+  .sw.on{border-color:var(--orange);}
+  .sw.lock .jz{filter:saturate(.3) brightness(.62);opacity:.85;}
+  .sw.lock:after{content:'';position:absolute;right:3px;bottom:3px;width:11px;height:11px;
+    background:no-repeat center/contain url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M3 5V3.6a3 3 0 0 1 6 0V5' fill='none' stroke='%23e8edf5' stroke-width='1.4'/%3E%3Crect x='2' y='5' width='8' height='6.2' rx='1.2' fill='%23e8edf5'/%3E%3C/svg%3E");}
+  .seg{display:flex;gap:6px;}
+  .seg button{flex:1;font:inherit;font-weight:700;font-size:13px;padding:9px 8px;border-radius:10px;
+    border:1px solid var(--cardb);background:transparent;color:var(--mut);cursor:pointer;}
+  .seg button.on{background:var(--card);color:var(--ink);border-color:var(--orange);}
+  .ar-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;}
+  .ar-card{display:flex;flex-direction:column;border:1px solid var(--cardb);border-radius:12px;overflow:hidden;
+    background:var(--card);}
+  .ar-card .arena-pv{display:block;width:100%;aspect-ratio:100/62;height:auto;}
+  .ar-card.lock .arena-pv{filter:grayscale(.85) brightness(.6);}
+  .ar-card .ab{padding:8px 10px 10px;display:flex;flex-direction:column;gap:3px;flex:1;}
+  .ar-card .ab b{font-size:14px;}
+  .ar-card .ab .nod{font-size:11.5px;color:var(--mut);line-height:1.35;}
+  .ar-card .rar{align-self:flex-start;font-size:9.5px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;
+    padding:1px 7px;border-radius:99px;background:rgba(255,255,255,.08);color:var(--mut);}
+  .ar-card.r-common .rar{color:#9fd18c;}
+  .ar-card.r-rare .rar{color:#7fb7ff;}
+  .ar-card.r-epic .rar{color:#c79bff;}
+  .ar-card.r-legendary .rar{color:#f2c14e;}
+  .ar-card.r-pro .rar{color:#1a1204;background:linear-gradient(135deg,#f2c14e,#e0952a);}
+  .ar-card .foot{margin-top:auto;padding-top:6px;font-size:12px;}
+  .ar-card .foot .inuse{color:var(--orange);font-weight:800;}
+  .ar-card .foot button{width:100%;font:inherit;font-weight:700;font-size:12.5px;padding:7px 8px;border-radius:9px;
+    border:1px solid var(--orange);background:transparent;color:var(--ink);cursor:pointer;}
+  .ar-card .foot .lbl{color:var(--mut);}
+  .ar-card .foot .bar{height:5px;border-radius:3px;background:rgba(255,255,255,.08);margin-top:5px;overflow:hidden;}
+  .ar-card .foot .bar i{display:block;height:100%;background:var(--orange);}
+  .newarena .na{display:flex;gap:12px;align-items:center;}
+  .newarena .arena-pv{width:44%;max-width:220px;flex:0 0 auto;border-radius:10px;aspect-ratio:100/62;height:auto;}
+  .newarena .na b{display:block;font-family:var(--display);font-size:20px;letter-spacing:.02em;}
+  .newarena .na span{display:block;font-size:12.5px;color:var(--mut);margin:3px 0 8px;}
+  .newarena .na button{font:inherit;font-weight:700;font-size:13px;padding:8px 12px;border-radius:10px;
+    border:1px solid var(--orange);background:transparent;color:var(--ink);cursor:pointer;}
   .ptab{flex:1;background:transparent;border:1px solid var(--cardb);color:var(--mut);
     font-size:12.5px;font-weight:800;padding:0 10px;height:36px;min-height:36px;border-radius:9px;}
   .ptab.on{background:var(--card);color:var(--ink);border-color:var(--line);}
@@ -913,10 +978,33 @@
    * and the layer types are identical in both states, so the .35s fade
    * between them still interpolates.
    */
+  /* THE FLOOR IS ITS OWN LAYER NOW, and the court is the building around it.
+     Every colour below is a custom property with the home arena's value as its
+     fallback, and hoops/courts.js hands a court its arena's values inline. So the
+     floor an account earns is the same seven layers with different paint, and
+     the three-quarter camera can tilt the floor without tilting the building. */
   .court{
     --floor-tint:radial-gradient(125% 85% at 50% -5%,
-      rgba(255,190,120,.20) 0%,rgba(255,170,90,.06) 45%,rgba(0,0,0,0) 72%);
+      var(--arena-light,rgba(255,190,120,.20)) 0%,rgba(255,170,90,.05) 45%,rgba(0,0,0,0) 72%);
     position:relative;width:100%;aspect-ratio:1/0.94;border-radius:13px;overflow:hidden;
+    background:var(--wall,#0f141d);
+    border:1px solid var(--cardb);contain:layout;container-type:inline-size;}
+  .court .floor{position:absolute;inset:0;
+    /* the board to board tone, the seam and the grain are custom properties,
+       so a parquet or an asphalt surface swaps these three and nothing else */
+    --tone:repeating-linear-gradient(90deg,
+        rgba(255,235,205,.035) 0 6.1%,rgba(0,0,0,.045) 6.1% 13.8%,
+        rgba(255,235,205,.015) 13.8% 21.7%);
+    /* the seam between two boards. A hairline, because the boards are what
+       should read and the gaps are what should not: at .30 this alone was
+       corduroy, and the tone above is what is meant to separate them. */
+    --seams:repeating-linear-gradient(90deg,
+        rgba(0,0,0,0) 0 5.75%,rgba(0,0,0,.17) 5.75% 6.1%);
+    /* the grain. A THIRD SET OF VERTICAL STRIPES IS THE RISK HERE, so it is
+       barely there: any darker and the eye reads three periods at once and
+       the floor turns to cloth. */
+    --grain:repeating-linear-gradient(90deg,
+        rgba(0,0,0,0) 0 1.15%,rgba(0,0,0,.022) 1.15% 1.63%);
     background:
       /* the arena light, or the club's colours washed over the boards */
       var(--floor-tint),
@@ -928,39 +1016,53 @@
          as one flat panel with lines on it */
       linear-gradient(183deg,rgba(255,255,255,.035) 0%,rgba(0,0,0,0) 28%,
         rgba(0,0,0,.05) 62%,rgba(0,0,0,0) 100%),
-      /* board to board tone, at a period that does not divide into the planks */
-      repeating-linear-gradient(90deg,
-        rgba(255,235,205,.035) 0 6.1%,rgba(0,0,0,.045) 6.1% 13.8%,
-        rgba(255,235,205,.015) 13.8% 21.7%),
-      /* the seam between two boards. A hairline, because the boards are what
-         should read and the gaps are what should not: at .30 this alone was
-         corduroy, and the tone above is what is meant to separate them. */
-      repeating-linear-gradient(90deg,
-        rgba(0,0,0,0) 0 5.75%,rgba(0,0,0,.17) 5.75% 6.1%),
-      /* the grain. A THIRD SET OF VERTICAL STRIPES IS THE RISK HERE, so it is
-         barely there: any darker and the eye reads three periods at once and
-         the floor turns to cloth. */
-      repeating-linear-gradient(90deg,
-        rgba(0,0,0,0) 0 1.15%,rgba(0,0,0,.022) 1.15% 1.63%),
+      var(--tone),var(--seams),var(--grain),
       /* and the maple underneath, darker as it runs away from the light */
-      linear-gradient(176deg,#8a5c2c 0%,#744d23 44%,#553519 78%,#402714 100%);
-    border:1px solid var(--cardb);contain:layout;}
+      linear-gradient(176deg,var(--m0,#8a5c2c) 0%,var(--m1,#744d23) 44%,
+        var(--m2,#553519) 78%,var(--m3,#402714) 100%);
+    transform-origin:50% 100%;}
+  /* PARQUET: squares of short boards, which is a checker of two tones with the
+     slats running one way inside them. */
+  .court[data-surf="parquet"] .floor{
+    --tone:repeating-conic-gradient(rgba(255,235,205,.06) 0 25%,rgba(0,0,0,.09) 0 50%) 0 0/16% 17%;
+    --seams:repeating-linear-gradient(0deg,rgba(0,0,0,0) 0 8.2%,rgba(0,0,0,.2) 8.2% 8.5%);
+    --grain:repeating-linear-gradient(90deg,rgba(0,0,0,0) 0 1.7%,rgba(0,0,0,.09) 1.7% 2%);}
+  /* ASPHALT: no boards at all. Two speckles at periods that never line up,
+     and one crack. */
+  .court[data-surf="asphalt"] .floor{
+    --tone:repeating-radial-gradient(circle at 23% 37%,rgba(255,255,255,.05) 0 .6px,rgba(0,0,0,0) .6px 2.2px);
+    --seams:repeating-radial-gradient(circle at 71% 64%,rgba(0,0,0,.12) 0 .8px,rgba(0,0,0,0) .8px 3.1px);
+    --grain:linear-gradient(115deg,rgba(0,0,0,0) 40%,rgba(0,0,0,.16) 40.3% 40.7%,rgba(0,0,0,0) 41%);}
+  /* A SPORT COURT: painted tiles in a grid. */
+  .court[data-surf="court"] .floor{
+    --tone:repeating-linear-gradient(0deg,rgba(255,255,255,.035) 0 4%,rgba(0,0,0,.035) 4% 8%);
+    --seams:repeating-linear-gradient(90deg,rgba(0,0,0,0) 0 3.85%,rgba(0,0,0,.1) 3.85% 4%);
+    --grain:repeating-linear-gradient(0deg,rgba(0,0,0,0) 0 3.85%,rgba(0,0,0,.1) 3.85% 4%);}
+  /* GLASS: a lit floor with a grid of light under it. */
+  .court[data-surf="glass"] .floor{
+    --tone:radial-gradient(60% 45% at 50% 35%,rgba(255,255,255,.10),rgba(0,0,0,0) 70%);
+    --seams:repeating-linear-gradient(90deg,rgba(0,0,0,0) 0 9.8%,rgba(120,200,255,.13) 9.8% 10%);
+    --grain:repeating-linear-gradient(0deg,rgba(0,0,0,0) 0 9.8%,rgba(120,200,255,.13) 9.8% 10%);}
   /* Out of bounds. A real apron is the same boards under a darker stain, so
      it is a wash over the floor rather than a different surface. */
   .court .oob{position:absolute;left:0;right:0;bottom:0;height:20%;
-    background:linear-gradient(180deg,rgba(0,0,0,.30),rgba(0,0,0,.52));}
+    background:linear-gradient(180deg,var(--apron1,rgba(0,0,0,.30)),var(--apron2,rgba(0,0,0,.52)));}
   /* BRIGHTER THAN THEY WERE, because they used to sit on near black and now
      they sit on wood. Court lines are painted white and on a real floor they
      are the most visible thing on it. */
-  .court .ln{position:absolute;border:2px solid rgba(255,255,255,.62);}
+  .court .ln{position:absolute;border:2px solid var(--line,rgba(255,255,255,.62));}
   /* THE THREE POINT LINE IS NOT ONE CURVE, and the corner three is the half
      everybody recognises. The ellipse's widest point sits at 11% down, so it
      meets the sideline there and the two straight segments run from the
      baseline to that seam. Drawn as one arc it swept off both edges of the
      floor and through the bench, which is a shape no court has. */
-  .court .arc3{left:6%;right:6%;top:-64%;height:150%;border-radius:50%;border-top:0;}
+  .court .arc3{left:6%;right:6%;top:-64%;height:150%;border-radius:50%;border-top:0;
+    /* the half of the ellipse above the baseline is not on the floor. The
+       court's own edge used to clip it; tilted, the floor's edge is not the
+       court's, so the arc clips itself */
+    clip-path:inset(42.67% -3px -3px -3px);}
   .court .c3{position:absolute;top:0;height:11.4%;width:2px;
-    background:rgba(255,255,255,.62);}
+    background:var(--line,rgba(255,255,255,.62));}
   .court .c3.l{left:6%;}
   .court .c3.r{right:6%;}
   /* The backboard, from above: a plate behind the rim. Two pixels of white
@@ -970,18 +1072,40 @@
     margin-left:-6.5%;border-radius:1px;background:rgba(255,255,255,.8);}
   /* THE PAINT IS PAINTED. An old school lane is a solid block of colour and
      it is the second thing anybody recognises about a court after the wood.
-     Neutral until a club is drawn, because the position colours on the
-     discs are the only palette this screen owns by default. */
+     The arena's own colour until a club is drawn. */
   .court .key{left:34%;right:34%;top:0;height:38%;border-top:0;
-    background:linear-gradient(180deg,rgba(138,52,20,.62),rgba(112,42,16,.5));}
+    background:linear-gradient(180deg,var(--paint1,rgba(138,52,20,.62)),var(--paint2,rgba(112,42,16,.5)));}
   .court .circ{left:41%;right:41%;top:30%;height:16%;border-radius:50%;}
   .court .rim{position:absolute;left:50%;top:7%;width:15px;height:15px;margin-left:-7.5px;
-    border:2px solid rgba(240,120,45,.9);border-radius:50%;
+    border:2px solid var(--rimc,rgba(240,120,45,.9));border-radius:50%;
     box-shadow:0 0 0 1px rgba(0,0,0,.35);}
-  .court .base{position:absolute;left:0;right:0;top:0;height:3px;background:rgba(255,255,255,.7);}
+  .court .base{position:absolute;left:0;right:0;top:0;height:3px;background:var(--line,rgba(255,255,255,.7));}
   .court .side{position:absolute;left:0;right:0;bottom:20%;height:2px;
-    background:linear-gradient(90deg,rgba(255,255,255,.18),rgba(255,255,255,.62) 18%,
-      rgba(255,255,255,.62) 82%,rgba(255,255,255,.18));}
+    background:linear-gradient(90deg,rgba(255,255,255,.18),var(--line,rgba(255,255,255,.62)) 18%,
+      var(--line,rgba(255,255,255,.62)) 82%,rgba(255,255,255,.18));}
+  /* ── THE THREE-QUARTER CAMERA ───────────────────────────────────────────
+     The floor leans away from the reader and the far end of the building
+     stands up behind the basket. The tilt and the distance are written by the
+     page from hoops/courts.js's TQ, the same numbers project() uses to place the
+     five spots, and check-arenas holds the two to a pixel. The distance is in
+     cqw, a share of the court's own width, so one pair of numbers is right at
+     every size the court is drawn. */
+  .court.tq .floor{transform:perspective(calc(var(--tq-d,180) * 1cqw)) rotateX(var(--tq-tilt,30deg));
+    /* the ground the floor sits in, carried out past both sidelines and toward
+       the reader on the same tilted plane, and never up past the far baseline,
+       where the building is */
+    box-shadow:0 60cqw 0 60cqw var(--surround,#150f09);}
+  .court .scene{position:absolute;left:0;right:0;top:0;height:calc(var(--tq-far,30%) + 3%);display:none;}
+  .court.tq .scene{display:block;}
+  .court .scene svg{display:block;width:100%;height:100%;overflow:visible;}
+  .court.tq .rim,.court.tq .bb{display:none;}
+  /* The basket stands up in three-quarter: a board, a rim and a net, placed at
+     the rim's point on the floor and drawn at the size that point is drawn. */
+  .court .hoop{display:none;position:absolute;width:15%;aspect-ratio:1/1;pointer-events:none;
+    transform:translate(-50%,-52%) scale(var(--s,1));transform-origin:50% 52%;z-index:3;}
+  .court.tq .hoop{display:block;}
+  .court .hoop svg{display:block;width:100%;height:100%;overflow:visible;}
+  .court.tq .spot{transform:translate(-50%,-50%) scale(var(--s,1));}
   .spot{position:absolute;transform:translate(-50%,-50%);width:74px;text-align:center;
     transition:opacity .3s ease;}
   .spot .disc{width:34px;height:34px;margin:0 auto;border-radius:50%;
@@ -1003,7 +1127,7 @@
      STILL clipped, and 7px is not a size anybody reads on a phone. Two lines
      broken at the hyphen is what those names look like on a jersey anyway. */
   .spot .nm.long{white-space:normal;overflow-wrap:anywhere;font-size:8.8px;line-height:1.1;}
-  .spot .yr{display:block;font-size:8.5px;color:var(--mut);}
+  .spot .yr{display:block;font-size:8.5px;color:var(--mut);text-shadow:0 1px 3px rgba(0,0,0,.95),0 0 2px rgba(0,0,0,.8);}
   .spot:not(.on) .nm,.spot:not(.on) .yr{color:var(--dim);}
 
   /* ── slot tabs and the player list ──────────────────────────────────────*/
@@ -2063,16 +2187,20 @@
     </div>
     <div class="court herocourt" id="h-court" role="img"
          aria-label="A roster being built, one signing at a time">
-      <div class="oob"></div>
-      <div class="base"></div>
-      <div class="ln arc3"></div>
-      <div class="c3 l"></div>
-      <div class="c3 r"></div>
-      <div class="ln key"></div>
-      <div class="ln circ"></div>
-      <div class="bb"></div>
-      <div class="rim"></div>
-      <div class="side"></div>
+      <div class="scene"></div>
+      <div class="floor">
+        <div class="oob"></div>
+        <div class="base"></div>
+        <div class="ln arc3"></div>
+        <div class="c3 l"></div>
+        <div class="c3 r"></div>
+        <div class="ln key"></div>
+        <div class="ln circ"></div>
+        <div class="bb"></div>
+        <div class="rim"></div>
+        <div class="side"></div>
+      </div>
+      <div class="hoop"></div>
     </div>
   </div>
     <p class="dim qd-say">Spin a season and a team. Sign five under a
@@ -2304,16 +2432,20 @@
 
     <aside class="dside">
       <div class="court" id="court" role="img" aria-label="Your rotation on the floor">
-        <div class="oob"></div>
-        <div class="base"></div>
-        <div class="ln arc3"></div>
-      <div class="c3 l"></div>
-      <div class="c3 r"></div>
-        <div class="ln key"></div>
-        <div class="ln circ"></div>
-        <div class="bb"></div>
-      <div class="rim"></div>
-        <div class="side"></div>
+        <div class="scene"></div>
+        <div class="floor">
+          <div class="oob"></div>
+          <div class="base"></div>
+          <div class="ln arc3"></div>
+          <div class="c3 l"></div>
+          <div class="c3 r"></div>
+          <div class="ln key"></div>
+          <div class="ln circ"></div>
+          <div class="bb"></div>
+          <div class="rim"></div>
+          <div class="side"></div>
+        </div>
+        <div class="hoop"></div>
       </div>
       <div class="rail off" id="rail"></div>
     </aside>
@@ -2513,6 +2645,9 @@
     <h2>What this run earned <span class="sub" id="o-earnedsub"></span></h2>
     <div class="earned" id="o-earned"></div>
   </div>
+  <!-- AN ARENA THIS RUN OPENED, drawn by renderNewArenas. Hidden on the run
+       that opened nothing, which is most of them. -->
+  <div class="card newarena" id="o-arenacard" hidden></div>
 
   <div class="card">
     <h2>The playoffs <span class="sub" id="o-porounds"></span></h2>
@@ -2525,16 +2660,20 @@
     <!-- The same court as the draft screen, so the men you finished with are
          seen where they played rather than only listed. -->
     <div class="court" id="o-court" role="img" aria-label="Your rotation on the floor">
-      <div class="oob"></div>
-      <div class="base"></div>
-      <div class="ln arc3"></div>
-      <div class="c3 l"></div>
-      <div class="c3 r"></div>
-      <div class="ln key"></div>
-      <div class="ln circ"></div>
-      <div class="bb"></div>
-      <div class="rim"></div>
-      <div class="side"></div>
+      <div class="scene"></div>
+      <div class="floor">
+        <div class="oob"></div>
+        <div class="base"></div>
+        <div class="ln arc3"></div>
+        <div class="c3 l"></div>
+        <div class="c3 r"></div>
+        <div class="ln key"></div>
+        <div class="ln circ"></div>
+        <div class="bb"></div>
+        <div class="rim"></div>
+        <div class="side"></div>
+      </div>
+      <div class="hoop"></div>
     </div>
     <div class="slots" id="o-slots" style="margin-top:12px"></div>
     <p class="dim" style="font-size:12.5px;margin:10px 0 0" id="o-best"></p>
@@ -2658,6 +2797,11 @@
   <div class="panel">
     <h2 id="prof-h">Career <span class="sub" id="prof-sub"></span></h2>
 
+    <!-- WHO THIS IS: your jersey, your name and whether you are Pro, drawn by
+         renderIdentity. The jersey is the one piece of the profile you wear, so
+         it is at the top and pressing it opens the Locker where it is changed. -->
+    <button class="pid" id="pf-id" type="button" aria-label="Open your locker"></button>
+
     <!-- THE ACCOUNT, AND IT SITS ABOVE THE CAREER RATHER THAN BEHIND A TAB.
          The career below is this browser's and says so; the account is what
          puts a name on the board and carries between devices, and a player
@@ -2681,7 +2825,12 @@
     <div class="ptabs" role="tablist">
       <button class="ptab on" id="pt-record" role="tab" aria-selected="true">Record</button>
       <button class="ptab" id="pt-badges" role="tab" aria-selected="false">Badges <span id="pt-count"></span></button>
+      <button class="ptab" id="pt-locker" role="tab" aria-selected="false">Locker</button>
     </div>
+    <!-- THE LOCKER: your jersey, the camera and the arenas you have earned.
+         Built by renderLocker, because every card on it is a question about
+         the account asked at the moment it is opened. -->
+    <div class="locker" id="pf-locker" hidden></div>
     <div class="badgegrid" id="pf-badges" hidden></div>
     <p class="dim" id="pf-badgenote" hidden style="font-size:11.5px;margin:10px 0 0"></p>
 
@@ -2832,6 +2981,7 @@
 <script src="engine.js?v=23"></script>
 <script src="run.js?v=11"></script>
 <script src="badges.js?v=3"></script>
+<script src="courts.js?v=1"></script>
 <script src="modes.js?v=8"></script>
 <!-- ACCOUNTS AND THE LEADERBOARD. All three are OPTIONAL: if the CDN is blocked
      or either file fails to load, the game runs exactly as it did, with runs
@@ -3283,7 +3433,10 @@ function boot(){
        surfaces is open when it lands. */
     A.boot();
     A.onChange(function(){
+      /* A change of account is a change of which arenas are yours. */
+      arenaChanged();
       if ($('sheet').classList.contains('open')) {
+        renderIdentity();
         renderAccount();
         /* The cabinet opens and shuts with the account, on the sheet the
            player is looking at. */
@@ -3292,7 +3445,7 @@ function boot(){
       /* And the results card, which tells a guest what the run lit and
          turns into the badges themselves the moment they sign in. */
       var ov = $('s-over');
-      if (ov && ov.classList.contains('active')) renderEarned();
+      if (ov && ov.classList.contains('active')) { renderEarned(); renderNewArenas(); }
       /* THE SHELF IS ASKED ON EVERY CHANGE OF ACCOUNT, and the boot is one of
          them: nothing is signed in at parse time, so a pull started beside
          A.boot() would always find no token and answer nothing. Signing IN is
@@ -4565,6 +4718,377 @@ function reelPools(){
    because he was not on it and a picture that put him there would have been
    telling a small lie. Five men is five spots, so the lie has nothing left to
    avoid and the court is simply the team. */
+/* ── ARENAS AND THE CAMERA ────────────────────────────────────────────────
+ *
+ * hoops/courts.js is the catalogue and the art; this is the page's half. Which
+ * arena a court wears is ASKED, never stored as earned: the account's choice is
+ * the one stored thing (rtf.arena.v1, keyed by account, on this device), and a
+ * choice the account cannot back (signed out, another account on this browser,
+ * a Pro arena after Pro lapses) falls back to the home arena rather than to a
+ * floor it does not own. That is baseball's rtd_park_v1, rule for rule.
+ *
+ * THE CAMERA IS A DEVICE PREFERENCE (rtf.cam.v1) and three-quarter is the
+ * default. It is about the screen in front of you, not about the account.
+ *
+ * A blocked or stale courts.js draws the home floor flat, which is the court
+ * this game had before any of this, so nothing that paints a court needs to
+ * know whether the file arrived. */
+var NEED_COURTS = 1;
+var CT = (window.RTF_COURTS && window.RTF_COURTS.COURTS_API_VERSION === NEED_COURTS)
+  ? window.RTF_COURTS : null;
+var ARENA_KEY = 'rtf.arena.v1', CAM_KEY = 'rtf.cam.v1';
+var arenaMemo = null;
+
+function camera(){
+  if (!CT) return 'top';
+  try { return localStorage.getItem(CAM_KEY) === 'top' ? 'top' : 'tq'; } catch (e) { return 'tq'; }
+}
+function setCamera(c){
+  try { localStorage.setItem(CAM_KEY, c === 'top' ? 'top' : 'tq'); } catch (e) {}
+  redressCourts();
+}
+/* What the unlock rules are asked of: the career the cabinet reads, the badges
+   it has earned, and whether the account is Pro. Guests are asked nothing: the
+   career on a signed out browser is nobody's. */
+function arenaInfoFor(c){
+  var st = A.state(), signed = !!(st && st.signedIn), badges = 0;
+  var BG = window.RTF_BADGES, MU = window.RTF_MODES_UI;
+  if (signed && BG && typeof BG.earned === 'function') {
+    try { badges = BG.earned(c).length; } catch (e) { badges = 0; }
+  }
+  return { signed: signed, pro: !!(MU && MU.pro && MU.pro()), badges: badges, c: c };
+}
+function arenaInfo(){ return arenaInfoFor(loadCareer() || blankCareer()); }
+function arenaChoices(){
+  try { var m = JSON.parse(localStorage.getItem(ARENA_KEY) || '{}'); return (m && typeof m === 'object') ? m : {}; }
+  catch (e) { return {}; }
+}
+var arenaForced = null;   /* a checker's handle, below. Nothing on the page sets it. */
+function currentArena(){
+  if (!CT) return 'home';
+  if (arenaForced && CT.BY_ID[arenaForced]) return arenaForced;
+  if (arenaMemo) return arenaMemo;
+  var st = A.state(), uid = st && st.signedIn ? st.userId : null;
+  var id = uid ? arenaChoices()[uid] : null;
+  if (!id || !CT.BY_ID[id] || !CT.status(CT.BY_ID[id], arenaInfo()).ok) id = 'home';
+  arenaMemo = id;
+  return id;
+}
+function setArena(id){
+  var st = A.state(), uid = st && st.signedIn ? st.userId : null;
+  if (!CT || !uid || !CT.BY_ID[id]) return;
+  var m = arenaChoices();
+  m[uid] = id;
+  try { localStorage.setItem(ARENA_KEY, JSON.stringify(m)); } catch (e) {}
+  redressCourts();
+}
+/* Anything that can move an unlock (a run filed, a feat, a pull, a sign in, Pro)
+   forgets the answer, and the next court painted asks again. */
+function arenaChanged(){
+  arenaMemo = null;
+  redressCourts();
+  if ($('sheet') && $('sheet').classList.contains('open')) {
+    renderIdentity();
+    if (badgeTab === 'locker') renderLocker();
+  }
+}
+/* The arenas a change of career opened, asked the same way as the badges: the
+   same question either side of the write. */
+function freshArenas(before, after){
+  if (!CT) return [];
+  try {
+    var had = {};
+    CT.unlockedIds(arenaInfoFor(before)).forEach(function(id){ had[id] = 1; });
+    return CT.unlockedIds(arenaInfoFor(after)).filter(function(id){ return !had[id]; })
+      .map(function(id){ return CT.BY_ID[id]; });
+  } catch (e) { return []; }
+}
+
+/* ── YOUR JERSEY ────────────────────────────────────────────────────────
+ *
+ * The one thing on the profile you wear. The football game's circle is a club
+ * colourway and two initials; this is the sport's version of the same idea, a
+ * jersey in a club's colours with your number on it.
+ *
+ * A CLUB'S COLOURS ARE EARNED BY PLAYING ONE FRANCHISE WITH THAT CLUB, which is
+ * the football crest's rule arriving here. Read off career.byClub, so it is
+ * derived like everything else on this sheet: retroactive, and on the account.
+ * The house colours are everybody's, and Pro opens every club. Stored is only
+ * the choice (rtf.look.v1, keyed by account, on this device), and a club the
+ * account cannot back falls back to the house colours. */
+var LOOK_KEY = 'rtf.look.v1';
+var HOUSE_KIT = { code: 'house', name: 'Run The Floor', bg: '#f0782d', accent: '#1a1f2b', on: '#10131a' };
+function lookOwner(){ var st = A.state(); return (st && st.signedIn && st.userId) ? st.userId : 'guest'; }
+function lookMap(){
+  try { var m = JSON.parse(localStorage.getItem(LOOK_KEY) || '{}'); return (m && typeof m === 'object') ? m : {}; }
+  catch (e) { return {}; }
+}
+function kitOwned(code, info){
+  if (code === 'house') return true;
+  if (!info.signed) return false;
+  if (info.pro) return true;
+  var s = info.c && info.c.byClub && info.c.byClub[code];
+  return !!(s && s.runs > 0);
+}
+function kitOf(code){
+  if (code === 'house' || !E.hasTeam || !E.hasTeam(code)) return HOUSE_KIT;
+  var k = E.clubSkin(code);
+  return { code: code, name: E.teamName(code), bg: k.bg, accent: k.accent, on: k.on };
+}
+function myLook(){
+  var l = lookMap()[lookOwner()] || {};
+  var info = arenaInfo();
+  var code = (l.club && kitOwned(l.club, info)) ? l.club : 'house';
+  var num = /^\d{1,2}$/.test(String(l.num == null ? '' : l.num)) ? String(l.num) : '1';
+  return { club: code, num: num };
+}
+function setLook(patch){
+  var m = lookMap(), k = lookOwner();
+  m[k] = Object.assign({}, m[k] || {}, patch);
+  try { localStorage.setItem(LOOK_KEY, JSON.stringify(m)); } catch (e) {}
+  renderIdentity();
+}
+var jzSeq = 0;
+function jerseySvg(code, num){
+  var k = kitOf(code), id = 'jz' + (++jzSeq);
+  var n = String(num == null ? '' : num).slice(0, 2);
+  var fs = n.length > 1 ? 21 : 24;
+  return '<svg viewBox="0 0 60 64" aria-hidden="true"><defs><linearGradient id="' + id + '" x1="0" y1="0" x2="0" y2="1">' +
+    '<stop offset="0" stop-color="#fff" stop-opacity=".16"/><stop offset=".5" stop-color="#fff" stop-opacity="0"/>' +
+    '<stop offset="1" stop-color="#000" stop-opacity=".22"/></linearGradient></defs>' +
+    '<path d="M16,4 Q21,4 23,9 Q30,14 37,9 Q39,4 44,4 L50,6 Q47,16 52,25 L52,60 Q30,63.5 8,60 L8,25 Q13,16 10,6 Z" fill="' + k.bg + '"/>' +
+    '<path d="M16,4 Q21,4 23,9 Q30,14 37,9 Q39,4 44,4 L50,6 Q47,16 52,25 L52,60 Q30,63.5 8,60 L8,25 Q13,16 10,6 Z" fill="url(#' + id + ')"/>' +
+    '<path d="M16,4 Q21,4 23,9 Q30,14 37,9 Q39,4 44,4" fill="none" stroke="' + k.accent + '" stroke-width="2.6"/>' +
+    '<path d="M10,6 Q13,16 8,25 M50,6 Q47,16 52,25" fill="none" stroke="' + k.accent + '" stroke-width="2.4"/>' +
+    '<text x="30" y="45" text-anchor="middle" font-family="Anton,Impact,sans-serif" font-size="' + fs + '" fill="' + k.on + '"' +
+    ' stroke="' + k.accent + '" stroke-width=".9" paint-order="stroke">' + esc(n) + '</text></svg>';
+}
+
+function renderIdentity(){
+  var el = $('pf-id');
+  if (!el) return;
+  var st = A.state(), look = myLook(), info = arenaInfo();
+  var name = (st && st.signedIn) ? (st.name || 'No name yet') : 'Guest';
+  var sub = (st && st.signedIn) ? kitOf(look.club).name + ' colors · #' + look.num
+    : 'Sign in to earn arenas and club colors';
+  el.innerHTML = '<span class="jz">' + jerseySvg(look.club, look.num) + '</span>' +
+    '<span class="who"><b>' + esc(name) + (info.pro ? '<i class="pro">PRO</i>' : '') + '</b>' +
+    '<span>' + esc(sub) + '</span></span><span class="go">Locker</span>';
+}
+
+/* ── THE LOCKER ─────────────────────────────────────────────────────────── */
+function arenaCard(a, info, current, sfx){
+  var st = CT.status(a, info);
+  var card = document.createElement('div');
+  card.className = 'ar-card r-' + a.rarity.toLowerCase() + (st.ok ? '' : ' lock');
+  card.setAttribute('data-arena', a.id);
+  var foot;
+  if (a.id === current) foot = '<span class="inuse">Playing here</span>';
+  else if (st.ok) foot = '<button type="button" data-use="' + a.id + '">Play here</button>';
+  else foot = '<span class="lbl">' + esc(st.label) + '</span>' +
+    (st.of ? '<div class="bar"><i style="width:' + Math.round(100 * st.have / st.of) + '%"></i></div>' +
+      '<span class="lbl">' + st.have + ' / ' + st.of + '</span>' : '');
+  card.innerHTML = CT.preview(a.id, sfx) +
+    '<div class="ab"><span class="rar">' + esc(a.rarity) + '</span><b>' + esc(a.name) + '</b>' +
+    '<span class="nod">' + esc(a.nod) + '</span><div class="foot">' + foot + '</div></div>';
+  return card;
+}
+function renderLocker(){
+  var box = $('pf-locker');
+  if (!box) return;
+  box.textContent = '';
+  var info = arenaInfo(), look = myLook();
+
+  /* the jersey */
+  var j = document.createElement('div');
+  j.className = 'lk';
+  j.innerHTML = '<h3>Your jersey <span>' + esc(kitOf(look.club).name) + ' colors</span></h3>' +
+    '<div class="lk-jersey"><span class="jz" id="lk-jz">' + jerseySvg(look.club, look.num) + '</span>' +
+    '<div class="lk-num"><label for="lk-num">Your number</label>' +
+    '<input id="lk-num" inputmode="numeric" maxlength="2" value="' + esc(look.num) + '" aria-label="Your number"></div></div>' +
+    '<div class="sw-grid" id="lk-kits"></div>' +
+    '<p class="lknote">' + (info.signed
+      ? (info.pro ? 'Pro wears every club.' : 'Play One Franchise with a club to wear its colors. Pro wears every club.')
+      : 'Sign in, then play One Franchise with a club to wear its colors.') + '</p>';
+  box.appendChild(j);
+  var grid = j.querySelector('#lk-kits');
+  var kits = [HOUSE_KIT.code].concat(E.franchises().map(function(f){ return f.code; }));
+  kits.forEach(function(code){
+    var owned = kitOwned(code, info), k = kitOf(code);
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'sw' + (code === look.club ? ' on' : '') + (owned ? '' : ' lock');
+    b.setAttribute('data-kit', code);
+    b.setAttribute('aria-label', k.name + (owned ? '' : ', locked'));
+    b.innerHTML = '<span class="jz">' + jerseySvg(code, look.num) + '</span>';
+    b.onclick = function(){
+      if (!owned) {
+        toast(info.signed ? 'Play One Franchise with the ' + k.name + ' to wear their colors.'
+          : 'Sign in to wear club colors.');
+        return;
+      }
+      setLook({ club: code });
+      renderLocker();
+    };
+    grid.appendChild(b);
+  });
+  var inp = j.querySelector('#lk-num');
+  inp.oninput = function(){
+    var v = inp.value.replace(/\D/g, '').slice(0, 2);
+    if (v !== inp.value) inp.value = v;
+    if (!v) return;
+    setLook({ num: v });
+    var big = $('lk-jz');
+    if (big) big.innerHTML = jerseySvg(myLook().club, v);
+  };
+
+  /* the camera */
+  var cam = document.createElement('div');
+  cam.className = 'lk';
+  cam.innerHTML = '<h3>Camera</h3><div class="seg" role="radiogroup">' +
+    '<button type="button" data-cam="tq" role="radio">Three-quarter</button>' +
+    '<button type="button" data-cam="top" role="radio">Overhead</button></div>' +
+    '<p class="lknote">Three-quarter shows the arena behind the basket. Overhead is the whole floor from above.</p>';
+  box.appendChild(cam);
+  var mark = function(){
+    cam.querySelectorAll('[data-cam]').forEach(function(b){
+      var on = b.getAttribute('data-cam') === camera();
+      b.className = on ? 'on' : '';
+      b.setAttribute('aria-checked', on ? 'true' : 'false');
+    });
+  };
+  cam.querySelectorAll('[data-cam]').forEach(function(b){
+    b.onclick = function(){ setCamera(b.getAttribute('data-cam')); mark(); };
+  });
+  mark();
+
+  /* the arenas */
+  if (!CT) return;
+  var cur = currentArena(), n = CT.unlockedIds(info).length;
+  var ar = document.createElement('div');
+  ar.className = 'lk';
+  ar.innerHTML = '<h3>Arenas <span>' + n + ' of ' + CT.ARENAS.length + '</span></h3><div class="ar-grid" id="lk-arenas"></div>' +
+    (info.signed ? '' : '<p class="lknote">Arenas are earned on an account. Sign in and everything you have played counts.</p>');
+  box.appendChild(ar);
+  var ag = ar.querySelector('#lk-arenas');
+  CT.ARENAS.forEach(function(a){ ag.appendChild(arenaCard(a, info, cur, 'lk')); });
+  ag.onclick = function(ev){
+    var b = ev.target.closest && ev.target.closest('[data-use]');
+    if (!b) return;
+    setArena(b.getAttribute('data-use'));
+    toast('Playing at ' + CT.BY_ID[b.getAttribute('data-use')].name);
+    renderLocker();
+  };
+}
+
+/* ── AN ARENA THIS RUN OPENED ───────────────────────────────────────────── */
+function renderNewArenas(){
+  var card = $('o-arenacard');
+  if (!card) return;
+  var ids = (run && run.earned && run.earned.arenas) || [];
+  if (!CT || !ids.length || !badgesOn()) { card.hidden = true; card.textContent = ''; return; }
+  var a = CT.BY_ID[ids[0]];
+  if (!a) { card.hidden = true; return; }
+  card.hidden = false;
+  card.innerHTML = '<h2>New arena unlocked</h2><div class="na">' + CT.preview(a.id, 'na') +
+    '<div><b>' + esc(a.name) + '</b><span>' + esc(a.nod) +
+    (ids.length > 1 ? ' And ' + (ids.length - 1) + ' more in your locker.' : '') + '</span>' +
+    (currentArena() === a.id ? '<span>Playing here.</span>'
+      : '<button type="button" id="b-na-use">Play here next</button>') + '</div></div>';
+  var b = $('b-na-use');
+  if (b) b.onclick = function(){ setArena(a.id); toast('Playing at ' + a.name); renderNewArenas(); };
+}
+
+/* A basket standing up, for the three-quarter camera. The rim is centred at
+   (20, 20.8) of the box, which is the point .hoop's transform anchors on. */
+var HOOP_SVG = '<svg viewBox="0 0 40 40" aria-hidden="true">' +
+  '<rect x="18.7" y="15" width="2.6" height="10.5" fill="#262c38"/>' +
+  '<rect x="7" y="1.5" width="26" height="15.5" rx="1" fill="rgba(225,238,255,.30)" stroke="#f4f7fb" stroke-width="1.3"/>' +
+  '<rect x="15" y="8" width="10" height="7.2" fill="none" stroke="#f4f7fb" stroke-width="1"/>' +
+  '<path d="M 15.2,20.8 L 16.9,27.2 L 23.1,27.2 L 24.8,20.8 M 17.6,21.4 L 18.4,27.2 M 20,21.6 L 20,27.2 M 22.4,21.4 L 21.6,27.2 M 16,23.8 L 24,23.8" fill="none" stroke="rgba(255,255,255,.82)" stroke-width=".55"/>' +
+  '<ellipse cx="20" cy="20.8" rx="5" ry="1.5" fill="none" style="stroke:var(--rimc,#f0782d)" stroke-width="1.25"/>' +
+  '</svg>';
+
+/* The court's height over its width. Read off the laid out box when there is
+   one, and off the computed aspect ratio when the court is on a screen that is
+   not showing, because a hidden box measures zero and zero is not a shape. */
+function courtRatio(el){
+  var w = el.clientWidth, h = el.clientHeight;
+  if (w > 0 && h > 0) return h / w;
+  var m = /([\d.]+)\s*\/\s*([\d.]+)/.exec(getComputedStyle(el).aspectRatio || '');
+  return m ? (+m[2]) / (+m[1]) : 0.94;
+}
+function dressCourt(el){
+  if (!el) return;
+  var id = currentArena(), cam = camera(), key = id + '|' + cam;
+  if (el._dress !== key) {
+    el._dress = key;
+    el.style.cssText = CT ? CT.floorVars(id) : '';
+    el.setAttribute('data-arena', id);
+    el.setAttribute('data-surf', CT ? CT.floorOf(id).surf : 'wood');
+    el.classList.toggle('tq', cam === 'tq');
+    var sc = el.querySelector('.scene');
+    if (sc) sc.innerHTML = (cam === 'tq' && CT) ? CT.scene(id, el.id || 'c') : '';
+    var hp = el.querySelector('.hoop');
+    if (hp && !hp.firstChild) hp.innerHTML = HOOP_SVG;
+  }
+  el._ratio = courtRatio(el);
+  if (cam === 'tq' && CT) {
+    el.style.setProperty('--tq-d', String(CT.TQ.persp * 100));
+    el.style.setProperty('--tq-tilt', CT.TQ.tilt + 'deg');
+    el.style.setProperty('--tq-far', CT.farEdge(el._ratio).toFixed(3) + '%');
+    var hoop = el.querySelector('.hoop');
+    if (hoop) {
+      var r = CT.project(50, 7, el._ratio);
+      hoop.style.left = r.x.toFixed(3) + '%';
+      hoop.style.top = r.y.toFixed(3) + '%';
+      hoop.style.setProperty('--s', r.s.toFixed(4));
+    }
+  }
+}
+/* Where a spot stands, in whichever camera the court is in. The flat position
+   is kept on the element so a court that changes shape (a phone turned, a
+   breakpoint crossed) can put everybody back without repainting the roster. */
+function placeSpot(el, sp){
+  var x = +sp.dataset.px, y = +sp.dataset.py;
+  if (CT && el.classList.contains('tq')) {
+    var r = CT.project(x, y, el._ratio || courtRatio(el));
+    sp.style.left = r.x.toFixed(3) + '%';
+    sp.style.top = r.y.toFixed(3) + '%';
+    sp.style.setProperty('--s', Math.max(0.84, Math.min(1, r.s)).toFixed(4));
+    sp.style.zIndex = String(4 + Math.round(r.y));
+  } else {
+    sp.style.left = x + '%';
+    sp.style.top = y + '%';
+    sp.style.removeProperty('--s');
+    sp.style.zIndex = '';
+  }
+}
+var COURT_IDS = ['h-court', 'court', 'o-court'];
+function redressCourts(){
+  arenaMemo = null;
+  for (var i = 0; i < COURT_IDS.length; i++) {
+    var el = $(COURT_IDS[i]);
+    if (!el) continue;
+    el._dress = null;
+    dressCourt(el);
+    var sp = el.querySelectorAll('.spot');
+    for (var k = 0; k < sp.length; k++) placeSpot(el, sp[k]);
+  }
+}
+/* A court only changes shape at a breakpoint, but a turned phone crosses one. */
+window.addEventListener('resize', function(){
+  for (var i = 0; i < COURT_IDS.length; i++) {
+    var el = $(COURT_IDS[i]);
+    if (!el || !el._dress) continue;
+    var r = courtRatio(el);
+    if (Math.abs(r - (el._ratio || 0)) < 0.004) continue;
+    dressCourt(el);
+    var sp = el.querySelectorAll('.spot');
+    for (var k = 0; k < sp.length; k++) placeSpot(el, sp[k]);
+  }
+});
+
 var SPOTS = {
   PG:  { x: 50, y: 62 }, SG: { x: 84, y: 46 }, SF: { x: 16, y: 46 },
   PF:  { x: 27, y: 20 }, C:  { x: 62, y: 15 }
@@ -4584,6 +5108,7 @@ function renderCourt(justSlot, into){
  * like the game, which it cannot do if it is drawing its own picture of it. */
 function paintCourt(el, filled, justSlot){
   if (!el) return;
+  dressCourt(el);
   var old = el.querySelectorAll('.spot');
   for (var i = 0; i < old.length; i++) old[i].remove();
 
@@ -4591,8 +5116,9 @@ function paintCourt(el, filled, justSlot){
     var slot = E.SLOTS[s], pos = SPOTS[slot], p = filled[slot];
     var sp = document.createElement('div');
     sp.className = 'spot' + (p ? ' on' : '') + (p && slot === justSlot ? ' just' : '');
-    sp.style.left = pos.x + '%';
-    sp.style.top = pos.y + '%';
+    sp.dataset.px = pos.x;
+    sp.dataset.py = pos.y;
+    placeSpot(el, sp);
 
     var disc = document.createElement('div');
     disc.className = 'disc';
@@ -6485,7 +7011,8 @@ function endRun(){
     run.recorded = true;
     var got = recordRun(out);
     run.earned = { fresh: got.fresh.map(function(b){
-      return { id: b.id, name: b.name, why: b.why, tier: b.tier }; }), bests: got.bests };
+      return { id: b.id, name: b.name, why: b.why, tier: b.tier }; }), bests: got.bests,
+      arenas: (got.arenas || []).map(function(a){ return a.id; }) };
   }
   save();
   renderOver(out);
@@ -7064,6 +7591,7 @@ function renderOver(out){
 
   renderBestNight();
   renderEarned();
+  renderNewArenas();
   renderOverDoors();
   /* THE BOARD IS ASKED HERE AND NEVER AWAITED. renderOver is also what a
      restored finished run calls, so this runs again on a reopened season,
@@ -8669,7 +9197,9 @@ function recordRun(out){
      round trips carrying the same bytes. The caller is the one place that is
      neither. */
   if (day) cloudPushDaily(day);
-  return { career: c, fresh: fresh, bests: bests, daily: day };
+  var arenas = freshArenas(before, c);
+  if (arenas.length) arenaChanged();
+  return { career: c, fresh: fresh, bests: bests, daily: day, arenas: arenas };
 }
 
 /* WHAT JUST LIT. Nothing stores "earned", by design: every badge is derived
@@ -8824,6 +9354,7 @@ function renderCareer(){
 var sheetReturn = null;
 
 function openProfile(){
+  renderIdentity();
   renderCareer();
   renderAccount();
   renderBadges();
@@ -9263,16 +9794,21 @@ function renderBadges(){
 var num0 = function(v){ return (typeof v === 'number' && isFinite(v)) ? v : 0; };
 
 function showProfileTab(which){
+  if (which !== 'badges' && which !== 'locker') which = 'record';
   badgeTab = which;
-  var record = which === 'record';
-  $('pf-list').hidden = !record;
-  $('pf-badges').hidden = record;
-  $('pf-badgenote').hidden = record || !badgesOn();
-  $('pt-record').className = 'ptab' + (record ? ' on' : '');
-  $('pt-badges').className = 'ptab' + (record ? '' : ' on');
-  $('pt-record').setAttribute('aria-selected', record ? 'true' : 'false');
-  $('pt-badges').setAttribute('aria-selected', record ? 'false' : 'true');
-  if (!record) renderBadges();
+  var tabs = { record: 'pt-record', badges: 'pt-badges', locker: 'pt-locker' };
+  $('pf-list').hidden = which !== 'record';
+  $('pf-badges').hidden = which !== 'badges';
+  $('pf-badgenote').hidden = which !== 'badges' || !badgesOn();
+  if ($('pf-locker')) $('pf-locker').hidden = which !== 'locker';
+  for (var k in tabs) {
+    var b = $(tabs[k]);
+    if (!b) continue;
+    b.className = 'ptab' + (k === which ? ' on' : '');
+    b.setAttribute('aria-selected', k === which ? 'true' : 'false');
+  }
+  if (which === 'badges') renderBadges();
+  if (which === 'locker') renderLocker();
 }
 
 // ── the home page ──────────────────────────────────────────────────────────
@@ -9732,6 +10268,7 @@ function cloudWriteLocal(key, value, before){
   /* The front page reads both records, the cabinet reads the career, and a
      merge landing under an empty shelf has to redraw it or the only way to see
      a cabinet that has just arrived is to reload. */
+  arenaChanged();
   renderHome();
   if ($('sheet').classList.contains('open')) renderCareer();
   return true;
@@ -9830,6 +10367,8 @@ $('b-again').onclick = function(){
 $('b-prof-x').onclick = closeProfile;
 $('pt-record').onclick = function(){ showProfileTab('record'); };
 $('pt-badges').onclick = function(){ showProfileTab('badges'); };
+$('pt-locker').onclick = function(){ showProfileTab('locker'); };
+$('pf-id').onclick = function(){ showProfileTab('locker'); };
 $('b-prof-clear').onclick = clearCareer;
 $('b-franchise-pick').onclick = openClubs;
 $('b-club-x').onclick = closeClubs;
@@ -9954,12 +10493,32 @@ function recordFeats(f){
       : fresh.length + ' badges: ' + fresh.map(function(b){ return b.name; }).join(', ');
     setTimeout(function(){ toast(line); }, 2300);
   }
+  /* AN ARENA A MODE OPENED, said after the badge rather than over it. */
+  var opened = badgesOn() ? freshArenas(before, c) : [];
+  if (opened.length) {
+    arenaChanged();
+    setTimeout(function(){ toast('Arena unlocked: ' + opened[0].name + (opened.length > 1 ? ' and ' + (opened.length - 1) + ' more' : '')); }, fresh.length ? 5200 : 2300);
+  }
   return fresh;
 }
 
 window.RTF_PAGE = {
   get data(){ return DATA; },
   feats: recordFeats,
+  arenaChanged: arenaChanged,
+  /* THE ARENAS, for the profile shelf in this file and for check-arenas.mjs.
+     `force` is the checker's alone: it draws an arena whatever the account
+     owns, so every floor and every scene can be looked at without playing to
+     it. Nothing on the page calls it, which is window.RTF_LIVE's arrangement. */
+  arena: {
+    current: function(){ return currentArena(); },
+    set: function(id){ setArena(id); },
+    camera: function(){ return camera(); },
+    setCamera: function(c){ setCamera(c); },
+    info: function(){ return arenaInfo(); },
+    force: function(id){ arenaForced = id || null; redressCourts(); },
+    redress: function(){ redressCourts(); },
+  },
   show: show,
   money: money,
   esc: esc,
@@ -10005,6 +10564,6 @@ boot();
 </script>
 <!-- AFTER the page, because it draws through window.RTF_PAGE, which the script
      above publishes. -->
-<script src="modes-ui.js?v=10"></script>
+<script src="modes-ui.js?v=11"></script>
 </body>
 </html>

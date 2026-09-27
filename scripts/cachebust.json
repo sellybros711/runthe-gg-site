@@ -2220,6 +2220,10 @@
       "v": "3",
       "sha": "508a73b49b29f0ff"
     },
+    "courts.js": {
+      "v": "1",
+      "sha": "e558d3f7daf32e4b"
+    },
     "modes.js": {
       "v": "8",
       "sha": "6fa27eb62d346eca"
@@ -2245,8 +2249,8 @@
       "sha": "31e8a7be1e03a4c1"
     },
     "modes-ui.js": {
-      "v": "10",
-      "sha": "76d765387cdecb53"
+      "v": "11",
+      "sha": "6e183594d20f585c"
     },
     "data/players.json": {
       "v": "5",

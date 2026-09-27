@@ -3159,6 +3159,8 @@ function proRefresh(force){
 function proSet(on){
   if (proOwned === on) return;
   proOwned = on;
+  /* Two arenas are Pro's, so owning it changes which floors are yours. */
+  if (P.arenaChanged) P.arenaChanged();
   var home = $('s-home');
   if (home && home.classList.contains('active')) renderHome();
   var sh = $('pro-sheet');
@@ -3228,6 +3230,8 @@ function onData(){
 
 window.RTF_MODES_UI = {
   UI_VERSION: UI_VERSION,
+  /* Whether this account owns Run The Floor Pro, for the arenas. */
+  pro: function(){ return proOwned; },
   onData: onData,
   renderHome: renderHome,
   openConquest: cqOpen,

@@ -10557,6 +10557,7 @@ The regression suite, none of which needs a network:
 
 ```
 node hoops/check-posture.mjs      discoverability, per the table above
+node hoops/check-arenas.mjs       arenas, the three-quarter camera and the Locker
 node hoops/build/check-fetch.mjs  the scraper's parsers, against saved markup
 node hoops/verify.mjs             draft legality, seed replay, and calibration
 node hoops/check-badges.mjs       every badge is reachable, against real runs
@@ -13533,6 +13534,71 @@ is hard to read on a phone.
 **Google Fonts does not load in the sandbox**, so a screenshot of the page shows the
 fallback. Inline the face with `addStyleTag`, the way `og.mjs` does, before judging the
 title by eye.
+
+### Arenas, the three-quarter camera and the Locker
+
+```
+node hoops/check-arenas.mjs          the catalogue, the art, the rules, the page
+node hoops/check-arenas.mjs --quick  no browser
+```
+
+Asked for: profiles like the NFL and MLB games, courts you unlock like baseball's
+ballparks, a three-quarter view of the court, and arenas with scenery.
+`hoops/courts.js` is `baseball/parks.js`' shape. Thirteen arenas, each a nod to a
+kind of place (a parquet floor, a chain-link blacktop, a beach court, a gym with
+pull-out bleachers) and **none named for a real arena or carrying a real logo**.
+
+**Unlocks are derived, never stored.** Every rule asks the career the cabinet
+reads (runs, rings, playoffs, best wins, badges earned, the mode feats `cq.best`,
+`ps.par`, `fx.title`) or whether the account is Pro. A guest gets the home arena
+only. The one stored thing is the choice, `rtf.arena.v1`, keyed by account on the
+device, and a choice the account cannot back (signed out, another account, a Pro
+arena without Pro) falls back to the home arena. `currentArena()` is the one
+answer and `arenaChanged()` forgets it on every event that can move an unlock: a
+run filed, a feat, a cloud pull, a change of account, Pro.
+
+**The floor is its own layer now.** `.court` is the building (`--wall`) and
+`.court .floor` holds the seven layers, with the boards' three repeating layers
+as custom properties (`--tone`, `--seams`, `--grain`) so a surface (`parquet`,
+`asphalt`, `court`, `glass`) swaps those three and nothing else. Every colour is a
+property with the home arena's value as its fallback, handed to the court inline
+by `floorVars()`. The club wash still sets `--floor-tint` on `.court` and it
+inherits down. verify.mjs reads the floor rule at `.court .floor{` for that reason.
+
+**THE TILT IS ONE ANSWER IN TWO PLACES.** The floor is tilted by CSS
+(`perspective()` in `cqw`, `rotateX`) written from `CT.TQ`, and the five spots are
+placed by `CT.project()`, the same perspective as arithmetic. The spots are NOT
+inside the tilted layer on purpose: text in a rotated plane is foreshortened and
+soft, and a name is the thing on a court that has to be read. check-arenas drops a
+marker onto the tilted floor under each spot and holds the two to 1.5px, the hoop
+to the rim's point, and the scene's foot to the far baseline. Breaking the
+projection's scale puts every spot 25 to 27px off.
+
+**A scene is fitted by its HEIGHT** (`xMidYMax meet`, overflow visible) and every
+backdrop runs from x -200 to 300 of a 100-wide box, brick and block as patterns so the width costs no elements. Cropped from the bottom
+instead, a phone's thin strip above the floor showed only crowd and the banners,
+windows and skyline that say which arena it is were off the top.
+
+**The surround is a box-shadow on the tilted floor**, offset down by its own
+spread, so it covers the wedges beside the far end without rising into the
+building. **The three point arc clips itself** (`clip-path`), because tilted, the
+floor's edge is no longer the court's and the upper half of the ellipse drew over
+the crowd.
+
+**The camera is a device preference** (`rtf.cam.v1`), three-quarter by default,
+Overhead in the Locker. Overhead is the old flat court exactly: no tilt, no scene,
+spots at their flat points.
+
+**The Locker** is the Career sheet's third tab: your jersey, the camera, and the
+arena shelf. The jersey is a club colorway and a number, stored in `rtf.look.v1`
+by account on the device. **A club's colors are earned by playing One Franchise
+with that club** (`career.byClub`), the football crest's rule; the house colors
+are everybody's and Pro wears every club. The identity row at the top of the sheet
+wears it. A results screen names an arena the run opened (`o-arenacard`), and a
+mode that opens one says so in a toast after its badge.
+
+**`RTF_PAGE.arena.force(id)` is the checker's alone**, like `window.RTF_LIVE`:
+nothing on the page calls it.
 
 ### The board is in the preflight now, and the helper under it could only say NO
 

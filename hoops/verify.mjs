@@ -1269,7 +1269,9 @@ ok(bestWins > worstWins + 20,
      first of them is an aspect ratio inside a media query. A regex for the
      selector alone reads that one and reports a floor with no boards in it,
      which is what the first draft of this did. */
-  const floor = /\n\s*\.court\{([^}]*var\(--floor-tint\)[^}]*)\}/.exec(src);
+  /* The floor is its own layer since the arenas, so the boards live on
+     `.court .floor` and the tint still comes down from `.court`. */
+  const floor = /\n\s*\.court \.floor\{([^}]*var\(--floor-tint\)[^}]*)\}/.exec(src);
   ok(!!floor, 'the court draws its own floor');
   if (floor) {
     /* The wood is the planks, the seams and the grain, which is three
