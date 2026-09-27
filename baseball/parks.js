@@ -39,7 +39,7 @@ const PARKS = [
   { id: 'home', name: 'The Diamond', nod: 'The park every run starts in.',
     rarity: 'Starter', unlock: { label: 'Yours from the first pitch', free: true } },
   { id: 'cornfield', name: 'The Cornfield', nod: 'Golden hour on a farm in Iowa.',
-    rarity: 'Common', unlock: { label: 'Play a season signed in', need: (i) => i.ctx.n, of: 1 } },
+    rarity: 'Common', unlock: { label: 'Play a season', need: (i) => i.ctx.n, of: 1 } },
   { id: 'ivy', name: 'Ivy Corner', nod: 'Ivy on brick and rooftop bleachers.',
     rarity: 'Common', unlock: { label: 'Earn 5 badges', need: (i) => i.badges, of: 5 } },
   { id: 'warehouse', name: 'Warehouse Yard', nod: 'A brick warehouse down the right field line.',
@@ -70,7 +70,11 @@ const BY_ID = Object.fromEntries(PARKS.map((p) => [p.id, p]));
 function status(park, info) {
   const u = park.unlock;
   if (u.free) return { ok: true, label: u.label };
-  if (!info || !info.signed) return { ok: false, label: 'Sign in, then: ' + u.label.charAt(0).toLowerCase() + u.label.slice(1), guest: true };
+  /* A guest is told the one thing standing between them and every park: an
+     account. "Sign in and ..." reads as one step, and a Pro park names Pro
+     rather than lower-casing a product name. */
+  if (!info || !info.signed) return { ok: false, guest: true,
+    label: u.pro ? 'Sign in and get Pro' : 'Sign in and ' + u.label.charAt(0).toLowerCase() + u.label.slice(1) };
   if (u.pro) return { ok: !!info.pro, label: u.label };
   let have = 0;
   try { have = Math.max(0, Number(u.need(info)) || 0); } catch (_) { have = 0; }
