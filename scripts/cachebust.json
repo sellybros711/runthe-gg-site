@@ -2217,8 +2217,8 @@
       "sha": "e377af19fb95be50"
     },
     "auth.js": {
-      "v": "1",
-      "sha": "f4d23b1fe32fff3a"
+      "v": "2",
+      "sha": "17b3bedb5b0006a3"
     },
     "/assets/cloudsave.js": {
       "v": "2",
@@ -2233,8 +2233,8 @@
       "sha": "31e8a7be1e03a4c1"
     },
     "modes-ui.js": {
-      "v": "8",
-      "sha": "aff9a55f4b0e75c3"
+      "v": "9",
+      "sha": "ceff817c666e40be"
     },
     "data/players.json": {
       "v": "5",

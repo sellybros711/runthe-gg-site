@@ -289,6 +289,25 @@ var CSS = [
   '.td-end button{background:none;border:1px solid rgba(255,255,255,.18);border-radius:999px;color:var(--ink);font:inherit;font-weight:700;padding:5px 11px;cursor:pointer;}',
   '.td-end button:hover{border-color:rgba(255,255,255,.4);}',
   '.td-end span{min-width:58px;text-align:right;}',
+  '.td-end button.lk{color:var(--dim);}',
+  '.td-pro{display:block;margin:8px auto 0;background:none;border:0;color:#f2c14e;font:inherit;font-weight:800;font-size:13px;',
+  'cursor:pointer;padding:2px 6px;}',
+  '.td-pro .pro-tag{font-style:normal;margin:0 4px 0 0;}',
+  '.pro-tag{display:inline-block;font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#1b1405;',
+  'background:#f2c14e;border-radius:4px;padding:1px 5px;margin-left:6px;vertical-align:1px;}',
+  '#pro-sheet[hidden]{display:none;}',
+  '.pro-list{list-style:none;margin:12px 0;padding:0;}',
+  '.pro-list li{padding:9px 0;border-top:1px solid #243047;font-size:14px;line-height:1.4;}',
+  '.pro-list li b{display:block;font-size:15px;}',
+  '.pro-list li:first-child{border-top:0;}',
+  '.pro-price{display:flex;align-items:baseline;gap:8px;margin:6px 0 12px;}',
+  '.pro-price b{font-family:var(--display);font-weight:400;font-size:34px;color:#f2c14e;}',
+  '.pro-price span{font-size:13px;color:var(--dim);}',
+  '.pro-buy{width:100%;background:linear-gradient(180deg,#f7d57a,#e0a93a);color:#1b1405;border:0;border-radius:12px;padding:14px;',
+  'font:inherit;font-weight:800;font-size:16px;cursor:pointer;}',
+  '.pro-buy[disabled]{opacity:.6;cursor:default;}',
+  '.pro-err{color:#fca5a5;font-size:13px;margin:8px 0 0;text-align:center;}',
+  '.pro-err[hidden]{display:none;}',
   '.fx-lab{display:block;font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);margin:12px 2px 6px;}',
   '.fx-sel{appearance:none;-webkit-appearance:none;color:var(--ink);font:inherit;font-weight:700;}',
   '.ps-slot{margin:12px 0;}',
@@ -1295,17 +1314,16 @@ var fxDayPz = null;                 // today's puzzle, for the screens that are 
 
 function today(){ return P.dayNumberOf(P.easternISO()); }
 
-/* ENDLESS IS PRO, AND PRO DOES NOT EXIST YET. While PRO_LIVE is false every
-   reader gets endless play, because there is nothing to sell it through and a
-   lock with no store behind it is a wall. The day the Stripe product ships,
-   flipping this makes it an owner's door; `rtf_premium` is the product key the
-   store work will add. */
-var PRO_LIVE = false;
-function endlessOpen(){
-  if (!PRO_LIVE) return true;
-  var a = P.auth(), st = a && a.state && a.state();
-  return !!(st && st.products && st.products.indexOf('rtf_premium') >= 0);
-}
+/* ENDLESS AND BUILD ARE RUN THE FLOOR PRO. `rtf_premium` in premium_products()
+   (supabase/123_hoops_pro.sql) is the whole answer, bought through the site's
+   one checkout as the `floor-pro` bundle. PRO_LIVE false opens it to everybody,
+   which is the switch to reach for if the store ever has to come down: a lock
+   with no store behind it is a wall. A friend's link never asks. */
+var PRO_LIVE = true;
+var PRO_BUNDLE = 'floor-pro';
+var PRO_PRICE = '$9.99';
+var proOwned = false;
+function endlessOpen(){ return !PRO_LIVE || proOwned; }
 function fxStore(){ return lsGet(FX_KEY) || { days: {} }; }
 /* THREE SHAPES OF RESULT, read as one. The first version was one man for one
    man (slot, out, inKey); the second one trade (with, outs, ins); this one a
@@ -1920,8 +1938,8 @@ function fxDoneHtml(r){
    is told why rather than shown a button that does nothing; while PRO_LIVE is
    false nobody is that reader. */
 function endlessDoor(id, label){
-  if (endlessOpen()) return '<div class="mx-row" style="margin-top:8px"><button class="ghost" id="' + id + '">' + label + '</button></div>';
-  return '<p class="fx-hint" style="text-align:center">Endless play is part of Pro.</p>';
+  return '<div class="mx-row" style="margin-top:8px"><button class="ghost" id="' + id + '">' + label
+    + (endlessOpen() ? '' : ' <span class="pro-tag">Pro</span>') + '</button></div>';
 }
 
 function fxShareText(r){
@@ -2075,7 +2093,8 @@ function fxPickRender(box){
   $('fx-pback').onclick = function(){ fxPicking = false; P.goHome(); };
 }
 function fxOpenPicker(){
-  if (!data() || !endlessOpen()) return;
+  if (!data()) return;
+  if (!endlessOpen()) { openPro('build'); return; }
   fxEnd = true; fxPicking = true;
   P.show('s-fix');
   fxRender();
@@ -2096,7 +2115,8 @@ function fxEndResult(p){
   return s.result && s.result.day === p.day ? fxNorm(s.result) : null;
 }
 function fxOpenEndless(){
-  if (!data() || !endlessOpen()) return;
+  if (!data()) return;
+  if (!endlessOpen()) { openPro('endless'); return; }
   var s = fxEndStore();
   if (s.ts && s.result) fxEndNew();   // a finished picked team is done; endless deals the next
   fxEnd = true; fxPicking = false;
@@ -2518,7 +2538,8 @@ function psPickRender(box){
   $('ps-pback').onclick = function(){ psPicking = false; P.goHome(); };
 }
 function psOpenPicker(){
-  if (!data() || !endlessOpen()) return;
+  if (!data()) return;
+  if (!endlessOpen()) { openPro('build'); return; }
   psEnd = true; psPicking = true;
   P.show('s-pass');
   psRender(false);
@@ -2536,7 +2557,8 @@ function psPlayPicked(from, to){
 }
 
 function psOpenEndless(){
-  if (!data() || !endlessOpen()) return;
+  if (!data()) return;
+  if (!endlessOpen()) { openPro('endless'); return; }
   var s = psEndStore();
   if (s.pz && s.pz.custom && s.st && s.st.done) psEndNew();
   psEnd = true; psPicking = false;
@@ -2592,8 +2614,15 @@ function todayHtml(){
     esc(surname(g.nameOf[pz.from])) + ' to ' + esc(surname(g.nameOf[pz.to])) + '. Par ' + pz.par + '.',
     st.done, st.done ? (st.solved ? plural(passesOf(st), 'pass', 'passes') : 'Missed') : '');
   if (streak > 1) h += '<div class="td-foot">' + streak + ' days in a row</div>';
-  if (endlessOpen()) h += '<div class="td-end"><span>Endless</span><button id="td-efx">Fix History</button><button id="td-eps">Six Passes</button></div>'
-    + '<div class="td-end"><span>Build</span><button id="td-pfx">Any team</button><button id="td-pps">Any two players</button></div>';
+  /* Drawn for everybody. Without Pro each chip wears the lock and opens the
+     offer, which is where that press was always going to end: a door nobody can
+     see is a mode nobody knows exists. */
+  var lk = endlessOpen() ? '' : ' class="lk"';
+  h += '<div class="td-end"><span>Endless</span><button id="td-efx"' + lk + '>Fix History</button><button id="td-eps"' + lk + '>Six Passes</button></div>'
+    + '<div class="td-end"><span>Build</span><button id="td-pfx"' + lk + '>Any team</button><button id="td-pps"' + lk + '>Any two players</button></div>'
+    /* One line, not a card: the front page is held to a height (check-home),
+       and a tag on each row label wrapped both rows onto two lines. */
+    + (endlessOpen() ? '' : '<button class="td-pro" id="td-pro"><i class="pro-tag">Pro</i> Unlock both for ' + PRO_PRICE + '</button>');
   return h + '</section>';
 }
 function playTilesHtml(){
@@ -2623,6 +2652,7 @@ function renderHome(){
   var ep = $('td-eps'); if (ep) ep.onclick = psOpenEndless;
   var pf = $('td-pfx'); if (pf) pf.onclick = fxOpenPicker;
   var pp = $('td-pps'); if (pp) pp.onclick = psOpenPicker;
+  var tp = $('td-pro'); if (tp) tp.onclick = function(){ openPro(null); };
   var qd = $('mc-qd'); if (qd) qd.onclick = function(){ if (P.openQuickDraft) P.openQuickDraft(); };
 }
 
@@ -2841,6 +2871,138 @@ function paintModeBoard(){
 // ═══ WIRING ═════════════════════════════════════════════════════════════════
 
 var ready = false;
+/* ── RUN THE FLOOR PRO ─────────────────────────────────────────────────────
+   One sheet, opened from any locked door. It says what Pro is, what stays free,
+   and takes one press to Stripe through the site's one checkout. */
+function proSheetEl(){
+  var sh = $('pro-sheet');
+  if (!sh) {
+    sh = document.createElement('div');
+    sh.id = 'pro-sheet';
+    sh.className = 'fx-sheet';
+    document.body.appendChild(sh);
+    sh.addEventListener('click', function(ev){ if (ev.target === sh) closePro(); });
+    document.addEventListener('keydown', function(ev){ if (ev.key === 'Escape') closePro(); });
+  }
+  return sh;
+}
+function closePro(){ var sh = $('pro-sheet'); if (sh) { sh.hidden = true; sh.removeAttribute('data-kind'); } }
+function signedAcct(){ var a = P.auth(), st = a && a.state && a.state(); return !!(st && st.signedIn); }
+function openPro(why){
+  var sh = proSheetEl();
+  sh.hidden = false;
+  sh.removeAttribute('data-kind');
+  paintPro(why);
+}
+function paintPro(why, kind){
+  var sh = $('pro-sheet');
+  if (!sh || sh.hidden) return;
+  var h = '<div class="fx-card"><div class="mb-top"><h2 style="margin:0">'
+    + (kind === 'thanks' ? (proOwned ? 'Pro is on' : 'Thanks for buying Pro') : proOwned ? 'You have Pro' : 'Run The Floor Pro')
+    + '</h2><button class="ghost sm" data-pro-x>Close</button></div>';
+  if (kind === 'thanks') {
+    h += '<p class="mx-say">' + (proOwned ? 'Endless puzzles and build your own are open. On every device you sign in on.'
+      : 'Your payment went through. Pro is on its way to your account and usually lands in a few seconds.') + '</p>';
+  } else if (proOwned) {
+    h += '<p class="mx-say">Endless puzzles and build your own are open. Thanks for backing the game.</p>';
+  } else {
+    var signed = signedAcct();
+    h += '<p class="mx-say">' + (why === 'endless' ? 'Out of puzzles for today? Pro keeps them coming.'
+        : why === 'build' ? 'Build your own puzzles with Pro.' : 'The dailies are free. Pro is everything else.') + '</p>'
+      + '<ul class="pro-list">'
+      + '<li><b>Endless puzzles</b>A new Fix History team or Six Passes pair every time you finish one.</li>'
+      + '<li><b>Rebuild any team</b>Any club, any year, champions too. Four trade windows to win it.</li>'
+      + '<li><b>Make a puzzle</b>Pick any two players and send the link. Friends play it free.</li>'
+      + '</ul>'
+      + '<div class="pro-price"><b>' + PRO_PRICE + '</b><span>once. Yours for good.</span></div>'
+      + '<button class="pro-buy" id="pro-buy">' + (signed ? 'Get Pro for ' + PRO_PRICE : 'Sign in to get Pro') + '</button>'
+      + '<p class="pro-err" id="pro-err" hidden></p>'
+      + '<p class="fx-hint" style="text-align:center">' + (signed
+        ? 'One payment through Stripe. Nothing renews. The dailies, Conquest and Quick Draft stay free for everybody.'
+        : 'Pro belongs to your RunThe.GG account, so it follows you to every device. The dailies stay free for everybody.') + '</p>';
+  }
+  sh.innerHTML = h + '</div>';
+  sh.querySelectorAll('[data-pro-x]').forEach(function(b){ b.onclick = closePro; });
+  var buy = $('pro-buy');
+  if (buy) buy.onclick = function(){
+    if (!signedAcct()) { closePro(); if (P.openProfile) P.openProfile(); return; }
+    buyPro(buy);
+  };
+}
+/* One POST to the site's one checkout. The verdict is read off the `error`
+   field and never the status, the contract checkout-bundle.js keeps. */
+function buyPro(btn){
+  var a = P.auth(), t = a && a.token ? a.token() : null;
+  if (!t) { closePro(); if (P.openProfile) P.openProfile(); return; }
+  var err = $('pro-err'); if (err) err.hidden = true;
+  btn.disabled = true; btn.textContent = 'Opening checkout...';
+  var st = a.state && a.state();
+  fetch('/api/stripe/checkout-bundle', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + t },
+    body: JSON.stringify({ bundle: PRO_BUNDLE, return_path: '/hoops/', email: (st && st.email) || undefined })
+  }).then(function(r){ return r.json().catch(function(){ return {}; }); })
+    .catch(function(){ return {}; })
+    .then(function(d){
+      if (d && d.url) { location.href = d.url; return; }
+      if (d && d.error === 'already_owned') proRefresh(true);
+      btn.disabled = false;
+      btn.textContent = 'Get Pro for ' + PRO_PRICE;
+      if (err) {
+        err.hidden = false;
+        err.textContent = d && d.error === 'stripe_not_configured' ? 'Pro is not on sale yet. Try again soon.'
+          : d && d.error === 'already_owned' ? 'This account already has Pro.'
+          : d && d.error === 'unauthorized' ? 'Sign in again, then try once more.'
+          : 'Checkout did not open. Try again.';
+      }
+    });
+}
+/* What the account owns. A null answer is no opinion and changes nothing, so a
+   dropped connection never takes Pro away mid-puzzle. A slower answer for an
+   account that has since changed is dropped. */
+var proAsked = 0;
+function proRefresh(force){
+  var ask = ++proAsked, a = P.auth();
+  if (!a || !a.premiumProducts) return Promise.resolve();
+  if (!signedAcct()) { proSet(false); return Promise.resolve(); }
+  return a.premiumProducts(force).then(function(prods){
+    if (ask !== proAsked || !Array.isArray(prods)) return;
+    proSet(prods.indexOf('rtf_premium') >= 0);
+  }).catch(function(){});
+}
+function proSet(on){
+  if (proOwned === on) return;
+  proOwned = on;
+  var home = $('s-home');
+  if (home && home.classList.contains('active')) renderHome();
+  var sh = $('pro-sheet');
+  if (sh && !sh.hidden && sh.getAttribute('data-kind') !== 'thanks') paintPro(null);
+}
+/* COMING BACK FROM STRIPE. The webhook races the redirect, so this asks for
+   about ten seconds, past the cache each time, and never says the payment
+   failed: it cannot know that. The flag comes off the URL first, so a reload
+   cannot replay it. */
+function checkoutReturn(){
+  var what = null;
+  try { what = new URLSearchParams(location.search).get('checkout'); } catch (e) {}
+  if (!what) return;
+  try {
+    var u = new URL(location.href); u.searchParams.delete('checkout');
+    history.replaceState(null, '', u.pathname + (u.searchParams.toString() ? '?' + u.searchParams.toString() : '') + u.hash);
+  } catch (e) {}
+  if (what !== 'success') return;
+  var sh = proSheetEl();
+  sh.hidden = false; sh.setAttribute('data-kind', 'thanks');
+  paintPro(null, 'thanks');
+  var waits = [800, 1200, 2000, 3000, 3500], i = 0;
+  (function next(){
+    if (proOwned || i >= waits.length) return;
+    setTimeout(function(){
+      proRefresh(true).then(function(){ if (!sh.hidden) paintPro(null, 'thanks'); next(); });
+    }, waits[i++]);
+  })();
+}
+
 /* ── LINKS ─────────────────────────────────────────────────────────────────
    A picked puzzle travels as a hash: #fix=CHI_1996 or #pass=jordami01.jamesle01.
    A hash never reaches the server, so a link works on any host this page is
@@ -2870,8 +3032,10 @@ function onData(){
   if (bt && bt.className.indexOf('failed') < 0) bt.className = 'boot done';
   renderHome();
   var a = P.auth();
-  if (a && a.onChange) a.onChange(function(){ claimGuests(); });
+  if (a && a.onChange) a.onChange(function(){ claimGuests(); proRefresh(false); });
   claimGuests();
+  proRefresh(false);
+  checkoutReturn();
   openLink();
   window.addEventListener('hashchange', openLink);
 }
@@ -2902,7 +3066,9 @@ window.RTF_MODES_UI = {
   },
   leave: function(id){ if (id !== 's-cq') cqClear(); },
   /* For the checker. Nothing on the page reads these. */
-  _cq: function(){ return cq; }
+  _cq: function(){ return cq; },
+  _pro: function(on){ proSet(!!on); },
+  _proRefresh: function(){ return proRefresh(true); }
 };
 if (data()) onData();
 })();

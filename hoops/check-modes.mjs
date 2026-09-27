@@ -679,6 +679,7 @@ if (!QUICK) {
   const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.json': 'application/json', '.png': 'image/png' };
   const posts = [];
   const escaped = [];
+  const checkouts = [];
   async function serve(route) {
     const u = new URL(route.request().url());
     /* THE BOARD, stood in for. Submits answer an id; reads answer a row and a
@@ -701,6 +702,13 @@ if (!QUICK) {
       return route.fulfill({ status: 200, contentType: 'application/json', body: '[]' });
     }
     if (u.hostname !== 'local.test') { escaped.push(u.hostname); return route.abort(); }
+    /* STRIPE IS LIVE AND HAS NO TEST MODE, so the checkout is answered here and
+       never let out: a url in the answer would navigate to a real payment page. */
+    if (u.pathname.startsWith('/api/')) {
+      checkouts.push({ path: u.pathname, auth: route.request().headers().authorization || '',
+        body: JSON.parse(route.request().postData() || '{}') });
+      return route.fulfill({ status: 503, contentType: 'application/json', body: '{"error":"stripe_not_configured"}' });
+    }
     let rel = decodeURIComponent(u.pathname);
     if (rel.endsWith('/')) rel += 'index.html';
     const f = path.join(ROOT, rel);
@@ -895,6 +903,62 @@ if (!QUICK) {
   await page.evaluate(() => window.RTF_PAGE.goHome());
   const doors = await page.evaluate(() => ['td-efx', 'td-eps', 'td-pfx', 'td-pps'].map((id) => !!document.getElementById(id)));
   ok(doors.every(Boolean), 'the front page offers endless and build for both dailies');
+  /* PRO. A guest owns nothing, so every door wears the lock and opens the
+     offer rather than doing nothing, and the finished daily's door does too. */
+  const lockedHome = await page.evaluate(() => ({
+    lk: document.querySelectorAll('.td-end button.lk').length, go: !!document.getElementById('td-pro'),
+    rows: [...document.querySelectorAll('.td-end')].map((e) => Math.round(e.getBoundingClientRect().height)) }));
+  ok(lockedHome.lk === 4 && lockedHome.go, `without Pro all four doors are locked and Go Pro is offered (${JSON.stringify(lockedHome)})`);
+  ok(lockedHome.rows.every((h) => h < 44), `and each row of doors holds one line (${lockedHome.rows})`);
+  await page.click('#td-efx');
+  const sheet1 = await page.evaluate(() => { const s = document.getElementById('pro-sheet');
+    return { open: !!s && !s.hidden, text: s ? s.textContent : '', screen: document.querySelector('.screen.active').id }; });
+  ok(sheet1.open && /Run The Floor Pro/.test(sheet1.text) && /Sign in to get Pro/.test(sheet1.text), 'a locked door opens the offer, and a guest is asked to sign in');
+  ok(sheet1.screen === 's-home', `and nothing behind it opens (${sheet1.screen})`);
+  ok(/\$9\.99/.test(sheet1.text) && /stay free|dailies are free/i.test(sheet1.text), 'the offer names the price and says the dailies stay free');
+  await page.click('#pro-sheet [data-pro-x]');
+  await page.click('#mc-fix');
+  await page.waitForSelector('#fx-endless');
+  ok(/Pro/.test(await page.textContent('#fx-endless')), "the finished daily's endless door wears the Pro tag");
+  await page.click('#fx-endless');
+  ok(await page.evaluate(() => !document.getElementById('pro-sheet').hidden), 'and opens the offer too');
+  await page.click('#pro-sheet [data-pro-x]');
+  /* A SIGNED IN BUYER, stood in: the press posts the floor-pro bundle with the
+     session token to the one checkout, and a refusal is said in words. */
+  await page.evaluate(() => {
+    window.__realAuth = window.RTF_PAGE.auth;
+    const fake = { state: () => ({ signedIn: true, email: 'buyer@example.com' }), token: () => 'tok-123',
+      premiumProducts: () => Promise.resolve(window.__owns || []) };
+    window.RTF_PAGE.auth = () => fake;
+    window.RTF_PAGE.goHome();
+  });
+  await page.click('#td-pro');
+  await page.click('#pro-buy');
+  await page.waitForSelector('#pro-err:not([hidden])');
+  const co = checkouts[checkouts.length - 1];
+  ok(co && co.path === '/api/stripe/checkout-bundle' && co.body.bundle === 'floor-pro' && co.body.return_path === '/hoops/',
+    `Get Pro posts the floor-pro bundle to the one checkout (${co && co.body.bundle})`);
+  ok(co && co.auth === 'Bearer tok-123', 'with the session token, never a user id in the body');
+  ok(/not on sale yet/.test(await page.textContent('#pro-err')), 'and a checkout that is not configured says so');
+  await page.click('#pro-sheet [data-pro-x]');
+  /* OWNING IT: the account read says rtf_premium and every door opens. */
+  await page.evaluate(() => { window.__owns = ['rtf_premium']; return window.RTF_MODES_UI._proRefresh(); });
+  const openHome = await page.evaluate(() => ({ lk: document.querySelectorAll('.td-end button.lk').length, go: !!document.getElementById('td-pro') }));
+  ok(openHome.lk === 0 && !openHome.go, 'once the account owns rtf_premium, the locks and the offer are gone');
+  /* Everything after this walks through the doors, so a door that stayed shut
+     would surface as a thirty second timeout naming a selector. Say what is
+     wrong instead, and stop. */
+  if (openHome.lk !== 0) {
+    console.log(`\n${passed} passed, ${failures.length} FAILED`);
+    failures.forEach((f) => console.log('  FAIL: ' + f));
+    console.log('  (stopped: owning rtf_premium did not open the doors, so the endless walk cannot run)');
+    await browser.close();
+    process.exit(1);
+  }
+  await page.evaluate(() => { window.__owns = ['ps_premium', 'cfb_premium']; return window.RTF_MODES_UI._proRefresh(); });
+  ok(await page.evaluate(() => document.querySelectorAll('.td-end button.lk').length) === 4, 'another game\'s Pro does not open this one');
+  await page.evaluate(() => { window.__owns = ['rtf_premium']; return window.RTF_MODES_UI._proRefresh(); });
+  await page.evaluate(() => { window.RTF_PAGE.auth = window.__realAuth; window.RTF_PAGE.goHome(); });
   const before5 = await page.evaluate(([d, pd]) => ({
     fx: localStorage.getItem('rtf.fix.v1'), ps: localStorage.getItem('rtf.passes.v1'),
     days: (JSON.parse(localStorage.getItem('runthefloor_career_v1') || '{}').feats || {})['fx.days'] || 0,
@@ -990,7 +1054,13 @@ if (!QUICK) {
   await friend.goto('http://local.test/hoops/#fix=CHI_1996', { waitUntil: 'domcontentloaded' });
   await friend.waitForSelector('#s-fix #fx-pat', { timeout: 60000 });
   ok(/Picked team/.test(await friend.textContent('#s-fix .cq-rung')), 'and a team link opens the picked team');
+  /* BACK FROM STRIPE: the thanks sheet, and the flag off the url. */
+  await friend.goto('http://local.test/hoops/?checkout=success', { waitUntil: 'domcontentloaded' });
+  await friend.waitForSelector('#pro-sheet:not([hidden])', { timeout: 60000 });
+  const back5 = await friend.evaluate(() => ({ t: document.getElementById('pro-sheet').textContent, q: location.search }));
+  ok(/Thanks for buying Pro/.test(back5.t) && back5.q === '', `coming back from checkout says thanks and clears the flag ("${back5.q}")`);
   await friend.close();
+  ok(!checkouts.some((c) => !/^\/api\/stripe\//.test(c.path)), 'nothing but the stood in checkout was asked');
 
   // Conquest: a game, and the count is not spoiled while it is on.
   await page.evaluate(() => window.RTF_MODES_UI.openConquest());

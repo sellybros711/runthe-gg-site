@@ -471,7 +471,16 @@ check_rows(sort, migration, what, breaks, ok) as (
       'a free account gets one play of each extra mode a day, not one in total',
       'The meter keeps 121''s rule: one play a day across all six modes. The page says one of each, so the second mode a player opens is refused with a sheet that says it is still free.',
       (select count(*) > 0 from con
-        where name = 'rtd_mode_plays_pkey' and def = 'PRIMARY KEY (user_id, mode, day)'))
+        where name = 'rtd_mode_plays_pkey' and def = 'PRIMARY KEY (user_id, mode, day)')),
+
+  -- RUN THE FLOOR PRO. One object, and its absence is loud only to Stripe: every
+  -- paid checkout 500s in the webhook and is retried, and the buyer lands back on
+  -- the page to a screen still offering them Pro.
+  (34, '123_hoops_pro',
+      'rtf_premium is a product the webhook may grant',
+      'A paid Run The Floor Pro checkout is refused by the table and retried by Stripe until this runs. The buyer is charged and sees no Pro.',
+      (select count(*) > 0 from con
+        where name = 'premium_unlocks_product_ck' and def like '%rtf_premium%'))
 )
 -- The summary has to come LAST, and a UNION can only be ordered by an output
 -- column, so the sort key is carried through a subquery rather than sorted on

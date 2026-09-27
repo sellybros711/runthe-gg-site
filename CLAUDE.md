@@ -10414,13 +10414,26 @@ server, and the link is built off the SENDER's own page rather than a written-ou
 the www-against-apex reason in the Stripe section. It is read once on boot and on `hashchange`,
 then cleared, so a reload after finishing goes to the front page.
 
-**PRO_LIVE IS FALSE, SO EVERYBODY GETS ALL OF THIS TODAY.** `endlessOpen()` in `modes-ui.js`
-is the one gate, and while there is no store for Run The Floor a lock would be a wall with
-nothing behind it. Flip `PRO_LIVE` the day the Stripe product ships and it reads `rtf_premium`
-off the account's products, which `hoops/auth.js` does not fetch yet: that read, the product
-key in `premium_unlocks_product_ck`, the catalog entry and the offer card are the store work,
-and none of it exists. **Opening a link never asks**: `fxPlayPicked` and `psPlayPicked` are the
-doors a link uses, because whoever made the link is the one Pro paid for.
+**IT IS RUN THE FLOOR PRO**, $9.99 once, the `floor-pro` bundle granting `rtf_premium`
+(`supabase/123_hoops_pro.sql`, go-live order in `functions/api/stripe/README.md`). Same shape
+as Diamond Pro: one checkout, one webhook, and the page asks `premium_products()` through
+`hoops/auth.js`. `endlessOpen()` in `modes-ui.js` is the one gate. There is no server meter,
+because nothing endless reaches the server: the gate is a convenience rather than a lock, and
+nothing competitive depends on it. `PRO_LIVE = false` is the kill switch that opens it to
+everybody if the store ever has to come down, since a lock with nothing behind it is a wall.
+
+**A LOCKED DOOR OPENS THE OFFER, it is never hidden and never dead.** The four Endless and
+Build chips are drawn for everybody; without Pro they wear a Pro tag and every press lands on
+`#pro-sheet`. A door nobody can see is a mode nobody knows exists. **Only `rtf_premium` opens
+it**: another game's Pro does not, and the walk asserts that from both ends. A null answer
+from the account read is no opinion and changes nothing, so a dropped connection never takes
+Pro away mid-puzzle. **Opening a link never asks**: `fxPlayPicked` and `psPlayPicked` are the
+doors a link uses, because whoever made the link is the one Pro paid for, and the walk opens
+both links on a fresh guest page to prove it.
+
+**The checkout is stood in and never let out**, the same rule as the football store: section 7
+answers `/api/stripe/checkout-bundle` itself with `stripe_not_configured`, asserts the body
+names `floor-pro` and the token rides in the header, and fails if anything else was asked.
 
 #### The boards, and `supabase/116_hoops_modes.sql`
 
