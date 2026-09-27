@@ -46,7 +46,7 @@
  *                     the bundle sells.
  */
 
-/* THE YEARLY SWITCH. One flag, and it is off until the owner says launch.
+/* THE YEARLY SWITCH. One flag. On since launch (2026-09-27); false is the kill switch.
  *
  * Off, the store sells the one-time bundles exactly as it always has. On, it sells
  * Perfect Season and Run The Bundle as yearly plans (the `year` block on each
@@ -62,7 +62,7 @@
  *
  * A LIFETIME BUYER IS UNTOUCHED EITHER WAY. Their rows have no end date and 124
  * refuses any update that would give them one. */
-export const YEARLY_LIVE = false;
+export const YEARLY_LIVE = true;
 
 export const BUNDLES = {
   /* Perfect Season Premium Bundle: dynasty + one franchise dynasty (NFL) and

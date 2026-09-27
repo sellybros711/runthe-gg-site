@@ -543,7 +543,7 @@ psql -d yr -f supabase/test/premium_yearly_test.sql   (its header lists the chai
 ```
 
 `supabase/124_premium_yearly.sql`, `functions/api/stripe/_offer.js` and one switch,
-`YEARLY_LIVE` in `_bundles.js`, which ships off. Perfect Season $19.99 a year, Run The Bundle
+`YEARLY_LIVE` in `_bundles.js`, on since launch (2026-09-27); false is the kill switch. Perfect Season $19.99 a year, Run The Bundle
 $34.99 a year for NEW buyers. The runbook is `functions/api/stripe/README.md`.
 
 **THE RULE THAT WINS OVER EVERYTHING: a lifetime row never moves.** A `premium_unlocks` row

@@ -316,7 +316,7 @@ and Ultimate are untouched.
 
 ### The switch
 
-`YEARLY_LIVE` in `_bundles.js`. It ships `false`. What the store shows and what the checkout
+`YEARLY_LIVE` in `_bundles.js`. It is `true` since launch (2026-09-27), and `false` is the kill switch. What the store shows and what the checkout
 sells is `_offer.js`'s answer, read by the page through `GET /api/stripe/offer`, and it is
 `year` only when all three hold:
 

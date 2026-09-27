@@ -6,7 +6,7 @@
  *
  * 'year' needs all three of these, and anything short of that is 'once':
  *
- *   YEARLY_LIVE          the switch in _bundles.js, off until launch
+ *   YEARLY_LIVE          the switch in _bundles.js, on since launch
  *   the two price vars   STRIPE_PRICE_PS_YEAR and STRIPE_PRICE_RTB_YEAR
  *   the database         premium_yearly_ready() from supabase/124_premium_yearly.sql
  *

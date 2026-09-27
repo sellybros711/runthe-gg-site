@@ -7,9 +7,11 @@
  * nowhere and the FORM IT WAS SENT is what gets asserted, so what reaches Stripe is checked
  * without anything reaching Stripe.
  *
- * THE SWITCH IS OFF IN THE REPO (YEARLY_LIVE in _bundles.js), so the endpoint is copied to a
- * scratch directory with it turned on for the yearly half. That copy is the only way to
- * drive the yearly rules without shipping the switch on, and it is thrown away after.
+ * THE SWITCH (YEARLY_LIVE in _bundles.js) IS SET IN A SCRATCH COPY, BOTH WAYS. It is on in
+ * the repo since launch, and the off half still matters: turning it back off is the kill
+ * switch, and it has to go on selling the one-time bundles exactly as before. So the
+ * endpoint is copied to a scratch directory with the flag written to whichever half is
+ * being driven, and the copy is thrown away after.
  *
  * What is asserted, the owner's rules in full:
  *   - the page must be showing the plan that is on sale, or the answer is offer_changed
@@ -36,12 +38,11 @@ const ok = (label, cond, detail) => {
 async function load(yearlyOn) {
   const dir = mkdtempSync(join(tmpdir(), 'checkout-'));
   cpSync(join(root, 'functions/api/stripe'), dir, { recursive: true });
-  if (yearlyOn) {
-    const f = join(dir, '_bundles.js');
-    const src = readFileSync(f, 'utf8');
-    if (!/export const YEARLY_LIVE = false;/.test(src)) throw new Error('no YEARLY_LIVE = false to turn on');
-    writeFileSync(f, src.replace('export const YEARLY_LIVE = false;', 'export const YEARLY_LIVE = true;'));
-  }
+  const f = join(dir, '_bundles.js');
+  const src = readFileSync(f, 'utf8');
+  const flag = /export const YEARLY_LIVE = (true|false);/;
+  if (!flag.test(src)) throw new Error('no YEARLY_LIVE = true|false line to set');
+  writeFileSync(f, src.replace(flag, 'export const YEARLY_LIVE = ' + (yearlyOn ? 'true' : 'false') + ';'));
   const mod = await import(join(dir, 'checkout-bundle.js') + '?' + Math.random());
   return { mod, dir };
 }
