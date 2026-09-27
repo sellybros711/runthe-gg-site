@@ -2,7 +2,7 @@
  *
  *   node baseball/check-pro.mjs
  *
- * The six extra modes share one free token a day, and Pro removes the limit.
+ * The six extra modes get one free start a day each, and Pro removes the limit.
  * Every way that breaks is silent: a gate that never closes sells nothing and
  * throws nothing, and a gate that closes on Classic takes the game away from
  * everybody while every screen still renders. So this plays the modes through
@@ -134,11 +134,11 @@ const chip = (page, id) => page.evaluate((i) => {
 const plays = (page) => page.evaluate(() => JSON.parse(localStorage.getItem('rtd_modeplays_v1') || '{}'));
 
 try {
-  head('1. A GUEST GETS ONE FREE TOKEN A DAY, SHARED BY ALL SIX');
+  head('1. A GUEST GETS ONE FREE START OF EACH MODE A DAY');
   {
     const { ctx, page } = await open({ signedIn: false });
     const line = await page.textContent('#hp-pro');
-    claim(/one free token a day/i.test(line) && /\$9\.99/.test(line), 'the front page says the rule and the price', line);
+    claim(/one free play a day/i.test(line) && /\$9\.99/.test(line), 'the front page says the rule and the price', line);
     claim((await chip(page, 'cap')) === '', 'an unplayed mode carries no chip');
 
     await tile(page, 'cap');
@@ -148,9 +148,6 @@ try {
       'the start is written to the device ledger, on the Eastern day', JSON.stringify(pl));
     await home(page);
     claim((await chip(page, 'cap')) === 'Played today', 'the tile now says it was played today');
-    claim((await chip(page, 'era')) === 'Tomorrow', 'and every other mode says Tomorrow');
-    const line2 = await page.textContent('#hp-pro');
-    claim(/token went on Cap Survivor/.test(line2), 'the front page says where the token went', line2);
 
     await tile(page, 'cap');
     await page.waitForTimeout(120);
@@ -158,10 +155,9 @@ try {
     claim(await page.evaluate(() => document.getElementById('sheet-pro').classList.contains('on')),
       'it opens the Pro sheet instead');
     const title = await page.textContent('#pro-title');
-    claim(/token is used/.test(title), 'the sheet says the token is used', title);
+    claim(/Cap Survivor/.test(title), 'the sheet names the mode that was refused', title);
     const lead = await page.textContent('#pro-in .pro-lead');
-    claim(/went on Cap Survivor/.test(lead) && /midnight Eastern/.test(lead),
-      'and names where it went and when a new one lands', lead);
+    claim(/midnight Eastern/.test(lead), 'and says when it comes back', lead);
     const btn = await page.textContent('#b-pro-buy');
     claim(/Sign in/.test(btn), 'a guest is asked to sign in, not to pay', btn);
     await page.evaluate(() => document.getElementById('b-pro-buy').click());
@@ -170,11 +166,17 @@ try {
       'and the button opens the account panel');
     await page.evaluate(() => { document.querySelectorAll('#sheet-trophy [data-close]')[0].click(); });
 
-    /* THE TOKEN IS SHARED, and a picker mode is refused BEFORE its picker. */
+    /* A picker mode is refused BEFORE its picker, not at the end of it. */
+    await tile(page, 'era');
+    await page.waitForTimeout(100);
+    claim(await onScreen(page, 's-era'), 'an unplayed Eras opens its decade picker');
+    await page.evaluate(() => document.querySelector('#s-era .era-card').click());
+    claim(await onScreen(page, 's-draft'), 'choosing a decade opens the draft');
+    await home(page);
     await tile(page, 'era');
     await page.waitForTimeout(100);
     claim(!(await onScreen(page, 's-era')) && await page.evaluate(() => document.getElementById('sheet-pro').classList.contains('on')),
-      'with the token spent on Cap Survivor, Eras is refused too, before its picker opens');
+      'a played Eras is refused before the picker, not after it');
     await page.evaluate(() => { document.querySelector('#sheet-pro [data-close-pro]').click(); });
 
     /* Classic is never counted. */
@@ -186,28 +188,6 @@ try {
     const pl2 = await plays(page);
     claim(!Object.values(pl2.by || {}).flat().some((m) => m === 'free' || m === 'daily'),
       'Classic is never written to the ledger', JSON.stringify(pl2));
-    await ctx.close();
-  }
-
-  head('1b. A PICKER MODE SPENDS THE TOKEN WHEN ITS DRAFT OPENS');
-  {
-    const { ctx, page } = await open({ signedIn: false });
-    await tile(page, 'era');
-    await page.waitForTimeout(100);
-    claim(await onScreen(page, 's-era'), 'an unspent token opens the decade picker');
-    claim(!(await plays(page)).by, 'opening the picker spends nothing');
-    await page.evaluate(() => document.querySelector('#s-era .era-card').click());
-    claim(await onScreen(page, 's-draft'), 'choosing a decade opens the draft');
-    const pl = await plays(page);
-    claim(pl.by && pl.by.guest && pl.by.guest[0] === 'era', 'and that is what spends it', JSON.stringify(pl));
-    await home(page);
-    for (const m of ['fran', 'div', 'staff', 'trade']) {
-      await tile(page, m);
-      await page.waitForTimeout(80);
-      claim(!(await onScreen(page, 's-draft')) && await page.evaluate(() => document.getElementById('sheet-pro').classList.contains('on')),
-        m + ' is shut for the rest of the day');
-      await page.evaluate(() => { document.querySelector('#sheet-pro [data-close-pro]').click(); });
-    }
     await ctx.close();
   }
 
@@ -227,10 +207,10 @@ try {
       next_at: new Date(Date.now() + 5 * 3600e3).toISOString() };
     const { ctx, page, sent } = await open({ signedIn: true, meter });
     claim((await chip(page, 'staff')) === 'Played today',
-      'a token the server says was spent on another device is marked on this one');
-    await tile(page, 'trade');
+      'a mode the server says was played on another device is marked on this one');
+    await tile(page, 'staff');
     await page.waitForTimeout(120);
-    claim(!(await onScreen(page, 's-draft')), 'and every mode is refused here');
+    claim(!(await onScreen(page, 's-draft')), 'and it is refused here');
     const lead = await page.textContent('#pro-in .pro-lead');
     claim(/in <?\s*[45]h/.test(lead) || /in [45]h/.test(lead), 'the countdown reads off the server clock', lead);
     await page.evaluate(() => document.getElementById('b-pro-buy').click());
@@ -243,16 +223,10 @@ try {
     claim(/not on sale yet/.test(err), 'a checkout that is not configured says so on the sheet', err);
     await page.evaluate(() => { document.querySelector('#sheet-pro [data-close-pro]').click(); });
 
-    await ctx.close();
-  }
-  {
-    const meter = { signed_in: true, pro: false, day: today, used: [],
-      next_at: new Date(Date.now() + 5 * 3600e3).toISOString() };
-    const { ctx, page } = await open({ signedIn: true, meter });
     await tile(page, 'trade');
     await page.waitForTimeout(300);
     const spent = await page.evaluate(() => window.__spent);
-    claim(spent.length === 1 && spent[0] === 'trade', 'a start spends the token on the server', JSON.stringify(spent));
+    claim(spent.includes('trade'), 'a start is sent to the server meter', JSON.stringify(spent));
     await ctx.close();
   }
 
@@ -301,15 +275,10 @@ try {
       return s ? s.textContent : '';
     });
     claim(sticker === 'Played today', 'the mode card says it was played today', sticker);
-    const other = await page.evaluate(() => {
-      const s = document.querySelector('#modes-in [data-mode="era"] .mc-sticker');
-      return s ? s.textContent : '';
-    });
-    claim(other === 'Tomorrow', 'and every other card says Tomorrow', other);
-    await page.evaluate(() => document.querySelector('#modes-in [data-mode="era"]').click());
+    await page.evaluate(() => document.querySelector('#modes-in [data-mode="div"]').click());
     await page.waitForTimeout(120);
-    claim(!(await onScreen(page, 's-era')) && await page.evaluate(() => document.getElementById('sheet-pro').classList.contains('on')),
-      'pressing another mode opens Pro, not its picker');
+    claim(!(await onScreen(page, 's-div')) && await page.evaluate(() => document.getElementById('sheet-pro').classList.contains('on')),
+      'pressing it opens Pro, not the division picker');
     /* Measured once the sheet has finished rising: mid-slide it is legitimately
        below the fold, and that is the animation rather than the layout. */
     await page.waitForTimeout(700);

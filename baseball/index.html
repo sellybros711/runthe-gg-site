@@ -391,7 +391,7 @@ body:has(#s-intro.on) header .lockup{visibility:hidden}
   font-family:var(--fd);text-transform:uppercase;letter-spacing:.06em;color:#fff;
   line-height:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .reelbox.year .reel-i{font-size:24px;font-weight:400}
-.reelbox.team .reel-i{font-size:13px;font-weight:400}
+.reelbox.team .reel-i{font-size:17px;font-weight:400;letter-spacing:.04em}
 .reel-i.land{font-weight:400}
 .reelbox.year.spin{border-color:rgba(200,180,80,.60)}
 .reelbox.team.spin{border-color:rgba(255,200,160,.50)}
@@ -745,6 +745,11 @@ body:has(#s-intro.on) header .lockup{visibility:hidden}
 .brk-t .yr{font-size:9.5px;color:var(--dim-2);flex:0 0 auto}
 .brk-t .sc{font-size:10px;font-weight:800;color:var(--green);flex:0 0 auto}
 .brk-t.me .nm{color:var(--gold)}
+/* A BYE IS NOT A MATCHUP. Two seeds in one box with a line between them read as a
+   series the pair played against each other, so the box is dashed and each seat
+   says Bye where a series score would go. */
+.brk-g.byes{border-style:dashed;background:transparent}
+.brk-t .sc.bye{color:var(--dim-2);font-weight:700;text-transform:uppercase;letter-spacing:.08em;font-size:9px}
 /* WINNERS ARE TINTED, NOT JUST BOLDED: weight alone is a poor signal at 11.5px in a
    column you scan rather than read. Losers are dimmed rather than reddened, because
    red is already doing a job on this screen. */
@@ -939,6 +944,22 @@ body:has(#s-intro.on) header .lockup{visibility:hidden}
 .stat-box .sl{font-size:11px;color:var(--dim-2);font-family:var(--fn);font-weight:600;text-transform:uppercase;margin-top:2px}
 .share-row{display:flex;gap:8px;margin:16px 0}
 .share-row .btn{flex:1}
+/* THE SECOND ROW IS TILES, NOT MORE BARS. Three full width outlines stacked under the
+   share button read as a form rather than a game, and each one cost a whole row of a
+   phone to say two words. Side by side with a drawn mark each, they are three doors. */
+.acts{display:flex;gap:8px;margin:0 0 6px}
+#b-season-go{margin:14px 0 4px}
+.act{flex:1 1 0;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;
+  padding:14px 6px 12px;border-radius:12px;background:var(--panel);border:1px solid rgba(var(--edge),.10);
+  color:var(--ink);font-family:var(--fn);font-size:11px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;
+  cursor:pointer;transition:transform .12s ease,border-color .12s ease,background .12s ease}
+.act[hidden]{display:none}
+.act svg{width:26px;height:26px;fill:none;stroke:var(--gold);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.act svg .f{fill:var(--gold);stroke:none}
+.act-l{max-width:100%;line-height:1.2;text-align:center}
+.act:hover{border-color:rgba(var(--edge),.24);background:rgba(var(--edge),.05)}
+.act:active{transform:translateY(1px) scale(.98)}
+.ico{width:.78em;height:.95em;fill:currentColor;vertical-align:-.1em;margin-right:.18em;flex:0 0 auto}
 .roster-final{display:flex;flex-direction:column;gap:4px;margin:12px 0}
 .rslot{display:flex;align-items:center;gap:10px;background:var(--panel);border:1px solid rgba(var(--edge),.08);
   border-radius:8px;padding:8px 12px;min-height:40px}
@@ -1166,7 +1187,9 @@ body:has(#s-intro.on) header .lockup{visibility:hidden}
 .acct .btn{flex:1 1 auto;width:auto;margin:0;padding:10px 12px;font-size:13px}
 .acct .aerr{font-size:12px;color:#c0392b;margin:8px 0 0}
 .acct .aerr.ok{color:var(--green)}
-.acct .apro{margin:10px 0 0;padding-top:10px;border-top:1px solid rgba(var(--edge),.10);font-size:13px;color:var(--dim)}
+.acct .arow.who .btn{flex:0 0 auto;padding:6px 14px;font-size:12px}
+.acct .apro{margin:10px 0 0;padding-top:10px;border-top:1px solid rgba(var(--edge),.10);font-size:13px;color:var(--dim);
+  display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:4px 12px}
 .acct .apro b{color:var(--gold)}
 .acct .apro button{margin-left:6px;background:none;border:0;padding:0;font:inherit;font-weight:800;
   color:var(--gold);text-decoration:underline;cursor:pointer}
@@ -1244,7 +1267,18 @@ body:has(#s-intro.on) header .lockup{visibility:hidden}
 .trophy-career .stk .sv{font-family:var(--fd);font-size:24px;line-height:1;color:var(--ink)}
 .trophy-career .stk .sl{font-family:var(--fn);font-size:8.5px;font-weight:700;letter-spacing:.05em;
   text-transform:uppercase;color:var(--dim-2);margin-top:4px}
-.trophy-group{margin-bottom:16px}
+/* A SHELF IS A CARD, and a shut one still shows what is on it. Folded down to a
+   line reading "15 still to earn" a new account met nine lines of grey text and no
+   badge anywhere, which reads as an empty page. The strip is the shelf's badges
+   drawn small, rim in their own tier, so the fold says what kind of thing is behind
+   it before anybody opens it. */
+.trophy-sum{margin:0 0 14px;text-align:center}
+.trophy-sum .ts-t{font-family:var(--fn);font-size:12px;font-weight:700;color:var(--gold)}
+.tg-bar{height:4px;border-radius:99px;background:rgba(var(--edge),.10);overflow:hidden;margin:0 0 10px}
+.tg-bar>i{display:block;height:100%;border-radius:inherit;background:var(--gold)}
+.trophy-sum .tg-bar{max-width:260px;margin:6px auto 0}
+.trophy-group{margin-bottom:10px;padding:12px;background:var(--panel);border:1px solid rgba(var(--edge),.08);
+  border-radius:12px}
 .trophy-group .tg-hd{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:8px}
 .trophy-group .tg-name{font-family:var(--fn);font-size:12px;font-weight:800;letter-spacing:.06em;
   text-transform:uppercase;color:var(--dim)}
@@ -1257,14 +1291,20 @@ body:has(#s-intro.on) header .lockup{visibility:hidden}
    that is what is open; what is left is the map, one tap behind a line that says
    how much of it there is. Folded is not hidden: every badge is in the DOM either
    way, so nothing is lost to a reader who wants the whole list. */
-.tg-more{margin-top:6px}
-.tg-more>summary{list-style:none;cursor:pointer;font-family:var(--fn);font-size:11px;
-  font-weight:700;color:var(--dim-2);padding:7px 2px}
+.tg-more{margin-top:8px}
+.trophy-grid+.tg-more{margin-top:10px}
+.tg-more>summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:10px;padding:2px 0}
 .tg-more>summary::-webkit-details-marker{display:none}
-.tg-more>summary::after{content:' +';font-weight:800}
-.tg-more[open]>summary::after{content:' -'}
-.tg-more>summary:hover{color:var(--ink)}
-.tg-more .trophy-grid{margin-top:4px}
+.tg-strip{flex:1 1 auto;min-width:0;display:flex;gap:4px;overflow:hidden;
+  -webkit-mask-image:linear-gradient(90deg,#000 82%,transparent);mask-image:linear-gradient(90deg,#000 82%,transparent)}
+.tg-go{flex:0 0 auto;font-family:var(--fn);font-size:11px;font-weight:700;color:var(--dim);white-space:nowrap}
+.tg-go::after{content:'';display:inline-block;width:6px;height:6px;margin-left:7px;vertical-align:2px;
+  border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(45deg);transition:transform .2s}
+.tg-more[open] .tg-go::after{transform:rotate(-135deg);vertical-align:-1px}
+.tg-more>summary:hover .tg-go{color:var(--ink)}
+.tg-more .trophy-grid{margin-top:10px}
+.bdg-ic.mini{width:24px;height:24px;border-width:2px;box-shadow:0 1px 3px -1px rgba(0,0,0,.4)}
+.bdg-ic.mini.dim{opacity:.42;filter:grayscale(.5)}
 .ach{display:flex;align-items:center;gap:11px;background:var(--panel);border:1px solid rgba(var(--edge),.07);
   border-radius:10px;padding:9px 12px}
 .ach.locked{opacity:.62}
@@ -1559,10 +1599,6 @@ body:has(#s-intro.on) header .lockup{visibility:hidden}
 .dd-grid{text-align:center;font-size:22px;letter-spacing:3px;margin-top:12px}
 
 /* ─── the board ─── */
-.ro-place{margin-top:7px;font-family:var(--fn);font-size:12.5px;font-weight:700;
-  color:var(--ink)}
-.ro-place b{font-family:'Righteous',var(--fd);font-size:17px;color:var(--gold)}
-.ro-place.dim{color:var(--dim-2);font-weight:600}
 .bd-tabs{display:flex;gap:6px;overflow-x:auto;padding-bottom:6px;margin-bottom:10px;
   -webkit-overflow-scrolling:touch}
 .bd-tab{flex:0 0 auto;font-family:var(--fn);font-size:11.5px;font-weight:800;
@@ -1861,7 +1897,7 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
      stamp, which is what the first pass at this looked like. */
   .hero .reelbox{--reel-h:64px;border-radius:11px}
   .hero .reelbox.year .reel-i{font-size:34px}
-  .hero .reelbox.team .reel-i{font-size:15px;white-space:normal;line-height:1.15;letter-spacing:.04em}
+  .hero .reelbox.team .reel-i{font-size:19px;white-space:normal;line-height:1.1;letter-spacing:.03em}
   .hero .rlabel{font-size:10px;letter-spacing:.2em;margin-bottom:8px}
 
   #s-intro #b-start{font-size:24px;padding:22px 28px}
@@ -2135,7 +2171,7 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
     <div class="ro-takes" id="sq-takes"></div>
     <div class="ro-chemlinks" id="sq-chemlinks"></div>
   </div>
-  <button class="btn" id="b-playball" style="margin-top:14px">&#9918; Play the season</button>
+  <button class="btn ball" id="b-playball" style="margin-top:14px"><svg class="bs bs-l" viewBox="0 0 100 100" aria-hidden="true"><use href="#seam"/></svg><svg class="bs bs-r" viewBox="0 0 100 100" aria-hidden="true"><use href="#seam"/></svg><span>Play the season</span></button>
   <div style="margin-top:10px"><button class="btn ghost sm" id="b-squad-quit">Quit this run</button></div>
 </div>
 
@@ -2174,8 +2210,9 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
   <div class="ss-ctl" id="s-actions" style="display:none">
     <button class="btn ghost ss-cbtn" id="b-sim-pause">Pause</button>
     <button class="btn ghost ss-cbtn" id="b-sim-speed">Faster</button>
-    <button class="btn" id="b-sim-fast">Sim to end</button>
+    <button class="btn ball" id="b-sim-fast"><svg class="bs bs-l" viewBox="0 0 100 100" aria-hidden="true"><use href="#seam"/></svg><svg class="bs bs-r" viewBox="0 0 100 100" aria-hidden="true"><use href="#seam"/></svg><span>Sim to end</span></button>
   </div>
+  <button class="btn ball" id="b-season-go" hidden><svg class="bs bs-l" viewBox="0 0 100 100" aria-hidden="true"><use href="#seam"/></svg><svg class="bs bs-r" viewBox="0 0 100 100" aria-hidden="true"><use href="#seam"/></svg><span>On to October</span></button>
   <div class="ss-loghd"><span>Game log</span><span id="ss-logn"></span></div>
   <div class="sim-feed" id="s-feed"></div>
 </div>
@@ -2204,7 +2241,7 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
   </div>
   <div class="sr-card" id="sr-card"></div>
   <div class="sr-actions">
-    <button class="btn" id="sr-play">Play ball</button>
+    <button class="btn ball" id="sr-play"><svg class="bs bs-l" viewBox="0 0 100 100" aria-hidden="true"><use href="#seam"/></svg><svg class="bs bs-r" viewBox="0 0 100 100" aria-hidden="true"><use href="#seam"/></svg><span>Play ball</span></button>
     <button class="btn ghost" id="sr-sim">Sim the series</button>
   </div>
   <button class="sr-all" id="sr-simall">Sim the rest of October</button>
@@ -2250,15 +2287,14 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
     <div class="ro-record" id="ro-record"></div>
     <div class="ro-verdict" id="ro-verdict"></div>
     <div class="ro-sub" id="ro-sub"></div>
-    <div class="ro-place" id="ro-place" hidden></div>
   </div>
   <div id="r-goat" style="display:none"></div>
 
   <div class="ro-cells">
     <div class="ro-cell"><div class="cv" id="ro-rating"></div><div class="cl" id="ro-rating-l">Team rating</div>
       <div class="ro-meter"><i id="ro-rating-bar"></i></div></div>
+    <div class="ro-cell"><div class="cv gold" id="ro-place">-</div><div class="cl" id="ro-place-l">Leaderboard</div></div>
     <div class="ro-cell"><div class="cv gold" id="ro-rank"></div><div class="cl" id="ro-rank-l">All-time rank</div></div>
-    <div class="ro-cell"><div class="cv green" id="ro-eff"></div><div class="cl" id="ro-eff-l">Draft grade</div></div>
   </div>
 
   <div class="ro-coach">
@@ -2273,12 +2309,14 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
   <div class="stat-row" id="r-stats"></div>
   <div id="r-roster"></div>
   <div class="share-row">
-    <button class="btn" id="b-share">&#9918; Share result</button>
+    <button class="btn ball" id="b-share"><svg class="bs bs-l" viewBox="0 0 100 100" aria-hidden="true"><use href="#seam"/></svg><svg class="bs bs-r" viewBox="0 0 100 100" aria-hidden="true"><use href="#seam"/></svg><span>Share result</span></button>
   </div>
-  <button class="btn ghost" id="b-watch-oct" hidden style="margin-top:8px">&#9918; Watch October</button>
-  <button class="btn ghost" id="b-again" style="margin-top:8px">Run it back</button>
+  <div class="acts">
+    <button class="act" id="b-watch-oct" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M10 8.5v7l5.5-3.5z" class="f"/></svg><span class="act-l">Watch October</span></button>
+    <button class="act" id="b-again"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 12a7.5 7.5 0 0 1 12.8-5.3L19.5 9"/><path d="M19.5 4.5V9H15"/><path d="M19.5 12a7.5 7.5 0 0 1-12.8 5.3L4.5 15"/><path d="M4.5 19.5V15H9"/></svg><span class="act-l">Run it back</span></button>
+    <button class="act" id="b-trophy-2"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M7 6H4.5a2.5 2.5 0 0 0 2.8 3.9M17 6h2.5a2.5 2.5 0 0 1-2.8 3.9"/><path d="M12 14v3.5M8.5 20.5h7M9.5 17.5h5"/></svg><span class="act-l">Trophy case</span></button>
+  </div>
   <div class="ro-modes" id="ro-modes" hidden></div>
-  <button class="btn ghost trophy-cta" id="b-trophy-2">Trophy case</button>
   <footer class="legal">
     <p><a href="/privacy.html" target="_blank" rel="noopener">Privacy</a><span>&middot;</span><a
       href="/terms.html" target="_blank" rel="noopener">Terms</a><span>&middot;</span><a
@@ -2314,7 +2352,7 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
       <button class="sheet-x" data-close-daily aria-label="Close">&times;</button>
     </div>
     <div id="daily-done-in"></div>
-    <button class="btn" id="b-daily-share" style="margin-top:14px">&#9918; Share today's result</button>
+    <button class="btn ball" id="b-daily-share" style="margin-top:14px"><svg class="bs bs-l" viewBox="0 0 100 100" aria-hidden="true"><use href="#seam"/></svg><svg class="bs bs-r" viewBox="0 0 100 100" aria-hidden="true"><use href="#seam"/></svg><span>Share today's result</span></button>
     <div style="margin-top:8px"><button class="btn ghost sm" data-close-daily>Close</button></div>
   </div>
 </div>
@@ -2408,7 +2446,7 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
   </div>
 </div>
 
-<script src="engine.js?v=32"></script>
+<script src="engine.js?v=33"></script>
 <script src="run.js?v=26"></script>
 <script src="achievements.js?v=10"></script>
 <script src="board.js?v=1"></script>
@@ -2533,9 +2571,13 @@ const BALL_SEAMS=(()=>{
   }
   return out.join('');
 })();
-function badgeIc(a,earned){
-  const g=earned?(BDG_GLYPH[a.group]||BDG_FALLBACK):BDG_LOCK;
-  return '<span class="bdg-ic '+a.tier+(earned?'':' off')+'" aria-hidden="true">'+
+/* `mini` is the shelf strip: small, and a locked one keeps its shelf's glyph and its
+   tier's rim at low strength, because the strip is there to say what is on the
+   shelf rather than to say it is locked (the fold already says that). */
+function badgeIc(a,earned,mini){
+  const g=earned||mini?(BDG_GLYPH[a.group]||BDG_FALLBACK):BDG_LOCK;
+  const cls=mini?' mini'+(earned?'':' dim'):(earned?'':' off');
+  return '<span class="bdg-ic '+a.tier+cls+'" aria-hidden="true">'+
     '<svg viewBox="0 0 40 40">'+BALL_SEAMS+
     '<g class="bg" transform="translate(14 14) scale(.5)">'+g+'</g></svg></span>';
 }
@@ -2569,34 +2611,42 @@ function renderTrophy(){
   const st=ev.stats;
   $('trophy-note').textContent=signed
     ?'Every season you play signed in counts. Seasons played as a guest do not.'
-    :'Your seasons are kept in this browser. Badges need an account.';
+    :'Your seasons are saved in this browser.';
   $('trophy-career').innerHTML=[
     ['Seasons',st.runs],['Titles',st.titles],
-    ['Best rank',st.bestRank?('#'+st.bestRank):'n/a'],['Day streak',ev.play.best],
+    ['Best rank',st.bestRank?('#'+st.bestRank):'-'],['Day streak',ev.play.best],
   ].map(s=>'<div class="stk"><div class="sv">'+s[1]+'</div><div class="sl">'+s[0]+'</div></div>').join('');
   const byGroup={};ACH.GROUPS.forEach(g=>byGroup[g]={earned:[],locked:[]});
   ev.earned.forEach(a=>byGroup[a.group]&&byGroup[a.group].earned.push(a));
   ev.locked.forEach(a=>byGroup[a.group]&&byGroup[a.group].locked.push(a));
   if(!signed){
     $('trophy-body').innerHTML='<div class="trophy-locked">'+
-      '<div class="tl-balls">'+['bronze','silver','gold','legend'].map(t=>badgeIc({tier:t,group:'Winning'},true)).join('')+'</div>'+
-      '<div class="tl-t">'+ACH.CATALOGUE.length+' badges, for players with an account</div>'+
-      '<p>Guests can play every mode. Badges are earned only by seasons played signed in.</p></div>';
+      '<div class="tl-balls">'+['bronze','silver','gold','legend'].map((t,i)=>
+        badgeIc({tier:t,group:ACH.GROUPS[[1,2,6,8][i]%ACH.GROUPS.length]},true)).join('')+'</div>'+
+      '<div class="tl-t">'+ACH.CATALOGUE.length+' badges to collect</div>'+
+      '<p>Sign in and every season you play counts toward them. Seasons played as a guest do not.</p></div>';
     return;
   }
-  $('trophy-body').innerHTML='<div style="text-align:center;font-family:var(--fn);font-size:12px;'+
-    'font-weight:700;color:var(--gold);margin-bottom:12px">'+ev.earned.length+' of '+ev.total+' badges</div>'+
-    ACH.GROUPS.map(g=>{
+  const bar=(n,of)=>'<div class="tg-bar"><i style="width:'+(of?Math.round(n/of*100):0)+'%"></i></div>';
+  /* A NEW ACCOUNT HAS NOTHING OPEN, so the first shelf opens for it: a cabinet whose
+     every shelf is shut is a page with no badge drawn on it. */
+  const openFirst=!ev.earned.length;
+  $('trophy-body').innerHTML='<div class="trophy-sum"><div class="ts-t">'+ev.earned.length+' of '+ev.total+
+    ' badges</div>'+bar(ev.earned.length,ev.total)+'</div>'+
+    ACH.GROUPS.map((g,gi)=>{
       const grp=byGroup[g];const total=grp.earned.length+grp.locked.length;
       const tile=(a,earned)=>'<div class="ach'+(earned?'':' locked')+'">'+badgeIc(a,earned)+
         '<div><div class="ach-t">'+esc(a.name)+'</div><div class="ach-d">'+esc(a.desc)+'</div></div></div>';
       const got=grp.earned.length
         ? '<div class="trophy-grid">'+grp.earned.map(a=>tile(a,true)).join('')+'</div>' : '';
       const left=grp.locked.length
-        ? '<details class="tg-more"><summary>'+grp.locked.length+' still to earn</summary>'+
+        ? '<details class="tg-more"'+(openFirst&&gi===0?' open':'')+'><summary>'+
+          '<span class="tg-strip">'+grp.locked.slice(0,14).map(a=>badgeIc(a,false,true)).join('')+'</span>'+
+          '<span class="tg-go">'+grp.locked.length+' to earn</span></summary>'+
           '<div class="trophy-grid">'+grp.locked.map(a=>tile(a,false)).join('')+'</div></details>' : '';
       return '<div class="trophy-group"><div class="tg-hd"><span class="tg-name">'+g+
-        '</span><span class="tg-count">'+grp.earned.length+'/'+total+'</span></div>'+got+left+'</div>';
+        '</span><span class="tg-count">'+grp.earned.length+'/'+total+'</span></div>'+
+        bar(grp.earned.length,total)+got+left+'</div>';
     }).join('');
 }
 /* THE ACCOUNT PANEL, in the trophy sheet because that is the one thing an
@@ -2646,7 +2696,7 @@ function renderAccount(){
   const pro=document.createElement('p');pro.className='apro';
   if(isPro())pro.innerHTML='<b>Pro</b>: every mode, as often as you like.';
   else{
-    pro.innerHTML='Free: one token a day for any of the six modes.';
+    pro.innerHTML='Free: one play of each mode a day.';
     const b=document.createElement('button');b.type='button';b.textContent='Go Pro for '+PRO_PRICE;
     b.onclick=()=>{closeSheet('sheet-trophy');ga('pro_opened',{from:'account'});openPro(null);};
     pro.appendChild(b);
@@ -2662,6 +2712,11 @@ const $=id=>document.getElementById(id);
    so nothing in the UI may read E.SLOTS directly once a run is live. */
 const SLOTS_NOW=()=>R.slotsOf(typeof RUN!=='undefined'?RUN:null);
 const esc=s=>{const d=document.createElement('div');d.textContent=s;return d.innerHTML;};
+/* DRAWN, NOT TYPED. The chemistry bolt and the streak flame were emoji, which is
+   whatever the reader's phone thinks a bolt looks like, in its own colours, beside
+   type that is ours. These take the colour of the text they sit in. */
+const ICO_BOLT='<svg class="ico" viewBox="0 0 12 16" aria-hidden="true"><path d="M7.2 0L1 9h4.2L4.2 16 11 6.6H6.6z"/></svg>';
+const ICO_FLAME='<svg class="ico" viewBox="0 0 14 16" aria-hidden="true"><path d="M7 0c.6 3-3.2 4.6-3.2 8.4a3.2 3.2 0 0 0 1.6 2.8C5 9.6 6 8.4 7 7.8c-.2 2 1.9 2.5 1.9 4.3a1.8 1.8 0 0 1-.6 1.4A4.6 4.6 0 0 0 12 9C12 4.4 7.9 3.8 7 0zM2 9.6A5.1 5.1 0 0 0 7 16a5.2 5.2 0 0 1-3.6-4.8z"/></svg>';
 /* The man being placed on the field, or null. Declared up here rather than beside
    the functions that use it, because show() and the field painters run at boot and a
    `let` read before its own line throws. See startPick. */
@@ -2755,7 +2810,7 @@ function chemBadge(entry,size){
   const names=entry.links.filter(l=>l.type!=='era').map(l=>l.label).join(' &middot; ');
   return '<span class="chembadge'+(size?' '+size:'')+'" style="--cc:'+c+'"'+
     (names?' title="'+esc(names.replace(/&middot;/g,'/'))+'"':'')+
-    '>&#9889;'+chemNum(entry.keyPoints)+'</span>';
+    '>'+ICO_BOLT+chemNum(entry.keyPoints)+'</span>';
 }
 
 /* ─── position colors ─── */
@@ -3227,7 +3282,7 @@ function drawField(el,live){
     const pip=c.querySelector('.pip');
     const ce=p?chemBySlot[i]:null;
     if(ce&&ce.keyPoints>0){
-      pip.textContent='⚡'+chemNum(ce.keyPoints);
+      pip.innerHTML=ICO_BOLT+chemNum(ce.keyPoints);
       pip.style.background=chemColor(ce.top&&ce.top.type);
       pip.style.display='grid';
       pip.title=ce.links.filter(l=>l.type!=='era').map(l=>l.label).join(' / ');
@@ -3613,8 +3668,7 @@ function openModes(){
         (m.soon?' disabled':'')+'>'+
         (m.soon?'<span class="mc-sticker soon">Soon</span>'
               :isPro()?'<span class="mc-sticker">Unlimited</span>'
-              :tokenOn()===CARD_METER[m.id]?'<span class="mc-sticker used">Played today</span>'
-              :tokenOn()?'<span class="mc-sticker used">Tomorrow</span>'
+              :modeUsed(CARD_METER[m.id])?'<span class="mc-sticker used">Played today</span>'
               :(m.sticker?'<span class="mc-sticker">'+esc(m.sticker)+'</span>':''))+
         '<div class="mc-head"><div class="mc-icon"><svg viewBox="0 0 24 24">'+m.icon+
         '</svg></div><div class="mc-title">'+esc(m.title)+'</div>'+(m.soon?'':ARROW)+'</div>'+
@@ -3658,10 +3712,8 @@ function pickMode(id){
 }
 
 /* ─── Run The Diamond Pro ────────────────────────────────────────────────
- * The six extra modes share ONE FREE TOKEN A DAY: play Eras and all six are shut
- * until the next Eastern day. Pro removes the limit, for $9.99 once. Classic and
- * the daily are never counted and never sold. (The first draft gave one start of
- * each mode, six a day. The owner asked for one token across the six.)
+ * Each of the six extra modes gets ONE FREE START A DAY. Pro removes the limit, for
+ * $9.99 once. Classic and the daily are never counted and never sold.
  *
  * WHAT IS COUNTED IS A START. A season already under way is never interrupted, and
  * a run is charged at the moment its draft opens (startRun, startTrade), which is
@@ -3722,17 +3774,10 @@ function playsMark(m){
   }catch(_){}
 }
 function isPro(){return proOwned||!!(meter&&meter.pro);}
-/* The mode today's token went on, or null while it is unspent. The device's answer
-   first, then the server's, which knows about other devices. */
-function tokenOn(){
-  const loc=playsLocal();if(loc.length)return loc[0];
-  if(meter&&meter.day===easternISO()&&Array.isArray(meter.used)&&meter.used.length)return meter.used[0];
-  return null;
-}
-/* A mode is shut when the token has gone, on it or on any of the other five. */
 function modeUsed(m){
   if(!m||isPro())return false;
-  return tokenOn()!=null;
+  if(playsLocal().indexOf(m)>=0)return true;
+  return !!(meter&&meter.day===easternISO()&&Array.isArray(meter.used)&&meter.used.indexOf(m)>=0);
 }
 /* The gate and the charge, in one place. Answers whether the run may start. */
 function modeBegin(m){
@@ -3791,11 +3836,8 @@ function paintProState(){
   if(line){
     if(isPro()){line.innerHTML='<b>Pro</b> \u00b7 every mode, as often as you like.';}
     else{
-      const on=tokenOn();
-      line.innerHTML=(on
-        ?'Today\'s free token went on '+esc(modeLabel(on))+'. '
-        :'One free token a day for any of the six modes. ')+
-        '<button type="button" id="b-hp-pro">Go Pro for '+PRO_PRICE+'</button> to play without limits.';
+      line.innerHTML='Each mode: one free play a day. <button type="button" id="b-hp-pro">Go Pro for '+
+        PRO_PRICE+'</button> to play without limits.';
       const b=$('b-hp-pro');if(b)b.onclick=()=>{ga('pro_opened',{from:'home'});openPro(null);};
     }
   }
@@ -3806,9 +3848,7 @@ function paintProState(){
 }
 function meterChip(m){
   if(isPro())return '<i class="hp-meter pro">Unlimited</i>';
-  const on=tokenOn();
-  if(on===m)return '<i class="hp-meter">Played today</i>';
-  if(on)return '<i class="hp-meter">Tomorrow</i>';
+  if(modeUsed(m))return '<i class="hp-meter">Played today</i>';
   return '';
 }
 
@@ -3830,19 +3870,16 @@ function proSheet(m,fresh){
       '<button class="btn ghost" data-close-pro>Close</button>';
     wirePro(box);return;
   }
-  const on=tokenOn();
-  $('pro-title').textContent=on?'Today\'s free token is used':'Run The Diamond Pro';
+  $('pro-title').textContent=m?('You played today\'s '+modeLabel(m)):'Run The Diamond Pro';
   const back=untilReset();
-  const lead=on
-    ?'You get one free token a day for any of the six modes. Today\'s went on '+
-      esc(modeLabel(on))+'. A new one lands at midnight Eastern'+
-      (back?', in <b>'+back+'</b>':'')+'. Or play '+(m&&m!==on?esc(modeLabel(m)):'any of them')+' now with Pro.'
-    :'You get one free token a day for any of the six modes. Pro takes the limit off.';
+  const lead=m
+    ?'Every mode gets one free play a day. '+esc(modeLabel(m))+' comes back at midnight Eastern'+
+      (back?', in <b>'+back+'</b>':'')+'. Or play it now with Pro.'
+    :'Every mode gets one free play a day. Pro takes the limit off.';
   const list=MODE_CARDS.filter(c=>!c.soon).map(c=>{
-    const mm=CARD_METER[c.id];
-    const tag=!on?'Free':on===mm?'Played':'Tomorrow';
+    const mm=CARD_METER[c.id];const used=modeUsed(mm);
     return '<li style="--c:'+c.tint+'"><i></i><span>'+esc(c.tile||c.title)+'</span>'+
-      '<em'+(on===mm?' class="used"':'')+'>'+tag+'</em></li>';
+      '<em'+(used?' class="used"':'')+'>'+(used?'Played':'Free')+'</em></li>';
   }).join('');
   const signed=!!acctId();
   box.innerHTML='<p class="pro-lead">'+lead+'</p>'+
@@ -3990,25 +4027,25 @@ function boardPayload(o){
 }
 /* Fire and forget, after the screen is up. Sets the place line if it can. */
 async function postToBoard(o){
+  const v0=$('ro-place');if(v0){v0.textContent='-';$('ro-place-l').textContent='Leaderboard';}
   const B=BOARD();if(!B)return;
-  const el=$('ro-place');if(!el)return;
-  el.hidden=false;el.textContent='Recording your season...';
+  /* THE MIDDLE CELL, not a line in the hero: where this season landed on its own
+     board sits between the rating and the all-time rank, the other two numbers
+     about how good the team was. */
+  const v=$('ro-place'),l=$('ro-place-l');if(!v||!l)return;
+  const say=(val,lab)=>{v.textContent=val;l.textContent=lab;};
+  say('-','Recording your season');
   let payload;
-  try{payload=boardPayload(o);}catch(e){console.error(e);el.hidden=true;return;}
+  try{payload=boardPayload(o);}catch(e){console.error(e);say('-','Leaderboard');return;}
   const sent=await B.submit(payload);
-  if(!sent){
-    el.textContent=B.needsMigration?'Leaderboard not set up yet.':'Leaderboard unreachable.';
-    el.classList.add('dim');return;
-  }
+  if(!sent){say('-',B.needsMigration?'Leaderboard not set up yet':'Leaderboard unreachable');return;}
   const where=payload.dailyKey?{dailyKey:payload.dailyKey}:{mode:payload.mode};
   const score=B.scoreOf(payload.wins,payload.playoffWins,payload.rating||0);
   const [place,tot]=await Promise.all([
     B.placeIn({...where,score}),B.total(where)]);
-  if(place==null||tot==null){el.textContent='On the board.';return;}
+  if(place==null||tot==null){say('-','On the board');return;}
   const board=payload.dailyKey?('Daily #'+dailyNo()):runModeLabel(payload.mode);
-  el.classList.remove('dim');
-  el.innerHTML='<b>#'+place+'</b> of '+tot.toLocaleString()+' on '+esc(board)+
-    (sent.duplicate?' <span class="dim">(already recorded today)</span>':'');
+  say('#'+place,'of '+tot.toLocaleString()+' on '+board+(sent.duplicate?' (already recorded)':''));
 }
 
 /* ─── the leaderboard screen ───
@@ -4184,7 +4221,7 @@ function paintDailyCard(){
     '<div class="dc-txt">'+
       '<div class="dc-hd"><span class="dc-eye">Daily challenge</span>'+
         '<span class="dc-no">#'+dailyNo()+'</span>'+
-        (streak>0?'<span class="dc-streak">&#128293; '+streak+'</span>':'')+'</div>'+
+        (streak>0?'<span class="dc-streak">'+ICO_FLAME+streak+'</span>':'')+'</div>'+
       (d?'<div class="dc-done"><b>'+d.wins+'-'+d.losses+'</b>'+
           (d.grid?'<span class="dc-grid">'+d.grid+'</span>':'')+'</div>'+
           '<div class="dc-sub">Played. New board at midnight Eastern.</div>'
@@ -4653,7 +4690,7 @@ function optTile(r,i){
       const pts=gained.reduce((s,l)=>s+E.chemPoints(l.value),0);
       const top=gained.reduce((b,l)=>(!b||l.value>b.value)?l:b,null);
       chemHtml='<span class="chemtag" style="--cc:'+chemColor(top.type)+'">'+
-        '&#9889;+'+chemNum(pts)+' '+esc(gained.length>1?
+        ICO_BOLT+'+'+chemNum(pts)+' '+esc(gained.length>1?
           chemLabel(top.type)+' +'+(gained.length-1):chemLabel(top.type))+'</span>';
     }
   }
@@ -4914,6 +4951,7 @@ function startSeason(){
   simSpeed=1;simPaused=false;
   $('b-sim-pause').textContent='Pause';$('b-sim-speed').textContent='Faster';
   $('s-actions').style.display='';
+  $('b-season-go').hidden=true;
   $('b-sim-fast').onclick=()=>{$('s-actions').style.display='none';simPaused=false;simRemaining();};
   $('b-sim-pause').onclick=()=>{
     const st=RUN&&RUN._simState;
@@ -5225,8 +5263,13 @@ function finishSeason(){
   if(simTimer){clearTimeout(simTimer);simTimer=null;}
   $('s-actions').style.display='none';
   const outcome=R.finalizeSeason(RUN);
-  if(outcome.madePlayoffs) setTimeout(()=>startPlayoffs(),1500);
-  else setTimeout(()=>showResult(),1500);
+  /* THE SEASON WAITS FOR YOU. It used to move on by itself a second and a half after
+     the last out, which took away the one screen that tells the whole story of the
+     162: the calendar, the race, the log. The button says where it goes. */
+  const go=$('b-season-go');
+  go.querySelector('span').textContent=outcome.madePlayoffs?'On to October':'See how it went';
+  go.onclick=()=>{go.hidden=true;if(outcome.madePlayoffs)startPlayoffs();else showResult();};
+  go.hidden=false;
 }
 
 /* ─── the bracket ───────────────────────────────────────────────────────────
@@ -5262,10 +5305,11 @@ const brkRevealAll=()=>brkBuild().revealAll();
 
 /* One seat. A seat with nobody in it yet is the winner of a series that has not been
    played, and says so rather than sitting blank. */
-function brkSeat(e,won,settled,score,champ){
+function brkSeat(e,won,settled,score,champ,bye){
   if(!e)return '<div class="brk-t tbd"><span class="sd"></span><span class="nm">TBD</span></div>';
   const cls=(settled?(won?' won':' out'):'')+(champ&&won?' champ':'');
-  const sc=(settled&&won&&score)?'<span class="sc">'+esc(score)+'</span>':'';
+  const sc=bye?'<span class="sc bye">Bye</span>'
+    :(settled&&won&&score)?'<span class="sc">'+esc(score)+'</span>':'';
   if(e.you)return '<div class="brk-t me'+cls+'"><span class="sd">'+e.seed+'</span>'+
     '<span class="nm">'+esc(myClubShort())+'</span>'+sc+'</div>';
   const t=e.team;
@@ -5306,8 +5350,8 @@ function brkRender(upTo){
     /* The two seats per side that sat the wild card out. They played nothing, but
        they are in the field and a bracket that leaves them off is missing four clubs. */
     if(c===0)for(const s of ['near','far']){
-      h+='<div class="brk-side">'+(s==='near'?'Your side':'The other side')+' byes</div>'+
-        '<div class="brk-g">'+BRK_BYES.map(n=>brkSeat(B[s][n],false,false)).join('')+'</div>';
+      h+='<div class="brk-side">Byes &middot; '+(s==='near'?'your side':'the other side')+'</div>'+
+        '<div class="brk-g byes">'+BRK_BYES.map(n=>brkSeat(B[s][n],false,false,null,false,true)).join('')+'</div>';
     }
     h+='</div>';
   }
@@ -5881,8 +5925,11 @@ function showResult(){
      mode built around everybody playing the same board. First in the chain:
      a daily run carries no other mode flag. */
   if(RUN.daily)modeLabel='Daily Challenge #'+dailyNo();
-  else if(RUN.tradeMachine){const n=(RUN.trades||[]).filter(t=>t.accepted).length;
-    modeLabel='Trade Machine \u00b7 '+n+' deal'+(n===1?'':'s');}
+  else if(RUN.tradeMachine){const took=(RUN.trades||[]).filter(t=>t.accepted),n=took.length;
+    /* The deals and what they were worth, rounded per deal the way the offer sheet
+       showed each one. This used to be a cell of its own, where the draft grade was. */
+    const gain=took.reduce((s,t)=>s+(t.in?offerWar(t.in):0)-(t.out?offerWar(t.out):0),0);
+    modeLabel='Trade Machine \u00b7 '+(n?n+' deal'+(n===1?'':'s')+' \u00b7 '+(gain>=0?'+':'')+gain.toFixed(1)+' WAR':'stood pat');}
   else if(RUN.staff)modeLabel='All-Time Pitching Staff';
   else if(RUN.capSurvivor)modeLabel='Cap Survivor \u00b7 '+(RUN.cuts||[]).length+' cut';
   else if(RUN.franchise)modeLabel='The all-time '+teamFullName(RUN.franchise);
@@ -5890,7 +5937,7 @@ function showResult(){
   else if(RUN.era)modeLabel=RUN.era+' era';
   const seedTxt=o.seedLabel&&o.madePlayoffs?o.seedLabel:'';
   $('ro-sub').textContent=[modeLabel,seedTxt].filter(Boolean).join(' · ');
-  $('b-again').textContent=RUN.daily?'Draft a team of your own':'Run it back';
+  $('b-again').querySelector('.act-l').textContent=RUN.daily?'Draft your own':'Run it back';
   paintResultModes();
   $('b-watch-oct').hidden=!o.madePlayoffs;
 
@@ -5915,32 +5962,6 @@ function showResult(){
     $('ro-rank').textContent=rank?('#'+rank):'n/a';
     $('ro-rank-l').textContent='All-time rank';
   }
-  /* The grade is measurably well spread (best-available medians B+, a careless
-     draft gets an F), but the word "grade" next to a losing record reads as a
-     grade on the SEASON. The label says what was actually graded: how much of
-     the value on your own board you walked away with. */
-  /* THE TRADE MACHINE DRAFTED NOTHING, so the grade is a sentence about a draft
-     that never happened: it read "drafted 96% of your board" on a roster the
-     mode hands you and forbids you to re-draft. What this mode did instead is
-     the deals, and what they were worth, which is the one number the screen was
-     not saying anywhere. */
-  if(RUN.tradeMachine){
-    const took=(RUN.trades||[]).filter(t=>t.accepted);
-    /* The same subtraction the offer sheet showed when each of these was
-       pressed, rounded per DEAL the way the sheet rounded it, or the receipt
-       disagrees with the offers it is a receipt for. */
-    const gain=took.reduce((s,t)=>s+(t.in?offerWar(t.in):0)-(t.out?offerWar(t.out):0),0);
-    $('ro-eff').textContent=took.length;
-    $('ro-eff-l').textContent=took.length
-      ?('Deal'+(took.length===1?'':'s')+' \u00b7 '+(gain>=0?'+':'')+gain.toFixed(1)+' WAR')
-      :'Deals \u00b7 stood pat';
-  }else{
-    const bps=RUN&&R.bestPossibleSquad?R.bestPossibleSquad(RUN,DATA):null;
-    $('ro-eff').textContent=bps?cappedGrade(bps.efficiency,o):'n/a';
-    $('ro-eff-l').textContent=bps?('Grade \u00b7 drafted '+Math.round(bps.efficiency)+'% of your board')
-      :'Grade';
-  }
-
   // Coach's take
   const tagged=RUN.roster.map((p,i)=>({...p,_slot:SLOTS_NOW()[RUN.slotIndex[i]]}));
   const cr=RUN.staff?staffReport(tagged,o.chemistry,shownRating(o))
@@ -5992,42 +6013,6 @@ function showResult(){
      must not cost anybody the season they just played. */
   setTimeout(()=>{postToBoard(o).catch(e=>console.error('board',e));},60);
 }
-function gradeFor(pct){
-  if(pct>=97)return'A+';if(pct>=93)return'A';if(pct>=89)return'A-';
-  if(pct>=85)return'B+';if(pct>=80)return'B';if(pct>=74)return'B-';
-  if(pct>=68)return'C+';if(pct>=60)return'C';if(pct>=50)return'D';return'F';
-}
-
-/*
- * THE GRADE IS CAPPED BY WHAT THE SEASON DID WITH THE ROSTER.
- *
- * On its own the grade is draft efficiency: the share of the WAR on your own
- * board that you walked away with. That is a real and useful number, and it is
- * still the thing that moves the grade. What it cannot do is sit at B+ directly
- * above the words MISSED THE PLAYOFFS, because a draft that captured most of its
- * board and then did not reach October did not do its job, whatever the ratio
- * says.
- *
- * Capping rather than replacing keeps the discrimination: a careless draft that
- * missed still gets an F and a sharp one gets the cap, so the grade says both
- * "how well did you draft" and "did it work". The percentage stays in the label,
- * so nothing is hidden, the grade just stops arguing with the record above it.
- */
-const GRADE_LADDER=['F','D','C','C+','B-','B','B+','A-','A','A+'];
-function gradeCeiling(o){
-  if(o.titleWon)return'A+';
-  const rounds=(RUN&&RUN.playoffs&&RUN.playoffs.rounds)||[];
-  if(!o.madePlayoffs)return'C+';
-  if(rounds.some(r=>r.round==='World Series'))return'A-';
-  if(rounds.filter(r=>r.won).length>=1)return'B+';
-  return'B-';
-}
-function cappedGrade(pct,o){
-  const g=gradeFor(pct),cap=gradeCeiling(o);
-  const i=GRADE_LADDER.indexOf(g),c=GRADE_LADDER.indexOf(cap);
-  return (i<0||c<0||i<=c)?g:cap;
-}
-
 /* ─── confetti ─── */
 function fireConfetti(gold){
   if(reduceMotion())return;
@@ -6094,7 +6079,7 @@ async function shareDaily(){
     if(navigator.share){await navigator.share({text});ga('daily_shared');return;}
   }catch(e){if(e&&e.name==='AbortError')return;}
   try{if(navigator.clipboard)await navigator.clipboard.writeText(text);}catch(_){}
-  btn.innerHTML='Copied';ga('daily_shared');
+  btn.querySelector('span').textContent='Copied';ga('daily_shared');
   setTimeout(()=>{btn.innerHTML=orig;},1400);
 }
 
@@ -6225,7 +6210,7 @@ async function shareResult(){
   try{ if(navigator.clipboard) await navigator.clipboard.writeText(text); }catch(_){}
   if(file){ const url=URL.createObjectURL(file);const a=document.createElement('a');
     a.href=url;a.download='run-the-diamond.png';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000); }
-  btn.textContent='Copied!';setTimeout(()=>{btn.innerHTML=orig;},2000);
+  btn.querySelector('span').textContent='Copied';setTimeout(()=>{btn.innerHTML=orig;},2000);
 }
 
 /* ─── init ─── */

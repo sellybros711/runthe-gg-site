@@ -463,7 +463,15 @@ check_rows(sort, migration, what, breaks, ok) as (
       (select count(*) > 0 from col where tbl = 'newsletter_subscribers' and name = 'unsub_token')
       and (select count(*) > 0 from col where tbl = 'newsletter_issues' and name = 'commit_sha')
       and (select count(*) = 5 from proc where name in
-            ('newsletter_status','newsletter_set','newsletter_guest_request','newsletter_confirm','newsletter_unsubscribe')))
+            ('newsletter_status','newsletter_set','newsletter_guest_request','newsletter_confirm','newsletter_unsubscribe'))),
+
+  -- THE KEY IS THE RULE. 121 keyed the meter on (user, day), one play a day
+  -- across all six modes; 122 widens it to (user, mode, day), one of each.
+  (33, '122_baseball_pro_per_mode',
+      'a free account gets one play of each extra mode a day, not one in total',
+      'The meter keeps 121''s rule: one play a day across all six modes. The page says one of each, so the second mode a player opens is refused with a sheet that says it is still free.',
+      (select count(*) > 0 from con
+        where name = 'rtd_mode_plays_pkey' and def = 'PRIMARY KEY (user_id, mode, day)'))
 )
 -- The summary has to come LAST, and a UNION can only be ordered by an output
 -- column, so the sort key is carried through a subquery rather than sorted on

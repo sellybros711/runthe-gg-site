@@ -230,7 +230,7 @@ async function toResults(p) {
         if (e && e.offsetParent !== null && !e.disabled) { e.click(); return true; }
         return false;
       };
-      hit('#b-brk-skip') || hit('#sr-simall') || hit('#gm-simall') || hit('#sr-sim');
+      hit('#b-season-go') || hit('#b-brk-skip') || hit('#sr-simall') || hit('#gm-simall') || hit('#sr-sim');
     });
     await p.waitForTimeout(300);
   }
@@ -291,7 +291,7 @@ const r = await p.evaluate(() => {
   };
   return {
     record: txt('ro-record'), verdict: txt('ro-verdict'),
-    rating: txt('ro-rating'), rank: txt('ro-rank'), eff: txt('ro-eff'),
+    rating: txt('ro-rating'), rank: txt('ro-rank'), eff: txt('ro-place'), effL: txt('ro-place-l'),
     takes: txt('ro-takes'), arch: txt('ro-arch'),
     rosterRows: document.querySelectorAll('#r-roster .rrow, #r-roster .rline, #r-roster li').length,
     rosterText: (document.getElementById('r-roster') || {}).textContent?.trim().length || 0,
@@ -306,12 +306,14 @@ claim(/\w/.test(r.verdict), `a verdict, rather than an empty hero: ${JSON.string
    of the three have failed silently on this page before: the rating was re-anchored
    twice, and a branch beside them read a field outcomeOf has never set, so it was
    dead on every run the game had ever played. An empty cell renders perfectly.
-   THE DRAFT GRADE IS A LETTER AND NOT A NUMBER, which the first draft of this
-   asserted wrongly and reported a correct screen as broken. */
+*/
 for (const [k, label] of [['rating', 'Team rating'], ['rank', 'All-time rank']]) {
   claim(/\d/.test(r[k]), `${label} carries a number: ${JSON.stringify(r[k])}`);
 }
-claim(/^[A-F][+-]?$/.test(r.eff), `the draft grade is a grade: ${JSON.stringify(r.eff)}`);
+/* THE GRADE IS GONE, asked for by the owner, and the middle cell is the season's
+   place on its own board. A letter coming back into that cell is the regression. */
+claim(!/^[A-F][+-]?$/.test(r.eff) && /Leaderboard|Recording|on |board/i.test(r.effL),
+  `the middle cell is the leaderboard, not a grade: ${JSON.stringify(r.eff)} / ${JSON.stringify(r.effL)}`);
 claim(/\w/.test(r.takes), "the coach's take is not blank");
 claim(/\w/.test(r.arch), `the roster has a shape: ${JSON.stringify(r.arch)}`);
 claim(r.rosterText > 100, 'the twelve are listed under it', `roster text ${r.rosterText} chars`);
