@@ -38,7 +38,7 @@
      to the table does not silently grow every board request. No player-supplied
      text is among them: the roster comes back as ids. */
   const COLS = [
-    'id', 'created_at', 'display_name', 'wins', 'losses', 'playoff_wins',
+    'id', 'created_at', 'user_id', 'display_name', 'wins', 'losses', 'playoff_wins',
     'made_playoffs', 'seed_label', 'title_won', 'tied_record', 'is_goat',
     'run_mode', 'franchise', 'era', 'division', 'daily_key',
     'rating', 'all_time_rank', 'staff_era', 'chemistry_pct', 'spend_musd',

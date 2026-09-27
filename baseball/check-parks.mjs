@@ -161,13 +161,13 @@ const rows = vet.map((r) => Object.assign({ u: 'acct1' }, r));
   claim(/Ivy Corner/i.test(geo.tag), 'the field names its park');
   /* the tag opens the shelf, and the shelf changes the park */
   await p.click('#park-tag');
-  await p.waitForSelector('#sheet-trophy .pk-card');
+  await p.waitForSelector('#sheet-profile .pk-card');
   const shelf = await p.evaluate(() => ({ cards: document.querySelectorAll('.pk-card').length,
     locked: document.querySelectorAll('.pk-card.locked').length, on: (document.querySelector('.pk-card.on .pk-name') || {}).textContent }));
   claim(shelf.cards === 13, `the shelf draws every park (${shelf.cards})`);
   claim(shelf.locked === 2 && /Ivy/i.test(shelf.on), `the two Pro parks are locked for a free veteran, and the one in use is marked (${shelf.locked})`);
   await p.click('.pk-use[data-park="monster"]');
-  await p.evaluate(() => document.querySelector('#sheet-trophy [data-close], #sheet-trophy .sheet-x') && document.querySelector('#sheet-trophy [data-close], #sheet-trophy .sheet-x').click());
+  await p.evaluate(() => document.querySelector('#sheet-profile .sheet-x').click());
   await p.waitForTimeout(200);
   claim(await parkOn(p) === 'monster', 'using a park redraws the draft on it');
   const stored = await p.evaluate(() => JSON.parse(localStorage.getItem('rtd_park_v1')));

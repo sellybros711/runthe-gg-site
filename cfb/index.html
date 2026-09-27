@@ -3717,9 +3717,9 @@ or endorsed by the NCAA, the CFP or any school.
          are six and would not fit on a phone. -->
     <div class="lbmode"><select id="lb-comp" aria-label="Which leaderboard"></select></div>
     <div class="tabwrap"><div class="tabs" id="lb-tabs">
-      <button class="tab on" data-lb="day">Today</button>
+      <button class="tab" data-lb="day">Today</button>
       <button class="tab" data-lb="week">This week</button>
-      <button class="tab" data-lb="all">All time</button>
+      <button class="tab on" data-lb="all">All time</button>
     </div></div>
     <!-- THREE AXES, AND ONE OF THEM RUNS THE OTHER WAY BY DEFAULT. Record and team
          overall are high-to-low; the national ranking is low-to-best, because No. 1 in
@@ -3961,7 +3961,7 @@ or endorsed by the NCAA, the CFP or any school.
 <script src="/assets/newsletter.js?v=1"></script>
 <!-- The broadcast field every game is played out on, shared with the NFL game. drawDriveChart
      hands its drives here and keeps its own body as the fallback. -->
-<script src="/assets/fieldcast.js?v=3"></script>
+<script src="/assets/fieldcast.js?v=4"></script>
 <!-- THE FREE TIER'S CLOCK, WHICH THIS PAGE ONLY READS. It is the mode's module and the
      mode is still the thing that decides: seasonWall() spends a season and reads the
      server's answer, because only the server can settle it. All this page wants is to know
@@ -7386,7 +7386,10 @@ function recordRun(row){
    by content-visibility on .lb .lbr, which skips layout and paint for every row that is
    off screen. */
 const LB_LIMIT=500;
-let lbWindow='day', lbSort='record', lbDir=null, lbBusy=false, lbFrom='s-intro', lbMode='free';
+/* EVERY BOARD OPENS ON ALL TIME, asked for by the owner, the same as the NFL game. It is
+   reset when the competition changes and never on a repaint, so a window somebody picked
+   stays picked while they look at the same board. */
+let lbWindow='all', lbSort='record', lbDir=null, lbBusy=false, lbFrom='s-intro', lbMode='free';
 /* The rows the board is currently showing, held so the podium, the pinned place row and
    a tap on any of them all read the same array rather than re-deriving it. */
 let lbRows=null, lbMyPlace=null;
@@ -7410,7 +7413,7 @@ function openBoard(mode){
   /* Opened from a finished season, the board opens on THAT season's competition:
      coming off a Pac-12 run to a free-play board you are not on is the wrong
      answer to "where did I come?". */
-  if(mode&&B&&B.MODES.indexOf(mode)>=0) lbMode=mode;
+  if(mode&&B&&B.MODES.indexOf(mode)>=0&&mode!==lbMode){ lbMode=mode; lbWindow='all'; }
   paintCompSelect();
   ga('board_opened',{window:lbWindow,sort:lbSort,mode:lbMode});
   show('s-board');
@@ -11977,7 +11980,7 @@ $('b-feedback').onclick=()=>feedbackSheet();
 $('b-modes').onclick=modeMenu;
 $('b-lb-intro').onclick=()=>openBoard();
 $('lb-comp').onchange=(e)=>{
-  lbMode=e.target.value;
+  lbMode=e.target.value; lbWindow='all';
   $('lb-comp').parentNode.classList.toggle('isconf',lbMode!=='free');
   ga('board_competition',{mode:lbMode});
   paintBoard();

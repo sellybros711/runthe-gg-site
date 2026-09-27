@@ -14,11 +14,15 @@ on:
   pull_request:
     paths:
       - 'baseball/**'
+      - 'supabase/127_baseball_profiles.sql'
+      - 'supabase/test/baseball_profile_test.sql'
       - '.github/workflows/baseball-checks.yml'
   push:
     branches: [main]
     paths:
       - 'baseball/**'
+      - 'supabase/127_baseball_profiles.sql'
+      - 'supabase/test/baseball_profile_test.sql'
       - '.github/workflows/baseball-checks.yml'
   workflow_dispatch: {}
 
@@ -146,3 +150,25 @@ jobs:
       # park. All four are silent, so all four are asked of the real page.
       - name: Ballparks, their art and their unlocks
         run: node baseball/check-parks.mjs
+
+      # THE PROFILE, and the career it keeps on the server. Every way this fails
+      # loses a player's things in silence: a device that never sends its seasons,
+      # a sync that drops the guest seasons beside them, a server that cannot be
+      # reached being read as an empty career, and a locked club or mark being
+      # saved anyway. The server half is supabase/test/baseball_profile_test.sql.
+      - name: The profile, Customize and the career on the server
+        run: node baseball/check-profile.mjs
+
+      # 127 in SQL: the career only ever adds, a season held is never replaced,
+      # every row is filed under its caller, and every choice is held to its list.
+      - name: Start Postgres
+        run: |
+          sudo systemctl start postgresql.service
+          sudo -u postgres createuser -s "$USER"
+      - name: supabase/127, driven in SQL
+        run: |
+          createdb rtd_prof
+          psql -q -d rtd_prof -f supabase/test/baseball_pro_base.sql
+          psql -q -v ON_ERROR_STOP=1 -d rtd_prof -f supabase/127_baseball_profiles.sql
+          psql -q -v ON_ERROR_STOP=1 -d rtd_prof -f supabase/127_baseball_profiles.sql
+          psql -q -v ON_ERROR_STOP=1 -d rtd_prof -f supabase/test/baseball_profile_test.sql

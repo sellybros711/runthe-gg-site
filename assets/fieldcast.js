@@ -14,10 +14,18 @@
  *   a lit stadium, with a crowd that erupts on the side that scored
  *   an LED ribbon board along the front of the stands
  *   the field in perspective, a broadcast camera rather than a diagram
- *   every drive as a lane of turf, newest nearest the camera, older ones receding
- *   the drive in progress played out snap by snap: the ball, the two lines, the formation,
- *     and the down and distance over the ball
+ *   the last few drives as lanes of turf, newest nearest the camera, older ones receding
+ *   the drive in progress played out snap by snap: the ball, the two lines and the down and
+ *     distance over the ball
  *   the moment: TOUCHDOWN, FIELD GOAL, NO GOOD, INTERCEPTED, SAFETY, ON DOWNS
+ *
+ * IT IS DELIBERATELY QUIET ON THE FIELD. The first version drew every drive of the last six,
+ * a pill on each, fifteen players chasing the ball, a banner across the whole middle of the
+ * field, a white flash, a screen shake, confetti and a blinking ribbon board, all at once.
+ * The owner's verdict was that it looked great and was overwhelming. So the stadium keeps
+ * its life (the crowd, the lights, the ribbon, the eruption) and the field carries only what
+ * a viewer is following: three drives of history, the ball, the two lines, and a small call
+ * when something happens. Add to the field only what replaces something already on it.
  *
  * THE MOMENTS FIRE THEMSELVES. A drive whose end the clock has just crossed is the event, so
  * no page has to call anything new, and a jump (Sim to the end, a reload, the final repaint)
@@ -467,25 +475,9 @@
     st.fx.forEach(function(o){ o.endAt = Math.min(o.endAt, fx.t0 + 260); });
     st.fx.push(fx);
     if (st.fx.length > 3) st.fx.shift();
-    if (def.big && !REDUCE){
-      st.shake = { t0: now(), amp: 3.2 * st.C.dpr };
-      st.erupt = { t0: now(), side: d.team, dur: 2600 };
-      spawnConfetti(st, fx);
-    }
+    if (def.big && !REDUCE) st.erupt = { t0: now(), side: d.team, dur: 2200 };
     if (res === 'field goal' && !REDUCE) st.erupt = { t0: now() + def.delay, side: d.team, dur: 1800 };
   }
-  function spawnConfetti(st, fx){
-    var C = st.C, p = C.P(U(fx.yard), fx.v), dpr = C.dpr;
-    var r = rngOf(hash('confetti|' + fx.t0));
-    var cols = [fx.col, '#ffd23f', '#ffffff', mix(fx.col, '#ffffff', 0.4)];
-    for (var i = 0; i < 70; i++){
-      var a = -Math.PI / 2 + (r() - 0.5) * 2.2, sp = (2.2 + r() * 4.2) * dpr;
-      st.parts.push({ x: p[0] + (r() - 0.5) * 20 * dpr, y: p[1], vx: Math.cos(a) * sp + (fx.team === 'you' ? -1 : 1) * r() * 1.5 * dpr,
-        vy: Math.sin(a) * sp, rot: r() * 6, vr: (r() - 0.5) * 0.4, w: (2 + r() * 2.5) * dpr, h: (3.5 + r() * 3) * dpr,
-        c: cols[Math.floor(r() * cols.length)], t0: fx.t0, life: 1400 + r() * 900 });
-    }
-  }
-
   /* ---------- painting one frame ---------- */
   function render(st){
     var F = st.frame; if (!F) return;
@@ -499,15 +491,8 @@
     ctx.fillStyle = '#03060c'; ctx.fillRect(0, 0, C.w, C.h);
 
     /* The camera follows the ball, gently, the way a broadcast pans. */
-    var sx = 0, sy = 0;
-    if (st.shake){
-      var k = (t - st.shake.t0) / 520;
-      if (k >= 1) st.shake = null;
-      else { var a = st.shake.amp * (1 - k); sx = Math.sin(t * 0.09) * a; sy = Math.cos(t * 0.11) * a * 0.6; }
-    }
     var dt = st.lastT ? Math.min(64, t - st.lastT) : 16; st.lastT = t;
     st.pan += (st.panTo - st.pan) * (REDUCE ? 1 : 1 - Math.pow(0.9, dt / 16));
-    ctx.translate(sx, sy);
 
     ctx.drawImage(st.stands, -st.M - st.pan * 0.35, 0);
     drawCrowdLife(st, ctx, t);
@@ -552,11 +537,11 @@
         else if (er.side === st.home){ x0 = 0; x1 = C.w; }
         else { x0 = C.w * st.awayBlock[0] - st.pan * 0.35; x1 = C.w * st.awayBlock[1] - st.pan * 0.35; }
         var gr = ctx.createLinearGradient(0, C.Sy * 0.2, 0, C.Sy);
-        gr.addColorStop(0, rgba(col, 0)); gr.addColorStop(1, rgba(col, (0.42 * fade).toFixed(3)));
+        gr.addColorStop(0, rgba(col, 0)); gr.addColorStop(1, rgba(col, (0.3 * fade).toFixed(3)));
         ctx.fillStyle = gr; ctx.fillRect(x0, 0, x1 - x0, C.Sy);
         /* Flashbulbs. */
         var r = rngOf(hash('bulbs|' + Math.floor(t / 70)));
-        for (var j = 0; j < 26 * fade; j++){
+        for (var j = 0; j < 10 * fade; j++){
           var bx = x0 + r() * (x1 - x0), by = C.Sy * (0.2 + r() * 0.78), s = (1 + r() * 1.8) * C.dpr;
           ctx.fillStyle = 'rgba(255,255,255,' + (0.5 + r() * 0.5).toFixed(2) + ')';
           ctx.fillRect(bx, by, s, s);
@@ -575,9 +560,10 @@
     var fs = h * 0.66;
     ctx.font = '900 ' + fs.toFixed(1) + 'px ' + LED;
     if (live && (t - fx.t0) > (fx.def.delay || 0)){
-      var on = REDUCE || Math.floor((t - fx.t0) / 160) % 2 === 0;
-      ctx.fillStyle = rgba(fx.col, 0.28); ctx.fillRect(0, y, C.w, h);
-      ctx.fillStyle = on ? '#ffffff' : mix(fx.col, '#ffffff', 0.5);
+      /* Steady, not blinking: the call is the one thing on the board, and a flashing word
+         across the whole width was most of what made a score feel like an alarm. */
+      ctx.fillStyle = rgba(fx.col, 0.2); ctx.fillRect(0, y, C.w, h);
+      ctx.fillStyle = mix(fx.col, '#ffffff', 0.7);
       var msg = fx.label + '   ' + fx.label + '   ' + fx.label + '   ';
       var w1 = ctx.measureText(msg).width;
       var off = REDUCE ? 0 : -((t - fx.t0) * 0.09 * dpr) % (w1 / 3);
@@ -618,7 +604,7 @@
     ctx.restore();
   }
 
-  function laneV(age){ return 0.8 - age * 0.132; }
+  function laneV(age){ return 0.8 - age * 0.2; }
 
   function drawDrives(st, ctx, F, t){
     var C = st.C, dpr = C.dpr, drives = F.drives || [], upTo = F.upTo;
@@ -636,7 +622,7 @@
       st.panTo = 0;
       return;
     }
-    var MAX = 6, start = Math.max(0, visible.length - MAX), shown = visible.slice(start);
+    var MAX = 3, start = Math.max(0, visible.length - MAX), shown = visible.slice(start);
     /* The lanes slide back when a new drive begins, rather than jumping. */
     var newest = shown[shown.length - 1], nk = newest.team + '|' + newest.tStart;
     if (st.newestKey !== nk){ st.newestKey = nk; st.newestAt = t; }
@@ -655,14 +641,15 @@
       var v = laneV(age), a = clamp(1 - age / (MAX - 0.4), 0.1, 1);
       if (v > 0.97) continue;
       drawRibbon1(st, ctx, dv, dv.startYard, clamp(norm(dv.result) === 'touchdown' ? (dv.team === 'you' ? 100 : 0) : dv.endYard, 0, 100), v, a * 0.85, false);
-      drawMark(st, ctx, dv, v, a);
+      /* The result pill on the drive that just ended and no other: one call to read, not a
+         column of them. The lane itself still says who went where. */
+      if (j === shown.length - 1 || (j === shown.length - 2 && shown[shown.length - 1] === active)) drawMark(st, ctx, dv, v, a);
     }
     st.laneV = laneV(-off);
 
     if (!active){ st.panTo = 0; return; }
     var v0 = laneV(-off);
     var col = active.team === 'you' ? st.you.color : st.them.color;
-    var dcol = active.team === 'you' ? st.them.color : st.you.color;
     var sit = active.sit && ds.p >= 0.999 ? active.sit : null;
     var showDowns = st.opts.downs !== false || sit;
 
@@ -687,14 +674,13 @@
       var lead = ds.pl && ds.pl.gain === 0 && ds.pl.pass ? ds.abs(ds.pl.los) : ds.ball;
       drawRibbon1(st, ctx, active, ds.trail, clamp(lead, 0, 100), v0, 1, true);
     }
-    /* At a real fourth down the two sides are set at the line for the snap the card is asking
-       about, not still in a heap from the play before it. */
+    /* At a real fourth down the ball sits on the spot the card is asking about, not wherever
+       the play before it left the animation. */
     if (sit && !ds.kick){
       var relL = ds.dir > 0 ? active.endYard : 100 - active.endYard;
       ds = { dir: ds.dir, abs: ds.abs, ball: active.endYard, height: 0, spin: 0, snap: 1, mv: 0,
         pl: { los: relL, gain: 0, pass: false, down: sit.down, togo: sit.toGo } };
     }
-    if (!ds.kick && ds.pl && !ds.pl.ret && C.w / dpr >= 260) drawFormation(st, ctx, ds, v0, col, dcol);
     if (ds.ghost != null){
       /* The throw that fell incomplete: the ball in the air, the spot unchanged. */
       drawBall(st, ctx, ds.abs(ds.ghost), v0, ds.height, t * 0.02, true);
@@ -719,7 +705,6 @@
     gr.addColorStop(0.35, rgba(col, (alpha * 0.55).toFixed(3)));
     gr.addColorStop(1, rgba(col, (alpha * 0.95).toFixed(3)));
     ctx.save();
-    if (live && !REDUCE){ ctx.shadowColor = rgba(col, 0.8); ctx.shadowBlur = 10 * dpr; }
     quad(ctx, C, u1, v - half, u2, v + half);
     ctx.fillStyle = gr; ctx.fill();
     ctx.restore();
@@ -791,41 +776,6 @@
     ctx.restore();
   }
 
-  /* Eleven a side would be noise at this size, so it is the parts a viewer reads: the line,
-     the backfield, the front seven and the safeties. They set at the line before the snap and
-     chase the ball after it. */
-  var OFF = [[-1.2, -0.09], [-1.2, -0.045], [-1.2, 0], [-1.2, 0.045], [-1.2, 0.09], [-4.5, 0], [-7, 0.035]];
-  var DEF = [[1.4, -0.07], [1.4, -0.024], [1.4, 0.024], [1.4, 0.07], [5, -0.06], [5, 0.06], [11, -0.14], [11, 0.14]];
-  function drawFormation(st, ctx, ds, v0, col, dcol){
-    var C = st.C, dpr = C.dpr, pl = ds.pl, mv = ds.mv || 0;
-    var fade = ds.snap != null && ds.snap < 0.2 ? ds.snap / 0.2 : 1;
-    var ballR = pl.los + (pl.gain === 0 && pl.pass ? 0 : pl.gain) * mv;
-    var ppl = [];
-    OFF.forEach(function(o, i){
-      var y = pl.los + o[0] + (i < 5 ? 2 * mv : (ballR - pl.los - o[0]) * mv * (i === 6 ? 1 : 0.55));
-      var v = v0 + o[1] * (1 + mv * (i < 5 ? 0.4 : 0));
-      ppl.push([y, v, col]);
-    });
-    DEF.forEach(function(o){
-      var y0 = pl.los + o[0], y = y0 + (ballR - y0) * mv * 0.78;
-      var v = v0 + o[1] + (0 - o[1]) * mv * 0.7;
-      ppl.push([y, v, dcol]);
-    });
-    ppl.sort(function(a, b){ return a[1] - b[1]; });
-    ctx.save(); ctx.globalAlpha = fade;
-    ppl.forEach(function(p){
-      var yard = ds.abs(p[0]), v = clamp(p[1], 0.02, 0.98), g = C.P(U(clamp(yard, -8, 108)), v);
-      var r = Math.max(1.6 * dpr, C.ppy(v) * 0.95);
-      ctx.fillStyle = 'rgba(0,0,0,.35)';
-      ctx.beginPath(); ctx.ellipse(g[0], g[1] + r * 0.2, r * 1.1, r * 0.4, 0, 0, Math.PI * 2); ctx.fill();
-      ctx.fillStyle = p[2]; ctx.strokeStyle = 'rgba(0,0,0,.7)'; ctx.lineWidth = Math.max(0.8, 0.5 * dpr);
-      ctx.beginPath(); ctx.arc(g[0], g[1] - r * 0.9, r, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
-      ctx.fillStyle = 'rgba(255,255,255,.35)';
-      ctx.beginPath(); ctx.arc(g[0] - r * 0.3, g[1] - r * 1.25, r * 0.35, 0, Math.PI * 2); ctx.fill();
-    });
-    ctx.restore();
-  }
-
   var ORD = ['', '1ST', '2ND', '3RD', '4TH'];
   function drawDownTag(st, ctx, down, togo, goal, losA, v0, col){
     var C = st.C, dpr = C.dpr, g = C.P(U(losA), v0);
@@ -853,21 +803,6 @@
 
   function drawFx(st, ctx, t){
     var C = st.C, dpr = C.dpr;
-    /* Confetti. */
-    if (st.parts.length){
-      var keep = [];
-      for (var i = 0; i < st.parts.length; i++){
-        var p = st.parts[i], age = t - p.t0;
-        if (age > p.life) continue;
-        var f = age / 16.7;
-        var x = p.x + p.vx * f, y = p.y + p.vy * f + 0.07 * dpr * f * f;
-        ctx.save(); ctx.globalAlpha = age > p.life - 300 ? (p.life - age) / 300 : 1;
-        ctx.translate(x, y); ctx.rotate(p.rot + p.vr * f);
-        ctx.fillStyle = p.c; ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h * Math.abs(Math.cos(f * 0.2 + p.rot)) + dpr * 0.5);
-        ctx.restore(); keep.push(p);
-      }
-      st.parts = keep;
-    }
     var live = [];
     st.fx.forEach(function(fx){
       var age = t - fx.t0, def = fx.def;
@@ -876,10 +811,6 @@
       if (def.kick) drawKick(st, ctx, fx, age);
       var ba = age - (def.delay || 0);
       if (ba >= 0) drawBanner(st, ctx, fx, ba, fx.endAt - fx.t0 - (def.delay || 0));
-      if (def.big && age < 280 && !REDUCE){
-        ctx.fillStyle = 'rgba(255,255,255,' + (0.3 * (1 - age / 280)).toFixed(3) + ')';
-        ctx.fillRect(0, 0, C.w, C.h);
-      }
     });
     st.fx = live;
   }
@@ -904,54 +835,38 @@
     ctx.restore();
   }
 
+  /* The call: a compact plate over the far side of the field, the word and whose it was on
+     one line. It used to be a slab across the whole middle of the picture with a shine and a
+     pop, which read as the game stopping rather than as a thing that happened in it. */
   function drawBanner(st, ctx, fx, age, dur){
     var C = st.C, dpr = C.dpr;
-    var IN = 220, OUT = 260;
+    var IN = 200, OUT = 240;
     var kin = REDUCE ? 1 : easeOut(age / IN), kout = REDUCE ? 0 : clamp((age - (dur - OUT)) / OUT, 0, 1);
-    /* Over the FAR half of the field, because the near lanes are where the ball is. */
-    var cy = C.Ty + (C.By - C.Ty) * 0.3, bh = Math.min(C.h * 0.17, 48 * dpr * C.s);
-    var bw = C.w * 0.84, skew = bh * 0.32;
-    var x = C.w / 2 + (1 - kin) * -C.w * 1.1 + kout * C.w * 1.1;
+    var cy = C.Ty + (C.By - C.Ty) * 0.24, bh = Math.min(C.h * 0.1, 26 * dpr * C.s);
     var col = fx.def.red ? '#e11d2e' : fx.def.amber ? '#f59e0b' : fx.def.gray ? '#5b6474' : fx.col;
-    ctx.save(); ctx.globalAlpha = 1 - kout * 0.6;
-    ctx.translate(x, cy);
-    ctx.shadowColor = 'rgba(0,0,0,.55)'; ctx.shadowBlur = 14 * dpr;
-    ctx.beginPath(); ctx.moveTo(-bw / 2 + skew, -bh / 2); ctx.lineTo(bw / 2 + skew, -bh / 2);
-    ctx.lineTo(bw / 2 - skew, bh / 2); ctx.lineTo(-bw / 2 - skew, bh / 2); ctx.closePath();
-    var gr = ctx.createLinearGradient(0, -bh / 2, 0, bh / 2);
-    gr.addColorStop(0, mix(col, '#ffffff', 0.18)); gr.addColorStop(0.55, col); gr.addColorStop(1, mix(col, '#000000', 0.35));
-    ctx.fillStyle = gr; ctx.fill();
-    ctx.shadowBlur = 0;
-    ctx.save(); ctx.clip();
-    /* The shine, one sweep across. */
-    if (!REDUCE){
-      var sx = -bw / 2 + ((age - 120) / 700) * bw * 1.4;
-      var sg = ctx.createLinearGradient(sx - bh, 0, sx + bh, 0);
-      sg.addColorStop(0, 'rgba(255,255,255,0)'); sg.addColorStop(0.5, 'rgba(255,255,255,.35)'); sg.addColorStop(1, 'rgba(255,255,255,0)');
-      ctx.fillStyle = sg; ctx.fillRect(-bw, -bh, bw * 2, bh * 2);
-    }
-    ctx.fillStyle = 'rgba(0,0,0,.18)'; ctx.fillRect(-bw, bh / 2 - bh * 0.09, bw * 2, bh * 0.09);
-    ctx.restore();
-    ctx.strokeStyle = 'rgba(255,255,255,.55)'; ctx.lineWidth = 1.2 * dpr; ctx.stroke();
-    /* The word, fitted to the slab. */
-    var fs = bh * 0.78;
+    var fs = bh * 0.72, ss = bh * 0.38, pad = bh * 0.5;
+    ctx.save();
     ctx.font = fs.toFixed(1) + 'px ' + DISPLAY;
-    var tw = ctx.measureText(fx.label).width, room = bw * 0.84;
-    if (tw > room){ fs *= room / tw; ctx.font = fs.toFixed(1) + 'px ' + DISPLAY; }
-    var pop = REDUCE ? 1 : 1 + 0.18 * (1 - easeOut(age / 320));
-    ctx.save(); ctx.scale(pop, pop); ctx.transform(1, 0, -0.14, 1, 0, 0);
-    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.lineWidth = 3 * dpr; ctx.strokeStyle = 'rgba(0,0,0,.45)'; ctx.lineJoin = 'round';
-    ctx.strokeText(fx.label, 0, fs * 0.04);
-    ctx.fillStyle = '#ffffff'; ctx.fillText(fx.label, 0, fs * 0.04);
-    ctx.restore();
-    if (fx.sub){
-      var ss = Math.max(8 * dpr, bh * 0.26);
-      ctx.font = '800 ' + ss.toFixed(1) + 'px ' + BODY;
-      var sw = ctx.measureText(fx.sub.toUpperCase()).width + ss * 1.4, sh = ss * 1.55;
-      ctx.fillStyle = '#0a0f1a'; roundRect(ctx, -sw / 2, bh / 2 - sh * 0.2, sw, sh, sh / 2); ctx.fill();
-      ctx.fillStyle = '#ffffff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.fillText(fx.sub.toUpperCase(), 0, bh / 2 - sh * 0.2 + sh / 2 + ss * 0.04);
+    var tw = ctx.measureText(fx.label).width;
+    var sub = fx.sub ? fx.sub.toUpperCase() : '';
+    ctx.font = '800 ' + ss.toFixed(1) + 'px ' + BODY;
+    var sw = sub ? ctx.measureText(sub).width + pad : 0;
+    var bw = Math.min(C.w * 0.9, tw + sw + pad * 2);
+    if (tw + sw + pad * 2 > bw){ var k = (bw - pad * 2) / (tw + sw); fs *= k; ss *= k; tw *= k; sw *= k; }
+    ctx.globalAlpha = kin * (1 - kout);
+    ctx.translate(C.w / 2, cy + (1 - kin) * bh * 0.4 - kout * bh * 0.3);
+    ctx.shadowColor = 'rgba(0,0,0,.45)'; ctx.shadowBlur = 8 * dpr;
+    roundRect(ctx, -bw / 2, -bh / 2, bw, bh, bh * 0.22);
+    ctx.fillStyle = 'rgba(8,12,22,.88)'; ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = col; ctx.fillRect(-bw / 2, -bh / 2, Math.max(3 * dpr, bh * 0.14), bh);
+    ctx.textBaseline = 'middle'; ctx.textAlign = 'left';
+    var x = -bw / 2 + pad;
+    ctx.font = fs.toFixed(1) + 'px ' + DISPLAY; ctx.fillStyle = '#ffffff';
+    ctx.fillText(fx.label, x, fs * 0.04);
+    if (sub){
+      ctx.font = '800 ' + ss.toFixed(1) + 'px ' + BODY; ctx.fillStyle = mix(col, '#ffffff', 0.55);
+      ctx.fillText(sub, x + tw + pad, ss * 0.06);
     }
     ctx.restore();
   }
@@ -967,7 +882,7 @@
       st.raf = 0;
       var cv = st.ctx.canvas;
       if (!cv.isConnected || cv.offsetParent === null) return;
-      var t = now(), busy = st.fx.length || st.parts.length || st.shake || st.erupt || Math.abs(st.pan - st.panTo) > 0.5
+      var t = now(), busy = st.fx.length || st.erupt || Math.abs(st.pan - st.panTo) > 0.5
         || (t - (st.newestAt || 0)) < 520;
       if (REDUCE && !busy) return;
       if (t - st.lastPaint > 40 && (busy || t - st.lastRender > 33)) render(st);
@@ -980,7 +895,7 @@
     var st = cv.__rtgField;
     var dpr = window.devicePixelRatio || 1;
     if (!st || st.w !== cv.width || st.h !== cv.height){
-      st = cv.__rtgField = { ctx: cv.getContext('2d'), w: cv.width, h: cv.height, plans: {}, fx: [], parts: [],
+      st = cv.__rtgField = { ctx: cv.getContext('2d'), w: cv.width, h: cv.height, plans: {}, fx: [],
         pan: 0, panTo: 0, raf: 0, lastPaint: 0, lastRender: 0, prevUp: null, opts: {} };
       st.C = camera(cv.width, cv.height, dpr);
       st.M = Math.ceil(cv.width * 0.06);
@@ -1024,7 +939,7 @@
     var drives = frame.drives || [], up = +frame.upTo || 0;
     /* A new game, or the same game rewound: forget the moments already fired. */
     if (st.prevUp == null || up < st.prevUp - 1){
-      st.fx = []; st.parts = []; st.plans = {}; st.erupt = null; st.shake = null;
+      st.fx = []; st.plans = {}; st.erupt = null;
       st.prevUp = null;
     }
     if (st.prevUp != null && up > st.prevUp){
