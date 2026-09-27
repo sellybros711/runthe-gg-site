@@ -2505,6 +2505,10 @@ pinned-row fallback depends on the axis rather than the window. A tap on a placi
 the results screen still opens the window that cell names. It stays a function rather
 than a literal so a board that wants its own default later is one line.
 
+**The college game does the same**, asked for right after: `lbWindow` in `cfb/index.html` starts
+at `'all'`, the All time tab is the one marked `on` in the markup, and both ways the competition
+changes (the `#lb-comp` select and `openBoard(mode)` with a different mode) set it back.
+
 ### A leaderboard nobody can open renders perfectly
 
 The Dynasty board had a table, two axes, three queries and no way in. The only thing that
