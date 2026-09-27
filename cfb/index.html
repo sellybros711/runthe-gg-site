@@ -3949,6 +3949,8 @@ or endorsed by the NCAA, the CFP or any school.
      copies of a price or a term is two chances to tell a customer something the other page
      contradicts, and the one that is wrong is whichever was edited second. -->
 <script src="/assets/store.js?v=22"></script>
+<!-- The release newsletter checkbox on the account page. See supabase/121_newsletter.sql. -->
+<script src="/assets/newsletter.js?v=1"></script>
 <!-- THE FREE TIER'S CLOCK, WHICH THIS PAGE ONLY READS. It is the mode's module and the
      mode is still the thing that decides: seasonWall() spends a season and reads the
      server's answer, because only the server can settle it. All this page wants is to know
@@ -6455,6 +6457,7 @@ function accountHtml(){
         '<p class="dim" style="font-size:11.5px;margin:9px 0 0">Three to twenty letters, '+
           'numbers or underscores. Changing it renames the seasons already on the board.</p>'+
         msg+
+        '<div data-rtg-news="cfb"></div>'+
         '<div style="margin-top:12px;display:grid;grid-template-columns:1fr 1fr;gap:9px">'+
           '<button class="btn ghost sm" id="ac-feedback">Send feedback</button>'+
           '<button class="btn ghost sm" id="ac-out">Sign out</button></div>';
@@ -6481,6 +6484,8 @@ function accountHtml(){
 
 function wireAccount(){
   const box=$('sheet-in'), a=A();
+  /* the release newsletter box, /assets/newsletter.js. Absent script, absent box. */
+  if(window.RTG_NEWS) RTG_NEWS.fill(box);
   const done=(r,okMsg)=>{
     authBusy=false;
     authMsg=r&&r.error?{err:r.error}:(okMsg?{ok:okMsg}:null);

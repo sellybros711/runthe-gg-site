@@ -8549,6 +8549,8 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
      here: without it the game keeps its runs exactly where it always did, in this browser
      and nowhere else. See supabase/103_cloud_saves.sql. -->
 <script src="/assets/cloudsave.js?v=2"></script>
+<!-- The release newsletter checkbox on the Account page. See supabase/121_newsletter.sql. -->
+<script src="/assets/newsletter.js?v=1"></script>
 <script defer src="auth.js?v=7"></script>
 <script>
 (function(){
@@ -25352,12 +25354,15 @@ function pfAccount(msg,ok){
     '<div style="margin-top:9px"><button class="btn ghost" id="a-setname">Change my name</button></div>'+
     '<p class="dim" style="font-size:11.5px;margin:12px 0 0">Runs you finish are recorded '+
       'under this name. Changing it renames the ones already on the board.</p>'+
+    '<div data-rtg-news="football"></div>'+
     '<div class="hrow" style="margin-top:14px">'+
       '<button class="btn ghost sm" id="a-feedback">Send feedback</button>'+
       '<button class="btn ghost sm" id="a-signout">Sign out</button></div>'+
     pfDangerHtml()+
     '<div style="margin-top:14px"><button class="btn ghost" id="sh-x">Close</button></div>';
   openSheet(); pfWireCommon(); pfWireDelete();
+  /* the release newsletter box, /assets/newsletter.js. Absent script, absent box. */
+  if(window.RTG_NEWS) RTG_NEWS.fill(box);
 }
 
 /* AT REST THIS IS ONE LINE, and the long version arrives on the first tap. The resting

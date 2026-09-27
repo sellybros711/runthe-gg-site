@@ -2972,6 +2972,8 @@ setTimeout(function(){
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"
   crossorigin="anonymous" defer></script>
 <script src="/setlist/auth.js?v=41" defer></script>
+<!-- The release newsletter checkbox on the account sheet. See supabase/121_newsletter.sql. -->
+<script src="/assets/newsletter.js?v=1" defer></script>
 <script src="/setlist/board.js?v=41" defer></script>
 
 <script type="module">
@@ -5345,10 +5347,13 @@ function renderAuth(){
             <code>supabase/68_setlist_username.sql</code>; if that has been run,
             reload the API schema cache in Supabase and sign in again.</div>
         </div>`}
+      <div data-rtg-news="setlist"></div>
       <div class="respin-acts">
         <button class="btn" type="button" id="authProfile">Your shows</button>
         <button class="btn ghost" type="button" id="authOut">Sign out</button>
       </div>${note}`;
+    /* the release newsletter box, /assets/newsletter.js. Absent script, absent box. */
+    if (window.RTG_NEWS) window.RTG_NEWS.fill(inner);
     authSheet.classList.add('on');
     return;
   }

@@ -134,6 +134,21 @@
   }
   function close() { var s = $('rtgauthScrim'); if (s) s.hidden = true; }
 
+  /* The release newsletter box (/assets/newsletter.js), fetched the first time the
+     account view opens rather than tagged onto all fifteen arcade pages. The ?v= here
+     is the same hand-written cache version the pages would carry: bump it with the file. */
+  var newsWaiters = null;
+  function withNews(fn) {
+    if (window.RTG_NEWS) { fn(); return; }
+    if (newsWaiters) { newsWaiters.push(fn); return; }
+    newsWaiters = [fn];
+    var sc = document.createElement('script');
+    sc.src = '/assets/newsletter.js?v=1';
+    sc.onload = function () { var w = newsWaiters; newsWaiters = null; if (window.RTG_NEWS) w.forEach(function (f) { try { f(); } catch (e) {} }); };
+    sc.onerror = function () { newsWaiters = null; };
+    document.head.appendChild(sc);
+  }
+
   function renderModal() {
     var t = $('rtgauthTitle'), l = $('rtgauthLede'), b = $('rtgauthBody');
     if (!t) return;
@@ -155,6 +170,7 @@
         '<div style="height:9px"></div>' +
         (isPro ? '<button class="rtgauth-ghost" id="rtgauthSub" type="button">Manage subscription</button><div style="height:9px"></div>' : '') +
         '<button class="rtgauth-ghost" id="rtgauthOut" type="button">Sign out</button>' +
+        '<div data-rtg-news="arcade"></div>' +
         (st.err ? '<div class="rtgauth-err" style="margin-top:12px">' + esc(st.err) + '</div>' : '') +
         // quick navigation back into the arcade (the hub lists every game)
         '<div class="rtgauth-nav"><a href="/arcade/">' + NAV_HOME + 'Arcade home</a><a href="/arcade/archive/">' + NAV_TICKET + 'Your Vault</a></div>' +
@@ -164,6 +180,7 @@
       if (sub) sub.onclick = function () { close(); if (window.RTGCard) RTGCard.paywall({}); };
       $('rtgauthOut').onclick = function () { run(function () { return A.signOut(); }, true); };
       $('rtgauthDel').onclick = onDelete;
+      withNews(function () { window.RTG_NEWS.fill(b); });
       return;
     }
 

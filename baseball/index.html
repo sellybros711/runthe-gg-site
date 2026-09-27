@@ -2364,6 +2364,8 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
 <script src="board.js?v=1"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="auth.js?v=1"></script>
+<!-- The release newsletter checkbox under the account in the trophy sheet. See supabase/121_newsletter.sql. -->
+<script src="/assets/newsletter.js?v=1"></script>
 <script>
 (function(){
 'use strict';
@@ -2591,6 +2593,8 @@ function renderAccount(){
   const r=row();r.classList.add('who');
   const p=document.createElement('span');p.innerHTML='Signed in as <b>'+esc(st.name)+'</b>';r.appendChild(p);
   btn(r,'Sign out','ghost sm',()=>A.signOut().then(renderTrophy));
+  /* the release newsletter box, /assets/newsletter.js. Absent script, absent box. */
+  if(window.RTG_NEWS) el.appendChild(RTG_NEWS.el({source:'baseball'}));
 }
 function openTrophy(){if(!ACH)return;renderTrophy();openSheet('sheet-trophy');ga('trophy_opened');}
 
