@@ -372,6 +372,26 @@
        bottom of the screen lands on the swing buttons instead. */
     body.ingame .screen > .controls:last-child{position:absolute;right:10px;
       bottom:6px;left:auto;margin:0;z-index:7;}
+    /* AND SO DOES THE PLAY BY PLAY, which was the black bar through the
+       strike zone. In the flow it sat UNDER the swing row and grew with
+       every pitch, so the row rode up the window line by line: reported
+       from a laptop with a screenshot of the swing row laid straight
+       across the zone by the sixth line of the log. `deckCoverBlocks`
+       measured all of it as deck, the camera had nothing left to pay it
+       with, and the covered zone was the result rather than an accident.
+       Out of the flow the swing row is one row at the bottom whatever the
+       log holds, and the log takes the top left corner under the score,
+       which is outfield and never the zone or the batter. */
+    body.ingame .screen > .log{position:absolute;left:0;top:58px;margin:0 8px;
+      max-width:min(340px, 32%);max-height:min(16vh, 92px);z-index:6;}
+    /* AND THE SWING ROW IS AS WIDE AS WHAT IS IN IT. Edge to edge it was a
+       dark slab laid across the batter's legs and the plate, the same
+       report's other half. A panel the size of its buttons covers the
+       buttons and nothing else, and End Game sits on the grass to its
+       right rather than inside it. */
+    body.ingame .screen > .meter-wrap{align-self:flex-start;
+      max-width:calc(100% - 150px);border-radius:var(--r-sm);
+      background:rgba(8,16,26,.66);}
   }
   /* THE END GAME ROW STAYS IN THE FLOW ON A TALL WINDOW, and it was pinned to
      the corner here for one commit. The way out of a game really was off the
@@ -428,6 +448,13 @@
     margin-left:12px;margin-right:12px;}
   body.ingame .meter-wrap,
   body.ingame .log{position:relative;z-index:6;}
+  /* THE MOUND ROW HAS TO BE ABOVE THE PICTURE TOO. It is static, and the
+     arena is absolutely positioned, so on a wide window the row was
+     painted UNDER the canvas: measured at 1440 by 800, the point at the
+     centre of the Mound button hit-tested to the field. A control nobody
+     can see or press, with nothing thrown. The End Game row is the last
+     child and carries its own position, so it is left out of this. */
+  body.ingame .screen > .controls:not(:last-child){position:relative;z-index:6;}
   /* AND IT SITS AT THE BOTTOM, which is one `auto` on the first of them.
      The arena is out of the flow, so the flex column holds only the deck
      and the free space is the whole window. */
@@ -16446,7 +16473,15 @@ function drawPlateView(ctx, w, h, t, pitch, inWindup, theme) {
      testers read it as the ball. In flight the catcher shows a TARGET,
      the way a real one does, and the mitt itself appears at the moment
      of the catch. */
+  /* ONLY THE PITCHER SEES IT. The target sits at `pitch.aim`, which is
+     where the arm is TRYING to put the ball, so shown to a batter it is
+     the answer printed in the zone before the windup ends: reported by
+     a player as a circle that says where the pitch is going. The
+     pitcher chose that spot, so on the mound it tells them nothing they
+     do not know and it stays. */
+  const showTarget = !playerIsBatting();
   const drawTarget = (mx, my) => {
+    if (!showTarget) return;
     ctx.strokeStyle = 'rgba(255,252,242,.55)';
     ctx.lineWidth = 2;
     ctx.beginPath(); ctx.arc(mx, my, 11, 0, Math.PI * 2); ctx.stroke();

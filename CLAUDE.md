@@ -7527,6 +7527,41 @@ mound in both cameras: every call in the game was announced across his face.
 Half way down is the band of outfield grass with nothing in it, and it is
 still above the zone.
 
+#### The play by play pushed the swing row onto the zone, a line at a time
+
+Reported from a laptop with a screenshot: a black bar across the middle of the
+field, lying straight over the strike zone. It was the swing row. **The play by
+play sat UNDER it in the flow and grew with every pitch**, so the row rode up the
+window a line at a time: `deckCoverBlocks` measured all of it as deck, the camera
+had nothing left to pay it with, and by the sixth line the zone was covered.
+
+**Nothing here could see it, because every check measured the first pitch of a
+game.** The log is empty then. `check-firstpitch`'s zone section fills it with
+twelve lines before it measures now, which is how every game looks by the second
+inning, and it asks that the log itself is off the zone as well.
+
+On a wide window the log is out of the flow, in the top left corner under the
+score, which is outfield and never the zone or the batter. **The swing row is as
+wide as what is in it** rather than edge to edge: a full-width band is a slab
+over the batter and the plate wherever it sits.
+
+**And the Mound row was under the picture.** It is static, the arena is
+absolutely positioned, so on a wide window the Mound button laid out inside the
+window, clear of every other control, and its centre hit-tested to the field
+canvas. Nobody could see it or press it. Two rectangles cannot report that, so
+`check-reach` hit-tests every control's centre and fails on one that lands in
+the arena.
+
+#### A batter is not shown where the pitch is going
+
+The catcher's target is drawn at `pitch.aim`, which is where the arm is TRYING to
+put the ball. Shown to a batter during the windup it is the answer printed in the
+zone, and a player reported exactly that: a circle saying where the pitch is
+going. **Only the pitcher sees it now**, because they chose the spot and it tells
+them nothing they do not know. `check-firstpitch` reads it off the drawing calls
+(a ring of 11 with a dot of 2 at its centre) in both halves, so a check that never
+sees the pitcher's target drawn cannot pass by accident.
+
 #### There are two batter's boxes and the camera only ever framed one
 
 Reported as nothing, because a screenshot of it looks fine about a quarter of the
