@@ -2814,10 +2814,15 @@ function renderAccount(){
   const p=document.createElement('span');p.innerHTML='Signed in as <b>'+esc(st.name)+'</b>';r.appendChild(p);
   btn(r,'Sign out','ghost sm',()=>A.signOut().then(renderTrophy));
   const pro=document.createElement('p');pro.className='apro';
-  if(isPro())pro.innerHTML='<b>Pro</b>: every mode, as often as you like.';
+  if(isPro()){
+    pro.innerHTML='<b>Pro</b>: every mode, as often as you like.';
+    const b=document.createElement('button');b.type='button';b.textContent='Manage billing';
+    b.onclick=()=>openBilling(b,null);
+    pro.appendChild(b);
+  }
   else{
     pro.innerHTML='Free: one play of each mode a day.';
-    const b=document.createElement('button');b.type='button';b.textContent='Go Pro for '+PRO_PRICE;
+    const b=document.createElement('button');b.type='button';b.textContent='Go Pro for '+PRO_PRICE+PRO_TERM;
     b.onclick=()=>{closeSheet('sheet-trophy');ga('pro_opened',{from:'account'});openPro(null);};
     pro.appendChild(b);
   }
@@ -3997,7 +4002,14 @@ function pickMode(id){
 
 /* ─── Run The Diamond Pro ────────────────────────────────────────────────
  * Each of the six extra modes gets ONE FREE START A DAY. Pro removes the limit, for
- * $9.99 once. Classic and the daily are never counted and never sold.
+ * $14.99 a year, renewing until it is cancelled. Classic and the daily are never
+ * counted and never sold.
+ *
+ * IT WAS $9.99 ONCE AND IS NOW A SUBSCRIPTION, the owner's call (2026-09). The grant
+ * is still one premium_unlocks row, now with an end date the webhook moves forward
+ * on every renewal and pulls in on a cancellation or a failed payment, so every
+ * reader here (premium_products(), rtd_mode_spend) needed no change: both already
+ * honour expires_at. An account that bought the old $9.99 keeps a row with no end.
  *
  * WHAT IS COUNTED IS A START. A season already under way is never interrupted, and
  * a run is charged at the moment its draft opens (startRun, startTrade), which is
@@ -4015,7 +4027,10 @@ function pickMode(id){
  *
  * THE PRICE IS WRITTEN ONCE, here. The amount charged lives in Stripe (the Price
  * behind STRIPE_PRICE_RTD_PRO), so a change there has to be matched on this line. */
-const PRO_PRICE='$9.99';
+const PRO_PRICE='$14.99';
+/* Said beside every price, because a price with no term on a subscription is a
+   price that reads as once. */
+const PRO_TERM=' a year';
 const PRO_BUNDLE='diamond-pro';
 /* The card id to the mode name the board and the server use. One spelling per
    mode on the server, which is runModeOf's. */
@@ -4121,7 +4136,7 @@ function paintProState(){
     if(isPro()){line.innerHTML='<b>Pro</b> \u00b7 every mode, as often as you like.';}
     else{
       line.innerHTML='Each mode: one free play a day. <button type="button" id="b-hp-pro">Go Pro for '+
-        PRO_PRICE+'</button> to play without limits.';
+        PRO_PRICE+PRO_TERM+'</button> to play without limits.';
       const b=$('b-hp-pro');if(b)b.onclick=()=>{ga('pro_opened',{from:'home'});openPro(null);};
     }
   }
@@ -4151,8 +4166,12 @@ function proSheet(m,fresh){
   if(isPro()){
     $('pro-title').textContent='You have Pro';
     box.innerHTML='<p class="pro-lead">Every mode, as often as you like. Thanks for backing the game.</p>'+
-      '<button class="btn ghost" data-close-pro>Close</button>';
-    wirePro(box);return;
+      '<button class="btn ghost" id="b-pro-billing">Manage billing</button>'+
+      '<p class="pro-err" id="pro-err" hidden></p>'+
+      '<div style="margin-top:10px"><button class="btn ghost" data-close-pro>Close</button></div>';
+    wirePro(box);
+    $('b-pro-billing').onclick=e=>openBilling(e.currentTarget,$('pro-err'));
+    return;
   }
   $('pro-title').textContent=m?('You played today\'s '+modeLabel(m)):'Run The Diamond Pro';
   const back=untilReset();
@@ -4168,11 +4187,11 @@ function proSheet(m,fresh){
   const signed=!!acctId();
   box.innerHTML='<p class="pro-lead">'+lead+'</p>'+
     '<ul class="pro-list">'+list+'</ul>'+
-    '<div class="pro-price"><b>'+PRO_PRICE+'</b><span>once. Unlimited plays of all six. Yours for good.</span></div>'+
-    '<button class="btn gold" id="b-pro-buy">'+(signed?'Get Pro for '+PRO_PRICE:'Sign in to get Pro')+'</button>'+
+    '<div class="pro-price"><b>'+PRO_PRICE+'</b><span>a year. Unlimited plays of all six'+(window.RTD_PARKS?', plus the two Pro ballparks':'')+'. Cancel anytime.</span></div>'+
+    '<button class="btn gold" id="b-pro-buy">'+(signed?'Get Pro for '+PRO_PRICE+PRO_TERM:'Sign in to get Pro')+'</button>'+
     '<p class="pro-err" id="pro-err" hidden></p>'+
     '<p class="pro-note">'+(signed
-      ?'One payment through Stripe. Nothing renews. Classic and the daily stay free for everybody.'
+      ?'Billed yearly through Stripe. It renews until you cancel, which you can do from your account any time. Classic and the daily stay free for everybody.'
       :'Pro belongs to your RunThe.GG account, so it follows you to every device you sign in on.')+'</p>'+
     '<div style="margin-top:10px"><button class="btn ghost" data-close-pro>Not now</button></div>';
   wirePro(box);
@@ -4205,7 +4224,7 @@ async function buyPro(btn){
   if(d&&d.url){location.href=d.url;return;}
   if(d&&d.error==='already_owned'){proRefresh(true);}
   btn.disabled=false;
-  btn.textContent='Get Pro for '+PRO_PRICE;
+  btn.textContent='Get Pro for '+PRO_PRICE+PRO_TERM;
   if(err){
     err.hidden=false;
     err.textContent=d&&d.error==='stripe_not_configured'?'Pro is not on sale yet. Try again soon.'
@@ -4213,6 +4232,25 @@ async function buyPro(btn){
       :d&&d.error==='unauthorized'?'Sign in again, then try once more.'
       :'Checkout did not open. Try again.';
   }
+}
+
+/* THE SUBSCRIPTION IS MANAGED IN STRIPE'S OWN PORTAL: cancelling, a new card, the
+   receipts. Same contract as the checkout, the verdict read off `error`. */
+async function openBilling(btn,err){
+  const t=typeof A.token==='function'?A.token():null;
+  if(!t){closeSheet('sheet-pro');openTrophy();return;}
+  const label=btn.textContent;btn.disabled=true;btn.textContent='Opening billing...';
+  let d={};
+  try{
+    const r=await fetch('/api/stripe/portal',{method:'POST',
+      headers:{'Content-Type':'application/json',Authorization:'Bearer '+t},
+      body:JSON.stringify({return_path:'/baseball/'})});
+    d=await r.json().catch(()=>({}));
+  }catch(_){d={};}
+  if(d&&d.url){ga('billing_opened',{from:'baseball'});location.href=d.url;return;}
+  btn.disabled=false;btn.textContent=label;
+  if(err){err.hidden=false;err.textContent=d&&d.error==='no_customer'
+    ?'There is no billing on this account to show.':'Billing did not open. Try again.';}
 }
 
 /* COMING BACK FROM STRIPE. The grant is written by the webhook, and the redirect

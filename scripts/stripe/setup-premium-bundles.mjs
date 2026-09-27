@@ -55,15 +55,19 @@ const CATALOG = [
       metadata: { site_bundle: 'run-the-bundle' },
     },
   },
-  /* $9.99, one-time, the owner's decision (2026-09). Baseball's own tier: it
-   * removes the once-a-day limit on the six extra modes and nothing else. */
+  /* $14.99 A YEAR, recurring, the owner's decision (2026-09); it was $9.99 once.
+   * Baseball's own tier: it removes the once-a-day limit on the six extra modes
+   * and nothing else. A new lookup key rather than the old one, because a Price
+   * cannot change from one-time to recurring: the old rtd_pro_once is a
+   * different Price and is left alone. */
   {
-    lookupKey: 'rtd_pro_once',
+    lookupKey: 'rtd_pro_year',
     envVar: 'STRIPE_PRICE_RTD_PRO',
-    amountCents: 999,
+    amountCents: 1499,
+    interval: 'year',
     product: {
       name: 'Run The Diamond Pro',
-      description: 'Unlimited plays of every Run The Diamond mode: Eras, One Franchise, Division, Cap Survivor, All-Time Pitching Staff and the Trade Machine. One purchase, yours for good.',
+      description: 'Unlimited plays of every Run The Diamond mode: Eras, One Franchise, Division, Cap Survivor, All-Time Pitching Staff and the Trade Machine. Renews yearly until cancelled.',
       metadata: { site_bundle: 'diamond-pro' },
     },
   },
@@ -121,6 +125,7 @@ for (const item of CATALOG) {
       currency: 'usd',
       unit_amount: String(item.amountCents),
       lookup_key: item.lookupKey,
+      ...(item.interval ? { 'recurring[interval]': item.interval } : {}),
     });
     console.log('+ ' + item.product.name + ': ' + price.id + ' (' + fmt(price.unit_amount) + ', created)');
   }

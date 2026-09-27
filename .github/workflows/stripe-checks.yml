@@ -1,0 +1,43 @@
+name: Stripe checks
+
+# Money moves through four files that trust each other: the bundle catalog, the
+# checkout, the webhook and the migrations. Every way they drift apart is a sale
+# that looks fine and a grant that is quietly wrong, so both checks run here.
+#
+#   node scripts/stripe/verify-bundles.mjs   the catalog agrees with everything that reads it
+#   node scripts/stripe/check-recurring.mjs  Run The Diamond Pro, a yearly subscription,
+#                                            driven through the real checkout and webhook
+#                                            against a fake Stripe and Supabase
+#
+# No secrets, no network, no deploy.
+
+on:
+  pull_request:
+    paths:
+      - 'functions/api/stripe/**'
+      - 'scripts/stripe/**'
+      - 'supabase/*.sql'
+      - '.github/workflows/stripe-checks.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'functions/api/stripe/**'
+      - 'scripts/stripe/**'
+      - 'supabase/*.sql'
+      - '.github/workflows/stripe-checks.yml'
+  workflow_dispatch: {}
+
+concurrency:
+  group: stripe-checks-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node scripts/stripe/verify-bundles.mjs
+      - run: node scripts/stripe/check-recurring.mjs

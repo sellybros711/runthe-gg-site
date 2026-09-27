@@ -15437,9 +15437,47 @@ psql -d rtd_pro -f supabase/test/baseball_pro_test.sql
 
 Asked for by the owner: the six extra modes (Eras, One Franchise, Division, Cap
 Survivor, All-Time Pitching Staff, Trade Machine) get **one free start each per
-Eastern day**, and **Pro** removes the limit for **$9.99 once**. Classic and the daily
+Eastern day**, and **Pro** removes the limit for **$14.99 a year**. Classic and the daily
 are never counted and never sold. The Stripe steps are in
 `functions/api/stripe/README.md`.
+
+#### It was $9.99 once and is now a yearly subscription
+
+```
+node scripts/stripe/check-recurring.mjs   the checkout and webhook, driven, no network
+```
+
+The owner moved the Stripe Price to $14.99 recurring yearly (2026-09), which the code
+could not sell: a recurring Price in payment mode is refused by Stripe outright, so the
+first press of Get Pro after the env var moved would have failed. `recurring: true` on
+the `diamond-pro` catalog row now opens the checkout in subscription mode, with the
+bundle key on the subscription's own metadata, because a renewal event carries the
+subscription and nothing else.
+
+**The grant is still ONE `premium_unlocks` row, now with an end date**, and that is why
+no reader changed: `premium_products()` and `rtd_mode_spend` already honoured
+`expires_at`. `grantRecurring` in the webhook sets it from the subscription: the paid
+period's end plus three days of grace, a week on `past_due` (the period has already moved
+forward, so honouring it would hand a failed card a year), and now for anything dead. A
+cancellation at period end stays `active` until then, so it needs no case of its own.
+
+Four things it must never do, each asserted by driving the real files:
+
+- **Write the `subscriptions` table.** It holds ONE row a user and it is the Arcade
+  Card's, so a baseball renewal there would overwrite somebody's membership. Removing
+  the routing fails six claims.
+- **Trust event order.** Every subscription event is read back from Stripe before it is
+  written, or a stale "active" landing after "deleted" hands back a year. Removing the
+  read-back fails three.
+- **Give a row with no end date an end.** The old $9.99 buyers and comps own Pro for
+  good, and checkout refuses to sell them a year.
+- **Refuse a lapsed subscriber.** Checkout counts only a RUNNING recurring grant as
+  owning it; the row outlives its end as the record.
+
+**The price is written once in the page**, `PRO_PRICE` with `PRO_TERM` (" a year")
+beside it wherever it is shown, because a price with no term on a subscription reads
+as once. Subscribers get **Manage billing**, which opens the Stripe Customer Portal;
+`portal.js` allows `/baseball/` as a return path.
 
 **The rule went per mode, then shared, then per mode again, and 122 is the last move.**
 121 shipped and was deployed with one token a day shared by all six, keyed on

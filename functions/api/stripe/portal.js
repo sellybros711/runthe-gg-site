@@ -45,7 +45,7 @@ export async function onRequestPost(context) {
      * football game was then returned to a different game, which reads as being
      * logged out of the one they were in. The roots below are the games a bundle
      * can be bought from, which is _bundles.js's returnRoots plus the Arcade. */
-    const ROOTS = ['/arcade/', '/football/', '/cfb/', '/golf/'];
+    const ROOTS = ['/arcade/', '/football/', '/cfb/', '/golf/', '/baseball/'];
     let ret = typeof body.return_path === 'string' ? body.return_path : '/arcade/';
     if (!ROOTS.some(function (root) { return ret.indexOf(root) === 0; })) ret = '/arcade/';
 
