@@ -2769,10 +2769,19 @@ node scripts/check-fieldcast.mjs     the renderer's rules, and that both pages d
 Asked for: the drive charts on the home page's two cards, but bigger, for the real games. So
 `/assets/fieldcast.js` is the picture every game is played on: the playoff broadcast, the bowl,
 the challenge bowl, the boss battle and the Full Team live games. A lit stadium with a dot matrix
-crowd (the home cards' motif), an LED ribbon board, the field in perspective, every drive as a
-lane that recedes as the game goes on, and the drive in progress played out snap by snap with the
-ball, the blue and yellow lines, a formation and the down and distance over the ball. Touchdowns,
-field goals, misses, turnovers and safeties get their own moment.
+crowd (the home cards' motif), an LED ribbon board, the field in perspective, the last three
+drives as lanes that recede as the game goes on, and the drive in progress played out snap by snap
+with the ball, the blue and yellow lines and the down and distance over the ball. Touchdowns, field
+goals, misses, turnovers and safeties get their own moment.
+
+**THE FIELD IS QUIET AND THE STADIUM IS NOT, which is the owner's call.** The first version drew
+six drives with a result pill on each, fifteen players chasing the ball, a banner across the whole
+middle of the field, a white flash, a screen shake, confetti and a blinking ribbon board, all at
+once. Verdict: visually great, a little overwhelming. So the stands keep all their life (the
+crowd, the lights, the ribbon, the eruption on a score) and the field carries what a viewer is
+following: three drives, one result pill on the drive that just ended, the ball, the two lines,
+and a small call plate over the far half. **Add to the field only what replaces something already
+on it.** The kick to the posts stays, because it is the one moment that shows where the ball went.
 
 **IT IS ONE FUNCTION DEEP IN EACH PAGE.** `drawDriveChart` in `football/index.html` and in
 `cfb/index.html` hands its drives to `RTG_FIELD.paint` and returns; the old chart is still below
@@ -2831,7 +2840,7 @@ clear of the chevron by its own half width now.
 **It keeps drawing between the page's frames**, which is what lets a score hold the clock while
 the crowd erupts and the banner plays: its own loop runs while the canvas is on screen, at thirty
 frames a second when nothing but the crowd is moving, and stops the moment `offsetParent` is
-null. Reduced motion gets no slides, no shake, no confetti and no ambient loop.
+null. Reduced motion gets no slides and no ambient loop.
 
 **The canvas is 196 to 320px tall, up from 160**, because a picture with a stadium in it needs the
 room. `check-fullteam.mjs` measures the boss board's calls and Continue against a phone, which is
