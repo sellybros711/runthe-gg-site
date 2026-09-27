@@ -4135,7 +4135,9 @@ function paintProState(){
   if(line){
     if(isPro()){line.innerHTML='<b>Pro</b> \u00b7 every mode, as often as you like.';}
     else{
-      line.innerHTML='Each mode: one free play a day. <button type="button" id="b-hp-pro">Go Pro for '+
+      /* The offer and nothing before it, the owner's call. The daily rule is said
+         where it bites: the Pro sheet and the mode tiles' Played today chip. */
+      line.innerHTML='<button type="button" id="b-hp-pro">Go Pro for '+
         PRO_PRICE+PRO_TERM+'</button> to play without limits.';
       const b=$('b-hp-pro');if(b)b.onclick=()=>{ga('pro_opened',{from:'home'});openPro(null);};
     }
