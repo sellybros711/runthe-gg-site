@@ -82,11 +82,13 @@ const MLB = require('../baseball/engine.js').CONSTANTS;
 function seasonRange(file) {
   const raw = JSON.parse(readFileSync(new URL(file, import.meta.url), 'utf8'));
   const rows = Array.isArray(raw) ? raw : (raw.players || Object.values(raw)[0]);
-  const ys = rows.map((p) => p.season || p.year).filter((y) => typeof y === 'number');
+  /* The baseball pool is written with compact keys, so a season there is `s`. */
+  const ys = rows.map((p) => p.season || p.year || p.s).filter((y) => typeof y === 'number');
   return { from: Math.min(...ys), to: Math.max(...ys) };
 }
 const CFB_YEARS = seasonRange('../cfb/data/cfb_player_seasons.json');
 const NFL_YEARS = seasonRange('../football/data/player_seasons.json');
+const MLB_YEARS = seasonRange('../baseball/data/players.json');
 
 const money = (m) => (m < 1 ? '$' + Math.round(m * 1000) + 'K' : '$' + m + 'M');
 
@@ -180,7 +182,7 @@ const FACTS = [
     id: 'the seasons on the wheel',
     find: /\bsince (\d{4})\b|\b(\d{4}) to (\d{4})\b/g,
     near: /season|year|draft/i,
-    ok: [CFB_YEARS.from, CFB_YEARS.to, NFL_YEARS.from, NFL_YEARS.to],
+    ok: [CFB_YEARS.from, CFB_YEARS.to, NFL_YEARS.from, NFL_YEARS.to, MLB_YEARS.from, MLB_YEARS.to],
     /* THE OVERLAP IS EXPECTED HERE AND NOWHERE ELSE. Both datasets run to the same
        last season, because both are refreshed to the season just played, so the
        collision check below would fire on 2025 for ever. What this fact still
@@ -190,7 +192,8 @@ const FACTS = [
     overlapOk: 'both games are current through the same season, by definition',
     why: 'the first and last season in cfb/data/cfb_player_seasons.json ('
       + CFB_YEARS.from + '-' + CFB_YEARS.to + ') and football/data/player_seasons.json ('
-      + NFL_YEARS.from + '-' + NFL_YEARS.to + ')',
+      + NFL_YEARS.from + '-' + NFL_YEARS.to + ') and baseball/data/players.json ('
+      + MLB_YEARS.from + '-' + MLB_YEARS.to + ')',
   },
 ];
 
