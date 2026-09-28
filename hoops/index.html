@@ -2008,8 +2008,7 @@
      data files as each parses, the league index, and the first paint. The bar
      reports rather than performs. A bar that always fills in two seconds is a
      worse lie than three dots, because it looks like information. */
-  /* ── the front page, three tiers ─────────────────────────────────────────
-     Today, Play, and a quiet row. The draft's four doors are in a sheet. */
+  /* ── the front page: Classic, then Conquest, then the daily puzzles ─────── */
   .quietrow{display:flex;justify-content:center;gap:4px 18px;flex-wrap:wrap;margin:18px 0 6px;}
   .qlink{background:none;border:0;padding:8px 2px;width:auto;color:var(--mut);font-family:var(--body);
     font-size:14px;font-weight:800;text-decoration:underline;text-decoration-color:rgba(255,255,255,.2);
@@ -2017,15 +2016,92 @@
   .qlink:hover{color:var(--ink);filter:none;}
   .lgfacts{font-size:12.5px;color:var(--dim);margin:0 0 12px;}
   .lgfacts b{color:var(--mut);font-family:var(--num);font-variant-numeric:tabular-nums;}
-  .qd-sheet{position:fixed;inset:0;z-index:70;background:rgba(3,5,9,.74);display:flex;align-items:flex-end;
-    justify-content:center;padding:12px;overflow-y:auto;}
-  .qd-sheet[hidden]{display:none;}
-  .qd-panel{width:100%;max-width:560px;max-height:calc(100vh - 24px);overflow-y:auto;background:#101522;
-    border:1px solid #2a3a4a;border-radius:18px;padding:14px 14px 16px;margin:auto 0 0;}
-  .qd-top{display:flex;align-items:center;justify-content:space-between;margin:0 2px 10px;}
-  .qd-top h2{margin:0;}
-  .qd-panel .card.qd{margin:0;}
-  @media (min-width:700px){ .qd-sheet{align-items:center;} .qd-panel{margin:auto;} }
+  /* ── CLASSIC, the front page's hero ───────────────────────────────────
+     The one card on the page lit from above in the brand orange, because it
+     is the one thing a returning player can play as often as they like. */
+  .classic{position:relative;overflow:hidden;padding:16px 14px 14px;border-color:rgba(240,120,45,.42);
+    background:radial-gradient(120% 70% at 50% 0%,rgba(240,120,45,.22),transparent 60%),
+      linear-gradient(180deg,#171c29,#0f131c);
+    box-shadow:0 18px 50px -26px rgba(240,120,45,.5);}
+  .cl-head{text-align:center;margin:0 0 12px;}
+  .cl-eye{display:inline-flex;gap:8px;align-items:center;font-size:10.5px;letter-spacing:.22em;
+    text-transform:uppercase;font-weight:800;color:var(--orange);}
+  .cl-eye i{font-style:normal;letter-spacing:.12em;color:#06140c;background:var(--green);
+    border-radius:999px;padding:2px 7px;font-size:9px;}
+  .classic .cl-title{display:block;font-family:var(--display);font-weight:400;
+    font-size:clamp(26px,7.4vw,36px);line-height:1.02;text-transform:uppercase;margin:6px 0;}
+  .cl-say{font-size:14px;color:var(--mut);margin:0 auto;max-width:36ch;line-height:1.45;}
+  .cl-say b{color:var(--ink);}
+  .classic .hero{background:none;margin:0 auto 12px;max-width:440px;}
+  .classic .hero .reelbox{height:52px;}
+  .classic .heroreels{margin-bottom:6px;}
+  /* THE THREE PLANS, said on the front page because they are what makes this
+     game different from every other draft game: a roster is asked how fast it
+     plays, not only how good it is. Colour is the plan's own and matches the
+     picker on the season screen. */
+  .cl-plans{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:0 0 12px;}
+  .clp{border-radius:10px;padding:8px 6px 7px;background:#0b0f18;border:1px solid rgba(255,255,255,.08);
+    text-align:center;min-width:0;}
+  .clp b{display:block;font-size:12px;font-weight:800;letter-spacing:.02em;}
+  .clp small{display:block;font-size:10.5px;color:var(--dim);margin-top:2px;line-height:1.3;}
+  .clp.run{border-color:rgba(240,120,45,.45);} .clp.run b{color:var(--orange);}
+  .clp.grind{border-color:rgba(96,165,250,.42);} .clp.grind b{color:#93c5fd;}
+  .cl-career{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:center;gap:2px 16px;
+    margin:0 0 10px;}
+  .cl-career .big-n{font-family:var(--display);font-variant-numeric:tabular-nums;font-size:22px;
+    font-weight:700;line-height:1;}
+  .cl-career .lab{font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);font-weight:800;}
+  .cl-career .qlink{padding:2px;font-size:13px;}
+  .cl-career .lastrun{flex:1 0 100%;text-align:center;margin:4px 0 0;font-size:12.5px;}
+  #classic #b-start{width:100%;}
+  /* THREE VARIANTS SIDE BY SIDE, on a phone too. Stacked they were three
+     full-width bars, about 220px of a 740px screen spent on one row of
+     choices, and the front page went from 1.6 screens to 2.8 the day the
+     court moved onto it. Side by side they are a row of tiles under the
+     button, which is what they are: other ways to play the same game. */
+  .cl-ways{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:8px;}
+  .cl-ways .modedoor{margin:0;min-width:0;position:relative;}
+  .cl-ways .modedoor button{padding:9px 8px;}
+  .cl-ways .modedoor .md-name{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .cl-ways .modedoor .md-sub{font-size:10.5px;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;
+    -webkit-box-orient:vertical;overflow:hidden;}
+  .cl-ways .modedoor .md-pick{width:24px;}
+  .cl-ways .modedoor.daily.streaked .md-main{padding-right:8px;}
+  .cl-ways .modedoor .md-streak{top:4px;right:4px;bottom:auto;width:auto;padding:1px 5px;border-radius:6px;
+    flex-direction:row;gap:3px;background:rgba(0,0,0,.55);}
+  .cl-ways .modedoor .md-streak b{font-size:11px;}
+  .cl-ways .modedoor .md-streak span{display:none;}
+
+  /* The two pace meters on the draft's fit card, in the plans' own colours. */
+  .fitrow.pace .meter i{background:var(--orange);}
+  .fitrow.pace.grind .meter i{background:#60a5fa;}
+  .styline{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0 0;}
+  .styline .sty{font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;
+    padding:3px 8px;border-radius:999px;background:rgba(240,120,45,.14);color:#f6a66e;}
+  .styline .sty.mid{background:rgba(255,255,255,.06);color:var(--dim);}
+
+  /* ── the game plan picker, on the season screen ─────────────────────── */
+  .plans{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin:12px 0 6px;}
+  .plan{position:relative;display:flex;flex-direction:column;align-items:center;gap:4px;min-width:0;
+    padding:10px 6px 9px;border-radius:12px;background:#0b0f18;border:1px solid rgba(255,255,255,.1);
+    color:var(--ink);font-family:var(--body);cursor:pointer;box-shadow:none;width:auto;}
+  .plan:hover{filter:none;border-color:rgba(255,255,255,.28);}
+  .plan .pl-name{font-size:12.5px;font-weight:800;line-height:1.2;text-align:center;}
+  .plan .pl-pace{font-size:10.5px;color:var(--dim);font-family:var(--num);font-variant-numeric:tabular-nums;}
+  .plan .pl-fit{display:block;width:80%;height:5px;border-radius:3px;background:#1c2536;overflow:hidden;}
+  .plan .pl-fit.none{background:transparent;}
+  .plan .pl-fit i{display:block;height:100%;border-radius:3px;background:var(--mut);}
+  .plan .pl-eff{font-family:var(--display);font-size:17px;letter-spacing:.02em;line-height:1;}
+  .plan .pl-may{font-size:10.5px;color:var(--mut);font-weight:700;}
+  .plan .pl-pick{position:absolute;top:-8px;left:50%;transform:translateX(-50%);white-space:nowrap;
+    font-size:8.5px;letter-spacing:.12em;text-transform:uppercase;font-weight:800;padding:2px 6px;
+    border-radius:999px;background:#101522;border:1px solid rgba(255,255,255,.2);color:var(--mut);}
+  .plan.run .pl-fit i{background:var(--orange);} .plan.grind .pl-fit i{background:#60a5fa;}
+  .plan.on{background:#131a28;}
+  .plan.run.on{border-color:var(--orange);box-shadow:0 0 0 1px var(--orange) inset;}
+  .plan.balanced.on{border-color:var(--mut);box-shadow:0 0 0 1px var(--mut) inset;}
+  .plan.grind.on{border-color:#60a5fa;box-shadow:0 0 0 1px #60a5fa inset;}
+  .plan-why{font-size:12.5px;color:var(--mut);text-align:center;margin:4px 0 12px;line-height:1.4;}
   .lgstrip{display:flex;flex-wrap:wrap;justify-content:center;gap:4px 12px;margin:-4px 0 14px;
     font-size:12px;color:var(--dim);font-weight:700;text-align:center;}
   .lgstrip b{color:var(--mut);font-family:var(--num);font-variant-numeric:tabular-nums;}
@@ -2231,7 +2307,7 @@
 <header class="mast">
   <div class="eyebrow">RunThe.GG</div>
   <h1><span class="l1">Run The</span> <span class="l2">Floor</span></h1>
-  <p>Fix history. Pass through it. Take the court from it.</p>
+  <p>Real NBA history. Draft five. Chase a ring.</p>
 </header>
 
 <!-- ── home ─────────────────────────────────────────────────────────────── -->
@@ -2265,38 +2341,24 @@
     </div>
   </div>
 
-  <!-- TODAY'S PLAY, and the one button the dock carries on this screen. It is
-       whichever daily is still open, then Conquest, so the thumb always lands on
-       the thing a returning player came for. modes-ui.js sets its label and what
-       it does; it is here so the dock has a real element to move. -->
-  <button class="big" id="b-today" disabled>Loading...</button>
-
-  <!-- THE MODES, drawn by modes-ui.js once the league has loaded. -->
-  <div class="mhome" id="modes-home"></div>
-
-  <!-- THE QUIET ROW. Everything a returning player might want that is not a
-       game: the boards for every mode in one sheet, the career, the rules. -->
-  <nav class="quietrow" id="home-quiet" aria-label="More">
-    <button class="qlink" id="b-home-boards">Leaderboards</button>
-    <button class="qlink" id="b-home-career">Career</button>
-    <button class="qlink" id="b-home-howto">How to play</button>
-  </nav>
-
-  <!-- QUICK DRAFT IS A SHEET, opened from its tile. It is four ways to play one
-       game, and on the front page they were four doors at the weight of the
-       three games above them. The court and the reels come with it, because
-       they are a picture of this mode and nothing else, and they only spin
-       while the sheet is open. `hidden` needs its own rule below, because the
-       sheet sets display:flex. -->
-  <div class="qd-sheet" id="qd-sheet" hidden>
-  <div class="qd-panel" role="dialog" aria-modal="true" aria-labelledby="qd-title">
-  <div class="qd-top"><h2 id="qd-title">Quick Draft</h2>
-    <button class="ghost sm" id="qd-x">Close</button></div>
-  <!-- QUICK DRAFT: the game this page started as, now one way to play of four.
-       The court and the reels that used to open the page live in its card,
-       because they are a picture of exactly this mode and nothing else. -->
-  <div class="card qd" id="qd-card">
-  <div class="hero" id="hero">
+  <!-- CLASSIC IS THE FRONT PAGE, AND THE REASON IS RETENTION.
+       Asked for by the owner: the two dailies are one shot each, so a front
+       page that leads with them teaches a new player to play twice and leave.
+       Classic is unlimited and it is the game this page was built as, so it is
+       the hero: the court and the reels spinning, the three game plans a
+       roster can run, the career so far, and one button, which the dock
+       carries on a phone. Its three variants (the daily draft, one club, one
+       decade) are the row under it. Conquest, the other unlimited mode, is
+       next; the daily puzzles come after that. It used to be called Quick
+       Draft and lived in a sheet behind a tile. -->
+  <section class="card classic" id="classic" aria-labelledby="cl-title">
+    <div class="cl-head">
+      <span class="cl-eye">Classic <i>Unlimited</i></span>
+      <h2 class="cl-title" id="cl-title">Draft five. Pick your pace.</h2>
+      <p class="cl-say">Spin a season and a team. Sign five under a <b>$120M</b> cap.
+        Run them, or walk it up. Play 82 and chase a ring.</p>
+    </div>
+    <div class="hero" id="hero">
     <div class="reels heroreels">
       <div class="reelbox season waiting" id="h-box-s" aria-hidden="true">
         <div class="reel-strip" id="h-reel-s"></div>
@@ -2325,19 +2387,21 @@
       <div class="hoop"></div>
     </div>
   </div>
-    <p class="dim qd-say">Spin a season and a team. Sign five under a
-      <b>$120M</b> cap. Play 82 and chase a ring.</p>
-    <button class="big" id="b-start">Start a draft</button>
-  </div>
-
-
-  <!-- TODAY'S RUN, AND IT SITS ABOVE THE OTHER TWO BECAUSE IT EXPIRES.
-       One Franchise and Decades are there every day and are chosen by mood.
-       This one is the same spins for everybody and it is gone at
-       midnight, so it is the only door on this page with a reason to be
-       taken NOW, and the only one that gives two people something to compare.
-       Its own class rather than .modedoor: it carries a result once it has
-       been played, which the other two never do. -->
+    <div class="cl-plans" id="cl-plans" aria-label="The three game plans">
+      <span class="clp run"><b>Run the floor</b><small>Guards, hands, boards</small></span>
+      <span class="clp bal"><b>Balanced</b><small>Talent does the talking</small></span>
+      <span class="clp grind"><b>Half court</b><small>Rim, post, defense</small></span>
+    </div>
+    <div class="cl-career" id="home-career" style="display:none">
+      <span><b class="big-n" id="hc-runs">0</b> <span class="lab">runs</span></span>
+      <span><b class="big-n ring" id="hc-rings">0</b> <span class="lab">rings</span></span>
+      <span><b class="big-n" id="hc-best">-</b> <span class="lab">best</span></span>
+      <button class="qlink" id="b-home-board">Leaderboard</button>
+      <span class="sub" id="hc-sub" hidden></span>
+      <p class="lastrun" id="hc-last"></p>
+    </div>
+    <button class="big" id="b-start" disabled>Start a draft</button>
+    <div class="cl-ways">
   <div class="modedoor daily" id="b-daily">
     <button class="md-main" id="b-daily-go">
       <span class="md-name" id="dl-name">Daily Draft</span>
@@ -2346,40 +2410,15 @@
     <span class="md-streak" id="dl-streak" hidden></span>
   </div>
 
-  <!-- THE SECOND DOOR, and the reason it is a door rather than a setting.
-       One Franchise is the same game with the club reel held still, so it
-       could have been a checkbox on the start button. It is not, because
-       choosing WHICH club is the whole of it: a Knicks fan is not turning an
-       option on, they are picking the thing they came for. The football game
-       makes the same call with "More ways to play", and this is that row.
-
-       Quieter than Start a run and full width under it. It is a second way in,
-       not a competing call to action, and a compact pill beside the primary
-       would have made the page a menu of two equal things when it has one main
-       game. Its label carries the last club played, so a returning fan taps
-       once rather than going back through the picker. -->
   <div class="modedoor" id="b-franchise">
     <button class="md-main" id="b-franchise-go">
       <span class="md-name" id="md-name">One Franchise</span>
       <span class="md-sub" id="md-sub">Pick a team. Only the year spins.</span>
     </button>
-    <!-- TWO TARGETS, AND ONLY ONCE THERE IS SOMETHING TO SWITCH FROM. Before a
-         club has been played the whole door opens the picker, because there is
-         no club to start. Afterwards the wide half starts the remembered club
-         in one tap and this one goes back to the thirty, which is the split a
-         fan of one team wants: they are not choosing every time, they are
-         playing their club. Hidden rather than disabled, since a control that
-         cannot do anything is a tap target that teaches nothing. -->
     <button class="md-pick" id="b-franchise-pick" hidden
       aria-label="Switch club"><span class="md-chev" aria-hidden="true"></span></button>
   </div>
 
-  <!-- THE THIRD DOOR, AND IT WAS ALREADY BUILT. ERAS has been in engine.js
-       and the era filter has been in drawable() since the day run.js was
-       written, and nothing on this page could ever set one. A whole mode,
-       shipped, tested by the fixtures, and unreachable: the same shape as the
-       Dynasty leaderboard in the football game that rendered perfectly and
-       had no way in. What it needed was a door. -->
   <div class="modedoor" id="b-decade">
     <button class="md-main" id="b-decade-go">
       <span class="md-name" id="dc-name">Decades</span>
@@ -2389,23 +2428,20 @@
       aria-label="Switch decade"><span class="md-chev" aria-hidden="true"></span></button>
   </div>
 
-  <!-- The career strip, which is hidden until there is a career to show. An
-       empty stat block on a first visit is worse than no stat block. -->
-  <div class="card" id="home-career" style="display:none">
-    <h2>Your career <span class="sub" id="hc-sub"></span></h2>
-    <div class="cstrip">
-      <span><span class="big-n" id="hc-runs">0</span> <span class="lab">runs</span></span>
-      <span><span class="big-n ring" id="hc-rings">0</span> <span class="lab">rings</span></span>
-      <span><span class="big-n" id="hc-best">-</span> <span class="lab">best</span></span>
     </div>
-    <p class="lastrun" id="hc-last"></p>
-    <div class="btnrow" style="margin-top:10px">
-      <button class="ghost sm" id="b-home-board" style="flex:1">Leaderboard</button>
-    </div>
-  </div>
-  </div>
-  </div>
+  </section>
 
+  <!-- CONQUEST, THEN THE DAILY PUZZLES, drawn by modes-ui.js once the league
+       has loaded. -->
+  <div class="mhome" id="modes-home"></div>
+
+  <!-- THE QUIET ROW. Everything a returning player might want that is not a
+       game: the boards for every mode in one sheet, the career, the rules. -->
+  <nav class="quietrow" id="home-quiet" aria-label="More">
+    <button class="qlink" id="b-home-boards">Leaderboards</button>
+    <button class="qlink" id="b-home-career">Career</button>
+    <button class="qlink" id="b-home-howto">How to play</button>
+  </nav>
 
   <!-- ONE FOLDED CARD, AND IT WAS FIFTY-FIVE PER CENT OF THE SCREEN.
        "How a run goes" and "Why five stars lose" were two open cards at the
@@ -2427,7 +2463,7 @@
        on a page of cards and the only thing different about it is that it
        opens. -->
   <details class="card howto" id="home-howto">
-    <summary><h2>How to play <span class="sub">five spins, one cap</span></h2>
+    <summary><h2>How to play <span class="sub">five spins, one cap, your pace</span></h2>
       <span class="ht-chev" aria-hidden="true"></span></summary>
 
     <p class="lgfacts">Built from <b id="ls-players">-</b> player-seasons, <b id="ls-clubs">-</b>
@@ -2479,11 +2515,20 @@
       team, and five willing helpers never do.
     </p>
 
+    <h3>Pick your pace</h3>
+    <p class="dim">
+      Before tip-off you pick a game plan. Run the floor needs a guard who
+      pushes it, hands in the passing lanes and rebounders to start the break.
+      Half court needs a rim protector, a big to play through and defense.
+      Running wins you more games. Grinding holds up better in May, when the
+      playoffs slow down. A plan your five cannot play costs you.
+    </p>
+
     <h3>Then it tells you what you built</h3>
     <p class="dim">
       When the fifth man signs, the game names your system: Showtime, the
-      Triangle, Grit and Grind, Pick and Roll, Twin Towers, Moreyball, Point
-      Center and more. They are tested against real lineups. The 1996 Bulls come
+      Triangle, Lob City, Run TMC, the Big Three, Grit and Grind, Twin Towers,
+      Moreyball, Five Out and more. They are tested against real lineups. The 1996 Bulls come
       back running the Triangle. The 1989 Pistons come back Grit and Grind. Get
       it wrong and it will tell you: five volume scorers are not a system. They
       are Too Many Mouths.
@@ -2590,6 +2635,11 @@
       <div class="cell"><div class="label">Defense</div><div class="value" id="p-drtg">-</div></div>
       <div class="cell"><div class="label">Rating</div><div class="value" id="p-rating">-</div></div>
     </div>
+    <!-- THE GAME PLAN, and the one call a player makes between the draft and
+         the tip. Three buttons, each saying how well these five can play it
+         and what it is worth now and in May. Drawn by renderPlans. -->
+    <div class="plans" id="p-plans" role="radiogroup" aria-label="Game plan"></div>
+    <p class="plan-why" id="p-plan-why"></p>
     <button class="big" id="b-play">Play all 82</button>
   </div>
 
@@ -3134,11 +3184,11 @@
      number in the same commit as the edit, then run:
        node scripts/check-cachebust.mjs --update
      CI checks it on any push touching an .html or .js file. See CLAUDE.md. -->
-<script src="engine.js?v=24"></script>
-<script src="run.js?v=12"></script>
-<script src="badges.js?v=3"></script>
+<script src="engine.js?v=25"></script>
+<script src="run.js?v=13"></script>
+<script src="badges.js?v=4"></script>
 <script src="courts.js?v=1"></script>
-<script src="modes.js?v=8"></script>
+<script src="modes.js?v=9"></script>
 <!-- ACCOUNTS AND THE LEADERBOARD. All three are OPTIONAL: if the CDN is blocked
      or either file fails to load, the game runs exactly as it did, with runs
      kept in this browser and the board reporting itself unreachable. An account
@@ -3217,7 +3267,7 @@ var bold = function(text){
  * comes back still disagrees, say so in words instead of dying quietly. One
  * retry, so this can never become a reload loop.
  */
-var NEED_VERSION = 8;
+var NEED_VERSION = 9;
 (function bootCheck(){
   if (E && R && E.API_VERSION === NEED_VERSION && R.API_VERSION === NEED_VERSION) return;
   if (!/[?&]fresh=/.test(location.search)) {
@@ -3372,9 +3422,8 @@ function show(id){
      bracket is still at that game, so coming back offers the same door. */
   if (id !== 's-live' && LV && LV.timer) { clearTimeout(LV.timer); LV.timer = null; }
   if (id !== 's-brk') stopBracket();
-  /* The reels spin inside the Quick Draft sheet and only while it is open, so
-     any change of screen shuts the sheet and stops them. */
-  closeQuickDraft();
+  /* The reels spin on the front page and only while it is showing: a loop
+     left running behind the draft spins reels nobody can see, on a phone. */
   heroStop();
   if (window.RTF_MODES_UI) window.RTF_MODES_UI.leave(id);
   /* The club belongs to the draft. The season, the results and the home screen
@@ -3386,6 +3435,7 @@ function show(id){
   $(id).classList.add('active');
   renderDock(id);
   renderAppBar(id);
+  if (id === 's-home') heroStart();
   window.scrollTo(0, 0);
 }
 
@@ -3403,9 +3453,12 @@ function show(id){
  * A screen with neither gets an empty dock, which CSS hides.
  */
 var DOCK_FOR = {
-  /* TODAY'S PLAY, not the draft. The draft is one of four ways in now, and
-     the button a thumb lands on is whichever daily is still open. */
-  's-home':   function(){ return [$('b-today')]; },
+  /* CLASSIC, because it is the unlimited mode and the front page leads with
+     it. A run in progress is the one thing ahead of it: the thumb lands on
+     Resume rather than on a button that starts over. */
+  's-home':   function(){
+    return run && run.phase !== R.PHASES.OVER ? [$('b-resume')] : [$('b-start')];
+  },
   's-draft':  function(){
     /* Between draws the action is the spin. During one it is picking a player
        off the board, which is not a button, so the dock carries the way OUT of
@@ -3440,7 +3493,7 @@ var DOCK_FOR = {
 var HOME_OF = {};
 
 function rememberHomes(){
-  var ids = ['b-today', 'b-start', 'b-spin', 'b-respin', 'b-play', 'b-skip', 'b-again',
+  var ids = ['b-resume', 'b-start', 'b-spin', 'b-respin', 'b-play', 'b-skip', 'b-again',
     'b-lv-fast', 'b-lv-next', 'b-brk-fast'];
   for (var i = 0; i < ids.length; i++) {
     var el = $(ids[i]);
@@ -3578,6 +3631,10 @@ function boot(){
     restore();
     if (window.RTF_MODES_UI) window.RTF_MODES_UI.onData();
     renderHome();
+    /* The dock reads the run: Resume when one was restored, Classic's Start
+       when not. And the court and the reels are the front page's picture, so
+       they start the moment there is a league to spin. */
+    if ($('s-home').classList.contains('active')) { renderDock('s-home'); heroStart(); }
     /* A RELOAD RESTORES THE OLD SCROLL POSITION, and the old position was
        somewhere down a draft board. Landing on the home page already scrolled
        past its own masthead reads as a broken page rather than a restored one. */
@@ -3995,7 +4052,8 @@ function frgMark(){ try { localStorage.setItem(FRG_KEY, '1'); } catch (e) {} pro
 
 function frgFill(){
   var C = E.CONSTANTS;
-  /* FOUR MODES, ONE LINE EACH, in the order the front page shows them. This
+  /* FOUR MODES, ONE LINE EACH, in the order the front page shows them, which
+     is Classic first since the front page was rebuilt around it. This
      guide used to be the draft's rules in three steps, which was right while
      the draft was the game. It is one of four ways in now, and a first-timer
      told only how to draft would never find the other three.
@@ -4004,14 +4062,14 @@ function frgFill(){
      distinctive thing that mode does and check-home holds the guide to saying
      it. Every number is read off the constants, never typed. */
   var steps = [
-    '<b>Fix History</b>, every day. One real team that fell short. '
-      + 'Work the phones through four trade windows and see if they win it.',
-    '<b>Six Passes</b>, every day. Get the ball from one legend to another '
-      + 'through real teammates.',
+    '<b>Classic.</b> ' + NUMWORD(E.SLOTS.length, true) + ' picks under a '
+      + money(C.CAP_MUSD) + ' cap. Pick how fast you play. Play ' + C.REGULAR_SEASON_GAMES
+      + ', and <b>every Game 7 is yours to play</b>.',
     '<b>Conquest.</b> Winners stay on. Beat real teams and take their best guys.',
-    '<b>Quick Draft.</b> ' + NUMWORD(E.SLOTS.length, true) + ' picks under a '
-      + money(C.CAP_MUSD) + ' cap. Play ' + C.REGULAR_SEASON_GAMES
-      + ', and <b>every Game 7 is yours to play</b>.'
+    '<b>Fix History</b>, every day. One real team that fell short. '
+      + 'Work the phones through four trade windows.',
+    '<b>Six Passes</b>, every day. Get the ball from one legend to another '
+      + 'through real teammates.'
   ];
   var ol = $('frg-steps');
   ol.textContent = '';
@@ -4020,7 +4078,7 @@ function frgFill(){
     li.innerHTML = steps[i];
     ol.appendChild(li);
   }
-  $('frg-goal').innerHTML = 'Start with <b>today\'s Fix</b>. It takes two minutes.';
+  $('frg-goal').innerHTML = 'Start with <b>a Classic draft</b>. The button is at the bottom.';
 }
 
 /* Shown on the FRONT PAGE only, and only once the data has landed, because
@@ -6287,6 +6345,34 @@ function renderFit(){
     box.appendChild(el);
   }
 
+  /* HOW FAST IT CAN PLAY, drafted toward rather than found out afterwards.
+     The plan is picked at tip-off, and a fit a player cannot see while
+     drafting is a dice roll rather than a strategy, which is this card's own
+     argument about spacing. */
+  var tagged = R.taggedRoster(run);
+  var fits = E.paceFits(tagged, P);
+  [['run', 'Run', fits.run], ['grind', 'Half court', fits.grind]].forEach(function(r){
+    var el = document.createElement('div');
+    el.className = 'fitrow pace ' + r[0];
+    var nm = document.createElement('span'); nm.className = 'nm'; nm.textContent = r[1];
+    var meter = document.createElement('span'); meter.className = 'meter';
+    var bar = document.createElement('i'); bar.style.width = Math.max(2, Math.round(r[2] * 100)) + '%';
+    meter.appendChild(bar);
+    var val = document.createElement('span'); val.className = 'val'; val.textContent = String(Math.round(r[2] * 100));
+    el.appendChild(nm); el.appendChild(meter); el.appendChild(val);
+    box.appendChild(el);
+  });
+  var sty = E.rosterStyle(tagged, P, fits);
+  var styl = document.createElement('p');
+  styl.className = 'styline';
+  ['size', 'speed', 'range'].forEach(function(k){
+    var t = document.createElement('span');
+    t.className = 'sty' + (sty[k] === 'Balanced' ? ' mid' : '');
+    t.textContent = sty[k] === 'Balanced' ? (k === 'size' ? 'Mid size' : k === 'speed' ? 'Mid pace' : 'Some range') : sty[k];
+    styl.appendChild(t);
+  });
+  box.appendChild(styl);
+
   /* The identity, once there is enough roster for one to mean anything. */
   var line = document.createElement('p');
   line.className = 'sysline';
@@ -6369,20 +6455,32 @@ function toSeason(){
   $('b-play').style.display = '';
   $('b-play').textContent = 'Play all 82';
   show('s-season');
+  paintSeasonCard();
+
+  /* THE FIVE MEN, so the roster is on screen for the season it is playing.
+     R.capOf rather than the constant, which is the one that stays true if a
+     mode is ever given a cap of its own, and R.remaining already nets off the
+     re-spin fees, so this is the money that actually left the budget rather
+     than the money that went on players. */
+  renderRoster($('p-slots'));
+  $('p-spend').textContent = money(R.capOf(run) - R.remaining(run))
+    + ' of ' + money(R.capOf(run)) + ' spent';
+}
+
+/* The card above the Play button: the ratings, the plan, and Vegas. Its own
+   function because choosing a plan redraws exactly this and nothing else. */
+function paintSeasonCard(){
   var proj = R.projectSeason(run, 120);
-  var tagged = run.roster.map(function(p, i){
-    var c = {}; for (var k in p) c[k] = p[k];
-    c._slot = E.SLOTS[run.slotIndex[i]];
-    return c;
-  });
-  var chem = E.resolveChemistry(tagged);
-  var st = E.rosterFit(tagged);
-  var ortg = E.rosterOffense(tagged, chem.bonus, st.bonus);
-  var drtg = E.rosterDefense(tagged, chem.bonus);
+  var tagged = R.taggedRoster(run);
+  /* E.rosterRatings, the one sum, with the plan in it: the numbers on this
+     card are the numbers the season plays. */
+  var rr = E.rosterRatings(tagged, { plan: run.plan });
+  var st = rr.structure, ortg = rr.ortg, drtg = rr.drtg;
 
   $('p-ortg').textContent = ortg.toFixed(1);
   $('p-drtg').textContent = drtg.toFixed(1);
-  $('p-rating').textContent = E.overallRating(E.teamWinPct(ortg, drtg)).toFixed(0);
+  $('p-rating').textContent = rr.rating.toFixed(0);
+  renderPlans(tagged, rr);
   /* "PROJECTED 41-41" OVER A LIVE 45-29 READS AS A BROKEN NUMBER, and this
      card stays on screen through the whole season. It is a projection made
      BEFORE tip-off, which is honest and useful, and the only thing wrong was
@@ -6396,15 +6494,71 @@ function toSeason(){
   $('p-proj').textContent = st.archetype.name + ' · Vegas: '
     + proj.typical + ' wins · ' + oddsWord(proj.titlePct) + ', '
     + (proj.titlePct < 1 ? 'under 1%' : proj.titlePct + '%');
+}
 
-  /* THE FIVE MEN, so the roster is on screen for the season it is playing.
-     R.capOf rather than the constant, which is the one that stays true if a
-     mode is ever given a cap of its own, and R.remaining already nets off the
-     re-spin fees, so this is the money that actually left the budget rather
-     than the money that went on players. */
-  renderRoster($('p-slots'));
-  $('p-spend').textContent = money(R.capOf(run) - R.remaining(run))
-    + ' of ' + money(R.capOf(run)) + ' spent';
+/* THE THREE PLANS, each read off these five men.
+ *
+ * What a plan is worth is said in WINS for the season, because a rating point
+ * is a number nobody feels, and in a word for May, because the playoff edge is
+ * what the run plan gives back and the half court plan saves up. A plan nobody
+ * has chosen is the coach's pick, marked as such; pressing one makes it yours
+ * and it is saved with the run. */
+function planWins(tagged, key){
+  var base = E.rosterRatings(tagged, { plan: 'balanced' });
+  var with_ = E.rosterRatings(tagged, { plan: key });
+  var w = function(r){ return 82 * E.teamWinPct(r.ortg, r.drtg); };
+  return Math.round(w(with_) - w(base));
+}
+function renderPlans(tagged, rr){
+  var box = $('p-plans');
+  if (!box) return;
+  var fits = rr.tempo ? rr.tempo.fits : E.paceFits(tagged);
+  var chosen = rr.tempo ? rr.tempo.plan : 'balanced';
+  var auto = !run.plan;
+  box.innerHTML = '';
+  E.PLAN_KEYS.forEach(function(key){
+    var pl = E.PLANS[key], eff = E.planEffect(key, fits);
+    var b = document.createElement('button');
+    b.className = 'plan ' + key + (key === chosen ? ' on' : '');
+    b.setAttribute('role', 'radio');
+    b.setAttribute('aria-checked', key === chosen ? 'true' : 'false');
+    var fit = key === 'run' ? fits.run : key === 'grind' ? fits.grind : null;
+    var dw = planWins(tagged, key);
+    var may = eff.poNet >= 0.4 ? 'Built for May' : eff.poNet <= -0.2 ? 'Hurts in May' : 'Same in May';
+    b.innerHTML = '<b class="pl-name">' + pl.name + '</b>'
+      + '<span class="pl-pace">' + (pl.pace || E.CONSTANTS.LEAGUE_PACE) + ' a night</span>'
+      + (fit == null ? '<span class="pl-fit none"></span>'
+        : '<span class="pl-fit"><i style="width:' + Math.round(fit * 100) + '%"></i></span>')
+      + '<span class="pl-eff">' + (key === 'balanced' ? 'No change'
+        : (dw > 0 ? '+' : dw < 0 ? '-' : '') + Math.abs(dw) + (Math.abs(dw) === 1 ? ' win' : ' wins')) + '</span>'
+      + '<span class="pl-may">' + (key === 'balanced' ? 'Talent decides' : may) + '</span>'
+      + (key === chosen && auto ? '<span class="pl-pick">Coach\'s pick</span>' : '');
+    b.onclick = function(){
+      run.plan = key;
+      save();
+      paintSeasonCard();
+    };
+    box.appendChild(b);
+  });
+  var why = $('p-plan-why');
+  if (why) why.textContent = planWhy(fits, chosen);
+}
+/* ONE SENTENCE ON WHY, read off the parts that make each fit. A fit is five
+   numbers under one bar, and the bar alone cannot tell a player which man to
+   draft next time. */
+function planWhy(fits, chosen){
+  var p = fits.parts || {};
+  if (chosen === 'run') {
+    var weak = [['pusher', 'a guard who pushes it'], ['hawks', 'hands in the passing lanes'],
+      ['glass', 'rebounders to start the break']].sort(function(a, b){ return p[a[0]] - p[b[0]]; })[0];
+    return 'Running. ' + (p[weak[0]] < 0.5 ? 'It would run better with ' + weak[1] + '.' : 'This five can really go.');
+  }
+  if (chosen === 'grind') {
+    var gw = [['anchor', 'a rim protector'], ['post', 'a big to play through'],
+      ['defense', 'more defense']].sort(function(a, b){ return p[a[0]] - p[b[0]]; })[0];
+    return 'Walking it up. ' + (p[gw[0]] < 0.5 ? 'It would grind better with ' + gw[1] + '.' : 'This five can lock you down.');
+  }
+  return 'Balanced. No pace bonus and no pace cost. The talent decides it.';
 }
 
 /* THE SEASON IS ALREADY PLAYED BEFORE THE FIRST CELL LIGHTS.
@@ -8149,6 +8303,14 @@ function renderOver(out){
      bonus is already in the strengths below, so it is not said twice. */
   var shape = out.structure && out.structure.archetype ? out.structure.archetype.name : null;
   if (shape && out.coach.strengths.indexOf(shape) === -1) tag(shape);
+  /* HOW IT PLAYED: the plan it ran, and the three words for its shape. The
+     plan is a tag of its own colour when it paid and a bad one when it cost,
+     read off the same net the season used. */
+  if (out.tempo && out.tempo.plan && out.tempo.plan !== 'balanced')
+    tag(out.tempo.name + ' · ' + out.tempo.pace, out.tempo.net > 0.1 ? 'good' : out.tempo.net < -0.1 ? 'bad' : '');
+  if (out.style) ['size', 'speed', 'range'].forEach(function(k){
+    if (out.style[k] && out.style[k] !== 'Balanced') tag(out.style[k]);
+  });
   for (var i = 0; i < out.coach.strengths.length; i++) tag(out.coach.strengths[i], 'good');
   for (var j = 0; j < out.coach.weaknesses.length; j++) tag(out.coach.weaknesses[j], 'bad');
 
@@ -11086,35 +11248,8 @@ document.addEventListener('keydown', function(ev){
  * to reach, and it is deliberately a list of verbs rather than the page's
  * state: the modes have their own saves and never touch `run`, so a Conquest
  * run and a draft in progress can both be alive without either knowing. */
-/* ── the Quick Draft sheet ────────────────────────────────────────────────
-   Four ways to play one game, behind its tile on the front page. Any door
-   inside it that is pressed shuts it, because each one either changes screen
-   (and show() shuts it anyway) or opens a picker of its own that has to be on
-   top of the front page rather than stacked on this. */
-function openQuickDraft(){
-  var sh = $('qd-sheet');
-  if (!sh) return;
-  sh.hidden = false;
-  document.body.classList.add('sheeted');
-  heroStart();
-}
-function closeQuickDraft(){
-  var sh = $('qd-sheet');
-  if (!sh || sh.hidden) return;
-  sh.hidden = true;
-  document.body.classList.remove('sheeted');
-  heroStop();
-}
-(function wireQuickDraft(){
-  var sh = $('qd-sheet');
-  if (!sh) return;
-  $('qd-x').onclick = closeQuickDraft;
-  sh.addEventListener('click', function(ev){
-    if (ev.target === sh) { closeQuickDraft(); return; }
-    var b = ev.target.closest && ev.target.closest('button');
-    if (b && b.id !== 'qd-x' && (b.id === 'b-start' || b.id === 'b-home-board' || b.closest('.modedoor'))) setTimeout(closeQuickDraft, 0);
-  });
-  document.addEventListener('keydown', function(ev){ if (ev.key === 'Escape') closeQuickDraft(); });
+/* ── the front page's links ─────────────────────────────────────────────── */
+(function wireHomeLinks(){
   $('b-home-career').onclick = function(){ openProfile(); };
   /* The rules card is folded at the foot of this page, so the link opens it
      rather than leaving for a second page that says the same thing. */
@@ -11195,7 +11330,6 @@ window.RTF_PAGE = {
   auth: function(){ return A; },
   openProfile: openProfile,
   openBoard: function(){ openBoard(); },
-  openQuickDraft: openQuickDraft,
   goHome: function(){ show('s-home'); renderHome(); },
   /* The chip in the top bar, for a screen that is not the draft's. */
   bar: function(text){
@@ -11229,6 +11363,6 @@ boot();
 </script>
 <!-- AFTER the page, because it draws through window.RTF_PAGE, which the script
      above publishes. -->
-<script src="modes-ui.js?v=12"></script>
+<script src="modes-ui.js?v=13"></script>
 </body>
 </html>

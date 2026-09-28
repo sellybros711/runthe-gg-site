@@ -2241,24 +2241,24 @@
   },
   "hoops/index.html": {
     "engine.js": {
-      "v": "24",
-      "sha": "871d6c66d2f65ae5"
+      "v": "25",
+      "sha": "ecde108bcd2940c3"
     },
     "run.js": {
-      "v": "12",
-      "sha": "60efc4154001ce90"
+      "v": "13",
+      "sha": "452c52091426e857"
     },
     "badges.js": {
-      "v": "3",
-      "sha": "508a73b49b29f0ff"
+      "v": "4",
+      "sha": "0a0c78a5bb9ee7fd"
     },
     "courts.js": {
       "v": "1",
       "sha": "e558d3f7daf32e4b"
     },
     "modes.js": {
-      "v": "8",
-      "sha": "6fa27eb62d346eca"
+      "v": "9",
+      "sha": "814d6471760c59b4"
     },
     "board.js": {
       "v": "5",
@@ -2281,8 +2281,8 @@
       "sha": "bd012c3ec2d45f42"
     },
     "modes-ui.js": {
-      "v": "12",
-      "sha": "f62feeee2682decb"
+      "v": "13",
+      "sha": "15404ba8e66217a5"
     },
     "data/players.json": {
       "v": "5",

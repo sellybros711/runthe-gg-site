@@ -662,7 +662,10 @@ function fxOddsStep(data, five, day, from, to) {
   let titles = 0, wins = 0;
   const rows = five.map((p, i) => ({ ...p, _slot: E.SLOTS[i] }));
   for (let i = from; i < to; i++) {
-    const run = E.playRun(rows, rngFor('fix:' + day, 'odds:' + i), E.SLOTS, data.oppPool);
+    /* TEMPO OFF. Tempo is Classic's mechanic; Fix History's odds were
+       balanced without it and fxPlayStretches below rates the same five
+       without it, so the two have to agree. */
+    const run = E.playRun(rows, rngFor('fix:' + day, 'odds:' + i), E.SLOTS, data.oppPool, { tempo: false });
     if (run.titleWon) titles++;
     wins += run.record.wins;
   }
@@ -672,7 +675,7 @@ function fxOddsStep(data, five, day, from, to) {
 /* The season as it is replayed for the story. */
 function fxReplay(data, five, day) {
   const rows = five.map((p, i) => ({ ...p, _slot: E.SLOTS[i] }));
-  return E.playRun(rows, rngFor('fix:' + day, 'replay'), E.SLOTS, data.oppPool);
+  return E.playRun(rows, rngFor('fix:' + day, 'replay'), E.SLOTS, data.oppPool, { tempo: false });
 }
 
 /* THE SALARY RULE, one function so the finder, the refusal and the guard

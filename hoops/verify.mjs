@@ -775,6 +775,34 @@ const KNOWN = [
   // PG Doc Rivers, SG John Starks, SF Charles Smith, PF Charles Oakley, C Patrick Ewing, 6th Anthony Mason
   ['the 1993 Knicks', 'Grit and Grind', [['riverdo01', 1993], ['starkjo01', 1993],
     ['smithch01', 1993], ['oaklech01', 1993], ['ewingpa01', 1993], ['masonan01', 1993]]],
+
+  /* THE EIGHT SYSTEMS ADDED WITH THE GAME PLANS, each held to the team it is
+     named for. Five men each, the five who played the most minutes, because
+     these were written after the roster became a starting five. */
+  // Payton, Hawkins, Schrempf, Kemp, Perkins: the trap and the run
+  ['the 1996 Sonics', 'Sonic Boom', [['paytoga01', 1996], ['hawkihe01', 1996],
+    ['schrede01', 1996], ['kempsh01', 1996], ['perkisa01', 1996]]],
+  // Hardaway, Richmond, Mullin: three over twenty and nobody tall
+  ['the 1991 Warriors', 'Run TMC', [['hardati01', 1991], ['richmmi01', 1991],
+    ['mullich01', 1991], ['higgiro01', 1991], ['listeal01', 1991]]],
+  // Westhead's Nuggets, the fastest team in the data
+  ['the 1991 Nuggets', 'Run and Gun', [['adamsmi01', 1991], ['woolror01', 1991],
+    ['willire01', 1991], ['rasmubl01', 1991], ['wolfjo01', 1991]]],
+  // Paul throwing it up to Griffin and Jordan
+  ['the 2014 Clippers', 'Lob City', [['paulch01', 2014], ['collida01', 2014],
+    ['crawfja01', 2014], ['griffbl01', 2014], ['jordade01', 2014]]],
+  // Pierce, Allen, Garnett
+  ['the 2008 Celtics', 'The Big Three', [['rondora01', 2008], ['allenra02', 2008],
+    ['piercpa01', 2008], ['garneke01', 2008], ['perkike01', 2008]]],
+  // Grant Hill with the ball
+  ['the 1997 Pistons', 'Point Forward', [['hunteli01', 1997], ['dumarjo01', 1997],
+    ['hillgr01', 1997], ['millste01', 1997], ['thorpot01', 1997]]],
+  // Luka with Porzingis and Kleber standing at the arc
+  ['the 2020 Mavericks', 'Five Out', [['doncilu01', 2020], ['hardati02', 2020],
+    ['finnedo01', 2020], ['klebima01', 2020], ['porzikr01', 2020]]],
+  // Harden's 2017, before Paul arrived and it became Moreyball
+  ['the 2017 Rockets', 'Heliocentric', [['hardeja01', 2017], ['gordoer01', 2017],
+    ['beverpa01', 2017], ['arizatr01', 2017], ['anderry01', 2017]]],
 ];
 
 for (const [who, expected, names] of KNOWN) {
@@ -797,6 +825,80 @@ const unnamed = KNOWN.filter(([, , names]) => {
   return six && !E.rosterFit(six).system;
 });
 isLineup(unnamed.length, 0, 'every real championship lineup is recognised as something');
+
+/* ── THE GAME PLAN, which is the half of Run The Floor that is about running ──
+ *
+ * A plan is picked at tip-off and the draft decides how well it works. Four
+ * things can go wrong with it in silence, because every one of them produces
+ * a perfectly ordinary season: the four paths that rate a roster disagreeing
+ * about the plan, a plan handing out value at the break-even it was set to
+ * pay nothing at, May NOT being different from the regular season (which is
+ * the whole choice), and the dailies picking up a mechanic they were never
+ * balanced on. */
+{
+  /* The four paths agree, with a plan set. playSeason and advanceGame are the
+     two that are easiest to let drift, because both are one call away from the
+     page and only one of them is read at a time. */
+  const a = greedyDraft(9191), b = greedyDraft(9191);
+  /* THE PLAN THE COACH WOULD NOT CALL, or a path that ignored the plan would
+     pass by landing on the same one: the first draft of this asked for 'run'
+     on a roster whose own pick was 'run', and removing the plan from
+     advanceGame went green. */
+  const auto = E.bestPlan(E.paceFits(R.taggedRoster(a)));
+  const want = auto === 'run' ? 'grind' : 'run';
+  a.plan = want; b.plan = want;
+  const bulk = R.playSeason(a);
+  for (let g = 0; R.advanceGame(b, g); g++);
+  const walkedRun = R.finalizeSeason(b);
+  is(walkedRun.record, bulk.record, 'with a plan set, the walked season and the instant one are one season');
+  is(bulk.tempo && bulk.tempo.plan, want, 'and the outcome says which plan it played');
+  ok(bulk.style && ['Big', 'Small', 'Balanced'].includes(bulk.style.size), 'and names its size');
+
+  const c = greedyDraft(9191); c.plan = want === 'run' ? 'grind' : 'run';
+  const grind = R.playSeason(c);
+  ok(grind.ortg !== bulk.ortg || grind.drtg !== bulk.drtg, 'a different plan plays a different season');
+
+  /* Nothing for free at break-even, both plans. */
+  const T = E.TEMPO;
+  const even = E.planEffect('run', { run: T.RUN_EVEN, grind: 0 });
+  ok(Math.abs(even.off) < 1e-9, `a run fit at break-even earns no offense (${even.off})`);
+  const evenG = E.planEffect('grind', { run: 0, grind: T.GRIND_EVEN });
+  ok(Math.abs(evenG.def) < 1e-9, `a half court fit at break-even earns no defense (${evenG.def})`);
+  ok(E.planEffect('run', { run: 0.2, grind: 0 }).net < 0, 'running with a roster that cannot run costs');
+  ok(E.planEffect('balanced', { run: 1, grind: 1 }).net === 0, 'balanced is worth nothing either way');
+
+  /* MAY IS A DIFFERENT GAME. Running is worth less in the playoffs and the
+     half court is worth more, at any fit that pays at all. That asymmetry is
+     the choice, and without it one plan is simply better. */
+  const fast = E.planEffect('run', { run: 0.9, grind: 0 });
+  const slow = E.planEffect('grind', { run: 0, grind: 0.9 });
+  ok(fast.net > 0 && fast.poNet < fast.net, `the run pays less in May (${fast.net} then ${fast.poNet})`);
+  ok(slow.net > 0 && slow.poNet > slow.net, `the half court pays more in May (${slow.net} then ${slow.poNet})`);
+  ok(fast.poPace < fast.gamePace && slow.poPace < slow.gamePace, 'and every playoff game is slower');
+
+  /* THE DAILIES AND CONQUEST KEEP THE MODEL THEY WERE BALANCED ON. */
+  const five = lineup([['paytoga01', 1996], ['hawkihe01', 1996], ['schrede01', 1996], ['kempsh01', 1996], ['perkisa01', 1996]]);
+  if (five) {
+    const off = E.rosterRatings(five, { tempo: false });
+    const chem = E.resolveChemistry(five), fit = E.rosterFit(five);
+    is(off.ortg, E.rosterOffense(five, chem.bonus, fit.bonus), 'tempo off is the old offense exactly');
+    is(off.drtg, E.rosterDefense(five, chem.bonus), 'and the old defense exactly');
+    ok(off.tempo === null, 'and carries no plan');
+  }
+
+  /* THE FITS NAME THE CLUBS A FAN NAMES, read off each club's own five. */
+  const fitOf = (ids) => { const r = lineup(ids); return r ? E.paceFits(r) : null; };
+  const suns = fitOf([['nashst01', 2005], ['johnsjo02', 2005], ['mariosh01', 2005], ['stoudam01', 2005], ['richaqu01', 2005]]);
+  const spurs = fitOf([['parketo01', 2003], ['jacksst02', 2003], ['bowenbr01', 2003], ['duncati01', 2003], ['robinda01', 2003]]);
+  if (suns) ok(suns.run > 0.8 && suns.run > suns.grind, `Nash's 2005 Suns are built to run (${suns.run} run, ${suns.grind} grind)`);
+  else lineupDrift.push('the 2005 Suns: a player is not in the data');
+  if (spurs) ok(spurs.grind > 0.8 && spurs.grind > spurs.run, `Duncan's 2003 Spurs are built to grind (${spurs.grind} grind, ${spurs.run} run)`);
+  else lineupDrift.push('the 2003 Spurs: a player is not in the data');
+
+  /* THE CLUB PACE MAP: the fastest and slowest clubs a fan would name. */
+  ok(E.teamTempo('DEN', 1991) >= 110, `Westhead's 1991 Nuggets are the top of the pace map (${E.teamTempo('DEN', 1991)})`);
+  ok(E.teamTempo('UTA', 1998) < 95, `Sloan's 1998 Jazz walk it up (${E.teamTempo('UTA', 1998)})`);
+}
 
 /* THE BALL ONLY BOUNCES ONCE, and it has to be the largest single thing the fit
    model says. Six players who each carried their own offense cannot carry one

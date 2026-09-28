@@ -376,7 +376,6 @@ var CSS = [
   '.td-title{display:block;font-family:var(--display);font-weight:400;font-size:22px;line-height:1.1;text-transform:uppercase;margin-top:4px;}',
   '.td-prog{display:flex;align-items:center;gap:5px;margin-top:4px;}',
   '.td-n{font-size:11px;font-weight:800;color:var(--mut);margin-right:3px;white-space:nowrap;}',
-  '#b-today.today,.dock #b-today.today{background:linear-gradient(180deg,var(--orange),var(--orange-dk));border-color:var(--orange);color:#fff;}',
   '.td-prog i{width:12px;height:12px;border-radius:3px;background:#243049;box-shadow:inset 0 0 0 1px rgba(255,255,255,.1);}',
   '.td-prog i.on{background:var(--green);box-shadow:none;}',
   '.td-row{display:grid;grid-template-columns:44px 1fr auto;gap:12px;align-items:center;width:100%;text-align:left;',
@@ -436,6 +435,14 @@ var CSS = [
   '.pt-foot{display:flex;align-items:center;justify-content:space-between;gap:6px;width:100%;margin-top:4px;}',
   '.pt-foot .mx-chip{font-size:10.5px;padding:2px 8px;white-space:nowrap;}',
   '.pt-go{font-family:var(--display);font-size:15px;letter-spacing:.04em;text-transform:uppercase;color:var(--orange);}',
+  /* Conquest as one wide row under the Classic hero: icon, words, then the
+     chip and the verb stacked on the right. */
+  '.ptiles.one{grid-template-columns:1fr;}',
+  '.ptile.wide{display:grid;grid-template-columns:44px 1fr auto;align-items:center;gap:12px;}',
+  '.ptile.wide .pt-body{display:block;min-width:0;}',
+  '.ptile.wide .pt-eye{display:block;font-size:9.5px;letter-spacing:.18em;text-transform:uppercase;font-weight:800;color:var(--dim);}',
+  '.ptile.wide .pt-sub{display:block;margin-top:3px;}',
+  '.ptile.wide .pt-foot{flex-direction:column;align-items:flex-end;width:auto;margin:0;}',
   '.mb-modes{display:flex;gap:6px;overflow-x:auto;margin:0 0 10px;scrollbar-width:none;}',
   '.mb-modes::-webkit-scrollbar{display:none;}',
   '.mb-mode{flex:0 0 auto;width:auto;border-radius:999px;padding:6px 12px;font-size:12.5px;font-weight:800;',
@@ -2812,22 +2819,21 @@ function psOpen(){
 
 // ═══ FRONT PAGE ═════════════════════════════════════════════════════════════
 
-/* ── THE FRONT PAGE: one game, three tiers ─────────────────────────────────
+/* ── THE FRONT PAGE: Classic, Conquest, then the daily puzzles ───────────
  *
- * It was seven doors at one weight in four colours, and a returning player had
- * to read all of them to find the one thing that changed since yesterday. Now:
+ * CLASSIC LEADS, and it is drawn by the page itself (index.html, #classic):
+ * it is the unlimited mode and the one a returning player can play as often as
+ * they like, so it is the hero and the dock carries its button. Asked for by
+ * the owner, because a front page led by two one-shot puzzles teaches a new
+ * player to play twice and leave.
  *
- *   TODAY   the two dailies as one checklist, which is the reason to open the
- *           app on any given day. The dock carries the one primary button,
- *           pointed at whichever is still open, so the rows are rows and not
- *           two more big buttons saying the same thing.
- *   PLAY    Conquest and Quick Draft, side by side. Quick Draft's four ways in
- *           live in a sheet behind its tile.
- *   QUIET   boards, career, rules, as a row of links under everything.
+ *   CONQUEST  the other unlimited mode, one wide tile directly under it.
+ *   DAILY     the two puzzles as one checklist, with endless and build under
+ *             them for Pro. Still one card; it just is not the first thing.
+ *   QUIET     boards, career, rules, as a row of links under everything.
  *
  * ONE COLOUR FOR ACTION. Every primary button is the brand orange; a mode's own
- * colour is on its icon and nowhere else. Four accents on one screen is what
- * made it read as four apps. */
+ * colour is on its icon and nowhere else. */
 function todayRow(id, ico, name, sub, done, doneTxt){
   return '<button class="td-row' + (done ? ' done' : '') + '" id="' + id + '"><span class="td-ico">' + ico + '</span>'
     + '<span class="td-txt"><b>' + name + '</b><small>' + sub + '</small></span>'
@@ -2839,7 +2845,7 @@ function todayHtml(){
   var n = (r ? 1 : 0) + (st.done ? 1 : 0);
   var streak = Math.max(fxStreak(), psStreak());
   var title = n === 2 ? 'Both done. New ones tomorrow.' : n === 1 ? 'One down, one to go.' : 'Two puzzles. One shot each.';
-  var h = '<section class="today" id="today"><div class="td-h"><div><span class="td-eye">Today · Day ' + p.day + '</span>'
+  var h = '<section class="today" id="today"><div class="td-h"><div><span class="td-eye">Daily puzzles · Day ' + p.day + '</span>'
     + '<b class="td-title">' + title + '</b></div>'
     + '<span class="td-prog"><span class="td-n">' + n + ' of 2</span><i class="' + (r ? 'on' : '') + '"></i><i class="' + (st.done ? 'on' : '') + '"></i></span></div>';
   var fxSub = esc(t.name) + '. Four trade windows to win it.';
@@ -2865,21 +2871,18 @@ function playTilesHtml(){
   if (!cq) cqLoad();
   var b = cqBest(), live = cq && !M.cqOver(cq);
   var cqSub = live ? (cq.drafting ? 'Finish your draft.' : plural(M.cqStreak(cq), 'win') + ' and counting.')
-    : 'Winners stay on. Take a guy off every team you beat.';
+    : 'Winners stay on. Beat a real team and take a guy off it.';
   var cqChip = live ? ball(14) + ' ' + plural(cq.lives, 'life', 'lives') : b.best ? 'Best ' + b.best + 'W' : '3 lives';
-  return '<h2 class="mhome-h">Play</h2><div class="ptiles">'
-    + '<button class="ptile cq" id="mc-cq"><span class="pt-ico">' + pix(ART.crown, { g: '#f2c14e', r: '#ef4444', b: '#60a5fa', d: '#a8781a' }, 3) + '</span>'
-    + '<b class="pt-name">Conquest</b><small class="pt-sub">' + cqSub + '</small>'
+  return '<div class="ptiles one">'
+    + '<button class="ptile cq wide" id="mc-cq"><span class="pt-ico">' + pix(ART.crown, { g: '#f2c14e', r: '#ef4444', b: '#60a5fa', d: '#a8781a' }, 3) + '</span>'
+    + '<span class="pt-body"><span class="pt-eye">Also unlimited</span><b class="pt-name">Conquest</b><small class="pt-sub">' + cqSub + '</small></span>'
     + '<span class="pt-foot"><span class="mx-chip">' + cqChip + '</span><span class="pt-go">' + (live ? 'Continue' : 'Play') + '</span></span></button>'
-    + '<button class="ptile qd" id="mc-qd"><span class="pt-ico">' + ball(34) + '</span>'
-    + '<b class="pt-name">Quick Draft</b><small class="pt-sub">Spin a team and a season. Sign five under ' + money(E.CONSTANTS.CAP_MUSD) + '.</small>'
-    + '<span class="pt-foot"><span class="mx-chip">4 ways</span><span class="pt-go">Draft</span></span></button>'
     + '</div>';
 }
 function renderHome(){
   var box = $('modes-home');
   if (!box || !data()) return;
-  box.innerHTML = todayHtml() + playTilesHtml();
+  box.innerHTML = playTilesHtml() + todayHtml();
   paintToday();
   var c = $('mc-cq'); if (c) c.onclick = cqOpen;
   var f = $('mc-fix'); if (f) f.onclick = fxOpen;
@@ -2889,27 +2892,12 @@ function renderHome(){
   var pf = $('td-pfx'); if (pf) pf.onclick = fxOpenPicker;
   var pp = $('td-pps'); if (pp) pp.onclick = psOpenPicker;
   var tp = $('td-pro'); if (tp) tp.onclick = function(){ openPro(null); };
-  var qd = $('mc-qd'); if (qd) qd.onclick = function(){ if (P.openQuickDraft) P.openQuickDraft(); };
 }
 
-/* THE DOCKED BUTTON: whichever daily is still open, then Conquest. One
-   button, so what it says is always the next thing worth doing. It is the
-   brand orange whatever it points at: the colour means "the next thing",
-   and the mode it opens is in its words. */
-function paintToday(){
-  var b = $('b-today');
-  if (!b) return;
-  var fxDone = !!fxResult(fxToday().day), psDone = psTodayState().done;
-  if (!fxDone) { b.textContent = 'Play today\'s Fix History'; b.onclick = fxOpen; }
-  else if (!psDone) { b.textContent = 'Play today\'s Six Passes'; b.onclick = psOpen; }
-  else {
-    var live = cq && !M.cqOver(cq);
-    b.textContent = live ? 'Back to Conquest' : 'Play Conquest';
-    b.onclick = cqOpen;
-  }
-  b.className = 'big today';
-  b.disabled = false;
-}
+/* THE DOCK IS CLASSIC'S NOW (index.html's DOCK_FOR), so the daily puzzles
+   are rows and nothing here owns a primary button. Kept as a function because
+   renderHome and the modes call it after every result. */
+function paintToday(){}
 
 // ═══ LEADERBOARDS ═══════════════════════════════════════════════════════════
 
@@ -3104,7 +3092,7 @@ function paintModeBoard(){
   if (mbMode === 'fix') { var fr = fxResult(d); if (fr && fr.boardId) mine[fr.boardId] = 1; var fy = fxResult(d - 1); if (fy && fy.boardId) mine[fy.boardId] = 1; }
   if (mbMode === 'passes') { var pd = psStore().days; Object.keys(pd).forEach(function(k){ if (pd[k].boardId) mine[pd[k].boardId] = 1; }); }
   if (mbMode === 'conquest' && cq && cq.boardId) mine[cq.boardId] = 1;
-  var modes = [['fix', 'Fix History'], ['passes', 'Six Passes'], ['conquest', 'Conquest'], ['draft', 'Quick Draft']];
+  var modes = [['draft', 'Classic'], ['conquest', 'Conquest'], ['fix', 'Fix History'], ['passes', 'Six Passes']];
   sh.innerHTML = '<div class="fx-card mb-card"><div class="mb-top"><h2 style="margin:0">Leaderboards'
     + '</h2><button class="ghost sm" id="mb-x">Close</button></div><div class="mb-modes">'
     + modes.map(function(m){ return '<button class="mb-mode' + (m[0] === mbMode ? ' on' : '') + '" data-m="' + m[0] + '">' + m[1] + '</button>'; }).join('')
@@ -3214,7 +3202,7 @@ function paintPro(why, kind){
       + '<button class="pro-buy" id="pro-buy">' + (signed ? 'Get Pro for ' + PRO_PRICE : 'Sign in to get Pro') + '</button>'
       + '<p class="pro-err" id="pro-err" hidden></p>'
       + '<p class="fx-hint" style="text-align:center">' + (signed
-        ? 'One payment through Stripe. Nothing renews. The dailies, Conquest and Quick Draft stay free for everybody.'
+        ? 'One payment through Stripe. Nothing renews. Classic, Conquest and the dailies stay free for everybody.'
         : 'Pro belongs to your RunThe.GG account, so it follows you to every device. The dailies stay free for everybody.') + '</p>';
   }
   sh.innerHTML = h + '</div>';

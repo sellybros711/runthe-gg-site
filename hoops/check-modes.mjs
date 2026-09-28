@@ -787,14 +787,18 @@ if (!QUICK) {
   page.on('pageerror', (e) => boom.push(String(e).slice(0, 200)));
   await page.route('**/*', serve);
   await page.goto('http://local.test/hoops/', { waitUntil: 'domcontentloaded' });
-  await page.waitForSelector('#b-today:not([disabled])', { timeout: 60000 });
+  await page.waitForSelector('#mc-cq', { state: 'attached', timeout: 60000 });
 
   const home = await page.evaluate(() => ({
     cards: ['mc-fix', 'mc-ps', 'mc-cq'].map((id) => !!document.getElementById(id)),
     dock: document.querySelector('#dock').textContent.trim(),
   }));
   ok(home.cards.every(Boolean), 'the front page has a card for each of the three');
-  ok(/Fix History/.test(home.dock), `the dock offers today's Fix History first ("${home.dock}")`);
+  /* THE DOCK IS CLASSIC'S since the front page was rebuilt around it, so
+     the dailies say what is open on their own rows rather than in the dock. */
+  ok(/draft/i.test(home.dock), `the dock carries Classic's Start ("${home.dock}")`);
+  ok(await page.evaluate(() => !document.querySelector('#mc-fix').classList.contains('done')),
+    'and today\'s Fix History row is open');
 
   // Fix History, end to end: a season of four windows.
   await page.click('#mc-fix');
@@ -835,7 +839,7 @@ if (!QUICK) {
 
   /* A RELOAD MID-SEASON comes back to the same window with the same deal. */
   await page.reload({ waitUntil: 'domcontentloaded' });
-  await page.waitForSelector('#b-today:not([disabled])', { timeout: 60000 });
+  await page.waitForSelector('#mc-cq', { state: 'attached', timeout: 60000 });
   const row = await page.textContent('#mc-fix');
   ok(/Game 20 window is open/.test(row), `the front page says which window is open ("${row.trim().slice(0, 60)}")`);
   await page.click('#mc-fix');
@@ -961,12 +965,13 @@ if (!QUICK) {
   ok(await page.$('#mb-rows .mb-more') === null, 'a second press shuts it');
   await page.click('#mb-x');
   await page.reload({ waitUntil: 'domcontentloaded' });
-  await page.waitForSelector('#b-today:not([disabled])', { timeout: 60000 });
+  await page.waitForSelector('#mc-cq', { state: 'attached', timeout: 60000 });
   await page.click('#mc-fix');
   ok(await page.$('#fx-share') !== null && await page.$('#fx-pat') === null,
     'a reload lands on the result: one season a day');
-  const dock = await page.evaluate(() => { window.RTF_PAGE.goHome(); return document.querySelector('#dock').textContent.trim(); });
-  ok(/Six Passes/.test(dock), `with Fix done, the dock moves on to Six Passes ("${dock}")`);
+  const dayRows = await page.evaluate(() => { window.RTF_PAGE.goHome();
+    return ['mc-fix', 'mc-ps'].map((id) => document.getElementById(id).classList.contains('done')); });
+  ok(dayRows[0] && !dayRows[1], `with Fix done, its row reads done and Six Passes is still open (${dayRows})`);
 
   /* THE TWO OLDER SHAPES OF RESULT, planted as somebody who played this
      morning would have left them, still draw and still file the way they were
@@ -993,7 +998,7 @@ if (!QUICK) {
     }, [fx.day, shape]);
     posts.length = 0;
     await page.reload({ waitUntil: 'domcontentloaded' });
-    await page.waitForSelector('#b-today:not([disabled])', { timeout: 60000 });
+    await page.waitForSelector('#mc-cq', { state: 'attached', timeout: 60000 });
     await page.click('#mc-fix');
     await page.waitForSelector('#fx-share');
     const lt = await page.textContent('#s-fix');
@@ -1206,7 +1211,7 @@ if (!QUICK) {
   await page.click('.cqd-card');
   const mid = await page.$$eval('.cqd-card', (b) => b.map((x) => x.getAttribute('data-k')).join());
   await page.reload({ waitUntil: 'domcontentloaded' });
-  await page.waitForSelector('#b-today:not([disabled])', { timeout: 60000 });
+  await page.waitForSelector('#mc-cq', { state: 'attached', timeout: 60000 });
   await page.evaluate(() => window.RTF_MODES_UI.openConquest());
   await page.waitForSelector('.cqd-card');
   const back = await page.$$eval('.cqd-card', (b) => b.map((x) => x.getAttribute('data-k')).join());

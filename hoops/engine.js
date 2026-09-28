@@ -41,7 +41,7 @@
    colors and title resolution added. 6: the roster is five men, so SLOTS is a
    different length and MINUTES_SHARE and minutesShare are gone. 8: gameChance
    and seriesChance, which the bracket's series card calls on every paint. */
-const ENGINE_API_VERSION = 8;
+const ENGINE_API_VERSION = 9;
 
 // ─── constants ──────────────────────────────────────────────────────────────
 
@@ -398,6 +398,8 @@ function indexData(players) {
   // Cheapest first, so the budget floor logic can stop at the first hit.
   for (const roster of Object.values(byTeamSeason)) roster.sort((a, b) => a.p - b.p);
 
+  buildTempo(byTeamSeason);
+
   const teamStats = {};
   const ratingTable = [];
   for (const ts of teamSeasons) {
@@ -490,6 +492,330 @@ function buildCheapBy(players) {
     byPos[pos] = byPos[pos].slice(0, 200);
   }
   return { '*': byPos };
+}
+
+// ─── tempo: how fast a club ran ─────────────────────────────────────────────
+
+/* HOW FAST HIS TEAM PLAYED THAT SEASON, in possessions a night at this game's
+ * league pace of 99. It is the half of RUN THE FLOOR that is about running.
+ *
+ * THE SOURCE HAS NO PACE COLUMN, so it is measured off what it does have. A
+ * club's shots per 240 minutes, less the putbacks its own offensive glass
+ * handed it (a share of its rebounds), against the league that same season.
+ * Possessions are shots plus turnovers plus trips to the line less offensive
+ * rebounds, and without turnovers or free throws in the pool this is the
+ * honest part of that sum. Measured, it names the clubs a fan names without
+ * being told: the 1991 Nuggets are the fastest team in the data, the Loughery
+ * and Moe Nuggets, Nellie's Warriors and Nash's Suns are all in the top few
+ * percent, and the slowest are Sloan's Jazz, Riley's Heat, Fratello's
+ * Cavaliers and the Bad Boy Pistons.
+ *
+ * ITS KNOWN MISS IS THE 1996 BULLS, who read fast (about 106) where the real
+ * club played a shade under league pace. They turned the ball over less than
+ * anybody and Rodman's putbacks are more than the share taken off, both of
+ * which read as extra shots. Recorded rather than patched: a table of
+ * exceptions is a second copy of the answer.
+ *
+ * Clamped at 90 and 112. The 1991 Nuggets measure 125 on this proxy against a
+ * real pace about fifteen percent over their league, so the top is the proxy
+ * overstating a real outlier, and a mechanic whose ceiling is one club is not
+ * a mechanic anybody else can chase. */
+const TEMPO_TS = {};
+
+function buildTempo(byTeamSeason) {
+  const bySeason = {};
+  const rates = [];
+  for (const [id, rows] of Object.entries(byTeamSeason)) {
+    if (!rows.length || rows[0].t === 'TOT') continue;
+    let shots = 0, minutes = 0;
+    for (const p of rows) {
+      const g = p.g || 0;
+      shots += ((p.fga || 0) - TEMPO.PUTBACK * (p.reb || 0)) * g;
+      minutes += (p.mp || 0) * g;
+    }
+    if (minutes <= 0) continue;
+    const rate = shots / minutes * 240;
+    rates.push([id, rows[0].s, rate]);
+    (bySeason[rows[0].s] = bySeason[rows[0].s] || []).push(rate);
+  }
+  const mean = {};
+  for (const [s, a] of Object.entries(bySeason)) mean[s] = a.reduce((x, y) => x + y, 0) / a.length;
+  /* FIRST WRITE WINS. This is module state and a checker indexes the pool
+     more than once, sometimes a sliver of it with two hand-built rows added;
+     a season's mean read off that sliver is a different number, and letting
+     it overwrite the full index would move a club's pace under a draft. */
+  for (const [id, season, rate] of rates) {
+    if (id in TEMPO_TS) continue;
+    const t = CONSTANTS.LEAGUE_PACE * rate / mean[season];
+    TEMPO_TS[id] = Math.round(clamp(t, TEMPO.FLOOR, TEMPO.CEIL) * 10) / 10;
+  }
+}
+
+/* HIS CLUB'S PACE PLUS HIS OWN, and the second half is what makes it a
+ * decision. A board is one team-season, so every man on it shares a club
+ * pace: a tempo read off the club alone is the same number on all five tiles
+ * and the only way to change it is a re-spin. Measured that way, a bot that
+ * chased pace drafted exactly the roster greedy did, every time.
+ *
+ * So each man carries a push of his own, in possessions: a ball-handler
+ * pushes it and a post big slows it down, a man who jumps passing lanes
+ * starts breaks, and a playmaker throws the outlet. Per 36 minutes and
+ * pace-adjusted, like every other rate here, and centred on the pool's
+ * median, so a typical man adds nothing. It runs about -1.9 to +2.3 from the
+ * tenth to the ninetieth percentile. What it produces is a fan's list: Alvin
+ * Robertson, Westbrook, Curry, Magic and Payton push hardest; Shaq, Bogut and
+ * Ewing slow it most; Jokic is dead neutral, which is the right answer about
+ * a center who throws the outlet himself.
+ *
+ * WHICH IS THE SIZE AXIS ARRIVING FOR FREE. Small lineups run and big ones
+ * grind, and nobody had to write that rule. What stops "draft five guards"
+ * being the answer is the outlet below: five sprinters who cannot rebound
+ * give most of the break back. */
+const TEMPO_POS = { PG: 1.0, SG: 0.6, SF: 0.2, PF: -0.4, C: -1.0 };
+function tempoPush(p) {
+  if (!p) return 0;
+  const per36 = (v) => paceAdjust((v || 0) / Math.max(12, p.mp || 36) * 36, p.s || 2000);
+  const pos = TEMPO_POS[p.pp || positionsOf(p)[0]] || 0;
+  const raw = pos * 1.2 + 1.4 * (per36(p.stl) - 1.2) + 0.2 * (per36(p.ast) - 3.3);
+  return clamp(raw - TEMPO.PUSH_MEDIAN, -4, 4);
+}
+function tempoClub(p) {
+  if (!p) return CONSTANTS.LEAGUE_PACE;
+  const t = TEMPO_TS[teamSeasonId(p.t, p.s)];
+  return typeof t === 'number' ? t : CONSTANTS.LEAGUE_PACE;
+}
+/* A row the index never saw (a hand-built fixture) runs at league pace plus
+   its own push, which is neither a reward nor a cost from the club. */
+function tempoOf(p) {
+  if (!p) return CONSTANTS.LEAGUE_PACE;
+  return Math.round(clamp(tempoClub(p) + tempoPush(p), TEMPO.FLOOR, TEMPO.CEIL) * 10) / 10;
+}
+function teamTempo(team, season) {
+  const t = TEMPO_TS[teamSeasonId(team, season)];
+  return typeof t === 'number' ? t : null;
+}
+
+/* THE GAME PLAN: HOW FAST THIS TEAM PLAYS, AND WHETHER IT CAN.
+ *
+ * Asked for by the owner: this game is called Run The Floor, so a team built
+ * to run should be rewarded for it, and "82 and 0" and every other draft game
+ * rate a roster on talent alone. So a Classic roster plays one of three plans,
+ * chosen by the player before tip-off, and the draft decides how well it can
+ * play it.
+ *
+ * WHY A PLAN AND NOT A PACE READ OFF THE FIVE, which was built first and
+ * measured. A board is one team-season and the slots force one of each
+ * position, so an average of five men's pace barely moves: a bot drafting for
+ * nothing but speed finished at 99.8 possessions against greedy's 99.3, and
+ * the reward it earned was a third of a rating point. A mechanic nobody can
+ * chase is decoration. Pace in the real league is a coach's choice anyway.
+ *
+ *   RUN         106 possessions. Easy baskets, if the roster can run: a guard
+ *               who pushes it and throws the ahead pass, hands in the passing
+ *               lanes, rebounders to start the break, and men who came from
+ *               clubs that ran. A roster that cannot run and tries loses.
+ *   BALANCED    league pace and nothing added.
+ *   HALF COURT  93 possessions. A set defense every trip: a rim anchor, a
+ *               big to play through, value that sits at the defensive end.
+ *
+ * AND MAY IS A DIFFERENT GAME. Playoff basketball slows down, every club
+ * scouts you for a week, and the break dries up. So the run reward keeps only
+ * PO_RUN of itself in the playoffs, the half-court defense counts PO_GRIND
+ * times, and every playoff game is played PO_SLOW possessions slower. That is
+ * the choice this mode is built around: run for seventy wins or grind for a
+ * ring. Both have happened. The Showtime Lakers ran and won five; Nash's Suns
+ * ran the league for five years and never reached a Finals; the Bad Boys and
+ * Duncan's Spurs walked it up and won.
+ *
+ * The fits are 0 to 1 and every term is a real basketball argument. Read off
+ * real clubs' best five they name who a fan names: the 2005 Suns run at 0.93
+ * and the 1991 Nuggets at 0.85, while the 2003 Spurs grind at 0.96 and the
+ * 1994 Knicks at 1.00.
+ *
+ * BREAK-EVEN SITS ON THE TYPICAL DRAFT, so nothing is handed out for free: a
+ * best-available five reads 0.62 run and 0.57 grind, and a plan at its own
+ * break-even is worth nothing. Measured over 200 drafts a strategy: a draft
+ * built for nothing but the run reaches 0.81 and earns +0.7 in the regular
+ * season and almost none of it in May, and one built to grind reaches 0.79 and
+ * earns +0.7 then +1.3 in May. Calling the wrong plan for the roster costs
+ * about two wins, which is what makes the call a decision.
+ *
+ * RUN_OFF WAS HELD DOWN BY THE RECORD, and that is the number to watch. A
+ * ceiling draft that runs plays more possessions, so its edge compounds, and
+ * at 7.0 "ceiling beats 72" went to 7.6% against a band ending at 6. 5.6 and a
+ * run pace of 104 put it at 5.8. See verify.mjs's TARGETS. */
+const TEMPO = {
+  PUTBACK: 0.28,       // share of a club's rebounds taken off its shots
+  PUSH_MEDIAN: 0.10,   // the pool's median push, so a typical man adds nothing
+  FLOOR: 90, CEIL: 112,
+  RUN_PACE: 104, GRIND_PACE: 94,
+  /* What each plan is worth at a fit of 1, and where it breaks even. */
+  RUN_OFF: 5.6, RUN_EVEN: 0.60, RUN_DEF: 0.45,
+  GRIND_DEF: 4.2, GRIND_EVEN: 0.57, GRIND_OFF: 0.2,
+  PO_RUN: 0.45,
+  PO_GRIND: 1.6,
+  PO_SLOW: 4,
+};
+
+const PLANS = {
+  run:      { key: 'run',      name: 'Run the floor', short: 'Run',        pace: TEMPO.RUN_PACE },
+  balanced: { key: 'balanced', name: 'Balanced',      short: 'Balanced',   pace: null },
+  grind:    { key: 'grind',    name: 'Half court',    short: 'Half court', pace: TEMPO.GRIND_PACE },
+};
+const PLAN_KEYS = ['run', 'balanced', 'grind'];
+
+function tempoLabel(pace) {
+  if (pace >= 104) return 'Run and gun';
+  if (pace >= 101) return 'Up tempo';
+  if (pace >= 97.5) return 'Balanced';
+  if (pace >= 94) return 'Half court';
+  return 'Grind it out';
+}
+
+/* HOW WELL THESE FIVE CAN RUN, AND HOW WELL THEY CAN GRIND. */
+function paceFits(roster, profile) {
+  const P = profile || rosterProfile(roster);
+  const L = CONSTANTS.LEAGUE_PACE;
+  const per36 = (p, v) => paceAdjust((v || 0) / Math.max(12, p.mp || 36) * 36, p.s || 2000);
+  const n = roster.length || 1;
+
+  /* The man who pushes it: a guard's assists and steals per 36, which is Magic
+     throwing the outlet to himself and Payton picking your pocket. */
+  const guards = roster.filter(p => hasAny(positionsOf(p), ['PG', 'SG', 'G']));
+  const pushGuard = guards.reduce((m, p) => Math.max(m, per36(p, p.ast) + 2 * per36(p, p.stl)), 0);
+  /* Where the five came from: a club that ran taught its men to run. */
+  const clubDev = roster.reduce((s, p) => s + tempoClub(p) - L, 0) / n;
+  /* A big to play through and a rim to protect, for the other end of it. */
+  const bigs = roster.filter(p => hasAny(positionsOf(p), ['PF', 'C', 'FC']));
+  const post = bigs.reduce((m, p) => Math.max(m, paceAdjust(p.pts || 0, p.s)), 0);
+  const ows = roster.reduce((s, p) => s + Math.max(0, p.ow || 0), 0);
+  const dws = roster.reduce((s, p) => s + Math.max(0, p.dw || 0), 0);
+  const dShare = ows + dws > 0 ? dws / (ows + dws) : 0;
+
+  /* PER MAN, NOT PER ROSTER, for the two team terms. A total reads zero until
+     the fourth pick whatever was drafted, so a meter built on one would sit
+     still through most of a draft and then jump, and the draft would carry no
+     signal about the plan until it was nearly over. */
+  const parts = {
+    pusher: over(pushGuard, 6, 6),
+    hawks: over(P.steals / n, 0.7, 0.6),
+    glass: over(P.reb / n, 4.5, 2.2),
+    heritage: over(clubDev, -3, 7),
+    anchor: over(P.bestRim, 0.7, 1.4),
+    post: over(post, 12, 10),
+    defense: over(dShare, 0.30, 0.15),
+    slow: over(-clubDev, -3, 7),
+  };
+  const run = 0.32 * parts.pusher + 0.30 * parts.hawks + 0.28 * parts.glass + 0.10 * parts.heritage;
+  const grind = 0.30 * parts.anchor + 0.22 * parts.post + 0.26 * parts.defense
+    + 0.14 * parts.glass + 0.08 * parts.slow;
+  return {
+    run: Math.round(run * 1000) / 1000,
+    grind: Math.round(grind * 1000) / 1000,
+    parts,
+    clubPace: Math.round((L + clubDev) * 10) / 10,
+  };
+}
+
+/* What a plan does to this roster, in rating points and possessions. */
+function planEffect(plan, fits) {
+  const L = CONSTANTS.LEAGUE_PACE;
+  const T = TEMPO;
+  let off = 0, def = 0, poOff = 0, poDef = 0, pace = L;
+  if (plan === 'run') {
+    pace = T.RUN_PACE;
+    off = T.RUN_OFF * (fits.run - T.RUN_EVEN);
+    def = T.RUN_DEF;
+    poOff = off > 0 ? off * T.PO_RUN : off;
+    poDef = def;
+  } else if (plan === 'grind') {
+    pace = T.GRIND_PACE;
+    def = -T.GRIND_DEF * (fits.grind - T.GRIND_EVEN);
+    off = -T.GRIND_OFF;
+    poDef = def < 0 ? def * T.PO_GRIND : def;
+    poOff = off;
+  }
+  const r2 = (v) => Math.round(v * 100) / 100;
+  return {
+    plan, name: (PLANS[plan] || PLANS.balanced).name,
+    pace, off, def, poOff, poDef,
+    net: r2(off - def), poNet: r2(poOff - poDef),
+    /* Possessions a game: halfway between yours and a league-pace opponent's,
+       and slower again in May. */
+    gamePace: (pace + L) / 2,
+    poPace: (pace + L) / 2 - T.PO_SLOW,
+  };
+}
+
+/* The plan a coach would call if nobody asked: the one worth most across the
+   whole year, the regular season weighted as what gets you a seed and the
+   playoffs as what gets you a ring. A fresh run starts here. */
+function bestPlan(fits) {
+  let best = 'balanced', score = 0;
+  for (const k of ['run', 'grind']) {
+    const e = planEffect(k, fits);
+    const v = e.net + 0.5 * e.poNet;
+    if (v > score + 0.05) { best = k; score = v; }
+  }
+  return best;
+}
+
+function rosterTempo(roster, profile, plan) {
+  const fits = paceFits(roster, profile);
+  const key = PLANS[plan] ? plan : bestPlan(fits);
+  const eff = planEffect(key, fits);
+  return { ...eff, fits, label: PLANS[key].name, auto: !PLANS[plan] };
+}
+
+/* THE THREE WAYS A FAN DESCRIBES A ROSTER BEFORE NAMING ITS SYSTEM: how big,
+ * how fast, and whether it can shoot. Asked for by the owner as being able to
+ * build every kind of team and every combination of them, and a system label
+ * alone cannot say "big and fast" or "small and slow". These three can, and
+ * they read off the same numbers the model charges for, so they are a
+ * description rather than a second opinion.
+ *
+ * The cuts are measured off 300 drafts: rebounds per man run 3.2 to 6.3 from
+ * the quartiles, fast minus slow fit runs -0.21 to +0.09, and spacing 0.57 to
+ * 0.91. Each word sits roughly at a quartile, so a typical roster reads
+ * Balanced on most of them and the words mean something when they appear. */
+function rosterStyle(roster, profile, fits) {
+  const P = profile || rosterProfile(roster);
+  const n = roster.length || 1;
+  const f = fits || paceFits(roster, P);
+  const reb = P.reb / n;
+  const lean = f.run - f.grind;
+  return {
+    size: reb >= 6.4 ? 'Big' : reb <= 4.8 ? 'Small' : 'Balanced',
+    speed: lean >= 0.12 ? 'Fast' : lean <= -0.12 ? 'Slow' : 'Balanced',
+    range: P.spacing >= 1.0 ? 'Shooting' : P.spacing <= 0.65 ? 'No range' : 'Balanced',
+  };
+}
+
+/* EVERYTHING A DRAFTED ROSTER RATES AT, IN ONE PLACE. Four paths used to add
+   chemistry, fit and the two ratings up by hand (playRun, the animated season,
+   the bracket runner and the season screen), and a fifth term added to three
+   of them is how an animated season and an instant one become two seasons off
+   one seed. `tempo: false` is the model the dailies and Conquest were balanced
+   on, and what a real club's rating (teamStrength) has always used. */
+function rosterRatings(tagged, opts) {
+  const useTempo = !(opts && opts.tempo === false);
+  const chem = resolveChemistry(tagged);
+  const structure = rosterFit(tagged);
+  const tempo = useTempo ? rosterTempo(tagged, structure.profile, opts && opts.plan) : null;
+  const o = rosterOffense(tagged, chem.bonus, structure.bonus);
+  const d = rosterDefense(tagged, chem.bonus);
+  const ortg = o + (tempo ? tempo.off : 0);
+  const drtg = d + (tempo ? tempo.def : 0);
+  return {
+    chem, structure, tempo, ortg, drtg,
+    rating: overallRating(teamWinPct(ortg, drtg)),
+    pace: tempo ? tempo.gamePace : CONSTANTS.LEAGUE_PACE,
+    po: {
+      ortg: o + (tempo ? tempo.poOff : 0),
+      drtg: d + (tempo ? tempo.poDef : 0),
+      pace: tempo ? tempo.poPace : CONSTANTS.LEAGUE_PACE,
+    },
+  };
 }
 
 // ─── rating and ranking ─────────────────────────────────────────────────────
@@ -759,8 +1085,31 @@ const SYSTEMS = [
        labelled Showtime, which is the defect written up above it. Eight is the
        margin that sits at the top of what a five man draft can actually reach:
        team shots run p99 72.0 and max 77.4. */
-    detect: (r, P) => (P.shots > FIT.SHOT_BUDGET + 8 ? 1 : -1),
+    /* AT THE PACE THEY PLAYED. A running club takes more shots a night
+       because it has more trips, not because five men are fighting over the
+       ball, and paceAdjust only knows the league's pace, not the club's. So
+       the 2005 Suns and the 1991 Nuggets came back Too Many Mouths, which is
+       the one thing those teams were not. Their shots are read at the pace
+       their clubs actually played. */
+    detect: (r, P) => (P.shots * clubPaceFactor(r) > FIT.SHOT_BUDGET + 8 ? 1 : -1),
     bonus: 0,
+  },
+  {
+    /* THREE STARS. Checked second, because three of the best players in the
+       league on one roster is what a fan calls the team before any scheme:
+       the 2008 Celtics and the 2012 Heat were the Big Three first and
+       whatever they ran second. A star is a man who carried a real load
+       (eight and a half win shares) and scored like it (seventeen a night). */
+    key: 'big_three',
+    name: 'The Big Three',
+    blurb: 'Three stars. One ball. Everybody else is playing for second.',
+    detect: (r, P) => {
+      const stars = r.filter(p => (p.w || 0) >= 8.5 && paceAdjust(p.pts || 0, p.s) >= 17);
+      if (stars.length < 3) return -1;
+      const third = stars.map(p => p.w).sort((a, b) => b - a)[2];
+      return fit(over(third, 8.5, 5));
+    },
+    bonus: 0.50,
   },
   {
     key: 'point_centre',
@@ -782,6 +1131,46 @@ const SYSTEMS = [
     bonus: 0.55,
   },
   {
+    /* THE FORWARD WHO DOES EVERYTHING. Grant Hill in Detroit, LeBron, Giannis:
+       the offense is run by a forward who also scores and rebounds like one.
+       All three are asked, which is what keeps Scottie Pippen's 1996 out of
+       it: he ran plenty of offense, and Jordan scored more and Rodman took
+       the boards, so that team is the triangle and not this. */
+    key: 'point_forward',
+    name: 'Point Forward',
+    blurb: 'The offense runs through a forward. He brings it up, posts up and cleans the glass.',
+    detect: (r, P) => {
+      const fwd = r.filter(p => p.pp === 'SF' || p.pp === 'PF')
+        .sort((a, b) => paceAdjust(b.ast || 0, b.s) - paceAdjust(a.ast || 0, a.s))[0];
+      if (!fwd) return -1;
+      const a = paceAdjust(fwd.ast || 0, fwd.s);
+      if (a < 5.5 || a < P.bestCreator - 0.5) return -1;
+      if (paceAdjust(fwd.reb || 0, fwd.s) < 7 || paceAdjust(fwd.pts || 0, fwd.s) < 20) return -1;
+      return fit(over(a, 5.5, 3), over(paceAdjust(fwd.pts, fwd.s), 20, 8));
+    },
+    bonus: 0.55,
+  },
+  {
+    /* EVERYBODY SHOOTS, THE CENTER INCLUDED. The modern floor: a five who
+       stands at the arc, so the paint is empty on purpose. Brook Lopez's
+       Bucks, the Kristaps and Karl-Anthony Towns rosters. Every man on it
+       takes real threes, and it is the only system that asks that of the
+       big. */
+    key: 'five_out',
+    name: 'Five Out',
+    blurb: 'Everybody shoots. Even the center. The paint is empty on purpose.',
+    detect: (r, P) => {
+      if (r.length < SLOTS.length || P.tpa < FIT.MODERN_TPA) return -1;
+      const minTpa = Math.min(...r.map(p => paceAdjust(p.tpa || 0, p.s)));
+      if (minTpa < 1.5) return -1;
+      const big = r.filter(p => hasAny(positionsOf(p), ['C', 'FC']))
+        .sort((a, b) => paceAdjust(b.tpa || 0, b.s) - paceAdjust(a.tpa || 0, a.s))[0];
+      if (!big || paceAdjust(big.tpa || 0, big.s) < 3.0) return -1;
+      return fit(over(minTpa, 1.5, 2.5), over(P.spacing, 1.1, 0.6));
+    },
+    bonus: 0.50,
+  },
+  {
     key: 'moreyball',
     name: 'Moreyball',
     blurb: 'Threes and layups. Nothing in between. A guard who shoots from the logo and a center who only dunks.',
@@ -797,6 +1186,29 @@ const SYSTEMS = [
         && (p.tpa || 0) < 1.0 && paceAdjust(p.reb || 0, p.s) >= 8);
       if (!rimRunner || P.bestCreator < 6.0) return -1;
       return fit(over(shooter, 1.35, 1.0), over(P.bestCreator, 6.0, 4.0));
+    },
+    bonus: 0.50,
+  },
+  {
+    /* ONE STAR RUNS EVERYTHING AND FOUR SHOOTERS WAIT. Luka's Mavericks and
+       Harden's Rockets: the same man takes the most shots and makes the most
+       passes, and the floor is spread for him. Iso Ball is the version with
+       no passing in it; this is the version where the one man IS the
+       passing. */
+    key: 'heliocentric',
+    name: 'Heliocentric',
+    blurb: 'One star runs every trip. Four shooters spread out and wait for him.',
+    detect: (r, P) => {
+      const sun = [...r].sort((a, b) => paceAdjust(b.fga || 0, b.s) - paceAdjust(a.fga || 0, a.s))[0];
+      if (!sun) return -1;
+      const a = paceAdjust(sun.ast || 0, sun.s);
+      if (a < 7.5 || a < P.bestCreator - 0.01) return -1;
+      if (!P.shots || paceAdjust(sun.fga || 0, sun.s) / P.shots < 0.27) return -1;
+      if (!P.ast || a / P.ast < 0.40 || P.spacing < 1.05) return -1;
+      /* One star, which is the word in the name. Three men over nineteen a
+         night is Run TMC, and the sun has to be the only light. */
+      if (r.filter(p => p !== sun && paceAdjust(p.pts || 0, p.s) >= 19).length > 1) return -1;
+      return fit(over(a, 7.5, 3), over(paceAdjust(sun.fga, sun.s) / P.shots, 0.27, 0.1));
     },
     bonus: 0.50,
   },
@@ -857,6 +1269,85 @@ const SYSTEMS = [
       return fit(over(P.spacing, 1.2, 0.8), over(P.steals, FIT.SWITCH_STEALS, 2.6));
     },
     bonus: 0.60,
+  },
+  {
+    /* A POINT GOD AND TWO BIGS WHO NEVER LET IT COME DOWN. The 2014
+       Clippers: Chris Paul throwing it at the rim for Blake Griffin and
+       DeAndre Jordan. Asked of what the bigs do, rebounds and blocks, rather
+       than of a post game, because the lob is the opposite of a post game.
+       Above Twin Towers and Pick and Roll, which both claim this roster and
+       are both less specific about it. */
+    key: 'lob_city',
+    name: 'Lob City',
+    blurb: 'A point guard throwing it at the rim. Two bigs who catch everything above it.',
+    detect: (r, P) => {
+      const guard = r.filter(p => hasAny(positionsOf(p), ['PG', 'G']))
+        .sort((a, b) => paceAdjust(b.ast || 0, b.s) - paceAdjust(a.ast || 0, a.s))[0];
+      if (!guard || paceAdjust(guard.ast || 0, guard.s) < 8.5) return -1;
+      const bigs = r.filter(p => hasAny(positionsOf(p), ['PF', 'C', 'FC'])
+        && paceAdjust(p.reb || 0, p.s) >= 8);
+      if (bigs.length < 2) return -1;
+      const leaper = Math.max(...bigs.map(p => paceAdjust(p.blk || 0, p.s)));
+      if (leaper < 1.4) return -1;
+      return fit(over(paceAdjust(guard.ast, guard.s), 8.5, 3), over(leaper, 1.4, 1.2));
+    },
+    bonus: 0.55,
+  },
+  {
+    /* THREE SCORERS AND NO BIG MAN TO SLOW THEM DOWN. Run TMC, the 1991
+       Warriors: Hardaway, Richmond and Mullin all over twenty a night, a
+       small lineup and a pace that found them all enough shots. */
+    key: 'run_tmc',
+    name: 'Run TMC',
+    blurb: 'Three guys who all get twenty. Small, fast, and nobody waits for the big man.',
+    detect: (r, P) => {
+      const scorers = r.filter(p => paceAdjust(p.pts || 0, p.s) >= 19).length;
+      if (scorers < 3) return -1;
+      if (Math.max(...r.map(p => paceAdjust(p.reb || 0, p.s))) >= 9.5) return -1;
+      if (paceFits(r, P).run < 0.72) return -1;
+      return fit(over(scorers, 3, 2), over(paceFits(r, P).run, 0.72, 0.25));
+    },
+    bonus: 0.50,
+  },
+  {
+    /* TRAP EVERYTHING, THEN RUN. The 1996 SuperSonics: Gary Payton picking
+       pockets, a roster of long arms in every passing lane, and Shawn Kemp at
+       the end of the break. Steals per man and a guard who takes the ball
+       away, on a roster that can actually run. Not a defense that walks it up
+       afterwards, which is Grit and Grind. */
+    key: 'sonic_boom',
+    name: 'Sonic Boom',
+    blurb: 'Trap every ball handler. Jump every lane. Run it back the other way.',
+    detect: (r, P) => {
+      /* At the pace the five played, like the shot budget above: a running
+         club gets more steals because it has more trips, and without this
+         the 1991 Nuggets, who gave up 130 a night, came back as the league's
+         great trapping defense. */
+      const k = clubPaceFactor(r);
+      const perMan = r.length ? P.steals * k / r.length : 0;
+      if (perMan < 1.5) return -1;
+      const thief = k * Math.max(...r.filter(p => hasAny(positionsOf(p), ['PG', 'SG', 'G']))
+        .map(p => paceAdjust(p.stl || 0, p.s)), 0);
+      if (thief < 1.8) return -1;
+      if (paceFits(r, P).run < 0.7) return -1;
+      return fit(over(perMan, 1.5, 0.5), over(thief, 1.8, 1.0));
+    },
+    bonus: 0.55,
+  },
+  {
+    /* UP AND DOWN ALL NIGHT. Paul Westhead's Nuggets, Doug Moe's before
+       them, Nellie's Warriors: first good look is the shot, and the other
+       team had better be in shape. The roster the run plan was built for,
+       named when nothing more specific is. */
+    key: 'run_and_gun',
+    name: 'Run and Gun',
+    blurb: 'Up and down all night. The first good look is the shot.',
+    detect: (r, P) => {
+      const f = paceFits(r, P);
+      if (f.run < 0.84 || f.grind > 0.6) return -1;
+      return fit(over(f.run, 0.84, 0.16));
+    },
+    bonus: 0.45,
   },
   {
     /* ABOVE PICK AND ROLL, and it is where it belongs rather than where it
@@ -1053,6 +1544,14 @@ const SYSTEMS = [
 ];
 
 const over = (v, min, span) => clamp(((v || 0) - min) / span, 0, 1);
+/* League pace over the pace the five came from, so a stat read per game on a
+   running club can be put back to a normal night. 1 for a roster the index
+   never saw. */
+const clubPaceFactor = (r) => {
+  if (!r.length) return 1;
+  const mean = r.reduce((s, p) => s + tempoClub(p), 0) / r.length;
+  return CONSTANTS.LEAGUE_PACE / mean;
+};
 const fit = (...xs) => xs.reduce((a, b) => a + b, 0) / xs.length;
 
 /* First match wins, most specific first. A roster that matches nothing is not
@@ -1889,8 +2388,8 @@ function generateSchedule(rng, games, pool) {
    defensive half of a draft finally shows up in a scoreline. Both sides are
    normalized against LEAGUE_RTG, so a league-average opponent leaves your own
    ratings exactly as they are. */
-function gameMeans(ortg, drtg, game) {
-  const pace = CONSTANTS.LEAGUE_PACE / 100;
+function gameMeans(ortg, drtg, game, possessions) {
+  const pace = (possessions || CONSTANTS.LEAGUE_PACE) / 100;
   const L = CONSTANTS.LEAGUE_RTG;
   return {
     pointsFor: ortg * (game.oppDrtg / L) * pace,
@@ -2051,13 +2550,14 @@ function playoffSeries(pointsFor, pointsAgainst, rng, bestOf, advantage) {
  * THE RNG IS DRAWN IN EXACTLY THE OLD ORDER, which is what lets verify.mjs go
  * on pinning a seed: the round's opponent first, then its games one at a time.
  */
-function poCreate(seed, ortg, drtg, regularWins, rating) {
+function poCreate(seed, ortg, drtg, regularWins, rating, possessions) {
   if (!seed || !seed.made) return null;
   /* Home court through the bracket scales with the regular season. Win 60 and
      you have it all the way; scrape the play-in and you do not have it once. */
   const span = CONSTANTS.REGULAR_SEASON_GAMES - CONSTANTS.PLAY_IN_WINS;
   return {
     ortg, drtg, rating,
+    pace: possessions || CONSTANTS.LEAGUE_PACE,
     edge: titleEdge(rating),
     names: playoffRoundNames(seed.rounds),
     bye: !!seed.bye,
@@ -2105,7 +2605,7 @@ function poBeginRound(po, rng) {
   oppNet = clamp(oppNet + normal(rng) * TITLE.SERIES_SD, -8.0, 16.0);
 
   const L = CONSTANTS.LEAGUE_RTG;
-  const pace = CONSTANTS.LEAGUE_PACE / 100;
+  const pace = (po.pace || CONSTANTS.LEAGUE_PACE) / 100;
   const oppOrtg = L + oppNet / 2;
   const oppDrtg = L - oppNet / 2;
   // The play-in is one game. Everything after it is a seven game series.
@@ -2274,8 +2774,8 @@ function seriesChance(cur) {
   return go(cur.yourWins, cur.oppWins);
 }
 
-function generatePlayoffs(seed, ortg, drtg, rng, regularWins, rating) {
-  const po = poCreate(seed, ortg, drtg, regularWins, rating);
+function generatePlayoffs(seed, ortg, drtg, rng, regularWins, rating, possessions) {
+  const po = poCreate(seed, ortg, drtg, regularWins, rating, possessions);
   if (!po) return null;
   let guard = 0;
   while (!po.done && guard++ < 200) poAdvance(po, rng);
@@ -3021,23 +3521,21 @@ function lastNameOf(n) {
 
 // ─── a whole season, start to finish ────────────────────────────────────────
 
-function playRun(roster, rng, slotNames, pool) {
+function playRun(roster, rng, slotNames, pool, opts) {
   /* Players draft in whatever order the wheel deals them, so the roster array
      is not in SLOTS order and the slot each one actually occupies has to be
      carried alongside. Everything downstream reads _slot, never the index. */
   const tagged = roster.map((p, i) => ({ ...p, _slot: (slotNames && slotNames[i]) || SLOTS[i] }));
 
-  const chem = resolveChemistry(tagged);
-  const structure = rosterFit(tagged);
-  const ortg = rosterOffense(tagged, chem.bonus, structure.bonus);
-  const drtg = rosterDefense(tagged, chem.bonus);
+  const R = rosterRatings(tagged, opts);
+  const { chem, structure, tempo, ortg, drtg } = R;
 
   const schedule = generateSchedule(rng, CONSTANTS.REGULAR_SEASON_GAMES, pool);
   const seasonGames = [];
   let wins = 0, losses = 0, totalPF = 0, totalPA = 0;
 
   for (const game of schedule) {
-    const means = gameMeans(ortg, drtg, game);
+    const means = gameMeans(ortg, drtg, game, R.pace);
     const result = resolveGame(means.pointsFor, means.pointsAgainst, rng, homeAdvantage(game));
     seasonGames.push({ game: game.game, ...result });
     if (result.won) wins++; else losses++;
@@ -3046,13 +3544,14 @@ function playRun(roster, rng, slotNames, pool) {
   }
 
   const seed = seedFromRecord(wins);
-  const rating = overallRating(teamWinPct(ortg, drtg));
-  const playoffs = generatePlayoffs(seed, ortg, drtg, rng, wins, rating);
+  const rating = R.rating;
+  const playoffs = generatePlayoffs(seed, R.po.ortg, R.po.drtg, rng, wins, rating, R.po.pace);
 
   return {
     roster: tagged,
     chemistry: chem,
     structure,
+    tempo,
     rating,
     ortg: round2(ortg),
     drtg: round2(drtg),
@@ -3475,6 +3974,8 @@ const publicAPI = {
   indexData, buildCheapBy, teamStrength,
   pairLinks, resolveChemistry, setCuratedChemistry,
   rosterOffense, rosterDefense, rosterFit, detectSystem,
+  TEMPO, PLANS, PLAN_KEYS, tempoOf, tempoClub, tempoPush, teamTempo, tempoLabel,
+  paceFits, planEffect, bestPlan, rosterTempo, rosterRatings, rosterStyle,
   rosterProfile, spacingIndex, paceAdjust, eraOf, ERA_CONTEXT, SYSTEMS, FIT,
   teamWinPct, overallRating, nationalRank, pythagorean,
   buildOpponentPool, generateSchedule, gameMeans,
