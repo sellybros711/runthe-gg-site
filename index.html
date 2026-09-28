@@ -176,6 +176,7 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
   .tile .tart{position:relative;aspect-ratio:16/10;display:flex;align-items:center;justify-content:center;overflow:hidden;
     background:linear-gradient(160deg,color-mix(in srgb,var(--gc) 85%,#fff 0%),color-mix(in srgb,var(--gc) 45%,#15102e));}
   .tile .tart img,.tile .tart .soon-row{z-index:2;}
+  .tile:not(.g-pitch) .tart img{box-shadow:0 0 0 1px rgba(255,255,255,.16);}
   .tile .tag{z-index:3;}
   .tile .tart img{position:relative;width:46%;max-width:92px;aspect-ratio:1;object-fit:contain;border-radius:18%;
     filter:drop-shadow(0 10px 14px rgba(0,0,0,.45));transition:transform .25s var(--ease);}
@@ -198,9 +199,19 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
      them. The busy detail sits at the edges and a shadow pools under the icon,
      so the logo stays the clearest thing on the tile. Each scene has one quiet
      motion. Source: the generator lives outside the page; edit the SVG here. */
+  /* The scene is the backdrop, the logo is the subject. So the scene sits back:
+     dimmed, desaturated and a touch out of focus, the way a camera focused on
+     the logo would see it, and a soft glow in the game's colour lifts the logo
+     off it. Hovering a tile brings its scene into focus. */
   .tile .tart .scene{position:absolute;inset:0;width:100%;height:100%;z-index:0;display:block;
-    transition:transform .5s var(--ease);}
-  .tile:hover .tart .scene{transform:scale(1.045);}
+    filter:blur(.6px) saturate(.7) brightness(.62);
+    transition:transform .5s var(--ease),filter .4s var(--ease);}
+  .tile .tart:after{content:"";position:absolute;inset:0;z-index:1;pointer-events:none;
+    background:radial-gradient(closest-side at 50% 50%,color-mix(in srgb,var(--gc) 55%,transparent),transparent 82%) 50% 50%/70% 110% no-repeat,
+      linear-gradient(180deg,rgba(10,12,34,.18),rgba(10,12,34,.32));
+    transition:opacity .4s var(--ease);}
+  .tile:hover .tart .scene{transform:scale(1.045);filter:blur(0) saturate(.95) brightness(.85);}
+  .tile:hover .tart:after{opacity:.7;}
   .scene .sc-flash{opacity:0;animation:scflash 4.8s steps(1) infinite;}
   @keyframes scflash{0%{opacity:1;}3%{opacity:.25;}5%{opacity:0;}}
   .scene .sc-twinkle{animation:sctwinkle 3.2s ease-in-out infinite;}
