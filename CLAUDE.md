@@ -441,6 +441,27 @@ is the absent-is-not-zero rule this file already runs on.
 catalog and count toward GOAT. The tier rungs are absolute badge counts, so twenty more badges
 only gives everybody more to earn.
 
+**THE COLLEGE GAME HAS ITS OWN SHELF, 21 BADGES ON SATURDAYS.** `cfb/achievements.js` carries
+the same design with the sport's own days: a noon kickoff, a night game, a weeknight, a
+neutral site, Thanksgiving week, conference title games, bowls, the playoff and the title game,
+10 and 25 schools, and 3, 8 and 14 weeks. The schedule is `cfb/data/cfb_schedule.json`, built by
+`cfb/build/cfb-schedule.mjs` off sportsdataverse's cfbfastR-data, which is on
+raw.githubusercontent and so reachable from the sandbox as well as a runner. Only games the
+game's own 83 schools play are kept, a school is matched by NAME (all 83 match the source
+exactly, and the build refuses to write if one stops), a game whose kickoff is still TBD is
+left out until it has a time, the underdog is the lower pregame Elo, and the window is four
+hours because a college game runs longer.
+
+**The college time is only the server's for a signed-in player.** That cabinet is read off the
+board; a guest's is this browser's history, stamped by the phone, the same as every calendar
+badge here, and a guest's badges are offered rather than kept. The page fetches the schedule at
+boot, never awaited, and every `evaluate` call passes it; `test_gameday.mjs` reads each call.
+
+`nfl-schedule.yml` builds both files as independent steps, so one source being down never stops
+the other landing, and goes red afterwards if either failed. `test_achievements.mjs` hands the
+Game Day shelf to `test_gameday.mjs` by name rather than demanding a synthetic career light it,
+and `test_cabinet.mjs` now reads the shelf count off the catalog instead of a literal 8.
+
 **The check asks both halves of every claim**: a badge lights at the right moment and stays
 dark a minute before kickoff, after the window, for the wrong club, across two moments, across
 two weeks, and for the favourite winning. It also holds the schedule to the catalog (every tag a
