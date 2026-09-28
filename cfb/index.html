@@ -3954,7 +3954,7 @@ or endorsed by the NCAA, the CFP or any school.
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="engine.js?v=35"></script>
 <script src="run.js?v=15"></script>
-<script src="achievements.js?v=11"></script>
+<script src="achievements.js?v=12"></script>
 <script src="auth.js?v=8"></script>
 <script src="board.js?v=7"></script>
 <!-- The tester list for Commish Simulator, which this page reads to decide whether to draw
@@ -7393,6 +7393,19 @@ function rowFromBoard(r){
   };
 }
 
+/* THE REAL COLLEGE SCHEDULE, for the Game Day shelf: which games were on when each season was
+   filed. A workflow rebuilds it under one name whenever a kickoff or a score moves, so it is
+   fetched no-cache rather than with a hand-written ?v= a bot cannot bump. Fetched once at boot
+   and never awaited: until it lands, or if it never does, the Game Day badges read as not
+   known and every other badge is untouched. */
+let CFB_SCHED=null;
+function loadCfbSchedule(){
+  fetch('data/cfb_schedule.json',{cache:'no-cache'})
+    .then(r=>{ if(!r.ok) throw new Error('cfb_schedule'); return r.json(); })
+    .then(j=>{ CFB_SCHED=j; })
+    .catch(()=>{});
+}
+
 function achState(rows){
   if(!window.PS_CFB_ACH) return null;
   /* HOW MANY SEASONS IS NOT HOW MANY ROWS. careerLoad holds the most recent five hundred
@@ -7402,7 +7415,8 @@ function achState(rows){
      board's rows and only with them: local history has none, because a history trimmed
      at four hundred has genuinely forgotten the rest. */
   const opts=(rows&&rows===careerRows&&careerTotal)?{total:careerTotal}:null;
-  return window.PS_CFB_ACH.evaluate(rows||loadHistory(),achResolve,new Date().toISOString(),opts);
+  return window.PS_CFB_ACH.evaluate(rows||loadHistory(),achResolve,new Date().toISOString(),
+    Object.assign({schedule:CFB_SCHED},opts||{}));
 }
 
 /* Badges the season just finished is responsible for, worked out by evaluating the cabinet
@@ -7437,10 +7451,10 @@ function recordRun(row){
   const rows=loadHistory();
   /* THE SEASON IS WRITTEN DOWN EITHER WAY. The row is this browser's own history and the
      results screen reads it; what an account buys is the badge actually being yours. */
-  const lastBefore=A?new Set(A.evaluate(rows,achResolve,row.created_at).earned.map(a=>a.id)):new Set();
+  const lastBefore=A?new Set(A.evaluate(rows,achResolve,row.created_at,{schedule:CFB_SCHED}).earned.map(a=>a.id)):new Set();
   rows.push(row); saveHistory(rows);
   const gained=A
-    ? A.evaluate(loadHistory(),achResolve,row.created_at).earned.filter(a=>!lastBefore.has(a.id))
+    ? A.evaluate(loadHistory(),achResolve,row.created_at,{schedule:CFB_SCHED}).earned.filter(a=>!lastBefore.has(a.id))
     : [];
   /* A GUEST IS TOLD WHAT THEY EARNED AND OFFERED IT, rather than told nothing. Telling them
      nothing was the previous rule and it was half right: what it was protecting against is a
@@ -8196,6 +8210,7 @@ function bootStep(say){
 }
 
 async function boot(){
+  loadCfbSchedule();
   const t0=(window.performance&&performance.now)?performance.now():0;
   try{
     /* The step lands after the parse, not after the response: the file of player seasons
