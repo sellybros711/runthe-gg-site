@@ -1143,9 +1143,50 @@ function chemistryWorth(roster, slotNames, opts) {
 const REPLACEMENT_RPG = 3.5;
 const WAR_TO_RPG = 0.062;
 
+/* THE BATTING ORDER, and why the coach's order costs nothing.
+ *
+ * A lineup spot is worth what it gets to do: the top of the order comes up more
+ * often, and the spots after the table setters come up with men on. These weights
+ * follow The Book's reading of that (the two best bats hit second and first, the
+ * next cleanup, then third and fifth) and average exactly one, so a lineup of nine
+ * equal hitters is worth the same in any order.
+ *
+ * `coachOrder` puts the best bats in the heaviest spots, which is the most any
+ * order can get out of these nine. That order is the BASELINE, so a run that never
+ * touches its lineup plays exactly the season it always did and no balance number
+ * moves. A different order costs what it gives up against that baseline and never
+ * pays more, so moving a man is a choice with a visible price rather than a way to
+ * buy runs. */
+const LINEUP_WEIGHT = [1.07, 1.08, 1.03, 1.06, 1.00, 0.97, 0.95, 0.93, 0.91];
+/* The spots, heaviest first. */
+const LINEUP_RANK = LINEUP_WEIGHT.map((w, i) => i).sort((a, b) => LINEUP_WEIGHT[b] - LINEUP_WEIGHT[a] || a - b);
+
+/* The nine in the coach's order, spot one first. Ties go to the higher-priced
+   season, then the name, so the order never depends on the order they were drafted. */
+function coachOrder(hitters) {
+  const byBat = hitters.slice().sort((a, b) =>
+    slotWar(b) - slotWar(a) || (b.p || 0) - (a.p || 0) || String(a.n).localeCompare(String(b.n)));
+  const out = new Array(hitters.length);
+  let k = 0;
+  for (const spot of LINEUP_RANK) if (spot < hitters.length) out[spot] = byBat[k++];
+  for (let i = 0; i < out.length; i++) if (!out[i]) out[i] = byBat[k++];
+  return out;
+}
+
+/* WAR a batting order gives up against the coach's. Zero unless every hitter carries
+   a spot (`_bat`, 1 to 9), so a roster nobody ordered is the coach's by definition. */
+function orderLoss(roster) {
+  const hitters = roster.filter(p => p.r === 'b');
+  if (hitters.length !== LINEUP_WEIGHT.length || !hitters.every(p => p._bat >= 1)) return 0;
+  const wt = (i) => LINEUP_WEIGHT[i] || 1;
+  const actual = hitters.reduce((s, p) => s + slotWar(p) * wt(p._bat - 1), 0);
+  const best = coachOrder(hitters).reduce((s, p, i) => s + slotWar(p) * wt(i), 0);
+  return Math.max(0, best - actual);
+}
+
 function rosterOffense(roster, chemMultiplier, battingOrderBonus) {
   const hitters = roster.filter(p => p.r === 'b');
-  const totalWar = hitters.reduce((s, p) => s + slotWar(p), 0);
+  const totalWar = hitters.reduce((s, p) => s + slotWar(p), 0) - orderLoss(roster);
   const baseRPG = REPLACEMENT_RPG + totalWar * WAR_TO_RPG;
   return baseRPG * chemMultiplier * (battingOrderBonus || 1.0);
 }
@@ -2258,7 +2299,11 @@ const GENERIC_SPOTS = ['C', '1B', '2B', '3B', 'SS', 'LF', 'CF', 'RF', 'DH'];
 function lineupFromRoster(roster) {
   const batters = (roster || []).filter(p => p.r === 'b');
   if (batters.length >= 9) {
-    return battingOrder(batters).slice(0, 9).map(p => ({
+    /* The order the player set, or the coach's, which is the same order the
+       season was played in. */
+    const ordered = batters.every(p => p._bat >= 1)
+      ? batters.slice().sort((a, b) => a._bat - b._bat) : coachOrder(batters);
+    return ordered.slice(0, 9).map(p => ({
       name: p.n, slot: p._slot || (p.ep || '').split(';')[0] || '', team: p.t, season: p.s, w: p.w,
     }));
   }
@@ -2629,7 +2674,7 @@ const publicAPI = {
   resolveGame, playoffSeries, playRun,
   BRACKET, bracketSeed, createBracket,
   PA_RATES, simGameScript, simHalfInning, spreadRuns, battingOrder, homeGames,
-  lineupFromRoster, staffFromRoster, lineupFromTeamSeason, staffFromTeamSeason,
+  lineupFromRoster, staffFromRoster, coachOrder, orderLoss, LINEUP_WEIGHT, lineupFromTeamSeason, staffFromTeamSeason,
   seedFromRecord, playoffRoundNames, PLAYOFF_ROUND_NAMES, titleEdge,
   respinCost, respinFees,
   pythagorean, rosterOffense, rosterRunPrevention, rosterStructure, closerSavePct,
