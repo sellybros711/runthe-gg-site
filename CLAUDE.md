@@ -16613,6 +16613,32 @@ still to earn" a new account met nine lines of grey text and no badge anywhere. 
 shelf shows its progress and a strip of its badges, rim in their tier, and a new
 account's first shelf is open.
 
+### A run in progress survives leaving the page
+
+```
+node baseball/check-resume.mjs     the banner asks and saves, and resuming is the same board
+```
+
+Asked for by the owner: pressing the banner during a game should ask first, and must
+not lose an active draft. Both banner links (`.lockup` and the RunThe.GG pill) leave
+the page, so during a run they `confirm()` first and save.
+
+**The save is `rtd_run_v1`, the run as it stood, and it belongs to the account (or
+guest) that made it.** It is written after every board (`nextSpin`), on every squad
+paint, and on `pagehide` and on the page going hidden, so a closed tab or a reload is
+covered as well as the banner. The front page offers it back (`#resume-card`).
+
+**THE BOARD ON SCREEN IS PART OF THE SAVE**, and resuming paints that board rather than
+spinning (`nextSpin(RUN.currentDraw)`). A resume that spun again would make leaving the
+page a free re-spin. `check-resume` proves it by reintroducing the spin.
+
+**The live season is never saved**, because its random stream is a closure. Once the
+first game is played the save stays the squad screen's, and a run is seeded, so coming
+back replays the SAME season with the same results. The banner says so when you leave
+mid-season. A finished run removes the save in `recordRun` (check-run asserts it), and
+so does quitting. Starting a new run over a saved one asks first, before any daily
+meter is charged (`okToReplace`).
+
 ### The squad screen is a batting order and a staff, and Pro can move them
 
 ```

@@ -306,6 +306,16 @@ body:has(#s-intro.on) header .lockup{visibility:hidden}
 /* One tagline, under the button, short enough to hold one line on a 320 phone. */
 .htag{margin:0 0 16px;text-align:center;font-size:13.5px;color:var(--dim)}
 .hp-start{margin-bottom:10px}
+/* A SAVED RUN, offered back on the front page. */
+.resume{display:flex;align-items:center;gap:10px;margin:0 0 12px;padding:10px 12px;border-radius:12px;
+  background:var(--panel);border:1.5px solid #e0b13a;box-shadow:0 4px 14px -8px rgba(0,0,0,.35)}
+.resume[hidden]{display:none}
+.resume .rs-txt{flex:1;min-width:0;font-size:13px;color:var(--dim);line-height:1.3}
+.resume .rs-txt b{display:block;font-family:var(--fn);font-size:13px;color:var(--ink)}
+.resume .rs-go{flex:0 0 auto;font-family:var(--fn);font-size:12px;font-weight:800;letter-spacing:.05em;
+  text-transform:uppercase;color:#2a1d05;background:linear-gradient(180deg,#f3cc62,#d9a531);border:0;
+  border-radius:9px;padding:9px 14px;cursor:pointer}
+.resume .rs-x{flex:0 0 auto;background:none;border:0;color:var(--dim);font-size:18px;line-height:1;padding:4px 6px;cursor:pointer}
 /* THE DRAFT BUTTON IS THE GAME, AND IT HAS TO SAY SO. Reported by the owner: beside
    a daily card, six mode tiles and More ways to play, a cream ball read as one more
    option rather than the front door. So it wears a gold ring and a gold tag naming
@@ -2346,6 +2356,7 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
 
   <div class="hp-go"><span class="go-tag" aria-hidden="true">&starf; Start here &middot; Classic mode &starf;</span>
   <button class="btn ball hp-start" id="b-start" aria-label="Start here, Classic mode: draft your team"><svg class="bs bs-l" viewBox="0 0 100 100" aria-hidden="true"><use href="#seam"/></svg><svg class="bs bs-r" viewBox="0 0 100 100" aria-hidden="true"><use href="#seam"/></svg><span>Draft your team</span></button></div>
+  <div class="resume" id="resume-card" hidden></div>
   <p class="htag">Draft twelve legends. Win the World Series.</p>
 
   <div class="hp-bento">
@@ -2889,6 +2900,7 @@ let lastNewParks=[];
 /* null is a guest season: the results screen says what signing in is for,
    rather than listing badges nobody is allowed to keep. */
 function recordRun(o){
+  dropSavedRun();
   if(!ACH){lastNewBadges=[];return;}
   const prev=loadHistory();
   const row=rowFromRun(o);
@@ -4588,6 +4600,7 @@ function heroStart(){heroRun++;heroLoop(heroRun);}
 function heroStop(){heroRun++;}
 function heroSync(){
   try{paintDailyCard();}catch(_){}
+  try{paintResume();}catch(_){}
   const on=$('s-intro').classList.contains('on')&&!document.hidden;
   if(on&&!heroRunning){heroRunning=true;heroStart();}
   else if(!on&&heroRunning){heroRunning=false;heroStop();}
@@ -4607,6 +4620,7 @@ async function boot(){
       window.RTD_ACCESS_TOKEN=A.token()||null;
       if($('sheet-trophy').classList.contains('on'))renderTrophy();
       profileSync();
+      try{paintResume();}catch(_){}
       proRefresh(false).then(()=>{if(A.state().signedIn||!A.state().waiting)checkoutReturn();});
     });
   }catch(_){}
@@ -5221,7 +5235,9 @@ async function postToBoard(o){
 /* ─── the leaderboard screen ───
    Tabs across the boards, because a Cap Survivor season and a Franchise season
    are not the same competition and should not share a list. */
-let boardTab='daily';
+/* The front page's button opens on Classic, which is the game most people play.
+   Asked for by the owner. Only a finished season opens on its own board. */
+let boardTab='free';
 const BOARD_TABS=[{k:'daily',label:'Today'}].concat(
   ['free','era','franchise','division','capsurvivor','staff','trade']
     .map(m=>({k:m,label:runModeLabel(m)})));
@@ -5231,7 +5247,7 @@ let boardFrom='s-intro';
 /* Where the season just filed landed, so the board it opens on can mark the row. */
 let lastBoardPlace=null;
 function openBoard(tab,from){
-  if(tab&&BOARD_TABS.some(t=>t.k===tab))boardTab=tab;
+  boardTab=tab&&BOARD_TABS.some(t=>t.k===tab)?tab:'free';
   boardFrom=from||'s-intro';
   show('s-board');paintBoard();
 }
@@ -5450,7 +5466,7 @@ $('b-quit').addEventListener('click',()=>{
   if(RUN&&RUN.phase===R.PHASES.DRAFT&&RUN.roster.length>0){
     if(!confirm('Quit this run? Your draft will be lost.')) return;
   }
-  RUN=null;show('s-intro');heroSync();
+  RUN=null;dropSavedRun();show('s-intro');heroSync();
 });
 /* RUN IT BACK REPLAYS THE MODE IT WAS RUN IN. It said "Draft again" and went to
    the front page, whose button is Classic whatever was just played: the one
@@ -5692,7 +5708,84 @@ function buildDivCards(){
 function buildDivGrid(){buildDivCards();}
 
 /* ─── start run ─── */
+/* A RUN IN PROGRESS IS SAVED, so leaving the page does not lose it. It is kept
+   while drafting and on the squad screen, which is everything before the first
+   pitch, and it is written whenever the page is left, hidden or closed, and after
+   every board and every squad change. The board on screen is part of the save,
+   so coming back shows the same board: leaving cannot re-roll it.
+
+   ONCE THE SEASON STARTS, THE SAVE IS THE SQUAD SCREEN'S. The live season holds
+   its random stream in a closure that cannot be saved, so it is not written. What
+   is kept is the run as it stood at the squad screen, and a run is seeded, so
+   replaying from there plays the same season with the same results. A finished
+   run removes the save (recordRun), and so does quitting one. The save belongs
+   to the account (or the guest) that made it. */
+const RUN_KEY='rtd_run_v1';
+function runSavable(r){
+  r=r||RUN;if(!r)return false;
+  if(r.phase===R.PHASES.DRAFT)return true;
+  return r.phase===R.PHASES.SEASON&&!(r._simState&&r._simState.results&&r._simState.results.length);
+}
+function saveRunNow(){
+  if(!runSavable())return;
+  try{const {_simState,...rest}=RUN;
+    localStorage.setItem(RUN_KEY,JSON.stringify({v:1,u:acctId()||null,at:Date.now(),run:rest}));}catch(e){}
+}
+function dropSavedRun(){try{localStorage.removeItem(RUN_KEY);}catch(e){}paintResume();}
+function savedRun(){
+  try{const o=JSON.parse(localStorage.getItem(RUN_KEY)||'null');
+    if(!o||o.v!==1||!o.run||!o.run.phase)return null;
+    if((o.u||null)!==(acctId()||null))return null;
+    return o;}catch(e){return null;}
+}
+function runLabel(r){
+  return r.daily?'Daily':r.era?r.era:r.franchise?teamFullName(r.franchise):r.division?r.division:
+    r.capSurvivor?'Cap Survivor':r.staff?'All-Time Staff':r.tradeMachine?'Trade Machine':'Classic';
+}
+function paintResume(){
+  const el=$('resume-card');if(!el)return;
+  const o=savedRun();
+  if(!o||(RUN&&RUN.seed===o.run.seed)){el.hidden=true;el.innerHTML='';return;}
+  const r=o.run,n=(r.roster||[]).length,of=R.slotsOf(r).length;
+  const where=r.phase===R.PHASES.DRAFT?'Spin '+Math.min(n+1,of)+' of '+of:'Squad set, season not started';
+  el.hidden=false;
+  el.innerHTML='<span class="rs-txt"><b>Your '+esc(runLabel(r))+' draft is saved</b>'+esc(where)+'</span>'+
+    '<button type="button" class="rs-go" id="b-resume">Resume</button>'+
+    '<button type="button" class="rs-x" id="b-resume-x" aria-label="Discard the saved draft">&times;</button>';
+  $('b-resume').onclick=resumeRun;
+  $('b-resume-x').onclick=()=>{if(confirm('Discard your saved draft?'))dropSavedRun();};
+}
+function resumeRun(){
+  const o=savedRun();if(!o||!DATA)return;
+  RUN=o.run;LU_SEL=null;
+  heroStop();heroRunning=false;
+  if(RUN.phase===R.PHASES.DRAFT){show('s-draft');modeNote('d-mode','draft');nextSpin(RUN.currentDraw||null);}
+  else showSquad();
+  ga('run_resumed',{phase:RUN.phase});
+}
+/* Starting a new run over a saved one asks first, before any meter is charged. */
+function okToReplace(){
+  const o=savedRun();
+  if(!o||(RUN&&RUN.seed===o.run.seed))return true;
+  if(!confirm('Start a new draft? Your saved draft will be discarded.'))return false;
+  dropSavedRun();return true;
+}
+/* THE BANNER LEAVES THE PAGE, so during a run it asks first and saves. */
+function leaveRunText(){
+  if(!RUN||RUN.phase===R.PHASES.OVER)return null;
+  if(runSavable())return 'Leave your draft? It\'s saved, and you can pick it up from the front page.';
+  return 'Leave the season? Your squad is saved, but the season will start over from the first game.';
+}
+document.querySelectorAll('header .lockup, header .pill.site').forEach(a=>a.addEventListener('click',e=>{
+  const t=leaveRunText();if(!t)return;
+  if(!confirm(t)){e.preventDefault();return;}
+  saveRunNow();
+}));
+window.addEventListener('pagehide',saveRunNow);
+document.addEventListener('visibilitychange',()=>{if(document.hidden)saveRunNow();});
+
 function startRun(opts={}){
+  if(!okToReplace())return;
   if(!modeBegin(meterOf(opts)))return;
   RUN=R.createRun(opts);
   heroStop();heroRunning=false;
@@ -5753,14 +5846,16 @@ function paintTop(){
   $('d-count').textContent='Spin '+Math.min(12,RUN.roster.length+1)+' of 12';
 }
 
-function nextSpin(){
+function nextSpin(resume){
   PICK=null;paintPickBar();
   paintTop();drawField($('field'),true);drawStaffLine($('field-staff'));drawLineupCard($('field-card'));watchFold();
   $('opts').innerHTML='';$('tabs').innerHTML='';$('d-respin').innerHTML='';
   activeTab='ALL';
   try{
-    const draw=R.spin(RUN,DATA);
+    /* A resumed run shows the board it was saved on rather than spinning again. */
+    const draw=resume||R.spin(RUN,DATA);
     buildDrawExtras(draw);
+    saveRunNow();
     spinBoth(draw,()=>paintOpts(draw));
   }catch(e){
     console.error('Draft spin error:',e);
@@ -6090,6 +6185,7 @@ function showSquad(){
   paintSquad();
 }
 function paintSquad(){
+  saveRunNow();
   /* No staff strip here: the list beside the field already names all twelve. */
   drawField($('sq-field'),false);
   const tagged=R.tagged(RUN);
@@ -6140,7 +6236,7 @@ function paintSquad(){
 $('b-playball').addEventListener('click',()=>startSeason());
 $('b-squad-quit').addEventListener('click',()=>{
   if(!confirm('Quit this run? Your draft will be lost.'))return;
-  RUN=null;show('s-intro');heroSync();
+  RUN=null;dropSavedRun();show('s-intro');heroSync();
 });
 
 /* The coach's take as rows. The roster's identity is already the pill in the
@@ -6343,6 +6439,7 @@ function askCut(ev,onDone){
    You did not draft this roster and you cannot re-draft it. Three times the phone
    rings, and the season waits for your answer. */
 function startTrade(){
+  if(!okToReplace())return;
   if(!modeBegin('trade'))return;
   RUN=R.createRun({tradeMachine:true});
   heroStop();heroRunning=false;
