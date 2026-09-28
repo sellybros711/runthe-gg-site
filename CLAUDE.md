@@ -16072,6 +16072,12 @@ tolerance is a few absolute pixels now, plus the claim no single reading can mak
 offset must not grow with the row**, because a derivation error is a fraction of a row
 and a border is not. Reintroduced, that defect now fails three assertions instead of one.
 
+**The Draft button wears a gold ring and a tag reading START HERE · CLASSIC MODE**,
+because beside the daily, the mode tiles and More ways to play the cream ball read as one
+option among several rather than the front door. The tag lives in `.hp-go` outside the
+button, because `.btn` clips, and takes no pointer. Its gold is fixed in both themes like the
+hide, and the glow breathes on opacity alone.
+
 **The daily card's label is a LABEL and not a second control.** The whole card has
 always been the button, so the desktop's CTA is drawn inside it and `.dc-go` is the
 only thing added. It names what the press does in each state, because the card opens
