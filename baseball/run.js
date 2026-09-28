@@ -1037,7 +1037,7 @@ function rebuildSimState(run) {
      * sweep in check-yardstick: every reading of it is the top ten).
      *
      * It is a balance change and was made on purpose: a higher rating buys a
-     * weaker opponent (titleEdge's PIVOT is 84), so at a fixed record a good
+     * weaker opponent (titleEdge's PIVOT is 90), so at a fixed record a good
      * roster's title rate fell 7.7% back to 5.7% when this was corrected. */
     rating: run.staff ? E.staffRating(tagged) : E.squadRating(run.roster),
     shownRating: run.staff ? E.staffRating(tagged) : E.teamRating(offense, defense),

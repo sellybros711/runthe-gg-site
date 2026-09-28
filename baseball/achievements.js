@@ -224,12 +224,17 @@ shelf('Roster craft', [
     (c) => c.best.efficiency >= 95],
   ['perfect_draft', 'Nothing left on the board', 'Draft at 98% efficiency.', 'legend',
     (c) => c.best.efficiency >= 98],
-  ['chem_4', 'They get along', 'Reach +4% chemistry.', 'bronze', (c) => c.best.chemPct >= 4],
-  ['chem_7', 'Good room', 'Reach +7% chemistry.', 'bronze', (c) => c.best.chemPct >= 7],
-  ['chem_10', 'Clubhouse magic', 'Reach +10% chemistry.', 'silver', (c) => c.best.chemPct >= 10],
-  ['chem_12', 'They would run through a wall', 'Reach +12% chemistry.', 'gold',
-    (c) => c.best.chemPct >= 12],
-  ['chem_14', 'One mind', 'Reach +14% chemistry.', 'legend', (c) => c.best.chemPct >= 14],
+  /* THE LADDER MOVED WITH THE CAP. Chemistry is a curve toward CHEMISTRY.MAX that
+     never reaches it, so when the cap came down from 0.15 to 0.12 the old +12 and
+     +14 rungs became impossible. Each rung keeps its share of the cap; the ids stay,
+     because a badge is derived from stored rows and a new id takes it off everybody
+     who has it. Lowering a threshold strips nobody. */
+  ['chem_4', 'They get along', 'Reach +3% chemistry.', 'bronze', (c) => c.best.chemPct >= 3],
+  ['chem_7', 'Good room', 'Reach +6% chemistry.', 'bronze', (c) => c.best.chemPct >= 6],
+  ['chem_10', 'Clubhouse magic', 'Reach +8% chemistry.', 'silver', (c) => c.best.chemPct >= 8],
+  ['chem_12', 'They would run through a wall', 'Reach +10% chemistry.', 'gold',
+    (c) => c.best.chemPct >= 10],
+  ['chem_14', 'One mind', 'Reach +11% chemistry.', 'legend', (c) => c.best.chemPct >= 11],
   /* THE OLD THRESHOLD WAS $210M AND THE CAP IS $170M, so this asked every title
      winner for something the cap already guaranteed: a second copy of "win the
      title", wearing gold. It was written when the cap was $245M. Retuned rather

@@ -54,7 +54,7 @@ const CONSTANTS = {
   PLAYOFF_HOME_FIELD: 0.15,
 
   /* Playoff opponents get this much tougher each round. */
-  PLAYOFF_ROUND_STEP: 0.12,
+  PLAYOFF_ROUND_STEP: 0.15,
 
   /* The record to chase. */
   RECORD_WINS: 116,
@@ -819,7 +819,10 @@ const CHEMISTRY = {
     era:       0.005,
   },
   MIN: -0.10,
-  MAX: 0.15,
+  /* 0.15 until 2026-09, when players reported chemistry as overpowered: the bot
+   * that chases links won 97 games and a title on 14.5% of runs. 0.12 takes that
+   * bot to 93 wins; see CLAUDE.md, "October got harder". */
+  MAX: 0.12,
 };
 
 /* Curated real-life relationships (families), loaded from data/chemistry.json.
@@ -933,7 +936,7 @@ function familyLink(a, b) {
  * In Eras Mode every pair is inside one decade, so the "same era" link fires on
  * nearly all 66 pairs whatever you draft. In One Franchise every pair shares the
  * club by construction. Left in, those links push a constrained run straight to the
- * chemistry cap, which is worth about 21 wins: measured, Eras and Division runs came
+ * chemistry cap, which is worth about 17 wins (21 before the cap came down to 0.12): measured, Eras and Division runs came
  * out at 100-104 mean wins against the core game's 89 while carrying LESS talent and
  * a LOWER rating. The constraint was paying better than it cost.
  *
@@ -1061,7 +1064,7 @@ function resolveChemistry(roster, opts) {
  * The VALUES above are already written as hundredths, so reading one as a whole
  * number of points is not a re-scaling, it is just dropping the percent sign:
  * family 0.09 is +9, a franchise tie 0.04 is +4, the ambient era link 0.005 is
- * +0.5. The cap is +15. That gives the player a small integer to compare
+ * +0.5. The cap is +12. That gives the player a small integer to compare
  * against, instead of a single team-wide percentage that never explains itself. */
 function chemPoints(value) {
   return Math.round(value * 1000) / 10;
@@ -1076,7 +1079,7 @@ function chemPoints(value) {
  *
  * Returns one entry per roster position: total points, the links themselves,
  * the strongest single link (what the UI colors the badge by), and keyPoints,
- * which drops the ambient era link. Era is +0.5 against a cap of +15 and it
+ * which drops the ambient era link. Era is +0.5 against a cap of +12 and it
  * attaches to nearly everybody, so badging it would put a meaningless mark on
  * ten of twelve players and drown the bonds that were actually chosen. */
 function chemistryByPlayer(roster, resolved, opts) {
@@ -1646,7 +1649,7 @@ function playoffRoundNames(rounds) {
  * multiplier applied to the opponent's scoring (>1 = tougher).
  */
 const TITLE = {
-  PIVOT: 84,        // rating at/above which the title is a fair fight
+  PIVOT: 90,        // rating at/above which the title is a fair fight (84 until 2026-09)
   SLOPE: 0.011,     // how fast a weaker team's opponent stiffens
   MAX_EDGE: 1.34,
   SEMI_SHARE: 0.5,  // the Championship Series gets half the edge
@@ -2511,7 +2514,7 @@ function coachReport(roster, chem, structure, rating, unspentMusd) {
   else if (spWar < 8) weaknesses.push('Thin rotation');
   if (closer && closer.w >= 3) strengths.push('Lights-out bullpen');
   else if (!closer || closer.w < 1.2) weaknesses.push('Shaky closer');
-  if (chemPct >= 9) strengths.push('Great clubhouse chemistry');
+  if (chemPct >= 7) strengths.push('Great clubhouse chemistry');  // 9 of a 15 cap, now 7 of 12
   else if (chemPct < 1) weaknesses.push('No real chemistry');
   if (structure && structure.archetype && structure.archetype.key === 'one_man_show')
     weaknesses.push(`Leans hard on ${top ? lastNameOf(top.n) : 'one star'}`);
@@ -2675,7 +2678,7 @@ const publicAPI = {
   BRACKET, bracketSeed, createBracket,
   PA_RATES, simGameScript, simHalfInning, spreadRuns, battingOrder, homeGames,
   lineupFromRoster, staffFromRoster, coachOrder, orderLoss, LINEUP_WEIGHT, lineupFromTeamSeason, staffFromTeamSeason,
-  seedFromRecord, playoffRoundNames, PLAYOFF_ROUND_NAMES, titleEdge,
+  seedFromRecord, playoffRoundNames, PLAYOFF_ROUND_NAMES, titleEdge, TITLE,
   respinCost, respinFees,
   pythagorean, rosterOffense, rosterRunPrevention, rosterStructure, closerSavePct,
   STAFF, staffOffense, staffRunPrevention, staffEra, staffRating,

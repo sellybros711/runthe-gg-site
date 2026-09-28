@@ -261,6 +261,8 @@ for (const [opts, bot, respins] of plan) {
 const GRIND = {
   daily_100: 'daily_50',
   daily_streak_30: 'daily_streak_14',
+  title_10: 'title_5',
+  surv_cut_5: 'surv_cut_3',
 };
 const SKILL = {
   /* A TITLE IS ABOUT ONE RUN IN SIXTY even for the best bot, so anything that
@@ -331,6 +333,22 @@ const SKILL = {
      the curated pairs instead, so `family` lights and its excuse came off. */
   threepeat: 'btb_title',
   fourpeat: 'btb_title',
+  /* OCTOBER GOT HARDER AND CHEMISTRY GOT WEAKER, the owner's call (players were
+     winning it all too easily). The title pivot went 84 to 90, each playoff round
+     stiffens 15% rather than 12%, and the chemistry cap came down from 0.15 to
+     0.12. Titles roughly halved and the chemistry bot lost about three wins, so
+     the rungs that stack a title on a second condition, and the two record rungs,
+     went back behind the line three runs a bot reaches. Each is anchored on the
+     half of itself the quick sweep does light. Measured over 500 chemistry drafts,
+     116 wins still happens (2 of 500, best 121), so the record is a wait rather
+     than a wall. */
+  tie_record: 'win_110',
+  goat: 'win_110',
+  wildcard_title: 'seed_wildcard',
+  btb_title: 'title_5',
+  mode_division_title: 'mode_division_oct',
+  mode_survivor_oct: 'surv_cut_3',
+  all_modes_oct: 'mode_division_oct',
   /* `daily_100w` HAD AN EXCUSE AND DID NOT NEED ONE. A hundred wins on a daily
      lights in the quick sweep (spread / classic), so the entry was section 5's
      own target: an excuse written for something that turned out to be reachable,
