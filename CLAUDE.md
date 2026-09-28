@@ -14057,36 +14057,47 @@ node baseball/build/icons.mjs     every icon, drawn from the one pixel ball
 python3 baseball/build/logo.py    the logo, cut off its stock
 ```
 
-### IT IS SERVED AND UNLISTED, and a launch is four edits rather than one
+### IT IS LIVE, and a launch is four edits rather than one
 
 ```
 node baseball/check-posture.mjs   the four rows, against INDEXED and LINKED
 ```
 
-Run The Diamond is indexable, in `sitemap.xml` and carrying the AdSense tag
-behind its Consent Mode defaults, and **the home page does not link it**. That is
-Segue's row in the table under the setlist game, not hoops' and not the full
-launch. It was launched with a home page link for a day and the owner took the
-link back off, so what follows describes a launch that was made, and undone
-by one half.
+Run The Diamond is indexable, in `sitemap.xml`, carrying the AdSense tag behind its
+Consent Mode defaults, **and linked from the home page** (launched 2026-09-28, the
+owner's call). It was launched once before with a home page link for a day and the
+owner took the link back off, which is why the guard has two declarations.
 
 **SO THE GUARD HAS TWO DECLARATIONS RATHER THAN ONE.** `INDEXED` holds the
 first three rows (robots, sitemap, ad tag), which move together. `LINKED` holds
-the fourth: the phone tile, the desktop card, the JSON-LD `ItemList` entry and
-any nav link. Each group is all or nothing, and `LINKED` without `INDEXED` is
-refused outright, because it sends visitors to a page that tells a crawler to
-stay away. Driven four ways: the launched home page against `LINKED = false`
-names the nav link, the tile and card, and the JSON-LD; the unlisted page against
-`LINKED = true` names all four; the launched page against `LINKED = true` passes;
-and `LINKED` without `INDEXED` names the contradiction.
+the fourth: the home page hub tile, the All games card, the JSON-LD `ItemList`
+entry and any nav link. Both are true now. Each group is all or nothing, and
+`LINKED` without `INDEXED` is refused outright, because it sends visitors to a page
+that tells a crawler to stay away.
 
-**RELAUNCHING ON THE HOME PAGE IS ONE LINE AND ONE FILE.** Set `LINKED = true`
-and restore `index.html` from the launch commit (`e1b7ec63`), which carries the
-tile, the card, the prose paragraph, the FAQ line and the JSON-LD entry in one
-piece. Then `node scripts/check-numbers.mjs --update`, because the home page's
-cap and season claims come back with it (4 each against 6). The `MLB` import in
-that file was left in for exactly this: it allows two values and claims nothing
-while no page states them.
+**THE HOME PAGE WAS REDESIGNED BETWEEN THE TWO LAUNCHES**, so the first launch's
+markup (`e1b7ec63`) no longer fits and the guard's old reading of it went stale: it
+asked for a `.gtile` and a per-device card, and the hub is now `<a class="tile
+g-...">` tiles plus the `<article class="feat ...">` library the sport filter works
+on. It asks for those now, and each was proved by taking it out. The launch touched
+every place the home page lists its games: the hub tile, the rotating featured spot
+(`G` in the inline script), the card and its filter chip (the counts are written by
+hand), the prose paragraph, the FAQ in both its HTML and JSON-LD copies, the
+WebSite description, the `ItemList`, the footer, and the On deck strip, which lost
+its Baseball coming soon card. The hub holds six tiles beside the featured card on a
+desktop, so the More on the way tile came out rather than dropping into a row of its
+own. `scripts/newsletter/games.json` gained baseball the same day, which is that
+file's own rule.
+
+**The card's picture is the game's own ballpark**, rendered once to
+`baseball/park-card.svg` by `node baseball/build/park-card.mjs`, so the home page
+shows The Diamond without loading the game's scripts. Re-run it after changing how
+The Diamond is drawn and bump the `?v=` on the two references in `index.html`.
+
+**`check-numbers` reads the baseball pool now.** The season range fact knew the
+football and college pools only, so "since 1901" on the home page failed against
+1999 and 2005. The baseball pool is written with compact keys, so `seasonRange`
+reads `s` as well.
 
 **IT IS FOUR EDITS AND EVERY ONE OF THEM IS INVISIBLE ALONE.** A page dropped
 from the sitemap is still indexable and still linked, so nothing breaks and it
@@ -14101,7 +14112,7 @@ walks every INDEXABLE page and SKIPS anything noindexed, so putting the robots
 tag back here does not fail it: it stops auditing this game at all, and the ad
 tag, the consent ordering and the policy links go unasked with it. **A guard
 that goes quiet when a thing is half reverted is worse than no guard**, so the
-state is declared ONCE, as `LIVE` at the top of `check-posture.mjs`, and the
+state is declared ONCE, as `INDEXED` and `LINKED` at the top of `check-posture.mjs`, and the
 rows are asked against the declaration rather than against whatever the files
 happen to say. Un-launching means editing that line, which is the whole point.
 
@@ -15199,6 +15210,13 @@ climbs the real ladder of fields one season count at a time:
 | Double-A | Depot Field | 30 |
 | Triple-A | Capital Park | 45 |
 | The Show | The Diamond (`home`) | 60 |
+
+**The Sandlot is drawn in the most detail of the road parks, on purpose**: it is the
+field a new player looks at longest. It carries bald spots where the fielders stand,
+weeds and dandelions where nobody plays (never on the skin), an old tire, a bike, a mitt
+and a ball bucket in FOUL ground so no chip covers them, and on the fence a painted
+scoreboard, a missing board with a dog's eyes behind it and two boards nailed back on
+crooked. `sandlotGround` and `SANDLOT_WALL` in `parks.js`.
 
 The track goes on through the eight big league parks (80, 100, 125, 155, 190, 230, 280,
 350), so a park still arrives every so often for as long as somebody plays. Off the track:
@@ -16594,6 +16612,32 @@ identity: 106 failures with the old engine.
 still to earn" a new account met nine lines of grey text and no badge anywhere. Each
 shelf shows its progress and a strip of its badges, rim in their tier, and a new
 account's first shelf is open.
+
+### A run in progress survives leaving the page
+
+```
+node baseball/check-resume.mjs     the banner asks and saves, and resuming is the same board
+```
+
+Asked for by the owner: pressing the banner during a game should ask first, and must
+not lose an active draft. Both banner links (`.lockup` and the RunThe.GG pill) leave
+the page, so during a run they `confirm()` first and save.
+
+**The save is `rtd_run_v1`, the run as it stood, and it belongs to the account (or
+guest) that made it.** It is written after every board (`nextSpin`), on every squad
+paint, and on `pagehide` and on the page going hidden, so a closed tab or a reload is
+covered as well as the banner. The front page offers it back (`#resume-card`).
+
+**THE BOARD ON SCREEN IS PART OF THE SAVE**, and resuming paints that board rather than
+spinning (`nextSpin(RUN.currentDraw)`). A resume that spun again would make leaving the
+page a free re-spin. `check-resume` proves it by reintroducing the spin.
+
+**The live season is never saved**, because its random stream is a closure. Once the
+first game is played the save stays the squad screen's, and a run is seeded, so coming
+back replays the SAME season with the same results. The banner says so when you leave
+mid-season. A finished run removes the save in `recordRun` (check-run asserts it), and
+so does quitting. Starting a new run over a saved one asks first, before any daily
+meter is charged (`okToReplace`).
 
 ### The squad screen is a batting order and a staff, and Pro can move them
 

@@ -306,6 +306,16 @@ body:has(#s-intro.on) header .lockup{visibility:hidden}
 /* One tagline, under the button, short enough to hold one line on a 320 phone. */
 .htag{margin:0 0 16px;text-align:center;font-size:13.5px;color:var(--dim)}
 .hp-start{margin-bottom:10px}
+/* A SAVED RUN, offered back on the front page. */
+.resume{display:flex;align-items:center;gap:10px;margin:0 0 12px;padding:10px 12px;border-radius:12px;
+  background:var(--panel);border:1.5px solid #e0b13a;box-shadow:0 4px 14px -8px rgba(0,0,0,.35)}
+.resume[hidden]{display:none}
+.resume .rs-txt{flex:1;min-width:0;font-size:13px;color:var(--dim);line-height:1.3}
+.resume .rs-txt b{display:block;font-family:var(--fn);font-size:13px;color:var(--ink)}
+.resume .rs-go{flex:0 0 auto;font-family:var(--fn);font-size:12px;font-weight:800;letter-spacing:.05em;
+  text-transform:uppercase;color:#2a1d05;background:linear-gradient(180deg,#f3cc62,#d9a531);border:0;
+  border-radius:9px;padding:9px 14px;cursor:pointer}
+.resume .rs-x{flex:0 0 auto;background:none;border:0;color:var(--dim);font-size:18px;line-height:1;padding:4px 6px;cursor:pointer}
 /* THE DRAFT BUTTON IS THE GAME, AND IT HAS TO SAY SO. Reported by the owner: beside
    a daily card, six mode tiles and More ways to play, a cream ball read as one more
    option rather than the front door. So it wears a gold ring and a gold tag naming
@@ -457,21 +467,32 @@ body:has(#s-intro.on) header .lockup{visibility:hidden}
 /* ─── chips ─── */
 .chip{--discr:17px;position:absolute;transform:translate(-50%,calc(-1 * var(--discr)));
   display:flex;flex-direction:column;width:62px;text-align:center;cursor:pointer;z-index:4}
+/* THE DISC HAS NO BORDER, AND THAT IS THE FIX FOR WHAT A PHONE SHOWED. It was a
+   translucent 2px border over a gradient that faded to translucent black, and iOS
+   Safari drew that as a flat band across the top and bottom of every disc and let
+   the grass show through the bottom of a filled one, so a round token read as a
+   square with its corners cut. The rim is now a box-shadow ring, which follows the
+   radius exactly in every engine, the face is opaque (posPaint), and the light is
+   painted on: a highlight up and to the left and a shaded underside, so the disc
+   reads as a domed token sitting on the grass. The disc does NOT clip, because the
+   chemistry badge hangs off its corner. */
 .chip .disc{position:relative;width:36px;height:36px;margin:0 auto;border-radius:50%;display:grid;place-items:center;
-  font-family:var(--fn);font-size:10px;font-weight:700;color:#fff;border:2px solid rgba(var(--edge),.25);
-  box-shadow:0 3px 8px -3px rgba(0,0,0,.40)}
-.chip .disc .dl{display:block;line-height:1}
+  font-family:var(--fn);font-size:10px;font-weight:800;letter-spacing:.02em;color:#fff;
+  box-shadow:inset 0 -2.5px 3px rgba(0,0,0,.28),inset 0 1.5px 1px rgba(255,255,255,.35),
+    0 0 0 1.5px rgba(0,0,0,.42),0 0 0 3.5px rgba(255,255,255,.2),0 5px 10px -3px rgba(0,0,0,.6)}
+.chip .disc .dl{display:block;line-height:1;position:relative;z-index:1}
 .chip.filled .disc{color:#fff}
-.chip.filled .disc:after{content:'';position:absolute;inset:-5px;border-radius:50%;
-  border:1px solid rgba(255,255,255,.17);pointer-events:none}
-/* The empty position disc is cream ON THE GRASS, so its edge is drawn against
-   its own fill rather than against the page: black in both themes, or in dark it
-   is a white line on a cream disc and the disc loses its outline. */
-.chip.empty .disc{background:linear-gradient(180deg,#f5f0e6,#e8dcc8);border:2px solid rgba(0,0,0,.18);
-  color:#5a4a30;box-shadow:inset 0 1px 2px rgba(255,255,255,.5),0 2px 6px -2px rgba(0,0,0,.25)}
-.chip.now .disc{border-color:#fff;animation:chipulse 1.6s ease-in-out infinite}
-@keyframes chipulse{0%,100%{box-shadow:0 0 0 4px rgba(255,255,255,.14),0 6px 16px -4px #000}
-  50%{box-shadow:0 0 0 10px rgba(255,255,255,.04),0 6px 16px -4px #000}}
+.chip.filled .disc .dl{text-shadow:0 1px 2px rgba(0,0,0,.5)}
+/* An EMPTY spot is a HOLLOW RING, the owner's call over a cream baseball: an open
+   position should be the quietest thing on the field, so it is an outline with the
+   grass showing through a faint tint, and the label in white. The ring is an inset
+   box-shadow rather than a border, for the same Safari reason as the filled disc. */
+.chip.empty .disc{background:rgba(10,24,12,.22);color:#fff;
+  box-shadow:inset 0 0 0 1.8px rgba(255,255,255,.82),0 2px 6px -3px rgba(0,0,0,.45)}
+.chip.empty .disc .dl{text-shadow:0 1px 2px rgba(0,0,0,.6)}
+.chip.now .disc{animation:chipulse 1.6s ease-in-out infinite}
+@keyframes chipulse{0%,100%{box-shadow:0 0 0 2px #fff,0 0 0 5px rgba(255,255,255,.2),0 6px 16px -4px #000}
+  50%{box-shadow:0 0 0 2px #fff,0 0 0 11px rgba(255,255,255,.04),0 6px 16px -4px #000}}
 .chip.pop .disc{animation:pop .34s cubic-bezier(.2,1.5,.4,1) both}
 @keyframes pop{from{transform:scale(.3);opacity:0}to{transform:scale(1);opacity:1}}
 .chip .lab{display:block}
@@ -499,7 +520,10 @@ body:has(#s-intro.on) header .lockup{visibility:hidden}
   border:1px solid rgba(255,255,255,.26);box-shadow:0 1px 3px rgba(0,0,0,.5)}
 /* The chemistry badge on a fielder. Auto width so it can carry a value rather
    than a single digit, and it takes the color of that player's strongest bond. */
+/* The bolt and the number share one line, the way the lists draw them. */
+.chip .pip .ico{margin:0;width:.72em;height:.9em}
 .chip .pip{position:absolute;top:-4px;right:-10px;min-width:17px;height:15px;padding:0 4px;
+  align-items:center;justify-content:center;gap:1px;line-height:1;
   border-radius:99px;display:none;place-items:center;font-family:var(--fn);
   font-size:9px;font-weight:800;color:#fff;border:1.5px solid rgba(var(--edge),.35);
   font-style:normal;white-space:nowrap;box-shadow:0 1px 3px -1px rgba(0,0,0,.5)}
@@ -1662,18 +1686,18 @@ button.rslot{width:100%;text-align:left;font:inherit;color:inherit;cursor:pointe
 @keyframes pbin{from{transform:translate(-50%,16px);opacity:0}to{transform:translate(-50%,0);opacity:1}}
 #s-draft.picking .field .chip{transition:opacity .18s}
 #s-draft.picking .field .chip:not(.target){opacity:.35;pointer-events:none}
-.chip.target .disc{background:linear-gradient(180deg,#ffe29a,#f0b93c);border:2px solid #fff;color:#3a2a00;
+.chip.target .disc{background:radial-gradient(circle at 36% 28%,#fff3cf 0%,#ffe29a 40%,#f0b93c 100%);color:#3a2a00;
   animation:tgpulse 1.2s ease-in-out infinite}
-@keyframes tgpulse{0%,100%{box-shadow:0 0 0 3px rgba(240,185,60,.55),0 6px 16px -4px #000}
-  50%{box-shadow:0 0 0 9px rgba(240,185,60,.12),0 6px 16px -4px #000}}
+@keyframes tgpulse{0%,100%{box-shadow:0 0 0 2px #fff,0 0 0 5px rgba(240,185,60,.55),0 6px 16px -4px #000}
+  50%{box-shadow:0 0 0 2px #fff,0 0 0 11px rgba(240,185,60,.12),0 6px 16px -4px #000}}
 .chip.target .who{color:#ffe29a;font-style:italic}
 /* The primary spot is the bright pulsing one. Any other spot is still gold, and
    still pressable, but quieter and carries the cost under it. */
-.chip.target:not(.natural) .disc{background:linear-gradient(180deg,#f3e3b8,#d9bd72);animation:none;
-  box-shadow:0 0 0 2px rgba(240,185,60,.5),0 6px 16px -4px #000}
+.chip.target:not(.natural) .disc{background:radial-gradient(circle at 36% 28%,#fbf1d6 0%,#f3e3b8 45%,#d9bd72 100%);animation:none;
+  box-shadow:0 0 0 1.5px rgba(255,255,255,.8),0 0 0 4px rgba(240,185,60,.45),0 6px 16px -4px #000}
 .chip.target:not(.natural) .who{color:#f3d9a0;font-style:normal;font-weight:700}
 .chip.target.natural .who{font-weight:700}
-.chip.filled.offpos .disc{box-shadow:0 0 0 2px #e39b2d,0 4px 10px -3px #000}
+.chip.filled.offpos .disc{box-shadow:inset 0 -2.5px 3px rgba(0,0,0,.28),0 0 0 2px #e39b2d,0 0 0 4px rgba(227,155,45,.25),0 4px 10px -3px #000}
 .lc-row.offpos .lc-war{color:#c67a10}
 .lc-row.target:not(.natural){opacity:.85;outline-style:dashed}
 .chip.target{z-index:6}
@@ -2332,6 +2356,7 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
 
   <div class="hp-go"><span class="go-tag" aria-hidden="true">&starf; Start here &middot; Classic mode &starf;</span>
   <button class="btn ball hp-start" id="b-start" aria-label="Start here, Classic mode: draft your team"><svg class="bs bs-l" viewBox="0 0 100 100" aria-hidden="true"><use href="#seam"/></svg><svg class="bs bs-r" viewBox="0 0 100 100" aria-hidden="true"><use href="#seam"/></svg><span>Draft your team</span></button></div>
+  <div class="resume" id="resume-card" hidden></div>
   <p class="htag">Draft twelve legends. Win the World Series.</p>
 
   <div class="hp-bento">
@@ -2795,7 +2820,7 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
 <script src="engine.js?v=35"></script>
 <script src="run.js?v=29"></script>
 <script src="achievements.js?v=11"></script>
-<script src="parks.js?v=8"></script>
+<script src="parks.js?v=9"></script>
 <script src="crest.js?v=2"></script>
 <script src="board.js?v=2"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
@@ -2875,6 +2900,7 @@ let lastNewParks=[];
 /* null is a guest season: the results screen says what signing in is for,
    rather than listing badges nobody is allowed to keep. */
 function recordRun(o){
+  dropSavedRun();
   if(!ACH){lastNewBadges=[];return;}
   const prev=loadHistory();
   const row=rowFromRun(o);
@@ -3716,7 +3742,12 @@ const POS_COLORS={
    the whole back of the rotation and the whole pen in the colour that means "no
    position", beside two blue starters. */
 function posColor(p){return POS_COLORS[p]||POS_COLORS[slotBase(String(p))]||'#475569';}
-function posPaint(p){const c=posColor(p);return'background:linear-gradient(160deg,'+c+',rgba(0,0,0,.45))';}
+/* OPAQUE all the way down. It faded to rgba(0,0,0,.45), which is see-through, so a
+   disc on the field showed the grass through its lower half. The colour is set first
+   on its own, so an engine without color-mix keeps a flat, solid disc. */
+function posPaint(p){const c=posColor(p);
+  return'background-color:'+c+';background-image:radial-gradient(circle at 34% 26%,rgba(255,255,255,.3),transparent 55%),'+
+    'linear-gradient(160deg,'+c+',color-mix(in srgb,'+c+' 52%,#0b0f14))';}
 
 /* WHICH INK A CLUB'S COLOUR CAN CARRY, measured rather than written. The plate
    was `--tcon:#fff` for all fifty, and five of them are light enough that white
@@ -4340,7 +4371,8 @@ function drawField(el,live){
     if(ce&&ce.keyPoints>0){
       pip.innerHTML=ICO_BOLT+chemNum(ce.keyPoints);
       pip.style.background=chemColor(ce.top&&ce.top.type);
-      pip.style.display='grid';
+      /* flex, not grid: a grid stacks the bolt over the number in one column */
+      pip.style.display='flex';
       pip.title=ce.links.filter(l=>l.type!=='era').map(l=>l.label).join(' / ');
     }else{pip.style.display='none';pip.title='';}
     c.style.left=DIAMOND_SPOTS[i].x+'%';
@@ -4568,6 +4600,7 @@ function heroStart(){heroRun++;heroLoop(heroRun);}
 function heroStop(){heroRun++;}
 function heroSync(){
   try{paintDailyCard();}catch(_){}
+  try{paintResume();}catch(_){}
   const on=$('s-intro').classList.contains('on')&&!document.hidden;
   if(on&&!heroRunning){heroRunning=true;heroStart();}
   else if(!on&&heroRunning){heroRunning=false;heroStop();}
@@ -4587,6 +4620,7 @@ async function boot(){
       window.RTD_ACCESS_TOKEN=A.token()||null;
       if($('sheet-trophy').classList.contains('on'))renderTrophy();
       profileSync();
+      try{paintResume();}catch(_){}
       proRefresh(false).then(()=>{if(A.state().signedIn||!A.state().waiting)checkoutReturn();});
     });
   }catch(_){}
@@ -5201,7 +5235,9 @@ async function postToBoard(o){
 /* ─── the leaderboard screen ───
    Tabs across the boards, because a Cap Survivor season and a Franchise season
    are not the same competition and should not share a list. */
-let boardTab='daily';
+/* The front page's button opens on Classic, which is the game most people play.
+   Asked for by the owner. Only a finished season opens on its own board. */
+let boardTab='free';
 const BOARD_TABS=[{k:'daily',label:'Today'}].concat(
   ['free','era','franchise','division','capsurvivor','staff','trade']
     .map(m=>({k:m,label:runModeLabel(m)})));
@@ -5211,7 +5247,7 @@ let boardFrom='s-intro';
 /* Where the season just filed landed, so the board it opens on can mark the row. */
 let lastBoardPlace=null;
 function openBoard(tab,from){
-  if(tab&&BOARD_TABS.some(t=>t.k===tab))boardTab=tab;
+  boardTab=tab&&BOARD_TABS.some(t=>t.k===tab)?tab:'free';
   boardFrom=from||'s-intro';
   show('s-board');paintBoard();
 }
@@ -5430,7 +5466,7 @@ $('b-quit').addEventListener('click',()=>{
   if(RUN&&RUN.phase===R.PHASES.DRAFT&&RUN.roster.length>0){
     if(!confirm('Quit this run? Your draft will be lost.')) return;
   }
-  RUN=null;show('s-intro');heroSync();
+  RUN=null;dropSavedRun();show('s-intro');heroSync();
 });
 /* RUN IT BACK REPLAYS THE MODE IT WAS RUN IN. It said "Draft again" and went to
    the front page, whose button is Classic whatever was just played: the one
@@ -5672,7 +5708,84 @@ function buildDivCards(){
 function buildDivGrid(){buildDivCards();}
 
 /* ─── start run ─── */
+/* A RUN IN PROGRESS IS SAVED, so leaving the page does not lose it. It is kept
+   while drafting and on the squad screen, which is everything before the first
+   pitch, and it is written whenever the page is left, hidden or closed, and after
+   every board and every squad change. The board on screen is part of the save,
+   so coming back shows the same board: leaving cannot re-roll it.
+
+   ONCE THE SEASON STARTS, THE SAVE IS THE SQUAD SCREEN'S. The live season holds
+   its random stream in a closure that cannot be saved, so it is not written. What
+   is kept is the run as it stood at the squad screen, and a run is seeded, so
+   replaying from there plays the same season with the same results. A finished
+   run removes the save (recordRun), and so does quitting one. The save belongs
+   to the account (or the guest) that made it. */
+const RUN_KEY='rtd_run_v1';
+function runSavable(r){
+  r=r||RUN;if(!r)return false;
+  if(r.phase===R.PHASES.DRAFT)return true;
+  return r.phase===R.PHASES.SEASON&&!(r._simState&&r._simState.results&&r._simState.results.length);
+}
+function saveRunNow(){
+  if(!runSavable())return;
+  try{const {_simState,...rest}=RUN;
+    localStorage.setItem(RUN_KEY,JSON.stringify({v:1,u:acctId()||null,at:Date.now(),run:rest}));}catch(e){}
+}
+function dropSavedRun(){try{localStorage.removeItem(RUN_KEY);}catch(e){}paintResume();}
+function savedRun(){
+  try{const o=JSON.parse(localStorage.getItem(RUN_KEY)||'null');
+    if(!o||o.v!==1||!o.run||!o.run.phase)return null;
+    if((o.u||null)!==(acctId()||null))return null;
+    return o;}catch(e){return null;}
+}
+function runLabel(r){
+  return r.daily?'Daily':r.era?r.era:r.franchise?teamFullName(r.franchise):r.division?r.division:
+    r.capSurvivor?'Cap Survivor':r.staff?'All-Time Staff':r.tradeMachine?'Trade Machine':'Classic';
+}
+function paintResume(){
+  const el=$('resume-card');if(!el)return;
+  const o=savedRun();
+  if(!o||(RUN&&RUN.seed===o.run.seed)){el.hidden=true;el.innerHTML='';return;}
+  const r=o.run,n=(r.roster||[]).length,of=R.slotsOf(r).length;
+  const where=r.phase===R.PHASES.DRAFT?'Spin '+Math.min(n+1,of)+' of '+of:'Squad set, season not started';
+  el.hidden=false;
+  el.innerHTML='<span class="rs-txt"><b>Your '+esc(runLabel(r))+' draft is saved</b>'+esc(where)+'</span>'+
+    '<button type="button" class="rs-go" id="b-resume">Resume</button>'+
+    '<button type="button" class="rs-x" id="b-resume-x" aria-label="Discard the saved draft">&times;</button>';
+  $('b-resume').onclick=resumeRun;
+  $('b-resume-x').onclick=()=>{if(confirm('Discard your saved draft?'))dropSavedRun();};
+}
+function resumeRun(){
+  const o=savedRun();if(!o||!DATA)return;
+  RUN=o.run;LU_SEL=null;
+  heroStop();heroRunning=false;
+  if(RUN.phase===R.PHASES.DRAFT){show('s-draft');modeNote('d-mode','draft');nextSpin(RUN.currentDraw||null);}
+  else showSquad();
+  ga('run_resumed',{phase:RUN.phase});
+}
+/* Starting a new run over a saved one asks first, before any meter is charged. */
+function okToReplace(){
+  const o=savedRun();
+  if(!o||(RUN&&RUN.seed===o.run.seed))return true;
+  if(!confirm('Start a new draft? Your saved draft will be discarded.'))return false;
+  dropSavedRun();return true;
+}
+/* THE BANNER LEAVES THE PAGE, so during a run it asks first and saves. */
+function leaveRunText(){
+  if(!RUN||RUN.phase===R.PHASES.OVER)return null;
+  if(runSavable())return 'Leave your draft? It\'s saved, and you can pick it up from the front page.';
+  return 'Leave the season? Your squad is saved, but the season will start over from the first game.';
+}
+document.querySelectorAll('header .lockup, header .pill.site').forEach(a=>a.addEventListener('click',e=>{
+  const t=leaveRunText();if(!t)return;
+  if(!confirm(t)){e.preventDefault();return;}
+  saveRunNow();
+}));
+window.addEventListener('pagehide',saveRunNow);
+document.addEventListener('visibilitychange',()=>{if(document.hidden)saveRunNow();});
+
 function startRun(opts={}){
+  if(!okToReplace())return;
   if(!modeBegin(meterOf(opts)))return;
   RUN=R.createRun(opts);
   heroStop();heroRunning=false;
@@ -5733,14 +5846,16 @@ function paintTop(){
   $('d-count').textContent='Spin '+Math.min(12,RUN.roster.length+1)+' of 12';
 }
 
-function nextSpin(){
+function nextSpin(resume){
   PICK=null;paintPickBar();
   paintTop();drawField($('field'),true);drawStaffLine($('field-staff'));drawLineupCard($('field-card'));watchFold();
   $('opts').innerHTML='';$('tabs').innerHTML='';$('d-respin').innerHTML='';
   activeTab='ALL';
   try{
-    const draw=R.spin(RUN,DATA);
+    /* A resumed run shows the board it was saved on rather than spinning again. */
+    const draw=resume||R.spin(RUN,DATA);
     buildDrawExtras(draw);
+    saveRunNow();
     spinBoth(draw,()=>paintOpts(draw));
   }catch(e){
     console.error('Draft spin error:',e);
@@ -6070,6 +6185,7 @@ function showSquad(){
   paintSquad();
 }
 function paintSquad(){
+  saveRunNow();
   /* No staff strip here: the list beside the field already names all twelve. */
   drawField($('sq-field'),false);
   const tagged=R.tagged(RUN);
@@ -6120,7 +6236,7 @@ function paintSquad(){
 $('b-playball').addEventListener('click',()=>startSeason());
 $('b-squad-quit').addEventListener('click',()=>{
   if(!confirm('Quit this run? Your draft will be lost.'))return;
-  RUN=null;show('s-intro');heroSync();
+  RUN=null;dropSavedRun();show('s-intro');heroSync();
 });
 
 /* The coach's take as rows. The roster's identity is already the pill in the
@@ -6323,6 +6439,7 @@ function askCut(ev,onDone){
    You did not draft this roster and you cannot re-draft it. Three times the phone
    rings, and the season waits for your answer. */
 function startTrade(){
+  if(!okToReplace())return;
   if(!modeBegin('trade'))return;
   RUN=R.createRun({tradeMachine:true});
   heroStop();heroRunning=false;
