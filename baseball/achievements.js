@@ -72,7 +72,7 @@ const DECADE_NAME = (d) => d + 's';
    door nobody built: the data was there and the shelf was not. */
 const MODES = [
   ['classic', 'Classic'],
-  ['era', 'Eras Draft'],
+  ['era', 'Decades Draft'],
   ['franchise', 'One Franchise'],
   ['division', 'Division Draft'],
   ['survivor', 'Salary Cap Survivor'],
@@ -384,10 +384,10 @@ shelf('The modes', MODES.reduce((out, [key, label]) => out.concat([
   /* The Eras draft is thirteen different pools, so it gets the same treatment the
      decade collection gets: one badge a decade, lit by finishing a season in it. */
   DECADES.map((d) => A('eras_' + d, 'The ' + DECADE_NAME(d) + ' all-stars',
-    'Finish an Eras Draft season in the ' + DECADE_NAME(d) + '.', 'bronze', 'The modes',
+    'Finish a Decades Draft season in the ' + DECADE_NAME(d) + '.', 'bronze', 'The modes',
     (c) => c.erasPlayed.has(DECADE_NAME(d))))
 ).concat(shelf('The modes', [
-  ['eras_all', 'Thirteen decades deep', 'Finish an Eras Draft season in all thirteen decades.',
+  ['eras_all', 'Thirteen decades deep', 'Finish a Decades Draft season in all thirteen decades.',
     'legend', (c) => DECADES.every((d) => c.erasPlayed.has(DECADE_NAME(d)))],
   ['div_all', 'The whole league', 'Finish a Division Draft in all six divisions.', 'gold',
     (c) => c.divisionsPlayed.size >= 6],
