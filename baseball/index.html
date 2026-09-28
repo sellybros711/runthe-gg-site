@@ -5905,7 +5905,9 @@ function eraCard(e,i,n){
 function buildEraGrid(){
   const grid=$('era-grid');grid.innerHTML='';
   const eras=R.eligibleEras(DATA);
-  eras.forEach((e,i)=>grid.appendChild(eraCard(e,i,eras.length)));
+  /* Newest decade first. Each card keeps its own place on the colour ramp, so a
+     decade wears the same colour whichever end of the list it is drawn at. */
+  eras.map((e,i)=>[e,i]).reverse().forEach(([e,i])=>grid.appendChild(eraCard(e,i,eras.length)));
 }
 
 /* ─── franchise mode ─── */

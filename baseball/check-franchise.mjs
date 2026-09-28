@@ -533,6 +533,7 @@ if (browser) {
       };
     }));
     ok(eras.length >= 12, `${eras.length} era cards`);
+    ok(/^2020/.test(eras[0].dec) && /^19[0-9]0/.test(eras[eras.length - 1].dec), `the newest decade leads: ${eras.map(e => e.dec).join(', ')}`);
     ok(eras.every(e => e.display === 'flex'), `an era card is not a flex column: ${eras.filter(e => e.display !== 'flex').map(e => e.dec + ' ' + e.display).join(', ')}`);
     ok(new Set(eras.map(e => e.rail)).size === eras.length, 'two decades share a rail colour, so the ramp is not a ramp');
     ok(eras.every(e => Math.abs(e.barW - e.segW) < 1.5), 'a bats and arms bar does not fill its own track');
