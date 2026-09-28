@@ -1982,6 +1982,16 @@ button.rslot{width:100%;text-align:left;font:inherit;color:inherit;cursor:pointe
   text-transform:uppercase;padding:8px 6px;border:0;border-radius:8px;background:transparent;
   color:var(--dim);cursor:pointer}
 .bd-win.on{background:rgba(var(--edge),.09);color:var(--ink)}
+/* The count and the sort, one line above the list. */
+.bd-bar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 2px 10px}
+.bd-count{font-family:var(--fn);font-size:11.5px;font-weight:800;color:var(--dim-2);letter-spacing:.02em}
+.bd-sort{display:inline-flex;align-items:center;gap:6px;font-family:var(--fn);font-size:11.5px;font-weight:800;
+  letter-spacing:.03em;padding:6px 11px;border-radius:99px;border:1px solid var(--line-2);
+  background:transparent;color:var(--ink);cursor:pointer}
+.bd-sort svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;transition:transform .2s ease}
+.bd-sort.asc svg{transform:rotate(180deg)}
+.bd-more{margin-top:6px}
+.bd-more[hidden]{display:none}
 .bd-ent{margin-bottom:6px}
 .bd-row{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:11px;width:100%;
   background:var(--panel);border:1px solid var(--line);cursor:pointer;text-align:left;
@@ -2511,7 +2521,10 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
   <h2 class="display" style="font-size:27px;margin:5px 0 10px">Who is on top</h2>
   <div class="bd-tabs" id="bd-tabs"></div>
   <div class="bd-wins" id="bd-wins" role="tablist" aria-label="When"></div>
+  <div class="bd-bar"><span class="bd-count" id="bd-count"></span>
+    <button type="button" class="bd-sort" id="bd-sort" aria-label="Sort order"></button></div>
   <div id="bd-list"></div>
+  <button type="button" class="btn ghost bd-more" id="bd-more" hidden></button>
   <div style="margin-top:16px"><button class="btn ghost sm" id="b-board-back">Back</button></div>
 </div>
 
@@ -2902,7 +2915,7 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
 <script src="achievements.js?v=11"></script>
 <script src="parks.js?v=9"></script>
 <script src="crest.js?v=2"></script>
-<script src="board.js?v=3"></script>
+<script src="board.js?v=4"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="auth.js?v=3"></script>
 <!-- The release newsletter checkbox under the account in the trophy sheet. See supabase/121_newsletter.sql. -->
@@ -5352,6 +5365,11 @@ let lastBoardPlace=null;
    time. Days are Eastern, like the daily. The daily board is one day already,
    so it has no window. */
 let boardWin='all';
+/* High to low (best first) or low to high, and how far down the board has been
+   loaded. A page is 100 rows, the most one request may ask for. */
+let boardAsc=false;
+const BOARD_PAGE=100;
+const BD_SORT_ICO='<svg viewBox="0 0 24 24"><path d="M12 5v14"/><path d="M6 13l6 6 6-6"/></svg>';
 const BOARD_WINS=[{k:'day',label:'Today'},{k:'week',label:'This week'},{k:'all',label:'All time'}];
 /* The instant an Eastern calendar day starts, as ISO. Asks the zone for its
    offset at noon that day rather than assuming one, so a clock change is right. */
@@ -5398,7 +5416,7 @@ function boardTeamHtml(r){
 }
 function openBoard(tab,from){
   boardTab=tab&&BOARD_TABS.some(t=>t.k===tab)?tab:'free';
-  boardWin='all';
+  boardWin='all';boardAsc=false;
   boardFrom=from||'s-intro';
   show('s-board');paintBoard();
 }
@@ -5433,69 +5451,112 @@ function paintBoard(){
   wins.innerHTML=BOARD_WINS.map(w=>'<button type="button" role="tab" class="bd-win'+(w.k===boardWin?' on':'')+
     '" aria-selected="'+(w.k===boardWin)+'" data-w="'+w.k+'">'+w.label+'</button>').join('');
   wins.querySelectorAll('.bd-win').forEach(b=>b.addEventListener('click',()=>{boardWin=b.dataset.w;paintBoard();}));
-  const tabNow=boardTab,winNow=boardWin;
-  const list=$('bd-list');
+  const sortB=$('bd-sort');
+  sortB.classList.toggle('asc',boardAsc);
+  sortB.innerHTML=BD_SORT_ICO+(boardAsc?'Low to high':'High to low');
+  sortB.onclick=()=>{boardAsc=!boardAsc;paintBoard();};
+  const tabNow=boardTab,winNow=boardWin,ascNow=boardAsc;
+  const stale=()=>tabNow!==boardTab||winNow!==boardWin||ascNow!==boardAsc;
+  const list=$('bd-list'),more=$('bd-more'),count=$('bd-count');
   list.innerHTML='<div class="bd-empty">Loading...</div>';
+  more.hidden=true;count.textContent='';
   const B=BOARD();
   if(!B){list.innerHTML='<div class="bd-empty">The leaderboard is not available.</div>';return;}
   const where=boardTab==='daily'?{dailyKey:easternISO()}:{mode:boardTab,since:boardSince(boardWin)};
-  B.top({...where,limit:50}).then(rows=>{
-    if(tabNow!==boardTab||winNow!==boardWin)return;
-    if(rows==null){
+  const rows=[];let total=null;
+  const rowHtml=(r,i)=>{
+    /* The rank is the season's place on the board whichever way it is read, so
+       low to high counts down from the total. */
+    const rank=boardAsc?(total!=null?total-i:null):i+1;
+    const detail=[];
+    if(!r.title_won&&r.made_playoffs)detail.push(r.seed_label);
+    if(r.run_mode==='staff'&&r.staff_era!=null)detail.push(r.staff_era+' ERA');
+    else if(r.rating!=null)detail.push('Rating '+Math.round(r.rating));
+    if(r.franchise)detail.push(esc(teamFullName(r.franchise)));
+    if(r.division)detail.push(esc(r.division));
+    if(r.era)detail.push(esc(r.era));
+    if(r.cuts)detail.push(r.cuts+' cut');
+    if(r.trades)detail.push(r.trades+' dealt');
+    const me=boardWin==='all'&&lastBoardPlace&&lastBoardPlace.tab===boardTab&&rank!=null&&lastBoardPlace.place===rank;
+    /* The marks lead the meta line as colored words, not pills: the row's own
+       edge already says it, so the words only have to name it. */
+    if(r.title_won)detail.unshift('<span class="bd-tag">'+BD_TROPHY+'Champions</span>');
+    if(r.is_goat)detail.unshift('<span class="bd-tag rec">'+ICO_FLAME+'Record</span>');
+    const cls='bd-ent'+(rank!=null&&rank<=3?' top3':'')+(r.title_won?' champ':'')+(r.is_goat?' record':'');
+    return '<div class="'+cls+'" data-i="'+i+'">'+
+      '<button type="button" class="bd-row'+(me?' me':'')+'" aria-expanded="false"><span class="bd-pos">'+(rank==null?'':rank.toLocaleString())+'</span>'+
+      (r.user_id?'<span class="bd-crest" data-uid="'+esc(r.user_id)+'"></span>':'<span class="bd-crest"></span>')+
+      '<span class="bd-who"><span class="bd-name" style="display:block">'+
+        esc(r.display_name||'Anonymous')+'</span>'+
+      '<span class="bd-meta" style="display:block">'+detail.join(' · ')+'</span></span>'+
+      '<span class="bd-rec"><b>'+r.wins+'-'+r.losses+'</b><span>record</span></span>'+
+      '<span class="bd-caret">'+BD_CARET+'</span></button>'+
+      '<div class="bd-team" hidden></div></div>';
+  };
+  const wire=ents=>ents.forEach(ent=>{
+    const btn=ent.querySelector('.bd-row'),team=ent.querySelector('.bd-team');
+    btn.addEventListener('click',()=>{
+      const open=!ent.classList.contains('open');
+      if(open&&!team.dataset.built){team.innerHTML=boardTeamHtml(rows[+ent.dataset.i]);team.dataset.built='1';}
+      ent.classList.toggle('open',open);team.hidden=!open;btn.setAttribute('aria-expanded',String(open));
+    });
+  });
+  const paintMore=()=>{
+    const left=total!=null?total-rows.length:null;
+    const full=rows.length>0&&rows.length%BOARD_PAGE===0;
+    more.hidden=!(left!=null?left>0:full);
+    more.textContent=left!=null?'Show '+Math.min(BOARD_PAGE,left)+' more':'Show more';
+  };
+  const note=()=>{
+    const old=list.querySelector('.bd-landed');if(old)old.remove();
+    /* A season past what is loaded is still yours to find: say where it landed. */
+    if(!boardAsc&&boardWin==='all'&&lastBoardPlace&&lastBoardPlace.tab===boardTab&&lastBoardPlace.place>rows.length)
+      list.insertAdjacentHTML('beforeend','<div class="bd-empty bd-landed">Your season landed at #'+
+        lastBoardPlace.place.toLocaleString()+'.</div>');
+  };
+  const page=()=>B.top({...where,asc:boardAsc,offset:rows.length,limit:BOARD_PAGE});
+  Promise.all([page(),B.total(where)]).then(([got,n])=>{
+    if(stale())return;
+    total=n;
+    if(got==null){
       list.innerHTML='<div class="bd-empty">'+(B.needsMigration
         ? 'The leaderboard has not been set up on the server yet.'
         : 'Could not reach the leaderboard. It will be here when the connection is.')+
         '</div>';return;
     }
-    if(!rows.length){
+    if(!got.length){
       list.innerHTML='<div class="bd-empty">'+(boardTab==='daily'
         ? 'Nobody has finished today\'s board yet. Be first.'
         : boardWin==='day'?'Nobody has filed a season here today. Be first.'
         : boardWin==='week'?'Nobody has filed a season here this week. Be first.'
         : 'No seasons here yet. Play one.')+'</div>';return;
     }
-    list.innerHTML=rows.map((r,i)=>{
-      const detail=[];
-      if(!r.title_won&&r.made_playoffs)detail.push(r.seed_label);
-      if(r.run_mode==='staff'&&r.staff_era!=null)detail.push(r.staff_era+' ERA');
-      else if(r.rating!=null)detail.push('Rating '+Math.round(r.rating));
-      if(r.franchise)detail.push(esc(teamFullName(r.franchise)));
-      if(r.division)detail.push(esc(r.division));
-      if(r.era)detail.push(esc(r.era));
-      if(r.cuts)detail.push(r.cuts+' cut');
-      if(r.trades)detail.push(r.trades+' dealt');
-      const me=boardWin==='all'&&lastBoardPlace&&lastBoardPlace.tab===boardTab&&lastBoardPlace.place===i+1;
-      /* The marks lead the meta line as colored words, not pills: the row's own
-         edge already says it, so the words only have to name it. */
-      if(r.title_won)detail.unshift('<span class="bd-tag">'+BD_TROPHY+'Champions</span>');
-      if(r.is_goat)detail.unshift('<span class="bd-tag rec">'+ICO_FLAME+'Record</span>');
-      const cls='bd-ent'+(i<3?' top3':'')+(r.title_won?' champ':'')+(r.is_goat?' record':'');
-      return '<div class="'+cls+'" data-i="'+i+'">'+
-        '<button type="button" class="bd-row'+(me?' me':'')+'" aria-expanded="false"><span class="bd-pos">'+(i+1)+'</span>'+
-        (r.user_id?'<span class="bd-crest" data-uid="'+esc(r.user_id)+'"></span>':'<span class="bd-crest"></span>')+
-        '<span class="bd-who"><span class="bd-name" style="display:block">'+
-          esc(r.display_name||'Anonymous')+'</span>'+
-        '<span class="bd-meta" style="display:block">'+detail.join(' \u00b7 ')+'</span></span>'+
-        '<span class="bd-rec"><b>'+r.wins+'-'+r.losses+'</b><span>record</span></span>'+
-        '<span class="bd-caret">'+BD_CARET+'</span></button>'+
-        '<div class="bd-team" hidden></div></div>';
-    }).join('');
-    list.querySelectorAll('.bd-ent').forEach(ent=>{
-      const btn=ent.querySelector('.bd-row'),team=ent.querySelector('.bd-team');
-      btn.addEventListener('click',()=>{
-        const open=!ent.classList.contains('open');
-        if(open&&!team.dataset.built){team.innerHTML=boardTeamHtml(rows[+ent.dataset.i]);team.dataset.built='1';}
-        ent.classList.toggle('open',open);team.hidden=!open;btn.setAttribute('aria-expanded',String(open));
-      });
-    });
-    /* A season past the top fifty is still yours to find: say where it landed. */
-    if(boardWin==='all'&&lastBoardPlace&&lastBoardPlace.tab===boardTab&&lastBoardPlace.place>rows.length)
-      list.insertAdjacentHTML('beforeend','<div class="bd-empty">Your season landed at #'+
-        lastBoardPlace.place.toLocaleString()+'.</div>');
+    if(total!=null)count.textContent=total.toLocaleString()+(total===1?' season':' seasons');
+    rows.push(...got);
+    list.innerHTML=got.map((r,i)=>rowHtml(r,i)).join('');
+    wire(list.querySelectorAll('.bd-ent'));
+    note();paintMore();
     paintBoardCrests(list,rows);
     const mine=list.querySelector('.bd-row.me');
     if(mine&&boardFrom==='s-over')requestAnimationFrame(()=>mine.scrollIntoView({block:'center'}));
   });
+  more.onclick=()=>{
+    more.disabled=true;more.textContent='Loading...';
+    page().then(got=>{
+      more.disabled=false;
+      if(stale())return;
+      if(got==null){paintMore();more.textContent='Could not load more. Try again';return;}
+      if(!got.length){more.hidden=true;return;}
+      const from=rows.length;rows.push(...got);
+      const holder=document.createElement('div');
+      holder.innerHTML=got.map((r,j)=>rowHtml(r,from+j)).join('');
+      const ents=[...holder.children];
+      const land=list.querySelector('.bd-landed');
+      ents.forEach(e=>list.insertBefore(e,land||null));
+      wire(ents);note();paintMore();
+      paintBoardCrests(list,rows);
+    });
+  };
 }
 
 /* ─── the daily ───────────────────────────────────────────────────────────

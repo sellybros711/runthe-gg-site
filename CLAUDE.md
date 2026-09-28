@@ -14256,6 +14256,11 @@ This week and All time** (`boardWin`), sent as `created_at=gte` on `B.top`. Days
 Eastern like the daily, and a week starts Monday. The daily board has no window,
 because it is one day already, and its tab reads Daily so it is not a second Today.
 
+**It loads a hundred at a time and sorts either way.** `B.top` takes `offset` and
+`asc`, and the count over the list is `B.total` with the same window. Low to high
+still prints each season's real place, counted down from the total, so the worst
+season on a board of 230 reads 230th. The window and the order survive each other.
+
 **A row opens into its twelve** (`boardTeamHtml`). The picks and slots already
 ride on every row, so the team is rebuilt against this browser's own pool with no
 request. A man not in the pool is a replacement body from a cut, and says so.

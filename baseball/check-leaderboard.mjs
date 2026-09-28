@@ -59,8 +59,24 @@ const roster = { picks: bats.concat(arms).map(keyOf).concat([]),
 const row = (i, o) => Object.assign({ id: 'r' + i, created_at: new Date().toISOString(), user_id: null,
   display_name: 'p' + i, wins: 100 - i, losses: 62 + i, made_playoffs: true, seed_label: 'Division winner',
   title_won: false, is_goat: false, tied_record: false, run_mode: 'free', rating: 90 }, roster, o);
+/* 230 seasons: four marked ones on top, then filler, so paging has three pages. */
+const N = 230;
 const ROWS = [row(0, { wins: 120, losses: 42, title_won: true, is_goat: true }),
   row(1, { wins: 118, losses: 44, is_goat: true }), row(2, { title_won: true }), row(3, {})];
+for (let i = 4; i < N; i++) ROWS.push(row(i, { wins: 99 - Math.floor(i / 4), losses: 63 + Math.floor(i / 4) }));
+ROWS.forEach((r, i) => { r.score = 100000 - i; });
+/* A stand-in for PostgREST that honours order, offset, limit and the exact count. */
+function answer(u) {
+  const q = new URL(u).searchParams;
+  const cors = { 'access-control-allow-origin': '*', 'access-control-expose-headers': 'content-range' };
+  if (q.get('select') === 'id') {
+    return { status: 200, headers: { ...cors, 'content-range': '0-0/' + N }, contentType: 'application/json', body: '[]' };
+  }
+  const asc = /score\.asc/.test(q.get('order') || '');
+  const list = asc ? ROWS.slice().reverse() : ROWS;
+  const off = +(q.get('offset') || 0), lim = +(q.get('limit') || 25);
+  return { status: 200, headers: cors, contentType: 'application/json', body: JSON.stringify(list.slice(off, off + lim)) };
+}
 
 const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
 const asked = [];
@@ -68,7 +84,7 @@ await ctx.route('**/*', (route) => {
   const u = route.request().url();
   if (u.includes('/rest/v1/rtd_runs')) {
     asked.push(decodeURIComponent(u));
-    return route.fulfill({ contentType: 'application/json', body: JSON.stringify(ROWS) });
+    return route.fulfill(answer(u));
   }
   if (u.includes('/rest/v1/')) return route.fulfill({ contentType: 'application/json', body: '[]' });
   return u.startsWith('http://localhost:' + PORT) ? route.continue() : route.abort();
@@ -101,7 +117,7 @@ await p.click('.bd-ent .bd-row');
 claim(await p.$eval('.bd-ent .bd-team', (t) => t.hidden), 'and tapping again folds it');
 
 head('2. EVERY MODE HAS TODAY, THIS WEEK AND ALL TIME');
-const last = () => asked[asked.length - 1] || '';
+const last = () => asked.filter((u) => u.includes('order=')).pop() || '';
 claim(await p.$eval('.bd-win.on', (b) => b.dataset.w) === 'all', 'it opens on All time');
 claim(!/created_at=gte/.test(last()), 'and All time asks with no window');
 await p.click('.bd-win[data-w="day"]'); await p.waitForTimeout(300);
@@ -132,6 +148,46 @@ claim(looks[2].champ && !looks[2].rec && /Champions/.test(looks[2].tags.join()),
 claim(!looks[3].champ && !looks[3].rec && !looks[3].tags.length, 'an ordinary season is plain');
 claim(looks[2].border !== looks[3].border, 'a champion row has its own edge', looks[2].border + ' vs ' + looks[3].border);
 claim(looks[1].anim === 'bdrec' && looks[2].anim === 'none', 'only a record season moves', looks[1].anim + ' / ' + looks[2].anim);
+
+head('4. MORE THAN FIFTY, A PAGE AT A TIME');
+const state = () => p.evaluate(() => ({
+  n: document.querySelectorAll('#bd-list .bd-ent').length,
+  count: document.getElementById('bd-count').textContent,
+  more: document.getElementById('bd-more').hidden ? '' : document.getElementById('bd-more').textContent,
+  first: document.querySelector('#bd-list .bd-ent .bd-pos').textContent,
+  firstName: document.querySelector('#bd-list .bd-ent .bd-name').textContent,
+  last: [...document.querySelectorAll('#bd-list .bd-ent .bd-pos')].pop().textContent,
+  sort: document.getElementById('bd-sort').textContent }));
+let st = await state();
+claim(st.count === '230 seasons', 'the board says how many seasons it holds', st.count);
+claim(st.n === 100, 'the first page is 100, not 50', `${st.n}`);
+claim(st.more === 'Show 100 more', 'and offers the next hundred', st.more);
+await p.click('#bd-more'); await p.waitForFunction(() => document.querySelectorAll('#bd-list .bd-ent').length === 200);
+st = await state();
+claim(st.last === '200' && /offset=100/.test(last()), 'Show more loads 101 to 200 from where it stopped', st.last);
+claim(st.more === 'Show 30 more', 'and says how many are left', st.more);
+await p.click('#bd-more'); await p.waitForFunction(() => document.querySelectorAll('#bd-list .bd-ent').length === 230);
+st = await state();
+claim(st.more === '' && st.last === '230', 'the last page ends the list and takes the button away', st.more || '(no button)');
+await p.click('.bd-ent:last-child .bd-row');
+claim(await p.$eval('.bd-ent:last-child .bd-team', (t) => !t.hidden && t.querySelectorAll('.rslot').length === 12),
+  'a row loaded on a later page still opens into its team');
+
+head('5. HIGH TO LOW, AND LOW TO HIGH');
+claim(/High to low/.test(st.sort), 'the board opens high to low', st.sort);
+await p.click('#bd-sort'); await p.waitForTimeout(400);
+st = await state();
+claim(/Low to high/.test(st.sort) && /score\.asc/.test(last()), 'the button turns it round', st.sort);
+claim(st.firstName === 'p229' && st.first === '230', 'the worst season leads, still ranked 230th', `${st.firstName} at ${st.first}`);
+claim(st.n === 100 && st.more === 'Show 100 more', 'and it pages the same way', `${st.n} / ${st.more}`);
+await p.click('#bd-more'); await p.waitForFunction(() => document.querySelectorAll('#bd-list .bd-ent').length === 200);
+st = await state();
+claim(st.last === '31', 'counting down as it goes', st.last);
+await p.click('.bd-win[data-w="week"]'); await p.waitForTimeout(400);
+claim(/Low to high/.test((await state()).sort), 'the order holds across a window change');
+await p.click('#bd-sort'); await p.waitForTimeout(400);
+st = await state();
+claim(st.first === '1' && st.firstName === 'p0' && /score\.desc/.test(last()), 'and turns back to best first', `${st.firstName} at ${st.first}`);
 
 claim(errors.length === 0, 'no page errors', errors.slice(0, 3).join(' | '));
 await ctx.close();

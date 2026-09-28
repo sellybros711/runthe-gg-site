@@ -169,17 +169,22 @@
     if (o.dailyKey) q.push('daily_key=eq.' + encodeURIComponent(o.dailyKey));
     else q.push('run_mode=eq.' + encodeURIComponent(o.mode || 'free'),
                 'daily_key=is.null');
+    if (o.since) q.push('created_at=gte.' + encodeURIComponent(o.since));
     const res = await call(TABLE + '?' + q.join('&'), {
       headers: headers({ Prefer: 'count=exact', Range: '0-0' }),
     });
     return countFrom(res);
   }
 
-  /* The top rows of a board, newest-first within a tie. */
+  /* A page of a board. Best first by default, the earlier season first within a
+     tie; `asc` turns the whole order round, so the worst season leads and the
+     later of two tied seasons comes first. `offset` pages down it. */
   async function top(opts) {
     const o = opts || {};
     const n = Math.max(1, Math.min(100, o.limit || 25));
-    const q = ['select=' + COLS, 'order=score.desc,created_at.asc', 'limit=' + n];
+    const order = o.asc ? 'score.asc,created_at.desc' : 'score.desc,created_at.asc';
+    const q = ['select=' + COLS, 'order=' + order, 'limit=' + n];
+    if (o.offset > 0) q.push('offset=' + Math.floor(o.offset));
     if (o.dailyKey) q.push('daily_key=eq.' + encodeURIComponent(o.dailyKey));
     else q.push('run_mode=eq.' + encodeURIComponent(o.mode || 'free'),
                 'daily_key=is.null');
