@@ -47,7 +47,7 @@ function shelf(group, list) {
   return list.map(([id, name, desc, tier, test]) => A(id, name, desc, tier, group, test));
 }
 
-const GROUPS = ['Milestones', 'Winning', 'October', 'The all-time list',
+const GROUPS = ['Milestones', 'Winning', 'October', 'Against real teams',
   'Roster craft', 'The roster', 'The modes', 'The daily', 'Streaks'];
 
 // Helpers over a single row -----------------------------------------------
@@ -170,20 +170,20 @@ shelf('October', [
     (c) => c.titles >= 1 && c.wsLosses >= 1],
 ]),
 
-shelf('The all-time list', [
-  ['rank_top1000', 'On the list', 'Build a top-1000 team of all time.', 'bronze',
+shelf('Against real teams', [
+  ['rank_top1000', 'On the list', 'Build a roster that ranks in the top 1,000 of real MLB teams.', 'bronze',
     (c) => c.bestRank != null && c.bestRank <= 1000],
-  ['rank_top500', 'Top 500', 'Build a top-500 team of all time.', 'bronze',
+  ['rank_top500', 'Top 500', 'Build a roster that ranks in the top 500 of real MLB teams.', 'bronze',
     (c) => c.bestRank != null && c.bestRank <= 500],
-  ['rank_top100', 'Top 100', 'Build a top-100 team of all time.', 'bronze',
+  ['rank_top100', 'Top 100', 'Build a roster that ranks in the top 100 of real MLB teams.', 'bronze',
     (c) => c.bestRank != null && c.bestRank <= 100],
-  ['rank_top50', 'Top 50', 'Build a top-50 team of all time.', 'silver',
+  ['rank_top50', 'Top 50', 'Build a roster that ranks in the top 50 of real MLB teams.', 'silver',
     (c) => c.bestRank != null && c.bestRank <= 50],
-  ['rank_top10', 'Top 10', 'Build a top-10 team of all time.', 'gold',
+  ['rank_top10', 'Top 10', 'Build a roster that ranks in the top 10 of real MLB teams.', 'gold',
     (c) => c.bestRank != null && c.bestRank <= 10],
-  ['rank_top3', 'Podium', 'Build a top-3 team of all time.', 'legend',
+  ['rank_top3', 'Podium', 'Build a roster that ranks in the top 3 of real MLB teams.', 'legend',
     (c) => c.bestRank != null && c.bestRank <= 3],
-  ['rank_one', 'Greatest ever assembled', 'Build the number one team of all time.', 'legend',
+  ['rank_one', 'Greatest ever assembled', 'Build a roster better on paper than every real MLB team.', 'legend',
     (c) => c.bestRank != null && c.bestRank <= 1],
   /* Thresholds follow what the rating MEANS, re-measured over 390 drafts after
      teamRating() was re-anchored on what a draft can actually produce. 80 is a

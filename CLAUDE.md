@@ -17276,6 +17276,18 @@ thing that says the season backed the roster up. Every rank still shows, in its
 labelled cell. Proved in both directions in one afternoon: shown on a 98-64 run at
 #54, hidden on 87-75 and on 76-86.
 
+**AND THEN THE RIBBON WENT ALTOGETHER, because the rank under it is not a claim
+about being great.** It compares twelve star seasons, on paper, against real clubs'
+own men, so it is cheap: over 150 drafts a greedy bot lands in the top 100 on 93 and
+in the top 10 on 34. A gate at "top 100 and reached October" was therefore shown on
+almost every playoff run. A player read "8TH-GREATEST TEAM OF ALL TIME" and a cell
+labelled "All-time rank" that tapped through to the leaderboard, where they were 74th,
+and called it false. They were right. The ribbon and `crownedRank` are gone from the
+screen and the share card. The cell reads `Of 2,717 real MLB teams` (the count comes
+from `ratingTable`), opens nothing, and every other surface (the board row, the daily
+share, the badges, both how-to pages) says "vs real MLB teams" rather than "all time".
+`check-run` section 0 fails on any of those coming back.
+
 **RUN IT BACK NOW REPLAYS THE MODE IT WAS RUN IN.** It said "Draft again" and went
 to the front page, whose button is Classic whatever was just played, so the one
 control on that screen for doing it again quietly took the mode away. **The daily

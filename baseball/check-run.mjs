@@ -237,39 +237,24 @@ async function toResults(p) {
   return !!(await p.$('#s-over.on'));
 }
 
-// ══ 0. the all-time ribbon has one rule, and the share card obeys it ════════
-head('0. THE RIBBON HAS ONE RULE, AND THE SHARE CARD READS IT');
-/* The results screen and the share card both hang "Nth-greatest team of all
-   time" over a season. The screen's copy was gated to a top 100 roster that
-   reached October and the card's was not, so a 73-89 season that missed the
-   playoffs went out to a group chat as the 439th-greatest team of all time. A
-   played run cannot be relied on to land either side of that line, so the rule
-   is lifted out of the page and asked directly, and the card is held to it. */
+// ══ 0. nothing calls a roster the greatest team of all time ═══════════════
+head('0. THE RANK AGAINST REAL TEAMS SAYS WHAT IT IS, AND NOTHING MORE');
+/* allTimeRank ranks a roster's talent ON PAPER against every real MLB
+   team-season. A drafted roster is twelve star seasons, so it is cheap: a greedy
+   draft lands in that top 100 on 93 runs in 100. It used to be hung over the
+   record as "8th-greatest team of all time", labelled "All-time rank" beside the
+   leaderboard cell, and tapped through to the leaderboard. A player 74th on the
+   board read it as their place on it, and was right that it was false.
+   So no surface may call it the greatest team, or bare "all time". */
 {
   const src = readFileSync(new URL('./index.html', import.meta.url), 'utf8');
-  const body = (name) => {
-    const at = src.indexOf('function ' + name + '(');
-    if (at < 0) return null;
-    let i = src.indexOf('{', at), depth = 0;
-    for (let j = i; j < src.length; j++) {
-      if (src[j] === '{') depth++;
-      else if (src[j] === '}' && --depth === 0) return src.slice(at, j + 1);
-    }
-    return null;
-  };
-  const rule = body('crownedRank');
-  claim(!!rule, 'the page has one ribbon rule, crownedRank()');
-  if (rule) {
-    const crownedRank = new Function(rule + '; return crownedRank;')();
-    claim(crownedRank({ allTimeRank: 27, madePlayoffs: true }) === 27, 'a top 100 roster that reached October is crowned');
-    claim(crownedRank({ allTimeRank: 27, madePlayoffs: false }) === null, 'a top 100 roster that missed October is not');
-    claim(crownedRank({ allTimeRank: 439, madePlayoffs: true }) === null, 'a roster outside the top 100 is not, even in October');
-    claim(crownedRank({ allTimeRank: null, madePlayoffs: true }) === null, 'a run with no rank (All-Time Staff) is not');
-  }
-  const card = body('drawShareCard') || '';
-  claim(/crownedRank\(o\)/.test(card), 'the share card asks crownedRank() before it draws the ribbon');
-  claim(!/ordinal\(o\.allTimeRank\)/.test(card), 'and never prints the raw rank as a ribbon',
-    'drawShareCard still formats o.allTimeRank into the ribbon line directly');
+  const code = src.replace(/\/\*[\s\S]*?\*\//g, '');
+  claim(!/greatest team of all time/i.test(code), 'no line calls a roster the Nth-greatest team of all time');
+  claim(!/GREATEST TEAM OF ALL TIME/.test(code), 'and the share card does not either');
+  claim(!/'All-time rank'|'ALL-TIME RANK'|' all time'\)/.test(code), 'the rank is never labelled bare "all time"');
+  claim(!/ro-rank-go/.test(code), 'the rank cell does not open the leaderboard');
+  const ach = readFileSync(new URL('./achievements.js', import.meta.url), 'utf8');
+  claim(!/team of all time/.test(ach), 'no badge promises a team of all time');
 }
 
 // ══ 1. a Classic run, end to end ═══════════════════════════════════════════
@@ -295,7 +280,7 @@ const r = await p.evaluate(() => {
   };
   return {
     record: txt('ro-record'), verdict: txt('ro-verdict'),
-    rating: txt('ro-rating'), rank: txt('ro-rank'), eff: txt('ro-place'), effL: txt('ro-place-l'),
+    rating: txt('ro-rating'), rank: txt('ro-rank'), rankL: txt('ro-rank-l'), eff: txt('ro-place'), effL: txt('ro-place-l'),
     takes: txt('ro-takes'), arch: txt('ro-arch'),
     rosterRows: document.querySelectorAll('#r-roster .rrow, #r-roster .rline, #r-roster li').length,
     rosterText: (document.getElementById('r-roster') || {}).textContent?.trim().length || 0,
@@ -311,7 +296,8 @@ claim(/\w/.test(r.verdict), `a verdict, rather than an empty hero: ${JSON.string
    twice, and a branch beside them read a field outcomeOf has never set, so it was
    dead on every run the game had ever played. An empty cell renders perfectly.
 */
-for (const [k, label] of [['rating', 'Team rating'], ['rank', 'All-time rank']]) {
+claim(/^Of [\d,]+ real MLB teams$/.test(r.rankL), `the rank says which list it is on, with the real count: ${JSON.stringify(r.rankL)}`);
+for (const [k, label] of [['rating', 'Team rating'], ['rank', 'Rank against real MLB teams']]) {
   claim(/\d/.test(r[k]), `${label} carries a number: ${JSON.stringify(r[k])}`);
 }
 /* THE GRADE IS GONE, asked for by the owner, and the middle cell is the season's
@@ -343,7 +329,7 @@ claim(oct.visible === !oct.missed,
 
 /* The two leaderboard cells open the board this season was filed on, and Back
    comes home to the result rather than to the front page. */
-for (const id of ['#ro-place-go', '#ro-rank-go']) {
+for (const id of ['#ro-place-go']) {
   await p.click(id);
   const bd = await p.evaluate(() => ({ on: !!document.querySelector('#s-board.on'),
     tab: (document.querySelector('#bd-tabs .bd-tab.on') || {}).textContent || '' }));
