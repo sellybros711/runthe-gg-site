@@ -14245,6 +14245,31 @@ the submit's BODY calls `rtd_board_day(`, so that is what the row asks. The fix
 is re-running 97, which is idempotent and was driven over an old copy with no
 error.
 
+### October has suspense, and a game 7 is played in front of you
+
+```
+node baseball/check-october.mjs     plays seasons until one reaches a decider
+```
+
+Asked for as the playoffs going by too fast. **Nothing here decides anything**: the
+bracket and every game were settled by the engine before October is shown.
+
+- **The bracket is slower** (`BRK_STEP` 880, was 520) and each series flips in.
+- **Your series lands a game at a time** on a strip above the bracket
+  (`seriesReveal`): a game waits on screen, lands, and the series line moves. A
+  game that can end the series waits longer. Classic and the daily take this path,
+  and so does "Sim the series" in the modes that play October out.
+- **A deciding game is never revealed there** (`isDecider`: both sides one win
+  away). It is played on the game screen behind a Game N card (`g7Intro`), at 1x
+  whatever the saved speed was, and the saved speed comes back after it.
+- **Tension is read off the game state** (`leverage`): late (7th on) and close
+  (two runs or fewer), and the tying run on base or at the plate. It slows the
+  pace, tightens the field, and gives a big at bat a "here's the pitch" beat.
+- **Skip ahead moves one step and never runs the rest of October.** It used to
+  fall through to `simRestOfOctober` whenever no reveal was running, so a player
+  tapping it through a series skipped a game 7 still to come. Only the "Sim the
+  rest of October" link does that now.
+
 ### The leaderboard opens rows, has windows, and marks champions and records
 
 ```
