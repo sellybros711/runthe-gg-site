@@ -14516,6 +14516,44 @@ The ball does not flip in the dark theme, for the same reason the draft
 button's hide does not. `BALL_SEAMS` is computed once and shared by every
 badge.
 
+### October got harder, and chemistry is capped at +12
+
+Reported by players: the World Series was too easy to win and chemistry was too
+strong. Three numbers in `engine.js`, measured over 200 drafts a bot at the $190M cap:
+
+| | was | now |
+|---|---|---|
+| `TITLE.PIVOT` | 84 | **90** |
+| `PLAYOFF_ROUND_STEP` | 0.12 | **0.15** |
+| `CHEMISTRY.MAX` | 0.15 | **0.12** |
+
+| bot | wins | Octobers | titles, was | titles, now |
+|---|---|---|---|---|
+| best available | 89.8 to 87.8 | 58% to 51% | 7.0% | **2.5%** |
+| careful | 94.6 to 92.4 | 77% to 70% | 10.0% | **7.5%** |
+| chases chemistry | 97.0 to 93.3 | 81% to 76% | 14.5% | **6.5%** |
+
+**The pivot is where the title stops being stiffened**, on the `rating` yardstick
+(squadRating), so moving it from 84 to 90 means most rosters now meet a tougher
+opponent in the Championship Series and the World Series. The round step makes every
+round after the first a little harder for everybody. Titles pooled across the three
+bots went 10.5% to 5.5%, and the chemistry chaser went from the best title bot to
+level with careful drafting, which is the other half of what was asked.
+
+**Chemistry is a curve toward the cap that never reaches it**, so the cap cut made
+the old +12 and +14 badge rungs impossible. The five chemistry rungs keep their share
+of the cap (+3, +6, +8, +10, +11) and keep their ids, because a badge is derived from
+stored rows. Lowering a threshold strips nobody. The coach's "Great clubhouse
+chemistry" line moved from 9 to 7 for the same reason. Player copy that names the cap
+reads `E.chemPoints(E.CHEMISTRY.MAX)`, so it moved on its own.
+
+**116 wins is still reachable**: 2 of 500 chemistry drafts, best 121 (13 of 500
+before). The quick badge sweep excuses the record rungs and the title-plus-something
+rungs on the half of each it lights; the full sweep lights all of them.
+
+**Board rows filed before this sit high**, the same as any balance change on a live
+board.
+
 ### The cap is $190M now, because $170M made October a coin flip for most drafts
 
 Reported by players: the cap felt too low and it was hard to make the playoffs.
@@ -15581,7 +15619,7 @@ in the row and do not move either.
 
 **It is a balance change and it was made on purpose**, which is what the old
 comment in `rebuildSimState` asked for. A higher rating buys a WEAKER opponent
-(`TITLE.PIVOT` is 84 and the edge is a multiplier on the opponent's scoring), so
+(`TITLE.PIVOT` was 84 then and is 90 now and the edge is a multiplier on the opponent's scoring), so
 at a fixed record a good roster's title rate falls **7.7% back to 5.7%**. Cutting
 a player no longer makes October easier.
 
@@ -16529,7 +16567,7 @@ So a 2011 Marlin and a 2013 Marlin were strangers, and a 1952 Boston Brave and a
 Milwaukee Brave were strangers. **A link that does not fire is a link nobody can see
 the absence of.** Measured on a fixed set of 150 drafted rosters, the fix is worth
 **+0.46 franchise links a roster and +0.0087 of net chemistry**, which on this game's
-own scale (the 0.15 cap is about 21 wins) is **about +1.2 wins**. Recorded rather
+own scale (the cap was 0.15 then, about 21 wins) is **about +1.2 wins**. Recorded rather
 than compensated: those links should always have fired, so it is a correction and not
 a buff, and board rows filed before it sit very slightly low.
 
