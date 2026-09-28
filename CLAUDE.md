@@ -398,6 +398,76 @@ ranks. One number for everybody, and it steps up on the day a mode launches. Nob
 anything: ranks are derived, so seasons a tester already played are counted the moment the
 shelf appears.
 
+### Game Day: badges for playing while the real league is
+
+```
+node football/check-gameday.mjs           every badge on the shelf, lit and dark, against the real schedule
+node football/build/nfl-schedule.mjs      rebuild football/data/nfl_schedule.json
+```
+
+Asked for by the owner: badges that pull people in while NFL games are on. Twenty of them on
+a `Game Day` shelf. The base one is **Home crowd**: finish a season during a real game with a
+player from either team in it. Everything else builds on that: 8 and 32 teams, both sidelines,
+a division game, four live teams at once, the three night games, a Sunday doubleheader,
+international, Thanksgiving, the playoffs, the Super Bowl, a club that goes on to win, an
+underdog that does, and 3, 8 and 18 different NFL weeks.
+
+**STILL DERIVED, AND IT NEEDED NO MIGRATION.** A row's `created_at` is written by the server,
+so a phone clock cannot move it. The other half is `football/data/nfl_schedule.json`, built off
+nflverse's `games.csv`: every kickoff as a UTC instant, both clubs in this site's codes (their
+`LA` is our `LAR`), the game type, the closing favourite, the final score, and a list of tags
+worked out in Eastern time at build time (`div intl tnf snf mnf early late thanks xmas post sb`)
+so the page never does time zone arithmetic. A game is ON from its kickoff to `GAME_DAY_MS`
+(three and a half hours) after it. **It is retroactive**: the file starts at the 2025 season,
+so every row filed on a game day since then is judged the moment the shelf ships.
+
+**The club is the player's franchise, not his city.** A 2000 St. Louis Ram counts for today's
+Rams, the same way the club collections already work.
+
+**FILED, NOT DRAFTED.** The time on a row is when the season finished. A run is a few minutes,
+so the badge copy says "finish a season" rather than claim a draft time nothing records.
+
+**`.github/workflows/nfl-schedule.yml` refreshes it twice a day and commits only when it
+moved.** A flexed kickoff, a final score and the playoff games all arrive on nobody's
+timetable, and a stale file is badges that silently do not light. The builder writes no clock,
+for the injury file's reason, and the check runs against the fresh file before it is committed.
+The page fetches it `no-cache` with no `?v=`, because a bot rewrites it under one name.
+
+**No schedule is "not known", never "no".** `achReady` loads the file beside the defensive pool
+and `achEvaluate` passes it as `opts.schedule`; with none, every Game Day test is false, which
+is the absent-is-not-zero rule this file already runs on.
+
+**They can only be earned in season**, which is a wait rather than a wall, so they are in the
+catalog and count toward GOAT. The tier rungs are absolute badge counts, so twenty more badges
+only gives everybody more to earn.
+
+**THE COLLEGE GAME HAS ITS OWN SHELF, 21 BADGES ON SATURDAYS.** `cfb/achievements.js` carries
+the same design with the sport's own days: a noon kickoff, a night game, a weeknight, a
+neutral site, Thanksgiving week, conference title games, bowls, the playoff and the title game,
+10 and 25 schools, and 3, 8 and 14 weeks. The schedule is `cfb/data/cfb_schedule.json`, built by
+`cfb/build/cfb-schedule.mjs` off sportsdataverse's cfbfastR-data, which is on
+raw.githubusercontent and so reachable from the sandbox as well as a runner. Only games the
+game's own 83 schools play are kept, a school is matched by NAME (all 83 match the source
+exactly, and the build refuses to write if one stops), a game whose kickoff is still TBD is
+left out until it has a time, the underdog is the lower pregame Elo, and the window is four
+hours because a college game runs longer.
+
+**The college time is only the server's for a signed-in player.** That cabinet is read off the
+board; a guest's is this browser's history, stamped by the phone, the same as every calendar
+badge here, and a guest's badges are offered rather than kept. The page fetches the schedule at
+boot, never awaited, and every `evaluate` call passes it; `test_gameday.mjs` reads each call.
+
+`nfl-schedule.yml` builds both files as independent steps, so one source being down never stops
+the other landing, and goes red afterwards if either failed. `test_achievements.mjs` hands the
+Game Day shelf to `test_gameday.mjs` by name rather than demanding a synthetic career light it,
+and `test_cabinet.mjs` now reads the shelf count off the catalog instead of a literal 8.
+
+**The check asks both halves of every claim**: a badge lights at the right moment and stays
+dark a minute before kickoff, after the window, for the wrong club, across two moments, across
+two weeks, and for the favourite winning. It also holds the schedule to the catalog (every tag a
+badge reads exists in the file) and the page to the wiring. Two defects were reintroduced to
+prove it bites: a window that never closes, and an upset that ignores the favourite.
+
 ### The premium bundle, and the check that boots both views
 
 ```
@@ -5301,6 +5371,56 @@ on the week, so a reader told on Monday is not told again on Tuesday.
 **A profile image only a winner has is a claim about an account, so it is the board's own
 problem**: `display_pro` is already the pattern, a derived boolean written by a trigger rather
 than typed, because a mark anybody can set is a mark that means nothing.
+
+## College Fantasy Challenge, a competition of its own
+
+```
+node cfb/build/test/test_fantasy.mjs --quick   the builders, no network, no browser
+node cfb/build/test/test_fantasy.mjs           and the page, in a browser, against a stub
+node cfb/build/fantasy/pool.mjs [--week N]     the week about to be played (dry by default)
+node cfb/build/fantasy/injuries.mjs --write    who is out, for the live week
+node cfb/build/fantasy/live.mjs --why          what a live tick would do
+psql -d cfbf -f supabase/test/fantasy_base.sql, 101, 111, then 128, then
+psql -d cfbf -f supabase/test/cfb_fantasy_test.sql
+```
+
+`cfb/fantasy/index.html` is the NFL page ported, and it lives only in the college game
+(the door is on `/cfb/`). **It shares no row with the NFL challenge**: its own tables
+(`cfb_fantasy_*`, `supabase/128_cfb_fantasy.sql`), its own board, its own prize, its own
+localStorage key (`cfb_fantasy_<season>_w<week>`). `football/fantasy/entries.js` serves both
+and reads `window.PS_FANTASY_PREFIX` at call time; absent is the NFL. The page test asserts
+not one call reaches an NFL table and not one key is written under `ps_fantasy_`, because a
+port's quiet failure is keeping a piece of what it was ported from.
+
+**ESPN IS THE ONLY SOURCE.** No CFBD key is set, and nothing else reachable carries college
+box scores. `site.api.espn.com` answers 403 to some runner IPs, so `espn.mjs` asks
+`site.web.api.espn.com` first. ESPN athlete ids are CFBD's, so a man's prior season in
+`cfb_player_seasons.json` joins on `player_id`.
+
+| | how |
+|---|---|
+| the slate | the twenty highest scoring FBS games of the week (`pickSlate`), by rank, spread and total |
+| the season so far | `cfb/data/fantasy/season_<season>.json`, every finished week's box scores, read once |
+| the projection | season to date, a prior from last season, availability and the Vegas implied total |
+| the cap | swept on each week's own board (`cap.mjs`), the round number where greedy and budget cross |
+| the swap | any man, before his game, for a man at his position priced at his price or up to a quarter (and at least $5M) below |
+| settling | ESPN's box score, final once every game is over and the last kicked off 4.5 hours ago |
+
+**THE SWAP IS OPEN TO ANY MAN, not only a flagged one.** College football files no injury
+report, so the page flags what it can find (ESPN's out and suspended roster groups, any
+designation ESPN carries, and who missed his team's last game) and the entrant acts on the
+rest. The band stops it being an upgrade: never above his price. The band rides on the week
+row, so the page and the server read one number.
+
+**THE WEEK LOCKS AT THE FIRST SLATE KICKOFF**, which is often a Thursday or Friday night.
+**THERE IS NO RESULTS FILE**: points live only in `cfb_fantasy_results`, and the page shapes
+the server's answer as the NFL page's file so nothing downstream branches.
+
+Workflows: `cfb-fantasy-pool.yml` (Monday 11am Eastern, dry run by hand), `cfb-fantasy-injuries.yml`
+(twice a day, commits only when the report moved), `cfb-fantasy-live.yml` (a loop woken by a
+wide cron net from Thursday evening to early Sunday UTC). The prize is the NFL's rule
+exactly: 30 days of Pro on the `fantasy:` source prefix (`fantasy:cfb-<season>-w<week>`), so
+the gold name, checkout and receipt filters that already skip a pass skip this one too.
 
 ## The wrestling game
 
@@ -13998,36 +14118,47 @@ node baseball/build/icons.mjs     every icon, drawn from the one pixel ball
 python3 baseball/build/logo.py    the logo, cut off its stock
 ```
 
-### IT IS SERVED AND UNLISTED, and a launch is four edits rather than one
+### IT IS LIVE, and a launch is four edits rather than one
 
 ```
 node baseball/check-posture.mjs   the four rows, against INDEXED and LINKED
 ```
 
-Run The Diamond is indexable, in `sitemap.xml` and carrying the AdSense tag
-behind its Consent Mode defaults, and **the home page does not link it**. That is
-Segue's row in the table under the setlist game, not hoops' and not the full
-launch. It was launched with a home page link for a day and the owner took the
-link back off, so what follows describes a launch that was made, and undone
-by one half.
+Run The Diamond is indexable, in `sitemap.xml`, carrying the AdSense tag behind its
+Consent Mode defaults, **and linked from the home page** (launched 2026-09-28, the
+owner's call). It was launched once before with a home page link for a day and the
+owner took the link back off, which is why the guard has two declarations.
 
 **SO THE GUARD HAS TWO DECLARATIONS RATHER THAN ONE.** `INDEXED` holds the
 first three rows (robots, sitemap, ad tag), which move together. `LINKED` holds
-the fourth: the phone tile, the desktop card, the JSON-LD `ItemList` entry and
-any nav link. Each group is all or nothing, and `LINKED` without `INDEXED` is
-refused outright, because it sends visitors to a page that tells a crawler to
-stay away. Driven four ways: the launched home page against `LINKED = false`
-names the nav link, the tile and card, and the JSON-LD; the unlisted page against
-`LINKED = true` names all four; the launched page against `LINKED = true` passes;
-and `LINKED` without `INDEXED` names the contradiction.
+the fourth: the home page hub tile, the All games card, the JSON-LD `ItemList`
+entry and any nav link. Both are true now. Each group is all or nothing, and
+`LINKED` without `INDEXED` is refused outright, because it sends visitors to a page
+that tells a crawler to stay away.
 
-**RELAUNCHING ON THE HOME PAGE IS ONE LINE AND ONE FILE.** Set `LINKED = true`
-and restore `index.html` from the launch commit (`e1b7ec63`), which carries the
-tile, the card, the prose paragraph, the FAQ line and the JSON-LD entry in one
-piece. Then `node scripts/check-numbers.mjs --update`, because the home page's
-cap and season claims come back with it (4 each against 6). The `MLB` import in
-that file was left in for exactly this: it allows two values and claims nothing
-while no page states them.
+**THE HOME PAGE WAS REDESIGNED BETWEEN THE TWO LAUNCHES**, so the first launch's
+markup (`e1b7ec63`) no longer fits and the guard's old reading of it went stale: it
+asked for a `.gtile` and a per-device card, and the hub is now `<a class="tile
+g-...">` tiles plus the `<article class="feat ...">` library the sport filter works
+on. It asks for those now, and each was proved by taking it out. The launch touched
+every place the home page lists its games: the hub tile, the rotating featured spot
+(`G` in the inline script), the card and its filter chip (the counts are written by
+hand), the prose paragraph, the FAQ in both its HTML and JSON-LD copies, the
+WebSite description, the `ItemList`, the footer, and the On deck strip, which lost
+its Baseball coming soon card. The hub holds six tiles beside the featured card on a
+desktop, so the More on the way tile came out rather than dropping into a row of its
+own. `scripts/newsletter/games.json` gained baseball the same day, which is that
+file's own rule.
+
+**The card's picture is the game's own ballpark**, rendered once to
+`baseball/park-card.svg` by `node baseball/build/park-card.mjs`, so the home page
+shows The Diamond without loading the game's scripts. Re-run it after changing how
+The Diamond is drawn and bump the `?v=` on the two references in `index.html`.
+
+**`check-numbers` reads the baseball pool now.** The season range fact knew the
+football and college pools only, so "since 1901" on the home page failed against
+1999 and 2005. The baseball pool is written with compact keys, so `seasonRange`
+reads `s` as well.
 
 **IT IS FOUR EDITS AND EVERY ONE OF THEM IS INVISIBLE ALONE.** A page dropped
 from the sitemap is still indexable and still linked, so nothing breaks and it
@@ -14042,7 +14173,7 @@ walks every INDEXABLE page and SKIPS anything noindexed, so putting the robots
 tag back here does not fail it: it stops auditing this game at all, and the ad
 tag, the consent ordering and the policy links go unasked with it. **A guard
 that goes quiet when a thing is half reverted is worse than no guard**, so the
-state is declared ONCE, as `LIVE` at the top of `check-posture.mjs`, and the
+state is declared ONCE, as `INDEXED` and `LINKED` at the top of `check-posture.mjs`, and the
 rows are asked against the declaration rather than against whatever the files
 happen to say. Un-launching means editing that line, which is the whole point.
 
@@ -14174,6 +14305,27 @@ object rows 23 and 24 ask for is in that copy. What tells it apart is whether
 the submit's BODY calls `rtd_board_day(`, so that is what the row asks. The fix
 is re-running 97, which is idempotent and was driven over an old copy with no
 error.
+
+### The leaderboard opens rows, has windows, and marks champions and records
+
+```
+node baseball/check-leaderboard.mjs
+```
+
+The front page's button opens on Classic, All time. **Every mode board has Today,
+This week and All time** (`boardWin`), sent as `created_at=gte` on `B.top`. Days are
+Eastern like the daily, and a week starts Monday. The daily board has no window,
+because it is one day already, and its tab reads Daily so it is not a second Today.
+
+**A row opens into its twelve** (`boardTeamHtml`). The picks and slots already
+ride on every row, so the team is rebuilt against this browser's own pool with no
+request. A man not in the pool is a replacement body from a cut, and says so.
+
+**A champion is gold** (`.champ`: a gold edge, a wash and a gold "Champions" word). **A record
+season is louder** (`.record`, `is_goat`, 117 wins or more: a moving gold and red
+edge and a red "Record" word). A record that also won it all wears both plus a
+glow. Only a record moves, and never under reduced motion. The `.record` background
+has three layers on purpose, so one keyframe animates both it and `.record.champ`.
 
 ### The profile, and everything on it is the server's
 
@@ -15141,6 +15293,13 @@ climbs the real ladder of fields one season count at a time:
 | Triple-A | Capital Park | 45 |
 | The Show | The Diamond (`home`) | 60 |
 
+**The Sandlot is drawn in the most detail of the road parks, on purpose**: it is the
+field a new player looks at longest. It carries bald spots where the fielders stand,
+weeds and dandelions where nobody plays (never on the skin), an old tire, a bike, a mitt
+and a ball bucket in FOUL ground so no chip covers them, and on the fence a painted
+scoreboard, a missing board with a dog's eyes behind it and two boards nailed back on
+crooked. `sandlotGround` and `SANDLOT_WALL` in `parks.js`.
+
 The track goes on through the eight big league parks (80, 100, 125, 155, 190, 230, 280,
 350), so a park still arrives every so often for as long as somebody plays. Off the track:
 **four SEASONAL parks** (Opening Day Mar 20 to Apr 10, Fireworks Night Jul 1 to 7, Haunted
@@ -15196,8 +15355,11 @@ the same coordinates and changes the grass, the dirt, the wall and everything
 behind it. The draft and squad fields (`PARKED_FIELDS`) extend the SVG's viewBox
 upward by `SKY` (10 units over 68) for the skyline. So `.field.parked` is
 `100/78` and `drawField` maps each chip's 68-unit y into the taller box. The home
-page hero passes no sky and always draws the home park, because its heights are
-measured against the fold.
+page hero passes no sky, because its heights are measured against the fold, and
+draws the park the account is using (`heroPark`), so a choice is the first thing a
+returning player sees. A guest sees the big league park. The profile hub carries
+the same park as a banner that opens the shelf, and both are redrawn when the
+server answers a change, so a refused save puts the real park back.
 
 **Every SVG id carries the field's suffix AND the park's id.** The profile draws
 all thirteen in one sheet beside the draft field. Two parks sharing a gradient id
@@ -16080,6 +16242,12 @@ tolerance is a few absolute pixels now, plus the claim no single reading can mak
 offset must not grow with the row**, because a derivation error is a fraction of a row
 and a border is not. Reintroduced, that defect now fails three assertions instead of one.
 
+**The Draft button wears a gold ring and a tag reading START HERE · CLASSIC MODE**,
+because beside the daily, the mode tiles and More ways to play the cream ball read as one
+option among several rather than the front door. The tag lives in `.hp-go` outside the
+button, because `.btn` clips, and takes no pointer. Its gold is fixed in both themes like the
+hide, and the glow breathes on opacity alone.
+
 **The daily card's label is a LABEL and not a second control.** The whole card has
 always been the button, so the desktop's CTA is drawn inside it and `.dc-go` is the
 only thing added. It names what the press does in each state, because the card opens
@@ -16526,6 +16694,70 @@ identity: 106 failures with the old engine.
 still to earn" a new account met nine lines of grey text and no badge anywhere. Each
 shelf shows its progress and a strip of its badges, rim in their tier, and a new
 account's first shelf is open.
+
+### A run in progress survives leaving the page
+
+```
+node baseball/check-resume.mjs     the banner asks and saves, and resuming is the same board
+```
+
+Asked for by the owner: pressing the banner during a game should ask first, and must
+not lose an active draft. Both banner links (`.lockup` and the RunThe.GG pill) leave
+the page, so during a run they `confirm()` first and save.
+
+**The save is `rtd_run_v1`, the run as it stood, and it belongs to the account (or
+guest) that made it.** It is written after every board (`nextSpin`), on every squad
+paint, and on `pagehide` and on the page going hidden, so a closed tab or a reload is
+covered as well as the banner. The front page offers it back (`#resume-card`).
+
+**THE BOARD ON SCREEN IS PART OF THE SAVE**, and resuming paints that board rather than
+spinning (`nextSpin(RUN.currentDraw)`). A resume that spun again would make leaving the
+page a free re-spin. `check-resume` proves it by reintroducing the spin.
+
+**The live season is never saved**, because its random stream is a closure. Once the
+first game is played the save stays the squad screen's, and a run is seeded, so coming
+back replays the SAME season with the same results. The banner says so when you leave
+mid-season. A finished run removes the save in `recordRun` (check-run asserts it), and
+so does quitting. Starting a new run over a saved one asks first, before any daily
+meter is charged (`okToReplace`).
+
+### The squad screen is a batting order and a staff, and Pro can move them
+
+```
+node baseball/check-lineup.mjs     the coach's order costs nothing, nothing beats it, and the page
+```
+
+Asked for by the owner: after the draft, all twelve read as a batting order and then
+the staff, set strategically for the player, and Pro can move men around before the
+season. `lineupList` in the page draws it on the squad screen and the results screen.
+
+**The coach's order is the season's BASELINE, so no balance number moved.**
+`LINEUP_WEIGHT` in `engine.js` is what a lineup spot is worth (The Book's reading: the
+two best bats hit second and first, the next cleanup, then third and fifth) and it
+averages exactly one. `coachOrder` puts the best bats in the heaviest spots, which is
+the most any order gets out of these nine, and `orderLoss` charges a different order
+what it gives up against that. A run nobody reordered plays exactly the season it
+always did. **A different order never pays more**, so moving a man is a choice with a
+visible price rather than a way for Pro to buy runs on a leaderboard. Measured: a
+reversed order costs about 1.3 wins, a random one about 0.6. `check-lineup` holds
+"nothing beats it" by exhaustion over all 362,880 orders of one nine, because asking
+`coachOrder` whether `coachOrder` is optimal is asking a function whether it agrees
+with itself.
+
+**`run.batOrder` holds ROSTER INDICES and null means the coach's.** A cut or a trade
+puts the new man at the same index, so a custom order keeps its spot for whoever
+replaces him, and a run on the coach's order is re-ordered by the coach for free.
+`R.tagged(run)` is the one roster the season reads, carrying each man's slot and each
+hitter's `_bat`; the season, the squad screen and October's at-bat games all read it.
+
+**The arms swap inside a group only** (`canSwapArms`): SP1 with SP2, and in All-Time
+Staff inside the rotation or the pen. The closer is its own job because the sim reads
+that slot by name for the save rate. Both groups are averaged into the season, so a
+swap moves nothing the season reads, only who starts which October game. The coach
+sets the rotation at the end of the draft too (`coachArms`, better arm at SP1).
+
+**It can be changed from the end of the draft until the first pitch** (`canReorder`),
+and only by Pro. A free account reads the order and a line saying Pro moves it.
 
 ### Run The Diamond Pro, and one free play of each mode a day
 

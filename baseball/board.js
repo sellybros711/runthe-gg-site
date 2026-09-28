@@ -183,6 +183,8 @@
     if (o.dailyKey) q.push('daily_key=eq.' + encodeURIComponent(o.dailyKey));
     else q.push('run_mode=eq.' + encodeURIComponent(o.mode || 'free'),
                 'daily_key=is.null');
+    /* A window: only seasons filed at or after this instant (today, this week). */
+    if (o.since) q.push('created_at=gte.' + encodeURIComponent(o.since));
     const res = await call(TABLE + '?' + q.join('&'), { headers: headers() });
     if (!res) return null;
     try { return await res.json(); } catch (_) { return null; }

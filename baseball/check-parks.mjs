@@ -225,6 +225,7 @@ async function openAs(opts) {
   }, opts);
   await p.goto(`http://localhost:${PORT}/baseball/`, { waitUntil: 'load' });
   await p.waitForSelector('#s-intro.on', { timeout: 20000 });
+  if (opts.home) return { ctx, p };
   await p.click('#b-start');
   await p.waitForSelector('#s-draft.on');
   await p.waitForFunction(() => document.querySelectorAll('#opts .tile').length > 0, null, { timeout: 25000 });
@@ -259,6 +260,34 @@ const rows = vet.map((r) => Object.assign({ u: 'acct1' }, r));
   claim(await parkOn(p) === 'monster', 'using a park redraws the draft on it');
   const stored = await p.evaluate(() => JSON.parse(localStorage.getItem('rtd_park_v1')));
   claim(stored && stored.acct1 === 'monster', 'and the choice is stored against the account');
+  await ctx.close();
+}
+head('4b. THE FRONT PAGE AND THE PROFILE SHOW THE PARK IN USE');
+{
+  const heroOn = (p) => p.evaluate(() => { const s = document.querySelector('#h-field svg'); return s && s.getAttribute('data-park'); });
+  const { ctx, p } = await openAs({ acct: 'acct1', rows, pref: { acct1: 'ivy' }, home: true });
+  claim(await heroOn(p) === 'ivy', 'the front page field is the park the account chose');
+  const chipsBefore = await p.evaluate(() => document.querySelectorAll('#h-field .chip').length);
+  await p.click('#b-profile');
+  await p.waitForSelector('#pf-park-go');
+  claim(/Ivy Corner/.test(await p.textContent('#pf-park-go')) && await p.evaluate(() => !!document.querySelector('#pf-park-go svg[data-park="ivy"]')),
+    'the profile shows the same park, drawn');
+  await p.click('#pf-park-go');
+  await p.waitForSelector('.pk-use[data-park="monster"]');
+  await p.click('.pk-use[data-park="monster"]');
+  await p.waitForTimeout(200);
+  claim(await heroOn(p) === 'monster', 'choosing another park redraws the front page on it');
+  await p.click('#pf-in .pf-back');
+  await p.waitForSelector('#pf-park-go');
+  claim(/Monster|monster/.test(await p.textContent('#pf-park-go')) || await p.evaluate(() => !!document.querySelector('#pf-park-go svg[data-park="monster"]')),
+    'and the profile follows');
+  const chipsAfter = await p.evaluate(() => document.querySelectorAll('#h-field .chip').length);
+  claim(chipsBefore >= 10 && chipsAfter === chipsBefore, `the front page keeps its chips through the change (${chipsBefore} then ${chipsAfter})`);
+  await ctx.close();
+}
+{
+  const { ctx, p } = await openAs({ rows, pref: { acct1: 'ivy' }, home: true });
+  claim(await p.evaluate(() => (document.querySelector('#h-field svg') || {}).getAttribute('data-park')) === 'home', 'a guest\'s front page shows the big league park');
   await ctx.close();
 }
 head('5. A PARK THE ACCOUNT CANNOT BACK IS NEVER DRAWN');

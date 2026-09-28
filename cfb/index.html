@@ -648,6 +648,29 @@ window.GA_ID='G-L29P5MRWKE';
      with no way to play for free". The pitch moved to the screen where it is honest, which
      is the wait wall inside the mode, after a season has been played. */
   .hp-commish .hp-namerow{display:flex;align-items:center;gap:7px}
+  /* COLLEGE FANTASY'S DOOR, a neon sign whose colour answers one question: is my lineup in
+     this week. Red until it is, green once it is. See ensureFantasyDoor(). */
+  .hp-cfbfan{position:relative;display:flex;flex-direction:column;align-items:center;gap:3px;
+    padding:14px 12px 12px;border-radius:12px;text-decoration:none;
+    background:linear-gradient(180deg,rgba(40,14,16,.9),rgba(20,12,14,.9));
+    border:1.5px solid rgba(239,68,68,.82);
+    box-shadow:0 0 18px -6px rgba(239,68,68,.75),inset 0 0 14px -8px rgba(239,68,68,.6)}
+  .hp-cfbfan.in{background:linear-gradient(180deg,rgba(12,36,22,.9),rgba(10,20,14,.9));
+    border-color:rgba(34,197,94,.82);
+    box-shadow:0 0 18px -6px rgba(34,197,94,.7),inset 0 0 14px -8px rgba(34,197,94,.55)}
+  .hp-cfbfan:active{transform:translateY(1px)}
+  .hp-cfbfan .hp-name{font-family:var(--fd);font-size:19px;font-weight:800;letter-spacing:.02em;
+    color:#ffe8e8;line-height:1}
+  .hp-cfbfan.in .hp-name{color:#dcfce7}
+  .hp-cfbfan .hp-sub{font-family:var(--fn);font-size:11.5px;font-weight:700;
+    color:rgba(255,232,232,.72);line-height:1.35;text-align:center;max-width:34ch}
+  .hp-cfbfan.in .hp-sub{color:rgba(220,252,231,.72)}
+  .hp-cfbfan .hp-tag{position:absolute;top:-8px;right:10px;font-family:var(--fn);
+    font-size:9.5px;font-weight:900;letter-spacing:.1em;text-transform:uppercase;
+    padding:3px 8px;border-radius:6px;background:rgba(239,68,68,.18);
+    border:1px solid rgba(239,68,68,.55);color:#ffe8e8}
+  .hp-cfbfan.in .hp-tag{background:rgba(34,197,94,.18);border-color:rgba(34,197,94,.55);
+    color:#dcfce7}
   /* THE PACE LINE. Quieter than the sentence above it and set apart by a hairline, because
      it is a different KIND of thing: the sentence says what the mode is for and this says
      what it costs you in time. Not a tag and not a lock, for the reason written where it is
@@ -3931,7 +3954,7 @@ or endorsed by the NCAA, the CFP or any school.
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="engine.js?v=35"></script>
 <script src="run.js?v=15"></script>
-<script src="achievements.js?v=11"></script>
+<script src="achievements.js?v=12"></script>
 <script src="auth.js?v=8"></script>
 <script src="board.js?v=7"></script>
 <!-- The tester list for Commish Simulator, which this page reads to decide whether to draw
@@ -5370,6 +5393,7 @@ function ensureCommishDoor(){
     if(commishDoor&&commishDoor.parentNode) commishDoor.parentNode.removeChild(commishDoor);
     if(commishLead&&commishLead.parentNode) commishLead.parentNode.removeChild(commishLead);
     commishDoor=null; commishLead=null;
+    ensureFantasyDoor();
     return;
   }
   if(!commishLead){
@@ -5480,6 +5504,61 @@ function ensureCommishDoor(){
   }else{
     ctas.appendChild(commishLead); ctas.appendChild(commishDoor);
   }
+  ensureFantasyDoor();
+}
+
+/* ── COLLEGE FANTASY'S DOOR ─────────────────────────────────────────────────────────
+ *
+ * The weekly challenge lives at /cfb/fantasy/, and it is this game's alone: separate
+ * tables, a separate board and a separate prize from the NFL one. DRAWN ONLY WHEN THERE IS
+ * A WEEK, read off the pointer the Monday build writes, so a season with no board built
+ * yet shows no door rather than a door to a screen that says nothing is on.
+ *
+ * THE BORDER IS THE STATE, which is the NFL door's rule arriving here: red until a lineup
+ * is in, green once one is, read off the mode's own record for the live week. That record
+ * is written only after the server has said yes, so a refused entry never lights it green,
+ * and it FAILS SOFT TO RED, which is the safe direction.
+ *
+ * A LINK AND NOT A BUTTON, because it leaves the page. A guest is not stopped here: the
+ * fantasy page tells them it needs an account before they draft, with a way to sign in. */
+let cfbFanWeek=null, cfbFanAsked=false, cfbFanDoor=null;
+function cfbFanEntered(){
+  if(!cfbFanWeek) return false;
+  try{
+    const s=JSON.parse(localStorage.getItem('cfb_fantasy_'+cfbFanWeek.season+'_w'+cfbFanWeek.week)||'null');
+    return !!s&&s.submitted!=null;
+  }catch(_){ return false; }
+}
+function ensureFantasyDoor(){
+  if(!cfbFanAsked){
+    cfbFanAsked=true;
+    fetch('/cfb/data/fantasy/now.json',{cache:'no-cache'})
+      .then(r=>r.ok?r.json():null)
+      .then(n=>{
+        if(!n||n.season==null||n.week==null) return;
+        cfbFanWeek=n;
+        ensureFantasyDoor();
+      })
+      .catch(()=>{});
+    return;
+  }
+  const ctas=document.querySelector('.ctas');
+  if(!ctas||!cfbFanWeek) return;
+  if(!cfbFanDoor){
+    cfbFanDoor=document.createElement('a');
+    cfbFanDoor.className='hp-cfbfan'; cfbFanDoor.id='b-hp-fantasy';
+    cfbFanDoor.href='/cfb/fantasy/';
+    cfbFanDoor.onclick=()=>{ ga('mode_opened',{mode:'fantasy',from:'home'}); };
+  }
+  const inn=cfbFanEntered();
+  cfbFanDoor.classList.toggle('in',inn);
+  cfbFanDoor.innerHTML='<span class="hp-tag">Beta</span>'
+    +'<span class="hp-name">Fantasy Challenge</span>'
+    +'<span class="hp-sub">'+(inn?'Your lineup is in for week '+cfbFanWeek.week+'.'
+      :'Six players from the week\'s biggest games. Top score wins Pro.')+'</span>';
+  const three=ctas.querySelector('.cta3');
+  if(three){ if(cfbFanDoor.nextSibling!==three) ctas.insertBefore(cfbFanDoor,three); }
+  else if(cfbFanDoor.parentNode!==ctas) ctas.appendChild(cfbFanDoor);
 }
 
 /* ── THE OFFER ON THE FRONT PAGE, WHICH ONLY THE PROFILE CARRIED ──────────────────────
@@ -7314,6 +7393,19 @@ function rowFromBoard(r){
   };
 }
 
+/* THE REAL COLLEGE SCHEDULE, for the Game Day shelf: which games were on when each season was
+   filed. A workflow rebuilds it under one name whenever a kickoff or a score moves, so it is
+   fetched no-cache rather than with a hand-written ?v= a bot cannot bump. Fetched once at boot
+   and never awaited: until it lands, or if it never does, the Game Day badges read as not
+   known and every other badge is untouched. */
+let CFB_SCHED=null;
+function loadCfbSchedule(){
+  fetch('data/cfb_schedule.json',{cache:'no-cache'})
+    .then(r=>{ if(!r.ok) throw new Error('cfb_schedule'); return r.json(); })
+    .then(j=>{ CFB_SCHED=j; })
+    .catch(()=>{});
+}
+
 function achState(rows){
   if(!window.PS_CFB_ACH) return null;
   /* HOW MANY SEASONS IS NOT HOW MANY ROWS. careerLoad holds the most recent five hundred
@@ -7323,7 +7415,8 @@ function achState(rows){
      board's rows and only with them: local history has none, because a history trimmed
      at four hundred has genuinely forgotten the rest. */
   const opts=(rows&&rows===careerRows&&careerTotal)?{total:careerTotal}:null;
-  return window.PS_CFB_ACH.evaluate(rows||loadHistory(),achResolve,new Date().toISOString(),opts);
+  return window.PS_CFB_ACH.evaluate(rows||loadHistory(),achResolve,new Date().toISOString(),
+    Object.assign({schedule:CFB_SCHED},opts||{}));
 }
 
 /* Badges the season just finished is responsible for, worked out by evaluating the cabinet
@@ -7358,10 +7451,10 @@ function recordRun(row){
   const rows=loadHistory();
   /* THE SEASON IS WRITTEN DOWN EITHER WAY. The row is this browser's own history and the
      results screen reads it; what an account buys is the badge actually being yours. */
-  const lastBefore=A?new Set(A.evaluate(rows,achResolve,row.created_at).earned.map(a=>a.id)):new Set();
+  const lastBefore=A?new Set(A.evaluate(rows,achResolve,row.created_at,{schedule:CFB_SCHED}).earned.map(a=>a.id)):new Set();
   rows.push(row); saveHistory(rows);
   const gained=A
-    ? A.evaluate(loadHistory(),achResolve,row.created_at).earned.filter(a=>!lastBefore.has(a.id))
+    ? A.evaluate(loadHistory(),achResolve,row.created_at,{schedule:CFB_SCHED}).earned.filter(a=>!lastBefore.has(a.id))
     : [];
   /* A GUEST IS TOLD WHAT THEY EARNED AND OFFERED IT, rather than told nothing. Telling them
      nothing was the previous rule and it was half right: what it was protecting against is a
@@ -8117,6 +8210,7 @@ function bootStep(say){
 }
 
 async function boot(){
+  loadCfbSchedule();
   const t0=(window.performance&&performance.now)?performance.now():0;
   try{
     /* The step lands after the parse, not after the response: the file of player seasons
@@ -8167,6 +8261,13 @@ async function boot(){
     /* A CHALLENGE LINK WINS. It is somebody else's message and the reason this page was
        opened; a held season is this player's own and will still be here afterwards. */
     if(!routeChallenge()&&!resumeHeld()) show('s-intro');
+    /* `#signin` OPENS THE ACCOUNT SHEET. The Fantasy Challenge page sends a guest here to
+       sign in, because the sign in form lives in this page and a second copy of it there
+       would be a second form to keep in step. The hash is cleared so a reload is a reload. */
+    if(location.hash==='#signin'){
+      try{ history.replaceState(null,'',location.pathname+location.search); }catch(_){}
+      openProfile('account');
+    }
     /* Anything a previous visit could not send. Deliberately not awaited and deliberately
        last: it is somebody else's message from an earlier session, and it must not hold up
        this one by a single frame. */

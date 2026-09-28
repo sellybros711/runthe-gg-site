@@ -16,13 +16,13 @@ import {
   gameOf, gamesOf, implied, boxRows, rosterOf, calendarOf,
 } from '../fantasy/espn.mjs';
 import {
-  pickSlate, gameScore, priorsFrom, buildMen, projectMan, positionLevels, pricePool,
+  pickSlate, nextWeek, gameScore, priorsFrom, buildMen, projectMan, positionLevels, pricePool,
   SLATE_SIZE, MATCHUP_HI, MATCHUP_LO, PROJ_LEVEL,
 } from '../fantasy/pool.mjs';
 import { seasonToDate } from '../fantasy/season.mjs';
 import { sweepCap, DRAFT } from '../fantasy/cap.mjs';
 import { poolSQL, resultsSQL } from '../fantasy/publish.mjs';
-import { buildReport } from '../fantasy/injuries.mjs';
+import { buildReport, desig } from '../fantasy/injuries.mjs';
 import { plan, easternDay } from '../fantasy/live.mjs';
 import { STAT_KEYS } from '../fantasy/espn.mjs';
 
@@ -160,6 +160,30 @@ let SLATE, EVENTS;
   ok('No. 1 against No. 2 outscores a Sun Belt blowout', top > dull + 40, `${top} against ${dull}`);
 }
 
+/* THE MONDAY BUILD. ESPN keeps a college week open until the Tuesday after it, so on the
+   Monday the job runs, the week just played is still "current" and has nothing left to kick
+   off. The first version picked it anyway and every Monday build died. */
+section('2b. the week to build is the first one with a slate');
+{
+  const day = 86400e3;
+  const cal = [3, 4, 5, 6].map((w) => ({
+    value: String(w), label: `Week ${w}`,
+    startDate: new Date(NOW + (w - 4) * 7 * day - 5 * day).toISOString(),
+    endDate: new Date(NOW + (w - 4) * 7 * day + 2 * day).toISOString(),
+  }));
+  const board = (events) => ({ leagues: [{ calendar: [{ value: '2', entries: cal }] }], events });
+  const played = EVENTS.map((e) => ({ ...e, date: new Date(NOW - 2 * day).toISOString(),
+    competitions: e.competitions.map((c) => ({ ...c, date: new Date(NOW - 2 * day).toISOString(),
+      status: { type: { state: 'post', completed: true } } })) }));
+  const asked = [];
+  const fetchWeek = async (_s, w) => { asked.push(w); return w === 4 ? board(played) : board(EVENTS); };
+  const open = calendarOf(board([])).filter((c) => Date.parse(c.end) > NOW).map((c) => c.week);
+  ok('the fixture has the week just played still open', open[0] === 4, open.join(','));
+  const w = await nextWeek(2026, NOW, fetchWeek);
+  ok('it builds week 5, not the week just played', w === 5, String(w));
+  ok('and it asked week 4 for a slate before passing it by', asked.includes(4), asked.join(','));
+}
+
 /* ─── 3. the board, the projection and the price ────────────────────────────────── */
 
 section('3. the board: projection and price');
@@ -258,6 +282,16 @@ section('5. the injury report says only what it knows');
     POOL.pool.filter((m) => m.missed_last).every((m) => !rep.men[m.player_id]
       || rep.men[m.player_id].st === 'missed' || m.team_id === tid));
   ok('the report carries no clock', !('built' in rep) && !JSON.stringify(rep).includes('T00:'));
+  /* ESPN's own designations, in the page's words. "Day-To-Day" is college football's
+     questionable, and an unrecognised word is left out rather than guessed at. */
+  ok('a designation ESPN carries is read', desig('Out') === 'out' && desig('Doubtful') === 'doubtful'
+    && desig('Day-To-Day') === 'questionable' && desig('Questionable') === 'questionable');
+  ok('  and an unknown one is not guessed', desig('Active') === null && desig('') === null);
+  const t2 = POOL.pool[1];
+  const rep2 = buildReport(POOL, new Map([[t2.team_id, new Map([[t2.player_id,
+    { name: t2.name, pos: t2.position, inj: { status: 'Day-To-Day', detail: 'Ankle' } }]])]]), []);
+  ok('  and it reaches the report', rep2.men[t2.player_id]
+    && rep2.men[t2.player_id].st === 'questionable' && rep2.men[t2.player_id].d === 'Ankle');
 }
 
 /* ─── 6. the SQL ────────────────────────────────────────────────────────────────── */

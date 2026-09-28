@@ -85,6 +85,79 @@
     return { current: run, best };
   }
 
+  /* ---------------- game day: a real college game on while the season was filed ----------------
+   *
+   * The Saturday half of the NFL game's Game Day shelf: football/achievements.js explains the
+   * design. A row's created_at is when the season was filed, the page hands in the schedule
+   * (cfb/data/cfb_schedule.json, built by cfb/build/cfb-schedule.mjs) as opts.schedule, and a
+   * game was ON from its kickoff to GAME_DAY_MS after it. No schedule means every answer is
+   * false, which is "not known".
+   *
+   * THE TIME IS ONLY AS GOOD AS WHERE THE ROW CAME FROM. A signed-in player's cabinet is read
+   * off the board, where the server wrote the time. A guest's is this browser's own history,
+   * stamped by the phone, so a guest could move the clock and light these, exactly as they can
+   * light every calendar badge here. A guest's badges are offered rather than kept, and
+   * claiming them brings the board's rows, so what ends up on an account is the server's time.
+   *
+   * A SCHOOL IS MATCHED BY NAME, because a roster's schools and the schedule's teams are
+   * spelled the same for every school in the game; the build refuses to write if one stops.
+   * A college game runs longer than an NFL one, so the window is four hours.
+   */
+  const GAME_DAY_MS = 4 * 3600 * 1000;
+  function gameDayOf(runs, schedule) {
+    const out = { matched: 0, schools: new Set(), tags: new Set(), split: false, conf: false,
+      slate: 0, weeks: new Set(), allday: false, called: false, upset: false };
+    const list = schedule && Array.isArray(schedule.games) ? schedule.games : null;
+    if (!list || !list.length) return out;
+    const games = list.map((g) => ({ g, k: Date.parse(g.k) })).filter((x) => !isNaN(x.k))
+      .sort((a, b) => a.k - b.k);
+    const kicks = games.map((x) => x.k);
+    const onAt = (t) => {
+      let lo = 0, hi = kicks.length;
+      while (lo < hi) { const m = (lo + hi) >> 1; if (kicks[m] <= t) lo = m + 1; else hi = m; }
+      const on = [];
+      for (let i = lo - 1; i >= 0 && kicks[i] > t - GAME_DAY_MS; i--) on.push(games[i].g);
+      return on;
+    };
+    const dayBy = Object.create(null);
+    for (const x of runs) {
+      if (!x.roster.length || !x.row.created_at) continue;
+      const t = Date.parse(x.row.created_at);
+      if (isNaN(t)) continue;
+      const on = onAt(t);
+      if (!on.length) continue;
+      const mine = new Set(x.roster.map((p) => p && p.school).filter(Boolean));
+      const live = new Set();
+      let hit = false;
+      for (const g of on) {
+        const inA = mine.has(g.a), inH = mine.has(g.h);
+        if (!inA && !inH) continue;
+        hit = true;
+        const tags = g.tags || [];
+        const wk = g.s + '-' + g.w;
+        out.weeks.add(wk);
+        for (const tg of tags) out.tags.add(tg);
+        if (inA) { out.schools.add(g.a); live.add(g.a); }
+        if (inH) { out.schools.add(g.h); live.add(g.h); }
+        if (inA && inH) { out.split = true; if (tags.indexOf('conf') >= 0) out.conf = true; }
+        for (const tg of ['noon', 'night']) {
+          if (tags.indexOf(tg) >= 0) (dayBy[wk] = dayBy[wk] || new Set()).add(tg);
+        }
+        if (Array.isArray(g.sc)) {
+          for (const [school, us, them] of [[g.a, g.sc[0], g.sc[1]], [g.h, g.sc[1], g.sc[0]]]) {
+            if (!mine.has(school) || !(us > them)) continue;
+            out.called = true;
+            if (g.fav && g.fav !== school) out.upset = true;
+          }
+        }
+      }
+      if (hit) out.matched++;
+      if (live.size > out.slate) out.slate = live.size;
+    }
+    out.allday = Object.values(dayBy).some((st) => st.size >= 2);
+    return out;
+  }
+
   /* ---------------- the context every test reads ---------------- */
 
   /*
@@ -171,6 +244,7 @@
     return {
       rows: asc,
       runs,
+      gameDay: gameDayOf(runs, opts && opts.schedule),
       total,
       titles,
       dayKeys,
@@ -219,6 +293,7 @@
      tier drives the color only: bronze, silver, gold, legend.
      group drives which shelf it sits on in the trophy case. */
   const A = (id, name, desc, tier, group, test) => ({ id, name, desc, tier, group, test });
+  const gd = (fn) => (c) => !!(c.gameDay && fn(c.gameDay));
 
   /* Ten team-seasons a college football fan can place from the id alone. Each one has a
      badge of its own below and they are counted together for the collector's badge, so
@@ -1057,6 +1132,58 @@
     A('talent_wasted', 'All that talent',
       'Miss the playoff with a team rated 95 or better.', 'silver', 'Roster craft',
       (c) => c.any((r) => !isTrue(r.made_playoffs) && has(r.overall) && Number(r.overall) >= 95)),
+
+    /* --- game day: finish a season while a real college game is on, with a man on the
+       roster from a school in it. See gameDayOf above. --- */
+    A('cgd_home', 'Home crowd',
+      'Finish a season during a real college game, with a player from either school.',
+      'bronze', 'Game Day', gd((g) => g.matched >= 1)),
+    A('cgd_schools_10', 'Channel surfing', 'Get Home crowd for 10 different schools.',
+      'silver', 'Game Day', gd((g) => g.schools.size >= 10)),
+    A('cgd_schools_25', 'All over the map', 'Get Home crowd for 25 different schools.',
+      'gold', 'Game Day', gd((g) => g.schools.size >= 25)),
+    A('cgd_split', 'Split crowd',
+      'Finish a season during a game, with players from both schools in it.',
+      'silver', 'Game Day', gd((g) => g.split)),
+    A('cgd_conf', 'Conference clash', 'Get Split crowd during a conference game.',
+      'gold', 'Game Day', gd((g) => g.conf)),
+    A('cgd_slate', 'Saturday slate',
+      'Finish a season with players from 4 schools that are all playing right now.',
+      'gold', 'Game Day', gd((g) => g.slate >= 4)),
+    A('cgd_noon', 'Big noon', 'Get Home crowd during a Saturday game that kicks off by noon.',
+      'silver', 'Game Day', gd((g) => g.tags.has('noon'))),
+    A('cgd_night', 'Under the lights', 'Get Home crowd during a Saturday night game.',
+      'silver', 'Game Day', gd((g) => g.tags.has('night'))),
+    A('cgd_weeknight', 'Weeknight football', 'Get Home crowd during a game on a weeknight.',
+      'silver', 'Game Day', gd((g) => g.tags.has('weeknight'))),
+    A('cgd_allday', 'All-day Saturday',
+      'Get Home crowd during a noon game and a night game on the same Saturday.',
+      'gold', 'Game Day', gd((g) => g.allday)),
+    A('cgd_neutral', 'Neutral site', 'Get Home crowd during a game on a neutral field.',
+      'silver', 'Game Day', gd((g) => g.tags.has('neutral'))),
+    A('cgd_rivalry', 'Rivalry week', 'Get Home crowd during Thanksgiving week.',
+      'gold', 'Game Day', gd((g) => g.tags.has('rivalry'))),
+    A('cgd_ccg', 'Championship Saturday', 'Get Home crowd during a conference title game.',
+      'gold', 'Game Day', gd((g) => g.tags.has('ccg'))),
+    A('cgd_bowl', 'Bowl season', 'Get Home crowd during a bowl game.',
+      'silver', 'Game Day', gd((g) => g.tags.has('bowl'))),
+    A('cgd_cfp', 'Playoff time', 'Get Home crowd during a College Football Playoff game.',
+      'gold', 'Game Day', gd((g) => g.tags.has('cfp'))),
+    A('cgd_natty', 'Title night', 'Get Home crowd during the national championship game.',
+      'legend', 'Game Day', gd((g) => g.tags.has('natty'))),
+    A('cgd_called', 'Called it',
+      'Get Home crowd with a player whose school goes on to win. It lands once the final is in.',
+      'silver', 'Game Day', gd((g) => g.called)),
+    A('cgd_upset', 'Upset special',
+      'Get Home crowd with a player from the underdog, and the underdog wins.',
+      'gold', 'Game Day', gd((g) => g.upset)),
+    A('cgd_weeks_3', 'Game day regular', 'Get Home crowd in 3 different weeks.',
+      'bronze', 'Game Day', gd((g) => g.weeks.size >= 3)),
+    A('cgd_weeks_8', 'Season ticket', 'Get Home crowd in 8 different weeks.',
+      'silver', 'Game Day', gd((g) => g.weeks.size >= 8)),
+    A('cgd_weeks_14', 'Perfect attendance', 'Get Home crowd in 14 different weeks.',
+      'legend', 'Game Day', gd((g) => g.weeks.size >= 14)),
+
     A('heisman_2_ring', 'Two winners, one ring',
       'Win the title with two Heisman winners on the roster.', 'legend', 'The roster',
       (c) => c.anyRoster((ros, row) => isTrue(row.title_won)
@@ -1064,7 +1191,7 @@
   ];
 
   const TIER_ORDER = { bronze: 0, silver: 1, gold: 2, legend: 3 };
-  const GROUPS = ['Milestones', 'Winning', 'Bowls', 'The poll', 'The conferences',
+  const GROUPS = ['Milestones', 'Winning', 'Game Day', 'Bowls', 'The poll', 'The conferences',
     'Roster craft', 'The roster', 'Streaks'];
 
   /*
@@ -1124,7 +1251,7 @@
     };
   }
 
-  const api = { CATALOG, GROUPS, TIER_ORDER, evaluate, playStreak, titleStreak, dayKey };
+  const api = { CATALOG, GROUPS, TIER_ORDER, GAME_DAY_MS, evaluate, playStreak, titleStreak, dayKey };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   if (typeof window !== 'undefined') window.PS_CFB_ACH = api;
 })();

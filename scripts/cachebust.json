@@ -1901,28 +1901,28 @@
   },
   "baseball/index.html": {
     "engine.js": {
-      "v": "34",
-      "sha": "6d18367026845095"
+      "v": "35",
+      "sha": "e78a13906da5556c"
     },
     "run.js": {
-      "v": "28",
-      "sha": "bb7c0c1f928646e6"
+      "v": "29",
+      "sha": "afd5eb1d8b9cc375"
     },
     "achievements.js": {
       "v": "11",
       "sha": "52aa262f4109a083"
     },
     "parks.js": {
-      "v": "8",
-      "sha": "7edb9a98e67de55e"
+      "v": "9",
+      "sha": "0c6672ef0fa18904"
     },
     "crest.js": {
       "v": "2",
       "sha": "bb273c0d1a928333"
     },
     "board.js": {
-      "v": "2",
-      "sha": "bc6d85fae3995fc5"
+      "v": "3",
+      "sha": "5f141f1e21eb5bc8"
     },
     "auth.js": {
       "v": "3",
@@ -2075,6 +2075,24 @@
       "sha": "80f518fa5e43a93d"
     }
   },
+  "cfb/fantasy/index.html": {
+    "/cfb/auth.js": {
+      "v": "8",
+      "sha": "d81dc7cbc4c21a96"
+    },
+    "/football/fantasy/clubs.js": {
+      "v": "2",
+      "sha": "a52a3937e36e0f9d"
+    },
+    "/football/fantasy/draft.js": {
+      "v": "5",
+      "sha": "a539847ded8a1ba6"
+    },
+    "/football/fantasy/entries.js": {
+      "v": "10",
+      "sha": "dd8cc0d912efc44f"
+    }
+  },
   "cfb/index.html": {
     "engine.js": {
       "v": "35",
@@ -2085,8 +2103,8 @@
       "sha": "4613f583129e3bb0"
     },
     "achievements.js": {
-      "v": "11",
-      "sha": "f57edd42ef794134"
+      "v": "12",
+      "sha": "208ef7eb35ebaffc"
     },
     "auth.js": {
       "v": "8",
@@ -2143,8 +2161,8 @@
       "sha": "a539847ded8a1ba6"
     },
     "entries.js": {
-      "v": "8",
-      "sha": "5de8d941e6bb6520"
+      "v": "10",
+      "sha": "dd8cc0d912efc44f"
     }
   },
   "football/index.html": {
@@ -2173,8 +2191,8 @@
       "sha": "204906d7b9a5bb27"
     },
     "achievements.js": {
-      "v": "15",
-      "sha": "faf8dcda9af64aa6"
+      "v": "16",
+      "sha": "7ed2ed93bde14ccb"
     },
     "crest.js": {
       "v": "11",

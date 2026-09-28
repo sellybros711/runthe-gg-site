@@ -443,10 +443,16 @@ console.log('\nA MAN WHO IS NOT PLAYING IS NOT A PICK');
   {
     const inj = JSON.parse(fs.readFileSync(path.join(ROOT, 'football/data',
       `injuries_${NOW.season}_w${NOW.week}.json`), 'utf8'));
+    /* THE BOARD THE PAGE ACTUALLY DRAWS, which takes Out and Doubtful men off the wheel as
+       well as injured reserve (`applyInjuries`, the launch day reversal). This read `off`
+       alone for as long as the report held few enough Out men not to matter, and then the
+       Saturday report stranded 4 of 400 drafts here while the page stranded none: a model
+       of the board that had drifted from the board. Kept in step with `GONE` there. */
+    const GONE = { off: 1, out: 1, doubtful: 1 };
     const live = POOL.pool.map((m) => {
       const e = inj.men[m.player_id];
       return e ? Object.assign({}, m, { inj: e }) : m;
-    }).filter((m) => !m.inj || m.inj.st !== 'off');
+    }).filter((m) => !m.inj || !GONE[m.inj.st]);
     ok('the live report takes men off the board', live.length < POOL.pool.length,
       `${POOL.pool.length} -> ${live.length}`);
     let stranded = 0, hurtSigned = 0, done = 0;
@@ -966,6 +972,9 @@ try { pw = (await import(PW)).default; } catch (e) {
   process.exit(fails ? 1 : 0);
 }
 
+/* What PostgREST hands back at most, per request, on the live project. */
+const SERVER_MAX_ROWS = 1000;
+
 const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.json': 'application/json',
   '.css': 'text/css', '.png': 'image/png', '.svg': 'image/svg+xml', '.ico': 'image/x-icon',
   '.woff2': 'font/woff2' };
@@ -1199,10 +1208,24 @@ async function openPage(browser, url, opts = {}) {
         return r.fulfill({ status: 400, contentType: 'application/json',
           body: JSON.stringify({ code: '42703', message: 'column fantasy_results.line does not exist' }) });
       }
-      const rows = server.noLine
+      let rows = server.noLine
         ? server.results.map((x) => ({ player_id: x.player_id, half_ppr: x.half_ppr }))
-        : server.results;
+        : server.results.slice();
+      /* PostgREST's own paging, INCLUDING ITS CAP: at most 1,000 rows a request whatever
+         `limit` asks for. That cap is what put 49 real men at 0.0 on the live board, so the
+         stub has to have it or the read that ignores it passes here. */
+      if (u.searchParams.get('order') === 'player_id') {
+        rows.sort((a, b) => (a.player_id < b.player_id ? -1 : a.player_id > b.player_id ? 1 : 0));
+      }
+      const total = rows.length;
+      const from = Number(u.searchParams.get('offset')) || 0;
+      const lim = Math.min(Number(u.searchParams.get('limit')) || Infinity, SERVER_MAX_ROWS);
+      rows = rows.slice(from, from + lim);
+      const count = /count=exact/.test(r.request().headers()['prefer'] || '');
       return r.fulfill({ status: 200, contentType: 'application/json',
+        headers: { 'content-range': (rows.length ? `${from}-${from + rows.length - 1}` : '*')
+          + '/' + (count ? total : '*'),
+          'access-control-expose-headers': 'content-range' },
         body: JSON.stringify(rows) });
     }
     if (u.hostname !== 'local.test') return r.abort();
@@ -2845,8 +2868,17 @@ console.log('\nA ROW OPENS INTO ITS LINEUP, AND THE LEADER WEARS THE PRIZE');
      third quarter, and the running back's is over: one man with somewhere to go and one
      whose number is the answer. */
   const QB0 = byPos('QB', 0), RB0 = byPos('RB', 0);
-  const results = [{ player_id: QB0.player_id, half_ppr: 21.4, line: '211 pass yds, 2 TD' },
-    { player_id: RB0.player_id, half_ppr: 9.1, line: '64 rush yds, 0 TD, 3 rec, 17 yds, 0 TD' }];
+  /* AND BOTH ARE PAST THE FIRST 1,000 ROWS. The writer files every man with a stat line,
+     1,049 of them in week 3, and a read that took one page drew the 49 past the cap as 0.0
+     under FINAL. So 1,100 other men come first, in the table's order and in the stub's. */
+  const FILL = Array.from({ length: 1100 }, (_, i) =>
+    ({ player_id: '00-000' + String(i).padStart(4, '0'), half_ppr: 0, line: '' }));
+  const results = FILL.concat([
+    { player_id: QB0.player_id, half_ppr: 21.4, line: '211 pass yds, 2 TD' },
+    { player_id: RB0.player_id, half_ppr: 9.1, line: '64 rush yds, 0 TD, 3 rec, 17 yds, 0 TD' }]);
+  ok('the points fixture runs past the server\'s cap',
+    results.length > SERVER_MAX_ROWS && [QB0, RB0].every((m) => m.player_id > FILL[FILL.length - 1].player_id),
+    String(results.length));
   const games = [
     { game_id: 'g1', away: QB0.team, home: QB0.opp, kick: new Date(LIVE_AT - 7200e3).toISOString(),
       state: 'in', away_score: 17, home_score: 10, period: 3, clock: '7:30' },

@@ -8,7 +8,7 @@
      not a lock: anybody with the URL is in, and the tester gate below is a feature flag
      served to every visitor. Say that plainly rather than implying the link is private. -->
 <meta name="robots" content="noindex, nofollow">
-<title>Fantasy Challenge | RunThe.GG</title>
+<title>College Fantasy | RunThe.GG</title>
 <link rel="icon" href="/favicon.ico">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -178,7 +178,7 @@
 
   /* ---- the swap ----
      A CALL AND A LIST. The call sits on the entry screen under the six, one line per man who
-     is ruled out and still has a game to miss; the list is the sheet it opens. Red is the
+     is flagged and still has a game to miss; the list is the sheet it opens. Red is the
      report's own colour for Out, so the call reads as the chip it is about. */
   #in-swap[hidden]{display:none}
   .swapcall{display:flex;align-items:center;gap:10px;margin-top:10px;padding:10px 12px;
@@ -197,6 +197,19 @@
   .swrow.on{border-color:var(--gold);background:rgba(240,201,107,.10)}
   .swrow .rc{font-size:11.5px}
   #sw-refuse{color:var(--red)}
+  /* THE QUIET HALF. Every man whose game has not started can be swapped, not only a flagged
+     one, because college football tells nobody who is hurt until kickoff. So the men nobody
+     has flagged get one line of small buttons rather than a red call each: six red calls
+     would read as six problems. */
+  .swapany{margin-top:10px;padding:10px 12px;border-radius:12px;border:1px solid var(--line)}
+  .swapany p{margin:0 0 8px;font-size:12.5px;line-height:1.35;color:var(--dim)}
+  .swapany .swb{display:flex;flex-wrap:wrap;gap:6px}
+  .swapany button{padding:6px 11px;border-radius:999px;border:1px solid var(--line-2);
+    background:rgba(255,255,255,.03);color:inherit;font:inherit;font-size:12px;
+    font-weight:700;cursor:pointer;max-width:100%;overflow:hidden;text-overflow:ellipsis;
+    white-space:nowrap}
+  /* A team's AP rank on the scoreboard, in front of its code. */
+  .grk{font-family:var(--fn);font-size:10px;font-weight:800;color:var(--dim-2);margin-right:4px}
   #sw-refuse[hidden]{display:none}
 
   /* ---- where you finished ----
@@ -606,28 +619,28 @@
 <body>
 <div class="wrap">
   <div class="top">
-    <span class="mark">Fantasy <i>Challenge</i></span>
-    <a href="/football/">&larr; Perfect Season</a>
+    <span class="mark">College <i>Fantasy</i></span>
+    <a href="/cfb/">&larr; College game</a>
   </div>
 
   <!-- Every screen ships in the markup and is switched by a class, the way the football
        page does it. Nothing here is built at runtime except the boards. -->
   <section id="s-load" class="screen on">
-    <div class="card"><div class="eyebrow">Fantasy Challenge</div>
+    <div class="card"><div class="eyebrow">College Fantasy</div>
       <p class="lede" id="load-say">Loading this week.</p></div>
   </section>
 
   <section id="s-shut" class="screen">
     <div class="card">
       <div class="eyebrow">Beta</div>
-      <h1 class="display" style="font-size:30px;margin-top:6px">Fantasy Challenge</h1>
+      <h1 class="display" style="font-size:30px;margin-top:6px">College Fantasy</h1>
       <p class="lede" id="shut-say"></p>
       <!-- THE WAY IN, ABOVE THE WAY OUT. A control the reader is being asked to press goes
            above the one that leaves, and it is hidden rather than absent so the refusal
            that is not about signing in does not offer it. -->
       <div class="stack">
-        <a class="btn" id="shut-go" href="/football/#signin" hidden>Sign in</a>
-        <a class="btn quiet" href="/football/">Back to the game</a>
+        <a class="btn" id="shut-go" href="/cfb/#signin" hidden>Sign in</a>
+        <a class="btn quiet" href="/cfb/">Back to the game</a>
       </div>
     </div>
   </section>
@@ -636,9 +649,10 @@
     <div class="card">
       <div class="eyebrow" id="home-week"></div>
       <h1 class="display" style="font-size:32px;margin-top:6px">One lineup. One week.</h1>
-      <p class="lede">Six men: QB, two RB, two WR, TE. Every man is priced on what he has
-        actually done this season. You get five drafts and submit one of them.</p>
-      <p class="lede">Half PPR. Whatever your six score between them is your score.</p>
+      <p class="lede">The week's biggest games. Six players: QB, two RB, two WR, TE. Each
+        is priced on his season so far and what he should do this week.</p>
+      <p class="lede">Five drafts. One goes in. Half PPR, and what your six score is your
+        score. Hurt or benched? Swap him before his game.</p>
       <div class="rule"></div>
       <div class="rail">
         <span><span class="eyebrow">Locks</span><br><b id="home-lock" class="num">-</b></span>
@@ -744,7 +758,7 @@
            the site is a trap. -->
       <div class="stack">
         <button class="btn quiet" id="b-in-back" hidden>Back</button>
-        <a class="btn quiet" href="/football/">Back to the game</a>
+        <a class="btn quiet" href="/cfb/">Back to the game</a>
       </div>
     </div>
   </section>
@@ -789,7 +803,7 @@
       </div>
       <div class="stack">
         <button class="btn quiet" id="b-live-back">Back</button>
-        <a class="btn quiet" href="/football/">Back to the game</a>
+        <a class="btn quiet" href="/cfb/">Back to the game</a>
       </div>
     </div>
   </section>
@@ -885,7 +899,7 @@
     </div>
 
     <div class="stack">
-      <a class="btn go" id="prz-store" href="/football/" hidden>Play Pro now</a>
+      <a class="btn go" id="prz-store" href="/cfb/" hidden>Play Pro now</a>
       <button class="btn quiet" id="prz-close">Close</button>
     </div>
   </div>
@@ -894,14 +908,26 @@
 <!-- The tester flag. Read defensively below: a blocked or stale copy leaves the global
      undefined, and the honest answer to "can this person see an unlaunched mode" when the
      list cannot be read is no. -->
-<script src="/football/fantasy-access.js?v=2"></script>
+<script>
+  /* WHO CAN SEE COLLEGE FANTASY. Inline rather than a file, because it has one rule and
+     nothing else asks it: the door is drawn for everybody and it opens for an account.
+     The entry is the server's anyway (`cfb_fantasy_submit` refuses a signed out lineup),
+     so this is a courtesy that tells a guest before five drafts rather than after them. */
+  window.PS_FANTASY_ACCESS = {
+    show: function(){ return true; },
+    allowed: function(who){ return !!(who && who.signedIn); }
+  };
+  /* THE COLLEGE TABLES. entries.js serves both competitions and reads this at call time,
+     so it has to be set before anything asks the server. See `supabase/128_cfb_fantasy.sql`. */
+  window.PS_FANTASY_PREFIX = 'cfb_fantasy_';
+</script>
 <!-- Accounts, exactly as the football page loads them. Optional: with the CDN blocked
      PS_AUTH never appears, nobody resolves as a tester, and the page says so. -->
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script defer src="/football/auth.js?v=8"></script>
-<script src="clubs.js?v=2"></script>
-<script src="draft.js?v=5"></script>
-<script src="entries.js?v=10"></script>
+<script defer src="/cfb/auth.js?v=8"></script>
+<script src="/football/fantasy/clubs.js?v=2"></script>
+<script src="/football/fantasy/draft.js?v=5"></script>
+<script src="/football/fantasy/entries.js?v=10"></script>
 <script>
 (function(){
   'use strict';
@@ -1023,8 +1049,11 @@
   /* SPELLED OUT RATHER THAN ABBREVIATED, except for the one abbreviation every fantasy
      reader already knows. `Q` is what a questionable man is called everywhere this mode's
      readers have ever seen one; DOUBT is not a word. */
-  var INJ_WORD = { off: 'OUT', out: 'OUT', doubtful: 'DOUBTFUL', questionable: 'Q',
-    none: 'INJ' };
+  /* COLLEGE FOOTBALL HAS NO LEAGUE WIDE REPORT, so the words are what this page can know:
+     ESPN's roster groups (out, suspended), a designation ESPN carries on a man (doubtful,
+     questionable), and the box score (he missed his team's last game). */
+  var INJ_WORD = { off: 'OUT', out: 'OUT', suspended: 'SUSP', doubtful: 'DOUBTFUL',
+    questionable: 'Q', missed: 'MISSED', none: 'INJ' };
 
   /*
    * THE CHIP IS A SPAN INSIDE A BUTTON AND NOT A BUTTON INSIDE ONE, which is invalid and
@@ -1036,7 +1065,8 @@
   var injChip = function (m) {
     var e = injOf(m);
     if (!e || !e.st) return '';
-    var cls = e.st === 'questionable' ? ' q' : (e.st === 'none' ? ' none' : '');
+    var cls = (e.st === 'questionable' || e.st === 'missed') ? ' q'
+      : (e.st === 'none' ? ' none' : '');
     return '<span class="inj' + cls + '" data-inj="' + esc(m.player_id) + '">'
       + esc(INJ_WORD[e.st] || 'INJ') + '</span>';
   };
@@ -1049,11 +1079,52 @@
    * for something read off data is a stylesheet that has to be edited every time the league
    * moves a team.
    */
+  /* THE COLLEGE VERSION READS THE TEAM'S COLOUR OFF THE WEEK ITSELF. ESPN sends each
+     school's two colours with the scoreboard and the build keeps them on `POOL.games`, so
+     there is no table of 130 schools here to fall out of date. They arrive as published,
+     which on this panel is mostly unreadable (navy, maroon, black), so they go through the
+     NFL tags' own lift: hue kept, lightness raised until 4.5:1. A school whose primary
+     carries no colour at all (a black) is drawn from its second one, which is the Raiders
+     and Steelers finding arriving at a second sport. */
+  var TEAM_COL = null;
+  function teamColors(){
+    if (TEAM_COL) return TEAM_COL;
+    var C = window.RTF_CLUBS, gs = (POOL && POOL.games) || [];
+    if (!C || typeof C.lift !== 'function' || !gs.length) return {};
+    TEAM_COL = {};
+    var hex = function(v){
+      var h = v ? '#' + String(v).replace(/^#/, '') : null;
+      return h && /^#[0-9a-f]{6}$/i.test(h) ? h : null;
+    };
+    var pick = function(t){
+      var a = hex(t.color), b = hex(t.alt);
+      if (a && C.chroma(a) < C.CHROMA_MIN && b && C.chroma(b) >= C.CHROMA_MIN) a = b;
+      return a ? C.lift(a) : null;
+    };
+    for (var i=0;i<gs.length;i++){
+      var sides = [gs[i].home, gs[i].away];
+      for (var j=0;j<2;j++){
+        var t = sides[j];
+        if (t && t.abbr && !TEAM_COL[t.abbr]) TEAM_COL[t.abbr] = pick(t);
+      }
+    }
+    return TEAM_COL;
+  }
+  /* The team's AP rank this week, off the same games, or nothing. */
+  function rankOf(code){
+    var gs = (POOL && POOL.games) || [];
+    for (var i=0;i<gs.length;i++){
+      if (gs[i].home && gs[i].home.abbr === code) return gs[i].home.rank || null;
+      if (gs[i].away && gs[i].away.abbr === code) return gs[i].away.rank || null;
+    }
+    return null;
+  }
   var club = function (code) {
     if (!code) return '';
-    var c = window.RTF_CLUBS && window.RTF_CLUBS.color(code);
+    var c = teamColors()[code];
     return '<em class="club"' + (c ? ' style="color:' + c + '"' : '') + '>' + esc(code) + '</em>';
   };
+
   /* HIS CLUB AND WHO HE PLAYS, WRITTEN ONCE. The board row and the confirm sheet both draw
      it, and two copies is how the two come to say different things about one bye week. */
   var matchup = function (m) {
@@ -1062,59 +1133,35 @@
   };
 
   var INJ_SAY = {
-    off: 'Not on an active roster.',
-    out: 'Ruled out.',
+    off: 'Not on the active roster.',
+    out: 'Listed as out.',
+    suspended: 'Suspended.',
     doubtful: 'Doubtful.',
     questionable: 'Questionable.',
-    none: 'On the injury report, with no designation.',
-  };
-  var ROSTER_SAY = {
-    RES: 'On injured reserve.', PUP: 'On the physically unable to perform list.',
-    NFI: 'On the non-football injury list.', SUS: 'Suspended.',
-    RET: 'Retired.', CUT: 'Not on a roster.', RSN: 'On reserve.', RSR: 'On reserve.',
-    NWT: 'Not with a team.',
+    missed: 'He missed his team\'s last game.',
+    none: 'Listed on the injury report.',
   };
 
   /*
-   * WHAT IT SAYS IS THE REPORT, AND IT DOES NOT PRETEND TO BE ANYTHING ELSE.
+   * WHAT IT SAYS IS ONLY WHAT IS KNOWN, AND IT SAYS WHERE IT CAME FROM.
    *
-   * The designation, the body part and whether he practised. That is what a club is obliged
-   * to publish and it is what every fantasy site is reading when it tells somebody a man is
-   * questionable. It is not a beat writer's paragraph, and the sheet does not imply one:
-   * the last line names the source. Writing the other kind would need a news feed, and
-   * nothing here could have been checked against one.
-   *
-   * AND IT SAYS WHICH WEEK IT IS FROM. On a Tuesday the coming week has not been filed at
-   * all, so the freshest answer about Sunday is last Sunday's, and a sheet that printed it
-   * as though it were this week's would be inventing a certainty nobody has.
+   * College football files no league wide injury report, so this sheet never borrows the
+   * NFL's words for one. ESPN files a roster in groups and two of them mean a man is not
+   * playing; ESPN sometimes carries a designation on a man; and the box score says who did
+   * not play in his team's last game. That last one is a fact rather than a diagnosis, and
+   * the sheet says only that. What it can always add is the way out: any man can be
+   * swapped before his game kicks off.
    */
   function showInj(id){
     var m = BY_ID[id], e = injOf(m);
     if (!m || !e) return;
     $('inj-name').textContent = m.name;
-    var bits = [];
-    bits.push(e.st === 'off' ? (ROSTER_SAY[e.roster] || 'Not on an active roster.')
-      : (INJ_SAY[e.st] || 'On the injury report.'));
-    if (e.d) bits.push(e.d + (e.d2 ? ' and ' + e.d2 : '') + '.');
-    if (e.p) bits.push(e.p + '.');
+    var bits = [INJ_SAY[e.st] || 'Listed on the injury report.'];
+    if (e.d) bits.push(String(e.d).replace(/\.$/, '') + '.');
     $('inj-line').textContent = bits.join(' ');
-    var when;
-    /* A RULING BY THE SITE IS NOT THE REPORT AND DOES NOT SAY IT IS. The report files no
-       Out until Friday for a Sunday game, so a man his club has already ruled out is
-       ruled out HERE, and the sentence below that names the official NFL report as the
-       source would be false about exactly him. The body part and the practice line above
-       are still the report's, so they stay. */
-    if (e.by === 'site'){
-      $('inj-when').textContent = 'Ruled out for week ' + POOL.week + ' by RunThe.GG. '
-        + 'The official report files game designations on Friday.';
-      $('inj-sheet').hidden = false;
-      return;
-    }
-    if (e.st === 'off') when = 'Read off the roster, as it stands now.';
-    else if (e.w === POOL.week) when = 'From this week\'s report.';
-    else when = 'From the week ' + e.w + ' report. Week ' + POOL.week
-      + ' has not been filed yet, so this is the last thing that was said about him.';
-    $('inj-when').textContent = when + ' Source: the official NFL game status report.';
+    var src = e.by === 'site' ? 'Ruled out for week ' + POOL.week + ' by RunThe.GG.'
+      : (e.st === 'missed' ? 'Read off the box scores.' : 'Read off ESPN\'s roster.');
+    $('inj-when').textContent = src + ' Any player can be swapped before his game.';
     $('inj-sheet').hidden = false;
   }
   $('inj-close').onclick = function(){ $('inj-sheet').hidden = true; };
@@ -1151,7 +1198,7 @@
      browser and nowhere else: clearing site data loses it, and a second device knows
      nothing about it. That is a feel test rather than a competition, and the screen says so
      rather than letting somebody believe they have entered something. */
-  var keyFor = function(season, week){ return 'ps_fantasy_' + season + '_w' + week; };
+  var keyFor = function(season, week){ return 'cfb_fantasy_' + season + '_w' + week; };
   var KEY = function(){ return keyFor(POOL.season, POOL.week); };
   function load(){
     try { return JSON.parse(localStorage.getItem(KEY())||'null'); } catch(e){ return null; }
@@ -1256,15 +1303,33 @@
    * so an absent id is inactive, hurt, benched or cut, and all four are nought on a fantasy
    * lineup. Read as "unknown" instead, a lineup would quietly total five men.
    */
+  /* THE COLLEGE WEEK HAS NO RESULTS FILE, AND THAT IS NOT AN OMISSION. The NFL mode scores
+     live off ESPN and settles off nflverse, which lands as a file. College football has no
+     second source this mode can reach, so ESPN's box score IS the result and it is only
+     ever in the database (`cfb_fantasy_results`, written by `cfb/build/fantasy/live.mjs`).
+     So this asks the server for the points and the week for whether they are final, and
+     shapes the answer exactly as the NFL page's file, so nothing below needs a branch.
+     ONLY A FINAL ANSWER IS KEPT. A week in progress is asked again next time, which is the
+     whole difference between a settled number and one on its way there. */
   var RESULTS = {};
   function resultsFor(season, week){
     var k = season + '|' + week;
-    if (RESULTS[k] !== undefined) return Promise.resolve(RESULTS[k]);
-    return fetch('/football/data/results_' + season + '_w' + week + '.json',
-      { cache: 'no-cache' })
-      .then(function(r){ return r.ok ? r.json() : null; })
-      .catch(function(){ return null; })
-      .then(function(j){ RESULTS[k] = j; return j; });
+    if (RESULTS[k]) return Promise.resolve(RESULTS[k]);
+    if (!F.results) return Promise.resolve(null);
+    return Promise.all([F.results(season, week), F.board(season, week, 1)])
+      .then(function(got){
+        var rows = got[0], wk = got[1] && got[1].week;
+        if (!rows || !rows.length || !wk) return null;
+        var scores = {};
+        for (var i=0;i<rows.length;i++){
+          scores[rows[i].player_id] = [Number(rows[i].half_ppr), rows[i].line || ''];
+        }
+        var res = { scores: scores, final: !!wk.scored_at,
+          played: wk.games_final, games: wk.games_total };
+        if (res.final) RESULTS[k] = res;
+        return res;
+      })
+      .catch(function(){ return null; });
   }
   var scoreOf = function(res, id){
     var row = res && res.scores && res.scores[id];
@@ -1428,8 +1493,8 @@
        A per man projection would say nothing a reader cannot already act on: what the board
        shows is what he has DONE, and how many of his club's games he was there for, which
        is both halves of what the projection reads. What he does next is the question. */
-    $('d-note').textContent = 'What they have done so far. What they do on Sunday is yours '
-      + 'to call.';
+    $('d-note').textContent = 'What they have done so far. What they do on Saturday is '
+      + 'yours to call.';
   }
 
   /*
@@ -1908,27 +1973,21 @@
 
   /* ---- the swap ----
    *
-   * A MAN RULED OUT AFTER THE LINEUP WENT IN CAN BE REPLACED, BEFORE HIS GAME. Reported by a
-   * player: a lineup submitted on the Tuesday is holding a man his club rules out on the
-   * Friday, and the only thing the mode used to do about it was score him zero.
+   * ANY MAN IN THE LINEUP CAN BE REPLACED BEFORE HIS GAME, for a man at his position whose
+   * game has not started, priced at his price or a little below. `supabase/128_cfb_fantasy.sql`
+   * is the rule and decides every clause from rows; this page only OFFERS what it expects the
+   * server to take, off the same pool file the server's prices were published from.
    *
-   * `supabase/119_fantasy_swap.sql` is the rule and it decides every clause from rows: he is
-   * in your lineup, he is on the server's out list, his game has not started, the man coming
-   * in plays the same position, is on this week's board, is not out himself, has not kicked
-   * off, and keeps the six under the cap. This page only OFFERS what it expects the server
-   * to take, and asks the same questions of the same two files the server was filled from
-   * (`publish-out.mjs` reads them both). What it never does is decide: a swap is a write.
-   *
-   * IT WORKS AFTER THE LOCK, which is when it matters. The report goes final on the Friday
-   * and the week locks on the Thursday, so a swap that stopped at the lock would help almost
-   * nobody.
+   * IT WORKS AFTER THE LOCK, which is when it matters: a Saturday game's news lands on the
+   * Saturday, long after the first kickoff on Thursday or Friday has locked the week.
    *
    * ONLY AN ENTRY ON THE ACCOUNT. A lineup this browser remembers and the server does not
    * has nothing to swap, and the note under it already says it will not count.
    */
   var LAST_IN = { res: null, lookingBack: false };
   var SWAP = null;   /* { out, pick, busy } while the sheet is open */
-  var SWAP_GONE = { off: 1, out: 1, doubtful: 1 };
+  var SWAP_GONE = { off: 1, out: 1, suspended: 1, doubtful: 1 };
+  var SWAP_FLAG = { off: 1, out: 1, suspended: 1, doubtful: 1, questionable: 1, missed: 1 };
   var SWAP_SHOWN = 12;
 
   function kicksLater(m, now){
@@ -1936,36 +1995,66 @@
     return Number.isFinite(t) && t > now;
   }
   function isOut(m){ return !!(m && m.inj && SWAP_GONE[m.inj.st]); }
+  function isFlagged(m){ return !!(m && m.inj && SWAP_FLAG[m.inj.st]); }
+  /*
+   * THE COLLEGE SWAP IS OPEN TO ANY MAN, BEFORE HIS GAME. `cfb_fantasy_swap` (128) asks
+   * that he is in your lineup and his game has not started, and nothing about why. That is
+   * the owner's answer to college football having no injury report: the page flags what it
+   * can find, and the entrant can act on what it cannot.
+   */
   function swappable(res, lookingBack){
     if (lookingBack || !F || typeof F.swap !== 'function' || !serverEntry()) return [];
     if (res && res.final) return [];
     var now = Date.now();
-    return entryMen().filter(function(m){ return isOut(m) && kicksLater(m, now); });
+    return entryMen().filter(function(m){ return kicksLater(m, now); });
   }
-  /* WHAT HE CAN SPEND IS HIS OWN PRICE PLUS WHAT THE LINEUP LEFT, rounded to the cent the
-     way the server's numeric is, so a float sum of six prices cannot refuse a legal swap. */
-  function swapRoom(out){
-    var spend = 0;
-    entryMen().forEach(function(m){ spend += m.price_musd; });
-    return Math.round((CAP - spend + out.price_musd) * 100) / 100;
+  /*
+   * THE BAND: HIS PRICE OR A LITTLE BELOW, NEVER ABOVE. The week carries it (`POOL.swap`,
+   * written to `cfb_fantasy_weeks` by publish.mjs), so the page and the server read one
+   * number. The floor is `max(price * pct, floor_musd)` under his price: a quarter of a
+   * star's money, and at least $5M, so a cheap man still has somebody to swap to. Never
+   * above is what keeps the swap a repair rather than an upgrade: a man who drafts a scrub
+   * on the Tuesday cannot trade him for the best player on the board on the Saturday.
+   * Rounded to the cent the way the server's numeric is.
+   */
+  function swapBand(out){
+    var sw = POOL.swap || { pct: 0.25, floor_musd: 5 };
+    var drop = Math.max(out.price_musd * sw.pct, sw.floor_musd);
+    return { lo: Math.round((out.price_musd - drop) * 100) / 100,
+      hi: Math.round(out.price_musd * 100) / 100 };
   }
   function swapChoices(out){
-    var inIt = {}, now = Date.now(), room = swapRoom(out);
+    var inIt = {}, now = Date.now(), band = swapBand(out);
     entryMen().forEach(function(m){ inIt[m.player_id] = 1; });
     return POOL.pool.filter(function(p){
       return p.position === out.position && !inIt[p.player_id] && !isOut(p)
-        && kicksLater(p, now) && p.price_musd <= room + 1e-9;
+        && kicksLater(p, now) && p.price_musd <= band.hi + 1e-9
+        && p.price_musd >= band.lo - 1e-9;
     }).sort(function(a, b){ return (b.proj - a.proj) || (a.price_musd - b.price_musd); })
       .slice(0, SWAP_SHOWN);
   }
+  var SWAP_WHY = { off: 'is out', out: 'is out', suspended: 'is suspended',
+    doubtful: 'is doubtful', questionable: 'is questionable',
+    missed: 'missed his team\'s last game' };
   function paintSwapCall(res, lookingBack){
     var men = swappable(res, lookingBack);
-    $('in-swap').innerHTML = men.map(function(m){
-      return '<div class="swapcall"><p><b>' + esc(m.name) + '</b> is '
-        + (m.inj.st === 'doubtful' ? 'doubtful' : 'out') + '. Swap him before '
+    var flagged = men.filter(isFlagged);
+    var rest = men.filter(function(m){ return !isFlagged(m); });
+    var html = flagged.map(function(m){
+      return '<div class="swapcall"><p><b>' + esc(m.name) + '</b> '
+        + esc(SWAP_WHY[m.inj.st] || 'is on the report') + '. Swap him before '
         + esc(kickLabel(m.kick)) + '.</p>'
         + '<button type="button" data-swap="' + esc(m.player_id) + '">Swap</button></div>';
     }).join('');
+    if (rest.length){
+      html += '<div class="swapany"><p>Know something we do not? Swap anyone before his '
+        + 'game, for a player at his price or a little below.</p><div class="swb">'
+        + rest.map(function(m){
+          return '<button type="button" data-swap="' + esc(m.player_id) + '">Swap '
+            + esc(m.name) + '</button>';
+        }).join('') + '</div></div>';
+    }
+    $('in-swap').innerHTML = html;
     $('in-swap').hidden = !men.length;
   }
   function swapRefused(t){
@@ -1978,10 +2067,11 @@
     var list = swapChoices(out);
     $('sw-slot').textContent = 'Swap at ' + out.position;
     $('sw-name').textContent = out.name;
+    var band = swapBand(out);
     $('sw-say').textContent = list.length
-      ? 'Pick a ' + out.position + ' whose game has not started. You have '
-        + money(swapRoom(out)) + ' to spend on him.'
-      : 'No ' + out.position + ' fits the money and is still to play.';
+      ? 'Pick a ' + out.position + ' priced ' + money(band.lo) + ' to ' + money(band.hi)
+        + ' whose game has not started.'
+      : 'No ' + out.position + ' in his price band is still to play.';
     if (SWAP.pick && !list.some(function(p){ return p.player_id === SWAP.pick; })){
       SWAP.pick = null;
     }
@@ -2123,7 +2213,16 @@
     if (SLATE) return SLATE;
     if (!POOL || !POOL.pool) return [];
     var by = {}, i, m, away, home;
-    for (i=0;i<POOL.pool.length;i++){
+    /* THE COLLEGE WEEK NAMES ITS OWN GAMES. The build picks the slate and writes it on the
+       week (`POOL.games`), so the screen reads that rather than working the games out of the
+       men. A game where no man on either side made the board is still a game on the slate. */
+    var gs = POOL.games || [];
+    for (i=0;i<gs.length;i++){
+      if (!gs[i].away || !gs[i].home || !gs[i].kick) continue;
+      by[gs[i].away.abbr + '|' + gs[i].home.abbr] = { away: gs[i].away.abbr,
+        home: gs[i].home.abbr, kick: gs[i].kick };
+    }
+    for (i=0;!gs.length && i<POOL.pool.length;i++){
       m = POOL.pool[i];
       if (!m.team || !m.opp || !m.kick) continue;
       away = m.home ? m.opp : m.team;
@@ -2227,8 +2326,10 @@
     } else {
       right = '<s>' + esc(kickLabel(g.kick)) + '</s>';
     }
-    var side = function(club, mine, other){
-      return '<div class="gt' + lead(mine, other) + '"><b>' + esc(club) + '</b>'
+    var side = function(code, mine, other){
+      var rk = rankOf(code);
+      return '<div class="gt' + lead(mine, other) + '"><b>'
+        + (rk ? '<small class="grk">' + rk + '</small>' : '') + club(code) + '</b>'
         + '<i>' + (has ? esc(String(mine)) : '') + '</i></div>';
     };
     return '<div class="gm' + (live ? ' live' : '') + (done ? ' done' : '') + '">'
@@ -2883,7 +2984,7 @@
        being played" sentence was only ever read after the week had finished. Read before it
        starts, "this is how it finished" is wrong about a week nobody has played a down of. */
     $('lv-say').textContent = liveOpen()
-      ? 'Every game of the week, and where everybody is, while it happens.'
+      ? 'Every game on the slate, and where everybody is, while it happens.'
       : (!locked()
         ? 'Week ' + POOL.week + ' has not kicked off yet.'
         : 'Week ' + POOL.week + ' is not being played right now. This is how it finished.');
@@ -2955,7 +3056,7 @@
        arcade pages have to agree. A middot list rather than a sentence, which is what this
        repo already reaches for when three facts share a line. */
     $('home-week').textContent = 'Beta · ' + POOL.season + ' week ' + POOL.week
-      + ' · ' + POOL.pool.length + ' men on the board';
+      + ' · ' + slate().length + ' games';
     $('home-lock').textContent = locked() ? 'Locked' : untilLock();
     $('home-cap').textContent = money(CAP);
     $('b-draft').hidden = locked() || state.chances.length >= D.CHANCES
@@ -2995,7 +3096,7 @@
     if (LAST){ drawLast(); return; }
     Promise.all([
       resultsFor(POOL.season, wk),
-      fetch('/football/data/weekly_' + POOL.season + '_w' + wk + '.json')
+      fetch('/cfb/data/fantasy/pool_' + POOL.season + '_w' + wk + '.json', { cache: 'no-cache' })
         .then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; }),
     ]).then(function(got){
       var res = got[0], pool = got[1];
@@ -3286,7 +3387,7 @@
      * has not got that hash yet lands on the front page with the pill in the header, so
      * the link is worth taking either way. */
     if (!who || !who.signedIn){
-      $('shut-say').textContent = 'Fantasy Challenge is in beta and it needs an account. '
+      $('shut-say').textContent = 'College Fantasy is in beta and it needs an account. '
         + 'Your lineup is scored against everybody else who entered, so it has to have a '
         + 'name on it. Sign in and come straight back.';
       $('shut-go').hidden = false;
@@ -3297,8 +3398,7 @@
        sentence that greets a signed in reader then has to be about the mode and not about
        their account. */
     $('shut-go').hidden = true;
-    $('shut-say').textContent = 'Fantasy Challenge is not open right now. It is being '
-      + 'tested with a handful of accounts first.';
+    $('shut-say').textContent = 'College Fantasy is not open right now. Check back soon.';
     show('s-shut'); return false;
   }
 
@@ -3367,7 +3467,7 @@
        of doubtful men blank, against 47.7% of questionable ones.
        QUESTIONABLE STAYS, because that one really is a decision.
        A ruling by the site (`by: 'site'`) is an Out like any other here. */
-    var GONE = { off: 1, out: 1, doubtful: 1 };
+    var GONE = { off: 1, out: 1, suspended: 1, doubtful: 1 };
     var men = POOL.pool, keep = [], i, e;
     for (i=0;i<men.length;i++){
       e = inj.men[men[i].player_id];
@@ -3385,7 +3485,7 @@
    * enough to have a checker for.
    */
   function boot(){
-    fetch('/football/data/fantasy_now.json', { cache: 'no-cache' })
+    fetch('/cfb/data/fantasy/now.json', { cache: 'no-cache' })
       .then(function(r){ if(!r.ok) throw new Error('now'); return r.json(); })
       .then(function(now){
         /* REVALIDATED, THE WAY ITS TWO SIBLINGS ALREADY ARE. The pointer above and the
@@ -3397,7 +3497,7 @@
            That is a whole different board, drawn from a stale file, with nothing to say so.
            No-cache is a conditional request rather than a refusal to cache: a 304 on every
            visit that has not moved, fresh bytes on the one that has. */
-        return fetch('/football/data/' + now.file, { cache: 'no-cache' }).then(function(r){
+        return fetch('/cfb/data/fantasy/' + now.file, { cache: 'no-cache' }).then(function(r){
           if(!r.ok) throw new Error('pool'); return r.json();
         });
       })
@@ -3408,12 +3508,22 @@
            NEXT week will be built with and has already been a different number from the
            live week's for a day. */
         CAP = D.capFor(p);
-        for (var i=0;i<p.pool.length;i++) BY_ID[p.pool[i].player_id] = p.pool[i];
+        for (var i=0;i<p.pool.length;i++){
+          var pm = p.pool[i];
+          /* THE POOL CARRIES ESPN'S OWN INJURY OBJECT AS `inj`, which is a different shape
+             from the report this page reads under the same name. Left, it is a chip with no
+             state and a man `D.hurt` cannot read. So it is taken off, and the one thing the
+             pool knows for certain (he missed his team's last game) stands in until the
+             report arrives over it. */
+          if (pm.inj && !pm.inj.st) delete pm.inj;
+          if (!pm.inj && pm.missed_last) pm.inj = { st: 'missed' };
+          BY_ID[pm.player_id] = pm;
+        }
         /* THE INJURY FILE IS OPTIONAL AND ITS ABSENCE IS THE ORDINARY CASE, so a miss is a
            404 that resolves to null rather than a throw. A week nobody has built one for,
            a deploy that has not landed it and a phone on a bad connection all arrive here
            the same way, and all three leave the mode exactly as it was. */
-        return fetch('/football/data/injuries_' + p.season + '_w' + p.week + '.json',
+        return fetch('/cfb/data/fantasy/injuries_' + p.season + '_w' + p.week + '.json',
           { cache: 'no-cache' })
           .then(function(r){ return r.ok ? r.json() : null; })
           .catch(function(){ return null; })
@@ -3429,6 +3539,10 @@
      show every signed in tester the not-open screen for a beat and then correct itself,
      which reads as being let in by accident. */
   function waitForAuth(){
+    /* THE COLLEGE GAME'S ACCOUNTS, which are the site's one account system under the
+       college file's name. entries.js reads `PS_AUTH` for the session token, so the college
+       client is handed to it under that name too. */
+    if (!window.PS_AUTH && window.PS_CFB_AUTH) window.PS_AUTH = window.PS_CFB_AUTH;
     var A = window.PS_AUTH;
     if (!A){
       /* No supabase at all. Nobody resolves as a tester, which is the safe answer. */

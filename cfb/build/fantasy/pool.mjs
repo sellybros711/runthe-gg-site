@@ -65,6 +65,8 @@ export const PRICE_K = 1.8;
 export const BASELINE_FRACTION = 150 / 380;
 
 export const SLATE_SIZE = 20;
+/* Fewer games than this left to kick off is not a week worth drafting. */
+export const MIN_SLATE = 10;
 export const POSITIONS = ['QB', 'RB', 'WR', 'TE'];
 const POS_OF = { QB: 'QB', RB: 'RB', FB: 'RB', WR: 'WR', TE: 'TE' };
 
@@ -226,13 +228,23 @@ export function buildMen(slate, rosters, todate, priors) {
 
 /* ─── the build ───────────────────────────────────────────────────────────────────── */
 
-/** The week about to be played: the first calendar week whose end has not passed. */
-export async function nextWeek(season, now = Date.now()) {
-  const sb = await scoreboardWeek(season, 1);
-  const cal = calendarOf(sb);
-  const w = cal.find((c) => Date.parse(c.end) > now);
-  if (!w) throw new Error(`the ${season} calendar has no week left in it`);
-  return w.week;
+/*
+ * The week about to be played: the first calendar week that still has a SLATE in it.
+ *
+ * "The first week whose end has not passed" is not that. ESPN ends a college week on the
+ * Tuesday morning after it, so on the Monday this job runs the week just played is still
+ * open, holds no game left to kick off, and the build refused it: every Monday run would
+ * have died on "0 games are left to play". So each open week is asked for its slate, the
+ * same way the build asks, and the first one that has one is the week.
+ */
+export async function nextWeek(season, now = Date.now(), fetchWeek = scoreboardWeek) {
+  const sb = await fetchWeek(season, 1);
+  const cal = calendarOf(sb).filter((c) => Date.parse(c.end) > now);
+  for (const c of cal) {
+    const wk = c.week === 1 ? sb : await fetchWeek(season, c.week);
+    if (wk && pickSlate(gamesOf(wk), now).length >= MIN_SLATE) return c.week;
+  }
+  throw new Error(`the ${season} calendar has no week with a slate left in it`);
 }
 
 export async function buildPool({ season, week, now = Date.now() }) {
@@ -245,7 +257,7 @@ export async function buildPool({ season, week, now = Date.now() }) {
   if (!sb) throw new Error(`the week ${week} scoreboard could not be read`);
   const games = gamesOf(sb);
   const slate = pickSlate(games, now);
-  if (slate.length < 10) {
+  if (slate.length < MIN_SLATE) {
     throw new Error(`only ${slate.length} games are left to play in week ${week}, `
       + 'which is not a slate. Build the next week.');
   }

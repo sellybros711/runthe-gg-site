@@ -85,7 +85,8 @@ has_table as (
     'fantasy_weeks','fantasy_prices','fantasy_results','fantasy_entries',
     'nfl_games','fantasy_prizes',
     'rtf_runs','rtd_runs','rtf_plays','rtd_mode_plays','premium_subscriptions',
-    'rtd_profiles','rtd_career','rtf_profiles'
+    'rtd_profiles','rtd_career','rtf_profiles',
+    'cfb_fantasy_weeks','cfb_fantasy_entries','cfb_fantasy_prizes'
   ]) as t
   where to_regclass('public.' || t) is not null
 ),
@@ -555,7 +556,21 @@ check_rows(sort, migration, what, breaks, ok) as (
       'The jersey, the chosen arena, the camera and the last club and decade live only in the browser that set them.',
       (select count(*) > 0 from has_table where name = 'rtf_profiles')
       and (select count(*) > 0 from col where tbl = 'rtf_profiles' and name = 'guide_seen')
-      and (select count(*) > 0 from proc where name = 'rtf_set_profile'))
+      and (select count(*) > 0 from proc where name = 'rtf_set_profile')),
+
+  -- THE COLLEGE FANTASY CHALLENGE, a competition of its own with its own tables. Asked
+  -- of the tables, the submit, the swap AND the settle trigger, because the trigger is the
+  -- one object whose absence is invisible from every side (114's finding): the week plays,
+  -- the board draws, and nobody is ever paid.
+  (41, '128_cfb_fantasy',
+      'the college Fantasy Challenge: the week, the entries, the swap and the prize',
+      'The college page drafts and then refuses every lineup. Without the trigger alone, a finished week settles nobody and first place is never paid.',
+      (select count(*) > 0 from has_table where name = 'cfb_fantasy_weeks')
+      and (select count(*) > 0 from has_table where name = 'cfb_fantasy_entries')
+      and (select count(*) > 0 from has_table where name = 'cfb_fantasy_prizes')
+      and (select count(*) > 0 from proc where name = 'cfb_fantasy_submit')
+      and (select count(*) > 0 from proc where name = 'cfb_fantasy_swap')
+      and (select count(*) > 0 from trg where name = 'cfb_fantasy_settle_on_scored'))
 )
 -- The summary has to come LAST, and a UNION can only be ordered by an output
 -- column, so the sort key is carried through a subquery rather than sorted on
