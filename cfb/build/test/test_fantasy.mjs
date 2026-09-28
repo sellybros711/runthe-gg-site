@@ -16,7 +16,7 @@ import {
   gameOf, gamesOf, implied, boxRows, rosterOf, calendarOf,
 } from '../fantasy/espn.mjs';
 import {
-  pickSlate, gameScore, priorsFrom, buildMen, projectMan, positionLevels, pricePool,
+  pickSlate, nextWeek, gameScore, priorsFrom, buildMen, projectMan, positionLevels, pricePool,
   SLATE_SIZE, MATCHUP_HI, MATCHUP_LO, PROJ_LEVEL,
 } from '../fantasy/pool.mjs';
 import { seasonToDate } from '../fantasy/season.mjs';
@@ -158,6 +158,30 @@ let SLATE, EVENTS;
   const dull = gameScore(gameOf(event({ home: ['x', 'X', 'X', '37'], away: ['y', 'Y', 'Y', '12'],
     kick: '2026-10-03T19:30Z', spread: -24, total: 41 })));
   ok('No. 1 against No. 2 outscores a Sun Belt blowout', top > dull + 40, `${top} against ${dull}`);
+}
+
+/* THE MONDAY BUILD. ESPN keeps a college week open until the Tuesday after it, so on the
+   Monday the job runs, the week just played is still "current" and has nothing left to kick
+   off. The first version picked it anyway and every Monday build died. */
+section('2b. the week to build is the first one with a slate');
+{
+  const day = 86400e3;
+  const cal = [3, 4, 5, 6].map((w) => ({
+    value: String(w), label: `Week ${w}`,
+    startDate: new Date(NOW + (w - 4) * 7 * day - 5 * day).toISOString(),
+    endDate: new Date(NOW + (w - 4) * 7 * day + 2 * day).toISOString(),
+  }));
+  const board = (events) => ({ leagues: [{ calendar: [{ value: '2', entries: cal }] }], events });
+  const played = EVENTS.map((e) => ({ ...e, date: new Date(NOW - 2 * day).toISOString(),
+    competitions: e.competitions.map((c) => ({ ...c, date: new Date(NOW - 2 * day).toISOString(),
+      status: { type: { state: 'post', completed: true } } })) }));
+  const asked = [];
+  const fetchWeek = async (_s, w) => { asked.push(w); return w === 4 ? board(played) : board(EVENTS); };
+  const open = calendarOf(board([])).filter((c) => Date.parse(c.end) > NOW).map((c) => c.week);
+  ok('the fixture has the week just played still open', open[0] === 4, open.join(','));
+  const w = await nextWeek(2026, NOW, fetchWeek);
+  ok('it builds week 5, not the week just played', w === 5, String(w));
+  ok('and it asked week 4 for a slate before passing it by', asked.includes(4), asked.join(','));
 }
 
 /* ─── 3. the board, the projection and the price ────────────────────────────────── */
