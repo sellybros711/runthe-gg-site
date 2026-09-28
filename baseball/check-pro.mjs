@@ -121,6 +121,8 @@ async function open(fake, opts = {}) {
 const onScreen = (page, id) => page.evaluate((i) => !!document.querySelector('#' + i + '.on'), id);
 const home = async (page) => {
   await page.evaluate(() => { document.getElementById('b-quit').click(); });
+  await page.waitForTimeout(60);
+  await page.evaluate(() => { if (document.querySelector('#sheet-ask.on')) document.getElementById('ask-yes').click(); });
   await page.waitForSelector('#s-intro.on');
   await page.waitForTimeout(80);
 };
