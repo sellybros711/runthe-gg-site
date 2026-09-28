@@ -1,0 +1,67 @@
+name: Refresh the NFL schedule for the Game Day badges
+
+# THE GAME DAY SHELF IN `football/achievements.js` ASKS ABOUT THE REAL LEAGUE: was a game on
+# when a season was filed, who won it, was it the Super Bowl. It reads that off
+# `football/data/nfl_schedule.json`, and this keeps the file true.
+#
+# Three things move in it over a season, and none of them on a timetable: a flexed kickoff,
+# a final score (nflverse fills it in hours after the whistle), and the playoff games, which
+# only exist once the bracket is set. "Called it" and "Upset special" wait on the second, and
+# "January football" and "Super Bowl Sunday" on the third, so a stale file is badges that do
+# not light when they should, with nothing anywhere saying why.
+#
+# IT COMMITS ONLY WHEN THE FILE MOVED, which is the injury job's rule and has its dependency:
+# two builds of an unchanged schedule have to be byte identical, so the builder writes no
+# clock. `check-gameday.mjs` asserts that, and it runs before anything is committed.
+
+on:
+  schedule:
+    # Twice a day, in UTC: late morning Eastern, which catches Sunday's and Monday's finals
+    # once nflverse has them, and just after midnight Eastern for anything filled in during
+    # the day.
+    - cron: '40 15 * * *'
+    - cron: '40 4 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: nfl-schedule
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Build the schedule
+        run: node football/build/nfl-schedule.mjs
+
+      # A FILE THAT WILL NOT PARSE, OR THAT LOST A CLUB OR A TAG, IS WORSE THAN AN OLD ONE:
+      # every badge on the shelf reads it. The whole Game Day check runs against the fresh
+      # file before it is allowed onto main.
+      - name: Check the shelf against it
+        run: node football/check-gameday.mjs
+
+      - name: Commit it, but only if it moved
+        run: |
+          git config user.name "schedule-bot"
+          git config user.email "noreply@anthropic.com"
+          git add football/data/nfl_schedule.json
+          if git diff --cached --quiet; then
+            echo "the schedule has not moved"
+            exit 0
+          fi
+          git commit -m "Game Day: the NFL schedule moved"
+          # Other scheduled jobs push to main too. Rebase and retry rather than fail.
+          for i in 1 2 3 4 5; do
+            git push && break
+            echo "push rejected, rebasing onto latest main (attempt $i)"
+            git pull --rebase origin main || exit 1
+          done

@@ -398,6 +398,55 @@ ranks. One number for everybody, and it steps up on the day a mode launches. Nob
 anything: ranks are derived, so seasons a tester already played are counted the moment the
 shelf appears.
 
+### Game Day: badges for playing while the real league is
+
+```
+node football/check-gameday.mjs           every badge on the shelf, lit and dark, against the real schedule
+node football/build/nfl-schedule.mjs      rebuild football/data/nfl_schedule.json
+```
+
+Asked for by the owner: badges that pull people in while NFL games are on. Twenty of them on
+a `Game Day` shelf. The base one is **Home crowd**: finish a season during a real game with a
+player from either team in it. Everything else builds on that: 8 and 32 teams, both sidelines,
+a division game, four live teams at once, the three night games, a Sunday doubleheader,
+international, Thanksgiving, the playoffs, the Super Bowl, a club that goes on to win, an
+underdog that does, and 3, 8 and 18 different NFL weeks.
+
+**STILL DERIVED, AND IT NEEDED NO MIGRATION.** A row's `created_at` is written by the server,
+so a phone clock cannot move it. The other half is `football/data/nfl_schedule.json`, built off
+nflverse's `games.csv`: every kickoff as a UTC instant, both clubs in this site's codes (their
+`LA` is our `LAR`), the game type, the closing favourite, the final score, and a list of tags
+worked out in Eastern time at build time (`div intl tnf snf mnf early late thanks xmas post sb`)
+so the page never does time zone arithmetic. A game is ON from its kickoff to `GAME_DAY_MS`
+(three and a half hours) after it. **It is retroactive**: the file starts at the 2025 season,
+so every row filed on a game day since then is judged the moment the shelf ships.
+
+**The club is the player's franchise, not his city.** A 2000 St. Louis Ram counts for today's
+Rams, the same way the club collections already work.
+
+**FILED, NOT DRAFTED.** The time on a row is when the season finished. A run is a few minutes,
+so the badge copy says "finish a season" rather than claim a draft time nothing records.
+
+**`.github/workflows/nfl-schedule.yml` refreshes it twice a day and commits only when it
+moved.** A flexed kickoff, a final score and the playoff games all arrive on nobody's
+timetable, and a stale file is badges that silently do not light. The builder writes no clock,
+for the injury file's reason, and the check runs against the fresh file before it is committed.
+The page fetches it `no-cache` with no `?v=`, because a bot rewrites it under one name.
+
+**No schedule is "not known", never "no".** `achReady` loads the file beside the defensive pool
+and `achEvaluate` passes it as `opts.schedule`; with none, every Game Day test is false, which
+is the absent-is-not-zero rule this file already runs on.
+
+**They can only be earned in season**, which is a wait rather than a wall, so they are in the
+catalog and count toward GOAT. The tier rungs are absolute badge counts, so twenty more badges
+only gives everybody more to earn.
+
+**The check asks both halves of every claim**: a badge lights at the right moment and stays
+dark a minute before kickoff, after the window, for the wrong club, across two moments, across
+two weeks, and for the favourite winning. It also holds the schedule to the catalog (every tag a
+badge reads exists in the file) and the page to the wiring. Two defects were reintroduced to
+prove it bites: a window that never closes, and an upset that ignores the favourite.
+
 ### The premium bundle, and the check that boots both views
 
 ```
