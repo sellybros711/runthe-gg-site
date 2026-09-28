@@ -225,8 +225,61 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
     .spot .go{padding:11px 16px;font-size:14px;}
     .tile{border-radius:16px;}
     .tile .tnm{font-size:14px;}
+    .tile .tart img{width:auto;height:66%;}
   }
-  @media (prefers-reduced-motion:reduce){ .tile,.spot,.tile .tart img{transition:none;} }
+  /* ---------- hub motion ----------
+     The page stays alive: the backdrop drifts, the cards deal in, every tile's
+     art moves in its own sport's way, the featured card leans with the pointer
+     and two badges float over it. Only transform, translate, opacity and
+     background-position move, so none of it costs a layout. The entrance uses
+     the translate property rather than transform, so the hover lift still works. */
+  .hero-bg:before{content:"";position:absolute;inset:-20%;
+    background:
+      radial-gradient(38% 42% at 18% 28%, rgba(124,108,255,.26), transparent 70%),
+      radial-gradient(34% 40% at 82% 18%, rgba(102,211,222,.20), transparent 70%),
+      radial-gradient(30% 36% at 55% 85%, rgba(110,232,78,.12), transparent 70%);
+    filter:blur(10px);animation:drift 22s ease-in-out infinite alternate;}
+  @keyframes drift{0%{transform:translate3d(0,0,0) scale(1);}100%{transform:translate3d(3%,-2%,0) scale(1.08);}}
+  @keyframes hubIn{from{opacity:0;translate:0 18px;}to{opacity:1;translate:0 0;}}
+  .hub > *{animation:hubIn .6s var(--ease) backwards;}
+  .hub > :nth-child(2){animation-delay:.08s;} .hub > :nth-child(3){animation-delay:.14s;}
+  .hub > :nth-child(4){animation-delay:.2s;} .hub > :nth-child(5){animation-delay:.26s;}
+  .hub > :nth-child(6){animation-delay:.32s;} .hub > :nth-child(7){animation-delay:.38s;}
+  .hub-top{animation:hubIn .6s var(--ease) backwards;}
+  @keyframes bob{0%,100%{translate:0 0;}50%{translate:0 -7px;}}
+  .tile .tart img{animation:bob 4.2s ease-in-out infinite;}
+  .tile:nth-child(3) .tart img{animation-delay:-.7s;} .tile:nth-child(4) .tart img{animation-delay:-1.4s;}
+  .tile:nth-child(5) .tart img{animation-delay:-2.1s;} .tile:nth-child(6) .tart img{animation-delay:-2.8s;}
+  .tile.g-nfl .tart:before,.tile.g-cfb .tart:before{animation:yardlines 3.2s linear infinite;}
+  @keyframes yardlines{to{background-position:-14.28% 0;}}
+  .tile.g-cfb .tart:before{animation-duration:2.6s;}
+  .tile.g-pitch .tart:before{background-size:50% 100%;animation:mowing 5s linear infinite;}
+  @keyframes mowing{to{background-position:100% 0;}}
+  .tile.g-arcade .tart:before{animation:gridslide 6s linear infinite;}
+  @keyframes gridslide{to{background-position:22px 22px,22px 22px;}}
+  .tile.g-golf .tart:before{animation:greenglow 4s ease-in-out infinite;}
+  @keyframes greenglow{50%{opacity:.6;transform:scale(1.08);}}
+  .tile.g-soon .soon-row span{animation:qpop 2.4s ease-in-out infinite;}
+  .tile.g-soon .soon-row span:nth-child(2){animation-delay:.3s;} .tile.g-soon .soon-row span:nth-child(3){animation-delay:.6s;}
+  @keyframes qpop{0%,60%,100%{transform:none;background:rgba(255,255,255,.12);}30%{transform:translateY(-6px) scale(1.08);background:rgba(255,255,255,.26);}}
+  .spot .ribbon{display:inline-flex;align-items:center;gap:7px;}
+  .spot .ribbon:before{content:"";width:7px;height:7px;border-radius:50%;background:#6EE84E;animation:livePulse 2.4s ease-out infinite;}
+  @keyframes livePulse{0%{box-shadow:0 0 0 0 rgba(110,232,78,.55);}70%{box-shadow:0 0 0 8px rgba(110,232,78,0);}100%{box-shadow:0 0 0 0 rgba(110,232,78,0);}}
+  .spot .go{position:relative;overflow:hidden;}
+  .spot .go:after{content:"";position:absolute;inset:0;background:linear-gradient(110deg,transparent 35%,rgba(255,255,255,.7) 50%,transparent 65%);
+    transform:translateX(-120%);animation:shine 3.2s ease-in-out infinite;}
+  .spot .art > :not(.fbadge){transform:translate(var(--px,0),var(--py,0));transition:transform .5s var(--ease);}
+  .fbadge{position:absolute;z-index:3;display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border-radius:12px;
+    background:rgba(13,17,40,.82);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);box-shadow:0 12px 26px -12px rgba(0,0,0,.7),inset 0 0 0 1px rgba(255,255,255,.12);
+    font-size:12.5px;font-weight:900;color:#fff;white-space:nowrap;pointer-events:none;}
+  .fbadge i{width:22px;height:22px;border-radius:7px;display:inline-flex;align-items:center;justify-content:center;font-style:normal;font-size:12px;
+    background:color-mix(in srgb,var(--gc) 35%,transparent);color:#fff;}
+  .fbadge.fb1{right:14px;bottom:10px;animation:bob 6s ease-in-out infinite;}
+  .fbadge.fb2{right:14px;top:16px;animation:bob 7s ease-in-out -2s infinite;}
+  @media (max-width:640px){ .fbadge.fb2{display:none;} .fbadge{font-size:11px;padding:6px 9px;} .fbadge.fb1{right:10px;bottom:6px;} }
+  @media (prefers-reduced-motion:reduce){ .tile,.spot,.tile .tart img{transition:none;}
+    .hub > *,.hub-top,.tile .tart img,.tile .tart:before,.tile.g-soon .soon-row span,.spot .ribbon:before,.spot .go:after,.fbadge{animation:none!important;}
+    .spot .art > :not(.fbadge){transform:none;transition:none;} }
   /* the featured card's live motifs, kept from the old stage */
   .mbody{height:236px;position:relative;overflow:hidden;display:flex;align-items:flex-end;justify-content:center;}
   .mbody.golf{gap:6px;padding:0 0 18px;background:linear-gradient(#86c3e6,#bfe3f2 55%,#6aa35c 55%,#2b7a38);}
@@ -775,7 +828,7 @@ window.GA_ID='G-L29P5MRWKE';
       <div class="hub">
         <a class="spot g-nfl" href="/football/">
           <span class="ribbon">Featured</span>
-          <span class="art"><canvas class="drivecanvas" data-league="nfl" aria-hidden="true"></canvas></span>
+          <span class="art"><canvas class="drivecanvas" data-league="nfl" aria-hidden="true"></canvas><span class="fbadge fb2" aria-hidden="true"><i>&#9679;</i>Instant play</span><span class="fbadge fb1" aria-hidden="true"><i>&#9733;</i>Trophies &amp; streaks</span></span>
           <span class="info"><img src="/football/icon-192.png" alt="" width="58" height="58" /><span class="tx"><span class="nm">The Perfect Season</span><span class="ds">Six legends. One cap. A full season.</span></span><span class="go">Play</span></span>
         </a>
         <a class="tile g-nfl" href="/football/"><span class="tart"><img src="/football/icon-192.png" alt="" width="92" height="92" /><span class="tag">Draft</span></span><span class="tinfo"><span class="tnm">The Perfect Season</span><span class="tsp">NFL · Season sim</span></span></a>
@@ -812,8 +865,9 @@ window.GA_ID='G-L29P5MRWKE';
   try{ var last=parseInt(localStorage.getItem('rtg_hero_game'),10); i=isNaN(last)?Math.floor(Math.random()*G.length):(last+1)%G.length; localStorage.setItem('rtg_hero_game',String(i)); }
   catch(e){ i=Math.floor(Date.now()/864e5)%G.length; }
   var f=G[i];
+  var BADGES='<span class="fbadge fb2" aria-hidden="true"><i>&#9679;</i>Instant play</span><span class="fbadge fb1" aria-hidden="true"><i>&#9733;</i>Trophies &amp; streaks</span>';
   spot.className='spot g-'+f.k; spot.href=f.href;
-  spot.innerHTML='<span class="ribbon">Featured</span><span class="art">'+f.art+'</span>'
+  spot.innerHTML='<span class="ribbon">Featured</span><span class="art">'+f.art+BADGES+'</span>'
     +'<span class="info"><img src="'+f.ic+'" alt="" width="58" height="58" /><span class="tx"><span class="nm">'+f.n+'</span><span class="ds">'+f.t+'</span></span><span class="go">Play</span></span>';
 })();
 </script>
@@ -1769,6 +1823,12 @@ document.querySelectorAll('.feat-link').forEach(function(a){
     cards.forEach(function(c){ io.observe(c); });
   }
   if(reduce||!fine) return;
+  var spot=document.querySelector('.hero .spot');
+  if(spot){ var sraf=0,sev=null;
+    function lean(){ sraf=0; var r=spot.getBoundingClientRect(), x=(sev.clientX-r.left)/r.width-.5, y=(sev.clientY-r.top)/r.height-.5;
+      spot.style.setProperty('--px',(x*-14)+'px'); spot.style.setProperty('--py',(y*-10)+'px'); }
+    spot.addEventListener('pointermove',function(e){ sev=e; if(!sraf) sraf=requestAnimationFrame(lean); });
+    spot.addEventListener('pointerleave',function(){ spot.style.removeProperty('--px'); spot.style.removeProperty('--py'); }); }
   cards.forEach(function(c){
     var raf=0,ev=null;
     function apply(){ raf=0; var r=c.getBoundingClientRect(), x=(ev.clientX-r.left)/r.width, y=(ev.clientY-r.top)/r.height;
