@@ -157,6 +157,15 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
   .spot .art{position:relative;flex:1 1 auto;min-height:230px;display:flex;align-items:center;justify-content:center;padding:18px 18px 0;}
   .spot .art .drivecanvas{height:220px;}
   .spot .mbody{height:220px;width:100%;border-radius:14px;box-shadow:0 0 0 1px rgba(255,255,255,.1);}
+  /* the rich preview: the card's own scene, filling the art box */
+  .spot{--c:var(--gc);}
+  .spot.rich .art{padding:14px 14px 0;}
+  .spot.rich .art .media{flex:1 1 auto;width:100%;height:auto;min-height:250px;border-radius:14px;
+    box-shadow:0 0 0 1px rgba(255,255,255,.12),0 18px 34px -20px rgba(0,0,0,.9);}
+  .spot.rich .art .media.fx-stadium{padding-top:40px;}
+  .spot.rich .fbadge{display:none;}
+  .spot.rich .media.fx-arc{padding-top:46px;height:auto;}
+  .spot:hover .blogo{transform:scale(1.04) rotate(-1.5deg);}
   .spot .ribbon{position:absolute;left:18px;top:18px;z-index:3;font-size:11px;font-weight:900;letter-spacing:.12em;text-transform:uppercase;
     background:#fff;color:#1a1440;border-radius:999px;padding:6px 11px;box-shadow:0 6px 16px -6px rgba(0,0,0,.5);}
   .spot .info{display:flex;align-items:center;gap:14px;padding:18px;}
@@ -165,7 +174,7 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
   .spot .info .nm,.spot .info .ds,.tile .tnm,.tile .tsp{display:block;}
   .spot .info .nm{font-family:var(--title);font-size:22px;line-height:1.1;}
   .spot .info .ds{font-size:14px;color:rgba(255,255,255,.82);margin-top:4px;line-height:1.4;}
-  .spot .go{flex:0 0 auto;font-weight:900;font-size:15px;background:#fff;color:#1a1440;border-radius:999px;padding:12px 20px;
+  .spot .info .go{flex:0 0 auto;font-weight:900;font-size:15px;background:#fff;color:#1a1440;border-radius:999px;padding:12px 20px;
     box-shadow:0 8px 20px -8px rgba(0,0,0,.6);}
 
   /* a tile per game */
@@ -229,7 +238,7 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
 
   @media (min-width:1061px){
     .spot .info{flex-wrap:wrap;}
-    .spot .go{flex:1 1 100%;text-align:center;}
+    .spot .info .go{flex:1 1 100%;text-align:center;}
   }
   @media (max-width:1060px){
     .hub{grid-template-columns:repeat(3,minmax(0,1fr));grid-template-rows:none;}
@@ -248,12 +257,14 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
     .spot{border-radius:18px;}
     .spot .art{padding:14px 14px 0;}
     .spot .art .drivecanvas,.spot .mbody{height:132px;}
+    .spot.rich .art{padding:10px 10px 0;}
+    .spot.rich .art .media{min-height:222px;}
     .spot .ribbon{left:14px;top:14px;font-size:10px;padding:5px 9px;}
     .spot .info{padding:14px;gap:12px;}
     .spot .info img{width:46px;height:46px;border-radius:11px;}
     .spot .info .nm{font-size:18px;}
     .spot .info .ds{font-size:13px;}
-    .spot .go{padding:11px 16px;font-size:14px;}
+    .spot .info .go{padding:11px 16px;font-size:14px;}
     .tile{border-radius:16px;}
     .tile .tnm{font-size:14px;}
     .tile .tart img{width:auto;height:66%;}
@@ -287,8 +298,8 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
   .spot .ribbon{display:inline-flex;align-items:center;gap:7px;}
   .spot .ribbon:before{content:"";width:7px;height:7px;border-radius:50%;background:#6EE84E;animation:livePulse 2.4s ease-out infinite;}
   @keyframes livePulse{0%{box-shadow:0 0 0 0 rgba(110,232,78,.55);}70%{box-shadow:0 0 0 8px rgba(110,232,78,0);}100%{box-shadow:0 0 0 0 rgba(110,232,78,0);}}
-  .spot .go{position:relative;overflow:hidden;}
-  .spot .go:after{content:"";position:absolute;inset:0;background:linear-gradient(110deg,transparent 35%,rgba(255,255,255,.7) 50%,transparent 65%);
+  .spot .info .go{position:relative;overflow:hidden;}
+  .spot .info .go:after{content:"";position:absolute;inset:0;background:linear-gradient(110deg,transparent 35%,rgba(255,255,255,.7) 50%,transparent 65%);
     transform:translateX(-120%);animation:shine 3.2s ease-in-out infinite;}
   .spot .art > :not(.fbadge){transform:translate(var(--px,0),var(--py,0));transition:transform .5s var(--ease);}
   .fbadge{position:absolute;z-index:3;display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border-radius:12px;
@@ -300,7 +311,7 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
   .fbadge.fb2{right:14px;top:16px;animation:bob 7s ease-in-out -2s infinite;}
   @media (max-width:640px){ .fbadge.fb2{display:none;} .fbadge{font-size:11px;padding:6px 9px;} .fbadge.fb1{right:10px;bottom:6px;} }
   @media (prefers-reduced-motion:reduce){ .tile,.spot,.tile .tart img{transition:none;}
-    .hub > *,.hub-top,.tile .tart img,.tile .tart .scene,.scene *,.tile.g-soon .soon-row span,.spot .ribbon:before,.spot .go:after,.fbadge{animation:none!important;}
+    .hub > *,.hub-top,.tile .tart img,.tile .tart .scene,.scene *,.tile.g-soon .soon-row span,.spot .ribbon:before,.spot .info .go:after,.fbadge{animation:none!important;}
     .spot .art > :not(.fbadge){transform:none;transition:none;} }
   /* the featured card's live motifs, kept from the old stage */
   .mbody{height:236px;position:relative;overflow:hidden;display:flex;align-items:flex-end;justify-content:center;}
@@ -897,7 +908,7 @@ window.GA_ID='G-L29P5MRWKE';
   catch(e){ i=Math.floor(Date.now()/864e5)%G.length; }
   var f=G[i];
   var BADGES='<span class="fbadge fb2" aria-hidden="true"><i>&#9679;</i>Instant play</span><span class="fbadge fb1" aria-hidden="true"><i>&#9733;</i>Trophies &amp; streaks</span>';
-  spot.className='spot g-'+f.k; spot.href=f.href;
+  spot.className='spot g-'+f.k; spot.href=f.href; spot.setAttribute('data-k',f.k);
   spot.innerHTML='<span class="ribbon">Featured</span><span class="art">'+f.art+BADGES+'</span>'
     +'<span class="info"><img src="'+f.ic+'" alt="" width="58" height="58" /><span class="tx"><span class="nm">'+f.n+'</span><span class="ds">'+f.t+'</span></span><span class="go">Play</span></span>';
 })();
@@ -1063,6 +1074,31 @@ window.GA_ID='G-L29P5MRWKE';
       </article>
     </main>
   </section>
+<script>
+/* The featured preview is the same scene as that game's card below: the stadium
+   with its score bug and touchdown banner, the golf course, the Arcade board,
+   the pitch with its clips. It is copied here before the scripts that drive
+   those scenes run, so they drive both copies. With this blocked, the spot
+   keeps the plainer art the rotation above gave it. */
+(function(){
+  var spot=document.querySelector('.hero .spot'); if(!spot) return;
+  var CARD={nfl:'football',cfb:'cfb',golf:'golf',arcade:'arcade',pitch:'soccer',base:'baseball'};
+  var src=document.querySelector('.feat.'+CARD[spot.getAttribute('data-k')]+' .media');
+  var art=spot.querySelector('.art'); if(!src||!art) return;
+  var m=src.cloneNode(true);
+  [].forEach.call(m.querySelectorAll('.tagline'),function(x){ x.remove(); });
+  /* no link inside the spot's own link */
+  [].forEach.call(m.querySelectorAll('a'),function(x){
+    var s=document.createElement('span'); s.className=x.className; while(x.firstChild) s.appendChild(x.firstChild); x.replaceWith(s); });
+  /* ids in an SVG must stay unique, so the copy gets its own */
+  var ids=[].map.call(m.querySelectorAll('[id]'),function(x){ var o=x.id; x.id=o+'-sp'; return o; });
+  if(ids.length){ [].forEach.call(m.querySelectorAll('*'),function(x){ [].forEach.call(x.attributes,function(at){
+    ids.forEach(function(o){ if(at.value.indexOf('#'+o+')')>-1) x.setAttribute(at.name,at.value.split('#'+o+')').join('#'+o+'-sp)')); }); }); }); }
+  m.setAttribute('aria-hidden','true');
+  var old=art.querySelector('.drivecanvas,.mbody'); if(old) old.replaceWith(m); else art.insertBefore(m,art.firstChild);
+  spot.classList.add('rich');
+})();
+</script>
 
   <section class="sec shell" id="on-deck">
     <div class="sec-head">
@@ -1901,7 +1937,7 @@ document.querySelectorAll('.feat-link').forEach(function(a){
    The marks, names and pitches are the Arcade's own (/arcade/gamemarks.js), so
    this card can never describe a puzzle the Arcade does not have. */
 (function(){
-  var box=document.querySelector('.fx-arc'); if(!box) return;
+  [].forEach.call(document.querySelectorAll('.fx-arc'),function(box){
   var reduce=false; try{ reduce=matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){}
   var tiles=[].slice.call(box.querySelectorAll('.at')), card=box.closest('.feat');
   var now=box.querySelector('.arc-now'), nm=box.querySelector('.arc-nm'), ds=box.querySelector('.arc-ds'),
@@ -1935,6 +1971,7 @@ document.querySelectorAll('.feat-link').forEach(function(a){
     },1600);
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',start); else start();
+  });
 })();
 </script>
 </body>
