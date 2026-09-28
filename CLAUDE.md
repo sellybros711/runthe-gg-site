@@ -12728,32 +12728,52 @@ where it usually lands, off `BRK_OVER` and the play-in line, and the player's ow
 record is still never moved. `check-bracket` asserts the far conference runs at
 least fourteen wins top to bottom and that no 8 seed has a top six record.
 
-#### It names nobody, and that is this game's rule rather than a shortcut
+#### Every seat is a club and a seed, and never a season
 
-The football bracket prints real clubs because there the opponents ARE real
-team-seasons off the difficulty ladder. Here they are not. The results screen
-has said "played like a 58 win team" since the day it shipped, for the reason
-written over it: printing "the 1996 Bulls" over a number the model rolled
-tells somebody they beat a team that was never in the room. **A bracket of
-real names would be that mistake fifteen times on one screen.**
+Asked for by the owner: the bracket says who you are playing, a team and a
+seed, and not a record. **This reverses a rule this section used to hold**,
+which was that the bracket names nobody and every seat is a seed and a record.
+The argument behind that rule was about a SEASON and it still holds: printing
+"the 1996 Bulls" over a number the model rolled tells somebody they beat a team
+that was never in the room. So a seat carries a **club of today's league and no
+year** (`BRK_CLUBS`, fifteen a conference, each club in its own). That is how a
+bracket for a season nobody has played yet reads, and it is a label rather than
+a claim about anybody who ever played.
 
-So every seat is a **seed and a record**, which is how an NBA bracket reads
-anyway, and no seat is a claim about anybody who ever played. `check-bracket`
-reads the seat painter's own source for a reach at `nickname`, `franchise` or
-`teamName`, and reads every seat off the rendered page for anything that is
-not a record, the player, or TBD.
+**The clubs come off a stream of their own** (`run.seed` + `|nbaclubs`), so a
+reload or a replay shows the same field and naming it moves no number in it. A
+**One Franchise run plays in its own club's conference and never meets its own
+club.** The play-in opponent is a club too, from the same conference and on no
+other seat. The seed chip wears the club's colors off `E.clubSkin`, the same
+skin the reels use, so the digit is measured to read on its own fill.
 
-**THE TWO NUMBERS ARE KEPT APART, DELIBERATELY.** A seat's record is the
-FIELD's shape: what a 3 seed won. The strength the engine actually drew is
-what you are playing, and the draw is deliberately wide (`TITLE.SERIES_SD`),
-so the two disagree and should. The seat carries the seed and the note under
-the rail carries the form: **"The 3 seed, playing like a 58 win team."** One
-sentence, two facts, neither pretending to be the other. Read as one claim
-they would make the bracket look like it was lying about its own seeding.
+**Two nicknames are cut** (`BRK_NICK`: Wolves, Blazers). The rail's seat fits
+"Timberwolves" and the series card does not: at 320 the card's name has about
+71px and "Timberwolves" needs 98. The guard measures all thirty clubs in a real
+seat and on the real card at 320 with a Range, through the page's own
+`brkClubName` lifted out, so the probe cannot pass on names the page stopped
+printing.
 
-That note is read off `run.po.cur.oppNet` and never off the pending game,
-which answers with the points and the home court, meaning the rating already
-converted for this matchup.
+**One club everywhere a round is named.** The rail, the series card, the note
+under the rail, a playoff game's box score and the results screen's series
+blocks all ask `brkThem` or `brkOppLabel`, which read the bracket's own seat.
+
+**EACH DECORATION GAME ROLLS ON A STREAM OF ITS OWN**, keyed on its place in the
+tree. Off one shared stream the result depended on the ORDER the games were
+first asked for: the live walk asks a render at a time, where games waiting on
+the player's series resolve late, and a reload asks a column at a time, so a
+bracket rebuilt after a reload could crown a different club from the one that
+was on screen before it. With names on the seats that would be visible, so the
+guard asks the field forwards and backwards and requires the same winners.
+
+**THE STRENGTH STAYS IN THE NOTE.** The seed is the FIELD's shape. The strength
+the engine drew is what you are playing, and the draw is deliberately wide
+(`TITLE.SERIES_SD`), so the two disagree and should: **"Next up: the Nuggets,
+the 3 seed. They play like a 58 win team."** That note is read off
+`run.po.cur.oppNet` and never off the pending game, which answers with the
+points and the home court, meaning the rating already converted for this
+matchup. The seat's wins are still built (they order the seeds) and are no
+longer printed anywhere.
 
 #### A column is empty until the round that feeds it has been played
 

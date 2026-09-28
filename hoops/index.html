@@ -1257,6 +1257,11 @@
     color:var(--mut);min-height:30px;}
   .brk-t + .brk-t{border-top:1px solid var(--line);}
   .brk-t .sd{flex:0 0 14px;text-align:center;font-size:9.5px;font-weight:800;color:var(--dim);}
+  /* A club's seed is a chip in its colors. The colors are the club's in both
+     themes, the same as the reels. */
+  .brk-t.club .sd{flex:0 0 17px;height:17px;border-radius:5px;display:grid;place-items:center;
+    background:var(--cb);color:var(--co);box-shadow:inset 0 0 0 1px var(--ca);
+    font-variant-numeric:tabular-nums;}
   .brk-t .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
     font-variant-numeric:tabular-nums;}
   .brk-t .sc{flex:0 0 auto;font-family:var(--num);font-variant-numeric:tabular-nums;font-size:11px;font-weight:700;
@@ -3849,9 +3854,11 @@ function renderGame(d){
      season opponent is a real club out of the same data. A playoff opponent
      is a strength the bracket drew, so it is described rather than named:
      naming one would invent a club that never played. */
+  var poOpp = !d.oppName && d.round ? brkOppLabel(d.round) : '';
   $('gs-opp').textContent = d.oppName
     ? (d.home ? 'vs ' : 'at ') + d.oppName
-    : (d.home ? 'Home' : 'Away') + ' · played like a ' + oppWins(d.oppNet) + ' win team';
+    : (poOpp ? (d.home ? 'vs ' : 'at ') + poOpp : (d.home ? 'Home' : 'Away'))
+      + ' · played like a ' + oppWins(d.oppNet) + ' win team';
 
   /* The quarters. */
   var q = $('gs-qtr');
@@ -6515,29 +6522,65 @@ function playSeason(){
  * the field AROUND that path, and the fourteen games the player is not in are
  * simulated for the reveal alone.
  *
- * ── IT NAMES NOBODY, AND THAT IS THIS GAME'S RULE RATHER THAN A SHORTCUT ────
+ * ── EVERY SEAT IS A CLUB AND A SEED, AND NEVER A SEASON ─────────────────────
  *
- * The football bracket prints real clubs because there the opponents ARE real
- * team-seasons off the difficulty ladder. Here they are not: the results
- * screen has said "played like a 58 win team" since the day it shipped, for
- * the reason written over it, which is that printing "the 1996 Bulls" over a
- * number the model rolled tells somebody they beat a team that was never in
- * the room. A bracket of real names would be that mistake fifteen times on
- * one screen.
+ * Asked for by the owner: the bracket says who you are playing, a team and a
+ * seed, the way an NBA bracket reads. It used to name nobody and print a
+ * record on every seat, on the argument that "the 1996 Bulls" over a number
+ * the model rolled tells somebody they beat a team that was never in the
+ * room. That argument is about a SEASON, and it still holds: no seat carries
+ * a year, so no seat is a claim about anybody who ever played. A seat is a
+ * club of today's league in its own conference, the way a bracket for a
+ * season nobody has played yet would read.
  *
- * So every seat is a SEED and a RECORD, which is how an NBA bracket reads
- * anyway, and no seat is a claim about anybody who ever played.
+ * WHICH CLUB IS DRAWN OFF THE RUN'S SEED, on a stream of its own, so a reload
+ * or a replay shows the same field and no draw that decides anything moves.
+ * A One Franchise run sits in its own club's conference and never meets
+ * itself.
  *
- * ── THE TWO NUMBERS ARE KEPT APART, DELIBERATELY ────────────────────────────
+ * ── THE RECORD IS GONE FROM THE SEAT AND THE STRENGTH STAYS IN THE NOTE ─────
  *
- * A seat's record is the FIELD's shape: what a 3 seed won. The strength the
- * engine actually drew is what you are playing against, and the draw is
- * deliberately wide (see TITLE.SERIES_SD), so the two disagree and should.
- * The seat carries the seed and the note under the bracket carries the form:
- * "The 3 seed, playing like a 58 win team." One sentence, two facts, neither
- * pretending to be the other.
+ * The seed is the FIELD's shape. The strength the engine actually drew is
+ * what you are playing against, and the draw is deliberately wide (see
+ * TITLE.SERIES_SD), so the two disagree and should. The seat carries the club
+ * and the seed, and the note under the bracket carries the form: "Next up:
+ * the Nuggets, the 3 seed. They play like a 58 win team."
  */
 var BRK_CONFS = ['East', 'West'];
+
+/* THE TWO CONFERENCES AS THEY ARE TODAY. Fifteen clubs a side, so a
+   conference fills its seven other seats and the play-in with room to spare
+   even when a One Franchise run takes its own club out of it. */
+var BRK_CLUBS = {
+  East: ['ATL', 'BOS', 'BRK', 'CHI', 'CHO', 'CLE', 'DET', 'IND', 'MIA', 'MIL',
+    'NYK', 'ORL', 'PHI', 'TOR', 'WAS'],
+  West: ['DAL', 'DEN', 'GSW', 'HOU', 'LAC', 'LAL', 'MEM', 'MIN', 'NOP', 'OKC',
+    'PHO', 'POR', 'SAC', 'SAS', 'UTA'],
+};
+
+/* The name a seat prints. Two nicknames are cut to what a broadcast graphic
+   calls them, because a seat is about eighty pixels of text on a phone and
+   "Timberwolves" does not fit it. */
+var BRK_NICK = { MIN: 'Wolves', POR: 'Blazers' };
+function brkClubName(e){
+  if (!e || !e.code) return '';
+  return BRK_NICK[e.code] || E.teamName(e.code);
+}
+
+function brkConfOf(code){
+  for (var c in BRK_CLUBS) if (BRK_CLUBS[c].indexOf(code) >= 0) return c;
+  return null;
+}
+
+/* A FISHER-YATES SHUFFLE ON THE CLUB STREAM, never on the field's. */
+function brkShuffle(list, rng){
+  var a = list.slice();
+  for (var i = a.length - 1; i > 0; i--) {
+    var j = Math.floor(rng() * (i + 1)), t = a[i];
+    a[i] = a[j]; a[j] = t;
+  }
+  return a;
+}
 /* The tree, in the order the boxes are drawn down a column, so a reader can
    follow a line rather than hunt for it: the top half of the conference is
    1/8 with 4/5 and the bottom half is 3/6 with 2/7. Seed numbers, not
@@ -6632,6 +6675,10 @@ function brkBuild(){
      again means the seed and the schedule cannot come apart. */
   var mySeed = run.playoffSeed && run.playoffSeed.bye ? brkSeedOf(wins) : 7;
   var nearIdx = Math.floor(rng() * 2);
+  /* A ONE FRANCHISE RUN PLAYS IN ITS OWN CLUB'S CONFERENCE. The draw above is
+     still made, so the field's stream is the one it always was. */
+  var own = run.club && brkConfOf(run.club) ? run.club : null;
+  if (own) nearIdx = BRK_CONFS.indexOf(brkConfOf(own));
 
   var nearWins = brkColumnWins(mySeed, wins, rng);
   /* The far conference has no player, so it is anchored on its own top seed
@@ -6640,11 +6687,18 @@ function brkBuild(){
   var farTop = brkLadder(1) - 1 + Math.floor(rng() * 5);
   var farWins = brkColumnWins(1, farTop, rng);
 
-  var seat = function(s, w, you){ return { seed: s, wins: w, you: !!you }; };
-  var near = [], far = [];
+  /* THE CLUBS COME OFF A STREAM OF THEIR OWN, so naming the field moves no
+     number in it. */
+  var crng = E.createSeededRNG(E.hashSeed(String(run.seed) + '|nbaclubs'));
+  var nearClubs = brkShuffle(BRK_CLUBS[BRK_CONFS[nearIdx]].filter(function(c){ return c !== own; }), crng);
+  var farClubs = brkShuffle(BRK_CLUBS[BRK_CONFS[1 - nearIdx]], crng);
+
+  var seat = function(s, w, you, code){ return { seed: s, wins: w, you: !!you, code: you ? null : code }; };
+  var near = [], far = [], k = 0;
   for (var s = 1; s <= 8; s++) {
-    near.push(seat(s, nearWins[s - 1], s === mySeed));
-    far.push(seat(s, farWins[s - 1], false));
+    var mine = s === mySeed;
+    near.push(seat(s, nearWins[s - 1], mine, mine ? null : nearClubs[k++]));
+    far.push(seat(s, farWins[s - 1], false, farClubs[s - 1]));
   }
 
   brk = {
@@ -6655,8 +6709,10 @@ function brkBuild(){
        front of it, so every stage below is offset by one. */
     off: rounds === E.CONSTANTS.PLAYOFF_ROUNDS_PLAY_IN ? 1 : 0,
     names: E.playoffRoundNames(rounds),
-    /* The other side of the play-in, a record and nothing else. */
-    playIn: { seed: null, wins: Math.max(20, wins - 1 - Math.floor(rng() * 3)), you: false },
+    /* The other side of the play-in: a club from the same conference that is
+       on no other seat, and no seed, because the winner is the 7. */
+    playIn: { seed: null, wins: Math.max(20, wins - 1 - Math.floor(rng() * 3)), you: false,
+      code: nearClubs[k] },
     cache: {}, revealed: {}, rng: rng,
   };
   return brk;
@@ -6682,7 +6738,7 @@ function brkEntrant(e){
   var pi = brkMine(-1);
   if (!pi || !pi.over) return null;
   if (pi.won) return e;
-  return { seed: e.seed, wins: B.playIn.wins, you: false };
+  return { seed: e.seed, wins: B.playIn.wins, you: false, code: B.playIn.code };
 }
 
 /* Who is in a game, and who won it. Resolved once and cached, because a
@@ -6731,7 +6787,13 @@ function brkGame(stage, side, idx){
      known yet is drawn as two empty seats and asked again later, and it must
      NOT be cached in that state or the empty answer outlives the reason. */
   if (!a || !b) return g;
-  var r = brkResolve(a.seed <= b.seed ? a : b, a.seed <= b.seed ? b : a, B.rng);
+  /* EACH GAME ROLLS ON A STREAM OF ITS OWN, keyed on its place in the tree.
+     Off one shared stream the result depended on the ORDER the games were
+     first asked for, so a bracket rebuilt after a reload, which asks a
+     column at a time, could crown a different club from the one that was on
+     the screen before it. */
+  var grng = E.createSeededRNG(E.hashSeed(String(run.seed) + '|brkgame|' + key));
+  var r = brkResolve(a.seed <= b.seed ? a : b, a.seed <= b.seed ? b : a, grng);
   g.won = r.win; g.lost = r.lose; g.w = r.w; g.l = r.l;
   B.cache[key] = g;
   return g;
@@ -6756,7 +6818,7 @@ function brkMine(stage){
 
    THE PLAY-IN IS ONE BOX, because the engine's play-in is one game. The real
    thing is four games over two nights and modelling that here would be a
-   picture of a tournament the run never plays. Its opponent carries a record
+   picture of a tournament the run never plays. Its opponent carries a club
    and NO SEED, which is the honest label: the winner is the 7 seed, so
    neither side is one yet, and a chip reading 8 beside a first round column
    that also has an 8 would be two different clubs wearing one number. */
@@ -6786,14 +6848,21 @@ function brkColumn(col){
  * over. Exactly one key is marked `just` at a time, and only `.just` carries
  * the flip, so the game that has this moment is the only thing moving.
  */
+/* A club's seed chip wears the club's colors, off the same skin the reels use,
+   so the digit is measured to read on its own fill. */
+function brkChip(e){
+  if (!e || e.you || !e.code || !E.clubSkin) return '';
+  var k = E.clubSkin(e.code);
+  return ' style="--cb:' + k.bg + ';--co:' + k.on + ';--ca:' + k.accent + '"';
+}
 function brkSeat(e, state, score){
   if (!e) return '<div class="brk-t tbd"><span class="sd"></span>'
     + '<span class="nm">TBD</span><span class="sc"></span></div>';
   var cls = state ? ' ' + state : '';
-  return '<div class="brk-t' + (e.you ? ' me' : '') + cls + '">'
-    + '<span class="sd">' + (e.seed == null ? '' : e.seed) + '</span>'
-    + '<span class="nm">' + (e.you ? YOUR_LOT : esc(e.wins + '-'
-      + (E.CONSTANTS.REGULAR_SEASON_GAMES - e.wins))) + '</span>'
+  return '<div class="brk-t' + (e.you ? ' me' : '') + (e.code ? ' club' : '') + cls + '"'
+    + (e.code ? ' data-club="' + esc(e.code) + '"' : '') + '>'
+    + '<span class="sd"' + brkChip(e) + '>' + (e.seed == null ? '' : e.seed) + '</span>'
+    + '<span class="nm">' + esc(e.you ? YOUR_LOT : brkClubName(e)) + '</span>'
     + '<span class="sc">' + (score == null ? '' : score) + '</span></div>';
 }
 
@@ -6996,6 +7065,22 @@ function brkThem(col){
   return g.pair[0] && g.pair[0].you ? g.pair[1] : g.pair[0];
 }
 
+/* THE SAME CLUB EVERYWHERE A ROUND IS NAMED: the rail, the series card, the
+   box score and the results screen all ask the bracket's own seat, so a round
+   cannot be the Nuggets on one screen and somebody else on the next. Empty
+   when the bracket cannot answer, and the caller then says what it always
+   said. */
+function brkOppLabel(roundName){
+  try {
+    if (!run || !run.po) return '';
+    var B = brkBuild(), col = B.names.indexOf(roundName);
+    if (col < 0) return '';
+    var t = brkThem(col);
+    if (!t || !t.code) return '';
+    return 'the ' + (t.seed != null ? t.seed + ' seed ' : '') + brkClubName(t);
+  } catch (e) { return ''; }
+}
+
 /* The man who led your five in scoring, off the box score the strip opens.
    Kept per game because gameDetail draws a whole box to answer it, and the
    card is repainted after every game of the series. */
@@ -7073,15 +7158,18 @@ function srsPaint(played){
   mysd.hidden = bestOf === 1;
   $('srs-mynm').innerHTML = esc(YOUR_LOT) + '<small>' + esc(simWins + '-' + simLosses) + '</small>';
   var thSeed = them && them.seed != null ? them.seed : null;
-  /* THE CHIP ONLY WHEN THE NAME DOES NOT ALREADY SAY IT. "The 5 seed" beside
-     a chip reading 5 is one fact twice, and on a 320 phone it cut the name to
-     "The 5 s...". The Finals name the other conference, so there it is the
-     only place the seed is. */
+  /* THE CLUB AND ITS SEED, never a record. The chip carries the seed in the
+     club's own colors and the line under the name says where it comes from,
+     so a Finals opponent reads as the other conference's top club. */
   thsd.textContent = thSeed == null ? '' : String(thSeed);
-  thsd.hidden = thSeed == null || !finals;
-  var thRec = them ? them.wins + '-' + (E.CONSTANTS.REGULAR_SEASON_GAMES - them.wins) : '';
-  $('srs-thnm').innerHTML = esc(thSeed == null ? 'The field' : (finals ? 'The ' + B.farConf : 'The ' + thSeed + ' seed'))
-    + '<small>' + esc(thRec) + '</small>';
+  thsd.hidden = thSeed == null;
+  thsd.setAttribute('style', them && them.code && E.clubSkin
+    ? (function(k){ return 'background:' + k.bg + ';color:' + k.on + ';box-shadow:inset 0 0 0 1px ' + k.accent; })(E.clubSkin(them.code))
+    : '');
+  var thWhere = thSeed == null ? 'Play-in'
+    : (finals ? B.farConf + ' ' : '') + thSeed + ' seed';
+  $('srs-thnm').innerHTML = esc(them && them.code ? brkClubName(them) : 'The field')
+    + '<small>' + esc(thWhere) + '</small>';
 
   /* The score. A one game round has no series score, so it says VS until the
      game is in and then the game's own score. */
@@ -7287,7 +7375,8 @@ function brkEnter(){
        for the reader's own series the moment the reveal is done. */
     if (brkUpset(g)) {
       brkNote('Upset in the ' + (g.side === 'near' ? B.myConf : B.farConf) + '. The '
-        + g.won.seed + ' seed knocks out the ' + g.lost.seed + '.');
+        + g.won.seed + ' seed ' + brkClubName(g.won) + ' knock out the '
+        + g.lost.seed + ' seed ' + brkClubName(g.lost) + '.');
     }
     brkLater(go, step);
   };
@@ -7404,9 +7493,10 @@ function brkSeriesNote(){
   var them = null;
   if (g && g.pair) them = g.pair[0] && g.pair[0].you ? g.pair[1] : g.pair[0];
   var form = 'They play like a ' + oppWins(cur.oppNet) + ' win team.';
+  var who = them && them.code ? 'the ' + brkClubName(them) : null;
   brkNote(them && them.seed != null
-    ? 'Next up: the ' + them.seed + ' seed. ' + form
-    : 'One game to get in. ' + form);
+    ? 'Next up: ' + (who ? who + ', ' : '') + 'the ' + them.seed + ' seed. ' + form
+    : 'One game to get in' + (who ? ', against ' + who : '') + '. ' + form);
 }
 
 function brkRoundDone(){
@@ -8111,7 +8201,8 @@ function renderOver(out){
 
         var lvl = document.createElement('div');
         lvl.className = 'ph-opp';
-        lvl.textContent = 'played like a ' + oppWins(rd.oppNet) + ' win team';
+        var ro = brkOppLabel(rd.round);
+        lvl.textContent = (ro ? 'vs ' + ro + ' · ' : '') + 'played like a ' + oppWins(rd.oppNet) + ' win team';
         wrap.appendChild(lvl);
 
         (rd.games || []).forEach(function(g, gi){
