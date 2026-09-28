@@ -110,6 +110,12 @@ jobs:
       - name: The leaderboard
         run: node baseball/check-leaderboard.mjs
 
+      # October has suspense: your series lands a game at a time, and a deciding
+      # game is played on the game screen, never revealed. Plays seasons until one
+      # reaches a decider, so it takes a few minutes.
+      - name: October and game 7
+        run: node baseball/check-october.mjs
+
       # Every badge, against real runs. The catalogue went from 36 to 205 in one
       # pass, and a badge nobody can earn throws no error and breaks no test: the
       # cabinet renders, the square stays dark, and nobody reports it. The hoops

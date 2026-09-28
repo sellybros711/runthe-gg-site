@@ -928,6 +928,49 @@ body:has(#s-intro.on) header .lockup{visibility:hidden}
 .brk-t.tbd .nm{color:var(--dim-2);font-weight:600;font-style:italic}
 .brk-t.champ{background:var(--warm)}
 .brk-t.champ .nm{color:var(--gold)}
+/* A column's other series flip in one at a time. */
+.brk-g.flip{animation:brkflip .5s cubic-bezier(.3,1.4,.5,1) both}
+@keyframes brkflip{0%{transform:rotateX(80deg);opacity:.2}100%{transform:none;opacity:1}}
+
+/* ─── your series, a game at a time ───
+   The bracket reveals everybody else's series; yours gets its own strip under it,
+   one game at a time, so the score of a series is something that happens. */
+.po-track{margin:12px 0 2px;padding:14px 14px 12px;border-radius:14px;background:var(--grad-panel);
+  border:1px solid var(--line-2);box-shadow:var(--shadow);animation:optin .35s ease both}
+.po-track[hidden]{display:none}
+.pt-hd{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:10px}
+.pt-eye{font-family:var(--fn);font-size:10px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--gold)}
+.pt-vs{font-family:var(--fn);font-size:11.5px;font-weight:800;color:var(--dim);white-space:nowrap}
+.pt-vs b{color:var(--ink)}
+.pt-pips{display:grid;gap:6px;margin-bottom:12px}
+.pt-pip{border-radius:9px;border:1px solid var(--line);background:rgba(var(--edge),.04);
+  padding:6px 2px;text-align:center;min-width:0;transition:background .25s,border-color .25s}
+.pt-pip .g{display:block;font-family:var(--fn);font-size:9px;font-weight:800;letter-spacing:.08em;color:var(--dim-2)}
+.pt-pip .r{display:block;font-family:var(--fd);font-size:15px;line-height:1.2;color:var(--dim-2);white-space:nowrap}
+.pt-pip.pend{border-color:var(--gold);animation:ptpend .9s ease-in-out infinite}
+.pt-pip.pend .r::after{content:'\2022\2022\2022';letter-spacing:2px;color:var(--gold)}
+@keyframes ptpend{0%,100%{box-shadow:0 0 0 0 rgba(212,160,23,.0)}50%{box-shadow:0 0 0 4px rgba(212,160,23,.28)}}
+.pt-pip.w{background:rgba(46,125,50,.14);border-color:rgba(46,125,50,.5);animation:ptland .45s cubic-bezier(.3,1.5,.5,1) both}
+.pt-pip.w .r{color:var(--green)}
+.pt-pip.l{background:rgba(192,57,43,.12);border-color:rgba(192,57,43,.45);animation:ptland .45s cubic-bezier(.3,1.5,.5,1) both}
+.pt-pip.l .r{color:var(--red)}
+.pt-pip.g7{border-color:#c0392b;background:linear-gradient(135deg,rgba(212,160,23,.22),rgba(192,57,43,.22));
+  animation:ptg7 1.1s ease-in-out infinite}
+.pt-pip.g7 .r{color:var(--gold)}
+.pt-pip.off{opacity:.35}
+@keyframes ptland{0%{transform:scale(.6);opacity:.2}100%{transform:none;opacity:1}}
+@keyframes ptg7{0%,100%{box-shadow:0 0 0 0 rgba(192,57,43,0)}50%{box-shadow:0 0 0 5px rgba(192,57,43,.3)}}
+.pt-status{font-family:var(--fd);font-size:24px;line-height:1.1;text-align:center;color:var(--ink);
+  text-transform:uppercase;letter-spacing:.02em}
+.pt-status.hot{color:var(--red)}
+.pt-status.gold{color:var(--gold)}
+.pt-status.g7{font-size:34px;background:linear-gradient(180deg,#f6d365,#c0392b);-webkit-background-clip:text;
+  background-clip:text;color:transparent;animation:ptbeat 1.1s ease-in-out infinite}
+@keyframes ptbeat{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
+.pt-sub{font-family:var(--fp);font-size:13px;color:var(--dim);text-align:center;margin-top:3px;min-height:1.3em}
+.pt-status.pop{animation:ptland .4s ease both}
+@media(prefers-reduced-motion:reduce){.pt-pip,.pt-status,.brk-g.flip{animation:none!important}}
+
 .brk-note{text-align:center;font-family:var(--fp);font-size:13px;color:var(--dim);
   margin:6px 0 0;min-height:18px}
 @media (max-width:400px){.brk-col{flex:0 0 138px}}
@@ -1078,6 +1121,39 @@ body:has(#s-intro.on) header .lockup{visibility:hidden}
 .gm-final .fs{font-family:var(--fd);font-size:44px;line-height:1.05;margin:2px 0}
 .gm-final.w .fs{color:var(--green)} .gm-final.l .fs{color:var(--red)}
 .gm-final .fn{font-family:var(--fn);font-size:12px;font-weight:700;color:var(--dim)}
+
+/* ─── game 7 ───
+   The one game that decides a series plays in front of you, and it looks it: an
+   intro card, a red and gold header, and a field that tightens when the game does. */
+.gm-g7{position:fixed;inset:0;z-index:150;display:flex;align-items:center;justify-content:center;
+  background:radial-gradient(circle at 50% 45%,rgba(20,10,5,.55),rgba(10,6,3,.88));cursor:pointer;
+  animation:scrimin .3s ease both}
+.gm-g7[hidden]{display:none}
+.gm-g7 .g7-in{text-align:center;padding:24px;animation:g7in .7s cubic-bezier(.2,1.4,.4,1) both}
+.gm-g7 .g7-eye{font-family:var(--fn);font-size:12px;font-weight:800;letter-spacing:.24em;text-transform:uppercase;color:#f6d365}
+.gm-g7 .g7-big{font-family:var(--fd);font-size:clamp(68px,22vw,120px);line-height:.95;margin:6px 0;
+  background:linear-gradient(180deg,#fff3c4,#f6d365 45%,#c0392b);-webkit-background-clip:text;background-clip:text;color:transparent;
+  filter:drop-shadow(0 6px 24px rgba(192,57,43,.45))}
+.gm-g7 .g7-sub{font-family:var(--fd);font-size:24px;color:#f5f0e6;letter-spacing:.04em;text-transform:uppercase}
+.gm-g7 .g7-note{font-family:var(--fp);font-size:14px;color:rgba(245,240,230,.75);margin-top:10px}
+.gm-g7 .g7-tap{font-family:var(--fn);font-size:10.5px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;
+  color:rgba(245,240,230,.5);margin-top:22px}
+@keyframes g7in{0%{transform:scale(1.6);opacity:0}100%{transform:none;opacity:1}}
+.gm-badge{display:inline-block;margin-left:8px;padding:2px 7px;border-radius:99px;font-size:9.5px;letter-spacing:.1em;
+  background:linear-gradient(90deg,#b8860b,#c0392b);color:#fff;vertical-align:1px}
+.gm-badge[hidden]{display:none}
+.gm-badge.late{background:none;border:1px solid rgba(192,57,43,.55);color:var(--red)}
+#s-game.g7 .gm-where{color:var(--red)}
+#s-game.g7 .gm-line{border-color:rgba(192,57,43,.45)}
+.gm-field.tense{border-color:rgba(192,57,43,.55);animation:gmtense 1.2s ease-in-out infinite}
+@keyframes gmtense{0%,100%{box-shadow:0 0 0 0 rgba(192,57,43,0)}50%{box-shadow:0 0 0 4px rgba(192,57,43,.2)}}
+.gm-arm.sit{color:var(--gold);font-weight:800}
+.gm-arm.sit::after{content:'';display:inline-block;width:1.4em;text-align:left;animation:gmdots 1s steps(4) infinite}
+@keyframes gmdots{0%{content:''}25%{content:'.'}50%{content:'..'}75%{content:'...'}}
+.gm-final.big{padding:22px 16px}
+.gm-final.big .fs{font-size:56px}
+.gm-final.big.w{border-color:rgba(212,160,23,.7);box-shadow:0 0 0 2px rgba(212,160,23,.25),0 10px 30px -10px rgba(212,160,23,.6)}
+@media(prefers-reduced-motion:reduce){.gm-g7 .g7-in,.gm-field.tense,.gm-arm.sit::after{animation:none!important}}
 
 @media (max-width:380px){
   .gm-line th,.gm-line td{min-width:16px;font-size:11px}
@@ -1982,6 +2058,16 @@ button.rslot{width:100%;text-align:left;font:inherit;color:inherit;cursor:pointe
   text-transform:uppercase;padding:8px 6px;border:0;border-radius:8px;background:transparent;
   color:var(--dim);cursor:pointer}
 .bd-win.on{background:rgba(var(--edge),.09);color:var(--ink)}
+/* The count and the sort, one line above the list. */
+.bd-bar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 2px 10px}
+.bd-count{font-family:var(--fn);font-size:11.5px;font-weight:800;color:var(--dim-2);letter-spacing:.02em}
+.bd-sort{display:inline-flex;align-items:center;gap:6px;font-family:var(--fn);font-size:11.5px;font-weight:800;
+  letter-spacing:.03em;padding:6px 11px;border-radius:99px;border:1px solid var(--line-2);
+  background:transparent;color:var(--ink);cursor:pointer}
+.bd-sort svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;transition:transform .2s ease}
+.bd-sort.asc svg{transform:rotate(180deg)}
+.bd-more{margin-top:6px}
+.bd-more[hidden]{display:none}
 .bd-ent{margin-bottom:6px}
 .bd-row{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:11px;width:100%;
   background:var(--panel);border:1px solid var(--line);cursor:pointer;text-align:left;
@@ -2511,7 +2597,10 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
   <h2 class="display" style="font-size:27px;margin:5px 0 10px">Who is on top</h2>
   <div class="bd-tabs" id="bd-tabs"></div>
   <div class="bd-wins" id="bd-wins" role="tablist" aria-label="When"></div>
+  <div class="bd-bar"><span class="bd-count" id="bd-count"></span>
+    <button type="button" class="bd-sort" id="bd-sort" aria-label="Sort order"></button></div>
   <div id="bd-list"></div>
+  <button type="button" class="btn ghost bd-more" id="bd-more" hidden></button>
   <div style="margin-top:16px"><button class="btn ghost sm" id="b-board-back">Back</button></div>
 </div>
 
@@ -2649,6 +2738,7 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
     <div class="eyebrow" id="po-seed-label"></div>
     <h2 class="display brk-title" id="brk-round">October baseball</h2>
   </div>
+  <div class="po-track" id="po-track" hidden aria-live="polite"></div>
   <div class="brk-wrap">
     <div class="brk" id="brk-rail" role="group" aria-label="Playoff bracket"></div>
   </div>
@@ -2673,6 +2763,7 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
 
 <!-- One playoff game, plate appearance by plate appearance. -->
 <div class="screen" id="s-game">
+  <div class="gm-g7" id="gm-g7" hidden role="dialog" aria-live="assertive"></div>
   <div class="gm-top">
     <div class="gm-where" id="gm-where"></div>
     <div class="gm-speeds">
@@ -2684,7 +2775,7 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
 
   <div class="gm-scroll" id="gm-scroll"><table class="gm-line" id="gm-line"></table></div>
 
-  <div class="gm-field">
+  <div class="gm-field" id="gm-field">
     <div class="gm-diamond" id="gm-diamond">
       <div class="gm-base b2" id="gm-b2"></div>
       <div class="gm-base b1" id="gm-b1"></div>
@@ -2902,7 +2993,7 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
 <script src="achievements.js?v=11"></script>
 <script src="parks.js?v=9"></script>
 <script src="crest.js?v=2"></script>
-<script src="board.js?v=3"></script>
+<script src="board.js?v=4"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="auth.js?v=3"></script>
 <!-- The release newsletter checkbox under the account in the trophy sheet. See supabase/121_newsletter.sql. -->
@@ -5352,6 +5443,11 @@ let lastBoardPlace=null;
    time. Days are Eastern, like the daily. The daily board is one day already,
    so it has no window. */
 let boardWin='all';
+/* High to low (best first) or low to high, and how far down the board has been
+   loaded. A page is 100 rows, the most one request may ask for. */
+let boardAsc=false;
+const BOARD_PAGE=100;
+const BD_SORT_ICO='<svg viewBox="0 0 24 24"><path d="M12 5v14"/><path d="M6 13l6 6 6-6"/></svg>';
 const BOARD_WINS=[{k:'day',label:'Today'},{k:'week',label:'This week'},{k:'all',label:'All time'}];
 /* The instant an Eastern calendar day starts, as ISO. Asks the zone for its
    offset at noon that day rather than assuming one, so a clock change is right. */
@@ -5398,7 +5494,7 @@ function boardTeamHtml(r){
 }
 function openBoard(tab,from){
   boardTab=tab&&BOARD_TABS.some(t=>t.k===tab)?tab:'free';
-  boardWin='all';
+  boardWin='all';boardAsc=false;
   boardFrom=from||'s-intro';
   show('s-board');paintBoard();
 }
@@ -5433,69 +5529,112 @@ function paintBoard(){
   wins.innerHTML=BOARD_WINS.map(w=>'<button type="button" role="tab" class="bd-win'+(w.k===boardWin?' on':'')+
     '" aria-selected="'+(w.k===boardWin)+'" data-w="'+w.k+'">'+w.label+'</button>').join('');
   wins.querySelectorAll('.bd-win').forEach(b=>b.addEventListener('click',()=>{boardWin=b.dataset.w;paintBoard();}));
-  const tabNow=boardTab,winNow=boardWin;
-  const list=$('bd-list');
+  const sortB=$('bd-sort');
+  sortB.classList.toggle('asc',boardAsc);
+  sortB.innerHTML=BD_SORT_ICO+(boardAsc?'Low to high':'High to low');
+  sortB.onclick=()=>{boardAsc=!boardAsc;paintBoard();};
+  const tabNow=boardTab,winNow=boardWin,ascNow=boardAsc;
+  const stale=()=>tabNow!==boardTab||winNow!==boardWin||ascNow!==boardAsc;
+  const list=$('bd-list'),more=$('bd-more'),count=$('bd-count');
   list.innerHTML='<div class="bd-empty">Loading...</div>';
+  more.hidden=true;count.textContent='';
   const B=BOARD();
   if(!B){list.innerHTML='<div class="bd-empty">The leaderboard is not available.</div>';return;}
   const where=boardTab==='daily'?{dailyKey:easternISO()}:{mode:boardTab,since:boardSince(boardWin)};
-  B.top({...where,limit:50}).then(rows=>{
-    if(tabNow!==boardTab||winNow!==boardWin)return;
-    if(rows==null){
+  const rows=[];let total=null;
+  const rowHtml=(r,i)=>{
+    /* The rank is the season's place on the board whichever way it is read, so
+       low to high counts down from the total. */
+    const rank=boardAsc?(total!=null?total-i:null):i+1;
+    const detail=[];
+    if(!r.title_won&&r.made_playoffs)detail.push(r.seed_label);
+    if(r.run_mode==='staff'&&r.staff_era!=null)detail.push(r.staff_era+' ERA');
+    else if(r.rating!=null)detail.push('Rating '+Math.round(r.rating));
+    if(r.franchise)detail.push(esc(teamFullName(r.franchise)));
+    if(r.division)detail.push(esc(r.division));
+    if(r.era)detail.push(esc(r.era));
+    if(r.cuts)detail.push(r.cuts+' cut');
+    if(r.trades)detail.push(r.trades+' dealt');
+    const me=boardWin==='all'&&lastBoardPlace&&lastBoardPlace.tab===boardTab&&rank!=null&&lastBoardPlace.place===rank;
+    /* The marks lead the meta line as colored words, not pills: the row's own
+       edge already says it, so the words only have to name it. */
+    if(r.title_won)detail.unshift('<span class="bd-tag">'+BD_TROPHY+'Champions</span>');
+    if(r.is_goat)detail.unshift('<span class="bd-tag rec">'+ICO_FLAME+'Record</span>');
+    const cls='bd-ent'+(rank!=null&&rank<=3?' top3':'')+(r.title_won?' champ':'')+(r.is_goat?' record':'');
+    return '<div class="'+cls+'" data-i="'+i+'">'+
+      '<button type="button" class="bd-row'+(me?' me':'')+'" aria-expanded="false"><span class="bd-pos">'+(rank==null?'':rank.toLocaleString())+'</span>'+
+      (r.user_id?'<span class="bd-crest" data-uid="'+esc(r.user_id)+'"></span>':'<span class="bd-crest"></span>')+
+      '<span class="bd-who"><span class="bd-name" style="display:block">'+
+        esc(r.display_name||'Anonymous')+'</span>'+
+      '<span class="bd-meta" style="display:block">'+detail.join(' · ')+'</span></span>'+
+      '<span class="bd-rec"><b>'+r.wins+'-'+r.losses+'</b><span>record</span></span>'+
+      '<span class="bd-caret">'+BD_CARET+'</span></button>'+
+      '<div class="bd-team" hidden></div></div>';
+  };
+  const wire=ents=>ents.forEach(ent=>{
+    const btn=ent.querySelector('.bd-row'),team=ent.querySelector('.bd-team');
+    btn.addEventListener('click',()=>{
+      const open=!ent.classList.contains('open');
+      if(open&&!team.dataset.built){team.innerHTML=boardTeamHtml(rows[+ent.dataset.i]);team.dataset.built='1';}
+      ent.classList.toggle('open',open);team.hidden=!open;btn.setAttribute('aria-expanded',String(open));
+    });
+  });
+  const paintMore=()=>{
+    const left=total!=null?total-rows.length:null;
+    const full=rows.length>0&&rows.length%BOARD_PAGE===0;
+    more.hidden=!(left!=null?left>0:full);
+    more.textContent=left!=null?'Show '+Math.min(BOARD_PAGE,left)+' more':'Show more';
+  };
+  const note=()=>{
+    const old=list.querySelector('.bd-landed');if(old)old.remove();
+    /* A season past what is loaded is still yours to find: say where it landed. */
+    if(!boardAsc&&boardWin==='all'&&lastBoardPlace&&lastBoardPlace.tab===boardTab&&lastBoardPlace.place>rows.length)
+      list.insertAdjacentHTML('beforeend','<div class="bd-empty bd-landed">Your season landed at #'+
+        lastBoardPlace.place.toLocaleString()+'.</div>');
+  };
+  const page=()=>B.top({...where,asc:boardAsc,offset:rows.length,limit:BOARD_PAGE});
+  Promise.all([page(),B.total(where)]).then(([got,n])=>{
+    if(stale())return;
+    total=n;
+    if(got==null){
       list.innerHTML='<div class="bd-empty">'+(B.needsMigration
         ? 'The leaderboard has not been set up on the server yet.'
         : 'Could not reach the leaderboard. It will be here when the connection is.')+
         '</div>';return;
     }
-    if(!rows.length){
+    if(!got.length){
       list.innerHTML='<div class="bd-empty">'+(boardTab==='daily'
         ? 'Nobody has finished today\'s board yet. Be first.'
         : boardWin==='day'?'Nobody has filed a season here today. Be first.'
         : boardWin==='week'?'Nobody has filed a season here this week. Be first.'
         : 'No seasons here yet. Play one.')+'</div>';return;
     }
-    list.innerHTML=rows.map((r,i)=>{
-      const detail=[];
-      if(!r.title_won&&r.made_playoffs)detail.push(r.seed_label);
-      if(r.run_mode==='staff'&&r.staff_era!=null)detail.push(r.staff_era+' ERA');
-      else if(r.rating!=null)detail.push('Rating '+Math.round(r.rating));
-      if(r.franchise)detail.push(esc(teamFullName(r.franchise)));
-      if(r.division)detail.push(esc(r.division));
-      if(r.era)detail.push(esc(r.era));
-      if(r.cuts)detail.push(r.cuts+' cut');
-      if(r.trades)detail.push(r.trades+' dealt');
-      const me=boardWin==='all'&&lastBoardPlace&&lastBoardPlace.tab===boardTab&&lastBoardPlace.place===i+1;
-      /* The marks lead the meta line as colored words, not pills: the row's own
-         edge already says it, so the words only have to name it. */
-      if(r.title_won)detail.unshift('<span class="bd-tag">'+BD_TROPHY+'Champions</span>');
-      if(r.is_goat)detail.unshift('<span class="bd-tag rec">'+ICO_FLAME+'Record</span>');
-      const cls='bd-ent'+(i<3?' top3':'')+(r.title_won?' champ':'')+(r.is_goat?' record':'');
-      return '<div class="'+cls+'" data-i="'+i+'">'+
-        '<button type="button" class="bd-row'+(me?' me':'')+'" aria-expanded="false"><span class="bd-pos">'+(i+1)+'</span>'+
-        (r.user_id?'<span class="bd-crest" data-uid="'+esc(r.user_id)+'"></span>':'<span class="bd-crest"></span>')+
-        '<span class="bd-who"><span class="bd-name" style="display:block">'+
-          esc(r.display_name||'Anonymous')+'</span>'+
-        '<span class="bd-meta" style="display:block">'+detail.join(' \u00b7 ')+'</span></span>'+
-        '<span class="bd-rec"><b>'+r.wins+'-'+r.losses+'</b><span>record</span></span>'+
-        '<span class="bd-caret">'+BD_CARET+'</span></button>'+
-        '<div class="bd-team" hidden></div></div>';
-    }).join('');
-    list.querySelectorAll('.bd-ent').forEach(ent=>{
-      const btn=ent.querySelector('.bd-row'),team=ent.querySelector('.bd-team');
-      btn.addEventListener('click',()=>{
-        const open=!ent.classList.contains('open');
-        if(open&&!team.dataset.built){team.innerHTML=boardTeamHtml(rows[+ent.dataset.i]);team.dataset.built='1';}
-        ent.classList.toggle('open',open);team.hidden=!open;btn.setAttribute('aria-expanded',String(open));
-      });
-    });
-    /* A season past the top fifty is still yours to find: say where it landed. */
-    if(boardWin==='all'&&lastBoardPlace&&lastBoardPlace.tab===boardTab&&lastBoardPlace.place>rows.length)
-      list.insertAdjacentHTML('beforeend','<div class="bd-empty">Your season landed at #'+
-        lastBoardPlace.place.toLocaleString()+'.</div>');
+    if(total!=null)count.textContent=total.toLocaleString()+(total===1?' season':' seasons');
+    rows.push(...got);
+    list.innerHTML=got.map((r,i)=>rowHtml(r,i)).join('');
+    wire(list.querySelectorAll('.bd-ent'));
+    note();paintMore();
     paintBoardCrests(list,rows);
     const mine=list.querySelector('.bd-row.me');
     if(mine&&boardFrom==='s-over')requestAnimationFrame(()=>mine.scrollIntoView({block:'center'}));
   });
+  more.onclick=()=>{
+    more.disabled=true;more.textContent='Loading...';
+    page().then(got=>{
+      more.disabled=false;
+      if(stale())return;
+      if(got==null){paintMore();more.textContent='Could not load more. Try again';return;}
+      if(!got.length){more.hidden=true;return;}
+      const from=rows.length;rows.push(...got);
+      const holder=document.createElement('div');
+      holder.innerHTML=got.map((r,j)=>rowHtml(r,from+j)).join('');
+      const ents=[...holder.children];
+      const land=list.querySelector('.bd-landed');
+      ents.forEach(e=>list.insertBefore(e,land||null));
+      wire(ents);note();paintMore();
+      paintBoardCrests(list,rows);
+    });
+  };
 }
 
 /* ─── the daily ───────────────────────────────────────────────────────────
@@ -6850,7 +6989,7 @@ function brkRender(upTo){
       const p0=known[c]?g.pair[0]:null,p1=known[c]?g.pair[1]:null;
       /* The ring means "this one is on now", so it comes off the moment the series
          has a result: a settled game wearing it reads as still to be played. */
-      h+='<div class="brk-g'+(g.me&&c===upTo&&!settled?' live':'')+'">'+
+      h+='<div class="brk-g'+(g.me&&c===upTo&&!settled?' live':'')+(g.key===brkJust?' flip':'')+'">'+
         brkSeat(p0,!!(w&&p0&&w===p0),settled,B.scores[g.key],c===3)+
         brkSeat(p1,!!(w&&p1&&w===p1),settled,B.scores[g.key],c===3)+'</div>';
     }
@@ -6896,8 +7035,10 @@ function brkFocus(col){
    after another; yours is left standing and the screen hands off. Nothing here decides
    anything: the others were settled the moment the pairings were asked for, and yours
    was settled by the engine before this screen was ever shown. */
-const BRK_STEP=520,BRK_LEAD=650,BRK_TAIL=620;
-let brkSkip=null;
+/* Slow enough to read each result as it lands. At 520 a column of five went by in
+   the time it takes to find your own row. */
+const BRK_STEP=880,BRK_LEAD=1000,BRK_TAIL=800;
+let brkSkip=null,brkJust=null;
 function brkShow(col,note,done){
   const B=brkBuild();
   /* The columns a bye walked past. Nobody animated them, but they happened, and the
@@ -6908,13 +7049,15 @@ function brkShow(col,note,done){
   $('po-seed-label').textContent=brkWhere(col);
   $('brk-round').textContent=BRK_ROUNDS[col]||'October baseball';
   $('brk-note').textContent='';
+  $('po-track').hidden=true;
+  brkJust=null;
   brkRender(col);
   show('s-playoffs');
   brkFocus(col);
   const games=brkColGames(col).filter(g=>!g.me&&!B.revealed[g.key]);
   let i=0;
   const finish=()=>{
-    poClear();brkSkip=null;
+    poClear();brkSkip=null;brkJust=null;
     games.forEach(g=>{B.revealed[g.key]=1;});
     brkRender(col);
     $('brk-note').textContent=note||'';
@@ -6924,6 +7067,7 @@ function brkShow(col,note,done){
   const tick=()=>{
     if(i>=games.length){PO.timer=setTimeout(finish,BRK_TAIL/(PO.speed||1));return;}
     B.revealed[games[i].key]=1;
+    brkJust=games[i].key;
     i++;
     brkRender(col);
     PO.timer=setTimeout(tick,BRK_STEP/(PO.speed||1));
@@ -7001,17 +7145,107 @@ function openRound(i){
   const col=brkColOf(i);
   brkShow(col,PO.quick?'':'Your series is next.',()=>{
     if(!PO)return;
-    if(!PO.quick){PO.timer=setTimeout(()=>openSeries(i),620/(PO.speed||1));return;}
-    const r=rounds[i];
-    brkSettleMine(i,r.won);
-    brkRender(col);
-    $('brk-note').textContent=r.won
-      ?'You take it '+r.yourWins+'-'+r.oppWins+'.'
-      :'Out of it '+r.oppWins+'-'+r.yourWins+'.';
-    PO.timer=setTimeout(()=>{
-      if(r.won&&i+1<rounds.length)openRound(i+1);else octoberDone();
-    },1500/(PO.speed||1));
+    if(!PO.quick){brkSkip=()=>{poClear();brkSkip=null;openSeries(i);};
+      PO.timer=setTimeout(brkSkip,620/(PO.speed||1));return;}
+    seriesReveal(i);
   });
+}
+
+/* ─── your series, a game at a time ───
+
+   The series was decided with the rest of October. What this does is let it
+   HAPPEN: each game waits a beat, lands, and the series line moves. A game that
+   can end the series waits longer. A winner-take-all game is not revealed at all:
+   it is played, in front of you, on the game screen. */
+function roundNeed(r){return Math.ceil((r.bestOf||7)/2);}
+function seriesAt(r,gi){let w=0,l=0;for(let k=0;k<gi;k++){if(r.games[k].won)w++;else l++;}return {w,l};}
+/* A deciding game: both sides one win away, so the next game ends it either way. */
+function isDecider(ri,gi){
+  const r=RUN&&RUN.playoffs&&RUN.playoffs.rounds[ri];if(!r||gi>=r.games.length)return false;
+  const need=roundNeed(r),{w,l}=seriesAt(r,gi);
+  return w===need-1&&l===need-1;
+}
+function deciderName(r){return (r.bestOf||7)>1?'Game '+(r.bestOf||7):'One game';}
+const NEXT_ROUND={'Wild Card':'the Division Series','Division Series':'the LCS',
+  'Championship Series':'the World Series','World Series':'the title'};
+function seriesLine(r,w,l){
+  if(w===l)return w?'Series tied '+w+'-'+l:'Series level';
+  return w>l?'You lead '+w+'-'+l:'You trail '+w+'-'+l;
+}
+function oppTag(r){
+  const yr=r.oppSeason?' \u2019'+String(r.oppSeason).slice(2):'';
+  return esc(r.oppTeam||r.oppName||'The field')+yr;
+}
+function seriesReveal(i){
+  poClear();
+  const r=RUN.playoffs.rounds[i],col=brkColOf(i);
+  const n=r.bestOf||7,need=roundNeed(r);
+  const sp=()=>PO.speed||1;
+  PO.round=i;
+  show('s-playoffs');
+  brkRender(col);brkFocus(col);
+  $('brk-note').textContent='';
+  const trk=$('po-track');
+  trk.hidden=false;
+  trk.innerHTML='<div class="pt-hd"><span class="pt-eye">Your series &middot; '+esc(r.round)+'</span>'+
+    '<span class="pt-vs">vs <b>'+oppTag(r)+'</b></span></div>'+
+    '<div class="pt-pips" style="grid-template-columns:repeat('+n+',1fr)">'+
+    Array.from({length:n},(_,k)=>'<div class="pt-pip" id="pt-'+k+'"><span class="g">G'+(k+1)+'</span><span class="r">&nbsp;</span></div>').join('')+
+    '</div><div class="pt-status" id="pt-st">'+(n>1?'Best of '+n:'One game')+'</div><div class="pt-sub" id="pt-sub">First to '+need+'.</div>';
+  const st=(t,cls,sub)=>{const e=$('pt-st');e.className='pt-status pop'+(cls?' '+cls:'');e.textContent=t;
+    $('pt-sub').textContent=sub||'';};
+  const pip=(k,cls,txt)=>{const e=$('pt-'+k);if(!e)return;e.className='pt-pip '+cls;e.querySelector('.r').textContent=txt||'\u00a0';};
+  let k=0;
+  const land=(g,kk)=>pip(kk,g.won?'w':'l',(g.won?'W ':'L ')+g.yourRuns+'-'+g.oppRuns);
+  const over=()=>{
+    for(let q=r.games.length;q<n;q++)pip(q,'off','');
+    const won=r.won;
+    st(won?(r.round==='World Series'?'Champions':'You win it '+r.yourWins+'-'+r.oppWins)
+      :'Out '+r.oppWins+'-'+r.yourWins,won?'gold':'hot',
+      won?(r.round==='World Series'?'The last team standing.':'On to '+(NEXT_ROUND[r.round]||'the next round')+'.')
+        :'That is the season.');
+    if(won&&r.round==='World Series')fireConfetti(true);
+    brkSkip=()=>{poClear();brkSkip=null;endSeries(true);};
+    PO.timer=setTimeout(()=>endSeries(true),2200/sp());
+  };
+  const toDecider=()=>{
+    brkSkip=()=>goDecider(i);
+    pip(k,'g7','LIVE');
+    const {w,l}=seriesAt(r,k);
+    st(deciderName(r),'g7',(n>1?'Series tied '+w+'-'+l+'. ':'')+'Winner take all. Play it out.');
+    PO.timer=setTimeout(()=>goDecider(i),2600/sp());
+  };
+  const step=()=>{
+    if(k>=r.games.length){over();return;}
+    if(isDecider(i,k)){toDecider();return;}
+    const {w,l}=seriesAt(r,k);
+    /* A game that can end it, for either side, gets the longer wait. */
+    const big=w===need-1||l===need-1;
+    pip(k,'pend','');
+    st('Game '+(k+1),big?'hot':'',big?(w===need-1?'One win from '+(NEXT_ROUND[r.round]||'moving on')+'.':'Facing elimination.'):seriesLine(r,w,l)+'.');
+    PO.timer=setTimeout(()=>{
+      const g=r.games[k];land(g,k);
+      const now=seriesAt(r,k+1);
+      const done=now.w>=need||now.l>=need;
+      if(!done)st(seriesLine(r,now.w,now.l),'',(g.won?'Won ':'Lost ')+'Game '+(k+1)+', '+g.yourRuns+'-'+g.oppRuns+'.');
+      k++;
+      PO.timer=setTimeout(step,(done?500:1000)/sp());
+    },(big?1900:1150)/sp());
+  };
+  /* Skip ahead finishes the reveal, but a deciding game is still played. */
+  brkSkip=()=>{
+    poClear();
+    while(k<r.games.length&&!isDecider(i,k)){land(r.games[k],k);k++;}
+    if(k<r.games.length)toDecider();else over();
+  };
+  PO.timer=setTimeout(step,900/sp());
+}
+/* The deciding game, played on the game screen whatever path got here. */
+function goDecider(i){
+  poClear();brkSkip=null;
+  const r=RUN.playoffs.rounds[i];
+  PO.round=i;PO.game=r.games.length-1;
+  playGame();
 }
 
 /* ─── the series card ─── */
@@ -7078,12 +7312,35 @@ function playGame(){
   PO.idx=-1;
   /* A pause belongs to the game it was called in. Carrying it into the next one
      leaves the screen frozen with no obvious reason why. */
-  PO.paused=false;paintSpeed();
+  PO.paused=false;
+  /* A deciding game plays at full length whatever the speed was: it is the one
+     game in October you are here to watch. The old speed comes back after it. */
+  PO.primed=null;
+  PO.g7=isDecider(PO.round,PO.game);
+  if(PO.g7){PO.speedWas=PO.speed;PO.speed=reduceMotion()?2:1;}
+  paintSpeed();
   show('s-game');
+  $('s-game').classList.toggle('g7',PO.g7);
   $('gm-final').hidden=true;
   $('gm-feed').innerHTML='';
+  $('gm-field').classList.remove('tense');
   paintGameChrome();
-  nextPlay();
+  if(PO.g7)g7Intro(r,()=>{if(PO&&PO.g7)nextPlay();});
+  else nextPlay();
+}
+/* The card before the first pitch. A tap starts it sooner. */
+function g7Intro(r,go){
+  const el=$('gm-g7'),{w,l}=seriesAt(r,PO.game);
+  el.innerHTML='<div class="g7-in"><div class="g7-eye">'+esc(r.round)+'</div>'+
+    '<div class="g7-big">'+esc(deciderName(r))+'</div>'+
+    '<div class="g7-sub">Winner take all</div>'+
+    '<div class="g7-note">'+((r.bestOf||7)>1?'Series tied '+w+'-'+l+'. ':'')+'vs '+oppTag(r)+'</div>'+
+    '<div class="g7-tap">Tap to play ball</div></div>';
+  el.hidden=false;
+  let gone=false;
+  const start=()=>{if(gone)return;gone=true;el.hidden=true;el.onclick=null;go();};
+  el.onclick=start;
+  PO.timer=setTimeout(start,3400/(PO.speed||1));
 }
 
 function paintGameChrome(){
@@ -7092,8 +7349,9 @@ function paintGameChrome(){
   for(let i=0;i<PO.game;i++){if(r.games[i].won)w++;else l++;}
   /* Round on its own line: "Championship Series - Game 6" wraps at phone width
      and the wrap lands between the two halves of one label. */
-  $('gm-where').innerHTML=esc(r.round)+
-    '<b>Game '+(PO.game+1)+' &middot; '+(w||l?'series '+w+'-'+l:'series level')+
+  $('gm-where').innerHTML=esc(r.round)+(PO.g7?'<span class="gm-badge">'+esc(deciderName(r))+'</span>':'')+
+    '<span class="gm-badge late" id="gm-late" hidden>Late and close</span>'+
+    '<b>Game '+(PO.game+1)+' &middot; '+(PO.g7?'winner take all':(w||l?'series '+w+'-'+l:'series level'))+
     ' &middot; '+(s.youHome?'at home':'on the road')+'</b>';
 
   const rows=[['aw',s.away.name,!s.youHome],['hm',s.home.name,s.youHome]];
@@ -7220,27 +7478,82 @@ function paintUp(p,hf){
   $('gm-arm').textContent=arm?('Pitching: '+arm.name+(arm.slot?' ('+arm.slot+')':'')):'';
 }
 
+/* HOW MUCH A PLATE APPEARANCE MATTERS, read off the game state before it: late
+   (the 7th on), close (two runs or fewer), and the tying or go-ahead run on base
+   or at the plate. 0 is an ordinary at bat, 3 is the last inning of a game 7
+   that could turn on one swing. It sets the pace and the "here's the pitch"
+   beat; it decides nothing, because the script already holds every result. */
+function leverage(ev){
+  if(!ev||ev.type!=='pa')return 0;
+  const p=ev.p,hf=ev.hf;
+  const top=hf.half==='top';
+  const a=ev.a-(top?p.runs:0),h=ev.h-(top?0:p.runs);
+  const bat=top?a:h,fld=top?h:a;
+  const on=p.basesBefore.filter(Boolean).length;
+  const margin=Math.abs(a-h);
+  const late=hf.inning>=7;
+  if(!late||margin>2)return 0;
+  /* The tying run is the batter or somebody already on. */
+  const tying=bat<fld&&fld-bat<=on+1;
+  const ahead=bat>=fld;
+  let lv=1;
+  if(tying||(ahead&&margin<=1&&on>0)||margin===0)lv=2;
+  if(hf.inning>=9&&(tying||margin===0||(p.outs===2&&!ahead)))lv=3;
+  return lv;
+}
 function delayFor(ev){
   const sp=PO.speed||1;
-  if(ev.type==='half')return 320/sp;
+  if(ev.type==='half')return (PO.g7&&ev.hf.inning>=7?900:360)/sp;
   const p=ev.p;
-  let d=270;
-  if(p.basesBefore.some(Boolean))d=380;
-  if(p.hit)d=540;
-  if(p.rbi>0)d=820;
-  if(p.code==='HR')d=1000;
-  if(p.walkoff)d=1500;
+  let d=320;
+  if(p.basesBefore.some(Boolean))d=440;
+  if(p.hit)d=640;
+  if(p.rbi>0)d=980;
+  if(p.code==='HR')d=1250;
+  if(p.walkoff)d=2200;
+  const lv=leverage(ev);
+  d*=[1,1.35,1.7,2.1][lv];
+  if(PO.g7)d*=1.3;
   return d/sp;
+}
+const BASE_WORD=b=>{
+  const on=[b[0]&&'first',b[1]&&'second',b[2]&&'third'].filter(Boolean);
+  if(!on.length)return 'Nobody on';
+  if(on.length===3)return 'Bases loaded';
+  return 'Runner'+(on.length>1?'s':'')+' on '+on.join(' and ');
+};
+/* The beat before a big at bat: the situation, then the pitch. */
+function pitchBeat(ev,lv){
+  const p=ev.p,hf=ev.hf;
+  paintUp(p,hf);
+  const arm=$('gm-arm');
+  arm.classList.add('sit');
+  const o=p.outsBefore;
+  arm.textContent=BASE_WORD(p.basesBefore)+', '+(o===0?'no outs':o===1?'one out':'two outs')+'. Here\u2019s the pitch';
+  return (lv>=3?1500:1000)*(PO.g7?1.2:1)/(PO.speed||1);
 }
 
 function nextPlay(){
   poClear();
   if(!PO||PO.paused)return;
+  const ev=PO.events[PO.idx+1];
+  if(!ev){PO.idx++;finishGame();return;}
+  const lv=leverage(ev);
+  const field=$('gm-field');
+  field.classList.toggle('tense',lv>=2);
+  const late=$('gm-late');if(late)late.hidden=!(lv>=1);
+  /* The pitch beat comes once per at bat: primed, then played. */
+  if(lv>=2&&PO.primed!==PO.idx+1&&(PO.speed||1)<4){
+    PO.primed=PO.idx+1;
+    PO.timer=setTimeout(nextPlay,pitchBeat(ev,lv));
+    return;
+  }
+  $('gm-arm').classList.remove('sit');
   PO.idx++;
-  const ev=PO.events[PO.idx];
-  if(!ev){finishGame();return;}
   renderEvent(ev);
-  PO.timer=setTimeout(nextPlay,delayFor(ev));
+  /* The last play of a deciding game holds before the final lands. */
+  const last=PO.idx===PO.events.length-1;
+  PO.timer=setTimeout(nextPlay,delayFor(ev)+(last&&PO.g7?1400/(PO.speed||1):0));
 }
 
 /* Skip: the score was never in doubt, so jumping to the end just means painting
@@ -7251,6 +7564,7 @@ function jumpToEnd(){
      series keeps pushing the next game back and the screen never moves. */
   if(!PO||!PO.events||PO.idx>=PO.events.length)return;
   poClear();
+  $('gm-g7').hidden=true;
   const s=PO.script;
   for(let i=0;i<9;i++){
     const t=s.line[i];
@@ -7287,24 +7601,33 @@ function finishGame(){
   const need=Math.ceil((r.bestOf||7)/2);
   const over=w>=need||l>=need;
   const fin=$('gm-final');
-  fin.className='gm-final '+(g.won?'w':'l');
-  fin.innerHTML='<div class="fl">'+(s.walkoff&&g.won?'Walk-off':'Final')+'</div>'+
+  $('gm-field').classList.remove('tense');
+  const lt=$('gm-late');if(lt)lt.hidden=true;
+  $('gm-arm').classList.remove('sit');
+  fin.className='gm-final '+(g.won?'w':'l')+(PO.g7?' big':'');
+  const wonIt=PO.g7&&g.won;
+  if(wonIt)fireConfetti(r.round==='World Series');
+  fin.innerHTML='<div class="fl">'+(PO.g7?esc(deciderName(r))+' &middot; ':'')+(s.walkoff&&g.won?'Walk-off':'Final')+'</div>'+
     '<div class="fs">'+(g.won?'W':'L')+' '+g.yourRuns+'-'+g.oppRuns+'</div>'+
     '<div class="fn">'+(over?(w>=need?'Series won '+w+'-'+l:'Series lost '+l+'-'+w)
       :'Series '+w+'-'+l)+'</div>';
   fin.hidden=false;
+  const hold=(PO.g7?4200:2400)/(PO.speed||1);
+  if(PO.g7){PO.speed=PO.speedWas||PO.speed;PO.g7=false;paintSpeed();}
   PO.timer=setTimeout(()=>{
+    $('s-game').classList.remove('g7');
     PO.game++;
     if(PO.game>=r.games.length)endSeries();else playGame();
-  },1700/(PO.speed||1));
+  },hold);
 }
 
 /* ─── between series ─── */
 
 /* Your result lands on the bracket, which is where it belongs: the seat you have
    been sitting in all round finally settles, and the column ahead unlocks. */
-function endSeries(){
+function endSeries(fromTrack){
   poClear();
+  if(!fromTrack)$('po-track').hidden=true;
   const i=PO.round,r=RUN.playoffs.rounds[i],col=brkColOf(i);
   brkSettleMine(i,r.won);
   $('po-seed-label').textContent=brkWhere(col);
@@ -7315,10 +7638,14 @@ function endSeries(){
     :'Out of it '+r.oppWins+'-'+r.yourWins+'. That is the season.';
   show('s-playoffs');
   brkFocus(col);
-  PO.timer=setTimeout(()=>{
+  if(r.won&&r.round==='World Series'&&!fromTrack)fireConfetti(true);
+  const next=()=>{poClear();brkSkip=null;
     if(r.won&&i+1<RUN.playoffs.rounds.length)openRound(i+1);
-    else octoberDone();
-  },1700/(PO.speed||1));
+    else octoberDone();};
+  /* Skip ahead moves on a step. It never runs the rest of October from here,
+     or a player tapping through would skip a game 7 still to come. */
+  brkSkip=next;
+  PO.timer=setTimeout(next,2600/(PO.speed||1));
 }
 
 /* Every round left, settled at once. Pressing it again on the finished bracket
@@ -7326,6 +7653,8 @@ function endSeries(){
    meant the screen never moved on. */
 function simRestOfOctober(){
   poClear();
+  $('gm-g7').hidden=true;$('s-game').classList.remove('g7');
+  if(PO&&PO.g7){PO.speed=PO.speedWas||PO.speed;PO.g7=false;}
   if(PO.done){octoberOver();return;}
   const rounds=RUN.playoffs.rounds;
   for(let i=PO.round;i<rounds.length;i++)brkSettleMine(i,rounds[i].won);
@@ -7335,7 +7664,8 @@ function simRestOfOctober(){
 /* The finished field, champion and all, before the results screen takes over. */
 function octoberDone(){
   poClear();
-  PO.done=true;brkSkip=null;
+  $('po-track').hidden=true;
+  PO.done=true;
   brkRevealAll();
   brkRender(3);
   const o=RUN.outcome;
@@ -7347,7 +7677,8 @@ function octoberDone(){
     :('Out in the '+(last?last.round:'playoffs')+'.');
   show('s-playoffs');
   brkFocus(3);
-  PO.timer=setTimeout(octoberOver,1900);
+  brkSkip=()=>{poClear();brkSkip=null;octoberOver();};
+  PO.timer=setTimeout(brkSkip,1900);
 }
 
 function octoberOver(){
@@ -7367,7 +7698,7 @@ function paintSpeed(){
 
 (function wireOctober(){
   $('sr-play').onclick=()=>{ga('october_watch',{round:PO?PO.round:0});playGame();};
-  $('sr-sim').onclick=()=>endSeries();
+  $('sr-sim').onclick=()=>{if(PO)seriesReveal(PO.round);};
   $('sr-simall').onclick=()=>simRestOfOctober();
   $('gm-simall').onclick=()=>simRestOfOctober();
   $('gm-skipgame').onclick=()=>{if(PO&&PO.script)jumpToEnd();};
