@@ -895,6 +895,12 @@ body:has(#s-intro.on) header .lockup{visibility:hidden}
 .brk::-webkit-scrollbar{height:6px}
 .brk::-webkit-scrollbar-thumb{background:var(--line-2);border-radius:3px}
 .brk-col{flex:0 0 150px;scroll-snap-align:start;display:flex;flex-direction:column;gap:7px}
+/* A column is a header over two halves of equal height, one per side of the
+   bracket, and each half centres its games. Later rounds sit level with the games
+   that feed them instead of stacking at the top. */
+.brk-half{flex:1 1 auto;display:flex;flex-direction:column;justify-content:center;gap:7px}
+.brk-half.ws{flex:1 1 auto}
+.brk-half .brk-side:first-child{margin-top:0}
 .brk-h{font-family:var(--fn);font-size:10px;font-weight:800;letter-spacing:.1em;
   text-transform:uppercase;color:var(--gold);text-align:center;padding-bottom:2px}
 .brk-side{font-family:var(--fn);font-size:9px;font-weight:800;letter-spacing:.13em;
@@ -986,6 +992,7 @@ body:has(#s-intro.on) header .lockup{visibility:hidden}
   .brk-wrap{width:100vw;margin-left:calc(50% - 50vw)}
   .brk{gap:14px;padding:6px 4px 16px;max-width:min(100%,calc(100vw - 28px))}
   .brk-col{flex:0 0 clamp(150px,calc((100vw - 90px) / 4),210px);gap:9px}
+  .brk-half{gap:9px}
   .brk-h{font-size:11.5px;letter-spacing:.12em;padding-bottom:4px}
   .brk-side{font-size:10px;margin-top:5px}
   .brk-g{border-radius:11px}
@@ -6984,26 +6991,31 @@ function brkRender(upTo){
   for(let c=0;c<4;c++){
     h+='<div class="brk-col"><div class="brk-h">'+esc(BRK_SHORT[c])+'</div>';
     const games=brkColGames(c);
-    let side=null;
-    for(const g of games){
-      if(c<3&&g.side!==side){
-        side=g.side;
-        h+='<div class="brk-side">'+(side==='near'?'Your side':'The other side')+'</div>';
-      }
+    const game=g=>{
       const settled=!!B.revealed[g.key];
       const w=settled?B.results[g.key]:null;
       const p0=known[c]?g.pair[0]:null,p1=known[c]?g.pair[1]:null;
       /* The ring means "this one is on now", so it comes off the moment the series
          has a result: a settled game wearing it reads as still to be played. */
-      h+='<div class="brk-g'+(g.me&&c===upTo&&!settled?' live':'')+(g.key===brkJust?' flip':'')+'">'+
+      return '<div class="brk-g'+(g.me&&c===upTo&&!settled?' live':'')+(g.key===brkJust?' flip':'')+'">'+
         brkSeat(p0,!!(w&&p0&&w===p0),settled,B.scores[g.key],c===3)+
         brkSeat(p1,!!(w&&p1&&w===p1),settled,B.scores[g.key],c===3)+'</div>';
-    }
-    /* The two seats per side that sat the wild card out. They played nothing, but
-       they are in the field and a bracket that leaves them off is missing four clubs. */
-    if(c===0)for(const s of ['near','far']){
-      h+='<div class="brk-side">Byes &middot; '+(s==='near'?'your side':'the other side')+'</div>'+
-        '<div class="brk-g byes">'+BRK_BYES.map(n=>brkSeat(B[s][n],false,false,null,false,true)).join('')+'</div>';
+    };
+    /* EACH SIDE IS A HALF OF THE COLUMN, and a half centres what is in it. So a
+       round's games sit level with the pair of games that feed them, the way a
+       bracket is drawn, rather than all stacking at the top of a tall column. The
+       World Series is one game in the middle of the whole column. */
+    if(c===3){
+      h+='<div class="brk-half ws">'+games.map(game).join('')+'</div>';
+    }else for(const sd of ['near','far']){
+      h+='<div class="brk-half">'+
+        '<div class="brk-side">'+(sd==='near'?'Your side':'The other side')+'</div>'+
+        games.filter(g=>g.side===sd).map(game).join('');
+      /* The two seats per side that sat the wild card out. They played nothing, but
+         they are in the field and a bracket that leaves them off is missing four clubs. */
+      if(c===0)h+='<div class="brk-side">Byes</div>'+
+        '<div class="brk-g byes">'+BRK_BYES.map(n=>brkSeat(B[sd][n],false,false,null,false,true)).join('')+'</div>';
+      h+='</div>';
     }
     h+='</div>';
   }
