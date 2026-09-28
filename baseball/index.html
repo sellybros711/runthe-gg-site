@@ -464,9 +464,8 @@ body:has(#s-intro.on) header .lockup{visibility:hidden}
    square with its corners cut. The rim is now a box-shadow ring, which follows the
    radius exactly in every engine, the face is opaque (posPaint), and the light is
    painted on: a highlight up and to the left and a shaded underside, so the disc
-   reads as a domed token sitting on the grass. The disc itself does NOT clip,
-   because the chemistry badge hangs off its corner; the seams live in `.sm`, a
-   layer of their own that is clipped to the circle. */
+   reads as a domed token sitting on the grass. The disc does NOT clip, because the
+   chemistry badge hangs off its corner. */
 .chip .disc{position:relative;width:36px;height:36px;margin:0 auto;border-radius:50%;display:grid;place-items:center;
   font-family:var(--fn);font-size:10px;font-weight:800;letter-spacing:.02em;color:#fff;
   box-shadow:inset 0 -2.5px 3px rgba(0,0,0,.28),inset 0 1.5px 1px rgba(255,255,255,.35),
@@ -474,19 +473,13 @@ body:has(#s-intro.on) header .lockup{visibility:hidden}
 .chip .disc .dl{display:block;line-height:1;position:relative;z-index:1}
 .chip.filled .disc{color:#fff}
 .chip.filled .disc .dl{text-shadow:0 1px 2px rgba(0,0,0,.5)}
-/* An EMPTY spot is a baseball: cream, lit from above, with its two red seams. The
-   edge is drawn against its own fill rather than against the page, black in both
-   themes, or in dark it is a white line on a cream disc and the disc loses its
-   outline. */
-.chip.empty .disc{background:radial-gradient(circle at 38% 30%,#fffdf8 0%,#f1e9d8 55%,#dccdb0 100%);color:#5a4a30;
-  box-shadow:inset 0 -2px 3px rgba(120,95,55,.28),0 0 0 1.5px rgba(0,0,0,.24),0 4px 8px -3px rgba(0,0,0,.45)}
-/* The seams sit out by the edge, a seventh of the way in, so a two letter label
-   (SS, RF, 1B, DH) has room between them. */
-.chip .disc .sm{position:absolute;inset:0;border-radius:50%;overflow:hidden;pointer-events:none}
-.chip.empty .disc .sm:before,.chip.empty .disc .sm:after{content:'';position:absolute;top:-16%;bottom:-16%;width:80%;
-  border-radius:50%;border:1.3px dashed rgba(196,48,58,.58)}
-.chip.empty .disc .sm:before{left:-66%}
-.chip.empty .disc .sm:after{right:-66%}
+/* An EMPTY spot is a HOLLOW RING, the owner's call over a cream baseball: an open
+   position should be the quietest thing on the field, so it is an outline with the
+   grass showing through a faint tint, and the label in white. The ring is an inset
+   box-shadow rather than a border, for the same Safari reason as the filled disc. */
+.chip.empty .disc{background:rgba(10,24,12,.22);color:#fff;
+  box-shadow:inset 0 0 0 1.8px rgba(255,255,255,.82),0 2px 6px -3px rgba(0,0,0,.45)}
+.chip.empty .disc .dl{text-shadow:0 1px 2px rgba(0,0,0,.6)}
 .chip.now .disc{animation:chipulse 1.6s ease-in-out infinite}
 @keyframes chipulse{0%,100%{box-shadow:0 0 0 2px #fff,0 0 0 5px rgba(255,255,255,.2),0 6px 16px -4px #000}
   50%{box-shadow:0 0 0 2px #fff,0 0 0 11px rgba(255,255,255,.04),0 6px 16px -4px #000}}
@@ -1685,7 +1678,6 @@ button.rslot{width:100%;text-align:left;font:inherit;color:inherit;cursor:pointe
 #s-draft.picking .field .chip:not(.target){opacity:.35;pointer-events:none}
 .chip.target .disc{background:radial-gradient(circle at 36% 28%,#fff3cf 0%,#ffe29a 40%,#f0b93c 100%);color:#3a2a00;
   animation:tgpulse 1.2s ease-in-out infinite}
-.chip.target .disc .sm{display:none}
 @keyframes tgpulse{0%,100%{box-shadow:0 0 0 2px #fff,0 0 0 5px rgba(240,185,60,.55),0 6px 16px -4px #000}
   50%{box-shadow:0 0 0 2px #fff,0 0 0 11px rgba(240,185,60,.12),0 6px 16px -4px #000}}
 .chip.target .who{color:#ffe29a;font-style:italic}
@@ -4148,7 +4140,7 @@ function fieldState(el){
       '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 13h12M3.5 13V7.5L8 4l4.5 3.5V13M6.5 13v-3h3v3"/></svg>'+
       esc(RTD_PARKS.BY_ID[park].name)+'</button>':'')+
     E.SLOTS.map((slot,i)=>'<div class="chip empty" data-i="'+i+'">'+
-      '<div class="disc"><span class="sm"></span><span class="dl">'+slot+'</span><i class="pip"></i></div>'+
+      '<div class="disc"><span class="dl">'+slot+'</span><i class="pip"></i></div>'+
       '<div class="lab"><div class="who"></div><div class="yr"></div></div></div>').join('');
   el._ps={chips:[...el.querySelectorAll('.chip')],fresh:true,park,sky};
   const tag=el.querySelector('#park-tag');
@@ -4554,7 +4546,7 @@ function heroChips(){
     const style=on?' style="'+posPaint(on.pos)+'"':'';
     const label=isPitcher&&!on?(i===11?'CP':'SP'):
       (on?on.pos:SLOTS_NOW()[i]);
-    el.innerHTML='<div class="disc"'+style+'><span class="sm"></span><span class="dl">'+label+'</span></div>'+
+    el.innerHTML='<div class="disc"'+style+'><span class="dl">'+label+'</span></div>'+
       (on?'<div class="lab"><div class="who">'+esc(lastName(on.name))+'</div><div class="yr">'+
       tcPlate(on.team,on.season)+' '+on.season+'</div></div>':'');
     f.appendChild(el);
