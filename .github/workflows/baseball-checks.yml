@@ -105,6 +105,11 @@ jobs:
       - name: A run survives leaving the page
         run: node baseball/check-resume.mjs
 
+      # The leaderboard: a row opens into its twelve, every mode has a today,
+      # this week and all time window, and champions and records look it.
+      - name: The leaderboard
+        run: node baseball/check-leaderboard.mjs
+
       # Every badge, against real runs. The catalogue went from 36 to 205 in one
       # pass, and a badge nobody can earn throws no error and breaks no test: the
       # cabinet renders, the square stays dark, and nobody reports it. The hoops
