@@ -568,6 +568,12 @@ const backCard = await d1.p.evaluate(() => {
 claim(backCard.played, 'coming back, the card knows the day has been played');
 claim(/result/i.test(backCard.label || ''),
   `and says so on the label: ${JSON.stringify(backCard.label)}`);
+/* The front page's Leaderboard button opens on Classic, even in a jar that has just
+   played the daily. Only a finished season opens on its own board. */
+await d1.p.click('#b-board');
+const homeTab = await d1.p.evaluate(() =>
+  (document.querySelector('#bd-tabs .bd-tab.on') || {}).textContent || '');
+claim(/classic/i.test(homeTab), `the front page's Leaderboard opens on Classic (${homeTab})`);
 
 // ══ 7. nothing got out, and nothing threw ══════════════════════════════════
 head('7. NOTHING LEFT THE PAGE, AND NOTHING THREW');

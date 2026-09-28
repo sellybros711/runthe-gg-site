@@ -5235,7 +5235,9 @@ async function postToBoard(o){
 /* ─── the leaderboard screen ───
    Tabs across the boards, because a Cap Survivor season and a Franchise season
    are not the same competition and should not share a list. */
-let boardTab='daily';
+/* The front page's button opens on Classic, which is the game most people play.
+   Asked for by the owner. Only a finished season opens on its own board. */
+let boardTab='free';
 const BOARD_TABS=[{k:'daily',label:'Today'}].concat(
   ['free','era','franchise','division','capsurvivor','staff','trade']
     .map(m=>({k:m,label:runModeLabel(m)})));
@@ -5245,7 +5247,7 @@ let boardFrom='s-intro';
 /* Where the season just filed landed, so the board it opens on can mark the row. */
 let lastBoardPlace=null;
 function openBoard(tab,from){
-  if(tab&&BOARD_TABS.some(t=>t.k===tab))boardTab=tab;
+  boardTab=tab&&BOARD_TABS.some(t=>t.k===tab)?tab:'free';
   boardFrom=from||'s-intro';
   show('s-board');paintBoard();
 }
