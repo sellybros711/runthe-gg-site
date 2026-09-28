@@ -696,13 +696,108 @@ BACK.sandlot = (c) => {
   /* the big oak in left with its treehouse, where every sandlot game ends */
   const oak = tree(10, c.wy(10) + 0.4, 2.4, '#4f8a3a', '#3a6b2c') +
     '<g transform="translate(6.6,' + f(c.wy(10) - 8.2) + ')"><rect width="5" height="2.6" fill="#9a6b3e"/><path d="M -0.5,0 L 2.5,-1.8 L 5.5,0 Z" fill="#7a3a2c"/><rect x="1.8" y=".8" width="1.2" height="1.1" fill="#3a2a1a"/></g>';
+  /* a washing line strung between two back yards */
+  const lx1 = 40.5, lx2 = 51, ly = (x) => c.wy(x) - 4.1;
+  let laundry = '<path d="M ' + lx1 + ',' + f(ly(lx1)) + ' Q ' + f((lx1 + lx2) / 2) + ',' + f(ly((lx1 + lx2) / 2) + 0.8) + ' ' + lx2 + ',' + f(ly(lx2)) + '" fill="none" stroke="rgba(60,50,40,.6)" stroke-width=".1"/>';
+  [[42.3, '#f1ecde', 1.3], [44.4, '#c9483a', 1.1], [46.4, '#5d8fc4', 1.4], [48.6, '#f2d27a', 1.0]].forEach(([x, col, w]) => {
+    const y = ly(x) + 0.55 * Math.sin((x - lx1) / (lx2 - lx1) * Math.PI);
+    laundry += '<path d="M ' + f(x - w / 2) + ',' + f(y) + ' L ' + f(x + w / 2) + ',' + f(y) + ' L ' + f(x + w * 0.4) + ',' + f(y + 1.3) + ' L ' + f(x - w * 0.4) + ',' + f(y + 1.3) + ' Z" fill="' + col + '"/>';
+  });
+  /* birds on the wire */
+  const birds = [[36, 0.25], [37.3, 0.28], [55, 0.2], [74, 0.3]].map(([x]) => {
+    const y = c.wy(x) - 12 + (x < 49 ? 2.2 : 2.1) - 0.2;
+    return '<ellipse cx="' + x + '" cy="' + f(y) + '" rx=".32" ry=".26" fill="#2c2a2a"/><circle cx="' + f(x + 0.26) + '" cy="' + f(y - 0.22) + '" r=".15" fill="#2c2a2a"/>';
+  }).join('');
+  /* smoke from a chimney, somebody's dinner */
+  const smoke = [[0, 0.9, 0.35], [0.8, 1.2, 0.26], [1.9, 1.5, 0.17]].map(([d, r, a]) =>
+    '<circle cx="' + f(58.2 + d) + '" cy="' + f(c.wy(62) - 9.3 - d * 1.4) + '" r="' + r + '" fill="rgba(240,240,240,' + a + ')"/>').join('');
+  /* a tire swing on the big oak */
+  const swing = '<line x1="13.3" y1="' + f(c.wy(10) - 5.8) + '" x2="13.3" y2="' + f(c.wy(10) - 1.9) + '" stroke="rgba(60,45,30,.8)" stroke-width=".12"/>' +
+    '<ellipse cx="13.3" cy="' + f(c.wy(10) - 1.3) + '" rx=".75" ry=".6" fill="none" stroke="#24211e" stroke-width=".35"/>';
   return {
     defs: sky.defs + plankPattern(c.id('planks'), '#8f6c45', '#6b4f31') +
       '<radialGradient id="' + c.id('sun') + '"><stop offset="0" stop-color="rgba(255,244,190,.95)"/><stop offset="1" stop-color="rgba(255,244,190,0)"/></radialGradient>',
     art: sky.art + '<circle cx="82" cy="-5" r="8" fill="' + c.url('sun') + '"/><circle cx="82" cy="-5" r="1.8" fill="#fff8d6"/>' +
-      cloud(30, -6, 1, 0.9) + cloud(58, -3, 0.8, 0.8) + row + poles + wire(0) + wire(0.8) + oak +
+      cloud(30, -6, 1, 0.9) + cloud(58, -3, 0.8, 0.8) + cloud(10, -8.5, 0.6, 0.7) + smoke + row + laundry + poles + wire(0) + wire(0.8) + birds + oak + swing +
       tree(91, c.wy(91) + 0.3, 1.6, '#5b9642', '#437a30'),
   };
+};
+
+/* THE SANDLOT IS WHERE EVERYBODY STARTS, so it is the field a new player looks at
+   longest, and it read as a flat olive lawn. What makes a sandlot a sandlot is that
+   people use it: the grass is worn bald where everybody stands, weeds and dandelions
+   come up where nobody does, and the gear is lying where it was dropped. The ground
+   is drawn in the ground's own coordinates (inside the squash toward home), and all
+   of the gear sits in FOUL ground, clear of the chips a draft puts on the field. */
+function sandlotGround() {
+  const R = rng(97);
+  let g = '';
+  /* bald spots, where the fielders stand every day */
+  for (const [x, y, rx, ry] of [[30.5, 25, 3, 1.5], [69.5, 25, 3, 1.5], [21.5, 34.5, 2.4, 1.2],
+    [78.5, 34.5, 2.4, 1.2], [43, 44.5, 1.8, 0.9], [57, 44.5, 1.8, 0.9]]) {
+    g += '<ellipse cx="' + x + '" cy="' + y + '" rx="' + rx + '" ry="' + ry + '" fill="rgba(176,146,98,.5)"/>' +
+      '<ellipse cx="' + f(x + rx * 0.25) + '" cy="' + f(y + ry * 0.2) + '" rx="' + f(rx * 0.55) + '" ry="' + f(ry * 0.5) + '" fill="rgba(160,128,82,.38)"/>';
+  }
+  /* the worn path the pitcher walks to the mound, and the one from the bench */
+  g += '<path d="M 50,57 Q 49.4,50 50,43" fill="none" stroke="rgba(176,146,98,.42)" stroke-width="1.3" stroke-linecap="round"/>';
+  /* grass tufts, weeds and dandelions, thickest where nobody plays */
+  for (let k = 0; k < 150; k++) {
+    const x = 1 + R() * 98, y = 14.5 + R() * 47;
+    const inPlay = Math.abs(x - 50) < (62.6 - y) * 0.96 && y < 60;
+    /* nothing grows on the skin: the dirt arc, the base cut-outs and the plate */
+    const dx = x - 50, dy = y - 40;
+    if (Math.hypot(dx, dy * 1.05) < 22.5 && y > 17) continue;
+    if (Math.hypot(x - 50, y - 62.6) < 6) continue;
+    if (inPlay && R() < 0.6) continue;
+    const t = R();
+    if (t < 0.55) g += '<path d="M ' + f(x - 0.35) + ',' + f(y) + ' L ' + f(x) + ',' + f(y - 0.7) + ' L ' + f(x + 0.35) + ',' + f(y) + '" fill="none" stroke="rgba(70,92,38,.55)" stroke-width=".16"/>';
+    else if (t < 0.8) g += '<circle cx="' + f(x) + '" cy="' + f(y) + '" r=".26" fill="#f2d443"/><circle cx="' + f(x) + '" cy="' + f(y) + '" r=".1" fill="#c99a1c"/>';
+    else if (t < 0.9) g += '<circle cx="' + f(x) + '" cy="' + f(y) + '" r=".22" fill="#f6f3ea"/>';
+    else g += '<ellipse cx="' + f(x) + '" cy="' + f(y) + '" rx=".45" ry=".28" fill="rgba(120,110,95,.55)"/>';
+  }
+  /* an old tire, lying flat in foul ground down the left field line */
+  g += '<g transform="translate(9,38)"><ellipse rx="2.4" ry="1.5" fill="#24211e"/><ellipse rx="1.25" ry=".75" fill="#6f7f44"/>' +
+    '<ellipse cy="-.2" rx="2.1" ry="1.25" fill="none" stroke="rgba(255,255,255,.12)" stroke-width=".18"/></g>';
+  /* a bike on its side down the right field line */
+  g += '<g transform="translate(90,40) rotate(-8)" fill="none" stroke-width=".32">' +
+    '<circle cx="-2.2" cy="0" r="1.5" stroke="#2c2c30"/><circle cx="2.2" cy="0" r="1.5" stroke="#2c2c30"/>' +
+    '<path d="M -2.2,0 L -.4,-1.4 L 1.4,-1.4 L 2.2,0 M -.4,-1.4 L 0,0 L 1.4,-1.4 M 1.4,-1.4 L 1.1,-2.3 L 1.9,-2.3 M -.4,-1.4 L -.8,-2.1" stroke="#c9483a"/>' +
+    '<rect x="-1.3" y="-2.45" width="1.1" height=".35" rx=".15" fill="#2c2c30" stroke="none"/></g>';
+  /* a mitt and a ball dropped behind third, and the bucket of balls by first */
+  g += '<g transform="translate(19,53.5)"><path d="M -1,-.2 Q -1.1,-1.3 -.1,-1.3 Q .9,-1.3 1,-.3 Q 1,.8 0,.9 Q -1,.8 -1,-.2 Z" fill="#8a5a2c"/>' +
+    '<path d="M -.5,-1.2 L -.5,.5 M 0,-1.3 L 0,.6 M .5,-1.2 L .5,.5" stroke="#5a3a1a" stroke-width=".12"/><circle cx="1.9" cy=".3" r=".48" fill="#f6f3ea"/>' +
+    '<path d="M 1.6,.05 Q 1.9,.3 1.65,.65" fill="none" stroke="#c9483a" stroke-width=".1"/></g>';
+  g += '<g transform="translate(80.5,53)"><path d="M -1,-1 L 1,-1 L .8,1 L -.8,1 Z" fill="#e1e4e6"/><ellipse cy="-1" rx="1" ry=".35" fill="#b8bec2"/>' +
+    [[-.45, -1.25], [.1, -1.4], [.55, -1.2], [-.1, -1.05]].map(([x, y]) => '<circle cx="' + x + '" cy="' + y + '" r=".32" fill="#f6f3ea"/>').join('') + '</g>';
+  return g;
+}
+
+/* the fence up close: a hand-painted scoreboard, a missing board and a peek through it */
+const SANDLOT_WALL = (c) => {
+  let s = PLANK_WALL(c);
+  const band = (x) => [c.wt(x), c.wb(x)];
+  /* the scoreboard, painted on the boards in right center */
+  const x1 = 60, x2 = 71, pts = [];
+  for (let i = 0; i <= 6; i++) { const x = x1 + (x2 - x1) * i / 6; pts.push(f(x) + ',' + f(band(x)[0] + 0.35)); }
+  for (let i = 6; i >= 0; i--) { const x = x1 + (x2 - x1) * i / 6; pts.push(f(x) + ',' + f(band(x)[1] - 0.35)); }
+  s += '<polygon points="' + pts.join(' ') + '" fill="#2e4a34"/>';
+  const [t, b] = band((x1 + x2) / 2), h = b - t;
+  s += '<rect x="' + (x1 + 0.8) + '" y="' + f(t + h * 0.22) + '" width="2.4" height="' + f(h * 0.16) + '" fill="rgba(245,240,225,.8)"/>' +
+    '<rect x="' + (x1 + 0.8) + '" y="' + f(t + h * 0.58) + '" width="2.4" height="' + f(h * 0.16) + '" fill="rgba(245,240,225,.8)"/>';
+  for (let k = 0; k < 5; k++) {
+    const x = x1 + 4 + k * 1.3;
+    s += '<rect x="' + f(x) + '" y="' + f(t + h * 0.2) + '" width=".7" height="' + f(h * 0.22) + '" fill="rgba(245,240,225,' + (k < 3 ? '.85' : '.3') + ')"/>' +
+      '<rect x="' + f(x) + '" y="' + f(t + h * 0.56) + '" width=".7" height="' + f(h * 0.22) + '" fill="rgba(245,240,225,' + (k < 2 ? '.85' : '.3') + ')"/>';
+  }
+  /* a missing board in left center, and the dog on the other side of it */
+  const gx = 36, [gt, gb] = band(gx);
+  s += '<rect x="' + gx + '" y="' + f(gt) + '" width="1.1" height="' + f(gb - gt) + '" fill="#2a2016"/>' +
+    '<circle cx="' + f(gx + 0.36) + '" cy="' + f(gt + (gb - gt) * 0.42) + '" r=".16" fill="#f2e7c0"/>' +
+    '<circle cx="' + f(gx + 0.76) + '" cy="' + f(gt + (gb - gt) * 0.42) + '" r=".16" fill="#f2e7c0"/>';
+  /* two boards nailed back on crooked */
+  s += '<line x1="18" y1="' + f(band(18)[0] + 0.6) + '" x2="23" y2="' + f(band(23)[0] + 1.3) + '" stroke="#a8845a" stroke-width=".5"/>' +
+    '<line x1="80" y1="' + f(band(80)[0] + 1.4) + '" x2="84.5" y2="' + f(band(84.5)[0] + 0.7) + '" stroke="#a8845a" stroke-width=".5"/>';
+  return s;
 };
 
 BACK.littleleague = (c) => {
@@ -1047,7 +1142,7 @@ const LOOK = {
   /* the road to the Show: low fences, worn grass and faint chalk at the bottom,
      a real big league finish by Triple-A */
   sandlot: { sun: true, grass: ['#93a95a', '#83994c', '#72893f'], foul: '#7e8f4a', mow: 'none', dirt: ['#caa574', '#a9845a'],
-    mound: ['#cfaa78', '#a47c50'], track: '#7e8f4a', chalk: 0.35, wall: ['#8f6c45', '#6b4f31'], wallArt: PLANK_WALL,
+    mound: ['#cfaa78', '#a47c50'], track: '#7e8f4a', chalk: 0.35, wall: ['#8f6c45', '#6b4f31'], wallArt: SANDLOT_WALL, ground: sandlotGround,
     wallLine: '#5a4128', pole: '#6b4f31', pads: false, wallH: 3, wallTop: lowTop(3) },
   littleleague: { sun: true, grass: ['#5fa845', '#509a3a', '#428a31'], foul: '#4e8f38', mow: 'bands', track: '#b99664',
     wall: ['#4f8a3a', '#3f7a30'], wallArt: LINK_WALL, wallLine: '#f2c12e', pole: '#f2c12e', pads: false, wallH: 2.6, wallTop: lowTop(2.6) },
