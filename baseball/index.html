@@ -2567,7 +2567,7 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
 </div>
 
 <div class="screen" id="s-era">
-  <div class="eyebrow">Eras Mode</div>
+  <div class="eyebrow">Decades Draft</div>
   <h2 class="display" style="font-size:27px;margin:5px 0 8px">Pick a decade</h2>
   <p class="dim" style="font-size:13px;margin:0 0 12px">Draft only from players of a single decade. Chase each era's best-ever record.</p>
   <div class="era-grid" id="era-grid"></div>
@@ -2990,7 +2990,7 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
 
 <script src="engine.js?v=35"></script>
 <script src="run.js?v=29"></script>
-<script src="achievements.js?v=11"></script>
+<script src="achievements.js?v=12"></script>
 <script src="parks.js?v=9"></script>
 <script src="crest.js?v=2"></script>
 <script src="board.js?v=4"></script>
@@ -4891,7 +4891,11 @@ function paintModesDoor(){
   /* Two names, because three wrapped at 390 and a door with a two line caption
      reads as a paragraph. The door is a phone's alone now: a desktop draws the
      modes as tiles (paintModeTiles), so the three-name caption it used is gone. */
-  const say=n=>short.length>n?short.slice(0,n).join(', ')+' and '+(short.length-n)+' more':short.join(', ');
+  /* The two SHORTEST names, kept in the sheet's order, because the caption has to
+     hold one line on a 320 phone and "Decades, One Franchise" did not. */
+  const pick=n=>{const keep=short.map((t,i)=>[t,i]).sort((a,b)=>a[0].length-b[0].length).slice(0,n)
+    .sort((a,b)=>a[1]-b[1]).map(x=>x[0]);return keep;};
+  const say=n=>short.length>n?pick(n).join(', ')+' and '+(short.length-n)+' more':short.join(', ');
   $('hm-sub').textContent=say(2);
 }
 /* THE DESKTOP SHOWS THE MODES RATHER THAN A DOOR TO THEM. A phone keeps the
@@ -4929,7 +4933,7 @@ $('b-first-go').addEventListener('click',()=>{closeSheet('sheet-first');markSeen
    home screen was six things competing with the one button that matters. */
 const ARROW='<svg class="mc-arrow" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>';
 const MODE_CARDS=[
-  {id:'era',tile:'Eras Draft',line:'Pick a decade. Every era plays differently.',mode:'era',tint:'var(--blue)',cls:'mc-era',title:'Eras Draft',
+  {id:'era',tile:'Decades Draft',line:'Pick a decade. Every era plays differently.',mode:'era',tint:'var(--blue)',cls:'mc-era',title:'Decades Draft',
    icon:'<path d="M12 2.4a9.6 9.6 0 1 0 0 19.2 9.6 9.6 0 0 0 0-19.2Z"/><path d="M12 6.7V12l3.5 2.1"/>',
    /* THE POOL DISAGREED WITH THE OLD SENTENCE. It said "the nineties are all
       bats", and the 1990s are the flattest decade there is: 19 arms in its top
@@ -5359,7 +5363,7 @@ function runModeOf(r){
   return 'free';
 }
 function runModeLabel(m){
-  return {free:'Classic',era:'Eras Draft',franchise:'One Franchise',
+  return {free:'Classic',era:'Decades Draft',franchise:'One Franchise',
     division:'Division Draft',capsurvivor:'Cap Survivor',staff:'All-Time Pitching Staff',
     trade:'Trade Machine'}[m]||'Classic';
 }
@@ -5855,7 +5859,7 @@ function chemCapNote(){
   return 'Bonuses stack with diminishing returns and the team total tops out at <b>+'+
     chemNum(E.chemPoints(E.CHEMISTRY.MAX))+'</b>. Chemistry lifts the runs you score, '+
     'so it shows up in your record rather than in your team rating.<br><br>'+
-    'A mode never pays for the bond its own rule guarantees. Eras Draft keeps you inside '+
+    'A mode never pays for the bond its own rule guarantees. Decades Draft keeps you inside '+
     'one decade, so <b>Same era</b> stops counting there. One Franchise and Division Draft '+
     'put everyone in a handful of uniforms, so <b>Franchise</b> stops counting in those. '+
     'What is left is what you actually chose.';
@@ -5905,7 +5909,9 @@ function eraCard(e,i,n){
 function buildEraGrid(){
   const grid=$('era-grid');grid.innerHTML='';
   const eras=R.eligibleEras(DATA);
-  eras.forEach((e,i)=>grid.appendChild(eraCard(e,i,eras.length)));
+  /* Newest decade first. Each card keeps its own place on the colour ramp, so a
+     decade wears the same colour whichever end of the list it is drawn at. */
+  eras.map((e,i)=>[e,i]).reverse().forEach(([e,i])=>grid.appendChild(eraCard(e,i,eras.length)));
 }
 
 /* ─── franchise mode ─── */
