@@ -1221,6 +1221,11 @@ body:has(#s-intro.on) header .lockup{visibility:hidden}
 .ro-cells{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0}
 .ro-cell{background:var(--panel);border:1px solid rgba(var(--edge),.10);border-radius:12px;
   padding:12px 8px;text-align:center;box-shadow:0 2px 6px rgba(0,0,0,.05)}
+.ro-cell.ro-go{font:inherit;color:inherit;cursor:pointer;position:relative;width:100%;
+  transition:border-color .15s,transform .1s}
+.ro-cell.ro-go:active{transform:scale(.97)}
+.ro-cell.ro-go::after{content:'\203A';position:absolute;top:6px;right:9px;font-size:15px;line-height:1;color:var(--dim-2)}
+@media (hover:hover){.ro-cell.ro-go:hover{border-color:var(--gold)}}
 .ro-cell .cv{font-family:var(--fd);font-size:30px;line-height:1;color:var(--ink)}
 .ro-cell .cv .u{font-size:15px;color:var(--dim-2)}
 .ro-cell .cv.gold{color:var(--gold)} .ro-cell .cv.green{color:var(--green)}
@@ -1455,6 +1460,13 @@ body:has(#s-intro.on) header .lockup{visibility:hidden}
    so it takes the rule back, or every shape in the circle grows an outline. */
 .pf-btn.crested svg,.pf-av svg,.pf-mark svg,.bd-crest svg{width:100%;height:100%;fill:initial;stroke:none;stroke-width:initial;display:block}
 .pf-id{display:flex;align-items:center;gap:14px;margin:0 0 12px}
+.pf-park{display:block;position:relative;width:100%;padding:0;margin:0 0 12px;border:1px solid rgba(var(--edge),.1);
+  border-radius:12px;overflow:hidden;background:none;cursor:pointer;text-align:left;font:inherit;color:inherit}
+.pf-park .pk-view{display:block;line-height:0}
+.pf-park .pk-view svg{display:block;width:100%;height:auto}
+.pf-park>span{position:absolute;left:0;right:0;bottom:0;padding:18px 12px 9px;color:#fff;font-size:11.5px;
+  background:linear-gradient(transparent,rgba(0,0,0,.7))}
+.pf-park>span b{display:block;font-family:var(--display);font-size:19px;letter-spacing:.03em;line-height:1.1}
 .pf-av{flex:0 0 64px;width:64px;height:64px;display:block}
 .pf-av.big{width:112px;height:112px;flex-basis:112px;margin:0 auto}
 .pf-nm{display:flex;flex-direction:column;gap:3px;min-width:0}
@@ -2572,8 +2584,8 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
   <div class="ro-cells">
     <div class="ro-cell"><div class="cv" id="ro-rating"></div><div class="cl" id="ro-rating-l">Team rating</div>
       <div class="ro-meter"><i id="ro-rating-bar"></i></div></div>
-    <div class="ro-cell"><div class="cv gold" id="ro-place">-</div><div class="cl" id="ro-place-l">Leaderboard</div></div>
-    <div class="ro-cell"><div class="cv gold" id="ro-rank"></div><div class="cl" id="ro-rank-l">All-time rank</div></div>
+    <button type="button" class="ro-cell ro-go" id="ro-place-go"><div class="cv gold" id="ro-place">-</div><div class="cl" id="ro-place-l">Leaderboard</div></button>
+    <button type="button" class="ro-cell ro-go" id="ro-rank-go"><div class="cv gold" id="ro-rank"></div><div class="cl" id="ro-rank-l">All-time rank</div></button>
   </div>
 
   <div class="ro-coach">
@@ -3095,11 +3107,18 @@ function setPark(id){
   const uid=acctId();if(!uid||!RTD_PARKS.BY_ID[id])return;
   const all=parkPrefs();all[uid]=id;
   try{localStorage.setItem(PARK_KEY,JSON.stringify(all));}catch(_){}
-  saveProf({park:id});
+  /* The server's answer is what every device reads, so the fields are drawn again
+     once it lands: a refusal puts the account's real park back on screen. */
+  saveProf({park:id}).then(()=>{refreshParkedFields();pfRepaint();});
   try{ga('park_chosen',{park:id});}catch(_){}
   refreshParkedFields();
 }
+/* The front page draws the park the account is playing on, so what somebody chose
+   is the first thing they see. A guest sees the big league park, which is the
+   picture the game is sold on; their own draft is still played on the sandlot. */
+function heroPark(){return acctId()?currentPark():'home';}
 function refreshParkedFields(){
+  const hf=$('h-field');if(hf&&hf.dataset.park&&hf.dataset.park!==heroPark())heroChips();
   for(const id of Object.keys(PARKED_FIELDS)){const el=$(id);if(el&&el._ps)el._ps=null;}
   if(RUN){const f=$('field');if(f&&$('s-draft').classList.contains('on'))drawField(f,true);
     const q=$('sq-field');if(q&&$('s-squad').classList.contains('on'))drawField(q,false);}
@@ -3207,7 +3226,7 @@ function adoptCareer(uid,serverRows){
 let syncAsk=0;
 async function profileSync(){
   const uid=acctId();const ask=++syncAsk;
-  if(!uid){PROF=null;PROF_FOR=null;paintAvatar();pfRepaint();return;}
+  if(!uid){PROF=null;PROF_FOR=null;paintAvatar();refreshParkedFields();pfRepaint();return;}
   paintAvatar();
   if(!hasProfileApi())return;
   let merged=null,row=null;
@@ -3348,7 +3367,9 @@ function pfHub(el){
   }
   el.innerHTML='<div class="pf-id"><span class="pf-av">'+myCrest(64)+'</span>'+
     '<span class="pf-nm"><b>'+esc(st.name)+'<i class="pf-pill'+(isPro()?' pro':'')+'">'+(isPro()?'Pro':'Free')+'</i></b>'+
-    '<span>Your RunThe.GG account</span></span></div>'+rank+
+    '<span>Your RunThe.GG account</span></span></div>'+
+    (window.RTD_PARKS?'<button type="button" class="pf-park" id="pf-park-go">'+parkPreview(currentPark(),'pfh')+
+      '<span><b>'+esc(RTD_PARKS.BY_ID[currentPark()].name)+'</b>Your ballpark. Tap to change it.</span></button>':'')+rank+
     '<div class="pf-stats">'+[['Seasons',s.runs||0],['Titles',s.titles||0],
       ['Best rating',s.bestRating!=null?Math.round(s.bestRating):'-'],
       ['Badges',ev?ev.earned.length+'/'+ev.total:'-']]
@@ -3367,6 +3388,7 @@ function pfHub(el){
     '<p class="pf-note">Your profile and every season you play signed in are kept on your account, on every device.</p>';
   pfWire(el);
   $('pf-go-badges').onclick=()=>{closeSheet('sheet-profile');openTrophy();};
+  const pg=$('pf-park-go');if(pg)pg.onclick=()=>{pfGo('look');const pk=$('pf-parks');if(pk)requestAnimationFrame(()=>pk.scrollIntoView({block:'start'}));};
   const bill=$('pf-bill');if(bill)bill.onclick=()=>openBilling(bill,$('pf-bill-err'));
   const gp=$('pf-gopro');if(gp)gp.onclick=()=>{closeSheet('sheet-profile');ga('pro_opened',{from:'profile'});openPro(null);};
 }
@@ -4042,7 +4064,7 @@ function diamondMarkings(sfx,park,sky){
 }
 
 /* THE DRAFT AND SQUAD FIELDS WEAR THE ACCOUNT'S BALLPARK, with a band of sky above
-   the wall for its skyline. The home page hero always draws the home park and no
+   the wall for its skyline. The home page hero draws heroPark() with no
    extra sky, because its heights are measured against the fold. A change of park
    rebuilds the field, so the cache is keyed on it. */
 const PARKED_FIELDS={'field':1,'sq-field':1};
@@ -4374,7 +4396,8 @@ function heroReset(){
 function heroChips(){
   const f=$('h-field');
   f.querySelectorAll('.chip').forEach(c=>c.remove());
-  if(!f.querySelector('.turf')) f.innerHTML=diamondMarkings(f.id);
+  const pk=heroPark();
+  if(f.dataset.park!==pk){f.innerHTML=diamondMarkings(f.id,pk);f.dataset.park=pk;}
   const filledPitchers=PITCHER_SLOTS.filter(i=>heroFilled.find(x=>x.at===i));
   const openPitchers=PITCHER_SLOTS.filter(i=>!heroFilled.find(x=>x.at===i));
   const activeP=openPitchers.length>0?openPitchers[0]:
@@ -4544,8 +4567,14 @@ function paintModeTiles(){
       '<b>'+esc(m.tile||m.title)+'</b><span>'+esc(m.line||m.text)+'</span></button>').join('');
   box.querySelectorAll('[data-mode]').forEach(b=>b.addEventListener('click',()=>{ga('mode_tile',{mode:b.dataset.mode});pickMode(b.dataset.mode);}));
 }
-$('b-board').addEventListener('click',openBoard);
-$('b-board-back').addEventListener('click',()=>{show('s-intro');heroSync();});
+$('b-board').addEventListener('click',()=>openBoard());
+$('b-board-back').addEventListener('click',()=>{
+  const to=boardFrom;boardFrom='s-intro';
+  if(to==='s-over'&&RUN){show('s-over');return;}
+  show('s-intro');heroSync();
+});
+$('ro-place-go').addEventListener('click',openRunBoard);
+$('ro-rank-go').addEventListener('click',openRunBoard);
 $('daily-card').addEventListener('click',startDaily);
 document.querySelectorAll('[data-close-daily]').forEach(el=>el.addEventListener('click',()=>closeSheet('sheet-daily')));
 $('b-daily-share').addEventListener('click',shareDaily);
@@ -5048,6 +5077,7 @@ async function postToBoard(o){
   if(place==null||tot==null){say('-','On the board');return;}
   const board=payload.dailyKey?('Daily #'+dailyNo()):runModeLabel(payload.mode);
   say('#'+place,'of '+tot.toLocaleString()+' on '+board+(sent.duplicate?' (already recorded)':''));
+  lastBoardPlace={tab:payload.dailyKey?'daily':payload.mode,place};
 }
 
 /* ─── the leaderboard screen ───
@@ -5057,7 +5087,22 @@ let boardTab='daily';
 const BOARD_TABS=[{k:'daily',label:'Today'}].concat(
   ['free','era','franchise','division','capsurvivor','staff','trade']
     .map(m=>({k:m,label:runModeLabel(m)})));
-function openBoard(){show('s-board');paintBoard();}
+/* The screen the board was opened from, so Back goes back to it: a board opened
+   off a finished season returns to that season rather than to the front page. */
+let boardFrom='s-intro';
+/* Where the season just filed landed, so the board it opens on can mark the row. */
+let lastBoardPlace=null;
+function openBoard(tab,from){
+  if(tab&&BOARD_TABS.some(t=>t.k===tab))boardTab=tab;
+  boardFrom=from||'s-intro';
+  show('s-board');paintBoard();
+}
+/* The two leaderboard cells on the results screen open the board this season was
+   filed on. The daily files on today's board; every other mode on its own. */
+function openRunBoard(){
+  const tab=RUN&&RUN.daily?'daily':runModeOf(RUN);
+  openBoard(tab,'s-over');
+}
 /* THE CIRCLES, asked for after the list is drawn, so a slow answer never holds the
    board up. A row filed by nobody, or by somebody with no profile yet, draws their
    initials on slate, which is what a circle is before it has been customized. */
@@ -5106,14 +5151,21 @@ function paintBoard(){
       if(r.era)detail.push(esc(r.era));
       if(r.cuts)detail.push(r.cuts+' cut');
       if(r.trades)detail.push(r.trades+' dealt');
-      return '<div class="bd-row"><div class="bd-pos">'+(i+1)+'</div>'+
+      const me=lastBoardPlace&&lastBoardPlace.tab===boardTab&&lastBoardPlace.place===i+1;
+      return '<div class="bd-row'+(me?' me':'')+'"><div class="bd-pos">'+(i+1)+'</div>'+
         (r.user_id?'<span class="bd-crest" data-uid="'+esc(r.user_id)+'"></span>':'<span class="bd-crest"></span>')+
         '<div class="bd-who"><div class="bd-name">'+
           esc(r.display_name||'Anonymous')+'</div>'+
         '<div class="bd-meta">'+detail.join(' \u00b7 ')+'</div></div>'+
         '<div class="bd-rec"><b>'+r.wins+'-'+r.losses+'</b><span>record</span></div></div>';
     }).join('');
+    /* A season past the top fifty is still yours to find: say where it landed. */
+    if(lastBoardPlace&&lastBoardPlace.tab===boardTab&&lastBoardPlace.place>rows.length)
+      list.insertAdjacentHTML('beforeend','<div class="bd-empty">Your season landed at #'+
+        lastBoardPlace.place.toLocaleString()+'.</div>');
     paintBoardCrests(list,rows);
+    const mine=list.querySelector('.bd-row.me');
+    if(mine&&boardFrom==='s-over')requestAnimationFrame(()=>mine.scrollIntoView({block:'center'}));
   });
 }
 

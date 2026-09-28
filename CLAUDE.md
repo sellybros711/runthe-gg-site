@@ -15185,8 +15185,11 @@ the same coordinates and changes the grass, the dirt, the wall and everything
 behind it. The draft and squad fields (`PARKED_FIELDS`) extend the SVG's viewBox
 upward by `SKY` (10 units over 68) for the skyline. So `.field.parked` is
 `100/78` and `drawField` maps each chip's 68-unit y into the taller box. The home
-page hero passes no sky and always draws the home park, because its heights are
-measured against the fold.
+page hero passes no sky, because its heights are measured against the fold, and
+draws the park the account is using (`heroPark`), so a choice is the first thing a
+returning player sees. A guest sees the big league park. The profile hub carries
+the same park as a banner that opens the shelf, and both are redrawn when the
+server answers a change, so a refused save puts the real park back.
 
 **Every SVG id carries the field's suffix AND the park's id.** The profile draws
 all thirteen in one sheet beside the draft field. Two parks sharing a gradient id
