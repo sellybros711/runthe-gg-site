@@ -128,7 +128,7 @@ const looks = await p.evaluate(() => [...document.querySelectorAll('.bd-ent')].m
   anim: getComputedStyle(e.querySelector('.bd-row')).animationName })));
 claim(looks[0].champ && looks[0].rec && looks[0].tags.length === 2, 'a record that won it all wears both', JSON.stringify(looks[0]));
 claim(!looks[1].champ && looks[1].rec && /Record/.test(looks[1].tags.join()), 'a record season is tagged', JSON.stringify(looks[1]));
-claim(looks[2].champ && !looks[2].rec && /Champs/.test(looks[2].tags.join()), 'a champion is tagged', JSON.stringify(looks[2]));
+claim(looks[2].champ && !looks[2].rec && /Champions/.test(looks[2].tags.join()), 'a champion is tagged', JSON.stringify(looks[2]));
 claim(!looks[3].champ && !looks[3].rec && !looks[3].tags.length, 'an ordinary season is plain');
 claim(looks[2].border !== looks[3].border, 'a champion row has its own edge', looks[2].border + ' vs ' + looks[3].border);
 claim(looks[1].anim === 'bdrec' && looks[2].anim === 'none', 'only a record season moves', looks[1].anim + ' / ' + looks[2].anim);

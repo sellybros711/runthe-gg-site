@@ -2003,11 +2003,10 @@ button.rslot{width:100%;text-align:left;font:inherit;color:inherit;cursor:pointe
   background:linear-gradient(90deg,rgba(212,160,23,.13),rgba(212,160,23,.02) 60%),var(--panel)}
 .bd-ent.champ .bd-team{border-color:rgba(212,160,23,.55)}
 .bd-ent.champ .bd-rec b{color:var(--gold)}
-.bd-tags{display:flex;flex-wrap:wrap;gap:4px;margin:3px 0 2px}
-.bd-tag{display:inline-flex;align-items:center;gap:4px;font-family:var(--fn);font-size:9.5px;font-weight:900;
-  letter-spacing:.07em;text-transform:uppercase;padding:2px 7px 2px 6px;border-radius:99px;vertical-align:1px;background:rgba(212,160,23,.16);color:var(--gold);border:1px solid rgba(212,160,23,.45)}
-.bd-tag svg.ico{width:9px;height:11px;fill:currentColor;stroke:none}
-.bd-tag svg{width:11px;height:11px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.bd-tag{display:inline-flex;align-items:center;gap:3px;vertical-align:-1px;color:#8a5a00;font-weight:800}
+:root[data-theme="dark"] .bd-tag{color:var(--gold)}
+.bd-tag svg.ico{width:8px;height:10px;fill:currentColor;stroke:none}
+.bd-tag svg{width:10px;height:10px;height:11px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
 /* A RECORD season (117 wins or more, past the real 116) is louder again: a
    moving gold edge and a red RECORD tag. A record that also won it all gets both. */
 .bd-ent.record .bd-row{border-color:transparent;
@@ -2027,7 +2026,8 @@ button.rslot{width:100%;text-align:left;font:inherit;color:inherit;cursor:pointe
 :root[data-theme="dark"] .bd-ent.record .bd-rec b{background-image:linear-gradient(180deg,#f6d365,#d4a017)}
 .bd-ent.champ:not(.record) .bd-rec b{color:#8a5a00}
 :root[data-theme="dark"] .bd-ent.champ .bd-rec b{color:var(--gold)}
-.bd-tag.rec{background:rgba(192,57,43,.16);color:#e0584a;border-color:rgba(192,57,43,.5)}
+.bd-tag.rec{color:#b03a2e}
+:root[data-theme="dark"] .bd-tag.rec{color:#e0584a}
 @media(prefers-reduced-motion:reduce){.bd-ent.record .bd-row{animation:none}}
 .bd-pos{flex:0 0 auto;min-width:26px;font-family:'Righteous',var(--fd);font-size:15px;
   color:var(--dim-2);text-align:right}
@@ -5465,15 +5465,16 @@ function paintBoard(){
       if(r.cuts)detail.push(r.cuts+' cut');
       if(r.trades)detail.push(r.trades+' dealt');
       const me=boardWin==='all'&&lastBoardPlace&&lastBoardPlace.tab===boardTab&&lastBoardPlace.place===i+1;
-      const tags=(r.is_goat?'<span class="bd-tag rec">'+ICO_FLAME+'Record season</span>':'')+
-        (r.title_won?'<span class="bd-tag">'+BD_TROPHY+'Champs</span>':'');
+      /* The marks lead the meta line as colored words, not pills: the row's own
+         edge already says it, so the words only have to name it. */
+      if(r.title_won)detail.unshift('<span class="bd-tag">'+BD_TROPHY+'Champions</span>');
+      if(r.is_goat)detail.unshift('<span class="bd-tag rec">'+ICO_FLAME+'Record</span>');
       const cls='bd-ent'+(i<3?' top3':'')+(r.title_won?' champ':'')+(r.is_goat?' record':'');
       return '<div class="'+cls+'" data-i="'+i+'">'+
         '<button type="button" class="bd-row'+(me?' me':'')+'" aria-expanded="false"><span class="bd-pos">'+(i+1)+'</span>'+
         (r.user_id?'<span class="bd-crest" data-uid="'+esc(r.user_id)+'"></span>':'<span class="bd-crest"></span>')+
         '<span class="bd-who"><span class="bd-name" style="display:block">'+
           esc(r.display_name||'Anonymous')+'</span>'+
-        (tags?'<span class="bd-tags">'+tags+'</span>':'')+
         '<span class="bd-meta" style="display:block">'+detail.join(' \u00b7 ')+'</span></span>'+
         '<span class="bd-rec"><b>'+r.wins+'-'+r.losses+'</b><span>record</span></span>'+
         '<span class="bd-caret">'+BD_CARET+'</span></button>'+

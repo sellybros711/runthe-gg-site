@@ -14260,9 +14260,9 @@ because it is one day already, and its tab reads Daily so it is not a second Tod
 ride on every row, so the team is rebuilt against this browser's own pool with no
 request. A man not in the pool is a replacement body from a cut, and says so.
 
-**A champion is gold** (`.champ`: a gold edge, a wash and a Champs tag). **A record
+**A champion is gold** (`.champ`: a gold edge, a wash and a gold "Champions" word). **A record
 season is louder** (`.record`, `is_goat`, 117 wins or more: a moving gold and red
-edge and a Record season tag). A record that also won it all wears both plus a
+edge and a red "Record" word). A record that also won it all wears both plus a
 glow. Only a record moves, and never under reduced motion. The `.record` background
 has three layers on purpose, so one keyframe animates both it and `.record.champ`.
 
