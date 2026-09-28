@@ -228,25 +228,48 @@
   /*
    * WHAT EVERY MAN HAS SCORED SO FAR THIS WEEK, which is what the lineups under the board's
    * rows read. `fantasy_results` is public on purpose (110 grants it): a man's points are a
-   * fact about a football game rather than about anybody's entry. A plain table read, one
-   * row a man who has played, about four hundred at the most. Fails soft like every read.
+   * fact about a football game rather than about anybody's entry. Fails soft like every read.
+   *
+   * IT IS READ IN PAGES, AND THAT IS THE FIX FOR A BOARD OF ZEROS. The live writer files a
+   * row for every man with a stat line, not only the men on the board, which was 1,049 rows
+   * in week 3 of 2026. PostgREST hands back at most 1,000 rows a request whatever is asked
+   * for, so one read silently dropped 49 men and they drew as 0.0 under FINAL: Kenneth
+   * Walker III with 19.3 and Josh Downs with 7.7, reported off a screenshot. Nothing threw.
+   * So it asks for an exact count, walks the table in `player_id` order until it holds that
+   * many rows, and stops on a short or empty page if the count cannot be read.
    */
   /* `line` is what he did (`277 pass yds, 2 TD`), from 126. A database that has not run
      that file answers a 400 naming the column, so the read asks once more without it and
      remembers, rather than taking every lineup's points down over a line of display text. */
   let noLine = false;
+  const RESULTS_PAGE = 1000;
+  const RESULTS_PAGES = 20;
   async function results(season, week) {
     try {
-      const ask = (cols) => timed(base() + P() + 'results?select=' + cols
-        + '&season=eq.' + Number(season) + '&week=eq.' + Number(week), { headers: headers() });
-      let res = await ask(noLine ? 'player_id,half_ppr' : 'player_id,half_ppr,line');
-      if (!noLine && res.status === 400) {
-        noLine = true;
-        res = await ask('player_id,half_ppr');
+      const ask = (from) => timed(base() + P() + 'results?select='
+        + (noLine ? 'player_id,half_ppr' : 'player_id,half_ppr,line')
+        + '&season=eq.' + Number(season) + '&week=eq.' + Number(week)
+        + '&order=player_id&offset=' + from + '&limit=' + RESULTS_PAGE,
+        { headers: Object.assign(headers(), { Prefer: 'count=exact' }) });
+      const out = [];
+      for (let i = 0; i < RESULTS_PAGES; i++) {
+        let res = await ask(out.length);
+        if (!noLine && res.status === 400) {
+          noLine = true;
+          res = await ask(out.length);
+        }
+        if (!res.ok) return null;
+        const j = await res.json();
+        if (!Array.isArray(j)) return null;
+        for (const x of j) out.push(x);
+        /* `0-999/1049`. The total is what says whether there is another page, because a
+           page shorter than the one asked for may only be the server's own cap. */
+        const m = /\/(\d+)\s*$/.exec(res.headers.get('content-range') || '');
+        const total = m ? Number(m[1]) : null;
+        if (!j.length) break;
+        if (total != null ? out.length >= total : j.length < RESULTS_PAGE) break;
       }
-      if (!res.ok) return null;
-      const j = await res.json();
-      return Array.isArray(j) ? j : null;
+      return out;
     } catch (e) { return null; }
   }
 
