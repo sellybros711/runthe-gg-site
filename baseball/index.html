@@ -457,21 +457,39 @@ body:has(#s-intro.on) header .lockup{visibility:hidden}
 /* ─── chips ─── */
 .chip{--discr:17px;position:absolute;transform:translate(-50%,calc(-1 * var(--discr)));
   display:flex;flex-direction:column;width:62px;text-align:center;cursor:pointer;z-index:4}
+/* THE DISC HAS NO BORDER, AND THAT IS THE FIX FOR WHAT A PHONE SHOWED. It was a
+   translucent 2px border over a gradient that faded to translucent black, and iOS
+   Safari drew that as a flat band across the top and bottom of every disc and let
+   the grass show through the bottom of a filled one, so a round token read as a
+   square with its corners cut. The rim is now a box-shadow ring, which follows the
+   radius exactly in every engine, the face is opaque (posPaint), and the light is
+   painted on: a highlight up and to the left and a shaded underside, so the disc
+   reads as a domed token sitting on the grass. The disc itself does NOT clip,
+   because the chemistry badge hangs off its corner; the seams live in `.sm`, a
+   layer of their own that is clipped to the circle. */
 .chip .disc{position:relative;width:36px;height:36px;margin:0 auto;border-radius:50%;display:grid;place-items:center;
-  font-family:var(--fn);font-size:10px;font-weight:700;color:#fff;border:2px solid rgba(var(--edge),.25);
-  box-shadow:0 3px 8px -3px rgba(0,0,0,.40)}
-.chip .disc .dl{display:block;line-height:1}
+  font-family:var(--fn);font-size:10px;font-weight:800;letter-spacing:.02em;color:#fff;
+  box-shadow:inset 0 -2.5px 3px rgba(0,0,0,.28),inset 0 1.5px 1px rgba(255,255,255,.35),
+    0 0 0 1.5px rgba(0,0,0,.42),0 0 0 3.5px rgba(255,255,255,.2),0 5px 10px -3px rgba(0,0,0,.6)}
+.chip .disc .dl{display:block;line-height:1;position:relative;z-index:1}
 .chip.filled .disc{color:#fff}
-.chip.filled .disc:after{content:'';position:absolute;inset:-5px;border-radius:50%;
-  border:1px solid rgba(255,255,255,.17);pointer-events:none}
-/* The empty position disc is cream ON THE GRASS, so its edge is drawn against
-   its own fill rather than against the page: black in both themes, or in dark it
-   is a white line on a cream disc and the disc loses its outline. */
-.chip.empty .disc{background:linear-gradient(180deg,#f5f0e6,#e8dcc8);border:2px solid rgba(0,0,0,.18);
-  color:#5a4a30;box-shadow:inset 0 1px 2px rgba(255,255,255,.5),0 2px 6px -2px rgba(0,0,0,.25)}
-.chip.now .disc{border-color:#fff;animation:chipulse 1.6s ease-in-out infinite}
-@keyframes chipulse{0%,100%{box-shadow:0 0 0 4px rgba(255,255,255,.14),0 6px 16px -4px #000}
-  50%{box-shadow:0 0 0 10px rgba(255,255,255,.04),0 6px 16px -4px #000}}
+.chip.filled .disc .dl{text-shadow:0 1px 2px rgba(0,0,0,.5)}
+/* An EMPTY spot is a baseball: cream, lit from above, with its two red seams. The
+   edge is drawn against its own fill rather than against the page, black in both
+   themes, or in dark it is a white line on a cream disc and the disc loses its
+   outline. */
+.chip.empty .disc{background:radial-gradient(circle at 38% 30%,#fffdf8 0%,#f1e9d8 55%,#dccdb0 100%);color:#5a4a30;
+  box-shadow:inset 0 -2px 3px rgba(120,95,55,.28),0 0 0 1.5px rgba(0,0,0,.24),0 4px 8px -3px rgba(0,0,0,.45)}
+/* The seams sit out by the edge, a seventh of the way in, so a two letter label
+   (SS, RF, 1B, DH) has room between them. */
+.chip .disc .sm{position:absolute;inset:0;border-radius:50%;overflow:hidden;pointer-events:none}
+.chip.empty .disc .sm:before,.chip.empty .disc .sm:after{content:'';position:absolute;top:-16%;bottom:-16%;width:80%;
+  border-radius:50%;border:1.3px dashed rgba(196,48,58,.58)}
+.chip.empty .disc .sm:before{left:-66%}
+.chip.empty .disc .sm:after{right:-66%}
+.chip.now .disc{animation:chipulse 1.6s ease-in-out infinite}
+@keyframes chipulse{0%,100%{box-shadow:0 0 0 2px #fff,0 0 0 5px rgba(255,255,255,.2),0 6px 16px -4px #000}
+  50%{box-shadow:0 0 0 2px #fff,0 0 0 11px rgba(255,255,255,.04),0 6px 16px -4px #000}}
 .chip.pop .disc{animation:pop .34s cubic-bezier(.2,1.5,.4,1) both}
 @keyframes pop{from{transform:scale(.3);opacity:0}to{transform:scale(1);opacity:1}}
 .chip .lab{display:block}
@@ -499,7 +517,10 @@ body:has(#s-intro.on) header .lockup{visibility:hidden}
   border:1px solid rgba(255,255,255,.26);box-shadow:0 1px 3px rgba(0,0,0,.5)}
 /* The chemistry badge on a fielder. Auto width so it can carry a value rather
    than a single digit, and it takes the color of that player's strongest bond. */
+/* The bolt and the number share one line, the way the lists draw them. */
+.chip .pip .ico{margin:0;width:.72em;height:.9em}
 .chip .pip{position:absolute;top:-4px;right:-10px;min-width:17px;height:15px;padding:0 4px;
+  align-items:center;justify-content:center;gap:1px;line-height:1;
   border-radius:99px;display:none;place-items:center;font-family:var(--fn);
   font-size:9px;font-weight:800;color:#fff;border:1.5px solid rgba(var(--edge),.35);
   font-style:normal;white-space:nowrap;box-shadow:0 1px 3px -1px rgba(0,0,0,.5)}
@@ -1662,18 +1683,19 @@ button.rslot{width:100%;text-align:left;font:inherit;color:inherit;cursor:pointe
 @keyframes pbin{from{transform:translate(-50%,16px);opacity:0}to{transform:translate(-50%,0);opacity:1}}
 #s-draft.picking .field .chip{transition:opacity .18s}
 #s-draft.picking .field .chip:not(.target){opacity:.35;pointer-events:none}
-.chip.target .disc{background:linear-gradient(180deg,#ffe29a,#f0b93c);border:2px solid #fff;color:#3a2a00;
+.chip.target .disc{background:radial-gradient(circle at 36% 28%,#fff3cf 0%,#ffe29a 40%,#f0b93c 100%);color:#3a2a00;
   animation:tgpulse 1.2s ease-in-out infinite}
-@keyframes tgpulse{0%,100%{box-shadow:0 0 0 3px rgba(240,185,60,.55),0 6px 16px -4px #000}
-  50%{box-shadow:0 0 0 9px rgba(240,185,60,.12),0 6px 16px -4px #000}}
+.chip.target .disc .sm{display:none}
+@keyframes tgpulse{0%,100%{box-shadow:0 0 0 2px #fff,0 0 0 5px rgba(240,185,60,.55),0 6px 16px -4px #000}
+  50%{box-shadow:0 0 0 2px #fff,0 0 0 11px rgba(240,185,60,.12),0 6px 16px -4px #000}}
 .chip.target .who{color:#ffe29a;font-style:italic}
 /* The primary spot is the bright pulsing one. Any other spot is still gold, and
    still pressable, but quieter and carries the cost under it. */
-.chip.target:not(.natural) .disc{background:linear-gradient(180deg,#f3e3b8,#d9bd72);animation:none;
-  box-shadow:0 0 0 2px rgba(240,185,60,.5),0 6px 16px -4px #000}
+.chip.target:not(.natural) .disc{background:radial-gradient(circle at 36% 28%,#fbf1d6 0%,#f3e3b8 45%,#d9bd72 100%);animation:none;
+  box-shadow:0 0 0 1.5px rgba(255,255,255,.8),0 0 0 4px rgba(240,185,60,.45),0 6px 16px -4px #000}
 .chip.target:not(.natural) .who{color:#f3d9a0;font-style:normal;font-weight:700}
 .chip.target.natural .who{font-weight:700}
-.chip.filled.offpos .disc{box-shadow:0 0 0 2px #e39b2d,0 4px 10px -3px #000}
+.chip.filled.offpos .disc{box-shadow:inset 0 -2.5px 3px rgba(0,0,0,.28),0 0 0 2px #e39b2d,0 0 0 4px rgba(227,155,45,.25),0 4px 10px -3px #000}
 .lc-row.offpos .lc-war{color:#c67a10}
 .lc-row.target:not(.natural){opacity:.85;outline-style:dashed}
 .chip.target{z-index:6}
@@ -3716,7 +3738,12 @@ const POS_COLORS={
    the whole back of the rotation and the whole pen in the colour that means "no
    position", beside two blue starters. */
 function posColor(p){return POS_COLORS[p]||POS_COLORS[slotBase(String(p))]||'#475569';}
-function posPaint(p){const c=posColor(p);return'background:linear-gradient(160deg,'+c+',rgba(0,0,0,.45))';}
+/* OPAQUE all the way down. It faded to rgba(0,0,0,.45), which is see-through, so a
+   disc on the field showed the grass through its lower half. The colour is set first
+   on its own, so an engine without color-mix keeps a flat, solid disc. */
+function posPaint(p){const c=posColor(p);
+  return'background-color:'+c+';background-image:radial-gradient(circle at 34% 26%,rgba(255,255,255,.3),transparent 55%),'+
+    'linear-gradient(160deg,'+c+',color-mix(in srgb,'+c+' 52%,#0b0f14))';}
 
 /* WHICH INK A CLUB'S COLOUR CAN CARRY, measured rather than written. The plate
    was `--tcon:#fff` for all fifty, and five of them are light enough that white
@@ -4121,7 +4148,7 @@ function fieldState(el){
       '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 13h12M3.5 13V7.5L8 4l4.5 3.5V13M6.5 13v-3h3v3"/></svg>'+
       esc(RTD_PARKS.BY_ID[park].name)+'</button>':'')+
     E.SLOTS.map((slot,i)=>'<div class="chip empty" data-i="'+i+'">'+
-      '<div class="disc"><span class="dl">'+slot+'</span><i class="pip"></i></div>'+
+      '<div class="disc"><span class="sm"></span><span class="dl">'+slot+'</span><i class="pip"></i></div>'+
       '<div class="lab"><div class="who"></div><div class="yr"></div></div></div>').join('');
   el._ps={chips:[...el.querySelectorAll('.chip')],fresh:true,park,sky};
   const tag=el.querySelector('#park-tag');
@@ -4340,7 +4367,8 @@ function drawField(el,live){
     if(ce&&ce.keyPoints>0){
       pip.innerHTML=ICO_BOLT+chemNum(ce.keyPoints);
       pip.style.background=chemColor(ce.top&&ce.top.type);
-      pip.style.display='grid';
+      /* flex, not grid: a grid stacks the bolt over the number in one column */
+      pip.style.display='flex';
       pip.title=ce.links.filter(l=>l.type!=='era').map(l=>l.label).join(' / ');
     }else{pip.style.display='none';pip.title='';}
     c.style.left=DIAMOND_SPOTS[i].x+'%';
@@ -4526,7 +4554,7 @@ function heroChips(){
     const style=on?' style="'+posPaint(on.pos)+'"':'';
     const label=isPitcher&&!on?(i===11?'CP':'SP'):
       (on?on.pos:SLOTS_NOW()[i]);
-    el.innerHTML='<div class="disc"'+style+'><span class="dl">'+label+'</span></div>'+
+    el.innerHTML='<div class="disc"'+style+'><span class="sm"></span><span class="dl">'+label+'</span></div>'+
       (on?'<div class="lab"><div class="who">'+esc(lastName(on.name))+'</div><div class="yr">'+
       tcPlate(on.team,on.season)+' '+on.season+'</div></div>':'');
     f.appendChild(el);
