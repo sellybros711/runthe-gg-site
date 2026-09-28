@@ -1516,6 +1516,20 @@ button.rslot{width:100%;text-align:left;font:inherit;color:inherit;cursor:pointe
 @media(min-width:600px){.sheet-inner{left:50%;transform:translateX(-50%);max-width:600px;border-radius:20px;
   bottom:auto;top:50%;animation:none}.sheet.on .sheet-inner{transform:translate(-50%,-50%)}}
 
+/* ─── the game's own "are you sure" ───
+   The browser's confirm() is a grey system box the page cannot style, so every
+   question the game asks is this sheet instead. It sits above every other sheet. */
+.sheet.ask{z-index:140}
+.sheet.ask .sheet-inner{text-align:center;padding-top:6px;border-top:3px solid var(--gold)}
+.ask-ball{width:44px;height:44px;margin:6px auto 8px;border-radius:50%;background:#f4efe4;
+  box-shadow:0 0 0 2px rgba(0,0,0,.25),0 4px 12px -4px rgba(0,0,0,.5);overflow:hidden}
+.ask-ball svg{width:100%;height:100%;display:block}
+.ask-eye{color:var(--gold);margin:0 0 4px}
+.sheet-title.ask-title{margin:0 0 8px;font-size:24px;line-height:1.1}
+.ask-body{margin:0 auto 18px;max-width:420px;color:var(--dim);font-size:15px;line-height:1.45}
+.ask-acts{display:flex;gap:10px}
+.ask-acts .btn{flex:1 1 0;width:auto;font-size:15px;padding:13px 12px}
+.ask-acts .btn.ghost{color:var(--ink)}
 .btn.g-btn{gap:10px}
 .btn .g-ic{width:18px;height:18px;flex:0 0 18px}
 /* ─── the profile ─── */
@@ -2688,6 +2702,20 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
 
 </div><!-- .wrap -->
 
+<div class="sheet ask" id="sheet-ask" aria-hidden="true" role="alertdialog" aria-labelledby="ask-title" aria-describedby="ask-body">
+  <div class="sheet-scrim" data-ask="0"></div>
+  <div class="sheet-inner">
+    <div class="sheet-grab"></div>
+    <div class="ask-ball" aria-hidden="true"><svg viewBox="0 0 100 100"><use href="#seam" transform="translate(-28 0)"/><use href="#seam" transform="translate(128 0) scale(-1 1)"/></svg></div>
+    <div class="eyebrow ask-eye" id="ask-eye"></div>
+    <h3 class="sheet-title ask-title" id="ask-title"></h3>
+    <p class="ask-body" id="ask-body"></p>
+    <div class="ask-acts">
+      <button type="button" class="btn ghost" data-ask="0" id="ask-no"></button>
+      <button type="button" class="btn" data-ask="1" id="ask-yes"></button>
+    </div>
+  </div>
+</div>
 <div class="sheet" id="sheet-cut" aria-hidden="true">
   <div class="sheet-scrim"></div>
   <div class="sheet-inner">
@@ -3000,6 +3028,28 @@ function paintNewBadges(){
 }
 
 /* ─── trophy case ─── */
+/* ask(): the game's styled confirm. Resolves true on the yes button, false on the
+   no button, the scrim or Escape. One question at a time; a second ask while one
+   is open answers the first no. */
+let askDone=null;
+function ask(o){
+  if(askDone)askDone(false);
+  $('ask-eye').textContent=o.eye||'Hold on';
+  $('ask-title').textContent=o.title;
+  $('ask-body').textContent=o.body||'';
+  $('ask-body').hidden=!o.body;
+  $('ask-yes').textContent=o.yes||'OK';
+  $('ask-no').textContent=o.no||'Cancel';
+  openSheet('sheet-ask');
+  setTimeout(()=>{try{$('ask-yes').focus();}catch(e){}},30);
+  return new Promise(res=>{askDone=v=>{askDone=null;closeSheet('sheet-ask');res(v);};});
+}
+document.addEventListener('click',e=>{
+  const b=e.target.closest('#sheet-ask [data-ask]');
+  if(b&&askDone)askDone(b.dataset.ask==='1');
+});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&askDone)askDone(false);});
+const QUIT_ASK={eye:'Quit this run',title:'Throw away this draft?',body:'Your picks will be lost. This can\'t be undone.',yes:'Quit',no:'Keep drafting'};
 function openSheet(id){const s=$(id);s.classList.add('on');s.setAttribute('aria-hidden','false');}
 function closeSheet(id){const s=$(id);s.classList.remove('on');s.setAttribute('aria-hidden','true');}
 function renderTrophy(){
@@ -5462,9 +5512,9 @@ function hasSeen(){try{return !!localStorage.getItem(SEEN_KEY);}catch(e){return 
 function markSeen(){try{localStorage.setItem(SEEN_KEY,'1');}catch(e){}}
 function maybeFirstRun(){if(!hasSeen())openSheet('sheet-first');}
 $('b-how-back').addEventListener('click',()=>{show('s-intro');heroSync();});
-$('b-quit').addEventListener('click',()=>{
+$('b-quit').addEventListener('click',async()=>{
   if(RUN&&RUN.phase===R.PHASES.DRAFT&&RUN.roster.length>0){
-    if(!confirm('Quit this run? Your draft will be lost.')) return;
+    if(!await ask(QUIT_ASK))return;
   }
   RUN=null;dropSavedRun();show('s-intro');heroSync();
 });
@@ -5753,7 +5803,7 @@ function paintResume(){
     '<button type="button" class="rs-go" id="b-resume">Resume</button>'+
     '<button type="button" class="rs-x" id="b-resume-x" aria-label="Discard the saved draft">&times;</button>';
   $('b-resume').onclick=resumeRun;
-  $('b-resume-x').onclick=()=>{if(confirm('Discard your saved draft?'))dropSavedRun();};
+  $('b-resume-x').onclick=async()=>{if(await ask({eye:'Saved draft',title:'Discard it?',body:'Your saved '+runLabel(r)+' draft will be gone for good.',yes:'Discard',no:'Keep it'}))dropSavedRun();};
 }
 function resumeRun(){
   const o=savedRun();if(!o||!DATA)return;
@@ -5764,28 +5814,32 @@ function resumeRun(){
   ga('run_resumed',{phase:RUN.phase});
 }
 /* Starting a new run over a saved one asks first, before any meter is charged. */
-function okToReplace(){
+async function okToReplace(){
   const o=savedRun();
   if(!o||(RUN&&RUN.seed===o.run.seed))return true;
-  if(!confirm('Start a new draft? Your saved draft will be discarded.'))return false;
+  if(!await ask({eye:'Saved draft',title:'Start a new draft?',
+    body:'Your saved '+runLabel(o.run)+' draft will be discarded.',yes:'Start new',no:'Keep it'}))return false;
   dropSavedRun();return true;
 }
 /* THE BANNER LEAVES THE PAGE, so during a run it asks first and saves. */
 function leaveRunText(){
   if(!RUN||RUN.phase===R.PHASES.OVER)return null;
-  if(runSavable())return 'Leave your draft? It\'s saved, and you can pick it up from the front page.';
-  return 'Leave the season? Your squad is saved, but the season will start over from the first game.';
+  if(runSavable())return {eye:'Leaving',title:'Leave your draft?',
+    body:'It\'s saved. Pick it up from the front page.',yes:'Leave',no:'Stay'};
+  return {eye:'Leaving',title:'Leave the season?',
+    body:'Your squad is saved. The season starts over from game one.',yes:'Leave',no:'Stay'};
 }
-document.querySelectorAll('header .lockup, header .pill.site').forEach(a=>a.addEventListener('click',e=>{
+document.querySelectorAll('header .lockup, header .pill.site').forEach(a=>a.addEventListener('click',async e=>{
   const t=leaveRunText();if(!t)return;
-  if(!confirm(t)){e.preventDefault();return;}
-  saveRunNow();
+  e.preventDefault();
+  if(!await ask(t))return;
+  saveRunNow();location.href=a.href;
 }));
 window.addEventListener('pagehide',saveRunNow);
 document.addEventListener('visibilitychange',()=>{if(document.hidden)saveRunNow();});
 
-function startRun(opts={}){
-  if(!okToReplace())return;
+async function startRun(opts={}){
+  if(!await okToReplace())return;
   if(!modeBegin(meterOf(opts)))return;
   RUN=R.createRun(opts);
   heroStop();heroRunning=false;
@@ -6234,8 +6288,8 @@ function paintSquad(){
     uniq.slice(0,4).map(l=>'<span class="ro-chemlink'+(l.type==='family'?' fam':'')+'">'+esc(l.label)+'</span>').join('');
 }
 $('b-playball').addEventListener('click',()=>startSeason());
-$('b-squad-quit').addEventListener('click',()=>{
-  if(!confirm('Quit this run? Your draft will be lost.'))return;
+$('b-squad-quit').addEventListener('click',async()=>{
+  if(!await ask(QUIT_ASK))return;
   RUN=null;dropSavedRun();show('s-intro');heroSync();
 });
 
@@ -6438,8 +6492,8 @@ function askCut(ev,onDone){
 /* ─── the trade machine, in play ───
    You did not draft this roster and you cannot re-draft it. Three times the phone
    rings, and the season waits for your answer. */
-function startTrade(){
-  if(!okToReplace())return;
+async function startTrade(){
+  if(!await okToReplace())return;
   if(!modeBegin('trade'))return;
   RUN=R.createRun({tradeMachine:true});
   heroStop();heroRunning=false;

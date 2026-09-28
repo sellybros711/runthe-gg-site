@@ -67,9 +67,20 @@ await ctx.route('**/baseball/auth.js*', (route) => route.fulfill({
 const p = await ctx.newPage();
 p.on('pageerror', (e) => errors.push(String(e)));
 await p.addInitScript(() => { try { localStorage.setItem('rtd_seen_intro_v1', '1'); } catch (_) {} });
-const dialogs = [];
-let answer = true;
-p.on('dialog', async (d) => { dialogs.push(d.message()); if (answer) await d.accept(); else await d.dismiss(); });
+/* The game asks in its own sheet, never the browser's confirm(): a native dialog
+   here is a failure, and is recorded so the claims below can say so. */
+const natives = [];
+p.on('dialog', async (d) => { natives.push(d.message()); await d.dismiss(); });
+/* Waits for the game's own question and answers it. Returns its title, or '' when
+   nothing was asked. */
+async function answer(yes) {
+  const up = await p.waitForSelector('#sheet-ask.on', { timeout: 3000 }).then(() => true, () => false);
+  if (!up) return '';
+  const t = await p.evaluate(() => document.getElementById('ask-title').textContent
+    + ' | ' + document.getElementById('ask-body').textContent);
+  await p.click(yes ? '#ask-yes' : '#ask-no');
+  return t;
+}
 
 const home = async () => {
   await p.goto(`http://localhost:${PORT}/baseball/`, { waitUntil: 'load' });
@@ -106,13 +117,13 @@ await board();
 const namesBefore = await boardNames();
 const filledBefore = await filled();
 claim(filledBefore === 3, 'three players signed', `${filledBefore}`);
-answer = false;
 await p.click('header .lockup');
-await p.waitForTimeout(400);
-claim(dialogs.length === 1 && /Leave your draft/.test(dialogs[0]), 'the banner asks before leaving a draft', dialogs.join(' / '));
-claim(await p.$('#s-draft.on') !== null, 'and saying no keeps you on the draft');
-answer = true;
-await Promise.all([p.waitForNavigation({ waitUntil: 'load' }), p.click('header .lockup')]);
+const asked = await answer(false);
+claim(/Leave your draft/.test(asked), 'the banner asks before leaving a draft, in the game\'s own sheet', asked || '(nothing asked)');
+await p.waitForTimeout(300);
+claim(await p.$('#s-draft.on') !== null && !(await p.$('#sheet-ask.on')), 'and saying no keeps you on the draft');
+await p.click('header .lockup');
+await Promise.all([p.waitForNavigation({ waitUntil: 'load' }), answer(true)]);
 await p.waitForSelector('#s-intro.on', { timeout: 20000 });
 await p.waitForTimeout(500);
 const card = await p.evaluate(() => { const c = document.getElementById('resume-card'); return c.hidden ? '' : c.textContent; });
@@ -139,17 +150,19 @@ claim(true, 'resume lands on the squad screen');
 
 head('4. A NEW DRAFT OVER A SAVED ONE ASKS FIRST');
 await home();
-dialogs.length = 0; answer = false;
 await p.click('#b-start');
-await p.waitForTimeout(400);
-claim(dialogs.length === 1 && /saved draft will be discarded/.test(dialogs[0]), 'starting over asks', dialogs.join(' / '));
+const asked2 = await answer(false);
+claim(/new draft/i.test(asked2) && /discarded/.test(asked2), 'starting over asks', asked2 || '(nothing asked)');
+await p.waitForTimeout(300);
 claim(await p.$('#s-intro.on') !== null, 'and saying no stays on the front page');
-answer = true;
 await p.click('#b-resume-x');
+const asked3 = await answer(true);
+claim(/Discard/.test(asked3), 'discarding asks too', asked3 || '(nothing asked)');
 await p.waitForTimeout(300);
 claim(await p.evaluate(() => document.getElementById('resume-card').hidden && !localStorage.getItem('rtd_run_v1')),
   'discarding removes the save');
 
+claim(natives.length === 0, 'no browser confirm() anywhere, only the game\'s own sheet', natives.join(' / '));
 claim(errors.length === 0, 'no page errors', errors.slice(0, 3).join(' | '));
 await ctx.close();
 await browser.close();
