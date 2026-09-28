@@ -1227,8 +1227,9 @@ button.rslot{width:100%;text-align:left;font:inherit;color:inherit;cursor:pointe
 .lc-row.open .lc-pos{background:rgba(var(--edge),.1)!important;color:var(--dim-2);text-shadow:none}
 /* An open slot's chip is 9.5px bold on a 10% edge tint, and the dark --dim-2 on
    that tint is 3.6:1 against light's 4.6: the one chip that regressed at night.
-   One step up the same ramp; the row's own .5 opacity still quiets it. */
-:root[data-theme="dark"] .lc-row.open .lc-pos{color:var(--dim)}
+   --dim was one step up and still read 3.5, so it takes the ink; the row's own
+   .5 opacity still quiets it. */
+:root[data-theme="dark"] .lc-row.open .lc-pos{color:var(--ink)}
 .lc-nm{flex:1;min-width:0;font-family:var(--fp);font-size:13.5px;font-weight:700;
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .lc-row.open .lc-nm{font-style:italic;font-weight:600;color:var(--dim-2)}
@@ -1973,12 +1974,64 @@ button.rslot{width:100%;text-align:left;font:inherit;color:inherit;cursor:pointe
   letter-spacing:.03em;padding:7px 12px;border-radius:99px;cursor:pointer;
   border:1px solid var(--line-2);background:transparent;color:var(--dim);white-space:nowrap}
 .bd-tab.on{background:var(--grad-gold);color:#fff;border-color:transparent}
-.bd-row{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:11px;
-  background:var(--panel);border:1px solid var(--line);margin-bottom:6px}
+/* The window: today, this week, all time. A segmented control under the modes. */
+.bd-wins{display:flex;gap:0;margin:0 0 12px;padding:3px;border-radius:10px;
+  background:var(--panel);border:1px solid var(--line)}
+.bd-wins[hidden]{display:none}
+.bd-win{flex:1 1 0;font-family:var(--fn);font-size:11.5px;font-weight:800;letter-spacing:.04em;
+  text-transform:uppercase;padding:8px 6px;border:0;border-radius:8px;background:transparent;
+  color:var(--dim);cursor:pointer}
+.bd-win.on{background:rgba(var(--edge),.09);color:var(--ink)}
+.bd-ent{margin-bottom:6px}
+.bd-row{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:11px;width:100%;
+  background:var(--panel);border:1px solid var(--line);cursor:pointer;text-align:left;
+  font:inherit;color:inherit;position:relative}
+.bd-row:hover{border-color:rgba(var(--edge),.2)}
+.bd-ent.open .bd-row{border-radius:11px 11px 0 0}
 .bd-row.me{border-color:var(--gold);background:rgba(184,134,11,.07)}
+.bd-caret{flex:0 0 auto;width:14px;height:14px;color:var(--dim-2);transition:transform .2s ease}
+.bd-caret svg{width:100%;height:100%;display:block;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.bd-ent.open .bd-caret{transform:rotate(180deg)}
+.bd-team{border:1px solid var(--line);border-top:0;border-radius:0 0 11px 11px;
+  background:var(--bg);padding:8px 12px 12px}
+.bd-team[hidden]{display:none}
+.bd-team .lu-head{margin-top:6px}
+.bd-team .rslot{cursor:default}
+.bd-team-foot{font-family:var(--fn);font-size:10.5px;font-weight:700;color:var(--dim-2);margin:8px 0 0}
+/* A CHAMPION is gold: a gold edge, a trophy by the record, and the word in gold. */
+.bd-ent.champ .bd-row{border-color:rgba(212,160,23,.55);
+  background:linear-gradient(90deg,rgba(212,160,23,.13),rgba(212,160,23,.02) 60%),var(--panel)}
+.bd-ent.champ .bd-team{border-color:rgba(212,160,23,.55)}
+.bd-ent.champ .bd-rec b{color:var(--gold)}
+.bd-tags{display:flex;flex-wrap:wrap;gap:4px;margin:3px 0 2px}
+.bd-tag{display:inline-flex;align-items:center;gap:4px;font-family:var(--fn);font-size:9.5px;font-weight:900;
+  letter-spacing:.07em;text-transform:uppercase;padding:2px 7px 2px 6px;border-radius:99px;vertical-align:1px;background:rgba(212,160,23,.16);color:var(--gold);border:1px solid rgba(212,160,23,.45)}
+.bd-tag svg.ico{width:9px;height:11px;fill:currentColor;stroke:none}
+.bd-tag svg{width:11px;height:11px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+/* A RECORD season (117 wins or more, past the real 116) is louder again: a
+   moving gold edge and a red RECORD tag. A record that also won it all gets both. */
+.bd-ent.record .bd-row{border-color:transparent;
+  background:linear-gradient(transparent,transparent) padding-box,
+    linear-gradient(var(--panel),var(--panel)) padding-box,
+    linear-gradient(115deg,#8a5a00,#f6d365,#c0392b,#f6d365,#8a5a00) border-box;
+  background-size:100% 100%,100% 100%,300% 100%;animation:bdrec 6s linear infinite;border-width:1.5px}
+.bd-ent.record.champ .bd-row{background:
+    linear-gradient(90deg,rgba(212,160,23,.16),rgba(212,160,23,.03) 60%) padding-box,
+    linear-gradient(var(--panel),var(--panel)) padding-box,
+    linear-gradient(115deg,#8a5a00,#f6d365,#c0392b,#f6d365,#8a5a00) border-box;
+  background-size:100% 100%,100% 100%,300% 100%;
+  box-shadow:0 0 0 1px rgba(246,211,101,.15),0 6px 22px -8px rgba(212,160,23,.55)}
+@keyframes bdrec{from{background-position:0 0,0 0,0% 0}to{background-position:0 0,0 0,300% 0}}
+.bd-ent.record .bd-rec b{background:linear-gradient(180deg,#b8860b,#7a4e00);-webkit-background-clip:text;
+  background-clip:text;color:transparent}
+:root[data-theme="dark"] .bd-ent.record .bd-rec b{background-image:linear-gradient(180deg,#f6d365,#d4a017)}
+.bd-ent.champ:not(.record) .bd-rec b{color:#8a5a00}
+:root[data-theme="dark"] .bd-ent.champ .bd-rec b{color:var(--gold)}
+.bd-tag.rec{background:rgba(192,57,43,.16);color:#e0584a;border-color:rgba(192,57,43,.5)}
+@media(prefers-reduced-motion:reduce){.bd-ent.record .bd-row{animation:none}}
 .bd-pos{flex:0 0 auto;min-width:26px;font-family:'Righteous',var(--fd);font-size:15px;
   color:var(--dim-2);text-align:right}
-.bd-row:nth-child(1) .bd-pos,.bd-row:nth-child(2) .bd-pos,.bd-row:nth-child(3) .bd-pos{color:var(--gold)}
+.bd-ent.top3 .bd-pos{color:var(--gold)}
 .bd-who{flex:1;min-width:0}
 .bd-name{font-family:var(--fn);font-size:13.5px;font-weight:800;color:var(--ink);
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -2457,6 +2510,7 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
   <div class="eyebrow">Leaderboard</div>
   <h2 class="display" style="font-size:27px;margin:5px 0 10px">Who is on top</h2>
   <div class="bd-tabs" id="bd-tabs"></div>
+  <div class="bd-wins" id="bd-wins" role="tablist" aria-label="When"></div>
   <div id="bd-list"></div>
   <div style="margin-top:16px"><button class="btn ghost sm" id="b-board-back">Back</button></div>
 </div>
@@ -2848,7 +2902,7 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
 <script src="achievements.js?v=11"></script>
 <script src="parks.js?v=9"></script>
 <script src="crest.js?v=2"></script>
-<script src="board.js?v=2"></script>
+<script src="board.js?v=3"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="auth.js?v=3"></script>
 <!-- The release newsletter checkbox under the account in the trophy sheet. See supabase/121_newsletter.sql. -->
@@ -5286,7 +5340,7 @@ async function postToBoard(o){
 /* The front page's button opens on Classic, which is the game most people play.
    Asked for by the owner. Only a finished season opens on its own board. */
 let boardTab='free';
-const BOARD_TABS=[{k:'daily',label:'Today'}].concat(
+const BOARD_TABS=[{k:'daily',label:'Daily'}].concat(
   ['free','era','franchise','division','capsurvivor','staff','trade']
     .map(m=>({k:m,label:runModeLabel(m)})));
 /* The screen the board was opened from, so Back goes back to it: a board opened
@@ -5294,8 +5348,57 @@ const BOARD_TABS=[{k:'daily',label:'Today'}].concat(
 let boardFrom='s-intro';
 /* Where the season just filed landed, so the board it opens on can mark the row. */
 let lastBoardPlace=null;
+/* THE WINDOW, for every mode's board: today, this week (since Monday), or all
+   time. Days are Eastern, like the daily. The daily board is one day already,
+   so it has no window. */
+let boardWin='all';
+const BOARD_WINS=[{k:'day',label:'Today'},{k:'week',label:'This week'},{k:'all',label:'All time'}];
+/* The instant an Eastern calendar day starts, as ISO. Asks the zone for its
+   offset at noon that day rather than assuming one, so a clock change is right. */
+function easternStart(iso){
+  const noon=Date.parse(iso+'T12:00:00Z');
+  let h=12;
+  try{h=+new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',hour:'2-digit',hourCycle:'h23'}).format(new Date(noon));}catch(_){}
+  return new Date(Date.parse(iso+'T00:00:00Z')+(12-h)*3600e3).toISOString();
+}
+function boardSince(win){
+  if(win==='all')return null;
+  const today=easternISO();
+  if(win==='day')return easternStart(today);
+  const d=new Date(Date.parse(today+'T12:00:00Z'));
+  const back=(d.getUTCDay()+6)%7;
+  return easternStart(new Date(d.getTime()-back*864e5).toISOString().slice(0,10));
+}
+/* A board row's twelve, rebuilt from its picks against this browser's own pool.
+   A man cut for a replacement body is not in the pool and is said as such. */
+const BD_CARET='<svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>';
+const BD_TROPHY='<svg viewBox="0 0 24 24"><path d="M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M7 6H4.5v1.5A3.5 3.5 0 0 0 8 11"/><path d="M17 6h2.5v1.5A3.5 3.5 0 0 1 16 11"/><path d="M12 14v3"/><path d="M8.5 20h7"/></svg>';
+function boardTeamHtml(r){
+  const picks=r.picks||[],slots=r.slots||[];
+  if(!picks.length)return '<p class="bd-team-foot">This season has no roster on file.</p>';
+  const pool=(DATA&&DATA.allPlayers)||{};
+  const order=E.SLOTS.concat(E.STAFF_SLOTS||[]);
+  const men=picks.map((k,j)=>({p:pool[k]||null,slot:slots[j]||'',k}))
+    .sort((a,b)=>{const ia=order.indexOf(a.slot),ib=order.indexOf(b.slot);return (ia<0?99:ia)-(ib<0?99:ib);});
+  const row=m=>'<div class="rslot"><span class="rpos" style="'+posPaint(m.slot)+'">'+esc(m.slot)+'</span>'+
+    (m.p?'<span class="rname">'+esc(m.p.n)+'</span><span class="rteam">'+seasonLine(m.p)+'</span>'+
+      '<span class="rwar">'+warHtml(m.p.w)+'</span>'
+     :'<span class="rname">Replacement player</span><span class="rteam">Signed after a cut</span>')+'</div>';
+  const bats=men.filter(m=>m.p?m.p.r!=='p':!/^(SP|RP|CL|SU)/.test(m.slot));
+  const arms=men.filter(m=>!bats.includes(m));
+  let h='';
+  if(bats.length)h+='<div class="lu-head"><span class="eyebrow">Lineup</span></div><div class="roster-final">'+bats.map(row).join('')+'</div>';
+  if(arms.length)h+='<div class="lu-head"><span class="eyebrow">Pitching staff</span></div><div class="roster-final">'+arms.map(row).join('')+'</div>';
+  const foot=[];
+  if(r.spend_musd!=null)foot.push(M(r.spend_musd)+' spent');
+  if(r.chemistry_pct)foot.push('Chemistry +'+r.chemistry_pct+'%');
+  if(r.all_time_rank)foot.push('#'+r.all_time_rank+' all time');
+  if(foot.length)h+='<p class="bd-team-foot">'+foot.join(' \u00b7 ')+'</p>';
+  return h;
+}
 function openBoard(tab,from){
   boardTab=tab&&BOARD_TABS.some(t=>t.k===tab)?tab:'free';
+  boardWin='all';
   boardFrom=from||'s-intro';
   show('s-board');paintBoard();
 }
@@ -5325,12 +5428,19 @@ function paintBoard(){
     esc(t.label)+'</button>').join('');
   $('bd-tabs').querySelectorAll('.bd-tab').forEach(b=>
     b.addEventListener('click',()=>{boardTab=b.dataset.k;paintBoard();}));
+  const wins=$('bd-wins');
+  wins.hidden=boardTab==='daily';
+  wins.innerHTML=BOARD_WINS.map(w=>'<button type="button" role="tab" class="bd-win'+(w.k===boardWin?' on':'')+
+    '" aria-selected="'+(w.k===boardWin)+'" data-w="'+w.k+'">'+w.label+'</button>').join('');
+  wins.querySelectorAll('.bd-win').forEach(b=>b.addEventListener('click',()=>{boardWin=b.dataset.w;paintBoard();}));
+  const tabNow=boardTab,winNow=boardWin;
   const list=$('bd-list');
   list.innerHTML='<div class="bd-empty">Loading...</div>';
   const B=BOARD();
   if(!B){list.innerHTML='<div class="bd-empty">The leaderboard is not available.</div>';return;}
-  const where=boardTab==='daily'?{dailyKey:easternISO()}:{mode:boardTab};
+  const where=boardTab==='daily'?{dailyKey:easternISO()}:{mode:boardTab,since:boardSince(boardWin)};
   B.top({...where,limit:50}).then(rows=>{
+    if(tabNow!==boardTab||winNow!==boardWin)return;
     if(rows==null){
       list.innerHTML='<div class="bd-empty">'+(B.needsMigration
         ? 'The leaderboard has not been set up on the server yet.'
@@ -5340,12 +5450,13 @@ function paintBoard(){
     if(!rows.length){
       list.innerHTML='<div class="bd-empty">'+(boardTab==='daily'
         ? 'Nobody has finished today\'s board yet. Be first.'
+        : boardWin==='day'?'Nobody has filed a season here today. Be first.'
+        : boardWin==='week'?'Nobody has filed a season here this week. Be first.'
         : 'No seasons here yet. Play one.')+'</div>';return;
     }
     list.innerHTML=rows.map((r,i)=>{
       const detail=[];
-      if(r.title_won)detail.push('Champions');
-      else if(r.made_playoffs)detail.push(r.seed_label);
+      if(!r.title_won&&r.made_playoffs)detail.push(r.seed_label);
       if(r.run_mode==='staff'&&r.staff_era!=null)detail.push(r.staff_era+' ERA');
       else if(r.rating!=null)detail.push('Rating '+Math.round(r.rating));
       if(r.franchise)detail.push(esc(teamFullName(r.franchise)));
@@ -5353,16 +5464,31 @@ function paintBoard(){
       if(r.era)detail.push(esc(r.era));
       if(r.cuts)detail.push(r.cuts+' cut');
       if(r.trades)detail.push(r.trades+' dealt');
-      const me=lastBoardPlace&&lastBoardPlace.tab===boardTab&&lastBoardPlace.place===i+1;
-      return '<div class="bd-row'+(me?' me':'')+'"><div class="bd-pos">'+(i+1)+'</div>'+
+      const me=boardWin==='all'&&lastBoardPlace&&lastBoardPlace.tab===boardTab&&lastBoardPlace.place===i+1;
+      const tags=(r.is_goat?'<span class="bd-tag rec">'+ICO_FLAME+'Record season</span>':'')+
+        (r.title_won?'<span class="bd-tag">'+BD_TROPHY+'Champs</span>':'');
+      const cls='bd-ent'+(i<3?' top3':'')+(r.title_won?' champ':'')+(r.is_goat?' record':'');
+      return '<div class="'+cls+'" data-i="'+i+'">'+
+        '<button type="button" class="bd-row'+(me?' me':'')+'" aria-expanded="false"><span class="bd-pos">'+(i+1)+'</span>'+
         (r.user_id?'<span class="bd-crest" data-uid="'+esc(r.user_id)+'"></span>':'<span class="bd-crest"></span>')+
-        '<div class="bd-who"><div class="bd-name">'+
-          esc(r.display_name||'Anonymous')+'</div>'+
-        '<div class="bd-meta">'+detail.join(' \u00b7 ')+'</div></div>'+
-        '<div class="bd-rec"><b>'+r.wins+'-'+r.losses+'</b><span>record</span></div></div>';
+        '<span class="bd-who"><span class="bd-name" style="display:block">'+
+          esc(r.display_name||'Anonymous')+'</span>'+
+        (tags?'<span class="bd-tags">'+tags+'</span>':'')+
+        '<span class="bd-meta" style="display:block">'+detail.join(' \u00b7 ')+'</span></span>'+
+        '<span class="bd-rec"><b>'+r.wins+'-'+r.losses+'</b><span>record</span></span>'+
+        '<span class="bd-caret">'+BD_CARET+'</span></button>'+
+        '<div class="bd-team" hidden></div></div>';
     }).join('');
+    list.querySelectorAll('.bd-ent').forEach(ent=>{
+      const btn=ent.querySelector('.bd-row'),team=ent.querySelector('.bd-team');
+      btn.addEventListener('click',()=>{
+        const open=!ent.classList.contains('open');
+        if(open&&!team.dataset.built){team.innerHTML=boardTeamHtml(rows[+ent.dataset.i]);team.dataset.built='1';}
+        ent.classList.toggle('open',open);team.hidden=!open;btn.setAttribute('aria-expanded',String(open));
+      });
+    });
     /* A season past the top fifty is still yours to find: say where it landed. */
-    if(lastBoardPlace&&lastBoardPlace.tab===boardTab&&lastBoardPlace.place>rows.length)
+    if(boardWin==='all'&&lastBoardPlace&&lastBoardPlace.tab===boardTab&&lastBoardPlace.place>rows.length)
       list.insertAdjacentHTML('beforeend','<div class="bd-empty">Your season landed at #'+
         lastBoardPlace.place.toLocaleString()+'.</div>');
     paintBoardCrests(list,rows);

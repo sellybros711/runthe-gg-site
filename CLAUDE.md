@@ -14245,6 +14245,27 @@ the submit's BODY calls `rtd_board_day(`, so that is what the row asks. The fix
 is re-running 97, which is idempotent and was driven over an old copy with no
 error.
 
+### The leaderboard opens rows, has windows, and marks champions and records
+
+```
+node baseball/check-leaderboard.mjs
+```
+
+The front page's button opens on Classic, All time. **Every mode board has Today,
+This week and All time** (`boardWin`), sent as `created_at=gte` on `B.top`. Days are
+Eastern like the daily, and a week starts Monday. The daily board has no window,
+because it is one day already, and its tab reads Daily so it is not a second Today.
+
+**A row opens into its twelve** (`boardTeamHtml`). The picks and slots already
+ride on every row, so the team is rebuilt against this browser's own pool with no
+request. A man not in the pool is a replacement body from a cut, and says so.
+
+**A champion is gold** (`.champ`: a gold edge, a wash and a Champs tag). **A record
+season is louder** (`.record`, `is_goat`, 117 wins or more: a moving gold and red
+edge and a Record season tag). A record that also won it all wears both plus a
+glow. Only a record moves, and never under reduced motion. The `.record` background
+has three layers on purpose, so one keyframe animates both it and `.record.champ`.
+
 ### The profile, and everything on it is the server's
 
 ```
