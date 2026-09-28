@@ -1206,7 +1206,8 @@
   .brk-eyebrow{font-size:11px;letter-spacing:.2em;text-transform:uppercase;
     font-weight:800;color:var(--orange);}
   .brk-title{font-family:var(--display);font-weight:400;text-transform:uppercase;
-    font-size:clamp(24px,7vw,36px);line-height:1.05;margin:4px 0 0;letter-spacing:.02em;}
+    font-size:clamp(24px,7vw,36px);line-height:1.05;margin:4px 0 0;letter-spacing:.02em;
+    justify-content:center;}
   .brk-wrap{position:relative;}
   .brk{display:flex;gap:9px;overflow-x:auto;overflow-y:hidden;padding:4px 2px 12px;
     scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch;}
@@ -1269,8 +1270,124 @@
   .brk-t.tbd .nm{color:var(--dim);font-weight:600;font-style:italic;}
   .brk-note{text-align:center;font-size:13px;color:var(--mut);margin:8px 0 0;min-height:18px;}
   @media (max-width:400px){ .brk-col{flex:0 0 138px;} }
+
+  /* AN UPSET IS WORTH SAYING ON THE BOX. A 7 seed beating a 2 is the story of
+     a first round, and a bracket that only greys the loser out tells it the
+     same way it tells a 1 beating an 8. The tag hangs on the top edge so it
+     costs the box no height, and every column stays the shape it was. */
+  .brk-g.upset{border-color:rgba(242,193,78,.45);}
+  .brk-up{position:absolute;top:-7px;right:7px;padding:1px 5px;border-radius:4px;
+    font-size:8.5px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;
+    background:var(--gold);color:#20160a;line-height:1.35;pointer-events:none;}
+
+  /* THE ROUND ARRIVES. The hero is the only place the round is named in
+     big type, so it is what moves when a new one starts: once, on the way in,
+     and never on the repaints in between. */
+  .brk-hero.enter .brk-title{animation:brkin .5s cubic-bezier(.2,.8,.3,1) both;}
+  .brk-hero.enter .brk-eyebrow{animation:brkin .5s .06s cubic-bezier(.2,.8,.3,1) both;}
+  @keyframes brkin{0%{opacity:0;transform:translateY(8px) scale(.97)}
+    100%{opacity:1;transform:none}}
+  .brk-hero.champ .brk-title{color:var(--gold);
+    text-shadow:0 0 18px rgba(242,193,78,.45);animation:brkchamp .7s cubic-bezier(.2,.8,.3,1) both;}
+  @keyframes brkchamp{0%{transform:scale(.8);opacity:0}60%{transform:scale(1.08);opacity:1}
+    100%{transform:none}}
+
+  /* ══ THE SERIES CARD ══════════════════════════════════════════════════
+   * One series, as a broadcast shows it: the two sides and the score, what
+   * the series is worth, and a strip of every game. The odds bar is ONE
+   * scaleX on a full width block, so a swing after a game is a transition the
+   * compositor runs rather than a width being laid out. */
+  .srs{position:relative;padding:12px 12px 10px;overflow:hidden;
+    background:linear-gradient(180deg,rgba(240,120,45,.07),rgba(255,255,255,.015));}
+  .srs-head{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:28px;}
+  .srs-eye{font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;font-weight:800;
+    color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .srs-tag{flex:0 0 auto;font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;
+    font-weight:800;padding:2px 7px;border-radius:999px;color:var(--orange);
+    border:1px solid rgba(240,120,45,.5);}
+  .srs-tag.hot{color:#20160a;background:var(--gold);border-color:var(--gold);
+    animation:srstag 1.2s ease-in-out infinite;}
+  @keyframes srstag{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
+  .srs-top{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px;margin:8px 0 10px;}
+  .srs-side{display:flex;align-items:center;gap:7px;min-width:0;}
+  .srs-side.them{justify-content:flex-end;text-align:right;}
+  .srs-sd[hidden]{display:none;}
+  .srs-sd{flex:0 0 auto;min-width:22px;height:22px;border-radius:6px;display:grid;place-items:center;
+    font-size:11px;font-weight:800;background:rgba(255,255,255,.06);color:var(--mut);
+    font-variant-numeric:tabular-nums;padding:0 4px;}
+  .srs-side.me .srs-sd{background:rgba(242,193,78,.16);color:var(--gold);}
+  .srs-nm{min-width:0;font-size:12.5px;font-weight:800;line-height:1.2;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .srs-side.me .srs-nm{color:var(--gold);}
+  .srs-nm small{display:block;font-size:10px;font-weight:600;color:var(--dim);
+    font-variant-numeric:tabular-nums;}
+  .srs-score{font-family:var(--display);font-size:34px;line-height:1;letter-spacing:.02em;
+    font-variant-numeric:tabular-nums;}
+  /* A one game round has no series score, so the big number is that game's
+     own score, which is three digits a side and wants less room. */
+  .srs-score.game{font-size:24px;}
+  .srs-score.pop{animation:srspop .45s cubic-bezier(.2,.8,.3,1);}
+  @keyframes srspop{0%{transform:scale(1)}40%{transform:scale(1.18)}100%{transform:scale(1)}}
+  .srs-odds{display:flex;align-items:center;gap:8px;}
+  .srs-olab{flex:0 0 auto;font-size:10px;letter-spacing:.12em;text-transform:uppercase;
+    font-weight:800;color:var(--dim);}
+  .srs-bar{position:relative;flex:1;height:8px;border-radius:999px;overflow:hidden;
+    background:rgba(239,68,68,.28);}
+  .srs-bar i{position:absolute;inset:0;border-radius:999px;transform-origin:left center;
+    background:linear-gradient(90deg,#f0782d,#f2c14e);transform:scaleX(.5);
+    transition:transform .7s cubic-bezier(.2,.8,.3,1);}
+  .srs-pct{flex:0 0 36px;text-align:right;font-size:13px;font-weight:800;}
+  .srs-delta{flex:0 0 auto;font-size:11px;font-weight:800;animation:srsdelta 1.8s ease-out both;}
+  .srs-delta.up{color:#86efac;} .srs-delta.down{color:#fca5a5;}
+  @keyframes srsdelta{0%{opacity:0;transform:translateY(4px)}15%{opacity:1;transform:none}
+    75%{opacity:1}100%{opacity:0}}
+  .srs-strip{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;margin:11px 0 0;}
+  .srs-strip.one{grid-template-columns:minmax(0,120px);justify-content:center;}
+  .srs-pip{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:1px;min-height:48px;padding:4px 1px;border-radius:8px;border:1px solid var(--line);
+    background:rgba(255,255,255,.025);color:var(--dim);font:inherit;min-width:0;}
+  button.srs-pip{cursor:pointer;margin:0;width:auto;}
+  button.srs-pip:hover{border-color:rgba(255,255,255,.22);}
+  .srs-pip .g{font-size:9px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;}
+  .srs-pip .r{font-family:var(--display);font-size:17px;line-height:1;}
+  .srs-pip .s{font-size:10px;font-weight:800;font-variant-numeric:tabular-nums;white-space:nowrap;
+    overflow:hidden;text-overflow:ellipsis;max-width:100%;}
+  .srs-pip .h{font-size:9px;font-weight:700;letter-spacing:.06em;}
+  .srs-pip.home{border-top-color:rgba(240,120,45,.55);}
+  .srs-pip.w{background:rgba(34,197,94,.1);border-color:rgba(34,197,94,.35);color:var(--ink);}
+  .srs-pip.w .r{color:#86efac;}
+  .srs-pip.l{background:rgba(239,68,68,.08);border-color:rgba(239,68,68,.3);color:var(--ink);}
+  .srs-pip.l .r{color:#fca5a5;}
+  .srs-pip.next{border-color:rgba(240,120,45,.75);color:var(--orange);}
+  .srs-pip.next:after{content:'';position:absolute;inset:-3px;border-radius:10px;
+    border:1px solid rgba(240,120,45,.6);pointer-events:none;animation:brkpulse 1.6s ease-in-out infinite;}
+  .srs-pip.moot{opacity:.28;}
+  .srs-pip.just{animation:brkflip .45s cubic-bezier(.2,.8,.3,1) both;}
+  .srs-last{margin:9px 0 0;font-size:12.5px;color:var(--mut);min-height:17px;text-align:center;}
+  .srs-last b{color:var(--ink);}
+  .srs-last b.w{color:#86efac;} .srs-last b.l{color:#fca5a5;}
+  /* THE SERIES IS OVER, AND IT SAYS SO LIKE A STAMP. In the heading row, where
+     the tag was: the tag is about the next game and there is none, so the
+     stamp takes its place and nothing on the card moves when it lands. It
+     was laid over the card first and sat on the other side's name. */
+  .srs-stamp{flex:0 0 auto;padding:1px 9px;border-radius:6px;margin-right:4px;
+    font-family:var(--display);font-size:17px;line-height:1.3;letter-spacing:.04em;text-transform:uppercase;
+    border:2px solid currentColor;transform:rotate(-4deg);pointer-events:none;
+    animation:srsstamp .45s cubic-bezier(.2,.8,.3,1) both;}
+  .srs-stamp.w{color:#86efac;} .srs-stamp.l{color:#fca5a5;}
+  @keyframes srsstamp{0%{opacity:0;transform:rotate(-4deg) scale(1.8)}
+    100%{opacity:1;transform:rotate(-4deg) scale(1)}}
+  .lvd-odds{margin:-6px 0 12px;font-size:12.5px;color:var(--gold);font-weight:700;}
+  @media (max-width:360px){
+    .srs-eye{letter-spacing:.08em;}
+    .srs-pip .s{font-size:9px;}
+    .srs-score{font-size:30px;}
+  }
   @media (prefers-reduced-motion: reduce){
     .brk-g.just,.brk-g.live:after{animation:none;}
+    .brk-hero.enter .brk-title,.brk-hero.enter .brk-eyebrow,.brk-hero.champ .brk-title,
+    .srs-tag.hot,.srs-score.pop,.srs-pip.next:after,.srs-pip.just,.srs-stamp,.srs-delta{animation:none;}
+    .srs-bar i{transition:none;}
   }
 
   /* ══ ONE GAME, PLAYED FORWARD ══════════════════════════════════════════
@@ -2534,8 +2651,42 @@
     <div class="lvd-eye" id="lvd-eye"></div>
     <h3 class="lvd-title" id="lvd-title"></h3>
     <p class="lvd-why" id="lvd-why"></p>
+    <p class="lvd-odds" id="lvd-odds" hidden></p>
     <button class="big gold" id="b-lv-play">Play it</button>
     <button class="ghost" id="b-lv-sim">Sim it</button>
+  </div>
+
+  <!-- THE SERIES YOU ARE IN, as a broadcast would show it: who, where it
+       stands, what it is worth, and every game so far. The rail below is the
+       whole field at a glance and says nothing about one series beyond a
+       score, which is why the postseason used to be a box whose number
+       changed. Below the door, because the door is a control and this is the
+       context for it. Painted by srsPaint and nothing else. -->
+  <div class="card srs" id="brk-srs" hidden>
+    <div class="srs-head">
+      <span class="srs-eye" id="srs-eye"></span>
+      <span class="srs-tag" id="srs-tag" hidden></span>
+      <span class="srs-stamp" id="srs-stamp" hidden></span>
+    </div>
+    <div class="srs-top">
+      <div class="srs-side me">
+        <span class="srs-sd" id="srs-mysd"></span>
+        <span class="srs-nm" id="srs-mynm"></span>
+      </div>
+      <div class="srs-score num" id="srs-score">0-0</div>
+      <div class="srs-side them">
+        <span class="srs-nm" id="srs-thnm"></span>
+        <span class="srs-sd" id="srs-thsd"></span>
+      </div>
+    </div>
+    <div class="srs-odds">
+      <span class="srs-olab" id="srs-olab">Series odds</span>
+      <div class="srs-bar" aria-hidden="true"><i id="srs-fill"></i></div>
+      <span class="srs-pct num" id="srs-pct"></span>
+      <span class="srs-delta num" id="srs-delta" hidden></span>
+    </div>
+    <div class="srs-strip" id="srs-strip"></div>
+    <p class="srs-last" id="srs-last"></p>
   </div>
 
   <div class="brk-wrap">
@@ -2978,8 +3129,8 @@
      number in the same commit as the edit, then run:
        node scripts/check-cachebust.mjs --update
      CI checks it on any push touching an .html or .js file. See CLAUDE.md. -->
-<script src="engine.js?v=23"></script>
-<script src="run.js?v=11"></script>
+<script src="engine.js?v=24"></script>
+<script src="run.js?v=12"></script>
 <script src="badges.js?v=3"></script>
 <script src="courts.js?v=1"></script>
 <script src="modes.js?v=8"></script>
@@ -3061,7 +3212,7 @@ var bold = function(text){
  * comes back still disagrees, say so in words instead of dying quietly. One
  * retry, so this can never become a reload loop.
  */
-var NEED_VERSION = 7;
+var NEED_VERSION = 8;
 (function bootCheck(){
   if (E && R && E.API_VERSION === NEED_VERSION && R.API_VERSION === NEED_VERSION) return;
   if (!/[?&]fresh=/.test(location.search)) {
@@ -4438,6 +4589,10 @@ function reduceMotion(){
    has asked their system for less motion, and it removes itself. */
 function fireConfetti(){
   if (reduceMotion()) return;
+  /* ONE SHOWER AT A TIME. A title is celebrated on the bracket and again on
+     the results screen a moment later, and the first is still falling when
+     the second is asked for: two canvases is twice the pieces for no reason. */
+  if (document.querySelector('.confetti-cv')) return;
   var colors = ['#f2c14e', '#f0782d', '#ffffff', '#fde68a', '#22c55e'];
   var dpr = Math.min(2, window.devicePixelRatio || 1);
   var cv = document.createElement('canvas');
@@ -6672,8 +6827,23 @@ function brkBox(g, live, just, known){
     wa = a === g.won ? g.w : g.l;
     wb = a === g.won ? g.l : g.w;
   }
-  return '<div class="brk-g' + (live ? ' live' : '') + (just ? ' just' : '') + '">'
+  /* Only once the box is settled on screen, or the tag would announce a
+     result the seats have not shown yet. */
+  var up = !!(sa && brkUpset(g));
+  return '<div class="brk-g' + (live ? ' live' : '') + (just ? ' just' : '')
+    + (up ? ' upset' : '') + '">'
+    + (up ? '<span class="brk-up">Upset</span>' : '')
     + brkSeat(a, sa, wa) + brkSeat(b, sb, wb) + '</div>';
+}
+
+/* AN UPSET IS THREE SEEDS OR MORE. A 5 over a 4 is a coin flip that went one
+   way, and tagging it would put the word on half the first round, where it
+   stops meaning anything. A 6 over a 3 is the story of the round. Read off
+   the seeds the seats print, so the tag can never disagree with the box. */
+function brkUpset(g){
+  if (!g || !g.won || !g.lost) return false;
+  var w = g.won.seed, l = g.lost.seed;
+  return w != null && l != null && w - l >= 3;
 }
 
 /* HAS THE ROUND THAT FEEDS THIS COLUMN FINISHED. Every decoration game in
@@ -6797,6 +6967,224 @@ var BRK_SHORT = {
 
 function brkNote(s){ var el = $('brk-note'); if (el) el.textContent = s || ''; }
 
+/* ── THE SERIES CARD ───────────────────────────────────────────────────────
+ *
+ * EVERYTHING ON IT IS READ, NOTHING IS DECIDED. The games are the run's own
+ * rows, the odds are the engine's arithmetic on the round's own means, the
+ * top scorer is the box score gameDetail would open, and the opponent's seed
+ * and record are the bracket's seat. Painting it can never move a result,
+ * which is the one rule this screen has always had.
+ */
+var srsLast = null, srsTop = {};
+
+/* The series on screen: the one being played in this column, or the one that
+   finished in it, or on the finale the last one the run played at all. */
+function srsSource(){
+  if (!run || !run.po) return null;
+  var po = run.po, cur = po.cur;
+  if (cur && cur.roundIndex === brkCol) return { live: true, s: cur, round: cur.roundIndex };
+  if (po.results[brkCol]) return { live: false, s: po.results[brkCol], round: brkCol };
+  var last = po.results.length - 1;
+  if (last >= 0 && brkCol > last) return { live: false, s: po.results[last], round: last };
+  return null;
+}
+
+/* Who is across from you in a column, off the same seat the rail draws. */
+function brkThem(col){
+  var g = brkColumn(col).filter(function(x){ return x.mine; })[0];
+  if (!g || !g.pair) return null;
+  return g.pair[0] && g.pair[0].you ? g.pair[1] : g.pair[0];
+}
+
+/* The man who led your five in scoring, off the box score the strip opens.
+   Kept per game because gameDetail draws a whole box to answer it, and the
+   card is repainted after every game of the series. */
+function srsTopScorer(round, gi){
+  var k = run.seed + ':' + round + ':' + gi;
+  if (Object.prototype.hasOwnProperty.call(srsTop, k)) return srsTop[k];
+  var d = R.gameDetail(run, { kind: 'playoff', round: round, game: gi });
+  var best = null;
+  if (d && d.box) for (var i = 0; i < d.box.length; i++) {
+    if (!best || (d.box[i].pts || 0) > (best.pts || 0)) best = d.box[i];
+  }
+  srsTop[k] = best ? { n: E.lastNameOf(best.n), pts: best.pts || 0 } : null;
+  return srsTop[k];
+}
+
+function srsStamp(s, bestOf){
+  var n = s.games.length;
+  if (bestOf === 1) return s.won ? 'Won it' : 'Out';
+  if (s.won) return s.oppWins === 0 ? 'Sweep' : 'Won in ' + n;
+  return s.yourWins === 0 ? 'Swept' : 'Out in ' + n;
+}
+
+/* A number counting up to where it landed, over half a second. The final
+   figure is written into the markup first and the count ends on it, so the
+   only window in which the text is not the answer is the count itself. */
+function srsCount(el, to){
+  if (!el || reduceMotion() || typeof requestAnimationFrame !== 'function') return;
+  var t0 = null, DUR = 520;
+  var step = function(ts){
+    if (!el.isConnected) return;
+    if (t0 == null) t0 = ts;
+    var k = Math.min(1, (ts - t0) / DUR);
+    el.textContent = String(Math.round(to * (1 - Math.pow(1 - k, 3))));
+    if (k < 1) requestAnimationFrame(step); else el.textContent = String(to);
+  };
+  requestAnimationFrame(step);
+}
+
+/* `played` says a game has just been added, so the newest pip flips, the
+   score pops, the numbers count and the odds say how far they moved. */
+function srsPaint(played){
+  var card = $('brk-srs');
+  if (!card) return;
+  var src = srsSource();
+  if (!src) { card.hidden = true; srsLast = null; return; }
+  card.hidden = false;
+
+  var B = brkBuild(), s = src.s, round = src.round;
+  var bestOf = s.bestOf || (s.round === 'Play-In' ? 1 : 7);
+  var need = s.need || Math.ceil(bestOf / 2);
+  var games = s.games || [];
+  var over = !src.live;
+  var next = src.live ? R.pendingGame(run) : null;
+  if (next && next.roundIndex !== round) next = null;
+
+  /* The heading and the tag: which game is next and what it is worth. */
+  var nm = BRK_SHORT[s.round] === 'Finals' ? 'The Finals' : (BRK_SHORT[s.round] || s.round);
+  $('srs-eye').textContent = nm + (bestOf > 1
+    ? (next ? ' · Game ' + (next.game + 1) : ' · Best of ' + bestOf) : ' · One game');
+  /* ONLY WHEN THE GAME IS WORTH A WORD. Home and away are already on the
+     strip, lit on the next game, and a tag saying so on every game pushed the
+     heading into an ellipsis on a 320 phone. */
+  var tag = $('srs-tag'), label = next ? gameTag(next) : '';
+  var hot = !!(next && (next.elimination || next.closeout || next.bestOf === 1));
+  tag.hidden = !label;
+  tag.textContent = label;
+  tag.className = 'srs-tag' + (hot ? ' hot' : '');
+
+  /* The two sides. Your seed is the bracket's, and a play-in run has none
+     yet: the winner of that game is what becomes the 7. */
+  var them = brkThem(round);
+  var finals = BRK_SHORT[s.round] === 'Finals';
+  var mysd = $('srs-mysd'), thsd = $('srs-thsd');
+  mysd.textContent = bestOf === 1 ? '' : String(B.mySeed);
+  mysd.hidden = bestOf === 1;
+  $('srs-mynm').innerHTML = esc(YOUR_LOT) + '<small>' + esc(simWins + '-' + simLosses) + '</small>';
+  var thSeed = them && them.seed != null ? them.seed : null;
+  /* THE CHIP ONLY WHEN THE NAME DOES NOT ALREADY SAY IT. "The 5 seed" beside
+     a chip reading 5 is one fact twice, and on a 320 phone it cut the name to
+     "The 5 s...". The Finals name the other conference, so there it is the
+     only place the seed is. */
+  thsd.textContent = thSeed == null ? '' : String(thSeed);
+  thsd.hidden = thSeed == null || !finals;
+  var thRec = them ? them.wins + '-' + (E.CONSTANTS.REGULAR_SEASON_GAMES - them.wins) : '';
+  $('srs-thnm').innerHTML = esc(thSeed == null ? 'The field' : (finals ? 'The ' + B.farConf : 'The ' + thSeed + ' seed'))
+    + '<small>' + esc(thRec) + '</small>';
+
+  /* The score. A one game round has no series score, so it says VS until the
+     game is in and then the game's own score. */
+  var sc = $('srs-score');
+  sc.className = 'srs-score num' + (bestOf === 1 && games[0] ? ' game' : '');
+  if (bestOf === 1) {
+    var g1 = games[0];
+    sc.textContent = g1 ? g1.yourPoints + '-' + g1.oppPoints : 'VS';
+  } else {
+    sc.textContent = s.yourWins + '-' + s.oppWins;
+  }
+  if (played && !reduceMotion()) { sc.classList.remove('pop'); void sc.offsetWidth; sc.classList.add('pop'); }
+
+  /* The odds. Over is over: the bar sits at the end it finished at. */
+  var p = over ? (s.won ? 1 : 0) : (E.seriesChance ? E.seriesChance(s) : null);
+  var fill = $('srs-fill'), pct = $('srs-pct'), dl = $('srs-delta');
+  $('srs-olab').textContent = bestOf === 1 ? 'Win chance' : 'Series odds';
+  if (p == null) { fill.style.transform = 'scaleX(.5)'; pct.textContent = ''; }
+  else {
+    fill.style.transform = 'scaleX(' + Math.max(0, Math.min(1, p)).toFixed(3) + ')';
+    pct.textContent = Math.round(p * 100) + '%';
+  }
+  var moved = played && p != null && srsLast && srsLast.round === round
+    ? Math.round(p * 100) - Math.round(srsLast.p * 100) : 0;
+  if (moved) {
+    dl.hidden = false;
+    dl.textContent = (moved > 0 ? '+' : '') + moved;
+    dl.className = 'srs-delta num ' + (moved > 0 ? 'up' : 'down');
+    void dl.offsetWidth;
+  } else if (!played) {
+    dl.hidden = true;
+  }
+  if (p != null) srsLast = { round: round, p: p };
+
+  /* The strip: every game of the series, played or still to come. */
+  var strip = $('srs-strip'), home = (E.PO_HOME && E.PO_HOME[bestOf]) || [1];
+  strip.className = 'srs-strip' + (bestOf === 1 ? ' one' : '');
+  var h = '';
+  for (var i = 0; i < bestOf; i++) {
+    var gm = games[i], isHome = gm ? !!gm.home : home[i] === 1;
+    var cls = 'srs-pip' + (isHome ? ' home' : '');
+    var tagG = bestOf === 1 ? 'Play-in' : 'G' + (i + 1);
+    if (gm) {
+      cls += gm.won ? ' w' : ' l';
+      if (played && i === games.length - 1) cls += ' just';
+      h += '<button type="button" class="' + cls + '" data-g="' + i + '" aria-label="'
+        + esc(tagG + ', ' + (gm.won ? 'won ' : 'lost ') + gm.yourPoints + ' to ' + gm.oppPoints
+          + '. Open the box score') + '">'
+        + '<span class="g">' + esc(tagG) + '</span>'
+        + '<span class="r">' + (gm.won ? 'W' : 'L') + '</span>'
+        /* THE MARGIN, NOT THE SCORE. Two three digit scores do not fit a
+           seventh of a phone, and cut to "122-1..." they said nothing. The
+           margin is what a strip of games is for; the score is one tap away
+           and on the line under the strip. */
+        + '<span class="s num">' + (gm.won ? '+' : '-') + Math.abs(gm.yourPoints - gm.oppPoints) + '</span>'
+        + '</button>';
+    } else {
+      var moot = over || s.yourWins >= need || s.oppWins >= need;
+      if (!moot && next && i === games.length) cls += ' next';
+      else if (moot) cls += ' moot';
+      h += '<div class="' + cls + '"><span class="g">' + esc(tagG) + '</span>'
+        + '<span class="h">' + (isHome ? 'Home' : 'Away') + '</span></div>';
+    }
+  }
+  strip.innerHTML = h;
+
+  /* The last line: how the newest game went and whose night it was, or
+     before the first one, where the games are. */
+  var last = $('srs-last');
+  if (games.length) {
+    var gi = games.length - 1, lg = games[gi], top = srsTopScorer(round, gi);
+    last.innerHTML = '<b class="' + (lg.won ? 'w' : 'l') + '">' + (lg.won ? 'Won' : 'Lost') + '</b> '
+      + esc(bestOf === 1 ? 'the play-in' : 'Game ' + (gi + 1)) + ', '
+      + '<b class="num" data-n="y">' + lg.yourPoints + '</b>-'
+      + '<b class="num" data-n="t">' + lg.oppPoints + '</b>'
+      + (lg.ot ? (lg.ot > 1 ? ' ' + lg.ot + 'OT' : ' OT') : '')
+      + (top ? ' · ' + esc(top.n) + ' ' + top.pts : '');
+    if (played) {
+      srsCount(last.querySelector('[data-n="y"]'), lg.yourPoints);
+      srsCount(last.querySelector('[data-n="t"]'), lg.oppPoints);
+    }
+  } else {
+    var nums = [];
+    for (var k = 0; k < home.length; k++) if (home[k] === 1) nums.push(k + 1);
+    last.textContent = bestOf === 1 ? 'On your floor.'
+      : 'Games ' + nums.slice(0, -1).join(', ') + ' and ' + nums[nums.length - 1] + ' on your floor.';
+  }
+
+  /* The stamp, once the series is decided. */
+  var st = $('srs-stamp');
+  var decided = over || s.yourWins >= need || s.oppWins >= need;
+  if (decided) {
+    var won = over ? !!s.won : s.yourWins >= need;
+    var txt = srsStamp({ won: won, games: games, yourWins: s.yourWins, oppWins: s.oppWins }, bestOf);
+    if (st.hidden || st.textContent !== txt) { st.hidden = true; void st.offsetWidth; }
+    st.textContent = txt;
+    st.className = 'srs-stamp ' + (won ? 'w' : 'l');
+    st.hidden = false;
+  } else {
+    st.hidden = true;
+  }
+}
+
 /* ── THE WALK ──────────────────────────────────────────────────────────────
  *
  * A round is three beats: the field around you settles, your series plays,
@@ -6835,12 +7223,20 @@ function brkRevealThrough(col){
   }
 }
 
-function brkHead(){
+function brkHead(enter){
   var B = brkBuild();
   var name = B.names[brkCol] || 'Playoffs';
   $('brk-round').textContent = BRK_SHORT[name] === 'Finals' ? 'The Finals' : name;
   $('brk-eyebrow').textContent = B.myConf + ' · ' + B.mySeed + ' seed · '
     + simWins + '-' + simLosses;
+  var hero = document.querySelector('#s-brk .brk-hero');
+  if (!hero) return;
+  hero.classList.remove('champ');
+  /* ONCE PER ROUND, ON THE WAY IN. Removing the class and reading a layout
+     property is what restarts a CSS animation on a node that already has it;
+     a repaint between rounds never calls this with `enter`, so the title
+     never twitches while the reader is looking at it. */
+  if (enter) { hero.classList.remove('enter'); void hero.offsetWidth; hero.classList.add('enter'); }
 }
 
 /* A round begins. pendingGame is what DRAWS the opponent, so the bracket
@@ -6856,11 +7252,12 @@ function brkEnter(){
   brkCol = next.roundIndex;
   brkRevealThrough(brkCol);
   B.justKey = null;
-  brkHead();
+  brkHead(true);
   brkNote('');
   $('lvdoor').hidden = true;
   brkRender();
   show('s-brk');
+  srsPaint(false);
   brkFocus(brkCol);
 
   var games = [];
@@ -6877,23 +7274,45 @@ function brkEnter(){
     if (k >= games.length) {
       B.justKey = null;
       brkRender();
-      brkTimer = setTimeout(brkSeries, 460);
+      brkLater(brkSeries, 460);
       return;
     }
-    B.revealed[games[k].key] = true;
-    B.justKey = games[k].key;
+    var g = games[k];
+    B.revealed[g.key] = true;
+    B.justKey = g.key;
     k++;
     brkRender();
-    brkTimer = setTimeout(go, step);
+    /* THE UPSET IS CALLED AS IT LANDS, the way a studio show cuts in. The
+       note is the one line under the rail, and brkSeriesNote takes it back
+       for the reader's own series the moment the reveal is done. */
+    if (brkUpset(g)) {
+      brkNote('Upset in the ' + (g.side === 'near' ? B.myConf : B.farConf) + '. The '
+        + g.won.seed + ' seed knocks out the ' + g.lost.seed + '.');
+    }
+    brkLater(go, step);
   };
   brkFastArm(function(){
     stopBracket();
     for (var z = 0; z < games.length; z++) B.revealed[games[z].key] = true;
     B.justKey = null;
     brkRender();
-    brkTimer = setTimeout(brkSeries, 200);
+    brkLater(brkSeries, 200);
   });
-  brkTimer = setTimeout(go, games.length ? 560 : 240);
+  brkLater(go, games.length ? 560 : 240);
+}
+
+/* THE WALK WAITS FOR A BOX SCORE. A played game in the series card opens its
+   box score over this screen, and a walk that carried on underneath would
+   play the next three games while somebody was reading the last one. So
+   every beat of the walk is scheduled through here and holds while the sheet
+   is open. stopBracket still clears it, because it is the same timer. */
+function brkLater(fn, ms){
+  brkTimer = setTimeout(function(){
+    brkTimer = null;
+    var gs = $('gamesheet');
+    if (gs && gs.classList.contains('open')) { brkLater(fn, 300); return; }
+    fn();
+  }, ms);
 }
 
 /* WHAT SKIP DOES RIGHT NOW, and null when there is nothing to hurry. Held
@@ -6917,18 +7336,55 @@ function brkSeries(){
   stopBracket();
   brkFastArm(null);
   $('lvdoor').hidden = true;
-  renderDock('s-brk');
   var next = R.pendingGame(run);
-  if (!next) { brkFinale(); return; }
-  if (next.roundIndex !== brkCol) { brkEnter(); return; }
+  if (!next) { renderDock('s-brk'); brkFinale(); return; }
+  if (next.roundIndex !== brkCol) { renderDock('s-brk'); brkEnter(); return; }
   brkSeriesNote();
-  if (next.big) { showDoor(next); return; }
+  srsPaint(false);
+  if (next.big) { renderDock('s-brk'); showDoor(next); return; }
+  /* SKIP HURRIES YOUR SERIES AND NEVER PAST A GAME 7. The door is the mode;
+     Skip is pacing. Same rule as Sim the rest on the live board. */
+  brkFastArm(brkRushSeries);
+  renderDock('s-brk');
+  /* A GAME THAT CAN END SOMETHING GETS A BEAT BEFORE THE TIP. The card's tag
+     is lit for it, and a moment on the tag is what makes it land as a big
+     game rather than as the next number in a list. */
+  var stakes = next.elimination || next.closeout || next.bestOf === 1;
+  brkLater(brkPlayOne, stakes ? 700 : 240);
+}
+
+/* One game of your series: settled the way every game is, then shown. */
+function brkPlayOne(){
+  var next = R.pendingGame(run);
+  if (!next || next.roundIndex !== brkCol || next.big) { brkSeries(); return; }
   var before = run.po.results.length;
   R.simGame(run);
   save();
   brkRender();
-  if (run.po.results.length > before) { brkTimer = setTimeout(brkRoundDone, 760); return; }
-  brkTimer = setTimeout(brkSeries, 560);
+  srsPaint(true);
+  if (run.po.results.length > before) { brkFastArm(null); brkLater(brkRoundDone, 1100); return; }
+  brkLater(brkSeries, 700);
+}
+
+/* THE REST OF THIS SERIES AT ONCE, up to a Game 7 and never through one. It
+   plays the same games in the same order off the same stream, so the result
+   is the one the slow walk would have shown: only the waiting goes. */
+function brkRushSeries(){
+  stopBracket();
+  brkFastArm(null);
+  var before = run.po.results.length, played = false, guard = 0;
+  while (guard++ < 10) {
+    var next = R.pendingGame(run);
+    if (!next || next.roundIndex !== brkCol || next.big) break;
+    R.simGame(run);
+    played = true;
+    if (run.po.results.length > before) break;
+  }
+  if (played) save();
+  brkRender();
+  srsPaint(played);
+  if (run.po.results.length > before) { brkLater(brkRoundDone, 700); return; }
+  brkSeries();
 }
 
 /* THE SEED AND THE FORM ARE TWO FACTS AND THE SENTENCE KEEPS THEM APART. The
@@ -6966,7 +7422,8 @@ function brkRoundDone(){
   } else {
     brkNote('Bounced in ' + roundPhrase(B.names[brkCol]) + '.');
   }
-  brkTimer = setTimeout(run.po.done ? brkFinale : brkEnter, 1000);
+  srsPaint(false);
+  brkLater(run.po.done ? brkFinale : brkEnter, 1300);
 }
 
 /* THE BRACKET FINISHES WITHOUT YOU, and that is worth the beat. A run that
@@ -6982,10 +7439,21 @@ function brkFinale(){
   brkRender();
   var last = brkColumn(B.names.length - 1)[0];
   var champ = last && last.won;
-  if (champ && champ.you) brkNote('Champions.');
-  else if (champ) brkNote('The ' + champ.seed + ' seed takes it.');
+  srsPaint(false);
+  if (champ && champ.you) {
+    /* THE TITLE IS WON ON THE BRACKET, so it is celebrated there first. The
+       results screen used to be the first place anything happened, which put
+       the moment one screen after the game that decided it. */
+    brkNote('Champions.');
+    $('brk-round').textContent = 'Champions';
+    var hero = document.querySelector('#s-brk .brk-hero');
+    if (hero) { hero.classList.remove('enter'); void hero.offsetWidth; hero.classList.add('champ'); }
+    fireConfetti();
+  } else if (champ) {
+    brkNote(champ.seed === 1 ? 'The top seed takes it.' : 'The ' + champ.seed + ' seed takes it.');
+  }
   brkFocus(brkCol);
-  brkTimer = setTimeout(endRun, 1400);
+  brkLater(endRun, champ && champ.you ? 2800 : 1600);
 }
 
 /* A reload lands here rather than on the season screen: the bracket is where
@@ -6997,13 +7465,14 @@ function brkResume(){
   brkCol = Math.min(at, B.names.length - 1);
   brkRevealThrough(brkCol + 1);
   B.justKey = null;
-  brkHead();
+  brkHead(true);
   brkNote('');
   $('lvdoor').hidden = true;
   brkRender();
   show('s-brk');
+  srsPaint(false);
   brkFocus(brkCol);
-  brkTimer = setTimeout(brkSeries, 420);
+  brkLater(brkSeries, 420);
 }
 
 /* What the game is, in the words that make somebody want to play it. */
@@ -7049,6 +7518,16 @@ function showDoor(next){
   $('lvd-title').textContent = gameTag(next) || 'The Finals';
   $('lvd-why').textContent = [seriesLine(next), doorWhy(next)]
     .filter(Boolean).join('. ');
+  /* WHAT TONIGHT IS WORTH, off the arithmetic the game is settled with. It is
+     the same whichever button is pressed: playing it forward is fitted to
+     land on the same odds, which is what makes Play it a choice about
+     watching rather than about winning. */
+  var odds = $('lvd-odds'), pc = E.gameChance
+    ? Math.round(100 * E.gameChance(next.pointsFor, next.pointsAgainst, next.adv)) : null;
+  if (odds) {
+    odds.hidden = pc == null;
+    if (pc != null) odds.textContent = 'You win this one ' + pc + '% of the time.';
+  }
   $('lvdoor').hidden = false;
   renderDock('s-brk');
   brkFastArm(null);
@@ -7065,7 +7544,8 @@ function doorSim(){
   R.simGame(run);
   save();
   brkRender();
-  brkTimer = setTimeout(run.po.results.length > before ? brkRoundDone : brkSeries, 620);
+  srsPaint(true);
+  brkLater(run.po.results.length > before ? brkRoundDone : brkSeries, 1100);
 }
 
 /* The bracket is finished, so the run is. */
@@ -7480,6 +7960,7 @@ function lvContinue(){
   LV = null;
   show('s-brk');
   brkRender();
+  srsPaint(true);
   /* The round's own row lands on the way out rather than while the verdict
      was up, so a player reads the game and then the series, in that order. */
   brkTimer = setTimeout(brkSeries, 420);
@@ -10434,6 +10915,14 @@ $('b-respin').onclick = respin;
 $('b-play').onclick = playSeason;
 $('b-lv-play').onclick = startLive;
 $('b-lv-sim').onclick = doorSim;
+/* A played game in the series card opens its box score. Delegated, because
+   the strip is rebuilt after every game. The walk holds while it is open. */
+$('srs-strip').addEventListener('click', function(ev){
+  var b = ev.target && ev.target.closest ? ev.target.closest('button.srs-pip') : null;
+  var src = srsSource();
+  if (!b || !src) return;
+  openGame({ kind: 'playoff', round: src.round, game: +b.getAttribute('data-g') });
+});
 $('b-lv-fast').onclick = lvFast;
 $('b-lv-next').onclick = lvContinue;
 $('b-brk-fast').onclick = function(){ if (brkFast) brkFast(); };

@@ -910,6 +910,20 @@ function taggedRoster(run) {
   return run.roster.map((p, i) => ({ ...p, _slot: E.SLOTS[run.slotIndex[i]] }));
 }
 
+/* EVERY PLAYOFF ROUND WITH GAMES IN IT, FINISHED OR NOT. After the run ends
+   that is run.playoffs.rounds, which is po.results under another name. While
+   the bracket is still being played it is po.results plus the series in
+   progress, so a game can be opened from the bracket the moment it is over.
+   The seed a box score is drawn from is the game's ADDRESS, and the address is
+   the same either way, so a game opened mid-bracket and the same game opened
+   from the results screen are one box score. check-bracket.mjs asserts that. */
+function playoffRounds(run) {
+  if (run && run.playoffs && run.playoffs.rounds) return run.playoffs.rounds;
+  const po = run && run.po;
+  if (!po) return [];
+  return po.cur ? po.results.concat([po.cur]) : po.results;
+}
+
 /* ref is { kind: 'season', index } or { kind: 'playoff', round, game }. */
 function gameDetail(run, ref) {
   if (!run || !ref) return null;
@@ -917,12 +931,12 @@ function gameDetail(run, ref) {
 
   let gm = null, head = null;
   if (playoff) {
-    const rd = run.playoffs && run.playoffs.rounds && run.playoffs.rounds[ref.round];
+    const rd = playoffRounds(run)[ref.round];
     if (!rd || !rd.games || !rd.games[ref.game]) return null;
     gm = rd.games[ref.game];
     head = {
       round: rd.round,
-      label: rd.round + (rd.games.length > 1 ? ' · Game ' + (ref.game + 1) : ''),
+      label: rd.round + (rd.round !== 'Play-In' ? ' · Game ' + (ref.game + 1) : ''),
       oppName: null, oppNet: rd.oppNet, home: !!gm.home, marquee: true,
     };
   } else {
@@ -984,11 +998,11 @@ function bigGames(run) {
       label: (sc.home ? 'vs ' : 'at ') + (sc.oppName || 'opponent'),
       score: g.yourPoints + '-' + g.oppPoints });
   });
-  if (run.playoffs && run.playoffs.rounds) {
-    run.playoffs.rounds.forEach((rd, r) => {
+  {
+    playoffRounds(run).forEach((rd, r) => {
       (rd.games || []).forEach((g, i) => {
         out.push({ kind: 'playoff', round: r, game: i, won: !!g.won,
-          label: rd.round + ((rd.games.length > 1) ? ' · G' + (i + 1) : ''),
+          label: rd.round + (rd.round !== 'Play-In' ? ' · G' + (i + 1) : ''),
           score: g.yourPoints + '-' + g.oppPoints });
       });
     });
@@ -1033,8 +1047,8 @@ function bestNight(run) {
     look({ kind: 'season', index: i },
       sc.oppName ? ((sc.home ? 'vs ' : 'at ') + sc.oppName) : ('game ' + (i + 1)));
   }
-  if (run.playoffs && run.playoffs.rounds) {
-    run.playoffs.rounds.forEach((rd, r) => {
+  {
+    playoffRounds(run).forEach((rd, r) => {
       (rd.games || []).forEach((g, i) => {
         look({ kind: 'playoff', round: r, game: i },
           rd.round + (rd.games.length > 1 ? ', game ' + (i + 1) : ''));
@@ -1256,14 +1270,14 @@ const publicAPI = {
   /* Moves with engine.js, not independently: index.html asks both files for the
      SAME number, so one version means one answer to "is this page and its
      scripts the same age". */
-  API_VERSION: 7,
+  API_VERSION: 8,
   PHASES, TUNING, BLOCK,
   createRun, spin, respin, sign,
   playSeason, advanceGame, finalizeSeason,
   playToPlayoffs, pendingGame, simGame, simRest, liveGame, recordGame, finishRun,
   previewSigning, previewFit, fitNow, bestPossibleSquad, projectSeason,
   indexData, drawable, clubSeasons, eraSeasons,
-  gameDetail, bigGames, bestNight, taggedRoster,
+  gameDetail, bigGames, bestNight, taggedRoster, playoffRounds,
   remaining, reserveFloor, fullFloor, spendable, capOf, money,
   canRespin, canFinishAfter, marginAfter, leavesNoChoice, blockFor, positionFull,
   LAST_SLOT_ROOM_MUSD,

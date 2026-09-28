@@ -359,6 +359,128 @@ head('3. the whole field, driven through the runs that break it');
   is0(ahead, 'and nothing past it is, so the bracket cannot read ahead');
 }
 
+// ── 3b. the series card reads, it never decides ─────────────────────────────
+head('3b. the series card: the odds are the games\' own, and a box score is one box score');
+{
+  const R = require(path.join(HERE, 'run.js'));
+  const M = require(path.join(HERE, 'modes.js'));
+
+  /* THE ENGINE'S ONE GAME IS CONQUEST'S ONE GAME. modes.js carries the same
+     formula as winChance, and two copies of one sum drift the first time one
+     is tuned. Held across a grid of matchups and every home court the
+     bracket can hand out. */
+  let apart = 0, grid = 0;
+  for (let pf = 96; pf <= 124; pf += 4) for (let pa = 96; pa <= 124; pa += 4)
+    for (const adv of [1, 1.02, 1 / 1.02, 1.04, 1 / 1.04]) {
+      grid++;
+      const a = E.gameChance(pf, pa, adv);
+      const b = M.winChance({ pointsFor: pf, pointsAgainst: pa }, adv);
+      if (Math.abs(a - b) > 1e-12) apart++;
+    }
+  is0(apart, `the engine's game chance is modes.js's winChance, over ${grid} matchups`);
+
+  /* THE SERIES ODDS ARE WHAT THE GAMES PLAY. Driven from a spread of series
+     states through resolveGame with the real home pattern, 20,000 series a
+     state. The band is four standard errors of a proportion at that sample
+     plus half a point for the tie a normal CDF cannot see. */
+  const states = [
+    { y: 0, o: 0, pf: 112, pa: 108, adv: 1.03 },
+    { y: 0, o: 0, pf: 106, pa: 113, adv: 1.01 },
+    { y: 2, o: 3, pf: 110, pa: 110, adv: 1.03 },
+    { y: 3, o: 2, pf: 104, pa: 112, adv: 1.0 },
+    { y: 1, o: 1, pf: 118, pa: 105, adv: 1.04 },
+    { y: 3, o: 3, pf: 109, pa: 111, adv: 1.02 },
+  ];
+  const N = QUICK ? 8000 : 20000;
+  for (const st of states) {
+    const cur = { bestOf: 7, need: 4, yourWins: st.y, oppWins: st.o,
+      pointsFor: st.pf, pointsAgainst: st.pa, adv: st.adv, games: new Array(st.y + st.o) };
+    const want = E.seriesChance(cur);
+    const rng = E.createSeededRNG(E.hashSeed('series|' + st.y + st.o + st.pf + st.pa));
+    let won = 0;
+    for (let n = 0; n < N; n++) {
+      let y = st.y, o = st.o;
+      while (y < 4 && o < 4) {
+        const home = E.PO_HOME[7][y + o] === 1;
+        const r = E.resolveGame(st.pf, st.pa, rng, home ? st.adv : 1 / st.adv);
+        if (r.won) y++; else o++;
+      }
+      if (y >= 4) won++;
+    }
+    const got = won / N;
+    const band = 4 * Math.sqrt(got * (1 - got) / N) + 0.005;
+    ok(Math.abs(got - want) <= band,
+      `series odds from ${st.y}-${st.o} are what the games play (says ${(want * 100).toFixed(1)}%, `
+      + `played ${(got * 100).toFixed(1)}%)`);
+  }
+
+  /* IT DRAWS NOTHING AND TOUCHES NOTHING. Asked on every paint, so a single
+     draw would move the season somebody is watching. */
+  const cur0 = { bestOf: 7, need: 4, yourWins: 1, oppWins: 2, pointsFor: 110,
+    pointsAgainst: 108, adv: 1.02, games: [{}, {}, {}] };
+  const snap = JSON.stringify(cur0);
+  const p1 = E.seriesChance(cur0), p2 = E.seriesChance(cur0);
+  ok(p1 === p2 && JSON.stringify(cur0) === snap, 'asking the odds twice changes nothing and answers the same');
+  is(E.seriesChance({ ...cur0, yourWins: 4 }), 1, 'a series won is certain');
+  is(E.seriesChance({ ...cur0, oppWins: 4 }), 0, 'and a series lost is over');
+
+  /* THE UPSET TAG, lifted from the page. Three seeds or more, and a seat
+     with no seed is never an upset. */
+  const upSrc = fnSource('brkUpset');
+  ok(!!upSrc, 'the upset rule is in the page');
+  if (upSrc) {
+    const brkUpset = new Function(upSrc + '\nreturn brkUpset;')();
+    const g = (w, l) => ({ won: { seed: w }, lost: { seed: l } });
+    ok(brkUpset(g(7, 2)) && brkUpset(g(6, 3)), 'a 7 over a 2 and a 6 over a 3 are upsets');
+    ok(!brkUpset(g(5, 4)) && !brkUpset(g(1, 8)), 'a 5 over a 4 is not, and neither is the 1 over the 8');
+    ok(!brkUpset(g(null, 2)) && !brkUpset({ won: null, lost: null }), 'and a seat with no seed never is');
+  }
+
+  /* ONE GAME, ONE BOX SCORE, WHENEVER IT IS OPENED. The strip opens a game
+     while the bracket is still being played, off po, and the results screen
+     opens it afterwards off run.playoffs. The seed is the game's address
+     either way, so the two must be the same box score to the point. */
+  const DATA = R.indexData(read('players.json'));
+  E.setCuratedChemistry(read('chemistry.json'));
+  let compared = 0, differ = 0, midNull = 0, runs = 0;
+  for (let seed = 1; seed <= 60 && compared < 40; seed++) {
+    const run = R.createRun({ seed });
+    let g = 0;
+    while (run.phase === R.PHASES.DRAFT && g++ < 50) {
+      const draw = R.spin(run, DATA);
+      const opts = draw.options.map((k) => DATA.allPlayers[k]).filter(Boolean);
+      if (!opts.length) break;
+      R.sign(run, opts.slice().sort((a, b) => b.w - a.w)[0]);
+    }
+    if (run.phase !== R.PHASES.SEASON) continue;
+    R.playToPlayoffs(run);
+    if (!run.po) continue;
+    runs++;
+    const mid = [];
+    let guard = 0;
+    while (!run.po.done && guard++ < 200) {
+      const next = R.pendingGame(run);
+      R.simGame(run);
+      /* The game just played, opened from the bracket before the run ends. */
+      const rd = run.po.cur ? run.po.cur.roundIndex : run.po.results.length - 1;
+      const gi = (run.po.cur ? run.po.cur.games.length : run.po.results[rd].games.length) - 1;
+      if (next && rd !== next.roundIndex) continue;
+      const d = R.gameDetail(run, { kind: 'playoff', round: rd, game: gi });
+      if (!d) { midNull++; continue; }
+      mid.push({ rd, gi, d: JSON.stringify(d) });
+    }
+    R.finishRun(run);
+    for (const m of mid) {
+      compared++;
+      const after = JSON.stringify(R.gameDetail(run, { kind: 'playoff', round: m.rd, game: m.gi }));
+      if (after !== m.d) differ++;
+    }
+  }
+  ok(runs > 0 && compared > 20, `enough playoff games to compare (${compared} games, ${runs} runs)`);
+  is0(midNull, 'every game just played opens from the bracket');
+  is0(differ, 'and each is the same box score as the one the results screen opens');
+}
+
 if (QUICK) { report(); process.exit(failures.length ? 1 : 0); }
 
 // ── the browser half ────────────────────────────────────────────────────────
@@ -553,6 +675,35 @@ const main = async () => {
     is(st[pi ? 2 : 1].games.length, 4, 'four semifinals');
     is(st[pi ? 3 : 2].games.length, 2, 'two conference finals');
     is(st[st.length - 1].games.length, 1, 'and one Finals');
+
+    /* THE SERIES CARD IS UP AND IT AGREES WITH THE RUN. One tile a game of
+       the round, a lit tile for every game played, and a score that is the
+       run's own series score. It sits above the rail, because it is the
+       context for the one box in the rail that is the reader's. */
+    const card = await page.evaluate(() => {
+      const c = document.querySelector('#brk-srs');
+      const r = JSON.parse(localStorage.getItem('runthefloor_run_v1'));
+      const cur = r.po && r.po.cur;
+      return {
+        shown: !!c && !c.hidden && c.getBoundingClientRect().height > 0,
+        above: c.getBoundingClientRect().bottom <= document.querySelector('.brk-wrap').getBoundingClientRect().top,
+        pips: c.querySelectorAll('.srs-pip').length,
+        played: c.querySelectorAll('.srs-pip.w, .srs-pip.l').length,
+        score: document.querySelector('#srs-score').textContent,
+        pct: document.querySelector('#srs-pct').textContent,
+        want: cur ? { bestOf: cur.bestOf, games: cur.games.length,
+          score: cur.bestOf === 1 ? null : cur.yourWins + '-' + cur.oppWins } : null,
+        wide: c.scrollWidth - c.clientWidth,
+      };
+    });
+    ok(card.shown, 'the series card is on the screen');
+    ok(card.above, 'above the rail');
+    if (card.want) {
+      is(card.pips, card.want.bestOf, 'one tile for every game the round can go');
+      is(card.played, card.want.games, 'and a result on every game already played');
+      if (card.want.score) is(card.score, card.want.score, 'the big number is the series score');
+    }
+    ok(/^\d{1,3}%$/.test(card.pct), `the odds are printed (${card.pct})`);
 
     /* NOBODY IS NAMED. Every seat is a seed and a record, or the player, or
        a seat nothing has fed yet. */

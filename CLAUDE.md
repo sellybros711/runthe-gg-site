@@ -12760,6 +12760,67 @@ reveal of something the reader has seen. Rounds already played are drawn
 settled, because a bracket that came back as a page of TBD reads as a run that
 had not started.
 
+#### Your series is a card, and every number on it is read rather than decided
+
+```
+node hoops/check-bracket.mjs --quick   section 3b: the odds, the upset rule, the box score
+```
+
+Asked for as making the playoff sim feel like an enhanced version of itself. The
+postseason used to be a box in the rail whose number changed every half second.
+`#brk-srs` sits between the door and the rail and shows YOUR series the way a
+broadcast does: the two sides, the series score, a **series odds** bar that
+swings after every game, a tile per game (W or L and the margin, lit for the
+next one, Home or Away on the rest), the newest result with whose night it was,
+and a stamp when it is over (Sweep, Won in 6, Out in 7).
+
+**NOTHING ON IT DECIDES ANYTHING**, which is the rule this screen has always
+had. The odds are `E.seriesChance(po.cur)`: resolveGame's own arithmetic
+(`gameChance`) walked over the real 2-2-1-1-1 home pattern, with no rng and no
+state touched, so asking it on every paint moves nothing. modes.js carries the
+same one-game formula as `winChance` for Conquest, so section 3b holds the two
+equal over a grid of matchups, and holds the series odds to 20,000 simulated
+series from six states. Breaking the home court or CONSISTENCY in the formula
+fails it.
+
+**A game opens from the bracket, and it is the same box score as later.**
+`R.playoffRounds(run)` is `run.playoffs.rounds` once the run is over and
+`po.results` plus the series in progress before that. The box score's seed is
+the game's address either way, so section 3b opens every game the moment it is
+played and again after `finishRun` and requires the two to match exactly.
+**The walk holds while the box score is open**: every beat is scheduled through
+`brkLater`, which waits while `#gamesheet` is open.
+
+**The pacing is per game now, and it is slower on purpose.** A game is about
+0.9s (0.24 to the tip, 0.7 on the result), a game that can end the series gets
+0.7s on its lit tag first, and a finished series holds 1.3s for the stamp. A
+seven game series is about 7s where it was 4s. **Skip ahead now hurries your
+own series too, and never through a Game 7**: `brkRushSeries` plays the same
+games in the same order off the same stream, so only the waiting goes.
+
+**What the tiles do not show is the score.** Two three digit scores do not fit a
+seventh of a phone and read as `122-1...`, so a tile shows the margin, and the
+score is on the line under the strip and one tap away.
+
+**An upset is three seeds or more** (`brkUpset`, lifted and tested): the box
+gets a gold Upset tag once it is settled on screen, and the reveal calls it in
+the note as it lands. A 5 over a 4 is not tagged, or the word would sit on half
+of every first round.
+
+**The title is won on the bracket, so it is celebrated there first**: the hero
+turns gold and reads Champions, confetti falls, and the results screen follows
+2.8s later. `fireConfetti` refuses a second shower while one is falling, so the
+results screen does not double it.
+
+**The round title was left-aligned and nobody had noticed.** `h2` is a
+space-between flex row site wide, so a lone title sat on the left under a
+centred eyebrow. `.brk-title` centres itself now.
+
+**Two layout faults were found only by looking**, and both are the rules above
+arriving again: `.srs-sd` sets `display:grid`, so its `hidden` needed its own
+`[hidden]` rule, and a stamp laid over the card sat on the other side's name,
+so it lives in the heading row where the tag was.
+
 ### The court is a hardwood floor, and the club goes ON it
 
 The court on all three screens (the home hero, the draft, the results) was a
