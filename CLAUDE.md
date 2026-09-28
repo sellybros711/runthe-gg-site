@@ -16525,6 +16525,44 @@ still to earn" a new account met nine lines of grey text and no badge anywhere. 
 shelf shows its progress and a strip of its badges, rim in their tier, and a new
 account's first shelf is open.
 
+### The squad screen is a batting order and a staff, and Pro can move them
+
+```
+node baseball/check-lineup.mjs     the coach's order costs nothing, nothing beats it, and the page
+```
+
+Asked for by the owner: after the draft, all twelve read as a batting order and then
+the staff, set strategically for the player, and Pro can move men around before the
+season. `lineupList` in the page draws it on the squad screen and the results screen.
+
+**The coach's order is the season's BASELINE, so no balance number moved.**
+`LINEUP_WEIGHT` in `engine.js` is what a lineup spot is worth (The Book's reading: the
+two best bats hit second and first, the next cleanup, then third and fifth) and it
+averages exactly one. `coachOrder` puts the best bats in the heaviest spots, which is
+the most any order gets out of these nine, and `orderLoss` charges a different order
+what it gives up against that. A run nobody reordered plays exactly the season it
+always did. **A different order never pays more**, so moving a man is a choice with a
+visible price rather than a way for Pro to buy runs on a leaderboard. Measured: a
+reversed order costs about 1.3 wins, a random one about 0.6. `check-lineup` holds
+"nothing beats it" by exhaustion over all 362,880 orders of one nine, because asking
+`coachOrder` whether `coachOrder` is optimal is asking a function whether it agrees
+with itself.
+
+**`run.batOrder` holds ROSTER INDICES and null means the coach's.** A cut or a trade
+puts the new man at the same index, so a custom order keeps its spot for whoever
+replaces him, and a run on the coach's order is re-ordered by the coach for free.
+`R.tagged(run)` is the one roster the season reads, carrying each man's slot and each
+hitter's `_bat`; the season, the squad screen and October's at-bat games all read it.
+
+**The arms swap inside a group only** (`canSwapArms`): SP1 with SP2, and in All-Time
+Staff inside the rotation or the pen. The closer is its own job because the sim reads
+that slot by name for the save rate. Both groups are averaged into the season, so a
+swap moves nothing the season reads, only who starts which October game. The coach
+sets the rotation at the end of the draft too (`coachArms`, better arm at SP1).
+
+**It can be changed from the end of the draft until the first pitch** (`canReorder`),
+and only by Pro. A free account reads the order and a line saying Pro moves it.
+
 ### Run The Diamond Pro, and one free play of each mode a day
 
 ```

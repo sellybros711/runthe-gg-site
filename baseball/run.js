@@ -661,7 +661,104 @@ function sign(run, player, slotIdx) {
   // Draft complete?
   if (run.roster.length >= slotsOf(run).length) {
     run.phase = PHASES.SEASON;
+    /* The coach sets the rotation too: the better arm starts Game 1. Both starters
+       are averaged into the season, so this moves no number the season reads. */
+    coachArms(run);
   }
+}
+
+/* THE BATTING ORDER. `run.batOrder` holds roster indices, spot one first, and is
+   only ever written by `setBatOrder`, which Pro reaches from the squad screen.
+   Null is the coach's order, which is derived every time rather than stored, so a
+   roster that changes mid-season (a cut, a trade) is re-ordered by the coach for
+   free. Indices rather than keys because a cut or a trade puts the new man at the
+   same index, so a custom order keeps his spot for whoever replaces him. */
+function hitterIdx(run) {
+  return run.roster.map((p, k) => k).filter(k => run.roster[k] && run.roster[k].r === 'b');
+}
+function coachBatOrder(run) {
+  const tagged = hitterIdx(run).map(k => ({ ...run.roster[k], _slot: slotsOf(run)[run.slotIndex[k]], _k: k }));
+  return E.coachOrder(tagged).map(p => p._k);
+}
+function validOrder(run, order) {
+  const hit = hitterIdx(run);
+  return Array.isArray(order) && order.length === hit.length && new Set(order).size === hit.length &&
+    order.every(k => hit.includes(k));
+}
+function batOrderOf(run) {
+  if (run.staff) return [];
+  return validOrder(run, run.batOrder) ? run.batOrder.slice() : coachBatOrder(run);
+}
+/* The roster as the season reads it: every man's slot and every hitter's spot. */
+function tagged_(run) {
+  const order = batOrderOf(run);
+  const nine = order.length === E.LINEUP_WEIGHT.length;
+  return run.roster.map((p, k) => {
+    const o = { ...p, _slot: slotsOf(run)[run.slotIndex[k]] };
+    const b = order.indexOf(k);
+    if (nine && b >= 0) o._bat = b + 1;
+    return o;
+  });
+}
+/* The roster with spots and no slots, for playRun, which tags the slots itself. */
+function batted(run) {
+  const t = tagged_(run);
+  return run.roster.map((p, k) => (t[k]._bat ? { ...p, _bat: t[k]._bat } : p));
+}
+/* A lineup can be changed from the end of the draft until the first pitch. */
+function canReorder(run) {
+  return !!run && run.phase === PHASES.SEASON && !(run._simState && run._simState.results.length);
+}
+function setBatOrder(run, order) {
+  if (!canReorder(run)) return false;
+  if (order === null) { run.batOrder = null; }
+  else {
+    if (!validOrder(run, order)) return false;
+    const coach = coachBatOrder(run);
+    run.batOrder = order.every((k, i) => k === coach[i]) ? null : order.slice();
+  }
+  if (run._simState) run._simState = rebuildSimState(run);
+  return true;
+}
+/* What an order costs against the coach's, in WAR given up. */
+function orderCost(run) {
+  return run.staff ? 0 : E.orderLoss(tagged_(run));
+}
+/* Swap two arms between their slots, inside one group (the rotation, or the pen).
+   The closer is its own group, because the sim reads that slot by name and the
+   save rate goes with it. A swap inside a group moves nothing the season reads
+   (both groups are averages), only who starts which October game. */
+function canSwapArms(run, a, b) {
+  if (!canReorder(run) || a === b) return false;
+  const pa = run.roster[a], pb = run.roster[b];
+  if (!pa || !pb || pa.r !== 'p' || pb.r !== 'p') return false;
+  const slots = slotsOf(run);
+  const sa = slots[run.slotIndex[a]], sb = slots[run.slotIndex[b]];
+  const g = (sl) => E.slotGroup(sl, !!run.staff);
+  if (g(sa) !== g(sb)) return false;
+  return fills(run, pa, sb) && fills(run, pb, sa);
+}
+function swapArms(run, a, b) {
+  if (!canSwapArms(run, a, b)) return false;
+  const t = run.slotIndex[a]; run.slotIndex[a] = run.slotIndex[b]; run.slotIndex[b] = t;
+  run.staffOrdered = true;
+  if (run._simState) run._simState = rebuildSimState(run);
+  return true;
+}
+/* Put the arms back in the coach's order: best first in each group. */
+function coachArms(run) {
+  if (!canReorder(run)) return false;
+  run.staffOrdered = false;
+  if (run.staff) { sortStaffSlots(run); }
+  else {
+    const slots = slotsOf(run);
+    const rot = run.roster.map((p, k) => k).filter(k => E.slotGroup(slots[run.slotIndex[k]], false) === E.slotGroup('SP1', false));
+    const held = rot.map(k => run.slotIndex[k]).sort((x, y) => x - y);
+    rot.sort((x, y) => (E.workloadWar(run.roster[y]) - E.workloadWar(run.roster[x])) || (x - y))
+      .forEach((k, i) => { run.slotIndex[k] = held[i]; });
+  }
+  if (run._simState) run._simState = rebuildSimState(run);
+  return true;
 }
 
 /* What a mode suppresses, in one place.
@@ -740,7 +837,7 @@ function playSeason(run) {
   const rng = rngFor(run);
   const slotNames = run.slotIndex.map(i => slotsOf(run)[i]);
   const pool = poolFor(run);
-  const result = E.playRun(run.roster, rng, slotNames, pool, chemOpts(run));
+  const result = E.playRun(batted(run), rng, slotNames, pool, chemOpts(run));
   result.allTimeRank = (_data && !run.staff) ? E.nationalRank(result.rating, _data.ratingTable) : null;
 
   run.season = result.season;
@@ -779,7 +876,7 @@ function advanceGame(run, gameIndex) {
     // each with their ACTUAL slot from slotIndex, because the sim reads SP1/SP2/CL
     // from these tags.
     const rng = rngFor(run);
-    const tagged = run.roster.map((p, k) => ({ ...p, _slot: slotsOf(run)[run.slotIndex[k]] }));
+    const tagged = tagged_(run);
     const chem = E.resolveChemistry(tagged, chemOpts(run));
     const structure = run.staff ? { multiplier: 1, archetype: null } : E.rosterStructure(tagged);
     const offense = run.staff ? E.staffOffense()
@@ -907,7 +1004,7 @@ function cutPlayer(run, rosterIdx) {
  * reading the roster it tagged before the market moved. */
 function rebuildSimState(run) {
   const st = run._simState;
-  const tagged = run.roster.map((p, k) => ({ ...p, _slot: slotsOf(run)[run.slotIndex[k]] }));
+  const tagged = tagged_(run);
   const chem = E.resolveChemistry(tagged, chemOpts(run));
   const structure = run.staff ? { multiplier: 1, archetype: null } : E.rosterStructure(tagged);
   const offense = run.staff ? E.staffOffense()
@@ -1220,7 +1317,7 @@ function projectSeason(run, trials) {
   let po = 0, title = 0, rec = 0;
   for (let i = 0; i < n; i++) {
     const rng = E.createSeededRNG((run.seed ^ (i * 2654435761)) >>> 0);
-    const out = E.playRun(run.roster, rng, slotNames, pool, chemOpts(run));
+    const out = E.playRun(batted(run), rng, slotNames, pool, chemOpts(run));
     wins.push(out.record.wins);
     if (out.seed.made) po++;
     if (out.titleWon) title++;
@@ -1257,6 +1354,8 @@ const publicAPI = {
   spin, respin, sign, focusTargets, eligibleFranchises, eligibleEras,
   chemOpts, chemOf, chemByPlayer, chemWorth,
   slotsOf, eligOf,
+  tagged: tagged_, batOrderOf, coachBatOrder, setBatOrder, orderCost, canReorder,
+  canSwapArms, swapArms, coachArms,
   payroll, overCap, marketAt, applyMarket, cutPlayer,
   TRADE, dealRoster, tradeAt, tradeOffers, acceptTrade, declineTrades,
   playSeason, advanceGame, finalizeSeason,

@@ -1118,6 +1118,24 @@ body:has(#s-intro.on) header .lockup{visibility:hidden}
 .rslot .rprice{font-family:var(--fn);font-size:12px;font-weight:700;color:var(--green)}
 .rslot .rwar{font-family:var(--fn);font-size:12px;font-weight:800;color:var(--ink);width:38px;text-align:right}
 .rslot .rlink{font-size:9px;color:var(--gold);font-weight:700}
+/* The lineup: a spot number, then the man. Pro taps two rows to swap them. */
+.rslot .rnum{flex:0 0 auto;width:16px;font-family:var(--fn);font-size:13px;font-weight:800;
+  color:var(--gold);text-align:center;font-variant-numeric:tabular-nums}
+button.rslot{width:100%;text-align:left;font:inherit;color:inherit;cursor:pointer}
+.rslot.lu-go:hover{border-color:rgba(var(--edge),.24)}
+.rslot.sel{border-color:var(--gold);box-shadow:0 0 0 2px var(--gold) inset}
+.rslot.tgt{border-color:rgba(var(--edge),.3);border-style:dashed}
+.lu-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:14px 0 -4px}
+.lu-reset{font-family:var(--fn);font-size:11px;font-weight:700;letter-spacing:.04em;color:var(--gold);
+  background:none;border:1px solid rgba(var(--edge),.2);border-radius:999px;padding:4px 10px;cursor:pointer}
+.lu-cost{margin:-6px 0 4px;font-size:13px;color:var(--leather)}
+.lu-hint{margin:-4px 0 6px;font-size:12.5px;color:var(--dim);text-align:center}
+.lu-pro{display:flex;align-items:center;gap:12px;margin:-4px 0 6px;padding:10px 12px;border-radius:10px;
+  border:1px dashed rgba(var(--edge),.2);font-size:13px;color:var(--dim)}
+.lu-pro span{flex:1}
+.lu-pro-go{flex:0 0 auto;font-family:var(--fn);font-size:12px;font-weight:800;letter-spacing:.05em;
+  text-transform:uppercase;color:#1a1205;background:linear-gradient(180deg,#f3cc62,#d9a531);
+  border:0;border-radius:8px;padding:8px 12px;cursor:pointer}
 
 /* ─── field beside lineup card, on a screen with room for it ───
    The page is a 640px column, which is right for a phone and leaves a desktop
@@ -2774,8 +2792,8 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
   </div>
 </div>
 
-<script src="engine.js?v=34"></script>
-<script src="run.js?v=28"></script>
+<script src="engine.js?v=35"></script>
+<script src="run.js?v=29"></script>
 <script src="achievements.js?v=11"></script>
 <script src="parks.js?v=8"></script>
 <script src="crest.js?v=2"></script>
@@ -4199,6 +4217,78 @@ function rosterList(host,opts){
   host.appendChild(wrap);
 }
 
+/* THE LINEUP: all twelve as a manager reads them, the nine in batting order and
+   then the staff. The coach sets both (engine.js coachOrder, run.js coachArms), and
+   the coach's batting order is the best the model can get out of these nine, so a
+   run that never touches it plays exactly the season it always did. Pro can move
+   men around from the end of the draft until the first pitch: tap one, then tap
+   who he swaps with. A different order costs what it gives up, and the line under
+   the list says how much, so moving a man is a choice with a visible price. */
+let LU_SEL=null;
+function lineupList(host,o){
+  o=o||{};
+  if(!host||!RUN)return;
+  const slots=SLOTS_NOW();
+  const perChem=R.chemByPlayer(RUN,null,o.chem||null);
+  const live=!!o.edit&&R.canReorder(RUN);
+  const pro=live&&isPro();
+  if(!pro)LU_SEL=null;
+  const order=R.batOrderOf(RUN);
+  const sel=LU_SEL;
+  const row=(k,lead,kind)=>{
+    const p=RUN.roster[k],slot=slots[RUN.slotIndex[k]];
+    const tgt=sel&&sel.k!==k&&sel.kind===kind&&(kind==='bat'||R.canSwapArms(RUN,sel.k,k));
+    return '<'+(pro?'button type="button"':'div')+' class="rslot'+(pro?' lu-go':'')+
+      (sel&&sel.k===k?' sel':'')+(tgt?' tgt':'')+'" data-k="'+k+'" data-kind="'+kind+'">'+
+      (lead?'<span class="rnum">'+lead+'</span>':'')+
+      '<span class="rpos" style="'+posPaint(slot)+'">'+esc(slot)+'</span>'+
+      '<span class="rname">'+esc(p.n)+'</span>'+
+      chemBadge(perChem[k],'sm')+
+      '<span class="rteam">'+seasonLine(p)+'</span>'+
+      (o.price?'<span class="rprice">'+M(p.p)+'</span>':'')+
+      '<span class="rwar">'+warHtml(p.w)+'</span>'+
+      '</'+(pro?'button':'div')+'>';
+  };
+  const head=(t,reset)=>'<div class="lu-head"><span class="eyebrow">'+t+'</span>'+
+    (reset?'<button type="button" class="lu-reset" data-reset="'+reset+'">Coach’s order</button>':'')+'</div>';
+  let h='';
+  if(!RUN.staff&&order.length){
+    h+=head('Batting order',pro&&RUN.batOrder?'bat':'');
+    h+='<div class="roster-final">'+order.map((k,i)=>row(k,i+1,'bat')).join('')+'</div>';
+    if(live&&o.costWins>=0.05) h+='<p class="lu-cost">Your order costs about '+o.costWins.toFixed(1)+
+      ' wins against the coach’s.</p>';
+  }
+  const arms=RUN.roster.map((p,k)=>k).filter(k=>RUN.roster[k].r==='p')
+    .sort((a,b)=>RUN.slotIndex[a]-RUN.slotIndex[b]);
+  h+=head('Pitching staff',pro&&RUN.staffOrdered?'arm':'');
+  h+='<div class="roster-final">'+arms.map(k=>row(k,'','arm')).join('')+'</div>';
+  if(pro) h+='<p class="lu-hint">'+(sel?'Now tap who he swaps with.':'Tap a player, then tap who he swaps with.')+'</p>';
+  else if(live) h+='<div class="lu-pro"><span>The coach set this lineup. Pro lets you move players before the season.</span>'+
+    '<button type="button" class="lu-pro-go" id="b-lu-pro">Get Pro</button></div>';
+  host.innerHTML=h;
+  if(!live)return;
+  const b=host.querySelector('#b-lu-pro');
+  if(b)b.onclick=()=>openPro();
+  if(!pro)return;
+  host.querySelectorAll('.lu-reset').forEach(el=>el.onclick=()=>{
+    LU_SEL=null;
+    if(el.dataset.reset==='bat')R.setBatOrder(RUN,null);else R.coachArms(RUN);
+    paintSquad();
+  });
+  host.querySelectorAll('.lu-go').forEach(el=>el.onclick=()=>{
+    const k=+el.dataset.k,kind=el.dataset.kind;
+    const cur=LU_SEL;
+    if(!cur||cur.kind!==kind){LU_SEL={k,kind};}
+    else if(cur.k===k){LU_SEL=null;}
+    else if(kind==='bat'){
+      const ord=R.batOrderOf(RUN);const a=ord.indexOf(cur.k),z=ord.indexOf(k);
+      ord[a]=k;ord[z]=cur.k;R.setBatOrder(RUN,ord);LU_SEL=null;
+    }else if(R.canSwapArms(RUN,cur.k,k)){R.swapArms(RUN,cur.k,k);LU_SEL=null;}
+    else LU_SEL={k,kind};
+    paintSquad();
+  });
+}
+
 function drawField(el,live){
   if(RUN&&RUN.staff){drawStaffBoard(el,live);return;}
   el.classList.remove('staffboard');
@@ -4836,6 +4926,9 @@ function untilReset(){
 }
 /* Everything that shows the meter, repainted from one call. */
 function paintProState(){
+  /* Pro is what lets the squad screen's lineup be moved, so a Pro answer that lands
+     while that screen is up redraws it. */
+  if(RUN&&$('s-squad').classList.contains('on'))paintSquad();
   const line=$('hp-pro');
   if(line){
     if(isPro()){line.innerHTML='<b>Pro</b> \u00b7 every mode, as often as you like.';}
@@ -4915,6 +5008,7 @@ function proSheet(m,fresh){
     '<div class="pro-vs">'+
       '<div class="pv-row pv-head"><span></span><span>Free</span><span>Pro</span></div>'+
       '<div class="pv-row"><span>Plays of each of the six modes</span><span class="pv-f">1 a day</span><span class="pv-p">Unlimited</span></div>'+
+      '<div class="pv-row"><span>Your batting order and rotation</span><span class="pv-f">Coach sets it</span><span class="pv-p">'+tick+' You do</span></div>'+
       '<div class="pv-row"><span>Run it back after a bad draft</span><span class="pv-f">Tomorrow</span><span class="pv-p">Right now</span></div>'+
       (proParks.length?'<div class="pv-row"><span>The Pro ballparks</span><span class="pv-f">Locked</span><span class="pv-p">'+tick+' Both</span></div>':'')+
       '<div class="pv-row"><span>Classic and the daily</span><span class="pv-f">Free</span><span class="pv-p">'+tick+' Free</span></div>'+
@@ -5971,21 +6065,32 @@ function staffReport(tagged,chem,rating){
 }
 
 function showSquad(){
+  LU_SEL=null;
   show('s-squad');
+  paintSquad();
+}
+function paintSquad(){
   /* No staff strip here: the list beside the field already names all twelve. */
   drawField($('sq-field'),false);
-  const tagged=RUN.roster.map((p,i)=>({...p,_slot:SLOTS_NOW()[RUN.slotIndex[i]]}));
+  const tagged=R.tagged(RUN);
   const chem=R.chemOf(RUN,tagged);
-  rosterList($('sq-roster'),{title:'All twelve',price:true,chem});
   /* All-Time Staff has no lineup to shape and no batting order to balance, so it
      gets neither an archetype nor a coach's report about its hitting. Left alone it
      told a twelve-arm roster it had a light-hitting lineup. */
   const structure=RUN.staff?{multiplier:1,archetype:null}:E.rosterStructure(tagged);
   /* The same number the results screen will show, from the same function, so the
      squad screen cannot promise one thing and the season report another. */
-  const rating=RUN.staff?E.staffRating(tagged):E.teamRating(
-    E.rosterOffense(tagged,chem.multiplier,structure.multiplier),
-    E.rosterRunPrevention(tagged,chem.multiplier));
+  const off=RUN.staff?0:E.rosterOffense(tagged,chem.multiplier,structure.multiplier);
+  const def=RUN.staff?0:E.rosterRunPrevention(tagged,chem.multiplier);
+  const rating=RUN.staff?E.staffRating(tagged):E.teamRating(off,def);
+  /* What the order costs, in wins: the same roster played in the coach's order. */
+  let costWins=0;
+  if(!RUN.staff&&RUN.batOrder){
+    const coach=tagged.map(p=>{const q={...p};delete q._bat;return q;});
+    const G=E.CONSTANTS.REGULAR_SEASON_GAMES;
+    costWins=(E.teamWinPct(E.rosterOffense(coach,chem.multiplier,structure.multiplier),def)-E.teamWinPct(off,def))*G;
+  }
+  lineupList($('sq-roster'),{price:true,chem,edit:true,costWins});
   /* UNSPENT MONEY IS NOT A WEAKNESS IN THE TRADE MACHINE, before the deadlines.
      Room under the cap is the thing that buys a deal, and the note directly
      under this said so while the take beside it marked the same money red. The
@@ -6555,7 +6660,7 @@ function startPlayoffs(){
 
 let PO=null;
 
-const myTagged=()=>RUN.roster.map((p,i)=>({...p,_slot:SLOTS_NOW()[RUN.slotIndex[i]]}));
+const myTagged=()=>R.tagged(RUN);
 const myClub=()=>RUN.franchise?teamFullName(RUN.franchise):'Your All-Stars';
 const myClubShort=()=>RUN.franchise||'YOU';
 
@@ -7109,7 +7214,7 @@ function showResult(){
     {label:'R/G',value:(o.totalRS/162).toFixed(1)},{label:'RA/G',value:(o.totalRA/162).toFixed(1)},
   ].map(s=>'<div class="stat-box"><div class="sv">'+s.value+'</div><div class="sl">'+s.label+'</div></div>').join('');
 
-  rosterList($('r-roster'),{title:'Your roster',chem:o.chemistry});
+  lineupList($('r-roster'),{chem:o.chemistry});
 
   if(o.titleWon||o.beatRecord) setTimeout(()=>fireConfetti(o.isGOAT||o.titleWon),300);
   /* Last, and never awaited: the screen is already up and a board that is down
