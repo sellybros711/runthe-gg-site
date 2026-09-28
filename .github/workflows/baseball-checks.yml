@@ -100,6 +100,11 @@ jobs:
       - name: The lineup
         run: node baseball/check-lineup.mjs
 
+      # A run in progress survives leaving the page: the banner asks first and
+      # saves, and resuming shows the SAME board, or leaving would be a free re-spin.
+      - name: A run survives leaving the page
+        run: node baseball/check-resume.mjs
+
       # Every badge, against real runs. The catalogue went from 36 to 205 in one
       # pass, and a badge nobody can earn throws no error and breaks no test: the
       # cabinet renders, the square stays dark, and nobody reports it. The hoops

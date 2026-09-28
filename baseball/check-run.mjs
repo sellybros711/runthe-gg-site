@@ -280,6 +280,10 @@ claim(drafted.stalled === null, 'twelve picks, with no board the draft could not
   drafted.stalled != null ? `stalled at pick ${drafted.stalled + 1}` : '');
 const arrived = await toResults(p);
 claim(arrived, 'the season and October hand off to the results screen');
+/* A run in progress is saved so leaving the page cannot lose it, and a FINISHED
+   one has to take that save with it, or the front page offers to resume a season
+   that is already on the board. */
+claim(await p.evaluate(() => !localStorage.getItem('rtd_run_v1')), 'a finished run leaves no saved draft behind');
 
 // ══ 2. what the results screen says ════════════════════════════════════════
 head('2. AND IT HAS SOMETHING TO SAY ON IT');
