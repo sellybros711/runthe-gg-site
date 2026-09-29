@@ -711,9 +711,17 @@ const PROJ = {
    * played for 16 seasons: actual = 1.019 * projected + 1.61, rms 1.60 wins,
    * over a range of 50 to 107 actual wins. The projection is sound across the
    * whole range a draft can reach, so it was left alone and only the anchors
-   * below moved. */
-  SLOPE: 1.5047,
-  INTERCEPT: -50.51,
+   * below moved.
+   *
+   * REFITTED when the schedule got harder (OPP_OFF_SCALE 1.05, OPP_DEF_SCALE
+   * 0.92): 640 drafts across eight bots, single seasons, actual = 1.5065 *
+   * pythagorean + -56.77, rms 6.3 wins for one season (the season's own noise).
+   * The same script on the old schedule gave 1.589 / -56.42 against the
+   * shipped 1.5047 / -50.51, so the bot mix moves the fit a little too. What
+   * it has to do is predict the season, and it does: every bot's mean
+   * projection lands within 2.2 wins of its mean record. */
+  SLOPE: 1.5065,
+  INTERCEPT: -56.77,
   /*
    * THE SCALE IS ANCHORED ON WHAT A DRAFT CAN ACTUALLY PRODUCE, at both ends.
    *
@@ -742,8 +750,14 @@ const PROJ = {
    * is 0.77 of a win, and no part of the scale is unreachable in either
    * direction. Re-measure both ends if the cap or the player pool moves: they
    * are facts about the draft, not preferences. */
-  FLOOR_WINS: 31, FLOOR_RATING: 1,
-  TOP_WINS: 106, TOP_RATING: 99,
+  /* RE-ANCHORED with the harder schedule, by the same method: the worst-man
+   * bot now projects a median 23 wins (was 28) and the best roster any bot
+   * reached projects 99 (was 107). So the scale keeps its meaning (1 is the
+   * worst draft, 99 the best anybody built) and a roster wins fewer games at
+   * every rating. A dead top is the defect this block was written to fix, so
+   * the anchors follow the draft rather than holding a win total. */
+  FLOOR_WINS: 26, FLOOR_RATING: 1,
+  TOP_WINS: 99, TOP_RATING: 99,
 };
 
 /* What a roster projects to win over 162, on this game's schedule. */
@@ -1538,8 +1552,21 @@ const SCHEDULE = {
   // Real teams' run-prevention model floors around ~4.1; scale the pool so
   // these opponents play at the postseason intensity a title team faces all
   // year, holding the calibrated difficulty. These are the difficulty dial.
-  OPP_OFF_SCALE: 1.02,
-  OPP_DEF_SCALE: 0.95,
+  //
+  // TUNED HARDER (2026-09), the owner's call: a careful draft was reaching 90
+  // wins about half the time. The target is one in four. Measured over 300
+  // drafts a bot at the $190M cap:
+  //
+  //                     1.02 / 0.95     1.05 / 0.92
+  //   spread (careful)  43% 90+ wins    28%
+  //   best available    25%             23%
+  //   chases chemistry  52%             38%
+  //
+  // 1.055 / 0.915 put the careful draft at 22%, past the target. The shown
+  // rating's projection (PROJ) was refitted against this schedule in the same
+  // change, because it predicts wins on it.
+  OPP_OFF_SCALE: 1.05,
+  OPP_DEF_SCALE: 0.92,
 };
 
 /* Build the pool of real team-seasons your schedule is drawn from. Returns
