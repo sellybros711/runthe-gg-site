@@ -718,26 +718,40 @@ body:has(#s-intro.on) header .lockup{visibility:hidden}
    Every tile printed WAR in the same ink, so telling a 9.0 season from a 2.0 one
    meant reading the digits on all six tiles. The bands are wide on purpose: a
    drafted season is elite, very good, good, useful or filler, and a scale with
-   more steps than that is a gradient nobody can name. Gold is the top and the
-   only one that glows, because on this board there should be one obvious answer
-   to "is anybody here special". */
+   more steps than that is a gradient nobody can name. The ladder is a heat
+   scale with a gem on top, the owner's call: red filler, then orange, yellow
+   and green, and diamond blue for the top, which is the only rung that glows,
+   because on this board there should be one obvious answer to "is anybody
+   here special". Yellow is a deep mustard in the light theme, because a true
+   yellow cannot be read on cream. Under 1.5 WAR is not a rung at all and
+   stays the page's dim ink. */
 .warv{font-weight:800}
-.warv.w5{color:#b8860b;text-shadow:0 0 12px rgba(184,134,11,.5)}
-.warv.w4{color:#d4772c}
-.warv.w3{color:#2e7d32}
-.warv.w2{color:#1a5276}
-.warv.w1{color:#6b6252}
+:root{--wt1:#b3261e;--wt2:#a84b00;--wt3:#806200;--wt4:#2e7d32;--wt5:#1565c0;--wt5-glow:rgba(21,101,192,.45)}
+/* The light rungs do not survive the charcoal (a dark blue or red there drew
+   DIMMER than the filler under it, and the temperature inverted), so these
+   are the dark theme's own lifted versions, in the same order, each clearing
+   the dark panel. */
+:root[data-theme="dark"]{--wt1:#ef6f66;--wt2:#f0954a;--wt3:#f2c94c;--wt4:#5cb85f;--wt5:#6fd0ff;--wt5-glow:rgba(111,208,255,.5)}
+.warv.w5{color:var(--wt5);text-shadow:0 0 12px var(--wt5-glow)}
+.warv.w4{color:var(--wt4)}
+.warv.w3{color:var(--wt3)}
+.warv.w2{color:var(--wt2)}
+.warv.w1{color:var(--wt1)}
 .warv.w0{color:var(--dim-2)}
-/* The rungs above are LIGHT-THEME LITERALS, so at night the blue "useful" rung
-   (#1a5276, the exact hex the dark token block calls a link nobody can read)
-   drew DIMMER than the warm-grey filler under it: the temperature inverted.
-   Reported with the black-name tiles. These are the dark theme's own lifted
-   accents, in the same order, each clearing the dark panel. */
-:root[data-theme="dark"] .warv.w5{color:#e0ac3c;text-shadow:0 0 12px rgba(224,172,60,.45)}
-:root[data-theme="dark"] .warv.w4{color:#e89552}
-:root[data-theme="dark"] .warv.w3{color:#5cb85f}
-:root[data-theme="dark"] .warv.w2{color:#6aa9d8}
-:root[data-theme="dark"] .warv.w1{color:#a29a89}
+/* The same tier rides on the draft tile as a bar down its left edge, so a board
+   can be read by colour before a single digit. It is a pseudo element rather
+   than a border or a shadow, because .hot owns the border and the shadow and a
+   tile can be both hot and elite. A signed or unaffordable tile loses it. */
+.tile{position:relative}
+.tile::before{content:"";position:absolute;left:0;top:9px;bottom:9px;width:3px;border-radius:0 3px 3px 0;
+  background:var(--tier,transparent);pointer-events:none}
+.tile.tw1{--tier:var(--wt1)}
+.tile.tw2{--tier:var(--wt2)}
+.tile.tw3{--tier:var(--wt3)}
+.tile.tw4{--tier:var(--wt4)}
+.tile.tw5{--tier:var(--wt5)}
+.tile.tw5::before{box-shadow:0 0 8px var(--wt5-glow)}
+.tile.off::before{display:none}
 .tile.off .warv{color:var(--dim-2)!important;text-shadow:none}
 .tile.off{background:rgba(var(--edge),.02);border-style:dashed;border-color:rgba(var(--edge),.08);cursor:default;box-shadow:none}
 .tile.off:active{transform:none}
@@ -4612,7 +4626,7 @@ function drawStaffBoard(el,live){
         '<span class="sb-slot">'+esc(sl)+'</span>'+
         '<span class="sb-name">'+esc(lastName(p.n))+'</span>'+
         '<span class="sb-meta">'+seasonLine(p)+'</span>'+
-        '<span class="sb-war">'+p.w.toFixed(1)+'</span>'+
+        '<span class="sb-war">'+warHtml(p.w)+'</span>'+
         (ce&&ce.keyPoints>0?'<span class="sb-chem" style="background:'+
           chemColor(ce.top&&ce.top.type)+'">&#9889;'+chemNum(ce.keyPoints)+'</span>':'')+
         '</div>';
@@ -6322,7 +6336,7 @@ function optTile(r,i){
   }
   const hot=!block&&chemHtml;
   const reason=block==='price'?'Too expensive':block==='drafted'?'Already drafted':block==='no_spot'?'No open position':'';
-  return '<button class="tile'+(block?' off':'')+(hot?' hot':'')+'" data-key="'+r.key+'"'+(block?' disabled':'')+
+  return '<button class="tile t'+warBand(p.w)+(block?' off':'')+(hot?' hot':'')+'" data-key="'+r.key+'"'+(block?' disabled':'')+
     ' style="animation-delay:'+(i*0.04)+'s">'+
     '<div class="th"><span class="pos" style="'+posPaint(pos)+'">'+esc(pos)+'</span>'+
     /* "Scarce" rather than "Scarce spot". The tag shares a row with a position
@@ -6734,7 +6748,7 @@ function askCut(ev,onDone){
     btn.disabled=!!p._repl;
     btn.innerHTML='<span class="cpos" style="'+posPaint(slot)+'">'+slot+'</span>'+
       '<span class="cname">'+esc(p.n)+'</span>'+
-      '<span class="cwar">'+p.w.toFixed(1)+' WAR</span>'+
+      '<span class="cwar">'+warHtml(p.w)+' WAR</span>'+
       '<span class="cprice">'+M(p.p)+'</span>';
     btn.addEventListener('click',()=>{
       const r=R.cutPlayer(RUN,i);
