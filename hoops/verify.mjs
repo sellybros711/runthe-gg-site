@@ -163,7 +163,9 @@ for (const slot of E.SLOTS) {
      easier, and the guard goes on asserting against a colour that is not on
      the page any more. */
   const pageSrc = fs.readFileSync(path.join(HERE, 'index.html'), 'utf8');
-  const doorRule = /\.modedoor button\{background:(#[0-9a-f]{3,6});/i.exec(pageSrc);
+  /* The door is a tile in the More ways to play grid now (.mtile), and the
+     club's accent is on its name exactly as it was on the old door's. */
+  const doorRule = /\.mtile \.mt-main\{[^}]*?background:(#[0-9a-f]{3,6});/i.exec(pageSrc);
   ok(!!doorRule, 'the One Franchise door declares a flat fill this can be measured against');
   const DOOR_FILL = doorRule ? doorRule[1] : '#141a26';
   const flat = [];
@@ -898,6 +900,68 @@ isLineup(unnamed.length, 0, 'every real championship lineup is recognised as som
   /* THE CLUB PACE MAP: the fastest and slowest clubs a fan would name. */
   ok(E.teamTempo('DEN', 1991) >= 110, `Westhead's 1991 Nuggets are the top of the pace map (${E.teamTempo('DEN', 1991)})`);
   ok(E.teamTempo('UTA', 1998) < 95, `Sloan's 1998 Jazz walk it up (${E.teamTempo('UTA', 1998)})`);
+}
+
+/* ── THE SYSTEM, IN THIS ROSTER'S OWN NAMES ─────────────────────────────────
+ *
+ * Asked for by the owner: the line under the archetype should be as specific
+ * to the team as it can be, naming the drafted players and how each fits. The
+ * blurb is the same sentence for every Pick and Roll roster; the story says
+ * "Stockton runs the pick and roll. Malone sets it and dives."
+ *
+ * PLAYED FOR REAL, nine ways of drafting, so every system is met on rosters a
+ * person could build rather than on a fixture written to fit a branch. And the
+ * claims are the four ways a sentence built from data goes wrong in silence:
+ * a system with no story, a story naming nobody on the team, a story that is
+ * the same for two different teams (the blurb again, by another name), and a
+ * missing field printing "undefined" on the fit card.
+ */
+{
+  const pageSrcAll = fs.readFileSync(path.join(HERE, 'index.html'), 'utf8');
+  /* Built from char codes, because this repo's dash checker refuses the
+     characters and their escapes alike, in a checker's source too. */
+  const DASHES = new RegExp('[' + String.fromCharCode(8211, 8212) + ']');
+  const W = ['w', 'pts', 'reb', 'ast', 'tpa', 'stl', 'blk', 'fga', 'dw'];
+  const bySys = {};
+  let told = 0, named = 0, clean = 0, total = 0;
+  const bad = [];
+  for (let i = 0; i < 1500; i++) {
+    const k = W[i % W.length], rnd = E.createSeededRNG(77 + i);
+    const run = R.createRun({ seed: 3000 + i });
+    let g = 0;
+    while (run.phase === R.PHASES.DRAFT && g++ < 50) {
+      const d = R.spin(run, data);
+      const o = d.options.map(x => data.allPlayers[x]).filter(Boolean);
+      o.sort((a, c) => ((c[k] || 0) + rnd() * 2) - ((a[k] || 0) + rnd() * 2));
+      R.sign(run, o[0]);
+    }
+    if (run.phase === R.PHASES.DRAFT) continue;
+    const t = R.taggedRoster(run);
+    const f = E.rosterFit(t);
+    const key = f.system ? f.system.key : 'none';
+    const story = f.system ? f.system.story : E.systemStory('none', t);
+    total++;
+    (bySys[key] = bySys[key] || []).push(story);
+    if (story && story.length > 12) told++;
+    if (t.some(p => story.indexOf(E.lastNameOf(p.n)) >= 0)) named++;
+    if (!DASHES.test(story) && !/undefined|NaN|null|\s\.|\.\./.test(story)) clean++;
+    else if (bad.length < 3) bad.push(key + ': ' + story);
+  }
+  const keys = Object.keys(bySys);
+  ok(keys.length >= 22, `every system was met by a real draft (${keys.length - (bySys.none ? 1 : 0)} systems and none)`);
+  ok(told === total, `every roster is told a story (${told} of ${total})`);
+  ok(named === total, `and every story names somebody on the team (${named} of ${total})`);
+  ok(clean === total, `with no dash, no stray field and no doubled stop (${clean} of ${total})${bad.length ? '\n      ' + bad.join('\n      ') : ''}`);
+  /* TEAM SPECIFIC, which is the half the blurb could never be. Two different
+     rosters in one system have to read differently, or the story is a second
+     blurb wearing a name. */
+  const same = keys.filter(k => bySys[k].length > 1 && new Set(bySys[k]).size === 1);
+  ok(same.length === 0, `two rosters in one system are told two different stories (${same.join(', ') || 'all differ'})`);
+  /* And the page prints it rather than the blurb, in the three places the
+     identity is said. */
+  ok(/f\.system\.story \|\| f\.system\.blurb/.test(pageSrcAll), 'the draft fit card prints the story');
+  ok((pageSrcAll.match(/paintSysLine\(\$\('(?:o|p)-sys'\)/g) || []).length === 2,
+    'and the season and results screens print it too');
 }
 
 /* THE BALL ONLY BOUNCES ONCE, and it has to be the largest single thing the fit

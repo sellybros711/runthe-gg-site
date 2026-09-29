@@ -11237,49 +11237,87 @@ WHERE ran once per row scanned and filed a play each time; a rename checked in
 the statement that made it read the snapshot from before it. Both are two
 statements now.
 
-#### The front page leads with Classic, because Classic is the one you come back to
+#### The front page is Run The Diamond's shape: Classic, the daily, More ways to play
 
 ```
-node hoops/check-home.mjs     section 4 holds the order, section 1 the length
+node hoops/check-home.mjs     section 4 holds the order and the sheet, section 1 the length
 ```
 
-Asked for by the owner: the unlimited mode has to be the focus, or players play
-the two dailies once and leave. The dailies are one play a day by design, so a
-front page that opens on them ends a visit in two games. **The draft is
-Classic now**, the name "Quick Draft" is gone from every screen, and it is the
-first thing on the page.
+Asked for by the owner, twice. First: the unlimited mode has to be the focus, or
+players play the two dailies once and leave, so **the draft is Classic** and it
+leads. Then, with Run The Diamond as the model: the other modes go under a
+**More ways to play** door rather than hanging off the Classic card, and **the
+daily challenge gets a spot of its own**.
 
 | order | what | where |
 |---|---|---|
-| 1 | Classic: eyebrow, title, reels and court, the three pace chips, the career line, Start, and One Franchise, Decades and the Daily Draft as a row of three | `#classic` in index.html |
-| 2 | Conquest, one wide tile under an "Also unlimited" eyebrow | `playTilesHtml()` in modes-ui.js |
-| 3 | both dailies as one checklist card | `todayHtml()` |
-| 4 | Leaderboards, Career, How to play as links | `#home-quiet` |
+| 1 | Classic: eyebrow, title, reels and court, the three pace chips, the career line, Start | `#classic` in index.html |
+| 2 | the Daily Draft, its own card, gold until today is played | `#b-daily-go`, `renderDailyDoor()` |
+| 3 | More ways to play: One Franchise, Decades, Conquest, Fix History, Six Passes, and Endless for Pro | `#mw-grid`, one grid |
+| 4 | three doors: How to play, Leaderboards, Career | `#home-quiet` |
 
-**The dock carries Classic's Start** (or Resume while a run is going), and it is
-the one big button on the page. `#b-today` and the Quick Draft sheet are gone,
-so nothing on this page opens a sheet to reach the game any more. **The reels
-turn whenever the front page is up**: `show('s-home')` and boot both call
-`heroStart()`, and `show()` stops it on the way out.
+**ONE GRID, TWO HOMES.** A desktop (920 and up) draws `#mw-grid` in `#hp-tiles`,
+beside the daily card, three across, and draws no door. A phone keeps it hidden
+and reaches it through `#b-modes`, which opens `#modesheet`: `openModes()`
+**moves the grid into the sheet** and `closeModes()` moves it back, which is the
+dock's rule (move the real button, never a copy) arriving at a grid. So there is
+one set of ids, and a checker presses `#mc-fix` wherever it currently lives. Any
+press inside the grid closes the sheet behind it, and `show()` puts the grid home
+on every screen change. `check-home` presses a tile from the sheet and asks where
+the grid went; with the move back removed it reports the grid stuck in the sheet.
 
-**Every id the draft's code and the checkers reach for is the same element,
-moved** (`#b-start`, `#b-daily-go`, `#b-franchise-go`, `#b-decade-go`,
-`#home-career`), so nothing downstream changed. A checker still waits on them
-with `state: 'attached'`.
+**The page owns two tiles and modes-ui.js owns four.** One Franchise and Decades
+are static markup painted by `renderModeDoor()` and `renderEraDoor()` (a
+remembered club wears its colours and gets a Switch club press under it).
+Conquest, Fix History, Six Passes and the Endless tile are filled into
+`#mw-cq`, `#mw-fix`, `#mw-ps` and `#mw-pro` by `renderHome()` there, because only
+that file knows whether a puzzle is done. It also writes the door's line, which
+names a puzzle still open today rather than making a phone reader open the sheet
+to find out.
 
-**`check-home`'s budget went back up, from 1.8 to 2.7 screens**, and that is the
-design rather than drift: the draft's court and its three doors are on the page
-again, where the sheet used to hide them. Measured: 2.23 at 390x844, 2.56 at
-360x740, 1.91 at 1512x950. The three ways in are one row of three to keep it
-there; stacked, they cost about 300px more.
+**A desktop keeps Start in the Classic card.** The card is two columns there,
+words left and court right, and `DOCK_FOR['s-home']` returns nothing while
+`(min-width:920px)` matches, because a bar pinned to the foot of the window
+floated over the daily card and the tiles. A phone docks it. A resize across 920
+re-docks through the `WIDE` listener.
 
-**Section 4 asserts the ORDER and the weight**: Classic first, one orange button,
-no second big button, no "Quick Draft" anywhere, no sheet, the reels turning,
-and the docked Start opening the draft. Swapping Classic and Conquest fails it.
+**The injected `.ptile` rules are gone, and they were a bug.** modes-ui.js had
+styled the old Conquest tile as `.ptile`, which is also the DRAFT BOARD's tile
+class, and its sheet is appended after the page's, so `.ptile{display:flex;...}`
+had been overriding the board's own grid layout since the tiles pass. Mode tiles
+are `.mtile` now and share no class with anything on the board.
 
-**The league's numbers live in How to play** (`.lgfacts`), and
-`#home-era` with them. **Leaderboards is one sheet with a chip per mode**, and
-the Classic chip hands over to the draft's own board sheet.
+**`check-home`'s budget came back down, 2.7 to 2.3 screens.** Measured 1.85 at
+390x844, 2.14 at 360x740 and 1.51 at 1512x950, against 2.23, 2.56 and 1.91 with
+the variants, Conquest and the puzzles on the page. The league's numbers still
+live in How to play (`.lgfacts`), and Leaderboards is one sheet with a chip per
+mode.
+
+#### The archetype line names this team's players
+
+```
+node hoops/verify.mjs     the block headed THE SYSTEM, IN THIS ROSTER'S OWN NAMES
+```
+
+Asked for by the owner: the description under the team archetype should be as
+team specific as possible, and can name the drafted players and how they fit. A
+blurb is the same sentence for every Pick and Roll roster. `E.systemStory(key,
+roster)` is the same system in this roster's names: "Stockton runs the pick and
+roll. 13.4 assists a night. Malone sets it and dives." `detectSystem` returns it as
+`story`, and the draft's fit card, the season card (`#p-sys`) and the results
+screen (`#o-sys`) print it, with the blurb as the fallback for a cached engine.
+
+**Every name is found by ROLE off the numbers the detect read**, per game at the
+league's pace: the best passer, the best rebounder, the man taking the shots, the
+man in the C slot. A surname unless two men share one. A name ending in a stop
+(Jaren Jackson Jr.) at the end of a sentence would print two, so the story folds
+them.
+
+verify plays 1,500 drafts nine ways and asserts all 22 systems are met, every
+story names somebody on the team, none carries a dash or a stray field, and two
+rosters in one system are told two different stories. That last claim is what
+keeps it from being a second blurb: a `systemStory` that returns one fixed
+sentence fails it and the naming claim.
 
 **`check-bracket`'s door walk needs a SEEDED run.** It took any run that
 reached the bracket, and a play-in run is one game: it can never open the series

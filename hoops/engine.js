@@ -1554,6 +1554,171 @@ const clubPaceFactor = (r) => {
 };
 const fit = (...xs) => xs.reduce((a, b) => a + b, 0) / xs.length;
 
+/* ── THE STORY: the system in THIS roster's own names ─────────────────────
+ *
+ * The blurb says what a system is. The story says who is doing it on this
+ * team: "Stockton runs the pick and roll. Malone sets it and dives." Asked for
+ * by the owner, because a description that is the same for every Pick and Roll
+ * roster tells a player nothing about the five he drafted.
+ *
+ * EVERY NAME IS READ OFF THE SAME NUMBERS THE SYSTEM WAS DETECTED ON, per game
+ * at the league's pace (paceAdjust), so a story cannot name a passer the detect
+ * did not see. Each branch finds its men by role (the best passer, the best
+ * rebounder, the one taking the shots) rather than by slot, because a system
+ * is a claim about what men do, not where they are listed.
+ *
+ * A surname unless two men share one. Numbers to one decimal. Short sentences:
+ * it is read on a phone between signings. It never returns a dash, and verify
+ * holds that over every system on real drafts.
+ */
+function systemStory(key, r, P) {
+  /* A name can end in a stop of its own (Jaren Jackson Jr.), and a sentence
+     that ends on him would print two. */
+  return tellSystem(key, r, P).replace(/\.\.+/g, '.');
+}
+function tellSystem(key, r, P) {
+  if (!r || !r.length) return '';
+  P = P || rosterProfile(r);
+  const pa = (p, k) => paceAdjust(p[k] || 0, p.s);
+  const last = r.map(p => lastNameOf(p.n));
+  const nm = (p) => {
+    if (!p) return '';
+    const i = r.indexOf(p), l = last[i];
+    return last.filter(x => x === l).length > 1 ? String(p.n) : l;
+  };
+  const by = (k, xs) => [...(xs || r)].sort((a, b) => pa(b, k) - pa(a, k));
+  const top = (k, xs) => by(k, xs)[0];
+  const f1 = (v) => (Math.round(v * 10) / 10).toFixed(1).replace(/\.0$/, '');
+  const list = (ps) => {
+    const n = ps.map(nm);
+    return n.length <= 1 ? (n[0] || '') : n.slice(0, -1).join(', ') + ' and ' + n[n.length - 1];
+  };
+  const rest = (...ex) => r.filter(p => ex.indexOf(p) < 0);
+  const creator = top('ast'), scorer = top('pts'), glass = top('reb'), rim = top('blk');
+  const shooter = [...r].sort((a, b) => spacingIndex(b) - spacingIndex(a))[0];
+  const bigs = r.filter(p => hasAny(positionsOf(p), ['PF', 'C', 'FC']));
+
+  switch (key) {
+    case 'too_many_mouths': {
+      const three = by('fga').slice(0, 3);
+      return list(three) + ' all had the ball on their own teams. '
+        + Math.round(P.shots * clubPaceFactor(r)) + ' shots a night for five guys. Somebody sits.';
+    }
+    case 'big_three': {
+      const stars = [...r].filter(p => (p.w || 0) >= 8.5 && pa(p, 'pts') >= 17)
+        .sort((a, b) => (b.w || 0) - (a.w || 0)).slice(0, 3);
+      const others = rest(...stars);
+      return list(stars) + ' are the three. '
+        + (others.length ? list(others) + (others.length > 1 ? ' do' : ' does') + ' the dirty work.' : '');
+    }
+    case 'point_centre': {
+      const big = by('ast', r.filter(p => p.pp === 'C'))[0] || creator;
+      const sp = [...rest(big)].sort((a, b) => spacingIndex(b) - spacingIndex(a))[0];
+      return 'It all runs through ' + nm(big) + ' at the elbow. ' + f1(pa(big, 'ast'))
+        + ' assists a night from the center spot.' + (sp ? ' ' + nm(sp) + ' spots up and waits.' : '');
+    }
+    case 'point_forward': {
+      const fwd = by('ast', r.filter(p => p.pp === 'SF' || p.pp === 'PF'))[0] || creator;
+      return nm(fwd) + ' brings it up, posts up and cleans the glass. '
+        + f1(pa(fwd, 'pts')) + ' points, ' + f1(pa(fwd, 'reb')) + ' boards, ' + f1(pa(fwd, 'ast')) + ' assists.';
+    }
+    case 'five_out': {
+      const big = by('tpa', r.filter(p => hasAny(positionsOf(p), ['C', 'FC'])))[0] || glass;
+      const drive = top('pts', rest(big));
+      return 'Even ' + nm(big) + ' shoots it. Everybody spots up, so the lane is wide open for ' + nm(drive) + '.';
+    }
+    case 'moreyball': {
+      const g = [...r.filter(p => hasAny(positionsOf(p), ['PG', 'SG', 'G', 'GF']))]
+        .sort((a, b) => spacingIndex(b) - spacingIndex(a))[0] || shooter;
+      const runner = r.find(p => hasAny(positionsOf(p), ['C', 'FC']) && (p.tpa || 0) < 1.0
+        && pa(p, 'reb') >= 8) || glass;
+      return nm(g) + ' lives beyond the arc. ' + nm(runner) + ' only dunks. Nothing in between.';
+    }
+    case 'heliocentric': {
+      const sun = top('fga');
+      return nm(sun) + ' runs every trip. ' + list(rest(sun)) + ' spread out and wait.';
+    }
+    case 'seven_seconds': {
+      const pg = r.find(p => (p._slot || p.pp) === 'PG') || creator;
+      const wings = [...rest(pg)].sort((a, b) => spacingIndex(b) - spacingIndex(a)).slice(0, 2);
+      return nm(pg) + ' pushes it and pulls up. ' + list(wings) + ' fill the corners. Shot up in seven.';
+    }
+    case 'death_lineup': {
+      const five = r.find(p => p._slot === 'C') || glass;
+      return 'No true center. ' + nm(five) + ' plays the five. Everybody switches and everybody shoots.';
+    }
+    case 'lob_city': {
+      const g = by('ast', r.filter(p => hasAny(positionsOf(p), ['PG', 'G'])))[0] || creator;
+      const catchers = by('reb', r.filter(p => p !== g && hasAny(positionsOf(p), ['PF', 'C', 'FC'])
+        && pa(p, 'reb') >= 8)).slice(0, 2);
+      return nm(g) + ' throws it at the rim. ' + f1(pa(g, 'ast')) + ' assists a night. '
+        + list(catchers) + ' go get it.';
+    }
+    case 'run_tmc': {
+      const three = r.filter(p => pa(p, 'pts') >= 19).sort((a, b) => pa(b, 'pts') - pa(a, 'pts')).slice(0, 3);
+      return list(three) + ' all get twenty. Small, fast, and nobody waits for a big.';
+    }
+    case 'sonic_boom': {
+      const thief = top('stl', r.filter(p => hasAny(positionsOf(p), ['PG', 'SG', 'G']))) || top('stl');
+      const finisher = top('pts', rest(thief));
+      return nm(thief) + ' jumps every passing lane. ' + f1(pa(thief, 'stl')) + ' steals a night. '
+        + nm(finisher) + ' is waiting at the other end.';
+    }
+    case 'run_and_gun': {
+      const shoot = scorer === creator ? top('pts', rest(creator)) : scorer;
+      return nm(creator) + ' pushes it every time. ' + nm(shoot) + ' takes the first good look.';
+    }
+    case 'twin_towers': {
+      const towers = by('reb').filter(p => pa(p, 'reb') >= 9).slice(0, 2);
+      const guard = towers.indexOf(rim) >= 0 ? nm(rim) + ' blocks everything.' : nm(rim) + ' protects the rim.';
+      const boards = towers.reduce((t, p) => t + pa(p, 'reb'), 0);
+      return list(towers) + ' own the glass. ' + Math.round(boards) + ' boards a night between them. ' + guard;
+    }
+    case 'pick_and_roll': {
+      const g = by('ast', r.filter(p => hasAny(positionsOf(p), ['PG', 'G'])))[0] || creator;
+      const big = by('pts', r.filter(p => p !== g && hasAny(positionsOf(p), ['PF', 'C', 'FC'])))[0] || glass;
+      return nm(g) + ' runs the pick and roll. ' + f1(pa(g, 'ast')) + ' assists a night. '
+        + nm(big) + ' sets it and dives.';
+    }
+    case 'grit_and_grind': {
+      const d = [...r].sort((a, b) => (b.dw || 0) - (a.dw || 0))[0];
+      return nm(d) + ' sets the tone. ' + (rim !== d ? nm(rim) + ' guards the rim. ' : '')
+        + 'Nobody scores easy.';
+    }
+    case 'triangle': {
+      const wing = [...r.filter(p => hasAny(positionsOf(p), ['SG', 'SF', 'GF']))]
+        .sort((a, b) => (b.ow || 0) - (a.ow || 0))[0] || scorer;
+      const post = top('pts', r.filter(p => p !== wing && hasAny(positionsOf(p), ['C', 'FC']))) || glass;
+      return nm(wing) + ' is the wing it all runs toward. ' + nm(post) + ' plays out of the post.';
+    }
+    case 'seven_footers': {
+      const post = top('pts', r.filter(p => hasAny(positionsOf(p), ['C', 'FC']))) || glass;
+      return 'Throw it to ' + nm(post) + ' and get out of the way. ' + f1(pa(post, 'pts')) + ' a night inside.';
+    }
+    case 'showtime': {
+      const small = rest(creator).filter(p => bigs.indexOf(p) < 0);
+      const wing = top('pts', small.length ? small : rest(creator));
+      return nm(creator) + ' pushes it every trip. ' + nm(wing) + ' beats everybody down the floor.';
+    }
+    case 'motion': {
+      const three = by('pts').slice(0, 3);
+      return 'Nobody hogs it. ' + list(three) + ' all get touches. The extra pass is always there.';
+    }
+    case 'pace_and_space': {
+      const runner = top('reb', bigs.filter(p => p !== shooter)) || glass;
+      return nm(shooter) + ' spaces the floor. ' + nm(runner) + ' runs to the rim.';
+    }
+    case 'iso': {
+      const hog = top('fga');
+      const share = P.shots ? Math.round(pa(hog, 'fga') / P.shots * 100) : 0;
+      return "It's " + nm(hog) + "'s ball. " + share + ' percent of the shots. The other four watch.';
+    }
+    default: {
+      return 'The best of them is ' + nm([...r].sort((a, b) => (b.w || 0) - (a.w || 0))[0]) + '.';
+    }
+  }
+}
+
 /* First match wins, most specific first. A roster that matches nothing is not
    punished, it is just told it has no identity, which is information. */
 function detectSystem(roster, profile) {
@@ -1565,6 +1730,7 @@ function detectSystem(roster, profile) {
         key: s.key,
         name: s.name,
         blurb: s.blurb,
+        story: systemStory(s.key, roster, P),
         fit: clamp(f, 0, 1),
         /* A partial fit earns a partial bonus, so scraping into an identity is
            worth less than genuinely being one. */
@@ -3973,7 +4139,7 @@ const publicAPI = {
   hashSeed, createSeededRNG, normal,
   indexData, buildCheapBy, teamStrength,
   pairLinks, resolveChemistry, setCuratedChemistry,
-  rosterOffense, rosterDefense, rosterFit, detectSystem,
+  rosterOffense, rosterDefense, rosterFit, detectSystem, systemStory,
   TEMPO, PLANS, PLAN_KEYS, tempoOf, tempoClub, tempoPush, teamTempo, tempoLabel,
   paceFits, planEffect, bestPlan, rosterTempo, rosterRatings, rosterStyle,
   rosterProfile, spacingIndex, paceAdjust, eraOf, ERA_CONTEXT, SYSTEMS, FIT,

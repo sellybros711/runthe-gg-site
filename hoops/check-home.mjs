@@ -99,14 +99,13 @@ section('1. the front page is under two screens, on the widths that bind');
       over: document.documentElement.scrollWidth - document.documentElement.clientWidth,
     }));
     const screens = g.page / h;
-    /* 2.7 SINCE CLASSIC BECAME THE HERO, and the move is a decision rather
-       than a loosening. The budget was 1.8 while the draft's court and doors
-       lived in a sheet; the owner asked for Classic to be the front page, and
-       its court and reels ARE the feature, so they came back onto it. Measured
-       after: 2.23 at 390x844, 2.56 at 360x740 and 1.91 at 1512x950. What this
-       still catches is the thing it was written for: a card of prose left
-       open, which is 800px and fails it at every width. */
-    ok(screens < 2.7, `${w}x${h}: ${screens.toFixed(2)} screens (${g.page}px)`);
+    /* 2.3 SINCE THE MODES WENT UNDER ONE DOOR. The budget went 1.8 to 2.7
+       when Classic's court came back onto the front page, and back down when
+       the variants, Conquest and the two puzzles moved into More ways to play:
+       measured 1.85 at 390x844, 2.14 at 360x740 and 1.51 at 1512x950, against
+       2.23, 2.56 and 1.91 before. A card of prose left open is about 800px
+       and still fails it at every width. */
+    ok(screens < 2.3, `${w}x${h}: ${screens.toFixed(2)} screens (${g.page}px)`);
     ok(g.over === 0, `${w}x${h}: nothing hangs off the side`);
     ok(boom.length === 0, `${w}x${h}: no page errors (${boom.join(' | ') || 'none'})`);
     await ctx.close();
@@ -241,69 +240,101 @@ section('3. the first run guide names the games you get to call');
   }
 }
 
-// ── 4. Classic leads ────────────────────────────────────────────────────────
-section('4. Classic is the hero, Conquest next, the daily puzzles after');
+// ── 4. Run The Diamond's shape ──────────────────────────────────────────────
+section('4. Classic, then the Daily Draft in its own spot, then More ways to play');
 /*
- * Asked for by the owner: the unlimited modes are the front page, because a
- * page led by two one-shot puzzles teaches a new player to play twice and
- * leave. Classic (the draft, once called Quick Draft) is the hero card, its
- * three variants sit inside it, Conquest is one wide tile under it, and the
- * dailies come after. Every way this rots renders perfectly, so the claims are
- * ORDER, VISIBILITY and COLOUR, never pixels.
+ * Asked for by the owner, with Run The Diamond as the model: Classic is the
+ * hero, the daily challenge gets a spot of its own, and every other mode is
+ * under More ways to play rather than hanging off the Classic card. A phone
+ * reaches that grid through one door and a sheet; a desktop draws it beside the
+ * daily card. Every way this rots renders perfectly, so the claims are ORDER,
+ * VISIBILITY and WHERE a thing lives, never pixels.
+ *
+ * ONE GRID, TWO HOMES. The tiles are moved into the sheet when it opens and
+ * back when it shuts, so the phone walk presses a tile FROM the sheet and then
+ * asks where the grid went: a sheet that stole the grid and kept it would leave
+ * a desktop reader with an empty bento after one resize.
  */
 {
+  const TILES = ['b-franchise-go', 'b-decade-go', 'mc-cq', 'mc-fix', 'mc-ps'];
   for (const [w, h] of [[390, 844], [1440, 900]]) {
+    const wide = w >= 920;
     const { page, ctx, boom } = await homePage(browser, w, h);
-    const g = await page.evaluate(() => {
-      const vis = (el) => !!el && !!el.offsetParent;
-      const top = (sel) => { const el = document.querySelector(sel); return el ? Math.round(el.getBoundingClientRect().top + scrollY) : 99999; };
-      const bgOf = (el) => getComputedStyle(el).backgroundImage + ' ' + getComputedStyle(el).backgroundColor;
-      const today = document.querySelector('#today');
-      const dockBtn = document.querySelector('#dock #b-start');
+    const g = await page.evaluate((TILES) => {
+      const vis = (el) => !!el && !!el.offsetParent && el.getBoundingClientRect().height > 0;
+      const box = (sel) => { const el = document.querySelector(sel); if (!el) return null;
+        const r = el.getBoundingClientRect(); return { top: Math.round(r.top + scrollY), left: Math.round(r.left), h: Math.round(r.height) }; };
+      const start = document.querySelector('#b-start');
       return {
-        classicTop: top('#classic'), cqTop: top('#mc-cq'), todayTop: top('#today'),
-        title: (document.querySelector('#cl-title') || {}).textContent || '',
+        classic: box('#classic'), daily: box('#b-daily-go'), door: box('#b-modes'), quiet: box('#home-quiet'),
+        grid: box('#mw-grid'), tiles: TILES.map((id) => vis(document.getElementById(id))),
+        tileTops: TILES.map((id) => { const b = document.getElementById(id); return b ? Math.round(b.getBoundingClientRect().top) : null; }),
+        doorVis: vis(document.querySelector('#b-modes')),
+        gridHome: document.querySelector('#mw-grid').parentNode.id,
+        dailyInClassic: !!document.querySelector('#classic #b-daily-go'),
+        variantsInClassic: document.querySelectorAll('#classic .mtile, #classic .modedoor, #classic .cl-ways').length,
+        dailyText: (document.querySelector('#b-daily-go') || {}).textContent || '',
         eye: (document.querySelector('#classic .cl-eye') || {}).textContent || '',
         plans: [...document.querySelectorAll('#cl-plans .clp b')].map((b) => b.textContent),
-        doors: ['b-daily-go', 'b-franchise-go', 'b-decade-go'].filter((id) => vis(document.getElementById(id))
-          && document.getElementById(id).closest('#classic')),
-        rows: today ? [...today.querySelectorAll('.td-row')].map((r) => r.id) : [],
-        tiles: [...document.querySelectorAll('.ptiles .ptile')].map((t) => t.id),
-        docked: !!dockBtn, dockText: dockBtn ? dockBtn.textContent : '',
-        dockBg: dockBtn ? bgOf(dockBtn) : '',
-        bigs: [...document.querySelectorAll('#s-home button.big')].filter(vis).map((b) => b.id),
+        startIn: start ? (start.closest('#dock') ? 'dock' : start.closest('#classic') ? 'classic' : 'elsewhere') : 'none',
+        startVis: vis(start),
+        doors: ['b-home-howto', 'b-home-boards', 'b-home-career'].filter((id) => vis(document.getElementById(id))),
         quick: /quick draft/i.test(document.querySelector('#s-home').innerText),
-        sheet: !!document.querySelector('#qd-sheet'),
         facts: !!document.querySelector('#home-howto #ls-players'),
-        heroTop: top('#h-court'),
+        heroTop: box('#h-court').top,
+        hmSub: (document.querySelector('#hm-sub') || {}).textContent || '',
       };
-    });
-    ok(g.classicTop < g.cqTop && g.cqTop < g.todayTop,
-      `${w}: Classic, then Conquest, then the daily puzzles (${g.classicTop}, ${g.cqTop}, ${g.todayTop})`);
+    }, TILES);
+
     ok(/classic/i.test(g.eye) && /unlimited/i.test(g.eye), `${w}: the hero says Classic and Unlimited ("${g.eye.trim()}")`);
-    ok(g.classicTop < h * 0.4, `${w}: Classic starts in the top of the first screen (${g.classicTop}px)`);
-    ok(g.heroTop < h, `${w}: and its court is on the first screen (${g.heroTop}px)`);
+    ok(g.classic.top < h * 0.4 && g.heroTop < h, `${w}: Classic and its court are on the first screen (${g.classic.top}, ${g.heroTop})`);
     ok(g.plans.join() === 'Run the floor,Balanced,Half court', `${w}: the three game plans are on the card (${g.plans.join()})`);
-    ok(g.doors.length === 3, `${w}: its three variants are inside it (${g.doors.join()})`);
-    ok(g.tiles.join() === 'mc-cq', `${w}: Conquest is the one tile (${g.tiles.join()})`);
-    ok(g.rows.join() === 'mc-fix,mc-ps', `${w}: the daily puzzles are one card holding both (${g.rows.join()})`);
-    ok(g.docked && /draft/i.test(g.dockText), `${w}: the dock carries Classic's Start ("${g.dockText}")`);
-    ok(g.bigs.length === 0, `${w}: and no second big button stands on the page (${g.bigs.join() || 'none'})`);
-    ok(/240, 120, 45|f0782d/i.test(g.dockBg), `${w}: the primary button is the brand orange (${g.dockBg.slice(0, 80)})`);
-    ok(!g.quick && !g.sheet, `${w}: the old name and the old sheet are gone`);
+    ok(g.variantsInClassic === 0, `${w}: no other mode hangs off the Classic card (${g.variantsInClassic})`);
+    ok(!g.dailyInClassic && g.daily && g.daily.top > g.classic.top + g.classic.h - 2,
+      `${w}: the Daily Draft is its own card, under Classic (${g.daily && g.daily.top})`);
+    ok(/Daily Draft/.test(g.dailyText) && /Day \d+/.test(g.dailyText), `${w}: and it says it is today's (${g.dailyText.trim().slice(0, 50)})`);
+    ok(g.doors.length === 3 && g.quiet.top > g.daily.top, `${w}: three doors (rules, boards, career) under it (${g.doors.join()})`);
+    ok(!g.quick, `${w}: the old name is gone`);
     ok(g.facts, `${w}: the league's numbers are still in How to play`);
 
-    /* THE COURT SPINS ON THE FRONT PAGE AND ONLY THERE. A loop left running
-       behind the draft spins reels nobody can see, on a phone, forever. */
-    const spun = await page.evaluate(() => new Promise((res) => {
-      const strip = document.querySelector('#h-reel-s');
-      const before = strip.style.transform;
-      setTimeout(() => res(strip.style.transform !== before || !!strip.children.length), 2500);
-    }));
-    ok(spun, `${w}: the reels are turning on the front page`);
-    await page.evaluate(() => document.querySelector('#dock #b-start').click());
+    if (wide) {
+      /* The bento: the daily card beside the tiles, the door not drawn, Start
+         in the card rather than in a bar floating over the tiles. */
+      ok(!g.doorVis, `${w}: a desktop draws no More ways to play door`);
+      ok(g.gridHome === 'hp-tiles' && g.tiles.every(Boolean), `${w}: the five mode tiles are on the page (${g.tiles})`);
+      ok(Math.abs(g.grid.top - g.daily.top) < 4, `${w}: beside the daily card (${g.grid.top} against ${g.daily.top})`);
+      ok(new Set(g.tileTops.slice(0, 3)).size === 1, `${w}: three across (${g.tileTops.slice(0, 3)})`);
+      ok(g.startIn === 'classic' && g.startVis, `${w}: Start is in the Classic card, not docked (${g.startIn})`);
+      await page.evaluate(() => document.querySelector('#b-start').click());
+    } else {
+      ok(g.doorVis && g.door.top > g.daily.top, `${w}: a phone reaches the modes through one door under the daily card`);
+      ok(g.tiles.every((v) => !v), `${w}: and the tiles are not on the page itself (${g.tiles})`);
+      ok(/daily puzzle|and 3 more/i.test(g.hmSub), `${w}: the door says what is waiting ("${g.hmSub}")`);
+      ok(g.startIn === 'dock', `${w}: the dock carries Classic's Start (${g.startIn})`);
+      await page.click('#b-modes');
+      await page.waitForSelector('#modesheet.open');
+      const inSheet = await page.evaluate((TILES) => ({
+        home: document.querySelector('#mw-grid').parentNode.id,
+        vis: TILES.map((id) => { const el = document.getElementById(id); return !!el && el.getBoundingClientRect().height > 0; }),
+        over: document.querySelector('#modesheet .panel').scrollWidth - document.querySelector('#modesheet .panel').clientWidth,
+      }), TILES);
+      ok(inSheet.home === 'mw-slot' && inSheet.vis.every(Boolean), `${w}: the door opens the sheet with all five tiles in it (${inSheet.vis})`);
+      ok(inSheet.over <= 0, `${w}: nothing in the sheet hangs off the side (${inSheet.over})`);
+      await page.click('#mc-cq');
+      await page.waitForTimeout(300);
+      const after = await page.evaluate(() => ({
+        open: document.querySelector('#modesheet').classList.contains('open'),
+        home: document.querySelector('#mw-grid').parentNode.id,
+        screen: document.querySelector('.screen.active').id,
+      }));
+      ok(!after.open && after.home === 'hp-tiles', `${w}: a tile leaves the sheet and the grid goes home (${JSON.stringify(after)})`);
+      ok(after.screen === 's-cq', `${w}: and the tile opened its mode (${after.screen})`);
+      await page.evaluate(() => window.RTF_PAGE.goHome());
+      await page.waitForTimeout(200);
+      await page.evaluate(() => document.querySelector('#dock #b-start').click());
+    }
     await page.waitForSelector('#s-draft.active', { timeout: 10000 });
-    ok(true, `${w}: the docked Start opens the draft`);
+    ok(true, `${w}: Start opens the draft`);
     ok(boom.length === 0, `${w}: no page errors (${boom.join(' | ') || 'none'})`);
     await ctx.close();
   }

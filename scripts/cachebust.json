@@ -2241,8 +2241,8 @@
   },
   "hoops/index.html": {
     "engine.js": {
-      "v": "25",
-      "sha": "ecde108bcd2940c3"
+      "v": "26",
+      "sha": "003dbd2fa2a81fe2"
     },
     "run.js": {
       "v": "13",
@@ -2281,8 +2281,8 @@
       "sha": "bd012c3ec2d45f42"
     },
     "modes-ui.js": {
-      "v": "13",
-      "sha": "15404ba8e66217a5"
+      "v": "14",
+      "sha": "7cae389dcf7ed17d"
     },
     "data/players.json": {
       "v": "5",
