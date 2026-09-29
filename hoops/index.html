@@ -2027,12 +2027,46 @@
     background:#f2c14e;color:#1a1205;white-space:nowrap;}
   .dailycard.played .dc-go{background:none;border:1px solid var(--cardb);color:var(--mut);}
 
+  /* ── the daily puzzles: a strip at the top ──────────────────────────────
+     Two cards side by side at every width, each a single press. The mode's
+     own colour is its edge while the puzzle is open; done, it goes quiet and
+     the chip turns green, the same rule as the daily card. */
+  .hp-puzzles{margin:4px 0 12px;}
+  .hp-puzzles[hidden]{display:none;}
+  .pz-head{display:flex;align-items:baseline;gap:10px;margin:0 2px 7px;}
+  .pz-head h2{margin:0;font-family:var(--display);font-weight:400;font-size:19px;letter-spacing:.03em;
+    text-transform:uppercase;line-height:1;}
+  .pz-left{margin-left:auto;font-size:11.5px;font-weight:800;color:var(--mut);white-space:nowrap;}
+  .pz-left.open{color:#f2c14e;}
+  .pz-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;}
+  .pz-slot{min-width:0;display:flex;}
+  .pz{position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:3px;width:100%;
+    min-width:0;margin:0;padding:11px 12px 12px;border-radius:13px;text-align:left;cursor:pointer;
+    border:1.5px solid color-mix(in srgb,var(--c) 55%,transparent);
+    background:linear-gradient(150deg,color-mix(in srgb,var(--c) 18%,#141a26),#141a26 75%);
+    color:var(--ink);font-family:var(--body);}
+  .pz:hover{filter:none;background:linear-gradient(150deg,color-mix(in srgb,var(--c) 24%,#1a2333),#1a2333 75%);}
+  .pz:active{transform:scale(.99);}
+  .pz.done{border-color:var(--cardb);background:#121722;}
+  .pz-top{display:flex;align-items:center;gap:8px;width:100%;margin-bottom:3px;}
+  .pz-ico{display:flex;align-items:center;justify-content:center;width:26px;height:26px;flex:0 0 auto;}
+  .pz-chip{margin-left:auto;font-size:10.5px;font-weight:800;padding:2px 8px;border-radius:99px;
+    background:var(--c);color:#10141d;white-space:nowrap;display:inline-flex;align-items:center;gap:4px;
+    font-variant-numeric:tabular-nums;}
+  .pz.done .pz-chip{background:rgba(52,211,153,.14);color:#6ee7b7;}
+  .pz-tag{font-size:9.5px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--c);
+    max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .pz.done .pz-tag{color:var(--dim);}
+  .pz-name{font-family:var(--display);font-weight:400;font-size:21px;line-height:1;letter-spacing:.02em;
+    text-transform:uppercase;}
+  .pz-sub{font-size:12px;font-weight:500;color:var(--mut);line-height:1.3;}
+
   /* ── MORE WAYS TO PLAY: the door, and the grid it opens ──────────────── */
   .hp-modes{display:flex;align-items:center;gap:12px;width:100%;margin:10px 0 0;padding:13px 14px;
     background:#141a26;color:var(--ink);border:1.5px solid rgba(240,120,45,.55);border-radius:14px;
     cursor:pointer;text-align:left;font-family:var(--body);}
   .hp-modes:hover{background:#1a2333;filter:none;}
-  .hm-dots{display:grid;grid-template-columns:repeat(3,9px);gap:4px;flex:0 0 auto;}
+  .hm-dots{display:grid;grid-template-columns:repeat(2,9px);gap:4px;flex:0 0 auto;}
   .hm-dots i{width:9px;height:9px;border-radius:50%;display:block;}
   .hm-txt{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;}
   .hm-txt b{font-family:var(--display);font-weight:400;font-size:20px;letter-spacing:.03em;
@@ -2121,7 +2155,13 @@
     .dc-sub{font-size:13.5px;}
     .dc-go{align-self:flex-start;font-size:15px;padding:12px 20px;}
     .hp-tiles{display:block;}
-    .mw-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;}
+    .mw-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;}
+    .hp-puzzles{margin:6px 0 14px;}
+    .pz-row{gap:14px;}
+    .pz{padding:15px 18px 16px;gap:4px;}
+    .pz-name{font-size:28px;}
+    .pz-sub{font-size:13.5px;}
+    .pz-ico{width:30px;height:30px;}
     .mtile{background:linear-gradient(150deg,color-mix(in srgb,var(--c) 22%,#141a26),#141a26 70%);}
     .mtile .mt-main{grid-template-columns:minmax(0,1fr);grid-template-areas:"ico" "tag" "name" "sub";
       align-items:start;align-content:start;row-gap:3px;flex:1;padding:15px 16px 16px;min-height:132px;
@@ -2419,16 +2459,29 @@
     </div>
   </div>
 
-  <!-- CLASSIC IS THE FRONT PAGE, AND THE REASON IS RETENTION.
+  <!-- THE DAILY PUZZLES OPEN THE PAGE, as a strip and not as a hero.
+       Asked for by the owner: Fix History and Six Passes are today's puzzles,
+       so they sit at the top where a returning player looks first. They are
+       one short row of two cards (side by side on a phone too), because the
+       reason Classic leads still holds: a page whose biggest thing is a one
+       shot puzzle teaches somebody to play twice and leave. Each card says
+       today's state (open, or done with the result), and the line beside the
+       heading says how many are left. modes-ui.js fills both slots and shows
+       the section, because only that file knows whether a puzzle is done. -->
+  <section class="hp-puzzles" id="hp-puzzles" aria-labelledby="pz-h" hidden>
+    <div class="pz-head"><h2 id="pz-h">Daily puzzles</h2><span class="pz-left" id="pz-left"></span></div>
+    <div class="pz-row"><div class="pz-slot" id="pz-fix"></div><div class="pz-slot" id="pz-ps"></div></div>
+  </section>
+
+  <!-- CLASSIC IS THE HERO, AND THE REASON IS RETENTION.
        Asked for by the owner: the two dailies are one shot each, so a front
        page that leads with them teaches a new player to play twice and leave.
        Classic is unlimited and it is the game this page was built as, so it is
        the hero: the court and the reels spinning, the three game plans a
        roster can run, the career so far, and one button, which the dock
-       carries on a phone. Its three variants (the daily draft, one club, one
-       decade) are the row under it. Conquest, the other unlimited mode, is
-       next; the daily puzzles come after that. It used to be called Quick
-       Draft and lived in a sheet behind a tile. -->
+       carries on a phone. The puzzle strip above is short on purpose, so
+       Classic is still the first big thing on the screen. It used to be
+       called Quick Draft and lived in a sheet behind a tile. -->
   <section class="card classic" id="classic" aria-labelledby="cl-title">
     <div class="cl-head">
       <span class="cl-eye">Classic <i>Unlimited</i></span>
@@ -2488,9 +2541,9 @@
        than as today's event. The whole card is the button, and the label on it
        says what the press does in each state (play, pick it back up, share).
 
-       THE REST IS MORE WAYS TO PLAY. One Franchise, Decades, Conquest and the
-       two daily puzzles are one grid (#mw-grid). A desktop draws it beside the
-       daily card; a phone keeps it in a sheet behind one door, because five
+       THE REST IS MORE WAYS TO PLAY. One Franchise, Decades, Conquest and
+       Endless are one grid (#mw-grid), two across beside the daily card on a
+       desktop. A phone keeps it in a sheet behind one door, because four
        tiles under the button is a screen of scrolling past the thing the page
        is for. It is ONE set of tiles, moved into the sheet when it opens and
        back when it shuts, which is the dock's rule (move the real button,
@@ -2528,15 +2581,13 @@
           <button class="mt-pick" id="b-decade-pick" hidden>Switch decade</button>
         </div>
         <div class="mtile" id="mw-cq" style="--c:#f2c14e"></div>
-        <div class="mtile" id="mw-fix" style="--c:#5eead4"></div>
-        <div class="mtile" id="mw-ps" style="--c:#fb923c"></div>
-        <div class="mtile mw-pro" id="mw-pro" style="--c:#f2c14e"></div>
+        <div class="mtile mw-pro" id="mw-pro" style="--c:#fb923c"></div>
       </div>
     </div>
   </div>
 
-  <button class="hp-modes" id="b-modes"><span class="hm-dots" id="hm-dots" aria-hidden="true"><i style="background:#f0782d"></i><i style="background:#c084fc"></i><i style="background:#f2c14e"></i><i style="background:#5eead4"></i><i style="background:#fb923c"></i></span>
-    <span class="hm-txt"><b>More ways to play</b><span class="hm-sub" id="hm-sub">One Franchise, Decades and 3 more</span></span>
+  <button class="hp-modes" id="b-modes"><span class="hm-dots" id="hm-dots" aria-hidden="true"><i style="background:#f0782d"></i><i style="background:#c084fc"></i><i style="background:#f2c14e"></i><i style="background:#fb923c"></i></span>
+    <span class="hm-txt"><b>More ways to play</b><span class="hm-sub" id="hm-sub">One Franchise, Decades, Conquest</span></span>
     <svg class="hm-arrow" viewBox="0 0 24 24" aria-hidden="true"><polyline points="9 6 15 12 9 18"/></svg></button>
 
   <!-- THREE DOORS, which are reference rather than play: the rules, every
@@ -11564,6 +11615,6 @@ boot();
 </script>
 <!-- AFTER the page, because it draws through window.RTF_PAGE, which the script
      above publishes. -->
-<script src="modes-ui.js?v=14"></script>
+<script src="modes-ui.js?v=15"></script>
 </body>
 </html>

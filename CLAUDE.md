@@ -11237,43 +11237,52 @@ WHERE ran once per row scanned and filed a play each time; a rename checked in
 the statement that made it read the snapshot from before it. Both are two
 statements now.
 
-#### The front page is Run The Diamond's shape: Classic, the daily, More ways to play
+#### The front page: the daily puzzles, Classic, the Daily Draft, More ways to play
 
 ```
-node hoops/check-home.mjs     section 4 holds the order and the sheet, section 1 the length
+node hoops/check-home.mjs     section 4 holds the order, the strip and the sheet, section 1 the length
 ```
 
-Asked for by the owner, twice. First: the unlimited mode has to be the focus, or
-players play the two dailies once and leave, so **the draft is Classic** and it
-leads. Then, with Run The Diamond as the model: the other modes go under a
-**More ways to play** door rather than hanging off the Classic card, and **the
-daily challenge gets a spot of its own**.
+Asked for by the owner, three times. First: the unlimited mode has to be the
+focus, or players play the two dailies once and leave, so **the draft is Classic**
+and it is the hero. Then, with Run The Diamond as the model: the other modes go
+under a **More ways to play** door, and **the daily challenge gets a spot of its
+own**. Then: **Fix History and Six Passes go at the top, as the daily puzzles.**
 
 | order | what | where |
 |---|---|---|
-| 1 | Classic: eyebrow, title, reels and court, the three pace chips, the career line, Start | `#classic` in index.html |
-| 2 | the Daily Draft, its own card, gold until today is played | `#b-daily-go`, `renderDailyDoor()` |
-| 3 | More ways to play: One Franchise, Decades, Conquest, Fix History, Six Passes, and Endless for Pro | `#mw-grid`, one grid |
-| 4 | three doors: How to play, Leaderboards, Career | `#home-quiet` |
+| 1 | Daily puzzles: Fix History and Six Passes, side by side, with how many are left | `#hp-puzzles`, filled by modes-ui.js |
+| 2 | Classic: eyebrow, title, reels and court, the three pace chips, the career line, Start | `#classic` in index.html |
+| 3 | the Daily Draft, its own card, gold until today is played | `#b-daily-go`, `renderDailyDoor()` |
+| 4 | More ways to play: One Franchise, Decades, Conquest, and Endless for Pro | `#mw-grid`, one grid |
+| 5 | three doors: How to play, Leaderboards, Career | `#home-quiet` |
+
+**THE PUZZLES ARE A STRIP, NOT A HERO**, which is how the third ask sits with the
+first. One heading and two half-width cards at every width, about 190px on a
+phone, so Classic is still the first big thing on the screen and the dock still
+carries its Start. Each card says today's state: the mode's colour and a Play chip
+while open, plain with a green chip carrying the result once done. The line
+beside the heading says how many are open, or when the next two arrive. The cards
+keep the ids the tiles had (`#mc-fix`, `#mc-ps`), so every walker still finds
+them; `tapMode` in check-modes shuts the sheet first if it is up, because the
+puzzles are never in it. The section ships `hidden` and `renderHome()` shows it,
+since only modes-ui.js knows whether a puzzle is done.
 
 **ONE GRID, TWO HOMES.** A desktop (920 and up) draws `#mw-grid` in `#hp-tiles`,
-beside the daily card, three across, and draws no door. A phone keeps it hidden
+beside the daily card, two across, and draws no door. A phone keeps it hidden
 and reaches it through `#b-modes`, which opens `#modesheet`: `openModes()`
 **moves the grid into the sheet** and `closeModes()` moves it back, which is the
 dock's rule (move the real button, never a copy) arriving at a grid. So there is
-one set of ids, and a checker presses `#mc-fix` wherever it currently lives. Any
+one set of ids, and a checker presses `#mc-cq` wherever it currently lives. Any
 press inside the grid closes the sheet behind it, and `show()` puts the grid home
 on every screen change. `check-home` presses a tile from the sheet and asks where
 the grid went; with the move back removed it reports the grid stuck in the sheet.
 
-**The page owns two tiles and modes-ui.js owns four.** One Franchise and Decades
-are static markup painted by `renderModeDoor()` and `renderEraDoor()` (a
+**The page owns two tiles and modes-ui.js owns the rest.** One Franchise and
+Decades are static markup painted by `renderModeDoor()` and `renderEraDoor()` (a
 remembered club wears its colours and gets a Switch club press under it).
-Conquest, Fix History, Six Passes and the Endless tile are filled into
-`#mw-cq`, `#mw-fix`, `#mw-ps` and `#mw-pro` by `renderHome()` there, because only
-that file knows whether a puzzle is done. It also writes the door's line, which
-names a puzzle still open today rather than making a phone reader open the sheet
-to find out.
+Conquest and the Endless tile are filled into `#mw-cq` and `#mw-pro`, and the two
+puzzle cards into `#pz-fix` and `#pz-ps`, by `renderHome()` there.
 
 **A desktop keeps Start in the Classic card.** The card is two columns there,
 words left and court right, and `DOCK_FOR['s-home']` returns nothing while
@@ -11285,13 +11294,15 @@ re-docks through the `WIDE` listener.
 styled the old Conquest tile as `.ptile`, which is also the DRAFT BOARD's tile
 class, and its sheet is appended after the page's, so `.ptile{display:flex;...}`
 had been overriding the board's own grid layout since the tiles pass. Mode tiles
-are `.mtile` now and share no class with anything on the board.
+are `.mtile` and puzzle cards `.pz`; neither shares a class with the board.
 
-**`check-home`'s budget came back down, 2.7 to 2.3 screens.** Measured 1.85 at
-390x844, 2.14 at 360x740 and 1.51 at 1512x950, against 2.23, 2.56 and 1.91 with
-the variants, Conquest and the puzzles on the page. The league's numbers still
-live in How to play (`.lgfacts`), and Leaderboards is one sheet with a chip per
-mode.
+**`check-home`'s budget is 2.5 screens.** It came down 2.7 to 2.3 when the modes
+went under one door, and the puzzle strip put 360x740 at 2.37, so it is 2.5 with
+the reason written beside it. A card of prose left open is about 800px and still
+fails it at every width. On a 568-tall phone the masthead and the strip fill the
+first screen, so Classic is only asked to start on it there. The league's numbers
+still live in How to play (`.lgfacts`), and Leaderboards is one sheet with a chip
+per mode.
 
 #### The archetype line names this team's players
 

@@ -2762,27 +2762,36 @@ function psOpen(){
 
 // ═══ FRONT PAGE ═════════════════════════════════════════════════════════════
 
-/* ── MORE WAYS TO PLAY: the tiles this file owns ─────────────────────────
+/* ── THE FRONT PAGE: the puzzle strip and the tiles this file owns ───────
  *
- * The front page is Run The Diamond's shape now (index.html): Classic, the
- * Daily Draft in its own spot, then MORE WAYS TO PLAY, one grid of tiles that
- * a desktop draws beside the daily card and a phone keeps in a sheet. The page
- * owns the grid and two of its tiles (One Franchise, Decades); this file fills
- * the other four, because only this file knows whether a puzzle is done.
+ * The front page (index.html) opens on the DAILY PUZZLES, a strip of two
+ * cards, then Classic, the Daily Draft in its own spot, then MORE WAYS TO
+ * PLAY, one grid of tiles a desktop draws beside the daily card and a phone
+ * keeps in a sheet. The page owns the grid and two of its tiles (One
+ * Franchise, Decades); this file fills everything that needs to know whether
+ * a puzzle is done or a run is live.
  *
+ *   #pz-fix   Fix History, today's puzzle, in the strip
+ *   #pz-ps    Six Passes, today's puzzle, in the strip
  *   #mw-cq    Conquest, the other unlimited mode
- *   #mw-fix   Fix History, today's puzzle
- *   #mw-ps    Six Passes, today's puzzle
  *   #mw-pro   endless and build, for Pro
  *
  * A TILE IS ONE PRESS. The tag over the name says what kind of mode it is, the
- * chip in the corner says where you are with it, and the sub says what it is. */
+ * chip in the corner says where you are with it, and the sub says what it is.
+ * The puzzle cards keep the ids the tiles had (#mc-fix, #mc-ps), so every
+ * walker that presses them still finds them. */
 function tileHtml(id, ico, tag, name, sub, chip, done){
   return '<button class="mt-main' + (chip ? ' has-chip' : '') + (done ? ' done' : '') + '" id="' + id + '">'
     + '<span class="mt-ico pix">' + ico + '</span>'
     + '<span class="mt-tag">' + tag + '</span><b class="mt-name">' + name + '</b>'
     + '<small class="mt-sub">' + sub + '</small>'
     + (chip ? '<span class="mt-chip' + (done ? '' : ' go') + '">' + chip + '</span>' : '') + '</button>';
+}
+function puzzleHtml(id, color, ico, tag, name, sub, chip, done){
+  return '<button class="pz' + (done ? ' done' : '') + '" id="' + id + '" style="--c:' + color + '">'
+    + '<span class="pz-top"><span class="pz-ico">' + ico + '</span><span class="pz-chip">' + chip + '</span></span>'
+    + '<span class="pz-tag">' + tag + '</span><b class="pz-name">' + name + '</b>'
+    + '<small class="pz-sub">' + sub + '</small></button>';
 }
 function cqTileHtml(){
   if (!cq) cqLoad();
@@ -2795,18 +2804,20 @@ function cqTileHtml(){
 }
 function fixTileHtml(){
   var p = fxToday(), t = tsParts(p.ts), r = fxResult(p.day);
-  var sub = esc(t.name) + '. Four trade windows to win it.';
+  /* Short on purpose: the card is half a phone wide, and the four windows
+     are explained on the screen it opens. */
+  var sub = esc(t.name) + '. Win it.';
   if (!r && fxInProgress()) {
     var dayRun = lsGet(FX_RUN);
-    sub = esc(t.name) + '. ' + esc(M.FX_WINDOWS[Math.min(dayRun.win, M.FX_WINDOWS.length - 1)].name) + ' window is open.';
+    sub = esc(t.name) + '. ' + esc(M.FX_WINDOWS[Math.min(dayRun.win, M.FX_WINDOWS.length - 1)].name) + ' window open.';
   }
-  return tileHtml('mc-fix', pix(ART.rewind, { t: '#5eead4' }, 2), 'Daily puzzle · Day ' + p.day, 'Fix History', sub,
+  return puzzleHtml('mc-fix', '#5eead4', pix(ART.rewind, { t: '#5eead4' }, 2), 'Day ' + p.day, 'Fix History', sub,
     r ? '<i class="td-ck" aria-hidden="true"></i>' + pct1(r.odds) : 'Play', !!r);
 }
 function psTileHtml(){
   var pz = psToday(), st = psTodayState(), g = graph();
-  return tileHtml('mc-ps', pix(ART.hoop, HOOP_PAL, 2), 'Daily puzzle · Par ' + pz.par, 'Six Passes',
-    esc(surname(g.nameOf[pz.from])) + ' to ' + esc(surname(g.nameOf[pz.to])) + ' through real teammates.',
+  return puzzleHtml('mc-ps', '#fb923c', pix(ART.hoop, HOOP_PAL, 2), 'Par ' + pz.par, 'Six Passes',
+    esc(surname(g.nameOf[pz.from])) + ' to ' + esc(surname(g.nameOf[pz.to])) + '.',
     st.done ? '<i class="td-ck" aria-hidden="true"></i>' + (st.solved ? plural(passesOf(st), 'pass', 'passes') : 'Missed') : 'Play',
     st.done);
 }
@@ -2820,23 +2831,23 @@ function proTileHtml(){
     + '<div class="td-end"><span>Build</span><button id="td-pfx"' + lk + '>Any team</button><button id="td-pps"' + lk + '>Two players</button></div>'
     + (endlessOpen() ? '' : '<button class="td-pro" id="td-pro"><i class="pro-tag">Pro</i> Unlock both for ' + PRO_PRICE + '</button>');
 }
-/* How many of today's two puzzles are still open, for the phone's door. */
+/* How many of today's two puzzles are still open, for the strip's heading. */
 function dailiesLeft(){
   if (!data()) return 0;
   return (fxResult(fxToday().day) ? 0 : 1) + (psTodayState().done ? 0 : 1);
 }
 function renderHome(){
   if (!data()) return;
-  var slots = { 'mw-cq': cqTileHtml, 'mw-fix': fixTileHtml, 'mw-ps': psTileHtml, 'mw-pro': proTileHtml };
+  var slots = { 'pz-fix': fixTileHtml, 'pz-ps': psTileHtml, 'mw-cq': cqTileHtml, 'mw-pro': proTileHtml };
   for (var k in slots) { var el = $(k); if (el) el.innerHTML = slots[k](); }
-  /* THE DOOR SAYS WHAT IS WAITING. A phone sees the grid only through it, so a
-     puzzle left open today is named on the door rather than found by opening
-     it. With both done it names the modes, the way Run The Diamond's does. */
-  var hs = $('hm-sub'), left = dailiesLeft();
-  if (hs) {
-    hs.textContent = left ? (left === 2 ? 'Two daily puzzles open today' : 'One daily puzzle left today')
-      : 'One Franchise, Decades and 3 more';
-    hs.className = 'hm-sub' + (left ? ' open' : '');
+  var sec = $('hp-puzzles'); if (sec) sec.hidden = false;
+  /* THE HEADING SAYS WHAT IS WAITING, and both done says when the next two
+     arrive, because a strip of two green cards reads as nothing left to do
+     rather than as a streak to keep. */
+  var hl = $('pz-left'), left = dailiesLeft();
+  if (hl) {
+    hl.textContent = left ? (left === 2 ? 'Two open today' : 'One left today') : 'New ones at midnight ET';
+    hl.className = 'pz-left' + (left ? ' open' : '');
   }
   paintToday();
   var c = $('mc-cq'); if (c) c.onclick = cqOpen;

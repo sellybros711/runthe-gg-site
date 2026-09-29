@@ -41,7 +41,10 @@ const QUICK = process.argv.includes('--quick');
 
 /* THE MODE TILES LIVE UNDER MORE WAYS TO PLAY. A phone reaches them through
    one door and a sheet, so a tile that is not on the page is pressed the way a
-   reader would press it: open the sheet, then the tile. */
+   reader would press it: open the sheet, then the tile. The two daily puzzles
+   are the strip at the top of the front page and never in the sheet, so a
+   press on one with the sheet up shuts the sheet first, the way a reader
+   would, rather than clicking through its scrim. */
 async function openMore(page) {
   const open = await page.evaluate(() => document.querySelector('#modesheet') &&
     document.querySelector('#modesheet').classList.contains('open'));
@@ -53,6 +56,11 @@ async function tapMode(page, sel) {
   const shown = await page.evaluate((q) => { const el = document.querySelector(q);
     return !!el && el.getBoundingClientRect().height > 0; }, sel);
   if (!shown) await openMore(page);
+  else if (await page.evaluate((q) => { const m = document.querySelector('#modesheet');
+    return !!m && m.classList.contains('open') && !m.contains(document.querySelector(q)); }, sel)) {
+    await page.keyboard.press('Escape');
+    await page.waitForFunction(() => !document.querySelector('#modesheet').classList.contains('open'));
+  }
   await page.click(sel);
 }
 const failures = [];
@@ -857,7 +865,7 @@ if (!QUICK) {
   await page.reload({ waitUntil: 'domcontentloaded' });
   await page.waitForSelector('#mc-cq', { state: 'attached', timeout: 60000 });
   const row = await page.textContent('#mc-fix');
-  ok(/Game 20 window is open/.test(row), `the front page says which window is open ("${row.trim().slice(0, 60)}")`);
+  ok(/Game 20 window open/.test(row), `the front page says which window is open ("${row.trim().slice(0, 60)}")`);
   await tapMode(page, '#mc-fix');
   await page.waitForSelector('#fx-pat');
   const steps2 = await page.$$eval('.fxw-s', (b) => b.map((x) => x.textContent));

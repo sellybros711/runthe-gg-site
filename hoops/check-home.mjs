@@ -103,9 +103,11 @@ section('1. the front page is under two screens, on the widths that bind');
        when Classic's court came back onto the front page, and back down when
        the variants, Conquest and the two puzzles moved into More ways to play:
        measured 1.85 at 390x844, 2.14 at 360x740 and 1.51 at 1512x950, against
-       2.23, 2.56 and 1.91 before. A card of prose left open is about 800px
-       and still fails it at every width. */
-    ok(screens < 2.3, `${w}x${h}: ${screens.toFixed(2)} screens (${g.page}px)`);
+       2.23, 2.56 and 1.91 before. 2.5 SINCE THE PUZZLES WENT ON TOP, which
+       the owner asked for: the strip is a heading and two cards, about 190px
+       on a phone, and it put 360x740 at 2.37. A card of prose left open is
+       about 800px and still fails it at every width. */
+    ok(screens < 2.5, `${w}x${h}: ${screens.toFixed(2)} screens (${g.page}px)`);
     ok(g.over === 0, `${w}x${h}: nothing hangs off the side`);
     ok(boom.length === 0, `${w}x${h}: no page errors (${boom.join(' | ') || 'none'})`);
     await ctx.close();
@@ -240,39 +242,50 @@ section('3. the first run guide names the games you get to call');
   }
 }
 
-// ── 4. Run The Diamond's shape ──────────────────────────────────────────────
-section('4. Classic, then the Daily Draft in its own spot, then More ways to play');
+// ── 4. The puzzles, then Classic, then the Daily Draft, then More ways to play
+section('4. The daily puzzles on top, Classic, the Daily Draft, then More ways to play');
 /*
- * Asked for by the owner, with Run The Diamond as the model: Classic is the
- * hero, the daily challenge gets a spot of its own, and every other mode is
- * under More ways to play rather than hanging off the Classic card. A phone
- * reaches that grid through one door and a sheet; a desktop draws it beside the
- * daily card. Every way this rots renders perfectly, so the claims are ORDER,
- * VISIBILITY and WHERE a thing lives, never pixels.
+ * Asked for by the owner in two steps. First, with Run The Diamond as the
+ * model: Classic is the hero, the daily challenge gets a spot of its own, and
+ * every other mode is under More ways to play. Then: Fix History and Six
+ * Passes go at the TOP of the page, as the daily puzzles. Every way this rots
+ * renders perfectly, so the claims are ORDER, VISIBILITY and WHERE a thing
+ * lives, never pixels.
+ *
+ * THE PUZZLES ARE A STRIP, NOT A HERO. Classic still has to be the first big
+ * thing on the screen, so the strip is asserted to be ABOVE Classic and
+ * Classic's court is still asserted on the first screen.
  *
  * ONE GRID, TWO HOMES. The tiles are moved into the sheet when it opens and
  * back when it shuts, so the phone walk presses a tile FROM the sheet and then
  * asks where the grid went: a sheet that stole the grid and kept it would leave
- * a desktop reader with an empty bento after one resize.
+ * a desktop reader with an empty bento after one resize. The puzzles are never
+ * in the grid, so they are never in the sheet either.
  */
 {
-  const TILES = ['b-franchise-go', 'b-decade-go', 'mc-cq', 'mc-fix', 'mc-ps'];
-  for (const [w, h] of [[390, 844], [1440, 900]]) {
+  const TILES = ['b-franchise-go', 'b-decade-go', 'mc-cq'];
+  const PUZZLES = ['mc-fix', 'mc-ps'];
+  for (const [w, h] of [[390, 844], [320, 568], [1440, 900]]) {
     const wide = w >= 920;
     const { page, ctx, boom } = await homePage(browser, w, h);
-    const g = await page.evaluate((TILES) => {
+    const g = await page.evaluate(([TILES, PUZZLES]) => {
       const vis = (el) => !!el && !!el.offsetParent && el.getBoundingClientRect().height > 0;
       const box = (sel) => { const el = document.querySelector(sel); if (!el) return null;
-        const r = el.getBoundingClientRect(); return { top: Math.round(r.top + scrollY), left: Math.round(r.left), h: Math.round(r.height) }; };
+        const r = el.getBoundingClientRect(); return { top: Math.round(r.top + scrollY), left: Math.round(r.left), h: Math.round(r.height), w: Math.round(r.width) }; };
       const start = document.querySelector('#b-start');
       return {
         classic: box('#classic'), daily: box('#b-daily-go'), door: box('#b-modes'), quiet: box('#home-quiet'),
+        strip: box('#hp-puzzles'), puzzles: PUZZLES.map((id) => box('#' + id)),
+        puzVis: PUZZLES.map((id) => vis(document.getElementById(id))),
+        puzInGrid: PUZZLES.filter((id) => document.querySelector('#mw-grid #' + id)).length,
+        puzText: PUZZLES.map((id) => (document.getElementById(id) || {}).textContent || ''),
+        left: (document.querySelector('#pz-left') || {}).textContent || '',
         grid: box('#mw-grid'), tiles: TILES.map((id) => vis(document.getElementById(id))),
         tileTops: TILES.map((id) => { const b = document.getElementById(id); return b ? Math.round(b.getBoundingClientRect().top) : null; }),
         doorVis: vis(document.querySelector('#b-modes')),
         gridHome: document.querySelector('#mw-grid').parentNode.id,
         dailyInClassic: !!document.querySelector('#classic #b-daily-go'),
-        variantsInClassic: document.querySelectorAll('#classic .mtile, #classic .modedoor, #classic .cl-ways').length,
+        variantsInClassic: document.querySelectorAll('#classic .mtile, #classic .modedoor, #classic .cl-ways, #classic .pz').length,
         dailyText: (document.querySelector('#b-daily-go') || {}).textContent || '',
         eye: (document.querySelector('#classic .cl-eye') || {}).textContent || '',
         plans: [...document.querySelectorAll('#cl-plans .clp b')].map((b) => b.textContent),
@@ -283,11 +296,27 @@ section('4. Classic, then the Daily Draft in its own spot, then More ways to pla
         facts: !!document.querySelector('#home-howto #ls-players'),
         heroTop: box('#h-court').top,
         hmSub: (document.querySelector('#hm-sub') || {}).textContent || '',
+        over: document.documentElement.scrollWidth - document.documentElement.clientWidth,
       };
-    }, TILES);
+    }, [TILES, PUZZLES]);
+
+    /* The puzzle strip leads, and it is the two puzzles side by side. */
+    ok(g.strip && g.puzVis.every(Boolean) && g.strip.top < g.classic.top,
+      `${w}: the daily puzzles are on the page above Classic (${g.strip && g.strip.top} against ${g.classic.top})`);
+    ok(g.strip.top < h * 0.45, `${w}: and on the first screen (${g.strip.top})`);
+    ok(g.puzInGrid === 0, `${w}: neither puzzle is a More ways to play tile (${g.puzInGrid})`);
+    ok(Math.abs(g.puzzles[0].top - g.puzzles[1].top) < 3 && g.puzzles[1].left > g.puzzles[0].left,
+      `${w}: Fix History and Six Passes sit side by side (${JSON.stringify(g.puzzles)})`);
+    ok(/Fix History/.test(g.puzText[0]) && /Day \d+/.test(g.puzText[0]), `${w}: Fix History says today's day (${g.puzText[0].trim().slice(0, 50)})`);
+    ok(/Six Passes/.test(g.puzText[1]) && /Par \d/.test(g.puzText[1]), `${w}: Six Passes says today's par (${g.puzText[1].trim().slice(0, 50)})`);
+    ok(/open today|left today/i.test(g.left), `${w}: the heading says what is waiting ("${g.left}")`);
+    ok(g.over <= 0, `${w}: nothing hangs off the side (${g.over})`);
 
     ok(/classic/i.test(g.eye) && /unlimited/i.test(g.eye), `${w}: the hero says Classic and Unlimited ("${g.eye.trim()}")`);
-    ok(g.classic.top < h * 0.4 && g.heroTop < h, `${w}: Classic and its court are on the first screen (${g.classic.top}, ${g.heroTop})`);
+    /* A short phone spends its first screen on the masthead and the strip, so
+       there Classic only has to START on it; the dock carries its button. */
+    ok(h < 700 ? g.classic.top < h * 0.8 : g.classic.top < h * 0.6 && g.heroTop < h,
+      `${w}: Classic and its court still lead the screen (${g.classic.top}, ${g.heroTop})`);
     ok(g.plans.join() === 'Run the floor,Balanced,Half court', `${w}: the three game plans are on the card (${g.plans.join()})`);
     ok(g.variantsInClassic === 0, `${w}: no other mode hangs off the Classic card (${g.variantsInClassic})`);
     ok(!g.dailyInClassic && g.daily && g.daily.top > g.classic.top + g.classic.h - 2,
@@ -298,27 +327,30 @@ section('4. Classic, then the Daily Draft in its own spot, then More ways to pla
     ok(g.facts, `${w}: the league's numbers are still in How to play`);
 
     if (wide) {
-      /* The bento: the daily card beside the tiles, the door not drawn, Start
-         in the card rather than in a bar floating over the tiles. */
+      /* The bento: the daily card beside the tiles, two across, the door not
+         drawn, Start in the card rather than in a bar floating over the tiles. */
       ok(!g.doorVis, `${w}: a desktop draws no More ways to play door`);
-      ok(g.gridHome === 'hp-tiles' && g.tiles.every(Boolean), `${w}: the five mode tiles are on the page (${g.tiles})`);
+      ok(g.gridHome === 'hp-tiles' && g.tiles.every(Boolean), `${w}: the mode tiles are on the page (${g.tiles})`);
       ok(Math.abs(g.grid.top - g.daily.top) < 4, `${w}: beside the daily card (${g.grid.top} against ${g.daily.top})`);
-      ok(new Set(g.tileTops.slice(0, 3)).size === 1, `${w}: three across (${g.tileTops.slice(0, 3)})`);
+      ok(g.tileTops[0] === g.tileTops[1] && g.tileTops[2] > g.tileTops[0], `${w}: two across (${g.tileTops})`);
       ok(g.startIn === 'classic' && g.startVis, `${w}: Start is in the Classic card, not docked (${g.startIn})`);
       await page.evaluate(() => document.querySelector('#b-start').click());
     } else {
       ok(g.doorVis && g.door.top > g.daily.top, `${w}: a phone reaches the modes through one door under the daily card`);
       ok(g.tiles.every((v) => !v), `${w}: and the tiles are not on the page itself (${g.tiles})`);
-      ok(/daily puzzle|and 3 more/i.test(g.hmSub), `${w}: the door says what is waiting ("${g.hmSub}")`);
+      ok(/Conquest/.test(g.hmSub), `${w}: the door names what is behind it ("${g.hmSub}")`);
       ok(g.startIn === 'dock', `${w}: the dock carries Classic's Start (${g.startIn})`);
       await page.click('#b-modes');
       await page.waitForSelector('#modesheet.open');
       const inSheet = await page.evaluate((TILES) => ({
         home: document.querySelector('#mw-grid').parentNode.id,
         vis: TILES.map((id) => { const el = document.getElementById(id); return !!el && el.getBoundingClientRect().height > 0; }),
+        pro: !!document.querySelector('#modesheet #mw-pro'),
+        puz: !!document.querySelector('#modesheet .pz'),
         over: document.querySelector('#modesheet .panel').scrollWidth - document.querySelector('#modesheet .panel').clientWidth,
       }), TILES);
-      ok(inSheet.home === 'mw-slot' && inSheet.vis.every(Boolean), `${w}: the door opens the sheet with all five tiles in it (${inSheet.vis})`);
+      ok(inSheet.home === 'mw-slot' && inSheet.vis.every(Boolean) && inSheet.pro, `${w}: the door opens the sheet with the tiles and Endless in it (${inSheet.vis})`);
+      ok(!inSheet.puz, `${w}: and no puzzle is in the sheet`);
       ok(inSheet.over <= 0, `${w}: nothing in the sheet hangs off the side (${inSheet.over})`);
       await page.click('#mc-cq');
       await page.waitForTimeout(300);
@@ -329,6 +361,20 @@ section('4. Classic, then the Daily Draft in its own spot, then More ways to pla
       }));
       ok(!after.open && after.home === 'hp-tiles', `${w}: a tile leaves the sheet and the grid goes home (${JSON.stringify(after)})`);
       ok(after.screen === 's-cq', `${w}: and the tile opened its mode (${after.screen})`);
+      /* The puzzle cards are one press each, straight off the front page. */
+      for (const [id, scr] of [['mc-fix', 's-fix'], ['mc-ps', 's-pass']]) {
+        await page.evaluate(() => window.RTF_PAGE.goHome());
+        await page.waitForTimeout(200);
+        /* A card that is not there is reported by name rather than as a
+           thirty second click timeout. */
+        const there = await page.evaluate((q) => { const el = document.getElementById(q);
+          return !!el && el.getBoundingClientRect().height > 0; }, id);
+        if (!there) { ok(false, `${w}: the ${id} card is there to press`); continue; }
+        await page.click('#' + id);
+        await page.waitForTimeout(250);
+        const on = await page.evaluate(() => document.querySelector('.screen.active').id);
+        ok(on === scr, `${w}: the ${id} card opens its puzzle (${on})`);
+      }
       await page.evaluate(() => window.RTF_PAGE.goHome());
       await page.waitForTimeout(200);
       await page.evaluate(() => document.querySelector('#dock #b-start').click());
