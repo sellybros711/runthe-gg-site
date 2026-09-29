@@ -718,19 +718,20 @@ body:has(#s-intro.on) header .lockup{visibility:hidden}
    Every tile printed WAR in the same ink, so telling a 9.0 season from a 2.0 one
    meant reading the digits on all six tiles. The bands are wide on purpose: a
    drafted season is elite, very good, good, useful or filler, and a scale with
-   more steps than that is a gradient nobody can name. The ladder is a traffic
-   light with a gem on top, the owner's call: grey filler, then red, yellow and
-   green, and diamond blue for the top, which is the only rung that glows,
+   more steps than that is a gradient nobody can name. The ladder is a heat
+   scale with a gem on top, the owner's call: red filler, then orange, yellow
+   and green, and diamond blue for the top, which is the only rung that glows,
    because on this board there should be one obvious answer to "is anybody
    here special". Yellow is a deep mustard in the light theme, because a true
-   yellow cannot be read on cream. */
+   yellow cannot be read on cream. Under 1.5 WAR is not a rung at all and
+   stays the page's dim ink. */
 .warv{font-weight:800}
-:root{--wt1:#6b6252;--wt2:#b3261e;--wt3:#806200;--wt4:#2e7d32;--wt5:#1565c0;--wt5-glow:rgba(21,101,192,.45)}
+:root{--wt1:#b3261e;--wt2:#a84b00;--wt3:#806200;--wt4:#2e7d32;--wt5:#1565c0;--wt5-glow:rgba(21,101,192,.45)}
 /* The light rungs do not survive the charcoal (a dark blue or red there drew
-   DIMMER than the grey filler under it, and the temperature inverted), so these
+   DIMMER than the filler under it, and the temperature inverted), so these
    are the dark theme's own lifted versions, in the same order, each clearing
    the dark panel. */
-:root[data-theme="dark"]{--wt1:#a29a89;--wt2:#ef6f66;--wt3:#f2c94c;--wt4:#5cb85f;--wt5:#6fd0ff;--wt5-glow:rgba(111,208,255,.5)}
+:root[data-theme="dark"]{--wt1:#ef6f66;--wt2:#f0954a;--wt3:#f2c94c;--wt4:#5cb85f;--wt5:#6fd0ff;--wt5-glow:rgba(111,208,255,.5)}
 .warv.w5{color:var(--wt5);text-shadow:0 0 12px var(--wt5-glow)}
 .warv.w4{color:var(--wt4)}
 .warv.w3{color:var(--wt3)}
