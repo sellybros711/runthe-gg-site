@@ -261,7 +261,6 @@ for (const [opts, bot, respins] of plan) {
 const GRIND = {
   daily_100: 'daily_50',
   daily_streak_30: 'daily_streak_14',
-  title_10: 'title_5',
 };
 const SKILL = {
   /* A TITLE IS ABOUT ONE RUN IN SIXTY even for the best bot, so anything that
@@ -342,9 +341,7 @@ const SKILL = {
      than a wall. */
   tie_record: 'win_110',
   goat: 'win_110',
-  wildcard_title: 'seed_wildcard',
   btb_title: 'title_5',
-  mode_division_title: 'mode_division_oct',
   /* THE SCHEDULE GOT HARDER, the owner's call: a careful draft was winning 90
      about half the time and the target is one in four. Opponents score 1.05x
      and allow 0.92x (was 1.02x and 0.95x). Measured over 2,250 seasons of the
@@ -358,7 +355,11 @@ const SKILL = {
      light in quick now. */
   win_110: 'win_100',
   oct_streak_10: 'oct_streak_5',
-  mode_era_title: 'mode_era_oct',
+  /* AN ELITE TEAM PLAYS LIKE ONE IN OCTOBER (TITLE.ELITE_* in engine.js): a
+     roster rated 85 or better meets easier opponents, so a 95+ roster reaches
+     the World Series most years. Four excuses came off because the quick sweep
+     lights them now: ten titles, a wild card title, and a Division and a
+     Decades title. */
   /* `daily_100w` HAD AN EXCUSE AND DID NOT NEED ONE. A hundred wins on a daily
      lights in the quick sweep (spread / classic), so the entry was section 5's
      own target: an excuse written for something that turned out to be reachable,
