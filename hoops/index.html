@@ -584,10 +584,12 @@
   .ar-card .ab .nod{font-size:11.5px;color:var(--mut);line-height:1.35;}
   .ar-card .rar{align-self:flex-start;font-size:9.5px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;
     padding:1px 7px;border-radius:99px;background:rgba(255,255,255,.08);color:var(--mut);}
-  .ar-card.r-common .rar{color:#9fd18c;}
-  .ar-card.r-rare .rar{color:#7fb7ff;}
-  .ar-card.r-epic .rar{color:#c79bff;}
-  .ar-card.r-legendary .rar{color:#f2c14e;}
+  /* One colour a rung of the ladder, from the street to the Hall of Fame. */
+  .ar-card.r-street .rar{color:#c8ccd2;}
+  .ar-card.r-rec .rar{color:#9fd18c;}
+  .ar-card.r-college .rar{color:#7fb7ff;}
+  .ar-card.r-league .rar{color:#c79bff;}
+  .ar-card.r-legend .rar{color:#f2c14e;}
   .ar-card.r-pro .rar{color:#1a1204;background:linear-gradient(135deg,#f2c14e,#e0952a);}
   .ar-card .foot{margin-top:auto;padding-top:6px;font-size:12px;}
   .ar-card .foot .inuse{color:var(--orange);font-weight:800;}
@@ -596,6 +598,9 @@
   .ar-card .foot .lbl{color:var(--mut);}
   .ar-card .foot .bar{height:5px;border-radius:3px;background:rgba(255,255,255,.08);margin-top:5px;overflow:hidden;}
   .ar-card .foot .bar i{display:block;height:100%;background:var(--orange);}
+  .ar-card .foot .reqs{display:flex;flex-wrap:wrap;gap:2px 8px;margin-top:4px;font-size:11px;
+    font-variant-numeric:tabular-nums;}
+  .ar-card .foot .reqs .met{color:var(--green,#5fd38a);}
   .newarena .na{display:flex;gap:12px;align-items:center;}
   .newarena .arena-pv{width:44%;max-width:220px;flex:0 0 auto;border-radius:10px;aspect-ratio:100/62;height:auto;}
   .newarena .na b{display:block;font-family:var(--display);font-size:20px;letter-spacing:.02em;}
@@ -957,12 +962,10 @@
   body.clubbed .court{--floor-tint:radial-gradient(125% 85% at 50% -5%,
     rgba(var(--club1rgb),.42) 0%,rgba(var(--club1rgb),.11) 48%,rgba(0,0,0,0) 74%);
     border-color:var(--club2);}
-  body.clubbed .court .rim{border-color:var(--club2);}
-  /* The lane takes the club, which is what a home floor does. */
-  body.clubbed .court .key{background:linear-gradient(180deg,
-    rgba(var(--club1rgb),.52),rgba(var(--club1rgb),.30));}
-  body.clubbed .court .arc3,body.clubbed .court .key,body.clubbed .court .circ{
-    border-color:rgba(255,255,255,.55);}
+  body.clubbed .court .lines-svg .rim{stroke:var(--club2);}
+  /* The lane and the center circle take the club, which is what a home floor does. */
+  body.clubbed .court .lines-svg .paint{fill:rgba(var(--club1rgb),.46);}
+  body.clubbed .court .lines-svg .paint2{fill:rgba(var(--club1rgb),.32);}
   /* The transitions are on the properties that move, not on "all", so a spin
      does not animate the layout of everything inside these panels. */
   .capwrap,.court{transition:border-color .35s ease,background .35s ease;}
@@ -1094,46 +1097,28 @@
     --tone:radial-gradient(60% 45% at 50% 35%,rgba(255,255,255,.10),rgba(0,0,0,0) 70%);
     --seams:repeating-linear-gradient(90deg,rgba(0,0,0,0) 0 9.8%,rgba(120,200,255,.13) 9.8% 10%);
     --grain:repeating-linear-gradient(0deg,rgba(0,0,0,0) 0 9.8%,rgba(120,200,255,.13) 9.8% 10%);}
-  /* Out of bounds. A real apron is the same boards under a darker stain, so
-     it is a wash over the floor rather than a different surface. */
-  .court .oob{position:absolute;left:0;right:0;bottom:0;height:20%;
-    background:linear-gradient(180deg,var(--apron1,rgba(0,0,0,.30)),var(--apron2,rgba(0,0,0,.52)));}
-  /* BRIGHTER THAN THEY WERE, because they used to sit on near black and now
-     they sit on wood. Court lines are painted white and on a real floor they
-     are the most visible thing on it. */
-  .court .ln{position:absolute;border:2px solid var(--line,rgba(255,255,255,.62));}
-  /* THE THREE POINT LINE IS NOT ONE CURVE, and the corner three is the half
-     everybody recognises. The ellipse's widest point sits at 11% down, so it
-     meets the sideline there and the two straight segments run from the
-     baseline to that seam. Drawn as one arc it swept off both edges of the
-     floor and through the bench, which is a shape no court has. */
-  .court .arc3{left:6%;right:6%;top:-64%;height:150%;border-radius:50%;border-top:0;
-    /* the half of the ellipse above the baseline is not on the floor. The
-       court's own edge used to clip it; tilted, the floor's edge is not the
-       court's, so the arc clips itself */
-    clip-path:inset(42.67% -3px -3px -3px);}
-  .court .c3{position:absolute;top:0;height:11.4%;width:2px;
-    background:var(--line,rgba(255,255,255,.62));}
-  .court .c3.l{left:6%;}
-  .court .c3.r{right:6%;}
-  /* The backboard, from above: a plate behind the rim. Two pixels of white
-     and it is the difference between a hoop floating on a floor and a
-     basket. */
-  .court .bb{position:absolute;left:50%;top:3.4%;width:13%;height:3px;
-    margin-left:-6.5%;border-radius:1px;background:rgba(255,255,255,.8);}
-  /* THE PAINT IS PAINTED. An old school lane is a solid block of colour and
-     it is the second thing anybody recognises about a court after the wood.
-     The arena's own colour until a club is drawn. */
-  .court .key{left:34%;right:34%;top:0;height:38%;border-top:0;
-    background:linear-gradient(180deg,var(--paint1,rgba(138,52,20,.62)),var(--paint2,rgba(112,42,16,.5)));}
-  .court .circ{left:41%;right:41%;top:30%;height:16%;border-radius:50%;}
-  .court .rim{position:absolute;left:50%;top:7%;width:15px;height:15px;margin-left:-7.5px;
-    border:2px solid var(--rimc,rgba(240,120,45,.9));border-radius:50%;
-    box-shadow:0 0 0 1px rgba(0,0,0,.35);}
-  .court .base{position:absolute;left:0;right:0;top:0;height:3px;background:var(--line,rgba(255,255,255,.7));}
-  .court .side{position:absolute;left:0;right:0;bottom:20%;height:2px;
-    background:linear-gradient(90deg,rgba(255,255,255,.18),var(--line,rgba(255,255,255,.62)) 18%,
-      var(--line,rgba(255,255,255,.62)) 82%,rgba(255,255,255,.18));}
+  /* THE LINES ARE ONE SVG, DRAWN IN FEET BY hoops/courts.js (lines()), and
+     stretched over the floor. A regulation half court: the sidelines and the
+     baseline, the corner three running straight into the arc, the lane with its
+     block and marks, a free throw circle solid on the court side and dashed in
+     the lane, the restricted area, the 28 ft marks and the center circles at
+     half court. The stroke does not stretch with the box
+     (non-scaling-stroke), so a line is the same weight on every court. The
+     apron outside the lines takes the arena's --apron colours, the lane its
+     --paint1 and the center circle its --paint2. */
+  .court .lines{position:absolute;inset:0;pointer-events:none;}
+  .court .lines-svg{display:block;width:100%;height:100%;overflow:visible;}
+  .court .lines-svg .l{fill:none;stroke:var(--line,rgba(255,255,255,.62));
+    stroke-width:max(1.4px,.42cqw);vector-effect:non-scaling-stroke;stroke-linejoin:round;}
+  .court .lines-svg .dash{stroke-dasharray:4 4;}
+  .court .lines-svg .mk{fill:var(--line,rgba(255,255,255,.62));}
+  .court .lines-svg .paint{fill:var(--paint1,rgba(138,52,20,.62));}
+  .court .lines-svg .paint2{fill:var(--paint2,rgba(112,42,16,.5));}
+  /* The backboard from above, and the rim in the arena's rim colour. The
+     three-quarter camera stands a real basket up instead. */
+  .court .lines-svg .bd{stroke:rgba(255,255,255,.85);}
+  .court .lines-svg .rim{stroke:var(--rimc,rgba(240,120,45,.9));}
+  .court.tq .lines-svg .hw{display:none;}
   /* ── THE THREE-QUARTER CAMERA ───────────────────────────────────────────
      The floor leans away from the reader and the far end of the building
      stands up behind the basket. The tilt and the distance are written by the
@@ -1149,7 +1134,6 @@
   .court .scene{position:absolute;left:0;right:0;top:0;height:calc(var(--tq-far,30%) + 3%);display:none;}
   .court.tq .scene{display:block;}
   .court .scene svg{display:block;width:100%;height:100%;overflow:visible;}
-  .court.tq .rim,.court.tq .bb{display:none;}
   /* The basket stands up in three-quarter: a board, a rim and a net, placed at
      the rim's point on the floor and drawn at the size that point is drawn. */
   .court .hoop{display:none;position:absolute;width:15%;aspect-ratio:1/1;pointer-events:none;
@@ -2554,18 +2538,7 @@
     <div class="court herocourt" id="h-court" role="img"
          aria-label="A roster being built, one signing at a time">
       <div class="scene"></div>
-      <div class="floor">
-        <div class="oob"></div>
-        <div class="base"></div>
-        <div class="ln arc3"></div>
-        <div class="c3 l"></div>
-        <div class="c3 r"></div>
-        <div class="ln key"></div>
-        <div class="ln circ"></div>
-        <div class="bb"></div>
-        <div class="rim"></div>
-        <div class="side"></div>
-      </div>
+      <div class="floor"><div class="lines"></div></div>
       <div class="hoop"></div>
     </div>
   </div>
@@ -2810,18 +2783,7 @@
     <aside class="dside">
       <div class="court" id="court" role="img" aria-label="Your rotation on the floor">
         <div class="scene"></div>
-        <div class="floor">
-          <div class="oob"></div>
-          <div class="base"></div>
-          <div class="ln arc3"></div>
-          <div class="c3 l"></div>
-          <div class="c3 r"></div>
-          <div class="ln key"></div>
-          <div class="ln circ"></div>
-          <div class="bb"></div>
-          <div class="rim"></div>
-          <div class="side"></div>
-        </div>
+        <div class="floor"><div class="lines"></div></div>
         <div class="hoop"></div>
       </div>
       <div class="rail off" id="rail"></div>
@@ -3079,18 +3041,7 @@
          seen where they played rather than only listed. -->
     <div class="court" id="o-court" role="img" aria-label="Your rotation on the floor">
       <div class="scene"></div>
-      <div class="floor">
-        <div class="oob"></div>
-        <div class="base"></div>
-        <div class="ln arc3"></div>
-        <div class="c3 l"></div>
-        <div class="c3 r"></div>
-        <div class="ln key"></div>
-        <div class="ln circ"></div>
-        <div class="bb"></div>
-        <div class="rim"></div>
-        <div class="side"></div>
-      </div>
+      <div class="floor"><div class="lines"></div></div>
       <div class="hoop"></div>
     </div>
     <div class="slots" id="o-slots" style="margin-top:12px"></div>
@@ -3382,7 +3333,7 @@
 <script src="engine.js?v=26"></script>
 <script src="run.js?v=13"></script>
 <script src="badges.js?v=4"></script>
-<script src="courts.js?v=1"></script>
+<script src="courts.js?v=2"></script>
 <script src="modes.js?v=9"></script>
 <!-- ACCOUNTS AND THE LEADERBOARD. All three are OPTIONAL: if the CDN is blocked
      or either file fails to load, the game runs exactly as it did, with runs
@@ -3402,7 +3353,7 @@
 <script src="/assets/cloudsave.js?v=2"></script>
 <!-- The release newsletter checkbox on the profile. See supabase/121_newsletter.sql. -->
 <script src="/assets/newsletter.js?v=1"></script>
-<script src="cloud.js?v=3"></script>
+<script src="cloud.js?v=4"></script>
 <script>
 (function(){
 'use strict';
@@ -3566,7 +3517,7 @@ var A = window.RTF_AUTH || {
  * renders, and the only symptom is a cabinet that comes back slightly wrong.
  * `null` is the honest answer when either half is missing, and every caller
  * below is written to do nothing at all when it is. */
-var NEED_CLOUD = 3;
+var NEED_CLOUD = 4;
 var CL = (window.RTF_CLOUD && window.RTF_CLOUD.API_VERSION === NEED_CLOUD)
   ? window.RTF_CLOUD : null;
 var SV = window.RTG_SAVE || null;
@@ -5185,16 +5136,18 @@ function reelPools(){
  * arena a court wears is ASKED, never stored as earned: the account's choice is
  * the one stored thing (on its profile row, 129, with rtf.arena.v1 as the
  * browser's copy), and a choice the account cannot back (signed out, another account on this browser,
- * a Pro arena after Pro lapses) falls back to the home arena rather than to a
- * floor it does not own. That is baseball's rtd_park_v1, rule for rule.
+ * a Pro arena after Pro lapses) falls back to the highest rung of the ladder
+ * the account has reached (CT.best), which is the Blacktop for everybody on day
+ * one and for every guest. That is baseball's road to the Show, rule for rule.
  *
  * THE CAMERA IS ON THE PROFILE (rtf.cam.v1 is the browser's copy) and
  * three-quarter is the default. A guest's is the browser's alone.
  *
- * A blocked or stale courts.js draws the home floor flat, which is the court
- * this game had before any of this, so nothing that paints a court needs to
- * know whether the file arrived. */
-var NEED_COURTS = 1;
+ * A blocked or stale courts.js draws plain maple boards, flat, with NO LINES:
+ * the court lines are drawn in feet by courts.js (lines()) and the page keeps
+ * no second copy of the geometry, because two copies of a court drift. Nothing
+ * throws; it is a court with the paint missing until the file arrives. */
+var NEED_COURTS = 2;
 var CT = (window.RTF_COURTS && window.RTF_COURTS.COURTS_API_VERSION === NEED_COURTS)
   ? window.RTF_COURTS : null;
 var ARENA_KEY = 'rtf.arena.v1', CAM_KEY = 'rtf.cam.v1';
@@ -5228,12 +5181,14 @@ function arenaChoices(){
 }
 var arenaForced = null;   /* a checker's handle, below. Nothing on the page sets it. */
 function currentArena(){
-  if (!CT) return 'home';
+  if (!CT) return 'blacktop';
   if (arenaForced && CT.BY_ID[arenaForced]) return arenaForced;
   if (arenaMemo) return arenaMemo;
   var st = A.state(), uid = st && st.signedIn ? st.userId : null;
-  var id = uid ? arenaChoices()[uid] : null;
-  if (!id || !CT.BY_ID[id] || !CT.status(CT.BY_ID[id], arenaInfo()).ok) id = 'home';
+  var id = uid ? arenaChoices()[uid] : null, info = arenaInfo();
+  /* No choice, or one this account cannot back: the highest rung it has
+     reached, which is the Blacktop for everybody on day one. */
+  if (!id || !CT.BY_ID[id] || !CT.status(CT.BY_ID[id], info).ok) id = CT.best(info);
   arenaMemo = id;
   return id;
 }
@@ -5412,16 +5367,19 @@ function renderIdentity(){
 function arenaCard(a, info, current, sfx){
   var st = CT.status(a, info);
   var card = document.createElement('div');
-  card.className = 'ar-card r-' + a.rarity.toLowerCase() + (st.ok ? '' : ' lock');
+  card.className = 'ar-card r-' + a.tier + (st.ok ? '' : ' lock');
   card.setAttribute('data-arena', a.id);
   var foot;
   if (a.id === current) foot = '<span class="inuse">Playing here</span>';
   else if (st.ok) foot = '<button type="button" data-use="' + a.id + '">Play here</button>';
-  else foot = '<span class="lbl">' + esc(st.label) + '</span>' +
-    (st.of ? '<div class="bar"><i style="width:' + Math.round(100 * st.have / st.of) + '%"></i></div>' +
-      '<span class="lbl">' + st.have + ' / ' + st.of + '</span>' : '');
+  /* Signed in, the counts ARE the rule, so the sentence is not said twice. */
+  else foot = (st.parts ? '' : '<span class="lbl">' + esc(st.label) + '</span>') +
+    (st.parts ? '<div class="bar"><i style="width:' + Math.round(100 * st.have / st.of) + '%"></i></div>' +
+      '<span class="lbl reqs">' + st.parts.map(function(q){
+        return '<span' + (q.have >= q.of ? ' class="met"' : '') + '>' + q.have + '/' + q.of + ' ' + q.word + '</span>';
+      }).join('') + '</span>' : '');
   card.innerHTML = CT.preview(a.id, sfx) +
-    '<div class="ab"><span class="rar">' + esc(a.rarity) + '</span><b>' + esc(a.name) + '</b>' +
+    '<div class="ab"><span class="rar">' + esc(CT.TIERS[a.tier] || a.tier) + '</span><b>' + esc(a.name) + '</b>' +
     '<span class="nod">' + esc(a.nod) + '</span><div class="foot">' + foot + '</div></div>';
   return card;
 }
@@ -5500,7 +5458,8 @@ function renderLocker(){
   var ar = document.createElement('div');
   ar.className = 'lk';
   ar.innerHTML = '<h3>Arenas <span>' + n + ' of ' + CT.ARENAS.length + '</span></h3><div class="ar-grid" id="lk-arenas"></div>' +
-    (info.signed ? '' : '<p class="lknote">Arenas are earned on an account. Sign in and everything you have played counts.</p>');
+    '<p class="lknote">Everybody starts on the Blacktop. The rest are earned with runs, badges and days played.' +
+    (info.signed ? ' Pro adds two of its own.' : ' Sign in and everything you have played counts.') + '</p>';
   box.appendChild(ar);
   var ag = ar.querySelector('#lk-arenas');
   CT.ARENAS.forEach(function(a){ ag.appendChild(arenaCard(a, info, cur, 'lk')); });
@@ -5563,6 +5522,8 @@ function dressCourt(el){
     if (sc) sc.innerHTML = (cam === 'tq' && CT) ? CT.scene(id, el.id || 'c') : '';
     var hp = el.querySelector('.hoop');
     if (hp && !hp.firstChild) hp.innerHTML = HOOP_SVG;
+    var ln = el.querySelector('.lines');
+    if (ln && !ln.firstChild && CT) ln.innerHTML = CT.lines(el.id || 'c');
   }
   el._ratio = courtRatio(el);
   if (cam === 'tq' && CT) {
@@ -5571,7 +5532,7 @@ function dressCourt(el){
     el.style.setProperty('--tq-far', CT.farEdge(el._ratio).toFixed(3) + '%');
     var hoop = el.querySelector('.hoop');
     if (hoop) {
-      var r = CT.project(50, 7, el._ratio);
+      var r = CT.project(CT.RIM_PCT.x, CT.RIM_PCT.y, el._ratio);
       hoop.style.left = r.x.toFixed(3) + '%';
       hoop.style.top = r.y.toFixed(3) + '%';
       hoop.style.setProperty('--s', r.s.toFixed(4));
@@ -10231,7 +10192,19 @@ function loadCareer(){
 function blankCareer(){
   return { version: 1, runs: 0, rings: 0, playoffs: 0, bestWins: 0, bestRating: 0,
     bestLabel: '', totalWins: 0, totalLosses: 0, clubs: {}, shapes: {}, beat72: 0,
-    seasons: {}, colleges: {}, rows: [] };
+    seasons: {}, colleges: {}, rows: [], days: {} };
+}
+
+/* THE DAYS AN ACCOUNT HAS PLAYED ON, keyed by the Eastern date the daily draft
+   already uses. The arena ladder asks how many there are, because dedication is
+   coming back rather than one long evening. A run counts one more on its day;
+   a mode stamps the day and counts nothing, since Conquest files a feat after
+   every steal. A map rather than a list, so cloud.js merges it like the others:
+   the union, and the larger count on a day both devices played. */
+function stampDay(c, count){
+  c.days = (c.days && typeof c.days === 'object') ? c.days : {};
+  var k = easternISO();
+  c.days[k] = count ? (+c.days[k] || 0) + 1 : Math.max(+c.days[k] || 0, 1);
 }
 
 /* Called once, when a run reaches a result. Recording it anywhere earlier would
@@ -10264,6 +10237,7 @@ function recordRun(out){
   var before = loadCareer() || blankCareer();
   var c = loadCareer() || blankCareer();
   c.runs++;
+  stampDay(c, true);
   c.totalWins += out.wins;
   c.totalLosses += out.losses;
   if (out.titleWon) c.rings++;
@@ -11704,6 +11678,7 @@ function recordFeats(f){
   var before = loadCareer() || blankCareer();
   var c = loadCareer() || blankCareer();
   BG.applyFeats(c, f);
+  stampDay(c, false);
   try { localStorage.setItem(PKEY, JSON.stringify(c)); } catch (e) {}
   cloudPushCareer(c);
   var fresh = freshBadges(before, c);

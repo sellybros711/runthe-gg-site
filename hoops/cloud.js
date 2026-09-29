@@ -189,8 +189,10 @@
      on this list because a key missing from all three lists is DROPPED on
      merge, silently: the badge lights on the device that earned it and goes
      dark the first time another device syncs. That is why API_VERSION moved
-     to 2 with it, so a page cached from before this cannot run this merge. */
-  var CAREER_COUNTS = ['clubs', 'shapes', 'seasons', 'colleges', 'feats'];
+     to 2 with it, so a page cached from before this cannot run this merge.
+     `days` (the days played on, which the arena ladder counts) is the same case
+     and moved it to 4. */
+  var CAREER_COUNTS = ['clubs', 'shapes', 'seasons', 'colleges', 'feats', 'days'];
   var CAREER_SHELVES = ['byClub', 'byEra'];
 
   /*
@@ -354,7 +356,7 @@
   }
 
   var publicAPI = {
-    API_VERSION: 3,
+    API_VERSION: 4,
     MODE_KEYS: MODE_KEYS, modeKind: modeKind, modeProgress: modeProgress, modeMerge: modeMerge,
     GAME: GAME,
     SLOT_RUN: SLOT_RUN, SLOT_CAREER: SLOT_CAREER, SLOT_DAILY: SLOT_DAILY,
