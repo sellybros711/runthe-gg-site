@@ -517,6 +517,7 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
   .acct .who .hi{font-family:var(--title);font-size:22px;color:#fff;}
   .acct .who .hi .u{color:var(--brand);}
   .acct .who .lo{color:var(--ink-2);font-size:14px;margin-top:6px;line-height:1.5;}
+  .acct .who .lo .links{display:flex;flex-wrap:wrap;gap:4px 16px;margin-top:4px;}
   .acct .who .lo a{color:var(--teal);font-weight:700;text-decoration:none;white-space:nowrap;}
   .avatar{flex:0 0 auto;width:60px;height:60px;border-radius:50%;display:flex;align-items:center;justify-content:center;
     background:linear-gradient(180deg,#66D3DE,#1c8d97);color:#04241f;font-weight:900;font-size:24px;box-shadow:0 0 0 4px rgba(102,211,222,.15);}
@@ -604,6 +605,8 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
   .sheet .remember{display:flex;align-items:center;gap:9px;margin-top:12px;font-size:12.5px;color:var(--mut);cursor:pointer;}
   .sheet .remember input{width:17px;height:17px;accent-color:var(--brand);flex:0 0 auto;}
   .sheet .go{width:100%;margin-top:16px;}
+  .sheet .forgot{display:block;width:max-content;margin:9px 2px 0 auto;font-size:12.5px;font-weight:600;color:var(--mut);text-decoration:underline;text-underline-offset:3px;}
+  .sheet .forgot:hover{color:var(--ink,#fff);}
   .sheet .swap{text-align:center;color:var(--mut);font-size:12.5px;margin-top:14px;}
   .sheet .swap a{color:var(--brand);font-weight:800;text-decoration:none;cursor:pointer;}
   .sheet .err{background:rgba(225,74,51,.12);border:1px solid rgba(225,74,51,.4);color:#ffb4a6;font-size:12.5px;line-height:1.45;border-radius:8px;padding:9px 11px;margin-top:12px;}
@@ -1435,10 +1438,11 @@ window.GA_ID='G-L29P5MRWKE';
       el.innerHTML=
         '<div class="avatar">'+esc(uname.charAt(0).toUpperCase()||'P')+'</div>'+
         '<div class="who"><div class="hi">Signed in as <span class="u">'+esc(uname)+'</span></div>'+
-        '<div class="lo">Your trophies, streaks and saves follow you into every game. <a href="#" id="acct-rename">Change username</a></div></div>'+
+        '<div class="lo">Your trophies, streaks and saves follow you into every game. <span class="links"><a href="#" id="acct-rename">Change username</a><a href="#" id="acct-pass">'+(hasPassword()?'Change password':'Set a password')+'</a></span></div></div>'+
         '<button class="btn ghost flexa" id="acct-out">Sign out</button>';
       $('acct-out').onclick=doSignOut;
       var rn=$('acct-rename'); if(rn) rn.onclick=function(e){ e.preventDefault(); openModal('username'); };
+      var pw=$('acct-pass'); if(pw) pw.onclick=function(e){ e.preventDefault(); openModal('password'); };
     }else{
       el.className='acct';
       el.innerHTML=
@@ -1453,9 +1457,67 @@ window.GA_ID='G-L29P5MRWKE';
   }
 
   // ---- modal ----
-  function openModal(mode){ st.mode=mode; st.err=''; st.note=''; st.busy=false; $('modal').hidden=false; renderModal(); }
+  function openModal(mode){ st.mode=mode; st.err=''; st.note=''; st.busy=false; st.done=false; $('modal').hidden=false; renderModal(); }
   function closeModal(){ $('modal').hidden=true; }
+  /* An account made with Google has no password until it sets one, so the change
+     form asks for the current one only when there is one to ask for. */
+  function hasPassword(){
+    var p=user&&user.app_metadata&&user.app_metadata.providers;
+    return !p || p.indexOf('email')>=0;
+  }
+  var PASS_MIN=6;
+  function renderPassModal(){
+    var m=st.mode, b=$('m-body'), busy=st.busy;
+    var msgs=(st.note?'<div class="note">'+esc(st.note)+'</div>':'')+(st.err?'<div class="err">'+esc(st.err)+'</div>':'');
+    if(m==='forgot'){
+      $('m-title').textContent='Reset your password';
+      $('m-lede').textContent='Enter the email on your account. We will send a link to set a new password.';
+      b.innerHTML=
+        '<input type="email" id="f-email" placeholder="Email" autocomplete="email" value="'+esc(st.email||'')+'">'+msgs+
+        '<button class="btn gold go" id="f-send"'+(busy?' disabled':'')+'>'+(busy?'Sending…':(st.sent?'Send it again':'Email me a reset link'))+'</button>'+
+        '<div class="swap">Remembered it? <a id="f-back">Back to sign in</a></div>';
+      $('f-send').onclick=function(){
+        var v=$('f-email').value.trim(); st.email=v;
+        if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v)){ st.err='Enter the email on your account.'; st.note=''; renderModal(); return; }
+        run(function(){ return sendReset(v); });
+      };
+      $('f-back').onclick=function(e){ e.preventDefault(); st.mode='signin'; st.err=''; st.note=''; renderModal(); };
+      return;
+    }
+    if(st.done){
+      $('m-title').textContent='Password saved';
+      $('m-lede').textContent='You are signed in. Use the new password next time.';
+      b.innerHTML=msgs+'<button class="btn gold go" id="f-done">Done</button>';
+      $('f-done').onclick=closeModal;
+      return;
+    }
+    // 'reset' arrives from the email link; 'password' is a signed-in change.
+    var reset=m==='reset', needCur=!reset&&hasPassword();
+    // A re-render after an error must not wipe what was typed.
+    var keep={}; ['f-cur','f-new','f-new2'].forEach(function(id){ var el=$(id); if(el) keep[id]=el.value; });
+    $('m-title').textContent=reset?'Set a new password':(needCur?'Change your password':'Set a password');
+    $('m-lede').textContent=reset?'Pick a new password. You will stay signed in.'
+      :(needCur?'Enter your current password, then the new one.':'You signed up with Google. Add a password to sign in with your email too.');
+    b.innerHTML=
+      (needCur?'<input type="password" id="f-cur" placeholder="Current password" autocomplete="current-password">':'')+
+      '<input type="password" id="f-new" placeholder="New password" autocomplete="new-password">'+
+      '<input type="password" id="f-new2" placeholder="New password again" autocomplete="new-password">'+msgs+
+      '<button class="btn gold go" id="f-save"'+(busy?' disabled':'')+'>'+(busy?'Saving…':'Save password')+'</button>'+
+      (reset?'':'<button class="btn ghost go" id="f-cancel" style="margin-top:9px">Cancel</button>');
+    Object.keys(keep).forEach(function(id){ var el=$(id); if(el) el.value=keep[id]; });
+    $('f-save').onclick=function(){
+      var cur=needCur?$('f-cur').value:'', n1=$('f-new').value, n2=$('f-new2').value;
+      st.note='';
+      if(needCur&&!cur){ st.err='Enter your current password.'; renderModal(); return; }
+      if(n1.length<PASS_MIN){ st.err='Use at least '+PASS_MIN+' characters.'; renderModal(); return; }
+      if(n1!==n2){ st.err='The two new passwords do not match.'; renderModal(); return; }
+      if(needCur&&cur===n1){ st.err='Pick a password you have not used here.'; renderModal(); return; }
+      run(function(){ return changePassword(cur,n1,needCur); });
+    };
+    var c=$('f-cancel'); if(c) c.onclick=closeModal;
+  }
   function renderModal(){
+    if(st.mode==='forgot'||st.mode==='reset'||st.mode==='password'){ renderPassModal(); return; }
     var pickUser = st.mode==='username';            // ONLY when we explicitly open the username editor
     var isUp = st.mode==='signup';
     var cur = username || '';
@@ -1481,6 +1543,7 @@ window.GA_ID='G-L29P5MRWKE';
           '<input type="email" id="f-email" placeholder="Email" autocomplete="email">'
         : '<input type="text" id="f-id" placeholder="Username or email" autocomplete="username">')+
       '<input type="password" id="f-pass" placeholder="Password" autocomplete="'+(isUp?'new-password':'current-password')+'">'+
+      (isUp?'':'<a class="forgot" id="f-forgot" href="#">Forgot your password?</a>')+
       '<label class="remember"><input type="checkbox" id="f-remember" checked> Keep me signed in on this device</label>'+
       (st.note?'<div class="note">'+esc(st.note)+'</div>':'')+
       (st.err?'<div class="err">'+esc(st.err)+'</div>':'')+
@@ -1490,6 +1553,12 @@ window.GA_ID='G-L29P5MRWKE';
     $('f-google').onclick=function(){ setRemember(); run(signInGoogle); };
     $('f-swap').onclick=function(e){ e.preventDefault(); st.mode=isUp?'signin':'signup'; st.err=''; st.note=''; renderModal(); };
     $('f-go').onclick=onSubmit;
+    var fg=$('f-forgot'); if(fg) fg.onclick=function(e){
+      e.preventDefault();
+      var id=($('f-id')&&$('f-id').value.trim())||'';
+      st.email=id.indexOf('@')>0?id:''; st.sent=false;
+      st.mode='forgot'; st.err=''; st.note=''; renderModal();
+    };
   }
   function setRemember(){ try{ var c=$('f-remember'); localStorage.setItem('rtt_chose_remember','1'); if(c&&c.checked) localStorage.setItem('rtt_remember','1'); else localStorage.removeItem('rtt_remember'); }catch(e){} }
 
@@ -1501,7 +1570,10 @@ window.GA_ID='G-L29P5MRWKE';
       // Signed in (via sign in, sign up, or a username save) → done. Never re-prompt
       // for a username on an ordinary login. Only keep the modal open when there is
       // no session yet, e.g. a new signup that still needs email confirmation.
-      if(user){ closeModal(); }
+      // The password forms report their own result, so they stay open.
+      var pw=st.mode==='forgot'||st.mode==='password'||st.mode==='reset';
+      if(pw){ renderModal(); }
+      else if(user){ closeModal(); }
       else { renderModal(); }
       renderPanel();
     }).catch(function(e){ st.busy=false; st.err=(e&&e.message)||'Something went wrong.'; renderModal(); });
@@ -1562,6 +1634,35 @@ window.GA_ID='G-L29P5MRWKE';
       return sb.rpc('set_username',{p_username:name});
     }).then(function(res){ if(res.error) throw new Error(res.error.message||'Could not set that username.'); username=name; bridgeSession(); });
   }
+  /* The link lands back on the home page, which opens the "set a new password" step
+     when supabase-js reports PASSWORD_RECOVERY. The same note shows whether or not
+     the address has an account, so this form cannot be used to find out who is here. */
+  function sendReset(email){
+    needSb();
+    return sb.auth.resetPasswordForEmail(email,{ redirectTo:location.origin+'/' }).then(function(res){
+      if(res.error && /rate|seconds|too many/i.test(res.error.message||'')) throw new Error('Too many tries. Wait a minute, then send it again.');
+      st.sent=true;
+      st.note='If that email has an account, a reset link is on its way. Check your inbox and spam folder.';
+    });
+  }
+  function changePassword(cur,next,needCur){
+    needSb(); if(!user) throw new Error('Your reset link has expired. Ask for a new one.');
+    var pre=needCur
+      ? sb.auth.signInWithPassword({ email:user.email, password:cur }).then(function(r){ if(r.error) throw new Error('Your current password is not right.'); })
+      : Promise.resolve();
+    return pre.then(function(){ return sb.auth.updateUser({ password:next }); }).then(function(res){
+      if(res.error){
+        var m=res.error.message||'';
+        if(/different from the old/i.test(m)) throw new Error('Pick a password you have not used here.');
+        if(/weak|characters/i.test(m)) throw new Error('That password is too weak. Try a longer one.');
+        throw new Error(m||'Could not save that password.');
+      }
+      if(res.data&&res.data.user) user=res.data.user;
+      st.mode='password'; st.done=true;
+      st.note='Password saved. Use it next time you sign in.';
+      bridgeSession();
+    });
+  }
   function doSignOut(){
     if(sb){ sb.auth.signOut({scope:'local'}).catch(function(){ try{sb.auth.signOut();}catch(e){} }); }
     bridgeClear(); user=null; username=null; closeModal(); renderPanel();
@@ -1586,6 +1687,15 @@ window.GA_ID='G-L29P5MRWKE';
     $('m-close').onclick=closeModal;
     $('modal').addEventListener('click',function(e){ if(e.target===$('modal')) closeModal(); });
     document.addEventListener('keydown',function(e){ if(e.key==='Escape' && !$('modal').hidden) closeModal(); });
+    /* A game's sign-in links here as /#forgot. Opened before the client exists so the
+       form still shows (and says accounts are offline) if supabase-js did not load.
+       The hash is cleared so a reload does not reopen it. */
+    try{
+      if(location.hash==='#forgot'){
+        history.replaceState(null,'',location.pathname+location.search);
+        st.email=''; st.sent=false; openModal('forgot');
+      }
+    }catch(e){}
     if(!(window.supabase && window.supabase.createClient)) return;   // fail open: panel + CTA still work, modal shows "offline"
     // Inbound bridge: if the user is signed in on RunTheTour (golf) but the home
     // page's default key is empty, copy the golf session over before createClient
@@ -1597,6 +1707,7 @@ window.GA_ID='G-L29P5MRWKE';
         if(_golf && _golf.indexOf('access_token')>=0) localStorage.setItem(DEFAULT_KEY,_golf);
       }
     }catch(e){}
+    var recoveryLink=/type=recovery/.test((location.hash||'')+(location.search||''));
     try{
       sb=window.supabase.createClient(SB_URL,SB_ANON,{ auth:{ persistSession:true, autoRefreshToken:true, detectSessionInUrl:true } });
     }catch(e){ sb=null; return; }
@@ -1610,6 +1721,11 @@ window.GA_ID='G-L29P5MRWKE';
       // the cross-game bridge on an ordinary signed-out visit.
       if(evt==='INITIAL_SESSION' && !session) return;
       if(session) bridgeSession(); else bridgeClear();
+      if(evt==='PASSWORD_RECOVERY' || (recoveryLink && session)){
+        recoveryLink=false;
+        applySession(session).then(function(){ openModal('reset'); });
+        return;
+      }
       var oauth=false; try{ oauth=!!localStorage.getItem('rtp_oauth_pending'); if(oauth){ localStorage.removeItem('rtp_oauth_pending'); localStorage.removeItem('rtt_oauth_pending'); } }catch(e){}
       applySession(session).then(function(){
         // Returning from Google: prompt for a username only for a brand-new account
@@ -1618,6 +1734,17 @@ window.GA_ID='G-L29P5MRWKE';
       });
     });
     sb.auth.getSession().then(function(r){ applySession(r.data && r.data.session); }).catch(function(){});
+    /* Anywhere can open the change form as /#password. */
+    try{
+      if(location.hash==='#password'){
+        history.replaceState(null,'',location.pathname+location.search);
+        sb.auth.getSession().then(function(r){
+          var s=r&&r.data&&r.data.session;
+          if(s){ applySession(s).then(function(){ openModal('password'); }); }
+          else { openModal('signin'); st.note='Sign in first, then change your password.'; renderModal(); }
+        });
+      }
+    }catch(e){}
     /* Safety net for the Google round trip. The redirect back carries the session in the
        URL, and supabase-js exchanges it asynchronously, so a single read on load can still
        land first and paint the page signed out. If we arrived from an OAuth redirect (or

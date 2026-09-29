@@ -13035,6 +13035,7 @@ function overlayAccount(screen){
               <div class="small muted" style="text-align:left;margin-top:4px">We ask your year of birth to confirm you're old enough for an account.</div>`
             :`<input class="name" id="au-id" placeholder="Username or email" autocomplete="username">`}
       <input class="name" id="au-pass" type="password" placeholder="Password" autocomplete="${isUp?'new-password':'current-password'}" style="margin-top:8px">
+      ${isUp?'':`<div style="text-align:right"><a href="/#forgot" target="_blank" rel="noopener" style="display:inline-block;margin:4px 0 2px;font-size:12.5px;color:inherit;opacity:.75;text-decoration:underline;text-underline-offset:3px">Forgot your password?</a></div>`}
       <div class="small muted" style="margin-top:9px;text-align:left">You'll stay signed in on this device until you sign out.</div>
       ${S.acctNote?`<div class="small" style="color:#35d6a0;margin-top:9px">${esc(S.acctNote)}</div>`:''}
       ${err?`<div class="autherr">${esc(err)}</div>`:''}
