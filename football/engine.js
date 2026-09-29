@@ -5797,6 +5797,9 @@ function fullCoachCall(d, plan) {
     return 'kick';
   }
   const behind = d.them - d.you;
+  /* Behind in overtime there is no next possession at all. Three points tie it and are worth
+     kicking; anything else, and every punt, is the loss. */
+  if (d.ot && behind > 0) return behind <= 3 && d.inFgRange ? 'fg' : 'go';
   /* Three points do not cover it and there is no time to get the ball back, so the drive is
      the game. Above every philosophy, including a coach who never otherwise goes. */
   if (d.quarter >= 4 && behind > 3) return 'go';
@@ -5923,9 +5926,11 @@ function bossBallSpot(y) {
   return y <= 50 ? { side: 'own', yard: Math.max(1, Math.round(y)) }
     : { side: 'opp', yard: Math.max(1, Math.round(100 - y)) };
 }
-/* The clock, split into quarters for display. */
+/* The clock, split into quarters for display. Overtime is period 5 and up, fifteen minutes
+   each the way a playoff overtime is, so a decision asked in it names a clock the page can
+   draw rather than 0:00 of the fourth quarter. The page labels anything past 4 as OT. */
 function bossClock(sim) {
-  const q = Math.min(4, Math.floor(sim.clock / 900) + 1);
+  const q = Math.floor(sim.clock / 900) + 1;
   const rem = 900 - (sim.clock - (q - 1) * 900);
   return { quarter: q, secs: Math.max(0, Math.round(rem)) };
 }
@@ -5943,11 +5948,14 @@ function bossTwoLive(sim) {
 function bossGenuineFourth(sim, c) {
   const short = c.toGo <= 3 && c.y >= 52;
   const lateTrail = sim.clock >= 2400 && sim.you < sim.them && c.y >= 35;
-  return short || lateTrail;
+  /* Behind in overtime, every fourth down is the season, wherever the ball is. */
+  const otTrail = !!sim.ot && sim.you < sim.them;
+  return short || lateTrail || otTrail;
 }
 
 function bossStartDrive(sim, team, startY) {
   sim.pos = team;
+  if (sim.ot) sim.ot.poss++;
   sim.cur = { team, y: startY, down: 1, toGo: Math.min(10, 100 - startY),
     startAbs: bossAbsYard(team, startY), tStart: sim.clock, plays: 0 };
 }
@@ -5977,6 +5985,14 @@ function bossEndDrive(sim, how, endY, rng) {
     result: how, tStart: c.tStart, tEnd: sim.clock, plays: c.plays };
   sim.drives.push(drive);
   sim[c.team] += pts;
+  /* A SCORE THAT ENDS OVERTIME ENDS THE GAME ON THE SPOT. Once both sides have had the ball,
+     the first score wins, and a touchdown that wins it is not followed by a kick or a two
+     point question nobody needs answering. The drive is recorded and the next advance calls
+     it: bossOtDecided is the one rule both places read. */
+  if (bossOtDecided(sim)) {
+    sim.cur = null;
+    return { type: 'drive', drive, you: sim.you, them: sim.them, clock: bossClock(sim) };
+  }
   if (how === 'td' && c.team === 'you' && bossTwoLive(sim)) {
     // Pause for the PAT decision; the handoff waits until it is resolved.
     sim.pending = { kind: 'two', team: 'you', pat: { endY } };
@@ -5999,8 +6015,32 @@ function bossDecisionInfo(sim, drive) {
   const c = sim.cur, toGoal = 100 - c.y;
   return { kind: 'fourth', quarter: cl.quarter, secs: cl.secs, you: sim.you, them: sim.them,
     down: 4, toGo: Math.round(c.toGo), ball: bossBallSpot(c.y), toGoal: Math.round(toGoal),
-    inFgRange: toGoal <= BOSS_SIM.FG_MAX_YARD };
+    inFgRange: toGoal <= BOSS_SIM.FG_MAX_YARD, ot: !!sim.ot };
 }
+
+/*
+ * ─── OVERTIME ────────────────────────────────────────────────────────────────────────
+ *
+ * A TIE AT THE END OF REGULATION USED TO BE DECIDED BY THE PREGAME PROJECTION: whichever side
+ * the sim expected to score more was handed the win, so a game the player watched end 24-24
+ * went into the book as a loss with nothing on screen to say why. Reported by a player, off a
+ * 19-0 Full Team season ended by an extra point that TIED the Super Bowl.
+ *
+ * So a tie plays overtime, under the playoff rule the NFL uses now: a fresh coin toss, both
+ * sides get one possession whatever happens on the first, and after that the next score wins.
+ * It never ends level, because neither game that uses this can: a playoff round has to send
+ * somebody through and a boss battle is a win or a loss.
+ *
+ * bossOtDecided is the whole of "is it over", read in two places: by bossEndDrive, so a
+ * winning score is not followed by an extra point, and by bossSimAdvance between drives.
+ */
+function bossOtDecided(sim) {
+  return !!sim.ot && sim.ot.poss >= 2 && sim.you !== sim.them;
+}
+/* Past this much overtime something has gone wrong rather than stayed tied, and the game has
+   to end somewhere: a coin, never the projection that caused this. Unreachable in practice,
+   at about one drive in three scoring. */
+const BOSS_OT_MAX = 3600 * 3;
 
 /*
  * PLAY FORWARD until something the driver needs to show: a completed drive, a decision for the
@@ -6010,10 +6050,22 @@ function bossDecisionInfo(sim, drive) {
 function bossSimAdvance(sim, rng) {
   if (sim.over) return { type: 'over', won: sim.won, you: sim.you, them: sim.them };
   if (!sim.cur) {
-    if (sim.clock >= 3600) {
-      sim.over = true;
-      sim.won = sim.you > sim.them || (sim.you === sim.them && sim.youExp >= sim.themExp);
-      return { type: 'over', won: sim.won, you: sim.you, them: sim.them };
+    const end = (won) => {
+      sim.over = true; sim.won = won;
+      return { type: 'over', won: sim.won, you: sim.you, them: sim.them, ot: !!sim.ot };
+    };
+    if (sim.ot) {
+      if (bossOtDecided(sim)) return end(sim.you > sim.them);
+      if (sim.clock >= BOSS_OT_MAX) return end(rng() < 0.5);
+    } else if (sim.clock >= 3600) {
+      if (sim.you !== sim.them) return end(sim.you > sim.them);
+      /* Level at the end of regulation: overtime, off its own coin toss. */
+      sim.clock = Math.max(sim.clock, 3600);
+      /* `level` is the score it was tied at, kept because the first overtime drive is played
+         before the page gets to say overtime has started. */
+      sim.ot = { poss: 0, receiver: rng() < 0.5 ? 'you' : 'them', level: sim.you };
+      sim.pos = sim.ot.receiver;
+      sim.nextStart = BOSS_SIM.START_YARD;
     }
     if (sim.pos == null) { sim.firstReceiver = rng() < 0.5 ? 'you' : 'them'; sim.pos = sim.firstReceiver; }
     bossStartDrive(sim, sim.pos, sim.nextStart != null ? sim.nextStart : BOSS_SIM.START_YARD);
@@ -6025,8 +6077,12 @@ function bossSimAdvance(sim, rng) {
     if (rng() < BOSS_SIM.TO_RATE) return bossEndDrive(sim, 'turnover', c.y, rng);
     if (c.down === 4 && !c.forcedGo) {
       const toGoal = 100 - c.y;
-      const trailing = sim[c.team] < sim[c.team === 'you' ? 'them' : 'you'];
-      const desperate = sim.clock >= 3360 && trailing;
+      const behind = sim[c.team === 'you' ? 'them' : 'you'] - sim[c.team];
+      /* In overtime the clock is not what runs out, the possession is: a side that is behind
+         there has this drive and no other. Three points tie it, so it kicks when it can, and
+         it never punts, because a punt is the loss. */
+      const desperate = sim.ot ? behind > 3 : (sim.clock >= 3360 && behind > 0);
+      const lastChance = !!sim.ot && behind > 0;
       if (c.team === 'you' && bossGenuineFourth(sim, c)) {
         sim.pending = { kind: 'fourth', team: 'you' };
         return { type: 'decision', decision: bossDecisionInfo(sim) };
@@ -6035,7 +6091,7 @@ function bossSimAdvance(sim, rng) {
         return bossFgGood(toGoal, rng) ? bossEndDrive(sim, 'fg', c.y, rng)
           : bossEndDrive(sim, 'miss', c.y, rng);
       }
-      if (toGoal > 5 && !desperate) return bossEndDrive(sim, 'punt', c.y, rng);
+      if (toGoal > 5 && !desperate && !lastChance) return bossEndDrive(sim, 'punt', c.y, rng);
       // otherwise go for it
     }
     c.forcedGo = false;

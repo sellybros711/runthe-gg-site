@@ -8507,7 +8507,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 
 <div class="sheet" id="sheet"><div class="inner" id="sheet-in"></div></div>
 
-<script src="engine.js?v=98"></script>
+<script src="engine.js?v=100"></script>
 <script src="run.js?v=103"></script>
 <!-- WHO CAN SEE FULL TEAM. Its own file rather than an array in this one, because three
      separate things ask and a list written three times drifts. Not optional in the way the
@@ -19441,6 +19441,9 @@ const PACE={
 const LIVE_PACE={'Wild Card':0.18,'Divisional':0.25,
   'Conference Championship':0.31,'Super Bowl':0.40};
 const QNAME=['1ST','2ND','3RD','4TH'];
+/* Anything past the fourth is overtime, which is not a fifth quarter: a live game that goes
+   to overtime reads OT on the bug and in the log, never undefined or 4TH 0:00. */
+const qLabel=(q)=>q>4?'OT':QNAME[q-1];
 const clockText=(sec)=>Math.floor(sec/60)+':'+String(Math.floor(sec%60)).padStart(2,'0');
 
 /* How the score bug dresses for each rung, and what its right-hand cell says. Slate,
@@ -20270,9 +20273,9 @@ function livePlayoffOver(ev,idx,done){
   bossStop();
   const o=bossOppNow;
   if($('bg-skip')) $('bg-skip').hidden=true;
-  $('bg-state').textContent='FINAL'; $('bg-q').textContent='FINAL';
+  $('bg-state').textContent='FINAL'; $('bg-q').textContent=ev.ot?'F/OT':'FINAL';
   $('bg-ck').textContent=ev.won?'YOU WIN':'YOU LOSE';
-  bossRenderScore(); bossDraw(3600,false);
+  bossRenderScore(); bossDraw(Math.max(3600,bossSim.clock),false);
   $('bg-calls').hidden=true;
   /* RECORDED, NOT DECIDED. advanceWeek takes the score this screen produced, files it as the
      round's result, advances the bracket and ends the run on a loss. See its `pre` note. */
@@ -20284,9 +20287,10 @@ function livePlayoffOver(ev,idx,done){
   const next=more?(run.playoffSeed.roundNames[run.season.playoffRound]||'The next round'):'';
   const vd=$('bg-verdict'); vd.className='bg-verdict '+(ev.won?'won':'lost');
   $('bg-outcome').textContent=ev.won?'You win':'You lose';
+  const inOt=ev.ot?' in overtime':'';
   $('bg-note').textContent=ev.won
-    ? (more?'You beat '+o.display+'. '+next+' next.':'You beat '+o.display+'. The ring is yours.')
-    : o.display+' ended your season.';
+    ? (more?'You beat '+o.display+inOt+'. '+next+' next.':'You beat '+o.display+inOt+'. The ring is yours.')
+    : o.display+' ended your season'+inOt+'.';
   const cont=$('b-boss-continue');
   cont.textContent=more?'Play '+next:'See the season';
   cont.onclick=()=>done();
@@ -21011,8 +21015,8 @@ function bossRenderScore(){
   $('bg-them').classList.toggle('lead',bossSim.them>=bossSim.you);
 }
 function bossSetClock(elapsed){
-  const q=Math.min(4,Math.floor(elapsed/900)+1);
-  $('bg-q').textContent=QNAME[q-1];
+  const q=Math.floor(elapsed/900)+1;
+  $('bg-q').textContent=qLabel(q);
   $('bg-ck').textContent=clockText(Math.max(0,900-(elapsed-(q-1)*900)));
 }
 /* Draw the completed drives up to a time, optionally with the drive in progress laid on top
@@ -21168,7 +21172,12 @@ function bossPlay(read){
 /* Play one event, drawing any drives it produced, then either pause for a decision, show the
    verdict, or keep going. */
 function bossLoop(){
+  const wasOt=!!bossSim.ot;
   const ev=E.bossSimAdvance(bossSim,bossRng);
+  /* REGULATION ENDED LEVEL AND THE SIM HAS GONE TO OVERTIME. Said over the field and written
+     into the log before the first overtime drive is drawn, because a game that carries on
+     past 0:00 of the fourth with nothing to say why reads as a clock that broke. */
+  if(!wasOt&&bossSim.ot) bossAnnounceOt();
   if(ev.type==='over'){ const end=bossOnOver||bossFinish;
     bossFlush(()=>{ bossRenderScore(); end(ev); }); return; }
   /* THE DRIVE IS PLAYED UP TO THE CALL BEFORE THE CALL IS ASKED. bossFlush only knows about
@@ -21181,6 +21190,16 @@ function bossLoop(){
      themselves carry the pace now, so this is the handoff between them rather than the
      pace itself. */
   bossFlush(()=>{ bossTimer=setTimeout(bossLoop,bossFast?0:420*bossPace); });
+}
+
+function bossAnnounceOt(){
+  const tie=bossSim.ot.level+'-'+bossSim.ot.level;
+  $('bg-narr').innerHTML='<b>Tied '+tie+' at the end of regulation.</b> Overtime: both sides get the ball, then the next score wins.';
+  const el=$('bg-log');
+  if(el) el.insertAdjacentHTML('afterbegin',
+    '<div class="pl call"><span class="t">OT</span>'+
+      '<span class="w">Overtime<i class="plsub">Tied at the end of regulation</i></span>'+
+      '<span class="n">'+tie+'</span></div>');
 }
 
 /* Animate every drive the sim has produced but not yet drawn, in order, then continue. */
@@ -21268,7 +21287,7 @@ function bossRescoreLast(){
 }
 function bossLogDrive(d){
   const el=$('bg-log'); if(!el) return;
-  const q=Math.min(4,Math.floor(d.tEnd/900)+1);
+  const q=Math.floor(d.tEnd/900)+1;
   const clock=clockText(Math.max(0,900-(d.tEnd-(q-1)*900)));
   const yds=bossDriveYards(d), plays=d.plays||0;
   /* The drive in one phrase, then what it cost to get there. A kick names its distance for
@@ -21290,7 +21309,7 @@ function bossLogDrive(d){
   const scored=d.result==='td'||d.result==='fg';
   el.insertAdjacentHTML('afterbegin',
     '<div class="pl '+(d.team==='you'?'you':'them')+(scored?'':' quiet')+'">'+
-      '<span class="t">'+QNAME[q-1]+' '+clock+'</span>'+
+      '<span class="t">'+qLabel(q)+' '+clock+'</span>'+
       '<span class="w">'+esc(d.team==='you'?'You':bossThreeLetter(bossOppNow))+' &middot; '+
         esc(what)+(drove?'<i class="plsub">'+esc(drove)+'</i>':'')+'</span>'+
       '<span class="n">'+bossSim.you+'-'+bossSim.them+'</span></div>');
@@ -21494,7 +21513,7 @@ function bossTakeCall(d,choice){
     bossTimer=setTimeout(bossLoop,bossFast?0:560);
   });
 }
-function ordinalQ(q){ return QNAME[q-1]+' quarter'; }
+function ordinalQ(q){ return q>4?'overtime':QNAME[q-1]+' quarter'; }
 /*
  * WHAT WAS DECIDED, as a verb phrase to sit after the caller's name. Present tense, because
  * on the coach's path it is printed in the second BEFORE the play is run.
@@ -21530,7 +21549,7 @@ function bossLogCall(d,choice,res){
   const how=bossCallOutcome(d,choice,res);
   el.insertAdjacentHTML('afterbegin',
     '<div class="pl call">'+
-      '<span class="t">'+QNAME[Math.min(3,d.quarter-1)]+' '+clockText(d.secs)+'</span>'+
+      '<span class="t">'+qLabel(d.quarter)+' '+clockText(d.secs)+'</span>'+
       '<span class="w">'+esc(bossCallerName)+' &middot; '+esc(what)+
         '<i class="plsub">'+esc(how)+'</i></span>'+
       '<span class="n">'+bossSim.you+'-'+bossSim.them+'</span></div>');
@@ -21568,9 +21587,9 @@ function bossFinish(ev){
   bossStop();
   const b=bossSpecNow||R.bossFor(run), o=bossOppNow||bossOppRow();
   if($('bg-skip')) $('bg-skip').hidden=true;
-  $('bg-state').textContent='FINAL'; $('bg-q').textContent='FINAL';
+  $('bg-state').textContent='FINAL'; $('bg-q').textContent=ev.ot?'F/OT':'FINAL';
   $('bg-ck').textContent=ev.won?'YOU WIN':'YOU LOSE';
-  bossRenderScore(); bossDraw(3600,false);
+  bossRenderScore(); bossDraw(Math.max(3600,bossSim.clock),false);
   $('bg-calls').hidden=true;
   const vd=$('bg-verdict'); vd.className='bg-verdict '+(ev.won?'won':'lost');
   $('bg-outcome').textContent=ev.won?'You win':'You lose';
@@ -21585,17 +21604,17 @@ function bossFinish(ev){
        it today rather than at the reset. */
     if(run&&run.dynasty) dailyGrace('dynasty','boss');
     if(b.reward==='freeze'){
-      $('bg-note').textContent='You beat '+o.display+'. Now pick a player to keep forever.';
+      $('bg-note').textContent='You beat '+o.display+(ev.ot?' in overtime':'')+'. Now pick a player to keep forever.';
       cont.textContent='Choose a player';
       cont.onclick=()=>bossFreeze();
     }else{
-      $('bg-note').textContent='You beat '+o.display+'. Your dead cap is wiped clean.';
+      $('bg-note').textContent='You beat '+o.display+(ev.ot?' in overtime':'')+'. Your dead cap is wiped clean.';
       cont.textContent='Into the offseason';
       cont.onclick=()=>{ R.applyBossResult(run,true); dynToWinter(); };
     }
     afterPaint(()=>fireConfetti(confettiTheme(false)));
   }else{
-    $('bg-note').textContent=o.display+' held on. The owner wants one more win next season.';
+    $('bg-note').textContent=o.display+(ev.ot?' won it in overtime':' held on')+'. The owner wants one more win next season.';
     cont.textContent='Into the offseason';
     cont.onclick=()=>{ R.applyBossResult(run,false); dynToWinter(); };
   }

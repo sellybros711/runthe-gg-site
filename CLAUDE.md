@@ -2960,6 +2960,33 @@ right the whole time.
 drive. Measured with the bug reintroduced: three of six seeds show it, so a one-seed check
 would have been a coin flip on whether the file was worth having.
 
+#### A tie goes to overtime, and it used to go to the projection
+
+```
+node football/check-overtime.mjs   the overtime rules, as properties, on the real engine
+```
+
+Reported by a player: a 19-0 Full Team season reached the Super Bowl, the last extra point
+TIED it 24-24, and the screen said YOU LOSE. `bossSimAdvance` ended every game at 3600 and
+settled a tie with `sim.youExp >= sim.themExp`, so the side the pregame projection disliked
+lost every tie it ever reached, in the boss battle and in every live Full Team playoff game,
+with nothing on screen to say why. Measured against the old engine: **0 of 600** tied games
+won by the weaker side.
+
+**A tie now plays overtime, under the NFL's playoff rule**: a fresh coin toss, both sides get
+one possession whatever the first one does, then the next score wins. It never ends level,
+because neither game that uses this can. `bossOtDecided` is the one rule, read by
+`bossEndDrive` (so a winning touchdown takes no extra point) and by `bossSimAdvance` between
+drives. `sim.ot.level` keeps the tied score, because the first overtime drive is played before
+the page gets to announce overtime, and reading the score at that moment printed "tied 30-24".
+
+**Behind in overtime there is no next possession**, so three rules change there and nowhere
+else: the sim never punts, it kicks only when three points tie it, and the player is asked on
+every fourth down wherever the ball is. `fullCoachCall` does the same for a hired coach, off
+`d.ot` on the decision. `bossClock` counts periods past 4 and the page labels them OT
+(`qLabel`), so a decision asked in overtime is never drawn at 0:00 of the fourth. A game
+decided in overtime reads F/OT on the bug and "in overtime" in the verdict.
+
 #### Sim the rest, and what it deliberately does not skip
 
 A boss battle animates every drive and is the longest watch in the mode, so `bossFast` hurries
