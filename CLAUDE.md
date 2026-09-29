@@ -12152,6 +12152,22 @@ with the hole under the reels to prove it. **It cannot go as flat as football's
 field**, which is about 1.84 wide: a half court is roughly square in life, and
 squashing it past 1.4 stops depicting the sport.
 
+**THE COURT COMES FIRST ON A PHONE TOO**, asked for by the owner: your lineup is
+the top of the screen on every width. It used to come last on a phone, on the
+argument that it pushed the board a screen down, and that was the wrong trade:
+the court is what you look back at between signings. The wide layout places it
+by column and row, so the markup order changes nothing there. **The pips follow
+the court**: they hang under the pinned bar only once the court has scrolled up
+behind it (`pipsFollowCourt`, off the court's own rectangle), because at the top
+they would be the same five slots drawn twice. They are out of the flow rather
+than collapsed, since a sticky bar that grows reshapes the page under the
+finger. `check-draft.mjs` section 3 asserts both, and each half was proved by
+removing it.
+
+**The pinned bar's club tint is a layer over its own opaque gradient.** Written
+alone it started at half alpha, so the reels and tiles scrolling under the
+sticky bar read straight through the budget.
+
 #### Every way this rots is silent, and two of them already had
 
 **`.active`, NOT `.on`.** The wrap gets its width from

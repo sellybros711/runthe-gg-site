@@ -503,6 +503,20 @@
    * The home hero and the results screen draw their own and keep 1/0.94,
    * which is what they have always had. */
   @media(max-width:919px){
+    /* THE PIPS HANG UNDER THE BAR, and only once the court has scrolled up
+       behind it. The court is the first thing on this screen now, so while it
+       is in view the pips would be the same five slots drawn twice, one above
+       the other. Out of the flow rather than collapsed, because the bar is
+       sticky and a sticky bar that grows reshapes the page under the finger.
+       Run The Diamond does the same with its field. `pipsup` is set by
+       `pipsFollowCourt()` off the court's own rectangle. */
+    .capwrap .dpips{position:absolute;left:10px;right:10px;top:100%;margin-top:6px;
+      padding:6px;border-radius:10px;background:#0a0e17;
+      border:1px solid var(--cardb);box-shadow:0 8px 18px rgba(0,0,0,.45);
+      opacity:0;visibility:hidden;transform:translateY(-6px);pointer-events:none;
+      transition:opacity .2s ease,transform .2s ease,visibility 0s linear .2s;}
+    .capwrap.pipsup .dpips{opacity:1;visibility:visible;transform:none;
+      transition:opacity .2s ease,transform .2s ease;}
     .dside .court{aspect-ratio:1/0.72;}
     .dside .spot{width:64px;}
     .dside .spot .disc{width:30px;height:30px;font-size:9px;}
@@ -948,8 +962,12 @@
      allowed to repaint it. The cap bar's gold and red warning states are
      untouched for the same reason: those two colours are a message about money,
      not decoration. Only the healthy bar takes the club. */
+  /* The tint is a LAYER over the bar's own opaque gradient. Written alone it
+     starts at half alpha, and this bar is sticky: the reels, the tabs and the
+     tiles scrolled up behind it and read straight through the budget. */
   body.clubbed .capwrap{border-color:var(--club2);
-    background:linear-gradient(180deg,rgba(var(--club1rgb),.5),#10151f 62%);}
+    background:linear-gradient(180deg,rgba(var(--club1rgb),.5),#10151f 62%),
+      linear-gradient(180deg,var(--card),#10151f);}
   body.clubbed .capbar:not(.tight):not(.broke) i{
     background:linear-gradient(90deg,var(--club1),var(--club2));}
   /* ONLY THE TINT LAYER, never the whole background. Replacing it outright is
@@ -2742,13 +2760,24 @@
     <div class="dpips" id="d-pips" aria-hidden="true"></div>
   </div>
 
-  <!-- ORDER IS MOBILE ORDER. What you drew, then who you can sign, then the
-       court. The court used to come first and on a 390px phone that meant
-       scrolling past a full screen of reference before reaching a single
-       player: the decision was buried under the picture of the decision. On a
-       wide screen it moves into a rail beside the board, where it costs
-       nothing. -->
+  <!-- THE COURT COMES FIRST, on every width. It is your lineup, and the
+       owner asked for it on top: the picture of the team you are building is
+       what frames every pick under it. It used to come last on a phone, on the
+       argument that it pushed the board a screen down; that was the wrong
+       trade, because the board is read one board at a time while the court is
+       the thing you look back at between signings. On a wide screen the grid
+       places it by column and row, so this order changes nothing there. The
+       pips in the pinned bar still carry the lineup once the court scrolls
+       away under the board. -->
   <div class="draftmain">
+    <aside class="dside">
+      <div class="court" id="court" role="img" aria-label="Your rotation on the floor">
+        <div class="scene"></div>
+        <div class="floor"><div class="lines"></div></div>
+        <div class="hoop"></div>
+      </div>
+      <div class="rail off" id="rail"></div>
+    </aside>
     <div class="dpick">
       <!-- THE WHEEL AND WHAT IT SAYS, as one block, because on a wide screen
            it is one COLUMN: the court takes the other half of the top row and
@@ -2780,14 +2809,6 @@
       <div class="opts" id="opts"></div>
     </div>
 
-    <aside class="dside">
-      <div class="court" id="court" role="img" aria-label="Your rotation on the floor">
-        <div class="scene"></div>
-        <div class="floor"><div class="lines"></div></div>
-        <div class="hoop"></div>
-      </div>
-      <div class="rail off" id="rail"></div>
-    </aside>
   </div>
 
   <!-- Hidden until there is a roster to have a shape. An empty card with a
@@ -3592,6 +3613,7 @@ function show(id){
   renderAppBar(id);
   if (id === 's-home') heroStart();
   window.scrollTo(0, 0);
+  pipsFollowCourt();
 }
 
 // ── the two bars ───────────────────────────────────────────────────────────
@@ -5957,6 +5979,24 @@ function oddsWord(pct){
   return pct >= 30 ? 'Title favorite' : pct >= 15 ? 'Contender'
     : pct >= 5 ? 'Dark horse' : pct >= 1 ? 'Long shot' : 'No shot';
 }
+
+/* The pips stand in for the court once it has scrolled up behind the pinned
+   bar, and not before. Asked of the court's own rectangle, so it is right
+   whatever height the bar or the court comes out at on this screen. */
+function pipsFollowCourt(){
+  var cap = document.querySelector('#s-draft .capwrap'), court = $('court');
+  if (!cap || !court) return;
+  var on = $('s-draft').classList.contains('active') &&
+    court.getBoundingClientRect().bottom < cap.getBoundingClientRect().bottom + 8;
+  if (cap.classList.contains('pipsup') !== on) cap.classList.toggle('pipsup', on);
+}
+(function(){
+  var queued = false;
+  function soon(){ if (queued) return; queued = true;
+    requestAnimationFrame(function(){ queued = false; pipsFollowCourt(); }); }
+  window.addEventListener('scroll', soon, { passive: true });
+  window.addEventListener('resize', soon);
+})();
 
 function statLine(p){
   return p.pts + ' pts · ' + p.reb + ' reb · ' + p.ast + ' ast';
