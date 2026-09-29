@@ -262,7 +262,6 @@ const GRIND = {
   daily_100: 'daily_50',
   daily_streak_30: 'daily_streak_14',
   title_10: 'title_5',
-  surv_cut_5: 'surv_cut_3',
 };
 const SKILL = {
   /* A TITLE IS ABOUT ONE RUN IN SIXTY even for the best bot, so anything that
@@ -309,7 +308,6 @@ const SKILL = {
      the 95 rating, the perfect draft and four more) and their excuses came off.
      These two went the other way. Each is anchored on the rung below it.
      (`rank_one` was the other, and the cap change below took it back off.) */
-  one_franchise_8: 'one_franchise',
   /* THE CAP WENT FROM $170M TO $190M, and the borderline moved a third time.
      Titles got easier, so seven title and legend rungs now light in quick and
      their excuses came off: back to back, three and four in a row, ten titles,
@@ -347,8 +345,20 @@ const SKILL = {
   wildcard_title: 'seed_wildcard',
   btb_title: 'title_5',
   mode_division_title: 'mode_division_oct',
-  mode_survivor_oct: 'surv_cut_3',
-  all_modes_oct: 'mode_division_oct',
+  /* THE SCHEDULE GOT HARDER, the owner's call: a careful draft was winning 90
+     about half the time and the target is one in four. Opponents score 1.05x
+     and allow 0.92x (was 1.02x and 0.95x). Measured over 2,250 seasons of the
+     chemistry bot's rosters, 110 wins went from 4.4% of them to 0.36%, and 116
+     and 117 still happen (1 in 2,250), so the top rungs are a wait rather than
+     a wall. A ten-year October streak and a Decades title went behind the line
+     three runs a bot reaches for the same reason. Each is anchored on the rung
+     below it, which still lights. Going the other way, four excuses came off
+     (five cuts, eight from one club, a Survivor October, every mode's
+     October): tougher seasons mean more cuts and different drafts, and all four
+     light in quick now. */
+  win_110: 'win_100',
+  oct_streak_10: 'oct_streak_5',
+  mode_era_title: 'mode_era_oct',
   /* `daily_100w` HAD AN EXCUSE AND DID NOT NEED ONE. A hundred wins on a daily
      lights in the quick sweep (spread / classic), so the entry was section 5's
      own target: an excuse written for something that turned out to be reachable,
