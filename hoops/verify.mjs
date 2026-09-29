@@ -1415,10 +1415,9 @@ ok(bestWins > worstWins + 20,
  * whole draft. Nothing throws and no other check here opens the page.
  *
  * The other half is the three courts. The home screen, the draft and the
- * results each carry one, and every part of the floor is markup: an apron, a
- * backboard and two corner threes added to one of them and not the others is
- * two courts in one game. Counted rather than named, so the next part added
- * is covered without anybody remembering this section exists.
+ * results each carry one, and each has to carry the same holders: a floor,
+ * the lines courts.js draws into it, the standing hoop and the scene. One of
+ * them missing a holder is two courts in one game.
  */
 {
   const src = fs.readFileSync(path.join(HERE, 'index.html'), 'utf8');
@@ -1449,10 +1448,13 @@ ok(bestWins > worstWins + 20,
 
   const courts = (src.match(/<div class="court[ "]/g) || []).length;
   ok(courts === 3, `three courts on this page (${courts})`);
-  for (const part of ['oob', 'bb', 'c3 l', 'c3 r', 'base', 'side']) {
+  /* The lines are one SVG courts.js draws in feet, so each court carries one
+     holder for it and none of the seven hand-placed boxes it replaced. */
+  for (const part of ['floor', 'lines', 'hoop', 'scene']) {
     const n = (src.match(new RegExp('class="' + part + '"', 'g')) || []).length;
     is(n, courts, `every court has its ${part}`);
   }
+  ok(!/class="(ln arc3|c3 [lr]|oob|ln key|ln circ)"/.test(src), 'and no court keeps a hand-placed line');
 }
 
 /* ── A STRAIGHT COLUMN OF DIGITS IS A FEATURE, NOT A TYPEFACE ───────────────

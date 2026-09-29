@@ -13990,14 +13990,54 @@ ballparks, a three-quarter view of the court, and arenas with scenery.
 kind of place (a parquet floor, a chain-link blacktop, a beach court, a gym with
 pull-out bleachers) and **none named for a real arena or carrying a real logo**.
 
-**Unlocks are derived, never stored.** Every rule asks the career the cabinet
-reads (runs, rings, playoffs, best wins, badges earned, the mode feats `cq.best`,
-`ps.par`, `fx.title`) or whether the account is Pro. A guest gets the home arena
-only. The one stored thing is the choice, on the account's profile row (below),
-and a choice the account cannot back (signed out, another account, a Pro
-arena without Pro) falls back to the home arena. `currentArena()` is the one
-answer and `arenaChanged()` forgets it on every event that can move an unlock: a
-run filed, a feat, a cloud pull, a change of account, Pro.
+**Unlocks are derived, never stored.** The one stored thing is the choice, on the
+account's profile row (below). `currentArena()` is the one answer and
+`arenaChanged()` forgets it on every event that can move an unlock: a run filed, a
+feat, a cloud pull, a change of account, Pro.
+
+#### Everybody starts on the Blacktop and climbs to the league
+
+Asked for by the owner: all users start on the blacktop and work their way to the
+professional arenas by completing achievements and being a dedicated player for a
+long period of time. `ARENAS` in `courts.js` is that ladder, in order:
+
+| tier | arenas | a rung asks for |
+|---|---|---|
+| Streetball | Blacktop (free), Boardwalk, Rooftop | 5 runs and 5 badges, then 15, 10 and 3 days |
+| Rec league | Rec Center | 30 runs, 18 badges, 5 days |
+| College | Fieldhouse, Altitude | 50 / 25 / 8, then 75 / 32 / 12 |
+| The League | Hardwood, Parquet, Sunset Hall | 100 / 40 / 15, 150 / 50 / 20, then 200 / 60 / 30 and a ring |
+| Hall of Fame | Cathedral, Banner Hall | 300 / 75 / 45 and 3 rings, then 500 / 90 / 60 and 5 rings |
+| Pro | Neon Court, The Glass | Run The Floor Pro, off the ladder |
+
+**Every rung asks for three kinds of thing at once**: runs played, badges earned
+and DIFFERENT DAYS played on. The badges are the achievements; the runs and the
+days are the dedication, and the days are the half that cannot be done in one
+long evening. The top three rungs want rings as well. The rule is written as data
+(`reqs`) and turned into the card's sentence by `ruleText`, so the words cannot
+drift from the numbers, and a locked card lists each part and how far along it is.
+
+**`career.days` is new and it is a map**, `{ 'YYYY-MM-DD': n }` on the Eastern date
+the daily already uses. `stampDay` in the page counts a run on its day and stamps
+the day (counting nothing) when a mode files a feat, since Conquest files one after
+every steal. **It is on `CAREER_COUNTS` in `cloud.js`**, which moved to API 4, or a
+second device would drop every day played on merge. Careers from before this have
+no days, so the count starts from the day this shipped. That is the one rule on the
+ladder that is not retroactive, and it is the one that measures time.
+
+**A guest, a fresh account and a choice the account cannot back all land on the
+highest rung reached** (`CT.best(info)`), which is the Blacktop on day one. With no
+choice made an account plays on its highest rung, so climbing shows up on the
+court without a trip to the Locker. The old ladder handed out the Hardwood free and
+most arenas off one feat; an account that had climbed that ladder keeps nothing it
+has not earned on this one, which is fine on an unlaunched preview and would need
+a legacy rule (baseball's `LEGACY_UNTIL`) the day the game launches.
+
+`check-arenas` holds the ladder to itself: every rung asks at least as much of
+everything as the one below and more runs, the league rungs want 100 runs, 40
+badges and 15 days or more, and one run, badge or day short of a rung keeps it
+shut. Section 10 plays a Conquest game on a third day and waits for the Rooftop's
+toast.
 
 **The floor is its own layer now.** `.court` is the building (`--wall`) and
 `.court .floor` holds the seven layers, with the boards' three repeating layers
@@ -14023,9 +14063,45 @@ windows and skyline that say which arena it is were off the top.
 
 **The surround is a box-shadow on the tilted floor**, offset down by its own
 spread, so it covers the wedges beside the far end without rising into the
-building. **The three point arc clips itself** (`clip-path`), because tilted, the
-floor's edge is no longer the court's and the upper half of the ellipse drew over
-the crowd.
+building.
+
+#### The lines are a regulation half court, drawn in feet
+
+Asked for with a court diagram poster as the reference. The lines used to be seven
+CSS boxes placed by eye, and three of them were wrong in the way a fan sees at once:
+the three point arc was one ellipse that ran through the half court line, the free
+throw circle hung under the lane as a whole ring, and there were no sidelines, hash
+marks or center circle.
+
+`courts.js` draws them now (`COURT`, `SHAPES`, `lines()`), in feet: the rim 5.25 ft
+out, the corner three 3 ft in and straight for 14.2 ft to where the 23.75 ft arc
+meets it, a 16 ft lane to the line at 19, the free throw circle solid toward half
+court and dashed in the lane, the 4 ft restricted area, the block and three marks
+up each side of the lane, the 28 ft marks across both sidelines, and the half court
+line with its 6 ft and 2 ft circles. `FRAME` is how those feet sit in the floor box:
+2 ft of apron each side, 1 ft behind the baseline, and half court 80% of the way
+down, where the five spots were always laid out. The lane takes `--paint1`, the
+center circle `--paint2`, the apron `--apron1` and `--apron2`, and a club takes the
+lane and the circle.
+
+- **One SVG, stretched with `preserveAspectRatio="none"`, and the stroke does not
+  stretch** (`vector-effect: non-scaling-stroke`), so a line is the same weight on
+  the square home court and the flat draft court. A circle is round only where the
+  box is the right shape, and the three-quarter camera foreshortens it anyway.
+- **The same `SHAPES` draw the shelf's thumbnails**, through a trapezoid map, so the
+  floor and the Locker cannot disagree about a line.
+- **Each court's apron gradient carries that court's id.** A gradient defined in a
+  court on a hidden screen does not paint for a court on a showing one.
+- **The rim moved with it**, to 5.25 ft (`CT.RIM_PCT`), and the standing hoop and
+  check-arenas' marker both read that rather than a written 7%.
+- **A blocked `courts.js` now means a floor with no lines.** The page keeps no second
+  copy of the geometry, because two copies of a court drift.
+
+check-arenas section 1c asks the geometry as properties (the corner meets the arc,
+the arc is round about the rim and tops out at 29 ft, the circle is split the right
+way, both 28 ft marks exist) and section 6 that all three courts carry the lines at
+a weight that does not stretch. Reintroducing an arc that reaches half court fails
+two claims.
 
 **The camera is on the profile too**, three-quarter by default,
 Overhead in the Locker. Overhead is the old flat court exactly: no tilt, no scene,

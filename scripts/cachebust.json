@@ -2253,8 +2253,8 @@
       "sha": "0a0c78a5bb9ee7fd"
     },
     "courts.js": {
-      "v": "1",
-      "sha": "e558d3f7daf32e4b"
+      "v": "2",
+      "sha": "82645102b5f5f295"
     },
     "modes.js": {
       "v": "9",
@@ -2277,8 +2277,8 @@
       "sha": "1005aca091f1fc4b"
     },
     "cloud.js": {
-      "v": "3",
-      "sha": "bd012c3ec2d45f42"
+      "v": "4",
+      "sha": "838d42af8b9dfab3"
     },
     "modes-ui.js": {
       "v": "16",

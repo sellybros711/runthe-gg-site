@@ -37,7 +37,7 @@
 'use strict';
 (function () {
 
-const COURTS_API_VERSION = 1;
+const COURTS_API_VERSION = 2;
 
 /* The three-quarter camera. `tilt` is how far the floor leans away, `persp` the
    viewing distance in court widths. A lower camera (bigger tilt, shorter
@@ -67,55 +67,202 @@ function project(x, y, ratio) {
 /* Where the far edge of the floor lands, which is where the building starts. */
 function farEdge(ratio) { return project(50, 0, ratio).y; }
 
+/* ─── the court ───
+   THE LINES ARE A REGULATION HALF COURT, IN FEET. They used to be seven CSS
+   boxes placed by eye, and three of them were wrong in a way a fan sees at
+   once: the three point arc was one ellipse that swept through the half court
+   line, the free throw circle hung below the lane as a whole ring, and there
+   were no sidelines, no hash marks and no center circle at all.
+
+   Everything is measured from the far baseline, x across from the left
+   sideline and y toward half court: the rim 5.25 ft out, a 16 ft lane with the
+   line at 19, a 6 ft circle solid on the court side and dashed inside the lane,
+   the corner three 3 ft in from each sideline and straight to where the 23.75 ft
+   arc meets it (14.2 ft), a 4 ft restricted area, the block and three lane
+   marks, the 28 ft marks on both sidelines, and the half court line at 47 with
+   its 6 ft and 2 ft circles.
+
+   FRAME is how those feet sit in the floor box: 2 ft of apron each side, 1 ft
+   behind the baseline, and the half court line 80% of the way down, which is
+   where the five spots have always been laid out against. The box is stretched
+   to fit, so a circle is round only where the box is the right shape; the
+   three-quarter camera foreshortens it anyway.
+
+   ONE LIST OF POLYLINES DRAWS BOTH THE FLOOR AND THE SHELF'S THUMBNAILS, so the
+   two cannot disagree about where a line is. */
+const COURT = { W: 50, HALF: 47, RIM: 5.25, BOARD: 4, R3: 23.75, CORNER: 3,
+  LANE: 16, FT: 19, FTR: 6, RA: 4, CC: 6, CCI: 2, MARK: 28 };
+const FRAME = { x0: -2, y0: -1, w: 54, h: 60 };
+/* A court point, as a percent of the floor box. */
+function pct(x, y) {
+  return { x: (x - FRAME.x0) / FRAME.w * 100, y: (y - FRAME.y0) / FRAME.h * 100 };
+}
+const RIM_PCT = pct(COURT.W / 2, COURT.RIM);
+
+function arcPts(cx, cy, r, a0, a1, n) {
+  const out = [];
+  n = n || Math.max(8, Math.round(Math.abs(a1 - a0) / 5));
+  for (let k = 0; k <= n; k++) {
+    const t = (a0 + (a1 - a0) * k / n) * Math.PI / 180;
+    out.push([cx + r * Math.cos(t), cy + r * Math.sin(t)]);
+  }
+  return out;
+}
+/* Every mark on the floor. `k` is what it is, which the page styles:
+   l a painted line, dash the half circle inside the lane, mk a filled mark,
+   hw the backboard and rim, drawn only by the overhead camera. */
+function courtShapes() {
+  const C = COURT, mid = C.W / 2, L = mid - C.LANE / 2, R = mid + C.LANE / 2;
+  const bottom = FRAME.y0 + FRAME.h;
+  const cornerY = C.RIM + Math.sqrt(C.R3 * C.R3 - (mid - C.CORNER) * (mid - C.CORNER));
+  const a3 = Math.acos((mid - C.CORNER) / C.R3) * 180 / Math.PI;
+  const S = [];
+  const line = (pts, k) => S.push({ k: k || 'l', pts });
+  /* the boundary: the baseline, both sidelines on past half court, the half court line */
+  line([[0, bottom], [0, 0], [C.W, 0], [C.W, bottom]]);
+  line([[0, C.HALF], [C.W, C.HALF]]);
+  /* the center circles */
+  line(arcPts(mid, C.HALF, C.CC, 0, 360, 72));
+  line(arcPts(mid, C.HALF, C.CCI, 0, 360, 36));
+  /* the three point line: straight from the baseline, then the arc */
+  line([[C.CORNER, 0], [C.CORNER, cornerY]].concat(
+    arcPts(mid, C.RIM, C.R3, 180 - a3, a3, 64), [[C.W - C.CORNER, cornerY], [C.W - C.CORNER, 0]]));
+  /* the lane and the free throw line */
+  line([[L, 0], [L, C.FT], [R, C.FT], [R, 0]]);
+  /* the free throw circle: solid toward half court, dashed inside the lane */
+  line(arcPts(mid, C.FT, C.FTR, 0, 180, 36));
+  line(arcPts(mid, C.FT, C.FTR, 180, 360, 36), 'dash');
+  /* the restricted area, squared off to the backboard */
+  line([[mid - C.RA, C.BOARD], [mid - C.RA, C.RIM]].concat(
+    arcPts(mid, C.RIM, C.RA, 180, 0, 24), [[mid + C.RA, C.BOARD]]));
+  /* the block, and three marks up each side of the lane */
+  for (const [x, dir] of [[L, -1], [R, 1]]) {
+    S.push({ k: 'mk', pts: [[x, 7], [x + dir * 0.7, 7], [x + dir * 0.7, 8], [x, 8]] });
+    for (const y of [11, 14, 17]) line([[x, y], [x + dir * 1, y]]);
+  }
+  /* the 28 foot marks, across both sidelines */
+  line([[-1.6, C.MARK], [1, C.MARK]]);
+  line([[C.W - 1, C.MARK], [C.W + 1.6, C.MARK]]);
+  /* the backboard and the rim, for the camera that looks straight down */
+  line([[mid - 3, C.BOARD], [mid + 3, C.BOARD]], 'hw bd');
+  line(arcPts(mid, C.RIM, 0.75, 0, 360, 24), 'hw rim');
+  return S;
+}
+const SHAPES = courtShapes();
+const pts = (p, map) => p.map((q) => { const m = map(q); return f(m[0]) + ',' + f(m[1]); }).join(' ');
+
+/* The floor's lines, as one SVG laid over the boards. The ids carry the
+   court's own suffix: a gradient defined inside a court on a hidden screen does
+   not paint for a court on a showing one. */
+function lines(sfx) {
+  const g = 'ap-' + (sfx || 'c');
+  const ap = '<linearGradient id="' + g + '" x1="0" y1="0" x2="0" y2="1">' +
+    '<stop offset="0" style="stop-color:var(--apron1,rgba(0,0,0,.3))"/>' +
+    '<stop offset="1" style="stop-color:var(--apron2,rgba(0,0,0,.52))"/></linearGradient>';
+  const X0 = FRAME.x0, Y0 = FRAME.y0, X1 = X0 + FRAME.w, Y1 = Y0 + FRAME.h, C = COURT;
+  const apron = '<path class="apron" fill="url(#' + g + ')" fill-rule="evenodd" d="M' + X0 + ',' + Y0 + 'H' + X1 + 'V' + Y1 + 'H' + X0 +
+    'ZM0,0V' + Y1 + 'H' + C.W + 'V0Z"/>';
+  const L = C.W / 2 - C.LANE / 2;
+  const paint = '<rect class="paint" x="' + L + '" y="0" width="' + C.LANE + '" height="' + C.FT + '"/>' +
+    '<circle class="paint2" cx="' + C.W / 2 + '" cy="' + C.HALF + '" r="' + C.CC + '"/>';
+  const same = (q) => q;
+  const marks = SHAPES.map((s) => s.k === 'mk'
+    ? '<polygon class="mk" points="' + pts(s.pts, same) + '"/>'
+    : '<polyline class="' + s.k + (s.k === 'l' ? '' : ' l') + '" points="' + pts(s.pts, same) + '"/>').join('');
+  return '<svg class="lines-svg" viewBox="' + X0 + ' ' + Y0 + ' ' + FRAME.w + ' ' + FRAME.h + '" preserveAspectRatio="none" aria-hidden="true">' +
+    '<defs>' + ap + '</defs>' + apron + paint + marks + '</svg>';
+}
+
 /* ─── the catalogue ───
-   `need` answers how far along the account is and `of` is the target. `pro`
-   arenas are the account tier's. `i` is { signed, pro, badges, c } where c is
-   the career object the page keeps. */
+   EVERYBODY STARTS ON THE BLACKTOP and works up to the league's buildings.
+   The ladder is street courts, a rec center, two college gyms, three league
+   arenas and two halls, and every rung asks for three kinds of thing at once:
+   runs played, badges earned and different days played on. The badges are the
+   achievements; the runs and the days are the dedication, and the days are the
+   half that cannot be done in one long evening. The last three rungs also want
+   rings. Pro's two arenas sit off the ladder.
+
+   `reqs` lists what a rung asks for, keyed on REQ. `i` is { signed, pro,
+   badges, c } where c is the career object the page keeps. */
 const num = (v) => (typeof v === 'number' && isFinite(v) ? v : 0);
-const feat = (c, k) => num(c && c.feats && c.feats[k]);
+const REQ = {
+  runs: { word: ['run', 'runs'], verb: 'play', have: (i) => num(i.c && i.c.runs) },
+  badges: { word: ['badge', 'badges'], verb: 'earn', have: (i) => num(i.badges) },
+  days: { word: ['different day', 'different days'], verb: 'play on', have: (i) => Object.keys((i.c && i.c.days) || {}).length },
+  rings: { word: ['ring', 'rings'], verb: 'win', have: (i) => num(i.c && i.c.rings) },
+};
+const TIERS = { street: 'Streetball', rec: 'Rec league', college: 'College',
+  league: 'The League', legend: 'Hall of Fame', pro: 'Pro' };
+const START = 'blacktop';
+const rungs = (runs, badges, days, rings) => {
+  const q = [['runs', runs], ['badges', badges]];
+  if (days) q.push(['days', days]);
+  if (rings) q.push(['rings', rings]);
+  return q.map(([k, of]) => ({ k, of }));
+};
 
 const ARENAS = [
-  { id: 'home', name: 'The Hardwood', nod: 'Maple, a painted lane and a full house.',
-    rarity: 'Starter', unlock: { label: 'Yours from the opening tip', free: true } },
-  { id: 'rec', name: 'Rec Center', nod: 'Pull-out bleachers and a clock on the wall.',
-    rarity: 'Common', unlock: { label: 'Finish a run', need: (i) => num(i.c && i.c.runs), of: 1 } },
-  { id: 'blacktop', name: 'The Blacktop', nod: 'Asphalt, a chain-link fence and the block.',
-    rarity: 'Common', unlock: { label: 'Earn 5 badges', need: (i) => i.badges, of: 5 } },
-  { id: 'parquet', name: 'The Parquet', nod: 'Old boards laid in squares, banners in the rafters.',
-    rarity: 'Rare', unlock: { label: 'Make the playoffs 3 times', need: (i) => num(i.c && i.c.playoffs), of: 3 } },
-  { id: 'sunset', name: 'Sunset Hall', nod: 'Purple and gold under the spotlights.',
-    rarity: 'Rare', unlock: { label: 'Win 60 games in a run', need: (i) => num(i.c && i.c.bestWins), of: 60 } },
-  { id: 'fieldhouse', name: 'The Fieldhouse', nod: 'Brick, steel trusses and light through tall windows.',
-    rarity: 'Rare', unlock: { label: 'Win 10 straight in Conquest', need: (i) => feat(i.c, 'cq.best'), of: 10 } },
-  { id: 'boardwalk', name: 'Boardwalk', nod: 'A beach court with the ocean behind the hoop.',
-    rarity: 'Epic', unlock: { label: 'Solve Six Passes at par', need: (i) => feat(i.c, 'ps.par'), of: 1 } },
-  { id: 'altitude', name: 'Altitude', nod: 'Glass walls onto snow and pines.',
-    rarity: 'Epic', unlock: { label: 'Win a title in Fix History', need: (i) => feat(i.c, 'fx.title'), of: 1 } },
-  { id: 'rooftop', name: 'The Rooftop', nod: 'A court on the roof, the skyline lit up.',
-    rarity: 'Epic', unlock: { label: 'Win a ring', need: (i) => num(i.c && i.c.rings), of: 1 } },
-  { id: 'cathedral', name: 'The Cathedral', nod: 'A dark bowl, one light, twenty thousand people.',
-    rarity: 'Legendary', unlock: { label: 'Earn 40 badges', need: (i) => i.badges, of: 40 } },
-  { id: 'banners', name: 'Banner Hall', nod: 'Every wall hung with a title.',
-    rarity: 'Legendary', unlock: { label: 'Win 3 rings', need: (i) => num(i.c && i.c.rings), of: 3 } },
-  { id: 'neon', name: 'Neon Court', nod: 'A black floor and a pink sun.',
-    rarity: 'Pro', unlock: { label: 'Run The Floor Pro', pro: true } },
-  { id: 'glass', name: 'The Glass', nod: 'A lit floor and ribbon boards all the way round.',
-    rarity: 'Pro', unlock: { label: 'Run The Floor Pro', pro: true } },
+  { id: 'blacktop', name: 'The Blacktop', tier: 'street', nod: 'Asphalt, a chain-link fence and the block.',
+    unlock: { free: true, label: 'Where everybody starts' } },
+  { id: 'boardwalk', name: 'Boardwalk', tier: 'street', nod: 'A beach court with the ocean behind the hoop.',
+    unlock: { reqs: rungs(5, 5) } },
+  { id: 'rooftop', name: 'The Rooftop', tier: 'street', nod: 'A court on the roof, the skyline lit up.',
+    unlock: { reqs: rungs(15, 10, 3) } },
+  { id: 'rec', name: 'Rec Center', tier: 'rec', nod: 'Pull-out bleachers and a clock on the wall.',
+    unlock: { reqs: rungs(30, 18, 5) } },
+  { id: 'fieldhouse', name: 'The Fieldhouse', tier: 'college', nod: 'Brick, steel trusses and light through tall windows.',
+    unlock: { reqs: rungs(50, 25, 8) } },
+  { id: 'altitude', name: 'Altitude', tier: 'college', nod: 'Glass walls onto snow and pines.',
+    unlock: { reqs: rungs(75, 32, 12) } },
+  { id: 'home', name: 'The Hardwood', tier: 'league', nod: 'Maple, a painted lane and a full house.',
+    unlock: { reqs: rungs(100, 40, 15) } },
+  { id: 'parquet', name: 'The Parquet', tier: 'league', nod: 'Old boards laid in squares, banners in the rafters.',
+    unlock: { reqs: rungs(150, 50, 20) } },
+  { id: 'sunset', name: 'Sunset Hall', tier: 'league', nod: 'Purple and gold under the spotlights.',
+    unlock: { reqs: rungs(200, 60, 30, 1) } },
+  { id: 'cathedral', name: 'The Cathedral', tier: 'legend', nod: 'A dark bowl, one light, twenty thousand people.',
+    unlock: { reqs: rungs(300, 75, 45, 3) } },
+  { id: 'banners', name: 'Banner Hall', tier: 'legend', nod: 'Every wall hung with a title.',
+    unlock: { reqs: rungs(500, 90, 60, 5) } },
+  { id: 'neon', name: 'Neon Court', tier: 'pro', nod: 'A black floor and a pink sun.',
+    unlock: { pro: true, label: 'Run The Floor Pro' } },
+  { id: 'glass', name: 'The Glass', tier: 'pro', nod: 'A lit floor and ribbon boards all the way round.',
+    unlock: { pro: true, label: 'Run The Floor Pro' } },
 ];
 const BY_ID = Object.fromEntries(ARENAS.map((a) => [a.id, a]));
+/* The rung's rule in words: "Play 30 runs, earn 18 badges, play on 5 different days". */
+function ruleText(u) {
+  if (!u.reqs) return u.label;
+  const s = u.reqs.map((q) => REQ[q.k].verb + ' ' + q.of + ' ' + REQ[q.k].word[q.of === 1 ? 0 : 1]).join(', ');
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+for (const a of ARENAS) a.unlock.label = ruleText(a.unlock);
 
-/* info: { signed, pro, badges, c }. Returns { ok, have, of, label, guest }. */
+/* info: { signed, pro, badges, c }. Returns { ok, label, guest, parts, have, of }.
+   `parts` is each requirement's progress; `have` and `of` are the rung as a
+   whole, counted in capped steps so the bar fills only when every part does. */
 function status(arena, info) {
   const u = arena.unlock;
   if (u.free) return { ok: true, label: u.label };
   if (!info || !info.signed) return { ok: false, guest: true,
     label: u.pro ? 'Sign in and get Pro' : 'Sign in and ' + u.label.charAt(0).toLowerCase() + u.label.slice(1) };
   if (u.pro) return { ok: !!info.pro, label: u.label };
-  let have = 0;
-  try { have = Math.max(0, Number(u.need(info)) || 0); } catch (_) { have = 0; }
-  return { ok: have >= u.of, have: Math.min(have, u.of), of: u.of, label: u.label };
+  const parts = u.reqs.map((q) => {
+    let have = 0;
+    try { have = Math.max(0, Number(REQ[q.k].have(info)) || 0); } catch (_) { have = 0; }
+    return { k: q.k, have: Math.min(have, q.of), of: q.of, word: REQ[q.k].word[1] };
+  });
+  const have = parts.reduce((t, p) => t + p.have / p.of, 0), of = parts.length;
+  return { ok: parts.every((p) => p.have >= p.of), parts, have: Math.round(have * 100) / 100, of, label: u.label };
 }
 function unlockedIds(info) { return ARENAS.filter((a) => status(a, info).ok).map((a) => a.id); }
+/* The highest rung an account has reached, which is where it plays until it
+   picks somewhere else. Pro's arenas are off the ladder, so never the default. */
+function best(info) {
+  let id = START;
+  for (const a of ARENAS) if (!a.unlock.pro && status(a, info).ok) id = a.id;
+  return id;
+}
 
 /* ─── the floors ───
    Every colour is a literal, because the floor is the sport rather than the
@@ -166,7 +313,7 @@ const FLOOR = {
     paint: ['rgba(60,150,255,.40)', 'rgba(40,120,220,.32)'], line: 'rgba(235,245,255,.86)',
     apron: ['rgba(0,0,0,.22)', 'rgba(0,0,0,.45)'], light: 'rgba(120,190,255,.26)', rim: 'rgba(255,140,60,.95)', wall: '#050b16' },
 };
-function floorOf(id) { return Object.assign({}, FLOOR_BASE, FLOOR[BY_ID[id] ? id : 'home'] || {}); }
+function floorOf(id) { return Object.assign({}, FLOOR_BASE, FLOOR[BY_ID[id] ? id : START] || {}); }
 /* The custom properties, as one inline style string. */
 function floorVars(id) {
   const F = floorOf(id);
@@ -515,7 +662,7 @@ SCENE.glass = (c) => {
    other: a gradient id shared by two SVGs on one page resolves to whichever
    came first, and nothing says so. */
 function scene(id, sfx) {
-  const arena = BY_ID[id] ? id : 'home';
+  const arena = BY_ID[id] ? id : START;
   const tag = (sfx || 's') + '-' + arena;
   const c = { id: (n) => n + '-' + tag, url: (n) => 'url(#' + n + '-' + tag + ')' };
   const s = (SCENE[arena] || SCENE.home)(c);
@@ -526,19 +673,32 @@ function scene(id, sfx) {
 /* A thumbnail for the shelf: the scene with a slice of the floor under it,
    drawn in one SVG so a card needs no CSS court at all. */
 function preview(id, sfx) {
-  const arena = BY_ID[id] ? id : 'home';
+  const arena = BY_ID[id] ? id : START;
   const F = floorOf(arena);
   const tag = (sfx || 'pv') + '-' + arena;
   const c = { id: (n) => n + '-' + tag, url: (n) => 'url(#' + n + '-' + tag + ')' };
   const s = (SCENE[arena] || SCENE.home)(c);
   /* The floor, in the same perspective as the court: a trapezoid from the far
-     baseline out to the near edge, the lane painted on it. */
+     baseline out to the near edge, and on it the court's own lines (SHAPES),
+     cut off 34 ft out, which is just past the top of the arc. Each row of the
+     trapezoid is an affine stretch, so a straight line stays straight. */
   const fl = grad(c, 'fl', [[F.m[3]], [F.m[1], 0.5], [F.m[0]]]);
+  const DEPTH = 34;
+  const map = (q) => {
+    const u = (q[0] - FRAME.x0) / FRAME.w, v = (q[1] - FRAME.y0) / (DEPTH - FRAME.y0);
+    const l = 8 - 16 * v, rr = 92 + 16 * v;
+    return [l + u * (rr - l), 40 + 22 * v];
+  };
+  const keep = (s) => s.k !== 'hw bd' && s.k !== 'hw rim' && s.pts.some((q) => q[1] <= DEPTH);
+  const clip = (p) => p.filter((q) => q[1] <= DEPTH + 0.5);
+  const L = COURT.W / 2 - COURT.LANE / 2;
+  const lane = [[L, 0], [L + COURT.LANE, 0], [L + COURT.LANE, COURT.FT], [L, COURT.FT]];
   const floor = '<polygon points="8,40 92,40 108,62 -8,62" fill="' + c.url('fl') + '"/>' +
-    '<polygon points="41,40 59,40 62,52 38,52" fill="' + F.paint[0] + '"/>' +
-    '<polygon points="41,40 59,40 62,52 38,52" fill="none" stroke="' + F.line + '" stroke-width=".5"/>' +
-    '<path d="M 16,40 Q 50,72 84,40" fill="none" stroke="' + F.line + '" stroke-width=".5"/>' +
-    '<line x1="-8" y1="62" x2="8" y2="40" stroke="' + F.line + '" stroke-width=".4"/><line x1="92" y1="40" x2="108" y2="62" stroke="' + F.line + '" stroke-width=".4"/>' +
+    '<polygon points="' + pts(lane, map) + '" fill="' + F.paint[0] + '"/>' +
+    SHAPES.filter(keep).map((s) => s.k === 'mk'
+      ? '<polygon points="' + pts(s.pts, map) + '" fill="' + F.line + '"/>'
+      : '<polyline points="' + pts(clip(s.pts), map) + '" fill="none" stroke="' + F.line + '" stroke-width=".5"' +
+        (s.k === 'dash' ? ' stroke-dasharray="1.2 1"' : '') + '/>').join('') +
     '<rect x="47" y="31" width="6" height="4" fill="rgba(255,255,255,.88)" stroke="#333" stroke-width=".3"/>' +
     '<ellipse cx="50" cy="36.2" rx="1.8" ry=".6" fill="none" stroke="' + F.rim + '" stroke-width=".45"/>';
   return '<svg class="arena-pv" viewBox="0 0 100 62" preserveAspectRatio="xMidYMid slice" aria-hidden="true" data-arena="' + arena + '">' +
@@ -546,7 +706,8 @@ function preview(id, sfx) {
 }
 
 const api = { COURTS_API_VERSION, TQ, project, farEdge, ARENAS, BY_ID, status, unlockedIds,
-  floorOf, floorVars, scene, preview, FLOOR };
+  floorOf, floorVars, scene, preview, FLOOR, START, TIERS, REQ, best, COURT, FRAME, pct, RIM_PCT,
+  SHAPES, lines };
 if (typeof module !== 'undefined' && module.exports) module.exports = api;
 if (typeof window !== 'undefined') window.RTF_COURTS = api;
 })();
