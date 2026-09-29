@@ -366,34 +366,10 @@ var CSS = [
   '.mx-rise{animation:mxRise .35s ease both;}',
   '@media (prefers-reduced-motion:reduce){.mx-rise,.mx-stamp{animation:none}}',
 
-  /* the mode cards on the front page */
-  '.mhome{display:grid;gap:10px;margin:0 0 6px;}',
-  '.today{border-radius:16px;border:1px solid rgba(255,255,255,.12);padding:14px 14px 10px;',
-  '  background:radial-gradient(120% 90% at 0% 0%,rgba(240,120,45,.16),transparent 60%),linear-gradient(180deg,#171e2d,#111624);',
-  '  box-shadow:0 10px 30px rgba(0,0,0,.35);}',
-  '.td-h{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin:0 2px 10px;}',
-  '.td-eye{display:block;font-size:10px;letter-spacing:.2em;text-transform:uppercase;font-weight:800;color:var(--orange);}',
-  '.td-title{display:block;font-family:var(--display);font-weight:400;font-size:22px;line-height:1.1;text-transform:uppercase;margin-top:4px;}',
-  '.td-prog{display:flex;align-items:center;gap:5px;margin-top:4px;}',
-  '.td-n{font-size:11px;font-weight:800;color:var(--mut);margin-right:3px;white-space:nowrap;}',
-  '#b-today.today,.dock #b-today.today{background:linear-gradient(180deg,var(--orange),var(--orange-dk));border-color:var(--orange);color:#fff;}',
-  '.td-prog i{width:12px;height:12px;border-radius:3px;background:#243049;box-shadow:inset 0 0 0 1px rgba(255,255,255,.1);}',
-  '.td-prog i.on{background:var(--green);box-shadow:none;}',
-  '.td-row{display:grid;grid-template-columns:44px 1fr auto;gap:12px;align-items:center;width:100%;text-align:left;',
-  '  background:#0f1420;border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:10px 12px;margin:0 0 8px;',
-  '  color:var(--ink);font-family:var(--body);cursor:pointer;}',
-  '.td-row:hover{filter:none;border-color:rgba(240,120,45,.5);}',
-  '.td-ico{width:44px;height:44px;border-radius:10px;background:#070a12;display:grid;place-items:center;}',
-  '.td-txt{min-width:0;}',
-  '.td-txt b{display:block;font-family:var(--pixel);font-weight:400;font-size:12px;text-transform:uppercase;line-height:1.4;}',
-  '.td-txt small{display:block;font-size:13px;color:var(--mut);font-weight:600;margin-top:3px;line-height:1.35;}',
-  '.td-st{font-family:var(--display);font-size:15px;letter-spacing:.04em;text-transform:uppercase;color:var(--orange);',
-  '  display:flex;align-items:center;gap:6px;white-space:nowrap;}',
-  '.td-row.done{background:#0d1512;border-color:rgba(74,222,128,.25);}',
-  '.td-row.done .td-st{color:var(--green);font-family:var(--num);font-variant-numeric:tabular-nums;font-weight:800;font-size:13px;text-transform:none;letter-spacing:0;}',
+  /* the chips the More ways to play tiles use (the tiles themselves are
+     styled by the page, beside the grid they live in) */
   '.td-ck{width:14px;height:14px;border-radius:50%;background:var(--green);position:relative;flex:0 0 auto;}',
   '.td-ck::after{content:"";position:absolute;left:4px;top:2px;width:4px;height:7px;border:solid #06140c;border-width:0 2px 2px 0;transform:rotate(45deg);}',
-  '.td-foot{font-size:12px;font-weight:800;color:var(--gold);text-align:center;margin:2px 0 2px;letter-spacing:.04em;}',
   '.td-end{display:flex;align-items:center;justify-content:center;gap:6px;flex-wrap:wrap;margin:8px 0 0;font-size:12px;}',
   '.td-end span{font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);}',
   '.td-end button{background:none;border:1px solid rgba(255,255,255,.18);border-radius:999px;color:var(--ink);font:inherit;font-weight:700;padding:5px 11px;cursor:pointer;}',
@@ -425,38 +401,12 @@ var CSS = [
   '.ps-chosen{display:flex;align-items:center;gap:10px;background:#161d2b;border:1px solid #2a3450;border-radius:10px;padding:10px 12px;margin-top:6px;}',
   '.ps-chosen b{flex:1;}',
   '.ps-chosen small{color:var(--dim);}',
-  '.ptiles{display:grid;grid-template-columns:1fr 1fr;gap:10px;}',
-  '.ptile{display:flex;flex-direction:column;align-items:flex-start;gap:6px;width:100%;text-align:left;cursor:pointer;',
-  '  background:linear-gradient(180deg,#171e2d,#121826);border:1px solid rgba(255,255,255,.1);border-radius:14px;',
-  '  padding:12px;color:var(--ink);font-family:var(--body);min-width:0;}',
-  '.ptile:hover{filter:none;border-color:rgba(240,120,45,.5);transform:translateY(-1px);}',
-  '.pt-ico{height:34px;display:flex;align-items:center;}',
-  '.pt-name{font-family:var(--pixel);font-weight:400;font-size:12px;text-transform:uppercase;line-height:1.4;margin-top:2px;}',
-  '.pt-sub{font-size:12.5px;color:var(--mut);font-weight:600;line-height:1.35;flex:1 1 auto;}',
-  '.pt-foot{display:flex;align-items:center;justify-content:space-between;gap:6px;width:100%;margin-top:4px;}',
-  '.pt-foot .mx-chip{font-size:10.5px;padding:2px 8px;white-space:nowrap;}',
-  '.pt-go{font-family:var(--display);font-size:15px;letter-spacing:.04em;text-transform:uppercase;color:var(--orange);}',
   '.mb-modes{display:flex;gap:6px;overflow-x:auto;margin:0 0 10px;scrollbar-width:none;}',
   '.mb-modes::-webkit-scrollbar{display:none;}',
   '.mb-mode{flex:0 0 auto;width:auto;border-radius:999px;padding:6px 12px;font-size:12.5px;font-weight:800;',
   '  background:#141a26;border:1px solid var(--cardb);color:var(--mut);}',
   '.mb-mode.on{background:var(--orange);border-color:var(--orange);color:#fff;}',
 
-  '  position:relative;overflow:hidden;border-radius:14px;padding:13px 14px;border:1px solid var(--cardb);',
-  '  background:linear-gradient(180deg,#171d2a,#10151f);transition:transform .12s,border-color .12s;}',
-  '  background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.08);}',
-  '  text-transform:uppercase;border-radius:8px;padding:7px 14px;color:#fff;}',
-  '  radial-gradient(420px 160px at 90% -20%,rgba(94,234,212,.18),transparent 70%),linear-gradient(180deg,#132024,#0e151b);}',
-  '  radial-gradient(420px 160px at 90% -20%,rgba(240,120,45,.22),transparent 70%),linear-gradient(180deg,#221710,#130f0c);}',
-  '  radial-gradient(420px 160px at 90% -20%,rgba(242,193,78,.18),transparent 70%),linear-gradient(180deg,#1f1b10,#12110c);}',
-  /* The Quick Draft card's court is a picture of the mode, not a stage, so it
-     is shorter than it was when it opened the page. */
-  '.qd .hero{margin:0 0 10px;}',
-  '.qd .herocourt{aspect-ratio:1/0.42;}',
-  '.qd .hero .reelbox{height:54px;}',
-  '.card p.qd-say{margin:0 0 12px;}',
-  '.mhome-h{font-family:var(--display);font-weight:400;text-transform:uppercase;font-size:15px;',
-  '  letter-spacing:.06em;color:var(--mut);margin:18px 2px 8px;}',
 
   /* ── Conquest ── */
   '.cq-head{display:flex;align-items:center;gap:12px;margin:4px 0 12px;}',
@@ -2812,74 +2762,93 @@ function psOpen(){
 
 // ═══ FRONT PAGE ═════════════════════════════════════════════════════════════
 
-/* ── THE FRONT PAGE: one game, three tiers ─────────────────────────────────
+/* ── THE FRONT PAGE: the puzzle strip and the tiles this file owns ───────
  *
- * It was seven doors at one weight in four colours, and a returning player had
- * to read all of them to find the one thing that changed since yesterday. Now:
+ * The front page (index.html) opens on the DAILY PUZZLES, a strip of two
+ * cards, then Classic, the Daily Draft in its own spot, then MORE WAYS TO
+ * PLAY, one grid of tiles a desktop draws beside the daily card and a phone
+ * keeps in a sheet. The page owns the grid and two of its tiles (One
+ * Franchise, Decades); this file fills everything that needs to know whether
+ * a puzzle is done or a run is live.
  *
- *   TODAY   the two dailies as one checklist, which is the reason to open the
- *           app on any given day. The dock carries the one primary button,
- *           pointed at whichever is still open, so the rows are rows and not
- *           two more big buttons saying the same thing.
- *   PLAY    Conquest and Quick Draft, side by side. Quick Draft's four ways in
- *           live in a sheet behind its tile.
- *   QUIET   boards, career, rules, as a row of links under everything.
+ *   #pz-fix   Fix History, today's puzzle, in the strip
+ *   #pz-ps    Six Passes, today's puzzle, in the strip
+ *   #mw-cq    Conquest, the other unlimited mode
+ *   #mw-pro   endless and build, for Pro
  *
- * ONE COLOUR FOR ACTION. Every primary button is the brand orange; a mode's own
- * colour is on its icon and nowhere else. Four accents on one screen is what
- * made it read as four apps. */
-function todayRow(id, ico, name, sub, done, doneTxt){
-  return '<button class="td-row' + (done ? ' done' : '') + '" id="' + id + '"><span class="td-ico">' + ico + '</span>'
-    + '<span class="td-txt"><b>' + name + '</b><small>' + sub + '</small></span>'
-    + '<span class="td-st">' + (done ? '<i class="td-ck" aria-hidden="true"></i>' + doneTxt : 'Play') + '</span></button>';
+ * A TILE IS ONE PRESS. The tag over the name says what kind of mode it is, the
+ * chip in the corner says where you are with it, and the sub says what it is.
+ * The puzzle cards keep the ids the tiles had (#mc-fix, #mc-ps), so every
+ * walker that presses them still finds them. */
+function tileHtml(id, ico, tag, name, sub, chip, done){
+  return '<button class="mt-main' + (chip ? ' has-chip' : '') + (done ? ' done' : '') + '" id="' + id + '">'
+    + '<span class="mt-ico pix">' + ico + '</span>'
+    + '<span class="mt-tag">' + tag + '</span><b class="mt-name">' + name + '</b>'
+    + '<small class="mt-sub">' + sub + '</small>'
+    + (chip ? '<span class="mt-chip' + (done ? '' : ' go') + '">' + chip + '</span>' : '') + '</button>';
 }
-function todayHtml(){
-  var p = fxToday(), t = tsParts(p.ts), r = fxResult(p.day);
-  var pz = psToday(), st = psTodayState(), g = graph();
-  var n = (r ? 1 : 0) + (st.done ? 1 : 0);
-  var streak = Math.max(fxStreak(), psStreak());
-  var title = n === 2 ? 'Both done. New ones tomorrow.' : n === 1 ? 'One down, one to go.' : 'Two puzzles. One shot each.';
-  var h = '<section class="today" id="today"><div class="td-h"><div><span class="td-eye">Today · Day ' + p.day + '</span>'
-    + '<b class="td-title">' + title + '</b></div>'
-    + '<span class="td-prog"><span class="td-n">' + n + ' of 2</span><i class="' + (r ? 'on' : '') + '"></i><i class="' + (st.done ? 'on' : '') + '"></i></span></div>';
-  var fxSub = esc(t.name) + '. Four trade windows to win it.';
-  var dayRun = lsGet(FX_RUN);
-  if (!r && fxInProgress()) fxSub = esc(t.name) + '. ' + esc(M.FX_WINDOWS[Math.min(dayRun.win, M.FX_WINDOWS.length - 1)].name) + ' window is open.';
-  h += todayRow('mc-fix', pix(ART.rewind, { t: '#5eead4' }, 3), 'Fix History', fxSub, !!r, r ? pct1(r.odds) : '');
-  h += todayRow('mc-ps', pix(ART.hoop, HOOP_PAL, 3), 'Six Passes',
-    esc(surname(g.nameOf[pz.from])) + ' to ' + esc(surname(g.nameOf[pz.to])) + '. Par ' + pz.par + '.',
-    st.done, st.done ? (st.solved ? plural(passesOf(st), 'pass', 'passes') : 'Missed') : '');
-  if (streak > 1) h += '<div class="td-foot">' + streak + ' days in a row</div>';
-  /* Drawn for everybody. Without Pro each chip wears the lock and opens the
-     offer, which is where that press was always going to end: a door nobody can
-     see is a mode nobody knows exists. */
-  var lk = endlessOpen() ? '' : ' class="lk"';
-  h += '<div class="td-end"><span>Endless</span><button id="td-efx"' + lk + '>Fix History</button><button id="td-eps"' + lk + '>Six Passes</button></div>'
-    + '<div class="td-end"><span>Build</span><button id="td-pfx"' + lk + '>Any team</button><button id="td-pps"' + lk + '>Any two players</button></div>'
-    /* One line, not a card: the front page is held to a height (check-home),
-       and a tag on each row label wrapped both rows onto two lines. */
-    + (endlessOpen() ? '' : '<button class="td-pro" id="td-pro"><i class="pro-tag">Pro</i> Unlock both for ' + PRO_PRICE + '</button>');
-  return h + '</section>';
+function puzzleHtml(id, color, ico, tag, name, sub, chip, done){
+  return '<button class="pz' + (done ? ' done' : '') + '" id="' + id + '" style="--c:' + color + '">'
+    + '<span class="pz-top"><span class="pz-ico">' + ico + '</span><span class="pz-chip">' + chip + '</span></span>'
+    + '<span class="pz-tag">' + tag + '</span><b class="pz-name">' + name + '</b>'
+    + '<small class="pz-sub">' + sub + '</small></button>';
 }
-function playTilesHtml(){
+function cqTileHtml(){
   if (!cq) cqLoad();
   var b = cqBest(), live = cq && !M.cqOver(cq);
-  var cqSub = live ? (cq.drafting ? 'Finish your draft.' : plural(M.cqStreak(cq), 'win') + ' and counting.')
-    : 'Winners stay on. Take a guy off every team you beat.';
-  var cqChip = live ? ball(14) + ' ' + plural(cq.lives, 'life', 'lives') : b.best ? 'Best ' + b.best + 'W' : '3 lives';
-  return '<h2 class="mhome-h">Play</h2><div class="ptiles">'
-    + '<button class="ptile cq" id="mc-cq"><span class="pt-ico">' + pix(ART.crown, { g: '#f2c14e', r: '#ef4444', b: '#60a5fa', d: '#a8781a' }, 3) + '</span>'
-    + '<b class="pt-name">Conquest</b><small class="pt-sub">' + cqSub + '</small>'
-    + '<span class="pt-foot"><span class="mx-chip">' + cqChip + '</span><span class="pt-go">' + (live ? 'Continue' : 'Play') + '</span></span></button>'
-    + '<button class="ptile qd" id="mc-qd"><span class="pt-ico">' + ball(34) + '</span>'
-    + '<b class="pt-name">Quick Draft</b><small class="pt-sub">Spin a team and a season. Sign five under ' + money(E.CONSTANTS.CAP_MUSD) + '.</small>'
-    + '<span class="pt-foot"><span class="mx-chip">4 ways</span><span class="pt-go">Draft</span></span></button>'
-    + '</div>';
+  var sub = live ? (cq.drafting ? 'Finish your draft.' : plural(M.cqStreak(cq), 'win') + ' and counting.')
+    : 'Winners stay on. Beat a real team and take a guy off it.';
+  var chip = live ? plural(cq.lives, 'life', 'lives') : b.best ? 'Best ' + b.best + 'W' : 'Play';
+  return tileHtml('mc-cq', pix(ART.crown, { g: '#f2c14e', r: '#ef4444', b: '#60a5fa', d: '#a8781a' }, 2),
+    'Unlimited', 'Conquest', sub, chip, false);
+}
+function fixTileHtml(){
+  var p = fxToday(), t = tsParts(p.ts), r = fxResult(p.day);
+  /* Short on purpose: the card is half a phone wide, and the four windows
+     are explained on the screen it opens. */
+  var sub = esc(t.name) + '. Win it.';
+  if (!r && fxInProgress()) {
+    var dayRun = lsGet(FX_RUN);
+    sub = esc(t.name) + '. ' + esc(M.FX_WINDOWS[Math.min(dayRun.win, M.FX_WINDOWS.length - 1)].name) + ' window open.';
+  }
+  return puzzleHtml('mc-fix', '#5eead4', pix(ART.rewind, { t: '#5eead4' }, 2), 'Day ' + p.day, 'Fix History', sub,
+    r ? '<i class="td-ck" aria-hidden="true"></i>' + pct1(r.odds) : 'Play', !!r);
+}
+function psTileHtml(){
+  var pz = psToday(), st = psTodayState(), g = graph();
+  return puzzleHtml('mc-ps', '#fb923c', pix(ART.hoop, HOOP_PAL, 2), 'Par ' + pz.par, 'Six Passes',
+    esc(surname(g.nameOf[pz.from])) + ' to ' + esc(surname(g.nameOf[pz.to])) + '.',
+    st.done ? '<i class="td-ck" aria-hidden="true"></i>' + (st.solved ? plural(passesOf(st), 'pass', 'passes') : 'Missed') : 'Play',
+    st.done);
+}
+/* Drawn for everybody. Without Pro each chip wears the lock and opens the
+   offer, which is where that press was always going to end: a door nobody can
+   see is a mode nobody knows exists. */
+function proTileHtml(){
+  var lk = endlessOpen() ? '' : ' class="lk"';
+  return '<span class="mt-tag">Pro · No daily limit</span><b class="mt-name">Endless</b>'
+    + '<div class="td-end"><span>Endless</span><button id="td-efx"' + lk + '>Fix History</button><button id="td-eps"' + lk + '>Six Passes</button></div>'
+    + '<div class="td-end"><span>Build</span><button id="td-pfx"' + lk + '>Any team</button><button id="td-pps"' + lk + '>Two players</button></div>'
+    + (endlessOpen() ? '' : '<button class="td-pro" id="td-pro"><i class="pro-tag">Pro</i> Unlock both for ' + PRO_PRICE + '</button>');
+}
+/* How many of today's two puzzles are still open, for the strip's heading. */
+function dailiesLeft(){
+  if (!data()) return 0;
+  return (fxResult(fxToday().day) ? 0 : 1) + (psTodayState().done ? 0 : 1);
 }
 function renderHome(){
-  var box = $('modes-home');
-  if (!box || !data()) return;
-  box.innerHTML = todayHtml() + playTilesHtml();
+  if (!data()) return;
+  var slots = { 'pz-fix': fixTileHtml, 'pz-ps': psTileHtml, 'mw-cq': cqTileHtml, 'mw-pro': proTileHtml };
+  for (var k in slots) { var el = $(k); if (el) el.innerHTML = slots[k](); }
+  var sec = $('hp-puzzles'); if (sec) sec.hidden = false;
+  /* THE HEADING SAYS WHAT IS WAITING, and both done says when the next two
+     arrive, because a strip of two green cards reads as nothing left to do
+     rather than as a streak to keep. */
+  var hl = $('pz-left'), left = dailiesLeft();
+  if (hl) {
+    hl.textContent = left ? (left === 2 ? 'Two open today' : 'One left today') : 'New ones at midnight ET';
+    hl.className = 'pz-left' + (left ? ' open' : '');
+  }
   paintToday();
   var c = $('mc-cq'); if (c) c.onclick = cqOpen;
   var f = $('mc-fix'); if (f) f.onclick = fxOpen;
@@ -2889,27 +2858,12 @@ function renderHome(){
   var pf = $('td-pfx'); if (pf) pf.onclick = fxOpenPicker;
   var pp = $('td-pps'); if (pp) pp.onclick = psOpenPicker;
   var tp = $('td-pro'); if (tp) tp.onclick = function(){ openPro(null); };
-  var qd = $('mc-qd'); if (qd) qd.onclick = function(){ if (P.openQuickDraft) P.openQuickDraft(); };
 }
 
-/* THE DOCKED BUTTON: whichever daily is still open, then Conquest. One
-   button, so what it says is always the next thing worth doing. It is the
-   brand orange whatever it points at: the colour means "the next thing",
-   and the mode it opens is in its words. */
-function paintToday(){
-  var b = $('b-today');
-  if (!b) return;
-  var fxDone = !!fxResult(fxToday().day), psDone = psTodayState().done;
-  if (!fxDone) { b.textContent = 'Play today\'s Fix History'; b.onclick = fxOpen; }
-  else if (!psDone) { b.textContent = 'Play today\'s Six Passes'; b.onclick = psOpen; }
-  else {
-    var live = cq && !M.cqOver(cq);
-    b.textContent = live ? 'Back to Conquest' : 'Play Conquest';
-    b.onclick = cqOpen;
-  }
-  b.className = 'big today';
-  b.disabled = false;
-}
+/* THE DOCK IS CLASSIC'S NOW (index.html's DOCK_FOR), so the daily puzzles
+   are rows and nothing here owns a primary button. Kept as a function because
+   renderHome and the modes call it after every result. */
+function paintToday(){}
 
 // ═══ LEADERBOARDS ═══════════════════════════════════════════════════════════
 
@@ -3104,7 +3058,7 @@ function paintModeBoard(){
   if (mbMode === 'fix') { var fr = fxResult(d); if (fr && fr.boardId) mine[fr.boardId] = 1; var fy = fxResult(d - 1); if (fy && fy.boardId) mine[fy.boardId] = 1; }
   if (mbMode === 'passes') { var pd = psStore().days; Object.keys(pd).forEach(function(k){ if (pd[k].boardId) mine[pd[k].boardId] = 1; }); }
   if (mbMode === 'conquest' && cq && cq.boardId) mine[cq.boardId] = 1;
-  var modes = [['fix', 'Fix History'], ['passes', 'Six Passes'], ['conquest', 'Conquest'], ['draft', 'Quick Draft']];
+  var modes = [['draft', 'Classic'], ['conquest', 'Conquest'], ['fix', 'Fix History'], ['passes', 'Six Passes']];
   sh.innerHTML = '<div class="fx-card mb-card"><div class="mb-top"><h2 style="margin:0">Leaderboards'
     + '</h2><button class="ghost sm" id="mb-x">Close</button></div><div class="mb-modes">'
     + modes.map(function(m){ return '<button class="mb-mode' + (m[0] === mbMode ? ' on' : '') + '" data-m="' + m[0] + '">' + m[1] + '</button>'; }).join('')
@@ -3214,7 +3168,7 @@ function paintPro(why, kind){
       + '<button class="pro-buy" id="pro-buy">' + (signed ? 'Get Pro for ' + PRO_PRICE : 'Sign in to get Pro') + '</button>'
       + '<p class="pro-err" id="pro-err" hidden></p>'
       + '<p class="fx-hint" style="text-align:center">' + (signed
-        ? 'One payment through Stripe. Nothing renews. The dailies, Conquest and Quick Draft stay free for everybody.'
+        ? 'One payment through Stripe. Nothing renews. Classic, Conquest and the dailies stay free for everybody.'
         : 'Pro belongs to your RunThe.GG account, so it follows you to every device. The dailies stay free for everybody.') + '</p>';
   }
   sh.innerHTML = h + '</div>';

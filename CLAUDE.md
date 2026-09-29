@@ -10791,15 +10791,16 @@ psql -d hoops_modes -f supabase/test/hoops_modes_test.sql
 
 Reported by the owner: a draft that goes 73-9 is the football game with a
 basketball on it, and a season is one decision followed by a long wait. So the
-front page leads with three games that are not drafts, and the draft is **Quick
-Draft**, one card of four.
+front page used to lead with three games that are not drafts. It leads with the
+draft again now, as **Classic** (see the front page section), because the dailies
+are one play a day and Classic is the mode a player comes back to.
 
 | | what it is | where |
 |---|---|---|
 | Fix History | the daily: one real team that fell short, one salary-matched trade | `fx*` |
 | Six Passes | the daily: one All-Star to another through real teammates | `ps*` |
 | Conquest | winners stay on against real teams; take a man off each one you beat | `cq*` |
-| Quick Draft | the game this page started as | `run.js` |
+| Classic | the draft, unlimited, and the front page's lead | `run.js` |
 
 `hoops/modes.js` is the rules and `hoops/modes-ui.js` draws them, through
 `window.RTF_PAGE`, which the page publishes before it boots. The UI file injects
@@ -11236,60 +11237,98 @@ WHERE ran once per row scanned and filed a play each time; a rename checked in
 the statement that made it read the snapshot from before it. Both are two
 statements now.
 
-#### The front page is one game in three tiers
+#### The front page: the daily puzzles, Classic, the Daily Draft, More ways to play
 
 ```
-node hoops/check-home.mjs     section 4 holds the hierarchy, section 1 the length
+node hoops/check-home.mjs     section 4 holds the order, the strip and the sheet, section 1 the length
 ```
 
-Asked for: make it feel like one game, with a clear direction and hierarchy,
-and move what does not need to be on the page into sheets. It was seven doors
-at one weight in four colours (Fix History, Six Passes, Conquest, a Quick Draft
-card with its own court, then Daily Draft, One Franchise and Decades), with the
-dock repeating the first card's button.
+Asked for by the owner, three times. First: the unlimited mode has to be the
+focus, or players play the two dailies once and leave, so **the draft is Classic**
+and it is the hero. Then, with Run The Diamond as the model: the other modes go
+under a **More ways to play** door, and **the daily challenge gets a spot of its
+own**. Then: **Fix History and Six Passes go at the top, as the daily puzzles.**
 
-| tier | what | where |
+| order | what | where |
 |---|---|---|
-| Today | both dailies as one checklist card, "0 of 2" and the streak | `todayHtml()` in modes-ui.js |
-| Play | Conquest and Quick Draft as two tiles | `playTilesHtml()` |
-| Quiet | Leaderboards, Career, How to play as links | `#home-quiet` in index.html |
+| 1 | Daily puzzles: Fix History and Six Passes, side by side, with how many are left | `#hp-puzzles`, filled by modes-ui.js |
+| 2 | Classic: eyebrow, title, reels and court, the three pace chips, the career line, Start | `#classic` in index.html |
+| 3 | the Daily Draft, its own card, gold until today is played | `#b-daily-go`, `renderDailyDoor()` |
+| 4 | More ways to play: One Franchise, Decades, Conquest, and Endless for Pro | `#mw-grid`, one grid |
+| 5 | three doors: How to play, Leaderboards, Career | `#home-quiet` |
 
-**The dock carries the one primary button**, `#b-today`, pointed at whichever
-daily is still open and then Conquest. The Today rows are rows, not two more big
-buttons. **It is the brand orange whatever it points at.** It used to take Fix
-History's teal and Six Passes' gold, and four accents on one screen is what made
-the page read as four apps. A mode's colour is on its icon and nowhere else.
+**THE PUZZLES ARE A STRIP, NOT A HERO**, which is how the third ask sits with the
+first. One heading and two half-width cards at every width, about 190px on a
+phone, so Classic is still the first big thing on the screen and the dock still
+carries its Start. Each card says today's state: the mode's colour and a Play chip
+while open, plain with a green chip carrying the result once done. The line
+beside the heading says how many are open, or when the next two arrive. The cards
+keep the ids the tiles had (`#mc-fix`, `#mc-ps`), so every walker still finds
+them; `tapMode` in check-modes shuts the sheet first if it is up, because the
+puzzles are never in it. The section ships `hidden` and `renderHome()` shows it,
+since only modes-ui.js knows whether a puzzle is done.
 
-**Quick Draft's four ways in live in a sheet**, `#qd-sheet`, with the court and
-reels, which spin only while it is open (`openQuickDraft` starts the hero,
-`closeQuickDraft` stops it, and `show()` shuts the sheet on any change of
-screen). Every id the draft's code and the checkers reach for (`#b-start`,
-`#b-daily-go`, `#b-franchise-go`, `#b-decade-go`, `#home-career`) is the same
-element, moved, so nothing downstream changed. **A checker waiting on
-`#b-start` needs `state: 'attached'` now**, because Playwright's default wait is
-for a VISIBLE element and a shut sheet is not one.
+**ONE GRID, TWO HOMES.** A desktop (920 and up) draws `#mw-grid` in `#hp-tiles`,
+beside the daily card, two across, and draws no door. A phone keeps it hidden
+and reaches it through `#b-modes`, which opens `#modesheet`: `openModes()`
+**moves the grid into the sheet** and `closeModes()` moves it back, which is the
+dock's rule (move the real button, never a copy) arriving at a grid. So there is
+one set of ids, and a checker presses `#mc-cq` wherever it currently lives. Any
+press inside the grid closes the sheet behind it, and `show()` puts the grid home
+on every screen change. `check-home` presses a tile from the sheet and asks where
+the grid went; with the move back removed it reports the grid stuck in the sheet.
 
-`.qd-sheet[hidden]` carries its own `display:none`, because the sheet sets
-`display:flex`, which is the football file's `[hidden]` lesson arriving here.
-Removed, the sheet sits open over the whole front page and section 4 fails on
-five claims.
+**The page owns two tiles and modes-ui.js owns the rest.** One Franchise and
+Decades are static markup painted by `renderModeDoor()` and `renderEraDoor()` (a
+remembered club wears its colours and gets a Switch club press under it).
+Conquest and the Endless tile are filled into `#mw-cq` and `#mw-pro`, and the two
+puzzle cards into `#pz-fix` and `#pz-ps`, by `renderHome()` there.
 
-**The league's numbers moved into How to play** (`.lgfacts`), because a
-returning player read "16,460 player-seasons" before the one thing they came
-for. `#home-era` moved with them and verify's check still reads it.
+**A desktop keeps Start in the Classic card.** The card is two columns there,
+words left and court right, and `DOCK_FOR['s-home']` returns nothing while
+`(min-width:920px)` matches, because a bar pinned to the foot of the window
+floated over the daily card and the tiles. A phone docks it. A resize across 920
+re-docks through the `WIDE` listener.
 
-**Leaderboards is one sheet with a chip per mode.** The three new modes draw in
-it; the Quick Draft chip hands over to the draft's own board sheet rather than
-drawing a thinner copy, because that board has its own competitions and axes.
+**The injected `.ptile` rules are gone, and they were a bug.** modes-ui.js had
+styled the old Conquest tile as `.ptile`, which is also the DRAFT BOARD's tile
+class, and its sheet is appended after the page's, so `.ptile{display:flex;...}`
+had been overriding the board's own grid layout since the tiles pass. Mode tiles
+are `.mtile` and puzzle cards `.pz`; neither shares a class with the board.
 
-**`check-home`'s budget came down from 2.8 to 1.8 screens.** Measured after:
-1.33 at 390x844, 1.64 at 360x740 and 1.11 at 1512x950, against 2.30 and 2.67
-before. The draft's card and doors back on the page are about 700px.
+**`check-home`'s budget is 2.5 screens.** It came down 2.7 to 2.3 when the modes
+went under one door, and the puzzle strip put 360x740 at 2.37, so it is 2.5 with
+the reason written beside it. A card of prose left open is about 800px and still
+fails it at every width. On a 568-tall phone the masthead and the strip fill the
+first screen, so Classic is only asked to start on it there. The league's numbers
+still live in How to play (`.lgfacts`), and Leaderboards is one sheet with a chip
+per mode.
 
-**Section 4's first draft had teeth and no voice.** With the sheet stuck open
-it clicked the tile through Playwright's pointer, the sheet intercepted, and the
-file died on a thirty second timeout before printing anything. It presses in
-the page now, so the same defect reports as five named failures.
+#### The archetype line names this team's players
+
+```
+node hoops/verify.mjs     the block headed THE SYSTEM, IN THIS ROSTER'S OWN NAMES
+```
+
+Asked for by the owner: the description under the team archetype should be as
+team specific as possible, and can name the drafted players and how they fit. A
+blurb is the same sentence for every Pick and Roll roster. `E.systemStory(key,
+roster)` is the same system in this roster's names: "Stockton runs the pick and
+roll. 13.4 assists a night. Malone sets it and dives." `detectSystem` returns it as
+`story`, and the draft's fit card, the season card (`#p-sys`) and the results
+screen (`#o-sys`) print it, with the blurb as the fallback for a cached engine.
+
+**Every name is found by ROLE off the numbers the detect read**, per game at the
+league's pace: the best passer, the best rebounder, the man taking the shots, the
+man in the C slot. A surname unless two men share one. A name ending in a stop
+(Jaren Jackson Jr.) at the end of a sentence would print two, so the story folds
+them.
+
+verify plays 1,500 drafts nine ways and asserts all 22 systems are met, every
+story names somebody on the team, none carries a dash or a stray field, and two
+rosters in one system are told two different stories. That last claim is what
+keeps it from being a second blurb: a `systemStory` that returns one fixed
+sentence fails it and the naming claim.
 
 **`check-bracket`'s door walk needs a SEEDED run.** It took any run that
 reached the bracket, and a play-in run is one game: it can never open the series
@@ -11733,6 +11772,87 @@ stalled. Nothing had stalled: the page had signed the man, drawn the next board
 and taken it out of `pending`. The stall dump prints `signed`, `draw` and
 `phase` now, which are the three things the wait actually asks for, so the next
 time a reader cannot read it says so instead of blaming the page.
+
+### Run the floor: a roster has a pace, and the coach picks a game plan
+
+```
+node hoops/verify.mjs          the plan block: walked equals instant, the May asymmetry, tempo off
+node hoops/check-badges.mjs    all 22 systems reached, and the Style of play shelf
+```
+
+Asked for by the owner: make Classic different from the other draft sites, and
+lean on the name. So a roster has a PACE, and the season is played at it.
+
+**THE FIRST VERSION DID NOT MOVE AND IS WORTH NOT REBUILDING.** A tempo averaged
+over five men barely varies, because a board is one club-season and the five
+slots are one of each position: every roster came out within a couple of
+possessions of 99. What varies is what the five DO, so the mechanic is a choice
+between three **game plans** (`PLANS` in engine.js), each paying by how well the
+roster fits it.
+
+| plan | pays for | costs |
+|---|---|---|
+| Run | a guard who pushes (assists and steals per 36), hawks, and the glass; a little for the clubs' own pace | a little defense; pays less in May |
+| Balanced | nothing | nothing |
+| Half court | a rim anchor, a post scorer, defensive win shares, the glass | a little offense; pays MORE in May |
+
+`paceFits(roster)` answers both fits from 0 to 1, off per-man means so they move
+from the first signing rather than waiting for a team total to fill up.
+`planEffect` turns a fit into points per 100 around a break-even (`RUN_EVEN` 0.60,
+`GRIND_EVEN` 0.57), so a roster that does not fit a plan loses by running it.
+`bestPlan` is the coach's pick: the best regular season plus half the playoff
+edge. `run.plan` overrides it from the season screen (`#p-plans`), which prints
+what each plan is worth in wins before the tip.
+
+**MAY IS SLOWER, AND THAT IS THE DECISION.** In the playoffs the run edge is
+multiplied by `PO_RUN` 0.45, the half court defense by `PO_GRIND` 1.6, and every
+game is 4 possessions slower (`PO_SLOW`). So a run roster wins more games and
+fewer rings than its record says, which is the argument fans have had about the
+Seven Seconds Suns for twenty years.
+
+**A club's tempo is a proxy and it is wrong about one team.** There is no pace
+column in the data, so `buildTempo` reads each club-season's shots less 0.28 of
+its rebounds per minute, relative to that season's mean. It is only 10% of the
+run fit. **It reads the 1996 Bulls as fast**, because they took and missed a lot
+of shots; that is the proxy's known miss and why it carries so little weight.
+
+**`rosterRatings` is the one pipeline and everything reads it**: `playRun`,
+`advanceGame`, `playSeason`, `projectSeason`, and the playoff runner through its
+`po` ratings and pace. `gameMeans`, `poCreate` and `generatePlayoffs` take a pace
+now. **`{tempo:false}` is the old model exactly**, and Fix History passes it,
+because that mode's odds are a daily puzzle already filed on a board and a real
+team does not choose a plan.
+
+**What it costs, measured at 200 drafts a bot**: taking the best man every time
+with the coach's plan wins 45 median; forcing Run on that same roster wins 43;
+drafting for the run fit moves it from 0.62 to 0.70 and wins 45 back. Drafting
+for the half court fit has the best playoff edge of any bot. All four TARGETS
+stay in band: ceiling 61.5 wins, title 15.2%, beats 72 at 5.8%, greedy 46.
+
+**`verify` asks the walked season and the instant one with a plan SET, and the
+plan it sets is the one the coach would NOT pick.** The first draft asked for
+Run on a roster whose own pick was Run, so removing the plan from `advanceGame`
+still passed. Proved by mutation: that removal, `PO_RUN` at 1, and forcing tempo
+on for Fix History each fail their own claim.
+
+#### Twenty-two systems, and a style line on top of them
+
+Eight new systems, each named for a real team and held to it in `verify`'s
+fixtures: Seven Seconds, Run TMC (1991 Warriors), Sonic Boom (1996 Sonics), Run
+and Gun (1991 Nuggets), Lob City (2014 Clippers), Big Three (2008 Celtics), Point
+Forward, and Heliocentric (2020 Mavericks, 2017 Rockets). **The ORDER in
+`SYSTEMS` is the first match**, so a new one steals rosters from whatever sits
+below it: the 1983 Sixers came back Sonic Boom and the 1991 Warriors Heliocentric
+until the order and two thresholds moved. Heliocentric allows one other 19 point
+scorer, and Sonic Boom's steals are deflated by the clubs' own pace
+(`clubPaceFactor`), because a fast era steals more by being fast.
+
+`rosterStyle` names three axes on top: Big or Small (rebounds per man), Fast or
+Slow (run fit against half court fit), Shooting or No range (spacing). The fit
+card on the draft screen shows them as chips and the results screen as tags, so
+big and fast, small and slow, and every mix are nameable whatever the system is.
+**The Style of play shelf** (`sty.*`, `pl.*` feats) lights a Run title, a Half
+court title, a 55 win season on each plan, and three style combinations.
 
 ### The last of five picks was made by the game, on a quarter to a half of runs
 

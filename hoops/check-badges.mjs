@@ -519,7 +519,21 @@ const EXCUSED = {
   'fring-5': ['grind', () => moved('fring:')],
   'fring-15': ['grind', () => moved('fring:')],
   'fring-all': ['grind', () => moved('fring:')],
-  'ering-all': ['grind', () => moved('ering:')],
+  /* A Decades title is the Champions badge with a mode on it, and the sweep
+     finds about one in a full run: the game plans reshuffled every season in
+     it and the one it found went. So both are proved by hand through the real
+     rule rather than waited for. */
+  'ering-1': ['skill', () => lights('ering-1', fakeRun({ era: 'nineties', playoffs: { won: true, rounds: [] } }))],
+  'ering-all': ['skill', () => {
+    const c = { version: 1, feats: {} };
+    for (const era of ['seventies', 'eighties', 'nineties', 'aughts', 'tens', 'twenties'])
+      B.applyFeats(c, B.draftFeats(fakeRun({ era, playoffs: { won: true, rounds: [] } })));
+    return B.earned(c).some((b) => b.id === 'ering-all');
+  }],
+  /* Twenty-two systems, and the four money bots above name about half of
+     them; the shape bots further down name every one. The top rung is the
+     whole set, so it is a collection somebody fills over weeks. */
+  'shapes-14': ['grind', () => Object.keys(career.shapes).length >= 8],
   'fx-30': ['grind', () => moved('fx.days')],
   'fx-title10': ['grind', () => moved('fx.title')],
   /* The page writes these. */
@@ -539,8 +553,6 @@ const EXCUSED = {
   'fofofo': ['skill', () => lights('fofofo', fakeRun({ playoffs: { won: true, rounds: [
     round('First Round', [W, W, W, W]), round('Conference Semifinals', [W, W, W, W]),
     round('Conference Finals', [W, L, W, W, W]), round('NBA Finals', [W, W, W, W])] } }))],
-  'w70': ['skill', () => B.earned({ bestWins: 70 }).some((b) => b.id === 'w70') && career.bestWins >= 60],
-  'record': ['skill', () => career.bestWins >= 60],
   'cq-flawless': ['skill', () => moved('cq.best')],
   'fx-miracle': ['skill', () => moved('fx.gain')],
 };

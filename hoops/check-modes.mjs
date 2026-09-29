@@ -39,6 +39,30 @@ E.setCuratedChemistry(JSON.parse(fs.readFileSync(path.join(HERE, 'data/chemistry
 const D = R.indexData(JSON.parse(fs.readFileSync(path.join(HERE, 'data/players.json'), 'utf8')));
 const QUICK = process.argv.includes('--quick');
 
+/* THE MODE TILES LIVE UNDER MORE WAYS TO PLAY. A phone reaches them through
+   one door and a sheet, so a tile that is not on the page is pressed the way a
+   reader would press it: open the sheet, then the tile. The two daily puzzles
+   are the strip at the top of the front page and never in the sheet, so a
+   press on one with the sheet up shuts the sheet first, the way a reader
+   would, rather than clicking through its scrim. */
+async function openMore(page) {
+  const open = await page.evaluate(() => document.querySelector('#modesheet') &&
+    document.querySelector('#modesheet').classList.contains('open'));
+  if (open) return;
+  await page.click('#b-modes');
+  await page.waitForSelector('#modesheet.open');
+}
+async function tapMode(page, sel) {
+  const shown = await page.evaluate((q) => { const el = document.querySelector(q);
+    return !!el && el.getBoundingClientRect().height > 0; }, sel);
+  if (!shown) await openMore(page);
+  else if (await page.evaluate((q) => { const m = document.querySelector('#modesheet');
+    return !!m && m.classList.contains('open') && !m.contains(document.querySelector(q)); }, sel)) {
+    await page.keyboard.press('Escape');
+    await page.waitForFunction(() => !document.querySelector('#modesheet').classList.contains('open'));
+  }
+  await page.click(sel);
+}
 const failures = [];
 let passed = 0;
 function ok(cond, what) { if (cond) passed++; else failures.push(what); }
@@ -787,17 +811,21 @@ if (!QUICK) {
   page.on('pageerror', (e) => boom.push(String(e).slice(0, 200)));
   await page.route('**/*', serve);
   await page.goto('http://local.test/hoops/', { waitUntil: 'domcontentloaded' });
-  await page.waitForSelector('#b-today:not([disabled])', { timeout: 60000 });
+  await page.waitForSelector('#mc-cq', { state: 'attached', timeout: 60000 });
 
   const home = await page.evaluate(() => ({
     cards: ['mc-fix', 'mc-ps', 'mc-cq'].map((id) => !!document.getElementById(id)),
     dock: document.querySelector('#dock').textContent.trim(),
   }));
   ok(home.cards.every(Boolean), 'the front page has a card for each of the three');
-  ok(/Fix History/.test(home.dock), `the dock offers today's Fix History first ("${home.dock}")`);
+  /* THE DOCK IS CLASSIC'S since the front page was rebuilt around it, so
+     the dailies say what is open on their own rows rather than in the dock. */
+  ok(/draft/i.test(home.dock), `the dock carries Classic's Start ("${home.dock}")`);
+  ok(await page.evaluate(() => !document.querySelector('#mc-fix').classList.contains('done')),
+    'and today\'s Fix History row is open');
 
   // Fix History, end to end: a season of four windows.
-  await page.click('#mc-fix');
+  await tapMode(page, '#mc-fix');
   await page.waitForSelector('.fx-man[data-k]');
   const fx = await page.evaluate(() => {
     const M = window.RTF_MODES, D = window.RTF_PAGE.data, E = window.RTF_ENGINE;
@@ -835,10 +863,10 @@ if (!QUICK) {
 
   /* A RELOAD MID-SEASON comes back to the same window with the same deal. */
   await page.reload({ waitUntil: 'domcontentloaded' });
-  await page.waitForSelector('#b-today:not([disabled])', { timeout: 60000 });
+  await page.waitForSelector('#mc-cq', { state: 'attached', timeout: 60000 });
   const row = await page.textContent('#mc-fix');
-  ok(/Game 20 window is open/.test(row), `the front page says which window is open ("${row.trim().slice(0, 60)}")`);
-  await page.click('#mc-fix');
+  ok(/Game 20 window open/.test(row), `the front page says which window is open ("${row.trim().slice(0, 60)}")`);
+  await tapMode(page, '#mc-fix');
   await page.waitForSelector('#fx-pat');
   const steps2 = await page.$$eval('.fxw-s', (b) => b.map((x) => x.textContent));
   ok(/Traded/.test(steps2[0]) && /Open now/.test(steps2[1]), 'a reload lands in the game 20 window with the deal marked');
@@ -961,12 +989,13 @@ if (!QUICK) {
   ok(await page.$('#mb-rows .mb-more') === null, 'a second press shuts it');
   await page.click('#mb-x');
   await page.reload({ waitUntil: 'domcontentloaded' });
-  await page.waitForSelector('#b-today:not([disabled])', { timeout: 60000 });
-  await page.click('#mc-fix');
+  await page.waitForSelector('#mc-cq', { state: 'attached', timeout: 60000 });
+  await tapMode(page, '#mc-fix');
   ok(await page.$('#fx-share') !== null && await page.$('#fx-pat') === null,
     'a reload lands on the result: one season a day');
-  const dock = await page.evaluate(() => { window.RTF_PAGE.goHome(); return document.querySelector('#dock').textContent.trim(); });
-  ok(/Six Passes/.test(dock), `with Fix done, the dock moves on to Six Passes ("${dock}")`);
+  const dayRows = await page.evaluate(() => { window.RTF_PAGE.goHome();
+    return ['mc-fix', 'mc-ps'].map((id) => document.getElementById(id).classList.contains('done')); });
+  ok(dayRows[0] && !dayRows[1], `with Fix done, its row reads done and Six Passes is still open (${dayRows})`);
 
   /* THE TWO OLDER SHAPES OF RESULT, planted as somebody who played this
      morning would have left them, still draw and still file the way they were
@@ -993,8 +1022,8 @@ if (!QUICK) {
     }, [fx.day, shape]);
     posts.length = 0;
     await page.reload({ waitUntil: 'domcontentloaded' });
-    await page.waitForSelector('#b-today:not([disabled])', { timeout: 60000 });
-    await page.click('#mc-fix');
+    await page.waitForSelector('#mc-cq', { state: 'attached', timeout: 60000 });
+    await tapMode(page, '#mc-fix');
     await page.waitForSelector('#fx-share');
     const lt = await page.textContent('#s-fix');
     ok(lt.includes(legacy.name), `a ${shape} result still draws its man (${legacy.name})`);
@@ -1006,7 +1035,7 @@ if (!QUICK) {
   }
 
   // Six Passes, along a shortest chain, through the filter a player uses.
-  await page.click('#mc-ps');
+  await tapMode(page, '#mc-ps');
   await page.waitForSelector('#ps-q');
   const art = await page.evaluate(() => ({
     pics: document.querySelectorAll('#s-pass .ps-pic svg.portrait').length,
@@ -1039,19 +1068,23 @@ if (!QUICK) {
   ok(doors.every(Boolean), 'the front page offers endless and build for both dailies');
   /* PRO. A guest owns nothing, so every door wears the lock and opens the
      offer rather than doing nothing, and the finished daily's door does too. */
+  /* Measured IN the sheet, where a phone reader meets them: read on the
+     front page itself the rows are inside a hidden grid and every height is
+     zero, which would pass the one-line claim on anything. */
+  await openMore(page);
   const lockedHome = await page.evaluate(() => ({
     lk: document.querySelectorAll('.td-end button.lk').length, go: !!document.getElementById('td-pro'),
     rows: [...document.querySelectorAll('.td-end')].map((e) => Math.round(e.getBoundingClientRect().height)) }));
   ok(lockedHome.lk === 4 && lockedHome.go, `without Pro all four doors are locked and Go Pro is offered (${JSON.stringify(lockedHome)})`);
-  ok(lockedHome.rows.every((h) => h < 44), `and each row of doors holds one line (${lockedHome.rows})`);
-  await page.click('#td-efx');
+  ok(lockedHome.rows.length === 2 && lockedHome.rows.every((h) => h > 0 && h < 44), `and each row of doors holds one line (${lockedHome.rows})`);
+  await tapMode(page, '#td-efx');
   const sheet1 = await page.evaluate(() => { const s = document.getElementById('pro-sheet');
     return { open: !!s && !s.hidden, text: s ? s.textContent : '', screen: document.querySelector('.screen.active').id }; });
   ok(sheet1.open && /Run The Floor Pro/.test(sheet1.text) && /Sign in to get Pro/.test(sheet1.text), 'a locked door opens the offer, and a guest is asked to sign in');
   ok(sheet1.screen === 's-home', `and nothing behind it opens (${sheet1.screen})`);
   ok(/\$9\.99/.test(sheet1.text) && /stay free|dailies are free/i.test(sheet1.text), 'the offer names the price and says the dailies stay free');
   await page.click('#pro-sheet [data-pro-x]');
-  await page.click('#mc-fix');
+  await tapMode(page, '#mc-fix');
   await page.waitForSelector('#fx-endless');
   ok(/Pro/.test(await page.textContent('#fx-endless')), "the finished daily's endless door wears the Pro tag");
   await page.click('#fx-endless');
@@ -1066,7 +1099,7 @@ if (!QUICK) {
     window.RTF_PAGE.auth = () => fake;
     window.RTF_PAGE.goHome();
   });
-  await page.click('#td-pro');
+  await tapMode(page, '#td-pro');
   await page.click('#pro-buy');
   await page.waitForSelector('#pro-err:not([hidden])');
   const co = checkouts[checkouts.length - 1];
@@ -1098,7 +1131,7 @@ if (!QUICK) {
     days: (JSON.parse(localStorage.getItem('runthefloor_career_v1') || '{}').feats || {})['fx.days'] || 0,
   }), [fx.day, chain.day]);
   posts.length = 0;
-  await page.click('#td-efx');
+  await tapMode(page, '#td-efx');
   await page.waitForSelector('#fx-pat');
   ok(/Endless/.test(await page.textContent('#s-fix .cq-rung')), 'endless Fix History says so');
   for (let i = 0; i < 4; i++) {
@@ -1126,7 +1159,7 @@ if (!QUICK) {
 
   // Endless Six Passes, solved along a real shortest chain.
   await page.evaluate(() => window.RTF_PAGE.goHome());
-  await page.click('#td-eps');
+  await tapMode(page, '#td-eps');
   await page.waitForSelector('#ps-q');
   ok(/Endless/.test(await page.textContent('#s-pass .cq-rung')), 'endless Six Passes says so');
   const ech = await page.evaluate(() => {
@@ -1147,7 +1180,7 @@ if (!QUICK) {
 
   // Build: any two players, through the search a player uses, sent as a link.
   await page.evaluate(() => { window.RTF_PAGE.goHome(); window.RTF_PAGE.shareText = (t) => { window.__shared = t; }; });
-  await page.click('#td-pps');
+  await tapMode(page, '#td-pps');
   await page.waitForSelector('#ps-qa');
   await page.fill('#ps-qa', 'Michael Jordan');
   await page.click('.ps-mate[data-id="jordami01"]');
@@ -1162,7 +1195,7 @@ if (!QUICK) {
 
   // Build: any team, through the two selects.
   await page.evaluate(() => window.RTF_PAGE.goHome());
-  await page.click('#td-pfx');
+  await tapMode(page, '#td-pfx');
   await page.waitForSelector('#fx-pclub');
   await page.selectOption('#fx-pclub', 'CHI');
   await page.waitForSelector('#fx-pyr');
@@ -1206,7 +1239,7 @@ if (!QUICK) {
   await page.click('.cqd-card');
   const mid = await page.$$eval('.cqd-card', (b) => b.map((x) => x.getAttribute('data-k')).join());
   await page.reload({ waitUntil: 'domcontentloaded' });
-  await page.waitForSelector('#b-today:not([disabled])', { timeout: 60000 });
+  await page.waitForSelector('#mc-cq', { state: 'attached', timeout: 60000 });
   await page.evaluate(() => window.RTF_MODES_UI.openConquest());
   await page.waitForSelector('.cqd-card');
   const back = await page.$$eval('.cqd-card', (b) => b.map((x) => x.getAttribute('data-k')).join());

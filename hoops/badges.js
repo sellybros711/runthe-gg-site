@@ -63,7 +63,7 @@ const prefixed = (c, pre) => Object.keys(set(c, 'feats'))
 /* How many of a thing there are to collect. Read from the data at boot where
    the page can, so a season landing in the data next July moves the target
    rather than leaving a collection permanently one short. */
-let TOTALS = { seasons: 53, clubs: 45, shapes: 14, mvps: 53, franchises: 30 };
+let TOTALS = { seasons: 53, clubs: 45, shapes: 22, mvps: 53, franchises: 30 };
 function setTotals(t) {
   if (!t) return;
   for (const k of Object.keys(TOTALS)) if (num(t[k]) > 0) TOTALS[k] = num(t[k]);
@@ -160,7 +160,7 @@ const AWARDS = [
 const TROPHIES = ['mvp', 'fmvp', 'roy', 'dpoy', 'smoy', 'mip', 'an1'];
 const BLUE_BLOODS = ['UNC', 'Duke', 'Kentucky', 'Kansas', 'UCLA'];
 
-/* ---------------- what a finished Quick Draft run proves ----------------
+/* ---------------- what a finished Classic run proves ----------------
  *
  * Returns { add: {key: 1}, max: {} }. Every key here is a count of runs that
  * did the thing. Pure: it reads the run the page already has and returns keys,
@@ -245,6 +245,16 @@ function draftFeats(run) {
   if (num(out.wins) >= 65) one('rs.w65');
   if (num(out.wins) >= 70) one('rs.w70');
   if (season.length && (num(out.totalPF) - num(out.totalPA)) / season.length >= 10) one('rs.pd10');
+
+  /* ---- how it played ---- */
+  const plan = out.tempo && out.tempo.plan, sty = out.style || {};
+  if (plan === 'run' && num(out.wins) >= 55) one('pl.run55');
+  if (plan === 'run' && out.titleWon) one('pl.runring');
+  if (plan === 'grind' && out.titleWon) one('pl.grindring');
+  if (plan === 'grind' && num(out.wins) >= 55) one('pl.grind55');
+  if (sty.size === 'Big' && sty.speed === 'Fast' && num(out.wins) >= 50) one('sty.bigfast');
+  if (sty.size === 'Small' && sty.range === 'Shooting' && num(out.wins) >= 50) one('sty.smallball');
+  if (sty.size === 'Big' && sty.speed === 'Slow' && num(out.wins) >= 50) one('sty.bigslow');
 
   /* ---- the playoffs ---- */
   const po = run.playoffs, rounds = (po && Array.isArray(po.rounds)) ? po.rounds : [];
@@ -399,6 +409,7 @@ const GROUPS = [
   ['win', 'Winning'],
   ['playoffs', 'Playoff lore'],
   ['build', 'Roster building'],
+  ['style', 'Style of play'],
   ['lines', 'Stat lines'],
   ['legends', 'Reunions'],
   ['history', 'Hall of fame'],
@@ -451,7 +462,7 @@ const CATALOG = [
   { id: 'hundred-wins', g: 'start', name: 'A thousand games', why: 'Play a thousand regular season games.',
     tier: 'gold', got: (c) => num(c.totalWins) + num(c.totalLosses) >= 1000 },
   { id: 'all-four', g: 'start', name: 'Four ways to play',
-    why: 'Finish a Quick Draft, a Conquest run, a Fix History day and a Six Passes chain.', tier: 'silver',
+    why: 'Finish a Classic draft, a Conquest run, a Fix History day and a Six Passes chain.', tier: 'silver',
     got: (c) => num(c.runs) >= 1 && feat(c, 'cq.runs') >= 1 && feat(c, 'fx.days') >= 1 && feat(c, 'ps.played') >= 1 },
 
   /* ---- winning ---- */
@@ -483,6 +494,22 @@ const CATALOG = [
     got: has('rs.slump') },
 
   /* ---- playoff lore ---- */
+  /* ---- style of play: the game plans and the shapes they suit ---- */
+  { id: 'pl-run55', g: 'style', name: 'Run the floor', why: 'Win 55 games playing Run the floor.', tier: 'silver',
+    got: has('pl.run55') },
+  { id: 'pl-grind55', g: 'style', name: 'Walk it up', why: 'Win 55 games playing Half court.', tier: 'silver',
+    got: has('pl.grind55') },
+  { id: 'pl-runring', g: 'style', name: 'Showtime ring', why: 'Win a title playing Run the floor. May slows everybody down.', tier: 'ring',
+    got: has('pl.runring') },
+  { id: 'pl-grindring', g: 'style', name: 'Defense wins championships', why: 'Win a title playing Half court.', tier: 'gold',
+    got: has('pl.grindring') },
+  { id: 'sty-bigfast', g: 'style', name: 'Bigs who run', why: 'Win 50 with a roster that is big and fast.', tier: 'gold',
+    got: has('sty.bigfast') },
+  { id: 'sty-smallball', g: 'style', name: 'Small ball', why: 'Win 50 with a roster that is small and shoots.', tier: 'gold',
+    got: has('sty.smallball') },
+  { id: 'sty-bigslow', g: 'style', name: 'Bully ball', why: 'Win 50 with a roster that is big and slow.', tier: 'silver',
+    got: has('sty.bigslow') },
+
   { id: 'ring', g: 'playoffs', name: 'Champions', why: 'Win the title.', tier: 'ring',
     got: (c) => num(c.rings) >= 1 },
   { id: 'threepeat', g: 'playoffs', name: 'Dynasty', why: 'Win three titles.', tier: 'ring',
@@ -781,7 +808,12 @@ function catalog() {
     const marks = { clubs: 45, seasons: 52, shapes: 14 };
     if (!b.id.endsWith('-' + marks[b._totalKey])) return b;
     if (total === marks[b._totalKey]) return b;
-    return { ...b, progress: (c) => [Math.min(count(c, b._totalKey), total), total],
+    /* The WORDS move with the target. "Field 14 different roster identities"
+       over a bar reading 0 of 22 is the card and the rule disagreeing, which
+       is what happened the day the systems went from fourteen to twenty-two.
+       The id stays, because a badge is derived and its id is its name. */
+    return { ...b, why: String(b.why).replace(String(marks[b._totalKey]), String(total)),
+      progress: (c) => [Math.min(count(c, b._totalKey), total), total],
       got: (c) => count(c, b._totalKey) >= total };
   });
 }

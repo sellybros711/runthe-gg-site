@@ -73,7 +73,8 @@ async function homePage(browser, width, height) {
   page.on('pageerror', (e) => boom.push(String(e).slice(0, 200)));
   await page.route('**/*', serve);
   await page.goto('http://local.test/hoops/', { waitUntil: 'domcontentloaded' });
-  await page.waitForSelector('#b-today:not([disabled])', { timeout: 30000 });
+  await page.waitForSelector('#b-start:not([disabled])', { state: 'attached', timeout: 30000 });
+  await page.waitForSelector('#mc-cq', { state: 'attached', timeout: 30000 });
   /* The first-time guide is a scrim over the whole page and it is correct: it
      is not what this file is about, and it is dismissed the same way a reader
      dismisses it. */
@@ -98,14 +99,15 @@ section('1. the front page is under two screens, on the widths that bind');
       over: document.documentElement.scrollWidth - document.documentElement.clientWidth,
     }));
     const screens = g.page / h;
-    /* 1.8 SINCE THE FRONT PAGE BECAME ONE GAME IN THREE TIERS. It was 2.8
-       while it held seven doors, and the complaint was that nothing said where
-       to start. Today's two puzzles are one card, Conquest and Quick Draft are
-       two tiles, and the draft's four doors are in a sheet. Measured after:
-       1.33 at 390x844, 1.64 at 360x740 and 1.11 at 1512x950, against 2.30 and
-       2.67 before. The draft's card and doors put back on the page are about
-       700px, so this fails on that. */
-    ok(screens < 1.8, `${w}x${h}: ${screens.toFixed(2)} screens (${g.page}px)`);
+    /* 2.3 SINCE THE MODES WENT UNDER ONE DOOR. The budget went 1.8 to 2.7
+       when Classic's court came back onto the front page, and back down when
+       the variants, Conquest and the two puzzles moved into More ways to play:
+       measured 1.85 at 390x844, 2.14 at 360x740 and 1.51 at 1512x950, against
+       2.23, 2.56 and 1.91 before. 2.5 SINCE THE PUZZLES WENT ON TOP, which
+       the owner asked for: the strip is a heading and two cards, about 190px
+       on a phone, and it put 360x740 at 2.37. A card of prose left open is
+       about 800px and still fails it at every width. */
+    ok(screens < 2.5, `${w}x${h}: ${screens.toFixed(2)} screens (${g.page}px)`);
     ok(g.over === 0, `${w}x${h}: nothing hangs off the side`);
     ok(boom.length === 0, `${w}x${h}: no page errors (${boom.join(' | ') || 'none'})`);
     await ctx.close();
@@ -188,16 +190,16 @@ section('3. the first run guide names the games you get to call');
     page.on('pageerror', (e) => boom.push(String(e).slice(0, 200)));
     await page.route('**/*', serve);
     await page.goto('http://local.test/hoops/', { waitUntil: 'domcontentloaded' });
-    await page.waitForSelector('#b-today:not([disabled])', { timeout: 30000 });
+    await page.waitForSelector('#b-start:not([disabled])', { state: 'attached', timeout: 30000 });
     await page.waitForTimeout(400);
 
-    /* THE ARROW POINTS AT TODAY'S PLAY, which is the button the dock carries
-       now that the draft is one mode of four. It was #b-start, and a check
-       still reading #b-start would be measuring a button inside a card
-       halfway down the page, which the scrim correctly covers. */
+    /* THE ARROW POINTS AT CLASSIC'S START, which is the button the dock
+       carries since the front page was rebuilt around Classic. It pointed at
+       #b-today (the next daily) for the pass in between, and that button is
+       gone. */
     const g = await page.evaluate(() => {
       const pan = document.querySelector('#frg-panel');
-      const start = document.querySelector('#b-today');
+      const start = document.querySelector('#dock #b-start');
       const r = start.getBoundingClientRect();
       const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
       return {
@@ -219,7 +221,7 @@ section('3. the first run guide names the games you get to call');
     /* FOUR MODES, AND A GUIDE THAT NAMES THREE HIDES ONE. A first-timer told
        only how to draft never finds the other three, which is the reason the
        guide was rewritten. */
-    for (const m of ['Fix History', 'Six Passes', 'Conquest', 'Quick Draft']) {
+    for (const m of ['Classic', 'Conquest', 'Fix History', 'Six Passes']) {
       ok(all.indexOf(m) >= 0, `${w}x${h}: the guide names ${m}`);
     }
     ok(!/end a series|every game of the finals/i.test(all),
@@ -227,82 +229,158 @@ section('3. the first run guide names the games you get to call');
     /* THE OLD SENTENCE ON ITS OWN IS THE DEFECT. "The season plays itself" is
        still true of the 82 and stays; what may not come back is that clause
        standing alone as the whole of what happens after the draft. */
-    ok(!/plays itself[^.]*\.\s*\d+ games[^.]*\.\s*$/i.test(g.steps[2] || ''),
+    ok(!/plays itself[^.]*\.\s*\d+ games[^.]*\.\s*$/i.test(g.steps[0] || ''),
       `${w}x${h}: the season step does not end at "the playoffs if you get there"`);
     ok(!g.scrolls, `${w}x${h}: and the panel does not scroll inside itself `
       + `(${g.need} of ${g.have})`);
     /* The way out of the guide is the button it points at, which is the
        whole of its design and the thing an extra line could cover. */
-    ok(g.startLive, `${w}x${h}: today's play is still the element at its own centre`);
+    ok(/Classic/.test(g.steps[0] || ''), `${w}x${h}: Classic is the first step, the mode the front page leads with`);
+    ok(g.startLive, `${w}x${h}: Start a draft is still the element at its own centre`);
     ok(boom.length === 0, `${w}x${h}: no page errors (${boom.join(' | ') || 'none'})`);
     await ctx.close();
   }
 }
 
-// ── 4. one game, three tiers ────────────────────────────────────────────────
-section('4. Today, Play, and the draft behind a sheet');
+// ── 4. The puzzles, then Classic, then the Daily Draft, then More ways to play
+section('4. The daily puzzles on top, Classic, the Daily Draft, then More ways to play');
 /*
- * The redesign is a HIERARCHY, and every way it rots renders perfectly: a door
- * put back on the page at the weight of the tiles, a second big button saying
- * what the dock already says, a mode colour back on a primary button. So the
- * claims are about structure and colour, not about pixels.
+ * Asked for by the owner in two steps. First, with Run The Diamond as the
+ * model: Classic is the hero, the daily challenge gets a spot of its own, and
+ * every other mode is under More ways to play. Then: Fix History and Six
+ * Passes go at the TOP of the page, as the daily puzzles. Every way this rots
+ * renders perfectly, so the claims are ORDER, VISIBILITY and WHERE a thing
+ * lives, never pixels.
+ *
+ * THE PUZZLES ARE A STRIP, NOT A HERO. Classic still has to be the first big
+ * thing on the screen, so the strip is asserted to be ABOVE Classic and
+ * Classic's court is still asserted on the first screen.
+ *
+ * ONE GRID, TWO HOMES. The tiles are moved into the sheet when it opens and
+ * back when it shuts, so the phone walk presses a tile FROM the sheet and then
+ * asks where the grid went: a sheet that stole the grid and kept it would leave
+ * a desktop reader with an empty bento after one resize. The puzzles are never
+ * in the grid, so they are never in the sheet either.
  */
 {
-  for (const [w, h] of [[390, 844], [1440, 900]]) {
+  const TILES = ['b-franchise-go', 'b-decade-go', 'mc-cq'];
+  const PUZZLES = ['mc-fix', 'mc-ps'];
+  for (const [w, h] of [[390, 844], [320, 568], [1440, 900]]) {
+    const wide = w >= 920;
     const { page, ctx, boom } = await homePage(browser, w, h);
-    const g = await page.evaluate(() => {
-      const vis = (el) => !!el && !!el.offsetParent;
-      const bgOf = (el) => getComputedStyle(el).backgroundImage + ' ' + getComputedStyle(el).backgroundColor;
-      const today = document.querySelector('#today');
-      const tiles = [...document.querySelectorAll('.ptiles .ptile')].map((t) => t.id);
-      const bigs = [...document.querySelectorAll('#s-home button.big')].filter(vis).map((b) => b.id);
-      const dockBtn = document.querySelector('#dock #b-today');
+    const g = await page.evaluate(([TILES, PUZZLES]) => {
+      const vis = (el) => !!el && !!el.offsetParent && el.getBoundingClientRect().height > 0;
+      const box = (sel) => { const el = document.querySelector(sel); if (!el) return null;
+        const r = el.getBoundingClientRect(); return { top: Math.round(r.top + scrollY), left: Math.round(r.left), h: Math.round(r.height), w: Math.round(r.width) }; };
+      const start = document.querySelector('#b-start');
       return {
-        rows: today ? [...today.querySelectorAll('.td-row')].map((r) => r.id) : [],
-        tiles,
-        draftVisible: ['b-start', 'b-daily-go', 'b-franchise-go', 'b-decade-go'].filter((id) => vis(document.getElementById(id))),
-        bigs,
-        docked: !!dockBtn,
-        dockBg: dockBtn ? bgOf(dockBtn) : '',
-        orange: getComputedStyle(document.documentElement).getPropertyValue('--orange').trim(),
-        topOfToday: today ? Math.round(today.getBoundingClientRect().top) : 9999,
+        classic: box('#classic'), daily: box('#b-daily-go'), door: box('#b-modes'), quiet: box('#home-quiet'),
+        strip: box('#hp-puzzles'), puzzles: PUZZLES.map((id) => box('#' + id)),
+        puzVis: PUZZLES.map((id) => vis(document.getElementById(id))),
+        puzInGrid: PUZZLES.filter((id) => document.querySelector('#mw-grid #' + id)).length,
+        puzText: PUZZLES.map((id) => (document.getElementById(id) || {}).textContent || ''),
+        left: (document.querySelector('#pz-left') || {}).textContent || '',
+        grid: box('#mw-grid'), tiles: TILES.map((id) => vis(document.getElementById(id))),
+        tileTops: TILES.map((id) => { const b = document.getElementById(id); return b ? Math.round(b.getBoundingClientRect().top) : null; }),
+        doorVis: vis(document.querySelector('#b-modes')),
+        gridHome: document.querySelector('#mw-grid').parentNode.id,
+        dailyInClassic: !!document.querySelector('#classic #b-daily-go'),
+        variantsInClassic: document.querySelectorAll('#classic .mtile, #classic .modedoor, #classic .cl-ways, #classic .pz').length,
+        dailyText: (document.querySelector('#b-daily-go') || {}).textContent || '',
+        eye: (document.querySelector('#classic .cl-eye') || {}).textContent || '',
+        plans: [...document.querySelectorAll('#cl-plans .clp b')].map((b) => b.textContent),
+        startIn: start ? (start.closest('#dock') ? 'dock' : start.closest('#classic') ? 'classic' : 'elsewhere') : 'none',
+        startVis: vis(start),
+        doors: ['b-home-howto', 'b-home-boards', 'b-home-career'].filter((id) => vis(document.getElementById(id))),
+        quick: /quick draft/i.test(document.querySelector('#s-home').innerText),
         facts: !!document.querySelector('#home-howto #ls-players'),
+        heroTop: box('#h-court').top,
+        hmSub: (document.querySelector('#hm-sub') || {}).textContent || '',
+        over: document.documentElement.scrollWidth - document.documentElement.clientWidth,
       };
-    });
-    ok(g.rows.join() === 'mc-fix,mc-ps', `${w}: today is one card holding both dailies (${g.rows.join()})`);
-    ok(g.tiles.join() === 'mc-cq,mc-qd', `${w}: play is two tiles, Conquest and Quick Draft (${g.tiles.join()})`);
-    ok(g.draftVisible.length === 0, `${w}: the draft's four doors are not on the page (${g.draftVisible.join() || 'none'})`);
-    ok(g.bigs.length === 0 && g.docked, `${w}: the one big button on the front page is the docked one (${g.bigs.join() || 'none'} on the page)`);
-    /* ONE COLOUR FOR ACTION. The docked button used to take the teal of Fix
-       History and the gold of Six Passes. It is the brand orange whatever it
-       points at, read off the computed style against the token. */
-    ok(/240, 120, 45|f0782d/i.test(g.dockBg), `${w}: the primary button is the brand orange (${g.dockBg.slice(0, 80)})`);
-    ok(g.topOfToday < h * 0.45, `${w}: today's card starts in the top half of the screen (${g.topOfToday}px)`);
-    ok(g.facts, `${w}: the league's numbers moved into How to play rather than off the page`);
+    }, [TILES, PUZZLES]);
 
-    /* THE SHEET: it opens from its tile, the reels spin only while it is open,
-       and pressing a door inside it shuts it. */
-    /* Pressed in the page rather than through Playwright's pointer, so a
-       sheet stuck open over the tile reports as the failure it is instead of
-       a thirty second click timeout that takes the whole file down. */
-    const press = (sel) => page.evaluate((q) => document.querySelector(q).click(), sel);
-    await press('#mc-qd');
-    await page.waitForTimeout(300);
-    const open = await page.evaluate(() => ({
-      shown: !document.querySelector('#qd-sheet').hidden,
-      doors: ['b-start', 'b-daily-go', 'b-franchise-go', 'b-decade-go'].filter((id) => !!document.getElementById(id).offsetParent).length,
-      startInView: (() => { const r = document.querySelector('#b-start').getBoundingClientRect(); return r.bottom <= innerHeight && r.top >= 0; })(),
-    }));
-    ok(open.shown && open.doors === 4, `${w}: the Quick Draft tile opens a sheet with all four ways in (${open.doors})`);
-    ok(open.startInView, `${w}: and Start a draft is on screen without scrolling the sheet`);
-    await page.keyboard.press('Escape');
-    await page.waitForTimeout(150);
-    ok(await page.evaluate(() => document.querySelector('#qd-sheet').hidden), `${w}: Escape shuts it`);
-    await press('#mc-qd');
-    await page.waitForTimeout(200);
-    await press('#b-start');
+    /* The puzzle strip leads, and it is the two puzzles side by side. */
+    ok(g.strip && g.puzVis.every(Boolean) && g.strip.top < g.classic.top,
+      `${w}: the daily puzzles are on the page above Classic (${g.strip && g.strip.top} against ${g.classic.top})`);
+    ok(g.strip.top < h * 0.45, `${w}: and on the first screen (${g.strip.top})`);
+    ok(g.puzInGrid === 0, `${w}: neither puzzle is a More ways to play tile (${g.puzInGrid})`);
+    ok(Math.abs(g.puzzles[0].top - g.puzzles[1].top) < 3 && g.puzzles[1].left > g.puzzles[0].left,
+      `${w}: Fix History and Six Passes sit side by side (${JSON.stringify(g.puzzles)})`);
+    ok(/Fix History/.test(g.puzText[0]) && /Day \d+/.test(g.puzText[0]), `${w}: Fix History says today's day (${g.puzText[0].trim().slice(0, 50)})`);
+    ok(/Six Passes/.test(g.puzText[1]) && /Par \d/.test(g.puzText[1]), `${w}: Six Passes says today's par (${g.puzText[1].trim().slice(0, 50)})`);
+    ok(/open today|left today/i.test(g.left), `${w}: the heading says what is waiting ("${g.left}")`);
+    ok(g.over <= 0, `${w}: nothing hangs off the side (${g.over})`);
+
+    ok(/classic/i.test(g.eye) && /unlimited/i.test(g.eye), `${w}: the hero says Classic and Unlimited ("${g.eye.trim()}")`);
+    /* A short phone spends its first screen on the masthead and the strip, so
+       there Classic only has to START on it; the dock carries its button. */
+    ok(h < 700 ? g.classic.top < h * 0.8 : g.classic.top < h * 0.6 && g.heroTop < h,
+      `${w}: Classic and its court still lead the screen (${g.classic.top}, ${g.heroTop})`);
+    ok(g.plans.join() === 'Run the floor,Balanced,Half court', `${w}: the three game plans are on the card (${g.plans.join()})`);
+    ok(g.variantsInClassic === 0, `${w}: no other mode hangs off the Classic card (${g.variantsInClassic})`);
+    ok(!g.dailyInClassic && g.daily && g.daily.top > g.classic.top + g.classic.h - 2,
+      `${w}: the Daily Draft is its own card, under Classic (${g.daily && g.daily.top})`);
+    ok(/Daily Draft/.test(g.dailyText) && /Day \d+/.test(g.dailyText), `${w}: and it says it is today's (${g.dailyText.trim().slice(0, 50)})`);
+    ok(g.doors.length === 3 && g.quiet.top > g.daily.top, `${w}: three doors (rules, boards, career) under it (${g.doors.join()})`);
+    ok(!g.quick, `${w}: the old name is gone`);
+    ok(g.facts, `${w}: the league's numbers are still in How to play`);
+
+    if (wide) {
+      /* The bento: the daily card beside the tiles, two across, the door not
+         drawn, Start in the card rather than in a bar floating over the tiles. */
+      ok(!g.doorVis, `${w}: a desktop draws no More ways to play door`);
+      ok(g.gridHome === 'hp-tiles' && g.tiles.every(Boolean), `${w}: the mode tiles are on the page (${g.tiles})`);
+      ok(Math.abs(g.grid.top - g.daily.top) < 4, `${w}: beside the daily card (${g.grid.top} against ${g.daily.top})`);
+      ok(g.tileTops[0] === g.tileTops[1] && g.tileTops[2] > g.tileTops[0], `${w}: two across (${g.tileTops})`);
+      ok(g.startIn === 'classic' && g.startVis, `${w}: Start is in the Classic card, not docked (${g.startIn})`);
+      await page.evaluate(() => document.querySelector('#b-start').click());
+    } else {
+      ok(g.doorVis && g.door.top > g.daily.top, `${w}: a phone reaches the modes through one door under the daily card`);
+      ok(g.tiles.every((v) => !v), `${w}: and the tiles are not on the page itself (${g.tiles})`);
+      ok(/Conquest/.test(g.hmSub), `${w}: the door names what is behind it ("${g.hmSub}")`);
+      ok(g.startIn === 'dock', `${w}: the dock carries Classic's Start (${g.startIn})`);
+      await page.click('#b-modes');
+      await page.waitForSelector('#modesheet.open');
+      const inSheet = await page.evaluate((TILES) => ({
+        home: document.querySelector('#mw-grid').parentNode.id,
+        vis: TILES.map((id) => { const el = document.getElementById(id); return !!el && el.getBoundingClientRect().height > 0; }),
+        pro: !!document.querySelector('#modesheet #mw-pro'),
+        puz: !!document.querySelector('#modesheet .pz'),
+        over: document.querySelector('#modesheet .panel').scrollWidth - document.querySelector('#modesheet .panel').clientWidth,
+      }), TILES);
+      ok(inSheet.home === 'mw-slot' && inSheet.vis.every(Boolean) && inSheet.pro, `${w}: the door opens the sheet with the tiles and Endless in it (${inSheet.vis})`);
+      ok(!inSheet.puz, `${w}: and no puzzle is in the sheet`);
+      ok(inSheet.over <= 0, `${w}: nothing in the sheet hangs off the side (${inSheet.over})`);
+      await page.click('#mc-cq');
+      await page.waitForTimeout(300);
+      const after = await page.evaluate(() => ({
+        open: document.querySelector('#modesheet').classList.contains('open'),
+        home: document.querySelector('#mw-grid').parentNode.id,
+        screen: document.querySelector('.screen.active').id,
+      }));
+      ok(!after.open && after.home === 'hp-tiles', `${w}: a tile leaves the sheet and the grid goes home (${JSON.stringify(after)})`);
+      ok(after.screen === 's-cq', `${w}: and the tile opened its mode (${after.screen})`);
+      /* The puzzle cards are one press each, straight off the front page. */
+      for (const [id, scr] of [['mc-fix', 's-fix'], ['mc-ps', 's-pass']]) {
+        await page.evaluate(() => window.RTF_PAGE.goHome());
+        await page.waitForTimeout(200);
+        /* A card that is not there is reported by name rather than as a
+           thirty second click timeout. */
+        const there = await page.evaluate((q) => { const el = document.getElementById(q);
+          return !!el && el.getBoundingClientRect().height > 0; }, id);
+        if (!there) { ok(false, `${w}: the ${id} card is there to press`); continue; }
+        await page.click('#' + id);
+        await page.waitForTimeout(250);
+        const on = await page.evaluate(() => document.querySelector('.screen.active').id);
+        ok(on === scr, `${w}: the ${id} card opens its puzzle (${on})`);
+      }
+      await page.evaluate(() => window.RTF_PAGE.goHome());
+      await page.waitForTimeout(200);
+      await page.evaluate(() => document.querySelector('#dock #b-start').click());
+    }
     await page.waitForSelector('#s-draft.active', { timeout: 10000 });
-    ok(await page.evaluate(() => document.querySelector('#qd-sheet').hidden), `${w}: starting a draft from it shuts it`);
+    ok(true, `${w}: Start opens the draft`);
     ok(boom.length === 0, `${w}: no page errors (${boom.join(' | ') || 'none'})`);
     await ctx.close();
   }

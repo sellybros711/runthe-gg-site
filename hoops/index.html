@@ -1535,67 +1535,7 @@
     bottom:auto;top:50%;transform:translateY(-50%);}}
   .sheet h2{margin-bottom:4px;}
 
-  /* ══ THE SECOND DOOR AND THE CLUB PICKER ═══════════════════════════════
-     The door is quieter than Start a run on purpose: the page has one main
-     game and a second way into it, and two equally loud buttons would make it
-     a menu. Full width so the column still has an edge, which is the note
-     the football page's .hp-more carries. */
-  .modedoor{display:flex;align-items:stretch;gap:1px;width:100%;margin:9px 0 0;
-    border-radius:12px;border:1px solid var(--cardb);overflow:hidden;
-    background:var(--cardb);}
-  /* OPAQUE, AND THAT IS NOT A DETAIL. The club's accent is painted on the
-     WRAPPER and shows through as the border and as the hairline between the
-     two halves, which is the whole trick. The first version left these
-     translucent, so a Bulls door came back as a solid red tile with red text
-     on it and the name was unreadable. A colour used as an edge has to stay
-     an edge. */
-  .modedoor button{background:#141a26;border:0;color:var(--ink);font-family:var(--body);
-    text-align:left;cursor:pointer;padding:13px 14px;transition:background .12s ease;}
-  .modedoor button:hover{background:#1a2333;}
-  .modedoor button:active{background:#0f141d;}
-  .modedoor .md-main{flex:1;min-width:0;}
-  .modedoor .md-pick{flex:0 0 auto;display:flex;align-items:center;justify-content:center;
-    width:46px;padding:0;}
-  .modedoor .md-pick[hidden]{display:none;}
-  .modedoor .md-name{display:block;font-size:15px;font-weight:800;letter-spacing:.005em;}
-  .modedoor .md-sub{display:block;font-size:12px;color:var(--dim);margin-top:3px;
-    line-height:1.4;}
-  .modedoor .md-chev{width:8px;height:8px;margin-left:-3px;
-    border-right:2px solid var(--dim);border-bottom:2px solid var(--dim);
-    transform:rotate(-45deg);}
-  /* Dressed once a club has been played, so the door itself is the receipt.
-     The colours come from clubSkin, the same call the reels and the court use,
-     which is why a club can never wear one colourway here and another there. */
-  .modedoor.clubbed{border-color:var(--md-accent,var(--cardb));
-    background:var(--md-accent,var(--cardb));}
-
-  /* TODAY'S RUN. Gold, which is what everything on this site that is worth
-     something wears, and the only door on the page with a colour of its own
-     while it is unplayed. Once it is in the book it goes plain, because a
-     door that keeps shouting after it has been used is a notification badge
-     that never clears. */
-  .modedoor.daily{border-color:rgba(242,193,78,.55);background:rgba(242,193,78,.55);
-    position:relative;}
-  .modedoor.daily .md-name{color:#f2c14e;}
-  .modedoor.daily.done{border-color:var(--cardb);background:var(--cardb);}
-  .modedoor.daily.done .md-name{color:var(--ink);}
-  /* THE STREAK IS NOT A BUTTON, so it is not inside one. Sitting in the
-     .md-main button it would be part of the tap target that starts a run,
-     and a number that looks pressable and is not is worse than no number.
-     Absolutely positioned so it cannot push the two lines of copy narrower
-     at 360px, which is where the sub already wraps to two lines. */
-  .modedoor .md-streak{position:absolute;top:0;right:0;bottom:0;width:58px;
-    display:flex;flex-direction:column;align-items:center;justify-content:center;
-    gap:1px;background:#141a26;pointer-events:none;}
-  .modedoor .md-streak[hidden]{display:none;}
-  .modedoor .md-streak b{font-family:var(--num);font-variant-numeric:tabular-nums;font-size:19px;color:#f2c14e;
-    line-height:1;}
-  .modedoor .md-streak span{font-size:9px;letter-spacing:.09em;text-transform:uppercase;
-    color:var(--dim);}
-  /* The copy has to stop before the streak does, or a long sub runs under it
-     and the last word is a column of half letters. */
-  .modedoor.daily.streaked .md-main{padding-right:66px;}
-
+  /* ══ THE CLUB PICKER ════════════════════════════════════════════════ */
   /* TWO COLUMNS AT 390px, which is what thirty clubs and a nickname need.
      One column is a list to scroll and three puts "Timberwolves" on two
      lines at 108px of tile. */
@@ -2008,24 +1948,278 @@
      data files as each parses, the league index, and the first paint. The bar
      reports rather than performs. A bar that always fills in two seconds is a
      worse lie than three dots, because it looks like information. */
-  /* ── the front page, three tiers ─────────────────────────────────────────
-     Today, Play, and a quiet row. The draft's four doors are in a sheet. */
-  .quietrow{display:flex;justify-content:center;gap:4px 18px;flex-wrap:wrap;margin:18px 0 6px;}
-  .qlink{background:none;border:0;padding:8px 2px;width:auto;color:var(--mut);font-family:var(--body);
-    font-size:14px;font-weight:800;text-decoration:underline;text-decoration-color:rgba(255,255,255,.2);
-    text-underline-offset:4px;cursor:pointer;box-shadow:none;}
-  .qlink:hover{color:var(--ink);filter:none;}
+  /* ── the front page: Classic, then Conquest, then the daily puzzles ─────── */
   .lgfacts{font-size:12.5px;color:var(--dim);margin:0 0 12px;}
   .lgfacts b{color:var(--mut);font-family:var(--num);font-variant-numeric:tabular-nums;}
-  .qd-sheet{position:fixed;inset:0;z-index:70;background:rgba(3,5,9,.74);display:flex;align-items:flex-end;
-    justify-content:center;padding:12px;overflow-y:auto;}
-  .qd-sheet[hidden]{display:none;}
-  .qd-panel{width:100%;max-width:560px;max-height:calc(100vh - 24px);overflow-y:auto;background:#101522;
-    border:1px solid #2a3a4a;border-radius:18px;padding:14px 14px 16px;margin:auto 0 0;}
-  .qd-top{display:flex;align-items:center;justify-content:space-between;margin:0 2px 10px;}
-  .qd-top h2{margin:0;}
-  .qd-panel .card.qd{margin:0;}
-  @media (min-width:700px){ .qd-sheet{align-items:center;} .qd-panel{margin:auto;} }
+  /* ── CLASSIC, the front page's hero ───────────────────────────────────
+     The one card on the page lit from above in the brand orange, because it
+     is the one thing a returning player can play as often as they like. */
+  .classic{position:relative;overflow:hidden;padding:16px 14px 14px;border-color:rgba(240,120,45,.42);
+    background:radial-gradient(120% 70% at 50% 0%,rgba(240,120,45,.22),transparent 60%),
+      linear-gradient(180deg,#171c29,#0f131c);
+    box-shadow:0 18px 50px -26px rgba(240,120,45,.5);}
+  .cl-head{text-align:center;margin:0 0 12px;}
+  .cl-eye{display:inline-flex;gap:8px;align-items:center;font-size:10.5px;letter-spacing:.22em;
+    text-transform:uppercase;font-weight:800;color:var(--orange);}
+  .cl-eye i{font-style:normal;letter-spacing:.12em;color:#06140c;background:var(--green);
+    border-radius:999px;padding:2px 7px;font-size:9px;}
+  .classic .cl-title{display:block;font-family:var(--display);font-weight:400;
+    font-size:clamp(26px,7.4vw,36px);line-height:1.02;text-transform:uppercase;margin:6px 0;}
+  .cl-say{font-size:14px;color:var(--mut);margin:0 auto;max-width:36ch;line-height:1.45;}
+  .cl-say b{color:var(--ink);}
+  .classic .hero{background:none;margin:0 auto 12px;max-width:440px;}
+  .classic .hero .reelbox{height:52px;}
+  .classic .heroreels{margin-bottom:6px;}
+  /* THE THREE PLANS, said on the front page because they are what makes this
+     game different from every other draft game: a roster is asked how fast it
+     plays, not only how good it is. Colour is the plan's own and matches the
+     picker on the season screen. */
+  .cl-plans{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:0 0 12px;}
+  .clp{border-radius:10px;padding:8px 6px 7px;background:#0b0f18;border:1px solid rgba(255,255,255,.08);
+    text-align:center;min-width:0;}
+  .clp b{display:block;font-size:12px;font-weight:800;letter-spacing:.02em;}
+  .clp small{display:block;font-size:10.5px;color:var(--dim);margin-top:2px;line-height:1.3;}
+  .clp.run{border-color:rgba(240,120,45,.45);} .clp.run b{color:var(--orange);}
+  .clp.grind{border-color:rgba(96,165,250,.42);} .clp.grind b{color:#93c5fd;}
+  .cl-career{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:center;gap:2px 16px;
+    margin:0 0 10px;}
+  .cl-career .big-n{font-family:var(--display);font-variant-numeric:tabular-nums;font-size:22px;
+    font-weight:700;line-height:1;}
+  .cl-career .lab{font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);font-weight:800;}
+  .cl-career .qlink{padding:2px;font-size:13px;}
+  .cl-career .lastrun{flex:1 0 100%;text-align:center;margin:4px 0 0;font-size:12.5px;}
+  #classic #b-start{width:100%;}
+  /* ── the daily card: its own spot ───────────────────────────────────
+     Gold, which is what everything on this site that is worth something
+     wears, while it is unplayed. Once today is in the book it goes plain,
+     because a card that keeps shouting after it has been used is a
+     notification badge that never clears. */
+  .hp-bento{margin:12px 0 0;}
+  .dailycard{display:flex;align-items:center;gap:12px;width:100%;text-align:left;cursor:pointer;
+    margin:0;padding:13px 14px;border-radius:14px;border:1.5px solid rgba(242,193,78,.5);
+    background:linear-gradient(135deg,rgba(242,193,78,.16),rgba(242,193,78,.03)),#121722;
+    color:var(--ink);font-family:var(--body);box-shadow:0 12px 28px -20px rgba(242,193,78,.6);
+    transition:transform .1s ease,box-shadow .15s ease;}
+  .dailycard:hover{filter:none;box-shadow:0 14px 30px -18px rgba(242,193,78,.75);}
+  .dailycard:active{transform:scale(.99);}
+  .dailycard.played{border-color:var(--cardb);background:#121722;box-shadow:none;}
+  .dc-txt{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px;}
+  .dc-hd{display:flex;align-items:center;gap:8px;}
+  .dc-eye{font-size:10.5px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:#f2c14e;}
+  .dailycard.played .dc-eye{color:var(--dim);}
+  .dc-no{font-size:10.5px;font-weight:800;color:var(--dim);font-family:var(--num);font-variant-numeric:tabular-nums;}
+  .dc-streak{margin-left:auto;font-size:11px;font-weight:800;color:#f2c14e;background:rgba(242,193,78,.12);
+    padding:2px 8px;border-radius:99px;font-variant-numeric:tabular-nums;}
+  .dc-streak[hidden]{display:none;}
+  .dc-title{font-family:var(--display);font-weight:400;font-size:21px;line-height:1.05;
+    text-transform:uppercase;letter-spacing:.01em;}
+  .dc-sub{font-size:12.5px;color:var(--mut);line-height:1.35;}
+  /* The label is a label and not a second control: the whole card presses. */
+  /* Five slots, filled as today's draft fills. A desktop's card is tall and
+     this is what it says with the room; a phone's is a band and skips it. */
+  .dc-slots{display:none;gap:6px;margin-top:14px;}
+  .dc-slots i{flex:1;font-style:normal;text-align:center;font-size:11px;font-weight:800;letter-spacing:.06em;
+    padding:10px 0;border-radius:9px;border:1px dashed rgba(242,193,78,.4);color:rgba(242,193,78,.8);}
+  .dc-slots i.on{border-style:solid;background:rgba(242,193,78,.16);color:#f2c14e;}
+  .dailycard.played .dc-slots i{border-color:rgba(255,255,255,.12);color:var(--dim);}
+  .dailycard.played .dc-slots i.on{background:rgba(74,222,128,.12);border-color:rgba(74,222,128,.35);color:#86efac;}
+  .dc-go{flex:0 0 auto;font-weight:800;font-size:13px;padding:9px 12px;border-radius:10px;
+    background:#f2c14e;color:#1a1205;white-space:nowrap;}
+  .dailycard.played .dc-go{background:none;border:1px solid var(--cardb);color:var(--mut);}
+
+  /* ── the daily puzzles: a strip at the top ──────────────────────────────
+     Two cards side by side at every width, each a single press. The mode's
+     own colour is its edge while the puzzle is open; done, it goes quiet and
+     the chip turns green, the same rule as the daily card. */
+  .hp-puzzles{margin:4px 0 12px;}
+  .hp-puzzles[hidden]{display:none;}
+  .pz-head{display:flex;align-items:baseline;gap:10px;margin:0 2px 7px;}
+  .pz-head h2{margin:0;font-family:var(--display);font-weight:400;font-size:19px;letter-spacing:.03em;
+    text-transform:uppercase;line-height:1;}
+  .pz-left{margin-left:auto;font-size:11.5px;font-weight:800;color:var(--mut);white-space:nowrap;}
+  .pz-left.open{color:#f2c14e;}
+  .pz-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;}
+  .pz-slot{min-width:0;display:flex;}
+  .pz{position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:3px;width:100%;
+    min-width:0;margin:0;padding:11px 12px 12px;border-radius:13px;text-align:left;cursor:pointer;
+    border:1.5px solid color-mix(in srgb,var(--c) 55%,transparent);
+    background:linear-gradient(150deg,color-mix(in srgb,var(--c) 18%,#141a26),#141a26 75%);
+    color:var(--ink);font-family:var(--body);}
+  .pz:hover{filter:none;background:linear-gradient(150deg,color-mix(in srgb,var(--c) 24%,#1a2333),#1a2333 75%);}
+  .pz:active{transform:scale(.99);}
+  .pz.done{border-color:var(--cardb);background:#121722;}
+  .pz-top{display:flex;align-items:center;gap:8px;width:100%;margin-bottom:3px;}
+  .pz-ico{display:flex;align-items:center;justify-content:center;width:26px;height:26px;flex:0 0 auto;}
+  .pz-chip{margin-left:auto;font-size:10.5px;font-weight:800;padding:2px 8px;border-radius:99px;
+    background:var(--c);color:#10141d;white-space:nowrap;display:inline-flex;align-items:center;gap:4px;
+    font-variant-numeric:tabular-nums;}
+  .pz.done .pz-chip{background:rgba(52,211,153,.14);color:#6ee7b7;}
+  .pz-tag{font-size:9.5px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--c);
+    max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .pz.done .pz-tag{color:var(--dim);}
+  .pz-name{font-family:var(--display);font-weight:400;font-size:21px;line-height:1;letter-spacing:.02em;
+    text-transform:uppercase;}
+  .pz-sub{font-size:12px;font-weight:500;color:var(--mut);line-height:1.3;}
+
+  /* ── MORE WAYS TO PLAY: the door, and the grid it opens ──────────────── */
+  .hp-modes{display:flex;align-items:center;gap:12px;width:100%;margin:10px 0 0;padding:13px 14px;
+    background:#141a26;color:var(--ink);border:1.5px solid rgba(240,120,45,.55);border-radius:14px;
+    cursor:pointer;text-align:left;font-family:var(--body);}
+  .hp-modes:hover{background:#1a2333;filter:none;}
+  .hm-dots{display:grid;grid-template-columns:repeat(2,9px);gap:4px;flex:0 0 auto;}
+  .hm-dots i{width:9px;height:9px;border-radius:50%;display:block;}
+  .hm-txt{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;}
+  .hm-txt b{font-family:var(--display);font-weight:400;font-size:20px;letter-spacing:.03em;
+    text-transform:uppercase;line-height:1.05;}
+  .hm-sub{font-size:12px;font-weight:700;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .hm-sub.open{color:#f2c14e;}
+  .hm-arrow{width:20px;height:20px;flex:0 0 auto;fill:none;stroke:var(--orange);stroke-width:2.4;
+    stroke-linecap:round;stroke-linejoin:round;}
+  .hp-tiles{display:none;}
+  .mw-say{font-size:13px;margin:0 0 12px;}
+  .mw-grid{display:grid;grid-template-columns:minmax(0,1fr);gap:8px;}
+  /* A TILE IS A BOX WITH ONE MAIN PRESS, and sometimes a second, smaller one
+     under it (switch club, switch decade). Two buttons rather than one with a
+     chevron inside, because a button inside a button is not a thing HTML has. */
+  .mtile{position:relative;display:flex;flex-direction:column;min-width:0;overflow:hidden;
+    border-radius:13px;border:1px solid rgba(255,255,255,.09);background:#141a26;}
+  .mtile:empty{display:none;}
+  .mtile .mt-main{position:relative;z-index:1;display:grid;grid-template-columns:auto minmax(0,1fr);
+    grid-template-areas:"ico tag" "ico name" "ico sub";column-gap:12px;row-gap:1px;align-items:center;
+    width:100%;padding:12px 13px;border:0;text-align:left;cursor:pointer;
+    background:#141a26;color:var(--ink);font-family:var(--body);}
+  .mtile .mt-main:hover{background:#1a2333;filter:none;}
+  .mtile .mt-ico{grid-area:ico;width:28px;height:28px;fill:none;stroke:var(--c);stroke-width:1.9;
+    stroke-linecap:round;stroke-linejoin:round;}
+  .mtile .mt-ico.pix{stroke:none;display:flex;align-items:center;justify-content:center;}
+  .mtile .mt-tag{grid-area:tag;font-size:9.5px;font-weight:800;letter-spacing:.13em;text-transform:uppercase;
+    color:var(--c);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .mtile .mt-name{grid-area:name;font-size:16px;font-weight:800;letter-spacing:.005em;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .mtile .mt-sub{grid-area:sub;font-size:12px;color:var(--mut);line-height:1.35;}
+  .mtile .mt-chip{position:absolute;top:9px;right:10px;font-size:10.5px;font-weight:800;
+    padding:2px 7px;border-radius:99px;background:rgba(255,255,255,.07);color:var(--mut);
+    font-variant-numeric:tabular-nums;display:inline-flex;align-items:center;gap:4px;}
+  .mtile .mt-chip.go{background:var(--c);color:#10141d;}
+  .mtile .mt-main.done .mt-chip{background:rgba(52,211,153,.14);color:#6ee7b7;}
+  .mtile .mt-main.has-chip{padding-right:74px;}
+  .mtile .mt-pick{border:0;border-top:1px solid rgba(255,255,255,.07);background:#10151f;color:var(--mut);
+    font-family:var(--body);font-size:12px;font-weight:800;padding:8px 13px;text-align:left;cursor:pointer;}
+  .mtile .mt-pick:hover{color:var(--ink);filter:none;}
+  .mtile .mt-pick[hidden]{display:none;}
+  /* Dressed once a club (or a decade) has been played, so the tile itself is
+     the receipt. The colour comes from clubSkin, the call the reels use. */
+  .mtile.clubbed{border-color:var(--md-accent,rgba(255,255,255,.09));}
+  .mw-pro{padding:11px 13px;gap:8px;}
+  .mw-pro .td-end{margin:0;}
+
+  /* ── the three doors ───────────────────────────────────────────────────── */
+  .hrow{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:10px 0 4px;}
+  .hdoor{display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px 6px;border-radius:12px;
+    border:1px solid rgba(255,255,255,.09);background:#121722;color:var(--ink);font-family:var(--body);
+    cursor:pointer;width:100%;}
+  .hdoor:hover{background:#1a2333;filter:none;}
+  .hdoor b{font-size:12.5px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;}
+  .hu-i{width:22px;height:22px;fill:none;stroke:var(--orange);stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;}
+  .hu-long{display:none;}
+  /* ── THE FRONT PAGE ON A DESKTOP: Run The Diamond's bento ──────────────
+     The page widens (the draft's own :has rule, applied to home), Classic
+     splits into its words on the left and its court on the right, the daily
+     card is the tall card beside the mode tiles, and the three doors are a
+     quiet row of links. Every rule is inside the query, so a phone renders
+     the stack it always has. */
+  @media(min-width:920px){
+    .wrap:has(#s-home.active){max-width:1040px;}
+    /* Rows of 1fr above and below the words centre them against the court,
+       which is the taller of the two columns. */
+    .classic{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);
+      grid-template-rows:1fr auto auto auto auto 1fr;
+      column-gap:30px;align-items:center;padding:24px 26px 22px;}
+    .classic > *{grid-column:1;}
+    .classic .cl-head{grid-row:2;}
+    .classic .cl-plans{grid-row:3;}
+    .classic .cl-career{grid-row:4;}
+    .classic #b-start{grid-row:5;}
+    .classic .hero{grid-column:2;grid-row:1 / -1;margin:0;max-width:none;}
+    .classic .herocourt{aspect-ratio:1/0.74;}
+    .classic .cl-head{text-align:left;}
+    .classic .cl-say{margin:0;}
+    .classic .cl-title{font-size:42px;}
+    .cl-career{justify-content:flex-start;}
+    .cl-career .lastrun{text-align:left;}
+    .hp-bento{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,2fr);gap:14px;margin-top:14px;}
+    .dailycard{flex-direction:column;align-items:stretch;justify-content:space-between;gap:16px;
+      padding:20px 20px 22px;height:100%;}
+    .dc-title{font-size:30px;}
+    .dc-slots{display:flex;}
+    .dc-sub{font-size:13.5px;}
+    .dc-go{align-self:flex-start;font-size:15px;padding:12px 20px;}
+    .hp-tiles{display:block;}
+    .mw-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;}
+    .hp-puzzles{margin:6px 0 14px;}
+    .pz-row{gap:14px;}
+    .pz{padding:15px 18px 16px;gap:4px;}
+    .pz-name{font-size:28px;}
+    .pz-sub{font-size:13.5px;}
+    .pz-ico{width:30px;height:30px;}
+    .mtile{background:linear-gradient(150deg,color-mix(in srgb,var(--c) 22%,#141a26),#141a26 70%);}
+    .mtile .mt-main{grid-template-columns:minmax(0,1fr);grid-template-areas:"ico" "tag" "name" "sub";
+      align-items:start;align-content:start;row-gap:3px;flex:1;padding:15px 16px 16px;min-height:132px;
+      background:transparent;}
+    .mtile .mt-main:hover{background:rgba(255,255,255,.04);}
+    .mtile .mt-ico{margin-bottom:8px;width:30px;height:30px;}
+    .mtile .mt-name{font-family:var(--display);font-weight:400;font-size:22px;text-transform:uppercase;
+      letter-spacing:.02em;line-height:1;white-space:normal;}
+    .mtile .mt-main.has-chip{padding-right:16px;}
+    .mtile .mt-pick{background:rgba(0,0,0,.18);}
+    .mw-pro{justify-content:flex-start;padding:15px 16px 16px;}
+    .mw-pro .mt-name{margin-bottom:4px;}
+    .mw-pro .td-end{justify-content:flex-start;margin-top:6px;}
+    .mw-pro .td-end span{flex:1 0 100%;min-width:0;text-align:left;font-size:10.5px;}
+    .mw-pro .td-end button{padding:4px 8px;font-size:11px;}
+    .mw-pro .td-pro{margin:10px 0 0;padding:0;text-align:left;}
+    #classic #b-start{margin-top:4px;}
+    #b-modes{display:none;}
+    .hrow{display:flex;justify-content:center;gap:34px;margin:14px 0 8px;}
+    .hdoor{flex-direction:row;gap:9px;width:auto;padding:6px 2px;border:0;background:none;color:var(--mut);}
+    .hdoor:hover{background:none;color:var(--ink);}
+    .hdoor .hu-i{width:19px;height:19px;}
+    .hdoor b{font-size:13.5px;}
+    .hu-long{display:inline;}
+    .hu-short{display:none;}
+  }
+
+
+  /* The two pace meters on the draft's fit card, in the plans' own colours. */
+  .fitrow.pace .meter i{background:var(--orange);}
+  .fitrow.pace.grind .meter i{background:#60a5fa;}
+  .styline{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0 0;}
+  .styline .sty{font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;
+    padding:3px 8px;border-radius:999px;background:rgba(240,120,45,.14);color:#f6a66e;}
+  .styline .sty.mid{background:rgba(255,255,255,.06);color:var(--dim);}
+
+  /* ── the game plan picker, on the season screen ─────────────────────── */
+  .plans{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin:12px 0 6px;}
+  .plan{position:relative;display:flex;flex-direction:column;align-items:center;gap:4px;min-width:0;
+    padding:10px 6px 9px;border-radius:12px;background:#0b0f18;border:1px solid rgba(255,255,255,.1);
+    color:var(--ink);font-family:var(--body);cursor:pointer;box-shadow:none;width:auto;}
+  .plan:hover{filter:none;border-color:rgba(255,255,255,.28);}
+  .plan .pl-name{font-size:12.5px;font-weight:800;line-height:1.2;text-align:center;}
+  .plan .pl-pace{font-size:10.5px;color:var(--dim);font-family:var(--num);font-variant-numeric:tabular-nums;}
+  .plan .pl-fit{display:block;width:80%;height:5px;border-radius:3px;background:#1c2536;overflow:hidden;}
+  .plan .pl-fit.none{background:transparent;}
+  .plan .pl-fit i{display:block;height:100%;border-radius:3px;background:var(--mut);}
+  .plan .pl-eff{font-family:var(--display);font-size:17px;letter-spacing:.02em;line-height:1;}
+  .plan .pl-may{font-size:10.5px;color:var(--mut);font-weight:700;}
+  .plan .pl-pick{position:absolute;top:-8px;left:50%;transform:translateX(-50%);white-space:nowrap;
+    font-size:8.5px;letter-spacing:.12em;text-transform:uppercase;font-weight:800;padding:2px 6px;
+    border-radius:999px;background:#101522;border:1px solid rgba(255,255,255,.2);color:var(--mut);}
+  .plan.run .pl-fit i{background:var(--orange);} .plan.grind .pl-fit i{background:#60a5fa;}
+  .plan.on{background:#131a28;}
+  .plan.run.on{border-color:var(--orange);box-shadow:0 0 0 1px var(--orange) inset;}
+  .plan.balanced.on{border-color:var(--mut);box-shadow:0 0 0 1px var(--mut) inset;}
+  .plan.grind.on{border-color:#60a5fa;box-shadow:0 0 0 1px #60a5fa inset;}
+  .plan-why{font-size:12.5px;color:var(--mut);text-align:center;margin:4px 0 12px;line-height:1.4;}
   .lgstrip{display:flex;flex-wrap:wrap;justify-content:center;gap:4px 12px;margin:-4px 0 14px;
     font-size:12px;color:var(--dim);font-weight:700;text-align:center;}
   .lgstrip b{color:var(--mut);font-family:var(--num);font-variant-numeric:tabular-nums;}
@@ -2231,7 +2425,7 @@
 <header class="mast">
   <div class="eyebrow">RunThe.GG</div>
   <h1><span class="l1">Run The</span> <span class="l2">Floor</span></h1>
-  <p>Fix history. Pass through it. Take the court from it.</p>
+  <p>Real NBA history. Draft five. Chase a ring.</p>
 </header>
 
 <!-- ── home ─────────────────────────────────────────────────────────────── -->
@@ -2265,38 +2459,37 @@
     </div>
   </div>
 
-  <!-- TODAY'S PLAY, and the one button the dock carries on this screen. It is
-       whichever daily is still open, then Conquest, so the thumb always lands on
-       the thing a returning player came for. modes-ui.js sets its label and what
-       it does; it is here so the dock has a real element to move. -->
-  <button class="big" id="b-today" disabled>Loading...</button>
+  <!-- THE DAILY PUZZLES OPEN THE PAGE, as a strip and not as a hero.
+       Asked for by the owner: Fix History and Six Passes are today's puzzles,
+       so they sit at the top where a returning player looks first. They are
+       one short row of two cards (side by side on a phone too), because the
+       reason Classic leads still holds: a page whose biggest thing is a one
+       shot puzzle teaches somebody to play twice and leave. Each card says
+       today's state (open, or done with the result), and the line beside the
+       heading says how many are left. modes-ui.js fills both slots and shows
+       the section, because only that file knows whether a puzzle is done. -->
+  <section class="hp-puzzles" id="hp-puzzles" aria-labelledby="pz-h" hidden>
+    <div class="pz-head"><h2 id="pz-h">Daily puzzles</h2><span class="pz-left" id="pz-left"></span></div>
+    <div class="pz-row"><div class="pz-slot" id="pz-fix"></div><div class="pz-slot" id="pz-ps"></div></div>
+  </section>
 
-  <!-- THE MODES, drawn by modes-ui.js once the league has loaded. -->
-  <div class="mhome" id="modes-home"></div>
-
-  <!-- THE QUIET ROW. Everything a returning player might want that is not a
-       game: the boards for every mode in one sheet, the career, the rules. -->
-  <nav class="quietrow" id="home-quiet" aria-label="More">
-    <button class="qlink" id="b-home-boards">Leaderboards</button>
-    <button class="qlink" id="b-home-career">Career</button>
-    <button class="qlink" id="b-home-howto">How to play</button>
-  </nav>
-
-  <!-- QUICK DRAFT IS A SHEET, opened from its tile. It is four ways to play one
-       game, and on the front page they were four doors at the weight of the
-       three games above them. The court and the reels come with it, because
-       they are a picture of this mode and nothing else, and they only spin
-       while the sheet is open. `hidden` needs its own rule below, because the
-       sheet sets display:flex. -->
-  <div class="qd-sheet" id="qd-sheet" hidden>
-  <div class="qd-panel" role="dialog" aria-modal="true" aria-labelledby="qd-title">
-  <div class="qd-top"><h2 id="qd-title">Quick Draft</h2>
-    <button class="ghost sm" id="qd-x">Close</button></div>
-  <!-- QUICK DRAFT: the game this page started as, now one way to play of four.
-       The court and the reels that used to open the page live in its card,
-       because they are a picture of exactly this mode and nothing else. -->
-  <div class="card qd" id="qd-card">
-  <div class="hero" id="hero">
+  <!-- CLASSIC IS THE HERO, AND THE REASON IS RETENTION.
+       Asked for by the owner: the two dailies are one shot each, so a front
+       page that leads with them teaches a new player to play twice and leave.
+       Classic is unlimited and it is the game this page was built as, so it is
+       the hero: the court and the reels spinning, the three game plans a
+       roster can run, the career so far, and one button, which the dock
+       carries on a phone. The puzzle strip above is short on purpose, so
+       Classic is still the first big thing on the screen. It used to be
+       called Quick Draft and lived in a sheet behind a tile. -->
+  <section class="card classic" id="classic" aria-labelledby="cl-title">
+    <div class="cl-head">
+      <span class="cl-eye">Classic <i>Unlimited</i></span>
+      <h2 class="cl-title" id="cl-title">Draft five. Pick your pace.</h2>
+      <p class="cl-say">Spin a season and a team. Sign five under a <b>$120M</b> cap.
+        Run them, or walk it up. Play 82 and chase a ring.</p>
+    </div>
+    <div class="hero" id="hero">
     <div class="reels heroreels">
       <div class="reelbox season waiting" id="h-box-s" aria-hidden="true">
         <div class="reel-strip" id="h-reel-s"></div>
@@ -2325,87 +2518,89 @@
       <div class="hoop"></div>
     </div>
   </div>
-    <p class="dim qd-say">Spin a season and a team. Sign five under a
-      <b>$120M</b> cap. Play 82 and chase a ring.</p>
-    <button class="big" id="b-start">Start a draft</button>
-  </div>
-
-
-  <!-- TODAY'S RUN, AND IT SITS ABOVE THE OTHER TWO BECAUSE IT EXPIRES.
-       One Franchise and Decades are there every day and are chosen by mood.
-       This one is the same spins for everybody and it is gone at
-       midnight, so it is the only door on this page with a reason to be
-       taken NOW, and the only one that gives two people something to compare.
-       Its own class rather than .modedoor: it carries a result once it has
-       been played, which the other two never do. -->
-  <div class="modedoor daily" id="b-daily">
-    <button class="md-main" id="b-daily-go">
-      <span class="md-name" id="dl-name">Daily Draft</span>
-      <span class="md-sub" id="dl-sub">Same spins for everyone today.</span>
-    </button>
-    <span class="md-streak" id="dl-streak" hidden></span>
-  </div>
-
-  <!-- THE SECOND DOOR, and the reason it is a door rather than a setting.
-       One Franchise is the same game with the club reel held still, so it
-       could have been a checkbox on the start button. It is not, because
-       choosing WHICH club is the whole of it: a Knicks fan is not turning an
-       option on, they are picking the thing they came for. The football game
-       makes the same call with "More ways to play", and this is that row.
-
-       Quieter than Start a run and full width under it. It is a second way in,
-       not a competing call to action, and a compact pill beside the primary
-       would have made the page a menu of two equal things when it has one main
-       game. Its label carries the last club played, so a returning fan taps
-       once rather than going back through the picker. -->
-  <div class="modedoor" id="b-franchise">
-    <button class="md-main" id="b-franchise-go">
-      <span class="md-name" id="md-name">One Franchise</span>
-      <span class="md-sub" id="md-sub">Pick a team. Only the year spins.</span>
-    </button>
-    <!-- TWO TARGETS, AND ONLY ONCE THERE IS SOMETHING TO SWITCH FROM. Before a
-         club has been played the whole door opens the picker, because there is
-         no club to start. Afterwards the wide half starts the remembered club
-         in one tap and this one goes back to the thirty, which is the split a
-         fan of one team wants: they are not choosing every time, they are
-         playing their club. Hidden rather than disabled, since a control that
-         cannot do anything is a tap target that teaches nothing. -->
-    <button class="md-pick" id="b-franchise-pick" hidden
-      aria-label="Switch club"><span class="md-chev" aria-hidden="true"></span></button>
-  </div>
-
-  <!-- THE THIRD DOOR, AND IT WAS ALREADY BUILT. ERAS has been in engine.js
-       and the era filter has been in drawable() since the day run.js was
-       written, and nothing on this page could ever set one. A whole mode,
-       shipped, tested by the fixtures, and unreachable: the same shape as the
-       Dynasty leaderboard in the football game that rendered perfectly and
-       had no way in. What it needed was a door. -->
-  <div class="modedoor" id="b-decade">
-    <button class="md-main" id="b-decade-go">
-      <span class="md-name" id="dc-name">Decades</span>
-      <span class="md-sub" id="dc-sub">One decade. Every team. A starting five from one era.</span>
-    </button>
-    <button class="md-pick" id="b-decade-pick" hidden
-      aria-label="Switch decade"><span class="md-chev" aria-hidden="true"></span></button>
-  </div>
-
-  <!-- The career strip, which is hidden until there is a career to show. An
-       empty stat block on a first visit is worse than no stat block. -->
-  <div class="card" id="home-career" style="display:none">
-    <h2>Your career <span class="sub" id="hc-sub"></span></h2>
-    <div class="cstrip">
-      <span><span class="big-n" id="hc-runs">0</span> <span class="lab">runs</span></span>
-      <span><span class="big-n ring" id="hc-rings">0</span> <span class="lab">rings</span></span>
-      <span><span class="big-n" id="hc-best">-</span> <span class="lab">best</span></span>
+    <div class="cl-plans" id="cl-plans" aria-label="The three game plans">
+      <span class="clp run"><b>Run the floor</b><small>Guards, hands, boards</small></span>
+      <span class="clp bal"><b>Balanced</b><small>Talent does the talking</small></span>
+      <span class="clp grind"><b>Half court</b><small>Rim, post, defense</small></span>
     </div>
-    <p class="lastrun" id="hc-last"></p>
-    <div class="btnrow" style="margin-top:10px">
-      <button class="ghost sm" id="b-home-board" style="flex:1">Leaderboard</button>
+    <div class="cl-career" id="home-career" style="display:none">
+      <span><b class="big-n" id="hc-runs">0</b> <span class="lab">runs</span></span>
+      <span><b class="big-n ring" id="hc-rings">0</b> <span class="lab">rings</span></span>
+      <span><b class="big-n" id="hc-best">-</b> <span class="lab">best</span></span>
+      <button class="qlink" id="b-home-board">Leaderboard</button>
+      <span class="sub" id="hc-sub" hidden></span>
+      <p class="lastrun" id="hc-last"></p>
+    </div>
+    <button class="big" id="b-start" disabled>Start a draft</button>
+  </section>
+
+  <!-- THE DAILY DRAFT HAS A SPOT OF ITS OWN, which is Run The Diamond's front
+       page arriving here. It used to be a third of a row of three under the
+       Start button, the same size as One Franchise, so the one mode built for
+       everybody playing the same board read as a variant of the game rather
+       than as today's event. The whole card is the button, and the label on it
+       says what the press does in each state (play, pick it back up, share).
+
+       THE REST IS MORE WAYS TO PLAY. One Franchise, Decades, Conquest and
+       Endless are one grid (#mw-grid), two across beside the daily card on a
+       desktop. A phone keeps it in a sheet behind one door, because four
+       tiles under the button is a screen of scrolling past the thing the page
+       is for. It is ONE set of tiles, moved into the sheet when it opens and
+       back when it shuts, which is the dock's rule (move the real button,
+       never a copy) arriving at a grid. -->
+  <div class="hp-bento" id="hp-bento">
+    <button class="dailycard" id="b-daily-go">
+      <span class="dc-txt">
+        <span class="dc-hd"><span class="dc-eye" id="dl-name">Daily Draft</span>
+          <span class="dc-no" id="dl-day"></span>
+          <span class="dc-streak" id="dl-streak" hidden></span></span>
+        <b class="dc-title" id="dl-title">Same spins for everyone.</b>
+        <span class="dc-sub" id="dl-sub">One shot a day.</span>
+        <span class="dc-slots" id="dl-slots" aria-hidden="true"></span>
+      </span>
+      <span class="dc-go" id="dl-go">Play today</span>
+    </button>
+    <div class="hp-tiles" id="hp-tiles">
+      <div class="mw-grid" id="mw-grid">
+        <div class="mtile" id="b-franchise" style="--c:#f0782d">
+          <button class="mt-main" id="b-franchise-go">
+            <svg class="mt-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3 4 6l2 4 2-1v12h8V9l2 1 2-4-4-3c-.5 1.7-2 3-4 3s-3.5-1.3-4-3z"/></svg>
+            <span class="mt-tag" id="md-tag">Classic</span>
+            <b class="mt-name" id="md-name">One Franchise</b>
+            <small class="mt-sub" id="md-sub">Pick a team. Only the year spins.</small>
+          </button>
+          <button class="mt-pick" id="b-franchise-pick" hidden>Switch club</button>
+        </div>
+        <div class="mtile" id="b-decade" style="--c:#c084fc">
+          <button class="mt-main" id="b-decade-go">
+            <svg class="mt-ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7v5l3.5 2"/></svg>
+            <span class="mt-tag" id="dc-tag">Classic</span>
+            <b class="mt-name" id="dc-name">Decades</b>
+            <small class="mt-sub" id="dc-sub">One decade. Every team.</small>
+          </button>
+          <button class="mt-pick" id="b-decade-pick" hidden>Switch decade</button>
+        </div>
+        <div class="mtile" id="mw-cq" style="--c:#f2c14e"></div>
+        <div class="mtile mw-pro" id="mw-pro" style="--c:#fb923c"></div>
+      </div>
     </div>
   </div>
-  </div>
-  </div>
 
+  <button class="hp-modes" id="b-modes"><span class="hm-dots" id="hm-dots" aria-hidden="true"><i style="background:#f0782d"></i><i style="background:#c084fc"></i><i style="background:#f2c14e"></i><i style="background:#fb923c"></i></span>
+    <span class="hm-txt"><b>More ways to play</b><span class="hm-sub" id="hm-sub">One Franchise, Decades, Conquest</span></span>
+    <svg class="hm-arrow" viewBox="0 0 24 24" aria-hidden="true"><polyline points="9 6 15 12 9 18"/></svg></button>
+
+  <!-- THREE DOORS, which are reference rather than play: the rules, every
+       board in one sheet, the career. A phone draws them as three cards with the
+       short word; a desktop as a quiet row of links under the bento. -->
+  <nav class="hrow" id="home-quiet" aria-label="More">
+    <button class="hdoor" id="b-home-howto"><svg class="hu-i" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5.2h6a3 3 0 0 1 3 3v11a2.4 2.4 0 0 0-2.4-2.4H3z"/><path d="M21 5.2h-6a3 3 0 0 0-3 3v11a2.4 2.4 0 0 1 2.4-2.4H21z"/></svg>
+      <b><span class="hu-long">How to play</span><span class="hu-short">Rules</span></b></button>
+    <button class="hdoor" id="b-home-boards"><svg class="hu-i" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V12"/><path d="M10 20V4"/><path d="M16 20v-6"/><path d="M22 20H2"/></svg>
+      <b><span class="hu-long">Leaderboards</span><span class="hu-short">Leaders</span></b></button>
+    <button class="hdoor" id="b-home-career"><svg class="hu-i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-4.2 4.2-6.3 8-6.3s7 2.1 8 6.3"/></svg>
+      <b><span class="hu-long">Career</span><span class="hu-short">Career</span></b></button>
+  </nav>
 
   <!-- ONE FOLDED CARD, AND IT WAS FIFTY-FIVE PER CENT OF THE SCREEN.
        "How a run goes" and "Why five stars lose" were two open cards at the
@@ -2427,7 +2622,7 @@
        on a page of cards and the only thing different about it is that it
        opens. -->
   <details class="card howto" id="home-howto">
-    <summary><h2>How to play <span class="sub">five spins, one cap</span></h2>
+    <summary><h2>How to play <span class="sub">five spins, one cap, your pace</span></h2>
       <span class="ht-chev" aria-hidden="true"></span></summary>
 
     <p class="lgfacts">Built from <b id="ls-players">-</b> player-seasons, <b id="ls-clubs">-</b>
@@ -2479,11 +2674,20 @@
       team, and five willing helpers never do.
     </p>
 
+    <h3>Pick your pace</h3>
+    <p class="dim">
+      Before tip-off you pick a game plan. Run the floor needs a guard who
+      pushes it, hands in the passing lanes and rebounders to start the break.
+      Half court needs a rim protector, a big to play through and defense.
+      Running wins you more games. Grinding holds up better in May, when the
+      playoffs slow down. A plan your five cannot play costs you.
+    </p>
+
     <h3>Then it tells you what you built</h3>
     <p class="dim">
       When the fifth man signs, the game names your system: Showtime, the
-      Triangle, Grit and Grind, Pick and Roll, Twin Towers, Moreyball, Point
-      Center and more. They are tested against real lineups. The 1996 Bulls come
+      Triangle, Lob City, Run TMC, the Big Three, Grit and Grind, Twin Towers,
+      Moreyball, Five Out and more. They are tested against real lineups. The 1996 Bulls come
       back running the Triangle. The 1989 Pistons come back Grit and Grind. Get
       it wrong and it will tell you: five volume scorers are not a system. They
       are Too Many Mouths.
@@ -2590,6 +2794,12 @@
       <div class="cell"><div class="label">Defense</div><div class="value" id="p-drtg">-</div></div>
       <div class="cell"><div class="label">Rating</div><div class="value" id="p-rating">-</div></div>
     </div>
+    <p class="sysline" id="p-sys" hidden></p>
+    <!-- THE GAME PLAN, and the one call a player makes between the draft and
+         the tip. Three buttons, each saying how well these five can play it
+         and what it is worth now and in May. Drawn by renderPlans. -->
+    <div class="plans" id="p-plans" role="radiogroup" aria-label="Game plan"></div>
+    <p class="plan-why" id="p-plan-why"></p>
     <button class="big" id="b-play">Play all 82</button>
   </div>
 
@@ -2778,6 +2988,7 @@
     <p class="story" id="o-story"></p>
     <p class="dim" style="margin:0;font-size:13.5px" id="o-seed"></p>
     <div class="tags" id="o-tags"></div>
+    <p class="sysline" id="o-sys" hidden></p>
     <!-- THE WAY IN. Every game of the run opens into a box score and the tap
          is only made by somebody who already suspects it is there, so the run
          names its own best night and links to it. It is also the line a fan
@@ -2927,6 +3138,20 @@
       <button class="ghost" id="b-gs-prev">Previous</button>
       <button id="b-gs-x" style="flex:1">Close</button>
       <button class="ghost" id="b-gs-next">Next</button>
+    </div>
+  </div>
+</div>
+
+<!-- MORE WAYS TO PLAY, on a phone. The sheet holds nothing of its own: the
+     grid is moved in from the front page when it opens and back when it shuts
+     (openModes), so there is one set of tiles and one set of ids. -->
+<div class="sheet" id="modesheet" role="dialog" aria-modal="true" aria-labelledby="mw-h">
+  <div class="panel">
+    <h2 id="mw-h">More ways to play</h2>
+    <p class="dim mw-say">Classic, your way. Winners stay on. Two puzzles a day.</p>
+    <div id="mw-slot"></div>
+    <div class="btnrow" style="margin-top:14px">
+      <button id="b-mw-x" style="flex:1">Close</button>
     </div>
   </div>
 </div>
@@ -3134,11 +3359,11 @@
      number in the same commit as the edit, then run:
        node scripts/check-cachebust.mjs --update
      CI checks it on any push touching an .html or .js file. See CLAUDE.md. -->
-<script src="engine.js?v=24"></script>
-<script src="run.js?v=12"></script>
-<script src="badges.js?v=3"></script>
+<script src="engine.js?v=26"></script>
+<script src="run.js?v=13"></script>
+<script src="badges.js?v=4"></script>
 <script src="courts.js?v=1"></script>
-<script src="modes.js?v=8"></script>
+<script src="modes.js?v=9"></script>
 <!-- ACCOUNTS AND THE LEADERBOARD. All three are OPTIONAL: if the CDN is blocked
      or either file fails to load, the game runs exactly as it did, with runs
      kept in this browser and the board reporting itself unreachable. An account
@@ -3217,7 +3442,7 @@ var bold = function(text){
  * comes back still disagrees, say so in words instead of dying quietly. One
  * retry, so this can never become a reload loop.
  */
-var NEED_VERSION = 8;
+var NEED_VERSION = 9;
 (function bootCheck(){
   if (E && R && E.API_VERSION === NEED_VERSION && R.API_VERSION === NEED_VERSION) return;
   if (!/[?&]fresh=/.test(location.search)) {
@@ -3357,6 +3582,9 @@ window.addEventListener('error', function(ev){
    are playing on do not. */
 function show(id){
   document.body.classList.toggle('inplay', id !== 's-home');
+  /* The modes sheet opens over the front page and every tile in it leaves it,
+     so a screen change always puts the grid back where it lives. */
+  closeModes(true);
   /* A running reveal belongs to the screen it started on. Leaving without
      stopping it leaves an interval painting cells nobody can see, and on the
      way back it would race the fresh one. The front page's animation is the
@@ -3372,9 +3600,8 @@ function show(id){
      bracket is still at that game, so coming back offers the same door. */
   if (id !== 's-live' && LV && LV.timer) { clearTimeout(LV.timer); LV.timer = null; }
   if (id !== 's-brk') stopBracket();
-  /* The reels spin inside the Quick Draft sheet and only while it is open, so
-     any change of screen shuts the sheet and stops them. */
-  closeQuickDraft();
+  /* The reels spin on the front page and only while it is showing: a loop
+     left running behind the draft spins reels nobody can see, on a phone. */
   heroStop();
   if (window.RTF_MODES_UI) window.RTF_MODES_UI.leave(id);
   /* The club belongs to the draft. The season, the results and the home screen
@@ -3386,6 +3613,7 @@ function show(id){
   $(id).classList.add('active');
   renderDock(id);
   renderAppBar(id);
+  if (id === 's-home') heroStart();
   window.scrollTo(0, 0);
 }
 
@@ -3402,10 +3630,23 @@ function show(id){
  * Each screen names its primary action and, where there is one, a secondary.
  * A screen with neither gets an empty dock, which CSS hides.
  */
+var WIDE = window.matchMedia ? window.matchMedia('(min-width:920px)') : { matches: false };
+if (WIDE.addEventListener) WIDE.addEventListener('change', function(){
+  var on = document.querySelector('.screen.active');
+  if (on && on.id === 's-home') renderDock('s-home');
+});
 var DOCK_FOR = {
-  /* TODAY'S PLAY, not the draft. The draft is one of four ways in now, and
-     the button a thumb lands on is whichever daily is still open. */
-  's-home':   function(){ return [$('b-today')]; },
+  /* CLASSIC, because it is the unlimited mode and the front page leads with
+     it. A run in progress is the one thing ahead of it: the thumb lands on
+     Resume rather than on a button that starts over. */
+  's-home':   function(){
+    if (run && run.phase !== R.PHASES.OVER) return [$('b-resume')];
+    /* A DESKTOP KEEPS START IN THE CLASSIC CARD. There the card is two
+       columns, words left and court right, and Start belongs under the words
+       it answers; a bar pinned to the foot of a 900px window floats over the
+       daily card and the tiles instead. A phone docks it, where the thumb is. */
+    return WIDE.matches ? [] : [$('b-start')];
+  },
   's-draft':  function(){
     /* Between draws the action is the spin. During one it is picking a player
        off the board, which is not a button, so the dock carries the way OUT of
@@ -3440,7 +3681,7 @@ var DOCK_FOR = {
 var HOME_OF = {};
 
 function rememberHomes(){
-  var ids = ['b-today', 'b-start', 'b-spin', 'b-respin', 'b-play', 'b-skip', 'b-again',
+  var ids = ['b-resume', 'b-start', 'b-spin', 'b-respin', 'b-play', 'b-skip', 'b-again',
     'b-lv-fast', 'b-lv-next', 'b-brk-fast'];
   for (var i = 0; i < ids.length; i++) {
     var el = $(ids[i]);
@@ -3578,6 +3819,10 @@ function boot(){
     restore();
     if (window.RTF_MODES_UI) window.RTF_MODES_UI.onData();
     renderHome();
+    /* The dock reads the run: Resume when one was restored, Classic's Start
+       when not. And the court and the reels are the front page's picture, so
+       they start the moment there is a league to spin. */
+    if ($('s-home').classList.contains('active')) { renderDock('s-home'); heroStart(); }
     /* A RELOAD RESTORES THE OLD SCROLL POSITION, and the old position was
        somewhere down a draft board. Landing on the home page already scrolled
        past its own masthead reads as a broken page rather than a restored one. */
@@ -3995,7 +4240,8 @@ function frgMark(){ try { localStorage.setItem(FRG_KEY, '1'); } catch (e) {} pro
 
 function frgFill(){
   var C = E.CONSTANTS;
-  /* FOUR MODES, ONE LINE EACH, in the order the front page shows them. This
+  /* FOUR MODES, ONE LINE EACH, in the order the front page shows them, which
+     is Classic first since the front page was rebuilt around it. This
      guide used to be the draft's rules in three steps, which was right while
      the draft was the game. It is one of four ways in now, and a first-timer
      told only how to draft would never find the other three.
@@ -4004,14 +4250,14 @@ function frgFill(){
      distinctive thing that mode does and check-home holds the guide to saying
      it. Every number is read off the constants, never typed. */
   var steps = [
-    '<b>Fix History</b>, every day. One real team that fell short. '
-      + 'Work the phones through four trade windows and see if they win it.',
-    '<b>Six Passes</b>, every day. Get the ball from one legend to another '
-      + 'through real teammates.',
+    '<b>Classic.</b> ' + NUMWORD(E.SLOTS.length, true) + ' picks under a '
+      + money(C.CAP_MUSD) + ' cap. Pick how fast you play. Play ' + C.REGULAR_SEASON_GAMES
+      + ', and <b>every Game 7 is yours to play</b>.',
     '<b>Conquest.</b> Winners stay on. Beat real teams and take their best guys.',
-    '<b>Quick Draft.</b> ' + NUMWORD(E.SLOTS.length, true) + ' picks under a '
-      + money(C.CAP_MUSD) + ' cap. Play ' + C.REGULAR_SEASON_GAMES
-      + ', and <b>every Game 7 is yours to play</b>.'
+    '<b>Fix History</b>, every day. One real team that fell short. '
+      + 'Work the phones through four trade windows.',
+    '<b>Six Passes</b>, every day. Get the ball from one legend to another '
+      + 'through real teammates.'
   ];
   var ol = $('frg-steps');
   ol.textContent = '';
@@ -4020,7 +4266,7 @@ function frgFill(){
     li.innerHTML = steps[i];
     ol.appendChild(li);
   }
-  $('frg-goal').innerHTML = 'Start with <b>today\'s Fix</b>. It takes two minutes.';
+  $('frg-goal').innerHTML = 'Start with <b>a Classic draft</b>. The button is at the bottom.';
 }
 
 /* Shown on the FRONT PAGE only, and only once the data has landed, because
@@ -4110,13 +4356,36 @@ function renderEras(){
   }
 }
 
+/* MORE WAYS TO PLAY, the phone's sheet. It owns no tiles: the one grid is
+   MOVED in when it opens and back to the front page when it shuts, which is
+   the dock's rule (move the real button, never a copy). One set of tiles means
+   one set of ids and one place each tile's state is painted. */
+function openModes(){
+  var g = $('mw-grid');
+  if (!g) return;
+  $('mw-slot').appendChild(g);
+  sheetReturn = document.activeElement;
+  $('modesheet').classList.add('open');
+  var first = g.querySelector('button');
+  (first || $('b-mw-x')).focus();
+}
+function closeModes(quiet){
+  var g = $('mw-grid'), home = $('hp-tiles');
+  if (g && home && g.parentNode !== home) home.appendChild(g);
+  if (!$('modesheet').classList.contains('open')) return;
+  $('modesheet').classList.remove('open');
+  if (!quiet && sheetReturn && sheetReturn.focus) { try { sheetReturn.focus(); } catch (e) {} }
+  sheetReturn = null;
+}
+
 function renderEraDoor(){
   var door = $('b-decade'), main = $('b-decade-go');
-  var name = $('dc-name'), sub = $('dc-sub'), pick = $('b-decade-pick');
+  var name = $('dc-name'), sub = $('dc-sub'), tag = $('dc-tag'), pick = $('b-decade-pick');
   if (!door || !main || !sub) return;
   var last = DATA ? lastEra() : null;
   if (!last) {
-    door.className = 'modedoor';
+    door.className = 'mtile';
+    tag.textContent = 'Classic';
     name.textContent = 'Decades';
     name.style.removeProperty('color');
     sub.textContent = 'One decade. Every team. '
@@ -4125,12 +4394,13 @@ function renderEraDoor(){
     main.onclick = openEras;
     return;
   }
-  /* The same "this one is remembered" treatment the club door gets, in the
+  /* The same "this one is remembered" treatment the club tile gets, in the
      page's own accent. A decade has no colours of its own and borrowing a
      club's would say something false about whose era it was. */
   var yrs = R.eraSeasons(last);
-  door.className = 'modedoor clubbed';
+  door.className = 'mtile clubbed';
   door.style.setProperty('--md-accent', 'rgba(240,120,45,.55)');
+  tag.textContent = 'Decades';
   name.textContent = ERA_NAMES[last] || last;
   name.style.color = 'var(--orange)';
   sub.textContent = yrs.length
@@ -6287,6 +6557,34 @@ function renderFit(){
     box.appendChild(el);
   }
 
+  /* HOW FAST IT CAN PLAY, drafted toward rather than found out afterwards.
+     The plan is picked at tip-off, and a fit a player cannot see while
+     drafting is a dice roll rather than a strategy, which is this card's own
+     argument about spacing. */
+  var tagged = R.taggedRoster(run);
+  var fits = E.paceFits(tagged, P);
+  [['run', 'Run', fits.run], ['grind', 'Half court', fits.grind]].forEach(function(r){
+    var el = document.createElement('div');
+    el.className = 'fitrow pace ' + r[0];
+    var nm = document.createElement('span'); nm.className = 'nm'; nm.textContent = r[1];
+    var meter = document.createElement('span'); meter.className = 'meter';
+    var bar = document.createElement('i'); bar.style.width = Math.max(2, Math.round(r[2] * 100)) + '%';
+    meter.appendChild(bar);
+    var val = document.createElement('span'); val.className = 'val'; val.textContent = String(Math.round(r[2] * 100));
+    el.appendChild(nm); el.appendChild(meter); el.appendChild(val);
+    box.appendChild(el);
+  });
+  var sty = E.rosterStyle(tagged, P, fits);
+  var styl = document.createElement('p');
+  styl.className = 'styline';
+  ['size', 'speed', 'range'].forEach(function(k){
+    var t = document.createElement('span');
+    t.className = 'sty' + (sty[k] === 'Balanced' ? ' mid' : '');
+    t.textContent = sty[k] === 'Balanced' ? (k === 'size' ? 'Mid size' : k === 'speed' ? 'Mid pace' : 'Some range') : sty[k];
+    styl.appendChild(t);
+  });
+  box.appendChild(styl);
+
   /* The identity, once there is enough roster for one to mean anything. */
   var line = document.createElement('p');
   line.className = 'sysline';
@@ -6296,16 +6594,34 @@ function renderFit(){
     var b = document.createElement('b');
     b.textContent = f.system.name;
     line.appendChild(b);
-    line.appendChild(document.createTextNode(f.system.blurb));
+    /* THIS ROSTER'S OWN NAMES, not the system's dictionary entry: the story
+       says who is doing it (E.systemStory). The blurb is the fallback for a
+       cached engine that does not tell one. */
+    line.appendChild(document.createTextNode(f.system.story || f.system.blurb));
   } else {
     var b2 = document.createElement('b');
     b2.textContent = 'No system';
     line.appendChild(b2);
     line.appendChild(document.createTextNode(
       NUMWORD(E.SLOTS.length, true)
-        + ' good players. Nothing they do together.'));
+        + ' good players. Nothing they do together.'
+        + (E.systemStory ? ' ' + E.systemStory('none', tagged, P) : '')));
   }
   box.appendChild(line);
+}
+
+/* THE SYSTEM LINE on the season and results screens: the name, then the
+   story in this roster's own names (E.systemStory). Hidden with no system,
+   because "no identity" is already said by the tag and the fit card. */
+function paintSysLine(el, sys){
+  if (!el) return;
+  el.textContent = '';
+  el.hidden = !sys;
+  if (!sys) return;
+  var b = document.createElement('b');
+  b.textContent = sys.name;
+  el.appendChild(b);
+  el.appendChild(document.createTextNode(sys.story || sys.blurb || ''));
 }
 
 function renderRoster(slotsEl){
@@ -6369,20 +6685,32 @@ function toSeason(){
   $('b-play').style.display = '';
   $('b-play').textContent = 'Play all 82';
   show('s-season');
+  paintSeasonCard();
+
+  /* THE FIVE MEN, so the roster is on screen for the season it is playing.
+     R.capOf rather than the constant, which is the one that stays true if a
+     mode is ever given a cap of its own, and R.remaining already nets off the
+     re-spin fees, so this is the money that actually left the budget rather
+     than the money that went on players. */
+  renderRoster($('p-slots'));
+  $('p-spend').textContent = money(R.capOf(run) - R.remaining(run))
+    + ' of ' + money(R.capOf(run)) + ' spent';
+}
+
+/* The card above the Play button: the ratings, the plan, and Vegas. Its own
+   function because choosing a plan redraws exactly this and nothing else. */
+function paintSeasonCard(){
   var proj = R.projectSeason(run, 120);
-  var tagged = run.roster.map(function(p, i){
-    var c = {}; for (var k in p) c[k] = p[k];
-    c._slot = E.SLOTS[run.slotIndex[i]];
-    return c;
-  });
-  var chem = E.resolveChemistry(tagged);
-  var st = E.rosterFit(tagged);
-  var ortg = E.rosterOffense(tagged, chem.bonus, st.bonus);
-  var drtg = E.rosterDefense(tagged, chem.bonus);
+  var tagged = R.taggedRoster(run);
+  /* E.rosterRatings, the one sum, with the plan in it: the numbers on this
+     card are the numbers the season plays. */
+  var rr = E.rosterRatings(tagged, { plan: run.plan });
+  var st = rr.structure, ortg = rr.ortg, drtg = rr.drtg;
 
   $('p-ortg').textContent = ortg.toFixed(1);
   $('p-drtg').textContent = drtg.toFixed(1);
-  $('p-rating').textContent = E.overallRating(E.teamWinPct(ortg, drtg)).toFixed(0);
+  $('p-rating').textContent = rr.rating.toFixed(0);
+  renderPlans(tagged, rr);
   /* "PROJECTED 41-41" OVER A LIVE 45-29 READS AS A BROKEN NUMBER, and this
      card stays on screen through the whole season. It is a projection made
      BEFORE tip-off, which is honest and useful, and the only thing wrong was
@@ -6396,15 +6724,72 @@ function toSeason(){
   $('p-proj').textContent = st.archetype.name + ' · Vegas: '
     + proj.typical + ' wins · ' + oddsWord(proj.titlePct) + ', '
     + (proj.titlePct < 1 ? 'under 1%' : proj.titlePct + '%');
+  paintSysLine($('p-sys'), st.system);
+}
 
-  /* THE FIVE MEN, so the roster is on screen for the season it is playing.
-     R.capOf rather than the constant, which is the one that stays true if a
-     mode is ever given a cap of its own, and R.remaining already nets off the
-     re-spin fees, so this is the money that actually left the budget rather
-     than the money that went on players. */
-  renderRoster($('p-slots'));
-  $('p-spend').textContent = money(R.capOf(run) - R.remaining(run))
-    + ' of ' + money(R.capOf(run)) + ' spent';
+/* THE THREE PLANS, each read off these five men.
+ *
+ * What a plan is worth is said in WINS for the season, because a rating point
+ * is a number nobody feels, and in a word for May, because the playoff edge is
+ * what the run plan gives back and the half court plan saves up. A plan nobody
+ * has chosen is the coach's pick, marked as such; pressing one makes it yours
+ * and it is saved with the run. */
+function planWins(tagged, key){
+  var base = E.rosterRatings(tagged, { plan: 'balanced' });
+  var with_ = E.rosterRatings(tagged, { plan: key });
+  var w = function(r){ return 82 * E.teamWinPct(r.ortg, r.drtg); };
+  return Math.round(w(with_) - w(base));
+}
+function renderPlans(tagged, rr){
+  var box = $('p-plans');
+  if (!box) return;
+  var fits = rr.tempo ? rr.tempo.fits : E.paceFits(tagged);
+  var chosen = rr.tempo ? rr.tempo.plan : 'balanced';
+  var auto = !run.plan;
+  box.innerHTML = '';
+  E.PLAN_KEYS.forEach(function(key){
+    var pl = E.PLANS[key], eff = E.planEffect(key, fits);
+    var b = document.createElement('button');
+    b.className = 'plan ' + key + (key === chosen ? ' on' : '');
+    b.setAttribute('role', 'radio');
+    b.setAttribute('aria-checked', key === chosen ? 'true' : 'false');
+    var fit = key === 'run' ? fits.run : key === 'grind' ? fits.grind : null;
+    var dw = planWins(tagged, key);
+    var may = eff.poNet >= 0.4 ? 'Built for May' : eff.poNet <= -0.2 ? 'Hurts in May' : 'Same in May';
+    b.innerHTML = '<b class="pl-name">' + pl.name + '</b>'
+      + '<span class="pl-pace">' + (pl.pace || E.CONSTANTS.LEAGUE_PACE) + ' a night</span>'
+      + (fit == null ? '<span class="pl-fit none"></span>'
+        : '<span class="pl-fit"><i style="width:' + Math.round(fit * 100) + '%"></i></span>')
+      + '<span class="pl-eff">' + (key === 'balanced' ? 'No change'
+        : (dw > 0 ? '+' : dw < 0 ? '-' : '') + Math.abs(dw) + (Math.abs(dw) === 1 ? ' win' : ' wins')) + '</span>'
+      + '<span class="pl-may">' + (key === 'balanced' ? 'Talent decides' : may) + '</span>'
+      + (key === chosen && auto ? '<span class="pl-pick">Coach\'s pick</span>' : '');
+    b.onclick = function(){
+      run.plan = key;
+      save();
+      paintSeasonCard();
+    };
+    box.appendChild(b);
+  });
+  var why = $('p-plan-why');
+  if (why) why.textContent = planWhy(fits, chosen);
+}
+/* ONE SENTENCE ON WHY, read off the parts that make each fit. A fit is five
+   numbers under one bar, and the bar alone cannot tell a player which man to
+   draft next time. */
+function planWhy(fits, chosen){
+  var p = fits.parts || {};
+  if (chosen === 'run') {
+    var weak = [['pusher', 'a guard who pushes it'], ['hawks', 'hands in the passing lanes'],
+      ['glass', 'rebounders to start the break']].sort(function(a, b){ return p[a[0]] - p[b[0]]; })[0];
+    return 'Running. ' + (p[weak[0]] < 0.5 ? 'It would run better with ' + weak[1] + '.' : 'This five can really go.');
+  }
+  if (chosen === 'grind') {
+    var gw = [['anchor', 'a rim protector'], ['post', 'a big to play through'],
+      ['defense', 'more defense']].sort(function(a, b){ return p[a[0]] - p[b[0]]; })[0];
+    return 'Walking it up. ' + (p[gw[0]] < 0.5 ? 'It would grind better with ' + gw[1] + '.' : 'This five can lock you down.');
+  }
+  return 'Balanced. No pace bonus and no pace cost. The talent decides it.';
 }
 
 /* THE SEASON IS ALREADY PLAYED BEFORE THE FIRST CELL LIGHTS.
@@ -8133,6 +8518,9 @@ function renderOver(out){
         + (DATA.ratingTable.length + 1).toLocaleString('en-US') + ' all time'
       : '');
 
+  /* The identity, said in this roster's names, under the tags. */
+  paintSysLine($('o-sys'), out.structure && out.structure.system);
+
   var tags = $('o-tags');
   tags.textContent = '';
   function tag(text, kind){
@@ -8149,6 +8537,14 @@ function renderOver(out){
      bonus is already in the strengths below, so it is not said twice. */
   var shape = out.structure && out.structure.archetype ? out.structure.archetype.name : null;
   if (shape && out.coach.strengths.indexOf(shape) === -1) tag(shape);
+  /* HOW IT PLAYED: the plan it ran, and the three words for its shape. The
+     plan is a tag of its own colour when it paid and a bad one when it cost,
+     read off the same net the season used. */
+  if (out.tempo && out.tempo.plan && out.tempo.plan !== 'balanced')
+    tag(out.tempo.name + ' · ' + out.tempo.pace, out.tempo.net > 0.1 ? 'good' : out.tempo.net < -0.1 ? 'bad' : '');
+  if (out.style) ['size', 'speed', 'range'].forEach(function(k){
+    if (out.style[k] && out.style[k] !== 'Balanced') tag(out.style[k]);
+  });
   for (var i = 0; i < out.coach.strengths.length; i++) tag(out.coach.strengths[i], 'good');
   for (var j = 0; j < out.coach.weaknesses.length; j++) tag(out.coach.weaknesses[j], 'bad');
 
@@ -10470,15 +10866,17 @@ function showProfileTab(which){
    same call the reels make. */
 function renderModeDoor(){
   var door = $('b-franchise'), main = $('b-franchise-go');
-  var name = $('md-name'), sub = $('md-sub'), pick = $('b-franchise-pick');
+  var name = $('md-name'), sub = $('md-sub'), tag = $('md-tag'), pick = $('b-franchise-pick');
   if (!door || !main || !sub) return;
-  /* DATA is what makes clubSeasons answerable, so the door stays in its plain
+  /* DATA is what makes clubSeasons answerable, so the tile stays in its plain
      state through the boot rather than printing a club with no season count
      beside it. */
   var last = DATA ? lastClub() : null;
   if (!last) {
-    door.className = 'modedoor';
+    door.className = 'mtile';
     door.style.removeProperty('--md-accent');
+    door.style.setProperty('--c', '#f0782d');
+    tag.textContent = 'Classic';
     name.textContent = 'One Franchise';
     name.style.removeProperty('color');
     sub.textContent = 'Pick a team. Only the year spins.';
@@ -10486,10 +10884,14 @@ function renderModeDoor(){
     main.onclick = openClubs;
     return;
   }
+  /* The tile wears the club: its name in the club's accent, the mode name as
+     the tag over it, so a returning Bulls player reads Bulls first. */
   var skin = E.clubSkin(last), seasons = R.clubSeasons(last).length;
-  door.className = 'modedoor clubbed';
+  door.className = 'mtile clubbed';
   door.style.setProperty('--md-accent', skin.accent);
-  name.textContent = 'One Franchise · ' + E.teamName(last);
+  door.style.setProperty('--c', skin.accent);
+  tag.textContent = 'One Franchise';
+  name.textContent = E.teamName(last);
   name.style.color = skin.accent;
   sub.textContent = E.team(last).full + '. ' + seasons + ' seasons on the wheel.';
   pick.hidden = false;
@@ -10503,56 +10905,58 @@ function renderModeDoor(){
    and resumes, which is the same rule the other two doors follow: a door that
    says Resume resumes. */
 function renderDailyDoor(){
-  var door = $('b-daily'), main = $('b-daily-go');
-  var name = $('dl-name'), sub = $('dl-sub'), streak = $('dl-streak');
-  if (!door || !main) return;
+  var card = $('b-daily-go');
+  var eye = $('dl-name'), day = $('dl-day'), title = $('dl-title'), sub = $('dl-sub'),
+    go = $('dl-go'), streak = $('dl-streak');
+  if (!card) return;
   var n = todayNumber(), s = dailyState();
   var live = run && run.daily === n && run.phase !== R.PHASES.OVER;
   var done = dailyDone();
 
-  door.className = 'modedoor daily' + (done && !live ? ' done' : '');
+  card.className = 'dailycard' + (done && !live ? ' played' : '');
+  eye.textContent = 'Daily Draft';
+  day.textContent = 'Day ' + n;
   if (live) {
-    name.textContent = 'Daily Draft · Day ' + n;
+    title.textContent = run.phase === R.PHASES.DRAFT
+      ? run.roster.length + ' of ' + E.SLOTS.length + ' signed'
+      : NUMWORD(E.SLOTS.length, true) + ' signed';
     sub.textContent = run.phase === R.PHASES.DRAFT
-      ? run.roster.length + ' of ' + E.SLOTS.length
-        + ' signed. Pick it back up.'
-      : NUMWORD(E.SLOTS.length, true) + ' signed. 82 to play.';
-    main.onclick = function(){ show('s-draft'); renderDraft(); };
+      ? 'Your draft is waiting. Same board as everyone.'
+      : '82 to play. Same board as everyone.';
+    go.textContent = 'Pick it back up';
+    card.onclick = function(){ show('s-draft'); renderDraft(); };
   } else if (done) {
-    name.textContent = 'Day ' + n + ' · ' + s.label;
-    sub.textContent = s.headline + '. Send it. Back tomorrow.';
-    main.onclick = shareDaily;
+    title.textContent = s.label;
+    sub.textContent = s.headline + '. Send it. New board tomorrow.';
+    go.textContent = 'Share it';
+    card.onclick = shareDaily;
   } else {
-    name.textContent = 'Daily Draft · Day ' + n;
-    sub.textContent = 'Same ' + NUMWORD(E.SLOTS.length)
-      + ' spins for everyone today.';
-    main.onclick = function(){ startRun(null, null, true); };
+    title.textContent = 'Same ' + NUMWORD(E.SLOTS.length) + ' spins for everyone';
+    sub.textContent = 'One shot today. Beat your friends on the same board.';
+    go.textContent = 'Play today';
+    card.onclick = function(){ startRun(null, null, true); };
   }
 
   /* THE STREAK IS SHOWN ONLY WHILE IT IS STILL ALIVE. A count of days that
      ended last March is not a streak, it is a fact about March, and printing
-     it beside today's door reads as a claim about right now. It survives
+     it beside today's card reads as a claim about right now. It survives
      today being unplayed, because a streak is not broken until a day is
      MISSED: yesterday's run is what it stands on.
 
      AND ONE DAY IS NOT A STREAK. Every first-time player finishes the daily
-     and is handed a gold "1 DAY" for having played once, which says nothing
-     and devalues the number on the day it starts meaning something. Two is
-     where a run of days begins. */
+     and is handed a "1 DAY" for having played once, which says nothing and
+     devalues the number on the day it starts meaning something. Two is where
+     a run of days begins. */
+  var slots = $('dl-slots');
+  if (slots) {
+    var filled = live ? run.roster.length : done ? E.SLOTS.length : 0;
+    slots.innerHTML = E.SLOTS.map(function(sl, i){
+      return '<i' + (i < filled ? ' class="on"' : '') + '>' + sl + '</i>'; }).join('');
+  }
   var alive = s && s.streak > 1 && (s.lastDone === n || s.lastDone === n - 1);
   streak.hidden = !alive;
   if (alive) {
-    door.className += ' streaked';
-    streak.textContent = '';
-    var b = document.createElement('b');
-    b.textContent = s.streak;
-    var lab = document.createElement('span');
-    lab.textContent = 'days';
-    streak.appendChild(b);
-    streak.appendChild(lab);
-    /* The label replaces the two nodes inside for a screen reader, which
-       would otherwise read "3" and "days" as two separate things a row
-       apart from the door they belong to. */
+    streak.textContent = s.streak + ' days';
     streak.setAttribute('aria-label', s.streak + ' days in a row');
   }
 }
@@ -11065,6 +11469,16 @@ $('clubsheet').addEventListener('click', function(ev){
   if (ev.target === $('clubsheet')) closeClubs(); });
 $('erasheet').addEventListener('click', function(ev){
   if (ev.target === $('erasheet')) closeEras(); });
+$('modesheet').addEventListener('click', function(ev){
+  if (ev.target === $('modesheet')) closeModes(); });
+$('b-modes').onclick = openModes;
+$('b-mw-x').onclick = function(){ closeModes(); };
+/* ANY PRESS INSIDE THE GRID LEAVES THE SHEET. Every tile goes somewhere (a
+   screen, a picker, the offer), so the sheet shuts behind it. Bubble phase, so
+   the tile's own handler has already run, and quietly, so focus is not pulled
+   back to the door over whatever the tile just opened. */
+$('mw-grid').addEventListener('click', function(ev){
+  if (ev.target.closest && ev.target.closest('button')) closeModes(true); });
 $('gamesheet').addEventListener('click', function(ev){
   if (ev.target === $('gamesheet')) closeGame(); });
 $('boardsheet').addEventListener('click', function(ev){
@@ -11075,7 +11489,7 @@ $('boardsheet').addEventListener('click', function(ev){
    order does not matter. */
 document.addEventListener('keydown', function(ev){
   if (ev.key !== 'Escape') return;
-  closeProfile(); closeClubs(); closeEras(); closeGame(); closeBoard();
+  closeProfile(); closeClubs(); closeEras(); closeGame(); closeBoard(); closeModes();
   if (!$('frg').hidden) frgClose();
 });
 
@@ -11086,35 +11500,8 @@ document.addEventListener('keydown', function(ev){
  * to reach, and it is deliberately a list of verbs rather than the page's
  * state: the modes have their own saves and never touch `run`, so a Conquest
  * run and a draft in progress can both be alive without either knowing. */
-/* ── the Quick Draft sheet ────────────────────────────────────────────────
-   Four ways to play one game, behind its tile on the front page. Any door
-   inside it that is pressed shuts it, because each one either changes screen
-   (and show() shuts it anyway) or opens a picker of its own that has to be on
-   top of the front page rather than stacked on this. */
-function openQuickDraft(){
-  var sh = $('qd-sheet');
-  if (!sh) return;
-  sh.hidden = false;
-  document.body.classList.add('sheeted');
-  heroStart();
-}
-function closeQuickDraft(){
-  var sh = $('qd-sheet');
-  if (!sh || sh.hidden) return;
-  sh.hidden = true;
-  document.body.classList.remove('sheeted');
-  heroStop();
-}
-(function wireQuickDraft(){
-  var sh = $('qd-sheet');
-  if (!sh) return;
-  $('qd-x').onclick = closeQuickDraft;
-  sh.addEventListener('click', function(ev){
-    if (ev.target === sh) { closeQuickDraft(); return; }
-    var b = ev.target.closest && ev.target.closest('button');
-    if (b && b.id !== 'qd-x' && (b.id === 'b-start' || b.id === 'b-home-board' || b.closest('.modedoor'))) setTimeout(closeQuickDraft, 0);
-  });
-  document.addEventListener('keydown', function(ev){ if (ev.key === 'Escape') closeQuickDraft(); });
+/* ── the front page's links ─────────────────────────────────────────────── */
+(function wireHomeLinks(){
   $('b-home-career').onclick = function(){ openProfile(); };
   /* The rules card is folded at the foot of this page, so the link opens it
      rather than leaving for a second page that says the same thing. */
@@ -11195,7 +11582,6 @@ window.RTF_PAGE = {
   auth: function(){ return A; },
   openProfile: openProfile,
   openBoard: function(){ openBoard(); },
-  openQuickDraft: openQuickDraft,
   goHome: function(){ show('s-home'); renderHome(); },
   /* The chip in the top bar, for a screen that is not the draft's. */
   bar: function(text){
@@ -11229,6 +11615,6 @@ boot();
 </script>
 <!-- AFTER the page, because it draws through window.RTF_PAGE, which the script
      above publishes. -->
-<script src="modes-ui.js?v=12"></script>
+<script src="modes-ui.js?v=15"></script>
 </body>
 </html>
