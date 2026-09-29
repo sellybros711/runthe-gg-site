@@ -845,12 +845,12 @@
       "sha": "f7ef23f8a4a80d1c"
     },
     "/arcade/stats.js": {
-      "v": "3",
-      "sha": "a702e7c6bd081eb4"
+      "v": "4",
+      "sha": "89cfe04bb4f1cd12"
     },
     "/arcade/hlstats.js": {
-      "v": "3",
-      "sha": "9a6a6cddf196a909"
+      "v": "4",
+      "sha": "8a819fadd4ddb9b3"
     },
     "/arcade/rosterstats.js": {
       "v": "3",
@@ -1383,8 +1383,8 @@
       "sha": "f4a8616769d64a24"
     },
     "/arcade/stats.js": {
-      "v": "3",
-      "sha": "a702e7c6bd081eb4"
+      "v": "4",
+      "sha": "89cfe04bb4f1cd12"
     },
     "/arcade/teamcolors.js": {
       "v": "2",
@@ -1707,8 +1707,8 @@
       "sha": "49a1b9fc353c148e"
     },
     "/arcade/sportegories-data.js": {
-      "v": "38",
-      "sha": "ac2add039514d413"
+      "v": "39",
+      "sha": "d4ed18e811e4d228"
     },
     "/arcade/type.js": {
       "v": "5",

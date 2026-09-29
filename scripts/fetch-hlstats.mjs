@@ -68,48 +68,128 @@ const TACKLE_COLS = ['def_tackles_solo','def_tackle_assists'];
 
 const activeIds = {};   // entity id -> 1, for players present in each sport's latest season
 
+// nflverse's player table: rookie_season is what tells a whole career from one
+// that started before NFL_FIRST and so arrives here cut off.
+async function loadPlayers(){
+  const txt = await fetchText('https://github.com/nflverse/nflverse-data/releases/download/players/players.csv');
+  if (!txt) throw new Error('players.csv missing: cannot tell whole careers from cut-off ones');
+  const lines = txt.split('\n'); const H = parseLine(lines[0]); const ci = {}; H.forEach((h,i)=>ci[h]=i);
+  const out = {};
+  for (let i=1;i<lines.length;i++){ const ln=lines[i]; if(!ln) continue; const f=parseLine(ln);
+    const id=f[ci['gsis_id']]; if(!id) continue;
+    out[id] = { rookie: parseInt(f[ci['rookie_season']])||null, group: f[ci['position_group']]||'' };
+  }
+  return out;
+}
+
+/* Summed PER PLAYER ID, never per name, and a career that began before
+ * NFL_FIRST is dropped rather than summed.
+ *
+ * Both were live defects. Michael Irvin played 1988 to 1999 and nflverse
+ * starts in 1999, so High Low showed his four game 1999 as his career: 167
+ * receiving yards. Reported by a player. Every pre-1999 career that ran into
+ * 1999 came out the same way. And keyed on the name, two men who share one
+ * (nflverse has two Jerry Rices) were one career.
+ *
+ * Dropping is the honest answer: High Low merges stats.js OVER this file, so a
+ * legend with a hand-kept full total still plays, and one without is simply not
+ * in that category rather than shown a number that is false. */
 async function buildNFL(){
-  const career = {};   // id -> { col: total }
+  const players = await loadPlayers();
+  const career = {};   // gsis -> { col: total }
+  const nameOf = {}, seasons = {};   // gsis -> display name, [years]
   let last = NFL_FIRST - 1;
-  let lastSeasonRows = [];
+  let lastSeasonIds = [];
   for (let y = NFL_FIRST; y < NFL_LAST_PROBE; y++){
     const txt = await fetchText(REL + y + '.csv');
     if (!txt){ if (y > 2020) break; else continue; }   // stop after the newest present
-    last = y; lastSeasonRows = [];
+    last = y; lastSeasonIds = [];
     const lines = txt.split('\n');
     const H = parseLine(lines[0]); const ci = {}; H.forEach((h,i)=>ci[h]=i);
     for (let i=1;i<lines.length;i++){
       const ln = lines[i]; if(!ln) continue; const f = parseLine(ln);
       if (f[ci['season_type']] && f[ci['season_type']] !== 'REG') continue;
-      const nm = f[ci['player_display_name']]; if(!nm) continue;
-      const id = entBy['NFL|'+nk(nm)]; if(!id) continue;    // corpus players only
-      lastSeasonRows.push(id);
-      const rec = career[id] || (career[id] = {});
+      const nm = f[ci['player_display_name']]; const pid = f[ci['player_id']];
+      if(!nm || !pid) continue;
+      if(!entBy['NFL|'+nk(nm)]) continue;                 // corpus names only
+      nameOf[pid] = nm; (seasons[pid] || (seasons[pid] = [])).push(y);
+      lastSeasonIds.push(pid);
+      const rec = career[pid] || (career[pid] = {});
       for (const [col] of NFL_MAP){ const v = parseFloat(f[ci[col]]); if(!isNaN(v)) rec[col] = (rec[col]||0)+v; }
       let tk = 0, any=false; for (const c of TACKLE_COLS){ const v=parseFloat(f[ci[c]]); if(!isNaN(v)){ tk+=v; any=true; } }
       if (any) rec.tackles = (rec.tackles||0) + tk;
     }
     console.log('  NFL '+y+' merged');
   }
-  lastSeasonRows.forEach(id => { activeIds[id] = 1; });   // players in the latest NFL season
+  // A career that started before NFL_FIRST is cut off. With no rookie season on
+  // file, one first seen IN NFL_FIRST cannot be told apart, so it goes too.
+  let cut = 0;
+  const whole = pid => {
+    const r = players[pid] && players[pid].rookie;
+    if (r) return r >= NFL_FIRST;
+    return Math.min.apply(null, seasons[pid]) > NFL_FIRST;
+  };
+  // One entity, one career. Namesakes are settled by POSITION first (the
+  // Saints receiver Michael Thomas and the safety of the same name played the
+  // same decade), then by which one played in the entity's own decades, then by
+  // the longer career.
+  //
+  // Position is a FAMILY, not a code, and it is a preference rather than a
+  // filter. nflverse files edge rushers as linebackers (Myles Garrett, Cameron
+  // Jordan) where the corpus says defensive lineman, and a two-way player
+  // (Travis Hunter) is a corner there and a receiver here. Filtering on the code
+  // dropped all four; ranking on the family keeps them and still separates two
+  // men of one name at different ends of the field.
+  const FAMILY = { QB:'QB', RB:'SK', WR:'SK', TE:'SK', OL:'OL', DL:'FR', LB:'FR', DB:'DB', SPEC:'SP' };
+  const ENT_FAMILY = { 'Quarterback':'QB', 'Running Back':'SK', 'Wide Receiver':'SK', 'Tight End':'SK',
+    'Offensive Lineman':'OL', 'Center':'OL', 'Defensive Lineman':'FR', 'Linebacker':'FR',
+    'Cornerback':'DB', 'Safety':'DB', 'Kicker':'SP', 'Punter':'SP' };
+  const entById = {}; ENT.forEach(e => { entById[e.id] = e; });
+  const pick = {};   // entity id -> gsis
+  const fit = (pid, e) => { const ds = e.decade || []; return seasons[pid].filter(y => ds.indexOf(Math.floor(y/10)*10) >= 0).length; };
+  const posOk = (pid, e) => { const want = ENT_FAMILY[e.pos], g = players[pid] && players[pid].group; const got = FAMILY[g]; return (!want || !got || want === got) ? 1 : 0; };
+  const score = (pid, e) => [posOk(pid, e), fit(pid, e), seasons[pid].length];
+  const better = (a, b) => { for (let i = 0; i < a.length; i++) { if (a[i] !== b[i]) return a[i] > b[i]; } return false; };
+  let namesakes = 0;
+  for (const pid in career){
+    const id = entBy['NFL|'+nk(nameOf[pid])];
+    const e = entById[id];
+    const prev = pick[id];
+    if (prev == null) { pick[id] = pid; continue; }
+    namesakes++;
+    if (better(score(pid, e), score(prev, e))) pick[id] = pid;
+  }
+  console.log('  NFL namesakes set aside:', namesakes);
+  const byEnt = {};
+  for (const id in pick){ const pid = pick[id]; if (whole(pid)) byEnt[id] = career[pid]; else cut++; }
+  console.log('  NFL careers cut off before '+NFL_FIRST+', dropped:', cut);
+  lastSeasonIds.forEach(pid => { const id = entBy['NFL|'+nk(nameOf[pid])]; if (id && pick[id] === pid && byEnt[id]) activeIds[id] = 1; });
   // shape into stat categories
   const out = {};
-  const defcat = (key,label,unit,col)=>{ const vals={}; for(const id in career){ const v=career[id][col]; if(v!=null && v>0) vals[id]=Math.round(v); } out[key]={label,unit,sport:'NFL',vals}; };
+  const defcat = (key,label,unit,col)=>{ const vals={}; for(const id in byEnt){ const v=byEnt[id][col]; if(v!=null && v>0) vals[id]=Math.round(v); } out[key]={label,unit,sport:'NFL',vals}; };
   for (const [col,key,label,unit] of NFL_MAP) defcat(key,label,unit,col);
-  { const vals={}; for(const id in career){ const v=career[id].tackles; if(v!=null && v>0) vals[id]=Math.round(v); } out['nfl_tackles']={label:'tackles',unit:'tkl',sport:'NFL',vals}; }
-  return { cats: out, asof: last };
+  { const vals={}; for(const id in byEnt){ const v=byEnt[id].tackles; if(v!=null && v>0) vals[id]=Math.round(v); } out['nfl_tackles']={label:'tackles',unit:'tkl',sport:'NFL',vals}; }
+  return { cats: out, asof: last, pick };
 }
 
 // ---- NFL draft position (overall pick) from nflverse draft_picks ----
-async function buildDraft(){
+async function buildDraft(pick){
+  const gsisToEnt = {}; for (const id in (pick||{})) gsisToEnt[pick[id]] = id;
   const txt = await fetchText('https://github.com/nflverse/nflverse-data/releases/download/draft_picks/draft_picks.csv');
   if (!txt) return { cats:{}, };
   const lines = txt.split('\n'); const H = parseLine(lines[0]); const ci={}; H.forEach((h,i)=>ci[h]=i);
-  const vals = {};
+  const vals = {}, locked = {};
   for (let i=1;i<lines.length;i++){ const ln=lines[i]; if(!ln) continue; const f=parseLine(ln);
-    const nm = f[ci['pfr_player_name']]; const pick = parseInt(f[ci['pick']]);
-    if(!nm || !pick) continue; const id = entBy['NFL|'+nk(nm)]; if(!id) continue;
-    if (vals[id]==null) vals[id] = pick;                 // first (only) draft slot
+    const nm = f[ci['pfr_player_name']]; const slot = parseInt(f[ci['pick']]); const gid = f[ci['gsis_id']];
+    if(!nm || !slot) continue;
+    // By the player id when this man is the one the stats chose, so the
+    // Chiefs' Chris Jones is pick 37 and not the 2013 Chris Jones's 78. By name
+    // only for a man with no stats row to settle it (a pre-1999 draftee, a
+    // lineman), and then never over an id match.
+    const byId = gid && gsisToEnt[gid];
+    const id = byId || entBy['NFL|'+nk(nm)]; if(!id) continue;
+    if (byId) { vals[id] = slot; locked[id] = 1; }
+    else if (vals[id]==null && !locked[id] && !(pick && pick[id])) vals[id] = slot;
   }
   console.log('  NFL draft picks matched:', Object.keys(vals).length);
   return { cats: { nfl_draft: { label:'draft position', unit:'', sport:'NFL', lowbest:true, vals } } };
@@ -127,7 +207,7 @@ function buildMLB(){
 }
 
 const nfl = await buildNFL();
-const draft = await buildDraft();
+const draft = await buildDraft(nfl.pick);
 const mlb = buildMLB();
 const stats = Object.assign({}, nfl.cats, draft.cats, mlb.cats);
 
