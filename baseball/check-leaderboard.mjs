@@ -52,8 +52,14 @@ const FAKE_AUTH = (pro) => `window.RTD_AUTH=(function(){const L=[];
 const browser = await chromium.launch(EXE ? { executablePath: EXE } : {});
 const pool = JSON.parse(readFileSync(path.join(HERE, 'data/players.json'), 'utf8'));
 const keyOf = (p) => p.i + '|' + p.s + '|' + p.r;
-const bats = pool.filter((p) => p.r === 'b').slice(0, 9);
-const arms = pool.filter((p) => p.r === 'p').slice(0, 3);
+/* ONE CLUB-SEASON, so the twelve are a reunion and the row has chemistry to draw.
+   The first club-season in the pool deep enough for nine bats and three arms. */
+const bySeason = {};
+pool.forEach((p) => { const k = p.t + p.s; (bySeason[k] = bySeason[k] || []).push(p); });
+const club = Object.values(bySeason).find((g) => g[0].t !== 'TOT' &&
+  g.filter((p) => p.r === 'b').length >= 9 && g.filter((p) => p.r === 'p').length >= 3);
+const bats = club.filter((p) => p.r === 'b').slice(0, 9);
+const arms = club.filter((p) => p.r === 'p').slice(0, 3);
 const roster = { picks: bats.concat(arms).map(keyOf).concat([]),
   slots: ['C', '1B', '2B', '3B', 'SS', 'LF', 'CF', 'RF', 'DH', 'SP1', 'SP2', 'CL'] };
 const row = (i, o) => Object.assign({ id: 'r' + i, created_at: new Date().toISOString(), user_id: null,
@@ -107,12 +113,15 @@ const team = await p.evaluate(() => {
   const t = document.querySelector('.bd-ent .bd-team');
   return { hidden: t.hidden, rows: t.querySelectorAll('.rslot').length,
     names: [...t.querySelectorAll('.rname')].map((n) => n.textContent),
-    open: document.querySelector('.bd-ent .bd-row').getAttribute('aria-expanded') };
+    open: document.querySelector('.bd-ent .bd-row').getAttribute('aria-expanded'),
+    bolts: [...t.querySelectorAll('.rslot .chembadge')].map((b) => b.textContent.trim()) };
 });
 claim(!team.hidden && team.open === 'true', 'tapping it opens it');
 claim(team.rows === 12, 'and shows all twelve', `${team.rows} rows`);
 claim(team.names.includes(bats[0].n) && team.names.includes(arms[0].n),
   'named off the pool, bats and arms', team.names.join(', '));
+claim(team.bolts.length >= 10, 'a reunion wears its chemistry bolts', `${team.bolts.length} bolts`);
+claim(team.bolts.every((b) => /\d/.test(b)), 'and every bolt carries its number', team.bolts.join(' '));
 await p.click('.bd-ent .bd-row');
 claim(await p.$eval('.bd-ent .bd-team', (t) => t.hidden), 'and tapping again folds it');
 

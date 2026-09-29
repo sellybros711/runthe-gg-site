@@ -5495,8 +5495,20 @@ function boardTeamHtml(r){
   const order=E.SLOTS.concat(E.STAFF_SLOTS||[]);
   const men=picks.map((k,j)=>({p:pool[k]||null,slot:slots[j]||'',k}))
     .sort((a,b)=>{const ia=order.indexOf(a.slot),ib=order.indexOf(b.slot);return (ia<0?99:ia)-(ib<0?99:ib);});
+  /* THE BOLTS ARE THE SAME ONES THE RESULTS SCREEN DRAWS. Chemistry is recomputed
+     here off the men this browser can place, under the rules of the mode the row
+     was filed in (chemOpts reads the same flags off the row it reads off a run),
+     so a One Franchise row never shows a team-mates link that mode did not pay.
+     A replacement body is nobody and links to nobody, so it is left out. */
+  const known=men.filter(m=>m.p);
+  let per=[];
+  try{
+    per=E.chemistryByPlayer(known.map(m=>({...m.p,_slot:m.slot})),null,
+      R.chemOpts({era:r.era,franchise:r.franchise,division:r.division,staff:r.run_mode==='staff'}));
+  }catch(e){per=[];}
+  known.forEach((m,i)=>{m.chem=per[i]||null;});
   const row=m=>'<div class="rslot"><span class="rpos" style="'+posPaint(m.slot)+'">'+esc(m.slot)+'</span>'+
-    (m.p?'<span class="rname">'+esc(m.p.n)+'</span><span class="rteam">'+seasonLine(m.p)+'</span>'+
+    (m.p?'<span class="rname">'+esc(m.p.n)+'</span>'+chemBadge(m.chem,'sm')+'<span class="rteam">'+seasonLine(m.p)+'</span>'+
       '<span class="rwar">'+warHtml(m.p.w)+'</span>'
      :'<span class="rname">Replacement player</span><span class="rteam">Signed after a cut</span>')+'</div>';
   const bats=men.filter(m=>m.p?m.p.r!=='p':!/^(SP|RP|CL|SU)/.test(m.slot));
