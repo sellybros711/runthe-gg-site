@@ -849,8 +849,8 @@
       "sha": "89cfe04bb4f1cd12"
     },
     "/arcade/hlstats.js": {
-      "v": "4",
-      "sha": "8a819fadd4ddb9b3"
+      "v": "5",
+      "sha": "e1d33602c622efe4"
     },
     "/arcade/rosterstats.js": {
       "v": "3",
@@ -1707,8 +1707,8 @@
       "sha": "49a1b9fc353c148e"
     },
     "/arcade/sportegories-data.js": {
-      "v": "39",
-      "sha": "d4ed18e811e4d228"
+      "v": "40",
+      "sha": "837f930ff61d4043"
     },
     "/arcade/type.js": {
       "v": "5",
