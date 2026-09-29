@@ -701,64 +701,115 @@
   .ern.streak .em{background:#d19410;}
 
   /* ── THE LEADERBOARD ───────────────────────────────────────────────────
-     Two selects side by side, because the door and the lock are two
-     questions. The second is hidden for the two modes that have no lock,
-     which is why the first is allowed to take the whole row when it is
-     alone: a control that shrinks to make room for nothing reads as a
-     control with something missing beside it. */
-  .lbpick{display:flex;gap:8px;margin:0 0 10px;}
-  .lbmode{flex:1;min-width:0;display:block;}
-  .lbmode select{width:100%;background:#141a26;color:var(--ink);font-family:var(--body);
+     Run The Diamond's board in this game's colours. A tab a mode, a window, a
+     sort and a hundred rows, and every row a button that opens into what was
+     built. A champion is gold, and a run past the real record moves. */
+  .bd-head{margin:2px 0 10px;}
+  .bd-eye{display:block;font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;
+    color:var(--orange);font-weight:800;}
+  .bd-h{font-size:27px;margin:4px 0 0;}
+  .bd-tabs{display:flex;gap:6px;overflow-x:auto;padding-bottom:6px;margin:0 0 10px;
+    scrollbar-width:none;-webkit-overflow-scrolling:touch;}
+  .bd-tabs::-webkit-scrollbar{display:none;}
+  @media (min-width:720px){ .bd-tabs{flex-wrap:wrap;overflow:visible;} }
+  .bd-tab{flex:0 0 auto;font-size:12px;font-weight:800;letter-spacing:.02em;padding:7px 13px;
+    border-radius:99px;border:1px solid var(--cardb);background:transparent;color:var(--mut);
+    white-space:nowrap;}
+  .bd-tab.on{background:linear-gradient(180deg,var(--orange),var(--orange-dk));color:#fff;
+    border-color:transparent;}
+  /* A label that sets a display keeps its hidden only with this: the old
+     sheet's lock picker set display:block and drew an empty select under the
+     league board, which is the first thing a player saw of it. */
+  .bd-lock{display:block;margin:0 0 10px;}
+  .bd-lock[hidden]{display:none;}
+  .bd-lock select{width:100%;background:#141a26;color:var(--ink);font-family:var(--body);
     font-size:13.5px;font-weight:700;border:1px solid var(--cardb);border-radius:9px;
-    padding:9px 10px;-webkit-appearance:none;appearance:none;
+    padding:9px 30px 9px 10px;-webkit-appearance:none;appearance:none;
     background-image:linear-gradient(45deg,transparent 50%,var(--dim) 50%),
       linear-gradient(135deg,var(--dim) 50%,transparent 50%);
     background-position:calc(100% - 16px) 50%,calc(100% - 11px) 50%;
-    background-size:5px 5px,5px 5px;background-repeat:no-repeat;padding-right:30px;}
-
-  /* THE SENTENCE THAT SAYS WHICH OF THE FOUR STATES THIS IS. It is always
-     present rather than hidden when there is nothing to say, because the
-     three empty states are the ones that need words and they are the states
-     where every other element on this screen has nothing in it. */
-  .lbnote{font-size:12.5px;line-height:1.5;color:var(--dim);margin:0 0 10px;}
-  .lbnote.bad{color:#f87171;}
-  .lbnote.first{color:#f2c14e;}
-
-  .lbrows{list-style:none;margin:0;padding:0;max-height:46vh;overflow-y:auto;}
-  .lbrow{display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:9px 2px;
-    border-bottom:1px solid var(--cardb);min-width:0;cursor:pointer;}
-  .lbrow:focus-visible{outline:2px solid var(--gold);outline-offset:-2px;}
-  /* THE FIVE, under the row that drafted them. A board of names and records
-     answers who won and never what they built, which is the first thing a fan
-     asks of the top of any leaderboard. The picks have ridden on every row
-     since the day it shipped and nothing drew them. */
-  .lbfive{flex:0 0 100%;margin:2px 0 0 40px;padding:0;list-style:none;
-    font-size:12px;line-height:1.55;color:var(--ink);}
-  .lbfive[hidden]{display:none;}
-  .lbfive li{display:flex;gap:8px;min-width:0;}
-  .lbfive .ps{flex:0 0 22px;color:var(--dim);font-weight:800;font-size:10.5px;
-    letter-spacing:.04em;padding-top:1px;}
-  .lbfive .pn{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-  .lbfive .pn i{font-style:normal;color:var(--dim);}
-  .lbrow:last-child{border-bottom:0;}
-  .lbrow .pl{flex:0 0 30px;font-family:var(--num);font-variant-numeric:tabular-nums;font-size:13px;color:var(--dim);
-    text-align:right;}
-  .lbrow .who{flex:1;min-width:0;}
-  .lbrow .who b{display:block;font-size:13.5px;font-weight:800;
+    background-size:5px 5px,5px 5px;background-repeat:no-repeat;}
+  .bd-seg{display:flex;gap:0;margin:0 0 10px;padding:3px;border-radius:10px;
+    background:var(--card);border:1px solid var(--cardb);}
+  .bd-seg[hidden]{display:none;}
+  .bd-seg button{flex:1 1 0;font-size:11.5px;font-weight:800;letter-spacing:.04em;
+    text-transform:uppercase;padding:8px 4px;border:0;border-radius:8px;background:transparent;
+    color:var(--dim);}
+  .bd-seg button.on{background:rgba(255,255,255,.08);color:var(--ink);}
+  .bd-bar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 2px 10px;}
+  .bd-count{font-size:11.5px;font-weight:800;color:var(--dim);letter-spacing:.02em;}
+  .bd-sort{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:800;
+    letter-spacing:.03em;padding:6px 11px;border-radius:99px;border:1px solid var(--cardb);
+    background:transparent;color:var(--ink);}
+  .bd-sort svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:2.2;
+    stroke-linecap:round;stroke-linejoin:round;transition:transform .2s ease;}
+  .bd-sort.asc svg{transform:rotate(180deg);}
+  .bd-more{width:100%;margin-top:6px;}
+  .bd-more[hidden]{display:none;}
+  .bd-foot{font-size:11.5px;color:var(--dim);margin:10px 2px 0;line-height:1.45;}
+  .bd-ent{margin-bottom:6px;}
+  .bd-row{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:11px;width:100%;
+    background:var(--card);border:1px solid var(--cardb);text-align:left;font:inherit;
+    color:inherit;position:relative;font-weight:400;}
+  .bd-row:hover:not(:disabled){filter:none;border-color:#3b4b66;}
+  .bd-ent.open .bd-row{border-radius:11px 11px 0 0;}
+  .bd-row.me{border-color:var(--gold);background:rgba(242,193,78,.07);}
+  .bd-pos{flex:0 0 auto;min-width:26px;font-family:var(--display);font-size:16px;
+    font-variant-numeric:tabular-nums;color:var(--dim);text-align:right;}
+  .bd-ent.top3 .bd-pos{color:var(--gold);}
+  .bd-crest{flex:0 0 30px;width:30px;height:32px;display:block;}
+  .bd-crest svg{width:100%;height:100%;display:block;}
+  .bd-crest.guest{opacity:.4;filter:grayscale(1);}
+  .bd-who{flex:1;min-width:0;}
+  .bd-name{display:block;font-size:13.5px;font-weight:800;color:var(--ink);
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-  .lbrow .who span{display:block;font-size:11px;color:var(--dim);margin-top:2px;
+  .bd-meta{display:block;font-size:10.5px;font-weight:700;color:var(--dim);margin-top:2px;
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-  .lbrow .val{flex:0 0 auto;font-family:var(--num);font-variant-numeric:tabular-nums;font-size:15px;font-weight:700;
-    text-align:right;}
-  .lbrow .val em{display:block;font-family:var(--body);font-style:normal;
-    font-size:10px;letter-spacing:.07em;text-transform:uppercase;color:var(--dim);
-    margin-top:2px;}
-  /* YOUR OWN ROW IS MARKED, which is most of what somebody opens a board for.
-     A border rather than a fill, so it reads as a mark on a row rather than
-     as a row of a different kind. */
-  .lbrow.you{border-left:3px solid var(--gold);padding-left:7px;margin-left:-10px;}
-  .lbrow.you .who b{color:var(--gold);}
-  .lbrow .ring{color:#f2c14e;}
+  .bd-rec{flex:0 0 auto;text-align:right;}
+  .bd-rec b{display:block;font-family:var(--display);font-weight:400;font-size:18px;
+    font-variant-numeric:tabular-nums;color:var(--ink);}
+  .bd-rec span{display:block;font-size:9.5px;font-weight:800;letter-spacing:.06em;
+    text-transform:uppercase;color:var(--dim);}
+  .bd-caret{flex:0 0 auto;width:14px;height:14px;color:var(--dim);transition:transform .2s ease;}
+  .bd-caret svg{width:100%;height:100%;display:block;fill:none;stroke:currentColor;stroke-width:2.2;
+    stroke-linecap:round;stroke-linejoin:round;}
+  .bd-ent.open .bd-caret{transform:rotate(180deg);}
+  .bd-team{border:1px solid var(--cardb);border-top:0;border-radius:0 0 11px 11px;
+    background:#0f1520;padding:8px 12px 12px;}
+  .bd-team[hidden]{display:none;}
+  .bd-team-foot{font-size:10.5px;font-weight:700;color:var(--dim);margin:8px 0 0;line-height:1.45;}
+  .bd-five{margin:0;padding:0;list-style:none;font-size:12.5px;line-height:1.55;color:var(--ink);}
+  .bd-five li{display:flex;gap:8px;min-width:0;padding:3px 0;border-top:1px solid rgba(255,255,255,.04);}
+  .bd-five li:first-child{border-top:0;}
+  .bd-five .ps{flex:0 0 24px;color:var(--dim);font-weight:800;font-size:10.5px;letter-spacing:.04em;padding-top:1px;}
+  .bd-five .pn{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .bd-five .pn i{font-style:normal;color:var(--dim);}
+  /* A CHAMPION is gold: a gold edge, the word in gold, and the record in gold. */
+  .bd-ent.champ .bd-row{border-color:rgba(242,193,78,.55);
+    background:linear-gradient(90deg,rgba(242,193,78,.13),rgba(242,193,78,.02) 60%),var(--card);}
+  .bd-ent.champ .bd-team{border-color:rgba(242,193,78,.55);}
+  .bd-ent.champ .bd-rec b{color:var(--gold);}
+  .bd-tag{display:inline-flex;align-items:center;gap:3px;vertical-align:-1px;color:var(--gold);font-weight:800;}
+  .bd-tag svg{width:11px;height:11px;fill:none;stroke:currentColor;stroke-width:2.2;
+    stroke-linecap:round;stroke-linejoin:round;}
+  .bd-tag.rec{color:#f87171;}
+  /* A RECORD run (74 wins or more, past the 73-9 Warriors) is louder again: a
+     moving gold and red edge. A record that also won it all gets both. */
+  .bd-ent.record .bd-row{border-color:transparent;border-width:1.5px;
+    background:linear-gradient(var(--card),var(--card)) padding-box,
+      linear-gradient(115deg,#8a5a00,#f6d365,#ef4444,#f6d365,#8a5a00) border-box;
+    background-size:100% 100%,300% 100%;animation:bdrec 6s linear infinite;}
+  .bd-ent.record.champ .bd-row{background:
+      linear-gradient(90deg,rgba(242,193,78,.16),rgba(242,193,78,.03) 60%) padding-box,
+      linear-gradient(var(--card),var(--card)) padding-box,
+      linear-gradient(115deg,#8a5a00,#f6d365,#ef4444,#f6d365,#8a5a00) border-box;
+    background-size:100% 100%,100% 100%,300% 100%;
+    box-shadow:0 0 0 1px rgba(246,211,101,.15),0 6px 22px -8px rgba(242,193,78,.55);}
+  @keyframes bdrec{from{background-position:0 0,0 0,0% 0}to{background-position:0 0,0 0,300% 0}}
+  @media(prefers-reduced-motion:reduce){.bd-ent.record .bd-row{animation:none;}}
+  .bd-empty{text-align:center;padding:30px 14px;color:var(--dim);font-size:13.5px;line-height:1.55;}
+  .bd-empty.bad{color:#f87171;}
+  .bd-empty.first{color:var(--gold);}
 
   /* WHERE THIS RUN LANDED, on the results screen. Pressable, because a
      placing nobody can open is a receipt and not a board. */
@@ -3085,6 +3136,36 @@
 <div class="screen" id="s-fix"></div>
 <div class="screen" id="s-pass"></div>
 
+<!-- ── THE LEADERBOARD ─────────────────────────────────────────────────
+     A SCREEN, ON RUN THE DIAMOND'S MODEL, and it replaced two sheets. The draft
+     had a sheet with a door and a lock as two selects, and the other three modes
+     had a second sheet of their own. So there were two leaderboards with two
+     sets of controls, and the draft's listed named runs only: a run finished
+     signed out was filed and counted and never shown, so a player with runs on
+     the server opened a board reading "no names yet". It is one screen now: a
+     tab a mode, a window, a sort, a hundred rows at a time, every run listed
+     (a guest's as Guest), and a row that opens into what was built. -->
+<div class="screen" id="s-board">
+  <div class="bd-head"><span class="bd-eye">Leaderboard</span>
+    <h2 class="bd-h" id="bd-h">Who is on top</h2></div>
+  <div class="bd-tabs" id="bd-tabs" role="tablist" aria-label="Which board"></div>
+  <!-- The club or the decade, for the two boards that have one. All of them is
+       the default, which is Run The Diamond's Franchise board; one is a board of
+       its own a tap away. -->
+  <label class="bd-lock" id="bd-lockwrap" hidden>
+    <span class="sr-only">Which team or decade</span>
+    <select id="bd-lock"></select>
+  </label>
+  <div class="bd-seg" id="bd-axes" role="tablist" aria-label="Ranked by"></div>
+  <div class="bd-seg" id="bd-wins" role="tablist" aria-label="When"></div>
+  <div class="bd-bar"><span class="bd-count" id="bd-count"></span>
+    <button type="button" class="bd-sort" id="bd-sort" aria-label="Sort order"></button></div>
+  <div id="bd-list"></div>
+  <button type="button" class="ghost bd-more" id="bd-more" hidden></button>
+  <p class="bd-foot" id="bd-foot"></p>
+  <div class="btnrow" style="margin-top:14px"><button class="ghost" id="b-board-back">Back</button></div>
+</div>
+
 <!-- ── career, kept on this device ───────────────────────────────────────
      Every run that reaches a result adds a line to this. It never leaves the
      browser it was played in: there is no account and nothing is sent
@@ -3232,67 +3313,6 @@
   </div>
 </div>
 
-<!-- ── the leaderboard ───────────────────────────────────────────────────
-     FOUR COMPETITIONS, NOT ONE BOARD WITH A FILTER ON IT, and the two locked
-     ones are scoped again by which club or which decade. Measured rather than
-     assumed: One Franchise pins chemistry near its ceiling whatever gets
-     drafted, so best-available finishes 46.8 wins there against the league's
-     42.0, and the decades are nine wins apart for the same drafting. One
-     board would quietly retire the record to whoever picked the deepest
-     franchise or the shallowest era, and every number on it would still look
-     perfectly reasonable.
-
-     A BOARD HAS FOUR STATES AND THREE OF THEM SHIP BROKEN: unreachable,
-     nobody has finished a run, and you have not finished one. Each needs its
-     own sentence, because a blank box is how a feature teaches somebody it is
-     broken and a spinner that never resolves is worse. On a game this new
-     "nobody yet" is the COMMON case, so it says being first is the prize.
-     That is the commish standings' lesson arriving here. -->
-<div class="sheet" id="boardsheet" role="dialog" aria-modal="true" aria-labelledby="lb-h">
-  <div class="panel">
-    <h2 id="lb-h">Leaderboard <span class="sub" id="lb-sub"></span></h2>
-
-    <!-- THE DOOR AND THE LOCK ARE TWO CONTROLS, because they are two
-         questions and one select holding thirty clubs, six decades, the
-         league and today is a list nobody can find anything in. The second
-         only appears for the two modes that have one. -->
-    <div class="lbpick">
-      <label class="lbmode">
-        <span class="sr-only">Which board</span>
-        <select id="lb-door">
-          <option value="league">The league</option>
-          <option value="club">One Franchise</option>
-          <option value="era">Decades</option>
-          <option value="daily">Daily</option>
-        </select>
-      </label>
-      <label class="lbmode" id="lb-keywrap" hidden>
-        <span class="sr-only">Which team or decade</span>
-        <select id="lb-key"></select>
-      </label>
-    </div>
-
-    <!-- THREE AXES, AND HOW FAR YOU WENT COMES FIRST. The goal the guide
-         names is the ring, so Best run ranks a title above any record and a
-         Finals loss above a second round one. Best record is the 72 chase on
-         its own, and the rating is the roster. See board.js for why all three
-         earn a tab. -->
-    <div class="ptabs" role="tablist">
-      <button class="ptab on" id="lb-ax-run" role="tab" aria-selected="true">Best run</button>
-      <button class="ptab" id="lb-ax-record" role="tab" aria-selected="false">Best record</button>
-      <button class="ptab" id="lb-ax-rating" role="tab" aria-selected="false">Team rating</button>
-    </div>
-
-    <p class="lbnote" id="lb-note"></p>
-    <ol class="lbrows" id="lb-rows"></ol>
-    <p class="dim" id="lb-foot" style="font-size:11.5px;margin:10px 0 0;line-height:1.45"></p>
-
-    <div class="btnrow" style="margin-top:14px">
-      <button id="b-lb-x" style="flex:1">Close</button>
-    </div>
-  </div>
-</div>
-
 <!-- ── THE FIRST RUN GUIDE ───────────────────────────────────────────────
      Once per browser, to somebody who has never started a run. It is the only
      thing here that interrupts before the player has done anything, so it
@@ -3372,7 +3392,7 @@
      for it rather than reading window.supabase once: on a repeat visit the data
      comes out of cache in milliseconds while this is still in flight. -->
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="board.js?v=5"></script>
+<script src="board.js?v=6"></script>
 <script src="auth.js?v=3"></script>
 <!-- THE SHELF. cloudsave.js is the transport and is shared with the football and
      college games; cloud.js is this game's own policy about slots, progress and
@@ -3497,7 +3517,7 @@ var DAILY_DARE = 'Everyone got the same ' + NUMWORD(E.SLOTS.length) + ' spins.';
  * handle. It is also what carries the diagnosis: `lastError` says which of the
  * two halves is missing, in words, on the screen that would otherwise just be
  * empty. */
-var NEED_BOARD = 5;
+var NEED_BOARD = 6;
 var B = (window.RTF_BOARD && window.RTF_BOARD.API_VERSION === NEED_BOARD)
   ? window.RTF_BOARD
   : {
@@ -3506,6 +3526,10 @@ var B = (window.RTF_BOARD && window.RTF_BOARD.API_VERSION === NEED_BOARD)
       claim: function(){ return Promise.resolve(false); },
       ranks: function(){ return Promise.resolve({ place: null, total: null, played: null }); },
       top: function(){ return Promise.resolve(null); },
+      list: function(){ return Promise.resolve(null); },
+      total: function(){ return Promise.resolve(null); },
+      jerseys: function(){ return Promise.resolve(null); },
+      modeOf: function(m){ return m || { door: 'league', key: null, day: null }; },
       mine: function(){ return Promise.resolve(null); },
       boards: function(){ return Promise.resolve(null); },
       submitFix: function(){ return Promise.resolve(null); },
@@ -3513,6 +3537,8 @@ var B = (window.RTF_BOARD && window.RTF_BOARD.API_VERSION === NEED_BOARD)
       submitConquest: function(){ return Promise.resolve(null); },
       claimPlay: function(){ return Promise.resolve(false); },
       playTop: function(){ return Promise.resolve(null); },
+      playList: function(){ return Promise.resolve(null); },
+      playCount: function(){ return Promise.resolve(null); },
       playPlace: function(){ return Promise.resolve(null); },
       moveCount: function(){ return Promise.resolve(null); },
       scoreOf: function(){ return null; },
@@ -8853,88 +8879,225 @@ function renderStanding(out){
           : 'Your run is saved. The board is offline right now.', false);
       return;
     }
-    /* A RUN PLAYED SIGNED OUT IS NOT ON THE LIST, which is named runs only,
-       so its place is where it WOULD sit and the field it is out of has to
-       count it: "313th of 312" is what this printed before, for any signed
-       out run at the bottom. A signed in run whose row has not landed yet is
-       the same case for a moment, so the field is never smaller than the
-       place. */
-    var st = A.state();
-    var named = !!(st && st.signedIn);
-    var field = Math.max(r.total + (named && run.boardId ? 0 : 1), r.place);
-    var at = r.place + ordinalOf(r.place);
-    if (!named) {
-      draw(at, 'Would be ' + at + ' of ' + field + ' on ' + boardPhrase(m),
-        'Sign in to claim it.', true);
+    /* A SUBMIT THAT FAILED IS SAID, not placed. The board answered, so the
+       run would get a place and a field and look filed when it is not: that
+       is the one lie this card can tell, and it was the hardest thing about
+       the board to diagnose. The server's own reason goes under it. */
+    if (run.submitted && !run.boardId && submitP) {
+      draw('-', 'This run did not reach the board',
+        B.lastError && B.lastError.where === 'submit'
+          ? 'The board refused it: ' + String(B.lastError.message || '').slice(0, 120)
+          : 'The board did not answer. Your run is saved here.', true);
       return;
     }
+    /* EVERY RUN IS ON THE BOARD NOW, a guest's as Guest, so the field is the
+       board's own count, plus this run for the moment its row has not landed. */
+    var st = A.state();
+    var named = !!(st && st.signedIn);
+    var field = Math.max(r.total + (run.boardId ? 0 : 1), r.place);
+    var at = r.place + ordinalOf(r.place);
     if (field === 1) {
       draw('1st', 'First on ' + boardPhrase(m),
-        'First finished run on this board. The top spot is yours.', true);
+        named ? 'First finished run on this board. The top spot is yours.'
+          : 'First run on this board. Sign in to put your name on it.', true);
       return;
     }
     draw(at, at + ' of ' + field + ' on ' + boardPhrase(m),
-      (r.played && r.played > r.total)
-        ? r.played + ' runs played here. ' + r.total + ' signed in.'
-        : 'Tap to see the board.', true);
+      named ? 'Tap to see the board.' : 'On the board as Guest. Sign in to put your name on it.', true);
   });
 }
 
 function ordinalOf(n){ return getOrdinal(n); }
 
-/* ── THE SHEET ─────────────────────────────────────────────────────────── */
-function openBoard(mode){
-  if (mode) lbMode = B.modeOf ? B.modeOf(mode) : mode;
-  else if (run && run.phase === R.PHASES.OVER) lbMode = modeOfRun(run);
-  sheetReturn = document.activeElement;
-  $('boardsheet').classList.add('open');
-  renderBoardPickers();
-  paintBoard();
-  $('b-lb-x').focus();
+/* ── THE SCREEN ────────────────────────────────────────────────────────────
+ *
+ * Run The Diamond's leaderboard, and one screen for every mode. The four draft
+ * boards are rtf_runs and the three other modes are rtf_plays, so a tab knows
+ * which table it reads and modes-ui.js says what one of its rows looks like.
+ */
+var BOARD_TABS = [
+  { k: 'league', label: 'Classic', kind: 'run' },
+  { k: 'daily', label: 'Daily Draft', kind: 'run' },
+  { k: 'club', label: 'One Franchise', kind: 'run' },
+  { k: 'era', label: 'Decades', kind: 'run' },
+  { k: 'conquest', label: 'Conquest', kind: 'play' },
+  { k: 'fix', label: 'Fix History', kind: 'play' },
+  { k: 'passes', label: 'Six Passes', kind: 'play' },
+];
+var PLAY_DOORS = { conquest: 1, fix: 1, passes: 1 };
+/* A DAY BOARD HAS A DAY, and its window is today or yesterday. Everything
+   else is a running board, windowed by when a row was filed. */
+var DAY_DOORS = { daily: 1, fix: 1, passes: 1 };
+var RUN_WINS = [{ k: 'day', label: 'Today' }, { k: 'week', label: 'This week' }, { k: 'all', label: 'All time' }];
+var DAY_WINS = [{ k: 'today', label: 'Today' }, { k: 'yesterday', label: 'Yesterday' }];
+var BOARD_AXES = [{ k: 'run', label: 'Best run' }, { k: 'record', label: 'Record' }, { k: 'rating', label: 'Rating' }];
+var BOARD_PAGE = 100;
+var lbWin = 'all', lbAsc = false, lbFrom = 's-home';
+var BD_SORT_ICO = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14"/><path d="M6 13l6 6 6-6"/></svg>';
+var BD_CARET = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>';
+var BD_TROPHY = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M7 6H4.5v1.5A3.5 3.5 0 0 0 8 11"/><path d="M17 6h2.5v1.5A3.5 3.5 0 0 1 16 11"/><path d="M12 14v3"/><path d="M8.5 20h7"/></svg>';
+var BD_FLAME = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3c1 4 5 5.5 5 10a5 5 0 0 1-10 0c0-2.5 1.5-4 2.5-5 .3 1.6 1.2 2.5 2.5 2.5-1-2.5-.7-5 0-7.5z"/></svg>';
+
+function isPlayDoor(d){ return !!PLAY_DOORS[d]; }
+
+/* The instant an Eastern calendar day starts, as ISO. Asks the zone for its
+   offset at noon that day rather than assuming one, so a clock change is
+   right. Run The Diamond's, for the same reason: the day rolls where the
+   daily's does. */
+function easternStart(iso){
+  var noon = Date.parse(iso + 'T12:00:00Z');
+  var h = 12;
+  try {
+    h = +new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York',
+      hour: '2-digit', hourCycle: 'h23' }).format(new Date(noon));
+  } catch (e) {}
+  return new Date(Date.parse(iso + 'T00:00:00Z') + (12 - h) * 3600e3).toISOString();
 }
-function closeBoard(){
-  $('boardsheet').classList.remove('open');
-  if (sheetReturn && sheetReturn.focus) sheetReturn.focus();
-  sheetReturn = null;
+function boardSince(win){
+  if (win !== 'day' && win !== 'week') return null;
+  var today = easternISO();
+  if (win === 'day') return easternStart(today);
+  var d = new Date(Date.parse(today + 'T12:00:00Z'));
+  var back = (d.getUTCDay() + 6) % 7;
+  return easternStart(new Date(d.getTime() - back * 864e5).toISOString().slice(0, 10));
 }
 
-/* The two selects, rebuilt from the DATA rather than written into the markup,
-   for the reason the club picker already is: the lineage, the seasons and the
-   span all come off teams.json and players.json, so a row here can never offer
-   a franchise or a decade the wheel cannot actually draw. */
-function renderBoardPickers(){
-  var door = $('lb-door'), wrap = $('lb-keywrap'), key = $('lb-key');
-  if (!door) return;
-  door.value = lbMode.door;
+function openBoard(mode, from){
+  var m = mode || (run && run.phase === R.PHASES.OVER ? modeOfRun(run) : null)
+    || { door: 'league', key: null, day: null };
+  if (isPlayDoor(m.door)) lbMode = { door: m.door, key: null, day: null };
+  else lbMode = B.modeOf ? B.modeOf(m) : m;
+  /* A day board opens on the day asked for (the run's own, from a results
+     screen) and otherwise on today. */
+  if (DAY_DOORS[lbMode.door]) {
+    var t = todayNumber();
+    lbWin = (lbMode.door === 'daily' && lbMode.day && lbMode.day === t - 1) ? 'yesterday' : 'today';
+  } else lbWin = 'all';
+  lbAsc = false;
+  var active = document.querySelector('.screen.active');
+  lbFrom = from || (active && active.id !== 's-board' ? active.id : 's-home');
+  show('s-board');
+  paintBoard();
+}
+function closeBoard(){
+  if (lbFrom === 's-home' || !$(lbFrom)) { show('s-home'); renderHome(); return; }
+  show(lbFrom);
+  if (lbFrom === 's-over') renderAppBar('s-over');
+}
+
+/* The lock select, rebuilt from the DATA rather than written into the markup,
+   for the reason the club picker already is: a row here can never offer a
+   franchise or a decade the wheel cannot actually draw. All of them is the
+   first option and the default. */
+function renderBoardLock(){
+  var wrap = $('bd-lockwrap'), sel = $('bd-lock');
   var locked = lbMode.door === 'club' || lbMode.door === 'era';
   wrap.hidden = !locked;
   if (!locked) return;
-
-  key.textContent = '';
+  sel.textContent = '';
   var add = function(v, label){
     var o = document.createElement('option');
     o.value = v; o.textContent = label;
-    key.appendChild(o);
+    sel.appendChild(o);
   };
   if (lbMode.door === 'club') {
-    /* E.franchises() answers ROWS and not codes, and it has already sorted
-       them by full name. Sorting the rows as if they were strings put an
-       object through teamName(), which falls back to returning what it was
-       given, and the whole picker threw on `.localeCompare is not a
-       function`: the sheet then opened with an empty select and no rows,
-       which reads exactly like a board with nobody on it. */
-    var rows = DATA ? E.franchises() : [];
-    rows.forEach(function(f){ add(f.code, f.full); });
-    if (!lbMode.key) lbMode.key = lastClub() || (rows[0] && rows[0].code) || null;
+    add('', 'Every team');
+    /* E.franchises() answers ROWS and not codes, already sorted by name. */
+    (DATA ? E.franchises() : []).forEach(function(f){ add(f.code, f.full); });
   } else {
+    add('', 'Every decade');
     Object.keys(E.ERAS).forEach(function(k){
       var sp = R.eraSeasons(k);
       add(k, (ERA_NAMES[k] || k)
         + (sp.length ? ' (' + sp[sp.length - 1] + '-' + sp[0] + ')' : ''));
     });
-    if (!lbMode.key) lbMode.key = lastEra() || Object.keys(E.ERAS)[0];
   }
-  key.value = lbMode.key;
+  sel.value = lbMode.key || '';
+}
+
+function segHtml(list, on, attr){
+  return list.map(function(w){
+    return '<button type="button" role="tab" class="' + (w.k === on ? 'on' : '') + '" aria-selected="'
+      + (w.k === on) + '" data-' + attr + '="' + w.k + '">' + esc(w.label) + '</button>';
+  }).join('');
+}
+
+/* WHICH ROWS ARE THIS PLAYER'S: the run this browser just filed, and, signed
+   in, every row the account filed on any device. */
+function boardMineOf(door){
+  var st = A.state ? A.state() : null;
+  var uid = st && st.signedIn ? st.userId : null;
+  var ids = {};
+  if (isPlayDoor(door)) {
+    var U = window.RTF_MODES_UI;
+    if (U && U.board) ids = U.board.mine(door) || {};
+  } else if (lbMine) ids[lbMine] = 1;
+  return function(r){ return !!(ids[r.id] || (uid && r.user_id === uid)); };
+}
+
+/* THE FIVE, rebuilt from a row's picks against this browser's own copy of the
+   league, with no request. A pick the local data cannot name says so rather
+   than being skipped, because a roster of four reads as a rendering fault. */
+function boardFiveHtml(row){
+  var picks = Array.isArray(row.picks) ? row.picks : [];
+  if (!picks.length) return '<p class="bd-team-foot">This run has no roster on file.</p>';
+  var slots = Array.isArray(row.slots) ? row.slots : [];
+  var h = '<ul class="bd-five">' + picks.map(function(k, i){
+    var pl = DATA && DATA.allPlayers ? DATA.allPlayers[k] : null;
+    return '<li><span class="ps">' + esc(slots[i] || (pl && pl.pp) || '') + '</span><span class="pn">'
+      + (pl ? esc(pl.n) + ' <i>' + esc(pl.s + ' ' + E.teamName(pl.t)) + '</i>'
+        : 'Season not in this version of the game') + '</span></li>';
+  }).join('') + '</ul>';
+  var foot = [];
+  if (row.spend_musd != null) foot.push('$' + Number(row.spend_musd).toFixed(0) + 'M spent');
+  if (row.chemistry) foot.push('Chemistry ' + (row.chemistry > 0 ? '+' : '') + Number(row.chemistry).toFixed(1));
+  if (row.point_diff != null) foot.push((row.point_diff > 0 ? '+' : '') + Number(row.point_diff).toFixed(1) + ' a night');
+  if (row.all_time_rank) foot.push('#' + row.all_time_rank + ' vs real NBA teams');
+  if (foot.length) h += '<p class="bd-team-foot">' + foot.join(' · ') + '</p>';
+  return h;
+}
+
+/* WHAT A DRAFT ROW SAYS. How far it went first, because that is what Best run
+   orders on and the reason the row above yours is above you, then the system,
+   then the club or the decade when the board is all of them. */
+function boardRunBits(r){
+  var bits = [];
+  var d = r.depth == null ? null : Number(r.depth);
+  if (r.is_goat) bits.push('<span class="bd-tag rec">' + BD_FLAME + 'Record</span>');
+  if (r.title_won) bits.push('<span class="bd-tag">' + BD_TROPHY + 'Champions</span>');
+  else if (d !== null && DEPTH_WORDS[d]) bits.push(esc(DEPTH_WORDS[d]));
+  else if (r.seed_label) bits.push(esc(r.seed_label));
+  if (r.lock_key && !lbMode.key) {
+    if (r.run_mode === 'club') bits.push(esc(E.teamName(r.lock_key)));
+    if (r.run_mode === 'era') bits.push(esc(ERA_NAMES[r.lock_key] || r.lock_key));
+  }
+  if (r.archetype) bits.push(esc(r.archetype));
+  var rating = lbAxis === 'rating';
+  return {
+    value: rating ? (r.rating == null ? '-' : Number(r.rating).toFixed(0)) : r.wins + '-' + r.losses,
+    unit: rating ? 'rating' : 'record',
+    meta: bits.join(' · '),
+    champ: !!r.title_won, record: !!r.is_goat,
+    more: function(){ return boardFiveHtml(r); },
+  };
+}
+
+/* THE JERSEYS, asked for after the list is drawn, so a slow answer never
+   holds the board up. A row filed by an account wears the house jersey until
+   its own arrives; a guest's is the same jersey, greyed. */
+function paintBoardJerseys(list, rows){
+  var uids = {};
+  rows.forEach(function(r){ if (r.user_id) uids[r.user_id] = 1; });
+  if (!B.jerseys || !Object.keys(uids).length) return;
+  B.jerseys(Object.keys(uids)).then(function(map){
+    if (!map || !list.isConnected) return;
+    list.querySelectorAll('.bd-crest[data-uid]').forEach(function(el){
+      var p = map[el.getAttribute('data-uid')];
+      if (!p) return;
+      var num = /^\d{1,2}$/.test(String(p.jersey_num || '')) ? p.jersey_num : '';
+      el.innerHTML = jerseySvg(p.jersey_club || 'house', num);
+    });
+  });
 }
 
 /* THE FOUR STATES, and each gets its own sentence. A blank box is how a
@@ -8942,134 +9105,163 @@ function renderBoardPickers(){
    worse. On a game this new "nobody yet" is the COMMON case, so it says being
    first is the prize rather than apologising for an empty list. */
 function paintBoard(){
-  var rows = $('lb-rows'), note = $('lb-note'), foot = $('lb-foot'), sub = $('lb-sub');
-  if (!rows) return;
+  var list = $('bd-list');
+  if (!list) return;
   var seq = ++lbSeq;
-  sub.textContent = modeName(lbMode);
-  rows.textContent = '';
-  note.className = 'lbnote';
-  note.textContent = 'Loading.';
-  foot.textContent = '';
+  var door = lbMode.door, play = isPlayDoor(door), dayDoor = !!DAY_DOORS[door];
 
-  ['run', 'record', 'rating'].forEach(function(ax){
-    $('lb-ax-' + ax).className = 'ptab' + (lbAxis === ax ? ' on' : '');
-    $('lb-ax-' + ax).setAttribute('aria-selected', lbAxis === ax ? 'true' : 'false');
+  var tabs = $('bd-tabs');
+  tabs.innerHTML = BOARD_TABS.map(function(t){
+    return '<button type="button" role="tab" class="bd-tab' + (t.k === door ? ' on' : '') + '" aria-selected="'
+      + (t.k === door) + '" data-k="' + t.k + '">' + esc(t.label) + '</button>';
+  }).join('');
+  tabs.querySelectorAll('.bd-tab').forEach(function(b){
+    b.onclick = function(){
+      var k = b.getAttribute('data-k');
+      openBoard(isPlayDoor(k) ? { door: k } : k === 'daily'
+        ? { door: 'daily', day: todayNumber() } : { door: k, key: null }, lbFrom);
+    };
   });
+  var onTab = tabs.querySelector('.bd-tab.on');
+  if (onTab && onTab.scrollIntoView) onTab.scrollIntoView({ block: 'nearest', inline: 'nearest' });
 
-  B.top(lbMode, 50, lbAxis).then(function(list){
-    /* A SLOWER REQUEST MUST NOT PAINT OVER A FASTER ONE. Two selects a half
+  renderBoardLock();
+  var axes = $('bd-axes');
+  axes.hidden = play;
+  axes.innerHTML = segHtml(BOARD_AXES, lbAxis, 'ax');
+  axes.querySelectorAll('button').forEach(function(b){
+    b.onclick = function(){ lbAxis = b.getAttribute('data-ax'); paintBoard(); };
+  });
+  var wins = $('bd-wins');
+  wins.innerHTML = segHtml(dayDoor ? DAY_WINS : RUN_WINS, lbWin, 'w');
+  wins.querySelectorAll('button').forEach(function(b){
+    b.onclick = function(){
+      lbWin = b.getAttribute('data-w');
+      if (door === 'daily') lbMode.day = todayNumber() - (lbWin === 'yesterday' ? 1 : 0);
+      paintBoard();
+    };
+  });
+  var sortB = $('bd-sort');
+  sortB.classList.toggle('asc', lbAsc);
+  sortB.innerHTML = BD_SORT_ICO + (lbAsc ? 'Low to high' : 'High to low');
+  sortB.onclick = function(){ lbAsc = !lbAsc; paintBoard(); };
+
+  var U = window.RTF_MODES_UI;
+  var day = dayDoor ? todayNumber() - (lbWin === 'yesterday' ? 1 : 0) : null;
+  if (door === 'daily') lbMode.day = day;
+  $('bd-h').textContent = 'Who is on top';
+  var more = $('bd-more'), count = $('bd-count'), foot = $('bd-foot');
+  list.innerHTML = '<div class="bd-empty">Loading...</div>';
+  more.hidden = true; count.textContent = ''; foot.textContent = '';
+
+  var since = dayDoor ? null : boardSince(lbWin);
+  var mode = play ? null : { door: door, key: lbMode.key, day: lbMode.day };
+  var mine = boardMineOf(door);
+  var rows = [], total = null;
+  var page = function(){
+    return play
+      ? (B.playList ? B.playList({ mode: door, day: day, since: since, asc: lbAsc, offset: rows.length, limit: BOARD_PAGE }) : Promise.resolve(null))
+      : (B.list ? B.list({ mode: mode, sort: lbAxis, asc: lbAsc, since: since, offset: rows.length, limit: BOARD_PAGE }) : Promise.resolve(null));
+  };
+  var counted = play
+    ? (B.playCount ? B.playCount(door, day, '', since) : Promise.resolve(null))
+    : B.total(mode, false, since, lbAxis);
+  var stale = function(){ return seq !== lbSeq; };
+  var noun = play ? (door === 'conquest' ? ['run', 'runs'] : ['entry', 'entries']) : ['run', 'runs'];
+
+  var rowHtml = function(r, i){
+    var rank = lbAsc ? (total != null ? total - i : null) : i + 1;
+    var b = play ? (U && U.board ? U.board.bits(r) : { value: String(r.score), unit: '', meta: '' }) : boardRunBits(r);
+    var meta = b.meta || '';
+    if (play && b.champ && b.tag) meta = '<span class="bd-tag">' + BD_TROPHY + esc(b.tag) + '</span>' + (meta ? ' · ' + meta : '');
+    var cls = 'bd-ent' + (rank != null && rank <= 3 ? ' top3' : '') + (b.champ ? ' champ' : '') + (b.record ? ' record' : '');
+    var crest = r.user_id
+      ? '<span class="bd-crest" data-uid="' + esc(r.user_id) + '">' + jerseySvg('house', '') + '</span>'
+      : '<span class="bd-crest guest">' + jerseySvg('house', '') + '</span>';
+    return '<div class="' + cls + '" data-i="' + i + '">'
+      + '<button type="button" class="bd-row' + (mine(r) ? ' me' : '') + '" aria-expanded="false">'
+      + '<span class="bd-pos">' + (rank == null ? '' : rank.toLocaleString()) + '</span>' + crest
+      + '<span class="bd-who"><span class="bd-name">' + esc(r.display_name || 'Guest') + '</span>'
+      + '<span class="bd-meta">' + meta + '</span></span>'
+      + '<span class="bd-rec"><b>' + esc(b.value) + '</b><span>' + esc(b.unit || '') + '</span></span>'
+      + '<span class="bd-caret">' + BD_CARET + '</span></button>'
+      + '<div class="bd-team" hidden></div></div>';
+  };
+  var wire = function(ents){
+    ents.forEach(function(ent){
+      var btn = ent.querySelector('.bd-row'), team = ent.querySelector('.bd-team');
+      btn.onclick = function(){
+        var open = !ent.classList.contains('open');
+        if (open && !team.getAttribute('data-built')) {
+          var r = rows[+ent.getAttribute('data-i')];
+          var bits = play ? (U && U.board ? U.board.bits(r) : null) : boardRunBits(r);
+          team.innerHTML = bits && bits.more ? bits.more() : '';
+          team.setAttribute('data-built', '1');
+        }
+        ent.classList.toggle('open', open);
+        team.hidden = !open;
+        btn.setAttribute('aria-expanded', String(open));
+      };
+    });
+  };
+  var paintMore = function(){
+    var left = total != null ? total - rows.length : null;
+    var full = rows.length > 0 && rows.length % BOARD_PAGE === 0;
+    more.hidden = !(left != null ? left > 0 : full);
+    more.textContent = left != null ? 'Show ' + Math.min(BOARD_PAGE, left) + ' more' : 'Show more';
+  };
+
+  Promise.all([page(), counted]).then(function(res){
+    /* A SLOWER REQUEST MUST NOT PAINT OVER A FASTER ONE. Two taps a half
        second apart is two lists in flight, and the first asked for can be the
        last to land. */
-    if (seq !== lbSeq) return;
-    if (list === null) {
-      note.className = 'lbnote bad';
-      note.textContent = B.needsMigration
+    if (stale()) return;
+    var got = res[0];
+    total = res[1];
+    if (got === null) {
+      list.innerHTML = '<div class="bd-empty bad">' + (B.needsMigration
         ? 'The leaderboard is not set up on this site yet.'
-        : 'Leaderboard not reachable right now. Your runs still count here.';
-      foot.textContent = B.lastError
-        ? B.lastError.where + ': ' + B.lastError.message : '';
+        : 'Leaderboard not reachable right now. Your runs still count here.') + '</div>';
+      foot.textContent = B.lastError ? B.lastError.where + ': ' + B.lastError.message : '';
       return;
     }
-    if (!list.length) {
-      note.className = 'lbnote first';
-      note.textContent = 'No names on this board yet. '
-        + 'Finish a run signed in and you are first.';
+    if (!got.length) {
+      list.innerHTML = '<div class="bd-empty first">' + (dayDoor
+        ? (lbWin === 'yesterday' ? 'Nobody finished yesterday\'s board.' : 'Nobody has finished today\'s board yet. Be first.')
+        : lbWin === 'day' ? 'Nobody has finished a run here today. Be first.'
+        : lbWin === 'week' ? 'Nobody has finished a run here this week. Be first.'
+        : 'No runs on this board yet. Finish one and you are first.') + '</div>';
       return;
     }
-    note.textContent = list.length === 1 ? 'One run on the board.'
-      : list.length + ' runs on the board, best first.';
-    list.forEach(function(row, i){ rows.appendChild(lbRow(row, i + 1)); });
-    foot.textContent = 'Only signed-in runs make the board. '
-      + 'Signed out, a run still counts toward your career.';
+    if (total != null) count.textContent = total.toLocaleString() + ' ' + (total === 1 ? noun[0] : noun[1])
+      + (dayDoor ? ' · Day ' + day : '');
+    rows.push.apply(rows, got);
+    list.innerHTML = got.map(function(r, i){ return rowHtml(r, i); }).join('');
+    wire([].slice.call(list.querySelectorAll('.bd-ent')));
+    paintMore();
+    paintBoardJerseys(list, rows);
+    foot.textContent = 'Sign in and your name goes on every run you finish. A run finished signed out shows as Guest.';
+    var me = list.querySelector('.bd-row.me');
+    if (me && lbFrom === 's-over') requestAnimationFrame(function(){ me.scrollIntoView({ block: 'center' }); });
   });
-}
-
-function lbRow(row, place){
-  var li = document.createElement('li');
-  li.className = 'lbrow' + (lbMine && row.id === lbMine ? ' you' : '');
-
-  var p = document.createElement('span');
-  p.className = 'pl';
-  p.textContent = place;
-
-  var who = document.createElement('span');
-  who.className = 'who';
-  var name = document.createElement('b');
-  name.textContent = row.display_name || 'Anonymous';
-  who.appendChild(name);
-  var line = document.createElement('span');
-  /* HOW FAR IT WENT FIRST, because that is what the list is ordered on and
-     the reason the row above yours is above you. Then the system, in the words
-     the results screen already uses, and never a number this board invented.
-     A row filed before depth existed falls back to its seed. */
-  var bits = [];
-  var d = row.depth == null ? null : Number(row.depth);
-  if (d !== null && DEPTH_WORDS[d]) bits.push(DEPTH_WORDS[d]);
-  else if (row.title_won) bits.push('Champions');
-  else if (row.seed_label) bits.push(row.seed_label);
-  if (row.archetype) bits.push(row.archetype);
-  line.textContent = bits.join(' · ');
-  if (row.title_won) line.className = 'ring';
-  who.appendChild(line);
-
-  var val = document.createElement('span');
-  val.className = 'val';
-  var em = document.createElement('em');
-  if (lbAxis === 'rating') {
-    val.textContent = row.rating == null ? '-' : Number(row.rating).toFixed(0);
-    em.textContent = 'rating';
-  } else {
-    val.textContent = row.wins + '-' + row.losses;
-    em.textContent = 'record';
-  }
-  val.appendChild(em);
-
-  li.appendChild(p); li.appendChild(who); li.appendChild(val);
-
-  /* THE FIVE, one tap away. Every row carries its picks as E.pkey strings,
-     which is the key DATA.allPlayers is built on, so a row is drawn against
-     this browser's own copy of the league with no request and no translation.
-     A pick the local data cannot name (a season this copy does not have yet)
-     says so rather than being skipped, because a roster of four reads as a
-     rendering fault. */
-  var picks = Array.isArray(row.picks) ? row.picks : [];
-  if (picks.length) {
-    var five = document.createElement('ul');
-    five.className = 'lbfive';
-    five.hidden = true;
-    var slots = Array.isArray(row.slots) ? row.slots : [];
-    picks.forEach(function(k, i){
-      var pl = DATA && DATA.allPlayers ? DATA.allPlayers[k] : null;
-      var r = document.createElement('li');
-      var ps = document.createElement('span');
-      ps.className = 'ps';
-      ps.textContent = slots[i] || (pl && pl.pp) || '';
-      var pn = document.createElement('span');
-      pn.className = 'pn';
-      if (pl) {
-        pn.textContent = pl.n + ' ';
-        var yr = document.createElement('i');
-        yr.textContent = pl.s + ' ' + E.teamName(pl.t);
-        pn.appendChild(yr);
-      } else {
-        pn.textContent = 'Season not in this version of the game';
-      }
-      r.appendChild(ps); r.appendChild(pn);
-      five.appendChild(r);
+  more.onclick = function(){
+    more.disabled = true; more.textContent = 'Loading...';
+    page().then(function(got){
+      more.disabled = false;
+      if (stale()) return;
+      if (got == null) { paintMore(); more.textContent = 'Could not load more. Try again'; return; }
+      if (!got.length) { more.hidden = true; return; }
+      var from = rows.length;
+      rows.push.apply(rows, got);
+      var holder = document.createElement('div');
+      holder.innerHTML = got.map(function(r, j){ return rowHtml(r, from + j); }).join('');
+      var ents = [].slice.call(holder.children);
+      ents.forEach(function(e){ list.appendChild(e); });
+      wire(ents);
+      paintMore();
+      paintBoardJerseys(list, rows);
     });
-    li.appendChild(five);
-    li.tabIndex = 0;
-    li.setAttribute('aria-expanded', 'false');
-    var flip = function(){
-      five.hidden = !five.hidden;
-      li.setAttribute('aria-expanded', five.hidden ? 'false' : 'true');
-    };
-    li.onclick = flip;
-    li.onkeydown = function(e){
-      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); flip(); }
-    };
-  }
-  return li;
+  };
 }
 
 /* WHAT THIS RUN EARNED, off run.earned, which recordRun worked out at the
@@ -11442,28 +11634,15 @@ $('b-era-x').onclick = closeEras;
 $('b-gs-x').onclick = closeGame;
 $('b-gs-prev').onclick = function(){ stepGame(-1); };
 $('b-gs-next').onclick = function(){ stepGame(1); };
-$('b-lb-x').onclick = closeBoard;
+$('b-board-back').onclick = closeBoard;
 $('b-prof-board').onclick = function(){ closeProfile(); openBoard(); };
 $('b-home-board').onclick = function(){ openBoard(); };
-$('o-stand').onclick = function(){ openBoard(modeOfRun(run)); };
-/* THE DOOR RESETS THE LOCK, deliberately. Switching from the Bulls board to
-   Decades and getting whichever era the previous session happened to leave
-   behind is a screen answering a question nobody asked; renderBoardPickers
-   fills the empty key with the last one PLAYED, which is the club or the
-   decade this player actually cares about. */
-$('lb-door').onchange = function(){
-  lbMode = { door: this.value, key: null, day: null };
-  if (lbMode.door === 'daily') lbMode.day = todayNumber();
-  renderBoardPickers();
+$('o-stand').onclick = function(){ openBoard(modeOfRun(run), 's-over'); };
+/* ONE TEAM OR ONE DECADE, or all of them. The empty value is all of them. */
+$('bd-lock').onchange = function(){
+  lbMode = { door: lbMode.door, key: this.value || null, day: null };
   paintBoard();
 };
-$('lb-key').onchange = function(){
-  lbMode = { door: lbMode.door, key: this.value, day: null };
-  paintBoard();
-};
-$('lb-ax-run').onclick = function(){ lbAxis = 'run'; paintBoard(); };
-$('lb-ax-record').onclick = function(){ lbAxis = 'record'; paintBoard(); };
-$('lb-ax-rating').onclick = function(){ lbAxis = 'rating'; paintBoard(); };
 /* Tapping the scrim closes it, which is what a sheet is expected to do, but a
    tap INSIDE the panel must not, or every button press dismisses the thing. */
 $('sheet').addEventListener('click', function(ev){ if (ev.target === $('sheet')) closeProfile(); });
@@ -11483,15 +11662,13 @@ $('mw-grid').addEventListener('click', function(ev){
   if (ev.target.closest && ev.target.closest('button')) closeModes(true); });
 $('gamesheet').addEventListener('click', function(ev){
   if (ev.target === $('gamesheet')) closeGame(); });
-$('boardsheet').addEventListener('click', function(ev){
-  if (ev.target === $('boardsheet')) closeBoard(); });
 /* ONE KEY, TWO SHEETS, and the club picker is the one that can be open over
    the profile is not: they are opened from different screens and never both.
    Escape closes whichever is up, and closing a shut sheet is a no-op, so the
    order does not matter. */
 document.addEventListener('keydown', function(ev){
   if (ev.key !== 'Escape') return;
-  closeProfile(); closeClubs(); closeEras(); closeGame(); closeBoard(); closeModes();
+  closeProfile(); closeClubs(); closeEras(); closeGame(); closeModes();
   if (!$('frg').hidden) frgClose();
 });
 
@@ -11513,9 +11690,7 @@ document.addEventListener('keydown', function(ev){
     ht.open = true;
     ht.scrollIntoView({ block: 'start', behavior: 'smooth' });
   };
-  $('b-home-boards').onclick = function(){
-    if (window.RTF_MODES_UI) window.RTF_MODES_UI.openBoards(); else openBoard();
-  };
+  $('b-home-boards').onclick = function(){ openBoard(); };
 })();
 
 /* THE OTHER MODES' FEATS. Conquest, Fix History and Six Passes file no row,
@@ -11583,7 +11758,7 @@ window.RTF_PAGE = {
   board: function(){ return B; },
   auth: function(){ return A; },
   openProfile: openProfile,
-  openBoard: function(){ openBoard(); },
+  openBoard: function(m){ openBoard(m); },
   goHome: function(){ show('s-home'); renderHome(); },
   /* The chip in the top bar, for a screen that is not the draft's. */
   bar: function(text){
@@ -11617,6 +11792,6 @@ boot();
 </script>
 <!-- AFTER the page, because it draws through window.RTF_PAGE, which the script
      above publishes. -->
-<script src="modes-ui.js?v=15"></script>
+<script src="modes-ui.js?v=16"></script>
 </body>
 </html>

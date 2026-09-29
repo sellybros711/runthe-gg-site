@@ -2261,8 +2261,8 @@
       "sha": "814d6471760c59b4"
     },
     "board.js": {
-      "v": "5",
-      "sha": "e377af19fb95be50"
+      "v": "6",
+      "sha": "0c56e909efaaaada"
     },
     "auth.js": {
       "v": "3",
@@ -2281,8 +2281,8 @@
       "sha": "bd012c3ec2d45f42"
     },
     "modes-ui.js": {
-      "v": "15",
-      "sha": "e2e7b969751042a2"
+      "v": "16",
+      "sha": "86ed04b12d4b2c9b"
     },
     "data/players.json": {
       "v": "5",

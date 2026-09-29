@@ -401,11 +401,6 @@ var CSS = [
   '.ps-chosen{display:flex;align-items:center;gap:10px;background:#161d2b;border:1px solid #2a3450;border-radius:10px;padding:10px 12px;margin-top:6px;}',
   '.ps-chosen b{flex:1;}',
   '.ps-chosen small{color:var(--dim);}',
-  '.mb-modes{display:flex;gap:6px;overflow-x:auto;margin:0 0 10px;scrollbar-width:none;}',
-  '.mb-modes::-webkit-scrollbar{display:none;}',
-  '.mb-mode{flex:0 0 auto;width:auto;border-radius:999px;padding:6px 12px;font-size:12.5px;font-weight:800;',
-  '  background:#141a26;border:1px solid var(--cardb);color:var(--mut);}',
-  '.mb-mode.on{background:var(--orange);border-color:var(--orange);color:#fff;}',
 
 
   /* ── Conquest ── */
@@ -587,7 +582,6 @@ var CSS = [
   '.fx-chips{display:flex;gap:6px;overflow-x:auto;padding:2px 2px 8px;scrollbar-width:none;}',
   '.fx-chips::-webkit-scrollbar{display:none;}',
   '.fx-chip{flex:0 0 auto;width:auto;border-radius:999px;padding:6px 12px;font-size:12.5px;font-weight:800;',
-  '  background:#141a26;border:1px solid var(--cardb);color:var(--mut);}',
   '.fx-chip.on{background:#0f766e;border-color:#5eead4;color:#fff;}',
   '.fx-fil{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:2px 0 4px;}',
   '.fx-fil .fx-q{padding:10px 12px;font-size:14px;}',
@@ -752,28 +746,13 @@ var CSS = [
   '.ps-done i{color:var(--dim);font-style:normal;}',
 
   /* the leaderboard sheet */
-  '#mb-sheet[hidden]{display:none;}',
-  '.mb-card{max-height:84vh;display:flex;flex-direction:column;}',
   '.mb-top{display:flex;align-items:center;justify-content:space-between;gap:10px;}',
   '.mb-top button.sm{padding:6px 12px;font-size:12px;}',
-  '.mb-tabs{display:flex;gap:6px;margin:12px 0 10px;}',
-  '.mb-tab{flex:1;background:#141a26;border:1px solid var(--cardb);color:var(--mut);padding:8px;border-radius:8px;}',
-  '.mb-tab.on{background:#1e2a3d;color:var(--ink);border-color:#3b4b66;}',
-  '.mb-rows{overflow-y:auto;display:grid;gap:4px;padding-bottom:4px;}',
-  '.mb-row{display:grid;grid-template-columns:30px 1fr auto;gap:10px;align-items:center;padding:8px 10px;',
-  '  border-radius:8px;background:rgba(255,255,255,.03);border:1px solid var(--line);}',
-  '.mb-row.me{border-color:var(--gold);background:#1e1a10;}',
-  '.mb-n{font-family:var(--pixel);font-size:11px;color:var(--mut);text-align:center;}',
-  '.mb-who{min-width:0;}',
-  '.mb-who b{display:block;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}',
-  '.mb-who small{display:block;font-size:11.5px;color:var(--dim);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}',
-  '.mb-v{font-family:var(--display);font-size:18px;font-variant-numeric:tabular-nums;}',
-  'button.mb-row{width:100%;text-align:left;color:var(--ink);font:inherit;cursor:pointer;}',
-  'button.mb-row .mb-v::after{content:"";display:inline-block;width:6px;height:6px;margin-left:8px;vertical-align:4px;',
-  '  border-right:2px solid var(--dim);border-bottom:2px solid var(--dim);transform:rotate(45deg);transition:transform .15s;}',
-  'button.mb-row.open .mb-v::after{transform:rotate(-135deg);vertical-align:0;}',
-  'button.mb-row.open{border-color:rgba(94,234,212,.45);}',
-  '.mb-more{margin:-2px 0 4px;padding:10px 12px;border-radius:0 0 8px 8px;background:#0f1520;border:1px solid var(--line);border-top:0;}',
+  '.mb-chain{margin:0 0 4px;padding:0;list-style:none;display:grid;gap:2px;counter-reset:ch;}',
+  '.mb-chain li{display:flex;align-items:baseline;gap:8px;font-size:12.5px;padding:3px 0;border-top:1px solid rgba(255,255,255,.04);}',
+  '.mb-chain li b{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}',
+  '.mb-chain small{color:var(--dim);font-weight:600;font-variant-numeric:tabular-nums;}',
+  '.mb-chain em{font-style:normal;font-size:9.5px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#5eead4;}',
   '.mb-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:10px;}',
   '.mb-stats div{background:rgba(255,255,255,.03);border-radius:6px;padding:6px 8px;}',
   '.mb-stats small{display:block;font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);font-weight:800;}',
@@ -2960,52 +2939,36 @@ function cqSubmitOrPlace(){
   });
 }
 
-/* THE SHEET. One for all three modes, because the three boards are one query
-   with a different mode. The dailies read today and yesterday; Conquest reads
-   today and all time. */
-var mbMode = null, mbTab = 0;
-function openModeBoard(mode){
-  mbMode = mode; mbTab = 0;
-  var sh = $('mb-sheet');
-  if (!sh) {
-    sh = document.createElement('div');
-    sh.id = 'mb-sheet';
-    sh.className = 'fx-sheet';
-    document.body.appendChild(sh);
-    sh.addEventListener('click', function(ev){ if (ev.target === sh) closeModeBoard(); });
-    document.addEventListener('keydown', function(ev){ if (ev.key === 'Escape') closeModeBoard(); });
-  }
-  sh.hidden = false;
-  paintModeBoard();
-}
-function closeModeBoard(){ var sh = $('mb-sheet'); if (sh) sh.hidden = true; }
+/* THE BOARDS ARE ONE SCREEN NOW, the page's own s-board, which is Run The
+   Diamond's leaderboard: a tab a mode, a window, a sort, a hundred rows at a
+   time, and a row that opens. This file only knows what a Conquest, Fix History
+   or Six Passes row SAYS, and hands that over through RTF_MODES_UI.board. */
+function openModeBoard(mode){ if (P.openBoard) P.openBoard({ door: mode }); }
 function mbDetail(row){
   var d = data();
   if (row.mode === 'fix') {
     var nm = function(k){ var p = d.allPlayers[k]; return p ? esc(surname(p.n)) : '?'; };
     /* A season of trades says how many and who came in. */
     if (Array.isArray(row.fix_trades)) {
-      if (!row.fix_trades.length) return 'Stood pat' + (row.replay_title ? ' 🏆' : '');
+      if (!row.fix_trades.length) return 'Stood pat';
       var got = [];
       row.fix_trades.forEach(function(t){ (t.ins || []).forEach(function(k){ got.push(nm(k)); }); });
-      return plural(row.fix_trades.length, 'trade') + ' · got ' + got.slice(0, 3).join(', ') + (row.replay_title ? ' 🏆' : '');
+      return plural(row.fix_trades.length, 'trade') + ' · got ' + got.slice(0, 3).join(', ');
     }
     var ins = row.fix_ins || [row.fix_in], outs = row.fix_outs || [row.fix_out];
     var inn = d.allPlayers[ins[0]];
     var from = row.fix_with ? E.teamName(tsParts(row.fix_with).code) : inn ? shortClub(inn.t, inn.s) : '';
-    return ins.map(nm).join(', ') + (from ? ' ' + esc(from) : '') + ' for ' + outs.map(nm).join(', ')
-      + (row.replay_title ? ' 🏆' : '');
+    return ins.map(nm).join(', ') + (from ? ' ' + esc(from) : '') + ' for ' + outs.map(nm).join(', ');
   }
-  if (row.mode === 'passes') return row.solved ? plural(row.passes, 'pass', 'passes') + ' · par ' + row.par : 'Shot clock';
+  if (row.mode === 'passes') return row.solved ? 'Par ' + row.par : 'Shot clock ran out';
   var took = (row.cq_took || []).slice(-2).map(function(k){ var p = d.allPlayers[k]; return p ? esc(surname(p.n)) : ''; }).filter(Boolean);
-  return plural(row.cq_wins, 'win') + (row.cq_cleared ? ' 👑' : '') + (took.length ? ' · took ' + took.join(', ') : '');
+  return took.length ? 'Took ' + took.join(', ') : 'Took nobody';
 }
 /* A FIX HISTORY ROW OPENS INTO THE SEASON IT WAS. The board already carries
    the club and every trade, so the final roster is rebuilt here from this
    browser's own data with no request: the club, then each trade in order. What
    it cannot say is who started, because the lineup is not filed, so it lists
    the roster by win shares and marks who came in. */
-var mbOpen = null;
 function mbFixTrades(row){
   if (Array.isArray(row.fix_trades)) return row.fix_trades;
   var ins = row.fix_ins || (row.fix_in ? [row.fix_in] : []), outs = row.fix_outs || (row.fix_out ? [row.fix_out] : []);
@@ -3026,7 +2989,7 @@ function mbFixMore(row){
     + '<div><small>Title odds</small><b>' + pct1(odds) + '</b></div>'
     + '<div><small>As built</small><b>' + (isFinite(base) ? pct1(base) : '-') + '</b></div>'
     + '<div><small>Replay</small><b>' + (row.replay_wins != null ? row.replay_wins + '-' + (E.CONSTANTS.REGULAR_SEASON_GAMES - row.replay_wins) : '-')
-    + (row.replay_title ? ' 🏆' : '') + '</b></div></div>';
+    + (row.replay_title ? ' · Won it' : '') + '</b></div></div>';
   if (trades.length) {
     h += '<ul class="mb-deals">' + trades.map(function(t){
       var w = M.FX_WINDOWS[t.w], club = t.with ? E.teamName(tsParts(t.with).code) : '';
@@ -3043,79 +3006,57 @@ function mbFixMore(row){
   }
   return h;
 }
-function mbValue(row){
-  if (row.mode === 'fix') return pct1(Number(row.fix_odds));
-  if (row.mode === 'passes') return row.solved ? String(row.passes) : 'X';
-  return String(row.cq_wins);
+/* A SIX PASSES ROW OPENS INTO ITS CHAIN, and a Conquest row into the five it
+   finished with and who ended it, drawn from this browser's own data with no
+   request, the way a Fix History row opens into its season. */
+function mbPassesMore(row){
+  var chain = Array.isArray(row.chain) ? row.chain : [];
+  if (!chain.length) return '<p class="fx-hint">No chain on file.</p>';
+  var g = graph();
+  return '<ol class="mb-chain">' + chain.map(function(id, i){
+    var sp = g.span[id];
+    return '<li><b>' + esc(g.nameOf(id) || id) + '</b>'
+      + (sp ? '<small>' + sp[0] + (sp[1] !== sp[0] ? '-' + sp[1] : '') + '</small>' : '')
+      + (i ? '' : '<em>Start</em>') + '</li>';
+  }).join('') + '</ol>'
+    + '<p class="bd-team-foot">' + (row.solved ? plural(row.passes, 'pass', 'passes') + ' against a par of ' + row.par
+      : 'The shot clock ran out after ' + plural(Math.max(0, chain.length - 1), 'pass', 'passes')) + '.</p>';
 }
-function paintModeBoard(){
-  var sh = $('mb-sheet');
-  if (!sh || sh.hidden) return;
-  var tabs = mbMode === 'conquest' ? ['Today', 'All time'] : ['Today', 'Yesterday'];
-  var d = today();
-  var day = mbMode === 'conquest' ? (mbTab === 0 ? d : null) : (mbTab === 0 ? d : d - 1);
-  var mine = {};
-  if (mbMode === 'fix') { var fr = fxResult(d); if (fr && fr.boardId) mine[fr.boardId] = 1; var fy = fxResult(d - 1); if (fy && fy.boardId) mine[fy.boardId] = 1; }
-  if (mbMode === 'passes') { var pd = psStore().days; Object.keys(pd).forEach(function(k){ if (pd[k].boardId) mine[pd[k].boardId] = 1; }); }
-  if (mbMode === 'conquest' && cq && cq.boardId) mine[cq.boardId] = 1;
-  var modes = [['draft', 'Classic'], ['conquest', 'Conquest'], ['fix', 'Fix History'], ['passes', 'Six Passes']];
-  sh.innerHTML = '<div class="fx-card mb-card"><div class="mb-top"><h2 style="margin:0">Leaderboards'
-    + '</h2><button class="ghost sm" id="mb-x">Close</button></div><div class="mb-modes">'
-    + modes.map(function(m){ return '<button class="mb-mode' + (m[0] === mbMode ? ' on' : '') + '" data-m="' + m[0] + '">' + m[1] + '</button>'; }).join('')
-    + '</div><div class="mb-tabs">'
-    + tabs.map(function(t, i){ return '<button class="mb-tab' + (i === mbTab ? ' on' : '') + '" data-i="' + i + '">' + t + '</button>'; }).join('')
-    + '</div><div id="mb-rows" class="mb-rows"><p class="fx-hint">Loading the board...</p></div></div>';
-  $('mb-x').onclick = closeModeBoard;
-  /* THE DRAFT'S BOARD IS ITS OWN SHEET, with its own competitions and axes,
-     so its chip hands over to it rather than drawing a thinner copy here. */
-  sh.querySelectorAll('.mb-mode').forEach(function(b){
-    b.onclick = function(){
-      var m = b.getAttribute('data-m');
-      if (m === 'draft') { closeModeBoard(); if (P.openBoard) P.openBoard(); return; }
-      mbMode = m; mbTab = 0; paintModeBoard();
-    };
-  });
-  sh.querySelectorAll('.mb-tab').forEach(function(b){
-    b.onclick = function(){ mbTab = Number(b.getAttribute('data-i')); paintModeBoard(); };
-  });
-  var want = mbMode + ':' + mbTab;
-  BB().playTop(mbMode, day, 50).then(function(rows){
-    if (!$('mb-rows') || mbMode + ':' + mbTab !== want) return;
-    var box = $('mb-rows');
-    if (rows === null) {
-      box.innerHTML = '<p class="fx-hint">The leaderboard is not reachable right now. Your result is saved on this device.</p>';
-      return;
-    }
-    if (!rows.length) {
-      box.innerHTML = '<p class="fx-hint">Nobody with a name on the board yet. Sign in and you are first.</p>';
-      return;
-    }
-    var h = '', place = 0, last = null, fix = mbMode === 'fix';
-    rows.forEach(function(r, i){
-      if (r.score !== last) { place = i + 1; last = r.score; }
-      var tag = fix ? 'button' : 'div', open = fix && mbOpen === r.id;
-      h += '<' + tag + ' class="mb-row' + (mine[r.id] ? ' me' : '') + (open ? ' open' : '') + '"'
-        + (fix ? ' data-id="' + Number(r.id) + '" aria-expanded="' + open + '"' : '') + '><span class="mb-n">' + place + '</span>'
-        + '<span class="mb-who"><b>' + esc(r.display_name || 'Guest') + '</b><small>' + mbDetail(r) + '</small></span>'
-        + '<span class="mb-v">' + mbValue(r) + '</span></' + tag + '>'
-        + (open ? '<div class="mb-more">' + mbFixMore(r) + '</div>' : '');
-    });
-    box.innerHTML = h;
-    if (fix) box.querySelectorAll('button.mb-row[data-id]').forEach(function(b){
-      b.onclick = function(){
-        var id = Number(b.getAttribute('data-id')), y = box.scrollTop;
-        mbOpen = mbOpen === id ? null : id;
-        var r = rows.filter(function(x){ return Number(x.id) === id; })[0];
-        box.querySelectorAll('.mb-more').forEach(function(m){ m.remove(); });
-        box.querySelectorAll('button.mb-row.open').forEach(function(o){ o.classList.remove('open'); o.setAttribute('aria-expanded', 'false'); });
-        if (mbOpen != null && r) {
-          b.classList.add('open'); b.setAttribute('aria-expanded', 'true');
-          b.insertAdjacentHTML('afterend', '<div class="mb-more">' + mbFixMore(r) + '</div>');
-        }
-        box.scrollTop = y;
-      };
-    });
-  });
+function mbConquestMore(row){
+  var d = data(), men = Array.isArray(row.cq_roster) ? row.cq_roster : [];
+  var h = men.length ? '<div class="mb-ros">' + men.map(function(k){
+    var p = d.allPlayers[k];
+    return '<div class="mb-man"><span>' + esc(p ? p.n : 'Season not in this version') + '</span>'
+      + (p ? '<small>' + esc(shortClub(p.t, p.s)) + ' · ' + (p.pts || 0).toFixed(1) + ' pts</small>' : '') + '</div>';
+  }).join('') + '</div>' : '<p class="fx-hint">No roster on file.</p>';
+  var foot = [plural(row.cq_wins, 'win')];
+  if (row.cq_cleared) foot.push('cleared the whole ladder');
+  else if (row.cq_lost_to) foot.push('ended by ' + esc(E.teamName(tsParts(row.cq_lost_to).code)) + ' ' + esc(tsParts(row.cq_lost_to).season || ''));
+  return h + '<p class="bd-team-foot">' + foot.join(' · ') + '</p>';
+}
+/* WHAT A ROW SAYS, for s-board. The value is what the board ranks on, the tag
+   is the one mark a row can wear (gold, like a title on the draft boards), and
+   `more` is what opens under it. */
+function boardBits(row){
+  if (row.mode === 'fix') return {
+    value: pct1(Number(row.fix_odds)), unit: 'title odds', meta: mbDetail(row),
+    champ: !!row.replay_title, tag: 'Won it all', more: function(){ return mbFixMore(row); } };
+  if (row.mode === 'passes') return {
+    value: row.solved ? String(row.passes) : 'X', unit: row.solved ? 'passes' : 'no chain',
+    meta: mbDetail(row), champ: !!(row.solved && row.passes <= row.par),
+    tag: row.solved && row.passes < row.par ? 'Under par' : 'At par',
+    more: function(){ return mbPassesMore(row); } };
+  return {
+    value: String(row.cq_wins), unit: row.cq_wins === 1 ? 'win' : 'wins', meta: mbDetail(row),
+    champ: !!row.cq_cleared, tag: 'Cleared', more: function(){ return mbConquestMore(row); } };
+}
+/* WHICH ROWS ARE THIS BROWSER'S, by the board id each mode kept when it filed. */
+function boardMine(mode){
+  var mine = {}, d = today();
+  if (mode === 'fix') [d, d - 1].forEach(function(x){ var r = fxResult(x); if (r && r.boardId) mine[r.boardId] = 1; });
+  if (mode === 'passes') { var pd = psStore().days; Object.keys(pd).forEach(function(k){ if (pd[k].boardId) mine[pd[k].boardId] = 1; }); }
+  if (mode === 'conquest' && cq && cq.boardId) mine[cq.boardId] = 1;
+  return mine;
 }
 
 // ═══ WIRING ═════════════════════════════════════════════════════════════════
@@ -3304,7 +3245,8 @@ window.RTF_MODES_UI = {
   openFix: fxOpen,
   openPasses: psOpen,
   /* Every board in one sheet, from the front page's quiet row. */
-  openBoards: function(){ openModeBoard('fix'); },
+  openBoards: function(){ if (P.openBoard) P.openBoard(); },
+  board: { bits: function(r){ return boardBits(r); }, mine: function(m){ return boardMine(m); } },
   /* The doors the draft's results screen offers: the dailies still open
      today, and Conquest. Built here because only this file knows whether a
      daily is done. */
