@@ -12613,7 +12613,7 @@ wrong three times.
 the claim is that the arithmetic is immune to a clock change, and on a CI
 machine running UTC the broken version passes. Proved by reintroducing it.
 
-### The leaderboard, and why there are four of them
+### The leaderboard, and why there are several of them
 
 ```
 node hoops/check-board.mjs                        the page, in a browser, in every state
@@ -12660,6 +12660,52 @@ made those rosters unrenderable and the two halves indistinguishable, on 5% of
 players, with nothing on screen to say which one it picked. It is `E.pkey()`'s
 format exactly and not a wire format translated at each end, because the client
 looks a row up in the map it already keys by that string.
+
+#### The board is a screen on Run The Diamond's model, and it lists every run
+
+Reported by a player with a screenshot: the league board read "No names on this
+board yet" over a career with runs in it, and an empty select sat beside the one
+that picked the board. Asked for: model it on Run The Diamond's and The Perfect
+Season's.
+
+**It listed named runs only, and that is what made it look broken.** A run
+finished signed out was filed, counted and never shown. Driven against a real
+Postgres 16 with 108, 300 payloads built by the real engine (Classic with all
+three plans, One Franchise, Decades) were all accepted, so the submit was never
+the fault: the filter was. Diamond lists every season and draws a guest as
+Anonymous; this lists every run and draws a guest as Guest. `ranks()` counts the
+same rows, so the results card's place is a place on the list it opens.
+
+**The empty select was `.lbmode{display:block}` beating `hidden`**, which is
+this repo's `[hidden]` pair arriving at the board. `check-board` reads the lock
+picker's COMPUTED display now, never the attribute.
+
+`s-board` is one screen for all seven boards, and it replaced two sheets (the
+draft's, and a second one modes-ui.js drew for Conquest, Fix History and Six
+Passes):
+
+| | |
+|---|---|
+| tabs | Classic, Daily Draft, One Franchise, Decades, Conquest, Fix History, Six Passes |
+| lock | One Franchise and Decades open on every team or decade, and narrow from a select |
+| axes | Best run, Record, Rating (the draft boards only) |
+| window | Today, This week, All time; the three day boards are Today or Yesterday |
+| sort | High to low or low to high, and a row keeps its real place either way |
+| paging | a hundred rows at a time, off the count |
+| rows | open into the five (or the season, the chain, the Conquest roster); a champion is gold, a 74 win run moves |
+| circles | the jersey each account chose, off `rtf_profiles` (129), asked after the list is drawn |
+
+**A locked door with no key is every key, not the league.** `modeOf` used to
+send a key-less club board to the league, which is a different competition
+listed under the wrong name. modes-ui.js only says what one of its rows looks
+like (`RTF_MODES_UI.board.bits`) and which rows are this browser's.
+
+**A submit that fails is said on the results card**, with the server's reason,
+instead of a place. The board answered, so the run would otherwise get a place
+in a field it is not in, which is the one lie that card can tell.
+
+**Back returns to the screen the board was opened from**, the results, a mode's
+result, or the front page.
 
 #### The migration hardcodes the engine, and the drift is silent
 

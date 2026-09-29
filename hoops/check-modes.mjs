@@ -970,13 +970,22 @@ if (!QUICK) {
      the club and the trades, and the numbers the row does not have room for. */
   boardRows = [{ id: 501, created_at: '2026-09-27T12:00:00Z', display_name: 'Tester', mode: 'fix', day: fx.day, score: 31,
     fix_ts: fx.ts, fix_odds: 0.312, fix_base: 0.114, replay_wins: 61, replay_title: true, fix_trades: saved.trades }];
+  /* THE BOARD IS THE PAGE'S LEADERBOARD SCREEN, on the Fix History tab, and
+     it has to land there rather than on Classic. */
   await page.click('#fx-board');
-  await page.waitForSelector('#mb-rows button.mb-row[data-id="501"]');
-  ok(await page.$('#mb-rows .mb-more') === null, 'a board row starts shut');
-  await page.click('#mb-rows button.mb-row[data-id="501"]');
-  await page.waitForSelector('#mb-rows .mb-more');
+  await page.waitForSelector('#s-board.active #bd-list .bd-ent');
+  const tab = await page.evaluate(() => (document.querySelector('#bd-tabs .bd-tab.on') || {}).getAttribute
+    && document.querySelector('#bd-tabs .bd-tab.on').getAttribute('data-k'));
+  ok(tab === 'fix', `the result's board button opens the Fix History tab (${tab})`);
+  const row0 = '#bd-list .bd-ent .bd-row';
+  ok(await page.$('#bd-list .bd-team:not([hidden])') === null, 'a board row starts shut');
+  ok(await page.evaluate(() => /Won it all/.test(document.querySelector('#bd-list .bd-meta').textContent)
+    && document.querySelector('#bd-list .bd-ent').classList.contains('champ')),
+    'a replay that won it wears the gold');
+  await page.click(row0);
+  await page.waitForSelector('#bd-list .bd-team:not([hidden])');
   const more = await page.evaluate(() => {
-    const m = document.querySelector('#mb-rows .mb-more');
+    const m = document.querySelector('#bd-list .bd-team:not([hidden])');
     return { text: m.textContent, men: m.querySelectorAll('.mb-man').length, newMen: m.querySelectorAll('.mb-man em').length };
   });
   const finalRows = await page.evaluate((t) => window.RTF_MODES.fxRosterAt(window.RTF_PAGE.data, { ts: t.ts, trades: t.trades }, 3).length,
@@ -985,9 +994,11 @@ if (!QUICK) {
   ok(more.newMen === saved.trades[0].ins.length, `with the men who came in marked (${more.newMen})`);
   ok(/31\.2%/.test(more.text) && /11\.4%/.test(more.text) && /61-21/.test(more.text), 'and the odds, the odds as built and the replay');
   ok(/Preseason/.test(more.text), 'and each trade, by the window it was made in');
-  await page.click('#mb-rows button.mb-row[data-id="501"]');
-  ok(await page.$('#mb-rows .mb-more') === null, 'a second press shuts it');
-  await page.click('#mb-x');
+  await page.click(row0);
+  ok(await page.$('#bd-list .bd-team:not([hidden])') === null, 'a second press shuts it');
+  await page.click('#b-board-back');
+  await page.waitForSelector('#s-fix.active');
+  ok(await page.$('#fx-share') !== null, 'and Back returns to the result it was opened from');
   await page.reload({ waitUntil: 'domcontentloaded' });
   await page.waitForSelector('#mc-cq', { state: 'attached', timeout: 60000 });
   await tapMode(page, '#mc-fix');
