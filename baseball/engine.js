@@ -1692,19 +1692,25 @@ const TITLE = {
    * over 1,500 drafted rosters, 40 Octobers each, share of Octobers:
    *
    *   rating   lost the DS    reached the WS    won it
-   *   95+      19% to 4%      47% to 89%        21% to 77%
-   *   90-94    23% to 10%     40% to 71%        13% to 47%
-   *   85-89    28% to 22%     27% to 38%        7% to 13%
+   *   95+      19% to 4%      47% to 90%        21% to 51%
+   *   90-94    23% to 10%     40% to 71%        13% to 29%
+   *   85-89    28% to 22%     27% to 37%        7% to 10%
    *   under 85 unchanged
+   *
+   * THE WORLD SERIES KEEPS ONLY ELITE_WS_SHARE OF IT, the owner's call: a 95+
+   * team should nearly always get there and win it about half the time. With
+   * the full ease in the World Series too, that team won 77% of its Octobers.
    *
    * Not in All-Time Staff, whose rating is its own ERA scale. */
   ELITE_FROM: 85,
   ELITE_PER: 0.025,
   ELITE_MAX: 0.35,
+  ELITE_WS_SHARE: 0.3,
 };
-function eliteEase(shown) {
+function eliteEase(shown, share) {
   if (typeof shown !== 'number') return 1;
-  return 1 - Math.min(TITLE.ELITE_MAX, Math.max(0, (shown - TITLE.ELITE_FROM) * TITLE.ELITE_PER));
+  const s = typeof share === 'number' ? share : 1;
+  return 1 - s * Math.min(TITLE.ELITE_MAX, Math.max(0, (shown - TITLE.ELITE_FROM) * TITLE.ELITE_PER));
 }
 function titleEdge(rating) {
   if (typeof rating !== 'number') return 1;
@@ -1738,7 +1744,6 @@ function playoffSeries(runsFor, runsAgainst, savePct, rng, bestOf, advantage) {
 function generatePlayoffs(seed, runsFor, runsAgainst, savePct, rng, regularWins, rating, pool, shown) {
   if (!seed.made) return null;
   const edge = titleEdge(rating);
-  const ease = eliteEase(shown);
 
   const rounds = playoffRoundNames(seed.rounds);
   const results = [];
@@ -1777,6 +1782,7 @@ function generatePlayoffs(seed, runsFor, runsAgainst, savePct, rng, regularWins,
     let titleMult = 1;
     if (roundName === 'World Series') titleMult = edge;
     else if (roundName === 'Championship Series') titleMult = 1 + (edge - 1) * TITLE.SEMI_SHARE;
+    const ease = eliteEase(shown, roundName === 'World Series' ? TITLE.ELITE_WS_SHARE : 1);
     const oppRA = defAdj * roundDifficulty * titleMult * ease;
 
     // Best-of-5 for WC and LDS, best-of-7 for LCS and WS

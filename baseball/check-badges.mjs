@@ -261,6 +261,7 @@ for (const [opts, bot, respins] of plan) {
 const GRIND = {
   daily_100: 'daily_50',
   daily_streak_30: 'daily_streak_14',
+  title_10: 'title_5',
 };
 const SKILL = {
   /* A TITLE IS ABOUT ONE RUN IN SIXTY even for the best bot, so anything that
@@ -357,9 +358,11 @@ const SKILL = {
   oct_streak_10: 'oct_streak_5',
   /* AN ELITE TEAM PLAYS LIKE ONE IN OCTOBER (TITLE.ELITE_* in engine.js): a
      roster rated 85 or better meets easier opponents, so a 95+ roster reaches
-     the World Series most years. Four excuses came off because the quick sweep
-     lights them now: ten titles, a wild card title, and a Division and a
-     Decades title. */
+     the World Series most years. The World Series keeps less of the ease, so
+     a 95+ roster wins it about half the time. Two excuses came off because the
+     quick sweep lights them now (a wild card title and a Division title). Ten
+     titles and a Decades title stay behind the line. */
+  mode_era_title: 'mode_era_oct',
   /* `daily_100w` HAD AN EXCUSE AND DID NOT NEED ONE. A hundred wins on a daily
      lights in the quick sweep (spread / classic), so the entry was section 5's
      own target: an excuse written for something that turned out to be reachable,
