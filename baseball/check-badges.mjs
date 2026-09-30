@@ -342,9 +342,7 @@ const SKILL = {
      than a wall. */
   tie_record: 'win_110',
   goat: 'win_110',
-  wildcard_title: 'seed_wildcard',
   btb_title: 'title_5',
-  mode_division_title: 'mode_division_oct',
   /* THE SCHEDULE GOT HARDER, the owner's call: a careful draft was winning 90
      about half the time and the target is one in four. Opponents score 1.05x
      and allow 0.92x (was 1.02x and 0.95x). Measured over 2,250 seasons of the
@@ -358,6 +356,12 @@ const SKILL = {
      light in quick now. */
   win_110: 'win_100',
   oct_streak_10: 'oct_streak_5',
+  /* AN ELITE TEAM PLAYS LIKE ONE IN OCTOBER (TITLE.ELITE_* in engine.js): a
+     roster rated 85 or better meets easier opponents, so a 95+ roster reaches
+     the World Series most years. The World Series keeps less of the ease, so
+     a 95+ roster wins it about half the time. Two excuses came off because the
+     quick sweep lights them now (a wild card title and a Division title). Ten
+     titles and a Decades title stay behind the line. */
   mode_era_title: 'mode_era_oct',
   /* `daily_100w` HAD AN EXCUSE AND DID NOT NEED ONE. A hundred wins on a daily
      lights in the quick sweep (spread / classic), so the entry was section 5's

@@ -1680,7 +1680,38 @@ const TITLE = {
   SLOPE: 0.011,     // how fast a weaker team's opponent stiffens
   MAX_EDGE: 1.34,
   SEMI_SHARE: 0.5,  // the Championship Series gets half the edge
+
+  /* AN ELITE TEAM PLAYS LIKE ONE IN OCTOBER. Everything above only ever makes
+   * the bracket HARDER, and it keys on squadRating, which is blind to chemistry,
+   * shape and the closer. So a roster the page rates 95 to 99 still lost the
+   * Division Series about one run in five and reached the World Series in fewer
+   * than half, and a player reads that as the rating lying.
+   *
+   * So the rating the player READS buys an easier October from ELITE_FROM up:
+   * every opponent scores ELITE_PER less a point, capped at ELITE_MAX. Measured
+   * over 1,500 drafted rosters, 40 Octobers each, share of Octobers:
+   *
+   *   rating   lost the DS    reached the WS    won it
+   *   95+      19% to 4%      47% to 90%        21% to 51%
+   *   90-94    23% to 10%     40% to 71%        13% to 29%
+   *   85-89    28% to 22%     27% to 37%        7% to 10%
+   *   under 85 unchanged
+   *
+   * THE WORLD SERIES KEEPS ONLY ELITE_WS_SHARE OF IT, the owner's call: a 95+
+   * team should nearly always get there and win it about half the time. With
+   * the full ease in the World Series too, that team won 77% of its Octobers.
+   *
+   * Not in All-Time Staff, whose rating is its own ERA scale. */
+  ELITE_FROM: 85,
+  ELITE_PER: 0.025,
+  ELITE_MAX: 0.35,
+  ELITE_WS_SHARE: 0.3,
 };
+function eliteEase(shown, share) {
+  if (typeof shown !== 'number') return 1;
+  const s = typeof share === 'number' ? share : 1;
+  return 1 - s * Math.min(TITLE.ELITE_MAX, Math.max(0, (shown - TITLE.ELITE_FROM) * TITLE.ELITE_PER));
+}
 function titleEdge(rating) {
   if (typeof rating !== 'number') return 1;
   return Math.max(1, Math.min(TITLE.MAX_EDGE, 1 + (TITLE.PIVOT - rating) * TITLE.SLOPE));
@@ -1710,7 +1741,7 @@ function playoffSeries(runsFor, runsAgainst, savePct, rng, bestOf, advantage) {
   };
 }
 
-function generatePlayoffs(seed, runsFor, runsAgainst, savePct, rng, regularWins, rating, pool) {
+function generatePlayoffs(seed, runsFor, runsAgainst, savePct, rng, regularWins, rating, pool, shown) {
   if (!seed.made) return null;
   const edge = titleEdge(rating);
 
@@ -1751,7 +1782,8 @@ function generatePlayoffs(seed, runsFor, runsAgainst, savePct, rng, regularWins,
     let titleMult = 1;
     if (roundName === 'World Series') titleMult = edge;
     else if (roundName === 'Championship Series') titleMult = 1 + (edge - 1) * TITLE.SEMI_SHARE;
-    const oppRA = defAdj * roundDifficulty * titleMult;
+    const ease = eliteEase(shown, roundName === 'World Series' ? TITLE.ELITE_WS_SHARE : 1);
+    const oppRA = defAdj * roundDifficulty * titleMult * ease;
 
     // Best-of-5 for WC and LDS, best-of-7 for LCS and WS
     const bestOf = (roundName === 'Wild Card' || roundName === 'Division Series') ? 5 : 7;
@@ -2621,7 +2653,7 @@ function playRun(roster, rng, slotNames, pool, opts) {
    * two numbers and must not be merged. */
   const rating = staffMode ? staffRating(tagged) : squadRating(roster);
   const shownRating = staffMode ? staffRating(tagged) : teamRating(offense, defense);
-  const playoffs = generatePlayoffs(seed, offense, defense, savePct, rng, wins, rating, pool);
+  const playoffs = generatePlayoffs(seed, offense, defense, savePct, rng, wins, rating, pool, staffMode ? null : shownRating);
 
   const titleWon = playoffs && playoffs.won;
   const isGOAT = wins >= CONSTANTS.GOAT_WINS;
@@ -2705,7 +2737,7 @@ const publicAPI = {
   BRACKET, bracketSeed, createBracket,
   PA_RATES, simGameScript, simHalfInning, spreadRuns, battingOrder, homeGames,
   lineupFromRoster, staffFromRoster, coachOrder, orderLoss, LINEUP_WEIGHT, lineupFromTeamSeason, staffFromTeamSeason,
-  seedFromRecord, playoffRoundNames, PLAYOFF_ROUND_NAMES, titleEdge, TITLE,
+  seedFromRecord, playoffRoundNames, PLAYOFF_ROUND_NAMES, titleEdge, eliteEase, TITLE,
   respinCost, respinFees,
   pythagorean, rosterOffense, rosterRunPrevention, rosterStructure, closerSavePct,
   STAFF, staffOffense, staffRunPrevention, staffEra, staffRating,
