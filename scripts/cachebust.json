@@ -2267,6 +2267,16 @@
       "sha": "260c8dc0bc33a527"
     }
   },
+  "hoops/design/style-guide.html": {
+    "../career-kit.js": {
+      "v": "1",
+      "sha": "c500fbf1764257ff"
+    },
+    "../baller.js": {
+      "v": "2",
+      "sha": "aa7d75997b9635f5"
+    }
+  },
   "hoops/index.html": {
     "engine.js": {
       "v": "26",
