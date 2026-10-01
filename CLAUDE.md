@@ -1221,6 +1221,20 @@ mode, which asks properly and draws the right screen either way.
 `preventDefault` fires only on that branch, so middle click, open in a new tab and a long
 press keep working the way an anchor should.
 
+#### The door is a character card, and there is one commissioner
+
+`cfb/commish/portrait.js` draws him: a man in a navy suit, the same on the front page door,
+the new term screen and the office header. **There is deliberately one of him.** The owner
+asked for the customization to stay minimal, so there is nothing to pick. Every id inside
+the SVG carries the caller's suffix (`CM_PORTRAIT(size, id)`), because two portraits on one
+page sharing a gradient id paint each other and the face goes flat with nothing thrown.
+
+The door (`ensureCommishDoor`) reads a term in progress off `cfb_commish_term`, the save the
+mode writes, and shows the season and its three meters (`revenue`, `health`, `standing`)
+with a Resume button. A term with `careerLogged` set is finished and is not offered. The
+save carries the whole tape, so it is parsed once per page load (`commishTerm`). The sentence
+under the name and its unbreakable tail did not move: test_store still holds it to two lines.
+
 ### Commissioner Mode is free at one season a day
 
 ```
@@ -3161,7 +3175,7 @@ node football/build/test/probe_cap.mjs        what cap makes the draft a decisio
 ```
 
 `football/fantasy/index.html` is the mode and `football/fantasy/draft.js` is the football.
-Six slots (QB, RB, RB, WR, WR, TE), a $110M cap, five whole drafts, one submitted. Half PPR,
+Six slots (QB, RB, RB, WR, WR, TE), a $110M cap, three whole drafts (five for Pro), one submitted. Half PPR,
 scored on what the six actually do. **It is a page of its own rather than a screen inside
 the football game**, because it shares nothing with that engine: no season, no sim, no
 ratings. What it shares is accounts, the palette and the tester pattern.
@@ -3221,6 +3235,36 @@ question they never ask, and the way that fails is a door that is never built, w
 nothing. Do it on a day with nothing on the clock.
 `check-fullteam.mjs` walks **every** `*-access.js` on disk now rather than naming two, so the
 lists cannot drift and a fourth mode is covered without anybody remembering.
+
+#### The look is one file, and the share card is one source for both competitions
+
+```
+(nohup python3 -m http.server 8080 &) ; node football/build/fantasy-og.mjs
+```
+
+`football/fantasy/skin.js` is the presentation layer the NFL page and the college page
+share: the stadium ground, the gold hairline on every card, the home hero (crest, six chips,
+three steps, three tiles), the cap bar under the money, the slot strip in position colours,
+the segmented live tabs and the podium places. **It is CSS carried in a script**, loaded
+synchronously right after each page's own `<style>`, because `check-cachebust` reads a
+`<script src>` and not a `<link>`, and a stylesheet caches exactly like a script. Each page's
+own `<style>` still holds the layout every checker measures, so **nothing in skin.js may
+move a control**: it paints, and where it changes a size it makes a control smaller.
+
+**The share card** is `football/fantasy/og-source.html`, rendered to `football/fantasy/og.png`
+and, with `?league=cfb`, to `cfb/fantasy/og.png`. It carries no number that can go stale (no
+cap, no week, no count), and the source is on `check-copy`'s list because its words are baked
+into an image. Bump the `?v=` on both pages' `og:image` and `twitter:image` and on the alias
+below together after a rebuild.
+
+**`Football/Fantasy/` is a capitalised alias**, the Mythiball and Wrestling arrangement:
+paths are case sensitive here, and `runthe.gg/Football/Fantasy` is the URL that gets typed and
+pasted, so it is a noindexed stub that refreshes to `/football/fantasy/` and carries the same
+link preview tag for tag, because a chat app reads the head without following the refresh.
+
+**A card's stat line carries two kinds of production at most**, the position's own first
+(`statLine` in `weekly-pool.mjs`). Josh Allen's one catch made his line 58 characters in week 4
+of 2026 and it was cut off at 360; the board is sized for about 40.
 
 #### A published week's cap is the WEEK's, and the constant is only the next one's
 
@@ -4792,9 +4836,29 @@ checker that let a request out would enter a lineup on somebody's account.
 accounts.** That can be made harder and not impossible, and it should be said out loud rather
 than designed around quietly.
 
-**Pro must not buy draws or entries.** The bundle sells the counting away. Selling an advantage
-in a prize competition is a different kind of product and this mode has no paid tier at all,
-which is why there is no `fantasySold()` beside `fullTeamSold()`.
+**Pro buys DRAFTS, and that reverses a rule this mode launched on.** It said Pro must not buy
+draws or entries, because selling an advantage in a prize competition is a different kind of
+product. The owner decided otherwise (2026-10): a free account gets **three** drafts a week and
+Pro gets **five**, on both competitions. Still one ENTRY each, and Pro does not change a price,
+a board or a score. `chancesAllowed()` on each page is the rule.
+
+**What it is worth, measured before it was built** on the week 4 board, as projected points of
+the best lineup a reader can submit: careful drafting 77.3 from three drafts against 78.2 from
+five, **about a point**; casual drafting 69.8 against 71.4, **about a point and a half**. Two
+good drafters with five each finish within about a point of each other, so the edge is the
+size of the race for first. **It also has a legal shape worth checking with somebody
+qualified**: the draft wheel is random per reader, there is a prize, and payment now buys more
+draws at it, which is the prize, chance and consideration triple a free contest normally
+avoids. Said out loud rather than designed around quietly.
+
+**Pro is `premium_products()`**, so a plan, a lifetime bundle and a Fantasy prize pass all count
+and a lapsed one does not. **An unknown answer is free**, because auth.js answers `[]` on any
+error and that never hands out the paid edge by accident. **A draft already made is never taken
+away**: the count is at least the drafts that exist, so a lineup started under the old five, or
+during a pass, can still be finished and submitted. It is the browser's rule, as the five always
+were: the server checks a lineup and never how many drafts it came from. The review screen tells
+a free account that has run out that Pro gets five, and links to `#pro`, which opens the store
+on each game's front page the way `#signin` opens the account sheet.
 
 #### A man ruled out can be swapped, before his game
 

@@ -58,7 +58,7 @@
      `defer`ed so a slow/blocked CDN can't parser-block first paint; sbInit() waits for it (see end of script). -->
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <!-- The release newsletter checkbox in the menu's Account section. See supabase/121_newsletter.sql. -->
-<script defer src="/assets/newsletter.js?v=1"></script>
+<script defer src="/assets/newsletter.js?v=2"></script>
 <!-- Google Consent Mode v2 defaults. Advertising storage is denied until the certified CMP (loaded by
      the AdSense tag below) records the user's choice; the CMP then updates these signals automatically,
      including tightening analytics where local law requires it. Analytics storage defaults to granted so
@@ -12061,6 +12061,7 @@ function render(){
     if(S.overlay==='s1launch') overlayS1Launch(app);
     if(S.overlay==='seasonlaunch') overlaySeasonLaunch(app);
     if(S.overlay==='s1end') overlayS1End(app);
+    if(S.overlay==='spookyszn') overlaySpookySzn(app);
     if(S.overlay==='arcadead') overlayArcadeAd(app);
     if(S.overlay==='purchased') overlayPurchased(app);
     if(S.overlay==='coinlog') overlayCoinLog(app);
@@ -12069,6 +12070,7 @@ function render(){
     if(S.overlay==='privacy') overlayPrivacy(app);
     if(S.overlay==='terms') overlayTerms(app);
     if(S.overlay==='menu') overlayMenu(app);
+    try{ seasonDecorPost(); }catch(e){}
   }catch(err){
     console.error('[RunTheTour] overlay render failed:', S.overlay, err);
     try{ track('screen_render_error',{overlay:S.overlay,message:(err&&err.message)||String(err)}); }catch(e){}
@@ -14863,7 +14865,7 @@ function homePlayerHeader(){
     if((lt.majors||0)>0) chips.push(`<span class="hh-chip"><b>${lt.majors}</b> major${lt.majors===1?'':'s'}</span>`);
   }catch(e){}
   const box=$(`<div class="homehdr">
-    <div class="hh-fig">${pxFigureHTML(S.look,66)}</div>
+    <div class="hh-fig" style="position:relative">${pxFigureHTML(S.look,66)}${decorLive()==='spooky'?(spkStyleOnce(),'<span class="spk-hhpk">'+spkEl('pumpkin',22)+'</span>'):''}</div>
     <div class="hh-txt">
       <div class="hh-hi">Welcome back</div>
       <div class="hh-name">${esc(nm)}</div>
@@ -14879,6 +14881,8 @@ function scrTitle(){
   let sceneHtml=''; try{ sceneHtml=titleSceneHTML(); }catch(e){}
   const scene=$(`<div class="scene" aria-hidden="true">${sceneHtml}</div>`);
   add(scene);
+  // seasonal decor: webs and pumpkins in the scene, and the hidden things to find on the home screen
+  if(decorLive()==='spooky'){ try{ spkStyleOnce(); scene.insertAdjacentHTML('beforeend',spookySceneHTML()); }catch(e){} try{ spookyHomeEggs().forEach(b=>app.appendChild(b)); }catch(e){} }
   const w=$(`<div class="titlewrap center"></div>`);
   // 5: returning players get their golfer + name (4) instead of the marketing hero; first-run keeps the pitch.
   const returning=homeReturning();
@@ -14935,7 +14939,7 @@ function scrTitle(){
   // already oriented on the interface instead of being dropped onto it cold.)
   // Season 1 launch announcement (returning players, once), fires after this render settles, and only
   // when no other overlay (e.g. the login bonus) is up; retried on later title renders until shown.
-  setTimeout(function(){ try{ maybeFirstTour(); }catch(e){} try{ flushPendingWelcome(); }catch(e){} try{ maybeS1LaunchPopup(); }catch(e){} try{ flushPendingLogin(); }catch(e){} try{ maybeS1EndPopup(); }catch(e){} try{ maybePassSettleNote(); }catch(e){} try{ maybeRosterPop(); }catch(e){} try{ maybeArcadeAd(); }catch(e){} }, 420);
+  setTimeout(function(){ try{ maybeFirstTour(); }catch(e){} try{ flushPendingWelcome(); }catch(e){} try{ maybeS1LaunchPopup(); }catch(e){} try{ flushPendingLogin(); }catch(e){} try{ maybeS1EndPopup(); }catch(e){} try{ maybeSpookyPopup(); }catch(e){} try{ maybePassSettleNote(); }catch(e){} try{ maybeRosterPop(); }catch(e){} try{ maybeArcadeAd(); }catch(e){} }, 420);
   // ════════════════════════════════════════════════════════════════════
   // Home = ONE HERO + a rail. Whatever you were last playing becomes the big
   // card (mid-career it's "Resume Year 12", first thing in the morning it's
@@ -15119,6 +15123,9 @@ function skinSliderNode(){
   return box;
 }
 // CS370: a small thumbnail of a favorite-club option (the club overlay cropped to its bounding box)
+// Every tile in the catalog is drawn by PXHD.renderMap: the same light from the top left, the same hue
+// shifted ramps and the same soft outline as the golfer wearing it, so the tile and the sprite agree.
+function pxThumbFrom(cv){ return cv?`<span class="sthumb"><img src="${cv.toDataURL()}" style="width:100%;height:100%;object-fit:contain;image-rendering:pixelated" alt=""></span>`:pxNoneThumb(); }
 function pxClubThumb(id){ const map=PXG_CLUBS[id]||PXG_CLUBS.driver; const pal=PXG_CLUB_PAL[id]; const P={l:PXG_FIX.l,g:PXG_FIX.g,G:PXG_FIX.G,H:PXG_FIX.H,F:PXG_FIX.F,S:'#e8ebf0'};
   const col=(ch)=>{ if(ch==='.'||ch===' ')return null; return (pal&&pal[ch])||P[ch]||null; };
   // zoom onto the club's DISTINCTIVE parts: bbox of everything except the generic shaft ('l'), so a
@@ -15126,37 +15133,54 @@ function pxClubThumb(id){ const map=PXG_CLUBS[id]||PXG_CLUBS.driver; const pal=P
   let x0=99,y0=99,x1=-1,y1=-1;
   for(let y=0;y<map.length;y++){ const row=map[y]; for(let x=0;x<row.length;x++){ if(row[x]==='l'||!col(row[x]))continue;
     if(x<x0)x0=x; if(x>x1)x1=x; if(y<y0)y0=y; if(y>y1)y1=y; } }
-  let ox=31,oy=39,W=14,H=18;
-  if(x1>=0 && (x1-x0)>=2 && (y1-y0)>=2){ ox=Math.max(0,x0-1); oy=Math.max(0,y0-1); W=Math.min(PXG_W-1,x1+1)-ox+1; H=Math.min(PXG_H-1,y1+1)-oy+1; }
-  const px=Math.max(4,Math.floor(72/Math.max(W,H))); const cv=document.createElement('canvas'); cv.width=W*px; cv.height=H*px; const ctx=cv.getContext('2d');
-  for(let y=oy;y<oy+H;y++){ const row=map[y]||''; for(let x=ox;x<ox+W;x++){ const c=col(row[x]); if(!c)continue; ctx.fillStyle=c; ctx.fillRect((x-ox)*px,(y-oy)*px,px,px); } }
-  return `<span class="sthumb"><img src="${cv.toDataURL()}" style="width:100%;height:100%;object-fit:contain;image-rendering:pixelated" alt=""></span>`; }
+  let crop=[31,39,44,56];
+  if(x1>=0 && (x1-x0)>=2 && (y1-y0)>=2) crop=[x0-1,y0-1,x1+1,y1+1];
+  const W=crop[2]-crop[0]+1, H=crop[3]-crop[1]+1;
+  return pxThumbFrom(PXHD.renderMap(map,col,{crop,fitSkip:'l',gloss:2,px:Math.max(4,Math.floor(72/Math.max(W,H)))})); }
 // boost-tier club thumbnail: the club group's own head shape rendered in that tier's unique finish
 // (Tour steel / Pro carbon+red / Signature gold) - 15 distinct looks across the 5 club groups.
 function pxBagThumb(club,tier){ const map=PXG_CLUBS[BAG_SHAPE[club]]||PXG_CLUBS.driver;
   const pal=Object.assign({g:PXG_FIX.g},BAG_TIER_PAL[tier-1]||BAG_TIER_PAL[0]);
   if(BAG_TIER_ACC[club]){ pal.S=BAG_TIER_ACC[club]; if(tier===2) pal.H=BAG_TIER_ACC[club]; }   // optional per-club accent glint
-  const ox=31,oy=39,W=14,H=18,px=5; const cv=document.createElement('canvas'); cv.width=W*px; cv.height=H*px; const ctx=cv.getContext('2d');
-  for(let y=0;y<map.length;y++){ const row=map[y]; for(let x=0;x<row.length;x++){ const c=pal[row[x]]; if(!c)continue; ctx.fillStyle=c; ctx.fillRect((x-ox)*px,(y-oy)*px,px,px); } }
-  return `<span class="sthumb"><img src="${cv.toDataURL()}" style="width:100%;height:100%;object-fit:contain;image-rendering:pixelated" alt=""></span>`; }
+  return pxThumbFrom(PXHD.renderMap(map,ch=>pal[ch]||null,{crop:[31,39,44,56],fitSkip:'l',gloss:2,px:5})); }
 // CS414: ball thumbnail (a zoomed crop of the teed-ball sprite; 'none' → an empty-outline placeholder)
 function pxBallThumb(id){ const map=PXG_BALL[id], pal=PXG_BALL_PAL[id];
   if(!map||!pal) return `<span class="sthumb color" style="background:#12251b;display:flex;align-items:center;justify-content:center;color:#5e7468;font:700 10px var(--body)">None</span>`;
-  const ox=32,oy=46,W=10,H=10,px=8; /* the ball is six wide at x 34, so 32 centres it */ const cv=document.createElement('canvas'); cv.width=W*px; cv.height=H*px; const ctx=cv.getContext('2d');
-  for(let y=0;y<map.length;y++){ const row=map[y]; for(let x=0;x<row.length;x++){ const c=pal[row[x]]; if(!c)continue; ctx.fillStyle=c; ctx.fillRect((x-ox)*px,(y-oy)*px,px,px); } }
-  return `<span class="sthumb"><img src="${cv.toDataURL()}" style="width:100%;height:100%;object-fit:contain;image-rendering:pixelated" alt=""></span>`; }
+  return pxThumbFrom(PXHD.renderMap(map,ch=>ch==='T'?{hex:pal.T||'#e8ebf0',t:3}:(pal[ch]||null),{crop:[32,46,41,55],fitSkip:'T',gloss:2,px:8})); }   /* the ball is six wide at x 34, so 32 centres it */
 // CS414: rocket-cleats thumbnail (a zoomed crop of the boot overlay; 'none' → empty placeholder)
-function pxCleatsThumb(id){ const map=PXG_CLEATS[id], pal=PXG_CLEATS_PAL[id];
-  if(!map||!pal) return `<span class="sthumb color" style="background:#12251b;display:flex;align-items:center;justify-content:center;color:#5e7468;font:700 10px var(--body)">None</span>`;
-  const ox=12,oy=49,W=22,H=8,px=5; const cv=document.createElement('canvas'); cv.width=W*px; cv.height=H*px; const ctx=cv.getContext('2d');
-  for(let y=0;y<map.length;y++){ const row=map[y]; for(let x=0;x<row.length;x++){ const c=pal[row[x]]; if(!c)continue; ctx.fillStyle=c; ctx.fillRect((x-ox)*px,(y-oy)*px,px,px); } }
-  return `<span class="sthumb"><img src="${cv.toDataURL()}" style="width:100%;height:100%;object-fit:contain;image-rendering:pixelated" alt=""></span>`; }
+function pxCleatsThumb(id){ if(!PXG_CLEATS[id]) return `<span class="sthumb color" style="background:#12251b;display:flex;align-items:center;justify-content:center;color:#5e7468;font:700 10px var(--body)">None</span>`;
+  return pxShoeThumb(Object.assign({},S.look||DEFLOOK,{cleats:id})); }
+// One shoe as the golfer wears it (the trail-side foot), drawn by PXHD and cropped close.
+function pxShoeThumb(look){ try{ const src=pxGolferCanvas(look,{only:'shoe',noClub:true,noBall:true}), c=src.width/PXG_W;
+    const cv=document.createElement('canvas'), x0=23, y0=48, w=11, h=8; cv.width=w*c; cv.height=h*c;
+    cv.getContext('2d').drawImage(src,x0*c,y0*c,cv.width,cv.height,0,0,cv.width,cv.height); return pxThumbFrom(cv); }catch(e){ return pxNoneThumb(); } }
+// A hat colour is the redrawn ball cap in that colour, the same picture the Ball Cap tile shows.
+function pxCapThumb(hatId){ try{ const src=pxGolferCanvas(Object.assign({},S.look||DEFLOOK,{cap:true,hatStyle:'cap',hat:hatId}),{only:'hat',noClub:true,noBall:true}), c=src.width/PXG_W;
+    const cv=document.createElement('canvas'), x0=12, y0=2, w=21, h=14; cv.width=w*c; cv.height=h*c;
+    cv.getContext('2d').drawImage(src,x0*c,y0*c,cv.width,cv.height,0,0,cv.width,cv.height); return pxThumbFrom(cv); }catch(e){ return pxNoneThumb(); } }
 // CS458: a clean standalone picture of a wearable ITEM by itself (headwear/eyewear/outerwear/legwear) 
 // paint just that item's sprite map, auto-crop to its bounding box, and scale it into the tile (no golfer).
 function pxNoneThumb(){ return `<span class="sthumb color" style="background:#12251b;display:flex;align-items:center;justify-content:center;color:#7fae9a;font:800 11px var(--body)">None</span>`; }
 function pxItemThumb(cat,id){
   if(!id||id==='none') return pxNoneThumb();
   const look=S.look||DEFLOOK, av=avLook(look);
+  // The tile shows the item exactly as the golfer wears it: drawn by PXHD on your golfer, then only
+  // that item's own pixels kept and cropped. An authored map painted flat would be a second, older
+  // picture of the same thing.
+  if((cat==='top'&&id!=='blazer'&&PXG_TOPS[id])||(cat==='leg'&&PXG_LEGS[id])){ try{
+    const map=cat==='top'?PXG_TOPS[id]:PXG_LEGS[id], pal=(cat==='top'?PXG_TOP_PAL:PXG_LEG_PAL)[id]||{};
+    const cv=PXHD.renderMap(map,ch=>pal[ch]||null,{px:6}); if(cv) return pxThumbFrom(cv); }catch(e){} }
+  try{ const tag={hw:'hat',ew:'ew',top:'top',leg:'leg'}[cat];
+    const L=cat==='hw'?Object.assign({},look,{cap:true,hatStyle:id}):cat==='ew'?Object.assign({},look,{eyewear:id}):cat==='top'?Object.assign({},look,{top:id}):Object.assign({},look,{leg:id});
+    const src=pxGolferCanvas(L,{only:tag,noClub:true,noBall:true}), cell=src.width/PXG_W;
+    const d=src.getContext('2d').getImageData(0,0,src.width,src.height).data;
+    let x0=99,y0=99,x1=-1,y1=-1;
+    for(let y=0;y<PXG_H;y++) for(let x=0;x<PXG_W;x++){ const i=((y*cell+(cell>>1))*src.width+(x*cell+(cell>>1)))*4;
+      if(d[i+3]>0){ if(x<x0)x0=x; if(x>x1)x1=x; if(y<y0)y0=y; if(y>y1)y1=y; } }
+    if(x1>=0){ x0=Math.max(0,x0-1); y0=Math.max(0,y0-1); x1=Math.min(PXG_W-1,x1+1); y1=Math.min(PXG_H-1,y1+1);
+      const cv=document.createElement('canvas'); cv.width=(x1-x0+1)*cell; cv.height=(y1-y0+1)*cell;
+      cv.getContext('2d').drawImage(src,x0*cell,y0*cell,cv.width,cv.height,0,0,cv.width,cv.height);
+      return `<span class="sthumb"><img src="${cv.toDataURL()}" style="width:100%;height:100%;object-fit:contain;image-rendering:pixelated" alt=""></span>`; } }catch(e){}
   const P=Object.assign({ k:PXG_FIX.k, g:PXG_FIX.g, l:PXG_FIX.l, n:PXG_FIX.n, G:PXG_FIX.G, H:PXG_FIX.H, F:PXG_FIX.F, c:av.hatHex, b:pxShade(av.hatHex,-24), w:pxShade(av.hatHex,26), E:'#20242c', S:'#e8ebf0' }, PXG_NOV);
   let map=null, pal=null;
   if(cat==='hw'){ map=(id==='visor')?PXG_VISOR:(PXG_HATS[id]||PXG_CAP); pal=PXG_HERITAGE_HAT_PAL[id]||null; }
@@ -15178,17 +15202,23 @@ function pxItemThumb(cat,id){
 // CS458: a clean pattern SWATCH (the pattern itself, not on the golfer), sample the pattern fn over the
 // shirt-region coordinates onto a small square so absolute-position patterns (tie-dye, ripple) read right.
 function pxPatThumb(id){
-  const base='#54736a';
-  const pd=PXPAT_BY[id];
-  if(!pd||id==='none') return `<span class="sthumb color" style="background:${base}"></span>`;
-  const px=8, W=18, H=15, sx=13, sy=25;
-  const cv=document.createElement('canvas'); cv.width=W*px; cv.height=H*px; const ctx=cv.getContext('2d');
+  const base='#54736a', pd=PXPAT_BY[id], none=!pd||id==='none';
   const a1=pxShade(base,42), a2=pxShade(base,80);
-  for(let j=0;j<H;j++){ for(let i=0;i<W;i++){ const gx=sx+i, gy=sy+j; let c;
+  // the polo from the colour tiles at twice the size, so a pattern has room to read; it is sampled at
+  // the coordinates the golfer's own torso uses, so the tile is the pattern as worn
+  const shape=pxIconBig(PXCOLTHUMB.shirt);
+  const sx=8, sy=21, dx=8, dy=14;
+  const colOf=(ch,i,j)=>{ if(ch==='.'||ch===' '||ch==='k') return null; if(ch==='w') return '#eef0eb';
+    const dt=(ch==='d'||ch==='s')?-1:ch==='l'?1:0; if(none) return {hex:base,dt};
+    const gx=sx+i, gy=sy+j; let c;
     if(pd.fixed){ const cols=pd.cols||[base]; c=cols[pd.f(gx,gy)|0]||cols[0]; }
     else { const a=pd.f(gx,gy); c=a?(a===2?a2:a1):base; }
-    ctx.fillStyle=c; ctx.fillRect(i*px,j*px,px,px); } }
-  return `<span class="sthumb"><img src="${cv.toDataURL()}" style="width:100%;height:100%;object-fit:contain;image-rendering:pixelated" alt=""></span>`;
+    return {hex:c,dt}; };
+  // renderMap reads one colour per character, so each cell gets its own one-character key
+  const keys={}, map=[]; let n=0;
+  shape.forEach((row,j)=>{ let out=''; for(let i=0;i<row.length;i++){ const c=colOf(row[i],i,j); if(!c){ out+='.'; continue; }
+    const k=String.fromCharCode(0x100+n++); keys[k]=c; out+=k; } map.push('.'.repeat(dx)+out); });
+  return pxThumbFrom(PXHD.renderMap(Array(dy).fill('').concat(map),ch=>keys[ch]||null,{px:6}));
 }
 // ---- the closet's CLUBS menu = YOUR BAG: 6 club slots; tap a slot to see its active boost upgrade and
 // equip any of the looks you own for that slot (equipping also puts the club in your golfer's hands). ----
@@ -16814,6 +16844,336 @@ function pxClubAddress(map){
     for(let k=0;k<run.length;k++) put(x+k,y,run[k][1]); }
   c=out.map(r=>r.join('')); _pxAddr.set(map,c); return c;
 }
+// PXHD: the standing pixel golfer, drawn as lit VOLUMES rather than flat paint (owner-approved mockup:
+// hue-shifted ramps, one light from the top left, contact shadows, a soft outline inside the shape, dot
+// eyes, near-black sunglasses). Same 44x56 grid and the same look fields as before, so every caller,
+// cache key and crop keeps working. The body, the face, four hairstyles, the cap, visor, bucket and flat
+// cap, and four pairs of eyewear are drawn here. Everything else in the wardrobe (novelty hats, the other
+// eyewear and hairstyles, tops, plus-fours, cleats, clubs, balls) is still the authored pixel map, pulled
+// through importMap() so it picks up the same light, ramps and outline as the parts drawn here.
+var PXHD=(function(){
+const W=44, H=56, C=22.5;
+const hexRgb=h=>{h=String(h||'#888888').replace('#',''); if(h.length===3) h=h.split('').map(c=>c+c).join('');
+  return[parseInt(h.slice(0,2),16)||0,parseInt(h.slice(2,4),16)||0,parseInt(h.slice(4,6),16)||0];};
+const rgbHsl=([r,g,b])=>{r/=255;g/=255;b/=255;const mx=Math.max(r,g,b),mn=Math.min(r,g,b);let h=0,s=0,l=(mx+mn)/2;
+  if(mx!==mn){const d=mx-mn;s=l>.5?d/(2-mx-mn):d/(mx+mn);h=mx===r?(g-b)/d+(g<b?6:0):mx===g?(b-r)/d+2:(r-g)/d+4;h*=60;}return[h,s,l];};
+const hslHex=(h,s,l)=>{h=((h%360)+360)%360;s=Math.max(0,Math.min(1,s));l=Math.max(0,Math.min(1,l));
+  const f=n=>{const k=(n+h/30)%12,a=s*Math.min(l,1-l);return Math.round(255*(l-a*Math.max(-1,Math.min(k-3,9-k,1))));};
+  return '#'+[f(0),f(8),f(4)].map(v=>v.toString(16).padStart(2,'0')).join('');};
+const mix=(a,b,t)=>{const A=hexRgb(a),B=hexRgb(b);return '#'+A.map((v,i)=>Math.max(0,Math.min(255,Math.round(v+(B[i]-v)*t))).toString(16).padStart(2,'0')).join('');};
+const lum=h=>rgbHsl(hexRgb(h))[2];
+// A 5-step ramp: deep, shade, base, light, spec. Shadows darken AND drift cool (skin drifts red-violet),
+// lights drift warm. An RGB mix rather than a hue rotation, so a white polo shades lavender, not green.
+const _ramps=new Map();
+function ramp(hex,o){ o=o||{}; const key=hex+'|'+(o.skin?1:0)+'|'+(o.spread||1); let r=_ramps.get(key); if(r) return r;
+  const sp=o.spread||1, COOL=o.skin?'#5a2338':'#2a2a68', WARM=o.skin?'#fff0d0':'#fff7dc';
+  const dk=(a,c)=>mix(mix(hex,'#000000',a*sp),COOL,c), lt=(a,w)=>mix(mix(hex,'#ffffff',a*sp),WARM,w);
+  const sat=(c,k)=>{const[hh,ss,ll]=rgbHsl(hexRgb(c));return hslHex(hh,Math.min(1,ss*k),ll);};
+  r=o.skin?[dk(.30,.22),dk(.13,.10),hex,lt(.12,.10),lt(.26,.20)]:[sat(dk(.34,.20),1.08),sat(dk(.15,.10),1.05),hex,lt(.16,.10),lt(.34,.24)];
+  if(_ramps.size>600) _ramps.clear(); _ramps.set(key,r); return r; }
+function skinRamp(hex){ const l=lum(hex); const r=ramp(hex,{skin:1,spread:l<.3?.55:.9}).slice();
+  if(l<.3){ r[3]=mix(hex,'#e8b48a',.16); r[4]=mix(hex,'#f4cfa8',.30); } return r; }
+function hairRamp(hex){ const l=lum(hex); const r=ramp(hex,{spread:l<.2?.55:1}).slice();
+  if(l<.2){ r[3]=mix(hex,'#8a7a9a',.28); r[4]=mix(hex,'#b8aac8',.45); } return r; }
+
+// ---- the canvas of parts ----
+function Sprite(){ this.g=[]; for(let y=0;y<H;y++) this.g.push(new Array(W).fill(null)); this.z=0; }
+Sprite.prototype.fill=function(mask,part,opt){ opt=opt||{}; const z=++this.z;
+  for(let y=0;y<H;y++)for(let x=0;x<W;x++){ if(!mask(x+.5,y+.5,x,y)) continue;
+    if(opt.under && this.g[y][x]) continue;
+    this.g[y][x]=Object.assign({tag:this.tag},part,{t:opt.t!=null?opt.t:null,dt:opt.dt||0,z}); } };
+Sprite.prototype.set=function(x,y,m,t,extra){ if(x<0||y<0||x>=W||y>=H) return; this.g[y][x]=Object.assign({m,t,z:++this.z,dt:0,tag:this.tag},extra||{}); };
+Sprite.prototype.tone=function(x,y,t){ const c=this.g[y]&&this.g[y][x]; if(c) c.t=t; };
+Sprite.prototype.nudge=function(x,y,d){ const c=this.g[y]&&this.g[y][x]; if(c) c.dt=(c.dt||0)+d; };
+Sprite.prototype.clear=function(mask){ for(let y=0;y<H;y++)for(let x=0;x<W;x++) if(mask(x+.5,y+.5,x,y)) this.g[y][x]=null; };
+const ell=(cx,cy,rx,ry)=>(x,y)=>((x-cx)/rx)**2+((y-cy)/ry)**2<=1;
+const rect=(x0,y0,x1,y1)=>(x,y,ix,iy)=>ix>=x0&&ix<=x1&&iy>=y0&&iy<=y1;
+const poly=pts=>(x,y)=>{let c=false;for(let i=0,j=pts.length-1;i<pts.length;j=i++){const[xi,yi]=pts[i],[xj,yj]=pts[j];
+  if(((yi>y)!==(yj>y))&&(x<(xj-xi)*(y-yi)/(yj-yi)+xi))c=!c;}return c;};
+const seg=(ax,ay,bx,by,r)=>(x,y)=>{const dx=bx-ax,dy=by-ay,t=Math.max(0,Math.min(1,((x-ax)*dx+(y-ay)*dy)/(dx*dx+dy*dy)));
+  return Math.hypot(x-ax-t*dx,y-ay-t*dy)<=r;};
+const and=(...m)=>(x,y,ix,iy)=>m.every(f=>f(x,y,ix,iy));
+const or=(...m)=>(x,y,ix,iy)=>m.some(f=>f(x,y,ix,iy));
+const not=m=>(x,y,ix,iy)=>!m(x,y,ix,iy);
+const mir=pts=>pts.map(([x,y])=>[2*C-x,y]);
+const nEll=(cx,cy,rx,ry)=>(x,y)=>{const nx=(x-cx)/rx,ny=(y-cy)/ry;return[nx,ny,Math.sqrt(Math.max(.02,1-nx*nx-ny*ny))];};
+const nCylV=(cx,rx,tilt)=>(x,y)=>{const nx=(x-cx)/rx;return[nx,tilt||0,Math.sqrt(Math.max(.02,1-nx*nx))];};
+const nCylSeg=(ax,ay,bx,by,r)=>(x,y)=>{const dx=bx-ax,dy=by-ay,L=Math.hypot(dx,dy),ux=dx/L,uy=dy/L;
+  const t=(x-ax)*ux+(y-ay)*uy, nx=(x-ax-t*ux)/r, ny=(y-ay-t*uy)/r;return[nx,ny,Math.sqrt(Math.max(.02,1-nx*nx-ny*ny))];};
+const nFlat=(nx,ny,nz)=>()=>[nx,ny,nz];
+const LIGHT=(()=>{const v=[-.55,-.72,.72];const l=Math.hypot(...v);return v.map(a=>a/l);})();
+function toneOf(c,x,y){ if(c.t!=null) return c.t;
+  const n=c.n?c.n(x+.5,y+.5):[0,0,1], l=Math.hypot(n[0],n[1],n[2])||1;
+  const d=(n[0]*LIGHT[0]+n[1]*LIGHT[1]+n[2]*LIGHT[2])/l+(c.bias||0);
+  let t=d>0.94?(c.gloss?4:3):d>0.80?3:d>0.40?2:d>0.08?1:0;
+  if(c.gloss>1&&d>0.88) t=4;
+  return Math.max(0,Math.min(4,t+(c.dt||0))); }
+
+// Paint: tones, contact shadows, the inner contour where one part overlaps another, and the soft
+// outline one pixel INSIDE the silhouette in the part's own shadow colour (owner: no dark outer ring).
+Sprite.prototype.paint=function(ctx,px,rampOf,only){ const g=this.g, T=[];
+  for(let y=0;y<H;y++){ T.push([]); for(let x=0;x<W;x++){ const c=g[y][x]; T[y].push(c?toneOf(c,x,y):-1); } }
+  for(let y=0;y<H;y++)for(let x=0;x<W;x++){ const c=g[y][x]; if(!c||c.t!=null||c.noAO) continue;
+    for(const[dx,dy]of[[0,-1],[1,0],[-1,0]]){ const o=g[y+dy]&&g[y+dy][x+dx];
+      if(o&&o.m!==c.m&&o.z>c.z&&!o.noCast){ T[y][x]=Math.max(0,T[y][x]-1); break; } } }
+  const out=[]; for(let y=0;y<H;y++){ out.push(new Array(W).fill(null)); for(let x=0;x<W;x++){ const c=g[y][x]; if(!c) continue;
+    const r=rampOf(c,x,y); out[y][x]=Array.isArray(r)?r[T[y][x]]:r; } }
+  for(let y=0;y<H;y++)for(let x=0;x<W;x++){ const c=g[y][x]; if(!c||c.nl||c.t!=null) continue; const r=rampOf(c,x,y); if(!Array.isArray(r)) continue;
+    for(const[dx,dy]of[[0,1],[1,0],[-1,0]]){ const o=g[y+dy]&&g[y+dy][x+dx];
+      if(o&&o.m!==c.m&&o.z<c.z&&!o.noOut){ out[y][x]=r[Math.min(T[y][x],1)]; break; } } }
+  const edits=[];
+  for(let y=0;y<H;y++)for(let x=0;x<W;x++){ const c=g[y][x]; if(!c||c.noOut||c.noEdge) continue; const r=rampOf(c,x,y); if(!Array.isArray(r)) continue;
+    const empty=(dx,dy)=>{ const o=g[y+dy]&&g[y+dy][x+dx]; return !o||o.noOut; };
+    const sh=empty(0,1)||empty(1,0), lit=empty(0,-1)||empty(-1,0); if(!sh&&!lit) continue;
+    const t=T[y][x]; edits.push([x,y,sh?r[Math.max(0,Math.min(t-1,1))]:r[Math.max(0,Math.min(t-1,2))]]); }
+  for(const[x,y,col]of edits) out[y][x]=col;
+  for(let y=0;y<H;y++)for(let x=0;x<W;x++){ const col=out[y][x]; if(!col) continue; if(only&&g[y][x].tag!==only) continue; ctx.fillStyle=col; ctx.fillRect(x*px,y*px,px,px); } };
+
+// Pull an authored pixel map in as parts. roleOf(ch) -> {m, dt} | null. Its light comes from an
+// ellipsoid fitted to the map's own pixels, so a tall witch hat and a flat headband both read round.
+function importMap(s,map,roleOf,o){ o=o||{}; if(!map) return; const dx=o.dx|0, dy=o.dy|0;
+  let x0=99,y0=99,x1=-1,y1=-1; const pts=[];
+  for(let y=0;y<map.length;y++){ const row=map[y]; if(!row) continue; for(let x=0;x<row.length;x++){ const ch=row[x]; if(ch==='.'||ch===' ') continue;
+    const r=roleOf(ch); if(!r) continue; const X=(o.flip?W-1-x:x)+dx, Y=y+dy; if(X<0||X>=W||Y<0||Y>=H) continue;
+    pts.push([X,Y,r]); if(X<x0)x0=X; if(X>x1)x1=X; if(Y<y0)y0=Y; if(Y>y1)y1=Y; } }
+  if(!pts.length) return;
+  const n=o.n||nEll((x0+x1+1)/2,(y0+y1+1)/2,Math.max(2,(x1-x0+1)/2+.6),Math.max(2,(y1-y0+1)/2+.6));
+  const z=++s.z;
+  for(const[X,Y,r]of pts) s.g[Y][X]=Object.assign({tag:s.tag,n,gloss:o.gloss||0,bias:o.bias||0,nl:o.nl,noEdge:o.noEdge,noCast:o.noCast,noAO:o.noAO,t:o.t!=null?o.t:null},r,{z,dt:(r.dt||0)});
+  return {x0,y0,x1,y1}; }
+
+// ---- the golfer ----
+// o: { av, pants, style, capOn, hatStyle, pat(fn|null), shades, club, top, leg, ball, cleats, lefty,
+//      hairMaps:{full,hat}, hats, heritage, eyewear, tops, topPal, legs, legPal, cleatsMap, cleatsPal,
+//      clubMap, clubPal, ballMap, ballPal, P (the fixed char palette), noClub, noBall, recolor }
+const HD_HAIR={short:1,curly:1,long:1,afro:1};
+const HD_HAT={cap:1,visor:1,bucket:1,flat:1};
+
+function build(o){ const s=new Sprite();
+  const hs=o.capOn?o.hatStyle:'', style=o.style, ew=o.shades, top=o.top;
+  const hdHat=!!HD_HAT[hs], openTop=!hs||hs==='visor'||!!o.openTop;
+  const hairHD=!!HD_HAIR[style] && (openTop||hdHat);
+  const longHair=style==='long';
+  const P=o.P||{};
+  // the roles an authored map's characters play. Hair maps use Y as their own highlight.
+  const roleBase=(pal,hair)=>ch=>{
+    if(pal&&pal[ch]) return {m:'x:'+pal[ch]};
+    if(hair){ if(ch==='h') return {m:'hair'}; if(ch==='i') return {m:'hair',dt:-1}; if(ch==='Y') return {m:'hair',dt:1}; }
+    switch(ch){ case 'c': return {m:'hat'}; case 'b': return {m:'hat',dt:-1}; case 'w': return {m:'hat',dt:1};
+      case 't': return {m:'shirt'}; case 'd': return {m:'shirt',dt:-1}; case 'v': return {m:'shirt',dt:1};
+      case 's': return {m:'skin'}; case 'j': return {m:'skin',dt:-1}; case 'x': return {m:'skin',dt:1};
+      case 'h': return {m:'hair'}; case 'i': return {m:'hair',dt:-1};
+      case 'p': return {m:'pants'}; case 'q': return {m:'pants',dt:-1}; case 'm': return {m:'pants',dt:1};
+      case 'o': return {m:'shoe'}; case 'z': return {m:'shoe',dt:-1}; case 'u': return {m:'shoe',dt:1}; }
+    return P[ch]?{m:'x:'+P[ch]}:null; };
+
+  // long hair hangs behind the shoulders, so it goes first
+  if(hairHD&&longHair){ const back=[[14.2,11],[17,11],[17.5,26],[15.5,30],[13.2,28]];
+    s.fill(or(poly(back),poly(mir(back))),{m:'hair',n:nCylV(C,9.5,-.1),gloss:1,bias:-.14}); }
+  // legs and shoes. The shoes sit on rows 50 to 55, where the authored cleats and the club expect them.
+  const leg=[[14.6,38.5],[22.2,38.5],[21.6,52.4],[15.2,52.4]];
+  s.fill(poly(leg),{m:'pants',n:nCylV(18.4,4.2,.05)}); s.fill(poly(mir(leg)),{m:'pants',n:nCylV(26.6,4.2,.05)});
+  for(let y=42;y<=50;y++){ s.tone(18,y,3); s.tone(26,y,2); }   // the trouser crease
+  const shoe=cx=>{ s.fill(ell(cx,52.6,4.9,2.6),{m:'shoe',n:nEll(cx,51.6,4.9,3.2),gloss:2,bias:.18});
+    s.fill(and(ell(cx,52.6,4.9,2.6),(x,y)=>y>53.6),{m:'sole'},{t:2});
+    s.fill(and(ell(cx,52.6,4.9,2.6),(x,y)=>Math.abs(x-cx)>2.6&&y<53.6),{m:'saddle',n:nEll(cx,51.6,4.9,3.2),gloss:1,nl:1});
+    s.set(Math.floor(cx)-1,51,'lace',0); s.set(Math.floor(cx)+1,51,'lace',0); };
+  s.tag='shoe'; shoe(17.6); shoe(27.4); s.tag='';
+  if(o.leg&&o.legs){ s.tag='leg'; importMap(s,o.legs,roleBase(o.legPal),{n:(x,y)=>{ const cx=x<C?18.4:26.6, nx=(x-cx)/4.6; return [nx,.05,Math.sqrt(Math.max(.02,1-nx*nx))]; }}); s.tag=''; }
+  if(o.cleats&&o.cleatsMap){ s.tag='shoe'; importMap(s,o.cleatsMap,roleBase(o.cleatsPal),{gloss:1}); s.tag=''; }
+  s.fill(rect(14,37,30,38),{m:'belt',n:nCylV(C,8.6,0),gloss:1});
+  // torso, sleeves, collar
+  const torso=poly([[13.2,24.2],[17.5,21.8],[27.5,21.8],[31.8,24.2],[31.2,37.6],[13.8,37.6]]);
+  const shirtN=(x,y)=>{const nx=(x-C)/10.5,ny=y<25?-(25-y)/3.2:(y>35?(y-35)/5:0);return[nx,ny,Math.sqrt(Math.max(.05,1-nx*nx))];};
+  s.fill(torso,{m:'shirt',n:shirtN});
+  const slv=[[13.4,23.6],[17,24.6],[16.4,30.6],[10.6,31.2],[10.6,27]];
+  const blazer=top==='blazer';
+  if(!blazer){ s.fill(poly(slv),{m:'shirt',n:nCylSeg(13.8,24,12.6,31,3.6)}); s.fill(poly(mir(slv)),{m:'shirt',n:nCylSeg(31.2,24,32.4,31,3.6)});
+    for(let x=10;x<=16;x++) s.nudge(x,30,-1); for(let x=28;x<=34;x++) s.nudge(x,30,-1);
+    const flap=[[17.6,21.6],[22.4,22.8],[21.4,25.6],[17.2,24.2]];
+    s.fill(poly(flap),{m:'shirt',n:nFlat(-.5,-.55,.7),noPat:1}); s.fill(poly(mir(flap)),{m:'shirt',n:nFlat(.25,-.45,.85),noPat:1});
+    for(let y=25;y<=29;y++) s.tone(22,y,1);
+    s.set(22,26,'button',3,{noCast:1}); s.set(22,28,'button',3,{noCast:1});
+    s.nudge(17,35,-1); s.nudge(18,36,-1); s.nudge(27,35,-1); s.nudge(26,36,-1); s.nudge(16,34,-1);
+  } else { s.tag='top';
+    // the blazer: open in a V over the shirt and tie, with lit lapels
+    s.fill(and(torso,not(poly([[19.6,22],[25.4,22],[23.6,31.5],[21.4,31.5]]))),{m:'jacket',n:shirtN});
+    s.fill(poly([[21.8,23.2],[23.2,23.2],[23.5,30.5],[22.5,31.6],[21.5,30.5]]),{m:'tie',n:nCylV(C,1.6,0),gloss:1});
+    s.fill(poly([[19.4,22],[21.4,24.6],[21.6,31.2],[18.4,27.4]]),{m:'jacket',n:nFlat(-.5,-.5,.7)},{dt:1});
+    s.fill(poly(mir([[19.4,22],[21.4,24.6],[21.6,31.2],[18.4,27.4]])),{m:'jacket',n:nFlat(.2,-.4,.85)});
+    s.set(22,33,'jbutton',2); s.set(22,35,'jbutton',2); s.tag='';
+  }
+  // other outerwear (cardigan, cape, the duck floatie) is the authored map over the torso
+  if(top&&!blazer&&o.tops&&o.tops[top]){ s.tag='top'; importMap(s,o.tops[top],roleBase(o.topPal&&o.topPal[top]),top==='duckfloatie'?{n:nCylV(C-2,26,-.2),bias:.2,gloss:1}:{n:shirtN}); s.tag=''; }
+  // arms and hands go IN FRONT of any outerwear: the grip is in front of the body
+  if(blazer){ s.tag='top'; s.fill(or(poly(slv),seg(12.6,28,19.2,37.4,2.2)),{m:'jacket',n:nCylSeg(12.6,26,19.2,37.4,2.6)});
+    s.fill(or(poly(mir(slv)),seg(32.4,28,25.8,37.4,2.2)),{m:'jacket',n:nCylSeg(32.4,26,25.8,37.4,2.6)}); s.tag=''; }
+  else { s.fill(seg(12.4,30.6,19.6,38.6,1.9),{m:'skin',n:nCylSeg(12.4,30.6,19.6,38.6,1.9)}); s.fill(seg(32.6,30.6,25.4,38.6,1.9),{m:'skin',n:nCylSeg(32.6,30.6,25.4,38.6,1.9)}); }
+  s.fill(rect(19,19,25,23),{m:'skin',n:nCylV(C,4,0)},{under:1,dt:-1});   // neck, under the collar
+  // the lead hand is gloved and on top of the grip, the trail hand below it
+  s.fill(ell(22.4,38.9,3.3,2.4),{m:'glove',n:nEll(22.0,38.3,3.6,2.9)});
+  s.fill(ell(22.6,41.4,2.9,2.0),{m:'skin',n:nEll(22.2,40.9,3.2,2.6)});
+  s.set(21,39,'glove',1); s.set(23,39,'glove',1);
+  // head, ears and face
+  const headM=or(and(ell(C,14,7.9,8.4),(x,y)=>y<15.5),poly([[14.8,15],[30.2,15],[29.6,18.2],[26.4,21.2],[18.6,21.2],[15.4,18.2]]));
+  const headN=nEll(C,15.6,9.6,11.5);
+  s.fill(or(ell(14.6,15.6,1.3,1.9),ell(30.4,15.6,1.3,1.9)),{m:'skin',n:nEll(C,15,9.6,7)});
+  s.fill(headM,{m:'skin',n:headN,bias:.06});
+  s.tone(14,16,1); s.tone(30,16,0);
+  const NC={noCast:1};
+  const face=()=>{ s.set(19,15,'pupil',0,NC); s.set(19,16,'pupil',0,NC); s.set(25,15,'pupil',0,NC); s.set(25,16,'pupil',0,NC);   // dot eyes
+    s.set(18,13,'brow',0,NC); s.set(19,13,'brow',0,NC); s.set(25,13,'brow',0,NC); s.set(26,13,'brow',0,NC);
+    s.tone(23,17,1); s.tone(23,18,1);
+    s.set(21,19,'mouth',0,NC); s.set(22,19,'mouth',0,NC); s.set(23,19,'mouth',0,NC);
+    s.set(17,18,'blush',0,NC); s.set(28,18,'blush',0,NC); };
+  face();
+  // hair
+  const hairP={m:'hair',gloss:1,bias:-.14};
+  if(hairHD){
+    if(style==='afro'){ const cut=hdHat&&hs!=='visor'?10:-99;
+      s.fill(and(or(ell(C,9.5,11.2,9),ell(13.4,14,3,4),ell(31.6,14,3,4)),(x,y)=>y<17.5&&y>cut),{...hairP,n:nEll(C,9.5,11.2,9)});
+      s.fill(and(headM,(x,y)=>y>12.4&&x>15.6&&x<29.4),{m:'skin',n:headN,bias:.06}); face();
+      [[17,5],[21,4],[26,5],[15,8],[19,7],[24,7],[29,8],[13,11],[17,10],[22,9],[27,10],[31,11],[15,13],[30,13]].forEach(([x,y])=>s.nudge(x,y,-1));
+    } else if(style==='curly'){
+      const curls=or(ell(C,10.6,8.8,6.6),ell(15.2,8.4,2.2,2.2),ell(18.6,5.4,2.4,2),ell(22.5,4.6,2.6,2),ell(26.4,5.4,2.4,2),ell(29.8,8.4,2.2,2.2),ell(14.6,11.8,1.9,2),ell(30.4,11.8,1.9,2));
+      const ccut=hdHat&&hs!=='visor'?9.5:-99;   // under a closed hat only the curls at the sides show
+      s.fill(and(curls,(x,y)=>y<13.6&&y>ccut),{...hairP,n:nEll(C,10,9.4,7.6)});
+      [[16,8],[19,6],[23,6],[27,7],[29,10],[17,11],[21,9],[25,9]].forEach(([x,y])=>s.nudge(x,y,-1));
+      [[18,7],[22,7],[26,8]].forEach(([x,y])=>s.nudge(x,y,1));
+    } else {
+      const ry=style==='buzz'?5.6:6.4;
+      s.fill(and(ell(C,11.6,8.4,ry),(x,y)=>y<12.6||x<16.4||x>28.6),{...hairP,n:nEll(C,11,8.6,7)});
+      for(let y=12;y<=14;y++){ s.set(15,y,'hair',null,{n:nEll(C,11,8.6,7),gloss:1,bias:-.14}); s.set(29,y,'hair',null,{n:nEll(C,11,8.6,7),gloss:1,bias:-.14}); }
+      if(style==='swoop'){ s.fill(poly([[15.6,8],[24,5.6],[29.6,9],[25.4,10.6],[18,11.6]]),{...hairP,n:nEll(C,9,8.6,7)}); s.nudge(24,9,-1); s.nudge(25,10,-1); }
+      else if(style!=='buzz'){ s.nudge(20,7,-1); s.nudge(20,8,-1); s.nudge(19,9,-1); }
+      if(style==='buzz') for(let x=16;x<=29;x+=2) s.nudge(x,8,-1);
+      if(longHair){ const lock=[[13.6,10.6],[16.8,10.6],[17.2,19],[16.6,25.6],[15.2,27.6],[13.4,25.4],[13.2,18]];
+        s.fill(poly(lock),{m:'hair',n:nCylV(15.2,2.4,-.15),gloss:1,bias:-.08}); s.fill(poly(mir(lock)),{m:'hair',n:nCylV(29.8,2.4,-.15),gloss:1,bias:-.08});
+        for(let y=14;y<=24;y+=3){ s.nudge(15,y,-1); s.nudge(30,y+1,-1); } }
+    }
+  } else {
+    // the authored hair: compressed under a closed hat, full otherwise
+    const map=(o.capOn&&!openTop)?(o.hairMaps.hat[style]||o.hairMaps.hat.short):o.hairMaps.full[style];
+    importMap(s,map,roleBase(null,true),{n:nEll(C,10.5,9.5,9),gloss:1,bias:-.14});
+  }
+  // hats
+  s.tag='hat';
+  if(hs==='cap'){
+    s.fill(and(ell(C,11.2,8.3,7.6),(x,y)=>y<11.6),{m:'hat',n:nEll(C,11.2,8.3,7.6),gloss:1});
+    s.fill(and(ell(C,11.7,8.9,1.7),(x,y)=>y<12.6),{m:'hat',n:nFlat(-.2,-.9,.4),gloss:1});
+    s.fill(and(ell(C,12.3,8.2,1.5),(x,y)=>y>12.0),{m:'hat',n:nFlat(0,.9,.3)},{t:0});
+    for(let x=16;x<=29;x++) s.nudge(x,13,-1);
+    s.set(22,4,'hatbtn',3,NC); s.set(23,4,'hatbtn',2,NC);
+    for(let y=4;y<=6;y++) s.nudge(22,y,-1);
+    s.fill(rect(21,7,24,9),{m:'patch',n:nEll(C,11.2,8.3,7.6)}); s.set(22,8,'patchmark',2); s.set(23,8,'patchmark',2);
+  } else if(hs==='visor'){
+    s.fill(and(ell(C,11.6,8.6,2.2),(x,y)=>y>9.6&&y<12.2),{m:'hat',n:nCylV(C,9,-.1),gloss:1});
+    s.fill(and(ell(C,12.3,9.4,2.1),(x,y)=>y>=11.4&&y<13.4),{m:'hat',n:nFlat(-.2,-.7,.7),gloss:1});
+    s.fill(and(ell(C,12.8,8.6,1.6),(x,y)=>y>12.8),{m:'hat',n:nFlat(0,.9,.3)},{t:0});
+    for(let x=16;x<=29;x++) s.nudge(x,14,-1);
+    s.fill(rect(20,10,25,10),{m:'patch',n:nFlat(-.3,-.3,.9)});
+  } else if(hs==='bucket'){
+    const brim=[[14.8,10.4],[30.2,10.4],[34.2,14.2],[33.2,15.2],[11.8,15.2],[10.8,14.2]];
+    s.fill(and(ell(C,10.4,7.3,7.4),(x,y)=>y<11.4),{m:'hat',n:nEll(C,10.4,7.3,7.4)});
+    s.fill(poly(brim),{m:'hat',n:(x,y)=>[(x-C)/14,-.3,.9]});
+    s.fill(and(poly(brim),(x,y)=>y>14.2),{m:'hat',n:nFlat(0,.8,.5)},{dt:-1});
+    s.fill(rect(15,10,29,10),{m:'band',n:nCylV(C,8,0)});
+    for(let x=16;x<=29;x++) s.nudge(x,16,-1); for(let x=13;x<=31;x+=2) s.nudge(x,13,-1);
+  } else if(hs==='flat'){
+    s.fill(poly([[14.4,12.8],[15.4,8],[19,5.6],[27,5.6],[30.4,8.6],[30.8,12.4]]),{m:'hat',n:(x,y)=>[(x-C)/10,(y-8)/7-.4,.85],bias:-.1});
+    s.fill(and(ell(C,12.4,8.6,1.6),(x,y)=>y>11.6),{m:'hat',n:nFlat(0,-.5,.85)},{dt:1});
+    s.fill(and(ell(C,12.9,8.1,1.3),(x,y)=>y>12.9),{m:'hat',n:nFlat(0,.9,.3)},{t:0});
+    for(let x=16;x<=29;x++) s.nudge(x,14,-1);
+    for(let y=7;y<=10;y++) s.nudge(22,y,-1);   // one centre seam; a weave read as dirt on a light cap
+    s.set(22,6,'hatbtn',2,NC);
+  } else if(hs){
+    const map=o.hats[hs]; const pal=o.heritage&&o.heritage[hs];
+    importMap(s,map,roleBase(pal),{gloss:1});
+  }
+  // eyewear
+  s.tag='ew';
+  if(ew==='shades'||ew==='wayfarer'){
+    const frame='frame';
+    const lens=x0=>{ s.fill(rect(x0,14,x0+4,16),{m:'dlens',nl:1,noCast:1,noEdge:1},{t:1});
+      s.set(x0+3,16,'dlens',0,{noCast:1,noEdge:1}); s.set(x0+4,16,'dlens',0,{noCast:1,noEdge:1}); s.set(x0+1,14,'dlens',3,{noCast:1,noEdge:1}); };
+    s.fill(rect(16,13,29,13),{m:frame,nl:1},{t:1}); lens(16); lens(24);
+    s.set(21,14,frame,1); s.set(22,14,frame,1); s.set(23,14,frame,1); s.set(15,14,frame,0); s.set(29,14,frame,0);
+    if(ew==='wayfarer'){ s.set(16,13,frame,3); s.set(24,13,frame,3); }
+  } else if(ew==='aviators'){
+    const shape=[[16,13.8],[21,13.8],[21,16.4],[19.4,17.6],[17,17.4],[16,16]];
+    s.fill(poly(shape),{m:'dlens',nl:1,noCast:1,noEdge:1},{t:1}); s.fill(poly(mir(shape)),{m:'dlens',nl:1,noCast:1,noEdge:1},{t:1});
+    for(let x=16;x<=29;x++){ s.tone(x,14,0); s.tone(x,17,0); }
+    s.set(17,15,'dlens',3,{noCast:1,noEdge:1}); s.set(25,15,'dlens',3,{noCast:1,noEdge:1});
+    s.fill(rect(16,13,29,13),{m:'gold',n:nFlat(-.3,-.8,.5),gloss:2,noEdge:1}); s.set(22,14,'gold',2); s.set(15,14,'gold',1); s.set(29,14,'gold',1);
+  } else if(ew==='round'){
+    const ring=cx=>{ s.fill(and(ell(cx,15.2,2.6,2.3),not(ell(cx,15.2,1.6,1.4))),{m:'gold',n:nEll(cx,14.6,3.2,3),gloss:2,nl:1,noCast:1,noEdge:1});
+      s.set(cx-1|0,14,'glint',0,{noCast:1,noEdge:1}); };
+    ring(18.6); ring(26.4); s.set(22,15,'gold',2,{noEdge:1}); s.set(15,14,'gold',1,{noEdge:1}); s.set(29,14,'gold',1,{noEdge:1});
+  } else if(ew==='goggles'){
+    s.fill(rect(13,13,31,15),{m:'strap',n:nCylV(C,9.4,0)}); for(let x=13;x<=31;x+=3) s.nudge(x,14,1);
+    s.fill(poly([[15.2,12.6],[29.8,12.6],[30.6,14.4],[29.4,17.6],[24.4,17.6],[22.5,16.4],[20.6,17.6],[15.6,17.6],[14.4,14.4]]),{m:'frame',n:(x,y)=>[(x-C)/9,(y-15)/4,.85],gloss:1});
+    s.fill(poly([[16.4,13.6],[28.6,13.6],[29.2,14.6],[28.4,16.6],[24.6,16.6],[22.5,15.4],[20.4,16.6],[16.6,16.6],[15.8,14.6]]),{m:'mirror',nl:1,noEdge:1});
+    for(let x=16;x<=29;x++){ s.tone(x,14,4); s.tone(x,15,2); s.tone(x,16,0); }
+    [[18,14],[19,14],[17,15],[25,14],[26,14],[24,15]].forEach(([x,y])=>s.set(x,y,'glint',0,{noEdge:1}));
+  } else if(ew&&o.eyewear&&o.eyewear[ew]){
+    // the authored eyewear: centred on the face (CS419) and dropped so the lenses sit ON the eyes,
+    // which are two rows lower on this face than on the old one. Authored colours are kept as drawn
+    // (t:2), and the dark lens tint (E) goes near black like the shades above.
+    const map=o.eyewear[ew], LENS='EOPQRaefry'; let mn=99,mx=-1,nL=0,nR=0,ly=99;
+    for(let y=0;y<map.length;y++){ const row=map[y]; for(let x=0;x<row.length;x++){ if(LENS.indexOf(row[x])<0) continue;
+      if(x<mn)mn=x; if(x>mx)mx=x; if(y<ly)ly=y; if(x<22)nL++; else if(x>22)nR++; } }
+    const dx=(mx>=0&&nL>0&&nR>0)?Math.round(22-(mn+mx)/2):0;
+    const dy=ew==='visorband'?0:(ly<99?Math.max(0,Math.min(3,15-ly)):1);
+    importMap(s,map,ch=>{ if(ch==='E') return {m:'dlens',t:1}; const r=roleBase(null)(ch); return r; },{dx,dy,t:2,nl:1,noCast:1,noEdge:1});
+  }
+  s.tag='';
+  // the club and the ball go last: an address club crosses the waist and the legs
+  if(o.clubMap&&!o.noClub) importMap(s,o.clubMap,roleBase(o.clubPal),{flip:!o.lefty,n:nFlat(-.5,-.3,.8),gloss:2,nl:1,noEdge:1,noCast:1});
+  if(o.ballMap&&!o.noBall) importMap(s,o.ballMap,roleBase(o.ballPal),{flip:!!o.lefty,gloss:2,noCast:1});
+  return s; }
+
+function render(o){ const av=o.av, s=build(o), px=o.px||7, only=o.only||'';
+  const cv=document.createElement('canvas'); cv.width=W*px; cv.height=H*px; const ctx=cv.getContext('2d');
+  if(!only){ ctx.fillStyle='rgba(0,0,0,.22)'; ctx.beginPath(); ctx.ellipse(22*px,54*px,12*px,2*px,0,0,7); ctx.fill(); }
+  const hatHex=av.hatHex, R={
+    skin:skinRamp(av.skinHex), shirt:ramp(av.shirtHex), pants:ramp(o.pants), shoe:ramp(av.shoesHex), saddle:ramp(av.shoesHex),
+    sole:ramp('#e8e2d4'), hat:ramp(hatHex), patch:ramp(lum(hatHex)>.6?'#1b2b4a':'#f1ede2'), patchmark:ramp(lum(hatHex)>.6?'#f4f1e6':'#1b2b4a'),
+    hatbtn:ramp(mix(hatHex,'#000000',.18)), band:ramp('#2a2f3b'), belt:ramp('#2a2420'), button:ramp('#f4f1ea'),
+    glove:ramp('#f7f8f5',{spread:.8}), dlens:['#040508','#08090e','#0e1018','#2e3d58','#56708f'], frame:ramp('#26272d'),
+    gold:ramp('#d6a640'), strap:ramp('#3a3f4a'), mirror:['#4b2a7a','#5f4bb0','#5c8fd6','#7fc3ec','#bfe9fb'],
+    jacket:ramp((o.topPal&&o.topPal.blazer&&o.topPal.blazer['1'])||'#7a1f2b'), tie:ramp('#243040'), jbutton:ramp('#d8b24a') };
+  const lace=mix(R.shoe[1],'#000000',.25), skinR=R.skin;
+  const fixed={ pupil:mix(hairRamp(av.hairBaseHex||av.hairHex)[0],'#1a1018',.6), brow:hairRamp(av.hairHex)[0], lace,
+    blush:mix(skinR[2],'#e0586a',.22), mouth:mix(skinR[1],'#7a2a34',.30), glint:'#fff6d8' };
+  const hairR=new Map();
+  const rampOf=(c,x,y)=>{ const m=c.m;
+    if(m==='hair'){ const hx=o.hairAt?o.hairAt(y):av.hairHex; let r=hairR.get(hx); if(!r){ r=hairRamp(hx); hairR.set(hx,r); } return r; }
+    if(m==='shirt'&&o.pat&&!c.noPat){ const h=o.pat(x,y); if(h) return ramp(h); }
+    if(R[m]) return R[m]; if(fixed[m]) return fixed[m];
+    if(m.charCodeAt(0)===120&&m[1]===':'){ const hex=m.slice(2); return c.lens?[mix(hex,'#000000',.2),mix(hex,'#000000',.1),hex,mix(hex,'#ffffff',.25),'#ffffff']:ramp(hex); }
+    return '#ff00ff'; };
+  s.paint(ctx,px,rampOf,only);
+  return cv; }
+// One authored item drawn ON ITS OWN through the same light, ramps and soft outline as the golfer, for the
+// shop and closet tiles. colOf(ch) answers a hex, {hex,dt} for a tone hint, or null. o.fitSkip names
+// characters left out of the shape the light is fitted to (a tee under a ball, the shaft above a head).
+function renderMap(map,colOf,o){ o=o||{}; const s=new Sprite(), px=o.px||6, skip=o.fitSkip||'';
+  let f=null;
+  for(let y=0;y<map.length;y++){ const row=map[y]||''; for(let x=0;x<row.length;x++){ const ch=row[x]; if(ch==='.'||ch===' '||skip.indexOf(ch)>=0||!colOf(ch)) continue;
+    const X=x+(o.dx|0), Y=y+(o.dy|0); if(!f) f=[X,Y,X,Y]; else { if(X<f[0])f[0]=X; if(Y<f[1])f[1]=Y; if(X>f[2])f[2]=X; if(Y>f[3])f[3]=Y; } } }
+  if(!f) return null;
+  const n=nEll((f[0]+f[2]+1)/2,(f[1]+f[3]+1)/2,Math.max(2,(f[2]-f[0]+1)/2+.6),Math.max(2,(f[3]-f[1]+1)/2+.6));
+  const bb=importMap(s,map,ch=>{ const c=colOf(ch); if(!c) return null; if(typeof c==='string') return {m:'x:'+c};
+    const r={m:'x:'+c.hex,dt:c.dt||0}; if(c.t!=null) r.t=c.t; return r; },{dx:o.dx,dy:o.dy,n,gloss:o.gloss||0,bias:o.bias||0});
+  if(!bb) return null;
+  const full=document.createElement('canvas'); full.width=W*px; full.height=H*px;
+  s.paint(full.getContext('2d'),px,(c)=>{ const m=c.m; return (m.charCodeAt(0)===120&&m[1]===':')?ramp(m.slice(2)):'#ff00ff'; });
+  const c=o.crop||[bb.x0-1,bb.y0-1,bb.x1+1,bb.y1+1], x0=Math.max(0,c[0]), y0=Math.max(0,c[1]), x1=Math.min(W-1,c[2]), y1=Math.min(H-1,c[3]);
+  const cv=document.createElement('canvas'); cv.width=(x1-x0+1)*px; cv.height=(y1-y0+1)*px;
+  cv.getContext('2d').drawImage(full,x0*px,y0*px,cv.width,cv.height,0,0,cv.width,cv.height);
+  return cv; }
+return { render, renderMap, ramp, mix };
+})();
 function pxGolferCanvas(look,opts){
   look=look||S.look||DEFLOOK; const av=avLook(look);
   const pantsHex=((typeof PANTS!=='undefined'&&PANTS.find(x=>x.id===(look.pants||'stone')))||{a:'#c7bfa8'}).a;
@@ -16823,132 +17183,30 @@ function pxGolferCanvas(look,opts){
   const pat=(look.shirtPat&&PXPAT_BY[look.shirtPat])?look.shirtPat:'';
   const shades=(look.eyewear&&PXG_EYEWEAR[look.eyewear])?look.eyewear:'';
   const club=(function(){ const c=normClub(look.club); return PXG_CLUBS[c]?c:'driver'; })();
-  const top=(look.top&&PXG_TOPS[look.top])?look.top:'';    // CS411: heritage outerwear (cardigan/blazer)
-  const legw=(look.leg&&PXG_LEGS[look.leg])?look.leg:'';   // CS411: heritage legwear (plus-fours)
-  const ball=(look.ball&&PXG_BALL[look.ball])?look.ball:'';   // CS414: teed ball beside the golfer
-  const cleats=(look.cleats&&PXG_CLEATS[look.cleats])?look.cleats:'';   // CS414: rocket cleats (footwear overlay)
-  const BODY=(opts&&opts.body)||PXG_BODY;   // CS486: swing-pose body override (club/ball drawn in the body, so noClub/noBall)
-  const key=av.key+'|st'+style+'|cap'+(capOn?hatStyle:'0')+'|pn'+(look.pants||'stone')+'|pt'+pat+'|ew'+shades+'|cl'+club+'|tp'+top+'|lg'+legw+'|bl'+ball+'|ct'+cleats+(look.lefty?'L':'R')+((opts&&opts.bkey)?'|b'+opts.bkey:'');
+  const top=(look.top&&PXG_TOPS[look.top])?look.top:'';
+  const legw=(look.leg&&PXG_LEGS[look.leg])?look.leg:'';
+  const ball=(look.ball&&PXG_BALL[look.ball])?look.ball:'';
+  const cleats=(look.cleats&&PXG_CLEATS[look.cleats])?look.cleats:'';
+  const key='hd|'+av.key+'|st'+style+'|cap'+(capOn?hatStyle:'0')+'|pn'+(look.pants||'stone')+'|pt'+pat+'|ew'+shades+'|cl'+club+'|tp'+top+'|lg'+legw+'|bl'+ball+'|ct'+cleats+(look.lefty?'L':'R')+((opts&&opts.noClub)?'|nc':'')+((opts&&opts.noBall)?'|nb':'')+((opts&&opts.only)?'|o'+opts.only:'');
   let cached=_pxCanvas.get(key); if(cached) return cached;
-  const P={ k:PXG_FIX.k, l:PXG_FIX.l, g:PXG_FIX.g, n:PXG_FIX.n, G:PXG_FIX.G, H:PXG_FIX.H, F:PXG_FIX.F,
-    s:av.skinHex, h:av.hairHex, t:av.shirtHex, d:pxShade(av.shirtHex,-26), v:pxShade(av.shirtHex,34),
-    p:pantsHex, q:pxShade(pantsHex,-22), m:pxShade(pantsHex,16),
-    j:pxShade(av.skinHex,-26-Math.round(12*(av.greyT||0))), x:pxShade(av.skinHex,20),   // ITEM 20: the jaw shade deepens with the years
-    i:pxShade(av.hairHex,-26), Y:pxShade(av.hairHex,28),
-    o:av.shoesHex, z:pxShade(av.shoesHex,-28), u:pxShade(av.shoesHex,14),
-    c:av.hatHex, b:pxShade(av.hatHex,-24), w:pxShade(av.hatHex,26), E:'#20242c', S:'#e8ebf0' };   // E = lens · S = bright chrome (iron/wedge/putter)
-  Object.assign(P, PXG_NOV);   // novelty hats/eyewear use their own fixed colors
-  const px=7, cv=document.createElement('canvas'); cv.width=PXG_W*px; cv.height=PXG_H*px;
-  const ctx=cv.getContext('2d');
-  ctx.fillStyle='rgba(0,0,0,.22)'; ctx.beginPath(); ctx.ellipse(22*px,54*px,12*px,2*px,0,0,7); ctx.fill();
-  const paint=(map,minY,pal)=>{ for(let y=(minY||0);y<map.length;y++){ const row=map[y];
-    for(let x=0;x<row.length;x++){ const ch=row[x]; if(ch==='.'||ch===' ')continue; const col=(pal&&pal[ch])||P[ch]; if(!col)continue;
-      ctx.fillStyle=col; ctx.fillRect(x*px,y*px,px,px); } } };
-  // The hair maps use Y for the crown HIGHLIGHT, but PXG_NOV also defines Y (witch-hat purple) and is merged
-  // into P above so novelty hats can paint straight off it. That collision put 24-34px of fixed purple on the
-  // hair of EVERY bare-headed golfer, whatever colour they picked. The hair paints with its own palette so it
-  // keeps its own highlight; the witch hat still reads P.Y and stays purple.
-  const HAIR_PAL={ Y:pxShade(av.hairHex,28) };
-  // ITEM 20: hair that greys from the temples up. The blend is per ROW, so there is no line across the
-  // head - the crown value at the top, the temple value by the sideburns, graded between. A closed hat
-  // clips the hair to the band that is already fully temple, which is what makes the ageing survive a cap.
-  const paintHair=(map)=>{ if(!map) return;
-    if(!(av.greyT>0)){ paint(map,0,HAIR_PAL); return; }
-    for(let y=0;y<map.length;y++){ const row=map[y]; if(!row) continue;
-      const f=Math.max(0,Math.min(1,(y-AGE_TEMPLE_Y0)/(AGE_TEMPLE_Y1-AGE_TEMPLE_Y0)));
-      const base=avMixHex(av.hairBaseHex,AGE_GREY_HEX,av.greyC+(av.greyT-av.greyC)*f);
-      const pal={ h:base, i:pxShade(base,-26), Y:pxShade(base,28) };
-      for(let x=0;x<row.length;x++){ const ch=row[x]; if(ch==='.'||ch===' ')continue;
-        const col=pal[ch]||P[ch]; if(!col)continue; ctx.fillStyle=col; ctx.fillRect(x*px,y*px,px,px); } } };
-  paint(BODY);
-  // CS370: favorite club in the correct hand - authored on the golfer's LEFT hand (lefty); a right-handed
-  // golfer mirrors it to the RIGHT hand (viewer's left). Drawn on the body layer so it sits with the hands.
-  // CS414: vintage/legendary clubs carry their OWN fixed palette (PXG_CLUB_PAL); stock clubs use the body's
-  // chrome/shaft chars (P). pal, when present, wins per-char so a wooden/gold club never borrows body colors.
-  const paintClub=(map,flip,pal)=>{ for(let y=0;y<map.length;y++){ const row=map[y];
-    for(let x=0;x<row.length;x++){ const ch=row[x]; if(ch==='.'||ch===' ')continue; const col=(pal&&pal[ch])||P[ch]; if(!col)continue;
-      const dx=flip?(PXG_W-1-x):x; ctx.fillStyle=col; ctx.fillRect(dx*px,y*px,px,px); } } };
-  // ITEM 18: the club and the ball are painted LAST (below), after the garments - an address club crosses
-  // the waist and the legs, so drawn here it would be covered by outerwear, legwear and cleats.
-  // CS411: paint a garment OVERLAY map with its own palette (heritage outerwear/legwear/hats)
-  const paintOverlay=(map,pal)=>{ if(!map||!pal) return; for(let y=0;y<map.length;y++){ const row=map[y];
-    for(let x=0;x<row.length;x++){ const ch=row[x]; const col=pal[ch]; if(!col)continue;
-      ctx.fillStyle=col; ctx.fillRect(x*px,y*px,px,px); } } };
-  // Item detail pass: EDGE-SHADED painter for worn items (hats/eyewear/outerwear/legwear/cleats) - a
-  // subtle top-edge rim light + under-edge shadow computed per pixel, so every item reads as a lit 3D
-  // object instead of flat pasted pixels. `pal` optional (falls back to the P palette).
-  const solid=(map,x,y)=>{ if(y<0||y>=map.length) return false; const c=map[y][x]; return c&&c!=='.'&&c!==' '; };
-  const paintShaded=(map,pal,dx)=>{ if(!map) return; dx=dx|0; for(let y=0;y<map.length;y++){ const row=map[y];
-    for(let x=0;x<row.length;x++){ const ch=row[x]; if(ch==='.'||ch===' ')continue;
-      let col=(pal&&pal[ch])||P[ch]; if(!col)continue;
-      if(!solid(map,x,y-1)) col=pxShade(col,16); else if(!solid(map,x,y+1)) col=pxShade(col,-15);
-      ctx.fillStyle=col; ctx.fillRect((x+dx)*px,y*px,px,px); } } };
-  // CS356g / CS409: SHIRT PATTERN overlay. FIXED patterns paint their own locked colors over the whole
-  // shirt region (ignoring the shirt color); normal patterns are a tonal accent over the shirt color.
+  const P=Object.assign({ k:PXG_FIX.k, l:PXG_FIX.l, g:PXG_FIX.g, n:PXG_FIX.n, G:PXG_FIX.G, H:PXG_FIX.H, F:PXG_FIX.F, E:'#20242c', S:'#e8ebf0' }, PXG_NOV);
+  // shirt patterns: a FIXED pattern is its own colours, a normal one is a tonal accent of the shirt
+  let patFn=null;
   if(pat){ const pd=PXPAT_BY[pat];
-    if(pd.fixed){ const cols=pd.cols||[];
-      for(let y=0;y<BODY.length;y++){ const row=BODY[y]; for(let x=0;x<row.length;x++){ const ch=row[x];
-        if(ch!=='t'&&ch!=='d'&&ch!=='v')continue; let col=cols[pd.f(x,y)|0]||cols[0]; if(!col)continue;
-        if(ch==='d') col=pxShade(col,-20); else if(ch==='v') col=pxShade(col,16);   // keep the body's 3D shading
-        ctx.fillStyle=col; ctx.fillRect(x*px,y*px,px,px); } }
-    } else {
-      const light=pxLum(av.shirtHex)>0.55, a1=pxShade(av.shirtHex, light?-52:46), a2=pxShade(av.shirtHex, light?-90:82);
-      for(let y=0;y<BODY.length;y++){ const row=BODY[y]; for(let x=0;x<row.length;x++){ const ch=row[x];
-        if(ch!=='t'&&ch!=='d'&&ch!=='v')continue; const a=pd.f(x,y); if(!a)continue;
-        let col=(a===2)?a2:a1; if(ch==='d') col=pxShade(col,-16); else if(ch==='v') col=pxShade(col,14);
-        ctx.fillStyle=col; ctx.fillRect(x*px,y*px,px,px); } }
-    } }
-  // CS411: HERITAGE OUTERWEAR over the torso (hides the polo/pattern) + LEGWEAR over the legs.
-  if(top && top!=='duckfloatie') paintShaded(PXG_TOPS[top], PXG_TOP_PAL[top]);
-  if(legw) paintShaded(PXG_LEGS[legw], PXG_LEG_PAL[legw]);
-  if(cleats) paintShaded(PXG_CLEATS[cleats], PXG_CLEATS_PAL[cleats]);
-  if(top==='duckfloatie') paintShaded(PXG_TOPS.duckfloatie, PXG_TOP_PAL.duckfloatie);   // the tube sits over trousers/legwear   // CS414: rocket-boot recolor + flame licks over the shoes
-  // ITEM 18: the forearms now converge in FRONT of the body to the grip, so a jacket hem would bury them.
-  // Re-paint only the body's SKIN pixels across the forearm/hand band - the garment itself is untouched,
-  // so this is correct for the cardigan, the blazer, the floatie and anything added later.
-  for(let y=34;y<=42;y++){ const row=BODY[y]||''; for(let x=0;x<row.length;x++){ const ch=row[x];
-    if(ch!=='s'&&ch!=='j'&&ch!=='x')continue; ctx.fillStyle=P[ch]; ctx.fillRect(x*px,y*px,px,px); } }
-  // ITEM 19: a GLOVE on the LEAD hand. A golfer wears one, on the top hand of the grip - the left hand
-  // for a right-hander, which on a frontal sprite is at viewer-RIGHT. Painted as a post-pass RECOLOUR of
-  // the hand's own pixels rather than a new body char: a baked char could not mirror with look.lefty, and
-  // every spare letter is already claimed by PXG_NOV. Keeping the hand's own s/j/x shading means the glove
-  // holds the form of the fist instead of flattening it.
-  if(!(opts&&opts.body)){
-    const GLOVE={x:'#ffffff', s:'#f2f5f1', j:'#c9cec8'}, SEAM='#8e968f';
-    for(let y=41;y<=42;y++){ const row=PXG_BODY[y]||''; let lo=-1, hi=-1;
-      for(let x=0;x<row.length;x++){ const c=row[x]; if(c==='s'||c==='j'||c==='x'){ if(lo<0) lo=x; hi=x; } }
-      if(lo<0) continue; const mid=(lo+hi)/2;
-      // The seam is the pixel where the glove meets the bare hand. Without it a white glove is only a few
-      // shades off the palest skin tone and the hand reads as one undifferentiated block; a hard edge makes
-      // it read as two hands, one gloved, on EVERY skin tone.
-      const seamX = look.lefty ? Math.floor(mid) : Math.ceil(mid);
-      for(let x=lo;x<=hi;x++){ const c=row[x]; if(c!=='s'&&c!=='j'&&c!=='x') continue;
-        if(look.lefty ? (x>mid) : (x<mid)) continue;   // trail hand stays bare
-        ctx.fillStyle=(x===seamX)?SEAM:GLOVE[c]; ctx.fillRect(x*px,y*px,px,px); } }
-  }
-  if(!(opts&&opts.noClub)) paintClub(pxClubAddress(PXG_CLUBS[club]), !look.lefty, PXG_CLUB_PAL[club]);
-  // CS414: teed ball on the TRAIL side (flip=look.lefty → opposite the club, so they never collide)
-  if(ball && !(opts&&opts.noBall)) paintClub(PXG_BALL[ball], !!look.lefty, PXG_BALL_PAL[ball]);
-  // CS356e: a full CAP covers the crown, so clip the hair to below the brim - only the fringe/sideburns
-  // "push out the bottom" of the hat (real-life), and NO hair pokes above/through it. Every full-crown hat
-  // clips the hair; a VISOR has an open top, so hair shows full (the band sits at the brow).
-  const openTop=(hatStyle==='visor')||!!PXG_HAT_OPEN[hatStyle];
-  // Hair overhaul: a closed-crown hat swaps in the style's authored UNDER-HAT hair (compressed - fringe/
-  // sideburns/tail below the brim) instead of a flat row clip, so the hat reshapes the hair naturally.
-  if(capOn && !openTop) paintHair(PXG_HAIR_HAT[style]||PXG_HAIR_HAT.short||[]);
-  else paintHair(PXG_HAIR[style]);
-  if(capOn){ if(PXG_HERITAGE_HAT_PAL[hatStyle]) paintShaded(PXG_HATS[hatStyle], PXG_HERITAGE_HAT_PAL[hatStyle]);   // CS411: tweed cap / straw boater (own palette)
-    else paintShaded(hatStyle==='visor'?PXG_VISOR:(PXG_HATS[hatStyle]||PXG_CAP)); }
-  // CS356g: EYEWEAR (sunglasses) over the eyes, on top of everything.
-  // CS419: some eyewear maps were authored off the face centre (col 22), so glasses sat off-centre. Auto-centre
-  // each map: measure its LENS pixels' horizontal midpoint and shift the whole map so the lenses sit on the
-  // eyes. Two-lens pieces only (skip single-eye monocle/eyepatch, which belong over one eye).
-  if(shades){ const ewm=PXG_EYEWEAR[shades], LENSCH='EOPQRaefry';
-    let mn=99,mx=-1,nL=0,nR=0;
-    for(let y=0;y<ewm.length;y++){ const row=ewm[y]; for(let x=0;x<row.length;x++){ if(LENSCH.indexOf(row[x])<0)continue;
-      if(x<mn)mn=x; if(x>mx)mx=x; if(x<22)nL++; else if(x>22)nR++; } }
-    const dx=(mx>=0 && nL>0 && nR>0) ? Math.round(22-(mn+mx)/2) : 0;   // centred two-lens pieces get dx=0
-    paintShaded(ewm, null, dx); }
+    if(pd.fixed){ const cols=pd.cols||[]; patFn=(x,y)=>cols[pd.f(x,y)|0]||cols[0]||null; }
+    else { const light=pxLum(av.shirtHex)>0.55, a1=pxShade(av.shirtHex, light?-52:46), a2=pxShade(av.shirtHex, light?-90:82);
+      patFn=(x,y)=>{ const a=pd.f(x,y); return a?(a===2?a2:a1):null; }; } }
+  // ITEM 20: hair greys from the temples up, per row, so there is no line across the head
+  const hairAt=(av.greyT>0)?(y=>{ const f=Math.max(0,Math.min(1,(y-AGE_TEMPLE_Y0)/(AGE_TEMPLE_Y1-AGE_TEMPLE_Y0)));
+    return avMixHex(av.hairBaseHex,AGE_GREY_HEX,av.greyC+(av.greyT-av.greyC)*f); }):null;
+  const cv=PXHD.render({ av, pants:pantsHex, style, capOn, hatStyle, openTop:!!PXG_HAT_OPEN[hatStyle], pat:patFn, hairAt,
+    shades, top, leg:legw, cleats, lefty:!!look.lefty, P,
+    hairMaps:{full:PXG_HAIR, hat:PXG_HAIR_HAT}, hats:PXG_HATS, heritage:PXG_HERITAGE_HAT_PAL, eyewear:PXG_EYEWEAR,
+    tops:PXG_TOPS, topPal:PXG_TOP_PAL, legs:legw?PXG_LEGS[legw]:null, legPal:legw?PXG_LEG_PAL[legw]:null,
+    cleatsMap:cleats?PXG_CLEATS[cleats]:null, cleatsPal:cleats?PXG_CLEATS_PAL[cleats]:null,
+    clubMap:pxClubAddress(PXG_CLUBS[club]), clubPal:PXG_CLUB_PAL[club],
+    ballMap:ball?PXG_BALL[ball]:null, ballPal:ball?PXG_BALL_PAL[ball]:null,
+    noClub:!!(opts&&opts.noClub), noBall:!!(opts&&opts.noBall), only:(opts&&opts.only)||'' });
   pxCacheSet(_pxCanvas,key,cv); return cv;
 }
 // CS490: the DIRECTIONAL 3/4 golfer. Renders one facing (N/NE/E/SE/S authored; NW/W/SW mirrored) in a pose.
@@ -26207,7 +26465,20 @@ const NEWS_CATS={tour:{name:'The Tour',col:'#F1D04A'}, career:{name:'Your Career
 const NEWS_DATE='8/14/26';
 const NEWS_DATE2='8/22/26';
 const NEWS_DATE3='8/27/26';
+const NEWS_DATE4='10/1/26';
 const NEWS_ENTRIES=[
+  {id:'spooky-szn', date:NEWS_DATE4, cat:'tour', icon:'🎃', title:'Spooky Szn is here',
+   blurb:'October dresses the game up. Cobwebs and lit pumpkins on the home screen, a pumpkin by your golfer, and the Spooky Season drop in the Pro Shop until Oct 31.',
+   where:'The home screen and the Pro Shop.'},
+  {id:'spooky-hunt', date:NEWS_DATE4, cat:'tour', icon:'💰', title:'Five spooky things to find',
+   blurb:'A spider, a ghost, a bat and two more are hiding around the clubhouse. Tap each one you spot. Find all five for 1,000 coins, once per account.',
+   where:'Home, the Pro Shop and your closet.'},
+  {id:'golfer-hd', date:NEWS_DATE4, cat:'career', icon:'✨', title:'Your golfer, redrawn',
+   blurb:'Every golfer is drawn with real light now. One light from the top left, shading that warms and cools, a soft outline and new eyes. The cap, visor, bucket hat, goggles and shades were all rebuilt.',
+   where:'Your card, profile, home screen, closet and shop.'},
+  {id:'catalog-hd', date:NEWS_DATE4, cat:'career', icon:'🛍', title:'The whole shop in the new style',
+   blurb:'Every tile matches the new golfer. Clubs, balls, cleats, colors and all 60 patterns. Hat and shoe colors show the real thing you\'d wear.',
+   where:'The Pro Shop and your closet.'},
   {id:'cal-years', date:NEWS_DATE3, cat:'tour', icon:'📅', title:'The tour runs on a calendar',
    blurb:'Every season now has a year on it. A career runs 2026 to 2055, then keeps counting into the Legend Circuit. The season screen, summary, history and share cards all name the year. You win a major in 2033, not in year eight.',
    where:'Everywhere a season is named.'},
@@ -36016,6 +36287,8 @@ function cosThumbHTML(cat,o){
      : (cat==='hw'||cat==='ew'||cat==='top'||cat==='leg') ? pxItemThumb(cat,o.id)
      : (cat==='cardbg') ? `<span class="sthumb" style="padding:0;overflow:hidden"><img src="${pxCardBgURL(o.id)}" alt="" style="width:100%;height:100%;object-fit:cover;image-rendering:pixelated"></span>`
      : (cat==='plate') ? `<span class="sthumb color" style="${plateCss(o.id)};display:flex;align-items:center;justify-content:center"><span style="font-weight:900;font-size:8.5px;letter-spacing:.06em">NAME</span></span>`
+     : (cat==='hat' && o.pat===undefined) ? pxCapThumb(o.id)
+     : (cat==='shoes' && o.pat===undefined) ? pxShoeThumb(Object.assign({},S.look||DEFLOOK,{shoes:o.id,cleats:''}))
      : (o.pat===undefined && PXCOLTHUMB[cat] && colOfCos(cat,o)) ? pxColorThumb(cat,colOfCos(cat,o))
      : (o.pat!==undefined
         ? `<span class="sthumb color" style="background:${patSwatchBg(o.id)}"></span>`
@@ -36031,13 +36304,23 @@ const PXCOLTHUMB={
   shoes:['.......kkkk...','.....kkaaaak..','..kkkaaalaaak.','.kaaaaaaaaaaak','kaaaaaaaaaaaak','kwwwwwwwwwwwwk','.kkkkkkkkkkkk.']
 };
 var _pxColThumb={};
+// A small garment icon at twice the size. Its k outline goes (PXHD's soft outline replaces it), except a k
+// with the garment on both sides of it, which is a seam (an armpit, the gap between collar and sleeve) and
+// becomes a shaded pixel instead of a hole.
+function pxIconBig(map){ const big=map.flatMap(r=>{ const w=r.split('').map(c=>c+c).join(''); return [w,w]; });
+  const fill=c=>c&&c!=='.'&&c!==' '&&c!=='k';
+  return big.map((row,y)=>row.split('').map((c,x)=>{ if(c!=='k') return c;
+    const L=fill(row[x-1]), R=fill(row[x+1]), U=fill((big[y-1]||'')[x]), D=fill((big[y+1]||'')[x]);
+    return ((L&&R)||(U&&D))?'s':'.'; }).join('')); }
 function pxColorThumb(cat,col){ const key=cat+col; if(!_pxColThumb[key]){
-    const map=PXCOLTHUMB[cat], W=16, H=16, sc=6, pal={k:pxShade(col,-110),d:pxShade(col,-45),a:col,l:pxShade(col,55),w:'#eef0eb',g:'#e2b43c'};
-    const cv=document.createElement('canvas'); cv.width=W*sc; cv.height=H*sc; const ctx=cv.getContext('2d');
-    const ox=Math.floor((W-map[0].length)/2), oy=Math.floor((H-map.length)/2);
-    map.forEach(function(row,y){ for(let x=0;x<row.length;x++){ const c=pal[row[x]]; if(!c) continue; ctx.fillStyle=c; ctx.fillRect((x+ox)*sc,(y+oy)*sc,sc,sc); } });
-    _pxColThumb[key]=cv.toDataURL(); }
-  return `<span class="sthumb"><img src="${_pxColThumb[key]}" alt="" style="width:86%;height:86%;image-rendering:pixelated"></span>`; }
+    // the garment at twice the size, lit by PXHD like the golfer: the old k outline is dropped (the soft
+    // outline inside the shape replaces it) and d and l stay as tone hints on the lit shape
+    const big=pxIconBig(PXCOLTHUMB[cat]);
+    const dx=Math.floor((44-big[0].length)/2), dy=Math.floor((56-big.length)/2);
+    const colOf=ch=>ch==='w'?'#eef0eb':ch==='g'?'#e2b43c':ch==='a'?col:(ch==='d'||ch==='s')?{hex:col,dt:-1}:ch==='l'?{hex:col,dt:1}:null;
+    const cv=PXHD.renderMap(big,colOf,{dx,dy,px:4});
+    _pxColThumb[key]=cv?cv.toDataURL():''; }
+  return `<span class="sthumb"><img src="${_pxColThumb[key]}" alt="" style="width:86%;height:86%;object-fit:contain;image-rendering:pixelated"></span>`; }
 function colOfCos(cat,o){ if(o.col) return o.col; try{ const it=(cosmeticItems(cat)||[]).find(x=>x.id===o.id); return it&&it.col; }catch(e){ return null; } }
 // COLLECTION REWARD thumbnail: a clean picture of the reward item itself (backdrop/apparel/etc),
 // reusing the store thumbnail renderer so a cardbg shows its pixel backdrop and a 'top' its sprite.
@@ -36428,6 +36711,306 @@ function dropWindowLabel(d){ if(!d.window) return 'Always available';
 function dropReturnsLabel(d){ return 'Returns '+_DROP_MON[d.window[0][0]-1]+' '+d.window[0][1]; }
 function dropProgress(d){ let own=0; d.items.forEach(function(ci){ if(cosOwned(ci[0],ci[1])) own++; }); return {own:own,tot:d.items.length}; }
 function liveThemedDrop(){ return DROPS.find(function(d){ return d.window && dropLive(d); })||null; }
+// ════ SEASONAL DECOR (owner, Oct 2026) ═══════════════════════════════════════════════════════════
+// Each themed drop can dress the game while its window is open: a full-page announcement the first time
+// a player opens the game in that window, ambient decoration on the home scene, and a handful of hidden
+// things to find around the game. Spooky Season is the first. Another season is one entry in
+// SEASON_DECOR plus its own pieces; nothing here is tied to a date, only to the drop's window.
+// Finding EVERY one pays a small coin reward (owner: 1,000), once per account per year. It goes through
+// addBonusCoins like a collection reward, and the claim is a synced owned flag ('egg:<season><year>'), so
+// clearing the browser or playing on a second device can't claim it twice. Coins need an account: a guest
+// who finds them all is told to sign in, and the claim lands on the next render after they do.
+const SEASON_DECOR={
+  spooky:{ drop:'spooky', coins:1000, eggs:['homespider','homeghost','homebat','shopspider','previewghost'],
+    found:{ homespider:'a spider', homeghost:'a ghost', homebat:'a bat', shopspider:'the shop spider', previewghost:'a ghost in the mirror' } }
+};
+function decorLive(){ try{
+  const f=(typeof location!=='undefined')&&/[?&]decor=([a-z]+)/.exec(location.search||'');   // QA: ?decor=spooky
+  if(f&&SEASON_DECOR[f[1]]) return f[1];
+  for(const k in SEASON_DECOR){ const d=dropById(SEASON_DECOR[k].drop); if(d&&d.window&&dropLive(d)) return k; }
+}catch(e){} return null; }
+function decorYear(){ return new Date().getFullYear(); }
+function decorReduced(){ try{ return matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){ return false; } }
+
+// ---- the pieces, drawn through PXHD so they share the golfer's light and soft outline ----
+const _spkArt={};
+function spkArt(key,rows,pal,px,frames){ if(_spkArt[key]) return _spkArt[key];
+  // frames: several row sets side by side in one sheet, for a steps() animation
+  const sets=frames||[rows], out=[];
+  for(const r of sets){ const cv=PXHD.renderMap(r,ch=>pal[ch]||null,{px:px||4}); out.push(cv); }
+  const w=Math.max(...out.map(c=>c?c.width:0)), h=Math.max(...out.map(c=>c?c.height:0));
+  const sh=document.createElement('canvas'); sh.width=w*out.length; sh.height=h; const x=sh.getContext('2d');
+  out.forEach((c,i)=>{ if(c) x.drawImage(c,i*w+Math.floor((w-c.width)/2),h-c.height); });
+  return (_spkArt[key]={url:sh.toDataURL(),w,h,n:out.length}); }
+const SPK_SPIDER=[[
+  "1.........1",
+  ".1.22222.1.",
+  "..1223221..",
+  "11112221111",
+  "...12521...",
+  "..1.454.1..",
+  ".1...5...1.",
+  "1.........1"],[
+  "..1.....1..",
+  ".1.22222.1.",
+  "1.1223221.1",
+  ".1112221 1.".replace(' ','1'),
+  "1..12521..1",
+  "...1454 1..".replace(' ','.'),
+  "..1..5..1..",
+  "..........."]];
+const SPK_SPIDER_PAL={'1':'#5a4a70','2':'#6a4f8e','3':'#b494e0','4':{hex:'#ff6a3a',t:3},'5':'#4a3566'};
+const SPK_BAT=[[
+  "1.........1",
+  "11.......11",
+  "111.1.1.111",
+  "11112221111",
+  ".1.14241.1.",
+  "....222....",
+  ".....2....."],[
+  "...........",
+  "....1.1....",
+  "...12221...",
+  "11114241111",
+  "1.1.222.1.1",
+  "1....2....1",
+  "..........."]];
+const SPK_BAT_PAL={'1':'#4e3d66','2':'#5e4a7a','4':{hex:'#ffcf3a',t:3}};
+const SPK_PUMPKIN=[
+  "......s......",
+  ".....ss......",
+  "..ooOoOooOo..",
+  ".ooOooOooOoo.",
+  "ooOyyoOoyyOoo",
+  "ooOyyoOoyyOoo",
+  "ooOooOyOooOoo",
+  "oOoyoyoyoyoOo",
+  "ooOoyyyyyoOoo",
+  ".ooOooOooOoo.",
+  "..ooooooooo.."];
+const SPK_PUMPKIN_PAL={o:'#e0761f',O:{hex:'#e0761f',dt:-1},y:{hex:'#ffd35a',t:3},s:'#5a7a2a'};
+const SPK_GHOST=[
+  "...wwwww...",
+  "..wwwwwww..",
+  ".wwwwwwwww.",
+  ".wwkwwwkww.",
+  ".wwkwwwkww.",
+  ".wwwwwwwww.",
+  "wwwwwkwwwww",
+  ".wwwwwwwww.",
+  ".wwwwwwwww.",
+  ".wwwwwwwww.",
+  ".ww.www.ww.",
+  ".w...w...w."];
+const SPK_GHOST_PAL={w:'#eaf0ff',k:{hex:'#2a2038',t:2}};
+function spkSprite(kind){ return kind==='spider'?spkArt('spider',null,SPK_SPIDER_PAL,4,SPK_SPIDER)
+  : kind==='bat'?spkArt('bat',null,SPK_BAT_PAL,4,SPK_BAT)
+  : kind==='pumpkin'?spkArt('pumpkin',SPK_PUMPKIN,SPK_PUMPKIN_PAL,4)
+  : spkArt('ghost',SPK_GHOST,SPK_GHOST_PAL,4); }
+// a sprite as an element; an animated sheet steps through its frames
+function spkEl(kind,h,cls){ const a=spkSprite(kind), w=Math.round(a.w*h/a.h);
+  const anim=a.n>1?`background-size:${w*a.n}px ${h}px;animation:spkFrames${a.n} ${kind==='bat'?'.22s':'.5s'} steps(${a.n}) infinite`:`background-size:${w}px ${h}px`;
+  return `<span class="spk-spr ${cls||''}" style="width:${w}px;height:${h}px;background-image:url(${a.url});${anim}"></span>`; }
+// a corner cobweb: spokes out of the corner and sagging rings between them, drawn a pixel at a time
+let _spkWeb='';
+function spkWebURL(){ if(_spkWeb) return _spkWeb;
+  const N=48, cv=document.createElement('canvas'); cv.width=N; cv.height=N; const x=cv.getContext('2d');
+  const dot=(px,py,a)=>{ px=Math.round(px); py=Math.round(py); if(px<0||py<0||px>=N||py>=N) return; x.fillStyle='rgba(232,228,246,'+a+')'; x.fillRect(px,py,1,1); };
+  const line=(x0,y0,x1,y1,a)=>{ const n=Math.ceil(Math.max(Math.abs(x1-x0),Math.abs(y1-y0))); for(let i=0;i<=n;i++){ const t=n?i/n:0; dot(x0+(x1-x0)*t,y0+(y1-y0)*t,a); } };
+  const ang=[0,16,34,52,70,90].map(d=>d*Math.PI/180), L=[50,48,46,46,48,50];
+  ang.forEach((a,i)=>line(0,0,Math.cos(a)*L[i],Math.sin(a)*L[i],.62));
+  [9,16,24,32,41].forEach((r,ri)=>{ for(let i=0;i<ang.length-1;i++){ const a0=ang[i], a1=ang[i+1];
+    const p0=[Math.cos(a0)*r,Math.sin(a0)*r], p1=[Math.cos(a1)*r,Math.sin(a1)*r];
+    const m=[(p0[0]+p1[0])/2*.86,(p0[1]+p1[1])/2*.86];   // the thread sags toward the corner
+    const steps=16; let px=p0;
+    for(let s=1;s<=steps;s++){ const t=s/steps, q=[(1-t)*(1-t)*p0[0]+2*(1-t)*t*m[0]+t*t*p1[0],(1-t)*(1-t)*p0[1]+2*(1-t)*t*m[1]+t*t*p1[1]];
+      line(px[0],px[1],q[0],q[1],ri===4?.38:.5); px=q; } } });
+  [[14,6],[22,17],[9,28],[33,12]].forEach(([a,b])=>{ x.fillStyle='rgba(255,255,255,.95)'; x.fillRect(a,b,1,1); });   // dew
+  return (_spkWeb=cv.toDataURL()); }
+let _spkMoon='';
+function spkMoonURL(){ if(_spkMoon) return _spkMoon;
+  const N=40, cv=document.createElement('canvas'); cv.width=N; cv.height=N; const x=cv.getContext('2d'), c=N/2-.5, r=17;
+  for(let j=0;j<N;j++) for(let i=0;i<N;i++){ const dx=i-c, dy=j-c, d=Math.hypot(dx,dy); if(d>r) continue;
+    const lit=(-dx*.6-dy*.6)/r; let col=lit>.35?'#fff6d6':lit>-.25?'#f1e2b4':lit>-.6?'#d8c48e':'#b9a672';
+    if(d>r-1) col='#c9b582';
+    x.fillStyle=col; x.fillRect(i,j,1,1); }
+  [[14,13,3],[25,22,4],[16,26,2],[27,12,2]].forEach(([a,b,rr])=>{ for(let j=-rr;j<=rr;j++) for(let i=-rr;i<=rr;i++){ if(i*i+j*j>rr*rr) continue; x.fillStyle=(i+j<0)?'#c8b47c':'#e3d3a2'; x.fillRect(a+i,b+j,1,1); } });
+  return (_spkMoon=cv.toDataURL()); }
+
+let _spkCss=false;
+function spkStyleOnce(){ if(_spkCss) return; _spkCss=true;
+  const st=document.createElement('style'); st.textContent=[
+  '.spk-spr{display:inline-block;background-repeat:no-repeat;background-position:0 0;image-rendering:pixelated}',
+  '.spk-hang .spk-spr,.spk-egg .spk-spr,.spk-bat .spk-spr{filter:drop-shadow(0 0 4px rgba(210,180,255,.55))}',
+  '@media (max-width:700px){.spk-pk{display:none}}',
+  '.spk-hhpk{position:absolute;left:100%;bottom:-2px;margin-left:-14px;filter:drop-shadow(0 0 8px rgba(255,160,50,.7));animation:spkGlow 3.4s ease-in-out infinite;pointer-events:none}',
+  '@keyframes spkFrames2{to{background-position:200% 0}}',   /* % runs against (box - sheet), so 100% is frame two */
+  // the full-page announcement
+  '.spk-ov{position:fixed;inset:0;z-index:60;overflow:hidden;display:flex;align-items:center;justify-content:center;padding:18px;background:radial-gradient(120% 80% at 50% 0%,#2a1446 0%,#160a28 45%,#08040f 100%);animation:spkIn .5s ease both}',
+  '@keyframes spkIn{from{opacity:0}to{opacity:1}}',
+  '.spk-moon{position:absolute;top:7%;right:9%;width:min(30vw,170px);image-rendering:pixelated;filter:drop-shadow(0 0 28px rgba(255,236,170,.45));animation:spkMoon 6s ease-in-out infinite}',
+  '@keyframes spkMoon{50%{filter:drop-shadow(0 0 44px rgba(255,236,170,.6))}}',
+  '.spk-fog{position:absolute;left:-30%;width:160%;height:38%;bottom:-8%;background:radial-gradient(50% 50% at 30% 50%,rgba(150,120,200,.22),transparent 70%),radial-gradient(40% 50% at 70% 60%,rgba(120,200,150,.12),transparent 70%);filter:blur(6px);animation:spkFog 18s ease-in-out infinite alternate}',
+  '.spk-fog.b{bottom:auto;top:46%;height:30%;opacity:.6;animation-duration:24s;animation-direction:alternate-reverse}',
+  '@keyframes spkFog{from{transform:translateX(-6%)}to{transform:translateX(8%)}}',
+  '.spk-web{position:absolute;width:min(46vw,280px);image-rendering:pixelated;opacity:.9;pointer-events:none}',
+  '.spk-web.tl{top:0;left:0}.spk-web.tr{top:0;right:0;transform:scaleX(-1)}.spk-web.br{bottom:0;right:0;transform:scale(-1,-1);width:min(34vw,200px);opacity:.7}',
+  '.spk-hang{position:absolute;z-index:3;top:0;display:flex;flex-direction:column;align-items:center;pointer-events:none;animation:spkDrop 1.6s cubic-bezier(.3,1.4,.5,1) both}',
+  '.spk-hang .silk{width:2px;background:linear-gradient(180deg,rgba(230,228,246,.15),rgba(230,228,246,.7))}',
+  '.spk-hang .bob{animation:spkBob 3.2s ease-in-out infinite}',
+  '@keyframes spkDrop{from{transform:translateY(-110%)}}',
+  '@keyframes spkBob{50%{transform:translateY(12px)}}',
+  '.spk-bat{position:absolute;left:-12%;animation:spkFly 9s linear infinite}',
+  '.spk-bat .bob{display:inline-block;animation:spkBatBob 1.2s ease-in-out infinite}',
+  '@keyframes spkFly{from{transform:translateX(0)}to{transform:translateX(130vw)}}',
+  '@keyframes spkBatBob{50%{transform:translateY(-18px)}}',
+  '.spk-ember{position:absolute;bottom:-10px;width:4px;height:4px;border-radius:1px;opacity:0;animation:spkRise linear infinite}',
+  '@keyframes spkRise{0%{opacity:0;transform:translateY(0)}15%{opacity:.9}100%{opacity:0;transform:translateY(-70vh) translateX(20px)}}',
+  '.spk-card{position:relative;z-index:2;width:min(100%,430px);text-align:center;padding:26px 20px 20px;border-radius:20px;background:linear-gradient(180deg,rgba(40,20,64,.92),rgba(18,9,30,.94));border:1px solid rgba(255,140,50,.55);box-shadow:0 0 0 1px rgba(255,140,50,.15),0 0 40px rgba(255,120,30,.25),0 24px 60px rgba(0,0,0,.6);animation:spkCard .7s .15s cubic-bezier(.2,1.3,.4,1) both}',
+  '@keyframes spkCard{from{opacity:0;transform:translateY(24px) scale(.94)}}',
+  '.spk-pump{display:block;margin:-62px auto 4px;width:max-content;animation:spkPump 2.6s ease-in-out infinite;filter:drop-shadow(0 0 18px rgba(255,170,60,.55))}',
+  '@keyframes spkPump{50%{transform:translateY(-6px) rotate(-3deg)}}',
+  '.spk-kick{font:800 11px var(--body);letter-spacing:.24em;text-transform:uppercase;color:#ffb46a}',
+  '.spk-ttl{font-family:var(--display);font-size:clamp(46px,14vw,70px);line-height:.92;margin:6px 0 2px;color:#ffe2b8;letter-spacing:.01em;text-shadow:0 0 6px #ff8a2a,0 0 22px rgba(255,120,30,.7),0 4px 0 #6a2a0a;animation:spkFlicker 5s infinite}',
+  '@keyframes spkFlicker{0%,100%{opacity:1}91%{opacity:1}92%{opacity:.35}93%{opacity:1}95%{opacity:.6}96%{opacity:1}}',
+  '.spk-sub{font-family:var(--display);font-size:22px;color:#c9a8ff;letter-spacing:.08em}',
+  '.spk-lede{color:#e6dcf4;font:600 15px/1.4 var(--body);margin:12px auto 14px;max-width:340px}',
+  '.spk-items{display:flex;flex-wrap:wrap;justify-content:center;gap:6px;margin:0 auto 12px;max-width:360px}',
+  '.spk-items .it{width:46px;height:46px;border-radius:10px;background:rgba(0,0,0,.35);border:1px solid rgba(201,168,255,.25);display:flex;align-items:center;justify-content:center;animation:spkPop .4s both}',
+  '.spk-items .it .sthumb{width:40px;height:40px;background:none;border:0;box-shadow:none}',
+  '@keyframes spkPop{from{opacity:0;transform:scale(.6)}}',
+  '.spk-rew{font:700 13px/1.35 var(--body);color:#ffcf8a;margin:0 auto 6px;max-width:330px}',
+  '.spk-hint{font:600 12.5px/1.35 var(--body);color:#a9e9b8;margin:2px auto 16px;max-width:320px}',
+  '.spk-go{display:block;width:100%;max-width:320px;margin:0 auto 8px;padding:14px;border:0;border-radius:14px;font:900 17px var(--body);letter-spacing:.05em;text-transform:uppercase;color:#2a0f00;background:linear-gradient(180deg,#ffb35a,#e0761f);box-shadow:0 0 20px rgba(255,140,40,.45),inset 0 -3px 0 rgba(0,0,0,.18);cursor:pointer}',
+  '.spk-later{background:none;border:0;color:#bfaedb;font:700 14px var(--body);padding:8px 14px;cursor:pointer}',
+  '.spk-x{position:absolute;top:12px;right:12px;z-index:3;width:40px;height:40px;border-radius:50%;border:1px solid rgba(201,168,255,.35);background:rgba(0,0,0,.35);color:#e6dcf4;font-size:16px;cursor:pointer}',
+  // the home scene and the hidden things
+  '.spk-scene-web{position:absolute;top:0;width:min(38vw,240px);image-rendering:pixelated;opacity:.55}',
+  '.spk-scene-web.l{left:0}.spk-scene-web.r{right:0;transform:scaleX(-1)}',
+  '.spk-pk{position:absolute;filter:drop-shadow(0 0 10px rgba(255,160,50,.55));animation:spkGlow 3.4s ease-in-out infinite}',
+  '@keyframes spkGlow{50%{filter:drop-shadow(0 0 18px rgba(255,170,60,.85))}}',
+  '.spk-egg{position:fixed;z-index:24;pointer-events:auto;cursor:pointer;-webkit-tap-highlight-color:transparent;background:none;border:0;padding:0}',
+  '.spk-egg.hang{top:58px;display:flex;flex-direction:column;align-items:center}',
+  '.spk-egg.hang .silk{width:1px;height:46px;background:rgba(230,228,246,.45)}',
+  '.spk-egg.hang .bob{animation:spkBob 3.6s ease-in-out infinite}',
+  '.spk-egg.hang.gone{animation:spkZip .6s ease-in both}',
+  '@keyframes spkZip{to{transform:translateY(-140px);opacity:0}}',
+  '.spk-egg.peek{left:0;top:46%;transform:translateX(-72%);animation:spkPeek 14s ease-in-out infinite}',
+  '@keyframes spkPeek{0%,70%,100%{transform:translateX(-72%)}76%,90%{transform:translateX(-8%)}}',
+  '.spk-egg.peek.gone{animation:spkVanish .5s ease-in both}',
+  '@keyframes spkVanish{to{opacity:0;transform:translateX(-8%) scale(1.4)}}',
+  '.spk-egg.fly{top:17%;left:-60px;animation:spkFlyBy 26s linear infinite}',
+  '@keyframes spkFlyBy{0%{transform:translateX(0)}22%{transform:translateX(calc(100vw + 120px))}100%{transform:translateX(calc(100vw + 120px))}}',
+  '.spk-egg.fly.gone{animation:spkVanish .5s ease-in both}',
+  '.spk-egg.inbar{position:absolute;top:100%;right:26%;z-index:5}',
+  '.spk-egg.mirror{position:absolute;left:calc(50% + 62px);bottom:22px;z-index:0;opacity:.85;animation:spkMirror 9s ease-in-out infinite}',
+  '@keyframes spkMirror{0%,60%,100%{transform:translateY(10px);opacity:0}70%,88%{transform:translateY(0);opacity:.9}}',
+  '.spk-egg.mirror.gone{animation:spkVanish .5s ease-in both}',
+  '.spk-ov.still,.spk-ov.still .spk-card,.spk-ov.still .spk-items .it,.spk-ov.still .spk-hang{animation:none}',
+  '@media (max-width:600px){.spk-moon{top:3%;right:4%;width:96px}.spk-hang .silk{max-height:22vh}}',
+  '@media (prefers-reduced-motion:reduce){.spk-ov *,.spk-ov,.spk-egg,.spk-egg *,.spk-pk{animation:none!important}.spk-egg.fly{display:none}.spk-egg.peek{transform:translateX(-50%)}.spk-egg.mirror{opacity:.9}}'
+  ].join('\n'); document.head.appendChild(st); }
+
+// ---- the full-page announcement ----
+function spookySeenKey(){ return 'bag_spooky_'+decorYear()+'_seen'; }
+function maybeSpookyPopup(){ try{
+  if(decorLive()!=='spooky') return;
+  if(LS.get(spookySeenKey(),false)) return;
+  if(S.overlay || S.screen!=='title') return;
+  if(typeof welcomePackPending==='function' && welcomePackPending()) return;
+  if(typeof s1LaunchPending==='function' && s1LaunchPending()) return;   // a season launch goes first
+  if(typeof isNewPlayer==='function' && isNewPlayer()) return;          // first run gets the onboarding
+  LS.set(spookySeenKey(),true);
+  try{ track('spooky_popup',{year:decorYear()}); }catch(e){}
+  S.overlay='spookyszn'; render();
+}catch(e){} }
+function overlaySpookySzn(screen){
+  spkStyleOnce();
+  const d=dropById('spooky'), r=dropReward(d), M=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const ends=d&&d.window?M[d.window[1][0]-1]+' '+d.window[1][1]:'';
+  const items=(d?d.items:[]).map((ci,i)=>{ let th=''; try{ const o=(cosmeticItems(ci[0])||[]).find(x=>x.id===ci[1])||{id:ci[1]}; th=cosThumbHTML(ci[0],o); }catch(e){}
+    return `<div class="it" style="animation-delay:${(.55+i*.07).toFixed(2)}s">${th}</div>`; }).join('');
+  const n=d?d.items.length:0;
+  const rewTxt=r?('Collect all '+n+' for the '+((r.items||[]).map(x=>x.name.replace(/ Backdrop$/,' backdrop')).join(' and ')||'reward')+(r.coins?' and '+coinFmt(r.coins)+' coins':'')+'.'):('Collect all '+n+' before '+ends+'.');
+  const R=decorReduced(), still=!!S._spkShown; S._spkShown=true;
+  const embers=R?'':Array.from({length:16},(_,i)=>{ const c=i%3===0?'#7dff5a':'#ff9a3a';
+    return `<span class="spk-ember" style="left:${(4+i*6)%96}%;background:${c};box-shadow:0 0 6px ${c};animation-duration:${(7+(i*37)%6)}s;animation-delay:${((i*53)%70)/10}s"></span>`; }).join('');
+  const hang=(left,len,h,delay)=>`<div class="spk-hang" style="left:${left};animation-delay:${delay}s"><div class="silk" style="height:${len}px"></div><div class="bob" style="animation-delay:${delay}s">${spkEl('spider',h)}</div></div>`;
+  const ov=$(`<div class="spk-ov${still?' still':''}" role="dialog" aria-modal="true" aria-label="Spooky Szn is here">
+    <img class="spk-moon" src="${spkMoonURL()}" alt="">
+    <div class="spk-fog"></div><div class="spk-fog b"></div>
+    ${embers}
+    <div class="spk-bat" style="top:18%;animation-delay:.4s"><span class="bob">${spkEl('bat',30)}</span></div>
+    <div class="spk-bat" style="top:30%;animation-delay:4.6s;animation-duration:11s"><span class="bob" style="animation-delay:.5s">${spkEl('bat',22)}</span></div>
+    <img class="spk-web tl" src="${spkWebURL()}" alt=""><img class="spk-web tr" src="${spkWebURL()}" alt=""><img class="spk-web br" src="${spkWebURL()}" alt="">
+    ${hang('6%',124,46,.3)}${hang('84%',104,38,.9)}${hang('30%',24,28,1.5)}
+    <button class="spk-x" aria-label="Close">✕</button>
+    <div class="spk-card">
+      <span class="spk-pump">${spkEl('pumpkin',72)}</span>
+      <div class="spk-kick">October only</div>
+      <div class="spk-ttl">SPOOKY SZN</div>
+      <div class="spk-sub">IS HERE</div>
+      <p class="spk-lede">The haunted drop is live until ${ends}. Witch hats, skeleton ribs and a cape with a taste for blood.</p>
+      <div class="spk-items">${items}</div>
+      <div class="spk-rew">${rewTxt}</div>
+      <div class="spk-hint">Five spooky things are hiding around the clubhouse. Find them all for ${coinFmt(SEASON_DECOR.spooky.coins)} coins.</div>
+      <button class="spk-go">Shop the drop</button>
+      <button class="spk-later">Later</button>
+    </div></div>`);
+  const close=()=>{ S.overlay=null; S._spkShown=false; render(); };
+  ov.querySelector('.spk-x').onclick=close; ov.querySelector('.spk-later').onclick=close;
+  ov.querySelector('.spk-go').onclick=()=>{ try{ track('spooky_popup_shop'); }catch(e){} S._spkShown=false; S.overlay='shop'; S.shopSec='drops'; S.shopDrop='spooky'; render(); };
+  screen.appendChild(ov);
+}
+
+// ---- the home scene: webs in the corners and lit pumpkins on the ground ----
+function spookySceneHTML(){
+  return `<img class="spk-scene-web l" src="${spkWebURL()}" alt=""><img class="spk-scene-web r" src="${spkWebURL()}" alt="">
+    <span class="spk-pk" style="left:calc(4% + 140px);bottom:15%">${spkEl('pumpkin',40)}</span>
+    <span class="spk-pk" style="left:calc(4% + 196px);bottom:13%;animation-delay:1.2s">${spkEl('pumpkin',28)}</span>
+    <span class="spk-pk" style="right:24%;bottom:9%;animation-delay:.6s">${spkEl('pumpkin',34)}</span>`; }
+
+// ---- the hidden things: five to find, each one once, counted per device ----
+function spkFoundKey(){ return 'bag_spooky_'+decorYear()+'_found'; }
+function spkFound(){ try{ return LS.get(spkFoundKey(),[])||[]; }catch(e){ return []; } }
+function spkFind(id,el){ try{
+  const cfg=SEASON_DECOR.spooky, f=spkFound();
+  if(el){ el.classList.add('gone'); el.style.pointerEvents='none'; }
+  if(f.indexOf(id)>=0){ toast('Boo! You found this one already.',1800); return; }
+  f.push(id); LS.set(spkFoundKey(),f);
+  const all=cfg.eggs.length;
+  try{ track('spooky_egg',{id,found:f.length}); }catch(e){}
+  if(f.length>=all){ if(!spkTryReward()) toast(sbSignedIn()?'All '+all+' spooky things found. Happy Halloween!':'All '+all+' found. Sign in to claim '+coinFmt(cfg.coins)+' coins.',3200); }
+  else toast('You found '+(cfg.found[id]||'something spooky')+'. '+f.length+' of '+all+'. Find all '+all+' for '+coinFmt(cfg.coins)+' coins.',2400);
+}catch(e){} }
+function spkEggClaimKey(){ return 'egg:spooky'+decorYear(); }
+// Pay the reward if every hidden thing is found and it hasn't been paid on this account. Safe to call on
+// every render: it does nothing until the hunt is complete and the player is signed in.
+function spkTryReward(){ try{
+  const cfg=SEASON_DECOR.spooky, f=spkFound(); if(!cfg.coins || f.length<cfg.eggs.length || !sbSignedIn()) return false;
+  const st=coinState(), k=spkEggClaimKey(); if(st.owned[k]) return false;
+  st.owned[k]=1; coinSave(st);
+  addBonusCoins(cfg.coins,{label:'for finding every spooky thing'});
+  try{ track('spooky_egg_reward',{coins:cfg.coins}); }catch(e){}
+  return true; }catch(e){ return false; } }
+function spkEgg(id,cls,inner,label){ const b=document.createElement('button'); b.className='spk-egg '+cls; b.type='button';
+  b.setAttribute('aria-label',label); b.innerHTML=inner; b.onclick=(e)=>{ e.stopPropagation(); spkFind(id,b); }; return b; }
+function spookyHomeEggs(){ if(decorLive()!=='spooky') return []; spkStyleOnce();
+  const f=spkFound(), out=[];
+  if(f.indexOf('homespider')<0) out.push(spkEgg('homespider','hang','<span class="silk"></span><span class="bob">'+spkEl('spider',26)+'</span>','A spider'));
+  if(f.indexOf('homeghost')<0) out.push(spkEgg('homeghost','peek',spkEl('ghost',46),'A ghost'));
+  if(f.indexOf('homebat')<0&&!decorReduced()) out.push(spkEgg('homebat','fly',spkEl('bat',26),'A bat'));
+  out.forEach(b=>{ if(b.classList.contains('hang')) b.style.right='calc(50% - min(46vw, 330px))'; });
+  return out; }
+// after every render: the shop's spider and the ghost behind the golfer in the shop and closet mirror
+function seasonDecorPost(){ spkTryReward(); if(decorLive()!=='spooky') return; spkStyleOnce();
+  const f=spkFound();
+  const bar=app.querySelector('.shop-bar');
+  if(bar && f.indexOf('shopspider')<0 && !bar.querySelector('.spk-egg')){ bar.style.position=bar.style.position||'relative';
+    const b=spkEgg('shopspider','hang inbar','<span class="silk" style="height:26px"></span><span class="bob">'+spkEl('spider',20)+'</span>','A spider'); b.style.top='100%'; b.style.position='absolute'; bar.appendChild(b); }
+  const pv=app.querySelector('.shop-preview');
+  if(pv && f.indexOf('previewghost')<0 && !pv.querySelector('.spk-egg')) pv.appendChild(spkEgg('previewghost','mirror',spkEl('ghost',34),'A ghost'));
+}
 // ===== COLLECTION REWARDS (owner): one exclusive item per themed drop, earned ONLY by owning every
 // item in that collection. Never buyable, never in packs, never shard-redeemable, auto-granted with a
 // celebration the moment the collection completes (cross-device safe: the owned union re-runs the check).

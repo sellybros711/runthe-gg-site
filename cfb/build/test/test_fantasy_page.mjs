@@ -45,7 +45,10 @@ export async function run(ROOT, POOL) {
     window.PS_CFB_AUTH = { API_VERSION: 2,
       boot: function(){ setTimeout(function(){ ls.forEach(function(f){ f(state()); }); }, 30); },
       state: state, onChange: function(f){ ls.push(f); return function(){}; },
-      token: function(){ return s ? 'tok' : null; } };
+      token: function(){ return s ? 'tok' : null; },
+      /* Three drafts for a free account and five for Pro, so Pro is a field on the fixture. */
+      premiumProducts: function(){
+        return Promise.resolve(s && s.pro ? ['ps_premium','cfb_premium'] : []); } };
   })();`;
 
   async function openPage(url, { who = USER, at = null, server = {}, injuries = null,
@@ -154,6 +157,16 @@ export async function run(ROOT, POOL) {
     /* ---- a whole entry, and which competition it reaches ---- */
     let entryIds = null, entryKeyValue = null;
     {
+      const { page, boom } = await openPage('/cfb/fantasy/',
+        { at: LOCK - 36 * 3600e3, who: { ...USER, pro: true } });
+      await waitScreen(page, 's-home');
+      await page.waitForTimeout(300);
+      ok('a Pro account gets five drafts', (await page.textContent('#home-drafts')) === '0 of 5',
+        await page.textContent('#home-drafts'));
+      ok('  and nothing threw', !boom.length, boom.join(' | ') || 'clean');
+      await page.close();
+    }
+    {
       const inj = { season: POOL.season, week: POOL.week, counts: {}, men: {} };
       const qb = POOL.pool.filter((m) => m.position === 'QB');
       inj.men[qb[0].player_id] = { st: 'suspended' };
@@ -166,6 +179,8 @@ export async function run(ROOT, POOL) {
         /week 5/.test(week) && new RegExp(POOL.games.length + ' games').test(week), week);
       ok('  and the cap is the week\'s own', (await page.textContent('#home-cap')) === '$' + POOL.cap_musd + 'M',
         await page.textContent('#home-cap'));
+      ok('  a free account gets three drafts', (await page.textContent('#home-drafts')) === '0 of 3',
+        await page.textContent('#home-drafts'));
       await page.click('#b-draft');
       await waitScreen(page, 's-draft');
       const seen = new Set();

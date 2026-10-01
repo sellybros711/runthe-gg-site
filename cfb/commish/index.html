@@ -100,6 +100,18 @@
      id, so a bare `#s-office{display:flex}` outranks it and the office renders on top of
      every other screen in the mode. It did, until this was caught in a screenshot of the
      data center with the whole office sitting above it. */
+  /* THE COMMISSIONER'S PORTRAIT. One man in a suit, drawn by portrait.js, on the new term
+     screen and at the top of the office. A gold ring, because it is the job. */
+  .cm-hero{width:104px;height:104px;border-radius:50%;margin:4px 0 14px;
+    box-shadow:0 0 0 3px #c9a25a,0 0 36px -6px rgba(201,162,90,.55)}
+  .cm-hero:empty{display:none}
+  .cm-hero svg,.cm-pt svg{display:block;width:100%;height:100%}
+  .cm-me{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+  .cm-pt{flex:0 0 56px;width:56px;height:56px;border-radius:50%;
+    box-shadow:0 0 0 2px #c9a25a,0 0 18px -6px rgba(201,162,90,.6)}
+  .cm-pt:empty{display:none}
+  .cm-me-t{flex:1;min-width:0}
+  .cm-me-t h2{margin:4px 0 0}
   #s-office.on{display:flex;flex-direction:column}
   .ocol{display:contents}
   .ob>*{order:2}
@@ -2210,6 +2222,7 @@
 
   <!-- The door. Nobody who is not on the list gets past this. -->
   <div class="screen on" id="s-gate">
+    <div class="cm-hero" id="gate-pt" aria-hidden="true"></div>
     <div class="eyebrow gold">College Football: Perfect Season</div>
     <h1>Commish<br>Simulator</h1>
     <p class="lede" id="gate-say">Checking your account.</p>
@@ -2311,8 +2324,15 @@
     </div>
 
     <div class="ocol ob">
-    <div class="eyebrow" id="off-when">Winter meetings</div>
-    <h2 id="off-title">Your office</h2>
+    <!-- THE COMMISSIONER, at the top of the briefing like a life sim's character card: his
+         portrait (portrait.js), where you are in the year, and the line about the room. -->
+    <div class="cm-me" id="off-me">
+      <span class="cm-pt" id="off-pt" aria-hidden="true"></span>
+      <div class="cm-me-t">
+        <div class="eyebrow" id="off-when">Winter meetings</div>
+        <h2 id="off-title">Your office</h2>
+      </div>
+    </div>
     <div class="meters" id="off-meters"></div>
     <!-- THE VOTE THAT ENDS A TERM, drawn rather than left to be worked out from nine numbers
          three of which do not count. See paintWhip(). -->
@@ -2781,6 +2801,7 @@
 <script src="/assets/store.js?v=23"></script>
 <script src="/cfb/engine.js?v=35"></script>
 <script src="access.js?v=7"></script>
+<script src="portrait.js?v=1"></script>
 <!-- THE FULL TEAM LIST AND FLAG. This page draws the same store the other two do, and
      the store asks whether the bundle it is selling names Full Team. Without this file that
      question has no answer here and the mode is dropped, so this door would sell three modes
@@ -4738,6 +4759,7 @@ function office(){
     : angry.length
       ? (angry.length===1?angry[0]+' has stopped listening':angry.length+' of the room have stopped listening')
       : 'Your office';
+  paintPortrait($('off-pt'),56,'off');
   paintMeters($('off-meters'),world,null,null,'start');
   paintWhip($('off-whip'),world,null);
   paintSport($('off-sport'),world,null);
@@ -9679,8 +9701,15 @@ function paintTag(){
     :!isTesterNow()?'Pro'
     :'Tester';
 }
+/* THE COMMISSIONER'S PORTRAIT, drawn once into a slot. portrait.js is a plain script beside
+   this one, so a blocked or stale copy leaves an empty circle rather than taking a screen. */
+function paintPortrait(el,n,id){
+  if(!el||el.firstChild||!window.CM_PORTRAIT) return;
+  el.innerHTML=window.CM_PORTRAIT(n,id);
+}
 function gate(){
   const say=$('gate-say'), act=$('gate-act');
+  paintPortrait($('gate-pt'),104,'gate');
   /* THE LEDE COMES BACK ON EVERY PASS, because one branch below takes it away. The store
      branch hides it (the store carries its own heading and lede), and gate() runs again on
      every auth change: signing out after seeing the paywall would otherwise land on a door

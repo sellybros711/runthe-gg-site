@@ -1023,6 +1023,13 @@ const authStub = (who) => `
         ls.forEach(function(f){ try{ f(state()); }catch(e){} }); }, 30); return true; },
       state: state,
       onChange: function(f){ ls.push(f); return function(){}; },
+      /* PRO IS A FIELD ON THE FIXTURE, because the draft count asks it: three drafts for a
+         free account and five for Pro. 'error' is the server failing, which must read as
+         free rather than as Pro. */
+      premiumProducts: function(){
+        if (s && s.pro === 'error') return Promise.reject(new Error('down'));
+        return Promise.resolve(s && s.pro ? ['ps_premium','cfb_premium'] : []);
+      },
     };
     function state(){
       return { ready:true, signedIn:!!s, userId: s&&s.userId, name: s&&s.name };
@@ -1603,16 +1610,25 @@ console.log('\nA WHOLE ENTRY, DRIVEN');
     before.length > 0 && before.join('|') === after.join('|'),
     before.join(', ') + '  ->  ' + after.join(', '));
 
-  /* Fill the rest of the five. */
-  for (let c = 1; c < D.CHANCES; c++) {
+  /* Fill the rest. THIS IS A FREE ACCOUNT, SO THAT IS THREE: Pro gets five, and the walk
+     in the next section is the Pro one. */
+  const FREE = 3;
+  for (let c = 1; c < FREE; c++) {
     await page.waitForSelector('#s-draft.on', { timeout: 10000 });
     await draftOne();
     await page.waitForSelector('#s-review.on', { timeout: 10000 });
-    if (c < D.CHANCES - 1) await page.click('#b-more');
+    if (c < FREE - 1) await page.click('#b-more');
   }
   const five = await page.locator('#r-five .lineup').count();
-  ok(`  all ${D.CHANCES} chances are drafted and shown together`, five === D.CHANCES, five + '');
-  ok('  and there is no sixth', await page.locator('#b-more').isHidden());
+  ok(`  all ${FREE} of a free account's chances are drafted and shown together`, five === FREE, five + '');
+  ok('  and there is no fourth', await page.locator('#b-more').isHidden());
+  const pro = await page.evaluate(() => {
+    const el = document.getElementById('r-pro');
+    const a = el && el.querySelector('a');
+    return { shown: !!el && !el.hidden, href: a && a.getAttribute('href') };
+  });
+  ok('  and the screen says Pro gets five, with a way to the store',
+    pro.shown && pro.href === '/football/#pro', JSON.stringify(pro));
 
   /*
    * THE TOTAL HAS TO BE CHECKABLE AGAINST THE SIX FIGURES PRINTED UNDER IT, which is the
@@ -1816,10 +1832,45 @@ for (const [label, server, want] of [
  * That is the boss battle's call box arriving at a different screen, and the same rule:
  * measure the deepest real case, against a PHONE rather than against the harness's window.
  */
+console.log('\nTHREE DRAFTS FOR A FREE ACCOUNT, FIVE FOR PRO');
+{
+  const KEY = `ps_fantasy_${POOL.season}_w${POOL.week}`;
+  const tile = async (who, storage) => {
+    const { page, boom } = await openPage(browser, FANTASY, { who, at: BEFORE, storage });
+    await page.waitForSelector('#s-home.on', { timeout: 15000 });
+    await page.waitForTimeout(300);
+    const got = await page.evaluate(() => ({
+      tile: document.getElementById('home-drafts').textContent,
+      step: document.querySelector('.steps').textContent }));
+    await page.close();
+    return { ...got, boom };
+  };
+  const free = await tile(TESTER);
+  ok('a free account gets three', free.tile === '0 of 3', free.tile);
+  ok('  and the home screen says Pro gets five', /Pro gets five/.test(free.step), free.step);
+  const pro = await tile({ ...TESTER, pro: true });
+  ok('a Pro account gets five', pro.tile === '0 of 5', pro.tile);
+  /* AN UNKNOWN ANSWER IS FREE. Read the other way, a dropped request would hand out the
+     paid edge in a prize competition. */
+  const down = await tile({ ...TESTER, pro: 'error' });
+  ok('  and a premium read that fails is read as free', down.tile === '0 of 3', down.tile);
+  /* A DRAFT ALREADY MADE IS NEVER TAKEN AWAY: a free account holding four from before the
+     rule, or from a pass that has run out, still has all four. */
+  const four = await tile(TESTER, { key: KEY, value: JSON.stringify({ season: POOL.season,
+    week: POOL.week, chances: [1, 2, 3, 4].map((n) => ({ seed: n, ids: [] })),
+    pick: null, submitted: null }) });
+  ok('  and a free account holding four drafts keeps all four', four.tile === '0 of 4', four.tile);
+  ok('  nothing threw', ![free, pro, down, four].some((x) => x.boom.length),
+    [free, pro, down, four].flatMap((x) => x.boom).join(' | ') || 'clean');
+}
+
 console.log('\nA REFUSAL IS ON THE SCREEN AT THE MOMENT IT IS SAID');
 {
   const { page, boom } = await openPage(browser, FANTASY,
-    { who: TESTER, at: BEFORE, server: { submit: 'that lineup is over the cap' } });
+    /* PRO, because five lineups is the deepest this screen gets and that is what the
+       refusal has to stay on screen under. */
+    { who: { ...TESTER, pro: true }, at: BEFORE,
+      server: { submit: 'that lineup is over the cap' } });
   await page.waitForSelector('#s-home.on', { timeout: 15000 });
   await page.click('#b-draft');
   for (let c = 0; c < D.CHANCES; c++) {
