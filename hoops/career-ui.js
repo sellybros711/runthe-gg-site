@@ -205,18 +205,19 @@ var CSS = [
 '.cr-actrow small{display:block;color:var(--mut);font-size:12px;}',
 '.cr-actrow button{flex:0 0 auto;font-size:12.5px;padding:8px 12px;}',
 '@media (prefers-reduced-motion:reduce){.cr-beats li,.cr-result,.cr-card{animation:none;}.cr-bar i{transition:none;}}',
-/* the player, drawn (hoops/baller.js) */
+/* the player, drawn (hoops/baller.js). The grid is 64 rows. Most heights are a
+   multiple of half a cell, which is whole device pixels on a 2x screen. */
 'img.rtf-baller{image-rendering:pixelated;image-rendering:crisp-edges;}',
-'.cr-id .rtf-baller{flex:0 0 auto;height:84px;width:auto;margin:-6px 0 -8px -4px;filter:drop-shadow(0 3px 6px rgba(0,0,0,.4));}',
-'.cr-preview .rtf-baller{flex:0 0 auto;height:132px;width:auto;}',
-'.cr-final .rtf-baller{height:150px;width:auto;margin:4px auto 2px;display:block;}',
+'.cr-id .rtf-baller{flex:0 0 auto;height:96px;width:auto;margin:-8px 0 -10px -4px;filter:drop-shadow(0 3px 6px rgba(0,0,0,.4));}',
+'.cr-preview .rtf-baller{flex:0 0 auto;height:128px;width:auto;}',
+'.cr-final .rtf-baller{height:160px;width:auto;margin:4px auto 2px;display:block;}',
 '.cr-rivalpic{display:flex;align-items:center;gap:10px;}',
-'.cr-rivalpic .rtf-baller{height:72px;width:auto;flex:0 0 auto;}',
+'.cr-rivalpic .rtf-baller{height:64px;width:auto;flex:0 0 auto;}',
 '.cr-persona{display:inline-block;margin-top:5px;font-size:10px;letter-spacing:.14em;text-transform:uppercase;font-weight:900;padding:3px 8px;border-radius:999px;background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.25);color:#fff;}',
 '.cr-topbtns{display:flex;gap:6px;}',
 '.cr-topbtns button{background:transparent;border:1px solid var(--cardb);color:var(--mut);padding:7px 10px;font-size:12px;}',
 '.cr-look{display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:start;}',
-'.cr-look .rtf-baller{height:150px;width:auto;}',
+'.cr-look .rtf-baller{height:160px;width:auto;}',
 '.cr-lrow{margin:0 0 9px;}',
 '.cr-lrow .k{display:block;font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);font-weight:800;margin:0 0 4px;}',
 '.cr-sw{display:flex;flex-wrap:wrap;gap:5px;}',
@@ -226,7 +227,7 @@ var CSS = [
 '.cr-sw button.dot.on{box-shadow:0 0 0 2px #0e131c,0 0 0 4px var(--orange);}',
 '.cr-gear summary{cursor:pointer;font-size:12px;font-weight:800;color:var(--mut);margin:2px 0 8px;}',
 '.cr-look > div:first-child{position:sticky;top:64px;}',
-'.ch-cur .rtf-baller{flex:0 0 auto;height:76px;width:auto;margin:-8px 0 -10px -2px;}',
+'.ch-cur .rtf-baller{flex:0 0 auto;height:80px;width:auto;margin:-8px 0 -10px -2px;}',
 ].join('\n');
 (function(){
   if (document.getElementById('cr-css')) return;

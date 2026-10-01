@@ -534,6 +534,40 @@ section('10. the press room, the persona, the look');
   ok(JSON.stringify(BL.lookFor('Same Name')) === JSON.stringify(BL.lookFor('Same Name')), 'a name always hashes to the same look');
   const looks = new Set(); for (let i = 0; i < 200; i++) looks.add(JSON.stringify(BL.lookFor('n' + i)));
   ok(looks.size > 150, `two hundred names are not two hundred twins (${looks.size} looks)`);
+  /* The drawing is a sprite, built of parts. Every pose of every look keeps
+     each part off the grid's edge (an edge eats the outline, which is how a
+     flat top first came out with its crown sliced off), has a head, two hands
+     and two shoes, breathes (the second frame differs), and is shaded rather
+     than flat: a figure in a handful of colours is the rectangle man this
+     replaced. */
+  {
+    const poses = ['stand', 'ball', 'up', 'trophy', 'suit', 'cap'];
+    const edge = [], missing = [], still = [], flat = [];
+    for (let i = 0; i < 40; i++) {
+      const lk = BL.lookFor('sprite' + i);
+      for (const pose of poses) {
+        const o = { c1: '#1d428a', c2: '#ffc72c', num: i % 100, pose };
+        const parts = BL.paint(lk, Object.assign({ parts: true }, o));
+        const names = new Set();
+        for (let y = 0; y < BL.H; y++) for (let x = 0; x < BL.W; x++) {
+          const n = parts[y][x];
+          if (!n) continue;
+          names.add(n.replace(/-?1$/, ''));
+          if (x === 0 || x === BL.W - 1 || y === 0 || y === BL.H - 1) edge.push(`${pose} ${lk.hair} ${n} at ${x},${y}`);
+        }
+        const has = (re) => [...names].some(n => re.test(n));
+        for (const [need, re] of [['head', /^head$/], ['hand', /hand$|^grip$/], ['shoe', /^shoe$/]]) if (!has(re)) missing.push(`${pose} ${lk.hair}: no ${need}`);
+        const f0 = BL.paint(lk, o), f1 = BL.paint(lk, Object.assign({ frame: 1 }, o));
+        if (JSON.stringify(f0) === JSON.stringify(f1)) still.push(pose);
+        const cols = new Set(); f0.forEach(r => r.forEach(c => { if (c) cols.add(c); }));
+        if (cols.size < 24) flat.push(`${pose} ${lk.hair} (${cols.size})`);
+      }
+    }
+    ok(!edge.length, `no part of the sprite touches the grid's edge (${edge.slice(0, 3).join('; ') || 'none'})`);
+    ok(!missing.length, `every pose has a head, hands and shoes (${missing.slice(0, 3).join('; ') || 'all'})`);
+    ok(!still.length, `every pose breathes (${still.slice(0, 3).join(', ') || 'all'})`);
+    ok(!flat.length, `every figure is shaded, not flat (${flat.slice(0, 3).join('; ') || 'all'})`);
+  }
   /* An old save, from before looks and reputations, still plays and still
      has a persona. */
   const O = C.newLife({ seed: 'old:save', start: 'draft', league });
