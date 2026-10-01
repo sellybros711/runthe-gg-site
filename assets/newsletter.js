@@ -15,6 +15,17 @@
  * /assets/cloudsave.js reads, plus the three that file does not need. A page with
  * its own raw supabase client (golf, soccer, the home page) passes getToken.
  *
+ * ONE ANSWER, EVERY BOX. The choice is a row on the ACCOUNT, so every game's
+ * profile reads the same answer the next time it opens. What a server read
+ * cannot fix is a box that is ALREADY on screen: a second box on the same page
+ * (baseball draws one in the account sheet and one on the profile), or a game
+ * open in another tab. So a saved change repaints every live box on this page
+ * at once, and is broadcast to the other tabs of this origin (BroadcastChannel,
+ * with a localStorage ping for browsers without it). A message carries the
+ * account's id off the token, so a tab signed in as somebody else ignores it.
+ * Nothing about the choice is STORED in the browser: a reload always asks the
+ * server, which stays the only source of truth.
+ *
  * IT FAILS SOFT AND OUT OF SIGHT. No token, or a database without 121, and the
  * row removes itself rather than showing a box that does nothing when pressed.
  */
@@ -44,10 +55,45 @@
         body: JSON.stringify(args || {})
       }).then(function (r) {
         if (!r.ok) return { skip: r.status === 404 || r.status === 401, error: true };
-        return r.json().then(function (v) { return { value: v }; });
+        return r.json().then(function (v) { return { value: v, who: whoOf(tok) }; });
       });
     }).catch(function () { return { error: true }; });
   }
+
+  /* who the token belongs to, read off the JWT's own payload. Only used to tell
+     a broadcast about this account from one about another, never as auth. */
+  function whoOf(tok) {
+    try {
+      var p = String(tok).split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+      while (p.length % 4) p += '=';
+      return JSON.parse(atob(p)).sub || null;
+    } catch (e) { return null; }
+  }
+
+  var live = [];          /* every box drawn on this page, pruned as they leave the DOM */
+  var KEY = 'rtg_news_sync_v1';
+  var chan = null;
+  try { chan = typeof BroadcastChannel === 'function' ? new BroadcastChannel('rtg-news') : null; } catch (e) { chan = null; }
+
+  function repaintAll(who, status, except) {
+    live = live.filter(function (b) { return b.row.isConnected || !b.mounted; });
+    live.forEach(function (b) {
+      if (b === except) return;
+      if (b.who && who && b.who !== who) return;
+      b.paint(status);
+    });
+  }
+  function announce(who, status) {
+    var msg = { who: who, status: status, at: Date.now() };
+    try { if (chan) chan.postMessage(msg); } catch (e) {}
+    try { root.localStorage.setItem(KEY, JSON.stringify(msg)); root.localStorage.removeItem(KEY); } catch (e) {}
+  }
+  function heard(msg) { if (msg && msg.status) repaintAll(msg.who, msg.status, null); }
+  if (chan) chan.onmessage = function (e) { heard(e.data); };
+  else if (root.addEventListener) root.addEventListener('storage', function (e) {
+    if (e.key !== KEY || !e.newValue) return;
+    try { heard(JSON.parse(e.newValue)); } catch (x) {}
+  });
 
   var css = '.rtg-news{display:flex;align-items:flex-start;gap:11px;margin:14px 0 0;padding:12px 14px;border-radius:12px;'
     + 'border:1px solid rgba(127,127,127,.28);background:rgba(127,127,127,.07);text-align:left;cursor:pointer;color:inherit;font:inherit}'
@@ -80,9 +126,15 @@
       s.textContent = status === 'pending' ? 'Check your inbox for a confirm link.' : SUB;
     }
 
+    var me = { row: row, paint: paint, who: null, mounted: false };
+    live.push(me);
+    /* a box that never reaches the page must not be held for ever */
+    setTimeout(function () { me.mounted = true; }, 0);
+
     call('newsletter_status', {}, opts.getToken).then(function (r) {
       if (r.skip) { row.hidden = true; return; }
       if (r.error) { row.hidden = true; return; }
+      me.who = r.who;
       paint(r.value);
     });
 
@@ -96,8 +148,11 @@
           s.textContent = 'That did not save. Please try again.';
           return;
         }
+        me.who = r.who || me.who;
         paint(r.value);
         if (want) s.textContent = 'You\'re on the list. ' + SUB;
+        repaintAll(me.who, r.value, me);
+        announce(me.who, r.value);
       });
     });
     return row;
@@ -117,5 +172,5 @@
     }
   }
 
-  root.RTG_NEWS = { API_VERSION: 1, el: el, fill: fill };
+  root.RTG_NEWS = { API_VERSION: 2, el: el, fill: fill };
 })(typeof window !== 'undefined' ? window : this);

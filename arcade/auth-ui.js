@@ -143,7 +143,7 @@
     if (newsWaiters) { newsWaiters.push(fn); return; }
     newsWaiters = [fn];
     var sc = document.createElement('script');
-    sc.src = '/assets/newsletter.js?v=1';
+    sc.src = '/assets/newsletter.js?v=2';
     sc.onload = function () { var w = newsWaiters; newsWaiters = null; if (window.RTG_NEWS) w.forEach(function (f) { try { f(); } catch (e) {} }); };
     sc.onerror = function () { newsWaiters = null; };
     document.head.appendChild(sc);
