@@ -2330,13 +2330,17 @@
       "v": "17",
       "sha": "d984540c2b06a2bb"
     },
+    "career-kit.js": {
+      "v": "1",
+      "sha": "c500fbf1764257ff"
+    },
     "scenes.js": {
       "v": "3",
       "sha": "a1888d078fd7e441"
     },
     "career-ui.js": {
-      "v": "8",
-      "sha": "fbff5834fdc7d892"
+      "v": "9",
+      "sha": "bed590d1cde3f70f"
     },
     "data/players.json": {
       "v": "5",
