@@ -65,6 +65,9 @@ const GUARDED = [
      exists because the rest of the repo predates the rule, and this page does not. */
   'football/fantasy/index.html',
   'football/fantasy/draft.js',
+  /* The share card's words are baked into og.png for both competitions, the most public text
+     the mode produces, so the source it is rendered from is copy too. */
+  'football/fantasy/og-source.html',
   // Run The Diamond. Added after the audit that cleared it: nothing on the banned
   // list across both pages, only long-sentence warnings, which this file does not
   // fail on. Its NUMBERS are held by baseball/check-numbers.mjs rather than by

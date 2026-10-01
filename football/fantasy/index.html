@@ -9,6 +9,25 @@
      served to every visitor. Say that plainly rather than implying the link is private. -->
 <meta name="robots" content="noindex, nofollow">
 <title>Fantasy Challenge | RunThe.GG</title>
+<!-- THE LINK PREVIEW. A share of this page used to unfurl as the site's generic card, so the one
+     link a player sends from here said nothing about the week. The card is drawn by
+     football/build/fantasy-og.mjs from football/fantasy/og-source.html, and the ?v= on og:image
+     and twitter:image moves together, here and on the capitalised alias, whenever it is rebuilt. -->
+<meta name="description" content="A free weekly NFL fantasy challenge. Draft six. Beat the field. Top score wins Pro.">
+<meta property="og:title" content="Fantasy Challenge | RunThe.GG">
+<meta property="og:description" content="A free weekly NFL fantasy challenge. Draft six. Beat the field. Top score wins Pro.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="RunThe.GG">
+<meta property="og:url" content="https://runthe.gg/football/fantasy/">
+<meta property="og:image" content="https://runthe.gg/football/fantasy/og.png?v=1">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="One lineup. One week. A lineup card with six empty slots, QB, two RB, two WR and a TE, under a trophy crest.">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:site" content="@RunTheGG">
+<meta name="twitter:title" content="Fantasy Challenge | RunThe.GG">
+<meta name="twitter:description" content="A free weekly NFL fantasy challenge. Draft six. Beat the field. Top score wins Pro.">
+<meta name="twitter:image" content="https://runthe.gg/football/fantasy/og.png?v=1">
 <link rel="icon" href="/favicon.ico">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -618,11 +637,12 @@
   .pill.red{color:#fca5a5;border-color:rgba(239,68,68,.5)}
   .stack{display:flex;flex-direction:column;gap:10px;margin-top:14px}
 </style>
+<script src="/football/fantasy/skin.js?v=1"></script>
 </head>
 <body>
 <div class="wrap">
   <div class="top">
-    <span class="mark">Fantasy <i>Challenge</i></span>
+    <span class="mark"><span data-crest="crest" style="display:contents"></span>Fantasy <i>Challenge</i></span>
     <a href="/football/">&larr; Perfect Season</a>
   </div>
 
@@ -649,17 +669,21 @@
   </section>
 
   <section id="s-home" class="screen">
-    <div class="card">
+    <div class="card hero">
+      <span class="hero-cup" data-crest="hc" aria-hidden="true"></span>
       <div class="eyebrow" id="home-week"></div>
-      <h1 class="display" style="font-size:32px;margin-top:6px">One lineup. One week.</h1>
-      <p class="lede">Six men: QB, two RB, two WR, TE. Every man is priced on what he has
-        actually done this season. You get five drafts and submit one of them.</p>
-      <p class="lede">Half PPR. Whatever your six score between them is your score.</p>
-      <div class="rule"></div>
-      <div class="rail">
-        <span><span class="eyebrow">Locks</span><br><b id="home-lock" class="num">-</b></span>
-        <span style="text-align:right"><span class="eyebrow">Cap</span><br>
-          <b id="home-cap" class="num">-</b></span>
+      <h1 class="display hero-h">One lineup.<br><em>One week.</em></h1>
+      <!-- The lineup the reader is about to build, in the chips the board will deal. -->
+      <div class="rack" aria-hidden="true"><span class="QB">QB</span><span class="RB">RB</span><span class="RB">RB</span><span class="WR">WR</span><span class="WR">WR</span><span class="TE">TE</span></div>
+      <ol class="steps">
+        <li><b>1</b><span><strong>Draft six</strong>QB, two RB, two WR, TE. Each is priced on what he should score. Stay under the cap.</span></li>
+        <li><b>2</b><span><strong>Five tries</strong>Draft up to five lineups. Submit the one you like best.</span></li>
+        <li><b>3</b><span><strong>Win the week</strong>Half PPR on what your six really do. Top score wins 30 days of Pro.</span></li>
+      </ol>
+      <div class="tiles">
+        <div class="t-lock"><span class="eyebrow">Locks</span><b id="home-lock">-</b></div>
+        <div class="t-cap"><span class="eyebrow">Cap</span><b id="home-cap">-</b></div>
+        <div class="t-drafts"><span class="eyebrow">Drafts</span><b id="home-drafts">-</b></div>
       </div>
       <div class="stack">
         <button class="btn" id="b-draft">Start drafting</button>
@@ -694,6 +718,7 @@
       <span><span class="eyebrow">Left to spend</span><br><b id="d-left" class="num">-</b></span>
       <span style="text-align:right"><span class="eyebrow">Signing</span><br>
         <b id="d-slot" class="num">-</b></span>
+      <span class="capbar" aria-hidden="true"><i id="d-capbar"></i></span>
     </div>
     <div class="slots" id="d-slots"></div>
     <div class="men" id="d-men"></div>
@@ -1380,6 +1405,7 @@
     $('d-chance').textContent = 'Draft ' + (cur+1) + ' of ' + D.CHANCES;
     var left = CAP - D.spent(c);
     countMoney(left);
+    $('d-capbar').style.transform = 'scaleX(' + Math.max(0, Math.min(1, left / CAP)) + ')';
     $('d-slot').textContent = i < D.SLOTS.length ? D.SLOTS[i] : 'done';
 
     var strip = '';
@@ -1388,7 +1414,7 @@
       /* ONLY THE CELL THAT JUST CHANGED POPS. Marked on the slot the last signing filled,
          which is i-1, so a repaint that signed nobody (a reload, coming back to the
          screen) animates nothing and the strip does not flash on arrival. */
-      strip += '<div class="slot ' + (man?'done':(k===i?'now':''))
+      strip += '<div class="slot s' + D.SLOTS[k] + ' ' + (man?'done':(k===i?'now':''))
         + (JUST === k ? ' just' : '') + '">'
         + '<div class="p">' + D.SLOTS[k] + '</div>'
         + '<div class="n">' + (man ? esc(man.name.split(' ').slice(-1)[0]) : '&nbsp;') + '</div>'
@@ -2457,7 +2483,9 @@
       + '" data-k="' + esc(key) + '">'
       + '<button type="button" class="bhd"' + (o.roster ? ' aria-controls="' + id + '"'
         + ' aria-expanded="' + open + '"' : ' disabled') + '>'
-      + '<span class="bp">' + esc(String(place)) + '</span>'
+      /* A podium only once somebody has a point, the leader rule's own reason. */
+      + '<span class="bp' + (place >= 1 && place <= 3 && +score > 0 ? ' pl' + place : '') + '">'
+      + esc(String(place)) + '</span>'
       + '<span class="bnw"><span class="bn">' + esc(name) + '</span>'
       + (o.lead ? '<span class="bpro" title="First place wins 30 days of Pro">' + TROPHY + 'PRO</span>' : '')
       + '</span>' + dots
@@ -3185,6 +3213,7 @@
       + ' · ' + POOL.pool.length + ' men on the board';
     $('home-lock').textContent = locked() ? 'Locked' : untilLock();
     $('home-cap').textContent = money(CAP);
+    $('home-drafts').textContent = done + ' of ' + D.CHANCES;
     $('b-draft').hidden = locked() || state.chances.length >= D.CHANCES
       && done >= D.CHANCES;
     $('b-draft').textContent = done ? 'Draft ' + (done+1) + ' of ' + D.CHANCES : 'Start drafting';

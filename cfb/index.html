@@ -671,6 +671,25 @@ window.GA_ID='G-L29P5MRWKE';
     border:1px solid rgba(239,68,68,.55);color:#ffe8e8}
   .hp-cfbfan.in .hp-tag{background:rgba(34,197,94,.18);border-color:rgba(34,197,94,.55);
     color:#dcfce7}
+  /* The crest is the prize and the six bars are the lineup, so the door says what the mode
+     is before a word of it is read. Faint yard lines behind, the ground the mode's own page
+     is drawn on, and the bars light up once a lineup is in. */
+  .hp-cfbfan{background:
+      repeating-linear-gradient(90deg,transparent 0 31px,rgba(255,255,255,.035) 31px 32px),
+      radial-gradient(160px 70px at 50% 0%,rgba(240,201,107,.16),transparent 75%),
+      linear-gradient(180deg,rgba(40,14,16,.9),rgba(20,12,14,.9));gap:4px;padding-top:12px}
+  .hp-cfbfan.in{background:
+      repeating-linear-gradient(90deg,transparent 0 31px,rgba(255,255,255,.035) 31px 32px),
+      radial-gradient(160px 70px at 50% 0%,rgba(240,201,107,.16),transparent 75%),
+      linear-gradient(180deg,rgba(12,36,22,.9),rgba(10,20,14,.9))}
+  .hp-cfbfan .hp-ico{width:30px;height:30px;flex:0 0 auto;
+    filter:drop-shadow(0 0 7px rgba(239,68,68,.55)) drop-shadow(0 2px 4px rgba(0,0,0,.6))}
+  .hp-cfbfan.in .hp-ico{filter:drop-shadow(0 0 7px rgba(34,197,94,.55)) drop-shadow(0 2px 4px rgba(0,0,0,.6))}
+  .hp-cfbfan .hp-rack{display:flex;gap:4px;margin-top:4px}
+  .hp-cfbfan .hp-rack i{display:block;width:17px;height:4px;border-radius:2px;opacity:.5}
+  .hp-cfbfan .hp-rack .QB{background:#ff0a3b} .hp-cfbfan .hp-rack .RB{background:#22c55e}
+  .hp-cfbfan .hp-rack .WR{background:#0f93ff} .hp-cfbfan .hp-rack .TE{background:#eb9500}
+  .hp-cfbfan.in .hp-rack i{opacity:1}
   /* THE PACE LINE. Quieter than the sentence above it and set apart by a hairline, because
      it is a different KIND of thing: the sentence says what the mode is for and this says
      what it costs you in time. Not a tag and not a lock, for the reason written where it is
@@ -5522,6 +5541,15 @@ function ensureCommishDoor(){
  * A LINK AND NOT A BUTTON, because it leaves the page. A guest is not stopped here: the
  * fantasy page tells them it needs an account before they draft, with a way to sign in. */
 let cfbFanWeek=null, cfbFanAsked=false, cfbFanDoor=null;
+/* The crest the mode's own page wears: a trophy on a shield, solid colours and no ids. */
+const CFB_CREST='<svg class="hp-ico" viewBox="0 0 32 32" aria-hidden="true">'
+  +'<path d="M16 1.8 28.4 6v9.4c0 7.4-5.3 12.6-12.4 15-7.1-2.4-12.4-7.6-12.4-15V6Z" '
+  +'fill="rgba(10,14,26,.85)" stroke="#f0c96b" stroke-width="1.8"/>'
+  +'<path d="M11 8.6h10v4.2a5 5 0 0 1-10 0Z" fill="#f0c96b"/>'
+  +'<path d="M11 9.8H8.6a2.6 2.6 0 0 0 2.9 3.8M21 9.8h2.4a2.6 2.6 0 0 1-2.9 3.8" '
+  +'fill="none" stroke="#f0c96b" stroke-width="1.4"/>'
+  +'<rect x="15" y="17.4" width="2" height="2.8" fill="#d9a13a"/>'
+  +'<rect x="11.8" y="20.2" width="8.4" height="2.4" rx="1" fill="#f0c96b"/></svg>';
 function cfbFanEntered(){
   if(!cfbFanWeek) return false;
   try{
@@ -5538,6 +5566,8 @@ function ensureFantasyDoor(){
         if(!n||n.season==null||n.week==null) return;
         cfbFanWeek=n;
         ensureFantasyDoor();
+        /* The lock line counts down, so the door is redrawn once a minute. */
+        setInterval(ensureFantasyDoor,60000);
       })
       .catch(()=>{});
     return;
@@ -5552,10 +5582,18 @@ function ensureFantasyDoor(){
   }
   const inn=cfbFanEntered();
   cfbFanDoor.classList.toggle('in',inn);
-  cfbFanDoor.innerHTML='<span class="hp-tag">Beta</span>'
+  /* WHEN THE WEEK LOCKS, off the pointer's own locks_at, and a plain line once it has. */
+  const ms=cfbFanWeek.locks_at?Date.parse(cfbFanWeek.locks_at)-Date.now():NaN;
+  const h=Math.floor(ms/3600000), d=Math.floor(h/24);
+  const left=!(ms>0)?null:d>=1?d+'d '+(h%24)+'h':h>=1?h+'h '+Math.floor(ms%3600000/60000)+'m'
+    :Math.max(1,Math.floor(ms/60000))+'m';
+  cfbFanDoor.innerHTML='<span class="hp-tag">Beta</span>'+CFB_CREST
     +'<span class="hp-name">Fantasy Challenge</span>'
     +'<span class="hp-sub">'+(inn?'Your lineup is in for week '+cfbFanWeek.week+'.'
-      :'Six players from the week\'s biggest games. Top score wins Pro.')+'</span>';
+      :left?'Week '+cfbFanWeek.week+' &middot; locks in '+left+' &middot; top score wins Pro'
+      :'Six players from the week\'s biggest games. Top score wins Pro.')+'</span>'
+    +'<span class="hp-rack" aria-hidden="true"><i class="QB"></i><i class="RB"></i><i class="RB">'
+    +'</i><i class="WR"></i><i class="WR"></i><i class="TE"></i></span>';
   const three=ctas.querySelector('.cta3');
   if(three){ if(cfbFanDoor.nextSibling!==three) ctas.insertBefore(cfbFanDoor,three); }
   else if(cfbFanDoor.parentNode!==ctas) ctas.appendChild(cfbFanDoor);

@@ -2076,6 +2076,10 @@
     }
   },
   "cfb/fantasy/index.html": {
+    "/football/fantasy/skin.js": {
+      "v": "1",
+      "sha": "8211beb1a8c09cc1"
+    },
     "/cfb/auth.js": {
       "v": "8",
       "sha": "d81dc7cbc4c21a96"
@@ -2144,6 +2148,10 @@
     }
   },
   "football/fantasy/index.html": {
+    "/football/fantasy/skin.js": {
+      "v": "1",
+      "sha": "8211beb1a8c09cc1"
+    },
     "/football/fantasy-access.js": {
       "v": "2",
       "sha": "8648d9aa90526509"

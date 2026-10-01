@@ -3222,6 +3222,36 @@ nothing. Do it on a day with nothing on the clock.
 `check-fullteam.mjs` walks **every** `*-access.js` on disk now rather than naming two, so the
 lists cannot drift and a fourth mode is covered without anybody remembering.
 
+#### The look is one file, and the share card is one source for both competitions
+
+```
+(nohup python3 -m http.server 8080 &) ; node football/build/fantasy-og.mjs
+```
+
+`football/fantasy/skin.js` is the presentation layer the NFL page and the college page
+share: the stadium ground, the gold hairline on every card, the home hero (crest, six chips,
+three steps, three tiles), the cap bar under the money, the slot strip in position colours,
+the segmented live tabs and the podium places. **It is CSS carried in a script**, loaded
+synchronously right after each page's own `<style>`, because `check-cachebust` reads a
+`<script src>` and not a `<link>`, and a stylesheet caches exactly like a script. Each page's
+own `<style>` still holds the layout every checker measures, so **nothing in skin.js may
+move a control**: it paints, and where it changes a size it makes a control smaller.
+
+**The share card** is `football/fantasy/og-source.html`, rendered to `football/fantasy/og.png`
+and, with `?league=cfb`, to `cfb/fantasy/og.png`. It carries no number that can go stale (no
+cap, no week, no count), and the source is on `check-copy`'s list because its words are baked
+into an image. Bump the `?v=` on both pages' `og:image` and `twitter:image` and on the alias
+below together after a rebuild.
+
+**`Football/Fantasy/` is a capitalised alias**, the Mythiball and Wrestling arrangement:
+paths are case sensitive here, and `runthe.gg/Football/Fantasy` is the URL that gets typed and
+pasted, so it is a noindexed stub that refreshes to `/football/fantasy/` and carries the same
+link preview tag for tag, because a chat app reads the head without following the refresh.
+
+**A card's stat line carries two kinds of production at most**, the position's own first
+(`statLine` in `weekly-pool.mjs`). Josh Allen's one catch made his line 58 characters in week 4
+of 2026 and it was cut off at 360; the board is sized for about 40.
+
 #### A published week's cap is the WEEK's, and the constant is only the next one's
 
 ```

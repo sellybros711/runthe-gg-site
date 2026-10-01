@@ -537,6 +537,22 @@ window.GA_ID='G-L29P5MRWKE';
      way to the thing that opens it. The press opens the sign-in sheet, which is where that
      tap was always going to end. */
   .hp-full.hp-fan.hp-lock .hp-full-name{color:rgba(255,232,232,.92)}
+  /* ---- THE CREST AND THE SIX ----
+     The trophy is the prize and the six bars are the lineup, so the door says what the
+     mode is before anybody reads a word of it. A field's yard lines sit faintly behind,
+     the same ground the mode's own pages are drawn on. The crest glows in the sign's own
+     colour, so it changes with the state rather than being a fourth colour to learn. */
+  .hp-full.hp-fan{background:
+      repeating-linear-gradient(90deg,transparent 0 31px,rgba(255,255,255,.035) 31px 32px),
+      radial-gradient(160px 70px at 50% 0%,rgba(240,201,107,.16),transparent 75%),
+      linear-gradient(180deg,var(--fan-bg1),var(--fan-bg2));gap:4px;padding-top:13px}
+  .hp-fan-ico{width:30px;height:30px;flex:0 0 auto;
+    filter:drop-shadow(0 0 7px var(--fan-g2)) drop-shadow(0 2px 4px rgba(0,0,0,.6))}
+  .hp-fan-rack{display:flex;gap:4px;margin-top:4px}
+  .hp-fan-rack i{display:block;width:17px;height:4px;border-radius:2px;opacity:.5}
+  .hp-fan-rack .QB{background:#ff0a3b} .hp-fan-rack .RB{background:#22c55e}
+  .hp-fan-rack .WR{background:#0f93ff} .hp-fan-rack .TE{background:#eb9500}
+  .hp-full.hp-fan.hp-fan-in .hp-fan-rack i{opacity:1;box-shadow:0 0 6px currentColor}
   /* Sized off the label it sits in rather than in pixels, so it tracks the name at every
      width instead of needing a breakpoint of its own. */
   .hp-lk{width:.82em;height:.82em;vertical-align:-0.06em;margin-right:5px;
@@ -12068,9 +12084,12 @@ function fantasyWeekEnsure(){
     .then(n=>{
       if(!n||n.season==null||n.week==null) return;
       fanWeek=n;
-      /* Only repaint if the answer actually changes the door, so this is a no-op on the
-         common visit and cannot fight whatever else has repainted since. */
-      if(fantasyEntered()) ensureFantasyButton();
+      /* REPAINTED ON EVERY ANSWER NOW, because the door says when the week locks and that
+         line is only known once the pointer is here. ensureFantasyButton rebuilds the same
+         node, so a second paint cannot fight whatever else has painted since. */
+      ensureFantasyButton();
+      /* The lock line is a countdown, so it is redrawn once a minute while the door is up. */
+      setInterval(()=>{ if($('b-fantasy')) ensureFantasyButton(); },60000);
     })
     .catch(()=>{});
 }
@@ -12083,6 +12102,33 @@ const HP_LOCK='<svg class="hp-lk" viewBox="0 0 24 24" aria-hidden="true">'+
   '<path fill="none" stroke="currentColor" stroke-width="2.4" '+
     'd="M7.6 10.4V7a4.4 4.4 0 0 1 8.8 0v3.4"/>'+
   '<rect x="4.2" y="10.2" width="15.6" height="11.6" rx="2.4" fill="currentColor"/></svg>';
+
+/* THE CREST, the trophy on a shield the mode's own pages wear in their header. Solid colours
+   and no gradient ids, so it can be drawn anywhere without two copies painting each other. */
+const HP_CREST='<svg class="hp-fan-ico" viewBox="0 0 32 32" aria-hidden="true">'+
+  '<path d="M16 1.8 28.4 6v9.4c0 7.4-5.3 12.6-12.4 15-7.1-2.4-12.4-7.6-12.4-15V6Z" '+
+  'fill="rgba(10,14,26,.85)" stroke="#f0c96b" stroke-width="1.8"/>'+
+  '<path d="M11 8.6h10v4.2a5 5 0 0 1-10 0Z" fill="#f0c96b"/>'+
+  '<path d="M11 9.8H8.6a2.6 2.6 0 0 0 2.9 3.8M21 9.8h2.4a2.6 2.6 0 0 1-2.9 3.8" '+
+  'fill="none" stroke="#f0c96b" stroke-width="1.4"/>'+
+  '<rect x="15" y="17.4" width="2" height="2.8" fill="#d9a13a"/>'+
+  '<rect x="11.8" y="20.2" width="8.4" height="2.4" rx="1" fill="#f0c96b"/></svg>';
+/* Six bars, one a slot, in the position colours the mode's board deals. Lit once a lineup
+   is in, which is the door's own question asked a second way. */
+const HP_RACK='<span class="hp-fan-rack" aria-hidden="true"><i class="QB"></i><i class="RB">'+
+  '</i><i class="RB"></i><i class="WR"></i><i class="WR"></i><i class="TE"></i></span>';
+/* WHEN THE WEEK LOCKS, read off the pointer the Tuesday build writes. Null before it has
+   arrived, and null once the week is under way, so the line falls back rather than
+   counting down past zero. */
+function fantasyLockLine(){
+  if(!fanWeek||!fanWeek.locks_at) return null;
+  const ms=Date.parse(fanWeek.locks_at)-Date.now();
+  if(!(ms>0)) return 'Week '+fanWeek.week+' is live &middot; see the board';
+  const h=Math.floor(ms/3600000), d=Math.floor(h/24);
+  const left=d>=1?d+'d '+(h%24)+'h':h>=1?h+'h '+Math.floor(ms%3600000/60000)+'m'
+    :Math.max(1,Math.floor(ms/60000))+'m';
+  return 'Week '+fanWeek.week+' &middot; locks in '+left;
+}
 
 function ensureFantasyButton(){
   let el=$('b-fantasy');
@@ -12123,13 +12169,13 @@ function ensureFantasyButton(){
   /* BETA, BECAUSE IT IS. Preview was the honest word while only a tester could open it and
      New is what a finished mode says. Beta is the one that tells a reader the mode is real,
      is theirs, and has rough edges. */
-  el.innerHTML='<span class="hp-tag hp-tag-beta">Beta</span>'+
+  el.innerHTML='<span class="hp-tag hp-tag-beta">Beta</span>'+HP_CREST+
     '<span class="hp-full-name">'+(showLock?HP_LOCK:'')+'Fantasy Challenge</span>'+
     '<span class="hp-full-sub">'+(inThisWeek
       ? 'Lineup in &middot; watch it score'
       : showLock
         ? 'Sign in to play &middot; one lineup a week'
-        : 'One lineup &middot; one week')+'</span>';
+        : (fantasyLockLine()||'One lineup &middot; one week'))+'</span>'+HP_RACK;
   /* THE COLOUR IS A CLAIM ABOUT THIS ACCOUNT, so it is said out loud for a reader who
      cannot see a border at all. The border is the fast answer and this is the true one. */
   el.setAttribute('aria-label','Fantasy Challenge, beta. '+(inThisWeek
