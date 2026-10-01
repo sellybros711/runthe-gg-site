@@ -15114,6 +15114,9 @@ function skinSliderNode(){
   return box;
 }
 // CS370: a small thumbnail of a favorite-club option (the club overlay cropped to its bounding box)
+// Every tile in the catalog is drawn by PXHD.renderMap: the same light from the top left, the same hue
+// shifted ramps and the same soft outline as the golfer wearing it, so the tile and the sprite agree.
+function pxThumbFrom(cv){ return cv?`<span class="sthumb"><img src="${cv.toDataURL()}" style="width:100%;height:100%;object-fit:contain;image-rendering:pixelated" alt=""></span>`:pxNoneThumb(); }
 function pxClubThumb(id){ const map=PXG_CLUBS[id]||PXG_CLUBS.driver; const pal=PXG_CLUB_PAL[id]; const P={l:PXG_FIX.l,g:PXG_FIX.g,G:PXG_FIX.G,H:PXG_FIX.H,F:PXG_FIX.F,S:'#e8ebf0'};
   const col=(ch)=>{ if(ch==='.'||ch===' ')return null; return (pal&&pal[ch])||P[ch]||null; };
   // zoom onto the club's DISTINCTIVE parts: bbox of everything except the generic shaft ('l'), so a
@@ -15121,31 +15124,31 @@ function pxClubThumb(id){ const map=PXG_CLUBS[id]||PXG_CLUBS.driver; const pal=P
   let x0=99,y0=99,x1=-1,y1=-1;
   for(let y=0;y<map.length;y++){ const row=map[y]; for(let x=0;x<row.length;x++){ if(row[x]==='l'||!col(row[x]))continue;
     if(x<x0)x0=x; if(x>x1)x1=x; if(y<y0)y0=y; if(y>y1)y1=y; } }
-  let ox=31,oy=39,W=14,H=18;
-  if(x1>=0 && (x1-x0)>=2 && (y1-y0)>=2){ ox=Math.max(0,x0-1); oy=Math.max(0,y0-1); W=Math.min(PXG_W-1,x1+1)-ox+1; H=Math.min(PXG_H-1,y1+1)-oy+1; }
-  const px=Math.max(4,Math.floor(72/Math.max(W,H))); const cv=document.createElement('canvas'); cv.width=W*px; cv.height=H*px; const ctx=cv.getContext('2d');
-  for(let y=oy;y<oy+H;y++){ const row=map[y]||''; for(let x=ox;x<ox+W;x++){ const c=col(row[x]); if(!c)continue; ctx.fillStyle=c; ctx.fillRect((x-ox)*px,(y-oy)*px,px,px); } }
-  return `<span class="sthumb"><img src="${cv.toDataURL()}" style="width:100%;height:100%;object-fit:contain;image-rendering:pixelated" alt=""></span>`; }
+  let crop=[31,39,44,56];
+  if(x1>=0 && (x1-x0)>=2 && (y1-y0)>=2) crop=[x0-1,y0-1,x1+1,y1+1];
+  const W=crop[2]-crop[0]+1, H=crop[3]-crop[1]+1;
+  return pxThumbFrom(PXHD.renderMap(map,col,{crop,fitSkip:'l',gloss:2,px:Math.max(4,Math.floor(72/Math.max(W,H)))})); }
 // boost-tier club thumbnail: the club group's own head shape rendered in that tier's unique finish
 // (Tour steel / Pro carbon+red / Signature gold) - 15 distinct looks across the 5 club groups.
 function pxBagThumb(club,tier){ const map=PXG_CLUBS[BAG_SHAPE[club]]||PXG_CLUBS.driver;
   const pal=Object.assign({g:PXG_FIX.g},BAG_TIER_PAL[tier-1]||BAG_TIER_PAL[0]);
   if(BAG_TIER_ACC[club]){ pal.S=BAG_TIER_ACC[club]; if(tier===2) pal.H=BAG_TIER_ACC[club]; }   // optional per-club accent glint
-  const ox=31,oy=39,W=14,H=18,px=5; const cv=document.createElement('canvas'); cv.width=W*px; cv.height=H*px; const ctx=cv.getContext('2d');
-  for(let y=0;y<map.length;y++){ const row=map[y]; for(let x=0;x<row.length;x++){ const c=pal[row[x]]; if(!c)continue; ctx.fillStyle=c; ctx.fillRect((x-ox)*px,(y-oy)*px,px,px); } }
-  return `<span class="sthumb"><img src="${cv.toDataURL()}" style="width:100%;height:100%;object-fit:contain;image-rendering:pixelated" alt=""></span>`; }
+  return pxThumbFrom(PXHD.renderMap(map,ch=>pal[ch]||null,{crop:[31,39,44,56],fitSkip:'l',gloss:2,px:5})); }
 // CS414: ball thumbnail (a zoomed crop of the teed-ball sprite; 'none' → an empty-outline placeholder)
 function pxBallThumb(id){ const map=PXG_BALL[id], pal=PXG_BALL_PAL[id];
   if(!map||!pal) return `<span class="sthumb color" style="background:#12251b;display:flex;align-items:center;justify-content:center;color:#5e7468;font:700 10px var(--body)">None</span>`;
-  const ox=32,oy=46,W=10,H=10,px=8; /* the ball is six wide at x 34, so 32 centres it */ const cv=document.createElement('canvas'); cv.width=W*px; cv.height=H*px; const ctx=cv.getContext('2d');
-  for(let y=0;y<map.length;y++){ const row=map[y]; for(let x=0;x<row.length;x++){ const c=pal[row[x]]; if(!c)continue; ctx.fillStyle=c; ctx.fillRect((x-ox)*px,(y-oy)*px,px,px); } }
-  return `<span class="sthumb"><img src="${cv.toDataURL()}" style="width:100%;height:100%;object-fit:contain;image-rendering:pixelated" alt=""></span>`; }
+  return pxThumbFrom(PXHD.renderMap(map,ch=>ch==='T'?{hex:pal.T||'#e8ebf0',t:3}:(pal[ch]||null),{crop:[32,46,41,55],fitSkip:'T',gloss:2,px:8})); }   /* the ball is six wide at x 34, so 32 centres it */
 // CS414: rocket-cleats thumbnail (a zoomed crop of the boot overlay; 'none' → empty placeholder)
-function pxCleatsThumb(id){ const map=PXG_CLEATS[id], pal=PXG_CLEATS_PAL[id];
-  if(!map||!pal) return `<span class="sthumb color" style="background:#12251b;display:flex;align-items:center;justify-content:center;color:#5e7468;font:700 10px var(--body)">None</span>`;
-  const ox=12,oy=49,W=22,H=8,px=5; const cv=document.createElement('canvas'); cv.width=W*px; cv.height=H*px; const ctx=cv.getContext('2d');
-  for(let y=0;y<map.length;y++){ const row=map[y]; for(let x=0;x<row.length;x++){ const c=pal[row[x]]; if(!c)continue; ctx.fillStyle=c; ctx.fillRect((x-ox)*px,(y-oy)*px,px,px); } }
-  return `<span class="sthumb"><img src="${cv.toDataURL()}" style="width:100%;height:100%;object-fit:contain;image-rendering:pixelated" alt=""></span>`; }
+function pxCleatsThumb(id){ if(!PXG_CLEATS[id]) return `<span class="sthumb color" style="background:#12251b;display:flex;align-items:center;justify-content:center;color:#5e7468;font:700 10px var(--body)">None</span>`;
+  return pxShoeThumb(Object.assign({},S.look||DEFLOOK,{cleats:id})); }
+// One shoe as the golfer wears it (the trail-side foot), drawn by PXHD and cropped close.
+function pxShoeThumb(look){ try{ const src=pxGolferCanvas(look,{only:'shoe',noClub:true,noBall:true}), c=src.width/PXG_W;
+    const cv=document.createElement('canvas'), x0=23, y0=48, w=11, h=8; cv.width=w*c; cv.height=h*c;
+    cv.getContext('2d').drawImage(src,x0*c,y0*c,cv.width,cv.height,0,0,cv.width,cv.height); return pxThumbFrom(cv); }catch(e){ return pxNoneThumb(); } }
+// A hat colour is the redrawn ball cap in that colour, the same picture the Ball Cap tile shows.
+function pxCapThumb(hatId){ try{ const src=pxGolferCanvas(Object.assign({},S.look||DEFLOOK,{cap:true,hatStyle:'cap',hat:hatId}),{only:'hat',noClub:true,noBall:true}), c=src.width/PXG_W;
+    const cv=document.createElement('canvas'), x0=12, y0=2, w=21, h=14; cv.width=w*c; cv.height=h*c;
+    cv.getContext('2d').drawImage(src,x0*c,y0*c,cv.width,cv.height,0,0,cv.width,cv.height); return pxThumbFrom(cv); }catch(e){ return pxNoneThumb(); } }
 // CS458: a clean standalone picture of a wearable ITEM by itself (headwear/eyewear/outerwear/legwear) 
 // paint just that item's sprite map, auto-crop to its bounding box, and scale it into the tile (no golfer).
 function pxNoneThumb(){ return `<span class="sthumb color" style="background:#12251b;display:flex;align-items:center;justify-content:center;color:#7fae9a;font:800 11px var(--body)">None</span>`; }
@@ -15155,6 +15158,9 @@ function pxItemThumb(cat,id){
   // The tile shows the item exactly as the golfer wears it: drawn by PXHD on your golfer, then only
   // that item's own pixels kept and cropped. An authored map painted flat would be a second, older
   // picture of the same thing.
+  if((cat==='top'&&id!=='blazer'&&PXG_TOPS[id])||(cat==='leg'&&PXG_LEGS[id])){ try{
+    const map=cat==='top'?PXG_TOPS[id]:PXG_LEGS[id], pal=(cat==='top'?PXG_TOP_PAL:PXG_LEG_PAL)[id]||{};
+    const cv=PXHD.renderMap(map,ch=>pal[ch]||null,{px:6}); if(cv) return pxThumbFrom(cv); }catch(e){} }
   try{ const tag={hw:'hat',ew:'ew',top:'top',leg:'leg'}[cat];
     const L=cat==='hw'?Object.assign({},look,{cap:true,hatStyle:id}):cat==='ew'?Object.assign({},look,{eyewear:id}):cat==='top'?Object.assign({},look,{top:id}):Object.assign({},look,{leg:id});
     const src=pxGolferCanvas(L,{only:tag,noClub:true,noBall:true}), cell=src.width/PXG_W;
@@ -15187,17 +15193,23 @@ function pxItemThumb(cat,id){
 // CS458: a clean pattern SWATCH (the pattern itself, not on the golfer), sample the pattern fn over the
 // shirt-region coordinates onto a small square so absolute-position patterns (tie-dye, ripple) read right.
 function pxPatThumb(id){
-  const base='#54736a';
-  const pd=PXPAT_BY[id];
-  if(!pd||id==='none') return `<span class="sthumb color" style="background:${base}"></span>`;
-  const px=8, W=18, H=15, sx=13, sy=25;
-  const cv=document.createElement('canvas'); cv.width=W*px; cv.height=H*px; const ctx=cv.getContext('2d');
+  const base='#54736a', pd=PXPAT_BY[id], none=!pd||id==='none';
   const a1=pxShade(base,42), a2=pxShade(base,80);
-  for(let j=0;j<H;j++){ for(let i=0;i<W;i++){ const gx=sx+i, gy=sy+j; let c;
+  // the polo from the colour tiles at twice the size, so a pattern has room to read; it is sampled at
+  // the coordinates the golfer's own torso uses, so the tile is the pattern as worn
+  const shape=pxIconBig(PXCOLTHUMB.shirt);
+  const sx=8, sy=21, dx=8, dy=14;
+  const colOf=(ch,i,j)=>{ if(ch==='.'||ch===' '||ch==='k') return null; if(ch==='w') return '#eef0eb';
+    const dt=(ch==='d'||ch==='s')?-1:ch==='l'?1:0; if(none) return {hex:base,dt};
+    const gx=sx+i, gy=sy+j; let c;
     if(pd.fixed){ const cols=pd.cols||[base]; c=cols[pd.f(gx,gy)|0]||cols[0]; }
     else { const a=pd.f(gx,gy); c=a?(a===2?a2:a1):base; }
-    ctx.fillStyle=c; ctx.fillRect(i*px,j*px,px,px); } }
-  return `<span class="sthumb"><img src="${cv.toDataURL()}" style="width:100%;height:100%;object-fit:contain;image-rendering:pixelated" alt=""></span>`;
+    return {hex:c,dt}; };
+  // renderMap reads one colour per character, so each cell gets its own one-character key
+  const keys={}, map=[]; let n=0;
+  shape.forEach((row,j)=>{ let out=''; for(let i=0;i<row.length;i++){ const c=colOf(row[i],i,j); if(!c){ out+='.'; continue; }
+    const k=String.fromCharCode(0x100+n++); keys[k]=c; out+=k; } map.push('.'.repeat(dx)+out); });
+  return pxThumbFrom(PXHD.renderMap(Array(dy).fill('').concat(map),ch=>keys[ch]||null,{px:6}));
 }
 // ---- the closet's CLUBS menu = YOUR BAG: 6 club slots; tap a slot to see its active boost upgrade and
 // equip any of the looks you own for that slot (equipping also puts the club in your golfer's hands). ----
@@ -16957,9 +16969,9 @@ function build(o){ const s=new Sprite();
     s.fill(and(ell(cx,52.6,4.9,2.6),(x,y)=>y>53.6),{m:'sole'},{t:2});
     s.fill(and(ell(cx,52.6,4.9,2.6),(x,y)=>Math.abs(x-cx)>2.6&&y<53.6),{m:'saddle',n:nEll(cx,51.6,4.9,3.2),gloss:1,nl:1});
     s.set(Math.floor(cx)-1,51,'lace',0); s.set(Math.floor(cx)+1,51,'lace',0); };
-  shoe(17.6); shoe(27.4);
-  if(o.leg&&o.legs){ s.tag='leg'; importMap(s,o.legs,roleBase(o.legPal)); s.tag=''; }
-  if(o.cleats&&o.cleatsMap) importMap(s,o.cleatsMap,roleBase(o.cleatsPal),{gloss:1});
+  s.tag='shoe'; shoe(17.6); shoe(27.4); s.tag='';
+  if(o.leg&&o.legs){ s.tag='leg'; importMap(s,o.legs,roleBase(o.legPal),{n:(x,y)=>{ const cx=x<C?18.4:26.6, nx=(x-cx)/4.6; return [nx,.05,Math.sqrt(Math.max(.02,1-nx*nx))]; }}); s.tag=''; }
+  if(o.cleats&&o.cleatsMap){ s.tag='shoe'; importMap(s,o.cleatsMap,roleBase(o.cleatsPal),{gloss:1}); s.tag=''; }
   s.fill(rect(14,37,30,38),{m:'belt',n:nCylV(C,8.6,0),gloss:1});
   // torso, sleeves, collar
   const torso=poly([[13.2,24.2],[17.5,21.8],[27.5,21.8],[31.8,24.2],[31.2,37.6],[13.8,37.6]]);
@@ -16983,7 +16995,7 @@ function build(o){ const s=new Sprite();
     s.set(22,33,'jbutton',2); s.set(22,35,'jbutton',2); s.tag='';
   }
   // other outerwear (cardigan, cape, the duck floatie) is the authored map over the torso
-  if(top&&!blazer&&o.tops&&o.tops[top]){ s.tag='top'; importMap(s,o.tops[top],roleBase(o.topPal&&o.topPal[top]),top==='duckfloatie'?{n:nCylV(C,13,0),bias:.32,gloss:1}:{n:shirtN}); s.tag=''; }
+  if(top&&!blazer&&o.tops&&o.tops[top]){ s.tag='top'; importMap(s,o.tops[top],roleBase(o.topPal&&o.topPal[top]),top==='duckfloatie'?{n:nCylV(C-2,26,-.2),bias:.2,gloss:1}:{n:shirtN}); s.tag=''; }
   // arms and hands go IN FRONT of any outerwear: the grip is in front of the body
   if(blazer){ s.tag='top'; s.fill(or(poly(slv),seg(12.6,28,19.2,37.4,2.2)),{m:'jacket',n:nCylSeg(12.6,26,19.2,37.4,2.6)});
     s.fill(or(poly(mir(slv)),seg(32.4,28,25.8,37.4,2.2)),{m:'jacket',n:nCylSeg(32.4,26,25.8,37.4,2.6)}); s.tag=''; }
@@ -17133,7 +17145,25 @@ function render(o){ const av=o.av, s=build(o), px=o.px||7, only=o.only||'';
     return '#ff00ff'; };
   s.paint(ctx,px,rampOf,only);
   return cv; }
-return { render, ramp, mix };
+// One authored item drawn ON ITS OWN through the same light, ramps and soft outline as the golfer, for the
+// shop and closet tiles. colOf(ch) answers a hex, {hex,dt} for a tone hint, or null. o.fitSkip names
+// characters left out of the shape the light is fitted to (a tee under a ball, the shaft above a head).
+function renderMap(map,colOf,o){ o=o||{}; const s=new Sprite(), px=o.px||6, skip=o.fitSkip||'';
+  let f=null;
+  for(let y=0;y<map.length;y++){ const row=map[y]||''; for(let x=0;x<row.length;x++){ const ch=row[x]; if(ch==='.'||ch===' '||skip.indexOf(ch)>=0||!colOf(ch)) continue;
+    const X=x+(o.dx|0), Y=y+(o.dy|0); if(!f) f=[X,Y,X,Y]; else { if(X<f[0])f[0]=X; if(Y<f[1])f[1]=Y; if(X>f[2])f[2]=X; if(Y>f[3])f[3]=Y; } } }
+  if(!f) return null;
+  const n=nEll((f[0]+f[2]+1)/2,(f[1]+f[3]+1)/2,Math.max(2,(f[2]-f[0]+1)/2+.6),Math.max(2,(f[3]-f[1]+1)/2+.6));
+  const bb=importMap(s,map,ch=>{ const c=colOf(ch); if(!c) return null; if(typeof c==='string') return {m:'x:'+c};
+    const r={m:'x:'+c.hex,dt:c.dt||0}; if(c.t!=null) r.t=c.t; return r; },{dx:o.dx,dy:o.dy,n,gloss:o.gloss||0,bias:o.bias||0});
+  if(!bb) return null;
+  const full=document.createElement('canvas'); full.width=W*px; full.height=H*px;
+  s.paint(full.getContext('2d'),px,(c)=>{ const m=c.m; return (m.charCodeAt(0)===120&&m[1]===':')?ramp(m.slice(2)):'#ff00ff'; });
+  const c=o.crop||[bb.x0-1,bb.y0-1,bb.x1+1,bb.y1+1], x0=Math.max(0,c[0]), y0=Math.max(0,c[1]), x1=Math.min(W-1,c[2]), y1=Math.min(H-1,c[3]);
+  const cv=document.createElement('canvas'); cv.width=(x1-x0+1)*px; cv.height=(y1-y0+1)*px;
+  cv.getContext('2d').drawImage(full,x0*px,y0*px,cv.width,cv.height,0,0,cv.width,cv.height);
+  return cv; }
+return { render, renderMap, ramp, mix };
 })();
 function pxGolferCanvas(look,opts){
   look=look||S.look||DEFLOOK; const av=avLook(look);
@@ -36235,6 +36265,8 @@ function cosThumbHTML(cat,o){
      : (cat==='hw'||cat==='ew'||cat==='top'||cat==='leg') ? pxItemThumb(cat,o.id)
      : (cat==='cardbg') ? `<span class="sthumb" style="padding:0;overflow:hidden"><img src="${pxCardBgURL(o.id)}" alt="" style="width:100%;height:100%;object-fit:cover;image-rendering:pixelated"></span>`
      : (cat==='plate') ? `<span class="sthumb color" style="${plateCss(o.id)};display:flex;align-items:center;justify-content:center"><span style="font-weight:900;font-size:8.5px;letter-spacing:.06em">NAME</span></span>`
+     : (cat==='hat' && o.pat===undefined) ? pxCapThumb(o.id)
+     : (cat==='shoes' && o.pat===undefined) ? pxShoeThumb(Object.assign({},S.look||DEFLOOK,{shoes:o.id,cleats:''}))
      : (o.pat===undefined && PXCOLTHUMB[cat] && colOfCos(cat,o)) ? pxColorThumb(cat,colOfCos(cat,o))
      : (o.pat!==undefined
         ? `<span class="sthumb color" style="background:${patSwatchBg(o.id)}"></span>`
@@ -36250,13 +36282,23 @@ const PXCOLTHUMB={
   shoes:['.......kkkk...','.....kkaaaak..','..kkkaaalaaak.','.kaaaaaaaaaaak','kaaaaaaaaaaaak','kwwwwwwwwwwwwk','.kkkkkkkkkkkk.']
 };
 var _pxColThumb={};
+// A small garment icon at twice the size. Its k outline goes (PXHD's soft outline replaces it), except a k
+// with the garment on both sides of it, which is a seam (an armpit, the gap between collar and sleeve) and
+// becomes a shaded pixel instead of a hole.
+function pxIconBig(map){ const big=map.flatMap(r=>{ const w=r.split('').map(c=>c+c).join(''); return [w,w]; });
+  const fill=c=>c&&c!=='.'&&c!==' '&&c!=='k';
+  return big.map((row,y)=>row.split('').map((c,x)=>{ if(c!=='k') return c;
+    const L=fill(row[x-1]), R=fill(row[x+1]), U=fill((big[y-1]||'')[x]), D=fill((big[y+1]||'')[x]);
+    return ((L&&R)||(U&&D))?'s':'.'; }).join('')); }
 function pxColorThumb(cat,col){ const key=cat+col; if(!_pxColThumb[key]){
-    const map=PXCOLTHUMB[cat], W=16, H=16, sc=6, pal={k:pxShade(col,-110),d:pxShade(col,-45),a:col,l:pxShade(col,55),w:'#eef0eb',g:'#e2b43c'};
-    const cv=document.createElement('canvas'); cv.width=W*sc; cv.height=H*sc; const ctx=cv.getContext('2d');
-    const ox=Math.floor((W-map[0].length)/2), oy=Math.floor((H-map.length)/2);
-    map.forEach(function(row,y){ for(let x=0;x<row.length;x++){ const c=pal[row[x]]; if(!c) continue; ctx.fillStyle=c; ctx.fillRect((x+ox)*sc,(y+oy)*sc,sc,sc); } });
-    _pxColThumb[key]=cv.toDataURL(); }
-  return `<span class="sthumb"><img src="${_pxColThumb[key]}" alt="" style="width:86%;height:86%;image-rendering:pixelated"></span>`; }
+    // the garment at twice the size, lit by PXHD like the golfer: the old k outline is dropped (the soft
+    // outline inside the shape replaces it) and d and l stay as tone hints on the lit shape
+    const big=pxIconBig(PXCOLTHUMB[cat]);
+    const dx=Math.floor((44-big[0].length)/2), dy=Math.floor((56-big.length)/2);
+    const colOf=ch=>ch==='w'?'#eef0eb':ch==='g'?'#e2b43c':ch==='a'?col:(ch==='d'||ch==='s')?{hex:col,dt:-1}:ch==='l'?{hex:col,dt:1}:null;
+    const cv=PXHD.renderMap(big,colOf,{dx,dy,px:4});
+    _pxColThumb[key]=cv?cv.toDataURL():''; }
+  return `<span class="sthumb"><img src="${_pxColThumb[key]}" alt="" style="width:86%;height:86%;object-fit:contain;image-rendering:pixelated"></span>`; }
 function colOfCos(cat,o){ if(o.col) return o.col; try{ const it=(cosmeticItems(cat)||[]).find(x=>x.id===o.id); return it&&it.col; }catch(e){ return null; } }
 // COLLECTION REWARD thumbnail: a clean picture of the reward item itself (backdrop/apparel/etc),
 // reusing the store thumbnail renderer so a cardbg shows its pixel backdrop and a 'top' its sprite.
