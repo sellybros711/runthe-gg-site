@@ -806,10 +806,16 @@ console.log('\nTHE PRICE IS THE PROJECTION, AND IT READS THE GAME STATUS REPORT'
     `${cutAged.length} of ${recentAged.length} men priced within a week of their report are discounted`);
   const recent = named.filter((m) => age(m) <= 1);
   const cut = recent.filter((m) => fac(m) !== 1);
-  /* AND THE FILE'S OWN MAX MUST NOT BE WHAT DECIDES. Most of a Tuesday report is older than
-     a week, so the count the price discounts is far short of the count the report names. */
-  ok('  so most of a Tuesday report is correctly not priced', cut.length < named.length / 2,
-    `${cut.length} of ${named.length} designated men are discounted`);
+  /* AND THE FILE'S OWN MAX MUST NOT BE WHAT DECIDES. A man more than a week past his own
+     report is never discounted, so the discounted count can be no more than the men who are
+     NOT that old. This used to read "most of a Tuesday report is not priced", which is a
+     claim about the DAY: from Wednesday the report is this week's, a Thursday run found 30 of
+     60 discounted, and the build stopped there before publishing week 4. */
+  const allCut = named.filter((m) => fac(m) !== 1);
+  const stale = named.filter((m) => age(m) > 1);
+  ok('  so a man past a week on the report is never what makes the count',
+    allCut.length <= named.length - stale.length,
+    `${allCut.length} of ${named.length} designated men are discounted, ${stale.length} are past a week`);
 
   /* NOTHING IS EVER PRICED ABOVE 1. A man on the report practising in full delivers 1.104,
      which is the projection under-reading good players rather than an availability signal,
