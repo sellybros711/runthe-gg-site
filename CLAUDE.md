@@ -10989,6 +10989,56 @@ wrote a `goldYear` that `closeSeason` read a season late, after the history it s
 written to was already pushed, so `cr-gold` was dark in 900 careers. The card writes `olympic`
 onto the last season's awards itself now, and about one career in nine wins gold.
 
+#### The player is drawn, and the big moments are scenes: Run The Tour, for basketball
+
+```
+node hoops/check-career.mjs   section 10 (press room, persona, look), 7b (the scenes, through the page)
+```
+
+Asked for by the owner: model Career on Run The Tour's characters and cutscenes. Three pieces.
+
+**`hoops/baller.js` draws the player** (`window.RTF_BALLER`): a 32 by 48 cell grid painted in
+code, then an outline pass that turns every empty cell touching a painted one into ink, which
+is what makes it read as pixel art. He wears the colours he plays in (`C.colorsOf`) and his own
+number, greys from 33, and has six poses (stand, ball, up, trophy, suit, cap). `img()` returns
+two frames and one page-wide timer swaps them (the breath); reduced motion gets one frame.
+**The look is a few short values on the life** (`L.look`), kept through `cleanLook`'s
+whitelist in career.js, and **baller.js is the only file that knows what they mean**:
+`normal()` falls back on anything it does not recognise, so an old save or a hand edit is
+always drawable. A career from before looks gets `lookFor(seed)`. The rival is drawn off
+`lookFor(name)`, so he always looks the same. **Only the invented are drawn**: no real player
+gets a face or a hashed look.
+
+**The press room is the engine's** (`TONES`, `PRESSERS`, `presserCard`). After a first-round
+pick, an MVP, a title, a Finals loss and a national title, a `presser` card is pushed; every
+answer is a TONE and moves `L.rep` (fans, respect). `EVENT_REP` gives twenty everyday event
+choices a reputation too, because a career sees two or three press conferences and without
+them almost nobody becomes anybody. The reputation drifts 20% back to the middle every season,
+so a persona is what you have done lately. **The persona is read, never stored**
+(`personaOf`, a three by three off the two axes). Measured, all nine are reachable and the
+balance bands do not move: the biggest press conference move is five points of fame.
+
+**`hoops/scenes.js` is the broadcast layer** (`window.RTF_SCENES`): an invented cast and
+outlets, rooms drawn in CSS (draft stage, press room, arena, studio, high school gym, locker
+room, Hall of Fame), a typewriter, tap to advance. **It decides nothing.** A scene is told
+after the engine moved, off the beats it returned (`pickScene`), and a decision in a scene is
+the engine's own pending card answered through `C.choose`, so the plain card is always on the
+screen underneath and a closed scene loses nothing. **Skip never skips a decision**: it jumps
+to the next one, and is hidden while one is up. `chain()` runs a moment straight into the
+next decision (a title into its press conference), and `build()` resolves every line against
+that moment's own context, or a chained scene would tell the first one's facts. Scenes are on
+by default and switched off per device (`rtf.scenes.v1`); check-career's main walk runs with
+them off and 7b runs them on.
+
+**The cast is invented and check-career reads scenes.js and baller.js for every real player's
+name**, the same guard career.js has. Anybody else in a scene is a role (your coach, the
+commissioner).
+
+Two things only a screenshot found: `.sc-front` (the press table, the studio desk) had no
+height, so nothing in it drew; and the drawn player made the identity card taller, which put a
+decision below the fold on a phone. `scrollStage` now scrolls to the first answer of a pending
+card, not to the top of the stage.
+
 #### The Career board, and a score worked out twice that has to agree
 
 ```

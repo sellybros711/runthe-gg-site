@@ -272,6 +272,24 @@ function randomName(seed) {
   return pick(rng, FIRST) + ' ' + pick(rng, LAST);
 }
 
+/* HOW HE LOOKS. Owned by the career so it rides in the life slot and follows
+   the account, and drawn by hoops/baller.js, which is the only file that
+   knows what any of these values means. So this keeps a whitelist of short
+   plain values and nothing else: a look from another device, or one somebody
+   edited by hand, can only ever be a look the drawing falls back on. */
+const LOOK_KEYS = ['skin', 'hair', 'hc', 'beard', 'band', 'sleeve', 'shoes', 'build'];
+function cleanLook(o) {
+  const out = {};
+  if (!o || typeof o !== 'object') return out;
+  for (const k of LOOK_KEYS) {
+    const v = o[k];
+    if (typeof v === 'number' && Number.isFinite(v)) out[k] = clamp(Math.round(v), 0, 99);
+    else if (typeof v === 'string' && /^[a-z0-9]{1,12}$/.test(v)) out[k] = v;
+  }
+  return out;
+}
+function setLook(L, look) { L.look = cleanLook(look); return L.look; }
+
 function newLife(opts) {
   const o = opts || {};
   const seed = o.seed != null ? String(o.seed) : String(Math.floor(Math.random() * 1e9));
@@ -297,6 +315,7 @@ function newLife(opts) {
     phase: 'combine', pending: [], log: [], history: [], flags: {},
     league: { latest: league.latest || 2026, net: Object.assign({}, league.net), stars: league.stars || {} },
     life: { rel: 'single', kids: 0, since: 0 }, rival: null,
+    look: cleanLook(o.look), rep: { fans: 50, resp: 50 },
     season: null, seasonsDone: 0, retired: false, final: null, steps: 0,
   };
   L.year = L.league.latest + 1;
@@ -441,6 +460,9 @@ function runDraft(L, beats) {
   else if (p <= 14) bump(L, { fame: 5 });
   L.phase = 'drafted';
   openYear(L);
+  /* A first-round pick walks across the stage to the podium. Ahead of
+     whatever the summer has queued, because it happens tonight. */
+  if (round === 1) L.pending.unshift(presserCard(L, 'draft'));
 }
 
 function joinTeam(L, c, trade) {
@@ -721,7 +743,7 @@ function allStarCheck(L, beats) {
   L.flags.allstars = n;
   bump(L, { fame: 6, morale: 5 });
   const line = n === 1 ? 'You are an All-Star.' : ordinal(n) + ' All-Star selection.';
-  beats.push({ kind: 'award', text: line, tone: 'gold' });
+  beats.push({ kind: 'award', text: line, tone: 'gold', award: 'star', n });
   logIt(L, line, 'gold');
   L.pending.push({
     id: 'allstar', kind: 'event', key: 'allstar', eyebrow: 'All-Star Weekend', title: 'They want you Saturday night too.',
@@ -877,7 +899,11 @@ function endSeries(L, beats) {
   beats.push({ kind: 'po', text: line, tone: won ? 'good' : 'bad' });
   logIt(L, line, won ? 'good' : 'bad');
   po.cur = null;
-  if (!won) { po.out = true; po.path = ROUND_SHORT[cur.round]; return; }
+  if (!won) {
+    po.out = true; po.path = ROUND_SHORT[cur.round];
+    if (cur.round === 3) { beats.push({ kind: 'finals_loss', text: 'The season ends in the Finals.', tone: 'bad', opp: cur.opp }); L.pending.push(presserCard(L, 'finals_loss')); }
+    return;
+  }
   if (cur.round === 3) {
     po.out = true; po.champ = true; po.path = 'Champion';
     L.flags.rings = (L.flags.rings || 0) + 1;
@@ -892,8 +918,9 @@ function endSeries(L, beats) {
     }
     const n = L.flags.rings;
     const ring = n === 1 ? 'NBA champion.' : 'Ring number ' + n + '.';
-    beats.push({ kind: 'champ', text: ring, tone: 'gold' });
+    beats.push({ kind: 'champ', text: ring, tone: 'gold', ring: n, fmvp: s.awards.indexOf('fmvp') >= 0, opp: cur.opp });
     logIt(L, ring, 'gold');
+    L.pending.push(presserCard(L, 'title'));
     return;
   }
   po.round++;
@@ -1201,6 +1228,132 @@ function legacy(L) {
    Each `run` returns the sentence the screen prints under the choice. Every
    person in here is a role, never a name. */
 const ok = (rng, p) => rng() < clamp(p, 0.03, 0.97);
+
+// ─── the press room ─────────────────────────────────────────────────────────
+
+/* After the moments a career is remembered for, a microphone. It is Run The
+ * Tour's press room arriving at a basketball career: every answer is a TONE,
+ * because how you say it is what gets clipped, and the screen shows the tone
+ * beside the words.
+ *
+ * Each tone moves a meter a little and moves the two axes your reputation is
+ * read off: FANS (do people love watching you) and RESPECT (do the people
+ * inside the game rate you). The persona on the identity card is read off
+ * those two, never stored, so it cannot disagree with them.
+ *
+ * Small on purpose. A press conference is a story about the career and not a
+ * lever on it: the biggest move is five points of fame, and check-career's
+ * balance bands are measured with the press room in.
+ */
+const TONES = {
+  humble: { name: 'Humble', d: { trust: 3, fame: 1 }, fans: 2, resp: 5 },
+  team: { name: 'Team first', d: { trust: 4, morale: 2 }, fans: 2, resp: 5 },
+  confident: { name: 'Confident', d: { fame: 3, morale: 2 }, fans: 4, resp: 1 },
+  loyal: { name: 'Loyal', d: { trust: 2, morale: 2, fame: 1 }, fans: 5, resp: 2 },
+  showman: { name: 'Showman', d: { fame: 4, morale: 2 }, fans: 6, resp: -3 },
+  fiery: { name: 'Fiery', d: { morale: 4, fame: 2 }, fans: 4, resp: 0 },
+  cold: { name: 'Ice cold', d: { trust: 2, fame: -1 }, fans: -5, resp: 4 },
+  cocky: { name: 'Cocky', d: { fame: 5, trust: -3 }, fans: -3, resp: -6, risk: 0.45 },
+};
+/* What gets said about it afterwards. Two of each, picked by the card's own
+   rng, so a reload reads the same line. */
+const TONE_SAY = {
+  humble: ['The clip goes around. People like you more for it.', 'Nobody writes a headline about it. The locker room notices.'],
+  team: ['Your teammates repost it. The room is tight.', 'The coach plays it in the film session. Twice.'],
+  confident: ['It plays well. You sound like somebody who belongs.', 'A good quote. It runs all day.'],
+  loyal: ['The city puts it on a T-shirt by morning.', 'Season ticket renewals jump. The owner sends flowers.'],
+  showman: ['It is on every show by lunch. You are a lot of fun.', 'A meme by midnight. Your follower count doubles.'],
+  fiery: ['The fans love the fire. The other team saves the clip.', 'It is the quote of the week. Everybody has a take.'],
+  cold: ['Four words and you walk off. The league takes you seriously.', 'No smile. No soundbite. Scouts call it focus.'],
+  cocky: ['Bold. It backs itself up, for now.', 'Half the league is angry. The other half is watching.'],
+};
+const TONE_BAD = ['It does not land. A rival coach pins it to the locker room wall.', 'It reads worse in print. The vets are quiet with you for a week.'];
+
+/* The topics, with the question and the answers. An answer is the words you
+   say and the tone they are said in. */
+const PRESSERS = {
+  draft: { title: 'The podium. A dozen microphones.', text: 'First question: what does this team get in you?',
+    ans: [['humble', 'A worker. I will earn everything.'], ['showman', 'A show. Buy your tickets now.'],
+      ['cocky', 'The best player in this draft.'], ['cold', 'Put me on the floor. That is my answer.']] },
+  mvp: { title: 'The trophy is heavy. So is the room.', text: 'Why you, this year?',
+    ans: [['team', 'My teammates made this easy.'], ['confident', 'I earned every vote.'],
+      ['cocky', 'It was not close.'], ['showman', 'Wait until next year.']] },
+  title: { title: 'Confetti in your hair. A podium on the floor.', text: 'What does this one mean?',
+    ans: [['team', 'This is about every guy in that room.'], ['loyal', 'This city deserved it.'],
+      ['cocky', 'Told you. Write it down.'], ['cold', 'We expected this. On to the next one.']] },
+  finals_loss: { title: 'The locker room is quiet. The cameras are not.', text: 'What happened out there?',
+    ans: [['humble', 'They were better. Credit them.'], ['fiery', 'We will be back. Mark it.'],
+      ['team', 'On me. Not my teammates.'], ['cold', 'Next question.']] },
+  ncaa: { title: 'One shining moment. Then the microphones.', text: 'What is next for you?',
+    ans: [['team', 'Enjoying this with my guys.'], ['loyal', 'This school made me.'],
+      ['confident', 'The league. I am ready.'], ['cocky', 'Best player in the country. Any questions?']] },
+};
+const PRESS_EYEBROW = { draft: 'Draft night', mvp: 'MVP press conference', title: 'Champions', finals_loss: 'After the Finals', ncaa: 'National champions' };
+
+function repOf(L) { return L.rep || (L.rep = { fans: 50, resp: 50 }); }
+function moveRep(L, fans, resp) {
+  const r = repOf(L);
+  r.fans = clamp(r.fans + fans, 0, 100);
+  r.resp = clamp(r.resp + resp, 0, 100);
+}
+/* The everyday choices that are also a public statement, as [fans, respect]
+   per option. A press conference is a few times a career at most, so without
+   these most players would never be anybody in particular. Kept in a table
+   rather than on each option, so the event text above stays a story and this
+   stays one place to read the reputation off. */
+const EVENT_REP = {
+  hot_streak: [[-2, -3], [2, 4], [-2, 2]],
+  stuck: [[0, 3], [2, -3], [0, 1]],
+  film_session: [[0, 3], [0, -3], [1, 0]],
+  online_beef: [[3, -4], [1, 1], [-2, 2]],
+  ref_heat: [[2, -3], [0, 2]],
+  heckler: [[-1, -4], [-1, 2], [4, 1]],
+  charity: [[3, 2], [2, 2], [-2, -1]],
+  podcast: [[3, -2], [-1, 1]],
+  media_day: [[2, -2], [1, 3], [0, 1]],
+  rap_album: [[3, -2], [-1, 0]],
+  rival_trash: [[1, 3], [3, -3], [-2, 2]],
+  docuseries: [[4, -2], [3, 0], [-3, 1]],
+  teammate_fight: [[1, -4], [0, 3], [0, 2]],
+  playoff_guarantee: [[3, -2], [-1, 2]],
+  christmas: [[4, -2], [-1, 2]],
+  superteam: [[-4, -2], [4, 2]],
+  hometown_call: [[3, 1], [-1, 0]],
+  local_ad: [[2, -1], [-1, 0]],
+  mentor_rookie: [[1, 4], [0, -1]],
+  young_star: [[1, 4], [0, 1], [-2, -2]],
+};
+/* Nine personas off a three by three of the two axes. */
+const PERSONAS = [
+  ['Villain', 'Low profile', 'Quiet assassin'],
+  ['Loose cannon', 'Still writing it', "Pro's pro"],
+  ['Showman', 'Fan favorite', 'Face of the league'],
+];
+function personaOf(L) {
+  const r = repOf(L), band = (v) => v < 42 ? 0 : v > 58 ? 2 : 1;
+  return PERSONAS[band(r.fans)][band(r.resp)];
+}
+function presserCard(L, topic) {
+  const p = PRESSERS[topic];
+  return {
+    id: 'presser', kind: 'presser', key: 'presser:' + topic + ':' + L.year, topic,
+    eyebrow: PRESS_EYEBROW[topic], title: p.title, text: p.text,
+    options: p.ans.map((a) => ({ label: a[1], tone: a[0], hint: TONES[a[0]].name })),
+  };
+}
+function choosePresser(L, card, opt, rng) {
+  const t = TONES[opt.tone] || TONES.humble;
+  bump(L, t.d);
+  moveRep(L, t.fans, t.resp);
+  L.flags.press = (L.flags.press || 0) + 1;
+  if (t.risk && !ok(rng, 1 - t.risk)) {
+    bump(L, { trust: -3, morale: -2 });
+    moveRep(L, 0, -3);
+    return { text: TONE_BAD[rng() < 0.5 ? 0 : 1], tone: 'bad' };
+  }
+  const say = TONE_SAY[opt.tone] || TONE_SAY.humble;
+  return { text: say[rng() < 0.5 ? 0 : 1], tone: 'good' };
+}
 const EVENTS = {
   vet_mentor: {
     phases: ['early'], once: true, when: (L) => L.seasonsDone === 0, weight: () => 4,
@@ -2201,9 +2354,10 @@ function endTourneyGame(L, t, g, won, beats) {
   if (t.r >= names.length) {
     t.done = true; t.champ = true;
     const txt = t.kind === 'hs' ? 'State champions.' : 'National champions.';
-    beats.push({ kind: 'champ', text: txt, tone: 'gold' });
+    beats.push({ kind: 'champ', text: txt, tone: 'gold', level: t.kind });
     logIt(L, (t.kind === 'hs' ? L.am.hs.name : L.am.college) + ': ' + txt, 'gold');
     bump(L, { fame: t.kind === 'hs' ? 6 : 12, morale: 12 });
+    if (t.kind === 'ncaa') L.pending.push(presserCard(L, 'ncaa'));
   }
 }
 function amClutchCard(L, t, g) {
@@ -2892,7 +3046,7 @@ function choose(L, i) {
   const before = snapshot(L);
   let text = '', tone = '', beats = [];
   L.pending.shift();
-  const road = chooseAm(L, card, i, opt, rng, beats);
+  const road = card.id === 'presser' ? choosePresser(L, card, opt, rng) : chooseAm(L, card, i, opt, rng, beats);
   if (road) { text = road.text; tone = road.tone; } else switch (card.id) {
     case 'combine': {
       const r = rng();
@@ -3042,6 +3196,8 @@ function choose(L, i) {
       if (ev) {
         const o = ev.options[i];
         text = o.run(L, rng) || '';
+        const rp = EVENTS[card.id] && EVENT_REP[card.id] && EVENT_REP[card.id][i];
+        if (rp) moveRep(L, rp[0], rp[1]);
       }
     }
   }
@@ -3125,10 +3281,11 @@ function step(L) {
       const aw = awards(L, st);
       for (const a of aw) {
         s.awards.push(a);
-        beats.push({ kind: 'award', text: AWARD_NAME[a] + '.', tone: 'gold' });
+        beats.push({ kind: 'award', text: AWARD_NAME[a] + '.', tone: 'gold', award: a });
         logIt(L, AWARD_NAME[a] + '.', 'gold');
         bump(L, { fame: a === 'mvp' ? 12 : 4 });
       }
+      if (aw.indexOf('mvp') >= 0) L.pending.push(presserCard(L, 'mvp'));
       if (s.allstar) s.awards.push('star');
       const seedTxt = s.seed <= 6 ? ordinal(s.seed) + ' in the ' + confOf(L.team) + '.'
         : s.seed <= 10 ? ordinal(s.seed) + ' in the ' + confOf(L.team) + '. Play-in.' : ordinal(s.seed) + ' in the ' + confOf(L.team) + '. No playoffs.';
@@ -3200,6 +3357,12 @@ function closeSeason(L, beats) {
   L.history.push(Object.assign({ y: s.year, age: L.age, t: s.team, ovr: ovrOf(L), w: s.w, l: s.l, seed: s.seed || null,
     po: path, aw: s.awards.slice(), sal: s.salary || 0, role: s.role ? s.role.label : '' }, pg));
   L.seasonsDone++;
+  /* A reputation is what you have done lately. It drifts back toward the
+     middle every season, so a career of quotes is a persona and one quote
+     from eight years ago is not. */
+  const rp = repOf(L);
+  rp.fans = Math.round(50 + (rp.fans - 50) * 0.8);
+  rp.resp = Math.round(50 + (rp.resp - 50) * 0.8);
   milestones(L, before, beats);
   rivalSeason(L, beats);
   /* Fame settles toward what the season said. */
@@ -3421,6 +3584,7 @@ const publicAPI = {
   clutchOptions, offers, ACTS, actsOpen, act, retireNow, lifeOf, lifeLine, rivalOn, featSummary, boardSummary, verdictOf,
   SCHOOLS, SCHOOL_BY, TIER_NAME, AM_EVENTS, HS_ROUNDS, NCAA_ROUNDS, GRADE, CYEAR, AGE_HS,
   isAm, colorsOf, roadView, nationalRank, rankText, starsOf, draftTalk, collegeOffers, schoolNet,
+  LOOK_KEYS, cleanLook, setLook, TONES, PRESSERS, PERSONAS, EVENT_REP, repOf, personaOf, presserCard,
 };
 
 if (typeof module !== 'undefined' && module.exports) module.exports = publicAPI;

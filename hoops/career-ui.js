@@ -205,6 +205,28 @@ var CSS = [
 '.cr-actrow small{display:block;color:var(--mut);font-size:12px;}',
 '.cr-actrow button{flex:0 0 auto;font-size:12.5px;padding:8px 12px;}',
 '@media (prefers-reduced-motion:reduce){.cr-beats li,.cr-result,.cr-card{animation:none;}.cr-bar i{transition:none;}}',
+/* the player, drawn (hoops/baller.js) */
+'img.rtf-baller{image-rendering:pixelated;image-rendering:crisp-edges;}',
+'.cr-id .rtf-baller{flex:0 0 auto;height:84px;width:auto;margin:-6px 0 -8px -4px;filter:drop-shadow(0 3px 6px rgba(0,0,0,.4));}',
+'.cr-preview .rtf-baller{flex:0 0 auto;height:132px;width:auto;}',
+'.cr-final .rtf-baller{height:150px;width:auto;margin:4px auto 2px;display:block;}',
+'.cr-rivalpic{display:flex;align-items:center;gap:10px;}',
+'.cr-rivalpic .rtf-baller{height:72px;width:auto;flex:0 0 auto;}',
+'.cr-persona{display:inline-block;margin-top:5px;font-size:10px;letter-spacing:.14em;text-transform:uppercase;font-weight:900;padding:3px 8px;border-radius:999px;background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.25);color:#fff;}',
+'.cr-topbtns{display:flex;gap:6px;}',
+'.cr-topbtns button{background:transparent;border:1px solid var(--cardb);color:var(--mut);padding:7px 10px;font-size:12px;}',
+'.cr-look{display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:start;}',
+'.cr-look .rtf-baller{height:150px;width:auto;}',
+'.cr-lrow{margin:0 0 9px;}',
+'.cr-lrow .k{display:block;font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);font-weight:800;margin:0 0 4px;}',
+'.cr-sw{display:flex;flex-wrap:wrap;gap:5px;}',
+'.cr-sw button{min-width:0;padding:6px 9px;font-size:12px;background:rgba(255,255,255,.04);border:1px solid var(--cardb);color:var(--mut);border-radius:8px;}',
+'.cr-sw button.on{border-color:var(--orange);color:var(--ink);background:rgba(240,120,45,.14);}',
+'.cr-sw button.dot{width:26px;height:26px;padding:0;border-radius:50%;}',
+'.cr-sw button.dot.on{box-shadow:0 0 0 2px #0e131c,0 0 0 4px var(--orange);}',
+'.cr-gear summary{cursor:pointer;font-size:12px;font-weight:800;color:var(--mut);margin:2px 0 8px;}',
+'.cr-look > div:first-child{position:sticky;top:64px;}',
+'.ch-cur .rtf-baller{flex:0 0 auto;height:76px;width:auto;margin:-8px 0 -10px -2px;}',
 ].join('\n');
 (function(){
   if (document.getElementById('cr-css')) return;
@@ -220,8 +242,24 @@ function skin(code){
   if (!code) return { primary: '#2b3242', secondary: '#c9ccd6', bg: '#2b3242', on: '#fff' };
   return E.clubSkin ? E.clubSkin(code) : { primary: '#2b3242', secondary: '#c9ccd6', bg: '#2b3242', on: '#fff' };
 }
-/* A jersey in the club's colours with your number on it. Drawn, so it is the
-   one picture of the player this mode has, and it changes when you move. */
+/* His look: the one he chose, or one off his seed for a career started
+   before looks existed. baller.js is the only reader of what is in it. */
+function lookOf(L){
+  var B = window.RTF_BALLER;
+  if (L && L.look && Object.keys(L.look).length) return L.look;
+  return B ? B.lookFor(L ? L.seed : 'x') : {};
+}
+/* The player, drawn, in whatever he is wearing right now. Falls back to the
+   jersey below if baller.js did not load, so the card is never empty. */
+function portrait(L, o){
+  var B = window.RTF_BALLER;
+  if (!B) return jersey(L);
+  var k = C.colorsOf(L);
+  o = o || {};
+  return B.img(lookOf(L), { c1: k.primary, c2: k.secondary, num: L.num, age: L.age, pose: o.pose || 'stand', scale: o.scale || 3 });
+}
+/* A jersey in the club's colours with your number on it. The fallback
+   picture, and the shape the hero used before the player was drawn. */
 function jersey(L){
   var k = L && C.colorsOf ? C.colorsOf(L) : skin(null);
   var num = L && L.num != null ? L.num : '';
@@ -254,10 +292,52 @@ function diffsHtml(d){
 var form = null;
 function freshForm(){
   var seed = String(Math.floor(Math.random() * 1e9));
-  return { seed: seed, name: C.randomName(seed), num: Math.floor(Math.random() * 100), pos: 'SF', arch: 'twoway', bg: 'oad', start: 'hs' };
+  var B = window.RTF_BALLER;
+  return { seed: seed, name: C.randomName(seed), num: Math.floor(Math.random() * 100), pos: 'SF', arch: 'twoway', bg: 'oad', start: 'hs',
+    look: B ? B.lookFor(seed) : {} };
 }
 function lifeOpts(){
-  return { seed: form.seed, name: form.name, num: form.num, pos: form.pos, arch: form.arch, bg: form.bg, start: form.start, league: league() };
+  return { seed: form.seed, name: form.name, num: form.num, pos: form.pos, arch: form.arch, bg: form.bg, start: form.start, look: form.look, league: league() };
+}
+/* The look chooser, shared by the builder and the Look sheet mid-career. */
+function lookRows(look, c1, c2, num){
+  var B = window.RTF_BALLER;
+  if (!B) return '';
+  var L = B.normal(look);
+  var chips = function(key, list){
+    return '<div class="cr-lrow"><span class="k">' + key[1] + '</span><div class="cr-sw">' + list.map(function(x){
+      return '<button type="button" data-lk="' + key[0] + '" data-lv="' + x[0] + '" class="' + (String(L[key[0]]) === String(x[0]) ? 'on' : '') + '">' + esc(x[1]) + '</button>';
+    }).join('') + '</div></div>';
+  };
+  var dots = function(key, cols){
+    return '<div class="cr-lrow"><span class="k">' + key[1] + '</span><div class="cr-sw">' + cols.map(function(c, i){
+      return '<button type="button" class="dot' + (L[key[0]] === i ? ' on' : '') + '" data-lk="' + key[0] + '" data-lv="' + i + '" style="background:' + c + '" aria-label="' + key[1] + ' ' + (i + 1) + '"></button>';
+    }).join('') + '</div></div>';
+  };
+  return '<div class="cr-look"><div>' + B.img(L, { c1: c1, c2: c2, num: num, scale: 4 }) + '</div><div>'
+    + dots(['skin', 'Skin'], B.SKINS)
+    + chips(['hair', 'Hair'], B.HAIRS)
+    + dots(['hc', 'Hair color'], B.HAIR_COLORS.map(function(x){ return x[1]; }))
+    + chips(['beard', 'Face'], B.BEARDS)
+    + '<details class="cr-gear"' + (gearOpen ? ' open' : '') + '><summary>Gear and build</summary>'
+    + chips(['band', 'Headband'], B.BANDS)
+    + chips(['sleeve', 'Arm sleeve'], B.SLEEVES)
+    + chips(['shoes', 'Shoes'], B.SHOES)
+    + chips(['build', 'Build'], B.BUILDS)
+    + '</details></div></div>';
+}
+/* The gear fold stays the way it was left: a press redraws the chooser. */
+var gearOpen = false;
+function wireLook(root, look, onChange){
+  var g = root.querySelector('.cr-gear');
+  if (g) g.ontoggle = function(){ gearOpen = g.open; };
+  root.querySelectorAll('[data-lk]').forEach(function(b){
+    b.onclick = function(){
+      var k = b.getAttribute('data-lk'), v = b.getAttribute('data-lv');
+      look[k] = k === 'skin' || k === 'hc' ? +v : v;
+      onChange();
+    };
+  });
 }
 function preview(){ return C.newLife(lifeOpts()); }
 var LEAGUE = null;
@@ -294,6 +374,7 @@ function buildView(){
     + '<input id="cr-num" class="cr-num" inputmode="numeric" maxlength="2" value="' + form.num + '" aria-label="Jersey number">'
     + '<button class="ghost" id="cr-dice" type="button" aria-label="New random name">New</button></div>'
     + '<span class="lab">Position</span><div class="cr-chips" id="cr-pos">' + pos + '</div>'
+    + '<span class="lab">Your look</span>' + lookRows(form.look, C.colorsOf(L).primary, C.colorsOf(L).secondary, form.num)
     + '<span class="lab">Your game</span><div class="cr-opts" id="cr-arch">' + arch + '</div>'
     + '<span class="lab">Where it starts</span><div class="cr-opts" id="cr-start">' + starts + '</div>'
     + (road ? '<p class="cr-town">' + esc(rv.what) + ' at ' + esc(rv.where) + '. ' + esc(rv.sub) + '.</p>'
@@ -315,6 +396,7 @@ function wireBuild(){
   root.querySelectorAll('[data-bg]').forEach(function(b){ b.onclick = function(){ form.bg = b.getAttribute('data-bg'); render(); }; });
   root.querySelectorAll('[data-start]').forEach(function(b){ b.onclick = function(){ form.start = b.getAttribute('data-start'); render(); }; });
   $('cr-home').onclick = goHome;
+  wireLook(root, form.look, render);
   $('cr-go').onclick = function(){
     var name = String(form.name || '').replace(/\s+/g, ' ').trim() || C.randomName(form.seed);
     var o = lifeOpts(); o.name = name;
@@ -342,11 +424,13 @@ function idCard(L){
   var sub = L.age + ' · ' + L.pos + ' · ' + C.ARCHES[L.arch].name;
   var club = rv ? rv.what + (rv.level === 'High school' ? ' at ' + rv.where : '') + (v.role ? ' · ' + v.role.label : '')
     : L.team ? teamName(L.team) + (v.role ? ' · ' + v.role.label : '') : (L.draft && !L.draft.team ? 'Undrafted' : 'Draft prospect');
+  var per = C.personaOf ? C.personaOf(L) : '';
   return '<div class="cr-id" style="--c1:' + k.primary + '">'
-    + jersey(L)
+    + portrait(L, { pose: L.team || rv ? 'ball' : 'stand' })
     + '<div class="cr-who"><b>' + esc(L.name) + '</b><span>' + esc(sub) + '</span><span>' + esc(club) + '</span>'
     + (rv ? '<span>' + esc(rv.sub) + '</span>' : '')
     + (!rv && ct && ct.kind !== 'overseas' ? '<span>' + money(ct.salary) + ' a year · ' + ct.years + (ct.years === 1 ? ' year left' : ' years left') + '</span>' : '')
+    + (per && per !== 'Still writing it' ? '<span class="cr-persona" title="How the league sees you">' + esc(per) + '</span>' : '')
     + '</div><div class="cr-ovr"><b>' + v.ovr + '</b><span>Overall</span></div></div>';
 }
 function meters(L){
@@ -500,16 +584,22 @@ function rivalHtml(L){
   var T = C.totals(L);
   var row = function(lab, a, b){ return '<tr><td>' + lab + '</td><td class="' + (a > b ? 'win' : '') + '">' + a.toLocaleString('en-US') + '</td><td class="' + (b > a ? 'win' : '') + '">' + b.toLocaleString('en-US') + '</td></tr>'; };
   var last = r.seasons[r.seasons.length - 1];
+  var B = window.RTF_BALLER, rk = last && E.clubSkin ? E.clubSkin(last.team) : null;
+  var pic = B ? B.img(B.lookFor(r.name), { c1: rk ? rk.primary : '#2b3242', c2: rk ? rk.secondary : '#c9ccd6', num: B.hash(r.name) % 99, scale: 2, still: true }) : '';
   return '<h3 class="cr-sub">Your rival</h3>'
-    + '<p class="cr-rivalwho"><b>' + esc(r.name) + '</b>, drafted ' + C.ordinal(r.pick) + '. '
-    + (r.retired ? 'Retired.' : last ? E.teamName(last.team) + ', ' + last.pts + ' a night last season.' : 'Rookie year ahead.') + '</p>'
+    + '<div class="cr-rivalpic">' + pic + '<p class="cr-rivalwho"><b>' + esc(r.name) + '</b>, drafted ' + C.ordinal(r.pick) + '. '
+    + (r.retired ? 'Retired.' : last ? E.teamName(last.team) + ', ' + last.pts + ' a night last season.' : 'Rookie year ahead.') + '</p></div>'
     + '<table class="cr-tbl cr-vs"><thead><tr><th></th><th>You</th><th>' + esc(r.name.split(' ').slice(-1)[0]) + '</th></tr></thead><tbody>'
     + row('Points', T.pts, r.pts) + row('All-Star', T.star, r.star) + row('MVP', T.mvp, r.mvp) + row('Rings', T.rings, r.rings)
     + '</tbody></table>';
 }
 
 function lifeView(L){
-  return '<div class="cr-top"><h2>Career</h2><button class="cr-home" id="cr-home">Home</button></div>'
+  var SC = window.RTF_SCENES;
+  return '<div class="cr-top"><h2>Career</h2><div class="cr-topbtns">'
+    + (window.RTF_BALLER ? '<button id="cr-lookbtn" type="button">Look</button>' : '')
+    + (SC ? '<button id="cr-scenes" type="button" aria-pressed="' + SC.on() + '">Scenes ' + (SC.on() ? 'on' : 'off') + '</button>' : '')
+    + '<button class="cr-home" id="cr-home">Home</button></div></div>'
     + idCard(L) + meters(L) + stageHtml(L) + facts(L) + ratingsHtml(L) + tabsHtml(L)
     + (L.phase === 'after' ? '' : '<button class="ghost" id="cr-quit" style="width:100%;margin-top:4px">Retire now</button>');
 }
@@ -517,6 +607,10 @@ function lifeView(L){
 function wireLife(L){
   var root = $('s-car');
   $('cr-home').onclick = goHome;
+  var lb = $('cr-lookbtn');
+  if (lb) lb.onclick = openLook;
+  var sb = $('cr-scenes');
+  if (sb) sb.onclick = function(){ var SC = window.RTF_SCENES; SC.setOn(!SC.on()); render(); };
   var nx = $('cr-next');
   if (nx) nx.onclick = function(){ doStep(); };
   root.querySelectorAll('.cr-choice').forEach(function(b){
@@ -549,7 +643,7 @@ function doStep(){
   if (L.retired) return finish();
   save();
   render();
-  scrollStage();
+  if (!scene(res)) scrollStage();
 }
 function doChoose(i){
   var L = store().cur;
@@ -560,7 +654,72 @@ function doChoose(i){
   if (L.retired) return finish();
   save();
   render();
-  scrollStage();
+  if (!scene(res)) scrollStage();
+}
+
+/* ─── scenes (hoops/scenes.js) ───────────────────────────────────────────
+   After the engine moves, the moment it produced is told as a scene, and a
+   decision it put on the table (a press conference, Game 7, signing day) is
+   asked inside it. The screen behind is already redrawn, so a scene closed
+   or skipped leaves the plain card there to answer. A card is put in a scene
+   once, and not again after a reload. */
+var seenCard = {};
+function scene(res){
+  var SC = window.RTF_SCENES, L = store().cur;
+  if (!SC || !SC.on() || !L) return false;
+  var beats;
+  try { beats = SC.chain(L, res, seenCard); } catch (e) { return false; }
+  if (!beats || !beats.length) return false;
+  var b = SC.build(L, null, null);
+  try {
+    SC.play(beats, b.ctx, {
+      card: function(){
+        var L2 = store().cur, c = L2 && L2.pending[0];
+        return c && SC.PRESENTABLE.indexOf(c.id) >= 0 ? c : null;
+      },
+      choose: function(n){
+        var L2 = store().cur;
+        if (!L2) return null;
+        var r = C.choose(L2, n);
+        if (!r) return null;
+        stage = { beats: r.beats || [], result: r, draft: null };
+        if (!L2.retired) { save(); render(); }
+        return r;
+      },
+      follow: function(r){
+        var L2 = store().cur;
+        if (!L2 || L2.retired) return [];
+        try { return SC.chain(L2, r, seenCard); } catch (e) { return []; }
+      },
+      done: function(){
+        var L2 = store().cur;
+        if (L2 && L2.retired) { finish(); return; }
+        render();
+        scrollStage();
+      },
+    });
+  } catch (e) { return false; }
+  return true;
+}
+
+/* ─── the Look sheet, mid-career ─────────────────────────────────────────── */
+function openLook(){
+  var L = store().cur;
+  if (!L || !window.RTF_BALLER) return;
+  var sh = $('cr-sheet');
+  var look = Object.assign({}, window.RTF_BALLER.normal(lookOf(L)));
+  var k = C.colorsOf(L);
+  var draw = function(){
+    sh.querySelector('.in').innerHTML = '<h3>Your look</h3><p class="cash">How you look on the floor and in every scene.</p>'
+      + lookRows(look, k.primary, k.secondary, L.num)
+      + '<div class="btnrow" style="margin-top:12px"><button id="cr-look-save" type="button">Save</button><button class="ghost" id="cr-sheet-x" type="button">Cancel</button></div>';
+    wireLook(sh, look, draw);
+    $('cr-look-save').onclick = function(){ C.setLook(L, look); save(); closeOff(); render(); };
+    $('cr-sheet-x').onclick = closeOff;
+  };
+  draw();
+  sh.hidden = false;
+  sh.onclick = function(e){ if (e.target === sh) closeOff(); };
 }
 function doAct(id){
   var L = store().cur;
@@ -577,8 +736,14 @@ function scrollStage(){
   var st = $('cr-stage');
   if (!st) return;
   var r = st.getBoundingClientRect();
-  if (r.top < 60 || r.top > window.innerHeight * 0.55) {
-    window.scrollTo({ top: Math.max(0, window.scrollY + r.top - 70), behavior: REDUCED ? 'auto' : 'smooth' });
+  /* A decision is what the eye has to land on: if its first answer would
+     sit below the fold, the screen moves to it even when the stage itself
+     starts on screen. */
+  var ch = st.querySelector('.cr-choice'), cr = ch ? ch.getBoundingClientRect() : null;
+  var low = cr && cr.bottom > window.innerHeight - 24;
+  if (r.top < 60 || r.top > window.innerHeight * 0.55 || low) {
+    var to = low ? Math.min(window.scrollY + r.top - 70, window.scrollY + cr.bottom - window.innerHeight * 0.7) : window.scrollY + r.top - 70;
+    window.scrollTo({ top: Math.max(0, to), behavior: REDUCED ? 'auto' : 'smooth' });
   }
 }
 
@@ -649,7 +814,9 @@ function finish(){
   var f = L.final || C.legacy(L);
   var teams = [];
   L.history.forEach(function(h){ if (h.t && teams.indexOf(h.t) < 0) teams.push(h.t); });
+  var kc = C.colorsOf(L);
   var card = { name: L.name, num: L.num, pos: L.pos, verdict: f.verdict, blurb: f.blurb, score: f.score,
+    look: lookOf(L), c1: kc.primary, c2: kc.secondary, age: L.age, persona: C.personaOf ? C.personaOf(L) : '',
     from: L.history.length ? L.history[0].y : L.year, to: L.history.length ? L.history[L.history.length - 1].y : L.year,
     teams: teams, totals: f.totals, awards: awardCounts(L), history: L.history, amHist: L.amHist || [], college: collegeOf(L),
     after: f.after || '', jersey: f.jersey || null, rival: f.rival || null, life: f.life || '',
@@ -667,6 +834,24 @@ function finish(){
   render();
   window.scrollTo(0, 0);
   if (sum) fileCareer(card, sum);
+  ceremony(L, card);
+}
+/* The career ends on a stage: the Hall of Fame for a Hall of Famer, the
+   press room for everybody else. Told, never asked: there is nothing left
+   to decide. */
+function ceremony(L, card){
+  var SC = window.RTF_SCENES;
+  if (!SC || !SC.on() || !L.history.length) return;
+  try {
+    var b = SC.build(L, null, null);
+    var hof = card.score >= 55;
+    b.ctx.from = card.from; b.ctx.to = card.to; b.ctx.verdict = card.verdict; b.ctx.blurb = card.blurb;
+    var beats = hof ? SC.SCENES.hall.map(function(x){
+      var o = {}; for (var k in x) o[k] = x[k];
+      o.tx = typeof x.tx === 'function' ? x.tx(b.ctx) : x.tx; return o;
+    }) : [{ who: 'hollis', room: 'studio', pic: 'me', pose: 'suit', tx: card.verdict + '. ' + card.blurb }];
+    SC.play(beats, b.ctx, {});
+  } catch (e) {}
 }
 
 /* ─── the Career board ──────────────────────────────────────────────────────
@@ -753,9 +938,11 @@ function finalView(card){
     + card.awards.map(function(a){ return '<span>' + (a.n > 1 ? a.n + 'x ' : '') + esc(a.name) + '</span>'; }).join('') + '</div>' : '';
   var hist = { history: card.history || [], amHist: card.amHist || [] };
   return '<div class="cr-top"><h2>Career over</h2><button class="cr-home" id="cr-home">Home</button></div>'
-    + '<div class="cr-final"><div class="eye">The verdict</div><div class="v">' + esc(card.verdict) + '</div>'
+    + '<div class="cr-final">' + (window.RTF_BALLER && card.look ? window.RTF_BALLER.img(card.look, { c1: card.c1, c2: card.c2, num: card.num, age: card.age, pose: card.totals && card.totals.rings ? 'trophy' : 'suit', scale: 4 }) : '')
+    + '<div class="eye">The verdict</div><div class="v">' + esc(card.verdict) + '</div>'
     + '<div class="nm">' + esc(card.name) + ' · #' + esc(String(card.num)) + ' · ' + card.from + '-' + card.to + '</div>'
     + '<p>' + esc(card.blurb) + '</p>'
+    + (card.persona && card.persona !== 'Still writing it' ? '<p class="cr-col">The league knew you as: ' + esc(card.persona) + '.</p>' : '')
     + (card.college ? '<p class="cr-col">' + esc(card.college) + '</p>' : '')
     + (card.jersey ? '<p class="cr-col">Your #' + esc(String(card.num)) + ' hangs in the rafters for the ' + esc(E.TEAM_NAMES[card.jersey] || card.jersey) + '.</p>' : '')
     + '<div class="cr-tot"><div><b>' + T.pts.toLocaleString() + '</b><span>Points</span></div>'
@@ -831,7 +1018,7 @@ function renderHero(){
     var rv = C.roadView(L);
     var where = rv ? rv.what + (rv.level === 'High school' ? ' at ' + rv.where : '') : L.team ? teamName(L.team) : 'Draft prospect';
     var when = L.season ? seasonTag(L.season.year) + ' · ' + L.season.w + '-' + L.season.l : (L.year ? 'Summer of ' + (L.year - 1) : '');
-    cur.innerHTML = jersey(L) + '<div><b>' + esc(L.name) + '</b><span>' + esc(where) + '</span><span>Age ' + L.age + ' · ' + esc(when) + '</span></div>'
+    cur.innerHTML = portrait(L, { pose: 'ball', scale: 2 }) + '<div><b>' + esc(L.name) + '</b><span>' + esc(where) + '</span><span>Age ' + L.age + ' · ' + esc(when) + '</span></div>'
       + '<div class="o"><b>' + v.ovr + '</b><span>OVR</span></div>';
     cur.style.setProperty('--c1', k.primary);
     cur.hidden = false;
