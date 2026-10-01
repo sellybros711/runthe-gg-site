@@ -1,3 +1,8 @@
+> **Reference only.** The game no longer reads this pack. Every character is drawn
+> by the rig in `mythiball/index.html` from a spec in `mythiball/sprites/cast.js`,
+> baked by `mythiball/sprites/tools/build_rig.mjs`. The specs follow the looks in
+> `source_reference/`, which is what this folder is kept for.
+
 # RunTheAllStars: Claude Code handoff
 
 This package contains all original 68-character references plus every enhanced animation strip successfully completed in this session. Characters that could not be generated are omitted from the enhanced set and listed in omitted_characters.txt.

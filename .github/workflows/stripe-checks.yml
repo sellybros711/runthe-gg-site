@@ -1,0 +1,88 @@
+name: Stripe checks
+
+# The payment layer, checked without touching Stripe. Four things, each of which
+# fails silently in production:
+#
+#   verify-bundles    the catalog, the SQL constraint, the yearly product lists and
+#                     the webhook's event list agree
+#   check-checkout    who may buy what, through the real checkout endpoint, with the
+#                     yearly switch on in a scratch copy (it ships off)
+#   check-recurring   Run The Diamond Pro, $14.99 a year, through the real checkout and
+#                     webhook against a fake Stripe and Supabase
+#   replay-webhook    every yearly plan event through the real webhook, against a real
+#                     Postgres built from the migrations, asserting after every event
+#                     that no lifetime row moved and no Fantasy pass was cut short
+#   premium_yearly    supabase/124 driven in SQL, the same database the replay builds
+#   arcade_cap        supabase/125's ranked cap, on the arcade chain it restates
+#
+# Runnable locally with the exact same commands:
+#   node scripts/stripe/verify-bundles.mjs
+#   node scripts/stripe/check-checkout.mjs
+#   node scripts/stripe/check-recurring.mjs
+#   node scripts/stripe/replay-webhook.mjs
+#
+# No secrets and no network: every Stripe and Supabase request is answered locally,
+# and an unexpected one fails the run.
+
+on:
+  pull_request:
+    paths:
+      - 'functions/api/stripe/**'
+      - 'scripts/stripe/**'
+      - 'supabase/**'
+      - '.github/workflows/stripe-checks.yml'
+  push:
+    paths:
+      - 'functions/api/stripe/**'
+      - 'scripts/stripe/**'
+      - 'supabase/**'
+      - '.github/workflows/stripe-checks.yml'
+  workflow_dispatch: {}
+
+concurrency:
+  group: stripe-checks-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  stripe:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: The catalog agrees with the SQL and the webhook
+        run: node scripts/stripe/verify-bundles.mjs
+      - name: Who may buy what
+        run: node scripts/stripe/check-checkout.mjs
+      - name: Run The Diamond Pro renews
+        run: node scripts/stripe/check-recurring.mjs
+      # The runner image ships PostgreSQL stopped. Start it, and let the runner's own
+      # user create databases, which is all the replay needs.
+      - name: Start Postgres
+        run: |
+          sudo systemctl start postgresql.service
+          sudo -u postgres createuser -s "$USER"
+          psql -d postgres -c 'select version()'
+      - name: Every plan event, through the real webhook, against a real Postgres
+        run: node scripts/stripe/replay-webhook.mjs --keep
+      - name: supabase/124 in SQL, on the database the replay built
+        run: |
+          createdb -T stripe_replay yr
+          psql -v ON_ERROR_STOP=1 -q -d yr -f supabase/test/premium_yearly_test.sql
+      - name: supabase/125's ranked cap, on the arcade chain
+        run: |
+          createdb capt
+          P="psql -X -q -v ON_ERROR_STOP=1 -d capt"
+          $P -f supabase/test/fantasy_base.sql
+          $P -c 'create table public.subscriptions(user_id uuid, status text, current_period_end timestamptz);'
+          for f in 101_premium_bundles 52_grid_daily 70_grid_integrity 72_grid_game_keys \
+                   74_arcade_new_games 76_sport_variant_boards 82_grid_submit_idempotent \
+                   85_rollcall_chain 125_arcade_cap_and_bonus_refund; do
+            $P -f supabase/$f.sql
+          done
+          $P -f supabase/test/arcade_cap_test.sql

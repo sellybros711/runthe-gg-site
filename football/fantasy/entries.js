@@ -2,7 +2,7 @@
  *
  * `supabase/109_fantasy_challenge.sql` is the record and this is the only thing that talks
  * to it. Five calls: submit a lineup, read your own, read the board, read your place, count
- * the entries.
+ * the entries. And since 119, one more write: swap a man who is ruled out.
  *
  * ─── IT IS NOT board.js AND MUST NOT BECOME IT ────────────────────────────────────────
  *
@@ -44,6 +44,14 @@
   const TIMEOUT_MS = 9000;
 
   const base = () => (root.PS_FANTASY_URL || SB_URL) + '/rest/v1/';
+  /* WHICH COMPETITION. The NFL challenge is `fantasy_*` and the college one is
+     `cfb_fantasy_*` (128), two separate sets of tables that share nothing, so one client
+     serves both and the page that loads it says which it is before any call goes out.
+     Read at CALL time rather than captured at load, because the college page sets it in a
+     script tag above this one and a load order swapped by an edit must not quietly send a
+     college lineup to the NFL table. Absent means the NFL, which is what every page that
+     predates the college mode already is. */
+  const P = () => root.PS_FANTASY_PREFIX || 'fantasy_';
   /* The bearer is the signed in session when there is one, exactly as board.js does it:
      sending the anon key while somebody is signed in leaves auth.uid() null inside the
      function, so their entry would be refused as a stranger's. */
@@ -100,7 +108,7 @@
   const SAY = (j, fallback) => {
     const m = j && typeof j.message === 'string' ? j.message.trim() : '';
     if (j && j.code !== 'P0001') {
-      try { console.warn('fantasy_submit refused:', j.code, m); } catch (e) {}
+      try { console.warn(P() + 'submit refused:', j.code, m); } catch (e) {}
       return fallback;
     }
     return (m && m.length < 140) ? m : fallback;
@@ -112,7 +120,7 @@
     }
     let res;
     try {
-      res = await timed(base() + 'rpc/fantasy_submit', {
+      res = await timed(base() + 'rpc/' + P() + 'submit', {
         method: 'POST',
         headers: headers(),
         body: JSON.stringify({ p_season: season, p_week: week, p_picks: picks }),
@@ -132,30 +140,66 @@
     return { ok: false, why: SAY(j, 'That lineup was not accepted.') };
   }
 
+  /* ─── the swap ──────────────────────────────────────────────────────────────────── */
+
+  /* THE SECOND WRITE, AND IT HAS THE SAME THREE ANSWERS AS THE FIRST. `fantasy_swap` (119)
+     replaces a man who is ruled out, before his game, with a man at his position whose game
+     has not started, and every clause of that is decided from rows on the server. The page
+     only offers what it expects the server to take.
+
+     A LOST ANSWER IS RECONCILED BY ASKING, exactly as a submit is. A swap that landed and
+     lost its reply is a lineup already holding the new man, and pressing again would be
+     refused as "that player is not in your lineup", which reads as the mode being broken.
+     So `{ok:null}` asks `mine()` and answers from the picks. */
+  async function swap(season, week, outId, inId) {
+    let res;
+    try {
+      res = await timed(base() + 'rpc/' + P() + 'swap', {
+        method: 'POST',
+        headers: headers(),
+        body: JSON.stringify({ p_season: season, p_week: week, p_out: outId, p_in: inId }),
+      });
+    } catch (e) {
+      res = null;
+    }
+    if (res && res.ok) return { ok: true };
+    if (res && res.status < 500) {
+      let j = null;
+      try { j = await res.json(); } catch (e) {}
+      return { ok: false, why: SAY(j, 'That swap was not accepted.') };
+    }
+    const m = await mine(season, week);
+    if (m && Array.isArray(m.picks)) {
+      if (m.picks.includes(inId) && !m.picks.includes(outId)) return { ok: true };
+      if (m.picks.includes(outId)) return { ok: null };
+    }
+    return { ok: null };
+  }
+
   /* ─── the reads ─────────────────────────────────────────────────────────────────── */
 
   /** Your own entry, or null for "no opinion", or false for "you have not entered". */
   async function mine(season, week) {
-    const j = await rpc('fantasy_my_entry', { p_season: season, p_week: week });
+    const j = await rpc(P() + 'my_entry', { p_season: season, p_week: week });
     if (j == null) return null;
     return j.length ? j[0] : false;
   }
 
   /** The board. Empty until the week locks, which is the server's rule and not this one. */
   async function standings(season, week, limit) {
-    const j = await rpc('fantasy_standings',
+    const j = await rpc(P() + 'standings',
       { p_season: season, p_week: week, p_limit: limit || 50 });
     return Array.isArray(j) ? j : null;
   }
 
   async function myPlace(season, week) {
-    const j = await rpc('fantasy_my_place', { p_season: season, p_week: week });
+    const j = await rpc(P() + 'my_place', { p_season: season, p_week: week });
     if (j == null) return null;
     return j.length ? j[0] : false;
   }
 
   async function entryCount(season, week) {
-    const j = await rpc('fantasy_entry_count', { p_season: season, p_week: week });
+    const j = await rpc(P() + 'entry_count', { p_season: season, p_week: week });
     return typeof j === 'number' ? j : null;
   }
 
@@ -176,7 +220,7 @@
    * bad request would flash empty every time a phone changed cell tower.
    */
   async function board(season, week, limit) {
-    const j = await rpc('fantasy_board',
+    const j = await rpc(P() + 'board',
       { p_season: season, p_week: week, p_limit: limit || 50 });
     return (j && typeof j === 'object' && Array.isArray(j.rows)) ? j : null;
   }
@@ -184,16 +228,48 @@
   /*
    * WHAT EVERY MAN HAS SCORED SO FAR THIS WEEK, which is what the lineups under the board's
    * rows read. `fantasy_results` is public on purpose (110 grants it): a man's points are a
-   * fact about a football game rather than about anybody's entry. A plain table read, one
-   * row a man who has played, about four hundred at the most. Fails soft like every read.
+   * fact about a football game rather than about anybody's entry. Fails soft like every read.
+   *
+   * IT IS READ IN PAGES, AND THAT IS THE FIX FOR A BOARD OF ZEROS. The live writer files a
+   * row for every man with a stat line, not only the men on the board, which was 1,049 rows
+   * in week 3 of 2026. PostgREST hands back at most 1,000 rows a request whatever is asked
+   * for, so one read silently dropped 49 men and they drew as 0.0 under FINAL: Kenneth
+   * Walker III with 19.3 and Josh Downs with 7.7, reported off a screenshot. Nothing threw.
+   * So it asks for an exact count, walks the table in `player_id` order until it holds that
+   * many rows, and stops on a short or empty page if the count cannot be read.
    */
+  /* `line` is what he did (`277 pass yds, 2 TD`), from 126. A database that has not run
+     that file answers a 400 naming the column, so the read asks once more without it and
+     remembers, rather than taking every lineup's points down over a line of display text. */
+  let noLine = false;
+  const RESULTS_PAGE = 1000;
+  const RESULTS_PAGES = 20;
   async function results(season, week) {
     try {
-      const res = await timed(base() + 'fantasy_results?select=player_id,half_ppr'
-        + '&season=eq.' + Number(season) + '&week=eq.' + Number(week), { headers: headers() });
-      if (!res.ok) return null;
-      const j = await res.json();
-      return Array.isArray(j) ? j : null;
+      const ask = (from) => timed(base() + P() + 'results?select='
+        + (noLine ? 'player_id,half_ppr' : 'player_id,half_ppr,line')
+        + '&season=eq.' + Number(season) + '&week=eq.' + Number(week)
+        + '&order=player_id&offset=' + from + '&limit=' + RESULTS_PAGE,
+        { headers: Object.assign(headers(), { Prefer: 'count=exact' }) });
+      const out = [];
+      for (let i = 0; i < RESULTS_PAGES; i++) {
+        let res = await ask(out.length);
+        if (!noLine && res.status === 400) {
+          noLine = true;
+          res = await ask(out.length);
+        }
+        if (!res.ok) return null;
+        const j = await res.json();
+        if (!Array.isArray(j)) return null;
+        for (const x of j) out.push(x);
+        /* `0-999/1049`. The total is what says whether there is another page, because a
+           page shorter than the one asked for may only be the server's own cap. */
+        const m = /\/(\d+)\s*$/.exec(res.headers.get('content-range') || '');
+        const total = m ? Number(m[1]) : null;
+        if (!j.length) break;
+        if (total != null ? out.length >= total : j.length < RESULTS_PAGE) break;
+      }
+      return out;
     } catch (e) { return null; }
   }
 
@@ -201,7 +277,7 @@
    * ─── WHERE YOU FINISHED, ONCE THE WEEK IS OVER ─────────────────────────────────────
    *
    * One call answers the whole popup: whether this reader entered, where they came, out of
-   * how many, and whether there is a promotion code with their name on it. Everything in it
+   * how many, and whether they won the 30 day Pro pass and when it ends. Everything in it
    * is about `auth.uid()`, so there is nothing here that says anything about anybody else.
    *
    * NULL MEANS "NO OPINION" AND FALSE MEANS "NOTHING TO SAY", which are different answers
@@ -211,7 +287,7 @@
    * they finished nowhere.
    */
   async function myResult(season, week) {
-    const j = await rpc('fantasy_my_result', { p_season: season, p_week: week });
+    const j = await rpc(P() + 'my_result', { p_season: season, p_week: week });
     if (!Array.isArray(j)) return null;
     return j.length ? j[0] : false;
   }
@@ -222,14 +298,14 @@
      ever. FAILS SOFT, because the cost of a lost ack is one repeated popup and the cost of
      blocking on it is a sheet that will not close. */
   async function ackResult(season, week) {
-    const j = await rpc('fantasy_ack_result', { p_season: season, p_week: week });
+    const j = await rpc(P() + 'ack_result', { p_season: season, p_week: week });
     return j === true;
   }
 
   /* Every week this account placed in, for the profile. No code in it: a profile is a record
      of what somebody did rather than a place to keep a voucher. */
   async function myWins() {
-    const j = await rpc('fantasy_my_wins', {});
+    const j = await rpc(P() + 'my_wins', {});
     return Array.isArray(j) ? j : null;
   }
 
@@ -239,10 +315,12 @@
        3: where you finished once it is settled, the ack that shows it once, and the wins a
           profile carries.
        `results` rides on 3 rather than bumping it: the page asks for it only if it is
-       there, so a page a version ahead of a cached copy of this file still draws. */
+       there, so a page a version ahead of a cached copy of this file still draws.
+       `swap` rides on 3 for the same reason: the page offers a swap only if `F.swap` is
+       there, so a stale copy of this file costs the offer and never the page. */
     API_VERSION: 3,
     submit, mine, standings, myPlace, entryCount, board, results,
-    myResult, ackResult, myWins,
+    myResult, ackResult, myWins, swap,
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = root.PS_FANTASY;
 })(typeof self !== 'undefined' ? self : this);

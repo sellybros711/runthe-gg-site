@@ -9,6 +9,25 @@
      served to every visitor. Say that plainly rather than implying the link is private. -->
 <meta name="robots" content="noindex, nofollow">
 <title>Fantasy Challenge | RunThe.GG</title>
+<!-- THE LINK PREVIEW. A share of this page used to unfurl as the site's generic card, so the one
+     link a player sends from here said nothing about the week. The card is drawn by
+     football/build/fantasy-og.mjs from football/fantasy/og-source.html, and the ?v= on og:image
+     and twitter:image moves together, here and on the capitalised alias, whenever it is rebuilt. -->
+<meta name="description" content="A free weekly NFL fantasy challenge. Draft six. Beat the field. Top score wins Pro.">
+<meta property="og:title" content="Fantasy Challenge | RunThe.GG">
+<meta property="og:description" content="A free weekly NFL fantasy challenge. Draft six. Beat the field. Top score wins Pro.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="RunThe.GG">
+<meta property="og:url" content="https://runthe.gg/football/fantasy/">
+<meta property="og:image" content="https://runthe.gg/football/fantasy/og.png?v=1">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="One lineup. One week. A lineup card with six empty slots, QB, two RB, two WR and a TE, under a trophy crest.">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:site" content="@RunTheGG">
+<meta name="twitter:title" content="Fantasy Challenge | RunThe.GG">
+<meta name="twitter:description" content="A free weekly NFL fantasy challenge. Draft six. Beat the field. Top score wins Pro.">
+<meta name="twitter:image" content="https://runthe.gg/football/fantasy/og.png?v=1">
 <link rel="icon" href="/favicon.ico">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -170,11 +189,45 @@
   .man.hurt .cost{opacity:.45}
   .man.hurt:active{transform:none}
 
-  /* The sheet a chip opens. Bottom anchored, because it is opened by a thumb near the
-     bottom of a list and a centred box would put the answer under the hand that asked. */
-  .isheet{position:fixed;inset:0;z-index:40;display:flex;align-items:flex-end;
-    justify-content:center;background:rgba(4,7,14,.74);padding:12px}
+  /* Every sheet on this page. CENTRED, and that reverses a bottom anchor that was argued for
+     a thumb. Reported by a player: zoomed in, the confirm was below the part of the page they
+     could see, so a press opened a sheet that was not there. A fixed box is placed against
+     the LAYOUT viewport, and a pinch zoom shows only part of that, so a sheet hung off its
+     bottom edge is the first thing a zoom crops. `fitSheets()` in the script moves the scrim
+     onto the VISUAL viewport while one is open, and centred is what keeps the box in the
+     middle of whatever is on screen.
+
+     `margin:auto` on the box rather than `align-items:center`, because a flex item centred
+     that way and taller than its line overflows BOTH ends and the top half cannot be
+     scrolled back to. An auto margin centres when there is room and gives up when there is
+     not, and `overflow-y:auto` lets the scrim scroll to the rest. */
+  .isheet{position:fixed;inset:0;z-index:40;display:flex;justify-content:center;
+    overflow-y:auto;overscroll-behavior:contain;background:rgba(4,7,14,.74);padding:12px}
+  .isheet > .ibox{margin:auto}
   .isheet[hidden]{display:none}
+
+  /* ---- the swap ----
+     A CALL AND A LIST. The call sits on the entry screen under the six, one line per man who
+     is ruled out and still has a game to miss; the list is the sheet it opens. Red is the
+     report's own colour for Out, so the call reads as the chip it is about. */
+  #in-swap[hidden]{display:none}
+  .swapcall{display:flex;align-items:center;gap:10px;margin-top:10px;padding:10px 12px;
+    border-radius:12px;border:1px solid rgba(239,68,68,.45);background:rgba(239,68,68,.10)}
+  .swapcall p{flex:1 1 auto;min-width:0;margin:0;font-size:13px;line-height:1.35}
+  .swapcall button{flex:0 0 auto;padding:8px 14px;border-radius:999px;cursor:pointer;
+    font:inherit;font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;
+    color:#fff;background:var(--red);border:0}
+  /* A BUTTON DOES NOT INHERIT THE PAGE'S INK. The UA sheet gives it `buttontext`, which is
+     black, so a row built out of buttons with no colour of its own is black on this panel. */
+  .swlist{display:flex;flex-direction:column;gap:6px;margin-top:10px;max-height:44vh;
+    overflow:auto}
+  .swrow{width:100%;padding:9px 10px;border-radius:10px;border:1px solid var(--line-2);
+    background:rgba(255,255,255,.03);color:inherit;font:inherit;text-align:left;
+    cursor:pointer}
+  .swrow.on{border-color:var(--gold);background:rgba(240,201,107,.10)}
+  .swrow .rc{font-size:11.5px}
+  #sw-refuse{color:var(--red)}
+  #sw-refuse[hidden]{display:none}
 
   /* ---- where you finished ----
      The place is the loudest thing on the sheet, because it is the one fact a reader opened
@@ -194,14 +247,12 @@
      Written as text it is fifteen characters somebody has to select by hand on a phone,
      mid sheet, and get exactly right. `user-select:all` is the fallback for a browser that
      refuses the clipboard: one tap selects the whole string rather than a word of it. */
-  .przcode{display:flex;align-items:center;justify-content:space-between;gap:10px;
-    width:100%;margin-top:6px;padding:12px 14px;border-radius:12px;cursor:pointer;
-    text-align:left;background:rgba(212,175,55,.10);border:1px solid rgba(212,175,55,.5)}
-  .przcode span{font-family:var(--fd);font-size:21px;letter-spacing:.04em;color:var(--gold);
-    user-select:all;word-break:break-all}
-  .przcode em{flex:0 0 auto;font-style:normal;font-size:11px;letter-spacing:.06em;
-    text-transform:uppercase;color:var(--dim-2)}
-  .przcode:disabled{cursor:default}
+  .przpass{display:flex;align-items:baseline;justify-content:space-between;gap:10px;
+    flex-wrap:wrap;margin-top:6px;padding:12px 14px;border-radius:12px;
+    background:rgba(212,175,55,.10);border:1px solid rgba(212,175,55,.5)}
+  .przpass b{font-family:var(--fd);font-size:21px;letter-spacing:.04em;color:var(--gold);
+    font-weight:400}
+  .przpass span{font-size:13px;color:var(--ink)}
   /* display:flex, so the attribute needs its own rule. Ninth time in this repo. */
   #prz-win[hidden]{display:none}
   .confetti-cv{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:41}
@@ -420,13 +471,20 @@
     color:var(--dim-2)}
   .bm .bmp.QB{color:var(--qb)} .bm .bmp.RB{color:var(--rb)}
   .bm .bmp.WR{color:var(--wr)} .bm .bmp.TE{color:var(--te)}
-  .bm .bmn{flex:1 1 auto;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .bm .bmn{flex:1 1 auto;min-width:0;display:flex;flex-direction:column}
+  .bm .bmnn,.bm .bml{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .bm .bmn .club{margin-left:5px;font-size:10.5px}
+  /* What he did, under his name. Quiet, because the number on the right is the headline. */
+  .bm .bml{text-decoration:none;font-size:10.5px;color:var(--dim-2);margin-top:1px}
   .bm .bmst{flex:0 0 auto;font-size:10px;color:var(--dim-2);text-transform:uppercase;
     letter-spacing:.05em}
   .bm .bmst.live{color:var(--green)}
-  .bm .bmpts{flex:0 0 38px;text-align:right;font-family:var(--fd);font-size:15px;
-    font-variant-numeric:tabular-nums}
+  .bm .bmpts{flex:0 0 auto;min-width:38px;display:flex;flex-direction:column;align-items:flex-end;
+    font-family:var(--fd);font-size:15px;font-variant-numeric:tabular-nums}
+  .bm .bmpts b{font-weight:inherit}
+  /* Where a live man is headed, small under what he has. */
+  .bm .bmlp{text-decoration:none;font-family:var(--fb);font-size:9.5px;letter-spacing:.03em;
+    color:var(--green);white-space:nowrap;margin-top:1px}
   .bm .bmpts.none{color:var(--dim-2)}
   .bm:last-child{padding-bottom:9px}
   /* The gap between the top fifty and a reader below it. A row of dots rather than nothing,
@@ -510,6 +568,11 @@
   .tabs button{flex:1 1 0;padding:9px 10px;border-radius:999px;border:1px solid var(--line);
     font-family:var(--fn);font-size:11.5px;font-weight:800;letter-spacing:.08em;
     text-transform:uppercase;color:var(--dim-2);background:none}
+  .pwk{display:flex;flex-wrap:wrap;gap:6px}
+  .pwk button{padding:6px 12px;border-radius:999px;border:1px solid var(--line);
+    background:transparent;color:var(--dim);font:inherit;font-size:13px;cursor:pointer}
+  .pwk button.on{background:var(--panel-2);border-color:var(--line-2);color:var(--ink)}
+  .pwk button[hidden]{display:none}
   .tabs button.on{background:var(--panel-2);border-color:var(--line-2);color:var(--ink)}
 
   /* THE WAY IN, WHILE THE GAMES ARE ON.
@@ -574,11 +637,12 @@
   .pill.red{color:#fca5a5;border-color:rgba(239,68,68,.5)}
   .stack{display:flex;flex-direction:column;gap:10px;margin-top:14px}
 </style>
+<script src="/football/fantasy/skin.js?v=1"></script>
 </head>
 <body>
 <div class="wrap">
   <div class="top">
-    <span class="mark">Fantasy <i>Challenge</i></span>
+    <span class="mark"><span data-crest="crest" style="display:contents"></span>Fantasy <i>Challenge</i></span>
     <a href="/football/">&larr; Perfect Season</a>
   </div>
 
@@ -605,21 +669,26 @@
   </section>
 
   <section id="s-home" class="screen">
-    <div class="card">
+    <div class="card hero">
+      <span class="hero-cup" data-crest="hc" aria-hidden="true"></span>
       <div class="eyebrow" id="home-week"></div>
-      <h1 class="display" style="font-size:32px;margin-top:6px">One lineup. One week.</h1>
-      <p class="lede">Six men: QB, two RB, two WR, TE. Every man is priced on what he has
-        actually done this season. You get five drafts and submit one of them.</p>
-      <p class="lede">Half PPR. Whatever your six score between them is your score.</p>
-      <div class="rule"></div>
-      <div class="rail">
-        <span><span class="eyebrow">Locks</span><br><b id="home-lock" class="num">-</b></span>
-        <span style="text-align:right"><span class="eyebrow">Cap</span><br>
-          <b id="home-cap" class="num">-</b></span>
+      <h1 class="display hero-h">One lineup.<br><em>One week.</em></h1>
+      <!-- The lineup the reader is about to build, in the chips the board will deal. -->
+      <div class="rack" aria-hidden="true"><span class="QB">QB</span><span class="RB">RB</span><span class="RB">RB</span><span class="WR">WR</span><span class="WR">WR</span><span class="TE">TE</span></div>
+      <ol class="steps">
+        <li><b>1</b><span><strong>Draft six</strong>QB, two RB, two WR, TE. Each is priced on what he should score. Stay under the cap.</span></li>
+        <li><b>2</b><span><strong>Three tries</strong>Draft up to three lineups and submit the one you like best. Pro gets five.</span></li>
+        <li><b>3</b><span><strong>Win the week</strong>Half PPR on what your six really do. Top score wins 30 days of Pro.</span></li>
+      </ol>
+      <div class="tiles">
+        <div class="t-lock"><span class="eyebrow">Locks</span><b id="home-lock">-</b></div>
+        <div class="t-cap"><span class="eyebrow">Cap</span><b id="home-cap">-</b></div>
+        <div class="t-drafts"><span class="eyebrow">Drafts</span><b id="home-drafts">-</b></div>
       </div>
       <div class="stack">
         <button class="btn" id="b-draft">Start drafting</button>
         <button class="btn blue" id="b-review" hidden>See your lineups</button>
+        <button class="btn quiet" id="b-past" hidden>Past weeks</button>
       </div>
       <p class="note" id="home-note"></p>
       <!-- LAST WEEK'S RESULT, on the screen a player lands on. Without it the loop does not
@@ -631,10 +700,10 @@
         <span class="lw"><b id="last-say"></b><s id="last-sub"></s></span>
         <span class="lp" id="last-pts"></span>
       </button>
-      <!-- A WAY BACK TO THE SHEET, and for the winner it is the way back to their code.
-           The popup shows once and then never again on its own, which is right for
-           something that arrives unasked, and would be wrong as the only time a $19.99
-           promotion code is ever on screen. Drawn only when there is a settled result to
+      <!-- A WAY BACK TO THE SHEET, and for the winner it is the way back to the date their
+           Pro pass ends. The popup shows once and then never again on its own, which is
+           right for something that arrives unasked, and would be wrong as the only place a
+           winner is ever told what they won. Drawn only when there is a settled result to
            reopen, so it is never a control that opens nothing. -->
       <button class="lastwk" id="b-prize" hidden>
         <span class="lw"><b id="prize-say"></b><s id="prize-sub"></s></span>
@@ -649,6 +718,7 @@
       <span><span class="eyebrow">Left to spend</span><br><b id="d-left" class="num">-</b></span>
       <span style="text-align:right"><span class="eyebrow">Signing</span><br>
         <b id="d-slot" class="num">-</b></span>
+      <span class="capbar" aria-hidden="true"><i id="d-capbar"></i></span>
     </div>
     <div class="slots" id="d-slots"></div>
     <div class="men" id="d-men"></div>
@@ -670,6 +740,8 @@
          That is the boss battle's own rule (a control the game is waiting on goes above the
          record of it) arriving at the ANSWER rather than at the question. -->
     <p class="refuse" id="r-refuse" hidden></p>
+    <!-- The two drafts Pro adds, said on the screen where a free account runs out. -->
+    <p class="note" id="r-pro" hidden>Pro gets five drafts a week. <a href="/football/#pro">Get Pro</a></p>
     <div class="stack">
       <button class="btn" id="b-more">Draft another</button>
       <button class="btn" id="b-submit" disabled>Submit this lineup</button>
@@ -698,6 +770,11 @@
         <span id="in-livesay"></span>
       </div>
       <div class="roster" id="in-roster" style="margin-top:12px"></div>
+      <!-- THE SWAP. A man ruled out after the lineup went in can be replaced before his
+           game, and this is where the page says so. Drawn only for a man who is out AND
+           still has a game to miss: once it kicks off the zero is his, and a call about a
+           game already under way would be a button the server refuses. -->
+      <div id="in-swap" hidden></div>
       <!-- AND A WAY TO THE BOARD, drawn only once there is a board to go to. The pinned
            button reaches the same screen while the games are on; this is what is left when
            they are over, because a leaderboard whose only door was a live one would
@@ -741,6 +818,7 @@
       <div class="tabs">
         <button id="lv-tab-games" class="on">The games</button>
         <button id="lv-tab-board">The board</button>
+        <button id="lv-tab-past">Past weeks</button>
       </div>
       <div id="lv-pane-games">
         <div class="gms" id="lv-games" style="margin-top:10px"></div>
@@ -752,7 +830,16 @@
              reach all four where the entry screen could only reach two: the reader here has
              not necessarily entered, so "nobody yet" is a sentence that can be true. -->
         <p class="note" id="lv-boardsay"></p>
-        <p class="note" id="lv-boardhow" hidden>Tap a name to see the lineup. First place when the week ends wins a Pro account.</p>
+        <p class="note" id="lv-boardhow" hidden>Tap a name to see the lineup. First place when the week ends wins 30 days of Pro.</p>
+      </div>
+      <!-- A FINISHED WEEK IS A RECORD, not a live board. It gets no poll, no move marks and
+           no live projection: the week is over and nothing on it is going to change. The
+           chips are the weeks the server has a competition for, asked once a visit. -->
+      <div id="lv-pane-past" hidden>
+        <div class="pwk" id="pw-weeks" style="margin-top:12px"></div>
+        <div class="eyebrow" id="pw-lab" style="margin-top:12px"></div>
+        <div class="board" id="pw-board" style="margin-top:6px"></div>
+        <p class="note" id="pw-say"></p>
       </div>
       <div class="stack">
         <button class="btn quiet" id="b-live-back">Back</button>
@@ -801,15 +888,33 @@
   </div>
 </div>
 
+<!-- THE SWAP SHEET. It lists the men who can take his place and nobody else, so the one
+     press that spends anything is a press the server should take. It still might not: a
+     game can kick off while the sheet is open, and the server's sentence is shown here when
+     it does. The scrim closes it, because closing costs nothing. -->
+<div class="isheet" id="sw-sheet" hidden>
+  <div class="ibox">
+    <div class="eyebrow" id="sw-slot"></div>
+    <h3 class="display" id="sw-name" style="font-size:23px;margin:5px 0 0"></h3>
+    <p class="lede" id="sw-say" style="margin-top:8px"></p>
+    <div class="swlist" id="sw-list"></div>
+    <p class="note" id="sw-refuse" hidden></p>
+    <div class="stack">
+      <button class="btn" id="sw-go" disabled>Pick a player</button>
+      <button class="btn quiet" id="sw-no">Keep my lineup</button>
+    </div>
+  </div>
+</div>
+
 <!-- WHERE YOU FINISHED. One sheet for the whole field, because a podium and a mid table are
      the same fact told at different volumes, and two sheets would be two places describing
      one week. What changes is the place, the line under it, and whether there is a code.
 
      THE SCRIM DOES NOT CLOSE THIS ONE, which is the opposite of the injury sheet directly
      above and is deliberate. That sheet is reference a reader opened on purpose and can
-     reopen any time. This one arrives unasked, shows once, and for one reader carries a
-     promotion code worth $19.99: a stray tap on the edge of the screen must not be the
-     thing that takes it away. The button is the way out and it says so. -->
+     reopen any time. This one arrives unasked, shows once, and for one reader says they
+     have won Pro: a stray tap on the edge of the screen must not be the thing that takes
+     it away. The button is the way out and it says so. -->
 <div class="isheet" id="prz-sheet" hidden>
   <div class="ibox">
     <div class="eyebrow" id="prz-eye">Week 3</div>
@@ -822,19 +927,19 @@
     </div>
     <p class="lede" id="prz-say" style="margin-top:12px"></p>
 
-    <!-- The winner's half. Built rather than revealed, so nobody who did not win ever has a
-         code in their page at all. -->
+    <!-- The winner's half. Nothing to claim: the pass is already on the account, written
+         by the database on the tick that closed the week (120_fantasy_pro_pass.sql). -->
     <div id="prz-win" hidden>
-      <div class="eyebrow" style="margin-top:16px">Your code</div>
-      <button class="przcode" id="prz-code" type="button">
-        <span id="prz-code-txt"></span>
-        <em id="prz-code-hint">tap to copy</em>
-      </button>
+      <div class="eyebrow" style="margin-top:16px">Your prize</div>
+      <div class="przpass">
+        <b id="prz-pass-head">Pro is yours</b>
+        <span id="prz-pass-till"></span>
+      </div>
       <p class="note" id="prz-win-say"></p>
     </div>
 
     <div class="stack">
-      <a class="btn go" id="prz-store" href="/football/" hidden>Go and claim it</a>
+      <a class="btn go" id="prz-store" href="/football/" hidden>Play Pro now</a>
       <button class="btn quiet" id="prz-close">Close</button>
     </div>
   </div>
@@ -847,10 +952,10 @@
 <!-- Accounts, exactly as the football page loads them. Optional: with the CDN blocked
      PS_AUTH never appears, nobody resolves as a tester, and the page says so. -->
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script defer src="/football/auth.js?v=7"></script>
+<script defer src="/football/auth.js?v=8"></script>
 <script src="clubs.js?v=2"></script>
 <script src="draft.js?v=5"></script>
-<script src="entries.js?v=5"></script>
+<script src="entries.js?v=10"></script>
 <script>
 (function(){
   'use strict';
@@ -1299,9 +1404,10 @@
   function paintDraft(){
     var c = chanceAt(cur);
     var i = c.men.length;
-    $('d-chance').textContent = 'Draft ' + (cur+1) + ' of ' + D.CHANCES;
+    $('d-chance').textContent = 'Draft ' + (cur+1) + ' of ' + chancesAllowed();
     var left = CAP - D.spent(c);
     countMoney(left);
+    $('d-capbar').style.transform = 'scaleX(' + Math.max(0, Math.min(1, left / CAP)) + ')';
     $('d-slot').textContent = i < D.SLOTS.length ? D.SLOTS[i] : 'done';
 
     var strip = '';
@@ -1310,7 +1416,7 @@
       /* ONLY THE CELL THAT JUST CHANGED POPS. Marked on the slot the last signing filled,
          which is i-1, so a repaint that signed nobody (a reload, coming back to the
          screen) animates nothing and the strip does not flash on arrival. */
-      strip += '<div class="slot ' + (man?'done':(k===i?'now':''))
+      strip += '<div class="slot s' + D.SLOTS[k] + ' ' + (man?'done':(k===i?'now':''))
         + (JUST === k ? ' just' : '') + '">'
         + '<div class="p">' + D.SLOTS[k] + '</div>'
         + '<div class="n">' + (man ? esc(man.name.split(' ').slice(-1)[0]) : '&nbsp;') + '</div>'
@@ -1463,6 +1569,35 @@
     if (ev.target === $('cf-sheet')) closeConfirm();
   });
 
+  /* A SHEET GOES WHERE THE READER IS LOOKING. `inset:0` on a fixed box is the LAYOUT
+     viewport, and under a pinch zoom the screen shows only part of that, so a sheet laid out
+     against the whole of it can open somewhere the reader cannot see. While one is open its
+     scrim is pinned to the VISUAL viewport instead, and kept there as the reader pans or
+     zooms. No zoom (scale 1) leaves the inline style empty, so the stylesheet's `inset:0` is
+     the whole story on an ordinary visit and nothing here can move it. */
+  function fitSheets(){
+    var vv = window.visualViewport;
+    var open = document.querySelectorAll('.isheet:not([hidden])');
+    for (var i = 0; i < open.length; i++) {
+      var s = open[i].style;
+      if (!vv || Math.abs(vv.scale - 1) < 0.01) {
+        s.top = s.left = s.width = s.height = s.right = s.bottom = '';
+        continue;
+      }
+      s.right = s.bottom = 'auto';
+      s.top = vv.offsetTop + 'px'; s.left = vv.offsetLeft + 'px';
+      s.width = vv.width + 'px'; s.height = vv.height + 'px';
+    }
+  }
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', fitSheets);
+    window.visualViewport.addEventListener('scroll', fitSheets);
+  }
+  /* Every sheet is opened by clearing `hidden`, from a dozen places, so the opening is
+     watched rather than each opener remembering to call this. */
+  new MutationObserver(fitSheets).observe(document.body,
+    { subtree: true, attributes: true, attributeFilter: ['hidden'] });
+
   $('d-men').addEventListener('click', function(ev){
     var b = ev.target.closest && ev.target.closest('.man');
     if (!b || !b.dataset.id || busy) return;
@@ -1579,17 +1714,18 @@
     $('r-five').innerHTML = html;
     var done = state.chances.filter(function(c){
       return (c.ids||[]).length >= D.SLOTS.length; }).length;
-    var last = done >= D.CHANCES;
-    $('r-eyebrow').textContent = done + ' of ' + D.CHANCES + ' drafted';
+    var last = done >= chancesAllowed();
+    $('r-eyebrow').textContent = done + ' of ' + chancesAllowed() + ' drafted';
     /* THE SCREEN SAYS WHAT THERE IS TO DO, and after one draft that is not "pick one". It
        read "Pick the one to submit" over a single lineup with four drafts still owed, which
        is a screen asking for a decision the player has nothing to make it with. */
     $('r-head').textContent = last ? 'Pick the one to submit' : 'Draft another, or stop here';
     $('r-say').textContent = last
       ? 'Tap a lineup to choose it. One goes in. Once it is in it is in.'
-      : (D.CHANCES - done) + (D.CHANCES - done === 1 ? ' draft left.' : ' drafts left.')
+      : (chancesAllowed() - done) + (chancesAllowed() - done === 1 ? ' draft left.' : ' drafts left.')
         + ' You can submit one of these instead. You do not have to use them all.';
     $('b-more').hidden = last;
+    $('r-pro').hidden = PRO || !last;
     $('b-submit').disabled = state.pick == null;
     /* Red is this page's primary. It follows the thing to do rather than sitting on Submit
        while Submit is refused, which is a disabled red button reading as the main action. */
@@ -1754,6 +1890,7 @@
     return (!state || state.submitted == null) ? [] : chanceAt(state.submitted).men;
   }
   function paintIn(res, lookingBack){
+    LAST_IN = { res: res, lookingBack: lookingBack };
     var c = { men: entryMen() };
     var done = !!res;
     $('b-in-back').hidden = !lookingBack;
@@ -1829,6 +1966,7 @@
         + s.half.toFixed(1) + '</span></div>';
     }
     $('in-roster').innerHTML = rows;
+    paintSwapCall(res, lookingBack);
 
     /* "The week closes" was wrong about both halves. The week ENDS on Monday night, and
        what happens at the Thursday kickoff is that entries stop. Shown in the reader's own
@@ -1852,6 +1990,163 @@
       : 'Saved in this browser. It is not on your account, so it will not count.';
     show('s-in');
   }
+
+  /* ---- the swap ----
+   *
+   * A MAN RULED OUT AFTER THE LINEUP WENT IN CAN BE REPLACED, BEFORE HIS GAME. Reported by a
+   * player: a lineup submitted on the Tuesday is holding a man his club rules out on the
+   * Friday, and the only thing the mode used to do about it was score him zero.
+   *
+   * `supabase/119_fantasy_swap.sql` is the rule and it decides every clause from rows: he is
+   * in your lineup, he is on the server's out list, his game has not started, the man coming
+   * in plays the same position, is on this week's board, is not out himself, has not kicked
+   * off, and keeps the six under the cap. This page only OFFERS what it expects the server
+   * to take, and asks the same questions of the same two files the server was filled from
+   * (`publish-out.mjs` reads them both). What it never does is decide: a swap is a write.
+   *
+   * IT WORKS AFTER THE LOCK, which is when it matters. The report goes final on the Friday
+   * and the week locks on the Thursday, so a swap that stopped at the lock would help almost
+   * nobody.
+   *
+   * ONLY AN ENTRY ON THE ACCOUNT. A lineup this browser remembers and the server does not
+   * has nothing to swap, and the note under it already says it will not count.
+   */
+  var LAST_IN = { res: null, lookingBack: false };
+  var SWAP = null;   /* { out, pick, busy } while the sheet is open */
+  var SWAP_GONE = { off: 1, out: 1, doubtful: 1 };
+  var SWAP_SHOWN = 12;
+
+  function kicksLater(m, now){
+    var t = Date.parse(m && m.kick);
+    return Number.isFinite(t) && t > now;
+  }
+  function isOut(m){ return !!(m && m.inj && SWAP_GONE[m.inj.st]); }
+  function swappable(res, lookingBack){
+    if (lookingBack || !F || typeof F.swap !== 'function' || !serverEntry()) return [];
+    if (res && res.final) return [];
+    var now = Date.now();
+    return entryMen().filter(function(m){ return isOut(m) && kicksLater(m, now); });
+  }
+  /* WHAT HE CAN SPEND IS HIS OWN PRICE PLUS WHAT THE LINEUP LEFT, rounded to the cent the
+     way the server's numeric is, so a float sum of six prices cannot refuse a legal swap. */
+  function swapRoom(out){
+    var spend = 0;
+    entryMen().forEach(function(m){ spend += m.price_musd; });
+    return Math.round((CAP - spend + out.price_musd) * 100) / 100;
+  }
+  function swapChoices(out){
+    var inIt = {}, now = Date.now(), room = swapRoom(out);
+    entryMen().forEach(function(m){ inIt[m.player_id] = 1; });
+    return POOL.pool.filter(function(p){
+      return p.position === out.position && !inIt[p.player_id] && !isOut(p)
+        && kicksLater(p, now) && p.price_musd <= room + 1e-9;
+    }).sort(function(a, b){ return (b.proj - a.proj) || (a.price_musd - b.price_musd); })
+      .slice(0, SWAP_SHOWN);
+  }
+  function paintSwapCall(res, lookingBack){
+    var men = swappable(res, lookingBack);
+    $('in-swap').innerHTML = men.map(function(m){
+      return '<div class="swapcall"><p><b>' + esc(m.name) + '</b> is '
+        + (m.inj.st === 'doubtful' ? 'doubtful' : 'out') + '. Swap him before '
+        + esc(kickLabel(m.kick)) + '.</p>'
+        + '<button type="button" data-swap="' + esc(m.player_id) + '">Swap</button></div>';
+    }).join('');
+    $('in-swap').hidden = !men.length;
+  }
+  function swapRefused(t){
+    var el = $('sw-refuse');
+    el.textContent = t || '';
+    el.hidden = !t;
+  }
+  function paintSwapSheet(){
+    var out = BY_ID[SWAP.out];
+    var list = swapChoices(out);
+    $('sw-slot').textContent = 'Swap at ' + out.position;
+    $('sw-name').textContent = out.name;
+    $('sw-say').textContent = list.length
+      ? 'Pick a ' + out.position + ' whose game has not started. You have '
+        + money(swapRoom(out)) + ' to spend on him.'
+      : 'No ' + out.position + ' fits the money and is still to play.';
+    if (SWAP.pick && !list.some(function(p){ return p.player_id === SWAP.pick; })){
+      SWAP.pick = null;
+    }
+    $('sw-list').innerHTML = list.map(function(p){
+      return '<button type="button" class="rrow swrow' + (p.player_id === SWAP.pick ? ' on' : '')
+        + '" data-in="' + esc(p.player_id) + '">'
+        + '<span class="rp ' + esc(p.position) + '">' + esc(p.position) + '</span>'
+        + '<span class="rn">' + esc(p.name) + '</span>' + injChip(p)
+        + '<span class="rc">' + esc(kickLabel(p.kick)) + ' · ' + money(p.price_musd) + '</span>'
+        + '<span class="rs">' + p.proj.toFixed(1) + '</span></button>';
+    }).join('');
+    var pick = SWAP.pick && BY_ID[SWAP.pick];
+    $('sw-go').disabled = !pick || SWAP.busy;
+    $('sw-go').textContent = SWAP.busy ? 'Swapping...'
+      : (pick ? 'Swap in ' + pick.name : 'Pick a player');
+  }
+  function openSwap(id){
+    if (!BY_ID[id]) return;
+    SWAP = { out: id, pick: null, busy: false };
+    swapRefused('');
+    paintSwapSheet();
+    $('sw-sheet').hidden = false;
+  }
+  function closeSwap(){
+    if (SWAP && SWAP.busy) return;
+    $('sw-sheet').hidden = true;
+    SWAP = null;
+  }
+  /* THE ROW IS REWRITTEN IN PLACE, and so is this browser's memory of it, so the six on
+     screen are the six the server now holds with no second round trip to ask. */
+  function applySwap(outId, inId){
+    var row = serverEntry();
+    if (row && Array.isArray(row.picks)){
+      row.picks = row.picks.map(function(id){ return id === outId ? inId : id; });
+    }
+    if (state && state.submitted != null && state.chances[state.submitted]){
+      var c = state.chances[state.submitted];
+      c.ids = (c.ids || []).map(function(id){ return id === outId ? inId : id; });
+      save();
+    }
+  }
+  $('in-swap').addEventListener('click', function(ev){
+    var b = ev.target.closest && ev.target.closest('[data-swap]');
+    if (b) openSwap(b.dataset.swap);
+  });
+  $('sw-list').addEventListener('click', function(ev){
+    var b = ev.target.closest && ev.target.closest('[data-in]');
+    if (!b || !SWAP || SWAP.busy) return;
+    SWAP.pick = b.dataset.in;
+    swapRefused('');
+    paintSwapSheet();
+  });
+  $('sw-no').onclick = closeSwap;
+  $('sw-sheet').addEventListener('click', function(ev){
+    if (ev.target === $('sw-sheet')) closeSwap();
+  });
+  $('sw-go').onclick = function(){
+    var s = SWAP;
+    if (!s || !s.pick || s.busy) return;
+    s.busy = true;
+    swapRefused('');
+    paintSwapSheet();
+    F.swap(POOL.season, POOL.week, s.out, s.pick).then(function(r){
+      s.busy = false;
+      /* A SWAP THAT LANDED IS APPLIED WHETHER OR NOT ITS SHEET IS STILL OPEN. The server
+         already holds it, so a screen that forgot it would be describing a lineup that no
+         longer exists. */
+      if (r.ok){
+        applySwap(s.out, s.pick);
+        if (SWAP === s){ $('sw-sheet').hidden = true; SWAP = null; }
+        if ($('s-in').classList.contains('on')) paintIn(LAST_IN.res, LAST_IN.lookingBack);
+        return;
+      }
+      if (SWAP !== s) return;
+      swapRefused(r.ok === false
+        ? 'Not swapped. ' + asSentence(r.why || 'That swap was not accepted.')
+        : 'The server did not answer. Reload to see if it went through.');
+      paintSwapSheet();
+    });
+  };
 
   /* ---- where everybody came ----
    *
@@ -2069,6 +2364,9 @@
      poll once the week has locked (see `entries.js`), and read by the lineups under the
      rows. A man with no entry has not put a number up yet. */
   var LIVE_PTS = null;
+  /* What each man has done so far (`277 pass yds, 2 TD`), off the same read. Empty on a
+     database without 126, and the lineup simply shows no line. */
+  var LIVE_LINE = null;
 
   var TROPHY = '<svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="'
     + 'M4 1h8v2h2.5v2.2A3.3 3.3 0 0 1 11.6 8.5 4 4 0 0 1 9 10.7V12h2.5v2h-7v-2H7v-1.3A4 4 0'
@@ -2089,10 +2387,42 @@
       g = served[i];
       if (!g || !g.away || !g.home) continue;
       var had = by[g.away] || by[g.home] || {};
-      g = { away: g.away, home: g.home, kick: g.kick || had.kick, state: g.state };
+      g = { away: g.away, home: g.home, kick: g.kick || had.kick, state: g.state,
+        period: g.period, clock: g.clock };
       by[g.away] = g; by[g.home] = g;
     }
     return by;
+  }
+
+  /*
+   * HOW MUCH OF A GAME IS STILL TO PLAY, as a share of sixty minutes, or null when the
+   * scoreboard cannot say. Regulation only: past the fourth it is 0, because overtime is
+   * ten minutes that most games never reach and projecting into it would promise points
+   * off a period that usually does not happen. Halftime reads as period 2 at 0:00, which
+   * is exactly half.
+   */
+  function gameLeft(g){
+    if (!g || g.state !== 'in') return null;
+    var p = Number(g.period);
+    if (!p) return null;
+    if (p > 4) return 0;
+    var m = String(g.clock || '').match(/^(\d+):(\d+)/);
+    if (!m) return null;
+    var left = Math.min(15, Number(m[1]) + Number(m[2]) / 60);
+    return ((4 - p) * 15 + left) / 60;
+  }
+
+  /*
+   * WHERE A LIVE MAN IS HEADED: what he has, plus his projection for the week scaled to
+   * the share of his game still to play. Deliberately the plainest version. It does not
+   * chase a hot first half, because a man with two touchdowns by the second quarter is not
+   * twice as likely to score again, and it reads the same `proj` the draft priced him on,
+   * so the number is one a reader has already seen on the card.
+   */
+  function liveProj(pts, m, g){
+    var left = gameLeft(g);
+    if (left == null || !m || !(m.proj >= 0)) return null;
+    return (pts || 0) + m.proj * left;
   }
 
   var POS_ORDER = { QB: 0, RB: 1, WR: 2, TE: 3 };
@@ -2108,9 +2438,11 @@
     var html = '';
     for (i=0;i<men.length;i++){
       var m = men[i];
-      var pts = file && file.scores && file.scores[m.player_id]
-        ? Number(file.scores[m.player_id][0])
+      var fromFile = file && file.scores && file.scores[m.player_id];
+      var pts = fromFile ? Number(fromFile[0])
         : (LIVE_PTS && LIVE_PTS[m.player_id] != null ? LIVE_PTS[m.player_id] : null);
+      var line = fromFile ? (fromFile[1] || '')
+        : ((LIVE_LINE && LIVE_LINE[m.player_id]) || '');
       var g = games[m.team];
       var st = '', cls = '';
       if (g && g.state === 'in') { st = 'Live'; cls = ' live'; }
@@ -2128,10 +2460,15 @@
       var started = g && (g.state === 'in' || g.state === 'post'
         || (g.kick && Date.now() >= Date.parse(g.kick)));
       var shown = pts != null ? Number(pts).toFixed(1) : (started ? '0.0' : '-');
+      /* Only while his game is on. Before it the card already said what he was projected
+         for, and after it the score IS the answer. */
+      var lp = liveProj(pts, m, g);
       html += '<div class="bm"><span class="bmp ' + esc(m.position || '') + '">' + esc(m.position || '') + '</span>'
-        + '<span class="bmn">' + esc(m.name) + (m.team ? club(m.team) : '') + '</span>'
+        + '<span class="bmn"><span class="bmnn">' + esc(m.name) + (m.team ? club(m.team) : '') + '</span>'
+        + (line ? '<s class="bml">' + esc(line) + '</s>' : '') + '</span>'
         + '<span class="bmst' + cls + '">' + esc(st) + '</span>'
-        + '<span class="bmpts' + (pts == null ? ' none' : '') + '">' + esc(shown) + '</span></div>';
+        + '<span class="bmpts' + (pts == null ? ' none' : '') + '"><b>' + esc(shown) + '</b>'
+        + (lp != null ? '<s class="bmlp">proj ' + lp.toFixed(1) + '</s>' : '') + '</span></div>';
     }
     return html;
   }
@@ -2149,9 +2486,11 @@
       + '" data-k="' + esc(key) + '">'
       + '<button type="button" class="bhd"' + (o.roster ? ' aria-controls="' + id + '"'
         + ' aria-expanded="' + open + '"' : ' disabled') + '>'
-      + '<span class="bp">' + esc(String(place)) + '</span>'
+      /* A podium only once somebody has a point, the leader rule's own reason. */
+      + '<span class="bp' + (place >= 1 && place <= 3 && +score > 0 ? ' pl' + place : '') + '">'
+      + esc(String(place)) + '</span>'
       + '<span class="bnw"><span class="bn">' + esc(name) + '</span>'
-      + (o.lead ? '<span class="bpro" title="First place wins a Pro account">' + TROPHY + 'PRO</span>' : '')
+      + (o.lead ? '<span class="bpro" title="First place wins 30 days of Pro">' + TROPHY + 'PRO</span>' : '')
       + '</span>' + dots
       + '<span class="bs">' + esc(score) + '</span>'
       + (o.roster ? CHEVRON : '') + '</button>'
@@ -2440,9 +2779,13 @@
       F.results ? F.results(season, week) : null]).then(function(both){
       var d = both[0];
       if (both[1] && gen === pollGen){
-        var pts = {};
-        for (var pi=0;pi<both[1].length;pi++) pts[both[1][pi].player_id] = Number(both[1][pi].half_ppr);
+        var pts = {}, lines = {};
+        for (var pi=0;pi<both[1].length;pi++){
+          pts[both[1][pi].player_id] = Number(both[1][pi].half_ppr);
+          if (both[1][pi].line) lines[both[1][pi].player_id] = String(both[1][pi].line);
+        }
         LIVE_PTS = pts;
+        LIVE_LINE = lines;
       }
       /* THREE WAYS AN ANSWER CAN BE STALE BY THE TIME IT LANDS, and all three have been
          real on this page: the reader left the screen, the poll was stopped, or the live
@@ -2560,7 +2903,8 @@
     var by = {};
     for (var i=0;i<d.me.lines.length;i++){
       var l = d.me.lines[i];
-      if (l.played) by[l.player_id] = [Number(l.half_ppr), ''];
+      if (l.played) by[l.player_id] = [Number(l.half_ppr),
+        (LIVE_LINE && LIVE_LINE[l.player_id]) || ''];
     }
     /*
      * AND HOW FAR INTO THE WEEK IT IS, which is the half this was missing.
@@ -2606,18 +2950,22 @@
      every rectangle is zero and every row appears to have travelled the height of the
      page. */
   function lvTab(which){
-    var games = which !== 'board';
-    $('lv-tab-games').classList.toggle('on', games);
-    $('lv-tab-board').classList.toggle('on', !games);
-    $('lv-pane-games').hidden = !games;
-    $('lv-pane-board').hidden = games;
+    if (which !== 'board' && which !== 'past') which = 'games';
+    $('lv-tab-games').classList.toggle('on', which === 'games');
+    $('lv-tab-board').classList.toggle('on', which === 'board');
+    $('lv-tab-past').classList.toggle('on', which === 'past');
+    $('lv-pane-games').hidden = which !== 'games';
+    $('lv-pane-board').hidden = which !== 'board';
+    $('lv-pane-past').hidden = which !== 'past';
     window.scrollTo(0,0);
+    if (which === 'past') openPast();
   }
   function boardShowing(){
     return $('s-live').classList.contains('on') && !$('lv-pane-board').hidden;
   }
   $('lv-tab-games').onclick = function(){ lvTab('games'); };
   $('lv-tab-board').onclick = function(){ lvTab('board'); };
+  $('lv-tab-past').onclick = function(){ lvTab('past'); };
 
   function openLive(tab){
     $('lv-week').textContent = POOL.season + ' week ' + POOL.week;
@@ -2645,7 +2993,7 @@
      * question asked in a different place.
      */
     clearBoardTimers();
-    lvTab(tab === 'board' ? 'board' : 'games');
+    lvTab(tab);
     paintScores(null);
     show('s-live');
     /* AFTER `show`, WHICH CANCELS TIMERS. The draft screen's reveal learnt this the same
@@ -2654,6 +3002,7 @@
   }
 
   $('b-live').onclick = function(){ openLive('games'); };
+  $('b-past').onclick = function(){ openLive('past'); };
   $('b-in-board').onclick = function(){ openLive('board'); };
   $('b-live-back').onclick = function(){
     /* BACK TO WHERE THEY CAME FROM, which is their own entry if they have one and the home
@@ -2663,6 +3012,172 @@
     else { paintHome(); show('s-home'); }
   };
 
+  /* ---- past weeks ----
+   *
+   * A FINISHED WEEK, READ BACK. The live board only ever shows `POOL.week`, so the moment
+   * the Tuesday build rolls the board over, the standings of the week just played have no
+   * door at all. Reported the first Thursday it happened.
+   *
+   * WHICH WEEKS IS ASKED OF THE SERVER, not counted from 1. A week the site never opened a
+   * competition for (2026 weeks 1 and 2) answers `week: null`, and a chip for it would be a
+   * control that opens nothing. Asked once a visit, in parallel, and kept.
+   *
+   * THE SIX MEN ARE NAMED OFF THAT WEEK'S OWN POOL. This week's board cannot name last
+   * week's men: a man on a bye, cut or traded is simply not in it, which is `lastWeekCard`'s
+   * argument. The points come off that week's results file, and off the server's results
+   * table when the file is not written yet.
+   *
+   * NO POLL, NO MOVE MARKS, NO LIVE PROJECTION. Nothing on a finished week is going to move.
+   */
+  var PAST = { weeks: null, asking: false, cur: 0, gen: 0, pools: {} };
+  function pastPool(season, wk){
+    var k = season + '|' + wk;
+    if (PAST.pools[k] !== undefined) return Promise.resolve(PAST.pools[k]);
+    return fetch('/football/data/weekly_' + season + '_w' + wk + '.json')
+      .then(function(r){ return r.ok ? r.json() : null; })
+      .catch(function(){ return null; })
+      .then(function(j){ PAST.pools[k] = j; return j; });
+  }
+  function openPast(){
+    if (PAST.weeks){ drawPastChips(); return; }
+    var top = POOL.week - 1;
+    if (top < 1){ PAST.weeks = []; drawPastChips(); return; }
+    if (PAST.asking) return;
+    PAST.asking = true;
+    $('pw-weeks').innerHTML = '';
+    $('pw-lab').textContent = '';
+    $('pw-board').innerHTML = '';
+    $('pw-say').textContent = 'Looking for past weeks.';
+    var asks = [];
+    for (var w = top; w >= 1; w--) asks.push(F.board(POOL.season, w, 50));
+    Promise.all(asks).then(function(all){
+      PAST.asking = false;
+      /* NULL IS "COULD NOT ASK", and is not remembered: the next open asks again rather
+         than telling somebody for the rest of the visit that there are no past weeks. */
+      if (all.some(function(d){ return d == null; }) && !all.some(function(d){ return d; })){
+        $('pw-say').textContent = 'Past weeks could not be reached. Try again in a moment.';
+        return;
+      }
+      var weeks = [], data = {};
+      for (var i=0;i<all.length;i++){
+        var d = all[i], wk = top - i;
+        if (d && d.week && Number(d.week.entries) > 0){ weeks.push(wk); data[wk] = d; }
+      }
+      PAST.weeks = weeks;
+      PAST.data = data;
+      drawPastChips();
+    });
+  }
+  function drawPastChips(){
+    var weeks = PAST.weeks || [];
+    if (!weeks.length){
+      $('pw-weeks').innerHTML = '';
+      $('pw-lab').textContent = '';
+      $('pw-board').innerHTML = '';
+      $('pw-say').textContent = 'No past weeks yet. Week ' + POOL.week + ' is the first.';
+      return;
+    }
+    if (weeks.indexOf(PAST.cur) < 0) PAST.cur = weeks[0];
+    var h = '';
+    for (var i=0;i<weeks.length;i++){
+      h += '<button type="button" data-w="' + weeks[i] + '"'
+        + (weeks[i] === PAST.cur ? ' class="on"' : '') + '>Week ' + weeks[i] + '</button>';
+    }
+    $('pw-weeks').innerHTML = h;
+    paintPast(PAST.cur);
+  }
+  $('pw-weeks').addEventListener('click', function(ev){
+    var b = ev.target.closest && ev.target.closest('button[data-w]');
+    if (!b) return;
+    PAST.cur = Number(b.getAttribute('data-w'));
+    drawPastChips();
+  });
+  function paintPast(wk){
+    var gen = ++PAST.gen, season = POOL.season;
+    var d = PAST.data && PAST.data[wk];
+    $('pw-lab').textContent = 'Week ' + wk;
+    $('pw-say').textContent = '';
+    Promise.all([pastPool(season, wk), resultsFor(season, wk)]).then(function(got){
+      var pool = got[0], file = got[1];
+      /* No file yet is a week the Tuesday build has not scored on disk. The server's own
+         table holds the same points, so the lineups still read. */
+      if (file && file.scores) return [pool, file];
+      return (F.results ? F.results(season, wk) : Promise.resolve(null)).then(function(rows){
+        var sc = {};
+        for (var i=0;rows && i<rows.length;i++){
+          sc[rows[i].player_id] = [Number(rows[i].half_ppr), rows[i].line || ''];
+        }
+        return [pool, rows ? { scores: sc } : null];
+      });
+    }).then(function(got){
+      if (gen !== PAST.gen) return;
+      paintPastBoard(wk, d, got[0], got[1]);
+    });
+  }
+  function pastRosterHTML(ids, pool, file){
+    var by = {}, men = [], i;
+    for (i=0;pool && i<pool.pool.length;i++) by[pool.pool[i].player_id] = pool.pool[i];
+    for (i=0;i<ids.length;i++) men.push(by[ids[i]] || { player_id: ids[i], name: 'Unknown', position: '' });
+    men.sort(function(a,b){ return (POS_ORDER[a.position] == null ? 9 : POS_ORDER[a.position])
+      - (POS_ORDER[b.position] == null ? 9 : POS_ORDER[b.position]); });
+    var html = '';
+    for (i=0;i<men.length;i++){
+      var m = men[i];
+      /* NO POINTS AT ALL IS "COULD NOT READ THEM", not six men who did not play, so it
+         draws a dash rather than a column of zeros that reads as a fact. */
+      var row = file && file.scores && file.scores[m.player_id];
+      var pts = row ? Number(row[0]).toFixed(1) : (file ? '0.0' : '-');
+      var line = row ? (row[1] || '') : (file ? 'did not play' : '');
+      html += '<div class="bm"><span class="bmp ' + esc(m.position || '') + '">' + esc(m.position || '') + '</span>'
+        + '<span class="bmn"><span class="bmnn">' + esc(m.name) + (m.team ? club(m.team) : '') + '</span>'
+        + (line ? '<s class="bml">' + esc(line) + '</s>' : '') + '</span>'
+        + '<span class="bmst">Final</span>'
+        + '<span class="bmpts"><b>' + pts + '</b></span></div>';
+    }
+    return html;
+  }
+  function paintPastBoard(wk, d, pool, file){
+    var rows = d && d.rows;
+    if (!rows || !rows.length){
+      $('pw-board').innerHTML = '';
+      $('pw-say').textContent = 'Nobody entered week ' + wk + '.';
+      return;
+    }
+    var n = d.week ? Number(d.week.entries) : rows.length;
+    var done = d.week && d.week.scored_at;
+    $('pw-lab').textContent = 'Week ' + wk + ' · ' + n + (n === 1 ? ' entry' : ' entries')
+      + (done ? ' · Final' : '');
+    var html = '', mine = false, i, r;
+    for (i=0;i<rows.length;i++){
+      r = rows[i];
+      if (r.is_me) mine = true;
+      var key = 'pw' + wk + '-' + String(r.entry_no == null ? 'p' + r.place : r.entry_no);
+      var win = done && Number(r.place) === 1;
+      html += boardRowHTML(key, r.place, r.display_name || 'Somebody',
+        Number(r.score).toFixed(1), ((r.is_me ? 'me' : '') + (win ? ' lead' : '')).trim(),
+        { lead: win, roster: Array.isArray(r.picks) && r.picks.length
+          ? pastRosterHTML(r.picks, pool, file) : '' });
+    }
+    var me = d.me && d.me.place ? d.me : null;
+    if (!mine && me){
+      var ml = Array.isArray(me.lines) ? me.lines : [];
+      html += '<div class="brow gap">...</div>';
+      html += boardRowHTML('pw' + wk + '-you', me.place, 'You', Number(me.score).toFixed(1), 'me',
+        { roster: ml.length ? pastRosterHTML(ml.map(function(l){ return l.player_id; }), pool, file) : '' });
+    }
+    $('pw-board').innerHTML = html;
+    $('pw-say').textContent = 'Tap a name to see the lineup.';
+  }
+  $('pw-board').addEventListener('click', function(ev){
+    var b = ev.target.closest && ev.target.closest('.bhd');
+    if (!b || b.disabled) return;
+    var row = b.parentNode, k = row.getAttribute('data-k');
+    var open = !row.classList.contains('open');
+    row.classList.toggle('open', open);
+    b.setAttribute('aria-expanded', String(open));
+    if (open) BOARD_OPEN[k] = 1; else delete BOARD_OPEN[k];
+  });
+
   /* ---- home ---- */
   function startChance(){
     var i = -1;
@@ -2670,7 +3185,7 @@
       if ((state.chances[k].ids||[]).length < D.SLOTS.length){ i = k; break; }
     }
     if (i < 0){
-      if (state.chances.length >= D.CHANCES){ toReview(); return; }
+      if (state.chances.length >= chancesAllowed()){ toReview(); return; }
       state.chances.push({ seed: D.newSeed(), ids: [] });
       i = state.chances.length - 1;
     }
@@ -2701,10 +3216,12 @@
       + ' · ' + POOL.pool.length + ' men on the board';
     $('home-lock').textContent = locked() ? 'Locked' : untilLock();
     $('home-cap').textContent = money(CAP);
-    $('b-draft').hidden = locked() || state.chances.length >= D.CHANCES
-      && done >= D.CHANCES;
-    $('b-draft').textContent = done ? 'Draft ' + (done+1) + ' of ' + D.CHANCES : 'Start drafting';
+    $('home-drafts').textContent = done + ' of ' + chancesAllowed();
+    $('b-draft').hidden = locked() || state.chances.length >= chancesAllowed()
+      && done >= chancesAllowed();
+    $('b-draft').textContent = done ? 'Draft ' + (done+1) + ' of ' + chancesAllowed() : 'Start drafting';
     $('b-review').hidden = !done;
+    $('b-past').hidden = POOL.week <= 1;
     /* THE REOPENED DRAFTS ARE NAMED WHERE THE READER LANDS, so nobody opens their five
        and finds one gone with nothing to say why. */
     $('home-note').textContent = locked()
@@ -2832,18 +3349,28 @@
     /* Called from every home paint as well as from the answer, so it has to be safe before
        there is anything to draw: no result is a door that is simply not there. */
     if (!PRZ) return;
-    var place = Number(PRZ.r.place);
-    $('prize-say').textContent = PRZ.r.promo_code
+    var place = Number(PRZ.r.place), won = passWon(PRZ.r);
+    $('prize-say').textContent = won
       ? 'You won week ' + PRZ.week
       : 'Week ' + PRZ.week + ' is settled';
-    $('prize-sub').textContent = PRZ.r.promo_code
-      ? 'Your code is in here'
+    $('prize-sub').textContent = won
+      ? (PRZ.r.pass_until ? 'Pro is yours until ' + passDay(PRZ.r.pass_until) : 'Your win is in here')
       : 'Where you finished, out of ' + PRZ.r.entries;
     $('prize-pl').textContent = ordinal(place);
     $('prize-pl').classList.toggle('pod', place <= 3);
     $('b-prize').hidden = false;
   }
   $('b-prize').onclick = function(){ showPrize(); };
+
+  /* THE PRIZE IS 30 DAYS OF PRO, granted by the server the moment the week is final. A
+     winner is first place on a week whose prize row reads `granted`; `void` is a field of
+     one, which is settled and deliberately not paid. The 30 is never written here: the
+     sheet prints the END DATE the server wrote, so moving the length in SQL moves this. */
+  function passWon(r){ return Number(r.place) === 1 && r.prize_state === 'granted'; }
+  function passDay(iso){
+    var d = new Date(iso);
+    return isNaN(d) ? '' : d.toLocaleDateString(undefined, { month: 'long', day: 'numeric' });
+  }
 
   function showPrize(){
     if (!PRZ) return;
@@ -2863,10 +3390,11 @@
        sheet can open after that week has already locked, and a line telling somebody to go
        and draft into a shut week is the one encouraging sentence that would be false. */
     var say;
-    /* A WIN WITH NO CODE IS A FIELD OF ONE, which the minting script voids rather than
-       pays. Said plainly, because "you won" over a sheet with no prize on it reads as the
-       prize going missing. The win itself is real and stays on their profile. */
-    if (place === 1 && !r.promo_code && entries < 2)
+    /* A WIN WITH NO PASS IS A FIELD OF ONE, which the server voids rather than pays. Said
+       plainly, because "you won" over a sheet with no prize on it reads as the prize going
+       missing. The win itself is real and stays on their profile. */
+    var won = passWon(r);
+    if (place === 1 && !won && entries < 2)
       say = 'You were the only entry this week, so there is no prize. The win still counts.';
     else if (place === 1) say = 'You won the week. Nobody drafted better.';
     else if (place === 2) say = 'So close. One spot off the top.';
@@ -2883,24 +3411,31 @@
       say += ' You beat your projection by ' + beat.toFixed(1) + ' points.';
     $('prz-say').textContent = say + ' The full board is on the live screen.';
 
-    /* THE CODE IS DRAWN ONLY FOR THE ACCOUNT IT BELONGS TO, and the server is what decides
-       that: `fantasy_my_result` hands a code to its owner and a null to everybody else, so
-       there is nothing here that a reader who did not win could reveal by opening the page
-       source. This branch has nothing to hide because it has nothing to draw. */
-    var code = r.promo_code;
-    $('prz-win').hidden = !code;
-    $('prz-store').hidden = !code;
-    if (code){
-      $('prz-code-txt').textContent = code;
-      $('prz-code-hint').textContent = 'tap to copy';
-      $('prz-win-say').textContent = 'That is the Perfect Season Premium Bundle, free, on '
-        + 'the account you entered with. Paste the code at checkout. It works once.';
+    /* THE PASS IS DRAWN ONLY FOR THE ACCOUNT THAT WON IT, and the server decides that:
+       `fantasy_my_result` joins the prize row on `auth.uid()`, so a reader who came second
+       is never handed a state or a date that is not theirs.
+       NO END DATE MEANS THEY ALREADY OWN PRO FOR GOOD, because the server never puts an end
+       on a permanent unlock. Saying "until" over that would be telling a buyer their
+       purchase runs out. */
+    var till = won && r.pass_until ? passDay(r.pass_until) : '';
+    $('prz-win').hidden = !won;
+    $('prz-store').hidden = !won || !till;
+    if (won){
+      $('prz-pass-head').textContent = till ? 'Pro is yours' : 'Pro is already yours';
+      $('prz-pass-till').textContent = till ? 'Until ' + till : 'For good';
+      $('prz-win-say').textContent = till
+        ? 'It is on the account you entered with, right now. Every Pro mode in The Perfect '
+          + 'Season and College Football, with no daily limits. It ends on ' + till
+          /* ABOUT THE PASS, not the account: a winner who also holds a yearly plan has
+             something that renews, and "nothing renews" would be false about them. */
+          + '. The pass doesn\'t renew and never charges you.'
+        : 'You already own Pro for good, so the pass adds nothing. The win is on your profile.';
     }
     $('prz-sheet').hidden = false;
     /* The winner and nobody else, and only a winner holding a prize: confetti over "there is
        no prize" is a party for nothing. After the sheet is on the glass, so the confetti
        falls over a screen that is already telling them why. */
-    if (place === 1 && code) requestAnimationFrame(function(){ requestAnimationFrame(winConfetti); });
+    if (won) requestAnimationFrame(function(){ requestAnimationFrame(winConfetti); });
   }
 
   /* CONFETTI FOR FIRST PLACE, lifted from the football game's own `fireConfetti` so a win
@@ -2965,25 +3500,6 @@
     if (PRZ && !PRZ.r.seen){ PRZ.r.seen = true; F.ackResult(POOL.season, PRZ.week); }
   }
   $('prz-close').onclick = closePrize;
-
-  /* COPYING IS A CONVENIENCE AND NEVER THE ONLY WAY OUT. `navigator.clipboard` needs a
-     secure context and a user gesture and is refused outright by some in-app browsers, so
-     the string is selectable either way (`user-select:all` on the span) and the button says
-     what happened rather than pretending. */
-  $('prz-code').onclick = function(){
-    var txt = $('prz-code-txt').textContent;
-    var done = function(ok){
-      $('prz-code-hint').textContent = ok ? 'copied' : 'select it and copy';
-    };
-    try {
-      if (navigator.clipboard && navigator.clipboard.writeText){
-        navigator.clipboard.writeText(txt).then(function(){ done(true); },
-          function(){ done(false); });
-        return;
-      }
-    } catch (e) {}
-    done(false);
-  };
 
   $('b-draft').onclick = function(){ startChance(); };
   $('b-review').onclick = function(){ toReview(); };
@@ -3055,6 +3571,51 @@
      the home screen over an entry somebody already made, and it must not invent one either.
      The wait is the one place on this page a round trip is worth it, and only because the
      alternative is showing a drafting screen to somebody who is already in. */
+  /* ---- how many drafts this account gets this week ----
+   *
+   * THREE FOR A FREE ACCOUNT AND FIVE FOR PRO, the owner's call. It overturns a rule this
+   * mode was launched on (Pro must not buy draws), so the cost is written down where the
+   * rule was, in CLAUDE.md: two more drafts are worth about a point to a careful drafter
+   * and about a point and a half to a casual one, measured on a real board.
+   *
+   * PRO IS READ OFF premium_products(), the one question every gate on the site asks, so a
+   * yearly plan, a lifetime bundle and a Fantasy prize pass all count and a lapsed one does
+   * not. AN UNKNOWN ANSWER IS FREE: auth.js answers [] on any error, which is the direction
+   * that never hands out a paid edge in a prize competition by accident.
+   *
+   * A DRAFT ALREADY MADE IS NEVER TAKEN AWAY. The count is at least the drafts that exist,
+   * so a lineup started before this rule, or while a pass was running, can still be
+   * finished, reviewed and submitted. What the limit stops is a NEW one.
+   *
+   * It is the browser's rule, the same as the five always were: the server checks a lineup
+   * and never how many drafts it came out of. */
+  var FREE_CHANCES = 3, PRO = false, proFor = null;
+  function chancesAllowed(){
+    var made = state ? state.chances.length : 0;
+    return Math.max(PRO ? D.CHANCES : FREE_CHANCES, made);
+  }
+  function askPro(){
+    var A = window.PS_AUTH, who = A && A.state ? A.state() : null;
+    var uid = who && who.signedIn ? (who.userId || who.name || 'me') : null;
+    if (!uid || !A.premiumProducts){ proFor = null; setPro(false); return; }
+    if (proFor === uid) return;
+    proFor = uid;
+    Promise.resolve(A.premiumProducts()).then(function(keys){
+      if (proFor === uid) setPro(Array.isArray(keys) && keys.indexOf('ps_premium') >= 0);
+    }, function(){ if (proFor === uid) setPro(false); });
+  }
+  /* Repaints only what the count is printed on, and never re-deals a draft board. */
+  function setPro(v){
+    if (PRO === v) return;
+    PRO = v;
+    if (!state) return;
+    var on = document.querySelector('.screen.on');
+    if (on && on.id === 's-home') paintHome();
+    else if (on && on.id === 's-review') toReview();
+    else if (on && on.id === 's-draft')
+      $('d-chance').textContent = 'Draft ' + (cur+1) + ' of ' + chancesAllowed();
+  }
+
   function begin(){
     state = load();
     if (!state || state.week !== POOL.week || state.season !== POOL.season){
@@ -3065,6 +3626,8 @@
        drawn, so a malformed save must cost the reopen and never the page. The submit
        guard is still there behind it. */
     try { reopenOverCap(); } catch (e) {}
+    askPro();
+    if (window.PS_AUTH && window.PS_AUTH.onChange) window.PS_AUTH.onChange(function(){ askPro(); });
     F.mine(POOL.season, POOL.week).then(function(row){
       if (row) SERVER_IN = { week: POOL.week, row: row };
       /* ASKED AT BOOT AND NOT INSIDE `paintHome`, which is where it was first written and

@@ -59,7 +59,7 @@ const read = (p) => fs.readFileSync(path.join(ROOT, p), 'utf8');
    INDEXED is refused outright: a page the home page sends visitors to while
    telling crawlers to stay away is the contradiction this file exists for. */
 const INDEXED = true;
-const LINKED = false;
+const LINKED = true;
 
 /* The two pages a reader meets. og-source.html is deliberately not one of them:
    it is the template the share card is rendered from, never a page, and it is
@@ -148,14 +148,14 @@ if (!LINKED && linkedFrom.length) {
     + 'is not on the site\'s own pages yet.');
 }
 
-/* THE HOME PAGE REACHES A VISITOR TWICE AND THE TWO DO NOT OVERLAP. Tiles are the
-   phone home screen and cards are the desktop one: `.gtiles{display:none}` until
-   640px, and `.games > .feat{display:none}` from 640px down. So a link added to
-   only one of them is a game that exists on one kind of device, which renders
-   perfectly and is invisible to every other check here. */
+/* THE HOME PAGE REACHES A VISITOR TWICE: the hub of tiles at the top, and the
+   "All games" cards under it that the sport filter works on. The redesign changed
+   both shapes (it was `.gtile` and a card per device), so this reads the current
+   ones: `<a class="tile g-...">` into /baseball/, and `<article class="feat
+   baseball">`. A game on only one of them is found by half the people who scroll. */
 const home = read('index.html');
-const hasTile = /<a class="gtile[^"]*baseball[^"]*"/i.test(home);
-const hasCard = /<article class="feat[^"]*baseball[^"]*"/i.test(home);
+const hasTile = /<a class="tile [^"]*" href="\/baseball\/"/i.test(home);
+const hasCard = /<article class="feat baseball[^"]*"/i.test(home);
 if (!LINKED && (hasTile || hasCard)) {
   problems.push(`index.html carries a baseball ${hasTile ? 'tile' : 'card'} while this file says `
     + 'the game is not on the home page. Half a link is a game that exists on one kind of '
@@ -163,12 +163,12 @@ if (!LINKED && (hasTile || hasCard)) {
 }
 if (LINKED) {
   if (!hasTile) {
-    problems.push('index.html has no .gtile for baseball. Tiles are the phone home screen, '
-      + 'so without one the game cannot be found on a phone at all.');
+    problems.push('index.html has no hub .tile for baseball. The hub is the first thing on the '
+      + 'home page, so without one the game is not in the list a visitor sees first.');
   }
   if (!hasCard) {
-    problems.push('index.html has no .feat card for baseball. Cards are the desktop home '
-      + 'screen, so without one the game cannot be found on a desktop at all.');
+    problems.push('index.html has no .feat card for baseball. The cards are the All games '
+      + 'library the sport filter works on, so without one the game is missing from it.');
   }
 }
 

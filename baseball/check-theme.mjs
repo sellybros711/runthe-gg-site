@@ -188,10 +188,10 @@ async function draft(page, picks, onBoard) {
   await dismiss(page);
   for (let i = 0; i < picks; i++) {
     /* Wait for a board that can be signed off rather than sleeping past the reels:
-       .tile.off has no handler, and a sheet still open swallows the click. */
+       .tile.off has no handler, and a man still being placed on the field swallows the next tile. */
     try {
       await page.waitForFunction(() => !!document.querySelector('#opts .tile:not(.off)')
-        && !document.querySelector('#sheet-pos.on'), null, { timeout: 15000 });
+        && !document.querySelector('#s-draft.picking'), null, { timeout: 15000 });
     } catch (_) { return false; }
     /* THE BOARD ITSELF, WHILE IT IS UP. A full twelve finishes the draft and hands
        off to the squad screen, so a probe placed after this loop has never once
@@ -201,7 +201,7 @@ async function draft(page, picks, onBoard) {
     if (onBoard) { await page.waitForTimeout(i === 0 ? 300 : 0); await onBoard(i); }
     await page.evaluate(() => document.querySelector('#opts .tile:not(.off)').click());
     await page.waitForTimeout(420);
-    await page.evaluate(() => { const o = document.querySelector('#sheet-pos.on .pos-opt'); if (o) o.click(); });
+    await page.evaluate(() => { const o = document.querySelector('#field .chip.target, #field-staff .target, #field-card .target'); if (o) o.click(); });
     await page.waitForTimeout(420);
   }
   /* WAIT FOR THE BOARD, never for a clock. The draft loop ends the moment the last
@@ -407,7 +407,11 @@ console.log('\n4. --edge flips, and only --edge');
 
      A tile can also be `.off`, and that one is safe: an unaffordable tile is still
      an --edge border, at a different alpha, and only the channels are compared. */
-  const SEL = ['.hdr-btn', '.btn.ghost', '.tile:not(.hot)', '.lineupcard', '.sbtn:not(.on)', '.tab:not(.on)'];
+  /* `.hp-tile` took `.btn.ghost`'s place. At this width the only ghost button ever
+     painted was the front page's three doors, which are text links on a desktop now
+     with no border at all: a 0px border reports currentColor, the ink, and the ink is
+     SUPPOSED to flip. The mode tiles are the front page's --edge border instead. */
+  const SEL = ['.hdr-btn', '.hp-tile', '.tile:not(.hot)', '.lineupcard', '.sbtn:not(.on)', '.tab:not(.on)'];
   const vals = {};
   for (const theme of ['dark', 'light']) {
     const { ctx, page } = await open(theme);

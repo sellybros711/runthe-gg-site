@@ -84,7 +84,9 @@ has_table as (
     'commish_free_clock','ps_runs','profiles',
     'fantasy_weeks','fantasy_prices','fantasy_results','fantasy_entries',
     'nfl_games','fantasy_prizes',
-    'rtf_runs','rtd_runs'
+    'rtf_runs','rtd_runs','rtf_plays','rtd_mode_plays','premium_subscriptions',
+    'rtd_profiles','rtd_career','rtf_profiles',
+    'cfb_fantasy_weeks','cfb_fantasy_entries','cfb_fantasy_prizes'
   ]) as t
   where to_regclass('public.' || t) is not null
 ),
@@ -367,7 +369,208 @@ check_rows(sort, migration, what, breaks, ok) as (
       'Every daily finished between 8pm and midnight Eastern is refused as backdated and never reaches the board. It looks like a quiet evening. Re-run 97, which is safe over an existing copy.',
       (select count(*) > 0 from proc where name = 'rtd_board_day')
       and (select count(*) > 0 from proc
-            where name = 'rtd_submit_run' and body like '%rtd_board_day(%'))
+            where name = 'rtd_submit_run' and body like '%rtd_board_day(%')),
+
+  -- RUN THE FLOOR'S OTHER THREE MODES, and the same silence as row 22. Fix
+  -- History, Six Passes and Conquest play entirely in the browser, keep their
+  -- results on the device, and file to rtf_plays through board.js, which fails
+  -- soft. Against a database without 116 every mode plays, every result screen
+  -- draws, and the one thing missing is a place and a leaderboard, which reads
+  -- exactly like a network that is down. The one-a-day index is in the same
+  -- row rather than its own, because 116 creates it in the same file and the
+  -- table is new, so nothing already in it can refuse the index.
+  (26, '116_hoops_modes',
+      'rtf_plays, so Fix History, Six Passes and Conquest have leaderboards',
+      'The three new modes play and never reach a board: no place on the result screen and an empty leaderboard, for everybody. It looks like a bad network day.',
+      (select count(*) > 0 from has_table where name = 'rtf_plays')
+      and (select count(*) > 0 from proc where name = 'rtf_submit_fix')
+      and (select count(*) > 0 from proc where name = 'rtf_submit_passes')
+      and (select count(*) > 0 from proc where name = 'rtf_submit_conquest')
+      and (select count(*) > 0 from proc where name = 'rtf_claim_play')
+      and (select count(*) > 0 from idx
+            where name = 'rtf_plays_daily_one_idx' and tbl = 'rtf_plays')),
+
+  -- FIX HISTORY AS A TRADE. The page files a trade through rtf_submit_trade,
+  -- which 116 does not have, and board.js fails soft, so against a database on
+  -- 116 alone every trade plays, the result screen draws, and nothing reaches
+  -- the board. The leaderboard itself still reads: board.js asks for the new
+  -- columns and falls back without them. So this row is its own rather than a
+  -- clause on 26, because 26 answering yes is exactly the state it misses.
+  (27, '117_hoops_trade',
+      'rtf_submit_trade and the trade columns, so a Fix History trade reaches the board',
+      'Fix History plays and no trade is ever filed: no place on the result screen, and today''s board holds only players on a page cached from before the trade finder. It looks like a quiet day.',
+      (select count(*) > 0 from proc where name = 'rtf_submit_trade')
+      and (select count(*) > 0 from col where tbl = 'rtf_plays' and name = 'fix_ins')
+      and (select count(*) > 0 from col where tbl = 'rtf_plays' and name = 'fix_outs')
+      and (select count(*) > 0 from col where tbl = 'rtf_plays' and name = 'fix_with')),
+
+  -- FIX HISTORY AS A SEASON of trade windows. Same shape as row 27 one step
+  -- on: the page files through rtf_submit_fix_season, which 117 does not have,
+  -- and a database on 117 plays every window and files nothing.
+  (28, '118_hoops_fix_season',
+      'rtf_submit_fix_season and fix_trades, so a season of Fix History trades reaches the board',
+      'Fix History plays all four windows and no result is ever filed: no place on the result screen and no row on today''s board. It looks like a quiet day.',
+      (select count(*) > 0 from proc where name = 'rtf_submit_fix_season')
+      and (select count(*) > 0 from col where tbl = 'rtf_plays' and name = 'fix_trades')),
+
+  -- A MAN RULED OUT CAN BE SWAPPED BEFORE HIS GAME. The page offers the swap
+  -- off the injury file and the server decides it off fantasy_out and each
+  -- man's kickoff, so without this file the button is there and every press
+  -- is refused with a sentence about a missing function. Asked of the columns
+  -- and the table through `col`, which asks the catalog for everything,
+  -- rather than through `has_table`, which is an allowlist.
+  (29, '119_fantasy_swap',
+      'fantasy_swap, the out list and each man''s kickoff',
+      'An entrant holding a man who is ruled out is offered a swap the server cannot make. Every press is refused, and the man scores nothing.',
+      (select count(*) > 0 from proc where name = 'fantasy_swap')
+      and (select count(*) > 0 from col where tbl = 'fantasy_out' and name = 'player_id')
+      and (select count(*) > 0 from col where tbl = 'fantasy_prices' and name = 'kick')
+      and (select count(*) > 0 from col where tbl = 'fantasy_entries' and name = 'swaps')),
+
+  -- THE WINNER GETS 30 DAYS OF PRO, paid by the settle itself. Asked of the
+  -- settle's BODY rather than of the grant function existing, because re-running
+  -- 114 on its own puts back a settle that pays nobody while the grant function
+  -- sits there unused, and that database would answer yes to an existence check.
+  (30, '120_fantasy_pro_pass',
+      'the winner of the week gets 30 days of Pro the moment the week is final',
+      'The week settles and first place is never paid. Every entrant''s result popup waits on a prize that nothing will write, so nobody is told how the week went.',
+      (select count(*) > 0 from proc where name = 'fantasy_grant_pass')
+      and (select count(*) > 0 from proc
+            where name = 'fantasy_settle_week' and body like '%fantasy_grant_pass%')
+      and (select count(*) > 0 from proc
+            where name = 'fantasy_my_result' and body like '%granted%')
+      and (select count(*) > 0 from col where tbl = 'fantasy_prizes' and name = 'pass_until')),
+
+  -- RUN THE DIAMOND PRO. Two halves that fail differently, asked in one row
+  -- because neither is any use without the other. Without the constraint every
+  -- paid Pro checkout 500s in the webhook and Stripe retries it; without the
+  -- meter the six modes stay unlimited for everybody, because the page fails
+  -- open, so nothing is sold at all.
+  (31, '121_baseball_pro',
+      'rtd_premium is a product the webhook may grant, and the six extra modes are metered once a day',
+      'A paid Pro checkout is refused by the table and retried by Stripe until this runs. The daily limit does nothing, so every account plays the extra modes without end.',
+      (select count(*) > 0 from con
+        where name = 'premium_unlocks_product_ck' and def like '%rtd_premium%')
+      and (select count(*) > 0 from has_table where name = 'rtd_mode_plays')
+      and (select count(*) > 0 from proc where name = 'rtd_mode_spend')
+      and (select count(*) > 0 from proc where name = 'rtd_mode_state')),
+
+  -- THE RELEASE NEWSLETTER. Both of its failures look like a working page: the
+  -- profile checkbox removes itself on any error, and the home page email box
+  -- answers a server error with a polite "try again". Asked of the table and the
+  -- five functions, because a guest signup needs a different one from a tick.
+  (32, '121_newsletter',
+      'the release newsletter list, the profile checkbox and the home page signup',
+      'The newsletter checkbox quietly disappears from every profile, and the home page email box refuses every address with "Something went wrong". Nobody gets on the list.',
+      (select count(*) > 0 from col where tbl = 'newsletter_subscribers' and name = 'unsub_token')
+      and (select count(*) > 0 from col where tbl = 'newsletter_issues' and name = 'commit_sha')
+      and (select count(*) = 5 from proc where name in
+            ('newsletter_status','newsletter_set','newsletter_guest_request','newsletter_confirm','newsletter_unsubscribe'))),
+
+  -- THE KEY IS THE RULE. 121 keyed the meter on (user, day), one play a day
+  -- across all six modes; 122 widens it to (user, mode, day), one of each.
+  (33, '122_baseball_pro_per_mode',
+      'a free account gets one play of each extra mode a day, not one in total',
+      'The meter keeps 121''s rule: one play a day across all six modes. The page says one of each, so the second mode a player opens is refused with a sheet that says it is still free.',
+      (select count(*) > 0 from con
+        where name = 'rtd_mode_plays_pkey' and def = 'PRIMARY KEY (user_id, mode, day)')),
+
+  -- RUN THE FLOOR PRO. One object, and its absence is loud only to Stripe: every
+  -- paid checkout 500s in the webhook and is retried, and the buyer lands back on
+  -- the page to a screen still offering them Pro.
+  (34, '123_hoops_pro',
+      'rtf_premium is a product the webhook may grant',
+      'A paid Run The Floor Pro checkout is refused by the table and retried by Stripe until this runs. The buyer is charged and sees no Pro.',
+      (select count(*) > 0 from con
+        where name = 'premium_unlocks_product_ck' and def like '%rtf_premium%')),
+
+  -- PERFECT SEASON AND RUN THE BUNDLE YEARLY. Its absence is safe on its own: the
+  -- server asks premium_yearly_ready() before it sells a plan, so the store goes on
+  -- selling the one-time bundles. What this row is for is the day the switch is on,
+  -- when a NO here means the store is still one-time and nobody can say why. The
+  -- lifetime guard is asked of the trigger, because the functions can be restated
+  -- by a later file and the trigger is the half nobody would think to check. And
+  -- the Fantasy prize is asked of its BODY, because re-running 120 on its own puts
+  -- back a prize that stacks on a paid plan's end rather than on its own.
+  (35, '124_premium_yearly',
+      'yearly plans are recorded, and a lifetime row cannot be given an end date',
+      'The store keeps selling the one-time bundles even with the yearly switch on. If only 120 was re-run after it, a Fantasy prize won during a paid plan is added to the plan''s end and a refund takes the prize with it.',
+      (select count(*) > 0 from has_table where name = 'premium_subscriptions')
+      and (select count(*) > 0 from col where tbl = 'premium_unlocks' and name = 'sub_until')
+      and (select count(*) > 0 from col where tbl = 'premium_unlocks' and name = 'grant_until')
+      and (select count(*) > 0 from proc where name = 'premium_sub_apply')
+      and (select count(*) > 0 from proc where name = 'premium_grant_bundle')
+      and (select count(*) > 0 from proc where name = 'premium_yearly_ready')
+      and (select count(*) > 0 from trg
+            where name = 'premium_unlocks_keep_lifetime_trg' and tbl = 'premium_unlocks')
+      and (select count(*) > 0 from proc
+            where name = 'fantasy_grant_pass' and body like '%grant_until%')),
+  -- TWO FOLLOW-UPS TO 124, asked of the BODY and of the function. The cap is asked of
+  -- grid_submit_run's body because re-running 85 (or any earlier grid file) on its
+  -- own puts back the version that reads the Arcade Card table alone, and that
+  -- database would answer yes to an existence check.
+  (36, '125_arcade_cap_and_bonus_refund',
+      'a bundle''s Arcade year lifts the ranked cap, and a refunded yearly Run The Bundle gives back its bonus',
+      'A Run The Bundle buyer is refused their fifth ranked arcade score of the day. And every full refund or chargeback of a yearly plan fails in the webhook and is retried by Stripe until this runs (the plan''s access is still taken back on each try).',
+      (select count(*) > 0 from proc
+        where name = 'grid_submit_run' and body like '%arcade_card_active%')
+      and (select count(*) > 0 from proc where name = 'premium_reclaim_bonus')),
+
+  -- WHAT EACH MAN DID, beside his points on the live board. Display only: the writer
+  -- asks for the column before it writes, so a database without this keeps scoring.
+  (37, '126_fantasy_results_line',
+      'each man''s stat line under his name in a lineup on the live board',
+      'The live board shows every man''s points and nothing about how he got them. Nothing is scored wrong.',
+      (select count(*) > 0 from col where tbl = 'fantasy_results' and name = 'line')),
+
+  -- RUN THE DIAMOND PROFILES. Its absence is soft by design: the page keeps every
+  -- season and every choice in the browser until the server can take them, and
+  -- sends them the first time it can. What is lost without it is exactly what this
+  -- file exists to stop losing: a cleared browser, a second phone, a private
+  -- window, each of which is an empty trophy case with nothing said. The rung is
+  -- asked of the function's arguments, because an early copy of 127 had none and
+  -- a board then draws every other player's circle at the bottom rung.
+  (38, '127_baseball_profiles',
+      'a baseball profile and career are kept on the account, not only in the browser',
+      'Seasons, badges and the profile circle live only in the browser that played them. Clearing site data or changing phones empties the trophy case.',
+      (select count(*) > 0 from has_table where name = 'rtd_profiles')
+      and (select count(*) > 0 from has_table where name = 'rtd_career')
+      and (select count(*) > 0 from col where tbl = 'rtd_profiles' and name = 'rung')
+      and (select count(*) > 0 from proc where name = 'rtd_career_merge')
+      and (select count(*) > 0 from proc where name = 'rtd_set_profile' and body like '%p_rung%')),
+
+  -- THE BALLPARK LADDER. 127's constraint lists thirteen parks and the shelf has
+  -- twenty seven, so without 128 a park chosen from the new ones is refused by the
+  -- server in silence: it works on the device and is gone on the next phone.
+  (39, '128_baseball_parks',
+      'every ballpark on the shelf can be saved to the account',
+      'Choosing a Little League, minor league, seasonal or hidden park works on this device only. The server refuses it and the next device opens on another park.',
+      (select count(*) > 0 from con where name = 'rtd_profiles_park_ck' and def like '%sandlot%' and def like '%golden%')),
+
+  -- RUN THE FLOOR PROFILES. Soft by design like 127: the page keeps the jersey,
+  -- the arena, the camera and the door choices in the browser until the server
+  -- can take them and sends them the first time it can. Without it they follow
+  -- nobody to a second phone, and a cleared browser loses them.
+  (40, '129_hoops_profiles',
+      'a hoops jersey, arena and camera are kept on the account, not only in the browser',
+      'The jersey, the chosen arena, the camera and the last club and decade live only in the browser that set them.',
+      (select count(*) > 0 from has_table where name = 'rtf_profiles')
+      and (select count(*) > 0 from col where tbl = 'rtf_profiles' and name = 'guide_seen')
+      and (select count(*) > 0 from proc where name = 'rtf_set_profile')),
+
+  -- THE COLLEGE FANTASY CHALLENGE, a competition of its own with its own tables. Asked
+  -- of the tables, the submit, the swap AND the settle trigger, because the trigger is the
+  -- one object whose absence is invisible from every side (114's finding): the week plays,
+  -- the board draws, and nobody is ever paid.
+  (41, '128_cfb_fantasy',
+      'the college Fantasy Challenge: the week, the entries, the swap and the prize',
+      'The college page drafts and then refuses every lineup. Without the trigger alone, a finished week settles nobody and first place is never paid.',
+      (select count(*) > 0 from has_table where name = 'cfb_fantasy_weeks')
+      and (select count(*) > 0 from has_table where name = 'cfb_fantasy_entries')
+      and (select count(*) > 0 from has_table where name = 'cfb_fantasy_prizes')
+      and (select count(*) > 0 from proc where name = 'cfb_fantasy_submit')
+      and (select count(*) > 0 from proc where name = 'cfb_fantasy_swap')
+      and (select count(*) > 0 from trg where name = 'cfb_fantasy_settle_on_scored'))
 )
 -- The summary has to come LAST, and a UNION can only be ordered by an output
 -- column, so the sort key is carried through a subquery rather than sorted on

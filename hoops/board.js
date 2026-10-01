@@ -37,7 +37,7 @@
 (function () {
   'use strict';
 
-  const BOARD_API_VERSION = 2;
+  const BOARD_API_VERSION = 6;
 
   const SB_URL = 'https://jcrrxqfpdelrmvjuihnm.supabase.co';
   const SB_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpjcnJ4cWZwZGVscm12anVpaG5tIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA3OTY5NjIsImV4cCI6MjA5NjM3Mjk2Mn0.wyjoZpa2yRW-l38-KMGqBvEgTlW9v1KheNye7csWAlM';
@@ -53,7 +53,7 @@
      stay small and adding a column to the table does not silently grow every
      request. No player-supplied text is among them: the roster comes back as
      ids and is drawn against the client's own copy of players.json. */
-  const COLS = 'id,created_at,display_name,run_mode,lock_key,daily_day,' +
+  const COLS = 'id,created_at,user_id,display_name,run_mode,lock_key,daily_day,' +
     'wins,losses,games,playoff_wins,made_playoffs,title_won,beat_record,is_goat,depth,' +
     'seed_label,point_diff,rating,ortg,drtg,chemistry,structure_mult,archetype,' +
     'spend_musd,respins,all_time_rank,picks,slots';
@@ -72,19 +72,19 @@
   function modeOf(m) {
     const o = m || {};
     const door = DOORS.indexOf(o.door) >= 0 ? o.door : 'league';
+    /* A LOCKED DOOR WITH NO KEY IS EVERY KEY, not the league. The board screen
+       opens One Franchise on every club at once, the way Run The Diamond's
+       Franchise board does, and narrows to one club from the picker. A key that
+       cannot be legal is dropped to that, never to the league, because the
+       league is a different competition and would be listed under this door's
+       name. */
     if (door === 'club') {
-      /* Two to four upper case letters, matching the check in rtf_submit_run.
-         A key that cannot be legal is dropped along with its door, because a
-         club board with no club is not a narrower board, it is every club's
-         runs in one list under one club's name. */
       const k = String(o.key || '').toUpperCase();
-      if (!/^[A-Z]{2,4}$/.test(k)) return { door: 'league', key: null, day: null };
-      return { door: 'club', key: k, day: null };
+      return { door: 'club', key: /^[A-Z]{2,4}$/.test(k) ? k : null, day: null };
     }
     if (door === 'era') {
       const k = String(o.key || '').toLowerCase();
-      if (!/^[a-z]{4,12}$/.test(k)) return { door: 'league', key: null, day: null };
-      return { door: 'era', key: k, day: null };
+      return { door: 'era', key: /^[a-z]{4,12}$/.test(k) ? k : null, day: null };
     }
     if (door === 'daily') {
       const d = Math.round(Number(o.day));
@@ -98,9 +98,13 @@
      every count. A place counted against a different competition from the one
      being listed is worse than no place at all, which is why this is one
      function rather than a clause written at each call site. */
-  function scope(mode, named) {
+  function scope(mode, named, since) {
     const m = modeOf(mode);
     let q = '&run_mode=eq.' + m.door;
+    /* THE WINDOW. An ISO instant from the page (Today, This week), and the
+       same clause goes on the list and on every count, or "412th of 90"
+       reads a place out of one window against a field out of another. */
+    if (sinceOk(since)) q += '&created_at=gte.' + encodeURIComponent(since);
     if (m.key !== null) q += '&lock_key=eq.' + encodeURIComponent(m.key);
     if (m.day !== null) q += '&daily_day=eq.' + m.day;
     /* NAMED RUNS ONLY, when asked for, exactly as the other two boards do it. A
@@ -146,6 +150,8 @@
   const dirOf = (key, want) => (want === 'asc' || want === 'desc' ? want : DIR[key]);
   const tiebreakFor = (key, way) => (way === DIR[key] ? 'asc' : 'desc');
 
+  const sinceOk = (v) => typeof v === 'string' && /^\d{4}-\d\d-\d\dT[\d:.]+Z$/.test(v);
+
   let offline = false;
   /* THE LAST THING THAT WENT WRONG, kept rather than thrown away. Failing soft
      and silently is right for the player and useless for working out why
@@ -165,7 +171,7 @@
     /* A 404 is the table or the function missing. A message naming either is
        the same thing arriving as a 400 from a stale schema cache, which is a
        real state a Supabase project sits in for a minute after a migration. */
-    if (res.status === 404 || /rtf_runs|rtf_submit_run|rtf_board_modes|record_score|depth/.test(msg)) {
+    if (res.status === 404 || /rtf_runs|rtf_submit_run|rtf_board_modes|record_score|depth|rtf_plays|rtf_submit_(fix|fix_season|trade|passes|conquest)/.test(msg)) {
       needsMigration = true;
     }
     lastError = { where, status: res.status, code: (body && body.code) || '', message: msg };
@@ -352,7 +358,7 @@
 
      Equal runs share a place, and the list breaks the tie by who got there
      first. */
-  async function placeIn(mode, sort, dirWant, value, named) {
+  async function placeIn(mode, sort, dirWant, value, named, since) {
     if (value === null || value === undefined || !Number.isFinite(Number(value))) return null;
     const key = SORTS[sort] ? sort : DEFAULT_SORT;
     const col = SORTS[key];
@@ -366,7 +372,7 @@
     try {
       const q = base() + TABLE + '?select=id&limit=1' +
         '&' + col + '=' + (dir === 'asc' ? 'lt.' : 'gt.') + encodeURIComponent(v) +
-        scope(mode, named);
+        scope(mode, named, since);
       const res = await timed(q, { headers: headers({ Prefer: 'count=exact' }) });
       if (!res.ok) return await fail('place', res);
       const ahead = countOf(res);
@@ -376,9 +382,12 @@
 
   /* How many runs are on this board at all, so a place can be shown as "412th
      of 9,051" rather than as a bare ordinal nobody can read a meaning into. */
-  async function total(mode, named) {
+  async function total(mode, named, since, sort) {
     try {
-      const q = base() + TABLE + '?select=id&limit=1' + scope(mode, named);
+      const q = base() + TABLE + '?select=id&limit=1' + scope(mode, named, since) +
+        /* The rating axis lists only rows that have a rating, so it counts
+           only those too, or the load-more button promises rows that never come. */
+        (SORTS[sort] === 'rating' ? '&rating=not.is.null' : '');
       const res = await timed(q, { headers: headers({ Prefer: 'count=exact' }) });
       if (!res.ok) return await fail('total', res);
       return countOf(res);
@@ -389,52 +398,72 @@
      sequence, because two one-after-another is most of a second on a phone and
      they do not depend on each other.
 
-     COUNTED AGAINST THE BOARD, WHICH IS THE NAMED ROWS. The college board
-     counted against every row in the window, guests included, so its results
-     screen could say 40th while the board seated the same season 31st: two
-     different numbers for one question, and the one you could check was the
-     one that was wrong. Both halves here are named, so the place and the field
-     it is out of describe the same population as the list. */
+     COUNTED AGAINST THE BOARD, AND THE BOARD IS EVERY RUN NOW. It listed named
+     runs only, and that is what made it look broken: a run finished signed out
+     was filed, counted and never shown, so a player who had finished runs
+     opened a board reading "no names yet". Run The Diamond lists every season
+     and shows a guest as Guest, and this does the same. The place and the
+     field are asked of the same rows the list shows, or the results screen
+     says 40th while the board seats the same season 31st. */
   async function ranks(mode, score) {
-    const [place, count, played] = await Promise.all([
-      placeIn(mode, 'run', 'desc', score, true),
-      total(mode, true),
-      /* And the unnamed total beside it, because "how many runs have been
-         played here" and "who is on the board" are two different questions and
-         the first is the one that says whether a mode is alive. */
+    const [place, count] = await Promise.all([
+      placeIn(mode, 'run', 'desc', score, false),
       total(mode, false),
     ]);
-    return { place, total: count, played };
+    return { place, total: count, played: count };
   }
 
   /* ---------------- the list ----------------
-     `dir`, when given, overrides the axis's natural direction. Reading an index
-     backwards is as cheap as reading it forwards in Postgres, so a reversed
-     board costs no new index and no extra time, provided the tiebreak reverses
-     with it, which is what tiebreakFor is for.
-
-     Validated against DIR's own two values rather than passed through, for the
-     same reason `sort` is looked up in SORTS: nothing a caller hands in reaches
-     an order= parameter as text. */
-  async function top(mode, limit, sort, dirWant) {
-    const key = SORTS[sort] ? sort : DEFAULT_SORT;
+     One page of a board. `o` is { mode, sort, asc, since, offset, limit }.
+     The sort key is looked up in SORTS and the direction is one of two words,
+     so nothing a caller hands in reaches an order= parameter as text. Reading
+     an index backwards is as cheap as reading it forwards in Postgres, so a
+     low to high board costs no new index, provided the tiebreak reverses with
+     it, which is what tiebreakFor is for. A page is at most 100 rows. */
+  async function list(o) {
+    const p = o || {};
+    const key = SORTS[p.sort] ? p.sort : DEFAULT_SORT;
     const col = SORTS[key];
-    const dir = dirOf(key, dirWant);
-    const n = Math.min(200, Math.max(1, Math.round(Number(limit) || 25)));
+    const dir = dirOf(key, p.asc ? 'asc' : 'desc');
+    const n = Math.min(100, Math.max(1, Math.round(Number(p.limit) || 100)));
+    const off = Math.max(0, Math.round(Number(p.offset) || 0));
     try {
       const q = base() + TABLE + '?select=' + COLS +
         '&order=' + col + '.' + dir + ',created_at.' + tiebreakFor(key, dir) +
-        '&limit=' + n +
-        /* The rating axis cannot order rows that have none, and PostgREST puts
-           nulls last on a desc order anyway, but saying so keeps the count and
-           the list describing the same rows. */
+        '&limit=' + n + (off ? '&offset=' + off : '') +
+        /* The rating axis cannot order rows that have none, and the count
+           leaves them out too, so the list and the count describe one set. */
         (col === 'rating' ? '&rating=not.is.null' : '') +
-        scope(mode, true);
+        scope(p.mode, false, p.since);
       const res = await timed(q, { headers: headers() });
       if (!res.ok) return await fail('top', res);
       const rows = await res.json();
       return Array.isArray(rows) ? rows : null;
     } catch (e) { return failThrown('top', e); }
+  }
+  /* The old shape, kept for anything cached against it: a first page. */
+  function top(mode, limit, sort, dirWant) {
+    return list({ mode, limit, sort, asc: dirWant === 'asc' });
+  }
+
+  /* ---------------- the circles ----------------
+     rtf_profiles (129) is public to read, which is what it was made public
+     for: a board row draws the jersey its player chose. Asked after the list
+     is drawn, never before, so a slow answer never holds a board up. Null is
+     no opinion, and the row keeps the house jersey it was drawn with. */
+  async function jerseys(uids) {
+    const ids = (uids || []).filter((u) => /^[0-9a-f-]{36}$/i.test(String(u)));
+    if (!ids.length) return {};
+    try {
+      const q = base() + 'rtf_profiles?select=user_id,jersey_club,jersey_num' +
+        '&user_id=in.(' + ids.slice(0, 100).join(',') + ')';
+      const res = await timed(q, { headers: headers() });
+      if (!res.ok) return null;
+      const rows = await res.json();
+      const out = {};
+      (Array.isArray(rows) ? rows : []).forEach((r) => { out[r.user_id] = r; });
+      return out;
+    } catch (e) { return null; }
   }
 
   /* Your own runs, newest first, for the profile. Needs a user id rather than
@@ -469,6 +498,157 @@
     } catch (e) { return failThrown('boards', e); }
   }
 
+  /* ---------------- the three other modes ----------------
+     Fix History, Six Passes and Conquest file into rtf_plays
+     (supabase/116_hoops_modes.sql), one submit function each, and the server
+     derives the score from the result. Higher is better on all three boards,
+     so every read below is the same query with a different mode. */
+  const PLAYS = 'rtf_plays';
+  const PLAY_COLS_116 = 'id,created_at,user_id,display_name,mode,day,score,' +
+    'fix_ts,fix_slot,fix_out,fix_in,fix_odds,fix_base,replay_wins,replay_title,' +
+    'passes,par,solved,chain,cq_wins,cq_lives,cq_cleared,cq_lost_to,cq_roster,cq_took';
+  /* LATER MIGRATIONS ADD COLUMNS, and SQL is deployed by hand while this file
+     ships by a push. A select naming a column the database does not have is a
+     400, and every board on the page would go dark over a column one detail
+     line reads. So the read asks for everything, and a refusal NAMING one of
+     these groups drops that group, asks again, and remembers. 117 added the
+     one-trade columns and 118 the season. */
+  const PLAY_OPTIONAL = [
+    { cols: ',fix_trades', test: /fix_trades/ },
+    { cols: ',fix_with,fix_outs,fix_ins', test: /fix_(with|outs|ins)/ },
+  ];
+  const playMissing = new Set();
+  const playCols = () => PLAY_COLS_116 + PLAY_OPTIONAL.filter((g, i) => !playMissing.has(i)).map((g) => g.cols).join('');
+  const MODES = ['fix', 'passes', 'conquest'];
+  const modeOk = (m) => MODES.indexOf(m) >= 0;
+  const dayOk = (d) => d == null || (Number.isFinite(Number(d)) && Number(d) >= 1);
+
+  async function rpc(where, name, body) {
+    try {
+      const res = await timed(base() + 'rpc/' + name, {
+        method: 'POST', headers: headers(), body: JSON.stringify(body),
+      });
+      if (!res.ok) return await fail(where, res);
+      return await res.json();
+    } catch (e) { return failThrown(where, e); }
+  }
+
+  /* A Fix History result is a TRADE now: one or two men out to a club from the
+     same season, one or two back (supabase/117_hoops_trade.sql). A result
+     saved by the first version was one man for one man and still files the
+     way it always did, through 116's function. */
+  /* A Fix History result is a SEASON of trades now (118): up to four, each
+     one to three men and any picks out, one to three men back. A result
+     saved by an earlier version files the way it always did: one trade
+     through 117, one man for one man through 116. */
+  async function submitFix(r) {
+    const tail = {
+      p_odds: roundTo(r.odds, 4), p_base: roundTo(r.base, 4),
+      p_replay_wins: r.replay ? Math.round(r.replay.w) : null,
+      p_replay_title: r.replay ? !!r.replay.title : null,
+    };
+    let id;
+    if (r.v === 2) {
+      id = await rpc('submitFix', 'rtf_submit_fix_season', Object.assign({
+        p_day: Math.round(r.day), p_ts: r.ts,
+        p_trades: (r.trades || []).map((t) => ({ w: t.w, with: t.with, outs: t.outs, picks: t.picks || [], ins: t.ins })),
+        p_headline: r.headline || null,
+      }, tail));
+    } else if (r.legacy || !r.with) {
+      id = await rpc('submitFix', 'rtf_submit_fix', Object.assign({
+        p_day: Math.round(r.day), p_ts: r.ts, p_slot: Math.round(r.slot),
+        p_out: r.out, p_in: r.inKey,
+      }, tail));
+    } else {
+      id = await rpc('submitFix', 'rtf_submit_trade', Object.assign({
+        p_day: Math.round(r.day), p_ts: r.ts, p_with: r.with,
+        p_outs: r.outs, p_ins: r.ins,
+      }, tail));
+    }
+    return typeof id === 'number' ? id : null;
+  }
+  async function submitPasses(day, chain, par, solved) {
+    const id = await rpc('submitPasses', 'rtf_submit_passes', {
+      p_day: Math.round(day), p_chain: chain, p_par: Math.round(par), p_solved: !!solved,
+    });
+    return typeof id === 'number' ? id : null;
+  }
+  async function submitConquest(c) {
+    const id = await rpc('submitConquest', 'rtf_submit_conquest', {
+      p_wins: Math.round(c.wins), p_lives: Math.round(c.lives), p_cleared: !!c.cleared,
+      p_lost_to: c.lostTo || null, p_roster: c.roster || null, p_took: c.took || null,
+      p_seed: String(c.seed),
+    });
+    return typeof id === 'number' ? id : null;
+  }
+  async function claimPlay(id) {
+    if (!id) return false;
+    return (await rpc('claimPlay', 'rtf_claim_play', { p_id: id })) === true;
+  }
+
+  /* The scope for one board: a mode, and a day for the dailies. Conquest's
+     all-time board passes no day. Validated rather than passed through, so
+     nothing a caller hands in reaches a query string as text. */
+  function playScope(mode, day, named, since) {
+    let q = '&mode=eq.' + mode;
+    if (day != null) q += '&day=eq.' + Math.round(Number(day));
+    if (sinceOk(since)) q += '&created_at=gte.' + encodeURIComponent(since);
+    if (named) q += '&display_name=not.is.null';
+    return q;
+  }
+  /* One page of a mode's board: { mode, day, since, asc, offset, limit }.
+     Every play is listed, a guest's as Guest, for the reason ranks() gives. */
+  async function playList(o) {
+    const p = o || {};
+    if (!modeOk(p.mode) || !dayOk(p.day)) return null;
+    const n = Math.min(100, Math.max(1, Math.round(Number(p.limit) || 100)));
+    const off = Math.max(0, Math.round(Number(p.offset) || 0));
+    const order = p.asc ? 'score.asc,created_at.desc' : 'score.desc,created_at.asc';
+    const ask = (cols) => timed(base() + PLAYS + '?select=' + cols +
+      '&order=' + order + '&limit=' + n + (off ? '&offset=' + off : '') +
+      playScope(p.mode, p.day, false, p.since), { headers: headers() });
+    try {
+      let res = await ask(playCols());
+      for (let tries = 0; !res.ok && res.status === 400 && tries < PLAY_OPTIONAL.length; tries++) {
+        let body = null;
+        try { body = await res.clone().json(); } catch (e) { body = null; }
+        const msg = String(body && body.message);
+        const hit = PLAY_OPTIONAL.findIndex((g, i) => !playMissing.has(i) && g.test.test(msg));
+        if (hit < 0) break;
+        playMissing.add(hit);
+        res = await ask(playCols());
+      }
+      if (!res.ok) return await fail('playTop', res);
+      const rows = await res.json();
+      return Array.isArray(rows) ? rows : null;
+    } catch (e) { return failThrown('playTop', e); }
+  }
+  function playTop(mode, day, limit) { return playList({ mode, day, limit }); }
+  async function playCount(mode, day, extra, since) {
+    try {
+      const q = base() + PLAYS + '?select=id&limit=1' + playScope(mode, day, false, since) + (extra || '');
+      const res = await timed(q, { headers: headers({ Prefer: 'count=exact' }) });
+      if (!res.ok) return await fail('playCount', res);
+      return countOf(res);
+    } catch (e) { return failThrown('playCount', e); }
+  }
+  /* Where a score sits among EVERY play on the board, named or not, so a
+     guest's place is out of the same field as everybody's. */
+  async function playPlace(mode, day, score) {
+    if (!modeOk(mode) || !dayOk(day) || !Number.isFinite(Number(score))) return null;
+    const [ahead, total] = await Promise.all([
+      playCount(mode, day, '&score=gt.' + encodeURIComponent(Number(score))),
+      playCount(mode, day, ''),
+    ]);
+    if (ahead === null || total === null) return null;
+    return { place: ahead + 1, total };
+  }
+  /* How many people made the same Fix History move today. */
+  async function moveCount(day, inKey) {
+    if (!dayOk(day) || !/^[a-z0-9.'-]{2,16}\|[0-9]{4}\|[A-Z]{2,4}$/.test(String(inKey))) return null;
+    return playCount('fix', day, '&fix_in=eq.' + encodeURIComponent(inKey));
+  }
+
   window.RTF_BOARD = {
     /* Moves when any of the shapes above change. index.html pins this and falls
        through to a stub that answers null to everything when it disagrees,
@@ -478,7 +658,9 @@
        network day. Nothing throws, so nothing reports it. Bump this and the
        page's NEED_BOARD in the same commit. */
     API_VERSION: BOARD_API_VERSION,
-    submit, claim, ranks, top, mine, boards, placeIn, total, boardsScope: scope,
+    submit, claim, ranks, top, list, mine, boards, placeIn, total, boardsScope: scope,
+    submitFix, submitPasses, submitConquest, claimPlay, playTop, playList, playCount, playPlace,
+    moveCount, jerseys,
     scoreOf, recordScoreOf, depthOf, modeOf, round1,
     SORTS, DIR, DEFAULT_SORT,
     get offline() { return offline; },

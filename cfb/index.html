@@ -648,6 +648,48 @@ window.GA_ID='G-L29P5MRWKE';
      with no way to play for free". The pitch moved to the screen where it is honest, which
      is the wait wall inside the mode, after a season has been played. */
   .hp-commish .hp-namerow{display:flex;align-items:center;gap:7px}
+  /* COLLEGE FANTASY'S DOOR, a neon sign whose colour answers one question: is my lineup in
+     this week. Red until it is, green once it is. See ensureFantasyDoor(). */
+  .hp-cfbfan{position:relative;display:flex;flex-direction:column;align-items:center;gap:3px;
+    padding:14px 12px 12px;border-radius:12px;text-decoration:none;
+    background:linear-gradient(180deg,rgba(40,14,16,.9),rgba(20,12,14,.9));
+    border:1.5px solid rgba(239,68,68,.82);
+    box-shadow:0 0 18px -6px rgba(239,68,68,.75),inset 0 0 14px -8px rgba(239,68,68,.6)}
+  .hp-cfbfan.in{background:linear-gradient(180deg,rgba(12,36,22,.9),rgba(10,20,14,.9));
+    border-color:rgba(34,197,94,.82);
+    box-shadow:0 0 18px -6px rgba(34,197,94,.7),inset 0 0 14px -8px rgba(34,197,94,.55)}
+  .hp-cfbfan:active{transform:translateY(1px)}
+  .hp-cfbfan .hp-name{font-family:var(--fd);font-size:19px;font-weight:800;letter-spacing:.02em;
+    color:#ffe8e8;line-height:1}
+  .hp-cfbfan.in .hp-name{color:#dcfce7}
+  .hp-cfbfan .hp-sub{font-family:var(--fn);font-size:11.5px;font-weight:700;
+    color:rgba(255,232,232,.72);line-height:1.35;text-align:center;max-width:34ch}
+  .hp-cfbfan.in .hp-sub{color:rgba(220,252,231,.72)}
+  .hp-cfbfan .hp-tag{position:absolute;top:-8px;right:10px;font-family:var(--fn);
+    font-size:9.5px;font-weight:900;letter-spacing:.1em;text-transform:uppercase;
+    padding:3px 8px;border-radius:6px;background:rgba(239,68,68,.18);
+    border:1px solid rgba(239,68,68,.55);color:#ffe8e8}
+  .hp-cfbfan.in .hp-tag{background:rgba(34,197,94,.18);border-color:rgba(34,197,94,.55);
+    color:#dcfce7}
+  /* The crest is the prize and the six bars are the lineup, so the door says what the mode
+     is before a word of it is read. Faint yard lines behind, the ground the mode's own page
+     is drawn on, and the bars light up once a lineup is in. */
+  .hp-cfbfan{background:
+      repeating-linear-gradient(90deg,transparent 0 31px,rgba(255,255,255,.035) 31px 32px),
+      radial-gradient(160px 70px at 50% 0%,rgba(240,201,107,.16),transparent 75%),
+      linear-gradient(180deg,rgba(40,14,16,.9),rgba(20,12,14,.9));gap:4px;padding-top:12px}
+  .hp-cfbfan.in{background:
+      repeating-linear-gradient(90deg,transparent 0 31px,rgba(255,255,255,.035) 31px 32px),
+      radial-gradient(160px 70px at 50% 0%,rgba(240,201,107,.16),transparent 75%),
+      linear-gradient(180deg,rgba(12,36,22,.9),rgba(10,20,14,.9))}
+  .hp-cfbfan .hp-ico{width:30px;height:30px;flex:0 0 auto;
+    filter:drop-shadow(0 0 7px rgba(239,68,68,.55)) drop-shadow(0 2px 4px rgba(0,0,0,.6))}
+  .hp-cfbfan.in .hp-ico{filter:drop-shadow(0 0 7px rgba(34,197,94,.55)) drop-shadow(0 2px 4px rgba(0,0,0,.6))}
+  .hp-cfbfan .hp-rack{display:flex;gap:4px;margin-top:4px}
+  .hp-cfbfan .hp-rack i{display:block;width:17px;height:4px;border-radius:2px;opacity:.5}
+  .hp-cfbfan .hp-rack .QB{background:#ff0a3b} .hp-cfbfan .hp-rack .RB{background:#22c55e}
+  .hp-cfbfan .hp-rack .WR{background:#0f93ff} .hp-cfbfan .hp-rack .TE{background:#eb9500}
+  .hp-cfbfan.in .hp-rack i{opacity:1}
   /* THE PACE LINE. Quieter than the sentence above it and set apart by a hairline, because
      it is a different KIND of thing: the sentence says what the mode is for and this says
      what it costs you in time. Not a tag and not a lock, for the reason written where it is
@@ -1480,7 +1522,7 @@ window.GA_ID='G-L29P5MRWKE';
 
   /* ── drive chart ────────────────────────────────────────────── */
   .pofield{margin-top:10px;border-radius:12px;overflow:hidden;border:1px solid rgba(255,255,255,.08);
-    background:#1a3318}
+    background:#03060c;box-shadow:0 12px 34px rgba(0,0,0,.45),inset 0 0 0 1px rgba(255,255,255,.03)}
   .pofield canvas{display:block;width:100%;height:auto}
 
   .bigrec{text-align:center;padding:6px 0 12px}
@@ -2649,6 +2691,68 @@ window.GA_ID='G-L29P5MRWKE';
   .modecard.mc-conf .mc-icon{background:linear-gradient(135deg,#f59e0b 0%,#b45309 100%)}
   .modecard.mc-conf .mc-title{color:#fbbf24}
 
+  /* ---- MORE WAYS TO PLAY IS A GRID ON A DESKTOP ----
+     This sheet is a 526px column of full width rows, and on a 1280px window that is one
+     narrow strip in the middle of a lot of nothing. The baseball game already solved it
+     with a .mc-grid modifier on .modecards, and the NFL game carries the same block as
+     this one, so all three sheets read as the same object.
+
+     IT IS DESKTOP ONLY, which is the difference from baseball. Baseball goes two across on
+     a phone because it has SIX modes and a phone list of six is a scroll. This page has
+     two, so a phone list is already short, already the widest each card can be, and
+     already what a thumb wants. The grid earns its place on a window with spare width and
+     nowhere else, so the whole block sits inside the query.
+
+     TWO COLUMNS, WHICH IS EVERY CARD THIS PAGE HAS. Baseball's third column exists for its
+     fifth and sixth modes. Asking for three here would draw a row of two and a third of a
+     row of nothing, so the count is what the column number answers to.
+
+     THE CROSS-PROMO BLOCKS BELOW ARE NOT TOUCHED, and that is the reason .mc-grid is a
+     modifier rather than a change to .modecards. Each xpromo holds ONE card, and a lone
+     tile in a two column grid is a card that has lost half its width for no reason. They
+     are full width rows and stay that way. */
+  @media(min-width:760px){
+    /* THE SHEET SIZES ITSELF OFF WHAT IS IN IT, and that is the load-bearing choice here.
+       ONE #sheet serves every sheet on this page, so a `wide` class added when this one
+       opens would be a reset the next person adding a sheet forgets, and the store would
+       open 860px wide with a 560px sheet's worth of content in it. That is the seasonTag()
+       lesson: the reset must not be the half somebody can forget. :has() asks the only
+       question that is reliably true at the moment it matters, which is whether there is a
+       grid in here, and it stops being true by itself when the next sheet writes over it.
+       Where :has() is unsupported the sheet stays 560px and the grid has less room to work
+       in, which is a narrower version of this layout rather than a broken one. */
+    .sheet .inner:has(.mc-grid){max-width:min(820px,calc(100vw - 64px))}
+    .modecards.mc-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+    /* A GRID ROW STRETCHES EVERY CELL TO ITS TALLEST, so a card is a column that fills its
+       cell rather than a block ending where its sentence does. Commish Simulator runs
+       longer than Conference Draft, and without this the shorter one draws its border at
+       its own height and leaves a gap under it. */
+    .mc-grid .modecard{display:flex;flex-direction:column;padding:15px 14px}
+    /* THE ICON GOES ABOVE THE NAME rather than beside it, which is what buys the narrower
+       column its room: a 32px icon, a gap and an uppercase mode name on one line is about
+       240px before the name has said anything. */
+    .mc-grid .modecard .mc-head{flex-direction:column;align-items:flex-start;gap:9px;
+      margin-bottom:7px}
+    .mc-grid .modecard .mc-icon{width:40px;height:40px;border-radius:10px}
+    .mc-grid .modecard .mc-icon svg{width:22px;height:22px}
+    /* THE CHEVRON GOES AND THE PADLOCK STAYS, which is not the same decision twice. A
+       chevron says "this is a thing you press", and a tile in a grid says that on its own.
+       A padlock says the opposite and is the only thing on the card that does, so hiding it
+       with the same rule would turn a shut door into one that looks open. Both hang off
+       `margin-left:auto` in a row and that does nothing in a column, so the one that stays
+       is pinned to the corner it was already sitting in. */
+    .mc-grid .modecard .mc-arrow{display:none}
+    .mc-grid .modecard .mc-pad{position:absolute;top:15px;right:14px;margin:0}
+    /* THE SIGN-IN CARD IS NOT A MODE, SO IT TAKES THE WHOLE ROW. It is drawn between the
+       two tiles for a signed out reader, and as a grid cell it took the second column and
+       pushed Commish Simulator down onto a row of its own: two modes, two rows, and an
+       account form sitting where a mode should be. Spanning, it reads as the note under
+       Conference Draft that it is. Spanning alone still split the two tiles onto two rows,
+       because it sits between them in the markup, so on the grid it goes after them. The
+       phone keeps it directly under the card it is about. */
+    .mc-grid .gate{grid-column:1 / -1;order:1}
+  }
+
   /* ---- THE CROSS-PROMO SECTION ----
      Its own block under the modes rather than another mode card: the pro game is a
      different game on a different page, and dropping it into the same list would
@@ -3655,9 +3759,9 @@ or endorsed by the NCAA, the CFP or any school.
          are six and would not fit on a phone. -->
     <div class="lbmode"><select id="lb-comp" aria-label="Which leaderboard"></select></div>
     <div class="tabwrap"><div class="tabs" id="lb-tabs">
-      <button class="tab on" data-lb="day">Today</button>
+      <button class="tab" data-lb="day">Today</button>
       <button class="tab" data-lb="week">This week</button>
-      <button class="tab" data-lb="all">All time</button>
+      <button class="tab on" data-lb="all">All time</button>
     </div></div>
     <!-- THREE AXES, AND ONE OF THEM RUNS THE OTHER WAY BY DEFAULT. Record and team
          overall are high-to-low; the national ranking is low-to-best, because No. 1 in
@@ -3869,8 +3973,8 @@ or endorsed by the NCAA, the CFP or any school.
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="engine.js?v=35"></script>
 <script src="run.js?v=15"></script>
-<script src="achievements.js?v=11"></script>
-<script src="auth.js?v=7"></script>
+<script src="achievements.js?v=12"></script>
+<script src="auth.js?v=8"></script>
 <script src="board.js?v=7"></script>
 <!-- The tester list for Commish Simulator, which this page reads to decide whether to draw
      the card on the modes sheet and cfb/commish/ reads to decide whether to open at all.
@@ -3894,7 +3998,12 @@ or endorsed by the NCAA, the CFP or any school.
      sold on this site, it unlocks both games, and it is described in exactly one file. Two
      copies of a price or a term is two chances to tell a customer something the other page
      contradicts, and the one that is wrong is whichever was edited second. -->
-<script src="/assets/store.js?v=22"></script>
+<script src="/assets/store.js?v=23"></script>
+<!-- The release newsletter checkbox on the account page. See supabase/121_newsletter.sql. -->
+<script src="/assets/newsletter.js?v=1"></script>
+<!-- The broadcast field every game is played out on, shared with the NFL game. drawDriveChart
+     hands its drives here and keeps its own body as the fallback. -->
+<script src="/assets/fieldcast.js?v=4"></script>
 <!-- THE FREE TIER'S CLOCK, WHICH THIS PAGE ONLY READS. It is the mode's module and the
      mode is still the thing that decides: seasonWall() spends a season and reads the
      server's answer, because only the server can settle it. All this page wants is to know
@@ -5303,6 +5412,7 @@ function ensureCommishDoor(){
     if(commishDoor&&commishDoor.parentNode) commishDoor.parentNode.removeChild(commishDoor);
     if(commishLead&&commishLead.parentNode) commishLead.parentNode.removeChild(commishLead);
     commishDoor=null; commishLead=null;
+    ensureFantasyDoor();
     return;
   }
   if(!commishLead){
@@ -5413,6 +5523,80 @@ function ensureCommishDoor(){
   }else{
     ctas.appendChild(commishLead); ctas.appendChild(commishDoor);
   }
+  ensureFantasyDoor();
+}
+
+/* ── COLLEGE FANTASY'S DOOR ─────────────────────────────────────────────────────────
+ *
+ * The weekly challenge lives at /cfb/fantasy/, and it is this game's alone: separate
+ * tables, a separate board and a separate prize from the NFL one. DRAWN ONLY WHEN THERE IS
+ * A WEEK, read off the pointer the Monday build writes, so a season with no board built
+ * yet shows no door rather than a door to a screen that says nothing is on.
+ *
+ * THE BORDER IS THE STATE, which is the NFL door's rule arriving here: red until a lineup
+ * is in, green once one is, read off the mode's own record for the live week. That record
+ * is written only after the server has said yes, so a refused entry never lights it green,
+ * and it FAILS SOFT TO RED, which is the safe direction.
+ *
+ * A LINK AND NOT A BUTTON, because it leaves the page. A guest is not stopped here: the
+ * fantasy page tells them it needs an account before they draft, with a way to sign in. */
+let cfbFanWeek=null, cfbFanAsked=false, cfbFanDoor=null;
+/* The crest the mode's own page wears: a trophy on a shield, solid colours and no ids. */
+const CFB_CREST='<svg class="hp-ico" viewBox="0 0 32 32" aria-hidden="true">'
+  +'<path d="M16 1.8 28.4 6v9.4c0 7.4-5.3 12.6-12.4 15-7.1-2.4-12.4-7.6-12.4-15V6Z" '
+  +'fill="rgba(10,14,26,.85)" stroke="#f0c96b" stroke-width="1.8"/>'
+  +'<path d="M11 8.6h10v4.2a5 5 0 0 1-10 0Z" fill="#f0c96b"/>'
+  +'<path d="M11 9.8H8.6a2.6 2.6 0 0 0 2.9 3.8M21 9.8h2.4a2.6 2.6 0 0 1-2.9 3.8" '
+  +'fill="none" stroke="#f0c96b" stroke-width="1.4"/>'
+  +'<rect x="15" y="17.4" width="2" height="2.8" fill="#d9a13a"/>'
+  +'<rect x="11.8" y="20.2" width="8.4" height="2.4" rx="1" fill="#f0c96b"/></svg>';
+function cfbFanEntered(){
+  if(!cfbFanWeek) return false;
+  try{
+    const s=JSON.parse(localStorage.getItem('cfb_fantasy_'+cfbFanWeek.season+'_w'+cfbFanWeek.week)||'null');
+    return !!s&&s.submitted!=null;
+  }catch(_){ return false; }
+}
+function ensureFantasyDoor(){
+  if(!cfbFanAsked){
+    cfbFanAsked=true;
+    fetch('/cfb/data/fantasy/now.json',{cache:'no-cache'})
+      .then(r=>r.ok?r.json():null)
+      .then(n=>{
+        if(!n||n.season==null||n.week==null) return;
+        cfbFanWeek=n;
+        ensureFantasyDoor();
+        /* The lock line counts down, so the door is redrawn once a minute. */
+        setInterval(ensureFantasyDoor,60000);
+      })
+      .catch(()=>{});
+    return;
+  }
+  const ctas=document.querySelector('.ctas');
+  if(!ctas||!cfbFanWeek) return;
+  if(!cfbFanDoor){
+    cfbFanDoor=document.createElement('a');
+    cfbFanDoor.className='hp-cfbfan'; cfbFanDoor.id='b-hp-fantasy';
+    cfbFanDoor.href='/cfb/fantasy/';
+    cfbFanDoor.onclick=()=>{ ga('mode_opened',{mode:'fantasy',from:'home'}); };
+  }
+  const inn=cfbFanEntered();
+  cfbFanDoor.classList.toggle('in',inn);
+  /* WHEN THE WEEK LOCKS, off the pointer's own locks_at, and a plain line once it has. */
+  const ms=cfbFanWeek.locks_at?Date.parse(cfbFanWeek.locks_at)-Date.now():NaN;
+  const h=Math.floor(ms/3600000), d=Math.floor(h/24);
+  const left=!(ms>0)?null:d>=1?d+'d '+(h%24)+'h':h>=1?h+'h '+Math.floor(ms%3600000/60000)+'m'
+    :Math.max(1,Math.floor(ms/60000))+'m';
+  cfbFanDoor.innerHTML='<span class="hp-tag">Beta</span>'+CFB_CREST
+    +'<span class="hp-name">Fantasy Challenge</span>'
+    +'<span class="hp-sub">'+(inn?'Your lineup is in for week '+cfbFanWeek.week+'.'
+      :left?'Week '+cfbFanWeek.week+' &middot; locks in '+left+' &middot; top score wins Pro'
+      :'Six players from the week\'s biggest games. Top score wins Pro.')+'</span>'
+    +'<span class="hp-rack" aria-hidden="true"><i class="QB"></i><i class="RB"></i><i class="RB">'
+    +'</i><i class="WR"></i><i class="WR"></i><i class="TE"></i></span>';
+  const three=ctas.querySelector('.cta3');
+  if(three){ if(cfbFanDoor.nextSibling!==three) ctas.insertBefore(cfbFanDoor,three); }
+  else if(cfbFanDoor.parentNode!==ctas) ctas.appendChild(cfbFanDoor);
 }
 
 /* ── THE OFFER ON THE FRONT PAGE, WHICH ONLY THE PROFILE CARRIED ──────────────────────
@@ -5488,7 +5672,9 @@ function modeMenu(){
   $('sheet-in').dataset.kind='modes';
   $('sheet-in').innerHTML=
     '<h2 class="display mtitle" style="font-size:25px;margin:4px 0 8px">More ways to play</h2>'+
-    '<div class="modecards">'+
+    /* mc-grid is a MODIFIER and the CSS behind it is entirely inside a min-width query, so
+       this class changes nothing at all on a phone. See the block beside .modecards. */
+    '<div class="modecards mc-grid">'+
       '<'+(locked?'div':'button')+' class="modecard mc-conf'+(locked?' locked':'')+'"'+
         (locked?'':' id="b-mc-conf"')+'>'+
         '<div class="mc-head"><div class="mc-icon"><svg viewBox="0 0 24 24">'+
@@ -5779,6 +5965,10 @@ const pwPill=()=>{
    reads as free: without this, the screen thanking somebody for their payment would sit
    directly above a card offering to sell it to them. Session-lived on purpose. */
 let justPaid=false;
+/* AND WHETHER WHAT THEY JUST PAID FOR WAS A PLAN, which the success url says (see below).
+   Declared up here beside justPaid because premiumSheet reads it and sits above the block
+   that sets it. */
+let paidYearly=false;
 /* AND IT IS GATED ON THE SAME ANSWER THE DOOR IS. The thing this card sells on this game
    is Commissioner Simulator, and while the launch flag is false only the tester list can
    see that mode at all: offering it to somebody who would still find nothing after paying
@@ -5822,12 +6012,27 @@ function premiumSheet(){
      just bought is the worst screen in the flow, so it is answered rather than left to
      chance. The receipts are one tap away from here. */
   if(ownsCfb()){
+    /* "NOTHING TO RENEW" IS ONLY TRUE FOR A LIFETIME OWNER. Two things answer it: the
+       success url, which knows a plan was just bought before any row exists, and the plan
+       read below, which rewrites the sentence with the date. So the first frame never
+       promises a subscriber that nothing will charge them again. */
     box.innerHTML='<div class="eyebrow gold">Your account</div>'+
       '<h2 class="display" style="font-size:26px;margin:4px 0 8px">You\'re Pro</h2>'+
-      '<p class="dim" style="font-size:13.5px;line-height:1.45;margin:0">'+
-        'Every Pro mode is unlocked, on every device you sign in on. There\'s nothing to '+
-        'renew.</p>'+pfClose();
+      '<p class="dim" id="pro-terms" style="font-size:13.5px;line-height:1.45;margin:0">'+
+        'Every Pro mode is unlocked, on every device you sign in on.'+
+        (paidYearly?'':' There\'s nothing to renew.')+'</p>'+pfClose();
     openSheet(); pfWire(box);
+    (async()=>{
+      const a=A();
+      let plans=[];
+      try{ plans=(a&&typeof a.premiumPlans==='function')?await a.premiumPlans():[]; }catch(e){ plans=[]; }
+      const el=$('pro-terms'), lv=livePlans(plans);
+      /* The sheet is one element every page rewrites, so an answer landing after the reader
+         has moved on must not paint over wherever they went. */
+      if(!el||!lv.length||$('sheet-in').dataset.kind!=='premium') return;
+      el.textContent='Every Pro mode is unlocked, on every device you sign in on. '+
+        planDates(lv[0]).replace(/^(Renews|Ends) on/,(m,w)=>'Your plan '+w.toLowerCase()+' on');
+    })();
     ga('premium_sheet_shown',{from:premiumFrom||'profile',tier:'pro'});
     premiumFrom=null;
     return;
@@ -5842,7 +6047,7 @@ function premiumSheet(){
       'not be loaded. Reload the page and try again.</p>')+
     '<div style="margin-top:12px"><button class="btn ghost sm" id="sp-x" '+
       'style="width:100%">Not now</button></div>';
-  if(window.RTG_STORE) window.RTG_STORE.wire(box,{buy:(kind,btn)=>buyBundle(kind,btn)});
+  if(window.RTG_STORE) window.RTG_STORE.wire(box,{buy:(kind,btn,plan)=>buyBundle(kind,btn,plan)});
   openSheet(); pfWire(box);
   ga('premium_sheet_shown',{from:premiumFrom||'profile',tier:acctTier()||'out'});
   premiumFrom=null;
@@ -5852,7 +6057,10 @@ function premiumSheet(){
    functions/api/stripe/checkout-bundle.js keeps on purpose. The verdict lands on the
    button that was pressed. A signed out visitor is sent to the account panel instead:
    the store's own labels already told them that step was coming. */
-async function buyBundle(kind,btn){
+/* `plan` is handed over by RTG_STORE.wire, and it is the plan the sheet was DRAWN with
+   rather than whatever the module thinks now. Those come apart when the switch flips under
+   an open sheet, and the wired one is the honest answer: it is what the buyer read. */
+async function buyBundle(kind,btn,plan){
   if(!authState.signedIn){ openProfile('account'); return; }
   const a=A();
   const t=a&&typeof a.token==='function'?a.token():null;
@@ -5863,10 +6071,36 @@ async function buyBundle(kind,btn){
     const r=await fetch('/api/stripe/checkout-bundle',{
       method:'POST',
       headers:{'Content-Type':'application/json',Authorization:'Bearer '+t},
-      body:JSON.stringify({bundle:kind,return_path:'/cfb/'})
+      /* THE PLAN THE SHEET SHOWED, so the checkout can refuse to charge anything else.
+         NOT OPTIONAL, and leaving it out was not a missing nicety: checkout-bundle.js
+         reads a body with no `plan` as 'once', and once the yearly switch went on that is
+         a mismatch, so it answered 409 offer_changed to every college purchase and the
+         button read "Checkout couldn't start" for ever. Nothing threw, the store drew
+         perfectly, and the only symptom was that nobody could buy the game. */
+      body:JSON.stringify({bundle:kind,return_path:'/cfb/',
+        plan:plan||((window.RTG_STORE&&window.RTG_STORE.plan)?window.RTG_STORE.plan():'once')})
     });
     const d=await r.json().catch(()=>({}));
     if(d&&d.url){ location.href=d.url; return; }
+    /* WHAT IS ON SALE CHANGED UNDER AN OPEN SHEET, which is the switch being flipped or a
+       browser holding a store.js from before it. Redraw the offer with the real price
+       rather than send anybody to a checkout the screen did not describe. */
+    if(d&&d.error==='offer_changed'){
+      if(window.RTG_STORE&&window.RTG_STORE.setPlan) window.RTG_STORE.setPlan(d.plan);
+      if(btn){ btn.disabled=false; btn.textContent='The price just changed'; }
+      premiumSheet();
+      return;
+    }
+    /* A PLAN ALREADY RUNNING IS CHANGED OR CANCELLED IN STRIPE, never bought twice. The
+       portal is where that happens, so this button opens it rather than explaining it. */
+    if(d&&d.error==='already_subscribed'){
+      if(btn) btn.textContent=d.change?'Opening Stripe...':'You already have this plan';
+      const r2=(a&&typeof a.billingPortal==='function')?await a.billingPortal('/cfb/','plan'):null;
+      if(r2&&r2.url){ location.href=r2.url; return; }
+      if(btn){ btn.disabled=false; btn.textContent='Manage your plan in Stripe'; }
+      return;
+    }
+    if(d&&d.error==='already_owned'){ premiumRefresh(true); }
     if(btn){
       btn.disabled=false;
       btn.textContent=
@@ -5895,12 +6129,20 @@ let checkoutPolled=false, checkoutWhat=null;
    justPaid and the profile can be opened before the account has even answered. A screen
    thanking somebody for their payment must never carry a card offering to sell it to
    them, and that is decided the moment the page has a URL. */
-try{ checkoutWhat=new URLSearchParams(location.search).get('checkout'); }catch(e){}
+/* checkout-bundle.js adds plan=year to a yearly plan's success url, so a screen can say the
+   plan renews before the plan row has even been written. The webhook and the redirect race,
+   and the sentence must not wait on that race to stop being wrong. */
+try{
+  const q=new URLSearchParams(location.search);
+  checkoutWhat=q.get('checkout');
+  if(checkoutWhat==='success'&&q.get('plan')==='year') paidYearly=true;
+}catch(e){}
 justPaid=checkoutWhat==='success';
 function checkoutStrip(){
   try{
     const u=new URL(location.href);
     u.searchParams.delete('checkout');
+    u.searchParams.delete('plan');
     history.replaceState(null,'',u.pathname+(u.searchParams.toString()?'?'+u.searchParams.toString():'')+u.hash);
   }catch(e){}
 }
@@ -5990,6 +6232,30 @@ const proDate=(s)=>{
   const d=new Date(s);
   return isNaN(d)?'':d.toLocaleDateString(undefined,{year:'numeric',month:'short',day:'numeric'});
 };
+/* A YEARLY PLAN THAT IS STILL PAID FOR (supabase/124). past_due counts: the grace is
+   running and Stripe is retrying the card, so the plan is still the account's, and saying
+   otherwise would read as Pro being taken away over a card that may yet go through.
+   THE SAME THREE TABLES THE FOOTBALL RECEIPT KEEPS, because one account holds one plan and
+   two receipts that disagreed about what it grants would be the drift this whole page
+   exists to prevent. */
+const PLAN_LIVE=['active','trialing','past_due'];
+const PLAN_PRODUCTS={'perfect-season':['ps_premium','cfb_premium'],
+  'run-the-bundle':['ps_premium','cfb_premium','arcade_card_year']};
+function livePlans(plans){
+  const now=Date.now();
+  return (plans||[]).filter((p)=>p&&PLAN_LIVE.indexOf(p.status)>=0&&
+    (!p.access_until||Date.parse(p.access_until)>now));
+}
+function planFor(live,product){
+  return live.find((p)=>(PLAN_PRODUCTS[p.bundle]||[]).indexOf(product)>=0)||null;
+}
+/* RENEWS OR ENDS, and never "yours for good": a plan is paid for a year at a time. The date
+   is the period end Stripe bills on, which is the date on their card statement. */
+function planDates(p){
+  const d=proDate(p.current_period_end);
+  if(!d) return 'On a yearly plan.';
+  return p.cancel_at_period_end?'Ends on '+d+'.':'Renews on '+d+'.';
+}
 function pfPro(){
   profileTab='pro'; pfPaint++;
   const box=$('sheet-in');
@@ -6017,6 +6283,17 @@ async function pfProLoad(){
   const by={};
   rows.forEach((r)=>{ if(r&&r.product) by[r.product]=r; });
   const owned=PRO_ORDER.filter((k)=>by[k]&&PRO_ITEM[k]);
+  /* THE YEARLY PLANS, read beside the rows rather than instead of them. A row says a plan
+     keeps it alive (sub_until); only the plan says whether it renews or has been cancelled,
+     and that is the sentence a subscriber opens this page for. Asked for defensively,
+     because auth.js is a sibling script and a browser one bump behind has a copy with no
+     premiumPlans on it: no plan read is the same answer as no plan, which is a lifetime
+     receipt, which is exactly what that browser was drawing before today. */
+  let plans=[];
+  try{ plans=(a&&typeof a.premiumPlans==='function')?await a.premiumPlans():[]; }catch(e){ plans=[]; }
+  if(mine!==pfPaint) return;
+  const live=livePlans(plans);
+  let hasPlan=false;
 
   if(!owned.length){
     /* REACHABLE, AND NOT A BUG. The row that opened this page was drawn from
@@ -6027,7 +6304,7 @@ async function pfProLoad(){
       'Your Pro modes are unlocked. The list of what is in your bundle couldn\'t be loaded '+
       'just now. Reload the page and it will come back.</p>';
   }else{
-    let ends=null, endedOn=null;
+    let ends=null, endedOn=null, passEnds=null, passEnded=null, paid=false;
     list.innerHTML=owned.map((k)=>{
       const it=PRO_ITEM[k], row=by[k];
       const g=(window.RTG_STORE&&window.RTG_STORE.game(it.game))||{name:'',c:'#94a3b8'};
@@ -6040,15 +6317,33 @@ async function pfProLoad(){
          Telling a customer they hold something they do not hold is the one thing a receipt
          must never do. */
       const gone=!!row.expires_at&&Date.parse(row.expires_at)<Date.now();
-      if(till&&gone) endedOn=till;
-      else if(till) ends=till;
+      /* A FANTASY CHALLENGE PASS WAS WON, NOT BOUGHT. The weekly winner gets 30 days of Pro
+         as these same two rows with an end date and a source naming the week
+         (supabase/120_fantasy_pro_pass.sql). "Bought" on a prize is false, and so is the
+         Arcade Card sentence under the list, which is only ever about an Arcade year. */
+      const won=/^fantasy:/.test(row.source||'');
+      /* THREE KINDS OF ROW, and only the lifetime one says "for good". A row a yearly plan
+         is keeping alive says when the plan renews or ends, a Fantasy pass says Won, and
+         nothing that ends is ever called lifetime. A plan wins over a pass on the same row,
+         because the plan is the thing that will charge them. */
+      const plan=row.expires_at?planFor(live,k):null;
+      const planGone=!plan&&!!row.sub_until&&!won;
+      if(plan) hasPlan=true;
+      if(!won&&!plan&&!planGone) paid=true;
+      if(plan||planGone){ /* the plan sentence below covers it */ }
+      else if(won){ if(till&&gone) passEnded=till; else if(till) passEnds=till; }
+      else if(k==='arcade_card_year'){ if(till&&gone) endedOn=till; else if(till) ends=till; }
       /* NOT EVERYTHING IN A BUNDLE ARRIVES AT ONCE. See the note on PRO_ITEM. Both halves
          are required: the product has to be one that is delivered elsewhere, and it has to
          be still unstamped. */
       const waiting=!!it.wait&&row.fulfilled_at==null&&!gone;
-      const dates=till
-        ? 'Bought '+when+'. '+(gone?'Ended ':'Ends ')+till+'.'
-        : 'Bought '+when+'. Yours for good.';
+      const dates=plan
+        ? planDates(plan)
+        : planGone
+          ? 'Your plan ended on '+till+'.'
+          : till
+            ? (won?'Won in the Fantasy Challenge on ':'Bought ')+when+'. '+(gone?'Ended ':'Ends ')+till+'.'
+            : 'Bought '+when+'. Yours for good.';
       return '<div class="pw-line'+(gone?' ended':'')+'" style="--gc:'+g.c+'"><b>'+esc(g.name)+'</b>'+
         '<span>'+esc(it.text)+'</span>'+
         (when||till
@@ -6061,9 +6356,16 @@ async function pfProLoad(){
          and a customer who thinks they are on a recurring charge cancels the whole account
          to stop it. Nothing here renews, and the sentence says so before they have to ask. */
       '<p class="dim" style="font-size:12px;line-height:1.45;margin:13px 0 0">'+
-        'You paid once. Nothing here renews and nothing charges you again.'+
+        /* A PLAN RENEWS, AND THE SENTENCE THAT SAYS NOTHING DOES IS THEN FALSE, so it goes.
+           A lifetime owner with no plan reads exactly what they always read. */
+        (hasPlan
+          ? 'Your plan renews each year until you cancel. Cancel any time below.'
+          : paid?'You paid once. Nothing here renews and nothing charges you again.'
+               :'You won this. Nothing here renews and nothing charges you.')+
         (ends?' Your Arcade Card year simply ends on '+esc(ends)+'.':'')+
         (endedOn?' Your Arcade Card year ended on '+esc(endedOn)+'.':'')+
+        (passEnds?' Your Pro pass ends on '+esc(passEnds)+'.':'')+
+        (passEnded?' Your Pro pass ended on '+esc(passEnded)+'.':'')+
       '</p>';
       /* AND IT STOPS THERE. Stating that the year ended is the receipt doing its job;
          following it with a way to buy a fresh one is a shop, and a shop for a product
@@ -6071,10 +6373,16 @@ async function pfProLoad(){
   }
 
   const bill=$('pf-pro-bill'); if(!bill) return;
+  /* CANCELLING IS THE THING A SUBSCRIBER CAME HERE TO FIND, so the button says so rather
+     than hiding it behind "receipts". A lifetime owner has nothing to manage and reads the
+     label they have always read. */
+  const planLive=live.length>0;
   bill.innerHTML='<button class="btn ghost sm" id="pf-bill" style="width:100%">'+
-      'Receipts and billing</button>'+
-    '<p class="dim" style="font-size:11.5px;margin:8px 0 0">Opens Stripe, where your '+
-      'receipts and payment details live.</p>';
+      (planLive?'Manage your plan':'Receipts and billing')+'</button>'+
+    '<p class="dim" style="font-size:11.5px;margin:8px 0 0">'+
+      (planLive
+        ? 'Opens Stripe, where you can cancel or change your plan and see your receipts.'
+        : 'Opens Stripe, where your receipts and payment details live.')+'</p>';
   $('pf-bill').onclick=async()=>{
     const b0=$('pf-bill'); if(b0){ b0.disabled=true; b0.textContent='Opening...'; }
     /* auth.js is a sibling script with its own cache version, so a browser one bump behind
@@ -6083,7 +6391,7 @@ async function pfProLoad(){
        presses. It falls into the same "could not open" answer as any other failure. */
     const a2=A();
     const r=(a2&&typeof a2.billingPortal==='function')
-      ? await a2.billingPortal('/cfb/')
+      ? await a2.billingPortal('/cfb/',planLive?'plan':null)
       : {error:'unavailable'};
     if(r&&r.url){ location.href=r.url; return; }
     /* SAY WHICH KIND OF NOTHING IT IS. no_customer is not a failure: an account comped by
@@ -6390,6 +6698,7 @@ function accountHtml(){
         '<p class="dim" style="font-size:11.5px;margin:9px 0 0">Three to twenty letters, '+
           'numbers or underscores. Changing it renames the seasons already on the board.</p>'+
         msg+
+        '<div data-rtg-news="cfb"></div>'+
         '<div style="margin-top:12px;display:grid;grid-template-columns:1fr 1fr;gap:9px">'+
           '<button class="btn ghost sm" id="ac-feedback">Send feedback</button>'+
           '<button class="btn ghost sm" id="ac-out">Sign out</button></div>';
@@ -6408,6 +6717,7 @@ function accountHtml(){
     (up?'<input class="fld" id="ac-user" placeholder="Your name on the board" autocomplete="username" maxlength="20">':'')+
     '<input class="fld" id="ac-pass" type="password" placeholder="Password" autocomplete="'+
       (up?'new-password':'current-password')+'">'+
+    (up?'':'<a href="/#forgot" target="_blank" rel="noopener" style="display:inline-block;margin:4px 0 2px;font-size:12.5px;color:inherit;opacity:.75;text-decoration:underline;text-underline-offset:3px">Forgot your password?</a>')+
     '<button class="btn sm" id="ac-go" style="margin-top:10px">'+
       (up?'Create the account':'Sign in')+'</button>'+msg+
     '<p class="authswap">'+(up?'Already have one? ':'New here? ')+
@@ -6416,6 +6726,8 @@ function accountHtml(){
 
 function wireAccount(){
   const box=$('sheet-in'), a=A();
+  /* the release newsletter box, /assets/newsletter.js. Absent script, absent box. */
+  if(window.RTG_NEWS) RTG_NEWS.fill(box);
   const done=(r,okMsg)=>{
     authBusy=false;
     authMsg=r&&r.error?{err:r.error}:(okMsg?{ok:okMsg}:null);
@@ -7120,6 +7432,19 @@ function rowFromBoard(r){
   };
 }
 
+/* THE REAL COLLEGE SCHEDULE, for the Game Day shelf: which games were on when each season was
+   filed. A workflow rebuilds it under one name whenever a kickoff or a score moves, so it is
+   fetched no-cache rather than with a hand-written ?v= a bot cannot bump. Fetched once at boot
+   and never awaited: until it lands, or if it never does, the Game Day badges read as not
+   known and every other badge is untouched. */
+let CFB_SCHED=null;
+function loadCfbSchedule(){
+  fetch('data/cfb_schedule.json',{cache:'no-cache'})
+    .then(r=>{ if(!r.ok) throw new Error('cfb_schedule'); return r.json(); })
+    .then(j=>{ CFB_SCHED=j; })
+    .catch(()=>{});
+}
+
 function achState(rows){
   if(!window.PS_CFB_ACH) return null;
   /* HOW MANY SEASONS IS NOT HOW MANY ROWS. careerLoad holds the most recent five hundred
@@ -7129,7 +7454,8 @@ function achState(rows){
      board's rows and only with them: local history has none, because a history trimmed
      at four hundred has genuinely forgotten the rest. */
   const opts=(rows&&rows===careerRows&&careerTotal)?{total:careerTotal}:null;
-  return window.PS_CFB_ACH.evaluate(rows||loadHistory(),achResolve,new Date().toISOString(),opts);
+  return window.PS_CFB_ACH.evaluate(rows||loadHistory(),achResolve,new Date().toISOString(),
+    Object.assign({schedule:CFB_SCHED},opts||{}));
 }
 
 /* Badges the season just finished is responsible for, worked out by evaluating the cabinet
@@ -7164,10 +7490,10 @@ function recordRun(row){
   const rows=loadHistory();
   /* THE SEASON IS WRITTEN DOWN EITHER WAY. The row is this browser's own history and the
      results screen reads it; what an account buys is the badge actually being yours. */
-  const lastBefore=A?new Set(A.evaluate(rows,achResolve,row.created_at).earned.map(a=>a.id)):new Set();
+  const lastBefore=A?new Set(A.evaluate(rows,achResolve,row.created_at,{schedule:CFB_SCHED}).earned.map(a=>a.id)):new Set();
   rows.push(row); saveHistory(rows);
   const gained=A
-    ? A.evaluate(loadHistory(),achResolve,row.created_at).earned.filter(a=>!lastBefore.has(a.id))
+    ? A.evaluate(loadHistory(),achResolve,row.created_at,{schedule:CFB_SCHED}).earned.filter(a=>!lastBefore.has(a.id))
     : [];
   /* A GUEST IS TOLD WHAT THEY EARNED AND OFFERED IT, rather than told nothing. Telling them
      nothing was the previous rule and it was half right: what it was protecting against is a
@@ -7192,7 +7518,10 @@ function recordRun(row){
    by content-visibility on .lb .lbr, which skips layout and paint for every row that is
    off screen. */
 const LB_LIMIT=500;
-let lbWindow='day', lbSort='record', lbDir=null, lbBusy=false, lbFrom='s-intro', lbMode='free';
+/* EVERY BOARD OPENS ON ALL TIME, asked for by the owner, the same as the NFL game. It is
+   reset when the competition changes and never on a repaint, so a window somebody picked
+   stays picked while they look at the same board. */
+let lbWindow='all', lbSort='record', lbDir=null, lbBusy=false, lbFrom='s-intro', lbMode='free';
 /* The rows the board is currently showing, held so the podium, the pinned place row and
    a tap on any of them all read the same array rather than re-deriving it. */
 let lbRows=null, lbMyPlace=null;
@@ -7216,7 +7545,7 @@ function openBoard(mode){
   /* Opened from a finished season, the board opens on THAT season's competition:
      coming off a Pac-12 run to a free-play board you are not on is the wrong
      answer to "where did I come?". */
-  if(mode&&B&&B.MODES.indexOf(mode)>=0) lbMode=mode;
+  if(mode&&B&&B.MODES.indexOf(mode)>=0&&mode!==lbMode){ lbMode=mode; lbWindow='all'; }
   paintCompSelect();
   ga('board_opened',{window:lbWindow,sort:lbSort,mode:lbMode});
   show('s-board');
@@ -7920,6 +8249,7 @@ function bootStep(say){
 }
 
 async function boot(){
+  loadCfbSchedule();
   const t0=(window.performance&&performance.now)?performance.now():0;
   try{
     /* The step lands after the parse, not after the response: the file of player seasons
@@ -7970,6 +8300,19 @@ async function boot(){
     /* A CHALLENGE LINK WINS. It is somebody else's message and the reason this page was
        opened; a held season is this player's own and will still be here afterwards. */
     if(!routeChallenge()&&!resumeHeld()) show('s-intro');
+    /* `#signin` OPENS THE ACCOUNT SHEET. The Fantasy Challenge page sends a guest here to
+       sign in, because the sign in form lives in this page and a second copy of it there
+       would be a second form to keep in step. The hash is cleared so a reload is a reload. */
+    if(location.hash==='#signin'){
+      try{ history.replaceState(null,'',location.pathname+location.search); }catch(_){}
+      openProfile('account');
+    }
+    /* `#pro` OPENS THE STORE, for the Fantasy Challenge's review screen, which tells a free
+       account that Pro gets five drafts a week and has no store of its own. */
+    else if(location.hash==='#pro'){
+      try{ history.replaceState(null,'',location.pathname+location.search); }catch(_){}
+      openPremium('fantasy');
+    }
     /* Anything a previous visit could not send. Deliberately not awaited and deliberately
        last: it is somebody else's message from an earlier session, and it must not hold up
        this one by a single frame. */
@@ -9922,8 +10265,16 @@ function generateDrives(script,rng){
    once it has arrived, so the synchronous chart never waits on it. */
 const fieldLogo=new Image(); fieldLogo.src='field-r.png?v=1';
 
-function drawDriveChart(ctx,w,h,drives,upTo,youColor,themColor,youName,themName){
+function drawDriveChart(ctx,w,h,drives,upTo,youColor,themColor,youName,themName,extra){
   if(!ctx)return;
+  /* THE BROADCAST FIELD, when /assets/fieldcast.js arrived; the college style is the bolder
+     mowing, the brighter end zones and a striped ball. Everything below is the chart it
+     replaced, kept for a blocked or stale copy of that file. */
+  if(window.RTG_FIELD&&window.RTG_FIELD.API_VERSION===1&&ctx.canvas){
+    RTG_FIELD.paint(ctx.canvas,Object.assign({drives,upTo,style:'college',
+      you:{color:youColor,name:youName},them:{color:themColor,name:themName}},extra||{}));
+    return;
+  }
   const dpr=window.devicePixelRatio||1;
   ctx.save();ctx.clearRect(0,0,w,h);
   const pad={l:4*dpr,r:4*dpr,t:10*dpr,b:14*dpr};
@@ -10024,6 +10375,7 @@ function drawDriveChart(ctx,w,h,drives,upTo,youColor,themColor,youName,themName)
 
 function initFieldCanvas(canvasId){
   const cv=$(canvasId); if(!cv) return null;
+  if(window.RTG_FIELD&&window.RTG_FIELD.API_VERSION===1) return RTG_FIELD.prepare(cv);
   const dpr=window.devicePixelRatio||1;
   const rect=cv.parentElement.getBoundingClientRect();
   const w=Math.max(300,Math.round(rect.width*dpr));
@@ -10098,7 +10450,13 @@ function playPlayoffGame(r,afterFn){
   const fieldCtx=initFieldCanvas('po-fcanvas');
   const fcv=$('po-fcanvas');
   let dcY=me.bg,dcT=them.bg;
-  const paintField=fieldCtx?(upTo)=>drawDriveChart(fieldCtx,fcv.width,fcv.height,drives,upTo,dcY,dcT,'YOU',(opp?E.teamColors(opp).abbreviation:'OPP')):()=>{};
+  const oppAb=opp?E.teamColors(opp).abbreviation:'OPP';
+  const ticker=(ROUND_SHORT[round]||round).toUpperCase()+'   YOU VS '+oppAb+'   RUNTHE.GG   ';
+  /* WHOSE STANDS. The first round is played on the better seed's campus (5 hosts 12 down to
+     8 hosts 9), and every round after it is at a neutral bowl site, which is the real CFP and
+     is what seedAdvantage in the engine already prices. Decoration: only the crowd reads it. */
+  const home=round==='CFP First Round'&&mySeed?(mySeed<=8?'you':'them'):'neutral';
+  const paintField=fieldCtx?(upTo)=>drawDriveChart(fieldCtx,fcv.width,fcv.height,drives,upTo,dcY,dcT,'YOU',oppAb,{ticker,home}):()=>{};
   paintField(0);
 
   const setLead=(y,t)=>{
@@ -10429,7 +10787,9 @@ function playFeatureBroadcast(cfg){
   $('bowl-field').hidden=false;   // unhide before measuring, or the canvas sizes to nothing
   const fieldCtx=initFieldCanvas('bowl-fcanvas');
   const fcv=$('bowl-fcanvas');
-  const paintField=fieldCtx?(upTo)=>drawDriveChart(fieldCtx,fcv.width,fcv.height,drives,upTo,me.bg,them.bg,'YOU',(opp?E.teamColors(opp).abbreviation:'OPP')):()=>{};
+  const oppAb=opp?E.teamColors(opp).abbreviation:'OPP';
+  const paintField=fieldCtx?(upTo)=>drawDriveChart(fieldCtx,fcv.width,fcv.height,drives,upTo,me.bg,them.bg,'YOU',oppAb,
+    {ticker:String(bowlName).toUpperCase()+'   YOU VS '+oppAb+'   RUNTHE.GG   ',home:'neutral'}):()=>{};
   paintField(0);
   const setLead=(y,t)=>{youEl.classList.toggle('lead',y>=t);themEl.classList.toggle('lead',t>=y);};
   setLead(0,0);
@@ -11398,7 +11758,8 @@ function bowlBroadcast(cfg){
   const fieldCtx=initFieldCanvas('bowl-fcanvas');
   const fcv=$('bowl-fcanvas');
   const themAbbr=(cfg.themName?cfg.themName.replace(/[^A-Za-z0-9]/g,'').slice(0,4).toUpperCase():'')||'OPP';
-  const paintField=fieldCtx?(upTo)=>drawDriveChart(fieldCtx,fcv.width,fcv.height,drives,upTo,me.bg,themWash.bg,'YOU',themAbbr):()=>{};
+  const paintField=fieldCtx?(upTo)=>drawDriveChart(fieldCtx,fcv.width,fcv.height,drives,upTo,me.bg,themWash.bg,'YOU',themAbbr,
+    {ticker:'CHALLENGE BOWL   YOU VS '+themAbbr+'   RUNTHE.GG   ',home:'neutral'}):()=>{};
   paintField(0);
   const setLead=(y,t)=>{ youEl.classList.toggle('lead',y>=t); themEl.classList.toggle('lead',t>=y); };
   setLead(0,0);
@@ -11765,7 +12126,7 @@ $('b-feedback').onclick=()=>feedbackSheet();
 $('b-modes').onclick=modeMenu;
 $('b-lb-intro').onclick=()=>openBoard();
 $('lb-comp').onchange=(e)=>{
-  lbMode=e.target.value;
+  lbMode=e.target.value; lbWindow='all';
   $('lb-comp').parentNode.classList.toggle('isconf',lbMode!=='free');
   ga('board_competition',{mode:lbMode});
   paintBoard();

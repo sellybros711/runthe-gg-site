@@ -48,6 +48,9 @@
       '.rtg-topbanner .rtb-prof svg{width:17px;height:17px;flex:0 0 auto;}',
       '.rtg-topbanner .rtb-prof .rtb-plab{font-weight:800;font-size:12.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}',
       '.rtg-topbanner .rtb-prof .rtb-av{flex:0 0 auto;width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,var(--coral,#F06A5F),#F0913C);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:12px;font-family:var(--hero,inherit);}',
+      '.rtg-topbanner .rtb-slotted{flex:0 0 auto;width:34px;height:34px;padding:0;border-radius:999px;border:1px solid var(--line2,rgba(244,247,251,.14));background:var(--card2,#162B44);color:var(--mut,#A9B8CB);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:none;}',
+      '.rtg-topbanner .rtb-slotted:hover{color:var(--ink,#F4F7FB);border-color:var(--coralT,#F06A5F);}',
+      '.rtg-topbanner .rtb-slotted svg{width:16px;height:16px;}',
       '@media (max-width:520px){.rtg-topbanner .rtb-name{display:none;}}',
       /* The decorative RunThe.GG pill goes before anything functional does. The
          plays chip now says "N games left" rather than "N plays", which is five
@@ -75,6 +78,22 @@
         '<button class="rtb-prof out" id="rtbProf" type="button" aria-label="Your profile"></button>' +
       '</div>';
     document.body.insertBefore(el, document.body.firstChild);
+
+    /* A page can hand the banner a control of its own (the hub's theme
+       button) by marking its holder data-banner-slot. It moves in whole, so
+       the page's own click handler comes with it, and the empty row it used
+       to occupy on its own goes away. */
+    var slot = document.querySelector('[data-banner-slot]');
+    if (slot) {
+      var right = el.querySelector('.rtb-right');
+      while (slot.firstElementChild) {
+        var c = slot.firstElementChild;
+        c.classList.add('rtb-slotted');
+        right.insertBefore(c, right.firstChild);
+      }
+      var holder = slot.closest('[data-banner-host]') || slot;
+      holder.hidden = true;
+    }
 
     document.getElementById('rtbTokens').addEventListener('click', onTokens);
     document.getElementById('rtbProf').addEventListener('click', onProfile);

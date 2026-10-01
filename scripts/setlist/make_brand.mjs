@@ -32,7 +32,11 @@ const OUT = join(ROOT, 'assets');
 const CACHE = join(ROOT, '.cache', 'fonts');
 
 // ── palette, kept in step with setlist/index.html ────────────────────────────
-const NAVY = '#071426', INK = '#F4F7FB', MUT = '#A9B8CB', DIM = '#7C8DA3';
+const NAVY = '#0E0B1C', INK = '#F6F2EA', MUT = '#B8AFCB', DIM = '#8C83A2';
+/* The poster's own stock and the setlist paper, both fixed in the game too. */
+const STAGE = '#140D2A', PAPER = '#F7F1E3', PAPER_INK = '#1B1726', PAPER_MUT = '#7A6E5C';
+/* The wordmark's sweep, the same five stops as `.hero h1`, and no gold. */
+const LIT = [[0.10, '#FF8A6B'], [0.34, '#FF6FC1'], [0.56, '#B794FF'], [0.76, '#4FD3E0'], [0.94, '#5FE39A']];
 /* The same five accents the chips sweep through, in the same order and from
    the same 210deg start as --dye. Changing one here without changing the CSS
    is how the icon and the game drift apart. */
@@ -148,79 +152,73 @@ function drawMark(size, maskable = false) {
   return c;
 }
 
-/* The OG card has one job: make a link unfurl as SEGUE rather than as the
-   RunThe.GG suite icon every other game already uses. So the mark and the word
-   carry it and the setlist behind is texture, not information. */
+/* THE OG CARD IS THE POSTER AND THE PAPER, the two objects the game is built
+   from. It is what a link unfurls as in a group chat, so it has to say what
+   this is to somebody who has never heard of it before they read a word: the
+   lit wordmark on a night stage says "jam scene", and the handwritten setlist
+   taped beside it says "setlists". Everything is drawn from the same constants
+   as the page, so the card and the game cannot drift. */
 function drawOG() {
-  const W = 1200, H = 630, PAD = 80;
+  const W = 1200, H = 630, PAD = 78;
   const c = createCanvas(W, H), x = c.getContext('2d');
-  x.fillStyle = NAVY; x.fillRect(0, 0, W, H);
-
-  /* The dye spiral from the home screen, over on the right where the lockup
-     is not. The ring mask is built on its OWN canvas and applied in a single
-     destination-in: compositing ring by ring intersects each new ring with
-     what is already there, so by the fourth stroke the mask is empty and the
-     spiral silently disappears. */
-  const SCX = W - 250, SCY = H / 2;
-  const spiral = createCanvas(W, H), sx = spiral.getContext('2d');
-  fillDye(sx, SCX, SCY, 520);
-  const rings = createCanvas(W, H), rx = rings.getContext('2d');
-  rx.strokeStyle = '#000';
-  rx.lineWidth = 13;
-  for (let r = 500; r > 8; r -= 34) {
-    rx.globalAlpha = Math.max(0.10, 1 - r / 520);
-    rx.beginPath();
-    rx.arc(SCX, SCY, r, 0, Math.PI * 2);
-    rx.stroke();
+  x.fillStyle = STAGE; x.fillRect(0, 0, W, H);
+  // The light rig: coloured washes, the same four the hero paints.
+  for (const [cx, cy, r, col, a] of [
+    [120, -40, 560, '240,106,95', .34], [1080, -60, 560, '55,197,213', .28],
+    [420, 360, 620, '169,130,243', .36], [1000, 700, 420, '255,111,193', .20]]) {
+    const g = x.createRadialGradient(cx, cy, 0, cx, cy, r);
+    g.addColorStop(0, `rgba(${col},${a})`); g.addColorStop(1, `rgba(${col},0)`);
+    x.fillStyle = g; x.fillRect(0, 0, W, H);
   }
-  sx.globalCompositeOperation = 'destination-in';
-  sx.drawImage(rings, 0, 0);
+  // Print screen.
+  x.fillStyle = 'rgba(255,255,255,.06)';
+  for (let yy = 2; yy < H; yy += 6) for (let xx = 2; xx < W; xx += 6) x.fillRect(xx, yy, 1.4, 1.4);
+
+  // The paper, on the right, skewed and taped, songs in marker.
   x.save();
-  x.globalAlpha = 0.5;
-  x.drawImage(spiral, 0, 0);
-  x.restore();
-
-  // The lockup's own metrics, needed before anything is drawn beside it.
-  const M = 148, GAP = 30;
-  const topY = H / 2 - 96;
-  x.font = '132px AlfaSlab';
-  const wordRight = PAD + M + GAP + x.measureText('SEGUE').width;
-
-  /* Setlist texture, over on the right with the spiral. On the left it ran
-     straight through the wordmark and MADHUVAN came out from behind the mark.
-     The column starts clear of the MEASURED wordmark rather than at a number
-     picked by eye, which is how the final E ended up inside DRIVE. */
-  const TEXT_LEFT = wordRight + 60;
-  x.save();
-  x.beginPath(); x.rect(TEXT_LEFT, 0, W - TEXT_LEFT, H); x.clip();
-  x.globalAlpha = 0.22;
-  x.font = '700 34px Archivo';
-  x.textBaseline = 'middle';
-  const rows = ['HUNGERSITE', 'ARCADIA', 'DRIVE', 'MADHUVAN', 'TUMBLE', 'ECHO OF A ROSE'];
-  rows.forEach((t, i) => {
-    const y = H / 2 + (i - (rows.length - 1) / 2) * 74;
-    x.fillStyle = INK;
-    x.fillText(t, TEXT_LEFT + 40, y);
-    if (i % 2) { x.fillStyle = '#48D17A'; x.fillText('›', TEXT_LEFT + 52 + x.measureText(t).width, y); }
-  });
-  x.restore();
-
-  // The lockup, left-aligned so it can never collide with either texture.
-  x.drawImage(drawMark(M), PAD, topY);
-
+  x.translate(930, 318); x.rotate(-3 * Math.PI / 180);
+  const PW = 330, PH = 430;
+  x.shadowColor = 'rgba(0,0,0,.55)'; x.shadowBlur = 40; x.shadowOffsetY = 18;
+  x.fillStyle = PAPER; x.fillRect(-PW / 2, -PH / 2, PW, PH);
+  x.shadowColor = 'transparent';
+  x.strokeStyle = 'rgba(27,23,38,.06)'; x.lineWidth = 1.5;
+  for (let ly = -PH / 2 + 44; ly < PH / 2; ly += 34) { x.beginPath(); x.moveTo(-PW / 2, ly); x.lineTo(PW / 2, ly); x.stroke(); }
+  x.fillStyle = 'rgba(255,241,200,.72)'; x.save(); x.rotate(4 * Math.PI / 180);
+  x.fillRect(-58, -PH / 2 - 16, 116, 34); x.restore();
   x.textBaseline = 'alphabetic';
-  x.font = '132px AlfaSlab';
-  x.fillStyle = INK;
-  x.fillText('SEGUE', PAD + M + GAP, topY + M - 26);
+  x.font = '900 15px ArchivoBlack'; x.fillStyle = PAPER_MUT;
+  letterspace(x, 'SET I', -PW / 2 + 30, -PH / 2 + 62, 3);
+  const songs = [['Hungersite', true], ['Arcadia', true], ['Hungersite', false], ['Tumble', false],
+                 ['Drive', true], ['Madhuvan', false]];
+  x.font = '34px Marker';
+  songs.forEach(([t, seg], i) => {
+    const y = -PH / 2 + 104 + i * 45;
+    x.fillStyle = PAPER_INK; x.fillText(t, -PW / 2 + 30, y);
+    if (seg) { x.fillStyle = '#6D3BD6'; x.fillText('>', -PW / 2 + 42 + x.measureText(t).width, y); }
+  });
+  x.font = '900 15px ArchivoBlack'; x.fillStyle = PAPER_MUT;
+  letterspace(x, 'ENCORE', -PW / 2 + 30, PH / 2 - 44, 3);
+  x.font = '34px Marker'; x.fillStyle = PAPER_INK; x.fillText('Rockdale', -PW / 2 + 152, PH / 2 - 42);
+  x.restore();
 
-  x.font = '700 27px Archivo';
-  x.fillStyle = MUT;
-  letterspace(x, 'THE SETLIST BUILDER GAME', PAD + 4, topY + M + 62, 5.5);
+  // The lockup: the mark, then the lit wordmark with its hard poster shadow.
+  const M = 112;
+  x.drawImage(drawMark(M), PAD, 96);
+  x.font = '900 20px ArchivoBlack'; x.fillStyle = '#CFC4E6';
+  letterspace(x, 'THE SETLIST GAME FOR JAM FANS', PAD + M + 26, 162, 4);
+  x.font = '176px Shrikhand';
+  const base = 392, wx = PAD - 6;
+  x.fillStyle = '#07040F'; x.fillText('Segue', wx, base + 9);
+  const g = x.createLinearGradient(0, base - 150, 0, base + 36);
+  for (const [o, col] of LIT) g.addColorStop(o, col);
+  x.fillStyle = g; x.fillText('Segue', wx, base);
 
-  x.font = '700 25px Archivo';
-  x.fillStyle = DIM;
-  letterspace(x, 'runthe.gg/setlist', PAD + 4, H - 58, 3);
+  x.font = '44px Shrikhand'; x.fillStyle = INK;
+  x.fillText('Build the show that', PAD, 482);
+  x.fillText('never happened.', PAD, 532);
 
+  x.font = '900 22px ArchivoBlack'; x.fillStyle = MUT;
+  letterspace(x, 'runthe.gg/setlist', PAD + 2, H - 40, 2);
   return c;
 }
 /** Canvas has no letter-spacing, and these labels need it to read as signage. */
@@ -235,8 +233,10 @@ function measureSpaced(x, text, gap) {
 }
 
 // ── run ──────────────────────────────────────────────────────────────────────
-await loadFont('AlfaSlab', 'Alfa+Slab+One');
+await loadFont('Shrikhand', 'Shrikhand');
+await loadFont('Marker', 'Permanent+Marker');
 await loadFont('Archivo', 'Archivo:wght@700');
+await loadFont('ArchivoBlack', 'Archivo:wght@900');
 mkdirSync(OUT, { recursive: true });
 
 const ICONS = [16, 32, 48, 64, 180, 192, 512, 1024];

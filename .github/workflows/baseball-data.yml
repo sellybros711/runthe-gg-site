@@ -156,6 +156,9 @@ jobs:
             ${{ inputs.split_stints && '--split-stints' || '' }} \
             ${{ inputs.require_fwar && '--require-fwar' || '' }}
           python3 compact_pool.py
+          # Where each man went to college, for the college chemistry link. Its own
+          # file, keyed on the pool's ids, so it runs after the pool is written.
+          python3 build_colleges.py
           cat provenance.json
 
       # WHAT THE SOURCES ACTUALLY SAID ABOUT TEN SEASONS A READER CAN LOOK UP.
@@ -229,18 +232,22 @@ jobs:
       - name: Bump the cache version if the pool moved
         if: ${{ inputs.commit }}
         run: |
-          if git diff --quiet -- baseball/data/players.json; then
-            echo "The pool did not move, so the version stays where it is."
-            exit 0
-          fi
-          CUR=$(grep -o "data/players\.json?v=[0-9]\+" baseball/index.html | head -1 | sed 's/.*=//')
-          if [ -z "$CUR" ]; then
-            echo "baseball/index.html does not version data/players.json, which it must" >&2
-            exit 1
-          fi
-          NEXT=$((CUR + 1))
-          sed -i "s|data/players\.json?v=$CUR|data/players.json?v=$NEXT|g" baseball/index.html
-          echo "data/players.json: v=$CUR -> v=$NEXT"
+          # Each data file is bumped on its own, and only if it really moved, so a
+          # refresh that changed nothing moves no number.
+          for F in players colleges; do
+            if git diff --quiet -- baseball/data/$F.json; then
+              echo "data/$F.json did not move, so its version stays where it is."
+              continue
+            fi
+            CUR=$(grep -o "data/$F\.json?v=[0-9]\+" baseball/index.html | head -1 | sed 's/.*=//')
+            if [ -z "$CUR" ]; then
+              echo "baseball/index.html does not version data/$F.json, which it must" >&2
+              exit 1
+            fi
+            NEXT=$((CUR + 1))
+            sed -i "s|data/$F\.json?v=$CUR|data/$F.json?v=$NEXT|g" baseball/index.html
+            echo "data/$F.json: v=$CUR -> v=$NEXT"
+          done
           node scripts/check-cachebust.mjs --update
           node scripts/check-cachebust.mjs
 
@@ -252,7 +259,7 @@ jobs:
           # The page and the record go with the data: the bump step edits
           # index.html and scripts/cachebust.json, and a commit that left either
           # behind would ship a pool under a version nobody asks for.
-          git add baseball/data/players.json baseball/pipeline/provenance.json \
+          git add baseball/data/players.json baseball/data/colleges.json baseball/pipeline/provenance.json \
                   baseball/index.html scripts/cachebust.json
           if git diff --cached --quiet; then
             echo "The pool did not move."

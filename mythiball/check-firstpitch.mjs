@@ -64,7 +64,7 @@ const ratio = (a, b) => (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
    two sections that are about the MACHINERY rather than the picture name
    their mode, because "a block is a whole number of device pixels" is a
    sentence retro means and smooth does not. */
-async function game(browser, w, h, dpr, mode) {
+async function game(browser, w, h, dpr, mode, youHome) {
   const ctx = await browser.newContext({ viewport: { width: w, height: h },
     deviceScaleFactor: dpr, isMobile: w < 900, hasTouch: w < 900 });
   const pg = await ctx.newPage();
@@ -74,13 +74,13 @@ async function game(browser, w, h, dpr, mode) {
   await pg.evaluate(() => localStorage.clear());
   await pg.goto(URL);
   await pg.waitForTimeout(400);
-  await pg.evaluate((m) => {
+  await pg.evaluate(([m, yh]) => {
     Sound.muted = true; PREFS.cutscenes = false; PREFS.coach = false;
     if (m) { PREFS.smooth = m === 'smooth'; document.body.classList.toggle('smooth', PREFS.smooth); }
     State.team = ROSTER.slice(0, 9).map(c => c.k); State.teamName = 'Testers';
     State.opponent = OPPONENTS[0]; State.innings = 5; State.mode = 'exhibition';
-    startGame({ mode: 'exhibition', youHome: false });
-  }, mode || null);
+    startGame({ mode: 'exhibition', youHome: !!yh });
+  }, [mode || null, youHome]);
   return { ctx, pg, errors };
 }
 
@@ -370,14 +370,40 @@ const main = async () => {
        So both claims are read off the GLASS: where the zone lands in CSS
        pixels, and where the deck starts. Neither is derived from the camera
        twice. */
-    for (const [label, w, h, dpr] of [['phone upright', 390, 844, 3],
+    /* AND THE PITCHING HALF, WHICH THIS SECTION NEVER ASKED. The deck is
+       TALLER while pitching (a pitch name, a row of types and the two action
+       buttons against a single swing row), and the camera cannot always pay
+       for it: `deckCoverBlocks` is honoured and then `sy` is clamped to the
+       world's own bottom edge, which is the one clamp that cannot be argued
+       with, so what the deck cannot be paid for it covers. Measured before the
+       fix, 22 pixels of a 200 pixel zone at 1440 by 900 and 47 of 160 at 1280
+       by 800, which is the bottom of the box a pitcher aims INTO. The batting
+       half was clear on every screen the whole time, which is exactly why it
+       survived: the zone was solved for, and only against the deck that was
+       measured. Six pixels of the smallest desktop are still covered and that
+       is the world running out rather than a layout to tighten. */
+    for (const [label, w, h, dpr, yh] of [['phone upright', 390, 844, 3],
                                       ['small phone', 320, 568, 2],
                                       ['phone sideways', 844, 390, 3],
                                       ['desktop', 1280, 800, 1],
-                                      ['desktop, tall', 1512, 900, 1]]) {
-      const { ctx, pg, errors } = await game(browser, w, h, dpr);
+                                      ['desktop, tall', 1512, 900, 1],
+                                      ['desktop pitching', 1440, 900, 1, true],
+                                      ['phone pitching', 390, 844, 3, true]]) {
+      const { ctx, pg, errors } = await game(browser, w, h, dpr, null, yh);
       await pg.waitForFunction(() => State.game && plateViewActive(State.game),
         { timeout: 25000 });
+      /* WITH THE PLAY BY PLAY FULL, which is how every game looks by the
+         second inning and how this section never looked. It measured the
+         first pitch of a game, with nothing in the log, and on a wide window
+         the log sat under the swing row and pushed it up a line per pitch:
+         reported from a laptop, the swing row lying straight across the zone
+         with six lines under it, while this section passed. The tallest the
+         deck ever gets is the reading that matters. */
+      await pg.evaluate(() => {
+        const g = State.game;
+        for (let i = 0; i < 12; i++) g.log.push({ text: `Line ${i + 1} of the play by play, as long as a real one gets.` });
+        refreshHud();
+      });
       await pg.waitForTimeout(250);
       const r = await pg.evaluate(() => {
         const P = plateGeom();
@@ -393,7 +419,10 @@ const main = async () => {
         const m = document.querySelector('.meter-wrap');
         const mb = m.getBoundingClientRect();
         const ar = cv.parentElement.getBoundingClientRect();
+        const lg = document.getElementById('log');
+        const lb = lg && lg.offsetParent ? lg.getBoundingClientRect() : null;
         return { x0, y0, x1, y1, deckTop: mb.top,
+                 log: lb && { l: lb.left, t: lb.top, r: lb.right, b: lb.bottom },
                  /* A PHONE HELD SIDEWAYS PUTS THE DECK BESIDE THE FIELD, in
                     a column of its own, and a column that starts high up the
                     window is not standing on anything. The claim is about
@@ -418,6 +447,57 @@ const main = async () => {
       ok(!r.deckOver || r.y1 <= r.deckTop + margin,
         `${label}: and the swing row does not stand on it`,
         `the zone ends at ${r.y1.toFixed(0)} and the deck starts at ${r.deckTop.toFixed(0)}`);
+      /* And the log itself, wherever it went, is never on the zone. */
+      const lo = r.log;
+      ok(!lo || lo.r <= r.x0 + margin || lo.l >= r.x1 - margin || lo.b <= r.y0 + margin || lo.t >= r.y1 - margin,
+        `${label}: and the play by play is not on it either`,
+        lo && `log ${lo.l.toFixed(0)},${lo.t.toFixed(0)}..${lo.r.toFixed(0)},${lo.b.toFixed(0)} against zone `
+          + `${r.x0.toFixed(0)},${r.y0.toFixed(0)}..${r.x1.toFixed(0)},${r.y1.toFixed(0)}`);
+      ok(errors.length === 0, `${label}: no page errors`, errors.join(' | '));
+      await pg.close(); await ctx.close();
+    }
+  }
+
+  /* ---- a batter is not shown where the pitch is going ---- */
+  {
+    console.log('a batter is not shown where the pitch is going');
+    /* The plate view drew the catcher's target at `pitch.aim` from the moment
+       a pitch existed, and `pitch.aim` is where the arm is TRYING to put the
+       ball. Batting, that is the answer printed in the zone before the windup
+       ends: reported by a player as a circle that says where the pitch is
+       going. It is read off the drawing calls rather than the pixels, because
+       the target is a faint ring and a pixel read would be a claim about the
+       park behind it. The pitching arm is asked too, because the target is
+       right there and a check that never sees it drawn proves nothing. */
+    for (const [label, youHome, want] of [['batting', false, false], ['pitching', true, true]]) {
+      const { ctx, pg, errors } = await game(browser, 1280, 800, 1, null, youHome);
+      /* Batting waits for the other side's pitch. Pitching has none until
+         the player throws, and the target stands at their aim meanwhile. */
+      await pg.waitForFunction((yh) => State.game && plateViewActive(State.game)
+        && (yh || State.game.pitch), youHome, { timeout: 25000 });
+      const seen = await pg.evaluate(async () => {
+        const g = State.game;
+        /* hold the windup open, which is when the target is the only mark */
+        if (g.pitch) {
+          g.pitch.windupMs = 60000; g.pitch.windupUntil = performance.now() + 60000;
+          g.pitch.start = g.pitch.windupUntil;
+        }
+        const proto = CanvasRenderingContext2D.prototype;
+        const real = proto.arc;
+        const calls = [];
+        proto.arc = function (x, y, r, a0, a1, ccw) {
+          calls.push([Math.round(x), Math.round(y), r]);
+          return real.call(this, x, y, r, a0, a1, ccw);
+        };
+        await new Promise(res => setTimeout(res, 300));
+        proto.arc = real;
+        /* the target is a ring of 11 with a dot of 2 at its centre */
+        const rings = calls.filter(c => c[2] === 11);
+        return rings.some(c => calls.some(d => d[2] === 2 && d[0] === c[0] && d[1] === c[1]));
+      });
+      ok(seen === want, want ? `${label}: the pitcher still sees his target`
+                              : `${label}: no target in the zone during the windup`,
+        `target drawn: ${seen}`);
       ok(errors.length === 0, `${label}: no page errors`, errors.join(' | '));
       await pg.close(); await ctx.close();
     }
@@ -538,7 +618,11 @@ const main = async () => {
                          dead: Math.round((box.height - r2.height) * 100 / box.height),
                          top: at(0), bottom: at(cv.height - 1),
                          sky: parse(cs.getPropertyValue('--sky')),
-                         turf: parse(cs.getPropertyValue('--turf')) });
+                         turf: parse(cs.getPropertyValue('--turf')),
+                         /* where the page says the picture's edges are,
+                            against where they actually are */
+                         pic: parseFloat(cs.getPropertyValue('--pic')),
+                         half: r2.height / box.height * 50 });
               step();
             });
           }));
@@ -567,6 +651,21 @@ const main = async () => {
         || (x.sky[0] < 30 && x.sky[1] < 40 && x.sky[2] < 45));
       ok(dark.length === 0, `${label}: never the near black it used to be`,
         `${dark.length} parks fall back to the arena's own colour`);
+      /* AND THE SHADE IS ANCHORED ON THE PICTURE'S OWN EDGE. The band is
+         that park's colour at the seam and is shaded away from it, because
+         two flat slabs is what 48% of a phone's wide view was. The overlay
+         has to be ZERO where it meets the canvas: anchored on half the
+         arena instead there is a step at the canvas edge, growing with the
+         band, which is the flatness this fixes arriving by its own back
+         door. Nothing else here can see it, because the colour claims above
+         read the custom properties rather than the glass and a step is a
+         perfectly valid gradient.
+
+         A tenth of a percent, which on the tallest arena in the sweep is
+         under a pixel. */
+      const slip = banded.filter(x => !(Math.abs(x.pic - x.half) < 0.1));
+      ok(slip.length === 0, `${label}: and the shade is zero where it meets the picture`,
+        slip.slice(0, 3).map(x => `${x.park}: --pic ${x.pic} against a real half of ${x.half.toFixed(2)}`).join('; '));
       ok(errors.length === 0, `${label}: no page errors`, errors.join(' | '));
       await pg.close(); await ctx.close();
     }

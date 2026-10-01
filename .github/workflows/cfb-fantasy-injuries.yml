@@ -1,0 +1,90 @@
+name: College fantasy, who is out
+
+# WHO CANNOT PLAY THIS WEEK, as well as college football lets anybody know. There is no
+# league wide report, so `cfb/build/fantasy/injuries.mjs` reads every slate team's roster
+# from ESPN (the out and suspended groups, and any designation ESPN carries), the box score
+# of each team's last game (who missed it), and the site's own rulings file.
+#
+# A PRICE MAY NEVER MOVE ONCE ANYBODY HAS DRAFTED AGAINST IT, and news moves all week, which
+# is why this is its own file and its own job rather than a step in the Monday build.
+#
+# IT COMMITS ONLY WHEN THE REPORT MOVED. The report carries no clock, so two runs over an
+# unchanged roster are byte identical and `git diff --cached --quiet` is quiet. That is the
+# NFL injury job's lesson: a timestamp in the file turned it into a commit and a Cloudflare
+# deploy on every firing.
+#
+# THE SWAP NEEDS NOTHING FROM THIS JOB. `cfb_fantasy_swap` lets an entrant replace ANY man
+# before his game, so the server keeps no out list. This file is what lets the page SAY why
+# somebody might want to.
+
+on:
+  schedule:
+    # Every day at late morning and early evening Eastern, in UTC.
+    - cron: '20 15 * * *'
+    - cron: '20 22 * * *'
+    # And twice more on a Saturday, because that is the day the news lands.
+    - cron: '20 13 * * 6'
+    - cron: '20 18 * * 6'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: cfb-fantasy-injuries
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      # No live week on disk is the state before the first Monday build, and is not an
+      # error: there is nobody to report on yet.
+      - name: Is there a week
+        id: week
+        run: |
+          if [ -f cfb/data/fantasy/now.json ]; then echo "go=yes" >> "$GITHUB_OUTPUT";
+          else echo "no live week yet"; echo "go=no" >> "$GITHUB_OUTPUT"; fi
+
+      - name: Read the rosters
+        if: steps.week.outputs.go == 'yes'
+        run: node cfb/build/fantasy/injuries.mjs --write
+
+      # A FILE THAT WILL NOT PARSE IS WORSE THAN NO FILE, because the page fetches it on
+      # every boot. It is read back before it is committed.
+      - name: Read it back
+        if: steps.week.outputs.go == 'yes'
+        run: |
+          node -e '
+            const fs = require("fs"), path = require("path");
+            const now = JSON.parse(fs.readFileSync("cfb/data/fantasy/now.json", "utf8"));
+            const f = path.join("cfb/data/fantasy", `injuries_${now.season}_w${now.week}.json`);
+            const j = JSON.parse(fs.readFileSync(f, "utf8"));
+            if (!j.men || typeof j.men !== "object") throw new Error("no men in " + f);
+            console.log(`${f}: ${Object.keys(j.men).length} men, ${JSON.stringify(j.counts)}`);
+          '
+
+      - name: Commit it, but only if it moved
+        if: steps.week.outputs.go == 'yes'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add cfb/data/fantasy/injuries_*.json
+          if git diff --cached --quiet; then
+            echo "the report has not moved"
+            exit 0
+          fi
+          git commit -q -m "College fantasy: the injury report moved"
+          for i in 1 2 3 4 5; do
+            git push -q && exit 0
+            echo "push rejected, rebasing onto latest main (attempt $i)"
+            git pull -q --rebase origin main || exit 1
+            sleep $((i * 5))
+          done
+          exit 1

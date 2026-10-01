@@ -425,6 +425,7 @@
         'nfl_steve-largent': 13089,
         'nfl_brandon-marshall': 12351,
         'nfl_hines-ward': 12083,
+        'nfl_michael-irvin': 11904,
         'nfl_calvin-johnson': 11619,
         'nfl_chad-johnson': 11059
       }
@@ -446,7 +447,8 @@
         'nfl_andre-johnson': 1062,
         'nfl_steve-smith-sr': 1031,
         'nfl_hines-ward': 1000,
-        'nfl_antonio-gates': 955
+        'nfl_antonio-gates': 955,
+        'nfl_michael-irvin': 750
       }
     },
     nfl_sacks: {

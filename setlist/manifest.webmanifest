@@ -8,8 +8,8 @@
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#071426",
-  "theme_color": "#071426",
+  "background_color": "#0E0B1C",
+  "theme_color": "#0E0B1C",
   "icons": [
     {
       "src": "/assets/segue-icon_192.png",

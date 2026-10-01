@@ -62,6 +62,10 @@ async function openPage(browser, url, opts = {}) {
   const { tester = false, inject = null } = opts;
   const page = await browser.newPage({ viewport: { width: 390, height: 900 } });
   const posted = [], boom = [];
+  /* WHAT THE STAND-IN CHECKOUT ANSWERS. Never a url: a url would navigate, and Stripe is
+     live with no test mode. A section sets this to drive one of the refusals the page has
+     to handle (offer_changed, already_subscribed) and puts it back. */
+  const ctl = { answer: null };
   page.on('pageerror', (e) => boom.push(String(e).slice(0, 200)));
   await page.route('**/*', async (r) => {
     const u = new URL(r.request().url());
@@ -69,8 +73,9 @@ async function openPage(browser, url, opts = {}) {
       let body = {};
       try { body = JSON.parse(r.request().postData() || '{}'); } catch (e) {}
       posted.push(body);
-      return r.fulfill({ status: 200, contentType: 'application/json',
-        body: JSON.stringify({ error: 'intercepted_by_check' }) });
+      const a = ctl.answer || { error: 'intercepted_by_check' };
+      if (a.url) throw new Error('check-premium: a checkout answer must never carry a url');
+      return r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(a) });
     }
     if (u.hostname !== 'local.test') return r.abort();
     let rel = decodeURIComponent(u.pathname);
@@ -91,7 +96,7 @@ async function openPage(browser, url, opts = {}) {
   });
   await page.goto(url, { waitUntil: 'domcontentloaded' });
   await page.waitForTimeout(5000);
-  return { page, posted, boom };
+  return { page, posted, boom, ctl };
 }
 
 const browser = await pw.chromium.launch({ executablePath: CHROME });
@@ -112,6 +117,7 @@ for (const [label, tester, url] of [
 
 console.log('\nTHE premium_unlocks ROW IS WHAT DECIDES, NOT THE TESTER LIST');
 const INJECT = 'beginDynastyDraft,premiumSheet,profileSheet,pfPro,acctTier,premiumPitch,dailyOn,'
+  + 'unlockedSheet,setPaidYearly:(v)=>{paidYearly=v;},'
   + 'dailyGrace,dailySpentSheet,dynastyRulesHTML,canPlayClubDynasty,'
   /* A grace server that grants each reason once, standing in for ps_attempt_grace. Built on
      top of whatever the state already holds rather than from three fields, so `unit` survives
@@ -153,19 +159,18 @@ const t = await openPage(browser, 'http://local.test/football/', { tester: true,
  */
 await t.page.evaluate(() => { window.__t.markAsked(); window.__t.signIn(); });
 
-/* THE RULES SHEET STANDS IN FRONT OF EVERY RUN NOW, unless the reader has ticked its own
-   "don't show this again", so the two paths through dynastyIntro are opted-in and opted-out
-   rather than first-time and later. The dead button only ever appeared on the path where no
-   sheet was in the way, which is why both are still driven.
-   DRIVEN ON ps_dynintro_off, NOT ps_dynintro. The second key still exists and still retires
-   the NEW badge, and it no longer has anything to do with whether the sheet appears; a check
-   left on the old key would run the same path twice and say it had run two. */
+/* THE RULES SHEET SHOWS BEFORE THE FIRST DYNASTY AND NEVER AGAIN, so the two paths through
+   dynastyIntro are first-time and later. The dead button only ever appeared on the path where
+   no sheet was in the way, which is why both are still driven. The first-time path clears
+   EVERY key that can mean "seen" (the new list and the two old ones), or it would run the
+   later path twice and say it had run both. */
 for (const introOff of [false, true]) {
-console.log('  ' + (introOff ? 'having turned the rules sheet off:' : 'with the rules sheet in front of it:'));
+console.log('  ' + (introOff ? 'having seen the rules before:' : 'with the rules sheet in front of it:'));
 await t.page.evaluate((off) => {
-  try { if (off) localStorage.setItem('ps_dynintro_off', '1');
-    else localStorage.removeItem('ps_dynintro_off'); } catch (e) {}
-  window.__dynIntroOff = off || undefined;
+  try {
+    if (off) localStorage.setItem('ps_seen_v1', JSON.stringify({ dynintro: 1 }));
+    else ['ps_seen_v1', 'ps_dynintro', 'ps_dynintro_off'].forEach((k) => localStorage.removeItem(k));
+  } catch (e) {}
 }, introOff);
 /*
  * THREE ACCOUNTS, AND THE FIRST ONE IS THE ONE THAT BROKE.
@@ -397,6 +402,213 @@ ok('all four grants are listed',
 ok('the Arcade year carries its end date', rec.text.includes(rec.ends), 'expected ' + rec.ends);
 ok('and it says nothing renews', /Nothing here renews/i.test(rec.text));
 ok('the Tour drop, unfulfilled, says it is on its way', /on its way/i.test(rec.text));
+
+/* A FANTASY CHALLENGE PASS WAS WON, NOT BOUGHT (supabase/120_fantasy_pro_pass.sql). The
+   same two rows, with an end date and a source naming the week. "Bought" and "You paid
+   once" are false about it, and the Arcade Card sentence is about something they do not
+   hold. Driven twice: a pass that is running, and one that has ended. */
+const won = await t.page.evaluate(async () => {
+  const T = window.__t;
+  T.setPremium(['ps_premium', 'cfb_premium']);
+  const at = '2026-09-29T04:00:00Z';
+  const read = async (endsAt) => {
+    window.PS_AUTH = Object.assign({}, window.PS_AUTH, {
+      premiumUnlocks: async () => ['ps_premium', 'cfb_premium'].map((product) => ({
+        product, source: 'fantasy:2026-w3', granted_at: at, expires_at: endsAt, fulfilled_at: at })),
+    });
+    document.getElementById('sheet').classList.remove('on');
+    T.pfPro();
+    await new Promise((r) => setTimeout(r, 800));
+    return (document.getElementById('sheet-in').innerText || '').replace(/\s+/g, ' ');
+  };
+  const ends = new Date(Date.now() + 20 * 86400e3).toISOString();
+  return {
+    live: await read(ends), gone: await read(new Date(Date.now() - 86400e3).toISOString()),
+    day: new Date(ends).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }),
+  };
+});
+ok('a won pass says it was won', /Won in the Fantasy Challenge/.test(won.live), won.live);
+ok('  and never that it was bought or paid for',
+  !/Bought|You paid once/.test(won.live + won.gone));
+ok('  and names the day it ends', won.live.includes('Your Pro pass ends on ' + won.day));
+ok('  and is not called an Arcade Card', !/Arcade Card/.test(won.live + won.gone));
+ok('  and once it has run out, says so in the past tense',
+  /Your Pro pass ended on/.test(won.gone) && !/pass ends on/.test(won.gone));
+
+console.log('\nSOLD YEARLY: THE STORE, THE CHECKOUT BODY, AND THE THREE RECEIPTS');
+/*
+ * Perfect Season and Run The Bundle can be sold as yearly plans (supabase/124,
+ * functions/api/stripe/_offer.js), behind one switch that ships off. The store shows
+ * whichever /api/stripe/offer answers, and nothing here reaches that endpoint, so the plan is
+ * set by hand through RTG_STORE.setPlan, which is exactly what a 409 offer_changed does.
+ *
+ * THE RULE THAT WINS OVER EVERYTHING: a lifetime owner sees exactly what they saw before.
+ * Asked first, with the plans read present and empty, which is a lifetime owner on a
+ * database that has 124.
+ */
+const Y_AT = '2026-09-01T00:00:00Z';
+const yEnd = new Date(Date.now() + 200 * 86400e3).toISOString();
+const yDay = new Date(yEnd).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+/* innerText applies text-transform, and the chips and buttons are set in capitals, so every
+   word below is compared without case. */
+const has = (hay, w) => hay.toLowerCase().includes(w.toLowerCase());
+const yStore = await t.page.evaluate(async () => {
+  const T = window.__t, S = window.RTG_STORE;
+  const text = () => (document.getElementById('sheet-in').innerText || '').replace(/\s+/g, ' ');
+  T.setPremium([]);
+  window.PS_AUTH = Object.assign({}, window.PS_AUTH, { token: () => 'check-token' });
+  S.setPlan('once');
+  document.getElementById('sheet').classList.remove('on');
+  T.premiumSheet();
+  const once = text();
+  /* NOT DRAWN AGAIN BY HAND: the page's own onPlan listener has to redraw an open store. */
+  S.setPlan('year');
+  await new Promise((r) => setTimeout(r, 60));
+  return { once, year: text() };
+});
+ok('sold once, the store says what it always said',
+  ['One payment', 'Lifetime access', '$80', 'Save $45', 'One time offer', 'No subscription, ever']
+    .every((w) => has(yStore.once, w)), yStore.once.slice(0, 160));
+ok('an open store is redrawn when the plan changes', yStore.year !== yStore.once);
+ok('sold yearly, every price says per year and every term says it renews',
+  ['Per year', 'Renews yearly', 'It renews yearly', 'Cancel any time'].every((w) => has(yStore.year, w)),
+  yStore.year.slice(0, 200));
+ok('  and the Run The Bundle claim is the yearly sum: $70 of parts, save $35',
+  has(yStore.year, '$70') && has(yStore.year, 'Save $35') && !has(yStore.year, '$80'));
+ok('  and the coins are called what they are, a one time bonus', has(yStore.year, 'One time bonus'));
+ok('  and nothing on a yearly sheet claims lifetime, forever, one payment or no subscription',
+  !/lifetime|forever|for good|One payment|No subscription|One time offer/i.test(yStore.year));
+
+t.posted.length = 0;
+await t.page.evaluate(() => { document.getElementById('b-buy-ps').click(); });
+await t.page.waitForTimeout(400);
+ok('the checkout is told the plan the sheet showed',
+  t.posted.length === 1 && t.posted[0].plan === 'year' && t.posted[0].bundle === 'perfect-season',
+  JSON.stringify(t.posted));
+
+/* offer_changed: the switch flipped under an open sheet. The page takes the server's plan,
+   redraws, and sends nobody to a checkout the screen did not describe. */
+t.ctl.answer = { error: 'offer_changed', plan: 'once' };
+const changed = await t.page.evaluate(async () => {
+  document.getElementById('b-buy-rtb').click();
+  await new Promise((r) => setTimeout(r, 500));
+  return { plan: window.RTG_STORE.plan(),
+    text: (document.getElementById('sheet-in').innerText || '').replace(/\s+/g, ' ') };
+});
+ok('offer_changed moves the page to the plan on sale and redraws it',
+  changed.plan === 'once' && has(changed.text, 'One payment'), changed.plan);
+
+/* already_subscribed: a plan is changed or cancelled in Stripe, never bought twice. */
+t.ctl.answer = { error: 'already_subscribed' };
+const portalAsk = await t.page.evaluate(async () => {
+  window.RTG_STORE.setPlan('year');
+  await new Promise((r) => setTimeout(r, 60));
+  const calls = [];
+  window.PS_AUTH = Object.assign({}, window.PS_AUTH,
+    { billingPortal: async (ret, scope) => { calls.push([ret, scope]); return { error: 'stub' }; } });
+  document.getElementById('b-buy-ps').click();
+  await new Promise((r) => setTimeout(r, 500));
+  return calls;
+});
+ok('already_subscribed sends them to the billing portal for the plan',
+  portalAsk.length === 1 && portalAsk[0][1] === 'plan', JSON.stringify(portalAsk));
+t.ctl.answer = null;
+
+const yRec = await t.page.evaluate(async ({ at, end }) => {
+  const T = window.__t;
+  const text = () => (document.getElementById('sheet-in').innerText || '').replace(/\s+/g, ' ');
+  const calls = [];
+  const read = async (rows, plans, premium) => {
+    T.setPremium(premium);
+    window.PS_AUTH = Object.assign({}, window.PS_AUTH, {
+      token: () => 'check-token',
+      premiumUnlocks: async () => rows,
+      premiumPlans: async () => plans,
+      billingPortal: async (ret, scope) => { calls.push(scope); return { error: 'stub' }; },
+    });
+    document.getElementById('sheet').classList.remove('on');
+    T.pfPro();
+    await new Promise((r) => setTimeout(r, 800));
+    return text();
+  };
+  const life = (p, src) => ({ product: p, source: src, granted_at: at, expires_at: null, fulfilled_at: at });
+  const sub = (p, src, until) => ({ product: p, source: src, granted_at: at, expires_at: until,
+    sub_until: until, grant_until: null, fulfilled_at: at });
+  const plan = (bundle, cancel, status) => ({ bundle, status: status || 'active',
+    current_period_end: end, cancel_at_period_end: !!cancel, access_until: end, ended_at: null });
+  const out = {};
+  out.lifetime = await read([life('ps_premium', 'bundle:perfect-season'), life('cfb_premium', 'bundle:perfect-season')],
+    [], ['ps_premium', 'cfb_premium']);
+  out.mixed = await read([life('ps_premium', 'bundle:perfect-season'), life('cfb_premium', 'bundle:perfect-season'),
+    sub('arcade_card_year', 'sub:run-the-bundle', end), life('runtour_pack', 'sub:run-the-bundle')],
+    [plan('run-the-bundle')], ['ps_premium', 'cfb_premium', 'arcade_card_year', 'runtour_pack']);
+  document.getElementById('pf-bill').click();
+  await new Promise((r) => setTimeout(r, 300));
+  out.yearly = await read([sub('ps_premium', 'sub:perfect-season', end), sub('cfb_premium', 'sub:perfect-season', end)],
+    [plan('perfect-season')], ['ps_premium', 'cfb_premium']);
+  out.cancelled = await read([sub('ps_premium', 'sub:perfect-season', end), sub('cfb_premium', 'sub:perfect-season', end)],
+    [plan('perfect-season', true)], ['ps_premium', 'cfb_premium']);
+  const past = new Date(Date.now() - 20 * 86400e3).toISOString();
+  out.lapsed = await read([sub('ps_premium', 'sub:perfect-season', past), sub('cfb_premium', 'sub:perfect-season', past)],
+    [{ bundle: 'perfect-season', status: 'canceled', current_period_end: past, cancel_at_period_end: false,
+       access_until: past, ended_at: past }], []);
+  out.lapsedPitch = T.premiumPitch();
+  out.portal = calls;
+  return out;
+}, { at: Y_AT, end: yEnd });
+ok('a lifetime owner reads exactly what they always read',
+  /Yours for good/.test(yRec.lifetime) && /You paid once\. Nothing here renews/.test(yRec.lifetime)
+    && /Receipts and billing/i.test(yRec.lifetime) && !/Renews on|Ends on|Manage your plan/i.test(yRec.lifetime),
+  yRec.lifetime.slice(0, 200));
+ok('a lifetime owner on a yearly Run The Bundle plan: the games stay for good, the card renews',
+  /Yours for good/.test(yRec.mixed) && yRec.mixed.includes('Renews on ' + yDay)
+    && /Your plan renews each year/.test(yRec.mixed) && !/Nothing here renews/.test(yRec.mixed),
+  yRec.mixed.slice(0, 260));
+ok('  and the billing button manages the plan', /Manage your plan/i.test(yRec.mixed)
+  && yRec.portal[0] === 'plan', JSON.stringify(yRec.portal));
+ok('a yearly subscriber reads when it renews', yRec.yearly.includes('Renews on ' + yDay)
+  && !/Yours for good|forever|Nothing here renews|You paid once/.test(yRec.yearly), yRec.yearly.slice(0, 200));
+ok('  and once cancelled, when it ends', yRec.cancelled.includes('Ends on ' + yDay)
+  && !yRec.cancelled.includes('Renews on'), yRec.cancelled.slice(0, 200));
+ok('a lapsed subscriber reads that the plan ended, and is back on the free allowance',
+  /Your plan ended on/.test(yRec.lapsed) && !/Yours for good|Renews on/.test(yRec.lapsed)
+    && yRec.lapsedPitch === true, yRec.lapsed.slice(0, 200));
+
+const yThanks = await t.page.evaluate(async () => {
+  const T = window.__t;
+  const text = () => (document.getElementById('sheet-in').innerText || '').replace(/\s+/g, ' ');
+  window.PS_AUTH = Object.assign({}, window.PS_AUTH, { premiumPlans: async () => [] });
+  T.setPremium(['ps_premium', 'cfb_premium']);
+  T.setPaidYearly(false);
+  document.getElementById('sheet').classList.remove('on');
+  T.unlockedSheet();
+  await new Promise((r) => setTimeout(r, 200));
+  const lifeThanks = text();
+  document.getElementById('sheet').classList.remove('on');
+  T.premiumSheet();
+  await new Promise((r) => setTimeout(r, 200));
+  const lifeOwner = text();
+  T.setPaidYearly(true);
+  document.getElementById('sheet').classList.remove('on');
+  T.unlockedSheet();
+  await new Promise((r) => setTimeout(r, 200));
+  const yearThanks = text();
+  document.getElementById('sheet').classList.remove('on');
+  T.premiumSheet();
+  await new Promise((r) => setTimeout(r, 200));
+  const yearOwner = text();
+  T.setPaidYearly(false);
+  window.RTG_STORE.setPlan('once');
+  return { lifeThanks, lifeOwner, yearThanks, yearOwner };
+});
+ok('the thank you after a one-time purchase says nothing renews',
+  /You paid once\. Nothing here renews/.test(yThanks.lifeThanks));
+ok('  and a lifetime owner opening the store is told there is nothing to renew',
+  /nothing to renew/i.test(yThanks.lifeOwner));
+ok('the thank you after a yearly purchase says it renews', /Your plan renews each year/.test(yThanks.yearThanks)
+  && !/Nothing here renews|You paid once/.test(yThanks.yearThanks), yThanks.yearThanks.slice(0, 200));
+ok('  and a subscriber opening the store is never told there is nothing to renew',
+  !/nothing to renew/i.test(yThanks.yearOwner), yThanks.yearOwner.slice(0, 200));
 
 console.log('\nTHE OLD RUN RULE, WHICH IS STILL THE RULE UNTIL 101 IS DEPLOYED');
 /*
@@ -728,7 +940,7 @@ const CK_INJECT = 'checkoutReturn,checkoutThanks,unlockedSheet,premiumSheet,prof
   + 'spendTheDay,dynToWinter,countSpends:()=>{const n={c:0};'
   + 'B.attemptSpend=async(m)=>{n.c++;const s=dailyState[m]||{};'
   + 'return Object.assign({},s,{ok:true,used:(s.used||0)+1});};return n;},'
-  + 'reviewDynastyRules,dynIntroOff,dynNewSheet,dailyStop,PRO_ITEM,'
+  + 'reviewDynastyRules,dynNewSheet,dailyStop,PRO_ITEM,'
   /* The two Full Team questions, which have different answers for a tester: who may PLAY it
      and whether it is part of the PRODUCT. The unlocked sheet reads the first, the receipt
      and the store read the second. */
@@ -965,19 +1177,17 @@ ok('and stops breathing', gold.spent && gold.spent.anim === 'none', gold.spent &
  * than the phantom.
  */
 /*
- * THE RULES SHEET STANDS IN FRONT OF EVERY RUN, AND THE READER TURNS IT OFF.
+ * THE RULES SHEET SHOWS ONCE, AND ONCE MEANS ON ANY DEVICE.
  *
- * It used to be once per browser. A dynasty is a calendar, a moving win bar, a frozen cap
- * and an ageing rule, and somebody coming back a fortnight later starts a run against rules
- * they half remember. So it shows every time and carries its own off switch.
+ * It stood in front of every run with a "don't show this again" box, and the box held in one
+ * browser. Players reported the same pop-up ten times. So: the first dynasty gets it, every
+ * later one goes straight to the draft, the box is gone, and the rules are still one tap
+ * away on demand. Three in a row, because "every time" and "once" agree on run one.
  *
- * THE TWO KEYS ARE THE POINT. ps_dynintro still means "has read them once" and is what
- * retires the NEW badge; ps_dynintro_off is the only thing that skips the sheet. Folding
- * them together is the obvious move and breaks both: a reader who never ticks the box keeps
- * a NEW badge forever, and ticking the box silently also claims the mode is no longer new to
- * them. Asserted because nothing on screen would look wrong either way.
+ * The OLD box's key is still honoured, so a player who ticked it before this shipped is
+ * never shown it again, and the NEW badge's key is still written the first time.
  */
-console.log('\nTHE RULES SHEET, BEFORE EVERY RUN, UNTIL THEY SAY OTHERWISE');
+console.log('\nTHE RULES SHEET, BEFORE THE FIRST DYNASTY AND NOT AGAIN');
 {
   const open = () => ck.page.evaluate(() => {
     const T = window.__t;
@@ -991,35 +1201,36 @@ console.log('\nTHE RULES SHEET, BEFORE EVERY RUN, UNTIL THEY SAY OTHERWISE');
     T.beginDynastyDraft();
     return { up: document.getElementById('sheet').classList.contains('on'),
       kind: document.getElementById('sheet-in').dataset.kind,
-      box: !!document.getElementById('b-dyni-off') };
+      box: !!document.querySelector('#sheet-in input[type=checkbox]') };
   });
-  await ck.page.evaluate(() => {
-    try { localStorage.removeItem('ps_dynintro'); localStorage.removeItem('ps_dynintro_off'); } catch (e) {}
-    window.__dynIntro = undefined; window.__dynIntroOff = undefined;
+  const clear = () => ck.page.evaluate(() => {
+    try { ['ps_seen_v1', 'ps_dynintro', 'ps_dynintro_off'].forEach((k) => localStorage.removeItem(k)); } catch (e) {}
+    window.__dynIntro = undefined;
   });
-  /* Three in a row, because "once per browser" passes a check that only opens it twice. */
-  for (const n of [1, 2, 3]) {
+  await clear();
+  const first = await open();
+  ok('the first dynasty gets the sheet', first.up && first.kind === 'dynintro', JSON.stringify(first));
+  ok('  with no "don\'t show this again" box to find', first.box === false);
+  const marks = await ck.page.evaluate(() => ({
+    seen: JSON.parse(localStorage.getItem('ps_seen_v1') || '{}').dynintro,
+    badge: localStorage.getItem('ps_dynintro') }));
+  ok('  and it is marked seen the moment it is up', marks.seen === 1, JSON.stringify(marks));
+  ok('  and the NEW badge is retired with it', marks.badge === '1');
+  for (const n of [2, 3]) {
     const r = await open();
-    ok('run ' + n + ' gets the sheet', r.up && r.kind === 'dynintro', JSON.stringify(r));
-    ok('  carrying its own off switch', r.box === true);
+    ok('run ' + n + ' goes straight to the draft', r.up === false, JSON.stringify(r));
   }
-  const ticked = await ck.page.evaluate(() => {
-    const c = document.getElementById('b-dyni-off');
-    c.checked = true; c.onchange();
-    return { off: window.__t.dynIntroOff(), read: localStorage.getItem('ps_dynintro') };
-  });
-  ok('ticking it is remembered', ticked.off === true);
-  const after = await open();
-  ok('and the next run goes straight to the draft', after.up === false, JSON.stringify(after));
-  /* THE OTHER KEY SURVIVED IT. They have read the rules, so the badge is retired, and that
-     has to be true whether or not they ticked the box. */
-  ok('while the mode still counts as read', ticked.read === '1', String(ticked.read));
-  /* AND THE ON-DEMAND SHEET NEVER OFFERS IT. Hiding a thing somebody just asked to see. */
+  await clear();
+  await ck.page.evaluate(() => { localStorage.setItem('ps_dynintro_off', '1'); });
+  const ticked = await open();
+  ok('a player who ticked the old box is not shown it', ticked.up === false, JSON.stringify(ticked));
+  /* AND THE ON-DEMAND SHEET STILL OPENS. Shown once is not taken away. */
   const demand = await ck.page.evaluate(() => {
     window.__t.reviewDynastyRules();
-    return !!document.getElementById('b-dyni-off');
+    return document.getElementById('sheet').classList.contains('on')
+      && document.getElementById('sheet-in').dataset.kind === 'dynintro';
   });
-  ok('the How to play sheet has no off switch', demand === false);
+  ok('the How to play sheet still opens on demand', demand === true);
   await ck.page.evaluate(() => {
     document.getElementById('sheet').classList.remove('on');
     document.querySelectorAll('.screen.on').forEach((s) => s.classList.remove('on'));
@@ -1462,11 +1673,10 @@ await ck.page.evaluate(() => {
   window.__t.paintHomeStart();
 });
 await new Promise((r) => setTimeout(r, 200));
-const geom = [];
-for (const w of [320, 360, 390, 560]) {
-  await ck.page.setViewportSize({ width: w, height: 1400 });
-  await new Promise((r) => setTimeout(r, 120));
-  geom.push(await ck.page.evaluate(async (width) => {
+/* THE MEASUREMENT, AS A FUNCTION, because it runs twice: once with the bundles sold once and
+   once sold yearly. The two sheets carry different chips, terms and footers, and the card's
+   sub line is a different sentence, so a layout proved for one says nothing about the other. */
+const measureOffer = async (width) => {
     const box = document.createElement('div');
     box.style.cssText = 'position:absolute;left:0;top:0;width:100%;padding:16px;box-sizing:border-box';
     box.innerHTML = window.RTG_STORE.html({ signedOut: false });
@@ -1524,7 +1734,12 @@ for (const w of [320, 360, 390, 560]) {
       chipSpread: Math.max(0, ...lines.map((l) => l.spread)),
       chipHeights: Math.max(0, ...lines.map((l) => l.heights)),
       overhang: Math.max(0, ...lines.map((l) => l.overhang)), total };
-  }, w));
+  };
+const geom = [];
+for (const w of [320, 360, 390, 560]) {
+  await ck.page.setViewportSize({ width: w, height: 1400 });
+  await new Promise((r) => setTimeout(r, 120));
+  geom.push(await ck.page.evaluate(measureOffer, w));
 }
 await ck.page.setViewportSize({ width: 390, height: 1400 });
 console.log('\nTHE OFFER IS SQUARE AT EVERY WIDTH IT IS READ AT');
@@ -1551,6 +1766,39 @@ geom.forEach((g) => {
    on adding a block. Move it when the sheet is meant to get longer, never to make this pass. */
 const tall = geom.find((g) => g.w === 390);
 ok('  and the whole offer stays under 1000px at 390', tall.total < 1000, tall.total + 'px');
+
+console.log('\nAND SOLD YEARLY, THE SAME PROPERTIES HOLD');
+/* The yearly sheet swaps One payment for Per year, Lifetime access for Renews yearly, drops
+   the One time offer block and rewrites the footer. The card's sub is its own sentence and
+   has to hold one line at 360 for the same reason the once sentence does. The page redraws
+   every card in place when the plan changes (RTG_STORE.onPlan), which is also asserted: a
+   card still reading "Pay once" over a yearly store is the drift this whole file is about. */
+await ck.page.evaluate(() => { window.RTG_STORE.setPlan('year'); });
+await new Promise((r) => setTimeout(r, 150));
+const ygeom = [];
+for (const w of [320, 360, 390, 560]) {
+  await ck.page.setViewportSize({ width: w, height: 1400 });
+  await new Promise((r) => setTimeout(r, 120));
+  ygeom.push(await ck.page.evaluate(measureOffer, w));
+}
+const ysub = await ck.page.evaluate(() =>
+  ((document.querySelector('#b-premium .pwc-t span') || {}).textContent) || '');
+const ysubWant = await ck.page.evaluate(() => window.RTG_STORE.cardSub);
+ok('  the front page card was redrawn with the yearly sub', !!ysub && ysub === ysubWant && !/once/i.test(ysub), ysub);
+ygeom.forEach((g) => {
+  ok('  ' + g.w + 'px: every hero tile is the same height', g.spread === 0, g.tiles.join(' '));
+  ok('  ' + g.w + 'px: the chips beside a price share a centre', g.chipSpread < 1,
+    g.chipSpread.toFixed(1) + 'px apart');
+  ok('  ' + g.w + 'px: and are the same pill', g.chipHeights < 1, g.chipHeights.toFixed(1) + 'px');
+  if (g.w >= 360) {
+    ok('  ' + g.w + 'px: the yearly prompt card says it in one line', !!g.sub && g.sub.lines === 1,
+      g.sub ? g.sub.lines + ' lines in a ' + g.sub.col + 'px column' : 'no card');
+  }
+});
+const ytall = ygeom.find((g) => g.w === 390);
+ok('  and the yearly offer stays under 1000px at 390', ytall.total < 1000, ytall.total + 'px');
+await ck.page.evaluate(() => { window.RTG_STORE.setPlan('once'); });
+await ck.page.setViewportSize({ width: 390, height: 1400 });
 
 /* ─── A DYNASTY SCREEN SAYS WHICH SEASON IT IS, AND NOTHING ELSE DOES ──────────────────
  *

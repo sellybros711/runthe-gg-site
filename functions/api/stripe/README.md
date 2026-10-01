@@ -1,21 +1,21 @@
-# Run The Arcade Card — Stripe rollout runbook
+# Run The Arcade Card: Stripe rollout runbook
 
 Access tiers: **Guest** 1 play/day (client-side), **Free account** 3 plays/day
 (server-enforced), **Arcade Card** (paid) unlimited plays + full past-day
-archive. Arcade Card is the single subscription entitlement — it reuses the
+archive. Arcade Card is the single subscription entitlement. It reuses the
 existing `subscriptions` table and the `runthegrid_pro` client flag (kept for
 back-compat; consumer-facing name is "Arcade Card").
 
 ## One-time setup
 
-1. **Supabase** — run in the SQL editor, in order:
+1. **Supabase**: run in the SQL editor, in order:
    - `supabase/52_grid_daily.sql` (daily boards/leaderboards)
    - `supabase/53_grid_pro.sql` (subscriptions table)
    - `supabase/69_arcade_card.sql` (webhook dedupe `stripe_events`, the
      server token counter `arcade_plays`, and the RPCs `arcade_spend_token`,
      `arcade_tokens_status`, `arcade_card_active`)
-2. **Stripe** — create ONE Product **"Run The Arcade Card"** with TWO recurring
-   Prices: Monthly $5.99 and Annual $49.99. (No free trial — the free tier is the
+2. **Stripe**: create ONE Product **"Run The Arcade Card"** with TWO recurring
+   Prices: Monthly $5.99 and Annual $49.99. (No free trial: the free tier is the
    try-before-you-buy.) Set **Monthly** as the product's default
    price. Copy both `price_...` ids. Point a webhook endpoint at
    `https://runthe.gg/api/stripe/webhook` with events:
@@ -149,8 +149,14 @@ reasoning, so the numbers can be argued with rather than rediscovered:
    in full and sees NOTHING, because the tester lists still decide. Set these when the gating
    ships, not before, and if you set them temporarily to test, remove them
    again in the same sitting.
-   - `STRIPE_PRICE_PS_PREMIUM_BUNDLE` = `price_1UCublHiw1zsFcnXxntEyM1s` (live, $19.99)
-   - `STRIPE_PRICE_RUN_THE_BUNDLE`    = `price_1UCue1Hiw1zsFcnXoTW2Cdyj` (live, $34.99)
+   - `STRIPE_PRICE_PS_PREMIUM_BUNDLE` = `price_1UCublHiw1zsFcnXxntEyM1s` (live, $19.99 once)
+   - `STRIPE_PRICE_RUN_THE_BUNDLE`    = `price_1UCue1Hiw1zsFcnXoTW2Cdyj` (live, $34.99 once)
+   - `STRIPE_PRICE_PS_YEAR`           = `price_1UKC9FHiw1zsFcnXln9hf7XH` (live, $19.99 a year)
+   - `STRIPE_PRICE_RTB_YEAR`          = `price_1UKCAjHiw1zsFcnX5Tz5OkFb` (live, $34.99 a year)
+
+   All four are set in Cloudflare Production. The two yearly prices sell nothing until
+   `YEARLY_LIVE` is turned on (see "Perfect Season and Run The Bundle, yearly" below), and
+   the two one-time ones stay exactly where they are until launch day.
 
    Both live Products exist in Stripe already, created 2026-09-06. Price ids
    are not secrets (they identify a price, they cannot charge anybody, and
@@ -161,7 +167,7 @@ reasoning, so the numbers can be argued with rather than rediscovered:
    the catalog, the SQL constraint, the setup script and the webhook drifting
    apart).
 
-**Flow:** game page POSTs `/api/stripe/checkout-bundle` `{ bundle, return_path }`
+**Flow:** game page POSTs `/api/stripe/checkout-bundle` `{ bundle, plan, return_path }`
 with the Supabase session token, gets a hosted Checkout URL (mode `payment`).
 The webhook grants on `checkout.session.completed` with `payment_status: paid`
 (or `async_payment_succeeded` for delayed methods): one `premium_unlocks` row
@@ -290,6 +296,246 @@ about the modes opening, since nothing reads `premium_products()` yet.
   must check the table server-side too, because a list shipped in the page is a
   feature flag and never a permission. That wiring belongs with each game's
   launch, not here.
+
+## Perfect Season and Run The Bundle, yearly
+
+**For NEW buyers only.** Every lifetime buyer keeps exactly what they have, and that rule wins
+over everything else here: a `premium_unlocks` row with no end date is never given one, never
+overwritten and never deleted, by a checkout, a renewal, a cancel, a refund, a lapse, a portal
+change or a Fantasy prize. `supabase/124_premium_yearly.sql` enforces it twice: every writer
+says `where expires_at is not null`, and a trigger refuses the update if a writer forgets.
+
+| plan | price | while paid for | once per account, ever |
+|---|---|---|---|
+| Perfect Season | $19.99 a year | `ps_premium`, `cfb_premium` | |
+| Run The Bundle | $34.99 a year | `ps_premium`, `cfb_premium`, the Arcade Card | 100,000 Run The Tour coins and a Tour Pack |
+
+The bonus is not handed over on a renewal, on a second plan, or to an account that already
+got it from the one-time Run The Bundle. Diamond Pro, Floor Pro, the Arcade Card's own plans
+and Ultimate are untouched.
+
+### The switch
+
+`YEARLY_LIVE` in `_bundles.js`. It is `true` since launch (2026-09-27), and `false` is the kill switch. What the store shows and what the checkout
+sells is `_offer.js`'s answer, read by the page through `GET /api/stripe/offer`, and it is
+`year` only when all three hold:
+
+1. `YEARLY_LIVE` is `true`
+2. `STRIPE_PRICE_PS_YEAR` and `STRIPE_PRICE_RTB_YEAR` are set
+3. the database answers `premium_yearly_ready()` (i.e. 124 is in)
+
+Anything short of that sells the one-time bundles, so turning the switch on before the SQL
+cannot sell a plan the webhook has nowhere to record. The page sends the plan it showed and
+the checkout answers `409 offer_changed` to a mismatch, so nobody is charged for something
+other than what their screen said.
+
+### Launch, in this order
+
+1. **SQL, by hand:** `supabase/124_premium_yearly.sql`. Idempotent; run it twice if unsure.
+   `supabase/test/launch_preflight.sql` row 35 says whether it is in. Re-running 120 on its own
+   afterwards puts back a Fantasy prize that stacks on a plan's end, and row 35 catches that too.
+2. **Stripe, webhook endpoint** (`/api/stripe/webhook`): add `invoice.paid`,
+   `charge.refunded` and `charge.dispute.created` to the events it already sends
+   (`checkout.session.completed`, `checkout.session.async_payment_succeeded`,
+   `customer.subscription.updated`, `customer.subscription.deleted`).
+3. **Stripe, Customer Portal** (Settings, Billing, Customer portal): cancellations ON and set
+   to **at the end of the billing period** (an immediate cancel ends access that moment).
+   Subscription updates ON with the two yearly prices as the only products a customer may
+   switch between, so a Perfect Season subscriber can move up to Run The Bundle rather than
+   pay for both. The checkout refuses Run The Bundle to a live Perfect Season plan and sends
+   them to the portal for exactly this reason. Leave proration on.
+4. **Stripe, Smart Retries / dunning:** anything is fine. Access runs to the period end plus
+   seven days of grace whatever the card is doing, and an account whose plan Stripe finally
+   cancels or marks unpaid is back on the free allowance at the end of that grace.
+5. **Code:** set `YEARLY_LIVE = true` in `_bundles.js`, merge to main, and Cloudflare deploys.
+6. **Test with a 100% off promotion code**, never a real card: Stripe is live with no test
+   mode. Buy Perfect Season yearly on a fresh account, check the profile says "Renews on",
+   open Manage your plan, cancel, check it says "Ends on".
+
+### What each Stripe event does
+
+| event | effect |
+|---|---|
+| `checkout.session.completed` (subscription mode) | first grant, and the Run The Bundle bonus if the account has never had it |
+| `invoice.paid` | a renewal: access to the new period end plus 7 days |
+| `customer.subscription.updated` | active: extends; past due: holds (the grace runs); a plan change in the portal re-grants the new plan's products and takes the old one's back |
+| `customer.subscription.deleted` | access ends at `ended_at`, which for a cancel at period end is the period end, with no grace added |
+| `charge.refunded` (full) / `charge.dispute.created` | access ends now; a late "active" for that same period grants nothing. If the refunded payment is the one that bought the Run The Bundle bonus, the bonus goes too (125, below) |
+
+Every one goes through `premium_sub_apply()`, which decides from the plan's status rather than
+from which event arrived, because Stripe delivers out of order and more than once. A plan is
+recognised by its PRICE first and its metadata second, so a plan changed in the portal is
+still the right plan, and a yearly plan never reaches the Arcade Card's `subscriptions`
+table, which eight arcade functions read as "this account holds an Arcade Card".
+
+### A refund takes back the bonus it paid for (125)
+
+`supabase/125_arcade_cap_and_bonus_refund.sql`, by hand, after 124. Preflight row 36.
+
+After a full refund or a chargeback on a plan, the webhook calls `premium_reclaim_bonus()`
+with the plan and the date the refunded invoice's period began. The bonus row is removed only
+if this plan wrote it and wrote it inside that period, so refunding the FIRST year (or the
+upgrade that brought the bonus) takes it back and refunding a renewal does not.
+
+| the bonus was | what happens |
+|---|---|
+| not redeemed yet | the row goes, so the coins are never paid |
+| redeemed | the row goes and the coins come back out of the wallet, down to zero; anything already spent is reported as a shortfall, never a negative balance |
+
+The Tour Pack cannot be taken back: packs live in the golf page, not on the server. A
+one-time Run The Bundle's bonus is never touched, because a one-time purchase is revoked by
+hand. With the row gone, a later paid Run The Bundle hands the bonus over again.
+
+**Run 125 before the next refund.** Without it the webhook answers 500 on a plan refund
+(`premium_reclaim_bonus 404`) and Stripe retries for three days. The plan's access is still
+taken back on every attempt, so nothing is lost while it waits.
+
+125 also fixes the arcade's four-a-day ranked cap, which only counted the monthly Arcade Card:
+a Run The Bundle buyer, whose card is a `premium_unlocks` row, was refused their fifth ranked
+score of the day. The cap now asks `arcade_card_active()`, like every other arcade reader.
+`supabase/test/arcade_cap_test.sql` drives both (its header lists the chain).
+
+### Why the claim is $70 and not $80
+
+Sold once, Run The Bundle is $19.99 + $49.99 (an Arcade Card year) + $9.99 (the Large Bucket
+the coins are worth) = $79.97, shown as $80, save $45. Sold yearly, each year is $19.99 +
+$49.99 = $69.98, shown as $70, save $35. The coins are left out of the yearly sum on purpose:
+they come once, so counting them makes the struck price true for one year and false for every
+renewal.
+
+### Checks
+
+```
+node scripts/stripe/verify-bundles.mjs       the catalog, the SQL and the webhook agree
+node scripts/stripe/check-checkout.mjs       who may buy what, through the real endpoint
+node scripts/stripe/replay-webhook.mjs       every plan event, through the real webhook, against a real Postgres
+psql -d yr -f supabase/test/premium_yearly_test.sql   (its header lists the chain)
+node football/check-premium.mjs              the store, the receipt and the checkout answers, in a browser
+```
+
+## Run The Diamond Pro ($14.99 a year, baseball only)
+
+The one bundle that belongs to a single game, by the owner's decision (2026-09). It
+still goes through the one checkout (`checkout-bundle.js`) and the one webhook, so
+there is no second payment path. The catalog row is `diamond-pro` in `_bundles.js`,
+it grants `rtd_premium`, and the page asks `premium_products()` for it.
+
+What it sells: the six extra modes (Eras, One Franchise, Division, Cap Survivor,
+All-Time Pitching Staff, Trade Machine) with no daily limit, plus the two Pro
+ballparks. Free accounts and guests get one start of each mode per Eastern day.
+Classic and the daily are free for everybody and never counted.
+
+**It is a yearly subscription.** It launched as $9.99 once and moved to $14.99 a
+year (2026-09). `recurring: true` on the catalog row makes the checkout open in
+subscription mode (Stripe refuses a recurring Price in payment mode) with the
+bundle key on the subscription's metadata. The webhook writes ONE `premium_unlocks`
+row whose `expires_at` follows the subscription:
+
+| subscription | Pro ends |
+|---|---|
+| active, trialing | end of the paid period, plus 3 days of grace |
+| past_due (a renewal failed, Stripe is retrying) | a week from now |
+| cancelled at period end | still active, so the end of the period |
+| canceled, unpaid, incomplete | now |
+| a full refund or a chargeback on one of its invoices | now, and it stays ended |
+
+Every subscription event is read back from Stripe before it is written, so events
+arriving out of order cannot hand a cancelled subscriber another year. **A refund does not
+cancel the subscription in Stripe**, so the row remembers the period end the refund took
+back (`payload.refunded_through`) and an event that still reads active for that period
+grants nothing. A paid renewal into a later period grants as usual; cancel the subscription
+in the dashboard when you refund it if that should not happen. The webhook needs
+`charge.refunded` and `charge.dispute.created` for this, which the yearly plans already added. **It never
+touches the `subscriptions` table**, which is the Arcade Card's and holds one row a
+user. **A row with no end date is never given one**, so anybody who bought the old
+$9.99, or was comped, keeps Pro for good, and checkout will not sell them a year.
+No migration was needed: `premium_products()` and `rtd_mode_spend` already honour
+`expires_at`. Subscribers manage or cancel through the Customer Portal
+(`/api/stripe/portal`), which the page's Manage billing button opens.
+
+```
+node scripts/stripe/check-recurring.mjs   the checkout and webhook, driven, no network
+node scripts/stripe/verify-bundles.mjs    the catalog against everything that reads it
+```
+
+### Go-live, in this order
+
+1. **Run the migrations** in the Supabase SQL editor, in order:
+   `supabase/121_baseball_pro.sql`, then `supabase/122_baseball_pro_per_mode.sql`.
+   Then paste `supabase/test/launch_preflight.sql` and confirm rows 31 and 33 read
+   **yes**. 122 turns 121's one shared play a day into one play of each mode. This has to come first:
+   until it runs, the table refuses `rtd_premium` and a paid checkout 500s in the
+   webhook (Stripe retries, so nobody loses money, but nobody gets Pro either).
+2. **The Price in Stripe is recurring: $14.99 USD per year.** Either run the script
+   (idempotent, prints the env var line, lookup key `rtd_pro_year`):
+   `STRIPE_SECRET_KEY=sk_live_... node scripts/stripe/setup-premium-bundles.mjs`
+   or do it by hand: Product catalog, **Run The Diamond Pro**, add a price,
+   **Recurring**, **Yearly**, **$14.99**. Copy the price id (`price_...`). A Price
+   cannot change from one-time to recurring, so the old $9.99 price is a different
+   Price; archive it rather than delete it.
+3. **Point the env var at the yearly price in Cloudflare Pages** (Settings,
+   Environment variables, Production): `STRIPE_PRICE_RTD_PRO = price_...` (the
+   $14.99 yearly one). Redeploy (or push any commit) so the function picks it up.
+   Until this is set the Get Pro button answers "Pro is not on sale yet".
+4. **The webhook endpoint must send the subscription events**:
+   `checkout.session.completed`, `checkout.session.async_payment_succeeded`,
+   `customer.subscription.updated` and `customer.subscription.deleted`. The Arcade
+   Card already needs the last two, so they are usually on; check the endpoint in
+   Developers, Webhooks. Without `customer.subscription.updated` a renewal never
+   moves the end date and every subscriber loses Pro a year in.
+5. **The Customer Portal must be on** (Settings, Billing, Customer portal), with
+   cancellation allowed, for Manage billing to open.
+6. **Test it** with a 100% off promotion code (Stripe is live, there is no test
+   mode here): open `/baseball/` signed in, press Go Pro, pay with the code, and
+   you land back on the game with "Pro is on". The tiles read Unlimited. Then
+   cancel from Manage billing and confirm Pro stays until the period's end.
+
+To comp somebody for good by hand (a row with no end date is never given one):
+
+```sql
+insert into public.premium_unlocks (user_id, product, source)
+values ('<user uuid>', 'rtd_premium', 'comp')
+on conflict (user_id, product) do update set expires_at = null;
+```
+
+## Run The Floor Pro ($9.99 once, basketball only)
+
+The second single-game tier, the same shape as Diamond Pro and by the same owner's
+decision (2026-09). One checkout, one webhook, no second payment path. The catalog
+row is `floor-pro` in `_bundles.js`, it grants `rtf_premium`, and `/hoops/` asks
+`premium_products()` for it through `hoops/auth.js`.
+
+What it sells: endless Fix History and Six Passes, rebuilding any team from any year,
+and making any two player puzzle. Both dailies, Conquest and Quick Draft are free for
+everybody and never metered, and a friend opening a shared puzzle link plays it free.
+There is no server meter: an endless or picked puzzle is built in the browser and
+files nothing to the board, so the gate is `endlessOpen()` in `hoops/modes-ui.js`.
+
+### Go-live, in this order
+
+1. **Run the migration** in the Supabase SQL editor: `supabase/123_hoops_pro.sql`
+   (it needs 121 first). Then paste `supabase/test/launch_preflight.sql` and confirm
+   row 34 reads **yes**. Until it runs, the table refuses `rtf_premium` and a paid
+   checkout 500s in the webhook.
+2. **Create the Product and Price in Stripe**, by hand in the Dashboard: name
+   **Run The Floor Pro**, one-time price **$9.99 USD**, lookup key `rtf_pro_once`.
+   Or `STRIPE_SECRET_KEY=sk_live_... node scripts/stripe/setup-premium-bundles.mjs`,
+   which is idempotent. Copy the price id (`price_...`).
+3. **Add the env var in Cloudflare Pages** (Production):
+   `STRIPE_PRICE_RTF_PRO = price_...`, then redeploy (push any commit). Until it is
+   set the Get Pro button answers "Pro is not on sale yet".
+4. **Nothing to change on the webhook.**
+5. **Test it** with a 100% off promotion code restricted to this product: open
+   `/hoops/` signed in, press Go Pro, pay with the code, and you land back on the game
+   with "Pro is on". The Endless and Build doors lose their Pro tag.
+
+To comp somebody by hand:
+
+```sql
+insert into public.premium_unlocks (user_id, product, source)
+values ('<user uuid>', 'rtf_premium', 'comp')
+on conflict (user_id, product) do update set expires_at = null;
+```
 
 ## Before public launch
 

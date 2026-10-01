@@ -11,7 +11,7 @@
  * /auth/v1/user, which validates the JWT signature and expiry for us.
  *
  * Returns the authenticated user id (string) or null. Callers MUST 401 on null
- * and use the returned id — never the request body.
+ * and use the returned id, never the request body.
  */
 export async function verifyUser(env, request) {
   if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE) return null;

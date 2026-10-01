@@ -53,6 +53,7 @@
      the stale timer      a play's timer fires into its OWN play or not at all
      a window's own play  a catch or a robbery never resolves into the play that replaced it
      its own clock        a play is applied on its own timer, never on the one it replaced
+     its own game         the next batter steps in to the game that called for him
      one grid         retro blows the world up by a whole number, onto the arena's own
                       pixels, and smooth frames the identical crop at the screen's own
      the code's own claims  what the comments assert about the code is true of it
@@ -376,9 +377,14 @@ async function main() {
         const known2 = !!g.batterCtx.weakKnown;
         refreshHud();
         const card = document.getElementById('atbat').textContent;
+        /* AND THE PITCHER IS STILL TOLD, which is the other half of the
+           clause and the one that would be lost by gating this on the
+           pitch rather than on the side. You chose it. */
+        const deck = (document.getElementById('pt-name') || {}).textContent || '';
         offerPitchSelection();
         const marked = [...document.querySelectorAll('#pitch-select button.weak')].map(b => b.dataset.pt);
         return { strip, weak: rep[0], weakLabel, plaque1, known1, left, plaque2, known2, before, card, marked,
+                 deck, deckWant: PITCHES[rep[0]].label.toUpperCase(),
                  said: g.log.some(l => /cannot handle/.test(l.text)), windup: BEAT.windup };
       });
       ok(!r.strip.grid && r.strip.throwBtn && r.strip.aiming, 'the strip is pitch and Throw; the spot is aimed on the field', JSON.stringify(r.strip));
@@ -387,6 +393,8 @@ async function main() {
       ok(r.known2 && r.plaque2 === 'WEAK PITCH · ' + r.weakLabel && r.said, 'the weak pitch is announced and logged', JSON.stringify({ p: r.plaque2, w: r.weakLabel }));
       ok(!/weak vs/i.test(r.before) && /weak vs/i.test(r.card), 'the at bat card marks it, only after', JSON.stringify({ before: r.before, card: r.card }));
       ok(r.marked.length === 1 && r.marked[0] === r.weak, 'the button is marked', JSON.stringify(r.marked));
+      ok(r.deck.indexOf(r.deckWant) >= 0, 'and the deck names the pitch you chose, at once',
+         `it read "${r.deck}"`);
       ok(errors.length === 0, 'no page errors', errors.join(' | '));
       await pg.close();
     }
@@ -398,10 +406,36 @@ async function main() {
       await exhibition(pg, false);
       const r = await pg.evaluate(() => {
         const g = State.game; g.half = 'top'; g.inning = 1;
-        throwPitch();
-        return { left: g.pitch.windupUntil - performance.now(), windup: BEAT.windup };
+        throwPitch('curveball');
+        refreshHud();
+        const lbl = () => (document.getElementById('pt-name') || {}).textContent || '';
+        /* THE LOUDEST LINE ON THE DECK MUST NOT NAME THE PITCH BEFORE IT
+           ARRIVES. It did, about seven tenths of a pitch duration before
+           the ball even left the hand, which is the whole read given away
+           on a game that models a read as the other dugout's difficulty
+           dial. Read at the moment a batter is deciding, and again once
+           the ball is in the mitt, where naming it is a record. */
+        /* READ AGAINST WHATEVER IS LIVE, never against the pitch this
+           fixture asked for. The CPU is the one pitching here, so its own
+           next throw can replace `g.pitch` between the two reads: pinned
+           to curveball the claim failed on a page doing the right thing,
+           naming a knuckler it had correctly just been handed. */
+        const nameNow = () => {
+          const i = g.pitch && PITCHES[g.pitch.pt];
+          return String(i ? i.label : (g.pitch ? g.pitch.pt : '')).toUpperCase();
+        };
+        const during = lbl(), duringWant = nameNow();
+        g.pitch.arrivedAt = performance.now();
+        refreshHud();
+        const after = lbl(), afterWant = nameNow();
+        return { left: g.pitch.windupUntil - performance.now(), windup: BEAT.windup,
+                 during, duringWant, after, afterWant };
       });
       ok(r.left > r.windup * 0.9, 'the full beat when you bat', JSON.stringify(r));
+      ok(r.during.indexOf(r.duringWant) < 0, 'and the deck does not name the pitch before it arrives',
+         `it read "${r.during}" against a live ${r.duringWant}`);
+      ok(r.after.indexOf(r.afterWant) >= 0, 'and does name it once the ball is in the mitt',
+         `it read "${r.after}" against a live ${r.afterWant}`);
       ok(errors.length === 0, 'no page errors', errors.join(' | '));
       await pg.close();
     }
@@ -1777,7 +1811,6 @@ async function main() {
       const bats = await pg.evaluate(() => {
         const ks = Object.keys(V2_SPRITES);
         const withArt = ks.filter(k => (V2_SPRITES[k].b || []).indexOf('ready') >= 0);
-        const without = ks.filter(k => (V2_SPRITES[k].b || []).indexOf('ready') < 0);
         const cv = document.createElement('canvas');
         cv.width = 200; cv.height = 200;
         const ctx = cv.getContext('2d');
@@ -1789,21 +1822,28 @@ async function main() {
           delete ctx.fillRect;
           return n;
         };
+        /* THE FALLBACK IS ASKED OF A FIXTURE. The rig draws a bat for every
+           character, so no real sprite reaches the prop any more; a copy of
+           one with its bat list taken away is the only way to prove a figure
+           with no bat in its art is still handed one. */
+        V2_SPRITES.__nobat = Object.assign({}, V2_SPRITES[ks[0]], { b: [] });
+        const plain = props('__nobat');
+        delete V2_SPRITES.__nobat;
         return {
-          withArt: withArt.length, without: without.length,
+          roster: ROSTER.length, withArt: withArt.length,
           drawnGotProp: withArt.filter(k => props(k) > 0).length,
-          plainGotNone: without.filter(k => props(k) === 0).length,
+          plainGotOne: plain > 0,
         };
       });
-      ok(bats.withArt > 30 && bats.without > 0,
-         'the pack draws a bat for most of the roster and a still for the rest',
-         `${bats.withArt} with drawn bats, ${bats.without} without`);
+      ok(bats.withArt >= bats.roster,
+         'the rig draws a bat for every character',
+         `${bats.withArt} with drawn bats of ${bats.roster}`);
       ok(bats.drawnGotProp === 0,
          'A MAN HOLDING A DRAWN BAT IS NOT HANDED A SECOND ONE',
          `${bats.drawnGotProp} of ${bats.withArt} got the prop as well`);
-      ok(bats.plainGotNone === 0,
-         'and a man whose art has no bat still gets one to hold',
-         `${bats.plainGotNone} of ${bats.without} were left empty handed`);
+      ok(bats.plainGotOne,
+         'and a figure whose art has no bat still gets one to hold',
+         'the fixture with no drawn bat was left empty handed');
 
       /* ---- nothing is sliced by the side of its own cell ---- */
       /* A strip is one image cut into 64px cells and several characters are
@@ -2069,21 +2109,38 @@ async function main() {
         const bat = () => currentBatter();
         const put = (i, c) => { g.bases[i] = c; };
         const before = g.away.score + g.home.score;
+        const tot = (o) => Object.values(o || {}).reduce((a, c) => a + c, 0);
+        const abs = () => tot(g.stats.ab);
+        /* Three at bat deltas, measured around the three plate appearances
+           whose at bat is a RULE rather than a default. Taken here because
+           a total cannot say which of them is wrong, and a total is what
+           this check used to be: it read 8 when the sacrifice bunt stopped
+           being an at bat, and the honest answer was three claims rather
+           than a 7. */
+        /* Named abd and not d, because the payload below already carries d
+           for doubles and the later key silently wins: every delta came
+           back undefined and all three claims failed on a correct page. */
+        const abd = {};
         try {
           applyHitMutation('home run', bat());
           applyHitMutation('single', bat());
           applyHitMutation('double', bat());
-          put(0, ROSTER[20]); put(1, ROSTER[21]); put(2, ROSTER[22]); recordWalk();
+          put(0, ROSTER[20]); put(1, ROSTER[21]); put(2, ROSTER[22]);
+          let a = abs(); recordWalk(); abd.walk = abs() - a;
           g.bases = [null, null, null]; recordWalk();
           recordOut('swinging strikeout', true);
           applyOutMutation('fly out', bat());
           applyOutMutation('ground out', bat());
           g.outs = 0; applyHitMutation('triple', bat());
-          g.bases = [null, null, ROSTER[23]]; applyOutMutation('bunt out', bat());
+          g.bases = [null, null, ROSTER[23]];
+          a = abs(); applyOutMutation('bunt out', bat()); abd.sac = abs() - a;
+          g.bases = [null, null, null];
+          a = abs(); applyOutMutation('bunt out', bat()); abd.bunt = abs() - a;
         } catch (e) { window.setTimeout = realTimeout; return { threw: String(e) }; }
         window.setTimeout = realTimeout;
-        const sum = (o) => Object.values(o || {}).reduce((a, c) => a + c, 0);
+        const sum = tot;
         return {
+          abd,
           delta: (g.away.score + g.home.score) - before,
           runs: sum(g.stats.r), rbi: sum(g.stats.rbi), ab: sum(g.stats.ab),
           h: sum(g.stats.hits), bb: sum(g.stats.bb), hr: sum(g.stats.hr),
@@ -2102,10 +2159,15 @@ async function main() {
       ok(r.pOuts >= 4, 'an out reaches the man who recorded it', 'outs ' + r.pOuts);
       ok(r.h >= r.hr + r.d + r.t, 'extra base hits are a subset of hits',
          `${r.h} hits against ${r.hr}+${r.d}+${r.t}`);
-      /* The walk is the one plate appearance that must NOT be an at bat,
-         which is the whole reason an average and an on base are two
-         different numbers. Two walks were drawn above. */
-      ok(r.ab === 8, 'a walk is a plate appearance and not an at bat', 'ab ' + r.ab);
+      /* A walk and a sacrifice are the two plate appearances that must NOT
+         be at bats, which is the whole reason an average and an on base are
+         two different numbers, and the whole reason a man who gives himself
+         up for the runner does not pay for it. The bunt with nobody on is
+         the control: without it the pair above pass on a page that has
+         stopped charging an at bat for a bunt at all. */
+      ok(r.abd.walk === 0, 'a walk is a plate appearance and not an at bat', 'ab +' + r.abd.walk);
+      ok(r.abd.sac === 0, 'a sacrifice bunt is not an at bat either', 'ab +' + r.abd.sac);
+      ok(r.abd.bunt === 1, 'a bunt with nobody on is an ordinary at bat', 'ab +' + r.abd.bunt);
       ok(errors.length === 0, 'no page errors', errors.join(' | '));
       await pg.close();
     }
@@ -3466,39 +3528,32 @@ async function main() {
     {
       console.log('the pitcher faces the plate');
       /* THE CAMERA IS BEHIND THE CATCHER, so the man on the mound is seen
-         from the FRONT. The pack's `windup`, `kick` and `release` are a
-         LEFT FACING PROFILE, and the plate view used all three, so every
+         from the FRONT. The pack's `windup`, `kick` and `release` were a
+         LEFT FACING PROFILE and the plate view used all three, so every
          pitch was a man throwing sideways toward third base while the ball
-         flew at the reader. Reported as the pitcher throwing to a base
-         instead of to home.
+         flew at the reader. Nothing could report it: each frame was the
+         right frame, present and distinct. They were the wrong VIEW.
 
-         NOTHING COULD REPORT IT. Each frame is the right frame for the
-         right character, present, distinct from its neighbours and
-         correctly seated: every property the guards here ask of a drawing.
-         They are the wrong VIEW, which none of them asks.
-
-         SO THE ALLOWLIST IS WRITTEN OUT, and it was established by
-         rendering all sixty eight and looking. That is not laziness: this
-         file already records TWO automatic matchers written for the pack
-         and thrown away, both of which confidently contradicted the eye,
-         and nothing in a 64x64 bitmap says which way a figure is turned.
-
-         What it really defends against is somebody restoring the pitching
-         animation by reaching for the three poses that are literally NAMED
-         windup, kick and release. That is the obvious edit and it is the
-         wrong one, so the check is on the names.
+         THE ALLOWLIST IS READ OFF THE RIG NOW, not written out. The rig
+         draws every pose from a spec that says which way it faces
+         (`view: 'front'` or `'side'`), so the claim is that nothing the
+         pitcher wears during a pitch is a side view. A list typed here was
+         right about the pack and would be wrong about the rig the day
+         anybody moved a pose, which is the drift a second copy invites.
 
          It reads the PICTURE over a whole real pitch rather than at an
          instant, because the pitcher's branch is a chain of `else if` and
          the way it breaks is one of them winning at a moment nobody
-         sampled. */
+         sampled. And it asks for the delivery as beats: the set, the knee
+         and the stride have to be three different drawings he actually
+         wears, or the windup is a statue. */
       const { pg, errors } = await fresh(browser);
       await exhibition(pg, false);
       const r = await pg.evaluate(async () => {
         const sleep = (ms) => new Promise(r => setTimeout(r, ms));
         const g = State.game;
-        /* every pose the pack draws front on, looked at one at a time */
-        const FRONT = ['idle', 'catch', 'throw', 'ready', 'cheer'];
+        /* every pose the rig draws facing the camera */
+        const FRONT = Object.keys(RIG.POSES).filter(p => RIG.POSES[p].view === 'front');
         /* `exhibition` clears the at bat, so nothing has built batterCtx
            and throwPitch would read weakPitch off undefined. It also
            decides who is up, so the pitcher is read after it. */
@@ -3515,27 +3570,27 @@ async function main() {
         const dur = Math.round((g.pitch.speed || 2) * 1000);
         await sleep(BEAT.windup + dur + 400);
         window.drawRunner = real;
-        /* how many of the roster have a cheer that is its own drawing, so
-           the windup is two frames rather than a statue */
+        /* how many of the roster draw the set, the kick and the stride as
+           three different pictures */
         let own = 0;
         for (const c of ROSTER) {
-          const a = v2Frame(c.k, 'idle'), d = v2Frame(c.k, 'cheer');
-          if (d && (!a || d.join('/') !== a.join('/'))) own++;
+          const d = ['windup', 'kick', 'throw'].map(p => (v2Frame(c.k, p) || []).join('/'));
+          if (d[0] && new Set(d).size === 3) own++;
         }
         return { poses: [...seen], FRONT, own, chars: ROSTER.length };
       });
       const bad = r.poses.filter(p => r.FRONT.indexOf(p) < 0);
       ok(r.poses.length > 0, 'the pitcher really is drawn during a pitch',
          'he was never drawn at all, so this section read nothing');
-      ok(r.poses.indexOf('cheer') >= 0,
-         'and the windup is a second frame rather than a statue',
+      ok(['windup', 'kick', 'throw'].every(p => r.poses.indexOf(p) >= 0),
+         'and the windup is a delivery: the set, the knee and the stride',
          `he wore only: ${r.poses.join(', ')}`);
       ok(bad.length === 0,
          'THE PITCHER IS NEVER TURNED SIDEWAYS: no profile frame reaches the mound',
          `he was drawn with ${bad.join(', ')}, which the pack draws in profile`);
-      ok(r.own >= 60,
-         `and ${r.own} of ${r.chars} have a cheer of their own to wind up with`,
-         `only ${r.own} do, so most of the roster would not animate`);
+      ok(r.own === r.chars,
+         `and all ${r.chars} draw those three beats as three pictures`,
+         `only ${r.own} of ${r.chars} do, so the rest would not animate`);
       ok(errors.length === 0, 'no page errors', errors.join(' | '));
       await pg.close();
     }
@@ -3951,6 +4006,48 @@ async function main() {
       await pg.close();
     }
 
+    /* ---- the next batter belongs to the game that called for him ---- */
+    {
+      console.log('an at bat starts in its own game');
+      /* The same rule a fourth time, at the beat every plate appearance
+         goes through. Each wait before the next batter was
+         `setTimeout(startAtBat, ms)`, which starts an at bat in whatever
+         game is current when it lands. Found by check-motion, which starts
+         games quickly enough to leave one inside its first 400ms and threw
+         "Cannot read properties of null (reading 'over')". Driven both
+         ways here: a game left inside the beat, and a game REPLACED inside
+         it, which is the quiet half. Counted by a spy on the function
+         itself, because a second at bat in a live game renders and throws
+         nothing. */
+      const { pg, errors } = await fresh(browser);
+      const r = await pg.evaluate(async () => {
+        const sleep = ms => new Promise(r => setTimeout(r, ms));
+        const kick = () => {
+          State.team = ROSTER.slice(0, 9).map(c => c.k); State.teamName = 'Testers';
+          State.opponent = randomOpponent(null); State.innings = 5; State.mode = 'exhibition';
+          startGame({ mode: 'exhibition', youHome: true });
+          return State.game;
+        };
+        kick();
+        await sleep(100);
+        State.game = null; State.screen = 'menu'; render();
+        await sleep(600);
+        const real = window.startAtBat;
+        let first = null;
+        const calls = [];
+        window.startAtBat = function () { calls.push(State.game === first); return real.apply(this, arguments); };
+        kick();                       /* A: its 400ms beat is now pending */
+        await sleep(120);
+        first = kick();               /* B replaces it inside that beat */
+        await sleep(900);
+        window.startAtBat = real;
+        return { calls: calls.length, intoB: calls.filter(Boolean).length };
+      });
+      ok(errors.length === 0, 'a game left inside its first beat does not throw', errors.join(' | '));
+      ok(r.intoB === 1, 'a replacing game gets exactly one first at bat, its own', JSON.stringify(r));
+      await pg.close();
+    }
+
     /* ---- one grid ---- */
     {
       console.log('one grid');
@@ -4050,15 +4147,21 @@ async function main() {
           startGame({ mode: 'exhibition', youHome: true });
         });
         await wait(pg, 1200);
-        /* Ask for the wide field. IT DOES NOT ALWAYS HOLD, and the comment
-           that used to sit here said it did: the next pitch is about a
-           second away and puts the plate camera straight back, so by the
-           time the read below happens the scale is the plate's on every
-           screen here. Nothing above cares, because the grid claims are
-           true of either camera. The one claim that DOES care samples both
-           on purpose, and says so where it is made. */
-        await pg.evaluate(() => { const g = State.game; if (g) { g.aiming = false; g.pitch = null; } });
-        await wait(pg, 400);
+        /* READ THE PLATE CAMERA, AND WAIT FOR IT RATHER THAN HOPING.
+           This used to clear the pitch to ask for the wide field and then
+           read 400ms later, on the argument that the next pitch puts the
+           plate camera back in time and that the grid claims hold of
+           either camera anyway. Both halves were wrong on a slower
+           machine. CI read the retina desktop while the WIDE camera still
+           held (scale 10, the whole world across), and the smooth read two
+           frames later caught the plate (scale 12): two cameras compared
+           and reported as two renderers disagreeing. And the wide camera
+           on a 1920 screen runs out of world sideways and letterboxes by
+           design, which the arena claim below is not about. So the reads
+           are the plate's by construction. The claim that is about the
+           wide camera clears the pitch itself, inside two frames, below. */
+        await pg.waitForFunction(() => State.game && plateViewActive(State.game), null, { timeout: 15000 });
+        await wait(pg, 150);
         const r = await pg.evaluate(() => {
           const cv = document.getElementById('field');
           const c = cv.getContext('2d');
@@ -4083,6 +4186,7 @@ async function main() {
                    wantW: box.clientWidth * dpr, wantH: box.clientHeight * dpr,
                    modal: all.slice().sort((a, b) => b[1] - a[1])[0][0],
                    strayShare: stray / px,
+                   plate: !!plateViewActive(State.game),
                    smoothing: cv.getContext('2d').imageSmoothingEnabled };
         });
         const scale = r.scale, draw = r.draw, step = scale / draw;
@@ -4142,11 +4246,11 @@ async function main() {
            This is the assertion that would catch somebody "simplifying"
            smooth mode by making the world finer, which is the version that
            was measured at 103ms a frame and reframed every screen. */
-        ok(s.scale === scale && s.sx === r.sx && s.sy === r.sy
+        ok(s.plate === r.plate && s.scale === scale && s.sx === r.sx && s.sy === r.sy
            && s.sw === r.sw && s.sh === r.sh,
           `${label}: smooth frames the identical crop at the identical scale`,
-          JSON.stringify({ retro: { scale, sx: r.sx, sy: r.sy, sw: r.sw, sh: r.sh },
-                           smooth: { scale: s.scale, sx: s.sx, sy: s.sy, sw: s.sw, sh: s.sh } }));
+          JSON.stringify({ retro: { plate: r.plate, scale, sx: r.sx, sy: r.sy, sw: r.sw, sh: r.sh },
+                           smooth: { plate: s.plate, scale: s.scale, sx: s.sx, sy: s.sy, sw: s.sw, sh: s.sh } }));
         /* AT THE SCREEN'S OWN RESOLUTION, AT OR ABOVE AND NEVER BELOW.
            Below CSS resolution the picture is softer than the glass can
            show, which is the only way this mode can look worse than the one
@@ -4253,7 +4357,7 @@ async function main() {
         out.orphanSprites = Object.keys(V2_SPRITES).filter(k => !keys.has(k));
         const POSES = ['idle','run1','run2','back','backrun1','backrun2','windup',
                        'release','swing','catch','throw','load','follow','kick',
-                       'ready','slump'];
+                       'ready','slump','field','slide'];
         out.shortPose = ROSTER.filter(c => {
           const f = (V2_SPRITES[c.k] || {}).f || {};
           return POSES.some(p => !f[p]);

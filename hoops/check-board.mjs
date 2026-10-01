@@ -69,6 +69,7 @@ const CORS = {
 const stub = {
   mode: 'rows',          // rows | empty | down | nomigration
   rows: [],
+  plays: [],
   calls: [],
   bodies: [],
   yourId: 4242,
@@ -78,7 +79,8 @@ function fakeRow(i, o = {}) {
   const wins = o.wins ?? (70 - i);
   return {
     id: o.id ?? (1000 + i), created_at: '2026-09-18T12:00:00Z',
-    display_name: o.name || ('player' + i),
+    user_id: o.uid || null,
+    display_name: o.name === null ? null : (o.name || ('player' + i)),
     run_mode: o.mode || 'league', lock_key: o.key ?? null, daily_day: o.day ?? null,
     wins, losses: 82 - wins, games: 82, playoff_wins: o.po ?? 0,
     depth: o.ring ? 6 : 2 + (o.po ?? 0),
@@ -118,6 +120,10 @@ async function serve(route) {
     if (u.pathname.endsWith('/rtf_submit_run')) return json(200, String(stub.yourId));
     if (u.pathname.endsWith('/rtf_claim_run')) return json(200, 'true');
     if (u.pathname.endsWith('/rtf_board_modes')) return json(200, '[]');
+    if (u.pathname.endsWith('/rtf_profiles')) {
+      return json(200, JSON.stringify(stub.rows.filter((r) => r.user_id).slice(0, 1)
+        .map((r) => ({ user_id: r.user_id, jersey_club: 'BOS', jersey_num: '33' }))));
+    }
 
     const wantsCount = (req.headers()['prefer'] || '').includes('count=exact');
     const empty = stub.mode === 'empty';
@@ -127,6 +133,9 @@ async function serve(route) {
       const ahead = u.search.includes('score=gt.') || u.search.includes('rating=gt.');
       const n = empty ? 0 : (ahead ? 40 : 312);
       return json(200, '[]', { 'content-range': '0-0/' + n });
+    }
+    if (u.pathname.endsWith('/rtf_plays')) {
+      return json(200, JSON.stringify(empty ? [] : stub.plays));
     }
     return json(200, JSON.stringify(empty ? [] : stub.rows));
   }
@@ -161,7 +170,7 @@ async function newPage(browser, boom) {
 
 async function boot(page) {
   await page.goto('http://local.test/hoops/', { waitUntil: 'domcontentloaded' });
-  await page.waitForSelector('#b-start:not([disabled])', { timeout: 30000 });
+  await page.waitForSelector('#b-start:not([disabled])', { state: 'attached', timeout: 30000 });
   await page.evaluate(() => { const b = document.querySelector('#frg-x'); if (b) b.click(); });
   await page.waitForTimeout(250);
 }
@@ -278,17 +287,26 @@ async function playRun(page, opener) {
   await page.waitForTimeout(2500);
 }
 
-const sheetState = (page) => page.evaluate(() => ({
-  open: document.querySelector('#boardsheet').classList.contains('open'),
-  sub: document.querySelector('#lb-sub').textContent,
-  door: document.querySelector('#lb-door').value,
-  keyShown: !document.querySelector('#lb-keywrap').hidden,
-  key: document.querySelector('#lb-key').value,
-  note: document.querySelector('#lb-note').textContent.trim(),
-  noteClass: document.querySelector('#lb-note').className,
-  rows: [...document.querySelectorAll('#lb-rows .lbrow')].length,
-  mine: [...document.querySelectorAll('#lb-rows .lbrow')].findIndex((r) => r.classList.contains('you')),
-}));
+/* WHAT THE LEADERBOARD SCREEN IS SHOWING. The lock picker is read off its
+   COMPUTED display and never off `hidden`: the sheet this replaced set
+   display:block on that label, so its `hidden` never took and an empty select
+   sat under the league board, which is what the player reported. */
+const sheetState = (page) => page.evaluate(() => {
+  const lw = document.querySelector('#bd-lockwrap');
+  const empty = document.querySelector('#bd-list .bd-empty');
+  const ents = [...document.querySelectorAll('#bd-list .bd-ent')];
+  return {
+    open: document.querySelector('#s-board').classList.contains('active'),
+    sub: document.querySelector('#bd-h').textContent,
+    door: (document.querySelector('#bd-tabs .bd-tab.on') || { getAttribute: () => null }).getAttribute('data-k'),
+    keyShown: getComputedStyle(lw).display !== 'none',
+    key: document.querySelector('#bd-lock').value,
+    note: (empty ? empty.textContent : document.querySelector('#bd-count').textContent).trim(),
+    noteClass: empty ? empty.className : '',
+    rows: ents.length,
+    mine: ents.findIndex((r) => r.querySelector('.bd-row.me')),
+  };
+});
 
 const main = async () => {
   const pw = (await import(PW)).default;
@@ -417,8 +435,8 @@ const main = async () => {
     const FIVE = ['PG', 'SG', 'SF', 'PF', 'C'].map((pos) => POOL.find((r) => r.pp === pos && r.s === 1996));
     const FIVE_KEYS = FIVE.map((r) => r.i + '|' + r.s + '|' + r.t);
     stub.rows = [fakeRow(0, { ring: true, name: 'jordan', picks: FIVE_KEYS,
-        slots: ['PG', 'SG', 'SF', 'PF', 'C'] }),
-      fakeRow(1, { id: stub.yourId, name: 'you' }), fakeRow(2)];
+        slots: ['PG', 'SG', 'SF', 'PF', 'C'], uid: '11111111-1111-1111-1111-111111111111' }),
+      fakeRow(1, { id: stub.yourId, name: 'you' }), fakeRow(2, { name: null })];
     await boot(page);
     /* A DECADES RUN AND NOT A LEAGUE ONE, and that is the difference between
        this section testing something and not. `lbMode` defaults to the
@@ -442,12 +460,12 @@ const main = async () => {
     });
     ok(!stand.hidden, 'the results screen says where the run landed');
     ok(/41st/.test(stand.text), `and names the place (${stand.text})`);
-    /* SIGNED OUT, THIS RUN IS NOT ON THE LIST, which is named runs only, so
-       the field it is placed in has to count it: the stand-in answers 312
-       named runs and the place is where it WOULD sit among 313. This read
-       "313th of 312" for any signed out run at the bottom before. */
-    ok(/Would be 41st of 313/.test(stand.text),
-      `out of the field it was counted against, itself included (${stand.text})`);
+    /* EVERY RUN IS ON THE BOARD NOW, a guest's as Guest, so a filed run is
+       inside the field it is placed in: the stand-in answers 312 runs and the
+       run is one of them. It read "Would be 41st of 313" while guest runs were
+       filed and never listed. */
+    ok(/41st of 312/.test(stand.text),
+      `out of the field the board counts (${stand.text})`);
     ok(/sign in/i.test(stand.text), 'and it says what puts the name on it');
     ok(!/on The /.test(stand.text), 'and the board is named mid-sentence in lower case');
     ok(!stand.disabled, 'and it opens something');
@@ -455,43 +473,63 @@ const main = async () => {
     await page.evaluate(() => document.querySelector('#o-stand').click());
     await page.waitForTimeout(800);
     const s = await sheetState(page);
-    ok(s.open, 'tapping it opens the board');
+    ok(s.open, 'tapping it opens the leaderboard screen');
     /* IT HAS TO LAND ON THE RUN'S OWN BOARD. Opening a Decades run onto the
        league shows somebody rows their run is not among, and the first thing
        they do is decide the board is broken. */
     is(s.door, 'era', 'on the board the run was actually played on');
-    ok(s.keyShown, 'with the decade it was played in already chosen');
+    ok(s.keyShown && /^[a-z]+$/.test(s.key), `with the decade it was played in already chosen (${s.key})`);
     is(s.rows, 3, 'the rows are listed');
     is(s.mine, 1, 'and this browser\'s own row is the one marked');
 
     /* HOW FAR IT WENT LEADS THE LINE, because that is what Best run orders on
        and the reason the row above yours is above you. */
-    const lines = await page.evaluate(() => [...document.querySelectorAll('#lb-rows .lbrow .who > span')]
+    const lines = await page.evaluate(() => [...document.querySelectorAll('#bd-list .bd-meta')]
       .map((e) => e.textContent));
     ok(/^Champions/.test(lines[0] || ''), `the champion's row says so first (${lines[0]})`);
     ok(/^Bounced in round one/.test(lines[2] || ''), `and a first round exit says that (${lines[2]})`);
     ok(!lines.some((l) => /all time/.test(l)), 'and the line carries no second ranking to argue with the first');
+    /* A GUEST IS LISTED, AS GUEST. The board listed named runs only, and a
+       player whose runs were filed signed out opened a board reading "no names
+       yet". Run The Diamond lists every season. */
+    const names = await page.evaluate(() => [...document.querySelectorAll('#bd-list .bd-name')].map((e) => e.textContent));
+    is(names[2], 'Guest', 'a run filed signed out is on the board as Guest');
+    await page.waitForTimeout(400);
+    const jz = await page.evaluate(() => {
+      const c = document.querySelectorAll('#bd-list .bd-crest');
+      return { first: (c[0] && c[0].textContent) || '', guest: c[2] ? c[2].classList.contains('guest') : false };
+    });
+    ok(/33/.test(jz.first), `a named row wears the jersey its account chose (${jz.first})`);
+    ok(jz.guest, 'and a guest row wears the greyed house jersey');
+    ok(await page.evaluate(() => document.querySelector('#bd-list .bd-ent').classList.contains('champ')),
+      'and the champion wears the gold');
 
     /* THE FIVE ARE ONE TAP AWAY. The picks ride on every row and nothing drew
        them, so the board answered who won and never what they built. */
     const shut = await page.evaluate(() => {
-      const f = document.querySelector('#lb-rows .lbrow .lbfive');
+      const f = document.querySelector('#bd-list .bd-team');
       return f ? f.hidden : null;
     });
     is(shut, true, 'the roster under a row starts folded');
-    await page.evaluate(() => document.querySelector('#lb-rows .lbrow').click());
+    await page.evaluate(() => document.querySelector('#bd-list .bd-row').click());
     await page.waitForTimeout(150);
     const five = await page.evaluate(() => {
-      const row = document.querySelector('#lb-rows .lbrow');
-      const f = row.querySelector('.lbfive');
-      return { hidden: f.hidden, exp: row.getAttribute('aria-expanded'),
-        names: [...f.querySelectorAll('li')].map((li) => li.textContent) };
+      const ent = document.querySelector('#bd-list .bd-ent');
+      const f = ent.querySelector('.bd-team');
+      return { hidden: f.hidden, exp: ent.querySelector('.bd-row').getAttribute('aria-expanded'),
+        names: [...f.querySelectorAll('.bd-five li')].map((li) => li.textContent) };
     });
     ok(!five.hidden && five.exp === 'true', 'tapping the row opens its five');
     is(five.names.length, 5, 'all five are drawn');
     ok(FIVE.every((r, i) => (five.names[i] || '').includes(r.n)),
       `by name, in slot order (${five.names.join(' | ')})`);
     ok(five.names.every((t) => /1996/.test(t)), 'each with the season it was');
+
+    /* BACK GOES BACK TO THE RESULTS, because the board was opened from them. */
+    await page.evaluate(() => document.querySelector('#b-board-back').click());
+    await page.waitForTimeout(300);
+    ok(await page.evaluate(() => document.querySelector('#s-over').classList.contains('active')),
+      'Back returns to the results screen it was opened from');
 
     /* TWO PATHS REACH THE SHEET AND BOTH HAVE TO LAND ON THE SAME BOARD. The
        standing passes the mode; Home and the career sheet pass nothing and
@@ -516,77 +554,117 @@ const main = async () => {
     await page.context().close();
   }
 
-  /* ── 4. all four doors, and the two axes ───────────────────────────────── */
+  /* ── 4. the tabs, the lock, the axes, the windows, the sort, the paging ── */
   const boom4 = [];
   {
     const page = await newPage(browser, boom4);
     stub.mode = 'rows'; stub.rows = [fakeRow(0), fakeRow(1)];
+    stub.plays = [{ id: 7, created_at: '2026-09-18T12:00:00Z', user_id: null, display_name: 'cq', mode: 'conquest',
+      day: 1, score: 9, cq_wins: 9, cq_lives: 0, cq_cleared: false, cq_lost_to: 'BOS_1986', cq_roster: [], cq_took: [] }];
     await boot(page);
     await page.evaluate(() => document.querySelector('#b-home-board').click());
     await page.waitForTimeout(700);
 
-    const lastList = () => stub.calls.filter((c) => c.includes('select=id%2C') || c.includes('select=id,'))
-      .slice(-1)[0] || '';
-    const lastQuery = () => stub.calls.slice(-1)[0] || '';
-
-    /* WHAT EACH DOOR ACTUALLY ASKS FOR. The whole design is four
-       competitions, and it is one wrong query parameter away from being one
-       board with four labels on it, which would render perfectly. */
-    const doors = [
-      ['league', 'run_mode=eq.league', 'lock_key', false],
-      ['club', 'run_mode=eq.club', 'lock_key=eq.', true],
-      ['era', 'run_mode=eq.era', 'lock_key=eq.', true],
-      ['daily', 'run_mode=eq.daily', 'daily_day=eq.', false],
-    ];
-    for (const [door, wantMode, wantKey, keyShown] of doors) {
+    const lastQuery = () => stub.calls.filter((c) => /select=id%2C|select=id,/.test(c)).slice(-1)[0] || '';
+    const tab = async (k) => {
       stub.calls = [];
-      await page.selectOption('#lb-door', door);
+      await page.evaluate((x) => document.querySelector('#bd-tabs .bd-tab[data-k="' + x + '"]').click(), k);
       await page.waitForTimeout(500);
+    };
+
+    let st = await sheetState(page);
+    is(st.door, 'league', 'the front page opens the leaderboard on Classic');
+    ok(!st.keyShown, 'and the Classic board draws no empty lock picker under it');
+
+    /* WHAT EACH TAB ACTUALLY ASKS FOR. The whole design is separate
+       competitions, one wrong query parameter away from one board with seven
+       labels on it, which would render perfectly. */
+    const doors = [
+      ['league', 'run_mode=eq.league', false],
+      ['daily', 'run_mode=eq.daily', false],
+      ['club', 'run_mode=eq.club', true],
+      ['era', 'run_mode=eq.era', true],
+    ];
+    for (const [door, want, lock] of doors) {
+      await tab(door);
       const q = lastQuery();
-      ok(q.includes(wantMode), `the ${door} board asks for ${wantMode}`);
-      if (keyShown) ok(q.includes(wantKey), `and scopes it with ${wantKey}`);
-      else ok(!q.includes('lock_key=eq.'), `and the ${door} board carries no lock`);
-      if (door === 'daily') ok(q.includes('daily_day=eq.'), 'today asks for one day');
-      const st = await sheetState(page);
-      is(st.keyShown, keyShown, `the lock picker is ${keyShown ? 'shown' : 'hidden'} for ${door}`);
-      ok(st.sub.length > 0, `and the ${door} board says which board it is`);
-      /* NAMED ROWS ONLY. A guest run is a real run and counts, but a board of
-         Anonymous rows is not a board. */
-      ok(q.includes('display_name=not.is.null'), `the ${door} list asks for named runs`);
+      ok(q.includes(want), `the ${door} board asks for ${want}`);
+      ok(!q.includes('lock_key=eq.'), `and opens on every ${door === 'era' ? 'decade' : 'team'} rather than one`);
+      if (door === 'daily') ok(q.includes('daily_day=eq.'), 'the daily asks for one day');
+      /* EVERY RUN, NAMED OR NOT. */
+      ok(!q.includes('display_name=not.is.null'), `the ${door} list asks for every run, guests included`);
+      st = await sheetState(page);
+      is(st.keyShown, lock, `the lock picker is ${lock ? 'shown' : 'hidden'} on ${door}`);
     }
-
     stub.calls = [];
-    await page.selectOption('#lb-door', 'league');
-    await page.waitForTimeout(400);
-    await page.evaluate(() => document.querySelector('#lb-ax-rating').click());
+    await page.selectOption('#bd-lock', 'seventies');
     await page.waitForTimeout(500);
-    ok(lastQuery().includes('order=rating.desc'), 'the rating axis orders on rating');
-    /* THE TIEBREAK REVERSES WITH THE SORT KEY, which is what lets there be no
-       ascending twin of any index. Both axes run desc today, so the tiebreak
-       is asc: a forward scan on a (col desc, created_at asc) index. */
-    ok(lastQuery().includes('created_at.asc'), 'and breaks a tie the way the index runs');
-    ok(lastQuery().includes('rating=not.is.null'),
-      'and leaves out rows that have no rating, so the list and the count agree');
-    await page.evaluate(() => document.querySelector('#lb-ax-record').click());
-    await page.waitForTimeout(400);
-    ok(lastQuery().includes('order=record_score.desc'), 'the record axis orders on the record alone');
-    await page.evaluate(() => document.querySelector('#lb-ax-run').click());
-    await page.waitForTimeout(400);
-    ok(lastQuery().includes('order=score.desc'),
-      'and Best run orders on the score, which leads with how far the run went');
+    ok(lastQuery().includes('lock_key=eq.seventies'), 'choosing a decade scopes the board to it');
+    await tab('club');
+    stub.calls = [];
+    await page.selectOption('#bd-lock', 'BOS');
+    await page.waitForTimeout(500);
+    ok(lastQuery().includes('lock_key=eq.BOS'), 'choosing a team scopes the board to it');
 
-    /* SWITCHING THE DOOR RESETS THE LOCK. Coming back to Decades and getting
-       whichever era the last session left behind is a screen answering a
-       question nobody asked. */
-    await page.selectOption('#lb-door', 'club');
-    await page.waitForTimeout(400);
-    await page.selectOption('#lb-key', 'BOS');
-    await page.waitForTimeout(400);
-    await page.selectOption('#lb-door', 'era');
-    await page.waitForTimeout(400);
-    const eraKey = await page.evaluate(() => document.querySelector('#lb-key').value);
-    ok(/^[a-z]+$/.test(eraKey) && eraKey !== 'BOS',
-      `changing the door drops the other door's lock (${eraKey})`);
+    await tab('league');
+    const ax = async (k) => {
+      stub.calls = [];
+      await page.evaluate((x) => document.querySelector('#bd-axes button[data-ax="' + x + '"]').click(), k);
+      await page.waitForTimeout(450);
+    };
+    await ax('rating');
+    ok(lastQuery().includes('order=rating.desc'), 'the rating axis orders on rating');
+    ok(lastQuery().includes('created_at.asc'), 'and breaks a tie the way the index runs');
+    ok(lastQuery().includes('rating=not.is.null'), 'and leaves out rows with no rating, so the list and the count agree');
+    await ax('record');
+    ok(lastQuery().includes('order=record_score.desc'), 'the record axis orders on the record alone');
+    await ax('run');
+    ok(lastQuery().includes('order=score.desc'), 'and Best run orders on the score, which leads with how far the run went');
+
+    /* THE WINDOW AND THE SORT, which is Run The Diamond's board. */
+    stub.calls = [];
+    await page.evaluate(() => document.querySelector('#bd-wins button[data-w="day"]').click());
+    await page.waitForTimeout(450);
+    ok(/created_at=gte\./.test(lastQuery()), 'Today asks for runs filed since the day started');
+    const cnt = stub.calls.filter((c) => c.includes('select=id&') || c.endsWith('select=id')).slice(-1)[0] || '';
+    ok(/created_at=gte\./.test(cnt), 'and counts the same window it lists');
+    stub.calls = [];
+    await page.evaluate(() => document.querySelector('#bd-wins button[data-w="all"]').click());
+    await page.waitForTimeout(450);
+    ok(!/created_at=gte/.test(lastQuery()), 'All time asks for every run');
+    stub.calls = [];
+    await page.evaluate(() => document.querySelector('#bd-sort').click());
+    await page.waitForTimeout(450);
+    ok(/order=score\.asc/.test(lastQuery()) && /created_at\.desc/.test(lastQuery()),
+      'Low to high reads the board backwards, tiebreak and all');
+    const ranksLow = await page.evaluate(() => [...document.querySelectorAll('#bd-list .bd-pos')].map((e) => e.textContent));
+    is(ranksLow, ['312', '311'], 'and each row keeps its real place, counted down from the total');
+    await page.evaluate(() => document.querySelector('#bd-sort').click());
+    await page.waitForTimeout(450);
+
+    /* A HUNDRED AT A TIME. The stand-in counts 312 and lists two, so there
+       are more to load and the next page starts where this one ended. */
+    const more = await page.evaluate(() => { const m = document.querySelector('#bd-more'); return { hidden: m.hidden, t: m.textContent }; });
+    ok(!more.hidden && /Show 100 more/.test(more.t), `a board longer than a page offers the next one (${more.t})`);
+    stub.calls = [];
+    await page.evaluate(() => document.querySelector('#bd-more').click());
+    await page.waitForTimeout(450);
+    ok(/offset=2/.test(lastQuery()), 'and asks for the rows after the ones it has');
+    is((await sheetState(page)).rows, 4, 'and adds them under the first page');
+
+    /* THE OTHER MODES ARE TABS OF THE SAME SCREEN. */
+    await tab('conquest');
+    const cq = stub.calls.filter((c) => c.includes('/rtf_plays')).slice(-1)[0] || '';
+    ok(/mode=eq\.conquest/.test(cq), 'the Conquest tab reads the Conquest board');
+    ok(await page.evaluate(() => getComputedStyle(document.querySelector('#bd-axes')).display === 'none'),
+      'and has no draft axes');
+    const cqRow = await page.evaluate(() => document.querySelector('#bd-list .bd-rec').textContent);
+    ok(/9\s*wins/.test(cqRow), `and ranks a run by its wins (${cqRow})`);
+    await tab('fix');
+    const fx = stub.calls.filter((c) => c.includes('/rtf_plays')).slice(-1)[0] || '';
+    ok(/mode=eq\.fix/.test(fx) && /day=eq\.\d+/.test(fx), 'the Fix History tab reads one day');
+    const wins = await page.evaluate(() => [...document.querySelectorAll('#bd-wins button')].map((b) => b.textContent));
+    is(wins, ['Today', 'Yesterday'], 'and its window is today or yesterday');
 
     await page.context().close();
   }
@@ -603,13 +681,13 @@ const main = async () => {
     const said = {};
     for (const m of ['rows', 'empty', 'down', 'nomigration']) {
       stub.mode = m;
-      await page.evaluate(() => document.querySelector('#lb-ax-record').click());
+      await page.evaluate(() => document.querySelector('#bd-axes button[data-ax="record"]').click());
       await page.waitForTimeout(700);
       const st = await sheetState(page);
       said[m] = st.note;
       if (m === 'rows') { is(st.rows, 1, 'a board with a run on it lists it'); }
       else { is(st.rows, 0, `the ${m} board lists nothing`); }
-      ok(st.note.length > 20, `and the ${m} board says why, in a sentence`);
+      if (m !== 'rows') ok(st.note.length > 20, `and the ${m} board says why, in a sentence`);
     }
     /* FOUR STATES, FOUR SENTENCES. A blank box is how a feature teaches
        somebody it is broken, and three of these states rendering the same
@@ -617,6 +695,7 @@ const main = async () => {
        case on a game this new, so it is the one that must not read as an
        error. */
     is(new Set(Object.values(said)).size, 4, 'each state says something different');
+    ok(/runs?$/.test(said.rows), `a board with runs counts them (${said.rows})`);
     ok(/first/i.test(said.empty), 'an empty board says being first is the prize');
     ok(!/first/i.test(said.down), 'and an unreachable one does not');
     ok(/not set up|not reachable/i.test(said.down), 'an unreachable board says so');
@@ -647,7 +726,7 @@ const main = async () => {
       standing: document.querySelector('#o-stand').textContent.replace(/\s+/g, ' ').trim(),
     }));
     ok(/^\d+-\d+$/.test(after.record), 'the season still finishes with the board missing');
-    ok(after.earned, 'the badges it earned are still announced');
+    ok(after.earned, 'what it earned is still announced');
     ok(after.career && after.career.runs >= 1, 'and it is still in the career');
     ok(/not reachable|not set up/i.test(after.standing),
       'while the standing says the board is the thing that is missing');
@@ -655,6 +734,99 @@ const main = async () => {
       'and never reports an unreachable board as an empty one');
     is(boom6.filter((b) => !/console:/.test(b)), [],
       'and nothing threw with every request failing');
+
+    /* ── 6b. THE CABINET IS AN ACCOUNT'S ──────────────────────────────────
+       This run was played signed out, so its results card has to offer the
+       badges rather than hand them over, and the career sheet's Badges tab has
+       to be the sign-in teaser rather than a cabinet. Then the same page signs
+       in and the same tab has to be the cabinet, every tile a ball. Both
+       halves are asked on one page, because the claim is that the SAME career
+       is read differently by who is holding it. */
+    const guest = await page.evaluate(() => {
+      const card = document.querySelector('#o-earned');
+      const out = {
+        ballRows: card.querySelectorAll('.ern:not(.ern-guest) .em.ball').length,
+        offer: !!card.querySelector('.ern-guest #b-earned-signin'),
+        offerText: (card.querySelector('.ern-guest') || {}).textContent || '',
+      };
+      document.querySelector('#b-home-career') && document.querySelector('#b-home-career').click();
+      document.querySelector('#pt-badges').click();
+      const grid = document.querySelector('#pf-badges');
+      out.tiles = grid.querySelectorAll('.bdg').length;
+      out.teaser = !!grid.querySelector('.bdg-guest');
+      out.teaserBalls = grid.querySelectorAll('.bdg-guest svg rect').length > 0;
+      out.count = document.querySelector('#pt-count').textContent;
+      out.note = !document.querySelector('#pf-badgenote').hidden;
+      return out;
+    });
+    is(guest.ballRows, 0, 'a guest\'s results card hands over no badges');
+    ok(guest.offer && /Sign in/.test(guest.offerText) && /\d+ badge/.test(guest.offerText),
+      'and instead says how many the run lit and offers the sign in');
+    is(guest.tiles, 0, 'a guest\'s Badges tab draws no cabinet');
+    ok(guest.teaser && guest.teaserBalls, 'it draws the teaser, balls and all');
+    ok(guest.count === '' && !guest.note, 'with no count and no storage note');
+
+    const member = await page.evaluate(() => {
+      window.RTF_AUTH.state = () => ({ ready: true, waiting: false, signedIn: true,
+        name: 'tester', userId: '00000000-0000-0000-0000-000000000001' });
+      document.querySelector('#pt-record').click();
+      document.querySelector('#pt-badges').click();
+      const grid = document.querySelector('#pf-badges');
+      const tiles = [...grid.querySelectorAll('.bdg')];
+      return {
+        tiles: tiles.length,
+        balls: tiles.filter((t) => t.querySelector('.bb svg rect')).length,
+        on: grid.querySelectorAll('.bdg.on').length,
+        teaser: !!grid.querySelector('.bdg-guest'),
+        count: document.querySelector('#pt-count').textContent,
+        ballPx: (() => { const b = grid.querySelector('.bdg .bb'); return b ? b.getBoundingClientRect().width : 0; })(),
+        cells: (() => { const v = grid.querySelector('.bdg .bb svg'); return v ? v.viewBox.baseVal.width : 0; })(),
+      };
+    });
+    ok(member.tiles > 20 && !member.teaser, 'signed in, the same tab is the cabinet');
+    is(member.balls, member.tiles, 'and every badge in it is a ball');
+    ok(member.on >= 1, 'the run played signed out lit badges the account now shows');
+    ok(/^\d+\/\d+$/.test(member.count), 'and the tab counts them');
+    ok(member.cells > 0 && Number.isInteger(member.ballPx / member.cells),
+      'a ball is a whole number of pixels a cell (' + member.ballPx + 'px over ' + member.cells + ' cells)');
+
+    /* THE SHELVES. One a group, in badges.js' order, each counting its own
+       tiles, and open exactly when something on it is earned: a shelf that
+       opened empty is a wall of grey, and one that stayed shut over a badge
+       somebody just earned hides the thing they came to look at. */
+    const shelves = await page.evaluate(() => {
+      const G = window.RTF_BADGES.GROUPS;
+      const sh = [...document.querySelectorAll('#pf-badges .bshelf')];
+      return {
+        groups: G.map((g) => g[0]), drawn: sh.map((d) => d.getAttribute('data-g')),
+        total: window.RTF_BADGES.TOTAL,
+        tiles: sh.reduce((n, d) => n + d.querySelectorAll('.bdg').length, 0),
+        counts: sh.every((d) => {
+          const m = d.querySelector('summary .n').textContent.match(/^(\d+)\/(\d+)$/);
+          return m && +m[1] === d.querySelectorAll('.bdg.on').length && +m[2] === d.querySelectorAll('.bdg').length;
+        }),
+        openRule: sh.every((d) => d.open === (d.querySelectorAll('.bdg.on').length > 0)),
+      };
+    });
+    is(shelves.drawn, shelves.groups, 'the cabinet draws one shelf a group, in order');
+    is(shelves.tiles, shelves.total, 'and every badge in the catalog is on one of them');
+    ok(shelves.counts, 'every shelf counts what is on it');
+    ok(shelves.openRule, 'a shelf is open exactly when something on it is earned');
+
+    /* THE OTHER MODES' HOOK. Conquest, Fix History and Six Passes hand their
+       feats to RTF_PAGE.feats; what lights has to land on the career, the
+       cabinet and a toast, and the toast has to wait for the mode's own. */
+    const hook = await page.evaluate(async () => {
+      const fresh = window.RTF_PAGE.feats({ add: { 'ps.played': 1, 'ps.solved': 1 } });
+      const soon = document.querySelector('#toast').textContent;
+      await new Promise((r) => setTimeout(r, 2500));
+      const c = JSON.parse(localStorage.getItem('runthefloor_career_v1'));
+      return { fresh: fresh.map((b) => b.id), soon, later: document.querySelector('#toast').textContent,
+        feats: c && c.feats };
+    });
+    ok(hook.fresh.includes('ps-first') && hook.fresh.includes('ps-1'), 'a mode\'s feats light its badges (' + hook.fresh + ')');
+    ok(hook.feats && hook.feats['ps.solved'] === 1, 'and they are written onto the career');
+    ok(!/badge/i.test(hook.soon) && /badges?/i.test(hook.later), 'and the toast waits its turn, then says so');
     await page.context().close();
   }
 

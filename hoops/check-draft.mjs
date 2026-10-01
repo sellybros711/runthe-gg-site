@@ -82,7 +82,7 @@ async function draftPage(browser, width, height) {
   page.on('pageerror', (e) => boom.push(String(e).slice(0, 200)));
   await page.route('**/*', serve);
   await page.goto('http://local.test/hoops/', { waitUntil: 'domcontentloaded' });
-  await page.waitForSelector('#b-start:not([disabled])', { timeout: 30000 });
+  await page.waitForSelector('#b-start:not([disabled])', { state: 'attached', timeout: 30000 });
   /* The first-time guide covers the button it points at. */
   await page.evaluate(() => { const b = document.querySelector('#frg-x'); if (b) b.click(); });
   await page.evaluate(() => document.querySelector('#b-start').click());
@@ -165,7 +165,7 @@ section('2. one pixel either side of the breakpoint, and no width gets neither')
   const gn = await geom(narrow.page);
   ok(gn.cols === 1, `919 is the single column (${gn.cols})`);
   ok(gn.pips === 'flex', 'and keeps the pips');
-  ok(gn.court.y > gn.dtop.y, 'with the court under the wheel, not beside it');
+  ok(gn.court.bottom <= gn.dtop.y + 1, 'with the court above the wheel, not under it');
   ok(gn.overflow === 0, 'with nothing off the side');
   await narrow.ctx.close();
 }
@@ -183,7 +183,35 @@ section('3. the court a phone draws is the one the file says it draws');
   ok(aspect > 1.3, `the phone court is the short one (aspect ${aspect.toFixed(2)}, `
     + `${Math.round(g.court.w)}x${Math.round(g.court.h)})`);
   ok(g.cols === 1, 'the board is one column');
+  /* THE LINEUP IS ON TOP, which the owner asked for: the court is the first
+     thing under the pinned bar, above the wheel and above the board. */
+  ok(g.court.bottom <= g.dtop.y + 1 && g.court.bottom <= g.opts.y,
+    `the court sits above the wheel and the board (court ends ${Math.round(g.court.bottom)}, `
+    + `wheel starts ${Math.round(g.dtop.y)})`);
   ok(g.overflow === 0, 'nothing hangs off the side');
+
+  /* THE PIPS ARE THE COURT'S STAND-IN, so they show exactly when the court
+     cannot be seen. At the top they would be the lineup drawn twice; scrolled
+     past the court they are the only lineup on the screen. Read as a computed
+     visibility, because the node stays laid out either way. */
+  const pipsShown = () => page.evaluate(() =>
+    getComputedStyle(document.querySelector('#d-pips')).visibility === 'visible');
+  ok(!(await pipsShown()), 'the pips hide while the court is on screen');
+  await page.evaluate(() => {
+    const c = document.querySelector('#court').getBoundingClientRect();
+    window.scrollTo(0, window.scrollY + c.bottom);
+  });
+  await page.waitForTimeout(400);
+  ok(await pipsShown(), 'and show once the court has scrolled up behind the bar');
+  const hang = await page.evaluate(() => {
+    const cap = document.querySelector('#s-draft .capwrap').getBoundingClientRect();
+    const pp = document.querySelector('#d-pips').getBoundingClientRect();
+    return { cap: cap.bottom, pip: pp.top };
+  });
+  ok(hang.pip >= hang.cap, `hanging under the bar rather than inside it (${Math.round(hang.pip)} vs ${Math.round(hang.cap)})`);
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.waitForTimeout(400);
+  ok(!(await pipsShown()), 'and hide again on the way back up');
   await ctx.close();
 }
 

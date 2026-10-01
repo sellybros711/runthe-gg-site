@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<!-- THE SHARE CARD'S SOURCE, rendered to og.png by football/build/fantasy-og.mjs. It is a
+     build input and never a page anybody visits, so it is noindexed. One file draws both
+     competitions: ?league=cfb swaps the badge and the link, and everything else
+     is the same card, because the two are one mode in two sports.
+     NO NUMBER ON IT GOES STALE. A picture cannot be re-interpolated, so the card names the
+     shape of the game (six slots, five drafts, one lineup) and the prize, and never the cap,
+     the week or a count of anything. -->
+<meta name="robots" content="noindex, nofollow">
+<title>Fantasy Challenge card | RunThe.GG</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{width:1200px;height:630px;overflow:hidden;background:#070a13}
+  body{font-family:'Inter',system-ui,sans-serif;color:#eef2f9;position:relative}
+  /* THE STADIUM: two banks of light from above and a field that runs away from the camera. */
+  .sky{position:absolute;inset:0;background:
+    radial-gradient(520px 340px at 160px -60px,rgba(255,255,255,.16),transparent 70%),
+    radial-gradient(520px 340px at 1040px -60px,rgba(255,255,255,.13),transparent 70%),
+    radial-gradient(900px 500px at 860px 330px,rgba(240,201,107,.16),transparent 70%),
+    linear-gradient(180deg,#121b33 0%,#0b1122 55%,#070a13 100%)}
+  .field{position:absolute;left:-200px;right:-200px;bottom:-110px;height:520px;
+    transform:perspective(560px) rotateX(58deg);transform-origin:50% 100%;
+    background:
+      repeating-linear-gradient(90deg,transparent 0 118px,rgba(255,255,255,.16) 118px 121px),
+      linear-gradient(180deg,#0f3a22 0%,#16502f 100%);
+    -webkit-mask-image:linear-gradient(180deg,transparent 0%,#000 38%);
+    mask-image:linear-gradient(180deg,transparent 0%,#000 38%);opacity:.6}
+  .lights{position:absolute;top:26px;display:flex;gap:9px}
+  .lights i{width:15px;height:15px;border-radius:50%;background:#fff8e1;
+    box-shadow:0 0 18px 6px rgba(255,240,200,.55)}
+  .lights.l{left:70px} .lights.r{right:70px}
+
+  .wrap{position:absolute;left:72px;top:92px;width:640px}
+  .brand{display:flex;align-items:center;gap:14px}
+  .brand svg{width:54px;height:54px;filter:drop-shadow(0 6px 14px rgba(240,201,107,.35))}
+  .brand b{font-family:'Anton',Impact,sans-serif;font-weight:400;font-size:34px;
+    letter-spacing:.02em;text-transform:uppercase}
+  .brand b i{font-style:normal;color:#f0c96b}
+  .tag{margin-left:6px;font-family:'Archivo',sans-serif;font-size:15px;font-weight:800;
+    letter-spacing:.14em;text-transform:uppercase;padding:5px 11px;border-radius:7px;
+    color:#93c5fd;background:rgba(59,130,246,.18);border:1.5px solid rgba(59,130,246,.55)}
+  h1{margin-top:26px;font-family:'Anton',Impact,sans-serif;font-weight:400;font-size:112px;
+    line-height:.9;letter-spacing:.005em;text-transform:uppercase;
+    text-shadow:0 10px 30px rgba(0,0,0,.6)}
+  h1 em{font-style:normal;background:linear-gradient(180deg,#fff2c9 0%,#f0c96b 55%,#c9902b 100%);
+    -webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:none;
+    filter:drop-shadow(0 10px 24px rgba(0,0,0,.55))}
+  .sub{margin-top:22px;font-family:'Archivo',sans-serif;font-size:27px;font-weight:700;
+    color:#c3cfdf;letter-spacing:.01em}
+  .sub b{color:#f0c96b}
+
+  /* THE LINEUP CARD, on the right: six slots in the colours the board deals, and the crest
+     standing over it. The slots are empty on purpose: the reader fills them. */
+  .card{position:absolute;right:72px;top:118px;width:360px;padding:26px 24px 22px;
+    border-radius:22px;background:linear-gradient(180deg,rgba(29,41,70,.92),rgba(14,20,36,.95));
+    border:1.5px solid rgba(255,255,255,.12);
+    box-shadow:0 30px 70px -20px rgba(0,0,0,.9),inset 0 1px 0 rgba(255,255,255,.1)}
+  .card:before{content:'';position:absolute;left:30px;right:30px;top:-1px;height:2px;
+    background:linear-gradient(90deg,transparent,#f0c96b,transparent)}
+  .cap{font-family:'Archivo',sans-serif;font-size:15px;font-weight:800;letter-spacing:.16em;
+    text-transform:uppercase;color:#8ea0bb}
+  .row{display:flex;align-items:center;gap:14px;margin-top:13px}
+  .row b{flex:0 0 58px;height:34px;border-radius:9px;display:grid;place-items:center;
+    font-family:'Archivo',sans-serif;font-size:17px;font-weight:800;letter-spacing:.05em;
+    color:#fff;box-shadow:inset 0 1px 0 rgba(255,255,255,.25)}
+  .row i{flex:1;height:14px;border-radius:7px;background:rgba(255,255,255,.08)}
+  .row:nth-child(3) i{width:70%;flex:0 0 62%} .row:nth-child(5) i{flex:0 0 74%}
+  .row:nth-child(6) i{flex:0 0 56%} .row:nth-child(7) i{flex:0 0 68%}
+  .QB{background:linear-gradient(180deg,#ff3d62,#c4062c)}
+  .RB{background:linear-gradient(180deg,#3fd57a,#159646)}
+  .WR{background:linear-gradient(180deg,#3aa8ff,#0a6fd1)}
+  .TE{background:linear-gradient(180deg,#ffae2e,#c77a00)}
+  .win{display:flex;align-items:center;justify-content:space-between;margin-top:20px;
+    padding-top:16px;border-top:1px solid rgba(255,255,255,.1)}
+  .win span{font-family:'Archivo',sans-serif;font-size:16px;font-weight:800;letter-spacing:.14em;
+    text-transform:uppercase;color:#8ea0bb}
+  .win b{font-family:'Anton',Impact,sans-serif;font-weight:400;font-size:30px;color:#f0c96b;
+    letter-spacing:.03em;text-transform:uppercase}
+
+  .foot{position:absolute;left:72px;bottom:44px;display:flex;align-items:center;gap:14px;
+    font-family:'Archivo',sans-serif;font-size:21px;font-weight:800;letter-spacing:.1em;
+    text-transform:uppercase;color:#e7edf6}
+  .foot s{text-decoration:none;color:#8ea0bb;letter-spacing:.06em}
+</style>
+</head>
+<body>
+<div class="sky"></div>
+<div class="field"></div>
+<div class="lights l"><i></i><i></i><i></i></div>
+<div class="lights r"><i></i><i></i><i></i></div>
+
+<div class="wrap">
+  <div class="brand">
+    <svg viewBox="0 0 32 32" aria-hidden="true">
+      <path d="M16 1.8 28.4 6v9.4c0 7.4-5.3 12.6-12.4 15-7.1-2.4-12.4-7.6-12.4-15V6Z"
+        fill="#141d33" stroke="#f0c96b" stroke-width="1.8"/>
+      <path d="M11 8.6h10v4.2a5 5 0 0 1-10 0Z" fill="#f0c96b"/>
+      <path d="M11 9.8H8.6a2.6 2.6 0 0 0 2.9 3.8M21 9.8h2.4a2.6 2.6 0 0 1-2.9 3.8"
+        fill="none" stroke="#f0c96b" stroke-width="1.4"/>
+      <rect x="15" y="17.4" width="2" height="2.8" fill="#d9a13a"/>
+      <rect x="11.8" y="20.2" width="8.4" height="2.4" rx="1" fill="#f0c96b"/>
+    </svg>
+    <b id="name">Fantasy <i>Challenge</i></b>
+    <span class="tag" id="league">NFL</span>
+  </div>
+  <h1>One lineup.<br><em>One week.</em></h1>
+  <p class="sub">Draft six. Beat the field. <b>Top score wins Pro.</b></p>
+</div>
+
+<div class="card">
+  <div class="cap">Your six</div>
+  <div class="row"><b class="QB">QB</b><i></i></div>
+  <div class="row"><b class="RB">RB</b><i></i></div>
+  <div class="row"><b class="RB">RB</b><i></i></div>
+  <div class="row"><b class="WR">WR</b><i></i></div>
+  <div class="row"><b class="WR">WR</b><i></i></div>
+  <div class="row"><b class="TE">TE</b><i></i></div>
+  <div class="win"><span>First place</span><b>Wins Pro</b></div>
+</div>
+
+<div class="foot"><span id="url">runthe.gg/football/fantasy</span><s>Free. New board every week.</s></div>
+
+<script>
+  /* The college card is the same card with a different badge and link. */
+  if (/[?&]league=cfb\b/.test(location.search)) {
+    document.getElementById('league').textContent = 'College';
+    document.getElementById('url').textContent = 'runthe.gg/cfb/fantasy';
+  }
+</script>
+</body>
+</html>

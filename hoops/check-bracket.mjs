@@ -26,14 +26,16 @@
  * quietly became the thing that picked the opponent would rebuild the
  * difficulty curve with nothing anywhere reporting it.
  *
- * IT CONTRADICTS ITSELF. Sixteen seats carry a seed and a record, so a 7 seed
- * printed above an 8 seed with more wins is a bracket arguing with its own
- * seeding, and the player's own record is the one number in the column that
- * is not ours to choose.
+ * IT CONTRADICTS ITSELF. The seeds are built off records, so a 7 seed built
+ * above an 8 seed with more wins is a field arguing with its own seeding,
+ * and the player's own record is the one number in the column that is not
+ * ours to choose.
  *
- * IT NAMES SOMEBODY. This game says "played like a 58 win team" rather than
- * naming a club, for the reason written over the results screen. Fifteen
- * seats is fifteen chances to break that.
+ * IT NAMES A SEASON. A seat is a club of today's league and a seed, asked for
+ * by the owner, and never a year: "the 1996 Bulls" over a number the model
+ * rolled is a claim about a team that was never in the room. The clubs are
+ * one draw off the run's seed, so the same run shows the same field, and the
+ * rail, the card and the note all name the same one.
  *
  * NOTHING HERE REACHES A NETWORK.
  */
@@ -209,28 +211,27 @@ head('1. the field is a field: seeded, ordered, and its own shape');
 }
 
 // ── 2. nobody is named ──────────────────────────────────────────────────────
-head('2. the bracket names nobody, which is this game\'s rule');
+head('2. every seat is a club and a seed, and never a season');
 {
-  /* The results screen has said "played like a N win team" since it shipped,
-     because printing a real club over a number the model rolled tells
-     somebody they beat a team that was never in the room. A bracket of
-     fifteen seats is fifteen chances to undo that in one screen, and the
-     failure is a page that reads better than the correct one. */
+  /* Asked for by the owner: the bracket says who you are playing, a team and
+     a seed. What must never come back is a SEASON on a seat, because "the
+     1996 Bulls" over a number the model rolled is a claim about a team that
+     was never in the room. A club of today's league is a label. */
   const at = pageSrc.indexOf('function brkSeat(');
   ok(at > 0, 'the seat painter is in the page');
   const end = pageSrc.indexOf('\n}', at);
   const seat = pageSrc.slice(at, end);
-  const named = /nickname|franchise|teamName|E\.team\(|clubSkin/.test(seat);
-  ok(!named, 'a seat is drawn without reaching for a club name'
-    + (named ? '\n      ' + seat.split('\n').filter((l) => /nickname|franchise|teamName|E\.team\(|clubSkin/.test(l)).join('\n      ') : ''));
+  ok(/brkClubName\(/.test(seat), 'a seat is drawn with its club name');
+  ok(!/REGULAR_SEASON_GAMES|e\.wins/.test(seat), 'and never with a record');
+  ok(!/teamDisplay|season/.test(seat), 'and never with a season');
 
   /* AND THE TWO NUMBERS STAY APART. The seat carries the seed, which is the
      field's shape; the note carries the strength the engine drew, which is
-     the only number that decides anything. Read as one claim they would make
-     the bracket look like it was lying about its own seeding. */
+     the only number that decides anything. */
   const note = fnSource('brkSeriesNote') || '';
   ok(/oppWins\(/.test(note), 'the note reads the drawn strength through oppWins');
   ok(/cur\.oppNet/.test(note), 'and off the round rather than off the pending game');
+  ok(/brkClubName\(/.test(note), 'and names the club it is about');
   ok(!/oppWins\(/.test(seat), 'and the seat does not, so the two never merge');
 }
 
@@ -241,7 +242,8 @@ head('3. the whole field, driven through the runs that break it');
      pieces feed each other and a lift of one function at a time would be a
      rebuild of the join rather than a test of it. Its only outside
      dependencies are the engine and the run, so the run is the fixture. */
-  const WANT = ['BRK_CONFS', 'BRK_TREE', 'BRK_OVER', 'brkWins', 'brkSeedOf',
+  const WANT = ['BRK_CONFS', 'BRK_CLUBS', 'BRK_NICK', 'brkClubName', 'brkConfOf', 'brkShuffle',
+    'BRK_TREE', 'BRK_OVER', 'brkWins', 'brkSeedOf',
     'brkColumnWins', 'brkLadder', 'brkOdds', 'brkResolve', 'brk', 'brkBuild', 'brkEntrant',
     'brkGame', 'brkMine', 'brkColumn', 'brkKnown'];
   const missing = WANT.filter((n) => !fnSource(n));
@@ -357,6 +359,197 @@ head('3. the whole field, driven through the runs that break it');
   }
   is0(firstHidden, 'the first round is drawn from the tip, play-in or not');
   is0(ahead, 'and nothing past it is, so the bracket cannot read ahead');
+
+  /* THE CLUBS. Every seat that is not the player is a club, sixteen seats
+     and the play-in are sixteen different clubs, each sits in its own
+     conference, and the same run always draws the same field. A One
+     Franchise run plays in its own club's conference and never meets its
+     own club. */
+  let unnamed = 0, dupes = 0, wrongConf = 0, drift = 0, selfMet = 0, ownConf = 0, drawn = 0;
+  const clubsIn = (F, B) => {
+    const out = [];
+    for (const e of B.near) if (!e.you) out.push([e.code, B.myConf]);
+    for (const e of B.far) out.push([e.code, B.farConf]);
+    if (B.off) out.push([B.playIn.code, B.myConf]);
+    return out;
+  };
+  const CONF = { East: new Set(['ATL', 'BOS', 'BRK', 'CHI', 'CHO', 'CLE', 'DET', 'IND', 'MIA', 'MIL',
+    'NYK', 'ORL', 'PHI', 'TOR', 'WAS']), West: new Set(['DAL', 'DEN', 'GSW', 'HOU', 'LAC', 'LAL',
+    'MEM', 'MIN', 'NOP', 'OKC', 'PHO', 'POR', 'SAC', 'SAS', 'UTA']) };
+  for (let s = 1; s <= 40; s++) {
+    for (const [wins, club] of [[46, null], [58, null], [64, null], [46, 'DEN'], [58, 'BOS'], [64, 'LAL']]) {
+      const r = fixture(s * 11 + 4, wins, 9, true);
+      if (club) r.club = club;
+      const F = make(r);
+      const B = F.brkBuild();
+      const list = clubsIn(F, B);
+      drawn += list.length;
+      const seen = new Set();
+      for (const [code, conf] of list) {
+        if (!code) { unnamed++; continue; }
+        if (seen.has(code)) dupes++;
+        seen.add(code);
+        if (!CONF[conf].has(code)) wrongConf++;
+        if (club && code === club) selfMet++;
+      }
+      if (club && !CONF[B.myConf].has(club)) ownConf++;
+      const again = make(JSON.parse(JSON.stringify(r))).brkBuild();
+      if (JSON.stringify(clubsIn(null, again)) !== JSON.stringify(list)) drift++;
+      /* A named seat is named all the way up the tree: the champion carries
+         the club it started the bracket as. */
+      const fin = F.brkColumn(B.names.length - 1)[0];
+      if (fin && fin.won && !fin.won.you && !fin.won.code) unnamed++;
+    }
+  }
+  ok(drawn > 3000, `the club sweep ran (${drawn} seats)`);
+  is0(unnamed, 'every seat that is not the player is a club');
+  is0(dupes, 'and no club is on two seats');
+  is0(wrongConf, 'and each club sits in its own conference');
+  is0(drift, 'and the same run always draws the same clubs');
+  is0(selfMet, 'a One Franchise run never meets its own club');
+  is0(ownConf, 'and plays in its own club\'s conference');
+
+  /* ASKED IN ANY ORDER, THE SAME FIELD. A reload rebuilds the bracket a
+     column at a time and the live walk asked it a render at a time, so a
+     result that depended on which game was asked first could crown a
+     different club after a reload. Each game rolls on its own stream now. */
+  let order = 0;
+  for (let s = 1; s <= 30; s++) {
+    const r = fixture(s * 19 + 7, 58, 1, false);
+    const fwd = make(JSON.parse(JSON.stringify(r)));
+    const Bf = fwd.brkBuild();
+    const ask = (F, cols) => cols.map((c) => F.brkColumn(c).map((g) => g.won ? g.won.code || 'you' : '-').join(','));
+    const cols = Bf.names.map((n, i) => i);
+    const a = ask(fwd, cols);
+    const back = make(JSON.parse(JSON.stringify(r)));
+    back.brkBuild();
+    ask(back, cols.slice().reverse());
+    const b = ask(back, cols);
+    if (a.join('|') !== b.join('|')) order++;
+  }
+  is0(order, 'the field crowns the same clubs whichever order it is asked in');
+}
+
+// ── 3b. the series card reads, it never decides ─────────────────────────────
+head('3b. the series card: the odds are the games\' own, and a box score is one box score');
+{
+  const R = require(path.join(HERE, 'run.js'));
+  const M = require(path.join(HERE, 'modes.js'));
+
+  /* THE ENGINE'S ONE GAME IS CONQUEST'S ONE GAME. modes.js carries the same
+     formula as winChance, and two copies of one sum drift the first time one
+     is tuned. Held across a grid of matchups and every home court the
+     bracket can hand out. */
+  let apart = 0, grid = 0;
+  for (let pf = 96; pf <= 124; pf += 4) for (let pa = 96; pa <= 124; pa += 4)
+    for (const adv of [1, 1.02, 1 / 1.02, 1.04, 1 / 1.04]) {
+      grid++;
+      const a = E.gameChance(pf, pa, adv);
+      const b = M.winChance({ pointsFor: pf, pointsAgainst: pa }, adv);
+      if (Math.abs(a - b) > 1e-12) apart++;
+    }
+  is0(apart, `the engine's game chance is modes.js's winChance, over ${grid} matchups`);
+
+  /* THE SERIES ODDS ARE WHAT THE GAMES PLAY. Driven from a spread of series
+     states through resolveGame with the real home pattern, 20,000 series a
+     state. The band is four standard errors of a proportion at that sample
+     plus half a point for the tie a normal CDF cannot see. */
+  const states = [
+    { y: 0, o: 0, pf: 112, pa: 108, adv: 1.03 },
+    { y: 0, o: 0, pf: 106, pa: 113, adv: 1.01 },
+    { y: 2, o: 3, pf: 110, pa: 110, adv: 1.03 },
+    { y: 3, o: 2, pf: 104, pa: 112, adv: 1.0 },
+    { y: 1, o: 1, pf: 118, pa: 105, adv: 1.04 },
+    { y: 3, o: 3, pf: 109, pa: 111, adv: 1.02 },
+  ];
+  const N = QUICK ? 8000 : 20000;
+  for (const st of states) {
+    const cur = { bestOf: 7, need: 4, yourWins: st.y, oppWins: st.o,
+      pointsFor: st.pf, pointsAgainst: st.pa, adv: st.adv, games: new Array(st.y + st.o) };
+    const want = E.seriesChance(cur);
+    const rng = E.createSeededRNG(E.hashSeed('series|' + st.y + st.o + st.pf + st.pa));
+    let won = 0;
+    for (let n = 0; n < N; n++) {
+      let y = st.y, o = st.o;
+      while (y < 4 && o < 4) {
+        const home = E.PO_HOME[7][y + o] === 1;
+        const r = E.resolveGame(st.pf, st.pa, rng, home ? st.adv : 1 / st.adv);
+        if (r.won) y++; else o++;
+      }
+      if (y >= 4) won++;
+    }
+    const got = won / N;
+    const band = 4 * Math.sqrt(got * (1 - got) / N) + 0.005;
+    ok(Math.abs(got - want) <= band,
+      `series odds from ${st.y}-${st.o} are what the games play (says ${(want * 100).toFixed(1)}%, `
+      + `played ${(got * 100).toFixed(1)}%)`);
+  }
+
+  /* IT DRAWS NOTHING AND TOUCHES NOTHING. Asked on every paint, so a single
+     draw would move the season somebody is watching. */
+  const cur0 = { bestOf: 7, need: 4, yourWins: 1, oppWins: 2, pointsFor: 110,
+    pointsAgainst: 108, adv: 1.02, games: [{}, {}, {}] };
+  const snap = JSON.stringify(cur0);
+  const p1 = E.seriesChance(cur0), p2 = E.seriesChance(cur0);
+  ok(p1 === p2 && JSON.stringify(cur0) === snap, 'asking the odds twice changes nothing and answers the same');
+  is(E.seriesChance({ ...cur0, yourWins: 4 }), 1, 'a series won is certain');
+  is(E.seriesChance({ ...cur0, oppWins: 4 }), 0, 'and a series lost is over');
+
+  /* THE UPSET TAG, lifted from the page. Three seeds or more, and a seat
+     with no seed is never an upset. */
+  const upSrc = fnSource('brkUpset');
+  ok(!!upSrc, 'the upset rule is in the page');
+  if (upSrc) {
+    const brkUpset = new Function(upSrc + '\nreturn brkUpset;')();
+    const g = (w, l) => ({ won: { seed: w }, lost: { seed: l } });
+    ok(brkUpset(g(7, 2)) && brkUpset(g(6, 3)), 'a 7 over a 2 and a 6 over a 3 are upsets');
+    ok(!brkUpset(g(5, 4)) && !brkUpset(g(1, 8)), 'a 5 over a 4 is not, and neither is the 1 over the 8');
+    ok(!brkUpset(g(null, 2)) && !brkUpset({ won: null, lost: null }), 'and a seat with no seed never is');
+  }
+
+  /* ONE GAME, ONE BOX SCORE, WHENEVER IT IS OPENED. The strip opens a game
+     while the bracket is still being played, off po, and the results screen
+     opens it afterwards off run.playoffs. The seed is the game's address
+     either way, so the two must be the same box score to the point. */
+  const DATA = R.indexData(read('players.json'));
+  E.setCuratedChemistry(read('chemistry.json'));
+  let compared = 0, differ = 0, midNull = 0, runs = 0;
+  for (let seed = 1; seed <= 60 && compared < 40; seed++) {
+    const run = R.createRun({ seed });
+    let g = 0;
+    while (run.phase === R.PHASES.DRAFT && g++ < 50) {
+      const draw = R.spin(run, DATA);
+      const opts = draw.options.map((k) => DATA.allPlayers[k]).filter(Boolean);
+      if (!opts.length) break;
+      R.sign(run, opts.slice().sort((a, b) => b.w - a.w)[0]);
+    }
+    if (run.phase !== R.PHASES.SEASON) continue;
+    R.playToPlayoffs(run);
+    if (!run.po) continue;
+    runs++;
+    const mid = [];
+    let guard = 0;
+    while (!run.po.done && guard++ < 200) {
+      const next = R.pendingGame(run);
+      R.simGame(run);
+      /* The game just played, opened from the bracket before the run ends. */
+      const rd = run.po.cur ? run.po.cur.roundIndex : run.po.results.length - 1;
+      const gi = (run.po.cur ? run.po.cur.games.length : run.po.results[rd].games.length) - 1;
+      if (next && rd !== next.roundIndex) continue;
+      const d = R.gameDetail(run, { kind: 'playoff', round: rd, game: gi });
+      if (!d) { midNull++; continue; }
+      mid.push({ rd, gi, d: JSON.stringify(d) });
+    }
+    R.finishRun(run);
+    for (const m of mid) {
+      compared++;
+      const after = JSON.stringify(R.gameDetail(run, { kind: 'playoff', round: m.rd, game: m.gi }));
+      if (after !== m.d) differ++;
+    }
+  }
+  ok(runs > 0 && compared > 20, `enough playoff games to compare (${compared} games, ${runs} runs)`);
+  is0(midNull, 'every game just played opens from the bracket');
+  is0(differ, 'and each is the same box score as the one the results screen opens');
 }
 
 if (QUICK) { report(); process.exit(failures.length ? 1 : 0); }
@@ -399,9 +592,30 @@ async function newPage(browser, boom){
 
 async function boot(page){
   await page.goto('http://local.test/hoops/', { waitUntil: 'domcontentloaded' });
-  await page.waitForSelector('#b-start:not([disabled])', { timeout: 30000 });
+  await page.waitForSelector('#b-start:not([disabled])', { state: 'attached', timeout: 30000 });
   await page.evaluate(() => { const b = document.querySelector('#frg-x'); if (b) b.click(); });
+  await widenDoor(page);
   await page.waitForTimeout(200);
+}
+
+/* THE DOOR IS A GAME 7 AND A GAME 7 IS RARE. Since the door stopped opening
+   on every game that could end a series, a run meets one about one time in
+   five, so sections 6 and 7 waited on an event that mostly never came: the
+   door was never seen and the run played itself out to the results screen.
+   That failed on every run from the commit that made the change, which is a
+   guard nobody reads. check-live.mjs met the same problem and widens the door
+   inside the page for exactly this; the real rule is asserted there, off the
+   engine, so this walk is free to ask for a door on any series game that can
+   end it. */
+async function widenDoor(page) {
+  await page.evaluate(() => {
+    const E = window.RTF_ENGINE, real = E.poNext;
+    E.poNext = function (po, rng) {
+      const n = real.call(this, po, rng);
+      if (n && n.bestOf > 1 && (n.elimination || n.closeout)) n.big = true;
+      return n;
+    };
+  });
 }
 
 /* Draft best-available through the real board and play the 82.
@@ -409,7 +623,12 @@ async function boot(page){
    CHILDREN and sets pointer-events none on the tile, so the tile itself is a
    visible box and a scripted click lands on a board still mid-spin, which
    leaves reelBusy true and the draft on an empty board for ever. */
-async function toPlayoffs(page){
+/* `needBye` asks for a run SEEDED into the first round. A play-in run is one
+   game, so it can never open the series door, and losing it ends the run
+   before the bracket proper: section 6 then reports no door and section 7 a
+   run that is over. That came up about one run in eight and read as a flake;
+   it is the fixture taking any run that reached the bracket. */
+async function toPlayoffs(page, needBye){
   await page.evaluate(() => { try { localStorage.removeItem('runthefloor_run_v1'); } catch (e) {} });
   await page.evaluate(() => document.querySelector('#b-start').click());
   /* HOW MANY TO SIGN IS THE ENGINE'S ANSWER, never a literal. Written 6 this
@@ -440,7 +659,13 @@ async function toPlayoffs(page){
       brk: !!document.querySelector('#s-brk.active'),
       over: !!document.querySelector('#s-over.active'),
     }));
-    if (st.brk) return true;
+    if (st.brk) {
+      if (!needBye) return true;
+      return await page.evaluate(() => {
+        try { const r = JSON.parse(localStorage.getItem('runthefloor_run_v1')); return !!(r && r.po && r.po.bye); }
+        catch (e) { return false; }
+      });
+    }
     if (st.over) return false;
     await page.waitForTimeout(100);
   }
@@ -454,10 +679,10 @@ async function toPlayoffs(page){
 async function findBracket(browser, boom){
   const page = await newPage(browser, boom);
   await boot(page);
-  for (let a = 0; a < 12; a++) {
-    if (await toPlayoffs(page)) return page;
+  for (let a = 0; a < 16; a++) {
+    if (await toPlayoffs(page, true)) return page;
     await page.evaluate(() => { const h = document.querySelector('#b-home'); if (h) h.click(); });
-    await page.waitForSelector('#b-start', { timeout: 10000 });
+    await page.waitForSelector('#b-start', { state: 'attached', timeout: 10000 });
     await page.waitForTimeout(120);
   }
   return null;
@@ -475,6 +700,9 @@ const railState = (page) => page.evaluate(() => {
         nm: t.querySelector('.nm').textContent,
         sc: t.querySelector('.sc').textContent,
         tbd: t.classList.contains('tbd'),
+        club: t.classList.contains('club'),
+        cut: (() => { const n = t.querySelector('.nm'); const r = document.createRange();
+          r.selectNodeContents(n); return r.getBoundingClientRect().width > n.clientWidth + 0.5; })(),
         me: t.classList.contains('me'),
         won: t.classList.contains('won'),
         out: t.classList.contains('out'),
@@ -522,15 +750,52 @@ const main = async () => {
     is(st[pi ? 3 : 2].games.length, 2, 'two conference finals');
     is(st[st.length - 1].games.length, 1, 'and one Finals');
 
-    /* NOBODY IS NAMED. Every seat is a seed and a record, or the player, or
-       a seat nothing has fed yet. */
-    let named = 0, mine = 0;
+    /* THE SERIES CARD IS UP AND IT AGREES WITH THE RUN. One tile a game of
+       the round, a lit tile for every game played, and a score that is the
+       run's own series score. It sits above the rail, because it is the
+       context for the one box in the rail that is the reader's. */
+    const card = await page.evaluate(() => {
+      const c = document.querySelector('#brk-srs');
+      const r = JSON.parse(localStorage.getItem('runthefloor_run_v1'));
+      const cur = r.po && r.po.cur;
+      return {
+        shown: !!c && !c.hidden && c.getBoundingClientRect().height > 0,
+        above: c.getBoundingClientRect().bottom <= document.querySelector('.brk-wrap').getBoundingClientRect().top,
+        pips: c.querySelectorAll('.srs-pip').length,
+        played: c.querySelectorAll('.srs-pip.w, .srs-pip.l').length,
+        score: document.querySelector('#srs-score').textContent,
+        pct: document.querySelector('#srs-pct').textContent,
+        want: cur ? { bestOf: cur.bestOf, games: cur.games.length,
+          score: cur.bestOf === 1 ? null : cur.yourWins + '-' + cur.oppWins } : null,
+        wide: c.scrollWidth - c.clientWidth,
+      };
+    });
+    ok(card.shown, 'the series card is on the screen');
+    ok(card.above, 'above the rail');
+    if (card.want) {
+      is(card.pips, card.want.bestOf, 'one tile for every game the round can go');
+      is(card.played, card.want.games, 'and a result on every game already played');
+      if (card.want.score) is(card.score, card.want.score, 'the big number is the series score');
+    }
+    ok(/^\d{1,3}%$/.test(card.pct), `the odds are printed (${card.pct})`);
+
+    /* EVERY SEAT IS A CLUB OR THE PLAYER OR TBD, and no seat is a record.
+       Sixteen clubs, sixteen different names, each with its seed on a chip. */
+    let named = 0, mine = 0, records = 0, chipless = 0;
+    const clubNames = new Set(), NICK = { MIN: 'Wolves', POR: 'Blazers' };
+    const want = new Set(Object.keys(E.TEAM_NAMES).map((c) => NICK[c] || E.TEAM_NAMES[c]));
     for (const c of st) for (const g of c.games) for (const s of g.seats) {
       if (s.me) { mine++; continue; }
       if (s.tbd) { if (s.nm !== 'TBD') named++; continue; }
-      if (!/^\d{1,2}-\d{1,2}$/.test(s.nm)) named++;
+      if (/^\d{1,2}-\d{1,2}$/.test(s.nm)) records++;
+      if (!want.has(s.nm)) named++;
+      if (s.sd !== '' && !s.club) chipless++;
+      if (c.head === 'First Round' || c.head === 'Play-In') clubNames.add(s.nm);
     }
-    is0(named, 'every seat is a record, the player, or TBD, and never a club');
+    is0(records, 'no seat prints a record');
+    is0(named, 'every seat is a club of the league, the player, or TBD');
+    is0(chipless, 'and every seeded club wears its seed on a chip');
+    ok(clubNames.size >= 15, `and the first round is fifteen different clubs (${clubNames.size})`);
     ok(mine > 0, `the player is in the field (${mine} seats)`);
 
     /* THE FIRST ROUND IS SEEDED AND THE COLUMN IS ORDERED. Its pairings are
@@ -549,21 +814,82 @@ const main = async () => {
     is(first.slice(0, 4).map((g) => g.seats[0].sd), ['1', '4', '3', '2'],
       'and a conference is drawn in bracket order');
 
-    /* RECORDS DESCEND WITH THE SEED, on the screen and not only in the
-       arithmetic. Read per conference, because the two are separate fields. */
-    let outOfOrder = 0;
-    for (const half of [first.slice(0, 4), first.slice(4)]) {
-      const bySeed = {};
-      for (const g of half) for (const s of g.seats) {
-        if (s.me) continue;
-        bySeed[+s.sd] = +s.nm.split('-')[0];
+    /* A NAME IS WHOLE. A seat is about eighty pixels of text on a phone, and
+       a name cut to an ellipsis is a club the reader has to guess. Measured
+       with a Range, because scrollWidth cannot see an ellipsis. */
+    let cut = 0;
+    for (const c of st) for (const g of c.games) for (const s of g.seats) if (s.cut) cut++;
+    is0(cut, 'no club name on the rail is cut short');
+
+    /* EVERY CLUB, NOT ONLY THE SIXTEEN THIS RUN DREW. A probe seat is put in
+       the first column for each of the thirty and measured the same way, so
+       whether the longest name fits is not down to the draw. */
+    /* THE PAGE'S OWN NAMER, lifted, so a probe cannot pass on names the page
+       has stopped printing. */
+    const namer = fnSource('BRK_NICK') + '\n' + fnSource('brkClubName');
+    const tooLong = await page.evaluate((namer) => {
+      const col = document.querySelector('#brk-rail .brk-col:not(.pin) .brk-g');
+      if (!col) return ['no column to probe'];
+      const E = window.RTF_ENGINE, out = [];
+      const nameOf = new Function('E', namer + '\nreturn brkClubName;')(E);
+      for (const c of ['ATL', 'BOS', 'BRK', 'CHI', 'CHO', 'CLE', 'DET', 'IND', 'MIA', 'MIL', 'NYK',
+        'ORL', 'PHI', 'TOR', 'WAS', 'DAL', 'DEN', 'GSW', 'HOU', 'LAC', 'LAL', 'MEM', 'MIN', 'NOP',
+        'OKC', 'PHO', 'POR', 'SAC', 'SAS', 'UTA']) {
+        const d = document.createElement('div');
+        d.className = 'brk-t club won';
+        d.innerHTML = '<span class="sd">8</span><span class="nm"></span><span class="sc">3</span>';
+        d.querySelector('.nm').textContent = nameOf({ code: c });
+        col.appendChild(d);
+        const n = d.querySelector('.nm'), r = document.createRange();
+        r.selectNodeContents(n);
+        if (r.getBoundingClientRect().width > n.clientWidth + 0.5) out.push(n.textContent);
+        d.remove();
       }
-      const seeds = Object.keys(bySeed).map(Number).sort((a, b) => a - b);
-      for (let i = 1; i < seeds.length; i++) {
-        if (bySeed[seeds[i]] > bySeed[seeds[i - 1]]) outOfOrder++;
+      return out;
+    }, namer);
+    is(tooLong, [], 'and no club in the league would be, at a phone\'s column');
+
+    /* THE SERIES CARD IS THE TIGHTER OF THE TWO. At 320 its name has about
+       seventy pixels, where "Timberwolves" needs about a hundred, which is
+       why two clubs go by the name a broadcast graphic uses. Measured on the
+       real card at the narrowest phone, then put back. */
+    await page.setViewportSize({ width: 320, height: 640 });
+    const cardLong = await page.evaluate((namer) => {
+      const nm = document.querySelector('#srs-thnm');
+      if (!nm || document.querySelector('#brk-srs').hidden) return ['the card is not up'];
+      const keep = nm.innerHTML, E = window.RTF_ENGINE, out = [];
+      const nameOf = new Function('E', namer + '\nreturn brkClubName;')(E);
+      for (const c of ['ATL', 'BOS', 'BRK', 'CHI', 'CHO', 'CLE', 'DET', 'IND', 'MIA', 'MIL', 'NYK',
+        'ORL', 'PHI', 'TOR', 'WAS', 'DAL', 'DEN', 'GSW', 'HOU', 'LAC', 'LAL', 'MEM', 'MIN', 'NOP',
+        'OKC', 'PHO', 'POR', 'SAC', 'SAS', 'UTA']) {
+        nm.innerHTML = '';
+        nm.appendChild(document.createTextNode(nameOf({ code: c })));
+        const sm = document.createElement('small'); sm.textContent = 'West 3 seed'; nm.appendChild(sm);
+        const r = document.createRange();
+        r.selectNodeContents(nm.firstChild);
+        if (r.getBoundingClientRect().width > nm.clientWidth + 0.5) out.push(nm.firstChild.textContent);
       }
+      nm.innerHTML = keep;
+      return out;
+    }, namer);
+    await page.setViewportSize(PHONE);
+    is(cardLong, [], 'and no club name is cut on the series card at 320');
+
+    /* THE CARD NAMES THE SAME CLUB THE RAIL DOES, and says its seed. */
+    const cardClub = await page.evaluate(() => {
+      const nm = document.querySelector('#srs-thnm');
+      const live = document.querySelector('#brk-rail .brk-g.live');
+      const other = live ? [...live.querySelectorAll('.brk-t')].find((t) => !t.classList.contains('me')) : null;
+      return { card: nm.firstChild ? nm.firstChild.textContent : '',
+        small: nm.querySelector('small') ? nm.querySelector('small').textContent : '',
+        rail: other ? other.querySelector('.nm').textContent : null,
+        note: document.querySelector('#brk-note').textContent };
+    });
+    if (cardClub.rail && cardClub.rail !== 'TBD') {
+      is(cardClub.card, cardClub.rail, 'the series card names the club the rail does');
+      ok(/seed|Play-in/.test(cardClub.small), `and says its seed (${cardClub.small})`);
+      ok(!/\d{1,2}-\d{1,2}/.test(cardClub.small), 'and not its record');
     }
-    is0(outOfOrder, 'a worse seed never shows more wins than a better one');
   }
 
   // ── 5. it does not read ahead ────────────────────────────────────────────
@@ -659,6 +985,8 @@ const main = async () => {
            a season record on a seat. */
         ok(/win team/.test(st.note),
           `the note says what they are playing like (${JSON.stringify(st.note)})`);
+        ok(/the [A-Z][A-Za-z0-9]+/.test(st.note) || /One game/.test(st.note),
+          `and names the club it is about (${JSON.stringify(st.note)})`);
         break;
       }
       if (await page.evaluate(() => !!document.querySelector('#s-over.active'))) break;
@@ -677,7 +1005,7 @@ const main = async () => {
     ok(before.phase === 'playoffs', `the saved run is in the playoffs (${before.phase})`);
 
     await page.reload({ waitUntil: 'domcontentloaded' });
-    await page.waitForSelector('#b-start:not([disabled])', { timeout: 30000 });
+    await page.waitForSelector('#b-start:not([disabled])', { state: 'attached', timeout: 30000 });
     await page.evaluate(() => document.querySelector('#b-resume').click());
     await page.waitForTimeout(700);
     const st = await page.evaluate(() => ({
@@ -746,7 +1074,7 @@ const main = async () => {
     for (; tries < 14 && !geo; tries++) {
       if (!(await toPlayoffs(pip))) {
         await pip.evaluate(() => { const h = document.querySelector('#b-home'); if (h) h.click(); });
-        await pip.waitForSelector('#b-start', { timeout: 10000 });
+        await pip.waitForSelector('#b-start', { state: 'attached', timeout: 10000 });
         await pip.waitForTimeout(120);
         continue;
       }
@@ -775,7 +1103,7 @@ const main = async () => {
       if (read) geo = read;
       else {
         await pip.evaluate(() => { const h = document.querySelector('#b-home'); if (h) h.click(); });
-        await pip.waitForSelector('#b-start', { timeout: 10000 });
+        await pip.waitForSelector('#b-start', { state: 'attached', timeout: 10000 });
         await pip.waitForTimeout(120);
       }
     }

@@ -14,11 +14,15 @@ on:
   pull_request:
     paths:
       - 'baseball/**'
+      - 'supabase/127_baseball_profiles.sql'
+      - 'supabase/test/baseball_profile_test.sql'
       - '.github/workflows/baseball-checks.yml'
   push:
     branches: [main]
     paths:
       - 'baseball/**'
+      - 'supabase/127_baseball_profiles.sql'
+      - 'supabase/test/baseball_profile_test.sql'
       - '.github/workflows/baseball-checks.yml'
   workflow_dispatch: {}
 
@@ -89,6 +93,29 @@ jobs:
       - name: The staff sorts itself
         run: node baseball/check-staff.mjs 60
 
+      # The squad screen reads as a batting order and a staff. The coach's order is
+      # the season's baseline, so it has to cost nothing and nothing may beat it,
+      # or Pro could buy runs by moving a man. Pro swaps, reads the cost, and can
+      # put the coach back; a free account reads the order and cannot move it.
+      - name: The lineup
+        run: node baseball/check-lineup.mjs
+
+      # A run in progress survives leaving the page: the banner asks first and
+      # saves, and resuming shows the SAME board, or leaving would be a free re-spin.
+      - name: A run survives leaving the page
+        run: node baseball/check-resume.mjs
+
+      # The leaderboard: a row opens into its twelve, every mode has a today,
+      # this week and all time window, and champions and records look it.
+      - name: The leaderboard
+        run: node baseball/check-leaderboard.mjs
+
+      # October has suspense: your series lands a game at a time, and a deciding
+      # game is played on the game screen, never revealed. Plays seasons until one
+      # reaches a decider, so it takes a few minutes.
+      - name: October and game 7
+        run: node baseball/check-october.mjs
+
       # Every badge, against real runs. The catalogue went from 36 to 205 in one
       # pass, and a badge nobody can earn throws no error and breaks no test: the
       # cabinet renders, the square stays dark, and nobody reports it. The hoops
@@ -139,3 +166,32 @@ jobs:
       # fabricated season on it.
       - name: A whole run, to the results screen
         run: node baseball/check-run.mjs
+
+      # THE BALLPARKS. An SVG url() that points at nothing draws nothing, two parks
+      # sharing an id paint each other, a rule nobody can meet is a park nobody
+      # sees, and a chosen park the account cannot back must fall back to the home
+      # park. All four are silent, so all four are asked of the real page.
+      - name: Ballparks, their art and their unlocks
+        run: node baseball/check-parks.mjs
+
+      # THE PROFILE, and the career it keeps on the server. Every way this fails
+      # loses a player's things in silence: a device that never sends its seasons,
+      # a sync that drops the guest seasons beside them, a server that cannot be
+      # reached being read as an empty career, and a locked club or mark being
+      # saved anyway. The server half is supabase/test/baseball_profile_test.sql.
+      - name: The profile, Customize and the career on the server
+        run: node baseball/check-profile.mjs
+
+      # 127 in SQL: the career only ever adds, a season held is never replaced,
+      # every row is filed under its caller, and every choice is held to its list.
+      - name: Start Postgres
+        run: |
+          sudo systemctl start postgresql.service
+          sudo -u postgres createuser -s "$USER"
+      - name: supabase/127, driven in SQL
+        run: |
+          createdb rtd_prof
+          psql -q -d rtd_prof -f supabase/test/baseball_pro_base.sql
+          psql -q -v ON_ERROR_STOP=1 -d rtd_prof -f supabase/127_baseball_profiles.sql
+          psql -q -v ON_ERROR_STOP=1 -d rtd_prof -f supabase/127_baseball_profiles.sql
+          psql -q -v ON_ERROR_STOP=1 -d rtd_prof -f supabase/test/baseball_profile_test.sql

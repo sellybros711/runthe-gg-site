@@ -566,6 +566,10 @@
   .badge-bar span{display:block;height:100%;background:linear-gradient(90deg,var(--globe),var(--teal));}
   .badge-prog{font-size:11.5px;color:var(--mut);font-weight:700;}
 
+  .taskcard.shortcut{margin-top:12px;border-color:rgba(236,181,80,.55);background:linear-gradient(135deg,rgba(236,181,80,.16),rgba(236,181,80,.03));
+    box-shadow:0 0 0 1px rgba(236,181,80,.15),0 12px 28px -18px rgba(236,181,80,.7);animation:rtgSwap .3s .08s cubic-bezier(.22,.9,.32,1) both;}
+  .taskcard.shortcut .pr{color:#f3dca0;}
+  .catchip.sc{background:linear-gradient(180deg,var(--goldhi),var(--golddk));color:#1a1030;border-color:transparent;}
   .skiprow{display:flex;align-items:center;gap:10px;background:rgba(236,181,80,.08);border:1px solid rgba(236,181,80,.3);
     border-radius:12px;padding:11px 13px;margin-top:12px;}
   .skiprow .sx{font-size:12.5px;color:#f3dca0;line-height:1.4;flex:1;}
@@ -577,6 +581,255 @@
   .foot .sep{margin:0 6px;color:#3c4c60;}
   .foot .footsub{margin-top:5px;font-size:11px;color:var(--mut);font-weight:600;letter-spacing:.02em;}
   .foot .footsub a{color:var(--globe);font-weight:800;}
+  /* Daily Route card on the home screen */
+  .daily{position:relative;overflow:hidden;border-radius:18px;padding:16px 16px 14px;margin-bottom:14px;
+    background:radial-gradient(120% 140% at 100% 0%,rgba(238,90,68,.22),transparent 55%),linear-gradient(180deg,#2a2152,#1b1640);
+    border:1px solid rgba(236,181,80,.45);box-shadow:0 18px 40px -26px #000;}
+  .daily .dhd{display:flex;align-items:center;gap:8px;}
+  .daily .dk{font-size:11px;font-weight:900;letter-spacing:.14em;text-transform:uppercase;color:var(--goldhi);}
+  .daily .dd{margin-left:auto;font-size:11px;font-weight:800;color:var(--mut);letter-spacing:.06em;text-transform:uppercase;}
+  .daily h3{font-size:21px;margin:6px 0 2px;}
+  .daily .dfin{font-size:13px;color:var(--mut);line-height:1.5;}
+  .daily .dfin b{color:var(--ink);}
+  .daily .dgrid{font-size:20px;letter-spacing:2px;line-height:1.35;margin:10px 0 2px;}
+  .daily .dline{font-size:13px;color:var(--mut);margin-top:6px;line-height:1.5;}
+  .daily .dline b{color:var(--ink);}
+  .daily .dstreak{display:inline-flex;gap:4px;align-items:center;font-size:11px;font-weight:900;color:#ffb86b;
+    background:rgba(255,140,40,.12);border:1px solid rgba(255,140,40,.4);padding:3px 9px;border-radius:999px;}
+  .daily .btnrow{margin-top:12px;}
+  /* carry-on picker on the setup screen */
+  .carry{display:grid;gap:8px;margin-top:10px;}
+  .carry button{display:flex;align-items:center;gap:10px;width:100%;text-align:left;cursor:pointer;color:var(--ink);font:inherit;
+    background:rgba(255,255,255,.04);border:1px solid var(--cardb);border-radius:13px;padding:11px 13px;transition:border-color .15s,background .15s;}
+  .carry button .ci{font-size:20px;width:26px;text-align:center;}
+  .carry button .cn{flex:1;font-weight:800;font-size:14px;}
+  .carry button .cn small{display:block;font-weight:600;font-size:11.5px;color:var(--mut);margin-top:2px;}
+  .carry button .cc{font-weight:900;font-size:13px;color:var(--goldhi);white-space:nowrap;}
+  .carry button.on{border-color:var(--ok);background:rgba(63,206,134,.1);}
+  .carry button.on .cc{color:#8ff0bf;}
+  .carry button:disabled{opacity:.45;cursor:default;}
+  .milesbal{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--mut);}
+  .milesbal b{color:var(--goldhi);font-size:16px;}
+  /* miles earned at the checkpoint */
+  .milesrow{margin-top:12px;display:inline-flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:center;
+    background:rgba(236,181,80,.1);border:1px solid rgba(236,181,80,.4);border-radius:12px;padding:8px 13px;font-size:12.5px;color:var(--mut);}
+  .milesrow b{color:var(--goldhi);font-size:17px;font-variant-numeric:tabular-nums;}
+  .verdict span.warn{background:rgba(238,90,68,.14);border-color:rgba(238,90,68,.45);color:#ffab9c;}
+  .lbrow .nm .rv{font-size:9.5px;font-weight:900;letter-spacing:.08em;color:#ffab9c;background:rgba(238,90,68,.14);
+    border:1px solid rgba(238,90,68,.45);padding:1px 6px;border-radius:5px;}
+  .rivalchip{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:900;margin-left:6px;
+    padding:2px 8px;border-radius:999px;border:1px solid rgba(255,255,255,.18);color:var(--mut);}
+  .rivalchip.up{color:#8ff0bf;border-color:rgba(63,206,134,.45);} .rivalchip.dn{color:#ffab9c;border-color:rgba(238,90,68,.45);}
+  .rivalchip.ko{color:var(--mut);text-decoration:line-through;}
+  /* race-end haul: new passport stamps + miles */
+  .haul{margin-top:14px;border:1px dashed rgba(236,181,80,.45);border-radius:14px;padding:12px;text-align:center;background:rgba(236,181,80,.05);}
+  .haul .hh{font-size:11px;font-weight:900;letter-spacing:.12em;text-transform:uppercase;color:var(--goldhi);}
+  .haul .hs{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:10px;}
+  .haul .stamp{width:54px;height:54px;border-radius:50%;border:2px solid rgba(238,90,68,.75);display:flex;align-items:center;justify-content:center;
+    overflow:hidden;transform:rotate(-8deg);animation:rtgStamp .45s cubic-bezier(.2,1.4,.4,1) both;background:rgba(0,0,0,.25);}
+  .haul .stamp:nth-child(2n){transform:rotate(7deg);}
+  .haul .hm{font-size:13px;color:var(--mut);margin-top:10px;} .haul .hm b{color:var(--goldhi);}
+  @keyframes rtgStamp{0%{opacity:0;scale:2.2;}70%{opacity:1;scale:.92;}100%{scale:1;}}
+  /* Passport */
+  #pmap{width:100%;height:auto;aspect-ratio:2/1;border:1px solid var(--cardb);border-radius:12px;touch-action:manipulation;
+    background:radial-gradient(120% 120% at 50% 40%,rgba(26,74,134,.5),rgba(10,8,26,.92));}
+  #pmap .ppin{cursor:pointer;}
+  #pmap .ppin .hit{fill:transparent;}
+  #pmap .ppin .dot{fill:rgba(255,255,255,.28);}
+  #pmap .ppin.v .dot{fill:#ECB550;stroke:#EE5A44;stroke-width:.7;}
+  #pmap .ppin.sel .dot{fill:#fff;stroke:#EE5A44;stroke-width:1.1;}
+  .pdet{display:flex;gap:13px;align-items:center;margin-top:12px;padding:12px;border-radius:13px;background:rgba(255,255,255,.04);border:1px solid var(--cardb);min-height:78px;}
+  .pdet .pn{font-weight:900;font-size:17px;} .pdet .pm{font-size:12.5px;color:var(--mut);line-height:1.5;margin-top:2px;}
+  .pdet .pm b{color:var(--ink);}
+  .preg{display:grid;gap:8px;margin-top:12px;}
+  .preg .rr{display:grid;grid-template-columns:110px 1fr 46px;gap:10px;align-items:center;font-size:12.5px;}
+  .preg .rr .rn{font-weight:800;} .preg .rr .rc{text-align:right;color:var(--mut);font-variant-numeric:tabular-nums;}
+  .preg .rt{height:8px;border-radius:999px;background:rgba(255,255,255,.07);overflow:hidden;}
+  .preg .rt span{display:block;height:100%;background:linear-gradient(90deg,#46A56C,#ECB550);border-radius:999px;}
+  .pflags{display:flex;flex-wrap:wrap;gap:7px;margin-top:12px;}
+  .pflags button{padding:0;border:1px solid var(--cardb);border-radius:6px;overflow:hidden;background:none;cursor:pointer;line-height:0;}
+  .pflags button.sel{outline:2px solid var(--globe);outline-offset:1px;}
+  .stat.link{cursor:pointer;transition:border-color .15s;} .stat.link:hover{border-color:rgba(236,181,80,.5);}
+
+  /* ===== play arena: destination strip, live field, ready card, done beat ===== */
+  .arena{position:relative;}
+  .arena-top{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:700;color:var(--mut);margin:-4px 0 12px;letter-spacing:.02em;}
+  .arena-top b{color:var(--ink);}
+  .field{margin:-4px 0 14px;padding:8px 10px 9px;border-radius:12px;background:rgba(0,0,0,.2);border:1px solid rgba(255,255,255,.06);}
+  .fl-hd{display:flex;justify-content:space-between;gap:8px;font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--mut);margin-bottom:7px;}
+  .fl-hd b{color:var(--ink);}
+  .fl-hd .rvin{color:#ff8d84;}
+  .fl-row{display:flex;gap:5px;flex-wrap:wrap;}
+  .fchip{position:relative;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;
+    background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);filter:grayscale(.8);opacity:.5;transition:opacity .25s,filter .25s,background .25s,border-color .25s;}
+  .fchip.riv{border-color:rgba(238,90,68,.75);}
+  .fchip.in{filter:none;opacity:1;background:rgba(53,214,160,.16);border-color:var(--ok);animation:fcIn .42s cubic-bezier(.2,1.4,.4,1);}
+  .fchip.in::after{content:"✓";position:absolute;right:-3px;bottom:-3px;width:13px;height:13px;border-radius:50%;background:var(--ok);color:#06231a;
+    font-size:9px;font-weight:900;display:flex;align-items:center;justify-content:center;}
+  .fchip.riv.in{background:rgba(238,90,68,.22);border-color:#EE5A44;}
+  .fchip.riv.in::after{background:#EE5A44;color:#fff;}
+  @keyframes fcIn{0%{transform:scale(.6);}60%{transform:scale(1.28);}100%{transform:scale(1);}}
+  .timer{transition:color .3s,box-shadow .3s;}
+  .timer.hot{color:var(--ok);box-shadow:0 0 0 1px rgba(53,214,160,.35);}
+  .timer.late{color:#ff8d84;box-shadow:0 0 0 1px rgba(255,107,107,.35);}
+  .ready{position:relative;text-align:center;padding:18px 10px 16px;border-radius:16px;cursor:pointer;user-select:none;-webkit-user-select:none;
+    background:radial-gradient(120% 90% at 50% 0%,rgba(236,181,80,.15),rgba(255,255,255,.02));border:1px dashed rgba(236,181,80,.3);animation:rtgFade .25s both;}
+  .rk-ico{font-size:42px;line-height:1;display:inline-block;animation:rkBob 1.3s ease-in-out infinite;}
+  .rk-name{font-family:'Bricolage Grotesque','Archivo',sans-serif;font-size:22px;font-weight:800;margin-top:8px;color:var(--goldhi);}
+  .rk-how{font-size:14.5px;color:var(--ink);opacity:.92;margin-top:4px;line-height:1.35;}
+  .rk-count{font-family:'Bricolage Grotesque','Archivo',sans-serif;font-size:66px;font-weight:800;line-height:1;margin-top:12px;color:#fff;font-variant-numeric:tabular-nums;}
+  .rk-count.go{color:var(--ok);text-shadow:0 0 24px rgba(53,214,160,.5);}
+  .rk-beat{animation:rkBeat .42s cubic-bezier(.2,1.3,.4,1) both;}
+  .rk-sc{display:inline-block;margin-top:10px;font-size:12px;font-weight:800;color:#1a1030;background:linear-gradient(180deg,var(--goldhi),var(--golddk));border-radius:999px;padding:4px 11px;}
+  .rk-tap{font-size:11px;font-weight:700;color:var(--mut);margin-top:10px;letter-spacing:.04em;}
+  @keyframes rkBeat{0%{transform:scale(1.9);opacity:0;}55%{transform:scale(.92);opacity:1;}100%{transform:scale(1);}}
+  @keyframes rkBob{0%,100%{transform:translateY(0) rotate(-4deg);}50%{transform:translateY(-5px) rotate(4deg);}}
+  .mg-in{animation:rtgMgIn .32s cubic-bezier(.2,1,.3,1) both;}
+  @keyframes rtgMgIn{from{opacity:0;transform:scale(.96) translateY(6px);}}
+  .donebeat{position:absolute;inset:0;z-index:5;border-radius:inherit;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
+    background:rgba(14,11,34,.92);-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);cursor:pointer;animation:rtgFade .2s both;text-align:center;padding:16px;}
+  .db-k{font-size:11px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:var(--ok);}
+  .db-t{font-family:'Bricolage Grotesque','Archivo',sans-serif;font-size:60px;font-weight:800;line-height:1;color:var(--goldhi);animation:rkBeat .45s both;font-variant-numeric:tabular-nums;}
+  .db-t small{font-size:22px;color:var(--mut);margin-left:3px;}
+  .db-k.gold{color:var(--goldhi);font-size:13px;}
+  .db-combo{font-size:12px;font-weight:900;color:#fff;background:rgba(236,181,80,.2);border:1px solid rgba(236,181,80,.45);border-radius:999px;padding:2px 10px;margin:4px 0 2px;}
+  .db-sub{font-size:13px;color:var(--mut);font-weight:700;}
+  .db-place{margin-top:10px;font-size:28px;font-weight:900;color:#fff;animation:rtgPopIn .3s .15s both;}
+  .db-place small{font-size:13px;color:var(--mut);font-weight:700;}
+  .db-go.sc{color:var(--ok);}
+  .db-go{margin-top:14px;font-size:13px;font-weight:800;color:var(--goldhi);animation:gatepulse 1.1s infinite;}
+  /* ===== minigame motion ===== */
+  .opts .opt{animation:rtgOptIn .34s cubic-bezier(.2,1,.3,1) backwards;}
+  .opts .opt:nth-child(2){animation-delay:.05s;} .opts .opt:nth-child(3){animation-delay:.1s;}
+  .opts .opt:nth-child(4){animation-delay:.15s;} .opts .opt:nth-child(5){animation-delay:.2s;}
+  .opts .opt.right{animation:rtgRight .5s both;}
+  .opts .opt.wrong{animation:rtgShake .36s both;}
+  .opts.settled .opt:not(.right){opacity:.38;transition:opacity .2s;}
+  @keyframes rtgOptIn{from{opacity:0;transform:translateY(10px) scale(.97);}}
+  @keyframes rtgRight{0%{transform:scale(1);}40%{transform:scale(1.04);box-shadow:0 0 0 4px rgba(53,214,160,.25),0 0 28px rgba(53,214,160,.35);}100%{transform:scale(1);}}
+  @keyframes rtgShake{0%,100%{transform:none;}20%{transform:translateX(-6px);}40%{transform:translateX(6px);}60%{transform:translateX(-4px);}80%{transform:translateX(3px);}}
+  .slot.solved .tileslot{animation:rtgWave .5s both;animation-delay:calc(var(--i,0) * 55ms);border-color:var(--ok);background:rgba(53,214,160,.18);}
+  @keyframes rtgWave{40%{transform:translateY(-9px) scale(1.08);}}
+  .tileslot.pop-in{border-color:var(--goldhi);}
+  .reactbox.go .big{animation:rtgGoPulse .42s ease-in-out infinite alternate;}
+  @keyframes rtgGoPulse{to{transform:scale(1.14);}}
+  .eet,.kmo,.kms{padding:0;}
+  .eet .flagemoji,.kmo .flagemoji,.kms .flagemoji{font-size:28px!important;}
+  /* memory match: real card flips */
+  .mmgrid{display:grid;grid-template-columns:repeat(4,64px);gap:10px;justify-content:center;margin:10px auto 4px;}
+  .mmc{width:64px;height:64px;perspective:520px;cursor:pointer;}
+  .mmin{position:relative;width:100%;height:100%;transition:transform .38s cubic-bezier(.3,1.3,.5,1);transform-style:preserve-3d;}
+  .mmc.up .mmin{transform:rotateY(180deg);}
+  .mmf{position:absolute;inset:0;border-radius:14px;display:flex;align-items:center;justify-content:center;backface-visibility:hidden;-webkit-backface-visibility:hidden;border:1px solid var(--cardb);}
+  .mmback{background:repeating-linear-gradient(45deg,rgba(236,181,80,.08) 0 6px,transparent 6px 12px),linear-gradient(135deg,#3a2f7a,#241c52);font-size:24px;box-shadow:inset 0 0 0 3px rgba(236,181,80,.2);}
+  .mmface{transform:rotateY(180deg);background:rgba(255,255,255,.08);font-size:30px;}
+  .mmc.done .mmface{background:rgba(53,214,160,.18);border-color:var(--ok);box-shadow:0 0 18px rgba(53,214,160,.3);}
+  .mmc.done .mmin{animation:mmGot .45s both;}
+  .mmc.no .mmface{border-color:var(--bad);background:rgba(255,107,107,.15);}
+  @keyframes mmGot{0%{transform:rotateY(180deg) scale(1);}50%{transform:rotateY(180deg) scale(1.13);}100%{transform:rotateY(180deg) scale(1);}}
+  /* whack: flags pop out of holes */
+  .wkgrid{display:grid;grid-template-columns:repeat(3,80px);gap:12px;justify-content:center;margin:10px auto 4px;}
+  .wkc{position:relative;width:80px;height:72px;overflow:hidden;border-radius:14px;cursor:pointer;touch-action:manipulation;
+    background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,.08));border:1px solid rgba(255,255,255,.07);}
+  .wkhole{position:absolute;left:12%;right:12%;bottom:7px;height:15px;border-radius:50%;background:radial-gradient(ellipse at 50% 40%,#05040f,#1d1740);box-shadow:inset 0 3px 6px rgba(0,0,0,.85);}
+  .wkmole{position:absolute;left:50%;bottom:15px;transform:translate(-50%,140%);line-height:0;filter:drop-shadow(0 5px 5px rgba(0,0,0,.55));}
+  .wkc.up .wkmole{animation:wkRise .2s cubic-bezier(.2,1.5,.4,1) both;}
+  .wkc.bonk .wkmole{animation:wkBonk .22s both;}
+  .wkc.bad{animation:rtgShake .32s;}
+  @keyframes wkRise{from{transform:translate(-50%,140%);}to{transform:translate(-50%,0);}}
+  @keyframes wkBonk{0%{transform:translate(-50%,0) scale(1.2,.75);}100%{transform:translate(-50%,140%) scale(.9,1.1);}}
+  /* true or false: a swipe card */
+  .tfdeck{position:relative;height:150px;margin:2px 0 4px;}
+  .tfcard{position:absolute;inset:0;border-radius:18px;background:linear-gradient(160deg,#322868,#1d1745);border:1px solid rgba(236,181,80,.32);
+    box-shadow:0 14px 30px -14px rgba(0,0,0,.75);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px 22px;text-align:center;
+    touch-action:pan-y;cursor:grab;transition:transform .3s cubic-bezier(.2,.9,.3,1),opacity .3s,box-shadow .2s;user-select:none;-webkit-user-select:none;}
+  .tfcard.drag{transition:box-shadow .2s;cursor:grabbing;}
+  .tfq{font-size:19px;font-weight:800;line-height:1.35;}
+  .tfhint{font-size:10.5px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--mut);margin-top:10px;}
+  .tfcard[data-lean="t"]{box-shadow:0 0 0 2px rgba(53,214,160,.7),0 14px 30px -14px rgba(0,0,0,.75);}
+  .tfcard[data-lean="f"]{box-shadow:0 0 0 2px rgba(255,107,107,.7),0 14px 30px -14px rgba(0,0,0,.75);}
+  .tfcard.fly-r{transform:translateX(125%) rotate(16deg)!important;opacity:0;}
+  .tfcard.fly-l{transform:translateX(-125%) rotate(-16deg)!important;opacity:0;}
+  .tfcard.tf-in{animation:tfIn .28s cubic-bezier(.2,1.2,.4,1) backwards;}
+  @keyframes tfIn{from{transform:translateY(26px) scale(.93);opacity:0;}}
+  .tfstamp{position:absolute;top:12px;right:14px;font-size:13px;font-weight:900;letter-spacing:.12em;padding:3px 9px;border-radius:7px;border:2px solid;opacity:0;transform:rotate(12deg) scale(1.7);}
+  .tfstamp.show{opacity:1;transform:rotate(12deg) scale(1);transition:opacity .12s,transform .16s cubic-bezier(.2,1.4,.4,1);}
+  .tfstamp.ok{color:var(--ok);} .tfstamp.no{color:var(--bad);}
+  .tfbtns .btn{flex:1;}
+  /* two-way duels */
+  .duel{position:relative;flex-wrap:nowrap;}
+  .duel .hlo{flex:1;}
+  .duel .vs{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:2;width:34px;height:34px;border-radius:50%;pointer-events:none;
+    background:linear-gradient(180deg,var(--goldhi),var(--golddk));color:#1a1030;font-size:11.5px;font-weight:900;display:flex;align-items:center;justify-content:center;
+    box-shadow:0 0 0 4px var(--card),0 6px 14px rgba(0,0,0,.5);}
+  .hlo.win{animation:rtgRight .5s both;background:rgba(53,214,160,.12);}
+  .hlo.lose{opacity:.5;}
+  #rscard{transition:transform .28s cubic-bezier(.5,0,.7,.4),opacity .28s;}
+  #rscard.fly-a{transform:translate(-30%,74px) scale(.35) rotate(-10deg);opacity:0;}
+  #rscard.fly-b{transform:translate(30%,74px) scale(.35) rotate(10deg);opacity:0;}
+
+  /* ---- Street Hunt ---- */
+  .huntc{position:relative;overflow:hidden;border-color:rgba(236,181,80,.35);
+    background:radial-gradient(120% 90% at 100% 0%,rgba(42,106,163,.35),transparent 60%),var(--card);}
+  .huntc .hck{display:flex;justify-content:space-between;align-items:center;font-size:11.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--goldhi);}
+  .huntc .new{background:var(--coral,#E24632);color:#fff;border-radius:999px;padding:3px 9px;letter-spacing:.04em;}
+  .huntc h3{font-size:19px;margin:6px 0 4px}
+  .huntc p{font-size:13px;line-height:1.55;margin:0}
+  .huntc .hdone{margin-top:9px;font-size:13px}
+  .hunt{padding:12px}
+  .hmap{position:relative;height:min(62vh,560px);min-height:340px;border-radius:14px;overflow:hidden;background:#141032;
+    touch-action:none;user-select:none;-webkit-user-select:none;border:1px solid var(--cardb);margin-top:8px}
+  .hmap canvas#hcv{position:absolute;inset:0;cursor:pointer}
+  .htop{position:absolute;left:8px;right:8px;top:8px;display:flex;gap:6px;pointer-events:none}
+  .hpill{background:rgba(12,9,32,.82);border:1px solid rgba(255,255,255,.14);color:var(--ink);font-weight:800;font-size:13px;
+    padding:5px 10px;border-radius:999px;font-variant-numeric:tabular-nums}
+  .hpill.htime{color:var(--goldhi);margin-right:auto;font-size:15px}
+  .hpill.bump{animation:hbump .35s ease}
+  @keyframes hbump{40%{transform:scale(1.25)}}
+  .hmini{position:absolute;right:8px;bottom:8px;border-radius:8px;border:1.5px solid rgba(236,181,80,.55);box-shadow:0 6px 18px -6px rgba(0,0,0,.8);pointer-events:none}
+  .hzoom{position:absolute;right:8px;top:46px;display:flex;flex-direction:column;gap:6px}
+  .hzoom button{width:36px;height:36px;border-radius:10px;border:1px solid rgba(255,255,255,.18);background:rgba(12,9,32,.85);color:#fff;font-size:20px;font-weight:800;cursor:pointer}
+  .hstreet{position:absolute;left:8px;bottom:8px;max-width:calc(100% - 150px);background:rgba(12,9,32,.85);color:#fff;font-size:12.5px;font-weight:700;
+    padding:5px 10px;border-radius:8px;border-left:3px solid var(--globe);opacity:0;transform:translateY(6px);transition:opacity .25s,transform .25s;pointer-events:none;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .hstreet.on{opacity:1;transform:none}
+  .hsay{position:absolute;left:50%;top:48px;transform:translate(-50%,-8px);max-width:86%;display:flex;gap:9px;align-items:center;
+    background:#fff;color:#1a1438;font-weight:700;font-size:13.5px;line-height:1.35;padding:9px 13px;border-radius:14px;
+    box-shadow:0 10px 26px -8px rgba(0,0,0,.7);opacity:0;pointer-events:none;transition:opacity .2s,transform .2s}
+  .hsay .f{font-size:24px}
+  .hsay.on{opacity:1;transform:translate(-50%,0)}
+  .hbanner{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) scale(.8);display:flex;flex-direction:column;align-items:center;gap:2px;
+    background:rgba(12,9,32,.92);border:2px solid var(--ok);border-radius:16px;padding:14px 22px;opacity:0;pointer-events:none;transition:opacity .2s,transform .25s cubic-bezier(.3,1.4,.5,1)}
+  .hbanner .e{font-size:40px}
+  .hbanner b{font-size:19px;color:#fff}
+  .hbanner span:last-child{font-size:12.5px;color:var(--mut)}
+  .hbanner.on{opacity:1;transform:translate(-50%,-50%) scale(1)}
+  .hintro{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(10,8,26,.72);backdrop-filter:blur(2px);transition:opacity .25s}
+  .hintro.out{opacity:0}
+  .hi-in{width:min(92%,380px);background:var(--card);border:1px solid rgba(236,181,80,.4);border-radius:16px;padding:18px;text-align:center;animation:hpop .35s cubic-bezier(.22,.9,.32,1)}
+  @keyframes hpop{from{opacity:0;transform:translateY(12px) scale(.96)}to{opacity:1;transform:none}}
+  .hi-k{font-size:12px;color:var(--mut);font-weight:700}
+  .hi-t{font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--goldhi);font-weight:800;margin-top:10px}
+  .hi-q{font-size:17px;font-weight:800;line-height:1.35;margin:6px 0 12px}
+  .hi-how{text-align:left;font-size:12.5px;color:var(--mut);margin:0 0 14px;padding-left:18px;line-height:1.6}
+  .hclue{margin-top:10px;background:var(--card2);border:1px solid var(--cardb);border-left:4px solid var(--globe);border-radius:12px;padding:11px 13px}
+  .hclue.flip{animation:hflip .45s ease}
+  @keyframes hflip{0%{transform:rotateX(80deg);opacity:0}100%{transform:none;opacity:1}}
+  .hclue .hk{font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--goldhi);font-weight:800}
+  .hclue .hk b{color:var(--coral,#E24632)}
+  .hclue .hq{font-size:15.5px;font-weight:800;line-height:1.4;margin-top:4px}
+  .hclue .hh{font-size:12.5px;color:var(--mut);margin-top:6px}
+  .hclue .hh.on{color:var(--goldhi)}
+  .hosm{font-size:11px;color:var(--mut);text-align:center;margin-top:10px;line-height:1.6}
+  .hload{height:6px;border-radius:9px;background:rgba(255,255,255,.08);overflow:hidden;margin:14px auto 4px;max-width:220px}
+  .hload i{display:block;height:100%;width:40%;background:var(--globe);border-radius:9px;animation:hload 1s ease-in-out infinite alternate}
+  @keyframes hload{from{transform:translateX(-60%)}to{transform:translateX(210%)}}
+  .huntend .he-medal{font-size:64px;margin-top:6px;animation:hpop .5s cubic-bezier(.3,1.5,.5,1)}
+  .huntend .he-time{font-size:44px;font-weight:900;color:var(--goldhi);font-variant-numeric:tabular-nums}
+  .huntend .he-sub{font-size:14px;margin-top:2px}
+  .huntend .he-route{display:flex;flex-wrap:wrap;justify-content:center;gap:6px;margin:14px 0 10px;font-size:12.5px;font-weight:700}
+  .huntend .he-route span{background:var(--card2);border:1px solid var(--cardb);border-radius:999px;padding:4px 10px}
+  .huntend .he-route i{color:var(--mut);font-style:normal;align-self:center}
 </style>
 </head>
 <body>
@@ -678,6 +931,27 @@
     runway:1, photosnap:1, stampit:1 };
   function taskKind(t){ return t.kind || KIND[t.cat] || 'mcq'; }
   function taskLabel(t){ return KIND_LABEL[taskKind(t)] || CAT_LABEL[t.cat] || 'Task'; }
+  // the ready card: an icon and one plain line on how to win, shown before GO
+  var KIND_ICON = { mcq:'🧠', flagid:'🏳️', capital:'🏛️', truefalse:'⚖️', higherlower:'↕️', oddoneout:'🧩',
+    memorymatch:'🃏', whack:'🔨', targettap:'🚕', mapfind:'📍', streetscout:'🛣️', zoomreveal:'🔍',
+    swingmeter:'🛫', eagleeye:'🦅', kimsgame:'👀', typeticket:'🎫', baggage:'🧳', rhythmecho:'🥁',
+    closest:'📏', closerfar:'🧭', compass:'🧭', regionsort:'🗂️', flightplan:'🗺️', globehunt:'🌡️',
+    detective:'🕵️', runway:'🛬', photosnap:'📸', stampit:'🛂', scramble:'🔤', sequence:'🔁', reaction:'🚦', order:'📊' };
+  var KIND_HOW = { mcq:'Pick the right answer.', flagid:'Name the flag.', capital:'Pick the capital.',
+    truefalse:'Swipe right for true, left for false.', higherlower:'Pick the one that wins each round.',
+    oddoneout:'Find the one that doesn\'t fit.', memorymatch:'Flip two cards at a time. Match every pair.',
+    whack:'Tap the right flag. Skip the rest.', targettap:'Tap when your taxi hits the curb.',
+    mapfind:'Drop one pin. Closer is better.', streetscout:'Look around, then pin it.',
+    zoomreveal:'Name the flag from a few pieces.', swingmeter:'Pull up when the speed hits green.',
+    eagleeye:'Find the flag that doesn\'t belong.', kimsgame:'Remember the flags. Spot the new one.',
+    typeticket:'Spell the city, letter by letter.', baggage:'Grab your bag when it hits the green zone.',
+    rhythmecho:'Listen first. Then tap the beat back.', closest:'Pick the closest one.',
+    closerfar:'Pick the one that\'s closer.', compass:'Tap the way you\'d fly.',
+    regionsort:'Sort each country into its region.', flightplan:'Tap the stops, closest first.',
+    globehunt:'Follow the heat to the hidden country.', detective:'Read the clues. Name the country.',
+    runway:'Descend, then flare right before you land.', photosnap:'Snap when it\'s in the frame.',
+    stampit:'Line it up, then press just right.', scramble:'Unscramble the word.',
+    sequence:'Watch the pattern. Repeat it.', reaction:'Tap on GO. Never on STOP.', order:'Tap them in order.' };
 
   var GHOSTS = [
     {n:'Team Fox',   f:'🦊'}, {n:'Team Wolf',  f:'🐺'}, {n:'Team Hawk',  f:'🦅'},
@@ -914,6 +1188,8 @@
       return b;
     }
     b.push({ kick:'Stage '+S.round+' of '+ROUNDS, title:esc(d.name), sub:esc(d.region)+' · '+alive+' teams left', sfx:'checkpoint' });
+    var rvT=rivalTeam();
+    if(S.round===1 && rvT) b.push({ who:'host', text:'Your rival this race is <b>'+esc(rvT.flag)+' '+esc(rvT.name)+'</b>. They\'re fast. Finish ahead of them.' });
     if(S.round<=2) b.push({ who:'pilot', text:'We\'re landing in <b>'+esc(d.name)+'</b>. Get to the mat as fast as you can.' });
     var f=countryFact(d.country); if(f) b.push({ who:'host', text:f+(S.round===1?' Slowest team here goes home. <b>Don\'t let it be you.</b>':' Only '+(alive-1)+' teams move on. '+(S.streak>=2?'That\'s <b>'+S.streak+' perfect stages</b> in a row. Keep it going.':'Go.')) });
     return b;
@@ -931,6 +1207,10 @@
     if(groundedTeam.id==='you')
       return [{ who:'control', text:'Everyone\'s checked in at <b>'+esc(S.dest.name)+'</b>. Last team in is…' },
               { kick:'Grounded', title:esc(S.teamName), sub:'Slowest at '+esc(S.dest.name)+'. You\'re out.', sfx:'lose' }];
+    if(groundedTeam.id===S.rivalId)
+      return [{ who:'control', text:'Everyone\'s checked in at <b>'+esc(S.dest.name)+'</b>. You came in <b>#'+you+' of '+n+'</b>.' },
+              { kick:'Rival Out', title:esc(groundedTeam.name), sub:'Your rival came in last. +75 miles', sfx:'win', fx:'celebrate' },
+              { who:'host', text:'That\'s your rival gone. <b>You\'re still in.</b>' }];
     return [{ who:'control', text:'Everyone\'s checked in at <b>'+esc(S.dest.name)+'</b>. You came in <b>#'+you+' of '+n+'</b>.' },
             { who:'host', text:'<b>'+esc(groundedTeam.name)+'</b> came in last. They\'re out. <b>You\'re still in.</b>', sfx:'checkpoint', fx:'burst' }];
   }
@@ -1027,6 +1307,8 @@
     s.perfectStages=s.perfectStages||0; s.stagesPlayed=s.stagesPlayed||0;
     s.kinds=s.kinds||{}; s.winStreak=s.winStreak||0; s.longestStreak=s.longestStreak||0;
     s.badgeSeen=s.badgeSeen||0;   // total badge tiers the player has already been shown
+    s.cfirst=s.cfirst||{}; s.cbest=s.cbest||{};   // passport: first stamp date + best stage time per country
+    s.miles=s.miles||0; s.milesTotal=s.milesTotal||0; s.rivalsBeaten=s.rivalsBeaten||0;
     return s;
   }
   function visitedCount(){ var s=statsDefault(); return Object.keys(s.countries||{}).length; }
@@ -1058,6 +1340,12 @@
       tiers:[{n:2,l:'Bronze'},{n:3,l:'Silver'},{n:5,l:'Gold'}] },
     { id:'survivor', name:'Marathoner', icon:'🧭', metric:function(s){return s.stagesPlayed;}, unit:'stages',
       tiers:[{n:20,l:'Bronze'},{n:100,l:'Silver'},{n:300,l:'Gold'}] },
+    { id:'nemesis', name:'Rival Slayer', icon:'⚔️', metric:function(s){return s.rivalsBeaten;}, unit:'rivals beaten',
+      tiers:[{n:1,l:'Bronze'},{n:5,l:'Silver'},{n:20,l:'Gold'}] },
+    { id:'miles', name:'High Flyer', icon:'✈️', metric:function(s){return s.milesTotal;}, unit:'miles',
+      tiers:[{n:1000,l:'Bronze'},{n:5000,l:'Silver'},{n:20000,l:'Gold'}] },
+    { id:'daily', name:'Daily Driver', icon:'🗓️', metric:function(s){return dailyDays();}, unit:'daily routes',
+      tiers:[{n:3,l:'Bronze'},{n:10,l:'Silver'},{n:30,l:'Gold'}] },
   ];
   function tierReached(b, s){ var v=b.metric(s), n=0; for(var i=0;i<b.tiers.length;i++){ if(v>=b.tiers[i].n) n=i+1; } return n; }
   function totalBadges(s){ s=s||statsDefault(); var t=0; BADGES.forEach(function(b){ t+=tierReached(b,s); }); return t; }
@@ -1121,8 +1409,10 @@
     if(S.screen==='online')    return renderDuoMenu();
     if(S.screen==='lobby')     return renderDuoLobby();
     if(S.screen==='trophies')  return renderTrophies();
+    if(S.screen==='passport')  return renderPassport();
     if(S.screen==='howto')     return renderHowTo();
     if(S.screen==='stage')     return renderStage();
+    if(S.screen==='hunt')      return renderHunt();
     renderHome();
   }
 
@@ -1150,6 +1440,8 @@
           + '<button class="btn ghost sm" id="howto" style="margin-top:12px">📖 How to play</button>'
         + '</div>'
       + '</div>'
+      + dailyCard()
+      + huntCard()
       + '<div class="card">'
         + '<h3 style="font-size:16px;margin-bottom:4px">How do you want to play?</h3>'
         + '<p class="muted" style="font-size:12.5px;margin:0 0 12px">You race 11 teams either way. Pick who\'s on <b>your</b> team.</p>'
@@ -1162,17 +1454,21 @@
         + '<div class="stats">'
           + statTile(st.races,'Races')
           + statTile(st.wins,'Wins')
-          + statTile(st.top3,'Top 3')
-          + statTile(visitedCount(),'Countries')
+          + statTile(visitedCount()+'<small style="font-size:13px;color:var(--mut)">/'+COUNTRIES.length+'</small>','Countries','pstat')
           + statTile(st.bestPlace?('#'+st.bestPlace):'-','Best finish')
+          + statTile(st.miles,'Miles')
           + statTile(totalBadges(st),'Badges')
         + '</div>'
-        + '<button class="btn ghost" id="trophies" style="margin-top:12px">🏆 Trophy Room</button>'
+        + '<div class="btnrow"><button class="btn ghost" id="passport">🛂 Passport</button><button class="btn ghost" id="trophies">🏆 Trophy Room</button></div>'
       + '</div>'
       + foot();
-    var m1=$('mode-solo'); if(m1) m1.onclick=function(){ S.coop=null; S.screen='setup'; render(); };
-    var m2=$('mode-duo_same'); if(m2) m2.onclick=function(){ S.coop={ same:true }; S.screen='setup'; render(); };
-    var m3=$('mode-duo_two'); if(m3) m3.onclick=function(){ S.coop=null; S.screen='online'; render(); };
+    var m1=$('mode-solo'); if(m1) m1.onclick=function(){ S.daily=null; S.coop=null; S.screen='setup'; render(); };
+    var m2=$('mode-duo_same'); if(m2) m2.onclick=function(){ S.daily=null; S.coop={ same:true }; S.screen='setup'; render(); };
+    var m3=$('mode-duo_two'); if(m3) m3.onclick=function(){ S.daily=null; S.coop=null; S.screen='online'; render(); };
+    var pp=$('passport'); if(pp) pp.onclick=function(){ S.screen='passport'; render(); };
+    var ps=$('pstat'); if(ps) ps.onclick=function(){ S.screen='passport'; render(); };
+    wireDailyCard();
+    wireHuntCard();
     var tr=$('trophies'); if(tr) tr.onclick=function(){ S.screen='trophies'; render(); };
     var ht=$('howto'); if(ht) ht.onclick=function(){ S.screen='howto'; render(); };
     renderAcct();
@@ -1203,6 +1499,14 @@
       + howPanel('green', illoFinal, '6 · Win the Final', 'Make it to Stage '+ROUNDS+'. That\'s the Final. The last 3 teams race to a famous landmark. Fastest team wins.')
       + '<div class="card"><h3 style="font-size:15px;margin-bottom:6px">🤝 Solo or team up</h3>'
         + '<p class="muted" style="font-size:13px;line-height:1.6;margin:0">Play <b>Solo</b> or with a friend. <b>Same Screen</b> is two of you on one phone, taking turns. <b>Two Devices</b> is you and a friend on your own phones, and your times get added up. Either way you race a full field of teams.</p></div>'
+      + '<div class="card"><h3 style="font-size:15px;margin-bottom:6px">🗓️ Daily Route, rivals and miles</h3>'
+        + '<p class="muted" style="font-size:13px;line-height:1.6;margin:0">The <b>Daily Route</b> is one race a day that everybody plays the same. Your first run counts and you get a grid to share. '
+        + 'Every race you get a <b>rival</b>. Finish ahead of them for bonus miles. '
+        + 'You earn <b>miles</b> every stage. Spend them on extra power-ups before a race. Every country you land in gets stamped in your <b>Passport</b>.</p></div>'
+      + '<div class="card"><h3 style="font-size:15px;margin-bottom:6px">⚡ The Shortcut and the live field</h3>'
+        + '<p class="muted" style="font-size:13px;line-height:1.6;margin:0">One stage each race offers a <b>Shortcut</b>. Clear it with no misses and you skip the City Run. Miss once and every miss costs double. '
+        + 'While you play, <b>the field</b> lights up as each team finishes, so you always know if you\'re ahead. '
+        + 'You can play from a keyboard too: 1 to 4 to answer, arrows to pick a side, Space for the big button.</p></div>'
       + '<div class="btnrow"><button class="btn ghost" id="htback">‹ Back</button><button class="btn globe" id="htplay">Start the race 🌍</button></div>'
       + foot();
     $('htback').onclick=function(){ S.screen='home'; render(); };
@@ -1252,7 +1556,7 @@
       + (tag?'<span class="tag'+(tag!=='Beta'?' soon':'')+'">'+tag+'</span>':'')
       + '<span class="chev">›</span></div>';
   }
-  function statTile(v,k){ return '<div class="stat"><div class="v">'+v+'</div><div class="k">'+k+'</div></div>'; }
+  function statTile(v,k,id){ return '<div class="stat'+(id?' link':'')+'"'+(id?' id="'+id+'"':'')+'><div class="v">'+v+'</div><div class="k">'+k+'</div></div>'; }
   function foot(){
     return '<div class="foot">'
       + '<div class="footnav">'
@@ -1274,23 +1578,30 @@
         + '<div style="margin-top:10px"><label class="fld" for="p2">Player 2</label>'
         + '<input type="text" id="p2" maxlength="14" placeholder="Player 2" value="'+esc((S.coop&&S.coop.p2)||'')+'" /></div>'
       : '';
+    var daily = !!S.daily;
     app.innerHTML = topbar()
       + '<div class="card">'
-        + '<h1 style="font-size:24px">'+(duo?'Name your duo':'Name your team')+'</h1>'
-        + '<p class="lede">'+(duo?'Two of you, one screen, one team':'You')+' vs '+FIELD_SIZE+' teams over '+ROUNDS+' Stages. '
+        + '<h1 style="font-size:24px">'+(daily?'🗓️ Today\'s Daily Route':duo?'Name your duo':'Name your team')+'</h1>'
+        + (daily
+          ? '<p class="lede">Everybody gets the same '+ROUNDS+' stages today. Same countries, same challenges, same teams. '
+            + (S.daily.practice?'<b>You already played today.</b> This one is practice and won\'t change your result.':'<b>Your first run is the one that counts.</b>')+'</p>'
+          : '<p class="lede">'+(duo?'Two of you, one screen, one team':'You')+' vs '+FIELD_SIZE+' teams over '+ROUNDS+' Stages. '
           + 'Slowest team each Stage is Grounded. The last 3 teams race the Final. Don\'t be last.'
-          + (duo?' You\'ll take turns. The game says who\'s up each Stage.':'')+'</p>'
+          + (duo?' You\'ll take turns. The game says who\'s up each Stage.':'')+'</p>')
         + '<div style="margin-top:16px"><label class="fld" for="tn">Team name</label>'
         + '<input type="text" id="tn" maxlength="18" placeholder="'+(duo?'Our Team':'Your Team')+'" value="'+esc(S.teamName||'')+'" /></div>'
         + duoFields
+        + carryCard(daily)
         + '<div class="btnrow">'
           + '<button class="btn ghost sm" id="back" style="flex:0 0 auto">‹ Back</button>'
           + '<button class="btn globe" id="go">Start the race 🌍</button>'
         + '</div>'
       + '</div>' + foot();
     $('back').onclick=function(){ S.screen='home'; render(); };
+    wireCarry();
     $('go').onclick=function(){
       S.teamName=($('tn').value||'').trim().slice(0,18) || (duo?'Our Team':'Your Team');
+      payCarry();
       if(duo){
         S.coop.p1=($('p1').value||'').trim().slice(0,14) || 'Player 1';
         S.coop.p2=($('p2').value||'').trim().slice(0,14) || 'Player 2';
@@ -1306,22 +1617,30 @@
     // ghost pace spread: a few sharp ghosts, several beatable ones. Skewed a
     // touch slower than before so a competent player has a fair, winnable field.
     var skills = []; for(var i=0;i<GHOSTS.length;i++){ skills.push(0.92 + (i*(1.75-0.92)/(GHOSTS.length-1))); }
-    skills = shuffle(skills);
+    if(S.daily){ S.daily.practice = S.daily.practice || !!dailyToday(); }
+    skills = S.daily ? withRng(dailyRng(0,1), function(){ return shuffle(skills); }) : shuffle(skills);
     var teams = [{ id:'you', name:S.teamName, flag:'🧭', isGhost:false, startedAsGhost:false, skill:1, alive:true, eff:0 }];
     for(var g=0; g<GHOSTS.length; g++){
       teams.push({ id:'g'+g, name:GHOSTS[g].n, flag:GHOSTS[g].f, isGhost:true, startedAsGhost:true,
                    skill:skills[g], alive:true, eff:0 });
     }
     S.teams = teams;
+    pickRival(teams);
     S.round = 1;
     S.usedCountries = {};
     S.skipUsed = false;
-    S.boosts = { fifty:1, shield:1 };    // one of each power-up per race
+    // the Shortcut: one mid-race stage offers a third card. Clean it and you skip the City Run.
+    S.scStage = 3 + Math.floor((S.daily ? dailyRng(0,7)() : Math.random())*4); S.scUsed=false; S.scTask=null;
+    var pk=S.packed||{};
+    S.boosts = { fifty:1+(pk.fifty?1:0), shield:1+(pk.shield?1:0) };    // one of each power-up per race, plus any carry-on
+    S.extraSkip = pk.skip?1:0; S.packed=null;
+    S.stageLog=[]; S.raceMiles=0; S.newStamps=[]; S._logged=0; S.lastMiles=null;
+    if(S.daily){ S.daily.order=withRng(dailyRng(0,3), function(){ return shuffle(COUNTRIES); }); S.daily.recent=[]; }
     S.spectating = false;
     S._runPend=null; S._runDone=false;   // City Run guards
     S._lastLL = null;   // no origin yet → first Flight Leg departs from HOME_LL (player's area, or US east coast)
     requestHome();      // ask for location so the opening leg departs from near the player
-    S.finishLine = pick(FINISH);   // GDD §11: the Final's location, locked at race start
+    S.finishLine = S.daily ? withRng(dailyRng(0,2), function(){ return pick(FINISH); }) : pick(FINISH);   // GDD §11: the Final's location, locked at race start
     S.streak = 0; S._cutLb = 0;
     S.screen='stage';
     // opening cutscene (once per session): the host sets the stakes, then wheels up
@@ -1343,15 +1662,23 @@
     } else {
       var pool = COUNTRIES.filter(function(c){ return !S.usedCountries[c.id]; });
       if(!pool.length){ S.usedCountries={}; pool=COUNTRIES.slice(); }
-      var c = pick(pool);
+      var c = S.daily ? S.daily.order[(S.round-1)%S.daily.order.length] : pick(pool);
       // TEMP (Street Scout testing): force stage 1 to a dense-coverage city so imagery loads
       if(FORCE_STREET_FIRST && streetEnabled() && S.round===1){ c = countryById('FR') || c; }
       S.usedCountries[c.id]=1;
       S.dest = { name:c.name, region:c.region, flag:c.flag, final:false, country:c };
-      var st=statsDefault(); st.countries[c.id]=1; saveStats(st);
+      var st=statsDefault(), was=+st.countries[c.id]||0; st.countries[c.id]=was+1;
+      if(!was){ st.cfirst[c.id]=dailyKey(); (S.newStamps=S.newStamps||[]).push(c.id); }
+      saveStats(st);
     }
     // build the challenge: Split Path (choose 1 of 2) or Solo Call (1 assigned). GDD §5-6.
-    buildChallenge();
+    // The Daily builds off its own seeded stream, and remembers the OFFERED kinds rather than
+    // the chosen one, so two players who picked differently still meet the same next stage.
+    if(S.daily){
+      var svR=S.recentKinds; S.recentKinds=S.daily.recent||[];
+      withRng(dailyRng(S.round,1), function(){ buildChallenge(); });
+      S.recentKinds=svR; S.daily.recent=(S.daily.recent||[]).concat(S.offered.map(taskKind)).slice(-3);
+    } else buildChallenge();
     // fly the leg to this destination first (skipped on the Final / no-coord dests),
     // then reveal the draw. The reveal is the payoff after the flight's suspense.
     var toLL = (S.dest.country && S.dest.country.ll) || null;
@@ -1381,6 +1708,21 @@
   }
 
   // ---- generated game types (self-contained, no per-country authoring) ----
+  var FLAG_KIN = [
+    ['it','mx','ie','ci','hu','bg'], ['id','pl','sg','at','pe','lb','ca','jp'],
+    ['nl','ru','fr','hr','rs','sk','cz','th','cr','lu'], ['de','be','ro','co','ec','ve','bo','gh','am'],
+    ['se','no','fi','dk','is','ch','gb'], ['au','nz','fj','gb','us'], ['us','my','cu','cl','pa','do','ph','lr'],
+    ['cn','vn','tr','tn','ma','kg','sg'], ['ar','uy','gt','gr','il','fi','sv','ni'],
+    ['ae','jo','kw','iq','eg','ye','sy','sd','om'], ['gh','sn','cm','et','bo','mz','zw','za','ke','tz','ug','ng','ml'],
+    ['sa','pk','dz','bd','ir','ng','tz'], ['in','ie','ci','ne','tj'], ['ar','uy','ua','kz','bo'], ['qa','bh','lv','ge','ch','dk'] ];
+  // up to n countries whose flags look like c's, topped up at random
+  function lookalikes(c, n){
+    var me=flagISO(c.flag), kin={}, out=[];
+    FLAG_KIN.forEach(function(g){ if(g.indexOf(me)>=0) g.forEach(function(x){ if(x!==me) kin[x]=1; }); });
+    shuffle(COUNTRIES).forEach(function(x){ if(out.length<n && x.id!==c.id && kin[flagISO(x.flag)]) out.push(x); });
+    otherCountries(c, n*3).forEach(function(x){ if(out.length<n && out.indexOf(x)<0) out.push(x); });
+    return out;
+  }
   function otherCountries(c, n){ return shuffle(COUNTRIES.filter(function(x){ return x.id!==c.id; })).slice(0,n); }
   // regions can be compound (e.g. Turkey = "Europe/Asia"); two regions "share" if
   // any slash-part matches, so a transcontinental country is never a false outlier.
@@ -1448,7 +1790,7 @@
     g.push({ kind:'memorymatch', cat:'memory', type:'brain', q:'Match all the pairs', tiles:tiles.slice(0,4) });
     // Whack-A-Landmark: tap the country's flag, dodge the decoys
     g.push({ kind:'whack', cat:'reflex', type:'reflex', q:'Tap '+c.flag+' when it pops up. Ignore the others.',
-             target:c.flag, decoys:shuffle(otherCountries(c,4).map(function(x){return x.flag;})) });
+             target:c.flag, decoys:shuffle((ramp()>=0.4?lookalikes(c,4):otherCountries(c,4)).map(function(x){return x.flag;})) });
     // Quick Tap: hit the moving target
     g.push({ kind:'targettap', cat:'reflex', type:'reflex', q:'Grab a taxi. Tap when yours hits the curb.' });
     // Find It On The Map: pin-drop, scored by distance (needs coords)
@@ -1466,7 +1808,7 @@
     g.push({ kind:'swingmeter', cat:'reflex', type:'reflex', q:'Time your takeoff. Pull up when the speed hits green.' });
     // Eagle Eye: one flag in the wall doesn't belong (visual hunt)
     g.push({ kind:'eagleeye', cat:'reflex', type:'reflex', q:'One of these isn’t '+c.name+'’s flag. Find it.',
-             target:c.flag, imposters:shuffle(otherCountries(c,3).map(function(x){return x.flag;})) });
+             target:c.flag, imposters:lookalikes(c,3).map(function(x){return x.flag;}) });
     // Memory Lineup: flags flash, find the one that WASN'T shown (observation)
     g.push({ kind:'kimsgame', cat:'memory', type:'brain', q:'Memorize the flags, then find the one that wasn’t there' });
     // Type The Ticket: retype the destination shown on your boarding pass (dexterity)
@@ -1613,7 +1955,12 @@
     } else {
       S.stageType='solo'; S.offered=[pick(fresh(pool))];
     }
-    S.chosen=null;
+    S.chosen=null; S.scTask=null;
+    if(!onlineActive() && !isFinal() && !S.scUsed && S.round===S.scStage){
+      var taken=S.offered.map(function(t){ return taskKind(t); });
+      var sc=brain.filter(function(t){ var k=taskKind(t); return taken.indexOf(k)<0 && k!=='mapfind' && k!=='streetscout' && k!=='globehunt'; });
+      if(sc.length) S.scTask=pick(sc);
+    }
   }
   function noteKind(k){ S.recentKinds=(S.recentKinds||[]); S.recentKinds.push(k); if(S.recentKinds.length>3) S.recentKinds.shift(); }
 
@@ -1638,7 +1985,7 @@
     var alive = aliveTeams().length;
     return '<div class="hud"><div class="pips">'+pips+'</div>'
       + '<div class="remain">Stage <b>'+S.round+'</b>/'+ROUNDS+' · <b>'+alive+'</b> left'
-      + (S.streak>=2?'<span class="streakchip">🔥 '+S.streak+'</span>':'')+'</div></div>';
+      + (S.streak>=2?'<span class="streakchip">🔥 '+S.streak+'</span>':'')+rivalChip()+'</div></div>';
   }
 
   /* --- phase: Flight Leg (watch the plane travel to the next country) ----------
@@ -1749,10 +2096,17 @@
         + '<div class="pr">'+esc(taskBlurb(t))+'</div></button>';
     });
     html += '</div>';
+    if(S.scTask){
+      html += '<button class="taskcard shortcut" id="scard">'
+        + '<div class="ct"><span class="catchip sc">⚡ Shortcut</span><span class="catchip">'+esc(taskLabel(S.scTask))+'</span>'
+        + '<span class="pen">miss +'+(PENALTY[S.scTask.cat]*2)+'s</span></div>'
+        + '<div class="pr">No misses and you skip the City Run. Miss once and every miss costs double.</div></button>';
+    }
     // Skip Pass (GDD §2, Fast Forward analog): once per race, take the field median
     // time. Offline only: online timing is server-authoritative.
     if(!S.skipUsed && !isFinal() && !onlineActive()){
-      html += '<div class="skiprow"><div class="sx"><b>⏩ Skip Pass</b>: skip this one. You can use it once per race. You get the average time, so it\'s safe but you won\'t move up.</div>'
+      var skN=1+(S.extraSkip||0);
+      html += '<div class="skiprow"><div class="sx"><b>⏩ Skip Pass</b>: skip this one. '+(skN>1?'You have '+skN+' left this race.':'You can use it once per race.')+' You get the average time, so it\'s safe but you won\'t move up.</div>'
         + '<button class="btn ghost sm" id="skip" style="flex:0 0 auto">Use</button></div>';
     }
     html += '</div>' + foot();
@@ -1764,6 +2118,7 @@
       };
     });
     if($('skip')) $('skip').onclick=useSkipPass;
+    if($('scard')) $('scard').onclick=function(){ S.chosen=S.scTask; S.scUsed=true; S._scPick=true; S.phase='play'; renderStage(); };
     renderAcct();
   }
   function taskBlurb(t){
@@ -1782,16 +2137,51 @@
     var t=S.chosen, kind=taskKind(t);
     noteKind(kind);   // remember for cross-stage variety
     var _sk=statsDefault(); _sk.kinds[kind]=1; saveStats(_sk);   // track game types played (badges)
-    S.play = { start: performance.now(), misses:0, done:false, shield:false };
+    S.play = { start: performance.now(), misses:0, done:false, shield:false, fin:[], sc:!!S._scPick };
+    S._scPick=false;
+    // pace the field NOW, so the live ticker shows the exact times the Checkpoint will use
+    if(!onlineActive()){ try{ S.play.ghosts=simulateGhosts(); }catch(e){ S.play.ghosts=null; } }
+    var d=S.dest||{};
     app.innerHTML = topbar() + hud()
-      + '<div class="card">'
-        + '<div class="game-hd"><span class="cat">'+esc(taskLabel(t))+(coopTurn()?' · 👤 '+esc(coopTurn()):'')+'</span>'
+      + '<div class="card arena">'
+        + '<div class="arena-top">'+(d.flag?flagImg(d.flag,{w:30,h:20,rad:4}):'')
+          + '<span>'+(d.final?'The Final':'Stage '+S.round)+(d.name?' · <b>'+esc(d.name)+'</b>':'')+'</span></div>'
+        + '<div class="game-hd"><span class="cat">'+(S.play.sc?'⚡ Shortcut · ':'')+esc(taskLabel(t))+(coopTurn()?' · 👤 '+esc(coopTurn()):'')+'</span>'
         + '<span class="timer" id="tmr">0.0</span></div>'
+        + fieldHtml()
         + '<div id="mg"></div>'
         + '<div class="missline" id="miss"></div>'
         + '<div class="boostbar" id="boostbar"></div>'
       + '</div>' + foot();
-    startTimer();
+    readyGo(kind, function(){ startKind(t, kind); });
+    renderAcct();
+  }
+  // the ready card: what the game is, one line on how to win, then 3, 2, 1, GO.
+  // The clock starts at GO, so reading the rules never costs you time. Tap to skip.
+  function readyGo(kind, go){
+    var mg=$('mg'), p=S.play; if(!mg) return go();
+    var n=3, to=null, fired=false;
+    mg.innerHTML='<div class="ready" id="ready">'
+      + '<div class="rk-ico">'+(KIND_ICON[kind]||'🌍')+'</div>'
+      + '<div class="rk-name">'+esc(KIND_LABEL[kind]||'Challenge')+'</div>'
+      + '<div class="rk-how">'+esc(KIND_HOW[kind]||'Go fast. Misses cost time.')+'</div>'
+      + (p.sc?'<div class="rk-sc">⚡ Shortcut: no misses skips the City Run</div>':'')
+      + '<div class="rk-count" id="rkc">3</div>'
+      + '<div class="rk-tap">Tap to start now</div></div>';
+    function fire(){ if(fired || S.play!==p || !$('ready')) return; fired=true; clearTimeout(to); go(); }
+    function tick(){
+      if(fired || S.play!==p || !$('ready')) return;
+      var c=$('rkc');
+      if(n>0){ if(c){ c.textContent=String(n); retrig(c,'rk-beat'); } beep(520,0.07,'sine',0.08); n--; to=setTimeout(tick, 420); }
+      else { if(c){ c.textContent='GO'; c.classList.add('go'); retrig(c,'rk-beat'); } beep(880,0.13,'triangle',0.12); vibe(12); to=setTimeout(fire, 250); }
+    }
+    // a click (not pointerdown) so the tap that skips can't land on the game underneath
+    $('ready').onclick=function(){ if(fired) return; beep(880,0.1,'triangle',0.1); fire(); };
+    tick();
+  }
+  function startKind(t, kind){
+    S.play.start=performance.now(); startTimer();
+    var mg=$('mg'); if(mg){ retrig(mg,'mg-in'); setTimeout(function(){ if(mg) mg.classList.remove('mg-in'); }, 360); }
     if(kind==='mcq'||kind==='flagid'||kind==='capital'||kind==='oddoneout'||kind==='closest') mgMcq(t);
     else if(kind==='scramble') mgScramble(t);
     else if(kind==='sequence') mgSequence(t);
@@ -1822,7 +2212,60 @@
     else if(kind==='stampit') mgStampIt(t);
     else finishTask();   // safety
     renderBoosts(kind);
-    renderAcct();
+  }
+  // the live field: every other team, lighting up the moment they finish this
+  // challenge. Their times are the real ones the Checkpoint will use.
+  function fieldHtml(){
+    var g=S.play&&S.play.ghosts; if(!g||!g.length) return '';
+    var chips=g.map(function(x,i){
+      return '<span class="fchip'+(x.team.id===S.rivalId?' riv':'')+'" data-k="'+i+'" title="'+esc(x.team.name)+'">'+esc(x.team.flag)+'</span>';
+    }).join('');
+    return '<div class="field" id="field"><div class="fl-hd"><span>The field</span><span id="fldn"><b>0</b> of '+g.length+' done</span></div>'
+      + '<div class="fl-row">'+chips+'</div></div>';
+  }
+  function tickField(eff){
+    var p=S.play, g=p&&p.ghosts; if(!g||!g.length) return;
+    var done=0, rvIn=false;
+    g.forEach(function(x,i){
+      if(x.chal<=eff){
+        done++; if(x.team.id===S.rivalId) rvIn=true;
+        if(!p.fin[i]){ p.fin[i]=1; var el=document.querySelector('.fchip[data-k="'+i+'"]'); if(el) el.classList.add('in'); }
+      }
+    });
+    var l=$('fldn');
+    if(l && l.getAttribute('data-n')!==String(done)+rvIn){
+      l.setAttribute('data-n', String(done)+rvIn);
+      l.innerHTML=(rvIn?'<span class="rvin">Rival is done · </span>':'')+'<b>'+done+'</b> of '+g.length+' done';
+    }
+    var tm=$('tmr');
+    if(tm){ var f=done/g.length; tm.classList.toggle('hot', f<0.34); tm.classList.toggle('late', f>=0.67); }
+  }
+  // the beat between the challenge and the City Run: your time, and where it
+  // puts you right now. Tap to go on, or it moves by itself.
+  function doneBeat(raw, misses, cb){
+    var p=S.play, mg=$('mg'), card=mg&&mg.parentNode;
+    if(!card || !p) return cb();
+    var counted = Math.max(0, misses - ((p.shield && misses>0)?1:0));   // the Shield forgives one
+    var pen=(PENALTY[(S.chosen&&S.chosen.cat)||'trivia']||0)*(p.sc&&counted?2:1);
+    var eff = raw + counted*pen;
+    tickField(eff);
+    var g=p.ghosts, place='';
+    if(g&&g.length){
+      var ahead=g.filter(function(x){ return x.chal<eff; }).length;
+      place='<div class="db-place">#'+(ahead+1)+' <small>of '+(g.length+1)+' so far</small></div>';
+    }
+    var sub = counted ? fmtTime(raw)+'s + '+counted+(counted>1?' misses':' miss')
+            : (misses ? 'Shield saved your miss' : 'No misses');
+    var el=document.createElement('div'); el.className='donebeat';
+    var combo=(p.combo||0)>=3 ? '<div class="db-combo">×'+p.combo+' combo</div>' : '';
+    el.innerHTML='<div class="db-k'+(misses?'':' gold')+'">'+(misses?'Challenge done':'Perfect 🎯')+'</div>'+combo+'<div class="db-t">'+fmtTime(eff)+'<small>s</small></div>'
+      + '<div class="db-sub">'+sub+'</div>' + place
+      + (p.sc&&!counted ? '<div class="db-go sc">⚡ Shortcut! No City Run. Straight to the Checkpoint ›</div>'
+                        : '<div class="db-go">Now run to the Checkpoint ›</div>');
+    card.appendChild(el);
+    var gone=false;
+    function go(){ if(gone) return; gone=true; if(S.play!==p || !el.isConnected) return; cb(); }
+    el.onclick=go; setTimeout(go, 1200);
   }
   // ---- power-ups (Boosts): one of each per race, deployed mid-challenge ----
   var MCQ_KINDS={ mcq:1, flagid:1, capital:1, oddoneout:1, closest:1, zoomreveal:1 };
@@ -1830,8 +2273,8 @@
     var bar=$('boostbar'); if(!bar) return;
     if(!S.boosts) S.boosts={ fifty:1, shield:1 };
     var html='';
-    if(MCQ_KINDS[kind]) html+='<button class="boost" id="bfifty"'+((S.boosts.fifty>0&&!S.play.done)?'':' disabled')+'>🔍 50 / 50</button>';
-    html+='<button class="boost'+(S.play.shield?' armed':'')+'" id="bshield"'+(((S.boosts.shield>0||S.play.shield)&&!S.play.done)?'':' disabled')+'>'+(S.play.shield?'🛡️ Shield armed':'🛡️ Shield')+'</button>';
+    if(MCQ_KINDS[kind]) html+='<button class="boost" id="bfifty"'+((S.boosts.fifty>0&&!S.play.done)?'':' disabled')+'>🔍 50 / 50'+(S.boosts.fifty>1?' ×'+S.boosts.fifty:'')+'</button>';
+    html+='<button class="boost'+(S.play.shield?' armed':'')+'" id="bshield"'+(((S.boosts.shield>0||S.play.shield)&&!S.play.done)?'':' disabled')+'>'+(S.play.shield?'🛡️ Shield armed':'🛡️ Shield'+(S.boosts.shield>1?' ×'+S.boosts.shield:''))+'</button>';
     bar.innerHTML=html;
     var bf=$('bfifty'); if(bf) bf.onclick=deployFifty;
     var bs=$('bshield'); if(bs) bs.onclick=deployShield;
@@ -1854,25 +2297,27 @@
     stopTimer();
     S.timerId = setInterval(function(){
       var e=$('tmr'); if(!e){ stopTimer(); return; }
-      e.textContent = fmtTime((performance.now()-S.play.start)/1000);
+      var el=(performance.now()-S.play.start)/1000;
+      e.textContent = fmtTime(el);
+      if(S.play && !S.play.done) tickField(el + (S.play.misses||0)*(PENALTY[(S.chosen&&S.chosen.cat)||'trivia']||0));
     }, 100);
   }
   function stopTimer(){ if(S.timerId){ clearInterval(S.timerId); S.timerId=null; } }
   function showMiss(){
-    if(S.play && S.play.misses){ sfx('wrong'); jolt(); }   // central miss cue for every game: sting + shake + penalty flyup
+    if(S.play && S.play.misses){ sfx('wrong'); jolt(); if(S.play.sc && S.play.misses===1) toast('⚡ Shortcut lost. Misses now cost double.'); }   // central miss cue for every game: sting + shake + penalty flyup
     var e=$('miss'); if(!e) return;
     e.innerHTML = S.play.misses ? 'Misses: <b>'+S.play.misses+'</b> (+'+(S.play.misses*PENALTY[S.chosen.cat])+'s)' : '';
     if(S.play.misses) swapIn(e);   // pulse so the penalty registers without looking down
   }
-  function finishTask(){
+  function finishTask(rawOverride){
     stopTimer();
-    var raw = (performance.now()-S.play.start)/1000;
+    var raw = rawOverride!=null ? rawOverride : (performance.now()-S.play.start)/1000;
     // solve stinger, the same payoff on all 31 kinds: word + burst + a clean-solve bonus line
     var cx=window.innerWidth/2, cy=window.innerHeight*0.38;
-    flyup(S.play.misses? 'SOLVED' : 'PERFECT 🎯', 'big'+(S.play.misses?'':' gold'), cx, cy);
+    // the words live on the done beat now; the burst is the hit
     FX.burst(cx, cy, S.play.misses?40:80, Math.PI*1.7, 8); vibe(S.play.misses?14:[12,30,18]);
-    if((S.play.combo||0)>=3) flyup('×'+S.play.combo+' combo!', 'combo gold', cx, cy+40);
-    resolveRound(raw, S.play.misses, false);
+    var m=S.play.misses;
+    doneBeat(raw, m, function(){ resolveRound(raw, m, false); });
   }
 
   /* ---------- minigame: multiple choice (trivia / math) ---------- */
@@ -1886,7 +2331,7 @@
       b.onclick=function(){
         if(S.play.done) return;
         var correct = (+b.getAttribute('data-i'))===t.a;
-        if(correct){ b.classList.add('right'); popIn(b); vibe(12); sfx('correct'); FX.pop(b); S.play.done=true; setTimeout(finishTask,220); }
+        if(correct){ b.classList.add('right'); b.parentNode.classList.add('settled'); vibe(12); sfx('correct'); FX.pop(b); S.play.done=true; setTimeout(finishTask,380); }
         else{ b.classList.add('wrong'); b.disabled=true; S.play.misses++; showMiss(); }
       };
     });
@@ -1916,7 +2361,7 @@
     Array.prototype.forEach.call(document.querySelectorAll('.opt'), function(b){
       b.onclick=function(){
         if(S.play.done) return;
-        if((+b.getAttribute('data-i'))===t.a){ b.classList.add('right'); popIn(b); vibe(12); sfx('correct'); FX.pop(b); frRevealAll(); S.play.done=true; setTimeout(finishTask,320); }
+        if((+b.getAttribute('data-i'))===t.a){ b.classList.add('right'); b.parentNode.classList.add('settled'); vibe(12); sfx('correct'); FX.pop(b); frRevealAll(); S.play.done=true; setTimeout(finishTask,420); }
         else{ b.classList.add('wrong'); b.disabled=true; S.play.misses++; showMiss(); frReveal(); }
       };
     });
@@ -1961,17 +2406,18 @@
     };
     // normalize built to chars for slot rendering
   }
+  function solvedWave(el){ if(!el) return; Array.prototype.forEach.call(el.children, function(c,i){ c.style.setProperty('--i', i); }); el.classList.add('solved'); }
   function builtStr(){ return S.scr.built.map(function(x){return x.ch;}).join(''); }
   function checkScramble(t){
     var answer=t.answer.toUpperCase();
     // re-render with the new letter placed
     var slots='';
     for(var i=0;i<answer.length;i++){ var e=S.scr.built[i]; slots+='<div class="tileslot'+(e?' filled':'')+'">'+(e?esc(e.ch):'')+'</div>'; }
-    var slotEl=document.querySelector('.slot'); if(slotEl) slotEl.innerHTML=slots;
+    var slotEl=document.querySelector('.slot'); if(slotEl){ slotEl.innerHTML=slots; var nw=slotEl.children[S.scr.built.length-1]; if(nw) popIn(nw); }
     var bankEls=document.querySelectorAll('.ltile');
     S.scr.built.forEach(function(x){ if(bankEls[x.i]) bankEls[x.i].classList.add('used'); });
     if(S.scr.built.length===answer.length){
-      if(builtStr()===answer){ sfx('correct'); vibe(14); S.play.done=true; setTimeout(finishTask,200); }
+      if(builtStr()===answer){ sfx('correct'); vibe(14); S.play.done=true; solvedWave(slotEl); setTimeout(finishTask,520); }
       else{ S.play.misses++; showMiss();
         // clear the wrong attempt (board glides back in rather than hard-cutting)
         S.scr.built=[]; S.scr.used=[]; setTimeout(function(){ if(!S.play.done){ renderScramble(t); swapIn(document.querySelector('.slot')); } },350); }
@@ -2007,7 +2453,7 @@
       S.play.start=performance.now(); startTimer();   // start timing the input phase
       return;
     }
-    var el=seqTile(S.seq.seq[k]); if(el) el.classList.add('lit');
+    var el=seqTile(S.seq.seq[k]); if(el) el.classList.add('lit'); beep(330+S.seq.seq[k]*95,0.2,'sine',0.09);
     setTimeout(function(){ if(el) el.classList.remove('lit');
       setTimeout(function(){ playSequence(t,k+1); }, 220);
     }, 600);
@@ -2017,7 +2463,7 @@
     var want=S.seq.seq[S.seq.input.length];
     if(i===want){
       S.seq.input.push(i);
-      el.classList.add('tap'); setTimeout(function(){ if(el) el.classList.remove('tap'); },180);
+      el.classList.add('tap'); popIn(el); beep(330+i*95,0.14,'sine',0.08); setTimeout(function(){ if(el) el.classList.remove('tap'); },180);
       seqStatus();
       if(S.seq.input.length===S.seq.seq.length){ sfx('correct'); vibe(14); S.play.done=true; setTimeout(finishTask,220); }
     } else {
@@ -2087,10 +2533,11 @@
     else if(kind==='stopTap'){ S.play.misses++; showMiss(); S.rx.msg='That was STOP!'; S.rx.sub='+1 miss'; }
     else /* early */{ S.play.misses++; showMiss(); S.rx.msg='Too soon!'; S.rx.sub='+1 miss · wait for it'; }
     S.rx.state='fb'; renderReaction(t);
+    tickField(0.8 + S.rx.sum/1000 + S.play.misses*(PENALTY[t.cat]||0));
     if(S.rx.go>=S.rx.need){
       S.play.done=true;
       var raw = 0.8 + S.rx.sum/1000;   // small overhead + summed reaction time (incl. slow penalties)
-      S.rx.to=setTimeout(function(){ resolveRound(raw, S.play.misses, false); }, 650);
+      S.rx.to=setTimeout(function(){ finishTask(raw); }, 650);
     } else {
       S.rx.to=setTimeout(function(){ if(!S.play.done) reactBegin(t); }, 750);
     }
@@ -2215,27 +2662,48 @@
   function mgTrueFalse(t){
     S.tf={ i:0, items:t.items };
     $('mg').innerHTML='<div class="seqstatus" id="tfst"></div>'
-      + '<div class="prompt" id="tfq" style="text-align:center;min-height:56px;display:flex;align-items:center;justify-content:center"></div>'
-      + '<div class="btnrow"><button class="btn ghost" id="tft" style="flex:1">✓ True</button>'
-      + '<button class="btn ghost" id="tff" style="flex:1">✗ False</button></div>';
+      + '<div class="tfdeck"><div class="tfcard" id="tfcard"><div class="tfstamp" id="tfstamp"></div>'
+        + '<div class="tfq" id="tfq"></div><div class="tfhint">Swipe or tap</div></div></div>'
+      + '<div class="btnrow tfbtns"><button class="btn ghost" id="tff">✗ False</button>'
+      + '<button class="btn ghost" id="tft">✓ True</button></div>';
     $('tft').onclick=function(){ tfAns(t,true,this); }; $('tff').onclick=function(){ tfAns(t,false,this); };
+    tfDrag(t);
     tfPaint();
+  }
+  // drag the card: past 70px it counts as an answer, right is true, left is false
+  function tfDrag(t){
+    var c=$('tfcard'); if(!c) return; var x0=null, dx=0;
+    c.addEventListener('pointerdown', function(e){ if(S.play.done||S.tf.lock) return; x0=e.clientX; dx=0; try{ c.setPointerCapture(e.pointerId); }catch(_){} c.classList.add('drag'); });
+    c.addEventListener('pointermove', function(e){ if(x0==null) return; dx=e.clientX-x0;
+      c.style.transform='translateX('+dx+'px) rotate('+(dx/16).toFixed(1)+'deg)'; c.setAttribute('data-lean', dx>30?'t':(dx<-30?'f':'')); });
+    function up(){ if(x0==null) return; x0=null; c.classList.remove('drag');
+      if(Math.abs(dx)>70) tfAns(t, dx>0, dx>0?$('tft'):$('tff'));
+      else { c.style.transform=''; c.setAttribute('data-lean',''); } }
+    c.addEventListener('pointerup', up); c.addEventListener('pointercancel', up);
   }
   function tfPaint(){
     var st=$('tfst'); if(st) st.innerHTML='Statement <b>'+(S.tf.i+1)+'</b>/'+S.tf.items.length;
-    var q=$('tfq'); if(q){ q.textContent=S.tf.items[S.tf.i].s; swapIn(q); }
+    var c=$('tfcard');
+    // reset with transitions off, or the new card slides back from where the old one flew
+    if(c){ c.style.transition='none'; c.className='tfcard'; c.style.transform=''; c.setAttribute('data-lean',''); void c.offsetWidth; c.style.transition=''; }
+    var sp=$('tfstamp'); if(sp){ sp.className='tfstamp'; sp.textContent=''; }
+    var q=$('tfq'); if(q) q.textContent=S.tf.items[S.tf.i].s;
+    if(c) retrig(c,'tf-in');
   }
   function tfAns(t,ans,btn){
     if(S.play.done || S.tf.lock) return;
     var ok = (ans===S.tf.items[S.tf.i].t);
     if(ok) sfx('tap'); else { S.play.misses++; showMiss(); }
     if(btn) btn.style.borderColor = ok?'var(--ok)':'var(--bad)';
-    S.tf.lock=true;   // feedback beat, same pacing as the MCQ games' 220ms
+    var c=$('tfcard'), sp=$('tfstamp');
+    if(sp){ sp.textContent=ans?'TRUE':'FALSE'; sp.className='tfstamp show '+(ok?'ok':'no'); }
+    if(c){ c.classList.remove('tf-in'); c.style.transform=''; setTimeout(function(){ if(c) c.classList.add(ans?'fly-r':'fly-l'); }, 90); }
+    S.tf.lock=true;   // feedback beat: the stamp lands, the card flies off
     setTimeout(function(){
       S.tf.lock=false; if(btn) btn.style.borderColor='';
       S.tf.i++;
       if(S.tf.i>=S.tf.items.length){ S.play.done=true; finishTask(); } else tfPaint();
-    },240);
+    },360);
   }
 
   /* ---------- minigame: Higher or Lower (compare a stat) ----------
@@ -2244,8 +2712,8 @@
     S.hl={ round:0, rounds:t.rounds||3, items:t.items };
     $('mg').innerHTML='<div class="seqstatus" id="hlst"></div>'
       + '<div class="prompt" style="text-align:center">'+esc(t.q)+'</div>'
-      + '<div class="btnrow"><button class="btn ghost hlo" data-i="0" style="flex:1"></button>'
-      + '<button class="btn ghost hlo" data-i="1" style="flex:1"></button></div>';
+      + '<div class="btnrow duel"><button class="btn ghost hlo" data-i="0"></button><div class="vs">VS</div>'
+      + '<button class="btn ghost hlo" data-i="1"></button></div>';
     each('.hlo', function(b){ b.onclick=function(){ hlAns(t, +b.getAttribute('data-i'), b); }; });
     hlPaint();
   }
@@ -2275,14 +2743,14 @@
     each('.hlo', function(b){
       var j=+b.getAttribute('data-i'), win=(lowerWins ? p[j].value<=p[1-j].value : p[j].value>=p[1-j].value);
       b.innerHTML=esc(p[j].label)+'<span class="revval">'+coordLabel(p[j].value,t.dir)+'</span>';
-      b.style.borderColor = win?'var(--ok)':'var(--bad)';
+      b.style.borderColor = win?'var(--ok)':'var(--bad)'; b.classList.add(win?'win':'lose');
     });
     S.hl.lock=true;
     setTimeout(function(){
-      S.hl.lock=false; each('.hlo', function(b){ b.style.borderColor=''; });
+      S.hl.lock=false; each('.hlo', function(b){ b.style.borderColor=''; b.classList.remove('win','lose'); });
       S.hl.round++;
       if(S.hl.round>=S.hl.rounds){ S.play.done=true; finishTask(); } else hlPaint();
-    },240);
+    },420);
   }
 
   /* ---------- minigame: Memory Match (concentration) ----------
@@ -2291,32 +2759,36 @@
   function mgMemoryMatch(t){
     var cards=shuffle(t.tiles.concat(t.tiles)).map(function(e,i){ return { id:i, em:e, up:false, done:false }; });
     S.mm={ cards:cards, open:[] };
-    var grid=cards.map(function(c){ return '<div class="seqtile mmc" data-id="'+c.id+'">❓</div>'; }).join('');
-    $('mg').innerHTML='<div class="prompt" style="text-align:center">Flip the cards, match all the pairs</div>'
-      + '<div class="seqgrid" style="max-width:280px;margin:8px auto 0">'+grid+'</div>';
+    var grid=cards.map(function(c){
+      return '<div class="mmc" data-id="'+c.id+'"><div class="mmin"><div class="mmf mmback">🌍</div>'
+        + '<div class="mmf mmface">'+flagImg(c.em,{w:40,h:27,rad:4})+'</div></div></div>';
+    }).join('');
+    $('mg').innerHTML='<div class="prompt" style="text-align:center">Flip two cards at a time. Match all the pairs.</div>'
+      + '<div class="mmgrid">'+grid+'</div>';
     each('.mmc', function(b){ b.onclick=function(){ mmFlip(+b.getAttribute('data-id')); }; });
   }
-  function mmPaint(id, pop){
+  function mmPaint(id){
     var c=S.mm.cards[id], el=document.querySelector('.mmc[data-id="'+id+'"]');
     if(!c||!el) return;
-    el.textContent=(c.up||c.done)?c.em:'❓';
-    el.classList.toggle('lit', c.up&&!c.done);
-    el.classList.toggle('tap', c.done);
-    if(pop) popIn(el);
+    el.classList.toggle('up', c.up||c.done);
+    el.classList.toggle('done', c.done);
+    if(!c.up) el.classList.remove('no');
   }
   function mmFlip(id){
     if(S.play.done) return;
     var c=S.mm.cards[id]; if(!c||c.up||c.done||S.mm.open.length>=2) return;
-    c.up=true; S.mm.open.push(id); mmPaint(id, true);
+    c.up=true; S.mm.open.push(id); mmPaint(id); beep(700,0.04,'triangle',0.05);
     if(S.mm.open.length===2){
       var a=S.mm.cards[S.mm.open[0]], b=S.mm.cards[S.mm.open[1]];
       if(a.em===b.em){
-        sfx('correct'); vibe(12); a.done=b.done=true; S.mm.open=[]; mmPaint(a.id); mmPaint(b.id);
+        a.done=b.done=true; S.mm.open=[];
+        setTimeout(function(){ sfx('correct'); vibe(12); mmPaint(a.id); mmPaint(b.id); }, 260);
         var all=true; S.mm.cards.forEach(function(x){ if(!x.done) all=false; });
-        if(all){ S.play.done=true; setTimeout(finishTask,260); }
+        if(all){ S.play.done=true; setTimeout(finishTask,720); }
       } else {
-        S.play.misses++; showMiss();
-        setTimeout(function(){ a.up=false; b.up=false; S.mm.open=[]; if(!S.play.done){ mmPaint(a.id); mmPaint(b.id); } }, 720);
+        setTimeout(function(){ if(S.play.done) return; S.play.misses++; showMiss();
+          [a,b].forEach(function(x){ var e2=document.querySelector('.mmc[data-id="'+x.id+'"]'); if(e2) e2.classList.add('no'); }); }, 300);
+        setTimeout(function(){ a.up=false; b.up=false; S.mm.open=[]; if(!S.play.done){ mmPaint(a.id); mmPaint(b.id); } }, 820);
       }
     }
   }
@@ -2327,17 +2799,21 @@
     // pop rate speeds up (820→560ms) and one more hit is needed on later Stages
     var d=ramp(), tick=Math.round(900-220*d);   // hold each pop a touch longer so it doesn't vanish mid-reach
     S.wk={ hits:0, need:5+Math.round(d), cells:[null,null,null,null,null,null,null,null,null], timer:null };
-    var cells=''; for(var i=0;i<9;i++){ cells+='<div class="seqtile wkc" data-i="'+i+'"></div>'; }
+    var cells=''; for(var i=0;i<9;i++){ cells+='<div class="wkc" data-i="'+i+'" data-v=""><div class="wkmole"></div><div class="wkhole"></div></div>'; }
     $('mg').innerHTML='<div class="seqstatus" id="wkst"></div>'
-      + '<div class="prompt" style="text-align:center">'+esc(t.q)+'</div>'
-      + '<div class="seqgrid" style="max-width:260px;margin:8px auto 0">'+cells+'</div>';
+      + '<div class="prompt" style="text-align:center">Tap '+flagImg(t.target,{w:30,h:20,rad:3})+' when it pops up. Skip the others.</div>'
+      + '<div class="wkgrid">'+cells+'</div>';
     each('.wkc', function(b){ fastTap(b, function(){ whackTap(t, +b.getAttribute('data-i')); }); });
     wkStatus(); S.wk.timer=setInterval(function(){ tickWhack(t); }, tick); tickWhack(t);
   }
   function wkStatus(){ var e=$('wkst'); if(e) e.innerHTML='Hits <b>'+S.wk.hits+'</b>/'+S.wk.need; }
   function wkCell(i){ return document.querySelector('.wkc[data-i="'+i+'"]'); }
   function wkPaint(){ for(var i=0;i<9;i++){ var el=wkCell(i); if(!el) continue; var v=S.wk.cells[i]||'';
-    if(el.textContent!==v){ el.textContent=v; if(v) popIn(el); else el.classList.remove('pop-in'); } } }
+    if(el.getAttribute('data-v')!==v){ el.setAttribute('data-v',v); el.classList.remove('bonk','bad');
+      var m=el.querySelector('.wkmole');
+      if(v){ if(m) m.innerHTML=flagImg(v,{w:46,h:31,rad:4}); retrig(el,'up'); } else el.classList.remove('up'); } } }
+  function wkHit(el, good){ if(!el) return; el.setAttribute('data-v',''); el.classList.remove('up'); retrig(el, good?'bonk':'bad');
+    if(!good) setTimeout(function(){ if(el) el.classList.remove('bad'); },340); }
   function tickWhack(t){
     if(S.play.done || !$('wkst')){ clearInterval(S.wk.timer); return; }
     var cells=[null,null,null,null,null,null,null,null,null];
@@ -2350,9 +2826,9 @@
   function whackTap(t,i){
     if(S.play.done) return;
     var c=S.wk.cells[i]; if(!c){ var ec=wkCell(i); if(ec) retrig(ec,'hitflash'); return; }   // empty tap: brief flash so it feels registered
-    if(c===t.target){ S.wk.hits++; S.wk.cells[i]=null; var el=wkCell(i); if(el) el.textContent=''; wkStatus();
+    if(c===t.target){ S.wk.hits++; S.wk.cells[i]=null; wkHit(wkCell(i), true); sfx('correct'); wkStatus();
       if(S.wk.hits>=S.wk.need){ S.play.done=true; clearInterval(S.wk.timer); finishTask(); return; }
-    } else { S.play.misses++; showMiss(); S.wk.cells[i]=null; var el2=wkCell(i); if(el2) el2.textContent=''; }
+    } else { S.play.misses++; showMiss(); S.wk.cells[i]=null; wkHit(wkCell(i), false); }
   }
 
   /* ---------- minigame: Quick Tap (reflex) ---------- */
@@ -2503,7 +2979,7 @@
     var n=Math.min(24, S.ee.n + S.ee.round*3);
     var imp=t.imposters[S.ee.round % t.imposters.length] || t.imposters[0];
     var at=Math.floor(Math.random()*n), tiles='';
-    for(var i=0;i<n;i++){ tiles+='<div class="seqtile eet" data-b="'+(i===at?1:0)+'" style="width:52px;height:52px;font-size:27px">'+(i===at?imp:t.target)+'</div>'; }
+    for(var i=0;i<n;i++){ tiles+='<div class="seqtile eet" data-b="'+(i===at?1:0)+'" style="width:52px;height:52px">'+flagImg(i===at?imp:t.target,{w:38,h:26,rad:3})+'</div>'; }
     $('mg').innerHTML='<div class="seqstatus">Found <b>'+S.ee.round+'</b>/'+S.ee.rounds+'</div>'
       + '<div class="prompt" style="text-align:center">'+esc(t.q)+'</div>'
       + '<div class="seqgrid swap-in" style="max-width:340px;margin:8px auto 0;gap:8px">'+tiles+'</div>';
@@ -2530,14 +3006,14 @@
     S.km.intruder=flags[S.km.k];
     var shown=flags.slice(0, S.km.k);
     S.km.opts=shuffle([S.km.intruder].concat(shuffle(shown).slice(0,3)));
-    var tiles=shown.map(function(f){ return '<div class="seqtile" style="width:54px;height:54px;font-size:28px">'+f+'</div>'; }).join('');
+    var tiles=shown.map(function(f,i){ return '<div class="seqtile kms pop-in" style="width:54px;height:54px;animation-delay:'+(i*70)+'ms">'+flagImg(f,{w:40,h:27,rad:3})+'</div>'; }).join('');
     $('mg').innerHTML='<div class="seqstatus">Lineup <b>'+(S.km.round+1)+'</b>/'+S.km.rounds+'</div>'
       + '<div class="prompt" style="text-align:center">👀 Memorize the lineup…</div>'
       + '<div class="seqgrid swap-in" id="kmshow" style="max-width:340px;margin:8px auto 0">'+tiles+'</div>';
     setTimeout(function(){ if(!S.play.done && $('kmshow')) kimAsk(t); }, S.km.flashMs);
   }
   function kimAsk(t){
-    var opts=S.km.opts.map(function(f){ return '<div class="seqtile kmo" data-f="'+f+'" style="width:58px;height:58px;font-size:30px">'+f+'</div>'; }).join('');
+    var opts=S.km.opts.map(function(f){ return '<div class="seqtile kmo" data-f="'+f+'" style="width:60px;height:60px">'+flagImg(f,{w:44,h:30,rad:4})+'</div>'; }).join('');
     $('mg').innerHTML='<div class="seqstatus">Lineup <b>'+(S.km.round+1)+'</b>/'+S.km.rounds+'</div>'
       + '<div class="prompt" style="text-align:center">Which flag <b style="color:var(--bad)">wasn\'t</b> there?</div>'
       + '<div class="seqgrid swap-in" style="margin-top:8px">'+opts+'</div>';
@@ -2586,7 +3062,8 @@
       S.tk.idx++;
       while(S.tk.word[S.tk.idx]===' ') S.tk.idx++;   // spaces fill themselves
       var s=$('tkslots'); if(s) s.innerHTML=tkSlots();   // slots aren't tappable, safe to rebuild
-      if(S.tk.idx>=S.tk.word.length){ S.play.done=true; setTimeout(finishTask,200); }
+      if(s){ var nw2=s.querySelectorAll('.tileslot.filled'); if(nw2.length) popIn(nw2[nw2.length-1]); }
+      if(S.tk.idx>=S.tk.word.length){ S.play.done=true; solvedWave(s); sfx('correct'); setTimeout(finishTask,520); }
     } else {
       S.play.misses++; showMiss();
       el.style.borderColor='var(--bad)'; setTimeout(function(){ if(el) el.style.borderColor=''; },300);
@@ -2740,8 +3217,8 @@
     S.cf={ i:0, rounds:t.pairs.length };
     $('mg').innerHTML='<div class="seqstatus" id="cfst"></div>'
       + '<div class="prompt" style="text-align:center">'+esc(t.q)+'</div>'
-      + '<div class="btnrow"><button class="btn ghost hlo" data-i="0" style="flex:1"></button>'
-      + '<button class="btn ghost hlo" data-i="1" style="flex:1"></button></div>';
+      + '<div class="btnrow duel"><button class="btn ghost hlo" data-i="0"></button><div class="vs">VS</div>'
+      + '<button class="btn ghost hlo" data-i="1"></button></div>';
     each('.hlo', function(b){ b.onclick=function(){ cfAns(t, +b.getAttribute('data-i'), b); }; });
     cfPaint(t);
   }
@@ -2759,14 +3236,14 @@
     each('.hlo', function(b){
       var j=+b.getAttribute('data-i'), it=(j===0?p.a:p.b);
       b.innerHTML=esc(it.label)+'<span class="revval">'+Math.round(it.d).toLocaleString()+' km</span>';
-      b.style.borderColor = (j===win)?'var(--ok)':'var(--bad)';
+      b.style.borderColor = (j===win)?'var(--ok)':'var(--bad)'; b.classList.add(j===win?'win':'lose');
     });
     S.cf.lock=true;
     setTimeout(function(){
-      S.cf.lock=false; each('.hlo', function(b){ b.style.borderColor=''; });
+      S.cf.lock=false; each('.hlo', function(b){ b.style.borderColor=''; b.classList.remove('win','lose'); });
       S.cf.i++;
       if(S.cf.i>=S.cf.rounds){ S.play.done=true; finishTask(); } else cfPaint(t);
-    },240);
+    },420);
   }
 
   /* ---------- minigame: Compass Chase (tap the direction, 2-3 rounds) ---------- */
@@ -2844,19 +3321,20 @@
     var st=$('rsst'); if(st) st.innerHTML='Sorted <b>'+S.rs.i+'</b>/'+S.rs.queue.length;
     var f=$('rsflag'); if(f) f.innerHTML=flagImg(q.flag,{w:104,h:70,rad:11,cls:'hero'});
     var n=$('rsname'); if(n) n.textContent=q.name;
-    swapIn($('rscard'));
+    var cd=$('rscard'); if(cd){ cd.style.transition='none'; cd.classList.remove('fly-a','fly-b'); void cd.offsetWidth; cd.style.transition=''; popIn(cd); }
   }
   function rsAns(t,r,btn){
     if(S.play.done || S.rs.lock) return;
     var ok = (r===S.rs.queue[S.rs.i].region);
     if(ok) sfx('tap'); else { S.play.misses++; showMiss(); }
     if(btn) btn.style.borderColor = ok?'var(--ok)':'var(--bad)';
+    var cd=$('rscard'); if(cd) cd.classList.add(btn&&btn.classList.contains('a')?'fly-a':'fly-b');
     S.rs.lock=true;
     setTimeout(function(){
       S.rs.lock=false; if(btn) btn.style.borderColor='';
       S.rs.i++;
       if(S.rs.i>=S.rs.queue.length){ S.play.done=true; finishTask(); } else rsPaint();
-    },240);
+    },300);
   }
 
   /* ---------- minigame: Pilot The Landing (controllable descent) ----------
@@ -3171,7 +3649,7 @@
       + '<circle cx="'+vx+'" cy="'+vy+'" r="3" fill="#EE5A44"/>'
       + '<circle cx="'+cx+'" cy="'+cy+'" r="3.2" fill="#35d6a0" stroke="#fff" stroke-width="0.5"/>');
     var h=$('maphint'); if(h) h.innerHTML='You were <b>'+Math.round(d).toLocaleString()+' km</b> away · '+(miss===0?'bullseye! 🎯':('+'+miss+' miss'+(miss>1?'es':'')));
-    setTimeout(function(){ resolveRound(raw, miss, false); }, 1500);
+    setTimeout(function(){ doneBeat(raw, miss, function(){ resolveRound(raw, miss, false); }); }, 1500);
   }
 
   /* ---------- minigame: Globe Hunt (Globle-style "warmer / colder" hunt) ----------
@@ -3343,9 +3821,30 @@
   }
   function ssKill(){ try{ if(S.ssViewer&&S.ssViewer.remove) S.ssViewer.remove(); }catch(e){} S.ssViewer=null; }
 
+
+  // keyboard play: 1-4 (or A-D) answer, arrows pick a side, Space hits the main control
+  document.addEventListener('keydown', function(e){
+    if(S.screen!=='stage' || S.phase!=='play' || !S.play || e.metaKey || e.ctrlKey || e.altKey) return;
+    var tg=e.target && e.target.tagName; if(tg==='INPUT' || tg==='TEXTAREA') return;
+    var k=e.key||'';
+    var rd=$('ready'); if(rd){ if(k===' '||k==='Enter'){ e.preventDefault(); rd.click(); } return; }
+    if(S.play.done || document.querySelector('.donebeat')) return;
+    function press(el){ if(el && !el.disabled){ e.preventDefault(); el.click(); return true; } return false; }
+    var idx='1234'.indexOf(k); if(idx<0 && k.length===1) idx='abcd'.indexOf(k.toLowerCase());
+    var opts=document.querySelectorAll('#mg .opts .opt');
+    if(opts.length && idx>=0 && idx<opts.length){ press(opts[idx]); return; }
+    if($('tft')){ if(k==='ArrowRight'||k==='t'||k==='T'){ press($('tft')); return; } if(k==='ArrowLeft'||k==='f'||k==='F'){ press($('tff')); return; } }
+    var duo=document.querySelectorAll('#mg .hlo');
+    if(duo.length===2){ if(k==='ArrowLeft'||k==='1'){ press(duo[0]); return; } if(k==='ArrowRight'||k==='2'){ press(duo[1]); return; } }
+    if(k===' '||k==='Enter'){
+      var main=$('tobtn')||$('rwbtn')||$('psshut')||$('stfield')||$('hrfield')||$('bgfield')||$('rbox')||$('repad');
+      if(main){ e.preventDefault(); main.click(); }
+    }
+  });
+
   /* -------------------------------------------------- Skip Pass (field median) */
   function useSkipPass(){
-    S.skipUsed=true;
+    if(S.extraSkip>0) S.extraSkip--; else S.skipUsed=true;
     var ghosts = simulateGhosts();       // pace the field first
     var med = median(ghosts.map(function(x){ return x.eff; }));
     resolveRound(med, 0, true, ghosts);  // player checks in at the median
@@ -3358,14 +3857,18 @@
   // difficulty ramps without a hand-tuned curve.
   function simulateGhosts(){
     var kind = (S.chosen&&taskKind(S.chosen)) || 'mcq';
+    // the Daily paces the field off the date and the game type, so everybody who
+    // picked the same challenge races the same times
+    if(S.daily && !S._dailySim){ S._dailySim=true; try{ return withRng(dailyRng(S.round, 9+strHash(kind)%997), simulateGhosts); } finally{ S._dailySim=false; } }
     var base = BASE[kind] || 8;
     var pen  = PENALTY[(S.chosen&&S.chosen.cat) || 'trivia'];
     return aliveTeams().filter(function(t){ return t.isGhost; }).map(function(t){
       var misses = (Math.random() < clampP(t.skill)) ? 1 : 0;
       if(Math.random() < clampP(t.skill)*0.4) misses++;
       // challenge time + the City Run to the Checkpoint (every team runs it)
-      var eff = base * t.skill * rnd(0.9,1.12) + misses*pen + RUN_BASE * t.skill * rnd(0.85,1.15);
-      return { team:t, eff:eff };
+      var chal = base * t.skill * rnd(0.9,1.12) + misses*pen;
+      var eff = chal + RUN_BASE * t.skill * rnd(0.85,1.15);
+      return { team:t, eff:eff, chal:chal };
     });
   }
   function clampP(skill){ var p=(skill-0.8)*0.45; return Math.max(0, Math.min(0.55, p)); }
@@ -3377,8 +3880,9 @@
     // Amazing-Race beat: after the challenge you still have to SPRINT THE CITY to
     // the Checkpoint mat, and that run counts. Intercept the first resolve, play
     // the City Run, then come back through here with the combined time.
+    if(!skipped && !S._runDone && S.play && S.play.sc && playerMisses===0){ S._runDone=true; S._scWin=true; }
     if(!skipped && !S._runDone){
-      S._runPend={ raw:playerRaw, misses:playerMisses, ghosts:preGhosts||null };
+      S._runPend={ raw:playerRaw, misses:playerMisses, ghosts:preGhosts||(S.play&&S.play.ghosts)||null };
       stopTimer(); S.phase='run'; renderStage(); return;
     }
     var act = S._runPend ? S._runPend.raw : playerRaw;      // challenge-only time
@@ -3386,8 +3890,10 @@
     S._runDone=false; S._runPend=null;
     if(onlineActive()){ return duoSubmit(playerRaw, playerMisses, act, runT); }   // two-devices duo: post my time, combine on the leaderboard
     var pen = PENALTY[(S.chosen&&S.chosen.cat) || 'trivia'];
+    var sc = (!skipped && S.play && S.play.sc) ? (S._scWin?'win':'fail') : null; S._scWin=false;
+    if(sc==='fail') pen*=2;
     var playerEff = skipped ? playerRaw : (playerRaw + playerMisses*pen);
-    S.lastResult = { raw:playerRaw, act:act, runT:runT, misses:playerMisses, eff:playerEff, skipped:!!skipped, pen:pen };
+    S.lastResult = { raw:playerRaw, act:act, runT:runT, misses:playerMisses, eff:playerEff, skipped:!!skipped, pen:pen, sc:sc };
 
     var ghosts = preGhosts || simulateGhosts();
     // stamp this round's effective time onto every alive team
@@ -3405,9 +3911,11 @@
       if(playerMisses===0 && k!=='reaction' && k!=='sequence' && k!=='mapfind'
          && (!st.fastestStage || act<st.fastestStage)) st.fastestStage=act;
       if(playerMisses===0) st.perfectStages++;
+      if(S.dest && S.dest.country && !S.dest.final){ var cid=S.dest.country.id; if(!st.cbest[cid] || playerEff<st.cbest[cid]) st.cbest[cid]=playerEff; }
     }
     saveStats(st);
     S.streak = (!skipped && playerMisses===0) ? (S.streak||0)+1 : 0;   // clean-stage streak (HUD 🔥)
+    awardStageMiles(S.lastResult);
 
     S.phase='checkpoint';
     renderStage();
@@ -3587,6 +4095,12 @@
     if(S._shieldSaved) chips+='<span class="good">🛡️ Shield save</span>';
     if(med!=null && r.eff<med) chips+='<span class="good">'+fmtTime(med-r.eff)+'s faster than most</span>';
     if(you===0 && n>1) chips+='<span class="gold">🥇 Fastest team</span>';
+    var rv=rivalTeam();
+    if(rv && rv.alive && rv.eff!=null){
+      var gap=rv.eff-r.eff;
+      chips += gap>=0 ? '<span class="good">⚔️ Beat '+esc(rv.name)+' by '+fmtTime(gap)+'s</span>'
+                      : '<span class="warn">⚔️ '+esc(rv.name)+' beat you by '+fmtTime(-gap)+'s</span>';
+    }
     var pct=n>1?Math.round(beat/(n-1)*100):100;
     return (chips?'<div class="verdict">'+chips+'</div>':'')
       + '<div class="fieldbar"><div class="lbl"><span>Field</span><b>Beat '+beat+' of '+(n-1)+' teams</b></div>'
@@ -3602,7 +4116,9 @@
       body = '<div class="breakdown"><span>Challenge <b>'+fmtTime(r.act!=null?r.act:r.raw)+'s</b></span>'
         + (r.runT?'<span>City Run <b>'+fmtTime(r.runT)+'s</b></span>':'')
         + '<span>Misses <b>'+r.misses+'</b> (+'+(r.misses*r.pen)+'s)</span></div>'
-        + (S._shieldSaved ? '<div class="muted" style="font-size:12px;margin-top:8px;color:var(--ok)">🛡️ Shield saved you a miss</div>' : '');
+        + (S._shieldSaved ? '<div class="muted" style="font-size:12px;margin-top:8px;color:var(--ok)">🛡️ Shield saved you a miss</div>' : '')
+        + (r.sc==='win' ? '<div class="muted" style="font-size:12.5px;margin-top:8px;color:var(--goldhi);font-weight:800">⚡ Shortcut cleared. You skipped the City Run.</div>'
+          : r.sc==='fail' ? '<div class="muted" style="font-size:12.5px;margin-top:8px;color:#ff8d84;font-weight:800">⚡ Shortcut lost. Your misses cost double.</div>' : '');
     }
     S._shieldSaved=false;
     app.innerHTML = topbar() + hud()
@@ -3612,11 +4128,13 @@
         + '<div class="muted" style="font-size:12px;margin-top:4px">your time</div>'
         + body
         + checkpointVerdict(r)
+        + milesRow()
         + '<button class="btn globe" id="lb" style="margin-top:16px">See the leaderboard ›</button>'
       + '</div>' + foot();
     // count the time up to the locked value, which makes the payoff land
     (function(){
       var fb=$('fbfil'); if(fb) requestAnimationFrame(function(){ fb.style.width=fb.getAttribute('data-w')+'%'; });
+      countUp($('milesn'), (S.lastMiles&&S.lastMiles.total)||0, 700, '+');
       var el=$('bigt'); if(!el || reduceMotion() || !(r.eff>0)) return;
       var t0=performance.now(), DUR=620;
       (function tick(){
@@ -3641,6 +4159,7 @@
     var youRank = ranked.findIndex(function(t){ return t.id==='you'; }) + 1;
     // the verdict plays as a cutscene first (Race Control checks the mat), once per stage
     if(S._cutLb!==S.round && !S.spectating){ S._cutLb=S.round; return cut(verdictBeats(ranked, groundedTeam, final), viewLeaderboard, destScene(S.dest)); }
+    if(S._logged!==S.round){ S._logged=S.round; logStage(ranked, groundedTeam, final); }
 
     var rowsHtml='';
     ranked.forEach(function(t,i){
@@ -3650,7 +4169,7 @@
       var place = win?'🏆':(i===0?'🥇':i===1?'🥈':i===2?'🥉':(i+1));
       rowsHtml += '<div class="'+cls+'" style="animation-delay:'+(i*55)+'ms">'
         + '<span class="p">'+place+'</span>'
-        + '<span class="nm">'+esc(t.name)+''+'</span>'
+        + '<span class="nm">'+esc(t.name)+(t.id===S.rivalId?' <span class="rv">RIVAL</span>':'')+'</span>'
         + '<span class="tm">'+fmtTime(t.eff)+'s'+(out?' · Grounded':'')+'</span></div>';
     });
 
@@ -3670,6 +4189,7 @@
       + '<div class="card">'
         + banner
         + '<div class="lb">'+rowsHtml+'</div>'
+        + ((final || groundedTeam.id==='you') ? haulHtml() : '')
         + '<div id="lbbtns"></div>'
       + '</div>' + foot();
 
@@ -3681,8 +4201,9 @@
       recordRaceEnd(ranked);
       btns.innerHTML='<div class="btnrow"><button class="btn ghost" id="home">Home</button><button class="btn ghost" id="share">📋 Share</button><button class="btn globe" id="again">Race again 🌍</button></div>';
       $('home').onclick=function(){ S.screen='home'; render(); };
-      $('again').onclick=function(){ S.screen='setup'; render(); };
+      $('again').onclick=function(){ S.daily=null; S.screen='setup'; render(); };
       $('share').onclick=function(){
+        if(S.daily){ return shareResult(dailyShareText(S.daily.key, S.daily.practice?null:dailyToday())); }
         shareResult(youWon2
           ? ('🌍 I just won RunTheGlobe. Beat '+(FIELD_SIZE-1)+' teams to '+(S.dest.landmark||S.dest.name)+'. Play at runthe.gg/globe')
           : ('🌍 I finished #'+youRank+' of '+FIELD_SIZE+' in RunTheGlobe\'s Final at '+S.dest.name+'. Think you can beat that? runthe.gg/globe'));
@@ -3691,7 +4212,8 @@
       sfx('lose');
       recordRaceEnd(ranked);   // record now (idempotent) so an abandon still counts
       // GDD §10: binary Grounded choice: watch live, or return home. No reward for watching.
-      btns.innerHTML='<div class="btnrow"><button class="btn ghost" id="home">Home</button><button class="btn globe" id="watch">Watch the rest ▶</button></div>';
+      btns.innerHTML='<div class="btnrow"><button class="btn ghost" id="home">Home</button>'+(S.daily&&!S.daily.practice?'<button class="btn ghost" id="dshare">📋 Share</button>':'')+'<button class="btn globe" id="watch">Watch the rest ▶</button></div>';
+      if($('dshare')) $('dshare').onclick=function(){ shareResult(dailyShareText(S.daily.key, dailyToday())); };
       $('home').onclick=function(){ S.screen='home'; render(); };
       $('watch').onclick=function(){ S.phase='grounded'; S.spectating=true; groundAndAdvance(groundedTeam); render(); };
     } else {
@@ -3730,10 +4252,11 @@
         + '<div class="banner"><h2 style="color:var(--globe)">🏁 The Final · '+esc(S.finishLine.city)+'</h2>'
         + '<p>You were Grounded, but here\'s how the race finished at '+esc(S.finishLine.landmark)+'.</p></div>'
         + '<div class="lb">'+rows+'</div>'
+        + haulHtml()
         + '<div class="btnrow"><button class="btn ghost" id="home">Home</button><button class="btn globe" id="again">Race again 🌍</button></div>'
       + '</div>' + foot();
     $('home').onclick=function(){ S.screen='home'; render(); };
-    $('again').onclick=function(){ S.screen='setup'; render(); };
+    $('again').onclick=function(){ S.daily=null; S.screen='setup'; render(); };
     renderAcct();
   }
   function simSpectatorStage(){
@@ -3742,6 +4265,289 @@
     var res=ghosts.map(function(t){ return {team:t, eff: (base+RUN_BASE)*t.skill*rnd(0.9,1.12)}; });
     res.sort(function(a,b){ return a.eff-b.eff; });
     var slow=res[res.length-1]; if(slow) slow.team.alive=false;
+  }
+
+  /* ======================================================================
+     THE DAILY ROUTE: one race a day, the same for everybody. Same finish
+     line, same nine countries, same challenge pairs, same rival field and
+     the same ghost times for a given game type. Only your own play differs.
+     It is keyed on the Eastern date so one group chat plays one board, and
+     the FIRST finished run of the day is the one that is kept. Anything
+     after it is practice and never touches the record.
+     ====================================================================== */
+  var MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  function dailyKey(d){
+    d=d||new Date();
+    try{
+      var p=new Intl.DateTimeFormat('en-CA',{ timeZone:'America/New_York', year:'numeric', month:'2-digit', day:'2-digit' }).format(d);
+      if(/^\d{4}-\d{2}-\d{2}$/.test(p)) return p;
+    }catch(e){}
+    return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2);
+  }
+  function fmtDay(key){ var p=String(key||'').split('-'); return p.length===3 ? MONTHS[(+p[1]-1)%12]+' '+(+p[2]) : ''; }
+  function strHash(str){ var h=2166136261; str=String(str||''); for(var i=0;i<str.length;i++){ h^=str.charCodeAt(i); h=Math.imul(h,16777619); } return h>>>0; }
+  function dailySeed(key){ return strHash('rtg-daily-'+key); }
+  function dailyRng(round, salt, seed){
+    var sd=(seed!=null?seed:S.daily.seed)>>>0;
+    return _mulberry32((sd ^ Math.imul((round+1)>>>0,2654435761>>>0) ^ Math.imul((salt+1)>>>0,40503>>>0))>>>0);
+  }
+  function dailyLoad(){ try{ return JSON.parse(localStorage.getItem('rtg_daily')||'{}')||{}; }catch(e){ return {}; } }
+  function dailySave(d){ try{ localStorage.setItem('rtg_daily', JSON.stringify(d)); }catch(e){} }
+  function dailyToday(){ return dailyLoad()[dailyKey()] || null; }
+  function dailyDays(){ return Object.keys(dailyLoad()).length; }
+  // day arithmetic in UTC on the date string, so a clock change cannot skip or repeat a day
+  function dayNum(key){ var p=key.split('-'); return Math.floor(Date.UTC(+p[0],+p[1]-1,+p[2])/86400000); }
+  function keyFromDay(n){ var d=new Date(n*86400000); return d.getUTCFullYear()+'-'+('0'+(d.getUTCMonth()+1)).slice(-2)+'-'+('0'+d.getUTCDate()).slice(-2); }
+  function dailyStreak(){
+    var d=dailyLoad(), today=dayNum(dailyKey()), n=0;
+    // an unplayed today does not break the streak yet: count back from yesterday
+    for(var k=(d[dailyKey()]?today:today-1); d[keyFromDay(k)]; k--) n++;
+    return n;
+  }
+  function dailyFinishFor(key){ return withRng(dailyRng(0,2,dailySeed(key)), function(){ return pick(FINISH); }); }
+  function untilNextRoute(){
+    try{
+      var p=new Intl.DateTimeFormat('en-US',{ timeZone:'America/New_York', hour:'numeric', minute:'numeric', hour12:false }).formatToParts(new Date());
+      var g=function(k){ for(var i=0;i<p.length;i++) if(p[i].type===k) return +p[i].value; return 0; };
+      var left=1440-((g('hour')%24)*60+g('minute')), h=Math.floor(left/60), m=left%60;
+      return h ? h+'h '+m+'m' : m+'m';
+    }catch(e){ return null; }
+  }
+  function startDaily(){
+    var key=dailyKey();
+    S.daily={ key:key, seed:dailySeed(key), practice:!!dailyToday() };
+    S.coop=null; S.screen='setup'; render();
+  }
+  function stageGrid(){
+    return (S.stageLog||[]).map(function(x){
+      var m = x.fin ? (x.r===1?'🏆':x.r===2?'🥈':'🥉')
+            : x.out ? '✈️'
+            : x.r<=Math.ceil(x.n/3) ? '🟩' : x.r>=x.n-1 ? '🟧' : '🟨';
+      return x.f+m;
+    });
+  }
+  function gridRows(cells){ var out=[]; for(var i=0;i<cells.length;i+=3) out.push(cells.slice(i,i+3).join(' ')); return out; }
+  function placeLine(rec){ return rec.won ? '🏆 Won the whole race' : 'Finished #'+rec.place+' of '+FIELD_SIZE; }
+  function dailyShareText(key, rec){
+    var cells = rec ? rec.grid : stageGrid();
+    var lines = ['RunTheGlobe Daily · '+fmtDay(key)].concat(gridRows(cells));
+    if(rec){ lines.push(placeLine(rec)); var sk=dailyStreak(); if(sk>=2) lines.push('🔥 '+sk+' days in a row'); }
+    else lines.push('Practice run');
+    lines.push('runthe.gg/globe');
+    return lines.join('\n');
+  }
+  function dailyRecord(place, won){
+    if(!S.daily || S.daily.practice) return;
+    var d=dailyLoad();
+    if(d[S.daily.key]){ S.daily.practice=true; return; }
+    d[S.daily.key]={ place:place, won:!!won, grid:stageGrid() };
+    dailySave(d);
+    addMiles(100,'Daily Route');
+  }
+  function dailyCard(){
+    var key=dailyKey(), rec=dailyToday(), sk=dailyStreak(), fl=dailyFinishFor(key);
+    var streak = sk>=1 ? '<span class="dstreak">🔥 '+sk+' day'+(sk>1?'s':'')+' in a row</span>' : '';
+    if(rec){
+      var nx=untilNextRoute();
+      return '<div class="daily"><div class="dhd"><span class="dk">🗓️ Daily Route</span><span class="dd">'+fmtDay(key)+'</span></div>'
+        + '<h3>'+(rec.won?'You won today\'s route':'Today\'s route is done')+'</h3>'
+        + '<div class="dgrid">'+gridRows(rec.grid).map(esc).join('<br>')+'</div>'
+        + '<div class="dline"><b>'+esc(placeLine(rec))+'</b>.'+(nx?' New route in '+nx+'.':'')+'</div>'
+        + (streak?'<div style="margin-top:8px">'+streak+'</div>':'')
+        + '<div class="btnrow"><button class="btn globe" id="dshare">📋 Share</button><button class="btn ghost" id="dplay">Practice run</button></div></div>';
+    }
+    return '<div class="daily"><div class="dhd"><span class="dk">🗓️ Daily Route</span><span class="dd">'+fmtDay(key)+'</span></div>'
+      + '<h3>Race today\'s route</h3>'
+      + '<div class="dfin">Finish line: '+esc(fl.flag||'🏁')+' <b>'+esc(fl.landmark)+'</b>, '+esc(fl.city)+'. Same '+ROUNDS+' stages for everybody today. Your first run counts.</div>'
+      + (streak?'<div style="margin-top:9px">'+streak+'</div>':'')
+      + '<div class="btnrow"><button class="btn globe" id="dplay">Play today\'s route 🌍</button></div></div>';
+  }
+  function wireDailyCard(){
+    var p=$('dplay'); if(p) p.onclick=startDaily;
+    var s=$('dshare'); if(s) s.onclick=function(){ shareResult(dailyShareText(dailyKey(), dailyToday())); };
+  }
+
+  /* ======================================================================
+     RIVAL: every race one strong ghost team is named as yours. Not the
+     fastest team in the field, one of the next few, so it is a fight you
+     can win. Beat them on a stage and you get miles, knock them out and
+     you get more, and finishing ahead of them counts toward a badge.
+     ====================================================================== */
+  function pickRival(teams){
+    var gs=teams.filter(function(t){ return t.isGhost; }).sort(function(a,b){ return a.skill-b.skill; });
+    var r=S.daily ? withRng(dailyRng(0,4), function(){ return Math.random(); }) : Math.random();
+    var t=gs[Math.min(gs.length-1, 2+Math.floor(r*3))];
+    S.rivalId=t?t.id:null; S.rivalBeat=false; S.rivalLast=null;
+  }
+  function rivalTeam(){
+    if(!S.rivalId || !S.teams || onlineActive()) return null;
+    for(var i=0;i<S.teams.length;i++) if(S.teams[i].id===S.rivalId) return S.teams[i];
+    return null;
+  }
+  function rivalChip(){
+    var rv=rivalTeam(); if(!rv || S.spectating) return '';
+    var cls=!rv.alive?' ko':S.rivalLast==='up'?' up':S.rivalLast==='dn'?' dn':'';
+    return '<span class="rivalchip'+cls+'" title="Your rival">⚔️ '+esc(rv.flag)+' '+esc(rv.name.replace(/^Team /,''))+'</span>';
+  }
+
+  /* ======================================================================
+     TRAVEL MILES: earned every stage, banked across races, spent on
+     carry-ons before a race. Carry-ons are off in the Daily Route, because
+     a board everybody shares has to start everybody level.
+     ====================================================================== */
+  function addMiles(n, label){
+    if(!(n>0)) return;
+    var st=statsDefault(); st.miles+=n; st.milesTotal+=n; saveStats(st);
+    S.raceMiles=(S.raceMiles||0)+n;
+    if(label){ (S.milesBonus=S.milesBonus||[]).push([n,label]); }
+  }
+  function awardStageMiles(r){
+    var parts=[];
+    function add(n,l){ parts.push([n,l]); }
+    if(r.skipped) add(10,'skipped');
+    else {
+      add(40,'cleared');
+      if(r.misses===0) add(25,'no misses');
+      if(r.sc==='win') add(100,'Shortcut');
+      if(S.streak>=2) add(10*Math.min(S.streak,5),'streak');
+    }
+    var field=aliveTeams().filter(function(t){ return t.eff!=null; }).sort(function(a,b){ return a.eff-b.eff; });
+    if(!r.skipped && field.length>1 && field[0].id==='you') add(50,'fastest');
+    var rv=rivalTeam(); S.rivalLast=null;
+    if(rv && rv.alive && rv.eff!=null){
+      S.rivalLast = r.eff<=rv.eff ? 'up' : 'dn';
+      if(S.rivalLast==='up' && !r.skipped) add(30,'beat your rival');
+    }
+    var tot=0; parts.forEach(function(p){ tot+=p[0]; });
+    S.lastMiles={ total:tot, parts:parts };
+    addMiles(tot);
+  }
+  function milesRow(){
+    var m=S.lastMiles; if(!m || !m.total) return '';
+    return '<div><div class="milesrow">✈️ <b id="milesn">+'+m.total+'</b> miles'
+      + '<span style="flex-basis:100%">'+m.parts.map(function(p){ return p[0]+' '+esc(p[1]); }).join(' · ')+'</span></div></div>';
+  }
+  function countUp(el, to, dur, prefix){
+    if(!el) return; prefix=prefix||'';
+    if(reduceMotion() || !(to>0)){ el.textContent=prefix+to; return; }
+    var t0=performance.now();
+    (function tick(){ if(!el.isConnected) return;
+      var k=Math.min(1,(performance.now()-t0)/dur), v=Math.round(to*(1-Math.pow(1-k,3)));
+      el.textContent=prefix+v; if(k<1) requestAnimationFrame(tick); })();
+  }
+  var CARRY=[
+    { id:'shield', ic:'🛡️', n:'Extra Shield',     d:'Forgive one more miss this race',        c:300 },
+    { id:'fifty',  ic:'🔍', n:'Extra 50/50',      d:'Knock out two wrong answers once more',  c:300 },
+    { id:'skip',   ic:'⏩', n:'Second Skip Pass', d:'Skip one more challenge this race',      c:500 }
+  ];
+  function packCost(){ var t=0, pk=S.pack||{}; CARRY.forEach(function(x){ if(pk[x.id]) t+=x.c; }); return t; }
+  function carryCard(daily){
+    if(daily) return '<p class="muted" style="font-size:12.5px;margin:14px 0 0">✈️ Carry-ons are off in the Daily Route. Everybody starts with the same power-ups.</p>';
+    S.pack=S.pack||{};
+    var bal=statsDefault().miles;
+    return '<div style="margin-top:16px"><div class="milesbal">✈️ <span>Carry-on</span><span style="margin-left:auto" id="milesleft"><b>'+(bal-packCost())+'</b> miles</span></div>'
+      + '<div class="carry">'+CARRY.map(function(x){
+          return '<button type="button" data-c="'+x.id+'"><span class="ci">'+x.ic+'</span><span class="cn">'+esc(x.n)+'<small>'+esc(x.d)+'</small></span><span class="cc">'+x.c+'</span></button>';
+        }).join('')+'</div>'
+      + (bal<300?'<p class="muted" style="font-size:12px;margin:8px 0 0">You earn miles every stage. Spend them here.</p>':'')
+      + '</div>';
+  }
+  function paintCarry(){
+    var bal=statsDefault().miles, left=bal-packCost(), pk=S.pack||{};
+    each('.carry button', function(b){
+      var id=b.getAttribute('data-c'), x=CARRY.filter(function(c){ return c.id===id; })[0];
+      b.classList.toggle('on', !!pk[id]);
+      b.disabled = !pk[id] && x.c>left;
+    });
+    var ml=$('milesleft'); if(ml) ml.innerHTML='<b>'+left+'</b> miles';
+  }
+  function wireCarry(){
+    if(!document.querySelector('.carry')) return;
+    each('.carry button', function(b){ b.onclick=function(){
+      var id=b.getAttribute('data-c'); S.pack=S.pack||{}; S.pack[id]=!S.pack[id]; sfx('tap'); paintCarry(); }; });
+    paintCarry();
+  }
+  function payCarry(){
+    S.packed=null;
+    if(S.daily || !S.pack) return;
+    var cost=packCost(), st=statsDefault();
+    if(cost>0 && cost<=st.miles){ st.miles-=cost; saveStats(st); S.packed=S.pack; }
+    S.pack={};
+  }
+
+  /* ---- per-stage log (drives the Daily grid) and the race-end haul ---- */
+  function logStage(ranked, grounded, final){
+    var you=ranked.findIndex(function(t){ return t.id==='you'; })+1;
+    (S.stageLog=S.stageLog||[]).push({ f:S.dest.flag||'🏁', r:you, n:ranked.length, out:!final && grounded.id==='you', fin:!!final });
+    if(!final && grounded.id===S.rivalId && grounded.id!=='you') addMiles(75,'Rival out');
+    // record now, before the screen is drawn, so the haul can show the race-end bonuses
+    if(final || grounded.id==='you') recordRaceEnd(ranked);
+  }
+  function haulHtml(){
+    var st=statsDefault(), stamps=(S.newStamps||[]).map(countryById).filter(Boolean), rv=rivalTeam(), h='';
+    if(stamps.length){
+      h+='<div class="hs">'+stamps.map(function(c,i){ return '<div class="stamp" title="'+esc(c.name)+'" style="animation-delay:'+(i*110)+'ms">'+flagImg(c.flag,{ fill:true, fit:'cover' })+'</div>'; }).join('')+'</div>'
+        + '<div class="hm">'+stamps.length+' new passport stamp'+(stamps.length>1?'s':'')+'</div>';
+    }
+    h+='<div class="hm">✈️ You earned <b>'+(S.raceMiles||0)+'</b> miles. You have <b>'+st.miles+'</b>.</div>';
+    if(rv) h+='<div class="hm">'+(S.rivalBeat?'⚔️ You beat your rival, <b>'+esc(rv.name)+'</b>.':'⚔️ <b>'+esc(rv.name)+'</b> beat you this time.')+'</div>';
+    if(S.daily) h+='<div class="hm">🗓️ '+(S.daily.practice?'Practice run. Your first run today is the one that counts.':'Daily Route saved. Share your grid.')+'</div>';
+    return '<div class="haul"><div class="hh">This race</div>'+h+'</div>';
+  }
+
+  /* ======================================================================
+     PASSPORT: every country you have landed in, on the same world map the
+     flights use. Tap near a dot (or a flag below) to see how you did there.
+     The tap picks the NEAREST country rather than relying on hit circles,
+     because Europe is thirty dots in a thumb's width.
+     ====================================================================== */
+  var PREGIONS=['Europe','Asia','Middle East','Africa','North America','South America','Oceania'];
+  function regionOf(c){ return String(c.region).split('/')[0]; }
+  function renderPassport(){
+    var s=statsDefault(), vis=s.countries||{}, n=visitedCount();
+    var order=COUNTRIES.slice().sort(function(a,b){ return (vis[a.id]?1:0)-(vis[b.id]?1:0); });   // stamped dots drawn on top
+    var pins=order.map(function(c){ var p=llToXY(c.ll), v=!!vis[c.id];
+      return '<g class="ppin'+(v?' v':'')+'" data-id="'+c.id+'"><circle class="dot" cx="'+p[0]+'" cy="'+p[1]+'" r="'+(v?2.6:1.4)+'"/></g>'; }).join('');
+    var regs=PREGIONS.map(function(r){
+      var all=COUNTRIES.filter(function(c){ return regionOf(c)===r; }), got=all.filter(function(c){ return vis[c.id]; }).length;
+      if(!all.length) return '';
+      return '<div class="rr"><span class="rn">'+esc(r)+'</span><span class="rt"><span style="width:'+Math.round(got/all.length*100)+'%"></span></span><span class="rc">'+got+'/'+all.length+'</span></div>';
+    }).join('');
+    var mine=COUNTRIES.filter(function(c){ return vis[c.id]; }).sort(function(a,b){ return a.name<b.name?-1:1; });
+    app.innerHTML = topbar()
+      + '<div class="card"><h1 style="font-size:24px">🛂 Passport</h1>'
+        + '<p class="lede"><b style="color:var(--globe)">'+n+'</b> of '+COUNTRIES.length+' countries stamped. Tap the map to look around.</p>'
+        + '<svg id="pmap" viewBox="0 0 360 180" preserveAspectRatio="none" style="margin-top:12px">'+worldSVGInner()+pins+'</svg>'
+        + '<div class="pdet" id="pdet"></div>'
+        + '<div class="preg">'+regs+'</div>'
+        + (mine.length
+          ? '<h3 style="font-size:14px;margin-top:16px">Your stamps</h3><div class="pflags">'+mine.map(function(c){ return '<button type="button" data-id="'+c.id+'" title="'+esc(c.name)+'">'+flagImg(c.flag,{ w:36, rad:0 })+'</button>'; }).join('')+'</div>'
+          : '<p class="muted" style="font-size:13px;margin-top:14px">No stamps yet. Every country you land in during a race gets stamped here.</p>')
+        + '<button class="btn ghost sm" id="pback" style="width:auto;margin-top:16px">‹ Back</button>'
+      + '</div>' + foot();
+    $('pback').onclick=function(){ S.screen='home'; render(); };
+    $('pmap').addEventListener('click', function(ev){
+      var r=this.getBoundingClientRect(), x=(ev.clientX-r.left)/r.width*360, y=(ev.clientY-r.top)/r.height*180, best=null, bd=1e9;
+      COUNTRIES.forEach(function(c){ var p=llToXY(c.ll), d=(p[0]-x)*(p[0]-x)+(p[1]-y)*(p[1]-y); if(d<bd){ bd=d; best=c; } });
+      if(best && bd<14*14){ sfx('tap'); passSel(best.id); }
+    });
+    each('.pflags button', function(b){ b.onclick=function(){ sfx('tap'); passSel(b.getAttribute('data-id')); }; });
+    passSel(S.passSel || (mine[0] && mine[0].id) || null);
+    renderAcct();
+  }
+  function passSel(id){
+    S.passSel=id;
+    var s=statsDefault(), c=id?countryById(id):null, box=$('pdet'); if(!box) return;
+    each('#pmap .ppin', function(g){ g.classList.toggle('sel', g.getAttribute('data-id')===id); });
+    each('.pflags button', function(b){ b.classList.toggle('sel', b.getAttribute('data-id')===id); });
+    if(!c){ box.innerHTML='<div class="pm">Tap a dot on the map to see a country.</div>'; return; }
+    var v=+s.countries[id]||0, best=s.cbest[id], first=s.cfirst[id];
+    box.innerHTML='<span style="flex:0 0 auto;'+(v?'':'filter:grayscale(1);opacity:.5')+'">'+flagImg(c.flag,{ w:64 })+'</span>'
+      + '<div><div class="pn">'+esc(c.name)+'</div><div class="pm">'+esc(c.region)+' · Capital <b>'+esc(c.capital)+'</b><br>'
+      + (v ? 'Landed here <b>'+v+'</b> time'+(v>1?'s':'')+(best?' · Best stage <b>'+fmtTime(best)+'s</b>':'')+(first?' · First stamp '+esc(fmtDay(first)):'')
+           : 'Not stamped yet. Land here in a race to get it.')
+      + '</div></div>';
+    retrig(box,'pop-in');
   }
 
   /* --------------------------------------------------------- record a race */
@@ -3760,7 +4566,15 @@
     if(isFinal() && youRank<=3) st.top3++;
     if(won){ st.winStreak=(st.winStreak||0)+1; if(st.winStreak>st.longestStreak) st.longestStreak=st.winStreak; }
     else { st.winStreak=0; }
+    // rival: you beat them if they went out before you, or finished behind you in the Final
+    var rv=rivalTeam();
+    if(rv){ var rvRank=ranked.findIndex(function(t){ return t.id===rv.id; })+1;
+      S.rivalBeat = !rv.alive || (rvRank>0 && youRank>0 && youRank<rvRank && isFinal());
+      if(S.rivalBeat) st.rivalsBeaten++; }
     saveStats(st);
+    if(won) addMiles(300,'Race won'); else if(isFinal() && youRank<=3) addMiles(120,'Made the podium');
+    if(S.rivalBeat) addMiles(100,'Beat your rival');
+    if(S.daily) dailyRecord(place, won);
     announceNewBadges(before);
   }
   // reset the per-race guard whenever a new race starts
@@ -4005,6 +4819,7 @@
   function duoDestLL(){ return (S.dest && S.dest.country && S.dest.country.ll) || null; }
   function duoStart(){
     S._recorded=false; S._runPend=null; S._runDone=false; S.boosts={ fifty:1, shield:1 };
+    S.rivalId=null; S.daily=null; S.stageLog=[]; S.newStamps=[]; S.raceMiles=0; S.milesBonus=[];
     duoRebuild(); S.online.started=true; S.online.view='race';
     S.screen='stage'; S._lastLL=null; duoSetStage(1);
     flightTo(duoDestLL(), function(){ S.phase='draw'; renderStage(); }); duoSave();
@@ -4176,13 +4991,609 @@
     S.phase='draw'; renderStage();
   }
 
+  /* ======================================================================
+     STREET HUNT: dropped on a real street, three clues, one mat.
+
+     The city is REAL: every street, the river and the parks come out of
+     OpenStreetMap through globe/build/osm-city.mjs, which runs on a GitHub
+     runner because Overpass is refused from the dev sandbox. The game walks
+     the street graph itself, so you can only go where a street goes.
+
+     A hunt is a drop point and a chain of three landmarks. Each clue names
+     a landmark without naming it. The last one holds the Checkpoint mat.
+     Nothing shows you where the stops are: you read the streets, ask a
+     local (they point, they never name it), or pay 10s for a ping.
+
+     THE ROUTE IS DERIVED FROM A SEED AND THE STREET GRAPH, never stored,
+     so today's hunt is the same for everybody on the same data file, and a
+     rebuilt city can move it. That is the right way round: a route stored
+     beside a graph that changed would send people to nodes that no longer
+     exist.
+     ====================================================================== */
+  var HUNT_SPEED = 50;            // metres a second: a game jog, not a walk
+  var HUNT_ZOOM = [0.42, 0.72, 1.15];
+  var HUNT = {
+    paris: { id:'paris', name:'Paris', flag:'🇫🇷', file:'/globe/data/city-paris.json?v=1', stops:[
+      { id:'eiffel', n:'Eiffel Tower', e:'🗼', ll:[48.85826,2.29450],
+        clue:'Built for a World\'s Fair in 1889. 330 metres of iron. Everybody\'s first photo.',
+        hint:'South bank. Look for the long lawn.' },
+      { id:'trocadero', n:'Trocadéro', e:'📸', ll:[48.86200,2.28850],
+        clue:'The best view of the tower is from across the river. Go stand on that terrace.',
+        hint:'North bank, straight across from the tower.' },
+      { id:'arc', n:'Arc de Triomphe', e:'🏛️', ll:[48.87378,2.29504],
+        clue:'Twelve avenues meet in a star. The Unknown Soldier lies under this arch.',
+        hint:'The top of the Champs-Élysées.' },
+      { id:'grandpalais', n:'Grand Palais', e:'🎪', ll:[48.86610,2.31252],
+        clue:'A giant glass roof over a hall built in 1900. Fashion shows, art fairs, fencing.',
+        hint:'Just off the Champs-Élysées, near the river.' },
+      { id:'alexandre', n:'Pont Alexandre III', e:'🌉', ll:[48.86386,2.31363],
+        clue:'The fanciest bridge in the city. Gold statues on every corner.',
+        hint:'It crosses between the Grand Palais and Les Invalides.' },
+      { id:'concorde', n:'Place de la Concorde', e:'🗿', ll:[48.86553,2.32125],
+        clue:'The biggest square in the city. A 3,000 year old Egyptian obelisk stands in the middle.',
+        hint:'The bottom of the Champs-Élysées.' },
+      { id:'invalides', n:'Les Invalides', e:'⚜️', ll:[48.85502,2.31265],
+        clue:'A golden dome. Napoleon is buried underneath.',
+        hint:'South bank. A long lawn runs down to the river.' },
+      { id:'orsay', n:'Musée d\'Orsay', e:'🕰️', ll:[48.85999,2.32655],
+        clue:'An old train station turned into a museum. Look for the giant clocks.',
+        hint:'South bank, across the river from the Tuileries.' },
+      { id:'vendome', n:'Place Vendôme', e:'💎', ll:[48.86750,2.32943],
+        clue:'An eight sided square full of jewellers. The column is made from melted cannons.',
+        hint:'Between the Tuileries and the Opéra.' },
+      { id:'opera', n:'Palais Garnier', e:'🎭', ll:[48.87196,2.33165],
+        clue:'The Phantom lived under this opera house. Gold on the roof, chandeliers inside.',
+        hint:'North of the Louvre, at the top of the avenue named after it.' },
+      { id:'louvre', n:'The Louvre', e:'🔺', ll:[48.86106,2.33583],
+        clue:'A glass pyramid in a palace courtyard. The Mona Lisa is inside.',
+        hint:'North bank, right by the river. It\'s huge.' },
+      { id:'pontneuf', n:'Pont Neuf', e:'🌁', ll:[48.85708,2.34131],
+        clue:'Its name means the new bridge. It\'s the oldest one in the city.',
+        hint:'The west tip of the island in the middle of the river.' },
+      { id:'notredame', n:'Notre-Dame', e:'⛪', ll:[48.85296,2.34990],
+        clue:'A Gothic cathedral on an island. It burned in 2019 and opened again in 2024.',
+        hint:'The bigger island in the middle of the river.' },
+      { id:'hoteldeville', n:'Hôtel de Ville', e:'🏰', ll:[48.85658,2.35231],
+        clue:'The mayor works in this palace. There\'s a big square out front and an ice rink in winter.',
+        hint:'North bank, across from the islands.' },
+      { id:'pompidou', n:'Centre Pompidou', e:'🧪', ll:[48.86064,2.35222],
+        clue:'A museum that wears its pipes on the outside. Blue for air, green for water.',
+        hint:'North bank, a few blocks up from City Hall.' }
+    ]}
+  };
+  var HUNT_LOCALS = ['🧑‍🎨','👩‍🍳','🧔','👵','🧑‍💼','👮','🧑‍🎤','👨‍🦳','🙋‍♀️','🚴'];
+  var HUNT_DATA = {};
+  var H = null;
+
+  function huntFmt(t){ t=Math.max(0,t); var m=Math.floor(t/60), s=t-m*60; return m+':'+(s<10?'0':'')+s.toFixed(1); }
+  function huntLoad(cid, cb){
+    if(HUNT_DATA[cid]) return cb(null, HUNT_DATA[cid]);
+    fetch(HUNT[cid].file).then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
+      .then(function(j){ HUNT_DATA[cid]=huntPrep(j, HUNT[cid]); cb(null, HUNT_DATA[cid]); })
+      .catch(function(e){ cb(e); });
+  }
+
+  // ---- the street graph ----
+  function huntPrep(j, city){
+    var N=j.nodes.length/2, X=new Float32Array(N), Y=new Float32Array(N), i, k;
+    for(i=0;i<N;i++){ X[i]=j.nodes[2*i]; Y[i]=j.nodes[2*i+1]; }
+    var deg=new Uint32Array(N), E2=0;
+    j.ways.forEach(function(w){ for(var k=4;k<w.length;k++){ if(w[k-1]===w[k]) continue; deg[w[k-1]]++; deg[w[k]]++; E2+=2; } });
+    var start=new Uint32Array(N+1); for(i=0;i<N;i++) start[i+1]=start[i]+deg[i];
+    var fill=start.slice(0,N), to=new Uint32Array(E2), len=new Float32Array(E2), way=new Uint32Array(E2);
+    j.ways.forEach(function(w, wi){ for(var k=4;k<w.length;k++){ var a=w[k-1], b=w[k]; if(a===b) continue;
+      var d=Math.hypot(X[a]-X[b], Y[a]-Y[b]);
+      to[fill[a]]=b; len[fill[a]]=d; way[fill[a]]=wi; fill[a]++;
+      to[fill[b]]=a; len[fill[b]]=d; way[fill[b]]=wi; fill[b]++; } });
+    // connected components: taps, drops and stops only ever use the biggest,
+    // or a tap on a sealed-off courtyard would have no path to it
+    var comp=new Int32Array(N).fill(-1), sizes=[], q=new Uint32Array(N);
+    for(i=0;i<N;i++){ if(comp[i]>=0 || deg[i]===0) continue;
+      var c=sizes.length, qh=0, qt=0, sz=0; q[qt++]=i; comp[i]=c;
+      while(qh<qt){ var u=q[qh++]; sz++; for(k=start[u];k<start[u+1];k++){ var v=to[k]; if(comp[v]<0){ comp[v]=c; q[qt++]=v; } } }
+      sizes.push(sz); }
+    var main=0; for(i=1;i<sizes.length;i++) if(sizes[i]>sizes[main]) main=i;
+    // node grid (main component only) for nearest lookups
+    var GC=120, grid=new Map();
+    for(i=0;i<N;i++){ if(comp[i]!==main) continue; var key=Math.floor(X[i]/GC)+','+Math.floor(Y[i]/GC);
+      var a0=grid.get(key); if(!a0) grid.set(key, a0=[]); a0.push(i); }
+    // way render grid
+    var WC=250, wgrid=new Map(), wbb=new Float32Array(j.ways.length*4);
+    j.ways.forEach(function(w, wi){ var x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;
+      for(var k=3;k<w.length;k++){ var n=w[k]; if(X[n]<x0)x0=X[n]; if(X[n]>x1)x1=X[n]; if(Y[n]<y0)y0=Y[n]; if(Y[n]>y1)y1=Y[n]; }
+      wbb[wi*4]=x0; wbb[wi*4+1]=y0; wbb[wi*4+2]=x1; wbb[wi*4+3]=y1;
+      // a way whose nodes all rounded onto one metre draws as a stray dot
+      var tot=0; for(var k2=4;k2<w.length;k2++) tot+=Math.hypot(X[w[k2]]-X[w[k2-1]], Y[w[k2]]-Y[w[k2-1]]); if(tot<3) return;
+      for(var gx=Math.floor(x0/WC); gx<=Math.floor(x1/WC); gx++) for(var gy=Math.floor(y0/WC); gy<=Math.floor(y1/WC); gy++){
+        var kk=gx+','+gy, arr=wgrid.get(kk); if(!arr) wgrid.set(kk, arr=[]); arr.push(wi); } });
+    // the longest segment of every way, which is where its name label goes
+    var lseg=new Uint16Array(j.ways.length), lsegL=new Float32Array(j.ways.length);
+    j.ways.forEach(function(w, wi){ var bk=4, bl=0; for(var k=4;k<w.length;k++){ var l=Math.hypot(X[w[k]]-X[w[k-1]], Y[w[k]]-Y[w[k-1]]); if(l>bl){ bl=l; bk=k; } } lseg[wi]=bk; lsegL[wi]=bl; });
+    function polyPath(list, want){ var p=new Path2D(), any=false;
+      list.forEach(function(r){ var off=(want==='notable')?1:0; if(r[off]!==(want==='inner'?1:0) && want!=='notable') return;
+        var o=off+1; if(r.length-o<6) return; p.moveTo(r[o], r[o+1]); for(var q2=o+2;q2<r.length;q2+=2) p.lineTo(r[q2], r[q2+1]); p.closePath(); any=true; });
+      return any?p:null; }
+    var lat0=j.origin[0], lon0=j.origin[1], MY=111320, MX=111320*Math.cos(lat0*Math.PI/180);
+    var D={ j:j, city:city, N:N, X:X, Y:Y, start:start, to:to, len:len, way:way, comp:comp, main:main,
+      GC:GC, grid:grid, WC:WC, wgrid:wgrid, wbb:wbb, lseg:lseg, lsegL:lsegL, tw:{},
+      waterOut:polyPath(j.water,'outer'), waterIn:polyPath(j.water,'inner'),
+      parkOut:polyPath(j.parks,'outer'), parkIn:polyPath(j.parks,'inner'), notable:polyPath(j.notable,'notable'),
+      proj:function(lat,lon){ return [(lon-lon0)*MX, (lat0-lat)*MY]; },
+      box:j.box, stamp:new Uint32Array(j.ways.length), frame:1 };
+    // the stops, on this graph. A stop with no street within 260m is dropped.
+    // 150 dropped the Louvre: the pyramid stands in a courtyard with no street
+    // in it, so the stop is reached from the edge of the palace instead, and
+    // its arrival ring grows to match.
+    D.stops=city.stops.map(function(s){ var p=D.proj(s.ll[0], s.ll[1]), n=huntNearest(D, p[0], p[1], 260);
+      return n<0?null:{ s:s, x:p[0], y:p[1], node:n, r:Math.max(55, Math.hypot(X[n]-p[0], Y[n]-p[1])+22) }; }).filter(Boolean);
+    return D;
+  }
+  function huntNearest(D, x, y, maxR){
+    var c=D.GC, gx=Math.floor(x/c), gy=Math.floor(y/c), best=-1, bd=maxR||1e9, R=Math.ceil((maxR||800)/c)+1;
+    for(var r=0;r<=R;r++){
+      for(var dx=-r;dx<=r;dx++) for(var dy=-r;dy<=r;dy++){
+        if(Math.max(Math.abs(dx),Math.abs(dy))!==r) continue;
+        var a=D.grid.get((gx+dx)+','+(gy+dy)); if(!a) continue;
+        for(var i=0;i<a.length;i++){ var n=a[i], d=Math.hypot(D.X[n]-x, D.Y[n]-y); if(d<bd){ bd=d; best=n; } }
+      }
+      if(best>=0 && bd<(r-1)*c) break;
+    }
+    return best;
+  }
+  function huntDijkstra(D, src, dst){
+    var N=D.N, dist=new Float64Array(N).fill(Infinity), prev=new Int32Array(N).fill(-1);
+    var hk=[0], hv=[src]; dist[src]=0;
+    function sw(i,j){ var t=hk[i]; hk[i]=hk[j]; hk[j]=t; t=hv[i]; hv[i]=hv[j]; hv[j]=t; }
+    while(hk.length){
+      var d0=hk[0], u=hv[0], last=hk.length-1;
+      hk[0]=hk[last]; hv[0]=hv[last]; hk.pop(); hv.pop();
+      for(var i=0,n=hk.length;;){ var l=2*i+1,r=l+1,m=i; if(l<n&&hk[l]<hk[m]) m=l; if(r<n&&hk[r]<hk[m]) m=r; if(m===i) break; sw(i,m); i=m; }
+      if(d0>dist[u]) continue;
+      if(u===dst) break;
+      for(var e=D.start[u]; e<D.start[u+1]; e++){ var v=D.to[e], nd=d0+D.len[e];
+        if(nd<dist[v]){ dist[v]=nd; prev[v]=u; hk.push(nd); hv.push(v);
+          for(var c=hk.length-1;c>0;){ var p=(c-1)>>1; if(hk[p]<=hk[c]) break; sw(c,p); c=p; } } }
+    }
+    return { dist:dist, prev:prev };
+  }
+  function huntPath(D, a, b){
+    if(a===b) return [a];
+    var r=huntDijkstra(D, a, b); if(r.prev[b]<0) return null;
+    var p=[]; for(var n=b; n!==-1; n=r.prev[n]) p.push(n); return p.reverse();
+  }
+
+  // ---- a route: a drop point and three stops, derived from a seed ----
+  function huntRoute(D, seed){
+    var rng=_mulberry32(seed||1), st=D.stops.slice();
+    for(var i=st.length-1;i>0;i--){ var jx=Math.floor(rng()*(i+1)), t=st[i]; st[i]=st[jx]; st[jx]=t; }
+    function pickNear(dist, lo, hi, not){ var c=st.filter(function(s){ var d=dist[s.node]; return d>=lo && d<=hi && not.indexOf(s)<0; });
+      return c.length ? c[Math.floor(rng()*c.length)] : null; }
+    for(var a=0;a<st.length;a++){
+      var A=st[a], dA=huntDijkstra(D, A.node, -1).dist;
+      var B=pickNear(dA, 700, 2100, [A]); if(!B) continue;
+      var dB=huntDijkstra(D, B.node, -1).dist;
+      var C=pickNear(dB, 700, 2100, [A,B]); if(!C || dA[C.node]<450) continue;
+      var drop=-1;
+      for(var t2=0;t2<6000;t2++){ var n=Math.floor(rng()*D.N); if(D.comp[n]!==D.main) continue;
+        if(dA[n]>=650 && dA[n]<=1300 && dB[n]>500){ drop=n; break; } }
+      if(drop<0) continue;
+      var metres=dA[drop]+dA[B.node]+dB[C.node];
+      return { drop:drop, stops:[A,B,C], metres:metres, par:metres/HUNT_SPEED };
+    }
+    return null;
+  }
+
+  // ---- start ----
+  function startHunt(cid, daily){
+    var city=HUNT[cid]; if(!city) return;
+    S.screen='hunt';
+    H={ cid:cid, daily:!!daily, phase:'load', err:null };
+    render();
+    huntLoad(cid, function(err, D){
+      if(!H || H.cid!==cid) return;
+      if(err){ H.phase='err'; H.err=err; render(); return; }
+      var seed = daily ? cityHash('hunt:'+cid+':'+dailyKey()) : ((Math.random()*4294967295)>>>0);
+      var R=huntRoute(D, seed);
+      if(!R){ H.phase='err'; H.err=new Error('no route'); render(); return; }
+      var rng=_mulberry32(seed^0x5bd1e995), locals=[], cro=[], k, n;
+      for(k=0;k<60 && locals.length<48;k++){ n=Math.floor(rng()*D.N); if(D.comp[n]!==D.main) continue;
+        if(Math.hypot(D.X[n]-D.X[R.drop], D.Y[n]-D.Y[R.drop])<120) continue;
+        locals.push({ x:D.X[n], y:D.Y[n], at:n, nx:n, e:HUNT_LOCALS[Math.floor(rng()*HUNT_LOCALS.length)], leg:-1, ph:rng()*6 }); }
+      for(k=0;k<400 && cro.length<36;k++){ n=Math.floor(rng()*D.N); if(D.comp[n]!==D.main) continue; cro.push({ x:D.X[n], y:D.Y[n], got:false, ph:rng()*6 }); }
+      H={ cid:cid, daily:!!daily, seed:seed, D:D, R:R, phase:'intro', leg:0,
+          p:{ x:D.X[R.drop], y:D.Y[R.drop], at:R.drop, path:[], i:0, heading:0, way:D.way[D.start[R.drop]] },
+          cam:{ x:D.X[R.drop], y:D.Y[R.drop], z:1, ox:0, oy:0 },
+          locals:locals, cro:cro, got:0, pings:0, pingUntil:0, seen:{}, wrong:{}, trail:[D.X[R.drop], D.Y[R.drop]],
+          t0:0, legT0:0, keys:{}, fog:null, mini:null, sayUntil:0, tap:null };
+      render();
+    });
+  }
+
+  function huntCard(){
+    var rec=huntStore(), today=rec.daily[dailyKey()];
+    return '<div class="card huntc">'
+      + '<div class="hck"><span>🗺️ Street Hunt</span><span class="new">New</span></div>'
+      + '<h3>Get lost in Paris 🇫🇷</h3>'
+      + '<p class="muted">You get dropped on a real street. Follow three clues across the city to the Checkpoint mat. Locals point the way. Croissants take a second off.</p>'
+      + (today ? '<div class="hdone">Today: <b>'+huntFmt(today.t)+'</b> '+(today.medal||'')+'</div>' : '')
+      + '<div class="btnrow"><button class="btn globe" id="hday">'+(today?'Replay today\'s hunt':'Today\'s hunt')+'</button><button class="btn ghost" id="hrand">Random drop</button></div>'
+      + '</div>';
+  }
+  function wireHuntCard(){
+    var a=$('hday'); if(a) a.onclick=function(){ startHunt('paris', true); };
+    var b=$('hrand'); if(b) b.onclick=function(){ startHunt('paris', false); };
+  }
+  function huntStore(){ try{ var o=JSON.parse(localStorage.getItem('rtg_hunt')||'{}')||{}; o.daily=o.daily||{}; o.runs=o.runs||0; o.best=o.best||null; return o; }catch(e){ return { daily:{}, runs:0, best:null }; } }
+  function huntSave(o){ try{ localStorage.setItem('rtg_hunt', JSON.stringify(o)); }catch(e){} }
+
+  // ---- the screen ----
+  function renderHunt(){
+    if(!H){ S.screen='home'; return render(); }
+    var city=HUNT[H.cid];
+    if(H.phase==='load' || H.phase==='err'){
+      app.innerHTML = topbar() + '<div class="card center">'
+        + (H.phase==='load'
+          ? '<div class="stagetype">🗺️ Street Hunt · '+esc(city.name)+'</div><p class="lede">Loading the streets of '+esc(city.name)+'…</p><div class="hload"><i></i></div>'
+          : '<div class="stagetype">🗺️ Street Hunt</div><p class="lede">'+esc(city.name)+' didn\'t load. Check your connection and try again.</p><div class="btnrow"><button class="btn ghost" id="hback">‹ Back</button><button class="btn globe" id="hretry">Try again</button></div>')
+        + '</div>' + foot();
+      var hb=$('hback'); if(hb) hb.onclick=function(){ H=null; S.screen='home'; render(); };
+      var hr=$('hretry'); if(hr) hr.onclick=function(){ startHunt(H.cid, H.daily); };
+      renderAcct(); return;
+    }
+    if(H.phase==='done') return renderHuntEnd();
+    app.innerHTML = topbar()
+      + '<div class="card hunt">'
+        + '<div class="stagetype">🗺️ Street Hunt · '+esc(city.name)+' '+city.flag+(H.daily?' · Today':'')+'</div>'
+        + '<div class="hmap" id="hmap">'
+          + '<canvas id="hcv"></canvas>'
+          + '<div class="htop"><span class="hpill htime" id="htime">0:00.0</span><span class="hpill" id="hleg">📍 1/3</span><span class="hpill" id="hcro">🥐 0</span></div>'
+          + '<canvas id="hmini" class="hmini"></canvas>'
+          + '<div class="hzoom"><button id="hzin" aria-label="Zoom in">+</button><button id="hzout" aria-label="Zoom out">−</button></div>'
+          + '<div class="hstreet" id="hstreet"></div>'
+          + '<div class="hsay" id="hsay"></div>'
+          + '<div class="hbanner" id="hbanner"></div>'
+          + (H.phase==='intro' ? huntIntroHtml() : '')
+        + '</div>'
+        + '<div class="hclue" id="hclue"></div>'
+        + '<div class="btnrow"><button class="btn ghost sm" id="hping">📡 Ping the stop (+10s)</button><button class="btn ghost sm" id="hquit">Quit</button></div>'
+        + '<div class="hosm">Tap the map to run there. Drag to look around. Arrow keys work too.<br>Map data © OpenStreetMap contributors</div>'
+      + '</div>' + foot();
+    renderAcct();
+    huntClue();
+    huntMount();
+  }
+  function huntIntroHtml(){
+    var s=H.R.stops[0].s;
+    return '<div class="hintro" id="hintro"><div class="hi-in">'
+      + '<div class="hi-k">You\'ve been dropped somewhere in '+esc(HUNT[H.cid].name)+'</div>'
+      + '<div class="hi-t">Clue 1 of 3</div>'
+      + '<div class="hi-q">'+esc(s.clue)+'</div>'
+      + '<ul class="hi-how"><li>Tap the map to run there</li><li>Walk past a local and they\'ll point the way</li><li>Every 🥐 takes 1s off your time</li><li>The last stop has the Checkpoint mat</li></ul>'
+      + '<button class="btn globe" id="hgo">Go 🏃</button></div></div>';
+  }
+  function huntClue(){
+    var el=$('hclue'); if(!el||!H||!H.R) return;
+    var s=H.R.stops[H.leg].s, last=H.leg===2;
+    var hintOn=H.t0 && (performance.now()-H.legT0)>30000;
+    el.innerHTML='<div class="hk">Clue '+(H.leg+1)+' of 3'+(last?' · <b>the Checkpoint mat is here</b>':'')+'</div>'
+      + '<div class="hq">'+esc(s.clue)+'</div>'
+      + '<div class="hh'+(hintOn?' on':'')+'" id="hhint">'+(hintOn?('💡 '+esc(s.hint)):'💡 A hint shows up after 30 seconds')+'</div>';
+    var lg=$('hleg'); if(lg) lg.textContent='📍 '+(H.leg+1)+'/3';
+  }
+
+  function huntMount(){
+    var cv=$('hcv'), box=$('hmap'); if(!cv||!box) return;
+    var ctx=cv.getContext('2d'), mini=$('hmini'), mctx=mini.getContext('2d');
+    var D=H.D, dpr=Math.min(2, window.devicePixelRatio||1), W=0, Hh=0;
+    function size(){ var r=box.getBoundingClientRect(); W=r.width; Hh=r.height; cv.width=Math.round(W*dpr); cv.height=Math.round(Hh*dpr); cv.style.width=W+'px'; cv.style.height=Hh+'px'; }
+    size();
+    var ro=null; try{ ro=new ResizeObserver(size); ro.observe(box); }catch(e){ window.addEventListener('resize', size); }
+    huntMiniInit(mini);
+
+    // input: tap to run, drag to look
+    var drag=null;
+    cv.addEventListener('pointerdown', function(e){ drag={ x:e.clientX, y:e.clientY, moved:false, id:e.pointerId }; try{ cv.setPointerCapture(e.pointerId); }catch(er){} });
+    cv.addEventListener('pointermove', function(e){ if(!drag) return; var dx=e.clientX-drag.x, dy=e.clientY-drag.y;
+      if(!drag.moved && Math.hypot(dx,dy)<7) return; drag.moved=true;
+      var sc=HUNT_ZOOM[H.cam.z]; H.cam.ox-=dx/sc; H.cam.oy-=dy/sc; drag.x=e.clientX; drag.y=e.clientY; H.lookT=performance.now(); });
+    cv.addEventListener('pointerup', function(e){ var d=drag; drag=null; if(!d||d.moved) return;
+      var r=cv.getBoundingClientRect(), sc=HUNT_ZOOM[H.cam.z];
+      var wx=H.cam.x+(e.clientX-r.left-W/2)/sc, wy=H.cam.y+(e.clientY-r.top-Hh/2)/sc;
+      huntGoTo(wx, wy); });
+    cv.addEventListener('wheel', function(e){ e.preventDefault(); huntZoom(e.deltaY<0?1:-1); }, { passive:false });
+    $('hzin').onclick=function(){ huntZoom(1); };
+    $('hzout').onclick=function(){ huntZoom(-1); };
+    $('hping').onclick=huntPing;
+    $('hquit').onclick=function(){ H=null; S.screen='home'; render(); };
+    var go=$('hgo'); if(go) go.onclick=function(){ var hi=$('hintro'); if(hi) hi.classList.add('out'); setTimeout(function(){ if(hi&&hi.parentNode) hi.parentNode.removeChild(hi); }, 260);
+      H.phase='play'; H.t0=performance.now(); H.legT0=H.t0; sfx('checkpoint'); huntClue(); };
+    function key(e, down){ if(S.screen!=='hunt'||!H) return; var k=e.key;
+      if(k==='ArrowUp'||k==='ArrowDown'||k==='ArrowLeft'||k==='ArrowRight'||k==='w'||k==='a'||k==='s'||k==='d'){ e.preventDefault(); H.keys[k]=down; }
+      else if(down && (k==='+'||k==='=')) huntZoom(1); else if(down && (k==='-'||k==='_')) huntZoom(-1);
+      else if(down && (k===' '||k==='Enter') && $('hgo')){ e.preventDefault(); $('hgo').click(); } }
+    var kd=function(e){ key(e,true); }, ku=function(e){ key(e,false); };
+    document.addEventListener('keydown', kd); document.addEventListener('keyup', ku);
+
+    var last=performance.now(), myH=H;
+    (function loop(){
+      if(H!==myH || !document.body.contains(cv) || S.screen!=='hunt' || H.phase==='done'){
+        document.removeEventListener('keydown', kd); document.removeEventListener('keyup', ku); if(ro) ro.disconnect(); return; }
+      var now=performance.now(), dt=Math.min(0.05,(now-last)/1000); last=now;
+      huntStep(dt, now);
+      if(H.phase==='done') return;
+      huntDraw(ctx, W, Hh, dpr, now);
+      huntMiniDraw(mctx, now);
+      requestAnimationFrame(loop);
+    })();
+  }
+  function huntZoom(d){ if(!H) return; H.cam.z=Math.max(0, Math.min(HUNT_ZOOM.length-1, H.cam.z+d)); }
+
+  // tap: run the shortest street path to the nearest street node
+  function huntGoTo(wx, wy){
+    if(!H || H.phase!=='play') return;
+    var D=H.D, dst=huntNearest(D, wx, wy, 400); if(dst<0) return;
+    var p=H.p, from=(p.path.length && p.i<p.path.length) ? p.path[p.i] : p.at;
+    var path=huntPath(D, from, dst); if(!path) return;
+    p.path=path; p.i=0; H.tap={ x:D.X[dst], y:D.Y[dst], t:performance.now() };
+    H.cam.ox*=0.5; H.cam.oy*=0.5;
+  }
+  function huntPing(){
+    if(!H || H.phase!=='play') return;
+    H.pings++; H.pingUntil=performance.now()+6000; sfx('tap');
+    huntSay('📡', 'Ping. +10s on your time.', 1600);
+  }
+  function huntSay(face, text, ms){
+    var el=$('hsay'); if(!el) return;
+    el.innerHTML='<span class="f">'+face+'</span><span>'+esc(text)+'</span>'; retrig(el,'on');
+    H.sayUntil=performance.now()+(ms||4200);
+  }
+  function huntDir(dx, dy){ var b=Math.atan2(dx, -dy)*180/Math.PI; if(b<0) b+=360;
+    return ['north','north-east','east','south-east','south','south-west','west','north-west'][Math.round(b/45)%8]; }
+
+  function huntStep(dt, now){
+    var D=H.D, p=H.p;
+    if(H.phase==='play'){
+      // keyboard: at a node, take the street that points closest to the keys
+      var kx=(H.keys.ArrowRight||H.keys.d?1:0)-(H.keys.ArrowLeft||H.keys.a?1:0), ky=(H.keys.ArrowDown||H.keys.s?1:0)-(H.keys.ArrowUp||H.keys.w?1:0);
+      if((kx||ky) && !(p.path.length && p.i<p.path.length)){
+        var best=-1, bs=0.35, L=Math.hypot(kx,ky);
+        for(var e=D.start[p.at]; e<D.start[p.at+1]; e++){ var v=D.to[e], vx=D.X[v]-D.X[p.at], vy=D.Y[v]-D.Y[p.at], vl=Math.hypot(vx,vy)||1;
+          var dot=(vx*kx+vy*ky)/(vl*L); if(dot>bs){ bs=dot; best=v; } }
+        if(best>=0){ p.path=[best]; p.i=0; H.cam.ox*=0.6; H.cam.oy*=0.6; }
+      }
+      // run along the path
+      var step=HUNT_SPEED*dt;
+      while(step>0 && p.path.length && p.i<p.path.length){
+        var n=p.path[p.i], tx=D.X[n], ty=D.Y[n], dx=tx-p.x, dy=ty-p.y, d=Math.hypot(dx,dy);
+        if(d<=step){ p.x=tx; p.y=ty; step-=d; for(var e2=D.start[p.at]; e2<D.start[p.at+1]; e2++) if(D.to[e2]===n){ p.way=D.way[e2]; break; }
+          p.at=n; p.i++; }
+        else { p.x+=dx/d*step; p.y+=dy/d*step; p.heading=Math.atan2(dy,dx); step=0; }
+      }
+      if(p.i>=p.path.length){ p.path=[]; p.i=0; }
+      var lt=H.trail; if(Math.hypot(lt[lt.length-2]-p.x, lt[lt.length-1]-p.y)>18){ lt.push(p.x,p.y); huntFogAt(p.x,p.y); }
+      // croissants
+      H.cro.forEach(function(c){ if(!c.got && Math.hypot(c.x-p.x,c.y-p.y)<16){ c.got=true; H.got++; sfx('correct'); var hc=$('hcro'); if(hc){ hc.textContent='🥐 '+H.got; retrig(hc,'bump'); } } });
+      // locals point the way, once each per clue
+      var tgt=H.R.stops[H.leg];
+      H.locals.forEach(function(l){ if(l.leg!==H.leg && Math.hypot(l.x-p.x,l.y-p.y)<30){ l.leg=H.leg;
+        var dx2=tgt.x-l.x, dy2=tgt.y-l.y, dd=Math.hypot(dx2,dy2), dir=huntDir(dx2,dy2);
+        var far=dd<150?'Almost there. Look around.':dd>=950?('About '+(Math.round(dd/500)*0.5)+' km.'):('About '+(Math.round(dd/100)*100)+' m.');
+        var lines=['Bonjour! Try '+dir+'. ', 'Ah, that one? Go '+dir+'. ', 'Head '+dir+'. '];
+        huntSay(l.e, dd<150?far:(lines[(l.ph*10|0)%3]+far)); } });
+      // stops
+      H.D.stops.forEach(function(s){ var d=Math.hypot(s.x-p.x, s.y-p.y);
+        if(d<420) H.seen[s.s.id]=1;
+        if(d<s.r){
+          if(s===tgt) huntArrive();
+          else if(!H.wrong[s.s.id] && H.R.stops.slice(0,H.leg).indexOf(s)<0){ H.wrong[s.s.id]=1; huntSay(s.s.e, 'That\'s '+s.s.n+'. Not the one you want.', 2600); }
+        } });
+      // clock
+      var tm=$('htime'); if(tm) tm.textContent=huntFmt(huntTime(now));
+      if((now-H.legT0)>30000){ var hh=$('hhint'); if(hh && !hh.classList.contains('on')) huntClue(); }
+    }
+    // locals wander
+    H.locals.forEach(function(l){ var tx=D.X[l.nx], ty=D.Y[l.nx], dx=tx-l.x, dy=ty-l.y, d=Math.hypot(dx,dy), s=6*dt;
+      if(d<=s){ l.x=tx; l.y=ty; l.at=l.nx; var a=D.start[l.at], b=D.start[l.at+1]; if(b>a) l.nx=D.to[a+Math.floor(Math.random()*(b-a))]; }
+      else { l.x+=dx/d*s; l.y+=dy/d*s; } });
+    // camera: follow, and let a drag drift back once you run
+    var c=H.cam; if(p.path.length && (!H.lookT || now-H.lookT>900)){ c.ox*=Math.pow(0.08,dt); c.oy*=Math.pow(0.08,dt); }
+    c.x+=(p.x+c.ox-c.x)*Math.min(1,dt*6); c.y+=(p.y+c.oy-c.y)*Math.min(1,dt*6);
+    var st=$('hstreet'); if(st){ var w=p.way>=0?H.D.j.ways[p.way]:null, nm=(w&&w[1]>=0)?H.D.j.names[w[1]]:'';
+      if(st._t!==nm){ st._t=nm; st.textContent=nm; st.classList.toggle('on', !!nm); } }
+    var say=$('hsay'); if(say && say.classList.contains('on') && now>H.sayUntil) say.classList.remove('on');
+  }
+  function huntTime(now){ return Math.max(0, (now-H.t0)/1000 + H.pings*10 - H.got*1); }
+
+  function huntArrive(){
+    var s=H.R.stops[H.leg];
+    H.p.path=[]; H.p.i=0;
+    sfx('correct'); vibe(20);
+    var b=$('hbanner');
+    if(H.leg===2){ huntFinish(); return; }
+    if(b){ b.innerHTML='<span class="e">'+s.s.e+'</span><b>'+esc(s.s.n)+'</b><span>Stop '+(H.leg+1)+' found. Next clue.</span>'; retrig(b,'on'); setTimeout(function(){ if(b) b.classList.remove('on'); }, 2200); }
+    try{ var r=$('hmap').getBoundingClientRect(); FX.burst(r.left+r.width/2, r.top+r.height/2, 50, Math.PI*1.4, 6); }catch(e){}
+    H.leg++; H.legT0=performance.now(); H.pingUntil=0; huntClue();
+    var cl=$('hclue'); if(cl) retrig(cl,'flip');
+  }
+  function huntFinish(){
+    var now=performance.now(), t=huntTime(now), par=H.R.par;
+    var medal = t<=par*1.35+15 ? '🥇' : t<=par*1.9+30 ? '🥈' : t<=par*2.8+50 ? '🥉' : '';
+    var rec=huntStore(); rec.runs++;
+    var isNewBest=!rec.best || t<rec.best; if(isNewBest) rec.best=t;
+    var key=dailyKey(), first=H.daily && !rec.daily[key];
+    if(first) rec.daily[key]={ t:t, medal:medal, got:H.got, pings:H.pings };
+    huntSave(rec);
+    var miles=40+H.got*5+(medal==='🥇'?60:medal==='🥈'?30:medal==='🥉'?15:0);
+    try{ var st=statsDefault(); st.miles+=miles; st.milesTotal+=miles; saveStats(st); }catch(e){}
+    H.res={ t:t, par:par, medal:medal, raw:(now-H.t0)/1000, miles:miles, newBest:isNewBest, first:first };
+    H.phase='done'; sfx('win');
+    setTimeout(function(){ if(S.screen==='hunt' && H && H.phase==='done'){ render(); try{ FX.celebrate(); }catch(e){} } }, 650);
+    var b=$('hbanner'); if(b){ b.innerHTML='<span class="e">🚩</span><b>Checkpoint!</b><span>'+esc(H.R.stops[2].s.n)+'</span>'; retrig(b,'on'); }
+  }
+  function renderHuntEnd(){
+    var r=H.res, city=HUNT[H.cid];
+    var stops=H.R.stops.map(function(s,i){ return '<span>'+s.s.e+' '+esc(s.s.n)+(i===2?' 🚩':'')+'</span>'; }).join('<i>›</i>');
+    app.innerHTML = topbar() + '<div class="card center huntend">'
+      + '<div class="stagetype">🗺️ Street Hunt · '+esc(city.name)+' '+city.flag+'</div>'
+      + '<div class="he-medal">'+(r.medal||'🏁')+'</div>'
+      + '<div class="he-time">'+huntFmt(r.t)+'</div>'
+      + '<div class="he-sub">'+(r.medal==='🥇'?'Gold. You know this city.':r.medal==='🥈'?'Silver. Solid run.':r.medal==='🥉'?'Bronze. You got there.':'You made it to the mat.')+(r.newBest?' <b>New best.</b>':'')+'</div>'
+      + '<div class="he-route">'+stops+'</div>'
+      + '<div class="breakdown"><span>Running <b>'+huntFmt(r.raw)+'</b></span><span>🥐 '+H.got+' <b>−'+H.got+'s</b></span><span>📡 '+H.pings+' <b>+'+(H.pings*10)+'s</b></span></div>'
+      + '<div class="muted" style="font-size:12.5px;margin-top:10px">Gold is under '+huntFmt(r.par*1.35+15)+'. +'+r.miles+' miles.</div>'
+      + '<div class="btnrow"><button class="btn globe" id="hshare">📋 Share</button><button class="btn ghost" id="hagain">New drop</button></div>'
+      + '<button class="btn ghost sm" id="hhome" style="width:auto;margin-top:12px">‹ Home</button>'
+      + '</div>' + foot();
+    $('hshare').onclick=function(){ shareResult('RunTheGlobe Street Hunt · '+city.name+' '+city.flag+(H.daily?(' · '+fmtDay(dailyKey())):'')+'\n⏱ '+huntFmt(r.t)+' '+(r.medal||'🏁')+'\n'+H.R.stops.map(function(s){ return s.s.e; }).join(' › ')+' 🚩\n🥐 '+H.got+' · 📡 '+H.pings+'\nrunthe.gg/globe'); };
+    $('hagain').onclick=function(){ startHunt(H.cid, false); };
+    $('hhome').onclick=function(){ H=null; S.screen='home'; render(); };
+    renderAcct();
+  }
+
+  // ---- fog and the minimap ----
+  function huntMiniInit(mini){
+    var D=H.D, b=D.box, bw=b[2]-b[0], bh=b[3]-b[1], MW=124, MH=Math.round(MW*bh/bw), dpr=Math.min(2,window.devicePixelRatio||1);
+    mini.width=MW*dpr; mini.height=MH*dpr; mini.style.width=MW+'px'; mini.style.height=MH+'px';
+    var s=MW/bw;
+    if(!D.miniBase){ var base=document.createElement('canvas'); base.width=MW*dpr; base.height=MH*dpr; var g=base.getContext('2d');
+      g.setTransform(s*dpr,0,0,s*dpr,-b[0]*s*dpr,-b[1]*s*dpr);
+      g.fillStyle='#1d1840'; g.fillRect(b[0],b[1],bw,bh);
+      if(D.waterOut){ g.fillStyle='#2a6aa3'; g.fill(D.waterOut); } if(D.waterIn){ g.fillStyle='#1d1840'; g.fill(D.waterIn); }
+      if(D.parkOut){ g.fillStyle='#2a5a45'; g.fill(D.parkOut); }
+      g.strokeStyle='#b1a6ee'; g.lineWidth=1.8/s; g.beginPath();
+      D.j.ways.forEach(function(w){ if(w[0]>2) return; g.moveTo(D.X[w[3]],D.Y[w[3]]); for(var k=4;k<w.length;k++) g.lineTo(D.X[w[k]],D.Y[w[k]]); }); g.stroke();
+      D.miniBase=base; }
+    var fog=document.createElement('canvas'); fog.width=MW*dpr; fog.height=MH*dpr; var f=fog.getContext('2d');
+    f.fillStyle='rgba(10,8,24,.8)'; f.fillRect(0,0,fog.width,fog.height);
+    H.mini={ MW:MW, MH:MH, s:s, dpr:dpr, fog:fog, f:f };
+    huntFogAt(H.p.x, H.p.y);
+  }
+  function huntFogAt(x, y){
+    var m=H.mini; if(!m) return; var b=H.D.box, f=m.f;
+    f.save(); f.globalCompositeOperation='destination-out';
+    var cx=(x-b[0])*m.s*m.dpr, cy=(y-b[1])*m.s*m.dpr, r=200*m.s*m.dpr;
+    var gr=f.createRadialGradient(cx,cy,r*0.35,cx,cy,r); gr.addColorStop(0,'rgba(0,0,0,1)'); gr.addColorStop(1,'rgba(0,0,0,0)');
+    f.fillStyle=gr; f.beginPath(); f.arc(cx,cy,r,0,6.2832); f.fill(); f.restore();
+  }
+  function huntMiniDraw(g, now){
+    var m=H.mini, D=H.D, b=D.box; if(!m) return;
+    g.setTransform(1,0,0,1,0,0); g.clearRect(0,0,m.MW*m.dpr,m.MH*m.dpr);
+    g.drawImage(D.miniBase,0,0); g.drawImage(m.fog,0,0);
+    g.setTransform(m.s*m.dpr,0,0,m.s*m.dpr,-b[0]*m.s*m.dpr,-b[1]*m.s*m.dpr);
+    D.stops.forEach(function(s){ if(!H.seen[s.s.id]) return; g.fillStyle='#F6D488'; g.beginPath(); g.arc(s.x,s.y,4/m.s,0,6.2832); g.fill(); });
+    var pr=(3.2+Math.sin(now/180))/m.s;
+    g.fillStyle='#ffffff'; g.beginPath(); g.arc(H.p.x,H.p.y,pr+1.4/m.s,0,6.2832); g.fill();
+    g.fillStyle='#E24632'; g.beginPath(); g.arc(H.p.x,H.p.y,pr,0,6.2832); g.fill();
+  }
+
+  // street names along the street, the biggest roads first, never on top of each other
+  function huntLabels(ctx, D, vis, sc, c, W, Hh, dpr){
+    var z=HUNT_ZOOM[c.z], maxCls=c.z>=1?3:2, j=D.j, placed=[], done={};
+    ctx.setTransform(dpr,0,0,dpr,0,0); ctx.font='700 11px system-ui,sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.lineJoin='round';
+    var cand=vis.filter(function(wi){ var w=j.ways[wi]; return w[1]>=0 && w[0]<=maxCls && !(w[2]&2); })
+      .sort(function(a,b){ return (j.ways[a][0]-j.ways[b][0]) || (D.lsegL[b]-D.lsegL[a]); });
+    for(var n=0;n<cand.length && placed.length<18;n++){
+      var wi=cand[n], w=j.ways[wi], nm=j.names[w[1]]; if(done[nm]) continue;
+      // the longest piece of this street whose middle is on screen
+      var tw=D.tw[nm]||(D.tw[nm]=ctx.measureText(nm).width), ax=0, ay=0, bx=0, by=0, L=0;
+      if(D.lsegL[wi]*z<tw+18) continue;
+      for(var k=4;k<w.length;k++){ var a=w[k-1], b=w[k];
+        var x1=(D.X[a]-c.x)*z+W/2, y1=(D.Y[a]-c.y)*z+Hh/2, x2=(D.X[b]-c.x)*z+W/2, y2=(D.Y[b]-c.y)*z+Hh/2;
+        var mx0=(x1+x2)/2, my0=(y1+y2)/2; if(mx0<30||mx0>W-30||my0<44||my0>Hh-34) continue;
+        var l0=Math.hypot(x2-x1,y2-y1); if(l0>L){ L=l0; ax=x1; ay=y1; bx=x2; by=y2; } }
+      if(L<tw+18) continue;
+      var mx=(ax+bx)/2, my=(ay+by)/2;
+      var clash=false; for(var q=0;q<placed.length;q++) if(Math.abs(placed[q][0]-mx)<tw/2+placed[q][2]/2+6 && Math.abs(placed[q][1]-my)<18){ clash=true; break; }
+      if(clash) continue;
+      var ang=Math.atan2(by-ay,bx-ax); if(ang>Math.PI/2) ang-=Math.PI; if(ang<-Math.PI/2) ang+=Math.PI;
+      ctx.save(); ctx.translate(mx,my); ctx.rotate(ang);
+      ctx.strokeStyle='rgba(13,10,34,.95)'; ctx.lineWidth=3.5; ctx.strokeText(nm,0,0);
+      ctx.fillStyle=w[0]===0?'#fff1cc':'#e6e1ff'; ctx.fillText(nm,0,0); ctx.restore();
+      placed.push([mx,my,tw]); done[nm]=1;
+    }
+  }
+
+  // ---- the map ----
+  var HUNT_ST = [ { w:17, c:'#e2b85e' }, { w:13, c:'#a99cf0' }, { w:10, c:'#7b70c4' }, { w:6.5, c:'#4d4488' }, { w:6, c:'#6a6796' } ];
+  function huntDraw(ctx, W, Hh, dpr, now){
+    var D=H.D, c=H.cam, sc=HUNT_ZOOM[c.z]*dpr;
+    ctx.setTransform(1,0,0,1,0,0);
+    ctx.fillStyle='#141032'; ctx.fillRect(0,0,W*dpr,Hh*dpr);
+    ctx.setTransform(sc,0,0,sc, W*dpr/2-c.x*sc, Hh*dpr/2-c.y*sc);
+    var hw=W/2/HUNT_ZOOM[c.z]+40, hh=Hh/2/HUNT_ZOOM[c.z]+40, x0=c.x-hw, x1=c.x+hw, y0=c.y-hh, y1=c.y+hh;
+    var b=D.box; ctx.fillStyle='#1f1a45'; ctx.fillRect(b[0],b[1],b[2]-b[0],b[3]-b[1]);
+    if(D.parkOut){ ctx.fillStyle='#1f4a3a'; ctx.fill(D.parkOut); }
+    if(D.parkIn){ ctx.fillStyle='#1f1a45'; ctx.fill(D.parkIn); }
+    if(D.waterOut){ ctx.fillStyle='#1d5486'; ctx.fill(D.waterOut); ctx.strokeStyle='#2f6ea6'; ctx.lineWidth=3; ctx.stroke(D.waterOut); }
+    if(D.waterIn){ ctx.fillStyle='#1f1a45'; ctx.fill(D.waterIn); }
+    if(D.notable){ ctx.fillStyle='#342b66'; ctx.fill(D.notable); ctx.strokeStyle='#4d428a'; ctx.lineWidth=1.5; ctx.stroke(D.notable); }
+    // streets in view
+    var vis=[], fr=++D.frame, paths=[new Path2D(),new Path2D(),new Path2D(),new Path2D(),new Path2D()], bridges=new Path2D();
+    var WC=D.WC, j=D.j;
+    for(var gx=Math.floor(x0/WC); gx<=Math.floor(x1/WC); gx++) for(var gy=Math.floor(y0/WC); gy<=Math.floor(y1/WC); gy++){
+      var arr=D.wgrid.get(gx+','+gy); if(!arr) continue;
+      for(var i=0;i<arr.length;i++){ var wi=arr[i]; if(D.stamp[wi]===fr) continue; D.stamp[wi]=fr; vis.push(wi);
+        var w=j.ways[wi], p=paths[w[0]]; p.moveTo(D.X[w[3]],D.Y[w[3]]); for(var k=4;k<w.length;k++) p.lineTo(D.X[w[k]],D.Y[w[k]]);
+        if(w[2]&1){ bridges.moveTo(D.X[w[3]],D.Y[w[3]]); for(k=4;k<w.length;k++) bridges.lineTo(D.X[w[k]],D.Y[w[k]]); } }
+    }
+    ctx.lineCap='round'; ctx.lineJoin='round';
+    ctx.strokeStyle='#0d0a22'; ctx.lineWidth=HUNT_ST[0].w+9; ctx.stroke(bridges);
+    for(var cl=4;cl>=0;cl--){ ctx.strokeStyle='#0f0c28'; ctx.lineWidth=HUNT_ST[cl].w+4; ctx.stroke(paths[cl]); }
+    for(cl=4;cl>=0;cl--){ ctx.strokeStyle=HUNT_ST[cl].c; ctx.lineWidth=HUNT_ST[cl].w; ctx.stroke(paths[cl]); }
+    huntLabels(ctx, D, vis, sc, c, W, Hh, dpr);
+    ctx.setTransform(sc,0,0,sc, W*dpr/2-c.x*sc, Hh*dpr/2-c.y*sc);
+    // your trail
+    var tr=H.trail; if(tr.length>3){ ctx.beginPath(); ctx.moveTo(tr[0],tr[1]); for(var t=2;t<tr.length;t+=2) ctx.lineTo(tr[t],tr[t+1]);
+      ctx.strokeStyle='rgba(246,212,136,.35)'; ctx.lineWidth=4; ctx.setLineDash([10,12]); ctx.stroke(); ctx.setLineDash([]); }
+    // the route you tapped
+    var p=H.p; if(p.path.length && p.i<p.path.length){ ctx.beginPath(); ctx.moveTo(p.x,p.y); for(var q=p.i;q<p.path.length;q++) ctx.lineTo(D.X[p.path[q]],D.Y[p.path[q]]);
+      ctx.strokeStyle='rgba(255,255,255,.75)'; ctx.lineWidth=3.5/HUNT_ZOOM[c.z]; ctx.setLineDash([6/HUNT_ZOOM[c.z],7/HUNT_ZOOM[c.z]]); ctx.stroke(); ctx.setLineDash([]); }
+
+    // screen space from here: emoji and markers stay the same size at any zoom
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    var z=HUNT_ZOOM[c.z];
+    function SX(x){ return (x-c.x)*z+W/2; } function SY(y){ return (y-c.y)*z+Hh/2; }
+    function inView(x,y,m){ var sx=SX(x), sy=SY(y); return sx>-m && sx<W+m && sy>-m && sy<Hh+m; }
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    var EF='"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif';
+    if(H.tap && now-H.tap.t<700){ var tk=(now-H.tap.t)/700; ctx.strokeStyle='rgba(255,255,255,'+(1-tk)+')'; ctx.lineWidth=2.5; ctx.beginPath(); ctx.arc(SX(H.tap.x),SY(H.tap.y),6+tk*18,0,6.2832); ctx.stroke(); }
+    H.cro.forEach(function(k2){ if(k2.got||!inView(k2.x,k2.y,20)) return; ctx.font='17px '+EF; ctx.fillText('🥐', SX(k2.x), SY(k2.y)-3+Math.sin(now/300+k2.ph)*2.5); });
+    H.locals.forEach(function(l){ if(!inView(l.x,l.y,20)) return; var asked=l.leg===H.leg;
+      ctx.globalAlpha=asked?0.55:1; ctx.font='20px '+EF; ctx.fillText(l.e, SX(l.x), SY(l.y)-6+Math.abs(Math.sin(now/260+l.ph))*-2); ctx.globalAlpha=1;
+      if(!asked){ ctx.fillStyle='#fff'; ctx.font='bold 10px system-ui,sans-serif'; ctx.fillText('?', SX(l.x)+11, SY(l.y)-17); } });
+    // landmarks: you only see one once you're close
+    var tgt=H.R.stops[H.leg];
+    D.stops.forEach(function(s){ var d=Math.hypot(s.x-p.x,s.y-p.y); if(d>420 || !inView(s.x,s.y,60)) return;
+      var sx=SX(s.x), sy=SY(s.y), done=H.R.stops.slice(0,H.leg).indexOf(s)>=0;
+      ctx.fillStyle=done?'rgba(63,206,134,.9)':'rgba(20,16,50,.88)'; ctx.strokeStyle=done?'#3fce86':'#ECB550'; ctx.lineWidth=2.5;
+      ctx.beginPath(); ctx.arc(sx,sy,19,0,6.2832); ctx.fill(); ctx.stroke();
+      ctx.font='21px '+EF; ctx.fillText(s.s.e, sx, sy+1);
+      if(d<260 || done){ ctx.font='800 12px system-ui,sans-serif'; var tw=ctx.measureText(s.s.n).width+14;
+        ctx.fillStyle='rgba(12,9,32,.85)'; ctx.fillRect(sx-tw/2, sy+24, tw, 19); ctx.fillStyle='#F6D488'; ctx.fillText(s.s.n, sx, sy+34); }
+      if(s===tgt && H.leg===2 && d<260){ ctx.font='24px '+EF; ctx.fillText('🚩', sx+24, sy-18+Math.sin(now/200)*2); } });
+    // you
+    var px=SX(p.x), py=SY(p.y), pulse=(now/900)%1;
+    ctx.strokeStyle='rgba(226,70,50,'+(0.6*(1-pulse))+')'; ctx.lineWidth=3; ctx.beginPath(); ctx.arc(px,py,9+pulse*18,0,6.2832); ctx.stroke();
+    ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(px,py,10,0,6.2832); ctx.fill();
+    ctx.fillStyle='#E24632'; ctx.beginPath(); ctx.arc(px,py,7.5,0,6.2832); ctx.fill();
+    if(p.path.length){ ctx.save(); ctx.translate(px,py); ctx.rotate(p.heading); ctx.fillStyle='#fff'; ctx.beginPath(); ctx.moveTo(15,0); ctx.lineTo(9,-5); ctx.lineTo(9,5); ctx.closePath(); ctx.fill(); ctx.restore(); }
+    // ping: an arrow on the edge of the map toward the stop
+    if(H.pingUntil>now){ var ang=Math.atan2(tgt.y-p.y, tgt.x-p.x), dd=Math.hypot(tgt.x-p.x,tgt.y-p.y);
+      var rx=Math.min(W,Hh)/2-34, ax=W/2+Math.cos(ang)*rx, ay=Hh/2+Math.sin(ang)*rx;
+      ctx.save(); ctx.translate(ax,ay); ctx.rotate(ang); ctx.fillStyle='#ECB550'; ctx.strokeStyle='#2a1e05'; ctx.lineWidth=2;
+      ctx.beginPath(); ctx.moveTo(16,0); ctx.lineTo(-10,-11); ctx.lineTo(-5,0); ctx.lineTo(-10,11); ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.restore();
+      ctx.font='800 12px system-ui,sans-serif'; ctx.fillStyle='#F6D488'; ctx.fillText(Math.round(dd/10)*10+' m', ax-Math.cos(ang)*26, ay-Math.sin(ang)*26); }
+  }
+
   /* --------------------------------------------------------------- bootstrap */
   S.screen='home';
+  var HUNT_Q=(function(){ try{ return new URLSearchParams(location.search).get('hunt'); }catch(e){ return null; } })();
   if(!COUNTRIES.length){
     app.innerHTML = '<div class="wrap"><div class="card center"><h2>Something didn\'t load</h2>'
       + '<p class="lede">The game didn\'t load right. Refresh to try again.</p></div></div>';
   } else {
-    render();
+    if(HUNT_Q && HUNT[HUNT_Q]) startHunt(HUNT_Q, false); else render();
     initAccount();
     // mute toggle (delegated so it works on every screen without a re-render)
     app.addEventListener('click', function(e){

@@ -163,7 +163,9 @@ for (const slot of E.SLOTS) {
      easier, and the guard goes on asserting against a colour that is not on
      the page any more. */
   const pageSrc = fs.readFileSync(path.join(HERE, 'index.html'), 'utf8');
-  const doorRule = /\.modedoor button\{background:(#[0-9a-f]{3,6});/i.exec(pageSrc);
+  /* The door is a tile in the More ways to play grid now (.mtile), and the
+     club's accent is on its name exactly as it was on the old door's. */
+  const doorRule = /\.mtile \.mt-main\{[^}]*?background:(#[0-9a-f]{3,6});/i.exec(pageSrc);
   ok(!!doorRule, 'the One Franchise door declares a flat fill this can be measured against');
   const DOOR_FILL = doorRule ? doorRule[1] : '#141a26';
   const flat = [];
@@ -775,6 +777,34 @@ const KNOWN = [
   // PG Doc Rivers, SG John Starks, SF Charles Smith, PF Charles Oakley, C Patrick Ewing, 6th Anthony Mason
   ['the 1993 Knicks', 'Grit and Grind', [['riverdo01', 1993], ['starkjo01', 1993],
     ['smithch01', 1993], ['oaklech01', 1993], ['ewingpa01', 1993], ['masonan01', 1993]]],
+
+  /* THE EIGHT SYSTEMS ADDED WITH THE GAME PLANS, each held to the team it is
+     named for. Five men each, the five who played the most minutes, because
+     these were written after the roster became a starting five. */
+  // Payton, Hawkins, Schrempf, Kemp, Perkins: the trap and the run
+  ['the 1996 Sonics', 'Sonic Boom', [['paytoga01', 1996], ['hawkihe01', 1996],
+    ['schrede01', 1996], ['kempsh01', 1996], ['perkisa01', 1996]]],
+  // Hardaway, Richmond, Mullin: three over twenty and nobody tall
+  ['the 1991 Warriors', 'Run TMC', [['hardati01', 1991], ['richmmi01', 1991],
+    ['mullich01', 1991], ['higgiro01', 1991], ['listeal01', 1991]]],
+  // Westhead's Nuggets, the fastest team in the data
+  ['the 1991 Nuggets', 'Run and Gun', [['adamsmi01', 1991], ['woolror01', 1991],
+    ['willire01', 1991], ['rasmubl01', 1991], ['wolfjo01', 1991]]],
+  // Paul throwing it up to Griffin and Jordan
+  ['the 2014 Clippers', 'Lob City', [['paulch01', 2014], ['collida01', 2014],
+    ['crawfja01', 2014], ['griffbl01', 2014], ['jordade01', 2014]]],
+  // Pierce, Allen, Garnett
+  ['the 2008 Celtics', 'The Big Three', [['rondora01', 2008], ['allenra02', 2008],
+    ['piercpa01', 2008], ['garneke01', 2008], ['perkike01', 2008]]],
+  // Grant Hill with the ball
+  ['the 1997 Pistons', 'Point Forward', [['hunteli01', 1997], ['dumarjo01', 1997],
+    ['hillgr01', 1997], ['millste01', 1997], ['thorpot01', 1997]]],
+  // Luka with Porzingis and Kleber standing at the arc
+  ['the 2020 Mavericks', 'Five Out', [['doncilu01', 2020], ['hardati02', 2020],
+    ['finnedo01', 2020], ['klebima01', 2020], ['porzikr01', 2020]]],
+  // Harden's 2017, before Paul arrived and it became Moreyball
+  ['the 2017 Rockets', 'Heliocentric', [['hardeja01', 2017], ['gordoer01', 2017],
+    ['beverpa01', 2017], ['arizatr01', 2017], ['anderry01', 2017]]],
 ];
 
 for (const [who, expected, names] of KNOWN) {
@@ -797,6 +827,142 @@ const unnamed = KNOWN.filter(([, , names]) => {
   return six && !E.rosterFit(six).system;
 });
 isLineup(unnamed.length, 0, 'every real championship lineup is recognised as something');
+
+/* ── THE GAME PLAN, which is the half of Run The Floor that is about running ──
+ *
+ * A plan is picked at tip-off and the draft decides how well it works. Four
+ * things can go wrong with it in silence, because every one of them produces
+ * a perfectly ordinary season: the four paths that rate a roster disagreeing
+ * about the plan, a plan handing out value at the break-even it was set to
+ * pay nothing at, May NOT being different from the regular season (which is
+ * the whole choice), and the dailies picking up a mechanic they were never
+ * balanced on. */
+{
+  /* The four paths agree, with a plan set. playSeason and advanceGame are the
+     two that are easiest to let drift, because both are one call away from the
+     page and only one of them is read at a time. */
+  const a = greedyDraft(9191), b = greedyDraft(9191);
+  /* THE PLAN THE COACH WOULD NOT CALL, or a path that ignored the plan would
+     pass by landing on the same one: the first draft of this asked for 'run'
+     on a roster whose own pick was 'run', and removing the plan from
+     advanceGame went green. */
+  const auto = E.bestPlan(E.paceFits(R.taggedRoster(a)));
+  const want = auto === 'run' ? 'grind' : 'run';
+  a.plan = want; b.plan = want;
+  const bulk = R.playSeason(a);
+  for (let g = 0; R.advanceGame(b, g); g++);
+  const walkedRun = R.finalizeSeason(b);
+  is(walkedRun.record, bulk.record, 'with a plan set, the walked season and the instant one are one season');
+  is(bulk.tempo && bulk.tempo.plan, want, 'and the outcome says which plan it played');
+  ok(bulk.style && ['Big', 'Small', 'Balanced'].includes(bulk.style.size), 'and names its size');
+
+  const c = greedyDraft(9191); c.plan = want === 'run' ? 'grind' : 'run';
+  const grind = R.playSeason(c);
+  ok(grind.ortg !== bulk.ortg || grind.drtg !== bulk.drtg, 'a different plan plays a different season');
+
+  /* Nothing for free at break-even, both plans. */
+  const T = E.TEMPO;
+  const even = E.planEffect('run', { run: T.RUN_EVEN, grind: 0 });
+  ok(Math.abs(even.off) < 1e-9, `a run fit at break-even earns no offense (${even.off})`);
+  const evenG = E.planEffect('grind', { run: 0, grind: T.GRIND_EVEN });
+  ok(Math.abs(evenG.def) < 1e-9, `a half court fit at break-even earns no defense (${evenG.def})`);
+  ok(E.planEffect('run', { run: 0.2, grind: 0 }).net < 0, 'running with a roster that cannot run costs');
+  ok(E.planEffect('balanced', { run: 1, grind: 1 }).net === 0, 'balanced is worth nothing either way');
+
+  /* MAY IS A DIFFERENT GAME. Running is worth less in the playoffs and the
+     half court is worth more, at any fit that pays at all. That asymmetry is
+     the choice, and without it one plan is simply better. */
+  const fast = E.planEffect('run', { run: 0.9, grind: 0 });
+  const slow = E.planEffect('grind', { run: 0, grind: 0.9 });
+  ok(fast.net > 0 && fast.poNet < fast.net, `the run pays less in May (${fast.net} then ${fast.poNet})`);
+  ok(slow.net > 0 && slow.poNet > slow.net, `the half court pays more in May (${slow.net} then ${slow.poNet})`);
+  ok(fast.poPace < fast.gamePace && slow.poPace < slow.gamePace, 'and every playoff game is slower');
+
+  /* THE DAILIES AND CONQUEST KEEP THE MODEL THEY WERE BALANCED ON. */
+  const five = lineup([['paytoga01', 1996], ['hawkihe01', 1996], ['schrede01', 1996], ['kempsh01', 1996], ['perkisa01', 1996]]);
+  if (five) {
+    const off = E.rosterRatings(five, { tempo: false });
+    const chem = E.resolveChemistry(five), fit = E.rosterFit(five);
+    is(off.ortg, E.rosterOffense(five, chem.bonus, fit.bonus), 'tempo off is the old offense exactly');
+    is(off.drtg, E.rosterDefense(five, chem.bonus), 'and the old defense exactly');
+    ok(off.tempo === null, 'and carries no plan');
+  }
+
+  /* THE FITS NAME THE CLUBS A FAN NAMES, read off each club's own five. */
+  const fitOf = (ids) => { const r = lineup(ids); return r ? E.paceFits(r) : null; };
+  const suns = fitOf([['nashst01', 2005], ['johnsjo02', 2005], ['mariosh01', 2005], ['stoudam01', 2005], ['richaqu01', 2005]]);
+  const spurs = fitOf([['parketo01', 2003], ['jacksst02', 2003], ['bowenbr01', 2003], ['duncati01', 2003], ['robinda01', 2003]]);
+  if (suns) ok(suns.run > 0.8 && suns.run > suns.grind, `Nash's 2005 Suns are built to run (${suns.run} run, ${suns.grind} grind)`);
+  else lineupDrift.push('the 2005 Suns: a player is not in the data');
+  if (spurs) ok(spurs.grind > 0.8 && spurs.grind > spurs.run, `Duncan's 2003 Spurs are built to grind (${spurs.grind} grind, ${spurs.run} run)`);
+  else lineupDrift.push('the 2003 Spurs: a player is not in the data');
+
+  /* THE CLUB PACE MAP: the fastest and slowest clubs a fan would name. */
+  ok(E.teamTempo('DEN', 1991) >= 110, `Westhead's 1991 Nuggets are the top of the pace map (${E.teamTempo('DEN', 1991)})`);
+  ok(E.teamTempo('UTA', 1998) < 95, `Sloan's 1998 Jazz walk it up (${E.teamTempo('UTA', 1998)})`);
+}
+
+/* ── THE SYSTEM, IN THIS ROSTER'S OWN NAMES ─────────────────────────────────
+ *
+ * Asked for by the owner: the line under the archetype should be as specific
+ * to the team as it can be, naming the drafted players and how each fits. The
+ * blurb is the same sentence for every Pick and Roll roster; the story says
+ * "Stockton runs the pick and roll. Malone sets it and dives."
+ *
+ * PLAYED FOR REAL, nine ways of drafting, so every system is met on rosters a
+ * person could build rather than on a fixture written to fit a branch. And the
+ * claims are the four ways a sentence built from data goes wrong in silence:
+ * a system with no story, a story naming nobody on the team, a story that is
+ * the same for two different teams (the blurb again, by another name), and a
+ * missing field printing "undefined" on the fit card.
+ */
+{
+  const pageSrcAll = fs.readFileSync(path.join(HERE, 'index.html'), 'utf8');
+  /* Built from char codes, because this repo's dash checker refuses the
+     characters and their escapes alike, in a checker's source too. */
+  const DASHES = new RegExp('[' + String.fromCharCode(8211, 8212) + ']');
+  const W = ['w', 'pts', 'reb', 'ast', 'tpa', 'stl', 'blk', 'fga', 'dw'];
+  const bySys = {};
+  let told = 0, named = 0, clean = 0, total = 0;
+  const bad = [];
+  for (let i = 0; i < 1500; i++) {
+    const k = W[i % W.length], rnd = E.createSeededRNG(77 + i);
+    const run = R.createRun({ seed: 3000 + i });
+    let g = 0;
+    while (run.phase === R.PHASES.DRAFT && g++ < 50) {
+      const d = R.spin(run, data);
+      const o = d.options.map(x => data.allPlayers[x]).filter(Boolean);
+      o.sort((a, c) => ((c[k] || 0) + rnd() * 2) - ((a[k] || 0) + rnd() * 2));
+      R.sign(run, o[0]);
+    }
+    if (run.phase === R.PHASES.DRAFT) continue;
+    const t = R.taggedRoster(run);
+    const f = E.rosterFit(t);
+    const key = f.system ? f.system.key : 'none';
+    const story = f.system ? f.system.story : E.systemStory('none', t);
+    total++;
+    (bySys[key] = bySys[key] || []).push(story);
+    if (story && story.length > 12) told++;
+    if (t.some(p => story.indexOf(E.lastNameOf(p.n)) >= 0)) named++;
+    if (!DASHES.test(story) && !/undefined|NaN|null|\s\.|\.\./.test(story)) clean++;
+    else if (bad.length < 3) bad.push(key + ': ' + story);
+  }
+  const keys = Object.keys(bySys);
+  ok(keys.length >= 22, `every system was met by a real draft (${keys.length - (bySys.none ? 1 : 0)} systems and none)`);
+  ok(told === total, `every roster is told a story (${told} of ${total})`);
+  ok(named === total, `and every story names somebody on the team (${named} of ${total})`);
+  ok(clean === total, `with no dash, no stray field and no doubled stop (${clean} of ${total})${bad.length ? '\n      ' + bad.join('\n      ') : ''}`);
+  /* TEAM SPECIFIC, which is the half the blurb could never be. Two different
+     rosters in one system have to read differently, or the story is a second
+     blurb wearing a name. */
+  const same = keys.filter(k => bySys[k].length > 1 && new Set(bySys[k]).size === 1);
+  ok(same.length === 0, `two rosters in one system are told two different stories (${same.join(', ') || 'all differ'})`);
+  /* And the page prints it rather than the blurb, in the three places the
+     identity is said. */
+  ok(/f\.system\.story \|\| f\.system\.blurb/.test(pageSrcAll), 'the draft fit card prints the story');
+  ok((pageSrcAll.match(/paintSysLine\(\$\('(?:o|p)-sys'\)/g) || []).length === 2,
+    'and the season and results screens print it too');
+}
 
 /* THE BALL ONLY BOUNCES ONCE, and it has to be the largest single thing the fit
    model says. Six players who each carried their own offense cannot carry one
@@ -1249,10 +1415,9 @@ ok(bestWins > worstWins + 20,
  * whole draft. Nothing throws and no other check here opens the page.
  *
  * The other half is the three courts. The home screen, the draft and the
- * results each carry one, and every part of the floor is markup: an apron, a
- * backboard and two corner threes added to one of them and not the others is
- * two courts in one game. Counted rather than named, so the next part added
- * is covered without anybody remembering this section exists.
+ * results each carry one, and each has to carry the same holders: a floor,
+ * the lines courts.js draws into it, the standing hoop and the scene. One of
+ * them missing a holder is two courts in one game.
  */
 {
   const src = fs.readFileSync(path.join(HERE, 'index.html'), 'utf8');
@@ -1269,7 +1434,9 @@ ok(bestWins > worstWins + 20,
      first of them is an aspect ratio inside a media query. A regex for the
      selector alone reads that one and reports a floor with no boards in it,
      which is what the first draft of this did. */
-  const floor = /\n\s*\.court\{([^}]*var\(--floor-tint\)[^}]*)\}/.exec(src);
+  /* The floor is its own layer since the arenas, so the boards live on
+     `.court .floor` and the tint still comes down from `.court`. */
+  const floor = /\n\s*\.court \.floor\{([^}]*var\(--floor-tint\)[^}]*)\}/.exec(src);
   ok(!!floor, 'the court draws its own floor');
   if (floor) {
     /* The wood is the planks, the seams and the grain, which is three
@@ -1281,10 +1448,13 @@ ok(bestWins > worstWins + 20,
 
   const courts = (src.match(/<div class="court[ "]/g) || []).length;
   ok(courts === 3, `three courts on this page (${courts})`);
-  for (const part of ['oob', 'bb', 'c3 l', 'c3 r', 'base', 'side']) {
+  /* The lines are one SVG courts.js draws in feet, so each court carries one
+     holder for it and none of the seven hand-placed boxes it replaced. */
+  for (const part of ['floor', 'lines', 'hoop', 'scene']) {
     const n = (src.match(new RegExp('class="' + part + '"', 'g')) || []).length;
     is(n, courts, `every court has its ${part}`);
   }
+  ok(!/class="(ln arc3|c3 [lr]|oob|ln key|ln circ)"/.test(src), 'and no court keeps a hand-placed line');
 }
 
 /* ── A STRAIGHT COLUMN OF DIGITS IS A FEATURE, NOT A TYPEFACE ───────────────

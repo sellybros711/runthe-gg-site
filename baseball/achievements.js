@@ -47,7 +47,7 @@ function shelf(group, list) {
   return list.map(([id, name, desc, tier, test]) => A(id, name, desc, tier, group, test));
 }
 
-const GROUPS = ['Milestones', 'Winning', 'October', 'The all-time list',
+const GROUPS = ['Milestones', 'Winning', 'October', 'Against real teams',
   'Roster craft', 'The roster', 'The modes', 'The daily', 'Streaks'];
 
 // Helpers over a single row -----------------------------------------------
@@ -72,11 +72,11 @@ const DECADE_NAME = (d) => d + 's';
    door nobody built: the data was there and the shelf was not. */
 const MODES = [
   ['classic', 'Classic'],
-  ['era', 'Eras Draft'],
+  ['era', 'Decades Draft'],
   ['franchise', 'One Franchise'],
   ['division', 'Division Draft'],
   ['survivor', 'Salary Cap Survivor'],
-  ['staff', 'All-Time Staff'],
+  ['staff', 'All-Time Pitching Staff'],
   ['trade', 'The Trade Machine'],
 ];
 function modeKeyOf(r) {
@@ -170,20 +170,20 @@ shelf('October', [
     (c) => c.titles >= 1 && c.wsLosses >= 1],
 ]),
 
-shelf('The all-time list', [
-  ['rank_top1000', 'On the list', 'Build a top-1000 team of all time.', 'bronze',
+shelf('Against real teams', [
+  ['rank_top1000', 'On the list', 'Build a roster that ranks in the top 1,000 of real MLB teams.', 'bronze',
     (c) => c.bestRank != null && c.bestRank <= 1000],
-  ['rank_top500', 'Top 500', 'Build a top-500 team of all time.', 'bronze',
+  ['rank_top500', 'Top 500', 'Build a roster that ranks in the top 500 of real MLB teams.', 'bronze',
     (c) => c.bestRank != null && c.bestRank <= 500],
-  ['rank_top100', 'Top 100', 'Build a top-100 team of all time.', 'bronze',
+  ['rank_top100', 'Top 100', 'Build a roster that ranks in the top 100 of real MLB teams.', 'bronze',
     (c) => c.bestRank != null && c.bestRank <= 100],
-  ['rank_top50', 'Top 50', 'Build a top-50 team of all time.', 'silver',
+  ['rank_top50', 'Top 50', 'Build a roster that ranks in the top 50 of real MLB teams.', 'silver',
     (c) => c.bestRank != null && c.bestRank <= 50],
-  ['rank_top10', 'Top 10', 'Build a top-10 team of all time.', 'gold',
+  ['rank_top10', 'Top 10', 'Build a roster that ranks in the top 10 of real MLB teams.', 'gold',
     (c) => c.bestRank != null && c.bestRank <= 10],
-  ['rank_top3', 'Podium', 'Build a top-3 team of all time.', 'legend',
+  ['rank_top3', 'Podium', 'Build a roster that ranks in the top 3 of real MLB teams.', 'legend',
     (c) => c.bestRank != null && c.bestRank <= 3],
-  ['rank_one', 'Greatest ever assembled', 'Build the number one team of all time.', 'legend',
+  ['rank_one', 'Greatest ever assembled', 'Build a roster better on paper than every real MLB team.', 'legend',
     (c) => c.bestRank != null && c.bestRank <= 1],
   /* Thresholds follow what the rating MEANS, re-measured over 390 drafts after
      teamRating() was re-anchored on what a draft can actually produce. 80 is a
@@ -224,12 +224,17 @@ shelf('Roster craft', [
     (c) => c.best.efficiency >= 95],
   ['perfect_draft', 'Nothing left on the board', 'Draft at 98% efficiency.', 'legend',
     (c) => c.best.efficiency >= 98],
-  ['chem_4', 'They get along', 'Reach +4% chemistry.', 'bronze', (c) => c.best.chemPct >= 4],
-  ['chem_7', 'Good room', 'Reach +7% chemistry.', 'bronze', (c) => c.best.chemPct >= 7],
-  ['chem_10', 'Clubhouse magic', 'Reach +10% chemistry.', 'silver', (c) => c.best.chemPct >= 10],
-  ['chem_12', 'They would run through a wall', 'Reach +12% chemistry.', 'gold',
-    (c) => c.best.chemPct >= 12],
-  ['chem_14', 'One mind', 'Reach +14% chemistry.', 'legend', (c) => c.best.chemPct >= 14],
+  /* THE LADDER MOVED WITH THE CAP. Chemistry is a curve toward CHEMISTRY.MAX that
+     never reaches it, so when the cap came down from 0.15 to 0.12 the old +12 and
+     +14 rungs became impossible. Each rung keeps its share of the cap; the ids stay,
+     because a badge is derived from stored rows and a new id takes it off everybody
+     who has it. Lowering a threshold strips nobody. */
+  ['chem_4', 'They get along', 'Reach +3% chemistry.', 'bronze', (c) => c.best.chemPct >= 3],
+  ['chem_7', 'Good room', 'Reach +6% chemistry.', 'bronze', (c) => c.best.chemPct >= 6],
+  ['chem_10', 'Clubhouse magic', 'Reach +8% chemistry.', 'silver', (c) => c.best.chemPct >= 8],
+  ['chem_12', 'They would run through a wall', 'Reach +10% chemistry.', 'gold',
+    (c) => c.best.chemPct >= 10],
+  ['chem_14', 'One mind', 'Reach +11% chemistry.', 'legend', (c) => c.best.chemPct >= 11],
   /* THE OLD THRESHOLD WAS $210M AND THE CAP IS $170M, so this asked every title
      winner for something the cap already guaranteed: a second copy of "win the
      title", wearing gold. It was written when the cap was $245M. Retuned rather
@@ -242,9 +247,14 @@ shelf('Roster craft', [
      rosters spent a minimum of $147.8M and a median of $168.9M: the cap binds, so
      winning cheap is a narrow thing rather than a big one. $160M leaves $10M of
      the cap unspent, which is a league-minimum slot, and it is about a fifth of
-     titles. A badge is not allowed to name a saving the game cannot make. */
-  ['bargain_title', 'Moneyball', 'Win the title spending under $160M.', 'gold',
-    (c) => c.rows.some((r) => r.titleWon && r.spend != null && r.spend < 160)],
+     titles. A badge is not allowed to name a saving the game cannot make.
+
+     THE CAP WENT TO $190M AND THIS FOLLOWED IT TO $180M, the same $10M under.
+     Loosening strips nobody: every roster that won under $160M is also under
+     $180M. Left at $160M it would be $30M under a cap that binds, which is the
+     $140M mistake above arriving from the other side. */
+  ['bargain_title', 'Moneyball', 'Win the title spending under $180M.', 'gold',
+    (c) => c.rows.some((r) => r.titleWon && r.spend != null && r.spend < 180)],
   ['no_respin_title', 'No do-overs', 'Win the title using no re-spins.', 'gold',
     (c) => c.rows.some((r) => r.titleWon && (r.respins || 0) === 0)],
   /* THREE IS THE CEILING, not a number picked to be hard: CONSTANTS.MAX_RESPINS
@@ -331,9 +341,9 @@ shelf('The roster', [
     (c) => c.best.rosterWar >= 55],
   ['floor_2', 'No passengers', 'Field twelve players who were all worth 2 WAR.', 'gold',
     (c) => c.best.floorWar >= 2],
-  /* One badge a link type. There are six and the most any roster carried over
-     1,750 played seasons is four, so there is deliberately no "all six" rung: the
-     double-play combo and the battery both need a same-season pairing at named
+  /* One badge a link type. There are eight and no roster carries them all, so
+     there is deliberately no "all eight" rung: the double-play combo and the
+     battery both need two men who really played together, fielded at the named
      positions, and the family link needs two men out of a curated list. */
   ['link_era', 'Same era', 'Build a roster linked by the years they played.', 'bronze',
     (c) => c.linkTypes.has('era')],
@@ -341,6 +351,10 @@ shelf('The roster', [
     (c) => c.linkTypes.has('franchise')],
   ['link_reunion', 'Reunion', 'Field two team-mates from the same season.', 'silver',
     (c) => c.linkTypes.has('reunion')],
+  ['link_teammates', 'Played together', 'Field two men who were real team-mates.', 'silver',
+    (c) => c.linkTypes.has('teammates')],
+  ['link_college', 'Old school', 'Field two players who went to the same college.', 'silver',
+    (c) => c.linkTypes.has('college')],
   ['link_dp', 'Turn two', 'Field a real double-play combination.', 'gold',
     (c) => c.linkTypes.has('dp_combo')],
   ['link_battery', 'Batterymates', 'Field a real catcher and pitcher pairing.', 'gold',
@@ -375,10 +389,10 @@ shelf('The modes', MODES.reduce((out, [key, label]) => out.concat([
   /* The Eras draft is thirteen different pools, so it gets the same treatment the
      decade collection gets: one badge a decade, lit by finishing a season in it. */
   DECADES.map((d) => A('eras_' + d, 'The ' + DECADE_NAME(d) + ' all-stars',
-    'Finish an Eras Draft season in the ' + DECADE_NAME(d) + '.', 'bronze', 'The modes',
+    'Finish a Decades Draft season in the ' + DECADE_NAME(d) + '.', 'bronze', 'The modes',
     (c) => c.erasPlayed.has(DECADE_NAME(d))))
 ).concat(shelf('The modes', [
-  ['eras_all', 'Thirteen decades deep', 'Finish an Eras Draft season in all thirteen decades.',
+  ['eras_all', 'Thirteen decades deep', 'Finish a Decades Draft season in all thirteen decades.',
     'legend', (c) => DECADES.every((d) => c.erasPlayed.has(DECADE_NAME(d)))],
   ['div_all', 'The whole league', 'Finish a Division Draft in all six divisions.', 'gold',
     (c) => c.divisionsPlayed.size >= 6],
@@ -408,7 +422,7 @@ shelf('The modes', MODES.reduce((out, [key, label]) => out.concat([
      On the old anchors the best staff anybody reached was 77, so 70 was a little
      better than a median good draft; against a scale whose top is now reachable
      a median good draft is 92, and 70 would be handed out for turning up. */
-  ['staff_90', 'A staff for the ages', 'Field an All-Time Staff rated 90 or better.', 'gold',
+  ['staff_90', 'A staff for the ages', 'Field an All-Time Pitching Staff rated 90 or better.', 'gold',
     (c) => c.rows.some((r) => r.staff && (r.rating || 0) >= 90)],
 ])),
 

@@ -73,6 +73,7 @@ function bracketFor(run) {
 
 let built = 0, tried = 0, byes = 0, wilds = 0;
 let upsets = 0, favourites = 0, titlesForFillers = 0;
+let lostSeen = 0;
 const seedsSeen = {};
 
 for (let s = 0; s < 4000 && built < WANT; s++) {
@@ -181,6 +182,13 @@ for (let s = 0; s < 4000 && built < WANT; s++) {
     const wonIt = !!(w && w.you);
     if (wonIt !== !!rounds[i].won)
       bad('the bracket agrees with the run about who advanced', tag + ' round ' + i);
+    /* THE WINNER HAS TO BE A SEAT THE PAGE DRAWS, by identity, because the page marks
+       a seat as the winner by asking whether it IS the result. The seat across from
+       the player used to be a fresh object on every call, so a lost series drew
+       neither side as the winner and printed no score. */
+    if (w && w !== g.pair[0] && w !== g.pair[1])
+      bad('the winner of your series is one of its two seats', tag + ' round ' + i);
+    if (w && !w.you) lostSeen++;
   }
   if (lastWon && rounds[rounds.length - 1].round !== 'World Series')
     bad('a run that keeps winning keeps playing', tag);
@@ -203,6 +211,8 @@ console.log('  ' + built + ' brackets off ' + tried + ' drafted runs  (' +
   byes + ' byes, ' + wilds + ' wild cards)');
 console.log('  ' + (fails ? fails + ' failures above' : 'every check passed'));
 
+if (!lostSeen) bad('some run went out in October, or the seat claim above is vacuous');
+else console.log('   ok  the club that beat you is drawn as the winner (' + lostSeen + ' lost series)');
 console.log('\nSHAPE\n');
 band('upsets among the simulated series', 100 * upsets / Math.max(1, upsets + favourites),
   12, 45, v => v.toFixed(1) + '%');

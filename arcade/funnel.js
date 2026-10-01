@@ -67,7 +67,8 @@
       '.funguest span{font-size:11.5px;font-weight:700;color:var(--mut,#8aa0b8);line-height:1.35;}' +
       '.funguest button{background:none;border:0;padding:0;cursor:pointer;' +
       'font:900 11.5px var(--f,system-ui);color:var(--brandT,var(--coralT,#FF8A3D));' +
-      'text-decoration:underline;text-underline-offset:3px;white-space:nowrap;}';
+      'text-decoration:underline;text-underline-offset:3px;white-space:nowrap;}' +
+      '.funguest button[hidden]{display:none;}';
     (document.head || document.documentElement).appendChild(s);
   }
 
@@ -272,6 +273,24 @@
     });
     box.appendChild(msg); box.appendChild(btn);
     rowEl.parentNode.insertBefore(box, rowEl.nextSibling);
+    /* Once today's free play is spent, card.js relabels the game's own Play
+       again button to this same sentence, so the screen offered one action
+       twice, a few lines apart. The note keeps its explanation and drops its
+       button when that happens. Watched rather than checked once, because
+       the relabel waits on the wallet and can land seconds after this note. */
+    var sheet = box.closest('#scrim, #resultModal, .sheet, .modal') || document.body;
+    function dedupe() {
+      if (!box.isConnected) { if (mo) mo.disconnect(); return; }
+      var bs = sheet.querySelectorAll('button');
+      for (var i = 0; i < bs.length; i++) {
+        if (bs[i] !== btn && !box.contains(bs[i]) && bs[i].offsetParent !== null &&
+            (bs[i].textContent || '').trim() === btn.textContent) { btn.hidden = true; return; }
+      }
+      btn.hidden = false;
+    }
+    var mo = window.MutationObserver ? new MutationObserver(dedupe) : null;
+    if (mo) mo.observe(sheet, { subtree: true, childList: true, characterData: true });
+    setTimeout(dedupe, 60);
   }
 
   /* ---- warm the next game while the result screen is being read -----------

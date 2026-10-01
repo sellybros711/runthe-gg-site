@@ -2778,7 +2778,7 @@
 
 <!-- THE BUNDLE STORE, shared with The Perfect Season. The door below draws it for anybody
      who has not bought, so it has to be there before gate() runs. -->
-<script src="/assets/store.js?v=22"></script>
+<script src="/assets/store.js?v=23"></script>
 <script src="/cfb/engine.js?v=35"></script>
 <script src="access.js?v=7"></script>
 <!-- THE FULL TEAM LIST AND FLAG. This page draws the same store the other two do, and
@@ -2837,7 +2837,7 @@
 <!-- Reads window.PS_CFB_AUTH at CALL time, not at load time, so it may sit either side of
      auth.js. It is here rather than up with the rest because nothing else reads it. -->
 <script src="splits.js?v=5"></script>
-<script src="/cfb/auth.js?v=7"></script>
+<script src="/cfb/auth.js?v=8"></script>
 <!-- THE TERM AND THE CAREER, KEPT AGAINST THE ACCOUNT. Shared with The Perfect Season,
      which had the same save in localStorage and the same way of losing it. Optional like
      everything else here: without it the mode keeps its term exactly where it always did,
@@ -3021,6 +3021,16 @@ function seasonWall(){
    reading. Leading with the offer is a paywall; leading with the clock is a season that is
    nearly here, sold by the wait rather than by the wall. */
 let waitTick=0;
+/* WHICHEVER WALL DREW THE OFFER, so a plan that turns out to have changed can put the real
+   price back on the screen the buyer is looking at. Two walls draw the store into `w-act`
+   with two different preambles, so the redraw is the painter itself rather than a second copy
+   of either one's markup.
+   DECLARED ABOVE BOTH WRITERS ON PURPOSE. It is a top level `let`, so it sits in the temporal
+   dead zone until its own line runs, and both painters are hundreds of lines above the one
+   place it would naturally have gone (beside buyBundle, which reads it). Nothing calls either
+   painter during load today, so the hazard is latent rather than live, which is exactly the
+   kind of thing that goes off later. */
+let wallOffer=null;
 function paintWait(st){
   const done=world?Math.max(0,world.year-world.startYear):0;
   const next=done+1;
@@ -3064,7 +3074,8 @@ function paintWait(st){
     : '')
     +'<a class="btn ghost" href="/cfb/" style="text-decoration:none;text-align:center;'
     +'margin-top:12px">Back to the game</a>';
-  if(window.RTG_STORE) window.RTG_STORE.wire($('w-act'),{buy:(kind,btn)=>buyBundle(kind,btn)});
+  if(window.RTG_STORE) window.RTG_STORE.wire($('w-act'),{buy:(kind,btn,plan)=>buyBundle(kind,btn,plan)});
+  wallOffer=()=>paintWait(st);
 }
 function waitPaintClock(st){
   const C=window.PS_CFB_COMMISH_CLOCK;
@@ -9351,7 +9362,8 @@ function freeCareerEnd(){
     : '<p class="lede">The store couldn\'t be loaded. Reload the page and try again.</p>')
     +'<a class="btn ghost" href="/cfb/" style="text-decoration:none;text-align:center;'
     +'margin-top:12px">Back to the game</a>';
-  if(window.RTG_STORE) window.RTG_STORE.wire($('w-act'),{buy:(kind,btn)=>buyBundle(kind,btn)});
+  if(window.RTG_STORE) window.RTG_STORE.wire($('w-act'),{buy:(kind,btn,plan)=>buyBundle(kind,btn,plan)});
+  wallOffer=freeCareerEnd;
   show('s-wait');
 }
 
@@ -9564,7 +9576,9 @@ $('b-term-share').onclick=async()=>{
 /* One POST, verdict by the `error` field and never the status, the contract
    functions/api/stripe/checkout-bundle.js keeps on purpose. The verdict lands on the
    button that was pressed, because the gate has no toast to speak through. */
-async function buyBundle(kind,btn){
+/* `plan` is handed over by RTG_STORE.wire, and it is the plan the wall was DRAWN with rather
+   than whatever the module thinks now: it is what the buyer read. */
+async function buyBundle(kind,btn,plan){
   const A=window.PS_CFB_AUTH;
   const t=A&&typeof A.token==='function'?A.token():null;
   if(!t){ if(btn) btn.textContent='Sign in on the game first'; return; }
@@ -9572,10 +9586,32 @@ async function buyBundle(kind,btn){
     const r=await fetch('/api/stripe/checkout-bundle',{
       method:'POST',
       headers:{'Content-Type':'application/json',Authorization:'Bearer '+t},
-      body:JSON.stringify({bundle:kind,return_path:'/cfb/commish/'})
+      /* THE PLAN THE WALL SHOWED. Without it checkout-bundle.js reads the body as 'once',
+         which stopped matching what is on sale the day the yearly switch went on, so every
+         purchase from this screen was refused with 409 offer_changed and the button read
+         "Checkout couldn't start". See the same note on the game page's own buyBundle. */
+      body:JSON.stringify({bundle:kind,return_path:'/cfb/commish/',
+        plan:plan||((window.RTG_STORE&&window.RTG_STORE.plan)?window.RTG_STORE.plan():'once')})
     });
     const d=await r.json().catch(()=>({}));
     if(d&&d.url){ location.href=d.url; return; }
+    /* WHAT IS ON SALE CHANGED UNDER AN OPEN WALL. Put the real price up rather than send
+       anybody to a checkout this screen did not describe. */
+    if(d&&d.error==='offer_changed'){
+      if(window.RTG_STORE&&window.RTG_STORE.setPlan) window.RTG_STORE.setPlan(d.plan);
+      if(btn) btn.textContent='The price just changed';
+      if(wallOffer) wallOffer();
+      return;
+    }
+    /* A PLAN ALREADY RUNNING IS CHANGED OR CANCELLED IN STRIPE, never bought twice. */
+    if(d&&d.error==='already_subscribed'){
+      if(btn) btn.textContent=d.change?'Opening Stripe...':'You already have this plan';
+      const r2=(A&&typeof A.billingPortal==='function')
+        ? await A.billingPortal('/cfb/commish/','plan') : null;
+      if(r2&&r2.url){ location.href=r2.url; return; }
+      if(btn) btn.textContent='Manage your plan in Stripe';
+      return;
+    }
     if(btn) btn.textContent=
       d&&d.error==='stripe_not_configured'?'Not on sale yet'
       :d&&d.error==='already_owned'?'This account already owns it'

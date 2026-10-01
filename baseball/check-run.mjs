@@ -43,10 +43,17 @@ import path from 'path';
 import http from 'http';
 
 const require = createRequire(import.meta.url);
-const { chromium } = require('/opt/node22/lib/node_modules/playwright');
+/* Playwright from node_modules first, which is where CI installs it, then the dev
+   sandbox's global copy. Hardcoding the sandbox path failed every CI run. */
+let chromium;
+try { ({ chromium } = require('playwright')); }
+catch (_) { try { ({ chromium } = require('/opt/node22/lib/node_modules/playwright')); } catch (e) { chromium = null; } }
+if (!chromium) { console.error('playwright is not installed'); process.exit(2); }
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, '..');
-const EXE = process.env.CHROMIUM || '/opt/pw-browsers/chromium-1194/chrome-linux/chrome';
+/* A pinned browser only where it exists, or Playwright's own everywhere else. */
+const EXE = process.env.CHROMIUM
+  || ['/opt/pw-browsers/chromium-1194/chrome-linux/chrome'].find((f) => existsSync(f)) || null;
 const PORT = 8137;
 
 /* Served over http rather than file://, because the page fetches its pool and its
@@ -89,6 +96,19 @@ async function openPage(opts) {
     blocked.push(u);
     return route.abort();
   });
+  /* A SIGNED IN PLAYER IS A STUB, NEVER THE LIVE PROJECT. Badges are for
+     accounts, so the Classic walk plays signed in and the daily walk plays as a
+     guest, and each asserts its own half. auth.js is swapped for a module that
+     answers the same shape and says it is signed in, registered after the
+     catch-all so it wins, and the supabase-js library is never fetched. */
+  if (opts && opts.acct) {
+    await ctx.route('**/baseball/auth.js*', (route) => route.fulfill({
+      contentType: 'application/javascript',
+      body: `window.RTD_AUTH={API_VERSION:1,boot:()=>true,
+        state:()=>({ready:true,waiting:false,signedIn:true,userId:${JSON.stringify(opts.acct)},name:'checkrun'}),
+        onChange:()=>()=>{},token:()=>null,signOut:()=>Promise.resolve()};`,
+    }));
+  }
   const p = await ctx.newPage();
   p.on('pageerror', (e) => errors.push(String(e)));
   await p.addInitScript(() => {
@@ -138,17 +158,17 @@ async function draft(p) {
       pick.click();
       return name;
     });
-    /* A TILE IS NOT ALWAYS A SIGNING. A man who fits more than one open slot opens
-       the position chooser instead, and the walk has to answer it: without this the
-       sheet sat there, the next pass read the same board, clicked the same tile,
-       and the draft never left "Spin 1 of 12". It is the natural slot where the
-       sheet marks one, which is what the sheet itself leads with. */
+    /* A TILE IS NOT ALWAYS A SIGNING. A man who fits more than one open slot is
+       placed on the field instead: his open slots glow and the walk has to tap one.
+       Without this the board sat there, the next pass read the same board, clicked
+       the same tile, and the draft never left "Spin 1 of 12". It taps his natural slot
+       where he has one, which the page marks. */
     await p.waitForTimeout(60);
     await p.evaluate(() => {
-      const sheet = document.getElementById('sheet-pos');
-      if (!sheet || !sheet.classList.contains('on')) return;
-      const opts = [...sheet.querySelectorAll('.pos-opt')];
-      (opts.find((o) => o.classList.contains('natural')) || opts[0]).click();
+      if (!document.querySelector('#s-draft.picking')) return;
+      const t = document.querySelector('#field .target.natural, #field-card .target.natural')
+        || document.querySelector('#field .target, #field-staff .target, #field-card .target');
+      if (t) t.click();
     });
     if (took == null) {
       /* No signable tile: the re-spin is the way on, and it is what a player does. */
@@ -175,6 +195,29 @@ async function toResults(p) {
   await p.waitForSelector('#s-season.on', { timeout: 20000 });
   await p.waitForSelector('#b-sim-fast', { state: 'visible', timeout: 30000 });
   await p.click('#b-sim-fast');
+  /* THE SEASON SCREEN IS DRAWN FROM THE SEASON'S OWN STATE. Read the instant the
+     fast forward lands, before the page moves on to October or the results: the
+     record, the four standings numbers, a race verdict, a calendar of six months
+     and a log with club chips and at least one month's line. */
+  if (!p.__seasonRead) {
+    p.__seasonRead = true;
+    const ss = await p.evaluate(() => ({
+      rec: document.getElementById('s-record').textContent.trim(),
+      tiles: ['ss-pace', 'ss-streak', 'ss-l10', 'ss-rd'].map((id) => document.getElementById(id).textContent.trim()),
+      race: document.getElementById('ss-rstate').textContent.trim(),
+      months: document.querySelectorAll('#s-pips .ss-mo').length,
+      played: document.querySelectorAll('#s-pips .sim-pip.w, #s-pips .sim-pip.l').length,
+      chips: document.querySelectorAll('#s-feed .sim-game .tc').length,
+      notes: [...document.querySelectorAll('#s-feed .sim-note')].map((n) => n.textContent.trim()),
+    }));
+    const [w, l] = ss.rec.split('-').map(Number);
+    claim(w + l === 162 && ss.played === 162, 'the season screen shows all 162 games on the calendar', JSON.stringify(ss));
+    claim(ss.tiles.every((t) => t && t !== '-') && /^[WL]\d+$/.test(ss.tiles[1]),
+      'the four standings numbers are filled in', JSON.stringify(ss.tiles));
+    claim(ss.race.length > 0 && ss.months === 6, 'the race verdict and the six month rows are drawn', JSON.stringify(ss));
+    claim(ss.chips > 0 && ss.notes.some((n) => /^Sep \d+-\d+$/.test(n)),
+      'the log carries club chips and September\'s record', JSON.stringify(ss.notes));
+  }
   /* October is a bracket that reveals itself, a series card and a live game, and
      which of the three is up depends on how the season went. Press whichever way
      forward is on screen until the results screen is. */
@@ -187,56 +230,45 @@ async function toResults(p) {
         if (e && e.offsetParent !== null && !e.disabled) { e.click(); return true; }
         return false;
       };
-      hit('#b-brk-skip') || hit('#sr-simall') || hit('#gm-simall') || hit('#sr-sim');
+      hit('#b-season-go') || hit('#b-brk-skip') || hit('#sr-simall') || hit('#gm-simall') || hit('#sr-sim');
     });
     await p.waitForTimeout(300);
   }
   return !!(await p.$('#s-over.on'));
 }
 
-// ══ 0. the all-time ribbon has one rule, and the share card obeys it ════════
-head('0. THE RIBBON HAS ONE RULE, AND THE SHARE CARD READS IT');
-/* The results screen and the share card both hang "Nth-greatest team of all
-   time" over a season. The screen's copy was gated to a top 100 roster that
-   reached October and the card's was not, so a 73-89 season that missed the
-   playoffs went out to a group chat as the 439th-greatest team of all time. A
-   played run cannot be relied on to land either side of that line, so the rule
-   is lifted out of the page and asked directly, and the card is held to it. */
+// ══ 0. nothing calls a roster the greatest team of all time ═══════════════
+head('0. THE RANK AGAINST REAL TEAMS SAYS WHAT IT IS, AND NOTHING MORE');
+/* allTimeRank ranks a roster's talent ON PAPER against every real MLB
+   team-season. A drafted roster is twelve star seasons, so it is cheap: a greedy
+   draft lands in that top 100 on 93 runs in 100. It used to be hung over the
+   record as "8th-greatest team of all time", labelled "All-time rank" beside the
+   leaderboard cell, and tapped through to the leaderboard. A player 74th on the
+   board read it as their place on it, and was right that it was false.
+   So no surface may call it the greatest team, or bare "all time". */
 {
   const src = readFileSync(new URL('./index.html', import.meta.url), 'utf8');
-  const body = (name) => {
-    const at = src.indexOf('function ' + name + '(');
-    if (at < 0) return null;
-    let i = src.indexOf('{', at), depth = 0;
-    for (let j = i; j < src.length; j++) {
-      if (src[j] === '{') depth++;
-      else if (src[j] === '}' && --depth === 0) return src.slice(at, j + 1);
-    }
-    return null;
-  };
-  const rule = body('crownedRank');
-  claim(!!rule, 'the page has one ribbon rule, crownedRank()');
-  if (rule) {
-    const crownedRank = new Function(rule + '; return crownedRank;')();
-    claim(crownedRank({ allTimeRank: 27, madePlayoffs: true }) === 27, 'a top 100 roster that reached October is crowned');
-    claim(crownedRank({ allTimeRank: 27, madePlayoffs: false }) === null, 'a top 100 roster that missed October is not');
-    claim(crownedRank({ allTimeRank: 439, madePlayoffs: true }) === null, 'a roster outside the top 100 is not, even in October');
-    claim(crownedRank({ allTimeRank: null, madePlayoffs: true }) === null, 'a run with no rank (All-Time Staff) is not');
-  }
-  const card = body('drawShareCard') || '';
-  claim(/crownedRank\(o\)/.test(card), 'the share card asks crownedRank() before it draws the ribbon');
-  claim(!/ordinal\(o\.allTimeRank\)/.test(card), 'and never prints the raw rank as a ribbon',
-    'drawShareCard still formats o.allTimeRank into the ribbon line directly');
+  const code = src.replace(/\/\*[\s\S]*?\*\//g, '');
+  claim(!/greatest team of all time/i.test(code), 'no line calls a roster the Nth-greatest team of all time');
+  claim(!/GREATEST TEAM OF ALL TIME/.test(code), 'and the share card does not either');
+  claim(!/'All-time rank'|'ALL-TIME RANK'|' all time'\)/.test(code), 'the rank is never labelled bare "all time"');
+  claim(!/ro-rank-go/.test(code), 'the rank cell does not open the leaderboard');
+  const ach = readFileSync(new URL('./achievements.js', import.meta.url), 'utf8');
+  claim(!/team of all time/.test(ach), 'no badge promises a team of all time');
 }
 
 // ══ 1. a Classic run, end to end ═══════════════════════════════════════════
 head('1. A WHOLE RUN REACHES THE SCREEN IT ENDS ON');
-const { ctx, p } = await openPage({});
+const { ctx, p } = await openPage({ acct: 'check-run-user' });
 const drafted = await draft(p);
 claim(drafted.stalled === null, 'twelve picks, with no board the draft could not go on from',
   drafted.stalled != null ? `stalled at pick ${drafted.stalled + 1}` : '');
 const arrived = await toResults(p);
 claim(arrived, 'the season and October hand off to the results screen');
+/* A run in progress is saved so leaving the page cannot lose it, and a FINISHED
+   one has to take that save with it, or the front page offers to resume a season
+   that is already on the board. */
+claim(await p.evaluate(() => !localStorage.getItem('rtd_run_v1')), 'a finished run leaves no saved draft behind');
 
 // ══ 2. what the results screen says ════════════════════════════════════════
 head('2. AND IT HAS SOMETHING TO SAY ON IT');
@@ -248,7 +280,7 @@ const r = await p.evaluate(() => {
   };
   return {
     record: txt('ro-record'), verdict: txt('ro-verdict'),
-    rating: txt('ro-rating'), rank: txt('ro-rank'), eff: txt('ro-eff'),
+    rating: txt('ro-rating'), rank: txt('ro-rank'), rankL: txt('ro-rank-l'), eff: txt('ro-place'), effL: txt('ro-place-l'),
     takes: txt('ro-takes'), arch: txt('ro-arch'),
     rosterRows: document.querySelectorAll('#r-roster .rrow, #r-roster .rline, #r-roster li').length,
     rosterText: (document.getElementById('r-roster') || {}).textContent?.trim().length || 0,
@@ -263,12 +295,15 @@ claim(/\w/.test(r.verdict), `a verdict, rather than an empty hero: ${JSON.string
    of the three have failed silently on this page before: the rating was re-anchored
    twice, and a branch beside them read a field outcomeOf has never set, so it was
    dead on every run the game had ever played. An empty cell renders perfectly.
-   THE DRAFT GRADE IS A LETTER AND NOT A NUMBER, which the first draft of this
-   asserted wrongly and reported a correct screen as broken. */
-for (const [k, label] of [['rating', 'Team rating'], ['rank', 'All-time rank']]) {
+*/
+claim(/^Of [\d,]+ real MLB teams$/.test(r.rankL), `the rank says which list it is on, with the real count: ${JSON.stringify(r.rankL)}`);
+for (const [k, label] of [['rating', 'Team rating'], ['rank', 'Rank against real MLB teams']]) {
   claim(/\d/.test(r[k]), `${label} carries a number: ${JSON.stringify(r[k])}`);
 }
-claim(/^[A-F][+-]?$/.test(r.eff), `the draft grade is a grade: ${JSON.stringify(r.eff)}`);
+/* THE GRADE IS GONE, asked for by the owner, and the middle cell is the season's
+   place on its own board. A letter coming back into that cell is the regression. */
+claim(!/^[A-F][+-]?$/.test(r.eff) && /Leaderboard|Recording|on |board/i.test(r.effL),
+  `the middle cell is the leaderboard, not a grade: ${JSON.stringify(r.eff)} / ${JSON.stringify(r.effL)}`);
 claim(/\w/.test(r.takes), "the coach's take is not blank");
 claim(/\w/.test(r.arch), `the roster has a shape: ${JSON.stringify(r.arch)}`);
 claim(r.rosterText > 100, 'the twelve are listed under it', `roster text ${r.rosterText} chars`);
@@ -291,6 +326,17 @@ const oct = await p.evaluate(() => {
 claim(oct.visible === !oct.missed,
   `Watch October is ${oct.missed ? 'not offered on a run with no October' : 'offered on a run that had one'}`,
   `visible ${oct.visible}, verdict missed ${oct.missed}`);
+
+/* The two leaderboard cells open the board this season was filed on, and Back
+   comes home to the result rather than to the front page. */
+for (const id of ['#ro-place-go']) {
+  await p.click(id);
+  const bd = await p.evaluate(() => ({ on: !!document.querySelector('#s-board.on'),
+    tab: (document.querySelector('#bd-tabs .bd-tab.on') || {}).textContent || '' }));
+  claim(bd.on && /classic/i.test(bd.tab), `${id} opens the leaderboard on this season's board (${bd.tab})`);
+  await p.click('#b-board-back');
+  claim(!!(await p.$('#s-over.on')), 'and Back returns to the result');
+}
 
 // ══ 3. the row it files is the row the cabinet reads ═══════════════════════
 head('3. THE SEASON IS FILED, AND THE BADGES IT LIT ARE NAMED');
@@ -339,6 +385,21 @@ const cab = await p.evaluate(() => {
     folds: body.querySelectorAll('details.tg-more').length,
     headline: (body.firstElementChild || {}).textContent || '',
     height: Math.round(body.scrollHeight),
+    flat: (() => {
+      const shut = [...body.querySelectorAll('details')].filter((d) => !d.open);
+      shut.forEach((d) => { d.open = true; });
+      const h = Math.round(body.scrollHeight);
+      shut.forEach((d) => { d.open = false; });
+      return h;
+    })(),
+    /* What the badges this account has earned take up: the grids that sit
+       outside every fold, because a locked badge's grid lives INSIDE one. Asked
+       as "inside any fold" and never "inside a shut one": the first draft asked
+       the second, and with every fold forced open it counted the whole locked
+       catalogue as earned and passed. Measured, never counted times a row
+       height, so a layout change to the tiles cannot make this claim lie. */
+    earnedH: Math.round([...body.querySelectorAll('.trophy-grid')].filter((g) => !g.closest('details'))
+      .reduce((n, g) => n + g.getBoundingClientRect().height, 0)),
     career: (document.getElementById('trophy-career') || {}).textContent || '',
   };
 });
@@ -348,9 +409,23 @@ claim(cab && cab.groups >= 9 && cab.folds >= 1, 'on shelves, with the locked hal
 claim(cab && cab.open > 0 && cab.open < cab.total / 2,
   `what you earned is open and the rest is not (${cab && cab.open} of ${cab && cab.total})`);
 /* MEASURED, BECAUSE THE COMPLAINT THIS FOLD ANSWERS IS A NUMBER. Drawn flat the
-   sheet is about nine thousand pixels on a phone; a first season should be a
-   fraction of that and should grow with what you win. */
-claim(cab && cab.height < 4000, `and the sheet is ${cab && cab.height}px rather than nine thousand`);
+   sheet is about fourteen and a half thousand pixels on a phone.
+
+   IT WAS A FIXED 4000px AND THAT WAS A CLAIM ABOUT THE DICE. The sheet is meant to
+   GROW with what you win: every badge earned is an open tile, about 68px on a
+   phone, and a first season lights anywhere from 25 to 50 of them. Measured, the
+   folded sheet was 2800px at 28 open and 4388px at about 50, while everything that
+   is not an earned tile sat at about 890px in every run. So the fixed line failed
+   on seasons that happened to earn a lot, on a layout doing exactly its job.
+
+   What the fold promises is that the LOCKED half costs a small fixed amount,
+   whatever was earned. So the claim is the sheet minus the earned tiles (the
+   shelves, their strips and the summary), held under 1200px, plus the whole folded
+   sheet held under a third of the same sheet opened flat, which is measured in
+   the same run rather than written down. */
+const locked = cab ? cab.height - cab.earnedH : Infinity;
+claim(cab && locked < 1200, `the locked half costs ${locked}px, whatever the season earned (${cab && cab.open} open)`);
+claim(cab && cab.height < cab.flat / 3, `and the sheet is ${cab && cab.height}px against ${cab && cab.flat}px flat`);
 claim(/\d/.test(cab ? cab.career : ''), 'the career line above it carries numbers');
 /* SHUT IT BEHIND US. A sheet is a scrim over the whole screen, so the next section's
    press lands on the scrim and retries for thirty seconds against a sheet nobody
@@ -438,6 +513,32 @@ const dRow = stored.hist[stored.hist.length - 1] || {};
 claim(stored.hist.length === 1 && dRow.daily === true,
   'and it is in the history with its own flag set', `rows ${stored.hist.length}, daily ${dRow.daily}`);
 
+/* BADGES ARE FOR ACCOUNTS. This walk is a guest, so the season is filed with no
+   account on it, the results screen offers a sign in rather than listing badges,
+   and the cabinet draws no badge at all. Each is asked on its own, because a
+   panel that still listed badges and a cabinet that still counted them are two
+   different ways for the rule to leak. */
+claim(dRow.u == null, 'a guest season carries no account', `u ${JSON.stringify(dRow.u)}`);
+const guest = await d1.p.evaluate(() => {
+  const nb = document.getElementById('ro-newbadges');
+  return { text: nb ? nb.textContent : '', listed: nb ? nb.querySelectorAll('.nb-item').length : -1,
+           signin: !!document.getElementById('b-nb-signin') };
+});
+claim(guest.listed === 0 && guest.signin, 'the results screen offers a sign in and lists no badge',
+  JSON.stringify(guest.text.slice(0, 80)));
+await d1.p.click('#b-nb-signin');
+await d1.p.waitForTimeout(350);
+const gcab = await d1.p.evaluate(() => ({
+  tiles: document.querySelectorAll('#trophy-body .ach').length,
+  locked: !!document.querySelector('#trophy-body .trophy-locked'),
+  acct: (document.getElementById('trophy-acct') || {}).textContent || '',
+}));
+claim(gcab.tiles === 0 && gcab.locked, 'and the cabinet a guest opens holds no badge',
+  `${gcab.tiles} tiles`);
+claim(gcab.acct.length > 0, 'with the account panel above it', JSON.stringify(gcab.acct.slice(0, 60)));
+await d1.p.click('#sheet-trophy .sheet-x');
+await d1.p.waitForSelector('#sheet-trophy.on', { state: 'hidden', timeout: 10000 });
+
 /* THE CARD A RETURNING VISITOR MEETS, IN THE SAME JAR THE RUN WAS PLAYED IN, which
    is the half the page's own front screen is for: a daily that recorded itself and
    a front page that does not know it is the same defect as never recording it. */
@@ -453,6 +554,12 @@ const backCard = await d1.p.evaluate(() => {
 claim(backCard.played, 'coming back, the card knows the day has been played');
 claim(/result/i.test(backCard.label || ''),
   `and says so on the label: ${JSON.stringify(backCard.label)}`);
+/* The front page's Leaderboard button opens on Classic, even in a jar that has just
+   played the daily. Only a finished season opens on its own board. */
+await d1.p.click('#b-board');
+const homeTab = await d1.p.evaluate(() =>
+  (document.querySelector('#bd-tabs .bd-tab.on') || {}).textContent || '');
+claim(/classic/i.test(homeTab), `the front page's Leaderboard opens on Classic (${homeTab})`);
 
 // ══ 7. nothing got out, and nothing threw ══════════════════════════════════
 head('7. NOTHING LEFT THE PAGE, AND NOTHING THREW');

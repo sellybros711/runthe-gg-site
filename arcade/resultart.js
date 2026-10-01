@@ -6,7 +6,7 @@
  * was drawn only if you pressed Share, so the person who actually did the thing
  * never saw it. The end screen showed them a bare number on a stack of buttons.
  *
- * This puts the card at the top of the result modal. It costs one drawing that
+ * This puts the card in the result modal, under the score. It costs one drawing that
  * was already being made, and it does three jobs at once: the result becomes
  * worth looking at, the board you just played is visible again (the art IS the
  * board), and Share stops being a leap of faith because you can see exactly
@@ -39,25 +39,48 @@
     if (styled) return; styled = true;
     var s = document.createElement('style'); s.id = 'rtgart-css';
     s.textContent = [
-      /* The card leads the modal. Capped by height, not width, so a tall poster
-         can never push the buttons under the fold on a short phone - the whole
-         point is that the next thing to do stays visible. */
-      '.rtgart{margin:0 0 14px;position:relative;border-radius:14px;overflow:hidden;',
-      '  background:var(--card2,#162B44);border:1px solid var(--line2,rgba(255,255,255,.14));',
+      /* The card sits UNDER the score, as a tile: a thumbnail and one button.
+         It used to lead the modal at full width, which put the same number on
+         screen twice (once on the poster, once in the headline under it) and
+         pushed the headline half a screen down. The score is the headline;
+         the card is the thing you send. Tap the thumbnail to see it big. */
+      '.rtgart{margin:14px 0 4px;position:relative;border-radius:18px;overflow:hidden;text-align:left;',
+      '  display:flex;align-items:center;gap:14px;padding:10px 12px 10px 10px;',
+      '  background:linear-gradient(135deg,color-mix(in srgb,var(--gac,#F2B632) 14%,var(--card2,#162B44)),var(--card2,#162B44) 70%);',
+      '  border:1px solid color-mix(in srgb,var(--gac,#F2B632) 30%,var(--line2,rgba(255,255,255,.14)));',
       '  opacity:0;transform:translateY(6px);transition:opacity .32s ease,transform .32s ease;}',
       '.rtgart.on{opacity:1;transform:none;}',
-      '.rtgart img{display:block;width:100%;height:auto;max-height:min(38vh,280px);object-fit:contain;background:#071426;}',
-      /* a quiet strip under the picture: what it is, and the one action it wants */
-      '.rtgart-bar{display:flex;align-items:center;gap:9px;padding:9px 11px;',
-      '  border-top:1px solid var(--line,rgba(255,255,255,.08));}',
-      '.rtgart-bar .l{flex:1;min-width:0;font-size:10.5px;font-weight:900;letter-spacing:.09em;',
-      '  text-transform:uppercase;color:var(--mut,#8aa0b8);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}',
-      '.rtgart-bar button{appearance:none;border:1px solid var(--line2,rgba(255,255,255,.16));',
-      '  background:transparent;color:var(--ink,#F4F7FB);font:900 11px var(--f,system-ui);',
-      '  letter-spacing:.06em;text-transform:uppercase;border-radius:999px;padding:7px 12px;cursor:pointer;flex:0 0 auto;}',
-      '.rtgart-bar button:hover{border-color:var(--brandT,#FF8A3D);color:var(--brandT,#FF8A3D);}',
+      '.rtgart-thumb{appearance:none;border:0;padding:0;margin:0;cursor:zoom-in;flex:0 0 76px;width:76px;',
+      '  aspect-ratio:4/5;border-radius:10px;overflow:hidden;background:#071426;',
+      '  box-shadow:0 6px 16px rgba(0,0,0,.35),0 0 0 1px rgba(255,255,255,.08);transform:rotate(-3deg);',
+      '  transition:transform .2s ease;}',
+      '.rtgart-thumb:hover{transform:rotate(0) scale(1.03);}',
+      '.rtgart-thumb img{display:block;width:100%;height:100%;object-fit:cover;}',
+      '.rtgart-body{flex:1;min-width:0;display:flex;flex-direction:column;gap:8px;}',
+      '.rtgart-body .l{font-size:10.5px;font-weight:900;letter-spacing:.12em;text-transform:uppercase;',
+      '  color:var(--mut,#8aa0b8);}',
+      '.rtgart-body .t{font:400 19px/1.05 Anton,var(--f,system-ui);letter-spacing:.01em;color:var(--ink,#F4F7FB);',
+      '  text-transform:uppercase;}',
+      /* Secondary on purpose: NEXT is the button this screen is for, and two
+         solid buttons in one colour a few lines apart read as one choice. */
+      '.rtgart-body button{appearance:none;align-self:flex-start;cursor:pointer;',
+      '  border:1.5px solid color-mix(in srgb,var(--gac,#F2B632) 70%,transparent);',
+      '  background:color-mix(in srgb,var(--gac,#F2B632) 16%,transparent);color:var(--ink,#F4F7FB);',
+      '  font:900 12.5px var(--f,system-ui);letter-spacing:.07em;text-transform:uppercase;',
+      '  border-radius:12px;padding:9px 16px;display:inline-flex;align-items:center;gap:7px;}',
+      '.rtgart-body button::before{content:"";width:14px;height:14px;flex:0 0 14px;background:currentColor;',
+      '  -webkit-mask:url("data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27black%27 stroke-width=%272.6%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3E%3Cpath d=%27M12 15V3M7 8l5-5 5 5M5 13v6a2 2 0 002 2h10a2 2 0 002-2v-6%27/%3E%3C/svg%3E") center/contain no-repeat;',
+      '  mask:url("data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27black%27 stroke-width=%272.6%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3E%3Cpath d=%27M12 15V3M7 8l5-5 5 5M5 13v6a2 2 0 002 2h10a2 2 0 002-2v-6%27/%3E%3C/svg%3E") center/contain no-repeat;}',
+      '.rtgart-body button:hover{background:color-mix(in srgb,var(--gac,#F2B632) 28%,transparent);}',
+      /* opened: the poster at full width, the tile folded under it */
+      '.rtgart.big{flex-direction:column;align-items:stretch;padding:10px;}',
+      '.rtgart.big .rtgart-thumb{flex:none;width:100%;aspect-ratio:auto;transform:none;cursor:zoom-out;}',
+      '.rtgart.big .rtgart-thumb img{height:auto;max-height:min(56vh,440px);object-fit:contain;}',
+      '.rtgart.big .rtgart-body{flex-direction:row;align-items:center;justify-content:space-between;}',
+      '.rtgart.big .rtgart-body .t{display:none;}',
       /* while the poster renders, hold its space so the modal does not jump */
-      '.rtgart.wait{min-height:140px;}'
+      '.rtgart.wait{min-height:116px;}',
+      '@media (prefers-reduced-motion:reduce){.rtgart,.rtgart-thumb{transition:none;}}'
     ].join('');
     (document.head || document.documentElement).appendChild(s);
   }
@@ -87,9 +110,12 @@
     if (!box) {
       box = document.createElement('div');
       box.className = 'rtgart wait';
-      box.innerHTML = '<div class="rtgart-bar"><span class="l">Your card</span></div>';
-      // Above everything the game wrote, including its own headline.
-      sheet.insertBefore(box, sheet.firstChild);
+      // Under the score and the chips, never above the headline. Every game
+      // has an .a-runline (result.js paints its chips just before it), so the
+      // card lands after the number it is a picture of.
+      var anchor = sheet.querySelector('.a-runline');
+      if (anchor && anchor.parentNode) anchor.parentNode.insertBefore(box, anchor.nextSibling);
+      else sheet.insertBefore(box, sheet.firstChild);
     }
     busy = true;
     RTGShare.preview(sp).then(function (url) {
@@ -98,9 +124,17 @@
       lastKey = sig;
       box.classList.remove('wait');
       box.innerHTML =
-        '<img alt="Your Run The Arcade card for today" src="' + url + '">' +
-        '<div class="rtgart-bar"><span class="l">Your card</span>' +
+        '<button type="button" class="rtgart-thumb" aria-label="See your card big" aria-expanded="false">' +
+        '<img alt="Your Run The Arcade card for today" src="' + url + '"></button>' +
+        '<div class="rtgart-body"><span class="l">Your card</span>' +
+        '<span class="t">Think they can beat it?</span>' +
         '<button type="button" data-rtgart-share>Share it</button></div>';
+      var th = box.querySelector('.rtgart-thumb');
+      if (th) th.onclick = function () {
+        var on = box.classList.toggle('big');
+        th.setAttribute('aria-expanded', on ? 'true' : 'false');
+        th.setAttribute('aria-label', on ? 'Shrink your card' : 'See your card big');
+      };
       var b = box.querySelector('[data-rtgart-share]');
       if (b) b.onclick = function () {
         // Hand off to the game's own Share button when it has one, so the

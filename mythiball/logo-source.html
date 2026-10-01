@@ -1,0 +1,36 @@
+<!doctype html>
+<!-- THE MYTHIBALL LOGO, IN PIXELS. `node mythiball/build-logo.mjs` renders every logo file from this page.
+
+     The drawing itself is NOT in this file. It lives in the game (mythiball/index.html, between MYPIX BEGIN
+     and MYPIX END) because the header draws the same mark, and one drawing in two places is two drawings
+     the first time either is touched. This page reads that block out of the game and runs it, which is how
+     golf/logo-source.html builds Run The Tour's logo.
+
+     Its own mark, deliberately NOT the Tour's look. The Tour is gold extruded letters on a green at dusk;
+     this is the game's cabinet palette (scorecard cream, navy ink, arcade red) and baseball's own shapes:
+     MYTHIBALL in red varsity letters set on an arch like a jersey, a script tail that is a pitch's trail
+     ending in the ball, and for the icon a stitched sleeve patch with a bolt through the ball. Only the
+     plumbing (the grid, the font, whole scales) is shared. Every file is one of the kit's grids at a
+     WHOLE scale:
+       lockup  104 x 48   the title (the link preview, and anywhere that wants a big one)
+       icon32   32 x 32   the app icons and a 32px tab
+       icon16   16 x 16   a 16px tab and the header, drawn again at that size rather than scaled down -->
+<html><head><meta charset="utf-8"><meta name="robots" content="noindex, nofollow"><title>MythiBall logo</title>
+<style>html,body{margin:0;background:#f1e2bb} canvas{image-rendering:pixelated;margin:14px;vertical-align:top}</style></head>
+<body>
+<script>
+(async function(){
+  const src=await (await fetch('/mythiball/index.html',{cache:'no-store'})).text();
+  const a=src.indexOf('/* ==================== MYPIX BEGIN'), b=src.indexOf('/* ==================== MYPIX END ==================== */');
+  if(a<0||b<0) throw new Error('the pixel kit markers are missing from mythiball/index.html');
+  const MYPIX=new Function(src.slice(a,b)+'\nreturn MYPIX;')();
+  window.MYPIX=MYPIX;
+  // four frames of the ball spinning at the end of its trail
+  window.PHASES=[0,Math.PI/2,Math.PI,Math.PI*1.5];
+  const add=c=>document.body.appendChild(c);
+  PHASES.forEach(p=>add(MYPIX.toCanvas(MYPIX.lockup(p),4)));
+  add(MYPIX.toCanvas(MYPIX.icon(32,0),6)); add(MYPIX.toCanvas(MYPIX.icon(16,0),6));
+  window.__markReady=true;
+})();
+</script>
+</body></html>

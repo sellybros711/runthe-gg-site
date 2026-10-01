@@ -197,6 +197,85 @@
     return out;
   }
 
+  /* ---------------- game day: a real NFL game on while the season was filed ----------------
+   *
+   * The Game Day shelf is the one thing on this site that asks about the REAL league, and it
+   * is still derived from rows like everything else. A row's created_at is written by the
+   * server, so a phone clock cannot move it; the page hands in the schedule
+   * (football/data/nfl_schedule.json, built by football/build/nfl-schedule.mjs) as
+   * opts.schedule, and a game was ON at a moment when that moment falls between its kickoff
+   * and GAME_DAY_MS after it. With no schedule handed in every answer is false, which is the
+   * same "not known" this file gives any column an old row is missing.
+   *
+   * THE CLUB IS THE PLAYER'S FRANCHISE, NOT HIS CITY. A 2000 St. Louis Ram is filed under
+   * LAR, which is what the schedule calls today's Rams, so a man counts for the club he
+   * played for whatever it is called now.
+   *
+   * FILED, NOT DRAFTED. The time on a row is when the season finished. A run is a few
+   * minutes, so the two are the same moment in practice, and the badges say "finish a
+   * season" rather than claim a draft time nothing records.
+   */
+  const GAME_DAY_MS = 3.5 * 3600 * 1000;
+  function gameDayOf(runs, schedule) {
+    const out = { matched: 0, clubs: new Set(), tags: new Set(), split: false, rival: false,
+      redzone: 0, weeks: new Set(), prime: false, doubleheader: false, called: false, upset: false };
+    const list = schedule && Array.isArray(schedule.games) ? schedule.games : null;
+    if (!list || !list.length) return out;
+    const games = list.map((g) => ({ g, k: Date.parse(g.k) })).filter((x) => !isNaN(x.k))
+      .sort((a, b) => a.k - b.k);
+    const kicks = games.map((x) => x.k);
+    /* The games on at instant t: every kickoff in (t - GAME_DAY_MS, t]. */
+    const onAt = (t) => {
+      let lo = 0, hi = kicks.length;
+      while (lo < hi) { const m = (lo + hi) >> 1; if (kicks[m] <= t) lo = m + 1; else hi = m; }
+      const on = [];
+      for (let i = lo - 1; i >= 0 && kicks[i] > t - GAME_DAY_MS; i--) on.push(games[i].g);
+      return on;
+    };
+    const primeBy = Object.create(null), windowBy = Object.create(null);
+    for (const x of runs) {
+      if (!x.roster.length || !x.row.created_at) continue;
+      const t = Date.parse(x.row.created_at);
+      if (isNaN(t)) continue;
+      const on = onAt(t);
+      if (!on.length) continue;
+      const mine = new Set(x.roster.map((p) => p && p.franchise).filter(Boolean));
+      const liveMine = new Set();
+      let hit = false;
+      for (const g of on) {
+        const inA = mine.has(g.a), inH = mine.has(g.h);
+        if (!inA && !inH) continue;
+        hit = true;
+        const wk = g.s + '-' + g.w;
+        out.weeks.add(wk);
+        for (const tg of (g.tags || [])) out.tags.add(tg);
+        if (inA) { out.clubs.add(g.a); liveMine.add(g.a); }
+        if (inH) { out.clubs.add(g.h); liveMine.add(g.h); }
+        if (inA && inH) { out.split = true; if ((g.tags || []).indexOf('div') >= 0) out.rival = true; }
+        for (const tg of ['tnf', 'snf', 'mnf']) {
+          if ((g.tags || []).indexOf(tg) >= 0) (primeBy[wk] = primeBy[wk] || new Set()).add(tg);
+        }
+        for (const tg of ['early', 'late']) {
+          if ((g.tags || []).indexOf(tg) >= 0) (windowBy[wk] = windowBy[wk] || new Set()).add(tg);
+        }
+        /* The result, once the game is final. A club on your roster that won is a call you
+           got right; one that won as the underdog is an upset you saw coming. */
+        if (Array.isArray(g.sc)) {
+          for (const [club, us, them] of [[g.a, g.sc[0], g.sc[1]], [g.h, g.sc[1], g.sc[0]]]) {
+            if (!mine.has(club) || !(us > them)) continue;
+            out.called = true;
+            if (g.fav && g.fav !== club) out.upset = true;
+          }
+        }
+      }
+      if (hit) out.matched++;
+      if (liveMine.size > out.redzone) out.redzone = liveMine.size;
+    }
+    out.prime = Object.values(primeBy).some((st) => st.size >= 3);
+    out.doubleheader = Object.values(windowBy).some((st) => st.size >= 2);
+    return out;
+  }
+
   /* ---------------- the context every test reads ---------------- */
 
   /*
@@ -453,8 +532,10 @@
     const modesPlayed = new Set(asc.map(modeOf).filter(Boolean));
     const modeTitles = new Set(titles.map(modeOf).filter(Boolean));
 
+    const gameDay = gameDayOf(runs, o.schedule);
+
     return {
-      rows: asc, runs, total: rows.length, titles, dayKeys, todayKey,
+      rows: asc, runs, total: rows.length, titles, dayKeys, todayKey, gameDay,
       play: playStreak(dayKeys, todayKey),
       title: titleStreak(asc),
       clubsPlayed, clubTitles, clubBanners, modesPlayed, modeTitles,
@@ -1308,6 +1389,66 @@
     return false;
   }));
 
+  /* ===================== GAME DAY =====================
+   * Finish a season while a real NFL game is on, with a man on your roster from a club in
+   * it. The time is the server's and the schedule is nflverse's; see gameDayOf above. The
+   * point of the shelf is to be here while the league is playing, so every rung asks for a
+   * live game and none of them can be earned in the offseason.
+   */
+  const gd = (fn) => (c) => !!(c.gameDay && fn(c.gameDay));
+  add(A('gd_home', 'Home crowd',
+    'Finish a season during a real NFL game, with a player from either team.',
+    'bronze', 'Game Day', gd((g) => g.matched >= 1)));
+  add(A('gd_teams_8', 'Channel surfing',
+    'Get Home crowd for 8 different teams.',
+    'silver', 'Game Day', gd((g) => g.clubs.size >= 8)));
+  add(A('gd_teams_32', 'Every sideline',
+    'Get Home crowd for all 32 teams.',
+    'legend', 'Game Day', gd((g) => g.clubs.size >= 32)));
+  add(A('gd_split', 'Split crowd',
+    'Finish a season during a game, with players from both teams in it.',
+    'silver', 'Game Day', gd((g) => g.split)));
+  add(A('gd_rival', 'Rivalry week',
+    'Get Split crowd during a division game.', 'gold', 'Game Day', gd((g) => g.rival)));
+  add(A('gd_redzone', 'Red zone channel',
+    'Finish a season with players from 4 different teams that are all playing right now.',
+    'gold', 'Game Day', gd((g) => g.redzone >= 4)));
+  add(A('gd_tnf', 'Thursday night lights',
+    'Finish a season during Thursday Night Football, with a player from either team.',
+    'silver', 'Game Day', gd((g) => g.tags.has('tnf'))));
+  add(A('gd_snf', 'Sunday night',
+    'Finish a season during Sunday Night Football, with a player from either team.',
+    'silver', 'Game Day', gd((g) => g.tags.has('snf'))));
+  add(A('gd_mnf', 'Monday night',
+    'Finish a season during Monday Night Football, with a player from either team.',
+    'silver', 'Game Day', gd((g) => g.tags.has('mnf'))));
+  add(A('gd_prime', 'Prime suspect',
+    'Get all three night games in the same NFL week.',
+    'legend', 'Game Day', gd((g) => g.prime)));
+  add(A('gd_doubleheader', 'Doubleheader',
+    'Get Home crowd during a 1pm game and a 4pm game on the same Sunday.',
+    'gold', 'Game Day', gd((g) => g.doubleheader)));
+  add(A('gd_intl', 'Passport stamped',
+    'Get Home crowd during an international game.', 'gold', 'Game Day', gd((g) => g.tags.has('intl'))));
+  add(A('gd_thanks', 'Thanksgiving table',
+    'Get Home crowd during a Thanksgiving game.', 'gold', 'Game Day', gd((g) => g.tags.has('thanks'))));
+  add(A('gd_post', 'January football',
+    'Get Home crowd during a playoff game.', 'gold', 'Game Day', gd((g) => g.tags.has('post'))));
+  add(A('gd_sb', 'Super Bowl Sunday',
+    'Get Home crowd during the Super Bowl.',
+    'legend', 'Game Day', gd((g) => g.tags.has('sb'))));
+  add(A('gd_called', 'Called it',
+    'Get Home crowd with a player whose team goes on to win. It lands once the final is in.',
+    'silver', 'Game Day', gd((g) => g.called)));
+  add(A('gd_upset', 'Upset special',
+    'Get Home crowd with a player from the underdog, and the underdog wins.',
+    'gold', 'Game Day', gd((g) => g.upset)));
+  [[3, 'Game day regular', 'bronze'], [8, 'Season ticket', 'silver'], [18, 'Perfect attendance', 'legend']]
+    .forEach(([n, name, tier]) => {
+      add(A('gd_weeks_' + n, name,
+        'Get Home crowd in ' + n + ' different NFL weeks.', tier, 'Game Day', gd((g) => g.weeks.size >= n)));
+    });
+
   /* ===================== STREAKS ===================== */
   [[3, 'Getting into it', 'bronze'], [5, 'Working week', 'bronze'],
    [7, 'Every day this week', 'silver'], [10, 'Ten in a row', 'silver'],
@@ -1737,7 +1878,7 @@
   /* Shelf order in the profile. A group with nothing in it draws nothing, so the two hidden
      modes can sit in this list before their badges exist. Dynasty goes near the front because
      it is the mode with the most to chase. */
-  const GROUPS = ['Milestones', 'Winning', 'Dynasty', 'Roster craft', 'Chemistry', 'Shapes',
+  const GROUPS = ['Milestones', 'Winning', 'Game Day', 'Dynasty', 'Roster craft', 'Chemistry', 'Shapes',
     'History', 'The vintages', 'The 32', 'Banners', 'Recruiting', 'Hardware', 'Modes',
     'Defense', 'Full Team', 'Front office', 'Calendar', 'Streaks'];
 
@@ -1775,13 +1916,14 @@
         dynasties: ctx.dynasties.length,
         bestDynasty: ctx.bestDynasty,
         bestDynastyScore: ctx.bestDynastyScore,
+        gameDays: ctx.gameDay.matched,
       },
     };
   }
 
   const api = {
     CATALOG, GROUPS, TIER_ORDER, CLUBS, SEASONS, COLLEGES, CAP, TRADE_DEADLINE_WEEK,
-    evaluate, playStreak, titleStreak, dayKey, analyzeLinks,
+    GAME_DAY_MS, evaluate, playStreak, titleStreak, dayKey, analyzeLinks,
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   if (typeof window !== 'undefined') window.PS_ACH = api;

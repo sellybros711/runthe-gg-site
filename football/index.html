@@ -537,6 +537,22 @@ window.GA_ID='G-L29P5MRWKE';
      way to the thing that opens it. The press opens the sign-in sheet, which is where that
      tap was always going to end. */
   .hp-full.hp-fan.hp-lock .hp-full-name{color:rgba(255,232,232,.92)}
+  /* ---- THE CREST AND THE SIX ----
+     The trophy is the prize and the six bars are the lineup, so the door says what the
+     mode is before anybody reads a word of it. A field's yard lines sit faintly behind,
+     the same ground the mode's own pages are drawn on. The crest glows in the sign's own
+     colour, so it changes with the state rather than being a fourth colour to learn. */
+  .hp-full.hp-fan{background:
+      repeating-linear-gradient(90deg,transparent 0 31px,rgba(255,255,255,.035) 31px 32px),
+      radial-gradient(160px 70px at 50% 0%,rgba(240,201,107,.16),transparent 75%),
+      linear-gradient(180deg,var(--fan-bg1),var(--fan-bg2));gap:4px;padding-top:13px}
+  .hp-fan-ico{width:30px;height:30px;flex:0 0 auto;
+    filter:drop-shadow(0 0 7px var(--fan-g2)) drop-shadow(0 2px 4px rgba(0,0,0,.6))}
+  .hp-fan-rack{display:flex;gap:4px;margin-top:4px}
+  .hp-fan-rack i{display:block;width:17px;height:4px;border-radius:2px;opacity:.5}
+  .hp-fan-rack .QB{background:#ff0a3b} .hp-fan-rack .RB{background:#22c55e}
+  .hp-fan-rack .WR{background:#0f93ff} .hp-fan-rack .TE{background:#eb9500}
+  .hp-full.hp-fan.hp-fan-in .hp-fan-rack i{opacity:1;box-shadow:0 0 6px currentColor}
   /* Sized off the label it sits in rather than in pixels, so it tracks the name at every
      width instead of needing a breakpoint of its own. */
   .hp-lk{width:.82em;height:.82em;vertical-align:-0.06em;margin-right:5px;
@@ -2047,8 +2063,10 @@ window.GA_ID='G-L29P5MRWKE';
      flat utility buttons below it, while sharing their edges. */
   .hp-more{display:flex;width:100%;justify-content:center;
     margin-top:20px;gap:9px;font-size:13px;letter-spacing:.05em;
-    border-radius:12px;border:1px solid var(--line-2);
-    background:linear-gradient(180deg,rgba(255,255,255,.062),rgba(255,255,255,.018));
+    border-radius:14px;border:1px solid rgba(255,255,255,.14);
+    background:linear-gradient(180deg,rgba(255,255,255,.07),rgba(255,255,255,.02));
+    -webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.09);
     color:rgba(238,242,249,.92);
     transition:border-color .15s ease,background .15s ease,transform .07s ease}
   .hp-more:hover{border-color:rgba(255,255,255,.28);
@@ -2381,7 +2399,8 @@ window.GA_ID='G-L29P5MRWKE';
        a flex container's DIRECT children, so a descendant selector that still matches has no
        effect at all and the group would silently fall to the catch-all order:5, landing
        under the utility row. */
-    #s-intro #b-start,#s-intro #hp-split,#s-intro #hp-longer{order:2}
+    #s-intro #hp-mode,#s-intro #hp-slots,#s-intro #b-start,#s-intro #hp-rule,
+    #s-intro #hp-split,#s-intro #hp-longer{order:2}
     #s-intro #b-teams{order:3}
     #s-intro .hp-util{order:4}
     #s-intro .hero{order:6;margin-top:16px;margin-bottom:0}
@@ -2488,6 +2507,195 @@ window.GA_ID='G-L29P5MRWKE';
   .htitle h1{font-family:var(--fd);font-size:min(11vw,70px);line-height:.9;
     letter-spacing:.005em;margin:7px 0 0;text-transform:uppercase;white-space:nowrap}
   .htitle p{margin:11px auto 0;max-width:23em;font-size:14px;color:var(--dim);line-height:1.45}
+  /* ─── THE FRONT PAGE, REDESIGNED ────────────────────────────────────────────────────────
+     The name on two lines, one switcher, one button, and the longer modes on a shelf.
+
+     THE NAME IS TWO LINES NOW, so the one-line sizing above no longer binds. "THE PERFECT"
+     is eleven of the eighteen characters, so the same 7.79px-per-px measure gives it about
+     4.8em: 14vw fits it at 320 with room even in the wider fallback face, and the cap holds it
+     at 84 once the column stops growing. nowrap stays on each line for the reason written above. */
+  .htitle h1{font-size:min(14vw,84px);line-height:.88}
+  .htitle p{max-width:27em}
+  .htitle h1 .l2{display:block;color:var(--red)}
+
+  /* COLOURS THAT CAN TRANSITION. A gradient cannot be tweened, but its stops can when they
+     are registered custom properties, so the switcher's pill and the Spin button slide from
+     red to blue to the red-and-blue of Full Team instead of snapping. A browser without
+     @property simply swaps the colours, which is the same information. */
+  @property --gl{syntax:'<color>';inherits:true;initial-value:#d93a3a}
+  @property --gr{syntax:'<color>';inherits:true;initial-value:#a01f1f}
+  #s-intro{--gl:#d93a3a;--gr:#a01f1f;--glow:rgba(239,68,68,.55);
+    transition:--gl .45s ease,--gr .45s ease}
+  #s-intro.hm-def{--gl:#2f63e4;--gr:#153aa4;--glow:rgba(59,130,246,.55)}
+  #s-intro.hm-full{--gl:#c62828;--gr:#1d4ed8;--glow:rgba(139,92,246,.5)}
+
+  .hp-mode{position:relative;display:grid;grid-template-columns:repeat(var(--n,3),minmax(0,1fr));
+    gap:6px;padding:5px;margin:4px 0 0;border-radius:16px;
+    background:linear-gradient(180deg,rgba(255,255,255,.07),rgba(255,255,255,.025));
+    border:1px solid rgba(255,255,255,.13);
+    -webkit-backdrop-filter:blur(14px) saturate(1.4);backdrop-filter:blur(14px) saturate(1.4);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.1),0 10px 26px -18px #000}
+  .hp-mode[hidden]{display:none}
+  /* ONE PILL SLIDING UNDER THE TABS, rather than a background on whichever tab is checked.
+     It moves by its own width plus the gap, so it lands on each column exactly whatever the
+     screen is. --i is the checked tab's place among the ones that are showing. */
+  .hp-mode-pill{position:absolute;top:5px;bottom:5px;left:5px;border-radius:10px;
+    width:calc((100% - 10px - (var(--n,3) - 1) * 6px) / var(--n,3));
+    transform:translateX(calc(var(--i,0) * (100% + 6px)));
+    background:linear-gradient(115deg,var(--gl) 0%,var(--gl) 46%,var(--gr) 54%,var(--gr) 100%);
+    border:1px solid rgba(255,255,255,.28);box-sizing:border-box;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.4),0 6px 16px -8px var(--glow);
+    transition:transform .5s cubic-bezier(.22,1.2,.36,1),box-shadow .4s ease}
+  #s-intro:not(.hm-full) .hp-mode-pill{background:linear-gradient(135deg,var(--gl),var(--gr))}
+  .hp-tab{position:relative;z-index:1;min-height:48px;border:0;border-radius:10px;
+    background:transparent;cursor:pointer;font-family:var(--fn);font-size:15px;font-weight:800;
+    letter-spacing:.08em;text-transform:uppercase;line-height:1.05;color:var(--dim);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+    transition:color .3s ease;-webkit-tap-highlight-color:transparent}
+  .hp-tab[hidden]{display:none}
+  .hp-tab[data-m="off"]{color:#fca5a5}
+  .hp-tab[data-m="def"]{color:#a5c4fb}
+  .hp-tab[aria-checked="true"]{color:#fff}
+  .hp-tab small{font-size:9px;letter-spacing:.1em;font-weight:700;color:inherit;opacity:.72}
+  .hp-tab small:empty{display:none}
+  .hp-tab:focus-visible{outline:2px solid #fff;outline-offset:-2px}
+  .hp-slots{margin:9px 0 9px;text-align:center;font-family:var(--fn);font-size:11.5px;
+    font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--dim-2)}
+  .hp-mode[hidden]+.hp-slots{margin-top:2px}
+  /* THE START BUTTON IS FROSTED GLASS, tinted with the switcher's colour.
+     Real backdrop-filter has nothing to blur here: the button sits on the page's flat dark,
+     and a blur of flat dark is flat dark. So what is "behind the glass" is drawn INSIDE it:
+     two soft lights in the mode's colours in .hp-go-fx, under a translucent tint, a frost
+     sheen, a little grain and a bright hairline edge. The backdrop-filter is still set, so
+     anything that ever does pass behind it (the page scrolling under a sticky header, a
+     glow) frosts properly. isolation keeps the z-index:-1 layer inside the button and
+     above its own background, which is what lets the label sit on top of it. */
+  .hp-start{isolation:isolate;display:flex;align-items:center;justify-content:center;gap:10px;
+    font-family:var(--fd);font-size:min(25px,7vw);white-space:nowrap;font-weight:400;letter-spacing:.06em;
+    padding:17px 18px;border-radius:16px;color:#fff;
+    background:linear-gradient(115deg,var(--gl),var(--gr));
+    background:linear-gradient(115deg,color-mix(in srgb,var(--gl) 58%,transparent),color-mix(in srgb,var(--gr) 52%,transparent));
+    border:1px solid rgba(255,255,255,.32);
+    -webkit-backdrop-filter:blur(16px) saturate(1.6);backdrop-filter:blur(16px) saturate(1.6);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.55),inset 0 -1px 0 rgba(255,255,255,.1),
+      0 18px 38px -16px var(--glow),0 3px 12px rgba(0,0,0,.4);
+    text-shadow:0 1px 2px rgba(0,0,0,.3);
+    transition:box-shadow .45s ease,border-color .3s ease,transform .07s ease}
+  #s-intro.hm-full .hp-start{background:linear-gradient(115deg,
+    color-mix(in srgb,var(--gl) 58%,transparent) 0%,color-mix(in srgb,var(--gl) 58%,transparent) 42%,
+    color-mix(in srgb,var(--gr) 55%,transparent) 58%,color-mix(in srgb,var(--gr) 55%,transparent) 100%)}
+  .hp-start:hover{border-color:rgba(255,255,255,.5)}
+  .hp-go-fx{position:absolute;inset:0;z-index:-1;border-radius:inherit;overflow:hidden;pointer-events:none}
+  .hp-go-fx i{position:absolute;width:70%;aspect-ratio:1;border-radius:50%;filter:blur(18px);opacity:.85}
+  .hp-go-fx i:nth-child(1){left:-12%;top:-95%;background:radial-gradient(circle,var(--gl),transparent 68%)}
+  .hp-go-fx i:nth-child(2){right:-14%;bottom:-100%;background:radial-gradient(circle,var(--gr),transparent 68%)}
+  /* The frost: a brighter top half, the way light catches the upper face of a pane. */
+  .hp-go-fx:before{content:'';position:absolute;inset:0;
+    background:linear-gradient(180deg,rgba(255,255,255,.26) 0%,rgba(255,255,255,.08) 46%,rgba(255,255,255,0) 54%,rgba(255,255,255,.05) 100%)}
+  /* Grain, which is the difference between frosted glass and tinted plastic. */
+  .hp-go-fx:after{content:'';position:absolute;inset:0;opacity:.16;mix-blend-mode:overlay;
+    background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)'/%3E%3C/svg%3E")}
+  @media (prefers-reduced-motion:no-preference){
+    .hp-go-fx i:nth-child(1){animation:hpgoA 9s ease-in-out infinite alternate}
+    .hp-go-fx i:nth-child(2){animation:hpgoB 11s ease-in-out infinite alternate}
+  }
+  @keyframes hpgoA{to{transform:translate(38%,22%)}}
+  @keyframes hpgoB{to{transform:translate(-36%,-18%)}}
+  .hp-go-l{position:relative}
+  .hp-go-l.swap{animation:hpswap .38s ease-out}
+  .hp-go-ar{flex:0 0 auto;width:.8em;height:.8em;fill:none;stroke:currentColor;stroke-width:3;
+    stroke-linecap:round;stroke-linejoin:round;opacity:.9;filter:drop-shadow(0 1px 2px rgba(0,0,0,.3));
+    transition:transform .2s ease}
+  .hp-start:hover .hp-go-ar{transform:translateX(3px)}
+  .hp-start.hp-loading .hp-go-ar{visibility:hidden}
+  /* Under 360 the longest label, "Draft your full team", has about eleven pixels to spare
+     in Anton. The padding and the tracking give a little back for a fallback face. */
+  @media (max-width:359px){.hp-start{padding-left:12px;padding-right:12px;letter-spacing:.04em;gap:8px}}
+  .hp-start.hp-loading{opacity:.7;pointer-events:none}
+  .hp-start.hp-loading .hp-go-l{visibility:hidden}
+  .hp-start.hp-loading:after{content:'';position:absolute;left:50%;top:50%;width:20px;
+    height:20px;margin:-10px 0 0 -10px;border-radius:50%;border:2.5px solid rgba(255,255,255,.3);
+    border-top-color:#fff;animation:hpSpin .7s linear infinite}
+  .hp-rule{margin:9px 0 0;text-align:center;font-size:12.5px;color:var(--dim);min-height:1.45em}
+  .hp-rule:empty{display:none}
+  .hp-slots.swap,.hp-rule.swap{animation:hpswap .38s ease-out}
+  @keyframes hpswap{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
+  /* THE OLD PAIR IS KEPT AND NEVER SHOWN. Its buttons still own beginDraft and
+     beginDefenseDraft and their loading states, and scripts that already press them keep
+     working, but the page has one way to start now. */
+  #s-intro #hp-split,#s-intro #hp-pick{display:none}
+  /* Full Team lives in the switcher now, so its door stays in the group for its state (the
+     save, the meter) and is not drawn. The Spin button reads both. */
+  #s-intro #b-start-full{display:none}
+
+  /* ─── THE SHELF ─── On a wide screen the longer modes sit side by side. NOT ON A PHONE:
+     each door carries a record corner, a mark and a one-line caption that were measured at
+     full width (see check-premium and check-fantasy), and at half of a 390 phone the corner
+     lands on the football and the captions wrap. So a phone keeps them stacked, with the gap
+     a shelf would have, and the store card and the dynasty's footnote take the whole row
+     either way. */
+  .hp-longer{display:grid;grid-template-columns:minmax(0,1fr);gap:10px;align-items:stretch;margin-top:18px}
+  .hp-longer>*{margin:0!important;min-width:0}
+  @media (min-width:920px) and (min-height:560px){
+    .hp-longer{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .hp-longer>.pw-card,.hp-longer>#b-dyn-new,.hp-longer>:only-child{grid-column:1/-1}
+    .hp-longer>.hp-full{justify-content:center;min-height:118px;padding:28px 10px 14px;border-radius:14px}
+    .hp-longer>.hp-full .hp-full-name{font-size:21px;line-height:1.02;white-space:normal;text-align:center}
+    .hp-longer>.hp-dyn .hp-full-name{font-size:24px}
+    .hp-longer>.hp-dyn .hp-full-sub{letter-spacing:.06em;white-space:nowrap}
+  }
+
+  /* ─── THE FIELD FOLLOWS THE SWITCHER ─── Twelve chips live on the hero field for good,
+     six a side, and a switch MOVES them rather than redrawing: the side you left runs off
+     its own end of the field and the side you picked comes on, one man at a time. */
+  .hero-field .chip{transition:left .62s cubic-bezier(.22,1.2,.36,1),top .62s cubic-bezier(.22,1.2,.36,1),
+    opacity .38s ease}
+  .hero-field .chip.gone{opacity:0;pointer-events:none}
+  .hero-field .hmk{position:absolute;inset:0;transition:opacity .35s ease}
+  .hero-field .hmk.out{opacity:0}
+  .hero-field .hsweep{position:absolute;top:0;bottom:0;left:-45%;width:40%;z-index:3;pointer-events:none;
+    background:linear-gradient(100deg,transparent,rgba(255,255,255,.14),transparent);
+    animation:hsweep .8s ease-out forwards}
+  @keyframes hsweep{to{left:110%}}
+  .field.hero-field.fullfield{aspect-ratio:1/0.54}
+  .hero-field.fullfield .chip .yr{display:none}
+  .hero-field.fullfield .chip .disc{width:30px;height:30px;font-size:10px}
+  .hero-field.fullfield .chip{--discr:15px}
+  .hero-field.fullfield .halfglow.up,.hero-field.fullfield .halfglow.down{opacity:.55}
+  @media (max-height:800px){
+    .hero-field.fullfield .chip .lab{display:none}
+    .hero-field.fullfield .chip .disc{width:24px;height:24px;font-size:8.5px}
+    .hero-field.fullfield .chip{--discr:12px}
+  }
+  /* SHORT SCREENS KEEP THE BUTTON ABOVE THE FOLD, which is the rule this page has always kept
+     and measured. The switcher costs about sixty pixels the old pair did not, so under 760 the
+     name goes back to one line (SEASON still red), the slot list stands down (the tabs already
+     say which side), and under 640 the subtitle goes too. */
+  @media (max-height:760px){
+    .htitle h1{font-size:min(11vw,70px);line-height:.9}
+    .htitle h1 .l2{display:inline}
+    .hp-slots{display:none}
+    .hp-mode{margin-bottom:10px}
+  }
+  @media (max-height:640px){
+    .htitle h1{font-size:min(10.5vw,40px)}
+    .htitle p{display:none}
+    .hp-tab{min-height:44px}
+  }
+  /* An iPhone SE is the tight one: 568 tall, and everything above has already come off. */
+  @media (max-height:600px){
+    .htitle .kicker{display:none}
+    .hp-start{padding:14px 18px}
+    .field.hero-field{height:108px}
+  }
+  @media (max-height:400px){
+    .htitle h1{font-size:min(8.5vw,31px)}
+  }
+  @media (prefers-reduced-motion:reduce){
+    .hero-field .chip,.hero-field .hmk,.hp-mode-pill,.hp-tab,#s-intro,.hp-start{transition:none}
+    .hero-field .hsweep,.hp-slots.swap,.hp-rule.swap{animation:none}
+    .hero-field .hsweep{display:none}
+  }
   .hrow{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:9px}
 
   /* WHERE THIS RUN RANKS
@@ -2771,15 +2979,6 @@ window.GA_ID='G-L29P5MRWKE';
   .swatch:focus-visible{outline:2px solid var(--blue);outline-offset:2px;border-radius:8px}
   /* Which club is picked, spelled out. A ringed disc in a grid of thirty-two does not tell
      anybody they have chosen the Jaguars. */
-  /* ---------- WHAT IS NEW ---------- */
-  .wnrow{display:flex;gap:13px;align-items:center;margin:0 0 12px}
-  .pfp.wnbig{width:88px;height:88px}
-  .wnlead{margin:0;font-size:13px;line-height:1.5;color:var(--dim)}
-  .wnlist{margin-top:0}
-  .wnnow{font-size:11.5px;margin:12px 0 0}
-  .wnchk{display:flex;align-items:center;gap:8px;margin-top:12px;font-size:12px;
-    color:var(--dim-2);cursor:pointer}
-  .wnchk input{width:15px;height:15px;accent-color:#F4B413;flex:0 0 auto}
   /* ---------- THE UNREAD DOT ---------- */
   /* Red, and the only red circle on any of these screens, because it has to be findable in
      the corner of an eye rather than read. It sits on the tile corner where an icon badge
@@ -3158,6 +3357,64 @@ window.GA_ID='G-L29P5MRWKE';
      line there is no title in front of it. */
   .modecard .mc-flag .mc-soon-tag,
   .modecard .mc-flag .mc-new{margin-left:0}
+
+  /* ---- MORE WAYS TO PLAY IS A GRID ON A DESKTOP ----
+     This sheet is a 526px column of full width rows, and on a 1280px window that is one
+     narrow strip of cards in the middle of a lot of nothing. The baseball game already
+     solved it with a .mc-grid modifier on .modecards; this is that treatment, and the
+     rules below are deliberately close to its so the two sheets read as the same object.
+
+     IT IS DESKTOP ONLY, which is the difference from baseball. Baseball goes two across on
+     a phone because it has SIX modes and a phone list of six is a scroll. This page has
+     three and the college game has two, so a phone list is already short, already the
+     widest each card can be, and already what a thumb wants. The grid earns its place on a
+     window with spare width and nowhere else, so the whole block is inside the query.
+
+     TWO COLUMNS AND NOT THREE. Baseball's third column is for its sixth card. Three cards
+     across two columns leaves one row of two and one of one, which is the shape a grid is
+     for; three across a row of three would fit here and would leave the college game, with
+     its two, drawing a third of a row of nothing. The count is what the column number has
+     to answer to, and these two pages answer differently from that one. */
+  @media(min-width:760px){
+    /* THE SHEET SIZES ITSELF OFF WHAT IS IN IT, and that is the load-bearing choice here.
+       ONE #sheet serves every sheet on this page and more than a dozen call sites write
+       into #sheet-in, so a `wide` class added when this one opens would be a reset that
+       the next person adding a sheet forgets, and the store would open 860px wide with a
+       560px sheet's worth of content in it. That is the seasonTag() lesson: the reset must
+       not be the half somebody can forget. :has() asks the only question that is reliably
+       true at the moment it matters, which is whether there is a grid in here, and it
+       stops being true by itself the instant the next sheet writes over it.
+       Where :has() is unsupported the sheet stays 560px and the grid simply has less room
+       to work in, which is a narrower version of this layout rather than a broken one. */
+    .sheet .inner:has(.mc-grid){max-width:min(860px,calc(100vw - 64px))}
+    .modecards.mc-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+    /* A GRID ROW STRETCHES EVERY CELL TO ITS TALLEST, so a card is a column that fills its
+       cell rather than a block that ends where its sentence does. Without this the short
+       card in a row draws its border at its own height and the row has a gap under it. */
+    .mc-grid .modecard{display:flex;flex-direction:column;padding:15px 14px}
+    /* THE ICON GOES ABOVE THE NAME rather than beside it, which is what buys the narrower
+       column its room: a 32px icon, a gap and an uppercase mode name on one line is about
+       240px before the name has said anything. */
+    .mc-grid .modecard .mc-head{flex-direction:column;align-items:flex-start;gap:9px;
+      margin-bottom:7px}
+    .mc-grid .modecard .mc-icon{width:40px;height:40px;border-radius:10px}
+    .mc-grid .modecard .mc-icon svg{width:23px;height:23px}
+    /* THE CHEVRON GOES AND THE PADLOCK STAYS, which is not the same decision twice. A
+       chevron says "this is a thing you press", and a tile in a grid says that on its own.
+       A padlock says the opposite and is the only thing on the card that does, so hiding it
+       with the same rule would turn a shut door into one that looks open. Both hang off
+       `margin-left:auto` in a row and that does nothing in a column, so the one that stays
+       is pinned to the corner it was already sitting in. */
+    .mc-grid .modecard .mc-arrow{display:none}
+    .mc-grid .modecard .mc-pad{position:absolute;top:15px;right:14px;margin:0}
+    /* THE SPLIT CARD KEEPS THE WHOLE ROW, and this is the one rule here that is about
+       football rather than about grids. One Franchise is not a tile: it is a panel with two
+       doors in it (.mc-ways is its own two column grid) and sometimes a third line under
+       them. Squeezed into half a row those two doors stack, which makes the card taller
+       than the row it is in and turns a deliberate pair of choices into a list. It spans
+       instead, so it reads as what it is and the two plain cards pair up under it. */
+    .mc-grid .modecard.mc-split{grid-column:1 / -1}
+  }
 
   /* ---- AND WHILE IT IS NOT OUT YET, IT IS GRAY ----
      The emerald border and the teal title above are the college game's own colors, and
@@ -5326,6 +5583,22 @@ window.GA_ID='G-L29P5MRWKE';
   @media (min-width:1200px) and (min-height:560px){
     .wrap:has(#s-intro.on){max-width:min(1040px,calc(100vw - 400px))}
   }
+  /* THE REDESIGN ON A WIDE SCREEN: the field on the left, and the name, the switcher, the
+     button and the shelf stacked in the right column. The title moves into that column too,
+     so the first thing the eye meets on the right is the name and directly under it the one
+     decision. */
+  @media (min-width:920px) and (min-height:560px){
+    #s-intro>.hero{grid-row:1/span 9}
+    #s-intro>.htitle,#s-intro>#hp-mode,#s-intro>#hp-slots,#s-intro>#hp-rule{grid-column:2}
+    #s-intro>.htitle{margin-bottom:18px}
+    #s-intro>.htitle h1{font-size:min(70px,6.4vw)}
+    #s-intro>.htitle h1 .l2{display:block}
+    #s-intro>.htitle p{display:block}
+    #s-intro>#b-start{margin-top:0}
+    .hp-longer{margin-top:18px}
+    .hp-start{font-size:28px;padding:19px 18px}
+    .hp-tab{min-height:52px;font-size:16px}
+  }
   /* Tiles arrive as a consequence of the reels landing, so they come in on a short
      stagger rather than all at once out of nowhere. */
   @keyframes optin{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
@@ -5827,7 +6100,7 @@ window.GA_ID='G-L29P5MRWKE';
 
   /* ---- Drive-chart field ---- */
   .pofield{margin-top:10px;border-radius:12px;overflow:hidden;border:1px solid rgba(255,255,255,.08);
-    background:#1a3318}
+    background:#03060c;box-shadow:0 12px 34px rgba(0,0,0,.45),inset 0 0 0 1px rgba(255,255,255,.03)}
   .pofield canvas{display:block;width:100%;height:auto}
 
   .bigrec{text-align:center;padding:6px 0 12px}
@@ -6924,16 +7197,37 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
       <div class="kicker">1999 to 2025</div>
       <!-- No <br>. The break was hardcoded, so the headline was two lines no matter what
            size it was set at, and the clamp below could never have fixed it on its own. -->
-      <h1>The Perfect Season</h1>
-      <p>Draft six NFL legends. Build your lineup. Chase a perfect season.</p>
+      <!-- TWO LINES NOW, ON PURPOSE. One line had to be sized to fit 390px and read as a
+           caption; broken after "Perfect" the name can be set twice as large and still clear
+           the narrowest phone, and "Season" carries the red the header wordmark already uses. -->
+      <h1>The Perfect <span class="l2">Season</span></h1>
+      <p>Spin a year and a team. Sign one. Beat the cap.</p>
     </div>
+
+    <!-- THE SWITCHER AND THE ONE BUTTON.
+         The front page used to ask for a decision in five separate places: an Offense and
+         Defense pair, then Full Team, Dynasty and Fantasy each as a door of their own, every
+         one of them a full-width block. The three quick drafts are one question with three
+         answers, so they are one control: pick a side here, press Spin, and the field above
+         changes to show what you picked.
+         The old doors are still in the markup (#hp-split) and still own their handlers and
+         their loading states. The Spin button only decides which of them to call, so nothing
+         about how a run starts has moved. paintHomeMode is the one painter. -->
+    <div class="hp-mode" id="hp-mode" role="radiogroup" aria-label="Pick your roster" hidden>
+      <span class="hp-mode-pill" aria-hidden="true"></span>
+      <button class="hp-tab" type="button" role="radio" data-m="off" id="hp-tab-off" aria-checked="true">Offense</button>
+      <button class="hp-tab" type="button" role="radio" data-m="def" id="hp-tab-def" aria-checked="false">Defense</button>
+      <button class="hp-tab" type="button" role="radio" data-m="full" id="hp-tab-full" aria-checked="false">Full Team<small id="hp-tab-full-note"></small></button>
+    </div>
+    <p class="hp-slots" id="hp-slots">QB &middot; RB &middot; WR &middot; WR &middot; TE &middot; FLEX</p>
 
     <!-- TWO CONTROLS, ONE OF THEM ON SCREEN AT A TIME. Everybody gets the single Start a
          run button below; testers get the Offense and Defense pair instead, and
          paintHomeStart is the only thing that decides which. Both are in the markup rather
          than one being built at runtime so the first-run guide, the landscape ordering and
          the focus ring all have something real to attach to before any script runs. -->
-    <button class="btn hp-start" id="b-start">Start a run</button>
+    <button class="btn hp-start m-off" id="b-start"><span class="hp-go-fx" aria-hidden="true"><i></i><i></i></span><span class="hp-go-l">Draft your offense</span><svg class="hp-go-ar" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></button>
+    <p class="hp-rule" id="hp-rule"></p>
     <!-- Shown and hidden with the split, not with the page: it is a caption for the pair of
          buttons and says nothing about the single Start a run. -->
     <p class="hp-pick" id="hp-pick" hidden>Which side of the ball will you draft?</p>
@@ -7186,9 +7480,9 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
       <button class="tab" data-dyn="score">High score</button>
     </div></div>
     <div class="tabwrap"><div class="tabs" id="lb-tabs">
-      <button class="tab on" data-lb="day">Today</button>
+      <button class="tab" data-lb="day">Today</button>
       <button class="tab" data-lb="week">This week</button>
-      <button class="tab" data-lb="all">All time</button>
+      <button class="tab on" data-lb="all">All time</button>
     </div></div>
     <div class="sortbar">
       <div class="seg" id="lb-sort">
@@ -8220,7 +8514,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 
 <div class="sheet" id="sheet"><div class="inner" id="sheet-in"></div></div>
 
-<script src="engine.js?v=98"></script>
+<script src="engine.js?v=100"></script>
 <script src="run.js?v=103"></script>
 <!-- WHO CAN SEE FULL TEAM. Its own file rather than an array in this one, because three
      separate things ask and a list written three times drifts. Not optional in the way the
@@ -8239,7 +8533,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
      did, with runs recorded anonymously. Deferred so neither delays first paint. -->
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="board.js?v=40"></script>
-<script src="achievements.js?v=15"></script>
+<script src="achievements.js?v=16"></script>
 <!-- The profile crest. Optional in the same way the two above are: it reads the catalog
      achievements.js installs, and if either fails to load the game falls back to the flat
      disc it drew before any of this existed. -->
@@ -8256,13 +8550,18 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 <!-- THE STORE, SHARED WITH COMMISH SIMULATOR. Not deferred: premiumSheet() can be opened by
      a door the moment the page is interactive, and a store that is not there yet draws the
      fallback line instead of the offer. -->
-<script src="/assets/store.js?v=22"></script>
+<script src="/assets/store.js?v=23"></script>
 <!-- THE RUN, KEPT AGAINST THE ACCOUNT. Shared with Commish Simulator, which had the same
      save in localStorage and the same way of losing it. Optional like everything else up
      here: without it the game keeps its runs exactly where it always did, in this browser
      and nowhere else. See supabase/103_cloud_saves.sql. -->
 <script src="/assets/cloudsave.js?v=2"></script>
-<script defer src="auth.js?v=7"></script>
+<!-- The release newsletter checkbox on the Account page. See supabase/121_newsletter.sql. -->
+<script src="/assets/newsletter.js?v=1"></script>
+<!-- The broadcast field every game is played out on. drawDriveChart hands its drives here and
+     keeps its own body as the fallback, so a blocked copy still draws the old chart. -->
+<script src="/assets/fieldcast.js?v=4"></script>
+<script defer src="auth.js?v=8"></script>
 <script>
 (function(){
 'use strict';
@@ -8670,12 +8969,19 @@ function checkoutStrip(){
   try{
     const u=new URL(location.href);
     u.searchParams.delete('checkout');
+    u.searchParams.delete('plan');
     history.replaceState(null,'',u.pathname+(u.searchParams.toString()?'?'+u.searchParams.toString():'')+u.hash);
   }catch(_){}
 }
 async function checkoutReturn(){
   let what=null;
-  try{ what=new URLSearchParams(location.search).get('checkout'); }catch(_){ return; }
+  try{
+    const q=new URLSearchParams(location.search);
+    what=q.get('checkout');
+    /* checkout-bundle.js adds plan=year to a yearly plan's success url, so the thank you
+       can say it renews before the plan row has even been read. */
+    if(what==='success'&&q.get('plan')==='year') paidYearly=true;
+  }catch(_){ return; }
   if(!what) return;
   /* Stripped before anything else, so a reload cannot replay the thank you and a shared
      link cannot carry it to somebody who bought nothing. */
@@ -8920,6 +9226,22 @@ const UNLOCK_DOORS=[
 const ULK_CHEV='<svg width="9" height="14" viewBox="0 0 9 14" fill="none" aria-hidden="true">'+
   '<path d="M1.5 1.5 L7 7 L1.5 12.5" stroke="currentColor" stroke-width="2" '+
   'stroke-linecap="round" stroke-linejoin="round"/></svg>';
+/* THE LINE UNDER WHAT THEY UNLOCKED, asked of the plans once the sheet is up. A lifetime
+   buyer keeps "You paid once"; anybody a plan is billing gets the date it renews or ends,
+   because telling a subscriber nothing renews is the one false sentence this sheet could
+   print. The checkout return already knows it was a plan (paidYearly), so the first frame
+   is right before the read lands. */
+async function unlockedTerms(){
+  const a=A();
+  let plans=[];
+  try{ plans=(a&&typeof a.premiumPlans==='function')?await a.premiumPlans():[]; }catch(_){ plans=[]; }
+  const el=$('ulk-terms');
+  if(!el||$('sheet-in').dataset.kind!=='unlocked') return;
+  const live=livePlans(plans);
+  if(!live.length) return;
+  el.textContent=planDates(live[0]).replace(/^(Renews|Ends) on/,(m,w)=>'Your plan '+w.toLowerCase()+' on')+
+    ' Cancel any time from your profile.';
+}
 function unlockedSheet(){
   const have=Array.isArray(premiumSet)?premiumSet:[];
   /* `when` is optional and absent on every row but one: a door the reader cannot walk
@@ -8948,10 +9270,13 @@ function unlockedSheet(){
       : '<p class="dim" style="font-size:12.5px;line-height:1.45;margin:14px 0 0">'+
           'Your Pro modes are unlocked. The list of what is in your bundle couldn\'t be '+
           'loaded just now. Reload the page and it will come back.</p>')+
-    '<p class="dim" style="font-size:12px;line-height:1.45;margin:14px 0 0">'+
-      'You paid once. Nothing here renews and nothing charges you again.</p>'+
+    '<p class="dim" id="ulk-terms" style="font-size:12px;line-height:1.45;margin:14px 0 0">'+
+      (paidYearly
+        ? 'Your plan renews each year. Cancel any time from your profile.'
+        : 'You paid once. Nothing here renews and nothing charges you again.')+'</p>'+
     '<div style="margin-top:14px"><button class="btn ghost" id="sh-x" style="width:100%">Close</button></div>';
   openSheet();
+  unlockedTerms();
   box.querySelectorAll('.ulk-row[data-ulk]').forEach((el)=>{
     const d=rows[+el.dataset.ulk];
     if(!d||!d.go) return;                       // an <a> navigates on its own
@@ -9680,7 +10005,6 @@ function show(id){
      network round trip, and on a connection where that round trip beats the loading screen
      the panel would find the wrong screen on and never fire at all. It declines quietly
      whenever it has already been shown, been opted out of, or has nothing to show. */
-  if(id==='s-intro'&&typeof whatsNewMaybe==='function') whatsNewMaybe();
   if(typeof heroSync==='function') heroSync();
   /* Measured here because a hidden element reports no scrollWidth at all: asking at
      boot said every tab row fitted, whatever the viewport. */
@@ -9745,7 +10069,7 @@ async function boot(){
     LEAGUE=lg.league_avg_pts_allowed_by_season; CAL=cal;
     BYKEY=new Map(pl.map(p=>[p.player_id+'|'+p.season,p]));
     bootStep('Building the league');
-    $('h-field').innerHTML=fieldMarkings();
+    heroMode=homeModeNow(); heroMarkings(heroMode,false);
     authBoot(); watchTabs(); wireDealNav(); paintHomeStart();
     /* AFTER the page is up and deliberately not awaited: the walk back from Stripe polls
        for a webhook and must never hold the game behind it. */
@@ -10406,7 +10730,15 @@ function beginDraft(opts){
   }
   show('s-draft'); nextSpin();
 }
-$('b-start').onclick=()=>{ beginDraft({}); };
+/* THE ONE BUTTON, AND WHICH DOOR IT OPENS IS THE SWITCHER'S ANSWER. Each branch calls the
+   same function its old door called, so the account wall, the day's allowance and a saved
+   Full Team season are all decided exactly where they always were. */
+$('b-start').onclick=()=>{
+  const m=homeModeNow();
+  if(m==='def') return beginDefenseDraft();
+  if(m==='full') return fullDoor();
+  return beginDraft({});
+};
 $('b-start-off').onclick=()=>{ beginDraft({}); };
 $('b-start-def').onclick=()=>{ beginDefenseDraft(); };
 /* NO BINDING HERE FOR FULL TEAM. The node does not exist at load: ensureFullButton() makes
@@ -10800,7 +11132,7 @@ function dynastyRunWall(){
   $('sheet-in').dataset.kind='daily';
   openSheet();
   if(premiumPitch()&&window.RTG_STORE){
-    window.RTG_STORE.wire($('sheet-in'),{buy:(kind)=>beginBundleCheckout(kind)});
+    window.RTG_STORE.wire($('sheet-in'),{buy:(kind,btn,plan)=>beginBundleCheckout(kind,btn,plan)});
     ga('premium_sheet_shown',{from:'dynasty_new_run',tier:acctTier()||'out'});
   }
   $('sh-x').onclick=closeSheet;
@@ -10899,7 +11231,7 @@ function dailySpentSheet(mode){
   $('sheet-in').dataset.kind='daily';
   openSheet();
   if(premiumPitch()&&window.RTG_STORE){
-    window.RTG_STORE.wire($('sheet-in'),{buy:(kind)=>beginBundleCheckout(kind)});
+    window.RTG_STORE.wire($('sheet-in'),{buy:(kind,btn,plan)=>beginBundleCheckout(kind,btn,plan)});
     ga('premium_sheet_shown',{from:'daily_limit_'+mode,tier:acctTier()||'out'});
   }
   $('sh-x').onclick=closeSheet;
@@ -11059,12 +11391,22 @@ function premiumSheet(){
   if(dynastyOwned()){
     box.innerHTML='<div class="eyebrow gold">Your account</div>'+
       '<h2 class="display" style="font-size:26px;margin:4px 0 8px">You\'re Pro</h2>'+
-      '<p class="dim" style="font-size:13.5px;line-height:1.45;margin:0">'+
-        'Every Pro mode is unlocked, on every device you sign in on. There\'s nothing to '+
-        'renew.</p>'+
+      '<p class="dim" id="pro-terms" style="font-size:13.5px;line-height:1.45;margin:0">'+
+        'Every Pro mode is unlocked, on every device you sign in on.'+
+        (paidYearly?'':' There\'s nothing to renew.')+'</p>'+
       '<div style="margin-top:14px"><button class="btn ghost" id="sh-x" style="width:100%">Close</button></div>';
     openSheet();
     $('sh-x').onclick=closeSheet;
+    /* "Nothing to renew" is only true for a lifetime owner, so a plan rewrites it. */
+    (async()=>{
+      const a=A();
+      let plans=[];
+      try{ plans=(a&&typeof a.premiumPlans==='function')?await a.premiumPlans():[]; }catch(_){ plans=[]; }
+      const el=$('pro-terms'), live=livePlans(plans);
+      if(!el||!live.length||$('sheet-in').dataset.kind!=='premium') return;
+      el.textContent='Every Pro mode is unlocked, on every device you sign in on. '+
+        planDates(live[0]).replace(/^(Renews|Ends) on/,(m,w)=>'Your plan '+w.toLowerCase()+' on');
+    })();
     ga('premium_sheet_shown',{from:premiumFrom||'mode',tier:'pro'});
     premiumFrom=null;
     return;
@@ -11079,7 +11421,7 @@ function premiumSheet(){
     ? window.RTG_STORE.html({signedOut:!authState.signedIn})
     : '<p class="dim">The store couldn\'t be loaded. Reload the page and try again.</p>')+
     '<div style="margin-top:12px"><button class="btn ghost" id="sh-x" style="width:100%">Not now</button></div>';
-  if(window.RTG_STORE) window.RTG_STORE.wire(box,{buy:(kind)=>beginBundleCheckout(kind)});
+  if(window.RTG_STORE) window.RTG_STORE.wire(box,{buy:(kind,btn,plan)=>beginBundleCheckout(kind,btn,plan)});
   openSheet();
   /* The two buy buttons are bound by RTG_STORE.wire above, scoped to this box. Close is
      this page's own, because the frame is this page's own. */
@@ -11090,7 +11432,7 @@ function premiumSheet(){
 
 /* One POST, verdict by the `error` field and never the status, which is the contract
    functions/api/stripe/checkout-bundle.js keeps on purpose. */
-async function beginBundleCheckout(kind){
+async function beginBundleCheckout(kind,btn,plan){
   const a=A();
   const t=a&&typeof a.token==='function'?a.token():null;
   /* THE PURCHASE NEEDS AN ACCOUNT, so send them to make one rather than telling them off.
@@ -11101,11 +11443,29 @@ async function beginBundleCheckout(kind){
     const r=await fetch('/api/stripe/checkout-bundle',{
       method:'POST',
       headers:{'Content-Type':'application/json',Authorization:'Bearer '+t},
-      body:JSON.stringify({bundle:kind,return_path:'/football/'})
+      /* THE PLAN THE SHEET SHOWED, so the checkout can refuse to charge anything else. */
+      body:JSON.stringify({bundle:kind,return_path:'/football/',
+        plan:plan||(window.RTG_STORE&&window.RTG_STORE.plan?window.RTG_STORE.plan():'once')})
     });
     const d=await r.json().catch(()=>({}));
     if(d&&d.url){ location.href=d.url; return; }
     if(d&&d.error==='already_owned'){ toast('This account already owns it.'); premiumRefresh(); closeSheet(); return; }
+    /* WHAT IS ON SALE CHANGED UNDER AN OPEN SHEET. Redraw it with the real price rather
+       than send anybody to a checkout the screen did not describe. */
+    if(d&&d.error==='offer_changed'){
+      if(window.RTG_STORE&&window.RTG_STORE.setPlan) window.RTG_STORE.setPlan(d.plan);
+      toast('The price just changed. Take another look.');
+      premiumSheet();
+      return;
+    }
+    /* A PLAN ALREADY RUNNING IS CHANGED OR CANCELLED IN STRIPE, never bought twice. */
+    if(d&&d.error==='already_subscribed'){
+      toast(d.change?'Change your plan in Stripe.':'You already have this plan.');
+      const r2=(a&&typeof a.billingPortal==='function')?await a.billingPortal('/football/','plan'):null;
+      if(r2&&r2.url){ location.href=r2.url; return; }
+      closeSheet();
+      return;
+    }
     if(d&&d.error==='stripe_not_configured'){ toast('Not on sale yet.'); return; }
     toast('Checkout couldn\'t start. Try again.');
   }catch(e){ toast('Checkout couldn\'t start. Try again.'); }
@@ -11115,8 +11475,12 @@ function paintHomeStart(){
   const split=$('hp-split'), one=$('b-start');
   if(!split||!one) return;
   const on=canPlayDefense();
-  split.hidden=!on;
-  one.hidden=on;
+  /* THE PAIR IS NEVER SHOWN NOW and the one button always is: the switcher above it is
+     where the side of the ball is chosen. The pair keeps its handlers for anything that
+     presses it directly. */
+  split.hidden=true;
+  one.hidden=false;
+  homeBusy(false);
   /* The caption belongs to the pair, so it comes and goes with the pair. Over a lone Start a
      run it would be telling somebody to choose between one thing. */
   const pick=$('hp-pick');
@@ -11147,7 +11511,125 @@ function paintHomeStart(){
   ensureFantasyButton();
   trimLongGroup();
   ensurePremiumCard();
+  paintHomeMode();
 }
+
+/* ─── THE SWITCHER ────────────────────────────────────────────────────────────────────────
+ *
+ * Three answers to one question, and only the ones this account can play are drawn: Defense
+ * asks canPlayDefense and Full Team asks canPlayFull, the same two calls that used to decide
+ * whether those doors existed. With only Offense left there is no question, so the control
+ * goes and the button simply starts a draft.
+ *
+ * THE CHOICE IS REMEMBERED on this device. Somebody who plays Defense every time should not
+ * have to say so every visit. A remembered mode this account can no longer play falls back
+ * to Offense rather than to a hidden tab. */
+const HOME_MODE_KEY='ps_home_mode';
+let homeMode=null;
+function homeModeList(){
+  const m=['off'];
+  if(canPlayDefense()) m.push('def');
+  if(canPlayFull()) m.push('full');
+  return m;
+}
+function homeModeNow(){
+  if(homeMode===null){
+    try{ homeMode=localStorage.getItem(HOME_MODE_KEY)||'off'; }catch(_){ homeMode='off'; }
+  }
+  return homeModeList().includes(homeMode)?homeMode:'off';
+}
+function setHomeMode(m){
+  if(m===homeModeNow()) return;
+  homeMode=m;
+  try{ localStorage.setItem(HOME_MODE_KEY,m); }catch(_){}
+  /* Asked for as soon as a side that needs it is picked, so the Spin that follows is warm. */
+  if(m!=='off') loadDefensePool().catch(()=>{});
+  paintHomeMode(true);
+}
+/* The Spin button's loading state, for the two sides that fetch a second pool first. */
+function homeBusy(on){
+  const b=$('b-start');
+  if(!b) return;
+  b.classList.toggle('hp-loading',!!on);
+  b.disabled=!!on;
+}
+/* WHAT THE LINE UNDER THE BUTTON SAYS. The numbers are read out of the constants, so a cap
+   that moves moves here too. Full Team's line is its old door's line: a saved season, a spent
+   day, or the shape of the run. */
+function homeRule(m){
+  if(m==='full'){
+    if(fullRead()) return 'Your season is saved. Pick up where you left off.';
+    if(dailyShut('full')){
+      const t=dailyCountdown(dailyResetsAt('full'));
+      return t?('Used today. Next run in '+t+'.'):'Used today. Next run tomorrow.';
+    }
+    return 'Twelve spins. '+M0(E.FULL_CAP_MUSD)+' cap.'+(dailyOn()?' One run a day.':'')+
+      (oneTeamReady()?'':' Needs a free account.');
+  }
+  return 'Six spins. '+M0(E.CONSTANTS.CAP_MUSD)+' cap.'+
+    (m==='def'&&!oneTeamReady()?' Needs a free account.':'');
+}
+/* The button names what it drafts, so the switcher's answer is on the thing you press. */
+const HOME_GO={off:'Draft your offense',def:'Draft your defense',full:'Draft your full team'};
+function homeSwap(el,html){
+  if(!el||el.innerHTML===html) return;
+  el.innerHTML=html;
+  if(reduceMotion()) return;
+  el.classList.remove('swap'); void el.offsetWidth; el.classList.add('swap');
+}
+function paintHomeMode(animate){
+  const box=$('hp-mode'), intro=$('s-intro');
+  if(!box||!intro||typeof E==='undefined') return;
+  const list=homeModeList();
+  const m=homeModeNow();
+  box.hidden=list.length<2;
+  box.style.setProperty('--n',String(list.length));
+  box.style.setProperty('--i',String(Math.max(0,list.indexOf(m))));
+  box.querySelectorAll('.hp-tab').forEach((t)=>{
+    const on=list.includes(t.dataset.m);
+    t.hidden=!on;
+    t.setAttribute('aria-checked',t.dataset.m===m?'true':'false');
+    t.tabIndex=t.dataset.m===m?0:-1;
+  });
+  intro.classList.toggle('hm-off',m==='off');
+  intro.classList.toggle('hm-def',m==='def');
+  intro.classList.toggle('hm-full',m==='full');
+  /* The Full Team tab says what state its run is in, the way its door did. */
+  const note=$('hp-tab-full-note');
+  if(note){
+    note.textContent=list.includes('full')
+      ?(fullRead()?'Resume':(dailyShut('full')?'Used today':(dailyOn()?'1 a day':'')))
+      :'';
+  }
+  const slots=m==='def'?E.DEFENSE_SLOTS:(m==='full'?null:E.SLOTS);
+  const sl=$('hp-slots');
+  const slHtml=slots?slots.join(' &middot; '):'Six on offense &middot; six on defense';
+  if(animate) homeSwap(sl,slHtml); else if(sl) sl.innerHTML=slHtml;
+  const ru=$('hp-rule');
+  if(animate) homeSwap(ru,homeRule(m)); else if(ru) ru.textContent=homeRule(m);
+  const go=document.querySelector('#b-start .hp-go-l');
+  const goTxt=(m==='full'&&fullRead())?'Resume Full Team':HOME_GO[m]||HOME_GO.off;
+  if(go&&go.textContent!==goTxt){
+    go.textContent=goTxt;
+    if(animate&&!reduceMotion()){ go.classList.remove('swap'); void go.offsetWidth; go.classList.add('swap'); }
+  }
+  heroSwitch();
+}
+/* Wired once. Arrow keys move between the tabs the way a radio group does. */
+(function(){
+  const box=$('hp-mode');
+  if(!box) return;
+  box.querySelectorAll('.hp-tab').forEach((t)=>{ t.onclick=()=>setHomeMode(t.dataset.m); });
+  box.addEventListener('keydown',(e)=>{
+    if(e.key!=='ArrowRight'&&e.key!=='ArrowLeft') return;
+    const list=homeModeList();
+    const i=list.indexOf(homeModeNow());
+    const n=list[(i+(e.key==='ArrowRight'?1:list.length-1))%list.length];
+    e.preventDefault();
+    setHomeMode(n);
+    const t=$('hp-tab-'+n); if(t) t.focus();
+  });
+})();
 
 /*
  * WHO IS OFFERED THE STORE, and the answer is the same rule the doors use: somebody who
@@ -11195,6 +11677,9 @@ const pwPill=()=>{
    directly above a card offering to sell it to them. Session-lived on purpose. It only has
    to cover the wait, and a reload after the webhook lands reads the real answer. */
 let justPaid=false;
+/* Set by a checkout return whose success url said plan=year. Read by the two sheets that
+   would otherwise say nothing renews. */
+let paidYearly=false;
 function premiumPitch(){
   if(!canPlayDynasty()) return false;
   if(justPaid) return false;
@@ -11248,6 +11733,19 @@ function ensurePremiumCard(){
     el.onclick=()=>openPremium('home_card');
     host.parentNode.insertBefore(el, host.nextSibling);
   }
+}
+
+/* THE PLAN CAN ARRIVE AFTER THE CARDS AND THE SHEET ARE DRAWN. /assets/store.js asks
+   /api/stripe/offer once at load and says 'once' until it answers, so on launch day a card
+   or an open store could be showing the one-time words while a yearly plan is what is on
+   sale. Every card is redrawn in place, and an open store is drawn again. The checkout
+   refuses a mismatch anyway (409 offer_changed); this is what keeps the screen from being
+   the thing that is wrong in the first place. */
+if(window.RTG_STORE&&typeof window.RTG_STORE.onPlan==='function'){
+  window.RTG_STORE.onPlan(()=>{
+    document.querySelectorAll('.pw-card').forEach((el)=>{ el.innerHTML=pwCardInner(); });
+    if($('sheet').classList.contains('on')&&$('b-buy-ps')) premiumSheet();
+  });
 }
 
 /* THE FULL TEAM BUTTON, MADE RATHER THAN REVEALED.
@@ -11309,8 +11807,8 @@ function ensureLongGroup(){
   /* AFTER WHICHEVER STARTER IS SHOWING. The split and the lone Start a run are the same
      slot wearing two faces and only one is ever in the layout, so this anchors to the one
      that is rather than to a fixed id. */
-  const split=$('hp-split'), one=$('b-start');
-  const top=(split&&!split.hidden)?split:one;
+  /* UNDER THE LINE BELOW THE SPIN BUTTON, which is the last thing that belongs to it. */
+  const top=$('hp-rule')||$('b-start');
   if(!top||!top.parentNode) return box;
   if(box.previousSibling!==top) top.parentNode.insertBefore(box,top.nextSibling);
   return box;
@@ -11586,9 +12084,12 @@ function fantasyWeekEnsure(){
     .then(n=>{
       if(!n||n.season==null||n.week==null) return;
       fanWeek=n;
-      /* Only repaint if the answer actually changes the door, so this is a no-op on the
-         common visit and cannot fight whatever else has repainted since. */
-      if(fantasyEntered()) ensureFantasyButton();
+      /* REPAINTED ON EVERY ANSWER NOW, because the door says when the week locks and that
+         line is only known once the pointer is here. ensureFantasyButton rebuilds the same
+         node, so a second paint cannot fight whatever else has painted since. */
+      ensureFantasyButton();
+      /* The lock line is a countdown, so it is redrawn once a minute while the door is up. */
+      setInterval(()=>{ if($('b-fantasy')) ensureFantasyButton(); },60000);
     })
     .catch(()=>{});
 }
@@ -11601,6 +12102,33 @@ const HP_LOCK='<svg class="hp-lk" viewBox="0 0 24 24" aria-hidden="true">'+
   '<path fill="none" stroke="currentColor" stroke-width="2.4" '+
     'd="M7.6 10.4V7a4.4 4.4 0 0 1 8.8 0v3.4"/>'+
   '<rect x="4.2" y="10.2" width="15.6" height="11.6" rx="2.4" fill="currentColor"/></svg>';
+
+/* THE CREST, the trophy on a shield the mode's own pages wear in their header. Solid colours
+   and no gradient ids, so it can be drawn anywhere without two copies painting each other. */
+const HP_CREST='<svg class="hp-fan-ico" viewBox="0 0 32 32" aria-hidden="true">'+
+  '<path d="M16 1.8 28.4 6v9.4c0 7.4-5.3 12.6-12.4 15-7.1-2.4-12.4-7.6-12.4-15V6Z" '+
+  'fill="rgba(10,14,26,.85)" stroke="#f0c96b" stroke-width="1.8"/>'+
+  '<path d="M11 8.6h10v4.2a5 5 0 0 1-10 0Z" fill="#f0c96b"/>'+
+  '<path d="M11 9.8H8.6a2.6 2.6 0 0 0 2.9 3.8M21 9.8h2.4a2.6 2.6 0 0 1-2.9 3.8" '+
+  'fill="none" stroke="#f0c96b" stroke-width="1.4"/>'+
+  '<rect x="15" y="17.4" width="2" height="2.8" fill="#d9a13a"/>'+
+  '<rect x="11.8" y="20.2" width="8.4" height="2.4" rx="1" fill="#f0c96b"/></svg>';
+/* Six bars, one a slot, in the position colours the mode's board deals. Lit once a lineup
+   is in, which is the door's own question asked a second way. */
+const HP_RACK='<span class="hp-fan-rack" aria-hidden="true"><i class="QB"></i><i class="RB">'+
+  '</i><i class="RB"></i><i class="WR"></i><i class="WR"></i><i class="TE"></i></span>';
+/* WHEN THE WEEK LOCKS, read off the pointer the Tuesday build writes. Null before it has
+   arrived, and null once the week is under way, so the line falls back rather than
+   counting down past zero. */
+function fantasyLockLine(){
+  if(!fanWeek||!fanWeek.locks_at) return null;
+  const ms=Date.parse(fanWeek.locks_at)-Date.now();
+  if(!(ms>0)) return 'Week '+fanWeek.week+' is live &middot; see the board';
+  const h=Math.floor(ms/3600000), d=Math.floor(h/24);
+  const left=d>=1?d+'d '+(h%24)+'h':h>=1?h+'h '+Math.floor(ms%3600000/60000)+'m'
+    :Math.max(1,Math.floor(ms/60000))+'m';
+  return 'Week '+fanWeek.week+' &middot; locks in '+left;
+}
 
 function ensureFantasyButton(){
   let el=$('b-fantasy');
@@ -11641,13 +12169,13 @@ function ensureFantasyButton(){
   /* BETA, BECAUSE IT IS. Preview was the honest word while only a tester could open it and
      New is what a finished mode says. Beta is the one that tells a reader the mode is real,
      is theirs, and has rough edges. */
-  el.innerHTML='<span class="hp-tag hp-tag-beta">Beta</span>'+
+  el.innerHTML='<span class="hp-tag hp-tag-beta">Beta</span>'+HP_CREST+
     '<span class="hp-full-name">'+(showLock?HP_LOCK:'')+'Fantasy Challenge</span>'+
     '<span class="hp-full-sub">'+(inThisWeek
       ? 'Lineup in &middot; watch it score'
       : showLock
         ? 'Sign in to play &middot; one lineup a week'
-        : 'One lineup &middot; one week')+'</span>';
+        : (fantasyLockLine()||'One lineup &middot; one week'))+'</span>'+HP_RACK;
   /* THE COLOUR IS A CLAIM ABOUT THIS ACCOUNT, so it is said out loud for a reader who
      cannot see a border at all. The border is the fast answer and this is the true one. */
   el.setAttribute('aria-label','Fantasy Challenge, beta. '+(inThisWeek
@@ -12013,17 +12541,12 @@ function dynastyReplaceSheet(opts){
  * meeting each of those for the first time in the middle of a run. That is not difficulty,
  * it is a missing sentence.
  *
- * SHOWN BEFORE EVERY RUN, AND TURNED OFF BY THE READER RATHER THAN BY THE SECOND VIEW.
- * It used to be once per browser, the same shape as tradeIntro. That is right for a mode you
- * learn once and wrong for this one: a dynasty is a calendar, a win bar that moves, a cap
- * that does not, and the ageing rule, and somebody coming back a fortnight later is starting
- * a run against rules they half remember. So the sheet stands in front of every run and
- * carries its own off switch, which is the arrangement that lets a player who HAS learned it
- * stop seeing it without taking it away from everybody else.
- *
- * `opts.offer` draws that switch. Only the intro passes it: a "do not show this again" on a
- * sheet somebody deliberately opened from the How to play pill would be offering to hide a
- * thing they just asked for.
+ * SHOWN ONCE, ON THE ACCOUNT. It stood in front of every run for a while, with its own
+ * "don't show this again" box, on the argument that somebody coming back a fortnight later
+ * half remembers the rules. The box only held in the browser it was ticked in, and players
+ * reported the same pop-up ten times. So it shows before the first dynasty and never pushes
+ * itself again (dynastyIntro, through hasSeen); the rules pill and How to play bring it
+ * back for anybody who wants it.
  */
 function dynastyRulesHTML(go,opts){
   const step=E.DYNASTY_STEP_SEASONS;   // seasons between steps up in the target
@@ -12137,60 +12660,32 @@ function dynastyRulesHTML(go,opts){
     '<p class="dim" style="font-size:13px;line-height:1.45;margin:13px 0 0">'+
       'You score points every season, more for the playoffs and a title, and later seasons '+
       'pay multiples. Lasting is the whole game.</p>'+
-    '<div style="margin-top:14px"><button class="btn" id="b-dyni-go">'+esc(go)+'</button></div>'+
-    /* UNDER THE BUTTON, which is where the site already puts this control: see .wnchk on the
-       crest's What's new sheet, whose markup and storage idiom this follows exactly so the
-       two cannot end up looking like two different products. */
-    ((opts&&opts.offer)
-      ? '<label class="wnchk"><input type="checkbox" id="b-dyni-off"'+
-          (dynIntroOff()?' checked':'')+'><span>Don\'t show this again</span></label>'
-      : '');
+    '<div style="margin-top:14px"><button class="btn" id="b-dyni-go">'+esc(go)+'</button></div>';
 }
 
 /*
- * TWO KEYS, BECAUSE THEY ANSWER TWO QUESTIONS.
- *
- * ps_dynintro means "has read the rules at least once" and is what retires the NEW badge on
- * the front page door. ps_dynintro_off means "has asked not to be shown them again" and is
- * the only thing that skips the sheet. Folding them into one was the obvious move and it is
- * wrong in both directions: the badge would never retire for somebody who reads the rules
- * every time and never ticks the box, and ticking the box would silently also mean "this
- * mode is no longer new to me", which the player did not say.
- *
- * Both fall back to a window flag when localStorage throws, which is a real state on iOS in
- * private mode. A checkbox that cannot persist should still work for the session it is in.
+ * ps_dynintro retires the NEW badge on the front page door and is set the first time the
+ * rules are on screen. ps_dynintro_off was the old "don't show this again" box; it is still
+ * READ (SEEN_LEGACY), so a player who ticked it is never shown the sheet again, and nothing
+ * writes it any more.
  */
 const DYN_INTRO_KEY='ps_dynintro';
 const DYN_INTRO_OFF='ps_dynintro_off';
-function dynIntroOff(){
-  try{ return localStorage.getItem(DYN_INTRO_OFF)==='1'; }catch(_){ return !!window.__dynIntroOff; }
-}
+/* SEEN ONCE MEANS SEEN, and it is held on the account rather than in one browser. */
+function dynIntroOff(){ return hasSeen('dynintro'); }
 function dynastyIntro(go){
   if(dynIntroOff()){ go(); return; }
-  /* Marked as read on the way in, not on the way out: the badge is about whether this mode
-     is still new to them, and it stops being new the moment the sheet is on screen. */
+  /* Marked on the way in, not on the way out. ps_dynintro also retires the NEW badge. */
   window.__dynIntro=true;
   try{ localStorage.setItem(DYN_INTRO_KEY,'1'); }catch(_){}
-  $('sheet-in').innerHTML=dynastyRulesHTML('Draft my team',{offer:true});
+  markSeen('dynintro');
+  $('sheet-in').innerHTML=dynastyRulesHTML('Draft my team');
   $('sheet-in').dataset.kind='dynintro';
   /* However it is dismissed the draft proceeds, because a rules popup that can strand a run
      is worse than no rules at all. The Trade Machine's intro writes this out at length. */
   sheetOnClose=go;
   openSheet();
   $('b-dyni-go').onclick=closeSheet;
-  /* WRITTEN THE MOMENT IT IS TICKED rather than on the way out, so the promise holds however
-     the sheet is dismissed: the backdrop, the button, or a phone back gesture. Unticking puts
-     it back, because a control that only goes one way is a trap on a sheet this one is about
-     to stop showing. */
-  const off=$('b-dyni-off');
-  if(off) off.onchange=()=>{
-    window.__dynIntroOff=off.checked;
-    try{
-      if(off.checked) localStorage.setItem(DYN_INTRO_OFF,'1');
-      else localStorage.removeItem(DYN_INTRO_OFF);
-    }catch(_){}
-    ga('dynasty_intro_off',{off:off.checked});
-  };
 }
 /* The same card on demand, with no continuation: it closes back to wherever you were. */
 function reviewDynastyRules(){
@@ -12476,6 +12971,9 @@ async function dynCloudPull(){
   if(!rows){ dynCloudPulled=null; return; }
   const by={};
   rows.forEach((r)=>{ if(r&&r.slot) by[r.slot]=r; });
+  /* The same shelf carries what the account has already been shown. Not a run, so it is
+     merged here rather than walked with FB_SLOTS below. */
+  seenMerge(by[SEEN_SLOT]);
   let painted=false;
   for(const slot of Object.keys(FB_SLOTS)){
     const S=FB_SLOTS[slot];
@@ -12979,6 +13477,7 @@ function beginFullDraft(){
   if(dailyShut('full')) return dailyStop('full');
   const b=$('b-start-full');
   if(b){ b.disabled=true; b.classList.add('hp-loading'); }
+  homeBusy(true);
   /* THE CATCH IS ON THE FETCH AND NOTHING ELSE.
      Chained as .then(...).catch(...) it also caught anything beginDraft threw, and the
      first thing beginDraft threw was the field renderer reading a coordinate for a chip
@@ -12991,6 +13490,7 @@ function beginFullDraft(){
     beginDraft({full:true});
   },()=>{
     if(b){ b.disabled=false; b.classList.remove('hp-loading'); }
+    homeBusy(false);
     toast('Couldn\'t load the defensive players. Check your connection and try again.');
   });
 }
@@ -13008,6 +13508,7 @@ function beginDefenseDraft(){
   }
   const b=$('b-start-def');
   if(b){ b.disabled=true; b.classList.add('hp-loading'); }
+  homeBusy(true);
   /* Two arguments rather than a chained .catch, for the reason written out in
      beginFullDraft: a chained catch reports a bug in the draft as a failed download. */
   loadDefensePool().then(()=>{
@@ -13015,6 +13516,7 @@ function beginDefenseDraft(){
     beginDraft({defense:true});
   },()=>{
     if(b){ b.disabled=false; b.classList.remove('hp-loading'); }
+    homeBusy(false);
     toast('Couldn\'t load the defensive players. Check your connection and try again.');
   });
 }
@@ -13288,7 +13790,9 @@ function modeMenu(){
   $('sheet-in').innerHTML=
     '<h2 class="display mtitle" style="font-size:25px;margin:4px 0 8px">More ways to play</h2>'+
     (locked?'<p class="dim" style="font-size:13px;line-height:1.4;margin:0 0 12px">'+esc(lockNote)+'</p>':'')+
-    '<div class="modecards">'+
+    /* mc-grid is a MODIFIER and the CSS behind it is entirely inside a min-width query, so
+       this class changes nothing at all on a phone. See the block beside .modecards. */
+    '<div class="modecards mc-grid">'+
       /* TWO SHAPES FOR ONE CARD, and which one you get is whether the Dynasty half exists
          for you. It is a premium mode with no premium behind it yet, so to everybody except
          a tester this card is exactly the button it has always been: one destination, one
@@ -14019,9 +14523,91 @@ function tutFinish(){
    IT POINTS AT THE BUTTON AND LEAVES IT LIVE. The scrim sits under #b-start rather than
    over it, so the way out of the guide is the thing the guide is telling you to do. Got it
    dismisses without starting, for somebody who wants to look around first. */
+/* ---- WHAT THIS PLAYER HAS ALREADY BEEN SHOWN ----
+   Reported by a player: the same pop-ups, ten times, after saying they did not need them.
+   Every one of these used to be remembered in THIS BROWSER and nowhere else, so a new
+   phone, a private window, iOS clearing a site nobody opened for a week, or a cleared jar
+   put every guide back in front of somebody forty seasons in. And the dynasty rules stood
+   in front of EVERY run unless a box was ticked, which is the ten times.
+
+   THREE RULES NOW, and each one is for one of those causes:
+   - every guide shows ONCE, ever, and is marked seen the moment it is on screen;
+   - a seen mark rides on the account (a `seen` slot on the same cloud save shelf the runs
+     use, so it costs no extra request: dynCloudPull already fetches the whole shelf), so
+     it follows the player to any device they sign in on;
+   - somebody with a history is not new, whatever this browser says. A run on the account
+     retires the first-run guide, a dynasty retires the dynasty rules and a Trade Machine
+     season retires its rules (seenFromRows, called by careerLoad).
+
+   The rules sheets are still one tap away on demand (How to play, the rules pill), so
+   nothing is taken away from a reader who wants them: they are just not pushed at anybody
+   twice. The old per-guide keys are still READ, so nobody who already dismissed something
+   sees it again on the day this ships. */
+const SEEN_KEY='ps_seen_v1';
+const SEEN_SLOT='seen';
+const SEEN_LEGACY={ guide:['ps_seen_guide'], dynintro:['ps_dynintro','ps_dynintro_off'],
+  tmintro:['ps_tmintro'] };
+/* Held in memory ONLY when storage throws (iOS private mode): a mark that cannot persist
+   must still hold for the visit it was made in. Everywhere else storage is the one copy, so
+   clearing it really does make a browser new again. */
+const seenMem={};
+function seenRead(){
+  let o={};
+  try{ o=JSON.parse(localStorage.getItem(SEEN_KEY)||'{}')||{}; }catch(_){ o={}; }
+  for(const k of Object.keys(SEEN_LEGACY)) for(const lk of SEEN_LEGACY[k]){
+    try{ if(localStorage.getItem(lk)==='1') o[k]=1; }catch(_){}
+  }
+  return Object.assign(o,seenMem);
+}
+function hasSeen(k){ return !!seenRead()[k]; }
+function seenWrite(o){
+  try{ localStorage.setItem(SEEN_KEY,JSON.stringify(o)); }
+  catch(_){ Object.keys(o).forEach((k)=>{ seenMem[k]=1; }); }
+}
+function markSeen(...keys){
+  const o=seenRead(); let moved=false;
+  keys.forEach((k)=>{ if(!o[k]){ o[k]=1; moved=true; } });
+  seenWrite(o);
+  if(moved) seenPush();
+}
+/* Up to the account, through the shelf's own queue. Progress is the number of things seen,
+   which only ever grows, so the server's "never move a save backwards" rule is exactly the
+   rule a seen list wants. Signed out there is nowhere to put it, and the browser copy is it. */
+function seenPush(){
+  if(!window.RTG_SAVE||!authState.signedIn||!authState.userId) return;
+  RTG_SAVE.queue(DYN_CLOUD_GAME,SEEN_SLOT,()=>{
+    const o=seenRead();
+    return { payload:{ seen:o }, progress:Object.keys(o).length };
+  });
+}
+/* Down from the account. A UNION, never a replace: either side may have seen something the
+   other has not, and nothing here ever un-sees a guide. */
+function seenMerge(row){
+  const there=(row&&row.payload&&row.payload.seen)||{};
+  const here=seenRead();
+  for(const k of Object.keys(there)) if(there[k]) here[k]=1;
+  seenWrite(here);
+  if(Object.keys(here).some((k)=>!there[k])) seenPush();
+  /* A guide already on screen for something this account has seen goes away again. */
+  if(here.guide&&frgUp()) frgClose();
+}
+/* What the account's own rows say about who this is. */
+function seenFromRows(rows){
+  rows=rows||[];
+  const keys=[];
+  if(rows.length) keys.push('guide');
+  if(rows.some((r)=>r&&(r.run_mode==='dynasty'||r.dynasty_id))) keys.push('dynintro');
+  if(rows.some((r)=>r&&r.run_mode==='trade')) keys.push('tmintro');
+  if(keys.length) markSeen(...keys);
+}
+/* And what this browser already holds: a saved run in any slot is somebody who has played. */
+function seenFromSaves(){
+  try{ if(Object.keys(FB_SLOTS).some((s)=>FB_SLOTS[s].read())) markSeen('guide'); }catch(_){}
+}
+
 const FRG_KEY='ps_seen_guide';
-function frgSeen(){ try{ return localStorage.getItem(FRG_KEY)==='1'; }catch(e){ return true; } }
-function frgMark(){ try{ localStorage.setItem(FRG_KEY,'1'); }catch(e){} }
+function frgSeen(){ return hasSeen('guide'); }
+function frgMark(){ try{ localStorage.setItem(FRG_KEY,'1'); }catch(e){} markSeen('guide'); }
 function frgUp(){ const el=$('frg'); return !!el&&!el.hidden; }
 /* WHAT THE GUIDE POINTS AT, which is no longer one fixed button. The front page shows either
    Start a run or the Offense and Defense pair, so the arrow, the cut-out, the glow and the
@@ -14141,8 +14727,24 @@ function frgClose(){
   window.removeEventListener('resize',frgPlace);
   window.removeEventListener('scroll',frgPlace);
 }
-function firstRunGuide(){
+/* `wait` counts the beats spent waiting to learn who this is. The guide fires 1.2s after boot
+   and the account can take longer than that to resolve, and a signed in player with a career
+   on a phone they have never used here is exactly who must not get it. So it waits for the
+   sign in to settle and, if somebody is signed in, for their rows, which retire it through
+   seenFromRows. Bounded, so a sign in that never answers still gets a stranger their guide. */
+function firstRunGuide(wait){
+  wait=wait||0;
   if(frgSeen()) return false;
+  seenFromSaves();
+  if(frgSeen()) return false;
+  if(wait<10&&A()&&!authState.ready){ setTimeout(()=>firstRunGuide(wait+1),400); return false; }
+  if(wait<10&&authState.signedIn&&authState.userId
+     &&!(career&&career.userId===authState.userId)){
+    careerLoad(authState.userId).then((c)=>{
+      setTimeout(()=>firstRunGuide(c?10:wait+1),c?0:400);
+    },()=>firstRunGuide(10));
+    return false;
+  }
   if(!$('s-intro').classList.contains('on')) return false;
   if($('sheet').classList.contains('on')) return false;
   if(wantModes||wantOneTeam||wantDefense||wantFull||wantDynasty) return false;
@@ -17609,11 +18211,11 @@ function tradeRulesHTML(cta){
   '</div>';
 }
 function tradeIntro(go){
-  let seen=false;
-  try{ seen=localStorage.getItem('ps_tmintro')==='1'; }catch(e){ seen=!!window.__tmIntro; }
-  if(seen){ go(); return; }
+  /* Once, on the account: see hasSeen. window.__tmIntro is kept for the checks that set it. */
+  if(hasSeen('tmintro')||window.__tmIntro){ go(); return; }
   window.__tmIntro=true;
   try{ localStorage.setItem('ps_tmintro','1'); }catch(e){}
+  markSeen('tmintro');
   $('sheet-in').innerHTML=tradeRulesHTML('Deal me a team');
   sheetOnClose=go;
   $('sheet').classList.add('on');
@@ -18943,6 +19545,9 @@ const PACE={
 const LIVE_PACE={'Wild Card':0.18,'Divisional':0.25,
   'Conference Championship':0.31,'Super Bowl':0.40};
 const QNAME=['1ST','2ND','3RD','4TH'];
+/* Anything past the fourth is overtime, which is not a fifth quarter: a live game that goes
+   to overtime reads OT on the bug and in the log, never undefined or 4TH 0:00. */
+const qLabel=(q)=>q>4?'OT':QNAME[q-1];
 const clockText=(sec)=>Math.floor(sec/60)+':'+String(Math.floor(sec%60)).padStart(2,'0');
 
 /* How the score bug dresses for each rung, and what its right-hand cell says. Slate,
@@ -19209,8 +19814,16 @@ const fieldLogo=new Image(); fieldLogo.src='field-r.png?v=1';
  * bar seventeen yards down the field at the moment the call was taken. Given one, the tail
  * sweeps from where the reader was left instead.
  */
-function drawDriveChart(ctx,w,h,drives,upTo,youColor,themColor,youName,themName,anchor){
+function drawDriveChart(ctx,w,h,drives,upTo,youColor,themColor,youName,themName,anchor,extra){
   if(!ctx)return;
+  /* THE BROADCAST FIELD, when /assets/fieldcast.js arrived. Everything below is the chart it
+     replaced, kept whole because a blocked or stale copy of that file must still leave a
+     game with a picture. See the header of fieldcast.js. */
+  if(window.RTG_FIELD&&window.RTG_FIELD.API_VERSION===1&&ctx.canvas){
+    RTG_FIELD.paint(ctx.canvas,Object.assign({drives,upTo,anchor:anchor||null,style:'nfl',
+      you:{color:youColor,name:youName},them:{color:themColor,name:themName}},extra||{}));
+    return;
+  }
   const dpr=window.devicePixelRatio||1;
   ctx.save();ctx.clearRect(0,0,w,h);
 
@@ -19418,6 +20031,7 @@ function drawDriveChart(ctx,w,h,drives,upTo,youColor,themColor,youName,themName,
 function initFieldCanvas(canvasId) {
   const cv = $(canvasId);
   if (!cv) return null;
+  if (window.RTG_FIELD && window.RTG_FIELD.API_VERSION === 1) return RTG_FIELD.prepare(cv);
   const dpr = window.devicePixelRatio || 1;
   const rect = cv.parentElement.getBoundingClientRect();
   const w = Math.max(300, Math.round(rect.width * dpr));
@@ -19428,6 +20042,20 @@ function initFieldCanvas(canvasId) {
 }
 
 let poTimer=null, poRaf=0, poSkip=null;
+
+/* WHOSE BUILDING A PLAYOFF GAME IS IN, which is what fills the broadcast field's stands. The
+   engine keeps a home field as an EDGE (homeField in run.js) and never names a host, so this
+   reads the bracket the player was just shown: the better seed hosts, the way the real
+   bracket does, and the Super Bowl is a neutral site. Without a bracket to read it is your
+   crowd, which is the edge the engine is giving you anyway. Decoration only: nothing reads it
+   but the stands. */
+function crowdHome(round,oppId){
+  if(round==='Super Bowl') return 'neutral';
+  const b=nbrk&&nbrk.forSeed===run.seed?nbrk:null;
+  const seat=b?(b.near||[]).find(x=>x&&x.team&&x.team.team_season_id===oppId):null;
+  if(!seat) return 'you';
+  return b.mySeed<=seat.seed?'you':'them';
+}
 
 function playPlayoffGame(r,after){
   const round=r.round||'Playoffs';
@@ -19544,8 +20172,10 @@ function playPlayoffGame(r,after){
     const sat=Math.max(cr,cg,cb)-Math.min(cr,cg,cb);
     if(sat<50)dcT='#e87461';
   }
+  const oppCode=opp?E.eraCode(opp.franchise,opp.season):'OPP';
+  const ticker=(ROUND_SHORT[round]||round).toUpperCase()+'   YOU VS '+oppCode+'   RUNTHE.GG   ';
   const paintField=fieldCtx?(upTo)=>drawDriveChart(fieldCtx,fcv.width,fcv.height,drives,upTo,
-    dcY,dcT,'YOU',opp?E.eraCode(opp.franchise,opp.season):'OPP'):()=>{};
+    dcY,dcT,'YOU',oppCode,null,{ticker,home:crowdHome(round,r.opponent_id)}):()=>{};
   paintField(0);
 
   const setLead=(y,t)=>{
@@ -19725,6 +20355,7 @@ function playLivePlayoffGame(idx,done){
   const coach=coachCalls()?run.coach:null;
   liveBoard(o,sim,rng,{
     eyebrow:round+seasonTag(),
+    home:crowdHome(round,o.team_season_id),
     state:ROUND_SHORT[round]||'LIVE',
     rec:(run.season.wins||0)+'-'+(run.season.losses||0),
     oppRec:'<i class="yr">'+o.season+'</i>'+esc(o.record||''),
@@ -19746,9 +20377,9 @@ function livePlayoffOver(ev,idx,done){
   bossStop();
   const o=bossOppNow;
   if($('bg-skip')) $('bg-skip').hidden=true;
-  $('bg-state').textContent='FINAL'; $('bg-q').textContent='FINAL';
+  $('bg-state').textContent='FINAL'; $('bg-q').textContent=ev.ot?'F/OT':'FINAL';
   $('bg-ck').textContent=ev.won?'YOU WIN':'YOU LOSE';
-  bossRenderScore(); bossDraw(3600,false);
+  bossRenderScore(); bossDraw(Math.max(3600,bossSim.clock),false);
   $('bg-calls').hidden=true;
   /* RECORDED, NOT DECIDED. advanceWeek takes the score this screen produced, files it as the
      round's result, advances the bracket and ends the run on a loss. See its `pre` note. */
@@ -19760,9 +20391,10 @@ function livePlayoffOver(ev,idx,done){
   const next=more?(run.playoffSeed.roundNames[run.season.playoffRound]||'The next round'):'';
   const vd=$('bg-verdict'); vd.className='bg-verdict '+(ev.won?'won':'lost');
   $('bg-outcome').textContent=ev.won?'You win':'You lose';
+  const inOt=ev.ot?' in overtime':'';
   $('bg-note').textContent=ev.won
-    ? (more?'You beat '+o.display+'. '+next+' next.':'You beat '+o.display+'. The ring is yours.')
-    : o.display+' ended your season.';
+    ? (more?'You beat '+o.display+inOt+'. '+next+' next.':'You beat '+o.display+inOt+'. The ring is yours.')
+    : o.display+' ended your season'+inOt+'.';
   const cont=$('b-boss-continue');
   cont.textContent=more?'Play '+next:'See the season';
   cont.onclick=()=>done();
@@ -20417,7 +21049,7 @@ function mandateBriefing(){
  * wrapped, so once the reward is taken it survives a reload.
  */
 let bossSim=null, bossRng=null, bossSpecNow=null, bossOppNow=null;
-let bossField=null, bossFcv=null, bossYouCol='#3a7bd5', bossThemCol='#e87461';
+let bossField=null, bossFcv=null, bossYouCol='#3a7bd5', bossThemCol='#e87461', bossHome='you';
 /*
  * TWO COUNTERS, AND THEY ANSWER DIFFERENT QUESTIONS.
  *
@@ -20487,8 +21119,8 @@ function bossRenderScore(){
   $('bg-them').classList.toggle('lead',bossSim.them>=bossSim.you);
 }
 function bossSetClock(elapsed){
-  const q=Math.min(4,Math.floor(elapsed/900)+1);
-  $('bg-q').textContent=QNAME[q-1];
+  const q=Math.floor(elapsed/900)+1;
+  $('bg-q').textContent=qLabel(q);
   $('bg-ck').textContent=clockText(Math.max(0,900-(elapsed-(q-1)*900)));
 }
 /* Draw the completed drives up to a time, optionally with the drive in progress laid on top
@@ -20505,11 +21137,15 @@ function bossDraw(upTo,live,anchor){
   let ds=bossSim.drives;
   if(live){
     const c=bossSim.cur;
+    /* plays and sit are the drive's REAL snap count and down, so the broadcast field shows
+       the fourth down the card under it is asking about rather than one it invented. */
     if(c) ds=ds.concat([{team:c.team,startYard:c.startAbs,
-      endYard:E_absYard(c.team,c.y),result:'live',tStart:c.tStart,tEnd:bossSim.clock}]);
+      endYard:E_absYard(c.team,c.y),result:'live',tStart:c.tStart,tEnd:bossSim.clock,
+      plays:c.plays,sit:{down:c.down,toGo:Math.max(1,Math.round(c.toGo))}}]);
   }
   drawDriveChart(bossField,bossFcv.width,bossFcv.height,ds,upTo,bossYouCol,bossThemCol,
-    'YOU',bossThreeLetter(bossOppNow),anchor||null);
+    'YOU',bossThreeLetter(bossOppNow),anchor||null,
+    {downs:false,home:bossHome,ticker:($('bg-eye').textContent||'Boss battle').toUpperCase()+'   YOU VS '+bossThreeLetter(bossOppNow)+'   RUNTHE.GG   '});
 }
 /* Absolute yard, mirrored for the boss, matching the engine's own frame. */
 function E_absYard(team,y){ const v=team==='you'?y:100-y; return Math.max(0,Math.min(100,v)); }
@@ -20570,6 +21206,7 @@ function liveBoard(o,sim,rng,opts){
   bossOnOver=opts.onOver||null;
   bossAutoCall=opts.autoCall||null;
   bossCallerName=opts.caller||'You';
+  bossHome=opts.home||'you';
   /* The bug and field colors, the same way the playoffs pick them: your side the game's blue
      (or your club), the opponent their real color, nudged apart if they collide on the field. */
   const them=E.washColors(o.franchise), me=youColors(them);
@@ -20624,6 +21261,9 @@ function bossPlay(read){
   liveBoard(o,sim,rng,{
     eyebrow:'Boss battle · Season '+run.seasonNo,
     state:'BOSS',
+    /* A boss is played in its own building: the crowd is theirs, which is half of what makes
+       it a boss. */
+    home:'them',
     narr:sim.readRight
       ? '<b class="good">Good read.</b> Your plan has them on their heels.'
       : sim.readTrap
@@ -20636,7 +21276,12 @@ function bossPlay(read){
 /* Play one event, drawing any drives it produced, then either pause for a decision, show the
    verdict, or keep going. */
 function bossLoop(){
+  const wasOt=!!bossSim.ot;
   const ev=E.bossSimAdvance(bossSim,bossRng);
+  /* REGULATION ENDED LEVEL AND THE SIM HAS GONE TO OVERTIME. Said over the field and written
+     into the log before the first overtime drive is drawn, because a game that carries on
+     past 0:00 of the fourth with nothing to say why reads as a clock that broke. */
+  if(!wasOt&&bossSim.ot) bossAnnounceOt();
   if(ev.type==='over'){ const end=bossOnOver||bossFinish;
     bossFlush(()=>{ bossRenderScore(); end(ev); }); return; }
   /* THE DRIVE IS PLAYED UP TO THE CALL BEFORE THE CALL IS ASKED. bossFlush only knows about
@@ -20649,6 +21294,16 @@ function bossLoop(){
      themselves carry the pace now, so this is the handoff between them rather than the
      pace itself. */
   bossFlush(()=>{ bossTimer=setTimeout(bossLoop,bossFast?0:420*bossPace); });
+}
+
+function bossAnnounceOt(){
+  const tie=bossSim.ot.level+'-'+bossSim.ot.level;
+  $('bg-narr').innerHTML='<b>Tied '+tie+' at the end of regulation.</b> Overtime: both sides get the ball, then the next score wins.';
+  const el=$('bg-log');
+  if(el) el.insertAdjacentHTML('afterbegin',
+    '<div class="pl call"><span class="t">OT</span>'+
+      '<span class="w">Overtime<i class="plsub">Tied at the end of regulation</i></span>'+
+      '<span class="n">'+tie+'</span></div>');
 }
 
 /* Animate every drive the sim has produced but not yet drawn, in order, then continue. */
@@ -20736,7 +21391,7 @@ function bossRescoreLast(){
 }
 function bossLogDrive(d){
   const el=$('bg-log'); if(!el) return;
-  const q=Math.min(4,Math.floor(d.tEnd/900)+1);
+  const q=Math.floor(d.tEnd/900)+1;
   const clock=clockText(Math.max(0,900-(d.tEnd-(q-1)*900)));
   const yds=bossDriveYards(d), plays=d.plays||0;
   /* The drive in one phrase, then what it cost to get there. A kick names its distance for
@@ -20758,7 +21413,7 @@ function bossLogDrive(d){
   const scored=d.result==='td'||d.result==='fg';
   el.insertAdjacentHTML('afterbegin',
     '<div class="pl '+(d.team==='you'?'you':'them')+(scored?'':' quiet')+'">'+
-      '<span class="t">'+QNAME[q-1]+' '+clock+'</span>'+
+      '<span class="t">'+qLabel(q)+' '+clock+'</span>'+
       '<span class="w">'+esc(d.team==='you'?'You':bossThreeLetter(bossOppNow))+' &middot; '+
         esc(what)+(drove?'<i class="plsub">'+esc(drove)+'</i>':'')+'</span>'+
       '<span class="n">'+bossSim.you+'-'+bossSim.them+'</span></div>');
@@ -20962,7 +21617,7 @@ function bossTakeCall(d,choice){
     bossTimer=setTimeout(bossLoop,bossFast?0:560);
   });
 }
-function ordinalQ(q){ return QNAME[q-1]+' quarter'; }
+function ordinalQ(q){ return q>4?'overtime':QNAME[q-1]+' quarter'; }
 /*
  * WHAT WAS DECIDED, as a verb phrase to sit after the caller's name. Present tense, because
  * on the coach's path it is printed in the second BEFORE the play is run.
@@ -20998,7 +21653,7 @@ function bossLogCall(d,choice,res){
   const how=bossCallOutcome(d,choice,res);
   el.insertAdjacentHTML('afterbegin',
     '<div class="pl call">'+
-      '<span class="t">'+QNAME[Math.min(3,d.quarter-1)]+' '+clockText(d.secs)+'</span>'+
+      '<span class="t">'+qLabel(d.quarter)+' '+clockText(d.secs)+'</span>'+
       '<span class="w">'+esc(bossCallerName)+' &middot; '+esc(what)+
         '<i class="plsub">'+esc(how)+'</i></span>'+
       '<span class="n">'+bossSim.you+'-'+bossSim.them+'</span></div>');
@@ -21036,9 +21691,9 @@ function bossFinish(ev){
   bossStop();
   const b=bossSpecNow||R.bossFor(run), o=bossOppNow||bossOppRow();
   if($('bg-skip')) $('bg-skip').hidden=true;
-  $('bg-state').textContent='FINAL'; $('bg-q').textContent='FINAL';
+  $('bg-state').textContent='FINAL'; $('bg-q').textContent=ev.ot?'F/OT':'FINAL';
   $('bg-ck').textContent=ev.won?'YOU WIN':'YOU LOSE';
-  bossRenderScore(); bossDraw(3600,false);
+  bossRenderScore(); bossDraw(Math.max(3600,bossSim.clock),false);
   $('bg-calls').hidden=true;
   const vd=$('bg-verdict'); vd.className='bg-verdict '+(ev.won?'won':'lost');
   $('bg-outcome').textContent=ev.won?'You win':'You lose';
@@ -21053,17 +21708,17 @@ function bossFinish(ev){
        it today rather than at the reset. */
     if(run&&run.dynasty) dailyGrace('dynasty','boss');
     if(b.reward==='freeze'){
-      $('bg-note').textContent='You beat '+o.display+'. Now pick a player to keep forever.';
+      $('bg-note').textContent='You beat '+o.display+(ev.ot?' in overtime':'')+'. Now pick a player to keep forever.';
       cont.textContent='Choose a player';
       cont.onclick=()=>bossFreeze();
     }else{
-      $('bg-note').textContent='You beat '+o.display+'. Your dead cap is wiped clean.';
+      $('bg-note').textContent='You beat '+o.display+(ev.ot?' in overtime':'')+'. Your dead cap is wiped clean.';
       cont.textContent='Into the offseason';
       cont.onclick=()=>{ R.applyBossResult(run,true); dynToWinter(); };
     }
     afterPaint(()=>fireConfetti(confettiTheme(false)));
   }else{
-    $('bg-note').textContent=o.display+' held on. The owner wants one more win next season.';
+    $('bg-note').textContent=o.display+(ev.ot?' won it in overtime':' held on')+'. The owner wants one more win next season.';
     cont.textContent='Into the offseason';
     cont.onclick=()=>{ R.applyBossResult(run,false); dynToWinter(); };
   }
@@ -22634,41 +23289,86 @@ const HERO_SPOTS=[
    player-seasons mostly surfaces people nobody recognizes, which makes the game look like it
    is about obscure players when it is about the famous ones. */
 const HERO_TOP_N=20;
-let heroPoolCache=null;
+/* ONE CACHE PER SIDE OF THE BALL. The defensive pool is a second download, so its half is
+   built the first time the switcher asks for it and not before. */
+const heroPoolCache={};
 
-function heroPool(){
-  if(heroPoolCache) return heroPoolCache;
+function heroPool(side){
+  side=side||'off';
+  if(heroPoolCache[side]) return heroPoolCache[side];
+  const src=side==='def'?(DDATA&&DDATA.players):(DATA&&DATA.players);
+  if(!src) return null;
   const by={};
-  for(const p of DATA.players)(by[p.position] ??= []).push(p);
+  for(const p of src)(by[p.position] ??= []).push(p);
   for(const k in by){
     by[k].sort((a,b)=>b.ppr_ppg_mean-a.ppr_ppg_mean);
     by[k]=by[k].slice(0,HERO_TOP_N);
   }
-  heroPoolCache=by;
-  return heroPoolCache;
+  heroPoolCache[side]=by;
+  return by;
 }
 
-/* Three signings, on three different spots, each filled by somebody who can actually play
-   there. The FLEX spot takes a back, a receiver or a tight end, which is the same rule the
-   real draft enforces. */
-function heroPicks(){
-  const pool=heroPool();
-  const spots=HERO_SPOTS.map((sp,i)=>i);
+/* ─── THE HERO FIELD FOLLOWS THE SWITCHER ─────────────────────────────────────────────────
+ *
+ * TWELVE CHIPS, SIX A SIDE, and they are never torn down. A switch changes where each one
+ * STANDS, and the CSS transition on left and top does the rest: the side you left runs off
+ * its own end of the field, the side you picked runs on, and on Full Team both line up either
+ * side of one line of scrimmage. Rebuilt instead, a switch would be a cut, and the whole
+ * point of the control is that you watch your answer arrive.
+ *
+ * The offensive spots are HERO_SPOTS, unchanged. The defensive ones are SPOT_FALLBACK_DEF's
+ * own coordinates, which is the formation the defense draft opens on. On Full Team both are
+ * folded toward the middle by fullY(), the same mapping the Full Team draft field uses, so
+ * the front page draws the picture that mode actually draws. */
+const HERO_DEF_SPOTS=[
+  {label:'DL',   left:30, top:64},
+  {label:'DL',   left:70, top:64},
+  {label:'LB',   left:50, top:44},
+  {label:'DB',   left:12, top:24},
+  {label:'DB',   left:88, top:24},
+  {label:'FLEX', left:32, top:24},
+];
+const HERO_ALL=[
+  ...HERO_SPOTS.map((sp,i)=>({k:'o'+i,side:'off',sp})),
+  ...HERO_DEF_SPOTS.map((sp,i)=>({k:'d'+i,side:'def',sp})),
+];
+/* WHERE A SIGNING CAN STAND ON A FULL FIELD. Twelve men on a field this short means a
+   lineman's name lands on the receiver across the line from him, and the back's runs off the
+   bottom. So on Full Team the front page only signs where a name has room; the other chips
+   are still on the field, empty, so the formation reads whole. */
+const HERO_FULL_OK=new Set(['o0','o2','o3','o4','o5','d3','d4','d5']);
+let heroMode='off';
+
+function heroAt(h,mode){
+  if(mode==='full') return {left:h.sp.left, top:fullY(h.sp.top,h.side==='def'), shown:true};
+  if(mode===h.side) return {left:h.sp.left, top:h.sp.top, shown:true};
+  /* Off its own end of the field: the offense leaves by the bottom, the defense by the top. */
+  return {left:h.sp.left, top:h.side==='off'?122:-22, shown:false};
+}
+
+/* Three signings, on three different spots in the formation on screen, each filled by
+   somebody who can actually play there. A FLEX takes any position on its own side, which is
+   the same rule the real draft enforces. */
+function heroPicks(mode){
+  mode=mode||heroMode;
+  const spots=HERO_ALL.filter(h=>mode==='full'?HERO_FULL_OK.has(h.k):h.side===mode);
   for(let i=spots.length-1;i>0;i--){
     const j=Math.floor(Math.random()*(i+1)); [spots[i],spots[j]]=[spots[j],spots[i]];
   }
   const out=[];
-  for(const at of spots){
+  for(const h of spots){
     if(out.length>=3) break;
-    const label=HERO_SPOTS[at].label;
-    const allowed=label==='FLEX'?['RB','WR','TE']:[label];
+    const pool=heroPool(h.side);
+    if(!pool) continue;
+    const label=h.sp.label;
+    const allowed=label==='FLEX'?(h.side==='def'?['DL','LB','DB']:['RB','WR','TE']):[label];
     const pos=allowed[Math.floor(Math.random()*allowed.length)];
     const cand=pool[pos];
     if(!cand||!cand.length) continue;
     const p=cand[Math.floor(Math.random()*cand.length)];
     const ts=DATA.byTeamSeasonId[p.team_season_id];
     if(!ts) continue;
-    out.push({at, season:p.season, team:ts.display.replace(/^\d{4}\s+/,''),
+    out.push({k:h.k, season:p.season, team:ts.display.replace(/^\d{4}\s+/,''),
       fr:p.franchise, pos, last:lastName(p.name)});
   }
   return out;
@@ -22697,25 +23397,89 @@ function heroFaces(){
 
 function heroChips(){
   const f=$('h-field');
-  f.querySelectorAll('.chip').forEach(c=>c.remove());
-  /* Spots are used exactly as designed. An earlier version squeezed them into a "safe band"
-     computed from the field's height so labels always fit, and that was the wrong trade: it
-     moved every bubble, and pushed the top row hard against the field's edge. Nothing moves
-     now; the chips whose label would not fit below flip it above instead. */
-  HERO_SPOTS.forEach((sp,i)=>{
-    const on=heroFilled.find(x=>x.at===i);
-    const el=document.createElement('div');
-    el.className='chip '+(on?'filled':'empty')+(on&&on.fresh?' pop':'');
-    el.style.left=sp.left+'%'; el.style.top=sp.top+'%';
+  if(!f) return;
+  /* Spots are used exactly as designed, and every chip is updated in place rather than
+     rebuilt, so a chip that changes position slides there instead of reappearing. */
+  HERO_ALL.forEach((h)=>{
+    let el=f.querySelector('.chip[data-k="'+h.k+'"]');
+    const at=heroAt(h,heroMode);
+    if(!el){
+      el=document.createElement('div');
+      el.dataset.k=h.k;
+      el.style.left=at.left+'%'; el.style.top=at.top+'%';
+      f.appendChild(el);
+    }
+    const on=at.shown?heroFilled.find(x=>x.k===h.k):null;
+    el.className='chip '+(on?'filled':'empty')+(on&&on.fresh?' pop':'')+(at.shown?'':' gone');
+    el.style.left=at.left+'%'; el.style.top=at.top+'%';
     const style=on?' style="background:linear-gradient(160deg,var(--'+on.pos.toLowerCase()+
       '),rgba(0,0,0,.45))"':'';
-    el.innerHTML='<div class="disc"'+style+'><span class="dl">'+(on?on.pos:sp.label)+
+    el.innerHTML='<div class="disc"'+style+'><span class="dl">'+(on?on.pos:h.sp.label)+
       '</span></div>'+(on?'<div class="lab"><div class="who">'+esc(on.last)+
       '</div><div class="yr">'+tcPlate(on.fr,on.season)+' '+on.season+
       '</div></div>':'');
-    f.appendChild(el);
     if(on) on.fresh=false;
   });
+}
+
+/* THE MARKINGS FOR EACH SIDE ARE THE DRAFT FIELD'S OWN: an end zone for the offense, the same
+   plus a line of scrimmage for the defense, and the open field with both units for Full
+   Team. They sit in a layer of their own under the chips so a switch can fade one set out
+   and the next in, rather than repainting the grass under twelve men who are mid-run. */
+function heroMarkings(mode,fade){
+  const f=$('h-field');
+  if(!f) return;
+  const kind=mode==='full'?'full':mode==='def';
+  const old=[...f.querySelectorAll('.hmk')];
+  /* Anything else a previous boot wrote straight into the field goes too. */
+  [...f.children].forEach(c=>{ if(!c.classList.contains('hmk')&&!c.classList.contains('chip')) c.remove(); });
+  const mk=document.createElement('div');
+  mk.className='hmk'+(fade&&old.length?' out':'');
+  mk.innerHTML=fieldMarkings(kind);
+  f.insertBefore(mk,f.firstChild);
+  f.classList.toggle('fullfield',mode==='full');
+  f.classList.toggle('pick-off',mode==='full');
+  f.classList.toggle('pick-def',mode==='full');
+  if(fade&&old.length){
+    requestAnimationFrame(()=>requestAnimationFrame(()=>{
+      mk.classList.remove('out');
+      old.forEach(o=>o.classList.add('out'));
+      setTimeout(()=>old.forEach(o=>o.remove()),420);
+    }));
+  }else old.forEach(o=>o.remove());
+}
+
+/* THE SWITCH ITSELF. Called by the switcher, and by paintHomeMode whenever the mode the page
+   is showing stops matching the one that is allowed (a signed out visitor's saved choice of
+   Defense, say, before the account has answered). */
+function heroSwitch(){
+  if(!DATA) return;
+  const want=homeModeNow();
+  if(want===heroMode) return;
+  heroMode=want;
+  const f=$('h-field');
+  if(!f) return;
+  heroMarkings(want,true);
+  /* One man at a time rather than all six together: the cascade is what reads as a unit
+     running on, where a block moving as one reads as a slide changing. */
+  const chips=[...f.querySelectorAll('.chip')];
+  chips.forEach((c,i)=>{ c.style.transitionDelay=(HERO_REDUCE?0:(i%6)*45)+'ms'; });
+  heroChips();
+  setTimeout(()=>chips.forEach(c=>{ c.style.transitionDelay=''; }),1100);
+  if(!HERO_REDUCE){
+    const sw=document.createElement('div');
+    sw.className='hsweep';
+    f.appendChild(sw);
+    setTimeout(()=>sw.remove(),900);
+  }
+  /* AND THE LOOP STARTS AGAIN ON THE NEW SIDE, once the runners have arrived. heroStop
+     bumps heroRun, which is what cancels a loop in the middle of a spin. */
+  if(HERO_REDUCE){ heroStatic(); return; }
+  if(heroRunning){
+    heroStop();
+    const seq=++heroRun;
+    setTimeout(()=>{ if(seq===heroRun&&heroRunning) heroLoop(seq); },650);
+  }
 }
 
 /* A reel with nothing in it yet. Three faces and no transform, so the placeholder
@@ -22744,10 +23508,11 @@ function heroReset(){
 /* No animation at all for anyone who has asked their device for less of it. They
    get the end of the sequence held still, which is the same information. */
 function heroStatic(){
-  const picks=heroPicks();
-  const last=picks[picks.length-1];
+  const picks=heroPicks(heroMode);
   heroFilled=picks.map(p=>({...p}));
   heroChips();
+  const last=picks[picks.length-1];
+  if(!last) return;
   heroSettle($('h-reel-y'),['2004',String(last.season),'2019'],String(last.season));
   heroSettle($('h-reel-t'),['Tennessee Titans',last.team,'Indianapolis Colts'],last.team);
   $('h-box-y').className='reelbox year done';
@@ -22760,10 +23525,16 @@ async function heroLoop(seq){
   const live=()=>seq===heroRun;
   while(live()){
     heroFilled=[]; heroChips(); heroReset();
+    /* A side of the ball whose people have not arrived yet waits for them. The download is
+       the defense draft's own, so the wait is paid once and the draft then starts warm. */
+    if(heroMode!=='off'&&!DDATA){
+      try{ await loadDefensePool(); }catch(_){ return; }
+      if(!live()) return;
+    }
     await heroNap(HERO.gap);
     /* Drawn per loop, not per page load, so the animation is different the second time
        round rather than only different between visits. */
-    for(const pk of heroPicks()){
+    for(const pk of heroPicks(heroMode)){
       if(!live()) return;
       const spinYear=heroSpin($('h-reel-y'),faces.years,String(pk.season),HERO.year);
       await heroNap(HERO.stagger);
@@ -22987,6 +23758,7 @@ function authBoot(){
     if(!st.signedIn){ myCrest=null; myMark=null; mySeen=null; }
     else { loadMyMark(); loadSeen(); crestBoot(); }
     signinHash();
+    proHash();
   });
   a.boot();
 }
@@ -23016,6 +23788,17 @@ function signinHash(){
   profileSheet();
 }
 
+/* #pro OPENS THE STORE ON ARRIVAL, for the Fantasy Challenge's review screen, which tells a
+   free account that Pro gets five drafts a week and has no store of its own to show them.
+   The same one-shot rules as #signin: asked once auth has answered, and the hash cleared. */
+let proDone=false;
+function proHash(){
+  if(proDone||!authState.ready||location.hash!=='#pro') return;
+  proDone=true;
+  try{ history.replaceState(null,'',location.pathname+location.search); }catch(_){}
+  openPremium('fantasy');
+}
+
 /* Fetch the rows the crest needs, once per account, and repaint what is already on screen.
    careerLoad is cached and the cabinet already asks for the same rows, so on a player who
    opens their profile this costs nothing at all: it is the same promise resolved twice.
@@ -23032,7 +23815,6 @@ function crestBoot(){
       crestRefresh(c.rows);
       pushTierIfMoved();
       paintAvatar();
-      whatsNewMaybe();
       if($('sheet').classList.contains('on')&&$('sheet-in').dataset.kind==='profile')
         profileSheet();
     });
@@ -23472,98 +24254,11 @@ async function loadMyAvatar(){
 
 const authMsg=(m,ok)=>'<p class="autherr'+(ok?' authok':'')+'">'+esc(m)+'</p>';
 
-/* ---------------- WHAT IS NEW ----------------
-   Shown once to a signed-in player who can see the crest, because a profile system nobody
-   is told about is a profile system nobody opens. Three rules it follows:
-
-   ONLY WHEN THERE IS NOTHING ELSE ON SCREEN. It arrives off a network round trip, so it can
-   land at any moment, including the middle of a draft or over a results screen somebody is
-   reading. A popup that interrupts a run is worse than no popup, so it waits for the front
-   page. It is asked twice for that reason: once when the rows land, and again by show()
-   every time the front page is arrived at, which covers both orders those can happen in.
-
-   ONCE PER VISIT AT MOST, whatever else happens. The auth library fires onChange more than
-   once on a normal sign-in, and each of those is a fresh chance to open this.
-
-   THE BOX IS WRITTEN THE MOMENT IT IS TICKED, not on the way out, because the promise it
-   makes has to hold however the sheet is dismissed, including the tab being closed. */
-const WHATSNEW_KEY='ps_crest_whatsnew_off:1';
-let whatsNewShown=false;
-function whatsNewOff(){
-  try{ return localStorage.getItem(WHATSNEW_KEY)==='1'; }catch(_){ return false; }
-}
-function whatsNewMaybe(){
-  if(whatsNewShown||whatsNewOff()||!canUseCrest()||!myCrest) return;
-  if(!$('s-intro').classList.contains('on')) return;
-  if($('sheet').classList.contains('on')) return;
-  whatsNewShown=true;
-  whatsNewSheet();
-}
-function whatsNewSheet(){
-  const box=$('sheet-in'); box.dataset.kind='whatsnew';
-  const C=window.PS_CREST;
-  const a=avatarOf(authState.name,myAvatar.color,myAvatar.initials);
-  const club=a.chosen?a.key:null;
-  const rung=crestRungFor(club);
-  /* Their own crest, not a picture of somebody else's. The whole argument for the thing is
-     that it is yours, and a stock illustration would be making that argument badly. */
-  let mine='';
-  try{ mine=C.crest({ club:club, rung:rung, mark:wornMark(), ring:myCrest.ring,
-    tier:myCrest.tier, size:88, text:a.text }); }catch(_){ mine=''; }
-  const tier=myCrest.tier?C.tierAt(myCrest.tier):null;
-  box.innerHTML='<div class="eyebrow">New</div>'+
-    '<h2 class="display" style="font-size:25px;margin:4px 0 10px">Your circle is a crest now</h2>'+
-    '<div class="wnrow">'+
-      '<span class="pfp crested wnbig" aria-hidden="true">'+mine+'</span>'+
-      '<p class="wnlead">That\'s yours, drawn from what you have actually done. '+
-        'Four things go into it, and every one of them is earned rather than picked '+
-        'off a list.</p>'+
-    '</div>'+
-    '<ul class="rules wnlist">'+
-      '<li><span class="n">1</span><span><b>Your club\'s colors</b>, in three steps. '+
-        'Play one draft with a club and the crest takes their colors. Reach the playoffs '+
-        'with them and their second color becomes the ring. Win it all with them and you '+
-        'get that club\'s own pattern, and all thirty two are different.</span></li>'+
-      '<li><span class="n">2</span><span><b>A mark</b> in the middle, instead of your '+
-        'initials. There are twelve, each one opened by a badge you already have: a '+
-        'perfect season, a 17-0, a title from a wild card seed, going 0-17. Pick which '+
-        'one you wear in Customize.</span></li>'+
-      '<li><span class="n">3</span><span><b>A seal</b> on the rim for your rank, which '+
-        'climbs with your badge count. Ten of them: Bronze 1, 2 and 3, then Silver, then '+
-        'Gold, then GOAT for every badge in the game. The chevrons are the number. '+
-        'Nothing to choose: it\'s your cabinet, in one shape.</span></li>'+
-      '<li><span class="n">4</span><span><b>The ring</b>, for the honors worth a ring. '+
-        'A title gets gold. Titles in two straight seasons, or a 20-0, and the light '+
-        'starts moving round it.</span></li>'+
-    '</ul>'+
-    '<p class="dim wnnow">'+esc(whatsNewStanding(a,rung,tier))+'</p>'+
-    '<div class="hrow" style="margin-top:14px">'+
-      '<button class="btn sm" id="wn-go">Set mine up</button>'+
-      '<button class="btn ghost sm" id="sh-x">Not now</button></div>'+
-    '<label class="wnchk"><input type="checkbox" id="wn-off"'+(whatsNewOff()?' checked':'')+'>'+
-      '<span>Don\'t show this again</span></label>';
-  openSheet();
-  $('sh-x').onclick=closeSheet;
-  $('wn-go').onclick=()=>pfLook();
-  const chk=$('wn-off');
-  chk.onchange=()=>{
-    try{
-      if(chk.checked) localStorage.setItem(WHATSNEW_KEY,'1');
-      else localStorage.removeItem(WHATSNEW_KEY);
-    }catch(_){}
-  };
-  ga('crest_whatsnew_shown',{rung:rung,badges:myCrest.badges});
-}
-/* Where they stand right now, in one line, because the four rules above are abstract until
-   somebody sees their own numbers against them. */
-function whatsNewStanding(a,rung,tier){
-  const bits=[];
-  bits.push(a.chosen?a.team+', rung '+rung+' of 3':'No club picked yet');
-  bits.push(myCrest.badges+' of '+myCrest.total+' badges'+(tier?', '+tier.name:''));
-  const n=myCrest.marks.length;
-  bits.push(n===1?'one mark unlocked':n+' marks unlocked');
-  return 'Right now: '+bits.join(' · ')+'.';
-}
+/* ---------------- WHAT IS NEW: RETIRED ----------------
+   A "your circle is a crest now" sheet opened on the front page for every signed-in player
+   on every visit until a box in it was ticked, and the box only held in one browser. It was
+   an announcement, the crest has been out since August, and it was the pop-up players were
+   tired of. Customize is where the crest is set, and the profile circle leads there. */
 
 /* ---------------- THE CREST, IN THE CUSTOMIZE PAGE ----------------
    Three controls that were one. The club grid below already existed; what is new is that the
@@ -23920,6 +24615,9 @@ async function careerLoad(userId){
   careerBusy=false;
   if(!r) return null;
   career={userId,rows:r.rows,total:r.total,capped:r.capped};
+  /* Who this is, by what they have played, so a guide is never put in front of somebody
+     whose history says they do not need it. Any caller, so whichever asks first does it. */
+  seenFromRows(r.rows);
   return career;
 }
 
@@ -24089,7 +24787,22 @@ function achPairLinks(a,b,sameClub){
 }
 function achEvaluate(rows){
   if(!ACH) return null;
-  try{ return ACH.evaluate(rows,achResolve,{pairLinks:achPairLinks}); }catch(_){ return null; }
+  try{ return ACH.evaluate(rows,achResolve,{pairLinks:achPairLinks,schedule:NFL_SCHED}); }catch(_){ return null; }
+}
+/* THE REAL NFL SCHEDULE, for the Game Day shelf: which games were on when each season was
+   filed. Rebuilt by a workflow whenever the schedule or a final score moves, under the same
+   name, so it is fetched no-cache rather than with a hand-written ?v= a bot cannot bump.
+   Loaded once, only when the cabinet is derived, and a failure leaves those badges dark
+   rather than holding up the ones that do not need it. */
+let NFL_SCHED=null, schedLoading=null;
+function loadSchedule(){
+  if(NFL_SCHED) return Promise.resolve(NFL_SCHED);
+  if(schedLoading) return schedLoading;
+  schedLoading=fetch('data/nfl_schedule.json',{cache:'no-cache'})
+    .then(r=>{ if(!r.ok) throw new Error('nfl_schedule'); return r.json(); })
+    .then(j=>{ NFL_SCHED=j; return j; })
+    .catch(()=>{ schedLoading=null; return null; });
+  return schedLoading;
 }
 /* THE DEFENDERS HAVE TO BE IN THE ROOM BEFORE THE CABINET IS DERIVED. achResolve reads
    BYKEY, and the defensive pool is a second data file that only a defense draft loads, so a
@@ -24097,9 +24810,10 @@ function achEvaluate(rows){
    empty roster: not a wrong badge, a missing one, and silently. Every caller awaits this
    first. A failure leaves the cabinet exactly as it was rather than blocking it. */
 function achReady(rows){
-  if(!ACH||DDATA) return Promise.resolve();
-  if(!(rows||[]).some(r=>r&&r.run_mode==='defense')) return Promise.resolve();
-  return loadDefensePool().then(()=>{},()=>{});
+  if(!ACH) return Promise.resolve();
+  const wait=[loadSchedule()];
+  if(!DDATA&&(rows||[]).some(r=>r&&r.run_mode==='defense')) wait.push(loadDefensePool().then(()=>{},()=>{}));
+  return Promise.all(wait).then(()=>{},()=>{});
 }
 
 /* The two streaks, side by side. The play streak leads with the state that motivates: if
@@ -24436,6 +25150,27 @@ const proDate=(s)=>{
   const d=new Date(s);
   return isNaN(d)?'':d.toLocaleDateString(undefined,{year:'numeric',month:'short',day:'numeric'});
 };
+/* A YEARLY PLAN THAT IS STILL PAID FOR (supabase/124). past_due counts: the grace is
+   running and Stripe is retrying the card, so the plan is still the account's, and saying
+   otherwise would read as Pro being taken away over a card that may yet go through. */
+const PLAN_LIVE=['active','trialing','past_due'];
+const PLAN_PRODUCTS={'perfect-season':['ps_premium','cfb_premium'],
+  'run-the-bundle':['ps_premium','cfb_premium','arcade_card_year']};
+function livePlans(plans){
+  const now=Date.now();
+  return (plans||[]).filter((p)=>p&&PLAN_LIVE.indexOf(p.status)>=0&&
+    (!p.access_until||Date.parse(p.access_until)>now));
+}
+function planFor(live,product){
+  return live.find((p)=>(PLAN_PRODUCTS[p.bundle]||[]).indexOf(product)>=0)||null;
+}
+/* RENEWS OR ENDS, and never "yours for good": a plan is paid for a year at a time. The date
+   is the period end Stripe bills on, which is the date on their card statement. */
+function planDates(p){
+  const d=proDate(p.current_period_end);
+  if(!d) return 'On a yearly plan.';
+  return p.cancel_at_period_end?'Ends on '+d+'.':'Renews on '+d+'.';
+}
 function pfPro(){
   const box=$('sheet-in'); box.dataset.kind='profile';
   box.innerHTML=pfHead('Your Pro access')+
@@ -24459,6 +25194,14 @@ async function pfProLoad(){
   const by={};
   rows.forEach((r)=>{ if(r&&r.product) by[r.product]=r; });
   const owned=PRO_ORDER.filter((k)=>by[k]&&PRO_ITEM[k]);
+  /* THE YEARLY PLANS, read beside the rows rather than instead of them. A row says a plan
+     keeps it alive (sub_until); only the plan says whether it renews or has been cancelled,
+     and that is the sentence a subscriber opens this page for. */
+  let plans=[];
+  try{ plans=(a&&typeof a.premiumPlans==='function')?await a.premiumPlans():[]; }catch(_){ plans=[]; }
+  if(!$('pf-pro-list')||$('sheet-in').dataset.kind!=='profile') return;
+  const live=livePlans(plans);
+  let hasPlan=false;
 
   if(!owned.length){
     /* REACHABLE, AND NOT A BUG. The row that opened this page was drawn from
@@ -24469,7 +25212,7 @@ async function pfProLoad(){
       'Your Pro modes are unlocked. The list of what is in your bundle couldn\'t be loaded '+
       'just now. Reload the page and it will come back.</p>';
   }else{
-    let ends=null, endedOn=null;
+    let ends=null, endedOn=null, passEnds=null, passEnded=null, paid=false;
     list.innerHTML=owned.map((k)=>{
       /* Same colour coding the offer uses, out of the same table, so the receipt and the
          card somebody bought from cannot disagree about which game a line belongs to. */
@@ -24485,8 +25228,22 @@ async function pfProLoad(){
          the future tense, months after it had gone. Telling a customer they hold something
          they do not hold is the one thing a receipt must never do. */
       const gone=!!row.expires_at&&Date.parse(row.expires_at)<Date.now();
-      if(till&&gone) endedOn=till;
-      else if(till) ends=till;
+      /* A FANTASY CHALLENGE PASS WAS WON, NOT BOUGHT. The weekly winner gets 30 days of Pro
+         as these same two rows with an end date and a source naming the week
+         (supabase/120_fantasy_pro_pass.sql). "Bought" on a prize is false, and so is the
+         Arcade Card sentence under the list, which is only ever about an Arcade year. */
+      const won=/^fantasy:/.test(row.source||'');
+      /* THREE KINDS OF ROW, and only the lifetime one says "for good". A row a yearly
+         plan is keeping alive says when the plan renews or ends, a Fantasy pass says Won,
+         and nothing that ends is ever called lifetime. A plan wins over a pass on the same
+         row, because the plan is the thing that will charge them. */
+      const plan=row.expires_at?planFor(live,k):null;
+      const planGone=!plan&&!!row.sub_until&&!won;
+      if(plan) hasPlan=true;
+      if(!won&&!plan&&!planGone) paid=true;
+      if(plan||planGone){ /* the plan sentence below covers it */ }
+      else if(won){ if(till&&gone) passEnded=till; else if(till) passEnds=till; }
+      else if(k==='arcade_card_year'){ if(till&&gone) endedOn=till; else if(till) ends=till; }
       /* NOT EVERYTHING IN A BUNDLE ARRIVES AT ONCE. The Run The Tour coins are credited by
          the golf backend, which stamps fulfilled_at when it does; until then the row is a
          promise this page has to keep rather than a thing the player has. Reporting it as
@@ -24495,9 +25252,13 @@ async function pfProLoad(){
          Both halves are required: the product has to be one that is delivered elsewhere, and
          it has to be still unstamped. See the note on PRO_ITEM. */
       const waiting=!!it.wait&&row.fulfilled_at==null&&!gone;
-      const dates=till
-        ? 'Bought '+when+'. '+(gone?'Ended ':'Ends ')+till+'.'
-        : 'Bought '+when+'. Yours for good.';
+      const dates=plan
+        ? planDates(plan)
+        : planGone
+          ? 'Your plan ended on '+till+'.'
+          : till
+            ? (won?'Won in the Fantasy Challenge on ':'Bought ')+when+'. '+(gone?'Ended ':'Ends ')+till+'.'
+            : 'Bought '+when+'. Yours for good.';
       return '<div class="pw-line'+(gone?' ended':'')+'" style="--gc:'+g.c+'"><b>'+esc(g.name)+'</b>'+
         '<span>'+esc(it.text)+'</span>'+
         (when||till
@@ -24510,9 +25271,16 @@ async function pfProLoad(){
          a customer who thinks they are on a recurring charge cancels the whole account to
          stop it. Nothing here renews, and the sentence says so before they have to ask. */
       '<p class="dim" style="font-size:12px;line-height:1.45;margin:13px 0 0">'+
-        'You paid once. Nothing here renews and nothing charges you again.'+
+        /* A PLAN RENEWS, AND THE SENTENCE THAT SAYS NOTHING DOES IS THEN FALSE, so it goes.
+           A lifetime owner with no plan reads exactly what they always read. */
+        (hasPlan
+          ? 'Your plan renews each year until you cancel. Cancel any time below.'
+          : paid?'You paid once. Nothing here renews and nothing charges you again.'
+               :'You won this. Nothing here renews and nothing charges you.')+
         (ends?' Your Arcade Card year simply ends on '+esc(ends)+'.':'')+
         (endedOn?' Your Arcade Card year ended on '+esc(endedOn)+'.':'')+
+        (passEnds?' Your Pro pass ends on '+esc(passEnds)+'.':'')+
+        (passEnded?' Your Pro pass ended on '+esc(passEnded)+'.':'')+
       '</p>';
       /* AND IT STOPS THERE. A "Start another Arcade year" button stood here for one commit
          and came out on the owner's call: this page is a receipt for what this account
@@ -24524,9 +25292,13 @@ async function pfProLoad(){
 
   const bill=$('pf-pro-bill');
   if(!bill) return;
-  bill.innerHTML='<button class="btn ghost" id="pf-bill" style="width:100%">Receipts and billing</button>'+
-    '<p class="dim" style="font-size:11.5px;margin:8px 0 0">Opens Stripe, where your receipts and '+
-      'payment details live.</p>';
+  const planLive=livePlans(plans).length>0;
+  bill.innerHTML='<button class="btn ghost" id="pf-bill" style="width:100%">'+
+      (planLive?'Manage your plan':'Receipts and billing')+'</button>'+
+    '<p class="dim" style="font-size:11.5px;margin:8px 0 0">'+
+      (planLive
+        ? 'Opens Stripe, where you can cancel or change your plan and see your receipts.'
+        : 'Opens Stripe, where your receipts and payment details live.')+'</p>';
   $('pf-bill').onclick=async()=>{
     busy('pf-bill','Opening');
     /* auth.js is a sibling script with its own cache version, so a browser one bump behind
@@ -24535,7 +25307,7 @@ async function pfProLoad(){
        presses. It falls into the same "could not open" answer as any other failure. */
     const a=A();
     const r=(a&&typeof a.billingPortal==='function')
-      ? await a.billingPortal('/football/')
+      ? await a.billingPortal('/football/',planLive?'plan':null)
       : {error:'unavailable'};
     if(r&&r.url){ location.href=r.url; return; }
     /* SAY WHICH KIND OF NOTHING IT IS. no_customer is not a failure: an account comped by
@@ -24804,12 +25576,15 @@ function pfAccount(msg,ok){
     '<div style="margin-top:9px"><button class="btn ghost" id="a-setname">Change my name</button></div>'+
     '<p class="dim" style="font-size:11.5px;margin:12px 0 0">Runs you finish are recorded '+
       'under this name. Changing it renames the ones already on the board.</p>'+
+    '<div data-rtg-news="football"></div>'+
     '<div class="hrow" style="margin-top:14px">'+
       '<button class="btn ghost sm" id="a-feedback">Send feedback</button>'+
       '<button class="btn ghost sm" id="a-signout">Sign out</button></div>'+
     pfDangerHtml()+
     '<div style="margin-top:14px"><button class="btn ghost" id="sh-x">Close</button></div>';
   openSheet(); pfWireCommon(); pfWireDelete();
+  /* the release newsletter box, /assets/newsletter.js. Absent script, absent box. */
+  if(window.RTG_NEWS) RTG_NEWS.fill(box);
 }
 
 /* AT REST THIS IS ONE LINE, and the long version arrives on the first tap. The resting
@@ -24967,6 +25742,7 @@ function profileSheet(msg,ok){
       'autocapitalize="off" autocorrect="off" spellcheck="false">'+
     '<input class="fld" id="a-pass" type="password" placeholder="password" '+
       'autocomplete="'+(up?'new-password':'current-password')+'">'+
+    (up?'':'<a href="/#forgot" target="_blank" rel="noopener" style="display:inline-block;margin:4px 0 2px;font-size:12.5px;color:inherit;opacity:.75;text-decoration:underline;text-underline-offset:3px">Forgot your password?</a>')+
     (up?'<input class="fld" id="a-user" placeholder="a name for the board" '+
         'autocapitalize="off" autocorrect="off" spellcheck="false" maxlength="20">':'')+
     '<div style="margin-top:10px"><button class="btn" id="a-go">'+
@@ -25495,11 +26271,12 @@ async function submitAfterSignIn(){
 
 /* THE BOARD, OPENED ON THE ROW THAT WAS JUST ADDED.
    Forced to the window and the axis where the run is certain to be findable rather than
-   wherever the board was last left: today, by record, best first. A run played in the
-   last few minutes is in today's board by definition, and the pinned-row fallback that
-   catches a run outside the top page only runs on a record board in descending order,
-   so those are the settings that guarantee there is something to point at. A club run goes
-   to that club's board, which is the only board it is on. */
+   wherever the board was last left: the board's own window (All time), by record, best
+   first. A run played in the last few minutes is on the
+   all-time board by definition, and the pinned-row fallback that catches a run outside the top
+   page only runs on a record board in descending order, so those are the settings that
+   guarantee there is something to point at. A club run goes to that club's board, which is
+   the only board it is on. */
 async function showMyRowOnBoard(){
   /* THE PROFILE SHEET HAS TO GO FIRST. The player got here by signing in inside it, and
      the auth handler repaints it rather than closing it, so without this the board is
@@ -25511,7 +26288,7 @@ async function showMyRowOnBoard(){
      has no row in, on an axis the mode is not scored on, when the whole point of this path is
      to show the player their own row. */
   boardFromRun();
-  lbWin='day'; lbSort=defaultSort(); lbDir=sortBestDir(lbSort);
+  lbWin=defaultWin(); lbSort=defaultSort(); lbDir=sortBestDir(lbSort);
   show('s-board');
   await loadBoard();
   /* Your actual row, which the 500-row list will hold unless five hundred people beat
@@ -25932,7 +26709,7 @@ function rankLine(r){
    looking for themselves, which is what the pinned row at the bottom is for. */
 const LB_LIMIT=500;
 
-let lbWin='day', lbSort='record', lbDir='desc', lbRows=null, lbBusy=false;
+let lbWin='all', lbSort='record', lbDir='desc', lbRows=null, lbBusy=false;
 /* WHICH COMPETITION IS SHOWING. 'free', or a club code for one of the thirty-two One Franchise
    boards. Separate from lbWin because it is a separate question: every competition has
    the same three windows, which is why the club boards were given a created_at window
@@ -26128,6 +26905,8 @@ $('lb-comp').addEventListener('change',()=>{
   /* One call instead of a copy of the rule in each branch above. */
   fixSort();
   lbDir=sortBestDir(lbSort);
+  /* Picking a competition lands on its own window: All time for an era or a club. */
+  lbWin=defaultWin();
   ga('board_competition',{mode:lbTrade?'trade':lbDefense?'defense':lbFull?'fullteam':lbEra?'era':lbClub?'club':'free',
     club:lbClub,era:lbEra});
   loadBoard();
@@ -26173,6 +26952,18 @@ function boardFromRun(){
    record. */
 function defaultSort(){ return lbTrade?'gm':lbDefense?'pa':'record'; }  // full team uses record, which is already the fallback
 
+/* THE WINDOW A BOARD OPENS ON is All time, on every competition, asked for by the owner.
+   It started with the era and club boards, where there are forty-odd of them against one free
+   board and Today on a Packers board is usually empty or one row, and then went to all of them.
+   It is still a function rather than a literal because it is applied when the competition
+   CHANGES, never on a repaint, so a window somebody picked stays picked until they move to
+   another board; a board that wants its own default later is one line here. */
+function defaultWin(){ return 'all'; }
+/* Which competition is showing, as one string, so a caller can ask whether it moved. */
+function compKey(){
+  return [lbTrade,lbDynasty,lbDefense,lbFull,lbEra||'',lbClub||''].join('|');
+}
+
 /* WHICH AXES THIS BOARD HAS, in one place. Four callers used to each carry their own copy of
    `if(lbSort==='gm') lbSort='rating'`, which was already one copy too many at one mode-only
    axis and is unmaintainable at three. Anything not offered here falls back to the record,
@@ -26196,7 +26987,11 @@ const sortBestDir=(k)=>k==='pa'?'asc':'desc';
 
 function openBoard(){
   if(run&&run.outcome){
+    const was=compKey();
     boardFromRun();
+    /* Only when the run moved the board to another competition: reopening the same one
+       keeps whatever window was picked on it. */
+    if(compKey()!==was) lbWin=defaultWin();
     if(lbTrade) lbSort='gm'; else if(lbDefense) lbSort='pa';
     fixSort();
     lbDir=sortBestDir(lbSort);

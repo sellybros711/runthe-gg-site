@@ -11,10 +11,13 @@
 
 const CONSTANTS = {
   /* The budget has to say no, or there's no decision in the draft. At $245M
-   * best-available was priced out on ~1.7 of 12 spins (it barely bit); $170M
-   * makes the budget bite hard. You can't afford a star most spins, and a
-   * strong roster takes real draft skill, not just best-available. */
-  CAP_MUSD: 170,
+   * best-available was priced out on ~1.7 of 12 spins (it barely bit). $170M
+   * bit too hard: players reported they could barely make the playoffs, and
+   * measured over 200 drafts a bot, taking the best man every time reached
+   * October on 29% of runs. $190M puts that at 56% and a careful draft at 73%,
+   * and careful still beats greedy by about five wins, so the budget is still
+   * the decision. See CLAUDE.md for the sweep. */
+  CAP_MUSD: 190,
   REGULAR_SEASON_GAMES: 162,
 
   RESPIN_LADDER_MUSD: [5, 10, 15],
@@ -51,7 +54,7 @@ const CONSTANTS = {
   PLAYOFF_HOME_FIELD: 0.15,
 
   /* Playoff opponents get this much tougher each round. */
-  PLAYOFF_ROUND_STEP: 0.12,
+  PLAYOFF_ROUND_STEP: 0.15,
 
   /* The record to chase. */
   RECORD_WINS: 116,
@@ -274,10 +277,17 @@ function inDivision(division, team, season) {
   return false;
 }
 
-/* The clubs a division has ever held, newest membership first, for the picker. */
+/* The clubs a division holds TODAY, for the picker. It used to list every code the
+ * division had ever held, so the NL East card showed FLA beside MIA and MON beside
+ * WSN, and Detroit, Milwaukee and Houston each wore two divisions. A card is the
+ * division as a fan knows it now. The DRAFT still reaches every season the
+ * division really held (`inDivision`), so the Florida Marlins and the Expos are on
+ * the wheel; only the chips are current. "Today" is the latest season any row
+ * reaches, read off the table rather than typed, so a new season moves it. */
+const DIVISION_LAST_SEASON = Math.max(...Object.values(DIVISIONS).flat().map(r => r[2]));
 function divisionClubs(division) {
   const rows = DIVISIONS[division] || [];
-  return rows.slice().sort((a, b) => b[2] - a[2]).map(r => r[0]);
+  return rows.filter(r => r[2] === DIVISION_LAST_SEASON).map(r => r[0]);
 }
 
 /* 12 roster slots per GDD §3. */
@@ -440,6 +450,58 @@ function canFillSlot(player, slotName, elig) {
   return positions.some(pos => eligible.includes(pos));
 }
 
+/* ─── PRIMARY POSITION ───
+ *
+ * A hitter is worth his full WAR at the position he actually played that season
+ * (`pp`) and a little less anywhere else he is eligible. Before this the slot a man
+ * stood in changed nothing: offense and defense both summed raw WAR, so putting a
+ * shortstop at first cost exactly what putting him at short did, and the choice
+ * the field asks for was not a choice.
+ *
+ * `pp` of OF is Baseball-Reference's "outfield" without a corner named, so any of
+ * the three outfield spots is his. DH is the slot for anybody and it costs nobody
+ * anything: a hitter there is only asked to hit, which is the half of his season
+ * that was never tied to a position. So DH is never charged, and it is still not
+ * anybody's OWN position unless his season was the DH, which is why `primaryAt`
+ * and `offPosition` are two questions. Pitchers are placed by the staff rules and are never
+ * off-position. A row with no `pp` is a Negro Leagues season Lahman cannot place,
+ * so there is nothing to be off of.
+ *
+ * `slotWar` is the one reading, used by the offense and the defense the season runs
+ * on. `squadRating` deliberately does NOT use it: that is the yardstick against real
+ * clubs, whose men all played their own positions. */
+const POSITION_FIT = {
+  /* The share of a hitter's WAR lost off his position. A 10 WAR season loses 0.8,
+   * about a win; a role player loses a tenth. Slight on purpose: the eligibility
+   * list already says he really played there. */
+  OFF: 0.08,
+};
+
+function slotBase(slotName) { return String(slotName || '').replace(/\d+$/, ''); }
+
+function primaryAt(player, slotName) {
+  if (!player || player.r !== 'b' || player._repl) return true;
+  if (!player.pp || !slotName) return true;
+  const base = slotBase(slotName);
+  if (player.pp === base) return true;
+  if (player.pp === 'OF' && (base === 'LF' || base === 'CF' || base === 'RF')) return true;
+  return false;
+}
+
+/* Whether a slot CHARGES him. Off his own position and not the DH. */
+function offPosition(player, slotName) {
+  const s = slotName || (player && player._slot);
+  if (primaryAt(player, s)) return false;
+  return slotBase(s) !== 'DH';
+}
+
+function slotWar(player, slotName) {
+  if (!player) return 0;
+  const s = slotName || player._slot;
+  if (!offPosition(player, s)) return player.w;
+  return player.w - Math.abs(player.w) * POSITION_FIT.OFF;
+}
+
 /* Build the team-season ID from team + season. */
 function teamSeasonId(team, season) {
   return `${team}_${season}`;
@@ -480,6 +542,7 @@ function indexData(players) {
   for (const p of players) {
     if (sideSeen[`${p.i}|${p.s}`] === 'both') p.half = p.r === 'b' ? 'batting' : 'pitching';
   }
+  setCareers(players);
 
   // Only real rosters are spinnable: skip TOT (Baseball-Reference's
   // multi-team season totals, not an actual club) and team-seasons with
@@ -648,9 +711,17 @@ const PROJ = {
    * played for 16 seasons: actual = 1.019 * projected + 1.61, rms 1.60 wins,
    * over a range of 50 to 107 actual wins. The projection is sound across the
    * whole range a draft can reach, so it was left alone and only the anchors
-   * below moved. */
-  SLOPE: 1.5047,
-  INTERCEPT: -50.51,
+   * below moved.
+   *
+   * REFITTED when the schedule got harder (OPP_OFF_SCALE 1.05, OPP_DEF_SCALE
+   * 0.92): 640 drafts across eight bots, single seasons, actual = 1.5065 *
+   * pythagorean + -56.77, rms 6.3 wins for one season (the season's own noise).
+   * The same script on the old schedule gave 1.589 / -56.42 against the
+   * shipped 1.5047 / -50.51, so the bot mix moves the fit a little too. What
+   * it has to do is predict the season, and it does: every bot's mean
+   * projection lands within 2.2 wins of its mean record. */
+  SLOPE: 1.5065,
+  INTERCEPT: -56.77,
   /*
    * THE SCALE IS ANCHORED ON WHAT A DRAFT CAN ACTUALLY PRODUCE, at both ends.
    *
@@ -679,8 +750,14 @@ const PROJ = {
    * is 0.77 of a win, and no part of the scale is unreachable in either
    * direction. Re-measure both ends if the cap or the player pool moves: they
    * are facts about the draft, not preferences. */
-  FLOOR_WINS: 31, FLOOR_RATING: 1,
-  TOP_WINS: 106, TOP_RATING: 99,
+  /* RE-ANCHORED with the harder schedule, by the same method: the worst-man
+   * bot now projects a median 23 wins (was 28) and the best roster any bot
+   * reached projects 99 (was 107). So the scale keeps its meaning (1 is the
+   * worst draft, 99 the best anybody built) and a roster wins fewer games at
+   * every rating. A dead top is the defect this block was written to fix, so
+   * the anchors follow the draft rather than holding a win total. */
+  FLOOR_WINS: 26, FLOOR_RATING: 1,
+  TOP_WINS: 99, TOP_RATING: 99,
 };
 
 /* What a roster projects to win over 162, on this game's schedule. */
@@ -741,13 +818,25 @@ const CHEMISTRY = {
     reunion:   0.08,
     battery:   0.07,
     dp_combo:  0.06,
-    franchise: 0.04,
+    /* Real team-mates drafted from different seasons: Ted Williams '46 and
+     * Johnny Pesky '50 wore the same shirt the same summers. Between a reunion
+     * (the same drafted season) and a bare franchise tie. */
+    teammates: 0.05,
+    /* Two men who went to the same college, in any era. Weaker than having played
+     * together in the majors and stronger than a bare shared shirt: a school is
+     * something the two of them really had in common, and a club they wore
+     * decades apart is something that happened to them separately. */
+    college:   0.04,
+    franchise: 0.03,
     /* Era is a weak ambient link, kept small so the deliberate links
      * (family/reunion/battery/DP) are what actually move the needle. */
     era:       0.005,
   },
   MIN: -0.10,
-  MAX: 0.15,
+  /* 0.15 until 2026-09, when players reported chemistry as overpowered: the bot
+   * that chases links won 97 games and a title on 14.5% of runs. 0.12 takes that
+   * bot to 93 wins; see CLAUDE.md, "October got harder". */
+  MAX: 0.12,
 };
 
 /* Curated real-life relationships (families), loaded from data/chemistry.json.
@@ -766,6 +855,83 @@ function setCuratedChemistry(json) {
     }
   }
 }
+/* WHO ACTUALLY PLAYED TOGETHER.
+ *
+ * Reunion, battery and the double-play combo used to need the two men drafted
+ * from the SAME team-season. A board is one team-season and a pick uses it up, so
+ * the only way to meet that was the same club being drawn twice: measured over 120
+ * drafts, reunion lit on 3% of rosters and the battery and the DP combo on 1%.
+ * Three of six links were decoration.
+ *
+ * A career is every franchise-season a man has a row in. Two men who share one
+ * were real team-mates, whichever of their seasons was drafted, and that is the
+ * bond the battery and the DP combo were always about. The pool is the build's own
+ * WAR floor, so a season a man barely played is not in it and does not count;
+ * that under-counts a little and never invents a pairing. */
+let CAREERS = {};
+function setCareers(players) {
+  CAREERS = {};
+  for (const p of players) {
+    if (p.t === 'TOT' || p.t === 'FA') continue;
+    (CAREERS[p.i] = CAREERS[p.i] || new Set()).add(franchiseOf(p.t, p.s) + '|' + p.s);
+  }
+}
+/* The first franchise-season two players shared, or null. */
+function sharedSeason(a, b) {
+  if (!a || !b || a.i === b.i) return null;
+  const A = CAREERS[a.i], B = CAREERS[b.i];
+  if (!A || !B) return null;
+  let first = null;
+  const [small, big] = A.size <= B.size ? [A, B] : [B, A];
+  for (const k of small) {
+    if (!big.has(k)) continue;
+    const yr = +k.split('|')[1];
+    if (!first || yr < first.yr) first = { key: k, yr };
+  }
+  return first;
+}
+
+/* What a player is doing on this roster, for the links that name positions. A
+ * placed man is read off his slot, so a shortstop drafted and put at first is not
+ * half of a double-play combo; an unplaced one (a preview) off his eligibility. */
+function playsAs(p, pos) {
+  if (p._slot) {
+    const base = slotBase(p._slot);
+    if (pos === 'P') return p.r === 'p';
+    return base === pos;
+  }
+  if (pos === 'P') return p.r === 'p';
+  return playerPositions(p).includes(pos);
+}
+
+/* WHERE THEY WENT TO SCHOOL, from data/colleges.json (Lahman's CollegePlaying,
+ * through 2014, built by pipeline/build_colleges.py). player id -> [school ids],
+ * and school id -> the name a box score writes. A man with no entry simply has no
+ * college link: the source stops in 2014, so it under-counts and never invents a
+ * pair. */
+let COLLEGES = {}, SCHOOL_NAMES = {};
+function setColleges(json) {
+  COLLEGES = {}; SCHOOL_NAMES = {};
+  if (!json || !json.p) return;
+  SCHOOL_NAMES = json.schools || {};
+  for (const id of Object.keys(json.p)) {
+    const v = json.p[id];
+    COLLEGES[id] = Array.isArray(v) ? v : [v];
+  }
+}
+/* The first school two players both went to, as its name, or null. */
+function sharedCollege(a, b) {
+  if (!a || !b || a.i === b.i) return null;
+  const A = COLLEGES[a.i], B = COLLEGES[b.i];
+  if (!A || !B) return null;
+  for (const s of A) if (B.indexOf(s) !== -1) return SCHOOL_NAMES[s] || s;
+  return null;
+}
+function collegeOf(p) {
+  const L = p && COLLEGES[p.i];
+  return L ? L.map((s) => SCHOOL_NAMES[s] || s) : [];
+}
+
 function familyLink(a, b) {
   const m = CURATED_FAMILY[a.i];
   return m && m[b.i] ? m[b.i] : null;
@@ -784,7 +950,7 @@ function familyLink(a, b) {
  * In Eras Mode every pair is inside one decade, so the "same era" link fires on
  * nearly all 66 pairs whatever you draft. In One Franchise every pair shares the
  * club by construction. Left in, those links push a constrained run straight to the
- * chemistry cap, which is worth about 21 wins: measured, Eras and Division runs came
+ * chemistry cap, which is worth about 17 wins (21 before the cap came down to 0.12): measured, Eras and Division runs came
  * out at 100-104 mean wins against the core game's 89 while carrying LESS talent and
  * a LOWER rating. The constraint was paying better than it cost.
  *
@@ -828,7 +994,25 @@ function pairLinks(a, b, opts) {
       label: `${a.s} ${a.t} reunion` });
   }
 
-  if (sameTeam && !sameSeason) {
+  /* Real team-mates from different drafted seasons. Checked before the bare
+     franchise tie, which it replaces: two men who shared a clubhouse are more
+     than two men who wore the same shirt decades apart. */
+  const shared = (sameTeam && sameSeason) ? { yr: a.s } : sharedSeason(a, b);
+  if (shared && !(sameTeam && sameSeason)) {
+    links.push({ type: 'teammates', value: CHEMISTRY.VALUES.teammates,
+      label: `Team-mates in ${shared.yr}` });
+  }
+
+  /* The same college. It sits beside the team-mates link rather than instead of
+     it, because it is a different fact: two Trojans who later shared a clubhouse
+     had both. The same man twice (two seasons of one player) is refused above. */
+  const school = sharedCollege(a, b);
+  if (school) {
+    links.push({ type: 'college', value: CHEMISTRY.VALUES.college,
+      label: school + ' alums' });
+  }
+
+  if (sameTeam && !sameSeason && !shared) {
     /* Name the code they actually shared when they shared one, and the franchise
        only when they did not. Two 1950s Boston Braves reading "ATL franchise"
        would be a link telling a reader something that never happened to them. */
@@ -836,30 +1020,16 @@ function pairLinks(a, b, opts) {
       label: `${a.t === b.t ? a.t : franA} franchise` });
   }
 
-  // DP combo: 2B + SS from same team-season
-  if (sameTeam && sameSeason) {
-    const aPos = playerPositions(a);
-    const bPos = playerPositions(b);
-    const has2B = aPos.includes('2B') || bPos.includes('2B');
-    const hasSS = aPos.includes('SS') || bPos.includes('SS');
-    if (has2B && hasSS) {
-      links.push({ type: 'dp_combo', value: CHEMISTRY.VALUES.dp_combo,
-        label: 'Double-play combo' });
-    }
+  // DP combo: a second baseman and a shortstop who really played together.
+  if (shared && ((playsAs(a, '2B') && playsAs(b, 'SS')) || (playsAs(a, 'SS') && playsAs(b, '2B')))) {
+    links.push({ type: 'dp_combo', value: CHEMISTRY.VALUES.dp_combo,
+      label: 'Double-play combo' });
   }
 
-  // Battery: C + pitcher from same team-season
-  if (sameTeam && sameSeason) {
-    const aPos = playerPositions(a);
-    const bPos = playerPositions(b);
-    const hasC = aPos.includes('C');
-    const hasPitcher = bPos.includes('SP') || bPos.includes('CL') || bPos.includes('RP');
-    const hasCReverse = bPos.includes('C');
-    const hasPitcherReverse = aPos.includes('SP') || aPos.includes('CL') || aPos.includes('RP');
-    if ((hasC && hasPitcher) || (hasCReverse && hasPitcherReverse)) {
-      links.push({ type: 'battery', value: CHEMISTRY.VALUES.battery,
-        label: 'Batterymates' });
-    }
+  // Battery: a catcher and a pitcher who really played together.
+  if (shared && ((playsAs(a, 'C') && playsAs(b, 'P')) || (playsAs(a, 'P') && playsAs(b, 'C')))) {
+    links.push({ type: 'battery', value: CHEMISTRY.VALUES.battery,
+      label: 'Batterymates' });
   }
 
   // Era: within 3 years
@@ -908,7 +1078,7 @@ function resolveChemistry(roster, opts) {
  * The VALUES above are already written as hundredths, so reading one as a whole
  * number of points is not a re-scaling, it is just dropping the percent sign:
  * family 0.09 is +9, a franchise tie 0.04 is +4, the ambient era link 0.005 is
- * +0.5. The cap is +15. That gives the player a small integer to compare
+ * +0.5. The cap is +12. That gives the player a small integer to compare
  * against, instead of a single team-wide percentage that never explains itself. */
 function chemPoints(value) {
   return Math.round(value * 1000) / 10;
@@ -923,7 +1093,7 @@ function chemPoints(value) {
  *
  * Returns one entry per roster position: total points, the links themselves,
  * the strongest single link (what the UI colors the badge by), and keyPoints,
- * which drops the ambient era link. Era is +0.5 against a cap of +15 and it
+ * which drops the ambient era link. Era is +0.5 against a cap of +12 and it
  * attaches to nearly everybody, so badging it would put a meaningless mark on
  * ten of twelve players and drown the bonds that were actually chosen. */
 function chemistryByPlayer(roster, resolved, opts) {
@@ -990,9 +1160,50 @@ function chemistryWorth(roster, slotNames, opts) {
 const REPLACEMENT_RPG = 3.5;
 const WAR_TO_RPG = 0.062;
 
+/* THE BATTING ORDER, and why the coach's order costs nothing.
+ *
+ * A lineup spot is worth what it gets to do: the top of the order comes up more
+ * often, and the spots after the table setters come up with men on. These weights
+ * follow The Book's reading of that (the two best bats hit second and first, the
+ * next cleanup, then third and fifth) and average exactly one, so a lineup of nine
+ * equal hitters is worth the same in any order.
+ *
+ * `coachOrder` puts the best bats in the heaviest spots, which is the most any
+ * order can get out of these nine. That order is the BASELINE, so a run that never
+ * touches its lineup plays exactly the season it always did and no balance number
+ * moves. A different order costs what it gives up against that baseline and never
+ * pays more, so moving a man is a choice with a visible price rather than a way to
+ * buy runs. */
+const LINEUP_WEIGHT = [1.07, 1.08, 1.03, 1.06, 1.00, 0.97, 0.95, 0.93, 0.91];
+/* The spots, heaviest first. */
+const LINEUP_RANK = LINEUP_WEIGHT.map((w, i) => i).sort((a, b) => LINEUP_WEIGHT[b] - LINEUP_WEIGHT[a] || a - b);
+
+/* The nine in the coach's order, spot one first. Ties go to the higher-priced
+   season, then the name, so the order never depends on the order they were drafted. */
+function coachOrder(hitters) {
+  const byBat = hitters.slice().sort((a, b) =>
+    slotWar(b) - slotWar(a) || (b.p || 0) - (a.p || 0) || String(a.n).localeCompare(String(b.n)));
+  const out = new Array(hitters.length);
+  let k = 0;
+  for (const spot of LINEUP_RANK) if (spot < hitters.length) out[spot] = byBat[k++];
+  for (let i = 0; i < out.length; i++) if (!out[i]) out[i] = byBat[k++];
+  return out;
+}
+
+/* WAR a batting order gives up against the coach's. Zero unless every hitter carries
+   a spot (`_bat`, 1 to 9), so a roster nobody ordered is the coach's by definition. */
+function orderLoss(roster) {
+  const hitters = roster.filter(p => p.r === 'b');
+  if (hitters.length !== LINEUP_WEIGHT.length || !hitters.every(p => p._bat >= 1)) return 0;
+  const wt = (i) => LINEUP_WEIGHT[i] || 1;
+  const actual = hitters.reduce((s, p) => s + slotWar(p) * wt(p._bat - 1), 0);
+  const best = coachOrder(hitters).reduce((s, p, i) => s + slotWar(p) * wt(i), 0);
+  return Math.max(0, best - actual);
+}
+
 function rosterOffense(roster, chemMultiplier, battingOrderBonus) {
   const hitters = roster.filter(p => p.r === 'b');
-  const totalWar = hitters.reduce((s, p) => s + p.w, 0);
+  const totalWar = hitters.reduce((s, p) => s + slotWar(p), 0) - orderLoss(roster);
   const baseRPG = REPLACEMENT_RPG + totalWar * WAR_TO_RPG;
   return baseRPG * chemMultiplier * (battingOrderBonus || 1.0);
 }
@@ -1066,7 +1277,7 @@ function rosterRunPrevention(roster, chemMultiplier) {
   const baseRA = staffEra * 1.08; // unearned run factor
 
   // Defense modifier from fielders' WAR (each WAR saves ~10 runs/162 games)
-  const defWar = fielders.reduce((s, p) => s + Math.max(0, p.w - 2) * 0.15, 0);
+  const defWar = fielders.reduce((s, p) => s + Math.max(0, slotWar(p) - 2) * 0.15, 0);
   const defMod = Math.max(0.85, 1.0 - defWar * 0.005);
 
   return baseRA * defMod * (2 - chemMultiplier);
@@ -1107,9 +1318,13 @@ const STAFF = {
   SP_ERA_BASE: 5.0, SP_ERA_PER_WAR: 0.386, SP_ERA_FLOOR: 1.60,
   RP_ERA_BASE: 4.60, RP_ERA_PER_WAR: 0.55, RP_ERA_FLOOR: 1.35,
   /* The two ends of the rating scale, in blended ERA. See staffRating for how
-   * they were measured and for what went wrong when only one end was. */
+   * they were measured and for what went wrong when only one end was.
+   * The TOP moved with the cap: at $170M the best staff any strategy reached
+   * was 2.916, and at $190M it is 2.775 (200 drafts, best arm every board),
+   * which pinned nine staffs at 100 until it was re-anchored. The floor is the
+   * worst man on every board, which no cap touches. */
   FLOOR_ERA: 4.63, FLOOR_RATING: 1,
-  TOP_ERA: 2.91, TOP_RATING: 99,
+  TOP_ERA: 2.77, TOP_RATING: 99,
 };
 function staffOffense() { return STAFF.LINEUP_RPG; }
 
@@ -1337,8 +1552,21 @@ const SCHEDULE = {
   // Real teams' run-prevention model floors around ~4.1; scale the pool so
   // these opponents play at the postseason intensity a title team faces all
   // year, holding the calibrated difficulty. These are the difficulty dial.
-  OPP_OFF_SCALE: 1.02,
-  OPP_DEF_SCALE: 0.95,
+  //
+  // TUNED HARDER (2026-09), the owner's call: a careful draft was reaching 90
+  // wins about half the time. The target is one in four. Measured over 300
+  // drafts a bot at the $190M cap:
+  //
+  //                     1.02 / 0.95     1.05 / 0.92
+  //   spread (careful)  43% 90+ wins    28%
+  //   best available    25%             23%
+  //   chases chemistry  52%             38%
+  //
+  // 1.055 / 0.915 put the careful draft at 22%, past the target. The shown
+  // rating's projection (PROJ) was refitted against this schedule in the same
+  // change, because it predicts wins on it.
+  OPP_OFF_SCALE: 1.05,
+  OPP_DEF_SCALE: 0.92,
 };
 
 /* Build the pool of real team-seasons your schedule is drawn from. Returns
@@ -1448,11 +1676,42 @@ function playoffRoundNames(rounds) {
  * multiplier applied to the opponent's scoring (>1 = tougher).
  */
 const TITLE = {
-  PIVOT: 84,        // rating at/above which the title is a fair fight
+  PIVOT: 90,        // rating at/above which the title is a fair fight (84 until 2026-09)
   SLOPE: 0.011,     // how fast a weaker team's opponent stiffens
   MAX_EDGE: 1.34,
   SEMI_SHARE: 0.5,  // the Championship Series gets half the edge
+
+  /* AN ELITE TEAM PLAYS LIKE ONE IN OCTOBER. Everything above only ever makes
+   * the bracket HARDER, and it keys on squadRating, which is blind to chemistry,
+   * shape and the closer. So a roster the page rates 95 to 99 still lost the
+   * Division Series about one run in five and reached the World Series in fewer
+   * than half, and a player reads that as the rating lying.
+   *
+   * So the rating the player READS buys an easier October from ELITE_FROM up:
+   * every opponent scores ELITE_PER less a point, capped at ELITE_MAX. Measured
+   * over 1,500 drafted rosters, 40 Octobers each, share of Octobers:
+   *
+   *   rating   lost the DS    reached the WS    won it
+   *   95+      19% to 4%      47% to 90%        21% to 51%
+   *   90-94    23% to 10%     40% to 71%        13% to 29%
+   *   85-89    28% to 22%     27% to 37%        7% to 10%
+   *   under 85 unchanged
+   *
+   * THE WORLD SERIES KEEPS ONLY ELITE_WS_SHARE OF IT, the owner's call: a 95+
+   * team should nearly always get there and win it about half the time. With
+   * the full ease in the World Series too, that team won 77% of its Octobers.
+   *
+   * Not in All-Time Staff, whose rating is its own ERA scale. */
+  ELITE_FROM: 85,
+  ELITE_PER: 0.025,
+  ELITE_MAX: 0.35,
+  ELITE_WS_SHARE: 0.3,
 };
+function eliteEase(shown, share) {
+  if (typeof shown !== 'number') return 1;
+  const s = typeof share === 'number' ? share : 1;
+  return 1 - s * Math.min(TITLE.ELITE_MAX, Math.max(0, (shown - TITLE.ELITE_FROM) * TITLE.ELITE_PER));
+}
 function titleEdge(rating) {
   if (typeof rating !== 'number') return 1;
   return Math.max(1, Math.min(TITLE.MAX_EDGE, 1 + (TITLE.PIVOT - rating) * TITLE.SLOPE));
@@ -1482,7 +1741,7 @@ function playoffSeries(runsFor, runsAgainst, savePct, rng, bestOf, advantage) {
   };
 }
 
-function generatePlayoffs(seed, runsFor, runsAgainst, savePct, rng, regularWins, rating, pool) {
+function generatePlayoffs(seed, runsFor, runsAgainst, savePct, rng, regularWins, rating, pool, shown) {
   if (!seed.made) return null;
   const edge = titleEdge(rating);
 
@@ -1523,7 +1782,8 @@ function generatePlayoffs(seed, runsFor, runsAgainst, savePct, rng, regularWins,
     let titleMult = 1;
     if (roundName === 'World Series') titleMult = edge;
     else if (roundName === 'Championship Series') titleMult = 1 + (edge - 1) * TITLE.SEMI_SHARE;
-    const oppRA = defAdj * roundDifficulty * titleMult;
+    const ease = eliteEase(shown, roundName === 'World Series' ? TITLE.ELITE_WS_SHARE : 1);
+    const oppRA = defAdj * roundDifficulty * titleMult * ease;
 
     // Best-of-5 for WC and LDS, best-of-7 for LCS and WS
     const bestOf = (roundName === 'Wild Card' || roundName === 'Division Series') ? 5 : 7;
@@ -1667,7 +1927,7 @@ function createBracket(opts) {
 
   const B = {
     mySeed, bye, firstCol, near, far, ladder,
-    results: {}, scores: {}, revealed: {},
+    results: {}, scores: {}, revealed: {}, oppSeats: {},
     colOf: (i) => firstCol + i,
   };
 
@@ -1739,11 +1999,18 @@ function createBracket(opts) {
     /* THE PLAYER'S OPPONENT IS THE RUN'S, not the bracket's. Every other seat is
      * filled by the reseed above; the seat across from them carries whatever seed
      * the pairing gave it and the club the run really scheduled. */
+    /* ONE OBJECT PER COLUMN, NEVER A FRESH ONE PER CALL. settleMine() stores the club
+     * that beat the player as a result, and the page draws a winner by asking whether
+     * a seat IS that result. A new object on every call is never the same one, so a
+     * lost series drew neither side as the winner and printed no score, while the
+     * club that won it carried on into the next column. */
     const opp = ladder[col - firstCol] || null;
     if (opp) for (const g of out) if (g.me) {
       const seat = g.pair[0] && g.pair[0].you ? 1 : 0;
       const cur = g.pair[seat];
-      g.pair[seat] = { team: opp, seed: (cur && cur.seed) || 1 };
+      const s = B.oppSeats[col] || (B.oppSeats[col] = { team: opp, seed: 1 });
+      s.seed = (cur && cur.seed) || 1;
+      g.pair[seat] = s;
     }
     return out;
   };
@@ -2094,7 +2361,11 @@ const GENERIC_SPOTS = ['C', '1B', '2B', '3B', 'SS', 'LF', 'CF', 'RF', 'DH'];
 function lineupFromRoster(roster) {
   const batters = (roster || []).filter(p => p.r === 'b');
   if (batters.length >= 9) {
-    return battingOrder(batters).slice(0, 9).map(p => ({
+    /* The order the player set, or the coach's, which is the same order the
+       season was played in. */
+    const ordered = batters.every(p => p._bat >= 1)
+      ? batters.slice().sort((a, b) => a._bat - b._bat) : coachOrder(batters);
+    return ordered.slice(0, 9).map(p => ({
       name: p.n, slot: p._slot || (p.ep || '').split(';')[0] || '', team: p.t, season: p.s, w: p.w,
     }));
   }
@@ -2302,7 +2573,7 @@ function coachReport(roster, chem, structure, rating, unspentMusd) {
   else if (spWar < 8) weaknesses.push('Thin rotation');
   if (closer && closer.w >= 3) strengths.push('Lights-out bullpen');
   else if (!closer || closer.w < 1.2) weaknesses.push('Shaky closer');
-  if (chemPct >= 9) strengths.push('Great clubhouse chemistry');
+  if (chemPct >= 7) strengths.push('Great clubhouse chemistry');  // 9 of a 15 cap, now 7 of 12
   else if (chemPct < 1) weaknesses.push('No real chemistry');
   if (structure && structure.archetype && structure.archetype.key === 'one_man_show')
     weaknesses.push(`Leans hard on ${top ? lastNameOf(top.n) : 'one star'}`);
@@ -2382,7 +2653,7 @@ function playRun(roster, rng, slotNames, pool, opts) {
    * two numbers and must not be merged. */
   const rating = staffMode ? staffRating(tagged) : squadRating(roster);
   const shownRating = staffMode ? staffRating(tagged) : teamRating(offense, defense);
-  const playoffs = generatePlayoffs(seed, offense, defense, savePct, rng, wins, rating, pool);
+  const playoffs = generatePlayoffs(seed, offense, defense, savePct, rng, wins, rating, pool, staffMode ? null : shownRating);
 
   const titleWon = playoffs && playoffs.won;
   const isGOAT = wins >= CONSTANTS.GOAT_WINS;
@@ -2455,7 +2726,9 @@ const publicAPI = {
   hashSeed, createSeededRNG, sampleGamma,
   playerPositions, canFillSlot, teamSeasonId,
   indexData, buildCheapBy,
-  pairLinks, resolveChemistry, setCuratedChemistry,
+  pairLinks, resolveChemistry, setCuratedChemistry, setCareers, sharedSeason,
+  setColleges, sharedCollege, collegeOf,
+  POSITION_FIT, primaryAt, offPosition, slotWar, slotBase,
   chemPoints, chemistryByPlayer, chemistryWorth,
   teamStrength, teamWinPct, overallRating, squadRating, nationalRank,
   PROJ, projectedWins, teamRating,
@@ -2463,8 +2736,8 @@ const publicAPI = {
   resolveGame, playoffSeries, playRun,
   BRACKET, bracketSeed, createBracket,
   PA_RATES, simGameScript, simHalfInning, spreadRuns, battingOrder, homeGames,
-  lineupFromRoster, staffFromRoster, lineupFromTeamSeason, staffFromTeamSeason,
-  seedFromRecord, playoffRoundNames, PLAYOFF_ROUND_NAMES, titleEdge,
+  lineupFromRoster, staffFromRoster, coachOrder, orderLoss, LINEUP_WEIGHT, lineupFromTeamSeason, staffFromTeamSeason,
+  seedFromRecord, playoffRoundNames, PLAYOFF_ROUND_NAMES, titleEdge, eliteEase, TITLE,
   respinCost, respinFees,
   pythagorean, rosterOffense, rosterRunPrevention, rosterStructure, closerSavePct,
   STAFF, staffOffense, staffRunPrevention, staffEra, staffRating,
