@@ -75,7 +75,7 @@ var CSS = [
 '.sc-room{position:absolute;inset:0;transition:opacity .35s ease;}',
 '.sc-room.out{opacity:0;}',
 '.sc-cast{position:absolute;left:0;right:0;top:58px;bottom:6%;display:flex;justify-content:center;align-items:flex-end;gap:4%;z-index:3;pointer-events:none;}',
-'.sc-cast img{height:min(46vh,340px);max-height:100%;width:auto;image-rendering:pixelated;filter:drop-shadow(0 6px 10px rgba(0,0,0,.45));transition:opacity .3s,transform .3s;}',
+'.sc-cast img{height:min(46vh,320px);max-height:100%;width:auto;image-rendering:pixelated;filter:drop-shadow(0 6px 10px rgba(0,0,0,.45));transition:opacity .3s,transform .3s;}',
 '.sc-cast img.dim{opacity:.5;transform:scale(.94);}',
 '.sc-cast img.in{animation:scIn .45s ease-out both;}',
 '@keyframes scIn{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}',

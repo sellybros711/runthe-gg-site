@@ -11140,11 +11140,36 @@ node hoops/check-career.mjs   section 10 (press room, persona, look), 7b (the sc
 
 Asked for by the owner: model Career on Run The Tour's characters and cutscenes. Three pieces.
 
-**`hoops/baller.js` draws the player** (`window.RTF_BALLER`): a 32 by 48 cell grid painted in
-code, then an outline pass that turns every empty cell touching a painted one into ink, which
-is what makes it read as pixel art. He wears the colours he plays in (`C.colorsOf`) and his own
-number, greys from 33, and has six poses (stand, ball, up, trophy, suit, cap). `img()` returns
-two frames and one page-wide timer swaps them (the breath); reduced motion gets one frame.
+**`hoops/baller.js` draws the player** (`window.RTF_BALLER`) on a 44 by 64 grid. He wears the
+colours he plays in (`C.colorsOf`) and his own number, greys from 33, and has six poses (stand,
+ball, up, trophy, suit, cap). `img()` returns two frames and one page-wide timer swaps them (the
+breath); reduced motion gets one frame.
+
+**It is built like a sprite, and the first version was not.** That one painted rectangles in
+flat colours and ringed them in black: a box torso, two-pixel arms, a square head. The owner
+called it poorly made, and it was. The rebuild is the mythiball rig's technique:
+- Every part is a shape with a surface normal. A limb is a tapered tube, the head and torso are
+  row tables, a hand is an ellipse. The light comes from the upper left, and a cell's level on
+  its part's five-colour ramp is how much it faces that light.
+- The ramps turn hue: shadows cool, highlights warm. Skin passes `soft`, which turns its shadows
+  only slightly red and drops chroma. Without that a pale face in shade reads as sunburnt.
+- Cloth (the jersey, the shorts, the jacket) is shaded across and hardly at all top to bottom,
+  with `lift` below zero. Shaded like a sphere, it bands diagonally.
+- A part in front puts a line on the part behind it, which is how an arm reads against a chest.
+- The outline is a dark shade of whatever it borders, lighter on the lit side. It is never a
+  black ring.
+- The jersey's piping is found, not drawn. It is any jersey cell touching skin.
+
+The figure is a little over four heads tall, the sports sprite's proportion.
+
+**`paint(look, { parts: true })` hands back part names instead of colours**, and only
+check-career asks for it. Section 10 proves four things over forty looks and six poses: no part
+touches the grid's edge, every pose has a head, hands and shoes, every pose breathes, and every
+figure has at least 24 colours. An edge eats the outline: the afro and the flat top first came
+out with their crowns sliced flat. Moving the afro back up fails that claim by name.
+
+**The display heights are mostly multiples of half a cell** (96, 128, 160, 64 and the scene's
+320), which is whole device pixels on a 2x screen.
 **The look is a few short values on the life** (`L.look`), kept through `cleanLook`'s
 whitelist in career.js, and **baller.js is the only file that knows what they mean**:
 `normal()` falls back on anything it does not recognise, so an old save or a hand edit is

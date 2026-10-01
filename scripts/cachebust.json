@@ -2293,8 +2293,8 @@
       "sha": "23559706d9ccd540"
     },
     "baller.js": {
-      "v": "1",
-      "sha": "9524569c7a4cbed7"
+      "v": "2",
+      "sha": "aa7d75997b9635f5"
     },
     "board.js": {
       "v": "7",
@@ -2321,12 +2321,12 @@
       "sha": "d984540c2b06a2bb"
     },
     "scenes.js": {
-      "v": "2",
-      "sha": "d7b46d651a75957e"
+      "v": "3",
+      "sha": "a1888d078fd7e441"
     },
     "career-ui.js": {
-      "v": "6",
-      "sha": "31376e0ed733e711"
+      "v": "7",
+      "sha": "bd75ccb52ed373ac"
     },
     "data/players.json": {
       "v": "5",
