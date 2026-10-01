@@ -2559,6 +2559,41 @@ Three things that each cost a round, all of them about the harness rather than t
 - **`/Season/i` matches "Regular season complete".** The absence to assert is the TAG, not the
   word.
 
+### A guide is shown once, and the account remembers it
+
+```
+node football/check-popups.mjs     the guide, the rules sheets, two devices and the old keys
+```
+
+Reported by a player: the same pop-ups and directions ten times, after saying they did not
+need them. Every guide on The Perfect Season was remembered in ONE BROWSER, so a new phone, a
+private window or a cleared jar put it back in front of somebody who had played for months.
+The dynasty rules stood in front of EVERY run unless a box was ticked, and the crest's "what's
+new" sheet opened on every visit until its box was ticked. Both boxes held in one browser.
+
+**`hasSeen` and `markSeen` are the one answer** (`ps_seen_v1`). Three rules, one per cause:
+
+- **Once, ever.** A guide is marked seen the moment it is on screen. The dynasty rules lost
+  their "don't show this again" box, because there is nothing left for it to switch off. The
+  rules pill and How to play still open the sheet on demand.
+- **On the account.** The list rides on the run shelf as a `seen` slot under `ps_dynasty`, so
+  it costs no request: `dynCloudPull` already fetches the whole shelf. Merged as a UNION, and
+  its progress is the count, so the server's "never backwards" rule is the right rule for it.
+- **A history is not new.** `careerLoad` files `seenFromRows`: any run retires the first-run
+  guide, a dynasty retires the dynasty rules, a Trade Machine season its rules. A saved run in
+  any slot does the same for a guest. **The first-run guide WAITS for the account** (bounded)
+  before it decides, because the player most at risk is signed in on a phone they have never
+  used here, and the guide fires before their rows arrive.
+
+**The old keys are still READ** (`SEEN_LEGACY`): `ps_seen_guide`, `ps_dynintro`,
+`ps_dynintro_off` and `ps_tmintro`. Nobody is shown something again on the day this ships.
+
+**The crest's "what's new" sheet is retired**, not made once. It was an announcement from
+August, and the profile circle already leads to Customize.
+
+**Memory is a fallback, never a second copy.** `seenMem` is written only when storage
+throws, so clearing storage really does make a browser new, which is what the checks rely on.
+
 ### Every football board opens on All time
 
 `defaultWin()` in `football/index.html`. Every competition used to open on Today. Asked

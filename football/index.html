@@ -2963,15 +2963,6 @@ window.GA_ID='G-L29P5MRWKE';
   .swatch:focus-visible{outline:2px solid var(--blue);outline-offset:2px;border-radius:8px}
   /* Which club is picked, spelled out. A ringed disc in a grid of thirty-two does not tell
      anybody they have chosen the Jaguars. */
-  /* ---------- WHAT IS NEW ---------- */
-  .wnrow{display:flex;gap:13px;align-items:center;margin:0 0 12px}
-  .pfp.wnbig{width:88px;height:88px}
-  .wnlead{margin:0;font-size:13px;line-height:1.5;color:var(--dim)}
-  .wnlist{margin-top:0}
-  .wnnow{font-size:11.5px;margin:12px 0 0}
-  .wnchk{display:flex;align-items:center;gap:8px;margin-top:12px;font-size:12px;
-    color:var(--dim-2);cursor:pointer}
-  .wnchk input{width:15px;height:15px;accent-color:#F4B413;flex:0 0 auto}
   /* ---------- THE UNREAD DOT ---------- */
   /* Red, and the only red circle on any of these screens, because it has to be findable in
      the corner of an eye rather than read. It sits on the tile corner where an icon badge
@@ -9998,7 +9989,6 @@ function show(id){
      network round trip, and on a connection where that round trip beats the loading screen
      the panel would find the wrong screen on and never fire at all. It declines quietly
      whenever it has already been shown, been opted out of, or has nothing to show. */
-  if(id==='s-intro'&&typeof whatsNewMaybe==='function') whatsNewMaybe();
   if(typeof heroSync==='function') heroSync();
   /* Measured here because a hidden element reports no scrollWidth at all: asking at
      boot said every tab row fitted, whatever the viewport. */
@@ -12505,17 +12495,12 @@ function dynastyReplaceSheet(opts){
  * meeting each of those for the first time in the middle of a run. That is not difficulty,
  * it is a missing sentence.
  *
- * SHOWN BEFORE EVERY RUN, AND TURNED OFF BY THE READER RATHER THAN BY THE SECOND VIEW.
- * It used to be once per browser, the same shape as tradeIntro. That is right for a mode you
- * learn once and wrong for this one: a dynasty is a calendar, a win bar that moves, a cap
- * that does not, and the ageing rule, and somebody coming back a fortnight later is starting
- * a run against rules they half remember. So the sheet stands in front of every run and
- * carries its own off switch, which is the arrangement that lets a player who HAS learned it
- * stop seeing it without taking it away from everybody else.
- *
- * `opts.offer` draws that switch. Only the intro passes it: a "do not show this again" on a
- * sheet somebody deliberately opened from the How to play pill would be offering to hide a
- * thing they just asked for.
+ * SHOWN ONCE, ON THE ACCOUNT. It stood in front of every run for a while, with its own
+ * "don't show this again" box, on the argument that somebody coming back a fortnight later
+ * half remembers the rules. The box only held in the browser it was ticked in, and players
+ * reported the same pop-up ten times. So it shows before the first dynasty and never pushes
+ * itself again (dynastyIntro, through hasSeen); the rules pill and How to play bring it
+ * back for anybody who wants it.
  */
 function dynastyRulesHTML(go,opts){
   const step=E.DYNASTY_STEP_SEASONS;   // seasons between steps up in the target
@@ -12629,60 +12614,32 @@ function dynastyRulesHTML(go,opts){
     '<p class="dim" style="font-size:13px;line-height:1.45;margin:13px 0 0">'+
       'You score points every season, more for the playoffs and a title, and later seasons '+
       'pay multiples. Lasting is the whole game.</p>'+
-    '<div style="margin-top:14px"><button class="btn" id="b-dyni-go">'+esc(go)+'</button></div>'+
-    /* UNDER THE BUTTON, which is where the site already puts this control: see .wnchk on the
-       crest's What's new sheet, whose markup and storage idiom this follows exactly so the
-       two cannot end up looking like two different products. */
-    ((opts&&opts.offer)
-      ? '<label class="wnchk"><input type="checkbox" id="b-dyni-off"'+
-          (dynIntroOff()?' checked':'')+'><span>Don\'t show this again</span></label>'
-      : '');
+    '<div style="margin-top:14px"><button class="btn" id="b-dyni-go">'+esc(go)+'</button></div>';
 }
 
 /*
- * TWO KEYS, BECAUSE THEY ANSWER TWO QUESTIONS.
- *
- * ps_dynintro means "has read the rules at least once" and is what retires the NEW badge on
- * the front page door. ps_dynintro_off means "has asked not to be shown them again" and is
- * the only thing that skips the sheet. Folding them into one was the obvious move and it is
- * wrong in both directions: the badge would never retire for somebody who reads the rules
- * every time and never ticks the box, and ticking the box would silently also mean "this
- * mode is no longer new to me", which the player did not say.
- *
- * Both fall back to a window flag when localStorage throws, which is a real state on iOS in
- * private mode. A checkbox that cannot persist should still work for the session it is in.
+ * ps_dynintro retires the NEW badge on the front page door and is set the first time the
+ * rules are on screen. ps_dynintro_off was the old "don't show this again" box; it is still
+ * READ (SEEN_LEGACY), so a player who ticked it is never shown the sheet again, and nothing
+ * writes it any more.
  */
 const DYN_INTRO_KEY='ps_dynintro';
 const DYN_INTRO_OFF='ps_dynintro_off';
-function dynIntroOff(){
-  try{ return localStorage.getItem(DYN_INTRO_OFF)==='1'; }catch(_){ return !!window.__dynIntroOff; }
-}
+/* SEEN ONCE MEANS SEEN, and it is held on the account rather than in one browser. */
+function dynIntroOff(){ return hasSeen('dynintro'); }
 function dynastyIntro(go){
   if(dynIntroOff()){ go(); return; }
-  /* Marked as read on the way in, not on the way out: the badge is about whether this mode
-     is still new to them, and it stops being new the moment the sheet is on screen. */
+  /* Marked on the way in, not on the way out. ps_dynintro also retires the NEW badge. */
   window.__dynIntro=true;
   try{ localStorage.setItem(DYN_INTRO_KEY,'1'); }catch(_){}
-  $('sheet-in').innerHTML=dynastyRulesHTML('Draft my team',{offer:true});
+  markSeen('dynintro');
+  $('sheet-in').innerHTML=dynastyRulesHTML('Draft my team');
   $('sheet-in').dataset.kind='dynintro';
   /* However it is dismissed the draft proceeds, because a rules popup that can strand a run
      is worse than no rules at all. The Trade Machine's intro writes this out at length. */
   sheetOnClose=go;
   openSheet();
   $('b-dyni-go').onclick=closeSheet;
-  /* WRITTEN THE MOMENT IT IS TICKED rather than on the way out, so the promise holds however
-     the sheet is dismissed: the backdrop, the button, or a phone back gesture. Unticking puts
-     it back, because a control that only goes one way is a trap on a sheet this one is about
-     to stop showing. */
-  const off=$('b-dyni-off');
-  if(off) off.onchange=()=>{
-    window.__dynIntroOff=off.checked;
-    try{
-      if(off.checked) localStorage.setItem(DYN_INTRO_OFF,'1');
-      else localStorage.removeItem(DYN_INTRO_OFF);
-    }catch(_){}
-    ga('dynasty_intro_off',{off:off.checked});
-  };
 }
 /* The same card on demand, with no continuation: it closes back to wherever you were. */
 function reviewDynastyRules(){
@@ -12968,6 +12925,9 @@ async function dynCloudPull(){
   if(!rows){ dynCloudPulled=null; return; }
   const by={};
   rows.forEach((r)=>{ if(r&&r.slot) by[r.slot]=r; });
+  /* The same shelf carries what the account has already been shown. Not a run, so it is
+     merged here rather than walked with FB_SLOTS below. */
+  seenMerge(by[SEEN_SLOT]);
   let painted=false;
   for(const slot of Object.keys(FB_SLOTS)){
     const S=FB_SLOTS[slot];
@@ -14517,9 +14477,91 @@ function tutFinish(){
    IT POINTS AT THE BUTTON AND LEAVES IT LIVE. The scrim sits under #b-start rather than
    over it, so the way out of the guide is the thing the guide is telling you to do. Got it
    dismisses without starting, for somebody who wants to look around first. */
+/* ---- WHAT THIS PLAYER HAS ALREADY BEEN SHOWN ----
+   Reported by a player: the same pop-ups, ten times, after saying they did not need them.
+   Every one of these used to be remembered in THIS BROWSER and nowhere else, so a new
+   phone, a private window, iOS clearing a site nobody opened for a week, or a cleared jar
+   put every guide back in front of somebody forty seasons in. And the dynasty rules stood
+   in front of EVERY run unless a box was ticked, which is the ten times.
+
+   THREE RULES NOW, and each one is for one of those causes:
+   - every guide shows ONCE, ever, and is marked seen the moment it is on screen;
+   - a seen mark rides on the account (a `seen` slot on the same cloud save shelf the runs
+     use, so it costs no extra request: dynCloudPull already fetches the whole shelf), so
+     it follows the player to any device they sign in on;
+   - somebody with a history is not new, whatever this browser says. A run on the account
+     retires the first-run guide, a dynasty retires the dynasty rules and a Trade Machine
+     season retires its rules (seenFromRows, called by careerLoad).
+
+   The rules sheets are still one tap away on demand (How to play, the rules pill), so
+   nothing is taken away from a reader who wants them: they are just not pushed at anybody
+   twice. The old per-guide keys are still READ, so nobody who already dismissed something
+   sees it again on the day this ships. */
+const SEEN_KEY='ps_seen_v1';
+const SEEN_SLOT='seen';
+const SEEN_LEGACY={ guide:['ps_seen_guide'], dynintro:['ps_dynintro','ps_dynintro_off'],
+  tmintro:['ps_tmintro'] };
+/* Held in memory ONLY when storage throws (iOS private mode): a mark that cannot persist
+   must still hold for the visit it was made in. Everywhere else storage is the one copy, so
+   clearing it really does make a browser new again. */
+const seenMem={};
+function seenRead(){
+  let o={};
+  try{ o=JSON.parse(localStorage.getItem(SEEN_KEY)||'{}')||{}; }catch(_){ o={}; }
+  for(const k of Object.keys(SEEN_LEGACY)) for(const lk of SEEN_LEGACY[k]){
+    try{ if(localStorage.getItem(lk)==='1') o[k]=1; }catch(_){}
+  }
+  return Object.assign(o,seenMem);
+}
+function hasSeen(k){ return !!seenRead()[k]; }
+function seenWrite(o){
+  try{ localStorage.setItem(SEEN_KEY,JSON.stringify(o)); }
+  catch(_){ Object.keys(o).forEach((k)=>{ seenMem[k]=1; }); }
+}
+function markSeen(...keys){
+  const o=seenRead(); let moved=false;
+  keys.forEach((k)=>{ if(!o[k]){ o[k]=1; moved=true; } });
+  seenWrite(o);
+  if(moved) seenPush();
+}
+/* Up to the account, through the shelf's own queue. Progress is the number of things seen,
+   which only ever grows, so the server's "never move a save backwards" rule is exactly the
+   rule a seen list wants. Signed out there is nowhere to put it, and the browser copy is it. */
+function seenPush(){
+  if(!window.RTG_SAVE||!authState.signedIn||!authState.userId) return;
+  RTG_SAVE.queue(DYN_CLOUD_GAME,SEEN_SLOT,()=>{
+    const o=seenRead();
+    return { payload:{ seen:o }, progress:Object.keys(o).length };
+  });
+}
+/* Down from the account. A UNION, never a replace: either side may have seen something the
+   other has not, and nothing here ever un-sees a guide. */
+function seenMerge(row){
+  const there=(row&&row.payload&&row.payload.seen)||{};
+  const here=seenRead();
+  for(const k of Object.keys(there)) if(there[k]) here[k]=1;
+  seenWrite(here);
+  if(Object.keys(here).some((k)=>!there[k])) seenPush();
+  /* A guide already on screen for something this account has seen goes away again. */
+  if(here.guide&&frgUp()) frgClose();
+}
+/* What the account's own rows say about who this is. */
+function seenFromRows(rows){
+  rows=rows||[];
+  const keys=[];
+  if(rows.length) keys.push('guide');
+  if(rows.some((r)=>r&&(r.run_mode==='dynasty'||r.dynasty_id))) keys.push('dynintro');
+  if(rows.some((r)=>r&&r.run_mode==='trade')) keys.push('tmintro');
+  if(keys.length) markSeen(...keys);
+}
+/* And what this browser already holds: a saved run in any slot is somebody who has played. */
+function seenFromSaves(){
+  try{ if(Object.keys(FB_SLOTS).some((s)=>FB_SLOTS[s].read())) markSeen('guide'); }catch(_){}
+}
+
 const FRG_KEY='ps_seen_guide';
-function frgSeen(){ try{ return localStorage.getItem(FRG_KEY)==='1'; }catch(e){ return true; } }
-function frgMark(){ try{ localStorage.setItem(FRG_KEY,'1'); }catch(e){} }
+function frgSeen(){ return hasSeen('guide'); }
+function frgMark(){ try{ localStorage.setItem(FRG_KEY,'1'); }catch(e){} markSeen('guide'); }
 function frgUp(){ const el=$('frg'); return !!el&&!el.hidden; }
 /* WHAT THE GUIDE POINTS AT, which is no longer one fixed button. The front page shows either
    Start a run or the Offense and Defense pair, so the arrow, the cut-out, the glow and the
@@ -14639,8 +14681,24 @@ function frgClose(){
   window.removeEventListener('resize',frgPlace);
   window.removeEventListener('scroll',frgPlace);
 }
-function firstRunGuide(){
+/* `wait` counts the beats spent waiting to learn who this is. The guide fires 1.2s after boot
+   and the account can take longer than that to resolve, and a signed in player with a career
+   on a phone they have never used here is exactly who must not get it. So it waits for the
+   sign in to settle and, if somebody is signed in, for their rows, which retire it through
+   seenFromRows. Bounded, so a sign in that never answers still gets a stranger their guide. */
+function firstRunGuide(wait){
+  wait=wait||0;
   if(frgSeen()) return false;
+  seenFromSaves();
+  if(frgSeen()) return false;
+  if(wait<10&&A()&&!authState.ready){ setTimeout(()=>firstRunGuide(wait+1),400); return false; }
+  if(wait<10&&authState.signedIn&&authState.userId
+     &&!(career&&career.userId===authState.userId)){
+    careerLoad(authState.userId).then((c)=>{
+      setTimeout(()=>firstRunGuide(c?10:wait+1),c?0:400);
+    },()=>firstRunGuide(10));
+    return false;
+  }
   if(!$('s-intro').classList.contains('on')) return false;
   if($('sheet').classList.contains('on')) return false;
   if(wantModes||wantOneTeam||wantDefense||wantFull||wantDynasty) return false;
@@ -18107,11 +18165,11 @@ function tradeRulesHTML(cta){
   '</div>';
 }
 function tradeIntro(go){
-  let seen=false;
-  try{ seen=localStorage.getItem('ps_tmintro')==='1'; }catch(e){ seen=!!window.__tmIntro; }
-  if(seen){ go(); return; }
+  /* Once, on the account: see hasSeen. window.__tmIntro is kept for the checks that set it. */
+  if(hasSeen('tmintro')||window.__tmIntro){ go(); return; }
   window.__tmIntro=true;
   try{ localStorage.setItem('ps_tmintro','1'); }catch(e){}
+  markSeen('tmintro');
   $('sheet-in').innerHTML=tradeRulesHTML('Deal me a team');
   sheetOnClose=go;
   $('sheet').classList.add('on');
@@ -23699,7 +23757,6 @@ function crestBoot(){
       crestRefresh(c.rows);
       pushTierIfMoved();
       paintAvatar();
-      whatsNewMaybe();
       if($('sheet').classList.contains('on')&&$('sheet-in').dataset.kind==='profile')
         profileSheet();
     });
@@ -24139,98 +24196,11 @@ async function loadMyAvatar(){
 
 const authMsg=(m,ok)=>'<p class="autherr'+(ok?' authok':'')+'">'+esc(m)+'</p>';
 
-/* ---------------- WHAT IS NEW ----------------
-   Shown once to a signed-in player who can see the crest, because a profile system nobody
-   is told about is a profile system nobody opens. Three rules it follows:
-
-   ONLY WHEN THERE IS NOTHING ELSE ON SCREEN. It arrives off a network round trip, so it can
-   land at any moment, including the middle of a draft or over a results screen somebody is
-   reading. A popup that interrupts a run is worse than no popup, so it waits for the front
-   page. It is asked twice for that reason: once when the rows land, and again by show()
-   every time the front page is arrived at, which covers both orders those can happen in.
-
-   ONCE PER VISIT AT MOST, whatever else happens. The auth library fires onChange more than
-   once on a normal sign-in, and each of those is a fresh chance to open this.
-
-   THE BOX IS WRITTEN THE MOMENT IT IS TICKED, not on the way out, because the promise it
-   makes has to hold however the sheet is dismissed, including the tab being closed. */
-const WHATSNEW_KEY='ps_crest_whatsnew_off:1';
-let whatsNewShown=false;
-function whatsNewOff(){
-  try{ return localStorage.getItem(WHATSNEW_KEY)==='1'; }catch(_){ return false; }
-}
-function whatsNewMaybe(){
-  if(whatsNewShown||whatsNewOff()||!canUseCrest()||!myCrest) return;
-  if(!$('s-intro').classList.contains('on')) return;
-  if($('sheet').classList.contains('on')) return;
-  whatsNewShown=true;
-  whatsNewSheet();
-}
-function whatsNewSheet(){
-  const box=$('sheet-in'); box.dataset.kind='whatsnew';
-  const C=window.PS_CREST;
-  const a=avatarOf(authState.name,myAvatar.color,myAvatar.initials);
-  const club=a.chosen?a.key:null;
-  const rung=crestRungFor(club);
-  /* Their own crest, not a picture of somebody else's. The whole argument for the thing is
-     that it is yours, and a stock illustration would be making that argument badly. */
-  let mine='';
-  try{ mine=C.crest({ club:club, rung:rung, mark:wornMark(), ring:myCrest.ring,
-    tier:myCrest.tier, size:88, text:a.text }); }catch(_){ mine=''; }
-  const tier=myCrest.tier?C.tierAt(myCrest.tier):null;
-  box.innerHTML='<div class="eyebrow">New</div>'+
-    '<h2 class="display" style="font-size:25px;margin:4px 0 10px">Your circle is a crest now</h2>'+
-    '<div class="wnrow">'+
-      '<span class="pfp crested wnbig" aria-hidden="true">'+mine+'</span>'+
-      '<p class="wnlead">That\'s yours, drawn from what you have actually done. '+
-        'Four things go into it, and every one of them is earned rather than picked '+
-        'off a list.</p>'+
-    '</div>'+
-    '<ul class="rules wnlist">'+
-      '<li><span class="n">1</span><span><b>Your club\'s colors</b>, in three steps. '+
-        'Play one draft with a club and the crest takes their colors. Reach the playoffs '+
-        'with them and their second color becomes the ring. Win it all with them and you '+
-        'get that club\'s own pattern, and all thirty two are different.</span></li>'+
-      '<li><span class="n">2</span><span><b>A mark</b> in the middle, instead of your '+
-        'initials. There are twelve, each one opened by a badge you already have: a '+
-        'perfect season, a 17-0, a title from a wild card seed, going 0-17. Pick which '+
-        'one you wear in Customize.</span></li>'+
-      '<li><span class="n">3</span><span><b>A seal</b> on the rim for your rank, which '+
-        'climbs with your badge count. Ten of them: Bronze 1, 2 and 3, then Silver, then '+
-        'Gold, then GOAT for every badge in the game. The chevrons are the number. '+
-        'Nothing to choose: it\'s your cabinet, in one shape.</span></li>'+
-      '<li><span class="n">4</span><span><b>The ring</b>, for the honors worth a ring. '+
-        'A title gets gold. Titles in two straight seasons, or a 20-0, and the light '+
-        'starts moving round it.</span></li>'+
-    '</ul>'+
-    '<p class="dim wnnow">'+esc(whatsNewStanding(a,rung,tier))+'</p>'+
-    '<div class="hrow" style="margin-top:14px">'+
-      '<button class="btn sm" id="wn-go">Set mine up</button>'+
-      '<button class="btn ghost sm" id="sh-x">Not now</button></div>'+
-    '<label class="wnchk"><input type="checkbox" id="wn-off"'+(whatsNewOff()?' checked':'')+'>'+
-      '<span>Don\'t show this again</span></label>';
-  openSheet();
-  $('sh-x').onclick=closeSheet;
-  $('wn-go').onclick=()=>pfLook();
-  const chk=$('wn-off');
-  chk.onchange=()=>{
-    try{
-      if(chk.checked) localStorage.setItem(WHATSNEW_KEY,'1');
-      else localStorage.removeItem(WHATSNEW_KEY);
-    }catch(_){}
-  };
-  ga('crest_whatsnew_shown',{rung:rung,badges:myCrest.badges});
-}
-/* Where they stand right now, in one line, because the four rules above are abstract until
-   somebody sees their own numbers against them. */
-function whatsNewStanding(a,rung,tier){
-  const bits=[];
-  bits.push(a.chosen?a.team+', rung '+rung+' of 3':'No club picked yet');
-  bits.push(myCrest.badges+' of '+myCrest.total+' badges'+(tier?', '+tier.name:''));
-  const n=myCrest.marks.length;
-  bits.push(n===1?'one mark unlocked':n+' marks unlocked');
-  return 'Right now: '+bits.join(' · ')+'.';
-}
+/* ---------------- WHAT IS NEW: RETIRED ----------------
+   A "your circle is a crest now" sheet opened on the front page for every signed-in player
+   on every visit until a box in it was ticked, and the box only held in one browser. It was
+   an announcement, the crest has been out since August, and it was the pop-up players were
+   tired of. Customize is where the crest is set, and the profile circle leads there. */
 
 /* ---------------- THE CREST, IN THE CUSTOMIZE PAGE ----------------
    Three controls that were one. The club grid below already existed; what is new is that the
@@ -24587,6 +24557,9 @@ async function careerLoad(userId){
   careerBusy=false;
   if(!r) return null;
   career={userId,rows:r.rows,total:r.total,capped:r.capped};
+  /* Who this is, by what they have played, so a guide is never put in front of somebody
+     whose history says they do not need it. Any caller, so whichever asks first does it. */
+  seenFromRows(r.rows);
   return career;
 }
 

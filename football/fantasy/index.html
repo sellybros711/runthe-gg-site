@@ -170,10 +170,21 @@
   .man.hurt .cost{opacity:.45}
   .man.hurt:active{transform:none}
 
-  /* The sheet a chip opens. Bottom anchored, because it is opened by a thumb near the
-     bottom of a list and a centred box would put the answer under the hand that asked. */
-  .isheet{position:fixed;inset:0;z-index:40;display:flex;align-items:flex-end;
-    justify-content:center;background:rgba(4,7,14,.74);padding:12px}
+  /* Every sheet on this page. CENTRED, and that reverses a bottom anchor that was argued for
+     a thumb. Reported by a player: zoomed in, the confirm was below the part of the page they
+     could see, so a press opened a sheet that was not there. A fixed box is placed against
+     the LAYOUT viewport, and a pinch zoom shows only part of that, so a sheet hung off its
+     bottom edge is the first thing a zoom crops. `fitSheets()` in the script moves the scrim
+     onto the VISUAL viewport while one is open, and centred is what keeps the box in the
+     middle of whatever is on screen.
+
+     `margin:auto` on the box rather than `align-items:center`, because a flex item centred
+     that way and taller than its line overflows BOTH ends and the top half cannot be
+     scrolled back to. An auto margin centres when there is room and gives up when there is
+     not, and `overflow-y:auto` lets the scrim scroll to the rest. */
+  .isheet{position:fixed;inset:0;z-index:40;display:flex;justify-content:center;
+    overflow-y:auto;overscroll-behavior:contain;background:rgba(4,7,14,.74);padding:12px}
+  .isheet > .ibox{margin:auto}
   .isheet[hidden]{display:none}
 
   /* ---- the swap ----
@@ -1529,6 +1540,35 @@
   $('cf-sheet').addEventListener('click', function(ev){
     if (ev.target === $('cf-sheet')) closeConfirm();
   });
+
+  /* A SHEET GOES WHERE THE READER IS LOOKING. `inset:0` on a fixed box is the LAYOUT
+     viewport, and under a pinch zoom the screen shows only part of that, so a sheet laid out
+     against the whole of it can open somewhere the reader cannot see. While one is open its
+     scrim is pinned to the VISUAL viewport instead, and kept there as the reader pans or
+     zooms. No zoom (scale 1) leaves the inline style empty, so the stylesheet's `inset:0` is
+     the whole story on an ordinary visit and nothing here can move it. */
+  function fitSheets(){
+    var vv = window.visualViewport;
+    var open = document.querySelectorAll('.isheet:not([hidden])');
+    for (var i = 0; i < open.length; i++) {
+      var s = open[i].style;
+      if (!vv || Math.abs(vv.scale - 1) < 0.01) {
+        s.top = s.left = s.width = s.height = s.right = s.bottom = '';
+        continue;
+      }
+      s.right = s.bottom = 'auto';
+      s.top = vv.offsetTop + 'px'; s.left = vv.offsetLeft + 'px';
+      s.width = vv.width + 'px'; s.height = vv.height + 'px';
+    }
+  }
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', fitSheets);
+    window.visualViewport.addEventListener('scroll', fitSheets);
+  }
+  /* Every sheet is opened by clearing `hidden`, from a dozen places, so the opening is
+     watched rather than each opener remembering to call this. */
+  new MutationObserver(fitSheets).observe(document.body,
+    { subtree: true, attributes: true, attributeFilter: ['hidden'] });
 
   $('d-men').addEventListener('click', function(ev){
     var b = ev.target.closest && ev.target.closest('.man');
