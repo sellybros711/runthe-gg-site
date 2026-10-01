@@ -42,7 +42,7 @@ const E = (typeof require !== 'undefined')
   : window.RTF_ENGINE;
 
 const CAREER_API_VERSION = 1;
-const LIFE_VERSION = 1;
+const LIFE_VERSION = 2;
 
 // ─── the league ─────────────────────────────────────────────────────────────
 
@@ -581,6 +581,52 @@ function mateBy(L, tag) {
   const r = rngAt(L, 'mate:' + tag);
   return list[Math.floor(r() * list.length)].n;
 }
+/* ─── the invented locker room ─────────────────────────────────────────────
+   REAL PEOPLE STAY ON THE COURT. The players and coaches off the data appear in
+   games, rosters, trades, awards, hirings and firings, and nowhere else: never
+   in a quote, a feud, a night out or a podcast. The drama a locker room makes
+   has to belong to somebody, so every club carries three invented players, seeded
+   per career, club and three-season era, who turn over the way a real bench does.
+   {tm} and {tm2} are two of them, {tvet} the veteran, {trook} the rookie and {tco}
+   the other scorer. {topp} is an invented player on another club. check-career
+   section 5c fails on a real token in any event that is not about basketball. */
+const LOCKER_ROLES = [['vet', 31, 4], ['rook', 20, 2], ['co', 25, 3]];
+function lockerOf(L, club) {
+  club = club || L.team || (L.am && (L.am.college || (L.am.hs && L.am.hs.name))) || 'am';
+  return LOCKER_ROLES.map(function(x, i) {
+    const era = Math.floor((L.year + i) / 3);
+    const key = 'lk:' + club + ':' + x[0] + ':' + era;
+    const r = rngAt({ seed: L.seed, year: 0 }, key);
+    return { n: personName(L, key), role: x[0], age: x[1] + Math.floor(r() * x[2]) };
+  });
+}
+function lockerBy(L, tag) {
+  const m = lockerOf(L);
+  const r = rngAt(L, 'lkby:' + tag);
+  return m[Math.floor(r() * m.length)].n;
+}
+/* The recurring cast: invented people with fixed names, the same in every
+   career, so they become familiar. NARRATIVE.md section 9 is who they are. */
+/* Which tokens resolve to a real person. An event that is not on the list
+   below may not use one, and check-career holds that. The list is short and
+   every entry says why it is basketball. */
+const REAL_TOKENS = ['vet', 'star', 'blocker', 'rookie', 'mate', 'mate2', 'opp', 'opp2', 'coach', 'oldcoach', 'firedcoach', 'interim', 'bigname', 'rivalcoach'];
+const INVENTED_TOKENS = ['tm', 'tm2', 'tvet', 'trook', 'tco', 'topp', 'rival', 'beat', 'critic', 'fan', 'shoeexec', 'aau', 'friend', 'trainer', 'press', 'pbp', 'ellis', 'lazlo', 'gm', 'owner', 'agent'];
+const BASKETBALL_ONLY = {
+  slump: 'the coach shortens a rotation leash',
+  coach_bench: 'the coach decides minutes',
+  stuck: 'a real starter is ahead of you and the coach decides who plays',
+  film_session: 'film, scheme and the coach running it',
+  hot_streak: 'the coach runs more plays for you',
+  coach_fired: 'a coaching change: hirings and firings',
+  teammate_fight: 'the coach runs practice; the teammate is invented',
+  summer_league: 'a pro-am game against a real pro',
+};
+const CAST = {
+  beat: 'Kelvin Shaw', critic: 'Bram Talbot', fan: 'Big Lou Petrakis', trainer: 'Nadia Ferro',
+  shoeexec: 'Grant Hollis', aau: 'Ed Vickers', friend: 'Tavian Price', press: 'June Kimura', pbp: 'Rocco Vance',
+  shadyagent: 'Sonny Rial', straightagent: 'Maya Okonkwo', ellis: 'Old Man Ellis', lazlo: 'Victor Lazlo', dre: 'Dre Calloway',
+};
 function agentNameFor(L, k) {
   return k === 'cousin' ? kinName(L, 'cousin', 'm') : personName(L, 'agent:' + k, k === 'power' ? 'm' : 'f');
 }
@@ -597,12 +643,12 @@ function peopleKey(L, k) {
     case 'mom': return firstOf(kinName(L, 'mom', 'f'));
     case 'dad': return firstOf(kinName(L, 'dad', 'm'));
     case 'partner': return firstOf(personName(L, 'partner:' + (lifeOf(L).pn || 0), 'x'));
-    case 'trainer': return personName(L, 'trainer');
+    case 'trainer': return CAST.trainer;
     case 'doctor': return personName(L, 'doctor:' + (L.team || 'am'), 'x');
     case 'scout': return personName(L, 'scout:' + L.year);
     case 'booster': return personName(L, 'booster:' + (L.am && L.am.college || ''));
     case 'roommate': return personName(L, 'roommate:' + (L.am && L.am.college || ''));
-    case 'friend': return personName(L, 'friend');
+    case 'friend': return CAST.friend;
     case 'reporter': return personName(L, 'reporter:' + L.year, 'x');
     case 'adviser': return personName(L, 'adviser:' + (L.am && L.am.college || ''), 'f');
     case 'commish': return personName(L, 'commish');
@@ -625,6 +671,14 @@ function peopleKey(L, k) {
     case 'interim': return (L.flags.search && L.flags.search.asst && L.flags.search.asst.n) || myCoach(L);
     case 'bigname': return (L.flags.search && L.flags.search.big && L.flags.search.big.n) || myCoach(L);
     case 'opp': case 'opp2': return oppStar(L, k);
+    case 'tm': return lockerBy(L, 'a:' + L.steps);
+    case 'tm2': { const m = lockerOf(L), x = lockerBy(L, 'a:' + L.steps); const o = m.filter((p) => p.n !== x); return (o[0] || m[0]).n; }
+    case 'tvet': return lockerOf(L)[0].n;
+    case 'trook': return lockerOf(L)[1].n;
+    case 'tco': return lockerOf(L)[2].n;
+    case 'topp': return personName(L, 'topp:' + L.steps);
+    case 'rival': return L.rival ? L.rival.name : CAST.dre;
+    case 'beat': case 'critic': case 'fan': case 'shoeexec': case 'aau': case 'press': case 'pbp': case 'ellis': case 'lazlo': return CAST[k];
     case 'ref': return personName(L, 'ref:' + L.steps);
     case 'guru': return personName(L, 'guru', 'x');
     case 'rivalcoach': { const r = rngAt(L, 'rc:' + L.steps); const cs = CLUBS.filter((c) => c !== L.team); return coachName(L, pick(r, cs)); }
@@ -719,6 +773,7 @@ function newLife(opts) {
     life: { rel: 'single', kids: 0, since: 0 }, rival: null,
     look: cleanLook(o.look), rep: { fans: 50, resp: 50 },
     season: null, seasonsDone: 0, retired: false, final: null, steps: 0,
+    mem: {}, people: {}, traits: rollTraits(seed), opt: { legend: o.legend !== false },
   };
   L.year = L.league.latest + 1;
   const rng = E.createSeededRNG(E.hashSeed(seed + ':create'));
@@ -746,6 +801,56 @@ function newLife(opts) {
   sayAll(L);
   return L;
 }
+
+// ─── the save, and how an old one is brought forward ────────────────────────
+
+/* A SAVE IS A VERSIONED OBJECT AND EVERY READER MIGRATES IT. Version 1 was
+   written as `v: 1` and never read, so there was no way to give an old career a
+   field a new feature needs. migrate() is called by the page on every load and
+   on every cloud adopt, before anything else touches the career. It is
+   idempotent (a second call changes nothing) and it never moves a number the
+   season sim reads, so an old career plays on exactly as it would have.
+
+   v2 adds the story engine's containers:
+     mem     { key: { y, v } }  what the career remembers, stamped with the year
+     people  { id: { role, n, met, rel, notes } }  the invented people met
+     traits  { name: { has, known } }  hidden traits, rolled off the seed
+     opt     { legend }  per-career settings */
+const TRAITS = ['clutch', 'coachable', 'injuryProne', 'lateBloomer', 'lockerVoice', 'gymRat', 'hothead', 'bigStage', 'ironMan', 'filmJunkie', 'spender', 'saver', 'showman', 'loyal', 'mercenary'];
+/* A trait a career has, off its own stream so rolling it moves no other draw.
+   Pairs that contradict each other are settled the same way every time. */
+function rollTraits(seed) {
+  const r = E.createSeededRNG(E.hashSeed(String(seed) + ':traits'));
+  const t = {};
+  for (const k of TRAITS) t[k] = { has: r() < 0.22, known: false };
+  if (t.spender.has && t.saver.has) t.saver.has = false;
+  if (t.loyal.has && t.mercenary.has) t.mercenary.has = false;
+  if (t.injuryProne.has && t.ironMan.has) t.ironMan.has = false;
+  return t;
+}
+function migrate(L) {
+  if (!L || typeof L !== 'object') return L;
+  const v = +L.v || 1;
+  if (v < 2) {
+    if (!L.mem || typeof L.mem !== 'object') L.mem = {};
+    if (!L.people || typeof L.people !== 'object') L.people = {};
+    if (!L.traits || typeof L.traits !== 'object') L.traits = rollTraits(L.seed);
+    if (!L.opt || typeof L.opt !== 'object') L.opt = { legend: true };
+    /* A version 1 career remembered a few things only as flags. Carry them
+       into memory so a callback can find them. */
+    const f = L.flags || {};
+    if (f.home) remember(L, 'hometown.played', true);
+    if (f.g7) remember(L, 'g7.made', f.g7);
+    if (f.rivalWins) remember(L, 'rival.beat', f.rivalWins);
+  }
+  for (const k of TRAITS) if (!L.traits[k]) L.traits[k] = { has: false, known: false };
+  L.v = LIFE_VERSION;
+  return L;
+}
+/* Memory. `remember` stamps the year; `recall` answers the record or null. */
+function remember(L, key, val) { if (!L.mem) L.mem = {}; L.mem[key] = { y: L.year, v: val === undefined ? true : val }; return L.mem[key]; }
+function recall(L, key) { return L.mem && L.mem[key] ? L.mem[key] : null; }
+function hasTrait(L, k) { return !!(L.traits && L.traits[k] && L.traits[k].has); }
 
 // ─── draft night ────────────────────────────────────────────────────────────
 
@@ -1672,7 +1777,7 @@ const TONE_SAY = {
   cold: ['Four words and you walk off. The league takes you seriously.', 'No smile. No soundbite. Scouts call it focus.'],
   cocky: ['Bold. It backs itself up, for now.', 'Half the league is angry. The other half is watching.'],
 };
-const TONE_BAD = ['It does not land. {rivalcoach} pins it to his locker room wall.', 'It reads worse in print. {vet} is quiet with you for a week.'];
+const TONE_BAD = ['It does not land. {topp} pins it to his locker.', 'It reads worse in print. {tvet} is quiet with you for a week.'];
 
 /* The topics, with the question and the answers. An answer is the words you
    say and the tone they are said in. */
@@ -1762,7 +1867,7 @@ function choosePresser(L, card, opt, rng) {
 const EVENTS = {
   vet_mentor: {
     phases: ['early'], once: true, when: (L) => L.seasonsDone === 0, weight: () => 4,
-    title: '{vet} pulls you aside.',
+    title: '{tvet} pulls you aside.',
     text: () => 'The oldest man in the locker room. He offers to show you how he stayed in the league.',
     options: [
       { label: 'Shadow him every day', run: (L) => { bump(L, { iq: 2, eth: 6, trust: 4 }); return 'Film at six. Lift at seven. You learn more than you expected.'; } },
@@ -1773,19 +1878,19 @@ const EVENTS = {
   rookie_duty: {
     phases: ['early'], once: true, when: (L) => L.seasonsDone === 0, weight: () => 3,
     title: 'Rookie duty.',
-    text: () => '{vet} hands you the order. Breakfast for the plane, every road trip. You are buying.',
+    text: () => '{tvet} hands you the order. Breakfast for the plane, every road trip. You are buying.',
     options: [
       { label: 'Go along with it', run: (L) => { bump(L, { trust: 6, cash: -0.05, morale: -2 }); return 'Forty breakfast sandwiches later, the locker room likes you.'; } },
-      { label: 'Turn it into content', run: (L, r) => { if (ok(r, 0.6)) { bump(L, { fame: 6, trust: 2 }); return 'The video does numbers. Even {vet} shares it.'; } bump(L, { fame: 3, trust: -6 }); return 'It does numbers. {vet} is not laughing.'; } },
+      { label: 'Turn it into content', run: (L, r) => { if (ok(r, 0.6)) { bump(L, { fame: 6, trust: 2 }); return 'The video does numbers. Even {tvet} shares it.'; } bump(L, { fame: 3, trust: -6 }); return 'It does numbers. {tvet} is not laughing.'; } },
       { label: 'Refuse', run: (L) => { bump(L, { trust: -8, morale: 3 }); return 'Bold. Your sneakers are full of ice the next morning.'; } },
     ],
   },
   night_out: {
     phases: ['early', 'mid', 'late'], when: () => true, weight: () => 3,
     title: 'Back-to-back tomorrow. The group chat is going out.',
-    text: () => '{mate} is organizing it. Everybody is going. You know how this ends.',
+    text: () => '{tm} is organizing it. Everybody is going. You know how this ends.',
     options: [
-      { label: 'Go out', run: (L, r) => { if (ok(r, 0.55)) { bump(L, { morale: 8, health: -4 }); return 'Great night. Rough morning. You get through it.'; } bump(L, { morale: 4, health: -6, trust: -7, fame: 3 }); return 'Photos surface. {coach} has seen them.'; } },
+      { label: 'Go out', run: (L, r) => { if (ok(r, 0.55)) { bump(L, { morale: 8, health: -4 }); return 'Great night. Rough morning. You get through it.'; } bump(L, { morale: 4, health: -6, trust: -7, fame: 3 }); return 'Photos surface. {gm} has seen them.'; } },
       { label: 'One drink, then home', run: (L) => { bump(L, { morale: 4, health: -1 }); return 'You show your face and leave early. Best of both.'; } },
       { label: 'Stay in', run: (L) => { bump(L, { iq: 1, health: 2, morale: -2 }); return 'Film and sleep. You play well tomorrow.'; } },
     ],
@@ -1795,7 +1900,7 @@ const EVENTS = {
     title: 'You are on fire.',
     text: () => 'Thirty points three straight nights. The cameras find your locker.',
     options: [
-      { label: 'Tell them you are the best player here', run: (L, r) => { bump(L, { fame: 8, trust: -4 }); if (ok(r, 0.5)) { bump(L, { usage: 0.02 }); return '{coach} runs more plays for you. The bigs notice.'; } bump(L, { morale: -3 }); return 'It plays on every channel. {mate} and {mate2} stop passing.'; } },
+      { label: 'Tell them you are the best player here', run: (L, r) => { bump(L, { fame: 8, trust: -4 }); if (ok(r, 0.5)) { bump(L, { usage: 0.02 }); return '{coach} runs more plays for you. The bigs notice.'; } bump(L, { morale: -3 }); return 'It plays on every channel. {tm} and {tm2} stop passing.'; } },
       { label: 'Credit your teammates', run: (L) => { bump(L, { trust: 5, morale: 4, win: 0.4 }); return 'The locker room loves it. The ball moves a little faster.'; } },
       { label: 'Say nothing', run: (L) => { bump(L, { fame: 2 }); return 'Headphones on. The mystery helps.'; } },
     ],
@@ -1826,7 +1931,7 @@ const EVENTS = {
     text: () => 'Twelve minutes a night. Some nights, none.',
     options: [
       { label: 'Outwork him', run: (L, r) => { bump(L, { eth: 5, health: -3 }); if (ok(r, 0.55)) { bump(L, { trust: 10, min: 5 }); return '{coach} notices. Your minutes go up.'; } bump(L, { trust: 4 }); return 'He notices. Not enough yet.'; } },
-      { label: 'Vent on a podcast', run: (L) => { bump(L, { fame: 6, trust: -12, morale: 3 }); return 'Clip goes everywhere. {coach} does not listen to podcasts. {mate} sends it to him.'; } },
+      { label: 'Vent on a podcast', run: (L) => { bump(L, { fame: 6, trust: -12, morale: 3 }); return 'Clip goes everywhere. {tm} sends it to {gm}.'; } },
       { label: 'Ask to go to the G League', run: (L) => { bump(L, { fin: 1, sho: 1, iq: 1, min: -3, trust: 4 }); return 'Twenty games of thirty-five minutes. You come back sharper.'; } },
     ],
   },
@@ -1842,8 +1947,8 @@ const EVENTS = {
   },
   teammate_touches: {
     phases: ['mid', 'late'], when: (L) => L.season && L.season.role && L.season.role.starter, weight: () => 2,
-    title: '{star} wants the ball.',
-    text: () => 'He says he is open on every possession. He tells the press too.',
+    title: '{tco} wants the ball.',
+    text: () => 'He says he is open on every possession. He tells {beat} too.',
     options: [
       { label: 'Feed him', run: (L) => { bump(L, { pla: 1, usage: -0.02, win: 0.5, trust: 3 }); return 'He gets his. The team wins four straight.'; } },
       { label: 'Talk it out in private', run: (L, r) => { if (ok(r, 0.65)) { bump(L, { morale: 3, win: 0.3 }); return 'Dinner, honesty, a handshake. Fixed.'; } bump(L, { morale: -3 }); return 'He leaves dinner early. It lingers.'; } },
@@ -1901,12 +2006,12 @@ const EVENTS = {
   },
   online_beef: {
     phases: ['early', 'mid', 'late'], when: (L) => L.m.fame >= 30, weight: () => 2,
-    title: '{opp} called you overrated.',
+    title: '{topp} called you overrated.',
     text: () => 'Online. In front of everybody. You play him Friday.',
     options: [
       { label: 'Clap back', run: (L, r) => { bump(L, { fame: 6 }); if (ok(r, 0.5)) { bump(L, { morale: 6 }); return 'Your reply is funnier. The internet picks a side. Yours.'; } bump(L, { morale: -5 }); return 'He wins the thread. It follows you for a week.'; } },
       { label: 'Answer Friday', run: (L, r) => { if (ok(r, 0.35 + (ovrOf(L) - 70) * 0.012)) { bump(L, { fame: 8, morale: 8, perf: 0.3 }); return 'Thirty-eight on him. You never say a word.'; } bump(L, { morale: -6 }); return 'He gets the better of you. Now it is a thing.'; } },
-      { label: 'Ignore it', run: (L) => { bump(L, { trust: 2 }); return '{coach} respects it.'; } },
+      { label: 'Ignore it', run: (L) => { bump(L, { trust: 2 }); return '{tvet} respects it.'; } },
     ],
   },
   ref_heat: {
@@ -1963,8 +2068,8 @@ const EVENTS = {
     title: 'A network wants you to host a podcast.',
     text: () => 'Weekly. Unfiltered. Good money.',
     options: [
-      { label: 'Start it', run: (L, r) => { bump(L, { fame: 8, cash: 0.4 }); if (ok(r, 0.3)) { bump(L, { trust: -8 }); return 'Episode six says too much about {coach}.'; } return 'It is a hit. Players start calling in.'; } },
-      { label: 'Not while you are playing', run: (L) => { bump(L, { trust: 3 }); return '{coach} appreciates the focus.'; } },
+      { label: 'Start it', run: (L, r) => { bump(L, { fame: 8, cash: 0.4 }); if (ok(r, 0.3)) { bump(L, { trust: -8 }); return 'Episode six says too much about the front office. {gm} calls.'; } return 'It is a hit. Players start calling in.'; } },
+      { label: 'Not while you are playing', run: (L) => { bump(L, { trust: 3 }); return '{gm} appreciates the focus.'; } },
     ],
   },
   body_care: {
@@ -1988,7 +2093,7 @@ const EVENTS = {
   },
   mentor_rookie: {
     phases: ['early'], when: (L) => L.age >= 29 && L.seasonsDone >= 6, weight: () => 2,
-    title: '{rookie} follows you everywhere.',
+    title: '{trook} follows you everywhere.',
     text: () => 'The rookie grew up with your poster on his wall.',
     options: [
       { label: 'Take him under your wing', run: (L) => { bump(L, { trust: 6, morale: 6, win: 0.3 }); return 'He gets better fast. So does the team.'; } },
@@ -2011,7 +2116,7 @@ const EVENTS = {
     text: () => 'Twenty microphones. One question.',
     options: [
       { label: 'MVP', run: (L, r) => { bump(L, { fame: 6 }); if (ovrOf(L) >= 85) { bump(L, { morale: 4 }); return 'Nobody laughs. That is the point.'; } bump(L, { morale: -3 }); return 'A few people laugh. You remember who.'; } },
-      { label: 'Win games', run: (L) => { bump(L, { trust: 4 }); return '{coach} likes that answer.'; } },
+      { label: 'Win games', run: (L) => { bump(L, { trust: 4 }); return '{gm} likes that answer.'; } },
       { label: 'Stay healthy', run: (L) => { bump(L, { health: 2 }); return 'Boring. True.'; } },
     ],
   },
@@ -2060,8 +2165,8 @@ const EVENTS = {
   },
   superteam: {
     phases: ['off'], when: (L) => ovrOf(L) >= 84 && L.contract && L.contract.years >= 1 && clubNet(L, L.team) < 2, weight: () => 2,
-    title: '{opp} and {opp2} call you the same night.',
-    text: () => 'They want to team up. They have a team in mind.',
+    title: '{agent} has a contender on the line.',
+    text: () => 'Two stars there want a third. They want you, and they want an answer this week.',
     options: [
       { label: 'Request the trade', run: (L, r) => { tradeNow(L, r, true); bump(L, { fame: 5, trust: 0 }); return 'It happens. The league calls it a superteam.'; } },
       { label: 'Stay loyal', run: (L) => { bump(L, { morale: 4, fame: 2, trust: 8 }); return 'You hang up. Your city notices.'; } },
@@ -2093,7 +2198,7 @@ const EVENTS = {
     options: [
       { label: 'Answer on the court', run: (L, r) => { if (ok(r, 0.45 + (ovrOf(L) - L.rival.ovr) * 0.04)) { bump(L, { fame: 7, morale: 6 }); L.flags.rivalWins = (L.flags.rivalWins || 0) + 1; return 'You see him in March. You win, and you outscore him by fifteen.'; } bump(L, { morale: -6 }); return 'You see him in March. He gets the better of it, and he says so.'; } },
       { label: 'Answer online', run: (L, r) => { bump(L, { fame: 5, trust: -2 }); if (ok(r, 0.5)) return 'Your reply is better than his podcast. The internet agrees.'; bump(L, { morale: -3 }); return 'He has better writers. It goes on for a week.'; } },
-      { label: 'Say nothing', run: (L) => { bump(L, { trust: 3 }); return '{coach} tells you that was the right answer.'; } },
+      { label: 'Say nothing', run: (L) => { bump(L, { trust: 3 }); return '{tvet} tells you that was the right answer.'; } },
     ],
   },
   rival_tv: {
@@ -2127,7 +2232,7 @@ const EVENTS = {
   wedding: {
     phases: ['off'], when: (L) => lifeOf(L).rel === 'engaged', weight: () => 6,
     title: 'Wedding planning.',
-    text: () => '{partner} has a list. {mate} has opinions.',
+    text: () => '{partner} has a list. {tm} has opinions.',
     options: [
       { label: 'Throw the party of the year', run: (L) => { lifeOf(L).rel = 'married'; bump(L, { cash: -Math.min(1.5, L.cash * 0.15), fame: 4, morale: 10 }); logIt(L, 'Married {partner}.', 'gold'); return 'Four hundred guests. The whole roster dances.'; } },
       { label: 'Something small', run: (L) => { lifeOf(L).rel = 'married'; bump(L, { morale: 10 }); logIt(L, 'Married {partner}.', 'gold'); return 'Family only, on a beach. Perfect.'; } },
@@ -2172,7 +2277,7 @@ const EVENTS = {
   },
   teammate_fight: {
     phases: ['early', 'mid'], when: (L) => L.season && L.season.role && L.season.role.min >= 18, weight: () => 1.6,
-    title: '{mate} shoves you in practice.',
+    title: '{tm} shoves you in practice.',
     text: () => 'Hard foul, harder words. Everybody stops.',
     options: [
       { label: 'Shove him back', run: (L, r) => { if (ok(r, 0.4)) { bump(L, { trust: 2, morale: 3 }); return '{coach} steps in. You two are fine by dinner.'; } bump(L, { rest: 0.04, trust: -8, fame: 3 }); return 'It leaks. You both get suspended a game.'; } },
@@ -2182,7 +2287,7 @@ const EVENTS = {
   },
   young_star: {
     phases: ['pre'], once: true, when: (L) => L.age >= 31 && L.season && L.seasonsDone >= 8, weight: () => 3,
-    title: 'The club drafted {rookie}.',
+    title: 'The club drafted {trook}.',
     text: () => 'A teenager at your position. Number two pick. {gm} says he needs minutes.',
     options: [
       { label: 'Mentor him', run: (L) => { bump(L, { trust: 8, min: -2, morale: 4, win: 0.3 }); return 'He listens. He takes your minutes and thanks you for them.'; } },
@@ -3894,7 +3999,7 @@ const ACTS = {
     when: () => true,
     run(L, r) {
       if (r() < 0.7) { bump(L, { morale: 8, trust: 2 }); return 'The whole team comes. Good night, good vibes.'; }
-      bump(L, { morale: 4, fame: 4, trust: -6 }); return 'It ends up online. {coach} has questions.';
+      bump(L, { morale: 4, fame: 4, trust: -6 }); return 'It ends up online. {gm} has questions.';
     },
   },
   house: {
@@ -4027,6 +4132,7 @@ const publicAPI = {
   LOOK_KEYS, cleanLook, setLook, TONES, PRESSERS, PERSONAS, EVENT_REP, repOf, personaOf, presserCard,
   COACHES_NOW, COACH_POOL, COACH_NAMES, PEOPLE_M, PEOPLE_F, PEOPLE_X, PEOPLE_LAST, FIRST, LAST, RIVAL_FIRST, RIVAL_LAST,
   coachState, coachOf, coachName, coachCarousel, myCoach, matesOf, myMates, personName, peopleKey, say, CLUBS,
+  lockerOf, CAST, TRAITS, rollTraits, migrate, remember, recall, hasTrait, REAL_TOKENS, INVENTED_TOKENS, BASKETBALL_ONLY,
 };
 
 if (typeof module !== 'undefined' && module.exports) module.exports = publicAPI;

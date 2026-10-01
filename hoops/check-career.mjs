@@ -302,6 +302,48 @@ section('5. real players and coaches by name, everybody else generated');
   ok(C.matesOf(L, 'BOS').every((m) => !m.real), 'thirty years on, the real men have all retired');
 }
 
+// ── 5c. real people stay on the court ───────────────────────────────────────
+/* A real player or coach may appear in games, rosters, trades, awards,
+   hirings and firings, and never in a quote, a feud, a night out or a
+   podcast. The engine types every token: REAL_TOKENS name a real person, and an
+   NBA event may only use one if BASKETBALL_ONLY lists it, with the reason.
+   The source is scanned too, because the press room and the between-card
+   actions are strings outside the event pool. */
+section('5c. real people stay on the court');
+{
+  const real = new RegExp('\\{(' + C.REAL_TOKENS.join('|') + ')(:\\w+)?\\}', 'g');
+  const bad = [];
+  for (const id in C.EVENTS) {
+    const src = JSON.stringify(C.EVENTS[id], (k, v) => typeof v === 'function' ? v.toString() : v);
+    const m = src.match(real);
+    if (m && !C.BASKETBALL_ONLY[id]) bad.push(id + ' ' + [...new Set(m)].join(' '));
+  }
+  ok(bad.length === 0, `no NBA event outside the basketball list uses a real person (${bad.join('; ') || 'none'})`);
+  ok(Object.keys(C.BASKETBALL_ONLY).every((id) => C.EVENTS[id] || (C.AM_EVENTS && C.AM_EVENTS[id])), 'every entry on the basketball list is a real event');
+  /* Strings outside both pools: allowed only where the line is a known
+     basketball context. Comments and the token switch itself are not copy. */
+  const src = fs.readFileSync(path.join(HERE, 'career.js'), 'utf8').split('\n');
+  const okLine = [/^\s*(\/\/|\*|\/\*)/, /case '/, /high school team', hint: 'Chemistry, and \{coach\}/, /Talk to \{coach\}/, /\{coach\} plays it in the film session/, /Fills \{coach\}/];
+  const outside = [];
+  let inPool = false, depth = 0;
+  src.forEach((line, i) => {
+    if (/^const (EVENTS|AM_EVENTS) = \{/.test(line)) { inPool = true; depth = 0; }
+    if (inPool) { depth += (line.match(/\{/g) || []).length - (line.match(/\}/g) || []).length; if (depth <= 0 && /^\};/.test(line)) inPool = false; return; }
+    if (real.test(line) && !okLine.some((r) => r.test(line))) outside.push(i + 1);
+    real.lastIndex = 0;
+  });
+  ok(outside.length === 0, `no real token in copy outside the pools except the basketball lines (${outside.slice(0, 6).join(', ') || 'none'})`);
+  /* The invented locker room: three a club, named, never a real player. */
+  const L = C.newLife({ seed: 'locker', league });
+  L.team = 'BOS';
+  const lk = C.lockerOf(L);
+  const realNames = new Set(ROWS.map((r) => r.n || r.name));
+  ok(lk.length === 3 && lk.every((m) => m.n && !realNames.has(m.n)), `every club carries three invented teammates (${lk.map((m) => m.n).join(', ')})`);
+  ok(Object.values(C.CAST).every((n) => !realNames.has(n)), 'nobody in the recurring cast shares a name with a real player');
+  const said = C.say(L, '{tm} {tm2} {tvet} {trook} {tco} {topp} {beat} {critic} {fan} {friend} {trainer}');
+  ok(!/\{/.test(said), `every invented token resolves (${said})`);
+}
+
 // ── 6. the money and the clock ─────────────────────────────────────────────
 section('6. contracts, the cap and the clock');
 {

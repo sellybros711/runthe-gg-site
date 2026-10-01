@@ -11253,6 +11253,48 @@ boards. `setName` in `auth.js` calls it and `rtf_rename_careers` after `rtf_rena
 first run for the snapshot reason recorded under 116: a function that inserts, called in the same
 statement as the select checking it, is checked against the table as it was before.
 
+#### The Career rebuild: the design system, the saves and the people
+
+```
+node hoops/check-saves.mjs      frozen version 1 saves migrate and play on unchanged
+node hoops/check-sprite.mjs     no existing sprite pose moves a cell
+node hoops/sim-career.mjs       a thousand careers against the story bible
+hoops/design/                   AUDIT, DESIGN, NARRATIVE and PLAN, plus the style guide
+```
+
+Career is being rebuilt in phases (`hoops/design/PLAN.md`). The design is **Arena
+Arcade**, picked by the owner: `hoops/career-kit.js` is the whole system (tokens,
+components, pixel art drawn in code on the sprite's grid), CSS carried in a script
+for the cache-busting reason `store.js` gives, every token prefixed `--k-` so it
+never reaches into the draft game's variables. `hoops/design/style-guide.html`
+renders every part. A screen needing something the kit lacks adds it to the kit
+and the guide first. The three fonts are self-hosted in `hoops/fonts/`.
+
+**REAL PEOPLE STAY ON THE COURT.** A real player or coach appears in games,
+rosters, trades, awards, hirings and firings, and never in a quote, a feud, a
+night out or a podcast. Every club carries three invented teammates
+(`lockerOf`: `{tm}`, `{tm2}`, `{tvet}`, `{trook}`, `{tco}`), `{topp}` is an
+invented player elsewhere, and the recurring cast (`CAST`) has fixed names.
+`REAL_TOKENS` names the tokens that resolve to a real person, and an NBA event
+may use one only if `BASKETBALL_ONLY` lists it with the reason. check-career
+section 5c fails otherwise, and scans the copy outside the pools too.
+
+**A SAVE IS VERSIONED AND MIGRATED.** `LIFE_VERSION` is 2. `migrate()` runs on
+every load, is idempotent, and never moves a number the sim reads, which is
+what `check-saves.mjs` proves: six saves written by the version 1 engine are
+frozen in `hoops/build/fixtures/` with what that engine did over the next 120
+presses, and the migrated careers must match it exactly. Never regenerate those
+fixtures with the current engine.
+
+**The simulator has two kinds of claim.** Invariants (a crash, a career that
+never ends, an unfilled token, junk printed as a value, a wrong-year draft line)
+fail every run. Balance targets carry the phase they are due by, and only fail
+once `--phase` reaches it, so a known gap is printed without being a failure.
+
+**The characters are final.** New cutscene poses are drawn by the existing rig
+in `baller.js`; `check-sprite.mjs` holds 960 hashes of every existing pose,
+recorded from the untouched file.
+
 ### Four ways to play, and the draft is one of them
 
 ```

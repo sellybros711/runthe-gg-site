@@ -31,8 +31,15 @@ with real animated cutscenes. Every database migration moves to the end
    Reports crashes, stuck careers, event coverage, overlap between careers,
    route and ending frequency against NARRATIVE.md's balance targets, and a
    continuity scan (wrong team, wrong age, a reference to a flag never set).
-4. **Lazy data.** Event content moves out of `career.js` into
-   `hoops/career-events/*.js` data modules loaded per stage.
+4. **Lazy data** moves to Phase C step 1, where the events are ported to the
+   data schema anyway: moving them twice would be churn.
+5. **The sprite guard** (`hoops/check-sprite.mjs`): 960 hashes of every
+   existing pose, recorded from the unchanged `baller.js`, so the new cutscene
+   poses cannot move a cell of the old ones.
+
+Status: done 2026-10-01. Saves are version 2 (`check-saves.mjs` plays six
+frozen version 1 saves on unchanged), the real-people split is enforced
+(`check-career.mjs` section 5c), and the simulator runs in CI.
 
 ## Phase A. Re-skin everything that exists
 

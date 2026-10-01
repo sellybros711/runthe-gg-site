@@ -34,7 +34,10 @@ var REDUCED = window.matchMedia && window.matchMedia('(prefers-reduced-motion:re
 function load(){
   try {
     var v = JSON.parse(localStorage.getItem(KEY) || 'null');
-    if (v && typeof v === 'object') return { cur: v.cur || null, hof: Array.isArray(v.hof) ? v.hof : [] };
+    /* Every career that comes off disk is migrated before anything reads it,
+       and `last` (the finished career's Hall card) is kept: it used to be
+       dropped here, which lost the board row a reload should still show. */
+    if (v && typeof v === 'object') return { cur: v.cur ? C.migrate(v.cur) : null, hof: Array.isArray(v.hof) ? v.hof : [], last: v.last || null };
   } catch (e) {}
   return { cur: null, hof: [] };
 }
