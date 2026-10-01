@@ -8307,6 +8307,12 @@ async function boot(){
       try{ history.replaceState(null,'',location.pathname+location.search); }catch(_){}
       openProfile('account');
     }
+    /* `#pro` OPENS THE STORE, for the Fantasy Challenge's review screen, which tells a free
+       account that Pro gets five drafts a week and has no store of its own. */
+    else if(location.hash==='#pro'){
+      try{ history.replaceState(null,'',location.pathname+location.search); }catch(_){}
+      openPremium('fantasy');
+    }
     /* Anything a previous visit could not send. Deliberately not awaited and deliberately
        last: it is somebody else's message from an earlier session, and it must not hold up
        this one by a single frame. */

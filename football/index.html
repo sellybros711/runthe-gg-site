@@ -23758,6 +23758,7 @@ function authBoot(){
     if(!st.signedIn){ myCrest=null; myMark=null; mySeen=null; }
     else { loadMyMark(); loadSeen(); crestBoot(); }
     signinHash();
+    proHash();
   });
   a.boot();
 }
@@ -23785,6 +23786,17 @@ function signinHash(){
   if(authState.signedIn) return;
   authMode='in';
   profileSheet();
+}
+
+/* #pro OPENS THE STORE ON ARRIVAL, for the Fantasy Challenge's review screen, which tells a
+   free account that Pro gets five drafts a week and has no store of its own to show them.
+   The same one-shot rules as #signin: asked once auth has answered, and the hash cleared. */
+let proDone=false;
+function proHash(){
+  if(proDone||!authState.ready||location.hash!=='#pro') return;
+  proDone=true;
+  try{ history.replaceState(null,'',location.pathname+location.search); }catch(_){}
+  openPremium('fantasy');
 }
 
 /* Fetch the rows the crest needs, once per account, and repaint what is already on screen.

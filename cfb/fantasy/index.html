@@ -674,7 +674,7 @@
       <div class="rack" aria-hidden="true"><span class="QB">QB</span><span class="RB">RB</span><span class="RB">RB</span><span class="WR">WR</span><span class="WR">WR</span><span class="TE">TE</span></div>
       <ol class="steps">
         <li><b>1</b><span><strong>Draft six</strong>QB, two RB, two WR, TE from the week's biggest games. Stay under the cap.</span></li>
-        <li><b>2</b><span><strong>Five tries</strong>Draft up to five lineups. Submit the one you like best.</span></li>
+        <li><b>2</b><span><strong>Three tries</strong>Draft up to three lineups and submit the one you like best. Pro gets five.</span></li>
         <li><b>3</b><span><strong>Win the week</strong>Half PPR. Hurt or benched? Swap him before his game. Top score wins 30 days of Pro.</span></li>
       </ol>
       <div class="tiles">
@@ -736,6 +736,8 @@
          That is the boss battle's own rule (a control the game is waiting on goes above the
          record of it) arriving at the ANSWER rather than at the question. -->
     <p class="refuse" id="r-refuse" hidden></p>
+    <!-- The two drafts Pro adds, said on the screen where a free account runs out. -->
+    <p class="note" id="r-pro" hidden>Pro gets five drafts a week. <a href="/cfb/#pro">Get Pro</a></p>
     <div class="stack">
       <button class="btn" id="b-more">Draft another</button>
       <button class="btn" id="b-submit" disabled>Submit this lineup</button>
@@ -1439,7 +1441,7 @@
   function paintDraft(){
     var c = chanceAt(cur);
     var i = c.men.length;
-    $('d-chance').textContent = 'Draft ' + (cur+1) + ' of ' + D.CHANCES;
+    $('d-chance').textContent = 'Draft ' + (cur+1) + ' of ' + chancesAllowed();
     var left = CAP - D.spent(c);
     countMoney(left);
     $('d-capbar').style.transform = 'scaleX(' + Math.max(0, Math.min(1, left / CAP)) + ')';
@@ -1720,17 +1722,18 @@
     $('r-five').innerHTML = html;
     var done = state.chances.filter(function(c){
       return (c.ids||[]).length >= D.SLOTS.length; }).length;
-    var last = done >= D.CHANCES;
-    $('r-eyebrow').textContent = done + ' of ' + D.CHANCES + ' drafted';
+    var last = done >= chancesAllowed();
+    $('r-eyebrow').textContent = done + ' of ' + chancesAllowed() + ' drafted';
     /* THE SCREEN SAYS WHAT THERE IS TO DO, and after one draft that is not "pick one". It
        read "Pick the one to submit" over a single lineup with four drafts still owed, which
        is a screen asking for a decision the player has nothing to make it with. */
     $('r-head').textContent = last ? 'Pick the one to submit' : 'Draft another, or stop here';
     $('r-say').textContent = last
       ? 'Tap a lineup to choose it. One goes in. Once it is in it is in.'
-      : (D.CHANCES - done) + (D.CHANCES - done === 1 ? ' draft left.' : ' drafts left.')
+      : (chancesAllowed() - done) + (chancesAllowed() - done === 1 ? ' draft left.' : ' drafts left.')
         + ' You can submit one of these instead. You do not have to use them all.';
     $('b-more').hidden = last;
+    $('r-pro').hidden = PRO || !last;
     $('b-submit').disabled = state.pick == null;
     /* Red is this page's primary. It follows the thing to do rather than sitting on Submit
        while Submit is refused, which is a disabled red button reading as the main action. */
@@ -3055,7 +3058,7 @@
       if ((state.chances[k].ids||[]).length < D.SLOTS.length){ i = k; break; }
     }
     if (i < 0){
-      if (state.chances.length >= D.CHANCES){ toReview(); return; }
+      if (state.chances.length >= chancesAllowed()){ toReview(); return; }
       state.chances.push({ seed: D.newSeed(), ids: [] });
       i = state.chances.length - 1;
     }
@@ -3086,10 +3089,10 @@
       + ' · ' + slate().length + ' games';
     $('home-lock').textContent = locked() ? 'Locked' : untilLock();
     $('home-cap').textContent = money(CAP);
-    $('home-drafts').textContent = done + ' of ' + D.CHANCES;
-    $('b-draft').hidden = locked() || state.chances.length >= D.CHANCES
-      && done >= D.CHANCES;
-    $('b-draft').textContent = done ? 'Draft ' + (done+1) + ' of ' + D.CHANCES : 'Start drafting';
+    $('home-drafts').textContent = done + ' of ' + chancesAllowed();
+    $('b-draft').hidden = locked() || state.chances.length >= chancesAllowed()
+      && done >= chancesAllowed();
+    $('b-draft').textContent = done ? 'Draft ' + (done+1) + ' of ' + chancesAllowed() : 'Start drafting';
     $('b-review').hidden = !done;
     /* THE REOPENED DRAFTS ARE NAMED WHERE THE READER LANDS, so nobody opens their five
        and finds one gone with nothing to say why. */
@@ -3439,6 +3442,51 @@
      the home screen over an entry somebody already made, and it must not invent one either.
      The wait is the one place on this page a round trip is worth it, and only because the
      alternative is showing a drafting screen to somebody who is already in. */
+  /* ---- how many drafts this account gets this week ----
+   *
+   * THREE FOR A FREE ACCOUNT AND FIVE FOR PRO, the owner's call. It overturns a rule this
+   * mode was launched on (Pro must not buy draws), so the cost is written down where the
+   * rule was, in CLAUDE.md: two more drafts are worth about a point to a careful drafter
+   * and about a point and a half to a casual one, measured on a real board.
+   *
+   * PRO IS READ OFF premium_products(), the one question every gate on the site asks, so a
+   * yearly plan, a lifetime bundle and a Fantasy prize pass all count and a lapsed one does
+   * not. AN UNKNOWN ANSWER IS FREE: auth.js answers [] on any error, which is the direction
+   * that never hands out a paid edge in a prize competition by accident.
+   *
+   * A DRAFT ALREADY MADE IS NEVER TAKEN AWAY. The count is at least the drafts that exist,
+   * so a lineup started before this rule, or while a pass was running, can still be
+   * finished, reviewed and submitted. What the limit stops is a NEW one.
+   *
+   * It is the browser's rule, the same as the five always were: the server checks a lineup
+   * and never how many drafts it came out of. */
+  var FREE_CHANCES = 3, PRO = false, proFor = null;
+  function chancesAllowed(){
+    var made = state ? state.chances.length : 0;
+    return Math.max(PRO ? D.CHANCES : FREE_CHANCES, made);
+  }
+  function askPro(){
+    var A = window.PS_AUTH, who = A && A.state ? A.state() : null;
+    var uid = who && who.signedIn ? (who.userId || who.name || 'me') : null;
+    if (!uid || !A.premiumProducts){ proFor = null; setPro(false); return; }
+    if (proFor === uid) return;
+    proFor = uid;
+    Promise.resolve(A.premiumProducts()).then(function(keys){
+      if (proFor === uid) setPro(Array.isArray(keys) && keys.indexOf('cfb_premium') >= 0);
+    }, function(){ if (proFor === uid) setPro(false); });
+  }
+  /* Repaints only what the count is printed on, and never re-deals a draft board. */
+  function setPro(v){
+    if (PRO === v) return;
+    PRO = v;
+    if (!state) return;
+    var on = document.querySelector('.screen.on');
+    if (on && on.id === 's-home') paintHome();
+    else if (on && on.id === 's-review') toReview();
+    else if (on && on.id === 's-draft')
+      $('d-chance').textContent = 'Draft ' + (cur+1) + ' of ' + chancesAllowed();
+  }
+
   function begin(){
     state = load();
     if (!state || state.week !== POOL.week || state.season !== POOL.season){
@@ -3449,6 +3497,8 @@
        drawn, so a malformed save must cost the reopen and never the page. The submit
        guard is still there behind it. */
     try { reopenOverCap(); } catch (e) {}
+    askPro();
+    if (window.PS_AUTH && window.PS_AUTH.onChange) window.PS_AUTH.onChange(function(){ askPro(); });
     F.mine(POOL.season, POOL.week).then(function(row){
       if (row) SERVER_IN = { week: POOL.week, row: row };
       /* ASKED AT BOOT AND NOT INSIDE `paintHome`, which is where it was first written and
