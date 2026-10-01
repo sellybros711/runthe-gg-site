@@ -80,6 +80,14 @@ var CSS = [
 '.cr-town{margin:10px 0 0;font-size:13.5px;color:var(--ink);font-weight:700;}',
 '.cr-sub{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);font-weight:800;margin:16px 0 6px;}',
 '.cr-final p.cr-col{color:var(--ink);font-weight:700;}',
+'.cr-epi p{margin:0 0 10px;font-size:14px;line-height:1.5;}',
+'.cr-epi p:last-child{margin:0;}',
+'.cr-epi .k,.cr-lifeline{display:block;}',
+'.cr-epi .k{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);font-weight:800;margin-bottom:2px;}',
+'.cr-lifeline{font-size:13px;color:var(--mut);margin:14px 0 0;}',
+'.cr-rivalwho{font-size:13px;color:var(--mut);margin:0 0 6px;}',
+'.cr-vs td:nth-child(2),.cr-vs td:nth-child(3),.cr-vs th:nth-child(2),.cr-vs th:nth-child(3){text-align:right;}',
+'.cr-vs td.win{color:#3ddc97;font-weight:800;}',
 /* the identity card */
 '.cr-id{position:relative;display:flex;gap:14px;align-items:center;padding:16px;border-radius:14px;overflow:hidden;margin:0 0 12px;',
 '  background:linear-gradient(135deg,var(--c1,#1d2433),#0e131c 78%);border:1px solid var(--cardb);}',
@@ -477,13 +485,29 @@ function trophies(L){
     + '<div><b>' + T.reb.toLocaleString() + '</b><span>Rebounds</span></div>'
     + '<div><b>' + T.ast.toLocaleString() + '</b><span>Assists</span></div>'
     + '<div><b>' + T.rings + '</b><span>Rings</span></div></div>'
-    + '<div style="margin-top:12px">' + chips + '</div>';
+    + '<div style="margin-top:12px">' + chips + '</div>'
+    + rivalHtml(L)
+    + '<p class="cr-lifeline">Off the floor: <b>' + esc(C.lifeLine(L)) + '</b></p>';
+}
+/* You against the man drafted next to you. */
+function rivalHtml(L){
+  var r = L.rival;
+  if (!r) return '';
+  var T = C.totals(L);
+  var row = function(lab, a, b){ return '<tr><td>' + lab + '</td><td class="' + (a > b ? 'win' : '') + '">' + a.toLocaleString('en-US') + '</td><td class="' + (b > a ? 'win' : '') + '">' + b.toLocaleString('en-US') + '</td></tr>'; };
+  var last = r.seasons[r.seasons.length - 1];
+  return '<h3 class="cr-sub">Your rival</h3>'
+    + '<p class="cr-rivalwho"><b>' + esc(r.name) + '</b>, drafted ' + C.ordinal(r.pick) + '. '
+    + (r.retired ? 'Retired.' : last ? E.teamName(last.team) + ', ' + last.pts + ' a night last season.' : 'Rookie year ahead.') + '</p>'
+    + '<table class="cr-tbl cr-vs"><thead><tr><th></th><th>You</th><th>' + esc(r.name.split(' ').slice(-1)[0]) + '</th></tr></thead><tbody>'
+    + row('Points', T.pts, r.pts) + row('All-Star', T.star, r.star) + row('MVP', T.mvp, r.mvp) + row('Rings', T.rings, r.rings)
+    + '</tbody></table>';
 }
 
 function lifeView(L){
   return '<div class="cr-top"><h2>Career</h2><button class="cr-home" id="cr-home">Home</button></div>'
     + idCard(L) + meters(L) + stageHtml(L) + facts(L) + ratingsHtml(L) + tabsHtml(L)
-    + '<button class="ghost" id="cr-quit" style="width:100%;margin-top:4px">Retire early and start over</button>';
+    + (L.phase === 'after' ? '' : '<button class="ghost" id="cr-quit" style="width:100%;margin-top:4px">Retire now</button>');
 }
 
 function wireLife(L){
@@ -501,10 +525,12 @@ function wireLife(L){
   var q = $('cr-quit');
   if (q) q.onclick = function(){
     if (!confirm('Retire now? The career ends here and goes in your Hall of Fame.')) return;
-    L.pending = [];
-    L.retired = true; L.phase = 'retired';
-    L.final = C.legacy(L);
-    finish();
+    var beats = C.retireNow(L);
+    if (L.retired) return finish();
+    stage = { beats: beats, result: null, draft: null };
+    save();
+    render();
+    scrollStage();
   };
   if (stage.draft) animateDraft();
 }
@@ -622,6 +648,7 @@ function finish(){
   var card = { name: L.name, num: L.num, pos: L.pos, verdict: f.verdict, blurb: f.blurb, score: f.score,
     from: L.history.length ? L.history[0].y : L.year, to: L.history.length ? L.history[L.history.length - 1].y : L.year,
     teams: teams, totals: f.totals, awards: awardCounts(L), history: L.history, amHist: L.amHist || [], college: collegeOf(L),
+    after: f.after || '', jersey: f.jersey || null, rival: f.rival || null, life: f.life || '',
     team: teams[teams.length - 1] || null, at: Date.now() };
   st.hof.unshift(card);
   if (st.hof.length > 20) st.hof.length = 20;
@@ -643,10 +670,18 @@ function finalView(card){
     + '<div class="nm">' + esc(card.name) + ' · #' + esc(String(card.num)) + ' · ' + card.from + '-' + card.to + '</div>'
     + '<p>' + esc(card.blurb) + '</p>'
     + (card.college ? '<p class="cr-col">' + esc(card.college) + '</p>' : '')
+    + (card.jersey ? '<p class="cr-col">Your #' + esc(String(card.num)) + ' hangs in the rafters for the ' + esc(E.TEAM_NAMES[card.jersey] || card.jersey) + '.</p>' : '')
     + '<div class="cr-tot"><div><b>' + T.pts.toLocaleString() + '</b><span>Points</span></div>'
     + '<div><b>' + (T.pts / gp).toFixed(1) + '</b><span>A game</span></div>'
     + '<div><b>' + T.rings + '</b><span>Rings</span></div>'
     + '<div><b>' + T.seasons + '</b><span>Seasons</span></div></div>' + aw + '</div>'
+    + (card.after || card.rival || card.life ? '<div class="card cr-epi">'
+      + (card.after ? '<p><span class="k">After basketball</span>' + esc(card.after) + '</p>' : '')
+      + (card.rival ? '<p><span class="k">Your rival</span>' + esc(card.rival.name) + ': ' + card.rival.pts.toLocaleString('en-US') + ' points, '
+        + card.rival.star + 'x All-Star, ' + card.rival.rings + (card.rival.rings === 1 ? ' ring.' : ' rings.')
+        + (card.totals.pts > card.rival.pts ? ' You had the better career.' : ' He had the better career.') + '</p>' : '')
+      + (card.life ? '<p><span class="k">Off the floor</span>' + esc(card.life) + '.</p>' : '')
+      + '</div>' : '')
     + '<div class="btnrow" style="margin:0 0 12px"><button id="cr-share">Share it</button><button class="ghost" id="cr-again">New career</button></div>'
     + '<div class="card"><h2>Season by season</h2>' + seasonsTable(hist) + '</div>';
 }

@@ -147,7 +147,9 @@ section('2. most careers are good ones, a few are great, and the bands hold');
 section('3. every event fires somewhere in the sweep');
 {
   /* A card nobody can reach is content nobody sees, and it throws nothing. */
-  const ids = Object.keys(C.EVENTS);
+  /* The hometown club only exists for a career that has a hometown, which is
+     one that started in high school, so section 8 asks for it. */
+  const ids = Object.keys(C.EVENTS).filter((id) => id !== 'hometown_call');
   const dark = ids.filter((id) => !fired[id]);
   ok(dark.length === 0, `every one of ${ids.length} events is dealt (${dark.join(', ') || 'none dark'})`);
   for (const id of ['combine', 'workout', 'agent', 'training', 'clutch', 'fa', 'retire', 'extension', 'allstar', 'injury']) {
@@ -214,6 +216,43 @@ section('6. contracts, the cap and the clock');
   ok(L.year === league.latest + 1, `a career starts the season after the data's last (${L.year})`);
 }
 
+// ── 9. the people around you, and the moments ─────────────────────────────
+section('9. a rival, a life, milestones, and what comes after');
+{
+  let rivals = 0, rivalBad = [], married = 0, kids = 0, maxKids = 0, after = 0, jerseys = 0, jBad = [], miles = 0, milesMissed = 0;
+  for (const x of all) {
+    const L = x.L, f = x.f;
+    if (L.rival) {
+      rivals++;
+      const r = L.rival;
+      if (!Number.isFinite(r.pts) || r.seasons.some((h) => !Number.isFinite(h.pts) || h.pts > 36)) rivalBad.push(L.seed);
+      if (r.seasons.length > 0 && r.name === L.name) rivalBad.push(L.seed + ' shares a name');
+    }
+    const life = C.lifeOf(L);
+    if (life.rel === 'married') married++;
+    kids += life.kids; maxKids = Math.max(maxKids, life.kids);
+    if (f.after && f.after.length > 10) after++;
+    if (f.jersey) {
+      jerseys++;
+      if (L.history.filter((h) => h.t === f.jersey).length < 7) jBad.push(L.seed);
+    }
+    /* A career that crossed twenty thousand says so in the story. */
+    if (f.totals.pts >= 20000) {
+      if (L.log.some((e) => /^20,000 career points/.test(e.t))) miles++; else milesMissed++;
+    }
+  }
+  const n = all.length;
+  console.log(`  rival ${rivals}/${n}  married ${married}  kids ${kids}  after ${after}  jerseys ${jerseys}  20k club ${miles}`);
+  ok(rivals === all.filter((x) => x.L.draft).length, 'every drafted or undrafted career has a rival from its class');
+  ok(rivalBad.length === 0, `the rival's numbers are real numbers (${rivalBad.slice(0, 3).join(', ') || 'none'})`);
+  ok(married / n > 0.1 && married / n < 0.9 && maxKids <= 4, `a life happens off the floor (${married} married, at most ${maxKids} kids)`);
+  ok(after === n, `every career ends on what comes next (${after} of ${n})`);
+  ok(jBad.length === 0 && jerseys > 0, `a retired number means seven years in one city (${jerseys} retired, ${jBad.length} wrong)`);
+  ok(milesMissed === 0 && miles > 0, `twenty thousand points is a moment (${miles} logged, ${milesMissed} missed)`);
+  const src = fs.readFileSync(path.join(HERE, 'career.js'), 'utf8');
+  ok(!/partner'?s name/i.test(src), 'the people in your life are roles');
+}
+
 // ── 8. the road: high school, college, and the draft it ends at ───────────
 section('8. three hundred careers from high school, and where they land');
 {
@@ -266,7 +305,7 @@ section('8. three hundred careers from high school, and where they land');
   /* Every card the road deals is dealt somewhere. */
   const dark = Object.keys(C.AM_EVENTS).filter((id) => !fired8[id]);
   ok(dark.length === 0, `every one of ${Object.keys(C.AM_EVENTS).length} road events is dealt (${dark.join(', ') || 'none dark'})`);
-  for (const id of ['hs_summer', 'offers', 'commit', 'signing', 'declare', 'portal', 'amclutch', 'combine']) ok(fired8[id] > 0, `the ${id} card is dealt (${fired8[id] || 0})`);
+  for (const id of ['hs_summer', 'offers', 'commit', 'signing', 'declare', 'portal', 'amclutch', 'combine', 'hometown_call', 'after']) ok(fired8[id] > 0, `the ${id} card is dealt (${fired8[id] || 0})`);
   /* Every way out of high school is taken by somebody. Overseas is the one a
      blind policy almost never picks (it needs a ranked player who waited past
      junior year), so a policy that wants it walks it on purpose. */

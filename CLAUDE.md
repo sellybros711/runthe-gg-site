@@ -10949,6 +10949,30 @@ NBA screen leaking down.
 **Overseas is the route a blind policy never finds**, because it needs a ranked player who
 waited past junior year. Section 8 walks it on purpose rather than hoping the sweep does.
 
+#### The people around you, the moments, and what comes after
+
+**A RIVAL FROM YOUR DRAFT CLASS**, invented like you (`makeRival` at the draft, picked within
+three slots of you), whose seasons are drawn off a growth curve in `rivalSeason` rather than
+played: he exists to be measured against and nothing in the league runs through him. Two cards
+use him, the trophy case draws you against him, and the Hall card says who had the better career.
+
+**A life off the floor** (`L.life`: single, dating, engaged, married, and kids up to four) is
+five cards that move morale more than basketball. Every person in it is a role. Old saves have
+no `life` key, so it is read through `lifeOf()`, never directly.
+
+**Milestones are crossings, read off `totals()` either side of `closeSeason`'s history push**,
+so 20,000 points is logged in the season it happened and never again.
+
+**RETIRING IS TWO MOMENTS.** `retire()` is the press conference and leaves an `after` card; the
+career is only over once it is answered (`L.retired`), and its sentence is the last line of the
+Hall card. The screen's own Retire button goes through `retireNow()` for the same reason. A
+career that never reached the league skips it. **A number is retired** for seven seasons with
+one club and a legacy score of 36 or more.
+
+**The hometown club calls only on a road career**, because only a road career has a hometown
+(`HOME_CLUB` maps the high school towns to clubs), so section 8 asks for that card and
+section 3 does not.
+
 **What it does not have yet**: a leaderboard (it needs a migration) and a badge shelf.
 
 ### Four ways to play, and the draft is one of them

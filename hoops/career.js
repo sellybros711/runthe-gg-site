@@ -296,6 +296,7 @@ function newLife(opts) {
     team: null, contract: null, draft: null,
     phase: 'combine', pending: [], log: [], history: [], flags: {},
     league: { latest: league.latest || 2026, net: Object.assign({}, league.net), stars: league.stars || {} },
+    life: { rel: 'single', kids: 0, since: 0 }, rival: null,
     season: null, seasonsDone: 0, retired: false, final: null, steps: 0,
   };
   L.year = L.league.latest + 1;
@@ -415,6 +416,7 @@ function runDraft(L, beats) {
     const pool = CLUBS.slice().sort((a, b) => clubNet(L, a) - clubNet(L, b));
     const three = [pool[2 + Math.floor(rng() * 6)], pool[11 + Math.floor(rng() * 6)], pool[20 + Math.floor(rng() * 6)]];
     L.draft = { pick: null, round: null, team: null };
+    makeRival(L, null);
     beats.push({ kind: 'draft', text: 'Sixty names. Not yours.', tone: 'bad' });
     logIt(L, 'Went undrafted.', 'bad');
     L.pending.push({
@@ -427,6 +429,7 @@ function runDraft(L, beats) {
   }
   const round = p > 30 ? 2 : 1;
   L.draft = { pick: p, round, team };
+  makeRival(L, p);
   const sal = rookieSalary(L, p);
   L.contract = { years: round === 1 ? 4 : 2, total: round === 1 ? 4 : 2, salary: sal, kind: round === 1 ? 'rookie' : 'min', start: L.year };
   joinTeam(L, team, false);
@@ -1099,14 +1102,24 @@ function offseason(L, beats) {
   queueEvents(L, 'off', 1);
 }
 
+/* Retiring is two moments: the press conference, which is here, and the
+   rest of your life, which is the `after` card it leaves on the table. The
+   career is only over once that card is answered. */
 function retire(L, beats, why) {
-  L.retired = true;
-  L.phase = 'retired';
+  L.phase = 'after';
   L.pending = [];
   L.final = legacy(L);
   const t = why || 'Retired at ' + L.age + '.';
   beats.push({ kind: 'retire', text: t, tone: 'gold' });
   logIt(L, t + ' ' + L.final.verdict + '.', 'gold');
+  L.pending.push(afterCard(L));
+}
+/* For the screen's own retire button, which can come at any point. */
+function retireNow(L) {
+  const beats = [];
+  if (!L.history.length) { L.pending = []; L.retired = true; L.phase = 'retired'; L.final = legacy(L); return beats; }
+  retire(L, beats, 'Retired at ' + L.age + '.');
+  return beats;
 }
 
 // ─── the legacy ─────────────────────────────────────────────────────────────
@@ -1162,7 +1175,14 @@ function legacy(L) {
   if (!L.history.length) return { totals: T, score: 0, verdict: 'Never made the league', blurb: 'The game gave you a lot. The league never called.' };
   const score = legacyScore(T);
   const v = VERDICTS.find((x) => score >= x[0]);
-  return { totals: T, score, verdict: v[1], blurb: v[2] };
+  /* A club retires your number when you were great there for a long time. */
+  const by = {};
+  for (const h of L.history) if (h.t) by[h.t] = (by[h.t] || 0) + 1;
+  let jersey = null;
+  for (const c in by) if (by[c] >= 7 && score >= 36 && (!jersey || by[c] > by[jersey])) jersey = c;
+  const r = L.rival;
+  const rival = r ? { name: r.name, pts: r.pts, star: r.star, mvp: r.mvp, rings: r.rings, beat: L.flags.rivalWins || 0 } : null;
+  return { totals: T, score, verdict: v[1], blurb: v[2], jersey, rival, life: lifeLine(L) };
 }
 
 // ─── the events ─────────────────────────────────────────────────────────────
@@ -1485,8 +1505,262 @@ const EVENTS = {
       { label: 'Rest', run: (L) => { bump(L, { health: 14 }); return 'Sleep, swim, repeat.'; } },
       { label: 'Work anyway', run: (L) => { bump(L, { health: -4, eth: 4, sho: 1 }); return 'You do it anyway. That is who you are.'; } },
     ],
+  },  rival_trash: {
+    phases: ['early', 'mid'], when: (L) => rivalOn(L) && L.m.fame >= 25, weight: () => 2.5,
+    title: 'Your draft-class rival is talking.',
+    text: (L) => L.rival.name + ' says you were the wrong pick. On a podcast. With video.',
+    options: [
+      { label: 'Answer on the court', run: (L, r) => { if (ok(r, 0.45 + (ovrOf(L) - L.rival.ovr) * 0.04)) { bump(L, { fame: 7, morale: 6 }); L.flags.rivalWins = (L.flags.rivalWins || 0) + 1; return 'You see him in March. You win, and you outscore him by fifteen.'; } bump(L, { morale: -6 }); return 'You see him in March. He gets the better of it, and he says so.'; } },
+      { label: 'Answer online', run: (L, r) => { bump(L, { fame: 5, trust: -2 }); if (ok(r, 0.5)) return 'Your reply is better than his podcast. The internet agrees.'; bump(L, { morale: -3 }); return 'He has better writers. It goes on for a week.'; } },
+      { label: 'Say nothing', run: (L) => { bump(L, { trust: 3 }); return 'Your coach tells you that was the right answer.'; } },
+    ],
+  },
+  rival_tv: {
+    phases: ['late'], when: (L) => rivalOn(L) && L.rival.ovr >= 74 && ovrOf(L) >= 74, weight: () => 2,
+    title: 'You and your rival on national TV.',
+    text: (L) => 'The whole broadcast is about you and ' + L.rival.name + '.',
+    options: [
+      { label: 'Guard him yourself', run: (L, r) => { if (ok(r, 0.35 + (L.rt.def - 70) * 0.02)) { bump(L, { fame: 6, def: 1 }); L.flags.rivalWins = (L.flags.rivalWins || 0) + 1; return 'He goes five for eighteen. You hear about it all week.'; } bump(L, { morale: -4 }); return 'He gets his. Thirty-two on you.'; } },
+      { label: 'Outscore him', run: (L, r) => { if (ok(r, 0.4 + (ovrOf(L) - L.rival.ovr) * 0.04)) { bump(L, { fame: 8, morale: 6 }); L.flags.rivalWins = (L.flags.rivalWins || 0) + 1; return 'Forty to his twenty-six. The clip of you waving is everywhere.'; } bump(L, { morale: -5 }); return 'He wins the duel and the game.'; } },
+      { label: 'Make it about the team', run: (L) => { bump(L, { trust: 4, win: 0.3 }); return 'A team win. The broadcast is disappointed.'; } },
+    ],
+  },
+  meet_someone: {
+    phases: ['off', 'pre'], when: (L) => lifeOf(L).rel === 'single' && L.age >= 21, weight: () => 2.2,
+    title: 'Somebody catches your eye.',
+    text: () => 'At a friend\'s birthday dinner. They have no idea who you are.',
+    options: [
+      { label: 'Ask them out', run: (L, r) => { if (ok(r, 0.7)) { const f = lifeOf(L); f.rel = 'dating'; f.since = L.year; bump(L, { morale: 8 }); logIt(L, 'Met someone.', 'good'); return 'Dinner turns into a whole weekend. You are smitten.'; } bump(L, { morale: -2 }); return 'They are not interested. That has not happened in years.'; } },
+      { label: 'Focus on basketball', run: (L) => { bump(L, { eth: 2 }); return 'You go home early. You watch film.'; } },
+    ],
+  },
+  propose: {
+    phases: ['off', 'pre'], when: (L) => lifeOf(L).rel === 'dating' && L.year - lifeOf(L).since >= 1, weight: () => 3,
+    title: 'You have a ring in your pocket.',
+    text: () => 'Two years together. The jeweler says it is perfect.',
+    options: [
+      { label: 'Propose', run: (L, r) => { const f = lifeOf(L); if (ok(r, 0.85)) { f.rel = 'engaged'; bump(L, { morale: 10 }); logIt(L, 'Got engaged.', 'good'); return 'Yes. Before you even finish the question.'; } f.rel = 'single'; bump(L, { morale: -12 }); return 'They say they need time. Then they need space.'; } },
+      { label: 'Not yet', run: (L) => { bump(L, { morale: -1 }); return 'The ring goes back in the drawer.'; } },
+    ],
+  },
+  wedding: {
+    phases: ['off'], when: (L) => lifeOf(L).rel === 'engaged', weight: () => 6,
+    title: 'Wedding planning.',
+    text: () => 'Your partner has a list. Your teammates have opinions.',
+    options: [
+      { label: 'Throw the party of the year', run: (L) => { lifeOf(L).rel = 'married'; bump(L, { cash: -Math.min(1.5, L.cash * 0.15), fame: 4, morale: 10 }); logIt(L, 'Got married.', 'gold'); return 'Four hundred guests. The whole roster dances.'; } },
+      { label: 'Something small', run: (L) => { lifeOf(L).rel = 'married'; bump(L, { morale: 10 }); logIt(L, 'Got married.', 'gold'); return 'Family only, on a beach. Perfect.'; } },
+    ],
+  },
+  baby: {
+    phases: ['off', 'pre'], when: (L) => lifeOf(L).rel === 'married' && lifeOf(L).kids < 4 && L.age <= 38, weight: () => 2,
+    title: 'Your partner wants to talk about kids.',
+    text: (L) => lifeOf(L).kids ? 'Another one?' : 'You always said you wanted a big family.',
+    options: [
+      { label: 'Start a family', run: (L) => { const f = lifeOf(L); f.kids++; bump(L, { morale: 10, health: -3 }); logIt(L, f.kids === 1 ? 'Became a parent.' : 'Welcomed kid number ' + f.kids + '.', 'good'); return f.kids === 1 ? 'A baby in June. You learn to sleep in two-hour pieces.' : 'Kid number ' + f.kids + '. The house is loud.'; } },
+      { label: 'After you retire', run: (L) => { bump(L, { morale: -2 }); return 'You agree to wait. Mostly.'; } },
+    ],
+  },
+  breakup: {
+    phases: ['off', 'mid'], when: (L) => lifeOf(L).rel === 'dating' && (L.m.morale < 45 || L.m.fame > 70), weight: () => 1.5,
+    title: 'Things are not good at home.',
+    text: () => 'Road trips, cameras, the group chat. Your partner says it is too much.',
+    options: [
+      { label: 'Fight for it', run: (L, r) => { if (ok(r, 0.55)) { bump(L, { morale: 4 }); return 'Counseling, a vacation, a long talk. You make it.'; } lifeOf(L).rel = 'single'; bump(L, { morale: -10 }); return 'It ends anyway. Quietly.'; } },
+      { label: 'Let it go', run: (L) => { lifeOf(L).rel = 'single'; bump(L, { morale: -6 }); return 'You move out in the offseason.'; } },
+    ],
+  },
+  hometown_call: {
+    phases: ['off'], once: true, when: (L) => homeClub(L) && L.team && L.team !== homeClub(L) && ovrOf(L) >= 74 && L.contract && L.contract.years >= 1, weight: () => 3,
+    title: 'Your hometown club calls.',
+    text: (L) => 'The ' + E.teamName(homeClub(L)) + ' want you home. Your mom already said yes.',
+    options: [
+      { label: 'Go home', run: (L) => { joinTeam(L, homeClub(L), true); bump(L, { morale: 15, fame: 5 }); L.flags.home = true; return 'They trade for you. Your old high school coach is at the press conference.'; } },
+      { label: 'Stay where you are', run: (L) => { bump(L, { trust: 6, morale: -2 }); return 'Not yet. Maybe at the end.'; } },
+    ],
+  },
+  docuseries: {
+    phases: ['pre', 'off'], once: true, when: (L) => L.m.fame >= 60, weight: () => 2,
+    title: 'A streaming service wants a documentary.',
+    text: () => 'Cameras everywhere for a season. Your house, your locker, your car.',
+    options: [
+      { label: 'Let them in', run: (L, r) => { bump(L, { fame: 10, cash: 0.8 }); if (ok(r, 0.6)) return 'It is a hit. Your mom becomes a star.'; bump(L, { trust: -8, morale: -3 }); return 'Episode four shows a locker room fight. Nobody forgets.'; } },
+      { label: 'Produce it yourself', run: (L) => { bump(L, { fame: 7, cash: 0.4 }); return 'You control the edit. It is a little flattering.'; } },
+      { label: 'No cameras', run: (L) => { bump(L, { trust: 3 }); return 'Your teammates appreciate it.'; } },
+    ],
+  },
+  teammate_fight: {
+    phases: ['early', 'mid'], when: (L) => L.season && L.season.role && L.season.role.min >= 18, weight: () => 1.6,
+    title: 'A teammate shoves you in practice.',
+    text: () => 'Hard foul, harder words. Everybody stops.',
+    options: [
+      { label: 'Shove him back', run: (L, r) => { if (ok(r, 0.4)) { bump(L, { trust: 2, morale: 3 }); return 'Coaches step in. You two are fine by dinner.'; } bump(L, { rest: 0.04, trust: -8, fame: 3 }); return 'It leaks. You both get suspended a game.'; } },
+      { label: 'Walk away', run: (L) => { bump(L, { trust: 4, morale: -2 }); return 'You go to the other end and shoot. The room respects it.'; } },
+      { label: 'Settle it in a scrimmage', run: (L, r) => { if (ok(r, 0.5 + (ovrOf(L) - 72) * 0.02)) { bump(L, { trust: 6, morale: 5 }); return 'You cook him for twenty minutes. Nobody shoves you again.'; } bump(L, { morale: -4 }); return 'He cooks you. The practice video gets passed around.'; } },
+    ],
+  },
+  young_star: {
+    phases: ['pre'], once: true, when: (L) => L.age >= 31 && L.season && L.seasonsDone >= 8, weight: () => 3,
+    title: 'The club drafted a teenager at your position.',
+    text: () => 'Number two pick. The front office says he needs minutes.',
+    options: [
+      { label: 'Mentor him', run: (L) => { bump(L, { trust: 8, min: -2, morale: 4, win: 0.3 }); return 'He listens. He takes your minutes and thanks you for them.'; } },
+      { label: 'Make him earn it', run: (L, r) => { if (ok(r, 0.5 + (ovrOf(L) - 76) * 0.03)) { bump(L, { min: 2, fame: 3 }); return 'You keep the job another year.'; } bump(L, { min: -5, morale: -6 }); return 'He wins the job by January.'; } },
+      { label: 'Ask to be moved', run: (L) => { L.flags.tradeAsk = true; bump(L, { trust: -8 }); return 'You want to start somewhere. You say so.'; } },
+    ],
+  },
+  buyout: {
+    phases: ['mid'], once: true, when: (L) => L.age >= 33 && L.team && clubNet(L, L.team) < 0 && L.contract && L.contract.years >= 1, weight: () => 3,
+    title: 'Your club offers a buyout.',
+    text: () => 'Give back some money, become a free agent, and chase a ring this spring.',
+    options: [
+      { label: 'Take it and join a contender', run: (L, r) => { bump(L, { cash: -Math.min(1.5, L.cash * 0.1) }); tradeNow(L, r, true); L.contract = { years: 1, total: 1, salary: round1(capFor(L.year) * MIN_PCT), kind: 'min', start: L.year }; return 'You sign with a contender the next day.'; } },
+      { label: 'Finish it out', run: (L) => { bump(L, { trust: 5, morale: -2 }); return 'Loyal to the end. The young guys watch how you work.'; } },
+    ],
+  },
+  christmas: {
+    phases: ['early'], when: (L) => L.m.fame >= 45 && L.season && L.season.role && L.season.role.starter, weight: () => 2,
+    title: 'You are on the Christmas Day schedule.',
+    text: () => 'The biggest regular season stage there is. Every family in the country has it on.',
+    options: [
+      { label: 'Wear custom shoes and take over', run: (L, r) => { if (ok(r, 0.35 + (ovrOf(L) - 75) * 0.025)) { bump(L, { fame: 8, morale: 6 }); return 'Thirty-eight points and the shoes sell out by New Year.'; } bump(L, { fame: 2, morale: -4 }); return 'Cold night. The shoes were nice.'; } },
+      { label: 'Play your game', run: (L) => { bump(L, { trust: 3, win: 0.2 }); return 'A win in front of everybody. That is the gift.'; } },
+    ],
+  },
+  agent_pitch: {
+    phases: ['off'], once: true, when: (L) => L.seasonsDone >= 3 && L.agent !== 'power', weight: () => 2,
+    title: 'A power agency wants you.',
+    text: () => 'They promise bigger deals and bigger shoe money. They take four percent.',
+    options: [
+      { label: 'Switch agents', run: (L) => { L.agent = 'power'; bump(L, { morale: 2 }); logIt(L, 'Signed with a power agency.', ''); return 'Your old agent takes it personally.'; } },
+      { label: 'Stay loyal', run: (L) => { bump(L, { morale: 3 }); return 'Your agent cries on the phone. Good tears.'; } },
+    ],
+  },
+  playoff_guarantee: {
+    phases: ['late'], when: (L) => L.season && L.season.seed && L.season.seed <= 8 && L.m.fame >= 35, weight: () => 2.5,
+    title: 'Reporters ask about the first round.',
+    text: () => 'Somebody asks if you can win the series. The cameras lean in.',
+    options: [
+      { label: 'Guarantee it', run: (L, r) => { bump(L, { fame: 6 }); if (ok(r, 0.55)) { bump(L, { win: 0.5, morale: 4 }); return 'The room goes quiet. Your teammates love it.'; } bump(L, { morale: -3, trust: -3 }); return 'The other team pins the quote on their wall.'; } },
+      { label: 'One game at a time', run: (L) => { bump(L, { trust: 3 }); return 'Boring. Correct.'; } },
+    ],
   },
 };
+
+// ─── the people around you ──────────────────────────────────────────────────
+
+/* A RIVAL FROM YOUR DRAFT CLASS. He is invented, like you, and he is drafted
+   near you, so every season there is somebody your career is measured
+   against. His seasons are drawn off a curve rather than played, because he
+   exists to be compared with and nothing in the league runs through him. */
+const RIVAL_FIRST = ['Terrence', 'Damon', 'Kobi', 'Jaylen', 'Desmond', 'Rico', 'Lamar', 'Tariq', 'Bryce', 'Keon',
+  'Moses', 'Isaac', 'Dorian', 'Aaron', 'Javon', 'Corey', 'Emeka', 'Andrei', 'Felix', 'Royce'];
+const RIVAL_LAST = ['Holloway', 'Stanfield', 'Mbeki', 'Carraway', 'Lindqvist', 'Prescott', 'Okoro', 'Brannigan',
+  'Delacroix', 'Ruffin', 'Tillman', 'Varga', 'Kincaid', 'Osei', 'Pemberton', 'Lockhart', 'Winslow', 'Achebe'];
+
+function makeRival(L, myPick) {
+  const rng = rngAt(L, 'rival');
+  let name = pick(rng, RIVAL_FIRST) + ' ' + pick(rng, RIVAL_LAST);
+  if (name === L.name) name = pick(rng, RIVAL_FIRST) + ' Okafor-' + pick(rng, RIVAL_LAST);
+  const p = myPick ? clamp(myPick + (rng() < 0.5 ? -1 : 1) * (1 + Math.floor(rng() * 3)), 1, 60) : 1 + Math.floor(rng() * 14);
+  const o = ovrOf(L);
+  L.rival = {
+    name, pos: pick(rng, POS), team: pick(rng, CLUBS.filter((c) => c !== L.team)), pick: p,
+    age: L.age + (rng() < 0.5 ? 0 : 1), ovr: clamp(Math.round(o + norm(rng) * 2.5), 45, 80),
+    pot: clamp(Math.round(L.pot + norm(rng) * 5), 60, 97), seasons: [], retired: false,
+    star: 0, mvp: 0, rings: 0, pts: 0, gp: 0,
+  };
+}
+function rivalSeason(L, beats) {
+  const r = L.rival;
+  if (!r || r.retired) return;
+  const rng = rngAt(L, 'rivalyr');
+  const gap = Math.max(0, r.pot - r.ovr);
+  r.ovr = clamp(Math.round(r.ovr + gap * (GROW[r.age] || 0) * (0.8 + rng() * 0.6) - (DECLINE[r.age] || (r.age >= 38 ? 6 : 0)) * (0.7 + rng() * 0.6)), 40, 98);
+  const pts = round1(clamp((r.ovr - 58) * 0.85 + norm(rng) * 2, 2, 34));
+  const gp = Math.round(clamp(76 - Math.max(0, r.age - 30) * 3 + norm(rng) * 6, 30, 82));
+  const aw = [];
+  if (r.ovr + norm(rng) * 2 >= 87) { aw.push('star'); r.star++; }
+  if (r.ovr >= 92 && rng() < 0.12) { aw.push('mvp'); r.mvp++; }
+  if (rng() < clamp(0.03 + (r.ovr - 75) * 0.004, 0.01, 0.12)) { aw.push('champ'); r.rings++; }
+  if (rng() < 0.12) r.team = pick(rng, CLUBS.filter((c) => c !== r.team));
+  r.seasons.push({ y: L.year, age: r.age, team: r.team, ovr: r.ovr, pts, gp, aw });
+  r.pts += Math.round(pts * gp); r.gp += gp;
+  const first = r.name.split(' ')[0];
+  if (aw.indexOf('mvp') >= 0) beats.push({ kind: 'rival', text: 'Your draft-class rival, ' + r.name + ', wins MVP.', tone: '' });
+  else if (aw.indexOf('champ') >= 0) beats.push({ kind: 'rival', text: r.name + ' wins a ring with the ' + nick(r.team) + '.', tone: '' });
+  else if (aw.indexOf('star') >= 0 && r.star === 1) beats.push({ kind: 'rival', text: first + ' makes his first All-Star team.', tone: '' });
+  r.age++;
+  if ((r.age >= 34 && (r.ovr < 68 || rng() < 0.25)) || r.age >= 39) {
+    r.retired = true;
+    beats.push({ kind: 'rival', text: r.name + ' retires. ' + r.pts.toLocaleString('en-US') + ' points.', tone: '' });
+    logIt(L, 'Your draft-class rival ' + r.name + ' retired.', '');
+  }
+}
+const rivalOn = (L) => !!(L.rival && !L.rival.retired);
+
+/* A LIFE OFF THE FLOOR. The person you meet, the wedding, the kids. Every one
+   of them is a role ("your partner"), never a name, and every one moves morale
+   more than it moves anything about basketball, which is the BitLife half. */
+function lifeOf(L) { return L.life || (L.life = { rel: 'single', kids: 0, since: 0 }); }
+function lifeLine(L) {
+  const f = lifeOf(L);
+  const rel = f.rel === 'married' ? 'Married' : f.rel === 'engaged' ? 'Engaged' : f.rel === 'dating' ? 'In a relationship' : 'Single';
+  return rel + (f.kids ? ', ' + f.kids + (f.kids === 1 ? ' kid' : ' kids') : '');
+}
+
+/* A hometown for the NBA's own clubs, so a road career can be called home. */
+const HOME_CLUB = { Baltimore: 'WAS', Chicago: 'CHI', Houston: 'HOU', Atlanta: 'ATL', Oakland: 'GSW', Philadelphia: 'PHI',
+  Dallas: 'DAL', Indianapolis: 'IND', Memphis: 'MEM', Detroit: 'DET', Brooklyn: 'BRK', Charlotte: 'CHO', Milwaukee: 'MIL',
+  Phoenix: 'PHO', 'New Orleans': 'NOP', Akron: 'CLE', Gary: 'CHI', Newark: 'BRK', Minneapolis: 'MIN', Raleigh: 'CHO',
+  Louisville: 'IND', Compton: 'LAL' };
+const homeClub = (L) => (L.am && HOME_CLUB[L.am.town]) || null;
+
+// ─── milestones ─────────────────────────────────────────────────────────────
+
+const MILESTONES = [['pts', [10000, 20000, 25000, 30000, 35000, 40000], 'points'], ['reb', [10000, 15000], 'rebounds'],
+  ['ast', [5000, 10000], 'assists'], ['gp', [1000, 1300], 'games']];
+function milestones(L, before, beats) {
+  const now = totals(L);
+  for (const [k, steps, word] of MILESTONES) {
+    for (const m of steps) {
+      if (before[k] < m && now[k] >= m) {
+        const t = m.toLocaleString('en-US') + ' career ' + word + '.';
+        beats.push({ kind: 'milestone', text: t, tone: 'gold' });
+        logIt(L, t, 'gold');
+        bump(L, { fame: 3 });
+      }
+    }
+  }
+}
+
+// ─── after basketball ───────────────────────────────────────────────────────
+
+/* The last card of a life, and the one line the Hall of Fame card ends on. */
+function afterCard(L) {
+  return {
+    id: 'after', kind: 'event', key: 'after', eyebrow: 'After basketball', title: 'What comes next?',
+    text: 'You are ' + L.age + '. You have ' + money(L.cash) + ' in the bank and the rest of your life.',
+    options: [
+      { label: 'Coach', hint: 'Basketball IQ ' + L.rt.iq + '. Start on a bench somewhere.' },
+      { label: 'Television', hint: 'Fame ' + L.m.fame + '. A desk and a suit.' },
+      { label: 'Run a front office', hint: 'Build a team the way you would have wanted one.' },
+      { label: 'Business', hint: 'Money ' + money(L.cash) + '. Make it work for you.' },
+      { label: 'Go home', hint: 'Your family. Your town. Nothing to prove.' },
+    ],
+  };
+}
+function chooseAfter(L, i, rng) {
+  const T = totals(L);
+  const big = T.star >= 3 || T.mvp || T.rings >= 2;
+  let t = '';
+  if (i === 0) t = L.rt.iq >= 72 && rng() < 0.6 ? (rng() < 0.4 ? 'You became a head coach and won a title from the bench.' : 'You became a head coach.') : 'You became an assistant coach. The players love you.';
+  else if (i === 1) t = L.m.fame >= 55 || big ? 'You became the voice of a national broadcast.' : 'You did local TV for your old club. Every night.';
+  else if (i === 2) t = rng() < 0.45 + (L.rt.iq - 60) * 0.01 ? 'You became a general manager and built a contender.' : 'You ran scouting for a decade. Two of your picks became All-Stars.';
+  else if (i === 3) t = L.cash >= 20 && rng() < 0.5 ? 'You bought a piece of an NBA team.' : L.cash >= 3 ? 'You built a business. Restaurants, then real estate.' : 'You opened a gym in your hometown.';
+  else t = 'You went home. You coach your kids now.';
+  return t;
+}
 
 function buzzer(L, r, p) {
   if (ok(r, p)) {
@@ -2729,6 +3003,15 @@ function choose(L, i) {
       bump(L, { morale: 5 });
       break;
     }
+    case 'after': {
+      L.retired = true;
+      L.phase = 'retired';
+      L.final = legacy(L);
+      L.final.after = chooseAfter(L, i, rng);
+      text = L.final.after; tone = 'gold';
+      logIt(L, text, 'gold');
+      break;
+    }
     case 'retire': {
       if (i === 1) { L.pending = []; retire(L, beats); text = 'You walk away.'; tone = 'gold'; }
       else { text = 'One more.'; bump(L, { morale: 3 }); }
@@ -2901,9 +3184,12 @@ function closeSeason(L, beats) {
   const po = s.po || { path: 'Missed' };
   const path = po.champ ? 'Champion' : po.path || 'Missed';
   if (L.flags.goldYear === L.year) s.awards.push('olympic');
+  const before = totals(L);
   L.history.push(Object.assign({ y: s.year, age: L.age, t: s.team, ovr: ovrOf(L), w: s.w, l: s.l, seed: s.seed || null,
     po: path, aw: s.awards.slice(), sal: s.salary || 0, role: s.role ? s.role.label : '' }, pg));
   L.seasonsDone++;
+  milestones(L, before, beats);
+  rivalSeason(L, beats);
   /* Fame settles toward what the season said. */
   const target = clamp(15 + (pg.pts - 8) * 2.2 + (s.allstar ? 12 : 0) + (po.champ ? 8 : 0), 5, 99);
   L.m.fame = clamp(Math.round(L.m.fame * 0.7 + target * 0.3 + (s.awards.length ? 3 : 0)), 0, 100);
@@ -3071,7 +3357,7 @@ const publicAPI = {
   seedLeague, normaliseNets, newLife, randomName, overall, ovrOf, step, choose, nextLabel,
   view, perGame, totals, legacy, legacyScore, clubNet, clubTier, rotationBar,
   roleOf, lineMeans, capFor, marketSalary, projectedPick, draftOrder, money, ordinal,
-  clutchOptions, offers, ACTS, actsOpen, act,
+  clutchOptions, offers, ACTS, actsOpen, act, retireNow, lifeOf, lifeLine, rivalOn,
   SCHOOLS, SCHOOL_BY, TIER_NAME, AM_EVENTS, HS_ROUNDS, NCAA_ROUNDS, GRADE, CYEAR, AGE_HS,
   isAm, colorsOf, roadView, nationalRank, rankText, starsOf, draftTalk, collegeOffers, schoolNet,
 };
