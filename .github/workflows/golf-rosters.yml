@@ -1,0 +1,72 @@
+name: Golf roster refresh (DataGolf)
+# Re-rates the golf game's current players from DataGolf's skill ratings and rewrites the in-game
+# Roster Updates page, using golf/roster/dg_refresh.py against golf/index.html.
+#
+# It NEVER pushes to main. The result goes to the review branch golf-roster-refresh with the movers
+# report in the run summary; deploying it to /golf is a separate, human decision (the runbook's rule).
+#
+# Needs one repository secret: DG_KEY (the DataGolf API key). The key is only ever passed in the
+# environment; the script never prints or writes it.
+#
+# Triggers: the Run workflow button (once this file is on main), every Tuesday in season (also from
+# main), and a push that changes golf/roster/REFRESH on any branch, which is how a session without
+# DataGolf access asks for a run without touching main.
+on:
+  workflow_dispatch: {}
+  schedule:
+    - cron: '17 14 * * 2'   # Tuesdays, mid morning Eastern, after Monday finishes
+  push:
+    paths:
+      - 'golf/roster/REFRESH'
+permissions:
+  contents: write
+concurrency:
+  group: golf-roster-refresh
+  cancel-in-progress: false
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Check the DataGolf key is configured
+        env:
+          DG_KEY: ${{ secrets.DG_KEY }}
+        run: |
+          if [ -z "$DG_KEY" ]; then
+            echo "### DG_KEY is not set" >> "$GITHUB_STEP_SUMMARY"
+            echo "Add the DataGolf API key as a repository secret named DG_KEY (Settings, Secrets and variables, Actions), then run this again." >> "$GITHUB_STEP_SUMMARY"
+            echo "::error::DG_KEY repository secret is not set"
+            exit 1
+          fi
+      - name: Pull the feed and re-rate (dry run first, for the report)
+        env:
+          DG_KEY: ${{ secrets.DG_KEY }}
+        run: |
+          python3 golf/roster/dg_refresh.py --report /tmp/report.txt
+          { echo '### Golf roster refresh'; echo '```'; cat /tmp/report.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+      - name: Apply to golf/index.html
+        env:
+          DG_KEY: ${{ secrets.DG_KEY }}
+        run: python3 golf/roster/dg_refresh.py --write
+      - name: The page still parses, and the repo rules hold
+        run: |
+          python3 -c "import re;s=open('golf/index.html').read();b=max(re.findall(r'<script[^>]*>(.*?)</script>',s,re.S),key=len);open('/tmp/x.js','w').write(b)"
+          node --check /tmp/x.js
+          node scripts/check-dashes.mjs golf
+      - name: Push to the review branch (never main)
+        run: |
+          if git diff --quiet -- golf/index.html; then
+            echo "No ratings moved. Nothing to push." | tee -a "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          git config user.name "golf-roster-bot"
+          git config user.email "noreply@anthropic.com"
+          FEED=$(sed -n 's/.*last_updated=\([0-9-]*\).*/\1/p' /tmp/report.txt | head -1)
+          git checkout -B golf-roster-refresh
+          git add golf/index.html
+          git commit -m "Golf: refresh roster from DataGolf feed ${FEED:-latest}"
+          git push -f origin golf-roster-refresh
+          echo "Pushed to golf-roster-refresh for review." >> "$GITHUB_STEP_SUMMARY"
