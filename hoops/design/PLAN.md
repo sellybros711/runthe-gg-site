@@ -8,8 +8,9 @@ every changed screen is screenshotted on a 390x844 phone, a 768x1024 tablet and 
 byte for byte as before (a pixel hash of `baller.paint()` for 40 looks and
 every pose, recorded once and asserted in every phase).
 
-Nothing below starts until you have picked a direction and approved the five
-documents.
+Direction picked 2026-10-01: Arena Arcade. Fonts self-hosted. Sound only
+with real animated cutscenes. Every database migration moves to the end
+(Phase G).
 
 ---
 
@@ -58,7 +59,10 @@ documents.
    never redrawn) plus rim, net and crowd sprites.
 4. Ceremonies: jersey reveal, All-Star intro, awards, ring night, banner,
    jersey retirement, Hall speech, on the existing scene player.
-5. Sound only if you approve it: crowd, buzzer, net, muted by default.
+5. Animated cutscenes (DESIGN.md section 11): new moving frame sets drawn by
+   the existing rig (walk, dribble, jumpshot, dunk, block, celebrate, dejected,
+   handshake, wave), a shot timeline in `scenes.js`, pixel sets per room, and
+   WebAudio sound cued off the timeline, muted by default.
 
 ## Phase C. The story engine
 
@@ -87,8 +91,8 @@ overlap under 50%) are asserted by the simulator, not counted by hand.
 
 The Vault, career archive and written career story, family tree and legacy
 careers, difficulty tiers, challenge careers, a daily seeded career,
-leaderboards (needs a migration beside `130_hoops_careers.sql`, deployed by
-hand and added to the preflight), share cards.
+share cards. Leaderboard UI is built against the existing Career board; the
+new boards wait for Phase G.
 
 ## Phase F. Polish
 
@@ -96,6 +100,12 @@ Every screen and state on three sizes against DESIGN.md; empty, loading and
 error states; a read of every string for voice, typos and continuity.
 
 ---
+
+## Phase G. Database (last)
+
+Every migration in one place at the end: challenge and Vault leaderboards,
+anything the story engine wants on the server. SQL files, tests against a real
+Postgres, preflight rows, and a hand deployment.
 
 ## Commits
 
@@ -113,9 +123,10 @@ See AUDIT.md section 11. The short version, for your decision:
    keeping that for the new pixel art too (zero network, one grid), rather than
    adding sheet files.
 3. Self-hosting fonts adds files to the repo. Your call.
-4. Leaderboards by challenge and Vault completion need a database migration,
-   deployed by hand.
-5. Sound is a new dependency in spirit (audio files). Off unless approved.
+4. Leaderboards by challenge and Vault completion need a database migration:
+   moved to Phase G, at the end.
+5. Sound: approved together with real animated cutscenes; synthesized with
+   WebAudio, so no audio files.
 6. "Playing alongside your own son" inside one career needs a son born by
    about 22 and the player still active near 40. It is possible but rare, so it
    lives in the legend layer, and the family tree in Phase E is the main

@@ -1,78 +1,44 @@
 # Run The Floor: Career design system
 
-Status: **DRAFT, waiting on a direction pick.** Sections 1 and 2 are decided by
-the pick. Sections 3 to 10 are written for the recommended direction (B with
-A's broadcast package) and hold for either of the other two with the values
-swapped. Nothing here is built yet. The rendered comparison is
-`hoops/design/directions.html` (noindexed, linked from nowhere).
+Status: **DECIDED, 2026-10-01: Arena Arcade.** Directions A and C are kept in
+`hoops/design/directions.html` as the record of what was considered. Arena
+Arcade is the whole system, including the in-game broadcast package, which is
+drawn in the same pixel language rather than borrowed from direction A.
 
 ---
 
-## 1. Three directions
+## 1. The pick
 
-All three are rendered on the same screen with the same content: the career
-hub on a phone, mid-season, with a trade rumor on the table. The player is the
-real `baller.js` sprite at a whole-number scale and is not altered.
+**Arena Arcade.** A sports video game menu built around the sprite. A spotlit
+pixel crowd above, pixel hardwood below, the player standing in the light.
+Panels are stepped pixel frames. The pixel face carries the numbers that matter
+and the eyebrows. Archivo carries everything you read. The team color is the
+ring around the frame and the shadow behind the big numbers.
 
-### A. Prime Time
+What was rejected, and why: A (Prime Time) left the sprite as the only pixel
+thing on screen; C (Back of the Card) put cream stock against a dark arena and
+made dense tables heavy. C's trading card idea survives as the share card.
 
-A national TV broadcast. Near-black ground, hard edges, no rounded corners
-on anything bigger than a chip. The team color runs down the left edge of every
-card like a network bar. Broadcast gold marks what matters (the decision, an
-award, a record). Headlines are condensed and loud. Numbers are huge.
+Owner decisions recorded with the pick:
 
-- Strengths: calm, scales to dense tables (season by season, box scores, the
-  GOAT ladder), and the broadcast package (score bug, lower thirds, chyron)
-  is native to it.
-- Risk: the pixel sprite is the only pixel thing on the screen, so the art
-  reads as a guest rather than the house style.
-
-### B. Arena Arcade (recommended base)
-
-A sports video game menu built around the sprite. A spotlit pixel crowd above,
-pixel hardwood below, the player standing on the floor. Panels are stepped
-pixel frames, labels and numbers in the pixel face, body copy in Archivo. The
-team color is the ring around the frame and the shadow behind the numbers.
-
-- Strengths: the closest match to the characters. Every new piece of art
-  (crowds, trophies, icons, arenas) can be drawn on the same grid with the same
-  lighting, which is what the brief asks for.
-- Risk: pixel type is hard to read small. Rule: the pixel face is never
-  under 8px and never carries a sentence.
-
-### C. Back of the Card
-
-A trading card and a magazine feature. Dark room, cream card stock, the player
-printed inside a team-color window with a diagonal stripe, decisions as a
-newspaper clipping with a slight rotation.
-
-- Strengths: the most distinctive, the warmest, and the share cards nearly
-  design themselves.
-- Risk: cream surfaces fight a dark arena mood in the scenes, dense tables on
-  paper stock get heavy, and a light surface against team colors needs more
-  contrast work than the other two.
-
-### Recommendation
-
-**B as the house style, with A's broadcast package for anything that happens
-during a game** (score bug, lower thirds, tale of the tape, the ticker). The
-menus and the hub are a video game; the games themselves are on TV. That is
-also exactly the brief's "premium national TV broadcast crossed with a modern
-sports video game menu", and it puts the sprite at the center of the art
-direction instead of beside it. C's trading card survives as one component:
-the share card and the "back of the card" stat page.
+| question | answer |
+|---|---|
+| fonts | self-hosted in `hoops/fonts/` (done: 66KB, OFL texts beside them) |
+| sound | yes, **only together with real animated cutscenes** (section 11) |
+| new pixel art | drawn in code on the sprite's grid and cached, no image sheets |
+| database migrations | all of them at the very end of the project |
 
 ---
 
-## 2. Concept (for the recommended direction)
+## 2. Concept
 
 The arena is dark and the light is earned. Everything sits on a near-black
-navy floor under a single warm spotlight, and the player stands in that light
-on real hardwood. The UI is a video game menu: stepped pixel frames, a pixel
-face for the numbers that matter, plain readable Archivo for everything you
-read. When a game is on, the screen changes channel: the broadcast package takes
-over with a score bug, lower thirds and hard wipes. Each stage of a career
-earns a richer room: a high school gym with folded bleachers and a buzzing
+navy floor under one warm spotlight, and the player stands in that light on
+real hardwood. The UI is a video game menu: stepped pixel frames, a pixel face
+for the numbers that matter, plain readable Archivo for everything you read.
+When a game is on, the screen changes channel to a pixel broadcast: a score bug,
+lower thirds and hard wipes, all on the same grid. Each stage of a career earns
+a richer room: a high school gym with folded bleachers and a buzzing
 scoreboard, a college arena with a student section, the NBA under full lights.
 Color is restraint everywhere except the team color, which is the one loud
 thing on every screen and changes the moment you are traded.
@@ -238,11 +204,13 @@ one accent, and nothing else.
 
 ## 8. Broadcast package
 
-Used during games and ceremonies only: score bug (top left, team chips,
-quarter, clock), lower third (name plate in team color with a gold rule),
-tale of the tape (two players, five rows), ticker (around the league), wipe
-(a team-color bar crossing the screen). The house frames step aside while it
-is up.
+Used during games and ceremonies only, in the house pixel language: score bug
+(top left, team chips in stepped frames, quarter and clock in the pixel face),
+lower third (name plate on `--team-1` with a `--c-gold` pixel rule and the
+speaker's sprite bust), tale of the tape (two busts, five rating rows with
+pixel pips), ticker (around the league, scrolling on a 1px grid), wipe (a
+stepped team-color bar crossing the screen in `--m-wipe`). The house frames step
+aside while it is up.
 
 ---
 
@@ -264,3 +232,60 @@ Ad slots are designed as panels with a `Sponsored` label in `--t-label`, placed
 between sections, never inside a decision card, never in the broadcast package,
 never fixed over a control. Career pages carry no ad tag today (hoops is
 noindexed); the slots are layout only until the game launches.
+
+---
+
+## 11. Cutscenes and sound
+
+The owner's condition for sound: real animated cutscenes, not a player standing
+and breathing. So a cutscene is a short **sequence of sprite frames moving
+through a pixel set**, played by a timeline, and sound is cued off the same
+timeline.
+
+### Frames, and the rule that keeps the characters final
+
+New moving poses are drawn by the **existing rig** in `baller.js` (the same
+parts, ramps, lighting, outlines and look options), so a player in motion is the
+same player. Nothing about the existing six poses may change: a guard hashes
+`paint()` for 40 looks across every existing pose and fails on any byte that
+moves. New poses (each two to six frames):
+
+| set | frames | used in |
+|---|---|---|
+| walk | 4 | entrances, tunnel walk, draft stage walk, podium |
+| dribble | 4 | intros, playable moments |
+| jumpshot | 5 (gather, rise, release, follow, land) | last shot, buzzer beater, free throws |
+| layup and dunk | 5 | poster, and-one, dunk contest |
+| block | 4 | chase-down block, final stop |
+| celebrate | 4 (fist, scream, point, flex) | wins, awards |
+| dejected | 3 | losses, injuries |
+| handshake and hug | 3 | draft night, trade, retirement |
+| wave | 3 | ring night, farewell, jersey retirement |
+
+### The cutscene player
+
+`scenes.js` keeps its beats, plates, typewriter, skip and off switch. Each
+beat can carry a **shot**: a list of tracks (actor sprite, frame set, path in
+set coordinates, timing in steps of 1/12 second) plus props (ball with arc,
+rim and net with a three-frame snap, confetti, camera flashes, scoreboard). The
+camera is a whole-pixel pan and a 1x/2x cut, never a smooth zoom, so the grid
+never smears. Reduced motion shows the key frame of each shot as a still.
+
+### Sound
+
+- Off by default; one mute toggle next to the scenes switch, remembered.
+- Short cues only: crowd bed (three loudness levels), buzzer, net swish, rim
+  clank, sneaker squeak, whistle, camera flash, draft podium chime, organ hit.
+- Synthesized with WebAudio at runtime (noise and oscillators, about 3KB of
+  code), so there are no audio files to load. If a cue sounds poor synthesized,
+  it can be replaced by a small recorded file later.
+- Sound plays only inside cutscenes and playable moments, never in menus.
+
+---
+
+## 12. Database migrations
+
+Deferred to the end of the project by owner decision. Everything until then
+saves to the existing account slot (`rtf.life.v1` through `cloud.js`), which
+needs no migration. Leaderboards by challenge and by Vault completion are built
+last, with their SQL file, a preflight row and hand deployment.
