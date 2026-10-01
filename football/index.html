@@ -8556,6 +8556,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
      here: without it the game keeps its runs exactly where it always did, in this browser
      and nowhere else. See supabase/103_cloud_saves.sql. -->
 <script src="/assets/cloudsave.js?v=2"></script>
+<script src="/assets/fantasy-promo.js?v=1"></script>
 <!-- The release newsletter checkbox on the Account page. See supabase/121_newsletter.sql. -->
 <script src="/assets/newsletter.js?v=2"></script>
 <!-- The broadcast field every game is played out on. drawDriveChart hands its drives here and
@@ -12093,6 +12094,13 @@ function fantasyWeekEnsure(){
     })
     .catch(()=>{});
 }
+
+/* THE LOCK DAY REMINDER. One sheet, once per account per week, on the Eastern day the
+   week locks and before the first kickoff. The rule lives in /assets/fantasy-promo.js
+   because the college game asks it too. `show` is this door's own question, so a reader
+   who is not shown the mode is never sold it. */
+if(window.RTG_FANPROMO) RTG_FANPROMO.init({ league:'nfl', nowUrl:'/football/data/fantasy_now.json',
+  href:'/football/fantasy/', entryPrefix:'ps_fantasy_', auth:()=>authState, show:()=>fantasyShow() });
 
 /* THE SAME PADLOCK THE modes sheet DRAWS, written out again rather than shared, because
    MC_LOCK is a const inside the sheet's own painter and hoisting it to module scope to
@@ -23676,6 +23684,8 @@ function authBoot(){
        would otherwise sit there looking at a single Start button. Losing eligibility (a sign
        out, a rename) puts it back the same way. */
     paintHomeStart();
+    /* The lock day reminder waits for the account, so it is asked again here. */
+    if(window.RTG_FANPROMO) RTG_FANPROMO.check();
     /* AND THE RUN THE ACCOUNT IS HOLDING, which is the one thing on this page that can arrive
        from another device. Not awaited: it repaints the door itself if what comes back is
        further on than what this browser had, and does nothing at all otherwise. */

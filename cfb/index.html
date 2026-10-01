@@ -4035,6 +4035,8 @@ or endorsed by the NCAA, the CFP or any school.
      copies of a price or a term is two chances to tell a customer something the other page
      contradicts, and the one that is wrong is whichever was edited second. -->
 <script src="/assets/store.js?v=23"></script>
+<script src="/assets/cloudsave.js?v=2"></script>
+<script src="/assets/fantasy-promo.js?v=1"></script>
 <!-- The release newsletter checkbox on the account page. See supabase/121_newsletter.sql. -->
 <script src="/assets/newsletter.js?v=2"></script>
 <!-- The broadcast field every game is played out on, shared with the NFL game. drawDriveChart
@@ -5679,6 +5681,12 @@ function ensureFantasyDoor(){
   else if(cfbFanDoor.parentNode!==ctas) ctas.appendChild(cfbFanDoor);
 }
 
+/* THE LOCK DAY REMINDER, the football game's sheet for this competition: once per account
+   per week, on the Eastern day the slate locks, before the first kickoff. The rule is in
+   /assets/fantasy-promo.js. cloudsave.js is loaded for it, so the mark rides on the account. */
+if(window.RTG_FANPROMO) RTG_FANPROMO.init({ league:'cfb', nowUrl:'/cfb/data/fantasy/now.json',
+  href:'/cfb/fantasy/', entryPrefix:'cfb_fantasy_', auth:()=>authState });
+
 /* ── THE OFFER ON THE FRONT PAGE, WHICH ONLY THE PROFILE CARRIED ──────────────────────
  *
  * The football game puts this card directly under its mode doors and this game put it two
@@ -6630,6 +6638,7 @@ function bootAuth(){
     /* And the offer card, which reads the same list. Signing OUT has to take it with it,
        which is why this runs on every change rather than only when somebody signs in. */
     ensurePremiumCard();
+    if(window.RTG_FANPROMO) RTG_FANPROMO.check();
     /* WHAT THE ACCOUNT OWNS FOLLOWS THE ACCOUNT TOO, and it has to be asked again on a
        CHANGE of account rather than once: signing out and back in as somebody else on the
        same tab would otherwise leave the previous person's purchases on screen. Cleared

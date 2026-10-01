@@ -52,7 +52,7 @@ export async function run(ROOT, POOL) {
   })();`;
 
   async function openPage(url, { who = USER, at = null, server = {}, injuries = null,
-    storage = null, viewport = { width: 390, height: 844 } } = {}) {
+    storage = null, script = null, viewport = { width: 390, height: 844 } } = {}) {
     const page = await browser.newPage({ viewport });
     const boom = [], posted = [], strays = [];
     page.on('pageerror', (e) => boom.push(String(e).slice(0, 200)));
@@ -60,6 +60,7 @@ export async function run(ROOT, POOL) {
       await page.addInitScript(`(function(){ var real = Date.now, off = ${at} - real();
         Date.now = function(){ return real() + off; }; })();`);
     }
+    if (script) await page.addInitScript(script);
     if (storage) {
       await page.addInitScript(`try{ localStorage.setItem(${JSON.stringify(storage.key)},
         ${JSON.stringify(storage.value)}); }catch(e){}`);
@@ -92,6 +93,12 @@ export async function run(ROOT, POOL) {
           case 'cfb_fantasy_my_result': return json(200, []);
           case 'cfb_fantasy_ack_result': return json(200, true);
           case 'cfb_fantasy_entry_count': return json(200, entry ? 1 : 0);
+          /* The account's shelf, which the lock day reminder marks. */
+          case 'ps_save_get': return json(200, server.shelf ? [server.shelf] : []);
+          case 'ps_save_put':
+            server.shelf = { ok: true, slot: body.p_slot, progress: body.p_progress,
+              payload: body.p_payload, saved_at: null };
+            return json(200, [server.shelf]);
           /* Recorded above and refused here, so a call to a table this competition does
              not own is a named failure rather than a request that got out. */
           default: return json(404, { message: 'not stubbed' });
@@ -108,7 +115,7 @@ export async function run(ROOT, POOL) {
         return r.fulfill({ status: 200, contentType: 'text/javascript', body: authStub(who) });
       }
       if (rel === '/cfb/data/fantasy/now.json') {
-        return json(200, { season: POOL.season, week: POOL.week, file: FILE });
+        return json(200, { season: POOL.season, week: POOL.week, file: FILE, locks_at: POOL.locks_at });
       }
       if (rel === '/cfb/data/fantasy/' + FILE) return json(200, POOL);
       if (/^\/cfb\/data\/fantasy\/injuries_/.test(rel)) {
@@ -301,6 +308,65 @@ export async function run(ROOT, POOL) {
       } catch (e) {}
       ok('  green once one is', lit);
       await page.close();
+    }
+
+    /* ---- the lock day reminder (/assets/fantasy-promo.js), the college competition's ----
+       Off under automation unless the flag asks, so the flag is set here. The day is the
+       pointer's own locks_at, pinned three hours before. */
+    {
+      const eastern = (ms) => new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York',
+        year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(ms));
+      const DAY = LOCK - 3 * 3600e3;
+      const TEST = 'window.RTG_FANPROMO_TEST=true;';
+      const look = async (page) => {
+        await page.waitForTimeout(4500);
+        return page.evaluate(() => {
+          const el = document.getElementById('fpromo');
+          return el ? { up: true, text: el.textContent,
+            href: el.querySelector('.fp-go').getAttribute('href') } : { up: false };
+        });
+      };
+      ok('the reminder fixture is the lock\'s own Eastern day', eastern(DAY) === eastern(LOCK));
+      {
+        const { page, boom, posted, strays } = await openPage('/cfb/', { at: DAY, script: TEST });
+        const got = await look(page);
+        ok('the college front page reminds an account on lock day', got.up);
+        if (got.up) {
+          ok('  for this competition\'s week, with the prize',
+            new RegExp('Week ' + POOL.week).test(got.text) && /wins 30 days of Pro/.test(got.text), got.text.slice(0, 120));
+          ok('  and it goes to the college mode', got.href === '/cfb/fantasy/', got.href);
+          await page.click('#fpromo .fp-later');
+          await page.waitForTimeout(500);
+          const put = posted.find((x) => x.fn === 'ps_save_put');
+          ok('  the account\'s shelf is written under the college slot',
+            !!put && put.body.p_game === 'rtg_promo' && put.body.p_slot === 'cfb'
+            && !!put.body.p_payload.seen[POOL.season + '_w' + POOL.week], JSON.stringify(put && put.body));
+        }
+        /* Every rpc is answered by the stub above, and the rest is aborted, so the shelf
+           never reached the live project. */
+        ok('  no shelf call went anywhere but the stub', !strays.some((x) => /ps_save/.test(x)),
+          strays.join(', '));
+        ok('  and nothing threw', !boom.length, boom.join(' | '));
+        await page.close();
+      }
+      {
+        const { page } = await openPage('/cfb/', { at: DAY, script: TEST,
+          storage: { key: 'cfb_fantasy_' + POOL.season + '_w' + POOL.week, value: entryKeyValue } });
+        ok('  not for an account that has entered', !(await look(page)).up);
+        await page.close();
+      }
+      {
+        const { page } = await openPage('/cfb/', { at: DAY, script: TEST,
+          server: { shelf: { ok: true, slot: 'cfb', progress: 1,
+            payload: { seen: { [POOL.season + '_w' + POOL.week]: 1 } } } } });
+        ok('  not for an account that saw it on another device', !(await look(page)).up);
+        await page.close();
+      }
+      {
+        const { page } = await openPage('/cfb/', { at: LOCK - 30 * 3600e3, script: TEST });
+        ok('  not the day before', !(await look(page)).up);
+        await page.close();
+      }
     }
   } catch (e) {
     ok('the walk finished', false, String(e && e.stack || e).slice(0, 400));

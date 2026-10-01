@@ -2138,6 +2138,14 @@
       "v": "23",
       "sha": "733a0836581de9eb"
     },
+    "/assets/cloudsave.js": {
+      "v": "2",
+      "sha": "db78661bbd724b47"
+    },
+    "/assets/fantasy-promo.js": {
+      "v": "1",
+      "sha": "17fcaf4e2246434c"
+    },
     "/assets/newsletter.js": {
       "v": "2",
       "sha": "260c8dc0bc33a527"
@@ -2221,6 +2229,10 @@
     "/assets/cloudsave.js": {
       "v": "2",
       "sha": "db78661bbd724b47"
+    },
+    "/assets/fantasy-promo.js": {
+      "v": "1",
+      "sha": "17fcaf4e2246434c"
     },
     "/assets/newsletter.js": {
       "v": "2",
