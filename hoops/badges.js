@@ -378,6 +378,32 @@ function passesFeats(solved, passes, par, clock, streak) {
   return { add, max };
 }
 
+/* ---------------- Career ----------------
+ * Called once, when a career is over. `s` is career.js' featSummary: plain
+ * numbers and flags about one finished life, so this file needs nothing from
+ * career.js. Everything is a maximum except the count of careers, so a
+ * badge reads the best life rather than the last one. */
+function careerFeats(s) {
+  const add = { 'cr.careers': 1 }, max = {};
+  if (!s) return { add: {}, max };
+  const m = (k, v) => { if (num(v) > 0) max[k] = Math.max(max[k] || 0, num(v)); };
+  m('cr.seasons', s.seasons); m('cr.pts', s.pts); m('cr.rings', s.rings); m('cr.mvp', s.mvp);
+  m('cr.star', s.star); m('cr.fmvp', s.fmvp); m('cr.dpoy', s.dpoy); m('cr.score', s.score); m('cr.g7', s.g7);
+  m('cr.ncaa', s.ncaa); m('cr.state', s.state); m('cr.npoy', s.npoy);
+  if (s.pick === 1) m('cr.pick1', 1);
+  if (s.undrafted && num(s.seasons) >= 8) m('cr.undrafted', 1);
+  if (s.road && num(s.seasons) > 0) m('cr.road', 1);
+  if (s.jersey) m('cr.jersey', 1);
+  if (s.oneClub && num(s.seasons) >= 12) m('cr.oneclub', 1);
+  if (s.rivalBeat) m('cr.rival', 1);
+  if (s.married && num(s.kids) >= 3) m('cr.family', 1);
+  if (s.home) m('cr.home', 1);
+  if (s.headCoach) m('cr.coach', 1);
+  if (num(s.olympic) > 0) m('cr.gold', 1);
+  if (num(s.ncaa) > 0 && num(s.rings) > 0) m('cr.double', 1);
+  return { add, max };
+}
+
 /* Fold feats into a career. The ONE writer, used by the page for every mode,
    so an add and a max mean the same thing wherever they came from. */
 function applyFeats(career, f) {
@@ -406,6 +432,7 @@ function applyFeats(career, f) {
  */
 const GROUPS = [
   ['start', 'Tip-off'],
+  ['career', 'Career'],
   ['win', 'Winning'],
   ['playoffs', 'Playoff lore'],
   ['build', 'Roster building'],
@@ -774,6 +801,53 @@ const CATALOG = [
     [7, 'ps-streak7', 'Automatic', 'Solve Six Passes seven days running.', 'gold'],
   ]),
 
+  /* ---- Career ---- */
+  { id: 'cr-first', g: 'career', name: 'Rookie card', why: 'Finish a Career.', tier: 'bronze', got: has('cr.careers') },
+  { id: 'cr-five', g: 'career', name: 'Five lives', why: 'Finish five Careers.', tier: 'silver', got: has('cr.careers', 5) },
+  { id: 'cr-road', g: 'career', name: 'The long road', why: 'Start in high school and make the league.', tier: 'bronze', got: has('cr.road') },
+  { id: 'cr-state', g: 'career', name: 'Hometown hero', why: 'Win a state title in high school.', tier: 'bronze', got: has('cr.state') },
+  { id: 'cr-ncaa', g: 'career', name: 'One shining moment', why: 'Win a national championship in college.', tier: 'silver', got: has('cr.ncaa') },
+  { id: 'cr-npoy', g: 'career', name: 'Best in the country', why: 'Be National Player of the Year in college.', tier: 'gold', got: has('cr.npoy') },
+  { id: 'cr-pick1', g: 'career', name: 'Number one', why: 'Go first overall in the draft.', tier: 'silver', got: has('cr.pick1') },
+  { id: 'cr-undrafted', g: 'career', name: 'Nobody called', why: 'Go undrafted and play eight seasons anyway.', tier: 'gold', got: has('cr.undrafted') },
+  ...ladder('career', 'cr.seasons', [
+    [10, 'cr-10y', 'A decade in', 'Play ten seasons in one Career.', 'bronze'],
+    [18, 'cr-18y', 'Ageless', 'Play eighteen seasons in one Career.', 'gold'],
+  ]),
+  ...ladder('career', 'cr.pts', [
+    [20000, 'cr-20k', 'Twenty thousand', 'Score 20,000 points in one Career.', 'silver'],
+    [30000, 'cr-30k', 'Thirty thousand', 'Score 30,000 points in one Career.', 'gold'],
+    [38000, 'cr-38k', 'The record', 'Score 38,000 points in one Career.', 'ring'],
+  ]),
+  ...ladder('career', 'cr.star', [
+    [1, 'cr-star', 'All-Star', 'Make an All-Star team in Career.', 'bronze'],
+    [10, 'cr-star10', 'Perennial', 'Make ten All-Star teams in one Career.', 'gold'],
+  ]),
+  ...ladder('career', 'cr.mvp', [
+    [1, 'cr-mvp', 'MVP', 'Win MVP in Career.', 'gold'],
+    [3, 'cr-mvp3', 'Three-peat MVP', 'Win three MVPs in one Career.', 'ring'],
+  ]),
+  ...ladder('career', 'cr.rings', [
+    [1, 'cr-ring', 'Champion', 'Win a ring in Career.', 'silver'],
+    [3, 'cr-ring3', 'Dynasty', 'Win three rings in one Career.', 'gold'],
+  ]),
+  { id: 'cr-fmvp', g: 'career', name: 'Finals MVP', why: 'Be Finals MVP in Career.', tier: 'gold', got: has('cr.fmvp') },
+  { id: 'cr-dpoy', g: 'career', name: 'Lockdown', why: 'Win Defensive Player of the Year in Career.', tier: 'gold', got: has('cr.dpoy') },
+  { id: 'cr-g7', g: 'career', name: 'Ice in the veins', why: 'Hit the last shot of a Game 7 in Career.', tier: 'silver', got: has('cr.g7') },
+  { id: 'cr-double', g: 'career', name: 'Both rings', why: 'Win a national championship and an NBA title in one Career.', tier: 'ring', got: has('cr.double') },
+  ...ladder('career', 'cr.score', [
+    [55, 'cr-hall', 'Springfield', 'Retire a Hall of Famer.', 'silver'],
+    [85, 'cr-ballot', 'First ballot', 'Retire a first-ballot Hall of Famer.', 'gold'],
+    [120, 'cr-inner', 'Inner circle', 'Retire one of the greatest ever.', 'ring'],
+  ]),
+  { id: 'cr-jersey', g: 'career', name: 'In the rafters', why: 'Have your number retired.', tier: 'gold', got: has('cr.jersey') },
+  { id: 'cr-oneclub', g: 'career', name: 'One city', why: 'Play twelve seasons and never change clubs.', tier: 'gold', got: has('cr.oneclub') },
+  { id: 'cr-rival', g: 'career', name: 'The right pick', why: 'Outscore your draft-class rival over a whole Career.', tier: 'bronze', got: has('cr.rival') },
+  { id: 'cr-home', g: 'career', name: 'Homecoming', why: 'Play for your hometown club.', tier: 'silver', got: has('cr.home') },
+  { id: 'cr-gold', g: 'career', name: 'Gold medal', why: 'Win Olympic gold in Career.', tier: 'silver', got: has('cr.gold') },
+  { id: 'cr-family', g: 'career', name: 'Full house', why: 'Retire married with three kids.', tier: 'bronze', got: has('cr.family') },
+  { id: 'cr-coach', g: 'career', name: 'From the bench', why: 'Become a head coach after you retire.', tier: 'bronze', got: has('cr.coach') },
+
   /* ---- heartbreak ---- */
   { id: 'swept', g: 'hurt', name: 'Swept', why: 'Lose a playoff series 0-4.', tier: 'bronze',
     got: (c) => any(c, (r) => r.swept) },
@@ -835,7 +909,7 @@ function earned(career) { return evaluate(career).filter((b) => b.got); }
 const publicAPI = {
   API_VERSION: BADGES_API_VERSION,
   catalog, evaluate, earned, setTotals, applyFeats,
-  draftFeats, conquestFeats, fixFeats, passesFeats,
+  draftFeats, conquestFeats, fixFeats, passesFeats, careerFeats,
   GROUPS, REUNIONS, DREAM_TEAM, CLASSES, BLUE_BLOODS,
   get TOTAL() { return CATALOG.length; },
 };

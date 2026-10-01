@@ -2552,7 +2552,7 @@
        today's state (open, or done with the result), and the line beside the
        heading says how many are left. modes-ui.js fills both slots and shows
        the section, because only that file knows whether a puzzle is done. -->
-  <!-- CAREER IS THE HERO. One NBA life from draft night to the Hall of Fame,
+  <!-- CAREER IS THE HERO. One basketball life from high school to the Hall of Fame,
        a season at a time, with the calls in between. Asked for by the owner as
        the main game mode, so it leads the page and the dock carries its button
        on a phone. career-ui.js paints it: a career in progress says who and
@@ -2560,8 +2560,8 @@
   <section class="card career-hero" id="career" aria-labelledby="ch-title">
     <span class="ch-eye">Career <i>New</i></span>
     <h2 id="ch-title">Live an NBA life.</h2>
-    <p class="ch-say" id="ch-say">Draft night to the Hall of Fame. Contracts, injuries, rivals and Game 7s. Every call is yours.</p>
-    <ol class="ch-path" id="ch-path" aria-hidden="true"><li>Draft</li><li>Rookie</li><li>All-Star</li><li>Ring</li><li class="end">Hall</li></ol>
+    <p class="ch-say" id="ch-say">High school to the Hall of Fame. Recruiting, March, contracts, rivals and Game 7s. Every call is yours.</p>
+    <ol class="ch-path" id="ch-path" aria-hidden="true"><li>High school</li><li>College</li><li>Draft</li><li>Ring</li><li class="end">Hall</li></ol>
     <div class="ch-cur" id="ch-cur" hidden></div>
     <button class="big" id="b-career" disabled>Start your career</button>
     <p class="ch-best" id="ch-best" hidden></p>
@@ -2718,10 +2718,11 @@
 
     <h3>Career</h3>
     <p class="dim" style="font-size:14px;margin:0 0 10px">
-      Build a player and live his whole NBA life. Draft night, then a season at a time, with
-      a call to make between every stretch of games: role, injuries, money, rivals, free
-      agency. Every Game 7 comes down to your last shot. Retire when you choose, and the
-      Hall of Fame gives its verdict.
+      Build a player and live his whole basketball life. Start as a high school sophomore, get
+      recruited, play college ball and March, then the draft. Or skip to draft night. Then a
+      season at a time, with a call to make between every stretch of games: role, injuries,
+      money, rivals, free agency. Every Game 7 comes down to your last shot. Retire when you
+      choose, and the Hall of Fame gives its verdict.
     </p>
 
     <h3>How a run goes</h3>
@@ -3408,10 +3409,11 @@
      CI checks it on any push touching an .html or .js file. See CLAUDE.md. -->
 <script src="engine.js?v=26"></script>
 <script src="run.js?v=13"></script>
-<script src="badges.js?v=4"></script>
+<script src="badges.js?v=5"></script>
 <script src="courts.js?v=2"></script>
 <script src="modes.js?v=9"></script>
-<script src="career.js?v=1"></script>
+<script src="career.js?v=6"></script>
+<script src="baller.js?v=1"></script>
 <!-- ACCOUNTS AND THE LEADERBOARD. All three are OPTIONAL: if the CDN is blocked
      or either file fails to load, the game runs exactly as it did, with runs
      kept in this browser and the board reporting itself unreachable. An account
@@ -3420,8 +3422,8 @@
      for it rather than reading window.supabase once: on a repeat visit the data
      comes out of cache in milliseconds while this is still in flight. -->
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="board.js?v=6"></script>
-<script src="auth.js?v=3"></script>
+<script src="board.js?v=7"></script>
+<script src="auth.js?v=4"></script>
 <!-- THE SHELF. cloudsave.js is the transport and is shared with the football and
      college games; cloud.js is this game's own policy about slots, progress and
      what happens when two devices disagree. The transport asks window.RTF_AUTH
@@ -3545,7 +3547,7 @@ var DAILY_DARE = 'Everyone got the same ' + NUMWORD(E.SLOTS.length) + ' spins.';
  * handle. It is also what carries the diagnosis: `lastError` says which of the
  * two halves is missing, in words, on the screen that would otherwise just be
  * empty. */
-var NEED_BOARD = 6;
+var NEED_BOARD = 7;
 var B = (window.RTF_BOARD && window.RTF_BOARD.API_VERSION === NEED_BOARD)
   ? window.RTF_BOARD
   : {
@@ -3569,6 +3571,11 @@ var B = (window.RTF_BOARD && window.RTF_BOARD.API_VERSION === NEED_BOARD)
       playCount: function(){ return Promise.resolve(null); },
       playPlace: function(){ return Promise.resolve(null); },
       moveCount: function(){ return Promise.resolve(null); },
+      submitCareer: function(){ return Promise.resolve(null); },
+      claimCareer: function(){ return Promise.resolve(false); },
+      careerList: function(){ return Promise.resolve(null); },
+      careerCount: function(){ return Promise.resolve(null); },
+      careerPlace: function(){ return Promise.resolve(null); },
       scoreOf: function(){ return null; },
       offline: true,
       lastError: { where: 'boot', status: 0, code: 'version',
@@ -4305,7 +4312,7 @@ function frgFill(){
      distinctive thing that mode does and check-home holds the guide to saying
      it. Every number is read off the constants, never typed. */
   var steps = [
-    '<b>Career.</b> One NBA life, from draft night to the Hall of Fame.',
+    '<b>Career.</b> One basketball life, from high school to the Hall of Fame.',
     '<b>Classic.</b> ' + NUMWORD(E.SLOTS.length, true) + ' picks under a '
       + money(C.CAP_MUSD) + ' cap. Pick how fast you play. Play ' + C.REGULAR_SEASON_GAMES
       + ', and <b>every Game 7 is yours to play</b>.',
@@ -8974,6 +8981,7 @@ function ordinalOf(n){ return getOrdinal(n); }
  * which table it reads and modes-ui.js says what one of its rows looks like.
  */
 var BOARD_TABS = [
+  { k: 'career', label: 'Career', kind: 'career' },
   { k: 'league', label: 'Classic', kind: 'run' },
   { k: 'daily', label: 'Daily Draft', kind: 'run' },
   { k: 'club', label: 'One Franchise', kind: 'run' },
@@ -8989,6 +8997,11 @@ var DAY_DOORS = { daily: 1, fix: 1, passes: 1 };
 var RUN_WINS = [{ k: 'day', label: 'Today' }, { k: 'week', label: 'This week' }, { k: 'all', label: 'All time' }];
 var DAY_WINS = [{ k: 'today', label: 'Today' }, { k: 'yesterday', label: 'Yesterday' }];
 var BOARD_AXES = [{ k: 'run', label: 'Best run' }, { k: 'record', label: 'Record' }, { k: 'rating', label: 'Rating' }];
+/* THE CAREER BOARD is rtf_careers (130) and orders three ways: the legacy
+   score the Hall card prints, career points, and rings. Its own axis, so
+   moving between it and a draft board keeps each where it was left. */
+var CAREER_AXES = [{ k: 'legacy', label: 'Legacy' }, { k: 'pts', label: 'Points' }, { k: 'rings', label: 'Rings' }];
+var lbCareerAxis = 'legacy';
 var BOARD_PAGE = 100;
 var lbWin = 'all', lbAsc = false, lbFrom = 's-home';
 var BD_SORT_ICO = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14"/><path d="M6 13l6 6 6-6"/></svg>';
@@ -9023,7 +9036,7 @@ function boardSince(win){
 function openBoard(mode, from){
   var m = mode || (run && run.phase === R.PHASES.OVER ? modeOfRun(run) : null)
     || { door: 'league', key: null, day: null };
-  if (isPlayDoor(m.door)) lbMode = { door: m.door, key: null, day: null };
+  if (m.door === 'career' || isPlayDoor(m.door)) lbMode = { door: m.door, key: null, day: null };
   else lbMode = B.modeOf ? B.modeOf(m) : m;
   /* A day board opens on the day asked for (the run's own, from a results
      screen) and otherwise on today. */
@@ -9086,7 +9099,10 @@ function boardMineOf(door){
   var st = A.state ? A.state() : null;
   var uid = st && st.signedIn ? st.userId : null;
   var ids = {};
-  if (isPlayDoor(door)) {
+  if (door === 'career') {
+    var CU = window.RTF_CAREER_UI;
+    if (CU && CU.boardIds) ids = CU.boardIds() || {};
+  } else if (isPlayDoor(door)) {
     var U = window.RTF_MODES_UI;
     if (U && U.board) ids = U.board.mine(door) || {};
   } else if (lbMine) ids[lbMine] = 1;
@@ -9140,6 +9156,53 @@ function boardRunBits(r){
   };
 }
 
+/* WHAT A CAREER ROW SAYS: the player, the Hall's verdict on him, and his
+   years. The verdict is read off the career engine's own ladder, so the board
+   and the Hall card can never call one career two things. A ring makes the
+   row gold and the inner circle makes it move. */
+function boardCareerBits(r){
+  var CE = window.RTF_CAREER;
+  var score = Number(r.score) || 0;
+  var verdict = CE && CE.verdictOf ? CE.verdictOf(score) : '';
+  var bits = [];
+  if (r.player) bits.push(esc(r.player));
+  if (verdict) bits.push(esc(verdict));
+  if (r.first_year && r.last_year) bits.push(r.first_year + '-' + r.last_year);
+  var ax = lbCareerAxis, rings = Number(r.rings) || 0;
+  return {
+    value: ax === 'pts' ? Number(r.pts || 0).toLocaleString('en-US') : ax === 'rings' ? String(rings) : String(score),
+    unit: ax === 'pts' ? 'points' : ax === 'rings' ? (rings === 1 ? 'ring' : 'rings') : 'legacy',
+    meta: bits.join(' · '),
+    champ: rings > 0, record: score >= 120,
+    more: function(){ return boardCareerHtml(r); },
+  };
+}
+function boardCareerHtml(r){
+  var gp = Math.max(1, Number(r.gp) || 0);
+  var per = function(n){ return (Number(n || 0) / gp).toFixed(1); };
+  var line = function(k, v){ return '<li><span class="ps">' + k + '</span><span class="pn">' + v + '</span></li>'; };
+  var aw = [];
+  var add = function(n, one, many){ n = Number(n) || 0; if (n) aw.push(n === 1 ? one : n + 'x ' + many); };
+  add(r.mvp, 'MVP', 'MVP'); add(r.fmvp, 'Finals MVP', 'Finals MVP'); add(r.an1, 'All-NBA First Team', 'All-NBA First Team');
+  add(r.star, 'All-Star', 'All-Star'); add(r.dpoy, 'Defensive Player of the Year', 'DPOY');
+  add(r.roy, 'Rookie of the Year', 'Rookie of the Year'); add(r.olympic, 'Olympic gold', 'Olympic gold');
+  add(r.ncaa, 'National champion', 'national champion'); add(r.npoy, 'National Player of the Year', 'National Player of the Year');
+  var clubs = (Array.isArray(r.clubs) ? r.clubs : []).map(function(c){ return esc(E.teamName(c)); });
+  var h = '<ul class="bd-five">'
+    + line('Pos', esc(r.pos || '') + (r.num != null ? ' · #' + esc(String(r.num)) : ''))
+    + line('Line', Number(r.pts || 0).toLocaleString('en-US') + ' points · ' + per(r.pts) + ' / ' + per(r.reb) + ' / ' + per(r.ast))
+    + line('Years', r.seasons + (Number(r.seasons) === 1 ? ' season' : ' seasons') + (r.peak ? ' · best ' + Number(r.peak).toFixed(1) + ' a night' : ''))
+    + (clubs.length ? line('Clubs', clubs.join(', ')) : '')
+    + line('Draft', (Number(r.pick) ? 'Pick ' + r.pick : 'Undrafted') + (r.college ? ' out of ' + esc(r.college) : r.road ? ' out of high school' : ''))
+    + (aw.length ? line('Hon', aw.join(', ')) : '')
+    + '</ul>';
+  var foot = [];
+  if (Number(r.rings)) foot.push(r.rings + (Number(r.rings) === 1 ? ' ring' : ' rings'));
+  if (r.jersey) foot.push('Number retired by the ' + esc(E.teamName(r.jersey)));
+  foot.push('Legacy ' + Number(r.score || 0));
+  return h + '<p class="bd-team-foot">' + foot.join(' · ') + '</p>';
+}
+
 /* THE JERSEYS, asked for after the list is drawn, so a slow answer never
    holds the board up. A row filed by an account wears the house jersey until
    its own arrives; a guest's is the same jersey, greyed. */
@@ -9166,7 +9229,7 @@ function paintBoard(){
   var list = $('bd-list');
   if (!list) return;
   var seq = ++lbSeq;
-  var door = lbMode.door, play = isPlayDoor(door), dayDoor = !!DAY_DOORS[door];
+  var door = lbMode.door, play = isPlayDoor(door), dayDoor = !!DAY_DOORS[door], career = door === 'career';
 
   var tabs = $('bd-tabs');
   tabs.innerHTML = BOARD_TABS.map(function(t){
@@ -9176,7 +9239,7 @@ function paintBoard(){
   tabs.querySelectorAll('.bd-tab').forEach(function(b){
     b.onclick = function(){
       var k = b.getAttribute('data-k');
-      openBoard(isPlayDoor(k) ? { door: k } : k === 'daily'
+      openBoard(isPlayDoor(k) || k === 'career' ? { door: k } : k === 'daily'
         ? { door: 'daily', day: todayNumber() } : { door: k, key: null }, lbFrom);
     };
   });
@@ -9186,9 +9249,12 @@ function paintBoard(){
   renderBoardLock();
   var axes = $('bd-axes');
   axes.hidden = play;
-  axes.innerHTML = segHtml(BOARD_AXES, lbAxis, 'ax');
+  axes.innerHTML = career ? segHtml(CAREER_AXES, lbCareerAxis, 'ax') : segHtml(BOARD_AXES, lbAxis, 'ax');
   axes.querySelectorAll('button').forEach(function(b){
-    b.onclick = function(){ lbAxis = b.getAttribute('data-ax'); paintBoard(); };
+    b.onclick = function(){
+      if (career) lbCareerAxis = b.getAttribute('data-ax'); else lbAxis = b.getAttribute('data-ax');
+      paintBoard();
+    };
   });
   var wins = $('bd-wins');
   wins.innerHTML = segHtml(dayDoor ? DAY_WINS : RUN_WINS, lbWin, 'w');
@@ -9213,23 +9279,24 @@ function paintBoard(){
   more.hidden = true; count.textContent = ''; foot.textContent = '';
 
   var since = dayDoor ? null : boardSince(lbWin);
-  var mode = play ? null : { door: door, key: lbMode.key, day: lbMode.day };
+  var mode = play || career ? null : { door: door, key: lbMode.key, day: lbMode.day };
   var mine = boardMineOf(door);
   var rows = [], total = null;
   var page = function(){
+    if (career) return B.careerList ? B.careerList({ sort: lbCareerAxis, asc: lbAsc, since: since, offset: rows.length, limit: BOARD_PAGE }) : Promise.resolve(null);
     return play
       ? (B.playList ? B.playList({ mode: door, day: day, since: since, asc: lbAsc, offset: rows.length, limit: BOARD_PAGE }) : Promise.resolve(null))
       : (B.list ? B.list({ mode: mode, sort: lbAxis, asc: lbAsc, since: since, offset: rows.length, limit: BOARD_PAGE }) : Promise.resolve(null));
   };
-  var counted = play
+  var counted = career ? (B.careerCount ? B.careerCount(since) : Promise.resolve(null)) : play
     ? (B.playCount ? B.playCount(door, day, '', since) : Promise.resolve(null))
     : B.total(mode, false, since, lbAxis);
   var stale = function(){ return seq !== lbSeq; };
-  var noun = play ? (door === 'conquest' ? ['run', 'runs'] : ['entry', 'entries']) : ['run', 'runs'];
+  var noun = career ? ['career', 'careers'] : play ? (door === 'conquest' ? ['run', 'runs'] : ['entry', 'entries']) : ['run', 'runs'];
 
   var rowHtml = function(r, i){
     var rank = lbAsc ? (total != null ? total - i : null) : i + 1;
-    var b = play ? (U && U.board ? U.board.bits(r) : { value: String(r.score), unit: '', meta: '' }) : boardRunBits(r);
+    var b = career ? boardCareerBits(r) : play ? (U && U.board ? U.board.bits(r) : { value: String(r.score), unit: '', meta: '' }) : boardRunBits(r);
     var meta = b.meta || '';
     if (play && b.champ && b.tag) meta = '<span class="bd-tag">' + BD_TROPHY + esc(b.tag) + '</span>' + (meta ? ' · ' + meta : '');
     var cls = 'bd-ent' + (rank != null && rank <= 3 ? ' top3' : '') + (b.champ ? ' champ' : '') + (b.record ? ' record' : '');
@@ -9252,7 +9319,7 @@ function paintBoard(){
         var open = !ent.classList.contains('open');
         if (open && !team.getAttribute('data-built')) {
           var r = rows[+ent.getAttribute('data-i')];
-          var bits = play ? (U && U.board ? U.board.bits(r) : null) : boardRunBits(r);
+          var bits = career ? boardCareerBits(r) : play ? (U && U.board ? U.board.bits(r) : null) : boardRunBits(r);
           team.innerHTML = bits && bits.more ? bits.more() : '';
           team.setAttribute('data-built', '1');
         }
@@ -9279,12 +9346,17 @@ function paintBoard(){
     if (got === null) {
       list.innerHTML = '<div class="bd-empty bad">' + (B.needsMigration
         ? 'The leaderboard is not set up on this site yet.'
+        : career ? 'Leaderboard not reachable right now. Your careers still count here.'
         : 'Leaderboard not reachable right now. Your runs still count here.') + '</div>';
       foot.textContent = B.lastError ? B.lastError.where + ': ' + B.lastError.message : '';
       return;
     }
     if (!got.length) {
-      list.innerHTML = '<div class="bd-empty first">' + (dayDoor
+      list.innerHTML = '<div class="bd-empty first">' + (career
+        ? (lbWin === 'day' ? 'Nobody has finished a career today. Be first.'
+          : lbWin === 'week' ? 'Nobody has finished a career this week. Be first.'
+          : 'No careers on this board yet. Retire one and you are first.')
+        : dayDoor
         ? (lbWin === 'yesterday' ? 'Nobody finished yesterday\'s board.' : 'Nobody has finished today\'s board yet. Be first.')
         : lbWin === 'day' ? 'Nobody has finished a run here today. Be first.'
         : lbWin === 'week' ? 'Nobody has finished a run here this week. Be first.'
@@ -9298,7 +9370,9 @@ function paintBoard(){
     wire([].slice.call(list.querySelectorAll('.bd-ent')));
     paintMore();
     paintBoardJerseys(list, rows);
-    foot.textContent = 'Sign in and your name goes on every run you finish. A run finished signed out shows as Guest.';
+    foot.textContent = career
+      ? 'Sign in and your name goes on every career you finish. A career finished signed out shows as Guest.'
+      : 'Sign in and your name goes on every run you finish. A run finished signed out shows as Guest.';
     var me = list.querySelector('.bd-row.me');
     if (me && lbFrom === 's-over') requestAnimationFrame(function(){ me.scrollIntoView({ block: 'center' }); });
   });
@@ -11865,6 +11939,7 @@ boot();
 <!-- AFTER the page, because it draws through window.RTF_PAGE, which the script
      above publishes. -->
 <script src="modes-ui.js?v=17"></script>
-<script src="career-ui.js?v=1"></script>
+<script src="scenes.js?v=2"></script>
+<script src="career-ui.js?v=6"></script>
 </body>
 </html>

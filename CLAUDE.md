@@ -10908,23 +10908,65 @@ is outside its band.
 ### Career is the main game: one invented player, a whole NBA life
 
 ```
-node hoops/check-career.mjs            six hundred careers three ways, then one through the page
+node hoops/check-career.mjs            nine hundred careers, six hundred from draft night and three
+                                       hundred from high school, then one through the page
 node hoops/check-career.mjs --quick    the engine only
 ```
 
 Asked for by the owner as the main game mode: a BitLife or Run The Tour career sim for
-basketball, a choose your own adventure from draft night to the Hall of Fame. The owner
-picked **NBA only, deep** as the first slice and **Career as the new hero**. High school and
-college are the background card on the builder (age, polish, ceiling) and a later pass can
-play them out. `hoops/career.js` is the rules (window.RTF_CAREER, node require) and
-`hoops/career-ui.js` draws `#s-car` and paints the front page's `#career` card.
+basketball, a choose your own adventure from high school to the Hall of Fame. The NBA half
+shipped first; high school and college are played out now, and draft night with a
+background card is the skip-ahead. `hoops/career.js` is the rules (window.RTF_CAREER, node
+require) and `hoops/career-ui.js` draws `#s-car` and paints the front page's `#career` card.
 
-**THE PLAYER IS INVENTED AND THE LEAGUE IS REAL.** Thirty real clubs, their colours, and year
-one's real rosters as a fact about who you join ("You join X, Y and Z", read off the data).
-Every rival, mentor, coach and teammate an event talks about is a ROLE, never a name. That is
-the wrestling game's rule arriving at a sport with real people in it. `check-career` section 5
-reads every player name in the data against `career.js`'s own source, and a random default
-name may not be a real player's either. Add events with roles.
+**THE PLAYER IS INVENTED AND THE LEAGUE IS REAL, AND EVERYBODY HAS A NAME.** Asked for by the
+owner: no "your coach". This reverses the first version's rule, which wrote every person in a
+story as a role. Now:
+
+| who | named how |
+|---|---|
+| teammates, opponents | real players, off the club's real roster in the data's last season |
+| NBA head coaches | real, `COACHES_NOW` in career.js, moved by a carousel |
+| everybody else | generated off the career's seed (`personName`, `kinName`): HS and college coaches, agents, GMs, owners, refs, doctors, family, boosters, the commissioner |
+
+**An event is written with a `{token}`, never with a job.** `say(L, s)` fills `{coach}`,
+`{gm}`, `{agent}`, `{mom}`, `{vet}`, `{star}`, `{mate}`, `{opp}` and the rest from `peopleKey`,
+with `:last` and `:first`. `sayAll` names the card ON TOP plus every beat at the end of
+`step`, `choose` and `act`, and only the top card: one waiting behind it is named when it gets
+there, so a coach fired by the card in front is not the coach the next card talks about.
+`logIt` names its own line. A token nobody knows is left as it is, so check-career can see it.
+
+**THE COACHES TABLE IS THE ONE PLACE A REAL NAME IS TYPED.** It is the staff at the end of the
+data's last season (with Portland's and New Orleans' interims), plus `COACH_POOL`: real coaches
+out of a chair and real assistants, the third field saying who has run a bench. Change a chair
+there and nowhere else. **Teammates are never typed**: `seedLeague` writes `roster` (the
+club's top twelve, name, position, an estimated birth year off the draft year, win shares)
+onto the life, and `matesOf` ages them a year at a time and retires them at an age seeded per
+man. Each draft class after that adds one generated rookie a club for about ten years. Nobody
+is traded: the league around you is a picture of who was there. An old save with no roster
+gets the page's when it opens on the same season of data, and otherwise reads year one's
+stars and ages them.
+
+**THE CAROUSEL** (`coachCarousel`, run from `driftLeague` every summer, the road years too):
+a club fires on how it played (your club on the record you actually played, and never after a
+title), a coach past 71 may retire, an interim is likely replaced, and the hire is weighted
+from fired coaches who have sat a year, unhired real names from the pool, and a generated
+first-time coach whose weight grows as the real names run out. A fired coach out four years,
+or past 72, leaves the list. `midseasonFirings` at the All-Star break hands a collapsing club
+to an interim assistant. **Your own club's mid-season firing is the `coach_fired` card**, whose
+`queue` hook really fires him, seats an interim, and puts two real candidates on the buttons.
+College `coach_leaves` really takes the worst club's job. Measured over 90 careers: about five
+changes a summer plus the February ones (the real league runs six or seven), benches all real
+in year one, about 94% real at year ten, then turning over.
+
+`check-career` section 5 holds it: the source types no real player outside the coaches table,
+no pairing the generated lists can make is a real player or coach (it found `Isaac Okoro`
+among the invented rivals, now `Obiora`), nothing a career prints shows an unfilled token or
+names a person by job alone (`the coach`, `a teammate`, `the commissioner` and the rest), every
+club has one coach after every step and no coach sits on two benches, a card about your coach
+names your club's coach, and year one's Celtics are the real Celtics while thirty years on they
+are all generated. Generated coaches skip any name already on a bench, which is what the two
+benches claim caught.
 
 **NOT A SECOND MODEL OF A ROSTER.** Year one's club nets come off the real rosters through
 `teamStrength`, scaled to a spread of 4.6, and every year after drifts on a mean-reverting
@@ -10970,8 +11012,186 @@ so the dock can carry `#b-career` from boot on a phone; Classic's Start stays in
 card. The first-visit guide names five modes with Career first and points at the docked
 button. `check-home`'s budget went 2.5 to 2.9 screens for it (2.40, 2.79 and 1.95 measured).
 
-**What it does not have yet**: a leaderboard (it needs a migration), a badge shelf, and the
-high school and college chapters. Those are the next passes.
+#### The road: high school, college, and the draft it ends at
+
+`newLife({ start: 'hs' })` begins as a fifteen year old sophomore, and it is the builder's
+default. Three high school years (`hs_pre`, `hs_reg`, `hs_po`, `hs_off`: a summer card, a
+26 game season, a four round state tournament), a national ranking, offers in junior year and
+a decision in senior year: a college, or a year overseas or in the G League. College is
+`col_pre` to `col_off`: non-conference, conference, the conference tournament and Selection
+Sunday, then March a weekend a step, then declare, come back, or enter the portal. Every exit
+lands on the same `combine` card a draft-night career starts on (`toDraft`), so **the NBA half
+never knew the road existed**.
+
+**THE SCHOOLS ARE REAL AND THE PEOPLE ARE GENERATED.** Fifty-odd real colleges by tier (blue
+blood, power, mid-major, small) with their colours, because a college is an institution the
+way a club is. Its coach (`colCoachName`, named on every offer), boosters, rivals and your
+roommate are generated names off the seed. High schools are invented (`<hometown> <suffix>`).
+
+**THE ROAD ENDS WHERE THE BACKGROUNDS DO, AND THAT IS MEASURED.** It is played on the league's
+ratings scale (a sophomore is about a 40), grows by `GROW_AM` toward a ceiling drawn from
+`ROAD_POT`, and section 8 holds its NBA outcomes to section 2's bands. The first cut handed
+out an MVP in 6% of road careers against 1 to 2% from draft night. Three things were wrong
+and none is obvious:
+- **Draft stock accumulated across college years.** It decays now (`stock * 0.5 + this year`)
+  and is clamped, because the board reads the last season hardest.
+- **A four-year senior had no age cost**, so a 22 year old with a high overall went top three.
+  `draftStock` has `- (age - 20) * 1.2` now, for every career. Scouts draft the ceiling.
+- **The road's ceiling ran higher than a background's**, through `pot` bumps on summer cards.
+
+**The recruiting rank is read against age** (`ovr - (age - 15) * 5.2`), so a junior is ranked
+against juniors, and the curve is fitted so about one in five of these players (all future
+pros) is a five-star by 17. A class rank that only rises with age is the bug that version had.
+
+**One tie game per tournament is yours**, the first close one you are on the floor for:
+`amclutch`, the same four shots as Game 7. It can come in any round, so the tournament has to
+be resumable mid-weekend: `runTourney` plays to `upto` and stops at the card, and the card
+continues it.
+
+**The third fact on the screen follows the stage**: the class ranking in high school, the mock
+draft (and NIL money) in college, the bank after. A sophomore told his bank balance is the
+NBA screen leaking down.
+
+**Overseas is the route a blind policy never finds**, because it needs a ranked player who
+waited past junior year. Section 8 walks it on purpose rather than hoping the sweep does.
+
+#### The people around you, the moments, and what comes after
+
+**A RIVAL FROM YOUR DRAFT CLASS**, invented like you (`makeRival` at the draft, picked within
+three slots of you), whose seasons are drawn off a growth curve in `rivalSeason` rather than
+played: he exists to be measured against and nothing in the league runs through him. Two cards
+use him, the trophy case draws you against him, and the Hall card says who had the better career.
+
+**A life off the floor** (`L.life`: single, dating, engaged, married, and kids up to four) is
+five cards that move morale more than basketball. The person is `{partner}`, keyed on
+`life.pn`, which moves on a breakup or a no, so a new relationship is a new person and the
+name on the meet card is the name you date. Old saves have no `life` key, so it is read
+through `lifeOf()`, never directly.
+
+**Milestones are crossings, read off `totals()` either side of `closeSeason`'s history push**,
+so 20,000 points is logged in the season it happened and never again.
+
+**RETIRING IS TWO MOMENTS.** `retire()` is the press conference and leaves an `after` card; the
+career is only over once it is answered (`L.retired`), and its sentence is the last line of the
+Hall card. The screen's own Retire button goes through `retireNow()` for the same reason. A
+career that never reached the league skips it. **A number is retired** for seven seasons with
+one club and a legacy score of 36 or more.
+
+**The hometown club calls only on a road career**, because only a road career has a hometown
+(`HOME_CLUB` maps the high school towns to clubs), so section 8 asks for that card and
+section 3 does not.
+
+#### The Career shelf, and the gold that was never recorded
+
+Thirty three badges on a `Career` shelf in `badges.js`, read off `cr.*` feats like every mode
+shelf. `featSummary(L)` in `career.js` is the one place a finished career is summed, and
+`careerFeats` turns that into feats: `cr.careers` is a count and everything else a high-water
+mark, so a second career that is worse than the first takes nothing away. `career-ui.js` files it
+in `finish()`, only for a career that reached the league, through `RTF_PAGE.feats`.
+
+**`check-badges` plays careers as well as drafts**, two starts and three ways of answering cards,
+and lights the whole shelf.
+
+**Olympic gold was never recorded, and the badge sweep is what found it.** The olympics card
+wrote a `goldYear` that `closeSeason` read a season late, after the history it should have
+written to was already pushed, so `cr-gold` was dark in 900 careers. The card writes `olympic`
+onto the last season's awards itself now, and about one career in nine wins gold.
+
+#### The player is drawn, and the big moments are scenes: Run The Tour, for basketball
+
+```
+node hoops/check-career.mjs   section 10 (press room, persona, look), 7b (the scenes, through the page)
+```
+
+Asked for by the owner: model Career on Run The Tour's characters and cutscenes. Three pieces.
+
+**`hoops/baller.js` draws the player** (`window.RTF_BALLER`): a 32 by 48 cell grid painted in
+code, then an outline pass that turns every empty cell touching a painted one into ink, which
+is what makes it read as pixel art. He wears the colours he plays in (`C.colorsOf`) and his own
+number, greys from 33, and has six poses (stand, ball, up, trophy, suit, cap). `img()` returns
+two frames and one page-wide timer swaps them (the breath); reduced motion gets one frame.
+**The look is a few short values on the life** (`L.look`), kept through `cleanLook`'s
+whitelist in career.js, and **baller.js is the only file that knows what they mean**:
+`normal()` falls back on anything it does not recognise, so an old save or a hand edit is
+always drawable. A career from before looks gets `lookFor(seed)`. The rival is drawn off
+`lookFor(name)`, so he always looks the same. **Only the invented are drawn**: no real player
+gets a face or a hashed look.
+
+**The press room is the engine's** (`TONES`, `PRESSERS`, `presserCard`). After a first-round
+pick, an MVP, a title, a Finals loss and a national title, a `presser` card is pushed; every
+answer is a TONE and moves `L.rep` (fans, respect). `EVENT_REP` gives twenty everyday event
+choices a reputation too, because a career sees two or three press conferences and without
+them almost nobody becomes anybody. The reputation drifts 20% back to the middle every season,
+so a persona is what you have done lately. **The persona is read, never stored**
+(`personaOf`, a three by three off the two axes). Measured, all nine are reachable and the
+balance bands do not move: the biggest press conference move is five points of fame.
+
+**`hoops/scenes.js` is the broadcast layer** (`window.RTF_SCENES`): an invented cast and
+outlets, rooms drawn in CSS (draft stage, press room, arena, studio, high school gym, locker
+room, Hall of Fame), a typewriter, tap to advance. **It decides nothing.** A scene is told
+after the engine moved, off the beats it returned (`pickScene`), and a decision in a scene is
+the engine's own pending card answered through `C.choose`, so the plain card is always on the
+screen underneath and a closed scene loses nothing. **Skip never skips a decision**: it jumps
+to the next one, and is hidden while one is up. `chain()` runs a moment straight into the
+next decision (a title into its press conference), and `build()` resolves every line against
+that moment's own context, or a chained scene would tell the first one's facts. Scenes are on
+by default and switched off per device (`rtf.scenes.v1`); check-career's main walk runs with
+them off and 7b runs them on.
+
+**The broadcasters are invented, and the coach and the commissioner are the career's.** Their
+plates read `C.myCoach` and `C.say(L, '{commish}')` through `ctxOf`, so a scene and a card name
+the same man, and 7b fails on a plate that reads a job. check-career reads scenes.js and
+baller.js for every real player's name, the same guard career.js has.
+
+Two things only a screenshot found: `.sc-front` (the press table, the studio desk) had no
+height, so nothing in it drew; and the drawn player made the identity card taller, which put a
+decision below the fold on a phone. `scrollStage` now scrolls to the first answer of a pending
+card, not to the top of the stage.
+
+#### The Career board, and a score worked out twice that has to agree
+
+```
+psql -d hoops_careers -f supabase/test/hoops_board_base.sql
+psql -d hoops_careers -f supabase/130_hoops_careers.sql
+psql -d hoops_careers -f supabase/test/hoops_careers_test.sql
+```
+
+`supabase/130_hoops_careers.sql` is `rtf_careers`, one row a career, its own table because a
+career is neither a season (`rtf_runs`) nor a play (`rtf_plays`). A career that reached the
+league is filed once, from `finish()` in `career-ui.js`, through `B.submitCareer(C.boardSummary(L))`.
+The career's seed is the key, so a second submit hands back the first row. A career that never
+made the league is not filed. **Deploy it by hand**; without it every career plays and retires,
+and the Hall card says the board is not set up. Preflight row 42.
+
+**THE SCORE IS DERIVED BY THE SERVER, AND THAT MADE `legacyScore` INTEGER ARITHMETIC.** The page
+sends totals and no score (the walk asserts the body has no score key), and `rtf_career_score`
+works it out. Written as `pts / 1000 * 1.4` the page computes a float and the server a numeric,
+and a total landing exactly on a half rounds one way in each, so the board and the Hall card
+would call one career two numbers. Both now count in ten thousandths and round half up. Measured
+by filing 600 engine careers through the real function: none refused, 600 of 600 scores equal.
+
+**The board is a tab of the one leaderboard screen**, first in `BOARD_TABS`, with its own axis
+(`lbCareerAxis`: Legacy, Points, Rings) so moving between it and a draft board keeps each where
+it was. The verdict on a row is `C.verdictOf(score)`, the career engine's own ladder. A ring
+makes the row gold and the inner circle (120 and up) makes it move. A row opens into the
+career: position, line, years, clubs, draft and honours.
+
+**A row's id rides on the Hall card** (`card.board`), which is in the `life` slot, so it is on
+the account. A guest's careers are claimed on sign in (`rtf_claim_career`), and `boardIds()`
+marks your rows. The Hall card asks for its place every time it is drawn, because the field
+keeps growing after it was filed.
+
+**The name is checked for shape and nothing else.** It is invented, so the server takes letters,
+spaces, an apostrophe, a stop and a hyphen, and `boardSummary` sends anything else as no name
+rather than losing the career.
+
+**A rename now reaches all three boards.** `rtf_rename_plays` has existed since 116 and nothing
+called it, so a renamed account kept its old name on the Conquest, Fix History and Six Passes
+boards. `setName` in `auth.js` calls it and `rtf_rename_careers` after `rtf_rename_runs`.
+
+**The SQL test splits every write from the read that checks it.** Three claims failed on the
+first run for the snapshot reason recorded under 116: a function that inserts, called in the same
+statement as the select checking it, is checked against the table as it was before.
 
 ### Four ways to play, and the draft is one of them
 

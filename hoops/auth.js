@@ -219,6 +219,13 @@
        leaves old rows under the old name, which is wrong and is not worth
        refusing the rename over. The next rename fixes them. */
     try { await sb.rpc('rtf_rename_runs'); } catch (e) {}
+    /* The other two boards keep their own copy of the name too. A database
+       without 116 or 130 answers these with an error, which is swallowed for
+       the reason above. rtf_rename_plays has existed since 116 and nothing
+       called it, so a renamed account went on reading the old name on the
+       Conquest, Fix History and Six Passes boards. */
+    try { await sb.rpc('rtf_rename_plays'); } catch (e) {}
+    try { await sb.rpc('rtf_rename_careers'); } catch (e) {}
     fire();
     return { error: null };
   }

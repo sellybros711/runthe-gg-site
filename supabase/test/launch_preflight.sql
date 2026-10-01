@@ -86,7 +86,7 @@ has_table as (
     'nfl_games','fantasy_prizes',
     'rtf_runs','rtd_runs','rtf_plays','rtd_mode_plays','premium_subscriptions',
     'rtd_profiles','rtd_career','rtf_profiles',
-    'cfb_fantasy_weeks','cfb_fantasy_entries','cfb_fantasy_prizes'
+    'cfb_fantasy_weeks','cfb_fantasy_entries','cfb_fantasy_prizes','rtf_careers'
   ]) as t
   where to_regclass('public.' || t) is not null
 ),
@@ -570,7 +570,18 @@ check_rows(sort, migration, what, breaks, ok) as (
       and (select count(*) > 0 from has_table where name = 'cfb_fantasy_prizes')
       and (select count(*) > 0 from proc where name = 'cfb_fantasy_submit')
       and (select count(*) > 0 from proc where name = 'cfb_fantasy_swap')
-      and (select count(*) > 0 from trg where name = 'cfb_fantasy_settle_on_scored'))
+      and (select count(*) > 0 from trg where name = 'cfb_fantasy_settle_on_scored')),
+
+  -- RUN THE FLOOR'S CAREER BOARD. It fails soft like every board here: a
+  -- career plays to the Hall card and the badges light, and the board says it
+  -- is not reachable, which looks exactly like a bad network day.
+  (42, '130_hoops_careers',
+      'a finished hoops Career goes on the Career board',
+      'Every Career plays and retires. The Career board stays empty and the Hall card says the board is not set up.',
+      (select count(*) > 0 from has_table where name = 'rtf_careers')
+      and (select count(*) > 0 from proc where name = 'rtf_submit_career')
+      and (select count(*) > 0 from proc where name = 'rtf_career_score')
+      and (select count(*) > 0 from proc where name = 'rtf_claim_career'))
 )
 -- The summary has to come LAST, and a UNION can only be ordered by an output
 -- column, so the sort key is carried through a subquery rather than sorted on

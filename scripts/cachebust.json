@@ -2265,8 +2265,8 @@
       "sha": "452c52091426e857"
     },
     "badges.js": {
-      "v": "4",
-      "sha": "0a0c78a5bb9ee7fd"
+      "v": "5",
+      "sha": "810f26fc816268d6"
     },
     "courts.js": {
       "v": "2",
@@ -2277,16 +2277,20 @@
       "sha": "814d6471760c59b4"
     },
     "career.js": {
+      "v": "6",
+      "sha": "23559706d9ccd540"
+    },
+    "baller.js": {
       "v": "1",
-      "sha": "7e7fb42faaeb0f12"
+      "sha": "9524569c7a4cbed7"
     },
     "board.js": {
-      "v": "6",
-      "sha": "0c56e909efaaaada"
+      "v": "7",
+      "sha": "d8601281630568e8"
     },
     "auth.js": {
-      "v": "3",
-      "sha": "ab78ce530d41a0b0"
+      "v": "4",
+      "sha": "181f307ca7be7113"
     },
     "/assets/cloudsave.js": {
       "v": "2",
@@ -2304,9 +2308,13 @@
       "v": "17",
       "sha": "d984540c2b06a2bb"
     },
+    "scenes.js": {
+      "v": "2",
+      "sha": "d7b46d651a75957e"
+    },
     "career-ui.js": {
-      "v": "1",
-      "sha": "030755b2006d05b6"
+      "v": "6",
+      "sha": "31376e0ed733e711"
     },
     "data/players.json": {
       "v": "5",
