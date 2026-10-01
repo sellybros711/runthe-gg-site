@@ -3350,10 +3350,14 @@ console.log('\nA PRESS ASKS BEFORE IT SPENDS');
    * a good many readers do not have. The name is the one thing on it that can grow, so it is
    * replaced with the longest the pool can produce and the box is measured again.
    *
-   * WHAT IS ASSERTED IS THE BUTTONS, not the height. The sheet is bottom anchored, so a tall
-   * one pushes its own eyebrow off the top and that is fine; what must never happen is the
-   * control the page is waiting on going off the screen, which is the football boss battle's
-   * Continue button arriving at a sheet.
+   * WHAT IS ASSERTED IS THE BUTTONS, not the height: what must never happen is the control
+   * the page is waiting on going off the screen, which is the football boss battle's Continue
+   * button arriving at a sheet.
+   *
+   * AND THE BOX IS IN THE MIDDLE. It was bottom anchored, and a player zoomed in on the board
+   * pressed a row and saw nothing: the sheet was below the part of the page on screen. A
+   * centred box is in the middle of whatever is showing. The zoom half itself (the scrim moved
+   * onto the visual viewport) cannot be driven here, because a headless page has no pinch.
    */
   const longest = POOL.pool.map((m) => m.name).sort((a, b) => b.length - a.length)[0];
   await page.setViewportSize({ width: 360, height: 740 });
@@ -3370,8 +3374,13 @@ console.log('\nA PRESS ASKS BEFORE IT SPENDS');
          confirm who they are signing is the one word it cannot afford to lose. */
       over: Math.round(nm.scrollWidth - nm.clientWidth),
       h: window.innerHeight,
+      box: document.querySelector('#cf-sheet .ibox').getBoundingClientRect(),
     };
   }, longest);
+  const gapTop = fit.box.top, gapBottom = fit.h - fit.box.bottom;
+  ok('  and the box sits in the middle of the screen, not on its bottom edge',
+    gapBottom > 40 && Math.abs(gapTop - gapBottom) <= 2,
+    `${Math.round(gapTop)}px above, ${Math.round(gapBottom)}px below`);
   ok(`  at 360x740 the longest name in the pool fits`, fit.over <= 1,
     `${longest}, ${fit.over}px over`);
   ok('  and both buttons are fully on the screen',
