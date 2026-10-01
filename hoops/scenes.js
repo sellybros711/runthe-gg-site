@@ -30,6 +30,9 @@
 'use strict';
 
 var E = window.RTF_ENGINE, C = window.RTF_CAREER, B = window.RTF_BALLER;
+/* The Arena Arcade kit draws the rooms as pixel sets. Without it the rooms
+   fall back to the CSS sets below, so a blocked kit never blanks a scene. */
+var K = window.RTF_KIT;
 if (!E || !C || !B) return;
 
 var KEY = 'rtf.scenes.v1';
@@ -81,16 +84,16 @@ var CSS = [
 '@keyframes scIn{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}',
 '.sc-front{position:absolute;inset:0;z-index:4;pointer-events:none;}',
 '.sc-hud{position:absolute;top:0;left:0;right:0;z-index:6;display:flex;align-items:center;gap:10px;padding:calc(10px + env(safe-area-inset-top,0px)) 12px 8px;background:linear-gradient(180deg,rgba(0,0,0,.6),transparent);}',
-'.sc-out{display:inline-flex;align-items:center;gap:6px;white-space:nowrap;flex:0 0 auto;font-size:10.5px;font-weight:900;letter-spacing:.14em;text-transform:uppercase;padding:5px 9px;border-radius:999px;background:rgba(0,0,0,.45);border:1px solid var(--oc,#888);color:#fff;}',
-'.sc-out i{width:7px;height:7px;border-radius:50%;background:#ff4b4b;box-shadow:0 0 8px #ff4b4b;animation:scLive 1.4s ease-in-out infinite;}',
+'.sc-out{display:inline-flex;align-items:center;gap:6px;white-space:nowrap;flex:0 0 auto;font-family:var(--k-f-pixel,monospace);font-size:8px;text-transform:uppercase;padding:7px 8px;background:#05070d;color:#fff;box-shadow:0 -2px 0 0 var(--oc,#888),0 2px 0 0 var(--oc,#888),-2px 0 0 0 var(--oc,#888),2px 0 0 0 var(--oc,#888);}',
+'.sc-out i{width:6px;height:6px;background:#ff4b4b;box-shadow:0 0 8px #ff4b4b;animation:scLive 1.4s ease-in-out infinite;}',
 '@keyframes scLive{50%{opacity:.35}}',
 '.sc-when{flex:1 1 auto;min-width:0;font-size:11.5px;color:rgba(255,255,255,.75);font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}',
-'.sc-skip{flex:0 0 auto;background:rgba(0,0,0,.45);border:1px solid rgba(255,255,255,.25);color:#fff;font-size:12px;font-weight:800;padding:7px 12px;border-radius:999px;}',
+'.sc-skip{flex:0 0 auto;background:#05070d;border:0;color:#fff;font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;padding:9px 12px;border-radius:0;min-height:40px;box-shadow:0 -2px 0 0 var(--k-frame,#2d3a66),0 2px 0 0 var(--k-frame,#2d3a66),-2px 0 0 0 var(--k-frame,#2d3a66),2px 0 0 0 var(--k-frame,#2d3a66);}',
 '.sc-skip[hidden]{display:none;}',
-'.sc-cap{position:relative;z-index:5;flex:0 0 auto;max-height:52vh;overflow:auto;padding:14px 16px calc(14px + env(safe-area-inset-bottom,0px));background:linear-gradient(180deg,#121826,#0b0f18);border-top:2px solid var(--oc,#f0782d);}',
+'.sc-cap{position:relative;z-index:5;flex:0 0 auto;max-height:52vh;overflow:auto;padding:14px 16px calc(14px + env(safe-area-inset-bottom,0px));background:var(--k-panel,#111629);box-shadow:0 -3px 0 0 var(--oc,#f0782d),0 -6px 0 0 #05070d;}',
 '.sc-who{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin:0 0 6px;}',
-'.sc-who b{font-family:var(--display,Impact);font-weight:400;font-size:19px;letter-spacing:.02em;text-transform:uppercase;color:var(--oc,#fff);}',
-'.sc-who span{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.55);font-weight:800;}',
+'.sc-who b{font-family:var(--k-f-display,var(--display,Impact));font-weight:400;font-size:19px;letter-spacing:.02em;text-transform:uppercase;color:var(--oc,#fff);}',
+'.sc-who span{font-family:var(--k-f-pixel,monospace);font-size:8px;letter-spacing:.02em;text-transform:uppercase;color:var(--k-ink-3,#8fa0d6);}',
 '.sc-tx{font-size:16.5px;line-height:1.5;min-height:3em;margin:0;}',
 '.sc-tx .q{font-style:italic;}',
 '.sc-caret{display:inline-block;margin-left:1px;animation:scLive .8s steps(1) infinite;color:var(--oc,#fff);}',
@@ -100,10 +103,10 @@ var CSS = [
 '.sc-q .eye{font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--oc,#f0782d);font-weight:900;}',
 '.sc-q p{margin:0 0 10px;color:rgba(255,255,255,.75);font-size:14.5px;line-height:1.45;}',
 '.sc-ch{display:flex;flex-direction:column;gap:7px;}',
-'.sc-ch button{text-align:left;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.16);color:#fff;padding:11px 13px;border-radius:11px;font-weight:700;font-size:15px;line-height:1.35;}',
-'.sc-ch button:hover{border-color:var(--oc,#f0782d);background:rgba(255,255,255,.09);}',
+'.sc-ch button{text-align:left;background:var(--k-panel-2,#18203a);border:0;color:#fff;padding:12px 13px;margin:2px;border-radius:0;font-weight:700;font-size:15px;line-height:1.35;min-height:52px;box-shadow:0 -2px 0 0 var(--k-panel-3,#202a4a),0 2px 0 0 var(--k-panel-3,#202a4a),-2px 0 0 0 var(--k-panel-3,#202a4a),2px 0 0 0 var(--k-panel-3,#202a4a);}',
+'.sc-ch button:hover{background:var(--k-panel-3,#202a4a);}','.sc-ch button:focus-visible{outline:2px solid var(--k-gold,#ffd166);outline-offset:3px;}',
 '.sc-ch button small{display:block;font-weight:500;font-size:12.5px;color:rgba(255,255,255,.6);margin-top:2px;}',
-'.sc-ch button .tone{display:inline-block;font-size:10px;letter-spacing:.14em;text-transform:uppercase;font-weight:900;color:#0b0f18;background:var(--oc,#f0782d);padding:2px 7px;border-radius:999px;margin:0 0 4px;}',
+'.sc-ch button .tone{display:inline-block;font-family:var(--k-f-pixel,monospace);font-size:8px;text-transform:uppercase;color:#0b0f18;background:var(--oc,#f0782d);padding:4px 6px;margin:0 0 6px;}',
 '.sc-feed{list-style:none;margin:8px 0 0;padding:0;display:flex;flex-direction:column;gap:7px;}',
 '.sc-feed li{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:11px;padding:8px 10px;font-size:14px;line-height:1.4;animation:scIn .35s ease-out both;}',
 '.sc-feed li b{display:block;font-size:12px;color:rgba(255,255,255,.6);font-weight:800;margin-bottom:1px;}',
@@ -148,11 +151,24 @@ var CSS = [
 '.rm-hall{background:radial-gradient(50% 60% at 50% 30%,rgba(255,215,120,.35),transparent 70%),repeating-linear-gradient(90deg,#2a2212 0 9%,#3a2f18 9% 11%,#2a2212 11% 20%),#1d170c;}',
 '.rm-hall .floor{position:absolute;left:0;right:0;bottom:0;height:26%;background:linear-gradient(#5a4a26,#2a2212);border-top:3px solid #e8b33c;}',
 '.rm-hall .plaque{position:absolute;left:50%;top:6%;transform:translateX(-50%);padding:6px 14px;border:2px solid #e8b33c;border-radius:6px;background:rgba(0,0,0,.4);font-family:var(--display,Impact);letter-spacing:.12em;color:#ffd36b;font-size:clamp(14px,3.6vw,22px);white-space:nowrap;}',
+'.sc-pix{overflow:hidden;background:#05070d;}',
+'.sc-pset{position:absolute;left:50%;top:var(--hud,58px);transform:translateX(-50%);}',
+'.sc-pfront{z-index:4;}',
+'.sc-pfront .sc-pset{clip-path:inset(var(--cut) 0 0 0);}',
+'.scov:has(.sc-pix) .sc-hud{background:#05070d;box-shadow:0 3px 0 0 #0b0e1a;}',
+'.sc-pset img{display:block;width:100%;height:100%;image-rendering:pixelated;image-rendering:crisp-edges;}',
+'.sc-pboard{position:absolute;left:50%;transform:translateX(-50%);padding:calc(var(--px,4px)*1.5) calc(var(--px,4px)*3);background:#05070d;color:#ffd36b;font-family:var(--k-f-pixel,"Press Start 2P",monospace);font-size:max(9px,calc(var(--px,4px)*2.2));line-height:1;white-space:nowrap;text-shadow:0 0 6px rgba(255,190,60,.6);',
+'  box-shadow:0 calc(var(--px,4px)*-1) 0 0 var(--c1),0 var(--px,4px) 0 0 var(--c1),calc(var(--px,4px)*-1) 0 0 0 var(--c1),var(--px,4px) 0 0 0 var(--c1);}',
+'.sc-pboard.sc-pscreen{background:transparent;box-shadow:none;color:#fff;text-shadow:calc(var(--px,4px)*.6) calc(var(--px,4px)*.6) 0 rgba(0,0,0,.6);font-size:max(11px,calc(var(--px,4px)*3.4));}',
+'.sc-pboard.sc-pgold{background:#2a2212;color:#ffd166;box-shadow:0 calc(var(--px,4px)*-1) 0 0 #e8b33c,0 var(--px,4px) 0 0 #e8b33c,calc(var(--px,4px)*-1) 0 0 0 #e8b33c,var(--px,4px) 0 0 0 #e8b33c;}',
+'.sc-pboard.sc-plogo{background:transparent;box-shadow:none;color:var(--oc);text-shadow:none;opacity:.85;}',
+'.sc-pflash{position:absolute;inset:0;pointer-events:none;background:radial-gradient(60% 40% at 50% 0,rgba(255,236,196,.18),transparent 70%);animation:scLive 1.2s steps(2) infinite;}',
+'.sc-cast img{image-rendering:pixelated;image-rendering:crisp-edges;}',
 '.sc-confetti{position:absolute;inset:0;z-index:5;pointer-events:none;overflow:hidden;}',
 '.sc-confetti i{position:absolute;top:-8%;width:8px;height:12px;animation:scFall linear infinite;}',
 '@keyframes scFall{to{transform:translateY(120vh) rotate(540deg)}}',
-'@media (prefers-reduced-motion:reduce){.sc-confetti,.rm-press .flash{display:none}.sc-cast img.in,.sc-feed li{animation:none}.rm-arena .crowd.loud{animation:none}}',
-'@media (min-width:760px){.sc-cap{max-width:720px;margin:0 auto;width:100%;border-radius:16px 16px 0 0;}}',
+'@media (prefers-reduced-motion:reduce){.sc-pflash{animation:none}.sc-confetti,.rm-press .flash{display:none}.sc-cast img.in,.sc-feed li{animation:none}.rm-arena .crowd.loud{animation:none}}',
+'@media (min-width:760px){.sc-cap{max-width:720px;margin:0 auto;width:100%;}}',
 ].join('\n');
 function cssOnce(){
   if (document.getElementById('sc-css')) return;
@@ -161,7 +177,68 @@ function cssOnce(){
 
 // ─── rooms ──────────────────────────────────────────────────────────────────
 
+/* A pixel room: the kit's 132 by 80 set, scaled by a whole number so every
+   cell is the same size, big enough to cover the stage and cropped from the
+   middle. Text on a board or a screen sits in the set's own coordinates. */
+var PIX_ROOM = { arena: 1, press: 1, draft: 1, studio: 1, gym: 1, locker: 1, hall: 1 };
+function pixKind(room, c){
+  if (room === 'arena') return c.level === 'College' ? 'col' : c.level === 'High school' ? 'hs' : c.level === 'Pro' ? 'gl' : 'nba';
+  if (room === 'gym') return 'hs';
+  return room;
+}
+/* Sets with furniture in front of the speaker (a press table, a studio desk):
+   the same picture is laid over the cast, cut to the furniture, so whoever is
+   talking stands behind it. The share is where the furniture starts. */
+var FRONT = { press: '74%', studio: '67%' };
+function pixRoomHTML(room, c){
+  var kind = pixKind(room, c);
+  var col1 = room === 'studio' ? c.oc : room === 'hall' ? '#a8761c' : c.c1, col2 = room === 'hall' ? '#ffd166' : c.c2;
+  var lab = '';
+  if (c.board && (kind === 'nba' || kind === 'col' || kind === 'gl')) lab = '<span class="sc-pboard" style="top:calc(var(--px) * 1)">' + esc(c.board) + '</span>';
+  else if (c.board && kind === 'hs') lab = '<span class="sc-pboard" style="top:calc(var(--px) * 6)">' + esc(c.board) + '</span>';
+  else if (kind === 'draft') lab = '<span class="sc-pboard sc-pscreen" style="top:calc(var(--px) * 13)">' + esc(c.board || 'DRAFT') + '</span>';
+  else if (kind === 'hall') lab = '<span class="sc-pboard sc-pgold" style="top:calc(var(--px) * 3)">' + esc(c.board || 'HALL OF FAME') + '</span>';
+  else if (kind === 'studio' && c.outlet) lab = '<span class="sc-pboard sc-plogo" style="bottom:calc(var(--px) * 2)">' + esc(c.outlet) + '</span>';
+  return '<div class="sc-room sc-pix rm-' + room + '" style="--c1:' + c.c1 + ';--c2:' + c.c2 + ';--oc:' + c.oc + '">'
+    + '<div class="sc-pset" data-kind="' + kind + '" data-c1="' + col1 + '" data-c2="' + col2 + '" data-seed="' + room + '">'
+    + '<img class="k-px" alt="" draggable="false">' + lab + '</div>'
+    + (FRONT[kind] ? '<div class="sc-front sc-pfront" style="--cut:' + FRONT[kind] + '"><div class="sc-pset"><img class="k-px" alt="" draggable="false"></div></div>' : '')
+    + (c.loud ? '<i class="sc-pflash"></i>' : '') + '</div>';
+}
+/* The set is drawn at the stage's own shape, so a tall phone gets a tall room
+   rather than a wide one blown up and cropped. One cell is a whole number of
+   pixels, about a hundredth of the short side, close to the sprite's own. */
+function fitPix(ov){
+  var st = ov.querySelector('.sc-stage'), set = ov.querySelector('.sc-pset');
+  if (!st) return;
+  var W = st.clientWidth, H = st.clientHeight;
+  if (!W || !H) return;
+  /* The broadcast bar sits over the top of the stage, so the set starts under
+     it and nothing on the set's wall is hidden by it. */
+  var hud = ov.querySelector('.sc-hud'), hh = hud ? hud.offsetHeight : 58;
+  ov.style.setProperty('--hud', hh + 'px');
+  if (set) {
+    H = Math.max(80, H - hh);
+    var k = Math.max(3, Math.round(Math.min(W, H) / 100));
+    var cw = Math.ceil(W / k), ch = Math.ceil(H / k);
+    var key = cw + 'x' + ch;
+    if (set.getAttribute('data-at') !== key) {
+      var art = K.room(set.getAttribute('data-kind'), cw, ch, { c1: set.getAttribute('data-c1'), c2: set.getAttribute('data-c2'), spotAt: 0.5, seed: set.getAttribute('data-seed') });
+      set.querySelector('img').src = art.url;
+      set.setAttribute('data-at', key);
+    }
+    set.style.width = (cw * k) + 'px'; set.style.height = (ch * k) + 'px';
+    set.style.setProperty('--px', k + 'px');
+    var fr = ov.querySelector('.sc-pfront .sc-pset');
+    if (fr) { fr.querySelector('img').src = set.querySelector('img').src; fr.style.width = set.style.width; fr.style.height = set.style.height; }
+  }
+  var imgs = ov.querySelectorAll('.sc-cast img');
+  var top = 58, room = Math.max(64, Math.min(H * 0.94 - top, 330));
+  var ks = Math.max(1, Math.floor(room / 64));
+  for (var i = 0; i < imgs.length; i++) { imgs[i].style.height = (64 * ks) + 'px'; imgs[i].style.width = (44 * ks) + 'px'; imgs[i].style.maxHeight = 'none'; }
+}
 function roomHTML(room, c){
+  if (K && PIX_ROOM[room]) return pixRoomHTML(room, c);
   var v = 'style="--c1:' + c.c1 + ';--c2:' + c.c2 + '"';
   switch (room) {
     case 'arena':
@@ -404,6 +481,11 @@ function play(beats, ctx, opts){
       + '<div class="sc-hud"><span class="sc-out"><i></i><span></span></span><span class="sc-when"></span><button class="sc-skip" type="button">Skip</button></div></div>'
       + '<div class="sc-cap"><div class="sc-who"><b></b><span></span></div><div class="sc-body"></div><p class="sc-tap">Tap to continue</p></div>';
     document.body.appendChild(ov);
+    /* The caption grows and shrinks with what it says (a decision is taller
+       than a line), so the set is refitted whenever the stage changes size. */
+    var stg = ov.querySelector('.sc-stage');
+    if (window.ResizeObserver) new ResizeObserver(function(){ if (!ov.hidden) fitPix(ov); }).observe(stg);
+    else window.addEventListener('resize', function(){ if (ov && !ov.hidden) fitPix(ov); });
   }
   ov.hidden = false;
   document.documentElement.style.overflow = 'hidden';
@@ -429,9 +511,10 @@ function play(beats, ctx, opts){
     if (key !== room) {
       room = key;
       var on2 = OUTLETS[CAST[bt.who] ? CAST[bt.who].outlet : 'night'];
-      $('.sc-rooms').innerHTML = roomHTML(r, { c1: ctx.c1, c2: ctx.c2, oc: oc, loud: bt.loud, board: T(bt.board, ctx), outlet: on2 ? on2.name.toUpperCase() : '' });
+      $('.sc-rooms').innerHTML = roomHTML(r, { c1: ctx.c1, c2: ctx.c2, oc: oc, level: ctx.level, loud: bt.loud, board: T(bt.board, ctx), outlet: on2 ? on2.name.toUpperCase() : '' });
     }
     $('.sc-conf').innerHTML = bt.confetti ? confettiHTML(ctx) : '';
+    fitPix(ov);
   }
   function setCast(bt){
     var k = (bt.pic || '') + '|' + (bt.pose || '');
@@ -453,6 +536,7 @@ function play(beats, ctx, opts){
     else if (bt.pic === 'rival') html = rv();
     else if (bt.pic === 'both') html = rv() + me();
     el.innerHTML = html;
+    fitPix(ov);
   }
   function plate(bt){
     var who = bt.who === 'me' ? { name: ctx.name, role: 'Number ' + ctx.num, outlet: 'team' } : (CAST[bt.who] || CAST.vance);

@@ -30,7 +30,7 @@
 (function(){
 'use strict';
 
-var API_VERSION = 1;
+var API_VERSION = 2;
 
 /* ─── colour ───────────────────────────────────────────────────────────── */
 
@@ -194,7 +194,8 @@ function brick(w, h, o){
    floor line, a light and a camera, and only what the brief says may change
    between them changes: the ground, the light and one accent.
 
-     kind   'hs' | 'col' | 'intl' | 'gl' | 'nba'
+     kind   'hs' | 'col' | 'intl' | 'gl' | 'nba', and for scenes 'press' |
+            'draft' | 'studio' | 'locker' | 'hall'
      o.c1, o.c2   the home colours (school, club)
      o.floorAt    where the floor starts, as a share of the height (0.6) */
 function room(kind, w, h, o){
@@ -308,6 +309,81 @@ function room(kind, w, h, o){
       rect(0, cy, w, 1, '#2a3048');
       people(cy + 2, fy - 2, 0.5, [c1, c2, '#3b3b46', '#20304f']);
       floor('#c08a55', null);
+    } else if (kind === 'press'){
+      /* The press room: a step-and-repeat wall in the home colours, a skirted
+         table at the front, a row of mics, the odd camera flash. */
+      rect(0, 0, w, h, mix(c1, '#0b0e1a', 0.55));
+      for (var py = 0; py < h; py += 10) for (var px = (py / 10 % 2) * 11 - 11; px < w; px += 22){
+        rect(px + 3, py + 2, 12, 5, mix(c1, '#0b0e1a', 0.3)); rect(px + 4, py + 3, 10, 1, mix(c2, c1, 0.4));
+        rect(px + 4, py + 5, 6, 1, mix(c2, c1, 0.6));
+      }
+      c.fillStyle = 'rgba(5,7,13,.35)'; c.fillRect(0, 0, w, h);
+      for (var fl2 = 0; fl2 < 5; fl2++) if (r() < 0.6){ var fx = (r() * w) | 0, fyy = (r() * h * 0.5) | 0; rect(fx, fyy, 1, 1, '#fffbe8'); rect(fx - 1, fyy, 3, 1, 'rgba(255,251,232,.5)'); rect(fx, fyy - 1, 1, 3, 'rgba(255,251,232,.5)'); }
+      var ty = Math.round(h * 0.74);
+      rect(0, ty, w, h - ty, '#141a2c'); rect(0, ty, w, 2, mix(c1, WARM, 0.2)); rect(0, ty + 2, w, 1, mix(c1, '#000', 0.4));
+      for (var sk = 0; sk < w; sk += 4) rect(sk, ty + 4, 1, h - ty - 4, '#0f1422');
+      var nx = Math.round(w / 2 - 10); rect(nx, ty + 5, 20, 7, '#f1efe8'); rect(nx, ty + 10, 20, 2, c1); rect(nx + 3, ty + 7, 14, 1, '#1d2440');
+      for (var mi = 0; mi < 4; mi++){ var mx = Math.round(w * 0.36) + mi * 9; rect(mx, ty - 7, 1, 7, '#2a2e38'); rect(mx - 1, ty - 10, 3, 4, '#454b58'); rect(mx - 1, ty - 10, 1, 1, '#7a8191'); }
+      spot(Math.round(w * 0.5), 0, 0.3, 0.12);
+    } else if (kind === 'draft'){
+      /* Draft night: a theatre, a giant screen in the club's colours, the stage,
+         the podium, blue spotlights and the floor full of families at tables. */
+      rect(0, 0, w, h, '#050a1e');
+      for (var dy = 0; dy < h * 0.6; dy++) rect(0, dy, w, 1, mix('#050a1e', '#10204e', dy / (h * 0.6)));
+      var sw2 = Math.round(w * 0.5), sx2 = Math.round(w / 2 - sw2 / 2);
+      rect(sx2 - 2, 5, sw2 + 4, 24, '#0b0e1a'); rect(sx2, 7, sw2, 20, mix(c1, '#05070d', 0.15));
+      for (var sl = 7; sl < 27; sl += 2) rect(sx2, sl, sw2, 1, mix(c1, '#05070d', 0.3));
+      rect(sx2 + 4, 11, sw2 - 8, 3, mix(c2, '#ffffff', 0.2)); rect(sx2 + 10, 17, sw2 - 20, 2, mix(c2, c1, 0.4));
+      var st2 = Math.round(h * 0.56);
+      rect(0, st2, w, 5, '#1c2a55'); rect(0, st2, w, 1, '#5d78c8');
+      rect(Math.round(w * 0.74), st2 - 12, 9, 12, '#1a2445'); rect(Math.round(w * 0.74), st2 - 12, 9, 2, '#5d78c8');
+      for (var bm = 0; bm < 2; bm++) spot(Math.round(w * (bm ? 0.78 : 0.22)), 0, 0.3, 0.08);
+      people(st2 + 7, h, 0.75, ['#1b2238', '#24304f', '#2e2a3d', mix(c1, '#000', 0.4), '#3a3f4b'], { flash: true });
+      for (var tb = 6; tb < w; tb += 26) rect(tb, h - 8, 16, 2, '#e9e6dc');
+    } else if (kind === 'studio'){
+      /* The studio: three screens, the network colour on the desk, a city at
+         night behind glass. c1 is the network's colour here, not a club's. */
+      rect(0, 0, w, h, '#0c0816');
+      for (var bx = 0; bx < w; bx += 7){ var bh = 10 + ((r() * 18) | 0); rect(bx, 40 - bh, 6, bh, '#151026'); for (var wy = 40 - bh + 2; wy < 38; wy += 3) if (r() < 0.4) rect(bx + 1 + ((r() * 4) | 0), wy, 1, 1, '#ffd98a'); }
+      rect(0, 40, w, 1, mix(c1, '#0c0816', 0.4));
+      var scw = Math.round(w * 0.24);
+      for (var sci = 0; sci < 3; sci++){
+        var scx = Math.round(w * 0.1) + sci * (scw + Math.round(w * 0.06));
+        rect(scx - 1, 9, scw + 2, 18, '#05070d'); rect(scx, 10, scw, 16, mix(c1, '#0c0816', 0.45 + sci * 0.1));
+        rect(scx + 2, 12, scw - 4, 1, mix(c1, WARM, 0.4)); if (sci === 1){ for (var bar2 = 0; bar2 < 5; bar2++) rect(scx + 3 + bar2 * 5, 24 - bar2 * 2 - 2, 3, bar2 * 2 + 2, '#f1efe8'); }
+      }
+      var dk = Math.round(h * 0.7);
+      rect(0, dk, w, h - dk, '#121726'); rect(4, dk - 3, w - 8, 4, '#232a3d'); rect(4, dk - 3, w - 8, 1, mix(c1, WARM, 0.25)); rect(4, dk + 1, w - 8, 2, c1);
+      spot(Math.round(w * 0.5), 0, 0.4, 0.06);
+    } else if (kind === 'locker'){
+      /* The locker room: stalls in the home colour with a jersey in each, a
+         bench, carpet and the logo circle in the middle of it. */
+      rect(0, 0, w, h, '#151a26');
+      var ly = 6, lh = Math.round(h * 0.56), lw = 14;
+      for (var lx = 0; lx < w; lx += lw){
+        rect(lx, ly, lw - 1, lh, mix(c1, '#0b0e1a', 0.45)); rect(lx, ly, lw - 1, 1, mix(c1, WARM, 0.25)); rect(lx + lw - 1, ly, 1, lh, '#090c14');
+        rect(lx + 2, ly + 3, lw - 5, 2, mix(c1, '#0b0e1a', 0.2));
+        var jx = lx + 3, jy = ly + 9; rect(jx, jy, 7, 11, c1); rect(jx + 2, jy, 3, 2, mix(c1, '#0b0e1a', 0.4)); rect(jx, jy + 2, 7, 1, c2); rect(jx + 2, jy + 5, 3, 3, c2);
+        rect(lx + 3, ly + lh - 8, 7, 3, '#2a3048');
+      }
+      var by2 = Math.round(h * 0.68);
+      rect(0, ly + lh, w, by2 - ly - lh, '#20263a');
+      rect(6, by2 - 4, w - 12, 3, '#7a5432'); rect(6, by2 - 4, w - 12, 1, '#a07448'); rect(10, by2 - 1, 2, 4, '#3a2a18'); rect(w - 12, by2 - 1, 2, 4, '#3a2a18');
+      rect(0, by2 + 3, w, h - by2 - 3, mix(c1, '#0b0e1a', 0.7));
+      var cx2 = Math.round(w / 2), cy2 = Math.round((by2 + h) / 2 + 2), rr = 14;
+      for (var a2 = 0; a2 < 360; a2 += 4){ var t3 = a2 * Math.PI / 180; rect(Math.round(cx2 + Math.cos(t3) * rr), Math.round(cy2 + Math.sin(t3) * rr * 0.35), 1, 1, c2); }
+      spot(Math.round(w * 0.5), 0, 0.35, 0.08);
+    } else if (kind === 'hall'){
+      /* The Hall of Fame: dark wood, gold columns, bronze plaques down the
+         walls, a carpet to the stage and one warm light. */
+      rect(0, 0, w, h, '#1d160c');
+      for (var hx = 0; hx < w; hx += 6) rect(hx, 0, 1, h, '#241b0f');
+      for (var col2 = 0; col2 < w; col2 += 33){ rect(col2 + 2, 0, 5, Math.round(h * 0.7), '#a8761c'); rect(col2 + 2, 0, 1, Math.round(h * 0.7), '#ffd166'); rect(col2 + 6, 0, 1, Math.round(h * 0.7), '#5a3d10'); }
+      for (var pl = 0; pl < w; pl += 33){ var ppx = pl + 13; for (var prow = 0; prow < 3; prow++){ var ppy = 8 + prow * 13; rect(ppx, ppy, 10, 10, '#6b4a1a'); rect(ppx + 1, ppy + 1, 8, 8, '#c08a36'); rect(ppx + 3, ppy + 2, 4, 3, '#7a5420'); rect(ppx + 2, ppy + 6, 6, 1, '#7a5420'); } }
+      var hf = Math.round(h * 0.7);
+      rect(0, hf, w, h - hf, '#2a2212'); rect(0, hf, w, 2, '#e8b33c');
+      for (var cy3 = hf + 2; cy3 < h; cy3++){ var half = Math.round((cy3 - hf) * 0.9) + 8; rect(Math.round(w / 2) - half, cy3, half * 2, 1, cy3 % 2 ? '#8a1c22' : '#7a161c'); }
+      spot(Math.round(w * 0.5), 0, 0.36, 0.2);
     } else {
       /* The NBA: a dark upper deck, the LED ribbon in the home colours, a full
          lower bowl with phones flashing, courtside, one hot spotlight. */

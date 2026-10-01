@@ -1175,6 +1175,16 @@ function renderHero(){
   var st = store(), L = st.cur;
   var cur = $('ch-cur'), say = $('ch-say'), go = $('b-career'), best = $('ch-best'), path = $('ch-path');
   if (!go) return;
+  /* The door stands in the same pixel arena the mode is played in, in the
+     colours of the career in progress (or the league's orange). */
+  var hero = $('career');
+  if (hero) {
+    var hk = L ? C.colorsOf(L) : { primary: '#ff7a1a', secondary: '#ffd166' };
+    var art = K.room(L ? stageKind(L) : 'nba', 132, 80, { c1: hk.primary, c2: hk.secondary, spotAt: 0.6, seed: 'hero' });
+    var set = hero.querySelector('.ch-set');
+    if (!set) { set = document.createElement('div'); set.className = 'ch-set'; set.setAttribute('aria-hidden', 'true'); hero.insertBefore(set, hero.firstChild); }
+    if (set.getAttribute('data-src') !== art.url) { set.innerHTML = '<img src="' + art.url + '" alt="" draggable="false">'; set.setAttribute('data-src', art.url); }
+  }
   if (L && !L.retired) {
     var k = C.colorsOf(L);
     var v = C.view(L);
