@@ -147,18 +147,44 @@ const WEEK_CAP = D.capFor(POOL);
      at $140M alike, so a check written there compares two identical boards and reports
      the defect as fixed. Measured: SAME at pick one, and 240 of 360 (seed, pick) pairs
      differ once money has been spent. So it is asked of a roster that has spent. */
-  const dear = POOL.pool.filter((m) => m.price_musd > 20).slice(0, 3);
-  const spent = { seed, men: dear, ids: dear.map((m) => m.player_id) };
+  /* THE FIXTURE HAS TO FIND A TIGHT ROSTER RATHER THAN NAME ONE. The board draws from the
+     dearest men at a slot whatever is left, so a cap only changes it when none of the five
+     drawn is signable and the guaranteed seat goes in. The first draft spent "the first three
+     men over $20M in pool order", which was tight on the week 3 board and on week 4 came to
+     $132.4M, over the $90M cap outright: both caps then dealt identical boards, the check
+     failed, and the Tuesday build stopped here before it published the week. So it walks the
+     spend upward from a cheap roster, three men at one slot price each, over twenty seeds,
+     and needs one (spend, seed) where the two caps deal different men. It asks only for a
+     spend that leaves room under BOTH caps, so the board at $90M is never empty. */
+  const near = (pos, want, not) => POOL.pool
+    .filter((m) => m.position === pos && !not.includes(m.player_id))
+    .sort((a, b) => Math.abs(a.price_musd - want) - Math.abs(b.price_musd - want))[0];
+  let spent = null, differ = 0;
+  for (let want = 8; want <= 30 && !differ; want += 1) {
+    const q = near('QB', want, []);
+    const r1 = q && near('RB', want, []);
+    const r2 = r1 && near('RB', want, [r1.player_id]);
+    if (!r2) continue;
+    const men = [q, r1, r2];
+    const c = { seed, men, ids: men.map((m) => m.player_id) };
+    if (D.boardFor(POOL.pool, c, 3, 90).length === 0) break;
+    spent = c;
+    for (let s = 0; s < 20; s++) {
+      const cs = { seed: seed + s, men, ids: c.ids };
+      if (ids(cs, 3, 90) !== ids(cs, 3, 140)) differ++;
+    }
+  }
   ok('  the two caps deal the SAME board at pick one, which is why the fixture spends',
     ids({ seed, men: [], ids: [] }, 0, 90) === ids({ seed, men: [], ids: [] }, 0, 140));
   ok('  and the CAP CHANGES THE BOARD once there is money spent, so this is not only '
     + 'a refusal at the submit',
-    ids(spent, 3, 90) !== ids(spent, 3, 140),
-    `$${D.spent(spent).toFixed(1)}M spent, same seed, two caps, two boards`);
+    differ > 0,
+    spent ? `$${D.spent(spent).toFixed(1)}M spent, ${differ} of 20 seeds deal two boards`
+      : 'no roster that leaves room under both caps');
   /* And the default is the constant, so a caller that forgets is wrong in the loud
      direction rather than silently drafting somebody else's week. */
   ok('  boardFor with no cap falls back to the constant',
-    ids(spent, 3, D.CAP_MUSD) === D.boardFor(POOL.pool, spent, 3)
+    !!spent && ids(spent, 3, D.CAP_MUSD) === D.boardFor(POOL.pool, spent, 3)
       .map((m) => m.player_id).join(','));
 }
 
