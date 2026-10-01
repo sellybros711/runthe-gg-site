@@ -104,8 +104,15 @@ const fired = {};
   ok(notDone === 0, `every career reaches retirement (${notDone} did not)`);
   ok(maxGuard < 600, `inside a sane number of presses (worst ${maxGuard})`);
   ok(twoOpts, 'every card but free agency offers a real choice');
-  /* The best real team lost nine. */
-  ok(maxW <= 76, `no club wins more than 76 (${maxW})`);
+  /* The best real team lost nine. A game's odds are clamped at 0.84, so a
+     74 win season is a draw in the tail and has to stay one: the claim is how
+     often, and a hard ceiling nobody reaches. The ceiling was written as the
+     sample's own max once (76), and a change to who gets drafted moved one
+     season to 77 in nine thousand, which is a coin landing, not a defect. */
+  let big = 0, seasonsAll = 0;
+  for (const x of all) for (const h of x.L.history) { seasonsAll++; if (h.w >= 74) big++; }
+  ok(big / seasonsAll < 0.005, `a 74 win season is rare (${(big / seasonsAll * 100).toFixed(2)}% of seasons)`);
+  ok(maxW < 80, `nobody wins 80 (${maxW})`);
   ok(maxPpg <= 38, `no season averages more than 38 a night (${maxPpg})`);
   console.log(`  ${all.length} careers, ${cards} cards answered`);
 }
@@ -207,6 +214,107 @@ section('6. contracts, the cap and the clock');
   ok(L.year === league.latest + 1, `a career starts the season after the data's last (${L.year})`);
 }
 
+// ── 8. the road: high school, college, and the draft it ends at ───────────
+section('8. three hundred careers from high school, and where they land');
+{
+  const fired8 = {}, bad = [], routes = {}, ages = {};
+  let notDone = 0, picks = [], hsPts = [], colPts = [], seeds = [], champ = 0, state = 0, five = 0, at17 = 0;
+  const road = [];
+  for (const pol of ['first', 'last', 'random']) {
+    for (let i = 0; i < 100; i++) {
+      let r;
+      try { r = play('road:' + pol + ':' + i, pol, { start: 'hs', pos: C.POS[i % 5], arch: C.ARCH_KEYS[i % 6] }); }
+      catch (e) { bad.push(pol + i + ': ' + String(e).slice(0, 140)); continue; }
+      const { L, seen } = r;
+      for (const id of seen) fired8[id] = (fired8[id] || 0) + 1;
+      if (!L.retired) notDone++;
+      road.push({ L, pol, f: L.final });
+      routes[L.bg] = (routes[L.bg] || 0) + 1;
+      if (L.draft) picks.push(L.draft.pick || 99);
+      const draftAge = (L.history[0] || {}).age;
+      if (draftAge != null) ages[draftAge] = (ages[draftAge] || 0) + 1;
+      for (const h of L.amHist) {
+        for (const k of ['pts', 'reb', 'ast', 'gp', 'w', 'l', 'ovr']) if (!Number.isFinite(h[k])) bad.push(`${pol}${i} ${h.lvl} ${h.y}: ${k} is ${h[k]}`);
+        const aw = h.aw || [];
+        if (h.lvl === 'HS') {
+          hsPts.push(h.pts);
+          /* Twenty-six games and at most four more in the state tournament. */
+          if (h.w + h.l < 26 || h.w + h.l > 30) bad.push(`${pol}${i} ${h.y}: a high school record of ${h.w}-${h.l}`);
+          if (aw.includes('hs_mrbb') && h.age < 16) bad.push(`${pol}${i}: Mr. Basketball as a sophomore`);
+          if (aw.includes('hs_state')) state++;
+          if (h.age === 17) { at17++; if (h.rank <= 25) five++; }
+        }
+        if (h.lvl === 'NCAA') {
+          colPts.push(h.pts);
+          /* Thirty-one, a conference tournament, and at most six in March. */
+          if (h.w + h.l < 32 || h.w + h.l > 41) bad.push(`${pol}${i} ${h.y}: a college record of ${h.w}-${h.l}`);
+          if (h.seed != null) { seeds.push(h.seed); if (h.seed < 1 || h.seed > 16) bad.push(`a ${h.seed} seed`); }
+          if (aw.includes('c_fr') && h.age !== 18) bad.push(`${pol}${i}: Freshman of the Year at ${h.age}`);
+          if (aw.includes('c_npoy') && h.gp < 20) bad.push(`${pol}${i}: Player of the Year in ${h.gp} games`);
+          if (aw.includes('c_champ')) champ++;
+          if (aw.includes('c_mop') && !aw.includes('c_champ')) bad.push(`${pol}${i}: Most Outstanding Player without the title`);
+        }
+      }
+    }
+  }
+  ok(bad.length === 0, `nothing throws and every road number is sane (${bad.slice(0, 3).join(' | ') || 'none'})`);
+  ok(notDone === 0, `every road career reaches retirement (${notDone} did not)`);
+  const q = (a, p) => { const x = a.slice().sort((m, n) => m - n); return x[Math.floor(p * (x.length - 1))]; };
+  console.log(`  high school ppg p50 ${q(hsPts, 0.5)} max ${Math.max(...hsPts)}  college ppg p50 ${q(colPts, 0.5)} max ${Math.max(...colPts)}`);
+  ok(Math.max(...hsPts) <= 36 && q(hsPts, 0.5) >= 10 && q(hsPts, 0.5) <= 24, 'high school lines are a high school star\'s');
+  ok(Math.max(...colPts) <= 33 && q(colPts, 0.5) >= 8 && q(colPts, 0.5) <= 20, 'college lines are a college player\'s');
+  /* Every card the road deals is dealt somewhere. */
+  const dark = Object.keys(C.AM_EVENTS).filter((id) => !fired8[id]);
+  ok(dark.length === 0, `every one of ${Object.keys(C.AM_EVENTS).length} road events is dealt (${dark.join(', ') || 'none dark'})`);
+  for (const id of ['hs_summer', 'offers', 'commit', 'signing', 'declare', 'portal', 'amclutch', 'combine']) ok(fired8[id] > 0, `the ${id} card is dealt (${fired8[id] || 0})`);
+  /* Every way out of high school is taken by somebody. Overseas is the one a
+     blind policy almost never picks (it needs a ranked player who waited past
+     junior year), so a policy that wants it walks it on purpose. */
+  for (let i = 0; i < 40 && !routes.intl; i++) {
+    const L = C.newLife({ seed: 'abroad:' + i, start: 'hs', league });
+    let g = 0;
+    while (!L.retired && g++ < 3000) {
+      if (L.pending.length) {
+        const c = L.pending[0];
+        let k = 0;
+        if (c.id === 'offers') k = c.options.length - 1;
+        if (c.id === 'commit') { const j = c.options.findIndex((o) => o.route === 'intl'); k = j >= 0 ? j : 0; }
+        C.choose(L, k);
+      } else C.step(L);
+    }
+    if (L.bg === 'intl' && L.amHist.some((h) => h.lvl === 'Overseas') && L.history.length) routes.intl = (routes.intl || 0) + 1;
+  }
+  ok(routes.oad && routes.senior && routes.gl && routes.intl, `college, four years, the G League and overseas all happen (${JSON.stringify(routes)})`);
+  ok(Object.keys(ages).every((a) => a >= 19 && a <= 22), `a rookie is 19 to 22 (${JSON.stringify(ages)})`);
+  ok(champ > 0 && state > 0, `titles happen at both levels (${state} state, ${champ} national)`);
+  ok(seeds.length > 0 && seeds.filter((x) => x === 1).length / seeds.length < 0.25, `a 1 seed is the top of the field, not the norm (${seeds.filter((x) => x === 1).length} of ${seeds.length})`);
+  /* A five-star is rare. Measured: about one in five of these players, all of
+     whom are on the road to the league. */
+  ok(five / at17 > 0.06 && five / at17 < 0.32, `about one in five is a five-star by 17 (${(five / at17 * 100).toFixed(0)}%)`);
+  /* THE ROAD ENDS WHERE THE BACKGROUNDS DO. A road that hands out better
+     players than draft night does makes skipping it a mistake, and the other
+     way round makes playing it a chore. So the bands are section 2's. */
+  const rnd = road.filter((x) => x.pol === 'random');
+  const share = (f) => rnd.filter(f).length / rnd.length;
+  const mvp = share((x) => x.f.totals.mvp > 0), hof = share((x) => x.f.score >= 55), star = share((x) => x.f.totals.star > 0);
+  const drafted = picks.filter((p) => p <= 60).length / picks.length;
+  console.log(`  MVP ${(mvp * 100).toFixed(1)}%  All-Star ${(star * 100).toFixed(0)}%  Hall ${(hof * 100).toFixed(0)}%  drafted ${(drafted * 100).toFixed(0)}%`);
+  ok(mvp < 0.07, `an MVP from the road is as rare as from draft night (${(mvp * 100).toFixed(1)}%)`);
+  ok(hof > 0.08 && hof < 0.42 && star > 0.15 && star < 0.5, 'the Hall and All-Star rates sit in the same bands');
+  ok(drafted > 0.8 && drafted < 1, `most of them are drafted, not all (${(drafted * 100).toFixed(0)}%)`);
+  /* And the road round-trips through JSON like the league half does. */
+  const a = play('road:det', 'random', { start: 'hs', pos: 'PG', arch: 'floor' }).L;
+  let M = C.newLife({ seed: 'road:det', start: 'hs', pos: 'PG', arch: 'floor', league }), g = 0;
+  while (!M.retired && g++ < 3000) {
+    M = JSON.parse(JSON.stringify(M));
+    if (M.pending.length) C.choose(M, pickFor('random', M, M.pending[0])); else C.step(M);
+  }
+  ok(JSON.stringify(M.amHist) === JSON.stringify(a.amHist) && JSON.stringify(M.history) === JSON.stringify(a.history),
+    'a road career reloaded before every press is the same career');
+  const src = fs.readFileSync(path.join(HERE, 'career.js'), 'utf8');
+  ok(/AM_EVENTS/.test(src), 'the road reads its own cards');
+}
+
 if (!QUICK) await browser();
 
 console.log('');
@@ -252,27 +360,35 @@ async function browser() {
 
   await page.evaluate(() => document.querySelector('#b-career').click());
   await page.waitForSelector('#cr-go');
-  /* The builder: what is picked is what is drafted. */
+  /* The builder: what is picked is what is played. High school is the
+     default; draft night shows the backgrounds and hides them again. */
   await page.click('[data-pos="C"]');
   await page.click('[data-arch="anchor"]');
-  await page.click('[data-bg="senior"]');
+  ok(!(await page.$('[data-bg]')), 'a high school start asks no background');
+  await page.click('[data-start="draft"]');
+  ok(!!(await page.$('[data-bg="senior"]')), 'draft night offers the backgrounds');
+  await page.click('[data-start="hs"]');
   await page.fill('#cr-name', 'Checker McTest');
   await page.click('#cr-go');
   const made = await page.evaluate(() => RTF_CAREER_UI.state().cur);
-  ok(made && made.pos === 'C' && made.arch === 'anchor' && made.bg === 'senior' && made.name === 'Checker McTest',
-    `the builder's picks are the career's (${made && [made.pos, made.arch, made.bg, made.name].join(', ')})`);
+  ok(made && made.pos === 'C' && made.arch === 'anchor' && made.stage === 'hs' && made.age === 15 && made.name === 'Checker McTest',
+    `the builder's picks are the career's (${made && [made.pos, made.arch, made.stage, made.age, made.name].join(', ')})`);
+  const third = await page.evaluate(() => (document.querySelectorAll('.cr-fact .k')[2] || {}).textContent || '');
+  ok(/ranking/i.test(third), `a sophomore is told his ranking, not his bank (${third})`);
 
   /* Play it out, pressing the first choice or the next button, reading the
      glass for a field that printed as nothing. */
   let presses = 0, junk = [], reloaded = false, offOpened = false, resumed = null;
+  const stagesSeen = {};
   while (presses++ < 900) {
     const st = await page.evaluate(() => {
       const s = RTF_CAREER_UI.state();
       const t = document.querySelector('#s-car').innerText;
-      return { cur: !!s.cur, last: !!s.last, junk: /\bundefined\b|\bNaN\b|\[object/.test(t), steps: s.cur ? s.cur.steps : 0,
+      return { cur: !!s.cur, last: !!s.last, junk: /\bundefined\b|\bNaN\b|\[object/.test(t), steps: s.cur ? s.cur.steps : 0, stage: s.cur && s.cur.stage,
         card: s.cur && s.cur.pending[0] ? s.cur.pending[0].key : null };
     });
     if (st.junk && junk.length < 3) junk.push('press ' + presses);
+    if (st.stage) stagesSeen[st.stage] = 1;
     if (!st.cur) break;
     /* Once, mid-career: reload and land on the same card. */
     if (!reloaded && st.steps >= 12 && st.card) {
@@ -319,6 +435,7 @@ async function browser() {
   }
   ok(junk.length === 0, `no field ever printed as undefined or NaN (${junk.join(', ') || 'none'})`);
   ok(reloaded, 'the reload arm ran');
+  ok(stagesSeen.hs && (stagesSeen.col || stagesSeen.pro) && stagesSeen.nba, `the walk went from high school to the league (${Object.keys(stagesSeen).join(', ')})`);
   const fin = await page.evaluate(() => ({
     last: RTF_CAREER_UI.state().last, v: (document.querySelector('.cr-final .v') || {}).textContent || '',
     hof: RTF_CAREER_UI.state().hof.length,

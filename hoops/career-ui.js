@@ -77,6 +77,9 @@ var CSS = [
 '.cr-opt.on{border-color:var(--orange);background:rgba(240,120,45,.12);box-shadow:inset 0 0 0 1px var(--orange);}',
 '.cr-preview{display:flex;gap:14px;align-items:center;margin:16px 0 4px;padding:12px;border:1px solid var(--line);border-radius:12px;background:rgba(0,0,0,.18);}',
 '.cr-preview .cr-bars{flex:1 1 auto;}',
+'.cr-town{margin:10px 0 0;font-size:13.5px;color:var(--ink);font-weight:700;}',
+'.cr-sub{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);font-weight:800;margin:16px 0 6px;}',
+'.cr-final p.cr-col{color:var(--ink);font-weight:700;}',
 /* the identity card */
 '.cr-id{position:relative;display:flex;gap:14px;align-items:center;padding:16px;border-radius:14px;overflow:hidden;margin:0 0 12px;',
 '  background:linear-gradient(135deg,var(--c1,#1d2433),#0e131c 78%);border:1px solid var(--cardb);}',
@@ -208,7 +211,7 @@ function skin(code){
 /* A jersey in the club's colours with your number on it. Drawn, so it is the
    one picture of the player this mode has, and it changes when you move. */
 function jersey(L){
-  var k = skin(L && L.team);
+  var k = L && C.colorsOf ? C.colorsOf(L) : skin(null);
   var num = L && L.num != null ? L.num : '';
   return '<svg class="cr-jersey" viewBox="0 0 64 70" aria-hidden="true">'
     + '<path d="M14 4 L24 4 Q32 14 40 4 L50 4 L60 14 L54 26 L50 24 L50 66 L14 66 L14 24 L10 26 L4 14 Z" fill="' + k.primary + '" stroke="' + k.secondary + '" stroke-width="2.5" stroke-linejoin="round"/>'
@@ -239,11 +242,12 @@ function diffsHtml(d){
 var form = null;
 function freshForm(){
   var seed = String(Math.floor(Math.random() * 1e9));
-  return { seed: seed, name: C.randomName(seed), num: Math.floor(Math.random() * 100), pos: 'SF', arch: 'twoway', bg: 'oad' };
+  return { seed: seed, name: C.randomName(seed), num: Math.floor(Math.random() * 100), pos: 'SF', arch: 'twoway', bg: 'oad', start: 'hs' };
 }
-function preview(){
-  return C.newLife({ seed: form.seed, name: form.name, num: form.num, pos: form.pos, arch: form.arch, bg: form.bg, league: league() });
+function lifeOpts(){
+  return { seed: form.seed, name: form.name, num: form.num, pos: form.pos, arch: form.arch, bg: form.bg, start: form.start, league: league() };
 }
+function preview(){ return C.newLife(lifeOpts()); }
 var LEAGUE = null;
 function league(){
   if (LEAGUE) return LEAGUE;
@@ -263,23 +267,29 @@ function buildView(){
     return '<button class="cr-opt' + (form.arch === k ? ' on' : '') + '" data-arch="' + k + '"><b>' + esc(a.name) + '</b><small>' + esc(a.blurb) + '</small></button>'; }).join('');
   var bg = C.BG_KEYS.map(function(k){ var b = C.BACKGROUNDS[k];
     return '<button class="cr-opt' + (form.bg === k ? ' on' : '') + '" data-bg="' + k + '"><b>' + esc(b.name) + '</b><small>Age ' + b.age + '. ' + esc(b.blurb) + '</small></button>'; }).join('');
+  var road = form.start === 'hs';
+  var starts = '<button class="cr-opt' + (road ? ' on' : '') + '" data-start="hs"><b>High school</b><small>Age 15. Recruiting, college, March, then the draft.</small></button>'
+    + '<button class="cr-opt' + (!road ? ' on' : '') + '" data-start="draft"><b>Draft night</b><small>Skip ahead. Pick how you got there.</small></button>';
+  var rv = road && C.roadView ? C.roadView(L) : null;
   var rt = C.RATINGS.map(function(k){
     return '<div class="r"><span>' + C.RATING_NAME[k] + '</span>' + bar(L.rt[k]) + '<b>' + L.rt[k] + '</b></div>';
   }).join('');
   return '<div class="card cr-build">'
     + '<div class="cr-top"><h2>New career</h2><button class="cr-home" id="cr-home">Home</button></div>'
-    + '<p class="dim" style="margin:0">Your player is made up. The league is real. Draft night is next.</p>'
+    + '<p class="dim" style="margin:0">Your player is made up. The schools and the league are real.</p>'
     + '<span class="lab">Name and number</span>'
     + '<div class="cr-name"><input id="cr-name" maxlength="28" value="' + esc(form.name) + '" aria-label="Player name">'
     + '<input id="cr-num" class="cr-num" inputmode="numeric" maxlength="2" value="' + form.num + '" aria-label="Jersey number">'
     + '<button class="ghost" id="cr-dice" type="button" aria-label="New random name">New</button></div>'
     + '<span class="lab">Position</span><div class="cr-chips" id="cr-pos">' + pos + '</div>'
     + '<span class="lab">Your game</span><div class="cr-opts" id="cr-arch">' + arch + '</div>'
-    + '<span class="lab">Your road to the draft</span><div class="cr-opts" id="cr-bg">' + bg + '</div>'
+    + '<span class="lab">Where it starts</span><div class="cr-opts" id="cr-start">' + starts + '</div>'
+    + (road ? '<p class="cr-town">' + esc(rv.what) + ' at ' + esc(rv.where) + '. ' + esc(rv.sub) + '.</p>'
+      : '<span class="lab">Your road to the draft</span><div class="cr-opts" id="cr-bg">' + bg + '</div>')
     + '<div class="cr-preview"><div class="cr-ovr"><b>' + C.ovrOf(L) + '</b><span>Overall</span></div>'
     + '<div class="cr-bars cr-rt">' + rt + '</div></div>'
     + '<p class="dim" style="font-size:12.5px;margin:6px 0 14px">Scouts grade your ceiling <b>' + grade(L) + '</b>. Age ' + L.age + '. How high you go is up to you.</p>'
-    + '<button class="big" id="cr-go">Go to the draft combine</button>'
+    + '<button class="big" id="cr-go">' + (road ? 'Start your sophomore year' : 'Go to the draft combine') + '</button>'
     + '</div>';
 }
 function wireBuild(){
@@ -291,10 +301,12 @@ function wireBuild(){
   root.querySelectorAll('[data-pos]').forEach(function(b){ b.onclick = function(){ form.pos = b.getAttribute('data-pos'); render(); }; });
   root.querySelectorAll('[data-arch]').forEach(function(b){ b.onclick = function(){ form.arch = b.getAttribute('data-arch'); render(); }; });
   root.querySelectorAll('[data-bg]').forEach(function(b){ b.onclick = function(){ form.bg = b.getAttribute('data-bg'); render(); }; });
+  root.querySelectorAll('[data-start]').forEach(function(b){ b.onclick = function(){ form.start = b.getAttribute('data-start'); render(); }; });
   $('cr-home').onclick = goHome;
   $('cr-go').onclick = function(){
     var name = String(form.name || '').replace(/\s+/g, ' ').trim() || C.randomName(form.seed);
-    var L = C.newLife({ seed: form.seed, name: name, num: form.num, pos: form.pos, arch: form.arch, bg: form.bg, league: league() });
+    var o = lifeOpts(); o.name = name;
+    var L = C.newLife(o);
     store().cur = L;
     form = null;
     stage = { beats: [], result: null };
@@ -312,14 +324,17 @@ var stage = { beats: [], result: null, draft: null };
 var tab = 'log';
 
 function idCard(L){
-  var v = C.view(L), k = skin(L.team);
+  var v = C.view(L), k = C.colorsOf(L);
   var ct = L.contract;
+  var rv = C.roadView(L);
   var sub = L.age + ' · ' + L.pos + ' · ' + C.ARCHES[L.arch].name;
-  var club = L.team ? teamName(L.team) + (v.role ? ' · ' + v.role.label : '') : (L.draft && !L.draft.team ? 'Undrafted' : 'Draft prospect');
+  var club = rv ? rv.what + (rv.level === 'High school' ? ' at ' + rv.where : '') + (v.role ? ' · ' + v.role.label : '')
+    : L.team ? teamName(L.team) + (v.role ? ' · ' + v.role.label : '') : (L.draft && !L.draft.team ? 'Undrafted' : 'Draft prospect');
   return '<div class="cr-id" style="--c1:' + k.primary + '">'
     + jersey(L)
     + '<div class="cr-who"><b>' + esc(L.name) + '</b><span>' + esc(sub) + '</span><span>' + esc(club) + '</span>'
-    + (ct && ct.kind !== 'overseas' ? '<span>' + money(ct.salary) + ' a year · ' + ct.years + (ct.years === 1 ? ' year left' : ' years left') + '</span>' : '')
+    + (rv ? '<span>' + esc(rv.sub) + '</span>' : '')
+    + (!rv && ct && ct.kind !== 'overseas' ? '<span>' + money(ct.salary) + ' a year · ' + ct.years + (ct.years === 1 ? ' year left' : ' years left') + '</span>' : '')
     + '</div><div class="cr-ovr"><b>' + v.ovr + '</b><span>Overall</span></div></div>';
 }
 function meters(L){
@@ -337,8 +352,20 @@ function facts(L){
   return '<div class="cr-facts">'
     + '<div class="cr-fact"><span class="k">Record</span><b>' + rec + '</b><small>' + esc(recSub) + '</small></div>'
     + '<div class="cr-fact"><span class="k">Your line</span><b>' + line + '</b><small>' + lineSub + '</small></div>'
-    + '<div class="cr-fact"><span class="k">Bank</span><b>' + money(L.cash) + '</b><small>' + money(L.earned) + ' earned</small></div>'
+    + thirdFact(L)
     + '</div>';
+}
+
+/* The third fact is the one that matters at this stage of a life: the class
+   ranking in high school, the mock draft in college, the money after. */
+function thirdFact(L){
+  var a = L.am, lv = a && L.stage !== 'nba' ? a.level : null;
+  if (lv === 'hs') return '<div class="cr-fact"><span class="k">Ranking</span><b>' + (a.rank > 600 ? '-' : '#' + a.rank) + '</b><small>' + (a.rank > 600 ? 'Unranked' : C.starsOf(a.rank) + ' stars') + '</small></div>';
+  if (lv === 'col') {
+    var p = C.projectedPick(L, a.stock || 0);
+    return '<div class="cr-fact"><span class="k">Mock draft</span><b>' + (p <= 60 ? C.ordinal(p) : '-') + '</b><small>NIL ' + money(L.cash) + '</small></div>';
+  }
+  return '<div class="cr-fact"><span class="k">Bank</span><b>' + money(L.cash) + '</b><small>' + money(L.earned) + ' earned</small></div>';
 }
 
 function cardHtml(L, c){
@@ -411,18 +438,33 @@ function tabsHtml(L){
   return '<div class="card"><div class="cr-tabs">' + t('log', 'Story') + t('seasons', 'Seasons') + t('trophies', 'Trophy case') + '</div>' + body + '</div>';
 }
 function seasonsTable(L){
-  if (!L.history.length) return '<p class="dim">No seasons yet. Draft night first.</p>';
+  var am = amTable(L.amHist || []);
+  if (!L.history.length) return am || '<p class="dim">No seasons yet.</p>';
   var rows = L.history.slice().reverse().map(function(h){
     return '<tr class="' + (h.po === 'Champion' ? 'champ' : '') + '"><td>' + seasonTag(h.y) + '</td><td>' + esc(h.t ? E.TEAM_NAMES[h.t] || h.t : '-') + '</td>'
       + '<td>' + h.ovr + '</td><td>' + h.gp + '</td><td>' + h.pts + '</td><td>' + h.reb + '</td><td>' + h.ast + '</td>'
       + '<td>' + h.w + '-' + h.l + '</td><td>' + esc(h.po) + '</td></tr>';
   }).join('');
-  return '<div class="cr-tblw"><table class="cr-tbl"><thead><tr><th>Season</th><th>Team</th><th>OVR</th><th>GP</th><th>PTS</th><th>REB</th><th>AST</th><th>Record</th><th>Finish</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
+  return '<div class="cr-tblw"><table class="cr-tbl"><thead><tr><th>Season</th><th>Team</th><th>OVR</th><th>GP</th><th>PTS</th><th>REB</th><th>AST</th><th>Record</th><th>Finish</th></tr></thead><tbody>' + rows + '</tbody></table></div>'
+    + (am ? '<h3 class="cr-sub">Before the league</h3>' + am : '');
+}
+/* High school, college and a pro year, newest first. */
+function amTable(list){
+  if (!list.length) return '';
+  var rows = list.slice().reverse().map(function(h){
+    var fin = h.finish || '-';
+    if (h.seed) fin = h.seed + ' seed · ' + fin;
+    return '<tr class="' + (/champion/i.test(fin) ? 'champ' : '') + '"><td>' + seasonTag(h.y) + '</td><td>' + esc(h.school) + '</td>'
+      + '<td>' + h.ovr + '</td><td>' + h.gp + '</td><td>' + h.pts + '</td><td>' + h.reb + '</td><td>' + h.ast + '</td>'
+      + '<td>' + h.w + '-' + h.l + '</td><td>' + esc(fin) + '</td></tr>';
+  }).join('');
+  return '<div class="cr-tblw"><table class="cr-tbl"><thead><tr><th>Season</th><th>School</th><th>OVR</th><th>GP</th><th>PTS</th><th>REB</th><th>AST</th><th>Record</th><th>Finish</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
 }
 function awardCounts(L){
   var n = {};
-  L.history.forEach(function(h){ (h.aw || []).forEach(function(a){ n[a] = (n[a] || 0) + 1; }); });
-  var order = ['champ', 'mvp', 'fmvp', 'an1', 'an2', 'an3', 'dpoy', 'star', 'roy', '6moy', 'mip', 'scor', 'ad1', 'ad2', 'olympic'];
+  L.history.concat(L.amHist || []).forEach(function(h){ (h.aw || []).forEach(function(a){ n[a] = (n[a] || 0) + 1; }); });
+  var order = ['champ', 'mvp', 'fmvp', 'an1', 'an2', 'an3', 'dpoy', 'star', 'roy', '6moy', 'mip', 'scor', 'ad1', 'ad2', 'olympic',
+    'c_champ', 'c_npoy', 'c_mop', 'c_aa1', 'c_aa2', 'c_f4', 'c_fr', 'c_cpoy', 'c_allconf', 'hs_state', 'hs_mrbb', 'hs_aag', 'hs_allstate'];
   return order.filter(function(k){ return n[k]; }).map(function(k){ return { k: k, n: n[k], name: C.AWARD_NAME[k] }; });
 }
 function trophies(L){
@@ -555,6 +597,20 @@ function closeOff(){ var sh = $('cr-sheet'); if (sh) sh.hidden = true; }
 
 // ─── the end ────────────────────────────────────────────────────────────────
 
+/* One line about the road, for the Hall of Fame card and the share. */
+function collegeOf(L){
+  var col = (L.amHist || []).filter(function(h){ return h.lvl === 'NCAA'; });
+  if (!col.length) {
+    var pro = (L.amHist || []).filter(function(h){ return h.lvl !== 'HS'; })[0];
+    return pro ? (pro.lvl === 'Overseas' ? 'Turned pro overseas out of high school' : 'Went to the G League out of high school') : '';
+  }
+  var schools = [];
+  col.forEach(function(h){ if (schools.indexOf(h.school) < 0) schools.push(h.school); });
+  var titles = col.filter(function(h){ return (h.aw || []).indexOf('c_champ') >= 0; }).length;
+  var yrs = col.length === 1 ? 'One and done at ' : col.length + ' years at ';
+  return yrs + schools.join(' and ') + (titles ? '. National champion' : '');
+}
+
 /* A finished career leaves the slot and goes on the shelf of Hall of Fame
    cards, so the next one can start while this one is still on screen. */
 function finish(){
@@ -565,7 +621,8 @@ function finish(){
   L.history.forEach(function(h){ if (h.t && teams.indexOf(h.t) < 0) teams.push(h.t); });
   var card = { name: L.name, num: L.num, pos: L.pos, verdict: f.verdict, blurb: f.blurb, score: f.score,
     from: L.history.length ? L.history[0].y : L.year, to: L.history.length ? L.history[L.history.length - 1].y : L.year,
-    teams: teams, totals: f.totals, awards: awardCounts(L), history: L.history, team: teams[teams.length - 1] || null, at: Date.now() };
+    teams: teams, totals: f.totals, awards: awardCounts(L), history: L.history, amHist: L.amHist || [], college: collegeOf(L),
+    team: teams[teams.length - 1] || null, at: Date.now() };
   st.hof.unshift(card);
   if (st.hof.length > 20) st.hof.length = 20;
   st.cur = null;
@@ -580,11 +637,12 @@ function finalView(card){
   var gp = Math.max(1, T.gp);
   var aw = card.awards && card.awards.length ? '<div class="cr-aw" style="justify-content:center;margin-top:14px">'
     + card.awards.map(function(a){ return '<span>' + (a.n > 1 ? a.n + 'x ' : '') + esc(a.name) + '</span>'; }).join('') + '</div>' : '';
-  var hist = { history: card.history || [] };
+  var hist = { history: card.history || [], amHist: card.amHist || [] };
   return '<div class="cr-top"><h2>Career over</h2><button class="cr-home" id="cr-home">Home</button></div>'
     + '<div class="cr-final"><div class="eye">The verdict</div><div class="v">' + esc(card.verdict) + '</div>'
     + '<div class="nm">' + esc(card.name) + ' · #' + esc(String(card.num)) + ' · ' + card.from + '-' + card.to + '</div>'
     + '<p>' + esc(card.blurb) + '</p>'
+    + (card.college ? '<p class="cr-col">' + esc(card.college) + '</p>' : '')
     + '<div class="cr-tot"><div><b>' + T.pts.toLocaleString() + '</b><span>Points</span></div>'
     + '<div><b>' + (T.pts / gp).toFixed(1) + '</b><span>A game</span></div>'
     + '<div><b>' + T.rings + '</b><span>Rings</span></div>'
@@ -598,6 +656,7 @@ function shareText(card){
   if (T.rings) bits.push(T.rings + (T.rings === 1 ? ' ring.' : ' rings.'));
   if (T.mvp) bits.push(T.mvp + 'x MVP.');
   if (T.star) bits.push(T.star + 'x All-Star.');
+  if (card.college) bits.push(card.college + '.');
   return 'Run The Floor · Career\n' + bits.join(' ') + '\nLive your own NBA life: ' + P.SHARE_URL;
 }
 function wireFinal(card){
@@ -643,9 +702,10 @@ function renderHero(){
   var cur = $('ch-cur'), say = $('ch-say'), go = $('b-career'), best = $('ch-best'), path = $('ch-path');
   if (!go) return;
   if (L && !L.retired) {
-    var k = skin(L.team);
+    var k = C.colorsOf(L);
     var v = C.view(L);
-    var where = L.team ? teamName(L.team) : 'Draft prospect';
+    var rv = C.roadView(L);
+    var where = rv ? rv.what + (rv.level === 'High school' ? ' at ' + rv.where : '') : L.team ? teamName(L.team) : 'Draft prospect';
     var when = L.season ? seasonTag(L.season.year) + ' · ' + L.season.w + '-' + L.season.l : (L.year ? 'Summer of ' + (L.year - 1) : '');
     cur.innerHTML = jersey(L) + '<div><b>' + esc(L.name) + '</b><span>' + esc(where) + '</span><span>Age ' + L.age + ' · ' + esc(when) + '</span></div>'
       + '<div class="o"><b>' + v.ovr + '</b><span>OVR</span></div>';

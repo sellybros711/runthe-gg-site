@@ -171,7 +171,7 @@ const ordinal = (n) => {
   const s = ['th', 'st', 'nd', 'rd'], v = n % 100;
   return n + (s[(v - 20) % 10] || s[v] || s[0]);
 };
-const money = (m) => m >= 1 ? '$' + (Math.round(m * 10) / 10).toFixed(m >= 10 ? 0 : 1) + 'M'
+const money = (m) => !m ? '$0' : m >= 1 ? '$' + (Math.round(m * 10) / 10).toFixed(m >= 10 ? 0 : 1) + 'M'
   : '$' + Math.round(m * 1000) + 'K';
 
 function overall(rt, pos) {
@@ -279,15 +279,19 @@ function newLife(opts) {
   const arch = ARCHES[o.arch] ? o.arch : 'twoway';
   const bgKey = BACKGROUNDS[o.bg] ? o.bg : 'oad';
   const bg = BACKGROUNDS[bgKey];
+  /* `start: 'hs'` begins as a fifteen year old sophomore. Anything else is
+     draft night, with the background standing in for the road. */
+  const road = o.start === 'hs';
   const league = o.league || { latest: 2026, net: normaliseNets({}), stars: {} };
   const L = {
     v: LIFE_VERSION, seed,
     name: String(o.name || randomName(seed)).replace(/\s+/g, ' ').trim().slice(0, 28) || randomName(seed),
     pos, arch, bg: bgKey, agent: 'boutique',
     num: Number.isFinite(+o.num) ? clamp(Math.round(+o.num), 0, 99) : null,
-    age: bg.age, year: (league.latest || 2026) + 1,
+    age: road ? AGE_HS : bg.age, year: (league.latest || 2026) + 1,
     rt: {}, pot: 80, eth: 60, dur: 60,
-    m: { health: 92, morale: 70, fame: bg.fame, trust: 50 },
+    m: { health: 92, morale: 70, fame: road ? 6 : bg.fame, trust: 50 },
+    stage: road ? 'hs' : 'nba', am: null, amHist: [],
     cash: 0.2, earned: 0, endorse: 0,
     team: null, contract: null, draft: null,
     phase: 'combine', pending: [], log: [], history: [], flags: {},
@@ -297,14 +301,23 @@ function newLife(opts) {
   L.year = L.league.latest + 1;
   const rng = E.createSeededRNG(E.hashSeed(seed + ':create'));
   if (L.num == null) L.num = Math.floor(rng() * 100);
-  const prof = POS_PROFILE[pos], tilt = ARCHES[arch].tilt, bt = bg.tilt || {};
+  const prof = POS_PROFILE[pos], tilt = ARCHES[arch].tilt, bt = road ? {} : (bg.tilt || {});
+  const base = road ? ROAD_BASE : bg.base;
   for (const k of RATINGS) {
-    L.rt[k] = clamp(Math.round(bg.base + (prof[k] || 0) + (tilt[k] || 0) + (bt[k] || 0) + norm(rng) * 3), 30, 88);
+    L.rt[k] = clamp(Math.round(base + (prof[k] || 0) + (tilt[k] || 0) + (bt[k] || 0) + norm(rng) * 3), road ? 25 : 30, 88);
   }
   /* Skewed low: most ceilings are a starter's, and a few are the roof. */
-  L.pot = Math.round(bg.pot[0] + Math.pow(rng(), 1.7) * (bg.pot[1] - bg.pot[0]));
+  L.pot = road ? Math.round(ROAD_POT[0] + Math.pow(rng(), ROAD_POT[2]) * (ROAD_POT[1] - ROAD_POT[0]))
+    : Math.round(bg.pot[0] + Math.pow(rng(), 1.7) * (bg.pot[1] - bg.pot[0]));
   L.eth = Math.round(45 + rng() * 40);
   L.dur = Math.round(45 + rng() * 45);
+  if (road) {
+    L.cash = 0;
+    newRoad(L, rng);
+    logIt(L, L.name + ', ' + POS_NAME[pos].toLowerCase() + '. A sophomore at ' + L.am.hs.name + '. Age ' + L.age + '.', 'gold');
+    queueEvents(L, 'hs_sum', rngAt(L, 'n:sum')() < 0.5 ? 1 : 0, AM_EVENTS);
+    return L;
+  }
   logIt(L, L.name + ', ' + POS_NAME[pos].toLowerCase() + '. ' + bg.name + '. Age ' + L.age + '.', 'gold');
   L.pending.push(combineCard(L));
   return L;
@@ -315,7 +328,8 @@ function newLife(opts) {
 /* Where the board has you, before anything you do this week. */
 function draftStock(L) {
   const fx = L.flags.stock || 0;
-  return ovrOf(L) * 0.75 + L.pot * 0.45 + L.m.fame * 0.06 + fx;
+  /* Scouts draft the ceiling, so a year older is a little less to dream on. */
+  return ovrOf(L) * 0.75 + L.pot * 0.45 + L.m.fame * 0.06 + fx - (L.age - 20) * 1.2;
 }
 function projectedPick(L, extra) {
   const s = draftStock(L) + (extra || 0);
@@ -687,6 +701,10 @@ const AWARD_NAME = {
   an2: 'All-NBA Second Team', an3: 'All-NBA Third Team', ad1: 'All-Defensive First Team',
   ad2: 'All-Defensive Second Team', star: 'All-Star', scor: 'Scoring title', champ: 'NBA champion',
   olympic: 'Olympic gold',
+  hs_allstate: 'All-State', hs_mrbb: 'Mr. Basketball', hs_aag: 'All-American Game', hs_state: 'State champion',
+  c_allconf: 'All-Conference', c_cpoy: 'Conference Player of the Year', c_fr: 'National Freshman of the Year',
+  c_aa1: 'First Team All-American', c_aa2: 'Second Team All-American', c_npoy: 'National Player of the Year',
+  c_mop: 'Most Outstanding Player', c_f4: 'Final Four', c_champ: 'National champion',
 };
 
 function allStarCheck(L, beats) {
@@ -1095,7 +1113,8 @@ function retire(L, beats, why) {
 
 function totals(L) {
   const T = { gp: 0, pts: 0, reb: 0, ast: 0, stl: 0, blk: 0, min: 0, seasons: L.history.length,
-    rings: 0, mvp: 0, fmvp: 0, star: 0, an: 0, an1: 0, dpoy: 0, roy: 0, earned: L.earned, olympic: 0 };
+    rings: 0, mvp: 0, fmvp: 0, star: 0, an: 0, an1: 0, dpoy: 0, roy: 0, earned: L.earned, olympic: 0,
+    ncaa: 0, npoy: 0, aa1: 0, state: 0 };
   for (const h of L.history) {
     T.gp += h.gp; T.pts += Math.round(h.pts * h.gp); T.reb += Math.round(h.reb * h.gp); T.ast += Math.round(h.ast * h.gp);
     T.stl += Math.round(h.stl * h.gp); T.blk += Math.round(h.blk * h.gp); T.min += Math.round(h.min * h.gp);
@@ -1111,6 +1130,14 @@ function totals(L) {
       else if (a === 'olympic') T.olympic++;
     }
   }
+  for (const h of L.amHist || []) {
+    for (const a of h.aw || []) {
+      if (a === 'c_champ') T.ncaa++;
+      else if (a === 'c_npoy') T.npoy++;
+      else if (a === 'c_aa1') T.aa1++;
+      else if (a === 'hs_state') T.state++;
+    }
+  }
   return T;
 }
 /* A Hall of Fame case, as one number. The weights are what a voter weighs: a
@@ -1118,7 +1145,9 @@ function totals(L) {
    career of good seasons, but a long career of good seasons is worth a lot. */
 function legacyScore(T) {
   return Math.round(T.pts / 1000 * 1.4 + T.reb / 1000 * 0.5 + T.ast / 1000 * 0.7 + T.rings * 4 + T.mvp * 13 + T.fmvp * 6
-    + T.an1 * 5 + (T.an - T.an1) * 2.5 + T.star * 2 + T.dpoy * 4 + T.roy * 2 + T.olympic * 2);
+    + T.an1 * 5 + (T.an - T.an1) * 2.5 + T.star * 2 + T.dpoy * 4 + T.roy * 2 + T.olympic * 2
+    /* The Hall in Springfield counts college too, a little. */
+    + (T.ncaa || 0) * 2 + (T.npoy || 0) * 3 + (T.aa1 || 0));
 }
 const VERDICTS = [
   [120, 'Inner circle', 'One of the greatest to ever play.'],
@@ -1130,6 +1159,7 @@ const VERDICTS = [
 ];
 function legacy(L) {
   const T = totals(L);
+  if (!L.history.length) return { totals: T, score: 0, verdict: 'Never made the league', blurb: 'The game gave you a lot. The league never called.' };
   const score = legacyScore(T);
   const v = VERDICTS.find((x) => score >= x[0]);
   return { totals: T, score, verdict: v[1], blurb: v[2] };
@@ -1504,31 +1534,1068 @@ const TRAIN = [
   { sho: 2, iq: 1 }, { ath: 1, fin: 1, reb: 1 }, { pla: 2, iq: 1 }, { def: 2, ath: 1 }, null,
 ];
 
-function queueEvents(L, phase, n) {
+const SUMMERY = { off: 1, pre: 1, hs_sum: 1, hs_off: 1, col_pre: 1, col_off: 1 };
+function queueEvents(L, phase, n, pool) {
+  pool = pool || EVENTS;
   if (!L.flags.offUsed || L.flags.offUsed.y !== L.year) L.flags.offUsed = { y: L.year };
   const used = L.season ? L.season.used : L.flags.offUsed;
   const once = L.flags.once = L.flags.once || {};
   const rng = rngAt(L, 'ev:' + phase + ':' + L.pending.length);
   for (let k = 0; k < n; k++) {
-    const ids = Object.keys(EVENTS).filter((id) => {
-      const ev = EVENTS[id];
+    const ids = Object.keys(pool).filter((id) => {
+      const ev = pool[id];
       if (ev.phases.indexOf(phase) < 0) return false;
       if (used[id]) return false;
       if (ev.once && once[id]) return false;
       return ev.when(L);
     });
-    const id = weighted(rng, ids, (x) => EVENTS[x].weight(L));
+    const id = weighted(rng, ids, (x) => pool[x].weight(L));
     if (!id) return;
     used[id] = 1;
-    if (EVENTS[id].once) once[id] = 1;
-    const ev = EVENTS[id];
+    if (pool[id].once) once[id] = 1;
+    const ev = pool[id];
     L.pending.push({
       id, kind: 'event', key: phase + ':' + id,
-      eyebrow: phase === 'off' || phase === 'pre' ? 'The summer' : 'This season',
+      eyebrow: SUMMERY[phase] ? 'The summer' : 'This season',
       title: ev.title, text: ev.text(L),
       options: ev.options.map((o) => ({ label: o.label })),
     });
   }
+}
+
+// ─── before the league: high school and college ─────────────────────────────
+
+/* A career can start on draft night, with a background standing in for how
+ * you got there, or three years earlier as a fifteen year old high school
+ * sophomore. The road is played on the league's own ratings scale, so a
+ * sophomore is about a 40 and a one and done arrives near the 56 the
+ * background would have handed him. The point of playing it is that the 56 is
+ * yours, and so is everything the scouts saw on the way.
+ *
+ * THE SCHOOLS ARE REAL AND THE PEOPLE ARE NOT. A college is an institution, the
+ * way an NBA club is, so Duke is Duke. Every coach, booster, rival and roommate
+ * a card talks about is a role, never a name: the line career.js already holds.
+ *
+ * NOTHING HERE TOUCHES THE LEAGUE'S MODEL. The road ends at the same combine
+ * card a draft-night career starts on, with ratings, a ceiling, fame and draft
+ * stock, and from there the NBA half plays exactly as it always has.
+ */
+const AGE_HS = 15;
+/* A sophomore's ratings sit around this, and his ceiling is drawn from this
+   range, skewed low by the exponent. Fitted so the road arrives at draft night
+   where the backgrounds do. See check-career section 8. */
+const ROAD_BASE = 38;
+const ROAD_POT = [66, 95, 1.6];
+const HS_GAMES = 26;
+const HS_ROUNDS = ['Sectional', 'Regional', 'State semifinal', 'State final'];
+const NCAA_ROUNDS = ['First Round', 'Second Round', 'Sweet 16', 'Elite Eight', 'Final Four', 'National Championship'];
+const NCAA_SHORT = ['R64', 'R32', 'Sweet 16', 'Elite Eight', 'Final Four', 'Title game'];
+/* What a starter looks like at each level, on the league's scale. */
+const HS_BAR = { 15: 32, 16: 34, 17: 36 };
+const COL_BAR = 48;
+const PRO_BAR = 52;
+const GRADE = { 10: 'sophomore', 11: 'junior', 12: 'senior' };
+const CYEAR = { 1: 'freshman', 2: 'sophomore', 3: 'junior', 4: 'senior' };
+/* The amateur half of the growth curve. Slower per summer than the league's
+   GROW, because there are more of them before anybody is paid. */
+const GROW_AM = { 15: 0.12, 16: 0.12, 17: 0.12, 18: 0.12, 19: 0.11, 20: 0.1, 21: 0.09, 22: 0.08 };
+
+const HOMETOWNS = ['Baltimore', 'Chicago', 'Houston', 'Atlanta', 'Oakland', 'Philadelphia', 'Dallas',
+  'Indianapolis', 'Memphis', 'Seattle', 'Detroit', 'Brooklyn', 'Charlotte', 'Milwaukee', 'Phoenix',
+  'New Orleans', 'Akron', 'Gary', 'Newark', 'Minneapolis', 'Raleigh', 'Las Vegas', 'Louisville', 'Compton'];
+const HS_SUFFIX = ['Central', 'North', 'East', 'West', 'South', 'Tech', 'Catholic', 'Academy'];
+const HS_COLORS = [['#7a1f2b', '#f2c14e'], ['#0b3d91', '#ffffff'], ['#1c5f3a', '#f5f5f5'], ['#4b2a83', '#f2c14e'],
+  ['#1a1a1a', '#d64545'], ['#c8102e', '#ffffff'], ['#00577a', '#f7a800'], ['#5a2d0c', '#f0e6d2']];
+
+/* Name, tier, conference, colours. */
+const SCHOOLS = [
+  ['Kentucky', 'blue', 'SEC', '#0033a0', '#ffffff'], ['Duke', 'blue', 'ACC', '#003087', '#ffffff'],
+  ['Kansas', 'blue', 'Big 12', '#0051ba', '#e8000d'], ['North Carolina', 'blue', 'ACC', '#7bafd4', '#13294b'],
+  ['UCLA', 'blue', 'Big Ten', '#2d68c4', '#f2a900'],
+  ['UConn', 'power', 'Big East', '#000e2f', '#ffffff'], ['Gonzaga', 'power', 'WCC', '#002967', '#c8102e'],
+  ['Arizona', 'power', 'Big 12', '#cc0033', '#ffffff'], ['Michigan State', 'power', 'Big Ten', '#18453b', '#ffffff'],
+  ['Houston', 'power', 'Big 12', '#c8102e', '#ffffff'], ['Villanova', 'power', 'Big East', '#00205b', '#13b5ea'],
+  ['Baylor', 'power', 'Big 12', '#154734', '#ffb81c'], ['Texas', 'power', 'SEC', '#bf5700', '#ffffff'],
+  ['Indiana', 'power', 'Big Ten', '#990000', '#eeedeb'], ['Arkansas', 'power', 'SEC', '#9d2235', '#ffffff'],
+  ['Auburn', 'power', 'SEC', '#0c2340', '#e87722'], ['Tennessee', 'power', 'SEC', '#ff8200', '#ffffff'],
+  ['Purdue', 'power', 'Big Ten', '#000000', '#cfb991'], ['Alabama', 'power', 'SEC', '#9e1b32', '#ffffff'],
+  ['Florida', 'power', 'SEC', '#0021a5', '#fa4616'], ['Michigan', 'power', 'Big Ten', '#00274c', '#ffcb05'],
+  ['Louisville', 'power', 'ACC', '#ad0000', '#ffffff'], ['Syracuse', 'power', 'ACC', '#f76900', '#000e54'],
+  ['Marquette', 'power', 'Big East', '#003366', '#ffcc00'], ['Creighton', 'power', 'Big East', '#005ca9', '#ffffff'],
+  ['Virginia', 'power', 'ACC', '#232d4b', '#f84c1e'], ['Iowa State', 'power', 'Big 12', '#c8102e', '#f1be48'],
+  ['Memphis', 'power', 'AAC', '#003087', '#898d8d'], ['Butler', 'power', 'Big East', '#13294b', '#ffffff'],
+  ['Dayton', 'mid', 'A-10', '#ce1141', '#004b8d'], ["Saint Mary's", 'mid', 'WCC', '#06315b', '#d80024'],
+  ['VCU', 'mid', 'A-10', '#000000', '#f8b800'], ['San Diego State', 'mid', 'Mountain West', '#a6192e', '#000000'],
+  ['Davidson', 'mid', 'A-10', '#ac1a2f', '#ffffff'], ['Wichita State', 'mid', 'AAC', '#000000', '#ffcd00'],
+  ['Loyola Chicago', 'mid', 'A-10', '#7a0019', '#ffc72c'], ['Drake', 'mid', 'MVC', '#004477', '#ffffff'],
+  ['New Mexico', 'mid', 'Mountain West', '#ba0c2f', '#a7a8aa'], ['Utah State', 'mid', 'Mountain West', '#0f2439', '#ffffff'],
+  ['Florida Atlantic', 'mid', 'AAC', '#003366', '#cc0000'], ['Belmont', 'mid', 'MVC', '#002469', '#c8102e'],
+  ['Murray State', 'low', 'MVC', '#002144', '#ecac00'], ['Oral Roberts', 'low', 'Summit', '#002f6c', '#c5b783'],
+  ['Weber State', 'low', 'Big Sky', '#492f92', '#ffffff'], ['Montana', 'low', 'Big Sky', '#70003c', '#999999'],
+  ['Lehigh', 'low', 'Patriot', '#653600', '#ffffff'], ['Vermont', 'low', 'America East', '#154734', '#ffd100'],
+  ['Furman', 'low', 'SoCon', '#582c83', '#ffffff'], ['Grand Canyon', 'low', 'WAC', '#522398', '#ffffff'],
+  ['Yale', 'low', 'Ivy', '#00356b', '#ffffff'], ['Princeton', 'low', 'Ivy', '#e77500', '#000000'],
+  ['Colgate', 'low', 'Patriot', '#821019', '#ffffff'],
+].map(([name, tier, conf, c1, c2]) => ({ name, tier, conf, c1, c2 }));
+const SCHOOL_BY = {};
+for (const s of SCHOOLS) SCHOOL_BY[s.name] = s;
+/* Points per hundred better than an average Division I team. */
+const TIER_NET = { blue: 14, power: 9, mid: 3, low: -4 };
+const TIER_NAME = { blue: 'Blue blood', power: 'Power conference', mid: 'Mid-major', low: 'Small conference' };
+const TIER_RANK = { blue: 0, power: 1, mid: 2, low: 3 };
+const CONF_NET = {};
+{
+  const sum = {}, n = {};
+  for (const s of SCHOOLS) { sum[s.conf] = (sum[s.conf] || 0) + TIER_NET[s.tier]; n[s.conf] = (n[s.conf] || 0) + 1; }
+  for (const c in sum) CONF_NET[c] = sum[c] / n[c] - 2;
+}
+
+const isAm = (L) => !!(L.am && L.stage !== 'nba');
+/* This season's strength for a college, the same all year. */
+function schoolNet(L, name) {
+  const s = SCHOOL_BY[name];
+  if (!s) return 0;
+  return round1(TIER_NET[s.tier] + norm(rngAt(L, 'sch:' + name)) * 2.5);
+}
+
+// ── the recruiting class ──
+
+/* Where the class has you. The score is read against your age, so a junior is
+   ranked against juniors, and the curve is fitted so a future pro is most
+   often a four-star and about one in eight is a five. */
+function recruitScore(L) {
+  return (ovrOf(L) - (L.age - AGE_HS) * 5.2) * 0.7 + L.pot * 0.55 + L.m.fame * 0.03 + ((L.am && L.am.rstock) || 0);
+}
+function nationalRank(L) {
+  const s = recruitScore(L);
+  return clamp(Math.round(900 / (1 + Math.exp((s - 63) / 5.6))), 1, 900);
+}
+const starsOf = (rank) => rank <= 25 ? 5 : rank <= 150 ? 4 : rank <= 350 ? 3 : 2;
+function rankText(rank) {
+  return rank > 600 ? 'Unranked' : '#' + rank + ' in the class · ' + starsOf(rank) + ' stars';
+}
+
+function collegeOffers(L, tag) {
+  const rank = L.am.rank;
+  const rng = rngAt(L, 'offers:' + (tag || ''));
+  const W = rank <= 25 ? { blue: 6, power: 3, mid: 0.1, low: 0 }
+    : rank <= 80 ? { blue: 1.4, power: 4, mid: 1, low: 0 }
+      : rank <= 200 ? { blue: 0.12, power: 3, mid: 3, low: 0.5 }
+        : rank <= 400 ? { blue: 0, power: 0.6, mid: 3, low: 3 }
+          : { blue: 0, power: 0.05, mid: 1, low: 4 };
+  const pool = SCHOOLS.filter((s) => s.name !== L.am.college);
+  const out = [];
+  while (out.length < 4 && pool.length) {
+    const s = weighted(rng, pool, (x) => W[x.tier]);
+    if (!s) break;
+    pool.splice(pool.indexOf(s), 1);
+    out.push(s.name);
+  }
+  return out.sort((a, b) => TIER_RANK[SCHOOL_BY[a].tier] - TIER_RANK[SCHOOL_BY[b].tier]);
+}
+function schoolHint(L, name) {
+  const s = SCHOOL_BY[name];
+  const bar = COL_BAR + (TIER_NET[s.tier] - 3) * 0.35;
+  const d = ovrOf(L) + 4 - bar;
+  const role = d >= 10 ? 'Starts from day one' : d >= 4 ? 'Fights for a starting spot' : d >= -2 ? 'Comes off the bench' : 'Waits his turn';
+  return TIER_NAME[s.tier] + ', ' + s.conf + '. ' + role + '.';
+}
+
+// ── an amateur season ──
+
+function newAmSeason(L, lvl) {
+  const school = lvl === 'hs' ? L.am.hs.name : lvl === 'col' ? L.am.college : L.am.proTeam;
+  L.season = {
+    amateur: true, lvl, year: L.year, team: null, school, g: 0, w: 0, l: 0, gp: 0,
+    tot: { min: 0, pts: 0, reb: 0, ast: 0, stl: 0, blk: 0, fga: 0, fgm: 0, tpa: 0, tpm: 0, fta: 0, ftm: 0 },
+    hi: { pts: 0, reb: 0, ast: 0 }, out: 0, injury: null,
+    mods: { min: 0, usage: 0, perf: 0, win: 0, risk: 0, rest: 0 },
+    used: {}, acts: {}, allstar: false, awards: [], po: null, notes: [], role: null,
+    startOvr: ovrOf(L), startTeam: null, asked: {}, conf: { w: 0, l: 0 }, tourney: null, seed: null, qual: false, finish: '',
+  };
+}
+const levelBar = (L) => {
+  const s = L.season;
+  if (!s || s.lvl === 'hs') return HS_BAR[L.age] || 36;
+  return s.lvl === 'col' ? COL_BAR : PRO_BAR;
+};
+function teamNetAm(L) {
+  const s = L.season;
+  const base = s.lvl === 'hs' ? L.am.hs.net : s.lvl === 'col' ? schoolNet(L, L.am.college) : L.am.proNet || 0;
+  return base + s.mods.win;
+}
+/* The bar to start, which is higher at a better school. */
+function amBar(L) {
+  const s = L.season;
+  if (s.lvl === 'hs') return levelBar(L) + L.am.hs.net * 0.5;
+  if (s.lvl === 'col') return COL_BAR + (schoolNet(L, L.am.college) - 3) * 0.35;
+  return PRO_BAR + (L.am.proNet || 0) * 0.3;
+}
+function amRole(L) {
+  const s = L.season;
+  const diff = effOvr(L) - amBar(L);
+  let min;
+  if (s.lvl === 'hs') min = diff >= 8 ? 30 : diff >= 3 ? 25 : diff >= -2 ? 17 : 9;
+  else min = diff >= 12 ? 34 : diff >= 7 ? 31 : diff >= 2 ? 27 : diff >= -3 ? 20 : diff >= -8 ? 12 : 6;
+  min += (L.m.trust - 50) * 0.05 + s.mods.min;
+  min = clamp(min, 3, s.lvl === 'hs' ? 32 : 37);
+  const starter = min >= (s.lvl === 'hs' ? 22 : 24);
+  const label = diff >= 10 && starter ? 'Go-to player' : starter ? 'Starter' : min >= 14 ? 'Sixth man' : 'Bench';
+  return { min: round1(min), diff, label, starter };
+}
+function amImpact(L, min) {
+  const s = L.season;
+  const per = s.lvl === 'hs' ? 32 : 40;
+  return (effOvr(L) - levelBar(L)) * (s.lvl === 'hs' ? 0.3 : 0.32) * (min / per);
+}
+const amP = (diff, home, lvl) => clamp(0.5 + diff * (lvl === 'hs' ? 0.035 : 0.028) + (home ? 0.04 : -0.04), 0.04, 0.96);
+
+/* The man's per-game means at this level. Points come off how far above the
+   level he is, less a little for a deep school, plus who he is as a player. */
+function amMeans(L, min) {
+  const s = L.season, r = L.rt, a = ARCHES[L.arch];
+  const lvl = s.lvl;
+  const per = lvl === 'hs' ? 30 : 33;
+  const k = min / per;
+  const rel = effOvr(L) - levelBar(L) - (lvl === 'hs' ? L.am.hs.net : lvl === 'col' ? schoolNet(L, L.am.college) - 3 : 0) * 0.25;
+  const pts = clamp((lvl === 'hs' ? 3 : 4) + rel * (lvl === 'hs' ? 1.1 : 1.05) + a.usage * 60, 0.5, lvl === 'hs' ? 34 : 26) * k;
+  const scoring = r.sho * 0.55 + r.fin * 0.45;
+  const ts = clamp(0.48 + rel * 0.004 + (scoring - 55) * 0.002, 0.42, 0.66);
+  const tsa = pts / (2 * ts);
+  const fta = tsa * 0.28, fga = tsa - 0.44 * fta;
+  const threeShare = clamp(0.18 + (r.sho - 50) * 0.008 + a.three, 0.02, 0.6);
+  const tpa = fga * threeShare;
+  const tpp = clamp(0.28 + (r.sho - 50) * 0.003, 0.2, 0.45);
+  const ftp = clamp(0.6 + (r.sho - 45) * 0.005, 0.5, 0.9);
+  const posReb = { PG: 3.6, SG: 4.2, SF: 5.6, PF: 7.2, C: 8.4 }[L.pos];
+  const reb = Math.max(1, posReb + (r.reb - 50) * 0.13 + rel * 0.1) * k;
+  const ast = Math.max(0.7, 1.6 + (r.pla - 40) * 0.12 + rel * 0.04) * k;
+  const stl = Math.max(0.1, 0.6 + (r.def - 50) * 0.02 + rel * 0.02) * k;
+  const big = { PG: 0.2, SG: 0.25, SF: 0.45, PF: 0.8, C: 1.2 }[L.pos] + (L.arch === 'anchor' ? 0.6 : 0);
+  const blk = Math.max(0.05, big + (r.def - 50) * 0.02 * big + rel * 0.02 * big) * k;
+  return { pts, fga, tpa, tpp, fta, ftp, reb, ast, stl, blk };
+}
+/* One game's line, drawn and added to the season. Returns the points. */
+function amLine(L, rng, mean, k) {
+  const s = L.season, T = s.tot;
+  const ptsMean = mean.pts * k;
+  const pts0 = Math.max(0, Math.round(ptsMean + norm(rng) * ptsMean * 0.32));
+  const reb = Math.max(0, Math.round(mean.reb * k + norm(rng) * mean.reb * 0.32));
+  const ast = Math.max(0, Math.round(mean.ast * k + norm(rng) * mean.ast * 0.34));
+  const stl = Math.max(0, Math.round(mean.stl * k + norm(rng) * 0.8));
+  const blk = Math.max(0, Math.round(mean.blk * k + norm(rng) * 0.7));
+  const tpa = Math.max(0, Math.round(mean.tpa * k + norm(rng) * 1.2));
+  const tpm = Math.min(tpa, Math.max(0, Math.round(tpa * mean.tpp + norm(rng) * 0.9)));
+  const fta = Math.max(0, Math.round(mean.fta * k + norm(rng) * 1.3));
+  const ftm = Math.min(fta, Math.round(fta * mean.ftp));
+  const twom = Math.max(0, Math.round((pts0 - ftm - 3 * tpm) / 2));
+  const fga = Math.max(tpa + twom, Math.round(mean.fga * k + norm(rng) * 1.8));
+  const pts = ftm + 3 * tpm + 2 * twom;
+  T.pts += pts; T.reb += reb; T.ast += ast; T.stl += stl; T.blk += blk;
+  T.fga += fga; T.fgm += tpm + twom; T.tpa += tpa; T.tpm += tpm; T.fta += fta; T.ftm += ftm;
+  s.gp++;
+  if (pts > s.hi.pts) s.hi.pts = pts;
+  if (reb > s.hi.reb) s.hi.reb = reb;
+  if (ast > s.hi.ast) s.hi.ast = ast;
+  if (pts >= 10 && reb >= 10 && ast >= 10) L.am.tripleDoubles = (L.am.tripleDoubles || 0) + 1;
+  return pts;
+}
+/* A stretch of games. `opp(rng, i)` is the other side's strength. */
+function amGames(L, n, opp, tag, beats, conf) {
+  const s = L.season;
+  const rng = rngAt(L, 'am:' + tag);
+  const role = amRole(L);
+  s.role = role;
+  const mean = amMeans(L, role.min);
+  const us0 = teamNetAm(L);
+  for (let i = 0; i < n; i++) {
+    const g = s.g + 1;
+    const hurt = s.injury && g >= s.injury.from && g < s.injury.until;
+    const rest = !hurt && s.mods.rest > 0 && rng() < s.mods.rest;
+    let us = us0;
+    if (!hurt && !rest) {
+      const mn = role.min * (0.86 + rng() * 0.28);
+      s.tot.min += mn;
+      const p = amLine(L, rng, mean, mn / role.min);
+      if (p > (L.am.high || 0)) {
+        L.am.high = p;
+        if (p >= (s.lvl === 'hs' ? 40 : 32)) beats.push({ kind: 'game', text: 'A career high: ' + p + ' points.', tone: 'gold' });
+      }
+      us += amImpact(L, mn);
+    } else s.out++;
+    const o = opp(rng, i);
+    const won = rng() < amP(us - o, i % 2 === 0, s.lvl);
+    s.g = g;
+    if (won) s.w++; else s.l++;
+    if (conf) { if (won) s.conf.w++; else s.conf.l++; }
+  }
+  bump(L, { health: -Math.round(role.min * 0.08 * n / 15) });
+}
+function amInjury(L, tag, beats) {
+  const s = L.season;
+  if (s.injury && s.injury.until > s.g) return;
+  const rng = rngAt(L, 'aminj:' + tag);
+  const p = 0.05 + (100 - L.dur) * 0.0008 + Math.max(0, 60 - L.m.health) * 0.0015 + s.mods.risk;
+  if (rng() >= p) return;
+  const major = rng() < 0.12;
+  const kind = major ? pick(rng, ['broken foot', 'torn ligament in the thumb', 'stress fracture']) : pick(rng, ['sprained ankle', 'jammed finger', 'bruised hip', 'tight hamstring']);
+  const g = major ? 8 + Math.floor(rng() * 10) : 1 + Math.floor(rng() * 4);
+  s.injury = { from: s.g + 1 + Math.floor(rng() * 4), until: 0, kind };
+  s.injury.until = s.injury.from + g;
+  bump(L, { health: major ? -14 : -5 });
+  beats.push({ kind: 'injury', text: 'A ' + kind + ' costs you ' + g + (g === 1 ? ' game.' : ' games.'), tone: 'bad' });
+  logIt(L, 'Missed ' + g + (g === 1 ? ' game' : ' games') + ' with a ' + kind + '.', 'bad');
+}
+
+// ── tournaments ──
+
+const POD = [[1, 16, 8, 9], [5, 12, 4, 13], [6, 11, 3, 14], [7, 10, 2, 15]];
+const seedNet = (s) => 17 - s * 1.25;
+function ncaaOppSeed(rng, s, r) {
+  if (r === 0) return 17 - s;
+  const pod = POD.findIndex((p) => p.indexOf(s) >= 0);
+  if (r === 1) {
+    const p = POD[pod], i = p.indexOf(s);
+    const other = i < 2 ? [p[2], p[3]] : [p[0], p[1]];
+    other.sort((a, b) => a - b);
+    return rng() < 0.68 ? other[0] : other[1];
+  }
+  if (r === 2) {
+    const adj = POD[pod ^ 1].slice().sort((a, b) => a - b);
+    return rng() < 0.62 ? adj[0] : adj[1 + Math.floor(rng() * 3)];
+  }
+  const pool = r === 3 ? POD[pod < 2 ? 2 : 0].concat(POD[pod < 2 ? 3 : 1]) : [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
+  return weighted(rng, pool, (x) => 1 / Math.pow(x, r === 3 ? 1.3 : 2));
+}
+function oppSchool(L, rng, seed) {
+  const want = seed <= 4 ? ['blue', 'power'] : seed <= 10 ? ['power', 'mid'] : ['mid', 'low'];
+  const pool = SCHOOLS.filter((s) => s.name !== L.am.college && want.indexOf(s.tier) >= 0);
+  return pick(rng, pool).name;
+}
+function hsOpp(L, rng) {
+  return pick(rng, HOMETOWNS.filter((t) => t !== L.am.town)) + ' ' + pick(rng, HS_SUFFIX);
+}
+/* Single elimination, a round at a time up to `upto`. The first close game of a
+   run, if you are on the floor for it, is a last possession and it is yours. */
+function runTourney(L, beats) {
+  const s = L.season, t = s.tourney;
+  while (t.alive && !t.done && t.r < t.upto && !t.waiting) {
+    const rng = rngAt(L, 'tg:' + t.kind + ':' + t.r);
+    let opp, oNet, oSeed = null;
+    if (t.kind === 'hs') { opp = hsOpp(L, rng); oNet = [-0.5, 1, 2.5, 3.5][t.r] + norm(rng) * 2; }
+    else { oSeed = ncaaOppSeed(rng, t.seed, t.r); opp = oppSchool(L, rng, oSeed); oNet = seedNet(oSeed) + norm(rng) * 1.5; }
+    const role = s.role || amRole(L);
+    const playing = !(s.injury && s.injury.until > s.g + 1);
+    const mn = Math.min(36, role.min + 2);
+    let us = teamNetAm(L);
+    let pts = null;
+    if (playing) { pts = amLine(L, rng, amMeans(L, mn), 1); s.tot.min += mn; us += amImpact(L, mn); }
+    const p = amP(us - oNet, t.kind === 'hs' && t.r < 2, s.lvl);
+    const u = rng();
+    s.g++;
+    const g = { r: t.r, opp, seed: oSeed, net: oNet, pts };
+    if (playing && role.starter && !t.clutched && Math.abs(u - p) < 0.07) {
+      t.clutched = true;
+      t.waiting = true;
+      t.cur = g;
+      L.pending.push(amClutchCard(L, t, g));
+      return;
+    }
+    endTourneyGame(L, t, g, u < p, beats);
+  }
+}
+function endTourneyGame(L, t, g, won, beats) {
+  const s = L.season;
+  const names = t.kind === 'hs' ? HS_ROUNDS : NCAA_ROUNDS;
+  if (won) s.w++; else s.l++;
+  t.games.push({ r: g.r, opp: g.opp, seed: g.seed, won, pts: g.pts });
+  const who = (g.seed ? g.seed + ' seed ' : '') + g.opp;
+  const yours = g.pts != null ? ' You score ' + g.pts + '.' : ' You watch from the bench.';
+  const line = (won ? 'Beat ' : 'Lost to ') + who + ' in the ' + names[g.r] + '.' + yours;
+  beats.push({ kind: 'po', text: line, tone: won ? 'good' : 'bad' });
+  if (!won) { t.alive = false; t.done = true; logIt(L, (t.kind === 'hs' ? 'Out in the ' : 'Out of the tournament in the ') + names[g.r] + '.', 'bad'); return; }
+  t.r++;
+  if (t.r >= names.length) {
+    t.done = true; t.champ = true;
+    const txt = t.kind === 'hs' ? 'State champions.' : 'National champions.';
+    beats.push({ kind: 'champ', text: txt, tone: 'gold' });
+    logIt(L, (t.kind === 'hs' ? L.am.hs.name : L.am.college) + ': ' + txt, 'gold');
+    bump(L, { fame: t.kind === 'hs' ? 6 : 12, morale: 12 });
+  }
+}
+function amClutchCard(L, t, g) {
+  const names = t.kind === 'hs' ? HS_ROUNDS : NCAA_ROUNDS;
+  const opts = clutchOptions(L);
+  return {
+    id: 'amclutch', kind: 'clutch', key: 'amclutch:' + t.kind + ':' + g.r,
+    eyebrow: names[g.r] + ' · ' + (g.seed ? g.seed + ' seed ' : '') + g.opp,
+    title: 'Tied. Six seconds. Your ball.',
+    text: (t.kind === 'hs' ? 'The whole town is in the gym.' : 'March. Every bracket in the country is watching.') + ' What is the play?',
+    ctx: { r: g.r },
+    options: opts.map((o) => ({ label: o.label, hint: RATING_NAME[o.rate] + ' ' + L.rt[o.rate] + '.' })),
+  };
+}
+
+// ── the steps of a high school year ──
+
+function hsRegular(L, beats) {
+  const s = L.season;
+  const role = amRole(L);
+  s.role = role;
+  beats.push({ kind: 'role', text: L.am.hs.name + ': ' + role.label + ', about ' + Math.round(role.min) + ' minutes a night.', tone: '' });
+  amInjury(L, 'hs1', beats);
+  amGames(L, 13, (r) => norm(r) * 3, 'hs1', beats, false);
+  amInjury(L, 'hs2', beats);
+  amGames(L, HS_GAMES - 13, (r) => norm(r) * 3 + 0.5, 'hs2', beats, false);
+  s.qual = s.w >= 13;
+  const pg = perGame(s);
+  beats.unshift({ kind: 'record', text: s.w + '-' + s.l + (s.qual ? '. Into the state playoffs.' : '. No playoffs.'), tone: s.qual ? 'good' : 'bad' });
+  beats.push({ kind: 'record', text: 'You: ' + pg.pts + ' points, ' + pg.reb + ' rebounds, ' + pg.ast + ' assists.', tone: '' });
+  logIt(L, GRADE[L.am.grade][0].toUpperCase() + GRADE[L.am.grade].slice(1) + ' year: ' + s.w + '-' + s.l + ', ' + pg.pts + ' a night.', '');
+  L.phase = 'hs_reg';
+  queueEvents(L, 'hs', 1 + (rngAt(L, 'n:hs')() < 0.5 ? 1 : 0), AM_EVENTS);
+}
+function hsPlayoffs(L, beats) {
+  const s = L.season;
+  L.phase = 'hs_po';
+  if (!s.qual) { closeAm(L, beats); return; }
+  s.tourney = { kind: 'hs', r: 0, upto: 4, alive: true, done: false, games: [], clutched: false, waiting: false };
+  runTourney(L, beats);
+  if (s.tourney.done) closeAm(L, beats);
+}
+
+// ── the steps of a college year ──
+
+function colStart(L, beats) {
+  const s = L.season;
+  const role = amRole(L);
+  s.role = role;
+  beats.push({ kind: 'role', text: L.am.college + ': ' + role.label + ', about ' + Math.round(role.min) + ' minutes a night.', tone: '' });
+  amInjury(L, 'c1', beats);
+  amGames(L, 12, (r) => -3 + norm(r) * 6, 'c1', beats, false);
+  const pg = perGame(s);
+  beats.push({ kind: 'record', text: 'Non-conference: ' + s.w + '-' + s.l + '. You: ' + pg.pts + ' points, ' + pg.reb + ' rebounds.', tone: s.w >= s.l ? 'good' : '' });
+  L.phase = 'col_early';
+  queueEvents(L, 'col', 1 + (rngAt(L, 'n:c1')() < 0.5 ? 1 : 0), AM_EVENTS);
+}
+function colConf(L, beats) {
+  const s = L.season;
+  const cn = CONF_NET[SCHOOL_BY[L.am.college].conf] || 0;
+  amInjury(L, 'c2', beats);
+  amGames(L, 19, (r) => cn + norm(r) * 4, 'c2', beats, true);
+  const pg = perGame(s);
+  beats.push({ kind: 'record', text: SCHOOL_BY[L.am.college].conf + ' play: ' + s.conf.w + '-' + s.conf.l + '. ' + s.w + '-' + s.l + ' overall. You: ' + pg.pts + ' a night.', tone: s.conf.w >= s.conf.l ? 'good' : '' });
+  L.phase = 'col_mid';
+  queueEvents(L, 'col', 1, AM_EVENTS);
+}
+/* The conference tournament, then Selection Sunday, then the awards. */
+function colMarch(L, beats) {
+  const s = L.season;
+  const sc = SCHOOL_BY[L.am.college];
+  const cn = CONF_NET[sc.conf] || 0;
+  const rng = rngAt(L, 'conft');
+  const role = s.role || amRole(L);
+  let wins = 0, auto = false;
+  for (let i = 0; i < 4; i++) {
+    const us = teamNetAm(L) + amImpact(L, role.min);
+    s.g++;
+    if (!(s.injury && s.injury.until > s.g)) { amLine(L, rng, amMeans(L, role.min), 1); s.tot.min += role.min; }
+    if (rng() < amP(us - (cn + i * 1.2 + norm(rng) * 2), false, 'col')) { s.w++; wins++; } else { s.l++; break; }
+  }
+  if (wins === 4) { auto = true; beats.push({ kind: 'po', text: sc.conf + ' tournament champions.', tone: 'gold' }); logIt(L, sc.conf + ' tournament champions.', 'good'); }
+  else beats.push({ kind: 'po', text: 'Out of the ' + sc.conf + ' tournament after ' + (wins === 0 ? 'one game.' : wins + (wins === 1 ? ' win.' : ' wins.')), tone: '' });
+  /* Selection Sunday. */
+  const us = teamNetAm(L) + amImpact(L, role.min);
+  const score = us + (s.w - s.l) * 0.12;
+  let seed = Math.round(18 - score * 0.8);
+  let inn = seed <= 11 || auto;
+  if (auto) seed = Math.max(seed, sc.tier === 'low' ? 13 : seed);
+  seed = clamp(seed, 1, 16);
+  s.seed = inn ? seed : null;
+  if (inn) {
+    s.tourney = { kind: 'ncaa', seed, r: 0, upto: 0, alive: true, done: false, games: [], clutched: false, waiting: false };
+    beats.push({ kind: 'record', text: 'Selection Sunday: a ' + seed + ' seed. ' + s.w + '-' + s.l + '.', tone: 'good' });
+    logIt(L, 'Into the NCAA Tournament as a ' + seed + ' seed.', 'good');
+  } else {
+    beats.push({ kind: 'record', text: 'Selection Sunday: your name is not called. ' + s.w + '-' + s.l + '.', tone: 'bad' });
+    logIt(L, 'Missed the NCAA Tournament.', 'bad');
+  }
+  colAwards(L, beats);
+  L.phase = 'col_late';
+}
+function colAwards(L, beats) {
+  const s = L.season, pg = perGame(s);
+  const rng = rngAt(L, 'colaw');
+  const rel = effOvr(L) - COL_BAR;
+  const lg = (x) => 1 / (1 + Math.exp(-x));
+  const out = [];
+  const gpOk = s.gp >= 20;
+  const sc = rel + pg.pts * 0.45 + norm(rng) * 1.5;
+  if (gpOk && sc >= 30.5) out.push('c_aa1');
+  else if (gpOk && sc >= 28) out.push('c_aa2');
+  if (gpOk && sc >= 31.5 && rng() < 0.45) out.push('c_npoy');
+  if (gpOk && pg.pts >= 13.5 && sc >= 22) out.push('c_allconf');
+  if (gpOk && sc >= 25 && s.conf.w - s.conf.l >= 6 && rng() < 0.55) out.push('c_cpoy');
+  if (gpOk && L.am.cyear === 1 && pg.pts >= 13 && rng() < lg((pg.pts - 17) * 0.45 + (rel - 12) * 0.2)) out.push('c_fr');
+  for (const a of out) {
+    s.awards.push(a);
+    beats.push({ kind: 'award', text: AWARD_NAME[a] + '.', tone: 'gold' });
+    logIt(L, AWARD_NAME[a] + '.', 'gold');
+  }
+  bump(L, { fame: out.length * 3 });
+}
+function colTourney(L, beats, upto) {
+  const s = L.season, t = s.tourney;
+  L.phase = 'col_po';
+  t.upto = upto;
+  runTourney(L, beats);
+  if (t.done) closeAm(L, beats);
+}
+
+/* A year as a professional before the draft: overseas, or in the G League. */
+function proYear(L, beats) {
+  const route = L.am.route;
+  L.am.proTeam = route === 'intl' ? 'Overseas' : 'G League';
+  L.am.proNet = round1(norm(rngAt(L, 'pronet')) * 3);
+  newAmSeason(L, 'pro');
+  const s = L.season;
+  const role = amRole(L);
+  s.role = role;
+  amInjury(L, 'pro', beats);
+  amGames(L, 32, (r) => norm(r) * 3, 'pro', beats, false);
+  const pg = perGame(s);
+  const where = route === 'intl' ? 'A season overseas against grown men' : 'A season in the G League';
+  beats.push({ kind: 'record', text: where + ': ' + pg.pts + ' points, ' + pg.reb + ' rebounds, ' + pg.ast + ' assists.', tone: 'good' });
+  bump(L, { cash: route === 'intl' ? 0.5 : 0.6, iq: 2 });
+  L.am.stock = (L.am.stock || 0) + 1 + Math.max(0, (pg.pts - 12) * 0.15);
+  s.finish = route === 'intl' ? 'Pro' : 'G League';
+  pushAmHist(L);
+  developAm(L, beats);
+  L.age++;
+  L.year++;
+  driftLeague(L);
+  toDraft(L, beats, route);
+}
+
+// ── the end of an amateur season ──
+
+function pushAmHist(L) {
+  const s = L.season, pg = perGame(s);
+  const lvl = s.lvl === 'hs' ? 'HS' : s.lvl === 'col' ? 'NCAA' : L.am.route === 'intl' ? 'Overseas' : 'G League';
+  L.amHist.push(Object.assign({ y: s.year, age: L.age, lvl, school: s.school, ovr: ovrOf(L), w: s.w, l: s.l,
+    finish: s.finish || '', seed: s.seed || null, rank: L.am.rank || null, aw: s.awards.slice() }, pg));
+}
+function developAm(L, beats) {
+  const before = ovrOf(L);
+  const rng = rngAt(L, 'develop');
+  const gap = Math.max(0, L.pot - before);
+  const eth = 0.65 + L.eth / 100 * 0.7;
+  const grow = gap * (GROW_AM[L.age] || 0.08) * eth;
+  for (const k of RATINGS) L.rt[k] = clamp(Math.round(L.rt[k] + grow * (0.6 + rng() * 0.8)), 25, 99);
+  const after = ovrOf(L);
+  if (after !== before) {
+    const t = 'Up ' + (after - before) + ' overall this summer, to ' + after + '.';
+    beats.push({ kind: 'dev', text: t, tone: 'good' });
+    logIt(L, t, 'good');
+  }
+  bump(L, { health: 30 });
+}
+function closeAm(L, beats) {
+  const s = L.season, pg = perGame(s);
+  const rng = rngAt(L, 'amclose');
+  const t = s.tourney;
+  if (s.lvl === 'hs') {
+    s.finish = t ? (t.champ ? 'State champion' : 'Lost in the ' + HS_ROUNDS[t.r].toLowerCase()) : 'No playoffs';
+    if (t && t.champ) s.awards.push('hs_state');
+    const sc = pg.pts + norm(rng) * 2.5;
+    if (s.gp >= 18 && sc >= 19) s.awards.push('hs_allstate');
+    if (s.gp >= 18 && L.am.grade >= 11 && pg.pts >= 22 && s.w >= 17 && rng() < 0.45) s.awards.push('hs_mrbb');
+  } else {
+    s.finish = !t ? 'No tournament' : t.champ ? 'National champion' : 'Lost in the ' + NCAA_ROUNDS[t.r];
+    if (t && t.r >= 4) s.awards.push(t.champ ? 'c_champ' : 'c_f4');
+    if (t && t.champ && s.role && s.role.starter && (s.role.diff >= 6 || rng() < 0.3)) s.awards.push('c_mop');
+  }
+  /* What the year did to the board. */
+  const before = L.am.rank;
+  if (s.lvl === 'hs') {
+    L.am.rstock = clamp((L.am.rstock || 0) * 0.7 + clamp((pg.pts - 18) * 0.05, -0.6, 0.8) + (t && t.champ ? 0.5 : 0) + s.awards.length * 0.25, -3, 3);
+  } else {
+    let st = clamp((pg.pts - 12) * 0.12, -1, 1.6) + (t ? Math.min(t.r, 5) * 0.25 : -0.3);
+    for (const a of s.awards) st += { c_aa1: 2, c_aa2: 1.2, c_npoy: 2, c_allconf: 0.4, c_cpoy: 0.6, c_fr: 0.8, c_f4: 0.4, c_champ: 0.8, c_mop: 1 }[a] || 0;
+    /* The board reads the last season hardest, so stock decays. */
+    L.am.stock = clamp((L.am.stock || 0) * 0.5 + st * 0.6, -3, 3.5);
+  }
+  const target = clamp((s.lvl === 'hs' ? 8 : 14) + (pg.pts - 10) * (s.lvl === 'hs' ? 1.1 : 1.8) + (t && t.champ ? 8 : 0), 3, 80);
+  L.m.fame = clamp(Math.round(L.m.fame * 0.7 + target * 0.3 + (s.awards.length ? 2 : 0)), 0, 100);
+  for (const a of s.awards) if (a !== 'hs_state' && a !== 'c_champ') {
+    if (s.lvl === 'hs' || a === 'c_f4' || a === 'c_mop') { beats.push({ kind: 'award', text: AWARD_NAME[a] + '.', tone: 'gold' }); logIt(L, AWARD_NAME[a] + '.', 'gold'); }
+  }
+  pushAmHist(L);
+  developAm(L, beats);
+  /* Senior year's honour comes after the season and the summer's growth, on the
+     final ranking. */
+  if (s.lvl === 'hs') {
+    L.am.rank = nationalRank(L);
+    const d = before - L.am.rank;
+    beats.push({ kind: 'rank', text: 'New rankings: ' + rankText(L.am.rank) + '.' + (Math.abs(d) >= 15 ? (d > 0 ? ' Up ' + d + ' spots.' : ' Down ' + (-d) + ' spots.') : ''), tone: d > 0 ? 'good' : d < -15 ? 'bad' : '' });
+    if (L.am.grade === 12 && L.am.rank <= 24) {
+      L.amHist[L.amHist.length - 1].aw.push('hs_aag');
+      beats.push({ kind: 'award', text: AWARD_NAME.hs_aag + '.', tone: 'gold' });
+      logIt(L, AWARD_NAME.hs_aag + '.', 'gold');
+      bump(L, { fame: 6 });
+    }
+    L.phase = 'hs_off';
+    hsOffCards(L, beats);
+  } else {
+    const proj = projectedPick(L, L.am.stock || 0);
+    beats.push({ kind: 'rank', text: draftTalk(proj) + '.', tone: proj <= 14 ? 'good' : proj > 50 ? 'bad' : '' });
+    L.phase = 'col_off';
+    colOffCards(L);
+  }
+  queueEvents(L, s.lvl === 'hs' ? 'hs_off' : 'col_off', rngAt(L, 'n:off')() < 0.55 ? 1 : 0, AM_EVENTS);
+}
+function draftTalk(p) {
+  if (p <= 3) return 'Mock drafts have you in the top three';
+  if (p <= 14) return 'Mock drafts have you in the lottery, around ' + ordinal(p);
+  if (p <= 30) return 'Mock drafts have you in the first round, around ' + ordinal(p);
+  if (p <= 50) return 'Mock drafts have you in the second round';
+  return 'You are not on the mock drafts yet';
+}
+
+// ── recruiting and the decisions between years ──
+
+function hsOffCards(L) {
+  const g = L.am.grade;
+  if (g === 11 && !L.am.college) {
+    const list = collegeOffers(L, 'jr');
+    L.am.offers = list;
+    L.pending.push({
+      id: 'offers', kind: 'event', key: 'offers', eyebrow: 'Recruiting', title: 'The offers are in.',
+      text: rankText(L.am.rank) + '. Commit now, or wait for senior year and hope the board moves your way.',
+      ctx: { list },
+      options: list.slice(0, 3).map((n) => ({ label: 'Commit to ' + n, hint: schoolHint(L, n), school: n }))
+        .concat([{ label: 'Keep your options open', hint: 'Better offers if you play well. Worse if you do not.' }]),
+    });
+  } else if (g === 12) {
+    if (L.am.college) {
+      L.pending.push({
+        id: 'signing', kind: 'event', key: 'signing', eyebrow: 'Signing day', title: 'The pen is on the table.',
+        text: 'You committed to ' + L.am.college + '. ' + rankText(L.am.rank) + '.',
+        options: [
+          { label: 'Sign with ' + L.am.college, hint: 'You gave your word.' },
+          { label: 'Reopen your recruitment', hint: 'See who else is out there.' },
+        ],
+      });
+    } else L.pending.push(commitCard(L));
+  }
+}
+function commitCard(L) {
+  const list = collegeOffers(L, 'sr');
+  L.am.offers = list;
+  const opts = list.slice(0, 3).map((n) => ({ label: n, hint: schoolHint(L, n), school: n }));
+  if (L.am.rank <= 90) opts.push({ label: 'Turn pro overseas', hint: 'Paid to play against men for a year. Then the draft.', route: 'intl' });
+  if (L.am.rank <= 140) opts.push({ label: 'Sign with the G League', hint: 'A paycheck and NBA coaching. Then the draft.', route: 'gl' });
+  return {
+    id: 'commit', kind: 'event', key: 'commit', eyebrow: 'Decision day', title: 'Where are you going?',
+    text: rankText(L.am.rank) + '. Hats on the table. The cameras are on.',
+    ctx: { list }, options: opts,
+  };
+}
+function colOffCards(L) {
+  const cy = L.am.cyear;
+  if (cy >= 4) { L.am.declared = true; return; }
+  const proj = projectedPick(L, L.am.stock || 0);
+  const next = CYEAR[cy + 1];
+  L.pending.push({
+    id: 'declare', kind: 'event', key: 'declare', eyebrow: 'The draft deadline', title: 'Stay or go?',
+    text: draftTalk(proj) + '. You have until April to decide.',
+    ctx: { proj },
+    options: [
+      { label: 'Declare for the draft', hint: proj <= 30 ? 'Get paid. Projected ' + ordinal(proj) + '.' : 'The second round, or worse. A gamble.' },
+      { label: 'Come back for your ' + next + ' year', hint: 'Another year of growth and another March.' },
+      { label: 'Enter the transfer portal', hint: 'A bigger role somewhere else.' },
+    ],
+  });
+}
+function portalCard(L) {
+  const proj = projectedPick(L, L.am.stock || 0);
+  const saveRank = L.am.rank;
+  /* The portal reads you off what you just did, not what you were at 17. */
+  L.am.rank = clamp(Math.round(proj * 5), 1, 700);
+  const list = collegeOffers(L, 'portal' + L.am.cyear).filter((n) => n !== L.am.college).slice(0, 3);
+  L.am.rank = saveRank;
+  return {
+    id: 'portal', kind: 'event', key: 'portal', eyebrow: 'Transfer portal', title: 'Your phone does not stop.',
+    text: 'Three programs want you for next season.',
+    ctx: { list },
+    options: list.map((n) => ({ label: n, hint: schoolHint(L, n), school: n }))
+      .concat([{ label: 'Stay at ' + L.am.college, hint: 'Pull your name out.' }]),
+  };
+}
+
+/* The summer between, which is where an amateur year begins. */
+function amNewYear(L, beats) {
+  L.age++;
+  L.year++;
+  driftLeague(L);
+  L.season = null;
+  if (L.am.level === 'hs' && L.am.grade < 12) {
+    L.am.grade++;
+    beats.push({ kind: 'year', text: GRADE[L.am.grade][0].toUpperCase() + GRADE[L.am.grade].slice(1) + ' year. You are ' + L.age + '.', tone: '' });
+    newAmSeason(L, 'hs');
+    L.phase = 'hs_pre';
+    L.pending.push(hsSummerCard(L));
+    queueEvents(L, 'hs_sum', rngAt(L, 'n:sum')() < 0.55 ? 1 : 0, AM_EVENTS);
+    return;
+  }
+  if (L.am.level === 'hs') {
+    /* Out of high school. */
+    if (L.am.route === 'intl' || L.am.route === 'gl') {
+      L.am.level = 'pro';
+      L.stage = 'pro';
+      L.phase = 'pro_year';
+      beats.push({ kind: 'year', text: L.am.route === 'intl' ? 'You sign overseas. You are ' + L.age + '.' : 'You sign with a G League team. You are ' + L.age + '.', tone: 'gold' });
+      return;
+    }
+    L.am.level = 'col';
+    L.stage = 'col';
+    L.am.cyear = 1;
+    beats.push({ kind: 'year', text: 'Freshman year at ' + L.am.college + '. You are ' + L.age + '.', tone: 'gold' });
+    logIt(L, 'Enrolled at ' + L.am.college + '.', 'gold');
+    colYear(L);
+    return;
+  }
+  if (L.am.declared) { toDraft(L, beats, L.am.cyear === 1 ? 'oad' : 'senior'); return; }
+  L.am.cyear++;
+  beats.push({ kind: 'year', text: CYEAR[L.am.cyear][0].toUpperCase() + CYEAR[L.am.cyear].slice(1) + ' year at ' + L.am.college + '. You are ' + L.age + '.', tone: '' });
+  colYear(L);
+}
+function colYear(L) {
+  newAmSeason(L, 'col');
+  L.phase = 'col_pre';
+  L.pending.push(trainingCard(L));
+  queueEvents(L, 'col_pre', rngAt(L, 'n:cpre')() < 0.65 ? 1 : 0, AM_EVENTS);
+}
+
+/* The road ends at the combine card a draft-night career starts on. */
+function toDraft(L, beats, route) {
+  L.stage = 'nba';
+  L.bg = route === 'senior' ? 'senior' : route === 'intl' ? 'intl' : route === 'gl' ? 'gl' : 'oad';
+  L.season = null;
+  L.team = null;
+  L.flags.stock = (L.flags.stock || 0) + (L.am.stock || 0);
+  L.phase = 'combine';
+  L.pending.push(combineCard(L));
+  const t = 'You declare for the ' + (L.year - 1) + ' NBA Draft.';
+  beats.push({ kind: 'year', text: t, tone: 'gold' });
+  logIt(L, t, 'gold');
+}
+
+function hsSummerCard(L) {
+  return {
+    id: 'hs_summer', kind: 'event', key: 'hs_summer', eyebrow: 'Summer before ' + GRADE[L.am.grade] + ' year',
+    title: 'How do you spend the summer?',
+    text: 'You are ' + L.age + '. Overall ' + ovrOf(L) + '. ' + rankText(L.am.rank) + '.',
+    options: [
+      { label: 'The shoe circuit', hint: 'Travel team, big gyms, every scout. Hard on the body.' },
+      { label: 'Skills trainer every day', hint: 'Get better at what you do.' },
+      { label: 'Run with your high school team', hint: 'Chemistry, and the coach notices.' },
+      { label: 'Rest and grow', hint: 'Sleep, eat, stretch.' },
+    ],
+  };
+}
+
+// ── the amateur cards ──
+
+const AM_EVENTS = {
+  grades: {
+    phases: ['hs', 'col'], when: () => true, weight: () => 3,
+    title: 'Your grades are slipping.',
+    text: (L) => L.season && L.season.lvl === 'col' ? 'The academic advisor says one more bad test and you sit.' : 'Your coach says no grades, no games.',
+    options: [
+      { label: 'Study every night', run: (L) => { bump(L, { iq: 1, morale: -2, eth: 3 }); return 'You pass. Barely. Your mom frames the report card.'; } },
+      { label: 'Get a tutor', run: (L) => { bump(L, { trust: 3, morale: 1 }); return 'Two nights a week. It works.'; } },
+      { label: 'Wing it', run: (L, r) => { if (ok(r, 0.5)) { bump(L, { morale: 2 }); return 'You wing it. It works. This time.'; } bump(L, { rest: 0.12, trust: -6 }); return 'Academically ineligible. You sit three games.'; } },
+    ],
+  },
+  mixtape: {
+    phases: ['hs', 'hs_sum'], when: (L) => L.am && L.am.level === 'hs', weight: () => 3,
+    title: 'Your mixtape hits a million views.',
+    text: () => 'Somebody put your dunks to music. Your phone has not stopped since.',
+    options: [
+      { label: 'Post more', run: (L) => { bump(L, { fame: 8, trust: -3 }); L.am.rstock = (L.am.rstock || 0) + 0.5; return 'Every scout in the country has seen your left hand now.'; } },
+      { label: 'Stay quiet', run: (L) => { bump(L, { trust: 4, iq: 1 }); return 'Your coach likes that you did not change.'; } },
+      { label: 'Call out the top player in your class', run: (L, r) => { bump(L, { fame: 10 }); if (ok(r, 0.4 + (ovrOf(L) - 45) * 0.03)) { L.am.rstock = (L.am.rstock || 0) + 1; return 'He accepts. You cook him at a summer event. On camera.'; } L.am.rstock = (L.am.rstock || 0) - 0.8; bump(L, { morale: -6 }); return 'He accepts. He cooks you. Also on camera.'; } },
+    ],
+  },
+  coach_son: {
+    phases: ['hs'], when: (L) => L.am && L.am.grade <= 11 && L.season && L.season.role && L.season.role.diff < 9, weight: () => 3,
+    title: "The coach's son plays your position.",
+    text: () => 'He gets the last shot every time. Everybody knows why.',
+    options: [
+      { label: 'Outwork him', run: (L, r) => { bump(L, { eth: 5 }); if (ok(r, 0.55)) { bump(L, { min: 6, trust: 6 }); return 'By February you are starting. Nobody says a word.'; } return 'You get better. He still starts.'; } },
+      { label: 'Talk to the coach', run: (L, r) => { if (ok(r, 0.4)) { bump(L, { min: 5 }); return 'He hears you. More minutes.'; } bump(L, { trust: -8 }); return 'He does not like being asked.'; } },
+      { label: 'Let your dad handle it', run: (L) => { bump(L, { trust: -10, morale: 2 }); return 'Your dad handles it. Loudly. In the parking lot.'; } },
+    ],
+  },
+  rival_school: {
+    phases: ['hs'], when: () => true, weight: () => 2.5,
+    title: 'Friday night. The crosstown rival.',
+    text: () => 'Sold out by Tuesday. They have a kid ranked higher than you.',
+    options: [
+      { label: 'Guarantee a win', run: (L, r) => { bump(L, { fame: 5 }); if (ok(r, 0.35 + (ovrOf(L) - 40) * 0.02)) { bump(L, { morale: 8, win: 0.5 }); L.am.rstock = (L.am.rstock || 0) + 0.5; return 'You back it up. Thirty-four and the student section storms the court.'; } bump(L, { morale: -7 }); return 'They win. They play your quote over the speakers.'; } },
+      { label: 'Let your game talk', run: (L, r) => { if (ok(r, 0.55)) { bump(L, { morale: 5, win: 0.3 }); return 'A quiet twenty-six. A win.'; } bump(L, { morale: -3 }); return 'Close loss. Next year.'; } },
+      { label: 'Lock up their star', run: (L) => { bump(L, { def: 1, trust: 4, win: 0.3 }); return 'He goes four for nineteen. The scouts noticed who guarded him.'; } },
+    ],
+  },
+  double_team: {
+    phases: ['hs', 'col'], when: (L) => L.season && L.season.role && L.season.role.label === 'Go-to player', weight: () => 3,
+    title: 'Every team sends two at you now.',
+    text: () => 'Box-and-one. Triangle-and-two. Some coaches just foul you.',
+    options: [
+      { label: 'Find the open man', run: (L) => { bump(L, { pla: 2, win: 0.4, usage: -0.01 }); return 'Your teammates start hitting shots. The defenses stop.'; } },
+      { label: 'Score through it', run: (L, r) => { if (ok(r, 0.5)) { bump(L, { fin: 1, fame: 4 }); return 'Forty against a box-and-one. They stop trying it.'; } bump(L, { morale: -4, health: -3 }); return 'You force it. A lot of bad shots.'; } },
+      { label: 'Ask the coach for new sets', run: (L) => { bump(L, { iq: 2, trust: 3 }); return 'You run off screens now. It is harder to double a moving target.'; } },
+    ],
+  },
+  prep_transfer: {
+    phases: ['hs_sum'], once: true, when: (L) => L.am && L.am.grade <= 11 && L.am.rank <= 220, weight: () => 4,
+    title: 'A national prep academy wants you.',
+    text: () => 'Better players, a national schedule, every game on a stream. You would leave home.',
+    options: [
+      { label: 'Transfer', run: (L) => { L.am.hs = { name: L.am.town + ' Prep Academy', net: 4.5, c1: '#111111', c2: '#f2c14e' }; if (L.season) L.season.school = L.am.hs.name; logIt(L, 'Transferred to ' + L.am.hs.name + '.', 'gold'); bump(L, { fame: 6, morale: -6, trust: -10 }); L.am.rstock = (L.am.rstock || 0) + 0.6; return 'New school, new teammates, new country of scouts.'; } },
+      { label: 'Stay home', run: (L) => { bump(L, { morale: 6, trust: 6 }); return 'Your town, your team. They paint your number on the gym wall.'; } },
+    ],
+  },
+  growth: {
+    phases: ['hs_sum'], once: true, when: (L) => L.am && L.age <= 16, weight: () => 2.5,
+    title: 'You grew two inches since spring.',
+    text: () => 'None of your shoes fit. Your coordination is a week behind your body.',
+    options: [
+      { label: 'Learn to play bigger', run: (L) => { bump(L, { reb: 3, fin: 2, def: 1, pot: 1 }); return 'Post moves, boxing out. A new game opens up.'; } },
+      { label: 'Keep your guard skills', run: (L) => { bump(L, { pla: 2, sho: 1, ath: 1, pot: 1 }); return 'A big who can handle. Scouts love a mismatch.'; } },
+    ],
+  },
+  camp_invite: {
+    phases: ['hs_sum'], when: (L) => L.am && L.am.rank <= 120, weight: () => 3,
+    title: 'The top hundred are invited to an elite camp.',
+    text: () => 'Four days. Every college coach in the country in the bleachers.',
+    options: [
+      { label: 'Compete with everyone', run: (L, r) => { bump(L, { health: -4 }); if (ok(r, 0.35 + (ovrOf(L) - 42) * 0.025)) { L.am.rstock = (L.am.rstock || 0) + 1.2; bump(L, { fame: 5 }); return 'Camp MVP. Your ranking jumps.'; } L.am.rstock = (L.am.rstock || 0) - 0.4; return 'A rough week. The coaches saw it.'; } },
+      { label: 'Go to learn', run: (L) => { bump(L, { iq: 2, def: 1 }); return 'You leave with a notebook full of things to fix.'; } },
+      { label: 'Skip it and rest', run: (L) => { bump(L, { health: 6 }); return 'Fresh legs for the season.'; } },
+    ],
+  },
+  street_agent: {
+    phases: ['hs_off', 'hs_sum'], once: true, when: (L) => L.am && L.am.rank <= 100, weight: () => 2.5,
+    title: 'A man in a nice car wants to help your family.',
+    text: () => 'He says he is a friend of a friend. He has an envelope.',
+    options: [
+      { label: 'Tell him no', run: (L) => { bump(L, { morale: 2, trust: 2 }); return 'He leaves a card. You throw it out.'; } },
+      { label: 'Take the envelope', run: (L) => { bump(L, { cash: 0.02, morale: 3 }); L.am.envelope = true; return 'Your family needs it. Nobody needs to know.'; } },
+      { label: 'Tell your coach', run: (L) => { bump(L, { trust: 6 }); return 'Your coach makes a call. The car never comes back.'; } },
+    ],
+  },
+  homecoming: {
+    phases: ['hs'], when: () => true, weight: () => 1.5,
+    title: 'Homecoming is the night before the big game.',
+    text: () => 'Your friends are going. So is somebody you like.',
+    options: [
+      { label: 'Go', run: (L, r) => { bump(L, { morale: 8 }); if (ok(r, 0.6)) return 'Best night of the year. You still play well.'; bump(L, { health: -4, perf: -0.3 }); return 'Great night. Slow legs the next day.'; } },
+      { label: 'Stay home and rest', run: (L) => { bump(L, { morale: -3, health: 3 }); return 'You hear about it all week.'; } },
+    ],
+  },
+  class_skip: {
+    phases: ['col'], when: () => true, weight: () => 2,
+    title: 'You have missed three straight classes.',
+    text: () => 'The professor emailed the athletic department.',
+    options: [
+      { label: 'Go to office hours', run: (L) => { bump(L, { iq: 1, trust: 2 }); return 'She is a big fan. You are fine.'; } },
+      { label: 'Get notes from a teammate', run: (L) => { bump(L, { morale: 1 }); return 'The walk-on has perfect notes. You owe him.'; } },
+      { label: 'Ignore it', run: (L, r) => { if (ok(r, 0.55)) return 'Nothing happens. You forget about it.'; bump(L, { rest: 0.1, trust: -6 }); return 'You are held out of two games.'; } },
+    ],
+  },
+  freshman_wall: {
+    phases: ['col'], when: (L) => L.am && L.am.cyear === 1, weight: () => 3,
+    title: 'You hit the freshman wall.',
+    text: () => 'Thirty games in. Your legs are gone. Practice is harder than high school games were.',
+    options: [
+      { label: 'Extra lifting', run: (L) => { bump(L, { ath: 1, reb: 1, health: -4 }); return 'Sore for a week. Stronger for March.'; } },
+      { label: 'Sleep and eat', run: (L) => { bump(L, { health: 8, perf: 0.3 }); return 'Nine hours a night. You feel human again.'; } },
+      { label: 'Push through it', run: (L, r) => { if (ok(r, 0.5)) { bump(L, { eth: 4 }); return 'You find a second wind.'; } bump(L, { health: -6, perf: -0.4 }); return 'It catches up with you in February.'; } },
+    ],
+  },
+  nba_scouts: {
+    phases: ['col'], when: (L) => L.am && L.am.stock > -2, weight: () => 2.5,
+    title: 'Twelve NBA scouts at practice.',
+    text: () => 'They sit in the corner with notebooks. Everybody knows who they came to see.',
+    options: [
+      { label: 'Show them everything', run: (L, r) => { if (ok(r, 0.5)) { L.am.stock = (L.am.stock || 0) + 0.8; return 'Your best practice of the year. Phones come out in the corner.'; } L.am.stock = (L.am.stock || 0) - 0.4; bump(L, { trust: -3 }); return 'You force it. The coach yells. The scouts write that down too.'; } },
+      { label: 'Play your role', run: (L) => { bump(L, { trust: 4 }); L.am.stock = (L.am.stock || 0) + 0.3; return 'Scouts like a guy who fits. They note it.'; } },
+    ],
+  },
+  rivalry_col: {
+    phases: ['col'], when: () => true, weight: () => 2,
+    title: 'Rivalry week. National TV.',
+    text: () => 'The student section has been camping out since Monday.',
+    options: [
+      { label: 'Take over the game', run: (L, r) => { if (ok(r, 0.3 + (ovrOf(L) - 50) * 0.025)) { bump(L, { fame: 8, win: 0.3 }); L.am.stock = (L.am.stock || 0) + 0.6; return 'Thirty-one on national TV. The student section chants your name.'; } bump(L, { morale: -5 }); return 'They key on you. A loss.'; } },
+      { label: 'Run the offense', run: (L) => { bump(L, { win: 0.4, trust: 3 }); return 'A team win. The coach mentions you first.'; } },
+      { label: 'Talk trash before it', run: (L, r) => { bump(L, { fame: 5 }); if (ok(r, 0.5)) return 'You back it up. The clip runs all week.'; bump(L, { morale: -4, trust: -3 }); return 'They bring it up every time you touch the ball.'; } },
+    ],
+  },
+  booster: {
+    phases: ['col', 'col_pre'], once: true, when: (L) => L.am && L.am.level === 'col', weight: () => 1.8,
+    title: 'A booster wants to give you a car.',
+    text: () => 'Off the books. He says everybody does it.',
+    options: [
+      { label: 'Take the keys', run: (L, r) => { if (ok(r, 0.6)) { bump(L, { morale: 6 }); return 'Nice car. Nobody asks.'; } bump(L, { rest: 0.25, fame: 3, trust: -8 }); L.am.stock = (L.am.stock || 0) - 0.6; return 'Somebody asks. You sit for a third of the season.'; } },
+      { label: 'Ask for a legal NIL deal instead', run: (L) => { bump(L, { cash: 0.08, morale: 2 }); return 'He sets one up. Same money, no problems.'; } },
+      { label: 'Turn it down', run: (L) => { bump(L, { trust: 3 }); return 'You keep riding the bus.'; } },
+    ],
+  },
+  nil_deal: {
+    phases: ['col_pre'], when: (L) => L.am && L.am.level === 'col' && L.m.fame >= 15, weight: () => 4,
+    title: 'An NIL collective wants a word.',
+    text: (L) => 'They will pay ' + money(round1(0.05 + Math.pow(L.m.fame, 1.4) * 0.002)) + ' for the season. Appearances, posts, a billboard.',
+    options: [
+      { label: 'Sign it', run: (L) => { const c = round1(0.05 + Math.pow(L.m.fame, 1.4) * 0.002); bump(L, { cash: c, fame: 3, trust: -2 }); L.earned = round1(L.earned + c); return 'Your face is on a billboard by the highway.'; } },
+      { label: 'Local businesses only', run: (L) => { const c = round1(0.02 + L.m.fame * 0.0008); bump(L, { cash: c, morale: 3 }); L.earned = round1(L.earned + c); return 'A pizza place and a car wash. The town loves it.'; } },
+      { label: 'Focus on basketball', run: (L) => { bump(L, { trust: 4, iq: 1 }); return 'You leave the money. The coach notices.'; } },
+    ],
+  },
+  roommate: {
+    phases: ['col_pre'], once: true, when: (L) => L.am && L.am.cyear === 1, weight: () => 4,
+    title: 'Your roommate is a walk-on from a farm town.',
+    text: () => 'He has never been on a plane. He wakes up at five.',
+    options: [
+      { label: 'Start waking up at five too', run: (L) => { bump(L, { eth: 6, health: -2 }); return 'He becomes your rebounder at six every morning.'; } },
+      { label: 'Show him the city', run: (L) => { bump(L, { morale: 6, trust: 2 }); return 'Best friends by October. He gives your speech at your wedding.'; } },
+      { label: 'Ask for a single', run: (L) => { bump(L, { morale: 1, trust: -2 }); return 'Quiet. Lonely.'; } },
+    ],
+  },
+  coach_leaves: {
+    phases: ['col_off'], once: true, when: (L) => L.am && L.am.cyear <= 3, weight: () => 2,
+    title: 'Your coach takes an NBA job.',
+    text: () => 'He calls before the news breaks. He wants you to know first.',
+    options: [
+      { label: 'Wish him well', run: (L) => { L.m.trust = 50; bump(L, { morale: -3 }); return 'The new coach has a different system. You start over.'; } },
+      { label: 'Ask him to put in a word with his new club', run: (L) => { L.m.trust = 50; L.am.stock = (L.am.stock || 0) + 0.6; return 'He says you are the best player he has coached. He means it.'; } },
+    ],
+  },
+  investigation: {
+    phases: ['col'], once: true, when: (L) => !!(L.am && L.am.envelope), weight: () => 8,
+    title: 'A reporter is asking about an envelope.',
+    text: () => 'Somebody talked. The school wants to hear it from you before the NCAA does.',
+    options: [
+      { label: 'Tell the truth', run: (L) => { L.am.envelope = false; bump(L, { rest: 0.2, trust: 4 }); return 'You sit nine games. The story is gone in a week.'; } },
+      { label: 'Deny everything', run: (L, r) => { L.am.envelope = false; if (ok(r, 0.6)) return 'It goes away. You never talk about it again.'; bump(L, { rest: 0.35, fame: 4, trust: -10 }); L.am.stock = (L.am.stock || 0) - 1; return 'It does not go away. Half a season, and the whole country knows why.'; } },
+    ],
+  },
+  summer_league: {
+    phases: ['col_off', 'hs_off'], when: () => true, weight: () => 1.5,
+    title: 'A pro-am league wants you this summer.',
+    text: () => 'Outdoor court, real pros, a thousand people on the fence.',
+    options: [
+      { label: 'Play', run: (L, r) => { bump(L, { health: -3 }); if (ok(r, 0.5)) { bump(L, { fame: 6, iq: 1 }); return 'You drop forty on a guy with a ring. The video is everywhere.'; } bump(L, { iq: 1 }); return 'The pros teach you a lesson. A useful one.'; } },
+      { label: 'Rest', run: (L) => { bump(L, { health: 5 }); return 'You watch from the fence.'; } },
+    ],
+  },
+};
+
+/* Answers to the road's own cards. Null means the card is not one of these. */
+function chooseAm(L, card, i, opt, rng, beats) {
+  switch (card.id) {
+    case 'hs_summer': {
+      if (i === 0) { bump(L, { fame: 5, health: -6, ath: 1 }); L.am.rstock = (L.am.rstock || 0) + 0.8; return { text: 'Twelve tournaments, four states, every scout. Your name is on the lists.', tone: 'good' }; }
+      if (i === 1) {
+        const focus = ARCHES[L.arch].tilt;
+        const keys = Object.keys(focus).filter((k) => focus[k] > 0).slice(0, 2);
+        const d = {};
+        for (const k of keys) d[k] = 2 + Math.round(rng());
+        d.eth = 3;
+        bump(L, d);
+        return { text: 'Five hundred shots a day. It shows in the first week.', tone: 'good' };
+      }
+      if (i === 2) { bump(L, { trust: 8, iq: 1, win: 0.6 }); return { text: 'Open gym every night. Your team is ready.', tone: 'good' }; }
+      bump(L, { health: 12, dur: 2 }); return { text: 'You sleep ten hours a night and grow half an inch.', tone: '' };
+    }
+    case 'offers': {
+      if (opt.school) {
+        L.am.college = opt.school;
+        bump(L, { morale: 6 });
+        logIt(L, 'Committed to ' + opt.school + '.', 'gold');
+        return { text: 'You pull on the hat. ' + opt.school + ' it is.', tone: 'gold' };
+      }
+      bump(L, { fame: 2 });
+      return { text: 'You keep everybody waiting. Senior year decides it.', tone: '' };
+    }
+    case 'signing': {
+      if (i === 0) { logIt(L, 'Signed with ' + L.am.college + '.', 'good'); return { text: 'Signed. ' + L.am.college + ' gets its ' + POS_NAME[L.pos].toLowerCase() + '.', tone: 'good' }; }
+      L.am.college = null;
+      L.pending.unshift(commitCard(L));
+      bump(L, { fame: 3 });
+      return { text: 'You decommit. Every coach who lost out calls back.', tone: '' };
+    }
+    case 'commit': {
+      if (opt.route) {
+        L.am.route = opt.route;
+        L.am.college = null;
+        logIt(L, opt.route === 'intl' ? 'Turned pro overseas out of high school.' : 'Signed with the G League out of high school.', 'gold');
+        return { text: opt.route === 'intl' ? 'You sign a one-year deal overseas.' : 'You sign with the G League.', tone: 'gold' };
+      }
+      L.am.college = opt.school;
+      L.am.route = 'college';
+      logIt(L, 'Committed to ' + opt.school + '.', 'gold');
+      bump(L, { morale: 6 });
+      return { text: 'You pull on the hat. ' + opt.school + ' it is.', tone: 'gold' };
+    }
+    case 'declare': {
+      if (i === 0) { L.am.declared = true; logIt(L, 'Declared for the draft.', 'gold'); return { text: 'You thank the fans. You hire an agent next week.', tone: 'gold' }; }
+      if (i === 1) { bump(L, { trust: 6, morale: 2 }); return { text: 'One more year. The campus loses its mind.', tone: 'good' }; }
+      L.pending.unshift(portalCard(L));
+      return { text: 'Your name is in the portal by lunch.', tone: '' };
+    }
+    case 'portal': {
+      if (opt.school) {
+        const from = L.am.college;
+        L.am.college = opt.school;
+        L.m.trust = 50;
+        logIt(L, 'Transferred from ' + from + ' to ' + opt.school + '.', 'gold');
+        return { text: 'You transfer to ' + opt.school + '.', tone: 'gold' };
+      }
+      return { text: 'You pull your name out. You stay.', tone: '' };
+    }
+    case 'amclutch': {
+      const o = clutchOptions(L)[i];
+      const s = L.season, t = s.tourney;
+      const made = rng() < o.p;
+      t.waiting = false;
+      if (made) { L.am.winners = (L.am.winners || 0) + 1; bump(L, { fame: 6, morale: 8 }); }
+      else bump(L, { morale: -8 });
+      const tx = made ? 'Good! You are going to remember that one for the rest of your life.' : 'No good. You sit on the floor for a long time.';
+      logIt(L, (t.kind === 'hs' ? HS_ROUNDS : NCAA_ROUNDS)[t.cur.r] + ': ' + (made ? 'hit the winner.' : 'missed the last shot.'), made ? 'gold' : 'bad');
+      endTourneyGame(L, t, t.cur, made, beats);
+      t.cur = null;
+      runTourney(L, beats);
+      if (t.done) closeAm(L, beats);
+      return { text: tx, tone: made ? 'gold' : 'bad' };
+    }
+  }
+  return null;
+}
+
+function newRoad(L, rng) {
+  const town = pick(rng, HOMETOWNS);
+  const [c1, c2] = pick(rng, HS_COLORS);
+  L.stage = 'hs';
+  L.am = { level: 'hs', grade: 10, cyear: 0, town, hs: { name: town + ' ' + pick(rng, HS_SUFFIX), net: round1(norm(rng) * 2.5), c1, c2 },
+    rank: 0, rstock: 0, stock: 0, college: null, route: null, declared: false, offers: [] };
+  L.amHist = [];
+  L.am.rank = nationalRank(L);
+  L.phase = 'hs_pre';
+  newAmSeason(L, 'hs');
+  L.pending.push(hsSummerCard(L));
 }
 
 // ─── answering a card ───────────────────────────────────────────────────────
@@ -1542,7 +2609,8 @@ function choose(L, i) {
   const before = snapshot(L);
   let text = '', tone = '', beats = [];
   L.pending.shift();
-  switch (card.id) {
+  const road = chooseAm(L, card, i, opt, rng, beats);
+  if (road) { text = road.text; tone = road.tone; } else switch (card.id) {
     case 'combine': {
       const r = rng();
       if (i === 0) {
@@ -1678,7 +2746,7 @@ function choose(L, i) {
       break;
     }
     default: {
-      const ev = EVENTS[card.id];
+      const ev = EVENTS[card.id] || AM_EVENTS[card.id];
       if (ev) {
         const o = ev.options[i];
         text = o.run(L, rng) || '';
@@ -1705,6 +2773,17 @@ function nextLabel(L) {
     case 'late': return L.season && L.season.po && !L.season.po.out ? 'Start the playoffs' : 'Go to the summer';
     case 'po': return L.season.po.out ? 'Go to the summer' : 'Play the ' + (L.season.po.round === -1 ? 'play-in' : ROUNDS[L.season.po.round]);
     case 'off': return 'Next season';
+    case 'hs_pre': return 'Play your ' + GRADE[L.am.grade] + ' season';
+    case 'hs_reg': return L.season && L.season.qual ? 'Play the state playoffs' : 'Go to the summer';
+    case 'hs_po': return 'Keep playing';
+    case 'hs_off': return L.am.grade < 12 ? 'Next season' : L.am.route === 'intl' || L.am.route === 'gl' ? 'Turn pro' : 'Go to college';
+    case 'col_pre': return 'Tip off the season';
+    case 'col_early': return 'Play the conference season';
+    case 'col_mid': return 'Conference tournament';
+    case 'col_late': return L.season && L.season.tourney ? 'Play the first weekend' : 'Go to the summer';
+    case 'col_po': return L.season.tourney.upto <= 2 ? 'Play the second weekend' : 'Go to the Final Four';
+    case 'col_off': return L.am.declared ? 'Go to the draft combine' : 'Next season';
+    case 'pro_year': return L.am.route === 'intl' ? 'Play the season overseas' : 'Play the G League season';
     default: return 'Continue';
   }
 }
@@ -1782,6 +2861,20 @@ function step(L) {
     case 'off':
       newYear(L, beats);
       break;
+    case 'hs_pre': hsRegular(L, beats); break;
+    case 'hs_reg': hsPlayoffs(L, beats); break;
+    case 'hs_po': runTourney(L, beats); if (L.season.tourney.done) closeAm(L, beats); break;
+    case 'hs_off': amNewYear(L, beats); break;
+    case 'col_pre': colStart(L, beats); break;
+    case 'col_early': colConf(L, beats); break;
+    case 'col_mid': colMarch(L, beats); break;
+    case 'col_late':
+      if (L.season.tourney) colTourney(L, beats, 2);
+      else closeAm(L, beats);
+      break;
+    case 'col_po': colTourney(L, beats, L.season.tourney.upto + 2); break;
+    case 'col_off': amNewYear(L, beats); break;
+    case 'pro_year': proYear(L, beats); break;
   }
   return { beats };
 }
@@ -1918,7 +3011,7 @@ const ACTS = {
   },
 };
 function actsOpen(L) {
-  if (L.retired || L.pending.length) return [];
+  if (L.retired || L.pending.length || isAm(L)) return [];
   const used = (L.flags.acts && L.flags.acts.y === L.year) ? L.flags.acts : {};
   return Object.keys(ACTS).map((id) => {
     const a = ACTS[id], cost = a.cost(L);
@@ -1951,6 +3044,26 @@ function view(L) {
   };
 }
 
+/* The colours you are wearing right now. */
+function colorsOf(L) {
+  if (isAm(L)) {
+    if (L.am.level === 'hs') return { primary: L.am.hs.c1, secondary: L.am.hs.c2 };
+    if (L.am.level === 'col' && SCHOOL_BY[L.am.college]) return { primary: SCHOOL_BY[L.am.college].c1, secondary: SCHOOL_BY[L.am.college].c2 };
+    return { primary: '#2b3242', secondary: '#c9ccd6' };
+  }
+  if (L.team && E.clubSkin) { const k = E.clubSkin(L.team); return { primary: k.primary, secondary: k.secondary }; }
+  return { primary: '#2b3242', secondary: '#c9ccd6' };
+}
+/* Where you are on the road, in two lines, for the identity card and the hero. */
+function roadView(L) {
+  if (!isAm(L)) return null;
+  const a = L.am;
+  if (a.level === 'hs') return { where: a.hs.name, level: 'High school', what: GRADE[a.grade][0].toUpperCase() + GRADE[a.grade].slice(1), sub: rankText(a.rank) };
+  if (a.level === 'col') return { where: a.college, level: 'College', what: CYEAR[a.cyear][0].toUpperCase() + CYEAR[a.cyear].slice(1) + ' at ' + a.college,
+    sub: draftTalk(projectedPick(L, a.stock || 0)) };
+  return { where: a.route === 'intl' ? 'Overseas' : 'G League', level: 'Pro', what: a.route === 'intl' ? 'A year overseas' : 'A year in the G League', sub: 'The draft is next' };
+}
+
 const publicAPI = {
   CAREER_API_VERSION, LIFE_VERSION,
   CONF, CLUBS, confOf, POS, POS_NAME, RATINGS, RATING_NAME, RATING_SHORT, WEIGHTS,
@@ -1959,6 +3072,8 @@ const publicAPI = {
   view, perGame, totals, legacy, legacyScore, clubNet, clubTier, rotationBar,
   roleOf, lineMeans, capFor, marketSalary, projectedPick, draftOrder, money, ordinal,
   clutchOptions, offers, ACTS, actsOpen, act,
+  SCHOOLS, SCHOOL_BY, TIER_NAME, AM_EVENTS, HS_ROUNDS, NCAA_ROUNDS, GRADE, CYEAR, AGE_HS,
+  isAm, colorsOf, roadView, nationalRank, rankText, starsOf, draftTalk, collegeOffers, schoolNet,
 };
 
 if (typeof module !== 'undefined' && module.exports) module.exports = publicAPI;

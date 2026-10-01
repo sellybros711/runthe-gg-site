@@ -2552,7 +2552,7 @@
        today's state (open, or done with the result), and the line beside the
        heading says how many are left. modes-ui.js fills both slots and shows
        the section, because only that file knows whether a puzzle is done. -->
-  <!-- CAREER IS THE HERO. One NBA life from draft night to the Hall of Fame,
+  <!-- CAREER IS THE HERO. One basketball life from high school to the Hall of Fame,
        a season at a time, with the calls in between. Asked for by the owner as
        the main game mode, so it leads the page and the dock carries its button
        on a phone. career-ui.js paints it: a career in progress says who and
@@ -2560,8 +2560,8 @@
   <section class="card career-hero" id="career" aria-labelledby="ch-title">
     <span class="ch-eye">Career <i>New</i></span>
     <h2 id="ch-title">Live an NBA life.</h2>
-    <p class="ch-say" id="ch-say">Draft night to the Hall of Fame. Contracts, injuries, rivals and Game 7s. Every call is yours.</p>
-    <ol class="ch-path" id="ch-path" aria-hidden="true"><li>Draft</li><li>Rookie</li><li>All-Star</li><li>Ring</li><li class="end">Hall</li></ol>
+    <p class="ch-say" id="ch-say">High school to the Hall of Fame. Recruiting, March, contracts, rivals and Game 7s. Every call is yours.</p>
+    <ol class="ch-path" id="ch-path" aria-hidden="true"><li>High school</li><li>College</li><li>Draft</li><li>Ring</li><li class="end">Hall</li></ol>
     <div class="ch-cur" id="ch-cur" hidden></div>
     <button class="big" id="b-career" disabled>Start your career</button>
     <p class="ch-best" id="ch-best" hidden></p>
@@ -2718,10 +2718,11 @@
 
     <h3>Career</h3>
     <p class="dim" style="font-size:14px;margin:0 0 10px">
-      Build a player and live his whole NBA life. Draft night, then a season at a time, with
-      a call to make between every stretch of games: role, injuries, money, rivals, free
-      agency. Every Game 7 comes down to your last shot. Retire when you choose, and the
-      Hall of Fame gives its verdict.
+      Build a player and live his whole basketball life. Start as a high school sophomore, get
+      recruited, play college ball and March, then the draft. Or skip to draft night. Then a
+      season at a time, with a call to make between every stretch of games: role, injuries,
+      money, rivals, free agency. Every Game 7 comes down to your last shot. Retire when you
+      choose, and the Hall of Fame gives its verdict.
     </p>
 
     <h3>How a run goes</h3>
@@ -3411,7 +3412,7 @@
 <script src="badges.js?v=4"></script>
 <script src="courts.js?v=2"></script>
 <script src="modes.js?v=9"></script>
-<script src="career.js?v=1"></script>
+<script src="career.js?v=2"></script>
 <!-- ACCOUNTS AND THE LEADERBOARD. All three are OPTIONAL: if the CDN is blocked
      or either file fails to load, the game runs exactly as it did, with runs
      kept in this browser and the board reporting itself unreachable. An account
@@ -4305,7 +4306,7 @@ function frgFill(){
      distinctive thing that mode does and check-home holds the guide to saying
      it. Every number is read off the constants, never typed. */
   var steps = [
-    '<b>Career.</b> One NBA life, from draft night to the Hall of Fame.',
+    '<b>Career.</b> One basketball life, from high school to the Hall of Fame.',
     '<b>Classic.</b> ' + NUMWORD(E.SLOTS.length, true) + ' picks under a '
       + money(C.CAP_MUSD) + ' cap. Pick how fast you play. Play ' + C.REGULAR_SEASON_GAMES
       + ', and <b>every Game 7 is yours to play</b>.',
@@ -11865,6 +11866,6 @@ boot();
 <!-- AFTER the page, because it draws through window.RTF_PAGE, which the script
      above publishes. -->
 <script src="modes-ui.js?v=17"></script>
-<script src="career-ui.js?v=1"></script>
+<script src="career-ui.js?v=2"></script>
 </body>
 </html>

@@ -10844,16 +10844,16 @@ is outside its band.
 ### Career is the main game: one invented player, a whole NBA life
 
 ```
-node hoops/check-career.mjs            six hundred careers three ways, then one through the page
+node hoops/check-career.mjs            nine hundred careers, six hundred from draft night and three
+                                       hundred from high school, then one through the page
 node hoops/check-career.mjs --quick    the engine only
 ```
 
 Asked for by the owner as the main game mode: a BitLife or Run The Tour career sim for
-basketball, a choose your own adventure from draft night to the Hall of Fame. The owner
-picked **NBA only, deep** as the first slice and **Career as the new hero**. High school and
-college are the background card on the builder (age, polish, ceiling) and a later pass can
-play them out. `hoops/career.js` is the rules (window.RTF_CAREER, node require) and
-`hoops/career-ui.js` draws `#s-car` and paints the front page's `#career` card.
+basketball, a choose your own adventure from high school to the Hall of Fame. The NBA half
+shipped first; high school and college are played out now, and draft night with a
+background card is the skip-ahead. `hoops/career.js` is the rules (window.RTF_CAREER, node
+require) and `hoops/career-ui.js` draws `#s-car` and paints the front page's `#career` card.
 
 **THE PLAYER IS INVENTED AND THE LEAGUE IS REAL.** Thirty real clubs, their colours, and year
 one's real rosters as a fact about who you join ("You join X, Y and Z", read off the data).
@@ -10906,8 +10906,50 @@ so the dock can carry `#b-career` from boot on a phone; Classic's Start stays in
 card. The first-visit guide names five modes with Career first and points at the docked
 button. `check-home`'s budget went 2.5 to 2.9 screens for it (2.40, 2.79 and 1.95 measured).
 
-**What it does not have yet**: a leaderboard (it needs a migration), a badge shelf, and the
-high school and college chapters. Those are the next passes.
+#### The road: high school, college, and the draft it ends at
+
+`newLife({ start: 'hs' })` begins as a fifteen year old sophomore, and it is the builder's
+default. Three high school years (`hs_pre`, `hs_reg`, `hs_po`, `hs_off`: a summer card, a
+26 game season, a four round state tournament), a national ranking, offers in junior year and
+a decision in senior year: a college, or a year overseas or in the G League. College is
+`col_pre` to `col_off`: non-conference, conference, the conference tournament and Selection
+Sunday, then March a weekend a step, then declare, come back, or enter the portal. Every exit
+lands on the same `combine` card a draft-night career starts on (`toDraft`), so **the NBA half
+never knew the road existed**.
+
+**THE SCHOOLS ARE REAL AND THE PEOPLE ARE NOT.** Fifty-odd real colleges by tier (blue blood,
+power, mid-major, small) with their colours, because a college is an institution the way a
+club is. Coaches, boosters, rivals and roommates are roles. High schools are invented
+(`<hometown> <suffix>`).
+
+**THE ROAD ENDS WHERE THE BACKGROUNDS DO, AND THAT IS MEASURED.** It is played on the league's
+ratings scale (a sophomore is about a 40), grows by `GROW_AM` toward a ceiling drawn from
+`ROAD_POT`, and section 8 holds its NBA outcomes to section 2's bands. The first cut handed
+out an MVP in 6% of road careers against 1 to 2% from draft night. Three things were wrong
+and none is obvious:
+- **Draft stock accumulated across college years.** It decays now (`stock * 0.5 + this year`)
+  and is clamped, because the board reads the last season hardest.
+- **A four-year senior had no age cost**, so a 22 year old with a high overall went top three.
+  `draftStock` has `- (age - 20) * 1.2` now, for every career. Scouts draft the ceiling.
+- **The road's ceiling ran higher than a background's**, through `pot` bumps on summer cards.
+
+**The recruiting rank is read against age** (`ovr - (age - 15) * 5.2`), so a junior is ranked
+against juniors, and the curve is fitted so about one in five of these players (all future
+pros) is a five-star by 17. A class rank that only rises with age is the bug that version had.
+
+**One tie game per tournament is yours**, the first close one you are on the floor for:
+`amclutch`, the same four shots as Game 7. It can come in any round, so the tournament has to
+be resumable mid-weekend: `runTourney` plays to `upto` and stops at the card, and the card
+continues it.
+
+**The third fact on the screen follows the stage**: the class ranking in high school, the mock
+draft (and NIL money) in college, the bank after. A sophomore told his bank balance is the
+NBA screen leaking down.
+
+**Overseas is the route a blind policy never finds**, because it needs a ranked player who
+waited past junior year. Section 8 walks it on purpose rather than hoping the sweep does.
+
+**What it does not have yet**: a leaderboard (it needs a migration) and a badge shelf.
 
 ### Four ways to play, and the draft is one of them
 
