@@ -14,10 +14,13 @@
  * leaves the career exactly where it was: the card is still on the table
  * underneath, and the screen behind the overlay is the ordinary one.
  *
- * THE CAST IS INVENTED. Every broadcaster and outlet here is made up, and
- * the people in a career's story who are not on the cast are ROLES (your
- * coach, the commissioner), never names. check-career reads this file for
- * every real player's name, the same way it reads career.js.
+ * THE BROADCASTERS ARE INVENTED, AND EVERYBODY ELSE IS WHO THE CAREER SAYS.
+ * Every broadcaster and outlet here is made up. The coach on the plate is
+ * the real coach of your club, or the generated coach of your school, and the
+ * commissioner is generated with the rest of the career's people: both come
+ * from career.js (C.myCoach, C.say), so a scene and a card always name the
+ * same man. check-career reads this file for every real player's name: a
+ * real person reaches a scene through the career, never typed in here.
  *
  * THE PLAYER IS THE PICTURE AND THE WORLD IS THE VOICE, which is Run The
  * Tour's rule: nobody but you is drawn, apart from your draft-class rival,
@@ -54,8 +57,8 @@ var CAST = {
   whit: { name: 'Dex Whitlow', role: 'Host', outlet: 'pod' },
   kim: { name: 'June Kimura', role: 'Press room', outlet: 'wire' },
   greer: { name: 'Tasha Greer', role: 'Prep scout', outlet: 'prep' },
-  commish: { name: 'The commissioner', role: 'At the podium', outlet: 'night' },
-  coach: { name: 'Your coach', role: 'Head coach', outlet: 'team' },
+  commish: { name: function(c){ return c.commish; }, role: 'Commissioner', outlet: 'night' },
+  coach: { name: function(c){ return c.coach; }, role: function(c){ return c.level === 'NBA' ? 'Head coach, ' + c.nick : 'Your coach'; }, outlet: 'team' },
   feed: { name: 'The Timeline', role: 'Fan reaction', outlet: 'timeline' },
 };
 
@@ -212,6 +215,7 @@ function ctxOf(L, extra){
     school: L.am && L.am.college ? L.am.college : (L.am && L.am.hs ? L.am.hs.name : ''),
     level: rv ? rv.level : 'NBA', persona: C.personaOf ? C.personaOf(L) : '',
     rival: L.rival || null,
+    coach: C.myCoach ? C.myCoach(L) : '', commish: C.say ? C.say(L, '{commish}') : '',
   };
   for (var x in extra || {}) c[x] = extra[x];
   return c;
@@ -455,8 +459,8 @@ function play(beats, ctx, opts){
     var out = OUTLETS[who.outlet] || OUTLETS.night;
     ov.style.setProperty('--oc', bt.who === 'me' ? ctx.c2 : out.c);
     $('.sc-out span').textContent = bt.who === 'me' ? 'Live' : out.name;
-    $('.sc-who b').textContent = who.name;
-    $('.sc-who span').textContent = who.role;
+    $('.sc-who b').textContent = T(who.name, ctx) || '';
+    $('.sc-who span').textContent = T(who.role, ctx) || '';
   }
   function paint(){
     var bt = list[i];

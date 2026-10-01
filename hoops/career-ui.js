@@ -429,6 +429,7 @@ function idCard(L){
     + portrait(L, { pose: L.team || rv ? 'ball' : 'stand' })
     + '<div class="cr-who"><b>' + esc(L.name) + '</b><span>' + esc(sub) + '</span><span>' + esc(club) + '</span>'
     + (rv ? '<span>' + esc(rv.sub) + '</span>' : '')
+    + ((L.team || rv) && v.coach ? '<span class="cr-coach">Coach ' + esc(v.coach) + '</span>' : '')
     + (!rv && ct && ct.kind !== 'overseas' ? '<span>' + money(ct.salary) + ' a year · ' + ct.years + (ct.years === 1 ? ' year left' : ' years left') + '</span>' : '')
     + (per && per !== 'Still writing it' ? '<span class="cr-persona" title="How the league sees you">' + esc(per) + '</span>' : '')
     + '</div><div class="cr-ovr"><b>' + v.ovr + '</b><span>Overall</span></div></div>';
@@ -483,18 +484,18 @@ function resultHtml(r){
   if (!r) return '';
   return '<div class="cr-result ' + (r.tone || '') + '"><div class="y">You: ' + esc(r.label) + '</div><p>' + esc(r.text) + '</p>' + diffsHtml(r.diff) + '</div>';
 }
-function draftHtml(d){
+function draftHtml(L, d){
   if (!d) return '';
   var k = skin(d.team);
   return '<div class="cr-draft" id="cr-draftbox" style="--c1:' + k.primary + '">'
-    + '<div class="tick" id="cr-tick">The commissioner steps up</div>'
+    + '<div class="tick" id="cr-tick">' + esc(C.say ? C.say(L, '{commish}') : 'The commissioner') + ' steps up</div>'
     + '<div class="pk" id="cr-pk" style="color:' + k.secondary + '">#' + d.pick + '</div>'
     + '<div class="tm" id="cr-tm">' + esc(teamName(d.team)) + '</div></div>';
 }
 
 function stageHtml(L){
   var out = '';
-  if (stage.draft) out += draftHtml(stage.draft);
+  if (stage.draft) out += draftHtml(L, stage.draft);
   out += resultHtml(stage.result);
   out += beatsHtml(stage.beats);
   if (L.pending.length) out += cardHtml(L, L.pending[0]);
@@ -986,6 +987,10 @@ function render(){
     root.innerHTML = '<div id="cr-body"></div><div class="cr-sheet" id="cr-sheet" hidden><div class="in"></div></div>';
   }
   var body = $('cr-body');
+  /* A career saved before rosters rode on the life gets the real ones now,
+     as long as it was opened on the same season of data. */
+  var lg = league();
+  if (st.cur && st.cur.league && !st.cur.league.roster && lg && lg.roster && st.cur.league.latest === lg.latest) st.cur.league.roster = lg.roster;
   if (st.cur) { body.innerHTML = lifeView(st.cur); wireLife(st.cur); }
   else if (st.last) { body.innerHTML = finalView(st.last); wireFinal(st.last); }
   else { body.innerHTML = buildView(); wireBuild(); }

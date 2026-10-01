@@ -4,11 +4,12 @@
  * be driven from node. Browser: window.RTF_CAREER. Node: require.
  *
  * THE PLAYER IS INVENTED AND THE LEAGUE IS REAL. Thirty real clubs, their real
- * colours, and year one's real rosters as a fact about who you join. Nothing
- * in here writes a storyline about a real person: every rival, mentor, coach
- * and teammate an event talks about is a role ("your starting center"), never
- * a name. That is the wrestling game's rule arriving at a sport with real
- * people in it, and it is the line to hold when adding events.
+ * colours, their real players and their real head coaches. Every person a
+ * line talks about has a name: a teammate or an opponent is a real player off
+ * the data, an NBA head coach is a real coach (and the carousel moves them),
+ * and everybody else is generated off the career's seed. Write an event with
+ * a {token} (see peopleKey) and never with a role like "your coach": the
+ * token is what makes the line about a person rather than a job.
  *
  * NOT A SECOND MODEL OF A ROSTER. The draft modes rate five real men through
  * the engine's pipeline; this file rates ONE invented man and a club's net
@@ -212,7 +213,7 @@ function diffOf(a, b) {
 }
 
 function logIt(L, text, tone) {
-  L.log.push({ y: L.year, t: text, tone: tone || '' });
+  L.log.push({ y: L.year, t: say(L, text), tone: tone || '' });
   if (L.log.length > 400) L.log.splice(0, L.log.length - 400);
 }
 
@@ -235,7 +236,7 @@ function seedLeague(rows) {
     } else net[c] = 0;
     stars[c] = list.slice().sort((a, b) => b.w - a.w).slice(0, 3).map((r) => r.n);
   }
-  return { latest: latest || 2026, net: normaliseNets(net), stars };
+  return { latest: latest || 2026, net: normaliseNets(net), stars, roster: rosterSeed(rows, latest) };
 }
 /* Mean zero, a spread of 4.6 points, which is roughly the real league's. */
 function normaliseNets(net) {
@@ -247,7 +248,8 @@ function normaliseNets(net) {
   return out;
 }
 /* A new season: every club regresses toward the middle and moves a little. */
-function driftLeague(L) {
+function driftLeague(L, beats) {
+  coachCarousel(L, beats);
   const rng = rngAt(L, 'drift');
   const net = {};
   for (const c of CLUBS) net[c] = (L.league.net[c] || 0) * 0.62 + norm(rng) * 3.6;
@@ -264,6 +266,406 @@ function clubTier(net) {
 /* What it takes to start for a club. A good club's rotation is better, so the
    bar to get on the floor there is higher. */
 const rotationBar = (net) => 67 + net * 0.45;
+
+// ─── the people ─────────────────────────────────────────────────────────────
+
+/* EVERYBODY IN A STORY HAS A NAME. NBA players and NBA head coaches are real
+ * people under their real names. Everybody else (a high school coach, a
+ * college coach, an agent, a GM, your mom, a booster) is generated off the
+ * career's seed, so they are the same people every time the career is loaded
+ * and different people in the next career.
+ *
+ * The head coaches are the staff in place at the end of the data's last
+ * season, which is the league the career opens on. They move after that the
+ * way coaches do: a bad year gets a coach fired, an interim gets the job or
+ * does not, and a fired coach can turn up somewhere else a year later. Once
+ * the real names run out, the league promotes generated assistants. Change a
+ * chair here and nowhere else.
+ */
+const COACHES_NOW = {
+  ATL: ['Quin Snyder', 1966], BOS: ['Joe Mazzulla', 1988], BRK: ['Jordi Fernández', 1982],
+  CHI: ['Billy Donovan', 1965], CHO: ['Charles Lee', 1984], CLE: ['Kenny Atkinson', 1967],
+  DET: ['J.B. Bickerstaff', 1979], IND: ['Rick Carlisle', 1959], MIA: ['Erik Spoelstra', 1970],
+  MIL: ['Doc Rivers', 1961], NYK: ['Mike Brown', 1970], ORL: ['Jamahl Mosley', 1978],
+  PHI: ['Nick Nurse', 1967], TOR: ['Darko Rajaković', 1979], WAS: ['Brian Keefe', 1976],
+  DAL: ['Jason Kidd', 1973], DEN: ['David Adelman', 1981], GSW: ['Steve Kerr', 1965],
+  HOU: ['Ime Udoka', 1977], LAC: ['Tyronn Lue', 1977], LAL: ['JJ Redick', 1984],
+  MEM: ['Tuomas Iisalo', 1982], MIN: ['Chris Finch', 1969], NOP: ['James Borrego', 1977],
+  OKC: ['Mark Daigneault', 1985], PHO: ['Jordan Ott', 1985], POR: ['Tiago Splitter', 1985],
+  SAC: ['Doug Christie', 1970], SAS: ['Mitch Johnson', 1986], UTA: ['Will Hardy', 1988],
+};
+/* Real coaches out of a chair when the data ends, and real assistants a club
+   could hand one to. The third field is whether he has run a bench before:
+   an interim comes from the assistants first, a big hire from the others. */
+const COACH_POOL = [
+  ['Mike Budenholzer', 1969, 1], ['Michael Malone', 1971, 1], ['Tom Thibodeau', 1958, 1],
+  ['Taylor Jenkins', 1984, 1], ['Monty Williams', 1971, 1], ['Frank Vogel', 1973, 1],
+  ['Willie Green', 1981, 1], ['Steve Clifford', 1961, 1], ['Nate McMillan', 1964, 1],
+  ['Wes Unseld Jr.', 1975, 1], ['Jacque Vaughn', 1975, 1], ['Darvin Ham', 1973, 1],
+  ['Dwane Casey', 1957, 1], ['Adrian Griffin', 1974, 1], ['Stephen Silas', 1973, 1],
+  ['Luke Walton', 1980, 1], ['Igor Kokoškov', 1971, 1], ['Mark Jackson', 1965, 1],
+  ['Jeff Van Gundy', 1962, 1], ['Sean Sweeney', 1984, 0], ['Johnnie Bryant', 1985, 0],
+  ['Micah Nori', 1973, 0], ['Chris Quinn', 1983, 0], ['Sam Cassell', 1969, 0],
+  ['Phil Handy', 1971, 0], ['Jarron Collins', 1978, 0], ['Dan Craig', 1980, 0],
+  ['Rex Kalamian', 1965, 0],
+];
+const COACH_NAMES = Object.keys(COACHES_NOW).map((c) => COACHES_NOW[c][0]).concat(COACH_POOL.map((x) => x[0]));
+
+/* Generated names. check-career holds every pairing these lists can make
+   against every real player and coach, so a made-up person is never somebody
+   real by accident. */
+const PEOPLE_M = ['Ray', 'Curtis', 'Dwayne', 'Glenn', 'Leon', 'Vernon', 'Tom', 'Marty', 'Russ', 'Darnell',
+  'Phil', 'Gene', 'Walt', 'Howard', 'Rodney', 'Earl', 'Lou', 'Frank', 'Cedric', 'Hank', 'Byron', 'Neil',
+  'Reggie', 'Otis', 'Stan', 'Lyle', 'Clint', 'Duane', 'Felix', 'Arturo'];
+const PEOPLE_F = ['Denise', 'Monique', 'Tanya', 'Rochelle', 'Angela', 'Carmen', 'Lorraine', 'Yvette',
+  'Brenda', 'Gloria', 'Sheila', 'Renee', 'Valerie', 'Darlene', 'Paula', 'Marisol', 'Joyce', 'Lena',
+  'Bernadette', 'Nadia'];
+const PEOPLE_X = ['Simone', 'Maya', 'Jordan', 'Alexis', 'Avery', 'Kendall', 'Brielle', 'Imani', 'Sasha',
+  'Noelle', 'Taylor', 'Camille', 'Jada', 'Reese', 'Tiana', 'Aaliyah', 'Morgan', 'Nia', 'Zora', 'Leila'];
+const PEOPLE_LAST = ['Haddock', 'Prewitt', 'Coldwell', 'Ferraro', 'Ambrose', 'Kettering', 'Doucette',
+  'Saltzman', 'Rourke', 'Batista', 'Whitcomb', 'Laughlin', 'Ostrander', 'Pettaway', 'Dabney', 'Hurlbut',
+  'Mancuso', 'Galloway', 'Tisdell', 'Brannock', 'Esposito', 'Varnado', 'Crenshaw', 'Lomax', 'Szabo',
+  'Okonjo', 'Pickard', 'Rayburn', 'Delgado', 'Fenwick', 'Quarles', 'Albrecht', 'Moncrief', 'Treadway',
+  'Yancey', 'Bergstrom', 'Cavanaugh', 'Duplessis', 'Heflin', 'Nakamura'];
+
+/* One person, off a key. The key is what makes him the same man next time. */
+function personName(L, key, kind) {
+  const r = E.createSeededRNG(E.hashSeed(String(L.seed) + ':who:' + key));
+  const first = kind === 'f' ? PEOPLE_F : kind === 'x' ? PEOPLE_X : PEOPLE_M;
+  return pick(r, first) + ' ' + pick(r, PEOPLE_LAST);
+}
+/* Family shares your last name. */
+const surname = (L) => { const p = String(L.name || '').trim().split(/\s+/); return p[p.length - 1] || 'Smith'; };
+function kinName(L, key, kind) {
+  const r = E.createSeededRNG(E.hashSeed(String(L.seed) + ':kin:' + key));
+  return pick(r, kind === 'f' ? PEOPLE_F : PEOPLE_M) + ' ' + surname(L);
+}
+const firstOf = (n) => String(n || '').split(' ')[0];
+const lastOf = (n) => { const p = String(n || '').trim().split(/\s+/); if (p.length > 1 && /^(jr\.?|sr\.?|ii|iii|iv)$/i.test(p[p.length - 1])) return p[p.length - 2]; return p[p.length - 1] || n; };
+
+// ─── the coaching carousel ──────────────────────────────────────────────────
+
+/* The league's coaches ride on the life like its club nets do. An old save
+   has no coaches yet, so they are read through here and built on first use. */
+function coachState(L) {
+  const lg = L.league;
+  if (!lg.coach) {
+    lg.coach = {};
+    for (const c of CLUBS) {
+      const x = COACHES_NOW[c];
+      lg.coach[c] = { n: x[0], b: x[1], since: (lg.latest || 2026) - 1, real: 1 };
+    }
+    lg.free = [];
+    lg.gone = [];
+    lg.gen = 0;
+  }
+  return lg;
+}
+function coachOf(L, c) {
+  const lg = coachState(L);
+  return lg.coach[c] || null;
+}
+const coachName = (L, c) => { const x = coachOf(L, c); return x ? x.n : ''; };
+/* Every real name the league has already used, so the pool is what is left. */
+function coachUsed(L) {
+  const lg = coachState(L), used = {};
+  for (const c of CLUBS) if (lg.coach[c]) used[lg.coach[c].n] = 1;
+  for (const f of lg.free) used[f.n] = 1;
+  for (const g of lg.gone) used[g] = 1;
+  return used;
+}
+/* Who a club can hire. Fired coaches who have sat a year, real names from
+   the pool nobody has hired yet, and a generated assistant when those run
+   short. `interim` wants an assistant who is already in the building. */
+function coachCandidates(L, c, interim, rng) {
+  const lg = coachState(L), used = coachUsed(L), out = [];
+  if (!interim) {
+    for (const f of lg.free) if (f.from !== c && L.year - f.out >= 1 && L.year - f.b < 70) out.push({ n: f.n, b: f.b, real: f.real, w: 3 + (f.good || 0) });
+  }
+  for (const x of COACH_POOL) {
+    if (used[x[0]] || L.year - x[1] >= 70) continue;
+    if (interim && x[2]) continue;
+    out.push({ n: x[0], b: x[1], real: 1, w: x[2] ? 2.5 : 1.6 });
+  }
+  /* A first-time coach the league promotes. More of them as the real names
+     retire, which is how a real league turns over. */
+  let g = personName(L, 'coachgen:' + (lg.gen || 0), 'm');
+  while (used[g]) { lg.gen = (lg.gen || 0) + 1; g = personName(L, 'coachgen:' + lg.gen, 'm'); }
+  out.push({ n: g, b: L.year - 38 - Math.floor(rng() * 10), real: 0, gen: 1, w: interim ? 3 : 1.2 + Math.max(0, 6 - out.length) * 0.5 });
+  return out;
+}
+function hire(L, c, cand, interim) {
+  const lg = coachState(L);
+  if (cand.gen) lg.gen = (lg.gen || 0) + 1;
+  lg.free = lg.free.filter((f) => f.n !== cand.n);
+  lg.coach[c] = { n: cand.n, b: cand.b, since: L.year, real: cand.real ? 1 : 0, interim: interim ? 1 : 0 };
+  return lg.coach[c];
+}
+function fire(L, c, good) {
+  const lg = coachState(L);
+  const x = lg.coach[c];
+  if (!x) return null;
+  if (L.year - x.b < 66) lg.free.push({ n: x.n, b: x.b, real: x.real, out: L.year, from: c, good: good || 0 });
+  else lg.gone.push(x.n);
+  lg.coach[c] = null;
+  return x;
+}
+/* How likely a club is to make a change, off how it played. */
+function fireChance(L, c, net, champ) {
+  const x = coachOf(L, c);
+  if (!x) return 1;
+  const ten = L.year - x.since;
+  let p = 0.03;
+  if (net < -4) p += 0.3; else if (net < -1.5) p += 0.15; else if (net < 1) p += 0.06; else p += 0.01;
+  if (ten >= 5 && net < 2) p += 0.06;
+  if (ten <= 1 && !x.interim) p -= 0.05;
+  if (x.interim) p += 0.45;
+  if (champ) p = 0;
+  return clamp(p, 0, 0.9);
+}
+/* The summer. Runs once a year, before the nets move, so it reads the season
+   just played. Your club's change is a beat; the rest is the league wire. */
+function coachCarousel(L, beats) {
+  const lg = coachState(L);
+  if (lg.cy === L.year) return;
+  lg.cy = L.year;
+  const rng = rngAt(L, 'carousel');
+  const moves = [];
+  for (const c of CLUBS) {
+    const x = lg.coach[c];
+    if (x && L.year - x.b >= 71 && rng() < 0.6) { lg.gone.push(x.n); lg.coach[c] = null; moves.push({ c, out: x, why: 'retires' }); continue; }
+    /* Your club is judged on the record you actually played. */
+    let net = clubNet(L, c), champ = false;
+    const last = L.history[L.history.length - 1];
+    if (c === L.team && last && last.y === L.year - 1 && last.t === c) {
+      net = (last.w / Math.max(1, last.w + last.l) - 0.5) / 0.03;
+      champ = last.po === 'Champion';
+    }
+    if (rng() < fireChance(L, c, net, champ)) moves.push({ c, out: fire(L, c, net > 2 ? 1 : 0), why: 'fired' });
+  }
+  for (const m of moves) {
+    const list = coachCandidates(L, m.c, false, rng);
+    const got = hire(L, m.c, weighted(rng, list, (x) => x.w) || list[0], false);
+    m.in = got;
+  }
+  /* Old coaches who never got another chair leave the list after four years. */
+  lg.free = lg.free.filter((f) => { if (L.year - f.out > 4 || L.year - f.b >= 72) { lg.gone.push(f.n); return false; } return true; });
+  if (lg.gone.length > 120) lg.gone = lg.gone.slice(-120);
+  const line = (m) => (m.out ? (m.why === 'retires' ? dot(m.out.n + ' retires') : dot('The ' + nick(m.c) + ' fire ' + m.out.n)) + ' ' : '')
+    + m.in.n + ' takes over.';
+  for (const m of moves) {
+    if (m.c === L.team && L.stage === 'nba') {
+      const txt = line(m);
+      beats && beats.push({ kind: 'coach', text: txt, tone: '' });
+      logIt(L, txt, '');
+      L.m.trust = 50;
+    }
+  }
+  const wire = moves.filter((m) => m.c !== L.team);
+  L.flags.wire = wire.slice(0, 3).map(line);
+  if (beats && L.stage === 'nba' && L.team) for (const m of wire.slice(0, 2)) beats.push({ kind: 'news', text: 'Around the league: ' + line(m).replace(/^The /, 'the '), tone: '' });
+}
+/* A sentence that ends on a name like Wes Unseld Jr. gets one full stop. */
+const dot = (t) => /\.$/.test(t) ? t : t + '.';
+/* The All-Star break. A club that has fallen through the floor makes a
+   change in February and hands it to an assistant. Your own club goes
+   through the coach_fired card instead, so the front office can ask you. */
+function midseasonFirings(L, beats) {
+  const lg = coachState(L);
+  if (lg.my === L.year) return;
+  lg.my = L.year;
+  const rng = rngAt(L, 'midfire');
+  for (const c of CLUBS) {
+    if (c === L.team) continue;
+    const x = lg.coach[c];
+    if (!x || x.interim || L.year - x.since < 1) continue;
+    const net = clubNet(L, c);
+    const p = net <= -4.5 ? 0.12 : net <= -3 ? 0.04 : 0;
+    if (rng() >= p) continue;
+    fire(L, c, 0);
+    const got = hire(L, c, weighted(rng, coachCandidates(L, c, true, rng), (y) => y.w), true);
+    if (beats && L.stage === 'nba' && L.team) beats.push({ kind: 'news', text: 'Around the league: ' + dot('the ' + nick(c) + ' fire ' + x.n) + ' ' + got.n + ' is the interim.', tone: '' });
+  }
+}
+
+// ─── the rosters around you ─────────────────────────────────────────────────
+
+/* REAL TEAMMATES. Every club opens with its real roster from the data's last
+   season, and those men age a year at a time and retire when their careers
+   would. Nobody is traded: the league around you is a picture of who was
+   there, not a model of what the front offices will do. Each draft class
+   after that adds one generated rookie a club, who stays about ten years. */
+function bornOf(r, first) {
+  if (r.dr) return r.dr - 20;
+  return (first || r.s) - 23;
+}
+function rosterSeed(rows, latest) {
+  const first = {};
+  for (const r of rows || []) if (!(first[r.i] <= r.s)) first[r.i] = r.s;
+  const by = {};
+  for (const r of rows || []) {
+    if (r.s !== latest || CLUBS.indexOf(r.t) < 0) continue;
+    (by[r.t] = by[r.t] || []).push(r);
+  }
+  const out = {};
+  for (const c of CLUBS) out[c] = (by[c] || []).slice().sort((a, b) => b.w - a.w).slice(0, 12)
+    .map((r) => [r.n, String(r.pp || r.ep || 'SF').split(';')[0], bornOf(r, first[r.i]), round1(r.w)]);
+  return out;
+}
+const R_POS = POS;
+function retireAge(L, name, w) {
+  const r = E.createSeededRNG(E.hashSeed(String(L.seed) + ':ret:' + name));
+  return 33 + Math.floor(r() * 4) + (w >= 8 ? 3 : w >= 5 ? 2 : w >= 2 ? 1 : 0);
+}
+/* Who is on club c in the current year, best first. */
+function matesOf(L, c) {
+  const lg = L.league;
+  const Y = L.year;
+  const out = [];
+  const base = lg.roster && lg.roster[c];
+  if (base) {
+    for (const p of base) {
+      const age = Y - p[2];
+      if (age <= retireAge(L, p[0], p[3])) out.push({ n: p[0], pos: p[1], age, w: p[3] * (age <= 30 ? 1 : 1 - (age - 30) * 0.08), real: 1 });
+    }
+  } else {
+    const age = 27 + Y - ((lg.latest || 2026) + 1);
+    if (age <= 35) for (const n of (lg.stars && lg.stars[c]) || []) out.push({ n, pos: '', age, w: 6, real: 1 });
+  }
+  for (let d = (lg.latest || 2026) + 1; d <= Y; d++) {
+    if (Y - d >= 10) continue;
+    const r = E.createSeededRNG(E.hashSeed(String(L.seed) + ':rook:' + c + ':' + d));
+    const n = pick(r, FIRST) + ' ' + pick(r, PEOPLE_LAST);
+    const peak = r() < 0.08 ? 9 : 1.5 + r() * 4;
+    const yrs = Y - d;
+    out.push({ n, pos: pick(r, R_POS), age: 20 + yrs, w: round1(peak * Math.min(1, 0.35 + yrs * 0.2)), real: 0 });
+  }
+  return out.sort((a, b) => b.w - a.w);
+}
+/* School teammates are generated, keyed on the school and the year. */
+function amMates(L) {
+  const school = L.am ? (L.am.college || (L.am.hs && L.am.hs.name) || 'school') : 'school';
+  const out = [];
+  for (let k = 0; k < 8; k++) {
+    const r = E.createSeededRNG(E.hashSeed(String(L.seed) + ':ammate:' + school + ':' + (L.year - (k % 4)) + ':' + k));
+    out.push({ n: pick(r, FIRST) + ' ' + pick(r, PEOPLE_LAST), pos: pick(r, R_POS), age: L.age + (k % 3) - 1, w: 5 - k * 0.4, real: 0 });
+  }
+  return out;
+}
+function myMates(L) {
+  if (L.stage !== 'nba') return amMates(L);
+  if (!L.team) return amMates(L);
+  return matesOf(L, L.team);
+}
+
+// ─── who a line is about ────────────────────────────────────────────────────
+
+/* A school keeps its coach until he leaves for the league. */
+function colCoachName(L, school) {
+  const v = L.am && L.am.college === school ? (L.am.cv || 0) : 0;
+  return personName(L, 'colcoach:' + school + ':' + v);
+}
+/* The coach a line means, wherever the career is. */
+function myCoach(L) {
+  if (L.stage !== 'nba' && L.am) {
+    if (L.am.level === 'col' && L.am.college) return colCoachName(L, L.am.college);
+    if (L.am.level === 'pro') return personName(L, 'procoach:' + (L.am.route || 'gl'));
+    return personName(L, 'hscoach:' + (L.am.hs ? L.am.hs.name : 'hs'));
+  }
+  if (L.team) return coachName(L, L.team) || personName(L, 'coach:' + L.team);
+  return personName(L, 'eurocoach');
+}
+function mateBy(L, tag) {
+  const list = myMates(L).slice(0, 9);
+  if (!list.length) return personName(L, 'mate:' + tag);
+  const r = rngAt(L, 'mate:' + tag);
+  return list[Math.floor(r() * list.length)].n;
+}
+function agentNameFor(L, k) {
+  return k === 'cousin' ? kinName(L, 'cousin', 'm') : personName(L, 'agent:' + k, k === 'power' ? 'm' : 'f');
+}
+function peopleKey(L, k) {
+  const ag = L.agent || 'boutique';
+  switch (k) {
+    case 'coach': return myCoach(L);
+    case 'hscoach': return personName(L, 'hscoach:' + (L.am && L.am.hs ? L.am.hs.name : (L.flags.hsName || 'hs')));
+    case 'gm': return personName(L, 'gm:' + (L.team || 'none'));
+    case 'owner': return personName(L, 'owner:' + (L.team || 'none'));
+    case 'agent': return agentNameFor(L, ag);
+    case 'newagent': return agentNameFor(L, 'power');
+    case 'cousin': return kinName(L, 'cousin', 'm');
+    case 'mom': return firstOf(kinName(L, 'mom', 'f'));
+    case 'dad': return firstOf(kinName(L, 'dad', 'm'));
+    case 'partner': return firstOf(personName(L, 'partner:' + (lifeOf(L).pn || 0), 'x'));
+    case 'trainer': return personName(L, 'trainer');
+    case 'doctor': return personName(L, 'doctor:' + (L.team || 'am'), 'x');
+    case 'scout': return personName(L, 'scout:' + L.year);
+    case 'booster': return personName(L, 'booster:' + (L.am && L.am.college || ''));
+    case 'roommate': return personName(L, 'roommate:' + (L.am && L.am.college || ''));
+    case 'friend': return personName(L, 'friend');
+    case 'reporter': return personName(L, 'reporter:' + L.year, 'x');
+    case 'adviser': return personName(L, 'adviser:' + (L.am && L.am.college || ''), 'f');
+    case 'commish': return personName(L, 'commish');
+    case 'streetagent': return personName(L, 'street');
+    case 'vet': { const m = myMates(L).slice().sort((a, b) => b.age - a.age); return m.length ? m[0].n : personName(L, 'vet'); }
+    case 'star': { const m = myMates(L); return m.length ? m[0].n : personName(L, 'star'); }
+    case 'blocker': { const m = myMates(L).filter((x) => x.pos === L.pos); return (m[0] || myMates(L)[0] || { n: personName(L, 'blocker') }).n; }
+    case 'rookie': { const m = myMates(L).slice().sort((a, b) => a.age - b.age); return m.length ? m[0].n : personName(L, 'rookie'); }
+    case 'mate': return mateBy(L, 'a:' + L.steps);
+    case 'mate2': return mateBy(L, 'b:' + L.steps);
+    case 'oldcoach': return (L.flags.leave && L.flags.leave.n) || myCoach(L);
+    case 'leaveclub': return L.flags.leave ? nick(L.flags.leave.club) : 'Pistons';
+    case 'tutor': return personName(L, 'tutor', 'f');
+    case 'prof': return personName(L, 'prof:' + (L.am && L.am.college || ''), 'x');
+    case 'prepstar': return personName(L, 'prepstar:' + (L.am ? L.am.town : ''));
+    case 'coachson': return firstOf(personName(L, 'son')) + ' ' + lastOf(myCoach(L));
+    case 'crush': return firstOf(personName(L, 'crush', 'x'));
+    case 'colcoach2': return personName(L, 'campcoach:' + L.year);
+    case 'firedcoach': return (L.flags.search && L.flags.search.out) || coachName(L, L.team);
+    case 'interim': return (L.flags.search && L.flags.search.asst && L.flags.search.asst.n) || myCoach(L);
+    case 'bigname': return (L.flags.search && L.flags.search.big && L.flags.search.big.n) || myCoach(L);
+    case 'opp': case 'opp2': return oppStar(L, k);
+    case 'ref': return personName(L, 'ref:' + L.steps);
+    case 'guru': return personName(L, 'guru', 'x');
+    case 'rivalcoach': { const r = rngAt(L, 'rc:' + L.steps); const cs = CLUBS.filter((c) => c !== L.team); return coachName(L, pick(r, cs)); }
+    default: return null;
+  }
+}
+/* A real star on another club, for a line about somebody across the league.
+   The same conference first, because that is who you see four times. */
+function oppStar(L, k) {
+  const r = rngAt(L, 'opp:' + L.steps);
+  const conf = L.team ? confOf(L.team) : 'East';
+  const clubs = CLUBS.filter((c) => c !== L.team && confOf(c) === conf);
+  const c1 = pick(r, clubs);
+  let c2 = pick(r, clubs);
+  if (c2 === c1) c2 = clubs[(clubs.indexOf(c1) + 1) % clubs.length];
+  const m = matesOf(L, k === 'opp2' ? c2 : c1);
+  return m.length ? m[0].n : personName(L, 'opp:' + k);
+}
+/* Fills {coach}, {mom}, {vet:last} and the rest. A token nobody knows is
+   left as it is, so check-career can find it. */
+const TOKEN = /\{([a-z0-9]+)(?::(last|first))?\}/gi;
+function say(L, s) {
+  if (typeof s !== 'string' || s.indexOf('{') < 0) return s;
+  return s.replace(TOKEN, (m, k, part) => {
+    const v = peopleKey(L, k.toLowerCase());
+    if (v == null) return m;
+    return part === 'last' ? lastOf(v) : part === 'first' ? firstOf(v) : v;
+  }).replace(/\b(Jr|Sr)\.\./g, '$1.');
+}
+/* The card on top, every beat, and the last answer, said in names. Only the
+   card on top: one waiting behind it is named when it gets there, so a coach
+   fired by the card in front is not the coach the next card talks about. */
+function sayAll(L, beats) {
+  for (const c of L.pending.slice(0, 1)) {
+    if (c.named) continue;
+    c.named = 1;
+    c.title = say(L, c.title); c.text = say(L, c.text); c.eyebrow = say(L, c.eyebrow);
+    for (const o of c.options || []) { o.label = say(L, o.label); if (o.hint) o.hint = say(L, o.hint); }
+  }
+  for (const b of beats || []) if (b && b.text) b.text = say(L, b.text);
+}
 
 // ─── a new life ─────────────────────────────────────────────────────────────
 
@@ -313,7 +715,7 @@ function newLife(opts) {
     cash: 0.2, earned: 0, endorse: 0,
     team: null, contract: null, draft: null,
     phase: 'combine', pending: [], log: [], history: [], flags: {},
-    league: { latest: league.latest || 2026, net: Object.assign({}, league.net), stars: league.stars || {} },
+    league: { latest: league.latest || 2026, net: Object.assign({}, league.net), stars: league.stars || {}, roster: league.roster || null },
     life: { rel: 'single', kids: 0, since: 0 }, rival: null,
     look: cleanLook(o.look), rep: { fans: 50, resp: 50 },
     season: null, seasonsDone: 0, retired: false, final: null, steps: 0,
@@ -336,10 +738,12 @@ function newLife(opts) {
     newRoad(L, rng);
     logIt(L, L.name + ', ' + POS_NAME[pos].toLowerCase() + '. A sophomore at ' + L.am.hs.name + '. Age ' + L.age + '.', 'gold');
     queueEvents(L, 'hs_sum', rngAt(L, 'n:sum')() < 0.5 ? 1 : 0, AM_EVENTS);
+    sayAll(L);
     return L;
   }
   logIt(L, L.name + ', ' + POS_NAME[pos].toLowerCase() + '. ' + bg.name + '. Age ' + L.age + '.', 'gold');
   L.pending.push(combineCard(L));
+  sayAll(L);
   return L;
 }
 
@@ -399,15 +803,15 @@ function workoutCard(L) {
     text: 'You have time for one. The board has you going around ' + ordinal(proj) + '.',
     ctx: { clubs, proj },
     options: picks.map((x) => ({ label: 'The ' + nick(x.club),
-      hint: 'They pick ' + ordinal(x.slot) + '. ' + clubTier(clubNet(L, x.club)) + '.', club: x.club, slot: x.slot })),
+      hint: 'They pick ' + ordinal(x.slot) + '. ' + clubTier(clubNet(L, x.club)) + '. Coach ' + coachName(L, x.club) + '.', club: x.club, slot: x.slot })),
   };
 }
-function agentCard() {
+function agentCard(L) {
   return {
     id: 'agent', kind: 'event', key: 'agent',
     eyebrow: 'Representation', title: 'Who negotiates for you?',
     text: 'Pick once. They do every deal you sign.',
-    options: Object.keys(AGENTS).map((k) => ({ label: AGENTS[k].name, hint: AGENTS[k].blurb, agent: k })),
+    options: Object.keys(AGENTS).map((k) => ({ label: agentNameFor(L, k), hint: AGENTS[k].name + '. ' + AGENTS[k].blurb, agent: k })),
   };
 }
 /* A rookie deal, off the slot. Pick 1 is about seven percent of the cap and the
@@ -569,7 +973,7 @@ function rollInjury(L, chunk, beats) {
   L.pending.push({
     id: 'injury', kind: 'event', key: 'injury:' + chunk, eyebrow: 'Injury report',
     title: 'It is a ' + kind + '.',
-    text: 'The doctors say ' + g + ' games. You have a say in how.',
+    text: 'Dr. {doctor:last} says ' + g + ' games. You have a say in how.',
     ctx: { g, major },
     options: major ? [
       { label: 'Surgery now', hint: 'Out the full stretch. Come back whole.' },
@@ -1146,6 +1550,7 @@ function retireNow(L) {
   const beats = [];
   if (!L.history.length) { L.pending = []; L.retired = true; L.phase = 'retired'; L.final = legacy(L); return beats; }
   retire(L, beats, 'Retired at ' + L.age + '.');
+  sayAll(L, beats);
   return beats;
 }
 
@@ -1253,21 +1658,21 @@ const TONES = {
   showman: { name: 'Showman', d: { fame: 4, morale: 2 }, fans: 6, resp: -3 },
   fiery: { name: 'Fiery', d: { morale: 4, fame: 2 }, fans: 4, resp: 0 },
   cold: { name: 'Ice cold', d: { trust: 2, fame: -1 }, fans: -5, resp: 4 },
-  cocky: { name: 'Cocky', d: { fame: 5, trust: -3 }, fans: -3, resp: -6, risk: 0.45 },
+  cocky: { name: 'Cocky', d: { fame: 5, trust: -3 }, fans: -6, resp: -6, risk: 0.45 },
 };
 /* What gets said about it afterwards. Two of each, picked by the card's own
    rng, so a reload reads the same line. */
 const TONE_SAY = {
   humble: ['The clip goes around. People like you more for it.', 'Nobody writes a headline about it. The locker room notices.'],
-  team: ['Your teammates repost it. The room is tight.', 'The coach plays it in the film session. Twice.'],
+  team: ['Your teammates repost it. The room is tight.', '{coach} plays it in the film session. Twice.'],
   confident: ['It plays well. You sound like somebody who belongs.', 'A good quote. It runs all day.'],
-  loyal: ['The city puts it on a T-shirt by morning.', 'Season ticket renewals jump. The owner sends flowers.'],
+  loyal: ['The city puts it on a T-shirt by morning.', 'Season ticket renewals jump. Team owner {owner} sends flowers.'],
   showman: ['It is on every show by lunch. You are a lot of fun.', 'A meme by midnight. Your follower count doubles.'],
   fiery: ['The fans love the fire. The other team saves the clip.', 'It is the quote of the week. Everybody has a take.'],
   cold: ['Four words and you walk off. The league takes you seriously.', 'No smile. No soundbite. Scouts call it focus.'],
   cocky: ['Bold. It backs itself up, for now.', 'Half the league is angry. The other half is watching.'],
 };
-const TONE_BAD = ['It does not land. A rival coach pins it to the locker room wall.', 'It reads worse in print. The vets are quiet with you for a week.'];
+const TONE_BAD = ['It does not land. {rivalcoach} pins it to his locker room wall.', 'It reads worse in print. {vet} is quiet with you for a week.'];
 
 /* The topics, with the question and the answers. An answer is the words you
    say and the tone they are said in. */
@@ -1348,17 +1753,17 @@ function choosePresser(L, card, opt, rng) {
   L.flags.press = (L.flags.press || 0) + 1;
   if (t.risk && !ok(rng, 1 - t.risk)) {
     bump(L, { trust: -3, morale: -2 });
-    moveRep(L, 0, -3);
+    moveRep(L, -2, -3);
     return { text: TONE_BAD[rng() < 0.5 ? 0 : 1], tone: 'bad' };
   }
-  const say = TONE_SAY[opt.tone] || TONE_SAY.humble;
-  return { text: say[rng() < 0.5 ? 0 : 1], tone: 'good' };
+  const lines = TONE_SAY[opt.tone] || TONE_SAY.humble;
+  return { text: lines[rng() < 0.5 ? 0 : 1], tone: 'good' };
 }
 const EVENTS = {
   vet_mentor: {
     phases: ['early'], once: true, when: (L) => L.seasonsDone === 0, weight: () => 4,
-    title: 'The oldest man in the locker room pulls you aside.',
-    text: () => 'Fourteen years in the league. He offers to show you how he stayed.',
+    title: '{vet} pulls you aside.',
+    text: () => 'The oldest man in the locker room. He offers to show you how he stayed in the league.',
     options: [
       { label: 'Shadow him every day', run: (L) => { bump(L, { iq: 2, eth: 6, trust: 4 }); return 'Film at six. Lift at seven. You learn more than you expected.'; } },
       { label: 'Ask about money', run: (L) => { bump(L, { cash: 0.2, iq: 1 }); L.flags.savvy = true; return 'He tells you what nobody told him. You open a real savings account.'; } },
@@ -1368,19 +1773,19 @@ const EVENTS = {
   rookie_duty: {
     phases: ['early'], once: true, when: (L) => L.seasonsDone === 0, weight: () => 3,
     title: 'Rookie duty.',
-    text: () => 'The vets want breakfast on the plane. Every road trip. You are buying.',
+    text: () => '{vet} hands you the order. Breakfast for the plane, every road trip. You are buying.',
     options: [
       { label: 'Go along with it', run: (L) => { bump(L, { trust: 6, cash: -0.05, morale: -2 }); return 'Forty breakfast sandwiches later, the locker room likes you.'; } },
-      { label: 'Turn it into content', run: (L, r) => { if (ok(r, 0.6)) { bump(L, { fame: 6, trust: 2 }); return 'The video does numbers. Even the vets share it.'; } bump(L, { fame: 3, trust: -6 }); return 'It does numbers. The vets are not laughing.'; } },
+      { label: 'Turn it into content', run: (L, r) => { if (ok(r, 0.6)) { bump(L, { fame: 6, trust: 2 }); return 'The video does numbers. Even {vet} shares it.'; } bump(L, { fame: 3, trust: -6 }); return 'It does numbers. {vet} is not laughing.'; } },
       { label: 'Refuse', run: (L) => { bump(L, { trust: -8, morale: 3 }); return 'Bold. Your sneakers are full of ice the next morning.'; } },
     ],
   },
   night_out: {
     phases: ['early', 'mid', 'late'], when: () => true, weight: () => 3,
     title: 'Back-to-back tomorrow. The group chat is going out.',
-    text: () => 'Everybody is going. You know how this ends.',
+    text: () => '{mate} is organizing it. Everybody is going. You know how this ends.',
     options: [
-      { label: 'Go out', run: (L, r) => { if (ok(r, 0.55)) { bump(L, { morale: 8, health: -4 }); return 'Great night. Rough morning. You get through it.'; } bump(L, { morale: 4, health: -6, trust: -7, fame: 3 }); return 'Photos surface. The coach has seen them.'; } },
+      { label: 'Go out', run: (L, r) => { if (ok(r, 0.55)) { bump(L, { morale: 8, health: -4 }); return 'Great night. Rough morning. You get through it.'; } bump(L, { morale: 4, health: -6, trust: -7, fame: 3 }); return 'Photos surface. {coach} has seen them.'; } },
       { label: 'One drink, then home', run: (L) => { bump(L, { morale: 4, health: -1 }); return 'You show your face and leave early. Best of both.'; } },
       { label: 'Stay in', run: (L) => { bump(L, { iq: 1, health: 2, morale: -2 }); return 'Film and sleep. You play well tomorrow.'; } },
     ],
@@ -1390,7 +1795,7 @@ const EVENTS = {
     title: 'You are on fire.',
     text: () => 'Thirty points three straight nights. The cameras find your locker.',
     options: [
-      { label: 'Tell them you are the best player here', run: (L, r) => { bump(L, { fame: 8, trust: -4 }); if (ok(r, 0.5)) { bump(L, { usage: 0.02 }); return 'The coach runs more plays for you. The bigs notice.'; } bump(L, { morale: -3 }); return 'It plays on every channel. Two teammates stop passing.'; } },
+      { label: 'Tell them you are the best player here', run: (L, r) => { bump(L, { fame: 8, trust: -4 }); if (ok(r, 0.5)) { bump(L, { usage: 0.02 }); return '{coach} runs more plays for you. The bigs notice.'; } bump(L, { morale: -3 }); return 'It plays on every channel. {mate} and {mate2} stop passing.'; } },
       { label: 'Credit your teammates', run: (L) => { bump(L, { trust: 5, morale: 4, win: 0.4 }); return 'The locker room loves it. The ball moves a little faster.'; } },
       { label: 'Say nothing', run: (L) => { bump(L, { fame: 2 }); return 'Headphones on. The mystery helps.'; } },
     ],
@@ -1402,42 +1807,42 @@ const EVENTS = {
     options: [
       { label: 'Midnight shooting', run: (L, r) => { bump(L, { health: -4 }); if (ok(r, 0.7)) { bump(L, { sho: 2, morale: 4 }); return 'Five hundred makes a night. It comes back.'; } bump(L, { morale: -4 }); return 'Tired legs, flat shots. It gets worse before it gets better.'; } },
       { label: 'Get to the rim instead', run: (L) => { bump(L, { fin: 1, usage: -0.01, perf: 0.4 }); return 'Layups and free throws until the jumper wakes up.'; } },
-      { label: 'Keep shooting', run: (L, r) => { if (ok(r, 0.5)) { bump(L, { morale: 6, fame: 2 }); return 'Shooters shoot. It breaks open in Denver.'; } bump(L, { morale: -6, trust: -3 }); return 'It does not break. The coach shortens your leash.'; } },
+      { label: 'Keep shooting', run: (L, r) => { if (ok(r, 0.5)) { bump(L, { morale: 6, fame: 2 }); return 'Shooters shoot. It breaks open in Denver.'; } bump(L, { morale: -6, trust: -3 }); return 'It does not break. {coach} shortens your leash.'; } },
     ],
   },
   coach_bench: {
     phases: ['early', 'mid'], when: (L) => L.season && L.season.role && L.season.role.starter && L.season.role.diff < 6, weight: () => 2,
-    title: 'The coach wants you off the bench.',
+    title: '{coach} wants you off the bench.',
     text: () => 'He says the second unit needs a scorer. You hear demotion.',
     options: [
       { label: 'Accept it', run: (L) => { bump(L, { trust: 10, min: -4, usage: 0.03 }); return 'You run the second unit. Sixth Man talk starts by March.'; } },
       { label: 'Push back', run: (L, r) => { if (ok(r, 0.4)) { bump(L, { trust: -3 }); return 'He relents. You keep the spot. For now.'; } bump(L, { trust: -12, min: -5, morale: -6 }); return 'He does it anyway. Now you are benched and annoyed.'; } },
-      { label: 'Ask for a trade', run: (L) => { L.flags.tradeAsk = true; bump(L, { trust: -15, fame: 3 }); return 'Your agent makes the call. Word gets out by morning.'; } },
+      { label: 'Ask for a trade', run: (L) => { L.flags.tradeAsk = true; bump(L, { trust: -15, fame: 3 }); return '{agent}, your agent, makes the call. Word gets out by morning.'; } },
     ],
   },
   stuck: {
     phases: ['early', 'mid'], when: (L) => L.season && L.season.role && L.season.role.min < 18, weight: () => 4,
-    title: 'You are stuck behind a veteran.',
+    title: 'You are stuck behind {blocker}.',
     text: () => 'Twelve minutes a night. Some nights, none.',
     options: [
-      { label: 'Outwork him', run: (L, r) => { bump(L, { eth: 5, health: -3 }); if (ok(r, 0.55)) { bump(L, { trust: 10, min: 5 }); return 'The coach notices. Your minutes go up.'; } bump(L, { trust: 4 }); return 'He notices. Not enough yet.'; } },
-      { label: 'Vent on a podcast', run: (L) => { bump(L, { fame: 6, trust: -12, morale: 3 }); return 'Clip goes everywhere. The coach does not listen to podcasts. Someone sends it to him.'; } },
+      { label: 'Outwork him', run: (L, r) => { bump(L, { eth: 5, health: -3 }); if (ok(r, 0.55)) { bump(L, { trust: 10, min: 5 }); return '{coach} notices. Your minutes go up.'; } bump(L, { trust: 4 }); return 'He notices. Not enough yet.'; } },
+      { label: 'Vent on a podcast', run: (L) => { bump(L, { fame: 6, trust: -12, morale: 3 }); return 'Clip goes everywhere. {coach} does not listen to podcasts. {mate} sends it to him.'; } },
       { label: 'Ask to go to the G League', run: (L) => { bump(L, { fin: 1, sho: 1, iq: 1, min: -3, trust: 4 }); return 'Twenty games of thirty-five minutes. You come back sharper.'; } },
     ],
   },
   film_session: {
     phases: ['early', 'mid', 'late'], when: () => true, weight: () => 2,
     title: 'Film session. The clip is you.',
-    text: () => 'You jog back on defense. The coach plays it three times.',
+    text: () => 'You jog back on defense. {coach} plays it three times.',
     options: [
       { label: 'Own it', run: (L) => { bump(L, { def: 1, trust: 6 }); return 'You say it is on you. It does not happen again.'; } },
-      { label: 'Argue', run: (L, r) => { if (ok(r, 0.3)) { bump(L, { trust: 2 }); return 'You had a point. The coach admits the scheme was wrong.'; } bump(L, { trust: -9 }); return 'Bad look. The assistants exchange a glance.'; } },
-      { label: 'Laugh it off', run: (L) => { bump(L, { morale: 2, trust: -3 }); return 'The room laughs too. The coach does not.'; } },
+      { label: 'Argue', run: (L, r) => { if (ok(r, 0.3)) { bump(L, { trust: 2 }); return 'You had a point. {coach} admits the scheme was wrong.'; } bump(L, { trust: -9 }); return 'Bad look. The assistants exchange a glance.'; } },
+      { label: 'Laugh it off', run: (L) => { bump(L, { morale: 2, trust: -3 }); return 'The room laughs too. {coach} does not.'; } },
     ],
   },
   teammate_touches: {
     phases: ['mid', 'late'], when: (L) => L.season && L.season.role && L.season.role.starter, weight: () => 2,
-    title: 'Your starting center wants the ball.',
+    title: '{star} wants the ball.',
     text: () => 'He says he is open on every possession. He tells the press too.',
     options: [
       { label: 'Feed him', run: (L) => { bump(L, { pla: 1, usage: -0.02, win: 0.5, trust: 3 }); return 'He gets his. The team wins four straight.'; } },
@@ -1450,7 +1855,7 @@ const EVENTS = {
     title: 'Your name is in trade talks.',
     text: () => 'The deadline is Thursday. Your phone will not stop.',
     options: [
-      { label: 'Tell them you want to stay', run: (L, r) => { bump(L, { trust: 6 }); if (ok(r, 0.8)) return 'The front office hears you. You stay.'; tradeNow(L, r); return 'They trade you anyway. Business.'; } },
+      { label: 'Tell them you want to stay', run: (L, r) => { bump(L, { trust: 6 }); if (ok(r, 0.8)) return 'General manager {gm} hears you. You stay.'; tradeNow(L, r); return 'They trade you anyway. Business.'; } },
       { label: 'Ask to go to a contender', run: (L, r) => { if (ok(r, 0.55)) { tradeNow(L, r, true); return 'Done. You are headed to a winner.'; } bump(L, { trust: -8 }); return 'No deal. And now everybody knows you wanted out.'; } },
       { label: 'Say nothing', run: (L, r) => { if (ok(r, 0.25)) { tradeNow(L, r); return 'A call at midnight. You have been traded.'; } return 'Thursday passes. You stay.'; } },
     ],
@@ -1458,7 +1863,7 @@ const EVENTS = {
   tank: {
     phases: ['late'], when: (L) => L.season && (L.season.l - L.season.w) >= 10, weight: () => 4,
     title: 'The front office is playing for the lottery.',
-    text: () => 'They want you on a minutes limit for the rest of the year.',
+    text: () => 'General manager {gm} wants you on a minutes limit for the rest of the year.',
     options: [
       { label: 'Go along', run: (L) => { bump(L, { min: -6, health: 6, trust: 4 }); return 'Fewer minutes. Fresher legs. Lower numbers.'; } },
       { label: 'Refuse', run: (L) => { bump(L, { trust: -8, fame: 3, win: 0.4 }); return 'You play it out. You also win them two games they did not want.'; } },
@@ -1472,7 +1877,7 @@ const EVENTS = {
     options: [
       { label: 'Play through it', run: (L, r) => { if (ok(r, 0.6)) { bump(L, { trust: 4, health: -4 }); return 'Taped up. It holds.'; } bump(L, { health: -10, risk: 0.05, perf: -0.5 }); return 'It gets worse. You are a step slow for weeks.'; } },
       { label: 'Sit a week', run: (L) => { bump(L, { health: 8, rest: 0.05 }); return 'A week off. Back to normal.'; } },
-      { label: 'Get a second opinion', run: (L) => { bump(L, { cash: -0.1, health: 5 }); return 'Expensive specialist. Good advice.'; } },
+      { label: 'Get a second opinion', run: (L) => { bump(L, { cash: -0.1, health: 5 }); return 'Dr. {doctor:last} costs a fortune. Good advice.'; } },
     ],
   },
   shoe_deal: {
@@ -1490,24 +1895,24 @@ const EVENTS = {
     title: 'A car dealership wants a commercial.',
     text: () => 'Thirty seconds. You hold a key and point at the camera.',
     options: [
-      { label: 'Do it', run: (L, r) => { bump(L, { cash: 0.25, fame: 2 }); if (ok(r, 0.35)) { bump(L, { fame: 4 }); return 'It is so bad it goes viral. Everybody quotes it.'; } return 'Easy money. Your mom loves it.'; } },
+      { label: 'Do it', run: (L, r) => { bump(L, { cash: 0.25, fame: 2 }); if (ok(r, 0.35)) { bump(L, { fame: 4 }); return 'It is so bad it goes viral. Everybody quotes it.'; } return 'Easy money. Your mom, {mom}, loves it.'; } },
       { label: 'Pass', run: (L) => { bump(L, { morale: 1 }); return 'Your brand stays clean.'; } },
     ],
   },
   online_beef: {
     phases: ['early', 'mid', 'late'], when: (L) => L.m.fame >= 30, weight: () => 2,
-    title: 'A guard in your conference called you overrated.',
+    title: '{opp} called you overrated.',
     text: () => 'Online. In front of everybody. You play him Friday.',
     options: [
       { label: 'Clap back', run: (L, r) => { bump(L, { fame: 6 }); if (ok(r, 0.5)) { bump(L, { morale: 6 }); return 'Your reply is funnier. The internet picks a side. Yours.'; } bump(L, { morale: -5 }); return 'He wins the thread. It follows you for a week.'; } },
       { label: 'Answer Friday', run: (L, r) => { if (ok(r, 0.35 + (ovrOf(L) - 70) * 0.012)) { bump(L, { fame: 8, morale: 8, perf: 0.3 }); return 'Thirty-eight on him. You never say a word.'; } bump(L, { morale: -6 }); return 'He gets the better of you. Now it is a thing.'; } },
-      { label: 'Ignore it', run: (L) => { bump(L, { trust: 2 }); return 'The coach respects it.'; } },
+      { label: 'Ignore it', run: (L) => { bump(L, { trust: 2 }); return '{coach} respects it.'; } },
     ],
   },
   ref_heat: {
     phases: ['early', 'mid', 'late'], when: () => true, weight: () => 1.5,
     title: 'Third straight no-call on a drive.',
-    text: () => 'The ref is right there. He looks away.',
+    text: () => 'Referee {ref} is right there. He looks away.',
     options: [
       { label: 'Let him have it', run: (L, r) => { bump(L, { fame: 3, cash: -0.04 }); if (ok(r, 0.5)) { bump(L, { trust: -5 }); return 'Ejected. Fined. The crowd loves you.'; } return 'A technical. Worth it, you decide.'; } },
       { label: 'Walk away', run: (L) => { bump(L, { iq: 1 }); return 'You get the next call. Funny how that works.'; } },
@@ -1535,7 +1940,7 @@ const EVENTS = {
   },
   family_money: {
     phases: ['pre', 'off', 'early'], when: (L) => L.cash >= 1, weight: () => 2,
-    title: 'A cousin needs money.',
+    title: 'Your cousin {cousin:first} needs money.',
     text: () => 'It is the third time this year. It is a lot.',
     options: [
       { label: 'Give it', run: (L) => { bump(L, { cash: -Math.min(0.5, L.cash * 0.2), morale: 3 }); return 'Family is family. You will hear from him again.'; } },
@@ -1545,7 +1950,7 @@ const EVENTS = {
   },
   investment: {
     phases: ['pre', 'off'], when: (L) => L.cash >= 1.5, weight: () => 2,
-    title: 'A friend has a business idea.',
+    title: '{friend}, a friend from home, has a business idea.',
     text: () => 'Streetwear. Or a burger chain. Or an app. He needs a partner.',
     options: [
       { label: 'Go all in', run: (L, r) => { const st = Math.min(L.cash * 0.4, 4); if (ok(r, L.flags.savvy ? 0.45 : 0.3)) { bump(L, { cash: st * 1.8, fame: 2 }); return 'It works. You are an owner now.'; } bump(L, { cash: -st, morale: -5 }); return 'It does not work. Neither does the friendship.'; } },
@@ -1558,13 +1963,13 @@ const EVENTS = {
     title: 'A network wants you to host a podcast.',
     text: () => 'Weekly. Unfiltered. Good money.',
     options: [
-      { label: 'Start it', run: (L, r) => { bump(L, { fame: 8, cash: 0.4 }); if (ok(r, 0.3)) { bump(L, { trust: -8 }); return 'Episode six says too much about your coach.'; } return 'It is a hit. Players start calling in.'; } },
-      { label: 'Not while you are playing', run: (L) => { bump(L, { trust: 3 }); return 'The coach appreciates the focus.'; } },
+      { label: 'Start it', run: (L, r) => { bump(L, { fame: 8, cash: 0.4 }); if (ok(r, 0.3)) { bump(L, { trust: -8 }); return 'Episode six says too much about {coach}.'; } return 'It is a hit. Players start calling in.'; } },
+      { label: 'Not while you are playing', run: (L) => { bump(L, { trust: 3 }); return '{coach} appreciates the focus.'; } },
     ],
   },
   body_care: {
     phases: ['pre', 'off'], once: true, when: (L) => L.age >= 27 && L.cash >= 1, weight: () => 3,
-    title: 'A longevity coach pitches a full program.',
+    title: '{guru}, a longevity coach, pitches a full program.',
     text: () => 'Chef, sleep coach, cold tub, the works. It is not cheap.',
     options: [
       { label: 'Buy the whole program', run: (L) => { bump(L, { cash: -Math.min(1.2, L.cash * 0.3), dur: 10, health: 10 }); L.flags.longevity = true; return 'You feel twenty-five. Your decline will be slower.'; } },
@@ -1574,7 +1979,7 @@ const EVENTS = {
   },
   load_mgmt: {
     phases: ['early', 'mid'], when: (L) => L.age >= 30 && L.season && L.season.role && L.season.role.starter, weight: () => 3,
-    title: 'The training staff wants to rest you on back-to-backs.',
+    title: 'Dr. {doctor:last} wants to rest you on back-to-backs.',
     text: () => 'Twelve games off. Fresher in April.',
     options: [
       { label: 'Agree', run: (L) => { bump(L, { rest: 0.15, health: 8 }); return 'You sit in a suit twelve times. Your knees thank you.'; } },
@@ -1583,8 +1988,8 @@ const EVENTS = {
   },
   mentor_rookie: {
     phases: ['early'], when: (L) => L.age >= 29 && L.seasonsDone >= 6, weight: () => 2,
-    title: 'The new rookie follows you everywhere.',
-    text: () => 'He grew up with your poster on his wall.',
+    title: '{rookie} follows you everywhere.',
+    text: () => 'The rookie grew up with your poster on his wall.',
     options: [
       { label: 'Take him under your wing', run: (L) => { bump(L, { trust: 6, morale: 6, win: 0.3 }); return 'He gets better fast. So does the team.'; } },
       { label: 'Let him learn the hard way', run: (L) => { bump(L, { morale: -1 }); return 'That is how you learned.'; } },
@@ -1606,18 +2011,32 @@ const EVENTS = {
     text: () => 'Twenty microphones. One question.',
     options: [
       { label: 'MVP', run: (L, r) => { bump(L, { fame: 6 }); if (ovrOf(L) >= 85) { bump(L, { morale: 4 }); return 'Nobody laughs. That is the point.'; } bump(L, { morale: -3 }); return 'A few people laugh. You remember who.'; } },
-      { label: 'Win games', run: (L) => { bump(L, { trust: 4 }); return 'The coach likes that answer.'; } },
+      { label: 'Win games', run: (L) => { bump(L, { trust: 4 }); return '{coach} likes that answer.'; } },
       { label: 'Stay healthy', run: (L) => { bump(L, { health: 2 }); return 'Boring. True.'; } },
     ],
   },
+  /* Your club's own firing. It is the real carousel: the coach really goes,
+     the assistant really runs the bench, and the answer is who the club
+     hires. The two names on the buttons are real candidates. */
   coach_fired: {
-    phases: ['mid'], when: (L) => L.season && (L.season.l - L.season.w) >= 8, weight: () => 2.5,
-    title: 'The coach is fired.',
-    text: () => 'The front office asks who you want next.',
+    phases: ['mid'], weight: () => 2.5,
+    when: (L) => { if (!L.season || L.season.l - L.season.w < 8 || !L.team) return false; const x = coachOf(L, L.team); return !!x && !x.interim && L.year - x.since >= 1; },
+    queue: (L) => {
+      const rng = rngAt(L, 'cfire');
+      const out = fire(L, L.team, 0);
+      const asst = weighted(rng, coachCandidates(L, L.team, true, rng), (y) => y.w);
+      const bigs = coachCandidates(L, L.team, false, rng).filter((y) => y.n !== asst.n && !y.gen);
+      const big = weighted(rng, bigs, (y) => y.w) || asst;
+      const other = weighted(rng, bigs.filter((y) => y.n !== big.n), (y) => y.w) || asst;
+      L.flags.search = { out: out ? out.n : '', asst, big, other };
+      hire(L, L.team, asst, true);
+    },
+    title: 'The club fires {firedcoach}.',
+    text: () => '{interim} has the bench for now. General manager {gm} asks who you want next.',
     options: [
-      { label: 'Back the assistant', run: (L) => { L.m.trust = 62; bump(L, { win: 0.4 }); return 'He gets the job. He remembers who backed him.'; } },
-      { label: 'Ask for a big name', run: (L, r) => { if (ok(r, 0.5)) { L.m.trust = 55; bump(L, { win: 1 }); return 'They land him. Practices get serious.'; } L.m.trust = 40; return 'They hire someone else. He heard you asked.'; } },
-      { label: 'Stay out of it', run: (L) => { L.m.trust = 50; return 'Not your job. Literally.'; } },
+      { label: 'Back {interim}', run: (L) => { const x = coachOf(L, L.team); if (x) x.interim = 0; L.m.trust = 62; bump(L, { win: 0.4 }); return '{coach} gets the job. He remembers who backed him.'; } },
+      { label: 'Ask for {bigname}', run: (L, r) => { const f = L.flags.search; if (ok(r, 0.5)) { hire(L, L.team, f.big, false); L.m.trust = 55; bump(L, { win: 1 }); return 'They land {coach}. Practices get serious.'; } hire(L, L.team, f.other, false); L.m.trust = 40; return 'They hire {coach} instead. He heard you asked for {bigname}.'; } },
+      { label: 'Stay out of it', run: (L, r) => { const f = L.flags.search; if (r() < 0.5) { const x = coachOf(L, L.team); if (x) x.interim = 0; } else hire(L, L.team, f.other, false); L.m.trust = 50; return 'Not your job. Literally. {gm} hands it to {coach}.'; } },
     ],
   },
   buzzer: {
@@ -1641,7 +2060,7 @@ const EVENTS = {
   },
   superteam: {
     phases: ['off'], when: (L) => ovrOf(L) >= 84 && L.contract && L.contract.years >= 1 && clubNet(L, L.team) < 2, weight: () => 2,
-    title: 'Two stars call you the same night.',
+    title: '{opp} and {opp2} call you the same night.',
     text: () => 'They want to team up. They have a team in mind.',
     options: [
       { label: 'Request the trade', run: (L, r) => { tradeNow(L, r, true); bump(L, { fame: 5, trust: 0 }); return 'It happens. The league calls it a superteam.'; } },
@@ -1662,7 +2081,7 @@ const EVENTS = {
        keys on the season that took it rather than on the meter. */
     phases: ['off'], when: (L) => !!(L.season && (L.season.out >= 12 || L.age >= 31)), weight: () => 3,
     title: 'The body is tired.',
-    text: () => 'The trainers want a quiet summer. Your trainer wants work.',
+    text: () => 'Dr. {doctor:last} wants a quiet summer. {trainer}, your trainer, wants work.',
     options: [
       { label: 'Rest', run: (L) => { bump(L, { health: 14 }); return 'Sleep, swim, repeat.'; } },
       { label: 'Work anyway', run: (L) => { bump(L, { health: -4, eth: 4, sho: 1 }); return 'You do it anyway. That is who you are.'; } },
@@ -1674,7 +2093,7 @@ const EVENTS = {
     options: [
       { label: 'Answer on the court', run: (L, r) => { if (ok(r, 0.45 + (ovrOf(L) - L.rival.ovr) * 0.04)) { bump(L, { fame: 7, morale: 6 }); L.flags.rivalWins = (L.flags.rivalWins || 0) + 1; return 'You see him in March. You win, and you outscore him by fifteen.'; } bump(L, { morale: -6 }); return 'You see him in March. He gets the better of it, and he says so.'; } },
       { label: 'Answer online', run: (L, r) => { bump(L, { fame: 5, trust: -2 }); if (ok(r, 0.5)) return 'Your reply is better than his podcast. The internet agrees.'; bump(L, { morale: -3 }); return 'He has better writers. It goes on for a week.'; } },
-      { label: 'Say nothing', run: (L) => { bump(L, { trust: 3 }); return 'Your coach tells you that was the right answer.'; } },
+      { label: 'Say nothing', run: (L) => { bump(L, { trust: 3 }); return '{coach} tells you that was the right answer.'; } },
     ],
   },
   rival_tv: {
@@ -1690,33 +2109,33 @@ const EVENTS = {
   meet_someone: {
     phases: ['off', 'pre'], when: (L) => lifeOf(L).rel === 'single' && L.age >= 21, weight: () => 2.2,
     title: 'Somebody catches your eye.',
-    text: () => 'At a friend\'s birthday dinner. They have no idea who you are.',
+    text: () => 'Their name is {partner}. You meet at {friend:first}\'s birthday dinner. They have no idea who you are.',
     options: [
-      { label: 'Ask them out', run: (L, r) => { if (ok(r, 0.7)) { const f = lifeOf(L); f.rel = 'dating'; f.since = L.year; bump(L, { morale: 8 }); logIt(L, 'Met someone.', 'good'); return 'Dinner turns into a whole weekend. You are smitten.'; } bump(L, { morale: -2 }); return 'They are not interested. That has not happened in years.'; } },
+      { label: 'Ask them out', run: (L, r) => { if (ok(r, 0.7)) { const f = lifeOf(L); f.rel = 'dating'; f.since = L.year; bump(L, { morale: 8 }); logIt(L, 'Met {partner}.', 'good'); return 'Dinner turns into a whole weekend. You are smitten.'; } bump(L, { morale: -2 }); lifeOf(L).pn = (lifeOf(L).pn || 0) + 1; return 'They are not interested. That has not happened in years.'; } },
       { label: 'Focus on basketball', run: (L) => { bump(L, { eth: 2 }); return 'You go home early. You watch film.'; } },
     ],
   },
   propose: {
     phases: ['off', 'pre'], when: (L) => lifeOf(L).rel === 'dating' && L.year - lifeOf(L).since >= 1, weight: () => 3,
     title: 'You have a ring in your pocket.',
-    text: () => 'Two years together. The jeweler says it is perfect.',
+    text: () => 'Two years with {partner}. The jeweler says it is perfect.',
     options: [
-      { label: 'Propose', run: (L, r) => { const f = lifeOf(L); if (ok(r, 0.85)) { f.rel = 'engaged'; bump(L, { morale: 10 }); logIt(L, 'Got engaged.', 'good'); return 'Yes. Before you even finish the question.'; } f.rel = 'single'; bump(L, { morale: -12 }); return 'They say they need time. Then they need space.'; } },
+      { label: 'Propose', run: (L, r) => { const f = lifeOf(L); if (ok(r, 0.85)) { f.rel = 'engaged'; bump(L, { morale: 10 }); logIt(L, 'Engaged to {partner}.', 'good'); return 'Yes. Before you even finish the question.'; } f.rel = 'single'; bump(L, { morale: -12 }); const nm = say(L, '{partner}'); f.pn = (f.pn || 0) + 1; return nm + ' says they need time. Then they need space.'; } },
       { label: 'Not yet', run: (L) => { bump(L, { morale: -1 }); return 'The ring goes back in the drawer.'; } },
     ],
   },
   wedding: {
     phases: ['off'], when: (L) => lifeOf(L).rel === 'engaged', weight: () => 6,
     title: 'Wedding planning.',
-    text: () => 'Your partner has a list. Your teammates have opinions.',
+    text: () => '{partner} has a list. {mate} has opinions.',
     options: [
-      { label: 'Throw the party of the year', run: (L) => { lifeOf(L).rel = 'married'; bump(L, { cash: -Math.min(1.5, L.cash * 0.15), fame: 4, morale: 10 }); logIt(L, 'Got married.', 'gold'); return 'Four hundred guests. The whole roster dances.'; } },
-      { label: 'Something small', run: (L) => { lifeOf(L).rel = 'married'; bump(L, { morale: 10 }); logIt(L, 'Got married.', 'gold'); return 'Family only, on a beach. Perfect.'; } },
+      { label: 'Throw the party of the year', run: (L) => { lifeOf(L).rel = 'married'; bump(L, { cash: -Math.min(1.5, L.cash * 0.15), fame: 4, morale: 10 }); logIt(L, 'Married {partner}.', 'gold'); return 'Four hundred guests. The whole roster dances.'; } },
+      { label: 'Something small', run: (L) => { lifeOf(L).rel = 'married'; bump(L, { morale: 10 }); logIt(L, 'Married {partner}.', 'gold'); return 'Family only, on a beach. Perfect.'; } },
     ],
   },
   baby: {
     phases: ['off', 'pre'], when: (L) => lifeOf(L).rel === 'married' && lifeOf(L).kids < 4 && L.age <= 38, weight: () => 2,
-    title: 'Your partner wants to talk about kids.',
+    title: '{partner} wants to talk about kids.',
     text: (L) => lifeOf(L).kids ? 'Another one?' : 'You always said you wanted a big family.',
     options: [
       { label: 'Start a family', run: (L) => { const f = lifeOf(L); f.kids++; bump(L, { morale: 10, health: -3 }); logIt(L, f.kids === 1 ? 'Became a parent.' : 'Welcomed kid number ' + f.kids + '.', 'good'); return f.kids === 1 ? 'A baby in June. You learn to sleep in two-hour pieces.' : 'Kid number ' + f.kids + '. The house is loud.'; } },
@@ -1726,18 +2145,18 @@ const EVENTS = {
   breakup: {
     phases: ['off', 'mid'], when: (L) => lifeOf(L).rel === 'dating' && (L.m.morale < 45 || L.m.fame > 70), weight: () => 1.5,
     title: 'Things are not good at home.',
-    text: () => 'Road trips, cameras, the group chat. Your partner says it is too much.',
+    text: () => 'Road trips, cameras, the group chat. {partner} says it is too much.',
     options: [
-      { label: 'Fight for it', run: (L, r) => { if (ok(r, 0.55)) { bump(L, { morale: 4 }); return 'Counseling, a vacation, a long talk. You make it.'; } lifeOf(L).rel = 'single'; bump(L, { morale: -10 }); return 'It ends anyway. Quietly.'; } },
-      { label: 'Let it go', run: (L) => { lifeOf(L).rel = 'single'; bump(L, { morale: -6 }); return 'You move out in the offseason.'; } },
+      { label: 'Fight for it', run: (L, r) => { if (ok(r, 0.55)) { bump(L, { morale: 4 }); return 'Counseling, a vacation, a long talk. You make it.'; } lifeOf(L).rel = 'single'; bump(L, { morale: -10 }); lifeOf(L).pn = (lifeOf(L).pn || 0) + 1; return 'It ends anyway. Quietly.'; } },
+      { label: 'Let it go', run: (L) => { lifeOf(L).rel = 'single'; bump(L, { morale: -6 }); lifeOf(L).pn = (lifeOf(L).pn || 0) + 1; return 'You move out in the offseason.'; } },
     ],
   },
   hometown_call: {
     phases: ['off'], once: true, when: (L) => homeClub(L) && L.team && L.team !== homeClub(L) && ovrOf(L) >= 74 && L.contract && L.contract.years >= 1, weight: () => 3,
     title: 'Your hometown club calls.',
-    text: (L) => 'The ' + E.teamName(homeClub(L)) + ' want you home. Your mom already said yes.',
+    text: (L) => 'The ' + E.teamName(homeClub(L)) + ' want you home. Your mom, {mom}, already said yes.',
     options: [
-      { label: 'Go home', run: (L) => { joinTeam(L, homeClub(L), true); bump(L, { morale: 15, fame: 5 }); L.flags.home = true; return 'They trade for you. Your old high school coach is at the press conference.'; } },
+      { label: 'Go home', run: (L) => { joinTeam(L, homeClub(L), true); bump(L, { morale: 15, fame: 5 }); L.flags.home = true; return 'They trade for you. {hscoach}, your old high school coach, is at the press conference.'; } },
       { label: 'Stay where you are', run: (L) => { bump(L, { trust: 6, morale: -2 }); return 'Not yet. Maybe at the end.'; } },
     ],
   },
@@ -1746,25 +2165,25 @@ const EVENTS = {
     title: 'A streaming service wants a documentary.',
     text: () => 'Cameras everywhere for a season. Your house, your locker, your car.',
     options: [
-      { label: 'Let them in', run: (L, r) => { bump(L, { fame: 10, cash: 0.8 }); if (ok(r, 0.6)) return 'It is a hit. Your mom becomes a star.'; bump(L, { trust: -8, morale: -3 }); return 'Episode four shows a locker room fight. Nobody forgets.'; } },
+      { label: 'Let them in', run: (L, r) => { bump(L, { fame: 10, cash: 0.8 }); if (ok(r, 0.6)) return 'It is a hit. Your mom, {mom}, becomes a star.'; bump(L, { trust: -8, morale: -3 }); return 'Episode four shows a locker room fight. Nobody forgets.'; } },
       { label: 'Produce it yourself', run: (L) => { bump(L, { fame: 7, cash: 0.4 }); return 'You control the edit. It is a little flattering.'; } },
       { label: 'No cameras', run: (L) => { bump(L, { trust: 3 }); return 'Your teammates appreciate it.'; } },
     ],
   },
   teammate_fight: {
     phases: ['early', 'mid'], when: (L) => L.season && L.season.role && L.season.role.min >= 18, weight: () => 1.6,
-    title: 'A teammate shoves you in practice.',
+    title: '{mate} shoves you in practice.',
     text: () => 'Hard foul, harder words. Everybody stops.',
     options: [
-      { label: 'Shove him back', run: (L, r) => { if (ok(r, 0.4)) { bump(L, { trust: 2, morale: 3 }); return 'Coaches step in. You two are fine by dinner.'; } bump(L, { rest: 0.04, trust: -8, fame: 3 }); return 'It leaks. You both get suspended a game.'; } },
+      { label: 'Shove him back', run: (L, r) => { if (ok(r, 0.4)) { bump(L, { trust: 2, morale: 3 }); return '{coach} steps in. You two are fine by dinner.'; } bump(L, { rest: 0.04, trust: -8, fame: 3 }); return 'It leaks. You both get suspended a game.'; } },
       { label: 'Walk away', run: (L) => { bump(L, { trust: 4, morale: -2 }); return 'You go to the other end and shoot. The room respects it.'; } },
       { label: 'Settle it in a scrimmage', run: (L, r) => { if (ok(r, 0.5 + (ovrOf(L) - 72) * 0.02)) { bump(L, { trust: 6, morale: 5 }); return 'You cook him for twenty minutes. Nobody shoves you again.'; } bump(L, { morale: -4 }); return 'He cooks you. The practice video gets passed around.'; } },
     ],
   },
   young_star: {
     phases: ['pre'], once: true, when: (L) => L.age >= 31 && L.season && L.seasonsDone >= 8, weight: () => 3,
-    title: 'The club drafted a teenager at your position.',
-    text: () => 'Number two pick. The front office says he needs minutes.',
+    title: 'The club drafted {rookie}.',
+    text: () => 'A teenager at your position. Number two pick. {gm} says he needs minutes.',
     options: [
       { label: 'Mentor him', run: (L) => { bump(L, { trust: 8, min: -2, morale: 4, win: 0.3 }); return 'He listens. He takes your minutes and thanks you for them.'; } },
       { label: 'Make him earn it', run: (L, r) => { if (ok(r, 0.5 + (ovrOf(L) - 76) * 0.03)) { bump(L, { min: 2, fame: 3 }); return 'You keep the job another year.'; } bump(L, { min: -5, morale: -6 }); return 'He wins the job by January.'; } },
@@ -1791,17 +2210,17 @@ const EVENTS = {
   },
   agent_pitch: {
     phases: ['off'], once: true, when: (L) => L.seasonsDone >= 3 && L.agent !== 'power', weight: () => 2,
-    title: 'A power agency wants you.',
+    title: '{newagent} from a power agency wants you.',
     text: () => 'They promise bigger deals and bigger shoe money. They take four percent.',
     options: [
-      { label: 'Switch agents', run: (L) => { L.agent = 'power'; bump(L, { morale: 2 }); logIt(L, 'Signed with a power agency.', ''); return 'Your old agent takes it personally.'; } },
-      { label: 'Stay loyal', run: (L) => { bump(L, { morale: 3 }); return 'Your agent cries on the phone. Good tears.'; } },
+      { label: 'Switch agents', run: (L) => { const old = say(L, '{agent}'); L.agent = 'power'; bump(L, { morale: 2 }); logIt(L, 'Signed with {agent} of a power agency.', ''); return old + ' takes it personally.'; } },
+      { label: 'Stay loyal', run: (L) => { bump(L, { morale: 3 }); return '{agent} cries on the phone. Good tears.'; } },
     ],
   },
   playoff_guarantee: {
     phases: ['late'], when: (L) => L.season && L.season.seed && L.season.seed <= 8 && L.m.fame >= 35, weight: () => 2.5,
     title: 'Reporters ask about the first round.',
-    text: () => 'Somebody asks if you can win the series. The cameras lean in.',
+    text: () => '{reporter} asks if you can win the series. The cameras lean in.',
     options: [
       { label: 'Guarantee it', run: (L, r) => { bump(L, { fame: 6 }); if (ok(r, 0.55)) { bump(L, { win: 0.5, morale: 4 }); return 'The room goes quiet. Your teammates love it.'; } bump(L, { morale: -3, trust: -3 }); return 'The other team pins the quote on their wall.'; } },
       { label: 'One game at a time', run: (L) => { bump(L, { trust: 3 }); return 'Boring. Correct.'; } },
@@ -1817,7 +2236,7 @@ const EVENTS = {
    exists to be compared with and nothing in the league runs through him. */
 const RIVAL_FIRST = ['Terrence', 'Damon', 'Kobi', 'Jaylen', 'Desmond', 'Rico', 'Lamar', 'Tariq', 'Bryce', 'Keon',
   'Moses', 'Isaac', 'Dorian', 'Aaron', 'Javon', 'Corey', 'Emeka', 'Andrei', 'Felix', 'Royce'];
-const RIVAL_LAST = ['Holloway', 'Stanfield', 'Mbeki', 'Carraway', 'Lindqvist', 'Prescott', 'Okoro', 'Brannigan',
+const RIVAL_LAST = ['Holloway', 'Stanfield', 'Mbeki', 'Carraway', 'Lindqvist', 'Prescott', 'Obiora', 'Brannigan',
   'Delacroix', 'Ruffin', 'Tillman', 'Varga', 'Kincaid', 'Osei', 'Pemberton', 'Lockhart', 'Winslow', 'Achebe'];
 
 function makeRival(L, myPick) {
@@ -1861,13 +2280,15 @@ function rivalSeason(L, beats) {
 }
 const rivalOn = (L) => !!(L.rival && !L.rival.retired);
 
-/* A LIFE OFF THE FLOOR. The person you meet, the wedding, the kids. Every one
-   of them is a role ("your partner"), never a name, and every one moves morale
+/* A LIFE OFF THE FLOOR. The person you meet, the wedding, the kids. Each of
+   them has a generated name ({partner}, keyed on `pn`, so a new relationship
+   is a new person), and every one moves morale
    more than it moves anything about basketball, which is the BitLife half. */
 function lifeOf(L) { return L.life || (L.life = { rel: 'single', kids: 0, since: 0 }); }
 function lifeLine(L) {
   const f = lifeOf(L);
-  const rel = f.rel === 'married' ? 'Married' : f.rel === 'engaged' ? 'Engaged' : f.rel === 'dating' ? 'In a relationship' : 'Single';
+  const who = say(L, '{partner}');
+  const rel = f.rel === 'married' ? 'Married to ' + who : f.rel === 'engaged' ? 'Engaged to ' + who : f.rel === 'dating' ? 'Dating ' + who : 'Single';
   return rel + (f.kids ? ', ' + f.kids + (f.kids === 1 ? ' kid' : ' kids') : '');
 }
 
@@ -1990,6 +2411,7 @@ function queueEvents(L, phase, n, pool) {
     used[id] = 1;
     if (pool[id].once) once[id] = 1;
     const ev = pool[id];
+    if (ev.queue) ev.queue(L);
     L.pending.push({
       id, kind: 'event', key: phase + ':' + id,
       eyebrow: SUMMERY[phase] ? 'The summer' : 'This season',
@@ -2008,9 +2430,10 @@ function queueEvents(L, phase, n, pool) {
  * background would have handed him. The point of playing it is that the 56 is
  * yours, and so is everything the scouts saw on the way.
  *
- * THE SCHOOLS ARE REAL AND THE PEOPLE ARE NOT. A college is an institution, the
- * way an NBA club is, so Duke is Duke. Every coach, booster, rival and roommate
- * a card talks about is a role, never a name: the line career.js already holds.
+ * THE SCHOOLS ARE REAL AND THE PEOPLE ARE GENERATED. A college is an
+ * institution, the way an NBA club is, so Duke is Duke. Its coach, its
+ * boosters and your roommate are generated names off the career's seed, the
+ * same people every time the career loads.
  *
  * NOTHING HERE TOUCHES THE LEAGUE'S MODEL. The road ends at the same combine
  * card a draft-night career starts on, with ratings, a ceiling, fame and draft
@@ -2134,7 +2557,7 @@ function schoolHint(L, name) {
   const bar = COL_BAR + (TIER_NET[s.tier] - 3) * 0.35;
   const d = ovrOf(L) + 4 - bar;
   const role = d >= 10 ? 'Starts from day one' : d >= 4 ? 'Fights for a starting spot' : d >= -2 ? 'Comes off the bench' : 'Waits his turn';
-  return TIER_NAME[s.tier] + ', ' + s.conf + '. ' + role + '.';
+  return TIER_NAME[s.tier] + ', ' + s.conf + '. Coach ' + colCoachName(L, name) + '. ' + role + '.';
 }
 
 // ── an amateur season ──
@@ -2510,7 +2933,7 @@ function proYear(L, beats) {
   developAm(L, beats);
   L.age++;
   L.year++;
-  driftLeague(L);
+  driftLeague(L, beats);
   toDraft(L, beats, route);
 }
 
@@ -2674,7 +3097,7 @@ function portalCard(L) {
 function amNewYear(L, beats) {
   L.age++;
   L.year++;
-  driftLeague(L);
+  driftLeague(L, beats);
   L.season = null;
   if (L.am.level === 'hs' && L.am.grade < 12) {
     L.am.grade++;
@@ -2736,7 +3159,7 @@ function hsSummerCard(L) {
     options: [
       { label: 'The shoe circuit', hint: 'Travel team, big gyms, every scout. Hard on the body.' },
       { label: 'Skills trainer every day', hint: 'Get better at what you do.' },
-      { label: 'Run with your high school team', hint: 'Chemistry, and the coach notices.' },
+      { label: 'Run with your high school team', hint: 'Chemistry, and {coach} notices.' },
       { label: 'Rest and grow', hint: 'Sleep, eat, stretch.' },
     ],
   };
@@ -2748,10 +3171,10 @@ const AM_EVENTS = {
   grades: {
     phases: ['hs', 'col'], when: () => true, weight: () => 3,
     title: 'Your grades are slipping.',
-    text: (L) => L.season && L.season.lvl === 'col' ? 'The academic advisor says one more bad test and you sit.' : 'Your coach says no grades, no games.',
+    text: (L) => L.season && L.season.lvl === 'col' ? '{adviser}, your academic adviser, says one more bad test and you sit.' : '{coach} says no grades, no games.',
     options: [
-      { label: 'Study every night', run: (L) => { bump(L, { iq: 1, morale: -2, eth: 3 }); return 'You pass. Barely. Your mom frames the report card.'; } },
-      { label: 'Get a tutor', run: (L) => { bump(L, { trust: 3, morale: 1 }); return 'Two nights a week. It works.'; } },
+      { label: 'Study every night', run: (L) => { bump(L, { iq: 1, morale: -2, eth: 3 }); return 'You pass. Barely. Your mom, {mom}, frames the report card.'; } },
+      { label: 'Get a tutor', run: (L) => { bump(L, { trust: 3, morale: 1 }); return '{tutor} comes two nights a week. It works.'; } },
       { label: 'Wing it', run: (L, r) => { if (ok(r, 0.5)) { bump(L, { morale: 2 }); return 'You wing it. It works. This time.'; } bump(L, { rest: 0.12, trust: -6 }); return 'Academically ineligible. You sit three games.'; } },
     ],
   },
@@ -2761,28 +3184,28 @@ const AM_EVENTS = {
     text: () => 'Somebody put your dunks to music. Your phone has not stopped since.',
     options: [
       { label: 'Post more', run: (L) => { bump(L, { fame: 8, trust: -3 }); L.am.rstock = (L.am.rstock || 0) + 0.5; return 'Every scout in the country has seen your left hand now.'; } },
-      { label: 'Stay quiet', run: (L) => { bump(L, { trust: 4, iq: 1 }); return 'Your coach likes that you did not change.'; } },
-      { label: 'Call out the top player in your class', run: (L, r) => { bump(L, { fame: 10 }); if (ok(r, 0.4 + (ovrOf(L) - 45) * 0.03)) { L.am.rstock = (L.am.rstock || 0) + 1; return 'He accepts. You cook him at a summer event. On camera.'; } L.am.rstock = (L.am.rstock || 0) - 0.8; bump(L, { morale: -6 }); return 'He accepts. He cooks you. Also on camera.'; } },
+      { label: 'Stay quiet', run: (L) => { bump(L, { trust: 4, iq: 1 }); return '{coach} likes that you did not change.'; } },
+      { label: 'Call out {prepstar}', run: (L, r) => { bump(L, { fame: 10 }); if (ok(r, 0.4 + (ovrOf(L) - 45) * 0.03)) { L.am.rstock = (L.am.rstock || 0) + 1; return 'He accepts. You cook him at a summer event. On camera.'; } L.am.rstock = (L.am.rstock || 0) - 0.8; bump(L, { morale: -6 }); return 'He accepts. He cooks you. Also on camera.'; } },
     ],
   },
   coach_son: {
     phases: ['hs'], when: (L) => L.am && L.am.grade <= 11 && L.season && L.season.role && L.season.role.diff < 9, weight: () => 3,
-    title: "The coach's son plays your position.",
-    text: () => 'He gets the last shot every time. Everybody knows why.',
+    title: "{coach}'s son plays your position.",
+    text: () => 'His name is {coachson}. He gets the last shot every time. Everybody knows why.',
     options: [
       { label: 'Outwork him', run: (L, r) => { bump(L, { eth: 5 }); if (ok(r, 0.55)) { bump(L, { min: 6, trust: 6 }); return 'By February you are starting. Nobody says a word.'; } return 'You get better. He still starts.'; } },
-      { label: 'Talk to the coach', run: (L, r) => { if (ok(r, 0.4)) { bump(L, { min: 5 }); return 'He hears you. More minutes.'; } bump(L, { trust: -8 }); return 'He does not like being asked.'; } },
-      { label: 'Let your dad handle it', run: (L) => { bump(L, { trust: -10, morale: 2 }); return 'Your dad handles it. Loudly. In the parking lot.'; } },
+      { label: 'Talk to {coach}', run: (L, r) => { if (ok(r, 0.4)) { bump(L, { min: 5 }); return 'He hears you. More minutes.'; } bump(L, { trust: -8 }); return 'He does not like being asked.'; } },
+      { label: 'Let your dad handle it', run: (L) => { bump(L, { trust: -10, morale: 2 }); return 'Your dad, {dad}, handles it. Loudly. In the parking lot.'; } },
     ],
   },
   rival_school: {
     phases: ['hs'], when: () => true, weight: () => 2.5,
     title: 'Friday night. The crosstown rival.',
-    text: () => 'Sold out by Tuesday. They have a kid ranked higher than you.',
+    text: () => 'Sold out by Tuesday. Their star, {prepstar}, is ranked higher than you.',
     options: [
       { label: 'Guarantee a win', run: (L, r) => { bump(L, { fame: 5 }); if (ok(r, 0.35 + (ovrOf(L) - 40) * 0.02)) { bump(L, { morale: 8, win: 0.5 }); L.am.rstock = (L.am.rstock || 0) + 0.5; return 'You back it up. Thirty-four and the student section storms the court.'; } bump(L, { morale: -7 }); return 'They win. They play your quote over the speakers.'; } },
       { label: 'Let your game talk', run: (L, r) => { if (ok(r, 0.55)) { bump(L, { morale: 5, win: 0.3 }); return 'A quiet twenty-six. A win.'; } bump(L, { morale: -3 }); return 'Close loss. Next year.'; } },
-      { label: 'Lock up their star', run: (L) => { bump(L, { def: 1, trust: 4, win: 0.3 }); return 'He goes four for nineteen. The scouts noticed who guarded him.'; } },
+      { label: 'Lock up their star', run: (L) => { bump(L, { def: 1, trust: 4, win: 0.3 }); return '{prepstar} goes four for nineteen. The scouts noticed who guarded him.'; } },
     ],
   },
   double_team: {
@@ -2792,7 +3215,7 @@ const AM_EVENTS = {
     options: [
       { label: 'Find the open man', run: (L) => { bump(L, { pla: 2, win: 0.4, usage: -0.01 }); return 'Your teammates start hitting shots. The defenses stop.'; } },
       { label: 'Score through it', run: (L, r) => { if (ok(r, 0.5)) { bump(L, { fin: 1, fame: 4 }); return 'Forty against a box-and-one. They stop trying it.'; } bump(L, { morale: -4, health: -3 }); return 'You force it. A lot of bad shots.'; } },
-      { label: 'Ask the coach for new sets', run: (L) => { bump(L, { iq: 2, trust: 3 }); return 'You run off screens now. It is harder to double a moving target.'; } },
+      { label: 'Ask {coach} for new sets', run: (L) => { bump(L, { iq: 2, trust: 3 }); return 'You run off screens now. It is harder to double a moving target.'; } },
     ],
   },
   prep_transfer: {
@@ -2818,7 +3241,7 @@ const AM_EVENTS = {
     title: 'The top hundred are invited to an elite camp.',
     text: () => 'Four days. Every college coach in the country in the bleachers.',
     options: [
-      { label: 'Compete with everyone', run: (L, r) => { bump(L, { health: -4 }); if (ok(r, 0.35 + (ovrOf(L) - 42) * 0.025)) { L.am.rstock = (L.am.rstock || 0) + 1.2; bump(L, { fame: 5 }); return 'Camp MVP. Your ranking jumps.'; } L.am.rstock = (L.am.rstock || 0) - 0.4; return 'A rough week. The coaches saw it.'; } },
+      { label: 'Compete with everyone', run: (L, r) => { bump(L, { health: -4 }); if (ok(r, 0.35 + (ovrOf(L) - 42) * 0.025)) { L.am.rstock = (L.am.rstock || 0) + 1.2; bump(L, { fame: 5 }); return 'Camp MVP. Your ranking jumps.'; } L.am.rstock = (L.am.rstock || 0) - 0.4; return 'A rough week. {colcoach2}, who was recruiting you, saw all of it.'; } },
       { label: 'Go to learn', run: (L) => { bump(L, { iq: 2, def: 1 }); return 'You leave with a notebook full of things to fix.'; } },
       { label: 'Skip it and rest', run: (L) => { bump(L, { health: 6 }); return 'Fresh legs for the season.'; } },
     ],
@@ -2826,17 +3249,17 @@ const AM_EVENTS = {
   street_agent: {
     phases: ['hs_off', 'hs_sum'], once: true, when: (L) => L.am && L.am.rank <= 100, weight: () => 2.5,
     title: 'A man in a nice car wants to help your family.',
-    text: () => 'He says he is a friend of a friend. He has an envelope.',
+    text: () => 'He says his name is {streetagent}. A friend of a friend. He has an envelope.',
     options: [
       { label: 'Tell him no', run: (L) => { bump(L, { morale: 2, trust: 2 }); return 'He leaves a card. You throw it out.'; } },
       { label: 'Take the envelope', run: (L) => { bump(L, { cash: 0.02, morale: 3 }); L.am.envelope = true; return 'Your family needs it. Nobody needs to know.'; } },
-      { label: 'Tell your coach', run: (L) => { bump(L, { trust: 6 }); return 'Your coach makes a call. The car never comes back.'; } },
+      { label: 'Tell {coach}', run: (L) => { bump(L, { trust: 6 }); return '{coach} makes a call. The car never comes back.'; } },
     ],
   },
   homecoming: {
     phases: ['hs'], when: () => true, weight: () => 1.5,
     title: 'Homecoming is the night before the big game.',
-    text: () => 'Your friends are going. So is somebody you like.',
+    text: () => 'Your friends are going. So is {crush}.',
     options: [
       { label: 'Go', run: (L, r) => { bump(L, { morale: 8 }); if (ok(r, 0.6)) return 'Best night of the year. You still play well.'; bump(L, { health: -4, perf: -0.3 }); return 'Great night. Slow legs the next day.'; } },
       { label: 'Stay home and rest', run: (L) => { bump(L, { morale: -3, health: 3 }); return 'You hear about it all week.'; } },
@@ -2845,10 +3268,10 @@ const AM_EVENTS = {
   class_skip: {
     phases: ['col'], when: () => true, weight: () => 2,
     title: 'You have missed three straight classes.',
-    text: () => 'The professor emailed the athletic department.',
+    text: () => 'Professor {prof:last} emailed the athletic department.',
     options: [
       { label: 'Go to office hours', run: (L) => { bump(L, { iq: 1, trust: 2 }); return 'She is a big fan. You are fine.'; } },
-      { label: 'Get notes from a teammate', run: (L) => { bump(L, { morale: 1 }); return 'The walk-on has perfect notes. You owe him.'; } },
+      { label: 'Get notes from {mate}', run: (L) => { bump(L, { morale: 1 }); return '{mate} has perfect notes. You owe him.'; } },
       { label: 'Ignore it', run: (L, r) => { if (ok(r, 0.55)) return 'Nothing happens. You forget about it.'; bump(L, { rest: 0.1, trust: -6 }); return 'You are held out of two games.'; } },
     ],
   },
@@ -2864,10 +3287,10 @@ const AM_EVENTS = {
   },
   nba_scouts: {
     phases: ['col'], when: (L) => L.am && L.am.stock > -2, weight: () => 2.5,
-    title: 'Twelve NBA scouts at practice.',
+    title: 'Twelve NBA scouts at practice. One is {scout}.',
     text: () => 'They sit in the corner with notebooks. Everybody knows who they came to see.',
     options: [
-      { label: 'Show them everything', run: (L, r) => { if (ok(r, 0.5)) { L.am.stock = (L.am.stock || 0) + 0.8; return 'Your best practice of the year. Phones come out in the corner.'; } L.am.stock = (L.am.stock || 0) - 0.4; bump(L, { trust: -3 }); return 'You force it. The coach yells. The scouts write that down too.'; } },
+      { label: 'Show them everything', run: (L, r) => { if (ok(r, 0.5)) { L.am.stock = (L.am.stock || 0) + 0.8; return 'Your best practice of the year. Phones come out in the corner.'; } L.am.stock = (L.am.stock || 0) - 0.4; bump(L, { trust: -3 }); return 'You force it. {coach} yells. The scouts write that down too.'; } },
       { label: 'Play your role', run: (L) => { bump(L, { trust: 4 }); L.am.stock = (L.am.stock || 0) + 0.3; return 'Scouts like a guy who fits. They note it.'; } },
     ],
   },
@@ -2877,14 +3300,14 @@ const AM_EVENTS = {
     text: () => 'The student section has been camping out since Monday.',
     options: [
       { label: 'Take over the game', run: (L, r) => { if (ok(r, 0.3 + (ovrOf(L) - 50) * 0.025)) { bump(L, { fame: 8, win: 0.3 }); L.am.stock = (L.am.stock || 0) + 0.6; return 'Thirty-one on national TV. The student section chants your name.'; } bump(L, { morale: -5 }); return 'They key on you. A loss.'; } },
-      { label: 'Run the offense', run: (L) => { bump(L, { win: 0.4, trust: 3 }); return 'A team win. The coach mentions you first.'; } },
+      { label: 'Run the offense', run: (L) => { bump(L, { win: 0.4, trust: 3 }); return 'A team win. {coach} mentions you first.'; } },
       { label: 'Talk trash before it', run: (L, r) => { bump(L, { fame: 5 }); if (ok(r, 0.5)) return 'You back it up. The clip runs all week.'; bump(L, { morale: -4, trust: -3 }); return 'They bring it up every time you touch the ball.'; } },
     ],
   },
   booster: {
     phases: ['col', 'col_pre'], once: true, when: (L) => L.am && L.am.level === 'col', weight: () => 1.8,
     title: 'A booster wants to give you a car.',
-    text: () => 'Off the books. He says everybody does it.',
+    text: () => 'His name is {booster}. Off the books. He says everybody does it.',
     options: [
       { label: 'Take the keys', run: (L, r) => { if (ok(r, 0.6)) { bump(L, { morale: 6 }); return 'Nice car. Nobody asks.'; } bump(L, { rest: 0.25, fame: 3, trust: -8 }); L.am.stock = (L.am.stock || 0) - 0.6; return 'Somebody asks. You sit for a third of the season.'; } },
       { label: 'Ask for a legal NIL deal instead', run: (L) => { bump(L, { cash: 0.08, morale: 2 }); return 'He sets one up. Same money, no problems.'; } },
@@ -2898,12 +3321,12 @@ const AM_EVENTS = {
     options: [
       { label: 'Sign it', run: (L) => { const c = round1(0.05 + Math.pow(L.m.fame, 1.4) * 0.002); bump(L, { cash: c, fame: 3, trust: -2 }); L.earned = round1(L.earned + c); return 'Your face is on a billboard by the highway.'; } },
       { label: 'Local businesses only', run: (L) => { const c = round1(0.02 + L.m.fame * 0.0008); bump(L, { cash: c, morale: 3 }); L.earned = round1(L.earned + c); return 'A pizza place and a car wash. The town loves it.'; } },
-      { label: 'Focus on basketball', run: (L) => { bump(L, { trust: 4, iq: 1 }); return 'You leave the money. The coach notices.'; } },
+      { label: 'Focus on basketball', run: (L) => { bump(L, { trust: 4, iq: 1 }); return 'You leave the money. {coach} notices.'; } },
     ],
   },
   roommate: {
     phases: ['col_pre'], once: true, when: (L) => L.am && L.am.cyear === 1, weight: () => 4,
-    title: 'Your roommate is a walk-on from a farm town.',
+    title: 'Your roommate, {roommate}, is a walk-on from a farm town.',
     text: () => 'He has never been on a plane. He wakes up at five.',
     options: [
       { label: 'Start waking up at five too', run: (L) => { bump(L, { eth: 6, health: -2 }); return 'He becomes your rebounder at six every morning.'; } },
@@ -2911,18 +3334,28 @@ const AM_EVENTS = {
       { label: 'Ask for a single', run: (L) => { bump(L, { morale: 1, trust: -2 }); return 'Quiet. Lonely.'; } },
     ],
   },
+  /* He really goes: the worst club in the league fires its coach and hires
+     him, so he is on an NBA bench for as long as the carousel keeps him. */
   coach_leaves: {
-    phases: ['col_off'], once: true, when: (L) => L.am && L.am.cyear <= 3, weight: () => 2,
-    title: 'Your coach takes an NBA job.',
+    phases: ['col_off'], once: true, when: (L) => L.am && L.am.cyear <= 3 && !!L.am.college, weight: () => 2,
+    queue: (L) => {
+      const club = CLUBS.slice().sort((a, b) => clubNet(L, a) - clubNet(L, b))[0];
+      const name = myCoach(L);
+      fire(L, club, 0);
+      hire(L, club, { n: name, b: L.year - 48, real: 0 }, false).since = L.year + 1;
+      L.flags.leave = { club, n: name };
+      L.am.cv = (L.am.cv || 0) + 1;
+    },
+    title: '{oldcoach} takes the {leaveclub} job.',
     text: () => 'He calls before the news breaks. He wants you to know first.',
     options: [
-      { label: 'Wish him well', run: (L) => { L.m.trust = 50; bump(L, { morale: -3 }); return 'The new coach has a different system. You start over.'; } },
-      { label: 'Ask him to put in a word with his new club', run: (L) => { L.m.trust = 50; L.am.stock = (L.am.stock || 0) + 0.6; return 'He says you are the best player he has coached. He means it.'; } },
+      { label: 'Wish him well', run: (L) => { L.m.trust = 50; bump(L, { morale: -3 }); return '{coach} replaces him. He has a different system. You start over.'; } },
+      { label: 'Ask him to put in a word with the {leaveclub}', run: (L) => { L.m.trust = 50; L.am.stock = (L.am.stock || 0) + 0.6; return 'He says you are the best player he has coached. He means it.'; } },
     ],
   },
   investigation: {
     phases: ['col'], once: true, when: (L) => !!(L.am && L.am.envelope), weight: () => 8,
-    title: 'A reporter is asking about an envelope.',
+    title: '{reporter} is asking about an envelope.',
     text: () => 'Somebody talked. The school wants to hear it from you before the NCAA does.',
     options: [
       { label: 'Tell the truth', run: (L) => { L.am.envelope = false; bump(L, { rest: 0.2, trust: 4 }); return 'You sit nine games. The story is gone in a week.'; } },
@@ -2934,7 +3367,7 @@ const AM_EVENTS = {
     title: 'A pro-am league wants you this summer.',
     text: () => 'Outdoor court, real pros, a thousand people on the fence.',
     options: [
-      { label: 'Play', run: (L, r) => { bump(L, { health: -3 }); if (ok(r, 0.5)) { bump(L, { fame: 6, iq: 1 }); return 'You drop forty on a guy with a ring. The video is everywhere.'; } bump(L, { iq: 1 }); return 'The pros teach you a lesson. A useful one.'; } },
+      { label: 'Play', run: (L, r) => { bump(L, { health: -3 }); if (ok(r, 0.5)) { bump(L, { fame: 6, iq: 1 }); return 'You drop forty on {opp}. The video is everywhere.'; } bump(L, { iq: 1 }); return 'The pros teach you a lesson. A useful one.'; } },
       { label: 'Rest', run: (L) => { bump(L, { health: 5 }); return 'You watch from the fence.'; } },
     ],
   },
@@ -3071,12 +3504,12 @@ function choose(L, i) {
       } else {
         L.flags.promise = { club: c, slot: theirs }; text = 'They love you. Promise made: if you are there, you are theirs.'; tone = 'good';
       }
-      L.pending.unshift(agentCard());
+      L.pending.unshift(agentCard(L));
       break;
     }
     case 'agent': {
       L.agent = opt.agent;
-      text = AGENTS[L.agent].name + ' it is.';
+      text = say(L, '{agent}') + ' it is.';
       if (L.agent === 'cousin') bump(L, { morale: 8 });
       L.phase = 'draft';
       break;
@@ -3201,6 +3634,8 @@ function choose(L, i) {
       }
     }
   }
+  text = say(L, text);
+  sayAll(L, beats);
   const after = snapshot(L);
   const res = { card, picked: i, label: opt.label, text, tone, diff: diffOf(before, after), beats };
   L.last = { title: card.title, label: opt.label, text, tone, diff: res.diff };
@@ -3270,6 +3705,7 @@ function step(L) {
       beats.push(recordBeat(L, 'At the break'));
       rollInjury(L, 'late', beats);
       allStarCheck(L, beats);
+      midseasonFirings(L, beats);
       L.phase = 'mid';
       queueEvents(L, 'mid', 1 + (rngAt(L, 'n:mid')() < 0.5 ? 1 : 0));
       break;
@@ -3325,6 +3761,7 @@ function step(L) {
     case 'col_off': amNewYear(L, beats); break;
     case 'pro_year': proYear(L, beats); break;
   }
+  sayAll(L, beats);
   return { beats };
 }
 function recordBeat(L, when) {
@@ -3404,9 +3841,9 @@ function newYear(L, beats) {
     delete L.contract.next;
   }
   if (L.contract && L.contract.years <= 0) L.contract = null;
-  driftLeague(L);
-  L.phase = 'pre';
   beats.push({ kind: 'year', text: 'The ' + (L.year - 1) + '-' + String(L.year).slice(2) + ' season. You are ' + L.age + '.', tone: '' });
+  driftLeague(L, beats);
+  L.phase = 'pre';
   openYear(L);
 }
 /* A summer with a club: the season is opened now, so whatever happens before
@@ -3427,7 +3864,7 @@ function openYear(L) {
 const inSeason = (L) => !!(L.season && L.team && ['drafted', 'pre', 'early', 'mid'].indexOf(L.phase) >= 0);
 const ACTS = {
   coach: {
-    name: 'Talk to the coach', blurb: 'Ask for a bigger role.', cost: () => 0,
+    name: 'Talk to {coach}', blurb: 'Ask your coach for a bigger role.', cost: () => 0,
     when: (L) => inSeason(L),
     run(L, r) {
       const role = roleOf(L);
@@ -3440,12 +3877,12 @@ const ACTS = {
   trade: {
     name: 'Request a trade', blurb: 'Ask out. It happens this summer.', cost: () => 0,
     when: (L) => !!(L.team && L.contract && L.contract.years >= 2 && !L.flags.tradeAsk && L.phase !== 'off'),
-    run(L) { L.flags.tradeAsk = true; bump(L, { trust: -14, fame: 2 }); return 'Your agent makes the call. The front office says they will look at it.'; },
+    run(L) { L.flags.tradeAsk = true; bump(L, { trust: -14, fame: 2 }); return '{agent}, your agent, makes the call. {gm} says the club will look at it.'; },
   },
   trainer: {
     name: 'Hire a personal trainer', blurb: 'Work ethic and durability.', cost: (L) => round1(0.25 + capFor(L.year) * 0.002),
     when: () => true,
-    run(L) { bump(L, { eth: 5, dur: 2, health: 3 }); return 'Six a.m. every day. You hate him. It works.'; },
+    run(L) { bump(L, { eth: 5, dur: 2, health: 3 }); return '{trainer} has you up at six every day. You hate him. It works.'; },
   },
   vacation: {
     name: 'Take a real vacation', blurb: 'Health and morale.', cost: (L) => round1(0.15 + capFor(L.year) * 0.001),
@@ -3457,13 +3894,13 @@ const ACTS = {
     when: () => true,
     run(L, r) {
       if (r() < 0.7) { bump(L, { morale: 8, trust: 2 }); return 'The whole team comes. Good night, good vibes.'; }
-      bump(L, { morale: 4, fame: 4, trust: -6 }); return 'It ends up online. The coach has questions.';
+      bump(L, { morale: 4, fame: 4, trust: -6 }); return 'It ends up online. {coach} has questions.';
     },
   },
   house: {
-    name: 'Buy your mom a house', blurb: 'Once. You have been waiting to do this.', cost: (L) => round1(1.2 + capFor(L.year) * 0.004),
+    name: 'Buy your mom a house', blurb: 'For {mom}. Once. You have been waiting to do this.', cost: (L) => round1(1.2 + capFor(L.year) * 0.004),
     when: (L) => !L.flags.momHouse,
-    run(L) { L.flags.momHouse = true; bump(L, { morale: 15, fame: 3 }); return 'She cries. You cry. Worth every dollar.'; },
+    run(L) { L.flags.momHouse = true; bump(L, { morale: 15, fame: 3 }); return '{mom} cries. You cry. Worth every dollar.'; },
   },
   foundation: {
     name: 'Start a foundation', blurb: 'Fame and morale. Costs real money.', cost: (L) => round1(1.5 + capFor(L.year) * 0.006),
@@ -3476,7 +3913,7 @@ function actsOpen(L) {
   const used = (L.flags.acts && L.flags.acts.y === L.year) ? L.flags.acts : {};
   return Object.keys(ACTS).map((id) => {
     const a = ACTS[id], cost = a.cost(L);
-    return { id, name: a.name, blurb: a.blurb, cost, used: !!used[id], ok: a.when(L) && !used[id] && L.cash >= cost };
+    return { id, name: say(L, a.name), blurb: say(L, a.blurb), cost, used: !!used[id], ok: a.when(L) && !used[id] && L.cash >= cost };
   }).filter((a) => ACTS[a.id].when(L));
 }
 function act(L, id) {
@@ -3488,8 +3925,10 @@ function act(L, id) {
   L.flags.acts[id] = 1;
   const before = snapshot(L);
   if (open.cost) L.cash = round1(L.cash - open.cost);
-  const text = a.run(L, rngAt(L, 'act:' + id));
-  const res = { title: a.name, label: a.name, text, tone: '', diff: diffOf(before, snapshot(L)) };
+  const text = say(L, a.run(L, rngAt(L, 'act:' + id)));
+  const nm = say(L, a.name);
+  sayAll(L);
+  const res = { title: nm, label: nm, text, tone: '', diff: diffOf(before, snapshot(L)) };
   L.last = res;
   return res;
 }
@@ -3502,6 +3941,7 @@ function view(L) {
     ovr: ovrOf(L), pot: L.pot, role: s && s.role ? s.role : (L.team ? roleOf(L) : null),
     line: s && s.gp ? perGame(s) : null, record: s ? { w: s.w, l: s.l } : null,
     next: nextLabel(L), totals: totals(L), cap: capFor(L.year),
+    coach: myCoach(L), mates: myMates(L).slice(0, 4).map((m) => m.n), wire: (L.flags.wire || []).slice(),
   };
 }
 
@@ -3585,6 +4025,8 @@ const publicAPI = {
   SCHOOLS, SCHOOL_BY, TIER_NAME, AM_EVENTS, HS_ROUNDS, NCAA_ROUNDS, GRADE, CYEAR, AGE_HS,
   isAm, colorsOf, roadView, nationalRank, rankText, starsOf, draftTalk, collegeOffers, schoolNet,
   LOOK_KEYS, cleanLook, setLook, TONES, PRESSERS, PERSONAS, EVENT_REP, repOf, personaOf, presserCard,
+  COACHES_NOW, COACH_POOL, COACH_NAMES, PEOPLE_M, PEOPLE_F, PEOPLE_X, PEOPLE_LAST, FIRST, LAST, RIVAL_FIRST, RIVAL_LAST,
+  coachState, coachOf, coachName, coachCarousel, myCoach, matesOf, myMates, personName, peopleKey, say, CLUBS,
 };
 
 if (typeof module !== 'undefined' && module.exports) module.exports = publicAPI;

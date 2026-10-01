@@ -12,11 +12,12 @@
  * over hundreds of careers played three ways, plus one career played through
  * the real page.
  *
- * THE LINE ABOUT REAL PEOPLE IS ASKED OF THE SOURCE. Every rival, mentor and
- * teammate an event talks about is a role, never a name, and the way that
- * breaks is somebody writing a storyline with a real name in it. No
- * measurement of an output can see a string that was never drawn, so section
- * 5 reads every player name in the data against career.js itself.
+ * EVERYBODY IN A STORY HAS A NAME. Teammates and opponents are real players
+ * off the data, NBA head coaches are real coaches who get fired and hired,
+ * and everybody else is generated. Section 5 holds both halves: the source
+ * types no real player outside the coaches table (a real person arrives
+ * through the data), no generated pairing is somebody real, and nothing a
+ * career prints names a person by job alone or shows an unfilled token.
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -177,24 +178,128 @@ section('4. determinism, and a reload mid-career changes nothing');
   ok(JSON.stringify(c.history) !== JSON.stringify(a.history), 'another seed is another career');
 }
 
-// ── 5. nobody real is written into a story ─────────────────────────────────
-section('5. no real player is named in any storyline');
+// ── 5. everybody has a name, and the real ones are real ─────────────────────
+section('5. real players and coaches by name, everybody else generated');
 {
   const names = new Set();
   for (const r of ROWS) if (r.n && r.n.indexOf(' ') > 0) names.add(r.n);
-  /* The scenes' cast and the drawing file are read the same way: an
-     invented broadcaster who shares a real player's name is the line
-     crossed by accident. */
+  const coaches = new Set(C.COACH_NAMES);
+  /* A real person reaches a line through the data or the coaches table, never
+     typed into a story. So the source, less the coaches table, names nobody
+     real: a storyline about a real player written by hand is the defect. */
   for (const f of ['career.js', 'scenes.js', 'baller.js']) {
-    const src = fs.readFileSync(path.join(HERE, f), 'utf8');
+    let src = fs.readFileSync(path.join(HERE, f), 'utf8');
+    for (const n of coaches) src = src.split(n).join('');
     const hits = [...names].filter((n) => src.indexOf(n) >= 0);
-    ok(hits.length === 0, `${f} names none of ${names.size} real players (${hits.slice(0, 5).join(', ') || 'none'})`);
+    ok(hits.length === 0, `${f} types none of ${names.size} real players outside the coaches table (${hits.slice(0, 5).join(', ') || 'none'})`);
   }
-  /* The default names are invented. A random one that happens to be a real
-     player is the same line crossed by accident. */
+  /* Every pairing the generated lists can make is nobody real. Read off the
+     lists themselves, so a name added to one is checked against every other. */
+  const pairs = (A, B) => A.flatMap((a) => B.map((b) => a + ' ' + b));
+  const made = {
+    people: pairs(C.PEOPLE_M.concat(C.PEOPLE_F, C.PEOPLE_X), C.PEOPLE_LAST),
+    rookies: pairs(C.FIRST, C.PEOPLE_LAST),
+    defaults: pairs(C.FIRST, C.LAST),
+    rivals: pairs(C.RIVAL_FIRST, C.RIVAL_LAST),
+  };
+  for (const k of Object.keys(made)) {
+    const clash = made[k].filter((n) => names.has(n) || coaches.has(n));
+    ok(clash.length === 0, `no generated ${k} name is a real player or coach (${clash.slice(0, 3).join(', ') || 'none'}, of ${made[k].length})`);
+  }
   const clash = [];
   for (let i = 0; i < 3000; i++) { const n = C.randomName('nm' + i); if (names.has(n)) clash.push(n); }
   ok(clash.length === 0, `no random default name is a real player's (${clash.slice(0, 3).join(', ') || 'none'})`);
+  ok(C.CLUBS.every((c) => C.COACHES_NOW[c] && C.COACHES_NOW[c][0]), 'every club opens with a real head coach');
+  ok(new Set(C.CLUBS.map((c) => C.COACHES_NOW[c][0])).size === C.CLUBS.length, 'no coach opens on two benches');
+  ok(!C.COACH_POOL.some((x) => C.CLUBS.some((c) => C.COACHES_NOW[c][0] === x[0])), 'the pool holds nobody already on a bench');
+
+  /* What a career actually says, over a sweep of careers both ways in. The old
+     role phrasings are the defect: "the coach", "a teammate", "the
+     commissioner" is a line about a job. And a token nobody filled is a line
+     that shows its own plumbing. */
+  const ROLE = [/\bthe coach\b/i, /\byour coach (says|makes|likes|tells|wants|takes)/i, /\ba teammate\b/i, /\bthe commissioner\b/i,
+    /\bthe owner\b/i, /\bthe trainers\b/i, /\bthe doctors\b/i, /\byour partner (has|wants|says)/i, /\bthe veteran\b/i,
+    /\byour starting center\b/i, /\bthe assistant\b/i, /\ba rival coach\b/i, /\byour agent (makes|cries)/i, /\bthe new coach\b/i];
+  const bad = [], open = [];
+  let years = 0, changes = 0, rehired = 0, noCoach = 0, twoBench = 0, cardCoach = 0, cardCoachOk = 0;
+  const fired = new Set();
+  const realAt = {};
+  const look = (L, t, where) => {
+    if (typeof t !== 'string') return;
+    if (/\{[a-z0-9]+(:[a-z]+)?\}/i.test(t)) open.push(where + ': ' + t);
+    for (const re of ROLE) if (re.test(t)) { bad.push(where + ': ' + t); break; }
+  };
+  for (let i = 0; i < (QUICK ? 40 : 90); i++) {
+    const L = C.newLife({ seed: 'names:' + i, start: i % 2 ? 'hs' : 'draft', league });
+    let g = 0, prev = JSON.stringify(C.coachState(L).coach);
+    const seen = (L2) => {
+      const cs = C.coachState(L2).coach, on = {};
+      for (const c of C.CLUBS) {
+        if (!cs[c]) { noCoach++; continue; }
+        if (on[cs[c].n]) twoBench++;
+        on[cs[c].n] = 1;
+      }
+    };
+    while (!L.retired && g++ < 4000) {
+      if (L.pending.length) {
+        const c = L.pending[0];
+        for (const t of [c.title, c.text, c.eyebrow]) look(L, t, c.id);
+        for (const o of c.options) { look(L, o.label, c.id); look(L, o.hint, c.id); }
+        if (c.id === 'coach_bench' || c.id === 'film_session') { cardCoach++; if ((c.title + c.text).indexOf(C.coachName(L, L.team)) >= 0) cardCoachOk++; }
+        const r = C.choose(L, pickFor('random', L, c));
+        look(L, r.text, c.id);
+        for (const b of r.beats || []) look(L, b.text, 'beat');
+      } else {
+        const y = L.year;
+        const st = C.step(L);
+        for (const b of st.beats) look(L, b.text, 'beat');
+        if (L.year !== y) {
+          years++;
+          const cur = C.coachState(L).coach, old = JSON.parse(prev);
+          for (const c of C.CLUBS) {
+            if (old[c] && cur[c] && old[c].n !== cur[c].n) {
+              changes++;
+              fired.add(old[c].n);
+              if (fired.has(cur[c].n)) rehired++;
+            }
+          }
+          const off = L.year - (league.latest + 1);
+          const a = realAt[off] = realAt[off] || [0, 0];
+          for (const c of C.CLUBS) { a[0] += cur[c] ? cur[c].real : 0; a[1]++; }
+        }
+        prev = JSON.stringify(C.coachState(L).coach);
+      }
+      seen(L);
+    }
+    for (const l of L.log) look(L, l.t, 'log');
+  }
+  ok(open.length === 0, `no line shows an unfilled {token} (${open.slice(0, 2).join(' | ') || 'none'})`);
+  ok(bad.length === 0, `no line names a person by job alone (${bad.slice(0, 3).join(' | ') || 'none'})`);
+  ok(noCoach === 0, `every club has a head coach after every step (${noCoach} empty benches)`);
+  ok(twoBench === 0, `no coach is on two benches at once (${twoBench})`);
+  const per = changes / Math.max(1, years);
+  console.log(`  coaching changes a summer ${per.toFixed(2)}  rehired after a firing ${rehired}  real coaches at year 1 ${(realAt[1][0] / realAt[1][1]).toFixed(2)}, year 10 ${realAt[10] ? (realAt[10][0] / realAt[10][1]).toFixed(2) : '-'}`);
+  ok(per >= 3 && per <= 9, `the carousel moves about as often as the real league (${per.toFixed(2)} changes a summer, want 3 to 9)`);
+  ok(rehired > 0, 'a fired coach turns up on another bench');
+  ok(realAt[1] && realAt[1][0] / realAt[1][1] >= 0.95 && realAt[10] && realAt[10][0] / realAt[10][1] >= 0.75,
+    'the benches stay mostly real coaches for a decade, then turn over');
+  ok(cardCoach > 0 && cardCoachOk === cardCoach, `a card about your coach names the coach of your club (${cardCoachOk} of ${cardCoach})`);
+
+  /* Teammates: year one's are the club's real roster, and the league turns
+     over into generated rookies as the real men retire. */
+  const L = C.newLife({ seed: 'mates', league });
+  const real = new Set();
+  for (const r of ROWS) if (r.s === league.latest && r.t === 'BOS') real.add(r.n);
+  const y1 = C.matesOf(L, 'BOS');
+  const y1real = y1.filter((m) => m.real);
+  ok(y1real.length >= 8 && y1real.every((m) => real.has(m.n)) && y1.length - y1real.length <= 1,
+    `year one's Celtics are the real Celtics, plus one rookie from a draft the data has not seen (${y1.slice(0, 3).map((m) => m.n).join(', ')})`);
+  L.year += 15;
+  const y15 = C.matesOf(L, 'BOS');
+  ok(y15.some((m) => !m.real) && y15.some((m) => m.real), 'fifteen years on, the roster is real veterans and generated rookies');
+  ok(y15.filter((m) => !m.real).every((m) => !names.has(m.n)), 'no generated rookie is a real player');
+  L.year += 15;
+  ok(C.matesOf(L, 'BOS').every((m) => !m.real), 'thirty years on, the real men have all retired');
 }
 
 // ── 6. the money and the clock ─────────────────────────────────────────────
@@ -685,7 +790,7 @@ async function scenesWalk(b, serve) {
   const pic = await page.evaluate(() => !!document.querySelector('.cr-id img.rtf-baller'));
   ok(pic, 'the identity card draws the player');
 
-  const seen = {}, rooms = {};
+  const seen = {}, rooms = {}, podium = [], jobs = [];
   let presses = 0, choseInScene = 0, skipHeld = false, underneath = false, pressBefore = 0;
   while (presses++ < 700) {
     const st = await page.evaluate(() => {
@@ -693,13 +798,16 @@ async function scenesWalk(b, serve) {
       const ov = document.querySelector('#scov');
       const open = !!(ov && !ov.hidden);
       return { cur: !!s.cur, open, ch: open && !!ov.querySelector('.sc-ch button'),
-        who: open ? ov.querySelector('.sc-who b').textContent : '', room: open && ov.querySelector('.sc-room') ? ov.querySelector('.sc-room').className : '',
+        who: open ? ov.querySelector('.sc-who b').textContent : '', role: open ? ov.querySelector('.sc-who span').textContent : '',
+        commish: s.cur && window.RTF_CAREER.say ? window.RTF_CAREER.say(s.cur, '{commish}') : '', room: open && ov.querySelector('.sc-room') ? ov.querySelector('.sc-room').className : '',
         card: s.cur && s.cur.pending[0] ? s.cur.pending[0].id : null, press: s.cur && s.cur.flags.press || 0,
         plain: !!document.querySelector('#cr-card') };
     });
     if (!st.cur && !st.open) break;
     if (st.open) {
       seen[st.who] = 1;
+      if (st.role === 'Commissioner') podium.push(st.who === st.commish && !/^the /i.test(st.who));
+      if (/^(the commissioner|your coach)$/i.test(st.who)) jobs.push(st.who);
       (st.room.match(/rm-\w+/g) || []).forEach((r) => { rooms[r] = 1; });
       if (st.ch) {
         /* Skip never skips a decision: the button is gone and Escape leaves
@@ -724,7 +832,8 @@ async function scenesWalk(b, serve) {
     const r = await page.evaluate(() => { const c = document.querySelector('.cr-choice'); if (c) { c.click(); return 'c'; } const n = document.querySelector('#cr-next'); if (n) { n.click(); return 'n'; } return 'x'; });
     if (r === 'x') break;
   }
-  ok(seen['The commissioner'], `draft night is told from the podium (${Object.keys(seen).join(', ')})`);
+  ok(podium.length > 0 && podium.every(Boolean), `draft night is told from the podium, by the career's own commissioner (${podium.length} beats, ${Object.keys(seen).join(', ')})`);
+  ok(jobs.length === 0, `no plate names a person by job alone (${jobs.slice(0, 2).join(', ') || 'none'})`);
   ok(rooms['rm-draft'] && rooms['rm-press'] && rooms['rm-arena'], `the draft stage, the press room and the arena all appear (${Object.keys(rooms).join(', ')})`);
   ok(choseInScene >= 1, `decisions are answered inside scenes (${choseInScene})`);
   ok(underneath, 'and the card a scene asks is on the plain screen underneath');

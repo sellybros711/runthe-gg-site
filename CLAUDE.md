@@ -10855,12 +10855,54 @@ shipped first; high school and college are played out now, and draft night with 
 background card is the skip-ahead. `hoops/career.js` is the rules (window.RTF_CAREER, node
 require) and `hoops/career-ui.js` draws `#s-car` and paints the front page's `#career` card.
 
-**THE PLAYER IS INVENTED AND THE LEAGUE IS REAL.** Thirty real clubs, their colours, and year
-one's real rosters as a fact about who you join ("You join X, Y and Z", read off the data).
-Every rival, mentor, coach and teammate an event talks about is a ROLE, never a name. That is
-the wrestling game's rule arriving at a sport with real people in it. `check-career` section 5
-reads every player name in the data against `career.js`'s own source, and a random default
-name may not be a real player's either. Add events with roles.
+**THE PLAYER IS INVENTED AND THE LEAGUE IS REAL, AND EVERYBODY HAS A NAME.** Asked for by the
+owner: no "your coach". This reverses the first version's rule, which wrote every person in a
+story as a role. Now:
+
+| who | named how |
+|---|---|
+| teammates, opponents | real players, off the club's real roster in the data's last season |
+| NBA head coaches | real, `COACHES_NOW` in career.js, moved by a carousel |
+| everybody else | generated off the career's seed (`personName`, `kinName`): HS and college coaches, agents, GMs, owners, refs, doctors, family, boosters, the commissioner |
+
+**An event is written with a `{token}`, never with a job.** `say(L, s)` fills `{coach}`,
+`{gm}`, `{agent}`, `{mom}`, `{vet}`, `{star}`, `{mate}`, `{opp}` and the rest from `peopleKey`,
+with `:last` and `:first`. `sayAll` names the card ON TOP plus every beat at the end of
+`step`, `choose` and `act`, and only the top card: one waiting behind it is named when it gets
+there, so a coach fired by the card in front is not the coach the next card talks about.
+`logIt` names its own line. A token nobody knows is left as it is, so check-career can see it.
+
+**THE COACHES TABLE IS THE ONE PLACE A REAL NAME IS TYPED.** It is the staff at the end of the
+data's last season (with Portland's and New Orleans' interims), plus `COACH_POOL`: real coaches
+out of a chair and real assistants, the third field saying who has run a bench. Change a chair
+there and nowhere else. **Teammates are never typed**: `seedLeague` writes `roster` (the
+club's top twelve, name, position, an estimated birth year off the draft year, win shares)
+onto the life, and `matesOf` ages them a year at a time and retires them at an age seeded per
+man. Each draft class after that adds one generated rookie a club for about ten years. Nobody
+is traded: the league around you is a picture of who was there. An old save with no roster
+gets the page's when it opens on the same season of data, and otherwise reads year one's
+stars and ages them.
+
+**THE CAROUSEL** (`coachCarousel`, run from `driftLeague` every summer, the road years too):
+a club fires on how it played (your club on the record you actually played, and never after a
+title), a coach past 71 may retire, an interim is likely replaced, and the hire is weighted
+from fired coaches who have sat a year, unhired real names from the pool, and a generated
+first-time coach whose weight grows as the real names run out. A fired coach out four years,
+or past 72, leaves the list. `midseasonFirings` at the All-Star break hands a collapsing club
+to an interim assistant. **Your own club's mid-season firing is the `coach_fired` card**, whose
+`queue` hook really fires him, seats an interim, and puts two real candidates on the buttons.
+College `coach_leaves` really takes the worst club's job. Measured over 90 careers: about five
+changes a summer plus the February ones (the real league runs six or seven), benches all real
+in year one, about 94% real at year ten, then turning over.
+
+`check-career` section 5 holds it: the source types no real player outside the coaches table,
+no pairing the generated lists can make is a real player or coach (it found `Isaac Okoro`
+among the invented rivals, now `Obiora`), nothing a career prints shows an unfilled token or
+names a person by job alone (`the coach`, `a teammate`, `the commissioner` and the rest), every
+club has one coach after every step and no coach sits on two benches, a card about your coach
+names your club's coach, and year one's Celtics are the real Celtics while thirty years on they
+are all generated. Generated coaches skip any name already on a bench, which is what the two
+benches claim caught.
 
 **NOT A SECOND MODEL OF A ROSTER.** Year one's club nets come off the real rosters through
 `teamStrength`, scaled to a spread of 4.6, and every year after drifts on a mean-reverting
@@ -10917,10 +10959,10 @@ Sunday, then March a weekend a step, then declare, come back, or enter the porta
 lands on the same `combine` card a draft-night career starts on (`toDraft`), so **the NBA half
 never knew the road existed**.
 
-**THE SCHOOLS ARE REAL AND THE PEOPLE ARE NOT.** Fifty-odd real colleges by tier (blue blood,
-power, mid-major, small) with their colours, because a college is an institution the way a
-club is. Coaches, boosters, rivals and roommates are roles. High schools are invented
-(`<hometown> <suffix>`).
+**THE SCHOOLS ARE REAL AND THE PEOPLE ARE GENERATED.** Fifty-odd real colleges by tier (blue
+blood, power, mid-major, small) with their colours, because a college is an institution the
+way a club is. Its coach (`colCoachName`, named on every offer), boosters, rivals and your
+roommate are generated names off the seed. High schools are invented (`<hometown> <suffix>`).
 
 **THE ROAD ENDS WHERE THE BACKGROUNDS DO, AND THAT IS MEASURED.** It is played on the league's
 ratings scale (a sophomore is about a 40), grows by `GROW_AM` toward a ceiling drawn from
@@ -10957,8 +10999,10 @@ played: he exists to be measured against and nothing in the league runs through 
 use him, the trophy case draws you against him, and the Hall card says who had the better career.
 
 **A life off the floor** (`L.life`: single, dating, engaged, married, and kids up to four) is
-five cards that move morale more than basketball. Every person in it is a role. Old saves have
-no `life` key, so it is read through `lifeOf()`, never directly.
+five cards that move morale more than basketball. The person is `{partner}`, keyed on
+`life.pn`, which moves on a breakup or a no, so a new relationship is a new person and the
+name on the meet card is the name you date. Old saves have no `life` key, so it is read
+through `lifeOf()`, never directly.
 
 **Milestones are crossings, read off `totals()` either side of `closeSeason`'s history push**,
 so 20,000 points is logged in the season it happened and never again.
@@ -11030,9 +11074,10 @@ that moment's own context, or a chained scene would tell the first one's facts. 
 by default and switched off per device (`rtf.scenes.v1`); check-career's main walk runs with
 them off and 7b runs them on.
 
-**The cast is invented and check-career reads scenes.js and baller.js for every real player's
-name**, the same guard career.js has. Anybody else in a scene is a role (your coach, the
-commissioner).
+**The broadcasters are invented, and the coach and the commissioner are the career's.** Their
+plates read `C.myCoach` and `C.say(L, '{commish}')` through `ctxOf`, so a scene and a card name
+the same man, and 7b fails on a plate that reads a job. check-career reads scenes.js and
+baller.js for every real player's name, the same guard career.js has.
 
 Two things only a screenshot found: `.sc-front` (the press table, the studio desk) had no
 height, so nothing in it drew; and the drawn player made the identity card taller, which put a
