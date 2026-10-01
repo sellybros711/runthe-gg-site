@@ -3236,6 +3236,41 @@ nothing. Do it on a day with nothing on the clock.
 `check-fullteam.mjs` walks **every** `*-access.js` on disk now rather than naming two, so the
 lists cannot drift and a fourth mode is covered without anybody remembering.
 
+#### On lock day the front page reminds you, once
+
+```
+node football/check-fantasy.mjs                 the section named THE LOCK DAY REMINDER
+node cfb/build/test/test_fantasy.mjs            the college half, at the end of the browser walk
+```
+
+Asked for by the owner: a pop-up that promotes the weekly challenge, with a live countdown to
+the lock and the prize, once per account, every week, from midnight on the day lineups lock.
+`/assets/fantasy-promo.js` is the rule and the sheet, and both front pages call
+`RTG_FANPROMO.init` (and `check()` on every auth change). One file, because the rule is one
+sentence in both games.
+
+**THE DAY IS THE POINTER'S, NEVER A WEEKDAY.** It reads `locks_at` off `fantasy_now.json` or
+`cfb/data/fantasy/now.json` and shows when the Eastern date equals the lock's Eastern date and
+the lock has not passed. A Thursday NFL lock and a Friday college slate are the same rule.
+
+**IT IS NOT SHOWN** over an entered week (the mode's own record, written only on a yes), when
+the page does not draw the fantasy door, off the front page, over an open sheet or the first
+visit guide, or before auth has answered, because the mark has to land on the right account.
+
+**ONCE PER ACCOUNT IS ON THE SHELF.** Marked seen the moment it is on screen, to the browser
+(`rtg_fanpromo_v1`) and, signed in, to `ps_saves` game `rtg_promo`, slot `nfl` or `cfb`, as a
+set of week keys whose count is the progress. The shelf is asked before the sheet opens, with
+a four second ceiling, and null is no opinion. Seen anywhere counts, which is the quiet
+direction. The college front page loads `cloudsave.js` for this. No migration: 103's slots
+are free-form.
+
+**IT IS OFF UNDER AUTOMATION** (`navigator.webdriver`) unless `window.RTG_FANPROMO_TEST` is
+set. A modal that appears one day a week would otherwise fail every front page suite in the
+repo on that day and no other. A check that wants it sets the flag and gets the real rule.
+
+**"wins 30 days of Pro" is in it**, so `check-fantasy`'s hold on the prize length reads this
+file too.
+
 #### The look is one file, and the share card is one source for both competitions
 
 ```

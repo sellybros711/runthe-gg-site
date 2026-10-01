@@ -53,6 +53,8 @@ const GUARDED = [
   'cfb/index.html',
   'cfb/commish/index.html',
   'assets/store.js',
+  /* The lock day reminder both football games draw over their front page. */
+  'assets/fantasy-promo.js',
   /* A BUILD SCRIPT THAT WRITES WORDS ONTO AN IMAGE IS COPY. 06-og.mjs writes the
      headline baked into og-challenge.png, which is the most public text the college
      game produces: it is what a shared challenge link shows in a feed, and nobody

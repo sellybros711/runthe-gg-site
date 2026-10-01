@@ -1023,6 +1023,9 @@ const authStub = (who) => `
         ls.forEach(function(f){ try{ f(state()); }catch(e){} }); }, 30); return true; },
       state: state,
       onChange: function(f){ ls.push(f); return function(){}; },
+      /* A TOKEN ONLY WHEN THE FIXTURE ASKS, because with one the shared cloud save starts
+         asking the shelf on every page here. The reminder section asks; nothing else does. */
+      token: function(){ return s && s.token ? s.token : null; },
       /* PRO IS A FIELD ON THE FIXTURE, because the draft count asks it: three drafts for a
          free account and five for Pro. 'error' is the server failing, which must read as
          free rather than as Pro. */
@@ -1123,6 +1126,15 @@ const serverStub = (server) => {
     /* The ack is asserted through `posted`, which already records every rpc, rather
        than through a counter here that only this file could read. */
     fantasy_ack_result: () => ({ status: 200, body: 'true' }),
+    /* THE ACCOUNT'S SHELF, for the lock day reminder: what it holds, and what was put. */
+    ps_save_get: (b) => ({ status: 200, body: JSON.stringify(
+      s.shelf && s.shelf[b.p_game + '/' + b.p_slot] ? [s.shelf[b.p_game + '/' + b.p_slot]] : []) }),
+    ps_save_put: (b) => {
+      s.shelf = s.shelf || {};
+      s.shelf[b.p_game + '/' + b.p_slot] = { ok: true, slot: b.p_slot, progress: b.p_progress,
+        payload: b.p_payload, saved_at: null };
+      return { status: 200, body: JSON.stringify([s.shelf[b.p_game + '/' + b.p_slot]]) };
+    },
     fantasy_my_wins: () => ({ status: 200, body: JSON.stringify(s.wins || []) }),
     fantasy_standings: () => ({ status: 200, body: JSON.stringify(s.standings || []) }),
     fantasy_my_place: () => ({ status: 200,
@@ -1205,7 +1217,7 @@ async function signOne(page, nth = 0) {
 async function openPage(browser, url, opts = {}) {
   const { who = null, viewport = { width: 390, height: 844 }, at = null,
     results = null, storage = null, server = null, reduced = false,
-    injuries = null } = opts;
+    injuries = null, script = null } = opts;
   const page = await browser.newPage({ viewport,
     reducedMotion: reduced ? 'reduce' : 'no-preference' });
   const boom = [];
@@ -1225,6 +1237,7 @@ async function openPage(browser, url, opts = {}) {
      simply not there on the next, and the symptom is the second page sitting on the home
      screen for ever waiting for an entry it never had. So an entry is carried across by
      hand, which is also the honest fixture: it is the same bytes the first page wrote. */
+  if (script) await page.addInitScript(script);
   if (storage) {
     await page.addInitScript(`(function(){
       try { localStorage.setItem(${JSON.stringify(storage.key)},
@@ -3017,11 +3030,15 @@ console.log('\nA ROW OPENS INTO ITS LINEUP, AND THE LEADER WEARS THE PRIZE');
   {
     const sql = fs.readFileSync(path.join(ROOT, 'supabase/120_fantasy_pro_pass.sql'), 'utf8');
     const days = [...new Set([...sql.matchAll(/interval '(\d+) days'/g)].map((m) => m[1]))];
-    const copy = [...fs.readFileSync(path.join(ROOT, 'football/fantasy/index.html'), 'utf8').matchAll(/wins (\d+) days of Pro/g)]
+    const read = (f) => [...fs.readFileSync(path.join(ROOT, f), 'utf8').matchAll(/wins (\d+) days of Pro/g)]
       .map((m) => m[1]);
+    const copy = read('football/fantasy/index.html');
+    /* AND THE LOCK DAY REMINDER, which says it on both front pages from one shared file. */
+    const promo = read('assets/fantasy-promo.js');
     ok('  and the number it names is the one the server grants',
-      days.length === 1 && copy.length >= 2 && copy.every((d) => d === days[0]),
-      'sql ' + days.join(',') + ', copy ' + copy.join(','));
+      days.length === 1 && copy.length >= 2 && promo.length >= 1
+      && copy.concat(promo).every((d) => d === days[0]),
+      'sql ' + days.join(',') + ', copy ' + copy.join(',') + ', reminder ' + promo.join(','));
   }
 
   const closed = await page.evaluate(() => {
@@ -4012,6 +4029,133 @@ for (const [label, who, want] of [
  * followed the one instruction on the screen and arrived somewhere that did not answer.
  * So the hash is driven rather than trusted.
  * ---------------------------------------------------------------- */
+/* ----------------------------------------------------------------
+ * THE LOCK DAY REMINDER, ONCE A WEEK, ON THE DAY IT MATTERS
+ *
+ * /assets/fantasy-promo.js puts a sheet over the front page on the Eastern day the week
+ * locks, with a countdown to the first kickoff and the prize. Every claim here is about
+ * WHEN, because a reminder that comes up on the wrong day, after the lock, over a lineup
+ * already entered, or twice, is worse than none.
+ *
+ * IT IS OFF UNDER AUTOMATION UNLESS ASKED FOR, so `RTG_FANPROMO_TEST` is set here and
+ * nowhere else. The first arm is that guard: without the flag nothing comes up, or every
+ * front page suite in the repo would fail one day a week.
+ *
+ * THE DAY IS THE POINTER'S, so the clock is pinned against the real `locks_at` rather than
+ * against a weekday. Signed in, the account's shelf is asked, and the route aborts it like
+ * every other request this file does not answer: no request reaches the live project.
+ * ---------------------------------------------------------------- */
+console.log('\nTHE LOCK DAY REMINDER COMES UP ONCE, ON THE DAY THE WEEK LOCKS');
+{
+  const LOCK = Date.parse(NOW.locks_at);
+  const eastern = (ms) => new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York',
+    year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(ms));
+  /* Three hours before the lock is the same Eastern day for any kickoff after 3am. */
+  const DAY = LOCK - 3 * 3600 * 1000;
+  ok('the fixture morning is the lock\'s own Eastern day', eastern(DAY) === eastern(LOCK),
+    eastern(DAY) + ' vs ' + eastern(LOCK));
+  const midnight = Date.parse(eastern(LOCK) + 'T00:00:00-04:00') || Date.parse(eastern(LOCK) + 'T00:00:00-05:00');
+  const TEST = 'window.RTG_FANPROMO_TEST=true;';
+  const wait = async (page) => {
+    await page.waitForTimeout(4500);
+    return page.evaluate(() => {
+      const el = document.getElementById('fpromo');
+      if (!el) return { up: false };
+      const segs = [...el.querySelectorAll('.fp-seg b')].map((b) => b.textContent);
+      const go = el.querySelector('.fp-go');
+      const card = el.querySelector('.fp-card').getBoundingClientRect();
+      return { up: true, text: el.textContent, segs, href: go.getAttribute('href'),
+        goShown: go.getBoundingClientRect().bottom <= innerHeight,
+        fits: card.top >= 0 && card.bottom <= innerHeight && card.right <= innerWidth };
+    });
+  };
+
+  {
+    const { page, boom } = await openPage(browser, 'http://local.test/football/', { who: STRANGER, at: DAY });
+    const got = await wait(page);
+    ok('without the test flag, automation is never shown it', !got.up);
+    ok('  nothing threw', !boom.length, boom.join(' | ') || 'clean');
+    await page.close();
+  }
+  const SIGNED = Object.assign({ token: 'fixture' }, STRANGER);
+  for (const [label, who] of [['a signed in account', SIGNED], ['a guest', null]]) {
+    const { page, boom, posted } = await openPage(browser, 'http://local.test/football/',
+      { who, at: DAY, script: TEST, server: {} });
+    const got = await wait(page);
+    ok(label + ' is shown it on lock day', got.up);
+    if (got.up) {
+      ok('  it names the week and says it locks today',
+        new RegExp('Week ' + NOW.week).test(got.text) && /lock today/i.test(got.text), got.text.slice(0, 120));
+      ok('  it says what first place wins', /wins 30 days of Pro/.test(got.text));
+      ok('  the countdown is the real time to the lock',
+        got.segs.length === 3 && Number(got.segs[0]) === 2 && Number(got.segs[1]) >= 58, got.segs.join(':'));
+      ok('  the way in is the mode', got.href === '/football/fantasy/', got.href);
+      ok('  and the whole card fits a phone', got.fits && got.goShown);
+      const s1 = await page.evaluate(() => document.querySelector('#fpromo .fp-seg:nth-child(3) b').textContent);
+      await page.waitForTimeout(2100);
+      const s2 = await page.evaluate(() => document.querySelector('#fpromo .fp-seg:nth-child(3) b').textContent);
+      ok('  and it counts down while it is open', s1 !== s2, s1 + ' then ' + s2);
+      await page.click('#fpromo .fp-later');
+      ok('  Not now closes it', await page.evaluate(() => !document.getElementById('fpromo')));
+      const seen = await page.evaluate(() => localStorage.getItem('rtg_fanpromo_v1'));
+      ok('  and it is marked seen for this week', new RegExp('nfl:' + NOW.season + '_w' + NOW.week).test(seen || ''), seen);
+      if (who) {
+        await page.waitForTimeout(500);
+        const put = posted.find((x) => x.fn === 'ps_save_put' && x.body.p_game === 'rtg_promo');
+        ok('  the account\'s shelf is asked, then written with this week',
+          posted.some((x) => x.fn === 'ps_save_get' && x.body.p_game === 'rtg_promo' && x.body.p_slot === 'nfl')
+          && !!put && !!put.body.p_payload.seen[NOW.season + '_w' + NOW.week],
+          JSON.stringify(put && put.body));
+      }
+      const again = await page.evaluate(async () => {
+        RTG_FANPROMO.check(); await new Promise((r) => setTimeout(r, 600));
+        return !!document.getElementById('fpromo');
+      });
+      ok('  asked again, it stays down', !again);
+    }
+    ok('  nothing threw', !boom.length, boom.join(' | ') || 'clean');
+    await page.close();
+  }
+  {
+    /* A SECOND VISIT IS A NEW PAGE CARRYING THE MARK, which is the honest fixture. */
+    const mark = JSON.stringify({ ['nfl:' + NOW.season + '_w' + NOW.week]: 1 });
+    const { page } = await openPage(browser, 'http://local.test/football/',
+      { who: STRANGER, at: DAY, script: TEST, storage: { key: 'rtg_fanpromo_v1', value: mark } });
+    ok('a second visit the same week is not shown it again', !(await wait(page)).up);
+    await page.close();
+  }
+  {
+    /* SEEN ON ANOTHER DEVICE: the shelf already holds this week, and this browser has nothing. */
+    const { page } = await openPage(browser, 'http://local.test/football/',
+      { who: SIGNED, at: DAY, script: TEST, server: { shelf: { 'rtg_promo/nfl': { ok: true,
+        slot: 'nfl', progress: 1, payload: { seen: { [NOW.season + '_w' + NOW.week]: 1 } } } } } });
+    ok('an account that saw it on another device is not shown it here', !(await wait(page)).up);
+    await page.close();
+  }
+  {
+    const { page } = await openPage(browser, 'http://local.test/football/',
+      { who: STRANGER, at: DAY, script: TEST,
+        storage: { key: 'ps_fantasy_' + NOW.season + '_w' + NOW.week, value: JSON.stringify({ submitted: Date.now() }) } });
+    ok('an account that has entered this week is not reminded', !(await wait(page)).up);
+    await page.close();
+  }
+  for (const [label, at] of [
+    ['the day before the lock', midnight - 60 * 1000],
+    ['a minute after the lock', LOCK + 60 * 1000],
+  ]) {
+    const { page } = await openPage(browser, 'http://local.test/football/',
+      { who: STRANGER, at, script: TEST });
+    ok('not shown ' + label, !(await wait(page)).up);
+    await page.close();
+  }
+  {
+    const { page } = await openPage(browser, 'http://local.test/football/',
+      { who: STRANGER, at: midnight + 60 * 1000, script: TEST });
+    ok('shown a minute after midnight Eastern on lock day', (await wait(page)).up);
+    await page.close();
+  }
+}
+
 console.log('\nTHE SIGN IN LINK LANDS ON THE SIGN IN SHEET');
 {
   const { page, boom } = await openPage(browser, 'http://local.test/football/#signin',
