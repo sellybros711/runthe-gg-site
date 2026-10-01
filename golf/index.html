@@ -36703,9 +36703,12 @@ function liveThemedDrop(){ return DROPS.find(function(d){ return d.window && dro
 // a player opens the game in that window, ambient decoration on the home scene, and a handful of hidden
 // things to find around the game. Spooky Season is the first. Another season is one entry in
 // SEASON_DECOR plus its own pieces; nothing here is tied to a date, only to the drop's window.
-// Nothing found pays coins, packs or shards: the hunt is for fun, so it can never move the economy.
+// Finding EVERY one pays a small coin reward (owner: 1,000), once per account per year. It goes through
+// addBonusCoins like a collection reward, and the claim is a synced owned flag ('egg:<season><year>'), so
+// clearing the browser or playing on a second device can't claim it twice. Coins need an account: a guest
+// who finds them all is told to sign in, and the claim lands on the next render after they do.
 const SEASON_DECOR={
-  spooky:{ drop:'spooky', eggs:['homespider','homeghost','homebat','shopspider','previewghost'],
+  spooky:{ drop:'spooky', coins:1000, eggs:['homespider','homeghost','homebat','shopspider','previewghost'],
     found:{ homespider:'a spider', homeghost:'a ghost', homebat:'a bat', shopspider:'the shop spider', previewghost:'a ghost in the mirror' } }
 };
 function decorLive(){ try{
@@ -36937,7 +36940,7 @@ function overlaySpookySzn(screen){
       <p class="spk-lede">The haunted drop is live until ${ends}. Witch hats, skeleton ribs and a cape with a taste for blood.</p>
       <div class="spk-items">${items}</div>
       <div class="spk-rew">${rewTxt}</div>
-      <div class="spk-hint">Something is creeping around the clubhouse. Tap it if you dare.</div>
+      <div class="spk-hint">Five spooky things are hiding around the clubhouse. Find them all for ${coinFmt(SEASON_DECOR.spooky.coins)} coins.</div>
       <button class="spk-go">Shop the drop</button>
       <button class="spk-later">Later</button>
     </div></div>`);
@@ -36964,9 +36967,19 @@ function spkFind(id,el){ try{
   f.push(id); LS.set(spkFoundKey(),f);
   const all=cfg.eggs.length;
   try{ track('spooky_egg',{id,found:f.length}); }catch(e){}
-  if(f.length>=all) toast('All '+all+' spooky things found. Happy Halloween!',3200);
-  else toast('You found '+(cfg.found[id]||'something spooky')+'. '+f.length+' of '+all+'.',2200);
+  if(f.length>=all){ if(!spkTryReward()) toast(sbSignedIn()?'All '+all+' spooky things found. Happy Halloween!':'All '+all+' found. Sign in to claim '+coinFmt(cfg.coins)+' coins.',3200); }
+  else toast('You found '+(cfg.found[id]||'something spooky')+'. '+f.length+' of '+all+'. Find all '+all+' for '+coinFmt(cfg.coins)+' coins.',2400);
 }catch(e){} }
+function spkEggClaimKey(){ return 'egg:spooky'+decorYear(); }
+// Pay the reward if every hidden thing is found and it hasn't been paid on this account. Safe to call on
+// every render: it does nothing until the hunt is complete and the player is signed in.
+function spkTryReward(){ try{
+  const cfg=SEASON_DECOR.spooky, f=spkFound(); if(!cfg.coins || f.length<cfg.eggs.length || !sbSignedIn()) return false;
+  const st=coinState(), k=spkEggClaimKey(); if(st.owned[k]) return false;
+  st.owned[k]=1; coinSave(st);
+  addBonusCoins(cfg.coins,{label:'for finding every spooky thing'});
+  try{ track('spooky_egg_reward',{coins:cfg.coins}); }catch(e){}
+  return true; }catch(e){ return false; } }
 function spkEgg(id,cls,inner,label){ const b=document.createElement('button'); b.className='spk-egg '+cls; b.type='button';
   b.setAttribute('aria-label',label); b.innerHTML=inner; b.onclick=(e)=>{ e.stopPropagation(); spkFind(id,b); }; return b; }
 function spookyHomeEggs(){ if(decorLive()!=='spooky') return []; spkStyleOnce();
@@ -36977,7 +36990,7 @@ function spookyHomeEggs(){ if(decorLive()!=='spooky') return []; spkStyleOnce();
   out.forEach(b=>{ if(b.classList.contains('hang')) b.style.right='calc(50% - min(46vw, 330px))'; });
   return out; }
 // after every render: the shop's spider and the ghost behind the golfer in the shop and closet mirror
-function seasonDecorPost(){ if(decorLive()!=='spooky') return; spkStyleOnce();
+function seasonDecorPost(){ spkTryReward(); if(decorLive()!=='spooky') return; spkStyleOnce();
   const f=spkFound();
   const bar=app.querySelector('.shop-bar');
   if(bar && f.indexOf('shopspider')<0 && !bar.querySelector('.spk-egg')){ bar.style.position=bar.style.position||'relative';
