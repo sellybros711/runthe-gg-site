@@ -289,7 +289,11 @@
   var MODE_KEYS = {
     'rtf.conquest.v1': 'cq', 'rtf.conquest.best.v1': 'cqbest',
     'rtf.fix.v1': 'fix', 'rtf.fix.run.v2': 'fixrun', 'rtf.fix.endless.v1': 'fixend',
-    'rtf.passes.v1': 'passes', 'rtf.passes.endless.v1': 'psend'
+    'rtf.passes.v1': 'passes', 'rtf.passes.endless.v1': 'psend',
+    /* Career: the life in progress and the Hall of Fame shelf, one clock slot.
+       A career is one life at one point, so the device that played on wins,
+       which is the run slot's own argument. */
+    'rtf.life.v1': 'life'
   };
   var DAYS_KEPT = 30;
 
@@ -356,7 +360,7 @@
   }
 
   var publicAPI = {
-    API_VERSION: 4,
+    API_VERSION: 5,
     MODE_KEYS: MODE_KEYS, modeKind: modeKind, modeProgress: modeProgress, modeMerge: modeMerge,
     GAME: GAME,
     SLOT_RUN: SLOT_RUN, SLOT_CAREER: SLOT_CAREER, SLOT_DAILY: SLOT_DAILY,

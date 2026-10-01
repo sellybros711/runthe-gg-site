@@ -8,6 +8,7 @@ name: Hoops checks
 #   node hoops/build/check-fetch.mjs    the scraper's parsers, against fixtures
 #   node hoops/verify.mjs               draft rules, replay, and the calibration
 #   node hoops/check-badges.mjs         every badge is reachable, against real runs
+#   node hoops/check-career.mjs --quick Career's engine: every life ends, the bands hold
 #
 # No secrets, no network, no deploy.
 
@@ -67,3 +68,10 @@ jobs:
       # nothing failed: the cabinet rendered and the squares just stayed dark.
       - name: Badges are reachable
         run: node hoops/check-badges.mjs
+
+      # Career, the engine half: six hundred lives played three ways must all
+      # retire, every event must be dealt somewhere, a reload must change
+      # nothing, and no real player may be written into a storyline. The
+      # browser half needs Chromium and runs locally.
+      - name: Career engine
+        run: node hoops/check-career.mjs --quick

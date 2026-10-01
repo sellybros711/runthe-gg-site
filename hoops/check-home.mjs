@@ -106,8 +106,11 @@ section('1. the front page is under two screens, on the widths that bind');
        2.23, 2.56 and 1.91 before. 2.5 SINCE THE PUZZLES WENT ON TOP, which
        the owner asked for: the strip is a heading and two cards, about 190px
        on a phone, and it put 360x740 at 2.37. A card of prose left open is
-       about 800px and still fails it at every width. */
-    ok(screens < 2.5, `${w}x${h}: ${screens.toFixed(2)} screens (${g.page}px)`);
+       about 800px and still fails it at every width. 2.9 SINCE CAREER WENT
+       ON TOP, which the owner asked for as the main game: the hero is about
+       300px on a phone and it put the three widths at 2.40, 2.79 and 1.95.
+       An open card of prose still fails it at the tight width. */
+    ok(screens < 2.9, `${w}x${h}: ${screens.toFixed(2)} screens (${g.page}px)`);
     ok(g.over === 0, `${w}x${h}: nothing hangs off the side`);
     ok(boom.length === 0, `${w}x${h}: no page errors (${boom.join(' | ') || 'none'})`);
     await ctx.close();
@@ -193,13 +196,13 @@ section('3. the first run guide names the games you get to call');
     await page.waitForSelector('#b-start:not([disabled])', { state: 'attached', timeout: 30000 });
     await page.waitForTimeout(400);
 
-    /* THE ARROW POINTS AT CLASSIC'S START, which is the button the dock
-       carries since the front page was rebuilt around Classic. It pointed at
-       #b-today (the next daily) for the pass in between, and that button is
-       gone. */
+    /* THE ARROW POINTS AT THE CAREER BUTTON, which is the button the dock
+       carries since the owner made Career the main game. It pointed at
+       Classic's Start before that, and at #b-today (the next daily) for the
+       pass before that. */
     const g = await page.evaluate(() => {
       const pan = document.querySelector('#frg-panel');
-      const start = document.querySelector('#dock #b-start');
+      const start = document.querySelector('#dock #b-career');
       const r = start.getBoundingClientRect();
       const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
       return {
@@ -221,7 +224,7 @@ section('3. the first run guide names the games you get to call');
     /* FOUR MODES, AND A GUIDE THAT NAMES THREE HIDES ONE. A first-timer told
        only how to draft never finds the other three, which is the reason the
        guide was rewritten. */
-    for (const m of ['Classic', 'Conquest', 'Fix History', 'Six Passes']) {
+    for (const m of ['Career', 'Classic', 'Conquest', 'Fix History', 'Six Passes']) {
       ok(all.indexOf(m) >= 0, `${w}x${h}: the guide names ${m}`);
     }
     ok(!/end a series|every game of the finals/i.test(all),
@@ -229,14 +232,15 @@ section('3. the first run guide names the games you get to call');
     /* THE OLD SENTENCE ON ITS OWN IS THE DEFECT. "The season plays itself" is
        still true of the 82 and stays; what may not come back is that clause
        standing alone as the whole of what happens after the draft. */
-    ok(!/plays itself[^.]*\.\s*\d+ games[^.]*\.\s*$/i.test(g.steps[0] || ''),
+    ok(!/plays itself[^.]*\.\s*\d+ games[^.]*\.\s*$/i.test(g.steps[1] || ''),
       `${w}x${h}: the season step does not end at "the playoffs if you get there"`);
     ok(!g.scrolls, `${w}x${h}: and the panel does not scroll inside itself `
       + `(${g.need} of ${g.have})`);
     /* The way out of the guide is the button it points at, which is the
        whole of its design and the thing an extra line could cover. */
-    ok(/Classic/.test(g.steps[0] || ''), `${w}x${h}: Classic is the first step, the mode the front page leads with`);
-    ok(g.startLive, `${w}x${h}: Start a draft is still the element at its own centre`);
+    ok(/Career/.test(g.steps[0] || ''), `${w}x${h}: Career is the first step, the mode the front page leads with`);
+    ok(/Classic/.test(g.steps[1] || ''), `${w}x${h}: and Classic is the second`);
+    ok(g.startLive, `${w}x${h}: the career button is still the element at its own centre`);
     ok(boom.length === 0, `${w}x${h}: no page errors (${boom.join(' | ') || 'none'})`);
     await ctx.close();
   }
@@ -274,6 +278,8 @@ section('4. The daily puzzles on top, Classic, the Daily Draft, then More ways t
         const r = el.getBoundingClientRect(); return { top: Math.round(r.top + scrollY), left: Math.round(r.left), h: Math.round(r.height), w: Math.round(r.width) }; };
       const start = document.querySelector('#b-start');
       return {
+        career: box('#career'), careerBtn: (() => { const b = document.querySelector('#b-career');
+          return b ? (b.closest('#dock') ? 'dock' : b.closest('#career') ? 'career' : 'elsewhere') : 'none'; })(),
         classic: box('#classic'), daily: box('#b-daily-go'), door: box('#b-modes'), quiet: box('#home-quiet'),
         strip: box('#hp-puzzles'), puzzles: PUZZLES.map((id) => box('#' + id)),
         puzVis: PUZZLES.map((id) => vis(document.getElementById(id))),
@@ -300,10 +306,12 @@ section('4. The daily puzzles on top, Classic, the Daily Draft, then More ways t
       };
     }, [TILES, PUZZLES]);
 
-    /* The puzzle strip leads, and it is the two puzzles side by side. */
+    /* CAREER LEADS, then the puzzle strip, then Classic. The owner made
+       Career the main game; the strip and Classic keep their order under it. */
+    ok(g.career && g.career.top < g.strip.top, `${w}: Career is above the daily puzzles (${g.career && g.career.top} against ${g.strip.top})`);
+    ok(g.career.top < h * 0.45, `${w}: and on the first screen (${g.career.top})`);
     ok(g.strip && g.puzVis.every(Boolean) && g.strip.top < g.classic.top,
       `${w}: the daily puzzles are on the page above Classic (${g.strip && g.strip.top} against ${g.classic.top})`);
-    ok(g.strip.top < h * 0.45, `${w}: and on the first screen (${g.strip.top})`);
     ok(g.puzInGrid === 0, `${w}: neither puzzle is a More ways to play tile (${g.puzInGrid})`);
     ok(Math.abs(g.puzzles[0].top - g.puzzles[1].top) < 3 && g.puzzles[1].left > g.puzzles[0].left,
       `${w}: Fix History and Six Passes sit side by side (${JSON.stringify(g.puzzles)})`);
@@ -312,11 +320,7 @@ section('4. The daily puzzles on top, Classic, the Daily Draft, then More ways t
     ok(/open today|left today/i.test(g.left), `${w}: the heading says what is waiting ("${g.left}")`);
     ok(g.over <= 0, `${w}: nothing hangs off the side (${g.over})`);
 
-    ok(/classic/i.test(g.eye) && /unlimited/i.test(g.eye), `${w}: the hero says Classic and Unlimited ("${g.eye.trim()}")`);
-    /* A short phone spends its first screen on the masthead and the strip, so
-       there Classic only has to START on it; the dock carries its button. */
-    ok(h < 700 ? g.classic.top < h * 0.8 : g.classic.top < h * 0.6 && g.heroTop < h,
-      `${w}: Classic and its court still lead the screen (${g.classic.top}, ${g.heroTop})`);
+    ok(/classic/i.test(g.eye) && /unlimited/i.test(g.eye), `${w}: the Classic card says Classic and Unlimited ("${g.eye.trim()}")`);
     ok(g.plans.join() === 'Run the floor,Balanced,Half court', `${w}: the three game plans are on the card (${g.plans.join()})`);
     ok(g.variantsInClassic === 0, `${w}: no other mode hangs off the Classic card (${g.variantsInClassic})`);
     ok(!g.dailyInClassic && g.daily && g.daily.top > g.classic.top + g.classic.h - 2,
@@ -334,12 +338,14 @@ section('4. The daily puzzles on top, Classic, the Daily Draft, then More ways t
       ok(Math.abs(g.grid.top - g.daily.top) < 4, `${w}: beside the daily card (${g.grid.top} against ${g.daily.top})`);
       ok(g.tileTops[0] === g.tileTops[1] && g.tileTops[2] > g.tileTops[0], `${w}: two across (${g.tileTops})`);
       ok(g.startIn === 'classic' && g.startVis, `${w}: Start is in the Classic card, not docked (${g.startIn})`);
+      ok(g.careerBtn === 'career', `${w}: and the career button is in the Career card (${g.careerBtn})`);
       await page.evaluate(() => document.querySelector('#b-start').click());
     } else {
       ok(g.doorVis && g.door.top > g.daily.top, `${w}: a phone reaches the modes through one door under the daily card`);
       ok(g.tiles.every((v) => !v), `${w}: and the tiles are not on the page itself (${g.tiles})`);
       ok(/Conquest/.test(g.hmSub), `${w}: the door names what is behind it ("${g.hmSub}")`);
-      ok(g.startIn === 'dock', `${w}: the dock carries Classic's Start (${g.startIn})`);
+      ok(g.careerBtn === 'dock', `${w}: the dock carries the career button (${g.careerBtn})`);
+      ok(g.startIn === 'classic', `${w}: and Classic's Start is in its own card (${g.startIn})`);
       await page.click('#b-modes');
       await page.waitForSelector('#modesheet.open');
       const inSheet = await page.evaluate((TILES) => ({
@@ -377,7 +383,13 @@ section('4. The daily puzzles on top, Classic, the Daily Draft, then More ways t
       }
       await page.evaluate(() => window.RTF_PAGE.goHome());
       await page.waitForTimeout(200);
-      await page.evaluate(() => document.querySelector('#dock #b-start').click());
+      /* The dock's button opens the career, and Classic's own Start the draft. */
+      await page.evaluate(() => document.querySelector('#dock #b-career').click());
+      await page.waitForSelector('#s-car.active', { timeout: 10000 });
+      ok(true, `${w}: the docked button opens Career`);
+      await page.evaluate(() => window.RTF_PAGE.goHome());
+      await page.waitForTimeout(200);
+      await page.evaluate(() => document.querySelector('#b-start').click());
     }
     await page.waitForSelector('#s-draft.active', { timeout: 10000 });
     ok(true, `${w}: Start opens the draft`);

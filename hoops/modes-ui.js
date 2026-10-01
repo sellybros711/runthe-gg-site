@@ -86,7 +86,7 @@ function syncWrite(k){
 /* Which screen a key's record is on screen in. A record is never swapped out
    from under somebody playing it: the device keeps its own and its next write,
    counted past the shelf's, is the one that stands. */
-var MODE_SCREEN = { cq: 's-cq', fixrun: 's-fix', fixend: 's-fix', psend: 's-pass', passes: 's-pass' };
+var MODE_SCREEN = { cq: 's-cq', fixrun: 's-fix', fixend: 's-fix', psend: 's-pass', passes: 's-pass', life: 's-car' };
 function onScreen(slot){
   var id = MODE_SCREEN[slot], el = id && $(id);
   return !!(el && el.classList.contains('active'));
@@ -139,6 +139,7 @@ function cloudAdopt(by, claim){
   if (!onScreen('cq')) cq = null;
   if (!onScreen('fixrun')) { fx = null; fxSt = null; fxDayPz = null; }
   if (!onScreen('psend')) psPz = null;
+  if (window.RTF_CAREER_UI) window.RTF_CAREER_UI.reload();
   var home = $('s-home');
   if (home && home.classList.contains('active')) renderHome();
 }
@@ -2837,6 +2838,7 @@ function renderHome(){
   var pf = $('td-pfx'); if (pf) pf.onclick = fxOpenPicker;
   var pp = $('td-pps'); if (pp) pp.onclick = psOpenPicker;
   var tp = $('td-pro'); if (tp) tp.onclick = function(){ openPro(null); };
+  if (window.RTF_CAREER_UI) window.RTF_CAREER_UI.renderHero();
 }
 
 /* THE DOCK IS CLASSIC'S NOW (index.html's DOCK_FOR), so the daily puzzles
@@ -3237,6 +3239,9 @@ window.RTF_MODES_UI = {
   UI_VERSION: UI_VERSION,
   /* The page's pull hands every row on the shelf to this, see cloudAdopt. */
   cloudAdopt: cloudAdopt,
+  /* A key some other file keeps (Career's), sent to the shelf the same way
+     this file's own records are. */
+  write: function(k){ syncWrite(k); },
   /* Whether this account owns Run The Floor Pro, for the arenas. */
   pro: function(){ return proOwned; },
   onData: onData,
