@@ -1731,6 +1731,37 @@
     background:linear-gradient(180deg,#151c29,#0d1219);border:1px solid var(--cardb);
     border-radius:15px;padding:17px 16px;animation:sheetup .3s cubic-bezier(.2,.9,.3,1);
     box-shadow:0 20px 50px rgba(0,0,0,.6);}
+  /* ── CAREER, THE FRONT PAGE'S HERO ─────────────────────────────────────
+   * Asked for by the owner: one NBA life, played a season at a time, is the
+   * main game now and Classic sits under it. The card is static markup so the
+   * dock can carry its button from boot; career-ui.js fills in who and where.
+   * Its rules are here rather than in that file's injected sheet because this
+   * is the first thing on the first paint. */
+  .career-hero{position:relative;overflow:hidden;padding:18px 16px 16px;
+    background:radial-gradient(600px 260px at 85% -40px,rgba(240,120,45,.28),transparent 65%),linear-gradient(180deg,#1b2232,#10151f);}
+  .career-hero .ch-eye{display:inline-flex;gap:8px;align-items:center;font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--orange);font-weight:800;}
+  .career-hero .ch-eye i{font-style:normal;color:#0b0f17;background:#f2c14e;border-radius:4px;padding:1px 6px;letter-spacing:.08em;}
+  .career-hero h2{font-size:30px;line-height:1.02;margin:8px 0 6px;display:block;}
+  .career-hero .ch-say{margin:0 0 14px;color:var(--mut);font-size:14.5px;line-height:1.5;max-width:30em;}
+  .ch-path{display:flex;align-items:center;gap:0;margin:0 0 14px;padding:0;list-style:none;}
+  .ch-path li{flex:1 1 0;text-align:center;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--mut);font-weight:800;position:relative;padding-top:18px;}
+  .ch-path li:before{content:"";position:absolute;top:4px;left:50%;width:10px;height:10px;margin-left:-5px;border-radius:50%;background:#0e131c;border:2px solid var(--orange);z-index:1;}
+  .ch-path li:after{content:"";position:absolute;top:8px;left:-50%;width:100%;height:2px;background:rgba(240,120,45,.4);}
+  .ch-path li:first-child:after{display:none;}
+  .ch-path li.end:before{background:#f2c14e;border-color:#f2c14e;}
+  .ch-cur{display:flex;gap:12px;align-items:center;margin:0 0 14px;padding:12px;border-radius:12px;background:linear-gradient(135deg,var(--c1,#1d2433),rgba(14,19,28,.9) 80%);border:1px solid var(--cardb);}
+  .ch-cur .cr-jersey{flex-basis:48px;width:48px;height:52px;}
+  .ch-cur b{display:block;font-size:16px;font-weight:800;}
+  .ch-cur span{display:block;font-size:12.5px;color:rgba(255,255,255,.78);}
+  .ch-cur .o{margin-left:auto;text-align:center;}
+  .ch-cur .o b{font-family:var(--display);font-weight:400;font-size:30px;line-height:1;}
+  .ch-cur .o span{font-size:9px;letter-spacing:.14em;text-transform:uppercase;font-weight:800;}
+  .ch-best{font-size:12.5px;color:var(--mut);margin:10px 0 0;}
+  .ch-best b{color:#ffe3a0;}
+  @media (min-width:920px){.career-hero h2{font-size:38px;}}
+  .ch-cur .cr-jersey{display:block;}
+  /* Both set a display, so the attribute alone would never take. */
+  .ch-cur[hidden],.ch-path[hidden]{display:none;}
   .frg-eyebrow{font-size:10px;letter-spacing:.16em;text-transform:uppercase;
     color:var(--orange);font-weight:800;margin-bottom:5px;}
   .frg-panel h2{font-family:var(--display);font-size:22px;line-height:1.1;margin:0 0 12px;}
@@ -2521,6 +2552,21 @@
        today's state (open, or done with the result), and the line beside the
        heading says how many are left. modes-ui.js fills both slots and shows
        the section, because only that file knows whether a puzzle is done. -->
+  <!-- CAREER IS THE HERO. One NBA life from draft night to the Hall of Fame,
+       a season at a time, with the calls in between. Asked for by the owner as
+       the main game mode, so it leads the page and the dock carries its button
+       on a phone. career-ui.js paints it: a career in progress says who and
+       where, none says what the mode is. -->
+  <section class="card career-hero" id="career" aria-labelledby="ch-title">
+    <span class="ch-eye">Career <i>New</i></span>
+    <h2 id="ch-title">Live an NBA life.</h2>
+    <p class="ch-say" id="ch-say">Draft night to the Hall of Fame. Contracts, injuries, rivals and Game 7s. Every call is yours.</p>
+    <ol class="ch-path" id="ch-path" aria-hidden="true"><li>Draft</li><li>Rookie</li><li>All-Star</li><li>Ring</li><li class="end">Hall</li></ol>
+    <div class="ch-cur" id="ch-cur" hidden></div>
+    <button class="big" id="b-career" disabled>Start your career</button>
+    <p class="ch-best" id="ch-best" hidden></p>
+  </section>
+
   <section class="hp-puzzles" id="hp-puzzles" aria-labelledby="pz-h" hidden>
     <div class="pz-head"><h2 id="pz-h">Daily puzzles</h2><span class="pz-left" id="pz-left"></span></div>
     <div class="pz-row"><div class="pz-slot" id="pz-fix"></div><div class="pz-slot" id="pz-ps"></div></div>
@@ -2669,6 +2715,14 @@
 
     <p class="lgfacts">Built from <b id="ls-players">-</b> player-seasons, <b id="ls-clubs">-</b>
       team seasons and <b id="ls-teams">-</b> franchises, <span id="home-era">1974 to 2026</span>.</p>
+
+    <h3>Career</h3>
+    <p class="dim" style="font-size:14px;margin:0 0 10px">
+      Build a player and live his whole NBA life. Draft night, then a season at a time, with
+      a call to make between every stretch of games: role, injuries, money, rivals, free
+      agency. Every Game 7 comes down to your last shot. Retire when you choose, and the
+      Hall of Fame gives its verdict.
+    </p>
 
     <h3>How a run goes</h3>
     <p class="dim" style="font-size:14px;margin:0 0 10px">
@@ -3107,6 +3161,7 @@
 <div class="screen" id="s-cq"></div>
 <div class="screen" id="s-fix"></div>
 <div class="screen" id="s-pass"></div>
+<div class="screen" id="s-car"></div>
 
 <!-- ── THE LEADERBOARD ─────────────────────────────────────────────────
      A SCREEN, ON RUN THE DIAMOND'S MODEL, and it replaced two sheets. The draft
@@ -3309,7 +3364,7 @@
   <div class="frg-scrim"></div>
   <div class="frg-panel" id="frg-panel">
     <div class="frg-eyebrow">First time here</div>
-    <h2>Four ways to play</h2>
+    <h2>Five ways to play</h2>
     <ol class="frg-steps" id="frg-steps"></ol>
     <p class="frg-goal" id="frg-goal"></p>
     <p class="frg-later">Your career and badges can wait. Play one first.</p>
@@ -3356,6 +3411,7 @@
 <script src="badges.js?v=4"></script>
 <script src="courts.js?v=2"></script>
 <script src="modes.js?v=9"></script>
+<script src="career.js?v=1"></script>
 <!-- ACCOUNTS AND THE LEADERBOARD. All three are OPTIONAL: if the CDN is blocked
      or either file fails to load, the game runs exactly as it did, with runs
      kept in this browser and the board reporting itself unreachable. An account
@@ -3374,7 +3430,7 @@
 <script src="/assets/cloudsave.js?v=2"></script>
 <!-- The release newsletter checkbox on the profile. See supabase/121_newsletter.sql. -->
 <script src="/assets/newsletter.js?v=1"></script>
-<script src="cloud.js?v=4"></script>
+<script src="cloud.js?v=5"></script>
 <script>
 (function(){
 'use strict';
@@ -3538,7 +3594,7 @@ var A = window.RTF_AUTH || {
  * renders, and the only symptom is a cabinet that comes back slightly wrong.
  * `null` is the honest answer when either half is missing, and every caller
  * below is written to do nothing at all when it is. */
-var NEED_CLOUD = 4;
+var NEED_CLOUD = 5;
 var CL = (window.RTF_CLOUD && window.RTF_CLOUD.API_VERSION === NEED_CLOUD)
   ? window.RTF_CLOUD : null;
 var SV = window.RTG_SAVE || null;
@@ -3640,11 +3696,11 @@ var DOCK_FOR = {
      Resume rather than on a button that starts over. */
   's-home':   function(){
     if (run && run.phase !== R.PHASES.OVER) return [$('b-resume')];
-    /* A DESKTOP KEEPS START IN THE CLASSIC CARD. There the card is two
-       columns, words left and court right, and Start belongs under the words
-       it answers; a bar pinned to the foot of a 900px window floats over the
-       daily card and the tiles instead. A phone docks it, where the thumb is. */
-    return WIDE.matches ? [] : [$('b-start')];
+    /* CAREER IS THE HERO, so a phone docks its button where the thumb is.
+       Classic's Start stays in the Classic card, under the words it answers.
+       A DESKTOP DOCKS NOTHING: a bar pinned to the foot of a 900px window
+       floats over the daily card and the tiles. */
+    return WIDE.matches ? [] : [$('b-career')];
   },
   's-draft':  function(){
     /* Between draws the action is the spin. During one it is picking a player
@@ -3680,7 +3736,7 @@ var DOCK_FOR = {
 var HOME_OF = {};
 
 function rememberHomes(){
-  var ids = ['b-resume', 'b-start', 'b-spin', 'b-respin', 'b-play', 'b-skip', 'b-again',
+  var ids = ['b-resume', 'b-start', 'b-career', 'b-spin', 'b-respin', 'b-play', 'b-skip', 'b-again',
     'b-lv-fast', 'b-lv-next', 'b-brk-fast'];
   for (var i = 0; i < ids.length; i++) {
     var el = $(ids[i]);
@@ -4239,16 +4295,17 @@ function frgMark(){ try { localStorage.setItem(FRG_KEY, '1'); } catch (e) {} pro
 
 function frgFill(){
   var C = E.CONSTANTS;
-  /* FOUR MODES, ONE LINE EACH, in the order the front page shows them, which
-     is Classic first since the front page was rebuilt around it. This
+  /* FIVE MODES, ONE LINE EACH, in the order the front page shows them, which
+     is Career first since the owner made it the main game, then Classic. This
      guide used to be the draft's rules in three steps, which was right while
-     the draft was the game. It is one of four ways in now, and a first-timer
-     told only how to draft would never find the other three.
+     the draft was the game. It is one of five ways in now, and a first-timer
+     told only how to draft would never find the other four.
 
      THE GAME 7 CLAUSE STAYS, on the draft's own line. It is the most
      distinctive thing that mode does and check-home holds the guide to saying
      it. Every number is read off the constants, never typed. */
   var steps = [
+    '<b>Career.</b> One NBA life, from draft night to the Hall of Fame.',
     '<b>Classic.</b> ' + NUMWORD(E.SLOTS.length, true) + ' picks under a '
       + money(C.CAP_MUSD) + ' cap. Pick how fast you play. Play ' + C.REGULAR_SEASON_GAMES
       + ', and <b>every Game 7 is yours to play</b>.',
@@ -4265,7 +4322,7 @@ function frgFill(){
     li.innerHTML = steps[i];
     ol.appendChild(li);
   }
-  $('frg-goal').innerHTML = 'Start with <b>a Classic draft</b>. The button is at the bottom.';
+  $('frg-goal').innerHTML = 'Start with <b>your career</b>. The button is at the bottom.';
 }
 
 /* Shown on the FRONT PAGE only, and only once the data has landed, because
@@ -11807,6 +11864,7 @@ boot();
 </script>
 <!-- AFTER the page, because it draws through window.RTF_PAGE, which the script
      above publishes. -->
-<script src="modes-ui.js?v=16"></script>
+<script src="modes-ui.js?v=17"></script>
+<script src="career-ui.js?v=1"></script>
 </body>
 </html>

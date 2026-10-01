@@ -818,9 +818,10 @@ if (!QUICK) {
     dock: document.querySelector('#dock').textContent.trim(),
   }));
   ok(home.cards.every(Boolean), 'the front page has a card for each of the three');
-  /* THE DOCK IS CLASSIC'S since the front page was rebuilt around it, so
-     the dailies say what is open on their own rows rather than in the dock. */
-  ok(/draft/i.test(home.dock), `the dock carries Classic's Start ("${home.dock}")`);
+  /* THE DOCK IS CAREER'S since the owner made it the main game (it was
+     Classic's before), so the dailies say what is open on their own rows
+     rather than in the dock. */
+  ok(/career/i.test(home.dock), `the dock carries the career button ("${home.dock}")`);
   ok(await page.evaluate(() => !document.querySelector('#mc-fix').classList.contains('done')),
     'and today\'s Fix History row is open');
 

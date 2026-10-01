@@ -10806,6 +10806,74 @@ the strategies a player would use, never loosening a threshold to suit a bot.
 the constants: it states what the balance is supposed to look like and flags what
 is outside its band.
 
+### Career is the main game: one invented player, a whole NBA life
+
+```
+node hoops/check-career.mjs            six hundred careers three ways, then one through the page
+node hoops/check-career.mjs --quick    the engine only
+```
+
+Asked for by the owner as the main game mode: a BitLife or Run The Tour career sim for
+basketball, a choose your own adventure from draft night to the Hall of Fame. The owner
+picked **NBA only, deep** as the first slice and **Career as the new hero**. High school and
+college are the background card on the builder (age, polish, ceiling) and a later pass can
+play them out. `hoops/career.js` is the rules (window.RTF_CAREER, node require) and
+`hoops/career-ui.js` draws `#s-car` and paints the front page's `#career` card.
+
+**THE PLAYER IS INVENTED AND THE LEAGUE IS REAL.** Thirty real clubs, their colours, and year
+one's real rosters as a fact about who you join ("You join X, Y and Z", read off the data).
+Every rival, mentor, coach and teammate an event talks about is a ROLE, never a name. That is
+the wrestling game's rule arriving at a sport with real people in it. `check-career` section 5
+reads every player name in the data against `career.js`'s own source, and a random default
+name may not be a real player's either. Add events with roles.
+
+**NOT A SECOND MODEL OF A ROSTER.** Year one's club nets come off the real rosters through
+`teamStrength`, scaled to a spread of 4.6, and every year after drifts on a mean-reverting
+walk, because projecting a real person's future is the line above. One man's impact on his
+club is `(effective overall - 68) * 0.32 * minutes / 48` points of net rating.
+
+**A YEAR IS A STEP MACHINE**: `pre` (training card, a summer card, a camp injury), `early`,
+`mid`, `late` (three stretches of games, a card or two after each, the All-Star break after
+`mid`), `po` (a round a step), `off` (development, contracts, free agency, retiring). `step()`
+never runs under a pending card and `choose()` answers the card on top. **Every draw is seeded
+off (seed, year, tag)**, so a reload lands on the same card with the same outcome behind it;
+section 4 round trips the whole career through JSON before every press and requires the same
+history.
+
+**Injuries are rolled for the NEXT stretch**, at the end of the step before, so a decision card
+(surgery, rush back, specialist) is answered before the games it costs. Rolled inside the
+stretch, the games were already played and the card decided nothing.
+
+**Game 7 is yours.** A series at 3-3 stops on a `clutch` card: four shots, each read off the
+rating it asks for, and the screen shows the rating rather than the odds. The rest of the
+bracket is simulated off club nets so the round you are in is against the club that came through.
+
+**The balance, measured over 600 careers three ways**, and held as bands rather than numbers:
+MVP in 1 to 3% of careers, an All-Star in about a quarter to a third, the Hall (`score >= 55`)
+in about a quarter, a median career of 15 to 16 seasons, a median best season near 18 a night.
+Three dials did most of the work: potential is skewed low (`pow(r, 1.7)`), the MVP is at most
+62% even in a perfect year because the league always has other candidates, and **a game's odds
+are clamped at 0.84**, because the first cut handed out an 81-1 season and the best real team
+lost nine.
+
+**A summer card has to ask about the season, not the meter.** `rehab_summer` asked for health
+under 60, and `develop()` gives the summer's health back before the off-season cards are dealt,
+so it was never dealt once in 600 careers. Section 3 fails on any event the sweep never deals.
+
+**THE CAREER IS ON THE ACCOUNT**: `rtf.life.v1` holds `{ cur, hof, last }` and is the `life`
+clock slot in `hoops/cloud.js` (API 5, so a cached page cannot run the old list). It is
+written through `RTF_MODES_UI.write`, which is modes-ui's own `syncWrite`, and adopted by its
+`cloudAdopt`, which tells `RTF_CAREER_UI.reload()`. `MODE_SCREEN` holds `life: 's-car'`, so a
+pull never swaps a career out from under somebody playing it.
+
+**The front page leads with it.** The `#career` card is static markup above the puzzle strip
+so the dock can carry `#b-career` from boot on a phone; Classic's Start stays in the Classic
+card. The first-visit guide names five modes with Career first and points at the docked
+button. `check-home`'s budget went 2.5 to 2.9 screens for it (2.40, 2.79 and 1.95 measured).
+
+**What it does not have yet**: a leaderboard (it needs a migration), a badge shelf, and the
+high school and college chapters. Those are the next passes.
+
 ### Four ways to play, and the draft is one of them
 
 ```

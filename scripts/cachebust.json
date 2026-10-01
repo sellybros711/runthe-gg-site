@@ -2260,6 +2260,10 @@
       "v": "9",
       "sha": "814d6471760c59b4"
     },
+    "career.js": {
+      "v": "1",
+      "sha": "7e7fb42faaeb0f12"
+    },
     "board.js": {
       "v": "6",
       "sha": "0c56e909efaaaada"
@@ -2277,12 +2281,16 @@
       "sha": "1005aca091f1fc4b"
     },
     "cloud.js": {
-      "v": "4",
-      "sha": "838d42af8b9dfab3"
+      "v": "5",
+      "sha": "c78aebc5a144ff1d"
     },
     "modes-ui.js": {
-      "v": "16",
-      "sha": "86ed04b12d4b2c9b"
+      "v": "17",
+      "sha": "d984540c2b06a2bb"
+    },
+    "career-ui.js": {
+      "v": "1",
+      "sha": "030755b2006d05b6"
     },
     "data/players.json": {
       "v": "5",
