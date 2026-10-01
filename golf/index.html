@@ -12059,6 +12059,7 @@ function render(){
     if(S.overlay==='s1launch') overlayS1Launch(app);
     if(S.overlay==='seasonlaunch') overlaySeasonLaunch(app);
     if(S.overlay==='s1end') overlayS1End(app);
+    if(S.overlay==='spookyszn') overlaySpookySzn(app);
     if(S.overlay==='arcadead') overlayArcadeAd(app);
     if(S.overlay==='purchased') overlayPurchased(app);
     if(S.overlay==='coinlog') overlayCoinLog(app);
@@ -12067,6 +12068,7 @@ function render(){
     if(S.overlay==='privacy') overlayPrivacy(app);
     if(S.overlay==='terms') overlayTerms(app);
     if(S.overlay==='menu') overlayMenu(app);
+    try{ seasonDecorPost(); }catch(e){}
   }catch(err){
     console.error('[RunTheTour] overlay render failed:', S.overlay, err);
     try{ track('screen_render_error',{overlay:S.overlay,message:(err&&err.message)||String(err)}); }catch(e){}
@@ -14858,7 +14860,7 @@ function homePlayerHeader(){
     if((lt.majors||0)>0) chips.push(`<span class="hh-chip"><b>${lt.majors}</b> major${lt.majors===1?'':'s'}</span>`);
   }catch(e){}
   const box=$(`<div class="homehdr">
-    <div class="hh-fig">${pxFigureHTML(S.look,66)}</div>
+    <div class="hh-fig" style="position:relative">${pxFigureHTML(S.look,66)}${decorLive()==='spooky'?(spkStyleOnce(),'<span class="spk-hhpk">'+spkEl('pumpkin',22)+'</span>'):''}</div>
     <div class="hh-txt">
       <div class="hh-hi">Welcome back</div>
       <div class="hh-name">${esc(nm)}</div>
@@ -14874,6 +14876,8 @@ function scrTitle(){
   let sceneHtml=''; try{ sceneHtml=titleSceneHTML(); }catch(e){}
   const scene=$(`<div class="scene" aria-hidden="true">${sceneHtml}</div>`);
   add(scene);
+  // seasonal decor: webs and pumpkins in the scene, and the hidden things to find on the home screen
+  if(decorLive()==='spooky'){ try{ spkStyleOnce(); scene.insertAdjacentHTML('beforeend',spookySceneHTML()); }catch(e){} try{ spookyHomeEggs().forEach(b=>app.appendChild(b)); }catch(e){} }
   const w=$(`<div class="titlewrap center"></div>`);
   // 5: returning players get their golfer + name (4) instead of the marketing hero; first-run keeps the pitch.
   const returning=homeReturning();
@@ -14930,7 +14934,7 @@ function scrTitle(){
   // already oriented on the interface instead of being dropped onto it cold.)
   // Season 1 launch announcement (returning players, once), fires after this render settles, and only
   // when no other overlay (e.g. the login bonus) is up; retried on later title renders until shown.
-  setTimeout(function(){ try{ maybeFirstTour(); }catch(e){} try{ flushPendingWelcome(); }catch(e){} try{ maybeS1LaunchPopup(); }catch(e){} try{ flushPendingLogin(); }catch(e){} try{ maybeS1EndPopup(); }catch(e){} try{ maybePassSettleNote(); }catch(e){} try{ maybeRosterPop(); }catch(e){} try{ maybeArcadeAd(); }catch(e){} }, 420);
+  setTimeout(function(){ try{ maybeFirstTour(); }catch(e){} try{ flushPendingWelcome(); }catch(e){} try{ maybeS1LaunchPopup(); }catch(e){} try{ flushPendingLogin(); }catch(e){} try{ maybeS1EndPopup(); }catch(e){} try{ maybeSpookyPopup(); }catch(e){} try{ maybePassSettleNote(); }catch(e){} try{ maybeRosterPop(); }catch(e){} try{ maybeArcadeAd(); }catch(e){} }, 420);
   // ════════════════════════════════════════════════════════════════════
   // Home = ONE HERO + a rail. Whatever you were last playing becomes the big
   // card (mid-career it's "Resume Year 12", first thing in the morning it's
@@ -36689,6 +36693,293 @@ function dropWindowLabel(d){ if(!d.window) return 'Always available';
 function dropReturnsLabel(d){ return 'Returns '+_DROP_MON[d.window[0][0]-1]+' '+d.window[0][1]; }
 function dropProgress(d){ let own=0; d.items.forEach(function(ci){ if(cosOwned(ci[0],ci[1])) own++; }); return {own:own,tot:d.items.length}; }
 function liveThemedDrop(){ return DROPS.find(function(d){ return d.window && dropLive(d); })||null; }
+// ════ SEASONAL DECOR (owner, Oct 2026) ═══════════════════════════════════════════════════════════
+// Each themed drop can dress the game while its window is open: a full-page announcement the first time
+// a player opens the game in that window, ambient decoration on the home scene, and a handful of hidden
+// things to find around the game. Spooky Season is the first. Another season is one entry in
+// SEASON_DECOR plus its own pieces; nothing here is tied to a date, only to the drop's window.
+// Nothing found pays coins, packs or shards: the hunt is for fun, so it can never move the economy.
+const SEASON_DECOR={
+  spooky:{ drop:'spooky', eggs:['homespider','homeghost','homebat','shopspider','previewghost'],
+    found:{ homespider:'a spider', homeghost:'a ghost', homebat:'a bat', shopspider:'the shop spider', previewghost:'a ghost in the mirror' } }
+};
+function decorLive(){ try{
+  const f=(typeof location!=='undefined')&&/[?&]decor=([a-z]+)/.exec(location.search||'');   // QA: ?decor=spooky
+  if(f&&SEASON_DECOR[f[1]]) return f[1];
+  for(const k in SEASON_DECOR){ const d=dropById(SEASON_DECOR[k].drop); if(d&&d.window&&dropLive(d)) return k; }
+}catch(e){} return null; }
+function decorYear(){ return new Date().getFullYear(); }
+function decorReduced(){ try{ return matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){ return false; } }
+
+// ---- the pieces, drawn through PXHD so they share the golfer's light and soft outline ----
+const _spkArt={};
+function spkArt(key,rows,pal,px,frames){ if(_spkArt[key]) return _spkArt[key];
+  // frames: several row sets side by side in one sheet, for a steps() animation
+  const sets=frames||[rows], out=[];
+  for(const r of sets){ const cv=PXHD.renderMap(r,ch=>pal[ch]||null,{px:px||4}); out.push(cv); }
+  const w=Math.max(...out.map(c=>c?c.width:0)), h=Math.max(...out.map(c=>c?c.height:0));
+  const sh=document.createElement('canvas'); sh.width=w*out.length; sh.height=h; const x=sh.getContext('2d');
+  out.forEach((c,i)=>{ if(c) x.drawImage(c,i*w+Math.floor((w-c.width)/2),h-c.height); });
+  return (_spkArt[key]={url:sh.toDataURL(),w,h,n:out.length}); }
+const SPK_SPIDER=[[
+  "1.........1",
+  ".1.22222.1.",
+  "..1223221..",
+  "11112221111",
+  "...12521...",
+  "..1.454.1..",
+  ".1...5...1.",
+  "1.........1"],[
+  "..1.....1..",
+  ".1.22222.1.",
+  "1.1223221.1",
+  ".1112221 1.".replace(' ','1'),
+  "1..12521..1",
+  "...1454 1..".replace(' ','.'),
+  "..1..5..1..",
+  "..........."]];
+const SPK_SPIDER_PAL={'1':'#5a4a70','2':'#6a4f8e','3':'#b494e0','4':{hex:'#ff6a3a',t:3},'5':'#4a3566'};
+const SPK_BAT=[[
+  "1.........1",
+  "11.......11",
+  "111.1.1.111",
+  "11112221111",
+  ".1.14241.1.",
+  "....222....",
+  ".....2....."],[
+  "...........",
+  "....1.1....",
+  "...12221...",
+  "11114241111",
+  "1.1.222.1.1",
+  "1....2....1",
+  "..........."]];
+const SPK_BAT_PAL={'1':'#4e3d66','2':'#5e4a7a','4':{hex:'#ffcf3a',t:3}};
+const SPK_PUMPKIN=[
+  "......s......",
+  ".....ss......",
+  "..ooOoOooOo..",
+  ".ooOooOooOoo.",
+  "ooOyyoOoyyOoo",
+  "ooOyyoOoyyOoo",
+  "ooOooOyOooOoo",
+  "oOoyoyoyoyoOo",
+  "ooOoyyyyyoOoo",
+  ".ooOooOooOoo.",
+  "..ooooooooo.."];
+const SPK_PUMPKIN_PAL={o:'#e0761f',O:{hex:'#e0761f',dt:-1},y:{hex:'#ffd35a',t:3},s:'#5a7a2a'};
+const SPK_GHOST=[
+  "...wwwww...",
+  "..wwwwwww..",
+  ".wwwwwwwww.",
+  ".wwkwwwkww.",
+  ".wwkwwwkww.",
+  ".wwwwwwwww.",
+  "wwwwwkwwwww",
+  ".wwwwwwwww.",
+  ".wwwwwwwww.",
+  ".wwwwwwwww.",
+  ".ww.www.ww.",
+  ".w...w...w."];
+const SPK_GHOST_PAL={w:'#eaf0ff',k:{hex:'#2a2038',t:2}};
+function spkSprite(kind){ return kind==='spider'?spkArt('spider',null,SPK_SPIDER_PAL,4,SPK_SPIDER)
+  : kind==='bat'?spkArt('bat',null,SPK_BAT_PAL,4,SPK_BAT)
+  : kind==='pumpkin'?spkArt('pumpkin',SPK_PUMPKIN,SPK_PUMPKIN_PAL,4)
+  : spkArt('ghost',SPK_GHOST,SPK_GHOST_PAL,4); }
+// a sprite as an element; an animated sheet steps through its frames
+function spkEl(kind,h,cls){ const a=spkSprite(kind), w=Math.round(a.w*h/a.h);
+  const anim=a.n>1?`background-size:${w*a.n}px ${h}px;animation:spkFrames${a.n} ${kind==='bat'?'.22s':'.5s'} steps(${a.n}) infinite`:`background-size:${w}px ${h}px`;
+  return `<span class="spk-spr ${cls||''}" style="width:${w}px;height:${h}px;background-image:url(${a.url});${anim}"></span>`; }
+// a corner cobweb: spokes out of the corner and sagging rings between them, drawn a pixel at a time
+let _spkWeb='';
+function spkWebURL(){ if(_spkWeb) return _spkWeb;
+  const N=48, cv=document.createElement('canvas'); cv.width=N; cv.height=N; const x=cv.getContext('2d');
+  const dot=(px,py,a)=>{ px=Math.round(px); py=Math.round(py); if(px<0||py<0||px>=N||py>=N) return; x.fillStyle='rgba(232,228,246,'+a+')'; x.fillRect(px,py,1,1); };
+  const line=(x0,y0,x1,y1,a)=>{ const n=Math.ceil(Math.max(Math.abs(x1-x0),Math.abs(y1-y0))); for(let i=0;i<=n;i++){ const t=n?i/n:0; dot(x0+(x1-x0)*t,y0+(y1-y0)*t,a); } };
+  const ang=[0,16,34,52,70,90].map(d=>d*Math.PI/180), L=[50,48,46,46,48,50];
+  ang.forEach((a,i)=>line(0,0,Math.cos(a)*L[i],Math.sin(a)*L[i],.62));
+  [9,16,24,32,41].forEach((r,ri)=>{ for(let i=0;i<ang.length-1;i++){ const a0=ang[i], a1=ang[i+1];
+    const p0=[Math.cos(a0)*r,Math.sin(a0)*r], p1=[Math.cos(a1)*r,Math.sin(a1)*r];
+    const m=[(p0[0]+p1[0])/2*.86,(p0[1]+p1[1])/2*.86];   // the thread sags toward the corner
+    const steps=16; let px=p0;
+    for(let s=1;s<=steps;s++){ const t=s/steps, q=[(1-t)*(1-t)*p0[0]+2*(1-t)*t*m[0]+t*t*p1[0],(1-t)*(1-t)*p0[1]+2*(1-t)*t*m[1]+t*t*p1[1]];
+      line(px[0],px[1],q[0],q[1],ri===4?.38:.5); px=q; } } });
+  [[14,6],[22,17],[9,28],[33,12]].forEach(([a,b])=>{ x.fillStyle='rgba(255,255,255,.95)'; x.fillRect(a,b,1,1); });   // dew
+  return (_spkWeb=cv.toDataURL()); }
+let _spkMoon='';
+function spkMoonURL(){ if(_spkMoon) return _spkMoon;
+  const N=40, cv=document.createElement('canvas'); cv.width=N; cv.height=N; const x=cv.getContext('2d'), c=N/2-.5, r=17;
+  for(let j=0;j<N;j++) for(let i=0;i<N;i++){ const dx=i-c, dy=j-c, d=Math.hypot(dx,dy); if(d>r) continue;
+    const lit=(-dx*.6-dy*.6)/r; let col=lit>.35?'#fff6d6':lit>-.25?'#f1e2b4':lit>-.6?'#d8c48e':'#b9a672';
+    if(d>r-1) col='#c9b582';
+    x.fillStyle=col; x.fillRect(i,j,1,1); }
+  [[14,13,3],[25,22,4],[16,26,2],[27,12,2]].forEach(([a,b,rr])=>{ for(let j=-rr;j<=rr;j++) for(let i=-rr;i<=rr;i++){ if(i*i+j*j>rr*rr) continue; x.fillStyle=(i+j<0)?'#c8b47c':'#e3d3a2'; x.fillRect(a+i,b+j,1,1); } });
+  return (_spkMoon=cv.toDataURL()); }
+
+let _spkCss=false;
+function spkStyleOnce(){ if(_spkCss) return; _spkCss=true;
+  const st=document.createElement('style'); st.textContent=[
+  '.spk-spr{display:inline-block;background-repeat:no-repeat;background-position:0 0;image-rendering:pixelated}',
+  '.spk-hang .spk-spr,.spk-egg .spk-spr,.spk-bat .spk-spr{filter:drop-shadow(0 0 4px rgba(210,180,255,.55))}',
+  '@media (max-width:700px){.spk-pk{display:none}}',
+  '.spk-hhpk{position:absolute;left:100%;bottom:-2px;margin-left:-14px;filter:drop-shadow(0 0 8px rgba(255,160,50,.7));animation:spkGlow 3.4s ease-in-out infinite;pointer-events:none}',
+  '@keyframes spkFrames2{to{background-position:200% 0}}',   /* % runs against (box - sheet), so 100% is frame two */
+  // the full-page announcement
+  '.spk-ov{position:fixed;inset:0;z-index:60;overflow:hidden;display:flex;align-items:center;justify-content:center;padding:18px;background:radial-gradient(120% 80% at 50% 0%,#2a1446 0%,#160a28 45%,#08040f 100%);animation:spkIn .5s ease both}',
+  '@keyframes spkIn{from{opacity:0}to{opacity:1}}',
+  '.spk-moon{position:absolute;top:7%;right:9%;width:min(30vw,170px);image-rendering:pixelated;filter:drop-shadow(0 0 28px rgba(255,236,170,.45));animation:spkMoon 6s ease-in-out infinite}',
+  '@keyframes spkMoon{50%{filter:drop-shadow(0 0 44px rgba(255,236,170,.6))}}',
+  '.spk-fog{position:absolute;left:-30%;width:160%;height:38%;bottom:-8%;background:radial-gradient(50% 50% at 30% 50%,rgba(150,120,200,.22),transparent 70%),radial-gradient(40% 50% at 70% 60%,rgba(120,200,150,.12),transparent 70%);filter:blur(6px);animation:spkFog 18s ease-in-out infinite alternate}',
+  '.spk-fog.b{bottom:auto;top:46%;height:30%;opacity:.6;animation-duration:24s;animation-direction:alternate-reverse}',
+  '@keyframes spkFog{from{transform:translateX(-6%)}to{transform:translateX(8%)}}',
+  '.spk-web{position:absolute;width:min(46vw,280px);image-rendering:pixelated;opacity:.9;pointer-events:none}',
+  '.spk-web.tl{top:0;left:0}.spk-web.tr{top:0;right:0;transform:scaleX(-1)}.spk-web.br{bottom:0;right:0;transform:scale(-1,-1);width:min(34vw,200px);opacity:.7}',
+  '.spk-hang{position:absolute;z-index:3;top:0;display:flex;flex-direction:column;align-items:center;pointer-events:none;animation:spkDrop 1.6s cubic-bezier(.3,1.4,.5,1) both}',
+  '.spk-hang .silk{width:2px;background:linear-gradient(180deg,rgba(230,228,246,.15),rgba(230,228,246,.7))}',
+  '.spk-hang .bob{animation:spkBob 3.2s ease-in-out infinite}',
+  '@keyframes spkDrop{from{transform:translateY(-110%)}}',
+  '@keyframes spkBob{50%{transform:translateY(12px)}}',
+  '.spk-bat{position:absolute;left:-12%;animation:spkFly 9s linear infinite}',
+  '.spk-bat .bob{display:inline-block;animation:spkBatBob 1.2s ease-in-out infinite}',
+  '@keyframes spkFly{from{transform:translateX(0)}to{transform:translateX(130vw)}}',
+  '@keyframes spkBatBob{50%{transform:translateY(-18px)}}',
+  '.spk-ember{position:absolute;bottom:-10px;width:4px;height:4px;border-radius:1px;opacity:0;animation:spkRise linear infinite}',
+  '@keyframes spkRise{0%{opacity:0;transform:translateY(0)}15%{opacity:.9}100%{opacity:0;transform:translateY(-70vh) translateX(20px)}}',
+  '.spk-card{position:relative;z-index:2;width:min(100%,430px);text-align:center;padding:26px 20px 20px;border-radius:20px;background:linear-gradient(180deg,rgba(40,20,64,.92),rgba(18,9,30,.94));border:1px solid rgba(255,140,50,.55);box-shadow:0 0 0 1px rgba(255,140,50,.15),0 0 40px rgba(255,120,30,.25),0 24px 60px rgba(0,0,0,.6);animation:spkCard .7s .15s cubic-bezier(.2,1.3,.4,1) both}',
+  '@keyframes spkCard{from{opacity:0;transform:translateY(24px) scale(.94)}}',
+  '.spk-pump{display:block;margin:-62px auto 4px;width:max-content;animation:spkPump 2.6s ease-in-out infinite;filter:drop-shadow(0 0 18px rgba(255,170,60,.55))}',
+  '@keyframes spkPump{50%{transform:translateY(-6px) rotate(-3deg)}}',
+  '.spk-kick{font:800 11px var(--body);letter-spacing:.24em;text-transform:uppercase;color:#ffb46a}',
+  '.spk-ttl{font-family:var(--display);font-size:clamp(46px,14vw,70px);line-height:.92;margin:6px 0 2px;color:#ffe2b8;letter-spacing:.01em;text-shadow:0 0 6px #ff8a2a,0 0 22px rgba(255,120,30,.7),0 4px 0 #6a2a0a;animation:spkFlicker 5s infinite}',
+  '@keyframes spkFlicker{0%,100%{opacity:1}91%{opacity:1}92%{opacity:.35}93%{opacity:1}95%{opacity:.6}96%{opacity:1}}',
+  '.spk-sub{font-family:var(--display);font-size:22px;color:#c9a8ff;letter-spacing:.08em}',
+  '.spk-lede{color:#e6dcf4;font:600 15px/1.4 var(--body);margin:12px auto 14px;max-width:340px}',
+  '.spk-items{display:flex;flex-wrap:wrap;justify-content:center;gap:6px;margin:0 auto 12px;max-width:360px}',
+  '.spk-items .it{width:46px;height:46px;border-radius:10px;background:rgba(0,0,0,.35);border:1px solid rgba(201,168,255,.25);display:flex;align-items:center;justify-content:center;animation:spkPop .4s both}',
+  '.spk-items .it .sthumb{width:40px;height:40px;background:none;border:0;box-shadow:none}',
+  '@keyframes spkPop{from{opacity:0;transform:scale(.6)}}',
+  '.spk-rew{font:700 13px/1.35 var(--body);color:#ffcf8a;margin:0 auto 6px;max-width:330px}',
+  '.spk-hint{font:600 12.5px/1.35 var(--body);color:#a9e9b8;margin:2px auto 16px;max-width:320px}',
+  '.spk-go{display:block;width:100%;max-width:320px;margin:0 auto 8px;padding:14px;border:0;border-radius:14px;font:900 17px var(--body);letter-spacing:.05em;text-transform:uppercase;color:#2a0f00;background:linear-gradient(180deg,#ffb35a,#e0761f);box-shadow:0 0 20px rgba(255,140,40,.45),inset 0 -3px 0 rgba(0,0,0,.18);cursor:pointer}',
+  '.spk-later{background:none;border:0;color:#bfaedb;font:700 14px var(--body);padding:8px 14px;cursor:pointer}',
+  '.spk-x{position:absolute;top:12px;right:12px;z-index:3;width:40px;height:40px;border-radius:50%;border:1px solid rgba(201,168,255,.35);background:rgba(0,0,0,.35);color:#e6dcf4;font-size:16px;cursor:pointer}',
+  // the home scene and the hidden things
+  '.spk-scene-web{position:absolute;top:0;width:min(38vw,240px);image-rendering:pixelated;opacity:.55}',
+  '.spk-scene-web.l{left:0}.spk-scene-web.r{right:0;transform:scaleX(-1)}',
+  '.spk-pk{position:absolute;filter:drop-shadow(0 0 10px rgba(255,160,50,.55));animation:spkGlow 3.4s ease-in-out infinite}',
+  '@keyframes spkGlow{50%{filter:drop-shadow(0 0 18px rgba(255,170,60,.85))}}',
+  '.spk-egg{position:fixed;z-index:24;pointer-events:auto;cursor:pointer;-webkit-tap-highlight-color:transparent;background:none;border:0;padding:0}',
+  '.spk-egg.hang{top:58px;display:flex;flex-direction:column;align-items:center}',
+  '.spk-egg.hang .silk{width:1px;height:46px;background:rgba(230,228,246,.45)}',
+  '.spk-egg.hang .bob{animation:spkBob 3.6s ease-in-out infinite}',
+  '.spk-egg.hang.gone{animation:spkZip .6s ease-in both}',
+  '@keyframes spkZip{to{transform:translateY(-140px);opacity:0}}',
+  '.spk-egg.peek{left:0;top:46%;transform:translateX(-72%);animation:spkPeek 14s ease-in-out infinite}',
+  '@keyframes spkPeek{0%,70%,100%{transform:translateX(-72%)}76%,90%{transform:translateX(-8%)}}',
+  '.spk-egg.peek.gone{animation:spkVanish .5s ease-in both}',
+  '@keyframes spkVanish{to{opacity:0;transform:translateX(-8%) scale(1.4)}}',
+  '.spk-egg.fly{top:17%;left:-60px;animation:spkFlyBy 26s linear infinite}',
+  '@keyframes spkFlyBy{0%{transform:translateX(0)}22%{transform:translateX(calc(100vw + 120px))}100%{transform:translateX(calc(100vw + 120px))}}',
+  '.spk-egg.fly.gone{animation:spkVanish .5s ease-in both}',
+  '.spk-egg.inbar{position:absolute;top:100%;right:26%;z-index:5}',
+  '.spk-egg.mirror{position:absolute;left:calc(50% + 62px);bottom:22px;z-index:0;opacity:.85;animation:spkMirror 9s ease-in-out infinite}',
+  '@keyframes spkMirror{0%,60%,100%{transform:translateY(10px);opacity:0}70%,88%{transform:translateY(0);opacity:.9}}',
+  '.spk-egg.mirror.gone{animation:spkVanish .5s ease-in both}',
+  '.spk-ov.still,.spk-ov.still .spk-card,.spk-ov.still .spk-items .it,.spk-ov.still .spk-hang{animation:none}',
+  '@media (max-width:600px){.spk-moon{top:3%;right:4%;width:96px}.spk-hang .silk{max-height:22vh}}',
+  '@media (prefers-reduced-motion:reduce){.spk-ov *,.spk-ov,.spk-egg,.spk-egg *,.spk-pk{animation:none!important}.spk-egg.fly{display:none}.spk-egg.peek{transform:translateX(-50%)}.spk-egg.mirror{opacity:.9}}'
+  ].join('\n'); document.head.appendChild(st); }
+
+// ---- the full-page announcement ----
+function spookySeenKey(){ return 'bag_spooky_'+decorYear()+'_seen'; }
+function maybeSpookyPopup(){ try{
+  if(decorLive()!=='spooky') return;
+  if(LS.get(spookySeenKey(),false)) return;
+  if(S.overlay || S.screen!=='title') return;
+  if(typeof welcomePackPending==='function' && welcomePackPending()) return;
+  if(typeof s1LaunchPending==='function' && s1LaunchPending()) return;   // a season launch goes first
+  if(typeof isNewPlayer==='function' && isNewPlayer()) return;          // first run gets the onboarding
+  LS.set(spookySeenKey(),true);
+  try{ track('spooky_popup',{year:decorYear()}); }catch(e){}
+  S.overlay='spookyszn'; render();
+}catch(e){} }
+function overlaySpookySzn(screen){
+  spkStyleOnce();
+  const d=dropById('spooky'), r=dropReward(d), M=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const ends=d&&d.window?M[d.window[1][0]-1]+' '+d.window[1][1]:'';
+  const items=(d?d.items:[]).map((ci,i)=>{ let th=''; try{ const o=(cosmeticItems(ci[0])||[]).find(x=>x.id===ci[1])||{id:ci[1]}; th=cosThumbHTML(ci[0],o); }catch(e){}
+    return `<div class="it" style="animation-delay:${(.55+i*.07).toFixed(2)}s">${th}</div>`; }).join('');
+  const n=d?d.items.length:0;
+  const rewTxt=r?('Collect all '+n+' for the '+((r.items||[]).map(x=>x.name.replace(/ Backdrop$/,' backdrop')).join(' and ')||'reward')+(r.coins?' and '+coinFmt(r.coins)+' coins':'')+'.'):('Collect all '+n+' before '+ends+'.');
+  const R=decorReduced(), still=!!S._spkShown; S._spkShown=true;
+  const embers=R?'':Array.from({length:16},(_,i)=>{ const c=i%3===0?'#7dff5a':'#ff9a3a';
+    return `<span class="spk-ember" style="left:${(4+i*6)%96}%;background:${c};box-shadow:0 0 6px ${c};animation-duration:${(7+(i*37)%6)}s;animation-delay:${((i*53)%70)/10}s"></span>`; }).join('');
+  const hang=(left,len,h,delay)=>`<div class="spk-hang" style="left:${left};animation-delay:${delay}s"><div class="silk" style="height:${len}px"></div><div class="bob" style="animation-delay:${delay}s">${spkEl('spider',h)}</div></div>`;
+  const ov=$(`<div class="spk-ov${still?' still':''}" role="dialog" aria-modal="true" aria-label="Spooky Szn is here">
+    <img class="spk-moon" src="${spkMoonURL()}" alt="">
+    <div class="spk-fog"></div><div class="spk-fog b"></div>
+    ${embers}
+    <div class="spk-bat" style="top:18%;animation-delay:.4s"><span class="bob">${spkEl('bat',30)}</span></div>
+    <div class="spk-bat" style="top:30%;animation-delay:4.6s;animation-duration:11s"><span class="bob" style="animation-delay:.5s">${spkEl('bat',22)}</span></div>
+    <img class="spk-web tl" src="${spkWebURL()}" alt=""><img class="spk-web tr" src="${spkWebURL()}" alt=""><img class="spk-web br" src="${spkWebURL()}" alt="">
+    ${hang('6%',124,46,.3)}${hang('84%',104,38,.9)}${hang('30%',24,28,1.5)}
+    <button class="spk-x" aria-label="Close">✕</button>
+    <div class="spk-card">
+      <span class="spk-pump">${spkEl('pumpkin',72)}</span>
+      <div class="spk-kick">October only</div>
+      <div class="spk-ttl">SPOOKY SZN</div>
+      <div class="spk-sub">IS HERE</div>
+      <p class="spk-lede">The haunted drop is live until ${ends}. Witch hats, skeleton ribs and a cape with a taste for blood.</p>
+      <div class="spk-items">${items}</div>
+      <div class="spk-rew">${rewTxt}</div>
+      <div class="spk-hint">Something is creeping around the clubhouse. Tap it if you dare.</div>
+      <button class="spk-go">Shop the drop</button>
+      <button class="spk-later">Later</button>
+    </div></div>`);
+  const close=()=>{ S.overlay=null; S._spkShown=false; render(); };
+  ov.querySelector('.spk-x').onclick=close; ov.querySelector('.spk-later').onclick=close;
+  ov.querySelector('.spk-go').onclick=()=>{ try{ track('spooky_popup_shop'); }catch(e){} S._spkShown=false; S.overlay='shop'; S.shopSec='drops'; S.shopDrop='spooky'; render(); };
+  screen.appendChild(ov);
+}
+
+// ---- the home scene: webs in the corners and lit pumpkins on the ground ----
+function spookySceneHTML(){
+  return `<img class="spk-scene-web l" src="${spkWebURL()}" alt=""><img class="spk-scene-web r" src="${spkWebURL()}" alt="">
+    <span class="spk-pk" style="left:calc(4% + 140px);bottom:15%">${spkEl('pumpkin',40)}</span>
+    <span class="spk-pk" style="left:calc(4% + 196px);bottom:13%;animation-delay:1.2s">${spkEl('pumpkin',28)}</span>
+    <span class="spk-pk" style="right:24%;bottom:9%;animation-delay:.6s">${spkEl('pumpkin',34)}</span>`; }
+
+// ---- the hidden things: five to find, each one once, counted per device ----
+function spkFoundKey(){ return 'bag_spooky_'+decorYear()+'_found'; }
+function spkFound(){ try{ return LS.get(spkFoundKey(),[])||[]; }catch(e){ return []; } }
+function spkFind(id,el){ try{
+  const cfg=SEASON_DECOR.spooky, f=spkFound();
+  if(el){ el.classList.add('gone'); el.style.pointerEvents='none'; }
+  if(f.indexOf(id)>=0){ toast('Boo! You found this one already.',1800); return; }
+  f.push(id); LS.set(spkFoundKey(),f);
+  const all=cfg.eggs.length;
+  try{ track('spooky_egg',{id,found:f.length}); }catch(e){}
+  if(f.length>=all) toast('All '+all+' spooky things found. Happy Halloween!',3200);
+  else toast('You found '+(cfg.found[id]||'something spooky')+'. '+f.length+' of '+all+'.',2200);
+}catch(e){} }
+function spkEgg(id,cls,inner,label){ const b=document.createElement('button'); b.className='spk-egg '+cls; b.type='button';
+  b.setAttribute('aria-label',label); b.innerHTML=inner; b.onclick=(e)=>{ e.stopPropagation(); spkFind(id,b); }; return b; }
+function spookyHomeEggs(){ if(decorLive()!=='spooky') return []; spkStyleOnce();
+  const f=spkFound(), out=[];
+  if(f.indexOf('homespider')<0) out.push(spkEgg('homespider','hang','<span class="silk"></span><span class="bob">'+spkEl('spider',26)+'</span>','A spider'));
+  if(f.indexOf('homeghost')<0) out.push(spkEgg('homeghost','peek',spkEl('ghost',46),'A ghost'));
+  if(f.indexOf('homebat')<0&&!decorReduced()) out.push(spkEgg('homebat','fly',spkEl('bat',26),'A bat'));
+  out.forEach(b=>{ if(b.classList.contains('hang')) b.style.right='calc(50% - min(46vw, 330px))'; });
+  return out; }
+// after every render: the shop's spider and the ghost behind the golfer in the shop and closet mirror
+function seasonDecorPost(){ if(decorLive()!=='spooky') return; spkStyleOnce();
+  const f=spkFound();
+  const bar=app.querySelector('.shop-bar');
+  if(bar && f.indexOf('shopspider')<0 && !bar.querySelector('.spk-egg')){ bar.style.position=bar.style.position||'relative';
+    const b=spkEgg('shopspider','hang inbar','<span class="silk" style="height:26px"></span><span class="bob">'+spkEl('spider',20)+'</span>','A spider'); b.style.top='100%'; b.style.position='absolute'; bar.appendChild(b); }
+  const pv=app.querySelector('.shop-preview');
+  if(pv && f.indexOf('previewghost')<0 && !pv.querySelector('.spk-egg')) pv.appendChild(spkEgg('previewghost','mirror',spkEl('ghost',34),'A ghost'));
+}
 // ===== COLLECTION REWARDS (owner): one exclusive item per themed drop, earned ONLY by owning every
 // item in that collection. Never buyable, never in packs, never shard-redeemable, auto-granted with a
 // celebration the moment the collection completes (cross-device safe: the owned union re-runs the check).
