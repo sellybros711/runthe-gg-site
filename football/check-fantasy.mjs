@@ -1130,7 +1130,14 @@ const serverStub = (server) => {
      * is drawn: a stub answering the same rows every time would let a painter that never
      * animates anything pass every assertion below.
      */
-    fantasy_board: () => {
+    fantasy_board: (b) => {
+      /* BY WEEK WHEN THE FIXTURE SAYS SO, for the past weeks tab, which asks every earlier
+         week once. A week the fixture does not name is a week with no competition. */
+      if (s.boardByWeek && b && b.p_week !== POOL.week) {
+        const w = s.boardByWeek[b.p_week];
+        return { status: 200, body: JSON.stringify(w || { week: null, rows: [], me: null,
+          games: [], entrants: [] }) };
+      }
       const list = s.boards;
       if (!list || !list.length) {
         return { status: 200, body: JSON.stringify(s.board == null ? null : s.board) };
@@ -2916,6 +2923,16 @@ console.log('\nA ROW OPENS INTO ITS LINEUP, AND THE LEADER WEARS THE PRIZE');
       state: 'in', away_score: 17, home_score: 10, period: 3, clock: '7:30' },
     { game_id: 'g2', away: RB0.team, home: RB0.opp, kick: new Date(LIVE_AT - 14400e3).toISOString(),
       state: 'post', away_score: 24, home_score: 20, period: 4, clock: '0:00' }];
+  /* THE TIGHT END HAS TO BE IN A LIVE GAME, which used to be true by luck: in week 3 the
+     dearest tight end was the quarterback's team-mate. From week 4 he was not, his game read
+     as not started, and the assertion about a man on the field went red with the page right.
+     So his club gets a live game of its own when it is not already in one. */
+  const TE0 = byPos('TE', 0);
+  if (![QB0.team, QB0.opp, RB0.team, RB0.opp].includes(TE0.team)) {
+    games.push({ game_id: 'g3', away: TE0.team, home: TE0.opp,
+      kick: new Date(LIVE_AT - 7200e3).toISOString(), state: 'in', away_score: 7,
+      home_score: 3, period: 3, clock: '7:30' });
+  }
   const B = boardOf({ games,
     rows: [r(1, 'Ada', 30.5, ADA, false, 2), r(2, 'You', 12.0, YOU, true, 1),
       r(3, 'Bo', 0, YOU, false, 0)],
@@ -3698,11 +3715,23 @@ console.log('\nA LINEUP THAT ALREADY HOLDS A RULED OUT MAN KEEPS HIM, AND SAYS W
   const { rulingsFor } = await import('./build/injuries.mjs');
   const rul = rulingsFor(path.join(ROOT, 'football/data/fantasy_ruled_out.json'),
     NOW.season, NOW.week);
-  const rid = Object.keys(rul)[0];
-  ok('there is a ruling this week to walk with', !!rid, rid ? rul[rid].name : 'none');
+  /* A WEEK WITH NO RULING IS THE ORDINARY WEEK, so the fixture makes one rather than
+     needing the live list to hold somebody. It used to demand a real ruling and went red the
+     first week the list was empty, which says nothing about the page. A real ruling is used
+     when there is one, and otherwise a real man is marked out by the site in the report the
+     page is served, which is exactly what `injuries.mjs` writes for a ruling. */
+  const INJ = JSON.parse(fs.readFileSync(path.join(ROOT, 'football/data',
+    `injuries_${NOW.season}_w${NOW.week}.json`), 'utf8'));
+  let rid = Object.keys(rul)[0];
+  if (!rid) {
+    const pick = POOL.pool.filter((m) => m.position === 'QB' && !INJ.men[m.player_id])
+      .sort((a, b) => a.price_musd - b.price_musd)[0];
+    rid = pick && pick.player_id;
+    if (rid) INJ.men[rid] = { st: 'out', w: NOW.week, d: 'Elbow', p: 'Did not practise', by: 'site' };
+  }
+  ok('there is a ruling this week to walk with', !!rid,
+    rid ? (POOL.pool.find((m) => m.player_id === rid) || {}).name : 'none');
   if (rid) {
-    const INJ = JSON.parse(fs.readFileSync(path.join(ROOT, 'football/data',
-      `injuries_${NOW.season}_w${NOW.week}.json`), 'utf8'));
     const ruledMan = POOL.pool.find((m) => m.player_id === rid);
     /* A LEGAL SIX AROUND HIM, cheapest fit man at every other slot, built off the slot
        list rather than written out, so a slot change reshapes the fixture by itself. */
@@ -3717,6 +3746,7 @@ console.log('\nA LINEUP THAT ALREADY HOLDS A RULED OUT MAN KEEPS HIM, AND SAYS W
     const state = { season: NOW.season, week: NOW.week, pick: null, submitted: null,
       chances: [{ seed: 1, ids }] };
     const { page, boom } = await openPage(browser, FANTASY, { who: TESTER, at: BEFORE,
+      injuries: INJ,
       storage: { key: `ps_fantasy_${NOW.season}_w${NOW.week}`, value: JSON.stringify(state) } });
     await page.waitForSelector('#s-home.on', { timeout: 15000 });
     await page.waitForSelector('#b-review:not([hidden])', { timeout: 5000 });
@@ -4327,6 +4357,73 @@ console.log('\nA MAN RULED OUT CAN BE SWAPPED, BEFORE HIS GAME');
     ok('an entry only this browser remembers is offered no swap',
       (await screenOn(page)) === 's-in' && (await call(page)).length === 0,
       await screenOn(page));
+    ok('  nothing threw', !boom.length, boom.join(' | ') || 'clean');
+    await page.close();
+  }
+}
+
+console.log('\nA FINISHED WEEK HAS A DOOR AFTER THE BOARD ROLLS OVER');
+{
+  /* THE TUESDAY BUILD ROLLS THE BOARD TO THE NEW WEEK, and before this tab the standings of
+     the week just played had no way in at all. Reported the first Thursday it happened.
+     The fixture is the previous week's real pool and its real results file on disk, so the
+     names and the points are the ones a reader would see. */
+  const PREV = POOL.week - 1;
+  const prevPool = fs.existsSync(path.join(ROOT, `football/data/weekly_${POOL.season}_w${PREV}.json`))
+    ? JSON.parse(fs.readFileSync(path.join(ROOT, `football/data/weekly_${POOL.season}_w${PREV}.json`), 'utf8')) : null;
+  const prevRes = fs.existsSync(path.join(ROOT, `football/data/results_${POOL.season}_w${PREV}.json`))
+    ? JSON.parse(fs.readFileSync(path.join(ROOT, `football/data/results_${POOL.season}_w${PREV}.json`), 'utf8')) : null;
+  ok('there is a finished week on disk to read back', !!prevPool && !!prevRes,
+    `week ${PREV}: pool ${!!prevPool}, results ${!!prevRes}`);
+  if (prevPool && prevRes) {
+    /* A man who scored and a man who did not, so the lineup reads both kinds of row. */
+    const scored = prevPool.pool.filter((m) => prevRes.scores[m.player_id]
+      && prevRes.scores[m.player_id][0] > 5);
+    const SIX = ['QB', 'RB', 'RB', 'WR', 'WR', 'TE'].map((pos, i) =>
+      scored.filter((m) => m.position === pos)[i === 2 || i === 4 ? 1 : 0]);
+    const picks = SIX.map((m) => m.player_id);
+    const total = Math.round(SIX.reduce((t, m) => t + prevRes.scores[m.player_id][0], 0) * 10) / 10;
+    const row = (place, name, score, me) => ({ place, display_name: name, score,
+      projected: 60, spend: 100, picks, is_me: !!me, entry_no: place });
+    const PAST = boardOf({ rows: [row(1, 'Ada', total), row(2, 'You', 40.2, true)],
+      scored_at: new Date(LIVE_AT - 86400e3).toISOString(), games_final: 16 });
+    const byWeek = { [PREV]: PAST };
+    const before = Date.parse(POOL.locks_at) - 3600e3;
+    const { page, boom, posted } = await openPage(browser, FANTASY,
+      { who: TESTER, at: before, results: prevRes, server: { mine: false, boardByWeek: byWeek } });
+    await page.waitForSelector('#s-home.on', { timeout: 15000 });
+    ok('the home screen has a door to past weeks', await page.evaluate(() =>
+      !document.getElementById('b-past').hidden));
+    await page.click('#b-past');
+    await page.waitForSelector('#pw-board .brow .bhd', { timeout: 10000 });
+    const seen = await page.evaluate(() => ({
+      tab: !document.getElementById('lv-pane-past').hidden
+        && document.getElementById('lv-tab-past').classList.contains('on'),
+      chips: [...document.querySelectorAll('#pw-weeks button')].map((b) => b.textContent),
+      lab: document.getElementById('pw-lab').textContent,
+      rows: [...document.querySelectorAll('#pw-board .brow')].map((e) =>
+        [e.querySelector('.bn').textContent, e.querySelector('.bs').textContent]),
+    }));
+    ok('  and it lands on the past weeks tab', seen.tab);
+    ok('  with a chip for only the weeks that had a competition',
+      seen.chips.length === 1 && seen.chips[0] === 'Week ' + PREV, seen.chips.join(', '));
+    ok('  the board is that week\'s, and says it is final', new RegExp('Week ' + PREV + '.*Final')
+      .test(seen.lab), seen.lab);
+    ok('  every row is drawn with its score', seen.rows.length === 2
+      && seen.rows[0][0] === 'Ada' && seen.rows[0][1] === total.toFixed(1), JSON.stringify(seen.rows));
+    ok('  and every earlier week was asked', [...Array(PREV).keys()].map((i) => i + 1)
+      .every((w) => posted.some((x) => x.fn === 'fantasy_board' && x.body.p_week === w)));
+    await page.click('#pw-board .brow .bhd');
+    await page.waitForTimeout(300);
+    const men = await page.evaluate(() => [...document.querySelectorAll('#pw-board .brow.open .bm')]
+      .map((e) => [e.querySelector('.bmnn').firstChild.textContent, e.querySelector('.bmpts b').textContent]));
+    const want = SIX.map((m) => [m.name, prevRes.scores[m.player_id][0].toFixed(1)]);
+    ok('  a row opens into six men named off THAT week\'s pool', men.length === 6
+      && want.every((w) => men.some((x) => x[0] === w[0])), men.map((x) => x[0]).join(', '));
+    ok('  with the points from that week\'s results file',
+      want.every((w) => men.some((x) => x[0] === w[0] && x[1] === w[1])), JSON.stringify(men));
+    ok('  and the six add up to the row', Math.abs(men.reduce((t, x) => t + Number(x[1]), 0) - total) < 0.06,
+      String(total));
     ok('  nothing threw', !boom.length, boom.join(' | ') || 'clean');
     await page.close();
   }

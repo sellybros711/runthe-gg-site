@@ -538,6 +538,11 @@
   .tabs button{flex:1 1 0;padding:9px 10px;border-radius:999px;border:1px solid var(--line);
     font-family:var(--fn);font-size:11.5px;font-weight:800;letter-spacing:.08em;
     text-transform:uppercase;color:var(--dim-2);background:none}
+  .pwk{display:flex;flex-wrap:wrap;gap:6px}
+  .pwk button{padding:6px 12px;border-radius:999px;border:1px solid var(--line);
+    background:transparent;color:var(--dim);font:inherit;font-size:13px;cursor:pointer}
+  .pwk button.on{background:var(--panel-2);border-color:var(--line-2);color:var(--ink)}
+  .pwk button[hidden]{display:none}
   .tabs button.on{background:var(--panel-2);border-color:var(--line-2);color:var(--ink)}
 
   /* THE WAY IN, WHILE THE GAMES ARE ON.
@@ -648,6 +653,7 @@
       <div class="stack">
         <button class="btn" id="b-draft">Start drafting</button>
         <button class="btn blue" id="b-review" hidden>See your lineups</button>
+        <button class="btn quiet" id="b-past" hidden>Past weeks</button>
       </div>
       <p class="note" id="home-note"></p>
       <!-- LAST WEEK'S RESULT, on the screen a player lands on. Without it the loop does not
@@ -774,6 +780,7 @@
       <div class="tabs">
         <button id="lv-tab-games" class="on">The games</button>
         <button id="lv-tab-board">The board</button>
+        <button id="lv-tab-past">Past weeks</button>
       </div>
       <div id="lv-pane-games">
         <div class="gms" id="lv-games" style="margin-top:10px"></div>
@@ -786,6 +793,15 @@
              not necessarily entered, so "nobody yet" is a sentence that can be true. -->
         <p class="note" id="lv-boardsay"></p>
         <p class="note" id="lv-boardhow" hidden>Tap a name to see the lineup. First place when the week ends wins 30 days of Pro.</p>
+      </div>
+      <!-- A FINISHED WEEK IS A RECORD, not a live board. It gets no poll, no move marks and
+           no live projection: the week is over and nothing on it is going to change. The
+           chips are the weeks the server has a competition for, asked once a visit. -->
+      <div id="lv-pane-past" hidden>
+        <div class="pwk" id="pw-weeks" style="margin-top:12px"></div>
+        <div class="eyebrow" id="pw-lab" style="margin-top:12px"></div>
+        <div class="board" id="pw-board" style="margin-top:6px"></div>
+        <p class="note" id="pw-say"></p>
       </div>
       <div class="stack">
         <button class="btn quiet" id="b-live-back">Back</button>
@@ -2863,18 +2879,22 @@
      every rectangle is zero and every row appears to have travelled the height of the
      page. */
   function lvTab(which){
-    var games = which !== 'board';
-    $('lv-tab-games').classList.toggle('on', games);
-    $('lv-tab-board').classList.toggle('on', !games);
-    $('lv-pane-games').hidden = !games;
-    $('lv-pane-board').hidden = games;
+    if (which !== 'board' && which !== 'past') which = 'games';
+    $('lv-tab-games').classList.toggle('on', which === 'games');
+    $('lv-tab-board').classList.toggle('on', which === 'board');
+    $('lv-tab-past').classList.toggle('on', which === 'past');
+    $('lv-pane-games').hidden = which !== 'games';
+    $('lv-pane-board').hidden = which !== 'board';
+    $('lv-pane-past').hidden = which !== 'past';
     window.scrollTo(0,0);
+    if (which === 'past') openPast();
   }
   function boardShowing(){
     return $('s-live').classList.contains('on') && !$('lv-pane-board').hidden;
   }
   $('lv-tab-games').onclick = function(){ lvTab('games'); };
   $('lv-tab-board').onclick = function(){ lvTab('board'); };
+  $('lv-tab-past').onclick = function(){ lvTab('past'); };
 
   function openLive(tab){
     $('lv-week').textContent = POOL.season + ' week ' + POOL.week;
@@ -2902,7 +2922,7 @@
      * question asked in a different place.
      */
     clearBoardTimers();
-    lvTab(tab === 'board' ? 'board' : 'games');
+    lvTab(tab);
     paintScores(null);
     show('s-live');
     /* AFTER `show`, WHICH CANCELS TIMERS. The draft screen's reveal learnt this the same
@@ -2911,6 +2931,7 @@
   }
 
   $('b-live').onclick = function(){ openLive('games'); };
+  $('b-past').onclick = function(){ openLive('past'); };
   $('b-in-board').onclick = function(){ openLive('board'); };
   $('b-live-back').onclick = function(){
     /* BACK TO WHERE THEY CAME FROM, which is their own entry if they have one and the home
@@ -2919,6 +2940,172 @@
     if (serverEntry() || (state && state.submitted != null)) openIn();
     else { paintHome(); show('s-home'); }
   };
+
+  /* ---- past weeks ----
+   *
+   * A FINISHED WEEK, READ BACK. The live board only ever shows `POOL.week`, so the moment
+   * the Tuesday build rolls the board over, the standings of the week just played have no
+   * door at all. Reported the first Thursday it happened.
+   *
+   * WHICH WEEKS IS ASKED OF THE SERVER, not counted from 1. A week the site never opened a
+   * competition for (2026 weeks 1 and 2) answers `week: null`, and a chip for it would be a
+   * control that opens nothing. Asked once a visit, in parallel, and kept.
+   *
+   * THE SIX MEN ARE NAMED OFF THAT WEEK'S OWN POOL. This week's board cannot name last
+   * week's men: a man on a bye, cut or traded is simply not in it, which is `lastWeekCard`'s
+   * argument. The points come off that week's results file, and off the server's results
+   * table when the file is not written yet.
+   *
+   * NO POLL, NO MOVE MARKS, NO LIVE PROJECTION. Nothing on a finished week is going to move.
+   */
+  var PAST = { weeks: null, asking: false, cur: 0, gen: 0, pools: {} };
+  function pastPool(season, wk){
+    var k = season + '|' + wk;
+    if (PAST.pools[k] !== undefined) return Promise.resolve(PAST.pools[k]);
+    return fetch('/football/data/weekly_' + season + '_w' + wk + '.json')
+      .then(function(r){ return r.ok ? r.json() : null; })
+      .catch(function(){ return null; })
+      .then(function(j){ PAST.pools[k] = j; return j; });
+  }
+  function openPast(){
+    if (PAST.weeks){ drawPastChips(); return; }
+    var top = POOL.week - 1;
+    if (top < 1){ PAST.weeks = []; drawPastChips(); return; }
+    if (PAST.asking) return;
+    PAST.asking = true;
+    $('pw-weeks').innerHTML = '';
+    $('pw-lab').textContent = '';
+    $('pw-board').innerHTML = '';
+    $('pw-say').textContent = 'Looking for past weeks.';
+    var asks = [];
+    for (var w = top; w >= 1; w--) asks.push(F.board(POOL.season, w, 50));
+    Promise.all(asks).then(function(all){
+      PAST.asking = false;
+      /* NULL IS "COULD NOT ASK", and is not remembered: the next open asks again rather
+         than telling somebody for the rest of the visit that there are no past weeks. */
+      if (all.some(function(d){ return d == null; }) && !all.some(function(d){ return d; })){
+        $('pw-say').textContent = 'Past weeks could not be reached. Try again in a moment.';
+        return;
+      }
+      var weeks = [], data = {};
+      for (var i=0;i<all.length;i++){
+        var d = all[i], wk = top - i;
+        if (d && d.week && Number(d.week.entries) > 0){ weeks.push(wk); data[wk] = d; }
+      }
+      PAST.weeks = weeks;
+      PAST.data = data;
+      drawPastChips();
+    });
+  }
+  function drawPastChips(){
+    var weeks = PAST.weeks || [];
+    if (!weeks.length){
+      $('pw-weeks').innerHTML = '';
+      $('pw-lab').textContent = '';
+      $('pw-board').innerHTML = '';
+      $('pw-say').textContent = 'No past weeks yet. Week ' + POOL.week + ' is the first.';
+      return;
+    }
+    if (weeks.indexOf(PAST.cur) < 0) PAST.cur = weeks[0];
+    var h = '';
+    for (var i=0;i<weeks.length;i++){
+      h += '<button type="button" data-w="' + weeks[i] + '"'
+        + (weeks[i] === PAST.cur ? ' class="on"' : '') + '>Week ' + weeks[i] + '</button>';
+    }
+    $('pw-weeks').innerHTML = h;
+    paintPast(PAST.cur);
+  }
+  $('pw-weeks').addEventListener('click', function(ev){
+    var b = ev.target.closest && ev.target.closest('button[data-w]');
+    if (!b) return;
+    PAST.cur = Number(b.getAttribute('data-w'));
+    drawPastChips();
+  });
+  function paintPast(wk){
+    var gen = ++PAST.gen, season = POOL.season;
+    var d = PAST.data && PAST.data[wk];
+    $('pw-lab').textContent = 'Week ' + wk;
+    $('pw-say').textContent = '';
+    Promise.all([pastPool(season, wk), resultsFor(season, wk)]).then(function(got){
+      var pool = got[0], file = got[1];
+      /* No file yet is a week the Tuesday build has not scored on disk. The server's own
+         table holds the same points, so the lineups still read. */
+      if (file && file.scores) return [pool, file];
+      return (F.results ? F.results(season, wk) : Promise.resolve(null)).then(function(rows){
+        var sc = {};
+        for (var i=0;rows && i<rows.length;i++){
+          sc[rows[i].player_id] = [Number(rows[i].half_ppr), rows[i].line || ''];
+        }
+        return [pool, rows ? { scores: sc } : null];
+      });
+    }).then(function(got){
+      if (gen !== PAST.gen) return;
+      paintPastBoard(wk, d, got[0], got[1]);
+    });
+  }
+  function pastRosterHTML(ids, pool, file){
+    var by = {}, men = [], i;
+    for (i=0;pool && i<pool.pool.length;i++) by[pool.pool[i].player_id] = pool.pool[i];
+    for (i=0;i<ids.length;i++) men.push(by[ids[i]] || { player_id: ids[i], name: 'Unknown', position: '' });
+    men.sort(function(a,b){ return (POS_ORDER[a.position] == null ? 9 : POS_ORDER[a.position])
+      - (POS_ORDER[b.position] == null ? 9 : POS_ORDER[b.position]); });
+    var html = '';
+    for (i=0;i<men.length;i++){
+      var m = men[i];
+      /* NO POINTS AT ALL IS "COULD NOT READ THEM", not six men who did not play, so it
+         draws a dash rather than a column of zeros that reads as a fact. */
+      var row = file && file.scores && file.scores[m.player_id];
+      var pts = row ? Number(row[0]).toFixed(1) : (file ? '0.0' : '-');
+      var line = row ? (row[1] || '') : (file ? 'did not play' : '');
+      html += '<div class="bm"><span class="bmp ' + esc(m.position || '') + '">' + esc(m.position || '') + '</span>'
+        + '<span class="bmn"><span class="bmnn">' + esc(m.name) + (m.team ? club(m.team) : '') + '</span>'
+        + (line ? '<s class="bml">' + esc(line) + '</s>' : '') + '</span>'
+        + '<span class="bmst">Final</span>'
+        + '<span class="bmpts"><b>' + pts + '</b></span></div>';
+    }
+    return html;
+  }
+  function paintPastBoard(wk, d, pool, file){
+    var rows = d && d.rows;
+    if (!rows || !rows.length){
+      $('pw-board').innerHTML = '';
+      $('pw-say').textContent = 'Nobody entered week ' + wk + '.';
+      return;
+    }
+    var n = d.week ? Number(d.week.entries) : rows.length;
+    var done = d.week && d.week.scored_at;
+    $('pw-lab').textContent = 'Week ' + wk + ' · ' + n + (n === 1 ? ' entry' : ' entries')
+      + (done ? ' · Final' : '');
+    var html = '', mine = false, i, r;
+    for (i=0;i<rows.length;i++){
+      r = rows[i];
+      if (r.is_me) mine = true;
+      var key = 'pw' + wk + '-' + String(r.entry_no == null ? 'p' + r.place : r.entry_no);
+      var win = done && Number(r.place) === 1;
+      html += boardRowHTML(key, r.place, r.display_name || 'Somebody',
+        Number(r.score).toFixed(1), ((r.is_me ? 'me' : '') + (win ? ' lead' : '')).trim(),
+        { lead: win, roster: Array.isArray(r.picks) && r.picks.length
+          ? pastRosterHTML(r.picks, pool, file) : '' });
+    }
+    var me = d.me && d.me.place ? d.me : null;
+    if (!mine && me){
+      var ml = Array.isArray(me.lines) ? me.lines : [];
+      html += '<div class="brow gap">...</div>';
+      html += boardRowHTML('pw' + wk + '-you', me.place, 'You', Number(me.score).toFixed(1), 'me',
+        { roster: ml.length ? pastRosterHTML(ml.map(function(l){ return l.player_id; }), pool, file) : '' });
+    }
+    $('pw-board').innerHTML = html;
+    $('pw-say').textContent = 'Tap a name to see the lineup.';
+  }
+  $('pw-board').addEventListener('click', function(ev){
+    var b = ev.target.closest && ev.target.closest('.bhd');
+    if (!b || b.disabled) return;
+    var row = b.parentNode, k = row.getAttribute('data-k');
+    var open = !row.classList.contains('open');
+    row.classList.toggle('open', open);
+    b.setAttribute('aria-expanded', String(open));
+    if (open) BOARD_OPEN[k] = 1; else delete BOARD_OPEN[k];
+  });
 
   /* ---- home ---- */
   function startChance(){
@@ -2962,6 +3149,7 @@
       && done >= D.CHANCES;
     $('b-draft').textContent = done ? 'Draft ' + (done+1) + ' of ' + D.CHANCES : 'Start drafting';
     $('b-review').hidden = !done;
+    $('b-past').hidden = POOL.week <= 1;
     /* THE REOPENED DRAFTS ARE NAMED WHERE THE READER LANDS, so nobody opens their five
        and finds one gone with nothing to say why. */
     $('home-note').textContent = locked()
