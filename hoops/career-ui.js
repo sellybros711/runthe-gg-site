@@ -80,6 +80,10 @@ var CSS = [
 '.cr-town{margin:10px 0 0;font-size:13.5px;color:var(--ink);font-weight:700;}',
 '.cr-sub{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);font-weight:800;margin:16px 0 6px;}',
 '.cr-final p.cr-col{color:var(--ink);font-weight:700;}',
+'.cr-place{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 0 12px;padding:10px 12px;border:1px solid var(--cardb);border-radius:12px;font-size:13.5px;color:var(--mut);}',
+'.cr-place b{color:var(--ink);}',
+'.cr-place button{flex:0 0 auto;padding:7px 12px;font-size:12.5px;}',
+'.cr-place[hidden]{display:none;}',
 '.cr-epi p{margin:0 0 10px;font-size:14px;line-height:1.5;}',
 '.cr-epi p:last-child{margin:0;}',
 '.cr-epi .k,.cr-lifeline{display:block;}',
@@ -650,6 +654,11 @@ function finish(){
     teams: teams, totals: f.totals, awards: awardCounts(L), history: L.history, amHist: L.amHist || [], college: collegeOf(L),
     after: f.after || '', jersey: f.jersey || null, rival: f.rival || null, life: f.life || '',
     team: teams[teams.length - 1] || null, at: Date.now() };
+  /* The badges, through the page's one feat writer, so a Career badge is
+     kept on the account the way every other mode's is. */
+  var BD = window.RTF_BADGES;
+  if (BD && BD.careerFeats && C.featSummary && P.feats && L.history.length) P.feats(BD.careerFeats(C.featSummary(L)));
+  var sum = C.boardSummary ? C.boardSummary(L) : null;
   st.hof.unshift(card);
   if (st.hof.length > 20) st.hof.length = 20;
   st.cur = null;
@@ -657,6 +666,84 @@ function finish(){
   save();
   render();
   window.scrollTo(0, 0);
+  if (sum) fileCareer(card, sum);
+}
+
+/* ─── the Career board ──────────────────────────────────────────────────────
+   A career that reached the league is filed once, when it ends
+   (supabase/130_hoops_careers.sql). The board is optional like everywhere in
+   this game: every call fails soft to null and the Hall card never waits for
+   it. The row's id is kept ON THE CARD, which rides in the life slot, so it
+   is on the account and a guest's careers can be claimed on sign in. */
+function BB(){ return P.board ? P.board() : null; }
+function signedIn(){ var a = P.auth && P.auth(); return !!(a && a.state && a.state().signedIn); }
+function fileCareer(card, sum){
+  var B = BB();
+  if (!B || !B.submitCareer) return;
+  var guest = !signedIn();
+  B.submitCareer(sum).then(function(id){
+    if (!id) {
+      card.board = { off: true, migration: !!B.needsMigration };
+      save(); paintPlace(card);
+      return;
+    }
+    card.board = { id: id, guest: guest };
+    save(); paintPlace(card);
+  });
+}
+/* Where the career sits, asked fresh every time the card is drawn, because
+   the field keeps growing after it was filed. */
+function paintPlace(card){
+  var el = $('cr-place');
+  if (!el || store().last !== card) return;
+  var b = card.board;
+  if (!b) { el.hidden = true; return; }
+  if (b.off) {
+    el.hidden = false;
+    el.innerHTML = '<span>' + (b.migration ? 'The Career board is not set up on this site yet.' : 'Career board not reachable right now. This career still counts here.') + '</span>';
+    return;
+  }
+  var B = BB();
+  el.hidden = false;
+  el.innerHTML = '<span>On the Career board.</span><button class="ghost" id="cr-board">See the board</button>';
+  wireBoardBtn();
+  if (!B || !B.careerPlace) return;
+  B.careerPlace(card.score).then(function(pl){
+    if (!pl || store().last !== card || !$('cr-place')) return;
+    var total = Math.max(pl.total, pl.place);
+    el.innerHTML = '<span><b>' + ordinal(pl.place) + '</b> of ' + total.toLocaleString('en-US') + (total === 1 ? ' career' : ' careers')
+      + (b.guest && !signedIn() ? '. On the board as Guest. Sign in to put your name on it.' : '.') + '</span>'
+      + '<button class="ghost" id="cr-board">See the board</button>';
+    wireBoardBtn();
+  });
+}
+function wireBoardBtn(){
+  var b = $('cr-board');
+  if (b) b.onclick = function(){ if (P.openBoard) P.openBoard({ door: 'career' }); };
+}
+function ordinal(n){
+  var s = ['th', 'st', 'nd', 'rd'], v = n % 100;
+  return n + (s[(v - 20) % 10] || s[v] || s[0]);
+}
+/* Every career this browser or this account filed, for the board's own
+   marking of your rows. */
+function boardIds(){
+  var st = store(), ids = {};
+  (st.hof || []).concat(st.last ? [st.last] : []).forEach(function(c){ if (c && c.board && c.board.id) ids[c.board.id] = 1; });
+  return ids;
+}
+/* A career finished signed out, taken over on the way in. */
+function claimGuests(){
+  if (!signedIn()) return;
+  var B = BB(), st = store(), any = false;
+  if (!B || !B.claimCareer) return;
+  (st.hof || []).concat(st.last ? [st.last] : []).forEach(function(c){
+    if (!c || !c.board || !c.board.id || !c.board.guest) return;
+    c.board.guest = false;
+    any = true;
+    B.claimCareer(c.board.id);
+  });
+  if (any) save();
 }
 
 function finalView(card){
@@ -682,6 +769,7 @@ function finalView(card){
         + (card.totals.pts > card.rival.pts ? ' You had the better career.' : ' He had the better career.') + '</p>' : '')
       + (card.life ? '<p><span class="k">Off the floor</span>' + esc(card.life) + '.</p>' : '')
       + '</div>' : '')
+    + '<div class="cr-place" id="cr-place" hidden></div>'
     + '<div class="btnrow" style="margin:0 0 12px"><button id="cr-share">Share it</button><button class="ghost" id="cr-again">New career</button></div>'
     + '<div class="card"><h2>Season by season</h2>' + seasonsTable(hist) + '</div>';
 }
@@ -698,6 +786,7 @@ function wireFinal(card){
   $('cr-home').onclick = goHome;
   $('cr-again').onclick = function(){ store().last = null; save(); form = null; render(); window.scrollTo(0, 0); };
   $('cr-share').onclick = function(){ P.shareText(shareText(card)); };
+  paintPlace(card);
 }
 
 // ─── the screen ─────────────────────────────────────────────────────────────
@@ -771,9 +860,12 @@ window.RTF_CAREER_UI = {
   /* For the page's dock and for check-career.mjs. */
   KEY: KEY,
   state: function(){ return store(); },
+  boardIds: boardIds,
 };
 
 function boot(){
+  var a = P.auth && P.auth();
+  if (a && a.onChange && !boot.wired) { boot.wired = true; a.onChange(claimGuests); claimGuests(); }
   renderHero();
   if (!league()) { setTimeout(boot, 250); return; }
   renderHero();

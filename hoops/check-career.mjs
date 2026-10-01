@@ -370,9 +370,47 @@ async function browser() {
   const CHROME = '/opt/pw-browsers/chromium-1194/chrome-linux/chrome';
   const pw = createRequire('/opt/node22/lib/node_modules/')('playwright');
   const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.json': 'application/json', '.png': 'image/png' };
+  /* THE CAREER BOARD, stood in on the same origin. No request leaves the
+     machine: the board is a live project, and a career filed there by a
+     checker would sit on it for ever. The submit records what it was sent,
+     because what matters is that no score is in it. */
+  const careers = [], sent = [];
+  async function stand(route, u) {
+    const req = route.request();
+    const json = (body, headers) => route.fulfill({ status: 200, contentType: 'application/json',
+      headers: Object.assign({ 'access-control-expose-headers': 'content-range' }, headers || {}), body: JSON.stringify(body) });
+    if (u.pathname.endsWith('/rpc/rtf_submit_career')) {
+      const p = JSON.parse(req.postData() || '{}');
+      sent.push(p);
+      const T = { pts: p.p_pts, reb: p.p_reb, ast: p.p_ast, rings: p.p_rings, mvp: p.p_mvp, fmvp: p.p_fmvp, an: p.p_an, an1: p.p_an1,
+        star: p.p_star, dpoy: p.p_dpoy, roy: p.p_roy, olympic: p.p_olympic, ncaa: p.p_ncaa, npoy: p.p_npoy, aa1: p.p_aa1 };
+      careers.push({ id: 900 + careers.length, created_at: new Date().toISOString(), user_id: null, display_name: null,
+        client_id: p.p_id, score: C.legacyScore(T), player: p.p_player, pos: p.p_pos, num: p.p_num, road: p.p_road,
+        college: p.p_college, pick: p.p_pick, first_year: p.p_from, last_year: p.p_to, clubs: p.p_clubs, jersey: p.p_jersey,
+        peak: p.p_peak, seasons: p.p_seasons, gp: p.p_gp, ...T });
+      /* Three careers ahead of it, so the place is not trivially first. */
+      for (let i = 0; i < 3; i++) careers.push({ id: 800 + i, created_at: new Date().toISOString(), user_id: null, display_name: 'rival' + i,
+        client_id: 'x' + i, score: 400 + i, player: 'Somebody Else', pos: 'SG', num: 1, road: false, college: null, pick: 1,
+        first_year: 2026, last_year: 2045, clubs: ['BOS'], jersey: null, peak: 30, seasons: 20, gp: 1500, pts: 40000, reb: 5000, ast: 5000,
+        rings: 5, mvp: 4, fmvp: 4, an: 15, an1: 12, star: 18, dpoy: 0, roy: 1, olympic: 2, ncaa: 0, npoy: 0, aa1: 0 });
+      return json(900);
+    }
+    if (u.pathname.endsWith('/rtf_careers')) {
+      const q = u.searchParams;
+      let rows = careers.slice();
+      const gt = q.get('score');
+      if (gt && gt.startsWith('gt.')) rows = rows.filter((r) => r.score > Number(gt.slice(3)));
+      if (q.get('select') === 'id') return json(rows.slice(0, 1).map((r) => ({ id: r.id })), { 'content-range': '0-0/' + rows.length });
+      const by = (q.get('order') || 'score.desc').split(',')[0].split('.');
+      rows.sort((x, y) => (by[1] === 'asc' ? 1 : -1) * (x[by[0]] - y[by[0]]));
+      return json(rows);
+    }
+    return route.fulfill({ status: 404, contentType: 'application/json', body: '{"message":"not stood in"}' });
+  }
   async function serve(route) {
     const u = new URL(route.request().url());
     if (u.hostname !== 'local.test') return route.abort();
+    if (u.pathname.startsWith('/sb/')) return stand(route, u);
     let rel = decodeURIComponent(u.pathname);
     if (rel.endsWith('/')) rel += 'index.html';
     const f = path.join(ROOT, rel);
@@ -384,7 +422,7 @@ async function browser() {
   const page = await ctx.newPage();
   const boom = [];
   page.on('pageerror', (e) => boom.push(String(e).slice(0, 200)));
-  await page.addInitScript(() => { try { localStorage.setItem('rtf.guide.v1', '1'); } catch (e) {} });
+  await page.addInitScript(() => { try { localStorage.setItem('rtf.guide.v1', '1'); } catch (e) {} window.RTF_BOARD_URL = 'http://local.test/sb'; });
   await page.route('**/*', serve);
   await page.goto('http://local.test/hoops/', { waitUntil: 'domcontentloaded' });
   await page.waitForSelector('#b-career:not([disabled])', { state: 'attached', timeout: 30000 });
@@ -481,8 +519,23 @@ async function browser() {
   }));
   ok(fin.last && fin.v.length > 3, `it ends on a verdict ("${fin.v}")`);
   ok(fin.hof === 1, `and the career goes on the shelf (${fin.hof})`);
+
+  /* THE CAREER BOARD. Filed once, with totals and no score, and the Hall card
+     says where it sits. */
+  await page.waitForFunction(() => /of \d+ careers/.test((document.querySelector('#cr-place') || {}).textContent || ''), null, { timeout: 15000 }).catch(() => {});
+  const placed = await page.evaluate(() => (document.querySelector('#cr-place') || {}).textContent || '');
+  ok(sent.length === 1, `the career is filed once (${sent.length})`);
+  ok(sent[0] && !Object.keys(sent[0]).some((k) => /score/.test(k)), 'and it sends no score: the server works that out');
+  ok(sent[0] && sent[0].p_player === 'Checker McTest' && sent[0].p_road === true && sent[0].p_seasons === fin.last.totals.seasons
+    && sent[0].p_pts === fin.last.totals.pts && sent[0].p_rings === fin.last.totals.rings,
+    'what it sends is the career on the Hall card');
+  ok(/^4th of 4 careers/.test(placed.trim()), `the Hall card says where it sits ("${placed.trim().slice(0, 60)}")`);
+  ok(/Guest/.test(placed), 'and a guest is told signing in puts a name on it');
+  const toBoard = await page.$('#cr-board');
+  ok(!!toBoard, 'the Hall card has a way to the board');
+  if (toBoard) await boardWalk(fin);
+  await page.evaluate(() => { const h = document.querySelector('#cr-home'); if (h) h.click(); });
   /* Back home the hero remembers it. */
-  await page.click('#cr-home');
   await page.waitForTimeout(250);
   const best = await page.evaluate(() => ({ t: (document.querySelector('#ch-best') || {}).textContent || '', hid: document.querySelector('#ch-best').hidden }));
   ok(!best.hid && /Checker McTest/.test(best.t), `the front page names your best career ("${best.t}")`);
@@ -492,4 +545,28 @@ async function browser() {
   ok(boom.length === 0, `no page errors (${boom.join(' | ') || 'none'})`);
   console.log(`  ${presses} presses to retirement`);
   await b.close();
+
+  async function boardWalk(fin) {
+  await toBoard.click();
+  await page.waitForSelector('#s-board.active .bd-ent');
+  const bd = await page.evaluate(() => {
+    const on = document.querySelector('#bd-tabs .bd-tab.on');
+    const mine = document.querySelector('.bd-row.me');
+    const ents = [].slice.call(document.querySelectorAll('.bd-ent'));
+    return { tab: on && on.textContent, axes: [].map.call(document.querySelectorAll('#bd-axes button'), (b) => b.textContent).join(','),
+      n: ents.length, mine: mine ? mine.querySelector('.bd-meta').textContent : '', count: document.querySelector('#bd-count').textContent };
+  });
+  ok(bd.tab === 'Career' && bd.axes === 'Legacy,Points,Rings', `the board opens on the Career tab (${bd.tab}; ${bd.axes})`);
+  ok(bd.n === 4 && /4 careers/.test(bd.count), `and lists every career filed (${bd.n}, ${bd.count})`);
+  ok(/Checker McTest/.test(bd.mine) && new RegExp(fin.v).test(bd.mine), `your row is marked and wears the Hall's verdict ("${bd.mine}")`);
+  await page.click('.bd-row.me');
+  const opened = await page.evaluate(() => (document.querySelector('.bd-ent.open .bd-team') || {}).textContent || '');
+  ok(/Draft/.test(opened) && /points/.test(opened) && !/undefined|NaN/.test(opened), `a row opens into the career ("${opened.slice(0, 70)}")`);
+  await page.click('#bd-axes [data-ax="rings"]');
+  await page.waitForSelector('#s-board.active .bd-ent');
+  const ringsUnit = await page.evaluate(() => (document.querySelector('.bd-rec span') || {}).textContent || '');
+  ok(/rings?/.test(ringsUnit), `the Rings order reads in rings ("${ringsUnit}")`);
+  await page.click('#b-board-back');
+  await page.waitForTimeout(200);
+  }
 }

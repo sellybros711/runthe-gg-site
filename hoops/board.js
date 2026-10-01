@@ -37,7 +37,7 @@
 (function () {
   'use strict';
 
-  const BOARD_API_VERSION = 6;
+  const BOARD_API_VERSION = 7;
 
   const SB_URL = 'https://jcrrxqfpdelrmvjuihnm.supabase.co';
   const SB_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpjcnJ4cWZwZGVscm12anVpaG5tIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA3OTY5NjIsImV4cCI6MjA5NjM3Mjk2Mn0.wyjoZpa2yRW-l38-KMGqBvEgTlW9v1KheNye7csWAlM';
@@ -649,6 +649,74 @@
     return playCount('fix', day, '&fix_in=eq.' + encodeURIComponent(inKey));
   }
 
+  /* ---------------- Career ----------------
+     One invented player's whole life, filed once when it ends
+     (supabase/130_hoops_careers.sql). The page sends the totals and the
+     server works out the legacy score, so nothing here sends a score. Three
+     orders, one per index: the legacy score, career points, and rings. */
+  const CAREERS = 'rtf_careers';
+  const CAREER_COLS = 'id,created_at,user_id,display_name,client_id,score,player,pos,num,road,college,pick,' +
+    'first_year,last_year,clubs,jersey,peak,seasons,gp,pts,reb,ast,rings,mvp,fmvp,an,an1,star,dpoy,roy,olympic,ncaa,npoy,aa1';
+  const CAREER_SORTS = {
+    legacy: ['score', 'score.desc,created_at.asc', 'score.asc,created_at.desc'],
+    pts: ['pts', 'pts.desc,created_at.asc', 'pts.asc,created_at.desc'],
+    rings: ['rings', 'rings.desc,score.desc,created_at.asc', 'rings.asc,score.asc,created_at.desc'],
+  };
+  async function submitCareer(c) {
+    if (!c || !c.id) return null;
+    const n = (v) => Math.max(0, Math.round(Number(v) || 0));
+    const id = await rpc('submitCareer', 'rtf_submit_career', {
+      p_id: String(c.id), p_player: c.name || null, p_pos: c.pos,
+      p_num: c.num == null ? null : n(c.num), p_road: !!c.road, p_college: c.college || null,
+      p_pick: n(c.pick), p_from: n(c.from), p_to: n(c.to), p_clubs: c.clubs || [],
+      p_jersey: c.jersey || null, p_peak: c.peak == null ? null : roundTo(c.peak, 1),
+      p_seasons: n(c.seasons), p_gp: n(c.gp), p_pts: n(c.pts), p_reb: n(c.reb), p_ast: n(c.ast),
+      p_rings: n(c.rings), p_mvp: n(c.mvp), p_fmvp: n(c.fmvp), p_an: n(c.an), p_an1: n(c.an1),
+      p_star: n(c.star), p_dpoy: n(c.dpoy), p_roy: n(c.roy), p_olympic: n(c.olympic),
+      p_ncaa: n(c.ncaa), p_npoy: n(c.npoy), p_aa1: n(c.aa1),
+    });
+    return typeof id === 'number' ? id : null;
+  }
+  async function claimCareer(id) {
+    if (!id) return false;
+    return (await rpc('claimCareer', 'rtf_claim_career', { p_id: id })) === true;
+  }
+  /* One page of the Career board: { sort, since, asc, offset, limit }. Every
+     career is listed, a guest's as Guest, for the reason ranks() gives. */
+  async function careerList(o) {
+    const p = o || {};
+    const sort = CAREER_SORTS[p.sort] || CAREER_SORTS.legacy;
+    const n = Math.min(100, Math.max(1, Math.round(Number(p.limit) || 100)));
+    const off = Math.max(0, Math.round(Number(p.offset) || 0));
+    try {
+      const res = await timed(base() + CAREERS + '?select=' + CAREER_COLS +
+        '&order=' + (p.asc ? sort[2] : sort[1]) + '&limit=' + n + (off ? '&offset=' + off : '') +
+        (sinceOk(p.since) ? '&created_at=gte.' + encodeURIComponent(p.since) : ''), { headers: headers() });
+      if (!res.ok) return await fail('careerList', res);
+      const rows = await res.json();
+      return Array.isArray(rows) ? rows : null;
+    } catch (e) { return failThrown('careerList', e); }
+  }
+  async function careerCount(since, extra) {
+    try {
+      const res = await timed(base() + CAREERS + '?select=id&limit=1' +
+        (sinceOk(since) ? '&created_at=gte.' + encodeURIComponent(since) : '') + (extra || ''),
+        { headers: headers({ Prefer: 'count=exact' }) });
+      if (!res.ok) return await fail('careerCount', res);
+      return countOf(res);
+    } catch (e) { return failThrown('careerCount', e); }
+  }
+  /* Where a legacy score sits among every career filed, named or not. */
+  async function careerPlace(score) {
+    if (!Number.isFinite(Number(score))) return null;
+    const [ahead, total] = await Promise.all([
+      careerCount(null, '&score=gt.' + encodeURIComponent(Math.round(Number(score)))),
+      careerCount(null, ''),
+    ]);
+    if (ahead === null || total === null) return null;
+    return { place: ahead + 1, total };
+  }
+
   window.RTF_BOARD = {
     /* Moves when any of the shapes above change. index.html pins this and falls
        through to a stub that answers null to everything when it disagrees,
@@ -661,6 +729,7 @@
     submit, claim, ranks, top, list, mine, boards, placeIn, total, boardsScope: scope,
     submitFix, submitPasses, submitConquest, claimPlay, playTop, playList, playCount, playPlace,
     moveCount, jerseys,
+    submitCareer, claimCareer, careerList, careerCount, careerPlace,
     scoreOf, recordScoreOf, depthOf, modeOf, round1,
     SORTS, DIR, DEFAULT_SORT,
     get offline() { return offline; },

@@ -1156,12 +1156,21 @@ function totals(L) {
 /* A Hall of Fame case, as one number. The weights are what a voter weighs: a
    ring, an MVP and a first team are each worth a great deal more than a long
    career of good seasons, but a long career of good seasons is worth a lot. */
+/* IN TEN THOUSANDTHS, ALL INTEGER, because the leaderboard works the same
+   number out again in SQL (supabase/130_hoops_careers.sql). Written as
+   `pts / 1000 * 1.4` it is a float, and a total landing exactly on a half
+   can round down here and up there, so the board and the Hall card would
+   disagree by one about the same career. Integers round the same way in
+   both. check-career asserts the two agree over every career it plays. */
 function legacyScore(T) {
-  return Math.round(T.pts / 1000 * 1.4 + T.reb / 1000 * 0.5 + T.ast / 1000 * 0.7 + T.rings * 4 + T.mvp * 13 + T.fmvp * 6
-    + T.an1 * 5 + (T.an - T.an1) * 2.5 + T.star * 2 + T.dpoy * 4 + T.roy * 2 + T.olympic * 2
-    /* The Hall in Springfield counts college too, a little. */
-    + (T.ncaa || 0) * 2 + (T.npoy || 0) * 3 + (T.aa1 || 0));
+  const x = T.pts * 14 + T.reb * 5 + T.ast * 7
+    + (T.rings * 4 + T.mvp * 13 + T.fmvp * 6 + T.an1 * 5 + T.star * 2 + T.dpoy * 4 + T.roy * 2 + T.olympic * 2
+      /* The Hall in Springfield counts college too, a little. */
+      + (T.ncaa || 0) * 2 + (T.npoy || 0) * 3 + (T.aa1 || 0)) * 10000
+    + (T.an - T.an1) * 25000;
+  return Math.floor((x + 5000) / 10000);
 }
+function verdictOf(score) { return (VERDICTS.find((x) => score >= x[0]) || VERDICTS[VERDICTS.length - 1])[1]; }
 const VERDICTS = [
   [120, 'Inner circle', 'One of the greatest to ever play.'],
   [85, 'First ballot', 'The Hall calls the first year you are eligible.'],
@@ -1473,7 +1482,7 @@ const EVENTS = {
     title: 'Team USA calls.',
     text: () => 'Twelve spots. One is yours if you want it.',
     options: [
-      { label: 'Go for gold', run: (L, r) => { bump(L, { health: -10, fame: 6 }); if (ok(r, 0.78)) { L.flags.olympic = (L.flags.olympic || 0) + 1; L.flags.goldYear = L.year; return 'Gold. The anthem hits different.'; } return 'Silver. It stings for a long time.'; } },
+      { label: 'Go for gold', run: (L, r) => { bump(L, { health: -10, fame: 6 }); if (ok(r, 0.78)) { L.flags.olympic = (L.flags.olympic || 0) + 1; const h = L.history[L.history.length - 1]; if (h) h.aw.push('olympic'); logIt(L, 'Olympic gold.', 'gold'); return 'Gold. The anthem hits different.'; } return 'Silver. It stings for a long time.'; } },
       { label: 'Rest this summer', run: (L) => { bump(L, { health: 6 }); return 'The legs need it.'; } },
     ],
   },
@@ -3183,7 +3192,10 @@ function closeSeason(L, beats) {
   const pg = perGame(s);
   const po = s.po || { path: 'Missed' };
   const path = po.champ ? 'Champion' : po.path || 'Missed';
-  if (L.flags.goldYear === L.year) s.awards.push('olympic');
+  /* Olympic gold is won in the summer AFTER a season is filed, so the card
+     writes it onto the season just closed. Waiting for the next close to
+     add it compared the summer's year with the next season's and never
+     matched, so no career ever recorded a medal. */
   const before = totals(L);
   L.history.push(Object.assign({ y: s.year, age: L.age, t: s.team, ovr: ovrOf(L), w: s.w, l: s.l, seed: s.seed || null,
     po: path, aw: s.awards.slice(), sal: s.salary || 0, role: s.role ? s.role.label : '' }, pg));
@@ -3330,6 +3342,55 @@ function view(L) {
   };
 }
 
+/* What a finished life adds up to, for badges.js' careerFeats and the board.
+   Plain numbers and flags, so neither of those needs this file. */
+function featSummary(L) {
+  const f = L.final || legacy(L), T = f.totals;
+  const teams = new Set(L.history.map((h) => h.t));
+  return {
+    seasons: T.seasons, pts: T.pts, rings: T.rings, mvp: T.mvp, fmvp: T.fmvp, star: T.star, dpoy: T.dpoy,
+    score: f.score, pick: (L.draft && L.draft.pick) || 0, undrafted: !!(L.draft && !L.draft.pick),
+    road: (L.amHist || []).length > 0, ncaa: T.ncaa || 0, state: T.state || 0, npoy: T.npoy || 0,
+    jersey: !!f.jersey, oneClub: teams.size === 1, g7: L.flags.g7 || 0,
+    rivalBeat: !!(L.rival && T.seasons >= 5 && T.pts > L.rival.pts), married: lifeOf(L).rel === 'married', kids: lifeOf(L).kids,
+    home: !!L.flags.home, headCoach: /head coach/.test(f.after || ''), olympic: T.olympic,
+  };
+}
+
+/* The last college a road career played for, or null. */
+function lastSchool(L) {
+  let s = null;
+  for (const h of L.amHist || []) if (h.lvl === 'NCAA' && h.school) s = h.school;
+  return s;
+}
+/* WHAT THE CAREER BOARD IS SENT, and nothing it works out for itself. The
+   score is not in here: rtf_submit_career derives it from these totals with
+   legacyScore's own arithmetic, so a page cannot file a number its career
+   did not earn. Only a career that reached the league is filed. */
+function boardSummary(L) {
+  if (!L || !L.history || !L.history.length) return null;
+  const f = L.final || legacy(L), T = f.totals;
+  const clubs = [];
+  for (const h of L.history) if (h.t && clubs.indexOf(h.t) < 0) clubs.push(h.t);
+  let peak = 0;
+  for (const h of L.history) if (h.gp >= 20 && h.pts > peak) peak = h.pts;
+  return {
+    id: String(L.seed),
+    /* The board refuses a name that is not letters, spaces, an apostrophe, a
+       stop or a hyphen, so one that is not goes as no name rather than taking
+       the whole career off the board. */
+    name: /^[\p{L}][\p{L} .'-]{0,27}$/u.test(L.name || '') ? L.name : null,
+    pos: L.pos, num: L.num,
+    road: (L.amHist || []).length > 0, college: lastSchool(L),
+    pick: (L.draft && L.draft.pick) || 0,
+    from: L.history[0].y, to: L.history[L.history.length - 1].y,
+    seasons: T.seasons, gp: T.gp, pts: T.pts, reb: T.reb, ast: T.ast,
+    rings: T.rings, mvp: T.mvp, fmvp: T.fmvp, an: T.an, an1: T.an1, star: T.star,
+    dpoy: T.dpoy, roy: T.roy, olympic: T.olympic, ncaa: T.ncaa || 0, npoy: T.npoy || 0, aa1: T.aa1 || 0,
+    clubs, jersey: f.jersey || null, peak: Math.round(peak * 10) / 10,
+  };
+}
+
 /* The colours you are wearing right now. */
 function colorsOf(L) {
   if (isAm(L)) {
@@ -3357,7 +3418,7 @@ const publicAPI = {
   seedLeague, normaliseNets, newLife, randomName, overall, ovrOf, step, choose, nextLabel,
   view, perGame, totals, legacy, legacyScore, clubNet, clubTier, rotationBar,
   roleOf, lineMeans, capFor, marketSalary, projectedPick, draftOrder, money, ordinal,
-  clutchOptions, offers, ACTS, actsOpen, act, retireNow, lifeOf, lifeLine, rivalOn,
+  clutchOptions, offers, ACTS, actsOpen, act, retireNow, lifeOf, lifeLine, rivalOn, featSummary, boardSummary, verdictOf,
   SCHOOLS, SCHOOL_BY, TIER_NAME, AM_EVENTS, HS_ROUNDS, NCAA_ROUNDS, GRADE, CYEAR, AGE_HS,
   isAm, colorsOf, roadView, nationalRank, rankText, starsOf, draftTalk, collegeOffers, schoolNet,
 };

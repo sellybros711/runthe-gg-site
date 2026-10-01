@@ -458,6 +458,23 @@ function playRunWith(o, pick) {
     feat(B.passesFeats(solved, chain ? chain.length - 1 : M.PS.CLOCK, pz.par, M.PS.CLOCK, streak));
   }
 }
+/* CAREER. Whole lives through career.js, from draft night and from high
+   school, answered three ways, each filed through the page's own careerFeats.
+   The rarest rungs (three MVPs, the scoring record, both rings) turn up a
+   handful of times in nine hundred lives, which is what a ring tier means. */
+{
+  const CR = require(path.join(HERE, 'career.js'));
+  const lg = CR.seedLeague(players);
+  const N = QUICK ? 40 : 150;
+  const pick = (L, c, pol) => pol === 'first' ? 0 : pol === 'last' ? c.options.length - 1 : (L.steps * 7 + c.key.length * 3 + L.age) % c.options.length;
+  for (const start of ['draft', 'hs']) for (const pol of ['first', 'last', 'random']) for (let i = 0; i < N; i++) {
+    const L = CR.newLife({ seed: start + pol + 'b' + i, league: lg, start, pos: CR.POS[i % 5], arch: CR.ARCH_KEYS[i % 6], bg: CR.BG_KEYS[(i >> 1) % 4] });
+    let g = 0;
+    while (!L.retired && g++ < 4000) { if (L.pending.length) CR.choose(L, pick(L, L.pending[0], pol)); else CR.step(L); }
+    if (L.history.length) feat(B.careerFeats(CR.featSummary(L)));
+  }
+}
+
 /* Exactly `clock` passes, never passing to the same man twice, finishing on
    the target. A walk that keeps the target within reach of what is left. */
 function longWay(g, pz, clock) {

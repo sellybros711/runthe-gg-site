@@ -10973,7 +10973,66 @@ one club and a legacy score of 36 or more.
 (`HOME_CLUB` maps the high school towns to clubs), so section 8 asks for that card and
 section 3 does not.
 
-**What it does not have yet**: a leaderboard (it needs a migration) and a badge shelf.
+#### The Career shelf, and the gold that was never recorded
+
+Thirty three badges on a `Career` shelf in `badges.js`, read off `cr.*` feats like every mode
+shelf. `featSummary(L)` in `career.js` is the one place a finished career is summed, and
+`careerFeats` turns that into feats: `cr.careers` is a count and everything else a high-water
+mark, so a second career that is worse than the first takes nothing away. `career-ui.js` files it
+in `finish()`, only for a career that reached the league, through `RTF_PAGE.feats`.
+
+**`check-badges` plays careers as well as drafts**, two starts and three ways of answering cards,
+and lights the whole shelf.
+
+**Olympic gold was never recorded, and the badge sweep is what found it.** The olympics card
+wrote a `goldYear` that `closeSeason` read a season late, after the history it should have
+written to was already pushed, so `cr-gold` was dark in 900 careers. The card writes `olympic`
+onto the last season's awards itself now, and about one career in nine wins gold.
+
+#### The Career board, and a score worked out twice that has to agree
+
+```
+psql -d hoops_careers -f supabase/test/hoops_board_base.sql
+psql -d hoops_careers -f supabase/130_hoops_careers.sql
+psql -d hoops_careers -f supabase/test/hoops_careers_test.sql
+```
+
+`supabase/130_hoops_careers.sql` is `rtf_careers`, one row a career, its own table because a
+career is neither a season (`rtf_runs`) nor a play (`rtf_plays`). A career that reached the
+league is filed once, from `finish()` in `career-ui.js`, through `B.submitCareer(C.boardSummary(L))`.
+The career's seed is the key, so a second submit hands back the first row. A career that never
+made the league is not filed. **Deploy it by hand**; without it every career plays and retires,
+and the Hall card says the board is not set up. Preflight row 42.
+
+**THE SCORE IS DERIVED BY THE SERVER, AND THAT MADE `legacyScore` INTEGER ARITHMETIC.** The page
+sends totals and no score (the walk asserts the body has no score key), and `rtf_career_score`
+works it out. Written as `pts / 1000 * 1.4` the page computes a float and the server a numeric,
+and a total landing exactly on a half rounds one way in each, so the board and the Hall card
+would call one career two numbers. Both now count in ten thousandths and round half up. Measured
+by filing 600 engine careers through the real function: none refused, 600 of 600 scores equal.
+
+**The board is a tab of the one leaderboard screen**, first in `BOARD_TABS`, with its own axis
+(`lbCareerAxis`: Legacy, Points, Rings) so moving between it and a draft board keeps each where
+it was. The verdict on a row is `C.verdictOf(score)`, the career engine's own ladder. A ring
+makes the row gold and the inner circle (120 and up) makes it move. A row opens into the
+career: position, line, years, clubs, draft and honours.
+
+**A row's id rides on the Hall card** (`card.board`), which is in the `life` slot, so it is on
+the account. A guest's careers are claimed on sign in (`rtf_claim_career`), and `boardIds()`
+marks your rows. The Hall card asks for its place every time it is drawn, because the field
+keeps growing after it was filed.
+
+**The name is checked for shape and nothing else.** It is invented, so the server takes letters,
+spaces, an apostrophe, a stop and a hyphen, and `boardSummary` sends anything else as no name
+rather than losing the career.
+
+**A rename now reaches all three boards.** `rtf_rename_plays` has existed since 116 and nothing
+called it, so a renamed account kept its old name on the Conquest, Fix History and Six Passes
+boards. `setName` in `auth.js` calls it and `rtf_rename_careers` after `rtf_rename_runs`.
+
+**The SQL test splits every write from the read that checks it.** Three claims failed on the
+first run for the snapshot reason recorded under 116: a function that inserts, called in the same
+statement as the select checking it, is checked against the table as it was before.
 
 ### Four ways to play, and the draft is one of them
 
