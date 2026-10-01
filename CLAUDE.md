@@ -1221,6 +1221,20 @@ mode, which asks properly and draws the right screen either way.
 `preventDefault` fires only on that branch, so middle click, open in a new tab and a long
 press keep working the way an anchor should.
 
+#### The door is a character card, and there is one commissioner
+
+`cfb/commish/portrait.js` draws him: a man in a navy suit, the same on the front page door,
+the new term screen and the office header. **There is deliberately one of him.** The owner
+asked for the customization to stay minimal, so there is nothing to pick. Every id inside
+the SVG carries the caller's suffix (`CM_PORTRAIT(size, id)`), because two portraits on one
+page sharing a gradient id paint each other and the face goes flat with nothing thrown.
+
+The door (`ensureCommishDoor`) reads a term in progress off `cfb_commish_term`, the save the
+mode writes, and shows the season and its three meters (`revenue`, `health`, `standing`)
+with a Resume button. A term with `careerLogged` set is finished and is not offered. The
+save carries the whole tape, so it is parsed once per page load (`commishTerm`). The sentence
+under the name and its unbreakable tail did not move: test_store still holds it to two lines.
+
 ### Commissioner Mode is free at one season a day
 
 ```
