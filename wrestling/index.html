@@ -2294,7 +2294,7 @@
 <script src="moves.js?v=3"></script>
 <script src="legends.js?v=2"></script>
 <script src="cosmetics.js?v=4"></script>
-<script src="world.js?v=3"></script>
+<script src="world.js?v=4"></script>
 <script src="pxwrestler.js?v=3"></script>
 <script>
 "use strict";
@@ -6062,10 +6062,17 @@ function renderLookEditor(bodyId, avId, L, ownedOnly){
     return;
   }
   if(LOOKTAB==='build'){
-    ['lean','athletic','heavy'].forEach(b=>{
+    // the body frame, then the five builds; all free, none of it touches a rating
+    const fig=L.figure==='f'?'f':'m';
+    [['m','Frame A'],['f','Frame B']].forEach(([v,nm])=>{
+      const prev=Object.assign({},L,{figure:v});
+      h+=`<div class="tile-opt ${fig===v?'on':''}" onclick="setLook('figure','${v}')">
+        <div class="tp"><div class="tpf full">${wrestlerSVG(prev,{frame:'full'})}</div></div><div class="tn">${nm}</div></div>`;
+    });
+    [['lean','Cruiserweight'],['athletic','Athletic'],['heavy','Heavyweight'],['super','Super heavy'],['giant','Giant']].forEach(([b,nm])=>{
       const prev=Object.assign({},L,{build:b});
       h+=`<div class="tile-opt ${L.build===b?'on':''}" onclick="setLook('build','${b}')">
-        <div class="tp"><div class="tpf full">${wrestlerSVG(prev,{frame:'full'})}</div></div><div class="tn">${cap(b)}</div></div>`;
+        <div class="tp"><div class="tpf full">${wrestlerSVG(prev,{frame:'full'})}</div></div><div class="tn">${nm}</div></div>`;
     });
   } else {
     const tab=LOOK_TABS.find(t=>t.k===LOOKTAB);
@@ -6095,7 +6102,8 @@ function randomizeLook(){
   const pickOwned=(slot)=>{ const opts=COSM.filter(c=>c.slot===slot&&(c.owned||(G&&G.bag.owned[c.id]))); return opts.length?opts[Math.floor(Math.random()*opts.length)].v:null; };
   LOOK_TABS.forEach(t=>{ const v=pickOwned(t.slot); if(v!=null) L[t.k]=v; });
   if(L.mask&&L.mask!=='none'&&Math.random()<0.6) L.mask='none';
-  L.build=['lean','athletic','heavy'][Math.floor(Math.random()*3)];
+  L.build=['lean','athletic','heavy','super','giant'][Math.floor(Math.random()*5)];
+  L.figure=Math.random()<0.5?'f':'m';
   COLOR_TABS.forEach(ct=>{ const pal=PAL[ct.pal]||[]; if(pal.length) L[ct.k]=pal[Math.floor(Math.random()*pal.length)]; });
   renderLookEditor(LOOKCTX.bodyId,LOOKCTX.avId,L,LOOKCTX.ownedOnly);
   if(G){ G.w.look=L; save(); }
@@ -8976,7 +8984,18 @@ function cycleSpeed(){ FIGHT_SPEED = FIGHT_SPEED===1?2:FIGHT_SPEED===2?4:1; $('f
 function oppLook(id,name){
   let h=0; const src=(id||name||'x')+''; for(let i=0;i<src.length;i++) h=(h*31+src.charCodeAt(i))>>>0;
   const nx=n=>{ h=(h*1664525+1013904223)>>>0; return Math.floor(h/4294967296*n); };
-  const pool=s=>COSM.filter(c=>c.slot===s).map(c=>c.v);
+  /* A frozen copy of the catalogue's order on the day this was written. The look
+     is a pick by index, so reading the live catalogue meant every item added to
+     the store quietly redressed every opponent in the game. New items are not
+     in here on purpose; an opponent is somebody, not a rack of stock. */
+  const OPP_POOL={
+    hair:["short","bald","buzz","long","pony","mullet","spiky","afro","mohawk","topknot","flames","dreads","undercut","wild","hornhair","slick","widow","bun","curls","fauxhawk","braids","halfshave","frosted","waist"],
+    face:["none","beard","stache","goatee","warrior","skull","tribal","mutton","scar","halfpaint","venom","soul","handlebar","fullbeard","eyeblack","crossface","visorpaint","bloodied","mist"],
+    attire:["trunks","tights","singlet","tank","jacket","duster","shorts","vest","bodysuit","armor","crop","sash","harness","hoodie","gi","chaps","robe"],
+    boots:["short","tall","sneak","pads","wraps","platform","goldboot","barefoot","hightop","combat","cowboy","steel","spiked"],
+    acc:["none","wrist","elbow","shades","chain","cape","belt","knee","bandana","gloves","scarf","wings","armband","necklace","towel","tassels","visor","facemask","armorpad","spikes","feather","crown"],
+    pattern:["solid","stripe","split","flame","stars","gold","bolt","check","scales","royal","pinstripe","polka","zigzag","camo","gradient","tigerstripe","web"] };
+  const pool=s=>OPP_POOL[s];
   const L=Object.assign({},DEFLOOK);
   L.skin=PAL.skin[nx(PAL.skin.length)]; L.hair=PAL.hair[nx(PAL.hair.length)];
   L.gear=PAL.gear[nx(PAL.gear.length)]; L.trim=PAL.trim[nx(PAL.trim.length)];
