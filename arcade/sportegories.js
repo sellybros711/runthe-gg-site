@@ -219,6 +219,23 @@
   var CATS_PER = 8;
   var LETTER_MIN_CATS = 120;     // don't roll a letter the library can barely serve
   var TIER_PLAN = [0, 0, 1, 1, 2, 1, 1, 2];   // 2 anchor, 4 mid, 2 hard
+  /* Flag 'broadcats' (flags.js). A board any fan can start on: four Anchor
+     categories (the tier the build gives to categories with 200+ known
+     answers: positions, eras, the big awards, the big conferences), three
+     Mid and one Hard. The labels stay Anchor, Mid and Hard. */
+  var TIER_PLAN_BROAD = [0, 0, 1, 0, 1, 0, 2, 1];   // 4 anchor, 3 mid, 1 hard
+  /* Retired from the daily board under the same flag: categories that count
+     franchises ("Played for the Miami Heat and 3 other franchises", "Played
+     for 4+ franchises", "Cornerback who played for 3+ teams", "Played for
+     exactly two franchises"). A fan cannot answer them
+     from memory, and franchise counts are the field the data gets wrong most
+     often (relocations, a week on a practice squad). "Never played for
+     another franchise" stays: that one a fan does know. */
+  var RETIRED = /\b\d\+ (teams|franchises)\b|\bother franchises?\b|exactly two franchises/i;
+  function broadOn(dateStr) {
+    var F = (typeof self !== 'undefined' ? self : this).RTGFlags;
+    try { return !!(F && F.on && F.on('broadcats', dateStr)); } catch (e) { return false; }
+  }
   /* Sport mix. The library is football-heavy by nature (NFL rosters churn), so
    * bias the draw toward basketball and away from baseball, and cap any one
    * sport so a day can't turn into an all-MLB card. */
@@ -322,7 +339,7 @@
     return L;
   }
 
-  function build(seed, forcedLetter) {
+  function build(seed, forcedLetter, broad) {
     if (!data()) return null;
     var r = rng(seed);
     var pick = (D.letters || []).filter(function (L) { return (D.byLetter[L] || []).length >= LETTER_MIN_CATS; });
@@ -337,6 +354,7 @@
       for (var wi = 0; wi < pick.length; wi++) { roll -= w[wi]; if (roll <= 0) { L = pick[wi]; break; } }
     }
     var avail = viableFor(L);
+    if (broad) avail = avail.filter(function (c) { return !RETIRED.test(c.l); });
     var out = [], used = {}, byTag = {}, bySport = {};
     function freeSport(c) { return (bySport[c.s || 'ANY'] || 0) < (SPORT_CAP[c.s || 'ANY'] || 3); }
     function draw(opts) {                       // weighted by sport AND breadth
@@ -346,7 +364,7 @@
       for (i = 0; i < opts.length; i++) { roll -= wOf(opts[i]); if (roll <= 0) return opts[i]; }
       return opts[opts.length - 1];
     }
-    TIER_PLAN.forEach(function (want) {
+    (broad ? TIER_PLAN_BROAD : TIER_PLAN).forEach(function (want) {
       var opts = avail.filter(function (c) {
         return !used[c.i] && c.t === want && (byTag[c.g] || 0) < 2 && freeSport(c);
       });
@@ -406,8 +424,8 @@
     }
     return lab;
   }
-  function daily(dateStr) { return build(hash('sportegories:' + dateStr), letterForDate(dateStr)); }
-  function practice(seed) { return build(hash('sportegories:practice:' + (seed == null ? Math.floor(Math.random() * 1e9) : seed))); }
+  function daily(dateStr) { return build(hash('sportegories:' + dateStr), letterForDate(dateStr), broadOn(dateStr)); }
+  function practice(seed) { return build(hash('sportegories:practice:' + (seed == null ? Math.floor(Math.random() * 1e9) : seed)), null, broadOn()); }
 
   // ---------- grading ----------
   /* Returns:

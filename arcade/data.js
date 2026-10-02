@@ -311,6 +311,21 @@
     }
   });
 
+  /* A player who transferred went to more than one school. A few source rows
+     carry them all in one string, latest first ("Miami; Washington State;
+     Incarnate Word"), which every game then printed and compared as if it
+     were one school's name: Alma Mater offered the whole string as a choice
+     and refused any single school typed. So e.col is the school he finished
+     at, and e.cols every school he attended. A game that grades a typed
+     answer accepts any of e.cols. scripts/audit-athletes.mjs reports these. */
+  ENT.forEach(function (e) {
+    if (!e || typeof e.col !== 'string' || e.col.indexOf(';') < 0) return;
+    var parts = e.col.split(';').map(function (s) { return s.trim(); }).filter(Boolean);
+    if (!parts.length) return;
+    e.col = parts[0];
+    if (parts.length > 1) e.cols = parts;
+  });
+
   var FR = root.RTGFranchise;
   if (FR && FR.normalize) ENT.forEach(function (e) { FR.normalize(e); });
 

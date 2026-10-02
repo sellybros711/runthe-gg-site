@@ -569,8 +569,12 @@ window.GA_ID='G-L29P5MRWKE';
 <script src="/arcade/cluebank.js?v=2"></script>
 <script src="/arcade/primary.js?v=32"></script>
 <script src="/arcade/franchise.js?v=1"></script>
-<script src="/arcade/data.js?v=7"></script>
-<script src="gen.js?v=14"></script>
+<script src="/arcade/data.js?v=8"></script>
+<script src="/arcade/flags.js?v=1"></script>
+<script src="/arcade/fame.js?v=1"></script>
+<script src="gen.js?v=15"></script>
+<script src="data/mini-words.js?v=1"></script>
+<script src="mini.js?v=1"></script>
 <script src="/arcade/sfx.js?v=3"></script>
 <script src="/arcade/result.js?v=1"></script>
 <script src="/arcade/funnel.js?v=13"></script>
@@ -630,6 +634,13 @@ window.GA_ID='G-L29P5MRWKE';
   // date; anything date-keyed (board submit/leaderboard, streak save) uses DATE.
   function dailyFor(dateStr){
     for(var i=0;i<LIST.length;i++){ if(LIST[i].id===dateStr) return LIST[i]; }
+    // The dense mini (every letter crossed), behind the densecw flag. The
+    // flag is read for the puzzle's own day, so an archive board from before
+    // the switch is the board it was. A day the mini cannot build falls
+    // through to gen.js below.
+    if(window.RTG_CWMINI && window.RTGFlags && RTGFlags.on('densecw', dateStr)){
+      try{ var m = RTG_CWMINI.forDate(dateStr); if(m) return m; }catch(e){}
+    }
     if(window.RTG_CWGEN){
       try{ var g = RTG_CWGEN.forDate(dateStr); if(g) return g; }catch(e){}
     }
@@ -1011,7 +1022,7 @@ window.GA_ID='G-L29P5MRWKE';
     }
     var el = startedAt ? (performance.now()-startedAt)/1000 : elapsed;
     try{ localStorage.setItem(RESUME_KEY, JSON.stringify({
-      date:DATE, letters:letters, elapsed:Math.round(el*10)/10, hintsUsed:hintsUsed
+      date:DATE, pid:P.id, letters:letters, elapsed:Math.round(el*10)/10, hintsUsed:hintsUsed
     })); }catch(e){}
   }
 
@@ -1373,7 +1384,12 @@ window.GA_ID='G-L29P5MRWKE';
   if(!TESTER && !ARCHIVE){
     var rs = readResume();
     if(rs && rs.date===DATE && saved.lastDone!==DATE &&
-       window.RTGTokens && RTGTokens.playsOf('crossword')>0){ RES = rs; }
+       window.RTGTokens && RTGTokens.playsOf('crossword')>0){
+      RES = rs;
+      // letters typed into a different grid (a flag changed the day's puzzle
+      // mid-solve) are not this grid's letters: keep the attempt, drop them
+      if(rs.pid && rs.pid!==P.id) RES.letters = [];
+    }
     else if(rs){ clearResume(); }   // stale (old date / already finished)
   }
   // token gate: out of plays -> locked review (streak bookkeeping already

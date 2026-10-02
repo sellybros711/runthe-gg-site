@@ -318,7 +318,9 @@ window.GA_ID='G-L29P5MRWKE';
 <script src="/arcade/supplement.js?v=6"></script>
 <script src="/arcade/primary.js?v=32"></script>
 <script src="/arcade/franchise.js?v=1"></script>
-<script src="/arcade/data.js?v=7"></script>
+<script src="/arcade/data.js?v=8"></script>
+<script src="/arcade/flags.js?v=1"></script>
+<script src="/arcade/fame.js?v=1"></script>
 <script src="/arcade/sfx.js?v=3"></script>
 <script src="/arcade/funnel.js?v=13"></script>
 <script src="/arcade/share.js?v=10"></script>
@@ -476,6 +478,18 @@ window.GA_ID='G-L29P5MRWKE';
     return true;
   }
 
+  /* Flag 'ramp' (flags.js, fame.js): every player in round i, the odd one
+     included, comes from fame band bandFor(i) or an easier one, so the run
+     opens on household names and widens as it goes. F() narrows a pool to the
+     band in force; with the flag off it hands the pool back untouched. */
+  var RAMP=false, MAXBAND=3, FCACHE={}, TI={ household:0, known:1, solid:2, deep:3 };
+  function F(list){
+    if(!RAMP || MAXBAND>=3 || !list) return list;
+    var m=FCACHE[MAXBAND]||(FCACHE[MAXBAND]=(typeof WeakMap==='function'?new WeakMap():null));
+    var hit=m && m.get(list);
+    if(!hit){ hit=list.filter(function(e){ return TI[RTGFame.tier(e)]<=MAXBAND; }); if(m) m.set(list, hit); }
+    return hit;
+  }
   // Each round type builds four + one odd, then passes the same fairness gate.
   // Round objects carry: type, ckey (connection identity, used by the
   // no-repeat guard), conn (display text for the reveal), team (t-rounds only).
@@ -495,12 +509,12 @@ window.GA_ID='G-L29P5MRWKE';
   // can't just spot the different sport); fall back to cross-sport if needed.
   // The warmup flag restricts to modern-star pools so round 1 stays a softball.
   function buildT(warmup){
-    var TK=warmup?teamKeysW:teamKeys, TB=warmup?teamsW:teams, OP=warmup?oddPoolW:oddPool;
-    if(!TK.length) return null;
+    var TK=warmup?teamKeysW:teamKeys, TB=warmup?teamsW:teams, OP=F(warmup?oddPoolW:oddPool);
+    if(!TK.length || !OP.length) return null;
     var tk=TK[ri(TK.length)];
     // Warmup: take the top-fame four from the team (already sorted). Otherwise
     // any four from the team pool, shuffled for variety.
-    var four = warmup ? TB[tk].slice(0,4) : shuffle(TB[tk]).slice(0,4);
+    var four = warmup ? F(TB[tk]).slice(0,4) : shuffle(F(TB[tk])).slice(0,4);
     if(four.length<4) return null;
     var sport4=four[0].sport, odd=null;
     for(var tries=0;tries<90;tries++){ var cand=OP[ri(OP.length)];
@@ -516,9 +530,10 @@ window.GA_ID='G-L29P5MRWKE';
   // SAME sport (e.g. 4 Quarterbacks + 1 Wide Receiver).
   function buildP(){
     if(!posKeys.length) return null;
-    var k=posKeys[ri(posKeys.length)];
-    var four=shuffle(posPools[k.sport][k.fam]).slice(0,4), odd=null;
-    for(var tries=0;tries<90;tries++){ var cand=oddPool[ri(oddPool.length)];
+    var k=posKeys[ri(posKeys.length)], OPp=F(oddPool);
+    var four=shuffle(F(posPools[k.sport][k.fam])).slice(0,4), odd=null;
+    if(four.length<4 || !OPp.length) return null;
+    for(var tries=0;tries<90;tries++){ var cand=OPp[ri(OPp.length)];
       if(cand.sport!==k.sport) continue;
       var cf=posFam(cand.pos); if(!cf||cf===k.fam) continue;
       odd=cand; break; }
@@ -529,9 +544,10 @@ window.GA_ID='G-L29P5MRWKE';
   // 20 years away - same sport, so eras are actually comparable.
   function buildD(){
     if(!decKeys.length) return null;
-    var k=decKeys[ri(decKeys.length)];
-    var four=shuffle(decPools[k.sport][k.dec]).slice(0,4), odd=null;
-    for(var tries=0;tries<90;tries++){ var cand=oddPool[ri(oddPool.length)];
+    var k=decKeys[ri(decKeys.length)], OPd=F(oddPool);
+    var four=shuffle(F(decPools[k.sport][k.dec])).slice(0,4), odd=null;
+    if(four.length<4 || !OPd.length) return null;
+    for(var tries=0;tries<90;tries++){ var cand=OPd[ri(OPd.length)];
       if(cand.sport!==k.sport) continue;
       if(!farFromDecade(cand,k.dec)) continue;
       odd=cand; break; }
@@ -542,8 +558,10 @@ window.GA_ID='G-L29P5MRWKE';
   function buildH(){
     if(!hofKeys.length) return null;
     var s=hofKeys[ri(hofKeys.length)];
-    var four=shuffle(hofPools[s]).slice(0,4);
-    var pool=nonHofPools[s], odd=pool[ri(pool.length)];
+    var four=shuffle(F(hofPools[s])).slice(0,4);
+    var pool=F(nonHofPools[s]);
+    if(four.length<4 || !pool || !pool.length) return null;
+    var odd=pool[ri(pool.length)];
     return finishRound('h', four, odd, 'h:hof', 'Hall of Famers', '');
   }
 
@@ -564,8 +582,10 @@ window.GA_ID='G-L29P5MRWKE';
     for(var w=0; w<3 && w<plan.length; w++) plan[w]='t';
     function warmupFor(i){ return i<3; }                              // rounds 1-3
     var out=[], guard=0, slotTries=0;
+    try{ RAMP=!!(window.RTGFlags && window.RTGFame && RTGFlags.on('ramp', DATE)); }catch(e){ RAMP=false; }
     while(out.length<ROUNDS && guard<24000){ guard++;
       var i=out.length;
+      MAXBAND = RAMP ? RTGFame.bandFor(i) : 3;
       var type=slotTries>200?'t':plan[i];   // if a slot's type keeps failing, fall back to a team round
       var wu=warmupFor(i);
       var r = type==='p'?buildP() : type==='d'?buildD() : type==='h'?buildH() : buildT(wu);
@@ -578,6 +598,11 @@ window.GA_ID='G-L29P5MRWKE';
     return out;
   }
   var SEQ=buildRounds();
+  MAXBAND=3;
+  /* Read-only view of the deal for scripts/check-content.mjs. */
+  window.__rtgDeal = function(n){ return SEQ.slice(0, n||30).map(function(r){
+    var five=r.five.map(function(id){ return byId[id]; });
+    return { target: byId[r.odd], five: five, extra: r.type+' '+r.conn }; }); };
 
   var idx=0, run=0, done=false, busy=false, started=false, startTs=0, elapsed=0, charged=false, attemptFirst=false;
   var choicesEl=document.getElementById('choices');

@@ -391,7 +391,9 @@ window.GA_ID='G-L29P5MRWKE';
 <script src="/arcade/supplement.js?v=6"></script>
 <script src="/arcade/primary.js?v=32"></script>
 <script src="/arcade/franchise.js?v=1"></script>
-<script src="/arcade/data.js?v=7"></script>
+<script src="/arcade/data.js?v=8"></script>
+<script src="/arcade/flags.js?v=1"></script>
+<script src="/arcade/fame.js?v=1"></script>
 <script src="/arcade/rosters.js?v=5"></script>
 <script src="/arcade/sfx.js?v=3"></script>
 <script src="/arcade/result.js?v=1"></script>
@@ -476,6 +478,11 @@ window.GA_ID='G-L29P5MRWKE';
      Pa."). Those are answers a player reads, so they are printed the way a
      person writes them. Display only: every comparison on this page still
      runs on the raw value, and RTGType.sameCollege accepts both spellings. */
+  // the answer as read back: the school he finished at, then any others
+  function schoolsOf(r){
+    var o=(r.cols||[]).filter(function(c){ return normCol(c)!==normCol(r.col); }).map(label);
+    return label(r.col) + (o.length ? ' (also ' + o.join(', ') + ')' : '');
+  }
   function label(c){ try{ return (window.RTGType && RTGType.schoolLabel) ? RTGType.schoolLabel(c) : c; }catch(e){ return c; } }
 
   function normCol(c){ return String(c||'').toLowerCase().replace(/[^a-z0-9]/g,''); }
@@ -485,16 +492,27 @@ window.GA_ID='G-L29P5MRWKE';
   var POOL=[], seen={}, colFreq={}, collegesBySport={NBA:[],NFL:[],MLB:[]}, sportSeen={NBA:{},NFL:{},MLB:{}};
   // corp cache: also carry star / ns / hp so the pool can gate on recognizability
   var corpMeta={}; ENT.forEach(function(e){ if(e && TEAM_SPORTS[e.sport]){ corpMeta[e.name+'|'+e.sport]={ star:!!e.star, ns:e.ns||0, hp:e.hp||0 }; } });
-  function addPlayer(name, sport, col, team, f, act){
+  function addPlayer(name, sport, col, team, f, act, ent){
     if(!name || !TEAM_SPORTS[sport] || badCol(col)) return;
     // Some upstream roster feeds already HTML-encode ampersands ("Texas A&amp;M"),
     // which the display then escapes a second time. Decode the common entity
     // (only ampersand appears in real US school names) before we store it.
     var cc=String(col).replace(/&amp;/gi,'&').trim();
+    /* A transfer: every school he attended, latest first. Any of them is a
+       right answer; the one shown is the school he finished at. data.js
+       already splits the corpus; the roster feed is split here. */
+    var cols=cc.split(';').map(function(x){ return x.trim(); }).filter(Boolean);
+    if(ent && ent.cols && ent.cols.length>1) cols=ent.cols.slice();
+    cc=cols[0]||cc;
     var k=name+'|'+sport; if(seen[k]) return; seen[k]=1;
     var fame=Math.max(f||0, corpF[k]||0);
     var m=corpMeta[k]||{};
-    POOL.push({ name:name, sport:sport, col:cc, team:team||null, f:fame, star:!!m.star, ns:m.ns||0, hp:m.hp||0, act:!!act });
+    var row={ name:name, sport:sport, col:cc, cols:cols.length>1?cols:null, team:team||null, f:fame, star:!!m.star, ns:m.ns||0, hp:m.hp||0, act:!!act };
+    /* The full record rides along (not enumerable, so nothing that copies a
+       row picks it up): the fame ramp and the option picker read it. A
+       roster-feed player has none and counts as a current, unranked name. */
+    try{ Object.defineProperty(row, '_ent', { value: ent || { name:name, sport:sport, act:1, decade:[2020] }, enumerable:false }); }catch(x){}
+    POOL.push(row);
     colFreq[cc]=(colFreq[cc]||0)+1;
     var n=normCol(cc); if(!sportSeen[sport][n]){ sportSeen[sport][n]=1; collegesBySport[sport].push(cc); }
   }
@@ -503,7 +521,7 @@ window.GA_ID='G-L29P5MRWKE';
      This used to take e.t LAST, which captioned Tom Seaver as a Red Sock for
      sixteen games in 1986 after eleven years with the Mets, and is right 15%
      of the time. A player wrote in about it. */
-  ENT.forEach(function(e){ if(!e) return; addPlayer(e.name, e.sport, e.col, (e.pt || (e.t&&e.t.length?e.t[0]:null)), e.f||0); });
+  ENT.forEach(function(e){ if(!e) return; addPlayer(e.name, e.sport, e.col, (e.pt || (e.t&&e.t.length?e.t[0]:null)), e.f||0, 0, e); });
   var ROS=(window.RTG_ROSTERS && Array.isArray(window.RTG_ROSTERS.players)) ? window.RTG_ROSTERS.players : null;
   if(ROS){ ROS.forEach(function(p){ if(p) addPlayer(p.n, p.s, p.col, p.t, 0, 1); }); }
   // distractor sampling leans on well-known (frequently attended) programs
@@ -518,12 +536,53 @@ window.GA_ID='G-L29P5MRWKE';
   // Four college options: the real one plus three plausible decoys, drawn first
   // from schools OTHER players of the same sport attended, then filled from the
   // most-common programs. All distinct (normalized), so there's one right answer.
+  function flagOn(n){ try{ return !!(window.RTGFlags && window.RTGFame && RTGFlags.on(n, DATE)); }catch(e){ return false; } }
+  /* Plausible schools (flag 'decoys'): the wrong schools are ones that players
+     like this one went to, from the same league, the same era and the same
+     position. A 1970s linebacker's options are schools 1970s linebackers came
+     from, not a list any fan could thin out by knowing which programs play
+     football. Falls back to the old draw when the alike pool runs short. */
+  var SCHOOLS_AT=null;   // sport|family|decade -> schools, built on first use
+  function alikeSchools(p){
+    var me=p._ent, out=[], hit={};
+    if(!me || !window.RTGFame) return out;
+    if(!SCHOOLS_AT){
+      SCHOOLS_AT={};
+      POOL.forEach(function(q){
+        var e=q._ent; if(!e || !e.decade) return;
+        var fam=RTGFame.posFamily(e)||'?';
+        e.decade.forEach(function(d){ var k=q.sport+'|'+fam+'|'+d; (SCHOOLS_AT[k]=SCHOOLS_AT[k]||[]).push(q.col); });
+      });
+    }
+    var fam=RTGFame.posFamily(me)||'?', ds=(me.decade||[]), mine=normCol(p.col);
+    // same position family and decade first, then the decades either side
+    [0,10].forEach(function(off){
+      ds.forEach(function(d){
+        [d-off, d+off].forEach(function(dd){
+          shuffle(SCHOOLS_AT[p.sport+'|'+fam+'|'+dd]||[]).forEach(function(c){
+            var n=normCol(c); if(n!==mine && !hit[n]){ hit[n]=1; out.push(c); }
+          });
+        });
+      });
+    });
+    /* A school a fan has never heard of can be ruled out on sight, so the
+       well-represented programs come first. Their order within that is still
+       the shuffle above, so the same handful does not turn up every round. */
+    var big=out.filter(function(c){ return (colFreq[c]||0)>=6; }), small=out.filter(function(c){ return (colFreq[c]||0)<6; });
+    return big.concat(small);
+  }
   function makeRound(p){
+    // every school he attended is a right answer, so none of them is a decoy
     var opts=[p.col], used={}; used[normCol(p.col)]=1;
+    (p.cols||[]).forEach(function(c){ used[normCol(c)]=1; });
+    if(flagOn('decoys')){
+      var al=alikeSchools(p);
+      for(var a=0;a<al.length && opts.length<4;a++){ var n0=normCol(al[a]); if(!used[n0]){ used[n0]=1; opts.push(al[a]); } }
+    }
     var same=shuffle(collegesBySport[p.sport]||[]);
     for(var i=0;i<same.length && opts.length<4;i++){ var c=same[i], n=normCol(c); if(!used[n]){ used[n]=1; opts.push(c); } }
     if(opts.length<4){ var comm=shuffle(COMMON); for(var j=0;j<comm.length && opts.length<4;j++){ var c2=comm[j], n2=normCol(c2); if(!used[n2]){ used[n2]=1; opts.push(c2); } } }
-    return { name:p.name, sport:p.sport, team:p.team, col:p.col, opts:shuffle(opts) };
+    return { name:p.name, sport:p.sport, team:p.team, col:p.col, cols:p.cols||null, opts:shuffle(opts) };
   }
   // Progressive difficulty among RECOGNISABLE names only. Fame Rule A: NFL is a
   // deep, noisy pool, so it needs a higher bar (f>=4) than NBA/MLB (f>=3); every
@@ -584,7 +643,13 @@ window.GA_ID='G-L29P5MRWKE';
     var deck=deckFor();
     if(!deck.length) return [];
     var seq=[];
-    if(daily){
+    var RAMP=flagOn('ramp');
+    if(RAMP) deck.forEach(function(r){ if(r._ent){ try{ Object.defineProperty(r, '_fame', { value: RTGFame.of(r._ent), enumerable:false, configurable:true, writable:true }); }catch(x){} } });
+    if(daily && RAMP){
+      // Flag 'ramp': marquee names first, then household, then down the bands
+      // (fame.js). Seeded off the day, so everybody gets the same run.
+      seq = RTGFame.ramp(deck, Math.min(ROUNDS, deck.length), mulberry32(xmur3('alma-ramp-'+MODE+'-'+DATE)()));
+    } else if(daily){
       // Unlimited streak: serve the ENTIRE pool in today's shuffled order.
       // Deck already has icons floating to the top (fame sort) with per-day
       // shuffle inside each fame tier, so early rounds are always icons.
@@ -595,12 +660,16 @@ window.GA_ID='G-L29P5MRWKE';
       var fresh=deck.filter(function(p){ return !seen[p.name+'|'+p.sport]; });
       if(fresh.length<ROUNDS){ fresh=deck; try{ LS.removeItem(seenKey()); }catch(e){} }   // whole deck seen today - start the cycle over
       fresh=shuffle(fresh);   // replay rng: a fresh random order each time
-      seq=fresh.slice(0,ROUNDS);
+      seq= RAMP ? RTGFame.ramp(fresh, Math.min(ROUNDS, fresh.length), rng) : fresh.slice(0,ROUNDS);
     }
     addSeen(seq);
     return seq.map(makeRound);
   }
   var SEQ = [];   // built per-mode in startWith()/beginAttempt()
+  /* Read-only view of the deal for scripts/check-content.mjs. */
+  window.__rtgDeal = function(n){ return SEQ.slice(0, n||30).map(function(r){
+    var e=(POOL.filter(function(q){ return q.name===r.name && q.sport===r.sport; })[0]||{})._ent;
+    return { target: e || { name:r.name, sport:r.sport }, col: r.col, schools: r.opts }; }); };
 
   var idx=0, run=0, done=false, busy=false, started=false, startTs=0, elapsed=0, charged=false, attemptFirst=false;
   var choicesEl=document.getElementById('choices');
@@ -668,7 +737,7 @@ window.GA_ID='G-L29P5MRWKE';
   var COL_KEYS=null;
   function knownSchool(text){
     if(!window.RTGType) return true;
-    if(!COL_KEYS){ COL_KEYS={}; ENT.forEach(function(e){ if(e && e.col) COL_KEYS[RTGType.schoolKey(e.col)]=1; }); }
+    if(!COL_KEYS){ COL_KEYS={}; ENT.forEach(function(e){ if(e && e.col) COL_KEYS[RTGType.schoolKey(e.col)]=1; (e&&e.cols||[]).forEach(function(c){ COL_KEYS[RTGType.schoolKey(c)]=1; }); }); }
     var k=RTGType.schoolKey(text);
     return !!(k && COL_KEYS[k]);
   }
@@ -677,7 +746,9 @@ window.GA_ID='G-L29P5MRWKE';
     var r=SEQ[idx]; if(!r) return;
     var text=answerIn.value;
     if(!text.trim()) return;
-    var right = window.RTGType ? RTGType.sameCollege(text, r.col) : (text.trim().toLowerCase()===String(r.col).toLowerCase());
+    var right = (r.cols||[r.col]).some(function(c){
+      return window.RTGType ? RTGType.sameCollege(text, c) : (text.trim().toLowerCase()===String(c).toLowerCase());
+    });
     if(!right && !knownSchool(text)){
       setSub('We don’t know that school. Check the spelling and try again.');
       if(window.RTGSound && RTGSound.soft) RTGSound.soft();
@@ -712,7 +783,7 @@ window.GA_ID='G-L29P5MRWKE';
     var r=SEQ[idx], got = bailed ? 1 : 2;
     setAnswerEnabled(false);
     if(window.RTGReview) RTGReview.add(GAME, { q:r.name, you: bt ? r.opts[+bt.dataset.i] : answerIn.value.trim(),
-      answer: label(r.col), ok: !!right, note: bailed ? 'Took the four choices' : '' });
+      answer: schoolsOf(r), ok: !!right, note: bailed ? 'Took the four choices' : '' });
     if(bailed){
       [].forEach.call(choicesEl.querySelectorAll('.choice'), function(b){
         if(r.opts[+b.dataset.i]===r.col) b.classList.add('correct'); else b.classList.add('dim');
@@ -723,13 +794,13 @@ window.GA_ID='G-L29P5MRWKE';
     if(right){
       ANSLOG.push(String(got));
       run+=got; document.getElementById('runN').textContent=run;
-      setSub('<span class="pts">+'+got+'</span> '+(got===1?'point':'points')+' <span class="school">'+esc(label(r.col))+'</span>', 'score');
+      setSub('<span class="pts">+'+got+'</span> '+(got===1?'point':'points')+' <span class="school">'+esc(schoolsOf(r))+'</span>', 'score');
       if(window.RTGSound) RTGSound.lock(); idx++;
       saveResume();
       afterFact(function(){ busy=false; renderRound(); answerIn.focus(); }, 1400);
     } else {
       ANSLOG.push('x');
-      setSub('<span class="pts">Nope.</span> <span class="school">It was '+esc(label(r.col))+'.</span>', 'miss');
+      setSub('<span class="pts">Nope.</span> <span class="school">It was '+esc(schoolsOf(r))+'.</span>', 'miss');
       if(window.RTGSound) RTGSound.wrong();
       afterFact(function(){ finish(); }, 2000);
     }

@@ -433,7 +433,9 @@ window.GA_ID='G-L29P5MRWKE';
 <script src="/arcade/supplement.js?v=6"></script>
 <script src="/arcade/primary.js?v=32"></script>
 <script src="/arcade/franchise.js?v=1"></script>
-<script src="/arcade/data.js?v=7"></script>
+<script src="/arcade/data.js?v=8"></script>
+<script src="/arcade/flags.js?v=1"></script>
+<script src="/arcade/fame.js?v=1"></script>
 <script src="/arcade/teamcolors.js?v=2"></script>
 <script src="/arcade/sfx.js?v=3"></script>
 <script src="/arcade/result.js?v=1"></script>
@@ -577,13 +579,23 @@ window.GA_ID='G-L29P5MRWKE';
   // 200 rounds up front cost ~370ms of blocked main thread for rounds almost
   // nobody reaches (same fix Rank It got).
   var BATCH=12;
-  function buildRounds(want, preSeen){
+  /* Phase 2 content, behind flags (flags.js): the run opens on household names
+     and gets harder (ramp), and the three wrong names come from the same era
+     and position as the answer (decoys). Read per board day, so an archive
+     day is dealt the way it was dealt on that day. */
+  function flagOn(n){ try{ return !!(window.RTGFlags && window.RTGFame && RTGFlags.on(n, DATE)); }catch(e){ return false; } }
+  function buildRounds(want, preSeen, base){
     want = Math.min(want || BATCH, ROUNDS);
     var pool=poolForMode();
-    var out=[], guard=0, seen={};
+    var out=[], guard=0, seen={}, bad={};
+    var RAMP=flagOn('ramp'), DECOYS=flagOn('decoys');
     if(preSeen) Object.keys(preSeen).forEach(function(k){ seen[k]=1; });
     while(out.length<want && guard<8000){ guard++;
-      var t=pool[ri(pool.length)];
+      var t;
+      if(RAMP){
+        t=RTGFame.pick(pool, (base||0)+out.length, rng, function(e){ return seen[e.id] || bad[e.id]; });
+        if(!t) break;
+      } else t=pool[ri(pool.length)];
       if(seen[t.id]) continue;   // each athlete stars at most once per day
       var tpath=pathOf(t);
       var tteams=fk(t);
@@ -592,7 +604,7 @@ window.GA_ID='G-L29P5MRWKE';
       // a precomputed path index; rebuilding it per iteration meant ~500k array
       // scans and ~430ms of blocked main thread before first paint.
       var others=sameSportExcept(t, tpath);
-      if(others.length<3) continue;
+      if(others.length<3){ bad[t.id]=1; continue; }
       // Prefer decoys that SHARE at least one team with the target - "he also
       // played for the Lakers" is a far more tempting wrong answer than a random
       // name. Still fair: only the target has the exact full chronological path.
@@ -610,7 +622,21 @@ window.GA_ID='G-L29P5MRWKE';
       // whole sport bucket. Late rounds still rank by shared-team count, but
       // only across the (small) overlap set before falling back.
       var overlap=overlapWith(t, tpath);
-      if(out.length>=19){
+      if(DECOYS){
+        /* A wrong name has to be believable: same league (already), the same
+           era, the same position family, and about as well known as the
+           answer, so none of the four can be ruled out without knowing the
+           career. Shared clubs still count, most of all late in the run. */
+        var tt=RTGFame.tier(t), TI=['household','known','solid','deep'];
+        var late=((base||0)+out.length)>=19;
+        var cand=shuffle(others).filter(function(e){ return e.id!==t.id && RTGFame.eraScore(t,e)>=1; });
+        var scored=cand.map(function(e,i){
+          var fameGap=Math.abs(TI.indexOf(RTGFame.tier(e))-TI.indexOf(tt));
+          return { e:e, i:i, v: RTGFame.alike(t,e)*10 + sharedCount(e)*(late?6:3) - fameGap*4 };
+        }).sort(function(a,b){ return (b.v-a.v) || (a.i-b.i); });
+        takeFrom(scored.map(function(x){ return x.e; }));
+        if(distract.length<3){ takeFrom(shuffle(others).filter(function(e){ return e.id!==t.id; })); }
+      } else if(out.length>=19){
         takeFrom(shuffle(overlap).sort(function(a,b){ return sharedCount(b)-sharedCount(a); }));
         if(distract.length<3){ takeFrom(shuffle(others).filter(function(e){ return e.id!==t.id; })); }
       } else {
@@ -623,13 +649,17 @@ window.GA_ID='G-L29P5MRWKE';
     return out;
   }
   var SEQ=buildRounds(BATCH);
+  /* Read-only view of the deal for scripts/check-content.mjs. Nothing on the
+     page calls it. */
+  window.__rtgDeal = function(n){ ensureRounds(n||30); return SEQ.slice(0, n||30).map(function(r){
+    return { target: byId[r.target], opts: r.opts.map(function(id){ return byId[id]; }) }; }); };
   // Top up before the player can run off the end. The RNG stream continues
   // from where the last batch stopped, so a given seed still yields a given
   // sequence - just built in slices.
   function ensureRounds(upto){
     if(SEQ.length>=ROUNDS || SEQ.length>=upto) return;
     var seen={}; SEQ.forEach(function(r){ seen[r.target]=1; });
-    var add=buildRounds(Math.min(ROUNDS, upto+BATCH)-SEQ.length, seen);
+    var add=buildRounds(Math.min(ROUNDS, upto+BATCH)-SEQ.length, seen, SEQ.length);
     for(var i=0;i<add.length;i++) SEQ.push(add[i]);
   }
 

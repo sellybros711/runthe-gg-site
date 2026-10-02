@@ -396,7 +396,9 @@ window.GA_ID='G-L29P5MRWKE';
 <script src="/arcade/supplement.js?v=6"></script>
 <script src="/arcade/primary.js?v=32"></script>
 <script src="/arcade/franchise.js?v=1"></script>
-<script src="/arcade/data.js?v=7"></script>
+<script src="/arcade/data.js?v=8"></script>
+<script src="/arcade/flags.js?v=1"></script>
+<script src="/arcade/fame.js?v=1"></script>
 <script src="/arcade/jerseys.js?v=32"></script>
 <script src="/arcade/teamcolors.js?v=2"></script>
 <script src="/arcade/sfx.js?v=3"></script>
@@ -522,7 +524,33 @@ window.GA_ID='G-L29P5MRWKE';
      A round is one jersey stint: a player, a club, and the years, because
      plenty of careers carry two or three different numbers and the question
      has to have exactly one answer. */
+  function flagOn(n){ try{ return !!(window.RTGFlags && window.RTGFame && RTGFlags.on(n, DATE)); }catch(e){ return false; } }
+  /* Flag 'ramp' (flags.js): the player is chosen by fame band for his place in
+     the run (fame.js), then one of his stints at random. Picking a STINT
+     uniformly, as below, also drew a player with four clubs four times as
+     often as a one-club player, which is not a difficulty anybody chose. */
+  function buildRampRounds(){
+    var stintsOf={}, players=[];
+    POOL.forEach(function(r){
+      if(!stintsOf[r.id]){ stintsOf[r.id]=[]; if(FACT_BY_ID[r.id]) players.push(FACT_BY_ID[r.id]); }
+      stintsOf[r.id].push(r);
+    });
+    var out=[], seen={};
+    for(var k=0; k<ROUNDS; k++){
+      var e=RTGFame.pick(players, k, rng, function(x){ return seen[x.id]; });
+      if(!e) break;
+      seen[e.id]=1;
+      // While the run is still on household names, ask about the stint they
+      // are known for (the longest), not a one-season cameo at the end.
+      var ss=stintsOf[e.id];
+      if(k < RTGFame.STEPS[0]){
+        out.push(ss.slice().sort(function(a,b){ return ((b.y1||0)-(b.y0||0))-((a.y1||0)-(a.y0||0)); })[0]);
+      } else out.push(ss[ri(ss.length)]);
+    }
+    return out;
+  }
   function buildRounds(){
+    if(flagOn('ramp')) return buildRampRounds();
     var out=[], seen={}, guard=0;
     while(out.length<ROUNDS && guard<20000){ guard++;
       var a=POOL[ri(POOL.length)];
@@ -539,6 +567,8 @@ window.GA_ID='G-L29P5MRWKE';
     return out;
   }
   var SEQ=buildRounds();
+  /* Read-only view of the deal for scripts/check-content.mjs. */
+  window.__rtgDeal = function(n){ return SEQ.slice(0, n||30).map(function(r){ return { target: FACT_BY_ID[r.id] || r, extra: r.team+' '+r.y0+'-'+r.y1+' #'+r.num }; }); };
 
   var idx=0, run=0, peak=0, done=false, busy=false, started=false, startTs=0, elapsed=0, charged=false, attemptFirst=false;
   var shield=true;   // arcade second chance: your one save resets the run to 0 but keeps you playing

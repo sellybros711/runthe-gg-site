@@ -397,6 +397,7 @@
   }
   var MIN_INFO = 5;
 
+  var NO_HAND = false;   // set by miniClue to ask for the facts clue only
   function clueFor(word, rng, seen) {
     var e = word.e;
     if (!givenOf(e.name)) return null;         // single-name entries never qualify
@@ -407,7 +408,7 @@
     var rivals = word.rivals || [];
     var anch = anchors(e);
     if (!anch.length) return null;
-    var hand = curatedPredicate(e, rng);
+    var hand = NO_HAND ? null : curatedPredicate(e, rng);
     var dec = primaryDecade(e);
     var era = eraOf(dec);
     var ml0 = (e.ml && e.ml.length) ? e.ml[0] : null;
@@ -885,8 +886,38 @@
     return null;
   }
 
+  /* The dense mini (mini.js) takes at most two players a grid, and asks this
+     file for them so a mini clue goes through the same rival walk as every
+     other player clue here. Only surnames of three to five letters can sit in
+     a 5x5 or a 6x6 with no long entries. */
+  function miniPlayers(dateStr, corpusOpt) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(String(dateStr || ''))) return [];
+    CUR_DECADE = Math.floor(+String(dateStr).slice(0, 4) / 10) * 10;
+    var corpus = corpusOpt || (root && root.GRID_ENTITIES) || [];
+    if (!corpus.length) return [];
+    var seen = {}, out = [];
+    getPool(corpus).forEach(function (w) {
+      if (!w.e || seen[w.w] || w.w.length < 3 || w.w.length > 5) return;
+      seen[w.w] = 1; out.push(w);
+    });
+    return out;
+  }
+  /* A mini clue is one short line. A hand-written moment is the better clue
+     and usually runs to a hundred characters, so it is taken only when it is
+     short enough, and otherwise the facts clue stands in for it. */
+  function miniClue(word, rng, max) {
+    max = max || 75;
+    var c = clueFor(word, rng || null, {});
+    if (c && c.text.length <= max) return c;
+    NO_HAND = true;
+    try { c = clueFor(word, rng || null, {}); } finally { NO_HAND = false; }
+    return (c && c.text.length <= max) ? c : null;
+  }
+
   return {
     forDate: forDate,
+    miniPlayers: miniPlayers,
+    miniClue: miniClue,
     _internal: { surnameOf: surnameOf, buildPool: buildPool, nick: nick, eraStr: eraStr, factsFit: factsFit }
   };
 });

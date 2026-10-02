@@ -421,7 +421,9 @@ window.GA_ID='G-L29P5MRWKE';
 <script src="/arcade/awards.js?v=3"></script>
 <script src="/arcade/primary.js?v=32"></script>
 <script src="/arcade/franchise.js?v=1"></script>
-<script src="/arcade/data.js?v=7"></script>
+<script src="/arcade/data.js?v=8"></script>
+<script src="/arcade/flags.js?v=1"></script>
+<script src="/arcade/fame.js?v=1"></script>
 <script src="/arcade/jerseys.js?v=32"></script>
 <script src="/arcade/stats.js?v=4"></script>
 <script src="/arcade/hlstats.js?v=5"></script>
@@ -584,8 +586,28 @@ window.GA_ID='G-L29P5MRWKE';
   function isActive(e){ return !!(e && ACTIVE[e.id]); }
 
   // ---------- draw a fresh opponent from the category pool ----------
+  /* Flag 'ramp' (flags.js, fame.js): the next player comes from the fame
+     band for the call the streak has reached, so a run opens on household
+     names and the deeper names arrive as the streak grows. A player already
+     shown in this run is not dealt again. With the flag off nothing here runs. */
+  var RSEEN={};
+  function drawRamp(cat, baseline, bv){
+    var on=false;
+    try{ on=!!(window.RTGFlags && window.RTGFame && RTGFlags.on('ramp')); }catch(e){}
+    if(!on) return null;
+    if(run===0) RSEEN={};
+    RSEEN[baseline.id]=1;
+    var c=RTGFame.pick(cat.pool||[], run, Math.random, function(e){
+      if(RSEEN[e.id]) return true;
+      var v=cat.vfn(e); return v==null || v===bv;
+    });
+    if(!c) return null;
+    RSEEN[c.id]=1;
+    return { ent:c, val:cat.vfn(c) };
+  }
   function drawOpponent(cat, baseline){
     var pool = cat.pool || [], bv = cat.vfn(baseline);
+    var ramped = drawRamp(cat, baseline, bv); if(ramped) return ramped;
     var recog = pool.filter(function(e){ return e.id!==baseline.id && (e.f||0)>=3; });
     if(recog.length < 8) recog = pool.filter(function(e){ return e.id!==baseline.id && (e.f||0)>=2; });
     if(!recog.length) recog = pool.filter(function(e){ return e.id!==baseline.id; });
@@ -599,6 +621,24 @@ window.GA_ID='G-L29P5MRWKE';
     for(var i=0;i<recog.length;i++){ var cv2=cat.vfn(recog[i]); if(cv2!=null && cv2!==bv) return { ent:recog[i], val:cv2 }; }
     return null;
   }
+
+  /* For scripts/check-content.mjs: the opponents a run would be dealt from the
+     most famous starting player, without playing. Restores the run counter and
+     the seen list, so it changes nothing about a game in progress. */
+  window.__rtgDeal = function(n){
+    // the chosen category, or before one is picked the one with most players
+    var c=cat || CATS.slice().sort(function(x,y){ return (y.pool||[]).length-(x.pool||[]).length; })[0];
+    if(!c || !c.pool || !c.pool.length) return null;
+    var keepRun=run, keepSeen=RSEEN, out=[];
+    var b=(window.RTGFame ? RTGFame.rank(c.pool) : c.pool)[0];
+    try{
+      for(var k=0;k<(n||30);k++){
+        run=k; var o=drawOpponent(c, b); if(!o) break;
+        out.push({ target:o.ent, extra:c.label }); b=o.ent;
+      }
+    } finally { run=keepRun; RSEEN=keepSeen; }
+    return out;
+  };
 
   // ---------- state ----------
   var cat=null, baseline=null, baselineVal=0, opp=null, oppVal=0, runStart=0;
