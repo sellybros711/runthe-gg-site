@@ -11321,6 +11321,74 @@ to have something real to measure. The leaderboard's Career tab keeps the
 game's shared board chrome, because restyling one tab of seven is a seam inside
 the board rather than one removed at its door.
 
+#### Phase E: Pro starts in high school, a free career starts from a generated road
+
+```
+node hoops/sim-career.mjs --n 1000 --phase E   the second sweep: generated roads, sons, difficulty, challenges
+node hoops/check-career.mjs                    section 11 (the engine), section 7 (the gate, the Vault, a son)
+```
+
+The owner's calls, 2026-10-02: no daily seeded career; playing the road from high
+school and the family tree are **Run The Floor Pro** (`rtf_premium`, the $9.99
+Endless already sells). A guest or free account starts on draft night from a
+pre-NBA life generated for them, a new one every career.
+
+**THE GENERATED ROAD IS THE REAL ROAD.** `C.generateRoad(opts)` is
+`newLife({ start: 'hs' })` played by an automatic policy (each card answered off
+`rngAt(L, 'gen:' + steps + ':' + id)`) and stopped at the combine card, with
+`L.opt.gen = 1`. Not a new formula: its NBA outcomes sit in the road's own bands,
+and the memories, people and routes it made carry on. `C.roadStory(L)` is the road
+in short lines, read off `amHist` and the route memories. The four background cards
+are gone from the builder for everybody; the engine still takes `bg`, so old saves
+and the sweeps are unchanged.
+
+**THE GATE IS THE START BUTTON.** `proOpen()` in `career-ui.js` asks
+`RTF_MODES_UI.proOpen()` (owning Pro, or `PRO_LIVE` off). Pressing High school or
+Play as your son without it opens the Pro sheet and changes nothing. A career
+already started is never taken away. `RTF_CAREER_UI.proChanged` redraws the
+builder when Pro arrives.
+
+**THE VAULT** rides in the `rtf.life.v1` slot: `arc` is every finished career as a
+short entry (200 kept; the full Hall card is still the newest 20 on `hof`), and
+`vault` is every key found (`t:` tier, `o:` outcome, `s:` secret, `r:` road, `g:`
+origin, `c:` challenge met). A card stores its ids (`card.ids`); an older card is
+read back through the catalog's names, and a slot from before is backfilled once on
+load. Tabs: Endings, Careers (each opens into its story), Family.
+
+**THE STORY** is `C.careerStory(L)`, chapters built only from what the career
+recorded, kept on the Hall card. Called by the page at the end, so it moves nothing
+the season reads.
+
+**A SON IS THE SON OF A FORMER PRO.** `newLife({ parent, parentLeague })` forces the
+`pro_son` origin and stores `L.parent` (`cleanParent`): the father's real points are
+`origin.father`, `{father}` and `{dad}` are his name, and his seasons are the copy's
+count. **He starts in his own year, in the league his father left**:
+`legacyLeague` copies the card's `lg` (`C.leagueEnd`, trimmed by the page) and plays
+the gap forward a summer at a time with `driftLeague`, so coaches and invented stars
+move on. A card without `lg` plays forward from the data's year. Only a father who
+reached the league can have a son (`canFather`). Four `leg_*` cards are his.
+
+**DIFFICULTY** is `L.opt.diff`, never written for Normal: `lvl(L)` multiplies growth
+and decline and injury odds and adds to a player's impact, and every Normal term is
+a multiply by one or an add of nought. **That is proved, not argued**: the story-on
+replay of 1,000 careers is byte identical. An **Easy** career files no Career badges
+and is not submitted to the board. Measured at 3,000: Hall of Fame on generated
+careers is about 31% Easy, 21% Normal, 12% Hard.
+
+**CHALLENGES** (`C.CHALLENGES`, nine) are goals over an ordinary career, with an
+optional start (`stock`, applied once at the combine by `chStock`) or a fixed
+difficulty. `challengeOf(L)` says where it stands; met or not is kept on the card
+and in the Vault. Each one is met in the sweep, played as itself on Easy; a
+challenge no player can chase is the unearnable badge, which is why Sixth Man and
+Three rings were replaced.
+
+**THE SHARE CARD** is `drawCard` in `career-ui.js` (540 by 756, the kit's colours,
+the player at a whole scale), shared through `RTF_PAGE.shareImage`, which is
+`shareRun`'s own path for a blob drawn elsewhere.
+
+**Leaderboards by challenge and by Vault completion need a migration** and are
+Phase G.
+
 #### Phase D: origins, roads, endings, and a legend layer with an off switch
 
 ```

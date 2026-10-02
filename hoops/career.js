@@ -346,6 +346,7 @@ function personName(L, key, kind) {
 /* Family shares your last name. */
 const surname = (L) => { const p = String(L.name || '').trim().split(/\s+/); return p[p.length - 1] || 'Smith'; };
 function kinName(L, key, kind) {
+  if (key === 'dad' && L.parent && L.parent.name) return L.parent.name;
   const r = E.createSeededRNG(E.hashSeed(String(L.seed) + ':kin:' + key));
   return pick(r, kind === 'f' ? PEOPLE_F : PEOPLE_M) + ' ' + surname(L);
 }
@@ -803,7 +804,16 @@ function newLife(opts) {
     mem: {}, people: {}, traits: rollTraits(seed), opt: { legend: o.legend !== false, moments: o.moments !== false },
   };
   if (o.story !== false) L.opt.story = STORY_VERSION;
+  /* Phase E: a difficulty and a challenge are story career settings. A
+     challenge can fix the difficulty; Normal is never written, so a career
+     without one is the same object it always was. */
+  const ch = L.opt.story && CHALLENGES[o.challenge] ? o.challenge : null;
+  const dk = ch && CHALLENGES[ch].diff ? CHALLENGES[ch].diff : o.diff;
+  if (L.opt.story && dk && dk !== 'normal' && DIFFS[dk]) L.opt.diff = dk;
+  if (ch) L.challenge = ch;
   L.year = L.league.latest + 1;
+  const parent = L.opt.story ? cleanParent(o.parent) : null;
+  if (parent) legacyLeague(L, parent, o.parentLeague, road ? AGE_HS : bg.age);
   const rng = E.createSeededRNG(E.hashSeed(seed + ':create'));
   if (L.num == null) L.num = Math.floor(rng() * 100);
   const prof = POS_PROFILE[pos], tilt = ARCHES[arch].tilt, bt = road ? {} : (bg.tilt || {});
@@ -818,7 +828,13 @@ function newLife(opts) {
   L.dur = Math.round(45 + rng() * 45);
   /* Where you are from, and on draft night the road you took to get here. */
   if (L.opt.story) {
-    setOrigin(L, o.origin);
+    setOrigin(L, parent ? 'pro_son' : o.origin);
+    if (parent) {
+      /* The mark to pass is the real one, and a famous name is a little
+         famous from the first day. */
+      remember(L, 'origin.father', parent.pts);
+      L.m.fame = clamp(L.m.fame + (parent.hof ? 6 : parent.star ? 3 : 0), 0, 100);
+    }
     if (!road) L.flags.town = pick(E.createSeededRNG(E.hashSeed(seed + ':town')), HOMETOWNS);
     if (!road) remember(L, 'route.' + ({ oad: 'oad', senior: 'four', intl: 'intl', gl: 'gl' }[bgKey]), true);
   }
@@ -831,6 +847,7 @@ function newLife(opts) {
     return L;
   }
   logIt(L, L.name + ', ' + POS_NAME[pos].toLowerCase() + '. ' + bg.name + '. Age ' + L.age + '.', 'gold');
+  chStock(L);
   L.pending.push(combineCard(L));
   sayAll(L);
   return L;
@@ -895,6 +912,19 @@ const storyOn = (L) => !!(L && L.opt && L.opt.story);
    bands. A migrated save keeps the old numbers, as it keeps everything. */
 const BAL = { star: 5, dec: 1.4, poTax: 3.5, maxAge: 38, tired: 31 };
 const bal = (L, k, old) => storyOn(L) ? BAL[k] : old;
+/* DIFFICULTY (Phase E). Normal is every career before this, to the bit: each
+   term is a multiply by one or an add of nought. Easy and Hard move how fast
+   a player grows, how fast he declines, how often he is hurt and what he is
+   worth to a team, and are measured by sim-career.mjs against Normal. An Easy
+   career is for the story: it is not filed to the Career board and earns no
+   badges (career-ui.js). */
+const DIFFS = {
+  easy: { name: 'Easy', blurb: 'More growth, fewer injuries. For the story. Not on the board.', grow: 1.3, dec: 0.8, inj: 0.65, edge: 1 },
+  normal: { name: 'Normal', blurb: 'The game as it is balanced.', grow: 1, dec: 1, inj: 1, edge: 0 },
+  hard: { name: 'Hard', blurb: 'Slower growth, harder knocks. Every ring is earned.', grow: 0.85, dec: 1.15, inj: 1.25, edge: -0.6 },
+};
+const DIFF_KEYS = Object.keys(DIFFS);
+const lvl = (L) => DIFFS[L.opt && L.opt.diff] || DIFFS.normal;
 
 // ─── draft night ────────────────────────────────────────────────────────────
 
@@ -1112,7 +1142,7 @@ function lineMeans(L, min, usage) {
 }
 /* What you add to the club when you play: points per hundred possessions. */
 function impact(L, min) {
-  return (effOvr(L) - 68) * 0.32 * (min / 48);
+  return (effOvr(L) - 68 + lvl(L).edge * 4) * 0.32 * (min / 48);
 }
 /* A game's odds off a net rating. Clamped short of certainty, because the
    best real team ever lost nine and a career sim that hands out 81-1 has
@@ -1126,7 +1156,7 @@ function rollInjury(L, chunk, beats) {
   const a = L.age;
   const p = 0.065 + (100 - L.dur) * 0.0011 + Math.max(0, a - 28) * 0.009
     + Math.max(0, 60 - L.m.health) * 0.0016 + s.mods.risk;
-  if (rng() >= p * (trait(L, 'injuryProne') ? 1.3 : trait(L, 'ironMan') ? 0.65 : 1)) return;
+  if (rng() >= p * (trait(L, 'injuryProne') ? 1.3 : trait(L, 'ironMan') ? 0.65 : 1) * lvl(L).inj) return;
   if (storyOn(L) && (tw(L).inj = (tw(L).inj || 0) + 1) >= 3) reveal(L, 'injuryProne', 'Three injuries already. You know the training room by heart.', beats);
   const r = rng();
   const from = CHUNKS[chunk][0] + Math.floor(rng() * 20);
@@ -1643,7 +1673,8 @@ function develop(L, beats) {
   const eth = 0.65 + L.eth / 100 * 0.7;
   let grow = gap * (GROW[a] || 0) * (eth + (trait(L, 'gymRat') ? 0.12 : 0));
   if (trait(L, 'lateBloomer')) grow = a <= 22 ? grow * 0.8 : a <= 27 ? grow + gap * 0.05 * eth : grow;
-  const dec = (DECLINE[a] || (a >= 38 ? 6.5 : 0)) * (1.2 - L.dur / 250) * (L.flags.longevity ? 0.75 : 1) * bal(L, 'dec', 1)
+  grow *= lvl(L).grow;
+  const dec = (DECLINE[a] || (a >= 38 ? 6.5 : 0)) * (1.2 - L.dur / 250) * (L.flags.longevity ? 0.75 : 1) * bal(L, 'dec', 1) * lvl(L).dec
     + Math.max(0, 50 - L.m.health) * 0.03;
   for (const k of RATINGS) {
     let d = grow * (0.6 + rng() * 0.8);
@@ -4168,7 +4199,7 @@ function developAm(L, beats) {
   const rng = rngAt(L, 'develop');
   const gap = Math.max(0, L.pot - before);
   const eth = 0.65 + L.eth / 100 * 0.7;
-  const grow = gap * (GROW_AM[L.age] || 0.08) * eth;
+  const grow = gap * (GROW_AM[L.age] || 0.08) * eth * lvl(L).grow;
   for (const k of RATINGS) L.rt[k] = clamp(Math.round(L.rt[k] + grow * (0.6 + rng() * 0.8)), 25, 99);
   const after = ovrOf(L);
   if (after !== before) {
@@ -4377,6 +4408,7 @@ function toDraft(L, beats, route) {
   L.season = null;
   L.team = null;
   L.flags.stock = (L.flags.stock || 0) + (L.am.stock || 0);
+  chStock(L);
   L.phase = 'combine';
   L.pending.push(combineCard(L));
   const t = 'You declare for the ' + (L.year - 1) + ' NBA Draft.';
@@ -5074,21 +5106,39 @@ story({
 
   /* Son of a former pro */
   ori_fathers_number: { at: 'hs_sum', req: { origin: 'pro_son', grade: [10, 10] }, w: 6,
-    t: 'Wear his number?', x: '{father} wore it for nine seasons. Everybody in the gym knows that.',
-    o: [O('Wear his number', { fame: 5, morale: -2 }, 'Every coach in the stands says his name before yours.', { set: 'son.number' }),
+    t: 'Wear his number?', x: (L) => '{father} wore ' + (L.parent && L.parent.num != null ? '#' + L.parent.num : 'it') + ' for ' + yearsWord(fatherYears(L)) + '. Everybody in the gym knows that.',
+    o: [O('Wear his number', { fame: 5, morale: -2 }, 'Every coach in the stands says his name before yours.', { set: 'son.number', do: (L) => { if (L.parent && L.parent.num != null) L.num = L.parent.num; } }),
       O('Pick your own', { morale: 5 }, 'He laughs and says he would have done the same.', { rel: [['dad', 10, 'You picked your own number.']] })] },
   ori_fathers_coach: { at: 'hs_off', req: { origin: 'pro_son', grade: [11, 12] }, w: 4,
     t: 'Your father\'s old coach calls.', x: 'He coaches a college now. He says he owes your father one.',
     o: [O('Hear him out', { trust: 4, morale: 2 }, 'He talks about your father for an hour. Then about you for ten minutes.'),
       O('Tell him you want your own road', { morale: 5, eth: 2 }, 'Your father hears about it. He is quiet for a day. Then proud.', { set: 'son.ownway', rel: [['dad', -5]] })] },
   ori_father_courtside: { at: 'pre', req: { origin: 'pro_son', seasons: [1, 2] }, w: 5,
-    t: '{father} wants a seat behind the bench.', x: 'Opening night. He played in this league for nine seasons. He has never sat behind your bench.',
+    t: '{father} wants a seat behind the bench.', x: (L) => 'Opening night. He played in this league for ' + yearsWord(fatherYears(L)) + '. He has never sat behind your bench.',
     o: [O('Get him the seat', { morale: 6, fame: 2 }, 'The broadcast finds him twice. He cries both times.', { rel: [['dad', 20, 'He sat behind your bench on opening night.']] }),
       O('Ask him to watch at home', { morale: 2, trust: 2 }, 'He understands. He texts you after every quarter.')] },
   ori_passed_father: { at: 'off', when: (L) => L.origin === 'pro_son' && !recall(L, 'origin.passed') && totals(L).pts > ((recall(L, 'origin.father') || {}).v || 9e9), w: 9,
     t: 'You passed your father.', x: (L) => 'Career points: ' + totals(L).pts + '. {father} finished with ' + recall(L, 'origin.father').v + '.',
     o: [O('Call him first', { morale: 10 }, 'He answers on the first ring. He already knew. He had been counting.', { set: 'origin.passed', rel: [['dad', 25, 'You passed his career points and called him first.']] }),
       O('Say nothing', { fame: 3 }, '{beat} writes it up anyway. Your father frames the column.', { set: 'origin.passed' })] },
+
+  /* A legacy career (Phase E): the father is a career this account played. */
+  leg_rafters: { at: 'pre', req: { seasons: [1, 3] }, when: (L) => !!(L.parent && L.parent.jersey && L.team === L.parent.jersey), w: 9,
+    t: 'His number is in the rafters.', x: (L) => '{father}\'s #' + L.parent.num + ' hangs over the floor you play on now.',
+    o: [O('Look up at it every night', { morale: 5, fame: 2 }, 'Before every tip. Nobody on the team says a word about it.', { set: 'son.rafters' }),
+      O('Never look up', { eth: 3, trust: 2 }, 'Eyes on the rim. You can feel it up there anyway.', { set: 'son.rafters' })] },
+  leg_old_club: { at: 'pre', req: { seasons: [1, 2] }, when: (L) => !!(L.parent && L.team && L.parent.jersey !== L.team && L.parent.clubs.indexOf(L.team) >= 0), w: 8,
+    t: 'Your father played here.', x: '{tvet} shows you a team photo in the hallway. Your father is in the second row.',
+    o: [O('Send him a picture of it', { morale: 4 }, 'He sends back nine exclamation points.', { rel: [['dad', 10, 'You sent him the old team photo.']] }),
+      O('Keep walking', { trust: 2 }, 'Nobody here needs a reminder. You make your own photo.')] },
+  leg_compared: { at: 'off', req: { seasons: [1, 3] }, when: (L) => !!L.parent, w: 7,
+    t: 'Everybody compares you to him.', x: '{critic} puts your numbers next to {father}\'s at the same age.',
+    o: [O('Say you will pass him', { fame: 4, morale: -2 }, 'The clip goes everywhere. So does the pressure.', { set: 'son.vow' }),
+      O('Say there is only one of him', { trust: 3, morale: 3 }, 'Your father calls that night. He liked that answer.', { rel: [['dad', 12, 'You said there is only one of him.']] })] },
+  leg_hall_night: { at: 'off', req: { seasons: [2, 12] }, when: (L) => !!(L.parent && L.parent.hof), w: 4,
+    t: 'They want you at his Hall night.', x: 'The Hall is showing a film about {father}. They ask you to speak.',
+    o: [O('Speak', { fame: 5, morale: 6 }, 'You keep it short. The room stands anyway.', { rel: [['dad', 15, 'You spoke at his Hall night.']] }),
+      O('Sit with him and listen', { morale: 4 }, 'He holds your hand the whole film. He has never done that.')] },
 
   /* Late growth spurt */
   ori_six_inches: { at: 'hs_sum', req: { origin: 'growth', grade: [10, 11] }, w: 6,
@@ -6791,7 +6841,239 @@ function roadView(L) {
   return { where: a.route === 'intl' ? 'Overseas' : 'G League', level: 'Pro', what: a.route === 'intl' ? 'A year overseas' : 'A year in the G League', sub: 'The draft is next' };
 }
 
+
+/* CHALLENGE CAREERS (Phase E). A challenge is a goal laid over an ordinary
+   career, and sometimes a start or a difficulty it fixes. `test` reads what
+   the career has done and `out` says when it can no longer be met, so the
+   screen can say so while the career plays on. Met or not is decided when the
+   career ends, and a challenge met is kept in the Vault. */
+const regGames = (L) => L.history.reduce((n, h) => n + (h.gp || 0), 0);
+const clubsOf = (L) => new Set(L.history.map((h) => h.t)).size;
+const CHALLENGES = {
+  ch_city: { name: 'One city', blurb: 'Play twelve seasons and every one for the same team.',
+    test: (L) => L.history.length >= 12 && clubsOf(L) === 1, out: (L) => clubsOf(L) > 1,
+    prog: (L) => L.history.length + ' of 12 seasons' + (clubsOf(L) > 1 ? ', but not with one team' : '') },
+  ch_rings: { name: 'Two rings', blurb: 'Win two championships.',
+    test: (L) => totals(L).rings >= 2, prog: (L) => totals(L).rings + ' of 2 rings' },
+  ch_30k: { name: 'The 30,000 club', blurb: 'Score 30,000 points in the regular season.',
+    test: (L) => totals(L).pts >= 30000, prog: (L) => totals(L).pts.toLocaleString('en-US') + ' of 30,000 points' },
+  ch_mvp: { name: 'Most valuable', blurb: 'Win an MVP.',
+    test: (L) => totals(L).mvp >= 1, prog: (L) => totals(L).mvp ? 'Done' : 'No MVP yet' },
+  ch_late: { name: 'Second round', blurb: 'Start low on the board. Drafted late or not at all, make an All-Star team.', stock: -9,
+    test: (L) => !!L.draft && (!L.draft.pick || L.draft.pick > 30) && totals(L).star >= 1,
+    out: (L) => !!(L.draft && L.draft.pick && L.draft.pick <= 30),
+    prog: (L) => !L.draft ? 'Draft night is ahead' : L.draft.pick && L.draft.pick <= 30 ? 'Drafted too high' : totals(L).star ? 'Done' : 'No All-Star yet' },
+  ch_lockdown: { name: 'Lockdown', blurb: 'Win Defensive Player of the Year twice.',
+    test: (L) => totals(L).dpoy >= 2, prog: (L) => totals(L).dpoy + ' of 2' },
+  ch_stars: { name: 'Ten All-Star games', blurb: 'Make ten All-Star teams.',
+    test: (L) => totals(L).star >= 10, prog: (L) => totals(L).star + ' of 10' },
+  ch_iron: { name: 'Iron man', blurb: 'Play 1,200 regular season games.',
+    test: (L) => regGames(L) >= 1200, prog: (L) => regGames(L).toLocaleString('en-US') + ' of 1,200 games' },
+  ch_hard: { name: 'The hard way', blurb: 'On Hard, make the Hall of Fame.', diff: 'hard',
+    test: (L) => !!(L.final && L.final.ending && L.final.ending.hof), prog: (L) => L.retired ? (L.final && L.final.ending && L.final.ending.hof ? 'Done' : 'Not in') : 'The voters decide at the end' },
+};
+const CHALLENGE_KEYS = Object.keys(CHALLENGES);
+/* A challenge that starts you low on the board does it once, at the combine. */
+function chStock(L) {
+  const c = L.challenge && CHALLENGES[L.challenge];
+  if (!c || !c.stock || L.flags.chStock) return;
+  L.flags.stock = (L.flags.stock || 0) + c.stock;
+  L.flags.chStock = 1;
+}
+/* Where a career stands on its challenge, for the screen and the Vault. */
+function challengeOf(L) {
+  const c = L && L.challenge && CHALLENGES[L.challenge];
+  if (!c) return null;
+  const met = !!c.test(L);
+  return { id: L.challenge, name: c.name, blurb: c.blurb, met, out: !met && !!(c.out && c.out(L)), prog: c.prog(L) };
+}
+
+// ─── the generated road (Phase E) ───────────────────────────────────────────
+
+/* A GUEST OR A FREE ACCOUNT STARTS ON DRAFT NIGHT, AND THE ROAD THERE IS
+   REAL. It is the high school start, played out by an automatic policy that
+   answers every card off the career's own seed, and stopped at the combine.
+   So no two launching points are the same, the memories, people and routes
+   the road made carry on into the league, and the NBA outcomes sit inside the
+   road's own measured bands (check-career section 8). Playing the road
+   yourself is Run The Floor Pro. */
+function generateRoad(opts) {
+  const o = Object.assign({}, opts || {}, { start: 'hs' });
+  const seed = o.seed != null ? String(o.seed) : String(Math.floor(Math.random() * 1e9));
+  for (let k = 0; k < 4; k++) {
+    o.seed = k ? seed + ':r' + k : seed;
+    const L = newLife(o);
+    L.opt.gen = 1;
+    let g = 0;
+    while (g++ < 1500 && !L.retired) {
+      if (L.pending.length) {
+        const c = L.pending[0];
+        if (c.id === 'combine') return L;
+        choose(L, Math.floor(rngAt(L, 'gen:' + L.steps + ':' + c.id)() * c.options.length));
+      } else step(L);
+    }
+  }
+  /* Never measured to happen; a draft night start is still a career. */
+  return newLife(Object.assign({}, opts, { start: 'draft', seed }));
+}
+/* The road a generated career took, in a handful of short lines, for the
+   screen that opens it and for the career story. Read off the seasons played,
+   so it is the same on a reload and on another device. */
+function roadStory(L) {
+  const H = L.amHist || [];
+  if (!H.length) return [];
+  const out = [];
+  const hs = H.filter((h) => h.lvl === 'HS');
+  if (hs.length) {
+    const school = hs[hs.length - 1].school;
+    const best = Math.min(...hs.map((h) => h.rank || 999));
+    out.push((hs.length === 1 ? 'One season' : NUMWORDS[hs.length] + ' seasons') + ' at ' + school + '.');
+    out.push(best > 600 ? 'Nobody ranked you.' : 'A ' + starsOf(best) + '-star recruit. #' + best + ' in the class.');
+    const st = hs.filter((h) => /State champion/.test(h.finish)).length;
+    if (st) out.push(st === 1 ? 'A state title.' : NUMWORDS[st] + ' state titles.');
+    if (hs.some((h) => (h.aw || []).indexOf('hs_mrbb') >= 0)) out.push('Mr. Basketball.');
+  }
+  if (recall(L, 'route.reclass')) out.push('You reclassified and skipped a year.');
+  if (recall(L, 'route.prep')) out.push('A prep school year first.');
+  if (recall(L, 'route.gap')) out.push('A gap year to train.');
+  if (recall(L, 'route.juco') || H.some((h) => h.lvl === 'Junior college')) out.push('Junior college before the big stage.');
+  if (recall(L, 'route.walkon')) out.push('A walk-on. Nobody promised you anything.');
+  const col = H.filter((h) => h.lvl === 'NCAA');
+  if (col.length) {
+    const schools = [];
+    col.forEach((h) => { if (schools.indexOf(h.school) < 0) schools.push(h.school); });
+    out.push((col.length === 1 ? 'One season at ' : NUMWORDS[col.length] + ' seasons at ') + schools.join(', then ') + '.');
+    const rank = (f) => f === 'National champion' ? 9 : Math.max(-1, NCAA_ROUNDS.findIndex((r) => f === 'Lost in the ' + r));
+    const top = col.slice().sort((a, b) => rank(b.finish) - rank(a.finish))[0];
+    if (top && top.finish === 'National champion') out.push('National champions.');
+    else if (top && rank(top.finish) >= 4) out.push('A run to the ' + NCAA_ROUNDS[rank(top.finish)] + '.');
+    else if (!col.some((h) => h.seed)) out.push('Never made the tournament.');
+    if (col.some((h) => (h.aw || []).indexOf('c_npoy') >= 0)) out.push('National Player of the Year.');
+    else if (col.some((h) => (h.aw || []).indexOf('c_aa1') >= 0)) out.push('First team All-American.');
+  }
+  H.forEach((h) => {
+    if (h.lvl === 'Overseas') out.push('A season as a pro overseas.');
+    else if (h.lvl === 'G League') out.push('A season as a pro in the G League.');
+    else if (h.lvl === 'Rec league') out.push('A rec league season. Somebody filmed it.');
+  });
+  const p = projectedPick(L);
+  out.push(p > 60 ? 'Now the combine. Nobody has you on the board.' : 'Now the combine. The board has you around ' + ordinal(p) + '.');
+  return out;
+}
+const NUMWORDS = ['No', 'One', 'Two', 'Three', 'Four', 'Five', 'Six'];
+
+/* THE WRITTEN CAREER STORY (Phase E), kept on the Hall card and read in the
+   Vault. It is built from what the career recorded, never from a template
+   that could say something the career did not do, and it is written to the
+   player in short sentences. Called by the page when a career ends, so it
+   moves nothing the season reads. */
+function careerStory(L) {
+  const f = L.final || legacy(L);
+  const H = L.history, T = totals(L), d = L.draft || {};
+  const out = [];
+  const start = [];
+  if (L.parent) start.push('Your father was ' + L.parent.name + '. ' + L.parent.verdict + '.');
+  if (L.origin && ORIGINS[L.origin] && !L.parent) start.push(ORIGINS[L.origin].name + '.');
+  const road = roadStory(L).slice(0, -1);
+  if (road.length) start.push(road.join(' '));
+  else if (BACKGROUNDS[L.bg] && !L.amHist.length) start.push(BACKGROUNDS[L.bg].name + '.');
+  if (start.length) out.push({ h: 'Where it started', p: start.join(' ') });
+  if (!H.length) {
+    out.push({ h: 'The league', p: d.pick ? 'Drafted ' + ordinal(d.pick) + ' by the ' + nick(d.team) + '. You never played a game.' : 'The league never called.' });
+  } else {
+    const dr = d.pick ? 'The ' + nick(d.team) + ' took you ' + ordinal(d.pick) + ' in ' + (H[0].y - 1) + '.' : 'Undrafted in ' + (H[0].y - 1) + '. You signed anyway.';
+    const clubs = [];
+    H.forEach((h) => { if (h.t && clubs.indexOf(h.t) < 0) clubs.push(h.t); });
+    const best = H.slice().sort((a, b) => b.pts - a.pts)[0];
+    const lg = [dr, H.length + (H.length === 1 ? ' season' : ' seasons') + (clubs.length === 1 ? ', all with the ' + nick(clubs[0]) + '.' : ' with ' + clubs.length + ' teams.'),
+      'Your best year was ' + (best.y - 1) + '-' + String(best.y).slice(2) + ': ' + best.pts + ' points a night for the ' + nick(best.t) + '.'];
+    const aw = [];
+    if (T.mvp) aw.push(T.mvp === 1 ? 'an MVP' : T.mvp + ' MVPs');
+    if (T.star) aw.push(T.star + (T.star === 1 ? ' All-Star game' : ' All-Star games'));
+    if (T.dpoy) aw.push(T.dpoy === 1 ? 'a Defensive Player of the Year' : T.dpoy + ' Defensive Player of the Year awards');
+    if (aw.length) lg.push('You won ' + (aw.length > 1 ? aw.slice(0, -1).join(', ') + ' and ' + aw[aw.length - 1] : aw[0]) + '.');
+    out.push({ h: 'The league', p: lg.join(' ') });
+    const champs = H.filter((h) => h.po === 'Champion');
+    const fin = H.filter((h) => h.po === 'Finals').length;
+    if (champs.length) {
+      const by = {};
+      champs.forEach((h) => { (by[h.t] = by[h.t] || []).push(h.y); });
+      const p = Object.keys(by).map((c) => (by[c].length === 1 ? 'A ring' : NUMWORDS[by[c].length] + ' rings') + ' with the ' + nick(c) + ' (' + by[c].join(', ') + ').');
+      if (T.fmvp) p.push(T.fmvp === 1 ? 'Finals MVP once.' : 'Finals MVP ' + T.fmvp + ' times.');
+      if (fin) p.push(fin === 1 ? 'One more Finals you lost.' : fin + ' more Finals you lost.');
+      out.push({ h: 'The rings', p: p.join(' ') });
+    } else if (fin) out.push({ h: 'The rings', p: fin === 1 ? 'You reached one Finals and lost it.' : 'You reached ' + fin + ' Finals and lost every one.' });
+    else if (H.some((h) => h.po !== 'Missed' && h.po !== 'Play-in')) out.push({ h: 'The rings', p: 'No ring. You never reached the Finals.' });
+    else out.push({ h: 'The rings', p: 'You never played a playoff series.' });
+    const M = memories(L).slice(-3);
+    if (M.length) out.push({ h: 'What people remember', p: M.map((m) => m.t).join(' ') });
+    const last = H[H.length - 1];
+    const end = ['You retired at ' + last.age + ', ' + T.pts.toLocaleString('en-US') + ' points in all.', f.verdict + '.'];
+    if (f.ending) {
+      end.push(f.ending.tierName + '.');
+      if (f.ending.secretName) end.push(f.ending.secretName + '.');
+    }
+    if (L.parent) end.push(T.pts > L.parent.pts ? 'You passed your father\'s ' + L.parent.pts.toLocaleString('en-US') + ' points.' : 'Your father finished with more points: ' + L.parent.pts.toLocaleString('en-US') + '.');
+    out.push({ h: 'The end', p: end.join(' ') });
+  }
+  if (f.epilogue) out.push({ h: 'Years later', p: f.epilogue });
+  return out;
+}
+
+/* A LEGACY CAREER IS YOUR SON (Phase E, Run The Floor Pro). His father is a
+   career this account finished, so `L.parent` is a short copy of that Hall
+   card and the son is a story career with the Son of a former pro origin
+   built on it: the father's real points are the mark to pass, his name is
+   the {father} on every card, and the seasons he played are the ones the
+   copy counts. A father is invented like his son, so the real-people rule
+   is untouched. */
+function cleanParent(p) {
+  if (!p || typeof p !== 'object' || !p.name) return null;
+  const n = (v, d) => Number.isFinite(+v) ? +v : d;
+  return {
+    id: String(p.id || ''), name: String(p.name).slice(0, 28), num: n(p.num, null), pos: POS.indexOf(p.pos) >= 0 ? p.pos : null,
+    pts: Math.max(0, Math.round(n(p.pts, 0))), seasons: Math.max(0, Math.round(n(p.seasons, 0))), score: n(p.score, 0),
+    verdict: String(p.verdict || 'A pro'), rings: n(p.rings, 0), star: n(p.star, 0), hof: !!p.hof,
+    end: n(p.end, 0) || null, age: n(p.age, 0) || null,
+    clubs: Array.isArray(p.clubs) ? p.clubs.filter((c) => CLUBS.indexOf(c) >= 0).slice(0, 12) : [],
+    jersey: CLUBS.indexOf(p.jersey) >= 0 ? p.jersey : null, gen: Math.max(1, Math.round(n(p.gen, 1))),
+  };
+}
+/* THE SON STARTS IN HIS OWN YEAR, in the league his father left. The father's
+   card keeps the league as it stood when he retired (the coaches, the nets,
+   the invented stars, the champions), and the years between his last season
+   and his son's sophomore year are played forward a summer at a time, so a
+   coach the father played for can still be on a bench and a star he played
+   against is an old man. Without that copy (a card from before Phase E) the
+   league is played forward from the data's own year. */
+const LEGACY_LEAGUE = ['net', 'coach', 'free', 'gone', 'gen', 'figs', 'champs', 'dyn', 'news', 'my', 'cy'];
+function legacyLeague(L, p, lg, age) {
+  L.parent = p;
+  L.opt.legacy = 1;
+  const r = E.createSeededRNG(E.hashSeed(L.seed + ':born'));
+  const fatherAt = 24 + Math.floor(r() * 10);
+  const end = p.end || L.year;
+  const start = Math.max(end + 1, end + fatherAt + age - (p.age || 34));
+  let from = L.year;
+  if (lg && typeof lg === 'object') {
+    for (const k of LEGACY_LEAGUE) if (lg[k] != null) L.league[k] = JSON.parse(JSON.stringify(lg[k]));
+    if (lg.y) from = lg.y;
+  }
+  for (let y = from + 1; y < start && y - from < 80; y++) { L.year = y; driftLeague(L, []); }
+  L.year = start;
+}
+/* What a finished career leaves for a son: the league as it stood. */
+function leagueEnd(L) {
+  const out = { y: L.year };
+  for (const k of LEGACY_LEAGUE) if (L.league[k] != null) out[k] = L.league[k];
+  return out;
+}
+const fatherYears = (L) => L.parent ? L.parent.seasons : 9;
+const yearsWord = (n) => n === 1 ? 'one season' : (NUMWORDS[n] ? NUMWORDS[n].toLowerCase() : n) + ' seasons';
+
 const publicAPI = {
+  generateRoad, roadStory, careerStory, cleanParent, leagueEnd, LEGACY_LEAGUE,
+  DIFFS, DIFF_KEYS, CHALLENGES, CHALLENGE_KEYS, challengeOf,
   CAREER_API_VERSION, LIFE_VERSION,
   CONF, CLUBS, confOf, POS, POS_NAME, RATINGS, RATING_NAME, RATING_SHORT, WEIGHTS,
   ARCHES, ARCH_KEYS, BACKGROUNDS, BG_KEYS, AGENTS, AWARD_NAME, ROUNDS, VERDICTS, EVENTS,

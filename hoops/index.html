@@ -3424,7 +3424,7 @@
 <script src="badges.js?v=5"></script>
 <script src="courts.js?v=2"></script>
 <script src="modes.js?v=9"></script>
-<script src="career.js?v=14"></script>
+<script src="career.js?v=15"></script>
 <script src="baller.js?v=3"></script>
 <!-- ACCOUNTS AND THE LEADERBOARD. All three are OPTIONAL: if the CDN is blocked
      or either file fails to load, the game runs exactly as it did, with runs
@@ -11935,6 +11935,21 @@ window.RTF_PAGE = {
       return;
     }
     copyAndDownload(text, null);
+  },
+  /* A picture and its words, for Career's share card: the share sheet when it
+     takes files, the text alone when it does not, and the clipboard and a
+     download on a laptop. shareRun's own rules, for a blob drawn elsewhere. */
+  shareImage: function(text, blob){
+    var file = null;
+    try { if (blob) file = new File([blob], 'run-the-floor.png', { type: 'image/png' }); } catch (e) { file = null; }
+    var sheet;
+    if (file && navigator.canShare && navigator.canShare({ files: [file] })) sheet = navigator.share({ text: text, files: [file] });
+    else if (navigator.share) sheet = navigator.share({ text: text });
+    else sheet = Promise.reject(new Error('no share sheet'));
+    return sheet.catch(function(err){
+      if (err && err.name === 'AbortError') return;
+      copyAndDownload(text, blob);
+    });
   }
 };
 
@@ -11950,12 +11965,12 @@ boot();
 </script>
 <!-- AFTER the page, because it draws through window.RTF_PAGE, which the script
      above publishes. -->
-<script src="modes-ui.js?v=17"></script>
-<script src="career-kit.js?v=3"></script>
+<script src="modes-ui.js?v=18"></script>
+<script src="career-kit.js?v=4"></script>
 <script src="sound.js?v=1"></script>
 <script src="court.js?v=1"></script>
 <script src="ticker.js?v=1"></script>
 <script src="scenes.js?v=5"></script>
-<script src="career-ui.js?v=16"></script>
+<script src="career-ui.js?v=17"></script>
 </body>
 </html>

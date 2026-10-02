@@ -40,9 +40,21 @@ function load(){
     /* Every career that comes off disk is migrated before anything reads it,
        and `last` (the finished career's Hall card) is kept: it used to be
        dropped here, which lost the board row a reload should still show. */
-    if (v && typeof v === 'object') return { cur: v.cur ? C.migrate(v.cur) : null, hof: Array.isArray(v.hof) ? v.hof : [], last: v.last || null };
+    if (v && typeof v === 'object') return backfill({ cur: v.cur ? C.migrate(v.cur) : null, hof: Array.isArray(v.hof) ? v.hof : [], last: v.last || null,
+      vault: v.vault && typeof v.vault === 'object' ? v.vault : null, arc: Array.isArray(v.arc) ? v.arc : null });
   } catch (e) {}
-  return { cur: null, hof: [] };
+  return backfill({ cur: null, hof: [] });
+}
+/* THE VAULT (Phase E) rides in the same slot. `arc` is every finished career
+   as a short entry, newest first, kept long after its full Hall card falls
+   off the twenty on `hof`; `vault` is every ending, road, origin and
+   challenge this account has found, with when. A slot written before either
+   existed builds them from the Hall cards it has, once. */
+var ARC_MAX = 200;
+function backfill(st){
+  if (!st.arc) st.arc = (st.hof || []).map(compact);
+  if (!st.vault) { st.vault = {}; (st.hof || []).slice().reverse().forEach(function(c){ vaultAdd(st, c); }); }
+  return st;
 }
 var S = null;
 function store(){ if (!S) S = load(); return S; }
@@ -58,6 +70,52 @@ function reload(){
   renderHero();
 }
 function onScreen(){ var el = $('s-car'); return !!(el && el.classList.contains('active')); }
+
+
+/* What the Vault keeps of a career, and the father a son is built from. */
+function cardId(c){ return String(c.id || (c.name + ':' + (c.at || c.from))); }
+function compact(c){
+  var T = c.totals || {}, e = c.ending || null;
+  return { id: cardId(c), parent: c.parent || null, gen: c.gen || 1, name: c.name, num: c.num, pos: c.pos, from: c.from, to: c.to, age: c.age,
+    verdict: c.verdict, score: c.score, hof: !!(e && HOF_IN[e.tier]),
+    tier: e ? e.tierName : '', pts: T.pts || 0, seasons: T.seasons || 0, rings: T.rings || 0, star: T.star || 0, mvp: T.mvp || 0,
+    teams: (c.teams || []).slice(0, 8), jersey: c.jersey || null, c1: c.c1, c2: c.c2, look: c.look || null, at: c.at || 0,
+    diff: c.diff || null, ch: c.ch || null };
+}
+/* Every Vault key a card earns: t tier, o outcome, s secret, r road, g origin,
+   c a challenge met. A card from before the ids were kept is read back
+   through the names, which are the catalog's own. */
+function inv(obj, pickName){ var o = {}; for (var k in obj) o[pickName ? pickName(obj[k]) : obj[k]] = k; return o; }
+var HOF_IN = { hof_first: 1, hof_eventual: 1, hof_debate: 1, hof_committee: 1 };
+var INV = null;
+function invs(){
+  if (!INV) INV = { t: inv(C.HOF_TIERS || {}), o: inv(C.OUTCOMES || {}), s: inv(C.SECRETS || {}),
+    r: inv(C.ROUTES || {}, function(x){ return x[0]; }), g: inv(C.ORIGINS || {}, function(x){ return x.name; }) };
+  return INV;
+}
+function vaultKeys(c){
+  var out = [], ids = c.ids, e = c.ending, I = invs();
+  if (ids) {
+    if (ids.tier) out.push('t:' + ids.tier);
+    (ids.outs || []).forEach(function(k){ out.push('o:' + k); });
+    if (ids.secret) out.push('s:' + ids.secret);
+    (ids.routes || []).forEach(function(k){ out.push('r:' + k); });
+    if (ids.origin) out.push('g:' + ids.origin);
+  } else if (e) {
+    if (e.tier || I.t[e.tierName]) out.push('t:' + (e.tier || I.t[e.tierName]));
+    (e.names || []).forEach(function(n){ if (I.o[n]) out.push('o:' + I.o[n]); });
+    if (e.secretName && I.s[e.secretName]) out.push('s:' + I.s[e.secretName]);
+    (e.routes || []).forEach(function(n){ if (I.r[n]) out.push('r:' + I.r[n]); });
+    if (c.origin && I.g[c.origin]) out.push('g:' + I.g[c.origin]);
+  }
+  if (c.ch && c.ch.met) out.push('c:' + c.ch.id);
+  return out;
+}
+function vaultAdd(st, c){
+  var fresh = [];
+  vaultKeys(c).forEach(function(k){ if (!st.vault[k]) { st.vault[k] = c.at || 1; fresh.push(k); } });
+  return fresh;
+}
 
 // ─── the stylesheet ─────────────────────────────────────────────────────────
 
@@ -241,6 +299,38 @@ var CSS = [
 '.cr-epi .cr-secret{color:var(--k-gold);font-weight:800;}',
 '.cr-epi .cr-secret .k{color:var(--k-gold);}',
 '.cr-road{margin:0 0 12px;font-size:14px;line-height:1.5;color:var(--k-ink-2);}',
+'.cr-roadbox{margin:0 0 12px;}.cr-roadbox .cr-list{margin:0;}',
+/* Phase E: the legacy banner, the story, the Vault */
+'.cr-son{margin:0 0 12px;}.cr-son p{margin:6px 0 0;font-size:14px;line-height:1.45;}',
+'.cr-gen{display:flex;align-items:center;gap:8px;margin:-4px 0 10px;font:800 11px var(--k-f-text);letter-spacing:.12em;text-transform:uppercase;color:var(--k-gold);}',
+'.cr-story h3.cr-sub:first-of-type{margin-top:4px;}',
+'.cr-story p{margin:4px 0 10px;font-size:14.5px;line-height:1.55;color:var(--k-ink);}',
+'.cr-sonbtn{margin:0 0 14px;}',
+'.cr-chres{margin:0 var(--k-px) 12px;}.cr-chres p{margin:6px 0 0;font-size:14px;}',
+'.cr-easy{margin:0 var(--k-px) 12px;}',
+'.cr-found{margin:0 var(--k-px) 12px;}.cr-found .cr-aw{margin-top:8px;}',
+'.cr-vsum{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;margin:0 var(--k-px) 14px;}',
+'.cr-vsum .k-num{font-size:26px;color:var(--k-gold);}',
+'.cr-vbar{flex:1 1 140px;height:10px;background:var(--k-panel-3);box-shadow:0 0 0 2px var(--k-frame);}',
+'.cr-vbar i{display:block;height:100%;background:var(--k-gold);transform-origin:left;}',
+'.cr-vgrid{list-style:none;margin:6px 0 14px;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px;}',
+'.cr-vgrid li{display:flex;align-items:center;gap:8px;min-height:40px;padding:6px 8px;font:700 12.5px/1.25 var(--k-f-text);background:var(--k-panel-2);box-shadow:0 0 0 2px var(--k-frame);}',
+'.cr-vgrid li.got{color:var(--k-ink);box-shadow:0 0 0 2px var(--k-gold);}',
+'.cr-vgrid li.no{color:var(--k-ink-3);}',
+'.cr-arc{list-style:none;margin:0;padding:0;}',
+'.cr-arc li{border-top:1px solid rgba(143,160,214,.12);}.cr-arc li:first-child{border-top:0;}',
+'.cr-aentry{display:flex;align-items:center;gap:12px;width:100%;min-height:56px;padding:6px 4px;background:none;border:0;color:var(--k-ink);text-align:left;cursor:pointer;font:inherit;}',
+'button.cr-aentry:hover,button.cr-aentry:focus-visible{background:var(--k-panel-2);}',
+'.cr-aentry.big{padding:10px 0;}',
+'.cr-apic{flex:0 0 44px;display:flex;justify-content:center;}.cr-aentry.big .cr-apic{flex-basis:88px;}',
+'.cr-apic img{height:64px;width:auto;}.cr-aentry.big .cr-apic img{height:128px;}',
+'.cr-awho{min-width:0;display:grid;gap:2px;}.cr-awho b{font-size:15px;}.cr-awho small{font-size:12px;color:var(--k-ink-2);}',
+'.cr-tree,.cr-tree ul{list-style:none;margin:0;padding:0;}',
+'.cr-tree ul{margin-left:22px;padding-left:12px;border-left:3px solid var(--k-frame);}',
+'.cr-tree{margin:0 0 14px;}',
+'.cr-lockbox{display:grid;justify-items:start;gap:10px;padding:6px 0;}.cr-lockbox p{margin:0;font-size:14px;line-height:1.5;}',
+'.cr-opt .cr-pro{margin-left:6px;vertical-align:2px;font-size:10px;}',
+'.cr-opt.cr-locked b{color:var(--k-ink-2);}',
 '.cr-epi .k{display:block;font:800 10px var(--k-f-text);letter-spacing:.14em;text-transform:uppercase;color:var(--k-ink-3);margin-bottom:3px;}',
 '.cr-place{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 var(--k-px) 14px;font-size:14px;color:var(--k-ink-2);}',
 '.cr-place b{color:var(--k-ink);}',
@@ -370,12 +460,20 @@ var form = null;
 function freshForm(){
   var seed = String(Math.floor(Math.random() * 1e9));
   var B = window.RTF_BALLER;
-  return { seed: seed, name: C.randomName(seed), num: Math.floor(Math.random() * 100), pos: 'SF', arch: 'twoway', bg: 'oad', start: 'hs',
-    origin: '', legend: true, look: B ? B.lookFor(seed) : {} };
+  return { seed: seed, name: C.randomName(seed), num: Math.floor(Math.random() * 100), pos: 'SF', arch: 'twoway', bg: 'oad', start: proOpen() ? 'hs' : 'gen',
+    origin: '', legend: true, look: B ? B.lookFor(seed) : {}, diff: 'normal', challenge: '' };
 }
+/* RUN THE FLOOR PRO IS WHAT PLAYS THE ROAD (PLAN.md Phase E). A guest and a
+   free account start on draft night from a road generated for them, a new one
+   every career; Pro can start at fifteen. Asked of modes-ui.js, which owns the
+   purchase, so a lapse or PRO_LIVE off is decided in one place. A career
+   already started is never taken away: the gate is this screen's start button. */
+function proOpen(){ var M = window.RTF_MODES_UI; return !!(M && M.proOpen && M.proOpen()); }
+function askPro(why){ var M = window.RTF_MODES_UI; if (M && M.openPro) M.openPro(why); }
 function lifeOpts(){
   return { seed: form.seed, name: form.name, num: form.num, pos: form.pos, arch: form.arch, bg: form.bg, start: form.start, look: form.look, league: league(),
-    origin: form.origin || undefined, legend: form.legend !== false };
+    origin: form.origin || undefined, legend: form.legend !== false, parent: form.parent || undefined, parentLeague: form.parentLeague || undefined,
+    diff: form.diff || 'normal', challenge: form.challenge || undefined };
 }
 /* The look chooser, shared by the builder and the Look sheet mid-career. The
    options are the sprite's own (baller.js) and are listed, never changed. */
@@ -420,7 +518,19 @@ function wireLook(root, look, onChange){
     };
   });
 }
-function preview(){ return C.newLife(lifeOpts()); }
+/* The builder's preview is the career the start button would make: the road
+   generated, or the sophomore. A generated road is a few milliseconds. */
+var PV = { k: null, L: null };
+function preview(){
+  var o = lifeOpts();
+  /* Only what changes the career is in the key: the name, the number and the
+     look are laid over the same career, so typing does not replay a road. */
+  var k = [o.seed, o.pos, o.arch, o.start, o.origin, o.legend, o.parent ? o.parent.id : '', o.diff, o.challenge].join('|');
+  if (PV.k !== k) { PV.k = k; PV.L = form.start === 'hs' ? C.newLife(o) : C.generateRoad(o); }
+  var L = PV.L;
+  L.name = String(form.name || '') || L.name; L.num = form.num; L.look = C.cleanLook(form.look);
+  return L;
+}
 var LEAGUE = null;
 function league(){
   if (LEAGUE) return LEAGUE;
@@ -442,22 +552,53 @@ function rtRows(L, prev, fill){
   }).join('');
 }
 
+/* The road a generated career took, as a short list. In the builder it says
+   that New draws another. */
+function roadHtml(L, builder){
+  var lines = C.roadStory ? C.roadStory(L) : [];
+  if (!lines.length) return '';
+  return '<div class="k-panel k-tight cr-roadbox" id="cr-roadbox">' + (builder ? '' : '<div class="k-eyebrow">' + K.iconHtml('clip', 2) + 'How you got here</div>')
+    + '<ul class="cr-list">' + lines.map(function(t){ return '<li>' + esc(t) + '</li>'; }).join('') + '</ul>'
+    + (builder ? '<p class="k-small" style="margin:8px 0 0">Played for you. Press New for another road.</p>' : '') + '</div>';
+}
+/* Difficulty and a challenge (Phase E). A challenge that fixes the difficulty
+   holds the chips where it put them. */
+function setHtml(){
+  if (!C.DIFFS) return '';
+  var fixed = form.challenge && C.CHALLENGES[form.challenge] && C.CHALLENGES[form.challenge].diff;
+  var dk = fixed || form.diff || 'normal';
+  var diff = C.DIFF_KEYS.map(function(k){ var on = dk === k;
+    return '<button class="k-chip' + (on ? ' on' : '') + '" data-diff="' + k + '" aria-pressed="' + on + '"' + (fixed && !on ? ' disabled' : '') + '>' + esc(C.DIFFS[k].name) + '</button>'; }).join('');
+  var ch = C.CHALLENGES[form.challenge];
+  var list = '<button class="cr-opt' + (!form.challenge ? ' on' : '') + '" data-ch="" aria-pressed="' + !form.challenge + '"><b>No challenge</b><small>Just a career.</small></button>'
+    + C.CHALLENGE_KEYS.map(function(k){ var c = C.CHALLENGES[k], on = form.challenge === k, got = !!store().vault['c:' + k];
+      return '<button class="cr-opt' + (on ? ' on' : '') + '" data-ch="' + k + '" aria-pressed="' + on + '"><b>' + esc(c.name) + (got ? ' ' + K.iconHtml('check', 1) : '') + '</b><small>' + esc(c.blurb) + '</small></button>'; }).join('');
+  return '<span class="lab k-label">Difficulty</span><div class="cr-chips" id="cr-diff" role="group" aria-label="Difficulty">' + diff + '</div>'
+    + '<p class="cr-town">' + esc(C.DIFFS[dk].blurb) + '</p>'
+    + '<details class="cr-gear cr-chal"' + (form.challenge || chOpen ? ' open' : '') + '><summary>' + (ch ? 'Challenge: ' + esc(ch.name) : 'Play a challenge') + '</summary>'
+    + '<div class="cr-opts" id="cr-ch">' + list + '</div></details>';
+}
+var chOpen = false;
 function buildView(){
   if (!form) form = freshForm();
   var L = preview(), k = C.colorsOf(L);
   var pos = C.POS.map(function(p){ var on = form.pos === p; return '<button class="k-chip' + (on ? ' on' : '') + '" data-pos="' + p + '" aria-pressed="' + on + '">' + p + '</button>'; }).join('');
   var arch = C.ARCH_KEYS.map(function(key){ var a = C.ARCHES[key], on = form.arch === key;
     return '<button class="cr-opt' + (on ? ' on' : '') + '" data-arch="' + key + '" aria-pressed="' + on + '"><b>' + esc(a.name) + '</b><small>' + esc(a.blurb) + '</small></button>'; }).join('');
-  var bg = C.BG_KEYS.map(function(key){ var b = C.BACKGROUNDS[key], on = form.bg === key;
-    return '<button class="cr-opt' + (on ? ' on' : '') + '" data-bg="' + key + '" aria-pressed="' + on + '"><b>' + esc(b.name) + '</b><small>Age ' + b.age + '. ' + esc(b.blurb) + '</small></button>'; }).join('');
-  var road = form.start === 'hs';
-  var starts = '<button class="cr-opt' + (road ? ' on' : '') + '" data-start="hs" aria-pressed="' + road + '"><b>High school</b><small>Age 15. Recruiting, college, March, then the draft.</small></button>'
-    + '<button class="cr-opt' + (!road ? ' on' : '') + '" data-start="draft" aria-pressed="' + !road + '"><b>Draft night</b><small>Skip ahead. Pick how you got there.</small></button>';
+  var road = form.start === 'hs', pro = proOpen();
+  var starts = '<button class="cr-opt' + (road ? ' on' : '') + (pro ? '' : ' cr-locked') + '" data-start="hs" aria-pressed="' + road + '"><b>High school'
+    + (pro ? '' : ' <span class="k-tag k-gold cr-pro">Pro</span>') + '</b><small>Age 15. Play recruiting, college and March yourself.</small></button>'
+    + '<button class="cr-opt' + (!road ? ' on' : '') + '" data-start="gen" aria-pressed="' + !road + '"><b>Draft night</b><small>Your road to the draft is played for you. A new one every career.</small></button>';
   var rv = road && C.roadView ? C.roadView(L) : null;
   /* Where you are from (Phase D). Left on Surprise me, the seed draws one and
      the line under the chips says which. */
   var ori = '';
-  if (C.ORIGIN_KEYS) {
+  if (form.parent) {
+    var fp = form.parent;
+    ori = '<div class="k-panel k-tight k-gold cr-son"><div class="k-eyebrow">' + K.iconHtml('tree', 2) + 'A legacy career</div>'
+      + '<p><b>Son of ' + esc(fp.name) + '.</b> ' + esc(fp.verdict) + '. ' + fp.pts.toLocaleString('en-US') + ' points over ' + fp.seasons + (fp.seasons === 1 ? ' season.' : ' seasons.') + '</p>'
+      + '<p class="k-small">You start in ' + (L.year - 1) + ', years after he retired. Pass his ' + fp.pts.toLocaleString('en-US') + ' points if you can.</p></div>';
+  } else if (C.ORIGIN_KEYS) {
     var any = !form.origin;
     ori = '<span class="lab k-label">Where you are from</span><div class="cr-opts" id="cr-origin" role="group" aria-label="Where you are from">'
       + '<button class="cr-opt' + (any ? ' on' : '') + '" data-origin="" aria-pressed="' + any + '"><b>Surprise me</b><small>One of these, drawn for you.</small></button>'
@@ -469,7 +610,9 @@ function buildView(){
       + '<p class="cr-town">Rare, larger than life stories. Off keeps every story grounded.</p>';
   }
   var B = window.RTF_BALLER;
-  return '<div class="cr-top"><h2 class="k-h1">New career</h2><button class="k-btn k-quiet" id="cr-home">Home</button></div>'
+  return '<div class="cr-top"><h2 class="k-h1">' + (form.parent ? 'Your son' : 'New career') + '</h2><div class="cr-topbtns">'
+    + (form.parent ? '<button class="k-btn k-quiet" id="cr-noson" type="button">Not a son</button>' : '')
+    + '<button class="k-btn k-quiet" id="cr-vault" type="button">' + K.iconHtml('vault', 2) + ' Vault</button><button class="k-btn k-quiet" id="cr-home">Home</button></div></div>'
     + '<div class="k-panel cr-build">'
     + '<p class="cr-intro">Your player is made up. The schools and the league are real.</p>'
     + '<span class="lab k-label">Name and number</span>'
@@ -481,14 +624,15 @@ function buildView(){
     + '<span class="lab k-label">Your game</span><div class="cr-opts" id="cr-arch">' + arch + '</div>'
     + ori
     + '<span class="lab k-label">Where it starts</span><div class="cr-opts" id="cr-start">' + starts + '</div>'
+    + setHtml()
     + (road ? '<p class="cr-town">' + esc(rv.what) + ' at ' + esc(rv.where) + '. ' + esc(rv.sub) + '.</p>'
-      : '<span class="lab k-label">Your road to the draft</span><div class="cr-opts" id="cr-bg">' + bg + '</div>')
+      : '<span class="lab k-label">Your road to the draft</span>' + roadHtml(L, true))
     + '<div class="cr-preview"><div class="cr-pfig">' + setArt(stageKind(L), k.primary, k.secondary, form.seed)
     + (B ? B.img(lookOf(L), { c1: k.primary, c2: k.secondary, num: form.num, age: L.age, pose: 'ball', scale: 2 }) : '') + '</div>'
     + '<div><div class="cr-povr"><span class="k-num">' + C.ovrOf(L) + '</span><span class="k-label">Overall</span></div>'
     + '<div class="cr-rt k-rows">' + rtRows(L, null, false) + '</div></div></div>'
     + '<p class="cr-grade">Scouts grade your ceiling <b>' + grade(L) + '</b>. Age ' + L.age + '. How high you go is up to you.</p>'
-    + '<button class="k-btn k-block k-big" id="cr-go">' + (road ? 'Start your sophomore year' : 'Go to the draft combine') + '</button>'
+    + '<button class="k-btn k-block k-big" id="cr-go">' + (road ? (pro ? 'Start your sophomore year' : 'Get Pro to start in high school') : 'Go to the draft combine') + '</button>'
     + '</div>';
 }
 function wireBuild(){
@@ -499,16 +643,27 @@ function wireBuild(){
   $('cr-dice').onclick = function(){ var s = String(Math.floor(Math.random() * 1e9)); form.seed = s; form.name = C.randomName(s); render(); };
   root.querySelectorAll('[data-pos]').forEach(function(b){ b.onclick = function(){ form.pos = b.getAttribute('data-pos'); render(); }; });
   root.querySelectorAll('[data-arch]').forEach(function(b){ b.onclick = function(){ form.arch = b.getAttribute('data-arch'); render(); }; });
-  root.querySelectorAll('[data-bg]').forEach(function(b){ b.onclick = function(){ form.bg = b.getAttribute('data-bg'); render(); }; });
   root.querySelectorAll('[data-origin]').forEach(function(b){ b.onclick = function(){ form.origin = b.getAttribute('data-origin'); render(); }; });
+  root.querySelectorAll('[data-diff]').forEach(function(b){ b.onclick = function(){ form.diff = b.getAttribute('data-diff'); render(); }; });
+  root.querySelectorAll('[data-ch]').forEach(function(b){ b.onclick = function(){ form.challenge = b.getAttribute('data-ch'); chOpen = true; render(); }; });
+  var cg = root.querySelector('.cr-chal'); if (cg) cg.ontoggle = function(){ chOpen = cg.open; };
   root.querySelectorAll('[data-legend]').forEach(function(b){ b.onclick = function(){ form.legend = b.getAttribute('data-legend') === '1'; render(); }; });
-  root.querySelectorAll('[data-start]').forEach(function(b){ b.onclick = function(){ form.start = b.getAttribute('data-start'); render(); }; });
+  root.querySelectorAll('[data-start]').forEach(function(b){ b.onclick = function(){
+    var v = b.getAttribute('data-start');
+    if (v === 'hs' && !proOpen()) { askPro('career'); return; }
+    form.start = v; render();
+  }; });
   $('cr-home').onclick = goHome;
+  $('cr-vault').onclick = openVault;
+  var ns = $('cr-noson');
+  if (ns) ns.onclick = function(){ form = null; render(); };
   wireLook(root, form.look, render);
   $('cr-go').onclick = function(){
+    if (form.start === 'hs' && !proOpen()) { askPro('career'); return; }
+    if (form.parent && !proOpen()) { askPro('family'); return; }
     var name = String(form.name || '').replace(/\s+/g, ' ').trim() || C.randomName(form.seed);
     var o = lifeOpts(); o.name = name;
-    var L = C.newLife(o);
+    var L = form.start === 'hs' ? C.newLife(o) : C.generateRoad(o);
     store().cur = L;
     form = null;
     stage = { beats: [], result: null };
@@ -551,6 +706,9 @@ function idCard(L){
   if ((L.team || rv) && v.coach) lines.push('Coach ' + v.coach);
   if (!rv && ct && ct.kind !== 'overseas') lines.push(money(ct.salary) + ' a year · ' + ct.years + (ct.years === 1 ? ' year left' : ' years left'));
   if (L.season && L.season.goal && C.GOALS[L.season.goal]) lines.push('Chasing: ' + C.GOALS[L.season.goal][0].toLowerCase());
+  var cs = C.challengeOf ? C.challengeOf(L) : null;
+  if (cs) lines.push('Challenge: ' + cs.name + ' · ' + (cs.met ? 'Done' : cs.out ? 'Out of reach' : cs.prog));
+  if (L.opt && L.opt.diff) lines.push(C.DIFFS[L.opt.diff].name + ' difficulty');
   var per = C.personaOf ? C.personaOf(L) : '';
   var strip = tag(L.pos + ' · ' + C.ARCHES[L.arch].name, 'k-team') + tag('#' + L.num)
     + (per && per !== 'Still writing it' ? '<span class="k-tag k-gold cr-persona" title="How the league sees you">' + esc(per) + '</span>' : '');
@@ -653,6 +811,7 @@ function draftHtml(L, d){
 
 function stageHtml(L, fresh){
   var out = '';
+  if (L.opt && L.opt.gen && !L.draft && L.stage === 'nba') out += roadHtml(L, false);
   if (stage.draft) out += draftHtml(L, stage.draft);
   out += resultHtml(stage.result, fresh);
   out += beatsHtml(stage.beats, fresh);
@@ -1100,6 +1259,15 @@ function collegeOf(L){
   return yrs + schools.join(' and ') + (titles ? '. National champion' : '');
 }
 
+/* The league a son starts in, kept small: the slot is half a megabyte for
+   everything. The news flags only stop a headline twice and are left. */
+function trimLeague(lg){
+  var o = {};
+  for (var k in lg) if (k !== 'news') o[k] = lg[k];
+  if (o.figs) o.figs = o.figs.filter(function(f){ return !f.gone; });
+  if (o.champs) { var ks = Object.keys(o.champs).sort().slice(-40), c = {}; ks.forEach(function(y){ c[y] = o.champs[y]; }); o.champs = c; }
+  return JSON.parse(JSON.stringify(o));
+}
 /* A finished career leaves the slot and goes on the shelf of Hall of Fame
    cards, so the next one can start while this one is still on screen. */
 function finish(){
@@ -1117,14 +1285,30 @@ function finish(){
     nick: f.nick || null, traits: f.traits || null, sig: f.sig || null, badges: f.badges || null, moments: f.moments || null, goals: f.goals || null,
     team: teams[teams.length - 1] || null, at: Date.now(),
     origin: f.origin || null, epilogue: f.epilogue || '',
-    ending: f.ending ? { tier: f.ending.tier, tierName: f.ending.tierName, names: f.ending.names || [], secretName: f.ending.secretName || null, routes: f.ending.routes || [] } : null };
+    ending: f.ending ? { tier: f.ending.tier, tierName: f.ending.tierName, names: f.ending.names || [], secretName: f.ending.secretName || null, routes: f.ending.routes || [] } : null,
+    /* Phase E: who this was, whose son, the story, the Vault ids, and the
+       league as he left it for a son to start in. */
+    id: String(L.seed), parent: L.parent ? L.parent.id : null, gen: L.parent ? (L.parent.gen || 1) + 1 : 1,
+    story: C.careerStory ? C.careerStory(L) : null,
+    ids: f.ending ? { tier: f.ending.tier, outs: f.ending.outcomes || [], secret: f.ending.secret || null,
+      routes: C.routesOf ? C.routesOf(L) : [], origin: L.origin || null } : null,
+    lg: C.leagueEnd && C.storyOn(L) ? trimLeague(C.leagueEnd(L)) : null,
+    diff: L.opt && L.opt.diff ? L.opt.diff : null,
+    ch: C.challengeOf && C.challengeOf(L) ? { id: L.challenge, met: C.challengeOf(L).met } : null };
+  var easy = card.diff === 'easy';
   /* The badges, through the page's one feat writer, so a Career badge is
      kept on the account the way every other mode's is. */
   var BD = window.RTF_BADGES;
-  if (BD && BD.careerFeats && C.featSummary && P.feats && L.history.length) P.feats(BD.careerFeats(C.featSummary(L)));
-  var sum = C.boardSummary ? C.boardSummary(L) : null;
+  /* AN EASY CAREER IS FOR THE STORY: no badges and no board. It is still
+     kept in the Vault, which records what happened rather than ranks it. */
+  if (!easy && BD && BD.careerFeats && C.featSummary && P.feats && L.history.length) P.feats(BD.careerFeats(C.featSummary(L)));
+  var sum = C.boardSummary && !easy ? C.boardSummary(L) : null;
   st.hof.unshift(card);
   if (st.hof.length > 20) st.hof.length = 20;
+  st.arc = (st.arc || []).filter(function(a){ return a.id !== card.id; });
+  st.arc.unshift(compact(card));
+  if (st.arc.length > ARC_MAX) st.arc.length = ARC_MAX;
+  card.found = vaultAdd(st, card);
   st.cur = null;
   st.last = card;
   save();
@@ -1235,7 +1419,8 @@ function finalView(card){
   var aw = card.awards && card.awards.length ? '<div class="cr-aw">' + awardTags(card.awards) + '</div>' : '';
   var hist = { history: card.history || [], amHist: card.amHist || [] };
   var B = window.RTF_BALLER;
-  return '<div class="cr-top"><h2 class="k-h1">Career over</h2><button class="k-btn k-quiet cr-home" id="cr-home">Home</button></div>'
+  return '<div class="cr-top"><h2 class="k-h1">Career over</h2><div class="cr-topbtns"><button class="k-btn k-quiet" id="cr-vault2" type="button">' + K.iconHtml('vault', 2) + ' Vault</button><button class="k-btn k-quiet cr-home" id="cr-home">Home</button></div></div>'
+    + (card.parent ? '<p class="cr-gen">' + K.iconHtml('tree', 2) + ' Generation ' + (card.gen || 2) + '</p>' : '')
     + '<div class="k-panel ' + (hof ? 'k-gold' : 'k-team') + ' cr-final">'
     + '<div class="cr-hset">' + setArt('nba', hof ? '#a8761c' : card.c1, hof ? '#ffd166' : card.c2, 'hall' + card.name) + '</div><div class="cr-hin">'
     + (B && card.look ? B.img(card.look, { c1: card.c1, c2: card.c2, num: card.num, age: card.age, pose: card.totals && card.totals.rings ? 'trophy' : 'suit', scale: 3 }) : '')
@@ -1263,7 +1448,12 @@ function finalView(card){
       + (card.moments && card.moments.length ? '<p><span class="k">Moments</span></p><ul class="cr-list">' + card.moments.map(function(m){ return '<li><span class="yr">' + m.y + '</span>' + esc(m.t) + '</li>'; }).join('') + '</ul>' : '')
       + '</div>' : '')
     + '<div class="k-panel k-tight cr-place" id="cr-place" hidden></div>'
+    + (card.ch && C.CHALLENGES && C.CHALLENGES[card.ch.id] ? '<div class="k-panel k-tight ' + (card.ch.met ? 'k-gold' : '') + ' cr-chres"><div class="k-eyebrow">' + K.iconHtml(card.ch.met ? 'check' : 'lock', 2) + 'Challenge · ' + esc(C.CHALLENGES[card.ch.id].name) + '</div><p>' + (card.ch.met ? 'Met. It is in the Vault.' : 'Not met. ' + esc(C.CHALLENGES[card.ch.id].blurb)) + '</p></div>' : '')
+    + (card.diff === 'easy' ? '<p class="k-small cr-easy">Played on Easy. Not on the Career board and no badges.</p>' : '')
+    + foundHtml(card)
     + '<div class="cr-btnrow"><button class="k-btn" id="cr-share">Share it</button><button class="k-btn k-sec" id="cr-again">New career</button></div>'
+    + (canFather(card) ? '<button class="k-btn k-sec k-block cr-sonbtn" id="cr-son" type="button">' + K.iconHtml('tree', 2) + ' Play as your son' + (proOpen() ? '' : ' <span class="k-tag k-gold cr-pro">Pro</span>') + '</button>' : '')
+    + storyHtml(card.story)
     + '<div class="k-panel cr-sec"><div class="k-eyebrow">' + K.iconHtml('clip', 2) + 'Season by season</div>' + seasonsTable(hist) + '</div>';
 }
 function shareText(card){
@@ -1275,11 +1465,221 @@ function shareText(card){
   if (card.college) bits.push(card.college + '.');
   return 'Run The Floor · Career\n' + bits.join(' ') + '\nLive your own NBA life: ' + P.SHARE_URL;
 }
+/* THE SHARE CARD (Phase E): the Hall card as a trading card, 540 by 756, in
+   the kit's colours with the player drawn at a whole-number scale. Only what
+   the card already says is on it. */
+function drawCard(card){
+  var B = window.RTF_BALLER, T = card.totals || {};
+  var W = 540, H = 756, cv = document.createElement('canvas');
+  cv.width = W; cv.height = H;
+  var x = cv.getContext('2d');
+  var hof = card.ending ? HOF_IN[card.ending.tier] : card.score >= 55;
+  var edge = hof ? '#ffd166' : (card.c2 || '#c9ccd6');
+  x.fillStyle = '#0a0d18'; x.fillRect(0, 0, W, H);
+  x.fillStyle = edge; x.fillRect(12, 12, W - 24, H - 24);
+  x.fillStyle = '#111629'; x.fillRect(20, 20, W - 40, H - 40);
+  var g = x.createLinearGradient(0, 20, 0, 420);
+  g.addColorStop(0, card.c1 || '#2b3242'); g.addColorStop(1, '#111629');
+  x.fillStyle = g; x.fillRect(20, 20, W - 40, 400);
+  x.fillStyle = 'rgba(5,7,13,.35)';
+  for (var i = 0; i < 30; i++) x.fillRect(20, 20 + i * 14, W - 40, 6);
+  x.textAlign = 'center';
+  x.fillStyle = '#ffd166'; x.font = '14px "Press Start 2P", monospace';
+  x.fillText('RUN THE FLOOR · CAREER', W / 2, 54);
+  if (B && card.look) {
+    var fig = B.canvas(card.look, { c1: card.c1, c2: card.c2, num: card.num, age: card.age, pose: T.rings ? 'trophy' : 'suit', scale: 5 });
+    x.imageSmoothingEnabled = false;
+    x.drawImage(fig, (W - fig.width) / 2, 82);
+  }
+  var fit = function(t, max, size, face){ var n = size; do { x.font = n + 'px ' + face; n -= 2; } while (x.measureText(t).width > max && n > 12); };
+  x.fillStyle = '#eef2f9';
+  fit(String(card.name).toUpperCase(), W - 80, 52, '"Anton", Impact, sans-serif');
+  x.fillText(String(card.name).toUpperCase(), W / 2, 466);
+  x.fillStyle = '#b8c3e6'; x.font = '600 18px "Archivo", system-ui, sans-serif';
+  x.fillText('#' + card.num + ' · ' + card.pos + ' · ' + card.from + '-' + card.to + (card.gen > 1 ? ' · Generation ' + card.gen : ''), W / 2, 496);
+  x.fillStyle = hof ? '#ffd166' : '#ff7a1a';
+  fit(String(card.verdict).toUpperCase(), W - 80, 34, '"Anton", Impact, sans-serif');
+  x.fillText(String(card.verdict).toUpperCase(), W / 2, 540);
+  var cells = [[(T.pts || 0).toLocaleString('en-US'), 'Points'], [String(T.rings || 0), 'Rings'], [String(T.star || 0), 'All-Star'], [String(T.mvp || 0), 'MVP']];
+  var cw = (W - 80) / 4;
+  cells.forEach(function(c, k){
+    var cx = 40 + cw * k;
+    x.fillStyle = '#18203a'; x.fillRect(cx + 4, 566, cw - 8, 86);
+    x.fillStyle = '#eef2f9'; x.font = '18px "Press Start 2P", monospace';
+    fit(c[0], cw - 20, 18, '"Press Start 2P", monospace');
+    x.fillText(c[0], cx + cw / 2, 608);
+    x.fillStyle = '#8fa0d6'; x.font = '800 13px "Archivo", system-ui, sans-serif';
+    x.fillText(c[1].toUpperCase(), cx + cw / 2, 636);
+  });
+  var foot = card.ending ? card.ending.tierName + (card.ending.secretName ? ' · ' + card.ending.secretName : '') : '';
+  if (foot) { x.fillStyle = '#b8c3e6'; fit(foot, W - 80, 18, '600 18px "Archivo", system-ui, sans-serif'); x.fillText(foot, W / 2, 684); }
+  x.fillStyle = '#8fa0d6'; x.font = '12px "Press Start 2P", monospace';
+  x.fillText(String(P.SHARE_URL || 'runthe.gg/hoops').replace(/^https?:\/\//, '').replace(/\/$/, ''), W / 2, 718);
+  return cv;
+}
+function shareCard(card){
+  var text = shareText(card);
+  var ready = document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve();
+  ready.then(function(){
+    var cv = null;
+    try { cv = drawCard(card); } catch (e) { if (window.console) console.error('career card failed to draw', e); }
+    if (!cv || !cv.toBlob || !P.shareImage) { P.shareText(text); return; }
+    cv.toBlob(function(blob){ P.shareImage(text, blob); }, 'image/png');
+  });
+}
 function wireFinal(card){
   $('cr-home').onclick = goHome;
+  var sb = $('cr-son'); if (sb) sb.onclick = function(){ startSon(card); };
+  $('cr-vault2').onclick = openVault;
   $('cr-again').onclick = function(){ store().last = null; save(); form = null; K.wipe(); render(); window.scrollTo(0, 0); };
-  $('cr-share').onclick = function(){ P.shareText(shareText(card)); };
+  $('cr-share').onclick = function(){ shareCard(card); };
   paintPlace(card);
+}
+
+
+// ─── the Vault (Phase E) ────────────────────────────────────────────────────
+
+/* The written story, one heading a chapter. */
+function storyHtml(story){
+  if (!story || !story.length) return '';
+  return '<div class="k-panel cr-sec cr-story"><div class="k-eyebrow">' + K.iconHtml('clip', 2) + 'Your story</div>'
+    + story.map(function(x){ return '<h3 class="cr-sub">' + esc(x.h) + '</h3><p>' + esc(x.p) + '</p>'; }).join('') + '</div>';
+}
+/* What this career put in the Vault for the first time. */
+function foundHtml(card){
+  var f = card.found;
+  if (!f || !f.length) return '';
+  return '<div class="k-panel k-tight k-gold cr-found"><div class="k-eyebrow">' + K.iconHtml('vault', 2) + 'New in the Vault</div><div class="cr-aw">'
+    + f.map(function(k){ return '<span class="k-tag k-gold">' + esc(vaultName(k)) + '</span>'; }).join('') + '</div></div>';
+}
+function vaultName(k){
+  var t = k.slice(0, 1), id = k.slice(2);
+  if (t === 't') return (C.HOF_TIERS || {})[id] || id;
+  if (t === 'o') return (C.OUTCOMES || {})[id] || id;
+  if (t === 's') return (C.SECRETS || {})[id] || id;
+  if (t === 'r') return ((C.ROUTES || {})[id] || [id])[0];
+  if (t === 'g') return ((C.ORIGINS || {})[id] || { name: id }).name;
+  if (t === 'c') return ((C.CHALLENGES || {})[id] || { name: id }).name;
+  return id;
+}
+/* The shelves, in the order a career meets them. */
+function vaultShelves(){
+  var sh = [
+    { k: 'g', name: 'Where you came from', ids: C.ORIGIN_KEYS || [] },
+    { k: 'r', name: 'The road', ids: Object.keys(C.ROUTES || {}) },
+    { k: 't', name: 'The Hall', ids: Object.keys(C.HOF_TIERS || {}) },
+    { k: 'o', name: 'Remembered as', ids: Object.keys(C.OUTCOMES || {}) },
+    { k: 's', name: 'Secret endings', ids: Object.keys(C.SECRETS || {}), secret: true },
+  ];
+  if (C.CHALLENGE_KEYS) sh.push({ k: 'c', name: 'Challenges', ids: C.CHALLENGE_KEYS });
+  return sh;
+}
+function vaultCount(st){
+  var have = 0, all = 0;
+  vaultShelves().forEach(function(s){ s.ids.forEach(function(id){ all++; if (st.vault[s.k + ':' + id]) have++; }); });
+  return { have: have, all: all };
+}
+var view = null, vtab = 'endings', vopen = null;
+function openVault(){ view = 'vault'; vopen = null; closeOff(); render(); window.scrollTo(0, 0); }
+function vaultView(){
+  var st = store(), n = vaultCount(st);
+  var t = function(id, name){ var on = vtab === id; return '<button class="k-tab" role="tab" aria-selected="' + on + '" data-vtab="' + id + '">' + name + '</button>'; };
+  var body = vtab === 'careers' ? careersHtml(st) : vtab === 'family' ? familyHtml(st) : endingsHtml(st);
+  return '<div class="cr-top"><h2 class="k-h1">The Vault</h2><div class="cr-topbtns"><button class="k-btn k-quiet" id="cr-vback" type="button">Back</button><button class="k-btn k-quiet" id="cr-home" type="button">Home</button></div></div>'
+    + '<div class="k-panel k-tight cr-vsum"><span class="k-num">' + n.have + '</span><span>of ' + n.all + ' found</span>'
+    + '<span class="cr-vbar" aria-hidden="true"><i style="width:' + Math.round(100 * n.have / Math.max(1, n.all)) + '%"></i></span>'
+    + '<span class="k-small">' + st.arc.length + (st.arc.length === 1 ? ' career played' : ' careers played') + '</span></div>'
+    + '<div class="k-panel cr-sec"><div class="k-tabs cr-tabs" role="tablist">' + t('endings', 'Endings') + t('careers', 'Careers') + t('family', 'Family') + '</div>'
+    + '<div role="tabpanel">' + body + '</div></div>';
+}
+function endingsHtml(st){
+  return vaultShelves().map(function(sh){
+    var have = sh.ids.filter(function(id){ return st.vault[sh.k + ':' + id]; }).length;
+    return '<h3 class="cr-sub">' + esc(sh.name) + ' · ' + have + ' of ' + sh.ids.length + '</h3><ul class="cr-vgrid">' + sh.ids.map(function(id){
+      var got = !!st.vault[sh.k + ':' + id], nm = vaultName(sh.k + ':' + id);
+      return '<li class="' + (got ? 'got' : 'no') + '">' + K.iconHtml(got ? (sh.k === 's' ? 'star' : 'check') : 'lock', 1)
+        + '<span>' + (got || !sh.secret ? esc(nm) : 'Secret') + '</span>' + (got ? '' : '<span class="sr-only"> (not found yet)</span>') + '</li>';
+    }).join('') + '</ul>';
+  }).join('');
+}
+function fullCard(id){ var h = store().hof || []; for (var i = 0; i < h.length; i++) if (cardId(h[i]) === id) return h[i]; return null; }
+function arcEntry(id){ var a = store().arc || []; for (var i = 0; i < a.length; i++) if (a[i].id === id) return a[i]; return null; }
+function careersHtml(st){
+  if (!st.arc.length) return '<p class="k-small">No finished careers yet. Every one you play ends up here.</p>';
+  if (vopen) {
+    var a = arcEntry(vopen);
+    if (a) {
+      var c = fullCard(a.id);
+      return '<button class="k-btn k-quiet" id="cr-vlist" type="button">All careers</button>' + entryHtml(a, true)
+        + (canFather(a) ? '<button class="k-btn k-sec k-block cr-sonbtn" data-son="' + esc(a.id) + '" type="button">' + K.iconHtml('tree', 2) + ' Play as his son' + (proOpen() ? '' : ' <span class="k-tag k-gold cr-pro">Pro</span>') + '</button>' : '')
+        + (c && c.story ? storyHtml(c.story) : '<p class="k-small">The full story is kept for your last twenty careers.</p>');
+    }
+  }
+  return '<ul class="cr-arc">' + st.arc.map(function(a){ return '<li>' + entryHtml(a, false) + '</li>'; }).join('') + '</ul>';
+}
+function entryHtml(a, big){
+  var B = window.RTF_BALLER;
+  var pic = B && a.look ? B.img(a.look, { c1: a.c1, c2: a.c2, num: a.num, age: a.age, pose: a.rings ? 'trophy' : 'suit', scale: big ? 2 : 1, still: true }) : '';
+  var inner = '<span class="cr-apic">' + pic + '</span><span class="cr-awho"><b>' + esc(a.name) + '</b>'
+    + '<small>' + a.from + '-' + a.to + ' · ' + a.pts.toLocaleString('en-US') + ' pts' + (a.rings ? ' · ' + a.rings + (a.rings === 1 ? ' ring' : ' rings') : '') + '</small>'
+    + '<small>' + esc(a.verdict) + (a.gen > 1 ? ' · Generation ' + a.gen : '') + '</small></span>';
+  return big ? '<div class="cr-aentry big">' + inner + '</div>' : '<button class="cr-aentry" type="button" data-arc="' + esc(a.id) + '">' + inner + '</button>';
+}
+/* THE FAMILY TREE is Run The Floor Pro's. A family is every career linked by
+   `parent`, drawn from the oldest down; a career with no son yet is a tree of
+   one and is not drawn, because a tree of one is the careers list. */
+function familyHtml(st){
+  if (!proOpen()) {
+    return '<div class="cr-lockbox">' + K.iconHtml('lock', 3) + '<p><b>The family tree is Pro.</b> When a career ends, play as his son. He starts years later, in the league his father left, with his father\'s points to chase.</p>'
+      + '<button class="k-btn" id="cr-fampro" type="button">Get Run The Floor Pro</button></div>';
+  }
+  var by = {}, ids = {};
+  st.arc.forEach(function(a){ ids[a.id] = a; });
+  st.arc.forEach(function(a){ if (a.parent && ids[a.parent]) (by[a.parent] = by[a.parent] || []).push(a); });
+  var roots = st.arc.filter(function(a){ return (!a.parent || !ids[a.parent]) && by[a.id]; });
+  if (!roots.length) return '<p class="k-small">No families yet. Finish a career, then press Play as your son.</p>';
+  var node = function(a){
+    var kids = (by[a.id] || []).slice().sort(function(x, y){ return x.from - y.from; });
+    return '<li>' + entryHtml(a, false) + (kids.length ? '<ul>' + kids.map(node).join('') + '</ul>' : '') + '</li>';
+  };
+  return roots.map(function(r){ return '<ul class="cr-tree">' + node(r) + '</ul>'; }).join('');
+}
+function wireVault(){
+  var root = $('s-car');
+  $('cr-home').onclick = goHome;
+  $('cr-vback').onclick = function(){ view = null; render(); window.scrollTo(0, 0); };
+  root.querySelectorAll('[data-vtab]').forEach(function(b){ b.onclick = function(){ vtab = b.getAttribute('data-vtab'); vopen = null; render(); var t = root.querySelector('[data-vtab="' + vtab + '"]'); if (t) t.focus(); }; });
+  root.querySelectorAll('[data-arc]').forEach(function(b){ b.onclick = function(){ vtab = 'careers'; vopen = b.getAttribute('data-arc'); render(); window.scrollTo(0, 0); }; });
+  root.querySelectorAll('[data-son]').forEach(function(b){ b.onclick = function(){ var id = b.getAttribute('data-son'); startSon(fullCard(id) || arcEntry(id)); }; });
+  var l = $('cr-vlist'); if (l) l.onclick = function(){ vopen = null; render(); };
+  var fp = $('cr-fampro'); if (fp) fp.onclick = function(){ askPro('family'); };
+}
+/* Play as his son: the builder, with the father on it. Pro, asked first. A
+   full Hall card carries the league he left; an older entry starts the son
+   in a league played forward from the data's own year. */
+/* A son is the son of a former pro, so his father has to have played. */
+function canFather(c){ return !!c && ((c.totals ? c.totals.seasons : c.seasons) || 0) > 0; }
+function startSon(c){
+  if (!canFather(c)) return;
+  if (!proOpen()) { askPro('family'); return; }
+  var a = c.totals ? compact(c) : c;
+  var seed = String(Math.floor(Math.random() * 1e9));
+  var B = window.RTF_BALLER;
+  var look = B ? B.lookFor(seed) : {};
+  if (a.look) { look.skin = a.look.skin; look.hc = a.look.hc; }
+  var last = String(a.name).trim().split(/\s+/).slice(-1)[0];
+  form = { seed: seed, name: C.randomName(seed).split(' ')[0] + ' ' + last, num: Math.floor(Math.random() * 100), pos: a.pos || 'SF', arch: 'twoway', bg: 'oad',
+    start: 'hs', origin: '', legend: true, look: look,
+    parent: { id: a.id, name: a.name, num: a.num, pos: a.pos, pts: a.pts, seasons: a.seasons, score: a.score, verdict: a.verdict,
+      rings: a.rings, star: a.star, hof: a.hof, clubs: a.teams || [], jersey: a.jersey, gen: a.gen || 1, end: a.to, age: a.age },
+    parentLeague: c.lg || null };
+  var st = store();
+  st.last = null;
+  save();
+  view = null;
+  K.wipe();
+  render();
+  window.scrollTo(0, 0);
 }
 
 // ─── the screen ─────────────────────────────────────────────────────────────
@@ -1305,7 +1705,8 @@ function render(){
   var team = st.cur ? st.cur.team : null;
   if (st.cur && lastTeam && team && team !== lastTeam) { K.wipe(); K.toast(K.iconHtml('home', 2) + '<span>Welcome to the ' + esc(teamName(team)) + '.</span>', 'k-gold'); }
   lastTeam = team;
-  if (st.cur) {
+  if (view === 'vault') { body.innerHTML = vaultView(); wireVault(); }
+  else if (st.cur) {
     var d = stage.delta || null;
     stage.delta = null;
     body.innerHTML = lifeView(st.cur, d);
@@ -1321,6 +1722,7 @@ function render(){
 function open(){
   if (!league()) { P.toast('The league is still loading.'); return; }
   S = null;
+  view = null;
   stage = { beats: [], result: null, draft: null };
   lastTeam = null;
   P.show('s-car');
@@ -1387,6 +1789,11 @@ window.RTF_CAREER_UI = {
      the tallest receipt rather than whichever one a random career deals. */
   paintPress: function(st){ stage = st; render(); scrollStage(); },
   boardIds: boardIds,
+  openVault: function(){ open(); openVault(); },
+  /* check-career.mjs only: the share card for the Hall card on screen. */
+  drawCard: function(){ var l = store().last; return l ? drawCard(l) : null; },
+  /* modes-ui.js calls this when Pro arrives or goes, so the builder redraws. */
+  proChanged: function(){ if (onScreen() && !store().cur && !store().last) { if (form && form.start === 'hs' && !proOpen()) form.start = 'gen'; render(); } },
 };
 
 function boot(){

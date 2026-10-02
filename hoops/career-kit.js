@@ -430,11 +430,15 @@ var ICONS = {
   home: ['...o...', '..obo..', '.obbbo.', 'ohbbbbo', 'obkbkbo', 'obkbkbo', 'ooooooo'],
   sound: ['...o...', '..oo.o.', 'oohbo.o', 'ohbbo.o', 'oobbo.o', '..oo.o.', '...o...'],
   mute: ['...o...', '..oo...', 'oohbo.o', 'ohbbooo', 'oobbo.o', '..oo...', '...o...'],
+  vault: ['ooooooo', 'ohbbbbo', 'obkkkbo', 'obkwkbo', 'obkkkbo', 'osbbbso', 'ooooooo'],
+  tree: ['..ooo..', '.ohbbo.', 'ohbbbbo', 'obbsbbo', '.ooooo.', '...k...', '..kkk..'],
+  share: ['....oo.', '...obo.', 'ooobbo.', 'ohbbbo.', 'obbbo..', 'osbo...', 'ooo....'],
 };
 var ICON_BASE = {
   heart: '#e5483f', face: '#f2b632', star: '#ffd166', clip: '#7fb2ff', cash: '#3ecf8e', ball: '#e2762a',
   trophy: '#e8b33c', medal: '#e8b33c', arrow: '#ff7a1a', up: '#3ecf8e', down: '#ff6b6b', lock: '#8fa0d6',
   check: '#3ecf8e', mic: '#b8c3e6', sound: '#ffd166', mute: '#8fa0d6', shoe: '#ff7a1a', ring: '#ffd166', whistle: '#b8c3e6', plane: '#7fb2ff', home: '#c98b4e',
+  vault: '#b8c3e6', tree: '#3ecf8e', share: '#ff7a1a',
 };
 function icon(name, color){
   var g = ICONS[name]; if (!g) return null;
