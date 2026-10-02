@@ -1404,7 +1404,10 @@ section('the building, the menus and the match mode');
     go('fight'); out.inmatch=document.body.classList.contains('inmatch') && getComputedStyle(document.getElementById('botnav')).display==='none';
     go('career'); out.back=!document.body.classList.contains('inmatch');
     ['win','loss','draw'].forEach(k=>{ const h=resultHero({oppName:'Test Opponent',oppId:null},{win:k==='win',draw:k==='draw'},k==='draw');
-      out.hero[k]=/mh-stamp/.test(h) && /Test Opponent/.test(h) && !/undefined|NaN/.test(h) && (h.match(/<svg/g)||[]).length>=2; });
+      // a sprite is an embedded PNG, and base64 spells NaN by chance, so the
+      // check reads the markup with the image data taken out
+      const txt=h.replace(/data:image\/[a-z]+;base64,[A-Za-z0-9+\/=]+/g,'');
+      out.hero[k]=/mh-stamp/.test(h) && /Test Opponent/.test(h) && !/undefined|NaN/.test(txt) && (h.match(/<svg/g)||[]).length>=2; });
     return out;
   });
   const vbad=r.venues.filter(v=>!(v.one&&v.named&&v.screen&&v.apron&&v.beams>=2));

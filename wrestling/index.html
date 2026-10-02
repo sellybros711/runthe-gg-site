@@ -11076,9 +11076,29 @@ function phaseTurn(ph){
   // the finish stretch is both of them trading. Nobody gets to run away with it
   return rnd() < clamp(0.5+MS.mom/340,0.24,0.76);
 }
+/* THE CALL KNOWS WHO IS IN THE RING. The phase bank is the same for every
+   match; this is the one line at the bell that is about this one: the feud
+   and why it started, or the belt on the line. Nothing is said when there is
+   nothing special about the match, which is most of them, so it stays a moment. */
+function contextCall(){
+  if(!G.prefs || G.prefs.commentary===false || !MS) return;
+  const o=MS.o||{}, st=story(), opp=MS.opp&&MS.opp.name, me=G.w.name, lines=[];
+  if(st && st.charId===o.oppId && opp){
+    const why=st.reason?String(st.reason).replace(/<[^>]+>/g,'').replace(/\.$/,''):'';
+    lines.push(why?`"Remember how this started: ${why}. Tonight ${me} and ${opp} settle some of it."`
+      :`"This is personal. ${me} and ${opp} have been circling each other for weeks."`);
+  }
+  if(o.stakes==='defense' && G.car.title) lines.push(`"${me} defends the ${G.car.title} tonight. One three count and it walks out with somebody else."`);
+  else if(o.stakes==='title') lines.push(`"Championship gold on the line. Everything changes for ${me} with one three count."`);
+  if(!lines.length) return;
+  const el=$('fLog'); if(!el) return;
+  lines.forEach(l=>{ const d=document.createElement('div'); d.className='comm-ctx'; d.style.color='#c8b273'; d.style.fontStyle='italic'; d.textContent=l; el.appendChild(d); });
+  el.scrollTop=el.scrollHeight;
+}
 async function announcePhase(ph){
   $('fPhase').textContent=ph.name.toUpperCase();
   fLog(`<span class="phase">· ${ph.name} ·</span> <span class="hint">${ph.say}</span>`);
+  if(MS && MS.beat===0) contextCall();
   commLine(null, ph.id);
   if(ph.id==='heat'||ph.id==='stretch') await sleep(240);
 }
@@ -11948,15 +11968,28 @@ async function climbAttempt(){
   await settle(280);
 }
 
+/* THE THREE BIG CALLS SPEAK YOUR MATCH. They were the same three cards with
+   the same three names in every match of every career. The choice and its
+   odds are unchanged; what changes is the wording, which now names a move you
+   actually know, your catchphrase and the kind of match this is. The pick of
+   move draws from the match's own rolls, so a replay of a seed reads the same. */
+function knownMove(cats){
+  const ms=(G.w.moves||[]).map(moveById).filter(m=>m&&cats.indexOf(m.cat)>=0);
+  return ms.length ? ms[Math.floor(rnd()*ms.length)] : null;
+}
+function callHead(list){ return list[(MS.decisions+(MS.beat||0))%list.length]; }
+function stipWord(){ const t=(MS.o&&(MS.o.stipLabel||MS.o.stip))||''; return t&&!/singles/i.test(t)?String(t).replace(/<[^>]+>/g,''):''; }
 async function finishDecision(){
   MS.finishTried=true; MS.decisions++;
   const fin=G.w.finisher?moveById(G.w.finisher):null;
   const psy=G.w.attrs.ps, base=0.40+psy*0.004+(MS.mom/380)+((100-MS.opp.hp)/300);
   const pFin=clamp(base+(fin?0.10:0)+styleDec('fin'),0,0.95), pSafe=clamp(base+0.24+styleDec('grind'),0,0.96);
-  const pick=await decide('THEY\'RE DOWN. CALL IT.','Your opponent is reeling. This is the moment.',[
-    {name:fin?fin.name:'Go For The Finish',desc:'End it now. Huge payoff if it lands.',p:pFin,kind:'fin'},
-    {name:'Grind Them Down',desc:'Safer. Keep control, finish later.',p:pSafe,kind:'grind'},
-    {name:'Play To The Crowd',desc:'Risk it for a massive pop.',p:clamp(base-0.10+G.w.attrs.ch*0.003+styleDec('crowd'),0,0.92),kind:'crowd'},
+  const sub=knownMove(['submission','technical']), stp=stipWord();
+  const pick=await decide(callHead(['THEY\'RE DOWN. CALL IT.','THIS IS THE MOMENT.','THEY\'RE OUT ON THEIR FEET.','END IT OR WAIT?']),
+    `${MS.opp.name} is reeling${stp?' and this is a '+stp.toLowerCase():''}. The building knows what comes next.`,[
+    {name:fin?fin.name:'Go For The Finish',desc:fin?'Your finisher. Huge payoff if it lands, a big swing if it doesn\'t.':'End it now. Huge payoff if it lands.',p:pFin,kind:'fin'},
+    {name:sub?`Lock in the ${sub.name}`:'Grind Them Down',desc:sub?'Wear them down with something you trust. Safer.':'Safer. Keep control, finish later.',p:pSafe,kind:'grind'},
+    {name:G.w.catch?`"${G.w.catch}"`:'Play To The Crowd',desc:G.w.catch?'Stop and say it to the whole building. Risky.':'Risk it for a massive pop.',p:clamp(base-0.10+G.w.attrs.ch*0.003+styleDec('crowd'),0,0.92),kind:'crowd'},
   ]);
   const ok=rnd()<pick.p;
   if(pick.kind==='fin'){
@@ -11989,9 +12022,11 @@ async function comebackDecision(){
   MS.decisions++;
   const to=G.w.attrs.to, ch=G.w.attrs.ch, ps=G.w.attrs.ps;
   const pFire=clamp(0.32+ch*0.005+to*0.002+styleDec('fire'),0,0.93), pCounter=clamp(0.28+ps*0.006+styleDec('counter'),0,0.93), pSurvive=clamp(0.62+to*0.003+styleDec('survive'),0,0.96);
-  const pick=await decide('YOU\'RE IN TROUBLE.','They have all the momentum. How do you turn this around?',[
+  const ctr=knownMove(['strike','slam','technical']);
+  const pick=await decide(callHead(['YOU\'RE IN TROUBLE.','THEY\'VE GOT YOU.','HANG ON.','THE ROOM IS TURNING.']),
+    `${MS.opp.name} has all the momentum. How do you turn this around?`,[
     {name:'Fire Up',desc:'Feed off the crowd and rally.',p:pFire,kind:'fire'},
-    {name:'Catch Them Clean',desc:'Time a counter out of nowhere.',p:pCounter,kind:'counter'},
+    {name:ctr?`Catch them with a ${ctr.name}`:'Catch Them Clean',desc:'Time a counter out of nowhere.',p:pCounter,kind:'counter'},
     {name:'Weather The Storm',desc:'Cover up and survive the run.',p:pSurvive,kind:'survive'},
   ]);
   const ok=rnd()<pick.p;
@@ -12016,9 +12051,11 @@ async function comebackDecision(){
 async function midDecision(){
   MS.decisions++;
   const ae=G.w.attrs.ae, te=G.w.attrs.te, ch=G.w.attrs.ch;
-  const pick=await decide('SWING THE MATCH.','A window opens. What do you call?',[
-    {name:'High-Risk Spot',desc:'Big pop if you hit it. Hurts if you miss.',p:clamp(0.30+ae*0.006+styleDec('risk')+facBonus('risk',0),0,0.93),kind:'risk'},
-    {name:'Chain Wrestling',desc:'Slow, technical, reliable.',p:clamp(0.55+te*0.004+styleDec('chain'),0,0.95),kind:'chain'},
+  const air=knownMove(['aerial']), chain=knownMove(['technical','suplex']), stp=stipWord();
+  const pick=await decide(callHead(['SWING THE MATCH.','A WINDOW OPENS.','YOUR CALL.','READ THE ROOM.']),
+    stp?`Halfway through a ${stp.toLowerCase()}. What do you call?`:'A window opens. What do you call?',[
+    {name:air?`Go up top: ${air.name}`:'High-Risk Spot',desc:'Big pop if you hit it. Hurts if you miss.',p:clamp(0.30+ae*0.006+styleDec('risk')+facBonus('risk',0),0,0.93),kind:'risk'},
+    {name:chain?`Chain into a ${chain.name}`:'Chain Wrestling',desc:'Slow, technical, reliable.',p:clamp(0.55+te*0.004+styleDec('chain'),0,0.95),kind:'chain'},
     {name:'Work The Crowd',desc:'Build heat before the finish.',p:clamp(0.48+ch*0.005+styleDec('heat'),0,0.95),kind:'heat'},
   ]);
   const ok=rnd()<pick.p;
