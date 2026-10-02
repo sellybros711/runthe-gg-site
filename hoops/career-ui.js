@@ -1893,6 +1893,18 @@ function renderHero(){
   }
   go.disabled = !league();
   go.onclick = open;
+  /* The card answers a press anywhere on it, the way the puzzle cards do. The
+     button stays the one focusable control, so a keyboard and a screen reader
+     meet a single door rather than a button nested in a button. */
+  if (hero) {
+    hero.classList.toggle('live', !go.disabled);
+    var chip = $('ch-chip');
+    if (chip) chip.textContent = L && !L.retired ? 'Continue' : 'Play';
+    hero.onclick = function(e){
+      if (go.disabled || (e.target.closest && e.target.closest('button,a,input,select'))) return;
+      open();
+    };
+  }
 }
 
 window.RTF_CAREER_UI = {

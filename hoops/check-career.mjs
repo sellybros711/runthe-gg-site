@@ -889,8 +889,21 @@ async function browser() {
   ok(home.docked, 'the dock carries the career button on a phone');
   ok(/start your career/i.test(home.label), `with nothing started it says Start ("${home.label}")`);
 
-  await page.evaluate(() => document.querySelector('#b-career').click());
-  await page.waitForSelector('#cr-go');
+  /* The card itself is a door, like the puzzle cards under it: on a phone its
+     button is in the dock, so a tap on the card is the first press a player
+     makes. A real tap on the heading, not a scripted click on the button. */
+  const card = await page.evaluate(() => {
+    const h = document.querySelector('#career');
+    const c = document.querySelector('#ch-chip');
+    return { live: h.classList.contains('live'), cursor: getComputedStyle(h).cursor,
+      chip: c ? getComputedStyle(c).display !== 'none' && c.textContent : '' };
+  });
+  ok(card.live && card.cursor === 'pointer', `the career card reads as pressable (${card.cursor})`);
+  ok(card.chip === 'Play', `and wears a Play chip like the puzzle cards ("${card.chip}")`);
+  await page.locator('#ch-title').scrollIntoViewIfNeeded();
+  await page.locator('#ch-title').click();
+  await page.waitForSelector('#cr-go', { timeout: 10000 }).catch(() => {});
+  ok(await page.evaluate(() => !!document.querySelector('#cr-go')), 'a tap on the career card opens Career');
   /* The builder: what is picked is what is played. High school is the
      default; draft night shows the backgrounds and hides them again. */
   await page.click('[data-pos="C"]');
