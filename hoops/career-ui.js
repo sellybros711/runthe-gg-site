@@ -325,6 +325,9 @@ var CSS = [
 '.cr-epi .cr-secret .k{color:var(--k-gold);}',
 '.cr-road{margin:0 0 12px;font-size:14px;line-height:1.5;color:var(--k-ink-2);}',
 '.cr-roadbox{margin:0 0 12px;}.cr-roadbox .cr-list{margin:0;}',
+'.cr-reveal li{animation:cr-roadin .4s steps(4,end) both;}',
+'@keyframes cr-roadin{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:none;}}',
+'@media (prefers-reduced-motion:reduce){.cr-reveal li{animation:none;}}',
 'details.cr-roadbox > summary,details.cr-rtfold > summary{cursor:pointer;list-style:none;margin:0;min-height:28px;display:flex;align-items:center;}',
 'details.cr-roadbox > summary::-webkit-details-marker,details.cr-rtfold > summary::-webkit-details-marker{display:none;}',
 'details.cr-roadbox > summary:after,details.cr-rtfold > summary:after{content:"+";margin-left:auto;font:normal 12px var(--k-f-pixel);color:var(--k-ink-3);}',
@@ -664,7 +667,15 @@ function roadHtml(L, builder){
   var list = '<ul class="cr-list">' + lines.map(function(t){ return '<li>' + esc(t) + '</li>'; }).join('') + '</ul>';
   /* In the career it is a fold, one line until it is opened: it is history,
      and on a phone it stood between the player and the card he has to answer. */
-  if (!builder) return '<details class="k-panel k-tight cr-roadbox" id="cr-roadbox"><summary class="k-eyebrow">' + K.iconHtml('clip', 2) + 'How you got here</summary>' + list + '</details>';
+  /* THE ROAD IS A REVEAL. The builder never shows it: it is played the moment
+     the career starts, and the first screen of the career opens on it, line
+     by line. After the first press it folds to one line, because by then it
+     is history. */
+  if (!builder) {
+    var rev = !!stage.reveal;
+    if (rev) list = '<ul class="cr-list cr-reveal">' + lines.map(function(t, i){ return '<li style="animation-delay:' + (i * 0.35).toFixed(2) + 's">' + esc(t) + '</li>'; }).join('') + '</ul>';
+    return '<details class="k-panel k-tight cr-roadbox' + (rev ? ' k-in' : '') + '" id="cr-roadbox"' + (rev ? ' open' : '') + '><summary class="k-eyebrow">' + K.iconHtml('clip', 2) + (rev ? 'Your road to the draft' : 'How you got here') + '</summary>' + list + '</details>';
+  }
   return '<div class="k-panel k-tight cr-roadbox" id="cr-roadbox">' + list
     + '<p class="k-small" style="margin:8px 0 0">Played for you. Press New for another road.</p></div>';
 }
@@ -777,7 +788,7 @@ function buildView(){
     + pane('start', '<p class="cr-intro">Your player is made up. The schools and the league are real.</p>'
       + '<span class="lab k-label">Where it starts</span><div class="cr-opts" id="cr-start">' + starts + '</div>'
       + (road ? '<p class="cr-town">' + esc(rv.what) + ' at ' + esc(rv.where) + '. ' + esc(rv.sub) + '.</p>'
-        : '<span class="lab k-label">Your road to the draft</span>' + roadHtml(L, true))
+        : '<p class="cr-town">Your road to the draft is played the moment you start. You see how it went at the combine.</p>')
       + '<p class="cr-grade">Scouts grade your ceiling <b>' + grade(L) + '</b>. Age ' + L.age + '. How high you go is up to you.</p>')
     + '<div class="cr-cta">' + (next ? '<button class="k-btn k-sec" id="cr-bnext" type="button" data-bstep="' + next[0] + '">' + next[1] + ' ' + K.iconHtml('arrow', 1) + '</button>' : '')
     + '<button class="k-btn k-block k-big" id="cr-go">' + goText + '</button></div>'
@@ -825,8 +836,9 @@ function wireBuild(){
     var o = lifeOpts(); o.name = name;
     var L = form.start === 'hs' ? C.newLife(o) : C.generateRoad(o);
     store().cur = L;
+    var gen = form.start !== 'hs';
     form = null;
-    stage = { beats: [], result: null };
+    stage = { beats: [], result: null, reveal: gen };
     save();
     K.wipe();
     render();
@@ -2014,6 +2026,9 @@ window.RTF_CAREER_UI = {
      the tallest receipt rather than whichever one a random career deals. */
   paintPress: function(st){ stage = st; render(); scrollStage(); },
   boardIds: boardIds,
+  /* check-career.mjs only: the road the start button would play, which the
+     builder deliberately never shows. */
+  previewRoad: function(){ return form && form.start !== 'hs' && C.roadStory ? C.roadStory(preview()) : []; },
   openVault: function(){ open(); openVault(); },
   /* check-career.mjs only: the share card for the Hall card on screen. */
   drawCard: function(){ var l = store().last; return l ? drawCard(l) : null; },

@@ -945,7 +945,11 @@ async function browser() {
   const free = await page.evaluate(() => ({ on: (document.querySelector('[data-start].on') || {}).getAttribute && document.querySelector('[data-start].on').getAttribute('data-start'),
     road: (document.querySelector('#cr-roadbox') || {}).textContent || '', bg: !!document.querySelector('[data-bg]'), pro: /Pro/.test(document.querySelector('[data-start="hs"]').textContent) }));
   ok(free.on === 'gen' && free.pro && !free.bg, `a guest starts on draft night, high school wears the Pro tag, and nobody picks a background (${free.on})`);
-  ok(/combine/.test(free.road) && !/undefined|NaN/.test(free.road), `the builder shows the road generated for him ("${free.road.slice(0, 60)}")`);
+  /* The road is a reveal: the builder never shows it, the career opens on it. */
+  ok(!free.road, 'the builder does not show the road to the draft before the career starts');
+  const hid = await page.evaluate(() => ({ line: (document.querySelector('[data-pane="start"]') || {}).textContent || '', road: window.RTF_CAREER_UI.previewRoad().join(' ') }));
+  ok(/played the moment you start/.test(hid.line), 'the start step says the road is played when the career starts');
+  ok(/combine/.test(hid.road) && !/undefined|NaN/.test(hid.road), `a road is still generated behind the scenes ("${hid.road.slice(0, 60)}")`);
   await page.click('[data-start="hs"]');
   const gate = await page.evaluate(() => ({ sheet: !document.getElementById('pro-sheet').hidden, on: document.querySelector('[data-start].on').getAttribute('data-start') }));
   ok(gate.sheet && gate.on === 'gen', 'pressing high school without Pro opens the offer and keeps draft night');
@@ -1212,7 +1216,7 @@ async function scenesWalk(b, serve) {
      about draft night on a podium, so it asks for a road the board likes:
      New draws another, which is what a player does too. */
   for (let k = 0; k < 40; k++) {
-    const p = await page.evaluate(() => { const m = /around (\d+)/.exec((document.querySelector('#cr-roadbox') || {}).textContent || ''); return m ? +m[1] : 99; });
+    const p = await page.evaluate(() => { const m = /around (\d+)/.exec(window.RTF_CAREER_UI.previewRoad().join(' ')); return m ? +m[1] : 99; });
     if (p <= 20) break;
     await page.click('#cr-dice');
   }
@@ -1289,7 +1293,12 @@ async function scenesWalk(b, serve) {
   await page.waitForSelector('#cr-go');
   await page.click('[data-bstep="start"]');
   await page.click('[data-start="gen"]');
+  const want = await page.evaluate(() => window.RTF_CAREER_UI.previewRoad().join(' '));
   await page.click('#cr-go');
+  /* and the career opens on it, open, as the first thing; the first press folds it */
+  const rv = await page.evaluate(() => { const r = document.querySelector('#cr-roadbox'); return r ? { open: r.open, text: r.textContent, reveal: !!r.querySelector('.cr-reveal') } : null; });
+  ok(rv && rv.open && rv.reveal && /Your road to the draft/.test(rv.text), 'a draft-night career opens on its road to the draft, revealed');
+  ok(rv && want.split(' ').slice(0, 6).every((w) => rv.text.includes(w)), 'and it is the road the builder generated');
   let opened = false;
   for (let k = 0; k < 40; k++) {
     const r = await page.evaluate(() => { if (window.RTF_SCENES.isOpen()) return 'o'; const c = document.querySelector('.cr-choice'); if (c) { c.click(); return 'c'; } const n = document.querySelector('#cr-next'); if (n) { n.click(); return 'n'; } return 'x'; });

@@ -11227,9 +11227,12 @@ because hair is what is being chosen there; the start button is pinned to the fo
 screen on every step. **Every step stays in the page with the others hidden**, so nothing a
 step holds is lost moving between them, and a walker has to press `[data-bstep]` before it
 clicks anything inside a step. check-career holds each step under 1.75 screens with the
-button on screen. In the career itself the road to the draft and (on a phone) the ratings
-are folds, so the card to answer comes sooner; the ratings open themselves when a press has
-just moved one.
+button on screen. **The road to the draft is never shown in the builder**: it is played the
+moment a draft-night career starts, and the career's first screen opens on it, line by line
+(`stage.reveal`). After the first press it is a fold reading How you got here. A walker that
+needs the road before starting asks `RTF_CAREER_UI.previewRoad()`, which is the checker's
+alone. On a phone the ratings are a fold too, so the card to answer comes sooner; they open
+themselves when a press has just moved one.
 
 **The press room is the engine's** (`TONES`, `PRESSERS`, `presserCard`). After a first-round
 pick, an MVP, a title, a Finals loss and a national title, a `presser` card is pushed; every
