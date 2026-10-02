@@ -123,6 +123,9 @@ The Vault, career archive and written career story, family tree and legacy
 careers, difficulty tiers, challenge careers, share cards. Leaderboard UI is
 built against the existing Career board; the new boards wait for Phase G.
 
+Done 2026-10-02. Report: `reports/phase-e-sim.md`; guards: `check-career.mjs`
+section 11 and its Vault walk, `sim-career.mjs --phase E`.
+
 No daily seeded career (the owner's call, 2026-10-02).
 
 What Run The Floor Pro adds to Career (the owner's call, 2026-10-02):
