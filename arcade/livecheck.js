@@ -219,7 +219,11 @@
 
   /* Awards. Wikidata's names are formal; ours are how fans say them. */
   var AWARD_RULES = [
-    [/hall of fame/, 'Hall of Fame'],
+    /* A sport's own hall, not any hall. Wikidata lists the College Football
+       Hall of Fame, team halls ("Green Bay Packers Hall of Fame") and state
+       halls beside the real one, and the old /hall of fame/ took all of them,
+       so a college star with no Canton bust passed "Hall of Famer". */
+    [/naismith memorial basketball hall of fame|women s basketball hall of fame|pro football hall of fame|national baseball hall of fame|hockey hall of fame|international boxing hall of fame|international tennis hall of fame|world golf hall of fame|nascar hall of fame|wwe hall of fame|ufc hall of fame|fia hall of fame|motorsports hall of fame of america|indianapolis motor speedway hall of fame|olympic and paralympic hall of fame|olympic hall of fame|international swimming hall of fame|national soccer hall of fame|english football hall of fame|italian football hall of fame/, 'Hall of Fame'],
     [/nba.*most valuable player|most valuable player.*nba/, 'NBA MVP'],
     [/nba finals most valuable player|finals mvp/, 'Finals MVP'],
     [/nba all-?star/, 'NBA All-Star'],
@@ -698,7 +702,7 @@
   return {
     softPass: softPass, setReportUrl: setReportUrl,
     resolve: resolve, lookup: lookup, verdict: verdict, shape: shape,
-    collegesFor: collegesFor, colCore: colCore,
+    collegesFor: collegesFor, colCore: colCore, awardsFor: awardsFor,
     setFetch: function (f) { _fetch = f; },
     setEngine: function (e) { _engine = e; },
     setYear: function (y) { _now = y; },

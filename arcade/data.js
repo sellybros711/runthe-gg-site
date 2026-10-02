@@ -300,6 +300,17 @@
    * stayed through a move counts one club and two Raiders are teammates of
    * one franchise. Show e.t; count and compare e.tk.
    * ---------------------------------------------------------------- */
+  /* Hall of Fame flags that cannot be true. Albert Pujols retired after the
+     2022 season and is not on a Cooperstown ballot until 2028. The same list
+     is applied by scripts/build-sportegories.mjs. */
+  var NOT_HOF = { 'MLB|albert pujols': 1 };
+  ENT.forEach(function (e) {
+    if (e && e.hof && NOT_HOF[e.sport + '|' + String(e.name || '').toLowerCase()]) {
+      e.hof = false;
+      if (Array.isArray(e.aw)) e.aw = e.aw.filter(function (a) { return a !== 'Hall of Fame'; });
+    }
+  });
+
   var FR = root.RTGFranchise;
   if (FR && FR.normalize) ENT.forEach(function (e) { FR.normalize(e); });
 
