@@ -262,6 +262,103 @@ Rig.prototype.shadeRun = function(){
   }
 };
 
+/* ─── the moving frames ──────────────────────────────────────────────────
+   The cutscenes and the playable moments need the man to MOVE, and the owner
+   declared the six standing poses final. So a moving frame is the same rig
+   with the joints somewhere else: the same parts, ramps, light, lines and
+   outline, and nothing about the six existing poses changes (check-sprite
+   hashes every one of them). A frame is a pose name, the set plus its index
+   ('shot2'), so every reader that already takes a pose takes these too.
+
+   An arm is two angles, the upper arm and the forearm, measured from straight
+   down, outward positive, 180 straight up, negative across the body. Angles
+   rather than points because a point moved by eye stretches the arm; an angle
+   keeps it the length it is. fs foreshortens the forearm (a hand held out
+   toward the camera), h nudges the hand (a wrist flicked after a release).
+     lift  how many cells each foot leaves the floor (a step, a jump)
+     dip   how many cells everything above the knee sinks (a crouch)
+     sp    how much wider the stance is
+   s = 1 is the side of the picture the ball pose holds the ball on: the
+   shooting hand. */
+var DOWN = [9, 4], UP = [156, 183];
+function fr(R, Lft, more){ var o = { a: { '1': R, '-1': Lft } }; for (var k in more || {}) o[k] = more[k]; return o; }
+var SETS = {
+  walk: [
+    fr([11, 10], [6, -10], { lift: { '1': 2 }, dip: 1 }),
+    fr(DOWN, DOWN, { lift: { '-1': 1 } }),
+    fr([6, -10], [11, 10], { lift: { '-1': 2 }, dip: 1 }),
+    fr(DOWN, DOWN, { lift: { '1': 1 } }),
+  ],
+  dribble: [
+    fr([25, 10], [30, 40, 1, 0.6], { dip: 2, sp: 1 }),
+    fr([18, 32], [30, 40, 1, 0.6], { dip: 2, sp: 1 }),
+    fr([22, 4], [30, 40, 1, 0.6], { dip: 2, sp: 1 }),
+    fr([18, 32], [30, 40, 1, 0.6], { dip: 2, sp: 1 }),
+  ],
+  /* gather, rise, release, follow-through, land */
+  shot: [
+    fr([20, -110], [20, -112], { dip: 3 }),
+    fr([150, 200], [150, 205], { lift: { '1': 1, '-1': 1 } }),
+    fr([165, 182], [150, 212], { lift: { '1': 2, '-1': 2 } }),
+    fr([160, 176, 1, 1, 1.2, 1.6], [130, 170], { lift: { '1': 2, '-1': 2 } }),
+    fr([25, 20], [25, 20], { dip: 2 }),
+  ],
+  /* the last step, the load, the rise, the slam, hanging on the rim */
+  dunk: [
+    fr([15, -100], [15, -104], { lift: { '1': 2 }, dip: 1 }),
+    fr([15, -40], [15, -44], { dip: 4 }),
+    fr([165, 176], [165, 178], { lift: { '1': 3, '-1': 3 } }),
+    fr([160, 140], [160, 144], { lift: { '1': 3, '-1': 3 } }),
+    fr([170, 181], [170, 183], { lift: { '1': 4, '-1': 4 } }),
+  ],
+  /* the crouch, the rise, the swat, the landing */
+  block: [
+    fr([20, 15], [20, 15], { dip: 3 }),
+    fr([150, 170], [30, 38, 1, 0.5], { lift: { '1': 2, '-1': 2 } }),
+    fr([172, 181], [38, 48, 1, 0.4], { lift: { '1': 3, '-1': 3 } }),
+    fr([28, 18], [28, 18], { dip: 2 }),
+  ],
+  /* a fist, a scream, a point at the crowd, a flex */
+  cheer: [
+    fr(UP, DOWN),
+    fr([140, 170], [140, 170]),
+    fr([142, 168], DOWN),
+    fr([85, 180], [85, 180]),
+  ],
+  /* hands on hips, hands on head, hands on knees */
+  sad: [
+    fr([40, -45], [40, -45]),
+    fr([140, 230], [140, 230]),
+    fr([10, -25], [10, -25], { dip: 4 }),
+  ],
+  /* the hand held out toward the man you are meeting, then the pump */
+  shake: [
+    fr(DOWN, [30, 40, 1, 0.45]),
+    fr(DOWN, [30, 60, 1, 0.45]),
+    fr(DOWN, [30, 48, 1, 0.45]),
+  ],
+  wave: [
+    fr([140, 190], DOWN),
+    fr([140, 170], DOWN),
+    fr([140, 160], DOWN),
+  ],
+};
+var ANIM = {};
+Object.keys(SETS).forEach(function(k){ SETS[k].forEach(function(f, i){ ANIM[k + i] = f; }); });
+/* Joints off the angles: shoulder, then 8 cells of upper arm, 7.6 of forearm,
+   the hand 2.6 on. */
+function animArm(f, s, bw){
+  var p = f.a[String(s)] || DOWN;
+  var sh = [CX + s * (9.4 + bw * 0.75), 22.2];
+  var r1 = p[0] * Math.PI / 180, r2 = p[1] * Math.PI / 180;
+  var l1 = 8 * (p[2] == null ? 1 : p[2]), l2 = 7.6 * (p[3] == null ? 1 : p[3]);
+  var el = [sh[0] + s * Math.sin(r1) * l1, sh[1] + Math.cos(r1) * l1];
+  var wr = [el[0] + s * Math.sin(r2) * l2, el[1] + Math.cos(r2) * l2];
+  var hd = [wr[0] + s * Math.sin(r2) * 2.6 + s * (p[4] || 0), wr[1] + Math.cos(r2) * 2.6 + (p[5] || 0)];
+  var hang = Math.abs(p[1]) < 30;
+  return { el: el, wr: wr, hand: [hd[0], hd[1], hang ? 1.9 : 2.0, hang ? 2.5 : 2.2], sh: sh, hang: hang, raised: p[1] > 90 };
+}
+
 /* Paint the whole figure into a grid of colours. opts:
      c1, c2   the jersey's two colours
      num      the number on the chest
@@ -271,7 +368,11 @@ Rig.prototype.shadeRun = function(){
 function paint(look, opts){
   var L = normal(look), o = opts || {};
   var pose = o.pose || 'stand';
-  var suit = pose === 'suit' || pose === 'cap';
+  var AN = ANIM[pose] || null;
+  /* A moving frame is in the jersey unless it is asked for in a suit or a cap
+     (the walk across a draft stage, up to a podium). */
+  var suit = pose === 'suit' || pose === 'cap' || !!(AN && (o.dress === 'suit' || o.dress === 'cap'));
+  var cap = pose === 'cap' || !!(AN && o.dress === 'cap');
   var c1 = o.c1 || '#2b3242', c2 = o.c2 || '#c9ccd6';
   if (contrast(c1, c2) < 1.4) c2 = inkOn(c1);
   var age = +o.age || 0;
@@ -303,6 +404,7 @@ function paint(look, opts){
   var arm = {};
   [-1, 1].forEach(function(s){
     var a;
+    if (AN) { arm[s] = animArm(AN, s, bw); return; }
     if (pose === 'up') a = { el: [CX + s * (12.6 + bw * 0.5), 15.0], wr: [CX + s * 12.2, 7.6], hand: [CX + s * 12.0, 4.8, 2.0, 2.2] };
     else if (pose === 'trophy') a = { el: [CX + s * (11.6 + bw * 0.6), 30.2], wr: [CX + s * 7.2, 32.8], hand: [CX + s * 5.7, 33.0, 1.9, 1.9] };
     else if (pose === 'ball' && s === 1) a = { el: [CX + 11.9 + bw * 0.6, 29.8], wr: [CX + 13.0, 34.6], hand: [CX + 13.0, 36.0, 2.1, 1.8] };
@@ -313,24 +415,29 @@ function paint(look, opts){
 
   /* ── the hair that hangs behind the head goes first ── */
   var hs = L.hair;
-  if (pose === 'cap') hs = hs === 'afro' ? 'afrocap' : hs === 'long' || hs === 'twists' || hs === 'braids' ? hs : 'buzz';
+  if (cap) hs = hs === 'afro' ? 'afrocap' : hs === 'long' || hs === 'twists' || hs === 'braids' ? hs : 'buzz';
   if (hs === 'long') R.add('hairback', { ramp: HR, group: 'hair', line: false }, rows(8, 25, function(y){ return y < 22 ? 6.9 : 6.9 - (y - 21) * 0.7; }, CX, 0.3));
   if (hs === 'afro') R.add('hairback', { ramp: HR, group: 'hair', line: false, flat: 0.9 }, ellipse(CX, 8.1, 9.0, 7.3));
   if (hs === 'afrocap') R.add('hairback', { ramp: HR, group: 'hair', line: false }, ellipse(CX, 9.8, 8.0, 5.6));
   if (hs === 'twists') R.add('hairback', { ramp: HR, group: 'hair', line: false }, rows(1, 17, function(y){ return y < 4 ? 4.8 + (y - 1) * 0.8 : 7.2; }, CX, 0.5));
 
   /* ── legs: skin, socks, shoes; trousers in a suit ── */
+  /* A moving frame can lift a foot (lf cells) and widen the stance (sp).
+     Both are zero for the six standing poses, which draw exactly as before. */
+  var LF = {}, SP = AN && AN.sp ? AN.sp : 0;
+  [-1, 1].forEach(function(s){ LF[s] = AN && AN.lift ? AN.lift[String(s)] || 0 : 0; });
   [-1, 1].forEach(function(s){
-    var kx = CX + s * (4.8 + bw * 0.3), fx = kx + s * 0.6;
+    var lf = LF[s];
+    var kx = CX + s * (4.8 + bw * 0.3 + SP), fx = kx + s * 0.6;
     if (!suit) {
-      var leg = [[kx, 46, 2.25 + am], [kx + s * 0.3, 50.6, 2.6 + am], [kx - s * 0.1, 56.8, 1.6 + am * 0.5]];
+      var leg = [[kx, 46, 2.25 + am], [kx + s * (0.3 + lf * 0.35), 50.6 - lf * 0.4, 2.6 + am], [kx - s * 0.1, 56.8 - lf, 1.6 + am * 0.5]];
       R.add('leg' + s, { ramp: SK, group: 'leg' + s }, tube(leg));
-      R.add('sock' + s, { ramp: WH, group: 'leg' + s, clip: function(x, y){ return y >= 52; } }, tube(leg.map(function(p){ return [p[0], p[1] + (p[1] > 55 ? 0.8 : 0), p[2] + 0.15]; })));
-      R.add('shoe' + s, { ramp: SH, group: 'shoe' + s }, rows(56, 61, table(56, [2.3, 2.6, 2.9, 3.1, 3.3, 3.4]), fx, 0.4));
-      R.add('sole' + s, { ramp: WH, group: 'shoe' + s, line: false }, rows(62, 62, function(){ return 3.5; }, fx, 0));
+      R.add('sock' + s, { ramp: WH, group: 'leg' + s, clip: function(x, y){ return y >= 52 - lf; } }, tube(leg.map(function(p){ return [p[0], p[1] + (p[1] > 55 - lf ? 0.8 : 0), p[2] + 0.15]; })));
+      R.add('shoe' + s, { ramp: SH, group: 'shoe' + s }, rows(56 - lf, 61 - lf, table(56 - lf, [2.3, 2.6, 2.9, 3.1, 3.3, 3.4]), fx, 0.4));
+      R.add('sole' + s, { ramp: WH, group: 'shoe' + s, line: false }, rows(62 - lf, 62 - lf, function(){ return 3.5; }, fx, 0));
     } else {
-      R.add('trouser' + s, { ramp: TR, group: 'leg' + s }, tube([[CX + s * 4.3, 38, 3.6], [CX + s * 4.4, 48, 3.0], [CX + s * 4.5, 59.6, 2.6]]));
-      R.add('shoe' + s, { ramp: BLK, group: 'shoe' + s }, rows(59, 62, table(59, [2.6, 3.0, 3.3, 3.4]), CX + s * 4.9, 0.5));
+      R.add('trouser' + s, { ramp: TR, group: 'leg' + s }, tube([[CX + s * (4.3 + SP), 38, 3.6], [CX + s * (4.4 + SP + lf * 0.3), 48 - lf * 0.4, 3.0], [CX + s * (4.5 + SP), 59.6 - lf, 2.6]]));
+      R.add('shoe' + s, { ramp: BLK, group: 'shoe' + s }, rows(59 - lf, 62 - lf, table(59 - lf, [2.6, 3.0, 3.3, 3.4]), CX + s * (4.9 + SP), 0.5));
     }
   });
 
@@ -391,7 +498,7 @@ function paint(look, opts){
     var mid = [(A.el[0] * 0.55 + A.wr[0] * 0.45) + s * 0.25, A.el[1] * 0.55 + A.wr[1] * 0.45];
     R.add('upper' + s, { ramp: AR, group: g }, tube([[A.sh[0], A.sh[1], r0], [A.el[0], A.el[1], r1]]));
     R.add('fore' + s, { ramp: AR, group: g }, tube([[A.el[0], A.el[1], r1 * 0.95], [mid[0], mid[1], r1 * 1.1], [A.wr[0], A.wr[1], r2]]));
-    if (suit) R.add('cuff' + s, { ramp: SHIRT, group: g, line: false }, ellipse(A.wr[0], A.wr[1] + (pose === 'up' ? -0.5 : 0.6), r2 + 0.1, 0.9));
+    if (suit) R.add('cuff' + s, { ramp: SHIRT, group: g, line: false }, ellipse(A.wr[0], A.wr[1] + (pose === 'up' || (AN && A.raised) ? -0.5 : 0.6), r2 + 0.1, 0.9));
     R.add('hand' + s, { ramp: SK, group: g }, ellipse(A.hand[0], A.hand[1], A.hand[2], A.hand[3]));
   });
 
@@ -459,8 +566,8 @@ function paint(look, opts){
       return on ? sphere(11, 7.2)(px, py) : null;
     });
   }
-  if (bandHex && pose !== 'cap') R.add('band', { ramp: ramp(bandHex), group: 'band', line: false }, function(px, py){ var y = Math.floor(py), w = hhw(y); return (y === 7 || y === 8) && w != null && Math.abs(px - CX) <= w + 0.5 ? sphere(9, 7)(px, py) : null; });
-  if (pose === 'cap') {
+  if (bandHex && !cap) R.add('band', { ramp: ramp(bandHex), group: 'band', line: false }, function(px, py){ var y = Math.floor(py), w = hhw(y); return (y === 7 || y === 8) && w != null && Math.abs(px - CX) <= w + 0.5 ? sphere(9, 7)(px, py) : null; });
+  if (cap) {
     var CR = [3.4, 4.8, 5.5, 5.9, 6.1, 6.2, 6.3];
     R.add('crown', { ramp: J1, group: 'cap' }, function(px, py){ var y = Math.floor(py), w = CR[y - 2]; return w != null && Math.abs(px - CX) <= w ? sphere(8, 6.6)(px, py) : null; });
     R.add('brim', { ramp: J1, group: 'cap' }, function(px, py){ var y = Math.floor(py), ad = Math.abs(px - CX); return y === 9 && ad <= 6.7 ? [(px - CX) / 8, 0.1] : null; });
@@ -506,17 +613,17 @@ function paint(look, opts){
       var fx = Math.floor(CX + s * 5.8);
       [43, 44, 45, 46].forEach(function(y){ if (at(fx, y) === 'shorts' && R.col[y][fx] !== J2[1] && R.col[y][fx] !== J2[2]) R.level(fx, y, Math.max(0, R.lev[y][fx] - 1)); });
       /* the sock's stripes, the shoe's collar, laces and side panel */
-      var kx = CX + s * (4.8 + bw * 0.3);
+      var kx = CX + s * (4.8 + bw * 0.3 + SP), lf = LF[s];
       for (var x3 = 0; x3 < W; x3++) {
-        if (at(x3, 53) === 'sock' + s) R.set(x3, 53, J1[x3 + 0.5 < kx ? 2 : 1]);
-        if (at(x3, 54) === 'sock' + s) R.set(x3, 54, J2[x3 + 0.5 < kx ? 2 : 1]);
-        if (at(x3, 56) === 'shoe' + s) R.level(x3, 56, Math.max(0, R.lev[56][x3] - 1));
-        if (at(x3, 61) === 'shoe' + s) R.set(x3, 61, x3 + 0.5 < kx ? WH[2] : WH[1]);
+        if (at(x3, 53 - lf) === 'sock' + s) R.set(x3, 53 - lf, J1[x3 + 0.5 < kx ? 2 : 1]);
+        if (at(x3, 54 - lf) === 'sock' + s) R.set(x3, 54 - lf, J2[x3 + 0.5 < kx ? 2 : 1]);
+        if (at(x3, 56 - lf) === 'shoe' + s) R.level(x3, 56 - lf, Math.max(0, R.lev[56 - lf][x3] - 1));
+        if (at(x3, 61 - lf) === 'shoe' + s) R.set(x3, 61 - lf, x3 + 0.5 < kx ? WH[2] : WH[1]);
       }
       var lc = Math.floor(kx + s * 0.6);
-      [57, 58, 59].forEach(function(y){ if (at(lc, y) === 'shoe' + s) R.set(lc, y, y % 2 ? WH[4] : WH[2]); });
+      [57, 58, 59].forEach(function(y){ y -= lf; if (at(lc, y) === 'shoe' + s) R.set(lc, y, (y + lf) % 2 ? WH[4] : WH[2]); });
       var px2 = Math.floor(kx + s * 0.6 + s * 2.3);
-      [58, 59, 60].forEach(function(y){ if (at(px2, y) === 'shoe' + s) R.set(px2, y, J2[s < 0 ? 3 : 1]); });
+      [58, 59, 60].forEach(function(y){ y -= lf; if (at(px2, y) === 'shoe' + s) R.set(px2, y, J2[s < 0 ? 3 : 1]); });
     });
   } else {
     /* lapels, the shirt collar, a tie in the club's colour, two buttons, a pocket square */
@@ -531,7 +638,7 @@ function paint(look, opts){
     [31, 34].forEach(function(y){ R.set(CX - 1, y, JK[0]); });
     var PQ = ramp(c2);
     R.set(CX + 5, 23, PQ[3]); R.set(CX + 6, 23, PQ[2]); R.set(CX + 6, 22, PQ[3]);
-    [-1, 1].forEach(function(s){ for (var x7 = 0; x7 < W; x7++) if (at(x7, 59) === 'shoe' + s && x7 + 0.5 < CX + s * 4.9) { R.set(x7, 59, BLK[4]); break; } });
+    [-1, 1].forEach(function(s){ var y8 = 59 - LF[s]; for (var x7 = 0; x7 < W; x7++) if (at(x7, y8) === 'shoe' + s && x7 + 0.5 < CX + s * (4.9 + SP)) { R.set(x7, y8, BLK[4]); break; } });
   }
 
   /* the face */
@@ -553,7 +660,7 @@ function paint(look, opts){
     }
   }
   if (L.beard === 'full' || L.beard === 'goatee') { for (var mx2 = 20; mx2 <= 23; mx2++) R.set(mx2, 15, mx2 === 20 || mx2 === 23 ? mix(SK[0], dark, 0.5) : dark); }
-  if (L.hair === 'bald' && pose !== 'cap') { R.set(18, 5, SK[4]); R.set(19, 5, SK[4]); R.set(18, 6, SK[3]); }
+  if (L.hair === 'bald' && !cap) { R.set(18, 5, SK[4]); R.set(19, 5, SK[4]); R.set(18, 6, SK[3]); }
 
   /* hair texture */
   for (var y7 = 0; y7 < 26; y7++) for (var x8 = 0; x8 < W; x8++) {
@@ -574,7 +681,7 @@ function paint(look, opts){
     if (at(x9, y9) === 'head' && up && (/^hair|^band/.test(up) || up === 'brim') && up !== 'hairf') R.level(x9, y9, Math.max(0, R.lev[y9][x9] - (up === 'brim' ? 2 : 1)));
   }
   /* the cap's logo, the ball's seams, the trophy's net and its shine */
-  if (pose === 'cap') {
+  if (cap) {
     var lg = ramp(c2); R.set(21, 4, lg[3]); R.set(22, 4, lg[2]); R.set(21, 5, lg[2]); R.set(22, 5, lg[1]);
     for (var xb = 0; xb < W; xb++) { if (at(xb, 2) === 'crown' && (xb === 21 || xb === 22)) R.set(xb, 2, J1[0]); }
   }
@@ -594,15 +701,23 @@ function paint(look, opts){
   /* knuckles: a dark line across the bottom of a hanging hand */
   [-1, 1].forEach(function(s){
     if (pose === 'up' || pose === 'trophy' || (pose === 'ball' && s === 1)) return;
+    if (AN && !arm[s].hang) return;
     var A = arm[s], hy = Math.floor(A.hand[1] + 1.2);
     for (var xh = Math.floor(A.hand[0] - 1); xh <= Math.floor(A.hand[0] + 1); xh++) if (at(xh, hy) === 'hand' + s && (xh + hy) % 2) R.level(xh, hy, 0);
   });
 
   /* ── the breath: everything above the knees drops a cell ── */
-  if (o.frame === 1) {
+  if (o.frame === 1 && !AN) {
     var knee = suit ? 42 : 45;
     for (var fy = knee; fy >= 1; fy--) { R.pid[fy] = R.pid[fy - 1].slice(); R.col[fy] = R.col[fy - 1].slice(); }
     R.pid[0] = new Array(W).fill(-1); R.col[0] = new Array(W).fill(null);
+  }
+
+  /* ── a crouch: everything above the knee sinks, the legs fold under ── */
+  if (AN && AN.dip) {
+    var kn = suit ? 42 : 45, dp = AN.dip;
+    for (var dy2 = kn; dy2 >= dp; dy2--) { R.pid[dy2] = R.pid[dy2 - dp].slice(); R.col[dy2] = R.col[dy2 - dp].slice(); }
+    for (var dz = 0; dz < dp; dz++) { R.pid[dz] = new Array(W).fill(-1); R.col[dz] = new Array(W).fill(null); }
   }
 
   /* opts.parts hands back the name of the part in every cell instead of a
@@ -649,7 +764,7 @@ function paint(look, opts){
 /* ─── to the screen ───────────────────────────────────────────────────── */
 
 var CACHE = {}, KEYS = [];
-function keyOf(look, o){ return JSON.stringify([normal(look), o.c1, o.c2, o.num, o.pose, o.age >= 33 ? o.age : 0, o.frame || 0, o.scale || 4, !!o.shadow]); }
+function keyOf(look, o){ return JSON.stringify([normal(look), o.c1, o.c2, o.num, o.pose, o.age >= 33 ? o.age : 0, o.frame || 0, o.scale || 4, !!o.shadow, o.dress || '']); }
 
 function canvas(look, opts){
   var o = opts || {};
@@ -688,7 +803,7 @@ function img(look, opts, cls){
   var o = Object.assign({}, opts || {});
   o.frame = 0;
   var a = url(look, o);
-  var still = o.pose === 'trophy' || o.still;
+  var still = o.pose === 'trophy' || o.still || !!ANIM[o.pose];
   var b = still ? a : url(look, Object.assign({}, o, { frame: 1 }));
   return '<img class="rtf-baller' + (cls ? ' ' + cls : '') + '" src="' + a + '"' + (still ? '' : ' data-b0="' + a + '" data-b1="' + b + '"')
     + ' width="' + (W * (o.scale || 4)) + '" height="' + (H * (o.scale || 4)) + '" alt="" draggable="false">';
@@ -707,6 +822,15 @@ function breathe(){
 var API = {
   W: W, H: H,
   SKINS: SKINS, HAIR_COLORS: HAIR_COLORS, HAIRS: HAIRS, BEARDS: BEARDS, BANDS: BANDS, SLEEVES: SLEEVES, SHOES: SHOES, BUILDS: BUILDS,
+  /* Where a hand is, in sprite cells, on a moving frame: the cutscene puts
+     the ball there rather than guessing. s = 1 is the shooting hand. */
+  handAt: function(pose, s, build){
+    var f = ANIM[pose]; if (!f) return null;
+    var bw = build === 'lean' ? -0.7 : build === 'strong' ? 0.9 : 0;
+    var a = animArm(f, s == null ? 1 : s, bw);
+    return [a.hand[0], a.hand[1] + (f.dip || 0)];
+  },
+  SETS: Object.keys(SETS).reduce(function(m, k){ m[k] = SETS[k].length; return m; }, {}), isFrame: function(p){ return !!ANIM[p]; },
   DEFAULT: DEFAULT, normal: normal, lookFor: lookFor, hash: hash, inkOn: inkOn, contrast: contrast,
   paint: paint, canvas: canvas, url: url, img: img, breathe: breathe,
 };

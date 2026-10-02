@@ -23,21 +23,21 @@
 <link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png?v=1">
 <link rel="icon" type="image/png" sizes="48x48" href="favicon-48.png?v=1">
 <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=1">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<!-- THE FONT DOES NOT GET TO HOLD THE GAME HOSTAGE.
-     A stylesheet from a third-party host is render-blocking, and the inline script
-     that boots the game runs after it. Measured with the host unreachable: 13 SECONDS
-     to a playable page, against 260ms when it answers. That is a real failure mode
-     rather than a lab curiosity, because fonts.googleapis.com is slow on bad networks
-     and blocked outright in some countries, and this game has to work there.
-     Loading it as print media and promoting it on load makes it non-blocking. Every
-     face below has a real fallback stack, so text paints immediately in the fallback
-     and swaps when Anton and Archivo arrive. -->
-<link rel="stylesheet" media="print" onload="this.media='all';this.onload=null"
-  href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@400;600;700;800;900&family=Press+Start+2P&display=swap">
-<noscript><link rel="stylesheet"
-  href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@400;600;700;800;900&family=Press+Start+2P&display=swap"></noscript>
+<link rel="preload" href="fonts/archivo-latin.woff2?v=1" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fonts/anton-latin.woff2?v=1" as="font" type="font/woff2" crossorigin>
+<!-- THE FONTS ARE SERVED FROM THIS SITE. They used to come from Google Fonts,
+     loaded as print media so a slow or blocked host could not hold the boot
+     script hostage (measured: 13 seconds to a playable page with the host
+     unreachable). That kept the page alive and left it in Impact and system UI
+     on exactly those networks. Self-hosted, the three faces are 66KB of woff2
+     (Latin subsets, SIL Open Font License, texts in fonts/), arrive from the
+     same origin as the page and swap in under font-display:swap, so nothing
+     blocks and nothing falls back for long. -->
+<style>
+  @font-face{font-family:'Anton';font-style:normal;font-weight:400;font-display:swap;src:url(fonts/anton-latin.woff2?v=1) format('woff2');}
+  @font-face{font-family:'Archivo';font-style:normal;font-weight:100 900;font-display:swap;src:url(fonts/archivo-latin.woff2?v=1) format('woff2');}
+  @font-face{font-family:'Press Start 2P';font-style:normal;font-weight:400;font-display:swap;src:url(fonts/pressstart2p-latin.woff2?v=1) format('woff2');}
+</style>
 
 <style>
   :root{

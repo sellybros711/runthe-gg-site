@@ -3094,15 +3094,19 @@ function paintPro(why, kind){
     + (kind === 'thanks' ? (proOwned ? 'Pro is on' : 'Thanks for buying Pro') : proOwned ? 'You have Pro' : 'Run The Floor Pro')
     + '</h2><button class="ghost sm" data-pro-x>Close</button></div>';
   if (kind === 'thanks') {
-    h += '<p class="mx-say">' + (proOwned ? 'Endless puzzles and build your own are open. On every device you sign in on.'
+    h += '<p class="mx-say">' + (proOwned ? 'Endless puzzles, build your own, high school careers and the family tree are open. On every device you sign in on.'
       : 'Your payment went through. Pro is on its way to your account and usually lands in a few seconds.') + '</p>';
   } else if (proOwned) {
-    h += '<p class="mx-say">Endless puzzles and build your own are open. Thanks for backing the game.</p>';
+    h += '<p class="mx-say">Endless puzzles, build your own, high school careers and the family tree are open. Thanks for backing the game.</p>';
   } else {
     var signed = signedAcct();
     h += '<p class="mx-say">' + (why === 'endless' ? 'Out of puzzles for today? Pro keeps them coming.'
-        : why === 'build' ? 'Build your own puzzles with Pro.' : 'The dailies are free. Pro is everything else.') + '</p>'
+        : why === 'build' ? 'Build your own puzzles with Pro.'
+        : why === 'career' ? 'Play your road from high school with Pro.'
+        : why === 'family' ? 'Play as your son with Pro, and keep a family tree.' : 'The dailies are free. Pro is everything else.') + '</p>'
       + '<ul class="pro-list">'
+      + '<li><b>Career from high school</b>Play the road yourself, from age 15 to the draft. Free careers start on draft night.</li>'
+      + '<li><b>Family tree</b>When a career ends, play as your son. Every generation is kept.</li>'
       + '<li><b>Endless puzzles</b>A new Fix History team or Six Passes pair every time you finish one.</li>'
       + '<li><b>Rebuild any team</b>Any club, any year, champions too. Four trade windows to win it.</li>'
       + '<li><b>Make a puzzle</b>Pick any two players and send the link. Friends play it free.</li>'
@@ -3111,8 +3115,8 @@ function paintPro(why, kind){
       + '<button class="pro-buy" id="pro-buy">' + (signed ? 'Get Pro for ' + PRO_PRICE : 'Sign in to get Pro') + '</button>'
       + '<p class="pro-err" id="pro-err" hidden></p>'
       + '<p class="fx-hint" style="text-align:center">' + (signed
-        ? 'One payment through Stripe. Nothing renews. Classic, Conquest and the dailies stay free for everybody.'
-        : 'Pro belongs to your RunThe.GG account, so it follows you to every device. The dailies stay free for everybody.') + '</p>';
+        ? 'One payment through Stripe. Nothing renews. Classic, Conquest, the dailies and Career from draft night stay free.'
+        : 'Pro belongs to your RunThe.GG account, so it follows you to every device. The dailies and Career from draft night stay free.') + '</p>';
   }
   sh.innerHTML = h + '</div>';
   sh.querySelectorAll('[data-pro-x]').forEach(function(b){ b.onclick = closePro; });
@@ -3172,6 +3176,9 @@ function proSet(on){
   if (home && home.classList.contains('active')) renderHome();
   var sh = $('pro-sheet');
   if (sh && !sh.hidden && sh.getAttribute('data-kind') !== 'thanks') paintPro(null);
+  /* Career's builder and Hall card offer Pro doors of their own. */
+  var CU = window.RTF_CAREER_UI;
+  if (CU && CU.proChanged) CU.proChanged();
 }
 /* COMING BACK FROM STRIPE. The webhook races the redirect, so this asks for
    about ten seconds, past the cache each time, and never says the payment
@@ -3244,6 +3251,9 @@ window.RTF_MODES_UI = {
   write: function(k){ syncWrite(k); },
   /* Whether this account owns Run The Floor Pro, for the arenas. */
   pro: function(){ return proOwned; },
+  /* Whether Pro's doors are open: owning it, or PRO_LIVE off. Career asks this. */
+  proOpen: function(){ return endlessOpen(); },
+  openPro: function(why){ openPro(why); },
   onData: onData,
   renderHome: renderHome,
   openConquest: cqOpen,

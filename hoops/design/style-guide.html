@@ -1,0 +1,335 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Career Style Guide | Run The Floor</title>
+<link rel="preload" href="../fonts/archivo-latin.woff2?v=1" as="font" type="font/woff2" crossorigin>
+<style>
+  @font-face{font-family:'Anton';font-style:normal;font-weight:400;font-display:swap;src:url(../fonts/anton-latin.woff2?v=1) format('woff2');}
+  @font-face{font-family:'Archivo';font-style:normal;font-weight:100 900;font-display:swap;src:url(../fonts/archivo-latin.woff2?v=1) format('woff2');}
+  @font-face{font-family:'Press Start 2P';font-style:normal;font-weight:400;font-display:swap;src:url(../fonts/pressstart2p-latin.woff2?v=1) format('woff2');}
+  /* Layout of the guide itself, not part of the kit. */
+  html,body{margin:0;background:#06080f;}
+  .sg{max-width:1180px;margin:0 auto;padding:32px 16px 96px;}
+  .sg > header{margin-bottom:32px;}
+  .sg section{margin:48px 0 0;}
+  .sg section > h2{font-family:var(--k-f-pixel);font-size:10px;color:var(--k-gold);margin:0 0 6px;text-transform:uppercase;}
+  .sg section > p.sg-note{margin:0 0 16px;max-width:760px;color:var(--k-ink-2);font-size:14px;}
+  .sg-grid{display:grid;gap:20px;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));align-items:start;}
+  .sg-row{display:flex;flex-wrap:wrap;gap:16px;align-items:center;}
+  .sg-cap{display:block;font:700 10px var(--k-f-text);letter-spacing:.12em;text-transform:uppercase;color:var(--k-ink-3);margin-top:6px;}
+  .sg-sw{width:100%;height:56px;}
+  .sg-swc{font:600 12px var(--k-f-text);color:var(--k-ink-2);margin-top:6px;}
+  .sg-swc b{display:block;color:var(--k-ink);font-family:var(--k-f-pixel);font-size:8px;margin-bottom:4px;}
+  .sg-phone{width:390px;max-width:100%;}
+  .sg-room{position:relative;height:150px;overflow:hidden;}
+  .sg-room .lab{position:absolute;left:8px;top:8px;}
+  .sg-demo-wipe{position:relative;height:60px;overflow:hidden;background:var(--k-panel);}
+</style>
+<script src="../career-kit.js?v=4"></script>
+</head>
+<body>
+<main class="sg k-root" id="sg">
+  <header>
+    <div class="k-eyebrow">Run The Floor · Career</div>
+    <h1 class="k-hero">Arena Arcade</h1>
+    <p class="k-dim" style="max-width:720px">The living style guide. Every component here is drawn by <code>hoops/career-kit.js</code>, the file every Career screen is built from. The player is the real <code>baller.js</code> sprite, unchanged. Spec: <code>hoops/design/DESIGN.md</code>.</p>
+  </header>
+
+  <section>
+    <h2>Color</h2>
+    <p class="sg-note">Contrast is measured against <code>--k-panel</code> and printed under each swatch. Text tokens all clear 4.5:1; <code>--k-ink-3</code> is for labels of 8px pixel type and 11px caps.</p>
+    <div class="sg-grid" id="sw" style="grid-template-columns:repeat(auto-fill,minmax(130px,1fr))"></div>
+  </section>
+
+  <section>
+    <h2>Team color slot</h2>
+    <p class="sg-note">A club's colours are never used raw for text. The kit lifts them until they read: a black club leads with its silver, a navy club with its gold. Three clubs, same card.</p>
+    <div class="sg-grid" id="teams"></div>
+  </section>
+
+  <section>
+    <h2>Type</h2>
+    <div class="k-panel">
+      <p class="k-hero">Hero 44 · Anton</p>
+      <p class="k-h1" style="margin-top:12px">Headline 32 · Your name is in a rumor</p>
+      <p class="k-h2" style="margin-top:12px">Section 24 · Season by season</p>
+      <p style="margin-top:12px"><span class="k-num">78</span> <span class="k-label">Number 24 · Press Start 2P</span></p>
+      <p style="margin-top:12px">Body 15 · Archivo. The coach played you 34 minutes and you gave him 31 points. He noticed.</p>
+      <p class="k-small">Small 13 · Archivo. Secondary text and hints.</p>
+      <p class="k-label">Label 11 · caps, 800, tracking .14em</p>
+      <p class="k-pix" style="color:var(--k-gold)">Pixel 8 · never a sentence</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Buttons</h2>
+    <p class="sg-note">Default, hover, pressed, disabled and focus. The press pushes the button into its own 3px lip.</p>
+    <div class="sg-row" id="btns"></div>
+  </section>
+
+  <section>
+    <h2>Chips and tabs</h2>
+    <div class="k-panel">
+      <div class="k-chips" role="group" aria-label="Position">
+        <button class="k-chip">PG</button><button class="k-chip is-hover">SG</button><button class="k-chip" aria-pressed="true">SF</button><button class="k-chip is-focus">PF</button><button class="k-chip" disabled>C</button>
+      </div>
+      <span class="sg-cap">default · hover · selected · focus · disabled</span>
+      <div class="k-tabs" role="tablist" style="margin-top:20px">
+        <button class="k-tab" role="tab" aria-selected="true">Story</button><button class="k-tab is-hover" role="tab" aria-selected="false">Seasons</button><button class="k-tab" role="tab" aria-selected="false">Trophies</button><button class="k-tab is-focus" role="tab" aria-selected="false">Vault</button>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Meters</h2>
+    <p class="sg-note">Hover, focus or tap a meter to read what it does. The last two are flashing once: one went up, one went down.</p>
+    <div class="k-panel k-tight"><div class="k-meters" id="meters"></div></div>
+  </section>
+
+  <section>
+    <h2>Ratings</h2>
+    <div class="k-panel sg-phone"><div class="k-rows" id="rows"></div></div>
+  </section>
+
+  <section>
+    <h2>Player card</h2>
+    <p class="sg-note">The home base of the hub. Sprite at a whole-number scale (3x), crowd and floor drawn on the same grid, the team colour on the ring, the number shadow and the floor wash.</p>
+    <div class="sg-row" id="pcards"></div>
+  </section>
+
+  <section>
+    <h2>Decision card and receipt</h2>
+    <div class="sg-grid" style="grid-template-columns:repeat(auto-fill,minmax(340px,1fr))">
+      <div class="k-panel k-gold k-decision">
+        <div class="k-eyebrow">Trade deadline · 6 days</div>
+        <h3 class="k-h1">Your name is in a three-team rumor</h3>
+        <p>Kelvin Shaw at the Wire says the Knicks are shopping you. Sonny Rial wants an answer tonight.</p>
+        <ol class="k-opts">
+          <li><button class="k-opt"><span class="k-key">1</span><span>Ask for the trade<small>Trust here drops. Sonny likes it.</small></span></button></li>
+          <li><button class="k-opt is-hover"><span class="k-key">2</span><span>"I want to be a Knick"<small>The fans remember. The GM might not care.</small></span></button></li>
+          <li><button class="k-opt is-focus"><span class="k-key">3</span><span>Say nothing<small>Let the deadline decide.</small></span></button></li>
+          <li><button class="k-opt" disabled><span class="k-key">4</span><span>Call the owner<small>Locked: you need a relationship of 60.</small></span></button></li>
+        </ol>
+      </div>
+      <div class="k-panel k-team" id="receipt"></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Stat table</h2>
+    <div class="k-panel"><div class="k-tablewrap"><table class="k-table">
+      <thead><tr><th>Season</th><th>Team</th><th>OVR</th><th>GP</th><th>PTS</th><th>REB</th><th>AST</th><th>Record</th></tr></thead>
+      <tbody>
+        <tr class="is-now"><td>2031-32</td><td>Knicks</td><td>78</td><td>41</td><td>24.1</td><td>5.2</td><td>6.0</td><td>27-14</td></tr>
+        <tr class="is-best"><td>2030-31</td><td>Knicks</td><td>77</td><td>79</td><td>26.4</td><td>5.6</td><td>5.1</td><td>51-31</td></tr>
+        <tr><td>2029-30</td><td>Knicks</td><td>71</td><td>82</td><td>17.9</td><td>4.0</td><td>3.9</td><td>44-38</td></tr>
+      </tbody></table></div></div>
+  </section>
+
+  <section>
+    <h2>Media</h2>
+    <div class="sg-grid">
+      <div class="k-panel">
+        <div class="k-headline" style="border:0;padding-top:0"><span class="k-out">The Floor Wire</span><h4>Hale drops 41 on Boston, and the Garden chants his name</h4><span class="k-small">Kelvin Shaw · 2h</span></div>
+        <div class="k-headline" style="--k-out:var(--k-bad)"><span class="k-out">Hot Take Hour</span><h4>Bram Talbot: "Call me when he wins a playoff series"</h4><span class="k-small">Clip · 1.2M views</span></div>
+      </div>
+      <div class="k-panel">
+        <div class="k-post"><span class="k-ava">BL</span><div><b>Big Lou <span>@frontrowlou</span></b><p>I have heckled this man for six years and I would take a bullet pass for him.</p></div></div>
+        <div class="k-post"><span class="k-ava">DC</span><div><b>Dre Calloway <span>@dre</span></b><p>still remember camp. still got the tape. #nothingchanged</p></div></div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Broadcast package</h2>
+    <p class="sg-note">Only during games and ceremonies. Same pixel language as the menus.</p>
+    <div class="sg-grid" style="grid-template-columns:repeat(auto-fill,minmax(340px,1fr))">
+      <div class="k-panel">
+        <div class="k-bug" id="bug"></div><span class="sg-cap">score bug</span>
+        <div class="k-lower" style="margin-top:20px" id="lower"></div><span class="sg-cap">lower third</span>
+      </div>
+      <div class="k-panel"><div class="k-tape" id="tape"></div><span class="sg-cap">tale of the tape</span></div>
+      <div class="k-panel k-flush" id="tick"></div>
+      <div class="k-panel"><button class="k-btn k-sec" id="wipe-go">Play the wipe</button><span class="sg-cap">transition between game and menu</span></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Motion: frames, the court, the ticker</h2>
+    <p class="sg-note">Phase B. Every moving frame is drawn by the same rig in <code>baller.js</code> (the six standing poses are untouched). The court player is <code>court.js</code>, the ticker <code>ticker.js</code>, sound <code>sound.js</code> (off by default).</p>
+    <div class="k-panel"><div id="frames" style="display:flex;flex-wrap:wrap;gap:6px"></div><span class="sg-cap">the nine moving sets, one row each</span></div>
+    <div class="sg-grid" style="grid-template-columns:repeat(auto-fill,minmax(340px,1fr));margin-top:14px">
+      <div class="k-panel k-flush"><div id="court" style="position:relative;height:380px"></div><span class="sg-cap" style="padding:8px">a playable moment: press the button or Space</span></div>
+      <div class="k-panel k-flush"><div id="cer" style="position:relative;height:380px"></div><span class="sg-cap" style="padding:8px">a ceremony: the draft-night walk, the handshake, the jersey</span></div>
+      <div class="k-panel" id="tkstrip"></div>
+      <div class="k-panel"><button class="k-btn k-sec" id="tk-demo">Play the live ticker</button><span class="sg-cap">a stretch of 27 games, 1x, 2x, 4x or skip</span></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Toasts and sheet</h2>
+    <div class="sg-row"><button class="k-btn k-sec" id="toast-go">Show a toast</button><button class="k-btn k-sec" id="sheet-go">Open a sheet</button></div>
+    <div class="k-scrim" id="scrim" hidden><div class="k-sheet">
+      <div class="k-sheet-head"><h3 class="k-h2">Off the court</h3><button class="k-btn k-quiet" data-close>Close</button></div>
+      <p class="k-dim">Buy your mother a house. Start a foundation. Call Tavi back. Each once a year.</p>
+      <button class="k-btn k-block" data-close>Buy the house · $2.1M</button>
+    </div></div>
+  </section>
+
+  <section>
+    <h2>Badges and trophies</h2>
+    <div class="sg-row" id="badges"></div>
+  </section>
+
+  <section>
+    <h2>Icons</h2>
+    <p class="sg-note">7x7 grids, outlined in a dark shade of their own colour, lit from the upper left. Shown at 2x, 3x and 4x.</p>
+    <div class="sg-row" id="icons"></div>
+  </section>
+
+  <section>
+    <h2>Stage looks</h2>
+    <p class="sg-note">One system, five rooms. The ground, the light and one accent change; nothing else does.</p>
+    <div class="sg-grid" id="rooms"></div>
+  </section>
+
+  <section>
+    <h2>Empty, loading, error</h2>
+    <div class="sg-grid">
+      <div class="k-panel"><div class="k-state" id="st-empty"></div></div>
+      <div class="k-panel"><div class="k-state k-loading" id="st-load"></div></div>
+      <div class="k-panel"><div class="k-state k-error" id="st-err"></div></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Ad slot</h2>
+    <div class="k-ad sg-phone"></div>
+  </section>
+</main>
+<script src="../baller.js?v=3"></script>
+<script src="../sound.js?v=1"></script>
+<script src="../court.js?v=1"></script>
+<script src="../ticker.js?v=1"></script>
+<script>
+/* Motion: every frame of every set, a live moment, a ceremony, the ticker. */
+(function(){
+  var B = window.RTF_BALLER, CT = window.RTF_COURT, TK = window.RTF_TICKER;
+  if (!B || !CT || !TK) return;
+  var look = { skin: 4, hair: 'twists', hc: 1, build: 'standard', shoes: 'club', beard: 'goatee' };
+  var me = { look: look, c1: '#1d428a', c2: '#ffc72c', num: 30, age: 26 };
+  var fr = document.getElementById('frames'), html = '';
+  Object.keys(B.SETS).forEach(function(set){
+    html += '<div style="display:flex;gap:2px;align-items:end;padding:4px;background:#0b0e1a"><span class="sg-cap" style="writing-mode:vertical-rl">' + set + '</span>';
+    for (var i = 0; i < B.SETS[set]; i++) html += '<img src="' + B.url(look, { pose: set + i, c1: me.c1, c2: me.c2, num: 30, scale: 2 }) + '" width="88" height="128" alt="' + set + ' ' + i + '" style="image-rendering:pixelated">';
+    fr.insertAdjacentHTML('beforeend', html + '</div>'); html = '';
+  });
+  function moment(){
+    var host = document.getElementById('court'); host.innerHTML = '';
+    var m = CT.moment(host, { kind: 'three', rating: 74, rateName: 'Shooting', room: 'nba', c1: me.c1, c2: me.c2, oc: '#552583', me: me,
+      bug: { home: 'GSW', away: 'LAL', clock: '0:07' }, intro: 'Game 7. Tied.', makeCall: 'Bang!', missCall: 'Off the rim.' },
+      { resolve: function(q){ return { made: q > 0.3 }; }, done: function(){ m.stop(); setTimeout(moment, 900); } });
+  }
+  function cer(){
+    var host = document.getElementById('cer'); host.innerHTML = '';
+    var c = CT.ceremony(host, 'jersey', { name: 'Marcus Vale', num: 30, pick: 3, teamName: 'Golden State Warriors', c1: me.c1, c2: me.c2, commish: 'Glen Ostrowski' },
+      { room: 'draft', me: me, done: function(){ setTimeout(function(){ c.stop(); cer(); }, 1500); } });
+  }
+  moment(); cer();
+  var games = []; for (var g = 1; g <= 27; g++) games.push({ n: g, opp: ['LAL', 'BOS', 'DEN', 'MIA'][g % 4], home: g % 2 === 0, won: g % 3 !== 0, pts: g === 11 ? 42 : 14 + (g * 7) % 15, reb: 5, ast: 6, out: g === 19, key: g === 11 });
+  var d = { kind: 'rs', label: 'Games 1 to 27', team: 'GSW', c1: me.c1, c2: me.c2, w0: 0, l0: 0, games: games, news: ['the Pistons fire their coach. An assistant is the interim.'] };
+  document.getElementById('tkstrip').innerHTML = TK.strip(d) + '<span class="sg-cap">the finished stretch, under the card</span>';
+  document.getElementById('tk-demo').onclick = function(){ TK.play(d, {}); };
+})();
+</script>
+<script>
+(function(){
+  var K = window.RTF_KIT, B = window.RTF_BALLER, $ = function(id){ return document.getElementById(id); };
+  K.wireTips(document.getElementById('sg'));
+
+  /* Swatches with their contrast on a panel. */
+  var sw = [['floor','--k-floor'],['panel','--k-panel'],['panel 2','--k-panel-2'],['panel 3','--k-panel-3'],['frame','--k-frame'],['ink','--k-ink'],['ink 2','--k-ink-2'],['ink 3','--k-ink-3'],['accent','--k-accent'],['gold','--k-gold'],['good','--k-good'],['bad','--k-bad'],['warn','--k-warn'],['trust','--k-trust'],['live','--k-live']];
+  var cs = getComputedStyle(document.documentElement);
+  $('sw').innerHTML = sw.map(function(s){ var v = cs.getPropertyValue(s[1]).trim(); return '<div><div class="sg-sw" style="background:' + v + ';box-shadow:inset 0 0 0 1px rgba(255,255,255,.12)"></div><div class="sg-swc"><b>' + s[0] + '</b>' + v + ' · ' + K.contrast(v, K.T.panel).toFixed(1) + ':1</div></div>'; }).join('');
+
+  /* Buttons in every state. */
+  var bs = [['Primary','k-btn',''],['Hover','k-btn is-hover',''],['Pressed','k-btn is-pressed',''],['Disabled','k-btn','disabled'],['Focus','k-btn is-focus',''],
+            ['Secondary','k-btn k-sec',''],['Pressed','k-btn k-sec is-pressed',''],['Quiet','k-btn k-quiet','']];
+  $('btns').innerHTML = bs.map(function(b){ return '<div><button class="' + b[1] + '" ' + b[2] + '>' + (b[0] === 'Quiet' ? 'Retire' : b[0] === 'Secondary' || b[1].indexOf('k-sec') > 0 ? 'Off the court' : 'Play the stretch') + '</button><span class="sg-cap">' + b[0] + '</span></div>'; }).join('')
+    + '<div><button class="k-btn k-icon" aria-label="Settings">' + K.iconHtml('clip', 2) + '</button><span class="sg-cap">Icon</span></div>';
+
+  /* Meters. */
+  var M = [['heart','HP','Health',92,'var(--k-good)','Health. Below 60 you play hurt and lose minutes; below 30 a stretch can end your season.'],
+           ['face','MOOD','Morale',64,'var(--k-warn)','Morale. Happy players play better and sign for less. Unhappy ones ask out.'],
+           ['star','FAME','Fame',41,'var(--k-gold)','Fame. Opens endorsements, the All-Star vote and the media. It also draws heat.'],
+           ['clip','TRUST','Coach trust',71,'var(--k-trust)','Coach trust. Decides your minutes and who gets the last shot.'],
+           ['cash','DEAL','Contract',30,'var(--k-accent)','Contract. Two years left at $28M. A contract year makes every game a test.']];
+  $('meters').innerHTML = M.map(function(m, i){ return '<button class="k-meter k-has-tip' + (i === 3 ? ' is-up' : i === 4 ? ' is-down' : '') + '" style="--k-pip:' + m[4] + '" aria-label="' + m[2] + ' ' + m[3] + ' of 100">' + K.iconHtml(m[0], 2) + '<span class="k-pips">' + K.pips(m[3]) + '</span><span class="k-mv">' + m[3] + '</span><span class="k-mk">' + m[1] + '</span><span class="k-tip' + (i === 0 ? ' k-left' : i === 4 ? ' k-right' : '') + '" role="tooltip"><b>' + m[2] + '</b>' + m[5] + '</span></button>'; }).join('');
+
+  /* Rating rows with deltas. */
+  var R = [['Shooting',84,2,1],['Finishing',71,0,0],['Playmaking',66,1,0],['Defense',58,-2,0],['Rebounding',44,0,0],['Athleticism',79,-1,0],['Basketball IQ',73,3,1]];
+  $('rows').innerHTML = R.map(function(r){ return '<div class="k-row' + (r[3] ? ' is-key' : '') + '"><span>' + r[0] + '</span>' + K.bar(r[1], r[3] ? 'var(--k-good)' : 'var(--k-accent)', r[2] !== 0) + '<span class="k-v">' + r[1] + '</span><span class="k-delta ' + (r[2] > 0 ? 'up' : r[2] < 0 ? 'down' : '') + '">' + (r[2] > 0 ? '+' + r[2] : r[2] < 0 ? r[2] : '') + '</span></div>'; }).join('');
+
+  /* Player cards, three clubs. */
+  var looks = [
+    { look: { skin: 5, hair: 'twists', hc: 0, beard: 'stubble', band: 'white', sleeve: 'club', shoes: 'club' }, c1: '#006BB6', c2: '#F58426', num: 3, name: 'Marcus<br>Hale', line: '#3 · SG · Knicks', ovr: 78, tags: ['Shot creator', 'Clutch'] },
+    { look: { skin: 2, hair: 'buzz', hc: 1, beard: 'full', band: 'none', sleeve: 'black', shoes: 'black' }, c1: '#000000', c2: '#C4CED4', num: 21, name: 'Theo<br>Varga', line: '#21 · C · Spurs', ovr: 71, tags: ['Rim protector'] },
+    { look: { skin: 7, hair: 'afro', hc: 0, beard: 'goatee', band: 'club', sleeve: 'none', shoes: 'gold' }, c1: '#002D62', c2: '#FDBB30', num: 0, name: 'Jalen<br>Brooks', line: '#0 · PG · Pacers', ovr: 83, tags: ['Floor general', 'Iron man'] },
+  ];
+  function card(p){
+    var set = K.room('nba', 132, 80, { c1: p.c1, c2: p.c2, spotAt: 0.3, seed: p.num });
+    var h = '<div class="k-panel k-team k-card-player sg-phone" data-c1="' + p.c1 + '" data-c2="' + p.c2 + '"><div class="k-stage">'
+      + '<div class="k-set">' + K.img(set, 3) + '</div><div class="k-teamwash"></div><div class="k-scrim-r"></div>'
+      + '<div class="k-actor">' + (B ? B.img(p.look, { c1: p.c1, c2: p.c2, num: p.num, pose: 'ball', scale: 3, age: 25 }) : '') + '</div>'
+      + '<div class="k-id"><h3 class="k-hero">' + p.name + '</h3><span class="k-tag k-team">' + p.line + '</span></div>'
+      + '<div class="k-ovr"><span class="k-num">' + p.ovr + '</span><span class="k-pix">OVR</span></div></div>'
+      + '<div class="k-strip">' + p.tags.map(function(t, i){ return '<span class="k-tag' + (i ? ' k-gold' : ' k-team') + '">' + t + '</span>'; }).join('') + '</div></div>';
+    return h;
+  }
+  $('pcards').innerHTML = looks.map(card).join('');
+  Array.prototype.forEach.call(document.querySelectorAll('.k-card-player'), function(el){ K.theme(el, el.dataset.c1, el.dataset.c2); });
+  $('teams').innerHTML = looks.map(function(p){ var v = K.teamVars(p.c1, p.c2); return '<div class="k-panel k-team k-tight" style="' + Object.keys(v).map(function(k){ return k + ':' + v[k]; }).join(';') + '"><span class="k-tag k-team">' + p.line.split(' · ')[2] + '</span> <span class="k-pix" style="color:var(--k-team-ink)">Team ink ' + K.contrast(v['--k-team-ink'], K.T.panel).toFixed(1) + ':1</span><div class="sg-swc">raw ' + p.c1 + ' on panel: ' + K.contrast(p.c1, K.T.panel).toFixed(1) + ':1</div></div>'; }).join('');
+
+  /* The receipt. */
+  $('receipt').innerHTML = '<div class="k-receipt"><div class="k-eyebrow">' + K.iconHtml('check', 2) + 'What changed</div>'
+    + '<p class="k-what">You asked for the trade. It leaked by morning.</p><ul>'
+    + '<li>' + K.iconHtml('clip', 2) + '<span>Coach trust · he heard it on the radio</span><b class="down">-12</b></li>'
+    + '<li>' + K.iconHtml('star', 2) + '<span>Fame · every show led with it</span><b class="up">+6</b></li>'
+    + '<li>' + K.iconHtml('cash', 2) + '<span>Sonny Rial · he loves leverage</span><b class="up">+10</b></li>'
+    + '</ul><div class="k-flag">Remembered: you asked out of New York in 2032.</div></div>';
+
+  /* Broadcast. */
+  $('bug').innerHTML = '<span class="k-tm" style="--k-c:#006BB6;--k-on:#fff">NYK</span><span class="k-sc">98</span><span class="k-tm" style="--k-c:#007A33;--k-on:#fff">BOS</span><span class="k-sc">97</span><span class="k-clock">4Q 0:06</span>';
+  $('lower').innerHTML = (B ? B.img(looks[0].look, { c1: '#006BB6', c2: '#F58426', num: 3, pose: 'stand', scale: 1, shadow: false }) : '') + '<div class="k-plate" style="--k-team-1:#006BB6;--k-team-on:#fff"><b>Marcus Hale</b><span>31 PTS · 6 AST · 12-19 FG</span></div>';
+  var tape = [['PTS', '24.1', '27.8'], ['REB', '5.2', '7.4'], ['AST', '6.0', '4.1'], ['3PT%', '41.2', '36.0'], ['DEF', '58', '74']];
+  $('tape').innerHTML = '<div class="k-side">' + (B ? B.img(looks[0].look, { c1: '#006BB6', c2: '#F58426', num: 3, pose: 'stand', scale: 2, shadow: false }) : '') + '<div class="k-pix">HALE</div></div><div class="k-mid">VS</div><div class="k-side">' + (B ? B.img(B.lookFor('dre'), { c1: '#E03A3E', c2: '#000000', num: 1, pose: 'stand', scale: 2, shadow: false }) : '') + '<div class="k-pix">CALLOWAY</div></div>'
+    + tape.map(function(t){ var a = parseFloat(t[1]), b = parseFloat(t[2]); return '<span class="k-l' + (a > b ? ' win' : '') + '">' + t[1] + '</span><span class="k-mid">' + t[0] + '</span><span class="k-r' + (b > a ? ' win' : '') + '">' + t[2] + '</span>'; }).join('');
+  $('tick').innerHTML = K.tickerHtml('Around the league', ['Celtics win 9 straight', 'Malik Rowe out 4 weeks', 'MVP ladder: Hale 11th', 'Lakers fire their coach']);
+  $('wipe-go').onclick = function(){ K.wipe(); };
+  $('toast-go').onclick = function(){ K.toast(K.iconHtml('trophy', 2) + ' Badge earned: Clutch gene', 'k-gold'); };
+  $('sheet-go').onclick = function(){ var d = K.dialog($('scrim'), { label: 'Off the court' }); Array.prototype.forEach.call($('scrim').querySelectorAll('[data-close]'), function(b){ b.onclick = d.close; }); };
+
+  /* Badges. */
+  var bd = [['trophy','Champion',0],['medal','All-Star',0],['star','MVP',0],['ring','Ring night',0],['ball','Clutch gene',0],['lock','Locked',1]];
+  $('badges').innerHTML = bd.map(function(b){ return '<div class="k-badge' + (b[2] ? ' is-locked' : '') + '"><span class="k-medal">' + K.iconHtml(b[0], 4) + '</span>' + b[1] + '</div>'; }).join('');
+
+  /* Icons. */
+  $('icons').innerHTML = K.ICONS.map(function(n){ return '<div style="text-align:center">' + K.iconHtml(n, 2) + ' ' + K.iconHtml(n, 3) + ' ' + K.iconHtml(n, 4) + '<span class="sg-cap">' + n + '</span></div>'; }).join('');
+
+  /* Stage looks. */
+  var rooms = [['High school','hs','#7a1f2b','#f2c14e'],['College','col','#c8102e','#ffffff'],['Overseas','intl','#1f6f43','#f2f2f0'],['G League','gl','#5b2c83','#c4ced4'],['NBA','nba','#006BB6','#F58426']];
+  $('rooms').innerHTML = rooms.map(function(r){
+    return '<div class="k-panel k-flush sg-room" style="height:auto">' + K.img(K.room(r[1], 132, 80, { c1: r[2], c2: r[3] }), 2) + '<span class="k-tag lab">' + r[0] + '</span></div>';
+  }).join('');
+
+  /* States. */
+  $('st-empty').innerHTML = K.iconHtml('trophy', 4) + '<p class="k-h2">The case is empty</p><p>Win something. The shelf will remember.</p>';
+  $('st-load').innerHTML = '<span class="k-bounce">' + K.iconHtml('ball', 4) + '</span><p class="k-pix">Simming the stretch</p>';
+  $('st-err').innerHTML = K.iconHtml('whistle', 4) + '<p class="k-h2">Technical foul</p><p>The save could not reach your account. Your career is safe on this device and will sync next time.</p><button class="k-btn k-sec">Try again</button>';
+})();
+</script>
+</body>
+</html>

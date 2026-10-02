@@ -58,21 +58,21 @@
 <link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png?v=1">
 <link rel="icon" type="image/png" sizes="48x48" href="favicon-48.png?v=1">
 <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=1">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<!-- THE FONT DOES NOT GET TO HOLD THE GAME HOSTAGE.
-     A stylesheet from a third-party host is render-blocking, and the inline script
-     that boots the game runs after it. Measured with the host unreachable: 13 SECONDS
-     to a playable page, against 260ms when it answers. That is a real failure mode
-     rather than a lab curiosity, because fonts.googleapis.com is slow on bad networks
-     and blocked outright in some countries, and this game has to work there.
-     Loading it as print media and promoting it on load makes it non-blocking. Every
-     face below has a real fallback stack, so text paints immediately in the fallback
-     and swaps when Anton and Archivo arrive. -->
-<link rel="stylesheet" media="print" onload="this.media='all';this.onload=null"
-  href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@400;600;700;800;900&family=Press+Start+2P&display=swap">
-<noscript><link rel="stylesheet"
-  href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@400;600;700;800;900&family=Press+Start+2P&display=swap"></noscript>
+<link rel="preload" href="fonts/archivo-latin.woff2?v=1" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fonts/anton-latin.woff2?v=1" as="font" type="font/woff2" crossorigin>
+<!-- THE FONTS ARE SERVED FROM THIS SITE. They used to come from Google Fonts,
+     loaded as print media so a slow or blocked host could not hold the boot
+     script hostage (measured: 13 seconds to a playable page with the host
+     unreachable). That kept the page alive and left it in Impact and system UI
+     on exactly those networks. Self-hosted, the three faces are 66KB of woff2
+     (Latin subsets, SIL Open Font License, texts in fonts/), arrive from the
+     same origin as the page and swap in under font-display:swap, so nothing
+     blocks and nothing falls back for long. -->
+<style>
+  @font-face{font-family:'Anton';font-style:normal;font-weight:400;font-display:swap;src:url(fonts/anton-latin.woff2?v=1) format('woff2');}
+  @font-face{font-family:'Archivo';font-style:normal;font-weight:100 900;font-display:swap;src:url(fonts/archivo-latin.woff2?v=1) format('woff2');}
+  @font-face{font-family:'Press Start 2P';font-style:normal;font-weight:400;font-display:swap;src:url(fonts/pressstart2p-latin.woff2?v=1) format('woff2');}
+</style>
 
 <style>
   :root{
@@ -1737,24 +1737,36 @@
    * dock can carry its button from boot; career-ui.js fills in who and where.
    * Its rules are here rather than in that file's injected sheet because this
    * is the first thing on the first paint. */
-  .career-hero{position:relative;overflow:hidden;padding:18px 16px 16px;
-    background:radial-gradient(600px 260px at 85% -40px,rgba(240,120,45,.28),transparent 65%),linear-gradient(180deg,#1b2232,#10151f);}
-  .career-hero .ch-eye{display:inline-flex;gap:8px;align-items:center;font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--orange);font-weight:800;}
-  .career-hero .ch-eye i{font-style:normal;color:#0b0f17;background:#f2c14e;border-radius:4px;padding:1px 6px;letter-spacing:.08em;}
+  .career-hero{position:relative;overflow:hidden;padding:18px 16px 16px;border-radius:0;border:0;
+    background:radial-gradient(600px 260px at 85% -40px,rgba(240,120,45,.28),transparent 65%),linear-gradient(180deg,#151b30,#0d1120);
+    /* Career is drawn in the Arena Arcade style (career-kit.js), so its door
+       wears the same stepped pixel frame as every Career screen behind it. */
+    margin-left:3px;margin-right:3px;
+    box-shadow:0 -3px 0 0 #2d3a66,0 3px 0 0 #2d3a66,-3px 0 0 0 #2d3a66,3px 0 0 0 #2d3a66;}
+  .career-hero > *{position:relative;z-index:1;}
+  .career-hero .ch-set{position:absolute;inset:0;z-index:0;overflow:hidden;opacity:.24;pointer-events:none;
+    -webkit-mask:linear-gradient(90deg,transparent 20%,#000 75%);mask:linear-gradient(90deg,transparent 20%,#000 75%);}
+  .career-hero .ch-set img{position:absolute;right:0;top:0;height:100%;width:auto;image-rendering:pixelated;}
+  #b-career{border-radius:0;border:0;color:#160b02;background:#ff7a1a;font-weight:800;margin-bottom:6px;
+    box-shadow:0 -3px 0 0 #05070d,-3px 0 0 0 #05070d,3px 0 0 0 #05070d,0 3px 0 0 #b04a06,0 6px 0 0 #05070d;}
+  #b-career:active{transform:translateY(3px);box-shadow:0 -3px 0 0 #05070d,-3px 0 0 0 #05070d,3px 0 0 0 #05070d,0 3px 0 0 #05070d;}
+  #b-career:disabled{background:#202a4a;color:#8fa0d6;box-shadow:0 -3px 0 0 #2d3a66,-3px 0 0 0 #2d3a66,3px 0 0 0 #2d3a66,0 3px 0 0 #2d3a66;}
+  .career-hero .ch-eye{display:inline-flex;gap:8px;align-items:center;font-family:var(--pixel);font-size:8px;line-height:1.6;letter-spacing:.02em;text-transform:uppercase;color:#ffd166;}
+  .career-hero .ch-eye i{font-style:normal;color:#0b0f17;background:#ffd166;padding:3px 5px;}
   .career-hero h2{font-size:30px;line-height:1.02;margin:8px 0 6px;display:block;}
   .career-hero .ch-say{margin:0 0 14px;color:var(--mut);font-size:14.5px;line-height:1.5;max-width:30em;}
   .ch-path{display:flex;align-items:center;gap:0;margin:0 0 14px;padding:0;list-style:none;}
   .ch-path li{flex:1 1 0;text-align:center;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--mut);font-weight:800;position:relative;padding-top:18px;}
-  .ch-path li:before{content:"";position:absolute;top:4px;left:50%;width:10px;height:10px;margin-left:-5px;border-radius:50%;background:#0e131c;border:2px solid var(--orange);z-index:1;}
+  .ch-path li:before{content:"";position:absolute;top:4px;left:50%;width:10px;height:10px;margin-left:-5px;background:#0e131c;border:2px solid var(--orange);z-index:1;}
   .ch-path li:after{content:"";position:absolute;top:8px;left:-50%;width:100%;height:2px;background:rgba(240,120,45,.4);}
   .ch-path li:first-child:after{display:none;}
   .ch-path li.end:before{background:#f2c14e;border-color:#f2c14e;}
-  .ch-cur{display:flex;gap:12px;align-items:center;margin:0 0 14px;padding:12px;border-radius:12px;background:linear-gradient(135deg,var(--c1,#1d2433),rgba(14,19,28,.9) 80%);border:1px solid var(--cardb);}
+  .ch-cur{display:flex;gap:12px;align-items:center;margin:0 3px 14px;padding:12px;border-radius:0;background:linear-gradient(135deg,var(--c1,#1d2433),rgba(14,19,28,.9) 80%);box-shadow:0 -2px 0 0 #2d3a66,0 2px 0 0 #2d3a66,-2px 0 0 0 #2d3a66,2px 0 0 0 #2d3a66;}
   .ch-cur .cr-jersey{flex-basis:48px;width:48px;height:52px;}
   .ch-cur b{display:block;font-size:16px;font-weight:800;}
   .ch-cur span{display:block;font-size:12.5px;color:rgba(255,255,255,.78);}
   .ch-cur .o{margin-left:auto;text-align:center;}
-  .ch-cur .o b{font-family:var(--display);font-weight:400;font-size:30px;line-height:1;}
+  .ch-cur .o b{font-family:var(--pixel);font-weight:400;font-size:22px;line-height:1;}
   .ch-cur .o span{font-size:9px;letter-spacing:.14em;text-transform:uppercase;font-weight:800;}
   .ch-best{font-size:12.5px;color:var(--mut);margin:10px 0 0;}
   .ch-best b{color:#ffe3a0;}
@@ -3412,8 +3424,8 @@
 <script src="badges.js?v=5"></script>
 <script src="courts.js?v=2"></script>
 <script src="modes.js?v=9"></script>
-<script src="career.js?v=6"></script>
-<script src="baller.js?v=2"></script>
+<script src="career.js?v=17"></script>
+<script src="baller.js?v=3"></script>
 <!-- ACCOUNTS AND THE LEADERBOARD. All three are OPTIONAL: if the CDN is blocked
      or either file fails to load, the game runs exactly as it did, with runs
      kept in this browser and the board reporting itself unreachable. An account
@@ -11923,6 +11935,21 @@ window.RTF_PAGE = {
       return;
     }
     copyAndDownload(text, null);
+  },
+  /* A picture and its words, for Career's share card: the share sheet when it
+     takes files, the text alone when it does not, and the clipboard and a
+     download on a laptop. shareRun's own rules, for a blob drawn elsewhere. */
+  shareImage: function(text, blob){
+    var file = null;
+    try { if (blob) file = new File([blob], 'run-the-floor.png', { type: 'image/png' }); } catch (e) { file = null; }
+    var sheet;
+    if (file && navigator.canShare && navigator.canShare({ files: [file] })) sheet = navigator.share({ text: text, files: [file] });
+    else if (navigator.share) sheet = navigator.share({ text: text });
+    else sheet = Promise.reject(new Error('no share sheet'));
+    return sheet.catch(function(err){
+      if (err && err.name === 'AbortError') return;
+      copyAndDownload(text, blob);
+    });
   }
 };
 
@@ -11938,8 +11965,12 @@ boot();
 </script>
 <!-- AFTER the page, because it draws through window.RTF_PAGE, which the script
      above publishes. -->
-<script src="modes-ui.js?v=17"></script>
-<script src="scenes.js?v=3"></script>
-<script src="career-ui.js?v=7"></script>
+<script src="modes-ui.js?v=18"></script>
+<script src="career-kit.js?v=4"></script>
+<script src="sound.js?v=1"></script>
+<script src="court.js?v=1"></script>
+<script src="ticker.js?v=1"></script>
+<script src="scenes.js?v=5"></script>
+<script src="career-ui.js?v=19"></script>
 </body>
 </html>

@@ -11253,6 +11253,353 @@ boards. `setName` in `auth.js` calls it and `rtf_rename_careers` after `rtf_rena
 first run for the snapshot reason recorded under 116: a function that inserts, called in the same
 statement as the select checking it, is checked against the table as it was before.
 
+#### The Career rebuild: the design system, the saves and the people
+
+```
+node hoops/check-saves.mjs      frozen version 1 saves migrate and play on unchanged
+node hoops/check-sprite.mjs     no existing sprite pose moves a cell
+node hoops/sim-career.mjs       a thousand careers against the story bible
+hoops/design/                   AUDIT, DESIGN, NARRATIVE and PLAN, plus the style guide
+```
+
+Career is being rebuilt in phases (`hoops/design/PLAN.md`). The design is **Arena
+Arcade**, picked by the owner: `hoops/career-kit.js` is the whole system (tokens,
+components, pixel art drawn in code on the sprite's grid), CSS carried in a script
+for the cache-busting reason `store.js` gives, every token prefixed `--k-` so it
+never reaches into the draft game's variables. `hoops/design/style-guide.html`
+renders every part. A screen needing something the kit lacks adds it to the kit
+and the guide first. The three fonts are self-hosted in `hoops/fonts/`.
+
+**REAL PEOPLE STAY ON THE COURT.** A real player or coach appears in games,
+rosters, trades, awards, hirings and firings, and never in a quote, a feud, a
+night out or a podcast. Every club carries three invented teammates
+(`lockerOf`: `{tm}`, `{tm2}`, `{tvet}`, `{trook}`, `{tco}`), `{topp}` is an
+invented player elsewhere, and the recurring cast (`CAST`) has fixed names.
+`REAL_TOKENS` names the tokens that resolve to a real person, and an NBA event
+may use one only if `BASKETBALL_ONLY` lists it with the reason. check-career
+section 5c fails otherwise, and scans the copy outside the pools too.
+
+**A SAVE IS VERSIONED AND MIGRATED.** `LIFE_VERSION` is 2. `migrate()` runs on
+every load, is idempotent, and never moves a number the sim reads, which is
+what `check-saves.mjs` proves: six saves written by the version 1 engine are
+frozen in `hoops/build/fixtures/` with what that engine did over the next 120
+presses, and the migrated careers must match it exactly. Never regenerate those
+fixtures with the current engine.
+
+**The simulator has two kinds of claim.** Invariants (a crash, a career that
+never ends, an unfilled token, junk printed as a value, a wrong-year draft line)
+fail every run. Balance targets carry the phase they are due by, and only fail
+once `--phase` reaches it, so a known gap is printed without being a failure.
+
+**The characters are final.** New cutscene poses are drawn by the existing rig
+in `baller.js`; `check-sprite.mjs` holds 960 hashes of every existing pose,
+recorded from the untouched file.
+
+**Every Career screen and scene is drawn on the kit (Phase A).** `career-ui.js`
+needs `RTF_KIT` and returns without it, like it needs the engine. Three things
+in it are easy to undo by accident:
+
+- **A scene room is drawn at the stage's own shape.** `fitPix` in `scenes.js`
+  asks `K.room` for a set as many cells as the stage holds, one cell a whole
+  number of pixels. Covering a stage with the 132 by 80 set instead blows a
+  tall phone up to eighteen pixels a cell and crops it to a wall of heads. It
+  refits on a `ResizeObserver`, because the caption grows and shrinks with
+  what it says. A press table and a studio desk are the same picture laid
+  over the cast and clipped (`FRONT`), so the speaker stands behind them.
+- **The answers win the scroll.** After a press, `scrollStage` brings the
+  card's first answer on screen even when that takes the stage top above the
+  window: a long receipt and the beats above a card used to leave the answers
+  below the fold. check-career paints the tallest receipt over a real card
+  (`RTF_CAREER_UI.paintPress`, the checker's alone) rather than hoping a random
+  career deals one, and checks every card's first answer, not a sample.
+- **Focus goes where the next thing is** after a keyboard press (the card's
+  heading or the next button), never on a mouse press, never with a scroll. A
+  number key answers the card on top; a sheet or a scene being open stops it.
+
+Four meters, not five: the fifth in PLAN.md waits for the story engine (Phase C)
+to have something real to measure. The leaderboard's Career tab keeps the
+game's shared board chrome, because restyling one tab of seven is a seam inside
+the board rather than one removed at its door.
+
+#### Phase E: Pro starts in high school, a free career starts from a generated road
+
+```
+node hoops/sim-career.mjs --n 1000 --phase E   the second sweep: generated roads, sons, difficulty, challenges
+node hoops/check-career.mjs                    section 11 (the engine), section 7 (the gate, the Vault, a son)
+```
+
+The owner's calls, 2026-10-02: no daily seeded career; playing the road from high
+school and the family tree are **Run The Floor Pro** (`rtf_premium`, the $9.99
+Endless already sells). A guest or free account starts on draft night from a
+pre-NBA life generated for them, a new one every career.
+
+**THE GENERATED ROAD IS THE REAL ROAD.** `C.generateRoad(opts)` is
+`newLife({ start: 'hs' })` played by an automatic policy (each card answered off
+`rngAt(L, 'gen:' + steps + ':' + id)`) and stopped at the combine card, with
+`L.opt.gen = 1`. Not a new formula: its NBA outcomes sit in the road's own bands,
+and the memories, people and routes it made carry on. `C.roadStory(L)` is the road
+in short lines, read off `amHist` and the route memories. The four background cards
+are gone from the builder for everybody; the engine still takes `bg`, so old saves
+and the sweeps are unchanged.
+
+**THE GATE IS THE START BUTTON.** `proOpen()` in `career-ui.js` asks
+`RTF_MODES_UI.proOpen()` (owning Pro, or `PRO_LIVE` off). Pressing High school or
+Play as your son without it opens the Pro sheet and changes nothing. A career
+already started is never taken away. `RTF_CAREER_UI.proChanged` redraws the
+builder when Pro arrives.
+
+**THE VAULT** rides in the `rtf.life.v1` slot: `arc` is every finished career as a
+short entry (200 kept; the full Hall card is still the newest 20 on `hof`), and
+`vault` is every key found (`t:` tier, `o:` outcome, `s:` secret, `r:` road, `g:`
+origin, `c:` challenge met). A card stores its ids (`card.ids`); an older card is
+read back through the catalog's names, and a slot from before is backfilled once on
+load. Tabs: Endings, Careers (each opens into its story), Family.
+
+**THE STORY** is `C.careerStory(L)`, chapters built only from what the career
+recorded, kept on the Hall card. Called by the page at the end, so it moves nothing
+the season reads.
+
+**A SON IS THE SON OF A FORMER PRO.** `newLife({ parent, parentLeague })` forces the
+`pro_son` origin and stores `L.parent` (`cleanParent`): the father's real points are
+`origin.father`, `{father}` and `{dad}` are his name, and his seasons are the copy's
+count. **He starts in his own year, in the league his father left**:
+`legacyLeague` copies the card's `lg` (`C.leagueEnd`, trimmed by the page) and plays
+the gap forward a summer at a time with `driftLeague`, so coaches and invented stars
+move on. A card without `lg` plays forward from the data's year. Only a father who
+reached the league can have a son (`canFather`). Four `leg_*` cards are his.
+
+**DIFFICULTY** is `L.opt.diff`, never written for Normal: `lvl(L)` multiplies growth
+and decline and injury odds and adds to a player's impact, and every Normal term is
+a multiply by one or an add of nought. **That is proved, not argued**: the story-on
+replay of 1,000 careers is byte identical. An **Easy** career files no Career badges
+and is not submitted to the board. Measured at 3,000: Hall of Fame on generated
+careers is about 31% Easy, 21% Normal, 12% Hard.
+
+**CHALLENGES** (`C.CHALLENGES`, nine) are goals over an ordinary career, with an
+optional start (`stock`, applied once at the combine by `chStock`) or a fixed
+difficulty. `challengeOf(L)` says where it stands; met or not is kept on the card
+and in the Vault. Each one is met in the sweep, played as itself on Easy; a
+challenge no player can chase is the unearnable badge, which is why Sixth Man and
+Three rings were replaced.
+
+**THE SHARE CARD** is `drawCard` in `career-ui.js` (540 by 756, the kit's colours,
+the player at a whole scale), shared through `RTF_PAGE.shareImage`, which is
+`shareRun`'s own path for a blob drawn elsewhere.
+
+**Leaderboards by challenge and by Vault completion need a migration** and are
+Phase G.
+
+#### Phase D: origins, roads, endings, and a legend layer with an off switch
+
+```
+node hoops/sim-career.mjs --n 1000 --phase D   every band and catalog target, what CI runs
+node hoops/check-story.mjs                     section 12: origins, routes, endings, the switch
+node hoops/build/replay-careers.mjs --story off --against base.json   old saves untouched
+```
+
+The content phase. 305 events, 47 arcs met, 27 routes, 34 endings and 26 legend
+events, all story careers only. A migrated save replays byte identical, proved
+over 1,000 careers against the Phase C engine. **Do that again after touching
+anything shared**: the replay is the only thing that can see a moved draw.
+
+**CONTENT IS DATA, written through three registries in `career.js`.**
+`story({...})` adds to the random pools (`STORY_NBA`, `STORY_AM`),
+`storyArcs({...})` adds arc nodes to `ARC_EVENTS`, and `storyFixed({...})` adds
+cards dealt by name (the epilogues, the halftime shot). `O(label, fx, result,
+more)` is an answer: `set`, `rel`, `start`, `go`, `end`, `do`, `log`. Every
+compiled card carries `authored: true`, which is how a check tells Phase D's
+nodes from Phase C's. A node whose result is decided by what happened rather
+than by the button still offers two answers (`shoeLaunch`, `curseVerdict`):
+check-career fails on any card with one.
+
+**FOUR NEW SLOTS, and each says when it is**: `alt` (the year away, labelled by
+`ALT_NAME`), `predraft`, `dn` (draft night) and `post` (years later).
+
+**AN ORIGIN IS CHOSEN OR DRAWN, and it is the one stored thing about where you
+are from.** Eight in `ORIGINS`, each a small ratings tilt, a fame nudge and
+sometimes a trait. Choosing one on the creation screen passes `origin` to
+`newLife`; Surprise me draws it off the seed and the screen says which.
+
+**A ROUTE IS RECOGNIZED, NEVER PICKED FROM A LIST.** The roads to the pros are
+remembered as `route.<id>` when they are taken; the roads through the pros are
+read off the history by `routeOn`. `routesOf(L)` is the one reader.
+
+**THE LEGEND LAYER IS GATED TWICE.** `L.opt.legend` is the switch, set on the
+creation screen and never by `migrate`. Under it, `legendOpen` opens the layer in
+about one season in eleven, seeded per career and year. Without that gate the
+pools run dry of ordinary cards late in a career and 89% of careers met a legend
+card. Arc nodes are not gated: an arc a legend card started finishes.
+
+**ENDINGS ARE A CATALOG, and `endingOf` is the one place a career is judged.**
+Six Hall tiers (`HOF_TIERS`, a seeded vote over `HOF_AT`), eighteen outcomes
+and ten secret endings. `finishLife` writes the epilogue line, which is also
+`final.after`, so the badges and board that read `after` keep working.
+
+**THE BANDS ARE TIGHT AND THEY PULL AGAINST EACH OTHER.** College at most 70%,
+the other roads together near a third, and the NBA reached at most 95%. So a
+route threshold in `commitCard` cannot move alone: raising the G League share
+lowers college and raises reach. Tune at 1,000 careers as well as 3,000, because
+CI runs 1,000 and a band met only on the bigger sample flaps.
+
+**Three side effects that were caught, all silent:**
+
+- Damping the old recurring events left a 600 career sweep with eleven
+  weddings. The life cycle (`LIFE_CYCLE`) is exempt and dealt a little more.
+- A road through a prep year or a reclassification moves ages: a rookie can be
+  18 (reclassified) or 23 to 24, and a freshman 17 or 19. check-career allows
+  those and still refuses an 18 year old who never reclassified.
+- An arc written with one ending passes every sweep. check-story reads the
+  source for each arc's endings and fails on one.
+
+#### Phase C: the story engine, and the story has to happen in order
+
+```
+node hoops/check-story.mjs                    events, calendar, arcs, traits, people, league, the page
+node hoops/build/replay-careers.mjs --out a.json   fingerprint 1,000 careers (then --against a.json)
+node hoops/sim-career.mjs --phase C           continuity scan and the Phase C bands
+```
+
+Asked for with two conditions: nothing overly wordy, and every storyline has to
+make sense with the timeline of what is happening.
+
+**A STORY CAREER IS EVERY CAREER STARTED FROM NOW ON** (`L.opt.story`, set by
+`newLife`, never by `migrate`). Everything below is behind `storyOn(L)`, because
+check-saves plays frozen saves against the old engine. The port of the events to
+data was proved the stronger way: `replay-careers.mjs` fingerprints the whole
+save of 1,000 seeded careers, and with the story off they are byte identical
+before and after every step of this phase.
+
+**AN EVENT IS DATA.** `defineEvents()` fills in phases, tags, `req` (declarative
+prerequisites read by `reqOk`, which throws on an unknown key), rarity, once,
+cooldown and cap. `STORY_RECURS` is the list of events allowed to come back,
+each with a cooldown and a cap; anything else happens once a career.
+
+**THE CALENDAR.** `L.year` is the year a season ENDS. A card says when it is:
+September (camp), December (after game 27), February (the break), April (after
+game 82), the summer, or the school year and month. Three timeline rules were
+broken and are fixed on a story career:
+
+- Nothing about the regular season is dealt in April, because by then it is over
+  (`STORY_PHASES`). April holds `playoff_eve` or `exit_interview`.
+- A high school season stops at the halfway mark (`hs_mid`), so January stories
+  can still change February. College keeps rivalry week out of March.
+- The Olympics come in Olympic years (the old rule was a year early).
+
+**COPY STATES ONLY TRUE FACTS.** A hot streak reads the player's own scoring, a
+proposal says how long it has really been, a freshman wall counts the real
+games, a repeat card reads its own history (`times()`): a cousin is "short
+again", a rebuilt gym is not falling apart. check-story holds every title to ten
+words, card text to 22 words and three sentences, answers to seven, results to
+sixteen.
+
+**`continuity()` and `continuityLog()`** scan every card and the log: in-game
+stories after the season, a partner named while single, NBA cards before the
+NBA, a wedding before an engagement, a memory from the future. The simulator
+fails on any hit, and check-story proves the scan bites by putting the April
+rule back.
+
+**PEOPLE, MEMORY, ARCS.** `L.people` is a ledger of the invented people met,
+with a meter and notes. **The names on a card are read BEFORE the answer runs**
+(`relNames`), or switching agents holds the grudge against the new one. Real
+people never enter it. `remember()` stamps the year and `callback()` says how
+long ago in words, never about the season it happened in. An arc
+(`ARC_EVENTS`, `arcStart`/`arcGo`/`arcEnd`) is dealt in its named slot ahead of
+anything random, happens once a career, and settles one of two or more ways.
+Six today: feud, gym, venture, promise, mentor, prep.
+
+**CHARACTER.** Hidden traits act on a story career and are revealed by play with
+a reason (`reveal`). Skill badges, a signature move, an archetype that follows
+the game you play, and a coach asking for the next position over. The ledger
+drives cards: an agent you keep crossing, your mom, the beat writer, the TV
+critic, your closest teammate.
+
+**THE LIVING LEAGUE IS INVENTED.** `L.league.figs` are invented stars who age,
+move, win the MVP when you do not (voters tire of a repeat winner) and retire.
+Every season records a champion and dynasties are named. Real clubs, coaches and
+rosters are untouched; a real player's future is not ours to write. **Summer
+news is stamped with the summer's calendar year** (`L.year - 1`), because
+`driftLeague` runs after the year has turned.
+
+**GOALS, LEGACY, MEDIA.** A goal card each camp, judged in April. `legacyView`
+gives the rung, the next one, a Hall chance and a records watch. `L.feed` is
+the news (one headline a step at most), with a debate show at the break and a
+nickname the broadcast gives you.
+
+**BALANCE.** The story layer leans careers upward, so a story career has its own
+bar (`BAL`: All-Star cut, steeper decline, a playoff tax, retirement ages). The
+Phase C bands hold over 3,000 careers. The People, Legacy and News tabs only
+appear on a story career.
+
+#### Phase B: the games move, and nothing under them did
+
+```
+node hoops/check-moments.mjs            the touch, the moments, the frames, every moment and ceremony played
+node hoops/check-moments.mjs --quick    no browser
+```
+
+The owner's condition for sound was real animated cutscenes, not a player
+standing and breathing. Four files:
+
+| file | what it is |
+|---|---|
+| `baller.js` | nine moving sets (walk, dribble, shot, dunk, block, cheer, sad, shake, wave), drawn by the same rig |
+| `court.js` | a pixel court and a timeline player at twelve ticks a second; the playable moments and the ceremonies |
+| `ticker.js` | each stretch of the season played on a live board, 1x, 2x, 4x or skip |
+| `sound.js` | WebAudio cues synthesized at runtime, off by default (`rtf.sound.v1`), only inside the court player |
+
+**A MOVING FRAME IS A POSE NAME** (`shot2`, `walk0`), so every reader that takes
+a pose takes these. An arm is two ANGLES, not two points: a point moved by eye
+stretches the arm, an angle keeps its length. The six standing poses go through
+code that is byte for byte what it was whenever a frame field is zero, which is
+what check-sprite's 960 hashes hold. A frame can be asked for in a suit or a cap
+(`dress`), for the walk across a draft stage. `handAt()` says where a hand is,
+so the court puts the ball there rather than guessing.
+
+**A FRAME'S ARMS ARE SHORT ON PURPOSE.** The grid is 44 cells wide and a full
+horizontal arm is 47, so every reach was pulled in until no part touches the
+edge for any build (check-moments section 5). A handshake is a forearm
+foreshortened toward the camera, not an arm held out sideways.
+
+**THE PLAYABLE MOMENT IS A TOUCH, AND THE ENGINE STILL ROLLS.** The meter turns a
+press into a number from -1 to 1 and `C.choose(L, i, { touch })` moves that
+shot's odds by at most `TOUCH` (0.12), with the card's own seeded draw. So a
+perfect release can rim out, a better release can only turn a miss into a make
+(section 2 answers the same card at -1, 0 and 1 from clones), and a touch of
+nought is the card it always was, byte for byte (section 1). Scenes off passes
+no touch. The simulator passes none, so balance is untouched by the meter.
+
+**MOMENT CARDS GO TO NEW CAREERS ONLY.** `L.opt.moments` is set by `newLife` and
+never by `migrate`, because check-saves plays frozen version 1 saves against
+what that engine did, and a new card is a press the old engine never asked
+for. A moment changes no record (the stretch is already played); it moves fame,
+morale and a count in `L.flags`. A card needs two options, so free throws have
+a second (let them ice you).
+
+**ONLY THE INVENTED ARE DRAWN, AND THE COURT KEEPS IT.** You, your rival and the
+commissioner (generated) are drawn. The man you guard on a stop is a real
+opponent, so he is the rig's outline filled flat in his club's colour: a shadow
+with no face. The tale of the tape compares you with your rival, never a real
+player. The score bug shows teams and the clock and no score, because the
+engine settles a game on odds, not points.
+
+**THE TICKER IS THE ENGINE'S GAMES.** `playChunk` writes `L.season.box`, one row
+a game (opponent, home, result, your line), drawing nothing from the rng, so
+the career plays as it did. Playoff results keep their game list. With scenes
+on it plays as an overlay before the step's scene; with scenes off, and after,
+a finished strip sits UNDER the card, never above it, because anything above a
+card pushes its answers off a phone's screen (check-career section 7).
+
+**THREE THINGS THAT BIT, worth not repeating:**
+
+- A ceremony layer and a moment layer share `.sc-court`; a ceremony is also
+  `.sc-shot` and takes no pointer, so a tap still advances the scene. A walker
+  that waits on any `.sc-court` waits for ever on a ceremony.
+- The court's cell size is whichever binds of 124 cells tall and 130 wide. Set
+  by the height alone, a phone drew a big man cut off at the edge; by a 160
+  width, a tall phone drew a small man under a wall of crowd.
+- One more header button wrapped the Career header to two rows on a phone and
+  pushed answers below the fold. Sound and Home are icon buttons for that.
+
 ### Four ways to play, and the draft is one of them
 
 ```

@@ -2,13 +2,18 @@ name: Hoops checks
 
 # Run The Floor is headless underneath: the engine and the draft loop touch no
 # DOM, so a whole 82 game season can be replayed from a seed in Node. This
-# workflow is what that buys. All three commands run locally, unchanged:
+# workflow is what that buys. Every command runs locally, unchanged:
 #
 #   node hoops/check-posture.mjs        the game stays out of the indexed site
 #   node hoops/build/check-fetch.mjs    the scraper's parsers, against fixtures
 #   node hoops/verify.mjs               draft rules, replay, and the calibration
 #   node hoops/check-badges.mjs         every badge is reachable, against real runs
 #   node hoops/check-career.mjs --quick Career's engine: every life ends, the bands hold
+#   node hoops/check-saves.mjs          old saves migrate and play on unchanged
+#   node hoops/check-sprite.mjs         no existing sprite pose moves a cell
+#   node hoops/check-moments.mjs --quick the touch, the moments, the frames
+#   node hoops/check-story.mjs --quick  the story engine: order, arcs, traits, people, league
+#   node hoops/sim-career.mjs           a thousand careers against the story bible
 #
 # No secrets, no network, no deploy.
 
@@ -75,3 +80,34 @@ jobs:
       # browser half needs Chromium and runs locally.
       - name: Career engine
         run: node hoops/check-career.mjs --quick
+
+      # Every saved career loads, migrates and plays on exactly as the old
+      # engine played it, against frozen version 1 saves.
+      - name: Career saves migrate
+        run: node hoops/check-saves.mjs
+
+      # The characters are final. New cutscene poses are drawn by the same rig,
+      # and no existing pose may move a single cell.
+      - name: The sprite does not change
+        run: node hoops/check-sprite.mjs
+
+      # The games feel alive, and nothing under the picture moved: a touch of
+      # nought is the old card, a better release only turns misses into makes,
+      # moments never reach a migrated save, every moving frame stays inside
+      # the grid. The browser half (every moment and ceremony played) runs
+      # locally.
+      - name: Playable moments
+        run: node hoops/check-moments.mjs --quick
+
+      # The story engine holds together: events are data, every card says
+      # when it is and the story happens in order, arcs end more than one way,
+      # traits are revealed only when a career has them, the people are
+      # invented, and the league names a champion and an MVP every season.
+      # Its browser half (the People, Legacy and News tabs) runs locally.
+      - name: Story engine
+        run: node hoops/check-story.mjs --quick
+
+      # A thousand careers: crashes, careers that never end, unfilled tokens,
+      # wrong-year lines, continuity, and the balance bands due by the phase.
+      - name: Career simulator
+        run: node hoops/sim-career.mjs --n 1000 --phase E
