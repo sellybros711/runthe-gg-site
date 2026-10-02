@@ -280,7 +280,10 @@ const M = {
   M['E: sons who start after their father retired'] = share(EX.sons, (x) => (x.L.amHist[0] || x.L.history[0] || { y: 0 }).y > x.dad.history[x.dad.history.length - 1].y);
   M['E: sons who name their father'] = share(EX.sons, (x) => C.say(x.L, '{father}') === x.dad.name);
   M['E: challenges met in the sweep'] = C.CHALLENGE_KEYS.filter((k) => (EX.ch[k] || []).some((x) => C.challengeOf(x.L).met)).length;
-  M['E: stories with every chapter'] = share(results.concat(exAll), (x) => { const st = C.careerStory(x.L); return st.length >= (x.L.history.length ? 4 : 2) && !st.some((c) => JUNK.test(c.p) || DASH.test(c.p)); });
+  const storyOk = (x) => { const st = C.careerStory(x.L); return st.length >= (x.L.history.length ? 4 : 2) && !st.some((c) => JUNK.test(c.p) || DASH.test(c.p)); };
+  M['E: stories with every chapter'] = share(results.concat(exAll), storyOk);
+  const badStory = results.concat(exAll).filter((x) => !storyOk(x)).slice(0, 3);
+  for (const x of badStory) console.log('story short or junk: ' + x.L.seed + ' ' + JSON.stringify(C.careerStory(x.L)).slice(0, 400));
 }
 /* The story engine, read off every career: how much of it a career meets. */
 const per = (f) => results.reduce((s, x) => s + f(x.L), 0) / Math.max(1, n);

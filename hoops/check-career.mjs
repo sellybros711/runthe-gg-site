@@ -1088,7 +1088,7 @@ async function scenesWalk(b, serve) {
   /* Off means off. */
   await page.evaluate(() => { localStorage.setItem('rtf.scenes.v1', 'off'); const a = document.querySelector('#cr-again'); if (a) a.click(); });
   await page.waitForSelector('#cr-go');
-  await page.click('[data-start="draft"]');
+  await page.click('[data-start="gen"]');
   await page.click('#cr-go');
   let opened = false;
   for (let k = 0; k < 40; k++) {
