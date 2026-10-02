@@ -80,6 +80,7 @@ var CSS = [
 /* the identity card */
 '.cr-id{margin:0 var(--k-px) 14px;}',
 '.cr-id .k-stage{height:240px;}',
+'@media (max-width:519px){.cr-id .k-stage{height:216px;}.cr-id .k-id .k-hero{font-size:28px;}}',
 '.cr-id .k-id{left:52%;}',
 '.cr-id .k-id .k-hero{font-size:30px;line-height:.95;overflow-wrap:anywhere;}',
 '.cr-id .k-id .k-tag{white-space:normal;line-height:1.5;text-align:left;}',
@@ -124,8 +125,12 @@ var CSS = [
 '.cr-result.good{--cr-tone:var(--k-good);}.cr-result.bad{--cr-tone:var(--k-bad);}.cr-result.gold{--cr-tone:var(--k-gold);}',
 '.cr-result{box-shadow:0 calc(var(--k-px)*-1) 0 0 var(--cr-tone,var(--k-frame)),0 var(--k-px) 0 0 var(--cr-tone,var(--k-frame)),calc(var(--k-px)*-1) 0 0 0 var(--cr-tone,var(--k-frame)),var(--k-px) 0 0 0 var(--cr-tone,var(--k-frame));}',
 '.cr-result li span{min-width:0;}',
+/* the rows a press moved, two to a line so a long receipt does not push the next card off the screen */
+'.cr-result ul{grid-template-columns:repeat(2,minmax(0,1fr));column-gap:16px;}',
+'.cr-result li{font-size:12.5px;}',
 '.cr-card .k-eyebrow{color:var(--k-accent);}',
 '.cr-card .k-h1{font-size:28px;margin-bottom:8px;}',
+'#cr-card-h:focus{outline:none;}',
 '.cr-card.clutch{background:linear-gradient(180deg,#2a2412,var(--k-panel) 70%);}',
 '.cr-card.clutch .k-eyebrow{color:var(--k-gold);}',
 '.cr-choice{min-height:56px;}',
@@ -740,6 +745,7 @@ function openRetire(L){
 
 /* Answer the card on top with a number key, the way the options are labelled.
    Never while typing, while a sheet is open or while a scene is playing. */
+var kbd = false;
 function onKey(e){
   if (!onScreen() || e.ctrlKey || e.metaKey || e.altKey) return;
   var t = e.target, tn = t && t.tagName;
@@ -755,14 +761,27 @@ function onKey(e){
   e.preventDefault();
   var b = document.querySelector('.cr-choice[data-i="' + (n - 1) + '"]');
   if (b) b.classList.add('is-pressed');
+  kbd = true;
   doChoose(n - 1);
 }
 document.addEventListener('keydown', onKey);
 
+/* Every press redraws the screen, which drops focus on the floor. A keyboard
+   or screen reader user is put back where the next thing is: the heading of
+   the card on top (so it is read out, and Tab reaches the answers), or the
+   next button. Never on a mouse or touch press, and never with a scroll. */
+function refocus(was){
+  if (!was) return;
+  var t = $('cr-card-h') || $('cr-next');
+  if (!t) return;
+  if (t.id === 'cr-card-h') t.setAttribute('tabindex', '-1');
+  try { t.focus({ preventScroll: true }); } catch (e) { t.focus(); }
+}
+function kbdFocus(){ var a = document.activeElement, r = $('s-car'); return !!(a && r && r.contains(a) && a.matches && a.matches(':focus-visible')); }
 function doStep(){
   var L = store().cur;
   if (!L) return;
-  var before = snap(L);
+  var before = snap(L), kb = kbdFocus();
   var res = C.step(L);
   stage = { beats: res.beats || [], result: null, draft: null, delta: before };
   var d = (res.beats || []).filter(function(b){ return b.kind === 'draft' && b.pick; })[0];
@@ -770,19 +789,20 @@ function doStep(){
   if (L.retired) return finish();
   save();
   render();
-  if (!scene(res)) scrollStage();
+  if (!scene(res)) { scrollStage(); refocus(kb); }
 }
 function doChoose(i){
   var L = store().cur;
   if (!L) return;
-  var before = snap(L);
+  var before = snap(L), kb = kbd || kbdFocus();
+  kbd = false;
   var res = C.choose(L, i);
   if (!res) return;
   stage = { beats: res.beats || [], result: res, draft: null, delta: before };
   if (L.retired) return finish();
   save();
   render();
-  if (!scene(res)) scrollStage();
+  if (!scene(res)) { scrollStage(); refocus(kb); }
 }
 
 /* ─── scenes (hoops/scenes.js) ───────────────────────────────────────────
@@ -874,7 +894,9 @@ function scrollStage(){
   var ch = st.querySelector('.cr-choice'), cr = ch ? ch.getBoundingClientRect() : null;
   var low = cr && cr.bottom > window.innerHeight - 24;
   if (r.top < 60 || r.top > window.innerHeight * 0.55 || low) {
-    var to = low ? Math.min(window.scrollY + r.top - 70, window.scrollY + cr.bottom - window.innerHeight * 0.7) : window.scrollY + r.top - 70;
+    /* When a receipt and the beats stand above the card, the stage top is
+       further up than the answers can afford: the answers win. */
+    var to = low ? Math.max(window.scrollY + r.top - 70, window.scrollY + cr.bottom - window.innerHeight * 0.7) : window.scrollY + r.top - 70;
     window.scrollTo({ top: Math.max(0, to), behavior: REDUCED ? 'auto' : 'smooth' });
   }
 }
@@ -1220,6 +1242,10 @@ window.RTF_CAREER_UI = {
   /* For the page's dock and for check-career.mjs. */
   KEY: KEY,
   state: function(){ return store(); },
+  /* check-career.mjs only: draw a given press's aftermath over the card on
+     top and scroll the way a real press does, so the fold can be asked about
+     the tallest receipt rather than whichever one a random career deals. */
+  paintPress: function(st){ stage = st; render(); scrollStage(); },
   boardIds: boardIds,
 };
 

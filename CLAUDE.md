@@ -11295,6 +11295,32 @@ once `--phase` reaches it, so a known gap is printed without being a failure.
 in `baller.js`; `check-sprite.mjs` holds 960 hashes of every existing pose,
 recorded from the untouched file.
 
+**Every Career screen and scene is drawn on the kit (Phase A).** `career-ui.js`
+needs `RTF_KIT` and returns without it, like it needs the engine. Three things
+in it are easy to undo by accident:
+
+- **A scene room is drawn at the stage's own shape.** `fitPix` in `scenes.js`
+  asks `K.room` for a set as many cells as the stage holds, one cell a whole
+  number of pixels. Covering a stage with the 132 by 80 set instead blows a
+  tall phone up to eighteen pixels a cell and crops it to a wall of heads. It
+  refits on a `ResizeObserver`, because the caption grows and shrinks with
+  what it says. A press table and a studio desk are the same picture laid
+  over the cast and clipped (`FRONT`), so the speaker stands behind them.
+- **The answers win the scroll.** After a press, `scrollStage` brings the
+  card's first answer on screen even when that takes the stage top above the
+  window: a long receipt and the beats above a card used to leave the answers
+  below the fold. check-career paints the tallest receipt over a real card
+  (`RTF_CAREER_UI.paintPress`, the checker's alone) rather than hoping a random
+  career deals one, and checks every card's first answer, not a sample.
+- **Focus goes where the next thing is** after a keyboard press (the card's
+  heading or the next button), never on a mouse press, never with a scroll. A
+  number key answers the card on top; a sheet or a scene being open stops it.
+
+Four meters, not five: the fifth in PLAN.md waits for the story engine (Phase C)
+to have something real to measure. The leaderboard's Career tab keeps the
+game's shared board chrome, because restyling one tab of seven is a seam inside
+the board rather than one removed at its door.
+
 ### Four ways to play, and the draft is one of them
 
 ```

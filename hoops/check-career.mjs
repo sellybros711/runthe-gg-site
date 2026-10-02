@@ -722,7 +722,7 @@ async function browser() {
 
   /* Play it out, pressing the first choice or the next button, reading the
      glass for a field that printed as nothing. */
-  let presses = 0, junk = [], reloaded = false, offOpened = false, resumed = null;
+  let presses = 0, junk = [], reloaded = false, offOpened = false, resumed = null, keyed = false, docked = false, offFold = [], cardsSeen = 0, tall = false;
   const stagesSeen = {};
   while (presses++ < 900) {
     const st = await page.evaluate(() => {
@@ -763,13 +763,52 @@ async function browser() {
         ok(shut, 'and it closes');
       }
     }
+    /* Once each: a number key answers the card on top, the next action is
+       where the thumb is, a meter explains itself on a tap, and nothing on a
+       phone scrolls sideways. */
+    if (!tall && st.card && st.steps >= 4) {
+      tall = true;
+      const r = await page.evaluate(() => {
+        const diff = ['Shooting', 'Finishing', 'Playmaking', 'Defense', 'Rebounding', 'Athleticism', 'Basketball IQ'].map((l, i) => ({ k: 'r' + i, label: l, d: 2 }))
+          .concat([{ k: 'health', label: 'Health', d: -4 }, { k: 'morale', label: 'Morale', d: 5 }, { k: 'fame', label: 'Fame', d: 3 }, { k: 'trust', label: 'Trust', d: -2 }, { k: 'cash', label: 'Cash', d: 0.4, money: true }]);
+        const beats = [1, 2, 3, 4, 5, 6].map((n) => ({ text: 'A line of what happened that runs long enough to wrap on a phone, number ' + n + '.', tone: n % 2 ? 'good' : '' }));
+        window.scrollTo(0, 0);
+        RTF_CAREER_UI.paintPress({ beats, result: { label: 'The long way', text: 'A long answer to a long question, the kind that fills the receipt and then some more.', tone: 'good', diff }, draft: null });
+        const c = document.querySelector('.cr-choice').getBoundingClientRect();
+        return Math.round(c.bottom);
+      });
+      ok(r > 0 && r <= 844, `under the tallest receipt, the card's first answer is still on the screen (${r})`);
+    }
+    if (!keyed && st.card && st.steps >= 3) {
+      keyed = true;
+      await page.keyboard.press('1');
+      const after = await page.evaluate(() => { const s = RTF_CAREER_UI.state(); return { card: s.cur && s.cur.pending[0] ? s.cur.pending[0].key : null, steps: s.cur ? s.cur.steps : 0,
+        you: (document.querySelector('.cr-result .cr-you') || {}).textContent || '', focus: document.activeElement ? document.activeElement.id : '' }; });
+      ok(after.focus === 'cr-card-h' || after.focus === 'cr-next', `after a key press, focus lands on what is next, not on the page (${after.focus || 'body'})`);
+      ok(/^You: /.test(after.you), `the 1 key answers the card, and the receipt says what you chose ("${after.you}")`);
+      continue;
+    }
+    if (!docked && !st.card) {
+      const nb = await page.$('#cr-next');
+      if (nb) {
+        docked = true;
+        await page.evaluate(() => window.scrollTo(0, 0));
+        const r = await nb.boundingBox();
+        ok(r && r.y >= 0 && r.y + r.height <= 844, `the next action is on the screen from the top of the page (${r && Math.round(r.y)})`);
+        const tip = await page.evaluate(() => { const m = document.querySelector('.cr-meters .k-meter'); m.click(); const o = !!document.querySelector('.k-meter.is-open .k-tip'); m.click(); return o; });
+        ok(tip, 'a meter opens its explanation on a tap');
+        const wide = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+        ok(wide <= 0, `nothing scrolls sideways on a phone (${wide}px)`);
+      }
+    }
     const c = await page.$('.cr-choice');
     if (c) {
       /* A card the game is waiting on is on the screen, not below the fold. */
-      if (presses % 15 === 0) {
-        const r = await c.boundingBox();
-        ok(r && r.y < 844 && r.y + r.height > 0, `the card's first choice is on the screen at press ${presses} (${r && Math.round(r.y)})`);
-      }
+      /* Every card, all of the first answer, not a sample: what pushed one
+         off the screen was a long receipt above it, which comes and goes. */
+      const r = await c.boundingBox();
+      if (!(r && r.y >= 0 && r.y + r.height <= 844) && offFold.length < 3) offFold.push(`${st.card} at press ${presses} (${r && Math.round(r.y + r.height)})`);
+      cardsSeen++;
       await c.click();
     } else {
       const nx = await page.$('#cr-next');
@@ -779,6 +818,9 @@ async function browser() {
   }
   ok(junk.length === 0, `no field ever printed as undefined or NaN (${junk.join(', ') || 'none'})`);
   ok(reloaded, 'the reload arm ran');
+  ok(tall, 'the tall receipt arm ran');
+  ok(keyed && docked, 'the keyboard and the docked-action arms ran');
+  ok(cardsSeen > 20 && offFold.length === 0, `every card's first answer is on the screen (${cardsSeen} cards; ${offFold.join(', ') || 'none off'})`);
   ok(stagesSeen.hs && (stagesSeen.col || stagesSeen.pro) && stagesSeen.nba, `the walk went from high school to the league (${Object.keys(stagesSeen).join(', ')})`);
   const fin = await page.evaluate(() => ({
     last: RTF_CAREER_UI.state().last, v: (document.querySelector('.cr-final .v') || {}).textContent || '',

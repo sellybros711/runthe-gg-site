@@ -43,6 +43,9 @@ frozen version 1 saves on unchanged), the real-people split is enforced
 
 ## Phase A. Re-skin everything that exists
 
+Done. Report: `reports/phase-a-sim.md`. Kept to four meters (the fifth waits
+for Phase C) and left the shared leaderboard chrome alone (see CLAUDE.md).
+
 1. Tokens and `pixart.js` (crowds, hardwood, brick, icons).
 2. Style guide page with every component in every state.
 3. Rebuild, on the system: creation (UI around the sprite only), hub with
