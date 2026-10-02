@@ -192,13 +192,21 @@ function bump(L, d) {
     const v = d[k];
     if (!v) continue;
     if (RATINGS.indexOf(k) >= 0) L.rt[k] = clamp(Math.round(L.rt[k] + v), 25, 99);
-    else if (METERS.indexOf(k) >= 0) L.m[k] = clamp(Math.round(L.m[k] + v), 0, 100);
+    else if (METERS.indexOf(k) >= 0) L.m[k] = clamp(Math.round(L.m[k] + v * traitMult(L, k, v)), 0, 100);
     else if (k === 'cash') L.cash = round1(L.cash + v);
     else if (k === 'eth') L.eth = clamp(L.eth + v, 0, 100);
     else if (k === 'dur') L.dur = clamp(L.dur + v, 0, 100);
     else if (k === 'pot') L.pot = clamp(L.pot + v, 40, 99);
     else if (L.season && L.season.mods && k in L.season.mods) L.season.mods[k] += v;
   }
+}
+/* Traits lean on the meters: a coachable player banks more trust from the
+   same moment, a showman more fame. Only on a story career. */
+function traitMult(L, k, v) {
+  if (v <= 0 || !L.opt || !L.opt.story || !L.traits) return 1;
+  if (k === 'trust' && L.traits.coachable && L.traits.coachable.has) return 1.3;
+  if (k === 'fame' && L.traits.showman && L.traits.showman.has) return 1.2;
+  return 1;
 }
 /* What a card moved, for the screen. */
 function snapshot(L) {
@@ -611,7 +619,7 @@ function lockerBy(L, tag) {
    below may not use one, and check-career holds that. The list is short and
    every entry says why it is basketball. */
 const REAL_TOKENS = ['vet', 'star', 'blocker', 'rookie', 'mate', 'mate2', 'opp', 'opp2', 'coach', 'oldcoach', 'firedcoach', 'interim', 'bigname', 'rivalcoach'];
-const INVENTED_TOKENS = ['tm', 'tm2', 'tvet', 'trook', 'tco', 'topp', 'rival', 'beat', 'critic', 'fan', 'shoeexec', 'aau', 'friend', 'trainer', 'press', 'pbp', 'ellis', 'lazlo', 'gm', 'owner', 'agent', 'foe', 'oldvet', 'campkid'];
+const INVENTED_TOKENS = ['tm', 'tm2', 'tvet', 'trook', 'tco', 'topp', 'rival', 'beat', 'critic', 'fan', 'shoeexec', 'aau', 'friend', 'trainer', 'press', 'pbp', 'ellis', 'lazlo', 'gm', 'owner', 'agent', 'foe', 'oldvet', 'campkid', 'bff'];
 const BASKETBALL_ONLY = {
   slump: 'the coach shortens a rotation leash',
   coach_bench: 'the coach decides minutes',
@@ -682,6 +690,7 @@ function peopleKey(L, k) {
     case 'oldvet': return arcData(L, 'mentor').n || personName(L, 'oldvet');
     case 'campkid': return arcData(L, 'gym').kid || personName(L, 'campkid');
     case 'school2': return arcData(L, 'prep').school || 'State';
+    case 'bff': { const b = bestMate(L); return b ? b.n : lockerOf(L)[0].n; }
     case 'beat': case 'critic': case 'fan': case 'shoeexec': case 'aau': case 'press': case 'pbp': case 'ellis': case 'lazlo': return CAST[k];
     case 'ref': return personName(L, 'ref:' + L.steps);
     case 'guru': return personName(L, 'guru', 'x');
@@ -1068,7 +1077,7 @@ function rollInjury(L, chunk, beats) {
   const a = L.age;
   const p = 0.065 + (100 - L.dur) * 0.0011 + Math.max(0, a - 28) * 0.009
     + Math.max(0, 60 - L.m.health) * 0.0016 + s.mods.risk;
-  if (rng() >= p) return;
+  if (rng() >= p * (trait(L, 'injuryProne') ? 1.3 : trait(L, 'ironMan') ? 0.65 : 1)) return;
   const r = rng();
   const from = CHUNKS[chunk][0] + Math.floor(rng() * 20);
   if (r < 0.62) {
@@ -1304,7 +1313,7 @@ function playoffImpact(L) {
   const role = s.role || roleOf(L);
   const playMin = Math.min(40, role.min + (role.starter ? 3 : 1));
   if (s.injury && s.injury.until > GAMES + 4) return 0;
-  return impact(L, playMin) + s.mods.win;
+  return impact(L, playMin) + s.mods.win + (trait(L, 'bigStage') ? 0.8 : 0);
 }
 /* A series that does not involve you, in one go. */
 function simSeries(L, a, b, rng, aHome) {
@@ -1530,7 +1539,7 @@ function momentResolve(L, card, i, rng, touch) {
     bump(L, ok ? { trust: 2 } : { morale: -1 });
     return { text: ok ? 'The right play. It works.' : 'The right play. It does not work.', tone: ok ? 'good' : '', made: ok };
   }
-  const made = rng() < touched(o.p, touch);
+  const made = rng() < touched(o.p + (card.ctx.m === 'buzzer' ? clutchBonus(L) : 0), touch);
   const T = {
     buzzer: made ? ['At the horn! The bench empties onto the floor.', 'buzzer'] : ['Off the back iron. Overtime, and the night goes the other way.', null],
     poster: made ? ['Right on top of him. That one is going on a wall.', 'posters'] : ['He stands his ground. Offensive foul.', null],
@@ -1539,6 +1548,7 @@ function momentResolve(L, card, i, rng, touch) {
   }[card.ctx.m];
   if (made) {
     f[T[1]] = (f[T[1]] || 0) + 1;
+    if (card.ctx.m === 'buzzer') clutchHit(L);
     bump(L, { fame: card.ctx.m === 'buzzer' || card.ctx.m === 'poster' ? 4 : 3, morale: 5 });
     logIt(L, { buzzer: 'Hit a shot at the horn against the ' + opp + '.', poster: 'Dunked on a ' + opp + ' big.', block: 'A chase-down block against the ' + opp + '.', stop: 'Got the last stop against the ' + opp + '.' }[card.ctx.m], 'gold');
   } else bump(L, { morale: -3 });
@@ -1549,12 +1559,12 @@ function momentResolve(L, card, i, rng, touch) {
    off the rating it asks for, so a shooter should shoot and a passer should
    find the open man, and the screen shows the rating rather than the odds. */
 function clutchOptions(L) {
-  const r = L.rt, net = clubNet(L, L.team);
+  const r = L.rt, net = clubNet(L, L.team), cb = clutchBonus(L);
   return [
-    { label: 'Pull-up three', rate: 'sho', p: clamp(0.2 + (r.sho - 50) * 0.0065, 0.12, 0.55) },
-    { label: 'Drive to the rim', rate: 'fin', p: clamp(0.26 + ((r.fin + r.ath) / 2 - 50) * 0.0058, 0.15, 0.58) },
-    { label: 'Mid-range fadeaway', rate: 'iq', p: clamp(0.25 + ((r.sho + r.iq) / 2 - 50) * 0.0052, 0.15, 0.55) },
-    { label: 'Find the open man', rate: 'pla', p: clamp(0.27 + (r.pla - 50) * 0.0045 + net * 0.006, 0.15, 0.55) },
+    { label: 'Pull-up three', rate: 'sho', p: clamp(0.2 + (r.sho - 50) * 0.0065, 0.12, 0.55) + cb + sigBonus(L, 'sho') },
+    { label: 'Drive to the rim', rate: 'fin', p: clamp(0.26 + ((r.fin + r.ath) / 2 - 50) * 0.0058, 0.15, 0.58) + cb + sigBonus(L, 'fin') },
+    { label: 'Mid-range fadeaway', rate: 'iq', p: clamp(0.25 + ((r.sho + r.iq) / 2 - 50) * 0.0052, 0.15, 0.55) + cb + sigBonus(L, 'iq') },
+    { label: 'Find the open man', rate: 'pla', p: clamp(0.27 + (r.pla - 50) * 0.0045 + net * 0.006, 0.15, 0.55) + cb + sigBonus(L, 'pla') },
   ];
 }
 function clutchCard(L, cur, home) {
@@ -1581,7 +1591,8 @@ function develop(L, beats) {
   const a = L.age;
   const gap = Math.max(0, L.pot - before);
   const eth = 0.65 + L.eth / 100 * 0.7;
-  const grow = gap * (GROW[a] || 0) * eth;
+  let grow = gap * (GROW[a] || 0) * (eth + (trait(L, 'gymRat') ? 0.12 : 0));
+  if (trait(L, 'lateBloomer')) grow = a <= 22 ? grow * 0.8 : a <= 27 ? grow + gap * 0.05 * eth : grow;
   const dec = (DECLINE[a] || (a >= 38 ? 6.5 : 0)) * (1.2 - L.dur / 250) * (L.flags.longevity ? 0.75 : 1)
     + Math.max(0, 50 - L.m.health) * 0.03;
   for (const k of RATINGS) {
@@ -1590,6 +1601,7 @@ function develop(L, beats) {
       const legs = k === 'ath' ? 1.6 : k === 'fin' || k === 'def' ? 1.15 : k === 'sho' || k === 'iq' ? 0.45 : 0.9;
       d -= dec * legs * (0.7 + rng() * 0.6);
       if (k === 'iq' && a <= 33) d += 0.6;
+      if (k === 'iq' && trait(L, 'filmJunkie')) d += 0.5;
     }
     L.rt[k] = clamp(Math.round(L.rt[k] + d), 25, 99);
   }
@@ -1600,6 +1612,8 @@ function develop(L, beats) {
     beats.push({ kind: 'dev', text: t, tone: diff > 0 ? 'good' : 'bad' });
     logIt(L, t, diff > 0 ? 'good' : 'bad');
   }
+  if (diff >= 3 && a >= 25) reveal(L, 'lateBloomer', 'Still getting better at ' + a + '.', beats);
+  if (L.eth >= 85 && a >= 22) reveal(L, 'gymRat', 'First in the gym. Every day.', beats);
   bump(L, { health: 28 });
 }
 
@@ -1685,6 +1699,7 @@ function retireCard(L) {
 function offseason(L, beats) {
   const s = L.season;
   develop(L, beats);
+  buildCards(L);
   /* Contracts. */
   const c = L.contract;
   if (c) c.years--;
@@ -2145,7 +2160,7 @@ const EVENTS = {
     title: 'Third straight no-call on a drive.',
     text: () => 'Referee {ref} is right there. He looks away.',
     options: [
-      { label: 'Let him have it', run: (L, r) => { bump(L, { fame: 3, cash: -0.04 }); if (ok(r, 0.5)) { bump(L, { trust: -5 }); return 'Ejected. Fined. The crowd loves you.'; } return 'A technical. Worth it, you decide.'; } },
+      { label: 'Let him have it', run: (L, r) => { bump(L, { fame: 3, cash: -0.04 }); if (ok(r, 0.5 + hotTax(L))) { bump(L, { trust: -5 }); return 'Ejected. Fined. The crowd loves you.'; } return 'A technical. Worth it, you decide.'; } },
       { label: 'Walk away', run: (L) => { bump(L, { iq: 1 }); return 'You get the next call. Funny how that works.'; } },
     ],
   },
@@ -2154,7 +2169,7 @@ const EVENTS = {
     title: 'A fan courtside is saying things about your family.',
     text: () => 'All night. Security is not doing anything.',
     options: [
-      { label: 'Confront him', run: (L, r) => { if (ok(r, 0.4)) { bump(L, { fame: 5, trust: -3 }); return 'Words only. He is banned. You are a folk hero.'; } bump(L, { fame: 6, cash: -0.2, trust: -6, rest: 0.03 }); return 'It gets out of hand. Suspended two games.'; } },
+      { label: 'Confront him', run: (L, r) => { if (ok(r, 0.4 - hotTax(L))) { bump(L, { fame: 5, trust: -3 }); return 'Words only. He is banned. You are a folk hero.'; } bump(L, { fame: 6, cash: -0.2, trust: -6, rest: 0.03 }); return 'It gets out of hand. Suspended two games.'; } },
       { label: 'Tell security', run: (L) => { bump(L, { trust: 3 }); return 'He is gone by the third quarter. The league backs you.'; } },
       { label: 'Wink and hit a three', run: (L, r) => { if (ok(r, L.rt.sho / 120)) { bump(L, { fame: 6, morale: 5 }); return 'Splash. You blow him a kiss. The clip is everywhere.'; } bump(L, { morale: -2 }); return 'Brick. He gets louder.'; } },
     ],
@@ -2413,7 +2428,7 @@ const EVENTS = {
     title: '{tm} shoves you in practice.',
     text: () => 'Hard foul, harder words. Everybody stops.',
     options: [
-      { label: 'Shove him back', run: (L, r) => { if (ok(r, 0.4)) { bump(L, { trust: 2, morale: 3 }); return '{coach} steps in. You two are fine by dinner.'; } bump(L, { rest: 0.04, trust: -8, fame: 3 }); return 'It leaks. You both get suspended a game.'; } },
+      { label: 'Shove him back', run: (L, r) => { if (ok(r, 0.4 - hotTax(L))) { bump(L, { trust: 2, morale: 3 }); return '{coach} steps in. You two are fine by dinner.'; } bump(L, { rest: 0.04, trust: -8, fame: 3 }); return 'It leaks. You both get suspended a game.'; } },
       { label: 'Walk away', run: (L) => { bump(L, { trust: 4, morale: -2 }); return 'You go to the other end and shoot. The room respects it.'; } },
       { label: 'Settle it in a scrimmage', run: (L, r) => { if (ok(r, 0.5 + (ovrOf(L) - 72) * 0.02)) { bump(L, { trust: 6, morale: 5 }); return 'You cook him for twenty minutes. Nobody shoves you again.'; } bump(L, { morale: -4 }); return 'He cooks you. The practice video gets passed around.'; } },
     ],
@@ -2462,6 +2477,53 @@ const EVENTS = {
     options: [
       { label: 'Guarantee it', run: (L, r) => { bump(L, { fame: 6 }); if (ok(r, 0.55)) { bump(L, { win: 0.5, morale: 4 }); return 'The room goes quiet. Your teammates love it.'; } bump(L, { morale: -3, trust: -3 }); return 'The other team pins the quote on their wall.'; } },
       { label: 'One game at a time', run: (L) => { bump(L, { trust: 3 }); return 'Boring. Correct.'; } },
+    ],
+  },
+  /* THE RELATIONSHIP WEB. Each of these is dealt off a meter in the person
+     ledger, so it only comes to a career that earned it. */
+  agent_rift: {
+    phases: ['off'], req: { story: true }, when: (L) => relOf(L, 'agent') <= -20, weight: 4,
+    title: '{agent} wants a word.',
+    text: () => 'He says you stopped listening. He has other clients.',
+    options: [
+      { label: 'Make it right', run: (L) => { relate(L, 'agent', 35, 'You patched it up over dinner.'); bump(L, { morale: 2 }); return 'Dinner. An apology. He picks up on the first ring again.'; } },
+      { label: 'Fire him', run: (L) => { const old = say(L, '{agent}'); L.agent = L.agent === 'power' ? 'boutique' : 'power'; relate(L, 'agent', 10, 'He took you on after the split.'); logIt(L, 'Fired ' + old + '. Signed with {agent}.', ''); return old + ' is out. {agent} starts Monday.'; } },
+    ],
+  },
+  mom_game: {
+    phases: ['early', 'mid'], once: true, req: { story: true, team: true }, when: (L) => relOf(L, 'mom') >= 25, weight: 2.5,
+    title: '{mom} wants to see you play.',
+    text: () => 'Live, from the front row. She has never seen a game in your building.',
+    options: [
+      { label: 'Fly her out this week', run: (L) => { bump(L, { cash: -0.05, morale: 8 }); relate(L, 'mom', 20, 'She saw you play from the front row.'); return 'Front row. She cheers every free throw. Even theirs.'; } },
+      { label: 'After the season', run: (L) => { relate(L, 'mom', -5); return 'She says that is fine. It is mostly fine.'; } },
+    ],
+  },
+  beat_feature: {
+    phases: ['pre'], once: true, req: { story: true, team: true }, when: (L) => relOf(L, 'beat') >= 15, weight: 3,
+    title: '{beat} wants a long feature.',
+    text: () => 'Three days with you. Your family, your town, your work.',
+    options: [
+      { label: 'Open up', run: (L) => { bump(L, { fame: 6 }); relate(L, 'beat', 20, 'He wrote your long feature.'); return 'It runs Sunday. Your mom reads it twice.'; } },
+      { label: 'Keep it to basketball', run: (L) => { bump(L, { fame: 2 }); relate(L, 'beat', 5); return 'A good story. Not the one he wanted.'; } },
+    ],
+  },
+  critic_segment: {
+    phases: ['mid'], req: { story: true, fame: [35, null] }, when: (L) => relOf(L, 'critic') <= -10, weight: 3,
+    title: '{critic} spends a whole segment on you.',
+    text: () => 'Eleven minutes. A graphic with your face on it. The word is fraud.',
+    options: [
+      { label: 'Go on his show', run: (L, r) => { if (ok(r, 0.5)) { relate(L, 'critic', 30, 'You went on his show and won the room.'); bump(L, { fame: 6 }); return 'You are funny and calm. He admits you have a point.'; } relate(L, 'critic', -15, 'You went on his show. It went badly.'); bump(L, { fame: 3, morale: -5 }); return 'He talks over you for ten minutes. It goes viral for him.'; } },
+      { label: 'Answer with a win', run: (L) => { bump(L, { win: 0.3, trust: 2 }); return 'Thirty and a win the next night. He moves on to somebody else.'; } },
+    ],
+  },
+  bff_call: {
+    phases: ['off'], req: { story: true }, when: (L) => { const b = bestMate(L); return !!(b && L.year - b.met >= 2); }, weight: 3, rarity: 'uncommon',
+    title: '{bff} calls.',
+    text: () => 'Your closest teammate. He just wants to talk. It is late.',
+    options: [
+      { label: 'Stay up and talk', run: (L) => { relate(L, 'bff', 15, 'You talked until three in the morning.'); bump(L, { morale: 6, health: -2 }); return 'Two hours. About everything except basketball.'; } },
+      { label: 'Call him tomorrow', run: (L) => { relate(L, 'bff', -5); return 'You forget. He does not mention it.'; } },
     ],
   },
   /* The setup of the feud arc. An invented player, named once and kept. */
@@ -2617,10 +2679,11 @@ function chooseAfter(L, i, rng) {
 }
 
 function buzzer(L, r, p) {
-  if (ok(r, p)) {
+  if (ok(r, p + clutchBonus(L))) {
     if (L.season && L.season.l > 0) { L.season.w++; L.season.l--; }
     bump(L, { fame: 5, morale: 8, trust: 3 });
     L.flags.winners = (L.flags.winners || 0) + 1;
+    clutchHit(L);
     return 'Good. Game over. You are on every highlight show tonight.';
   }
   bump(L, { morale: -4 });
@@ -2921,6 +2984,13 @@ function relate(L, tok, d, note, name) {
   if (note) { p.notes.push([L.year, say(L, note)]); if (p.notes.length > 5) p.notes.shift(); }
   return p;
 }
+/* Your closest teammate, past or present: the invented teammate you have the
+   most with, if it is anything at all. */
+function bestMate(L) {
+  let b = null;
+  for (const id in L.people || {}) { const p = L.people[id]; if (p.role === 'Teammate' && p.rel >= 40 && (!b || p.rel > b.rel)) b = p; }
+  return b;
+}
 const relOf = (L, tok) => { const n = peopleKey(L, tok); const p = L.people && L.people[tok + ':' + n]; return p ? p.rel : 0; };
 /* What each answer does to the people in it, as data: [token, change, note]. */
 const EVENT_REL = {
@@ -2937,8 +3007,10 @@ const EVENT_REL = {
   tank: [[['gm', 10]], [['gm', -10]], [['gm', -20, 'You asked out of the tank.']]],
   trade_rumor: [[['gm', 10]], [['gm', -10]], []],
   contract_year: [[['agent', 10]], [['gm', 10]], []],
-  podcast: [[['beat', -5], ['critic', 10]], [['gm', 5]]],
-  docuseries: [[['mom', 10]], [], [['tm', 5]]],
+  podcast: [[['beat', -5], ['critic', 10]], [['gm', 5], ['agent', -8]]],
+  shoe_deal: [[['agent', 10]], [['agent', 15], ['shoeexec', 20, 'You signed for your own shoe.']], [['agent', -25, 'You turned down two shoe deals.']]],
+  local_ad: [[['agent', 5]], [['agent', -10, 'You passed on his commercial.']]],
+  docuseries: [[['mom', 10], ['agent', 5]], [['agent', 5]], [['tm', 5], ['agent', -12, 'You turned down the documentary.']]],
   agent_pitch: [[['agent', -40, 'You left for a power agency.']], [['agent', 30, 'You stayed loyal.']]],
   propose: [[], [['partner', -10]]],
   wedding: [[['partner', 20, 'The wedding of the year.']], [['partner', 25, 'A small wedding on a beach.']]],
@@ -3052,6 +3124,143 @@ function dueArcs(L, slot) {
   }
   return out;
 }
+
+// ─── character: hidden traits, the build, the people around you ──────────────
+
+/* HIDDEN TRAITS (NARRATIVE.md section 2) are rolled at birth and do their work
+   on a story career whether or not you know them. A trait is REVEALED when
+   play touches it, and only then does the card show it, with the reason in
+   one line. A migrated save rolls traits too, and they do nothing there,
+   because acting on them would replay its career differently. */
+const trait = (L, k) => storyOn(L) && hasTrait(L, k);
+const TRAIT_NAME = {
+  clutch: 'Clutch', coachable: 'Coachable', injuryProne: 'Injury prone', lateBloomer: 'Late bloomer', lockerVoice: 'Locker room voice',
+  gymRat: 'Gym rat', hothead: 'Hothead', bigStage: 'Big stage', ironMan: 'Iron man', filmJunkie: 'Film junkie',
+  spender: 'Big spender', saver: 'Saver', showman: 'Showman', loyal: 'Loyal', mercenary: 'Mercenary',
+};
+function reveal(L, k, why, beats) {
+  const t = L.traits && L.traits[k];
+  if (!storyOn(L) || !t || !t.has || t.known) return false;
+  t.known = L.year; t.why = why;
+  const line = 'Revealed: ' + TRAIT_NAME[k] + '. ' + why;
+  logIt(L, line, 'gold');
+  if (beats) beats.push({ kind: 'trait', text: line, tone: 'gold', trait: k });
+  return true;
+}
+const tw = (L) => L.tw || (L.tw = {});
+const clutchBonus = (L) => trait(L, 'clutch') ? 0.05 : 0;
+const hotTax = (L) => trait(L, 'hothead') ? 0.15 : 0;
+/* A shot that won a game, from any door: the regular season, a moment, a
+   Game 7, a tournament. Two of them and a clutch player knows it. */
+function clutchHit(L, beats) {
+  if (!storyOn(L)) return;
+  const n = tw(L).winners = (tw(L).winners || 0) + 1;
+  if (n >= 2) reveal(L, 'clutch', 'Two game winners already.', beats);
+}
+/* The answers that go looking for a fight. */
+const HOT_PICKS = { ref_heat: 0, heckler: 0, teammate_fight: 0, arc_feud_2: 0, online_beef: 0 };
+function watchPick(L, id, i, beats) {
+  if (!storyOn(L)) return;
+  if (HOT_PICKS[id] === i) { const n = tw(L).hot = (tw(L).hot || 0) + 1; if (n >= 2) reveal(L, 'hothead', 'Two blowups. People have noticed.', beats); }
+}
+/* Season-level reveals, read when a season closes. */
+function traitSeason(L, beats) {
+  if (!storyOn(L)) return;
+  const s = L.season, T = tw(L);
+  if (!s) return;
+  if (s.out <= 2 && s.gp >= 60) T.iron = (T.iron || 0) + 1;
+  if (T.iron >= 3) reveal(L, 'ironMan', 'Three seasons without missing real time.', beats);
+  if (s.po && (s.po.champ || (s.po.results || []).length >= 3)) reveal(L, 'bigStage', 'You play bigger in May.', beats);
+  if (L.m.trust >= 75) reveal(L, 'coachable', 'Every staff you have had trusts you.', beats);
+  if (L.m.fame >= 70) reveal(L, 'showman', 'The cameras find you. You find them back.', beats);
+  if (L.rt.iq >= 78) reveal(L, 'filmJunkie', 'You know every play before the call.', beats);
+  if (L.cash >= 25) reveal(L, 'saver', 'You still have most of what you made.', beats);
+  if ((T.spent || 0) >= 3) reveal(L, 'spender', 'The money comes in. The money goes out.', beats);
+  const clubs = new Set(L.history.map((h) => h.t)).size;
+  if (L.history.length >= 6 && clubs === 1) reveal(L, 'loyal', 'Six seasons, one jersey.', beats);
+  if (clubs >= 3) reveal(L, 'mercenary', 'Three jerseys. You go where it pays.', beats);
+  const mates = Object.values(L.people || {}).filter((p) => p.role === 'Teammate' && p.rel >= 20).length;
+  if (mates >= 3) reveal(L, 'lockerVoice', 'Three teammates would run through a wall for you.', beats);
+}
+
+/* SKILL BADGES are read off what you are, at the end of each season, and
+   kept once earned. Each needs a rating, and some need the season to show it. */
+const BADGES = [
+  ['deadeye', 'Deadeye', (L) => L.rt.sho >= 85],
+  ['floorgen', 'Floor general', (L) => L.rt.pla >= 85],
+  ['lockdown', 'Lockdown', (L) => L.rt.def >= 85],
+  ['glass', 'Glass cleaner', (L) => L.rt.reb >= 85],
+  ['finisher', 'Finisher', (L) => L.rt.fin >= 85],
+  ['flight', 'Highlight factory', (L) => L.rt.ath >= 88],
+  ['brain', 'Coach on the floor', (L) => L.rt.iq >= 85],
+  ['bucket', 'Walking bucket', (L, pg) => pg && pg.pts >= 25],
+  ['dimes', 'Dime dropper', (L, pg) => pg && pg.ast >= 9],
+  ['boards', 'Board man', (L, pg) => pg && pg.reb >= 11],
+];
+function badgeSeason(L, beats) {
+  if (!storyOn(L)) return;
+  const pg = L.season && L.season.gp >= 40 ? perGame(L.season) : null;
+  const B = L.badges || (L.badges = {});
+  for (const [k, name, test] of BADGES) if (!B[k] && test(L, pg)) {
+    B[k] = L.year;
+    logIt(L, 'Earned a badge: ' + name + '.', 'good');
+    if (beats) beats.push({ kind: 'badge', text: 'New badge: ' + name + '.', tone: 'good' });
+  }
+}
+const badgeList = (L) => BADGES.filter(([k]) => L.badges && L.badges[k]).map(([k, n]) => ({ k, name: n, y: L.badges[k] }));
+
+/* THE BUILD CHANGES. Three summer cards, each at most once in a while: the
+   game you play has become another archetype, your coach wants you at the
+   next position over, and you pick a signature move. None is forced. */
+const SIGS = {
+  sho: ['Step-back three', 'The step-back. Nobody has a counter.'],
+  fin: ['Euro step', 'Two steps, two directions. Defenders guess wrong.'],
+  pla: ['No-look pass', 'You look one way. The ball goes the other.'],
+  def: ['Chase-down block', 'From behind, at the glass. Your best highlight.'],
+  reb: ['Putback slam', 'Every miss is a chance. You live on the glass.'],
+  ath: ['Baseline reverse', 'Under the rim and back up the other side.'],
+  iq: ['Pump fake', 'One fake. They always bite.'],
+};
+function archFit(L, k) {
+  const r = L.rt, mean = RATINGS.reduce((a, x) => a + r[x], 0) / RATINGS.length, t = ARCHES[k].tilt;
+  let f = 0;
+  for (const x in t) f += t[x] * (r[x] - mean);
+  return f;
+}
+const NEXT_POS = { PG: ['SG'], SG: ['PG', 'SF'], SF: ['SG', 'PF'], PF: ['SF', 'C'], C: ['PF'] };
+function buildCards(L) {
+  if (!storyOn(L) || !L.team || L.retired) return;
+  const F = L.flags, top = RATINGS.slice().sort((a, b) => L.rt[b] - L.rt[a]);
+  if (!L.sig && L.age >= 23 && ovrOf(L) >= 74) {
+    const ks = top.slice(0, 3);
+    L.pending.push({ id: 'build_sig', kind: 'event', key: 'sig:' + L.year, eyebrow: calendar(L, 'off'), title: 'Every great one has a move.',
+      text: 'Which one is yours?', ctx: { ks }, options: ks.map((k) => ({ label: SIGS[k][0], hint: RATING_NAME[k] + ' ' + L.rt[k] + '.' })) });
+    return;
+  }
+  const best = ARCH_KEYS.slice().sort((a, b) => archFit(L, b) - archFit(L, a))[0];
+  if (best !== L.arch && L.age >= 24 && archFit(L, best) - archFit(L, L.arch) >= 45 && L.year - (F.archAsk || 0) >= 4) {
+    F.archAsk = L.year;
+    L.pending.push({ id: 'build_arch', kind: 'event', key: 'arch:' + L.year, eyebrow: calendar(L, 'off'), title: 'Your game has changed.',
+      text: 'The scouting reports call you a ' + ARCHES[best].name.toLowerCase() + ' now.', ctx: { to: best },
+      options: [{ label: 'Lean into it', hint: ARCHES[best].blurb }, { label: 'Stay a ' + ARCHES[L.arch].name.toLowerCase(), hint: ARCHES[L.arch].blurb }] });
+    return;
+  }
+  const alt = NEXT_POS[L.pos].map((p) => [p, overall(L.rt, p) - ovrOf(L)]).sort((a, b) => b[1] - a[1])[0];
+  if (alt && alt[1] >= 2 && L.age >= 24 && L.year - (F.posAsk || 0) >= 4) {
+    F.posAsk = L.year;
+    L.pending.push({ id: 'build_pos', kind: 'event', key: 'pos:' + L.year, eyebrow: calendar(L, 'off'), title: '{coach} wants to try you at ' + POS_NAME[alt[0]].toLowerCase() + '.',
+      text: 'Your ratings play ' + alt[1] + ' better there.', ctx: { to: alt[0] },
+      options: [{ label: 'Move to ' + alt[0], hint: 'Overall ' + overall(L.rt, alt[0]) + ' there.' }, { label: 'Stay at ' + L.pos, hint: 'It is your position.' }] });
+  }
+}
+function chooseBuild(L, card, i) {
+  if (card.id === 'build_sig') { const k = card.ctx.ks[i]; L.sig = { k, name: SIGS[k][0], y: L.year }; logIt(L, 'Signature move: ' + SIGS[k][0] + '.', 'gold'); bump(L, { fame: 3 }); return SIGS[k][1]; }
+  if (card.id === 'build_arch') { if (i === 0) { const was = ARCHES[L.arch].name; L.arch = card.ctx.to; logIt(L, 'From ' + was.toLowerCase() + ' to ' + ARCHES[L.arch].name.toLowerCase() + '.', 'good'); return 'New reports, new role. You are a ' + ARCHES[L.arch].name.toLowerCase() + ' now.'; } bump(L, { morale: 2 }); return 'You know who you are.'; }
+  if (card.id === 'build_pos') { if (i === 0) { L.pos = card.ctx.to; logIt(L, 'Moved to ' + POS_NAME[L.pos].toLowerCase() + '.', 'good'); bump(L, { trust: 4 }); return 'New spot on the floor. It fits.'; } bump(L, { trust: -2 }); return 'He lets it go. For now.'; }
+  return null;
+}
+/* A signature move pays on the shot it is. */
+const sigBonus = (L, k) => L.sig && L.sig.k === k ? 0.03 : 0;
 
 // ─── before the league: high school and college ─────────────────────────────
 
@@ -4186,7 +4395,7 @@ function chooseAm(L, card, i, opt, rng, beats, touch) {
       const s = L.season, t = s.tourney;
       const made = rng() < touched(o.p, touch);
       t.waiting = false;
-      if (made) { L.am.winners = (L.am.winners || 0) + 1; bump(L, { fame: 6, morale: 8 }); }
+      if (made) { L.am.winners = (L.am.winners || 0) + 1; bump(L, { fame: 6, morale: 8 }); clutchHit(L, beats); }
       else bump(L, { morale: -8 });
       const tx = made ? 'Good! You are going to remember that one for the rest of your life.' : 'No good. You sit on the floor for a long time.';
       logIt(L, (t.kind === 'hs' ? HS_ROUNDS : NCAA_ROUNDS)[t.cur.r] + ': ' + (made ? 'hit the winner.' : 'missed the last shot.'), made ? 'gold' : 'bad');
@@ -4325,7 +4534,7 @@ function choose(L, i, extra) {
       made = rng() < touched(o.p, touch);
       cur.waiting = false;
       cur.games.push(made ? 1 : 0);
-      if (made) { cur.w = 4; L.flags.g7 = (L.flags.g7 || 0) + 1; bump(L, { fame: 10, morale: 10 }); text = 'Good! Series over. You will be watching that one for the rest of your life.'; tone = 'gold'; }
+      if (made) { cur.w = 4; L.flags.g7 = (L.flags.g7 || 0) + 1; clutchHit(L, beats); if (storyOn(L)) remember(L, 'g7.made', true); bump(L, { fame: 10, morale: 10 }); text = 'Good! Series over. You will be watching that one for the rest of your life.'; tone = 'gold'; }
       else { cur.l = 4; bump(L, { morale: -10 }); text = 'No good. The building goes silent.'; tone = 'bad'; }
       logIt(L, 'Game 7 against the ' + nick(cur.opp) + ': ' + (made ? 'hit the winner.' : 'missed the last shot.'), made ? 'gold' : 'bad');
       endSeries(L, beats);
@@ -4382,8 +4591,12 @@ function choose(L, i, extra) {
       }
       break;
     }
+    case 'build_sig': case 'build_arch': case 'build_pos':
+      text = chooseBuild(L, card, i) || ''; tone = 'good';
+      break;
     default: {
       const ev = EVENTS[card.id] || AM_EVENTS[card.id] || ARC_EVENTS[card.id];
+      watchPick(L, card.id, i, beats);
       if (ev) {
         const o = ev.options[i];
         const names = relNames(L, card.id, i);
@@ -4543,7 +4756,8 @@ function pay(L, beats) {
     * (BIG_MARKET[L.team] ? 1.3 : 1) + (L.endorseBonus || 0));
   L.endorse = endorse;
   L.earned = round1(L.earned + sal + endorse);
-  L.cash = round1(L.cash + sal * (0.5 - AGENTS[L.agent].fee) + endorse * 0.55 - Math.min(L.cash * 0.08, 3));
+  const habit = trait(L, 'spender') ? 0.05 : trait(L, 'saver') ? -0.03 : 0;
+  L.cash = round1(L.cash + sal * (0.5 - AGENTS[L.agent].fee - habit) + endorse * 0.55 - Math.min(L.cash * (0.08 + habit), 3));
   if (L.season) L.season.salary = sal;
 }
 function closeSeason(L, beats) {
@@ -4568,6 +4782,8 @@ function closeSeason(L, beats) {
   rp.resp = Math.round(50 + (rp.resp - 50) * 0.8);
   milestones(L, before, beats);
   rivalSeason(L, beats);
+  traitSeason(L, beats);
+  badgeSeason(L, beats);
   /* Fame settles toward what the season said. */
   const target = clamp(15 + (pg.pts - 8) * 2.2 + (s.allstar ? 12 : 0) + (po.champ ? 8 : 0), 5, 99);
   L.m.fame = clamp(Math.round(L.m.fame * 0.7 + target * 0.3 + (s.awards.length ? 3 : 0)), 0, 100);
@@ -4691,6 +4907,7 @@ function act(L, id) {
   L.flags.acts[id] = 1;
   const before = snapshot(L);
   if (open.cost) L.cash = round1(L.cash - open.cost);
+  if (open.cost >= 0.5 && storyOn(L)) tw(L).spent = (tw(L).spent || 0) + 1;
   const text = say(L, a.run(L, rngAt(L, 'act:' + id)));
   const nm = say(L, a.name);
   sayAll(L);
@@ -4794,7 +5011,7 @@ const publicAPI = {
   COACHES_NOW, COACH_POOL, COACH_NAMES, PEOPLE_M, PEOPLE_F, PEOPLE_X, PEOPLE_LAST, FIRST, LAST, RIVAL_FIRST, RIVAL_LAST,
   coachState, coachOf, coachName, coachCarousel, myCoach, matesOf, myMates, personName, peopleKey, say, CLUBS,
   lockerOf, CAST, TRAITS, rollTraits, migrate, remember, recall, hasTrait, REAL_TOKENS, INVENTED_TOKENS, BASKETBALL_ONLY,
-  STORY_VERSION, storyOn, recurs, continuity, continuityLog, ARC_EVENTS, CALLBACKS, callback, memories, ago, relate, relOf, EVENT_REL, arcData, STORY_RECURS, STORY_PHASES, calendar, RARITY, EVENT_TAGS, REQ, reqOk, defineEvents,
+  STORY_VERSION, storyOn, recurs, TRAIT_NAME, BADGES, badgeList, SIGS, archFit, trait, continuity, continuityLog, ARC_EVENTS, CALLBACKS, callback, memories, ago, relate, relOf, EVENT_REL, arcData, STORY_RECURS, STORY_PHASES, calendar, RARITY, EVENT_TAGS, REQ, reqOk, defineEvents,
 };
 
 if (typeof module !== 'undefined' && module.exports) module.exports = publicAPI;

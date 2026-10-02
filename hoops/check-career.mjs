@@ -319,15 +319,19 @@ section('5c. real people stay on the court');
     if (m && !C.BASKETBALL_ONLY[id]) bad.push(id + ' ' + [...new Set(m)].join(' '));
   }
   ok(bad.length === 0, `no NBA event outside the basketball list uses a real person (${bad.join('; ') || 'none'})`);
+  /* An arc is a story, so it is invented people only, every node. */
+  const arcBad = Object.keys(C.ARC_EVENTS).filter((id) => real.test(JSON.stringify(C.ARC_EVENTS[id], (k, v) => typeof v === 'function' ? v.toString() : v)) && (real.lastIndex = 0, true));
+  real.lastIndex = 0;
+  ok(arcBad.length === 0, `no arc uses a real person (${arcBad.join(', ') || 'none'})`);
   ok(Object.keys(C.BASKETBALL_ONLY).every((id) => C.EVENTS[id] || (C.AM_EVENTS && C.AM_EVENTS[id])), 'every entry on the basketball list is a real event');
   /* Strings outside both pools: allowed only where the line is a known
      basketball context. Comments and the token switch itself are not copy. */
   const src = fs.readFileSync(path.join(HERE, 'career.js'), 'utf8').split('\n');
-  const okLine = [/^\s*(\/\/|\*|\/\*)/, /case '/, /high school team', hint: 'Chemistry, and \{coach\}/, /Talk to \{coach\}/, /\{coach\} plays it in the film session/, /Fills \{coach\}/];
+  const okLine = [/^\s*(\/\/|\*|\/\*)/, /case '/, /high school team', hint: 'Chemistry, and \{coach\}/, /Talk to \{coach\}/, /\{coach\} plays it in the film session/, /Fills \{coach\}/, /\{coach\} wants to try you at/];
   const outside = [];
   let inPool = false, depth = 0;
   src.forEach((line, i) => {
-    if (/^const (EVENTS|AM_EVENTS) = \{/.test(line)) { inPool = true; depth = 0; }
+    if (/^const (EVENTS|AM_EVENTS|ARC_EVENTS) = \{/.test(line)) { inPool = true; depth = 0; }
     if (inPool) { depth += (line.match(/\{/g) || []).length - (line.match(/\}/g) || []).length; if (depth <= 0 && /^\};/.test(line)) inPool = false; return; }
     if (real.test(line) && !okLine.some((r) => r.test(line))) outside.push(i + 1);
     real.lastIndex = 0;

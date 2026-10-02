@@ -54,7 +54,7 @@ const clone = (x) => JSON.parse(JSON.stringify(x));
    else dealt twice is a repeat. The list shrinks as Phase C gives the
    recurring events memory and cooldowns. */
 const SYSTEM = new Set(['training', 'hs_summer', 'injury', 'clutch', 'amclutch', 'moment', 'presser', 'fa', 'extension', 'workout', 'nooffer', 'offers',
-  'allstar', 'retire', 'declare', 'portal', 'commit', 'signing']);
+  'allstar', 'retire', 'declare', 'portal', 'commit', 'signing', 'build_arch', 'build_pos', 'build_sig']);
 const RECURS = { has: (id) => SYSTEM.has(id) || C.recurs(id) };
 
 function policyPick(pol, L, c, r) {
