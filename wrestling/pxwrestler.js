@@ -73,7 +73,7 @@ var PATTERNS = [['solid', 'Solid'], ['stripe', 'Side stripe'], ['split', 'Split'
 var AURAS = [['none', 'None'], ['spark', 'Sparks'], ['smoke', 'Smoke'], ['flame', 'Flame'], ['storm', 'Storm'], ['halo', 'Halo'], ['ice', 'Frost'],
   ['neon', 'Neon'], ['void', 'Void'], ['pyro', 'Pyro'], ['gilded', 'Gilded']];
 var BELTS = [['none', 'None'], ['waist', 'On the waist'], ['shoulder', 'Over the shoulder']];
-var POSES = ['idle', 'flex', 'point', 'raise', 'stance'];
+var POSES = ['idle', 'flex', 'point', 'raise', 'stance', 'strike', 'grapple', 'kick', 'stomp', 'lift', 'stagger', 'dive', 'climb'];
 
 function ids(list){ return list.map(function(x){ return x[0]; }); }
 /* the newer hairstyles are drawn on the shape of an older one, plus their own detail */
@@ -313,7 +313,12 @@ function paint(look, opts){
     else if (pose === 'raise') a = { el: [CX + s * (B.sw + 3.0), shY - 8.6], wr: [CX + s * (B.sw + 1.8), shY - 19.4], fist: [CX + s * (B.sw + 1.2), shY - Math.min(22.4, shY - 5.6)] };
     else if (pose === 'point' && s === 1) a = { el: [CX + B.sw + 2.6, shY - 6.0], wr: [CX + B.sw + 3.2, shY - 12.5], fist: [CX + B.sw + 3.4, shY - 14.6], point: true };
     else if (pose === 'point' && s === -1) a = { el: [CX - B.sw - 3.6, shY + 7.0], wr: [CX - B.ww - 1.2, wsY - 1.8], fist: [CX - B.ww - 0.4, wsY - 0.8], hip: true };
-    else if (pose === 'stance') a = { el: [CX + s * (B.sw + 2.6), shY + 8.6], wr: [CX + s * (B.sw - 1.4), shY + 12.0], fist: [CX + s * (B.sw - 2.4), shY + 12.4] };
+    else if (pose === 'strike' && s === 1) a = { el: [CX + B.sw + 4.5, shY + 1.0], wr: [CX + B.sw + 8.5, shY + 0.4], fist: [CX + B.sw + 10.4, shY + 0.4] };
+    else if (pose === 'grapple' || (pose === 'climb' && s === -1)) a = { el: [CX + s * (B.sw + 3.6), shY + 5], wr: [CX + s * (B.sw + 5.2), shY + 3.5], fist: [CX + s * (B.sw + 5.6), shY + 2.2] };
+    else if (pose === 'lift' || (pose === 'climb' && s === 1)) a = { el: [CX + s * (B.sw + 3.0), shY - 8.6], wr: [CX + s * (B.sw + 1.8), shY - 19.4], fist: [CX + s * (B.sw + 1.2), shY - Math.min(22.4, shY - 5.6)] };
+    else if (pose === 'stagger') a = { el: [CX + s * (B.sw + 3.2), shY + 7], wr: [CX + s * (B.sw + 5.6), shY + 13], fist: [CX + s * (B.sw + 6.0), shY + 15] };
+    else if (pose === 'dive') a = { el: [CX + s * (B.sw + 4.5), shY - 1], wr: [CX + s * (B.sw + 9), shY - 2], fist: [CX + s * (B.sw + 10.6), shY - 2.4] };
+    else if (pose === 'stance' || pose === 'strike' || pose === 'kick' || pose === 'stomp') a = { el: [CX + s * (B.sw + 2.6), shY + 8.6], wr: [CX + s * (B.sw - 1.4), shY + 12.0], fist: [CX + s * (B.sw - 2.4), shY + 12.4] };
     else a = { el: [CX + s * (B.sw + 1.4), shY + 9.5], wr: [CX + s * (B.sw + 1.0), shY + 17.0], fist: [CX + s * (B.sw + 0.9), shY + 19.0] };
     a.sh = [sx, shY + 0.6];
     arm[s] = a;
@@ -322,7 +327,10 @@ function paint(look, opts){
   var leg = {};
   [-1, 1].forEach(function(s){
     var hx = CX + s * (B.ww * 0.52 + 0.4 + (fem ? 0.6 : 0)), kx = hx + s * (0.6 + wide), fx = kx + s * (0.3 + wide * 0.4);
-    leg[s] = { hip: [hx, wsY + 2.5], knee: [kx, knY], ank: [fx, anY], foot: fx + s * 0.8 };
+    leg[s] = { hip: [hx, wsY + 2.5], knee: [kx, knY], ank: [fx, anY], foot: fx + s * 0.8, so: SOLE };
+    /* a leg off the floor carries its own floor row for the boot and foot */
+    if (s === 1 && pose === 'kick') leg[s] = { hip: [hx, wsY + 2.5], knee: [hx + 5, wsY + 6], ank: [hx + 10.5, wsY + 5], foot: hx + 12, so: Math.round(wsY + 7) };
+    if (s === 1 && (pose === 'stomp' || pose === 'climb')) leg[s] = { hip: [hx, wsY + 2.5], knee: [hx + 1.5, knY - 5], ank: [hx + 2, knY + 1.5], foot: hx + 2.8, so: Math.round(knY + 4.5) };
   });
 
   /* ── behind everything: the cape, the hair that hangs ── */
@@ -370,16 +378,16 @@ function paint(look, opts){
       : L.boots === 'combat' || L.boots === 'hightop' ? g.ank[1] - 4.2 : g.ank[1] - 1.4;
     if (L.boots !== 'wraps') {
       R.add('boot' + s, { ramp: BT, group: 'boot' + s, clip: function(x, y){ return y >= bootTop; } },
-        tube([[g.knee[0], g.knee[1] + 1, lr * 0.9], [g.ank[0], g.ank[1], lr * 0.78], [g.ank[0] + s * 0.2, SOLE - 1.5, lr * 0.75]]));
-      R.add('foot' + s, { ramp: BT, group: 'boot' + s }, rows(SOLE - 3, SOLE - 1, function(y){ return y === SOLE - 3 ? lr * 0.85 : lr * 0.95 + 0.6; }, g.foot, 0.4));
+        tube([[g.knee[0], g.knee[1] + 1, lr * 0.9], [g.ank[0], g.ank[1], lr * 0.78], [g.ank[0] + s * 0.2, g.so - 1.5, lr * 0.75]]));
+      R.add('foot' + s, { ramp: BT, group: 'boot' + s }, rows(g.so - 3, g.so - 1, function(y){ return y === g.so - 3 ? lr * 0.85 : lr * 0.95 + 0.6; }, g.foot, 0.4));
       R.add('sole' + s, { ramp: L.boots === 'sneaks' || L.boots === 'hightop' ? WH : L.boots === 'platform' ? TR : BLK, group: 'boot' + s, line: false },
-        rows(L.boots === 'platform' ? SOLE - 1 : SOLE, SOLE, function(){ return lr * 0.95 + 0.9; }, g.foot, 0));
-      if (L.boots === 'steel') R.add('toe' + s, { ramp: METAL, group: 'boot' + s, line: false }, rows(SOLE - 3, SOLE - 2, function(){ return lr * 0.7; }, g.foot, 0.4));
+        rows(L.boots === 'platform' ? g.so - 1 : g.so, g.so, function(){ return lr * 0.95 + 0.9; }, g.foot, 0));
+      if (L.boots === 'steel') R.add('toe' + s, { ramp: METAL, group: 'boot' + s, line: false }, rows(g.so - 3, g.so - 2, function(){ return lr * 0.7; }, g.foot, 0.4));
       if (L.boots === 'spiked') for (var sk = 0; sk < 3; sk++) R.add('spike' + s + sk, { ramp: METAL, group: 'spike' }, ellipse(g.knee[0] + s * (lr * 0.85 + 0.7), g.knee[1] + 4 + sk * 3, 0.9, 0.6));
       if (L.boots === 'kick') R.add('kick' + s, { ramp: TR, group: 'kick' + s }, rows(Math.floor(g.knee[1] + 1), Math.floor(g.ank[1]), function(){ return lr * 0.62; }, function(y){ return g.knee[0] + (g.ank[0] - g.knee[0]) * ((y - g.knee[1]) / (g.ank[1] - g.knee[1])) - s * 0.3; }, 0.25));
     } else {
-      R.add('foot' + s, { ramp: SK, group: gp }, rows(SOLE - 2, SOLE, function(y){ return y === SOLE ? lr + 0.4 : lr * 0.8 + 0.4; }, g.foot, 0.4));
-      R.add('wrap' + s, { ramp: TAPE, group: gp, line: false }, rows(Math.floor(g.ank[1] - 1), SOLE - 1, function(){ return lr * 0.82 + 0.3; }, g.ank[0], 0.3));
+      R.add('foot' + s, { ramp: SK, group: gp }, rows(g.so - 2, g.so, function(y){ return y === g.so ? lr + 0.4 : lr * 0.8 + 0.4; }, g.foot, 0.4));
+      R.add('wrap' + s, { ramp: TAPE, group: gp, line: false }, rows(Math.floor(g.ank[1] - 1), g.so - 1, function(){ return lr * 0.82 + 0.3; }, g.ank[0], 0.3));
     }
     var padOn = L.knees === 'pads' || (L.knees === 'one' && s === -1);
     if (padOn) R.add('knee' + s, { ramp: L.boots === 'kick' ? TR : ramp(mix(bootHex, '#000000', 0.15)), group: 'knee' + s }, ellipse(g.knee[0], g.knee[1] + 0.2, lr + 0.5, 2.4));
@@ -977,12 +985,13 @@ function fromLegacy(L){
 /* The game's call sites pass a frame and one of its own pose names, and lay
    the result out in a fixed SVG box per frame. This keeps every one of them
    working: the same box, with the sprite placed in it. */
-var GAME_POSE = { stand: 'idle', ready: 'stance', guard: 'stance', run: 'stance', runBack: 'stance', grapple: 'stance', lockup: 'stance',
-  strike: 'point', wind: 'stance', chop: 'point', clothes: 'point', kick: 'stance', bigboot: 'stance', stomp: 'stance', lift: 'raise', carry: 'raise',
-  press: 'raise', held: 'idle', vert: 'idle', climb: 'raise', kneel: 'stance', taunt: 'point', torso: 'flex', celebrate: 'raise', point: 'point',
-  stagger: 'idle', reel: 'idle', corner: 'idle', whip: 'point', ropes: 'stance', raised: 'raise', dive: 'raise', splash: 'idle',
+var GAME_POSE = { stand: 'idle', ready: 'stance', guard: 'stance', run: 'stance', runBack: 'stance', grapple: 'grapple', lockup: 'grapple',
+  strike: 'strike', wind: 'stance', chop: 'strike', clothes: 'strike', kick: 'kick', bigboot: 'kick', stomp: 'stomp', lift: 'lift', carry: 'lift',
+  press: 'lift', held: 'stagger', vert: 'lift', climb: 'climb', kneel: 'stagger', taunt: 'point', torso: 'flex', celebrate: 'raise', point: 'point',
+  stagger: 'stagger', reel: 'stagger', corner: 'stagger', whip: 'strike', ropes: 'grapple', raised: 'raise', dive: 'dive', splash: 'dive',
   refIdle: 'idle', refWatch: 'stance', refUp: 'raise', refDown: 'point', refNo: 'point', refRaise: 'raise' };
 var LYING = { prone: 1, proneUp: 1, pin: 1, submit: 1, bridge: 1, splash: 1, held: 0 };
+var TILT = { dive: -24, reel: 9, held: -8 };   // a lean, in degrees, for the moves that are not upright
 var BOX = { head: [17, -7, 30, 36], legs: [14, 40, 36, 50], wide: [-24, -14, 112, 118], full: [-6, -8, 76, 104] };
 var K = 1.55, OX = 32 - CX * K, OY = 89 - SOLE * K;   // the old figure stood at x 32, soles on y 89, crown near y 1; at 1.55 a raised fist still clears the top of the full box
 function svg(L, opt){
@@ -995,7 +1004,8 @@ function svg(L, opt){
   var box = opt.frame === 'head' ? BOX.head : opt.frame === 'legs' ? BOX.legs : (opt.frame === 'action' || lying) ? BOX.wide : BOX.full;
   var o = { pose: pose, scale: 2, shadow: opt.frame !== 'head' && !lying, flip: !!opt.flip };
   var a = url(look, o), b = opt.still ? a : url(look, Object.assign({}, o, { frame: 1 }));
-  var w = W * K, h = H * K, tf = lying ? ' transform="rotate(-90 32 ' + (OY + h * 0.62).toFixed(1) + ')"' : '';
+  var w = W * K, h = H * K, tf = lying ? ' transform="rotate(-90 32 ' + (OY + h * 0.62).toFixed(1) + ')"'
+    : TILT[gp] ? ' transform="rotate(' + TILT[gp] + ' 32 ' + (OY + h * 0.62).toFixed(1) + ')"' : '';
   var t = opt.title ? '<title>' + String(opt.title).replace(/[<>&"]/g, '') + '</title>' : '';
   return '<svg viewBox="' + box.join(' ') + '" xmlns="http://www.w3.org/2000/svg" class="pxfig">' + t
     + '<image class="rtr-px" href="' + a + '"' + (opt.still ? '' : ' data-b0="' + a + '" data-b1="' + b + '"')
