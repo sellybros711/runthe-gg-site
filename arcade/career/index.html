@@ -194,6 +194,11 @@
   .choice.correct{border-color:var(--green); background:color-mix(in srgb, var(--green) 15%, var(--card));}
   .choice.wrong{border-color:var(--red); background:color-mix(in srgb, var(--red) 14%, var(--card));}
   .choice.dim{opacity:.5;}
+  .bailbtn.aside{visibility:hidden; pointer-events:none;}
+  .choice.sel{border-color:var(--green); background:color-mix(in srgb, var(--green) 10%, var(--card));}
+  .choicego{display:block; width:100%; min-height:48px; border:0; border-radius:13px; background:var(--green); color:var(--onAccent,#04140A);
+    font:900 16px var(--f); cursor:pointer;}
+  .choicego:disabled{opacity:.45; cursor:default;}
   .hintline{text-align:center; font-size:11.5px; color:var(--mut); margin:14px 0 2px; font-weight:700;}
   .lb{background:var(--card); border:1px solid var(--line2); border-radius:14px; padding:12px 14px; box-shadow:var(--shadow); margin:18px 0 14px;}
   .lb h3{font-family:var(--hero); font-weight:400; letter-spacing:.03em; text-transform:uppercase; font-size:14px; color:var(--coralT); margin:0 0 12px; display:flex; align-items:center; gap:8px;}
@@ -341,12 +346,15 @@ window.GA_ID='G-L29P5MRWKE';
         <span class="worth" id="worth">Worth <b>5</b></span>
       </div>
     </div>
+    <!-- The way out sits ABOVE the answer field. Below it, it lay under the
+         name suggestions that drop down from the field, so a tap meant for a
+         suggestion could spend the round on the four names instead. -->
+    <button class="bailbtn" type="button" id="bailBtn">Not sure? Show me 4 names (1 point)</button>
     <div class="answerbar" id="answerbar">
       <input class="answerin" id="answerIn" type="text" inputmode="text" placeholder="Name the player" aria-label="Name the player" />
       <button class="answergo" id="answerGo" type="button">Call it</button>
     </div>
     <div class="subprompt" id="subprompt"></div>
-    <button class="bailbtn" type="button" id="bailBtn">Not sure? Show me 4 names (1 point)</button>
     <div class="choices" id="choices" hidden></div>
     <div class="factline" id="factline" aria-live="polite"></div>
     <div class="hintline" id="hintline">Type the name to call it. Each extra team you ask for is worth less.</div>
@@ -716,7 +724,7 @@ window.GA_ID='G-L29P5MRWKE';
     if(factEl){ factEl.textContent=''; factEl.classList.remove('on'); }
     var r=SEQ[idx], target=byId[r.target];
     shown=1; bailed=false;
-    answerIn.value=''; choicesEl.hidden=true; choicesEl.innerHTML='';
+    answerIn.value=''; bailBtn.classList.remove('aside'); choicesEl.hidden=true; choicesEl.innerHTML='';
     setAnswerEnabled(true);
     drawScout(target); drawPath(target, false); drawWorth(target, false);
   }
@@ -743,14 +751,31 @@ window.GA_ID='G-L29P5MRWKE';
     bailed=true;
     var target=byId[r.target];
     choicesEl.hidden=false;
-    choicesEl.innerHTML = r.opts.map(function(id){ return '<button class="choice" type="button" data-id="'+id+'">'+esc(byId[id].name)+'</button>'; }).join('');
-    [].forEach.call(choicesEl.querySelectorAll('.choice'), function(bt){ bt.addEventListener('click', function(){ resolve(bt.dataset.id===r.target, bt); }); });
+    /* Pick, then lock it in. A tap used to be the answer, so a thumb that
+       landed one row off ended the run. Now a tap selects, and the call is
+       a second, separate button that says which name it is calling. */
+    choicesEl.innerHTML = r.opts.map(function(id){ return '<button class="choice" type="button" aria-pressed="false" data-id="'+id+'">'+esc(byId[id].name)+'</button>'; }).join('') +
+      '<button class="choicego" type="button" id="choiceGo" disabled>Pick a name</button>';
+    var picked=null, goBtn=document.getElementById('choiceGo');
+    [].forEach.call(choicesEl.querySelectorAll('.choice'), function(bt){ bt.addEventListener('click', function(){
+      if(done||busy) return;
+      picked=bt;
+      [].forEach.call(choicesEl.querySelectorAll('.choice'), function(x){ x.classList.toggle('sel', x===bt); x.setAttribute('aria-pressed', x===bt?'true':'false'); });
+      goBtn.disabled=false; goBtn.textContent='Lock in '+byId[bt.dataset.id].name;
+    }); });
+    goBtn.addEventListener('click', function(){ if(!picked) return; goBtn.hidden=true; resolve(picked.dataset.id===r.target, picked); });
     setAnswerEnabled(true);
     drawWorth(target, false);
     document.getElementById('subprompt').textContent='It’s one of these. Worth 1 point.';
     saveResume();
   }
   bailBtn.addEventListener('click', bail);
+  /* While a name is being typed the suggestions are open, above or below the
+     field depending on the keyboard, and the four-name button is the one
+     thing a stray tap could hit. It steps out of the way (keeping its space,
+     so nothing jumps) until the field is empty again. */
+  function bailAside(){ bailBtn.classList.toggle('aside', !!answerIn.value.trim()); }
+  answerIn.addEventListener('input', bailAside);
 
   /* A typed answer is graded in three states, not two. A name we have never
      heard of is a spelling problem, not a wrong answer, and ending someone's

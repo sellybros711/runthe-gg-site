@@ -369,6 +369,90 @@ if ('franchise'.includes(only) || !only) {
   await sg.ctx.close();
 }
 
+/* ------------------------------------------------------------------ bug 13 */
+if ('career'.includes(only) || !only) {
+  R.section('Bug 13: Career Path keeps the suggestions away from the four names, and a pick needs a confirm');
+  const { ctx, p } = await open('career', { mobile: true });
+  await p.fill('#answerIn', 'Mich'); await sleep(500);
+  const geo = await p.evaluate(() => { const b = document.getElementById('bailBtn'), cs = getComputedStyle(b);
+    const box = document.querySelector('.rtgtype-box:not([hidden])'); const br = b.getBoundingClientRect(), xr = box ? box.getBoundingClientRect() : null;
+    const hit = xr && !(br.bottom <= xr.top || br.top >= xr.bottom || br.right <= xr.left || br.left >= xr.right);
+    return { box: !!box, visible: cs.visibility !== 'hidden' && cs.pointerEvents !== 'none', overlap: !!hit,
+      bailAbove: br.bottom <= document.getElementById('answerIn').getBoundingClientRect().top }; });
+  R.ok(geo.box, 'typing opens the name suggestions');
+  R.ok(!geo.visible && geo.bailAbove, 'while a name is typed, the four-name button sits above the field and takes no taps', JSON.stringify(geo));
+  await p.fill('#answerIn', ''); await p.dispatchEvent('#answerIn', 'input'); await sleep(200);
+  await p.click('#bailBtn'); await sleep(300);
+  await p.click('#choices .choice >> nth=0'); await sleep(600);
+  const mid = await p.evaluate(() => ({ go: document.getElementById('choiceGo') && !document.getElementById('choiceGo').disabled,
+    label: (document.getElementById('choiceGo') || {}).textContent, judged: !!document.querySelector('#choices .choice.correct, #choices .choice.wrong') }));
+  R.ok(mid.go && /^Lock in /.test(mid.label) && !mid.judged, 'tapping a name selects it and does not answer', JSON.stringify(mid));
+  await p.click('#choiceGo'); await sleep(500);
+  const end = await p.evaluate(() => !!document.querySelector('#choices .choice.correct'));
+  R.ok(end, 'Lock it in answers the round');
+  await ctx.close();
+}
+
+/* ------------------------------------------------------------- bugs 14 to 16 */
+if ('crossword'.includes(only) || !only) {
+  R.section('Bugs 14 to 16: the crossword starts on a clue, fits a phone, and takes a real keyboard');
+  const state = p => p.evaluate(() => { const cells = [...document.querySelectorAll('#board .cell')], n = Math.round(Math.sqrt(cells.length));
+    const i = cells.findIndex(c => c.classList.contains('sel')), s = cells[i];
+    return { i, r: Math.floor(i / n), c: i % n, block: s ? s.classList.contains('block') : null, num: s && s.querySelector('.num') ? s.querySelector('.num').textContent : '',
+      tag: document.getElementById('clueTag').textContent.trim(), active: !!document.querySelector('.list li.active'),
+      firstA: (document.querySelector('#listA li .n') || {}).textContent, letters: cells.map(c => (c.querySelector('.ch') || {}).textContent || '').join('') }; });
+
+  // 14: before anything is pressed, the cursor is on the first Across clue.
+  const d = await open('crossword', { vp: { width: 1280, height: 860 } });
+  let s = await state(d.p);
+  R.ok(s.i >= 0 && !s.block && s.active, 'the page opens with a lit cell and a highlighted clue', JSON.stringify(s));
+  R.ok(new RegExp('^' + s.firstA + ' ACROSS', 'i').test(s.tag) && s.num === s.firstA, 'and it is the first Across clue, on its first square', s.tag + ' / num ' + s.num);
+
+  // 16: arrows, letters, Backspace, Tab.
+  const start = s;
+  await d.p.keyboard.press('ArrowRight'); s = await state(d.p);
+  R.ok(s.r === start.r && s.c === start.c + 1, 'ArrowRight moves along the Across word', start.r + ',' + start.c + ' -> ' + s.r + ',' + s.c);
+  await d.p.keyboard.press('ArrowLeft'); await d.p.keyboard.press('q'); s = await state(d.p);
+  R.ok(s.letters.includes('Q') && s.c === start.c + 1, 'a letter fills the square and steps on', JSON.stringify({ c: s.c }));
+  await d.p.keyboard.press('Backspace'); s = await state(d.p);
+  R.ok(!s.letters.includes('Q') && s.c === start.c, 'Backspace steps back and clears it', JSON.stringify({ c: s.c, has: s.letters.includes('Q') }));
+  await d.p.keyboard.press('Tab'); const t1 = (await state(d.p)).tag;
+  R.ok(t1 !== start.tag, 'Tab moves to the next clue', start.tag + ' -> ' + t1);
+  await d.p.keyboard.press('Shift+Tab'); s = await state(d.p);
+  R.ok(s.tag === start.tag, 'Shift+Tab comes back', s.tag);
+  // On a square two words cross, an arrow across the current word turns the
+  // cursor before it moves anywhere.
+  const cross = await d.p.evaluate(() => { const cells = [...document.querySelectorAll('#board .cell')], n = Math.round(Math.sqrt(cells.length));
+    const w = (r, c) => r >= 0 && c >= 0 && r < n && c < n && !cells[r * n + c].classList.contains('block');
+    for (let i = 0; i < cells.length; i++) { const r = Math.floor(i / n), c = i % n;
+      if (w(r, c) && (w(r, c - 1) || w(r, c + 1)) && (w(r - 1, c) || w(r + 1, c))) return i; } return -1; });
+  R.ok(cross >= 0, 'the puzzle has a square where two words cross');
+  if (cross >= 0) {
+    await d.p.click('#board .cell >> nth=' + cross); const pre = await state(d.p);
+    await d.p.keyboard.press(/ACROSS/.test(pre.tag) ? 'ArrowDown' : 'ArrowRight'); s = await state(d.p);
+    R.ok(s.i === pre.i && /ACROSS/.test(s.tag) !== /ACROSS/.test(pre.tag), 'an arrow across the word turns the cursor first, without moving', pre.tag + ' -> ' + s.tag + ' at ' + pre.i + '/' + s.i);
+  }
+  // Keys typed into a page field are not grid input.
+  const before = (await state(d.p)).letters;
+  await d.p.evaluate(() => { const i = document.createElement('input'); i.id = 'cwProbe'; document.body.appendChild(i); i.focus(); });
+  await d.p.keyboard.type('zzz'); await d.p.keyboard.press('Backspace');
+  R.ok((await state(d.p)).letters === before, 'typing in a text field leaves the grid alone');
+  await d.ctx.close();
+
+  // 15: the whole grid is above the pinned clue and keyboard on a phone.
+  for (const vp of [[375, 667], [360, 640], [390, 844]]) {
+    const m = await open('crossword', { mobile: true, vp: { width: vp[0], height: vp[1] } });
+    await m.p.click('#board .cell:not(.block) >> nth=0'); await sleep(500);
+    await m.p.click('#kbd .key:not(.wide) >> nth=0'); await sleep(400);
+    const g = await m.p.evaluate(() => { const r = e => e.getBoundingClientRect(), b = r(document.getElementById('board')), bar = r(document.querySelector('.playbar')),
+      tb = document.querySelector('.rtg-topbanner'); return { top: Math.round(b.top), bot: Math.round(b.bottom), barTop: Math.round(bar.top),
+      banner: tb ? Math.round(r(tb).bottom) : 0, wide: document.documentElement.scrollWidth > innerWidth }; });
+    R.ok(g.bot <= g.barTop && g.top >= g.banner, vp.join('x') + ': the whole grid is in view between the banner and the keyboard', JSON.stringify(g));
+    R.ok(!g.wide, vp.join('x') + ': and the page does not scroll sideways');
+    await m.ctx.close();
+  }
+}
+
 await browser.close(); srv.close();
 console.log(R.fails() ? '\n' + R.fails() + ' failed' : '\narcade bugs ok');
 process.exit(R.fails() ? 1 : 0);

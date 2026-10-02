@@ -127,6 +127,14 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 
 /* ---------- grid ---------- */
 .board-wrap{position:relative; margin-bottom:12px; container-type:inline-size;}
+/* Under the pinned deck (clue, controls and keys) a phone has about 320px of
+   window between the top banner and the deck. A full-width square board is
+   taller than that, so its bottom rows sat behind the clue while you typed.
+   --fitW is that window's height, measured by fitBoard() below: the board
+   narrows to it so the whole grid is on screen with the keyboard up. */
+@media (max-width:999px){
+  .board-wrap{max-width:var(--fitW,100%); margin-left:auto; margin-right:auto;}
+}
 .board{display:grid; gap:2px; width:100%; aspect-ratio:1/1;
   background:var(--grid-line); border:2px solid var(--grid-line); border-radius:8px; padding:2px;
   box-shadow:var(--shadow); overflow:hidden;}
@@ -684,14 +692,21 @@ window.GA_ID='G-L29P5MRWKE';
 
   // ---- state ----------------------------------------------------------------
   var sel = { r:0, c:0, dir:'A' };
+  /* Start on a clue, not on a square. The cursor used to open on the first
+     white square going Across, and on most days that square starts no Across
+     word (106 of 180 grids have no 1 Across), so no clue lit up and the first
+     letter typed went nowhere. The lowest-numbered Across clue, or Down when a
+     grid has none, is where a solver expects to begin. */
+  function startSel(){
+    var a=P.entries.filter(function(e){ return e.dir==='A'; }).sort(function(x,y){ return x.num-y.num; })[0]
+        || P.entries.slice().sort(function(x,y){ return x.num-y.num; })[0];
+    if(a){ sel.r=a.r; sel.c=a.c; sel.dir=a.dir; }
+  }
   var startedAt = null, elapsed = 0, tick = null, done = false;
   var charged = false, attemptFirst = false;
   var hintsUsed = 0;   // free players get 1 reveal per play; Pro (and tester/archive) unlimited
 
-  // pick first white cell
-  (function(){ outer:
-    for(var r=0;r<N;r++) for(var c=0;c<N;c++) if(!cells[r][c].block){ sel.r=r; sel.c=c; break outer; }
-  })();
+  startSel();   // the first clue, not the first square
 
   // ---- render the board -----------------------------------------------------
   var board = document.getElementById('board');
@@ -712,6 +727,7 @@ window.GA_ID='G-L29P5MRWKE';
     board.style.width = (cell*N + chrome) + 'px';
   }
   sizeBoard();
+  window.RTGCwSize = sizeBoard;   // fitBoard() narrows the wrap, then asks again
   var szT; addEventListener('resize', function(){ clearTimeout(szT); szT = setTimeout(sizeBoard, 90); });
   addEventListener('orientationchange', function(){ setTimeout(sizeBoard, 120); });
   for(var r=0;r<N;r++) for(var c=0;c<N;c++){
@@ -878,15 +894,40 @@ window.GA_ID='G-L29P5MRWKE';
     jumpTo(order[idx]);
   }
 
+  /* The grid listens to the whole page, so it has to know when a key is NOT
+     for it: typing an email into the sign-in form used to fill the grid, and
+     Tab could not leave a dialog. Anything with its own text field, or any
+     open dialog, keeps its keys. */
+  function keysElsewhere(ev){
+    var t=ev.target;
+    if(t && t!==document.body && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName))) return true;
+    /* "Open" means drawn: a closed sheet is display:none, and a display:none
+       box still reports position:fixed, so the box list is what to ask. */
+    var ds=document.querySelectorAll('[role="dialog"], [aria-modal="true"]');
+    for(var i=0;i<ds.length;i++){ if(!ds[i].hidden && ds[i].getClientRects().length) return true; }
+    var sc=document.getElementById('scrim'); if(sc && !sc.classList.contains('hidden')) return true;
+    return false;
+  }
+  /* An arrow along the current word moves; an arrow across it turns first,
+     the way every crossword app works, so the highlighted clue always matches
+     the direction you are about to type in. */
+  function arrow(dir, dr, dc){
+    if(sel.dir!==dir && ownerOf(sel.r, sel.c, dir)){ sel.dir=dir; render(); return; }
+    var r=sel.r, c=sel.c;
+    for(var i=0;i<N;i++){ r+=dr; c+=dc; if(r<0||c<0||r>=N||c>=N) return;
+      if(!cells[r][c].block){ sel.r=r; sel.c=c; if(!ownerOf(r,c,sel.dir) && ownerOf(r,c,dir)) sel.dir=dir;
+        else if(!ownerOf(r,c,sel.dir)) toggleDir(); render(); return; } }
+  }
   document.addEventListener('keydown', function(ev){
     if(ev.metaKey||ev.ctrlKey||ev.altKey) return;
+    if(keysElsewhere(ev)) return;
     var k=ev.key;
     if(/^[a-zA-Z]$/.test(k)){ typeLetter(k); ev.preventDefault(); }
-    else if(k==='Backspace'){ backspace(); ev.preventDefault(); }
-    else if(k==='ArrowUp'){ sel.dir='D'; move(-1,0); ev.preventDefault(); }
-    else if(k==='ArrowDown'){ sel.dir='D'; move(1,0); ev.preventDefault(); }
-    else if(k==='ArrowLeft'){ sel.dir='A'; move(0,-1); ev.preventDefault(); }
-    else if(k==='ArrowRight'){ sel.dir='A'; move(0,1); ev.preventDefault(); }
+    else if(k==='Backspace'||k==='Delete'){ backspace(); ev.preventDefault(); }
+    else if(k==='ArrowUp'){ arrow('D',-1,0); ev.preventDefault(); }
+    else if(k==='ArrowDown'){ arrow('D',1,0); ev.preventDefault(); }
+    else if(k==='ArrowLeft'){ arrow('A',0,-1); ev.preventDefault(); }
+    else if(k==='ArrowRight'){ arrow('A',0,1); ev.preventDefault(); }
     else if(k===' '){ toggleDir(); render(); ev.preventDefault(); }
     else if(k==='Tab'){ nextClue(ev.shiftKey?-1:1); ev.preventDefault(); }
   });
@@ -1229,9 +1270,7 @@ window.GA_ID='G-L29P5MRWKE';
     startedAt=null; elapsed=0;
     document.getElementById('timerN').textContent='0:00';
     // reset the cursor to the first white cell
-    (function(){ outer:
-      for(var r=0;r<N;r++) for(var c=0;c<N;c++) if(!cells[r][c].block){ sel.r=r; sel.c=c; sel.dir='A'; break outer; }
-    })();
+    startSel();
     var scr=document.getElementById('scrim'); if(scr) scr.classList.add('hidden');
     var b=document.getElementById('board'); if(b){ b.style.pointerEvents=''; b.style.opacity=''; }
     stopCountdown();
@@ -1348,6 +1387,55 @@ window.GA_ID='G-L29P5MRWKE';
   } else {
     beginAttempt();
   }
+})();
+</script>
+<script>
+/* The whole grid fits above the pinned deck on a phone.
+   The deck's height moves with the clue (one line to three), so it is reserved
+   at three lines of clue: measured at the clue's real length the board would
+   grow and shrink between clues. The answer is a width, because the board is
+   square. Desktop (1000px and up) has no pinned deck and is left alone. */
+(function(){
+  var wrap=document.querySelector('.board-wrap'), bar=document.querySelector('.playbar'),
+      txt=document.getElementById('clueTxt'), board=document.getElementById('board');
+  if(!wrap||!bar||!board) return;
+  var MIN=220;
+  function topEdge(){ var b=document.querySelector('.rtg-topbanner'); return b ? Math.max(0, b.getBoundingClientRect().bottom) : 0; }
+  function deck(){
+    var h=bar.getBoundingClientRect().height;
+    if(txt){ var lh=parseFloat(getComputedStyle(txt).lineHeight)||20; h+=Math.max(0, 3*lh - txt.getBoundingClientRect().height); }
+    return h;
+  }
+  /* sizeBoard() in the game snaps the board to a width its cells divide
+     evenly, off the wrap's width, so it has to run again after the wrap moves. */
+  function fitBoard(){
+    var was=wrap.style.getPropertyValue('--fitW');
+    if(window.innerWidth>=1000) wrap.style.removeProperty('--fitW');
+    else wrap.style.setProperty('--fitW', Math.max(MIN, Math.floor(window.innerHeight - topEdge() - deck() - 10))+'px');
+    if(wrap.style.getPropertyValue('--fitW')!==was && window.RTGCwSize) window.RTGCwSize();
+  }
+  /* A tap or a key lands on the board: if part of it is under the deck or the
+     banner, scroll it back into the window between them. */
+  function inView(){
+    if(window.innerWidth>=1000) return;
+    var r=board.getBoundingClientRect(), top=topEdge()+4, bot=bar.getBoundingClientRect().top-4;
+    if(r.bottom>bot) window.scrollBy(0, Math.min(r.bottom-bot, r.top-top));
+    else if(r.top<top) window.scrollBy(0, r.top-top);
+  }
+  window.RTGCwFit={ fit:fitBoard, inView:inView };
+  fitBoard();
+  /* the top banner is drawn by topbanner.js and can land after this runs */
+  window.addEventListener('load', fitBoard);
+  window.addEventListener('resize', fitBoard);
+  if(window.ResizeObserver) new ResizeObserver(fitBoard).observe(bar);
+  board.addEventListener('click', function(){ requestAnimationFrame(inView); });
+  document.addEventListener('keydown', function(e){
+    var t=e.target, tag=t && t.tagName;
+    if(tag==='INPUT'||tag==='TEXTAREA'||tag==='SELECT'||(t&&t.isContentEditable)) return;
+    if(!document.getElementById('scrim').classList.contains('hidden')) return;
+    requestAnimationFrame(inView);
+  });
+  document.addEventListener('pointerdown', function(e){ if(e.target.closest && e.target.closest('.kbd')) requestAnimationFrame(inView); });
 })();
 </script>
 <script>
