@@ -425,13 +425,13 @@ window.GA_ID='G-L29P5MRWKE';
 <script src="/arcade/stats.js?v=4"></script>
 <script src="/arcade/hlstats.js?v=5"></script>
 <script src="/arcade/rosterstats.js?v=4"></script>
-<script src="/arcade/tokens.js?v=13"></script>
-<script src="/arcade/day.js?v=2"></script>
+<script src="/arcade/tokens.js?v=14"></script>
+<script src="/arcade/day.js?v=3"></script>
 <script src="/arcade/dayroll.js?v=1"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="/arcade/board.js?v=21"></script>
-<script src="/arcade/leaderboard.js?v=15"></script>
-<script src="/arcade/alltime.js?v=3"></script>
+<script src="/arcade/board.js?v=22"></script>
+<script src="/arcade/leaderboard.js?v=16"></script>
+<script src="/arcade/alltime.js?v=4"></script>
 <script src="/arcade/auth.js?v=4"></script>
 <script src="/arcade/mycard.js?v=14"></script>
 <script src="/arcade/topbanner.js?v=10"></script>
@@ -447,8 +447,9 @@ window.GA_ID='G-L29P5MRWKE';
      is what gives that gate the game's name and accent. -->
 <script src="/arcade/calendar.js?v=15"></script>
 <script src="/arcade/demo.js?v=4"></script>
-<script src="/arcade/pregame.js?v=26"></script>
-<script src="/arcade/resultstats.js?v=2"></script>
+<script src="/arcade/pregame.js?v=27"></script>
+<script src="/arcade/resultstats.js?v=3"></script>
+<script src="/arcade/review.js?v=1" defer></script>
 <script src="/arcade/modal-a11y.js?v=1"></script>
 <script>
 (function(){
@@ -602,6 +603,18 @@ window.GA_ID='G-L29P5MRWKE';
   var cat=null, baseline=null, baselineVal=0, opp=null, oppVal=0, runStart=0;
   var run=0, best=0, busy=false, playing=false, charged=false;
 
+  /* A RUN SURVIVES A RELOAD. The play is spent when the first player is
+     picked, so a reload mid-run used to land on the "free play used" wall
+     with the run thrown away. The run is kept here: the category, the two
+     players on screen, the streak and when it began. */
+  var RESUME_KEY='rtg:resume:highlow';
+  function readResume(){ try{ var r=JSON.parse(LS.getItem(RESUME_KEY)); return (r&&typeof r==='object')?r:null; }catch(e){ return null; } }
+  function clearResume(){ try{ LS.removeItem(RESUME_KEY); }catch(e){} }
+  function saveResume(){
+    if(!playing || !charged || !cat || !baseline || !opp) return;
+    try{ LS.setItem(RESUME_KEY, JSON.stringify({ d:DATE, cat:cat.key, base:baseline.id, opp:opp.id, run:run, t0:runStart, first:attemptFirst?1:0 })); }catch(e){}
+  }
+
   function load(){ try{ return JSON.parse(LS.getItem(SAVE_KEY))||{}; }catch(e){ return {}; } }
   function save(s){ try{ LS.setItem(SAVE_KEY, JSON.stringify(s)); }catch(e){} }
 
@@ -714,7 +727,7 @@ window.GA_ID='G-L29P5MRWKE';
 
   function startGame(baseId){
     var e = idMap[baseId]; if(!e || !cat) return;
-    baseline=e; run=0; playing=true; busy=false; charged=false;
+    baseline=e; run=0; playing=true; busy=false; charged=false; if(window.RTGReview) RTGReview.start(GAME);
     runStart=Date.now();   // real elapsed time is the board's tiebreak
     var s=load(); best=s.best||0;
     document.getElementById('streakN').textContent='0';
@@ -752,7 +765,11 @@ window.GA_ID='G-L29P5MRWKE';
   function nextOpponent(){
     var drawn=drawOpponent(cat, baseline);
     if(!drawn){ toast('No more fair matchups. Nice run!'); finish(); return; }
-    opp=drawn.ent; oppVal=drawn.val;
+    showOpponent(drawn.ent, drawn.val);
+    saveResume();
+  }
+  function showOpponent(ent, val){
+    opp=ent; oppVal=val;
     oppCard.classList.remove('revealed','correct','wrong');
     document.getElementById('oppName').textContent=opp.name;
     document.getElementById('oppMeta').textContent=metaLine(opp);
@@ -767,6 +784,9 @@ window.GA_ID='G-L29P5MRWKE';
     var actualHigher = oppVal > baselineVal;   // ties never presented
     var correct = (dir==='higher') === actualHigher;
     oppCard.classList.add('revealed'); oppCard.classList.add(correct?'correct':'wrong');
+    if(window.RTGReview){ var rvt=function(h){ var d=document.createElement('div'); d.innerHTML=h; return d.textContent; };
+      RTGReview.add(GAME, { q:opp.name+' vs '+baseline.name+' ('+cat.label+')', you:dir==='higher'?'Higher':'Lower',
+        answer:(actualHigher?'Higher':'Lower')+': '+rvt(fmtVal(cat, oppVal, opp))+' to '+rvt(fmtVal(cat, baselineVal, baseline)), ok:correct }); }
     if(correct){
       run++; if(run>best) best=run;
       document.getElementById('streakN').textContent=run;
@@ -785,7 +805,19 @@ window.GA_ID='G-L29P5MRWKE';
     else if(ev.key==='ArrowDown'){ ev.preventDefault(); guess('lower'); }
   });
 
-  document.getElementById('quitBtn').addEventListener('click', function(){ backToSetup(); });
+  /* Leaving a run part way used to throw it away with the play already spent.
+     Now it asks first, and a yes ends the run where it stands, the same as a
+     miss: that is the "confirms quitting" that counts a play as used. A card
+     member has nothing to lose, so they are not asked. */
+  document.getElementById('quitBtn').addEventListener('click', function(){
+    var unlimited = !!(window.RTGTokens && RTGTokens.hasCard && RTGTokens.hasCard());
+    if(playing && charged && !unlimited){
+      if(!window.confirm('End this run now? It counts as your play.')) return;
+      finish(); return;
+    }
+    if(playing) clearResume();
+    backToSetup();
+  });
   function backToSetup(){
     playing=false; busy=false;
     document.getElementById('scrim').classList.add('hidden');
@@ -801,6 +833,7 @@ window.GA_ID='G-L29P5MRWKE';
   var NEWBEST=false;
   function finish(){
     if(!playing) return; playing=false; busy=false;
+    clearResume(); if(window.RTGTokens && RTGTokens.complete) RTGTokens.complete(GAME);
     var s=load(); var prevBest=s.best||0;
     NEWBEST = run>0 && run>prevBest;
     s.best=Math.max(prevBest, run); s.last={ run:run }; save(s); best=s.best;
@@ -862,7 +895,7 @@ window.GA_ID='G-L29P5MRWKE';
         var pill=document.getElementById('lbPill'); if(pill) pill.textContent='Live';
         var samp=document.getElementById('lbSample'); if(!samp) return;
         if(!rows.length){ samp.innerHTML='<div class="samplab">Today’s board</div><div class="note" style="margin:2px 0 0">Nobody’s posted yet today. Be the first.</div>'; }
-        else{ var me=(RTG_BOARD.state().name||'').toLowerCase(), h='<div class="samplab">Top runs today</div>';
+        else{ var me=((RTG_BOARD.boardName&&RTG_BOARD.boardName())||RTG_BOARD.state().name||'').toLowerCase(), h='<div class="samplab">Top runs today</div>';
           for(var i=0;i<rows.length;i++){ var r=rows[i], nm=r.display_name||'Player', mine=me&&nm.toLowerCase()===me;
             h+='<div class="row'+(mine?' you':'')+'"><span class="rk">'+(i+1)+'</span><span class="who">'+esc(nm)+'</span><span class="tm">'+(r.run_len||0)+' in a row</span></div>'; }
           samp.innerHTML=h;
@@ -890,7 +923,23 @@ window.GA_ID='G-L29P5MRWKE';
   document.getElementById('yourBest').textContent = s0.best||0;
   if(s0.last && s0.last.run!=null) document.getElementById('yourRun').textContent = s0.last.run+' in a row';
 
-  if(canStart()) revealGame(); else { paintGate(); show('gate'); }
+  // A run left part way through today comes straight back.
+  var R0=readResume(), resumed=false;
+  if(R0 && R0.d===DATE && window.RTGTokens && RTGTokens.inProgress && RTGTokens.inProgress(GAME)){
+    var c0=catByKey[R0.cat], b0=idMap[R0.base], o0=idMap[R0.opp];
+    if(c0 && b0 && o0){
+      cat=c0; baseline=b0; run=Math.max(0,R0.run|0); runStart=+R0.t0||Date.now();
+      playing=true; busy=false; charged=true; attemptFirst=!!R0.first; best=(load().best||0);
+      revealed=true; document.getElementById('lb').classList.add('on');
+      document.getElementById('streakN').textContent=String(run);
+      document.getElementById('mbMetric').textContent = cat.sport+' · '+cat.label+(cat.note?(' ('+cat.note+')'):'');
+      baselineVal=cat.vfn(baseline);
+      show('play'); setBaselineCard(baseline, baselineVal); showOpponent(o0, cat.vfn(o0));
+      resumed=true; toast('Picked up where you left off');
+    }
+  }
+  if(R0 && !resumed) clearResume();
+  if(!resumed){ if(canStart()) revealGame(); else { paintGate(); show('gate'); } }
   if(window.RTG_BOARD){
     try{ RTG_BOARD.boot(); RTG_BOARD.onChange(function(){
       if(canStart()){ revealGame(); renderRealBoard(); } else if(!revealed){ paintGate(); }

@@ -581,7 +581,16 @@ check_rows(sort, migration, what, breaks, ok) as (
       (select count(*) > 0 from has_table where name = 'rtf_careers')
       and (select count(*) > 0 from proc where name = 'rtf_submit_career')
       and (select count(*) > 0 from proc where name = 'rtf_career_score')
-      and (select count(*) > 0 from proc where name = 'rtf_claim_career'))
+      and (select count(*) > 0 from proc where name = 'rtf_claim_career')),
+
+  -- THE ARCADE'S BOARD NAMES. Without it an account with no username is still
+  -- filed with no name, and every board prints "Player" for it, so a board of
+  -- new sign-ups reads as six copies of one person. Nothing throws.
+  (43, '131_arcade_generated_names',
+      'an unnamed account gets a generated name on the arcade boards',
+      'Unnamed accounts all show as "Player" and cannot find their own row.',
+      (select count(*) > 0 from proc where name = 'arcade_generated_name')
+      and (select count(*) > 0 from trg where name = 'grid_runs_fill_name'))
 )
 -- The summary has to come LAST, and a UNION can only be ordered by an output
 -- column, so the sort key is carried through a subquery rather than sorted on

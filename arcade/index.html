@@ -1137,11 +1137,11 @@ window.GA_ID='G-L29P5MRWKE';
 </div>
 
 <script src="/arcade/favteam.js"></script>
-<script src="/arcade/tokens.js?v=13"></script>
-<script src="/arcade/day.js?v=2"></script>
+<script src="/arcade/tokens.js?v=14"></script>
+<script src="/arcade/day.js?v=3"></script>
 <script src="/arcade/dayroll.js?v=1"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="/arcade/board.js?v=21"></script>
+<script src="/arcade/board.js?v=22"></script>
 <script src="/arcade/auth.js?v=4"></script>
 <script src="/arcade/mycard.js?v=14"></script>
 <script src="/arcade/topbanner.js?v=10"></script>
@@ -1627,7 +1627,7 @@ window.GA_ID='G-L29P5MRWKE';
   mark('cardCareer','pipR', 'stR', 'playR', rDone, runText(rs, 'pts'), 'career');
   mark('cardRank',  'pipK', 'stK', 'playK', kDone, 'Solved', 'rankit');
   mark('cardAlma',  'pipA', 'stA', 'playA', aDone, runText(as, 'pts'), 'almamater');
-  mark('cardSpg',   'pipS', 'stS', 'playS', sDone, (sg.last && sg.last.score != null) ? ('Solved · ' + sg.last.score + ' pts') : 'Solved', 'sportegories');
+  mark('cardSpg',   'pipS', 'stS', 'playS', sDone, (sg.last && sg.last.score != null) ? ('Solved · ' + sg.last.score + (sg.last.score===1?' pt':' pts')) : 'Solved', 'sportegories');
   // High Low is endless, so "done" is simply having run it today.
   var hs = {}; try { hs = JSON.parse(g('rtg:highlow:v1', '{}')) || {}; } catch (e) {}
   var hDone = false; try { hDone = !!(TOK && TOK.playsOf && TOK.playsOf('highlow') > 0); } catch (e) {}

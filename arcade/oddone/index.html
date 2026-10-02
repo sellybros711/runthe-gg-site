@@ -323,17 +323,18 @@ window.GA_ID='G-L29P5MRWKE';
 <script src="/arcade/share.js?v=9"></script>
 <script src="/arcade/result.js?v=1"></script>
 <script src="/arcade/resultart.js?v=4"></script>
-<script src="/arcade/resultstats.js?v=2"></script>
+<script src="/arcade/resultstats.js?v=3"></script>
+<script src="/arcade/review.js?v=1" defer></script>
 <script src="/arcade/challenge.js?v=4"></script>
 <script src="/arcade/modal-a11y.js?v=1"></script>
-<script src="/arcade/tokens.js?v=13"></script>
-<script src="/arcade/day.js?v=2"></script>
+<script src="/arcade/tokens.js?v=14"></script>
+<script src="/arcade/day.js?v=3"></script>
 <script src="/arcade/dayroll.js?v=1"></script>
 <script src="/arcade/archive.js?v=2"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="/arcade/board.js?v=21"></script>
-<script src="/arcade/leaderboard.js?v=15"></script>
-<script src="/arcade/alltime.js?v=3"></script>
+<script src="/arcade/board.js?v=22"></script>
+<script src="/arcade/leaderboard.js?v=16"></script>
+<script src="/arcade/alltime.js?v=4"></script>
 <script src="/arcade/auth.js?v=4"></script>
 <script src="/arcade/mycard.js?v=14"></script>
 <script src="/arcade/topbanner.js?v=10"></script>
@@ -344,7 +345,7 @@ window.GA_ID='G-L29P5MRWKE';
 <script src="/arcade/calendar.js?v=15"></script>
 <script src="/arcade/archivecta.js?v=2"></script>
 <script src="/arcade/demo.js?v=4"></script>
-<script src="/arcade/pregame.js?v=26"></script>
+<script src="/arcade/pregame.js?v=27"></script>
 <script src="/arcade/howto.js?v=24"></script>
 <script src="/arcade/fact.js?v=3"></script>
 <script>
@@ -578,7 +579,9 @@ window.GA_ID='G-L29P5MRWKE';
     if(done||busy) return; busy=true; startIfNeeded();
     var r=SEQ[idx];
     var right = id===r.odd;
-    var btns=choicesEl.querySelectorAll('.choice');
+    if(window.RTGReview) RTGReview.add(GAME, { q:'Odd one out: '+r.five.map(function(x){ return byId[x] ? byId[x].name : ''; }).join(', '),
+      you: byId[id] ? byId[id].name : '', answer: byId[r.odd] ? byId[r.odd].name : '', ok: right,
+      note: right ? '' : whyTrueLabel(r) });
     // The four that belong light green; the odd one lights red.
     [].forEach.call(btns, function(b){
       b.classList.remove('dim');
@@ -640,11 +643,19 @@ window.GA_ID='G-L29P5MRWKE';
       { lab:'All No. 1 overall picks', p:function(e){ return e.dp===1; } },
       { lab:'All active in the 2010s', p:function(e){ return (e.decade||[]).indexOf(2010)>=0; } },
       { lab:'All active in the 2000s', p:function(e){ return (e.decade||[]).indexOf(2000)>=0; } },
-      { lab:'All MVP winners', p:function(e){ return (e.aw||[]).some(function(a){ return /MVP/i.test(a); }); } }
+      { lab:'All MVP winners', p:function(e){ return (e.aw||[]).some(function(a){ return /MVP/i.test(a); }); } },
+      { lab:'All born outside the USA', p:function(e){ return !!e.nat && e.nat!=='United States'; } },
+      { lab:'All active in the 1990s', p:function(e){ return (e.decade||[]).indexOf(1990)>=0; } },
+      { lab:'All active in the 1980s', p:function(e){ return (e.decade||[]).indexOf(1980)>=0; } },
+      { lab:'All active in the 2020s', p:function(e){ return (e.decade||[]).indexOf(2020)>=0; } }
     ];
     var decoys=[];
     shuffle(CAND).forEach(function(c){ if(decoys.length<2 && c.lab!==trueLab && !four.every(c.p)) decoys.push(c.lab); });
-    ['All Olympians','All one-team players','All league scoring champions'].forEach(function(l){ if(decoys.length<2 && l!==trueLab && decoys.indexOf(l)<0) decoys.push(l); });
+    /* Every decoy is checked false against the four. The old fallbacks
+       ("All league scoring champions", "All Olympians", "All one-team players")
+       were never checked, so four Hall of Fame scoring champions could be shown
+       a "wrong" answer that was true. They are gone; the checked list above is
+       long enough that two false ones always exist. */
     var opts = shuffle([trueLab].concat(decoys));
     /* No countdown bar. It was there to stop an optional flourish from feeling
        like a toll; now the question is worth a point, and putting a clock on a
@@ -659,6 +670,7 @@ window.GA_ID='G-L29P5MRWKE';
       b.addEventListener('click', function(){
         if(tapped) return; tapped=true;
         var ok=b.dataset.l===trueLab;
+        if(window.RTGReview) RTGReview.add(GAME, { q:'What links the other four?', you:b.dataset.l, answer:trueLab, ok:ok });
         [].forEach.call(choicesEl.querySelectorAll('.choice.why'), function(x){
           if(x.dataset.l===trueLab) x.classList.add('correct'); else x.classList.add('dim');
           if(x===b && !ok) x.classList.add('wrong');
@@ -680,6 +692,7 @@ window.GA_ID='G-L29P5MRWKE';
     var sk=document.getElementById('whySkip');
     if(sk) sk.addEventListener('click', function(){
       if(tapped) return; tapped=true;
+      if(window.RTGReview) RTGReview.add(GAME, { q:'What links the other four?', you:'', answer:trueLab, ok:null, note:'Skipped' });
       document.getElementById('subprompt').innerHTML='<b class="no">The link was:</b> '+esc(trueLab)+'.';
       showFact(byId[r.odd]);
       timer=setTimeout(go, 1600);
@@ -688,7 +701,7 @@ window.GA_ID='G-L29P5MRWKE';
 
   function startIfNeeded(){ if(started||done) return;
     if(!charged){ if(ARCHIVE){ charged=true; attemptFirst=false; } else { var r=(window.RTGTokens?RTGTokens.startAttempt(GAME):{ok:true,first:true}); charged=true; attemptFirst=!!(r&&r.first); } }
-    started=true; startTs=performance.now(); }
+    started=true; startTs=performance.now(); if(window.RTGReview) RTGReview.start(GAME); saveResume(); }
   function fmt(s){ s=Math.max(0,Math.floor(s)); return Math.floor(s/60)+':'+String(s%60).padStart(2,'0'); }
 
   function updateHint(){ var h=document.getElementById('hintline'); if(!h) return;
@@ -750,7 +763,7 @@ window.GA_ID='G-L29P5MRWKE';
   // made Wordle spread).
   var ANSLOG=[];
   function finish(){ if(window.RTGArchive&&RTGArchive.markDone)RTGArchive.markDone('oddone', DATE);
-    if(done) return; done=true;
+    if(done) return; done=true; if(!ARCHIVE&&window.RTGTokens&&RTGTokens.complete) RTGTokens.complete(GAME);
     if(!ARCHIVE) clearResume();
     elapsed = started ? (performance.now()-startTs)/1000 : 0;
     var s=load(), today=DATE, y=shiftDay(today,-1);
@@ -799,7 +812,7 @@ window.GA_ID='G-L29P5MRWKE';
     subEl.classList.toggle('newbest', !locked && NEWBEST);
     var mm=document.getElementById('mMilestone');
     if(mm){ if(!locked && MSTONE){ mm.textContent='\ud83d\udd25 '+MSTONE; mm.classList.add('on'); } else { mm.textContent=''; mm.classList.remove('on'); } }
-    document.getElementById('yourTm').textContent = run+' points';
+    document.getElementById('yourTm').textContent = run+(run===1?' point':' points');
     document.getElementById('yourBest').textContent = s.bestRun||0;
     updateAgainBtn();
     setTimeout(function(){ document.getElementById('scrim').classList.remove('hidden'); if(!locked && attemptFirst && (run>=5 || NEWBEST)){ confetti(NEWBEST?140:(run>=15?120:70), NEWBEST || run>=15); if(window.RTGSound) RTGSound.win(); } startCountdown(); }, 300);
@@ -828,7 +841,7 @@ window.GA_ID='G-L29P5MRWKE';
   /* The result screen shows this card too (resultart.js), so the spec the
      share button builds is now a function both can call. */
   function cardSpec(){
-    var stat=(run>0?'🔥 ':'')+run+' points';
+    var stat=(run>0?'🔥 ':'')+run+(run===1?' point':' points');
     return { key:'oddone', date:DATE, grid:shareGrid(), stat:stat, statInt:run };
   }
   window.RTG_CARD_SPEC = cardSpec;
@@ -860,9 +873,9 @@ window.GA_ID='G-L29P5MRWKE';
       var pill=lb.querySelector('.lb-pill'); if(pill) pill.textContent='Live';
       var samp=document.getElementById('lbSample'); if(samp){ samp.style.opacity='1';
         if(!rows.length){ samp.innerHTML='<div class="lb-samplab">Today’s board</div><div class="note" style="margin:2px 0 0">Nobody’s posted yet today. Be the first.</div>'; }
-        else{ var me=(RTG_BOARD.state().name||'').toLowerCase(), h='<div class="lb-samplab">Top runs today</div>';
+        else{ var me=((RTG_BOARD.boardName&&RTG_BOARD.boardName())||RTG_BOARD.state().name||'').toLowerCase(), h='<div class="lb-samplab">Top runs today</div>';
           for(var i=0;i<rows.length;i++){ var r=rows[i], nm=r.display_name||'Player', mine=me&&nm.toLowerCase()===me;
-            h+='<div class="row'+(mine?' you':'')+'"><span class="rk">'+(i+1)+'</span><span class="who">'+lbEsc(nm)+'</span><span class="tm">'+(r.run_len||0)+' points</span></div>'; }
+            h+='<div class="row'+(mine?' you':'')+'"><span class="rk">'+(i+1)+'</span><span class="who">'+lbEsc(nm)+'</span><span class="tm">'+(r.run_len||0)+((r.run_len||0)===1?' point':' points')+'</span></div>'; }
           samp.innerHTML=h;
         }
       }

@@ -567,17 +567,18 @@ window.GA_ID='G-L29P5MRWKE';
 <script src="/arcade/funnel.js?v=12"></script>
 <script src="/arcade/share.js?v=9"></script>
 <script src="/arcade/resultart.js?v=4"></script>
-<script src="/arcade/resultstats.js?v=2"></script>
+<script src="/arcade/resultstats.js?v=3"></script>
+<script src="/arcade/review.js?v=1" defer></script>
 <script src="/arcade/challenge.js?v=4"></script>
 <script src="/arcade/modal-a11y.js?v=1"></script>
-<script src="/arcade/tokens.js?v=13"></script>
-<script src="/arcade/day.js?v=2"></script>
+<script src="/arcade/tokens.js?v=14"></script>
+<script src="/arcade/day.js?v=3"></script>
 <script src="/arcade/dayroll.js?v=1"></script>
 <script src="/arcade/archive.js?v=2"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="/arcade/board.js?v=21"></script>
-<script src="/arcade/leaderboard.js?v=15"></script>
-<script src="/arcade/alltime.js?v=3"></script>
+<script src="/arcade/board.js?v=22"></script>
+<script src="/arcade/leaderboard.js?v=16"></script>
+<script src="/arcade/alltime.js?v=4"></script>
 <script src="/arcade/auth.js?v=4"></script>
 <script src="/arcade/mycard.js?v=14"></script>
 <script src="/arcade/topbanner.js?v=10"></script>
@@ -588,7 +589,7 @@ window.GA_ID='G-L29P5MRWKE';
 <script src="/arcade/calendar.js?v=15"></script>
 <script src="/arcade/archivecta.js?v=2"></script>
 <script src="/arcade/demo.js?v=4"></script>
-<script src="/arcade/pregame.js?v=26"></script>
+<script src="/arcade/pregame.js?v=27"></script>
 <script src="/arcade/howto.js?v=24"></script>
 <script>
 (function(){
@@ -802,6 +803,7 @@ window.GA_ID='G-L29P5MRWKE';
     }
     startedAt = performance.now();
     tick = setInterval(updateTimer, 250);
+    saveResume();   // the play was just spent: keep it restorable from this tap on
   }
   function updateTimer(){
     if(!startedAt) return;
@@ -996,8 +998,15 @@ window.GA_ID='G-L29P5MRWKE';
   }
 
   function finish(){ if(window.RTGArchive&&RTGArchive.markDone)RTGArchive.markDone('crossword', DATE);
+    if(!done && !TESTER && !ARCHIVE && window.RTGTokens && RTGTokens.complete) RTGTokens.complete('crossword');
     done=true; if(tick) clearInterval(tick);
     clearResume();   // attempt is over - nothing left to restore
+    if(window.RTGReview) RTGReview.set('crossword', P.entries.slice().sort(function(a,b){ return a.dir===b.dir ? a.num-b.num : (a.dir<b.dir?-1:1); }).map(function(e){
+      var cs=entryCells(e), typed='', rev=false;
+      cs.forEach(function(rc){ var k=cells[rc[0]][rc[1]]; typed+=(k.val||'.'); if(k.revealed) rev=true; });
+      return { q:e.num+(e.dir==='A'?' Across: ':' Down: ')+String(e.clue).replace(/<[^>]*>/g,''), you:typed, answer:e.answer,
+               ok: rev ? null : typed.toUpperCase()===String(e.answer).toUpperCase(), note: rev ? 'Revealed' : '' };
+    }));
     elapsed = startedAt ? (performance.now()-startedAt)/1000 : 0;
     document.getElementById('timerN').textContent = fmt(elapsed);
 
@@ -1295,7 +1304,7 @@ window.GA_ID='G-L29P5MRWKE';
       var samp=lb.querySelector('.lb-sample'); if(samp){ samp.style.opacity='1';
         if(!rows.length){ samp.innerHTML='<div class="lb-samplab">Today’s board</div><div class="note" style="margin:2px 0 0">Nobody’s posted yet today. Be the first.</div>'; }
         else{
-          var me=(RTG_BOARD.state().name||'').toLowerCase(), h='<div class="lb-samplab">Today’s fastest</div>';
+          var me=((RTG_BOARD.boardName&&RTG_BOARD.boardName())||RTG_BOARD.state().name||'').toLowerCase(), h='<div class="lb-samplab">Today’s fastest</div>';
           for(var i=0;i<rows.length;i++){ var r=rows[i], nm=r.display_name||'Player', mine=me&&nm.toLowerCase()===me;
             h+='<div class="row'+(mine?' you':'')+'"><span class="rk">'+(i+1)+'</span><span class="who">'+lbEsc(nm)+'</span><span class="tm">'+RTG_BOARD.fmtTime(r.base_seconds)+'</span></div>'; }
           samp.innerHTML=h;

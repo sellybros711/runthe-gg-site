@@ -240,13 +240,17 @@
     });
   }
 
-  function fresh(){ return { date:todayStr(), plays:{}, sf:{}, bonus:0 }; }
+  function fresh(){ return { date:todayStr(), plays:{}, sf:{}, bonus:0, st:{} }; }
   function read(){
     var s;
     try{ s=JSON.parse(LS.getItem(KEY)); }catch(e){ s=null; }
     if(!s || typeof s!=='object') s=fresh();
     if(s.date!==todayStr()) s=fresh();           // new day → refill (local midnight)
     if(!s.plays || typeof s.plays!=='object') s.plays={};
+    // st = how today's latest attempt at each game stands: 'p' in progress,
+    // 'd' done, 'q' quit. Added after the wallet shipped, so an older blob has
+    // none and every play it holds reads as finished, which is what it was.
+    if(!s.st || typeof s.st!=='object') s.st={};
     // sf = server-synced used floor, per game (anti-bypass). The v3 wallet stored
     // a single number here; coerce so an upgrading device doesn't throw.
     if(!s.sf || typeof s.sf!=='object') s.sf={};
@@ -303,10 +307,35 @@
     if(game) return remainingOf(game);
     if(unlimited()) return Infinity;
     var n=0, i;
-    for(i=0;i<FREE_LIST.length;i++) n+=remainingOf(FREE_LIST[i]);
-    for(i=0;i<GAMES.length;i++) if(trialOpen(GAMES[i])) n++;
+    for(i=0;i<FREE_LIST.length;i++) n+=remainingOf(FREE_LIST[i]) + (inProgress(FREE_LIST[i]) ? 1 : 0);
+    for(i=0;i<GAMES.length;i++) if(trialOpen(GAMES[i]) || (!isFreeGame(GAMES[i]) && inProgress(GAMES[i]))) n++;
     return n;
   }
+
+  /* A PLAY IS SPENT AT THE FIRST MOVE AND COUNTED AT THE LAST.
+
+     The spend stays where it was, on the first move, locally and on the
+     server: a daily board you can open, look at and restart is not one play.
+     What changed is what the player is told. A game that has been started and
+     not finished is IN PROGRESS: the counter still counts it as a game left,
+     the lockout wall does not show, and the page restores it. It becomes used
+     when it is finished (complete) or when the player says they are done with
+     it (quit). Reported: a reload mid-game locked people out of a game they
+     had not played. */
+  function inProgress(game){
+    if(!game) return false;
+    var s=read();
+    return s.st[game]==='p' && (s.plays[game]||0)>0;
+  }
+  function setState(game, v){
+    if(!game) return;
+    var s=read();
+    if(!s.st[game] && !(s.plays[game]||0)) return;      // nothing was started today
+    if(s.st[game]===v) return;
+    s.st[game]=v; write(s); emit('rtg:tokens');
+  }
+  function complete(game){ setState(game, 'd'); }
+  function quit(game){ setState(game, 'q'); }
   // Raise the server-used floor for one game (never lowers it within a day).
   function setServerUsed(game, n){
     if(typeof game!=='string'){ return; }          // old (total-only) signature: ignore
@@ -409,7 +438,7 @@
     var s=read(), before=s.plays[game]||0;
     DENIED=false; REPLAY=false;
     if(unlimited()){
-      s.plays[game]=before+1; write(s); bumpLife(game); emit('rtg:tokens');
+      s.plays[game]=before+1; s.st[game]='p'; write(s); bumpLife(game); emit('rtg:tokens');
       gaGame('arcade_game_started', game, { tier:'card', try_no:before+1 });
       return { ok:true, tryNo:before+1, first:(before===0), bonus:(before>0), left:Infinity };
     }
@@ -421,7 +450,7 @@
     // nobody spends theirs by opening a page.
     var wasTrial = trialOpen(game);
     if(wasTrial) markTrialUsed(game);
-    s.plays[game]=before+1; write(s); bumpLife(game); emit('rtg:tokens');
+    s.plays[game]=before+1; s.st[game]='p'; write(s); bumpLife(game); emit('rtg:tokens');
     gaGame('arcade_game_started', game, { tier: wasTrial ? 'trial' : (signedIn() ? 'free' : 'guest'), try_no:before+1 });
     serverSpend(game);
     return { ok:true, tryNo:before+1, first:(before===0), bonus:false, trial:wasTrial, left:remainingOf(game) };
@@ -510,6 +539,10 @@
     triesLeft: triesLeft,
     canPlay: canPlay,
     startAttempt: startAttempt,
+    // today's attempt: started, finished, or given up
+    inProgress: inProgress,
+    complete: complete,
+    quit: quit,
     rankAuthorized: rankAuthorized,
     replaying: replaying,
     // ordering (hub)

@@ -399,17 +399,18 @@ window.GA_ID='G-L29P5MRWKE';
 <script src="/arcade/share.js?v=9"></script>
 <script src="/arcade/result.js?v=1"></script>
 <script src="/arcade/resultart.js?v=4"></script>
-<script src="/arcade/resultstats.js?v=2"></script>
+<script src="/arcade/resultstats.js?v=3"></script>
+<script src="/arcade/review.js?v=1" defer></script>
 <script src="/arcade/challenge.js?v=4"></script>
 <script src="/arcade/modal-a11y.js?v=1"></script>
-<script src="/arcade/tokens.js?v=13"></script>
-<script src="/arcade/day.js?v=2"></script>
+<script src="/arcade/tokens.js?v=14"></script>
+<script src="/arcade/day.js?v=3"></script>
 <script src="/arcade/dayroll.js?v=1"></script>
 <script src="/arcade/archive.js?v=2"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="/arcade/board.js?v=21"></script>
-<script src="/arcade/leaderboard.js?v=15"></script>
-<script src="/arcade/alltime.js?v=3"></script>
+<script src="/arcade/board.js?v=22"></script>
+<script src="/arcade/leaderboard.js?v=16"></script>
+<script src="/arcade/alltime.js?v=4"></script>
 <script src="/arcade/auth.js?v=4"></script>
 <script src="/arcade/mycard.js?v=14"></script>
 <script src="/arcade/topbanner.js?v=10"></script>
@@ -420,7 +421,7 @@ window.GA_ID='G-L29P5MRWKE';
 <script src="/arcade/calendar.js?v=15"></script>
 <script src="/arcade/archivecta.js?v=2"></script>
 <script src="/arcade/demo.js?v=4"></script>
-<script src="/arcade/pregame.js?v=26"></script>
+<script src="/arcade/pregame.js?v=27"></script>
 <script src="/arcade/howto.js?v=24"></script>
 <script src="/arcade/type.js?v=5"></script>
 <script src="/arcade/fact.js?v=3"></script>
@@ -612,6 +613,8 @@ window.GA_ID='G-L29P5MRWKE';
     var p=SEQ[idx], real=jn(p), off=Math.abs(said-real);
     setAnswerEnabled(false);
     var card=vs.querySelector('.pcard');
+    if(window.RTGReview) RTGReview.add(GAME, { q:p.name, you:'#'+said, answer:'#'+real, ok: off<=2,
+      note: off===0 ? 'Bullseye' : (off<=2 ? 'Within 2 counts' : (shield ? 'Your save kicked in' : '')) });
     document.getElementById('n0').textContent='#'+real;
     if(card) card.classList.add('revealed');
     showFact(p);
@@ -654,7 +657,7 @@ window.GA_ID='G-L29P5MRWKE';
 
   function startIfNeeded(){ if(started||done) return;
     if(!charged){ if(ARCHIVE){ charged=true; attemptFirst=false; } else { var r=(window.RTGTokens?RTGTokens.startAttempt(GAME):{ok:true,first:true}); charged=true; attemptFirst=!!(r&&r.first); } }
-    started=true; startTs=performance.now(); }
+    started=true; startTs=performance.now(); if(window.RTGReview) RTGReview.start(GAME); saveResume(); }
   function fmt(s){ s=Math.max(0,Math.floor(s)); return Math.floor(s/60)+':'+String(s%60).padStart(2,'0'); }
 
   function updateHint(){ var h=document.getElementById('hintline'); if(!h) return;
@@ -721,7 +724,7 @@ window.GA_ID='G-L29P5MRWKE';
   // made Wordle spread).
   var ANSLOG=[];
   function finish(){ if(window.RTGArchive&&RTGArchive.markDone)RTGArchive.markDone('table', DATE);
-    if(done) return; done=true;
+    if(done) return; done=true; if(!ARCHIVE&&window.RTGTokens&&RTGTokens.complete) RTGTokens.complete(GAME);
     if(!ARCHIVE) clearResume();
     elapsed = started ? (performance.now()-startTs)/1000 : 0;
     var s=load(), today=DATE, y=shiftDay(today,-1);
@@ -837,7 +840,7 @@ window.GA_ID='G-L29P5MRWKE';
       var pill=lb.querySelector('.lb-pill'); if(pill) pill.textContent='Live';
       var samp=document.getElementById('lbSample'); if(samp){ samp.style.opacity='1';
         if(!rows.length){ samp.innerHTML='<div class="lb-samplab">Today’s board</div><div class="note" style="margin:2px 0 0">Nobody’s posted yet today. Be the first.</div>'; }
-        else{ var me=(RTG_BOARD.state().name||'').toLowerCase(), h='<div class="lb-samplab">Top runs today</div>';
+        else{ var me=((RTG_BOARD.boardName&&RTG_BOARD.boardName())||RTG_BOARD.state().name||'').toLowerCase(), h='<div class="lb-samplab">Top runs today</div>';
           for(var i=0;i<rows.length;i++){ var r=rows[i], nm=r.display_name||'Player', mine=me&&nm.toLowerCase()===me;
             h+='<div class="row'+(mine?' you':'')+'"><span class="rk">'+(i+1)+'</span><span class="who">'+lbEsc(nm)+'</span><span class="tm">'+(r.run_len||0)+' in a row</span></div>'; }
           samp.innerHTML=h;

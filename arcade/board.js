@@ -32,6 +32,33 @@
   var listeners = [];
 
   function fire() { for (var i = 0; i < listeners.length; i++) { try { listeners[i](state()); } catch (e) {} } }
+  /* THE NAME A ROW WEARS WHEN THE ACCOUNT HAS NONE. Mirrors
+     public.arcade_generated_name in supabase/131_arcade_generated_names.sql
+     exactly (the word lists and the arithmetic), so the server files an
+     unnamed account under the same name the page looks for when it marks
+     "(you)". scripts/check-arcade-names.mjs holds the two together. */
+  var ADJ = ['Swift','Clutch','Steady','Bold','Quick','Sharp','Lucky','Calm',
+    'Fearless','Fresh','Veteran','Golden','Iron','Silent','Rapid','Brave',
+    'Crafty','Mighty','Nimble','Gritty','Slick','Sneaky','Smooth','Wild',
+    'Cool','Hot','Prime','Super','Fast','Big','Little','Sly'];
+  var NOUN = ['Shortstop','Closer','Slugger','Pitcher','Catcher','Rookie','Captain','Point Guard',
+    'Center','Forward','Quarterback','Linebacker','Receiver','Kicker','Safety','Tackle',
+    'Coach','Scout','Umpire','Ace','Sixth Man','Leadoff','Anchor','Playmaker',
+    'Rebounder','Shooter','Blocker','Runner','Batter','Fielder','Striker','Keeper'];
+  function generatedName(uid) {
+    var hex = String(uid || '').replace(/-/g, '').slice(0, 7);
+    if (!/^[0-9a-f]{7}$/i.test(hex)) return null;
+    var n = parseInt(hex, 16);
+    return ADJ[n % 32] + ' ' + NOUN[Math.floor(n / 32) % 32] + ' ' + (Math.floor(n / 1024) % 900 + 100);
+  }
+  // The name this account's rows carry on a board: its username, or the
+  // generated one when it has none. Null when signed out.
+  function boardName() {
+    if (name) return name;
+    var uid = session && session.user && session.user.id;
+    return uid ? generatedName(uid) : null;
+  }
+
   function state() {
     return {
       ready: !!sb,
@@ -684,6 +711,8 @@
   }
 
   window.RTG_BOARD = {
+    generatedName: generatedName,
+    boardName: boardName,
     boot: boot,
     state: state,
     onChange: function (fn) { listeners.push(fn); if (sb || offline) fn(state()); },

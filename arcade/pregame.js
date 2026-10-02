@@ -85,6 +85,12 @@
     var out=[];
     for(var i=0;i<list.length;i++){
       if(list[i]===GAME) continue;
+      /* "Still free today" means a game they can still open. It used to list
+         all four whatever had been played, so a player who had done every one
+         was sent round in a circle of walls. An unfinished game still counts:
+         it is waiting for them. */
+      var open = !T || !T.remainingOf || T.remainingOf(list[i])>0 || (T.inProgress && T.inProgress(list[i]));
+      if(!open) continue;
       var m=(window.RTGCalendar && RTGCalendar.get) ? RTGCalendar.get(list[i]) : null;
       out.push({ key:list[i], name:(m&&m.name)||list[i] });
     }
@@ -95,6 +101,13 @@
     return '<div class="rtgpg-alt">'+o.map(function(g){
       return '<a class="rtgpg-alt-a" href="/arcade/'+esc(g.key)+'/">'+esc(g.name)+'</a>';
     }).join('')+'</div>';
+  }
+  // The label and the links together, or one plain sentence when there is
+  // nothing left to send them to.
+  function freeBlock(label, style){
+    var links=freeLinks();
+    if(!links) return '<div class="rtgpg-note2"'+(style||'')+'>You’ve played all four free games today. New ones drop at midnight.</div>';
+    return '<div class="rtgpg-note2"'+(style||'')+'>'+label+'</div>'+links;
   }
   function openSignin(){ if(window.RTGAuthUI && RTGAuthUI.open) RTGAuthUI.open('signin'); }
   function openCard(reason){ if(window.RTGCard && RTGCard.paywall) RTGCard.paywall({ reason: reason || 'upsell' }); }
@@ -244,6 +257,9 @@
     // back, so it is the one time the player has to be TOLD before they start.
     // Landing them silently on the board would burn it on a mis-tap.
     if (hasCard() || (canPlay() && !trialOpen())) { dismissed = true; return; }
+    // A game started today and not finished is not a spent play: the page
+    // restores it, so there is nothing to gate. See RTGTokens.inProgress.
+    if (T && T.inProgress && T.inProgress(GAME)) { dismissed = true; return; }
     injectStyles();
     scrim=document.createElement('div'); scrim.className='rtgpg-scrim';
     var m=meta();
@@ -281,7 +297,9 @@
   function renderBody(){
     if(dismissed || !scrim) return;
     try{ document.body.style.overflow='hidden'; }catch(e){}
-    var m=meta(), name=(m&&m.name)||'This game';
+    /* High Low has no archive, so the calendar has no entry for it and this
+       used to print "This game" on its gate. The share module names all twelve. */
+    var m=meta(), name=(m&&m.name)||(window.RTGShare&&RTGShare.NAMES&&RTGShare.NAMES[GAME])||(GAME==='highlow'?'High Low':'This game');
     var b=$('rtgpgBody'); if(!b) return;
 
     if(hasCard()){
@@ -396,8 +414,7 @@
           '<li><b>›</b><span>The Archive: every past day, still playable</span></li>'+
         '</ul>'+
         '<button class="rtgpg-go buy" id="rtgpgGo" type="button">Get the Arcade Card</button>'+
-        '<div class="rtgpg-note2" style="margin-top:12px">Free today:</div>'+
-        freeLinks()+
+        freeBlock('Free today:', ' style="margin-top:12px"')+
         '<div><button class="rtgpg-ghost" id="rtgpgBack" type="button">Back to the arcade</button></div>';
       $('rtgpgGo').onclick=function(){ openCard('locked'); };
       $('rtgpgBack').onclick=function(){ location.href='/arcade/'; };
@@ -415,8 +432,7 @@
       '<h2 class="rtgpg-nm">'+esc(name)+'</h2>'+
       '<div class="rtgpg-tag">Back tomorrow</div>'+
       '<div class="rtgpg-note">That’s your go at '+esc(name)+' for today. A new one drops at midnight.</div>'+
-      '<div class="rtgpg-note2">Still free today:</div>'+
-      freeLinks()+
+      freeBlock('Still free today:')+
       /* Both wore a ticket, and neither is one. Signing up and inviting are
          both "add a person", which is what the mark draws. */
       (!signedIn()

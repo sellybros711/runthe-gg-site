@@ -767,18 +767,19 @@ window.GA_ID='G-L29P5MRWKE';
 <script src="/arcade/funnel.js?v=12"></script>
 <script src="/arcade/share.js?v=9"></script>
 <script src="/arcade/resultart.js?v=4"></script>
-<script src="/arcade/resultstats.js?v=2"></script>
+<script src="/arcade/resultstats.js?v=3"></script>
+<script src="/arcade/review.js?v=1" defer></script>
 <script src="/arcade/challenge.js?v=4"></script>
 <script src="/arcade/modal-a11y.js?v=1"></script>
-  <script src="/arcade/tokens.js?v=13"></script>
-<script src="/arcade/day.js?v=2"></script>
+  <script src="/arcade/tokens.js?v=14"></script>
+<script src="/arcade/day.js?v=3"></script>
 <script src="/arcade/mode.js?v=7"></script>
 <script src="/arcade/dayroll.js?v=1"></script>
   <script src="/arcade/archive.js?v=2"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-  <script src="/arcade/board.js?v=21"></script>
-<script src="/arcade/leaderboard.js?v=15"></script>
-<script src="/arcade/alltime.js?v=3"></script>
+  <script src="/arcade/board.js?v=22"></script>
+<script src="/arcade/leaderboard.js?v=16"></script>
+<script src="/arcade/alltime.js?v=4"></script>
 <script src="/arcade/auth.js?v=4"></script>
 <script src="/arcade/mycard.js?v=14"></script>
 <script src="/arcade/topbanner.js?v=10"></script>
@@ -789,7 +790,7 @@ window.GA_ID='G-L29P5MRWKE';
 <script src="/arcade/calendar.js?v=15"></script>
 <script src="/arcade/archivecta.js?v=2"></script>
 <script src="/arcade/demo.js?v=4"></script>
-<script src="/arcade/pregame.js?v=26"></script>
+<script src="/arcade/pregame.js?v=27"></script>
 <script src="/arcade/howto.js?v=24"></script>
   <script>
   (function () {
@@ -1208,6 +1209,7 @@ window.GA_ID='G-L29P5MRWKE';
       // charge one play-token the first time this attempt truly begins (first tile placement/move)
       if (!charged) { if (ARCHIVE) { charged = true; attemptFirst = false; } else { var r = (window.RTGTokens ? RTGTokens.startAttempt(GAME) : { ok: true, first: true }); charged = true; attemptFirst = !!(r && r.first); } }
       started = true; startTs = Date.now();
+      if (window.RTGReview) RTGReview.start(GAME);
       tick = setInterval(updateTimer, 250);
       updateTimer();
       resumeSave();   // protect the just-charged ranked attempt from an immediate refresh
@@ -1349,6 +1351,7 @@ window.GA_ID='G-L29P5MRWKE';
       if (window.RTGSound) RTGSound.wrong();
       var close = oneAway(ids);
       lastMissSet = ids.slice().sort().join(',');   // block re-submitting the identical four
+      if (window.RTGReview) RTGReview.add(GAME, { q: 'A miss', you: ids.map(function (id) { return byId[id] ? byId[id].name : ''; }).join(', '), answer: '', ok: false, note: close ? 'One away' : '' });
       feedback(close ? 'One away. 3 of these 4 belong together.' : 'Nope. Swap a name and try again. (−1 guess)', close ? 'close' : 'miss');
       shakeSelected();
       popDot(mistakes - 1);
@@ -1366,8 +1369,17 @@ window.GA_ID='G-L29P5MRWKE';
     function finish(won) { if(window.RTGArchive&&RTGArchive.markDone)RTGArchive.markDone('match', DATE);
       if (done) return;
       done = true; if (tick) { clearInterval(tick); tick = null; }
+      if (!ARCHIVE && window.RTGTokens && RTGTokens.complete) RTGTokens.complete(GAME);
       resumeClear();   // attempt is over - nothing left to resume
       var finalTime = elapsedSec();
+      if (window.RTGReview) {
+        var rvPrev = RTGReview.read(GAME), rvMiss = rvPrev ? rvPrev.rows.filter(function (r) { return r.ok === false && r.q === 'A miss'; }) : [];
+        RTGReview.set(GAME, day.lanes.map(function (l) {
+          var mine = usedCat(l.id);
+          return { q: l.name, you: mine ? 'Found it' : '', answer: day.solution[l.id].map(function (id) { return byId[id] ? byId[id].name : ''; }).join(', '),
+                   ok: mine, note: mine ? '' : 'Not found' };
+        }).concat(rvMiss));
+      }
 
       if (!won) autoSolveReveal();
 
@@ -1981,7 +1993,7 @@ window.GA_ID='G-L29P5MRWKE';
           if (!rows.length) {
             samp.innerHTML = '<div class="lb-samplab">Today’s board</div><div class="note" style="margin:2px 0 0">Nobody’s posted a time yet today. Be the first.</div>';
           } else {
-            var me = (RTG_BOARD.state().name || '').toLowerCase(), h = '<div class="lb-samplab">Today’s fastest</div>';
+            var me = ((RTG_BOARD.boardName && RTG_BOARD.boardName()) || RTG_BOARD.state().name || '').toLowerCase(), h = '<div class="lb-samplab">Today’s fastest</div>';
             for (var i = 0; i < rows.length; i++) {
               var r = rows[i], nm = r.display_name || 'Player', mine = me && nm.toLowerCase() === me;
               h += '<div class="row' + (mine ? ' you' : '') + '"><span class="rk">' + (i + 1) + '</span><span class="who">' + escapeHtml(nm) + '</span><span class="tm">' + RTG_BOARD.fmtTime(r.base_seconds) + '</span></div>';
