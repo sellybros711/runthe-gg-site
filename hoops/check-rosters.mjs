@@ -54,6 +54,7 @@ const ids = {};
 for (const c of clubs) for (const m of RO.clubs[c]) (ids[m.i] = ids[m.i] || []).push(c);
 const twice = Object.keys(ids).filter((i) => ids[i].length > 1);
 ok(twice.length === 0, `nobody is on two rosters (${twice.slice(0, 3).join(', ') || 'none'})`);
+ok(!(RO.twice > 6), `a handful at most were on two club pages and kept on one (${RO.twice || 0})`);
 const known = Object.keys(ids).filter((i) => ROWS.some((r) => r.i === i && r.s >= latest - 1)).length;
 ok(known / Object.keys(ids).length > 0.6, `most of the league played last season and joins the data (${known} of ${Object.keys(ids).length})`);
 

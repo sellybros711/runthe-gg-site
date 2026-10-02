@@ -104,7 +104,18 @@ async function main() {
     console.error('A real NBA roster carries 13 to 18. Nothing was written.');
     process.exit(1);
   }
-  const out = { season, clubs, coaches };
+  /* ONE CLUB A MAN. A season page lists everybody who has been on the club
+     this season, so a man moved in camp turns up on two pages, and nothing on
+     either says which is current. He is kept on the first and the clash is
+     recorded, which check-rosters holds to a handful: dozens would mean the
+     pages are listing last season's men. */
+  const seen = {}, twice = [];
+  for (const c of CLUBS) clubs[c] = clubs[c].filter((m) => {
+    if (seen[m.i]) { twice.push(m.n + ' (' + seen[m.i] + ', ' + c + ')'); return false; }
+    seen[m.i] = c; return true;
+  });
+  if (twice.length) console.log('\nOn two pages, kept on the first: ' + twice.join('; '));
+  const out = { season, clubs, coaches, twice: twice.length };
   fs.writeFileSync(OUT, JSON.stringify(out) + '\n');
   const n = Object.values(clubs).reduce((s, l) => s + l.length, 0);
   console.log(`\nWrote ${path.relative(process.cwd(), OUT)}: ${n} players on 30 clubs for ${season - 1}-${String(season).slice(2)}.`);
