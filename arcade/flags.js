@@ -42,7 +42,14 @@
     broadcats: { since: null, pct: 0, daily: true },
     // The dense mini crossword (every letter crossed) in place of the sparse
     // layout.
-    densecw:   { since: null, pct: 0, daily: true }
+    densecw:   { since: null, pct: 0, daily: true },
+    // Phase 3: a guest's finished run goes on the daily board under a
+    // generated name, through an anonymous session (board.js). Needs
+    // supabase/132_arcade_guest_board.sql and "Allow anonymous sign-ins" in the
+    // Supabase dashboard; without either it quietly keeps the run local. It
+    // changes who is on the board, not what the puzzle is, so a percentage is
+    // safe here.
+    guestboard: { since: null, pct: 0, daily: false }
   };
 
   var KEY = 'rtg:flags';

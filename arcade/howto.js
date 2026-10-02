@@ -1,8 +1,8 @@
 /* Run The Arcade - shared "How to play" helper.
    Usage: <script src="/arcade/howto.js"></script> then RTGHowto.init('table').
    Injects a "?" topbar button + a small modal with per-game bullets.
-   First-ever visit auto-opens the modal once (localStorage 'rtg:howto:<game>'),
-   unless the page booted with a result modal already showing (locked state). */
+   It never opens by itself: the board's one line of instruction does that
+   job, and the ? is there for anything more. */
 (function(){
   'use strict';
 
@@ -103,6 +103,8 @@
       '.rtgHowto-list{margin:0;padding:0 0 0 18px;text-align:left;color:var(--mut);font-size:13px;line-height:1.55;}' +
       '.rtgHowto-list li{margin:0 0 8px;}' +
       '.rtgHowto-list li:last-child{margin-bottom:0;}' +
+      '.rtgHowto-set{display:flex;gap:8px;margin:0 0 14px;}' +
+      '.rtgHowto-set button{flex:1 1 0;min-height:44px;appearance:none;border-radius:11px;border:1px solid var(--line2);background:var(--card2,var(--card));color:var(--ink);font-family:var(--f,inherit);font-weight:800;font-size:13px;cursor:pointer;}' +
       '.rtgHowto-ok{display:block;width:100%;appearance:none;border:0;border-radius:11px;padding:13px;min-height:46px;background:var(--brand,#FF8A3D);color:var(--onAccent,#160B02);font-family:var(--f,inherit);font-weight:800;font-size:13px;cursor:pointer;}';
     // Pages without a --hero display font (e.g. the crossword) fall back to the
     // body font - bump the title weight there so it still reads as a heading.
@@ -201,6 +203,22 @@
       demo = { host: stagewrap, handle: null };
     }
     card.appendChild(rules);
+    /* Sound and theme live here as well as in the header, because on a phone
+       the header is one row (gamehead.js) and they are the two controls that
+       left it. Each button presses the page's own control, so there is one
+       place that owns the setting. */
+    var set = document.createElement('div');
+    set.className = 'rtgHowto-set';
+    var sndOrig = document.querySelector('[data-sound-toggle]');
+    var thmOrig = document.getElementById('themeBtn');
+    var sndB = null, thmB = null;
+    function paintSet(){
+      if (sndB) sndB.textContent = 'Sound: ' + (sndOrig.classList.contains('snd-off') ? 'off' : 'on');
+      if (thmB) thmB.textContent = 'Theme: ' + (document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark');
+    }
+    if (sndOrig) { sndB = document.createElement('button'); sndB.type = 'button'; sndB.addEventListener('click', function(){ sndOrig.click(); setTimeout(paintSet, 0); }); set.appendChild(sndB); }
+    if (thmOrig) { thmB = document.createElement('button'); thmB.type = 'button'; thmB.addEventListener('click', function(){ thmOrig.click(); setTimeout(paintSet, 0); }); set.appendChild(thmB); }
+    if (sndB || thmB) card.appendChild(set);
     card.appendChild(ok);
     scrim.appendChild(card);
     document.body.appendChild(scrim);
@@ -225,6 +243,7 @@
       } catch (e) { return null; }
     }
     function open(){
+      if (typeof paintSet === 'function') paintSet();
       scrim.classList.add('on');
       if (demo && !demo.handle) demo.handle = RTGDemo.mount(demo.host, key, accent());
     }
@@ -256,30 +275,10 @@
       else topbar.appendChild(btn);
     }
 
-    // ---- auto-open on first-ever visit ----------------------------------
-    // Wait a beat so the game's boot logic (which may reveal a result modal
-    // for a locked/finished day, typically after a ~300ms timeout) has run.
-    // If any game scrim is showing we skip the auto-open and leave the flag
-    // unset, so the intro still shows on the next fresh visit.
-    /* On a first visit, open THIS. It used to hand off to a tour that pointed
-       at the league switcher and the score box, which answers "what is this
-       control" for somebody who does not yet know what the game is. The demo
-       answers the earlier question by playing a round, and once you have seen
-       one the controls explain themselves.
-       Still waits for the pregame overlay and any result modal to be gone:
-       opening onto a screen they cannot see would be worse than saying
-       nothing. */
-    if(!seen()){
-      var tries = 0;
-      var wait = setInterval(function(){
-        if (++tries > 40) { clearInterval(wait); return; }              // ~12s, then give up
-        if (document.querySelector('.scrim:not(.hidden)')) return;      // a result is showing
-        if (document.querySelector('.rtgpg-scrim:not([hidden])')) return; // pregame is showing
-        clearInterval(wait);
-        markSeen();
-        open();
-      }, 300);
-    }
+    /* NO AUTO-OPEN. A first visit goes straight into a playable game: the
+       board carries one line of instruction and the ? holds the rest (the
+       demo, the scoring and the rules). The sheet used to open on its own the
+       first time, in front of the board somebody had just tapped into. */
   }
 
   window.RTGHowto = { init: init };

@@ -193,6 +193,7 @@
   .actions{margin-top:14px;}
   .checkbtn{width:100%; appearance:none; border:0; background:var(--pink); color:#20101a; font-weight:900; font-size:16px; border-radius:13px; padding:15px; min-height:52px; cursor:pointer; box-shadow:var(--shadow);}
   .checkbtn:hover{filter:brightness(1.06);} .checkbtn:disabled{background:var(--card2); color:var(--mut); cursor:default;}
+  .axis .axmid{display:none;}   /* shown on a phone, where the up and down arrows are hidden (gamehead.js) */
   .hintline{text-align:center; font-size:11.5px; color:var(--mut); margin:12px 0 2px; font-weight:700;}
   /* big, blind first-try feedback pinned above the lineup */
   .rkfb{display:none; text-align:center; margin:11px 0 3px; padding:15px 16px 13px; border-radius:12px;
@@ -393,7 +394,7 @@ window.GA_ID='G-L29P5MRWKE';
   <div class="lead"><span class="k" id="axisLabel">Today’s ranking</span><span class="v" id="prompt">Rank these five by a career stat. <b>Most</b> at the top.</span></div>
 
   <div class="playcol">
-    <div class="axis"><span id="axTop">↑ Most</span><span id="axBot">Fewest ↓</span></div>
+    <div class="axis"><span id="axTop">↑ Most</span><span class="axmid">Tap two to swap</span><span id="axBot">Fewest ↓</span></div>
     <div class="rkfb" id="rkFeedback" aria-live="polite"></div>
     <div class="rows" id="rows"></div>
 
@@ -477,10 +478,10 @@ window.GA_ID='G-L29P5MRWKE';
 <script src="/arcade/stats.js?v=4"></script>
 <script src="/arcade/teamcolors.js?v=2"></script>
 <script src="/arcade/sfx.js?v=3"></script>
-<script src="/arcade/funnel.js?v=13"></script>
-<script src="/arcade/share.js?v=10"></script>
-<script src="/arcade/result.js?v=1"></script>
-<script src="/arcade/resultart.js?v=4"></script>
+<script src="/arcade/funnel.js?v=14"></script>
+<script src="/arcade/share.js?v=11"></script>
+<script src="/arcade/result.js?v=2"></script>
+<script src="/arcade/resultart.js?v=5"></script>
 <script src="/arcade/resultstats.js?v=3"></script>
 <script src="/arcade/review.js?v=1" defer></script>
 <script src="/arcade/challenge.js?v=4"></script>
@@ -491,21 +492,22 @@ window.GA_ID='G-L29P5MRWKE';
 <script src="/arcade/mode.js?v=7"></script>
 <script src="/arcade/archive.js?v=2"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="/arcade/board.js?v=22"></script>
+<script src="/arcade/board.js?v=23"></script>
 <script src="/arcade/leaderboard.js?v=16"></script>
 <script src="/arcade/alltime.js?v=4"></script>
 <script src="/arcade/auth.js?v=4"></script>
 <script src="/arcade/mycard.js?v=14"></script>
 <script src="/arcade/topbanner.js?v=10"></script>
 <script src="/arcade/auth-ui.js?v=9"></script>
-<script src="/arcade/card.js?v=22"></script>
+<script src="/arcade/card.js?v=23"></script>
 <script src="/arcade/referral.js?v=12"></script>
 <script src="/arcade/gamemarks.js?v=4"></script>
 <script src="/arcade/calendar.js?v=15"></script>
 <script src="/arcade/archivecta.js?v=2"></script>
 <script src="/arcade/demo.js?v=4"></script>
-<script src="/arcade/pregame.js?v=27"></script>
-<script src="/arcade/howto.js?v=24"></script>
+<script src="/arcade/gamehead.js?v=1"></script>
+<script src="/arcade/pregame.js?v=28"></script>
+<script src="/arcade/howto.js?v=25"></script>
 <script>
 (function(){
   'use strict';
@@ -714,7 +716,7 @@ window.GA_ID='G-L29P5MRWKE';
         // lets the page scroll (the ▲▼ arrows still reorder). Mouse/pen drag anywhere.
         if(e.pointerType === 'touch' && !e.target.closest('.rord')) return;
         e.preventDefault();
-        var fromIdx=items.indexOf(item), startY=e.clientY, step=item.offsetHeight+9;
+        var fromIdx=items.indexOf(item), startY=e.clientY, step=rowStep(items, item);
         drag={ items:items, item:item, fromIdx:fromIdx, target:fromIdx };
         try{ item.setPointerCapture(e.pointerId); }catch(_){}
         item.classList.add('dragging'); startIfNeeded();
@@ -777,6 +779,13 @@ window.GA_ID='G-L29P5MRWKE';
     render();
   }
 
+  /* One row's step is the distance between two rows' tops, measured. It was
+     written offsetHeight + 9, and the styled gap is 11 (and smaller again on a
+     phone), so every drag was a little short of where the finger went. */
+  function rowStep(items, item){
+    if(items.length>1){ var d=items[1].getBoundingClientRect().top-items[0].getBoundingClientRect().top; if(d>0) return d; }
+    return item.offsetHeight+9;
+  }
   document.getElementById('checkBtn').addEventListener('click', check);
   // podium when a set clears: the full 1st-to-5th ranking with values, held on
   // screen until the player taps NEXT PUZZLE (no auto-dismiss, no auto-advance).

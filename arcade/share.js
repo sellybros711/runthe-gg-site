@@ -419,11 +419,26 @@
     } catch (e) {}
   }
 
+  /* TEXT FIRST. Every game's Share button lands here, and what it sends is the
+     text card: "Run The Arcade · <game> #<day>", a row of squares that shows
+     the shape of the result and none of the answers, the stat, and the link.
+     Text is what pastes into a group chat, and it is the one form every app
+     shows in full. The poster is still there, one tap further: the card on
+     the end screen offers it as "Share the image" (resultart.js), which is
+     sendImage below.
+     spec: { key, date, grid, stat, statInt } */
+  function send(spec) {
+    remember(spec);
+    try { if (window.gtag) gtag('event', 'arcade_share', { arcade_game: spec.key, share_kind: 'text' }); } catch (e) {}
+    fire(card(spec.key, spec.date, { grid: spec.grid, stat: spec.stat }), spec.statInt);
+  }
+
   // Share the visual card + the text (which still carries the tappable link and
   // the challenge). Web Share with the image on mobile; on desktop, save the
   // PNG and copy the text. Falls back to plain text if anything is unavailable.
   // spec: { key, date, grid, stat, statInt }
-  function send(spec) {
+  function sendImage(spec) {
+    try { if (window.gtag) gtag('event', 'arcade_share', { arcade_game: spec.key, share_kind: 'image' }); } catch (e) {}
     remember(spec);
     var text = card(spec.key, spec.date, { grid: spec.grid, stat: spec.stat });
     try { window.RTGShareStat = (spec.statInt == null || isNaN(spec.statInt)) ? null : spec.statInt; } catch (e) {}
@@ -498,7 +513,7 @@
 
   window.RTGShare = {
     NAMES: NAMES, name: name, url: url, puzzleNo: puzzleNo,
-    header: header, card: card, fire: fire, send: send, draw: draw, note: note,
+    header: header, card: card, fire: fire, send: send, sendImage: sendImage, draw: draw, note: note,
     remember: remember, recall: recall, preview: preview, matchCount: matchCount
   };
 })();

@@ -431,6 +431,7 @@
   .tile .status{position:absolute; top:11px; right:12px; z-index:2; font-size:9.5px; font-weight:900; letter-spacing:.08em; text-transform:uppercase;
     padding:4px 9px; border-radius:999px; line-height:1; border:1.5px solid color-mix(in srgb, var(--ink) 30%, transparent); color:var(--ink); background:color-mix(in srgb,var(--card) 55%, transparent);}
   .tile .status.ready{border-color:color-mix(in srgb, var(--ink) 32%, transparent); color:var(--ink);}
+  .tile .status.prog{border-color:var(--gold); color:var(--goldT,var(--gold)); background:color-mix(in srgb,var(--card) 78%, transparent);}
   .tile .status.done{border-color:var(--green); color:var(--greenT); background:color-mix(in srgb,var(--card) 78%, transparent);}
   /* The price of a tile, said once, in the corner every other state already
      uses. Filled rather than outlined, because these two are labels for what
@@ -684,7 +685,7 @@
   .top[hidden]{display:none;}
   .wrap{padding-top:calc(18px + env(safe-area-inset-top,0));}
 
-  /* kicker, then the title across the whole width, then the tour link and
+  /* kicker, then the title across the whole width, then the one-line hint and
      the day's ring sharing the last row. The ring used to sit beside the
      title and squeezed it onto two lines on every phone. */
   .zone-head{display:grid; grid-template-columns:1fr auto; align-items:center; gap:6px 14px; margin:4px 2px 18px;}
@@ -698,12 +699,9 @@
   .zone-head .dayd:empty::before{content:"\00a0";}
   .zone-head .dprog{margin:4px 0 0; padding:6px 12px 6px 7px; border-radius:999px;
     background:var(--card); border:1px solid var(--line2);}
-  /* the tour is a quiet link under the date, not a second button competing
-     with the day's ring for the same row */
-  .zone-head .rtgtour-open{grid-column:1; grid-row:3; justify-self:start; min-width:0; margin:4px 0 0 !important;
-    border:0 !important; background:transparent !important; padding:4px 0 !important; box-shadow:none !important;
-    font-size:12.5px !important; text-align:left; white-space:normal; color:var(--mut) !important;}
-  .zone-head .rtgtour-open:hover{color:var(--ink) !important;}
+  /* One line where the six-step tour used to start. The tiles say the rest. */
+  .zone-head .zhint{grid-column:1; grid-row:3; justify-self:start; min-width:0; margin:4px 0 0;
+    font-size:13px; font-weight:700; color:var(--mut);}
 
   .tiles{gap:14px;}
   .tsec{margin:10px 0 -2px;}
@@ -821,6 +819,7 @@ window.GA_ID='G-L29P5MRWKE';
           </span>
           <span class="day">Today's Games<span class="dayd" id="dayDate"></span></span>
           <span class="dprog" id="dprog"><span class="dring" id="dring" aria-hidden="true"></span><span class="dstreak" id="dstreak" hidden></span><span class="pips"><span class="pip" id="pipT"></span><span class="pip" id="pipM"></span><span class="pip" id="pipR"></span><span class="pip" id="pipO"></span><span class="pip" id="pipK"></span><span class="pip" id="pipA"></span><span class="pip" id="pipG"></span><span class="pip" id="pipC"></span><span class="pip" id="pipS"></span><span class="pip" id="pipL"></span><span class="pip" id="pipN"></span><span class="pip" id="pipH"></span></span><span id="dprogT">0 / 9 played</span></span>
+          <span class="zhint">Tap a game to play. Four are free every day.</span>
         </div>
 
         <div class="tiles">
@@ -1145,49 +1144,15 @@ window.GA_ID='G-L29P5MRWKE';
 <script src="/arcade/day.js?v=3"></script>
 <script src="/arcade/dayroll.js?v=1"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="/arcade/board.js?v=22"></script>
+<script src="/arcade/board.js?v=23"></script>
 <script src="/arcade/auth.js?v=4"></script>
 <script src="/arcade/mycard.js?v=14"></script>
 <script src="/arcade/topbanner.js?v=10"></script>
 <script src="/arcade/auth-ui.js?v=9"></script>
-<script src="/arcade/card.js?v=22"></script>
+<script src="/arcade/card.js?v=23"></script>
 <script src="/arcade/referral.js?v=12"></script>
 <script src="/arcade/nav.js?v=3"></script>
 <script src="/arcade/calendar.js?v=15"></script>
-<script src="/arcade/tour.js?v=1"></script>
-<script src="/arcade/tourdata.js?v=6"></script>
-<script>
-/* THE FIRST NINETY SECONDS.
-   Ten tiles with no explanation is the single biggest thing standing between
-   someone arriving and someone playing: it does not say what the place is,
-   what a streak is for, or which one to open. The walkthrough points at the
-   real tiles and answers those in order, and it stays available afterwards
-   because plenty of people skip it and come back wanting it. */
-(function () {
-  function startTour(force){
-    if (!window.RTGTour || !window.RTGTourData) return;
-    if (force) RTGTour.replay('hub', RTGTourData.HUB);
-    else RTGTour.once('hub', RTGTourData.HUB);
-  }
-  function mountButton(){
-    if (!window.RTGTour) return;
-    var head = document.querySelector('.zone-head');
-    if (!head || document.getElementById('tourOpen')) return;
-    var b = RTGTour.button('New here? Show me around');
-    b.id = 'tourOpen';
-    b.style.cssText = 'margin:10px auto 0; display:flex;';
-    b.addEventListener('click', function(){ startTour(true); });
-    head.appendChild(b);
-  }
-  function go(){
-    mountButton();
-    // let the tiles finish painting so the spotlight lands on a real rectangle
-    setTimeout(function(){ startTour(false); }, 650);
-  }
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', go);
-  else go();
-})();
-</script>
 <script>
 (function () {
   var LS = window.localStorage;
@@ -1374,7 +1339,11 @@ window.GA_ID='G-L29P5MRWKE';
         keys.forEach(function(k,i){
           var el=document.getElementById(TILE[k]); if(!el) return;
           el.style.order = String(ord++);
-          var lock = !!(TOK.cardOnly && TOK.cardOnly(k));
+          /* A card game whose free look was started and not finished is still
+             this player's to finish (pregame.js lets it through), so it is not
+             drawn as locked while it is in progress. */
+          var going = !!(TOK.inProgress && TOK.inProgress(k));
+          var lock = !going && !!(TOK.cardOnly && TOK.cardOnly(k));
           el.classList.toggle('locked', lock);
           var play = el.querySelector('.play');
           if(lock && play) play.innerHTML = LOCK+'ARCADE CARD';
@@ -1384,6 +1353,8 @@ window.GA_ID='G-L29P5MRWKE';
           // runs after the first paint, so re-check the tile rather than the
           // chip's own class.
           if(el.classList.contains('solved')) return;
+          if(going){ st.className='status prog'; st.textContent='In progress';
+            if(play && !el.classList.contains('locked')) play.innerHTML='RESUME <span class="arw">→</span>'; return; }
           var tryFree = !lock && !member && !!(TOK.trialOffer && TOK.trialOffer(k));
           if(lock){
             st.className='status members';
@@ -1572,6 +1543,7 @@ window.GA_ID='G-L29P5MRWKE';
   // Pro sees PLAY AGAIN (practice); free sees ✓ DONE until tomorrow.
   function triesLeft(key) { return TOK ? TOK.triesLeft(key) : 1; }
   function hasCard() { return !!(TOK && TOK.hasCard && TOK.hasCard()); }
+  function started(key) { try { return !!(TOK && TOK.inProgress && TOK.inProgress(key)); } catch (e) { return false; } }
   var ARW = ' <span class="arw">→</span>';
   var CAL_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg>';
   var TROPHY_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 4h12v4a6 6 0 0 1-12 0zM6 6H3v2a3 3 0 0 0 3 3M18 6h3v2a3 3 0 0 1-3 3M9 20h6M12 15v5"/></svg>';
@@ -1586,6 +1558,12 @@ window.GA_ID='G-L29P5MRWKE';
       card.classList.add('solved');
       st.className = 'status done'; st.textContent = statusText || 'Solved';
       document.getElementById(pipId).classList.add('done');
+    } else if (started(key)) {
+      /* STARTED AND NOT FINISHED. The game page restores it (tokens.js
+         inProgress), so the tile says so and the pill says RESUME rather than
+         PLAY, which would read as a fresh start of a board already begun. */
+      card.classList.add('inprog');
+      st.className = 'status prog'; st.textContent = 'In progress';
     } else {
       card.classList.add('unplayed');
       st.className = 'status ready';
@@ -1612,6 +1590,8 @@ window.GA_ID='G-L29P5MRWKE';
       play.classList.add('hollow');
       play.innerHTML = TICK_SVG + '<b class="pd">PLAYED</b><span class="vr">View result</span>';
       card.classList.add('recap'); card.setAttribute('data-recap', key);
+    } else if (!done && started(key)) {
+      play.innerHTML = 'RESUME' + ARW;
     } else if (!done) {
       // Not played yet, whoever you are: PLAY. What the play COSTS is the
       // badge's job in the corner, which is where free, members only and the
@@ -1634,7 +1614,7 @@ window.GA_ID='G-L29P5MRWKE';
   mark('cardSpg',   'pipS', 'stS', 'playS', sDone, (sg.last && sg.last.score != null) ? ('Solved · ' + sg.last.score + (sg.last.score===1?' pt':' pts')) : 'Solved', 'sportegories');
   // High Low is endless, so "done" is simply having run it today.
   var hs = {}; try { hs = JSON.parse(g('rtg:highlow:v1', '{}')) || {}; } catch (e) {}
-  var hDone = false; try { hDone = !!(TOK && TOK.playsOf && TOK.playsOf('highlow') > 0); } catch (e) {}
+  var hDone = false; try { hDone = !!(TOK && TOK.playsOf && TOK.playsOf('highlow') > 0) && !started('highlow'); } catch (e) {}
   mark('cardRoll',  'pipL', 'stL', 'playL', lDone, (rc.last && rc.last.score != null) ? ('Named ' + rc.last.score + '/' + rc.last.total) : 'Played', 'rollcall');
   mark('cardChain', 'pipN', 'stN', 'playN', nDone, (ch.last && ch.last.solved) ? 'Chained' : 'Played', 'chain');
   mark('cardHigh',  'pipH', 'stH', 'playH', hDone, runText(hs), 'highlow');
