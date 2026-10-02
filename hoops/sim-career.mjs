@@ -53,12 +53,9 @@ const clone = (x) => JSON.parse(JSON.stringify(x));
 /* Events that are allowed to come back in one career, by design. Anything
    else dealt twice is a repeat. The list shrinks as Phase C gives the
    recurring events memory and cooldowns. */
-const RECURS = new Set(['training', 'hs_summer', 'injury', 'clutch', 'amclutch', 'moment', 'presser', 'fa', 'extension', 'workout', 'nooffer', 'offers',
-  'night_out', 'slump', 'hot_streak', 'film_session', 'charity', 'family_money', 'local_ad', 'buzzer', 'online_beef', 'ref_heat', 'rival_trash',
-  'heckler', 'body_care', 'injury_tweak', 'investment', 'teammate_fight', 'teammate_touches', 'trade_rumor', 'media_day', 'load_mgmt', 'coach_bench',
-  'stuck', 'double_team', 'hot_streak', 'contract_year', 'rehab_summer', 'tank', 'coach_fired', 'podcast', 'docuseries', 'christmas', 'shoe_deal',
-  'playoff_guarantee', 'meet_someone', 'propose', 'baby', 'grades', 'mixtape', 'rival_school', 'class_skip', 'rivalry_col', 'nba_scouts', 'nil_deal',
-  'booster', 'freshman_wall', 'summer_league', 'coach_son', 'allstar', 'homecoming', 'retire', 'vet_mentor', 'agent_pitch', 'street_agent']);
+const SYSTEM = new Set(['training', 'hs_summer', 'injury', 'clutch', 'amclutch', 'moment', 'presser', 'fa', 'extension', 'workout', 'nooffer', 'offers',
+  'allstar', 'retire', 'declare', 'portal', 'commit', 'signing']);
+const RECURS = { has: (id) => SYSTEM.has(id) || C.recurs(id) };
 
 function policyPick(pol, L, c, r) {
   const n = c.options.length;
@@ -91,11 +88,15 @@ function run(seed, start, pol, picks) {
       seen[c.id] = (seen[c.id] || 0) + 1;
       const t = textOf(c);
       if (JUNK.test(t)) problems.push('card ' + c.id + ': ' + t.match(JUNK)[0]);
+      for (const x of C.continuity(L, c)) problems.push('continuity ' + x);
       const i = picks ? (picks[k++] || 0) % c.options.length : policyPick(pol, L, c, r);
       C.choose(L, i);
     } else C.step(L);
   }
   if (!L.retired) problems.push('never retired');
+  for (const x of C.continuityLog(L)) problems.push('continuity ' + x);
+  /* A recurring event stops at its cap. */
+  for (const id in seen) { const r = C.STORY_RECURS[id]; if (r && seen[id] > r[1]) problems.push('over cap ' + id + ' ' + seen[id]); }
   for (const e of L.log) {
     if (JUNK.test(e.t)) problems.push('log ' + e.y + ': ' + e.t.slice(0, 80));
     /* A line about a draft names that summer's draft. */

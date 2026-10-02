@@ -620,7 +620,7 @@ const BASKETBALL_ONLY = {
   hot_streak: 'the coach runs more plays for you',
   coach_fired: 'a coaching change: hirings and firings',
   teammate_fight: 'the coach runs practice; the teammate is invented',
-  summer_league: 'a pro-am game against a real pro',
+  playoff_eve: 'the coach hands out a defensive assignment',
 };
 const CAST = {
   beat: 'Kelvin Shaw', critic: 'Bram Talbot', fan: 'Big Lou Petrakis', trainer: 'Nadia Ferro',
@@ -775,6 +775,7 @@ function newLife(opts) {
     season: null, seasonsDone: 0, retired: false, final: null, steps: 0,
     mem: {}, people: {}, traits: rollTraits(seed), opt: { legend: o.legend !== false, moments: o.moments !== false },
   };
+  if (o.story !== false) L.opt.story = STORY_VERSION;
   L.year = L.league.latest + 1;
   const rng = E.createSeededRNG(E.hashSeed(seed + ':create'));
   if (L.num == null) L.num = Math.floor(rng() * 100);
@@ -1969,6 +1970,19 @@ function choosePresser(L, card, opt, rng) {
   const lines = TONE_SAY[opt.tone] || TONE_SAY.humble;
   return { text: lines[rng() < 0.5 ? 0 : 1], tone: 'good' };
 }
+/* Text that states a fact reads the fact. A bench player's hot streak is not
+   thirty a night, and a proposal says how long it has really been. */
+const WORDNUM = ['No', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten'];
+const wordNum = (n) => WORDNUM[n] || String(n);
+function streakLine(L) {
+  const ppg = L.season && L.season.gp ? perGame(L.season).pts : 10;
+  const bar = Math.max(10, Math.round((ppg + 8) / 5) * 5);
+  return bar + ' or more three straight nights.';
+}
+function yearsWith(L) {
+  const n = Math.max(1, L.year - (lifeOf(L).since || L.year));
+  return wordNum(n) + (n === 1 ? ' year' : ' years');
+}
 const EVENTS = {
   vet_mentor: {
     phases: ['early'], once: true, req: { seasons: [0, 0] }, weight: () => 4,
@@ -2003,7 +2017,7 @@ const EVENTS = {
   hot_streak: {
     phases: ['early', 'mid', 'late'], req: { minutes: [22, null] }, weight: () => 3,
     title: 'You are on fire.',
-    text: () => 'Thirty points three straight nights. The cameras find your locker.',
+    text: (L) => streakLine(L) + ' The cameras find your locker.',
     options: [
       { label: 'Tell them you are the best player here', run: (L, r) => { bump(L, { fame: 8, trust: -4 }); if (ok(r, 0.5)) { bump(L, { usage: 0.02 }); return '{coach} runs more plays for you. The bigs notice.'; } bump(L, { morale: -3 }); return 'It plays on every channel. {tm} and {tm2} stop passing.'; } },
       { label: 'Credit your teammates', run: (L) => { bump(L, { trust: 5, morale: 4, win: 0.4 }); return 'The locker room loves it. The ball moves a little faster.'; } },
@@ -2013,11 +2027,11 @@ const EVENTS = {
   slump: {
     phases: ['early', 'mid', 'late'], req: { minutes: [14, null] }, weight: () => 3,
     title: 'You cannot buy a bucket.',
-    text: () => 'Twenty-six percent from three for a month. The fans have opinions.',
+    text: () => 'A month of bricks. The fans have opinions.',
     options: [
       { label: 'Midnight shooting', run: (L, r) => { bump(L, { health: -4 }); if (ok(r, 0.7)) { bump(L, { sho: 2, morale: 4 }); return 'Five hundred makes a night. It comes back.'; } bump(L, { morale: -4 }); return 'Tired legs, flat shots. It gets worse before it gets better.'; } },
       { label: 'Get to the rim instead', run: (L) => { bump(L, { fin: 1, usage: -0.01, perf: 0.4 }); return 'Layups and free throws until the jumper wakes up.'; } },
-      { label: 'Keep shooting', run: (L, r) => { if (ok(r, 0.5)) { bump(L, { morale: 6, fame: 2 }); return 'Shooters shoot. It breaks open in Denver.'; } bump(L, { morale: -6, trust: -3 }); return 'It does not break. {coach} shortens your leash.'; } },
+      { label: 'Keep shooting', run: (L, r) => { if (ok(r, 0.5)) { bump(L, { morale: 6, fame: 2 }); return 'Shooters shoot. It breaks open on the road.'; } bump(L, { morale: -6, trust: -3 }); return 'It does not break. {coach} shortens your leash.'; } },
     ],
   },
   coach_bench: {
@@ -2115,7 +2129,7 @@ const EVENTS = {
     text: () => 'Online. In front of everybody. You play him Friday.',
     options: [
       { label: 'Clap back', run: (L, r) => { bump(L, { fame: 6 }); if (ok(r, 0.5)) { bump(L, { morale: 6 }); return 'Your reply is funnier. The internet picks a side. Yours.'; } bump(L, { morale: -5 }); return 'He wins the thread. It follows you for a week.'; } },
-      { label: 'Answer Friday', run: (L, r) => { if (ok(r, 0.35 + (ovrOf(L) - 70) * 0.012)) { bump(L, { fame: 8, morale: 8, perf: 0.3 }); return 'Thirty-eight on him. You never say a word.'; } bump(L, { morale: -6 }); return 'He gets the better of you. Now it is a thing.'; } },
+      { label: 'Answer Friday', run: (L, r) => { if (ok(r, 0.35 + (ovrOf(L) - 70) * 0.012)) { bump(L, { fame: 8, morale: 8, perf: 0.3 }); return 'You torch him. You never say a word.'; } bump(L, { morale: -6 }); return 'He gets the better of you. Now it is a thing.'; } },
       { label: 'Ignore it', run: (L) => { bump(L, { trust: 2 }); return '{tvet} respects it.'; } },
     ],
   },
@@ -2260,7 +2274,7 @@ const EVENTS = {
     ],
   },
   olympics: {
-    phases: ['off'], when: (L) => (L.year + 1) % 4 === 0 && ovrOf(L) >= 82, weight: () => 9,
+    phases: ['off'], when: (L) => (storyOn(L) ? L.year % 4 === 0 : (L.year + 1) % 4 === 0) && ovrOf(L) >= 82, weight: () => 9,
     title: 'Team USA calls.',
     text: () => 'Twelve spots. One is yours if you want it.',
     options: [
@@ -2301,7 +2315,7 @@ const EVENTS = {
     title: 'Your draft-class rival is talking.',
     text: (L) => L.rival.name + ' says you were the wrong pick. On a podcast. With video.',
     options: [
-      { label: 'Answer on the court', run: (L, r) => { if (ok(r, 0.45 + (ovrOf(L) - L.rival.ovr) * 0.04)) { bump(L, { fame: 7, morale: 6 }); L.flags.rivalWins = (L.flags.rivalWins || 0) + 1; return 'You see him in March. You win, and you outscore him by fifteen.'; } bump(L, { morale: -6 }); return 'You see him in March. He gets the better of it, and he says so.'; } },
+      { label: 'Answer on the court', run: (L, r) => { if (ok(r, 0.45 + (ovrOf(L) - L.rival.ovr) * 0.04)) { bump(L, { fame: 7, morale: 6 }); L.flags.rivalWins = (L.flags.rivalWins || 0) + 1; return 'You see him in March. You win and outscore him by fifteen.'; } bump(L, { morale: -6 }); return 'You see him in March. He wins it. He says so, loudly.'; } },
       { label: 'Answer online', run: (L, r) => { bump(L, { fame: 5, trust: -2 }); if (ok(r, 0.5)) return 'Your reply is better than his podcast. The internet agrees.'; bump(L, { morale: -3 }); return 'He has better writers. It goes on for a week.'; } },
       { label: 'Say nothing', run: (L) => { bump(L, { trust: 3 }); return '{tvet} tells you that was the right answer.'; } },
     ],
@@ -2328,7 +2342,7 @@ const EVENTS = {
   propose: {
     phases: ['off', 'pre'], when: (L) => lifeOf(L).rel === 'dating' && L.year - lifeOf(L).since >= 1, weight: () => 3,
     title: 'You have a ring in your pocket.',
-    text: () => 'Two years with {partner}. The jeweler says it is perfect.',
+    text: (L) => yearsWith(L) + ' with {partner}. The jeweler says it is perfect.',
     options: [
       { label: 'Propose', run: (L, r) => { const f = lifeOf(L); if (ok(r, 0.85)) { f.rel = 'engaged'; bump(L, { morale: 10 }); logIt(L, 'Engaged to {partner}.', 'good'); return 'Yes. Before you even finish the question.'; } f.rel = 'single'; bump(L, { morale: -12 }); const nm = say(L, '{partner}'); f.pn = (f.pn || 0) + 1; return nm + ' says they need time. Then they need space.'; } },
       { label: 'Not yet', run: (L) => { bump(L, { morale: -1 }); return 'The ring goes back in the drawer.'; } },
@@ -2348,7 +2362,7 @@ const EVENTS = {
     title: '{partner} wants to talk about kids.',
     text: (L) => lifeOf(L).kids ? 'Another one?' : 'You always said you wanted a big family.',
     options: [
-      { label: 'Start a family', run: (L) => { const f = lifeOf(L); f.kids++; bump(L, { morale: 10, health: -3 }); logIt(L, f.kids === 1 ? 'Became a parent.' : 'Welcomed kid number ' + f.kids + '.', 'good'); return f.kids === 1 ? 'A baby in June. You learn to sleep in two-hour pieces.' : 'Kid number ' + f.kids + '. The house is loud.'; } },
+      { label: 'Start a family', run: (L) => { const f = lifeOf(L); f.kids++; bump(L, { morale: 10, health: -3 }); logIt(L, f.kids === 1 ? 'Became a parent.' : 'Welcomed kid number ' + f.kids + '.', 'good'); return f.kids === 1 ? 'A baby by next summer. You learn to sleep in two-hour pieces.' : 'Kid number ' + f.kids + '. The house is loud.'; } },
       { label: 'After you retire', run: (L) => { bump(L, { morale: -2 }); return 'You agree to wait. Mostly.'; } },
     ],
   },
@@ -2366,7 +2380,7 @@ const EVENTS = {
     title: 'Your hometown club calls.',
     text: (L) => 'The ' + E.teamName(homeClub(L)) + ' want you home. Your mom, {mom}, already said yes.',
     options: [
-      { label: 'Go home', run: (L) => { joinTeam(L, homeClub(L), true); bump(L, { morale: 15, fame: 5 }); L.flags.home = true; return 'They trade for you. {hscoach}, your old high school coach, is at the press conference.'; } },
+      { label: 'Go home', run: (L) => { joinTeam(L, homeClub(L), true); bump(L, { morale: 15, fame: 5 }); L.flags.home = true; return 'They trade for you. Your old coach {hscoach} is at the press conference.'; } },
       { label: 'Stay where you are', run: (L) => { bump(L, { trust: 6, morale: -2 }); return 'Not yet. Maybe at the end.'; } },
     ],
   },
@@ -2434,6 +2448,27 @@ const EVENTS = {
     options: [
       { label: 'Guarantee it', run: (L, r) => { bump(L, { fame: 6 }); if (ok(r, 0.55)) { bump(L, { win: 0.5, morale: 4 }); return 'The room goes quiet. Your teammates love it.'; } bump(L, { morale: -3, trust: -3 }); return 'The other team pins the quote on their wall.'; } },
       { label: 'One game at a time', run: (L) => { bump(L, { trust: 3 }); return 'Boring. Correct.'; } },
+    ],
+  },
+  /* The two April cards of a story career. The regular season is over, so
+     these are about what is left: the playoffs, or the summer. */
+  playoff_eve: {
+    phases: ['late'], req: { story: true }, when: (L) => !!(L.season && L.season.po && !L.season.po.out), weight: 3,
+    title: 'The playoffs start Saturday.',
+    text: () => '{coach} wants you on their best player.',
+    options: [
+      { label: 'Take the assignment', run: (L) => { bump(L, { def: 1, win: 0.3, health: -2 }); remember(L, 'po.stopper', L.year); return 'You fall asleep to their film.'; } },
+      { label: 'Save your legs for scoring', run: (L) => { bump(L, { perf: 0.3, trust: -3 }); return 'He gives the job to {tvet}. He notes who asked.'; } },
+    ],
+  },
+  exit_interview: {
+    phases: ['late'], req: { story: true }, when: (L) => !!(L.season && L.season.po && L.season.po.out), weight: 3,
+    title: 'Exit interview.',
+    text: () => '{gm} has your season on one page. He wants to hear next year.',
+    options: [
+      { label: 'Promise a big summer', run: (L) => { bump(L, { eth: 4, trust: 4 }); remember(L, 'promise.summer', L.year); return 'He writes it down. So do you.'; } },
+      { label: 'Ask for help on the roster', run: (L) => { bump(L, { trust: -2 }); remember(L, 'asked.help', L.year); return 'He says he is working on it. He said that last year.'; } },
+      { label: 'Blame the system', run: (L) => { bump(L, { trust: -8, fame: 2 }); remember(L, 'blamed.system', L.year); return '{beat} has it on the site by lunch.'; } },
     ],
   },
 };
@@ -2689,12 +2724,15 @@ function evOpen(L, ev) {
   if (!storyOn(L)) return true;
   const h = (L.evlog || {})[ev.id];
   if (!h || !h.length) return true;
-  if (ev.cap && h.length >= ev.cap) return false;
-  if (ev.cooldown && L.year - h[h.length - 1] < ev.cooldown) return false;
+  const r = STORY_RECURS[ev.id];
+  const cap = ev.cap || (r ? r[1] : 1), cd = ev.cooldown || (r ? r[0] : 0);
+  if (h.length >= cap) return false;
+  if (cd && L.year - h[h.length - 1] < cd) return false;
   return true;
 }
 function eligible(L, ev, phase, used, once) {
-  if (ev.phases.indexOf(phase) < 0) return false;
+  const ph = storyOn(L) && STORY_PHASES[ev.id] ? STORY_PHASES[ev.id] : ev.phases;
+  if (ph.indexOf(phase) < 0) return false;
   if (used[ev.id]) return false;
   if (ev.once && once[ev.id]) return false;
   if (!evOpen(L, ev)) return false;
@@ -2702,6 +2740,51 @@ function eligible(L, ev, phase, used, once) {
   return !!ev.when(L);
 }
 
+/* THE CALENDAR. Every slot an event can be dealt in is a real moment in a
+   real year, and the card says which. L.year is the year a season ENDS (2027
+   is 2026-27), so camp and December belong to the year before it.
+     pre    after the summer, before the opener        September
+     early  after game 27                               December
+     mid    after game 55, the All-Star break           February
+     late   after game 82, before the playoffs          April
+     off    after the playoffs                          the summer
+   A story career keeps every in-game story out of `late`: by then the
+   regular season is over and only the playoffs are left to change. */
+const SLOT_MONTH = { pre: 'September', early: 'December', mid: 'February', late: 'April', hs: 'January', col: 'December', col_mar: 'March', col_pre: 'October' };
+const SLOT_SUMMER = { off: 1, hs_sum: 1, hs_off: 1, col_off: 1 };
+function calendar(L, slot) {
+  const nba = !isAm(L);
+  const y = nba && (slot === 'pre' || slot === 'early') ? L.year - 1 : L.year;
+  const when = SLOT_SUMMER[slot] ? 'Summer' : (SLOT_MONTH[slot] || 'This season');
+  if (nba) return when + ' ' + y;
+  const a = L.am || {};
+  const yr = a.level === 'col' ? CYEAR[a.cyear] : GRADE[a.grade];
+  return yr ? yr[0].toUpperCase() + yr.slice(1) + ' year · ' + when : when;
+}
+/* Events that list `late` but are about the regular season, and college
+   events that cannot happen in March, are dealt elsewhere on a story career. */
+const STORY_PHASES = {
+  night_out: ['early', 'mid'], hot_streak: ['early', 'mid'], slump: ['early', 'mid'], film_session: ['early', 'mid'],
+  online_beef: ['early', 'mid'], ref_heat: ['early', 'mid'], buzzer: ['early', 'mid'], teammate_touches: ['mid'],
+  heckler: ['mid'], tank: ['mid'], rival_tv: ['mid'],
+  grades: ['hs', 'col', 'col_mar'], class_skip: ['col', 'col_mar'], nba_scouts: ['col', 'col_mar'], investigation: ['col', 'col_mar'],
+  double_team: ['hs', 'col', 'col_mar'], freshman_wall: ['col_mar'], rivalry_col: ['col'],
+};
+/* ON A STORY CAREER AN EVENT HAPPENS ONCE unless it is written to recur. A
+   recurring event waits `cooldown` seasons and stops at `cap`: a slump can
+   come back, a cousin can call again, but not every year and not forever. */
+const STORY_RECURS = {
+  night_out: [2, 3], slump: [2, 3], hot_streak: [2, 3], film_session: [2, 2], buzzer: [2, 3], ref_heat: [3, 2],
+  injury_tweak: [2, 3], trade_rumor: [2, 3], stuck: [2, 2], coach_bench: [3, 2], teammate_touches: [3, 2],
+  media_day: [3, 3], load_mgmt: [2, 3], charity: [3, 3], family_money: [3, 3], local_ad: [3, 2], investment: [3, 3],
+  heckler: [3, 2], online_beef: [3, 2], rival_trash: [3, 2], rival_tv: [3, 2], teammate_fight: [4, 2],
+  contract_year: [2, 5], tank: [3, 2], coach_fired: [3, 2], rehab_summer: [2, 4], christmas: [2, 4],
+  playoff_guarantee: [3, 2], playoff_eve: [3, 4], exit_interview: [3, 4], olympics: [4, 3], superteam: [4, 2],
+  meet_someone: [2, 3], breakup: [3, 2], propose: [2, 2], wedding: [3, 2], baby: [1, 4],
+  grades: [1, 3], rival_school: [1, 3], double_team: [1, 2], mixtape: [1, 2], class_skip: [1, 2], nba_scouts: [1, 3],
+  rivalry_col: [1, 3], summer_league: [1, 2], camp_invite: [1, 2], nil_deal: [1, 4],
+};
+const recurs = (id) => !!STORY_RECURS[id];
 const SUMMERY = { off: 1, pre: 1, hs_sum: 1, hs_off: 1, col_pre: 1, col_off: 1 };
 function queueEvents(L, phase, n, pool) {
   pool = pool || EVENTS;
@@ -2720,11 +2803,54 @@ function queueEvents(L, phase, n, pool) {
     if (ev.queue) ev.queue(L);
     L.pending.push({
       id, kind: 'event', key: phase + ':' + id,
-      eyebrow: SUMMERY[phase] ? 'The summer' : 'This season',
+      eyebrow: storyOn(L) ? calendar(L, phase) : SUMMERY[phase] ? 'The summer' : 'This season',
       title: ev.title, text: ev.text(L),
       options: ev.options.map((o) => ({ label: o.label })),
     });
   }
+}
+
+// ─── continuity ─────────────────────────────────────────────────────────────
+
+/* THE STORY HAS TO HAPPEN IN ORDER. These are the rules a reader would notice
+   broken: a card about a game after the season ended, a partner named while
+   you are single, an Olympics in a year with none, a wedding before an
+   engagement. The simulator runs them over every card of every career and
+   fails on any hit (NARRATIVE.md: continuity scan failures, 0). They read
+   state only and change nothing. */
+const IN_GAME = { court: 1, locker: 1 };
+const PARTNER_EVENTS = { propose: 1, wedding: 1, baby: 1, breakup: 1 };
+function continuity(L, card) {
+  const out = [];
+  const ev = card && (EVENTS[card.id] || AM_EVENTS[card.id]);
+  if (!ev || card.kind !== 'event') return out;
+  const slot = String(card.key || '').split(':')[0];
+  const story = storyOn(L);
+  if (story && (slot === 'late' || slot === 'off' || slot === 'pre') && ev.tags.some((t) => IN_GAME[t]) && card.id !== 'young_star' && card.id !== 'playoff_eve')
+    out.push(card.id + ' is about the regular season and was dealt in ' + slot);
+  if (PARTNER_EVENTS[card.id] && lifeOf(L).rel === 'single') out.push(card.id + ' names a partner while single');
+  if (story && card.id === 'olympics' && L.year % 4 !== 0) out.push('olympics in ' + L.year);
+  if (ev.pool === 'nba' && isAm(L)) out.push(card.id + ' is an NBA card dealt before the NBA');
+  if (ev.pool === 'am' && !isAm(L)) out.push(card.id + ' is a school card dealt in the NBA');
+  if (ev.pool === 'am' && /^col/.test(slot) && L.am && L.am.level !== 'col') out.push(card.id + ' is a college card dealt in high school');
+  if (ev.pool === 'nba' && !L.team && ev.tags.some((t) => IN_GAME[t] || t === 'coach')) out.push(card.id + ' needs a club and there is none');
+  return out;
+}
+/* The order a life is logged in: met, then engaged, then married, and a
+   child only once married. A new person starts the chain again. */
+function continuityLog(L) {
+  const out = [];
+  let y = -Infinity, met = false, engaged = false, married = false;
+  for (const e of L.log) {
+    if (e.y < y) out.push('the log goes back in time at ' + e.y);
+    y = Math.max(y, e.y);
+    if (/^Met /.test(e.t)) { met = true; engaged = false; }
+    else if (/^Engaged to /.test(e.t)) { if (!met) out.push('engaged before meeting anybody'); engaged = true; met = false; }
+    else if (/^Married /.test(e.t)) { if (!engaged) out.push('married without an engagement'); married = true; engaged = false; }
+    else if (/^Became a parent|^Welcomed kid/.test(e.t) && !married) out.push('a child before a wedding');
+  }
+  for (const k in L.mem || {}) if (L.mem[k].y > L.year) out.push('memory ' + k + ' is from the future');
+  return out;
 }
 
 // ─── before the league: high school and college ─────────────────────────────
@@ -3111,6 +3237,19 @@ function hsRegular(L, beats) {
   beats.push({ kind: 'role', text: L.am.hs.name + ': ' + role.label + ', about ' + Math.round(role.min) + ' minutes a night.', tone: '' });
   amInjury(L, 'hs1', beats);
   amGames(L, 13, (r) => norm(r) * 3, 'hs1', beats, false);
+  /* A story career stops at the halfway mark, so what happens in January is
+     dealt in January and can still change February. */
+  if (storyOn(L)) {
+    const pg = perGame(s);
+    beats.push({ kind: 'record', text: 'Halfway: ' + s.w + '-' + s.l + '. You: ' + pg.pts + ' points, ' + pg.reb + ' rebounds.', tone: s.w >= s.l ? 'good' : '' });
+    L.phase = 'hs_mid';
+    queueEvents(L, 'hs', 1 + (rngAt(L, 'n:hs')() < 0.5 ? 1 : 0), AM_EVENTS);
+    return;
+  }
+  hsSecondHalf(L, beats);
+}
+function hsSecondHalf(L, beats) {
+  const s = L.season;
   amInjury(L, 'hs2', beats);
   amGames(L, HS_GAMES - 13, (r) => norm(r) * 3 + 0.5, 'hs2', beats, false);
   s.qual = s.w >= 13;
@@ -3119,7 +3258,7 @@ function hsRegular(L, beats) {
   beats.push({ kind: 'record', text: 'You: ' + pg.pts + ' points, ' + pg.reb + ' rebounds, ' + pg.ast + ' assists.', tone: '' });
   logIt(L, GRADE[L.am.grade][0].toUpperCase() + GRADE[L.am.grade].slice(1) + ' year: ' + s.w + '-' + s.l + ', ' + pg.pts + ' a night.', '');
   L.phase = 'hs_reg';
-  queueEvents(L, 'hs', 1 + (rngAt(L, 'n:hs')() < 0.5 ? 1 : 0), AM_EVENTS);
+  if (!storyOn(L)) queueEvents(L, 'hs', 1 + (rngAt(L, 'n:hs')() < 0.5 ? 1 : 0), AM_EVENTS);
 }
 function hsPlayoffs(L, beats) {
   const s = L.season;
@@ -3152,7 +3291,7 @@ function colConf(L, beats) {
   const pg = perGame(s);
   beats.push({ kind: 'record', text: SCHOOL_BY[L.am.college].conf + ' play: ' + s.conf.w + '-' + s.conf.l + '. ' + s.w + '-' + s.l + ' overall. You: ' + pg.pts + ' a night.', tone: s.conf.w >= s.conf.l ? 'good' : '' });
   L.phase = 'col_mid';
-  queueEvents(L, 'col', 1, AM_EVENTS);
+  queueEvents(L, storyOn(L) ? 'col_mar' : 'col', 1, AM_EVENTS);
 }
 /* The conference tournament, then Selection Sunday, then the awards. */
 function colMarch(L, beats) {
@@ -3564,7 +3703,7 @@ const AM_EVENTS = {
   },
   homecoming: {
     phases: ['hs'], when: () => true, weight: () => 1.5,
-    title: 'Homecoming is the night before the big game.',
+    title: 'Winter formal is the night before the rivalry game.',
     text: () => 'Your friends are going. So is {crush}.',
     options: [
       { label: 'Go', run: (L, r) => { bump(L, { morale: 8 }); if (ok(r, 0.6)) return 'Best night of the year. You still play well.'; bump(L, { health: -4, perf: -0.3 }); return 'Great night. Slow legs the next day.'; } },
@@ -3584,7 +3723,7 @@ const AM_EVENTS = {
   freshman_wall: {
     phases: ['col'], when: (L) => L.am && L.am.cyear === 1, weight: () => 3,
     title: 'You hit the freshman wall.',
-    text: () => 'Thirty games in. Your legs are gone. Practice is harder than high school games were.',
+    text: (L) => (L.season ? L.season.g : 30) + ' games in. Your legs are gone. College practice is harder than high school games.',
     options: [
       { label: 'Extra lifting', run: (L) => { bump(L, { ath: 1, reb: 1, health: -4 }); return 'Sore for a week. Stronger for March.'; } },
       { label: 'Sleep and eat', run: (L) => { bump(L, { health: 8, perf: 0.3 }); return 'Nine hours a night. You feel human again.'; } },
@@ -3636,7 +3775,7 @@ const AM_EVENTS = {
     text: () => 'He has never been on a plane. He wakes up at five.',
     options: [
       { label: 'Start waking up at five too', run: (L) => { bump(L, { eth: 6, health: -2 }); return 'He becomes your rebounder at six every morning.'; } },
-      { label: 'Show him the city', run: (L) => { bump(L, { morale: 6, trust: 2 }); return 'Best friends by October. He gives your speech at your wedding.'; } },
+      { label: 'Show him the city', run: (L) => { bump(L, { morale: 6, trust: 2 }); return 'Best friends by October. He is in your corner for good.'; } },
       { label: 'Ask for a single', run: (L) => { bump(L, { morale: 1, trust: -2 }); return 'Quiet. Lonely.'; } },
     ],
   },
@@ -3656,7 +3795,7 @@ const AM_EVENTS = {
     text: () => 'He calls before the news breaks. He wants you to know first.',
     options: [
       { label: 'Wish him well', run: (L) => { L.m.trust = 50; bump(L, { morale: -3 }); return '{coach} replaces him. He has a different system. You start over.'; } },
-      { label: 'Ask him to put in a word with the {leaveclub}', run: (L) => { L.m.trust = 50; L.am.stock = (L.am.stock || 0) + 0.6; return 'He says you are the best player he has coached. He means it.'; } },
+      { label: 'Ask for a word with the {leaveclub}', run: (L) => { L.m.trust = 50; L.am.stock = (L.am.stock || 0) + 0.6; return 'He says you are the best player he has coached. He means it.'; } },
     ],
   },
   investigation: {
@@ -3673,7 +3812,7 @@ const AM_EVENTS = {
     title: 'A pro-am league wants you this summer.',
     text: () => 'Outdoor court, real pros, a thousand people on the fence.',
     options: [
-      { label: 'Play', run: (L, r) => { bump(L, { health: -3 }); if (ok(r, 0.5)) { bump(L, { fame: 6, iq: 1 }); return 'You drop forty on {opp}. The video is everywhere.'; } bump(L, { iq: 1 }); return 'The pros teach you a lesson. A useful one.'; } },
+      { label: 'Play', run: (L, r) => { bump(L, { health: -3 }); if (ok(r, 0.5)) { bump(L, { fame: 6, iq: 1 }); return 'You drop forty in front of the whole fence. The video is everywhere.'; } bump(L, { iq: 1 }); return 'The pros teach you a lesson. A useful one.'; } },
       { label: 'Rest', run: (L) => { bump(L, { health: 5 }); return 'You watch from the fence.'; } },
     ],
   },
@@ -3979,6 +4118,7 @@ function nextLabel(L) {
     case 'po': return L.season.po.out ? 'Go to the summer' : 'Play the ' + (L.season.po.round === -1 ? 'play-in' : ROUNDS[L.season.po.round]);
     case 'off': return 'Next season';
     case 'hs_pre': return 'Play your ' + GRADE[L.am.grade] + ' season';
+    case 'hs_mid': return 'Play the second half';
     case 'hs_reg': return L.season && L.season.qual ? 'Play the state playoffs' : 'Go to the summer';
     case 'hs_po': return 'Keep playing';
     case 'hs_off': return L.am.grade < 12 ? 'Next season' : L.am.route === 'intl' || L.am.route === 'gl' ? 'Turn pro' : 'Go to college';
@@ -4072,6 +4212,7 @@ function step(L) {
       newYear(L, beats);
       break;
     case 'hs_pre': hsRegular(L, beats); break;
+    case 'hs_mid': hsSecondHalf(L, beats); break;
     case 'hs_reg': hsPlayoffs(L, beats); break;
     case 'hs_po': runTourney(L, beats); if (L.season.tourney.done) closeAm(L, beats); break;
     case 'hs_off': amNewYear(L, beats); break;
@@ -4353,7 +4494,7 @@ const publicAPI = {
   COACHES_NOW, COACH_POOL, COACH_NAMES, PEOPLE_M, PEOPLE_F, PEOPLE_X, PEOPLE_LAST, FIRST, LAST, RIVAL_FIRST, RIVAL_LAST,
   coachState, coachOf, coachName, coachCarousel, myCoach, matesOf, myMates, personName, peopleKey, say, CLUBS,
   lockerOf, CAST, TRAITS, rollTraits, migrate, remember, recall, hasTrait, REAL_TOKENS, INVENTED_TOKENS, BASKETBALL_ONLY,
-  STORY_VERSION, storyOn, RARITY, EVENT_TAGS, REQ, reqOk, defineEvents,
+  STORY_VERSION, storyOn, recurs, continuity, continuityLog, STORY_RECURS, STORY_PHASES, calendar, RARITY, EVENT_TAGS, REQ, reqOk, defineEvents,
 };
 
 if (typeof module !== 'undefined' && module.exports) module.exports = publicAPI;
