@@ -611,7 +611,7 @@ function lockerBy(L, tag) {
    below may not use one, and check-career holds that. The list is short and
    every entry says why it is basketball. */
 const REAL_TOKENS = ['vet', 'star', 'blocker', 'rookie', 'mate', 'mate2', 'opp', 'opp2', 'coach', 'oldcoach', 'firedcoach', 'interim', 'bigname', 'rivalcoach'];
-const INVENTED_TOKENS = ['tm', 'tm2', 'tvet', 'trook', 'tco', 'topp', 'rival', 'beat', 'critic', 'fan', 'shoeexec', 'aau', 'friend', 'trainer', 'press', 'pbp', 'ellis', 'lazlo', 'gm', 'owner', 'agent'];
+const INVENTED_TOKENS = ['tm', 'tm2', 'tvet', 'trook', 'tco', 'topp', 'rival', 'beat', 'critic', 'fan', 'shoeexec', 'aau', 'friend', 'trainer', 'press', 'pbp', 'ellis', 'lazlo', 'gm', 'owner', 'agent', 'foe', 'oldvet', 'campkid'];
 const BASKETBALL_ONLY = {
   slump: 'the coach shortens a rotation leash',
   coach_bench: 'the coach decides minutes',
@@ -678,6 +678,10 @@ function peopleKey(L, k) {
     case 'tco': return lockerOf(L)[2].n;
     case 'topp': return personName(L, 'topp:' + L.steps);
     case 'rival': return L.rival ? L.rival.name : CAST.dre;
+    case 'foe': return arcData(L, 'feud').n || personName(L, 'foe');
+    case 'oldvet': return arcData(L, 'mentor').n || personName(L, 'oldvet');
+    case 'campkid': return arcData(L, 'gym').kid || personName(L, 'campkid');
+    case 'school2': return arcData(L, 'prep').school || 'State';
     case 'beat': case 'critic': case 'fan': case 'shoeexec': case 'aau': case 'press': case 'pbp': case 'ellis': case 'lazlo': return CAST[k];
     case 'ref': return personName(L, 'ref:' + L.steps);
     case 'guru': return personName(L, 'guru', 'x');
@@ -1974,6 +1978,9 @@ function choosePresser(L, card, opt, rng) {
    thirty a night, and a proposal says how long it has really been. */
 const WORDNUM = ['No', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten'];
 const wordNum = (n) => WORDNUM[n] || String(n);
+/* How many times this event has been dealt in this career, this one included.
+   Only a story career counts; anything else reads as the first time. */
+const times = (L, id) => Math.max(1, ((L.evlog || {})[id] || []).length);
 function streakLine(L) {
   const ppg = L.season && L.season.gp ? perGame(L.season).pts : 10;
   const bar = Math.max(10, Math.round((ppg + 8) / 5) * 5);
@@ -1989,7 +1996,7 @@ const EVENTS = {
     title: '{tvet} pulls you aside.',
     text: () => 'The oldest man in the locker room. He offers to show you how he stayed in the league.',
     options: [
-      { label: 'Shadow him every day', run: (L) => { bump(L, { iq: 2, eth: 6, trust: 4 }); return 'Film at six. Lift at seven. You learn more than you expected.'; } },
+      { label: 'Shadow him every day', run: (L) => { bump(L, { iq: 2, eth: 6, trust: 4 }); arcStart(L, 'mentor', 'arc_mentor_2', 'off', 7, { n: say(L, '{tvet}') }); return 'Film at six. Lift at seven. You learn more than you expected.'; } },
       { label: 'Ask about money', run: (L) => { bump(L, { cash: 0.2, iq: 1 }); L.flags.savvy = true; return 'He tells you what nobody told him. You open a real savings account.'; } },
       { label: 'Do your own thing', run: (L) => { bump(L, { morale: 2 }); return 'He shrugs. There is always another rookie.'; } },
     ],
@@ -2154,10 +2161,10 @@ const EVENTS = {
   },
   charity: {
     phases: ['pre', 'off', 'mid'], req: { cash: 0.5 }, weight: () => 2,
-    title: 'Your old high school gym is falling apart.',
+    title: (L) => L.flags.gym ? 'The rec center back home is falling apart.' : 'Your old high school gym is falling apart.',
     text: () => 'The roof leaks onto the court. They ask if you can help.',
     options: [
-      { label: 'Pay for a new gym', run: (L) => { const c = Math.min(L.cash * 0.5, 2.5); bump(L, { cash: -c, fame: 6, morale: 8 }); L.flags.gym = true; return 'Your name on the wall. The kids lose their minds.'; } },
+      { label: 'Pay for a new gym', run: (L) => { const c = Math.min(L.cash * 0.5, 2.5); bump(L, { cash: -c, fame: 6, morale: 8 }); L.flags.gym = true; return arcStart(L, 'gym', 'arc_gym_2', 'off', 0, { kid: personName(L, 'campkid:' + L.year) }) ? 'Construction starts Monday. It opens next summer.' : 'Your name on the wall. The kids lose their minds.'; } },
       { label: 'Run a free camp', run: (L) => { bump(L, { fame: 3, morale: 5, health: -2 }); return 'Three hundred kids. One of them can really play.'; } },
       { label: 'Not now', run: (L) => { bump(L, { morale: -2 }); return 'You tell yourself next year.'; } },
     ],
@@ -2165,7 +2172,7 @@ const EVENTS = {
   family_money: {
     phases: ['pre', 'off', 'early'], req: { cash: 1 }, weight: () => 2,
     title: 'Your cousin {cousin:first} needs money.',
-    text: () => 'It is the third time this year. It is a lot.',
+    text: (L) => times(L, 'family_money') > 1 ? 'He is short again. It is a lot.' : 'He is in a jam. It is a lot.',
     options: [
       { label: 'Give it', run: (L) => { bump(L, { cash: -Math.min(0.5, L.cash * 0.2), morale: 3 }); return 'Family is family. You will hear from him again.'; } },
       { label: 'Set up a trust for the family', run: (L) => { bump(L, { cash: -Math.min(0.8, L.cash * 0.25), morale: 6 }); L.flags.savvy = true; return 'Structure. Rules. Fewer awkward calls.'; } },
@@ -2174,10 +2181,17 @@ const EVENTS = {
   },
   investment: {
     phases: ['pre', 'off'], req: { cash: 1.5 }, weight: () => 2,
-    title: '{friend}, a friend from home, has a business idea.',
+    title: (L) => times(L, 'investment') > 1 ? '{friend} is back with a new idea.' : '{friend}, a friend from home, has a business idea.',
     text: () => 'Streetwear. Or a burger chain. Or an app. He needs a partner.',
     options: [
-      { label: 'Go all in', run: (L, r) => { const st = Math.min(L.cash * 0.4, 4); if (ok(r, L.flags.savvy ? 0.45 : 0.3)) { bump(L, { cash: st * 1.8, fame: 2 }); return 'It works. You are an owner now.'; } bump(L, { cash: -st, morale: -5 }); return 'It does not work. Neither does the friendship.'; } },
+      { label: 'Go all in', run: (L, r) => { const st = Math.min(L.cash * 0.4, 4);
+        if (storyOn(L) && !(L.arcs && L.arcs.venture)) {
+          const good = ok(r, L.flags.savvy ? 0.6 : 0.5), boom = good && ok(r, 0.6);
+          bump(L, { cash: -st });
+          arcStart(L, 'venture', 'arc_venture_2', 'off', 1, { in: round1(st), more: round1(Math.max(0.2, st * 0.5)), good, boom });
+          return 'You put in ' + money(round1(st)) + '. It opens in the spring.';
+        }
+        if (ok(r, L.flags.savvy ? 0.45 : 0.3)) { bump(L, { cash: st * 1.8, fame: 2 }); return 'It works. You are an owner now.'; } bump(L, { cash: -st, morale: -5 }); return 'It does not work. Neither does the friendship.'; } },
       { label: 'Put in a little', run: (L, r) => { const st = Math.min(L.cash * 0.1, 1); if (ok(r, 0.45)) { bump(L, { cash: st * 1.5 }); return 'A small win. A good story.'; } bump(L, { cash: -st }); return 'Gone. Cheap lesson.'; } },
       { label: 'Pass', run: () => 'You keep the money. You keep the friend.' },
     ],
@@ -2213,7 +2227,7 @@ const EVENTS = {
   mentor_rookie: {
     phases: ['early'], req: { age: [29, null], seasons: [6, null] }, weight: () => 2,
     title: '{trook} follows you everywhere.',
-    text: () => 'The rookie grew up with your poster on his wall.',
+    text: (L) => { const p = L.people && L.people['trook:' + peopleKey(L, 'trook')]; return p && p.met < L.year ? 'Second year. Same poster on his wall.' : 'The rookie grew up with your poster on his wall.'; },
     options: [
       { label: 'Take him under your wing', run: (L) => { bump(L, { trust: 6, morale: 6, win: 0.3 }); return 'He gets better fast. So does the team.'; } },
       { label: 'Let him learn the hard way', run: (L) => { bump(L, { morale: -1 }); return 'That is how you learned.'; } },
@@ -2335,7 +2349,7 @@ const EVENTS = {
     title: 'Somebody catches your eye.',
     text: () => 'Their name is {partner}. You meet at {friend:first}\'s birthday dinner. They have no idea who you are.',
     options: [
-      { label: 'Ask them out', run: (L, r) => { if (ok(r, 0.7)) { const f = lifeOf(L); f.rel = 'dating'; f.since = L.year; bump(L, { morale: 8 }); logIt(L, 'Met {partner}.', 'good'); return 'Dinner turns into a whole weekend. You are smitten.'; } bump(L, { morale: -2 }); lifeOf(L).pn = (lifeOf(L).pn || 0) + 1; return 'They are not interested. That has not happened in years.'; } },
+      { label: 'Ask them out', run: (L, r) => { if (ok(r, 0.7)) { const f = lifeOf(L); f.rel = 'dating'; f.since = L.year; bump(L, { morale: 8 }); logIt(L, 'Met {partner}.', 'good'); relate(L, 'partner', 30, 'You met at a birthday dinner.'); return 'Dinner turns into a whole weekend. You are smitten.'; } bump(L, { morale: -2 }); lifeOf(L).pn = (lifeOf(L).pn || 0) + 1; return 'They are not interested. That has not happened in years.'; } },
       { label: 'Focus on basketball', run: (L) => { bump(L, { eth: 2 }); return 'You go home early. You watch film.'; } },
     ],
   },
@@ -2344,7 +2358,7 @@ const EVENTS = {
     title: 'You have a ring in your pocket.',
     text: (L) => yearsWith(L) + ' with {partner}. The jeweler says it is perfect.',
     options: [
-      { label: 'Propose', run: (L, r) => { const f = lifeOf(L); if (ok(r, 0.85)) { f.rel = 'engaged'; bump(L, { morale: 10 }); logIt(L, 'Engaged to {partner}.', 'good'); return 'Yes. Before you even finish the question.'; } f.rel = 'single'; bump(L, { morale: -12 }); const nm = say(L, '{partner}'); f.pn = (f.pn || 0) + 1; return nm + ' says they need time. Then they need space.'; } },
+      { label: 'Propose', run: (L, r) => { const f = lifeOf(L); if (ok(r, 0.85)) { f.rel = 'engaged'; bump(L, { morale: 10 }); logIt(L, 'Engaged to {partner}.', 'good'); relate(L, 'partner', 25, 'You proposed. Yes.'); return 'Yes. Before you even finish the question.'; } f.rel = 'single'; bump(L, { morale: -12 }); const nm = say(L, '{partner}'); f.pn = (f.pn || 0) + 1; return nm + ' says they need time. Then they need space.'; } },
       { label: 'Not yet', run: (L) => { bump(L, { morale: -1 }); return 'The ring goes back in the drawer.'; } },
     ],
   },
@@ -2450,6 +2464,18 @@ const EVENTS = {
       { label: 'One game at a time', run: (L) => { bump(L, { trust: 3 }); return 'Boring. Correct.'; } },
     ],
   },
+  /* The setup of the feud arc. An invented player, named once and kept. */
+  feud_start: {
+    phases: ['early', 'mid'], req: { story: true, seasons: [1, null], fame: [25, null], minutes: [18, null] }, weight: 2.2, rarity: 'uncommon',
+    queue: (L) => arcStart(L, 'feud', null, 'early', 1, { n: personName(L, 'foe:' + L.year) }),
+    title: '{foe} calls you soft.',
+    text: () => 'On his podcast, by name. The clip is in your phone forty times.',
+    options: [
+      { label: 'Answer on the floor', run: (L) => { arcGo(L, 'feud', 'arc_feud_2', 'early', 1); relate(L, 'foe', -15, 'He called you soft.'); return 'You find his team on next season\'s schedule. December.'; } },
+      { label: 'Answer online', run: (L) => { arcGo(L, 'feud', 'arc_feud_2', 'early', 1); relate(L, 'foe', -25, 'You went at him online.'); bump(L, { fame: 4 }); return 'Your reply does numbers. He answers in an hour.'; } },
+      { label: 'Let it go', run: (L) => { arcEnd(L, 'feud', 'ignored'); bump(L, { trust: 2 }); return 'He tries twice more. Then he finds somebody else.'; } },
+    ],
+  },
   /* The two April cards of a story career. The regular season is over, so
      these are about what is left: the playoffs, or the summer. */
   playoff_eve: {
@@ -2466,8 +2492,8 @@ const EVENTS = {
     title: 'Exit interview.',
     text: () => '{gm} has your season on one page. He wants to hear next year.',
     options: [
-      { label: 'Promise a big summer', run: (L) => { bump(L, { eth: 4, trust: 4 }); remember(L, 'promise.summer', L.year); return 'He writes it down. So do you.'; } },
-      { label: 'Ask for help on the roster', run: (L) => { bump(L, { trust: -2 }); remember(L, 'asked.help', L.year); return 'He says he is working on it. He said that last year.'; } },
+      { label: 'Promise a big summer', run: (L) => { bump(L, { eth: 4, trust: 4 }); arcStart(L, 'promise', 'arc_promise_2', 'pre', 1, { ovr: ovrOf(L) }); return 'He writes it down. So do you.'; } },
+      { label: 'Ask for help on the roster', run: (L) => { bump(L, { trust: -2 }); const again = !!recall(L, 'asked.help'); remember(L, 'asked.help', L.year); return again ? 'He says he is working on it. He said that last time too.' : 'He says he is working on it.'; } },
       { label: 'Blame the system', run: (L) => { bump(L, { trust: -8, fame: 2 }); remember(L, 'blamed.system', L.year); return '{beat} has it on the site by lunch.'; } },
     ],
   },
@@ -2786,12 +2812,28 @@ const STORY_RECURS = {
 };
 const recurs = (id) => !!STORY_RECURS[id];
 const SUMMERY = { off: 1, pre: 1, hs_sum: 1, hs_off: 1, col_pre: 1, col_off: 1 };
+function dealCard(L, phase, ev) {
+  if (ev.queue) ev.queue(L);
+  const card = {
+    id: ev.id, kind: 'event', key: phase + ':' + ev.id,
+    eyebrow: storyOn(L) ? calendar(L, phase) : SUMMERY[phase] ? 'The summer' : 'This season',
+    title: typeof ev.title === 'function' ? ev.title(L) : ev.title, text: ev.text(L),
+    options: ev.options.map((o) => ({ label: o.label })),
+  };
+  if (storyOn(L) && ev.cb) { const c = callback(L, ev.cb); if (c) card.text = c + ' ' + card.text; }
+  L.pending.push(card);
+}
 function queueEvents(L, phase, n, pool) {
   pool = pool || EVENTS;
   if (!L.flags.offUsed || L.flags.offUsed.y !== L.year) L.flags.offUsed = { y: L.year };
   const used = L.season ? L.season.used : L.flags.offUsed;
   const once = L.flags.once = L.flags.once || {};
   const rng = rngAt(L, 'ev:' + phase + ':' + L.pending.length);
+  /* An arc that is due is dealt first, and takes one of the slot's places. */
+  if (storyOn(L)) {
+    const due = dueArcs(L, phase);
+    if (due.length) { dealCard(L, phase, ARC_EVENTS[due[0]]); n = Math.max(0, n - 1); }
+  }
   for (let k = 0; k < n; k++) {
     const ids = Object.keys(pool).filter((id) => eligible(L, pool[id], phase, used, once));
     const id = weighted(rng, ids, (x) => pool[x].weight(L));
@@ -2799,14 +2841,7 @@ function queueEvents(L, phase, n, pool) {
     used[id] = 1;
     if (pool[id].once) once[id] = 1;
     if (storyOn(L)) (evSeen(L)[id] = evSeen(L)[id] || []).push(L.year);
-    const ev = pool[id];
-    if (ev.queue) ev.queue(L);
-    L.pending.push({
-      id, kind: 'event', key: phase + ':' + id,
-      eyebrow: storyOn(L) ? calendar(L, phase) : SUMMERY[phase] ? 'The summer' : 'This season',
-      title: ev.title, text: ev.text(L),
-      options: ev.options.map((o) => ({ label: o.label })),
-    });
+    dealCard(L, phase, pool[id]);
   }
 }
 
@@ -2822,8 +2857,13 @@ const IN_GAME = { court: 1, locker: 1 };
 const PARTNER_EVENTS = { propose: 1, wedding: 1, baby: 1, breakup: 1 };
 function continuity(L, card) {
   const out = [];
-  const ev = card && (EVENTS[card.id] || AM_EVENTS[card.id]);
+  const ev = card && (EVENTS[card.id] || AM_EVENTS[card.id] || ARC_EVENTS[card.id]);
   if (!ev || card.kind !== 'event') return out;
+  if (ev.pool === 'arc') {
+    if (ev.stage === 'nba' && isAm(L)) out.push(card.id + ' is an NBA arc dealt before the NBA');
+    if (ev.stage === 'am' && !isAm(L)) out.push(card.id + ' is a school arc dealt in the NBA');
+    return out;
+  }
   const slot = String(card.key || '').split(':')[0];
   const story = storyOn(L);
   if (story && (slot === 'late' || slot === 'off' || slot === 'pre') && ev.tags.some((t) => IN_GAME[t]) && card.id !== 'young_star' && card.id !== 'playoff_eve')
@@ -2850,6 +2890,166 @@ function continuityLog(L) {
     else if (/^Became a parent|^Welcomed kid/.test(e.t) && !married) out.push('a child before a wedding');
   }
   for (const k in L.mem || {}) if (L.mem[k].y > L.year) out.push('memory ' + k + ' is from the future');
+  return out;
+}
+
+// ─── the story engine: people, memory, callbacks, arcs ───────────────────────
+
+/* THE PERSON LEDGER. Every invented person a story career deals with is kept:
+   who they are to you, the year you met, a meter from -100 to 100 and the
+   last few things that happened between you. Real people are never in it:
+   a real coach is the trust meter and nothing else. */
+const ROLE_OF = {
+  agent: 'Agent', newagent: 'Agent', gm: 'General manager', owner: 'Owner', tm: 'Teammate', tm2: 'Teammate', tvet: 'Teammate',
+  trook: 'Teammate', tco: 'Teammate', rival: 'Draft-class rival', partner: 'Partner', mom: 'Mom', dad: 'Dad', cousin: 'Cousin',
+  friend: 'Friend from home', beat: 'Beat writer', critic: 'TV critic', trainer: 'Trainer', hscoach: 'High school coach',
+  roommate: 'College roommate', foe: 'Nemesis', oldvet: 'Old teammate', campkid: 'Kid from your camp', shoeexec: 'Shoe executive', fan: 'Superfan',
+};
+function meet(L, tok, name) {
+  const n = name || peopleKey(L, tok);
+  if (!n || !ROLE_OF[tok]) return null;
+  const id = tok + ':' + n;
+  const P = L.people || (L.people = {});
+  if (!P[id]) P[id] = { role: ROLE_OF[tok], n, met: L.year, rel: 0, notes: [] };
+  return P[id];
+}
+function relate(L, tok, d, note, name) {
+  if (!storyOn(L)) return null;
+  const p = meet(L, tok, name);
+  if (!p) return null;
+  p.rel = clamp(p.rel + d, -100, 100);
+  if (note) { p.notes.push([L.year, say(L, note)]); if (p.notes.length > 5) p.notes.shift(); }
+  return p;
+}
+const relOf = (L, tok) => { const n = peopleKey(L, tok); const p = L.people && L.people[tok + ':' + n]; return p ? p.rel : 0; };
+/* What each answer does to the people in it, as data: [token, change, note]. */
+const EVENT_REL = {
+  vet_mentor: [[['tvet', 25, 'He showed you the ropes.']], [['tvet', 10]], [['tvet', -10]]],
+  rookie_duty: [[['tvet', 15, 'You bought the breakfasts.']], [['tvet', -5]], [['tvet', -20, 'You refused rookie duty.']]],
+  night_out: [[['tm', 12]], [['tm', 4]], [['tm', -4]]],
+  teammate_touches: [[['tco', 20, 'You fed him.']], [['tco', 10]], [['tco', -20, 'You froze him out.']]],
+  teammate_fight: [[['tm', -15, 'You shoved back.']], [['tm', 5]], [['tm', 10]]],
+  online_beef: [[['critic', -10]], [], [['beat', 5]]],
+  family_money: [[['cousin', 15]], [['cousin', 5], ['mom', 10]], [['cousin', -25, 'You said no.']]],
+  investment: [[['friend', 15, 'You went all in on his idea.']], [['friend', 5]], [['friend', -5]]],
+  coach_bench: [[], [], [['agent', 5], ['gm', -15, 'You asked for a trade.']]],
+  stuck: [[], [['gm', -10], ['beat', 10]], []],
+  tank: [[['gm', 10]], [['gm', -10]], [['gm', -20, 'You asked out of the tank.']]],
+  trade_rumor: [[['gm', 10]], [['gm', -10]], []],
+  contract_year: [[['agent', 10]], [['gm', 10]], []],
+  podcast: [[['beat', -5], ['critic', 10]], [['gm', 5]]],
+  docuseries: [[['mom', 10]], [], [['tm', 5]]],
+  agent_pitch: [[['agent', -40, 'You left for a power agency.']], [['agent', 30, 'You stayed loyal.']]],
+  propose: [[], [['partner', -10]]],
+  wedding: [[['partner', 20, 'The wedding of the year.']], [['partner', 25, 'A small wedding on a beach.']]],
+  baby: [[['partner', 15], ['mom', 15]], [['partner', -5]]],
+  hometown_call: [[['mom', 20, 'You came home.'], ['hscoach', 20]], []],
+  mentor_rookie: [[['trook', 25, 'You took him under your wing.']], [['trook', -5]]],
+  young_star: [[['trook', 25, 'You mentored him.']], [['trook', -10]], [['gm', -10]]],
+  rehab_summer: [[], [['trainer', 10]]],
+  charity: [[['hscoach', 20, 'You paid for the new gym.']], [['hscoach', 10]], []],
+  roommate: [[['roommate', 20]], [['roommate', 30, 'Best friends by October.']], [['roommate', -15]]],
+  grades: [[['mom', 5]], [], []],
+  coach_son: [[], [], [['dad', 10], ['hscoach', -20, 'Your dad yelled in the parking lot.']]],
+  playoff_eve: [[], []],
+  exit_interview: [[['gm', 10]], [['gm', -5]], [['gm', -15], ['beat', 5]]],
+};
+/* The names are read BEFORE the answer runs, because the answer can change
+   who a token means (a new agent, a new club), and the card was about the
+   people on it when it was dealt. */
+function relNames(L, id, i) {
+  const t = EVENT_REL[id] && EVENT_REL[id][i];
+  if (!t || !storyOn(L)) return null;
+  return t.map(([tok, d, note]) => [tok, d, note, peopleKey(L, tok)]);
+}
+function applyRel(L, names) {
+  if (names) for (const [tok, d, note, n] of names) relate(L, tok, d, note, n);
+}
+
+/* MEMORY and CALLBACKS. remember() stamps the year; a callback is a short
+   line keyed by what is remembered, and it says how long ago in words, so a
+   story can point back at itself ("Two seasons ago you beat {foe}"). A
+   callback is never said about the year it happened in: it is a memory only
+   once it is behind you. */
+function ago(L, y) {
+  const d = L.year - y;
+  if (d <= 0) return 'this season';
+  if (d === 1) return 'last season';
+  if (d <= 4) return wordNum(d).toLowerCase() + ' seasons ago';
+  return 'back in ' + (y - 1) + '-' + String(y).slice(2);
+}
+const sw = (a) => a ? ', ' + a : '';
+const CALLBACKS = {
+  'arc.feud.won': (a) => 'You beat {foe} when it counted' + sw(a) + '.',
+  'arc.feud.lost': (a) => '{foe} got the better of you' + sw(a) + '.',
+  'arc.feud.peace': (a) => 'You and {foe} buried it' + sw(a) + '.',
+  'arc.feud.respect': (a) => 'You won the game {foe} made personal' + sw(a) + '.',
+  'arc.gym.mentor': () => 'A kid from your gym plays college ball. You still call him.',
+  'arc.gym.fan': () => 'A kid from your gym plays college ball in your shoes.',
+  'arc.venture.won': (a) => 'The business you backed paid off' + sw(a) + '.',
+  'arc.venture.lost': (a) => 'The business you backed closed' + sw(a) + '.',
+  'arc.venture.out': (a) => 'You pulled out of a friend\'s business' + sw(a) + '.',
+  'arc.promise.kept': (a) => 'You promised a big summer' + sw(a) + '. You delivered.',
+  'arc.promise.broken': (a) => 'You promised a big summer' + sw(a) + '. It never came.',
+  'arc.prep.won': () => 'You beat {prepstar} again in college.',
+  'arc.prep.peace': () => 'You and {prepstar} shook hands in college.',
+  'arc.prep.lost': () => '{prepstar} got you back in college.',
+  'arc.mentor.video': () => '{oldvet} plays your video before his games.',
+  'arc.mentor.visit': () => '{oldvet} still has the photo from his gym.',
+  'po.stopper': (a) => 'You took the toughest playoff assignment' + sw(a) + '.',
+  'blamed.system': (a) => 'You blamed the system in an exit interview' + sw(a) + '.',
+  'g7.made': () => 'You hit a Game 7 winner.',
+  'hometown.played': () => 'You came home to play.',
+};
+function callback(L, key) {
+  const m = recall(L, key), f = CALLBACKS[key];
+  if (!m || !f || m.y >= L.year) return '';
+  return say(L, f(ago(L, m.y)));
+}
+/* Memories worth printing, oldest first, each with its year. */
+function memories(L) {
+  const out = [];
+  for (const k in L.mem || {}) if (CALLBACKS[k]) out.push({ k, y: L.mem[k].y, t: say(L, CALLBACKS[k]('')) });
+  return out.sort((a, b) => a.y - b.y);
+}
+
+/* ARCS. An arc is a run of cards with a setup, an escalation and a payoff,
+   and it ends in one of at least two resolutions. A node is dealt in a named
+   slot no earlier than a named year, ahead of anything random, and an arc
+   left unfinished for four years (an overseas year, a retirement) is let go.
+   The resolution is remembered as `arc.<id>.<how>`, which is what the
+   callbacks read. */
+function arcData(L, id) { return (L.arcs && L.arcs[id] && L.arcs[id].d) || {}; }
+/* An arc happens once in a career. Starting one that already ran answers
+   false, and the caller tells the plain version of its story instead. */
+function arcStart(L, id, node, slot, dy, d) {
+  if (!storyOn(L)) return false;
+  const A = L.arcs || (L.arcs = {});
+  if (A[id]) return false;
+  A[id] = { node, slot, y: L.year + dy, d: d || {}, at: L.year };
+  return true;
+}
+function arcGo(L, id, node, slot, dy) {
+  const a = L.arcs && L.arcs[id];
+  if (!a) return;
+  a.node = node; a.slot = slot; a.y = L.year + dy;
+}
+function arcEnd(L, id, how) {
+  const a = L.arcs && L.arcs[id];
+  if (!a) return;
+  a.done = how; a.node = null;
+  remember(L, 'arc.' + id + '.' + how, true);
+}
+function dueArcs(L, slot) {
+  const out = [];
+  for (const id in L.arcs || {}) {
+    const a = L.arcs[id];
+    if (a.done || !a.node) continue;
+    if (L.year - a.y > 4) { a.done = 'faded'; a.node = null; continue; }
+    if (a.slot !== slot || L.year < a.y) continue;
+    const ev = ARC_EVENTS[a.node];
+    if (ev && reqOk(L, ev.req) && ev.when(L)) out.push(a.node);
+  }
   return out;
 }
 
@@ -3645,8 +3845,9 @@ const AM_EVENTS = {
   },
   rival_school: {
     phases: ['hs'], when: () => true, weight: () => 2.5,
-    title: 'Friday night. The crosstown rival.',
-    text: () => 'Sold out by Tuesday. Their star, {prepstar}, is ranked higher than you.',
+    queue: (L) => { const r = rngAt(L, 'prep2'); const pool = SCHOOLS.filter((x) => x.tier === 'blue' || x.tier === 'power'); arcStart(L, 'prep', 'arc_prep_2', 'col', 1, { school: pick(r, pool).name }); },
+    title: (L) => times(L, 'rival_school') > 1 ? 'The crosstown rival, again.' : 'Friday night. The crosstown rival.',
+    text: () => 'Sold out by Tuesday. Their star is {prepstar}. Every scout in the state is there.',
     options: [
       { label: 'Guarantee a win', run: (L, r) => { bump(L, { fame: 5 }); if (ok(r, 0.35 + (ovrOf(L) - 40) * 0.02)) { bump(L, { morale: 8, win: 0.5 }); L.am.rstock = (L.am.rstock || 0) + 0.5; return 'You back it up. Thirty-four and the student section storms the court.'; } bump(L, { morale: -7 }); return 'They win. They play your quote over the speakers.'; } },
       { label: 'Let your game talk', run: (L, r) => { if (ok(r, 0.55)) { bump(L, { morale: 5, win: 0.3 }); return 'A quiet twenty-six. A win.'; } bump(L, { morale: -3 }); return 'Close loss. Next year.'; } },
@@ -3819,6 +4020,103 @@ const AM_EVENTS = {
 };
 defineEvents(EVENTS, 'nba');
 defineEvents(AM_EVENTS, 'am');
+
+/* THE ARCS. Each node is dealt by dueArcs() in its own slot, never at random,
+   and each run() moves the arc on (arcGo) or settles it (arcEnd). Setups live
+   in EVENTS and AM_EVENTS; only what follows a setup is here. */
+const ARC_EVENTS = {
+  /* The feud: a podcast insult, a bump at the scorer's table, a rematch. */
+  arc_feud_2: {
+    phases: ['early'], stage: 'nba', req: { team: true },
+    title: 'Round two with {foe}.',
+    text: () => 'December, his building. He bumps you at the scorer\'s table before tip.',
+    options: [
+      { label: 'Bump him back', run: (L, r) => { arcGo(L, 'feud', 'arc_feud_3', 'mid', 0); if (ok(r, 0.5)) { bump(L, { fame: 4, morale: 3 }); return 'Double technical. The crowd loves it. So do you.'; } bump(L, { fame: 3, cash: -0.05, trust: -3 }); return 'Only you get the technical. He waves goodbye.'; } },
+      { label: 'Smile and guard him', run: (L) => { arcGo(L, 'feud', 'arc_feud_3', 'mid', 0); bump(L, { def: 1, trust: 3 }); return 'He takes nine shots in the first half. He makes two.'; } },
+      { label: 'Offer a handshake', run: (L) => { arcEnd(L, 'feud', 'peace'); relate(L, 'foe', 40, 'You shook hands before tip.'); bump(L, { trust: 2 }); return 'He looks at it for a long second. Then he takes it.'; } },
+    ],
+  },
+  arc_feud_3: {
+    phases: ['mid'], stage: 'nba', req: { team: true },
+    title: 'You and {foe}, the national game.',
+    text: () => 'February. A sold-out building. {beat} calls it the game of the month.',
+    options: [
+      { label: 'Take him yourself', run: (L, r) => { if (ok(r, 0.4 + (ovrOf(L) - 72) * 0.03)) { arcEnd(L, 'feud', 'won'); relate(L, 'foe', -10, 'You beat him in the national game.'); bump(L, { fame: 8, morale: 6 }); return 'You win the duel and the game. He leaves without talking.'; } arcEnd(L, 'feud', 'lost'); relate(L, 'foe', -10, 'He beat you in the national game.'); bump(L, { morale: -6 }); return 'He gets you. He talks about it for a week.'; } },
+      { label: 'Win the game, not the duel', run: (L) => { arcEnd(L, 'feud', 'respect'); relate(L, 'foe', 20, 'You won the game he made personal.'); bump(L, { win: 0.4, trust: 4 }); return 'A team win. He says something kind after. Nobody expected that.'; } },
+    ],
+  },
+  /* The gym: the gym you paid for opens, and years later a kid from it signs
+     with a college. */
+  arc_gym_2: {
+    phases: ['off'], stage: 'nba',
+    title: 'Your gym opens.',
+    text: () => 'Your old high school paints your number at center court. Kids from your camp are there.',
+    options: [
+      { label: 'Cut the ribbon', run: (L) => { arcGo(L, 'gym', 'arc_gym_3', 'off', 5); bump(L, { fame: 3, morale: 6 }); return 'Photos, a speech, a lot of hugs.'; } },
+      { label: 'Run the first practice', run: (L) => { arcGo(L, 'gym', 'arc_gym_3', 'off', 5); arcData(L, 'gym').coached = true; bump(L, { morale: 8 }); return 'Two hours of drills. One twelve-year-old does not miss.'; } },
+    ],
+  },
+  arc_gym_3: {
+    phases: ['off'], stage: 'nba',
+    title: '{campkid} signs with a college.',
+    text: (L) => 'He was twelve at your gym opening.' + (arcData(L, 'gym').coached ? ' He made every drill.' : '') + ' He tags you in the post.',
+    options: [
+      { label: 'Call him', run: (L) => { arcEnd(L, 'gym', 'mentor'); relate(L, 'campkid', 40, 'You called the day he signed.'); bump(L, { morale: 8 }); return 'He cannot talk. He just laughs. You know the feeling.'; } },
+      { label: 'Send him a box of your shoes', run: (L) => { arcEnd(L, 'gym', 'fan'); relate(L, 'campkid', 20, 'You sent him shoes.'); bump(L, { fame: 2, morale: 3 }); return 'He wears them in his first game. Size fourteen.'; } },
+    ],
+  },
+  /* The venture: the money went in last summer; now the business has a year
+     of numbers. Whether it works was settled when it opened. */
+  arc_venture_2: {
+    phases: ['off'], stage: 'nba',
+    title: '{friend}\'s business has a year of numbers.',
+    text: (L) => arcData(L, 'venture').good ? 'It is making money. Lines on weekends. He wants to grow.' : 'It is losing money. He needs ' + money(arcData(L, 'venture').more) + ' to keep going.',
+    options: [
+      { label: 'Put in more', run: (L, r) => { const d = arcData(L, 'venture'); bump(L, { cash: -Math.min(d.more, L.cash) }); arcGo(L, 'venture', 'arc_venture_3', 'off', 1); d.in += d.more; return d.good ? 'A second location by spring.' : 'You write the check. He promises it turns.'; } },
+      { label: 'Take your money out', run: (L) => { const d = arcData(L, 'venture'); const back = round1(d.in * (d.good ? 1.6 : 0.4)); bump(L, { cash: back }); arcEnd(L, 'venture', d.good ? 'won' : 'out'); relate(L, 'friend', d.good ? 5 : -20, d.good ? 'You cashed out of his business.' : 'You pulled out when it was losing.'); return 'You get ' + money(back) + ' back.' + (d.good ? ' A clean win.' : ' He takes it hard.'); } },
+    ],
+  },
+  arc_venture_3: {
+    phases: ['off'], stage: 'nba',
+    title: 'Two years in, the books are final.',
+    text: (L) => arcData(L, 'venture').boom ? '{friend} has an offer to buy the whole thing.' : '{friend} calls. It did not make it.',
+    options: [
+      { label: 'Hear it out', run: (L) => { const d = arcData(L, 'venture'); if (d.boom) { const back = round1(d.in * 2.6); bump(L, { cash: back, fame: 2 }); arcEnd(L, 'venture', 'won'); relate(L, 'friend', 25, 'The business sold.'); return 'They sell. Your share is ' + money(back) + '.'; } arcEnd(L, 'venture', 'lost'); relate(L, 'friend', -10, 'The business closed.'); bump(L, { morale: -6 }); return 'It closes in May. The sign stays up a while.'; } },
+      { label: 'Tell him you are proud of him', run: (L) => { const d = arcData(L, 'venture'); relate(L, 'friend', 20, 'You stood by him.'); if (d.boom) { const back = round1(d.in * 2.2); bump(L, { cash: back, morale: 4 }); arcEnd(L, 'venture', 'won'); return 'He sells. He cries on the phone. You get ' + money(back) + '.'; } arcEnd(L, 'venture', 'lost'); bump(L, { morale: -2 }); return 'It closes. The friendship does not.'; } },
+    ],
+  },
+  /* The promise: what you told the GM in April, checked at camp. */
+  arc_promise_2: {
+    phases: ['pre'], stage: 'nba', req: { team: true },
+    title: '{gm} remembers April.',
+    text: (L) => { const d = ovrOf(L) - (arcData(L, 'promise').ovr || ovrOf(L)); return d > 0 ? 'You came back ' + d + ' better. He says so in front of the staff.' : 'You promised a big summer. You came back the same player.'; },
+    options: [
+      { label: 'Point at the work', run: (L) => { const up = ovrOf(L) > (arcData(L, 'promise').ovr || 99); arcEnd(L, 'promise', up ? 'kept' : 'broken'); relate(L, 'gm', up ? 15 : -10, up ? 'You kept your April promise.' : 'You broke your April promise.'); bump(L, up ? { min: 3, trust: 4 } : { trust: -4 }); return up ? 'More minutes. Earned.' : 'He nods. He has heard it before.'; } },
+      { label: 'Keep your head down', run: (L) => { const up = ovrOf(L) > (arcData(L, 'promise').ovr || 99); arcEnd(L, 'promise', up ? 'kept' : 'broken'); bump(L, { trust: up ? 6 : 1, eth: 3 }); return 'You go to work. That is the answer either way.'; } },
+    ],
+  },
+  /* The mentor: the veteran who looked after you, years later. */
+  arc_mentor_2: {
+    phases: ['off'], stage: 'nba',
+    title: '{oldvet} coaches high school now.',
+    text: () => 'He calls. He wants you at his gym for a day.',
+    options: [
+      { label: 'Go for the whole day', run: (L) => { arcEnd(L, 'mentor', 'visit'); relate(L, 'oldvet', 30, 'You spent a day at his gym.'); bump(L, { morale: 8, fame: 1 }); return 'His kids lose their minds. He stands in the back and grins.'; } },
+      { label: 'Send a video', run: (L) => { arcEnd(L, 'mentor', 'video'); relate(L, 'oldvet', 5); bump(L, { morale: 2 }); return 'Two minutes, recorded in a hotel. He plays it before every game.'; } },
+    ],
+  },
+  /* The crosstown rival from high school, on the other bench in college. */
+  arc_prep_2: {
+    phases: ['col', 'col_mar'], stage: 'am', when: (L) => !!(L.am && L.am.level === 'col' && L.am.college !== arcData(L, 'prep').school),
+    title: '{prepstar} is on the other bench.',
+    text: () => 'Your old crosstown rival plays for {school2} now. National TV.',
+    options: [
+      { label: 'Make it personal', run: (L, r) => { if (ok(r, 0.4 + (ovrOf(L) - 50) * 0.03)) { arcEnd(L, 'prep', 'won'); bump(L, { fame: 6, morale: 6 }); if (L.am) L.am.stock = (L.am.stock || 0) + 0.4; return 'You win again. Some things never change.'; } arcEnd(L, 'prep', 'lost'); bump(L, { morale: -5 }); return 'He wins this one. He reminds you about high school anyway.'; } },
+      { label: 'Shake his hand first', run: (L) => { arcEnd(L, 'prep', 'peace'); bump(L, { trust: 3, morale: 3 }); return 'You catch up at midcourt. Then you play hard.'; } },
+    ],
+  },
+};
+defineEvents(ARC_EVENTS, 'arc');
 
 /* Answers to the road's own cards. Null means the card is not one of these. */
 function chooseAm(L, card, i, opt, rng, beats, touch) {
@@ -4085,10 +4383,12 @@ function choose(L, i, extra) {
       break;
     }
     default: {
-      const ev = EVENTS[card.id] || AM_EVENTS[card.id];
+      const ev = EVENTS[card.id] || AM_EVENTS[card.id] || ARC_EVENTS[card.id];
       if (ev) {
         const o = ev.options[i];
+        const names = relNames(L, card.id, i);
         text = o.run(L, rng) || '';
+        applyRel(L, names);
         const rp = EVENTS[card.id] && EVENT_REP[card.id] && EVENT_REP[card.id][i];
         if (rp) moveRep(L, rp[0], rp[1]);
       }
@@ -4494,7 +4794,7 @@ const publicAPI = {
   COACHES_NOW, COACH_POOL, COACH_NAMES, PEOPLE_M, PEOPLE_F, PEOPLE_X, PEOPLE_LAST, FIRST, LAST, RIVAL_FIRST, RIVAL_LAST,
   coachState, coachOf, coachName, coachCarousel, myCoach, matesOf, myMates, personName, peopleKey, say, CLUBS,
   lockerOf, CAST, TRAITS, rollTraits, migrate, remember, recall, hasTrait, REAL_TOKENS, INVENTED_TOKENS, BASKETBALL_ONLY,
-  STORY_VERSION, storyOn, recurs, continuity, continuityLog, STORY_RECURS, STORY_PHASES, calendar, RARITY, EVENT_TAGS, REQ, reqOk, defineEvents,
+  STORY_VERSION, storyOn, recurs, continuity, continuityLog, ARC_EVENTS, CALLBACKS, callback, memories, ago, relate, relOf, EVENT_REL, arcData, STORY_RECURS, STORY_PHASES, calendar, RARITY, EVENT_TAGS, REQ, reqOk, defineEvents,
 };
 
 if (typeof module !== 'undefined' && module.exports) module.exports = publicAPI;
