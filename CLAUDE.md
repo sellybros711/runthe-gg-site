@@ -10993,9 +10993,13 @@ missed summers quietly (`rostNow`). The rosters are not kept on a Hall card (`tr
 them, with `lines`): a son's league rebuilds them, which is right, because the 2026 men have
 aged out by then.
 
-**THE TEAM TAB** (story careers, NBA only) is `rotationOf`: your club in minutes order, you
-placed by your real minutes (the season's average once a game is played, the coach's plan
-before), the rest of 240 shared off a real rotation's shape. It is display only: the season
+**THE TEAM TAB** (story careers, NBA only) is `rotationOf`: the starting five, then the bench
+in minutes order, you placed by your real minutes (the season's average once a game is played,
+the coach's plan before), the rest of 240 shared off a real rotation's shape. **The five always
+covers PG, SG, SF, PF and C**: `bestFive` is exact over every way of seating five, a man counts
+at full value at his own position, 0.85 next to it (or at a second position the data lists),
+0.15 two away and 0.03 further, so a center only plays the point when nobody else can. You are
+forced into it when your minutes make you a starter. check-career 11d holds it to brute force. It is display only: the season
 sim reads minutes from `roleOf` and never from this. A teammate's points are last season's
 rate (`lines`, off the data) at this season's minutes.
 

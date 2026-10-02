@@ -958,17 +958,18 @@ function teamHtml(L){
   var ord = function(n){ var v = n % 100, x = ['th', 'st', 'nd', 'rd']; return n + (x[(v - 20) % 10] || x[v] || x[0]); };
   var head = '<div class="cr-leg"><div><b>' + ord(R.rank) + '</b><span>In the rotation</span></div>'
     + '<div><b>' + R.min + '</b><span>' + (R.played ? 'Minutes a night' : 'Minutes planned') + '</span></div>'
-    + '<div><b>' + esc(R.role) + '</b><span>Your role</span></div></div>';
+    + '<div><b>' + esc(R.slot ? 'Start ' + R.slot : R.role) + '</b><span>Your role</span></div></div>';
   var line = esc(teamName(R.club)) + (s && s.gp ? ' · ' + s.w + '-' + s.l : '') + (pg ? ' · You: ' + pg.pts + ' points, ' + pg.reb + (pg.reb === 1 ? ' rebound, ' : ' rebounds, ') + pg.ast + (pg.ast === 1 ? ' assist' : ' assists') : '');
   var rows = R.list.map(function(x, i){
     var pts = x.you ? (pg ? pg.pts : '-') : x.min > 0 ? x.pts : '-';
     var sep = i === 5 ? '<li class="cr-rot-sep" aria-hidden="true">Bench</li>' : '';
-    return sep + '<li class="cr-rot-r' + (x.you ? ' you' : '') + (x.min <= 0 ? ' dnp' : '') + '"><span class="n">' + x.rank + '</span>'
-      + '<span class="who"><b>' + esc(x.you ? x.n + ' (you)' : x.n) + '</b><small>' + esc(x.pos || '') + ' · ' + x.age + ' · ' + esc(x.role) + '</small></span>'
+    var at = x.slot && x.slot !== x.pos ? x.pos + ', playing ' + x.slot : x.pos || '';
+    return sep + '<li class="cr-rot-r' + (x.you ? ' you' : '') + (x.min <= 0 ? ' dnp' : '') + '"><span class="n">' + (x.slot || i + 1) + '</span>'
+      + '<span class="who"><b>' + esc(x.you ? x.n + ' (you)' : x.n) + '</b><small>' + esc(at) + ' · ' + x.age + ' · ' + esc(x.role) + '</small></span>'
       + '<span class="v">' + (x.min > 0 ? x.min : '-') + '</span><span class="v">' + pts + '</span></li>';
   }).join('');
   return head + '<p class="k-small cr-rot-line">' + line + '</p>'
-    + '<ol class="cr-rot" aria-label="Rotation"><li class="cr-rot-h" aria-hidden="true"><span class="n">#</span><span class="who">Starters</span><span class="v">Min</span><span class="v">Pts</span></li>' + rows + '</ol>';
+    + '<ol class="cr-rot" aria-label="Rotation"><li class="cr-rot-h" aria-hidden="true"><span class="n"></span><span class="who">Starters</span><span class="v">Min</span><span class="v">Pts</span></li>' + rows + '</ol>';
 }
 /* The people a career has met, closest and furthest first. */
 function peopleHtml(L){

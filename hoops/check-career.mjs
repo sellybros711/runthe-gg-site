@@ -736,6 +736,7 @@ section('11. Phase E: the generated road, a son, difficulty and challenges');
   const L = C.newLife({ seed: 'rot', league, start: 'draft' });
   let g = 0, checked = 0, bad = [];
   const start = {}, seenGp = {};
+  let twoAway = 0;
   for (const c of C.CLUBS) start[c] = C.matesOf(L, c).map((m) => m.n).join('|');
   while (!L.retired && g++ < 4000 && L.year < L.league.latest + 5) {
     if (L.pending.length) C.choose(L, 0); else C.step(L);
@@ -746,9 +747,26 @@ section('11. Phase E: the generated road, a son, difficulty and challenges');
     const tot = R.list.reduce((a, x) => a + x.min, 0), you = R.list.filter((x) => x.you);
     if (Math.abs(tot - 240) > 1) bad.push(L.year + ': ' + tot + ' minutes');
     if (you.length !== 1 || you[0].rank !== R.rank) bad.push(L.year + ': you are not in it once');
-    if (R.list.some((x, i) => i && x.min > R.list[i - 1].min + 0.05)) bad.push(L.year + ': out of order');
+    const five = R.list.slice(0, 5);
+    if (five.map((x) => x.slot).join() !== 'PG,SG,SF,PF,C') bad.push(L.year + ': the five do not cover the positions');
+    if (R.list.slice(5).some((x, i, a) => i && x.min > a[i - 1].min + 0.05)) bad.push(L.year + ': the bench is out of order');
+    if (five.some((x) => Math.abs(C.POS.indexOf(x.pos) - C.POS.indexOf(x.slot)) >= 2) && R.list.slice(5).some((y) => y.min > 0)) twoAway++;
+    if (R.list.filter((x) => x.slot).some((x) => !x.you) && !R.list.some((x) => x.slot) ) bad.push('no starters');
   }
   ok(checked > 3 && !bad.length, `the rotation adds to 240 with you in it once (${checked} looks${bad.length ? ': ' + bad.slice(0, 2).join('; ') : ''})`);
+  ok(twoAway === 0, `nobody starts two positions from his own while the bench has a man (${twoAway})`);
+  /* bestFive is the best five: checked against every way of choosing five
+     and seating them, on rosters drawn from the real league. */
+  let worse = 0;
+  for (const c of C.CLUBS.slice(0, 8)) {
+    const ms = C.matesOf(L, c).slice(0, 8).map((m) => ({ v: Math.max(0.1, m.w), pos: m.pos }));
+    const got = C.bestFive(ms).score;
+    let best = 0;
+    const perm = (used, j, sc) => { if (j === 5) { best = Math.max(best, sc); return; } ms.forEach((m, i) => { if (!used.includes(i)) perm(used.concat([i]), j + 1, sc + m.v * C.fitAt(m.pos, C.POS[j], null)); }); };
+    perm([], 0, 0);
+    if (got < best - 1e-9) worse++;
+  }
+  ok(worse === 0, `the starting five is the best five that covers the positions (${worse} of 8 beaten by brute force)`);
   const moved = C.CLUBS.filter((c) => C.matesOf(L, c).map((m) => m.n).join('|') !== start[c]).length;
   const feedMoves = (L.feed || []).filter((f) => f.k === 'move').length;
   ok(moved >= 25 && feedMoves > 0, `rosters change over four summers (${moved} of 30 clubs, ${feedMoves} moves in the news)`);

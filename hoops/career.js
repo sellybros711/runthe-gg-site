@@ -326,7 +326,7 @@ function seedLeague(rows) {
   /* What each man did in that season, for the rotation screen and the
      Saturday contests: minutes, points, rebounds, assists, threes taken. */
   const lines = {};
-  for (const c in by) for (const r of by[c]) lines[r.n] = [round1(r.mp || 0), round1(r.pts || 0), round1(r.reb || 0), round1(r.ast || 0), round1(r.tpa || 0)];
+  for (const c in by) for (const r of by[c]) lines[r.n] = [round1(r.mp || 0), round1(r.pts || 0), round1(r.reb || 0), round1(r.ast || 0), round1(r.tpa || 0), String(r.ep || r.pp || '')];
   return { latest: latest || 2026, net: normaliseNets(net), stars, roster: rosterSeed(rows, latest), lines };
 }
 /* Mean zero, a spread of 4.6 points, which is roughly the real league's. */
@@ -1347,40 +1347,86 @@ function roleOf(L) {
   const label = (diff >= 12 && min >= 33) ? 'Franchise player' : min >= 30 ? 'Starter' : min >= 24 ? 'Starter' : min >= 15 ? 'Rotation' : 'End of bench';
   return { min: round1(min), diff, label, starter: min >= 24 };
 }
-/* THE ROTATION: your club's thirteen, ordered by minutes, with you placed by
-   the minutes you are actually getting (this season's average once a game is
-   played, the coach's plan before that). Teammates take the rest of 240 off a
-   real rotation's shape, best man first. Display only: the season sim reads
-   your minutes from roleOf, never from this. */
+/* THE STARTING FIVE covers all five positions, always. A man counts at full
+   value at his own position and at 0.85 at a position next to it (or a
+   second one the data lists for him). Two away is 0.15 and further 0.03, so
+   a center only ever plays the point when nobody else on the roster can. bestFive is exact: it tries every
+   way of filling the five slots and keeps the best, with anyone marked
+   `force` (you, when your minutes make you a starter) always in. */
+const SLOTS5 = ['PG', 'SG', 'SF', 'PF', 'C'];
+function fitAt(pos, slot, ep) {
+  if (pos === slot) return 1;
+  if ((ep && ep.indexOf(slot) >= 0) || (NEXT_POS[pos] || []).indexOf(slot) >= 0) return 0.85;
+  const d = Math.abs(SLOTS5.indexOf(pos) - SLOTS5.indexOf(slot));
+  return d === 2 ? 0.15 : 0.03;
+}
+function bestFive(cands) {
+  let states = { 0: { s: 0, a: [] } };
+  cands.forEach((c, i) => {
+    const next = {};
+    const put = (m, st) => { if (!next[m] || next[m].s < st.s) next[m] = st; };
+    for (const k in states) {
+      const m = +k, st = states[k];
+      if (!c.force) put(m, st);
+      for (let j = 0; j < 5; j++) if (!(m & (1 << j))) put(m | (1 << j), { s: st.s + c.v * fitAt(c.pos, SLOTS5[j], c.ep), a: st.a.concat([[i, j]]) });
+    }
+    states = next;
+  });
+  const full = states[31];
+  if (!full) return null;
+  const out = [];
+  for (const [i, j] of full.a) out[j] = i;
+  return { slots: out, score: full.s };
+}
+/* THE ROTATION: your club in minutes order, with you placed by the minutes
+   you are actually getting (this season's average once a game is played, the
+   coach's plan before that). The starting five is bestFive; the rest come off
+   the bench by value, and everyone shares 240 off a real rotation's shape.
+   Display only: the season sim reads your minutes from roleOf, never this. */
 const ROT_SHAPE = [35, 33, 31, 29, 27, 24, 20, 16, 12, 8, 5, 0, 0, 0, 0];
-const ROT_WORD = ['', 'Starter', 'Starter', 'Starter', 'Starter', 'Starter', 'Sixth man', 'Rotation', 'Rotation', 'Rotation', 'Bench', 'Bench', 'Bench', 'Bench', 'Bench', 'Bench', 'Bench'];
 function rotationOf(L) {
   if (L.stage !== 'nba' || !L.team) return null;
   const s = L.season, role = roleOf(L);
   const played = s && s.gp > 0 && s.tot && s.tot.min > 0;
   const mine = round1(played ? s.tot.min / s.gp : role.min);
-  /* The coach starts two guards, two forwards and a big when he has them,
-     best man first at each, and brings the rest off the bench by value. */
-  const all = matesOf(L, L.team).slice(0, 14), mates = [];
-  const fits = [['PG', 'SG'], ['PG', 'SG'], ['SF', 'PF'], ['SF', 'PF'], ['C', 'PF']];
-  for (const f of fits) { const m = all.find((x) => mates.indexOf(x) < 0 && f.indexOf(x.pos) >= 0); if (m) mates.push(m); }
-  for (const m of all) if (mates.indexOf(m) < 0) mates.push(m);
+  const lines = L.league.lines || {};
+  const mates = matesOf(L, L.team).slice(0, 14);
   let at = ROT_SHAPE.findIndex((m) => m <= mine);
   if (at < 0 || at > mates.length) at = mates.length;
-  const slots = ROT_SHAPE.slice(0, mates.length + 1);
-  slots.splice(at, 1);
-  const tot = slots.reduce((a, x) => a + x, 0) || 1, left = Math.max(0, 240 - mine);
-  const lines = L.league.lines || {};
-  const list = mates.map((m, i) => {
-    const min = round1(slots[i] * left / tot), ln = lines[m.n];
+  const youStart = at < 5;
+  const me = { n: L.name, pos: L.pos, age: L.age, you: true, min: mine, pts: null, w: 0 };
+  const epOf = (m) => { const ln = lines[m.n]; return ln && ln[5] ? String(ln[5]).split(';') : null; };
+  const cands = mates.map((m) => ({ v: Math.max(0.1, m.w), pos: m.pos, ep: epOf(m), m }));
+  if (youStart) cands.unshift({ v: 1000, pos: L.pos, ep: null, force: true, m: me });
+  const five = bestFive(cands);
+  const starters = five.slots.map((i, j) => ({ slot: SLOTS5[j], m: cands[i].m }));
+  const bench = mates.filter((m) => !starters.some((x) => x.m === m)).sort((a, b) => b.w - a.w);
+  /* Minutes: the rotation's shape without your slot. Starters take the top
+     of it by value, the bench the rest, scaled so the club plays 240. */
+  const shape = ROT_SHAPE.slice(0, mates.length + 1);
+  shape.splice(at, 1);
+  const tot = shape.reduce((a, x) => a + x, 0) || 1, left = Math.max(0, 240 - mine);
+  const row = (m, k, slot) => {
+    const min = round1(shape[k] * left / tot), ln = lines[m.n];
     /* Points: last season's rate for a man the data has, otherwise one off
        his value; at the minutes he is getting now. */
     const rate = ln && ln[0] > 0 ? ln[1] / ln[0] : 0.18 + Math.max(0, m.w) * 0.035;
-    return { n: m.n, pos: m.pos, age: m.age, real: m.real, min, pts: min > 0 ? round1(rate * min) : 0 };
-  });
-  list.splice(at, 0, { n: L.name, pos: L.pos, age: L.age, you: true, min: mine, pts: null });
-  list.forEach((x, i) => { x.rank = i + 1; x.role = x.min <= 0 ? 'Out of the rotation' : ROT_WORD[i + 1] || 'Bench'; });
-  return { list, rank: at + 1, min: mine, played, role: list[at].role, plan: role.label, club: L.team, gp: s ? s.gp : 0 };
+    return { n: m.n, pos: m.pos, age: m.age, real: m.real, min, pts: min > 0 ? round1(rate * min) : 0, slot };
+  };
+  const rows = new Map();
+  starters.filter((x) => x.m !== me).sort((a, b) => b.m.w - a.m.w).forEach((x, k, arr) => rows.set(x.m, row(x.m, k, x.slot)));
+  const nS = starters.filter((x) => x.m !== me).length;
+  bench.forEach((m, k) => rows.set(m, row(m, nS + k, null)));
+  me.slot = youStart ? starters.find((x) => x.m === me).slot : null;
+  /* The five in position order, then the bench (you among it if you come
+     off it) in minutes order. Rank is by minutes across the whole club. */
+  const five5 = starters.map((x) => (x.m === me ? me : rows.get(x.m)));
+  const rest = bench.map((m) => rows.get(m)).concat(youStart ? [] : [me]).sort((a, b) => b.min - a.min);
+  const list = five5.concat(rest);
+  list.slice().sort((a, b) => b.min - a.min).forEach((x, i) => { x.rank = i + 1; });
+  rest.forEach((x, k) => { x.role = x.min <= 0 ? 'Out of the rotation' : k === 0 ? 'Sixth man' : x.min >= 10 ? 'Rotation' : 'Bench'; });
+  five5.forEach((x) => { x.role = 'Starter'; });
+  return { list, rank: me.rank, min: mine, played, role: me.role, slot: me.slot || null, plan: role.label, club: L.team, gp: s ? s.gp : 0 };
 }
 function usageOf(L, role) {
   const a = ARCHES[L.arch];
@@ -7459,7 +7505,7 @@ const publicAPI = {
   CAREER_API_VERSION, LIFE_VERSION,
   CONF, CLUBS, confOf, POS, POS_NAME, RATINGS, RATING_NAME, RATING_SHORT, WEIGHTS,
   ARCHES, ARCH_KEYS, POS_ARCHES, archesFor, archBase, POS_SIZE, wtFor, wtRange, sizeOf, sizeTilt, heightText, BACKGROUNDS, BG_KEYS, AGENTS, AWARD_NAME, ROUNDS, VERDICTS, EVENTS,
-  seedLeague, normaliseNets, newLife, rotationOf, rostOf, randomName, overall, ovrOf, step, choose, nextLabel,
+  seedLeague, normaliseNets, newLife, rotationOf, bestFive, fitAt, rostOf, randomName, overall, ovrOf, step, choose, nextLabel,
   view, perGame, totals, legacy, legacyScore, clubNet, clubTier, rotationBar,
   roleOf, lineMeans, capFor, marketSalary, projectedPick, draftOrder, money, ordinal,
   clutchOptions, offers, ACTS, actsOpen, act, retireNow, lifeOf, lifeLine, sonsOf, rivalOn, featSummary, boardSummary, verdictOf,
