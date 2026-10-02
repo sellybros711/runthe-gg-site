@@ -428,6 +428,7 @@ section('8. three hundred careers from high school, and where they land');
       if (L.draft) picks.push(L.draft.pick || 99);
       const draftAge = (L.history[0] || {}).age;
       if (draftAge != null) ages[draftAge] = (ages[draftAge] || 0) + 1;
+      if (draftAge === 18 && !C.recall(L, 'route.reclass')) bad.push(`${pol}${i}: an 18-year-old rookie who never reclassified`);
       for (const h of L.amHist) {
         for (const k of ['pts', 'reb', 'ast', 'gp', 'w', 'l', 'ovr']) if (!Number.isFinite(h[k])) bad.push(`${pol}${i} ${h.lvl} ${h.y}: ${k} is ${h[k]}`);
         const aw = h.aw || [];
@@ -444,7 +445,8 @@ section('8. three hundred careers from high school, and where they land');
           /* Thirty-one, a conference tournament, and at most six in March. */
           if (h.w + h.l < 32 || h.w + h.l > 41) bad.push(`${pol}${i} ${h.y}: a college record of ${h.w}-${h.l}`);
           if (h.seed != null) { seeds.push(h.seed); if (h.seed < 1 || h.seed > 16) bad.push(`a ${h.seed} seed`); }
-          if (aw.includes('c_fr') && h.age !== 18) bad.push(`${pol}${i}: Freshman of the Year at ${h.age}`);
+          /* A freshman is 18, or 17 after reclassifying and 19 after a prep or gap year (Phase D). */
+          if (aw.includes('c_fr') && (h.age < 17 || h.age > 19)) bad.push(`${pol}${i}: Freshman of the Year at ${h.age}`);
           if (aw.includes('c_npoy') && h.gp < 20) bad.push(`${pol}${i}: Player of the Year in ${h.gp} games`);
           if (aw.includes('c_champ')) champ++;
           if (aw.includes('c_mop') && !aw.includes('c_champ')) bad.push(`${pol}${i}: Most Outstanding Player without the title`);
@@ -480,7 +482,9 @@ section('8. three hundred careers from high school, and where they land');
     if (L.bg === 'intl' && L.amHist.some((h) => h.lvl === 'Overseas') && L.history.length) routes.intl = (routes.intl || 0) + 1;
   }
   ok(routes.oad && routes.senior && routes.gl && routes.intl, `college, four years, the G League and overseas all happen (${JSON.stringify(routes)})`);
-  ok(Object.keys(ages).every((a) => a >= 19 && a <= 22), `a rookie is 19 to 22 (${JSON.stringify(ages)})`);
+  /* 18 only after reclassifying (asserted above); 23 and 24 after a prep year,
+     four seasons and a year stashed overseas. */
+  ok(Object.keys(ages).every((a) => a >= 18 && a <= 24) && (ages[19] || 0) > (ages[23] || 0) + (ages[24] || 0), `a rookie is 19 to 22, with the Phase D roads either side (${JSON.stringify(ages)})`);
   ok(champ > 0 && state > 0, `titles happen at both levels (${state} state, ${champ} national)`);
   ok(seeds.length > 0 && seeds.filter((x) => x === 1).length / seeds.length < 0.25, `a 1 seed is the top of the field, not the norm (${seeds.filter((x) => x === 1).length} of ${seeds.length})`);
   /* A five-star is rare. Measured: about one in five of these players, all of

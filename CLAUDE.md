@@ -11321,6 +11321,68 @@ to have something real to measure. The leaderboard's Career tab keeps the
 game's shared board chrome, because restyling one tab of seven is a seam inside
 the board rather than one removed at its door.
 
+#### Phase D: origins, roads, endings, and a legend layer with an off switch
+
+```
+node hoops/sim-career.mjs --n 1000 --phase D   every band and catalog target, what CI runs
+node hoops/check-story.mjs                     section 12: origins, routes, endings, the switch
+node hoops/build/replay-careers.mjs --story off --against base.json   old saves untouched
+```
+
+The content phase. 305 events, 47 arcs met, 27 routes, 34 endings and 26 legend
+events, all story careers only. A migrated save replays byte identical, proved
+over 1,000 careers against the Phase C engine. **Do that again after touching
+anything shared**: the replay is the only thing that can see a moved draw.
+
+**CONTENT IS DATA, written through three registries in `career.js`.**
+`story({...})` adds to the random pools (`STORY_NBA`, `STORY_AM`),
+`storyArcs({...})` adds arc nodes to `ARC_EVENTS`, and `storyFixed({...})` adds
+cards dealt by name (the epilogues, the halftime shot). `O(label, fx, result,
+more)` is an answer: `set`, `rel`, `start`, `go`, `end`, `do`, `log`. Every
+compiled card carries `authored: true`, which is how a check tells Phase D's
+nodes from Phase C's. A node whose result is decided by what happened rather
+than by the button still offers two answers (`shoeLaunch`, `curseVerdict`):
+check-career fails on any card with one.
+
+**FOUR NEW SLOTS, and each says when it is**: `alt` (the year away, labelled by
+`ALT_NAME`), `predraft`, `dn` (draft night) and `post` (years later).
+
+**AN ORIGIN IS CHOSEN OR DRAWN, and it is the one stored thing about where you
+are from.** Eight in `ORIGINS`, each a small ratings tilt, a fame nudge and
+sometimes a trait. Choosing one on the creation screen passes `origin` to
+`newLife`; Surprise me draws it off the seed and the screen says which.
+
+**A ROUTE IS RECOGNIZED, NEVER PICKED FROM A LIST.** The roads to the pros are
+remembered as `route.<id>` when they are taken; the roads through the pros are
+read off the history by `routeOn`. `routesOf(L)` is the one reader.
+
+**THE LEGEND LAYER IS GATED TWICE.** `L.opt.legend` is the switch, set on the
+creation screen and never by `migrate`. Under it, `legendOpen` opens the layer in
+about one season in eleven, seeded per career and year. Without that gate the
+pools run dry of ordinary cards late in a career and 89% of careers met a legend
+card. Arc nodes are not gated: an arc a legend card started finishes.
+
+**ENDINGS ARE A CATALOG, and `endingOf` is the one place a career is judged.**
+Six Hall tiers (`HOF_TIERS`, a seeded vote over `HOF_AT`), eighteen outcomes
+and ten secret endings. `finishLife` writes the epilogue line, which is also
+`final.after`, so the badges and board that read `after` keep working.
+
+**THE BANDS ARE TIGHT AND THEY PULL AGAINST EACH OTHER.** College at most 70%,
+the other roads together near a third, and the NBA reached at most 95%. So a
+route threshold in `commitCard` cannot move alone: raising the G League share
+lowers college and raises reach. Tune at 1,000 careers as well as 3,000, because
+CI runs 1,000 and a band met only on the bigger sample flaps.
+
+**Three side effects that were caught, all silent:**
+
+- Damping the old recurring events left a 600 career sweep with eleven
+  weddings. The life cycle (`LIFE_CYCLE`) is exempt and dealt a little more.
+- A road through a prep year or a reclassification moves ages: a rookie can be
+  18 (reclassified) or 23 to 24, and a freshman 17 or 19. check-career allows
+  those and still refuses an 18 year old who never reclassified.
+- An arc written with one ending passes every sweep. check-story reads the
+  source for each arc's endings and fails on one.
+
 #### Phase C: the story engine, and the story has to happen in order
 
 ```

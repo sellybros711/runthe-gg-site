@@ -56,8 +56,14 @@ section('2. the traits a migrated career rolls are the ones a new career would')
 {
   const L = C.migrate(clone(FX.saves.nba_mid));
   ok(JSON.stringify(L.traits) === JSON.stringify(C.rollTraits(L.seed)), 'off the seed, so a migrated save and a new one agree');
-  const n = C.newLife({ seed: 'fx-nba', name: 'Fix Veteran' });
+  const n = C.newLife({ seed: 'fx-nba', name: 'Fix Veteran', story: false });
   ok(JSON.stringify(n.traits) === JSON.stringify(L.traits), 'and newLife rolls the same traits for the same seed');
+  /* A story career also gets the trait its origin carries (Phase D), and
+     nothing else moves. */
+  const s = C.newLife({ seed: 'fx-nba', name: 'Fix Veteran' });
+  const moved = Object.keys(s.traits).filter((k) => JSON.stringify(s.traits[k]) !== JSON.stringify(n.traits[k]));
+  const carried = C.ORIGINS[s.origin].trait;
+  ok(moved.every((k) => k === carried && s.traits[k].has), `a story career differs only by its origin's trait (${moved.join(', ') || 'none'})`);
   const all = {};
   for (let i = 0; i < 2000; i++) { const t = C.rollTraits('t' + i); for (const k in t) if (t[k].has) all[k] = (all[k] || 0) + 1; }
   ok(C.TRAITS.every((k) => all[k] > 150), `every trait turns up (${C.TRAITS.map((k) => k + ' ' + (all[k] || 0)).join(', ')})`);

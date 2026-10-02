@@ -76,8 +76,8 @@ function policyPick(pol, L, c, r) {
 
 const JUNK = /\bundefined\b|\bNaN\b|\[object |\{[a-z0-9]+(?::(?:last|first))?\}/;
 
-function run(seed, start, pol, picks) {
-  const L = C.newLife({ seed, league, start });
+function run(seed, start, pol, picks, legend) {
+  const L = C.newLife({ seed, league, start, legend: legend !== false });
   const r = E.createSeededRNG(E.hashSeed(seed + ':policy'));
   const seen = {}, problems = [];
   let g = 0, k = 0;
@@ -116,13 +116,17 @@ function run(seed, start, pol, picks) {
      measured. Phase C gives events cooldowns and caps; until then the repeats
      are counted against a target due by C. */
   const repeats = Object.keys(seen).filter((id) => seen[id] > 1 && !RECURS.has(id));
-  return { L, seen, problems, repeats };
+  const legendSeen = Object.keys(seen).filter((id) => { const e = C.evById(id); return !!(e && e.legend); });
+  return { L, seen, problems, repeats, legendSeen };
 }
 
+const mem = (L, k) => !!(L.mem && L.mem[k]);
 function routeOf(L) {
   const r = { start: L.amHist && L.amHist.length ? 'hs' : 'draft' };
   const a = L.am || {};
-  r.pre = r.start === 'draft' ? 'bg:' + L.bg : a.route === 'intl' ? 'overseas' : a.route === 'gl' ? 'gleague' : a.college ? 'college' : 'other';
+  r.pre = r.start === 'draft' ? 'bg:' + L.bg
+    : mem(L, 'route.rec') ? 'rec' : mem(L, 'route.juco') ? 'juco' : mem(L, 'route.walkon') ? 'walkon'
+      : a.route === 'intl' ? 'overseas' : a.route === 'gl' ? 'gleague' : a.route === 'gap' ? 'gap' : a.college ? 'college' : 'other';
   const p = L.draft && L.draft.pick;
   r.slot = !L.draft || !p ? 'undrafted' : p <= 14 ? 'lottery' : p <= 30 ? 'first' : 'second';
   const clubs = new Set(L.history.map((h) => h.t)).size;
@@ -152,18 +156,29 @@ const n = results.length;
 const pct = (x) => (100 * x / Math.max(1, n));
 const ev = {};
 for (const x of results) for (const id in x.seen) { ev[id] = ev[id] || { careers: 0, total: 0, max: 0 }; ev[id].careers++; ev[id].total += x.seen[id]; ev[id].max = Math.max(ev[id].max, x.seen[id]); }
-const allIds = new Set(Object.keys(C.EVENTS).concat(Object.keys(C.AM_EVENTS || {})));
+const allIds = new Set(Object.keys(C.EVENTS).concat(Object.keys(C.AM_EVENTS || {}), Object.keys(C.STORY_EV || {}), Object.keys(C.ARC_EVENTS || {})));
 const never = [...allIds].filter((id) => !ev[id]);
 
+/* Overlap is measured over the story catalog: the system cards every career
+   meets (training, free agency, the combine, the draft) are not story. */
+const FLOW = new Set(['combine', 'agent', 'undrafted', 'after', 'nooffer', 'moment', 'presser']);
+const story = (x) => Object.keys(x.seen).filter((id) => !SYSTEM.has(id) && !FLOW.has(id));
 let ov = 0, pairs = 0;
 for (let i = 0; i + 1 < results.length; i += 2) {
-  const a = Object.keys(results[i].seen), b = new Set(Object.keys(results[i + 1].seen));
+  const a = story(results[i]), b = new Set(story(results[i + 1]));
   ov += a.filter((x) => b.has(x)).length / Math.max(1, Math.min(a.length, b.size)); pairs++;
 }
 const overlap = 100 * ov / Math.max(1, pairs);
 const distinct = results.reduce((s, x) => s + Object.keys(x.seen).length, 0) / Math.max(1, n);
 
 const count = (f) => results.filter(f).length;
+/* The ending a career was given; a career from before Phase D has none. */
+const endOf = (x) => (x.L.final && x.L.final.ending) || { hof: C.legacy(x.L).score >= 55, tier: C.legacy(x.L).score >= 85 ? 'hof_first' : '', outcomes: [], secret: null };
+/* The legend switch, off: a smaller sweep that must never meet one. */
+const OFF = [];
+if (!SCRIPT && !ONLY) for (let i = 0; i < Math.min(300, Math.ceil(N / 10)); i++) {
+  try { OFF.push(run('off' + i, i % 2 ? 'hs' : 'draft', 'random', null, false)); } catch (e) { crashes++; }
+}
 const T = (x) => C.totals(x.L);
 const hs = results.filter((x) => routeOf(x.L).start === 'hs');
 const routes = {}, slots = {}, pros = {}, verdicts = {};
@@ -183,8 +198,20 @@ const M = {
   'All-Star at least once': pct(count((x) => T(x).star > 0)),
   'MVP at least once': pct(count((x) => T(x).mvp > 0)),
   'a ring': pct(count((x) => T(x).rings > 0)),
-  'Hall of Fame (any tier)': pct(count((x) => C.legacy(x.L).score >= 55)),
-  'first ballot or better': pct(count((x) => C.legacy(x.L).score >= 85)),
+  'route: juco or walk-on': 100 * hs.filter((x) => /juco|walkon/.test(routeOf(x.L).pre)).length / Math.max(1, hs.length),
+  'route: undrafted or rec league': 100 * hs.filter((x) => routeOf(x.L).pre === 'rec' || routeOf(x.L).slot === 'undrafted').length / Math.max(1, hs.length),
+  'Hall of Fame (any tier)': pct(count((x) => endOf(x).hof)),
+  'first ballot or better': pct(count((x) => endOf(x).tier === 'hof_first')),
+  'GOAT debate ending': pct(count((x) => endOf(x).outcomes.indexOf('lo_goat') >= 0)),
+  'a secret ending': pct(count((x) => !!endOf(x).secret)),
+  'a legend event (switch on)': pct(count((x) => x.legendSeen.length > 0)),
+  'a legend event (switch off)': OFF.length ? 100 * OFF.filter((x) => x.legendSeen.length > 0).length / OFF.length : 0,
+  'events in the catalog': allIds.size,
+  'arcs met in the sweep': new Set([].concat(...results.map((x) => Object.keys(x.L.arcs || {})))).size,
+  'routes met in the sweep': new Set([].concat(...results.map((x) => C.routesOf(x.L)))).size,
+  'endings met in the sweep': new Set([].concat(...results.map((x) => { const e = endOf(x); return [e.tier].concat(e.outcomes, e.secret ? [e.secret] : []); }))).size,
+  'endings in the catalog': C.ENDING_COUNT(),
+  'legend events met in the sweep': new Set([].concat(...results.map((x) => x.legendSeen))).size,
   'distinct events per career': distinct,
   "two careers' event overlap": overlap,
   'median NBA seasons': median(results.map((x) => x.L.history.length)),
@@ -214,8 +241,20 @@ const TARGETS = [
   ['All-Star at least once', 22, 35, 'C'],
   ['MVP at least once', 1, 3, 'C'],
   ['a ring', 18, 30, 'C'],
+  ['route: juco or walk-on', 4, 10, 'D'],
+  ['route: undrafted or rec league', 4, 10, 'D'],
   ['Hall of Fame (any tier)', 18, 28, 'D'],
   ['first ballot or better', 5, 10, 'D'],
+  ['GOAT debate ending', 0.3, 1, 'D'],
+  ['a secret ending', 1, 4, 'D'],
+  ['a legend event (switch on)', 30, 45, 'D'],
+  ['a legend event (switch off)', 0, 0, 'D'],
+  ['events in the catalog', 250, Infinity, 'D'],
+  ['arcs met in the sweep', 40, Infinity, 'D'],
+  ['routes met in the sweep', 15, Infinity, 'D'],
+  ['endings in the catalog', 30, Infinity, 'D'],
+  ['endings met in the sweep', 30, Infinity, 'D'],
+  ['legend events met in the sweep', 20, Infinity, 'D'],
   ['distinct events per career', 70, 110, 'D'],
   ["two careers' event overlap", 0, 50, 'D'],
   ['median NBA seasons', 11, 14, 'C'],

@@ -32,11 +32,11 @@ function section(t) { console.log(`\n${t}\n${'-'.repeat(t.length)}`); }
 const clone = (x) => JSON.parse(JSON.stringify(x));
 const league = C.seedLeague(ROWS);
 const words = (s) => String(s).replace(/\{[a-z0-9]+(?::\w+)?\}/gi, 'X').split(/\s+/).filter(Boolean).length;
-const POOLS = { nba: C.EVENTS, am: C.AM_EVENTS, arc: C.ARC_EVENTS };
+const POOLS = { nba: C.EVENTS, am: C.AM_EVENTS, arc: C.ARC_EVENTS, story: C.STORY_EV };
 
 /* One career, every card it was dealt and the state it was dealt in. */
-function play(seed, start, pickFn) {
-  const L = C.newLife({ seed, league, start });
+function play(seed, start, pickFn, more) {
+  const L = C.newLife(Object.assign({ seed, league, start }, more || {}));
   const r = E.createSeededRNG(E.hashSeed(seed + ':pol'));
   const cards = [];
   let g = 0;
@@ -86,11 +86,15 @@ section('3. every card says when it is, and the story happens in order');
 {
   const NBA = /^(September|December|February|April|Summer) \d{4}$/;
   const AM = /^(Freshman|Sophomore|Junior|Senior) year · (January|December|March|October|Summer)$/;
+  /* Phase D's moments between the two: the year away, the weeks before a
+     draft, and draft night itself. */
+  const AWAY = new RegExp('^(' + Object.values(C.ALT_NAME).join('|') + ') · January$|^Before the \\d{4} draft$|^Draft night \\d{4}$');
   let events = 0, bad = [], cont = [];
   for (const x of runs) for (const k of x.cards) {
-    if (k.c.kind !== 'event' || !(C.EVENTS[k.c.id] || C.AM_EVENTS[k.c.id] || C.ARC_EVENTS[k.c.id])) continue;
+    const sev = C.STORY_EV[k.c.id];
+    if (k.c.kind !== 'event' || !(C.EVENTS[k.c.id] || C.AM_EVENTS[k.c.id] || C.ARC_EVENTS[k.c.id] || (sev && sev.pool !== 'post'))) continue;
     events++;
-    if (!(k.am ? AM : NBA).test(k.c.eyebrow)) bad.push(k.c.id + ' "' + k.c.eyebrow + '"');
+    if (!(k.am ? AM : NBA).test(k.c.eyebrow) && !AWAY.test(k.c.eyebrow)) bad.push(k.c.id + ' "' + k.c.eyebrow + '"');
     for (const c of k.cont) cont.push(c);
   }
   ok(events > N * 20, `the sweep met plenty of events (${events})`);
@@ -139,8 +143,22 @@ section('5. arcs: set up, escalate, pay off, and end more than one way');
   }
   const arcs = [...new Set(Object.keys(C.ARC_EVENTS).map((n) => n.split('_')[1]))];
   ok(arcs.length >= 6, `six arcs or more (${arcs.join(', ')})`);
-  for (const id of arcs) ok(how[id] && how[id].size >= 2, `${id} settles at least two ways (${how[id] ? [...how[id]].join(', ') : 'never'})`);
-  const dark = Object.keys(C.ARC_EVENTS).filter((n) => !nodes[n]);
+  /* Every arc is WRITTEN to end two ways or more: read off the nodes. */
+  const SRC = fs.readFileSync(path.join(HERE, 'career.js'), 'utf8');
+  for (const id of arcs) {
+    const tags = new Set();
+    for (const m of SRC.matchAll(new RegExp("end: \\['" + id + "', '([a-z]+)'\\]", 'g'))) tags.add(m[1]);
+    for (const m of SRC.matchAll(new RegExp("arcEnd\\(L, '" + id + "', ([^)]*)\\)", 'g'))) for (const q of m[1].matchAll(/'([a-z]+)'/g)) tags.add(q[1]);
+    ok(tags.size >= 2, `${id} is written to end at least two ways (${[...tags].join(', ') || 'none'})`);
+  }
+  /* And the ones this sweep settled often enough to judge DID end two ways.
+     A rare arc (a legend one, a farewell season) is judged by the 1,000
+     career simulator's "events never dealt", not by a sample of two hundred. */
+  for (const id of arcs) {
+    const n = runs.filter((x) => x.L.arcs && x.L.arcs[id] && x.L.arcs[id].done && x.L.arcs[id].done !== 'faded').length;
+    if (n >= 12) ok(how[id].size >= 2, `${id} settles at least two ways in the sweep (${[...how[id]].join(', ')} over ${n})`);
+  }
+  const dark = Object.keys(C.ARC_EVENTS).filter((n) => !nodes[n] && !C.ARC_EVENTS[n].authored);
   ok(dark.length === 0, `every arc node is dealt somewhere (${dark.join(', ') || 'all'})`);
   ok(early === 0, 'no arc node comes before its setup');
   const once = runs.every((x) => { const seen = {}; return x.cards.every((k) => !C.ARC_EVENTS[k.c.id] || !(seen[k.c.id] = (seen[k.c.id] || 0) + 1) || seen[k.c.id] === 1); });
@@ -219,6 +237,60 @@ section('10. goals are offered, chased, and judged');
   ok(share > 0.25 && share < 0.8, `a goal is a real ask: met ${(share * 100).toFixed(0)}% of the time`);
   const kinds = new Set(G.map((g) => g.k));
   ok(kinds.size >= 7, `goals fit many careers (${[...kinds].join(', ')})`);
+}
+
+section('12. Phase D: origins, routes, endings, epilogues and the legend switch');
+{
+  /* Every origin can be chosen, and it is the one the career reports. */
+  for (const k of C.ORIGIN_KEYS) {
+    const L = C.newLife({ seed: 'or' + k, league, start: 'hs', origin: k });
+    ok(L.origin === k && C.legacy(L).origin === C.ORIGINS[k].name, `the ${k} origin is kept and reported`);
+  }
+  const anyOrigin = C.newLife({ seed: 'or-any', league });
+  ok(C.ORIGIN_KEYS.indexOf(anyOrigin.origin) >= 0, 'with none chosen, one is drawn from the list');
+  /* The legend switch, off: no legend card in a single career, ever. */
+  let legendOff = 0, legendOn = 0;
+  for (let i = 0; i < Math.ceil(N / 4); i++) {
+    for (const k of play('lgoff' + i, i % 2 ? 'hs' : 'draft', null, { legend: false }).cards) if (C.evById(k.c.id) && C.evById(k.c.id).legend) legendOff++;
+  }
+  for (const x of runs) for (const k of x.cards) if (C.evById(k.c.id) && C.evById(k.c.id).legend) legendOn++;
+  ok(legendOff === 0, `with legend moments switched off, none is dealt (${legendOff})`);
+  ok(legendOn > 0, `with them on, the sweep meets some (${legendOn}), so the zero above means something`);
+  /* Routes are recognized from what the career did, and only known ones. */
+  const met = new Set();
+  let unknown = [];
+  for (const x of runs) for (const r of C.routesOf(x.L)) { met.add(r); if (!C.ROUTES[r]) unknown.push(r); }
+  ok(unknown.length === 0, `every recognized route is in the catalog (${unknown.slice(0, 3).join(', ') || 'all'})`);
+  ok(met.size >= 12, `the sweep recognized many routes (${met.size} of ${Object.keys(C.ROUTES).length})`);
+  /* Endings: a catalog of thirty or more, and every finished career has one. */
+  ok(C.ENDING_COUNT() >= 30, `thirty endings or more in the catalog (${C.ENDING_COUNT()})`);
+  const done = runs.filter((x) => x.L.history.length && x.L.retired);
+  const bare = done.filter((x) => !(x.L.final && x.L.final.ending && x.L.final.ending.tier));
+  ok(done.length > 20 && bare.length === 0, `every finished NBA career carries an ending (${done.length - bare.length} of ${done.length})`);
+  const tierIds = new Set(Object.keys(C.HOF_TIERS));
+  ok(done.every((x) => tierIds.has(x.L.final.ending.tier)), 'every ending tier is one of the catalog\'s');
+  /* Every road out of the game has its epilogue, and it closes the career. */
+  for (const p of C.AFTER_PATHS) ok(!!C.STORY_EV['ep_' + p[0]], `the ${p[0]} path has an epilogue`);
+  const eps = done.filter((x) => x.cards.some((k) => /^ep_/.test(k.c.id)));
+  ok(eps.length > 10, `finished careers meet their epilogue (${eps.length})`);
+  /* Real people stay on the court in everything Phase D wrote. */
+  const L = C.newLife({ seed: 'tok', league });
+  const real = [];
+  const AUTH = Object.assign({}, C.STORY_EV);
+  for (const id in C.ARC_EVENTS) if (C.ARC_EVENTS[id].authored) AUTH[id] = C.ARC_EVENTS[id];
+  const SRC = fs.readFileSync(path.join(HERE, 'career.js'), 'utf8');
+  for (const id in AUTH) {
+    const at = SRC.search(new RegExp('\\n  ' + id + ': '));
+    if (at < 0) { real.push(id + ' (not found in the source)'); continue; }
+    const rest = SRC.slice(at + 4);
+    const m = rest.search(/\n  [a-z0-9_]+: |\n\}\);/);
+    const chunk = rest.slice(0, m < 0 ? 3000 : m);
+    if (C.BASKETBALL_ONLY[id]) continue;
+    for (const t of C.REAL_TOKENS) if (new RegExp('\\{' + t + '(:[a-z]+)?\\}').test(chunk)) real.push(id + ' {' + t + '}');
+  }
+  ok(real.length === 0, `no Phase D card puts a real player or coach in a story (${real.slice(0, 4).join(', ') || 'none'})`);
+  ok(Object.keys(AUTH).length >= 150, `Phase D wrote the content it claims (${Object.keys(AUTH).length} cards)`);
+  void L;
 }
 
 section('11. the page shows it: people, legacy, news, and what you are known for');

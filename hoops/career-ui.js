@@ -238,6 +238,9 @@ var CSS = [
 '.cr-final .cr-aw{justify-content:center;margin-top:14px;}',
 '.cr-epi p{margin:0 0 12px;font-size:14.5px;line-height:1.5;}',
 '.cr-epi p:last-child{margin:0;}',
+'.cr-epi .cr-secret{color:var(--k-gold);font-weight:800;}',
+'.cr-epi .cr-secret .k{color:var(--k-gold);}',
+'.cr-road{margin:0 0 12px;font-size:14px;line-height:1.5;color:var(--k-ink-2);}',
 '.cr-epi .k{display:block;font:800 10px var(--k-f-text);letter-spacing:.14em;text-transform:uppercase;color:var(--k-ink-3);margin-bottom:3px;}',
 '.cr-place{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 var(--k-px) 14px;font-size:14px;color:var(--k-ink-2);}',
 '.cr-place b{color:var(--k-ink);}',
@@ -368,10 +371,11 @@ function freshForm(){
   var seed = String(Math.floor(Math.random() * 1e9));
   var B = window.RTF_BALLER;
   return { seed: seed, name: C.randomName(seed), num: Math.floor(Math.random() * 100), pos: 'SF', arch: 'twoway', bg: 'oad', start: 'hs',
-    look: B ? B.lookFor(seed) : {} };
+    origin: '', legend: true, look: B ? B.lookFor(seed) : {} };
 }
 function lifeOpts(){
-  return { seed: form.seed, name: form.name, num: form.num, pos: form.pos, arch: form.arch, bg: form.bg, start: form.start, look: form.look, league: league() };
+  return { seed: form.seed, name: form.name, num: form.num, pos: form.pos, arch: form.arch, bg: form.bg, start: form.start, look: form.look, league: league(),
+    origin: form.origin || undefined, legend: form.legend !== false };
 }
 /* The look chooser, shared by the builder and the Look sheet mid-career. The
    options are the sprite's own (baller.js) and are listed, never changed. */
@@ -450,6 +454,20 @@ function buildView(){
   var starts = '<button class="cr-opt' + (road ? ' on' : '') + '" data-start="hs" aria-pressed="' + road + '"><b>High school</b><small>Age 15. Recruiting, college, March, then the draft.</small></button>'
     + '<button class="cr-opt' + (!road ? ' on' : '') + '" data-start="draft" aria-pressed="' + !road + '"><b>Draft night</b><small>Skip ahead. Pick how you got there.</small></button>';
   var rv = road && C.roadView ? C.roadView(L) : null;
+  /* Where you are from (Phase D). Left on Surprise me, the seed draws one and
+     the line under the chips says which. */
+  var ori = '';
+  if (C.ORIGIN_KEYS) {
+    var any = !form.origin;
+    ori = '<span class="lab k-label">Where you are from</span><div class="cr-opts" id="cr-origin" role="group" aria-label="Where you are from">'
+      + '<button class="cr-opt' + (any ? ' on' : '') + '" data-origin="" aria-pressed="' + any + '"><b>Surprise me</b><small>One of these, drawn for you.</small></button>'
+      + C.ORIGIN_KEYS.map(function(o){ var on = form.origin === o; return '<button class="cr-opt' + (on ? ' on' : '') + '" data-origin="' + o + '" aria-pressed="' + on + '"><b>' + esc(C.ORIGINS[o].name) + '</b><small>' + esc(C.ORIGINS[o].blurb) + '</small></button>'; }).join('')
+      + '</div>' + (any && L.origin ? '<p class="cr-town" id="cr-origin-line">Drawn: <b>' + esc(C.ORIGINS[L.origin].name) + '.</b> ' + esc(C.ORIGINS[L.origin].blurb) + '</p>' : '')
+      + '<span class="lab k-label">Legend moments</span><div class="cr-chips" id="cr-legend" role="group" aria-label="Legend moments">'
+      + '<button class="k-chip' + (form.legend ? ' on' : '') + '" data-legend="1" aria-pressed="' + !!form.legend + '">On</button>'
+      + '<button class="k-chip' + (!form.legend ? ' on' : '') + '" data-legend="0" aria-pressed="' + !form.legend + '">Off</button></div>'
+      + '<p class="cr-town">Rare, larger than life stories. Off keeps every story grounded.</p>';
+  }
   var B = window.RTF_BALLER;
   return '<div class="cr-top"><h2 class="k-h1">New career</h2><button class="k-btn k-quiet" id="cr-home">Home</button></div>'
     + '<div class="k-panel cr-build">'
@@ -461,6 +479,7 @@ function buildView(){
     + '<span class="lab k-label">Position</span><div class="cr-chips" id="cr-pos" role="group" aria-label="Position">' + pos + '</div>'
     + '<span class="lab k-label">Your look</span>' + lookRows(form.look, k.primary, k.secondary, form.num)
     + '<span class="lab k-label">Your game</span><div class="cr-opts" id="cr-arch">' + arch + '</div>'
+    + ori
     + '<span class="lab k-label">Where it starts</span><div class="cr-opts" id="cr-start">' + starts + '</div>'
     + (road ? '<p class="cr-town">' + esc(rv.what) + ' at ' + esc(rv.where) + '. ' + esc(rv.sub) + '.</p>'
       : '<span class="lab k-label">Your road to the draft</span><div class="cr-opts" id="cr-bg">' + bg + '</div>')
@@ -481,6 +500,8 @@ function wireBuild(){
   root.querySelectorAll('[data-pos]').forEach(function(b){ b.onclick = function(){ form.pos = b.getAttribute('data-pos'); render(); }; });
   root.querySelectorAll('[data-arch]').forEach(function(b){ b.onclick = function(){ form.arch = b.getAttribute('data-arch'); render(); }; });
   root.querySelectorAll('[data-bg]').forEach(function(b){ b.onclick = function(){ form.bg = b.getAttribute('data-bg'); render(); }; });
+  root.querySelectorAll('[data-origin]').forEach(function(b){ b.onclick = function(){ form.origin = b.getAttribute('data-origin'); render(); }; });
+  root.querySelectorAll('[data-legend]').forEach(function(b){ b.onclick = function(){ form.legend = b.getAttribute('data-legend') === '1'; render(); }; });
   root.querySelectorAll('[data-start]').forEach(function(b){ b.onclick = function(){ form.start = b.getAttribute('data-start'); render(); }; });
   $('cr-home').onclick = goHome;
   wireLook(root, form.look, render);
@@ -701,6 +722,10 @@ function legacyHtml(L){
   var out = '<div class="cr-leg"><div><b>' + esc(v.rung) + '</b><span>Today</span></div>'
     + '<div><b>' + (v.next ? '+' + v.next.need : 'Top') + '</b><span>' + esc(v.next ? 'To ' + v.next.name : 'Of the ladder') + '</span></div>'
     + '<div><b>' + v.hof + '%</b><span>Hall chance</span></div></div>';
+  if (C.routesOf && C.storyOn(L)) {
+    var road = [L.origin ? C.ORIGINS[L.origin].name : null].concat(C.routesOf(L).map(function(k){ return C.ROUTES[k][0]; })).filter(Boolean);
+    if (road.length) out += '<h3 class="cr-sub">Your road</h3><p class="cr-road">' + esc(road.join(' · ')) + '</p>';
+  }
   if (v.watch.length) out += '<h3 class="cr-sub">Records watch</h3><ul class="cr-list">' + v.watch.map(function(w){ return '<li>' + w.left.toLocaleString('en-US') + ' ' + esc(w.word) + ' to ' + w.m.toLocaleString('en-US') + '.</li>'; }).join('') + '</ul>';
   if (G.length) out += '<h3 class="cr-sub">Goals · ' + G.filter(function(g){ return g.met; }).length + ' of ' + G.length + ' met</h3><ul class="cr-list">'
     + G.slice().reverse().slice(0, 10).map(function(g){ return '<li class="' + (g.met ? 'met' : '') + '"><span class="yr">' + g.y + '</span>' + esc(C.GOALS[g.k][0]) + (g.met ? '. Done.' : '. Missed.') + '</li>'; }).join('') + '</ul>';
@@ -1090,7 +1115,9 @@ function finish(){
     teams: teams, totals: f.totals, awards: awardCounts(L), history: L.history, amHist: L.amHist || [], college: collegeOf(L),
     after: f.after || '', jersey: f.jersey || null, rival: f.rival || null, life: f.life || '',
     nick: f.nick || null, traits: f.traits || null, sig: f.sig || null, badges: f.badges || null, moments: f.moments || null, goals: f.goals || null,
-    team: teams[teams.length - 1] || null, at: Date.now() };
+    team: teams[teams.length - 1] || null, at: Date.now(),
+    origin: f.origin || null, epilogue: f.epilogue || '',
+    ending: f.ending ? { tier: f.ending.tier, tierName: f.ending.tierName, names: f.ending.names || [], secretName: f.ending.secretName || null, routes: f.ending.routes || [] } : null };
   /* The badges, through the page's one feat writer, so a Career badge is
      kept on the account the way every other mode's is. */
   var BD = window.RTF_BADGES;
@@ -1221,8 +1248,13 @@ function finalView(card){
     + (card.jersey ? '<p class="cr-col">Your #' + esc(String(card.num)) + ' hangs in the rafters for the ' + esc(E.TEAM_NAMES[card.jersey] || card.jersey) + '.</p>' : '')
     + totalsHtml(T, '<div><b>' + (T.pts / gp).toFixed(1) + '</b><span>A game</span></div><div><b>' + T.seasons + '</b><span>Seasons</span></div>')
     + aw + '</div></div>'
-    + (card.after || card.rival || card.life ? '<div class="k-panel cr-sec cr-epi">'
-      + (card.after ? '<p><span class="k">After basketball</span>' + esc(card.after) + '</p>' : '')
+    + (card.after || card.rival || card.life || card.ending ? '<div class="k-panel cr-sec cr-epi">'
+      + (card.ending && card.ending.secretName ? '<p class="cr-secret"><span class="k">A secret ending</span>' + esc(card.ending.secretName) + '</p>' : '')
+      + (card.ending ? '<p><span class="k">The Hall</span>' + esc(card.ending.tierName) + '</p>' : '')
+      + (card.ending && card.ending.names.length ? '<p><span class="k">Remembered as</span>' + esc(card.ending.names.join(' · ')) + '</p>' : '')
+      + (card.origin || (card.ending && card.ending.routes.length) ? '<p><span class="k">The road</span>' + esc([card.origin].concat(card.ending ? card.ending.routes : []).filter(Boolean).join(' · ')) + '</p>' : '')
+      + (card.epilogue ? '<p><span class="k">Years later</span>' + esc(card.epilogue) + '</p>'
+        : card.after ? '<p><span class="k">After basketball</span>' + esc(card.after) + '</p>' : '')
       + (card.rival ? '<p><span class="k">Your rival</span>' + esc(card.rival.name) + ': ' + card.rival.pts.toLocaleString('en-US') + ' points, '
         + card.rival.star + 'x All-Star, ' + card.rival.rings + (card.rival.rings === 1 ? ' ring.' : ' rings.')
         + (card.totals.pts > card.rival.pts ? ' You had the better career.' : ' He had the better career.') + '</p>' : '')

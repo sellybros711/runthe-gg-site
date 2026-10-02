@@ -104,6 +104,13 @@ and goes to Phase D.
 
 ## Phase D. Routes, storylines, outcomes
 
+Done 2026-10-02. Report: `reports/phase-d-sim.md`; guards: `sim-career.mjs
+--phase D` (every band and catalog target) and section 12 of `check-story.mjs`.
+Still story careers only: a migrated save replays byte identical, proved over
+1,000 careers against the Phase C engine. The creation screen picks an origin
+and switches the legend layer; the Hall card shows the tier, what the career
+is remembered as, the road, any secret ending and the epilogue.
+
 Content in the order that adds the most variety per event written:
 origins, routes to the pros, pro routes, arcs by stage, endings and
 epilogues, the recurring cast, the legend layer (with its off switch).

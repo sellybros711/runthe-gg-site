@@ -620,7 +620,8 @@ function lockerBy(L, tag) {
    below may not use one, and check-career holds that. The list is short and
    every entry says why it is basketball. */
 const REAL_TOKENS = ['vet', 'star', 'blocker', 'rookie', 'mate', 'mate2', 'opp', 'opp2', 'coach', 'oldcoach', 'firedcoach', 'interim', 'bigname', 'rivalcoach'];
-const INVENTED_TOKENS = ['tm', 'tm2', 'tvet', 'trook', 'tco', 'topp', 'rival', 'beat', 'critic', 'fan', 'shoeexec', 'aau', 'friend', 'trainer', 'press', 'pbp', 'ellis', 'lazlo', 'gm', 'owner', 'agent', 'foe', 'oldvet', 'campkid', 'bff'];
+const INVENTED_TOKENS = ['tm', 'tm2', 'tvet', 'trook', 'tco', 'topp', 'rival', 'beat', 'critic', 'fan', 'shoeexec', 'aau', 'friend', 'trainer', 'press', 'pbp', 'ellis', 'lazlo', 'gm', 'owner', 'agent', 'foe', 'oldvet', 'campkid', 'bff',
+  'sonny', 'maya', 'dre', 'father', 'rookie2', 'costar', 'exec', 'mascot'];
 const BASKETBALL_ONLY = {
   slump: 'the coach shortens a rotation leash',
   coach_bench: 'the coach decides minutes',
@@ -693,6 +694,18 @@ function peopleKey(L, k) {
     case 'school2': return arcData(L, 'prep').school || 'State';
     case 'bff': { const b = bestMate(L); return b ? b.n : lockerOf(L)[0].n; }
     case 'beat': case 'critic': case 'fan': case 'shoeexec': case 'aau': case 'press': case 'pbp': case 'ellis': case 'lazlo': return CAST[k];
+    case 'sonny': return CAST.shadyagent;
+    case 'maya': return CAST.straightagent;
+    case 'dre': return CAST.dre;
+    case 'father': return kinName(L, 'dad', 'm');
+    case 'town': return (L.am && L.am.town) || L.flags.town || 'home';
+    case 'abroad': { const m = recall(L, 'origin.abroad'); return m ? m.v : 'home'; }
+    case 'school': { if (L.am && L.am.college) return L.am.college; const h = (L.amHist || []).filter((x) => x.lvl === 'NCAA').pop(); return h ? h.school : 'your old school'; }
+    case 'club': return L.team ? nick(L.team) : 'club';
+    case 'rookie2': return personName(L, 'rookie2:' + (L.team || '') + ':' + Math.floor(L.year / 3));
+    case 'costar': return arcData(L, 'costar').n || personName(L, 'costar');
+    case 'exec': return personName(L, 'exec:' + L.year, 'x');
+    case 'mascot': return 'Rumble';
     case 'ref': return personName(L, 'ref:' + L.steps);
     case 'guru': return personName(L, 'guru', 'x');
     case 'rivalcoach': { const r = rngAt(L, 'rc:' + L.steps); const cs = CLUBS.filter((c) => c !== L.team); return coachName(L, pick(r, cs)); }
@@ -803,11 +816,17 @@ function newLife(opts) {
     : Math.round(bg.pot[0] + Math.pow(rng(), 1.7) * (bg.pot[1] - bg.pot[0]));
   L.eth = Math.round(45 + rng() * 40);
   L.dur = Math.round(45 + rng() * 45);
+  /* Where you are from, and on draft night the road you took to get here. */
+  if (L.opt.story) {
+    setOrigin(L, o.origin);
+    if (!road) L.flags.town = pick(E.createSeededRNG(E.hashSeed(seed + ':town')), HOMETOWNS);
+    if (!road) remember(L, 'route.' + ({ oad: 'oad', senior: 'four', intl: 'intl', gl: 'gl' }[bgKey]), true);
+  }
   if (road) {
     L.cash = 0;
     newRoad(L, rng);
     logIt(L, L.name + ', ' + POS_NAME[pos].toLowerCase() + '. A sophomore at ' + L.am.hs.name + '. Age ' + L.age + '.', 'gold');
-    queueEvents(L, 'hs_sum', rngAt(L, 'n:sum')() < 0.5 ? 1 : 0, AM_EVENTS);
+    queueEvents(L, 'hs_sum', L.opt.story || rngAt(L, 'n:sum')() < 0.5 ? 1 : 0, AM_EVENTS);
     sayAll(L);
     return L;
   }
@@ -887,6 +906,13 @@ function draftStock(L) {
 }
 function projectedPick(L, extra) {
   const s = draftStock(L) + (extra || 0);
+  /* A story career's board is spread the way a real one is: a quarter of a
+     class in the lottery, the first round deeper, and a real undrafted tail. */
+  if (storyOn(L)) {
+    /* A rec league player is on nobody's board until somebody films him. */
+    if (s < 74.5 || (recall(L, 'route.rec') && !recall(L, 'rec.viral'))) return 61;
+    return clamp(Math.round(60 / (1 + Math.exp((s - 81.7) / 4.6))) + 1, 1, 61);
+  }
   const p = Math.round(60 / (1 + Math.exp((s - 83.5) / 2.4))) + 1;
   return clamp(p, 1, 61);
 }
@@ -972,6 +998,19 @@ function runDraft(L, beats) {
     makeRival(L, null);
     beats.push({ kind: 'draft', text: 'Sixty names. Not yours.', tone: 'bad' });
     logIt(L, 'Went undrafted.', 'bad');
+    if (storyOn(L)) {
+      /* A story career has to earn the deal: a Summer League invite is a
+         tryout, and the money overseas is real. */
+      remember(L, 'route.undrafted', true);
+      L.pending.push({
+        id: 'undrafted', kind: 'event', key: 'undrafted', eyebrow: 'After the draft',
+        title: 'Your phone is ringing.', text: 'Three clubs want you on their Summer League team. No promises.',
+        ctx: { story: 1 },
+        options: three.map((c) => ({ label: 'Summer League with the ' + nick(c), hint: clubTier(clubNet(L, c)) + '. Earn a two-way deal.', club: c }))
+          .concat([{ label: 'Take the money overseas', hint: 'A real contract in Europe. Come back later.' }]),
+      });
+      return;
+    }
     L.pending.push({
       id: 'undrafted', kind: 'event', key: 'undrafted', eyebrow: 'After the draft',
       title: 'Your phone is ringing.',
@@ -982,6 +1021,7 @@ function runDraft(L, beats) {
   }
   const round = p > 30 ? 2 : 1;
   L.draft = { pick: p, round, team };
+  if (storyOn(L)) L.draft.net = round1(clubNet(L, team));
   makeRival(L, p);
   const sal = rookieSalary(L, p);
   L.contract = { years: round === 1 ? 4 : 2, total: round === 1 ? 4 : 2, salary: sal, kind: round === 1 ? 'rookie' : 'min', start: L.year };
@@ -993,6 +1033,8 @@ function runDraft(L, beats) {
   else if (p <= 5) bump(L, { fame: 10 });
   else if (p <= 14) bump(L, { fame: 5 });
   L.phase = 'drafted';
+  /* Draft night itself, before the summer it opens. */
+  if (storyOn(L)) queueEvents(L, 'dn', 1);
   openYear(L);
   /* A first-round pick walks across the stage to the podium. Ahead of
      whatever the summer has queued, because it happens tonight. */
@@ -1085,7 +1127,7 @@ function rollInjury(L, chunk, beats) {
   const p = 0.065 + (100 - L.dur) * 0.0011 + Math.max(0, a - 28) * 0.009
     + Math.max(0, 60 - L.m.health) * 0.0016 + s.mods.risk;
   if (rng() >= p * (trait(L, 'injuryProne') ? 1.3 : trait(L, 'ironMan') ? 0.65 : 1)) return;
-  if (storyOn(L) && (tw(L).inj = (tw(L).inj || 0) + 1) >= 3) reveal(L, 'injuryProne', 'Three injuries already. The trainers know your name.', beats);
+  if (storyOn(L) && (tw(L).inj = (tw(L).inj || 0) + 1) >= 3) reveal(L, 'injuryProne', 'Three injuries already. You know the training room by heart.', beats);
   const r = rng();
   const from = CHUNKS[chunk][0] + Math.floor(rng() * 20);
   if (r < 0.62) {
@@ -1620,7 +1662,7 @@ function develop(L, beats) {
     beats.push({ kind: 'dev', text: t, tone: diff > 0 ? 'good' : 'bad' });
     logIt(L, t, diff > 0 ? 'good' : 'bad');
   }
-  if (diff >= 2 && a >= 25) reveal(L, 'lateBloomer', 'Still getting better at ' + a + '.', beats);
+  if (diff >= 1 && a >= 24) reveal(L, 'lateBloomer', 'Still getting better at ' + a + '.', beats);
   if (L.eth >= 85 && a >= 22) reveal(L, 'gymRat', 'First in the gym. Every day.', beats);
   bump(L, { health: 28 });
 }
@@ -1721,6 +1763,7 @@ function offseason(L, beats) {
     beats.push({ kind: 'trade', text: 'Your request is granted. Traded to the ' + E.teamName(to) + '.', tone: 'gold' });
   }
   if (L.age >= bal(L, 'maxAge', 40)) { retire(L, beats, 'The body made the call at ' + L.age + '.'); return; }
+  if (storyOn(L) && L.flags.farewell === L.year) { retire(L, beats, 'Retired at ' + L.age + ' after a farewell season.'); return; }
   const tired = L.age >= bal(L, 'tired', 34) || (L.age >= 31 && o < 70);
   if (c && c.years === 1 && c.kind === 'rookie' && o >= 66) {
     const sal = round1(marketSalary(L, o + 2) * 0.97);
@@ -1782,7 +1825,7 @@ function retire(L, beats, why) {
   const t = why || 'Retired at ' + L.age + '.';
   beats.push({ kind: 'retire', text: t, tone: 'gold' });
   logIt(L, t + ' ' + L.final.verdict + '.', 'gold');
-  L.pending.push(afterCard(L));
+  L.pending.push(storyOn(L) ? storyAfterCard(L) : afterCard(L));
 }
 /* For the screen's own retire button, which can come at any point. */
 function retireNow(L) {
@@ -1853,7 +1896,11 @@ const VERDICTS = [
 ];
 function legacy(L) {
   const T = totals(L);
-  if (!L.history.length) return { totals: T, score: 0, verdict: 'Never made the league', blurb: 'The game gave you a lot. The league never called.' };
+  if (!L.history.length) {
+    const nv = { totals: T, score: 0, verdict: 'Never made the league', blurb: 'The game gave you a lot. The league never called.' };
+    if (storyOn(L)) { nv.origin = L.origin ? ORIGINS[L.origin].name : null; nv.ending = endingOf(L, T, 0, null); }
+    return nv;
+  }
   const score = legacyScore(T);
   const v = VERDICTS.find((x) => score >= x[0]);
   /* A club retires your number when you were great there for a long time. */
@@ -1874,6 +1921,8 @@ function legacy(L) {
     out.moments = memories(L).slice(-5).map((m) => ({ y: m.y, t: m.t }));
     const G = L.goals || [];
     out.goals = { met: G.filter((g) => g.met).length, of: G.length };
+    out.origin = L.origin ? ORIGINS[L.origin].name : null;
+    out.ending = endingOf(L, T, score, jersey);
   }
   return out;
 }
@@ -2550,7 +2599,7 @@ const EVENTS = {
   },
   /* The setup of the feud arc. An invented player, named once and kept. */
   feud_start: {
-    phases: ['early', 'mid'], req: { story: true, seasons: [1, null], fame: [25, null], minutes: [18, null] }, weight: 2.2, rarity: 'uncommon',
+    phases: ['early', 'mid'], req: { story: true, seasons: [1, null], fame: [25, null], minutes: [18, null] }, weight: 1.2, rarity: 'uncommon',
     queue: (L) => arcStart(L, 'feud', null, 'early', 1, { n: personName(L, 'foe:' + L.year) }),
     title: '{foe} calls you soft.',
     text: () => 'On his podcast, by name. The clip is in your phone forty times.',
@@ -2598,6 +2647,8 @@ function makeRival(L, myPick) {
   const rng = rngAt(L, 'rival');
   let name = pick(rng, RIVAL_FIRST) + ' ' + pick(rng, RIVAL_LAST);
   if (name === L.name) name = pick(rng, RIVAL_FIRST) + ' Okafor-' + pick(rng, RIVAL_LAST);
+  /* The kid from camp is the rival on draft night too. */
+  if (storyOn(L) && recall(L, 'camp.met') && L.name !== CAST.dre) name = CAST.dre;
   const p = myPick ? clamp(myPick + (rng() < 0.5 ? -1 : 1) * (1 + Math.floor(rng() * 3)), 1, 60) : 1 + Math.floor(rng() * 14);
   const o = ovrOf(L);
   L.rival = {
@@ -2846,6 +2897,7 @@ function eligible(L, ev, phase, used, once) {
   const ph = storyOn(L) && STORY_PHASES[ev.id] ? STORY_PHASES[ev.id] : ev.phases;
   if (ph.indexOf(phase) < 0) return false;
   if (used[ev.id]) return false;
+  if (ev.legend && (!(L.opt && L.opt.legend) || !legendOpen(L))) return false;
   if (ev.once && once[ev.id]) return false;
   if (!evOpen(L, ev)) return false;
   if (!reqOk(L, ev.req)) return false;
@@ -2865,6 +2917,10 @@ function eligible(L, ev, phase, used, once) {
 const SLOT_MONTH = { pre: 'September', early: 'December', mid: 'February', late: 'April', hs: 'January', col: 'December', col_mar: 'March', col_pre: 'October' };
 const SLOT_SUMMER = { off: 1, hs_sum: 1, hs_off: 1, col_off: 1 };
 function calendar(L, slot) {
+  if (slot === 'post') return 'Years later';
+  if (slot === 'predraft') return 'Before the ' + (L.year - 1) + ' draft';
+  if (slot === 'dn') return 'Draft night ' + (L.year - 1);
+  if (slot === 'alt') return (ALT_NAME[(L.am || {}).route] || 'Away') + ' · January';
   const nba = !isAm(L);
   const y = nba && (slot === 'pre' || slot === 'early') ? L.year - 1 : L.year;
   const when = SLOT_SUMMER[slot] ? 'Summer' : (SLOT_MONTH[slot] || 'This season');
@@ -2897,6 +2953,7 @@ const STORY_RECURS = {
   rivalry_col: [1, 3], summer_league: [1, 2], camp_invite: [1, 2], nil_deal: [1, 4],
 };
 const recurs = (id) => !!STORY_RECURS[id];
+let AM_ALL = null, NBA_ALL = null;
 const SUMMERY = { off: 1, pre: 1, hs_sum: 1, hs_off: 1, col_pre: 1, col_off: 1 };
 function dealCard(L, phase, ev) {
   if (ev.queue) ev.queue(L);
@@ -2911,6 +2968,9 @@ function dealCard(L, phase, ev) {
 }
 function queueEvents(L, phase, n, pool) {
   pool = pool || EVENTS;
+  /* A story career draws from the Phase D catalog as well. */
+  if (storyOn(L)) pool = pool === AM_EVENTS ? (AM_ALL || (AM_ALL = Object.assign({}, AM_EVENTS, STORY_AM)))
+    : pool === EVENTS ? (NBA_ALL || (NBA_ALL = Object.assign({}, EVENTS, STORY_NBA))) : pool;
   if (!L.flags.offUsed || L.flags.offUsed.y !== L.year) L.flags.offUsed = { y: L.year };
   const used = L.season ? L.season.used : L.flags.offUsed;
   const once = L.flags.once = L.flags.once || {};
@@ -2918,11 +2978,19 @@ function queueEvents(L, phase, n, pool) {
   /* An arc that is due is dealt first, and takes one of the slot's places. */
   if (storyOn(L)) {
     const due = dueArcs(L, phase);
-    if (due.length) { dealCard(L, phase, ARC_EVENTS[due[0]]); n = Math.max(0, n - 1); }
+    /* Two arcs can be due in one slot (an April with a farewell and a
+       label to answer); both are dealt, each taking a place. */
+    for (const id of due.slice(0, 2)) { dealCard(L, phase, ARC_EVENTS[id]); n = Math.max(0, n - 1); }
   }
   for (let k = 0; k < n; k++) {
     const ids = Object.keys(pool).filter((id) => eligible(L, pool[id], phase, used, once));
-    const id = weighted(rng, ids, (x) => pool[x].weight(L));
+    /* On a story career the old recurring cards (a slump, a night out) give
+       way a little to the wider catalog, so two careers share less. */
+    /* A life off the floor keeps its pace: meeting someone, a proposal, a
+       wedding, a baby. Damping those left a sweep of 600 with eleven weddings,
+       so on a story career they are dealt a little more often, not less. */
+    const damp = storyOn(L) ? (x) => (LIFE_CYCLE[x] ? 1.8 : STORY_RECURS[x] && !STORY_EV[x] ? 0.2 : 1) : () => 1;
+    const id = weighted(rng, ids, (x) => pool[x].weight(L) * damp(x));
     if (!id) return;
     used[id] = 1;
     if (pool[id].once) once[id] = 1;
@@ -2941,10 +3009,11 @@ function queueEvents(L, phase, n, pool) {
    state only and change nothing. */
 const IN_GAME = { court: 1, locker: 1 };
 const PARTNER_EVENTS = { propose: 1, wedding: 1, baby: 1, breakup: 1 };
+const LIFE_CYCLE = { meet_someone: 1, propose: 1, wedding: 1, baby: 1 };
 function continuity(L, card) {
   const out = [];
-  const ev = card && (EVENTS[card.id] || AM_EVENTS[card.id] || ARC_EVENTS[card.id]);
-  if (!ev || card.kind !== 'event') return out;
+  const ev = card && evById(card.id);
+  if (!ev || card.kind !== 'event' || ev.pool === 'post') return out;
   if (ev.pool === 'arc') {
     if (ev.stage === 'nba' && isAm(L)) out.push(card.id + ' is an NBA arc dealt before the NBA');
     if (ev.stage === 'am' && !isAm(L)) out.push(card.id + ' is a school arc dealt in the NBA');
@@ -2990,6 +3059,8 @@ const ROLE_OF = {
   trook: 'Teammate', tco: 'Teammate', rival: 'Draft-class rival', partner: 'Partner', mom: 'Mom', dad: 'Dad', cousin: 'Cousin',
   friend: 'Friend from home', beat: 'Beat writer', critic: 'TV critic', trainer: 'Trainer', hscoach: 'High school coach',
   roommate: 'College roommate', foe: 'Nemesis', oldvet: 'Old teammate', campkid: 'Kid from your camp', shoeexec: 'Shoe executive', fan: 'Superfan',
+  sonny: 'Agent', maya: 'Agent', dre: 'Rival from camp', aau: 'AAU coach', ellis: 'Streetball legend', lazlo: 'Owner', father: 'Dad',
+  rookie2: 'Teammate', costar: 'Co-star',
 };
 function meet(L, tok, name) {
   const n = name || peopleKey(L, tok);
@@ -4028,27 +4099,59 @@ function colTourney(L, beats, upto) {
 }
 
 /* A year as a professional before the draft: overseas, or in the G League. */
+const ALT_TEAM = { intl: 'Overseas', gl: 'G League', juco: 'Junior college', prep: 'Prep school', gap: 'Private runs', rec: 'Rec league' };
+const ALT_NET = { intl: 0, gl: 0, juco: -6, prep: -3, gap: -2, rec: -9 };
 function proYear(L, beats) {
   const route = L.am.route;
-  L.am.proTeam = route === 'intl' ? 'Overseas' : 'G League';
-  L.am.proNet = round1(norm(rngAt(L, 'pronet')) * 3);
-  newAmSeason(L, 'pro');
+  /* A story career plays the year in two halves, with a card between, so the
+     year can have a story. A save from before plays it in one step. */
+  const story = storyOn(L), half = story ? 16 : 32;
+  if (!story || !L.am.altHalf) {
+    L.am.proTeam = ALT_TEAM[route] || 'G League';
+    L.am.proNet = round1(norm(rngAt(L, 'pronet')) * 3 + (story ? ALT_NET[route] || 0 : 0));
+    newAmSeason(L, 'pro');
+    const s = L.season;
+    s.role = amRole(L);
+    amInjury(L, 'pro', beats);
+    amGames(L, half, (r) => norm(r) * 3, 'pro', beats, false);
+    if (story) {
+      L.am.altHalf = 1;
+      queueEvents(L, 'alt', 1 + (rngAt(L, 'n:alt')() < 0.5 ? 1 : 0), AM_EVENTS);
+      return;
+    }
+  } else {
+    L.am.altHalf = 0;
+    amGames(L, half, (r) => norm(r) * 3, 'pro2', beats, false);
+  }
   const s = L.season;
-  const role = amRole(L);
-  s.role = role;
-  amInjury(L, 'pro', beats);
-  amGames(L, 32, (r) => norm(r) * 3, 'pro', beats, false);
   const pg = perGame(s);
-  const where = route === 'intl' ? 'A season overseas against grown men' : 'A season in the G League';
+  const where = { intl: 'A season overseas against grown men', gl: 'A season in the G League', juco: 'A junior college season',
+    prep: 'A prep school season', gap: 'A year of private runs', rec: 'A year of rec league and pro-ams' }[route] || 'A season';
   beats.push({ kind: 'record', text: where + ': ' + pg.pts + ' points, ' + pg.reb + ' rebounds, ' + pg.ast + ' assists.', tone: 'good' });
-  bump(L, { cash: route === 'intl' ? 0.5 : 0.6, iq: 2 });
-  L.am.stock = (L.am.stock || 0) + 1 + Math.max(0, (pg.pts - 12) * 0.15);
-  s.finish = route === 'intl' ? 'Pro' : 'G League';
+  bump(L, { cash: route === 'intl' ? 0.5 : route === 'gl' ? 0.6 : route === 'rec' ? 0.03 : 0, iq: 2 });
+  L.am.stock = (L.am.stock || 0) + (route === 'rec' ? -1.5 : route === 'gap' ? 0.4 : 1) + Math.max(0, (pg.pts - 12) * 0.15);
+  s.finish = ALT_TEAM[route] === 'Overseas' ? 'Pro' : ALT_TEAM[route] || 'G League';
   pushAmHist(L);
   developAm(L, beats);
+  if (route === 'juco' || route === 'prep') {
+    /* One year away, then the choice again, with whatever the year earned. */
+    L.am.altDone = true;
+    L.am.level = 'hs';
+    L.am.grade = 12;
+    if (route === 'juco') L.am.jucoYear = true;
+    L.am.rstock = (L.am.rstock || 0) + clamp((pg.pts - 14) * 0.08, -0.5, 1.2) + (route === 'prep' ? 0.6 : 0.3);
+    L.am.rank = nationalRank(L);
+    L.stage = 'hs';
+    L.phase = 'hs_off';
+    beats.push({ kind: 'rank', text: 'New offers come in. ' + rankText(L.am.rank) + '.', tone: 'good' });
+    queueEvents(L, 'hs_off', 0, AM_EVENTS);
+    L.pending.push(commitCard(L));
+    return;
+  }
   L.age++;
   L.year++;
   driftLeague(L, beats);
+  if (route === 'rec') L.flags.stock = (L.flags.stock || 0) - 6;
   toDraft(L, beats, route);
 }
 
@@ -4056,7 +4159,7 @@ function proYear(L, beats) {
 
 function pushAmHist(L) {
   const s = L.season, pg = perGame(s);
-  const lvl = s.lvl === 'hs' ? 'HS' : s.lvl === 'col' ? 'NCAA' : L.am.route === 'intl' ? 'Overseas' : 'G League';
+  const lvl = s.lvl === 'hs' ? 'HS' : s.lvl === 'col' ? 'NCAA' : L.am.route === 'intl' ? 'Overseas' : L.am.route === 'gl' ? 'G League' : ALT_TEAM[L.am.route] || 'G League';
   L.amHist.push(Object.assign({ y: s.year, age: L.age, lvl, school: s.school, ovr: ovrOf(L), w: s.w, l: s.l,
     finish: s.finish || '', seed: s.seed || null, rank: L.am.rank || null, aw: s.awards.slice() }, pg));
 }
@@ -4141,7 +4244,7 @@ function draftTalk(p) {
 
 function hsOffCards(L) {
   const g = L.am.grade;
-  if (g === 11 && !L.am.college) {
+  if (g === 11 && !L.am.college && !(storyOn(L) && L.am.rank > 150)) {
     const list = collegeOffers(L, 'jr');
     L.am.offers = list;
     L.pending.push({
@@ -4168,8 +4271,21 @@ function commitCard(L) {
   const list = collegeOffers(L, 'sr');
   L.am.offers = list;
   const opts = list.slice(0, 3).map((n) => ({ label: n, hint: schoolHint(L, n), school: n }));
-  if (L.am.rank <= 90) opts.push({ label: 'Turn pro overseas', hint: 'Paid to play against men for a year. Then the draft.', route: 'intl' });
-  if (L.am.rank <= 140) opts.push({ label: 'Sign with the G League', hint: 'A paycheck and NBA coaching. Then the draft.', route: 'gl' });
+  const rk = L.am.rank, again = !!L.am.altDone;
+  if (storyOn(L) && !again) {
+    /* A story career sees every road its ranking really has. */
+    if (rk >= 90 && rk <= 420) opts.push({ label: 'A prep school year', hint: 'One more year to grow. Then choose again.', route: 'prep' });
+    if (rk <= 80 && rngAt(L, 'gapoffer')() < 0.6) opts.push({ label: 'Take a gap year', hint: 'Train alone for the draft. No team, no games.', route: 'gap' });
+  }
+  if (!again && (rk <= 90 || (storyOn(L) && rk <= 110)) && (!storyOn(L) || rngAt(L, 'intloffer')() < 0.65)) opts.push({ label: 'Turn pro overseas', hint: 'Paid to play against men for a year. Then the draft.', route: 'intl' });
+  if (!again && (rk <= 140 || (storyOn(L) && rk <= 165)) && (!storyOn(L) || rngAt(L, 'gloffer')() < 0.45)) opts.push({ label: 'Sign with the G League', hint: 'A paycheck and NBA coaching. Then the draft.', route: 'gl' });
+  if (storyOn(L) && !again) {
+    const power = SCHOOLS.filter((x) => x.tier === 'power');
+    const walk = power[Math.floor(rngAt(L, 'walkon')() * power.length)].name;
+    if (rk >= 265) opts.push({ label: 'Walk on at ' + walk, hint: 'No scholarship. A jersey if you earn it.', route: 'walkon', school: walk });
+    if (rk >= 262) opts.push({ label: 'Junior college', hint: 'Two-a-days in a gym with no air. A D1 offer next year, maybe.', route: 'juco' });
+    if (rk >= 355) opts.push({ label: 'Play rec league and work', hint: 'No offer worth taking. Keep playing anyway.', route: 'rec' });
+  }
   return {
     id: 'commit', kind: 'event', key: 'commit', eyebrow: 'Decision day', title: 'Where are you going?',
     text: rankText(L.am.rank) + '. Hats on the table. The cameras are on.',
@@ -4225,17 +4341,18 @@ function amNewYear(L, beats) {
   }
   if (L.am.level === 'hs') {
     /* Out of high school. */
-    if (L.am.route === 'intl' || L.am.route === 'gl') {
+    if (L.am.route === 'intl' || L.am.route === 'gl' || (!L.am.college && ALT_DONE[L.am.route])) {
       L.am.level = 'pro';
       L.stage = 'pro';
       L.phase = 'pro_year';
-      beats.push({ kind: 'year', text: L.am.route === 'intl' ? 'You sign overseas. You are ' + L.age + '.' : 'You sign with a G League team. You are ' + L.age + '.', tone: 'gold' });
+      const r = L.am.route;
+      beats.push({ kind: 'year', text: (r === 'intl' ? 'You sign overseas.' : r === 'gl' ? 'You sign with a G League team.' : ALT_NAME[r] + '.') + ' You are ' + L.age + '.', tone: 'gold' });
       return;
     }
     L.am.level = 'col';
     L.stage = 'col';
-    L.am.cyear = 1;
-    beats.push({ kind: 'year', text: 'Freshman year at ' + L.am.college + '. You are ' + L.age + '.', tone: 'gold' });
+    L.am.cyear = L.am.jucoYear ? 2 : 1;
+    beats.push({ kind: 'year', text: CYEAR[L.am.cyear][0].toUpperCase() + CYEAR[L.am.cyear].slice(1) + ' year at ' + L.am.college + '. You are ' + L.age + '.', tone: 'gold' });
     logIt(L, 'Enrolled at ' + L.am.college + '.', 'gold');
     colYear(L);
     return;
@@ -4254,6 +4371,7 @@ function colYear(L) {
 
 /* The road ends at the combine card a draft-night career starts on. */
 function toDraft(L, beats, route) {
+  if (storyOn(L) && L.am && L.am.college) remember(L, 'route.' + (L.am.cyear >= 4 ? 'four' : L.am.cyear === 1 ? 'oad' : 'college'), true);
   L.stage = 'nba';
   L.bg = route === 'senior' ? 'senior' : route === 'intl' ? 'intl' : route === 'gl' ? 'gl' : 'oad';
   L.season = null;
@@ -4588,6 +4706,1344 @@ const ARC_EVENTS = {
 };
 defineEvents(ARC_EVENTS, 'arc');
 
+// ─── Phase D: routes, storylines, outcomes ──────────────────────────────────
+
+/* EVERYTHING BELOW IS FOR A STORY CAREER and nothing in it is dealt to a
+   migrated save: the pools are only merged in when storyOn(L), the new slots
+   are only opened then, and every engine hook checks it first. So a career
+   started before Phase D (or with the story off) plays on byte for byte,
+   which `hoops/build/replay-careers.mjs --story off` proves.
+
+   An event here is written as data and compiled into the same shape as the
+   rest of the catalog. An option is
+     { l: label, fx: bump, s: what the screen says, set: memory key(s),
+       rel: [[token, change, note]], start/go/end: arc moves, p: odds,
+       no: the branch when the odds miss, do: anything else, log: a log line }
+   `rel` is read into EVENT_REL, so the people on a card are named before the
+   answer runs, the same as every other card. */
+/* How often the legend layer comes up, tuned so about a third of careers meet
+   it at least once (NARRATIVE.md section 10). A legend card can only be dealt
+   in a year the gate is open, seeded off the career and the year, so the
+   layer arrives as a rare season rather than as a slow drip. */
+const LEGEND_W = 1;
+const LEGEND_P = 0.09;
+const legendOpen = (L) => rngAt(L, 'legend')() < LEGEND_P;
+const O = (l, fx, s, more) => Object.assign({ l, fx, s }, more || {});
+const STORY_EV = {}, STORY_NBA = {}, STORY_AM = {};
+const ALT_NAME = { intl: 'Overseas year', gl: 'G League year', juco: 'Junior college', prep: 'Prep school year', gap: 'Gap year', rec: 'Rec league year' };
+const AM_SLOTS = { hs: 1, hs_sum: 1, hs_off: 1, col: 1, col_pre: 1, col_mar: 1, col_off: 1, alt: 1 };
+function runOpt(L, r, o) {
+  let b = o;
+  if (o.p != null && !ok(r, typeof o.p === 'function' ? o.p(L) : o.p)) {
+    b = o.no || {};
+    if (b.rel) for (const x of b.rel) relate(L, x[0], x[1], x[2]);
+  }
+  if (b.fx) bump(L, typeof b.fx === 'function' ? b.fx(L) : b.fx);
+  for (const k of [].concat(b.set || [])) remember(L, k, true);
+  if (b.start) arcStart.apply(null, [L].concat(b.start));
+  if (b.go) arcGo.apply(null, [L].concat(b.go));
+  if (b.end) arcEnd.apply(null, [L].concat(b.end));
+  const t = b.do ? b.do(L, r) : null;
+  if (b.log) logIt(L, typeof b.log === 'function' ? b.log(L) : b.log, b.tone || 'good');
+  return t || (typeof b.s === 'function' ? b.s(L) : b.s) || '';
+}
+function compileStory(id, sp, kind) {
+  const phases = String(sp.at).split(' ');
+  const am = phases.every((p) => AM_SLOTS[p]);
+  const ev = {
+    phases, req: Object.assign({ story: true }, sp.req || {}), when: sp.when, weight: (sp.w == null ? 2 : sp.w) * (sp.legend ? LEGEND_W : 1),
+    rarity: sp.rar || 'common', once: true, legend: !!sp.legend, tags: sp.tags ? sp.tags.split(' ') : [],
+    stage: am ? 'am' : phases[0] === 'post' ? 'post' : 'nba', cb: sp.cb, authored: true,
+    title: sp.t, text: typeof sp.x === 'function' ? sp.x : () => sp.x,
+    options: sp.o.map((o) => ({ label: o.l, run: (L, r) => runOpt(L, r, o) })),
+  };
+  EVENT_REL[id] = sp.o.map((o) => o.rel || []);
+  return ev;
+}
+/* Random pool: dealt in its slots like any other card. */
+function story(specs) {
+  const pool = {};
+  for (const id in specs) pool[id] = compileStory(id, specs[id]);
+  defineEvents(pool, 'story');
+  for (const id in pool) {
+    const ev = pool[id];
+    ev.pool = ev.stage === 'am' ? 'am' : 'nba';
+    STORY_EV[id] = ev;
+    if (ev.stage === 'am') STORY_AM[id] = ev; else if (ev.stage === 'nba') STORY_NBA[id] = ev;
+  }
+}
+/* Arc nodes: dealt only when their arc is due, ahead of anything random. */
+function storyArcs(specs) {
+  const pool = {};
+  for (const id in specs) { pool[id] = compileStory(id, specs[id]); pool[id].req = specs[id].req || null; }
+  defineEvents(pool, 'arc');
+  for (const id in pool) ARC_EVENTS[id] = pool[id];
+}
+/* Fixed cards: dealt by name at one moment (an epilogue, the halftime shot). */
+function storyFixed(specs) {
+  const pool = {};
+  for (const id in specs) pool[id] = compileStory(id, specs[id]);
+  defineEvents(pool, 'story');
+  for (const id in pool) { pool[id].pool = 'post'; STORY_EV[id] = pool[id]; }
+}
+const evById = (id) => EVENTS[id] || AM_EVENTS[id] || ARC_EVENTS[id] || STORY_EV[id];
+/* Deal one named card now, if it is open. */
+function dealNamed(L, slot, id) {
+  const ev = evById(id);
+  if (!ev) return false;
+  dealCard(L, slot, ev);
+  if (storyOn(L)) (evSeen(L)[id] = evSeen(L)[id] || []).push(L.year);
+  return true;
+}
+
+/* The new prerequisites a route, an origin or a career shape is read off. */
+const amOf = (L) => L.am || {};
+Object.assign(REQ, {
+  origin: (L, v) => [].concat(v).indexOf(L.origin) >= 0,
+  route: (L, v) => [].concat(v).some((k) => !!recall(L, 'route.' + k)),
+  notRoute: (L, v) => [].concat(v).every((k) => !recall(L, 'route.' + k)),
+  level: (L, v) => isAm(L) && [].concat(v).indexOf(amOf(L).level) >= 0,
+  grade: (L, r) => !!L.am && inRange(L.am.grade || 0, r),
+  cyear: (L, r) => !!L.am && inRange(L.am.cyear || 0, r),
+  rank: (L, r) => !!L.am && !!L.am.rank && inRange(L.am.rank, r),
+  tier: (L, v) => !!(L.am && L.am.college && SCHOOL_BY[L.am.college]) && [].concat(v).indexOf(SCHOOL_BY[L.am.college].tier) >= 0,
+  pick: (L, r) => inRange(L.draft ? (L.draft.pick || 61) : 61, r),
+  rings: (L, r) => inRange(totals(L).rings, r),
+  stars: (L, r) => inRange(totals(L).star, r),
+  clubs: (L, r) => inRange(new Set(L.history.map((h) => h.t)).size, r),
+  yearsHere: (L, r) => inRange(L.history.filter((h) => h.t === L.team).length, r),
+  pro: (L, v) => [].concat(v).every((k) => routeOn(L, k)),
+  persona: (L, v) => [].concat(v).indexOf(personaOf(L)) >= 0,
+  kids: (L, r) => inRange(lifeOf(L).kids || 0, r),
+  known: (L, a) => a.every((k) => !!(L.traits && L.traits[k] && L.traits[k].known)),
+  big: (L, v) => !!BIG_MARKET[L.team] === v,
+  net: (L, r) => !!L.team && inRange(clubNet(L, L.team), r),
+  legendOn: (L, v) => !!(L.opt && L.opt.legend) === v,
+  drafted: (L, v) => !!(L.draft && L.draft.pick) === v,
+  arc: (L, a) => a.every((k) => !!(L.arcs && L.arcs[k])),
+  notArc: (L, a) => a.every((k) => !(L.arcs && L.arcs[k])),
+  arcDone: (L, a) => a.every((k) => !!(L.arcs && L.arcs[k] && L.arcs[k].done)),
+});
+
+// ─── origins ────────────────────────────────────────────────────────────────
+
+/* WHERE YOU ARE FROM (NARRATIVE.md section 4). Chosen at creation, or rolled
+   off the seed. It tilts the ratings a little, gives the career a trait it
+   always has, and opens three or four cards no other origin sees. */
+const ORIGINS = {
+  small_town: { name: 'Small-town unknown', blurb: 'One stoplight. One gym. Nobody is watching yet.', tilt: { iq: 2 }, fame: -3, trait: 'loyal' },
+  big_city: { name: 'Big-city prodigy', blurb: 'Famous at fourteen. Every park knows your name.', tilt: { fin: 2 }, fame: 6, trait: 'showman' },
+  pro_son: { name: 'Son of a former pro', blurb: 'Your father played nine seasons. You hear about it.', tilt: { iq: 3 }, fame: 4, trait: 'filmJunkie' },
+  growth: { name: 'Late growth spurt', blurb: 'A guard until last summer. Then six inches.', tilt: { pla: 2, reb: 2 } },
+  intl: { name: 'International prospect', blurb: 'Grew up abroad. Came over at fifteen.', tilt: { iq: 2, pla: 2 } },
+  prep: { name: 'Prep school transfer', blurb: 'Left home for a boarding school with a real gym.', tilt: { iq: 1, sho: 1 } },
+  multi: { name: 'Multi-sport athlete', blurb: 'Quarterback in the fall. Shortstop in the spring.', tilt: { ath: 3 } },
+  walkon: { name: 'Overlooked', blurb: 'Cut from varsity once. Still in the gym every night.', tilt: { def: 2 }, fame: -3, trait: 'gymRat' },
+};
+const ORIGIN_KEYS = Object.keys(ORIGINS);
+const ABROAD = ['Kaunas', 'Belgrade', 'Lyon', 'Lagos', 'Melbourne', 'Ljubljana', 'Valencia', 'Istanbul'];
+function setOrigin(L, key) {
+  const k = ORIGINS[key] ? key : pick(E.createSeededRNG(E.hashSeed(L.seed + ':origin')), ORIGIN_KEYS);
+  const o = ORIGINS[k];
+  L.origin = k;
+  for (const r in o.tilt) L.rt[r] = clamp(L.rt[r] + o.tilt[r], 25, 88);
+  if (o.fame) L.m.fame = clamp(L.m.fame + o.fame, 0, 100);
+  if (o.trait && L.traits[o.trait]) L.traits[o.trait].has = true;
+  const rng = E.createSeededRNG(E.hashSeed(L.seed + ':originx'));
+  if (k === 'pro_son') remember(L, 'origin.father', 6000 + Math.round(rng() * 9000));
+  if (k === 'intl') remember(L, 'origin.abroad', pick(rng, ABROAD));
+}
+
+// ─── routes ─────────────────────────────────────────────────────────────────
+
+/* A ROUTE IS RECOGNIZED, not chosen from a list (NARRATIVE.md section 5). The
+   roads to the pros are remembered as `route.<id>` at the moment they are
+   taken; the roads through the pros are read off what the career did. Each
+   one opens its own cards. */
+const ROUTES = {
+  oad: ['One and done', 'pre'], four: ['Four-year college star', 'pre'], midmajor: ['Mid-major', 'pre'],
+  portal: ['Transfer portal', 'pre'], juco: ['Junior college', 'pre'], walkon: ['Walk-on', 'pre'],
+  gl: ['G League pathway', 'pre'], intl: ['Overseas pro at 18', 'pre'], gap: ['Gap year', 'pre'],
+  prep: ['Prep school year', 'pre'], reclass: ['Reclassified', 'pre'], rec: ['Rec league discovery', 'pre'],
+  undrafted: ['Undrafted free agent', 'pre'], stash: ['Draft and stash', 'pre'],
+  savior: ['Lottery savior', 'pro'], bust: ['Bust who rebuilds', 'pro'], rise: ['Role player to star', 'pro'],
+  sixth: ['Sixth man', 'pro'], stopper: ['Defensive stopper', 'pro'], journey: ['Journeyman', 'pro'],
+  detour: ['Overseas detour and return', 'pro'], lifer: ['Franchise lifer', 'pro'], ringchase: ['Ring chaser', 'pro'],
+  small: ['Small-market hero', 'pro'], big: ['Big-market celebrity', 'pro'], vet: ['Player-coach veteran', 'pro'],
+  superteam: ['Superteam builder', 'pro'],
+};
+function routeOn(L, id) {
+  if (recall(L, 'route.' + id)) return true;
+  const H = L.history, d = L.draft || {};
+  switch (id) {
+    case 'savior': return !!d.pick && d.pick <= 5 && (d.net == null ? false : d.net <= -2) && H.length >= 3;
+    case 'bust': return !!d.pick && d.pick <= 14 && H.length >= 3 && H[2].ovr < 67;
+    case 'rise': return (!d.pick || d.pick >= 21) && H.some((h) => (h.aw || []).indexOf('star') >= 0);
+    case 'sixth': return H.some((h) => (h.aw || []).indexOf('6moy') >= 0) || H.filter((h) => h.role === 'Sixth man').length >= 3;
+    case 'stopper': return H.filter((h) => (h.aw || []).some((a) => a === 'dpoy' || a === 'ad1' || a === 'ad2')).length >= 2;
+    case 'journey': return new Set(H.map((h) => h.t)).size >= 5;
+    case 'detour': return !!recall(L, 'route.detour.left') && H.some((h) => h.y > recall(L, 'route.detour.left').y);
+    case 'lifer': return H.length >= 10 && new Set(H.map((h) => h.t)).size === 1;
+    case 'small': { const n = H.filter((h) => !BIG_MARKET[h.t]).length; return n >= 8 && n >= H.length * 0.8; }
+    case 'big': return H.filter((h) => BIG_MARKET[h.t]).length >= 5;
+    case 'vet': return !!recall(L, 'route.vet') || (L.age >= 34 && !!(L.traits.lockerVoice && L.traits.lockerVoice.known));
+    case 'superteam': return !!recall(L, 'arc.costar.landed');
+    default: return false;
+  }
+}
+const routesOf = (L) => Object.keys(ROUTES).filter((k) => routeOn(L, k));
+
+// ─── endings ────────────────────────────────────────────────────────────────
+
+/* AN ENDING IS A HALL TIER, WHAT THE CAREER WAS, AND SOMETIMES A SECRET
+   (NARRATIVE.md section 8). The tier comes off the legacy score and a vote
+   seeded off the career, so a reload never changes it. */
+const HOF_TIERS = {
+  hof_first: 'First ballot Hall of Famer', hof_eventual: 'Hall of Famer, in time', hof_debate: 'Voted in after a debate',
+  hof_snub: 'Snubbed by the Hall', hof_committee: 'In through the veterans committee', hof_none: 'Not a Hall of Famer',
+};
+const OUTCOMES = {
+  lo_goat: 'In the GOAT debate', lo_statue: 'One-team legend, statue outside', lo_jersey: 'Number in the rafters',
+  lo_ringless: 'The ringless great', lo_playoff_hero: 'Playoff hero', lo_cult_hero: 'Journeyman cult hero',
+  lo_cut_short: 'What could have been', lo_bust: 'The bust', lo_redemption: 'The redemption story',
+  lo_villain: 'The villain who was right', lo_elder: 'Beloved elder statesman', lo_sixth: 'The great sixth man',
+  lo_stopper: 'The stopper', lo_overseas: 'A cup of coffee, then a legend abroad', lo_never: 'Never made the league',
+  lo_glue: 'The glue guy with the rings', lo_hometown: 'Hometown hero', lo_superteam: 'The one who built it',
+};
+const SECRETS = {
+  sx_full_circle: 'Full circle', sx_father_son: 'Passed the old man', sx_curse: 'The curse breaker',
+  sx_dre: 'Two kids from camp', sx_ellis: 'The student', sx_apex: 'The one who came back',
+  sx_town: 'The gym has your name', sx_mascot: 'The mascot\'s best friend', sx_comeback: 'Fifty and still splashing',
+  sx_undrafted: 'Sixty names, not his',
+};
+const ENDING_COUNT = () => Object.keys(HOF_TIERS).length + Object.keys(OUTCOMES).length + Object.keys(SECRETS).length;
+function hofTier(L, score, T) {
+  const r = E.createSeededRNG(E.hashSeed(L.seed + ':hof'));
+  const vote = r(), later = r();
+  if (score >= HOF_AT[0]) return 'hof_first';
+  if (score >= HOF_AT[1]) return 'hof_eventual';
+  if (score >= HOF_AT[2]) {
+    if (vote < 0.5) return 'hof_debate';
+    return (T.rings || recall(L, 'record.broken')) && later < 0.45 ? 'hof_committee' : 'hof_snub';
+  }
+  return 'hof_none';
+}
+const HOF_AT = [95, 60, 44];
+const GOAT_AT = 158;
+const hofIn = (tier) => tier === 'hof_first' || tier === 'hof_eventual' || tier === 'hof_debate' || tier === 'hof_committee';
+function outcomesOf(L, T, score, tier, jersey) {
+  const H = L.history, out = [];
+  if (!H.length) {
+    out.push((L.flags.overseasYears || 0) >= 2 ? 'lo_overseas' : 'lo_never');
+    return out;
+  }
+  const clubs = new Set(H.map((h) => h.t)).size;
+  const peak = Math.max.apply(null, H.map((h) => h.ovr));
+  const d = L.draft || {};
+  const inj = recall(L, 'inj.major');
+  const p = personaOf(L);
+  if (score >= GOAT_AT || (T.mvp >= 3 && T.rings >= 4)) out.push('lo_goat');
+  if (routeOn(L, 'lifer') && hofIn(tier)) out.push('lo_statue');
+  else if (jersey) out.push('lo_jersey');
+  if (hofIn(tier) && !T.rings) out.push('lo_ringless');
+  if (T.fmvp && (L.flags.g7 || 0) + (L.flags.buzzer || 0) + (L.flags.stops || 0) + (L.flags.ftIce || 0) >= 2) out.push('lo_playoff_hero');
+  if (clubs >= 5 && (L.m.fame >= 40 || repOf(L).fans >= 60)) out.push('lo_cult_hero');
+  if (inj && L.age <= 31 && peak >= 74 && !hofIn(tier)) out.push('lo_cut_short');
+  if (d.pick && d.pick <= 14 && peak < 74) out.push('lo_bust');
+  if (routeOn(L, 'bust') && (T.star || T.rings)) out.push('lo_redemption');
+  if ((p === 'Villain' || p === 'Loose cannon' || p === 'Showman') && T.rings >= 1) out.push('lo_villain');
+  if (routeOn(L, 'vet') && (p === "Pro's pro" || p === 'Face of the league' || p === 'Quiet assassin')) out.push('lo_elder');
+  if (H.some((h) => (h.aw || []).indexOf('6moy') >= 0)) out.push('lo_sixth');
+  if (T.dpoy >= 2) out.push('lo_stopper');
+  if ((L.flags.overseasYears || 0) >= 2 && H.length <= 4) out.push('lo_overseas');
+  if (T.rings >= 3 && !T.star) out.push('lo_glue');
+  const home = homeClub(L);
+  if (home && H.filter((h) => h.t === home).length >= Math.max(5, H.length / 2)) out.push('lo_hometown');
+  if (routeOn(L, 'superteam') && T.rings) out.push('lo_superteam');
+  return out;
+}
+function secretOf(L, T, tier, jersey) {
+  const H = L.history, d = L.draft || {};
+  const fam = (k) => !!recall(L, k);
+  if (fam('legend.halftime.made') && hofIn(tier)) return 'sx_comeback';
+  if (fam('arc.curse.broken')) return 'sx_curse';
+  if ((fam('arc.apex.won') || fam('arc.apex.villain')) && T.rings) return 'sx_apex';
+  if ((fam('arc.ellis.move') || fam('arc.ellis.hello')) && T.fmvp) return 'sx_ellis';
+  if (L.origin === 'walkon' && tier === 'hof_first' && jersey) return 'sx_full_circle';
+  if (L.origin === 'pro_son' && fam('origin.passed') && tier === 'hof_first') return 'sx_father_son';
+  if (L.origin === 'small_town' && fam('town.stayed') && hofIn(tier)) return 'sx_town';
+  if (fam('arc.camp.friends') && hofIn(tier) && L.rival && (L.rival.star >= 3 || L.rival.mvp)) return 'sx_dre';
+  if (fam('arc.mascot.friends') && jersey && tier === 'hof_first') return 'sx_mascot';
+  if (!d.pick && H.length && T.star) return 'sx_undrafted';
+  return null;
+}
+function endingOf(L, T, score, jersey) {
+  const tier = H_TIER(L, score, T);
+  const outs = outcomesOf(L, T, score, tier, jersey);
+  const sx = secretOf(L, T, tier, jersey);
+  return {
+    tier, tierName: HOF_TIERS[tier], hof: hofIn(tier), outcomes: outs, names: outs.map((k) => OUTCOMES[k]),
+    secret: sx, secretName: sx ? SECRETS[sx] : null, routes: routesOf(L).map((k) => ROUTES[k][0]),
+  };
+}
+const H_TIER = (L, score, T) => L.history.length ? hofTier(L, score, T) : 'hof_none';
+
+// ─── after basketball ───────────────────────────────────────────────────────
+
+/* THE EPILOGUE (NARRATIVE.md section 8.4). The after card offers the paths
+   this career has earned, then a short chapter is played and the career is
+   over only once that is answered. */
+const AFTER_PATHS = [
+  ['head_coach', 'Head coach', 'A bench of your own.', (L) => L.rt.iq >= 70 || trait(L, 'coachable') || !!recall(L, 'v.coachy')],
+  ['assistant', 'Assistant coach', 'Start in the film room. Work up.', () => true],
+  ['gm', 'Front office', 'Build a team the way you wanted one.', (L) => L.rt.iq >= 66 || !!recall(L, 'arc.venture.won')],
+  ['owner', 'Buy into a team', 'An ownership group wants your name and money.', (L) => L.cash >= 25],
+  ['broadcast', 'Television', 'A desk, a suit, a microphone.', (L) => L.m.fame >= 45 || !!recall(L, 'media.pod')],
+  ['league', 'League office', 'Rules, schedules, the players\' side.', (L) => !!recall(L, 'union.role')],
+  ['college', 'Coach your old school', 'The campus never forgot you.', (L) => !!(L.amHist && L.amHist.some((h) => h.lvl === 'NCAA'))],
+  ['hs', 'Coach high school at home', 'The gym where it started.', (L) => !!L.am || L.origin === 'small_town' || trait(L, 'loyal')],
+  ['business', 'Business', 'Make the money work for you.', (L) => L.cash >= 6],
+  ['actor', 'Hollywood', 'Your agent has a script.', (L) => !!recall(L, 'ent.movie') || L.m.fame >= 70],
+  ['politics', 'Run for office', 'The city council seat at home is open.', (L) => L.m.fame >= 55 && !!recall(L, 'foundation')],
+  ['podcast', 'The podcast', 'Three microphones and no filter.', (L) => !!recall(L, 'media.pod') || L.m.fame >= 50],
+  ['comeback', 'One more comeback', 'You are not done. Probably.', (L) => L.age <= 37 && ovrOf(L) >= 64],
+  ['family', 'Go home', 'Your family. Your town. Nothing to prove.', () => true],
+];
+function storyAfterCard(L) {
+  const rng = E.createSeededRNG(E.hashSeed(L.seed + ':after'));
+  const open = AFTER_PATHS.filter((p) => p[0] !== 'family' && p[3](L)).sort(() => rng() - 0.5).slice(0, 4);
+  open.push(AFTER_PATHS[AFTER_PATHS.length - 1]);
+  return {
+    id: 'after', kind: 'event', key: 'after', eyebrow: 'After basketball', title: 'What comes next?',
+    text: 'You are ' + L.age + '. You have ' + money(L.cash) + ' in the bank and the rest of your life.',
+    ctx: { paths: open.map((p) => p[0]) },
+    options: open.map((p) => ({ label: p[1], hint: p[2] })),
+  };
+}
+/* The career ends here, after the epilogue and, rarely, one last shot. */
+function finishLife(L, text) {
+  if (L.final && text) { L.final.epilogue = say(L, text); L.final.after = L.final.epilogue; }
+  if (storyOn(L) && L.opt.legend && !recall(L, 'legend.halftime') && L.history.length >= 6
+    && rngAt(L, 'halftime')() < 0.04 && dealNamed(L, 'post', 'lg_one_more_shot')) return;
+  L.retired = true;
+  L.phase = 'retired';
+  if (L.final) {
+    const T = totals(L);
+    L.final.ending = endingOf(L, T, L.final.score, L.final.jersey);
+  }
+}
+
+// ── origins (NARRATIVE.md 7.1) ──
+
+story({
+  /* Small-town unknown */
+  ori_town_paper: { at: 'hs_sum hs', req: { origin: 'small_town', grade: [10, 11] }, w: 4,
+    t: 'The town paper wants a story.', x: 'The {town} weekly has never covered a sophomore. They want a photo at the county gym.',
+    o: [O('Give the interview', { fame: 4, morale: 3 }, 'Front page, above the fold. Your mom buys twenty copies.', { set: 'town.paper', rel: [['hscoach', 10, 'You made the paper.']] }),
+      O('Let the season talk', { eth: 3 }, 'They run a box score instead. You like it better.')] },
+  ori_county_gym: { at: 'hs', req: { origin: 'small_town' }, w: 3,
+    t: 'The janitor gives you a key.', x: 'The county gym opens at five if you have the key. Now you do.',
+    o: [O('Be there at five', { sho: 2, def: 1, health: -4 }, 'Three hundred shots before school. Every day. It shows by March.'),
+      O('Sleep until seven', { health: 4, morale: 3 }, 'You keep the key on your ring anyway.')] },
+  ori_scout_lost: { at: 'hs_sum', req: { origin: 'small_town', mem: ['town.paper'] }, w: 4,
+    t: 'A showcase two states away.', x: 'Every scout who matters will be there. The town game is the same weekend.',
+    o: [O('Drive to the showcase', { fame: 6, cash: -0.02 }, 'Nine hours each way. A scout writes your name down twice.', { do: (L) => { if (L.am) L.am.rstock = (L.am.rstock || 0) + 0.7; } }),
+      O('Stay for the town game', { morale: 6 }, 'The whole town comes. You score 31. Nobody here forgets it.', { set: 'town.stayed' })] },
+  ori_town_return: { at: 'off', req: { origin: 'small_town', seasons: [3, null] }, w: 3, rar: 'uncommon',
+    t: 'The town wants you back for a day.', x: 'They are naming the county gym for somebody. They hope it is you.',
+    o: [O('Go home for it', { morale: 8, fame: 2 }, 'Your name goes up over the door. The key still works.', { set: 'town.gym', rel: [['hscoach', 20, 'The gym has your name now.']] }),
+      O('Send a check and a video', { cash: -0.3, morale: 2 }, 'They name it anyway. You watch the video of it twice.')] },
+
+  /* Big-city prodigy */
+  ori_mixtape_famous: { at: 'hs_sum hs', req: { origin: 'big_city', grade: [10, 10] }, w: 5,
+    t: 'Your mixtape has a million views.', x: 'You are fifteen. Strangers at the park call your name.',
+    o: [O('Post another one', { fame: 8, morale: 4 }, 'Two million. Grown men want to guard you at the park.', { set: 'city.mixtape' }),
+      O('Go quiet until the season', { trust: 4, eth: 3 }, 'The views keep climbing anyway. You stay in the gym.')] },
+  ori_city_rivalry: { at: 'hs', req: { origin: 'big_city' }, w: 3,
+    t: 'The crosstown school calls.', x: 'Their coach wants you to transfer. Better gym, better schedule, a television game.',
+    o: [O('Transfer', { fame: 5, trust: -4 }, 'Half your neighborhood stops talking to you. The other half buys tickets.', { set: 'city.switched', rel: [['hscoach', -25, 'You left for the crosstown school.']] }),
+      O('Stay with your guys', { morale: 6, trust: 6 }, 'You beat them twice that season. It feels better than a TV game.', { rel: [['hscoach', 15, 'You stayed.']] })] },
+  ori_runner_offer: { at: 'hs_off', req: { origin: 'big_city', mem: ['city.mixtape'], grade: [11, 12] }, w: 4, rar: 'uncommon',
+    t: 'A man in a nice car wants to help.', x: 'He calls himself an uncle. He has an envelope and a school in mind.',
+    o: [O('Take the envelope', { cash: 0.05, morale: -2 }, 'It feels like a loan you never agreed to.', { set: 'city.runner', p: 0.7, no: { fx: { fame: -6, trust: -6 }, s: 'Somebody saw. A booster investigation follows your name for a year.', set: 'city.runner' } }),
+      O('Hand it back', { morale: 4 }, 'He smiles like he has heard no before. He does not call again.', { rel: [['mom', 15, 'You turned down the envelope.']] })] },
+  ori_city_mural: { at: 'off', req: { origin: 'big_city', stars: [1, null] }, w: 4,
+    t: 'The city wants to paint you.', x: 'A mural on the side of the corner store where you grew up. Forty feet tall.',
+    o: [O('Pose for it', { fame: 5, morale: 6 }, 'Forty feet of you, ball on your hip. Kids take pictures with it every day.', { set: 'city.mural' }),
+      O('Ask them to paint the park instead', { morale: 4, trust: 2 }, 'New rims and new paint. The park is full every night.')] },
+
+  /* Son of a former pro */
+  ori_fathers_number: { at: 'hs_sum', req: { origin: 'pro_son', grade: [10, 10] }, w: 6,
+    t: 'Wear his number?', x: '{father} wore it for nine seasons. Everybody in the gym knows that.',
+    o: [O('Wear his number', { fame: 5, morale: -2 }, 'Every coach in the stands says his name before yours.', { set: 'son.number' }),
+      O('Pick your own', { morale: 5 }, 'He laughs and says he would have done the same.', { rel: [['dad', 10, 'You picked your own number.']] })] },
+  ori_fathers_coach: { at: 'hs_off', req: { origin: 'pro_son', grade: [11, 12] }, w: 4,
+    t: 'Your father\'s old coach calls.', x: 'He coaches a college now. He says he owes your father one.',
+    o: [O('Hear him out', { trust: 4, morale: 2 }, 'He talks about your father for an hour. Then about you for ten minutes.'),
+      O('Tell him you want your own road', { morale: 5, eth: 2 }, 'Your father hears about it. He is quiet for a day. Then proud.', { set: 'son.ownway', rel: [['dad', -5]] })] },
+  ori_father_courtside: { at: 'pre', req: { origin: 'pro_son', seasons: [1, 2] }, w: 5,
+    t: '{father} wants a seat behind the bench.', x: 'Opening night. He played in this league for nine seasons. He has never sat behind your bench.',
+    o: [O('Get him the seat', { morale: 6, fame: 2 }, 'The broadcast finds him twice. He cries both times.', { rel: [['dad', 20, 'He sat behind your bench on opening night.']] }),
+      O('Ask him to watch at home', { morale: 2, trust: 2 }, 'He understands. He texts you after every quarter.')] },
+  ori_passed_father: { at: 'off', when: (L) => L.origin === 'pro_son' && !recall(L, 'origin.passed') && totals(L).pts > ((recall(L, 'origin.father') || {}).v || 9e9), w: 9,
+    t: 'You passed your father.', x: (L) => 'Career points: ' + totals(L).pts + '. {father} finished with ' + recall(L, 'origin.father').v + '.',
+    o: [O('Call him first', { morale: 10 }, 'He answers on the first ring. He already knew. He had been counting.', { set: 'origin.passed', rel: [['dad', 25, 'You passed his career points and called him first.']] }),
+      O('Say nothing', { fame: 3 }, '{beat} writes it up anyway. Your father frames the column.', { set: 'origin.passed' })] },
+
+  /* Late growth spurt */
+  ori_six_inches: { at: 'hs_sum', req: { origin: 'growth', grade: [10, 11] }, w: 6,
+    t: 'You grew six inches.', x: 'Nothing fits. Your coach wants you under the basket. You still think like a guard.',
+    o: [O('Keep playing guard', { pla: 2, sho: 1 }, 'A guard who can see over everybody. Scouts start asking questions.', { set: 'growth.guard' }),
+      O('Move inside', { reb: 3, def: 2, pla: -1 }, 'You learn the post in a month. You miss the ball in your hands.', { set: 'growth.big' })] },
+  ori_clumsy_year: { at: 'hs', req: { origin: 'growth' }, w: 4,
+    t: 'Your body does not know itself.', x: 'You trip over the baseline in warmups. Twice.',
+    o: [O('Yoga and footwork, every day', { ath: 2, health: 2 }, 'By spring you move like you were always this tall.'),
+      O('Play through it', { health: -5, morale: -2 }, 'Your knees ache all season. It passes. Mostly.')] },
+  ori_new_position: { at: 'col col_pre', req: { origin: 'growth' }, w: 3,
+    t: 'The coaches want to move you.', x: 'One more position over. They say your height is wasted where you are.',
+    o: [O('Embrace it', { reb: 2, def: 1, trust: 6 }, 'It takes a month. Then it takes over the conference.'),
+      O('Fight to stay', { morale: 3, trust: -5 }, 'You keep the spot. The coaches keep asking.')] },
+  ori_old_jersey: { at: 'off', req: { origin: 'growth', seasons: [4, null] }, w: 2,
+    t: 'Your mom finds your eighth grade jersey.', x: 'It would not fit your arm now.',
+    o: [O('Frame it', { morale: 5 }, 'It goes up in the hallway. Guests do not believe it is yours.'),
+      O('Give it to a kid at camp', { morale: 4, fame: 1 }, 'He wears it to every practice. It fits him fine.')] },
+
+  /* International prospect */
+  ori_u17: { at: 'hs_sum', req: { origin: 'intl', grade: [10, 11] }, w: 5,
+    t: 'The under-17 national team calls.', x: 'A summer tournament for the country you grew up in. {abroad} would watch on TV.',
+    o: [O('Play for them', { fame: 5, health: -4, iq: 2 }, 'You lead the tournament in assists. Home watches every game.', { set: 'intl.u17' }),
+      O('Stay and train', { sho: 2, def: 1 }, 'You watch on a laptop. It is harder than you thought.')] },
+  ori_language: { at: 'hs col', req: { origin: 'intl' }, w: 3,
+    t: 'The playbook is a second language.', x: 'You know every play. In a timeout, the English comes too fast to follow.',
+    o: [O('A tutor every night', { iq: 2, morale: -2 }, 'By February you joke with your teammates. In English.'),
+      O('Let the game talk', { morale: 3 }, 'You learn the word for every action anyway. It is enough.')] },
+  ori_homesick: { at: 'early', req: { origin: 'intl', seasons: [0, 0] }, w: 4,
+    t: 'December is long this far from home.', x: 'The food is wrong. The time difference means calls at midnight.',
+    o: [O('Fly your family over', { cash: -0.1, morale: 8 }, 'Your mother cooks for the whole team. The vets adopt you.', { rel: [['mom', 15, 'She flew over in your rookie December.']] }),
+      O('Tough it out', { morale: -4, eth: 3 }, 'You find a restaurant that gets it almost right. You go every Sunday.')] },
+  ori_federation: { at: 'off', req: { origin: 'intl', seasons: [3, null] }, w: 3, rar: 'uncommon',
+    t: 'The national federation wants your summer.', x: 'A qualifying window. They say the country needs you.',
+    o: [O('Play every summer', { fame: 5, health: -6 }, '{abroad} throws you a parade. Your knees file a complaint.', { set: 'intl.flag' }),
+      O('Skip this window', { health: 6 }, 'The federation president says something sharp to the papers. It blows over.', { set: 'intl.fedfeud' })] },
+
+  /* Prep school transfer */
+  ori_prep_dorm: { at: 'hs_sum', req: { origin: 'prep', grade: [10, 10] }, w: 6,
+    t: 'Your roommate has a trust fund.', x: 'His father owns buildings. You own two pairs of shoes.',
+    o: [O('Get to know him', { morale: 3, iq: 1 }, 'He is better company than you expected. His father asks about you.', { set: 'prep.roommate' }),
+      O('Ask for a single', { iq: 2, morale: -2 }, 'A room the size of a closet. You study a lot.')] },
+  ori_prep_investor: { at: 'off', req: { origin: 'prep', mem: ['prep.roommate'], seasons: [2, null] }, w: 4, rar: 'uncommon',
+    t: 'Your old roommate\'s father calls.', x: 'He wants to put money behind something with your name on it.',
+    o: [O('Take the meeting', { cash: 0.4, morale: 3 }, 'A clean deal with a lawyer in the room. It grows every year.', { set: 'arc.venture.won' }),
+      O('Keep it friendly', { morale: 2 }, 'He sends a fruit basket every Christmas anyway.')] },
+  ori_hometown_resent: { at: 'off', req: { origin: 'prep', seasons: [1, null] }, w: 3,
+    t: 'Home says you forgot it.', x: 'A radio host back home calls you the one who left at fourteen.',
+    o: [O('Run a camp back home', { morale: 6, cash: -0.1 }, 'Three hundred kids. The radio host brings his son.', { set: 'prep.home' }),
+      O('Let it go', { morale: -3 }, 'It stings more than you say.')] },
+
+  /* Multi-sport athlete */
+  ori_two_sport: { at: 'hs_sum', req: { origin: 'multi', grade: [10, 11] }, w: 6,
+    t: 'Football or basketball?', x: 'The football coach says you could start at quarterback. The basketball coach says nothing. He just looks at you.',
+    o: [O('Basketball only', { sho: 2, pla: 1 }, 'The football coach does not talk to you in the hallway for a month.'),
+      O('Both', { ath: 2, health: -6, fame: 3 }, 'Friday nights and Saturday mornings. You are tired and very good at two things.', { set: 'multi.both' })] },
+  ori_draft_mlb: { at: 'predraft', req: { origin: 'multi' }, w: 6,
+    t: 'A baseball team drafts you anyway.', x: 'Twentieth round. A scout says the offer stands if basketball does not work.',
+    o: [O('Tell them no, for good', { morale: 4, trust: 2 }, 'You hang the jersey they sent in your closet. It stays there.'),
+      O('Keep the door open', { morale: 2 }, '{agent} files the letter. Just in case.', { set: 'multi.mlb' })] },
+  ori_football_coach: { at: 'off', req: { origin: 'multi', seasons: [2, null] }, w: 3, rar: 'uncommon',
+    t: 'A football coach wants a tryout.', x: 'He has seen your high school film. He thinks you are wasting a gift.',
+    o: [O('Laugh and decline', { morale: 3 }, 'You send him a signed ball. A basketball.'),
+      O('Throw for him once', { fame: 6, health: -3 }, 'Sixty yards on a line. The clip runs for a week.', { set: 'multi.throw' })] },
+
+  /* Overlooked walk-on type */
+  ori_cut_varsity: { at: 'hs_sum', req: { origin: 'walkon', grade: [10, 10] }, w: 6,
+    t: 'Cut from varsity.', x: 'Freshman year. Your name was not on the list taped to the door.',
+    o: [O('Ask the coach why', { iq: 2, trust: 6 }, 'He tells you. You fix every word of it by the next tryout.', { set: 'walkon.asked', rel: [['hscoach', 15, 'You asked him why he cut you.']] }),
+      O('Just outwork everybody', { def: 2, eth: 4 }, 'You make the team the next year. Nobody outworks you.')] },
+  ori_managers_job: { at: 'col_pre', req: { origin: 'walkon', cyear: [1, 1] }, w: 5,
+    t: 'They need a manager.', x: 'Towels, water, rebounding for the starters. It gets you in the gym every day.',
+    o: [O('Take it', { def: 2, iq: 2, morale: -2 }, 'You rebound for the stars all fall. You guard them in pickup.', { set: 'walkon.mgr' }),
+      O('Keep your pride', { morale: 3 }, 'You find another gym. It is a worse gym.')] },
+  ori_jersey_99: { at: 'off', req: { origin: 'walkon', seasons: [5, null] }, w: 3,
+    t: 'Number ninety-nine.', x: 'The number nobody wanted when you arrived. Kids in the stands wear it now.',
+    o: [O('Keep wearing it', { morale: 6, fame: 2 }, 'It sells more than any number on the roster.', { set: 'walkon.99' }),
+      O('Give it to a rookie', { morale: 4, trust: 3 }, 'He asks why. You tell him the whole story.')] },
+});
+
+// ── high school and the summer circuit (NARRATIVE.md 7.2) ──
+
+story({
+  rv_meet: { at: 'hs_sum', req: { grade: [10, 11], rank: [1, 400] }, w: 5,
+    t: 'A kid at camp will not stop talking.', x: '{dre}. Your age, your size, louder than both of you put together.',
+    o: [O('Shake his hand', { morale: 3 }, 'He talks the whole handshake. You end up laughing.', { set: 'camp.met', start: ['camp', 'arc_camp_2', 'hs_sum', 1, { tone: 'friendly' }], rel: [['dre', 15, 'You met at camp and shook hands.']] }),
+      O('Talk back', { fame: 2, morale: 2 }, 'The whole camp stops to watch. Neither of you backs down.', { set: 'camp.met', start: ['camp', 'arc_camp_2', 'hs_sum', 1, { tone: 'hot' }], rel: [['dre', -15, 'You traded trash talk at camp.']] })] },
+  aau_two_brands: { at: 'hs_sum', req: { grade: [10, 11], rank: [1, 250] }, w: 4,
+    t: 'Two shoe circuits want you.', x: '{aau} runs a team on one of them. The other team flies you to tournaments.',
+    o: [O('Play for {aau}', { morale: 4, trust: 3 }, 'His gym smells like old sneakers. He knows every scout by name.', { set: 'aau.vickers', start: ['aau', 'arc_aau_2', 'hs_sum', 1], rel: [['aau', 20, 'You chose his team.']] }),
+      O('Take the flights', { fame: 4 }, 'Hotels, team gear, a bigger stage. {aau} wishes you luck.', { set: 'aau.other', rel: [['aau', -5]] })] },
+  nil_first_check: { at: 'hs_off', req: { rank: [1, 150], grade: [11, 12] }, w: 4,
+    t: 'A car dealer wants you in an ad.', x: 'The biggest dealership in {town}. Thirty seconds and a check.',
+    o: [O('Film it', { cash: 0.03, fame: 3 }, 'You point at a truck and smile. The whole school quotes it.', { set: 'nil.hs' }),
+      O('Wait for college', { eth: 2 }, 'He says the offer stands. It does not, but that is fine.')] },
+  visit_host: { at: 'hs_off', req: { grade: [11, 11], rank: [1, 300] }, w: 3, rar: 'uncommon',
+    t: 'Your official visit host has plans.', x: 'A party off campus. He says every recruit goes.',
+    o: [O('Go for an hour', { morale: 4 }, 'Somebody takes a photo. You do not think about it again.', { start: ['visit', 'arc_visit_2', 'hs_sum', 0] }),
+      O('Back to the hotel', { trust: 3 }, 'You watch film with the coaches instead. They notice.')] },
+  hs_dad_coach: { at: 'hs', req: { grade: [10, 12] }, w: 2,
+    t: 'Your dad is coaching from the stands.', x: 'Every possession. The whole gym can hear him.',
+    o: [O('Talk to him after', { morale: 3 }, 'He promises to sit quieter. He makes it a week.', { rel: [['dad', 5]] }),
+      O('Tune it out', { iq: 1 }, 'You learn to hear only {hscoach:last}. It is a useful skill.')] },
+  hs_ranking_drop: { at: 'hs_off', when: (L) => L.am && L.am.rank > 200 && L.am.grade >= 11, w: 3,
+    t: 'You fell in the rankings.', x: 'A website moved you down. The comments are not kind.',
+    o: [O('Read every comment', { morale: -5, eth: 4 }, 'You screenshot the worst one. It is your phone background now.'),
+      O('Delete the app', { morale: 3 }, 'You go to the gym instead. It does more for you.')] },
+  hs_first_dunk: { at: 'hs', when: (L) => L.rt.ath >= 55 && L.am && L.am.grade <= 11, w: 3,
+    t: 'A breakaway with nobody back.', x: 'You have never dunked in a game. The student section knows it.',
+    o: [O('Go up with two hands', { fame: 4, morale: 6 }, 'Rim rattling. Your phone has nine hundred notifications by morning.', { p: (L) => clamp(0.35 + (L.rt.ath - 55) * 0.03, 0.2, 0.9), no: { fx: { morale: -3 }, s: 'Off the back iron. The whole bench covers their faces. You laugh too.' } }),
+      O('Lay it in', { trust: 2 }, 'Two points. The coach nods. The students boo, a little.')] },
+  hs_all_american: { at: 'hs_off', req: { grade: [12, 12], rank: [1, 30] }, w: 6,
+    t: 'The Crown Classic.', x: 'The all-star game for the best seniors in the country. Every phone in America watches.',
+    o: [O('Shoot your shot', { fame: 6 }, 'Twenty-two points and a crossover that goes around the internet.', { p: 0.55, no: { fx: { fame: 2 }, s: 'Four of fifteen. Somebody else wins MVP. It is still a great week.' } }),
+      O('Make the right pass', { trust: 4, iq: 1 }, 'Eleven assists. The college coaches in the stands like that more.')] },
+  hs_injury_senior: { at: 'hs', req: { grade: [12, 12] }, w: 2, rar: 'uncommon',
+    t: 'Your ankle rolls in January.', x: 'Senior year. The trainer says two weeks if you rest it.',
+    o: [O('Rest it', { health: 6 }, 'Two weeks on the bench. It hurts more than the ankle.', { set: 'inj.hs' }),
+      O('Tape it and play', { health: -8, fame: 2 }, 'You play the rivalry game on one leg and win it.', { set: 'inj.hs' })] },
+  hs_state_parade: { at: 'hs_off', when: (L) => L.season && L.season.tourney && L.season.tourney.champ, w: 9,
+    t: 'The town throws a parade.', x: 'State champions. A fire truck, a marching band and every kid in {town}.',
+    o: [O('Ride on the fire truck', { morale: 8, fame: 3 }, 'You throw candy for two miles. Your arm is sore for a week.', { set: 'hs.parade' }),
+      O('Walk with the band', { morale: 6 }, 'You walk next to the drummers. It is the loudest day of your life.', { set: 'hs.parade' })] },
+  hs_reclass_offer: { at: 'hs_off', when: (L) => L.am && L.am.grade === 11 && L.am.rank <= 45 && L.age <= 17, w: 5, rar: 'uncommon',
+    t: 'You could skip senior year.', x: 'Your credits are done. Reclassify, and you are in college this fall. A year younger in the draft.',
+    o: [O('Reclassify', { fame: 4 }, 'Paperwork, a summer course and a lot of goodbyes. You are a freshman in August.', { do: (L) => { remember(L, 'route.reclass', true); L.am.grade = 12; if (!L.am.college) L.pending.push(commitCard(L)); logIt(L, 'Reclassified to graduate a year early.', 'gold'); } }),
+      O('Stay with your class', { morale: 4 }, 'One more year at home. Senior night with the guys you grew up with.')] },
+  hs_grades_warning: { at: 'hs', when: (L) => L.am && L.am.grade >= 11 && L.rt.iq < 55, w: 3,
+    t: 'One more bad test and you sit.', x: 'Chemistry. The eligibility letter is on the coach\'s desk.',
+    o: [O('Get a tutor', { iq: 2, morale: -2 }, 'Four nights a week with {tutor}. A B minus. You frame it.', { rel: [['mom', 10]] }),
+      O('Cram the night before', { morale: 2 }, 'A C. Eligible. Barely.', { p: 0.6, no: { fx: { trust: -6, morale: -6 }, s: 'A D. You sit two games. The team loses both.' } })] },
+  hs_coach_son2: { at: 'hs', when: (L) => L.am && L.am.grade === 10, w: 2,
+    t: 'A senior wants your minutes.', x: 'He has waited three years. You are fifteen and starting.',
+    o: [O('Earn them every day', { def: 1, eth: 3 }, 'He makes you better in practice. By February you are friends.'),
+      O('Let {hscoach:last} sort it out', { morale: 2 }, 'He starts you. The senior does not talk to you until graduation.')] },
+
+  // ── college (7.3) ──
+  col_captain: { at: 'col_pre', req: { cyear: [3, 4] }, w: 4,
+    t: 'The team votes you captain.', x: 'Fourteen votes. The fifteenth was yours, for somebody else.',
+    o: [O('Lead out loud', { trust: 6, morale: 4 }, 'You run the huddles. The freshmen follow you everywhere.', { set: 'col.captain' }),
+      O('Lead by example', { eth: 4, trust: 4 }, 'First in, last out. It works the same.', { set: 'col.captain' })] },
+  col_senior_night: { at: 'col_mar', req: { cyear: [4, 4] }, w: 8,
+    t: 'Senior night.', x: 'Four years at {school}. Your family walks you to center court.',
+    o: [O('Give a speech', { morale: 8, fame: 3 }, 'You thank the managers by name. The arena loses it.', { set: 'col.senior' }),
+      O('Just play', { morale: 6 }, 'Twenty-eight points. You leave the floor to a standing ovation.', { set: 'col.senior' })] },
+  col_coach_yells: { at: 'col', w: 3,
+    t: 'Film session. The clip is you.', x: 'The head coach runs it back five times. The room is silent.',
+    o: [O('Take it', { trust: 6, def: 1 }, 'You never make that mistake again. He notices.'),
+      O('Fire back', { trust: -8, morale: 3 }, 'The assistant coaches look at the floor. You sit the first half Saturday.')] },
+  col_return_senior: { at: 'col_off', when: (L) => L.am && L.am.cyear === 3 && projectedPick(L, L.am.stock || 0) > 25, w: 4,
+    t: 'The mocks have you in the second round.', x: 'One more year could change that. Or nothing could.',
+    o: [O('Ask the staff what they hear', { iq: 1 }, 'They say come back. They would say that.'),
+      O('Ask an agent, unofficially', { fame: 1 }, 'You are not supposed to talk to agents yet. You learn a lot anyway.')] },
+  col_portal_new_coach: { at: 'col_pre', req: { route: 'portal' }, w: 6,
+    t: 'A new coach, a new system.', x: 'Everything you knew is wrong here. Different sets, different words.',
+    o: [O('Learn it all', { iq: 3, trust: 6 }, 'By November you are the one teaching it to freshmen.'),
+      O('Play your way', { fame: 2, trust: -5 }, 'You score. He lets you. For now.')] },
+  col_portal_old_team: { at: 'col', req: { route: 'portal' }, w: 6,
+    t: 'Your old school is on the schedule.', x: 'Their fans have a sign with your face on it. It is not kind.',
+    o: [O('Make them regret it', { fame: 4 }, 'Thirty points in their building. Their coach shakes your hand anyway.', { p: (L) => clamp(0.4 + (ovrOf(L) - 55) * 0.03, 0.2, 0.85), set: 'col.portalrevenge', no: { fx: { morale: -5 }, s: 'Five for nineteen. Their student section chants your name. Not nicely.' } }),
+      O('Play it like any game', { trust: 4 }, 'A quiet sixteen points and a win. Better that way.')] },
+  col_injury: { at: 'col', w: 2, rar: 'uncommon',
+    t: 'Something pops in practice.', x: 'The trainer calls it a stress fracture. Six weeks, or a medical redshirt.',
+    o: [O('Rehab and come back', { health: -6 }, 'Back for March. Not all the way.', { set: 'inj.col' }),
+      O('Take the redshirt', { health: 15, iq: 2 }, 'A year to heal and learn. You come back stronger.', { set: ['inj.col', 'col.redshirt'] })] },
+  walkon_practice_squad: { at: 'col_pre col', req: { route: 'walkon' }, w: 8,
+    t: 'You guard the starters every day.', x: 'Scout team. You learn every opponent\'s plays and run them against your own team.',
+    o: [O('Make every practice a game', { def: 3, eth: 3, health: -4 }, 'A starter shoves you after a charge. The coach smiles.', { start: ['walkon', 'arc_walkon_2', 'col_off', 0] }),
+      O('Learn the system', { iq: 3 }, 'You know the playbook better than the point guard.', { start: ['walkon', 'arc_walkon_2', 'col_off', 0] })] },
+  nil_bidding: { at: 'col_off', req: { cyear: [1, 3] }, when: (L) => L.am && ovrOf(L) >= 56, w: 3, rar: 'uncommon',
+    t: 'A collective doubles your NIL money.', x: 'If you transfer. They put the number in writing.',
+    o: [O('Stay loyal', { trust: 6, morale: 2 }, 'Your own collective matches half. The fans love you for it.', { start: ['nil', 'arc_nil_2', 'col_pre', 1] }),
+      O('Ask your school to match', { cash: 0.08 }, 'They match. Now everybody knows you asked.', { start: ['nil', 'arc_nil_2', 'col_pre', 1] })] },
+  coach_rumor: { at: 'hs_off', when: (L) => L.am && L.am.college && L.am.grade === 12, w: 3, rar: 'uncommon',
+    t: 'Your coach is a candidate somewhere else.', x: 'The pro rumor sites have the man who recruited you interviewing for an NBA job.',
+    o: [O('Call him', { trust: 3 }, 'He says he is not going anywhere. He says it fast.', { start: ['coachleft', 'arc_coachleft_2', 'col_pre', 1] }),
+      O('Wait and see', {}, 'You hear nothing for a month. Then you hear everything.', { start: ['coachleft', 'arc_coachleft_2', 'col_pre', 1] })] },
+
+  // ── the other roads (alt slot: overseas, G League, juco, prep, gap, rec) ──
+  abr_first_practice: { at: 'alt', req: { route: 'intl' }, w: 8,
+    t: 'Grown men test you on day one.', x: 'A thirty-three year old forward elbows you on every screen.',
+    o: [O('Elbow him back', { fame: 2, def: 1 }, 'He grins. By the next week he picks you first in drills.'),
+      O('Laugh it off', { morale: 3 }, 'He keeps doing it. You learn to set your feet.')] },
+  abr_derby: { at: 'alt', req: { route: 'intl' }, w: 6,
+    t: 'The derby.', x: 'Drums, flares and fourteen thousand people who hate the other team more than they love you.',
+    o: [O('Take the last shot', { fame: 5 }, 'It goes in. They carry you off the floor.', { p: (L) => clamp(0.45 + clutchBonus(L), 0.2, 0.8), set: 'abr.derby', no: { fx: { morale: -4 }, s: 'It rims out. The other side sets off a flare in your honor.' } }),
+      O('Feed the veteran', { trust: 5 }, 'He hits it. The coach hugs you first.')] },
+  abr_coach: { at: 'alt', req: { route: 'intl' }, w: 4,
+    t: 'The coach trusts his veterans.', x: 'Twelve minutes a night. He says you have to earn it here.',
+    o: [O('Earn it', { def: 2, eth: 3 }, 'Twenty minutes by February.'),
+      O('Have your agent call', { trust: -6, fame: 1 }, 'He plays you more. He does not talk to you more.')] },
+  glid_paycheck: { at: 'alt', req: { route: 'gl' }, w: 8,
+    t: 'Your first paycheck.', x: 'You are eighteen. It is more money than your parents make in a year.',
+    o: [O('Save most of it', { cash: 0.3 }, 'A boring account with a good number in it.', { set: 'money.saved' }),
+      O('Buy your mom a car', { cash: -0.05, morale: 8 }, 'She cries in the dealership parking lot.', { rel: [['mom', 25, 'You bought her a car with your first check.']] })] },
+  glid_vet: { at: 'alt', req: { route: 'gl' }, w: 6,
+    t: 'A thirty-one year old takes you in.', x: '{tvet} has played on four continents. He says you remind him of himself.',
+    o: [O('Listen to everything', { iq: 3 }, 'He teaches you how to rest on the road. And how to read a scouting report.', { rel: [['tvet', 25, 'He looked after you in the G League.']] }),
+      O('Keep your distance', { morale: 1 }, 'He shrugs. There is always another kid.')] },
+  juco_gym: { at: 'alt', req: { route: 'juco' }, w: 8,
+    t: 'Two-a-days in a gym with no air.', x: 'The juco coach runs practice like it is 1985. Nobody here was recruited.',
+    o: [O('Outwork the gym', { ath: 2, def: 2, health: -5 }, 'You lose eight pounds in a month. D1 coaches start calling.', { start: ['juco', 'arc_juco_2', 'hs_off', 0] }),
+      O('Do enough', { morale: 2 }, 'You lead the team in scoring. Nobody calls yet.', { start: ['juco', 'arc_juco_2', 'hs_off', 0] })] },
+  juco_bus: { at: 'alt', req: { route: 'juco' }, w: 5,
+    t: 'A nine-hour bus ride.', x: 'A Tuesday game in a town with one hotel. The heat is broken.',
+    o: [O('Watch film on your phone', { iq: 2 }, 'You learn their whole offense by the state line.'),
+      O('Sleep', { health: 4 }, 'You wake up with a sore neck and thirty points in you.')] },
+  prep_new_coach: { at: 'alt', req: { route: 'prep' }, w: 8,
+    t: 'A coach who has sent forty players to college.', x: 'He says he can fix your jumper in a year.',
+    o: [O('Let him rebuild it', { sho: 3, morale: -2 }, 'Ugly for two months. Then pure.'),
+      O('Work on your body', { ath: 2, health: 4 }, 'Twelve pounds of muscle. Scouts notice before you score.')] },
+  gap_alone: { at: 'alt', req: { route: 'gap' }, w: 8,
+    t: 'Just you and a trainer.', x: 'No team, no schedule. Mock drafts start to forget your name.',
+    o: [O('Post your workouts', { fame: 6 }, 'A million views a week. Scouts watch too.', { set: 'gap.brand' }),
+      O('Stay quiet and work', { sho: 2, iq: 2 }, 'Nobody knows what you are doing. You like it that way.', { set: 'gap.quiet' })] },
+  gap_forgotten: { at: 'alt', req: { route: 'gap' }, w: 6,
+    t: 'You dropped off a mock draft.', x: 'Out of the first round on the biggest site.',
+    o: [O('Call a trainer you trust', {}, 'He gets you a workout with an NBA team. Then two.', { do: (L) => { L.am.stock = (L.am.stock || 0) + 0.5; } }),
+      O('Ignore it', { morale: 2 }, 'You are in the gym when it updates. You do not check.')] },
+  rec_day_job: { at: 'alt', req: { route: 'rec' }, w: 8,
+    t: 'The warehouse wants you on nights.', x: 'Overtime pay. It would mean no rec league.',
+    o: [O('Take the shifts', { cash: 0.02, morale: -4 }, 'Good money. Your jumper gets rusty.'),
+      O('Keep your nights', { sho: 2, morale: 3 }, 'You are broke and in the best shape of your life.')] },
+  rec_proam: { at: 'alt', req: { route: 'rec' }, w: 6,
+    t: 'A pro-am at the big park downtown.', x: 'Real pros play here in the summer. A scout sits on the top row.',
+    o: [O('Go at the pros', { fame: 8 }, 'Fifty-four points. The clip is everywhere by morning.', { p: (L) => clamp(0.3 + (ovrOf(L) - 50) * 0.03, 0.15, 0.7), set: 'rec.viral', do: (L) => { if (recall(L, 'rec.viral')) L.flags.stock = (L.flags.stock || 0) + 3; },
+      no: { fx: { morale: -3 }, s: 'A good night, not a great one. The scout leaves at halftime.' } }),
+      O('Play your game', { iq: 1 }, 'Twenty-two and nine. A coach asks for your number.')] },
+});
+
+storyArcs({
+  arc_camp_2: { at: 'hs_sum', stage: 'am',
+    t: 'Same camp. Same kid.', x: (L) => '{dre} is back.' + (arcData(L, 'camp').tone === 'hot' ? ' He has not forgotten what you said.' : ' He waves from across the gym.') + ' The scouts put you on each other.',
+    o: [O('Guard him every possession', { def: 2, fame: 3 }, 'He gets his. You get more. The scouts write both names down.', { go: ['camp', 'arc_camp_3', 'dn', 2] }),
+      O('Room with him', { morale: 4 }, 'He talks until three in the morning. He is funny. You did not expect that.', { go: ['camp', 'arc_camp_3', 'dn', 2], rel: [['dre', 20, 'You roomed together at camp.']] })] },
+  arc_camp_3: { at: 'dn', stage: 'nba', when: (L) => !!L.rival && L.rival.name === CAST.dre,
+    t: '{dre} hears his name too.', x: (L) => 'Draft night. He goes ' + (L.rival.pick < (L.draft.pick || 61) ? 'before' : 'after') + ' you. He finds you backstage.',
+    o: [O('Hug him', { morale: 5 }, 'Two kids from camp. Both in the league.', { go: ['camp', 'arc_camp_4', 'early', 1], rel: [['dre', 20, 'You hugged on draft night.']] }),
+      O('Tell him you will see him soon', { fame: 2 }, 'He laughs. He knows what you mean.', { go: ['camp', 'arc_camp_4', 'early', 1], rel: [['dre', -5]] })] },
+  arc_camp_4: { at: 'early', stage: 'nba', req: { team: true, rival: true },
+    t: 'You and {dre}, on national TV.', x: 'The first time the two kids from camp share an NBA floor in a big game.',
+    o: [O('Win the matchup', { fame: 5 }, 'You outscore him. He hugs you anyway.', { p: (L) => clamp(0.4 + (ovrOf(L) - L.rival.ovr) * 0.05, 0.1, 0.9), end: ['camp', 'won'], no: { fx: { morale: -4 }, s: 'He gets you. He brings it up at every All-Star weekend.', end: ['camp', 'lost'] } }),
+      O('Trade jerseys after', { morale: 6 }, 'Framed in both your houses by Christmas.', { end: ['camp', 'friends'], rel: [['dre', 25, 'You traded jerseys after your first NBA matchup.']] })] },
+  arc_aau_2: { at: 'hs_sum', stage: 'am',
+    t: '{aau} got paid for you.', x: 'A shoe company gave him a bonus for signing you. He tells you himself.',
+    o: [O('Thank him for telling you', { trust: 4 }, 'He says the money keeps the gym open. You believe him.', { end: ['aau', 'loyal'], rel: [['aau', 20, 'You stayed when you found out about the money.']] }),
+      O('Ask for a cut', { cash: 0.01 }, 'He gives you one, quietly. Neither of you mentions it again.', { end: ['aau', 'cut'], rel: [['aau', -10]] }),
+      O('Switch teams', { fame: 3 }, 'He does not try to stop you.', { end: ['aau', 'left'], rel: [['aau', -30, 'You left his team.']] })] },
+  arc_visit_2: { at: 'hs_sum', stage: 'am',
+    t: 'The photo from the party.', x: 'It is on a message board. Nothing in it is bad. It looks bad.',
+    o: [O('Call the coach and explain', { trust: 4 }, 'He laughs. He has seen worse. The offer stands.', { end: ['visit', 'fine'] }),
+      O('Say nothing', { morale: -2 }, 'One school drops you quietly. You never find out why.', { end: ['visit', 'cost'], do: (L) => { if (L.am) L.am.rstock = (L.am.rstock || 0) - 0.4; } })] },
+  arc_nil_2: { at: 'col_pre', stage: 'am', when: (L) => !!(L.am && L.am.level === 'col'),
+    t: 'The collective wants appearances.', x: 'Car washes, autograph tables and a gala. Every weekend in October.',
+    o: [O('Do them all', { fame: 4, health: -4 }, 'You sign four thousand things. Your hand cramps in practice.', { end: ['nil', 'paid'] }),
+      O('Do half', { trust: 2 }, 'They grumble. They pay anyway.', { end: ['nil', 'half'] })] },
+  arc_coachleft_2: { at: 'col_pre', stage: 'am', when: (L) => !!(L.am && L.am.level === 'col' && L.am.cyear <= 2),
+    t: 'The man who recruited you is gone.', x: 'He took the NBA job. The new staff did not recruit you.',
+    o: [O('Win over the new staff', { trust: 6, eth: 3 }, 'You are the first one in on their first day.', { end: ['coachleft', 'stayed'] }),
+      O('Ask for your release', { morale: 2 }, 'They grant it. You are in the portal before practice starts.', { end: ['coachleft', 'left'], do: (L) => { L.pending.unshift(portalCard(L)); } })] },
+  arc_walkon_2: { at: 'col_off', stage: 'am',
+    t: 'The coach calls the team together.', x: 'He has an envelope. He says your name.',
+    o: [O('Open it in front of everybody', { morale: 10, fame: 3 }, 'A scholarship. The whole team piles on you.', { end: ['walkon', 'schol'], set: 'walkon.schol', log: 'Earned a scholarship.' }),
+      O('Ask to open it alone', { morale: 8 }, 'A scholarship. You call home from the parking lot.', { end: ['walkon', 'private'], set: 'walkon.schol', log: 'Earned a scholarship.' })] },
+  arc_juco_2: { at: 'hs_off', stage: 'am',
+    t: 'A D1 coach drives nine hours to see you.', x: 'He watches one practice and asks for your mom\'s number.',
+    o: [O('Tell him you are ready', { morale: 6 }, 'He offers before he leaves the parking lot.', { end: ['juco', 'offer'], do: (L) => { L.am.rstock = (L.am.rstock || 0) + 0.6; L.am.rank = nationalRank(L); L.pending = L.pending.filter((c) => c.id !== 'commit'); L.pending.push(commitCard(L)); } }),
+      O('Ask about playing time first', { iq: 1 }, 'He promises nothing. You like that he does not lie.', { end: ['juco', 'honest'] })] },
+});
+
+// ── pre-draft and draft night (NARRATIVE.md 7.4) ──
+
+story({
+  pre_interview_trap: { at: 'predraft', w: 5,
+    t: 'An executive asks the question.', x: '{exec} leans back in the interview room. "Who is the best player in this draft, and why is it not you?"',
+    o: [O('Say it is you, and mean it', { fame: 2 }, 'He writes something down. You hope it was a compliment.', { p: 0.6, set: 'pre.interview', no: { fx: { morale: -2 }, s: 'He writes something down and frowns. Word gets around that you are arrogant.' } }),
+      O('Name somebody else and explain', { iq: 1, trust: 4 }, 'He likes the scouting report. He asks you to stay for lunch.', { set: 'pre.interview' }),
+      O('Make a joke', { morale: 3 }, 'He laughs. The room relaxes. Half the teams love it.')] },
+  pre_medical: { at: 'predraft', when: (L) => !!(recall(L, 'inj.hs') || recall(L, 'inj.col') || L.dur < 52), w: 5,
+    t: 'A medical flag leaks.', x: 'A team doctor found something in your knee scan. Now every team knows.',
+    o: [O('Release your full records', { trust: 4 }, 'Doctors agree it is nothing. Most teams relax.', { do: (L) => { L.flags.stock = (L.flags.stock || 0) - 0.5; } }),
+      O('Say nothing', { morale: -2 }, 'Two teams take you off their boards. You never know which two.', { do: (L) => { L.flags.stock = (L.flags.stock || 0) - 1.5; } })] },
+  pre_shooting_coach: { at: 'predraft', when: (L) => L.rt.sho < 58, w: 4,
+    t: 'Six weeks to fix your jumper.', x: 'A shooting coach says he can rebuild it before the draft. Or break it.',
+    o: [O('Rebuild it', { sho: 3 }, 'A new release. It looks better. It feels strange.', { p: 0.6, no: { fx: { sho: -1, morale: -4 }, s: 'It is worse at workouts. You go back to the old one.' } }),
+      O('Keep your shot', { morale: 2 }, 'You make it work in workouts. Teams see what you are.')] },
+  pre_green_room: { at: 'predraft', when: (L) => projectedPick(L) <= 22, w: 5,
+    t: 'The league invites you to the green room.', x: 'A table near the stage. Cameras on you until your name is called.',
+    o: [O('Accept', { fame: 3 }, 'You get a suit fitted. Your mom buys a dress.', { set: 'dn.greenroom' }),
+      O('Watch from home', { morale: 3 }, 'A cookout in the backyard. If the call comes, it comes there.', { set: 'dn.home' })] },
+  pre_workout_heat: { at: 'predraft', w: 3,
+    t: 'Six workouts in eight days.', x: 'Six cities. Your legs are gone by Thursday.',
+    o: [O('Push through', { fame: 2, health: -6 }, 'Your last workout is your best. Somebody notices.', { do: (L) => { L.flags.stock = (L.flags.stock || 0) + 0.6; } }),
+      O('Cancel two', { health: 6 }, 'Those two teams are offended. Your legs are not.')] },
+  dn_mom_hug: { at: 'dn', req: { drafted: true }, w: 5,
+    t: 'The camera finds your mom.', x: 'She has not stopped crying since {commish} said your name.',
+    o: [O('Hug her for a long time', { morale: 8, fame: 2 }, 'The clip runs on every highlight show. You do not care.', { rel: [['mom', 20, 'The hug on draft night.']] }),
+      O('Make her laugh', { morale: 6 }, 'She swats your arm on live TV. Everybody watching laughs too.', { rel: [['mom', 15]] })] },
+  dn_hometown: { at: 'dn', when: (L) => !!(L.draft && L.draft.team && homeClub(L) === L.draft.team), w: 9,
+    t: 'Your hometown team picked you.', x: 'The arena where you watched games as a kid is screaming your name.',
+    o: [O('Wave to the section you sat in', { fame: 4, morale: 8 }, 'Section 112, upper row. They are all on their feet.', { set: 'dn.home.pick' }),
+      O('Call your old coach', { morale: 6 }, 'He picks up before it rings.', { rel: [['hscoach', 25, 'You called him on draft night.']] })] },
+  dn_stash: { at: 'dn', req: { pick: [36, 60] }, w: 4,
+    t: 'They want to stash you.', x: 'Second round. The {club} want you to play a year in Europe while they hold your rights.',
+    o: [O('Go to Europe for a year', { iq: 2 }, 'A one-year deal abroad. They will call next summer.', { do: (L) => {
+        L.flags.rights = L.team; remember(L, 'route.stash', true); L.flags.overseas = (L.flags.overseas || 0) + 1;
+        L.team = null; L.season = null; L.contract = { years: 1, total: 1, salary: 0.8, kind: 'overseas', start: L.year };
+        L.pending = L.pending.filter((c) => c.id !== 'goal' && c.id !== 'training');
+        logIt(L, 'Stashed overseas for a season.', ''); } }),
+      O('Ask to come over now', { trust: 2 }, 'They agree. Fifteenth man, but in the league.')] },
+  dn_slide: { at: 'dn', when: (L) => !!(recall(L, 'dn.greenroom') && L.draft && (L.draft.pick || 61) >= 18), w: 9,
+    t: 'The green room empties around you.', x: (L) => 'You were projected in the lottery. Pick ' + (L.draft.pick || 'sixty') + '. The camera never left your face.',
+    o: [O('Smile through it', { morale: -4, trust: 4 }, 'People notice the grace. A teammate sends you a long text.', { set: 'dn.slide' }),
+      O('Write the picks down', { eth: 6, fame: 2 }, 'Every team that passed. You keep the paper in your locker.', { set: ['dn.slide', 'dn.list'] })] },
+
+  // ── rookie and early career (7.5) ──
+  money_first_buy: { at: 'pre early', req: { seasons: [0, 1] }, when: (L) => L.contract && L.contract.salary >= 2, w: 5,
+    t: 'Your first real money.', x: 'The first paycheck clears. Everybody has advice.',
+    o: [O('A car you always wanted', { cash: -0.3, morale: 6 }, 'It is ridiculous. You love it.', { start: ['money', 'arc_money_2', 'off', 1, { kind: 'car' }] }),
+      O('A house for your mom', { cash: -0.8, morale: 8 }, 'Four bedrooms and a porch. She cannot stop touching the walls.', { set: 'family.house', start: ['money', 'arc_money_2', 'off', 1, { kind: 'house' }], rel: [['mom', 30, 'You bought her a house.']] }),
+      O('Hire a financial adviser', { cash: 0.1 }, 'Index funds and a budget. Very boring. Very smart.', { start: ['money', 'arc_money_2', 'off', 1, { kind: 'adviser' }] })] },
+  r_card_game: { at: 'early', req: { seasons: [0, 1] }, tags: 'locker', w: 3,
+    t: 'The back of the plane has a card game.', x: '{tm} deals you in. The stakes are not small.',
+    o: [O('Play a few hands', { morale: 4, cash: -0.02 }, 'You lose a little. You learn a lot about everybody.', { rel: [['tm', 15, 'You played cards on the plane.']] }),
+      O('Sleep', { health: 3 }, 'You land fresh. {tm} calls you boring.', { rel: [['tm', -3]] })] },
+  r_jersey_number: { at: 'pre', req: { seasons: [1, 2] }, w: 2,
+    t: 'A veteran has your number.', x: '{tvet} wore it first. He might sell it.',
+    o: [O('Buy it from him', { cash: -0.05, morale: 5 }, 'A watch and a dinner. He tells the story at every stop.', { rel: [['tvet', 15, 'You bought his number off him.']] }),
+      O('Pick a new number', { morale: 2 }, 'A new number, a new start.')] },
+  r_wall: { at: 'mid', req: { seasons: [0, 0], minutes: [16, null] }, tags: 'court', w: 4,
+    t: 'The rookie wall.', x: 'Game fifty-five. Your legs feel like somebody else\'s.',
+    o: [O('Rest and sleep more', { health: 6, min: -1 }, 'You come out of it in two weeks.', { start: ['wall', 'arc_wall_2', 'off', 0] }),
+      O('Grind through it', { health: -6, eth: 3 }, 'You play through. Your shot does not.', { start: ['wall', 'arc_wall_2', 'off', 0] })] },
+  r_vet_tests: { at: 'early', req: { seasons: [0, 0] }, tags: 'locker', w: 3,
+    t: 'The veterans test you on the road.', x: '{tvet} sends you for coffee at five in the morning. In Denver. In January.',
+    o: [O('Get the coffee', { trust: 3, morale: -1 }, 'Eight orders, all correct. They start calling you by name.', { start: ['room', 'arc_room_2', 'mid', 0], rel: [['tvet', 10]] }),
+      O('Send it back with a joke', { morale: 2 }, 'Half of them laugh. The other half remember.', { start: ['room', 'arc_room_2', 'mid', 0, { joke: 1 }] })] },
+  sl_first_game: { at: 'dn', req: { seasons: [0, 0] }, w: 3,
+    t: 'Summer League starts in a week.', x: 'Las Vegas in July. Your first game in the colors.',
+    o: [O('Hunt your shot', { fame: 4 }, 'Twenty-six points in your first game. The clip makes the rounds.', { p: (L) => clamp(0.35 + (ovrOf(L) - 60) * 0.04, 0.15, 0.85), set: 'sl.good', no: { fx: { morale: -3 }, s: 'Five for eighteen. You learn that Vegas gyms are hot.' } }),
+      O('Run the team', { trust: 5, iq: 1 }, 'You run the plays they asked you to. The coaches love the tape.')] },
+  sig_game: { at: 'mid', req: { seasons: [0, 4], minutes: [24, null] }, when: (L) => !!(L.season && L.season.hi && L.season.hi.pts >= 32), tags: 'court', w: 6,
+    t: 'Your first signature game.', x: (L) => L.season.hi.pts + ' points. Your phone does not stop for two days.',
+    o: [O('Do every interview', { fame: 8, morale: 3 }, 'A morning show, a podcast and a magazine shoot.', { start: ['sig', 'arc_sig_2', 'late', 0, { loud: 1 }] }),
+      O('One interview, then the gym', { trust: 4, eth: 3 }, 'You tell {beat} it was one night. Then you go shoot.', { start: ['sig', 'arc_sig_2', 'late', 0] })] },
+  r_road_roommate: { at: 'early mid', req: { seasons: [0, 2] }, tags: 'locker', w: 1, rar: 'uncommon',
+    t: 'Your road roommate snores.', x: '{trook} sleeps like a chainsaw. Every hotel, every night.',
+    o: [O('Buy him a mouthguard', { cash: -0.01, morale: 3 }, 'It works. He says you saved his career.', { rel: [['trook', 15, 'You fixed his snoring.']] }),
+      O('Ask for your own room', { health: 3 }, 'You sleep well. He is a little hurt.', { rel: [['trook', -5]] })] },
+  r_rookie_month: { at: 'early', req: { seasons: [0, 0] }, when: (L) => !!(L.season && perGame(L.season).pts >= 14), tags: 'court', w: 5,
+    t: 'Rookie of the Month.', x: 'November is yours. The league sends a plaque.',
+    o: [O('Give it to your mom', { morale: 6 }, 'It goes on her mantel, next to your fourth grade spelling bee trophy.', { rel: [['mom', 10]] }),
+      O('Put it in your locker', { fame: 2, eth: 2 }, 'A reminder. Eleven more months to win.')] },
+  promise_broken: { at: 'dn', when: (L) => !!(L.flags.promise && L.draft && L.draft.team && L.flags.promise.club !== L.draft.team), w: 7,
+    t: 'They promised. They passed.', x: (L) => 'The ' + nick(L.flags.promise.club) + ' said you were their pick. They took somebody else.',
+    o: [O('Remember it', { eth: 4 }, 'You write the date on a piece of tape inside your shoe.', { start: ['promise2', 'arc_promise2_2', 'early', 1, { club: 0 }], do: (L) => { arcData(L, 'promise2').club = L.flags.promise.club; } }),
+      O('Let it go', { morale: 3 }, 'Business. You meant it. Mostly.', { set: 'promise.forgiven' })] },
+});
+
+storyArcs({
+  arc_money_2: { at: 'off', stage: 'nba',
+    t: 'A year after the first big buy.', x: (L) => ({ car: 'The car has eleven thousand miles. Your cousins want to borrow it.', house: 'Your mom planted a garden. Your cousins want rooms.', adviser: 'Your adviser sends the year-end statement. It is up.' }[arcData(L, 'money').kind] || 'A year later.'),
+    o: [O('Set some rules', { trust: 2, cash: 0.1 }, 'A family meeting. A budget. Some hurt feelings. Better money.', { end: ['money', 'rules'], rel: [['cousin', -10]] }),
+      O('Say yes to everybody', { cash: -0.4, morale: 4 }, 'Everybody is happy. The account is less happy.', { end: ['money', 'yes'], rel: [['cousin', 15]] })] },
+  arc_wall_2: { at: 'off', stage: 'nba',
+    t: '{trainer} has a plan.', x: 'She watched your second half. She says your body needs a different summer.',
+    o: [O('Follow it to the letter', { ath: 2, health: 10, dur: 4 }, 'Sleep tracking, a new diet, no pickup. You come back a different player.', { end: ['wall', 'broke'], rel: [['trainer', 25, 'You followed her plan after the rookie wall.']] }),
+      O('Do your own summer', { sho: 1 }, 'You work hard. Just not the way she said.', { end: ['wall', 'own'], rel: [['trainer', -5]] })] },
+  arc_room_2: { at: 'mid', stage: 'nba', req: { team: true },
+    t: 'The veterans make a decision about you.', x: (L) => arcData(L, 'room').joke ? 'They have not forgotten the coffee joke.' : 'February. A team dinner. They save you a seat.',
+    o: [O('Sit with them', { trust: 5, morale: 6 }, '{tvet} gives a toast. You are one of them now.', { end: ['room', 'accepted'], rel: [['tvet', 20, 'The room accepted you.']] }),
+      O('Sit with the young guys', { morale: 3 }, 'They nod. The room never fully opens up to you.', { end: ['room', 'outside'] })] },
+  arc_sig_2: { at: 'late', stage: 'nba',
+    t: 'Teams have your film now.', x: (L) => arcData(L, 'sig').loud ? 'April. Everybody saw the interviews. Defenses saw them too.' : 'April. Defenses spent two months on your big night.',
+    o: [O('Look at what they took away', { iq: 2 }, 'They sit on your right hand. You spend the summer on your left.', { end: ['sig', 'sustained'] }),
+      O('Keep doing what worked', { fame: 2 }, 'It still works. Sometimes.', { end: ['sig', 'onenight'] })] },
+  arc_promise2_2: { at: 'early', stage: 'nba', req: { team: true }, when: (L) => !!arcData(L, 'promise2').club && L.team !== arcData(L, 'promise2').club,
+    t: 'The team that broke its promise.', x: (L) => 'The ' + nick(arcData(L, 'promise2').club) + ' on national TV. You still have the tape in your shoe.',
+    o: [O('Make them pay', { fame: 5 }, 'Thirty-one points. You stare at their bench the whole fourth quarter.', { p: (L) => clamp(0.35 + (ovrOf(L) - 66) * 0.04, 0.15, 0.85), end: ['promise2', 'revenge'], no: { fx: { morale: -4 }, s: 'Seven points. They win by twenty. The tape stays in the shoe.', end: ['promise2', 'grudge'] } }),
+      O('Shake their GM\'s hand', { trust: 4, morale: 3 }, 'He says they made a mistake. You knew that.', { end: ['promise2', 'forgiven'] })] },
+});
+
+// ── the prime (NARRATIVE.md 7.6) ──
+
+const meRank = (L) => { const r = L.season && L.season.race; const m = r && r.find((x) => x.you); return m ? m.rank : 99; };
+story({
+  td_unhappy: { at: 'mid', req: { seasons: [2, null], team: true }, when: (L) => L.m.morale < 55 && L.season && L.season.w < L.season.l && L.contract && L.contract.years >= 1, w: 4,
+    t: 'You want out.', x: 'Losing, again. You have said nothing in public. Yet.',
+    o: [O('Tell {gm} privately', { trust: -4 }, 'He listens. He says he will try. It goes quiet.', { start: ['trade', 'arc_trade_2', 'late', 0, { loud: 0 }], rel: [['gm', -10, 'You asked him for a trade.']] }),
+      O('Say it on the record', { fame: 5, trust: -12 }, '{beat} has it by the end of the night.', { start: ['trade', 'arc_trade_2', 'late', 0, { loud: 1 }], rel: [['gm', -25, 'You asked out in public.']] }),
+      O('Keep quiet and play', { morale: -2, trust: 4 }, 'You say the right things. You mean about half of them.')] },
+  bb_rumor: { at: 'early', req: { seasons: [3, null], fame: [45, null], team: true }, w: 2, rar: 'uncommon',
+    t: 'You are in blockbuster talks.', x: 'Three teams, nine players. Your name is the biggest one.',
+    o: [O('Call {gm}', { trust: 3 }, 'He says there is nothing to it. He has said that before.', { start: ['bb', 'arc_bb_2', 'mid', 0] }),
+      O('Act like you did not hear', { morale: -2 }, 'Every reporter in the building asks. You say nothing seven times.', { start: ['bb', 'arc_bb_2', 'mid', 0] })] },
+  max_eligible: { at: 'mid', req: { seasons: [3, null], ovr: [80, null], team: true }, when: (L) => !!(L.contract && L.contract.years <= 2), w: 4,
+    t: 'You are eligible for the max.', x: 'Your next deal could be the biggest in franchise history. The talks start in July.',
+    o: [O('Tell {agent:first} you want every dollar', { fame: 3 }, 'He smiles. He already has the spreadsheet.', { start: ['max', 'arc_max_2', 'off', 0, { ask: 'max' }] }),
+      O('Say you will take less to win', { trust: 6, morale: 2 }, 'The front office loves it. {agent:first} does not.', { start: ['max', 'arc_max_2', 'off', 0, { ask: 'less' }], rel: [['agent', -10]] }),
+      O('Say you will look around', { fame: 4, trust: -6 }, 'Every team with space starts clearing it.', { start: ['max', 'arc_max_2', 'off', 0, { ask: 'walk' }] })] },
+  cs_target: { at: 'mid', req: { seasons: [4, null], ovr: [80, null], team: true }, when: (L) => clubNet(L, L.team) > -2 && !recall(L, 'arc.costar.landed'), w: 3, rar: 'uncommon',
+    t: 'A star is a free agent this summer.', x: (L) => personName(L, 'costar') + ' wants a winner. You could recruit him yourself.',
+    o: [O('Start recruiting now', { fame: 3 }, 'Dinner in his city on the off day. It goes well.', { start: ['costar', 'arc_costar_2', 'off', 0, { n: 0, warm: 1 }], do: (L) => { arcData(L, 'costar').n = personName(L, 'costar'); } }),
+      O('Let the front office handle it', { trust: 3 }, 'They make the pitch. You stay out of it.', { start: ['costar', 'arc_costar_2', 'off', 0, { n: 0 }], do: (L) => { arcData(L, 'costar').n = personName(L, 'costar'); } })] },
+  touch_tension: { at: 'early', req: { seasons: [3, null], starter: true, ovr: [72, null] }, tags: 'locker', w: 2, rar: 'uncommon',
+    t: '{tco} is counting shots.', x: 'Yours and his. He says the gap is getting bigger.',
+    o: [O('Talk to him', { trust: 3 }, 'It goes fine. You think.', { start: ['touch', 'arc_touch_2', 'mid', 0] }),
+      O('Take more shots', { fame: 3, usage: 0.02 }, 'You score more. He talks less.', { start: ['touch', 'arc_touch_2', 'mid', 0, { more: 1 }], rel: [['tco', -15, 'You kept shooting.']] }),
+      O('Feed him for a week', { win: 0.3 }, 'He scores thirty twice. Then he wants more.', { start: ['touch', 'arc_touch_2', 'mid', 0], rel: [['tco', 10]] })] },
+  lm_rest: { at: 'early', req: { age: [29, null], team: true, starter: true }, w: 2, rar: 'uncommon',
+    t: 'The staff wants you to sit a national TV game.', x: 'Back-to-back. The science says rest. The ticket buyers say otherwise.',
+    o: [O('Sit', { health: 8 }, 'You watch in a suit. The crowd boos the announcement.', { start: ['lm', 'arc_lm_2', 'mid', 0, { sat: 1 }] }),
+      O('Play', { health: -6, fame: 2 }, 'You play forty minutes. Your hamstring files a complaint.', { start: ['lm', 'arc_lm_2', 'mid', 0] })] },
+  snub: { at: 'mid', req: { seasons: [2, null], ovr: [79, null], team: true }, when: (L) => !!(L.season && !L.season.allstar && perGame(L.season).pts >= 21), w: 6,
+    t: 'Snubbed.', x: (L) => perGame(L.season).pts + ' a night. Not an All-Star. The internet is angrier than you are.',
+    o: [O('Post a workout clip at midnight', { fame: 4, morale: 2 }, 'No caption. Two million views.', { start: ['snub', 'arc_snub_2', 'mid', 1] }),
+      O('Say nothing', { eth: 3, trust: 3 }, 'You take the long weekend to work.', { start: ['snub', 'arc_snub_2', 'mid', 1] })] },
+  shoe_meeting: { at: 'off', req: { seasons: [4, null], fame: [62, null], ovr: [80, null] }, w: 4,
+    t: '{shoeexec} wants to talk about a signature line.', x: 'Stride Athletics. Your name on a box. Your story on the tongue.',
+    o: [O('Tell them your origin story', { morale: 4 }, 'He records every word. The designers start sketching.', { start: ['shoe', 'arc_shoe_2', 'pre', 1, { story: 1 }], rel: [['shoeexec', 20, 'You told him your story for the shoe.']] }),
+      O('Ask for the biggest check', { cash: 0.5 }, 'He pays it. The shoe will be whatever they want.', { start: ['shoe', 'arc_shoe_2', 'pre', 1] })] },
+  mvp_ladder: { at: 'mid', req: { team: true }, when: (L) => meRank(L) <= 3, w: 7,
+    t: 'You are on the MVP ladder.', x: (L) => 'Third, second, first, depending on the morning show. ' + (meRank(L) === 1 ? 'Today you are first.' : 'Today you are ' + ordinal(meRank(L)) + '.'),
+    o: [O('Chase the stat line', { usage: 0.03, fame: 4 }, 'You average thirty-two in March.', { start: ['mvp', 'arc_mvp_2', 'late', 0, { how: 'stats' }] }),
+      O('Make it about winning', { win: 0.5, trust: 4 }, 'Eleven wins in twelve games.', { start: ['mvp', 'arc_mvp_2', 'late', 0, { how: 'wins' }] }),
+      O('Ignore it and stay healthy', { health: 6 }, 'You sit two back-to-backs. Voters notice.', { start: ['mvp', 'arc_mvp_2', 'late', 0, { how: 'rest' }] })] },
+  pf_label: { at: 'off', when: (L) => { const h = L.history[L.history.length - 1]; return !!h && h.seed && h.seed <= 2 && /R1|R2|First Round|Conference Semifinals/.test(h.po || '') && h.y === L.year; }, w: 6,
+    t: 'Out early as a top seed.', x: '{critic} says you are a regular season player. It is going on the shows all summer.',
+    o: [O('Answer it in May', { eth: 4 }, 'You say nothing. You go to work.', { start: ['pf', 'arc_pf_2', 'late', 1] }),
+      O('Answer it now', { fame: 3, morale: -2 }, 'A long post. It makes things louder.', { start: ['pf', 'arc_pf_2', 'late', 1] })] },
+  dy_ego: { at: 'pre', when: (L) => { const H = L.history; return H.length >= 2 && H.slice(-2).every((h) => (h.aw || []).indexOf('champ') >= 0); }, w: 9,
+    t: 'Two in a row.', x: 'Every interview asks about three. {tco} wants more of the credit.',
+    o: [O('Give him the credit', { trust: 6, morale: 3 }, 'He softens. The room holds together.', { start: ['dynasty', 'arc_dynasty_2', 'off', 0, { kept: 1 }], rel: [['tco', 20, 'You gave him the credit during the dynasty.']] }),
+      O('Remind everybody whose team it is', { fame: 4 }, 'True. Unhelpful.', { start: ['dynasty', 'arc_dynasty_2', 'off', 0], rel: [['tco', -20, 'You reminded him whose team it was.']] })] },
+  cy_pressure: { at: 'mid', req: { team: true }, when: (L) => !!(L.contract && L.contract.years === 1 && L.age <= 30 && L.contract.kind !== 'rookie'), w: 3,
+    t: 'Contract year.', x: 'Every box score is a negotiation now. {agent:first} texts after every game.',
+    o: [O('Block it out', { eth: 3 }, 'You turn the phone off on game days.'),
+      O('Hunt numbers', { usage: 0.02, trust: -3 }, 'Your stats go up. The ball moves less.')] },
+  bad_contract: { at: 'off', req: { seasons: [5, null] }, when: (L) => !!(L.contract && L.contract.salary >= capFor(L.year) * 0.1 && ovrOf(L) < 80), w: 6,
+    t: 'Worst contract in the league?', x: '{critic} has a list. You are on it. Third.',
+    o: [O('Laugh it off on air', { fame: 3, morale: 2 }, 'You read the list out loud on a podcast. It helps.'),
+      O('Get in the gym', { eth: 5, health: -2 }, 'You spend the summer proving a list wrong.')] },
+  cameo_movie: { at: 'off', req: { fame: [60, null] }, w: 3,
+    t: 'A director wants you in a movie.', x: 'Two lines. A comedy. You play a basketball player.',
+    o: [O('Do it', { fame: 5, cash: 0.1 }, 'You are not good. You are very funny.', { set: 'ent.movie' }),
+      O('Pass', { trust: 2 }, 'You watch the movie on a plane. It is fine without you.')] },
+  fashion_week: { at: 'off', req: { fame: [68, null], big: true }, w: 3,
+    t: 'Front row at fashion week.', x: 'A designer wants you in the front row. And maybe a line of your own.',
+    o: [O('Go', { fame: 5, morale: 4 }, 'Photos everywhere. A capsule collection by spring.', { set: 'ent.fashion' }),
+      O('Train instead', { eth: 3 }, 'You send a teammate. He has never been happier.')] },
+  game_cover: { at: 'off', req: { fame: [78, null], stars: [2, null] }, w: 4,
+    t: 'The cover of a video game.', x: 'Court Kings, the biggest basketball game there is. Your face on the box.',
+    o: [O('Say yes', { fame: 6, cash: 0.3 }, 'Kids play as you in every living room. You lose with yourself online.', { set: 'ent.cover' }),
+      O('Ask for your mom on the back', { fame: 4, morale: 6 }, 'They agree. She shows everybody at church.', { set: 'ent.cover' })] },
+  union_voice: { at: 'off', req: { seasons: [5, null], team: true }, when: (L) => trait(L, 'lockerVoice') || repOf(L).resp >= 60, w: 3,
+    t: 'The players want you in the union.', x: 'Vice president. Meetings in the summer. A seat at the table.',
+    o: [O('Run for it', { trust: 4, fame: 2 }, 'You win by twelve votes. Your summers get shorter.', { set: 'union.role' }),
+      O('Back somebody else', { morale: 2 }, 'You campaign for {tvet}. He wins.')] },
+  foundation: { at: 'off', req: { seasons: [3, null], cash: 3 }, w: 2, rar: 'uncommon',
+    t: 'Start a foundation?', x: 'Your accountant says it is time. Your mom says it is past time.',
+    o: [O('Schools back home', { cash: -0.6, morale: 6 }, 'Two hundred laptops in September.', { set: 'foundation', rel: [['mom', 15]] }),
+      O('Courts in every park', { cash: -0.5, fame: 3 }, 'New rims and new lights in twelve parks.', { set: 'foundation' }),
+      O('Scholarships', { cash: -0.7, morale: 5 }, 'Ten kids a year. The first class writes you letters.', { set: 'foundation' })] },
+  social_mistake: { at: 'early mid off', req: { fame: [50, null] }, w: 2, rar: 'uncommon',
+    t: 'A late night post.', x: 'You were angry. You were tired. You hit send.',
+    o: [O('Delete it and apologize', { trust: 2, fame: -2 }, 'Gone in ten minutes. Screenshots are forever. It fades.'),
+      O('Double down', { fame: 5, trust: -8 }, 'It trends for two days. {gm} calls.')] },
+  social_win: { at: 'off', req: { fame: [35, null] }, w: 1, rar: 'uncommon',
+    t: 'A kid in a hospital wears your jersey.', x: 'His nurse posted it. He is nine. He says you are his favorite player.',
+    o: [O('Visit him', { morale: 8, fame: 4 }, 'Two hours. Video games. You lose on purpose. He knows.'),
+      O('Send a video and some gear', { morale: 4, fame: 2 }, 'He watches it eleven times. His nurse counts.')] },
+  family_courtside: { at: 'early', req: { kids: [1, null], team: true }, w: 3,
+    t: 'Your kid comes to a game.', x: 'Front row. Noise-canceling headphones. Your jersey, down to the knees.',
+    o: [O('Wave every timeout', { morale: 8 }, 'The broadcast finds it. Kids wave back from every seat.'),
+      O('Lock in', { fame: 2 }, 'A big night. You point at the front row after the last bucket.')] },
+});
+
+storyArcs({
+  arc_trade_2: { at: 'late', stage: 'nba', req: { team: true },
+    t: 'It leaked.', x: (L) => arcData(L, 'trade').loud ? 'It was never private. {beat} has the list of teams you would accept.' : '{beat} has it now. Somebody in the building talked.',
+    o: [O('Confirm it', { fame: 4, trust: -6 }, 'No going back. The summer will decide.', { go: ['trade', 'arc_trade_3', 'off', 0] }),
+      O('Walk it back', { trust: 3, morale: -4 }, 'You say you are happy here. Nobody believes it.', { go: ['trade', 'arc_trade_3', 'off', 0], do: (L) => { arcData(L, 'trade').back = 1; } })] },
+  arc_trade_3: { at: 'off', stage: 'nba', req: { team: true },
+    t: 'The trade request, settled.', x: 'Draft week. {gm} calls you in.',
+    o: [O('Hear him out', {}, '', { do: (L, r) => {
+        const d = arcData(L, 'trade');
+        if (!d.back && ok(r, 0.6)) { tradeNow(L, r, true); arcEnd(L, 'trade', 'traded'); bump(L, { morale: 8 }); return 'Done. The ' + nick(L.team) + ' want you. You fly out tomorrow.'; }
+        arcEnd(L, 'trade', 'stayed'); bump(L, { morale: -4, trust: 4 }); return 'No deal. He asks you to give it one more year.'; } }),
+      O('Tell him you have changed your mind', { trust: 8, morale: 2 }, 'He shakes your hand. A fresh start, in the same building.', { end: ['trade', 'reconciled'], rel: [['gm', 20, 'You took back the trade request.']] })] },
+  arc_bb_2: { at: 'mid', stage: 'nba', req: { team: true },
+    t: 'The deadline.', x: 'Thursday at noon. Your phone is face down on the table.',
+    o: [O('Pick it up', {}, '', { do: (L, r) => {
+        if (ok(r, 0.45)) { const from = L.team; tradeNow(L, r); arcData(L, 'bb').from = from; arcGo(L, 'bb', 'arc_bb_3', 'early', 1); return 'You have been traded to the ' + nick(L.team) + '. You learn it from the screen.'; }
+        arcEnd(L, 'bb', 'stayed'); bump(L, { morale: 3 }); return 'Noon passes. Nobody called. You exhale.'; } }),
+      O('Go to practice', { trust: 3 }, '', { do: (L, r) => {
+        if (ok(r, 0.35)) { const from = L.team; tradeNow(L, r); arcData(L, 'bb').from = from; arcGo(L, 'bb', 'arc_bb_3', 'early', 1); return 'The coach pulls you out of a drill. You are on the ' + nick(L.team) + ' now.'; }
+        arcEnd(L, 'bb', 'stayed'); return 'Nobody pulls you out of anything. You stay.'; } })] },
+  arc_bb_3: { at: 'early', stage: 'nba', req: { team: true }, when: (L) => !!arcData(L, 'bb').from && L.team !== arcData(L, 'bb').from,
+    t: 'Back in your old building.', x: (L) => 'The ' + nick(arcData(L, 'bb').from) + ' play a video for you in the first timeout.',
+    o: [O('Tap your chest', { morale: 6, fame: 2 }, 'A standing ovation. Then you score thirty against them.', { end: ['bb', 'thrived'] }),
+      O('Stay locked in', { trust: 3 }, 'You barely look up. You win by twelve.', { end: ['bb', 'thrived'] })] },
+  arc_max_2: { at: 'off', stage: 'nba',
+    t: 'The money talks are done.', x: (L) => { const a = arcData(L, 'max').ask; return a === 'less' ? 'You took less. The front office spent the difference on a shooter.' : a === 'walk' ? 'You looked around. Four teams flew in for meetings.' : 'Every dollar. The biggest deal in franchise history.'; },
+    o: [O('Buy dinner for the whole staff', { trust: 4, cash: -0.05 }, 'Equipment managers, video guys, the chef. Everybody.', { end: ['max', 'generous'], do: (L) => { if (arcData(L, 'max').ask === 'less' && L.team) L.league.net[L.team] = (L.league.net[L.team] || 0) + 1; } }),
+      O('Get back in the gym', { eth: 3 }, 'The deal is done. Earning it starts tomorrow.', { end: ['max', 'signed'] })] },
+  arc_costar_2: { at: 'off', stage: 'nba', req: { team: true },
+    t: 'The meeting.', x: (L) => '{costar} comes to your house.' + (arcData(L, 'costar').warm ? ' He remembers the dinner.' : ' He has never been here before.'),
+    o: [O('Pitch him a ring', {}, '', { do: (L, r) => {
+        const d = arcData(L, 'costar');
+        if (ok(r, d.warm ? 0.55 : 0.4)) { arcEnd(L, 'costar', 'landed'); remember(L, 'arc.costar.landed', true); L.league.net[L.team] = (L.league.net[L.team] || 0) + 2.5; relate(L, 'costar', 30, 'He signed after the meeting at your house.'); bump(L, { morale: 8, fame: 4 }); logIt(L, 'Recruited ' + d.n + ' to the ' + nick(L.team) + '.', 'gold'); return 'He signs the next morning. Now you have help.'; }
+        arcEnd(L, 'costar', 'spurned'); bump(L, { morale: -5 }); return 'He goes somewhere else. He calls to tell you himself.'; } }),
+      O('Let him decide in peace', { trust: 3 }, '', { do: (L, r) => {
+        if (ok(r, 0.3)) { arcEnd(L, 'costar', 'landed'); remember(L, 'arc.costar.landed', true); L.league.net[L.team] = (L.league.net[L.team] || 0) + 2.5; bump(L, { morale: 8 }); return 'He signs. He says you were the only one who did not pressure him.'; }
+        arcEnd(L, 'costar', 'spurned'); return 'He signs elsewhere. He says you were the only one who did not pressure him.'; } })] },
+  arc_touch_2: { at: 'mid', stage: 'nba', req: { team: true },
+    t: 'It is on TV now.', x: (L) => arcData(L, 'touch').more ? 'A camera caught {tco} yelling at you in a timeout.' : '{critic} spent ten minutes on you and {tco}.',
+    o: [O('Own it', { trust: 4 }, 'You say it is on you. He hears about it.', { go: ['touch', 'arc_touch_3', 'off', 0], rel: [['tco', 10]] }),
+      O('Deny everything', { fame: 2 }, 'Nobody believes either of you.', { go: ['touch', 'arc_touch_3', 'off', 0] })] },
+  arc_touch_3: { at: 'off', stage: 'nba',
+    t: 'You and {tco}, settled.', x: 'The season is over. One of you could be moved this summer.',
+    o: [O('Take him to dinner', { morale: 4 }, 'Three hours. You leave as friends. Real ones.', { end: ['touch', 'friends'], rel: [['tco', 30, 'You settled it over dinner.']] }),
+      O('Tell the front office to choose', { trust: -4 }, 'They choose you. He is traded at the draft.', { end: ['touch', 'traded'], rel: [['tco', -20, 'The front office chose you over him.']] })] },
+  arc_lm_2: { at: 'mid', stage: 'nba',
+    t: '{critic} calls you soft.', x: (L) => arcData(L, 'lm').sat ? 'Ten minutes on the rest night. He used the word "soft" nine times.' : 'He says you will be broken by May.',
+    o: [O('Say nothing', { eth: 2 }, 'The clip goes around. You let May answer it.', { go: ['lm', 'arc_lm_3', 'late', 0] }),
+      O('Call into his show', { fame: 4 }, 'You are calm and funny. He has nothing.', { go: ['lm', 'arc_lm_3', 'late', 0], rel: [['critic', -10, 'You called into his show.']] })] },
+  arc_lm_3: { at: 'late', stage: 'nba',
+    t: 'April. The legs question.', x: 'The playoffs start Saturday. Everybody wants to know how you feel.',
+    o: [O('Tell the truth', {}, '', { do: (L) => { const fresh = L.m.health >= 60; arcEnd(L, 'lm', fresh ? 'fresh' : 'tired'); bump(L, fresh ? { morale: 5 } : { morale: -3 }); return fresh ? 'Fresh. You say so. You mean it.' : 'Honestly? Tired. {critic} plays the clip twice.'; } }),
+      O('Say you feel great', { fame: 1 }, 'Everybody says that in April.', { end: ['lm', 'fine'] })] },
+  arc_snub_2: { at: 'mid', stage: 'nba', req: { team: true },
+    t: 'One year after the snub.', x: (L) => L.season && L.season.allstar ? 'The All-Star votes are in. You are in.' : 'The All-Star votes are in. Again, no.',
+    o: [O('Read the list', {}, '', { do: (L) => { const inN = !!(L.season && L.season.allstar); arcEnd(L, 'snub', inN ? 'answered' : 'chip'); bump(L, inN ? { morale: 8 } : { eth: 4 }); return inN ? 'You screenshot it. Then you delete the screenshot. No need.' : 'The chip on your shoulder gets heavier. You like the weight.'; } }),
+      O('Do not look', { eth: 2 }, '', { do: (L) => { arcEnd(L, 'snub', L.season && L.season.allstar ? 'answered' : 'chip'); return 'Your mom texts you either way.'; } })] },
+  arc_shoe_2: { at: 'pre', stage: 'nba',
+    t: 'The first sample shoe.', x: (L) => arcData(L, 'shoe').story ? 'The tongue has a map of {town} on it.' : 'It is very shiny. You are not sure it is you.',
+    o: [O('Wear it on opening night', { fame: 4 }, 'The cameras find your feet all night.', { go: ['shoe', 'arc_shoe_3', 'mid', 0] }),
+      O('Ask for one more round of changes', { morale: 2 }, '{shoeexec} sighs. The new version is better.', { go: ['shoe', 'arc_shoe_3', 'mid', 0], do: (L) => { arcData(L, 'shoe').better = 1; } })] },
+  arc_shoe_3: { at: 'mid', stage: 'nba',
+    t: 'Launch day.', x: 'All-Star weekend. Stores open at midnight.',
+    o: [O('Go to the flagship store', { fame: 3 }, '', { do: shoeLaunch }),
+      O('Watch the numbers from home', { health: 2 }, '', { do: shoeLaunch })] },
+  arc_mvp_2: { at: 'late', stage: 'nba',
+    t: 'The MVP debate.', x: (L) => 'April. {critic} and two former players argue about you for an hour. They focus on the ' + ({ stats: 'numbers', wins: 'wins', rest: 'games you missed' }[arcData(L, 'mvp').how] || 'numbers') + '.',
+    o: [O('Watch it', { morale: -1 }, 'You turn it off at the half hour mark.', { end: ['mvp', 'watched'] }),
+      O('Go to sleep', { health: 2 }, 'The voters will do what they do.', { end: ['mvp', 'slept'] })] },
+  arc_pf_2: { at: 'late', stage: 'nba',
+    t: 'May is coming.', x: 'The label from last spring is still there. The playoffs start Saturday.',
+    o: [O('Embrace it', { morale: 3 }, 'You tell the room this is the year. You mean it.', { end: ['pf', 'embraced'] }),
+      O('Tune it out', { eth: 2 }, 'Headphones on. Same routine.', { end: ['pf', 'tuned'] })] },
+  arc_dynasty_2: { at: 'off', stage: 'nba',
+    t: 'The summer after the dynasty question.', x: (L) => arcData(L, 'dynasty').kept ? 'The core is together. {tco} is still here.' : 'The front office has calls about {tco}.',
+    o: [O('Fight to keep the group', { trust: 4 }, 'They keep it. One more run.', { end: ['dynasty', 'kept'] }),
+      O('Let the business happen', { morale: -2 }, 'They move him for younger legs. It is the right call. It still hurts.', { end: ['dynasty', 'broke'] })] },
+});
+
+// ── adversity (NARRATIVE.md 7.7) ──
+
+story({
+  inj_comeback: { at: 'off', when: (L) => { const m = recall(L, 'inj.major'); return !!m && m.y === L.year; }, w: 9,
+    t: 'The long way back.', x: 'Surgery is behind you. {trainer} lays out three ways to spend the summer.',
+    o: [O('The slow road', { health: 14, ath: -1 }, 'Nine months, no shortcuts. Opening night is the goal.', { start: ['comeback', 'arc_comeback_2', 'early', 1, { path: 'slow' }], rel: [['trainer', 15, 'You took the slow road back.']] }),
+      O('Push to be ready early', { health: 4 }, 'Ahead of schedule. Everybody says so. You hope so.', { start: ['comeback', 'arc_comeback_2', 'early', 1, { path: 'fast' }] }),
+      O('An experimental treatment', { cash: -0.4, health: 8 }, 'A clinic overseas. Expensive. Promising.', { start: ['comeback', 'arc_comeback_2', 'early', 1, { path: 'new' }] })] },
+  md_sore: { at: 'mid', req: { seasons: [2, null], team: true }, when: (L) => L.m.health < 85, w: 2, rar: 'uncommon',
+    t: 'The soreness will not go away.', x: 'Your hip, for six weeks. The team doctor says it is tightness.',
+    o: [O('Trust the team doctor', { health: -3 }, 'Ice and stretching. It gets a little better.', { start: ['md', 'arc_md_2', 'off', 0, { second: 0 }] }),
+      O('Get a second opinion', { cash: -0.05, trust: -3 }, 'A specialist you pay for yourself. The team is not thrilled.', { start: ['md', 'arc_md_2', 'off', 0, { second: 1 }] })] },
+  cc_counsel: { at: 'mid off', req: { seasons: [2, null] }, when: (L) => (L.evlog && (L.evlog.slump || []).length >= 2 && L.m.morale < 55) || L.m.morale < 30, w: 3,
+    t: 'Something is off, and it is not your jumper.', x: 'You are not sleeping. Games feel like tests you did not study for.',
+    o: [O('Talk to someone', { morale: 10 }, 'Once a week, all season. It is the best decision of your career.', { set: 'cc.help', start: ['cc', 'arc_cc_2', 'pre', 1] }),
+      O('Work through it alone', { eth: 3, morale: -2 }, 'Longer hours. It helps a little.', { start: ['cc', 'arc_cc_2', 'pre', 1, { alone: 1 }] })] },
+  lr_split: { at: 'early', req: { seasons: [2, null], team: true }, when: (L) => L.season && L.season.w < L.season.l, tags: 'locker', w: 2, rar: 'uncommon',
+    t: 'The locker room has split.', x: 'The vets on one side. The young players on the other. {tvet} and {trook} have stopped talking.',
+    o: [O('Call a players-only meeting', { trust: 3 }, 'You book a room for after practice.', { start: ['rift', 'arc_rift_2', 'mid', 0, { led: 1 }] }),
+      O('Stay out of it', { morale: -2 }, 'It does not go away on its own.', { start: ['rift', 'arc_rift_2', 'mid', 0] })] },
+  susp_flagrant: { at: 'early mid', req: { team: true }, when: (L) => trait(L, 'hothead') || L.m.morale < 30, tags: 'court', w: 3,
+    t: 'Flagrant two.', x: 'He undercut you on a layup. You got up swinging. Ejected.',
+    o: [O('Apologize after the game', { trust: 4, cash: -0.05 }, 'One game suspension. The league notes the apology.', { set: 'susp.games' }),
+      O('Defend it', { fame: 3, trust: -6, cash: -0.1 }, 'Two games. {critic} has a field day.', { set: 'susp.games', rel: [['critic', -5]] })] },
+  susp_curfew: { at: 'mid', req: { team: true }, when: (L) => !!(L.evlog && L.evlog.night_out), w: 1, rar: 'uncommon',
+    t: 'You missed curfew.', x: 'Three in the morning on a road trip. Security has the time stamp.',
+    o: [O('Own it to the team', { trust: 2, min: -2 }, 'One game. You tell the room before the coaches can.', { set: 'susp.curfew' }),
+      O('Blame the hotel', { trust: -8, min: -3 }, 'Nobody buys it. Two games.', { set: 'susp.curfew' })] },
+  boo_night: { at: 'mid', req: { team: true, seasons: [2, null] }, when: (L) => !!(L.season && L.season.w < L.season.l - 6), w: 3,
+    t: 'Booed at home.', x: 'Your own building. Your own fans. Every missed shot.',
+    o: [O('Cup your ear', { fame: 4, trust: -4 }, 'They boo louder. You score on the next three trips.', { start: ['boo', 'arc_boo_2', 'off', 0, { loud: 1 }] }),
+      O('Clap with them', { morale: -2, trust: 3 }, 'You agree with them. It disarms the place.', { start: ['boo', 'arc_boo_2', 'off', 0] }),
+      O('Ignore it', { eth: 2 }, 'Headphones on in your head. It is still loud.', { start: ['boo', 'arc_boo_2', 'off', 0] })] },
+  tv_take: { at: 'early', req: { fame: [55, null], seasons: [1, null] }, w: 3,
+    t: '{critic} says you are overrated.', x: 'Hot Take Hour. A graphic with your face and the word "overrated" in red.',
+    o: [O('Respond online', { fame: 4 }, 'Three words. It gets more views than his show.', { start: ['tv', 'arc_tv_2', 'off', 0, { clap: 1 }], rel: [['critic', -15, 'You clapped back online.']] }),
+      O('Ignore him', { eth: 2 }, 'He keeps talking. That is his job.', { start: ['tv', 'arc_tv_2', 'off', 0] })] },
+  sonny_pitch: { at: 'off', req: { seasons: [1, 6] }, when: (L) => L.agent !== 'power', w: 3,
+    t: '{sonny} wants to represent you.', x: 'Two phones, a nice watch, a lot of promises. He says your endorsements are worth double.',
+    o: [O('Let him run your endorsements', { morale: 3, fame: 2 }, 'He has you on a magazine cover by September.', { start: ['sonny', 'arc_sonny_2', 'off', 1], set: 'agent.sonny', rel: [['sonny', 25, 'He took over your endorsements.']] }),
+      O('Ask {maya} about him', { iq: 1 }, 'She says nothing bad. She says it carefully.', { rel: [['maya', 15, 'You asked her about Sonny.']] }),
+      O('Say no', { trust: 1 }, 'He leaves his card. Two cards, actually.')] },
+  hf_drives_you: { at: 'hs_sum', req: { grade: [10, 11] }, w: 4,
+    t: '{friend} has a car now.', x: 'It has one working door. He drives you to every AAU game anyway.',
+    o: [O('Pay him back in gas money', { cash: -0.01, morale: 4 }, 'He refuses. You leave it in the cupholder anyway.', { set: 'friend.tavi', start: ['tavi', 'arc_tavi_2', 'off', 3], rel: [['friend', 25, 'He drove you to every AAU game.']] }),
+      O('Promise him something bigger', { morale: 5 }, '"When you make it," he says. He means it as a joke.', { set: ['friend.tavi', 'friend.promise'], start: ['tavi', 'arc_tavi_2', 'off', 3], rel: [['friend', 30, 'You promised him something when you made it.']] })] },
+  money_broke: { at: 'off', req: { seasons: [3, null] }, when: (L) => L.earned > 5 && L.cash < L.earned * 0.3, w: 6,
+    t: 'Your adviser asks for a meeting.', x: 'The numbers are bad. You have earned a lot. You have kept very little.',
+    o: [O('Listen and cut back', { cash: 0.6, morale: -4 }, 'A smaller house. Fewer cars. A real plan.', { set: 'money.warned' }),
+      O('Ignore it', { morale: 2 }, 'You will figure it out next season. Probably.', { set: 'money.warned', do: (L) => { L.cash = round1(Math.max(0, L.cash - 0.4)); } })] },
+  money_generational: { at: 'off', req: { seasons: [8, null], cash: 30 }, w: 5,
+    t: 'Generational money.', x: 'Your accountant says your great-grandchildren will never need to work.',
+    o: [O('Set up a trust', { morale: 6 }, 'Lawyers, signatures, peace of mind.', { set: 'money.gen' }),
+      O('Buy something ridiculous', { cash: -2, fame: 3 }, 'A vineyard. You do not drink wine.', { set: 'money.gen' })] },
+  hs_jersey_return: { at: 'off', req: { seasons: [7, null], stars: [1, null] }, w: 4,
+    t: 'Your high school retires your number.', x: 'A Friday night in {town}. Your old coach is holding the frame.',
+    o: [O('Fly home for it', { morale: 10, fame: 2 }, 'The gym is sold out. Your coach cries before you do.', { set: 'hs.numret', rel: [['hscoach', 30, 'He held the frame when they retired your number.']] }),
+      O('Send your family', { morale: 4 }, 'Your mom gives the speech. It is better than yours would have been.', { set: 'hs.numret' })] },
+  mom_house: { at: 'off', req: { seasons: [1, 4] }, when: (L) => !recall(L, 'family.house') && L.cash >= 2, w: 4,
+    t: 'Your mom still lives in the old place.', x: 'Two bedrooms. The heat does not always work.',
+    o: [O('Buy her a house', { cash: -1.2, morale: 10 }, 'She picks a yellow one with a porch. She cries on the porch.', { set: 'family.house', rel: [['mom', 30, 'You bought her a house.']] }),
+      O('Fix up the old one', { cash: -0.3, morale: 6 }, 'New heat, new roof. She refuses to move anyway.', { rel: [['mom', 15]] })] },
+  heckler_lou: { at: 'mid', req: { team: true, seasons: [1, null] }, tags: 'court', w: 2, rar: 'uncommon',
+    t: 'Front row, every game.', x: '{fan}. He has heckled you since your first game here. Today it is about your free throws.',
+    o: [O('Make both and wink', { fame: 2 }, 'He laughs. Then he heckles somebody else.', { start: ['lou', 'arc_lou_2', 'off', 4], rel: [['fan', 10, 'You winked at him after two free throws.']] }),
+      O('Give him a look', { trust: -1 }, 'He loves it. Now he has material.', { start: ['lou', 'arc_lou_2', 'off', 4], rel: [['fan', -5]] })] },
+});
+
+storyArcs({
+  arc_comeback_2: { at: 'early', stage: 'nba', req: { team: true },
+    t: 'The comeback game.', x: (L) => ({ slow: 'Nine months to the day.', fast: 'Ahead of schedule, everybody says.', new: 'The treatment worked. You think.' }[arcData(L, 'comeback').path] || '') + ' The building stands when you check in.',
+    o: [O('Attack the rim', {}, '', { do: (L, r) => {
+        const d = arcData(L, 'comeback'); const p = d.path === 'slow' ? 0.75 : d.path === 'new' ? 0.6 : 0.5;
+        if (ok(r, p)) { arcEnd(L, 'comeback', 'full'); bump(L, { morale: 10, fame: 4 }); return 'The first dunk in a year. The bench empties.'; }
+        arcEnd(L, 'comeback', 'reinvent'); bump(L, { ath: -2, iq: 2, morale: -2 }); return 'The burst is not all the way back. You will have to play smarter now.'; } }),
+      O('Ease in', { trust: 3 }, 'Fourteen minutes. Smart. You are back.', { end: ['comeback', 'eased'] })] },
+  arc_md_2: { at: 'off', stage: 'nba',
+    t: 'The scan comes back.', x: (L) => arcData(L, 'md').second ? 'The specialist was right. It was never tightness.' : 'A new scan at the end of the season. It was never tightness.',
+    o: [O('Fix it now', {}, '', { do: (L) => { const early = arcData(L, 'md').second; arcEnd(L, 'md', early ? 'early' : 'late'); bump(L, early ? { health: 10 } : { health: 4, ath: -2 }); return early ? 'Caught early. A small procedure and a full summer.' : 'A bigger fix than it needed to be. You lose some burst.'; } }),
+      O('Talk to the team about it', { trust: -3 }, 'A long meeting. Everybody is sorry. Nobody says it.', { end: ['md', 'talked'], rel: [['gm', -10, 'The misdiagnosed hip.']] })] },
+  arc_cc_2: { at: 'pre', stage: 'nba',
+    t: 'Camp opens. You feel different.', x: (L) => arcData(L, 'cc').alone ? 'The summer of long hours helped. Some.' : 'A summer of honest conversations. Lighter.',
+    o: [O('Tell your teammates about it', { trust: 6, morale: 6 }, 'Two of them come to you that week with their own stuff.', { end: ['cc', 'growth'] }),
+      O('Keep it to yourself', { morale: 4 }, 'You feel better. That is enough.', { end: ['cc', 'quiet'] })] },
+  arc_rift_2: { at: 'mid', stage: 'nba', req: { team: true },
+    t: 'The players-only meeting.', x: (L) => arcData(L, 'rift').led ? 'Your meeting. Forty minutes. Raised voices, then quiet ones.' : 'Somebody else called it. Everybody looks at you anyway.',
+    o: [O('Say the hard thing', { trust: 4 }, '', { do: (L, r) => { if (ok(r, arcData(L, 'rift').led ? 0.65 : 0.45)) { arcEnd(L, 'rift', 'leader'); bump(L, { win: 0.6, morale: 6 }); return 'They win six of the next seven. The room is yours now.'; } arcEnd(L, 'rift', 'scapegoat'); bump(L, { trust: -6, morale: -4 }); return 'It leaks. You become the story.'; } }),
+      O('Listen', { iq: 1 }, 'You hear things you did not know. Some of them about you.', { end: ['rift', 'listened'] })] },
+  arc_boo_2: { at: 'off', stage: 'nba',
+    t: 'The summer after the boos.', x: (L) => arcData(L, 'boo').loud ? 'The ear cup is a meme. Half the city loves it.' : 'The city wants to know if you want to be here.',
+    o: [O('Do a free camp in the city', { morale: 6, cash: -0.05 }, 'A thousand kids. Their parents cheer the loudest.', { end: ['boo', 'won'] }),
+      O('Say nothing until opening night', { eth: 3 }, 'The first home game is the answer, either way.', { end: ['boo', 'waited'] })] },
+  arc_tv_2: { at: 'off', stage: 'nba',
+    t: '{critic} wants you on his show.', x: 'Hot Take Hour, in studio. He promises to be fair. He has never been fair.',
+    o: [O('Go on', {}, '', { do: (L, r) => { if (ok(r, 0.55 + (L.m.fame - 50) * 0.005)) { arcEnd(L, 'tv', 'truce'); relate(L, 'critic', 25, 'You went on his show and won.'); bump(L, { fame: 5, morale: 4 }); return 'You are funny and calm. By the end he is laughing. A truce, on air.'; } arcEnd(L, 'tv', 'feud'); relate(L, 'critic', -20, 'You went on his show and it went badly.'); bump(L, { fame: 3, morale: -4 }); return 'He ambushes you with a clip. The feud lives forever.'; } }),
+      O('Decline', { trust: 2 }, 'He calls you scared on air. You are on vacation.', { end: ['tv', 'declined'] })] },
+  arc_sonny_2: { at: 'off', stage: 'nba',
+    t: '{sonny} made a side deal.', x: 'A shoe company paid him to steer you their way. It is in a court filing.',
+    o: [O('Fire him', { trust: 4 }, 'You hire {maya} the same week. She hates surprises. You love that.', { end: ['sonny', 'fired'], rel: [['sonny', -40, 'You fired him over the side deal.'], ['maya', 25, 'You hired her after Sonny.']] }),
+      O('Hear his side', { morale: -2 }, '', { do: (L, r) => { if (ok(r, 0.5)) { arcEnd(L, 'sonny', 'saved'); bump(L, { cash: 0.6 }); return 'He turns the mess into a better deal. You do not ask how.'; } arcEnd(L, 'sonny', 'sunk'); bump(L, { cash: -0.8, fame: -3 }); return 'It gets worse. A settlement and a lot of headlines.'; } })] },
+  arc_tavi_2: { at: 'off', stage: 'nba',
+    t: '{friend} wants a job.', x: (L) => (recall(L, 'friend.promise') ? 'You promised him something when you made it. ' : '') + 'He wants to be on the payroll. Driver, assistant, anything.',
+    o: [O('Hire him', { cash: -0.1, morale: 4 }, 'He is late twice in the first week. He is also the only one who tells you the truth.', { go: ['tavi', 'arc_tavi_3', 'off', 3], do: (L) => { arcData(L, 'tavi').job = 1; } }),
+      O('Help him start a business', { cash: -0.4 }, 'A barbershop near your old court. He cuts your hair before every playoff run.', { go: ['tavi', 'arc_tavi_3', 'off', 3], do: (L) => { arcData(L, 'tavi').biz = 1; } }),
+      O('Say no', { morale: -4 }, 'He says he understands. He calls less.', { end: ['tavi', 'cut'], rel: [['friend', -30, 'You said no when he asked for a job.']] })] },
+  arc_tavi_3: { at: 'off', stage: 'nba',
+    t: '{friend} has news.', x: (L) => arcData(L, 'tavi').biz ? 'The barbershop opened a second location.' : 'He wants to know if he can be more than a driver.',
+    o: [O('Make him a partner', { cash: -0.2, morale: 8 }, 'Your name and his on the paperwork. He frames the first page.', { end: ['tavi', 'partner'], rel: [['friend', 30, 'He became your business partner.']] }),
+      O('Ask him to be your best man', { morale: 10 }, 'He laughs, then he cries, then he says yes.', { end: ['tavi', 'bestman'], rel: [['friend', 40, 'You asked him to be your best man.']] })] },
+  arc_lou_2: { at: 'off', stage: 'nba', when: (L) => !!L.team,
+    t: '{fan} writes you a letter.', x: 'He has heckled you for years. He says it is because he loves you. He has a ticket stub for every game.',
+    o: [O('Invite him to practice', { morale: 6, fame: 2 }, 'He cannot talk the whole time. First time ever.', { end: ['lou', 'friends'], rel: [['fan', 30, 'You invited him to practice.']] }),
+      O('Write back', { morale: 4 }, 'Two lines. He laminates it.', { end: ['lou', 'letter'], rel: [['fan', 20]] })] },
+});
+
+// ── late career (NARRATIVE.md 7.9) ──
+
+story({
+  v_smaller_role: { at: 'pre', req: { age: [32, null], team: true }, when: (L) => { const h = L.history[L.history.length - 1]; return !!h && ovrOf(L) < h.ovr; }, w: 4,
+    t: 'They want you off the bench this year.', x: 'Training camp. The depth chart has your name lower than last year.',
+    o: [O('Accept it', { trust: 8, morale: -2, min: -3 }, 'You run the second unit like a coach.', { set: 'v.role' }),
+      O('Fight for minutes', { eth: 4, health: -3 }, 'You win the job back for a month. Then the young legs win it.', { set: 'v.role' }),
+      O('Ask to be moved', { trust: -6 }, '{gm} says he will see. He means no.', { set: 'v.role', rel: [['gm', -10]] })] },
+  v_ring_chase: { at: 'off', req: { age: [33, null], rings: [0, 0], team: true }, when: (L) => !!(L.contract && L.contract.years >= 1) && clubNet(L, L.team) < 2, w: 4,
+    t: 'No ring. Time is short.', x: 'A contender would take you for the minimum. You would have to give up money to go.',
+    o: [O('Take the buyout and chase it', { morale: 6 }, '', { do: (L, r) => { tradeNow(L, r, true); L.contract = { years: 1, total: 1, salary: round1(capFor(L.year) * MIN_PCT), kind: 'min', start: L.year + 1 }; remember(L, 'route.ringchase', true); logIt(L, 'Took the minimum to chase a ring with the ' + nick(L.team) + '.', 'gold'); return 'You sign with the ' + nick(L.team) + ' for the minimum. They have a real shot.'; } }),
+      O('Stay where you are', { trust: 6, morale: -2 }, 'Loyalty. It might be the right call. It might not.', { set: 'v.stayed' })] },
+  mr_rookie: { at: 'pre', req: { age: [31, null], team: true, seasons: [7, null] }, w: 4,
+    t: 'The team drafted your replacement.', x: '{rookie2} is twenty and plays your position. Your old poster is his lock screen.',
+    o: [O('Take him under your wing', { trust: 6, morale: 3 }, 'You show him how to rest, how to read a scout report, how to talk to {beat}.', { start: ['mentor2', 'arc_mentor2_2', 'mid', 0, { teach: 1 }], rel: [['rookie2', 25, 'You took him under your wing.']], set: 'route.vet' }),
+      O('Make him earn it', { eth: 3 }, 'You guard him every practice. He gets better fast.', { start: ['mentor2', 'arc_mentor2_2', 'mid', 0], rel: [['rookie2', 5]] })] },
+  v_milestone: { at: 'mid', req: { team: true, age: [30, null] }, when: (L) => { const T = totals(L); return [10000, 15000, 20000, 25000, 30000].some((m) => T.pts < m && T.pts >= m - 900); }, w: 5,
+    t: 'A milestone is close.', x: (L) => { const T = totals(L); const m = [10000, 15000, 20000, 25000, 30000].find((x) => T.pts < x && T.pts >= x - 900); return (m - T.pts) + ' points to ' + m.toLocaleString('en-US') + '. Everybody is counting.'; },
+    o: [O('Chase it', { usage: 0.02, fame: 2 }, 'You get it in March, on a pull-up. They stop the game.', { set: 'v.chase' }),
+      O('Let it come', { trust: 4 }, 'It comes on a free throw in a blowout. Perfect.', { set: 'v.chase' })] },
+  v_rival_last: { at: 'mid', req: { rival: true, age: [33, null], team: true }, w: 6,
+    t: 'Probably the last time.', x: '{rival} and you, one more time. The arena knows it.',
+    o: [O('Trade jerseys after', { morale: 8 }, 'You both hold the other\'s jersey up for the cameras.', { set: 'rival.last', rel: [['rival', 20, 'You swapped jerseys the last time you played.']] }),
+      O('Beat him one last time', { fame: 3 }, 'You hit the dagger. He laughs about it in the handshake.', { set: 'rival.last' })] },
+  v_hair_grey: { at: 'pre', req: { age: [33, 34] }, w: 3,
+    t: 'A grey hair.', x: '{trook} finds it on picture day. The whole locker room knows by lunch.',
+    o: [O('Leave it', { morale: 3 }, 'You call it experience. They call you Unc.', { rel: [['trook', 10]] }),
+      O('Dye it', { fame: 1 }, 'They find the box in the trash. Worse.')] },
+  v_bench_coach: { at: 'mid', req: { age: [33, null], team: true }, when: (L) => trait(L, 'lockerVoice') || L.rt.iq >= 72, tags: 'court', w: 4,
+    t: 'The coach hands you the clipboard.', x: 'A timeout in a blowout. He says draw something up.',
+    o: [O('Draw a play for the rookie', { trust: 6, morale: 4 }, 'He scores. The bench loses it. So does the coach.', { set: ['v.coachy', 'route.vet'] }),
+      O('Hand it back with a smile', { morale: 2 }, 'He laughs. He asks again in March.', { set: 'v.coachy' })] },
+  fw_announce: { at: 'pre', req: { age: [35, null], team: true }, w: 5,
+    t: 'This could be the last one.', x: 'Training camp. Your body says so. You have not said it out loud.',
+    o: [O('Announce it', { fame: 6, morale: 6 }, 'A press conference. A farewell season. Every road arena has a gift waiting.', { start: ['farewell', 'arc_farewell_2', 'mid', 0], do: (L) => { L.flags.farewell = L.year; remember(L, 'fw.announced', true); } }),
+      O('Keep it quiet', { eth: 2 }, 'You will decide in the summer. Like always.')] },
+
+  // ── playoffs and the league (7.10, 7.11) ──
+  po_road: { at: 'late', when: (L) => !!(L.season && L.season.seed >= 6 && L.season.seed <= 8), w: 1, rar: 'uncommon',
+    t: 'You open on the road.', x: 'Lower seed. A hostile building on Saturday. The team plane leaves Thursday.',
+    o: [O('Say it is the same game', { trust: 4, win: 0.2 }, 'They believe it. Mostly.'),
+      O('Embrace being the villain', { fame: 2, morale: 3 }, 'You walk in waving. Their fans hate it. You love it.')] },
+  po_hurt: { at: 'late', when: (L) => L.m.health < 72 && !!(L.season && L.season.seed && L.season.seed <= 10), w: 4,
+    t: 'You are not healthy for the playoffs.', x: 'Something in your ankle. The team doctor says you could make it worse.',
+    o: [O('Play through it', { health: -6, fame: 3, win: 0.2 }, 'You tape it twice and play. It hurts for a month after.'),
+      O('Sit the first game', { health: 8, win: -0.2 }, 'You watch in a suit. It is the hardest game of your career.')] },
+  po_elim_presser: { at: 'off', when: (L) => { const h = L.history[L.history.length - 1]; return !!h && h.y === L.year && /R1|R2|CF|Finals/.test(h.po || ''); }, w: 2,
+    t: 'Cleaning out your locker.', x: 'The season ended a week ago. {press} has the last questions.',
+    o: [O('Take the blame', { trust: 6, fame: -1 }, 'The room respects it. {beat} writes it up kindly.'),
+      O('Look ahead', { morale: 3 }, 'You talk about the summer. Nobody quotes it.')] },
+  lg_cup: { at: 'early', req: { team: true }, when: (L) => clubNet(L, L.team) > 2, w: 2, rar: 'uncommon',
+    t: 'The in-season tournament final.', x: 'December in Las Vegas. A cup, prize money and a court painted gold.',
+    o: [O('Take it seriously', { fame: 3, health: -3 }, '', { do: (L, r) => { if (ok(r, 0.5)) { bump(L, { cash: 0.3, morale: 6 }); remember(L, 'lg.cup', true); return 'You win the cup. The prize money buys the whole staff a vacation.'; } bump(L, { morale: -3 }); return 'You lose the final by two. A strange December hurt.'; } }),
+      O('Treat it like any game', { health: 2 }, 'You lose the final. You are fresh in April.')] },
+  lg_deadline_day: { at: 'mid', req: { team: true, seasons: [1, null] }, when: (L) => clubNet(L, L.team) > 3, w: 1, rar: 'uncommon',
+    t: 'Deadline day. The front office is buying.', x: 'They want to add a veteran. They ask what the team needs.',
+    o: [O('A shooter', { win: 0.4 }, 'They get one. Your driving lanes open up.'),
+      O('A defender', { win: 0.4, def: 1 }, 'They get one. You finally get a night off from the best scorer.')] },
+  lg_lockout: { at: 'off', req: { seasons: [2, null] }, when: (L) => !recall(L, 'lg.lockout') && L.year % 11 === 3, w: 4, rar: 'rare',
+    t: 'A lockout.', x: 'The owners and the players cannot agree. The gyms are closed.',
+    o: [O('Join the bargaining table', { trust: 3, fame: 2 }, 'You sit in on the meetings. It is boring and important.', { set: ['lg.lockout', 'union.role'] }),
+      O('Play overseas for a month', { cash: 0.2, iq: 1 }, 'A month in a league you have never heard of. Then it ends.', { set: 'lg.lockout' })] },
+  lg_expansion: { at: 'off', req: { seasons: [3, null], team: true }, when: (L) => !recall(L, 'lg.expansion') && L.year % 13 === 5, w: 4, rar: 'rare',
+    t: 'Two expansion teams.', x: 'Each club can protect eight players. You are waiting to see the list.',
+    o: [O('Call {gm}', { trust: 2 }, 'He says you are protected. He says it before you finish the question.', { set: 'lg.expansion' }),
+      O('Wait for the list', { morale: -2 }, 'You are protected. You read it four times anyway.', { set: 'lg.expansion' })] },
+  lg_rule_change: { at: 'off', req: { seasons: [2, null] }, when: (L) => !recall(L, 'lg.rule') && L.year % 7 === 2, w: 3, rar: 'uncommon',
+    t: 'The league changes a rule.', x: 'No more hand checking on the perimeter. Officials will call it tight.',
+    o: [O('Learn to defend without your hands', { def: 1, iq: 1 }, 'A summer of slides and angles.', { set: 'lg.rule' }),
+      O('Attack it on offense', { fin: 1 }, 'Free throws for everybody. You plan to take most of them.', { set: 'lg.rule' })] },
+  lg_new_arena: { at: 'off', req: { team: true, seasons: [3, null] }, when: (L) => !recall(L, 'lg.arena') && L.year % 9 === 4, w: 3, rar: 'rare',
+    t: 'A new arena.', x: 'The club moves downtown next season. Your face is on the construction fence.',
+    o: [O('Help design the locker room', { morale: 4 }, 'A barber chair, a cold tub and a lot of space.', { set: 'lg.arena' }),
+      O('Keep one thing from the old place', { morale: 6 }, 'They give you the scorer\'s table chair. It goes in your garage.', { set: 'lg.arena' })] },
+  lg_lottery_show: { at: 'off', req: { team: true }, when: (L) => clubNet(L, L.team) < -4 && L.history.length >= 1 && L.history[L.history.length - 1].seed > 10, w: 3,
+    t: 'The lottery show.', x: 'Your team has the third-best odds. Ping pong balls decide your next teammate.',
+    o: [O('Watch with the staff', { trust: 3 }, '', { do: (L, r) => { if (ok(r, 0.3)) { L.league.net[L.team] = (L.league.net[L.team] || 0) + 1.5; bump(L, { morale: 6 }); return 'Number one. The room erupts. A future star is coming.'; } return 'Fifth. Fine. Somebody good is still there.'; } }),
+      O('Watch from the golf course', { morale: 2 }, 'You find out from forty texts at once.')] },
+});
+
+storyArcs({
+  arc_mentor2_2: { at: 'mid', stage: 'nba', req: { team: true },
+    t: '{rookie2} is taking your minutes.', x: (L) => arcData(L, 'mentor2').teach ? 'The things you taught him are working. Against you.' : 'He plays like he has something to prove. To you.',
+    o: [O('Keep teaching him', { trust: 6, min: -2 }, 'He thanks you on the broadcast. By name.', { go: ['mentor2', 'arc_mentor2_3', 'off', 0], do: (L) => { arcData(L, 'mentor2').kind = 'mentor'; } }),
+      O('Compete for every minute', { eth: 4, health: -3 }, 'Practices turn into wars. Both of you get better.', { go: ['mentor2', 'arc_mentor2_3', 'off', 0], do: (L) => { arcData(L, 'mentor2').kind = 'rival'; } })] },
+  arc_mentor2_3: { at: 'off', stage: 'nba',
+    t: 'The handoff.', x: '{rookie2} made his first All-Star ballot. He calls you before anyone else.',
+    o: [O('Tell him he earned it', { morale: 8 }, 'He says you earned half of it.', { end: ['mentor2', 'mentor'], rel: [['rookie2', 25, 'He called you first.']] }),
+      O('Tell him you are not done yet', { fame: 2, eth: 3 }, 'He laughs. He knows you mean it.', { end: ['mentor2', 'both'] })] },
+  arc_farewell_2: { at: 'mid', stage: 'nba',
+    t: 'The farewell tour.', x: 'Every road arena plays a video. The gifts pile up in the equipment room.',
+    o: [O('Stop and thank every crowd', { fame: 5, morale: 8 }, 'A rocking chair, a surfboard, a painting of you as a kid.', { go: ['farewell', 'arc_farewell_3', 'late', 0] }),
+      O('Keep your head down and win', { win: 0.4 }, 'You wave once a night. Then you go to work.', { go: ['farewell', 'arc_farewell_3', 'late', 0] })] },
+  arc_farewell_3: { at: 'late', stage: 'nba',
+    t: 'The last home game.', x: 'April. Your number is painted on the floor. Your family is in the front row.',
+    o: [O('Speak to the crowd', { morale: 10, fame: 4 }, 'Four minutes. You thank the ushers by name.', { end: ['farewell', 'speech'], log: 'Played the last home game of a farewell season.' }),
+      O('Just walk off slowly', { morale: 8 }, 'You touch the floor on the way out. They do not stop cheering.', { end: ['farewell', 'quiet'], log: 'Played the last home game of a farewell season.' })] },
+});
+
+/* Arc nodes whose answer is decided by what happened, not by the button: two
+   ways to meet it, one result. Declared so the arc tables can name them. */
+function shoeLaunch(L, r) {
+  const d = arcData(L, 'shoe'); const p = 0.35 + (d.story ? 0.15 : 0) + (d.better ? 0.1 : 0) + (L.m.fame - 60) * 0.01;
+  if (ok(r, p)) { arcEnd(L, 'shoe', 'soldout'); L.endorseBonus = (L.endorseBonus || 0) + 4; bump(L, { fame: 5 }); return 'Sold out in nine minutes. A line around the block.'; }
+  if (ok(r, 0.5)) { arcEnd(L, 'shoe', 'cult'); L.endorseBonus = (L.endorseBonus || 0) + 1.5; return 'Slow sales. Then collectors find it. It becomes a cult shoe.'; }
+  arcEnd(L, 'shoe', 'flop'); return 'It sits on the shelf. You wear it anyway.'; }
+function cursePlay(L) { arcGo(L, 'curse', 'arc_curse_3', 'off', 0); return 'Whatever happens, the city will say it was the curse.'; }
+function curseVerdict(L) { const h = L.history[L.history.length - 1]; if (h && h.po === 'Champion') { arcEnd(L, 'curse', 'broken'); remember(L, 'legend.cursebroken', true); bump(L, { fame: 8, morale: 10 }); return 'They rename a street. The curse is over.'; } arcEnd(L, 'curse', 'held'); bump(L, { morale: -3 }); return 'The curse wins this one. The city says next year.'; }
+
+// ── the legend layer (NARRATIVE.md 7.12) ──
+
+/* A SPORTS MOVIE, NOT A FANTASY NOVEL. Rare, a little heightened, every person
+   in it invented, and all of it gone when the legend switch is off. */
+story({
+  lg_ellis_summer: { at: 'hs_sum col_off', legend: true, w: 3, rar: 'rare',
+    t: 'An old man at the park.', x: '{ellis}. Nobody knows how old he is. He watches you for an hour, then says one word: "Again."',
+    o: [O('Do it again', { iq: 2, fin: 2 }, 'He teaches you a move that is not on any tape. A hesitation that should not work.', { set: 'legend.ellis', start: ['ellis', 'arc_ellis_2', 'late', 3] }),
+      O('Ask who he is', { morale: 2 }, 'He laughs and walks away. The next day he is back on the same bench.', { set: 'legend.ellis', start: ['ellis', 'arc_ellis_2', 'late', 3] })] },
+  lg_lucky: { at: 'early mid', legend: true, req: { team: true }, w: 2, rar: 'rare',
+    t: 'A lucky pair of socks.', x: 'You wore them in the best game of your life. You have worn them every game since.',
+    o: [O('Believe in them', { morale: 6 }, 'You win nine straight. You do not wash them. The trainers are concerned.', { set: 'legend.lucky', start: ['lucky', 'arc_lucky_2', 'late', 0] }),
+      O('Laugh at yourself', { morale: 2 }, 'You wear them anyway. Just in case.', { set: 'legend.lucky', start: ['lucky', 'arc_lucky_2', 'late', 0] })] },
+  lg_curse: { at: 'pre', legend: true, req: { team: true, seasons: [3, null] }, when: (L) => clubNet(L, L.team) > 1 && !L.history.some((h) => h.t === L.team && (h.aw || []).indexOf('champ') >= 0), w: 2, rar: 'rare',
+    t: 'The curse.', x: (L) => 'The city believes the ' + nick(L.team) + ' are cursed. An old radio host has a theory about a traded goat.',
+    o: [O('Say curses are not real', { trust: 2 }, 'The city laughs. Nervously.', { set: 'legend.curse', start: ['curse', 'arc_curse_2', 'late', 0] }),
+      O('Visit the old radio host', { fame: 3 }, 'He gives you a list of rituals. You do two of them.', { set: 'legend.curse', start: ['curse', 'arc_curse_2', 'late', 0, { ritual: 1 }] })] },
+  lg_cult_movie: { at: 'off', legend: true, req: { mem: ['ent.movie'] }, w: 4, rar: 'uncommon',
+    t: 'Your movie is a cult classic.', x: 'The bad comedy with your two lines. College kids quote it at midnight screenings.',
+    o: [O('Show up at a screening', { fame: 6, morale: 6 }, 'You do your line live. The theater shakes.', { set: 'legend.cult' }),
+      O('Pretend it never happened', { morale: 2 }, 'It keeps happening without you.', { set: 'legend.cult' })] },
+  lg_dre9: { at: 'off', legend: true, req: { rival: true, seasons: [4, null] }, when: (L) => !!L.rival && L.rival.name === CAST.dre, w: 4, rar: 'rare',
+    t: 'An old team photo.', x: 'Your mom finds a photo of you at nine, third row. The kid beside you is {dre}.',
+    o: [O('Send it to him', { morale: 8 }, 'He calls at midnight. Neither of you remembered. Neither of you can stop laughing.', { set: 'legend.dre9', rel: [['dre', 25, 'You found the team photo from when you were nine.']] }),
+      O('Keep it for the speech', { morale: 4 }, 'You put it in a drawer marked "someday."', { set: 'legend.dre9' })] },
+  lg_lazlo: { at: 'off', legend: true, req: { team: true, seasons: [3, null] }, w: 2, rar: 'rare',
+    t: 'A billionaire buys the team.', x: (L) => '{lazlo} now owns the ' + nick(L.team) + '. He wears a cape to his first press conference.',
+    o: [O('Take his call', { fame: 2 }, 'He wants you in the new uniform he designed. It has tassels.', { set: 'legend.lazlo', start: ['lazlo', 'arc_lazlo_2', 'mid', 1] }),
+      O('Let {agent:first} take it', { trust: 1 }, 'He sends a gift basket shaped like you.', { set: 'legend.lazlo', start: ['lazlo', 'arc_lazlo_2', 'mid', 1] })] },
+  lg_midnight: { at: 'off', legend: true, req: { seasons: [1, null] }, w: 2, rar: 'rare',
+    t: 'A midnight run.', x: 'You cannot sleep. There is a game under the lights at the park near the hotel.',
+    o: [O('Play in a hoodie', { morale: 8, fame: 5 }, 'Nobody recognizes you for six games. Then somebody films it.', { set: 'legend.midnight' }),
+      O('Just watch', { morale: 4 }, 'An old man on the bench says you look like a pro. You say thanks.', { set: 'legend.midnight' })] },
+  lg_mascot: { at: 'mid', legend: true, req: { team: true }, w: 2, rar: 'rare',
+    t: 'The mascot started it.', x: '{mascot}, the other team\'s mascot, mocks your free throw routine. Every time.',
+    o: [O('Mock him back', { fame: 4 }, 'You do his dance after a three. The crowd adores it.', { set: 'legend.mascot', start: ['mascot', 'arc_mascot_2', 'off', 1, { war: 1 }] }),
+      O('Give him a high five', { morale: 4 }, 'He freezes. Then he hugs you. A legend begins.', { set: 'legend.mascot', start: ['mascot', 'arc_mascot_2', 'off', 1] })] },
+  lg_apex: { at: 'off', legend: true, req: { ovr: [76, null], seasons: [3, null], age: [25, 32] }, w: 5, rar: 'rare',
+    t: 'A rival league offers double.', x: 'The Apex League. New teams, new money, one season. They want a face.',
+    o: [O('Jump for a season', { cash: 6, fame: 6, trust: -20 }, 'You sign. The league office is furious. Your phone is on fire.', { set: 'legend.apex', start: ['apex', 'arc_apex_2', 'early', 1] }),
+      O('Stay', { trust: 8, morale: 2 }, 'You say no on a podcast. The number leaks anyway.')] },
+  lg_dream: { at: 'off', legend: true, when: (L) => { const h = L.history[L.history.length - 1]; return !!h && h.y === L.year && /R2|CF|Finals/.test(h.po || ''); }, w: 8, rar: 'rare',
+    t: 'The dream.', x: 'Every night since the loss. The same shot. The same rim.',
+    o: [O('In the dream, shoot it again', { morale: 6 }, 'It goes in. You wake up smiling. You go to the gym at five.', { set: 'legend.dream' }),
+      O('In the dream, pass it', { iq: 2, morale: 4 }, 'Your teammate hits it. You wake up and call him.', { set: 'legend.dream' })] },
+  lg_fortune: { at: 'early', legend: true, req: { seasons: [0, 2], team: true }, w: 2, rar: 'rare',
+    t: 'A fortune teller on a road trip.', x: 'A storefront near the hotel in New Orleans. She looks at your hand and says one number.',
+    o: [O('Ask what it means', { morale: 3 }, '"You will know." You do not know. Yet.', { set: 'legend.fortune' }),
+      O('Laugh and leave a tip', { morale: 2 }, 'She calls after you: "Wear it."', { set: 'legend.fortune' })] },
+  lg_mask: { at: 'off', legend: true, req: { seasons: [2, null], fame: [40, null] }, w: 2, rar: 'rare',
+    t: 'A streetball tour, in a mask.', x: 'A summer tour of city parks. A masked player nobody can identify. If you want.',
+    o: [O('Put on the mask', { fame: 6, morale: 8, health: -3 }, 'Twelve cities. The internet has theories. None of them are you. Until one is.', { set: 'legend.mask' }),
+      O('Leave it to somebody else', { health: 3 }, 'You watch the clips. You are fairly sure you know who it is.')] },
+  lg_comet: { at: 'pre', legend: true, req: { seasons: [2, null], team: true }, w: 1, rar: 'rare',
+    t: 'Everything is going in.', x: 'Training camp. You have not missed in four days. The coaches stop counting.',
+    o: [O('Ride it', { sho: 4, fin: 2, fame: 4 }, 'A season where the rim looks like an ocean.', { set: 'legend.comet', start: ['comet', 'arc_comet_2', 'off', 0] }),
+      O('Do not talk about it', { sho: 3, fin: 2 }, 'You tell nobody. You keep shooting.', { set: 'legend.comet', start: ['comet', 'arc_comet_2', 'off', 0] })] },
+  lg_ghost: { at: 'mid', legend: true, req: { age: [33, null], team: true }, w: 2, rar: 'rare',
+    t: 'A stranger in your jersey.', x: 'Every home game for ten years. Same seat, same faded jersey, your rookie number. Nobody knows his name.',
+    o: [O('Send him a signed ball', { morale: 6 }, 'He is gone before the usher gets there. The seat is empty.', { set: 'legend.ghost' }),
+      O('Find him after the game', { morale: 4 }, 'He shakes your hand and says, "Thank you for all of it." Then he is gone.', { set: 'legend.ghost' })] },
+  lg_exhibition: { at: 'off', legend: true, req: { age: [30, null], stars: [1, null] }, w: 6, rar: 'rare',
+    t: 'A game against legends.', x: 'A TV network invents a one-night game. Today\'s stars against a team of old greats.',
+    o: [O('Play it like Game 7', { fame: 6, health: -4 }, 'You win by one. The old guys argue about the last call for a year.', { set: 'legend.exhibition' }),
+      O('Enjoy it', { morale: 8 }, 'You trade stories on the bench. You lose. You do not care.', { set: 'legend.exhibition' })] },
+  lg_four_point: { at: 'off', legend: true, req: { seasons: [3, null] }, when: (L) => L.rt.sho >= 70 && !recall(L, 'legend.four'), w: 2, rar: 'rare',
+    t: 'The league tries a four-point line.', x: 'Thirty-two feet. One season, as an experiment.',
+    o: [O('Practice it all summer', { sho: 2, fame: 4 }, 'You hit nine in the first month. The experiment is extended.', { set: 'legend.four' }),
+      O('Ignore it', { iq: 1 }, 'You keep taking good shots. Others do not.', { set: 'legend.four' })] },
+  lg_relocation: { at: 'off', legend: true, req: { team: true, seasons: [5, null] }, when: (L) => clubNet(L, L.team) < -3, w: 1, rar: 'rare',
+    t: 'They might move the team.', x: '{lazlo} has a stadium plan in another city. The fans are marching downtown.',
+    o: [O('March with them', { fame: 6, morale: 6, trust: -4 }, 'Ten thousand people and you at the front. The plan dies in a month.', { set: 'legend.relocation' }),
+      O('Stay out of it', { trust: 2 }, 'The plan dies anyway. Some fans remember you stayed quiet.', { set: 'legend.relocation' })] },
+});
+
+storyArcs({
+  arc_ellis_2: { at: 'late', stage: 'nba', legend: true, req: { team: true },
+    t: '{ellis} is in the building.', x: 'Courtside, in a tracksuit, years after the park. The night before the playoffs.',
+    o: [O('Use his move tonight', { fin: 2, fame: 3 }, 'The hesitation. It works. He nods once and leaves at halftime.', { end: ['ellis', 'move'] }),
+      O('Go say hello', { morale: 8 }, 'He says, "Again." You laugh until your teammates stare.', { end: ['ellis', 'hello'] })] },
+  arc_lucky_2: { at: 'late', stage: 'nba', legend: true,
+    t: 'The socks are gone.', x: 'The night before the playoffs. The laundry service washed them. They shrank.',
+    o: [O('Panic', { morale: -4 }, 'You make the equipment manager drive to three stores.', { end: ['lucky', 'lost'] }),
+      O('It was always you', { morale: 6, iq: 1 }, 'You play in new socks. You play great.', { end: ['lucky', 'you'] })] },
+  arc_curse_2: { at: 'late', stage: 'nba', legend: true,
+    t: 'The playoffs, and the curse.', x: (L) => (arcData(L, 'curse').ritual ? 'You did the rituals. ' : '') + 'The city holds its breath.',
+    o: [O('Play anyway', {}, '', { do: cursePlay }),
+      O('Wear the old jersey to warmups', { fame: 2 }, '', { do: cursePlay })] },
+  arc_curse_3: { at: 'off', stage: 'nba', legend: true,
+    t: 'The curse, one more summer.', x: (L) => { const h = L.history[L.history.length - 1]; return h && h.po === 'Champion' ? 'You won it. The radio host cries on air.' : 'Not this year. The radio host has a new theory.'; },
+    o: [O('Read what the city says', {}, '', { do: curseVerdict }),
+      O('Turn off the radio', { morale: 1 }, '', { do: curseVerdict })] },
+  arc_lazlo_2: { at: 'mid', stage: 'nba', legend: true, req: { team: true },
+    t: '{lazlo} has a demand.', x: 'He wants you to sing the anthem before the rivalry game. He says it is in your contract. It is not.',
+    o: [O('Sing it', { fame: 6, morale: 4 }, 'You are not good. The building sings with you. It is beautiful.', { end: ['lazlo', 'sang'], rel: [['lazlo', 25, 'You sang the anthem.']] }),
+      O('Politely refuse', { trust: 3 }, 'He sends a gold-plated basketball and a note that says "Next time."', { end: ['lazlo', 'refused'], rel: [['lazlo', -10]] })] },
+  arc_mascot_2: { at: 'off', stage: 'nba', legend: true,
+    t: '{mascot} writes you a letter.', x: (L) => arcData(L, 'mascot').war ? 'He says the feud was the best year of his life. He wants a rematch.' : 'He says you were the only player who ever high fived him.',
+    o: [O('Make peace on camera', { fame: 4, morale: 6 }, 'A truce at midcourt. He gives you his tail. You keep it forever.', { end: ['mascot', 'friends'] }),
+      O('Rematch', { fame: 5 }, 'The dance-off goes viral. You lose. On purpose.', { end: ['mascot', 'rivals'] })] },
+  arc_apex_2: { at: 'early', stage: 'nba', legend: true, req: { team: true },
+    t: 'Back in the NBA.', x: 'The Apex League folded after one season. Every arena boos you this December.',
+    o: [O('Win them back slowly', { trust: 6, eth: 4 }, 'By March they mostly stop.', { end: ['apex', 'won'] }),
+      O('Embrace the villain role', { fame: 6, morale: 2 }, 'You cup your ear in every road building. It becomes your thing.', { end: ['apex', 'villain'] })] },
+  arc_comet_2: { at: 'off', stage: 'nba', legend: true,
+    t: 'The comet passes.', x: 'The summer after the season where nothing missed. Your shot feels normal again.',
+    o: [O('Chase it back', { sho: -2, eth: 4 }, 'It never fully comes back. You become a better player chasing it.', { end: ['comet', 'chased'] }),
+      O('Be grateful for it', { sho: -2, morale: 6 }, 'One season like that is more than most get.', { end: ['comet', 'grateful'] })] },
+});
+
+storyFixed({
+  lg_one_more_shot: { at: 'post', legend: true,
+    t: 'Fifty years old, one shot at halftime.', x: 'A charity night at your old arena. They hand you a ball at half court.',
+    o: [O('Shoot it', {}, '', { do: (L, r) => { remember(L, 'legend.halftime', true); const made = ok(r, 0.22 + (L.rt.sho - 60) * 0.006); if (made) remember(L, 'legend.halftime.made', true); finishLife(L, made ? 'At fifty you hit it from half court. The arena loses its mind.' : 'At fifty you hit the front of the rim. They cheer anyway.'); return made ? 'Nothing but net. At fifty.' : 'Front rim. They cheer anyway.'; } }),
+      O('Hand it to a kid courtside', {}, '', { do: (L) => { remember(L, 'legend.halftime', true); finishLife(L, 'You handed the ball to a kid at halftime. He made it.'); return 'He makes it. You jump higher than he does.'; } })] },
+});
+
+// ── epilogues (NARRATIVE.md 8.4) ──
+
+/* One card each, after the after card. Each answer is the last line of the
+   career and finishes it. */
+const EP = (t, x, a, b) => ({ at: 'post', t, x, o: [
+  O(a[0], a[1] || {}, a[2], { do: (L) => { finishLife(L, a[3]); return null; } }),
+  O(b[0], b[1] || {}, b[2], { do: (L) => { finishLife(L, b[3]); return null; } })] });
+storyFixed({
+  ep_head_coach: EP('Your own bench.', 'Three years as an assistant. Now a team wants you in the big chair.',
+    ['Take the rebuilding job', {}, 'Young players and patience. Year four, they make the playoffs.', 'You took a rebuilding team to the playoffs as a head coach.'],
+    ['Take the contender', {}, 'Pressure from day one. You win a title in year two.', 'You won a title as a head coach.']),
+  ep_assistant: EP('The film room.', 'You start as the fourth assistant. You break down tape at two in the morning.',
+    ['Stay patient', {}, 'Nine years. Then the front of the bench. Then the big chair.', 'You worked your way from the film room to a head coaching job.'],
+    ['Become the player development guy', {}, 'Every young star in the league wants your summer workouts.', 'You became the coach every young star calls in the summer.']),
+  ep_gm: EP('The front office.', 'An ownership group gives you the keys. They want a winner in five years.',
+    ['Draft and develop', {}, 'Year five, a sixty-win team. Every starter drafted by you.', 'You built a contender through the draft.'],
+    ['Trade for stars', {}, 'Two blockbusters in a summer. A title the next June.', 'You traded for stars and won a title as a general manager.']),
+  ep_owner: EP('A seat in the owners\' meeting.', 'You buy a piece of a team. A big enough piece to have a vote.',
+    ['Fight for the players', {}, 'The other owners do not love you. The players do.', 'You became the owner the players trusted.'],
+    ['Learn the business first', {}, 'Ten quiet years. Then you own the controlling share.', 'You became the first former player to own a controlling share of a team.']),
+  ep_broadcast: EP('The desk.', 'A national studio show. A suit, a monitor and three other loud people.',
+    ['Be honest', {}, 'Your takes are fair and unpopular. Players text you thanks.', 'You became the honest voice on national television.'],
+    ['Be loud', { fame: 4 }, 'Ratings go up. {critic} calls you his rival.', 'You became the loudest voice in basketball television.']),
+  ep_league: EP('The league office.', 'Rules, schedules and the players\' side of every table.',
+    ['Fix the schedule', {}, 'Fewer back-to-backs. Every trainer sends you flowers.', 'You fixed the schedule at the league office.'],
+    ['Run for union president', {}, 'You win in a landslide. Two labor deals and no lockouts.', 'You led the players\' union through two labor deals.']),
+  ep_college: EP('Your old school calls.', '{school} needs a head coach. The students already have the signs.',
+    ['Take it', {}, 'You sleep in the office the first year. By year three, March is yours again.', 'You came back to coach your old school.'],
+    ['Take it, and recruit your old neighborhood', {}, 'Every kid from home wants to play for you.', 'You coached your old school with a roster from your old neighborhood.']),
+  ep_hs: EP('The gym where it started.', 'Your old high school needs a coach. The gym still smells the same.',
+    ['Coach the varsity', {}, 'State champions in year four. A fire truck parade, again.', 'You went home and won a state title as a coach.'],
+    ['Run the youth program', {}, 'Every kid in {town} learns the game from you.', 'You taught every kid in your hometown to play.']),
+  ep_business: EP('Business.', 'A boardroom with your name on the glass door.',
+    ['Build something slow', {}, 'Real estate and patience. A quiet empire.', 'You built a quiet empire after basketball.'],
+    ['Bet big on one idea', {}, 'A sports drink with your face on it. It is everywhere in three years.', 'You bet everything on one idea after basketball, and it worked.']),
+  ep_actor: EP('Hollywood.', 'Your agent has a script. You would play a retired player. Easy, he says.',
+    ['Take the lead role', {}, 'You are better than anyone expected. Including you.', 'You became a real actor after basketball.'],
+    ['Produce instead', {}, 'A documentary about your hometown. It wins awards.', 'You produced a documentary about your hometown.']),
+  ep_politics: EP('The city council seat.', 'The seat back home is open. People keep asking you to run.',
+    ['Run', {}, 'You win by a lot. New courts in every ward.', 'You won a seat on the city council back home.'],
+    ['Back someone better', {}, 'You campaign for a teacher. She wins.', 'You helped a teacher win the city council seat back home.']),
+  ep_podcast: EP('The podcast.', 'Three microphones in your basement. Your first guest is a former teammate.',
+    ['Tell the real stories', {}, 'The locker room stories nobody has heard. It is number one in a month.', 'Your podcast became the most popular show in basketball.'],
+    ['Keep it about the game', {}, 'Film breakdowns and long interviews. Coaches listen.', 'Coaches built practices around your podcast.']),
+  ep_comeback: EP('One more comeback.', 'A year off. Your knees feel good. A team calls about a camp invite.',
+    ['Go to camp', {}, 'You make the team. Eleven games. A standing ovation on the road.', 'You came back for one more short season after retiring.'],
+    ['Say no and smile', {}, 'You keep the voicemail. You play it at dinner parties.', 'You turned down one last comeback and kept the voicemail.']),
+  ep_family: EP('Home.', 'Your family. Your town. Nothing to prove.',
+    ['Coach your kids\' teams', {}, 'Saturday mornings in a cold gym. The best seat you ever had.', 'You went home and coached your kids on Saturday mornings.'],
+    ['Disappear for a while', {}, 'A lake, a boat and no phone. You come back when you are ready.', 'You went home and found a quiet life.']),
+});
+
+/* The roads a story career can take out of high school besides college or a
+   paycheck: each is a year away, then the draft or a second choice. */
+const ALT_DONE = { juco: 'Enrolled at a junior college.', prep: 'Took a prep school year.', gap: 'Took a gap year to train for the draft.', rec: 'Stayed home to play rec league and work.' };
+const ALT_SAY = { juco: 'A junior college two hours from home. Nobody here is famous.', prep: 'A boarding school with a coach who wins. One more year.',
+  gap: 'No team. A trainer, a gym and a year.', rec: 'Days at the warehouse. Nights at the rec center. You keep playing.' };
+
 /* Answers to the road's own cards. Null means the card is not one of these. */
 function chooseAm(L, card, i, opt, rng, beats, touch) {
   switch (card.id) {
@@ -4623,7 +6079,23 @@ function chooseAm(L, card, i, opt, rng, beats, touch) {
       return { text: 'You decommit. Every coach who lost out calls back.', tone: '' };
     }
     case 'commit': {
+      if (opt.route === 'walkon') {
+        L.am.college = opt.school;
+        L.am.route = 'college';
+        L.am.walkon = true;
+        remember(L, 'route.walkon', true);
+        logIt(L, 'Walked on at ' + opt.school + '.', 'gold');
+        return { text: 'No scholarship. A locker in the corner. You are in.', tone: 'good' };
+      }
+      if (opt.route && ALT_DONE[opt.route]) {
+        L.am.route = opt.route;
+        L.am.college = null;
+        remember(L, 'route.' + opt.route, true);
+        logIt(L, ALT_DONE[opt.route], 'gold');
+        return { text: ALT_SAY[opt.route], tone: 'good' };
+      }
       if (opt.route) {
+        if (storyOn(L)) remember(L, 'route.' + opt.route, true);
         L.am.route = opt.route;
         L.am.college = null;
         logIt(L, opt.route === 'intl' ? 'Turned pro overseas out of high school.' : 'Signed with the G League out of high school.', 'gold');
@@ -4631,6 +6103,7 @@ function chooseAm(L, card, i, opt, rng, beats, touch) {
       }
       L.am.college = opt.school;
       L.am.route = 'college';
+      if (storyOn(L) && SCHOOL_BY[opt.school] && (SCHOOL_BY[opt.school].tier === 'mid' || SCHOOL_BY[opt.school].tier === 'low')) remember(L, 'route.midmajor', true);
       logIt(L, 'Committed to ' + opt.school + '.', 'gold');
       bump(L, { morale: 6 });
       return { text: 'You pull on the hat. ' + opt.school + ' it is.', tone: 'gold' };
@@ -4646,6 +6119,7 @@ function chooseAm(L, card, i, opt, rng, beats, touch) {
         const from = L.am.college;
         L.am.college = opt.school;
         L.m.trust = 50;
+        if (storyOn(L)) remember(L, 'route.portal', true);
         logIt(L, 'Transferred from ' + from + ' to ' + opt.school + '.', 'gold');
         return { text: 'You transfer to ' + opt.school + '.', tone: 'gold' };
       }
@@ -4715,6 +6189,7 @@ function choose(L, i, extra) {
         else { L.flags.stock = (L.flags.stock || 0) - 1; text = 'Cold day. It happens. It gets noticed.'; tone = 'bad'; }
       } else { text = 'You stay home. Your stock does not move.'; }
       L.pending.unshift(workoutCard(L));
+      if (storyOn(L)) queueEvents(L, 'predraft', 1 + (rng() < 0.4 ? 1 : 0));
       break;
     }
     case 'workout': {
@@ -4738,6 +6213,27 @@ function choose(L, i, extra) {
       break;
     }
     case 'undrafted': {
+      if (card.ctx && card.ctx.story) {
+        if (!opt.club) {
+          L.flags.overseas = (L.flags.overseas || 0) + 1;
+          L.contract = { years: 1, total: 1, salary: 0.8, kind: 'overseas', start: L.year };
+          L.phase = 'drafted';
+          text = 'A one-year deal in Europe. Real money. Real minutes.';
+          logIt(L, 'Signed overseas after going undrafted.', '');
+          break;
+        }
+        const pSL = clamp(0.04 + (ovrOf(L) - 58) * 0.033 + (L.m.fame - 20) * 0.003, 0.1, 0.85);
+        if (rng() >= pSL) {
+          L.flags.overseas = (L.flags.overseas || 0) + 1;
+          L.contract = { years: 1, total: 1, salary: 0.6, kind: 'overseas', start: L.year };
+          L.phase = 'drafted';
+          text = 'Five games in Las Vegas. Good ones. The ' + nick(opt.club) + ' go another way. You sign overseas.';
+          tone = 'bad';
+          logIt(L, 'Cut after Summer League. Signed overseas.', 'bad');
+          break;
+        }
+        remember(L, 'sl.made', true);
+      }
       L.contract = { years: 1, total: 1, salary: round1(capFor(L.year) * MIN_PCT), kind: 'min', start: L.year };
       joinTeam(L, opt.club, false);
       L.draft = { pick: null, round: null, team: opt.club };
@@ -4762,6 +6258,7 @@ function choose(L, i, extra) {
       const s = L.season, inj = s && s.injury;
       const g = card.ctx.g;
       if (inj) {
+        if (card.ctx.major && storyOn(L)) remember(L, 'inj.major', L.age);
         if (card.ctx.major) {
           if (i === 0) { inj.until = inj.from + g; bump(L, { ath: -2, health: -8 }); text = 'Surgery goes well. The rehab is long.'; }
           else if (i === 1) {
@@ -4828,6 +6325,15 @@ function choose(L, i, extra) {
       break;
     }
     case 'after': {
+      if (storyOn(L) && card.ctx && card.ctx.paths) {
+        const path = card.ctx.paths[i];
+        L.final = legacy(L);
+        L.final.path = path;
+        L.final.after = AFTER_PATHS.find((p) => p[0] === path)[1] + '.';
+        text = 'A new chapter.'; tone = 'gold';
+        if (!dealNamed(L, 'post', 'ep_' + path)) finishLife(L, '');
+        break;
+      }
       L.retired = true;
       L.phase = 'retired';
       L.final = legacy(L);
@@ -4845,6 +6351,7 @@ function choose(L, i, extra) {
       if (i === 0) { L.pending = []; retire(L, beats); text = 'You walk away.'; tone = 'gold'; }
       else {
         L.flags.overseas = (L.flags.overseas || 0) + 1;
+        if (storyOn(L) && L.history.length && !recall(L, 'route.detour.left')) remember(L, 'route.detour.left', true);
         L.team = null;
         L.contract = { years: 1, total: 1, salary: 0.8, kind: 'overseas', start: L.year + 1 };
         text = 'A year in Europe. Big minutes. A second chance.';
@@ -4861,7 +6368,7 @@ function choose(L, i, extra) {
       text = chooseBuild(L, card, i) || ''; tone = 'good';
       break;
     default: {
-      const ev = EVENTS[card.id] || AM_EVENTS[card.id] || ARC_EVENTS[card.id];
+      const ev = evById(card.id);
       watchPick(L, card.id, i, beats);
       if (ev) {
         const o = ev.options[i];
@@ -4908,7 +6415,8 @@ function nextLabel(L) {
     case 'col_late': return L.season && L.season.tourney ? 'Play the first weekend' : 'Go to the summer';
     case 'col_po': return L.season.tourney.upto <= 2 ? 'Play the second weekend' : 'Go to the Final Four';
     case 'col_off': return L.am.declared ? 'Go to the draft combine' : 'Next season';
-    case 'pro_year': return L.am.route === 'intl' ? 'Play the season overseas' : 'Play the G League season';
+    case 'pro_year': return (L.am.altHalf ? 'Finish the ' : 'Play the ') + ({ intl: 'season overseas', gl: 'G League season', juco: 'junior college season',
+      prep: 'prep school season', gap: 'gap year', rec: 'rec league year' }[L.am.route] || 'season');
     default: return 'Continue';
   }
 }
@@ -4940,7 +6448,7 @@ function step(L) {
       beats.push(recordBeat(L, 'After 27'));
       rollInjury(L, 'mid', beats);
       L.phase = 'early';
-      queueEvents(L, 'early', 1 + (rngAt(L, 'n:early')() < 0.6 ? 1 : 0));
+      queueEvents(L, 'early', 1 + (rngAt(L, 'n:early')() < (storyOn(L) ? 0.35 : 0.6) ? 1 : 0));
       break;
     }
     case 'early':
@@ -4952,7 +6460,7 @@ function step(L) {
       midseasonFirings(L, beats);
       if (storyOn(L)) { L.season.race = mvpRace(L); debate(L); }
       L.phase = 'mid';
-      queueEvents(L, 'mid', 1 + (rngAt(L, 'n:mid')() < 0.5 ? 1 : 0));
+      queueEvents(L, 'mid', 1 + (rngAt(L, 'n:mid')() < (storyOn(L) ? 0.3 : 0.5) ? 1 : 0));
       break;
     case 'mid': {
       playChunk(L, 'late', beats);
@@ -5068,6 +6576,7 @@ function overseasYear(L, beats) {
   if (L.age >= 37) { retire(L, beats, 'Retired overseas at ' + L.age + '.'); return; }
   const rng = rngAt(L, 'overseas');
   const d = Math.round(1 + rng() * 2);
+  if (storyOn(L)) L.flags.overseasYears = (L.flags.overseasYears || 0) + 1;
   for (const k of RATINGS) L.rt[k] = clamp(L.rt[k] + (L.age <= 28 ? d : -1), 25, 99);
   L.earned = round1(L.earned + 0.8);
   L.cash = round1(L.cash + 0.4);
@@ -5076,8 +6585,20 @@ function overseasYear(L, beats) {
   L.season = null;
   L.contract = null;
   L.phase = 'off';
-  /* Back on the market. */
-  const list = offers(L);
+  /* A stashed pick comes back to the club that holds his rights. */
+  if (L.flags.rights) {
+    const c = L.flags.rights;
+    L.flags.rights = null;
+    L.contract = { years: 2, total: 2, salary: round1(capFor(L.year) * MIN_PCT * 1.3), kind: 'min', start: L.year + 1 };
+    joinTeam(L, c, false);
+    const t = 'The ' + E.teamName(c) + ' bring you over. Two years.';
+    beats.push({ kind: 'sign', text: t, tone: 'gold' });
+    logIt(L, t, 'gold');
+    return;
+  }
+  /* Back on the market. A story career that has never played in the league
+     needs to be good enough to be noticed from across an ocean. */
+  const list = storyOn(L) && !L.history.length && ovrOf(L) < 70 ? [] : offers(L);
   if (!list.length || L.age >= 34) {
     L.pending.push({
       id: 'nooffer', kind: 'event', key: 'nooffer2', eyebrow: 'Free agency', title: 'The NBA still is not calling.',
@@ -5285,6 +6806,7 @@ const publicAPI = {
   coachState, coachOf, coachName, coachCarousel, myCoach, matesOf, myMates, personName, peopleKey, say, CLUBS,
   lockerOf, CAST, TRAITS, rollTraits, migrate, remember, recall, hasTrait, REAL_TOKENS, INVENTED_TOKENS, BASKETBALL_ONLY,
   STORY_VERSION, BAL, storyOn, recurs, figs, activeFigs, figOvr, mvpRace, legacyView, GOALS, OUTLETS, NICKS, feed, TRAIT_NAME, BADGES, badgeList, SIGS, archFit, trait, continuity, continuityLog, ARC_EVENTS, CALLBACKS, callback, memories, ago, relate, relOf, EVENT_REL, arcData, STORY_RECURS, STORY_PHASES, calendar, RARITY, EVENT_TAGS, REQ, reqOk, defineEvents,
+  ORIGINS, ORIGIN_KEYS, ROUTES, routesOf, routeOn, HOF_TIERS, OUTCOMES, SECRETS, ENDING_COUNT, endingOf, STORY_EV, STORY_NBA, STORY_AM, evById, AFTER_PATHS, ALT_NAME,
 };
 
 if (typeof module !== 'undefined' && module.exports) module.exports = publicAPI;
