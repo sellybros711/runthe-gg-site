@@ -913,6 +913,32 @@ async function browser() {
   const sz = await page.evaluate(() => ({ ht: document.querySelector('#cr-ht').textContent, wt: document.querySelector('#cr-wt').textContent, line: document.querySelector('#cr-sizeline').textContent }));
   ok(/^7'1"$/.test(sz.ht) && /lb$/.test(sz.wt) && /rebounding/.test(sz.line), `height and weight step and say what they do (${sz.ht}, ${sz.wt}: ${sz.line})`);
   await page.click('[data-arch="c_rim"]');
+  /* THE BUILDER IS FOUR SHORT STEPS. It was four and a half phone screens of
+     one form with the start button at the bottom. Every step has to fit in
+     about one and a half screens, the player and his ratings stay on top, and
+     the start button is on the screen at every step. */
+  for (const st of ['player', 'look', 'story', 'start']) {
+    await page.click(`[data-bstep="${st}"]`);
+    const m = await page.evaluate((st) => {
+      const go = document.querySelector('#cr-go').getBoundingClientRect(), pane = document.querySelector(`[data-pane="${st}"]`);
+      const others = [...document.querySelectorAll('[data-pane]')].filter((x) => x !== pane && !x.hidden).length;
+      const pv = document.querySelector('.cr-build .cr-preview');
+      return { h: document.documentElement.scrollHeight, vh: innerHeight, goIn: go.top >= 0 && go.bottom <= innerHeight, shown: !!pane && !pane.hidden, others,
+        rt: pv ? pv.querySelectorAll('.k-row').length : 0 };
+    }, st);
+    ok(m.shown && m.others === 0, `the ${st} step shows alone`);
+    ok(m.goIn, `the start button is on screen on the ${st} step`);
+    ok(m.h <= m.vh * 1.75, `the ${st} step is under 1.75 phone screens (${(m.h / m.vh).toFixed(2)})`);
+    ok(m.rt === 7, `the player and all seven ratings stay on top on the ${st} step (${m.rt})`);
+  }
+  /* Facial hair has a colour of its own, shown once there is facial hair. */
+  await page.click('[data-bstep="look"]');
+  await page.click('[data-lk="beard"][data-lv="none"]');
+  ok(!(await page.$('[data-lk="bc"]')), 'no facial hair color row for a clean face');
+  await page.click('[data-lk="beard"][data-lv="full"]');
+  await page.click('[data-lk="bc"][data-lv="6"]');
+  ok(await page.evaluate(() => document.querySelector('[data-lk="bc"][data-lv="6"]').classList.contains('on')), 'a facial hair color can be picked apart from the hair');
+  await page.click('[data-bstep="start"]');
   /* PHASE E: a guest starts on draft night, from a road generated for him.
      High school is Run The Floor Pro: the press opens the offer and changes
      nothing. Then Pro, stood in, and the walk plays the road itself. */
@@ -928,11 +954,13 @@ async function browser() {
   await page.evaluate(() => { const x = document.querySelector('#pro-sheet [data-pro-x]'); if (x) x.click(); window.RTF_MODES_UI.proOpen = () => true; });
   await page.click('[data-start="hs"]');
   ok(!(await page.$('#cr-roadbox')) && !(await page.$('[data-bg]')), 'with Pro, a high school start shows no generated road');
+  await page.click('[data-bstep="player"]');
   await page.fill('#cr-name', 'Checker McTest');
   await page.click('#cr-go');
   const made = await page.evaluate(() => RTF_CAREER_UI.state().cur);
   ok(made && made.pos === 'C' && made.arch === 'c_rim' && made.ht === 85 && made.stage === 'hs' && made.age === 15 && made.name === 'Checker McTest',
     `the builder's picks are the career's (${made && [made.pos, made.arch, made.stage, made.age, made.name].join(', ')})`);
+  ok(made && made.look && made.look.beard === 'full' && made.look.bc === 6, `the facial hair color is the career's (${made && JSON.stringify(made.look)})`);
   const third = await page.evaluate(() => (document.querySelectorAll('.cr-fact .k')[2] || {}).textContent || '');
   ok(/ranking/i.test(third), `a sophomore is told his ranking, not his bank (${third})`);
 
@@ -1112,6 +1140,7 @@ async function browser() {
     await page.click('[data-arc]');
     await page.click('[data-son]');
     await page.waitForSelector('.cr-son');
+    await page.click('[data-bstep="story"]');
     await page.click('[data-diff="easy"]');
     await page.click('#cr-go');
     const son = await page.evaluate(() => { const L = RTF_CAREER_UI.state().cur; return { father: L.parent && L.parent.name, origin: L.origin, first: (L.amHist[0] || L.history[0] || {}).y || L.year, diff: L.opt.diff,
@@ -1174,8 +1203,11 @@ async function scenesWalk(b, serve) {
   await page.evaluate(() => document.querySelector('#b-career').click());
   await page.waitForSelector('#cr-go');
   /* The look chosen in the builder is the career's. */
+  await page.click('[data-bstep="look"]');
   await page.click('[data-lk="hair"][data-lv="afro"]');
+  await page.click('[data-bstep="start"]');
   await page.click('[data-start="gen"]');
+  await page.click('[data-bstep="player"]');
   /* The road is generated, and a road can end off the board. This walk is
      about draft night on a podium, so it asks for a road the board likes:
      New draws another, which is what a player does too. */
@@ -1184,7 +1216,9 @@ async function scenesWalk(b, serve) {
     if (p <= 20) break;
     await page.click('#cr-dice');
   }
+  await page.click('[data-bstep="look"]');
   await page.click('[data-lk="hair"][data-lv="afro"]');
+  await page.click('[data-bstep="player"]');
   await page.fill('#cr-name', 'Scene McTest');
   await page.click('#cr-go');
   const look = await page.evaluate(() => RTF_CAREER_UI.state().cur.look);
@@ -1253,6 +1287,7 @@ async function scenesWalk(b, serve) {
   /* Off means off. */
   await page.evaluate(() => { localStorage.setItem('rtf.scenes.v1', 'off'); const a = document.querySelector('#cr-again'); if (a) a.click(); });
   await page.waitForSelector('#cr-go');
+  await page.click('[data-bstep="start"]');
   await page.click('[data-start="gen"]');
   await page.click('#cr-go');
   let opened = false;

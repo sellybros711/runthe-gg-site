@@ -11204,6 +11204,33 @@ always drawable. A career from before looks gets `lookFor(seed)`. The rival is d
 `lookFor(name)`, so he always looks the same. **Only the invented are drawn**: no real player
 gets a face or a hashed look.
 
+**A HAIRSTYLE IS A SILHOUETTE FIRST.** Asked for by the owner, because only the afro read:
+every other style hugged the skull, so a fade, a buzz and a flat top were one helmet with
+different noise on it. Each style is now a shape (`TOPS` in baller.js gives the volume above
+the skull row by row: a flat top is a box, a curly top a scalloped dome, twists and long hair
+hang past the ears), and the texture after the shading is a pattern per style rather than a
+hash: two by two curl clumps, twisted ropes with a dark seam, plaited cornrows with scalp
+between, a fade dithered into the skin. `braids` is labelled Cornrows and keeps its id,
+because the id is in saves. **Hair has its own ramp** (`hairRamp`): the general ramp lifts
+near black so a black jersey has room for a fold, and on hair that drew black hair as a taupe
+helmet. Render a contact sheet of every style in four colours before changing any of it;
+check-sprite was re-recorded once for this pass and its header says what moved.
+
+**Facial hair has its own colour** (`bc`, an index into `HAIR_COLORS`). Absent means Match,
+the natural colour that goes with the hair, which is what every look had before, so no old
+look changes. The row only shows once there is facial hair to colour.
+
+**THE BUILDER IS FOUR STEPS** (Player, Look, Story, Start), because as one form it was four
+and a half phone screens with the start button at the bottom. The player, his overall and
+all seven ratings stay on top; the Look step draws him twice the size framed on the head,
+because hair is what is being chosen there; the start button is pinned to the foot of the
+screen on every step. **Every step stays in the page with the others hidden**, so nothing a
+step holds is lost moving between them, and a walker has to press `[data-bstep]` before it
+clicks anything inside a step. check-career holds each step under 1.75 screens with the
+button on screen. In the career itself the road to the draft and (on a phone) the ratings
+are folds, so the card to answer comes sooner; the ratings open themselves when a press has
+just moved one.
+
 **The press room is the engine's** (`TONES`, `PRESSERS`, `presserCard`). After a first-round
 pick, an MVP, a title, a Finals loss and a national title, a `presser` card is pushed; every
 answer is a TONE and moves `L.rep` (fans, respect). `EVENT_REP` gives twenty everyday event

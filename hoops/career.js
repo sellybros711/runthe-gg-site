@@ -978,7 +978,7 @@ function randomName(seed) {
    knows what any of these values means. So this keeps a whitelist of short
    plain values and nothing else: a look from another device, or one somebody
    edited by hand, can only ever be a look the drawing falls back on. */
-const LOOK_KEYS = ['skin', 'hair', 'hc', 'beard', 'band', 'sleeve', 'shoes', 'build'];
+const LOOK_KEYS = ['skin', 'hair', 'hc', 'bc', 'beard', 'band', 'sleeve', 'shoes', 'build'];
 function cleanLook(o) {
   const out = {};
   if (!o || typeof o !== 'object') return out;

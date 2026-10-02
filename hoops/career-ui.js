@@ -325,6 +325,12 @@ var CSS = [
 '.cr-epi .cr-secret .k{color:var(--k-gold);}',
 '.cr-road{margin:0 0 12px;font-size:14px;line-height:1.5;color:var(--k-ink-2);}',
 '.cr-roadbox{margin:0 0 12px;}.cr-roadbox .cr-list{margin:0;}',
+'details.cr-roadbox > summary,details.cr-rtfold > summary{cursor:pointer;list-style:none;margin:0;min-height:28px;display:flex;align-items:center;}',
+'details.cr-roadbox > summary::-webkit-details-marker,details.cr-rtfold > summary::-webkit-details-marker{display:none;}',
+'details.cr-roadbox > summary:after,details.cr-rtfold > summary:after{content:"+";margin-left:auto;font:normal 12px var(--k-f-pixel);color:var(--k-ink-3);}',
+'details.cr-roadbox[open] > summary:after,details.cr-rtfold[open] > summary:after{content:"-";}',
+'details.cr-roadbox[open] > summary,details.cr-rtfold[open] > summary{margin-bottom:8px;}',
+'.cr-rtsum{margin-left:auto;margin-right:10px;font:700 12px var(--k-f-text);letter-spacing:0;text-transform:none;color:var(--k-ink-2);}',
 /* Phase E: the legacy banner, the story, the Vault */
 '.cr-son{margin:0 0 12px;}.cr-son p{margin:6px 0 0;font-size:14px;line-height:1.45;}',
 '.cr-gen{display:flex;align-items:center;gap:8px;margin:-4px 0 10px;font:800 11px var(--k-f-text);letter-spacing:.12em;text-transform:uppercase;color:var(--k-gold);}',
@@ -406,6 +412,42 @@ var CSS = [
 '.cr-town{margin:12px 0 0;font-size:14px;color:var(--k-ink);font-weight:700;}',
 '.cr-grade{font-size:13px;color:var(--k-ink-2);margin:8px 0 16px;}',
 '.cr-grade b{color:var(--k-gold);}',
+/* the builder in steps: the player on top, four tabs, a pinned start */
+'.cr-build .cr-preview{grid-template-columns:96px minmax(0,1fr);gap:12px;align-items:start;margin:0 0 12px;}',
+'.cr-build .cr-preview .cr-pfig{width:96px;height:140px;}',
+'.cr-build .cr-pside{min-width:0;}',
+'.cr-build .cr-povr{display:flex;align-items:baseline;gap:6px;margin:0 0 6px;}',
+'.cr-build .cr-povr .k-num{font-size:26px;margin:0;}',
+'.cr-ceil{margin-left:auto;font:800 11px var(--k-f-text);letter-spacing:.08em;text-transform:uppercase;color:var(--k-ink-2);}',
+'.cr-ceil b{color:var(--k-gold);}',
+'.cr-build .cr-rt{gap:3px;}',
+'.cr-build .cr-rt .k-row{grid-template-columns:84px minmax(0,1fr) 22px 0;font-size:11.5px;min-height:0;}',
+'.cr-build .cr-rt .k-row .k-delta{display:none;}',
+'.cr-steps{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;margin:0 0 4px;}',
+'.cr-stab{display:flex;align-items:center;justify-content:center;gap:6px;min-height:44px;padding:0 4px;border:0;cursor:pointer;font:800 12.5px var(--k-f-text);color:var(--k-ink-2);background:var(--k-panel-2);}',
+'.cr-stab i{font:normal 8px var(--k-f-pixel);color:var(--k-ink-3);}',
+'.cr-stab.on{color:#160b02;background:var(--k-gold);}',
+'.cr-stab.on i{color:#160b02;}',
+'.cr-stab:focus-visible{outline:2px solid var(--k-gold);outline-offset:2px;}',
+'.cr-pane[hidden]{display:none;}',
+'.cr-pane > .lab:first-child,.cr-pane > .cr-intro:first-child{margin-top:14px;}',
+'.cr-pane > .cr-look{margin-top:14px;}',
+'.cr-opts.cr-pick{grid-template-columns:repeat(2,minmax(0,1fr));gap:4px;}',
+'.cr-opts.cr-pick .cr-opt{padding:10px;min-height:44px;}',
+'.cr-opts.cr-pick .cr-opt b{font-size:13px;margin:0;}',
+'.cr-opts.cr-pick .cr-opt small{display:none;}',
+'.cr-look.cr-look-nofig{display:block;}',
+'.cr-look.cr-look-nofig > div:first-child{position:static;padding:0;background:none;}',
+'.cr-look-nofig .cr-sw{gap:2px;}',
+'.cr-look-nofig .cr-sw button.dot{width:30px;height:30px;margin:2px;}',
+'.cr-build .cr-preview .cr-pfig.cr-zoom .rtf-baller{bottom:auto;top:-4px;}',
+'.cr-look-nofig [aria-label="Facial hair color"] button.dot{width:26px;height:26px;}',
+'.cr-look-nofig [aria-label="Facial hair color"] button:first-child{padding:6px 8px;}',
+'.cr-look-nofig .cr-sw button{padding:6px 9px;}',
+'.cr-cta{position:sticky;bottom:0;z-index:5;display:flex;gap:6px;margin:16px -16px -16px;padding:10px 16px calc(10px + env(safe-area-inset-bottom));background:linear-gradient(180deg,rgba(13,17,32,.86),#0d1120 40%);}',
+'.cr-cta #cr-go{flex:1 1 auto;margin:0;font-size:15px;padding:0 10px;}',
+'.cr-cta #cr-bnext{flex:0 0 auto;margin:0;min-height:52px;display:inline-flex;align-items:center;gap:8px;}',
+'@media (min-width:720px){.cr-opts.cr-pick{grid-template-columns:repeat(3,minmax(0,1fr));}}',
 /* the look chooser (the options are the sprite\'s and are not changed here) */
 '.cr-look{display:grid;grid-template-columns:auto minmax(0,1fr);gap:14px;align-items:start;}',
 '.cr-look > div:first-child{position:sticky;top:64px;padding:8px;background:var(--k-panel-2);}',
@@ -529,7 +571,7 @@ function lifeOpts(){
 }
 /* The look chooser, shared by the builder and the Look sheet mid-career. The
    options are the sprite's own (baller.js) and are listed, never changed. */
-function lookRows(look, c1, c2, num){
+function lookRows(look, c1, c2, num, noFig){
   var B = window.RTF_BALLER;
   if (!B) return '';
   var L = B.normal(look);
@@ -545,11 +587,20 @@ function lookRows(look, c1, c2, num){
       return '<button type="button" class="dot' + (on ? ' on' : '') + '" data-lk="' + key[0] + '" data-lv="' + i + '" style="background:' + c + '" aria-pressed="' + on + '" aria-label="' + key[1] + ' ' + (i + 1) + '"></button>';
     }).join('') + '</div></div>';
   };
-  return '<div class="cr-look"><div>' + B.img(L, { c1: c1, c2: c2, num: num, scale: 3 }) + '</div><div>'
+  /* Facial hair colour is its own choice, shown once there is facial hair to
+     colour. Match is the natural colour that goes with the hair. */
+  var bcRow = L.beard === 'none' ? '' : '<div class="cr-lrow"><span class="k k-label">Facial hair color</span><div class="cr-sw" role="group" aria-label="Facial hair color">'
+    + '<button type="button" data-lk="bc" data-lv="auto" class="' + (L.bc < 0 ? 'on' : '') + '" aria-pressed="' + (L.bc < 0) + '">Match</button>'
+    + B.HAIR_COLORS.map(function(x, i){
+      var on = L.bc === i;
+      return '<button type="button" class="dot' + (on ? ' on' : '') + '" data-lk="bc" data-lv="' + i + '" style="background:' + x[1] + '" aria-pressed="' + on + '" aria-label="Facial hair color ' + (i + 1) + '"></button>';
+    }).join('') + '</div></div>';
+  return '<div class="cr-look' + (noFig ? ' cr-look-nofig' : '') + '">' + (noFig ? '' : '<div>' + B.img(L, { c1: c1, c2: c2, num: num, scale: 3 }) + '</div>') + '<div>'
     + dots(['skin', 'Skin'], B.SKINS)
     + chips(['hair', 'Hair'], B.HAIRS)
     + dots(['hc', 'Hair color'], B.HAIR_COLORS.map(function(x){ return x[1]; }))
-    + chips(['beard', 'Face'], B.BEARDS)
+    + chips(['beard', 'Facial hair'], B.BEARDS)
+    + bcRow
     + '<details class="cr-gear"' + (gearOpen ? ' open' : '') + '><summary>Gear and build</summary>'
     + chips(['band', 'Headband'], B.BANDS)
     + chips(['sleeve', 'Arm sleeve'], B.SLEEVES)
@@ -565,7 +616,8 @@ function wireLook(root, look, onChange){
   root.querySelectorAll('[data-lk]').forEach(function(b){
     b.onclick = function(){
       var k = b.getAttribute('data-lk'), v = b.getAttribute('data-lv');
-      look[k] = k === 'skin' || k === 'hc' ? +v : v;
+      if (v === 'auto') delete look[k];
+      else look[k] = k === 'skin' || k === 'hc' || k === 'bc' ? +v : v;
       onChange();
     };
   });
@@ -609,9 +661,12 @@ function rtRows(L, prev, fill){
 function roadHtml(L, builder){
   var lines = C.roadStory ? C.roadStory(L) : [];
   if (!lines.length) return '';
-  return '<div class="k-panel k-tight cr-roadbox" id="cr-roadbox">' + (builder ? '' : '<div class="k-eyebrow">' + K.iconHtml('clip', 2) + 'How you got here</div>')
-    + '<ul class="cr-list">' + lines.map(function(t){ return '<li>' + esc(t) + '</li>'; }).join('') + '</ul>'
-    + (builder ? '<p class="k-small" style="margin:8px 0 0">Played for you. Press New for another road.</p>' : '') + '</div>';
+  var list = '<ul class="cr-list">' + lines.map(function(t){ return '<li>' + esc(t) + '</li>'; }).join('') + '</ul>';
+  /* In the career it is a fold, one line until it is opened: it is history,
+     and on a phone it stood between the player and the card he has to answer. */
+  if (!builder) return '<details class="k-panel k-tight cr-roadbox" id="cr-roadbox"><summary class="k-eyebrow">' + K.iconHtml('clip', 2) + 'How you got here</summary>' + list + '</details>';
+  return '<div class="k-panel k-tight cr-roadbox" id="cr-roadbox">' + list
+    + '<p class="k-small" style="margin:8px 0 0">Played for you. Press New for another road.</p></div>';
 }
 /* Difficulty and a challenge (Phase E). A challenge that fixes the difficulty
    holds the chips where it put them. */
@@ -647,12 +702,13 @@ function sizeHtml(){
     + '</div><p class="cr-town" id="cr-sizeline">' + esc(sizeLine()) + '</p>';
 }
 function buildView(){
-  if (!form) form = freshForm();
+  if (!form) { form = freshForm(); bstep = 'player'; }
   if (C.archesFor(form.pos).indexOf(form.arch) < 0 || !(form.ht > 0)) setPos(form.pos);
   var L = preview(), k = C.colorsOf(L);
   var pos = C.POS.map(function(p){ var on = form.pos === p; return '<button class="k-chip' + (on ? ' on' : '') + '" data-pos="' + p + '" aria-pressed="' + on + '">' + p + '</button>'; }).join('');
   var arch = C.archesFor(form.pos).map(function(key){ var a = C.ARCHES[key], on = form.arch === key;
     return '<button class="cr-opt' + (on ? ' on' : '') + '" data-arch="' + key + '" aria-pressed="' + on + '"><b>' + esc(a.name) + '</b><small>' + esc(a.blurb) + '</small></button>'; }).join('');
+  var archOn = C.ARCHES[form.arch];
   var road = form.start === 'hs', pro = proOpen();
   var starts = '<button class="cr-opt' + (road ? ' on' : '') + (pro ? '' : ' cr-locked') + '" data-start="hs" aria-pressed="' + road + '"><b>High school'
     + (pro ? '' : ' <span class="k-tag k-gold cr-pro">Pro</span>') + '</b><small>Age 15. Play recruiting, college and March yourself.</small></button>'
@@ -668,42 +724,66 @@ function buildView(){
       + '<p class="k-small">You start in ' + (L.year - 1) + ', years after he retired. Pass his ' + fp.pts.toLocaleString('en-US') + ' points if you can.</p></div>';
   } else if (C.ORIGIN_KEYS) {
     var any = !form.origin;
-    ori = '<span class="lab k-label">Where you are from</span><div class="cr-opts" id="cr-origin" role="group" aria-label="Where you are from">'
+    ori = '<span class="lab k-label">Where you are from</span><div class="cr-opts cr-pick" id="cr-origin" role="group" aria-label="Where you are from">'
       + '<button class="cr-opt' + (any ? ' on' : '') + '" data-origin="" aria-pressed="' + any + '"><b>Surprise me</b><small>One of these, drawn for you.</small></button>'
       + C.ORIGIN_KEYS.map(function(o){ var on = form.origin === o; return '<button class="cr-opt' + (on ? ' on' : '') + '" data-origin="' + o + '" aria-pressed="' + on + '"><b>' + esc(C.ORIGINS[o].name) + '</b><small>' + esc(C.ORIGINS[o].blurb) + '</small></button>'; }).join('')
-      + '</div>' + (any && L.origin ? '<p class="cr-town" id="cr-origin-line">Drawn: <b>' + esc(C.ORIGINS[L.origin].name) + '.</b> ' + esc(C.ORIGINS[L.origin].blurb) + '</p>' : '')
+      + '</div>' + (any && L.origin ? '<p class="cr-town" id="cr-origin-line">Drawn: <b>' + esc(C.ORIGINS[L.origin].name) + '.</b> ' + esc(C.ORIGINS[L.origin].blurb) + '</p>'
+        : !any ? '<p class="cr-town">' + esc(C.ORIGINS[form.origin].blurb) + '</p>' : '')
       + '<span class="lab k-label">Legend moments</span><div class="cr-chips" id="cr-legend" role="group" aria-label="Legend moments">'
       + '<button class="k-chip' + (form.legend ? ' on' : '') + '" data-legend="1" aria-pressed="' + !!form.legend + '">On</button>'
       + '<button class="k-chip' + (!form.legend ? ' on' : '') + '" data-legend="0" aria-pressed="' + !form.legend + '">Off</button></div>'
       + '<p class="cr-town">Rare, larger than life stories. Off keeps every story grounded.</p>';
   }
   var B = window.RTF_BALLER;
+  /* FOUR SHORT STEPS, NOT ONE LONG FORM. On a phone the builder was four and
+     a half screens of scrolling with the start button at the bottom. Now the
+     player is always on top (the figure, the overall and every rating, so a
+     change in any step shows at once), the steps are tabs, and the start
+     button is pinned to the foot of the screen: a career can start from any
+     step. Every step stays in the page and the others are hidden, so nothing
+     a step holds is ever lost by moving between them. */
+  var steps = [['player', 'Player'], ['look', 'Look'], ['story', 'Story'], ['start', 'Start']];
+  var si = 0; steps.forEach(function(x, i){ if (x[0] === bstep) si = i; });
+  var tabs = '<div class="cr-steps" role="tablist" aria-label="Build your player">' + steps.map(function(x, i){
+    var on = x[0] === bstep;
+    return '<button type="button" role="tab" class="cr-stab' + (on ? ' on' : '') + '" data-bstep="' + x[0] + '" aria-selected="' + on + '"><i>' + (i + 1) + '</i>' + x[1] + '</button>';
+  }).join('') + '</div>';
+  var pane = function(id, html){ return '<div class="cr-pane" role="tabpanel" data-pane="' + id + '"' + (id === bstep ? '' : ' hidden') + '>' + html + '</div>'; };
+  var next = steps[si + 1];
+  var goText = road ? (pro ? 'Start your sophomore year' : 'Get Pro to start in high school') : 'Go to the draft combine';
   return '<div class="cr-top"><h2 class="k-h1">' + (form.parent ? 'Your son' : 'New career') + '</h2><div class="cr-topbtns">'
     + (form.parent ? '<button class="k-btn k-quiet" id="cr-noson" type="button">Not a son</button>' : '')
     + '<button class="k-btn k-quiet" id="cr-vault" type="button">' + K.iconHtml('vault', 2) + ' Vault</button><button class="k-btn k-quiet" id="cr-home">Home</button></div></div>'
     + '<div class="k-panel cr-build">'
-    + '<p class="cr-intro">Your player is made up. The schools and the league are real.</p>'
-    + '<span class="lab k-label">Name and number</span>'
-    + '<div class="cr-name"><input id="cr-name" maxlength="28" value="' + esc(form.name) + '" aria-label="Player name" autocomplete="off">'
-    + '<input id="cr-num" class="cr-num" inputmode="numeric" maxlength="2" value="' + form.num + '" aria-label="Jersey number">'
-    + '<button class="k-btn k-sec" id="cr-dice" type="button" aria-label="New random name">New</button></div>'
-    + '<span class="lab k-label">Position</span><div class="cr-chips" id="cr-pos" role="group" aria-label="Position">' + pos + '</div>'
-    + sizeHtml()
-    + '<span class="lab k-label">Your look</span>' + lookRows(form.look, k.primary, k.secondary, form.num)
-    + '<span class="lab k-label">Your game as a ' + esc(C.POS_NAME[form.pos].toLowerCase()) + '</span><div class="cr-opts" id="cr-arch">' + arch + '</div>'
-    + ori
-    + '<span class="lab k-label">Where it starts</span><div class="cr-opts" id="cr-start">' + starts + '</div>'
-    + (road ? '<p class="cr-town">' + esc(rv.what) + ' at ' + esc(rv.where) + '. ' + esc(rv.sub) + '.</p>'
-      : '<span class="lab k-label">Your road to the draft</span>' + roadHtml(L, true))
-    + setHtml()
-    + '<div class="cr-preview"><div class="cr-pfig">' + setArt(stageKind(L), k.primary, k.secondary, form.seed)
-    + (B ? B.img(lookOf(L), { c1: k.primary, c2: k.secondary, num: form.num, age: L.age, pose: 'ball', scale: 2 }) : '') + '</div>'
-    + '<div><div class="cr-povr"><span class="k-num">' + C.ovrOf(L) + '</span><span class="k-label">Overall</span></div>'
+    /* On the Look step the figure is drawn at twice the size and framed on the
+       head and shoulders, because hair is what is being chosen there. */
+    + '<div class="cr-preview"><div class="cr-pfig' + (bstep === 'look' ? ' cr-zoom' : '') + '">' + setArt(stageKind(L), k.primary, k.secondary, form.seed)
+    + (B ? B.img(lookOf(L), { c1: k.primary, c2: k.secondary, num: form.num, age: L.age, pose: bstep === 'look' ? 'stand' : 'ball', scale: bstep === 'look' ? 4 : 2 }) : '') + '</div>'
+    + '<div class="cr-pside"><div class="cr-povr"><span class="k-num">' + C.ovrOf(L) + '</span><span class="k-label">Overall</span>'
+    + '<span class="cr-ceil">Ceiling <b>' + grade(L) + '</b></span></div>'
     + '<div class="cr-rt k-rows">' + rtRows(L, null, false) + '</div></div></div>'
-    + '<p class="cr-grade">Scouts grade your ceiling <b>' + grade(L) + '</b>. Age ' + L.age + '. How high you go is up to you.</p>'
-    + '<button class="k-btn k-block k-big" id="cr-go">' + (road ? (pro ? 'Start your sophomore year' : 'Get Pro to start in high school') : 'Go to the draft combine') + '</button>'
+    + (form.parent ? ori : '')
+    + tabs
+    + pane('player', '<span class="lab k-label">Name and number</span>'
+      + '<div class="cr-name"><input id="cr-name" maxlength="28" value="' + esc(form.name) + '" aria-label="Player name" autocomplete="off">'
+      + '<input id="cr-num" class="cr-num" inputmode="numeric" maxlength="2" value="' + form.num + '" aria-label="Jersey number">'
+      + '<button class="k-btn k-sec" id="cr-dice" type="button" aria-label="New random name">New</button></div>'
+      + '<span class="lab k-label">Position</span><div class="cr-chips" id="cr-pos" role="group" aria-label="Position">' + pos + '</div>'
+      + sizeHtml()
+      + '<span class="lab k-label">Your game as a ' + esc(C.POS_NAME[form.pos].toLowerCase()) + '</span><div class="cr-opts cr-pick" id="cr-arch">' + arch + '</div>'
+      + (archOn ? '<p class="cr-town">' + esc(archOn.blurb) + '</p>' : ''))
+    + pane('look', lookRows(form.look, k.primary, k.secondary, form.num, true))
+    + pane('story', (form.parent ? '' : ori) + setHtml())
+    + pane('start', '<p class="cr-intro">Your player is made up. The schools and the league are real.</p>'
+      + '<span class="lab k-label">Where it starts</span><div class="cr-opts" id="cr-start">' + starts + '</div>'
+      + (road ? '<p class="cr-town">' + esc(rv.what) + ' at ' + esc(rv.where) + '. ' + esc(rv.sub) + '.</p>'
+        : '<span class="lab k-label">Your road to the draft</span>' + roadHtml(L, true))
+      + '<p class="cr-grade">Scouts grade your ceiling <b>' + grade(L) + '</b>. Age ' + L.age + '. How high you go is up to you.</p>')
+    + '<div class="cr-cta">' + (next ? '<button class="k-btn k-sec" id="cr-bnext" type="button" data-bstep="' + next[0] + '">' + next[1] + ' ' + K.iconHtml('arrow', 1) + '</button>' : '')
+    + '<button class="k-btn k-block k-big" id="cr-go">' + goText + '</button></div>'
     + '</div>';
 }
+var bstep = 'player';
 function wireBuild(){
   var root = $('s-car');
   var nm = $('cr-name'), nu = $('cr-num');
@@ -727,6 +807,11 @@ function wireBuild(){
     var v = b.getAttribute('data-start');
     if (v === 'hs' && !proOpen()) { askPro('career'); return; }
     form.start = v; render();
+  }; });
+  root.querySelectorAll('[data-bstep]').forEach(function(b){ b.onclick = function(){
+    bstep = b.getAttribute('data-bstep'); render();
+    var t = root.querySelector('.cr-steps');
+    if (t && t.getBoundingClientRect().top < 0) t.scrollIntoView({ block: 'start' });
   }; });
   $('cr-home').onclick = goHome;
   $('cr-vault').onclick = openVault;
@@ -929,10 +1014,18 @@ function dockHtml(L){
   return '<div class="cr-dock" id="cr-dock"><button class="k-btn k-block k-big cr-next" id="cr-next">' + esc(lab) + '</button></div>';
 }
 
+/* The ratings are a fold on a phone, so the decision card and the season
+   numbers come first. It opens itself when a press has just moved a rating,
+   stays the way it was left otherwise, and is always open on a wide screen. */
+var rtOpen = false;
 function ratingsHtml(L, d){
-  return '<div class="k-panel cr-sec"><div class="k-eyebrow">' + K.iconHtml('up', 2) + 'Ratings</div>'
+  var moved = !!(d && d.rt && C.RATINGS.some(function(k){ return d.rt[k] != null && d.rt[k] !== L.rt[k]; }));
+  var wide = window.matchMedia && window.matchMedia('(min-width:720px)').matches;
+  var open = wide || rtOpen || moved;
+  return '<details class="k-panel cr-sec cr-rtfold"' + (open ? ' open' : '') + '><summary class="k-eyebrow">' + K.iconHtml('up', 2) + 'Ratings'
+    + '<span class="cr-rtsum">' + C.ovrOf(L) + ' OVR · Ceiling ' + grade(L) + '</span></summary>'
     + '<p class="k-small" style="margin:0 0 10px">Green counts most at ' + esc(L.pos) + '. Ceiling ' + grade(L) + '.</p>'
-    + '<div class="cr-rt cr-two k-rows">' + rtRows(L, d && d.rt, !!d) + '</div></div>';
+    + '<div class="cr-rt cr-two k-rows">' + rtRows(L, d && d.rt, !!d) + '</div></details>';
 }
 function tabsHtml(L){
   var body = '';
@@ -1090,6 +1183,8 @@ function lifeView(L, d){
 
 function wireLife(L, d){
   var root = $('s-car');
+  var rf = root.querySelector('.cr-rtfold');
+  if (rf) rf.ontoggle = function(){ if (!(window.matchMedia && window.matchMedia('(min-width:720px)').matches)) rtOpen = rf.open; };
   $('cr-home').onclick = goHome;
   var lb = $('cr-lookbtn');
   if (lb) lb.onclick = openLook;

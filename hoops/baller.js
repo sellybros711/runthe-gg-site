@@ -35,7 +35,7 @@ var HAIR_COLORS = [
   ['blonde', '#d6b05a'], ['platinum', '#e6e0cc'], ['red', '#c2302f'], ['blue', '#3a6fd8'],
 ];
 var HAIRS = [
-  ['fade', 'Fade'], ['buzz', 'Buzz'], ['afro', 'Afro'], ['twists', 'Twists'], ['braids', 'Braids'],
+  ['fade', 'Fade'], ['buzz', 'Buzz'], ['afro', 'Afro'], ['twists', 'Twists'], ['braids', 'Cornrows'],
   ['flattop', 'Flat top'], ['curly', 'Curly top'], ['bun', 'Bun'], ['long', 'Long'], ['bald', 'Bald'],
 ];
 var BEARDS = [['none', 'Clean'], ['stubble', 'Stubble'], ['goatee', 'Goatee'], ['full', 'Full']];
@@ -55,6 +55,9 @@ function normal(look){
   out.hc = Number.isFinite(+o.hc) ? Math.max(0, Math.min(HAIR_COLORS.length - 1, Math.round(+o.hc))) : DEFAULT.hc;
   out.hair = ids(HAIRS).indexOf(o.hair) >= 0 ? o.hair : DEFAULT.hair;
   out.beard = ids(BEARDS).indexOf(o.beard) >= 0 ? o.beard : DEFAULT.beard;
+  /* facial hair colour, chosen apart from the hair; -1 (or absent) is the
+     natural colour that goes with the hair, which is what every look had before */
+  out.bc = o.bc != null && o.bc !== '' && Number.isFinite(+o.bc) && +o.bc >= 0 && +o.bc < HAIR_COLORS.length ? Math.round(+o.bc) : -1;
   out.band = ids(BANDS).indexOf(o.band) >= 0 ? o.band : DEFAULT.band;
   out.sleeve = ids(SLEEVES).indexOf(o.sleeve) >= 0 ? o.sleeve : DEFAULT.sleeve;
   out.shoes = ids(SHOES).indexOf(o.shoes) >= 0 ? o.shoes : DEFAULT.shoes;
@@ -160,6 +163,24 @@ function ramp(hex, cool, soft){
     fromHsl(h, s, l),
     fromHsl(toward(h, 52, 7), s * 0.98, l + (1 - l) * 0.2),
     fromHsl(toward(h, 52, 13), s * 0.9, l + (1 - l) * 0.46),
+  ];
+}
+
+/* Hair has its own ramp. The general one lifts near black a long way so a
+   black jersey has room for a fold, and on hair that read as grey: black hair
+   was a taupe helmet. Here dark hair stays dark, its light is a narrow cool
+   sheen rather than a pale top, and light hair keeps a warm highlight. */
+function hairRamp(hex){
+  var c = hsl(hex), h = c[0], s = c[1], l = c[2];
+  if (l < 0.2) l = 0.12 + l * 0.6;
+  if (s < 0.05) { h = 30; s = 0.05; }
+  var dark = c[2] < 0.12, hi = dark ? 214 : 40;
+  return [
+    fromHsl(toward(h, 250, 10), Math.min(1, s * 1.05), l * 0.42),
+    fromHsl(toward(h, 250, 5), s, l * 0.7),
+    fromHsl(h, s, l),
+    fromHsl(toward(h, hi, dark ? 12 : 6), s * (dark ? 0.8 : 0.95), l + (1 - l) * (dark ? 0.08 : 0.2)),
+    fromHsl(toward(h, hi, dark ? 24 : 12), s * (dark ? 0.6 : 0.85), l + (1 - l) * (dark ? 0.2 : 0.42)),
   ];
 }
 
@@ -381,9 +402,10 @@ function paint(look, opts){
   var SK = ramp(skinHex, 355, true);
   var hairHex = HAIR_COLORS[L.hc][1];
   if (age >= 33) hairHex = mix(hairHex, '#c9c9c4', Math.min(0.75, (age - 32) / 12));
-  var HR = ramp(hairHex, 250);
-  /* A beard is the natural colour even when the hair is dyed. */
-  var natural = L.hc >= 5 ? HAIR_COLORS[L.hc === 5 ? 4 : 1][1] : HAIR_COLORS[L.hc][1];
+  var HR = hairRamp(hairHex);
+  /* A beard is the natural colour even when the hair is dyed, unless a
+     colour of its own was chosen. */
+  var natural = L.bc >= 0 ? HAIR_COLORS[L.bc][1] : L.hc >= 5 ? HAIR_COLORS[L.hc === 5 ? 4 : 1][1] : HAIR_COLORS[L.hc][1];
   var beardHex = mix(natural, '#000000', 0.12);
   if (age >= 33) beardHex = mix(beardHex, '#c9c9c4', Math.min(0.7, (age - 32) / 12));
   var BR = ramp(beardHex, 250);
@@ -415,11 +437,24 @@ function paint(look, opts){
 
   /* ── the hair that hangs behind the head goes first ── */
   var hs = L.hair;
-  if (cap) hs = hs === 'afro' ? 'afrocap' : hs === 'long' || hs === 'twists' || hs === 'braids' ? hs : 'buzz';
-  if (hs === 'long') R.add('hairback', { ramp: HR, group: 'hair', line: false }, rows(8, 25, function(y){ return y < 22 ? 6.9 : 6.9 - (y - 21) * 0.7; }, CX, 0.3));
+  /* Under a cap only what would really show stays: an afro squashed out from
+     under it, and anything long enough to hang below it. */
+  if (cap) hs = hs === 'afro' ? 'afrocap' : hs === 'long' || hs === 'twists' || hs === 'bald' ? hs : 'buzz';
+  /* A ragged bottom for hair that hangs: each column ends on its own row,
+     fixed by the column so the breath and every pose agree. */
+  var ragged = function(x, base){ return base + (((x * 2654435761) >>> 0) >>> 29) % 3; };
+  if (hs === 'long') R.add('hairback', { ramp: HR, group: 'hair', line: false }, function(px, py){
+    var y = Math.floor(py), ad = Math.abs(px - CX);
+    if (y < 8 || ad > (y < 19 ? 7.6 : 7.6 - (y - 18) * 0.5) || y > ragged(Math.floor(px), 22)) return null;
+    return [(px - CX) / 8.4, 0.25];
+  });
   if (hs === 'afro') R.add('hairback', { ramp: HR, group: 'hair', line: false, flat: 0.9 }, ellipse(CX, 8.1, 9.0, 7.3));
   if (hs === 'afrocap') R.add('hairback', { ramp: HR, group: 'hair', line: false }, ellipse(CX, 9.8, 8.0, 5.6));
-  if (hs === 'twists') R.add('hairback', { ramp: HR, group: 'hair', line: false }, rows(1, 17, function(y){ return y < 4 ? 4.8 + (y - 1) * 0.8 : 7.2; }, CX, 0.5));
+  if (hs === 'twists') R.add('hairback', { ramp: HR, group: 'hair', line: false }, function(px, py){
+    var y = Math.floor(py), ad = Math.abs(px - CX);
+    if (y < 4 || ad > 7.4 || y > ragged(Math.floor(px), 16)) return null;
+    return [(px - CX) / 8.2, 0.2];
+  });
 
   /* ── legs: skin, socks, shoes; trousers in a suit ── */
   /* A moving frame can lift a foot (lf cells) and widen the stance (sp).
@@ -522,36 +557,64 @@ function paint(look, opts){
   var dome = function(fn){ return function(px, py){ return fn(px, py) ? sphere(9, 7.2)(px, py) : null; }; };
   var top = function(yb){ return function(px, py){ return onHead(px, py) && py < yb; }; };
   var sides = function(y0, y1, inner){ return function(px, py){ return onHead(px, py) && py >= y0 && py < y1 && Math.abs(px - CX) > inner; }; };
-  var crest = function(px, py){ return Math.floor(py) === 3 && Math.abs(px - CX) <= 3.4; };
+  /* Every style is a SHAPE first, because at this size the silhouette is what
+     reads: a flat top is a box, a curly top a lumpy dome, twists hang past the
+     ears, a fade is a dark cap over lighter sides. The texture comes after the
+     shading, in the hair detail pass, and is a pattern rather than noise. */
+  var TOPS = {
+    fade:    { 2: 3.0, 3: 4.6, 4: 5.5, 5: 5.9, 6: 6.0, 7: 5.9 },
+    curly:   { 1: 3.2, 2: 5.0, 3: 6.0, 4: 6.6, 5: 6.8, 6: 6.7, 7: 6.3 },
+    flattop: { 1: 5.0, 2: 5.4, 3: 5.6, 4: 5.7, 5: 5.8, 6: 5.9, 7: 5.9 },
+    twists:  { 1: 3.6, 2: 5.4, 3: 6.4, 4: 7.0, 5: 7.2, 6: 7.3, 7: 7.3 },
+    long:    { 3: 4.4, 4: 5.6, 5: 6.2, 6: 6.5, 7: 6.6 },
+  };
+  var topOf = function(name){ var t = TOPS[name]; return function(px, py){ var w = t[Math.floor(py)]; return w != null && Math.abs(px - CX) <= w; }; };
+  /* a squared line-up at the temples, under a top */
+  var temples = function(px, py){ return Math.floor(py) === 8 && Math.abs(px - CX) > 4.0 && onHead(px, py); };
+  /* hair that sits on the skull: the cap of the head and down past the temples */
+  var skull = function(lo){ return function(px, py){ var y = Math.floor(py); return onHead(px, py) && (y <= 7 || (y <= lo && Math.abs(px - CX) > 4.9)); }; };
   var fadeR = ramp(mix(hairHex, skinHex, 0.55), 250);
+  var fadeSides = function(px, py){ var y = Math.floor(py); return y >= 9 && y <= 12 && Math.abs(px - CX) > 4.8 && onHead(px, py); };
   if (hs === 'buzz') {
-    R.add('hair', { ramp: ramp(mix(hairHex, skinHex, 0.3), 250), group: 'hair', line: false }, dome(function(px, py){ return top(7.6)(px, py) || sides(7.6, 10.6, 4.7)(px, py); }));
-  } else if (hs === 'fade' || hs === 'bun') {
-    R.add('hairf', { ramp: fadeR, group: 'hair', line: false }, dome(sides(7.4, 12.4, 4.6)));
-    R.add('hair', { ramp: HR, group: 'hair' }, dome(function(px, py){ return top(7.8)(px, py) || crest(px, py); }));
-    if (hs === 'bun') R.add('bun', { ramp: HR, group: 'hair' }, ellipse(CX, 2.4, 2.4, 1.8));
-  } else if (hs === 'flattop') {
-    R.add('hairf', { ramp: fadeR, group: 'hair', line: false }, dome(sides(7.2, 12.4, 4.6)));
-    R.add('hair', { ramp: HR, group: 'hair' }, function(px, py){
-      var y = Math.floor(py), ad = Math.abs(px - CX);
-      if (y < 1 || y > 7 || ad > (y === 1 ? 4.9 : 5.5) || (y >= 6 && !onHead(px, py))) return null;
-      return [(px - CX) / 6.2, y === 1 ? -0.8 : 0];
+    R.add('hair', { ramp: ramp(mix(hairHex, skinHex, 0.18), 250), group: 'hair', line: false }, dome(skull(10)));
+  } else if (hs === 'fade' || hs === 'flattop') {
+    R.add('hairf', { ramp: fadeR, group: 'hair', line: false }, dome(fadeSides));
+    if (hs === 'fade') R.add('hair', { ramp: HR, group: 'hair' }, dome(function(px, py){ return topOf('fade')(px, py) || temples(px, py); }));
+    else R.add('hair', { ramp: HR, group: 'hair' }, function(px, py){
+      if (!(topOf('flattop')(px, py) || temples(px, py))) return null;
+      return [(px - CX) / 6.4, Math.floor(py) === 1 ? -0.9 : 0.05];
     });
   } else if (hs === 'curly') {
+    R.add('hairf', { ramp: fadeR, group: 'hair', line: false }, dome(fadeSides));
     R.add('hair', { ramp: HR, group: 'hair' }, dome(function(px, py){
-      var y = Math.floor(py), x = Math.floor(px), ad = Math.abs(px - CX);
-      if (y === 1) return ad <= 3.6 && x % 3 !== 0;
-      if (y === 2 || y === 3) return ad <= (y === 2 ? 4.8 : 5.6);
-      return top(8.0)(px, py) || sides(8.0, 10.6, 4.6)(px, py);
+      var y = Math.floor(py), ad = Math.abs(px - CX), w = TOPS.curly[y];
+      /* a scalloped edge: the outermost cell drops out on alternate rows, so
+         the dome reads as a pile of curls rather than a helmet */
+      if (w != null && ad <= w) return !(ad > w - 1 && (Math.floor(ad) + y) % 2);
+      return temples(px, py) || (y === 8 && (ad > 1.2 && ad < 2.6));
     }));
   } else if (hs === 'braids') {
-    R.add('hair', { ramp: HR, group: 'hair' }, dome(function(px, py){ return top(8.0)(px, py) || crest(px, py) || sides(8.0, 11.6, 4.8)(px, py); }));
+    R.add('hair', { ramp: HR, group: 'hair' }, dome(function(px, py){ return skull(10)(px, py) || (Math.floor(py) === 3 && Math.abs(px - CX) <= 2.6); }));
+  } else if (hs === 'bun') {
+    R.add('hair', { ramp: HR, group: 'hair' }, dome(function(px, py){ return skull(10)(px, py) || (Math.floor(py) === 3 && Math.abs(px - CX) <= 3.0); }));
+    R.add('bun', { ramp: HR, group: 'hair' }, ellipse(CX, 2.7, 3.3, 2.0));
   } else if (hs === 'afro' || hs === 'afrocap') {
     R.add('hair', { ramp: HR, group: 'hair', line: false }, dome(function(px, py){ return top(7.8)(px, py) || sides(7.8, 10.6, 4.6)(px, py); }));
   } else if (hs === 'twists') {
-    R.add('hair', { ramp: HR, group: 'hair', line: false }, dome(function(px, py){ return top(8.0)(px, py) || sides(8.0, 14.4, 4.6)(px, py); }));
+    R.add('hair', { ramp: HR, group: 'hair' }, dome(function(px, py){
+      var y = Math.floor(py), ad = Math.abs(px - CX);
+      if (topOf('twists')(px, py) && y <= 7) return true;
+      /* a fringe of rope ends over the forehead, and ropes down past the ears */
+      if (y === 8 && ad <= 4.4) return Math.floor(ad) % 3 !== 2;
+      return y >= 8 && ad > 4.6 && ad <= 7.3 && y <= ragged(Math.floor(px), 13);
+    }));
   } else if (hs === 'long') {
-    R.add('hair', { ramp: HR, group: 'hair' }, dome(function(px, py){ return top(7.8)(px, py) || crest(px, py) || sides(7.8, 15.4, 4.6)(px, py); }));
+    R.add('hair', { ramp: HR, group: 'hair' }, dome(function(px, py){
+      var y = Math.floor(py), ad = Math.abs(px - CX);
+      if (topOf('long')(px, py)) return true;
+      /* parted curtains framing the face, down to the jaw */
+      return y >= 8 && ad > 4.5 && ad <= 7.4 && y <= ragged(Math.floor(px), 15);
+    }));
   }
   if (L.beard === 'goatee') {
     R.add('beard', { ramp: BR, group: 'beard', line: false }, function(px, py){
@@ -651,7 +714,9 @@ function paint(look, opts){
   R.set(21, 13, SK[0]); R.set(22, 13, SK[0]); R.set(20, 13, SK[1]);
   R.set(20, 15, SK[0]); R.set(21, 15, mix(SK[0], dark, 0.35)); R.set(22, 15, mix(SK[0], dark, 0.35)); R.set(23, 15, SK[0]);
   R.set(21, 16, SK[3]);
-  R.set(15, 11, SK[1]); R.set(28, 11, SK[0]);
+  /* the ears' inner shade, unless hair hangs over them */
+  if (!/^hair/.test(at(15, 11) || '')) R.set(15, 11, SK[1]);
+  if (!/^hair/.test(at(28, 11) || '')) R.set(28, 11, SK[0]);
   if (L.beard === 'stubble') {
     for (var y6 = 12; y6 <= 17; y6++) for (var x6 = 15; x6 < 29; x6++) {
       if (at(x6, y6) !== 'head') continue;
@@ -662,18 +727,62 @@ function paint(look, opts){
   if (L.beard === 'full' || L.beard === 'goatee') { for (var mx2 = 20; mx2 <= 23; mx2++) R.set(mx2, 15, mx2 === 20 || mx2 === 23 ? mix(SK[0], dark, 0.5) : dark); }
   if (L.hair === 'bald' && !cap) { R.set(18, 5, SK[4]); R.set(19, 5, SK[4]); R.set(18, 6, SK[3]); }
 
-  /* hair texture */
+  /* hair texture: a pattern per style, laid over the rig's shading */
+  var lvAt = function(x, y, k){ R.level(x, y, Math.max(0, Math.min(4, k))); };
   for (var y7 = 0; y7 < 26; y7++) for (var x8 = 0; x8 < W; x8++) {
     var n7 = at(x8, y7);
-    if (!n7 || !/^hair|^bun/.test(n7) || n7 === 'hairf') continue;
-    var lv = R.lev[y7][x8], hh = (((x8 * 73856093) ^ (y7 * 19349663)) >>> 0) % 7;
-    if (hs === 'afro' || hs === 'afrocap') { if (hh === 0) R.level(x8, y7, Math.min(4, lv + 1)); else if (hh === 3 || hh === 5) R.level(x8, y7, Math.max(0, lv - 1)); }
-    else if (hs === 'twists') { if ((x8 + (y7 >> 1)) % 2) R.level(x8, y7, Math.max(0, lv - 1)); else if (lv < 4 && y7 % 3 === 0) R.level(x8, y7, lv + 1); }
-    else if (hs === 'braids') { if (x8 % 2) R.level(x8, y7, Math.max(0, lv - 1)); else if (lv < 4) R.level(x8, y7, lv + 1); }
-    else if (hs === 'curly') { if ((x8 + y7) % 3 === 0) R.level(x8, y7, Math.min(4, lv + 1)); else if ((x8 + y7) % 3 === 1) R.level(x8, y7, Math.max(0, lv - 1)); }
-    else if (hs === 'long') { if (x8 % 2 === 0 && y7 > 7) R.level(x8, y7, Math.max(0, lv - 1)); }
-    else if (hs === 'flattop') { if (y7 === 1 || (x8 * 3 + y7 * 5) % 7 === 0) R.level(x8, y7, Math.min(4, lv + 1)); else if ((x8 + y7 * 2) % 5 === 0) R.level(x8, y7, Math.max(0, lv - 1)); }
-    else if (hs === 'fade' || hs === 'bun' || hs === 'buzz') { if ((x8 * 3 + y7 * 5) % 7 === 0) R.level(x8, y7, Math.min(4, lv + 1)); else if ((x8 + y7 * 2) % 5 === 0) R.level(x8, y7, Math.max(0, lv - 1)); }
+    if (!n7 || !/^hair|^bun/.test(n7)) continue;
+    var lv = R.lev[y7][x8], d7 = x8 + 0.5 - CX, ad7 = Math.abs(d7), hh = (((x8 * 73856093) ^ (y7 * 19349663)) >>> 0) % 7;
+    if (n7 === 'hairf') {
+      /* the fade: hair at the top of the sides, skin by the ears, dithered */
+      var t7 = [0.3, 0.46, 0.62, 0.76][y7 - 9] + ((x8 + y7) % 2 ? 0.14 : 0);
+      R.set(x8, y7, mix(HR[Math.min(3, lv)], SK[Math.min(3, lv + 1)], Math.min(0.92, t7)));
+      continue;
+    }
+    if (hs === 'afro' || hs === 'afrocap') { if (hh === 0) lvAt(x8, y7, lv + 1); else if (hh === 3 || hh === 5) lvAt(x8, y7, lv - 1); }
+    else if (hs === 'fade') {
+      if (y7 >= 3 && y7 <= 4 && d7 > -4 && d7 < -1) lvAt(x8, y7, y7 === 3 && d7 > -3 && d7 < -2 ? 4 : 3);
+      else lvAt(x8, y7, Math.min(lv, 2));
+      if (y7 >= 7 && d7 > 0) lvAt(x8, y7, Math.min(lv, 1));
+    }
+    else if (hs === 'flattop') {
+      /* a lit flat top, then the front face of the box, lit from the left */
+      if (y7 === 1) lvAt(x8, y7, d7 < 1 ? 4 : 3);
+      else if (y7 <= 7) lvAt(x8, y7, (d7 < -3 ? 3 : d7 < 2 ? 2 : 1) - (x8 % 3 === 0 && y7 > 2 ? 1 : 0));
+    }
+    else if (hs === 'curly') {
+      /* curls as two by two clumps, offset row to row: a lit corner, a dark one */
+      var u7 = x8 + (Math.floor(y7 / 2) % 2), cu = u7 % 2, cv = y7 % 2;
+      if (!cu && !cv) lvAt(x8, y7, lv + 1); else if (cu && cv) lvAt(x8, y7, lv - 2);
+    }
+    else if (hs === 'twists') {
+      /* ropes two wide with a dark seam between, twisted on a diagonal */
+      var col = Math.floor(ad7 + 0.5) % 3;
+      if (col === 2) lvAt(x8, y7, 0);
+      else { var tw = (y7 + col + (d7 < 0 ? 0 : 1)) % 3; lvAt(x8, y7, tw === 0 ? lv - 1 : tw === 2 ? Math.min(3, lv + 1) : lv); }
+    }
+    else if (hs === 'braids') {
+      /* cornrows: plaited rows running back from the hairline, scalp between */
+      var cb = Math.floor(ad7 + 1) % 3;
+      if (cb === 0 && y7 >= 3) R.set(x8, y7, mix(SK[Math.max(0, lv - 1)], HR[1], 0.6));
+      else lvAt(x8, y7, (y7 + cb) % 2 ? Math.min(3, lv + 1) : Math.max(0, lv - 1));
+    }
+    else if (hs === 'buzz') {
+      /* a close crop is a shadow on the skull, so it never takes the top light */
+      var bl = Math.min(lv, 2);
+      R.set(x8, y7, (x8 + y7) % 2 ? mix(R.parts[R.pid[y7][x8]].ramp[bl], SK[bl], 0.25) : R.parts[R.pid[y7][x8]].ramp[bl]);
+    }
+    else if (hs === 'bun') {
+      if (n7 === 'bun') { var bd = Math.hypot((d7 + 1) / 3.3, (y7 + 0.5 - 2.2) / 2); lvAt(x8, y7, bd < 0.45 ? 4 : bd < 0.8 ? 3 : lv - 1); }
+      else if (y7 === 4 && ad7 <= 1.6) lvAt(x8, y7, 0);
+      else if (y7 >= 4 && Math.floor(ad7) % 2 && y7 <= 7) lvAt(x8, y7, lv - 1);
+      else if (y7 === 5 && d7 > -4.5 && d7 < -1) lvAt(x8, y7, 3);
+    }
+    else if (hs === 'long') {
+      if (y7 <= 6 && d7 > -1 && d7 < 0) lvAt(x8, y7, 0);
+      else if (y7 >= 4 && y7 <= 5 && d7 > -4.5 && d7 < -1.5) lvAt(x8, y7, 3);
+      else if (y7 > 6 && x8 % 2 === 0) lvAt(x8, y7, lv - 1);
+    }
   }
   /* the hairline, and a cap's brim: the row of skin under them takes their shadow */
   for (var x9 = 0; x9 < W; x9++) for (var y9 = 5; y9 < 12; y9++) {
