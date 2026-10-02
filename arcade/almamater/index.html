@@ -31,7 +31,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:ital,wght@0,600;0,700;0,800;0,900;1,800;1,900&family=Press+Start+2P&display=swap" rel="stylesheet" />
-<link rel="stylesheet" href="/arcade/arcade.css?v=6" />
+<link rel="stylesheet" href="/arcade/arcade.css?v=7" />
 <script src="/arcade/icons.js?v=3"></script>
 <style>
   :root{
@@ -277,7 +277,8 @@ window.GA_ID='G-L29P5MRWKE';
   s.src='https://www.googletagmanager.com/gtag/js?id='+encodeURIComponent(id);
   document.head.appendChild(s);})();
 </script>
-<script src="/arcade/gamehead.js?v=2"></script>
+<script src="/arcade/tokens.js?v=14"></script>
+<script src="/arcade/gamehead.js?v=3"></script>
 </head>
 <body>
 <div class="wrap">
@@ -300,7 +301,7 @@ window.GA_ID='G-L29P5MRWKE';
 
   <div class="runbar">
     <div class="big" id="runN">0</div>
-    <div class="rl"><span class="k">Points today</span><span class="v" id="runSub">Type it for 2. Take the choices for 1. Miss once and you’re out.</span></div>
+    <div class="rl"><span class="k">Points today</span><span class="v" id="runSub">2 typed, 1 from choices. One miss ends it.</span></div>
     <div class="best"><span class="n" id="bestRun">0</span><span class="c">Best</span></div>
   </div>
 
@@ -316,7 +317,7 @@ window.GA_ID='G-L29P5MRWKE';
     <button class="bailbtn" type="button" id="bailBtn">Not sure? Show me 4 schools (1 point)</button>
     <div class="choices" id="choices" hidden></div>
     <div class="factline" id="factline" aria-live="polite"></div>
-    <div class="hintline" id="hintline">Type the school. Stuck? Grab the 4 choices.</div>
+    <div class="hintline" id="hintline">Type the school, or take 4 choices.</div>
   </div>
 
   <div class="lb" id="lb">
@@ -405,7 +406,6 @@ window.GA_ID='G-L29P5MRWKE';
 <script src="/arcade/review.js?v=1" defer></script>
 <script src="/arcade/challenge.js?v=4"></script>
 <script src="/arcade/modal-a11y.js?v=1"></script>
-<script src="/arcade/tokens.js?v=14"></script>
 <script src="/arcade/day.js?v=3"></script>
 <script src="/arcade/dayroll.js?v=1"></script>
 <script src="/arcade/mode.js?v=7"></script>
@@ -424,9 +424,9 @@ window.GA_ID='G-L29P5MRWKE';
 <script src="/arcade/gamemarks.js?v=4"></script>
 <script src="/arcade/calendar.js?v=15"></script>
 <script src="/arcade/archivecta.js?v=2"></script>
-<script src="/arcade/demo.js?v=4"></script>
-<script src="/arcade/pregame.js?v=28"></script>
-<script src="/arcade/howto.js?v=25"></script>
+<script src="/arcade/demo.js?v=5"></script>
+<script src="/arcade/pregame.js?v=29"></script>
+<script src="/arcade/howto.js?v=26"></script>
 <script src="/arcade/teamcolors.js?v=2"></script>
 <script src="/arcade/type.js?v=5"></script>
 <script src="/arcade/fact.js?v=5"></script>
@@ -813,9 +813,9 @@ window.GA_ID='G-L29P5MRWKE';
     started=true; startTs=performance.now(); if(window.RTGReview) RTGReview.start(GAME); saveResume(); }
 
   function updateHint(){ var h=document.getElementById('hintline'); if(!h) return;
-    if(ARCHIVE){ h.textContent='Type the school. Stuck? Grab the 4 choices. · Archive · your personal best'; return; }
+    if(ARCHIVE){ h.textContent='Type the school, or take 4 choices. · Archive · your personal best'; return; }
     var lbl = window.RTGTokens ? (' · '+RTGTokens.hint(GAME)) : '';
-    h.textContent='Type the school. Stuck? Grab the 4 choices.'+lbl; }
+    h.textContent='Type the school, or take 4 choices.'+lbl; }
   function beginAttempt(){
     var isReplay = servedDaily || (!ARCHIVE && window.RTGTokens && RTGTokens.playsOf(GAME)>0);
     if(isReplay && !ARCHIVE) clearResume();   // replays are practice: never resumable

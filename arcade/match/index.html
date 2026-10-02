@@ -38,7 +38,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@500;600;700;800;900&family=Press+Start+2P&display=swap" rel="stylesheet" />
-<link rel="stylesheet" href="/arcade/arcade.css?v=6" />
+<link rel="stylesheet" href="/arcade/arcade.css?v=7" />
 <script src="/arcade/icons.js?v=3"></script>
 <style>
   /* ---------------- design tokens (dark default + light override) ---------------- */
@@ -182,9 +182,9 @@
   .abtn:active{transform:translateY(1px);}
   .abtn:disabled{opacity:.45; cursor:default;}
   .abtn svg{flex:0 0 auto;}
-  .abtn .cost{font-size:11px; font-weight:900; color:rgba(7,20,38,.65);}
+  .abtn .cost{font-size:11px; font-weight:900; color:rgba(7,20,38,.85);}
   .abtn.gold{background:var(--blue); color:#fff; border-color:transparent;}
-  .abtn.gold .cost{color:rgba(255,255,255,.8);}
+  .abtn.gold .cost{color:#fff;}
   .abtn.gold:hover{filter:brightness(1.06);}
   .abtn.gold:disabled{filter:none;}
   .abtn.ghost:hover{border-color:var(--blue);}
@@ -198,7 +198,7 @@
   .howto summary::-webkit-details-marker{display:none;}
   .howto summary .chev{color:var(--mut); transition:transform .2s; font-size:12px;}
   .howto[open] summary .chev{transform:rotate(180deg);}
-  .howto ol{margin:0; padding:0 18px 16px 34px; color:var(--mut); font-size:13px; line-height:1.55;}
+  .howto ol{margin:0; padding:0 18px 16px 34px; color:var(--mut); font-size:16px; line-height:1.55;}
   .howto li{margin-bottom:7px;}
   .howto b{color:var(--ink);}
 
@@ -297,7 +297,7 @@
   /* ---------------- pool ---------------- */
   .pool-h{display:flex; align-items:baseline; gap:10px; margin:0 2px 10px;}
   .pool-h .t{font-family:var(--hero); font-weight:400; letter-spacing:.04em; text-transform:uppercase; font-size:16px; color:var(--ink);}
-  .pool-h .n{font-size:11.5px; font-weight:900; letter-spacing:.1em; text-transform:uppercase; color:var(--blueT);}
+  .pool-h .n{font-size:11.5px; font-weight:900; letter-spacing:.1em; text-transform:uppercase; color:color-mix(in srgb, var(--blueT) 70%, var(--ink));}
   .pool{display:grid; grid-template-columns:repeat(5,1fr); gap:9px; min-height:52px; margin-bottom:var(--sp-3);}
   .pool .tile{min-height:62px; font-size:12.5px;}
   .groups-h .n{color:var(--mut); text-transform:none; letter-spacing:.02em; font-weight:700;}
@@ -563,7 +563,8 @@ window.GA_ID='G-L29P5MRWKE';
   s.src='https://www.googletagmanager.com/gtag/js?id='+encodeURIComponent(id);
   document.head.appendChild(s);})();
 </script>
-<script src="/arcade/gamehead.js?v=2"></script>
+<script src="/arcade/tokens.js?v=14"></script>
+<script src="/arcade/gamehead.js?v=3"></script>
 </head>
 <body>
   <div class="topwrap">
@@ -589,7 +590,7 @@ window.GA_ID='G-L29P5MRWKE';
   <div class="app">
     <main class="gameCol">
       <div class="modesw hidden" id="modesw" role="tablist" aria-label="Choose sport version"></div>
-      <div class="lead"><span class="k">Today's board · <span id="datep">-</span></span><span class="v explain"><span class="ex-t">Tap four names that go together. Find all 4 groups. Four misses and you’re done.</span><span class="lh"></span></span></div>
+      <div class="lead"><span class="k">Today's board · <span id="datep">-</span></span><span class="v explain"><span class="ex-t">Find the four groups of four. Four misses ends it.</span><span class="lh"></span></span></div>
 
       <div class="tester-banner" id="testerBanner" hidden><b>Tester mode</b>: unlimited plays. Use <b>New board</b> in the sidebar for a fresh puzzle.</div>
 
@@ -683,9 +684,9 @@ window.GA_ID='G-L29P5MRWKE';
       <details class="card howto" id="howto">
         <summary>How to play <span class="chev" aria-hidden="true">▼</span></summary>
         <ol>
-          <li><b>Find the four hidden groups.</b> Every name shares a team, a jersey number, a last name or a feat with exactly 3 others.</li>
-          <li><b>Tap four names</b> you think go together, then <b>Submit</b>. Nail it and the group locks in up top. Miss and it costs you a guess.</li>
-          <li>Stuck? <b>Reveal a group</b> for 1 guess. Four misses and your board’s done.</li>
+          <li><b>Four hidden groups.</b> Each shares a team, number, name or feat.</li>
+          <li><b>Tap four</b>, then <b>Submit</b>. A miss costs a guess.</li>
+          <li><b>Reveal a group</b> for 1 guess. Four misses ends it.</li>
         </ol>
       </details>
 
@@ -782,7 +783,6 @@ window.GA_ID='G-L29P5MRWKE';
 <script src="/arcade/review.js?v=1" defer></script>
 <script src="/arcade/challenge.js?v=4"></script>
 <script src="/arcade/modal-a11y.js?v=1"></script>
-  <script src="/arcade/tokens.js?v=14"></script>
 <script src="/arcade/day.js?v=3"></script>
 <script src="/arcade/mode.js?v=7"></script>
 <script src="/arcade/dayroll.js?v=1"></script>
@@ -800,9 +800,9 @@ window.GA_ID='G-L29P5MRWKE';
 <script src="/arcade/gamemarks.js?v=4"></script>
 <script src="/arcade/calendar.js?v=15"></script>
 <script src="/arcade/archivecta.js?v=2"></script>
-<script src="/arcade/demo.js?v=4"></script>
-<script src="/arcade/pregame.js?v=28"></script>
-<script src="/arcade/howto.js?v=25"></script>
+<script src="/arcade/demo.js?v=5"></script>
+<script src="/arcade/pregame.js?v=29"></script>
+<script src="/arcade/howto.js?v=26"></script>
   <script>
   (function () {
     'use strict';

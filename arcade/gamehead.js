@@ -45,7 +45,8 @@
   /* One line of instruction for a game that had none above its board. The
      others already carry one (the scoreboard's line, a lead, a setup blurb). */
   var LINE = {
-    crossword: { before: '.board-wrap', text: 'Tap a square and type. Tap it again to switch across and down.' }
+    /* crossword's line is in its own markup now, so it is there at first
+       paint. The mechanism stays for a game that needs one later. */
   };
 
   var MQ = window.matchMedia ? window.matchMedia('(max-width: 600px)') : null;
@@ -58,8 +59,8 @@
     s.id = 'rtggh-css';
     s.textContent = [
       /* the one-line instruction and the notice: shown at every width */
-      '.rtggh-line{margin:0 0 10px;font-size:13px;font-weight:700;line-height:1.4;color:var(--mut);text-align:center;}',
-      '.rtggh-notice{margin:0 0 10px;padding:8px 12px;border-radius:12px;font-size:13px;font-weight:700;line-height:1.4;',
+      '.rtggh-line{margin:0 0 10px;font-size:16px;font-weight:700;line-height:1.4;color:var(--mut);text-align:center;}',
+      '.rtggh-notice{margin:0 0 10px;padding:8px 12px;border-radius:12px;font-size:16px;font-weight:700;line-height:1.4;',
       ' color:var(--ink);background:color-mix(in srgb, var(--gold,#F2B632) 14%, var(--card));',
       ' border:1px solid color-mix(in srgb, var(--gold,#F2B632) 45%, transparent);text-align:center;}',
       '.rtggh-notice a,.rtggh-notice button{font:inherit;font-weight:900;color:var(--goldT,#F2B632);background:none;border:0;padding:0;',
@@ -86,7 +87,13 @@
       /* One line, always. A wrapped strip is a second header row, which is the
          thing this file exists to remove; on the narrowest phones the labels
          tighten instead. */
-      '.rtggh-strip .rtggh-stats{display:flex;align-items:center;gap:8px;flex-wrap:nowrap;min-width:0;white-space:nowrap;overflow:hidden;}',
+      '.rtggh-strip .rtggh-stats{display:flex;align-items:center;gap:8px;flex-wrap:nowrap;min-width:0;white-space:nowrap;overflow:hidden;',
+      /* the clip box reaches past the stats by a few pixels, so the streak
+         chip's invisible 44px hit area is not cut off at its own edge */
+      ' padding:3px 0 13px 3px;margin:-3px 0 -13px -3px;}',
+      /* above the strip is the header, which sits over it, so the streak chip
+         reaches down for its 44px the way the account buttons do */
+      'html body .rtggh-strip #streakStat::after,html body .rtggh-strip #streakChip::after{inset:-3px -3px -13px -3px;}',
       '@media (max-width:389px){.rtggh-strip{letter-spacing:.02em;font-size:10px;gap:6px;} .rtggh-strip .rtggh-stats{gap:6px;} .rtggh-strip .rtggh-stat b{margin-left:3px;}}',
       '.rtggh-strip .rtggh-stat b{font-family:var(--hero,inherit);font-weight:400;font-size:16px;letter-spacing:0;color:var(--ink);margin-left:4px;font-variant-numeric:tabular-nums;}',
       '.rtggh-strip .rtggh-right{margin-left:auto;display:flex;align-items:center;gap:6px;flex:0 0 auto;}',
@@ -108,7 +115,7 @@
       '.rtggh-strip .rtb-tokens,.rtggh-strip .rtb-prof{position:relative;overflow:visible;}',
       /* reaching down into the strip's margin, because the sticky bar above
          sits over anything that reaches up */
-      'html body .rtggh-strip #rtbTokens::after,html body .rtggh-strip #rtbProf::after{content:"";position:absolute;inset:-2px -4px -12px -4px;}',
+      'html body .rtggh-strip #rtbTokens::after,html body .rtggh-strip #rtbProf::after{content:"";position:absolute;inset:-3px -4px -13px -4px;}',
       /* arcade.css holds 46px for this row while mode.js fills it; filled on
          a phone with the 32px buttons above it is 42, so hold 42. */
       'html body.rtggh .modesw:empty{min-height:42px;}',
@@ -122,7 +129,7 @@
       /* ---- each board on one screen at 375x667 ---- */
       'body.rtggh .modesw{margin-bottom:8px !important;}',
       'html body.rtggh .modesw:not(:empty) button{min-height:32px;}',
-      'body.rtggh-career .prompt,body.rtggh-almamater .prompt,body.rtggh-oddone .prompt{font-size:14px;margin:0 0 6px;}',
+      'body.rtggh-career .prompt,body.rtggh-almamater .prompt,body.rtggh-oddone .prompt{font-size:16px;margin:0 0 6px;}',
       'body.rtggh-career .pathcard{padding:10px 12px !important;margin-bottom:10px;}',
       'body.rtggh-career .pathcard .plab{margin-bottom:6px;}',
       'body.rtggh-career .stopgap{height:6px;}',
@@ -136,7 +143,7 @@
       'html body.rtggh-rankit .rmeta .sub{margin-top:3px;}',
       'body.rtggh-match .lead{padding:8px 12px !important;margin-bottom:8px !important;}',
       'body.rtggh-match .lead .k{display:none !important;}',
-      'body.rtggh-match .lead .v{margin-top:0 !important;font-size:13px !important;}',
+      'body.rtggh-match .lead .v{margin-top:0 !important;font-size:16px !important;}',
       'body.rtggh-match .pool-h .t{display:none;}',
       'body.rtggh-match .pool-h{margin-bottom:6px;}',
       'body.rtggh-match .mstatus{padding-top:4px !important;padding-bottom:4px !important;margin-bottom:6px !important;}',
@@ -154,7 +161,7 @@
       'body.rtggh .runbar{min-height:0 !important;padding:6px 10px !important;border-left-width:1px !important;box-shadow:none !important;margin-bottom:8px !important;}',
       'body.rtggh .runbar .big,body.rtggh .runbar .best,body.rtggh .runbar .rstat,body.rtggh .runbar .rl .k{display:none !important;}',
       'body.rtggh .runbar .rl{text-align:center;width:100%;}',
-      'body.rtggh .runbar .rl .v{font-size:13px !important;line-height:1.35 !important;}',
+      'body.rtggh .runbar .rl .v{font-size:16px !important;line-height:1.3 !important;}',
       'body.rtggh.rtggh-rankit .runbar{display:none !important;}'
     ].join('\n');
     (document.head || document.documentElement).appendChild(s);
@@ -284,6 +291,27 @@
   }
   function clearNotice() { if (noticeEl && noticeEl.parentNode) noticeEl.parentNode.removeChild(noticeEl); noticeEl = null; }
 
+  /* THE FREE-PLAY LINE IS DRAWN DURING PARSE. A free account opening a card
+     game it has not tried is told, above the board, that its one free play is
+     spent on the first move. pregame.js used to add that line after the page
+     had painted, which pushed the whole board down 95px. tokens.js loads just
+     before this file and is pure localStorage, so the same question can be
+     asked here, the moment the top bar has been read, and the line is part of
+     the first paint. pregame.js writes the same words into the same element. */
+  var TRIAL = 'Your one free play. It\u2019s spent once you start. ' +
+    '<button type="button" id="rtgpgCardLine">See the Arcade Card</button>';
+  var trialDone = false;
+  function earlyTrial(force) {
+    var tb = $('.topbar');
+    if (!tb || !(force === true || readPast(tb))) return false;
+    var T = window.RTGTokens;
+    try {
+      if (T && T.hasCard && !T.hasCard() && T.canPlay && T.canPlay(GAME) && T.trialOpen && T.trialOpen(GAME))
+        notice(TRIAL, { id: 'rtgpgTrial' });
+    } catch (e) {}
+    return true;
+  }
+
   /* BEFORE FIRST PAINT. This file loads at the end of <body>, so the header
      is already there: the strip is built right away rather than after the
      banner, or the page paints one header and then rearranges into another
@@ -307,6 +335,7 @@
     if (MQ && MQ.matches && tb && (force === true || readPast(tb))) apply();
     if (on) { bindStats(); attachBanner(); }
     if (!lineDone) { addLine(); lineDone = !LINE[GAME] || !!document.querySelector('.rtggh-line'); }
+    if (!trialDone) trialDone = earlyTrial(force);
   }
   function settle() {
     step(true);
@@ -325,6 +354,6 @@
     if (MQ.addEventListener) MQ.addEventListener('change', onChange); else if (MQ.addListener) MQ.addListener(onChange);
   }
 
-  window.RTGGameHead = { notice: notice, clearNotice: clearNotice, on: function () { return on; } };
+  window.RTGGameHead = { notice: notice, clearNotice: clearNotice, on: function () { return on; }, TRIAL: TRIAL };
   boot();
 })();

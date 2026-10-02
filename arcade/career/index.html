@@ -31,7 +31,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:ital,wght@0,600;0,700;0,800;0,900;1,800;1,900&family=Press+Start+2P&display=swap" rel="stylesheet" />
-<link rel="stylesheet" href="/arcade/arcade.css?v=6" />
+<link rel="stylesheet" href="/arcade/arcade.css?v=7" />
 <script src="/arcade/icons.js?v=3"></script>
 <style>
   :root{
@@ -106,7 +106,9 @@
   /* Held so the JS fill doesn't throw the hint line and leaderboard down the
      page a second after first paint - a fixed-count list, so its height is
      knowable, and :empty drops the reservation the moment it's built. */
-  .path:empty{min-height:196px;}
+  /* the four stops a round opens with: 152px on a desktop, 122 on a phone */
+  .path:empty{min-height:152px;}
+  @media (max-width:520px){ .path:empty{min-height:122px;} }
   .stop{display:flex; align-items:center; gap:12px;}
   .stop .dot{flex:0 0 auto; width:26px; height:26px; border-radius:50%; border:2px solid var(--pc,var(--green)); background:var(--pc,var(--card)); color:var(--pcInk,#fff); font-family:var(--hero); font-weight:400; font-size:14px; display:flex; align-items:center; justify-content:center; position:relative; z-index:1; text-shadow:0 1px 2px rgba(0,0,0,.55);}
   .stop:not([style]) .dot{background:var(--card); color:var(--greenT); text-shadow:none;}
@@ -124,7 +126,7 @@
      more teams to come" is itself a clue, and a career of unknown length would
      make the 3-point call a coin flip. */
   /* out-specifies the :not([style]):first/last-child dot tints above */
-  .path .stop.veiled .dot{background:var(--card); border-style:dashed; border-color:var(--line2); color:var(--line2); text-shadow:none;}
+  .path .stop.veiled .dot{background:var(--card); border-style:dashed; border-color:var(--line2); color:var(--mut); text-shadow:none;}
   .path .stop.veiled .tm{color:var(--line2); letter-spacing:.18em; font-size:14px;}
   .revealbar{display:flex; align-items:center; justify-content:space-between; gap:12px; margin-top:16px; padding-top:14px; border-top:1px dashed var(--line2);}
   .revealbtn{flex:0 0 auto; border:1px solid var(--line2); background:var(--card2); color:var(--ink);
@@ -179,7 +181,8 @@
     text-transform:uppercase; color:var(--mut);}
   .scout .sc b{font-size:12.5px; font-weight:900; color:var(--ink); letter-spacing:.01em;}
   .scout .sc.era b{color:var(--greenT);}
-  .scout:empty{display:none;}
+  /* empty only before the first round is drawn: it keeps its two rows so the
+     card does not grow 84px under the reader when the round lands */
   .subprompt{text-align:center; font-size:12px; font-weight:700; color:var(--mut); margin:-6px 0 12px; min-height:16px;}
   .choices{display:flex; flex-direction:column; gap:9px;}
   /* A class rule beats the UA's [hidden]{display:none}, so without this the
@@ -308,7 +311,8 @@ window.GA_ID='G-L29P5MRWKE';
   s.src='https://www.googletagmanager.com/gtag/js?id='+encodeURIComponent(id);
   document.head.appendChild(s);})();
 </script>
-<script src="/arcade/gamehead.js?v=2"></script>
+<script src="/arcade/tokens.js?v=14"></script>
+<script src="/arcade/gamehead.js?v=3"></script>
 </head>
 <body>
 <div class="wrap">
@@ -331,7 +335,7 @@ window.GA_ID='G-L29P5MRWKE';
 
   <div class="runbar">
     <div class="big" id="runN">0</div>
-    <div class="rl"><span class="k">Points today</span><span class="v" id="runSub">Name them off 1 team for 5. Miss once and you’re out.</span></div>
+    <div class="rl"><span class="k">Points today</span><span class="v" id="runSub">5 points off one team. One miss ends it.</span></div>
     <div class="best"><span class="n" id="bestRun">0</span><span class="c">Best</span></div>
   </div>
 
@@ -358,7 +362,7 @@ window.GA_ID='G-L29P5MRWKE';
     <div class="subprompt" id="subprompt"></div>
     <div class="choices" id="choices" hidden></div>
     <div class="factline" id="factline" aria-live="polite"></div>
-    <div class="hintline" id="hintline">Type the name to call it. Each extra team you ask for is worth less.</div>
+    <div class="hintline" id="hintline">Call it now, or show a team for less.</div>
   </div>
 
   <div class="lb" id="lb">
@@ -447,7 +451,6 @@ window.GA_ID='G-L29P5MRWKE';
 <script src="/arcade/review.js?v=1" defer></script>
 <script src="/arcade/challenge.js?v=4"></script>
 <script src="/arcade/modal-a11y.js?v=1"></script>
-<script src="/arcade/tokens.js?v=14"></script>
 <script src="/arcade/day.js?v=3"></script>
 <script src="/arcade/dayroll.js?v=1"></script>
 <script src="/arcade/mode.js?v=7"></script>
@@ -465,9 +468,9 @@ window.GA_ID='G-L29P5MRWKE';
 <script src="/arcade/gamemarks.js?v=4"></script>
 <script src="/arcade/calendar.js?v=15"></script>
 <script src="/arcade/archivecta.js?v=2"></script>
-<script src="/arcade/demo.js?v=4"></script>
-<script src="/arcade/pregame.js?v=28"></script>
-<script src="/arcade/howto.js?v=25"></script>
+<script src="/arcade/demo.js?v=5"></script>
+<script src="/arcade/pregame.js?v=29"></script>
+<script src="/arcade/howto.js?v=26"></script>
 <script src="/arcade/type.js?v=5"></script>
 <script src="/arcade/fact.js?v=5"></script>
 <script>
@@ -902,9 +905,9 @@ window.GA_ID='G-L29P5MRWKE';
   function fmt(s){ s=Math.max(0,Math.floor(s)); return Math.floor(s/60)+':'+String(s%60).padStart(2,'0'); }
 
   function updateHint(){ var h=document.getElementById('hintline'); if(!h) return;
-    if(ARCHIVE){ h.textContent='Call it now, or see another team for fewer points. · Archive · your personal best'; return; }
+    if(ARCHIVE){ h.textContent='Call it now, or show a team for less. · Archive · your personal best'; return; }
     var lbl = window.RTGTokens ? (' · '+RTGTokens.hint(GAME)) : '';
-    h.textContent='Call it now, or see another team for fewer points.'+lbl; }
+    h.textContent='Call it now, or show a team for less.'+lbl; }
   function beginAttempt(){
     var isReplay = servedDaily || (!ARCHIVE && window.RTGTokens && RTGTokens.playsOf(GAME)>0);
     if(isReplay && !ARCHIVE) clearResume();   // replays are practice: never resumable

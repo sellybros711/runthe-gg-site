@@ -51,6 +51,45 @@ html{scrollbar-gutter:stable;}
   --a-shadow-press:2px 2px 0 rgba(13,27,44,.14);
 }
 
+/* ---- light theme text accents, held to WCAG AA ----------------------------
+   The "T" tokens are the accent colours used AS TEXT. In the light theme
+   several were tuned for looks on white and measured 3.2 to 4.4:1 on the
+   page's own pale ground (gold 3.3, green 3.2, teal 4.0, the quiet --dim
+   2.4). These are the same hues taken down until each clears 4.5:1 on the
+   ground and on a card. Written html:root so it beats the copy of these
+   tokens every page carries in its own inline style, without !important.
+   The fills (--gold, --teal...) are untouched: a button or a bar is not text. */
+html:root[data-theme="light"]{
+  --dim:#5A697B;
+  --coralT:#B83220; --goldT:#7E5600; --tealT:#0B6E7A; --greenT:#127A38;
+  --pinkT:#A82E66; --brandT:#9A4406; --brand2T:#B02F25; --mossT:#4E6510;
+}
+
+/* the scoreboard's small "Best" caption was --dim on a tinted card: 3.8:1 */
+html body .runbar .best .c{color:var(--mut);}
+/* Common Ground's footer had no link colour at all, so its links were the
+   browser's own blue on navy (1.75:1) */
+html body .gjfoot{color:var(--mut);}
+html body .gjfoot a{color:var(--tealT);}
+:root[data-theme="light"] .iv-kicker{color:#0F6A30;}
+
+/* ---- body text is 16px --------------------------------------------------
+   The lines a player reads to play (the scoreboard's sentence, the line under
+   the board, the setup blurb) were 11.5 to 14px. Written html body so it
+   beats each page's own rule and its phone shrink. */
+html body .runbar .rl .v, html body .hintline, html body .blurb, html body .setupsub,
+html body .lead .v{font-size:16px; line-height:1.35;}
+
+/* ---- the leaderboard's place, held from the first paint ------------------
+   Every game page carries the old sample leaderboard in its markup (283px),
+   and leaderboard.js swaps it for a one-line "Leaderboard" button (64px) once
+   the page's scripts have run. Everything under it jumped 219px up on every
+   load. The markup is drawn at the button's size from the start; the button
+   that replaces it is the same box. */
+html body .lb:not(.rtglb-slot), html body .mlb:not(.rtglb-slot){
+  height:64px; min-height:0; margin:18px 0 14px; padding:0; overflow:hidden; visibility:hidden;
+  border:0; box-shadow:none; background:none;}
+
 /* ---- typography helpers -------------------------------------------------- */
 .a-title{font-family:var(--hero); font-weight:400; letter-spacing:.01em; text-transform:uppercase; line-height:1;}
 .a-num{font-variant-numeric:tabular-nums; font-feature-settings:"tnum" 1;}
@@ -216,6 +255,17 @@ body:has(.a-gametitle) .brand.logo .sub{display:none;}
   .a-card,.a-btn{transition:none !important;}
   .a-status--progress::before{animation:none !important;}
 }
+/* Reduced motion, for every page that loads this sheet. Several pages had
+   their own "*{animation:none}", and * does not reach ::before or ::after,
+   which is where most of the looping rings and shimmers live. So it is said
+   once here, for elements and both pseudo-elements. The duration is cut to
+   nothing rather than the animation removed, so anything that animates IN
+   still lands in its finished state instead of staying at its first frame. */
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation-duration:.001ms !important; animation-delay:0s !important;
+    animation-iteration-count:1 !important; transition-duration:.001ms !important;
+    transition-delay:0s !important; scroll-behavior:auto !important;}
+}
 
 /* ---- How to play: one tab at the foot of every game ---------------------- */
 /* The long-form rules used to sit permanently open under every game. On a
@@ -249,9 +299,9 @@ body:has(.a-gametitle) .brand.logo .sub{display:none;}
 .gj h3{font-family:var(--hero,'Anton',Impact,sans-serif); font-weight:400; letter-spacing:.02em;
   text-transform:uppercase; font-size:15px; margin:20px 0 8px; color:var(--ink,#F4F7FB);}
 .gj-body > h3:first-child{margin-top:0;}
-.gj p{font-size:13.5px; line-height:1.65; color:var(--mut,#A9B8CB); margin:0 0 10px; font-weight:600;}
+.gj p{font-size:16px; line-height:1.55; color:var(--mut,#A9B8CB); margin:0 0 10px; font-weight:600;}
 .gj ul{margin:0 0 10px; padding-left:20px;}
-.gj li{font-size:13.5px; line-height:1.6; color:var(--mut,#A9B8CB); margin:5px 0; font-weight:600;}
+.gj li{font-size:16px; line-height:1.5; color:var(--mut,#A9B8CB); margin:5px 0; font-weight:600;}
 .gj a{color:var(--tealT,#37C5D5); font-weight:800; text-decoration:none;}
 .gj a:hover{text-decoration:underline;}
 @media (max-width:520px){
@@ -339,6 +389,73 @@ html body .gh-mark svg.jrot{width:28px; height:28px;}
 :root:has(.gh-mark[data-mark="oddone"]){--gac:#A982F3;}
 :root:has(.gh-mark[data-mark="highlow"]){--gac:#FF8A3D;}
 :root:has(.gh-mark[data-mark="table"]){--gac:#F2B632;}
+
+/* ---- each game is its own room ---------------------------------------------
+   Every game used to share one ground, one card and one line colour, so the
+   only thing that told Odd One Out from Rank It was the button. Now the game's
+   own colour (--gac, above) sets the light at the top of the page, tints every
+   hairline, colours the name in the header, and the top of the page carries a
+   faint motif that is the game's own shape:
+
+     Common Ground   a board of tiles        Number Game     jersey pinstripes
+     Crossword       a crossword grid        Roll Call       a ruled roster sheet
+     High Low        a slanted ticker        Chain           links
+     Odd One Out     a field of dots         Rank It         ranked bars
+     Career Path     a dashed route          Alma Mater      a pennant lattice
+     Guess           a radar sweep           Sportegories    a category wheel
+
+   The motif fades out within the first screen, so text further down sits on
+   the plain ground. Every colour here is a mix of the game colour into the
+   theme's own ink or ground, which is why one rule holds for both themes. */
+:root:has(.gh-mark[data-mark]){
+  --gline:color-mix(in srgb, color-mix(in srgb, var(--gac) 45%, #F4F7FB) 17%, transparent);
+  --gmo:color-mix(in srgb, var(--gac) 15%, transparent);
+  --line2:var(--gline);
+  /* the cards carry a trace of the game's colour too */
+  --card:color-mix(in srgb, var(--gac) 6%, #10233A);
+  --gglow:color-mix(in srgb, var(--gac) 20%, transparent);
+  /* the quiet ink is lifted a step: the game's light under it is brighter
+     than the plain navy it was chosen against */
+  --dim:#97A6B9;
+}
+html:root[data-theme="light"]:has(.gh-mark[data-mark]){
+  --gline:color-mix(in srgb, color-mix(in srgb, var(--gac) 50%, #0D1B2C) 22%, transparent);
+  --gmo:color-mix(in srgb, var(--gac) 14%, transparent);
+  --card:color-mix(in srgb, var(--gac) 4%, #FFFFFF);
+  --gglow:color-mix(in srgb, var(--gac) 11%, transparent);
+  --mut:#475870; --dim:#4F5E72;
+}
+:root:has(.gh-mark[data-mark="match"]){ --motif:conic-gradient(from 90deg at 4px 4px, transparent 90deg, var(--gmo) 0); --motif-size:30px 30px; }
+:root:has(.gh-mark[data-mark="crossword"]){ --motif:conic-gradient(from 90deg at 1.5px 1.5px, transparent 90deg, var(--gmo) 0); --motif-size:26px 26px; }
+:root:has(.gh-mark[data-mark="highlow"]){ --motif:linear-gradient(135deg, transparent 44%, var(--gmo) 44% 56%, transparent 56%); --motif-size:26px 26px; }
+:root:has(.gh-mark[data-mark="oddone"]){ --motif:radial-gradient(circle, var(--gmo) 0 2.5px, transparent 3px); --motif-size:22px 22px; }
+:root:has(.gh-mark[data-mark="sportegories"]){ --motif:repeating-conic-gradient(from -4deg at 50% -40px, var(--gmo) 0 8deg, transparent 8deg 30deg); --motif-size:auto; }
+:root:has(.gh-mark[data-mark="career"]){ --motif:repeating-linear-gradient(90deg, var(--gmo) 0 14px, transparent 14px 26px); --motif-size:100% 34px; }
+:root:has(.gh-mark[data-mark="guess"]){ --motif:repeating-radial-gradient(circle at 50% -60px, var(--gmo) 0 1.5px, transparent 1.5px 26px); --motif-size:auto; }
+:root:has(.gh-mark[data-mark="rankit"]){ --motif:linear-gradient(90deg, var(--gmo) 0 62%, transparent 62%); --motif-size:220px 24px; }
+:root:has(.gh-mark[data-mark="almamater"]){ --motif:conic-gradient(from 45deg at 50% 50%, var(--gmo) 0 25%, transparent 0 100%); --motif-size:24px 34px; }
+:root:has(.gh-mark[data-mark="table"]){ --motif:repeating-linear-gradient(90deg, var(--gmo) 0 1.5px, transparent 1.5px 16px); --motif-size:auto; }
+:root:has(.gh-mark[data-mark="rollcall"]){ --motif:repeating-linear-gradient(180deg, transparent 0 25px, var(--gmo) 25px 26.5px); --motif-size:auto; }
+:root:has(.gh-mark[data-mark="chain"]){ --motif:radial-gradient(ellipse 8px 6px, transparent 0 5px, var(--gmo) 5.5px 7px, transparent 7.5px); --motif-size:20px 14px; }
+
+html body:has(.gh-mark[data-mark]){
+  background:
+    radial-gradient(1000px 480px at 50% -200px, var(--gglow), transparent 70%),
+    linear-gradient(180deg, transparent 0, var(--bg) 460px),
+    var(--motif, none),
+    var(--bg);
+  background-size:auto, auto, var(--motif-size, auto), auto;
+  background-repeat:no-repeat, no-repeat, repeat, no-repeat;}
+/* the game's name, in its colour drawn toward the theme's ink so it reads */
+html body:has(.gh-mark[data-mark]) .topbar .brand.logo .sub{
+  color:color-mix(in srgb, var(--gac) 45%, var(--ink));}
+/* links in the how-to tab and the footer take the game's colour as well,
+   drawn toward the ink so they read on the game's light in either theme */
+html body:has(.gh-mark[data-mark]) .foot a, html body:has(.gh-mark[data-mark]) .gjfoot a,
+html body:has(.gh-mark[data-mark]) .gj a{color:color-mix(in srgb, var(--gac) 45%, var(--ink));}
+/* the "?" sheet is the game's too */
+html body .rtgHowto-card{border-top:3px solid var(--gac, var(--line2));}
+html body .rtgHowto-title{color:color-mix(in srgb, var(--gac, var(--ink)) 45%, var(--ink));}
 
 /* The tools are one control, not four: ?, sound and theme share a single pill
    with hairlines between them. Adjacent-sibling selectors do the joining, so
@@ -564,5 +681,19 @@ html body .modesw:empty{min-height:46px;}
   #shuffleBtn::after{ inset:-9px -4px; }
   #btnClue::after, .tk-share::after{ inset:-7px -4px; }
   #rows .rrow button::after{ inset:-2px -5px; }
-  #prevClue::after, #nextClue::after{ inset:-4px -2px; }
+  #prevClue::after, #nextClue::after{ inset:-4px -3px; }
+  /* Phase 4: each of these measured 1 to 4px short of 44 */
+  .themeBtn::after, #themeBtn::after{ inset:-6px; }
+  #shuffleBtn::after{ inset:-10px -4px; }
+  #btnClue::after{ inset:-8px -4px; }
+  #streakStat::after, #streakChip::after{ inset:-7px -3px; }
+  #btnDir::after, #btnCheck::after, #btnReveal::after{ inset:-8px -3px -4px; }
+  /* The crossword's keys. Ten across a 375px phone is 37px a key with its
+     gap, so a key cannot be 44 wide; its hit area takes the whole gap around
+     it instead (the row gap is 5px, the row margin 6px), so every point of
+     the keyboard belongs to the nearest key and the height reaches 44. */
+  .krow .key{ position:relative; }
+  .krow .key::after{ content:""; position:absolute; inset:-2px -3px -3px; }
 }
+/* the game's name in the phone header is the way home: a 44px row */
+html body.rtggh .topbar .brand.logo{ min-height:44px; }

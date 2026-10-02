@@ -152,11 +152,14 @@
   var scrim=null, dismissed=false;
 
   function trialNotice(){
-    var m=meta(), name=(m&&m.name)||(window.RTGShare&&RTGShare.NAMES&&RTGShare.NAMES[GAME])||'this game';
-    var html='Your one free play of '+esc(name)+'. Once you start, that’s your go. '+
-      '<button type="button" id="rtgpgCardLine">See the Arcade Card</button>';
+    // the words live in gamehead.js, which draws this line before first paint
+    var html=(window.RTGGameHead && RTGGameHead.TRIAL) ||
+      ('Your one free play. It’s spent once you start. '+
+       '<button type="button" id="rtgpgCardLine">See the Arcade Card</button>');
     function put(){
-      var el=null;
+      var el=document.getElementById('rtgpgTrial');
+      // already drawn by gamehead.js during parse: only wire its button
+      if(el){ var b0=document.getElementById('rtgpgCardLine'); if(b0) b0.onclick=function(){ openCard('trial'); }; return; }
       if(window.RTGGameHead && RTGGameHead.notice) el=RTGGameHead.notice(html, { id:'rtgpgTrial' });
       else {
         var tb=document.querySelector('.topbar'); if(!tb||!tb.parentNode) return;

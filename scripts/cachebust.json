@@ -4,9 +4,13 @@
       "v": "3",
       "sha": "96ddcdb15ea90ca2"
     },
+    "/arcade/tokens.js": {
+      "v": "14",
+      "sha": "f3747d7b1403f64a"
+    },
     "/arcade/gamehead.js": {
-      "v": "2",
-      "sha": "3ac9d176769b8c77"
+      "v": "3",
+      "sha": "db824d134ddb6ef3"
     },
     "../match/entities.js": {
       "v": "12",
@@ -88,10 +92,6 @@
       "v": "1",
       "sha": "bfc89e7ef5333115"
     },
-    "/arcade/tokens.js": {
-      "v": "14",
-      "sha": "f3747d7b1403f64a"
-    },
     "/arcade/day.js": {
       "v": "3",
       "sha": "b439237ac07ec089"
@@ -161,16 +161,16 @@
       "sha": "dd07f766a98637ad"
     },
     "/arcade/demo.js": {
-      "v": "4",
-      "sha": "d277c7b4b177127f"
+      "v": "5",
+      "sha": "fa1bc6fdf5eef6ac"
     },
     "/arcade/pregame.js": {
-      "v": "28",
-      "sha": "11fecba27c0bcde7"
+      "v": "29",
+      "sha": "f81423d00da12af8"
     },
     "/arcade/howto.js": {
-      "v": "25",
-      "sha": "4cd550ccd6ea06c3"
+      "v": "26",
+      "sha": "4f304dc9b4be7abf"
     },
     "/arcade/teamcolors.js": {
       "v": "2",
@@ -239,8 +239,8 @@
       "sha": "492d83f0120cb5a0"
     },
     "/arcade/nav.js": {
-      "v": "3",
-      "sha": "e779f73f6de62243"
+      "v": "4",
+      "sha": "86490b3c6b8c1b84"
     },
     "/arcade/calendar.js": {
       "v": "15",
@@ -252,9 +252,13 @@
       "v": "3",
       "sha": "96ddcdb15ea90ca2"
     },
+    "/arcade/tokens.js": {
+      "v": "14",
+      "sha": "f3747d7b1403f64a"
+    },
     "/arcade/gamehead.js": {
-      "v": "2",
-      "sha": "3ac9d176769b8c77"
+      "v": "3",
+      "sha": "db824d134ddb6ef3"
     },
     "../match/entities.js": {
       "v": "12",
@@ -336,10 +340,6 @@
       "v": "1",
       "sha": "bfc89e7ef5333115"
     },
-    "/arcade/tokens.js": {
-      "v": "14",
-      "sha": "f3747d7b1403f64a"
-    },
     "/arcade/day.js": {
       "v": "3",
       "sha": "b439237ac07ec089"
@@ -405,16 +405,16 @@
       "sha": "dd07f766a98637ad"
     },
     "/arcade/demo.js": {
-      "v": "4",
-      "sha": "d277c7b4b177127f"
+      "v": "5",
+      "sha": "fa1bc6fdf5eef6ac"
     },
     "/arcade/pregame.js": {
-      "v": "28",
-      "sha": "11fecba27c0bcde7"
+      "v": "29",
+      "sha": "f81423d00da12af8"
     },
     "/arcade/howto.js": {
-      "v": "25",
-      "sha": "4cd550ccd6ea06c3"
+      "v": "26",
+      "sha": "4f304dc9b4be7abf"
     },
     "/arcade/type.js": {
       "v": "5",
@@ -426,9 +426,13 @@
     }
   },
   "arcade/chain/index.html": {
+    "/arcade/tokens.js": {
+      "v": "14",
+      "sha": "f3747d7b1403f64a"
+    },
     "/arcade/gamehead.js": {
-      "v": "2",
-      "sha": "3ac9d176769b8c77"
+      "v": "3",
+      "sha": "db824d134ddb6ef3"
     },
     "/arcade/franchise.js": {
       "v": "1",
@@ -437,10 +441,6 @@
     "/arcade/icons.js": {
       "v": "3",
       "sha": "96ddcdb15ea90ca2"
-    },
-    "/arcade/tokens.js": {
-      "v": "14",
-      "sha": "f3747d7b1403f64a"
     },
     "/arcade/day.js": {
       "v": "3",
@@ -495,12 +495,12 @@
       "sha": "492d83f0120cb5a0"
     },
     "/arcade/demo.js": {
-      "v": "4",
-      "sha": "d277c7b4b177127f"
+      "v": "5",
+      "sha": "fa1bc6fdf5eef6ac"
     },
     "/arcade/pregame.js": {
-      "v": "28",
-      "sha": "11fecba27c0bcde7"
+      "v": "29",
+      "sha": "f81423d00da12af8"
     },
     "/arcade/funnel.js": {
       "v": "14",
@@ -547,8 +547,8 @@
       "sha": "3c801e8a64f49dc8"
     },
     "/arcade/howto.js": {
-      "v": "25",
-      "sha": "4cd550ccd6ea06c3"
+      "v": "26",
+      "sha": "4f304dc9b4be7abf"
     }
   },
   "arcade/crossword/index.html": {
@@ -556,9 +556,13 @@
       "v": "3",
       "sha": "96ddcdb15ea90ca2"
     },
+    "/arcade/tokens.js": {
+      "v": "14",
+      "sha": "f3747d7b1403f64a"
+    },
     "/arcade/gamehead.js": {
-      "v": "2",
-      "sha": "3ac9d176769b8c77"
+      "v": "3",
+      "sha": "db824d134ddb6ef3"
     },
     "puzzles.js": {
       "v": "11",
@@ -656,10 +660,6 @@
       "v": "1",
       "sha": "bfc89e7ef5333115"
     },
-    "/arcade/tokens.js": {
-      "v": "14",
-      "sha": "f3747d7b1403f64a"
-    },
     "/arcade/day.js": {
       "v": "3",
       "sha": "b439237ac07ec089"
@@ -721,16 +721,16 @@
       "sha": "dd07f766a98637ad"
     },
     "/arcade/demo.js": {
-      "v": "4",
-      "sha": "d277c7b4b177127f"
+      "v": "5",
+      "sha": "fa1bc6fdf5eef6ac"
     },
     "/arcade/pregame.js": {
-      "v": "28",
-      "sha": "11fecba27c0bcde7"
+      "v": "29",
+      "sha": "f81423d00da12af8"
     },
     "/arcade/howto.js": {
-      "v": "25",
-      "sha": "4cd550ccd6ea06c3"
+      "v": "26",
+      "sha": "4f304dc9b4be7abf"
     }
   },
   "arcade/guess/index.html": {
@@ -738,9 +738,13 @@
       "v": "3",
       "sha": "96ddcdb15ea90ca2"
     },
+    "/arcade/tokens.js": {
+      "v": "14",
+      "sha": "f3747d7b1403f64a"
+    },
     "/arcade/gamehead.js": {
-      "v": "2",
-      "sha": "3ac9d176769b8c77"
+      "v": "3",
+      "sha": "db824d134ddb6ef3"
     },
     "../match/entities.js": {
       "v": "12",
@@ -822,10 +826,6 @@
       "v": "1",
       "sha": "bfc89e7ef5333115"
     },
-    "/arcade/tokens.js": {
-      "v": "14",
-      "sha": "f3747d7b1403f64a"
-    },
     "/arcade/day.js": {
       "v": "3",
       "sha": "b439237ac07ec089"
@@ -891,16 +891,16 @@
       "sha": "dd07f766a98637ad"
     },
     "/arcade/demo.js": {
-      "v": "4",
-      "sha": "d277c7b4b177127f"
+      "v": "5",
+      "sha": "fa1bc6fdf5eef6ac"
     },
     "/arcade/pregame.js": {
-      "v": "28",
-      "sha": "11fecba27c0bcde7"
+      "v": "29",
+      "sha": "f81423d00da12af8"
     },
     "/arcade/howto.js": {
-      "v": "25",
-      "sha": "4cd550ccd6ea06c3"
+      "v": "26",
+      "sha": "4f304dc9b4be7abf"
     },
     "/arcade/fact.js": {
       "v": "5",
@@ -912,9 +912,13 @@
       "v": "3",
       "sha": "96ddcdb15ea90ca2"
     },
+    "/arcade/tokens.js": {
+      "v": "14",
+      "sha": "f3747d7b1403f64a"
+    },
     "/arcade/gamehead.js": {
-      "v": "2",
-      "sha": "3ac9d176769b8c77"
+      "v": "3",
+      "sha": "db824d134ddb6ef3"
     },
     "../match/entities.js": {
       "v": "12",
@@ -963,10 +967,6 @@
     "/arcade/rosterstats.js": {
       "v": "4",
       "sha": "f5cc0f203ed248f5"
-    },
-    "/arcade/tokens.js": {
-      "v": "14",
-      "sha": "f3747d7b1403f64a"
     },
     "/arcade/day.js": {
       "v": "3",
@@ -1037,12 +1037,12 @@
       "sha": "d633f99672c5715c"
     },
     "/arcade/demo.js": {
-      "v": "4",
-      "sha": "d277c7b4b177127f"
+      "v": "5",
+      "sha": "fa1bc6fdf5eef6ac"
     },
     "/arcade/pregame.js": {
-      "v": "28",
-      "sha": "11fecba27c0bcde7"
+      "v": "29",
+      "sha": "f81423d00da12af8"
     },
     "/arcade/resultstats.js": {
       "v": "3",
@@ -1057,8 +1057,8 @@
       "sha": "bfc89e7ef5333115"
     },
     "/arcade/howto.js": {
-      "v": "25",
-      "sha": "4cd550ccd6ea06c3"
+      "v": "26",
+      "sha": "4f304dc9b4be7abf"
     }
   },
   "arcade/index.html": {
@@ -1111,8 +1111,8 @@
       "sha": "492d83f0120cb5a0"
     },
     "/arcade/nav.js": {
-      "v": "3",
-      "sha": "e779f73f6de62243"
+      "v": "4",
+      "sha": "86490b3c6b8c1b84"
     },
     "/arcade/calendar.js": {
       "v": "15",
@@ -1162,9 +1162,13 @@
       "v": "3",
       "sha": "96ddcdb15ea90ca2"
     },
+    "/arcade/tokens.js": {
+      "v": "14",
+      "sha": "f3747d7b1403f64a"
+    },
     "/arcade/gamehead.js": {
-      "v": "2",
-      "sha": "3ac9d176769b8c77"
+      "v": "3",
+      "sha": "db824d134ddb6ef3"
     },
     "entities.js": {
       "v": "12",
@@ -1238,10 +1242,6 @@
       "v": "1",
       "sha": "bfc89e7ef5333115"
     },
-    "/arcade/tokens.js": {
-      "v": "14",
-      "sha": "f3747d7b1403f64a"
-    },
     "/arcade/day.js": {
       "v": "3",
       "sha": "b439237ac07ec089"
@@ -1307,16 +1307,16 @@
       "sha": "dd07f766a98637ad"
     },
     "/arcade/demo.js": {
-      "v": "4",
-      "sha": "d277c7b4b177127f"
+      "v": "5",
+      "sha": "fa1bc6fdf5eef6ac"
     },
     "/arcade/pregame.js": {
-      "v": "28",
-      "sha": "11fecba27c0bcde7"
+      "v": "29",
+      "sha": "f81423d00da12af8"
     },
     "/arcade/howto.js": {
-      "v": "25",
-      "sha": "4cd550ccd6ea06c3"
+      "v": "26",
+      "sha": "4f304dc9b4be7abf"
     }
   },
   "arcade/oddone/index.html": {
@@ -1324,9 +1324,13 @@
       "v": "3",
       "sha": "96ddcdb15ea90ca2"
     },
+    "/arcade/tokens.js": {
+      "v": "14",
+      "sha": "f3747d7b1403f64a"
+    },
     "/arcade/gamehead.js": {
-      "v": "2",
-      "sha": "3ac9d176769b8c77"
+      "v": "3",
+      "sha": "db824d134ddb6ef3"
     },
     "../match/entities.js": {
       "v": "12",
@@ -1404,10 +1408,6 @@
       "v": "1",
       "sha": "bfc89e7ef5333115"
     },
-    "/arcade/tokens.js": {
-      "v": "14",
-      "sha": "f3747d7b1403f64a"
-    },
     "/arcade/day.js": {
       "v": "3",
       "sha": "b439237ac07ec089"
@@ -1469,16 +1469,16 @@
       "sha": "dd07f766a98637ad"
     },
     "/arcade/demo.js": {
-      "v": "4",
-      "sha": "d277c7b4b177127f"
+      "v": "5",
+      "sha": "fa1bc6fdf5eef6ac"
     },
     "/arcade/pregame.js": {
-      "v": "28",
-      "sha": "11fecba27c0bcde7"
+      "v": "29",
+      "sha": "f81423d00da12af8"
     },
     "/arcade/howto.js": {
-      "v": "25",
-      "sha": "4cd550ccd6ea06c3"
+      "v": "26",
+      "sha": "4f304dc9b4be7abf"
     },
     "/arcade/fact.js": {
       "v": "5",
@@ -1490,9 +1490,13 @@
       "v": "3",
       "sha": "96ddcdb15ea90ca2"
     },
+    "/arcade/tokens.js": {
+      "v": "14",
+      "sha": "f3747d7b1403f64a"
+    },
     "/arcade/gamehead.js": {
-      "v": "2",
-      "sha": "3ac9d176769b8c77"
+      "v": "3",
+      "sha": "db824d134ddb6ef3"
     },
     "../match/entities.js": {
       "v": "12",
@@ -1570,10 +1574,6 @@
       "v": "1",
       "sha": "bfc89e7ef5333115"
     },
-    "/arcade/tokens.js": {
-      "v": "14",
-      "sha": "f3747d7b1403f64a"
-    },
     "/arcade/day.js": {
       "v": "3",
       "sha": "b439237ac07ec089"
@@ -1639,22 +1639,26 @@
       "sha": "dd07f766a98637ad"
     },
     "/arcade/demo.js": {
-      "v": "4",
-      "sha": "d277c7b4b177127f"
+      "v": "5",
+      "sha": "fa1bc6fdf5eef6ac"
     },
     "/arcade/pregame.js": {
-      "v": "28",
-      "sha": "11fecba27c0bcde7"
+      "v": "29",
+      "sha": "f81423d00da12af8"
     },
     "/arcade/howto.js": {
-      "v": "25",
-      "sha": "4cd550ccd6ea06c3"
+      "v": "26",
+      "sha": "4f304dc9b4be7abf"
     }
   },
   "arcade/rollcall/index.html": {
+    "/arcade/tokens.js": {
+      "v": "14",
+      "sha": "f3747d7b1403f64a"
+    },
     "/arcade/gamehead.js": {
-      "v": "2",
-      "sha": "3ac9d176769b8c77"
+      "v": "3",
+      "sha": "db824d134ddb6ef3"
     },
     "/arcade/franchise.js": {
       "v": "1",
@@ -1663,10 +1667,6 @@
     "/arcade/icons.js": {
       "v": "3",
       "sha": "96ddcdb15ea90ca2"
-    },
-    "/arcade/tokens.js": {
-      "v": "14",
-      "sha": "f3747d7b1403f64a"
     },
     "/arcade/day.js": {
       "v": "3",
@@ -1721,12 +1721,12 @@
       "sha": "492d83f0120cb5a0"
     },
     "/arcade/demo.js": {
-      "v": "4",
-      "sha": "d277c7b4b177127f"
+      "v": "5",
+      "sha": "fa1bc6fdf5eef6ac"
     },
     "/arcade/pregame.js": {
-      "v": "28",
-      "sha": "11fecba27c0bcde7"
+      "v": "29",
+      "sha": "f81423d00da12af8"
     },
     "/arcade/funnel.js": {
       "v": "14",
@@ -1773,14 +1773,18 @@
       "sha": "3c801e8a64f49dc8"
     },
     "/arcade/howto.js": {
-      "v": "25",
-      "sha": "4cd550ccd6ea06c3"
+      "v": "26",
+      "sha": "4f304dc9b4be7abf"
     }
   },
   "arcade/sportegories/index.html": {
+    "/arcade/tokens.js": {
+      "v": "14",
+      "sha": "f3747d7b1403f64a"
+    },
     "/arcade/gamehead.js": {
-      "v": "2",
-      "sha": "3ac9d176769b8c77"
+      "v": "3",
+      "sha": "db824d134ddb6ef3"
     },
     "/arcade/franchise.js": {
       "v": "1",
@@ -1789,10 +1793,6 @@
     "/arcade/icons.js": {
       "v": "3",
       "sha": "96ddcdb15ea90ca2"
-    },
-    "/arcade/tokens.js": {
-      "v": "14",
-      "sha": "f3747d7b1403f64a"
     },
     "/arcade/day.js": {
       "v": "3",
@@ -1843,12 +1843,12 @@
       "sha": "492d83f0120cb5a0"
     },
     "/arcade/demo.js": {
-      "v": "4",
-      "sha": "d277c7b4b177127f"
+      "v": "5",
+      "sha": "fa1bc6fdf5eef6ac"
     },
     "/arcade/pregame.js": {
-      "v": "28",
-      "sha": "11fecba27c0bcde7"
+      "v": "29",
+      "sha": "f81423d00da12af8"
     },
     "/arcade/result.js": {
       "v": "2",
@@ -1899,8 +1899,8 @@
       "sha": "fe10a391d84f3713"
     },
     "/arcade/howto.js": {
-      "v": "25",
-      "sha": "4cd550ccd6ea06c3"
+      "v": "26",
+      "sha": "4f304dc9b4be7abf"
     }
   },
   "arcade/table/index.html": {
@@ -1908,9 +1908,13 @@
       "v": "3",
       "sha": "96ddcdb15ea90ca2"
     },
+    "/arcade/tokens.js": {
+      "v": "14",
+      "sha": "f3747d7b1403f64a"
+    },
     "/arcade/gamehead.js": {
-      "v": "2",
-      "sha": "3ac9d176769b8c77"
+      "v": "3",
+      "sha": "db824d134ddb6ef3"
     },
     "../match/entities.js": {
       "v": "12",
@@ -1996,10 +2000,6 @@
       "v": "1",
       "sha": "bfc89e7ef5333115"
     },
-    "/arcade/tokens.js": {
-      "v": "14",
-      "sha": "f3747d7b1403f64a"
-    },
     "/arcade/day.js": {
       "v": "3",
       "sha": "b439237ac07ec089"
@@ -2061,16 +2061,16 @@
       "sha": "dd07f766a98637ad"
     },
     "/arcade/demo.js": {
-      "v": "4",
-      "sha": "d277c7b4b177127f"
+      "v": "5",
+      "sha": "fa1bc6fdf5eef6ac"
     },
     "/arcade/pregame.js": {
-      "v": "28",
-      "sha": "11fecba27c0bcde7"
+      "v": "29",
+      "sha": "f81423d00da12af8"
     },
     "/arcade/howto.js": {
-      "v": "25",
-      "sha": "4cd550ccd6ea06c3"
+      "v": "26",
+      "sha": "4f304dc9b4be7abf"
     },
     "/arcade/type.js": {
       "v": "5",

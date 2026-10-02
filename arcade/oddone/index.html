@@ -31,7 +31,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:ital,wght@0,600;0,700;0,800;0,900;1,800;1,900&family=Press+Start+2P&display=swap" rel="stylesheet" />
-<link rel="stylesheet" href="/arcade/arcade.css?v=6" />
+<link rel="stylesheet" href="/arcade/arcade.css?v=7" />
 <script src="/arcade/icons.js?v=3"></script>
 <style>
   :root{
@@ -213,7 +213,8 @@ window.GA_ID='G-L29P5MRWKE';
   s.src='https://www.googletagmanager.com/gtag/js?id='+encodeURIComponent(id);
   document.head.appendChild(s);})();
 </script>
-<script src="/arcade/gamehead.js?v=2"></script>
+<script src="/arcade/tokens.js?v=14"></script>
+<script src="/arcade/gamehead.js?v=3"></script>
 </head>
 <body>
 <div class="wrap">
@@ -236,7 +237,7 @@ window.GA_ID='G-L29P5MRWKE';
 
   <div class="runbar">
     <div class="big" id="runN">0</div>
-    <div class="rl"><span class="k">Points today</span><span class="v" id="runSub">Spot it for 1. Name the link for 1 more. Miss once and you’re out.</span></div>
+    <div class="rl"><span class="k">Points today</span><span class="v" id="runSub">1 to spot it, 1 for the link. One miss ends it.</span></div>
     <div class="best"><span class="n" id="bestRun">0</span><span class="c">Best</span></div>
   </div>
 
@@ -244,7 +245,7 @@ window.GA_ID='G-L29P5MRWKE';
   <div class="subprompt" id="subprompt"></div>
   <div class="choices" id="choices"></div>
   <div class="factline" id="factline" aria-live="polite"></div>
-  <div class="hintline" id="hintline">Tap the name that doesn’t belong. Then name the link.</div>
+  <div class="hintline" id="hintline">Tap the one that doesn’t belong.</div>
 
   <div class="lb" id="lb">
     <h3>Daily Leaderboard <span class="lb-pill">Sample</span></h3>
@@ -331,7 +332,6 @@ window.GA_ID='G-L29P5MRWKE';
 <script src="/arcade/review.js?v=1" defer></script>
 <script src="/arcade/challenge.js?v=4"></script>
 <script src="/arcade/modal-a11y.js?v=1"></script>
-<script src="/arcade/tokens.js?v=14"></script>
 <script src="/arcade/day.js?v=3"></script>
 <script src="/arcade/dayroll.js?v=1"></script>
 <script src="/arcade/archive.js?v=2"></script>
@@ -348,9 +348,9 @@ window.GA_ID='G-L29P5MRWKE';
 <script src="/arcade/gamemarks.js?v=4"></script>
 <script src="/arcade/calendar.js?v=15"></script>
 <script src="/arcade/archivecta.js?v=2"></script>
-<script src="/arcade/demo.js?v=4"></script>
-<script src="/arcade/pregame.js?v=28"></script>
-<script src="/arcade/howto.js?v=25"></script>
+<script src="/arcade/demo.js?v=5"></script>
+<script src="/arcade/pregame.js?v=29"></script>
+<script src="/arcade/howto.js?v=26"></script>
 <script src="/arcade/fact.js?v=5"></script>
 <script>
 (function(){
@@ -748,9 +748,9 @@ window.GA_ID='G-L29P5MRWKE';
   function fmt(s){ s=Math.max(0,Math.floor(s)); return Math.floor(s/60)+':'+String(s%60).padStart(2,'0'); }
 
   function updateHint(){ var h=document.getElementById('hintline'); if(!h) return;
-    if(ARCHIVE){ h.textContent='Tap the name that doesn’t belong. · Archive · your personal best'; return; }
+    if(ARCHIVE){ h.textContent='Tap the one that doesn’t belong. · Archive · your personal best'; return; }
     var lbl = window.RTGTokens ? (' · '+RTGTokens.hint(GAME)) : '';
-    h.textContent='Tap the name that doesn’t belong.'+lbl; }
+    h.textContent='Tap the one that doesn’t belong.'+lbl; }
   function beginAttempt(){
     var isReplay = servedDaily || (!ARCHIVE && window.RTGTokens && RTGTokens.playsOf(GAME)>0);
     if(isReplay && !ARCHIVE) clearResume();   // replays are practice: never resumable

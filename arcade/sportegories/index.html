@@ -31,7 +31,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:ital,wght@0,600;0,700;0,800;0,900;1,800;1,900&family=Press+Start+2P&display=swap" rel="stylesheet" />
-<link rel="stylesheet" href="/arcade/arcade.css?v=6" />
+<link rel="stylesheet" href="/arcade/arcade.css?v=7" />
 <style>
   :root{
     --bg:#071426; --card:#10233A; --card2:#162B44; --card3:#1A3350;
@@ -89,7 +89,7 @@
   .hero{background:var(--card); border:1px solid var(--line2); border-radius:16px; padding:22px 20px; box-shadow:var(--shadow); text-align:center;}
   .hero h1{font-family:var(--hero); font-weight:400; font-size:clamp(34px,9vw,52px); line-height:.95; margin:0 0 10px; letter-spacing:.02em;}
   .hero h1 b{color:var(--spT); font-weight:400;}
-  .hero p{margin:0 auto 18px; max-width:44ch; font-size:14px; color:var(--mut); line-height:1.5;}
+  .hero p{margin:0 auto 18px; max-width:44ch; font-size:16px; color:var(--mut); line-height:1.5;}
   .rules{display:grid; gap:9px; text-align:left; margin:0 auto 20px; max-width:400px;}
   .rule{display:flex; gap:10px; align-items:flex-start; font-size:13px; color:var(--ink); font-weight:600;}
   .rule .b{flex:0 0 22px; height:22px; border-radius:6px; background:var(--sp); color:var(--onAccent,#160B02); display:flex; align-items:center; justify-content:center; font-weight:900; font-size:12px;}
@@ -267,7 +267,8 @@ window.GA_ID='G-L29P5MRWKE';
   s.src='https://www.googletagmanager.com/gtag/js?id='+encodeURIComponent(id);
   document.head.appendChild(s);})();
 </script>
-<script src="/arcade/gamehead.js?v=2"></script>
+<script src="/arcade/tokens.js?v=14"></script>
+<script src="/arcade/gamehead.js?v=3"></script>
 </head>
 <body>
 <div class="wrap">
@@ -289,7 +290,7 @@ window.GA_ID='G-L29P5MRWKE';
   <section class="panel on" id="panelSetup">
     <div class="hero">
       <h1>Sport<b>egories</b></h1>
-      <p>One letter. Eight categories. Two minutes. Name a player for each.</p>
+      <p>One letter. Eight categories. Two minutes.</p>
       <button class="gobtn" id="startBtn" type="button">Start today’s puzzle</button>
       <button class="ghost" id="practiceBtn" type="button">Random practice puzzle</button>
       <div style="margin-top:14px;font-size:11.5px;color:var(--dim)" id="bestLine"></div>
@@ -385,7 +386,6 @@ window.GA_ID='G-L29P5MRWKE';
 
 <script src="/arcade/franchise.js?v=1"></script>
 <script src="/arcade/icons.js?v=3"></script>
-<script src="/arcade/tokens.js?v=14"></script>
 <script src="/arcade/day.js?v=3"></script>
 <script src="/arcade/dayroll.js?v=1"></script>
 <!-- archive.js reads RTGTokens.isPro() as it parses, so it must come after tokens.js -->
@@ -403,8 +403,8 @@ window.GA_ID='G-L29P5MRWKE';
 <script src="/arcade/auth-ui.js?v=9"></script>
 <script src="/arcade/card.js?v=23"></script>
 <script src="/arcade/referral.js?v=12"></script>
-<script src="/arcade/demo.js?v=4"></script>
-<script src="/arcade/pregame.js?v=28"></script>
+<script src="/arcade/demo.js?v=5"></script>
+<script src="/arcade/pregame.js?v=29"></script>
 <script src="/arcade/result.js?v=2"></script>
 <script src="/arcade/funnel.js?v=14"></script>
 <script src="/arcade/share.js?v=11"></script>
@@ -954,7 +954,7 @@ window.GA_ID='G-L29P5MRWKE';
   })();
 })();
 </script>
-<script src="/arcade/howto.js?v=25"></script>
+<script src="/arcade/howto.js?v=26"></script>
 <script>if (window.RTGHowto) RTGHowto.init('sportegories');</script>
 </body>
 </html>

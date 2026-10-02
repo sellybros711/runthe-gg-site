@@ -31,7 +31,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:ital,wght@0,600;0,700;0,800;0,900;1,800;1,900&family=Press+Start+2P&display=swap" rel="stylesheet" />
-<link rel="stylesheet" href="/arcade/arcade.css?v=6" />
+<link rel="stylesheet" href="/arcade/arcade.css?v=7" />
 <script src="/arcade/icons.js?v=3"></script>
 <style>
   :root{
@@ -129,7 +129,8 @@
   .pcard .nm{font-weight:900; font-size:clamp(19px,3.4vh,32px); line-height:1.1; color:var(--ink);}
   .pcard .meta{display:flex; flex-direction:column; align-items:center; gap:3px; font-size:clamp(11px,1.7vh,14px); font-weight:800; letter-spacing:.03em; color:var(--mut); text-transform:uppercase;}
   .pcard .meta .era{color:var(--goldT); font-weight:900; letter-spacing:.09em;}
-  .pcard .meta .tm{color:var(--mut); font-weight:800;}
+  :root[data-theme="light"] .pcard .meta .era{color:#6B4900;}
+  .pcard .meta .tm{color:var(--ink); font-weight:800;}
   .pcard .meta .tm.more{color:var(--dim); font-weight:700;}
   .pcard .num{font-family:var(--hero); font-weight:400; font-size:clamp(34px,6vh,60px); line-height:1; color:var(--goldT);
     height:0; opacity:0; transform:translateY(6px) scale(.92); transform-origin:center top;
@@ -283,7 +284,8 @@ window.GA_ID='G-L29P5MRWKE';
   s.src='https://www.googletagmanager.com/gtag/js?id='+encodeURIComponent(id);
   document.head.appendChild(s);})();
 </script>
-<script src="/arcade/gamehead.js?v=2"></script>
+<script src="/arcade/tokens.js?v=14"></script>
+<script src="/arcade/gamehead.js?v=3"></script>
 </head>
 <body>
 <div class="wrap">
@@ -306,7 +308,7 @@ window.GA_ID='G-L29P5MRWKE';
 
   <div class="runbar">
     <div class="rstat cur"><span class="big" id="runN">0</span><span class="lab">In a row</span></div>
-    <div class="rl"><span class="v" id="runSub">Exact is a bullseye. Within 2 still counts. You get 1 save, then you’re out.</span><span class="shieldpill" id="shieldPill">Save ready</span></div>
+    <div class="rl"><span class="v" id="runSub">Within 2 counts. One save, then you’re out.</span><span class="shieldpill" id="shieldPill">Save ready</span></div>
     <div class="rstat best"><span class="big" id="bestRun">0</span><span class="lab">Best ever</span></div>
   </div>
 
@@ -321,7 +323,7 @@ window.GA_ID='G-L29P5MRWKE';
     </div>
     <div class="subprompt" id="subprompt"></div>
     <div class="factline" id="factline" aria-live="polite"></div>
-    <div class="hintline" id="hintline">Type the number. Within 2 still counts.</div>
+    <div class="hintline" id="hintline">Type the number.</div>
   </div>
 
   <div class="lb" id="lb">
@@ -411,7 +413,6 @@ window.GA_ID='G-L29P5MRWKE';
 <script src="/arcade/review.js?v=1" defer></script>
 <script src="/arcade/challenge.js?v=4"></script>
 <script src="/arcade/modal-a11y.js?v=1"></script>
-<script src="/arcade/tokens.js?v=14"></script>
 <script src="/arcade/day.js?v=3"></script>
 <script src="/arcade/dayroll.js?v=1"></script>
 <script src="/arcade/archive.js?v=2"></script>
@@ -428,9 +429,9 @@ window.GA_ID='G-L29P5MRWKE';
 <script src="/arcade/gamemarks.js?v=4"></script>
 <script src="/arcade/calendar.js?v=15"></script>
 <script src="/arcade/archivecta.js?v=2"></script>
-<script src="/arcade/demo.js?v=4"></script>
-<script src="/arcade/pregame.js?v=28"></script>
-<script src="/arcade/howto.js?v=25"></script>
+<script src="/arcade/demo.js?v=5"></script>
+<script src="/arcade/pregame.js?v=29"></script>
+<script src="/arcade/howto.js?v=26"></script>
 <script src="/arcade/type.js?v=5"></script>
 <script src="/arcade/fact.js?v=5"></script>
 <script>
@@ -701,9 +702,9 @@ window.GA_ID='G-L29P5MRWKE';
   function fmt(s){ s=Math.max(0,Math.floor(s)); return Math.floor(s/60)+':'+String(s%60).padStart(2,'0'); }
 
   function updateHint(){ var h=document.getElementById('hintline'); if(!h) return;
-    if(ARCHIVE){ h.textContent='Type the number. Within 2 still counts. · Archive · your personal best'; return; }
+    if(ARCHIVE){ h.textContent='Type the number. · Archive · your personal best'; return; }
     var lbl = window.RTGTokens ? (' · '+RTGTokens.hint(GAME)) : '';
-    h.textContent='Type the number. Within 2 still counts.'+lbl; }
+    h.textContent='Type the number.'+lbl; }
   function beginAttempt(){
     // Ranked first play = the daily board; every replay is a fresh random board.
     var isReplay = servedDaily || (!ARCHIVE && window.RTGTokens && RTGTokens.playsOf(GAME)>0);

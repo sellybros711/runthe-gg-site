@@ -38,7 +38,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:ital,wght@0,600;0,700;0,800;0,900;1,800;1,900&family=Rubik:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
-<link rel="stylesheet" href="/arcade/arcade.css?v=6" />
+<link rel="stylesheet" href="/arcade/arcade.css?v=7" />
 <script src="/arcade/icons.js?v=3"></script>
 <style>
 :root{
@@ -117,7 +117,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 .inforow{display:flex; align-items:center; justify-content:space-between; gap:8px;
   background:var(--card); border:1px solid var(--line2); border-radius:12px; box-shadow:var(--shadow);
   padding:9px 13px; margin-bottom:12px;}
-.inforow .seg{font-family:var(--pix); font-size:10px; letter-spacing:.4px; font-weight:800; color:var(--ink);}
+.inforow .seg{font-family:var(--pix); font-size:10px; letter-spacing:.4px; font-weight:800; color:var(--ink); text-transform:uppercase;}
 .inforow .seg small{color:var(--mut); font-weight:700;}
 .inforow .sep{width:1px; height:18px; background:var(--line2);}
 .inforow .size{color:var(--newsT);}
@@ -148,14 +148,14 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
   font-family:var(--pix); font-weight:800; user-select:none; cursor:pointer; text-transform:uppercase;
   color:var(--cell-ink); transition:background .12s ease;}
 .cell.block{background:#0b1522; cursor:default;}
-.cell .num{position:absolute; top:2px; left:3px; font-size:9px; font-weight:800; color:rgba(10,20,32,.5); line-height:1;}
+.cell .num{position:absolute; top:2px; left:3px; font-size:9px; font-weight:800; color:rgba(10,20,32,.74); line-height:1;}
 .cell .num{font-size:max(calc(17cqw / var(--n,5)), 7px);}
 .cell .ch{font-size:min(6.4vw,30px); line-height:1; color:var(--cell-ink);}
 .cell .ch{font-size:calc(56cqw / var(--n,5));}
 .cell.inword{background:var(--word);}
-.cell.inword .num{color:rgba(10,20,32,.5);}
+.cell.inword .num{color:rgba(10,20,32,.74);}
 .cell.sel{background:var(--sel); color:var(--cell-ink);}
-.cell.sel .num{color:rgba(10,20,32,.7);}
+.cell.sel .num{color:rgba(10,20,32,.82);}
 .cell.good .ch{color:#1f8b39;}
 .cell.bad .ch{color:#d23a22;}
 .cell.sel.good .ch,.cell.sel.bad .ch{color:var(--cell-ink);}
@@ -182,7 +182,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 .cluebar .arw:active{background:var(--line2);}
 .cluebar .body{flex:1; min-width:0; padding:9px 12px; display:flex; flex-direction:column; justify-content:center;}
 .cluebar .tag{font-family:var(--pix); font-size:8px; letter-spacing:1px; font-weight:800; color:var(--newsT); text-transform:uppercase;}
-.cluebar .txt{font-size:15px; font-weight:600; line-height:1.3; color:var(--ink);}
+.cluebar .txt{font-size:16px; font-weight:600; line-height:1.3; color:var(--ink);}
 
 /* ---------- controls ---------- */
 .controls{display:flex; gap:8px; margin-bottom:14px;}
@@ -202,10 +202,10 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 .list h3{font-family:var(--pix); font-size:11px; letter-spacing:1px; font-weight:800; color:var(--newsT);
   margin:0 0 6px; text-transform:uppercase;}
 .list ol{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:2px;}
-.list li{display:flex; gap:7px; padding:6px 8px; border-radius:8px; font-size:13px; line-height:1.25; cursor:pointer; color:var(--ink);}
+.list li{display:flex; gap:7px; padding:6px 8px; border-radius:8px; font-size:16px; line-height:1.25; cursor:pointer; color:var(--ink);}
 .list li .n{font-weight:800; color:var(--mut); flex:0 0 auto; min-width:16px; text-align:right;}
 .list li.active{background:var(--word); color:var(--cell-ink);}
-.list li.active .n{color:rgba(10,20,32,.6);}
+.list li.active .n{color:rgba(10,20,32,.8);}
 .list li.done .t{color:var(--dim); text-decoration:line-through;}
 
 /* On a phone the masthead was eating roughly a third of the screen before the
@@ -228,10 +228,10 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
   .playbar{padding-top:7px;}
   .playbar .cluebar{margin-bottom:6px;}
   .playbar .cluebar .body{padding:7px 11px;}
-  .playbar .cluebar .txt{font-size:14px;}
+  .playbar .cluebar .txt{font-size:16px;}
   .playbar .controls{margin-bottom:4px;}
   .playbar .controls button{padding:8px 4px; font-size:11.5px;}
-  .playbar .key{height:38px;}
+  .playbar .key{height:39px;}
   .playbar .krow{margin-bottom:5px;}
 }
 
@@ -361,6 +361,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
       grid-template-areas:
         "top   top"
         "title title"
+        "line  lb"
         "info  lb"
         "play  lb"
         "board lb"
@@ -369,6 +370,10 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
     .wrap > .topbar{ grid-area:top; }
     .wrap > .a-gametitle{ grid-area:title; }
     .wrap > .inforow{ grid-area:info; }
+    .wrap > .rtggh-line{ grid-area:line; text-align:left; }
+    /* the clue bar is drawn two lines tall before the first clue lands, so
+       filling it in does not push the board down (it moved it 21px) */
+    .playbar .cluebar .txt{ min-height:2.6em; }
     .wrap > .playbar{ grid-area:play; position:static; margin:0; padding:0;
       background:none; border-top:0; box-shadow:none; }
     .wrap > .board-wrap{ grid-area:board; }
@@ -403,7 +408,8 @@ window.GA_ID='G-L29P5MRWKE';
   s.src='https://www.googletagmanager.com/gtag/js?id='+encodeURIComponent(id);
   document.head.appendChild(s);})();
 </script>
-<script src="/arcade/gamehead.js?v=2"></script>
+<script src="/arcade/tokens.js?v=14"></script>
+<script src="/arcade/gamehead.js?v=3"></script>
 </head>
 <body>
 <div class="wrap">
@@ -435,6 +441,9 @@ window.GA_ID='G-L29P5MRWKE';
     <span class="seg clock" aria-label="Time"><span class="n" id="timerN">0:00</span></span>
   </div>
 
+  <!-- the one line of instruction, in the markup so it is there at first
+       paint (gamehead.js styles it; injected, it pushed the board 21px) -->
+  <p class="rtggh-line">Tap a square and type. Tap twice to switch.</p>
 
   <div class="board-wrap">
     <div class="board" id="board" role="grid" aria-label="Crossword grid"></div>
@@ -585,7 +594,6 @@ window.GA_ID='G-L29P5MRWKE';
 <script src="/arcade/review.js?v=1" defer></script>
 <script src="/arcade/challenge.js?v=4"></script>
 <script src="/arcade/modal-a11y.js?v=1"></script>
-<script src="/arcade/tokens.js?v=14"></script>
 <script src="/arcade/day.js?v=3"></script>
 <script src="/arcade/dayroll.js?v=1"></script>
 <script src="/arcade/archive.js?v=2"></script>
@@ -602,9 +610,9 @@ window.GA_ID='G-L29P5MRWKE';
 <script src="/arcade/gamemarks.js?v=4"></script>
 <script src="/arcade/calendar.js?v=15"></script>
 <script src="/arcade/archivecta.js?v=2"></script>
-<script src="/arcade/demo.js?v=4"></script>
-<script src="/arcade/pregame.js?v=28"></script>
-<script src="/arcade/howto.js?v=25"></script>
+<script src="/arcade/demo.js?v=5"></script>
+<script src="/arcade/pregame.js?v=29"></script>
+<script src="/arcade/howto.js?v=26"></script>
 <script>
 (function(){
   "use strict";
