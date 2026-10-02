@@ -232,6 +232,9 @@
     }
     function key(ev) {
       if (Date.now() - t0 < 300) return;
+      // a space typed into a text field is a space, not "next"
+      var t = ev.target, tag = (t && t.tagName) || '';
+      if (/^(INPUT|TEXTAREA|SELECT)$/.test(tag) || (t && t.isContentEditable)) return;
       if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); go(); }
     }
     document.addEventListener('pointerdown', tap, true);

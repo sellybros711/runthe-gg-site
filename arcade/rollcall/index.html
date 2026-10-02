@@ -655,7 +655,8 @@ window.GA_ID='G-L29P5MRWKE';
     }
     checking = true;
     message('Checking…', 'warn');
-    TC.onClubIn(raw, D.teams[board.team], board.year, sportOf(board))   // the live record files a club under one name for all its years.then(function(r){
+    // the raw club name: the live record files a club under one name for all its years
+    TC.onClubIn(raw, D.teams[board.team], board.year, sportOf(board)).then(function(r){
       checking = false;
       if(done) return;
       if(r && r.ok === true){

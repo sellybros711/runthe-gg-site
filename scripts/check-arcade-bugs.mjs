@@ -47,6 +47,27 @@ async function pastTrialGate(p){
   if (go) { await go.click(); await sleep(500); }
 }
 
+/* ------------------------------------------------------------------ syntax */
+/* Every arcade page carries its game in an inline script, and one stray token
+   kills the whole game with nothing louder than a console error. That shipped
+   once on this branch (a comment dropped into the middle of a promise chain
+   took Roll Call down), so every inline block is compiled here, no browser. */
+if ('syntax'.includes(only) || !only) {
+  R.section('Every arcade script compiles');
+  const { readFileSync, readdirSync, statSync } = await import('node:fs');
+  const vm = await import('node:vm');
+  const files = [];
+  (function walk(d){ for (const f of readdirSync(d)) { const p = d + '/' + f; if (statSync(p).isDirectory()) walk(p); else if (/\.(html|js)$/.test(f)) files.push(p); } })('arcade');
+  let n = 0; const bad = [];
+  for (const f of files) {
+    const s = readFileSync(f, 'utf8');
+    const blocks = f.endsWith('.js') ? [[s, 1]] : [...s.matchAll(/<script(?![^>]*\bsrc=)(?![^>]*type="application\/ld\+json")[^>]*>([\s\S]*?)<\/script>/g)]
+      .map(m => [m[1], s.slice(0, m.index).split('\n').length]);
+    for (const [code, line] of blocks) { n++; try { new vm.Script(code, { filename: f }); } catch (e) { bad.push(f + ':' + line + ' ' + e.message); } }
+  }
+  R.ok(n > 50 && bad.length === 0, 'all ' + n + ' arcade scripts compile', bad.slice(0, 5).join(' | '));
+}
+
 /* ------------------------------------------------------------- bugs 1 and 2 */
 if ('lockout'.includes(only) || !only) {
   R.section('Bug 1: leaving an unfinished game resumes it, it does not lock you out');
@@ -82,7 +103,8 @@ if ('lockout'.includes(only) || !only) {
     // a wrong pick ends an Alma Mater run: that is completion
     await p.evaluate(() => { const r = document.querySelectorAll('#choices .choice'); for (const b of r) { if (!b.classList.contains('correct')) { b.click(); return; } } });
     await p.click('#choices .choice >> nth=0').catch(() => {});
-    await sleep(3200);
+    // the fact line holds until a tap (or 4 seconds): tap past it, as a player would
+    await sleep(700); await p.mouse.click(5, 300); await sleep(1500);
     const c2 = await chip();
     const done = await p.evaluate(() => RTGTokens.inProgress('almamater'));
     R.ok(!done && /3 games left/.test(c2), 'finishing the game drops it', c2);
@@ -252,7 +274,12 @@ if ('review'.includes(only) || !only) {
       const done = await p.evaluate(() => { const s = document.getElementById('scrim'); return s && !s.classList.contains('hidden'); });
       if (done) break;
       const n = String((i * 37 + 3) % 100); typed.push('#' + n);
-      await p.fill('#answerIn', n); await p.click('#answerGo'); await sleep(2600);
+      await p.fill('#answerIn', n); await p.click('#answerGo'); await sleep(700);
+      // the fact line holds the next question until a tap: tap past it
+      await p.mouse.click(5, 300);
+      await p.waitForFunction(() => { const s = document.getElementById('scrim'), i = document.getElementById('answerIn');
+        return (s && !s.classList.contains('hidden')) || (i && !i.disabled); }, null, { timeout: 8000 }).catch(() => {});
+      await sleep(300);
     }
     await sleep(1200);
     const log = await p.evaluate(() => { const r = RTGReview.read('table'); return r ? r.rows : null; });
