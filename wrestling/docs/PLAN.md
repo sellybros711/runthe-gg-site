@@ -142,6 +142,15 @@ tagged real or in character. Events take the week's scene slot. Measured over 15
 186 of the 351 play (against 30 scenes before); the rest wait on a specific earlier choice
 or on Phase D's origins and school. `verify.mjs` holds the files to a fresh build.
 
+**C2 is in: the memory.** Every catalog choice is stored with its year (`c.ev.mem`, keyed by
+flag and by event id). The compiler collects the flags a row recalls, from its conditions and
+from setup prose like "he quotes x_...", into `recall`, and strips flag names out of the text a
+player reads. When a later event names one, the card quotes the old choice back ("3 years ago,
+you chose: ..."). A choice some later event will recall says "They will remember this".
+Saves from before C2 hold flags without the words, so those simply quote nothing.
+`verify.mjs` sets a flag, opens the event that recalls it, and checks the quote and that no
+flag name reaches the screen. Over 150 careers, 3,976 of 11,818 event plays (a third) quote an earlier choice back.
+
 Still out: every career wins some title (the indie belt is too easy) and every career has a
 long injury. The simulator now signs up the ladder and its `rotate` policy trains the weakest
 key stat, because a policy that never moves up measures the policy rather than the game.

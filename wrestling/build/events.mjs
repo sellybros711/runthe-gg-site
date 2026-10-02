@@ -50,14 +50,30 @@ function atom(t) {
   if ((m = t.match(/^(\d+) (?:indie |pro |tv |televised )?matches/))) return { s: 'matches', op: '>=', v: +m[1] };
   return null;
 }
+/* C2, the memory. A flag a row names (as a condition, or in its setup prose as
+   "he quotes x_...") is something the page can quote back: the choice that set
+   it, and the year. Flag names never reach the screen, so prose loses them. */
+const FLAGS_IN = /\b(?:x|a|p|k|e|h|o|r)_[a-z0-9_]+(?:\.[a-z0-9]+)?\b/g;
+function cleanProse(t) {
+  t = t.replace(/\([^)]*\b(?:x|a|p|k|e|h|o|r)_[a-z0-9_]+[^)]*\)/g, '');   // "(he quotes x_a or x_b)"
+  t = t.replace(/memory payoff:\s*/i, '');
+  const F = '(?:x|a|p|k|e|h|o|r)_[a-z0-9_.]+';
+  t = t.replace(new RegExp(`\\b(brings up|quotes|remembers|mentions)\\s+${F}(?:\\s*(?:,|or|and)\\s*${F})*`, 'g'), '$1 the old days');
+  t = t.replace(/\b(?:if|the one from|unless|and|or|not)\s+(?:x|a|p|k|e|h|o|r)_[a-z0-9_.]+(?:\s+(?:set|resolved|done))?/g, '');
+  t = t.replace(/reads every \S+ flag/g, 'remembers everything');
+  t = t.replace(new RegExp(`${F}(?:\\s+(?:set|resolved|done))?`, 'g'), '');
+  t = t.replace(/\s{2,}/g, ' ').replace(/\s+([,.;:])/g, '$1').replace(/^[\s,;:]+|[\s,;:]+$/g, '');
+  return /[a-z]{3}/i.test(t) && !/^(or|and|years later)$/i.test(t) ? t : '';
+}
 function needs(raw) {
-  const all = [], prose = [];
+  const all = [], prose = [], recall = new Set();
+  (raw.match(FLAGS_IN) || []).forEach(f => recall.add(f));
   raw.split(/,\s*|;\s*/).forEach(part => {
     const alts = part.split(/\s+or\s+/).map(atom);
-    if (part.trim() && alts.every(Boolean)) all.push(alts.length === 1 ? alts[0] : { any: alts });
-    else if (part.trim()) { prose.push(part.trim()); if (/[a-z]_[a-z]|[<>]=?\d/.test(part)) tally(unread.needs, part.trim()); }
+    if (part.trim() && alts.every(Boolean)) { all.push(alts.length === 1 ? alts[0] : { any: alts }); alts.forEach(a => a.seen && recall.add(a.seen)); }
+    else if (part.trim()) { const c = cleanProse(part.trim()); if (c) prose.push(c); if (/[a-z]_[a-z]|[<>]=?\d/.test(part)) tally(unread.needs, part.trim()); }
   });
-  return { all, setup: prose.join(', ') };
+  return { all, setup: prose.join(', '), recall: [...recall] };
 }
 function effects(raw) {
   const out = [];
@@ -102,7 +118,7 @@ for (const r of rows) {
   const n = needs(r.need);
   const ev = {
     id: r.id, st: [...new Set(st)], w: WEIGHT[r.rarity] || 5, rar: r.rarity, tone: r.tone,
-    chain: chained.has(r.id) ? 1 : 0, need: n.all, setup: n.setup,
+    chain: chained.has(r.id) ? 1 : 0, need: n.all, setup: n.setup, recall: n.recall,
     opts: chs.map((t, i) => ({
       t: t.replace(/\s*\[[RK]\]\s*$/, ''), tag: (t.match(/\[([RK])\]/) || [])[1] || 'R',
       eff: effects(cs[i] || cs[cs.length - 1] || ''),

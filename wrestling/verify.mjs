@@ -195,6 +195,22 @@ section('the event catalog');
   !r.dangling.length ? ok('every chain points at an event that exists') : bad('chains to nothing: '+r.dangling.slice(0,5).join(', '));
   (r.shown===r.want && r.result && r.opened && r.seen && r.closed) ? ok('an event plays through the card, applies, opens its chain and closes')
     : bad('event card: '+JSON.stringify(r));
+  // C2: a choice is remembered, and a later event that names its flag quotes it back
+  const q = await page.evaluate(()=>{
+    const later=EV.all.find(x=>(x.recall||[]).some(f=>/^[x-z]?[xkp]_/.test(f)));
+    const f=later.recall.find(f=>/^[xkp]_/.test(f));
+    const src=EV.all.find(x=>x.opts.some(o=>o.flags.indexOf(f)>=0));
+    if(!src) return {none:f};
+    const i=src.opts.findIndex(o=>o.flags.indexOf(f)>=0);
+    const lines=catalogApply(src,i);
+    playCatalogEvent(later, ()=>{});
+    const rec=document.querySelector('#sceneBody .ev-recall');
+    const out={f, text:rec&&rec.textContent, want:src.opts[i].t, kept:lines.some(l=>l&&l.kept),
+      leak:/\b[xakpeh]_[a-z]/.test(document.getElementById('sceneBody').textContent)};
+    closeScene(); return out;
+  });
+  (q.text && q.text.indexOf(q.want.replace(/[.]$/,''))>=0 && q.kept) ? ok(`a later event quotes the earlier choice back (${q.f})`) : bad('memory recall: '+JSON.stringify(q));
+  !q.leak ? ok('no flag name reaches the screen') : bad('a raw flag name is on the event card');
   errs.length ? bad('event card page errors: '+errs.slice(0,3).join(' | ')) : ok('no page errors playing an event');
   await page.close();
 }

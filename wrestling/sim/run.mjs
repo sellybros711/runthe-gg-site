@@ -102,6 +102,7 @@ function playCareer({ diff, policy, cap }) {
         // the event catalog takes the week's scene slot first, as it does in play
         const ev = catalogPick();
         if (ev) {
+          if (evRecall(ev).length) scenes['recall'] = (scenes['recall'] || 0) + 1;
           const i = policy === 'first' ? 0 : policy === 'random' ? Math.floor(Math.random() * ev.opts.length) : n % ev.opts.length;
           catalogApply(ev, i); scenes['ev:' + ev.id] = (scenes['ev:' + ev.id] || 0) + 1; markSegmentPlayed();
         }
@@ -200,7 +201,8 @@ const evIds = Object.keys(seen).filter(k => k.startsWith('ev:'));
 const evTotal = await (async () => { const b = await pw.chromium.launch(); const p = await b.newPage(); await p.goto(URL); await p.waitForTimeout(400);
   const n = await p.evaluate(async () => { await evLoadUpTo(6); return EV.all.length; }); await b.close(); return n; })();
 console.log(`\ncatalog events reached: ${evIds.length} of ${evTotal}, ${evIds.reduce((s, k) => s + seen[k], 0)} plays`);
-const ids = Object.keys(seen).filter(k => !k.startsWith('ev:')).sort((a, b) => seen[b] - seen[a]);
+console.log(`events that quoted an earlier choice back: ${seen.recall || 0}`);
+const ids = Object.keys(seen).filter(k => !k.startsWith('ev:') && k !== 'recall').sort((a, b) => seen[b] - seen[a]);
 console.log(`\nscenes reached: ${ids.length}. Most common: ${ids.slice(0, 6).map(k => `${k} ${seen[k]}`).join(', ')}`);
 console.log(`least common: ${ids.slice(-6).map(k => `${k} ${seen[k]}`).join(', ')}`);
 const outFile = path.join(ROOT, 'wrestling', 'sim', 'last-run.json');
