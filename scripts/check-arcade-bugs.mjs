@@ -613,6 +613,20 @@ if ('sweep'.includes(only) || !only) {
         let up = 0, dn = 0; while (up < 30 && mine(cx, cy - up - 1)) up++; while (dn < 30 && mine(cx, cy + dn + 1)) dn++;
         return { sel, h: Math.round(b.height), hit: up + dn + 1, self: mine(cx, cy) }; });
     });
+    /* Phase 3 moved Sound and Theme off a phone's header and into the "?"
+       sheet (gamehead.js), so on a phone the theme control is probed there. */
+    const phone = await p.evaluate(() => document.body.classList.contains('rtggh'));
+    if (phone) {
+      const th = hits.find(h => h.sel === '#themeBtn');
+      await p.click('#rtgHowtoBtn'); await sleep(400);
+      const inSheet = await p.evaluate(() => {
+        const el = [...document.querySelectorAll('.rtgHowto-set button')].find(b => /theme/i.test(b.textContent));
+        if (!el) return { sel: '"?" sheet theme', missing: true };
+        const b = el.getBoundingClientRect();
+        return { sel: '"?" sheet theme', h: Math.round(b.height), hit: Math.round(b.height), self: document.elementFromPoint(b.left + b.width / 2, b.top + b.height / 2) === el };
+      });
+      hits.splice(hits.indexOf(th), 1, inSheet);
+    }
     for (const h of hits) R.ok(!h.missing && h.self && h.hit >= 42, h.sel + ' answers a tap across about 44px of height (drawn ' + h.h + ')', JSON.stringify(h));
     await ctx.close();
   }

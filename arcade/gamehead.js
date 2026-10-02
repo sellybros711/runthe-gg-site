@@ -66,6 +66,13 @@
       ' text-decoration:underline;text-underline-offset:3px;cursor:pointer;}',
       /* ---- phone only from here ---- */
       'body.rtggh .rtg-topbanner{display:none !important;}',
+      /* arcade.css holds 51px at the top of <body> for the banner until it
+         lands. On a phone the banner never shows, so that space goes too, or
+         it is held through first paint and then collapses under the reader. */
+      'html body.rtggh::before{display:none !important;}',
+      /* and the bar is drawn at its final height (the 44px "?" button, which
+         howto.js adds a beat later, plus padding) so it does not grow */
+      'html body.rtggh .topbar{min-height:54px;box-sizing:border-box;}',
       'html body.rtggh .topbar{flex-wrap:nowrap;padding:4px 0 6px;gap:6px;position:sticky;top:0;z-index:60;',
       ' background:var(--bg);box-shadow:0 8px 12px -12px rgba(0,0,0,.5);}',
       'html body.rtggh .topbar .brand.logo{flex:1 1 auto;}',
@@ -96,13 +103,24 @@
       '.rtggh-strip .rtb-tokens.unlimited{color:var(--brandT,#FF8A3D);border-color:color-mix(in srgb,var(--brandT,#FF8A3D) 55%,transparent);}',
       '.rtggh-strip .rtb-tokens.unlimited .tk-ic{color:var(--brandT,#FF8A3D);}',
       '.rtggh-strip .rtb-prof{padding:0 4px;min-width:30px;justify-content:center;max-width:44px;overflow:hidden;}',
+      /* Drawn 30px to keep the strip slim, tapped across 44: the hit area
+         reaches 7px above and below (the strip's own margin is under it). */
+      '.rtggh-strip .rtb-tokens,.rtggh-strip .rtb-prof{position:relative;overflow:visible;}',
+      /* reaching down into the strip's margin, because the sticky bar above
+         sits over anything that reaches up */
+      'html body .rtggh-strip #rtbTokens::after,html body .rtggh-strip #rtbProf::after{content:"";position:absolute;inset:-2px -4px -12px -4px;}',
+      /* arcade.css holds 46px for this row while mode.js fills it; filled on
+         a phone with the 32px buttons above it is 42, so hold 42. */
+      'html body.rtggh .modesw:empty{min-height:42px;}',
+      'html body.rtggh .modesw button{position:relative;}',
+      'html body.rtggh .modesw button::after{content:"";position:absolute;left:0;right:0;top:-6px;bottom:-6px;}',
       '.rtggh-strip .rtb-prof.out{padding:0 10px;max-width:none;}',
       '.rtggh-strip .rtb-prof:not(.out) .rtb-plab{display:none;}',
       '.rtggh-strip .rtb-prof svg{width:16px;height:16px;flex:0 0 auto;}',
       '.rtggh-strip .rtb-prof .rtb-av{width:22px;height:22px;border-radius:50%;background:linear-gradient(135deg,var(--coral,#F06A5F),#F0913C);',
       ' color:#fff;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:11px;}',
       /* ---- each board on one screen at 375x667 ---- */
-      'body.rtggh .modesw:not(:empty){margin-bottom:8px !important;}',
+      'body.rtggh .modesw{margin-bottom:8px !important;}',
       'html body.rtggh .modesw:not(:empty) button{min-height:32px;}',
       'body.rtggh-career .prompt,body.rtggh-almamater .prompt,body.rtggh-oddone .prompt{font-size:14px;margin:0 0 6px;}',
       'body.rtggh-career .pathcard{padding:10px 12px !important;margin-bottom:10px;}',
@@ -117,7 +135,7 @@
       'html body.rtggh-rankit .rmeta .nm{font-size:19px;-webkit-line-clamp:1;}',
       'html body.rtggh-rankit .rmeta .sub{margin-top:3px;}',
       'body.rtggh-match .lead{padding:8px 12px !important;margin-bottom:8px !important;}',
-      'body.rtggh-match .lead .k,body.rtggh-match .lead .explain .lh:empty{display:none !important;}',
+      'body.rtggh-match .lead .k{display:none !important;}',
       'body.rtggh-match .lead .v{margin-top:0 !important;font-size:13px !important;}',
       'body.rtggh-match .pool-h .t{display:none;}',
       'body.rtggh-match .pool-h{margin-bottom:6px;}',
@@ -158,24 +176,37 @@
     moved = [];
   }
 
+  /* The strip is drawn as soon as the top bar is parsed, which is before the
+     scoreboard it mirrors exists. So every cell is drawn at once (it holds
+     its width) and bound to its source when that has been parsed too. */
+  var cells = [];
   function mirror(statsEl) {
     var defs = STATS[GAME] || [];
-    var cells = [];
+    cells = [];
     defs.forEach(function (d) {
-      var src = document.getElementById(d[0]);
-      if (!src) return;
       var cell = document.createElement('span');
       cell.className = 'rtggh-stat';
-      cell.innerHTML = d[1] + '<b></b>';
+      cell.innerHTML = d[1] + '<b>0</b>';
       statsEl.appendChild(cell);
-      cells.push({ src: src, out: cell.querySelector('b') });
+      cells.push({ id: d[0], src: null, out: cell.querySelector('b') });
     });
-    function sync() { cells.forEach(function (c) { c.out.textContent = (c.src.textContent || '').trim() || '0'; }); }
-    sync();
-    if (cells.length && window.MutationObserver) {
-      obs = new MutationObserver(sync);
-      cells.forEach(function (c) { obs.observe(c.src, { childList: true, characterData: true, subtree: true }); });
-    }
+    bindStats();
+  }
+  function sync() { cells.forEach(function (c) { if (c.src) c.out.textContent = (c.src.textContent || '').trim() || '0'; }); }
+  function bindStats() {
+    var fresh = false;
+    cells.forEach(function (c) {
+      if (c.src) return;
+      c.src = document.getElementById(c.id);
+      if (!c.src) return;
+      fresh = true;
+      if (window.MutationObserver) {
+        if (!obs) obs = new MutationObserver(sync);
+        obs.observe(c.src, { childList: true, characterData: true, subtree: true });
+      }
+    });
+    if (fresh) sync();
+    return cells.every(function (c) { return !!c.src; });
   }
 
   function apply() {
@@ -192,14 +223,24 @@
     topbar.parentNode.insertBefore(strip, after);
     move($('.chip', topbar), statsEl);
     mirror(statsEl);
-    move(document.getElementById('rtbTokens'), right);
-    move(document.getElementById('rtbProf'), right);
+    attachBanner();
     if (noticeEl) placeNotice();
+  }
+  // The pill and account button arrive with topbanner.js, sometimes a beat
+  // after the strip is drawn. The strip reserves their height, so moving them
+  // in later shifts nothing.
+  function attachBanner() {
+    if (!on || !strip) return;
+    var right = strip.lastChild;
+    var tk = document.getElementById('rtbTokens'), pf = document.getElementById('rtbProf');
+    if (tk && tk.parentNode !== right) move(tk, right);
+    if (pf && pf.parentNode !== right) move(pf, right);
   }
   function revert() {
     if (!on) return;
     on = false;
     if (obs) { obs.disconnect(); obs = null; }
+    cells = [];
     restore();
     if (strip && strip.parentNode) strip.parentNode.removeChild(strip);
     strip = null;
@@ -243,17 +284,47 @@
   }
   function clearNotice() { if (noticeEl && noticeEl.parentNode) noticeEl.parentNode.removeChild(noticeEl); noticeEl = null; }
 
+  /* BEFORE FIRST PAINT. This file loads at the end of <body>, so the header
+     is already there: the strip is built right away rather than after the
+     banner, or the page paints one header and then rearranges into another
+     and everything under it jumps. */
+  /* This file loads in <head>, and the phone header is built while the page
+     is still being parsed: the moment the top bar has been read (its next
+     sibling exists), before the browser paints anything. The scoreboard,
+     the banner and the crossword's board arrive later in the same parse and
+     are picked up as they land. Built after load instead, the page paints
+     one header and then rearranges into the other, and the board jumps. */
+  var lineDone = false, parseObs = null;
+  // The top bar has been read once anything after it has: a sibling, or (on
+  // a page where it is the last thing in its wrapper) the wrapper's sibling.
+  function readPast(el) {
+    for (var n = el; n && n !== document.body; n = n.parentNode) if (n.nextElementSibling) return true;
+    return false;
+  }
+  function step(force) {
+    if (!document.body) return;
+    var tb = $('.topbar');
+    if (MQ && MQ.matches && tb && (force === true || readPast(tb))) apply();
+    if (on) { bindStats(); attachBanner(); }
+    if (!lineDone) { addLine(); lineDone = !LINE[GAME] || !!document.querySelector('.rtggh-line'); }
+  }
+  function settle() {
+    step(true);
+    if (parseObs) { parseObs.disconnect(); parseObs = null; }
+    bannerReady(attachBanner);
+  }
   function boot() {
     css();
-    addLine();
+    if (window.MutationObserver && document.readyState === 'loading') {
+      parseObs = new MutationObserver(step);
+      parseObs.observe(document.documentElement, { childList: true, subtree: true });
+      document.addEventListener('DOMContentLoaded', settle);
+    } else settle();
     if (!MQ) return;
-    bannerReady(function () {
-      if (MQ.matches) apply();
-      var onChange = function () { if (MQ.matches) apply(); else revert(); };
-      if (MQ.addEventListener) MQ.addEventListener('change', onChange); else if (MQ.addListener) MQ.addListener(onChange);
-    });
+    var onChange = function () { if (MQ.matches) { apply(); bindStats(); bannerReady(attachBanner); } else revert(); };
+    if (MQ.addEventListener) MQ.addEventListener('change', onChange); else if (MQ.addListener) MQ.addListener(onChange);
   }
 
   window.RTGGameHead = { notice: notice, clearNotice: clearNotice, on: function () { return on; } };
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
+  boot();
 })();
