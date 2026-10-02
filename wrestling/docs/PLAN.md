@@ -134,6 +134,14 @@ with the Hall at 236 and headliner at 264 (`HALL_BAR`, `legacyGrade`).
 | headliner | 10 (8-14) | 2 (4-8) | 1 (1-4) |
 | ended by injury | 8 (6-12) | 6 (8-14) | 7 (10-18) |
 
+**C1, the event engine.** `docs/NARRATIVE-EVENTS.md` compiles (`node wrestling/build/events.mjs`)
+into `wrestling/events/s1.js` to `s6.js`, one file per stage, loaded when a career reaches
+it. 351 events: prerequisites read from flags, meters and relationships, weight by rarity,
+once per career, two weeks apart, chained rows only after something unlocks them, choices
+tagged real or in character. Events take the week's scene slot. Measured over 150 careers:
+186 of the 351 play (against 30 scenes before); the rest wait on a specific earlier choice
+or on Phase D's origins and school. `verify.mjs` holds the files to a fresh build.
+
 Still out: every career wins some title (the indie belt is too easy) and every career has a
 long injury. The simulator now signs up the ladder and its `rotate` policy trains the weakest
 key stat, because a policy that never moves up measures the policy rather than the game.

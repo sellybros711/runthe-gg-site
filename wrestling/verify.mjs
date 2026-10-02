@@ -67,6 +67,7 @@ const BLOCK = [
   'GCW','King of the Ring','Best of the Super Juniors','Cruiserweight Classic','Tokyo Dome','Tiger Mask','Natural Selection',
 ];
 const files = fs.readdirSync(path.join(ROOT,'wrestling')).filter(f=>/\.(js|html)$/.test(f)).map(f=>'wrestling/'+f)
+    .concat(fs.existsSync(path.join(ROOT,'wrestling','events'))?fs.readdirSync(path.join(ROOT,'wrestling','events')).map(f=>'wrestling/events/'+f):[])
   .concat(['wrestling/booking/index.html']);
 for(const f of files){
   const txt = fs.readFileSync(path.join(ROOT,f),'utf8');
@@ -160,6 +161,41 @@ section('pages load');
 {
   const {page, errs} = await fresh(URL+'/wrestling/');
   if(errs.length) bad('career game: '+errs.slice(0,3).join(' | ')); else ok('career game loads clean');
+  await page.close();
+}
+/* ---------- the event catalog (C1) ----------
+   The stage files are generated from docs/NARRATIVE-EVENTS.md. A doc edited
+   without re-running the build ships last week's events, so the build is run
+   to a scratch folder and compared byte for byte. Then one event is played
+   through the real card, and its chain is checked to open. */
+section('the event catalog');
+{
+  const os=require('os'), cp=require('child_process');
+  const tmp=fs.mkdtempSync(path.join(os.tmpdir(),'ev-'));
+  const run=cp.spawnSync(process.execPath,[path.join(HERE,'build','events.mjs')],{env:{...process.env,EV_OUT:tmp},encoding:'utf8'});
+  const dir=path.join(HERE,'events');
+  const built=fs.existsSync(tmp)?fs.readdirSync(tmp).sort():[], shipped=fs.existsSync(dir)?fs.readdirSync(dir).sort():[];
+  const same=run.status===0 && built.length && built.join()===shipped.join() && built.every(f=>fs.readFileSync(path.join(tmp,f),'utf8')===fs.readFileSync(path.join(dir,f),'utf8'));
+  same ? ok(`events/ matches a fresh build (${built.join(', ')})`) : bad('events/ is stale: run node wrestling/build/events.mjs and bump EV_VERSION');
+  const {page, errs} = await fresh(URL+'/wrestling/');
+  const r = await page.evaluate(async()=>{
+    quickStart(); await evLoadUpTo(6);
+    const ids=new Set(EV.all.map(e=>e.id));
+    const dangling=EV.all.flatMap(e=>e.next.filter(n=>!ids.has(n)).map(n=>e.id+'>'+n));
+    const e=EV.all.find(x=>!x.chain && x.next.length && x.opts.length>1);
+    playCatalogEvent(e, ()=>{});
+    const shown=document.querySelectorAll('#sceneBody .scene-opt').length;
+    document.querySelector('#sceneBody .scene-opt').click();
+    const result=!!document.querySelector('#sceneBody .ev-result');
+    const opened=e.next.every(n=>G.car.ev.open[n]!=null);
+    document.getElementById('evDone').click();
+    return {n:EV.all.length, dangling, shown, want:e.opts.length, result, opened, seen:G.car.ev.seen[e.id]!=null, closed:!$('sceneBack').classList.contains('open')};
+  });
+  r.n>=300 ? ok(`${r.n} events load across the six stage files`) : bad(`only ${r.n} events loaded`);
+  !r.dangling.length ? ok('every chain points at an event that exists') : bad('chains to nothing: '+r.dangling.slice(0,5).join(', '));
+  (r.shown===r.want && r.result && r.opened && r.seen && r.closed) ? ok('an event plays through the card, applies, opens its chain and closes')
+    : bad('event card: '+JSON.stringify(r));
+  errs.length ? bad('event card page errors: '+errs.slice(0,3).join(' | ')) : ok('no page errors playing an event');
   await page.close();
 }
 /* THE HOME PAGE WITH A CAREER ON IT. This is not the same test as the one above:

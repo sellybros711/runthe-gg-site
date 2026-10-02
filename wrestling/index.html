@@ -487,6 +487,10 @@
   .scene-optlist{display:flex;flex-direction:column;gap:8px;}
   .scene-opt{padding:11px 14px;border:1px solid var(--line);border-radius:10px;background:rgba(255,255,255,.02);cursor:pointer;transition:transform .1s,border-color .15s,background .15s;}
   .scene-opt:hover{transform:translateX(3px);border-color:rgba(224,179,65,.6);background:rgba(224,179,65,.08);}
+  .ev-tag{display:inline-block;margin-left:6px;padding:1px 6px;font-size:9px;letter-spacing:.12em;text-transform:uppercase;border:1px solid var(--line);color:var(--text-faint);vertical-align:middle;}
+  .ev-tag.ev-K{color:var(--gold);border-color:var(--gold);}
+  .ev-result{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px;}
+  .ev-result span{padding:4px 9px;border:1px solid var(--line);font-size:12px;color:var(--cream);}
   .scene-opt-t{font-size:14px;color:var(--cream);line-height:1.4;}
   .scene-opt-n{font-size:11px;color:var(--text-faint);margin-top:5px;font-style:italic;}
   .scene-walk{margin-top:14px;text-align:center;}
@@ -20611,8 +20615,156 @@ function applySegmentEffect(eff, who){
 /* Show a segment before the match if one is available and one hasn't already
    played this week. Bound to the "Head To The Ring" button flow so it feels
    like part of walking out to gorilla. */
+/* ============================================================
+   THE EVENT ENGINE (Phase C1).
+   docs/NARRATIVE-EVENTS.md is the content and wrestling/build/events.mjs
+   compiles it into events/s1.js to s6.js, one file per career stage, loaded
+   when a career first reaches that stage. Each event carries its stages, a
+   weight from its rarity, its conditions (flags, meters, relationships), its
+   choices with their real or kayfabe tag, their effects and flags, and the
+   events a choice unlocks.
+
+   The rules, in order:
+     a CHAINED event (one that another event leads to) only plays once it has
+       been unlocked, and an unlocked event that is due outranks a fresh one;
+     an ENTRY event plays when its stage and conditions fit, on a roll;
+     every event plays once per career;
+     two weeks at least between any two, so they stay moments;
+     the pick is deterministic per week, so a reload shows the same event.
+   Bump EV_VERSION whenever the build is re-run, or a returning visitor keeps
+   the stage files they already had.
+   ============================================================ */
+const EV_VERSION=2;
+const EV={all:[], loaded:{}, loading:{}};
+function evDrain(){ const R=window.RTR_EVENTS; if(!R||!R.q||!R.q.length) return;
+  while(R.q.length){ const list=R.q.shift(); list.forEach(e=>{ if(!EV.all.some(x=>x.id===e.id)) EV.all.push(e); }); } }
+function evLoad(n){
+  if(EV.loaded[n]) return Promise.resolve();
+  if(EV.loading[n]) return EV.loading[n];
+  return EV.loading[n]=new Promise(res=>{
+    const sc=document.createElement('script'); sc.src=`events/s${n}.js?v=${EV_VERSION}`;
+    sc.onload=()=>{ EV.loaded[n]=true; evDrain(); res(); };
+    sc.onerror=()=>{ EV.loading[n]=null; res(); };   // offline: no events this week, nothing breaks
+    document.head.appendChild(sc);
+  });
+}
+/* Which stages a career is in right now. A stage is about the job and the
+   body, not the calendar: the tier you work, abroad or not, and age. */
+function evStages(){
+  const c=G.car, t=workTier().id, p=myPromo()||{}, out=[];
+  const abroad=p.region && !/USA/.test(p.region);
+  if(t==='indie') out.push(1);
+  if(t==='regional') out.push(2);
+  if(t==='national') out.push(abroad?3:4);
+  if(t==='global') out.push(5);
+  if(abroad && t!=='national') out.push(3);
+  if(c.age>=34) out.push(6);
+  return out;
+}
+function evLoadUpTo(n){ const ps=[]; for(let i=1;i<=n;i++) ps.push(evLoad(i)); return Promise.all(ps); }
+function evState(){ const c=G.car; c.ev=c.ev||{seen:{}, open:{}, npc:{}, last:-99, layer:{R:0,K:0}}; return c.ev; }
+const evNow=()=>G.car.year*WEEKS_PER_YEAR+G.car.week;
+function evNpc(who){ const st=evState(); return st.npc[who]=st.npc[who]||{respect:40,heat:0}; }
+function evStat(k){
+  const c=G.car, a=G.w.attrs;
+  switch(k){ case 'money': return c.earnings||0; case 'pop': return c.pop; case 'push': case 'standing': return c.standing||50;
+    case 'mom': return c.mom; case 'cond': return c.cond; case 'morale': return c.morale;
+    case 'matches': return (c.rec.w||0)+(c.rec.l||0)+(c.rec.d||0); default: return a[k]!=null?a[k]:0; }
+}
+function evCmp(x,op,v){ return op==='>='?x>=v:op==='<='?x<=v:op==='>'?x>v:x<v; }
+function evCond(k){
+  if(k.any) return k.any.some(evCond);
+  if(k.f) return sceneRecalls(k.f);
+  if(k.not) return !sceneRecalls(k.not);
+  if(k.seen){ const st=evState(); return Object.keys(st.seen).some(id=>id.startsWith(k.seen)); }
+  if(k.rel) return evCmp(evNpc(k.who)[k.rel], k.op, k.v);
+  if(k.s) return evCmp(evStat(k.s), k.op, k.v);
+  return true;
+}
+function evEligible(e, stages){
+  const st=evState();
+  if(st.seen[e.id]!=null) return false;
+  if(!e.st.some(n=>stages.indexOf(n)>=0)) return false;
+  if(e.chain){ const due=st.open[e.id]; if(due==null || due>evNow()) return false; }
+  return e.need.every(evCond);
+}
+function evHash(str){ let h=2166136261>>>0; for(let i=0;i<str.length;i++){ h^=str.charCodeAt(i); h=Math.imul(h,16777619); } return h>>>0; }
+/* The week's event, or null. Loads any stage not loaded yet and plays from
+   what is already here, so the first week of a new stage may be quiet. */
+function catalogPick(){
+  if(!G||!G.car||G.car.retired) return null;
+  const stages=evStages(); if(!stages.length) return null;
+  evLoadUpTo(Math.max(...stages)); evDrain();
+  const st=evState(), now=evNow();
+  if(now-st.last<2) return null;
+  Object.keys(st.open).forEach(id=>{ if(now-st.open[id]>30) delete st.open[id]; });   // a thread left too long goes cold
+  const pool=EV.all.filter(e=>evEligible(e,stages)); if(!pool.length) return null;
+  const seed=`${careerSeed()}-ev-${now}`;
+  const due=pool.filter(e=>e.chain);
+  if(!due.length && evHash(seed+'roll')%100>=35) return null;
+  const list=due.length?due:pool, total=list.reduce((t,e)=>t+e.w,0);
+  let r=(evHash(seed)%10000)/10000*total;
+  for(const e of list){ r-=e.w; if(r<=0) return e; }
+  return list[list.length-1];
+}
+const EV_NAMES={money:'Money', pop:'Popularity', push:'Push', standing:'Standing', mom:'Momentum', cond:'Condition', morale:'Morale',
+  te:'Technique', ch:'Charisma', st:'Stamina', po:'Power', ae:'Aerial', to:'Toughness', ps:'Psychology'};
+const evCap=w=>w.charAt(0).toUpperCase()+w.slice(1);
+/* Apply choice i of event e. Returns the lines to show. */
+function catalogApply(e, i){
+  const c=G.car, w=G.w, o=e.opts[i]||e.opts[0], st=evState(), now=evNow(), out=[];
+  st.seen[e.id]=now; st.last=now; delete st.open[e.id];
+  st.layer[o.tag]=(st.layer[o.tag]||0)+1;
+  o.eff.forEach(f=>{
+    if(f.rel){ const n=evNpc(f.who); n[f.rel]=clamp(n[f.rel]+f.d,0,100); out.push(`${f.rel==='heat'?'Heat with '+evCap(f.who):evCap(f.who)+'\u2019s respect'} ${f.d>0?'+':''}${f.d}`); return; }
+    if(f.injury){ c.cond=clamp(c.cond-8,0,100); out.push('Condition -8'); return; }
+    const k=f.s, d=f.d;
+    if(k==='money') c.earnings=Math.max(0,(c.earnings||0)+d);
+    else if(k==='pop') c.pop=clamp(c.pop+d,1,100);
+    else if(k==='standing') c.standing=clamp((c.standing||50)+d);
+    else if(k==='push') c.standing=clamp((c.standing||50)+d*0.5);
+    else if(k==='mom') c.mom=clamp(c.mom+d);
+    else if(k==='cond') c.cond=clamp(c.cond+d,0,100);
+    else if(k==='morale') c.morale=clamp(c.morale+d);
+    else if(w.attrs[k]!=null) w.attrs[k]=clamp(w.attrs[k]+d);
+    else return;
+    out.push(k==='money'?`Money ${d>0?'+':'-'}$${Math.abs(d).toLocaleString()}`:`${EV_NAMES[k]||k} ${d>0?'+':''}${d}`);
+  });
+  o.flags.forEach(f=>sceneRemember(f));
+  // the rows this one leads to open in two to six weeks
+  e.next.forEach(id=>{ if(st.seen[id]==null && st.open[id]==null) st.open[id]=now+2+evHash(id+careerSeed())%5; });
+  return out;
+}
+function evTitle(id){ return evCap(id.replace(/^(a\d+_\d+[a-z]?|day|org)_/,'').replace(/_/g,' ')); }
+function evSetup(t){ t=(t||'').trim(); if(!t) return ''; t=evCap(t); return /[.!?]$/.test(t)?t:t+'.'; }
+const EV_STAGE_NAME={1:'The indies',2:'The territory',3:'Abroad',4:'National TV',5:'The top',6:'Twilight'};
+function playCatalogEvent(e, onDone){
+  const back=$('sceneBack'), body=$('sceneBody');
+  if(!back||!body){ catalogApply(e,0); if(onDone) onDone(); return; }
+  if(typeof endTour==='function' && TOUR_I>=0) endTour();
+  const stg=evStages().find(n=>e.st.indexOf(n)>=0)||e.st[0];
+  body.innerHTML=`<div class="scene-tag">${EV_STAGE_NAME[stg]||''} · ${e.rar}</div>
+    <div class="scene-head"><div class="scene-av scene-av-narr">${pico('microphone',36)}</div>
+      <div><div class="scene-who">${evTitle(e.id)}</div><div class="scene-line">${evSetup(e.setup)}</div></div></div>
+    <div class="scene-optlist">${e.opts.map((o,i)=>`<div class="scene-opt" data-i="${i}">
+      <div class="scene-opt-t">${o.t} <span class="ev-tag ev-${o.tag}">${o.tag==='K'?'In character':'Real life'}</span></div></div>`).join('')}</div>`;
+  back.classList.add('open');
+  body.querySelectorAll('.scene-opt').forEach(el=>{ el.onclick=()=>{
+    const lines=catalogApply(e,+el.dataset.i);
+    markSegmentPlayed(); save();
+    body.querySelector('.scene-optlist').outerHTML=`<div class="ev-result">${lines.length?lines.map(l=>`<span>${l}</span>`).join(''):'<span>It stays with you.</span>'}</div>
+      <div class="scene-walk"><button id="evDone">Continue</button></div>`;
+    document.getElementById('evDone').onclick=()=>{ closeScene(); if(onDone) onDone(); };
+  }; });
+}
+function maybeCatalogEvent(onDone){
+  let e=null; try{ e=catalogPick(); }catch(_){ e=null; }
+  if(!e) return false;
+  playCatalogEvent(e, onDone); return true;
+}
 function maybeShowPreMatchSegment(onDone){
   if(segmentsPlayedThisWeek()){ onDone(); return; }
+  if(maybeCatalogEvent(onDone)) return;
   // Prefer the multi-beat conversation engine. Fall back to the legacy
   // single-beat library only if no scene qualifies this week.
   const scene = pickScene('prematch');
@@ -20627,6 +20779,7 @@ function maybeShowPreMatchSegment(onDone){
 function maybeScene(trigger, onDone){
   const done = onDone || function(){};
   if(segmentsPlayedThisWeek()){ done(); return false; }
+  if(maybeCatalogEvent(done)) return true;
   const scene = pickScene(trigger);
   if(!scene){ done(); return false; }
   playScene(scene, done);

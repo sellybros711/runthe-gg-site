@@ -99,7 +99,13 @@ function playCareer({ diff, policy, cap }) {
     const b = c.booking; if (!b) { try { advanceWeek(); } catch (e) { F('advanceWeek threw: ' + e.message); break; } continue; }
     if (b.type === 'match') {
       try {
-        const sc = pickScene('prematch');
+        // the event catalog takes the week's scene slot first, as it does in play
+        const ev = catalogPick();
+        if (ev) {
+          const i = policy === 'first' ? 0 : policy === 'random' ? Math.floor(Math.random() * ev.opts.length) : n % ev.opts.length;
+          catalogApply(ev, i); scenes['ev:' + ev.id] = (scenes['ev:' + ev.id] || 0) + 1; markSegmentPlayed();
+        }
+        const sc = ev ? null : pickScene('prematch');
         if (sc) {
           const x = sceneCtx(); let cast = null;
           try { cast = sc.cast ? sc.cast(x) : { a: null }; } catch (_) {}
@@ -146,6 +152,7 @@ async function worker() {
   page.on('pageerror', e => { if (pageErrors.length < 20) pageErrors.push(e.message); });
   await page.route(u => !u.href.startsWith(URL.replace(/wrestling\/$/, '')), r => r.abort());
   await page.goto(URL); await page.waitForTimeout(600);
+  await page.evaluate(() => evLoadUpTo(6));
   await page.evaluate(src => { window.__playCareer = eval('(' + src + ')'); }, playCareer.toString());
   while (next < jobs.length) {
     const job = jobs[next++];
@@ -156,7 +163,7 @@ async function worker() {
   await ctx.close();
 }
 await Promise.all(Array.from({ length: JOBS }, worker));
-await browser.close(); server.close();
+await browser.close();
 
 // ---------- report ----------
 const pct = (xs, f) => xs.length ? Math.round(100 * xs.filter(f).length / xs.length) : 0;
@@ -189,11 +196,16 @@ for (const d of DIFFS) {
 }
 
 const seen = {}; results.forEach(r => Object.entries(r.scenes || {}).forEach(([k, v]) => { seen[k] = (seen[k] || 0) + v; }));
-const ids = Object.keys(seen).sort((a, b) => seen[b] - seen[a]);
+const evIds = Object.keys(seen).filter(k => k.startsWith('ev:'));
+const evTotal = await (async () => { const b = await pw.chromium.launch(); const p = await b.newPage(); await p.goto(URL); await p.waitForTimeout(400);
+  const n = await p.evaluate(async () => { await evLoadUpTo(6); return EV.all.length; }); await b.close(); return n; })();
+console.log(`\ncatalog events reached: ${evIds.length} of ${evTotal}, ${evIds.reduce((s, k) => s + seen[k], 0)} plays`);
+const ids = Object.keys(seen).filter(k => !k.startsWith('ev:')).sort((a, b) => seen[b] - seen[a]);
 console.log(`\nscenes reached: ${ids.length}. Most common: ${ids.slice(0, 6).map(k => `${k} ${seen[k]}`).join(', ')}`);
 console.log(`least common: ${ids.slice(-6).map(k => `${k} ${seen[k]}`).join(', ')}`);
 const outFile = path.join(ROOT, 'wrestling', 'sim', 'last-run.json');
 fs.writeFileSync(outFile, JSON.stringify({ careers: results.length, at: 'see git log', scenes: seen, raw: results.map(r => ({ d: r.diff, y: r.years, tier: r.maxTier, world: r.world, ...r.raw })) }, null, 1));
 if (STRICT && bandMisses) failures++;
 console.log(failures ? `\n${failures} FAILED` : `\nall good${bandMisses ? ` (${bandMisses} balance readings outside their bands, reported only)` : ''}`);
+server.close();
 process.exit(failures ? 1 : 0);
