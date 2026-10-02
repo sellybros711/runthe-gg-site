@@ -979,6 +979,17 @@ async function browser() {
     await page.click('[data-vtab="careers"]');
     await page.click('[data-arc]');
     ok(!!(await page.$('.cr-story')), 'a career in the archive opens into its story');
+    /* Play as his son needs a son: a career that never had one is not offered
+       the button. The walk's own career gets one afterwards so the son half
+       below still runs. */
+    const sons = await page.evaluate(() => ({ n: RTF_CAREER_UI.state().hof[0].sons, btn: !!document.querySelector('[data-son]'), life: RTF_CAREER_UI.state().hof[0].life }));
+    ok(typeof sons.n === 'number' && sons.btn === sons.n > 0, `the son button follows the sons (${sons.n} in "${sons.life}", button ${sons.btn})`);
+    if (!sons.n) {
+      await page.evaluate(() => { const st = RTF_CAREER_UI.state(); st.hof[0].sons = 0; (st.arc || []).forEach((a) => { if (a.id === st.hof[0].id) a.sons = 0; }); });
+      await page.click('[data-vtab="family"]'); await page.click('[data-vtab="careers"]'); await page.click('[data-arc]');
+      ok(!(await page.$('[data-son]')), 'no son, no Play as his son');
+      await page.evaluate(() => { const st = RTF_CAREER_UI.state(); st.hof[0].sons = 1; (st.arc || []).forEach((a) => { if (a.id === st.hof[0].id) a.sons = 1; }); });
+    }
     await page.click('[data-vtab="family"]');
     const fam = await page.evaluate(() => document.querySelector('[role="tabpanel"]').textContent);
     ok(/No families yet/.test(fam), `a family needs two generations ("${fam.trim().slice(0, 40)}")`);

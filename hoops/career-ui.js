@@ -80,7 +80,7 @@ function compact(c){
     verdict: c.verdict, score: c.score, hof: !!(e && HOF_IN[e.tier]),
     tier: e ? e.tierName : '', pts: T.pts || 0, seasons: T.seasons || 0, rings: T.rings || 0, star: T.star || 0, mvp: T.mvp || 0,
     teams: (c.teams || []).slice(0, 8), jersey: c.jersey || null, c1: c.c1, c2: c.c2, look: c.look || null, at: c.at || 0,
-    diff: c.diff || null, ch: c.ch || null };
+    diff: c.diff || null, ch: c.ch || null, sons: sonsIn(c) };
 }
 /* Every Vault key a card earns: t tier, o outcome, s secret, r road, g origin,
    c a challenge met. A card from before the ids were kept is read back
@@ -1304,6 +1304,7 @@ function finish(){
     from: L.history.length ? L.history[0].y : L.year, to: L.history.length ? L.history[L.history.length - 1].y : L.year,
     teams: teams, totals: f.totals, awards: awardCounts(L), history: L.history, amHist: L.amHist || [], college: collegeOf(L),
     after: f.after || '', jersey: f.jersey || null, rival: f.rival || null, life: f.life || '',
+    sons: C.sonsOf ? C.sonsOf(L) : 0,
     nick: f.nick || null, traits: f.traits || null, sig: f.sig || null, badges: f.badges || null, moments: f.moments || null, goals: f.goals || null,
     team: teams[teams.length - 1] || null, at: Date.now(),
     origin: f.origin || null, epilogue: f.epilogue || '',
@@ -1679,8 +1680,16 @@ function wireVault(){
 /* Play as his son: the builder, with the father on it. Pro, asked first. A
    full Hall card carries the league he left; an older entry starts the son
    in a league played forward from the data's own year. */
-/* A son is the son of a former pro, so his father has to have played. */
-function canFather(c){ return !!c && ((c.totals ? c.totals.seasons : c.seasons) || 0) > 0; }
+/* A son is the son of a former pro, so his father has to have played, and
+   he has to have had a son. A card filed before sons were counted reads its
+   life line, which names the kids; without kids there is no son. */
+function sonsIn(c){
+  if (!c) return 0;
+  if (typeof c.sons === 'number') return c.sons;
+  var m = /(\d+) (?:son|kid)/.exec(c.life || '');
+  return m ? +m[1] : 0;
+}
+function canFather(c){ return !!c && ((c.totals ? c.totals.seasons : c.seasons) || 0) > 0 && sonsIn(c) > 0; }
 function startSon(c){
   if (!canFather(c)) return;
   if (!proOpen()) { askPro('family'); return; }

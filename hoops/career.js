@@ -2555,7 +2555,15 @@ const EVENTS = {
     title: '{partner} wants to talk about kids.',
     text: (L) => lifeOf(L).kids ? 'Another one?' : 'You always said you wanted a big family.',
     options: [
-      { label: 'Start a family', run: (L) => { const f = lifeOf(L); f.kids++; bump(L, { morale: 10, health: -3 }); logIt(L, f.kids === 1 ? 'Became a parent.' : 'Welcomed kid number ' + f.kids + '.', 'good'); return f.kids === 1 ? 'A baby by next summer. You learn to sleep in two-hour pieces.' : 'Kid number ' + f.kids + '. The house is loud.'; } },
+      { label: 'Start a family', run: (L) => {
+        const f = lifeOf(L); f.kids++; bump(L, { morale: 10, health: -3 });
+        /* A story career knows boy or girl, because only a son can be played next. */
+        if (storyOn(L)) {
+          const boy = kidIsSon(L, f.kids - 1); if (Number.isFinite(f.sons) && boy) f.sons++;
+          logIt(L, (f.kids === 1 ? 'Became a parent. ' : 'Welcomed kid number ' + f.kids + '. ') + (boy ? 'A boy.' : 'A girl.'), 'good');
+          return (f.kids === 1 ? 'A baby ' : 'Kid number ' + f.kids + ', a baby ') + (boy ? 'boy' : 'girl') + ' by next summer. ' + (f.kids === 1 ? 'You learn to sleep in two-hour pieces.' : 'The house is loud.');
+        }
+        logIt(L, f.kids === 1 ? 'Became a parent.' : 'Welcomed kid number ' + f.kids + '.', 'good'); return f.kids === 1 ? 'A baby by next summer. You learn to sleep in two-hour pieces.' : 'Kid number ' + f.kids + '. The house is loud.'; } },
       { label: 'After you retire', run: (L) => { bump(L, { morale: -2 }); return 'You agree to wait. Mostly.'; } },
     ],
   },
@@ -2788,7 +2796,23 @@ function lifeLine(L) {
   const f = lifeOf(L);
   const who = say(L, '{partner}');
   const rel = f.rel === 'married' ? 'Married to ' + who : f.rel === 'engaged' ? 'Engaged to ' + who : f.rel === 'dating' ? 'Dating ' + who : 'Single';
+  if (f.kids && storyOn(L)) {
+    const b = sonsOf(L), g = f.kids - b, parts = [];
+    if (b) parts.push(b + (b === 1 ? ' son' : ' sons'));
+    if (g) parts.push(g + (g === 1 ? ' daughter' : ' daughters'));
+    return rel + ', ' + parts.join(' and ');
+  }
   return rel + (f.kids ? ', ' + f.kids + (f.kids === 1 ? ' kid' : ' kids') : '');
+}
+/* Boy or girl, off the seed and the birth order, so it is never stored and
+   never moves another draw. A save can carry a count instead (sons), which
+   wins: it is what the page and the checker set. */
+function kidIsSon(L, i) { return (E.hashSeed(String(L.seed) + ':kid:' + i) & 1) === 1; }
+function sonsOf(L) {
+  const f = lifeOf(L);
+  if (Number.isFinite(f.sons)) return Math.max(0, Math.min(f.sons, f.kids || 0));
+  let n = 0; for (let i = 0; i < (f.kids || 0); i++) if (kidIsSon(L, i)) n++;
+  return n;
 }
 
 /* A hometown for the NBA's own clubs, so a road career can be called home. */
@@ -7149,7 +7173,7 @@ const publicAPI = {
   seedLeague, normaliseNets, newLife, randomName, overall, ovrOf, step, choose, nextLabel,
   view, perGame, totals, legacy, legacyScore, clubNet, clubTier, rotationBar,
   roleOf, lineMeans, capFor, marketSalary, projectedPick, draftOrder, money, ordinal,
-  clutchOptions, offers, ACTS, actsOpen, act, retireNow, lifeOf, lifeLine, rivalOn, featSummary, boardSummary, verdictOf,
+  clutchOptions, offers, ACTS, actsOpen, act, retireNow, lifeOf, lifeLine, sonsOf, rivalOn, featSummary, boardSummary, verdictOf,
   SCHOOLS, SCHOOL_BY, TIER_NAME, AM_EVENTS, HS_ROUNDS, NCAA_ROUNDS, GRADE, CYEAR, AGE_HS,
   isAm, colorsOf, roadView, nationalRank, rankText, starsOf, draftTalk, collegeOffers, schoolNet,
   LOOK_KEYS, cleanLook, setLook, TONES, PRESSERS, PERSONAS, EVENT_REP, repOf, personaOf, presserCard,
