@@ -22,7 +22,27 @@ These change the plan. Each has a recommendation.
 | 9 | Rename the trademark risks found in the audit ("GCW" initials, "King of the Ring", "Best of the Super Juniors", "The Cruiserweight Classic", "Tokyo Dome", "Tiger Mask", "Natural Selection")? Ids stay, only names change. | **yes** |
 | 10 | Keep the game unlisted (noindex, no home page link) for the whole redesign? | **yes**, until Phase F |
 
+### The answers (2026-10-02)
+
+| # | answer |
+|---|---|
+| 1 | A, Main Event |
+| 2 | approved |
+| 3 | yes, retire the toggle |
+| 4 | yes |
+| 5 | yes, and the wider coin economy is decided later |
+| 6 | yes, with every SQL migration saved for the very end |
+| 7 | **not split**, to save effort: the simulator drives the real page in a headless browser instead (`wrestling/sim/run.mjs`) |
+| 8 | not now; later, and only a little |
+| 9 | yes |
+| 10 | yes, unlisted |
+
 ## Phase A0 · Foundations (no visible change)
+
+Done: save version 2 with a migration chain and a raw backup per old version; per slot
+backup and restore; a career seed that salts every scene pick, and the random stream saved
+and carried on across a resume; player text stripped of markup characters on the way in and
+in old saves; one `legacyOf()`; the simulator. Item 3 below is dropped by decision 7.
 
 1. Save version 2 with a migration chain: `load()` never returns null for an old schema again;
    it migrates forward and keeps a per slot backup of the pre migration save.

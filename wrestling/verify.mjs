@@ -1287,16 +1287,24 @@ section('two styles, one rig');
       if(!tr.some(p=>inF(p,32,55))) out.crotch.push(a);
     });
     host.remove();
-    // the switch: Retro really is the pixel game, and it sticks
-    setGfx(false);
-    out.retroNow = wrestlerSVG(DEFLOOK,{}).indexOf('crispEdges')>=0 && pico('trophy',20).indexOf('crispEdges')>=0
-      && beltSVG(BELT_ART_DEFAULT,30).indexOf('crispEdges')>=0 && document.documentElement.classList.contains('gfx-retro');
-    out.stored = localStorage.getItem('rtr_gfx');
+    // the switch is retired (docs/PLAN.md decision 3): one look, the pixel
+    // sprites, whatever an old visit stored under rtr_gfx
+    localStorage.setItem('rtr_gfx','retro');
+    out.oneLook = gfxSmooth() && wrestlerSVG(DEFLOOK,{}).indexOf('rtr-px')>=0 && !document.querySelector('.gfxseg');
+    // every value of every slot a player can own converts to a drawable sprite
+    out.convert=[]; out.converted=0;
+    const slots={}; (window.RTR_COSMETICS||[]).forEach(c=>{ (slots[c.slot]=slots[c.slot]||new Set()).add(c.v); });
+    const LEG={hair:'hairStyle'};
+    Object.keys(slots).forEach(sl=>slots[sl].forEach(v=>{
+      const L=Object.assign({},DEFLOOK,{[LEG[sl]||sl]:v});
+      try{ const g=RTR_PX.paint(RTR_PX.fromLegacy(L),{pose:'idle'}); const lit=g.reduce((n,r)=>n+r.filter(Boolean).length,0);
+        if(lit<300) out.convert.push(sl+':'+v+' draws '+lit); else out.converted++; }
+      catch(e){ out.convert.push(sl+':'+v+' threw '+e.message); }
+    }));
     return out;
   });
   await page.reload(); await page.waitForTimeout(600);
-  const after = await page.evaluate(()=>{ const v={retro:!gfxSmooth(), cls:document.documentElement.classList.contains('gfx-retro')};
-    setGfx(true); v.back=gfxSmooth() && wrestlerSVG(DEFLOOK,{}).indexOf('crispEdges')<0; return v; });
+  const after = await page.evaluate(()=>({ cls:document.documentElement.classList.contains('gfx-retro'), px:wrestlerSVG(DEFLOOK,{}).indexOf('rtr-px')>=0 }));
   if(errs.length) bad('styles: page errors: '+errs.slice(0,2).join(' | '));
   r.rigDiff.length ? bad(`the two styles pose differently: ${r.rigDiff.join(', ')}`)
                    : ok(`all ${r.poses} poses emit the same rig in both styles`);
@@ -1311,10 +1319,10 @@ section('two styles, one rig');
     : bad(`trunks leave skin between the legs on: ${r.crotch.join(', ')||'(no trunks found, '+r.trunksSeen+')'}`);
   r.icons.length ? bad('icons with no smooth drawing: '+r.icons.join(', ')) : ok('every icon has a smooth drawing');
   r.shapes.length ? bad('belt plates that do not draw smooth: '+r.shapes.join(', ')) : ok('every belt plate shape draws smooth');
-  (r.retroNow && r.stored==='retro') ? ok('the Retro switch puts the pixel figure, icons and belts back')
-    : bad(`the Retro switch did not take: ${JSON.stringify({now:r.retroNow, stored:r.stored})}`);
-  (after.retro && after.cls) ? ok('Retro survives a reload') : bad('Retro did not survive a reload: '+JSON.stringify(after));
-  after.back ? ok('and switching back returns the smooth figure') : bad('switching back did not return the smooth figure');
+  r.oneLook ? ok('the graphics toggle is retired: a stored Retro still draws the pixel sprites') : bad('the retired graphics toggle still changes the figure or is still on screen');
+  (!after.cls && after.px) ? ok('and a reload keeps one look') : bad('a reload brought the old Retro look back: '+JSON.stringify(after));
+  (r.converted>=100 && !r.convert.length) ? ok(`every ownable cosmetic value converts to a drawn sprite (${r.converted})`)
+    : bad(`cosmetics that do not convert: ${r.convert.slice(0,6).join('; ')} (${r.converted} fine)`);
   await page.close();
 }
 

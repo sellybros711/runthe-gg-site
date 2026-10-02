@@ -2295,13 +2295,14 @@
 <script src="legends.js?v=2"></script>
 <script src="cosmetics.js?v=4"></script>
 <script src="world.js?v=3"></script>
+<script src="pxwrestler.js?v=2"></script>
 <script>
 "use strict";
 /* ============================================================
    RunTheRopes: Build A Wrestler (career simulator)
    Single save, localStorage. Attributes + moves are EARNED.
    ============================================================ */
-const SAVE='rtr_baw_v1', SCHEMA=1;
+const SAVE='rtr_baw_v1', SCHEMA=2;
 // Multi-slot save layer. The original SAVE key is treated as slot 0 for
 // back-compat; slots 1..3 add rtr_baw_v1_s1 / s2 / s3. The active slot is
 // remembered under rtr_baw_slot. All existing save()/load() paths route
@@ -4452,19 +4453,47 @@ function save(){
   if(!G) return;
   try{
     G.savedAt = Date.now();
+    G.rng = RNG>>>0;            // the stream carries on from here after a resume
     localStorage.setItem(activeSaveKey(),JSON.stringify(G));
   }catch(e){ console.warn('RTR: save failed',e); }
 }
 function load(){
   try{
     const r=localStorage.getItem(activeSaveKey()); if(!r) return null;
-    const o=JSON.parse(r);
-    return (o&&o.schema===SCHEMA)? migrate(o) : null;
+    const o=JSON.parse(r); if(!o) return null;
+    const v=o.schema||1;
+    if(v>SCHEMA) return null;      // written by a newer build: leave it untouched
+    if(v<SCHEMA){
+      // keep the save as it was before any migration, once per old version
+      try{ const bk=activeSaveKey()+'_pre'+v; if(!localStorage.getItem(bk)) localStorage.setItem(bk, r); }catch(_){}
+      upgradeSave(o, v);
+    }
+    return migrate(o);
   }catch(e){ console.warn('RTR: load failed',e); return null; }
 }
 addEventListener('visibilitychange',()=>{ if(document.visibilityState==='hidden') save(); });
 addEventListener('pagehide', save);
 addEventListener('beforeunload', save);
+/* The save version chain. Each step takes a save written at version n and
+   brings it to n+1. A save is never dropped for being old: load() runs every
+   step it needs, after keeping a raw copy under <slot>_pre<n>. */
+const SAVE_STEPS={
+  // 1 -> 2: every career gets its own seed, so scene picks and resumes stop
+  // following the calendar. Derived from the save itself so it is stable.
+  1(o){
+    const w=o.w||{};
+    ['name','nick','finisherName','finisherNameB','catch'].forEach(k=>{ if(typeof w[k]==='string') w[k]=w[k].replace(PLAIN_RE,''); });
+    o.seed=(hashStr((o.w&&o.w.name||'')+'|'+(o.savedAt||0)+'|'+((o.car&&o.car.year)||0))>>>0)||1; },
+};
+// Player typed text is printed through innerHTML across the game, so the
+// characters that could open markup never get into a save in the first place.
+const PLAIN_RE=/[<>&"`]/g;
+function upgradeSave(o, from){
+  for(let v=from; v<SCHEMA; v++){ const f=SAVE_STEPS[v]; if(f) f(o); }
+  o.schema=SCHEMA; return o;
+}
+// the per career salt for every deterministic pick
+function careerSeed(){ return (G&&G.seed)||0; }
 // bring a career started before the business systems existed up to date
 function migrate(o){
   const c=o.car, w=o.w; if(!c||!w) return o;
@@ -4771,17 +4800,21 @@ function poseOf(n){ return POSES[n]||POSES.stand; }
    that asks is above this line and some of it runs while the page is still
    being read. A const would be read before its own declaration and throw. */
 var GFX_SMOOTH;
-function gfxSmooth(){
-  if(GFX_SMOOTH===undefined){ try{ GFX_SMOOTH = localStorage.getItem('rtr_gfx')!=='retro'; }catch(_){ GFX_SMOOTH=true; } }
-  return GFX_SMOOTH;
-}
+/* Retired (decision 3 in docs/PLAN.md): the game has one look now, the pixel
+   sprites in pxwrestler.js. Wrestlers no longer read this at all; the chrome
+   (icons, belts, type) stays on the smooth set until the Phase A2 re-skin
+   replaces it, so a player who picked Retro sees the new sprites in the
+   default chrome. The old key is left where it is and read for nothing. */
+function gfxSmooth(){ return true; }
 function setGfx(smooth){
   GFX_SMOOTH=!!smooth;
   try{ localStorage.setItem('rtr_gfx', smooth?'smooth':'retro'); }catch(_){}
   document.documentElement.classList.toggle('gfx-retro', !smooth);
 }
 document.documentElement.classList.toggle('gfx-retro', !gfxSmooth());
-function wrestlerSVG(L,opt){ return gfxSmooth() ? wrestlerSVGSmooth(L,opt) : wrestlerSVGRetro(L,opt); }
+// every wrestler on every screen is drawn by the pixel sprite renderer; the
+// two older renderers stay below until Phase A2 has moved the share card off them
+function wrestlerSVG(L,opt){ return window.RTR_PX ? RTR_PX.svg(L,opt) : wrestlerSVGSmooth(L,opt); }
 function wrestlerSVGRetro(L,opt){
   L=Object.assign({},DEFLOOK,L||{}); opt=opt||{};
   const p=poseOf(opt.pose);
@@ -6078,14 +6111,14 @@ function gotoStep(n){
   window.scrollTo(0,0);
 }
 function finishCreate(){
-  const name=($('cName').value||'').trim()||'The Rookie';
+  const name=($('cName').value||'').trim().replace(PLAIN_RE,'')||'The Rookie';
   const st=STYLES.find(s=>s.id===CREATE.style);
   const attrs=styleAttrs(st);
   const mastery={}; MCATS.forEach(c=>mastery[c.id]=0);
   G={ schema:SCHEMA, screen:'career',
-    w:{ name, nick:($('cNick').value||'').trim(), align:$('cAlign').value, era:$('cEra').value, style:CREATE.style,
+    w:{ name, nick:($('cNick').value||'').trim().replace(PLAIN_RE,''), align:$('cAlign').value, era:$('cEra').value, style:CREATE.style,
         look:Object.assign({},CREATE.look), attrs, mastery, moves:(window.RTR_STARTER_MOVES||[]).slice(), custom:[], finisher:null, tp:0, xp:0,
-        finisherName:($('cFinName').value||'').trim()||null,
+        finisherName:($('cFinName').value||'').trim().replace(PLAIN_RE,'')||null,
         finisherNameB:(($('cFinNameB')&&$('cFinNameB').value)||'').trim()||null,
         catch:(($('cCatch')&&$('cCatch').value)||'').trim()||null,
         entrance:($('cEntrance').value||'metal') },
@@ -6101,6 +6134,7 @@ function finishCreate(){
     log:[], hist:[]
   };
   RNG=(name.length*7919+Date.now())>>>0;
+  G.seed=RNG||1;
   checkUnlocks();          // you already know everything your ratings allow
   // your first character, chosen to suit the archetype you built
   const fits=GIMMICKS.filter(g=>g.align===G.w.align);
@@ -7570,7 +7604,7 @@ function renderHome(){
   const s=load(); const el=$('homeCont');
   try{ paintProfile(); paintBotNav('home'); }catch(_){}
   if(!s){
-    const hasBackup = (()=>{ try{ return !!localStorage.getItem(SAVE+'_prev'); }catch(_e){ return false; } })();
+    const hasBackup = (()=>{ try{ return !!localStorage.getItem(activeSaveKey()+'_prev'); }catch(_e){ return false; } })();
     // If ANY slot has a save, show the picker even without an active one.
     // (Happens when the active slot is empty but another slot has a career.)
     const anySave = SLOT_KEYS.some(k=>{ try{ return !!localStorage.getItem(k); }catch(_){ return false; } });
@@ -7587,7 +7621,7 @@ function renderHome(){
       </div>
     </div>
     ${anySave ? slotPickerHTML() : ''}
-    ${gfxToggleHTML()}`;
+    `;
     return;
   }
   const c=s.car, w=s.w;
@@ -7619,25 +7653,12 @@ function renderHome(){
     <div class="row" style="margin-top:12px;justify-content:center;">
       <button class="ghost" style="padding:7px 14px;font-size:12px;" onclick="go('start')">Start a new career</button>
     </div>
-    ${gfxToggleHTML()}`;
+    `;
 }
 /* The style switch. It reloads rather than repainting in place, because a
    figure, an icon or a belt drawn in the old style is sitting in markup all
    over the page (the inbox, the news, the locker) and a reload is the one
    repaint that cannot miss any of them. The save is already on disk. */
-function gfxToggleHTML(){
-  const sm=gfxSmooth();
-  return `<div class="gfxrow"><span class="gfx-lab">Graphics</span>
-    <div class="gfxseg" role="group" aria-label="Graphics style">
-      <button class="${sm?'on':''}" aria-pressed="${sm}" onclick="pickGfx(true)">Smooth</button>
-      <button class="${sm?'':'on'}" aria-pressed="${!sm}" onclick="pickGfx(false)">Retro</button>
-    </div></div>`;
-}
-function pickGfx(smooth){
-  if(!!smooth===gfxSmooth()) return;
-  setGfx(smooth);
-  try{ location.reload(); }catch(_){ renderHome(); }
-}
 /* The front page is a HUB, not a splash. The golf game leads with the thing it
    wants opened today (the daily) and puts the season track next to it; this is
    the same idea in wrestling's furniture. Both cards read from the SAVE, not
@@ -7720,7 +7741,9 @@ function continueCareer(dest){ G=load(); if(!G){ renderHome(); return; }
   if(!G.world) initWorld();               // living world state for older saves
   migrateChampions();                     // upgrade champion shape for older saves
   rehydrateCharOverrides();               // re-apply world event mutations after load
-  RNG=(G.car.year*104729+G.car.week*7919+1)>>>0;
+  // carry the career's own random stream on; an old save without one mixes in
+  // its seed so two careers on the same week do not replay the same rolls
+  RNG=(G.rng!=null)? (G.rng>>>0) : ((careerSeed()^(G.car.year*104729+G.car.week*7919+1))>>>0);
   go(G.car.retired?'hof':(dest||'career')); }   // a home card can open straight onto its own screen
 
 /* ============================================================
@@ -8352,7 +8375,7 @@ function promptCatchphrase(){
      <input type="text" id="_catchIn" maxlength="60" style="width:100%;padding:8px 10px;font-size:14px;" value="${cur}" placeholder="Believe that.">
      <p class="hint" style="margin-top:6px;">The line opens every promo you cut from now on.</p>`,
     [{label:'Skip',cls:'ghost',fn:closeModal},
-     {label:'Say it',fn:()=>{ const v=(document.getElementById('_catchIn')&&document.getElementById('_catchIn').value||'').trim();
+     {label:'Say it',fn:()=>{ const v=(document.getElementById('_catchIn')&&document.getElementById('_catchIn').value||'').trim().replace(PLAIN_RE,'');
        if(v){ w.catch=v; pushInboxItem({ico:pico('microphone',18),sev:'good',txt:`<b>Catchphrase:</b> "${v}"`}); }
        closeModal(); save(); renderCareer(); }}]);
 }
@@ -14590,6 +14613,9 @@ function yearEnd(){
   if(c.age>=36 && rnd()<retireOdds){ retire('Your body finally called it. Too many miles, too many landings.'); }
 }
 function _retireCoinBonus(){ try{ awardCoins(COIN_CAREER_DONE,'a career, start to finish',true); }catch(_){} }
+// One legacy number, read by the Hall screen, the legends archive and the
+// career simulator. It was written out three times.
+function legacyOf(c,w){ return Math.round(c.rep/60 + c.reigns.length*14 + c.rec.w*1.4 + c.pop*0.7 + ovr(w)*0.6); }
 function retire(reason){ G.car.retired=true; G.car.retireReason=reason||'You walked away on your own terms.';
   _retireCoinBonus();     // a finished career is the biggest single coin award in the game
   archiveToLegends();     // record this career to the cross-save Hall of Legends
@@ -14635,7 +14661,7 @@ function loadLegends(){ try{ return JSON.parse(localStorage.getItem(LEGENDS_KEY)
 function saveLegends(list){ try{ localStorage.setItem(LEGENDS_KEY, JSON.stringify(list.slice(0,60))); } catch(_e){} }
 function archiveToLegends(){
   const c=G.car, w=G.w;
-  const legacy=Math.round(c.rep/60 + c.reigns.length*14 + c.rec.w*1.4 + c.pop*0.7 + ovr(w)*0.6);
+  const legacy=legacyOf(c,w);
   const grade= legacy>=180?'A+':legacy>=150?'A':legacy>=120?'B+':legacy>=95?'B':legacy>=70?'C+':legacy>=45?'C':'D';
   const entry={ name:w.name, nick:w.nick||'', years:c.year, wl:`${c.rec.w}-${c.rec.l}`,
     titles:c.reigns.length, earnings:c.earnings, pop:Math.round(c.pop||0), ovr:ovr(w),
@@ -14701,14 +14727,14 @@ function newCareerConfirm(){ modal('Start a new career?','Your current wrestler 
     // If they haven't already been archived, keep them anyway as an unfinished run
     try{ archiveToLegends(); }catch(_e){}
     // And keep the raw save one step back so a misclick is recoverable
-    try{ const cur=localStorage.getItem(SAVE); if(cur) localStorage.setItem(SAVE+'_prev', cur); }catch(_e){}
+    try{ const cur=localStorage.getItem(activeSaveKey()); if(cur) localStorage.setItem(activeSaveKey()+'_prev', cur); }catch(_e){}
     closeModal(); localStorage.removeItem(activeSaveKey()); G=null; go('home');}}]); }
 // Recover the last career from the auto-backup slot (available on the home screen).
 function restoreBackup(){
   try{
-    const prev=localStorage.getItem(SAVE+'_prev');
+    const prev=localStorage.getItem(activeSaveKey()+'_prev');
     if(!prev){ toast('No backup on file'); return; }
-    localStorage.setItem(SAVE, prev);
+    localStorage.setItem(activeSaveKey(), prev);
     toast('Backup restored'); continueCareer();
   }catch(_e){ toast('Couldn\'t restore backup'); }
 }
@@ -15141,7 +15167,7 @@ function drawCard(){
   const st=styleOf(), f=myFaction();
   const gear=w.look.gear||'#C6392C';
   const bg=`linear-gradient(180deg,${shade(gear,-58)},#0b0a0a 62%),radial-gradient(circle at 50% 24%,${shade(gear,-20)}55,transparent 62%)`;
-  const legacy=Math.round(c.rep/60 + c.reigns.length*14 + c.rec.w*1.4 + c.pop*0.7 + ovr(w)*0.6);
+  const legacy=legacyOf(c,w);
   const rows=[['Years Active',c.year],['Record',`${c.rec.w}-${c.rec.l}`],['Title Reigns',c.reigns.length],
     ['Earnings',money(c.earnings)],['Popularity',Math.round(c.pop)],['Moves Known',w.moves.length+'/'+MOVES.length]];
   const hi=(G.hi||[]).slice(0,3);
@@ -16994,7 +17020,7 @@ function pmSayChips(){
   pmSay(encodeURIComponent(JSON.stringify({k:'chips',line,read:{hostile,intensity,specific,crowd,wantsTitle:tags.some(t=>t==='threat')&&PMCTX.opp&&PMCTX.opp.holdsBelt,kind,tags,words:line.split(/\s+/).length}})));
 }
 function pmCustom(){
-  const el=$('pmCustom'), v=(el&&el.value||'').trim();
+  const el=$('pmCustom'), v=(el&&el.value||'').trim().replace(PLAIN_RE,'');
   if(v.length<4){ toast('Say a bit more than that'); return; }
   pmSay(encodeURIComponent(JSON.stringify({k:'custom',line:v})));
 }
@@ -17569,7 +17595,7 @@ function askTeam(id){
     <div class="flab" style="margin-top:10px;">Team name</div>
     <input type="text" id="teamName" maxlength="28" value="${sug}">`,
     [{label:'Cancel',cls:'ghost',fn:closeModal},
-     {label:'Make it official',fn:()=>{const n=($('teamName')&&$('teamName').value||'').trim()||sug;
+     {label:'Make it official',fn:()=>{const n=($('teamName')&&$('teamName').value||'').trim().replace(PLAIN_RE,'')||sug;
        closeModal(); formTeam(id,n); save(); renderCrew(); toast(n+' are a team');}}]);
 }
 function askStable(){
@@ -17579,7 +17605,7 @@ function askStable(){
     <div class="flab" style="margin-top:10px;">Stable name</div>
     <input type="text" id="stableName" maxlength="28" value="${sug}">`,
     [{label:'Cancel',cls:'ghost',fn:closeModal},
-     {label:'Found it',fn:()=>{const n=($('stableName')&&$('stableName').value||'').trim()||sug;
+     {label:'Found it',fn:()=>{const n=($('stableName')&&$('stableName').value||'').trim().replace(PLAIN_RE,'')||sug;
        closeModal(); foundStable(n); save(); renderCrew(); toast(n+' is born');}}]);
 }
 function askManager(id){
@@ -18016,7 +18042,7 @@ function buildBackstageLayout(){
   const rival   = c.rivalId;
   const storyId = story() && story().charId;
   const excludeIds = new Set([worldCh, secCh, rival, storyId].filter(Boolean));
-  const seed = `${c.year}-${c.week}-${me.id}`;
+  const seed = `${careerSeed()}-${c.year}-${c.week}-${me.id}`;
   const otherPool = roster.filter(x=>!excludeIds.has(x.id)).map(x=>x.id);
   // Locker room takes priority so the main dressing room is never dead even on
   // tiny indie rosters. Catering and gorilla take what's left over.
@@ -19783,7 +19809,7 @@ function pickSegment(){
   const pool = SEGMENT_LIB.filter(s=>{ try{ return s.when(c); }catch(_){ return false; } });
   if(!pool.length) return null;
   // Deterministic pick per week so the same load shows the same segment
-  const seed = `${c.year}-${c.week}-seg`;
+  const seed = `${careerSeed()}-${c.year}-${c.week}-seg`;
   let h=2166136261>>>0;
   for(let i=0;i<seed.length;i++){ h^=seed.charCodeAt(i); h=Math.imul(h,16777619); }
   const idx = (h>>>0) % pool.length;
@@ -20046,7 +20072,7 @@ function pickScene(trigger){
   // story beat that is due); the highest priority wins when two are due
   const pris=pool.filter(s=>s.priority).sort((a,b)=>(+b.priority)-(+a.priority)); if(pris.length) return pris[0];
   // weighted pick, deterministic per week so a reload shows the same scene
-  const seed=`${c.year}-${c.week}-${trigger||'any'}`;
+  const seed=`${careerSeed()}-${c.year}-${c.week}-${trigger||'any'}`;
   let h=2166136261>>>0;
   for(let i=0;i<seed.length;i++){ h^=seed.charCodeAt(i); h=Math.imul(h,16777619); }
   const total=pool.reduce((s,p)=>s+(p.weight||1),0);
@@ -20493,7 +20519,7 @@ function confirmRetire(){ modal('Hang up the boots?','You can retire any time. Y
 
 function renderHof(){
   const c=G.car, w=G.w;
-  const legacy=Math.round(c.rep/60 + c.reigns.length*14 + c.rec.w*1.4 + c.pop*0.7 + ovr(w)*0.6);
+  const legacy=legacyOf(c,w);
   const grade= legacy>=180?'A+':legacy>=150?'A':legacy>=120?'B+':legacy>=95?'B':legacy>=70?'C+':legacy>=45?'C':'D';
   const inducted=legacy>=120;
   // Grade by area, not just one number, so the induction reads like a real one

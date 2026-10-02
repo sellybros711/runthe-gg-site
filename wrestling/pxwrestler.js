@@ -695,7 +695,7 @@ function url(look, opts){
   if (CACHE[k]) return CACHE[k];
   var u = canvas(look, o).toDataURL('image/png');
   CACHE[k] = u; KEYS.push(k);
-  if (KEYS.length > 120) delete CACHE[KEYS.shift()];
+  if (KEYS.length > 400) delete CACHE[KEYS.shift()];
   return u;
 }
 function img(look, opts, cls){
@@ -714,7 +714,103 @@ function breathe(){
     flip ^= 1;
     var list = document.querySelectorAll('img.rtr-px[data-b0]');
     for (var i = 0; i < list.length; i++) list[i].src = list[i].getAttribute(flip ? 'data-b1' : 'data-b0');
+    var ims = document.querySelectorAll('image.rtr-px[data-b0]');
+    for (var j = 0; j < ims.length; j++) ims[j].setAttribute('href', ims[j].getAttribute(flip ? 'data-b1' : 'data-b0'));
   }, 720);
+}
+
+
+/* ─── the game's saved looks ──────────────────────────────────────────
+   The career game stores looks in its own older shape (hex skin and hair,
+   one attire, one accessory, and so on) and every cosmetic a player owns is
+   keyed on those ids. Nothing is rewritten in a save: the old look is read
+   here, at draw time, into the closest new look. So an owned item can never
+   be lost to a conversion, and a value with no pixel version yet falls back
+   to its nearest neighbour until one is drawn. DESIGN.md section 10. */
+function nearest(hex, list, get){
+  var m = /^#?([0-9a-f]{6})$/i.exec(String(hex || '')); if (!m) return -1;
+  var n = parseInt(m[1], 16), r = n >> 16, g = (n >> 8) & 255, b = n & 255, best = -1, bd = 1e9;
+  list.forEach(function(it, i){
+    var q = parseInt(get(it).slice(1), 16), d = Math.pow(r - (q >> 16), 2) + Math.pow(g - ((q >> 8) & 255), 2) + Math.pow(b - (q & 255), 2);
+    if (d < bd) { bd = d; best = i; }
+  });
+  return best;
+}
+var LEG = {
+  hair: { undercut: 'short', wild: 'long', bun: 'topknot', curls: 'afro', fauxhawk: 'mohawk', braids: 'dreads', halfshave: 'mohawk',
+    frosted: 'spiky', waist: 'long', widow: 'slick', flames: 'spiky', hornhair: 'spiky', swoop: 'slick' },
+  facial: { beard: 'beard', stache: 'stache', goatee: 'goatee', fullbeard: 'longbeard', mutton: 'beard', handlebar: 'stache', soul: 'goatee' },
+  paint: { warrior: 'bars', eyeblack: 'bars', tribal: 'bars', visorpaint: 'bars', skull: 'skull', venom: 'skull', halfpaint: 'split', crossface: 'split' },
+  boots: { tall: 'tall', short: 'low', pads: 'kick', wraps: 'wraps', barefoot: 'wraps', sneak: 'sneaks', hightop: 'sneaks' },
+  tattoo: { sleeve: 'sleeve', chest: 'chest', full: 'both', tribalink: 'sleeve', barbwire: 'sleeve', neck: 'chest', kanji: 'chest' },
+  build: { lean: 'cruiser', athletic: 'athletic', heavy: 'heavy' },
+};
+function fromLegacy(L){
+  L = L || {};
+  if (L.v === 2) return normal(L);                    // already a new look
+  var o = {}, a = L.attire || 'trunks', acc = L.acc || '';
+  o.build = L.figure === 'f' ? (LEG.build[L.build] || 'athletic') : (BODY[L.build] ? L.build : (LEG.build[L.build] || 'athletic'));
+  o.figure = L.figure === 'f' ? 'f' : 'm';
+  var si = nearest(L.skin, SKINS, function(x){ return x; }); o.skin = si < 0 ? DEFAULT.skin : si;
+  var hi = nearest(L.hair, HAIR_COLORS, function(x){ return x[1]; }); o.hc = hi < 0 ? 0 : hi;
+  var hs = L.hairStyle || 'short';
+  o.hair = ids(HAIRS).indexOf(hs) >= 0 ? hs : (LEG.hair[hs] || 'short');
+  var f = L.face || 'none';
+  o.facial = LEG.facial[f] || 'none';
+  o.paint = LEG.paint[f] || 'none';
+  o.mask = !L.mask || L.mask === 'none' ? 'none' : L.mask === 'half' ? 'half' : 'lucha';
+  o.bottom = 'trunks'; o.top = 'none'; o.entrance = 'none';
+  if (['trunks', 'tights', 'singlet', 'shorts'].indexOf(a) >= 0) o.bottom = a;
+  else if (a === 'tank' || a === 'crop') o.top = a;
+  else if (a === 'jacket' || a === 'robe' || a === 'vest') o.entrance = a;
+  else if (a === 'duster') o.entrance = 'robe';
+  else if (a === 'bodysuit') o.bottom = 'singlet';
+  else if (a === 'armor' || a === 'gi') { o.bottom = 'pants'; o.top = 'rash'; }
+  else if (a === 'hoodie') { o.entrance = 'jacket'; }
+  else if (a === 'chaps') o.bottom = 'pants';
+  else if (a === 'ref') { o.bottom = 'pants'; o.top = 'tee'; }
+  o.boots = LEG.boots[L.boots] || 'tall';
+  if (L.boots === 'goldboot') o.bootc = '#e0b341';
+  o.wrists = acc === 'gloves' ? 'gloves' : acc === 'wrist' ? 'tape' : 'none';
+  o.elbows = acc === 'elbow' ? 'pad' : 'none';
+  o.knees = acc === 'knee' ? 'pads' : 'none';
+  o.shades = acc === 'shades';
+  if (acc === 'cape' && o.entrance === 'none') o.entrance = 'cape';
+  o.belt = acc === 'belt' ? 'waist' : 'none';
+  o.tattoo = LEG.tattoo[L.tattoo] || 'none';
+  o.gear = L.gear; o.trim = L.trim;
+  if (a === 'ref') { o.gear = '#23232b'; o.trim = '#f4e8db'; }
+  o.mood = L.mood || 'neutral';
+  return normal(o);
+}
+
+/* The game's call sites pass a frame and one of its own pose names, and lay
+   the result out in a fixed SVG box per frame. This keeps every one of them
+   working: the same box, with the sprite placed in it. */
+var GAME_POSE = { stand: 'idle', ready: 'stance', guard: 'stance', run: 'stance', runBack: 'stance', grapple: 'stance', lockup: 'stance',
+  strike: 'point', wind: 'stance', chop: 'point', clothes: 'point', kick: 'stance', bigboot: 'stance', stomp: 'stance', lift: 'raise', carry: 'raise',
+  press: 'raise', held: 'idle', vert: 'idle', climb: 'raise', kneel: 'stance', taunt: 'point', torso: 'flex', celebrate: 'raise', point: 'point',
+  stagger: 'idle', reel: 'idle', corner: 'idle', whip: 'point', ropes: 'stance', raised: 'raise', dive: 'raise', splash: 'idle',
+  refIdle: 'idle', refWatch: 'stance', refUp: 'raise', refDown: 'point', refNo: 'point', refRaise: 'raise' };
+var LYING = { prone: 1, proneUp: 1, pin: 1, submit: 1, bridge: 1, splash: 1, held: 0 };
+var BOX = { head: [17, -7, 30, 36], legs: [14, 40, 36, 50], wide: [-24, -14, 112, 118], full: [-6, -8, 76, 104] };
+var K = 1.55, OX = 32 - CX * K, OY = 89 - SOLE * K;   // the old figure stood at x 32, soles on y 89, crown near y 1; at 1.55 a raised fist still clears the top of the full box
+function svg(L, opt){
+  opt = opt || {};
+  var look = fromLegacy(L);
+  if (opt.belt && opt.belt.carry) look.belt = opt.belt.carry === 'shoulder' ? 'shoulder' : 'waist';
+  var gp = opt.pose || 'stand', pose = GAME_POSE[gp] || (POSES.indexOf(gp) >= 0 ? gp : 'idle');
+  if (opt.belt && opt.belt.carry === 'hand') pose = 'raise';
+  var lying = !!LYING[gp];
+  var box = opt.frame === 'head' ? BOX.head : opt.frame === 'legs' ? BOX.legs : (opt.frame === 'action' || lying) ? BOX.wide : BOX.full;
+  var o = { pose: pose, scale: 2, shadow: opt.frame !== 'head' && !lying, flip: !!opt.flip };
+  var a = url(look, o), b = opt.still ? a : url(look, Object.assign({}, o, { frame: 1 }));
+  var w = W * K, h = H * K, tf = lying ? ' transform="rotate(-90 32 ' + (OY + h * 0.62).toFixed(1) + ')"' : '';
+  var t = opt.title ? '<title>' + String(opt.title).replace(/[<>&"]/g, '') + '</title>' : '';
+  return '<svg viewBox="' + box.join(' ') + '" xmlns="http://www.w3.org/2000/svg" class="pxfig">' + t
+    + '<image class="rtr-px" href="' + a + '"' + (opt.still ? '' : ' data-b0="' + a + '" data-b1="' + b + '"')
+    + ' x="' + OX.toFixed(2) + '" y="' + OY.toFixed(2) + '" width="' + w.toFixed(2) + '" height="' + h.toFixed(2) + '"'
+    + ' preserveAspectRatio="none" style="image-rendering:pixelated"' + tf + '/></svg>';
 }
 
 var API = {
@@ -722,6 +818,7 @@ var API = {
   SKINS: SKINS, HAIR_COLORS: HAIR_COLORS, FIGURES: FIGURES,
   normal: normal, hash: hash, ramp: ramp, mix: mix, contrast: contrast, inkOn: inkOn,
   paint: paint, canvas: canvas, url: url, img: img, breathe: breathe,
+  fromLegacy: fromLegacy, svg: svg,
 };
 if (typeof module !== 'undefined' && module.exports) module.exports = API;
 if (typeof window !== 'undefined') { window.RTR_PX = API; breathe(); }

@@ -2449,6 +2449,10 @@
     "world.js": {
       "v": "3",
       "sha": "ae8d13fb75695dc9"
+    },
+    "pxwrestler.js": {
+      "v": "2",
+      "sha": "8d3f6bb674692f55"
     }
   }
 }
