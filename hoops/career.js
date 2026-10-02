@@ -340,6 +340,9 @@ function normaliseNets(net) {
 }
 /* A new season: every club regresses toward the middle and moves a little. */
 function driftLeague(L, beats) {
+  /* Before the data's season is over nothing moves: those summers are the
+     real past, and the league in the data is what it became. */
+  if (L.opt && L.opt.cal && L.year <= L.league.latest + 1) return;
   coachCarousel(L, beats);
   const rng = rngAt(L, 'drift');
   const net = {};
@@ -632,18 +635,22 @@ function rookieFor(L, c, d) {
   const peak = r() < 0.08 ? 9 : 1.5 + r() * 4;
   return { n, pos: pick(r, R_POS), b: d - 20, w: round1(peak), g: 1, d };
 }
-function rostOf(L) {
-  if (!storyOn(L) || !L.league.roster) return null;
-  const lg = L.league;
-  if (lg.rost) return lg.rost;
-  const R = {};
+/* The rosters as the data has them, aged to season Y: a rookie a club for
+   every draft after the data's, and the men who have retired by then gone. */
+function rostBuild(L, Y) {
+  const lg = L.league, R = {};
   for (const c of CLUBS) {
     R[c] = ((lg.roster && lg.roster[c]) || []).map((p) => ({ n: p[0], pos: p[1], b: p[2], w: p[3] }));
-    for (let d = (lg.latest || 2026) + 1; d <= L.year; d++) R[c].push(rookieFor(L, c, d));
-    R[c] = R[c].filter((e) => !rostGone(L, e, L.year));
+    for (let d = (lg.latest || 2026) + 1; d <= Y; d++) R[c].push(rookieFor(L, c, d));
+    R[c] = R[c].filter((e) => !rostGone(L, e, Y));
   }
-  lg.rost = R; lg.rostY = L.year;
+  lg.rost = R; lg.rostY = Y;
   return R;
+}
+function rostOf(L) {
+  if (!storyOn(L) || !L.league.roster) return null;
+  if (L.league.rost) return L.league.rost;
+  return rostBuild(L, L.year);
 }
 /* A reader that jumps years plays the summers it missed, quietly. */
 function rostNow(L) {
@@ -664,6 +671,10 @@ function rosterSummer(L, beats, quietY) {
   const R = rostOf(L);
   const Y = quietY || L.year;
   if (!R || L.league.rostY >= Y) return;
+  /* A career dated back (L.opt.cal) is in the real past until the season
+     after the data's: no trades, no signings, nobody invented. The rosters
+     are the data's, built fresh for that season. */
+  if (L.opt && L.opt.cal && Y <= L.league.latest + 1) { rostBuild(L, Y); return; }
   const rng = E.createSeededRNG(E.hashSeed(String(L.seed) + ':' + Y + ':moves')), lg = L.league;
   lg.rostY = Y;
   const before = {};
@@ -1031,6 +1042,16 @@ function newLife(opts) {
   if (L.opt.story && dk && dk !== 'normal' && DIFFS[dk]) L.opt.diff = dk;
   if (ch) L.challenge = ch;
   L.year = L.league.latest + 1;
+  /* THE ROAD ENDS IN TODAY'S LEAGUE. A sophomore who started in the data's
+     newest season reached the draft four or more summers later, into a league
+     that had drifted that long: clubs regressed to the middle, stars traded,
+     benches turned over. The real league was gone before he got there. So a
+     story career that starts in high school is dated ROAD_LEAD years back,
+     which puts the usual draft (after a freshman year of college) on the real
+     draft, and the league does not move until then (driftLeague). A longer
+     road arrives in a league that has moved for the extra years, which is
+     true to the road. A son keeps his father's calendar. */
+  if (road && L.opt.story && !(L.opt.story && cleanParent(o.parent))) { L.year -= ROAD_LEAD; L.opt.cal = 1; }
   const parent = L.opt.story ? cleanParent(o.parent) : null;
   if (parent) legacyLeague(L, parent, o.parentLeague, road ? AGE_HS : bg.age);
   const rng = E.createSeededRNG(E.hashSeed(seed + ':create'));
@@ -4065,6 +4086,9 @@ function legacyView(L) {
  * stock, and from there the NBA half plays exactly as it always has.
  */
 const AGE_HS = 15;
+/* How many seasons before the data's newest one a high school career starts:
+   sophomore, junior, senior and a college freshman year, then the draft. */
+const ROAD_LEAD = 4;
 /* A sophomore's ratings sit around this, and his ceiling is drawn from this
    range, skewed low by the exponent. Fitted so the road arrives at draft night
    where the backgrounds do. See check-career section 8. */
@@ -6693,7 +6717,12 @@ function choose(L, i, extra) {
           logIt(L, 'Signed overseas after going undrafted.', '');
           break;
         }
-        const pSL = clamp(0.04 + (ovrOf(L) - 58) * 0.033 + (L.m.fame - 20) * 0.003, 0.1, 0.85);
+        /* The floor is 5%: a player too weak to be drafted almost never talks
+           his way onto a roster from Summer League. At 10% the high school
+           road reached the league 94.9% of the time over 3,000 careers, on
+           the 95% ceiling, so CI's 1,000 flapped with any change to the
+           seeds. At 5% it is 94.4 on CI's sample and 94.3 on 1,500 roads. */
+        const pSL = clamp(0.04 + (ovrOf(L) - 58) * 0.033 + (L.m.fame - 20) * 0.003, 0.05, 0.85);
         if (rng() >= pSL) {
           L.flags.overseas = (L.flags.overseas || 0) + 1;
           L.contract = { years: 1, total: 1, salary: 0.6, kind: 'overseas', start: L.year };
@@ -7505,7 +7534,7 @@ const publicAPI = {
   CAREER_API_VERSION, LIFE_VERSION,
   CONF, CLUBS, confOf, POS, POS_NAME, RATINGS, RATING_NAME, RATING_SHORT, WEIGHTS,
   ARCHES, ARCH_KEYS, POS_ARCHES, archesFor, archBase, POS_SIZE, wtFor, wtRange, sizeOf, sizeTilt, heightText, BACKGROUNDS, BG_KEYS, AGENTS, AWARD_NAME, ROUNDS, VERDICTS, EVENTS,
-  seedLeague, normaliseNets, newLife, rotationOf, bestFive, fitAt, rostOf, randomName, overall, ovrOf, step, choose, nextLabel,
+  seedLeague, normaliseNets, newLife, rotationOf, bestFive, fitAt, rostOf, rostNow, randomName, overall, ovrOf, step, choose, nextLabel,
   view, perGame, totals, legacy, legacyScore, clubNet, clubTier, rotationBar,
   roleOf, lineMeans, capFor, marketSalary, projectedPick, draftOrder, money, ordinal,
   clutchOptions, offers, ACTS, actsOpen, act, retireNow, lifeOf, lifeLine, sonsOf, rivalOn, featSummary, boardSummary, verdictOf,

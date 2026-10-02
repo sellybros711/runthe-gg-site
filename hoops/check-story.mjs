@@ -293,6 +293,63 @@ section('12. Phase D: origins, routes, endings, epilogues and the legend switch'
   void L;
 }
 
+section('13. the road ends in today\'s league');
+{
+  /* A high school career is dated back so the usual draft is the real one,
+     and nothing in the league moves before it. A player reported the Thunder
+     without Shai Gilgeous-Alexander, picking 10th, in a league six summers on. */
+  const latest = league.latest;
+  const byYear = {};
+  let real = null;
+  for (let i = 0; i < 120; i++) {
+    const L = C.generateRoad({ seed: 'cal' + i, league });
+    byYear[L.year] = (byYear[L.year] || 0) + 1;
+    if (!real && L.year === latest + 1) real = L;
+  }
+  const early = Object.keys(byYear).filter((y) => +y > latest + 1).reduce((s2, y) => s2 + byYear[y], 0);
+  ok((byYear[latest + 1] || 0) >= 120 * 0.3, `the usual draft is the real one: a third or more of roads reach the league in ${latest + 1} (${JSON.stringify(byYear)})`);
+  ok(early < 120 * 0.7, 'and the rest arrive a few years later, not all of them');
+  ok(real && real.opt.cal === 1, 'a high school story career carries the calendar flag');
+  if (real) {
+    /* No real player has changed clubs, and the only ones gone are veterans
+       retiring at the end of the data's season, the same rule a draft night
+       start meets. */
+    const R = C.rostOf(real);
+    /* A man traded during the data's season is listed by both of his clubs. */
+    const dataClubs = {}, now = {};
+    for (const c in league.roster || {}) for (const p of league.roster[c] || []) (dataClubs[p[0]] = dataClubs[p[0]] || []).push(c);
+    for (const c in R) for (const e of R[c]) (now[e.n] = now[e.n] || []).push(c);
+    const moved = [], young = [];
+    for (const n in dataClubs) {
+      for (const c of now[n] || []) if (dataClubs[n].indexOf(c) < 0) moved.push(n + ' to ' + c);
+      const p = league.roster[dataClubs[n][0]].find((x) => x[0] === n);
+      if (!now[n] && real.year - p[2] < 33) young.push(n);
+    }
+    ok(moved.length === 0, `arriving on the real draft, no real player has changed clubs (${moved.slice(0, 4).join(', ') || 'none'})`);
+    ok(young.length === 0, `and nobody under 33 has left the league (${young.slice(0, 4).join(', ') || 'none'})`);
+    const okc = (R.OKC || []).map((e) => e.n);
+    ok(okc.indexOf('Shai Gilgeous-Alexander') >= 0, 'the Thunder still have Shai Gilgeous-Alexander');
+    const order = Object.keys(real.league.net).sort((a, b) => real.league.net[a] - real.league.net[b]);
+    const top = Object.keys(league.net).sort((a, b) => league.net[b] - league.net[a])[0];
+    ok(real.league.net[top] === league.net[top] && order.indexOf(top) === order.length - 1, `club strength is the data's: ${top}, the best club, picks last`);
+  }
+  /* The catch-up path: a screen that reads the rosters in the high school
+     years, then again at the draft, replays the summers between. Those are
+     the real past, so nobody may be traded in them. */
+  const hsL = C.newLife({ seed: 'calhs', league, start: 'hs' });
+  C.rostOf(hsL);
+  hsL.year = latest + 1;
+  const R2 = C.rostNow(hsL), moved2 = [];
+  for (const c in R2) for (const e of R2[c]) {
+    const homes = []; for (const k in league.roster || {}) if ((league.roster[k] || []).some((p) => p[0] === e.n)) homes.push(k);
+    if (homes.length && homes.indexOf(c) < 0) moved2.push(e.n + ' to ' + c);
+  }
+  ok(moved2.length === 0, `rosters read in high school and again at the draft show no trades in between (${moved2.slice(0, 3).join(', ') || 'none'})`);
+  /* A draft night career that never went to high school keeps its calendar. */
+  const bg = C.newLife({ seed: 'calbg', league, story: true });
+  ok(!bg.opt.cal && bg.year === latest + 1, 'a draft night start without a road is not back-dated');
+}
+
 section('11. the page shows it: people, legacy, news, and what you are known for');
 await (async () => {
   const ROOT = path.join(HERE, '..');

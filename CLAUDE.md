@@ -11009,6 +11009,26 @@ the dunk, the men who take the most threes for the other), then the invented sta
 generated names. The result is drawn first and the field is written around it on its own
 stream; check-career 11b holds the field to the headline.
 
+**THE ROAD ENDS IN TODAY'S LEAGUE.** Reported by a player: drafted into a 2032 league, the
+Thunder had no Shai Gilgeous-Alexander and picked 10th. A high school career started in the
+data's newest season, so the usual draft came four summers later, after four summers of
+drift: club strength regresses toward the middle, stars are traded, benches turn over. The
+real league was gone before the player arrived. A story career that starts in high school is
+now dated `ROAD_LEAD` (4) seasons back and flagged `L.opt.cal`, and `driftLeague` does nothing
+for it until the season after the data's newest. Measured over 300 generated roads: drafts
+land in 2027 (the first season after the data) 42% of the time, 2028 to 2031 for longer
+roads, which arrive in a league that has moved for exactly the extra years. An old save has
+no flag and keeps its calendar; a son keeps his father's.
+
+**Moving the dates reseeds every high school career**, because the draws are keyed on the
+year, and that exposed a band sitting on its edge: reaching the NBA from high school was
+94.9% over 3,000 careers against a ceiling of 95, identical before and after the change, so
+CI's 1,000 flapped to 95.6. The fix is a real tune, not a band: an undrafted player's
+Summer League tryout floor went 10% to 5% (every one of those tryouts in the sample sat on
+the floor), which puts it at 94.4 on CI's sample and 94.3 on 1,500 roads. Two other levers
+were tried and measured to do nothing: the tryout's base, and the overall a player needs to
+be noticed from overseas.
+
 **THE CAROUSEL** (`coachCarousel`, run from `driftLeague` every summer, the road years too):
 a club fires on how it played (your club on the record you actually played, and never after a
 title), a coach past 71 may retire, an interim is likely replaced, and the hire is weighted
