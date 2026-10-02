@@ -1369,6 +1369,68 @@ function allStarCheck(L, beats) {
   });
 }
 
+/* The field and the scores of a Saturday contest you entered. The result is
+   drawn before this runs; this only names who you were up against and writes
+   the scores around it, on its own stream, so nothing else in the career
+   moves. Everybody in it is invented: a league star or two, then names off
+   the same lists. A dunk is judged out of 100 a round, a three-point round out
+   of 40. Out in round one is a hyphen in the final column. */
+const CONTEST = {
+  dunk: { name: 'Dunk contest', n: 4, fin: 2, stars: 1, r1: [62, 96], f: [72, 100] },
+  three: { name: 'Three-point contest', n: 6, fin: 3, stars: 2, r1: [13, 27], f: [17, 31] },
+};
+function contestField(L, kind, won) {
+  const C = CONTEST[kind];
+  const rng = rngAt(L, 'contest:' + kind);
+  const span = (a) => a[0] + Math.floor(rng() * (a[1] - a[0] + 1));
+  const distinct = (n, a) => { const out = []; while (out.length < n) { const v = span(a); if (!out.includes(v)) out.push(v); } return out.sort((x, y) => y - x); };
+  const taken = new Set([L.name]), clubs = new Set([L.team]);
+  const club = () => { for (let k = 0; k < 20; k++) { const c = pick(rng, CLUBS); if (!clubs.has(c)) { clubs.add(c); return c; } } return pick(rng, CLUBS); };
+  const others = [];
+  const stars = ((L.league && L.league.figs) || []).filter((f) => !f.gone && f.club !== L.team);
+  for (let k = 0; k < C.stars && stars.length && rng() < 0.6; k++) {
+    const f = stars.splice(Math.floor(rng() * stars.length), 1)[0];
+    if (taken.has(f.n) || clubs.has(f.club)) continue;
+    taken.add(f.n); clubs.add(f.club); others.push({ n: f.n, club: f.club });
+  }
+  while (others.length < C.n - 1) {
+    const n = figName(L, rng);
+    if (taken.has(n) || others.some((o) => lastOf(o.n) === lastOf(n))) continue;
+    taken.add(n); others.push({ n, club: club() });
+  }
+  // where you finish round one: in the final if you won it, and for a dunk loss
+  // sometimes in the final and beaten there; a three-point loss is round one
+  const final = won || (kind === 'dunk' && rng() < 0.45);
+  const rank = final ? Math.floor(rng() * C.fin) : C.fin + Math.floor(rng() * (C.n - C.fin));
+  const r1 = distinct(C.n, C.r1);
+  const order = others.slice();
+  for (let k = order.length - 1; k > 0; k--) { const j = Math.floor(rng() * (k + 1)); const t = order[k]; order[k] = order[j]; order[j] = t; }
+  const rows = [];
+  for (let k = 0, o = 0; k < C.n; k++) {
+    const p = k === rank ? { n: L.name, club: L.team, you: true } : order[o++];
+    rows.push({ n: p.n, club: nick(p.club), you: !!p.you, r1: r1[k], f: null });
+  }
+  const fin = rows.slice(0, C.fin);
+  const fs = distinct(C.fin, C.f);
+  const me = fin.find((r) => r.you);
+  const rest = fin.filter((r) => !r.you);
+  for (let k = rest.length - 1; k > 0; k--) { const j = Math.floor(rng() * (k + 1)); const t = rest[k]; rest[k] = rest[j]; rest[j] = t; }
+  const byF = me ? (won ? [me].concat(rest) : rest.concat([me])) : rest;
+  byF.forEach((r, k) => { r.f = fs[k]; });
+  // the headline for a dunk you lost in the final is two misses, so it scores like one
+  if (me && !won && kind === 'dunk') me.f = Math.min(me.f, 64 + Math.floor(rng() * 19));
+  const placed = byF.concat(rows.slice(C.fin));
+  placed.forEach((r, k) => { r.place = k + 1; });
+  return { kind, name: C.name, rows: placed, champ: placed[0].n, you: placed.findIndex((r) => r.you) + 1, final };
+}
+/* One short line for the log, after the headline. */
+function contestLine(c) {
+  const w = c.rows[0], mine = c.rows.find((r) => r.you), two = c.rows[1];
+  if (mine.place === 1) return c.name + ': beat ' + two.n + ' in the final, ' + w.f + ' to ' + two.f + '.';
+  if (mine.f != null) return c.name + ': ' + w.n + ' beat you in the final, ' + w.f + ' to ' + mine.f + '.';
+  return c.name + ': out in round one with ' + mine.r1 + '. ' + w.n + ' won it.';
+}
+
 // ─── the playoffs ───────────────────────────────────────────────────────────
 
 /* The bracket around you. The other series are simulated off club nets and
@@ -6224,7 +6286,7 @@ function choose(L, i, extra) {
   const touch = extra && Number.isFinite(+extra.touch) ? clamp(+extra.touch, -1, 1) : 0;
   const rng = rngAt(L, 'pick:' + card.key + ':' + i);
   const before = snapshot(L);
-  let text = '', tone = '', beats = [], made = null;
+  let text = '', tone = '', beats = [], made = null, contest = null;
   L.pending.shift();
   const road = card.id === 'presser' ? choosePresser(L, card, opt, rng) : chooseAm(L, card, i, opt, rng, beats, touch);
   if (road) { text = road.text; tone = road.tone; if (road.made != null) made = road.made; } else switch (card.id) {
@@ -6329,11 +6391,15 @@ function choose(L, i, extra) {
       if (i === 0) {
         if (rng() < clamp((L.rt.ath - 60) * 0.025, 0.05, 0.85)) { L.flags.dunk = (L.flags.dunk || 0) + 1; bump(L, { fame: 10 }); text = 'You jump over a car. Dunk contest champion.'; tone = 'gold'; }
         else { bump(L, { fame: 2 }); text = 'Two misses on your best dunk. The judges are kind.'; }
+        contest = contestField(L, 'dunk', tone === 'gold');
       } else if (i === 1) {
         if (rng() < clamp((L.rt.sho - 65) * 0.025, 0.05, 0.85)) { L.flags.threes = (L.flags.threes || 0) + 1; bump(L, { fame: 8 }); text = 'The money ball rack. Three-point champion.'; tone = 'gold'; }
         else { bump(L, { fame: 2 }); text = 'Out in the first round. You laugh it off.'; }
+        contest = contestField(L, 'three', tone === 'gold');
       } else { bump(L, { health: 6 }); text = 'Sunday only. Fresh for the second half.'; }
       logIt(L, text, tone);
+      // the field is display, so a career from before it keeps its log as it was
+      if (contest && storyOn(L)) logIt(L, contestLine(contest), tone);
       break;
     }
     case 'clutch': {
@@ -6435,6 +6501,7 @@ function choose(L, i, extra) {
   sayAll(L, beats);
   const after = snapshot(L);
   const res = { card, picked: i, label: opt.label, text, tone, diff: diffOf(before, after), beats };
+  if (contest) res.contest = contest;
   if (made != null) res.made = made;
   L.last = { title: card.title, label: opt.label, text, tone, diff: res.diff };
   return res;

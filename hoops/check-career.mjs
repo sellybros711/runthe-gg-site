@@ -680,6 +680,35 @@ section('11. Phase E: the generated road, a son, difficulty and challenges');
   ok(new RegExp(T.pts.toLocaleString('en-US')).test(st.map((x) => x.p).join(' ')), 'and the points in it are the career\'s');
 }
 
+/* A Saturday contest names its field and its scores, and they have to agree
+   with the headline: a champion is first, a loss is not, the final is ordered,
+   nobody is in it twice, and a three-point loss is out in round one. */
+{
+  section('11b. All-Star Saturday: who you were up against');
+  let n = 0, bad = [], kinds = {};
+  for (let s = 0; s < 400 && n < 120; s++) {
+    const L = C.newLife({ seed: 'contest:' + s, league });
+    for (let k = 0; k < 4000 && !L.retired; k++) {
+      const c = L.pending[0];
+      if (c && c.id === 'allstar') {
+        const r = C.choose(L, s % 2), ct = r.contest; n++;
+        kinds[ct.kind] = (kinds[ct.kind] || 0) + 1;
+        const won = r.tone === 'gold', mine = ct.rows.find((x) => x.you), fin = ct.rows.filter((x) => x.f != null);
+        if (won !== (mine.place === 1)) bad.push(s + ': headline and place disagree');
+        if (new Set(ct.rows.map((x) => x.n)).size !== ct.rows.length) bad.push(s + ': a name twice');
+        if (fin.some((x, i) => i && x.f >= fin[i - 1].f)) bad.push(s + ': the final is out of order');
+        if (ct.kind === 'three' && !won && mine.f != null) bad.push(s + ': a three-point loss reached the final');
+        if (ct.rows.some((x) => /undefined|NaN/.test(x.n + x.club))) bad.push(s + ': junk in a row');
+        if (!L.log.some((x) => x.t.startsWith(ct.name + ':'))) bad.push(s + ': no log line');
+        break;
+      }
+      if (c) C.choose(L, 0); else C.step(L);
+    }
+  }
+  ok(n >= 60 && kinds.dunk && kinds.three, `contests reached in the sweep (${n}: ${JSON.stringify(kinds)})`);
+  ok(!bad.length, `every field agrees with its result${bad.length ? ': ' + bad.slice(0, 3).join('; ') : ''}`);
+}
+
 if (!QUICK) await browser();
 
 console.log('');

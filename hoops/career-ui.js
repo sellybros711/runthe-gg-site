@@ -189,6 +189,16 @@ var CSS = [
 /* the rows a press moved, two to a line so a long receipt does not push the next card off the screen */
 '.cr-result ul{grid-template-columns:repeat(2,minmax(0,1fr));column-gap:16px;}',
 '.cr-result li{font-size:12.5px;}',
+/* the contest table: one row an entrant, names give way before scores do */
+'.cr-ct{display:grid;gap:2px;font-size:12.5px;}',
+'.cr-ct-r{display:grid;grid-template-columns:minmax(0,1fr) 3.4em 3.4em;gap:8px;align-items:center;padding:5px 8px;background:rgba(143,160,214,.07);color:var(--k-ink-2);}',
+'.cr-ct-r span:first-child{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}',
+'.cr-ct-r span+span{text-align:right;font-variant-numeric:tabular-nums;}',
+'.cr-ct-r b{display:inline-block;min-width:1.4em;font-family:var(--k-f-pixel);font-size:9px;color:var(--k-ink-3);}',
+'.cr-ct-r i{font-style:normal;color:var(--k-ink-3);}',
+'.cr-ct-h{background:none;padding-top:0;padding-bottom:2px;font:800 10px var(--k-f-text);letter-spacing:.12em;text-transform:uppercase;color:var(--k-ink-3);}',
+'.cr-ct-r.you{color:var(--k-ink);font-weight:700;box-shadow:inset 3px 0 0 var(--k-accent);}',
+'.cr-ct-r.win b,.cr-ct-r.win span+span+span{color:var(--k-gold);}',
 '.cr-card .k-eyebrow{color:var(--k-accent);}',
 '.cr-card .k-h1{font-size:28px;margin-bottom:8px;}',
 '#cr-card-h:focus{outline:none;}',
@@ -797,7 +807,19 @@ function resultHtml(r, fresh){
   return '<div class="k-panel k-receipt cr-result ' + (r.tone || '') + (fresh ? ' k-in' : '') + '" aria-live="polite">'
     + '<div class="k-eyebrow">' + K.iconHtml('check', 2) + 'What changed</div>'
     + '<div class="cr-you">You: ' + esc(r.label) + '</div><p class="k-what">' + esc(r.text) + '</p>'
+    + contestHtml(r.contest)
     + (rows ? '<ul>' + rows + '</ul>' : '') + '</div>';
+}
+/* A Saturday contest: who was in it, round one, the final, and where you
+   finished. Out in round one is a hyphen in the final column. */
+function contestHtml(c){
+  if (!c || !c.rows) return '';
+  var head = '<div class="cr-ct-r cr-ct-h" role="row"><span role="columnheader">The field</span><span role="columnheader">Rd 1</span><span role="columnheader">Final</span></div>';
+  return '<div class="cr-ct" role="table" aria-label="' + esc(c.name) + ' results">' + head + c.rows.map(function(x){
+    return '<div class="cr-ct-r' + (x.you ? ' you' : '') + (x.place === 1 ? ' win' : '') + '" role="row">'
+      + '<span role="cell"><b>' + x.place + '</b>' + esc(x.you ? 'You' : x.n) + ' <i>' + esc(x.club) + '</i></span>'
+      + '<span role="cell">' + x.r1 + '</span><span role="cell">' + (x.f == null ? '-' : x.f) + '</span></div>';
+  }).join('') + '</div>';
 }
 function draftHtml(L, d){
   if (!d) return '';
