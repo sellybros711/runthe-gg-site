@@ -909,8 +909,9 @@ async function scenesWalk(b, serve) {
   ok(pic, 'the identity card draws the player');
 
   const seen = {}, rooms = {}, podium = [], jobs = [];
-  let presses = 0, choseInScene = 0, skipHeld = false, underneath = false, pressBefore = 0;
-  while (presses++ < 700) {
+  let presses = 0, choseInScene = 0, skipHeld = false, underneath = false, pressBefore = 0, movesPlayed = 0, ticks = 0, lastX = null;
+  await page.evaluate(() => { window.played = 0; });
+  while (presses++ < 1400) {
     const st = await page.evaluate(() => {
       const s = RTF_CAREER_UI.state();
       const ov = document.querySelector('#scov');
@@ -922,6 +923,12 @@ async function scenesWalk(b, serve) {
         plain: !!document.querySelector('#cr-card') };
     });
     if (!st.cur && !st.open) break;
+    /* A playable moment: the court is up and the meter waits for a press.
+       Press it, then let the court finish. */
+    const tick = await page.evaluate(() => { const t = document.querySelector('#tkov'); if (t && !t.hidden) { window.tickers = (window.tickers || 0) + 1; document.querySelector('#tk-go').click(); return 1; } return 0; });
+    if (tick) { ticks++; continue; }
+    const court = await page.evaluate(() => { const g = document.querySelector('#scov .ct-go'); if (g && g.offsetParent) { g.click(); played++; return 'p'; } return document.querySelector('#scov .sc-court:not(.sc-shot)') ? 'w' : ''; }).catch(() => '');
+    if (court) { if (court === 'p') movesPlayed++; await page.waitForTimeout(court === 'w' ? 250 : 50); continue; }
     if (st.open) {
       seen[st.who] = 1;
       if (st.role === 'Commissioner') podium.push(st.who === st.commish && !/^the /i.test(st.who));
@@ -948,12 +955,14 @@ async function scenesWalk(b, serve) {
       continue;
     }
     const r = await page.evaluate(() => { const c = document.querySelector('.cr-choice'); if (c) { c.click(); return 'c'; } const n = document.querySelector('#cr-next'); if (n) { n.click(); return 'n'; } return 'x'; });
-    if (r === 'x') break;
+    if (r === 'x') { lastX = await page.evaluate(() => ({ html: document.body.innerText.slice(0, 300), scov: !!document.querySelector('#scov:not([hidden])'), tk: !!document.querySelector('#tkov:not([hidden])'), court: !!document.querySelector('.sc-court') })); break; }
   }
+  if (lastX || presses >= 1400) console.log('  walk ended:', presses, JSON.stringify(lastX));
   ok(podium.length > 0 && podium.every(Boolean), `draft night is told from the podium, by the career's own commissioner (${podium.length} beats, ${Object.keys(seen).join(', ')})`);
   ok(jobs.length === 0, `no plate names a person by job alone (${jobs.slice(0, 2).join(', ') || 'none'})`);
   ok(rooms['rm-draft'] && rooms['rm-press'] && rooms['rm-arena'], `the draft stage, the press room and the arena all appear (${Object.keys(rooms).join(', ')})`);
   ok(choseInScene >= 1, `decisions are answered inside scenes (${choseInScene})`);
+  ok(ticks >= 3, `the stretches of a season play on the live ticker (${ticks})`);
   ok(underneath, 'and the card a scene asks is on the plain screen underneath');
   const fin = await page.evaluate(() => RTF_CAREER_UI.state().last);
   ok(fin && fin.look && fin.look.hair === 'afro', 'the Hall card keeps the look');
@@ -970,6 +979,6 @@ async function scenesWalk(b, serve) {
   }
   ok(!opened, 'with scenes switched off no scene ever opens');
   ok(boom.length === 0, `no page errors with scenes on (${boom.join(' | ') || 'none'})`);
-  console.log(`  ${presses} presses, ${choseInScene} decisions inside scenes, cast: ${Object.keys(seen).length}`);
+  console.log(`  ${presses} presses, ${choseInScene} decisions inside scenes, ${movesPlayed} moments played on the court, ${ticks} ticker presses, cast: ${Object.keys(seen).length}`);
   await ctx.close();
 }

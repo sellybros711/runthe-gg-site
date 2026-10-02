@@ -53,7 +53,7 @@ const clone = (x) => JSON.parse(JSON.stringify(x));
 /* Events that are allowed to come back in one career, by design. Anything
    else dealt twice is a repeat. The list shrinks as Phase C gives the
    recurring events memory and cooldowns. */
-const RECURS = new Set(['training', 'hs_summer', 'injury', 'clutch', 'amclutch', 'presser', 'fa', 'extension', 'workout', 'nooffer', 'offers',
+const RECURS = new Set(['training', 'hs_summer', 'injury', 'clutch', 'amclutch', 'moment', 'presser', 'fa', 'extension', 'workout', 'nooffer', 'offers',
   'night_out', 'slump', 'hot_streak', 'film_session', 'charity', 'family_money', 'local_ad', 'buzzer', 'online_beef', 'ref_heat', 'rival_trash',
   'heckler', 'body_care', 'injury_tweak', 'investment', 'teammate_fight', 'teammate_touches', 'trade_rumor', 'media_day', 'load_mgmt', 'coach_bench',
   'stuck', 'double_team', 'hot_streak', 'contract_year', 'rehab_summer', 'tank', 'coach_fired', 'podcast', 'docuseries', 'christmas', 'shoe_deal',

@@ -61,6 +61,12 @@ for Phase C) and left the shared leaderboard chrome alone (see CLAUDE.md).
 
 ## Phase B. Games that feel alive
 
+Done 2026-10-02. Report: `reports/phase-b-sim.md`; guard: `check-moments.mjs`.
+The playable moments go to careers started from now on, never to a migrated
+save, so old saves keep playing exactly as before (see CLAUDE.md). The tale of
+the tape compares you with your draft-class rival only, because he is the one
+other invented player; a real opponent is drawn as a shadow, never a face.
+
 1. Broadcast package components.
 2. Live sim ticker per stretch with speed controls and key moments only.
 3. Playable moments engine on a pixel half court: last shot (existing),

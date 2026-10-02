@@ -11,6 +11,7 @@ name: Hoops checks
 #   node hoops/check-career.mjs --quick Career's engine: every life ends, the bands hold
 #   node hoops/check-saves.mjs          old saves migrate and play on unchanged
 #   node hoops/check-sprite.mjs         no existing sprite pose moves a cell
+#   node hoops/check-moments.mjs --quick the touch, the moments, the frames
 #   node hoops/sim-career.mjs           a thousand careers against the story bible
 #
 # No secrets, no network, no deploy.
@@ -89,7 +90,15 @@ jobs:
       - name: The sprite does not change
         run: node hoops/check-sprite.mjs
 
+      # The games feel alive, and nothing under the picture moved: a touch of
+      # nought is the old card, a better release only turns misses into makes,
+      # moments never reach a migrated save, every moving frame stays inside
+      # the grid. The browser half (every moment and ceremony played) runs
+      # locally.
+      - name: Playable moments
+        run: node hoops/check-moments.mjs --quick
+
       # A thousand careers: crashes, careers that never end, unfilled tokens,
       # wrong-year lines, and the balance bands due by the current phase.
       - name: Career simulator
-        run: node hoops/sim-career.mjs --n 1000
+        run: node hoops/sim-career.mjs --n 1000 --phase B

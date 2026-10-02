@@ -75,6 +75,9 @@ var CSS = [
 '.cr-top .k-h1{font-size:28px;}',
 '.cr-topbtns{display:flex;gap:2px;flex-wrap:wrap;justify-content:flex-end;}',
 '.cr-topbtns .k-btn{min-height:40px;padding:8px 10px;font-size:12px;}',
+'.cr-topbtns .cr-scn i{display:inline-block;width:8px;height:8px;margin-left:7px;background:#5b6584;}',
+'.cr-topbtns .cr-scn[aria-pressed="true"] i{background:#3ecf8e;box-shadow:0 0 6px #3ecf8e;}',
+'.cr-topbtns .cr-snd{padding:8px 9px;display:inline-flex;align-items:center;justify-content:center;min-width:40px;}',
 '.cr-sec{margin:0 0 14px;}',
 '.cr-sec > .k-eyebrow{margin:0 0 8px;}',
 /* the identity card */
@@ -588,6 +591,8 @@ function stageHtml(L, fresh){
   out += resultHtml(stage.result, fresh);
   out += beatsHtml(stage.beats, fresh);
   if (L.pending.length) out += cardHtml(L, L.pending[0], fresh);
+  var tk = stage.tick && window.RTF_TICKER ? window.RTF_TICKER.strip(stage.tick) : '';
+  if (L.pending.length) out += tk;
   else {
     var acts = C.actsOpen(L);
     if (acts.length) {
@@ -596,6 +601,7 @@ function stageHtml(L, fresh){
       if (acts.some(function(a){ return a.id === 'trade'; })) out += btnAct(acts, 'trade');
       out += '<button class="k-btn k-sec" id="cr-off">Off the court</button></div>';
     }
+    out += tk;
   }
   return '<div class="cr-stage" id="cr-stage">' + out + '</div>';
 }
@@ -695,8 +701,9 @@ function lifeView(L, d){
   var SC = window.RTF_SCENES;
   return '<div class="cr-top"><h2 class="k-h1">Career</h2><div class="cr-topbtns">'
     + (window.RTF_BALLER ? '<button class="k-btn k-quiet" id="cr-lookbtn" type="button">Look</button>' : '')
-    + (SC ? '<button class="k-btn k-quiet" id="cr-scenes" type="button" aria-pressed="' + SC.on() + '">Scenes ' + (SC.on() ? 'on' : 'off') + '</button>' : '')
-    + '<button class="k-btn k-quiet cr-home" id="cr-home">Home</button></div></div>'
+    + (SC ? '<button class="k-btn k-quiet cr-scn" id="cr-scenes" type="button" aria-pressed="' + SC.on() + '" title="Scenes ' + (SC.on() ? 'on' : 'off') + '">Scenes<i aria-hidden="true"></i></button>' : '')
+    + (SC && window.RTF_SOUND ? '<button class="k-btn k-quiet cr-snd" id="cr-sound" type="button" aria-pressed="' + window.RTF_SOUND.on() + '" aria-label="Sound in scenes, ' + (window.RTF_SOUND.on() ? 'on' : 'off') + '" title="Sound in scenes">' + K.iconHtml(window.RTF_SOUND.on() ? 'sound' : 'mute', 2) + '</button>' : '')
+    + '<button class="k-btn k-quiet cr-home cr-snd" id="cr-home" type="button" aria-label="Home" title="Home">' + K.iconHtml('home', 2) + '</button></div></div>'
     + '<div class="cr-grid"><div class="cr-side">' + idCard(L) + meters(L, d) + '</div>'
     + '<div class="cr-main">' + stageHtml(L, !!d) + facts(L) + ratingsHtml(L, d) + tabsHtml(L)
     + (L.phase === 'after' ? '' : '<button class="k-btn k-quiet k-block" id="cr-quit">Retire now</button>')
@@ -710,6 +717,8 @@ function wireLife(L, d){
   if (lb) lb.onclick = openLook;
   var sb = $('cr-scenes');
   if (sb) sb.onclick = function(){ var SC = window.RTF_SCENES; SC.setOn(!SC.on()); render(); };
+  var sn = $('cr-sound');
+  if (sn) sn.onclick = function(){ var SN = window.RTF_SOUND; SN.setOn(!SN.on()); if (SN.on()) SN.cue('chime'); render(); };
   var nx = $('cr-next');
   if (nx) nx.onclick = function(){ doStep(); };
   root.querySelectorAll('.cr-choice').forEach(function(b){
@@ -754,6 +763,7 @@ function onKey(e){
   if (sh && !sh.hidden) return;
   var SC = window.RTF_SCENES;
   if (SC && SC.isOpen && SC.isOpen()) return;
+  if (window.RTF_TICKER && window.RTF_TICKER.isOpen()) return;
   var L = store().cur;
   if (!L || !L.pending.length) return;
   var n = parseInt(e.key, 10);
@@ -782,13 +792,22 @@ function doStep(){
   var L = store().cur;
   if (!L) return;
   var before = snap(L), kb = kbdFocus();
+  var was = { phase: L.phase, poDone: L.season && L.season.po ? L.season.po.results.length : 0 };
   var res = C.step(L);
   stage = { beats: res.beats || [], result: null, draft: null, delta: before };
+  var TK = window.RTF_TICKER, SC = window.RTF_SCENES;
+  stage.tick = TK ? TK.dataFor(L, was, res.beats) : null;
   var d = (res.beats || []).filter(function(b){ return b.kind === 'draft' && b.pick; })[0];
   if (d) stage.draft = { pick: d.pick, team: d.team };
   if (L.retired) return finish();
   save();
   render();
+  /* A stretch of games goes by on the live ticker first, then whatever
+     moment it produced is told. */
+  if (stage.tick && TK && SC && SC.on()) {
+    TK.play(stage.tick, { done: function(){ if (!scene(res)) { scrollStage(); refocus(kb); } } });
+    return;
+  }
   if (!scene(res)) { scrollStage(); refocus(kb); }
 }
 function doChoose(i){
@@ -825,11 +844,11 @@ function scene(res){
         var L2 = store().cur, c = L2 && L2.pending[0];
         return c && SC.PRESENTABLE.indexOf(c.id) >= 0 ? c : null;
       },
-      choose: function(n){
+      choose: function(n, extra){
         var L2 = store().cur;
         if (!L2) return null;
         var before = snap(L2);
-        var r = C.choose(L2, n);
+        var r = C.choose(L2, n, extra);
         if (!r) return null;
         stage = { beats: r.beats || [], result: r, draft: null, delta: before };
         if (!L2.retired) { save(); render(); }

@@ -165,6 +165,15 @@ var CSS = [
 '.sc-pflash{position:absolute;inset:0;pointer-events:none;background:radial-gradient(60% 40% at 50% 0,rgba(255,236,196,.18),transparent 70%);animation:scLive 1.2s steps(2) infinite;}',
 '.sc-cast img{image-rendering:pixelated;image-rendering:crisp-edges;}',
 '.sc-confetti{position:absolute;inset:0;z-index:5;pointer-events:none;overflow:hidden;}',
+'.sc-court{position:absolute;left:0;right:0;bottom:0;top:var(--hud,58px);z-index:5;}',
+'.sc-shot{pointer-events:none;}',
+'.sc-tape{position:absolute;left:50%;top:calc(var(--hud,58px) + 8px);transform:translateX(-50%);z-index:6;width:min(88%,360px);background:rgba(5,7,13,.92);padding:8px 10px;box-shadow:0 -2px 0 0 #ffd166,0 2px 0 0 #ffd166,-2px 0 0 0 #ffd166,2px 0 0 0 #ffd166;font-family:var(--k-f-pixel,"Press Start 2P",var(--display,Impact));font-size:9px;text-transform:uppercase;}',
+'.sc-tape .tp-h{display:flex;justify-content:space-between;align-items:baseline;gap:6px;margin:0 0 6px;}',
+'.sc-tape .tp-h b{font-family:var(--k-f-display,var(--display,Impact));font-weight:400;font-size:18px;color:#fff;letter-spacing:.02em;}',
+'.sc-tape .tp-h span{color:#ffd166;font-size:7px;}',
+'.sc-tape .tp-r{display:grid;grid-template-columns:1fr auto 1fr;gap:8px;padding:5px 0;border-top:2px solid #1d2440;}',
+'.sc-tape .tp-r span{color:#cdd6f4;}','.sc-tape .tp-r span:last-child{text-align:right;}',
+'.sc-tape .tp-r span.w{color:#3ecf8e;}','.sc-tape .tp-r i{font-style:normal;color:#8fa0d6;font-size:7px;}',
 '.sc-confetti i{position:absolute;top:-8%;width:8px;height:12px;animation:scFall linear infinite;}',
 '@keyframes scFall{to{transform:translateY(120vh) rotate(540deg)}}',
 '@media (prefers-reduced-motion:reduce){.sc-pflash{animation:none}.sc-confetti,.rm-press .flash{display:none}.sc-cast img.in,.sc-feed li{animation:none}.rm-arena .crowd.loud{animation:none}}',
@@ -294,6 +303,10 @@ function ctxOf(L, extra){
     rival: L.rival || null,
     coach: C.myCoach ? C.myCoach(L) : '', commish: C.say ? C.say(L, '{commish}') : '',
   };
+  if (L.final && L.final.jersey) {
+    var jk = E.clubSkin ? E.clubSkin(L.final.jersey) : null;
+    c.jerseyName = E.teamName(L.final.jersey); c.jc1 = jk ? jk.primary : c.c1; c.jc2 = jk ? jk.secondary : c.c2;
+  }
   for (var x in extra || {}) c[x] = extra[x];
   return c;
 }
@@ -312,9 +325,9 @@ var SCENES = {
   draft: [
     { who: 'commish', room: 'draft', pic: null, board: function(c){ return 'DRAFT ' + (c.year - 1); },
       tx: function(c){ return 'With the ' + C.ordinal(c.pick) + ' pick in the ' + (c.year - 1) + ' draft, the ' + c.teamName + ' select...'; } },
-    { who: 'commish', room: 'draft', pic: 'me', pose: 'cap', board: function(c){ return c.nick.toUpperCase(); },
+    { who: 'commish', room: 'draft', pic: 'me', pose: 'cap', shot: 'jersey', board: function(c){ return c.nick.toUpperCase(); },
       tx: function(c){ return c.name + '.'; } },
-    { who: 'vance', room: 'draft', pic: 'me', pose: 'cap', board: function(c){ return c.nick.toUpperCase(); },
+    { who: 'vance', room: 'draft', pic: 'me', pose: 'cap', shot: 'jersey', board: function(c){ return c.nick.toUpperCase(); },
       tx: vary([
         function(c){ return 'He walks across the stage in a ' + c.nick + ' cap. Somewhere a family is losing its mind.'; },
         function(c){ return 'The handshake, the hat, the photo. ' + c.last + ' is a ' + c.nick.replace(/s$/, '') + '.'; },
@@ -326,19 +339,19 @@ var SCENES = {
     { who: 'whit', room: 'studio', pic: null, tx: 'Undrafted is a door, not a wall. Ask anybody who walked through it.' },
   ],
   debut: [
-    { who: 'vance', room: 'arena', pic: 'me', pose: 'ball', board: function(c){ return '#' + c.num; },
+    { who: 'vance', room: 'arena', pic: 'me', pose: 'ball', shot: 'debut', board: function(c){ return '#' + c.num; },
       tx: function(c){ return 'Opening night. ' + c.name + ' checks in for the first time. Number ' + c.num + '.'; } },
     { who: 'bell', room: 'arena', pic: 'me', pose: 'ball', board: function(c){ return '#' + c.num; },
       tx: function(c){ return 'Family in section 112. You can hear them from the floor.'; } },
   ],
   title: [
-    { who: 'vance', room: 'arena', pic: 'me', pose: 'up', loud: true, confetti: true, board: 'CHAMPIONS',
+    { who: 'vance', room: 'arena', pic: 'me', pose: 'up', loud: true, confetti: true, shot: 'title', board: 'CHAMPIONS',
       tx: function(c){ return 'The ' + c.nick + ' are champions! ' + c.last + ' is on the scorer\'s table with both arms up.'; } },
     { who: 'bell', room: 'arena', pic: 'me', pose: 'trophy', confetti: true, board: 'CHAMPIONS',
       tx: function(c){ return c.fmvp ? 'Finals MVP too. He has not let go of the trophy and nobody is asking him to.' : 'The trophy comes down the line. ' + c.last + ' holds it like it might leave.'; } },
   ],
   ring2: [
-    { who: 'vance', room: 'arena', pic: 'me', pose: 'trophy', loud: true, confetti: true, board: 'CHAMPIONS',
+    { who: 'vance', room: 'arena', pic: 'me', pose: 'trophy', loud: true, confetti: true, shot: 'title', board: 'CHAMPIONS',
       tx: function(c){ return 'Ring number ' + c.ring + ' for ' + c.last + '. This is starting to look like a habit.'; } },
   ],
   finals_loss: [
@@ -357,17 +370,17 @@ var SCENES = {
   ],
   mvp: [
     { who: 'hollis', room: 'studio', pic: null, tx: function(c){ return 'It is official. ' + c.name + ' is the Most Valuable Player.'; } },
-    { who: 'sato', room: 'studio', pic: 'me', pose: 'trophy', tx: function(c){ return c.line ? c.line + ' a night. The numbers made the case. The tape closed it.' : 'The numbers made the case. The tape closed it.'; } },
+    { who: 'sato', room: 'draft', pic: 'me', pose: 'trophy', shot: 'award', tx: function(c){ return c.line ? c.line + ' a night. The numbers made the case. The tape closed it.' : 'The numbers made the case. The tape closed it.'; } },
   ],
   allstar: [
-    { who: 'hollis', room: 'studio', pic: 'me', pose: 'ball', tx: function(c){ return 'First All-Star nod for ' + c.name + '. The coaches saw it before the fans did.'; } },
+    { who: 'hollis', room: 'arena', pic: 'me', pose: 'ball', shot: 'allstar', loud: true, board: 'ALL-STAR', tx: function(c){ return 'First All-Star nod for ' + c.name + '. The coaches saw it before the fans did.'; } },
   ],
   ncaa: [
-    { who: 'vance', room: 'arena', pic: 'me', pose: 'up', loud: true, confetti: true, board: 'NATIONAL CHAMPS',
+    { who: 'vance', room: 'arena', pic: 'me', pose: 'up', loud: true, confetti: true, shot: 'title', board: 'NATIONAL CHAMPS',
       tx: function(c){ return c.school + ' is national champion! ' + c.last + ' is climbing the ladder with scissors.'; } },
   ],
   state: [
-    { who: 'greer', room: 'gym', pic: 'me', pose: 'up', confetti: true,
+    { who: 'greer', room: 'gym', pic: 'me', pose: 'up', confetti: true, shot: 'title',
       tx: function(c){ return c.school + ' wins state. The whole town is on the floor. ' + c.last + ' is somewhere in the middle of it.'; } },
   ],
   trade: [
@@ -382,9 +395,27 @@ var SCENES = {
     { who: 'hollis', room: 'studio', pic: null, tx: function(c){ return c.verdict ? 'The word around the league: ' + c.verdict.toLowerCase() + '.' : 'An era ends.'; } },
   ],
   hall: [
-    { who: 'vance', room: 'hall', pic: 'me', pose: 'suit', board: 'HALL OF FAME',
+    { who: 'vance', room: 'hall', pic: 'me', pose: 'suit', shot: 'hall', board: 'HALL OF FAME',
       tx: function(c){ return 'Enshrined. ' + c.name + ', ' + c.from + ' to ' + c.to + '.'; } },
     { who: 'hollis', room: 'hall', pic: 'me', pose: 'suit', board: 'HALL OF FAME', tx: function(c){ return c.blurb || 'A career for the ages.'; } },
+  ],
+  /* The night the ring is handed out and a banner goes up, the first home
+     game after a title. */
+  ring_night: [
+    { who: 'vance', room: 'arena', pic: 'me', pose: 'stand', shot: 'ring', loud: true, board: 'RING NIGHT',
+      tx: function(c){ return 'Ring night. The lights go down and the ' + c.nick + ' raise a banner for ' + (c.year - 1) + '.'; } },
+    { who: 'bell', room: 'arena', pic: 'me', pose: 'stand', shot: 'ring', loud: true, board: 'RING NIGHT',
+      tx: function(c){ return c.last + ' gets the loudest one. He puts the ring on and does not take it off for warmups.'; } },
+  ],
+  /* A number going to the rafters, told on the way out of a career. */
+  rafters: [
+    { who: 'vance', room: 'arena', pic: 'me', pose: 'suit', shot: 'rafters', loud: true, board: function(c){ return '#' + c.num; },
+      tx: function(c){ return 'Number ' + c.num + ' goes up. Nobody in ' + (c.jerseyName || 'the building') + ' will wear it again.'; } },
+  ],
+  /* Draft night's other half: the man you will be measured against. */
+  tape: [
+    { who: 'sato', room: 'studio', pic: 'both', pose: 'cap', tape: true,
+      tx: function(c){ return c.rival ? 'Same class. ' + c.rival.name + ' went ' + C.ordinal(c.rival.pick) + '. Remember the name. You will hear it for fifteen years.' : ''; } },
   ],
   rival_mvp: [
     { who: 'whit', room: 'studio', pic: 'rival', pose: 'trophy', tx: function(c){ return c.rival.name + ' wins MVP. You came into the league together. Just saying.'; } },
@@ -404,7 +435,46 @@ var CARD_INTROS = {
   declare: function(card, c){ return [{ who: 'hollis', room: 'studio', pic: 'me', pose: 'stand', tx: function(){ return 'The deadline is here. Does ' + c.last + ' stay, or is he gone?'; } }]; },
   after: function(card, c){ return [{ who: 'kim', room: 'press', pic: 'me', pose: 'suit', tx: 'One last question. What comes next?' }]; },
 };
+CARD_INTROS.moment = function(card, c){ return [{ who: 'vance', room: 'arena', pic: 'me', pose: 'ball', loud: true, board: 'LIVE',
+  tx: card.text || 'It comes down to this.' }]; };
 var PRESENTABLE = Object.keys(CARD_INTROS);
+
+/* ─── playable moments (hoops/court.js) ─────────────────────────────────
+   A Game 7 option, a tournament tie and every moment card is played on the
+   court rather than read: the choice is still the engine's card, the press
+   on the meter is a touch handed to the engine with it, and what the court
+   shows next is what the engine said. */
+var PLAY_CLOCK = { buzzer: ['Q4', '0:04'], ft: ['Q4', '0:02'], stop: ['Q4', '0:12'], poster: ['Q3', '4:51'], block: ['Q3', '1:38'] };
+function playSpec(card, n, c){
+  var CT = window.RTF_COURT;
+  if (!CT) return null;
+  var L = c.L, rt = L.rt || {};
+  var kind = null, rating = 60, rn = 'Touch';
+  if (card.id === 'clutch' || card.id === 'amclutch') {
+    kind = CT.CLUTCH_KIND[n];
+    var R = [[rt.sho, 'Shooting'], [Math.round(((rt.fin || 60) + (rt.ath || 60)) / 2), 'Finishing'], [Math.round(((rt.sho || 60) + (rt.iq || 60)) / 2), 'Touch'], [rt.pla, 'Playmaking']][n] || [60, 'Touch'];
+    rating = R[0]; rn = R[1];
+  } else if (card.id === 'moment') {
+    kind = card.ctx && card.ctx.plays ? card.ctx.plays[n] : null;
+    var RM = { buzzer: [rt.sho, 'Shooting'], ft: [rt.sho, 'Shooting'], poster: [rt.ath, 'Athleticism'], block: [rt.def, 'Defense'], stop: [rt.def, 'Defense'] }[kind];
+    if (RM) { rating = RM[0]; rn = RM[1]; }
+  }
+  if (!kind) return null;
+  var opp = card.ctx && card.ctx.opp, ok = opp && E.clubSkin ? E.clubSkin(opp) : null;
+  var clock = card.id === 'moment' ? PLAY_CLOCK[kind] || ['Q4', '0:09'] : card.id === 'clutch' ? ['Q4', '0:09'] : ['Q4', '0:07'];
+  var home = c.team ? c.team : (c.school || 'HOME').replace(/[^A-Za-z ]/g, '').split(' ').map(function(w){ return w[0]; }).join('').slice(0, 3).toUpperCase();
+  var room = c.level === 'College' ? 'col' : c.level === 'High school' ? 'hs' : c.level === 'Pro' ? 'gl' : 'nba';
+  var calls = {
+    three: ['BANG! At the buzzer!', 'Off the rim.'], mid: ['Fadeaway... GOT IT!', 'Short.'], drive: ['HAMMER DOWN!', 'Rolls off.'], pass: ['The open man... YES!', 'Off the rim.'],
+    buzzer: ['At the horn! BANG!', 'Off the back iron.'], ft: ['Two for two. Ice.', 'Both off.'], poster: ['ON HIS HEAD!', 'Offensive foul.'], block: ['PINNED!', 'A step late.'], stop: ['STOP! Ballgame!', 'He buries it.'],
+  }[kind];
+  return { kind: kind, rating: rating || 60, rateName: rn, room: room, c1: c.c1, c2: c.c2, oc: ok ? ok.primary : '#3a4566', confetti: card.id !== 'moment',
+    me: { look: c.look, c1: c.c1, c2: c.c2, num: c.num, age: c.age },
+    bug: { home: home || 'YOU', away: opp || 'OPP', period: clock[0], clock: clock[1] },
+    pressure: card.id === 'moment' ? 0.4 : 1,
+    intro: kind === 'stop' || kind === 'block' ? 'Here he comes.' : kind === 'ft' ? 'Two shots.' : 'Clock running.',
+    makeCall: calls[0], missCall: calls[1], halfCall: 'One of two.' };
+}
 
 /* The fans, after you answer. Three posts, picked by the tone and the seed. */
 var FEED = {
@@ -446,7 +516,7 @@ function pickScene(res, L){
     if (b.level === 'hs') return { id: 'state' };
     return { id: b.ring > 1 ? 'ring2' : 'title', x: { ring: b.ring, fmvp: b.fmvp } };
   }
-  if ((b = has('draft'))) return b.pick ? { id: 'draft', x: { pick: b.pick } } : { id: 'undrafted' };
+  if ((b = has('draft'))) return b.pick ? { id: 'draft', x: { pick: b.pick }, then: L.rival ? 'tape' : null } : { id: 'undrafted' };
   if ((b = has('award', function(x){ return x.award === 'mvp'; }))) {
     var v = C.view(L);
     return { id: 'mvp', x: { line: v.line ? v.line.pts + ' points' : '' } };
@@ -454,9 +524,12 @@ function pickScene(res, L){
   if (has('finals_loss')) return { id: 'finals_loss' };
   if ((b = has('award', function(x){ return x.award === 'star' && x.n === 1; }))) return { id: 'allstar' };
   if ((b = has('trade'))) return { id: 'trade' };
-  if ((b = has('retire'))) return { id: 'retire', x: { verdict: L.final && L.final.verdict } };
+  if ((b = has('retire'))) return { id: 'retire', x: { verdict: L.final && L.final.verdict }, then: L.final && L.final.jersey ? 'rafters' : null };
   if ((b = has('milestone'))) return { id: 'milestone', x: { text: b.text } };
   if ((b = has('rival', function(x){ return /wins MVP/.test(x.text); })) && L.rival) return { id: 'rival_mvp' };
+  /* Ring night: the first press of a season after a title, once. */
+  var h0 = L.history && L.history[L.history.length - 1];
+  if ((b = has('role')) && L.stage === 'nba' && h0 && h0.aw && h0.aw.indexOf('champ') >= 0 && h0.t === L.team && L.flags && L.flags.ringNight !== L.year) { L.flags.ringNight = L.year; return { id: 'ring_night' }; }
   if ((b = has('role')) && L.seasonsDone === 0 && L.stage === 'nba' && !(L.flags && L.flags.debutSeen)) { L.flags.debutSeen = 1; return { id: 'debut' }; }
   return null;
 }
@@ -490,13 +563,16 @@ function play(beats, ctx, opts){
   ov.hidden = false;
   document.documentElement.style.overflow = 'hidden';
   var $ = function(s){ return ov.querySelector(s); };
-  var list = beats.slice(), i = 0, timer = null, typing = false, choosing = false, room = null, roomName = 'studio', castKey = '', done = false;
+  var list = beats.slice(), i = 0, timer = null, typing = false, choosing = false, room = null, roomName = 'studio', castKey = '', done = false, playing = false, moment = null;
   ctx.vseed = ctx.vseed != null ? ctx.vseed : B.hash(ctx.L.seed + ':' + ctx.L.year + ':' + (ctx.sceneId || '')) % 997;
 
   function stopType(){ if (timer) { clearInterval(timer); timer = null; } }
   function finish(){
     if (done) return;
     done = true; stopType();
+    if (moment) { moment.stop(); moment = null; }
+    clearShot(); setTape({});
+    var ch = ov.querySelector('.sc-court'); if (ch) ch.parentNode.removeChild(ch);
     ov.hidden = true;
     document.documentElement.style.overflow = '';
     $('.sc-rooms').innerHTML = ''; $('.sc-cast').innerHTML = ''; $('.sc-conf').innerHTML = '';
@@ -538,6 +614,47 @@ function play(beats, ctx, opts){
     el.innerHTML = html;
     fitPix(ov);
   }
+  /* A beat with a shot plays it on the court player (hoops/court.js): the
+     same room, the man moving through it. The shot carries on across beats
+     that name the same shot, so the caption can change while he walks. */
+  var shotKey = '', shotLive = null;
+  function clearShot(){
+    if (shotLive) { shotLive.stop(); shotLive = null; }
+    var h = ov.querySelector('.sc-shot'); if (h) h.parentNode.removeChild(h);
+    $('.sc-cast').style.visibility = '';
+    shotKey = '';
+  }
+  function setShot(bt){
+    var CT = window.RTF_COURT;
+    var key = bt.shot && CT ? bt.shot : '';
+    if (key === shotKey) return;
+    clearShot();
+    if (!key) return;
+    shotKey = key;
+    var host = document.createElement('div');
+    host.className = 'sc-court sc-shot';
+    $('.sc-stage').appendChild(host);
+    $('.sc-cast').style.visibility = 'hidden';
+    var x = {}; for (var k in ctx) x[k] = ctx[k];
+    for (var k2 in bt.sx || {}) if (bt.sx[k2] != null) x[k2] = bt.sx[k2];
+    shotLive = CT.ceremony(host, key, x, { room: pixKind(bt.room || roomName, ctx), me: { look: ctx.look, c1: ctx.c1, c2: ctx.c2, num: ctx.num, age: ctx.age } });
+    if (!shotLive) clearShot();
+  }
+  /* Tale of the tape: you and your draft-class rival, side by side, on the
+     same five lines. Both men are invented, so both are drawn. */
+  function setTape(bt){
+    var t = ov.querySelector('.sc-tape');
+    if (!bt.tape || !ctx.rival) { if (t) t.parentNode.removeChild(t); return; }
+    if (t) return;
+    var r = ctx.rival, L = ctx.L, me = C.ovrOf ? C.ovrOf(L) : 0;
+    var rows = [['OVR', me, r.ovr], ['Ceiling', L.pot, r.pot], ['Pick', L.draft && L.draft.pick || '-', r.pick], ['Age', L.age, r.age], ['Position', L.pos, r.pos]];
+    var el = document.createElement('div');
+    el.className = 'sc-tape';
+    el.innerHTML = '<div class="tp-h"><b>' + esc(ctx.last) + '</b><span>Tale of the tape</span><b>' + esc(last(r.name)) + '</b></div>'
+      + rows.map(function(rw){ var a = +rw[1], b2 = +rw[2], lead = isFinite(a) && isFinite(b2) && a !== b2 ? (rw[0] === 'Pick' || rw[0] === 'Age' ? (a < b2 ? 0 : 1) : (a > b2 ? 0 : 1)) : -1;
+        return '<div class="tp-r"><span class="' + (lead === 0 ? 'w' : '') + '">' + esc(rw[1]) + '</span><i>' + esc(rw[0]) + '</i><span class="' + (lead === 1 ? 'w' : '') + '">' + esc(rw[2]) + '</span></div>'; }).join('');
+    $('.sc-stage').appendChild(el);
+  }
   function plate(bt){
     var who = bt.who === 'me' ? { name: ctx.name, role: 'Number ' + ctx.num, outlet: 'team' } : (CAST[bt.who] || CAST.vance);
     var out = OUTLETS[who.outlet] || OUTLETS.night;
@@ -550,7 +667,7 @@ function play(beats, ctx, opts){
     var bt = list[i];
     stopType();
     choosing = false;
-    setRoom(bt); setCast(bt); plate(bt);
+    setRoom(bt); setCast(bt); setShot(bt); setTape(bt); plate(bt);
     $('.sc-when').textContent = ctx.when || '';
     var body = $('.sc-body');
     $('.sc-skip').hidden = false;
@@ -600,11 +717,42 @@ function play(beats, ctx, opts){
         if (!choosing) return;
         choosing = false;
         var n = +btn.getAttribute('data-i');
+        var spec = playSpec(card, n, ctx);
+        if (spec) return playMoment(card, n, spec);
         var res = opts.choose ? opts.choose(n) : null;
         var tail = aftermath(card, card.options[n], res).concat(opts.follow && res ? opts.follow(res) || [] : []);
         list.splice.apply(list, [i + 1, 0].concat(tail));
         advance();
       };
+    });
+  }
+  /* The court takes the stage, the meter takes the caption. The engine is
+     asked once, at the press, and everything after is its answer. */
+  function playMoment(card, n, spec){
+    var host = document.createElement('div');
+    host.className = 'sc-court';
+    $('.sc-stage').appendChild(host);
+    $('.sc-cast').style.visibility = 'hidden';
+    var body = $('.sc-body');
+    body.innerHTML = '<div class="sc-q"><div class="eye">' + esc(card.options[n].label) + '</div></div>';
+    playing = true;
+    var res = null;
+    moment = window.RTF_COURT.moment(host, Object.assign({ ctlHost: body }, spec), {
+      resolve: function(q){
+        res = opts.choose ? opts.choose(n, { touch: q }) : null;
+        var m = res ? res.made : false;
+        return { made: m == null ? res && res.tone === 'gold' : m };
+      },
+      done: function(){
+        playing = false;
+        if (moment) { moment.stop(); moment = null; }
+        if (host.parentNode) host.parentNode.removeChild(host);
+        $('.sc-cast').style.visibility = '';
+        castKey = ''; room = null;
+        var tail = aftermath(card, card.options[n], res).concat(opts.follow && res ? opts.follow(res) || [] : []);
+        list.splice.apply(list, [i + 1, 0].concat(tail));
+        advance();
+      },
     });
   }
   function aftermath(card, opt, res){
@@ -624,7 +772,7 @@ function play(beats, ctx, opts){
     return out;
   }
   function advance(){
-    if (choosing) return;
+    if (choosing || playing) return;
     var bt = list[i];
     if (typing && bt) {
       stopType(); typing = false;
@@ -641,7 +789,7 @@ function play(beats, ctx, opts){
   function skip(e){
     if (e) e.stopPropagation();
     for (var k = i + 1; k < list.length; k++) if (list[k].choice) { i = k; paint(); return; }
-    if (list[i] && list[i].choice) return;
+    if (playing || (list[i] && list[i].choice)) return;
     finish();
   }
   ov.querySelector('.sc-stage').onclick = advance;
@@ -670,6 +818,7 @@ function build(L, pick, card){
   var beats = [];
   if (pick && pick.pre && SCENES[pick.pre]) beats = beats.concat(SCENES[pick.pre]);
   if (pick && SCENES[pick.id]) beats = beats.concat(SCENES[pick.id]);
+  if (pick && pick.then && SCENES[pick.then]) beats = beats.concat(SCENES[pick.then]);
   if (card && CARD_INTROS[card.id]) {
     var intro = CARD_INTROS[card.id](card, c);
     beats = beats.concat(intro, [{ who: intro[0].who, room: intro[0].room, pic: 'me', pose: intro[0].pose, choice: true }]);
@@ -678,7 +827,11 @@ function build(L, pick, card){
      scene chained onto another (the title after a Game 7 winner) tells its
      own facts rather than the first scene's. */
   c.vseed = B.hash(L.seed + ':' + L.year + ':' + c.sceneId) % 997;
-  beats = beats.map(function(b){ var o = {}; for (var k in b) o[k] = b[k]; o.tx = T(b.tx, c); o.board = T(b.board, c); return o; });
+  beats = beats.map(function(b){ var o = {}; for (var k in b) o[k] = b[k]; o.tx = T(b.tx, c); o.board = T(b.board, c);
+    /* A shot is played against this moment's own facts too (the pick on
+       draft night, the award at the podium), not the scene's opening ones. */
+    if (b.shot) o.sx = { pick: c.pick, award: c.sceneId === 'mvp' ? 'Most Valuable Player' : c.award, teamName: c.teamName, nick: c.nick, year: c.year, num: c.num, from: c.from, to: c.to };
+    return o; });
   return { beats: beats, ctx: c };
 }
 /* What follows a decision made in a scene: the moment it produced, then the

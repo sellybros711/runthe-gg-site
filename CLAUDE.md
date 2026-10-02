@@ -11321,6 +11321,76 @@ to have something real to measure. The leaderboard's Career tab keeps the
 game's shared board chrome, because restyling one tab of seven is a seam inside
 the board rather than one removed at its door.
 
+#### Phase B: the games move, and nothing under them did
+
+```
+node hoops/check-moments.mjs            the touch, the moments, the frames, every moment and ceremony played
+node hoops/check-moments.mjs --quick    no browser
+```
+
+The owner's condition for sound was real animated cutscenes, not a player
+standing and breathing. Four files:
+
+| file | what it is |
+|---|---|
+| `baller.js` | nine moving sets (walk, dribble, shot, dunk, block, cheer, sad, shake, wave), drawn by the same rig |
+| `court.js` | a pixel court and a timeline player at twelve ticks a second; the playable moments and the ceremonies |
+| `ticker.js` | each stretch of the season played on a live board, 1x, 2x, 4x or skip |
+| `sound.js` | WebAudio cues synthesized at runtime, off by default (`rtf.sound.v1`), only inside the court player |
+
+**A MOVING FRAME IS A POSE NAME** (`shot2`, `walk0`), so every reader that takes
+a pose takes these. An arm is two ANGLES, not two points: a point moved by eye
+stretches the arm, an angle keeps its length. The six standing poses go through
+code that is byte for byte what it was whenever a frame field is zero, which is
+what check-sprite's 960 hashes hold. A frame can be asked for in a suit or a cap
+(`dress`), for the walk across a draft stage. `handAt()` says where a hand is,
+so the court puts the ball there rather than guessing.
+
+**A FRAME'S ARMS ARE SHORT ON PURPOSE.** The grid is 44 cells wide and a full
+horizontal arm is 47, so every reach was pulled in until no part touches the
+edge for any build (check-moments section 5). A handshake is a forearm
+foreshortened toward the camera, not an arm held out sideways.
+
+**THE PLAYABLE MOMENT IS A TOUCH, AND THE ENGINE STILL ROLLS.** The meter turns a
+press into a number from -1 to 1 and `C.choose(L, i, { touch })` moves that
+shot's odds by at most `TOUCH` (0.12), with the card's own seeded draw. So a
+perfect release can rim out, a better release can only turn a miss into a make
+(section 2 answers the same card at -1, 0 and 1 from clones), and a touch of
+nought is the card it always was, byte for byte (section 1). Scenes off passes
+no touch. The simulator passes none, so balance is untouched by the meter.
+
+**MOMENT CARDS GO TO NEW CAREERS ONLY.** `L.opt.moments` is set by `newLife` and
+never by `migrate`, because check-saves plays frozen version 1 saves against
+what that engine did, and a new card is a press the old engine never asked
+for. A moment changes no record (the stretch is already played); it moves fame,
+morale and a count in `L.flags`. A card needs two options, so free throws have
+a second (let them ice you).
+
+**ONLY THE INVENTED ARE DRAWN, AND THE COURT KEEPS IT.** You, your rival and the
+commissioner (generated) are drawn. The man you guard on a stop is a real
+opponent, so he is the rig's outline filled flat in his club's colour: a shadow
+with no face. The tale of the tape compares you with your rival, never a real
+player. The score bug shows teams and the clock and no score, because the
+engine settles a game on odds, not points.
+
+**THE TICKER IS THE ENGINE'S GAMES.** `playChunk` writes `L.season.box`, one row
+a game (opponent, home, result, your line), drawing nothing from the rng, so
+the career plays as it did. Playoff results keep their game list. With scenes
+on it plays as an overlay before the step's scene; with scenes off, and after,
+a finished strip sits UNDER the card, never above it, because anything above a
+card pushes its answers off a phone's screen (check-career section 7).
+
+**THREE THINGS THAT BIT, worth not repeating:**
+
+- A ceremony layer and a moment layer share `.sc-court`; a ceremony is also
+  `.sc-shot` and takes no pointer, so a tap still advances the scene. A walker
+  that waits on any `.sc-court` waits for ever on a ceremony.
+- The court's cell size is whichever binds of 124 cells tall and 130 wide. Set
+  by the height alone, a phone drew a big man cut off at the edge; by a 160
+  width, a tall phone drew a small man under a wall of crowd.
+- One more header button wrapped the Career header to two rows on a phone and
+  pushed answers below the fold. Sound and Home are icon buttons for that.
+
 ### Four ways to play, and the draft is one of them
 
 ```

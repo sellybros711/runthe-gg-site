@@ -773,7 +773,7 @@ function newLife(opts) {
     life: { rel: 'single', kids: 0, since: 0 }, rival: null,
     look: cleanLook(o.look), rep: { fans: 50, resp: 50 },
     season: null, seasonsDone: 0, retired: false, final: null, steps: 0,
-    mem: {}, people: {}, traits: rollTraits(seed), opt: { legend: o.legend !== false },
+    mem: {}, people: {}, traits: rollTraits(seed), opt: { legend: o.legend !== false, moments: o.moments !== false },
   };
   L.year = L.league.latest + 1;
   const rng = E.createSeededRNG(E.hashSeed(seed + ':create'));
@@ -1104,6 +1104,10 @@ function playChunk(L, chunk, beats) {
   const usage = usageOf(L, role);
   const mean = lineMeans(L, role.min, usage);
   const opps = CLUBS.filter((c) => c !== L.team);
+  /* The stretch, game by game, for the live ticker: who, where, the result
+     and your line. Only the latest stretch is kept, and keeping it draws
+     nothing from the rng, so a career plays exactly as it did without it. */
+  const box = s.box = [];
   for (let g = from; g <= to; g++) {
     const home = g % 2 === 0;
     const hurt = s.injury && g >= s.injury.from && g < s.injury.until;
@@ -1142,11 +1146,13 @@ function playChunk(L, chunk, beats) {
         beats.push({ kind: 'game', text: 'Triple-double against the ' + nick(opp) + ': ' + p + ', ' + reb + ' and ' + ast + '.', tone: 'good' });
       }
       net = net0 + impact(L, mn);
+      box.push([g, opps[(g * 7 + L.year) % opps.length], home ? 1 : 0, 0, p, reb, ast]);
     } else {
       s.out++;
+      box.push([g, opps[(g * 7 + L.year) % opps.length], home ? 1 : 0, 0, -1, 0, 0]);
     }
     s.g = g;
-    if (rng() < gameP(net, home)) s.w++; else s.l++;
+    if (rng() < gameP(net, home)) { s.w++; box[box.length - 1][3] = 1; } else s.l++;
   }
   bump(L, { health: -Math.round(role.min * 0.1 * ((to - from + 1) / 27)) });
 }
@@ -1403,7 +1409,7 @@ function endSeries(L, beats) {
   const s = L.season, po = s.po, cur = po.cur;
   const won = cur.w === 4;
   const name = ROUNDS[cur.round];
-  po.results.push({ round: cur.round, opp: cur.opp, w: cur.w, l: cur.l, won });
+  po.results.push({ round: cur.round, opp: cur.opp, w: cur.w, l: cur.l, won, games: cur.games.slice() });
   const line = (won ? 'Beat the ' : 'Lost to the ') + nick(cur.opp) + ' ' + cur.w + '-' + cur.l + ' in the ' + name + '.';
   beats.push({ kind: 'po', text: line, tone: won ? 'good' : 'bad' });
   logIt(L, line, won ? 'good' : 'bad');
@@ -1433,6 +1439,101 @@ function endSeries(L, beats) {
     return;
   }
   po.round++;
+}
+
+/* ─── playable moments ──────────────────────────────────────────────────
+   A night inside a stretch that comes down to you: a shot at the horn, two
+   free throws with the game on them, the last stop, a poster, a chase-down.
+   Each is a card with the playable choice first (court.js plays it, and its
+   release is the touch) and a safe one second. Nothing here moves the
+   record: the stretch is already played, so a moment is how one night of it
+   ended, and what it moves is fame, morale and the memory of it.
+
+   ONLY FOR CAREERS STARTED SINCE THEY EXISTED. L.opt.moments is set by
+   newLife and never by migrate, because an old save plays on exactly as the
+   engine that wrote it would have (check-saves), and a new card is a press
+   the old engine never asked for. */
+const MOMENT_P = 0.16;
+const MOMENTS = {
+  buzzer: { w: () => 2, title: 'The ball, the clock, the horn.',
+    text: (L, o) => 'Tied with the ' + o + '. Four seconds. It comes to you.',
+    opts: (L) => [
+      { label: 'Take the shot', hint: 'Shooting ' + L.rt.sho + '.', p: clamp(0.3 + (L.rt.sho - 50) * 0.006, 0.15, 0.62), play: 'buzzer' },
+      { label: 'Drive and kick', hint: 'Find somebody.', p: 0.38 },
+    ] },
+  ft: { w: () => 2, title: 'Two shots. Down one.',
+    text: (L, o) => 'Fouled with two seconds left against the ' + o + '. The building is trying to get in your head.',
+    opts: (L) => [
+      { label: 'Step to the line', hint: 'Shooting ' + L.rt.sho + '.', p: clamp(0.6 + (L.rt.sho - 50) * 0.006 + (L.rt.iq - 50) * 0.002, 0.42, 0.95), play: 'ft' },
+      { label: 'Let them ice you', hint: 'Two timeouts. Long walk.', p: clamp(0.56 + (L.rt.sho - 50) * 0.006 + (L.rt.iq - 50) * 0.004, 0.4, 0.93) },
+    ] },
+  poster: { w: (L) => L.rt.ath >= 68 ? 1.5 : 0, title: 'One man between you and the rim.',
+    text: (L, o) => 'A runout against the ' + o + '. Their big has planted himself in the lane.',
+    opts: (L) => [
+      { label: 'Rise up', hint: 'Athleticism ' + L.rt.ath + '.', p: clamp(0.34 + ((L.rt.ath + L.rt.fin) / 2 - 60) * 0.008, 0.2, 0.75), play: 'poster' },
+      { label: 'Lay it in', hint: 'Two points is two points.', p: 0.8 },
+    ] },
+  block: { w: (L) => L.rt.def >= 64 && L.rt.ath >= 60 ? 1.5 : 0, title: 'He thinks he is gone.',
+    text: (L, o) => 'A steal at the other end and a ' + o + ' guard is all alone. You are four steps behind him.',
+    opts: (L) => [
+      { label: 'Chase him down', hint: 'Defense ' + L.rt.def + '.', p: clamp(0.3 + ((L.rt.def + L.rt.ath) / 2 - 60) * 0.009, 0.15, 0.7), play: 'block' },
+      { label: 'Let it go', hint: 'Save your legs.', p: 0 },
+    ] },
+  stop: { w: (L) => L.rt.def >= 58 ? 1.5 : 0, title: 'Up one. Last possession.',
+    text: (L, o) => 'The ' + o + ' clear out a side for their best scorer. You ask for the assignment.',
+    opts: (L) => [
+      { label: 'Guard him', hint: 'Defense ' + L.rt.def + '.', p: clamp(0.36 + (L.rt.def - 55) * 0.008, 0.2, 0.75), play: 'stop' },
+      { label: 'Send the double', hint: 'Make somebody else beat you.', p: 0.5 },
+    ] },
+};
+function queueMoment(L, chunk) {
+  if (!L.opt || !L.opt.moments || !L.season || !L.team) return;
+  const s = L.season, role = s.role || roleOf(L);
+  if (role.min < 18) return;
+  if (s.injury && s.g >= s.injury.from && s.g < s.injury.until) return;
+  const rng = rngAt(L, 'moment:' + chunk);
+  if (rng() >= MOMENT_P) return;
+  const id = weighted(rng, Object.keys(MOMENTS), (k) => MOMENTS[k].w(L));
+  if (!id) return;
+  const m = MOMENTS[id], opp = CLUBS.filter((c) => c !== L.team)[Math.floor(rng() * (CLUBS.length - 1))];
+  const opts = m.opts(L);
+  L.pending.push({
+    id: 'moment', kind: 'moment', key: 'moment:' + L.year + ':' + chunk,
+    eyebrow: 'A night against the ' + nick(opp), title: m.title, text: m.text(L, nick(opp)),
+    ctx: { m: id, opp, plays: opts.map((o) => o.play || null) },
+    options: opts.map((o) => ({ label: o.label, hint: o.hint })),
+  });
+}
+function momentResolve(L, card, i, rng, touch) {
+  const m = MOMENTS[card.ctx.m], o = m.opts(L)[i], opp = nick(card.ctx.opp);
+  const f = L.flags;
+  if (card.ctx.m === 'ft') {
+    const p = touched(o.p, touch);
+    const n = (rng() < p ? 1 : 0) + (rng() < p ? 1 : 0);
+    if (n === 2) { f.ftIce = (f.ftIce || 0) + 1; bump(L, { fame: 3, morale: 6 }); logIt(L, 'Two free throws to beat the ' + opp + '.', 'gold'); return { text: 'Two for two. Ice.', tone: 'gold', made: 2 }; }
+    if (n === 1) { bump(L, { morale: -2 }); return { text: 'One of two. Overtime. You win it there, but you think about the miss all night.', tone: '', made: 1 }; }
+    bump(L, { morale: -6 }); logIt(L, 'Missed two at the line against the ' + opp + '.', 'bad');
+    return { text: 'Both off the rim. The other bench is loving it.', tone: 'bad', made: 0 };
+  }
+  if (!o.play) {
+    if (card.ctx.m === 'block') return { text: 'Two points for them. Nobody notices.', tone: '', made: false };
+    const ok = rng() < o.p;
+    bump(L, ok ? { trust: 2 } : { morale: -1 });
+    return { text: ok ? 'The right play. It works.' : 'The right play. It does not work.', tone: ok ? 'good' : '', made: ok };
+  }
+  const made = rng() < touched(o.p, touch);
+  const T = {
+    buzzer: made ? ['At the horn! The bench empties onto the floor.', 'buzzer'] : ['Off the back iron. Overtime, and the night goes the other way.', null],
+    poster: made ? ['Right on top of him. That one is going on a wall.', 'posters'] : ['He stands his ground. Offensive foul.', null],
+    block: made ? ['Pinned to the glass. He never saw you coming.', 'chasedowns'] : ['A step late. And one.', null],
+    stop: made ? ['You stay in front. A tough miss at the horn. Ballgame.', 'stops'] : ['He gets to his spot and buries it.', null],
+  }[card.ctx.m];
+  if (made) {
+    f[T[1]] = (f[T[1]] || 0) + 1;
+    bump(L, { fame: card.ctx.m === 'buzzer' || card.ctx.m === 'poster' ? 4 : 3, morale: 5 });
+    logIt(L, { buzzer: 'Hit a shot at the horn against the ' + opp + '.', poster: 'Dunked on a ' + opp + ' big.', block: 'A chase-down block against the ' + opp + '.', stop: 'Got the last stop against the ' + opp + '.' }[card.ctx.m], 'gold');
+  } else bump(L, { morale: -3 });
+  return { text: T[0], tone: made ? 'gold' : 'bad', made };
 }
 
 /* GAME 7 IS YOURS. Tied, the ball, the last shot. The odds of each choice come
@@ -3479,7 +3580,7 @@ const AM_EVENTS = {
 };
 
 /* Answers to the road's own cards. Null means the card is not one of these. */
-function chooseAm(L, card, i, opt, rng, beats) {
+function chooseAm(L, card, i, opt, rng, beats, touch) {
   switch (card.id) {
     case 'hs_summer': {
       if (i === 0) { bump(L, { fame: 5, health: -6, ath: 1 }); L.am.rstock = (L.am.rstock || 0) + 0.8; return { text: 'Twelve tournaments, four states, every scout. Your name is on the lists.', tone: 'good' }; }
@@ -3544,7 +3645,7 @@ function chooseAm(L, card, i, opt, rng, beats) {
     case 'amclutch': {
       const o = clutchOptions(L)[i];
       const s = L.season, t = s.tourney;
-      const made = rng() < o.p;
+      const made = rng() < touched(o.p, touch);
       t.waiting = false;
       if (made) { L.am.winners = (L.am.winners || 0) + 1; bump(L, { fame: 6, morale: 8 }); }
       else bump(L, { morale: -8 });
@@ -3554,7 +3655,7 @@ function chooseAm(L, card, i, opt, rng, beats) {
       t.cur = null;
       runTourney(L, beats);
       if (t.done) closeAm(L, beats);
-      return { text: tx, tone: made ? 'gold' : 'bad' };
+      return { text: tx, tone: made ? 'gold' : 'bad', made };
     }
   }
   return null;
@@ -3575,17 +3676,25 @@ function newRoad(L, rng) {
 
 // ─── answering a card ───────────────────────────────────────────────────────
 
-function choose(L, i) {
+/* extra.touch is the playable moment's release, from -1 to 1 (see
+   hoops/court.js). It moves a shot's odds by at most TOUCH and nothing else,
+   and the shot is still the engine's own seeded draw. A career played with the
+   scenes off passes no touch, which is a touch of nought: the odds the card
+   always had. */
+const TOUCH = 0.12;
+function touched(p, touch) { return touch ? clamp(p + touch * TOUCH, 0.05, 0.9) : p; }
+function choose(L, i, extra) {
   const card = L.pending[0];
   if (!card) return null;
   const opt = card.options[i];
   if (!opt) return null;
+  const touch = extra && Number.isFinite(+extra.touch) ? clamp(+extra.touch, -1, 1) : 0;
   const rng = rngAt(L, 'pick:' + card.key + ':' + i);
   const before = snapshot(L);
-  let text = '', tone = '', beats = [];
+  let text = '', tone = '', beats = [], made = null;
   L.pending.shift();
-  const road = card.id === 'presser' ? choosePresser(L, card, opt, rng) : chooseAm(L, card, i, opt, rng, beats);
-  if (road) { text = road.text; tone = road.tone; } else switch (card.id) {
+  const road = card.id === 'presser' ? choosePresser(L, card, opt, rng) : chooseAm(L, card, i, opt, rng, beats, touch);
+  if (road) { text = road.text; tone = road.tone; if (road.made != null) made = road.made; } else switch (card.id) {
     case 'combine': {
       const r = rng();
       if (i === 0) {
@@ -3674,13 +3783,18 @@ function choose(L, i) {
     case 'clutch': {
       const o = clutchOptions(L)[i];
       const cur = L.season.po.cur;
-      const made = rng() < o.p;
+      made = rng() < touched(o.p, touch);
       cur.waiting = false;
       cur.games.push(made ? 1 : 0);
       if (made) { cur.w = 4; L.flags.g7 = (L.flags.g7 || 0) + 1; bump(L, { fame: 10, morale: 10 }); text = 'Good! Series over. You will be watching that one for the rest of your life.'; tone = 'gold'; }
       else { cur.l = 4; bump(L, { morale: -10 }); text = 'No good. The building goes silent.'; tone = 'bad'; }
       logIt(L, 'Game 7 against the ' + nick(cur.opp) + ': ' + (made ? 'hit the winner.' : 'missed the last shot.'), made ? 'gold' : 'bad');
       endSeries(L, beats);
+      break;
+    }
+    case 'moment': {
+      const r = momentResolve(L, card, i, rng, touch);
+      text = r.text; tone = r.tone; made = r.made;
       break;
     }
     case 'extension': {
@@ -3743,6 +3857,7 @@ function choose(L, i) {
   sayAll(L, beats);
   const after = snapshot(L);
   const res = { card, picked: i, label: opt.label, text, tone, diff: diffOf(before, after), beats };
+  if (made != null) res.made = made;
   L.last = { title: card.title, label: opt.label, text, tone, diff: res.diff };
   return res;
 }
@@ -3799,6 +3914,7 @@ function step(L) {
       L.season.role = role;
       beats.push({ kind: 'role', text: E.teamName(L.team) + ': ' + role.label + ', about ' + Math.round(role.min) + ' minutes a night.', tone: '' });
       playChunk(L, 'early', beats);
+      queueMoment(L, 'early');
       beats.push(recordBeat(L, 'After 27'));
       rollInjury(L, 'mid', beats);
       L.phase = 'early';
@@ -3807,6 +3923,7 @@ function step(L) {
     }
     case 'early':
       playChunk(L, 'mid', beats);
+      queueMoment(L, 'mid');
       beats.push(recordBeat(L, 'At the break'));
       rollInjury(L, 'late', beats);
       allStarCheck(L, beats);
@@ -3816,6 +3933,7 @@ function step(L) {
       break;
     case 'mid': {
       playChunk(L, 'late', beats);
+      queueMoment(L, 'late');
       const s = L.season;
       const st = standings(L);
       startPlayoffs(L, st);

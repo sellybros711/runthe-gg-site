@@ -28,7 +28,7 @@
   .sg-room .lab{position:absolute;left:8px;top:8px;}
   .sg-demo-wipe{position:relative;height:60px;overflow:hidden;background:var(--k-panel);}
 </style>
-<script src="../career-kit.js?v=2"></script>
+<script src="../career-kit.js?v=3"></script>
 </head>
 <body>
 <main class="sg k-root" id="sg">
@@ -158,6 +158,18 @@
   </section>
 
   <section>
+    <h2>Motion: frames, the court, the ticker</h2>
+    <p class="sg-note">Phase B. Every moving frame is drawn by the same rig in <code>baller.js</code> (the six standing poses are untouched). The court player is <code>court.js</code>, the ticker <code>ticker.js</code>, sound <code>sound.js</code> (off by default).</p>
+    <div class="k-panel"><div id="frames" style="display:flex;flex-wrap:wrap;gap:6px"></div><span class="sg-cap">the nine moving sets, one row each</span></div>
+    <div class="sg-grid" style="grid-template-columns:repeat(auto-fill,minmax(340px,1fr));margin-top:14px">
+      <div class="k-panel k-flush"><div id="court" style="position:relative;height:380px"></div><span class="sg-cap" style="padding:8px">a playable moment: press the button or Space</span></div>
+      <div class="k-panel k-flush"><div id="cer" style="position:relative;height:380px"></div><span class="sg-cap" style="padding:8px">a ceremony: the draft-night walk, the handshake, the jersey</span></div>
+      <div class="k-panel" id="tkstrip"></div>
+      <div class="k-panel"><button class="k-btn k-sec" id="tk-demo">Play the live ticker</button><span class="sg-cap">a stretch of 27 games, 1x, 2x, 4x or skip</span></div>
+    </div>
+  </section>
+
+  <section>
     <h2>Toasts and sheet</h2>
     <div class="sg-row"><button class="k-btn k-sec" id="toast-go">Show a toast</button><button class="k-btn k-sec" id="sheet-go">Open a sheet</button></div>
     <div class="k-scrim" id="scrim" hidden><div class="k-sheet">
@@ -198,7 +210,41 @@
     <div class="k-ad sg-phone"></div>
   </section>
 </main>
-<script src="../baller.js?v=2"></script>
+<script src="../baller.js?v=3"></script>
+<script src="../sound.js?v=1"></script>
+<script src="../court.js?v=1"></script>
+<script src="../ticker.js?v=1"></script>
+<script>
+/* Motion: every frame of every set, a live moment, a ceremony, the ticker. */
+(function(){
+  var B = window.RTF_BALLER, CT = window.RTF_COURT, TK = window.RTF_TICKER;
+  if (!B || !CT || !TK) return;
+  var look = { skin: 4, hair: 'twists', hc: 1, build: 'standard', shoes: 'club', beard: 'goatee' };
+  var me = { look: look, c1: '#1d428a', c2: '#ffc72c', num: 30, age: 26 };
+  var fr = document.getElementById('frames'), html = '';
+  Object.keys(B.SETS).forEach(function(set){
+    html += '<div style="display:flex;gap:2px;align-items:end;padding:4px;background:#0b0e1a"><span class="sg-cap" style="writing-mode:vertical-rl">' + set + '</span>';
+    for (var i = 0; i < B.SETS[set]; i++) html += '<img src="' + B.url(look, { pose: set + i, c1: me.c1, c2: me.c2, num: 30, scale: 2 }) + '" width="88" height="128" alt="' + set + ' ' + i + '" style="image-rendering:pixelated">';
+    fr.insertAdjacentHTML('beforeend', html + '</div>'); html = '';
+  });
+  function moment(){
+    var host = document.getElementById('court'); host.innerHTML = '';
+    var m = CT.moment(host, { kind: 'three', rating: 74, rateName: 'Shooting', room: 'nba', c1: me.c1, c2: me.c2, oc: '#552583', me: me,
+      bug: { home: 'GSW', away: 'LAL', clock: '0:07' }, intro: 'Game 7. Tied.', makeCall: 'Bang!', missCall: 'Off the rim.' },
+      { resolve: function(q){ return { made: q > 0.3 }; }, done: function(){ m.stop(); setTimeout(moment, 900); } });
+  }
+  function cer(){
+    var host = document.getElementById('cer'); host.innerHTML = '';
+    var c = CT.ceremony(host, 'jersey', { name: 'Marcus Vale', num: 30, pick: 3, teamName: 'Golden State Warriors', c1: me.c1, c2: me.c2, commish: 'Glen Ostrowski' },
+      { room: 'draft', me: me, done: function(){ setTimeout(function(){ c.stop(); cer(); }, 1500); } });
+  }
+  moment(); cer();
+  var games = []; for (var g = 1; g <= 27; g++) games.push({ n: g, opp: ['LAL', 'BOS', 'DEN', 'MIA'][g % 4], home: g % 2 === 0, won: g % 3 !== 0, pts: g === 11 ? 42 : 14 + (g * 7) % 15, reb: 5, ast: 6, out: g === 19, key: g === 11 });
+  var d = { kind: 'rs', label: 'Games 1 to 27', team: 'GSW', c1: me.c1, c2: me.c2, w0: 0, l0: 0, games: games, news: ['the Pistons fire their coach. An assistant is the interim.'] };
+  document.getElementById('tkstrip').innerHTML = TK.strip(d) + '<span class="sg-cap">the finished stretch, under the card</span>';
+  document.getElementById('tk-demo').onclick = function(){ TK.play(d, {}); };
+})();
+</script>
 <script>
 (function(){
   var K = window.RTF_KIT, B = window.RTF_BALLER, $ = function(id){ return document.getElementById(id); };

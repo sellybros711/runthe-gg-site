@@ -2269,12 +2269,24 @@
   },
   "hoops/design/style-guide.html": {
     "../career-kit.js": {
-      "v": "2",
-      "sha": "8969f14ba5ae70e8"
+      "v": "3",
+      "sha": "9606b4dfca62f551"
     },
     "../baller.js": {
-      "v": "2",
-      "sha": "aa7d75997b9635f5"
+      "v": "3",
+      "sha": "e48c93c2a060d1fb"
+    },
+    "../sound.js": {
+      "v": "1",
+      "sha": "656d4b3828a6edf2"
+    },
+    "../court.js": {
+      "v": "1",
+      "sha": "1a084c077d1c7381"
+    },
+    "../ticker.js": {
+      "v": "1",
+      "sha": "430851c9fed6fd89"
     }
   },
   "hoops/index.html": {
@@ -2299,12 +2311,12 @@
       "sha": "814d6471760c59b4"
     },
     "career.js": {
-      "v": "7",
-      "sha": "470bc1e5036d5bae"
+      "v": "8",
+      "sha": "b9937127566119ea"
     },
     "baller.js": {
-      "v": "2",
-      "sha": "aa7d75997b9635f5"
+      "v": "3",
+      "sha": "e48c93c2a060d1fb"
     },
     "board.js": {
       "v": "7",
@@ -2331,16 +2343,28 @@
       "sha": "d984540c2b06a2bb"
     },
     "career-kit.js": {
-      "v": "2",
-      "sha": "8969f14ba5ae70e8"
+      "v": "3",
+      "sha": "9606b4dfca62f551"
+    },
+    "sound.js": {
+      "v": "1",
+      "sha": "656d4b3828a6edf2"
+    },
+    "court.js": {
+      "v": "1",
+      "sha": "1a084c077d1c7381"
+    },
+    "ticker.js": {
+      "v": "1",
+      "sha": "430851c9fed6fd89"
     },
     "scenes.js": {
-      "v": "4",
-      "sha": "f942c78077099f7c"
+      "v": "5",
+      "sha": "2ec4a97f63ad97db"
     },
     "career-ui.js": {
-      "v": "13",
-      "sha": "e9050a5149a0ac46"
+      "v": "14",
+      "sha": "9816f95c14ea7fb4"
     },
     "data/players.json": {
       "v": "5",
