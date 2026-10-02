@@ -120,9 +120,29 @@ overlap under 50%) are asserted by the simulator, not counted by hand.
 ## Phase E. Replay and sharing
 
 The Vault, career archive and written career story, family tree and legacy
-careers, difficulty tiers, challenge careers, a daily seeded career,
-share cards. Leaderboard UI is built against the existing Career board; the
-new boards wait for Phase G.
+careers, difficulty tiers, challenge careers, share cards. Leaderboard UI is
+built against the existing Career board; the new boards wait for Phase G.
+
+No daily seeded career (the owner's call, 2026-10-02).
+
+What Run The Floor Pro adds to Career (the owner's call, 2026-10-02):
+
+| | guest and free | Pro |
+|---|---|---|
+| where it starts | draft night, from a generated pre-NBA life | high school, played out, or draft night |
+| the pre-NBA life | generated fresh every career, never picked | played |
+| family tree and legacy careers | no | yes |
+
+The generated life replaces the four background cards for free players. It is
+the real road (`newLife({ start: 'hs' })`) played out off the seed by an
+automatic policy, stopped at the combine, and shown as a short story: the
+high school, the ranking, the school or the year away, the tournament runs,
+the draft stock. So every launching point is different, and it already sits
+inside the road's measured NBA bands (check-career section 8).
+
+A career already started is never taken away: a free account holding a high
+school career in progress plays it to the end. The gate is at the door
+(`newLife`), the same rule as every other Pro door on this page.
 
 ## Phase F. Polish
 
