@@ -369,7 +369,8 @@
   // close the result overlay and reveal today's leaderboard rail
   function showBoard() {
     try {
-      var s = document.getElementById('scrim'); if (s) s.classList.add('hidden');
+      // An inline result card (Sportegories) is not an overlay: leave it where it is.
+      var s = document.getElementById('scrim'); if (s && !s.classList.contains('inline')) s.classList.add('hidden');
       var r = document.getElementById('resultModal'); if (r) r.setAttribute('hidden', '');
       document.body.style.overflow = '';
       var lb = document.querySelector('.lb, .mlb');

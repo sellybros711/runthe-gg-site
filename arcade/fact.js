@@ -26,6 +26,17 @@
 })(typeof self !== 'undefined' ? self : this, function () {
   'use strict';
 
+  /* The franchises (data.js fills e.tk through franchise.js), and the one
+     club to name when a career had a single franchise, under whichever name
+     fits it: "Houston Oilers / Tennessee Titans" for Bruce Matthews. */
+  function fr(e) { return (e.tk && e.tk.length) ? e.tk : uniq(e.t); }
+  function club(e) {
+    var t = uniq(e.t);
+    if (fr(e).length !== 1 || !t.length) return null;
+    if (t.length === 1) return t[0];
+    var F = (typeof self !== 'undefined' ? self : this).RTGFranchise;
+    return F && F.label ? F.label(e.sport, fr(e)[0], t) : t[0];
+  }
   function uniq(a) {
     var seen = {}, out = [];
     (a || []).forEach(function (x) { if (x && !seen[x]) { seen[x] = 1; out.push(x); } });
@@ -34,11 +45,6 @@
   /* City-or-nickname short form, so a jersey line reads "23 in Cleveland"
      rather than "23 with the Cleveland Cavaliers". Last word for the ones
      whose nickname is the famous half, first words otherwise. */
-  function shortTeam(t) {
-    var s = String(t || '');
-    var m = /^(.*?)\s+(\S+)$/.exec(s);
-    return m ? m[1] : s;
-  }
   function num(n) {
     var W = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine',
              'ten', 'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen',
@@ -65,8 +71,10 @@
     } },
     { kind: 'draft', weight: 9, make: function (e) {
       if (e.dp !== 1) return null;
-      var t = uniq(e.t);
-      return 'Taken first overall' + (t.length ? ' by the ' + t[0] : '') + '.';
+      // e.t is not in career order, so the drafting club is only named when
+      // there is just the one franchise to name.
+      var c = club(e);
+      return 'Taken first overall' + (c ? ' by the ' + c : '') + '.';
     } },
     /* "Six franchises in all." and then the club that was actually his.
      *
@@ -82,15 +90,15 @@
      * (primary.js). Where it is known it is the more interesting half anyway:
      * a journeyman is defined by the one place he stuck. */
     { kind: 'teams', weight: 8, make: function (e) {
-      var t = uniq(e.t);
+      var t = fr(e);
       if (t.length < 5) return null;
       var n = cap(num(t.length)) + ' franchises in all';
       return e.pt ? (n + '. Longest stay: the ' + e.pt + '.') : (n + '.');
     } },
     { kind: 'teams', weight: 8, make: function (e) {
-      var t = uniq(e.t);
-      if (t.length !== 1 || (e.ns || 0) < 9) return null;
-      return cap(num(e.ns)) + ' seasons, one uniform: the ' + t[0] + '.';
+      var c = club(e);
+      if (!c || (e.ns || 0) < 9) return null;
+      return cap(num(e.ns)) + ' seasons, one franchise: the ' + c + '.';
     } },
     { kind: 'decade', weight: 7, make: function (e) {
       var d = e.decade || [];
@@ -104,22 +112,21 @@
     } },
     { kind: 'hof', weight: 6, make: function (e) {
       if (!e.hof) return null;
-      var c = uniq(e.t), d = e.decade || [];
+      var c = club(e), d = e.decade || [];
       // "A Hall of Famer." on its own says almost nothing, so always carry a
       // second clause: the one-club career, the era, or where they came from.
-      if (c.length === 1) return 'A Hall of Famer, all of it with the ' + c[0] + '.';
+      if (c) return 'A Hall of Famer, all of it with the ' + c + '.';
       if (d.length >= 2) return 'A Hall of Famer, ' + d[0] + 's into the ' + d[d.length - 1] + 's.';
       if (e.col) return 'A Hall of Famer, out of ' + e.col + '.';
       return 'A Hall of Famer' + (e.pos ? ' at ' + e.pos.toLowerCase() : '') + '.';
     } },
     { kind: 'jersey', weight: 5, make: function (e) {
-      var j = uniq(e.j), t = uniq(e.t);
+      // Numbers and clubs are not stored in matching order, so a number is
+      // only tied to a club when there is one club it could be.
+      var j = uniq(e.j), c = club(e);
       if (!j.length) return null;
-      if (j.length >= 2 && t.length >= 2) {
-        return 'Wore ' + j[0] + ' in ' + shortTeam(t[0]) + ', then ' + j[1] + ' in ' + shortTeam(t[1]) + '.';
-      }
       if (j.length >= 2) return 'Wore ' + list(j.slice(0, 3).map(String)) + ' over the years.';
-      return 'Wore No. ' + j[0] + (t.length ? ' for the ' + t[0] : '') + '.';
+      return 'Wore No. ' + j[0] + (c ? ' for the ' + c : '') + '.';
     } },
     { kind: 'col', weight: 5, make: function (e) {
       if (!e.col) return null;
@@ -139,14 +146,14 @@
       return cap(num(e.ns)) + ' seasons in the ' + (LEAGUE[e.sport] || e.sport) + '.';
     } },
     { kind: 'teams', weight: 3, make: function (e) {
-      var t = uniq(e.t);
-      if (t.length < 2 || t.length > 4) return null;
+      var t = uniq(e.t), k = fr(e);
+      if (k.length < 2 || k.length > 4 || t.length > 4) return null;
       return 'Career stops: ' + list(t) + '.';
     } },
     { kind: 'pos', weight: 3, make: function (e) {
-      var t = uniq(e.t), d = e.decade || [];
-      if (!e.pos || !t.length || !d.length) return null;
-      return an(e.pos) + ' ' + e.pos.toLowerCase() + ' who started out with the ' + t[0] + ' in the ' + d[0] + 's.';
+      var c = club(e), d = e.decade || [];
+      if (!e.pos || !c || !d.length) return null;
+      return an(e.pos) + ' ' + e.pos.toLowerCase() + ' with the ' + c + ', starting in the ' + d[0] + 's.';
     } },
     { kind: 'active', weight: 3, make: function (e) {
       var d = e.decade || [];
@@ -199,5 +206,39 @@
     return Object.keys(out);
   }
 
-  return { of: of, kindsFor: kindsFor, _builders: BUILDERS };
+  /* RTGFact.hold(next, ms): wait before the next round, long enough to read
+     the line. The fact used to share the round's own 1.4 second beat, so a
+     two-line fact was gone before most people reached the end of it. When a
+     fact is showing (#factline.on) the round now waits for a tap, a key, or
+     four seconds, whichever comes first. With no fact it waits `ms` as before.
+     A tap in the first 300ms is ignored so the press that answered the round
+     cannot also skip it. */
+  function hold(next, ms) {
+    if (typeof document === 'undefined') return setTimeout(next, ms);
+    var el = document.getElementById('factline');
+    if (!el || !el.classList.contains('on')) return setTimeout(next, ms);
+    var fired = false, t0 = Date.now(), timer;
+    function go() {
+      if (fired) return; fired = true; clearTimeout(timer);
+      document.removeEventListener('pointerdown', tap, true);
+      document.removeEventListener('keydown', key, true);
+      next();
+    }
+    function tap(ev) {
+      if (Date.now() - t0 < 300) return;
+      var a = ev.target && ev.target.closest && ev.target.closest('a, .rtgpg-scrim, [role="dialog"]');
+      if (a) return;
+      go();
+    }
+    function key(ev) {
+      if (Date.now() - t0 < 300) return;
+      if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); go(); }
+    }
+    document.addEventListener('pointerdown', tap, true);
+    document.addEventListener('keydown', key, true);
+    timer = setTimeout(go, Math.max(ms, 4000));
+    return timer;
+  }
+
+  return { of: of, kindsFor: kindsFor, hold: hold, _builders: BUILDERS };
 });

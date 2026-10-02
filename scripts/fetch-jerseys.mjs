@@ -360,7 +360,12 @@ const NFL_ERA = {
   // code: [[through this season, the club it was then], ...]
   HOU: [[1996, 'Houston Oilers']],       // the Texans arrive in 2002
   PHX: [[1993, 'Phoenix Cardinals']],
-  LA:  [[1994, 'Los Angeles Rams']]      // and again from 2016, which the default covers
+  LA:  [[1994, 'Los Angeles Rams']],     // and again from 2016, which the default covers
+  /* Washington is one franchise under three names. The table above names the
+     club as it is now, which filed a 2009 lineman under a name it took in
+     2022; the arcade then printed it. */
+  WAS: [[2019, 'Washington Redskins'], [2021, 'Washington Football Team']],
+  WSH: [[2019, 'Washington Redskins'], [2021, 'Washington Football Team']]
 };
 function nflTeam(code, year) {
   var era = NFL_ERA[code];

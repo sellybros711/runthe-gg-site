@@ -760,11 +760,12 @@ window.GA_ID='G-L29P5MRWKE';
   <script src="/arcade/awards.js?v=3"></script>
 <script src="/arcade/supplement.js?v=6"></script>
 <script src="/arcade/primary.js?v=32"></script>
-<script src="/arcade/data.js?v=5"></script>
-  <script src="generator.js?v=14"></script>
+<script src="/arcade/franchise.js?v=1"></script>
+<script src="/arcade/data.js?v=6"></script>
+  <script src="generator.js?v=15"></script>
   <script src="/arcade/sfx.js?v=2"></script>
 <script src="/arcade/result.js?v=1"></script>
-<script src="/arcade/funnel.js?v=12"></script>
+<script src="/arcade/funnel.js?v=13"></script>
 <script src="/arcade/share.js?v=9"></script>
 <script src="/arcade/resultart.js?v=4"></script>
 <script src="/arcade/resultstats.js?v=3"></script>
@@ -1322,7 +1323,12 @@ window.GA_ID='G-L29P5MRWKE';
         });
         return Object.keys(acc || {});
       }
-      var t = inter(function (e) { return e.t; });   if (t.length) return 'played for the ' + t[0];
+      var t = inter(function (e) { return e.tk || e.t; });
+      if (t.length) {
+        var F = window.RTGFranchise, nm = t[0];
+        if (F && F.label) { var ns = []; es.forEach(function (e) { (e.t || []).forEach(function (n, i) { if ((e.tkn || e.t)[i] === t[0]) ns.push(n); }); }); nm = F.label(es[0].sport, t[0], ns); }
+        return 'played for the ' + nm;
+      }
       var j = inter(function (e) { return e.j; });   if (j.length) return 'wore No. ' + j[0];
       var sn = es.map(function (e) { return (Gen.deriveWordplay ? Gen.deriveWordplay(e.name).surname : e.name.split(' ').pop()); });
       if (sn[0] && sn.every(function (x) { return x === sn[0]; })) return 'share the surname ' + sn[0];

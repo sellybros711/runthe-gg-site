@@ -289,6 +289,7 @@ window.GA_ID='G-L29P5MRWKE';
 </div>
 <div class="toast" id="toast"></div>
 
+<script src="/arcade/franchise.js?v=1"></script>
 <script src="/arcade/icons.js?v=3"></script>
 <script src="/arcade/tokens.js?v=14"></script>
 <script src="/arcade/day.js?v=3"></script>
@@ -308,7 +309,7 @@ window.GA_ID='G-L29P5MRWKE';
 <script src="/arcade/referral.js?v=11"></script>
 <script src="/arcade/demo.js?v=4"></script>
 <script src="/arcade/pregame.js?v=27"></script>
-<script src="/arcade/funnel.js?v=12"></script>
+<script src="/arcade/funnel.js?v=13"></script>
 <script src="/arcade/share.js?v=9"></script>
 <script src="/arcade/result.js?v=1"></script>
 <script src="/arcade/resultart.js?v=4"></script>
@@ -484,7 +485,10 @@ window.GA_ID='G-L29P5MRWKE';
       found:Object.keys(found), extra:extra.slice() })); }catch(e){}
   }
 
-  function clubName(){ return D.teams[board.team]; }
+  /* The club as it was called that season: the roster files carry
+     "Washington Commanders" for every Washington year. */
+  function eraName(b){ var n=D.teams[b.team], sp=sportOf(b); return (window.RTGFranchise && sp) ? RTGFranchise.nameAt(sp, n, b.year, b.year) : n; }
+  function clubName(){ return eraName(board); }
   // the board is one club, so its sport is the sport of anyone on it. The live
   // check needs it: a name can be two men in two leagues.
   function sportOf(b){
@@ -507,7 +511,7 @@ window.GA_ID='G-L29P5MRWKE';
     // so the answer key is in hand before the ninety seconds start.
     loadShard(b, function(){});
   }
-  function clubOf(b){ return D.teams[b.team]; }
+  function clubOf(b){ return eraName(b); }
   /* AN NBA SEASON HAS TWO YEARS IN ITS NAME AND WE WERE ONLY PRINTING ONE.
      Our year is Basketball-Reference's, which labels a season by the year it
      ENDS: 2010 is the 2009-10 season. A player reads "2010 SEASON" as 2010-11,
@@ -651,7 +655,7 @@ window.GA_ID='G-L29P5MRWKE';
     }
     checking = true;
     message('Checking…', 'warn');
-    TC.onClubIn(raw, clubName(), board.year, sportOf(board)).then(function(r){
+    TC.onClubIn(raw, D.teams[board.team], board.year, sportOf(board))   // the live record files a club under one name for all its years.then(function(r){
       checking = false;
       if(done) return;
       if(r && r.ok === true){

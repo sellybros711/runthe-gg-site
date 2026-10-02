@@ -263,6 +263,112 @@ if ('review'.includes(only) || !only) {
   }
 }
 
+/* ------------------------------------------------------------------- bug 9 */
+if ('fact'.includes(only) || !only) {
+  R.section('Bug 9: the fact line keeps its space and stays until a tap or 4 seconds');
+  for (const g of ['almamater', 'career', 'oddone', 'table']) {
+    const { ctx, p } = await open(g, { mobile: true });
+    const h = await p.evaluate(() => { const f = document.getElementById('factline'); const lh = parseFloat(getComputedStyle(f).lineHeight);
+      return { empty: f.getBoundingClientRect().height, lh }; });
+    R.ok(h.empty >= h.lh * 3 - 1, g + ' reserves three lines for the fact before it is written', JSON.stringify(h));
+    await ctx.close();
+  }
+  const { ctx, p } = await open('almamater', { mobile: true });
+  await p.click('#bailBtn'); await sleep(400);
+  const before = await p.evaluate(() => ({ name: document.getElementById('pName').textContent,
+    hint: document.getElementById('hintline').getBoundingClientRect().top, fact: document.getElementById('factline').getBoundingClientRect().height }));
+  await p.click('#choices .choice >> nth=0'); await sleep(150);
+  const shown = await p.evaluate(() => ({ on: document.getElementById('factline').classList.contains('on'),
+    hint: document.getElementById('hintline').getBoundingClientRect().top, fact: document.getElementById('factline').getBoundingClientRect().height }));
+  R.ok(shown.on, 'a fact is shown after the answer');
+  R.ok(Math.abs(shown.hint - before.hint) < 1 && Math.abs(shown.fact - before.fact) < 1, 'writing the fact moves nothing below it', JSON.stringify({ before, shown }));
+  await sleep(2600);
+  const mid = await p.evaluate(() => ({ name: document.getElementById('pName').textContent, over: !document.getElementById('scrim').classList.contains('hidden') }));
+  R.ok(mid.name === before.name && !mid.over, 'at 2.75 seconds the fact is still up and the game has not moved on', JSON.stringify(mid));
+  await p.mouse.click(20, 200); await sleep(700);
+  const after = await p.evaluate(() => ({ name: document.getElementById('pName').textContent, over: !document.getElementById('scrim').classList.contains('hidden') }));
+  R.ok(after.name !== before.name || after.over, 'a tap moves on at once', JSON.stringify(after));
+  await ctx.close();
+}
+
+/* -------------------------------------------------------------- bugs 11, 12 */
+if ('sportegories'.includes(only) || !only) {
+  R.section('Bugs 11 and 12: the Sportegories clock stays put, and the result is one card above the rows');
+  const { ctx, p } = await open('sportegories', { mobile: true });
+  await p.click('#startBtn'); await sleep(6500);
+  await p.evaluate(() => window.scrollTo(0, document.getElementById('rows').getBoundingClientRect().bottom + window.scrollY - 200));
+  await sleep(400);
+  const pin = await p.evaluate(() => { const tb = document.querySelector('.rtg-topbanner'); const c = document.getElementById('clock').getBoundingClientRect();
+    return { clockTop: c.top, clockBottom: c.bottom, banner: tb ? tb.getBoundingClientRect().bottom : 0, vh: innerHeight, scrolled: scrollY }; });
+  R.ok(pin.scrolled > 100 && pin.clockTop >= pin.banner - 1 && pin.clockBottom < pin.vh / 2, 'scrolled down the card, the clock is still on screen under the banner', JSON.stringify(pin));
+  await p.fill('#in0', 'zzz');
+  await p.click('#doneBtn');
+  await p.waitForFunction(() => !document.getElementById('scrim').classList.contains('hidden'), null, { timeout: 20000 });
+  await sleep(500);
+  const res = await p.evaluate(() => { const sc = document.getElementById('scrim'); const cs = getComputedStyle(sc);
+    const rows = document.getElementById('rows').getBoundingClientRect(), card = sc.getBoundingClientRect();
+    return { inPanel: !!sc.closest('#panelPlay'), pos: cs.position, cardAboveRows: card.bottom <= rows.top + 1,
+      score: document.getElementById('mScore').textContent, tally: document.getElementById('tallyN').textContent,
+      tallyShown: document.getElementById('tally').classList.contains('on') }; });
+  R.ok(res.inPanel && res.pos === 'static', 'the result is a card in the board, not an overlay', JSON.stringify(res));
+  R.ok(res.cardAboveRows, 'it sits above the scored rows, which stay readable under it');
+  R.ok(res.score === res.tally && !res.tallyShown, 'the score is said once: the tally becomes the card and is not counted again', JSON.stringify(res));
+  await ctx.close();
+}
+
+/* ---------------------------------------------------------------- bugs 7, 8 */
+if ('franchise'.includes(only) || !only) {
+  R.section('Bugs 7 and 8: each team under its name of the day, and a franchise counted once');
+  const { ctx, p } = await open('table');
+  const r = await p.evaluate(() => {
+    const F = window.RTGFranchise, E = window.GRID_ENTITIES, out = { anach: [], dup: [], named: {} };
+    for (const e of E) {
+      if (!e.tk || !e.t) continue;
+      if (new Set(e.tk).size !== e.tk.length) out.dup.push(e.name);
+      const sp = F.span(e); if (!sp) continue;
+      for (const n of e.t) {   // a name from the table must have been in use at some point of the career
+        const k = F.key(e.sport, n, sp[0], sp[1]), eras = (F._F[e.sport] || {})[k]; if (!eras) continue;
+        const mine = eras.filter(x => x[2] === n);
+        const ov = x => Math.max(0, Math.min(x[1], sp[1]) - Math.max(x[0], sp[0]) + 1);
+        if (mine.length && !mine.some(x => ov(x) >= Math.min(2, sp[1] - sp[0] + 1, x[1] - x[0] + 1))) out.anach.push(e.name + ': ' + n);
+      }
+    }
+    const by = n => E.find(e => e.name === n);
+    for (const n of ['Sammy Baugh', 'Oscar Robertson', 'Bruce Matthews', 'Hank Aaron', 'Patrick Ewing', 'Albert Haynesworth', 'George Mikan'])
+      { const e = by(n); out.named[n] = e ? { t: e.t, tk: e.tk } : null; }
+    out.wasEarly = (window.RTG_TABLE_POOL || []).length;
+    out.fact = window.RTGFact ? [0, 1, 2, 3].map(k => RTGFact.of(by('Bruce Matthews'), { seed: k })).join(' ') : null;
+    return out;
+  });
+  R.ok(r.anach.length === 0, 'no player carries a club name from outside his career years', r.anach.slice(0, 6).join(' | '));
+  R.ok(r.dup.length === 0, 'no franchise appears twice in a player’s franchise list', r.dup.slice(0, 6).join(', '));
+  const N = r.named;
+  R.ok(N['Sammy Baugh'] && N['Sammy Baugh'].t.includes('Washington Redskins') && !N['Sammy Baugh'].t.includes('Washington Commanders'), 'Sammy Baugh played for the Washington Redskins', JSON.stringify(N['Sammy Baugh']));
+  R.ok(N['Albert Haynesworth'] && !N['Albert Haynesworth'].t.includes('Washington Commanders'), 'a 2009 career is not filed under a name from 2022', JSON.stringify(N['Albert Haynesworth']));
+  R.ok(N['Oscar Robertson'] && N['Oscar Robertson'].t.includes('Cincinnati Royals'), 'Oscar Robertson played for the Cincinnati Royals, not the Sacramento Kings', JSON.stringify(N['Oscar Robertson']));
+  R.ok(N['George Mikan'] && N['George Mikan'].t.includes('Minneapolis Lakers'), 'George Mikan played for the Minneapolis Lakers', JSON.stringify(N['George Mikan']));
+  R.ok(N['Bruce Matthews'] && N['Bruce Matthews'].tk.length === 1, 'Bruce Matthews (Oilers and Titans) is one franchise', JSON.stringify(N['Bruce Matthews']));
+  R.ok(N['Hank Aaron'] && N['Hank Aaron'].tk.length === 2, 'Hank Aaron (Milwaukee and Atlanta Braves, Brewers) is two franchises', JSON.stringify(N['Hank Aaron']));
+  R.ok(N['Patrick Ewing'] && !N['Patrick Ewing'].t.includes('Oklahoma City Thunder'), 'Patrick Ewing never played for the Thunder', JSON.stringify(N['Patrick Ewing']));
+  R.ok(r.fact && /the Houston Oilers \/ Tennessee Titans/.test(r.fact) && !/ the Tennessee Titans\./.test(r.fact), 'his fact line names his one franchise under both names', r.fact);
+  // Stint games show the club as it was called in those seasons.
+  const nums = await p.evaluate(() => { const F = window.RTGFranchise; return (window.RTG_JERSEYS ? RTG_JERSEYS.stints : [])
+    .filter(s => s.sport === 'NFL' && s.team === 'Washington Commanders' && s.y1 < 2020).slice(0, 50)
+    .map(s => F.nameAt('NFL', s.team, s.y0, s.y1)); });
+  R.ok(nums.length > 0 && nums.every(n => n === 'Washington Redskins'), 'pre-2020 Washington stints show as the Redskins', JSON.stringify(nums.slice(0, 3)));
+  await ctx.close();
+  // Sportegories: a team category names every era it accepts.
+  const sg = await open('sportegories');
+  const lab = await sg.p.evaluate(() => { const S = window.RTG_SPORTEGORIES, out = [];
+    for (let i = 0; i < 365; i++) { const d = new Date(2026, 0, 1 + i); const ds = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+      S.daily(ds).cats.forEach(c => out.push(c.label)); }
+    return out; });
+  const bad = lab.filter(l => /the (Washington Commanders|Tennessee Titans|Oklahoma City Thunder|Cleveland Guardians)\b/.test(l) && !/ \/ /.test(l));
+  R.ok(bad.length === 0, 'a Sportegories team that took other names reads with them (Houston Oilers / Tennessee Titans)', bad.slice(0, 4).join(' | '));
+  R.ok(lab.some(l => /Houston Oilers \/ Tennessee Titans/.test(l)), 'and the relabel is actually exercised over a year of cards');
+  await sg.ctx.close();
+}
+
 await browser.close(); srv.close();
 console.log(R.fails() ? '\n' + R.fails() + ' failed' : '\narcade bugs ok');
 process.exit(R.fails() ? 1 : 0);

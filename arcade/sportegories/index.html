@@ -132,6 +132,15 @@
   .clock .t{font-family:var(--hero); font-weight:400; font-size:30px; line-height:1; color:var(--ink); font-variant-numeric:tabular-nums;}
   .clock.warn .t{color:var(--red);}
   .clock .l{font-size:8.5px; font-weight:900; letter-spacing:.1em; text-transform:uppercase; color:var(--mut); margin-top:3px;}
+  /* The letter, the clock and the bar stay on screen while the eight rows
+     scroll under them (with the phone keyboard up, most of the card is below
+     the fold). --pin-top is the sticky top banner's height, set in script. */
+  .pinhead{position:sticky; top:var(--pin-top,0px); z-index:20; background:var(--card);
+    margin:-14px -14px 0; padding:14px 14px 1px; border-radius:16px 16px 0 0;}
+  .pinhead.off{position:static; box-shadow:none;}
+  .lethead .k{font-size:12px !important;}
+  .rule{font-size:14px; font-weight:800; line-height:1.35; margin:0 0 12px; color:var(--ink);}
+  .pinhead.stuck{box-shadow:0 10px 18px -14px rgba(0,0,0,.7); border-radius:0;}
   .bar{height:5px; border-radius:999px; background:var(--card3); overflow:hidden; margin-bottom:14px;}
   .bar i{display:block; height:100%; background:var(--sp); width:100%; transition:width .3s linear;}
   .bar i.warn{background:var(--red);}
@@ -210,6 +219,15 @@
   /* ---- result ---- */
   .scrim{position:fixed; inset:0; background:rgba(3,9,18,.66); backdrop-filter:blur(4px); z-index:50; display:flex; align-items:flex-start; justify-content:center; padding:max(24px,env(safe-area-inset-top)) 16px 24px; overflow:auto;}
   .scrim.hidden{display:none;}
+  /* The result card sits in the board, where the running tally was, above the
+     scored rows: one place, read top to bottom, instead of a popup laid over
+     the very rows it summarises. The shared result modules still find it as
+     #scrim, so nothing else had to learn a second layout. */
+  .scrim.inline{position:static; inset:auto; background:none; backdrop-filter:none; -webkit-backdrop-filter:none;
+    padding:0; display:block; z-index:auto; overflow:visible; margin:0 0 12px; scroll-margin-top:calc(var(--pin-top,0px) + 12px);}
+  .scrim.inline.hidden{display:none;}
+  .scrim.inline .sheet{max-width:none; background:var(--card2); box-shadow:none; border-color:color-mix(in srgb, var(--sp) 45%, var(--line2));}
+  .scrim.inline .x{display:none;}
   .sheet{width:100%; max-width:420px; background:var(--card); border:1px solid var(--line2); border-radius:18px; padding:24px 20px; box-shadow:0 24px 60px -24px rgba(0,0,0,.8); text-align:center; position:relative;}
   .sheet .x{position:absolute; top:12px; right:12px; width:34px; height:34px; border-radius:50%; border:1px solid var(--line2); background:var(--card2); color:var(--mut); cursor:pointer; font-size:15px;}
   .sheet .sub-h{font-size:11px; font-weight:900; letter-spacing:.14em; text-transform:uppercase; color:var(--mut);}
@@ -300,15 +318,17 @@ window.GA_ID='G-L29P5MRWKE';
   <!-- ===== play ===== -->
   <section class="panel" id="panelPlay">
     <div class="board">
+      <div class="pinhead" id="pinhead">
       <div class="lethead">
         <div class="letter" id="letterTile">-</div>
         <div class="li">
           <div class="k" id="modeLab">Today’s letter</div>
-          <div class="v">Name a player for each category. Their <b>first or last name</b> has to start with it.</div>
         </div>
         <div class="clock" id="clock"><div class="t" id="clockT">2:00</div><div class="l">Left</div></div>
       </div>
       <div class="bar"><i id="barFill"></i></div>
+      </div>
+      <p class="rule">Name a player for each category. Their <b>first or last name</b> has to start with it.</p>
       <div class="tally" id="tally">
         <span class="n" id="tallyN">0</span>
         <span class="l">Points<b id="tallyLab">Scoring your card…</b></span>
@@ -369,6 +389,7 @@ window.GA_ID='G-L29P5MRWKE';
 </div>
 <div class="toast" id="toast"></div>
 
+<script src="/arcade/franchise.js?v=1"></script>
 <script src="/arcade/icons.js?v=3"></script>
 <script src="/arcade/tokens.js?v=14"></script>
 <script src="/arcade/day.js?v=3"></script>
@@ -391,7 +412,7 @@ window.GA_ID='G-L29P5MRWKE';
 <script src="/arcade/demo.js?v=4"></script>
 <script src="/arcade/pregame.js?v=27"></script>
 <script src="/arcade/result.js?v=1"></script>
-<script src="/arcade/funnel.js?v=12"></script>
+<script src="/arcade/funnel.js?v=13"></script>
 <script src="/arcade/share.js?v=9"></script>
 <script src="/arcade/resultart.js?v=4"></script>
 <script src="/arcade/resultstats.js?v=3"></script>
@@ -399,7 +420,7 @@ window.GA_ID='G-L29P5MRWKE';
 <script src="/arcade/sfx.js?v=2"></script>
 <script src="/arcade/sportegories-data.js?v=42"></script>
 <script src="/arcade/type.js?v=5"></script>
-<script src="/arcade/sportegories.js?v=13"></script>
+<script src="/arcade/sportegories.js?v=14"></script>
 <script src="/arcade/livecheck.js?v=8"></script>
 <script>
 (function(){
@@ -589,6 +610,7 @@ window.GA_ID='G-L29P5MRWKE';
     clearReveal(); revealDone=null;
     $('tally').classList.remove('on');
     $('doneBtn').style.display='';
+    $('pinhead').classList.remove('off');
     render(); show('play');
     inputs.forEach(function(el){ el.addEventListener('input', saveResume); });
     tick(); if(timer) clearInterval(timer); timer=setInterval(tick,1000);
@@ -650,6 +672,7 @@ window.GA_ID='G-L29P5MRWKE';
 
   function grade(){
     if(graded) return; graded=true;
+    $('pinhead').classList.add('off');
     if(!ARCHIVE && isDaily){ clearResume(); if(window.RTGTokens && RTGTokens.complete) RTGTokens.complete(GAME); }
     if(timer){ clearInterval(timer); timer=null; }
     $('doneBtn').style.display='none';
@@ -784,8 +807,12 @@ window.GA_ID='G-L29P5MRWKE';
       $('mSub').textContent = perfect ? 'Perfect card!'
         : (newBest ? 'New personal best!'
         : (left<=0 ? 'Time’s up' : 'Card done'));
-      $('scrim').classList.remove('hidden');
-      countTo($('mScore'), total, 900);
+      var sc=$('scrim'), tal=$('tally');
+      if(sc.parentNode!==tal.parentNode) tal.parentNode.insertBefore(sc, tal);
+      sc.classList.add('inline');
+      $('mScore').textContent=total;   // already counted up in the tally: say it once
+      sc.classList.remove('hidden');
+      try{ sc.scrollIntoView({behavior:reduced()?'auto':'smooth', block:'start'}); }catch(e){}
       if(perfect || (newBest && correct>=4)){ confetti(perfect?130:90, perfect); sfx('win'); }
     }
     revealDone = function(){                      // skip: land everything now
@@ -844,6 +871,17 @@ window.GA_ID='G-L29P5MRWKE';
   var toastT=null;
   function toast(m){ var el=$('toast'); el.textContent=m; el.classList.add('on'); if(toastT)clearTimeout(toastT); toastT=setTimeout(function(){ el.classList.remove('on'); },2200); }
 
+  (function pinTop(){
+    function set(){
+      var tb=document.querySelector('.rtg-topbanner');
+      document.documentElement.style.setProperty('--pin-top', (tb ? Math.round(tb.getBoundingClientRect().height) : 0)+'px');
+      var ph=$('pinhead'); if(ph){ var top=ph.getBoundingClientRect().top, want=parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--pin-top'))||0;
+        ph.classList.toggle('stuck', Math.abs(top-want)<1 && window.scrollY>0); }
+    }
+    set(); window.addEventListener('resize', set); window.addEventListener('scroll', set, {passive:true});
+    if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', set);
+    setTimeout(set, 600);
+  })();
   $('startBtn').addEventListener('click', function(){ startPuzzle(true); });
   $('practiceBtn').addEventListener('click', function(){ startPuzzle(false); });
   $('doneBtn').addEventListener('click', grade);

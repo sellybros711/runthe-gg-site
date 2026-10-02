@@ -284,6 +284,7 @@ window.GA_ID='G-L29P5MRWKE';
 </div>
 <div class="toast" id="toast"></div>
 
+<script src="/arcade/franchise.js?v=1"></script>
 <script src="/arcade/icons.js?v=3"></script>
 <script src="/arcade/tokens.js?v=14"></script>
 <script src="/arcade/day.js?v=3"></script>
@@ -303,7 +304,7 @@ window.GA_ID='G-L29P5MRWKE';
 <script src="/arcade/referral.js?v=11"></script>
 <script src="/arcade/demo.js?v=4"></script>
 <script src="/arcade/pregame.js?v=27"></script>
-<script src="/arcade/funnel.js?v=12"></script>
+<script src="/arcade/funnel.js?v=13"></script>
 <script src="/arcade/share.js?v=9"></script>
 <script src="/arcade/result.js?v=1"></script>
 <script src="/arcade/resultart.js?v=4"></script>
@@ -382,8 +383,12 @@ window.GA_ID='G-L29P5MRWKE';
   }
   function linkText(l){
     if(!l) return '';
-    if(!l.dated || l.y0==null) return l.team + ', years not confirmed';
-    return l.team + ', ' + (l.y0===l.y1 ? l.y0 : l.y0+' to '+l.y1);
+    // The club as it was called in those years: the stint file names every
+    // Washington season "Commanders".
+    var F=window.RTGFranchise, sp=puz?sportOf(puz.a):null;
+    var tm = (F && sp && l.y0!=null) ? F.nameAt(sp, l.team, l.y0, l.y1) : l.team;
+    if(!l.dated || l.y0==null) return tm + ', years not confirmed';
+    return tm + ', ' + (l.y0===l.y1 ? l.y0 : l.y0+' to '+l.y1);
   }
   // roster index, so neighbours can be listed without touching every player
   var ROSTER = {};

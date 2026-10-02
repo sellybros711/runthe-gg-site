@@ -192,7 +192,17 @@
       c.members.push(ent.id); c.sports[ent.sport] = 1; c.fames.push(ent.f);
     }
     entities.forEach(function (ent) {
-      (ent.t || []).forEach(function (team) { add('team:' + team, team, 'career', ent); });
+      /* Teams are FRANCHISES (ent.tk from franchise.js): Oakland and Las Vegas
+         Raiders are one group, and a player who wore both names is in it once.
+         The group's name is settled below from the names its members actually
+         played under, so a lane of 1990s Washington players reads "Washington
+         Redskins", not the club's 2022 name. */
+      var tks = ent.tk || ent.t || [], tkn = ent.tkn || tks;
+      tks.forEach(function (k) {
+        add('team:' + k, k, 'career', ent);
+        var c = cats['team:' + k]; c.tnames = c.tnames || [];
+        (ent.t || []).forEach(function (n, i) { if (tkn[i] === k) c.tnames.push(n); });
+      });
       (ent.j || []).forEach(function (n) { add('jersey:' + n, 'Wore No. ' + n, 'career', ent); });
       if (ent.dy) add('draft:' + ent.dy, ent.dy + ' Draft Class', 'career', ent);
       if (ent.dp === 1) add('pick1', 'No. 1 Overall Picks', 'career', ent);
@@ -211,6 +221,12 @@
       // initials categories are omitted on purpose — "these 5 share initials" isn't
       // a deducible group, and they crowd out better wordplay.
       if (w.allit) add('allit', 'Alliterative Names', 'wordplay', ent);
+    });
+    var FR = (typeof window !== 'undefined' && window.RTGFranchise) || (typeof self !== 'undefined' && self.RTGFranchise) || null;
+    Object.keys(cats).forEach(function (k) {
+      var c = cats[k];
+      if (c.tnames && FR && FR.label) c.name = FR.label(Object.keys(c.sports)[0], c.name, c.tnames);
+      delete c.tnames;
     });
     Object.keys(cats).forEach(function (k) {
       var c = cats[k]; var sk = Object.keys(c.sports); c.sport = sk.length === 1 ? sk[0] : 'multi';

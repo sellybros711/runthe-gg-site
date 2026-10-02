@@ -357,9 +357,54 @@
       var c = draw(opts);
       used[c.i] = 1; byTag[c.g] = (byTag[c.g] || 0) + 1;
       bySport[c.s || 'ANY'] = (bySport[c.s || 'ANY'] || 0) + 1;
-      out.push({ i: c.i, label: c.l, tier: c.t, axis: c.g, sport: c.s || 'ANY', pool: c.n, valid: (D.viab[c.i] || {})[L.toLowerCase()] || 0 });
+      out.push({ i: c.i, label: eraLabel(c.l, c.s), tier: c.t, axis: c.g, sport: c.s || 'ANY', pool: c.n, valid: (D.viab[c.i] || {})[L.toLowerCase()] || 0 });
     });
     return { letter: L, cats: out, seed: seed };
+  }
+  /* A team category accepts every era of its franchise (the data's alias
+     table files the Houston Oilers under the Titans), so the label names every
+     era too: "Played for the Houston Oilers / Tennessee Titans", not a 2022
+     name for a 1980s career. Labels that already use a shared nickname
+     ("the Raiders") are left as they are. franchise.js is optional here. */
+  /* The names the players this file accepts for a club actually played
+     under, worked out from each one's decades. So the label promises exactly
+     what the check accepts: the 76ers read "Syracuse Nationals / Philadelphia
+     76ers" only if a Syracuse-era player is in the file. */
+  var UNDER = null;
+  function namesUnder(sport, team) {
+    var F = (typeof self !== 'undefined' ? self : this).RTGFranchise;
+    if (!UNDER) {
+      UNDER = {};
+      (P || []).forEach(function (p) {
+        var bits = p.decBits || 0, lo = null, hi = null;
+        for (var b = 0; b < 16; b++) if (bits & (1 << b)) { var y = D.dec0 + 10 * b; if (lo == null) lo = y; hi = y + 9; }
+        p.teams.forEach(function (t) {
+          var k = p.sport + '|' + t, n = (lo != null && F) ? F.nameAt(p.sport, t, lo, hi) : t;
+          var m = UNDER[k] = UNDER[k] || {};
+          m[n] = (m[n] || 0) + 1;
+        });
+      });
+    }
+    // The two names most of these players wore; a name only a handful wore
+    // (the Cleveland Naps) does not get to stand for the club.
+    var m = UNDER[sport + '|' + team];
+    if (!m) return [team];
+    var ns = Object.keys(m).sort(function (a, b) { return m[b] - m[a]; });
+    return ns.filter(function (n, i) { return i < 2 && (i === 0 || m[n] >= 2); });
+  }
+  function eraLabel(lab, sport) {
+    var F = (typeof self !== 'undefined' ? self : this).RTGFranchise;
+    if (!F || !F.franchiseLabel || !F._F || !sport || !F._F[sport]) return lab;
+    var keys = Object.keys(F._F[sport]).sort(function (a, b) { return b.length - a.length; });
+    for (var k = 0; k < keys.length; k++) {
+      var at = lab.indexOf('the ' + keys[k]);
+      if (at < 0) continue;
+      var end = at + 4 + keys[k].length, after = lab.charAt(end);
+      if (after && /[A-Za-z]/.test(after)) continue;
+      var nl = F.label(sport, keys[k], namesUnder(sport, keys[k]));
+      return nl && nl !== keys[k] ? lab.slice(0, at + 4) + nl + lab.slice(end) : lab;
+    }
+    return lab;
   }
   function daily(dateStr) { return build(hash('sportegories:' + dateStr), letterForDate(dateStr)); }
   function practice(seed) { return build(hash('sportegories:practice:' + (seed == null ? Math.floor(Math.random() * 1e9) : seed))); }

@@ -291,6 +291,18 @@
    * it costs nothing: the documented contract above is read e.pt, fall back to
    * e.t[0], and the first club is always a true thing to say.
    */
+  /* ------------------------------------------------------------------
+   * ONE CLUB, ONE ENTRY; EACH NAME AS IT WAS (franchise.js -> RTGFranchise)
+   *
+   * e.t becomes the club names as they were in the player's years (no more
+   * "Washington Commanders" for a 2009 career, no "Sacramento Kings" for the
+   * Cincinnati Royals), and e.tk the franchises, one each, so a player who
+   * stayed through a move counts one club and two Raiders are teammates of
+   * one franchise. Show e.t; count and compare e.tk.
+   * ---------------------------------------------------------------- */
+  var FR = root.RTGFranchise;
+  if (FR && FR.normalize) ENT.forEach(function (e) { FR.normalize(e); });
+
   var PR = root.RTG_PRIMARY;
   if (PR && PR.of) {
     var ptHit = 0, ptOdd = 0;
@@ -298,6 +310,8 @@
       if (!e || !e.name || !e.sport || e.pt) return;
       var t = PR.of(e.sport, e.name);
       if (!t) return;
+      var sp = FR && FR.span ? FR.span(e) : null;
+      if (sp) t = FR.nameAt(e.sport, t, sp[0], sp[1]);
       if (Array.isArray(e.t) && e.t.length && e.t.indexOf(t) === -1) { ptOdd++; return; }
       e.pt = t; ptHit++;
     });
