@@ -3641,6 +3641,7 @@ let MOMENT_Q=[];
 function queueMoment(ico,txt,opt){ MOMENT_Q.push({ico,txt,kick:opt&&opt.kick,sub:opt&&opt.sub}); }
 function showMoments(){
   if(!MOMENT_Q.length) return;
+  if(G&&G.prefs&&G.prefs.noMoments){ MOMENT_Q=[]; return; }   // already in the inbox and the log
   const back=$('momentBack'); if(back.classList.contains('open')) return;
   if($('ceremonyBack').classList.contains('open')) return;
   // Never stack a Moment on top of the guided tour or a live scene. The
@@ -7297,8 +7298,14 @@ function openRules(i){
       i<RULES.length-1?{label:RULES[i+1].n+' →',fn:()=>openRules(i+1)}:{label:'Done',fn:closeModal}
     ].filter(Boolean));
 }
+/* THE TWO SWITCHES. Timing off swaps every mash for one press with the odds
+   shown. Milestone cards off stops the full screen spotlight; every milestone
+   is still written to the inbox and the log, so nothing is lost but the pause. */
+function setPref(k){ G.prefs=G.prefs||{}; G.prefs[k]=!G.prefs[k]; syncTimingBtn(); try{ save(); }catch(_){} openHelp(); }
 function openHelp(){
-  modal('Help', `<p class="log">New here, or want the details?</p>`,
+  const p=(G&&G.prefs)||{};
+  const row=(k,label,on)=>`<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:8px;"><span>${label}</span><button class="ghost" style="min-height:44px;padding:6px 14px;" onclick="setPref('${k}')">${on?'On':'Off'}</button></div>`;
+  modal('Help', `<p class="log">New here, or want the details?</p>${G&&G.car?`<div class="log" style="margin-top:6px;"><b>Settings</b>${row('untimed','Timing spots',!p.untimed)}${row('noMoments','Milestone cards',!p.noMoments)}</div>`:''}`,
     [{label:'Replay walkthrough',cls:'ghost',fn:()=>{closeModal(); startTour('hub');}},
      {label:'Open the Rulebook',fn:()=>{closeModal(); openRules(0);}}]);
 }

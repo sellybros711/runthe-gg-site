@@ -109,6 +109,12 @@ result, great losses pay · B6 the new match types and promotion specialties · 
 playable system on the new components · B8 weekly shows building to supershows with full
 cards · B9 sound, only if approved · B10 ceremony scenes and the Scenes off switch.
 
+Done so far: B2 the pixel ring view; B3 decisions that name your own moves and catchphrase,
+and a call at the bell that names the feud or the belt; B4 an untimed alternative to every
+mash and promo beat (Timing off); B5 crowd heat as its own number beside the stars; B10's
+switch, as Milestone cards off in Help (backstage scenes carry choices, so they always play).
+Still to do: B1 entrances, B6 new match types, B8 supershow cards, the ceremony scenes.
+
 ## Phase C · The story engine
 
 C1 data driven events (prerequisites, weights, cooldowns, rarity, chains), lazy loaded by
