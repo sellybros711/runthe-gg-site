@@ -30,7 +30,10 @@ let passed = 0;
 function ok(cond, what) { if (cond) passed++; else failures.push(what); }
 function section(t) { console.log(`\n${t}\n${'-'.repeat(t.length)}`); }
 const clone = (x) => JSON.parse(JSON.stringify(x));
-const league = C.seedLeague(ROWS);
+/* Today's rosters when the repo has them (hoops/data/rosters.json, written by
+   the roster workflow), so every section plays the league a career joins. */
+const ROSTERS = fs.existsSync(path.join(HERE, 'data', 'rosters.json')) ? JSON.parse(fs.readFileSync(path.join(HERE, 'data', 'rosters.json'), 'utf8')) : null;
+const league = C.seedLeague(ROWS, ROSTERS);
 const words = (s) => String(s).replace(/\{[a-z0-9]+(?::\w+)?\}/gi, 'X').split(/\s+/).filter(Boolean).length;
 const POOLS = { nba: C.EVENTS, am: C.AM_EVENTS, arc: C.ARC_EVENTS, story: C.STORY_EV };
 
@@ -323,10 +326,13 @@ section('13. the road ends in today\'s league');
     for (const n in dataClubs) {
       for (const c of now[n] || []) if (dataClubs[n].indexOf(c) < 0) moved.push(n + ' to ' + c);
       const p = league.roster[dataClubs[n][0]].find((x) => x[0] === n);
-      if (!now[n] && real.year - p[2] < 33) young.push(n);
+      /* On today's rosters nobody has left at all: they are under contract
+         for this season. Without the file, a veteran may retire at the end of
+         the data's season. */
+      if (!now[n] && (league.rs || real.year - p[2] < 33)) young.push(n);
     }
     ok(moved.length === 0, `arriving on the real draft, no real player has changed clubs (${moved.slice(0, 4).join(', ') || 'none'})`);
-    ok(young.length === 0, `and nobody under 33 has left the league (${young.slice(0, 4).join(', ') || 'none'})`);
+    ok(young.length === 0, `and nobody ${league.rs ? '' : 'under 33 '}has left the league (${young.slice(0, 4).join(', ') || 'none'})`);
     const okc = (R.OKC || []).map((e) => e.n);
     ok(okc.indexOf('Shai Gilgeous-Alexander') >= 0, 'the Thunder still have Shai Gilgeous-Alexander');
     const order = Object.keys(real.league.net).sort((a, b) => real.league.net[a] - real.league.net[b]);

@@ -639,14 +639,32 @@ function preview(){
   return L;
 }
 var LEAGUE = null;
+/* TODAY'S ROSTERS (data/rosters.json): the clubs as they stand for the season a
+   career joins, refreshed by a workflow and fetched no-cache with no ?v=,
+   because a bot rewrites it under one name. Until it has answered, a league is
+   seeded without it and not kept, so the first career started after it lands
+   joins the real clubs. No file, or a stale one, is the data's last season. */
+var ROSTERS = null, ROSTERS_DONE = false;
+function loadRosters(){
+  if (ROSTERS_DONE || loadRosters.asked) return;
+  loadRosters.asked = true;
+  var done = function(j){ ROSTERS = j && j.clubs ? j : null; ROSTERS_DONE = true; LEAGUE = null; };
+  try {
+    fetch('data/rosters.json', { cache: 'no-cache' })
+      .then(function(r){ return r.ok ? r.json() : null; })
+      .then(done, function(){ done(null); });
+  } catch (e) { done(null); }
+}
+loadRosters();
 function league(){
   if (LEAGUE) return LEAGUE;
   var d = P.data;
   if (!d || !d.allPlayers) return null;
   var rows = [];
   for (var k in d.allPlayers) rows.push(d.allPlayers[k]);
-  LEAGUE = C.seedLeague(rows);
-  return LEAGUE;
+  var lg = C.seedLeague(rows, ROSTERS);
+  if (ROSTERS_DONE) LEAGUE = lg;
+  return lg;
 }
 function rtRows(L, prev, fill){
   var w = C.WEIGHTS[L.pos];
@@ -1922,7 +1940,10 @@ function render(){
   /* A career saved before rosters rode on the life gets the real ones now,
      as long as it was opened on the same season of data. */
   var lg = league();
-  if (st.cur && st.cur.league && !st.cur.league.roster && lg && lg.roster && st.cur.league.latest === lg.latest) st.cur.league.roster = lg.roster;
+  if (st.cur && st.cur.league && !st.cur.league.roster && lg && lg.roster && st.cur.league.latest === lg.latest) {
+    st.cur.league.roster = lg.roster;
+    if (lg.rs) st.cur.league.rs = lg.rs;
+  }
   /* The screen wears the club's colours, and a move to a new one is a wipe
      in the new colours rather than a silent repaint. */
   var col = st.cur ? C.colorsOf(st.cur) : st.last ? { primary: st.last.c1, secondary: st.last.c2 } : null;

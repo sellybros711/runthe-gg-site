@@ -309,9 +309,16 @@ function logIt(L, text, tone) {
 /* Year one's club strength off the real rosters, then scaled to the league's
    real spread. `rows` is the data's player-seasons; only the newest season is
    read. A club with nobody in it reads as average rather than as nothing. */
-function seedLeague(rows) {
+function seedLeague(rows, rosters) {
   let latest = 0;
   for (const r of rows || []) if (r.s > latest) latest = r.s;
+  /* TODAY'S ROSTERS. A career joins the season after the data's newest, and
+     hoops/data/rosters.json is that season's real clubs: the summer's trades,
+     free agents and rookies, every man under contract. When it is for that
+     season, the clubs are built from it, each man carrying what he did last
+     season. Anything else (no file, a stale one) is the data's last season. */
+  const today = rosters && rosters.clubs && +rosters.season === latest + 1 ? rosters : null;
+  if (today) return seedToday(rows, latest, today);
   const by = {};
   for (const r of rows || []) if (r.s === latest && CLUBS.indexOf(r.t) >= 0) (by[r.t] = by[r.t] || []).push(r);
   const net = {}, stars = {};
@@ -328,6 +335,44 @@ function seedLeague(rows) {
   const lines = {};
   for (const c in by) for (const r of by[c]) lines[r.n] = [round1(r.mp || 0), round1(r.pts || 0), round1(r.reb || 0), round1(r.ast || 0), round1(r.tpa || 0), String(r.ep || r.pp || '')];
   return { latest: latest || 2026, net: normaliseNets(net), stars, roster: rosterSeed(rows, latest), lines };
+}
+/* The clubs as rosters.json has them. A man's worth is his last season in the
+   data (all his clubs added), or the one before at a discount, or a rookie's.
+   The net comes off the same rows his new club now holds, so a club that
+   traded for a star plays like it. */
+const POS_COARSE = { G: 'SG', F: 'SF', GF: 'SF', FC: 'PF' };
+function seedToday(rows, latest, today) {
+  const last = {}, prev = {}, first = {}, lineOf = {};
+  for (const r of rows || []) {
+    if (!(first[r.i] <= r.s)) first[r.i] = r.s;
+    if (r.s === latest) { (last[r.i] = last[r.i] || []).push(r); }
+    else if (r.s >= latest - 2 && !(prev[r.i] && prev[r.i].s >= r.s)) prev[r.i] = r;
+  }
+  const net = {}, stars = {}, roster = {}, lines = {};
+  for (const c of CLUBS) {
+    const men = (today.clubs[c] || []).map((m) => {
+      const mine = last[m.i] || [];
+      let w;
+      if (mine.length) w = mine.reduce((a, r) => a + (r.w || 0), 0);
+      else if (prev[m.i]) w = (prev[m.i].w || 0) * 0.7;
+      else w = 1.2;
+      /* Last season's line, from whichever club he played most for. */
+      const top = mine.slice().sort((a, b) => (b.g || 0) - (a.g || 0))[0];
+      if (top) lines[m.n] = [round1(top.mp || 0), round1(top.pts || 0), round1(top.reb || 0), round1(top.ast || 0), round1(top.tpa || 0), String(top.ep || top.pp || '')];
+      const pos = R_POS.indexOf(m.pos) >= 0 ? m.pos : POS_COARSE[m.pos] || 'SF';
+      const born = m.b || (top ? bornOf(top, first[m.i]) : latest - 21);
+      return { m, w: round1(w), pos, born, rows: mine };
+    }).sort((a, b) => b.w - a.w);
+    roster[c] = men.slice(0, 15).map((x) => [x.m.n, x.pos, x.born, x.w]);
+    stars[c] = men.slice(0, 3).map((x) => x.m.n);
+    /* Strength off last season's rows of the men he now has, the best one per
+       man, so a traded player counts once and for his new club. */
+    const list = men.map((x) => x.rows.slice().sort((a, b) => (b.w || 0) - (a.w || 0))[0]).filter(Boolean);
+    net[c] = list.length >= 5 && E.teamStrength ? (() => { const st = E.teamStrength(list); return st.ortg - st.drtg; })() : 0;
+  }
+  const coach = {};
+  for (const c of CLUBS) if (today.coaches && today.coaches[c]) coach[c] = String(today.coaches[c]).slice(0, 40);
+  return { latest: latest || 2026, rs: latest + 1, net: normaliseNets(net), stars, roster, lines, cn: coach };
 }
 /* Mean zero, a spread of 4.6 points, which is roughly the real league's. */
 function normaliseNets(net) {
@@ -450,6 +495,14 @@ function coachState(L) {
     lg.coach = {};
     for (const c of CLUBS) {
       const x = COACHES_NOW[c];
+      /* rosters.json names who coaches the club the season a career joins. A
+         man the tables know keeps his birth year; a new one is given one. */
+      const now = lg.cn && lg.cn[c];
+      if (now && now !== x[0]) {
+        const k = Object.values(COACHES_NOW).concat(COACH_POOL).find((y) => y[0] === now);
+        lg.coach[c] = { n: now, b: k ? k[1] : 1978, since: lg.rs || (lg.latest || 2026), real: 1 };
+        continue;
+      }
       lg.coach[c] = { n: x[0], b: x[1], since: (lg.latest || 2026) - 1, real: 1 };
     }
     lg.free = [];
@@ -627,7 +680,19 @@ function rostCurW(e, Y) {
 }
 function rostGone(L, e, Y) {
   const age = Y - e.b;
-  return e.g ? (age > 34 || Y - e.d >= 11) : age > retireAge(L, e.n, e.w);
+  if (e.g) return age > 34 || Y - e.d >= 11;
+  /* On today's rosters nobody leaves before the season they are under contract
+     for has been played. After it the simulation decides, and a veteran past
+     the usual age still gets a season or two rather than the whole old guard
+     walking out in one summer. */
+  const rs = L.league && L.league.rs;
+  if (rs && Y <= rs) return false;
+  let lim = retireAge(L, e.n, e.w);
+  if (rs) {
+    const r = E.createSeededRNG(E.hashSeed(String(L.seed) + ':last:' + e.n));
+    lim = Math.max(lim, rs - e.b + 1 + Math.floor(r() * 2));
+  }
+  return age > lim;
 }
 function rookieFor(L, c, d) {
   const r = E.createSeededRNG(E.hashSeed(String(L.seed) + ':rook:' + c + ':' + d));
@@ -641,7 +706,9 @@ function rostBuild(L, Y) {
   const lg = L.league, R = {};
   for (const c of CLUBS) {
     R[c] = ((lg.roster && lg.roster[c]) || []).map((p) => ({ n: p[0], pos: p[1], b: p[2], w: p[3] }));
-    for (let d = (lg.latest || 2026) + 1; d <= Y; d++) R[c].push(rookieFor(L, c, d));
+    /* Today's rosters already carry this season's real rookies, so invented
+       ones start with the next draft. */
+    for (let d = (lg.rs || lg.latest || 2026) + 1; d <= Y; d++) R[c].push(rookieFor(L, c, d));
     R[c] = R[c].filter((e) => !rostGone(L, e, Y));
   }
   lg.rost = R; lg.rostY = Y;
@@ -764,13 +831,13 @@ function matesOf(L, c) {
   if (base) {
     for (const p of base) {
       const age = Y - p[2];
-      if (age <= retireAge(L, p[0], p[3])) out.push({ n: p[0], pos: p[1], age, w: p[3] * (age <= 30 ? 1 : 1 - (age - 30) * 0.08), real: 1 });
+      if (!rostGone(L, { n: p[0], b: p[2], w: p[3] }, Y)) out.push({ n: p[0], pos: p[1], age, w: p[3] * (age <= 30 ? 1 : 1 - (age - 30) * 0.08), real: 1 });
     }
   } else {
     const age = 27 + Y - ((lg.latest || 2026) + 1);
     if (age <= 35) for (const n of (lg.stars && lg.stars[c]) || []) out.push({ n, pos: '', age, w: 6, real: 1 });
   }
-  for (let d = (lg.latest || 2026) + 1; d <= Y; d++) {
+  for (let d = (lg.rs || lg.latest || 2026) + 1; d <= Y; d++) {
     if (Y - d >= 10) continue;
     const r = E.createSeededRNG(E.hashSeed(String(L.seed) + ':rook:' + c + ':' + d));
     const n = pick(r, FIRST) + ' ' + pick(r, PEOPLE_LAST);
@@ -1034,6 +1101,11 @@ function newLife(opts) {
   if (o.story !== false) L.opt.story = STORY_VERSION;
   /* Last season's lines, for the rotation screen and the Saturday contests. */
   if (L.opt.story && league.lines) L.league.lines = league.lines;
+  /* The season the rosters are real for, and who coaches each club then. A
+     league seeded without rosters.json carries neither, and is the same
+     object it always was. */
+  if (league.rs) L.league.rs = league.rs;
+  if (league.cn && Object.keys(league.cn).length) L.league.cn = league.cn;
   /* Phase E: a difficulty and a challenge are story career settings. A
      challenge can fix the difficulty; Normal is never written, so a career
      without one is the same object it always was. */

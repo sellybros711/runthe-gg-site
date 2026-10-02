@@ -11029,6 +11029,40 @@ the floor), which puts it at 94.4 on CI's sample and 94.3 on 1,500 roads. Two ot
 were tried and measured to do nothing: the tryout's base, and the overall a player needs to
 be noticed from overseas.
 
+**A CAREER JOINS TODAY'S ROSTERS, NOT LAST SEASON'S.** Reported by the owner: Curry, LeBron,
+Durant and Harden are under contract for 2026-27, and the game could retire them before it,
+because the league was seeded off the season that had ENDED (2025-26) and then aged a year by
+its own rules. It also had none of the summer's trades, signings or rookies.
+
+```
+node hoops/build/fetch-rosters.mjs --season 2027   (on a runner: .github/workflows/hoops-rosters.yml)
+node hoops/check-rosters.mjs                       the file, the season, the handover
+```
+
+`hoops/data/rosters.json` is every club for the season about to be played: each man's
+Basketball-Reference id, name, position and birth year, two-way contracts marked, and the head
+coach. **Basketball-Reference is blocked from the sandbox**, so the file is only ever written
+by the workflow, weekly (Mondays) and on dispatch, committed only when it moved, with no clock
+in it. The page fetches it no-cache with no `?v=` (`loadRosters` in career-ui.js), the NFL
+schedule file's arrangement, and does not keep a league seeded before it has answered.
+
+`seedLeague(rows, rosters)` uses it only when its season is the one after the data's newest
+(`seedToday`): a man carries what he did last season (all his clubs added), a club's net comes
+off the rows of the men it now has, and the league is stamped `rs`. On `rs`:
+
+- **Nobody leaves before that season is played** (`rostGone`): no retirement, no trade, no
+  invented rookie (they start with the next draft). A draft night career and a high school
+  road that lands in `rs` both meet exactly the file.
+- **After it the simulation decides**, and a veteran past the usual age gets the season after
+  `rs` plus up to one more, so the old guard is not emptied in one summer.
+- **The file's coach replaces `COACHES_NOW`** for a club where they differ (`L.league.cn`),
+  and the carousel takes over from there.
+
+No file, or a file for another season, is the old behaviour exactly, and a league seeded
+without one carries no `rs` or `cn` key: `replay-careers --story off` is byte identical over
+1,000 careers. An old save keeps its own roster. check-story, check-career and sim-career all
+seed from the file when the repo has it, so the bands are measured on the league that ships.
+
 **THE CAROUSEL** (`coachCarousel`, run from `driftLeague` every summer, the road years too):
 a club fires on how it played (your club on the record you actually played, and never after a
 title), a coach past 71 may retire, an interim is likely replaced, and the hire is weighted

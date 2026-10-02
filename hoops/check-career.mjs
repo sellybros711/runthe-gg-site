@@ -36,7 +36,9 @@ let passed = 0;
 function ok(cond, what) { if (cond) passed++; else failures.push(what); }
 function section(t) { console.log(`\n${t}\n${'-'.repeat(t.length)}`); }
 
-const league = C.seedLeague(ROWS);
+/* The league the game seeds: today's rosters when the repo has them. */
+const ROSTERS_FILE = new URL('./data/rosters.json', import.meta.url);
+const league = C.seedLeague(ROWS, fs.existsSync(ROSTERS_FILE) ? JSON.parse(fs.readFileSync(ROSTERS_FILE, 'utf8')) : null);
 /* An en or em dash in copy, built from its code points so this file carries none. */
 const DASH = new RegExp('[' + String.fromCharCode(8211, 8212) + ']');
 
@@ -1128,14 +1130,17 @@ async function browser() {
     ok(!!(await page.$('.cr-story')), 'a career in the archive opens into its story');
     /* Play as his son needs a son: a career that never had one is not offered
        the button. The walk's own career gets one afterwards so the son half
-       below still runs. */
+       below still runs. The archive entry is matched on the id the page files
+       it under (cardId: the card's id, or name:at), which a Hall card does not
+       always carry, so matching on h.id alone missed it and the walk waited
+       for a son button that never came. */
     const sons = await page.evaluate(() => ({ n: RTF_CAREER_UI.state().hof[0].sons, btn: !!document.querySelector('[data-son]'), life: RTF_CAREER_UI.state().hof[0].life }));
     ok(typeof sons.n === 'number' && sons.btn === sons.n > 0, `the son button follows the sons (${sons.n} in "${sons.life}", button ${sons.btn})`);
     if (!sons.n) {
-      await page.evaluate(() => { const st = RTF_CAREER_UI.state(); st.hof[0].sons = 0; (st.arc || []).forEach((a) => { if (a.id === st.hof[0].id) a.sons = 0; }); });
+      await page.evaluate(() => { const st = RTF_CAREER_UI.state(), h = st.hof[0], id = String(h.id || (h.name + ':' + (h.at || h.from))); h.sons = 0; (st.arc || []).forEach((a) => { if (a.id === id) a.sons = 0; }); });
       await page.click('[data-vtab="family"]'); await page.click('[data-vtab="careers"]'); await page.click('[data-arc]');
       ok(!(await page.$('[data-son]')), 'no son, no Play as his son');
-      await page.evaluate(() => { const st = RTF_CAREER_UI.state(); st.hof[0].sons = 1; (st.arc || []).forEach((a) => { if (a.id === st.hof[0].id) a.sons = 1; }); });
+      await page.evaluate(() => { const st = RTF_CAREER_UI.state(), h = st.hof[0], id = String(h.id || (h.name + ':' + (h.at || h.from))); h.sons = 1; (st.arc || []).forEach((a) => { if (a.id === id) a.sons = 1; }); });
     }
     await page.click('[data-vtab="family"]');
     const fam = await page.evaluate(() => document.querySelector('[role="tabpanel"]').textContent);

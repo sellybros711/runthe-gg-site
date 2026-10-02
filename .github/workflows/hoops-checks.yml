@@ -13,6 +13,7 @@ name: Hoops checks
 #   node hoops/check-sprite.mjs         no existing sprite pose moves a cell
 #   node hoops/check-moments.mjs --quick the touch, the moments, the frames
 #   node hoops/check-story.mjs --quick  the story engine: order, arcs, traits, people, league
+#   node hoops/check-rosters.mjs        a career joins today's real rosters
 #   node hoops/sim-career.mjs           a thousand careers against the story bible
 #
 # No secrets, no network, no deploy.
@@ -106,6 +107,11 @@ jobs:
       # Its browser half (the People, Legacy and News tabs) runs locally.
       - name: Story engine
         run: node hoops/check-story.mjs --quick
+
+      # The league a career joins is today's: data/rosters.json, nobody retired
+      # or moved before the season they are under contract for.
+      - name: Today's rosters
+        run: node hoops/check-rosters.mjs
 
       # A thousand careers: crashes, careers that never end, unfilled tokens,
       # wrong-year lines, continuity, and the balance bands due by the phase.

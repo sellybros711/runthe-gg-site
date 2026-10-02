@@ -51,7 +51,9 @@ const PHASE = arg('phase', '0');
 const PHASES = ['0', 'A', 'B', 'C', 'D', 'E', 'F', 'G'];
 const due = (p) => PHASES.indexOf(p) <= PHASES.indexOf(PHASE);
 
-const league = C.seedLeague(ROWS);
+/* The league the game seeds: today's rosters when the repo has them. */
+const ROSTERS_FILE = new URL('./data/rosters.json', import.meta.url);
+const league = C.seedLeague(ROWS, fs.existsSync(ROSTERS_FILE) ? JSON.parse(fs.readFileSync(ROSTERS_FILE, 'utf8')) : null);
 /* An en or em dash in copy, built from its code points so this file carries none. */
 const DASH = new RegExp('[' + String.fromCharCode(8211, 8212) + ']');
 const clone = (x) => JSON.parse(JSON.stringify(x));
