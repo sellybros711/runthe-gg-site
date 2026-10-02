@@ -1493,6 +1493,8 @@
   .mmoves .x{font-family:var(--mono);color:var(--gold);font-weight:700;}
 
   /* ---- the payoff, made to feel like one: stars, ceremonies, count-ups ---- */
+  .sb-heat{margin-top:6px;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--text-faint);}
+  .sb-heat b{color:var(--gold);}
   .starbox{text-align:center;padding:14px 10px 12px;margin-bottom:12px;border:1px solid var(--line);border-radius:12px;
     background:linear-gradient(180deg,rgba(0,0,0,.30),rgba(0,0,0,.10));}
   .starbox .sb-lab{font-size:9.5px;letter-spacing:.22em;text-transform:uppercase;color:var(--text-faint);font-weight:800;}
@@ -7206,7 +7208,8 @@ const RULES=[
   <p class="log">Every match gets a score from <b>0 to 100</b>, shown as <b>stars</b> out of five. Your whole career runs on this number.</p>
   <div class="rulecall"><b>Winning isn't the point.</b> A <b>90-rated loss</b> gets you more rep, more love from the office and more popularity than a <b>50-rated win</b>. Ducking tough opponents is the slowest way to the top.</div>
   <p class="log"><b>What helps:</b> near-falls the crowd buys, mixing it up, picking one body part and staying on it, hitting the spots you call, a title on the line, and just being good (you and your opponent both).</p>
-  <p class="log"><b>What kills it:</b> calling the same spots over and over, no near-falls, a match under five minutes, weak ring psychology for your level, gassing out late, and working hurt.</p>`},
+  <p class="log"><b>What kills it:</b> calling the same spots over and over, no near-falls, a match under five minutes, weak ring psychology for your level, gassing out late, and working hurt.</p>
+  <p class="log"><b>Crowd heat</b> is a second number. It's how loud the building got: near-falls, big spots, a feud, blood, a hot finish. A hot crowd grows your popularity. A great match in a quiet room still pays.</p>`},
  {n:'Getting Better', h:`
   <p class="log">You can't buy anything. You earn it all in the ring.</p>
   <ul class="ruleul">
@@ -12916,8 +12919,28 @@ function simMatch(o){
     nearFalls:nf, time:`${Math.floor(secs/60)}:${String(secs%60).padStart(2,'0')}`,
     finish:{type:sub?'sub':'pin',by:win,move:finMv?finMv.name:'a cover',fin:!!(finMv&&finMv.tier>=4)}};
 }
+/* THE CROWD IS NOT THE RATING. Workrate is what the stars measure; heat is
+   what the building felt: near-falls, big spots, a feud, blood, a hot finish.
+   A clean technical match can be four stars in front of a quiet room, and a
+   brawl can bring the house down at two and a half. Read off what happened,
+   never rolled, so the same night always reads the same. */
+function crowdHeatOf(o,res){
+  const ms=(typeof MS!=='undefined'&&MS&&MS.o===o)?MS:null;
+  let h=30+(res.nearFalls||0)*7+(ms?(ms.big||0)*4:0)+(res.decWon||0)*3;
+  if(ms&&(ms.blood_me||ms.blood_opp)) h+=8;
+  const st=story(); if(st&&st.charId===o.oppId) h+=10;
+  if(o.stakes==='title'||o.stakes==='defense') h+=8;
+  if(res.finish&&res.finish.fin) h+=6;
+  if(!res.draw&&res.win&&G.w.align==='face') h+=4;
+  if(!res.draw&&!res.win&&G.w.align==='heel') h+=3;
+  if(res.draw) h-=4;
+  if(ms&&ms.clock<330) h-=10;
+  return Math.round(clamp(h,0,100));
+}
+function heatBand(h){ return h>=80?'Molten':h>=62?'Hot':h>=44?'Warm':h>=26?'Quiet':'Dead'; }
 function applyMatch(o,res){
   const c=G.car, w=G.w, sc=schedOf(c.deal&&c.deal.sched);
+  if(res.heat==null) res.heat=crowdHeatOf(o,res);
   /* WHAT TONIGHT DID TO YOU. The result screen used to show what you earned
      (purse, rep, XP) and nothing about what CHANGED (standing, the act,
      momentum, condition, the opponent's opinion of you). Every one of those
@@ -12966,7 +12989,7 @@ function applyMatch(o,res){
   c.rep+=repGain;
   // fame is tier-relative: tearing it up on the indies doesn't make you a household name
   const reach=0.35+tierIdx()*0.28;
-  const popGain=((res.quality-50)/6 + (draw?0.7:res.win?1.6:-0.3) + (o.stakes!=='standard'?1.2:0))*reach*(styleOf().popMult||1)*facBonus('pop');
+  const popGain=((res.quality-50)/6 + ((res.heat||50)-50)/20 + (draw?0.7:res.win?1.6:-0.3) + (o.stakes!=='standard'?1.2:0))*reach*(styleOf().popMult||1)*facBonus('pop');
   const popCeil=Math.min(100,([38,64,85,100][tierIdx()]||38)+4);
   c.pop=clamp(c.pop+popGain,1,popCeil);
   // the room reacts to the match too, in whichever direction you are working
@@ -13704,6 +13727,7 @@ function renderMatch(o,res){
       <div class="starrow">${starRowHTML(s)}</div>
       <div class="sb-num"><span id="sbNum">0</span><span style="color:var(--text-faint)">/100</span> · ${starLine}</div>
       <div class="sb-band">${starBand(s)}</div>
+      ${res.heat!=null?`<div class="sb-heat">Crowd <b>${heatBand(res.heat)}</b> · ${res.heat}/100</div>`:''}
     </div>
     <div class="mfinish">
       <div class="mf-head">${finishLine(res,o)}</div>
