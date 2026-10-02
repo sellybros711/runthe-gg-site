@@ -37,3 +37,4 @@ __pycache__/
 # safety net for one run of one script, not source, and it is a 2MB file that
 # would land in every commit that touched the sprite table.
 mythiball/index.html.prev
+wrestling/sim/last-run.json

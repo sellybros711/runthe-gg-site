@@ -63,8 +63,11 @@ const BLOCK = [
   // finishers named after the wrestler who owns them, moved off in the move catalogue
   'Walls of Jericho','Regal Stretch','Anaconda Vice','Con-Chair-To','Hulk-Up','Jackhammer','Perfect-Plex',
   'Emerald Flowsion','Tiger Driver','Burning Hammer','BAH GAWD',
+  // renamed in docs/PLAN.md decision 9 (old saves are rewritten by save step 2)
+  'GCW','King of the Ring','Best of the Super Juniors','Cruiserweight Classic','Tokyo Dome','Tiger Mask','Natural Selection',
 ];
 const files = fs.readdirSync(path.join(ROOT,'wrestling')).filter(f=>/\.(js|html)$/.test(f)).map(f=>'wrestling/'+f)
+    .concat(fs.existsSync(path.join(ROOT,'wrestling','events'))?fs.readdirSync(path.join(ROOT,'wrestling','events')).map(f=>'wrestling/events/'+f):[])
   .concat(['wrestling/booking/index.html']);
 for(const f of files){
   const txt = fs.readFileSync(path.join(ROOT,f),'utf8');
@@ -158,6 +161,41 @@ section('pages load');
 {
   const {page, errs} = await fresh(URL+'/wrestling/');
   if(errs.length) bad('career game: '+errs.slice(0,3).join(' | ')); else ok('career game loads clean');
+  await page.close();
+}
+/* ---------- the event catalog (C1) ----------
+   The stage files are generated from docs/NARRATIVE-EVENTS.md. A doc edited
+   without re-running the build ships last week's events, so the build is run
+   to a scratch folder and compared byte for byte. Then one event is played
+   through the real card, and its chain is checked to open. */
+section('the event catalog');
+{
+  const os=require('os'), cp=require('child_process');
+  const tmp=fs.mkdtempSync(path.join(os.tmpdir(),'ev-'));
+  const run=cp.spawnSync(process.execPath,[path.join(HERE,'build','events.mjs')],{env:{...process.env,EV_OUT:tmp},encoding:'utf8'});
+  const dir=path.join(HERE,'events');
+  const built=fs.existsSync(tmp)?fs.readdirSync(tmp).sort():[], shipped=fs.existsSync(dir)?fs.readdirSync(dir).sort():[];
+  const same=run.status===0 && built.length && built.join()===shipped.join() && built.every(f=>fs.readFileSync(path.join(tmp,f),'utf8')===fs.readFileSync(path.join(dir,f),'utf8'));
+  same ? ok(`events/ matches a fresh build (${built.join(', ')})`) : bad('events/ is stale: run node wrestling/build/events.mjs and bump EV_VERSION');
+  const {page, errs} = await fresh(URL+'/wrestling/');
+  const r = await page.evaluate(async()=>{
+    quickStart(); await evLoadUpTo(6);
+    const ids=new Set(EV.all.map(e=>e.id));
+    const dangling=EV.all.flatMap(e=>e.next.filter(n=>!ids.has(n)).map(n=>e.id+'>'+n));
+    const e=EV.all.find(x=>!x.chain && x.next.length && x.opts.length>1);
+    playCatalogEvent(e, ()=>{});
+    const shown=document.querySelectorAll('#sceneBody .scene-opt').length;
+    document.querySelector('#sceneBody .scene-opt').click();
+    const result=!!document.querySelector('#sceneBody .ev-result');
+    const opened=e.next.every(n=>G.car.ev.open[n]!=null);
+    document.getElementById('evDone').click();
+    return {n:EV.all.length, dangling, shown, want:e.opts.length, result, opened, seen:G.car.ev.seen[e.id]!=null, closed:!$('sceneBack').classList.contains('open')};
+  });
+  r.n>=300 ? ok(`${r.n} events load across the six stage files`) : bad(`only ${r.n} events loaded`);
+  !r.dangling.length ? ok('every chain points at an event that exists') : bad('chains to nothing: '+r.dangling.slice(0,5).join(', '));
+  (r.shown===r.want && r.result && r.opened && r.seen && r.closed) ? ok('an event plays through the card, applies, opens its chain and closes')
+    : bad('event card: '+JSON.stringify(r));
+  errs.length ? bad('event card page errors: '+errs.slice(0,3).join(' | ')) : ok('no page errors playing an event');
   await page.close();
 }
 /* THE HOME PAGE WITH A CAREER ON IT. This is not the same test as the one above:
@@ -1287,16 +1325,29 @@ section('two styles, one rig');
       if(!tr.some(p=>inF(p,32,55))) out.crotch.push(a);
     });
     host.remove();
-    // the switch: Retro really is the pixel game, and it sticks
-    setGfx(false);
-    out.retroNow = wrestlerSVG(DEFLOOK,{}).indexOf('crispEdges')>=0 && pico('trophy',20).indexOf('crispEdges')>=0
-      && beltSVG(BELT_ART_DEFAULT,30).indexOf('crispEdges')>=0 && document.documentElement.classList.contains('gfx-retro');
-    out.stored = localStorage.getItem('rtr_gfx');
+    // the switch is retired (docs/PLAN.md decision 3): one look, the pixel
+    // sprites, whatever an old visit stored under rtr_gfx
+    localStorage.setItem('rtr_gfx','retro');
+    out.oneLook = gfxSmooth() && wrestlerSVG(DEFLOOK,{}).indexOf('rtr-px')>=0 && !document.querySelector('.gfxseg');
+    // every value of every slot a player can own converts to a drawable sprite
+    out.convert=[]; out.converted=0;
+    const slots={}; (window.RTR_COSMETICS||[]).forEach(c=>{ (slots[c.slot]=slots[c.slot]||new Set()).add(c.v); });
+    const LEG={hair:'hairStyle'};
+    Object.keys(slots).forEach(sl=>slots[sl].forEach(v=>{
+      const L=Object.assign({},DEFLOOK,{[LEG[sl]||sl]:v});
+      try{ const g=RTR_PX.paint(RTR_PX.fromLegacy(L),{pose:'idle'}); const lit=g.reduce((n,r)=>n+r.filter(Boolean).length,0);
+        if(lit<300) out.convert.push(sl+':'+v+' draws '+lit); else out.converted++;
+        // nothing may touch the canvas edge, on any build or pose: the outline needs the cell
+        ['lean','athletic','heavy','super','giant'].forEach(bd=>RTR_PX.POSES.forEach(po=>{
+          const e=RTR_PX.paint(RTR_PX.fromLegacy(Object.assign({},L,{build:bd})),{pose:po});
+          if(e[0].some(Boolean)||e[e.length-1].some(Boolean)||e.some(r=>r[0]||r[r.length-1])) out.convert.push(sl+':'+v+' touches the edge ('+bd+' '+po+')');
+        })); }
+      catch(e){ out.convert.push(sl+':'+v+' threw '+e.message); }
+    }));
     return out;
   });
   await page.reload(); await page.waitForTimeout(600);
-  const after = await page.evaluate(()=>{ const v={retro:!gfxSmooth(), cls:document.documentElement.classList.contains('gfx-retro')};
-    setGfx(true); v.back=gfxSmooth() && wrestlerSVG(DEFLOOK,{}).indexOf('crispEdges')<0; return v; });
+  const after = await page.evaluate(()=>({ cls:document.documentElement.classList.contains('gfx-retro'), px:wrestlerSVG(DEFLOOK,{}).indexOf('rtr-px')>=0 }));
   if(errs.length) bad('styles: page errors: '+errs.slice(0,2).join(' | '));
   r.rigDiff.length ? bad(`the two styles pose differently: ${r.rigDiff.join(', ')}`)
                    : ok(`all ${r.poses} poses emit the same rig in both styles`);
@@ -1311,10 +1362,10 @@ section('two styles, one rig');
     : bad(`trunks leave skin between the legs on: ${r.crotch.join(', ')||'(no trunks found, '+r.trunksSeen+')'}`);
   r.icons.length ? bad('icons with no smooth drawing: '+r.icons.join(', ')) : ok('every icon has a smooth drawing');
   r.shapes.length ? bad('belt plates that do not draw smooth: '+r.shapes.join(', ')) : ok('every belt plate shape draws smooth');
-  (r.retroNow && r.stored==='retro') ? ok('the Retro switch puts the pixel figure, icons and belts back')
-    : bad(`the Retro switch did not take: ${JSON.stringify({now:r.retroNow, stored:r.stored})}`);
-  (after.retro && after.cls) ? ok('Retro survives a reload') : bad('Retro did not survive a reload: '+JSON.stringify(after));
-  after.back ? ok('and switching back returns the smooth figure') : bad('switching back did not return the smooth figure');
+  r.oneLook ? ok('the graphics toggle is retired: a stored Retro still draws the pixel sprites') : bad('the retired graphics toggle still changes the figure or is still on screen');
+  (!after.cls && after.px) ? ok('and a reload keeps one look') : bad('a reload brought the old Retro look back: '+JSON.stringify(after));
+  (r.converted>=100 && !r.convert.length) ? ok(`every ownable cosmetic value converts to a drawn sprite clear of the canvas edge on every build and pose (${r.converted})`)
+    : bad(`cosmetics that do not convert: ${r.convert.slice(0,6).join('; ')} (${r.converted} fine)`);
   await page.close();
 }
 
@@ -1389,7 +1440,10 @@ section('the building, the menus and the match mode');
     go('fight'); out.inmatch=document.body.classList.contains('inmatch') && getComputedStyle(document.getElementById('botnav')).display==='none';
     go('career'); out.back=!document.body.classList.contains('inmatch');
     ['win','loss','draw'].forEach(k=>{ const h=resultHero({oppName:'Test Opponent',oppId:null},{win:k==='win',draw:k==='draw'},k==='draw');
-      out.hero[k]=/mh-stamp/.test(h) && /Test Opponent/.test(h) && !/undefined|NaN/.test(h) && (h.match(/<svg/g)||[]).length>=2; });
+      // a sprite is an embedded PNG, and base64 spells NaN by chance, so the
+      // check reads the markup with the image data taken out
+      const txt=h.replace(/data:image\/[a-z]+;base64,[A-Za-z0-9+\/=]+/g,'');
+      out.hero[k]=/mh-stamp/.test(h) && /Test Opponent/.test(h) && !/undefined|NaN/.test(txt) && (h.match(/<svg/g)||[]).length>=2; });
     return out;
   });
   const vbad=r.venues.filter(v=>!(v.one&&v.named&&v.screen&&v.apron&&v.beams>=2));

@@ -1707,8 +1707,8 @@
       "sha": "49a1b9fc353c148e"
     },
     "/arcade/sportegories-data.js": {
-      "v": "42",
-      "sha": "7263ebc2b9bab3b4"
+      "v": "43",
+      "sha": "7b4b34a201d5560d"
     },
     "/arcade/type.js": {
       "v": "5",
@@ -2477,16 +2477,20 @@
       "sha": "3346626a00aa6a99"
     },
     "legends.js": {
-      "v": "2",
-      "sha": "1901d3930e7ddfbe"
+      "v": "3",
+      "sha": "af4dc16899c5a205"
     },
     "cosmetics.js": {
-      "v": "4",
-      "sha": "a9fa7a820658a0f2"
+      "v": "5",
+      "sha": "95ff7b608f19e6b8"
     },
     "world.js": {
-      "v": "3",
-      "sha": "ae8d13fb75695dc9"
+      "v": "5",
+      "sha": "9a43c1963f83465b"
+    },
+    "pxwrestler.js": {
+      "v": "4",
+      "sha": "5fa1f4cc2423250e"
     }
   }
 }

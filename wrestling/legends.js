@@ -115,7 +115,7 @@ window.RTR_LEGENDS = [
   { id:'l_becky', name:'Rebecca Quin', era:'modern', rarity:'legendary',
     attr:{label:'The Standard', b:{ch:16,te:10,ps:8}}, move:{name:'Fujiwara Armbar', kind:'finisher', dmg:74, pop:88, style:'technical'} },
   { id:'l_charlotte', name:'Ashley Fliehr', era:'modern', rarity:'epic',
-    attr:{label:'Second Generation', b:{te:12,po:10,ch:8}}, move:{name:'Natural Selection', kind:'finisher', dmg:76, pop:80, style:'technical'} },
+    attr:{label:'Second Generation', b:{te:12,po:10,ch:8}}, move:{name:'Second Nature', kind:'finisher', dmg:76, pop:80, style:'technical'} },
   { id:'l_aj', name:'Allen Jones', era:'modern', rarity:'legendary',
     attr:{label:'Effortless', b:{te:14,ae:14,ps:8}}, move:{name:'Belly-to-Back Facebuster', kind:'finisher', dmg:80, pop:86, style:'technical'} },
   { id:'l_omega', name:'Tyson Smith', era:'modern', rarity:'legendary',
