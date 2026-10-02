@@ -54,7 +54,7 @@ const clone = (x) => JSON.parse(JSON.stringify(x));
    else dealt twice is a repeat. The list shrinks as Phase C gives the
    recurring events memory and cooldowns. */
 const SYSTEM = new Set(['training', 'hs_summer', 'injury', 'clutch', 'amclutch', 'moment', 'presser', 'fa', 'extension', 'workout', 'nooffer', 'offers',
-  'allstar', 'retire', 'declare', 'portal', 'commit', 'signing', 'build_arch', 'build_pos', 'build_sig']);
+  'allstar', 'retire', 'declare', 'portal', 'commit', 'signing', 'build_arch', 'build_pos', 'build_sig', 'goal', 'nickname']);
 const RECURS = { has: (id) => SYSTEM.has(id) || C.recurs(id) };
 
 function policyPick(pol, L, c, r) {
@@ -95,6 +95,14 @@ function run(seed, start, pol, picks) {
   }
   if (!L.retired) problems.push('never retired');
   for (const x of C.continuityLog(L)) problems.push('continuity ' + x);
+  /* The feed is copy too, and it runs forward in time. */
+  let fy = -Infinity;
+  for (const f of L.feed || []) {
+    if (JUNK.test(f.t)) problems.push('feed ' + f.y + ': ' + f.t.slice(0, 80));
+    if (f.y < fy) problems.push('continuity the feed goes back in time at ' + f.y);
+    fy = Math.max(fy, f.y);
+  }
+  for (const k in L.traits || {}) if (L.traits[k].known && !L.traits[k].has) problems.push('revealed a trait it does not have: ' + k);
   /* A recurring event stops at its cap. */
   for (const id in seen) { const r = C.STORY_RECURS[id]; if (r && seen[id] > r[1]) problems.push('over cap ' + id + ' ' + seen[id]); }
   for (const e of L.log) {
@@ -183,6 +191,19 @@ const M = {
   'events never dealt': never.length,
   'unplanned repeats per career': results.reduce((s, x) => s + x.repeats.length, 0) / Math.max(1, n),
 };
+/* The story engine, read off every career: how much of it a career meets. */
+const per = (f) => results.reduce((s, x) => s + f(x.L), 0) / Math.max(1, n);
+const STORY = {
+  'arcs started': per((L) => Object.keys(L.arcs || {}).length),
+  'arcs resolved': per((L) => Object.values(L.arcs || {}).filter((a) => a.done && a.done !== 'faded').length),
+  'traits revealed': per((L) => Object.values(L.traits || {}).filter((t) => t.known).length),
+  'people in the ledger': per((L) => Object.keys(L.people || {}).length),
+  'skill badges': per((L) => Object.keys(L.badges || {}).length),
+  'signature move': 100 * per((L) => L.sig ? 1 : 0),
+  'nickname': 100 * per((L) => L.nick ? 1 : 0),
+  'goals met (share)': 100 * results.reduce((s, x) => s + (x.L.goals || []).filter((g) => g.met).length, 0) / Math.max(1, results.reduce((s, x) => s + (x.L.goals || []).length, 0)),
+  'feed lines': per((L) => (L.feed || []).length),
+};
 /* NARRATIVE.md section 10, with the phase each band is due by. */
 const TARGETS = [
   ['reaches the NBA (high school start)', 85, 95, 'D'],
@@ -223,6 +244,8 @@ for (const [k, lo, hi, ph] of TARGETS) {
   if (!inBand && due(ph)) targetFails.push(k);
   P(`| ${k} | ${v.toFixed(1)} | ${lo} to ${hi} | ${ph} | ${inBand ? 'in' : due(ph) ? 'FAIL' : 'not yet'} |`);
 }
+P('\n## The story engine\n');
+P('| per career | value |\n|---|---|\n' + Object.keys(STORY).map((k) => `| ${k} | ${STORY[k].toFixed(1)} |`).join('\n'));
 P('\n## Routes\n');
 P('| before the NBA | share |\n|---|---|\n' + Object.keys(routes).sort().map((k) => `| ${k} | ${pct(routes[k]).toFixed(1)}% |`).join('\n'));
 P('\n| draft slot | share |\n|---|---|\n' + Object.keys(slots).sort().map((k) => `| ${k} | ${pct(slots[k]).toFixed(1)}% |`).join('\n'));

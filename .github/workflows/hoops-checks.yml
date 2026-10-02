@@ -12,6 +12,7 @@ name: Hoops checks
 #   node hoops/check-saves.mjs          old saves migrate and play on unchanged
 #   node hoops/check-sprite.mjs         no existing sprite pose moves a cell
 #   node hoops/check-moments.mjs --quick the touch, the moments, the frames
+#   node hoops/check-story.mjs --quick  the story engine: order, arcs, traits, people, league
 #   node hoops/sim-career.mjs           a thousand careers against the story bible
 #
 # No secrets, no network, no deploy.
@@ -98,7 +99,15 @@ jobs:
       - name: Playable moments
         run: node hoops/check-moments.mjs --quick
 
+      # The story engine holds together: events are data, every card says
+      # when it is and the story happens in order, arcs end more than one way,
+      # traits are revealed only when a career has them, the people are
+      # invented, and the league names a champion and an MVP every season.
+      # Its browser half (the People, Legacy and News tabs) runs locally.
+      - name: Story engine
+        run: node hoops/check-story.mjs --quick
+
       # A thousand careers: crashes, careers that never end, unfilled tokens,
-      # wrong-year lines, and the balance bands due by the current phase.
+      # wrong-year lines, continuity, and the balance bands due by the phase.
       - name: Career simulator
-        run: node hoops/sim-career.mjs --n 1000 --phase B
+        run: node hoops/sim-career.mjs --n 1000 --phase C

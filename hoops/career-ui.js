@@ -159,6 +159,40 @@ var CSS = [
 '.cr-rt .k-row.is-key span:first-child:after{content:"";display:inline-block;width:5px;height:5px;margin-left:6px;vertical-align:2px;background:var(--k-good);}',
 '.cr-tabs{margin:0 0 12px;}',
 '.cr-tabs .k-tab{min-width:0;font-size:11px;letter-spacing:.08em;}',
+/* six tabs are two rows of three on a phone */
+'@media (max-width:519px){.cr-tabs.k-tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));}}',
+/* the people around you: a name, who they are, a meter that runs both ways */
+'.cr-ppl{list-style:none;margin:0;padding:0;}',
+'.cr-ppl li{display:grid;grid-template-columns:minmax(0,1fr) 96px;gap:4px 12px;padding:9px 0;border-top:1px solid rgba(143,160,214,.12);}',
+'.cr-ppl li:first-child{border-top:0;}',
+'.cr-ppl b{display:block;font-size:14px;color:var(--k-ink);}',
+'.cr-ppl small{display:block;font-size:12px;color:var(--k-ink-3);}',
+'.cr-ppl .note{grid-column:1/-1;font-size:12.5px;color:var(--k-ink-2);}',
+'.cr-rel{position:relative;align-self:center;height:10px;background:var(--k-panel-2);box-shadow:0 0 0 2px var(--k-frame);}',
+'.cr-rel i{position:absolute;top:0;bottom:0;}',
+'.cr-rel i.up{left:50%;background:var(--k-good);}',
+'.cr-rel i.dn{right:50%;background:var(--k-bad);}',
+'.cr-rel:after{content:"";position:absolute;left:50%;top:-3px;bottom:-3px;width:2px;background:var(--k-ink-3);}',
+/* legacy */
+'.cr-leg{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin:0 0 12px;}',
+'.cr-leg div{padding:10px 6px;text-align:center;background:var(--k-panel-2);}',
+'.cr-leg b{display:block;font-family:var(--k-f-pixel);font-size:9px;line-height:1.5;color:var(--k-ink);overflow-wrap:anywhere;}',
+'.cr-leg span{display:block;margin-top:5px;font:800 9px var(--k-f-text);letter-spacing:.1em;text-transform:uppercase;color:var(--k-ink-3);}',
+'.cr-list{list-style:none;margin:0;padding:0;}',
+'.cr-list li{font-size:13.5px;line-height:1.45;padding:6px 0;border-top:1px solid rgba(143,160,214,.12);color:var(--k-ink-2);}',
+'.cr-list li:first-child{border-top:0;}',
+'.cr-list li.met{color:var(--k-good);}',
+'.cr-list li .yr{display:inline-block;min-width:44px;color:var(--k-ink-3);font-family:var(--k-f-pixel);font-size:8px;}',
+/* the news */
+'.cr-feed{list-style:none;margin:0;padding:0;max-height:460px;overflow:auto;}',
+'.cr-feed li{padding:8px 0;border-top:1px solid rgba(143,160,214,.12);font-size:13.5px;line-height:1.45;color:var(--k-ink);}',
+'.cr-feed li:first-child{border-top:0;}',
+'.cr-feed .src{display:block;font:800 9px var(--k-f-text);letter-spacing:.12em;text-transform:uppercase;color:var(--k-ink-3);margin-bottom:2px;}',
+'.cr-feed li.debate{color:var(--k-ink-2);font-style:italic;}',
+'.cr-race{width:100%;margin:0 0 12px;}',
+'.cr-race tr.you td{color:var(--k-gold);font-weight:800;}',
+'.cr-known{display:flex;flex-wrap:wrap;gap:6px;padding:0 var(--k-s-4) 12px;background:var(--k-panel);}',
+'.cr-known .k-tag{white-space:normal;line-height:1.5;}',
 '.cr-log{list-style:none;margin:0;padding:0;max-height:440px;overflow:auto;}',
 '.cr-log li{font-size:13.5px;line-height:1.45;padding:7px 0;border-top:1px solid rgba(143,160,214,.12);color:var(--k-ink-2);display:flex;gap:10px;}',
 '.cr-log li .yr{flex:0 0 44px;color:var(--k-ink-3);font-family:var(--k-f-pixel);font-size:8px;line-height:2.3;}',
@@ -490,10 +524,12 @@ function idCard(L){
   var club = rv ? rv.what + (rv.level === 'High school' ? ' at ' + rv.where : '')
     : L.team ? teamName(L.team) : (L.draft && !L.draft.team ? 'Undrafted' : 'Draft prospect');
   var lines = [];
+  if (L.nick) lines.push('"' + L.nick + '"');
   lines.push('Age ' + L.age + (v.role ? ' · ' + v.role.label : ''));
   if (rv) lines.push(rv.sub);
   if ((L.team || rv) && v.coach) lines.push('Coach ' + v.coach);
   if (!rv && ct && ct.kind !== 'overseas') lines.push(money(ct.salary) + ' a year · ' + ct.years + (ct.years === 1 ? ' year left' : ' years left'));
+  if (L.season && L.season.goal && C.GOALS[L.season.goal]) lines.push('Chasing: ' + C.GOALS[L.season.goal][0].toLowerCase());
   var per = C.personaOf ? C.personaOf(L) : '';
   var strip = tag(L.pos + ' · ' + C.ARCHES[L.arch].name, 'k-team') + tag('#' + L.num)
     + (per && per !== 'Still writing it' ? '<span class="k-tag k-gold cr-persona" title="How the league sees you">' + esc(per) + '</span>' : '');
@@ -504,7 +540,16 @@ function idCard(L){
     + '<div class="k-id"><h3 class="k-hero">' + esc(L.name) + '</h3>' + tag(club, 'k-team')
     + '</div><div class="k-ovr"><span class="k-num" id="cr-ovr">' + v.ovr + '</span><span class="k-pix">OVR</span></div></div>'
     + '<div class="cr-lines">' + lines.map(function(t){ return '<span class="cr-sub2">' + esc(t) + '</span>'; }).join('') + '</div>'
-    + '<div class="k-strip">' + strip + '</div></div>';
+    + '<div class="k-strip">' + strip + '</div>' + knownHtml(L) + '</div>';
+}
+/* What the career has shown: revealed traits (with the reason on hover and
+   for a screen reader), the signature move and the skill badges. */
+function knownHtml(L){
+  var out = [];
+  (C.TRAITS || []).forEach(function(k){ var t = L.traits && L.traits[k]; if (t && t.known) out.push('<span class="k-tag k-gold" title="' + esc(t.why || '') + '">' + esc(C.TRAIT_NAME[k]) + '<span class="sr-only"> ' + esc(t.why || '') + '</span></span>'); });
+  if (L.sig) out.push('<span class="k-tag k-team" title="Signature move">' + esc(L.sig.name) + '</span>');
+  (C.badgeList ? C.badgeList(L) : []).forEach(function(b){ out.push('<span class="k-tag">' + esc(b.name) + '</span>'); });
+  return out.length ? '<div class="cr-known" aria-label="Known for">' + out.join('') + '</div>' : '';
 }
 function meters(L, d){
   var m = L.m;
@@ -628,10 +673,50 @@ function tabsHtml(L){
     var log = L.log.slice().reverse().slice(0, 160);
     body = '<ul class="cr-log">' + log.map(function(e){ return '<li class="' + (e.tone || '') + '"><span class="yr">' + e.y + '</span><span>' + esc(e.t) + '</span></li>'; }).join('') + '</ul>';
   } else if (tab === 'seasons') body = seasonsTable(L);
+  else if (tab === 'people') body = peopleHtml(L);
+  else if (tab === 'legacy') body = legacyHtml(L);
+  else if (tab === 'news') body = newsHtml(L);
   else body = trophies(L);
   var t = function(id, name){ var on = tab === id; return '<button class="k-tab" role="tab" aria-selected="' + on + '" data-tab="' + id + '">' + name + '</button>'; };
-  return '<div class="k-panel cr-sec"><div class="k-tabs cr-tabs" role="tablist">' + t('log', 'Story') + t('seasons', 'Seasons') + t('trophies', 'Trophy case') + '</div>'
+  return '<div class="k-panel cr-sec"><div class="k-tabs cr-tabs" role="tablist">' + t('log', 'Story') + t('seasons', 'Seasons') + t('trophies', 'Trophies')
+    + (L.opt && L.opt.story ? t('people', 'People') + t('legacy', 'Legacy') + t('news', 'News') : '') + '</div>'
     + '<div role="tabpanel">' + body + '</div></div>';
+}
+/* The people a career has met, closest and furthest first. */
+function peopleHtml(L){
+  var P = Object.keys(L.people || {}).map(function(k){ return L.people[k]; });
+  if (!P.length) return '<p class="k-small">Nobody yet. Give it a season.</p>';
+  P.sort(function(a, b){ return Math.abs(b.rel) - Math.abs(a.rel) || b.met - a.met; });
+  return '<ul class="cr-ppl">' + P.slice(0, 24).map(function(p){
+    var w = Math.min(50, Math.abs(p.rel) / 2), last = p.notes && p.notes.length ? p.notes[p.notes.length - 1] : null;
+    var word = p.rel >= 60 ? 'Close' : p.rel >= 20 ? 'Good' : p.rel > -20 ? 'Fine' : p.rel > -60 ? 'Cold' : 'Bad blood';
+    return '<li><div><b>' + esc(p.n) + '</b><small>' + esc(p.role) + ' · since ' + p.met + '</small></div>'
+      + '<div class="cr-rel" role="img" aria-label="' + esc(word) + ', ' + p.rel + '"><i class="' + (p.rel >= 0 ? 'up' : 'dn') + '" style="width:' + w + '%"></i></div>'
+      + (last ? '<div class="note">' + last[0] + ': ' + esc(last[1]) + '</div>' : '') + '</li>';
+  }).join('') + '</ul>';
+}
+/* Where the career stands with the Hall, what it chased, what it keeps. */
+function legacyHtml(L){
+  var v = C.legacyView(L), G = L.goals || [], M = C.memories ? C.memories(L) : [];
+  var out = '<div class="cr-leg"><div><b>' + esc(v.rung) + '</b><span>Today</span></div>'
+    + '<div><b>' + (v.next ? '+' + v.next.need : 'Top') + '</b><span>' + esc(v.next ? 'To ' + v.next.name : 'Of the ladder') + '</span></div>'
+    + '<div><b>' + v.hof + '%</b><span>Hall chance</span></div></div>';
+  if (v.watch.length) out += '<h3 class="cr-sub">Records watch</h3><ul class="cr-list">' + v.watch.map(function(w){ return '<li>' + w.left.toLocaleString('en-US') + ' ' + esc(w.word) + ' to ' + w.m.toLocaleString('en-US') + '.</li>'; }).join('') + '</ul>';
+  if (G.length) out += '<h3 class="cr-sub">Goals · ' + G.filter(function(g){ return g.met; }).length + ' of ' + G.length + ' met</h3><ul class="cr-list">'
+    + G.slice().reverse().slice(0, 10).map(function(g){ return '<li class="' + (g.met ? 'met' : '') + '"><span class="yr">' + g.y + '</span>' + esc(C.GOALS[g.k][0]) + (g.met ? '. Done.' : '. Missed.') + '</li>'; }).join('') + '</ul>';
+  if (M.length) out += '<h3 class="cr-sub">Moments</h3><ul class="cr-list">' + M.map(function(m){ return '<li><span class="yr">' + m.y + '</span>' + esc(m.t) + '</li>'; }).join('') + '</ul>';
+  return out;
+}
+/* The news: the MVP ladder while a season is on, then the feed, newest first. */
+function newsHtml(L){
+  var s = L.season, out = '';
+  if (s && s.race && s.race.length) {
+    out += '<h3 class="cr-sub" style="margin-top:0">MVP ladder · the break</h3><table class="k-table cr-race"><tbody>'
+      + s.race.map(function(x){ return '<tr class="' + (x.you ? 'you' : '') + '"><td>' + x.rank + '</td><td>' + esc(x.n) + '</td><td>' + esc(x.club ? E.TEAM_NAMES[x.club] || x.club : '') + '</td></tr>'; }).join('') + '</tbody></table>';
+  }
+  var F = (L.feed || []).slice().reverse().slice(0, 60);
+  if (!F.length) return out + '<p class="k-small">Nothing written about you yet.</p>';
+  return out + '<ul class="cr-feed">' + F.map(function(f){ return '<li class="' + (f.k === 'debate' ? 'debate' : '') + '"><span class="src">' + esc(f.s) + ' · ' + f.y + '</span>' + esc(f.t) + '</li>'; }).join('') + '</ul>';
 }
 function td(l, v, cls){ return '<td data-l="' + l + '"' + (cls ? ' class="' + cls + '"' : '') + '>' + v + '</td>'; }
 function seasonsTable(L){
@@ -1004,6 +1089,7 @@ function finish(){
     from: L.history.length ? L.history[0].y : L.year, to: L.history.length ? L.history[L.history.length - 1].y : L.year,
     teams: teams, totals: f.totals, awards: awardCounts(L), history: L.history, amHist: L.amHist || [], college: collegeOf(L),
     after: f.after || '', jersey: f.jersey || null, rival: f.rival || null, life: f.life || '',
+    nick: f.nick || null, traits: f.traits || null, sig: f.sig || null, badges: f.badges || null, moments: f.moments || null, goals: f.goals || null,
     team: teams[teams.length - 1] || null, at: Date.now() };
   /* The badges, through the page's one feat writer, so a Career badge is
      kept on the account the way every other mode's is. */
@@ -1129,6 +1215,7 @@ function finalView(card){
     + '<div class="eye">' + (hof ? 'The Hall of Fame' : 'The verdict') + '</div><div class="v">' + esc(card.verdict) + '</div>'
     + '<div class="nm">' + esc(card.name) + ' · #' + esc(String(card.num)) + ' · ' + card.from + '-' + card.to + '</div>'
     + '<p>' + esc(card.blurb) + '</p>'
+    + (card.nick ? '<p class="cr-col">They called you ' + esc(card.nick) + '.</p>' : '')
     + (card.persona && card.persona !== 'Still writing it' ? '<p class="cr-col">The league knew you as: ' + esc(card.persona) + '.</p>' : '')
     + (card.college ? '<p class="cr-col">' + esc(card.college) + '</p>' : '')
     + (card.jersey ? '<p class="cr-col">Your #' + esc(String(card.num)) + ' hangs in the rafters for the ' + esc(E.TEAM_NAMES[card.jersey] || card.jersey) + '.</p>' : '')
@@ -1140,6 +1227,8 @@ function finalView(card){
         + card.rival.star + 'x All-Star, ' + card.rival.rings + (card.rival.rings === 1 ? ' ring.' : ' rings.')
         + (card.totals.pts > card.rival.pts ? ' You had the better career.' : ' He had the better career.') + '</p>' : '')
       + (card.life ? '<p><span class="k">Off the floor</span>' + esc(card.life) + '.</p>' : '')
+      + (card.traits && (card.traits.length || card.sig) ? '<p><span class="k">Known for</span>' + esc(card.traits.concat(card.sig ? [card.sig] : []).join(' · ')) + '.</p>' : '')
+      + (card.moments && card.moments.length ? '<p><span class="k">Moments</span></p><ul class="cr-list">' + card.moments.map(function(m){ return '<li><span class="yr">' + m.y + '</span>' + esc(m.t) + '</li>'; }).join('') + '</ul>' : '')
       + '</div>' : '')
     + '<div class="k-panel k-tight cr-place" id="cr-place" hidden></div>'
     + '<div class="cr-btnrow"><button class="k-btn" id="cr-share">Share it</button><button class="k-btn k-sec" id="cr-again">New career</button></div>'

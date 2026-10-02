@@ -11321,6 +11321,85 @@ to have something real to measure. The leaderboard's Career tab keeps the
 game's shared board chrome, because restyling one tab of seven is a seam inside
 the board rather than one removed at its door.
 
+#### Phase C: the story engine, and the story has to happen in order
+
+```
+node hoops/check-story.mjs                    events, calendar, arcs, traits, people, league, the page
+node hoops/build/replay-careers.mjs --out a.json   fingerprint 1,000 careers (then --against a.json)
+node hoops/sim-career.mjs --phase C           continuity scan and the Phase C bands
+```
+
+Asked for with two conditions: nothing overly wordy, and every storyline has to
+make sense with the timeline of what is happening.
+
+**A STORY CAREER IS EVERY CAREER STARTED FROM NOW ON** (`L.opt.story`, set by
+`newLife`, never by `migrate`). Everything below is behind `storyOn(L)`, because
+check-saves plays frozen saves against the old engine. The port of the events to
+data was proved the stronger way: `replay-careers.mjs` fingerprints the whole
+save of 1,000 seeded careers, and with the story off they are byte identical
+before and after every step of this phase.
+
+**AN EVENT IS DATA.** `defineEvents()` fills in phases, tags, `req` (declarative
+prerequisites read by `reqOk`, which throws on an unknown key), rarity, once,
+cooldown and cap. `STORY_RECURS` is the list of events allowed to come back,
+each with a cooldown and a cap; anything else happens once a career.
+
+**THE CALENDAR.** `L.year` is the year a season ENDS. A card says when it is:
+September (camp), December (after game 27), February (the break), April (after
+game 82), the summer, or the school year and month. Three timeline rules were
+broken and are fixed on a story career:
+
+- Nothing about the regular season is dealt in April, because by then it is over
+  (`STORY_PHASES`). April holds `playoff_eve` or `exit_interview`.
+- A high school season stops at the halfway mark (`hs_mid`), so January stories
+  can still change February. College keeps rivalry week out of March.
+- The Olympics come in Olympic years (the old rule was a year early).
+
+**COPY STATES ONLY TRUE FACTS.** A hot streak reads the player's own scoring, a
+proposal says how long it has really been, a freshman wall counts the real
+games, a repeat card reads its own history (`times()`): a cousin is "short
+again", a rebuilt gym is not falling apart. check-story holds every title to ten
+words, card text to 22 words and three sentences, answers to seven, results to
+sixteen.
+
+**`continuity()` and `continuityLog()`** scan every card and the log: in-game
+stories after the season, a partner named while single, NBA cards before the
+NBA, a wedding before an engagement, a memory from the future. The simulator
+fails on any hit, and check-story proves the scan bites by putting the April
+rule back.
+
+**PEOPLE, MEMORY, ARCS.** `L.people` is a ledger of the invented people met,
+with a meter and notes. **The names on a card are read BEFORE the answer runs**
+(`relNames`), or switching agents holds the grudge against the new one. Real
+people never enter it. `remember()` stamps the year and `callback()` says how
+long ago in words, never about the season it happened in. An arc
+(`ARC_EVENTS`, `arcStart`/`arcGo`/`arcEnd`) is dealt in its named slot ahead of
+anything random, happens once a career, and settles one of two or more ways.
+Six today: feud, gym, venture, promise, mentor, prep.
+
+**CHARACTER.** Hidden traits act on a story career and are revealed by play with
+a reason (`reveal`). Skill badges, a signature move, an archetype that follows
+the game you play, and a coach asking for the next position over. The ledger
+drives cards: an agent you keep crossing, your mom, the beat writer, the TV
+critic, your closest teammate.
+
+**THE LIVING LEAGUE IS INVENTED.** `L.league.figs` are invented stars who age,
+move, win the MVP when you do not (voters tire of a repeat winner) and retire.
+Every season records a champion and dynasties are named. Real clubs, coaches and
+rosters are untouched; a real player's future is not ours to write. **Summer
+news is stamped with the summer's calendar year** (`L.year - 1`), because
+`driftLeague` runs after the year has turned.
+
+**GOALS, LEGACY, MEDIA.** A goal card each camp, judged in April. `legacyView`
+gives the rung, the next one, a Hall chance and a records watch. `L.feed` is
+the news (one headline a step at most), with a debate show at the break and a
+nickname the broadcast gives you.
+
+**BALANCE.** The story layer leans careers upward, so a story career has its own
+bar (`BAL`: All-Star cut, steeper decline, a playoff tax, retirement ages). The
+Phase C bands hold over 3,000 careers. The People, Legacy and News tabs only
+appear on a story career.
+
 #### Phase B: the games move, and nothing under them did
 
 ```

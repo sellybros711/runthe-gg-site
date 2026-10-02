@@ -82,6 +82,13 @@ other invented player; a real opponent is drawn as a shadow, never a face.
 
 ## Phase C. The story engine
 
+Done 2026-10-02. Report: `reports/phase-c-sim.md`; guard: `check-story.mjs`.
+Everything here is for careers started from now on (`L.opt.story`); a
+migrated save plays exactly as before, proved by replaying 1,000 careers with
+the story off. Off-court systems (step 8) are the ledger, the venture arc and
+the family already in the life; a fuller money and family layer is content,
+and goes to Phase D.
+
 1. Event schema (NARRATIVE.md section 2): prerequisites, weights, cooldowns,
    rarity, chains, flags. The existing 88 events are ported to it first, with no
    behavior change, proved by replaying 1,000 seeded careers before and after.

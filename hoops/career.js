@@ -262,6 +262,7 @@ function driftLeague(L, beats) {
   const net = {};
   for (const c of CLUBS) net[c] = (L.league.net[c] || 0) * 0.62 + norm(rng) * 3.6;
   L.league.net = normaliseNets(net);
+  leagueSummer(L);
 }
 const clubNet = (L, c) => L.league.net[c] || 0;
 function clubTier(net) {
@@ -869,6 +870,12 @@ function hasTrait(L, k) { return !!(L.traits && L.traits[k] && L.traits[k].has);
    career is dealt is behind this, so a save from before plays on unchanged. */
 const STORY_VERSION = 1;
 const storyOn = (L) => !!(L && L.opt && L.opt.story);
+/* A STORY CAREER IS TUNED TO NARRATIVE.md section 10, measured by
+   sim-career.mjs over a thousand careers. The traits, arcs and the build all
+   lean a career upward, so the bar is set where the whole of it lands in the
+   bands. A migrated save keeps the old numbers, as it keeps everything. */
+const BAL = { star: 5, dec: 1.4, poTax: 3.5, maxAge: 38, tired: 31 };
+const bal = (L, k, old) => storyOn(L) ? BAL[k] : old;
 
 // ─── draft night ────────────────────────────────────────────────────────────
 
@@ -1078,6 +1085,7 @@ function rollInjury(L, chunk, beats) {
   const p = 0.065 + (100 - L.dur) * 0.0011 + Math.max(0, a - 28) * 0.009
     + Math.max(0, 60 - L.m.health) * 0.0016 + s.mods.risk;
   if (rng() >= p * (trait(L, 'injuryProne') ? 1.3 : trait(L, 'ironMan') ? 0.65 : 1)) return;
+  if (storyOn(L) && (tw(L).inj = (tw(L).inj || 0) + 1) >= 3) reveal(L, 'injuryProne', 'Three injuries already. The trainers know your name.', beats);
   const r = rng();
   const from = CHUNKS[chunk][0] + Math.floor(rng() * 20);
   if (r < 0.62) {
@@ -1222,7 +1230,7 @@ function awards(L, st) {
      little better than a coin flip. */
   if (gpOk && o >= 91 && seed <= 3) {
     const sc = (o - 93) * 0.6 + (w - 55) * 0.1 + (pg.pts - 27) * 0.15 + (L.m.fame - 70) * 0.02;
-    if (rng() < 0.62 * lg(sc - 0.4)) out.push('mvp');
+    if (rng() < (storyOn(L) ? 0.52 : 0.62) * lg(sc - 0.4)) out.push('mvp');
   } else rng();
   if (gpOk) {
     const tier = o + (pg.pts - 22) * 0.12 + norm(rng) * 1.4;
@@ -1270,7 +1278,7 @@ function allStarCheck(L, beats) {
   if (s.gp < 25) return;
   const rng = rngAt(L, 'allstar');
   const st = effOvr(L) + L.m.fame * 0.07 + (pg.pts - 18) * 0.35 + (s.w - s.l) * 0.05 + norm(rng) * 1.5;
-  if (st < 88.5) return;
+  if (st < 88.5 + bal(L, 'star', 0)) return;
   s.allstar = true;
   const n = (L.flags.allstars || 0) + 1;
   L.flags.allstars = n;
@@ -1304,8 +1312,8 @@ function startPlayoffs(L, st) {
   s.po = { cf, seed, round: seed > 6 ? -1 : 0, results: [], field: {}, out: false, champ: false };
 }
 function seriesP(L, mine, theirs, home) {
-  const mn = clubNet(L, mine) + (mine === L.team ? playoffImpact(L) : 0);
-  const tn = clubNet(L, theirs) + (theirs === L.team ? playoffImpact(L) : 0);
+  const mn = clubNet(L, mine) + (mine === L.team ? playoffImpact(L) - bal(L, 'poTax', 0) : 0);
+  const tn = clubNet(L, theirs) + (theirs === L.team ? playoffImpact(L) - bal(L, 'poTax', 0) : 0);
   return gameP(mn - tn, home);
 }
 function playoffImpact(L) {
@@ -1593,7 +1601,7 @@ function develop(L, beats) {
   const eth = 0.65 + L.eth / 100 * 0.7;
   let grow = gap * (GROW[a] || 0) * (eth + (trait(L, 'gymRat') ? 0.12 : 0));
   if (trait(L, 'lateBloomer')) grow = a <= 22 ? grow * 0.8 : a <= 27 ? grow + gap * 0.05 * eth : grow;
-  const dec = (DECLINE[a] || (a >= 38 ? 6.5 : 0)) * (1.2 - L.dur / 250) * (L.flags.longevity ? 0.75 : 1)
+  const dec = (DECLINE[a] || (a >= 38 ? 6.5 : 0)) * (1.2 - L.dur / 250) * (L.flags.longevity ? 0.75 : 1) * bal(L, 'dec', 1)
     + Math.max(0, 50 - L.m.health) * 0.03;
   for (const k of RATINGS) {
     let d = grow * (0.6 + rng() * 0.8);
@@ -1612,7 +1620,7 @@ function develop(L, beats) {
     beats.push({ kind: 'dev', text: t, tone: diff > 0 ? 'good' : 'bad' });
     logIt(L, t, diff > 0 ? 'good' : 'bad');
   }
-  if (diff >= 3 && a >= 25) reveal(L, 'lateBloomer', 'Still getting better at ' + a + '.', beats);
+  if (diff >= 2 && a >= 25) reveal(L, 'lateBloomer', 'Still getting better at ' + a + '.', beats);
   if (L.eth >= 85 && a >= 22) reveal(L, 'gymRat', 'First in the gym. Every day.', beats);
   bump(L, { health: 28 });
 }
@@ -1700,6 +1708,7 @@ function offseason(L, beats) {
   const s = L.season;
   develop(L, beats);
   buildCards(L);
+  if (!L.pending.some((c) => /^build_/.test(c.id))) nicknameCard(L);
   /* Contracts. */
   const c = L.contract;
   if (c) c.years--;
@@ -1711,8 +1720,8 @@ function offseason(L, beats) {
     joinTeam(L, to, true);
     beats.push({ kind: 'trade', text: 'Your request is granted. Traded to the ' + E.teamName(to) + '.', tone: 'gold' });
   }
-  if (L.age >= 40) { retire(L, beats, 'The body made the call at ' + L.age + '.'); return; }
-  const tired = L.age >= 34 || (L.age >= 31 && o < 70);
+  if (L.age >= bal(L, 'maxAge', 40)) { retire(L, beats, 'The body made the call at ' + L.age + '.'); return; }
+  const tired = L.age >= bal(L, 'tired', 34) || (L.age >= 31 && o < 70);
   if (c && c.years === 1 && c.kind === 'rookie' && o >= 66) {
     const sal = round1(marketSalary(L, o + 2) * 0.97);
     L.pending.push({
@@ -1780,6 +1789,7 @@ function retireNow(L) {
   const beats = [];
   if (!L.history.length) { L.pending = []; L.retired = true; L.phase = 'retired'; L.final = legacy(L); return beats; }
   retire(L, beats, 'Retired at ' + L.age + '.');
+  headlines(L, beats);
   sayAll(L, beats);
   return beats;
 }
@@ -1853,7 +1863,19 @@ function legacy(L) {
   for (const c in by) if (by[c] >= 7 && score >= 36 && (!jersey || by[c] > by[jersey])) jersey = c;
   const r = L.rival;
   const rival = r ? { name: r.name, pts: r.pts, star: r.star, mvp: r.mvp, rings: r.rings, beat: L.flags.rivalWins || 0 } : null;
-  return { totals: T, score, verdict: v[1], blurb: v[2], jersey, rival, life: lifeLine(L) };
+  const out = { totals: T, score, verdict: v[1], blurb: v[2], jersey, rival, life: lifeLine(L) };
+  /* A story career is remembered for more than its numbers: what it was
+     called, what the league learned about it, and the moments it kept. */
+  if (storyOn(L)) {
+    out.nick = L.nick || null;
+    out.traits = TRAITS.filter((k) => L.traits[k] && L.traits[k].known).map((k) => TRAIT_NAME[k]);
+    out.sig = L.sig ? L.sig.name : null;
+    out.badges = badgeList(L).map((b) => b.name);
+    out.moments = memories(L).slice(-5).map((m) => ({ y: m.y, t: m.t }));
+    const G = L.goals || [];
+    out.goals = { met: G.filter((g) => g.met).length, of: G.length };
+  }
+  return out;
 }
 
 // ─── the events ─────────────────────────────────────────────────────────────
@@ -2041,7 +2063,7 @@ const EVENTS = {
     title: 'You are on fire.',
     text: (L) => streakLine(L) + ' The cameras find your locker.',
     options: [
-      { label: 'Tell them you are the best player here', run: (L, r) => { bump(L, { fame: 8, trust: -4 }); if (ok(r, 0.5)) { bump(L, { usage: 0.02 }); return '{coach} runs more plays for you. The bigs notice.'; } bump(L, { morale: -3 }); return 'It plays on every channel. {tm} and {tm2} stop passing.'; } },
+      { label: 'Say you are the best here', run: (L, r) => { bump(L, { fame: 8, trust: -4 }); if (ok(r, 0.5)) { bump(L, { usage: 0.02 }); return '{coach} runs more plays for you. The bigs notice.'; } bump(L, { morale: -3 }); return 'It plays on every channel. {tm} and {tm2} stop passing.'; } },
       { label: 'Credit your teammates', run: (L) => { bump(L, { trust: 5, morale: 4, win: 0.4 }); return 'The locker room loves it. The ball moves a little faster.'; } },
       { label: 'Say nothing', run: (L) => { bump(L, { fame: 2 }); return 'Headphones on. The mystery helps.'; } },
     ],
@@ -2197,7 +2219,7 @@ const EVENTS = {
   investment: {
     phases: ['pre', 'off'], req: { cash: 1.5 }, weight: () => 2,
     title: (L) => times(L, 'investment') > 1 ? '{friend} is back with a new idea.' : '{friend}, a friend from home, has a business idea.',
-    text: () => 'Streetwear. Or a burger chain. Or an app. He needs a partner.',
+    text: () => 'Streetwear or burgers or an app. He needs a partner.',
     options: [
       { label: 'Go all in', run: (L, r) => { const st = Math.min(L.cash * 0.4, 4);
         if (storyOn(L) && !(L.arcs && L.arcs.venture)) {
@@ -2773,6 +2795,7 @@ function defineEvents(pool, kind) {
       ev.rarity = w >= 3 ? 'common' : 'uncommon';
     }
     if (!ev.when) ev.when = () => true;
+    if (ev.weight == null) ev.weight = 1;
     if (typeof ev.weight === 'number') { const w = ev.weight * RARITY[ev.rarity]; ev.weight = () => w; }
   }
   return pool;
@@ -3159,8 +3182,10 @@ function clutchHit(L, beats) {
 }
 /* The answers that go looking for a fight. */
 const HOT_PICKS = { ref_heat: 0, heckler: 0, teammate_fight: 0, arc_feud_2: 0, online_beef: 0 };
+const SPEND_PICKS = { wedding: 0, body_care: 0, charity: 0, investment: 0, family_money: 0 };
 function watchPick(L, id, i, beats) {
   if (!storyOn(L)) return;
+  if (SPEND_PICKS[id] === i) tw(L).spent = (tw(L).spent || 0) + 1;
   if (HOT_PICKS[id] === i) { const n = tw(L).hot = (tw(L).hot || 0) + 1; if (n >= 2) reveal(L, 'hothead', 'Two blowups. People have noticed.', beats); }
 }
 /* Season-level reveals, read when a season closes. */
@@ -3261,6 +3286,242 @@ function chooseBuild(L, card, i) {
 }
 /* A signature move pays on the shot it is. */
 const sigBonus = (L, k) => L.sig && L.sig.k === k ? 0.03 : 0;
+
+// ─── the world: a living league, goals, legacy and the media ─────────────────
+
+/* THE LIVING LEAGUE. A story career shares the league with a handful of
+   invented stars who rise, peak, win things and retire on their own clocks.
+   They are who wins the MVP when you do not, who beats you to the ring, and
+   who the debate shows argue about. Invented on purpose: a real player's
+   future is not ours to write. Real clubs, real coaches and real rosters
+   stay exactly as they are. */
+const ORD_WORD = ['', 'first', 'second', 'third', 'fourth', 'fifth', 'sixth', 'seventh', 'eighth'];
+const OUTLETS = ['Hardwood Wire', 'The Daily Dribble', 'Baseline Radio', 'Court Report', 'The Arena Sheet'];
+function figRng(L, tag) { return E.createSeededRNG(E.hashSeed(String(L.seed) + ':fig:' + tag)); }
+function figOvr(f, year) {
+  const a = year - f.b;
+  const up = a <= 27 ? f.peak - (27 - a) * 2.4 : a <= 30 ? f.peak : f.peak - (a - 30) * 1.9;
+  return Math.round(clamp(up, 60, 99));
+}
+function figName(L, rng) {
+  for (let i = 0; i < 30; i++) {
+    const n = pick(rng, RIVAL_FIRST) + ' ' + pick(rng, PEOPLE_LAST);
+    if ((!L.rival || L.rival.name !== n) && !(L.league.figs || []).some((f) => f.n === n) && n !== L.name) return n;
+  }
+  return 'Jalen Starling';
+}
+function figs(L) {
+  if (!storyOn(L)) return [];
+  const G = L.league;
+  if (!G.figs) {
+    G.figs = [];
+    const rng = figRng(L, 'seed');
+    for (let i = 0; i < 9; i++) {
+      const age = 20 + Math.floor(rng() * 12);
+      G.figs.push({ n: figName(L, rng), b: L.year - age, peak: Math.round(86 + rng() * 10), pos: pick(rng, POS), club: pick(rng, CLUBS), mvp: 0, rings: 0, gone: 0 });
+    }
+  }
+  return G.figs;
+}
+const activeFigs = (L) => figs(L).filter((f) => !f.gone);
+/* A summer in the league: the stars age, some move, the old ones retire and a
+   rookie arrives on the worst club. Read in the summer the age changes. */
+function figYear(L) {
+  const rng = figRng(L, 'y' + L.year);
+  for (const f of activeFigs(L)) {
+    const a = L.year - f.b;
+    if (a >= 34 + Math.floor(rng() * 4) || (a >= 29 && figOvr(f, L.year) < 74)) { f.gone = L.year; feed(L, 'retire', f.n + ' retires after ' + (a - 19) + ' seasons.', null, L.year - 1); continue; }
+    if (rng() < 0.12 && figOvr(f, L.year) >= 84) { const to = pick(rng, CLUBS.filter((c) => c !== f.club && c !== L.team)); feed(L, 'move', f.n + ' signs with the ' + E.teamName(to) + '.', null, L.year - 1); f.club = to; }
+  }
+  const worst = CLUBS.slice().sort((a, b) => clubNet(L, a) - clubNet(L, b))[0];
+  const kid = { n: figName(L, rng), b: L.year - 19, peak: Math.round(84 + rng() * 12), pos: pick(rng, POS), club: worst, mvp: 0, rings: 0, gone: 0 };
+  figs(L).push(kid);
+  feed(L, 'draft', 'The ' + nick(worst) + ' draft ' + kid.n + ' with a top pick.', null, L.year - 1);
+}
+/* The MVP race, as it stands at the All-Star break. You are in it when your
+   season says so. */
+function mvpRace(L) {
+  const rng = figRng(L, 'race' + L.year);
+  /* Voters tire of the same winner, so a run of MVPs is hard to keep. */
+  const out = activeFigs(L).map((f) => ({ n: f.n, club: f.club, sc: figOvr(f, L.year) + clubNet(L, f.club) * 0.5 + norm(rng) * 2.6
+    - (f.won || []).filter((y) => L.year - y <= 4).length * 2.4 }));
+  const s = L.season;
+  if (s && s.gp >= 20 && !isAm(L)) {
+    const pg = perGame(s);
+    out.push({ n: L.name, club: L.team, you: true, sc: effOvr(L) + (pg.pts - 24) * 0.35 + (s.w - s.l) * 0.06 });
+  }
+  return out.sort((a, b) => b.sc - a.sc).slice(0, 5).map((x, i) => Object.assign(x, { rank: i + 1 }));
+}
+/* Who won what when you did not. Called once, as the regular season ends. */
+function leagueAwards(L, mine) {
+  if (!storyOn(L)) return;
+  const race = mvpRace(L).filter((x) => !x.you);
+  if (mine.indexOf('mvp') < 0 && race.length) {
+    const f = activeFigs(L).find((x) => x.n === race[0].n);
+    if (f) { f.mvp++; (f.won = f.won || []).push(L.year); feed(L, 'award', f.n + ' wins the MVP.' + (f.mvp > 1 ? ' His ' + (ORD_WORD[f.mvp] || ordinal(f.mvp)) + '.' : '')); }
+  }
+  if (L.season) L.season.mvp = mine.indexOf('mvp') >= 0 ? L.name : race.length ? race[0].n : '';
+}
+/* The champion, every season, and the dynasties they become. */
+function leagueChamp(L, beats) {
+  if (!storyOn(L) || !L.season || !L.team) return;
+  const s = L.season, po = s.po || {};
+  let club;
+  if (po.champ) club = L.team;
+  else {
+    const fin = (po.results || []).find((r) => r.round === 3);
+    if (fin) club = fin.opp;
+    else {
+      const rng = figRng(L, 'champ' + L.year);
+      club = weighted(rng, CLUBS.filter((c) => c !== L.team), (c) => Math.exp(clubNet(L, c) * 0.45));
+    }
+  }
+  const G = L.league, C2 = G.champs || (G.champs = {});
+  C2[s.year] = club;
+  for (const f of activeFigs(L)) if (f.club === club) f.rings++;
+  if (club !== L.team) feed(L, 'champ', 'The ' + E.teamName(club) + ' win the title.');
+  const last = [0, 1, 2, 3].map((d) => C2[s.year - d]);
+  const run = last.filter((c) => c === club).length;
+  if ((last[1] === club && run >= 2) || run >= 3) {
+    const dyn = G.dyn || (G.dyn = {});
+    if (!dyn[club] || s.year - dyn[club] > 3) {
+      dyn[club] = s.year;
+      const span = last.lastIndexOf(club) + 1;
+      const line = run === 2 && span === 2 ? (club === L.team ? 'Back to back. ' : 'The ' + nick(club) + ' go back to back. ') + 'Dynasty talk starts.'
+        : (club === L.team ? 'Your ' : 'The ') + nick(club) + ': ' + wordNum(run).toLowerCase() + ' titles in ' + wordNum(span).toLowerCase() + ' years. A dynasty.';
+      feed(L, 'dynasty', line);
+      if (club === L.team) { logIt(L, line, 'gold'); if (beats) beats.push({ kind: 'dynasty', text: line, tone: 'gold' }); }
+    }
+  }
+}
+/* League news, now and then, each at most once. A thing announced for a
+   later year arrives in that year. */
+const LEAGUE_NEWS = [
+  ['cup', () => 'The league adds a midseason cup. Prize money for every player on the winner.'],
+  ['line', () => 'The league votes to move the three-point line back a foot.'],
+  ['commish', (L) => 'A new commissioner takes over: ' + peopleKey(L, 'commish') + '.'],
+  ['expand', (L) => 'Two expansion clubs are coming in ' + (L.year + 3) + '.', 3, 'The two expansion clubs play their first games.'],
+  ['tv', () => 'A new TV deal. Every club is richer by the fall.'],
+  ['ban', () => 'A betting scandal on another club. Two players are banned for life.'],
+];
+function leagueNews(L) {
+  const G = L.league, done = G.news || (G.news = {});
+  for (const [id, , dy, later] of LEAGUE_NEWS) if (done[id] && dy && done[id] + dy === L.year) feed(L, 'league', later, null, L.year - 1);
+  const rng = figRng(L, 'news' + L.year);
+  if (rng() > 0.25) return;
+  const open = LEAGUE_NEWS.filter((x) => !done[x[0]]);
+  if (!open.length) return;
+  const x = pick(rng, open);
+  done[x[0]] = L.year;
+  feed(L, 'league', x[1](L), null, L.year - 1);
+}
+function leagueSummer(L) {
+  if (!storyOn(L)) return;
+  figYear(L);
+  leagueNews(L);
+}
+
+/* THE FEED: what the outlets say about you and the league, newest last. One
+   headline a step at most from the beats, so it reads like a front page and
+   not a transcript. */
+function feed(L, kind, t, src, y) {
+  if (!storyOn(L)) return;
+  const F = L.feed || (L.feed = []);
+  F.push({ y: y || L.year, k: kind, t: say(L, t), s: src || OUTLETS[(F.length * 7 + L.year) % OUTLETS.length] });
+  if (F.length > 80) F.shift();
+}
+const HEAD = {
+  award: (b) => b.award === 'mvp' ? '{name} is your MVP.' : b.award === 'star' ? null : '{name}: ' + b.text.replace(/\.$/, '') + '.',
+  champ: (b) => '{name} and the {club} win it all.',
+  trade: (b) => { const m = /Traded to the (.+?)\./.exec(b.text); return m ? '{name} is traded to the ' + m[1] + '.' : null; },
+  trait: (b) => b.trait ? '{name} has a reputation now: ' + TRAIT_NAME[b.trait].toLowerCase() + '.' : null,
+  badge: () => null,
+  milestone: (b) => '{name} reaches ' + b.text.replace(/^([0-9,]+) career/, '$1 career').toLowerCase(),
+  dynasty: (b) => b.text,
+  finals_loss: () => '{name} comes up short in the Finals.',
+  retire: () => '{name} retires.',
+};
+function headlines(L, beats) {
+  if (!storyOn(L) || !beats || !beats.length) return;
+  for (const b of beats) {
+    const f = HEAD[b.kind];
+    const t = f && f(b);
+    if (t) { feed(L, b.kind, t.replace(/\{name\}/g, L.name).replace(/\{club\}/g, L.team ? nick(L.team) : '')); return; }
+  }
+}
+/* The debate show at the All-Star break: two invented hosts, one question
+   about you, and they never agree. */
+function debate(L) {
+  if (!storyOn(L) || isAm(L) || L.m.fame < 40 || !L.season) return;
+  const o = ovrOf(L), s = L.season, pg = perGame(s), rng = figRng(L, 'debate' + L.year);
+  /* Every other season at most, unless something big happened. */
+  if (L.flags.debated === L.year - 1 && !s.allstar) return;
+  L.flags.debated = L.year;
+  const race = s.race || [], me = race.find((x) => x.you);
+  const q = me && me.rank <= 2 ? 'Is ' + L.name + ' the MVP?' : o >= 85 ? 'Is ' + L.name + ' a top ten player?'
+    : s.allstar ? 'Did ' + L.name + ' deserve the All-Star nod?' : L.contract && L.contract.salary > capFor(L.year) * 0.2 ? 'Is ' + L.name + ' worth the money?' : 'Is ' + L.name + ' for real?';
+  const hot = pick(rng, [pg.pts >= 20 ? pg.pts + ' a night. Yes.' : 'Watch the film. Yes.', 'He wins games. Yes.', 'I have seen enough. Yes.']);
+  const cold = pick(rng, [s.w < s.l ? 'His team is ' + s.w + '-' + s.l + '. No.' : 'Ask me in May. No.', 'Show me a playoff run. No.', 'Not yet. No.']);
+  feed(L, 'debate', q + ' ' + CAST.ellis + ': "' + hot + '" ' + CAST.critic + ': "' + cold + '"', 'Hot Take Hour');
+}
+/* NICKNAMES come from the broadcast, off something you have shown. */
+const NICKS = { clutch: 'Iceman', ironMan: 'Ironman', showman: 'Showtime', hothead: 'The Fuse', deadeye: 'Splash', lockdown: 'The Wall', glass: 'Glass', flight: 'Skywalker', brain: 'The Professor', floorgen: 'The Conductor', bigStage: 'Mr. May' };
+function nicknameCard(L) {
+  if (!storyOn(L) || L.nick || L.m.fame < 45 || L.year - (L.flags.nickAsk || -9) < 3 || isAm(L)) return;
+  const known = TRAITS.filter((k) => L.traits[k] && L.traits[k].known && NICKS[k]).concat(Object.keys(L.badges || {}).filter((k) => NICKS[k]));
+  if (!known.length) return;
+  const nm = NICKS[known[0]];
+  L.flags.nickAsk = L.year;
+  L.pending.push({ id: 'nickname', kind: 'event', key: 'nick:' + L.year, eyebrow: calendar(L, 'off'), title: 'The broadcast has a name for you.',
+    text: '"' + nm + '." {pbp} said it once. Now everybody does.', ctx: { nm },
+    options: [{ label: 'Own it', hint: 'It goes on the jersey stitching.' }, { label: 'Ask them to drop it', hint: 'You have a name already.' }] });
+}
+
+/* GOALS. Before each season a story career picks one thing to chase, from
+   three that fit where it is. Met or missed, it is said at the end. */
+const GOALS = {
+  playoffs: ['Make the playoffs', (L, s) => !!(s.po && (s.po.results || []).length), (L) => clubNet(L, L.team) < 2],
+  star: ['Make the All-Star team', (L, s) => !!s.allstar, (L) => ovrOf(L) >= 78],
+  twenty: ['Average 20 a night', (L, s) => perGame(s).pts >= 20, (L) => { const h = L.history[L.history.length - 1]; return !!h && h.pts >= 14 && h.pts < 20; }],
+  thirty: ['Average 30 a night', (L, s) => perGame(s).pts >= 30, (L) => { const h = L.history[L.history.length - 1]; return !!h && h.pts >= 24; }],
+  healthy: ['Play 75 games', (L, s) => s.gp >= 75, (L) => L.age >= 28],
+  ring: ['Win the title', (L, s) => !!(s.po && s.po.champ), (L) => clubNet(L, L.team) >= 2],
+  start: ['Win a starting job', (L, s) => !!(s.role && s.role.starter), (L) => { const h = L.history[L.history.length - 1]; return !!h && (h.role === 'Rotation' || h.role === 'End of bench'); }],
+  mvp: ['Win the MVP', (L, s) => s.awards.indexOf('mvp') >= 0, (L) => ovrOf(L) >= 89],
+  defense: ['Make an All-Defense team', (L, s) => s.awards.some((a) => a === 'ad1' || a === 'ad2' || a === 'dpoy'), (L) => L.rt.def >= 84],
+};
+function goalCard(L) {
+  if (!storyOn(L) || !L.team || !L.season || L.season.goal) return;
+  const fit = Object.keys(GOALS).filter((k) => GOALS[k][2](L));
+  if (fit.length < 2) return;
+  const rng = figRng(L, 'goal' + L.year);
+  const ks = fit.sort(() => rng() - 0.5).slice(0, 3);
+  L.pending.push({ id: 'goal', kind: 'event', key: 'goal:' + L.year, eyebrow: calendar(L, 'pre'), title: 'What are you chasing this season?',
+    text: 'Pick one. You will be held to it in April.', ctx: { ks }, options: ks.map((k) => ({ label: GOALS[k][0] })) });
+}
+function goalSeason(L, beats) {
+  const s = L.season;
+  if (!storyOn(L) || !s || !s.goal) return;
+  const g = GOALS[s.goal], met = g[1](L, s);
+  const G = L.goals || (L.goals = []);
+  G.push({ y: s.year, k: s.goal, met });
+  const t = (met ? 'Goal met: ' : 'Goal missed: ') + g[0].toLowerCase() + '.';
+  logIt(L, t, met ? 'good' : 'bad');
+  beats.push({ kind: 'goal', text: t, tone: met ? 'good' : 'bad' });
+  bump(L, met ? { morale: 6, fame: 2 } : { morale: -3 });
+}
+
+/* LEGACY, read live: the rung you are on, the next one and how far, a Hall of
+   Fame chance and the records coming up. */
+function legacyView(L) {
+  const T = totals(L), sc = legacyScore(T);
+  const i = VERDICTS.findIndex((v) => sc >= v[0]);
+  const next = i > 0 ? VERDICTS[i - 1] : null;
+  const hof = Math.round(100 / (1 + Math.exp(-(sc - 55) / 8)));
+  const watch = [];
+  for (const [k, steps, word] of MILESTONES) { const m = steps.find((x) => T[k] < x); if (m && T[k] >= m * 0.6) watch.push({ k, m, left: m - T[k], word }); }
+  return { score: Math.round(sc), rung: VERDICTS[i][1], next: next ? { name: next[1], need: Math.ceil(next[0] - sc) } : null, hof, watch };
+}
 
 // ─── before the league: high school and college ─────────────────────────────
 
@@ -4103,7 +4364,7 @@ const AM_EVENTS = {
   },
   street_agent: {
     phases: ['hs_off', 'hs_sum'], once: true, when: (L) => L.am && L.am.rank <= 100, weight: () => 2.5,
-    title: 'A man in a nice car wants to help your family.',
+    title: 'A man in a nice car wants to help.',
     text: () => 'He says his name is {streetagent}. A friend of a friend. He has an envelope.',
     options: [
       { label: 'Tell him no', run: (L) => { bump(L, { morale: 2, trust: 2 }); return 'He leaves a card. You throw it out.'; } },
@@ -4591,6 +4852,11 @@ function choose(L, i, extra) {
       }
       break;
     }
+    case 'goal': L.season.goal = card.ctx.ks[i]; text = 'Locked in. April will tell.'; break;
+    case 'nickname':
+      if (i === 0) { L.nick = card.ctx.nm; logIt(L, 'They call you ' + L.nick + '.', 'gold'); feed(L, 'nick', L.name + ' has a name now: ' + L.nick + '.'); text = 'It sticks. Kids at camp call you it.'; tone = 'gold'; }
+      else { text = 'They mostly drop it.'; }
+      break;
     case 'build_sig': case 'build_arch': case 'build_pos':
       text = chooseBuild(L, card, i) || ''; tone = 'good';
       break;
@@ -4608,6 +4874,7 @@ function choose(L, i, extra) {
     }
   }
   text = say(L, text);
+  headlines(L, beats);
   sayAll(L, beats);
   const after = snapshot(L);
   const res = { card, picked: i, label: opt.label, text, tone, diff: diffOf(before, after), beats };
@@ -4683,6 +4950,7 @@ function step(L) {
       rollInjury(L, 'late', beats);
       allStarCheck(L, beats);
       midseasonFirings(L, beats);
+      if (storyOn(L)) { L.season.race = mvpRace(L); debate(L); }
       L.phase = 'mid';
       queueEvents(L, 'mid', 1 + (rngAt(L, 'n:mid')() < 0.5 ? 1 : 0));
       break;
@@ -4693,6 +4961,7 @@ function step(L) {
       const st = standings(L);
       startPlayoffs(L, st);
       const aw = awards(L, st);
+      leagueAwards(L, aw);
       for (const a of aw) {
         s.awards.push(a);
         beats.push({ kind: 'award', text: AWARD_NAME[a] + '.', tone: 'gold', award: a });
@@ -4740,6 +5009,7 @@ function step(L) {
     case 'col_off': amNewYear(L, beats); break;
     case 'pro_year': proYear(L, beats); break;
   }
+  headlines(L, beats);
   sayAll(L, beats);
   return { beats };
 }
@@ -4772,7 +5042,7 @@ function closeSeason(L, beats) {
      matched, so no career ever recorded a medal. */
   const before = totals(L);
   L.history.push(Object.assign({ y: s.year, age: L.age, t: s.team, ovr: ovrOf(L), w: s.w, l: s.l, seed: s.seed || null,
-    po: path, aw: s.awards.slice(), sal: s.salary || 0, role: s.role ? s.role.label : '' }, pg));
+    po: path, aw: s.awards.slice(), sal: s.salary || 0, role: s.role ? s.role.label : '' }, pg, storyOn(L) ? { mvpBy: s.mvp || '' } : {}));
   L.seasonsDone++;
   /* A reputation is what you have done lately. It drifts back toward the
      middle every season, so a career of quotes is a persona and one quote
@@ -4784,6 +5054,8 @@ function closeSeason(L, beats) {
   rivalSeason(L, beats);
   traitSeason(L, beats);
   badgeSeason(L, beats);
+  goalSeason(L, beats);
+  leagueChamp(L, beats);
   /* Fame settles toward what the season said. */
   const target = clamp(15 + (pg.pts - 8) * 2.2 + (s.allstar ? 12 : 0) + (po.champ ? 8 : 0), 5, 99);
   L.m.fame = clamp(Math.round(L.m.fame * 0.7 + target * 0.3 + (s.awards.length ? 3 : 0)), 0, 100);
@@ -4834,6 +5106,7 @@ function openYear(L) {
   if (!L.team) return;
   newSeason(L);
   L.pending.push(trainingCard(L));
+  goalCard(L);
   if (L.seasonsDone > 0) queueEvents(L, 'pre', rngAt(L, 'n:pre')() < 0.6 ? 1 : 0);
   rollInjury(L, 'early', []);
 }
@@ -5011,7 +5284,7 @@ const publicAPI = {
   COACHES_NOW, COACH_POOL, COACH_NAMES, PEOPLE_M, PEOPLE_F, PEOPLE_X, PEOPLE_LAST, FIRST, LAST, RIVAL_FIRST, RIVAL_LAST,
   coachState, coachOf, coachName, coachCarousel, myCoach, matesOf, myMates, personName, peopleKey, say, CLUBS,
   lockerOf, CAST, TRAITS, rollTraits, migrate, remember, recall, hasTrait, REAL_TOKENS, INVENTED_TOKENS, BASKETBALL_ONLY,
-  STORY_VERSION, storyOn, recurs, TRAIT_NAME, BADGES, badgeList, SIGS, archFit, trait, continuity, continuityLog, ARC_EVENTS, CALLBACKS, callback, memories, ago, relate, relOf, EVENT_REL, arcData, STORY_RECURS, STORY_PHASES, calendar, RARITY, EVENT_TAGS, REQ, reqOk, defineEvents,
+  STORY_VERSION, BAL, storyOn, recurs, figs, activeFigs, figOvr, mvpRace, legacyView, GOALS, OUTLETS, NICKS, feed, TRAIT_NAME, BADGES, badgeList, SIGS, archFit, trait, continuity, continuityLog, ARC_EVENTS, CALLBACKS, callback, memories, ago, relate, relOf, EVENT_REL, arcData, STORY_RECURS, STORY_PHASES, calendar, RARITY, EVENT_TAGS, REQ, reqOk, defineEvents,
 };
 
 if (typeof module !== 'undefined' && module.exports) module.exports = publicAPI;
