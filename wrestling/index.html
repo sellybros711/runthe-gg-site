@@ -1878,6 +1878,8 @@
   /* a form label can run to a sentence, and a sentence in the pixel label face
      is hard work; it stays in the body face, set small and bold */
   .flab{font-family:var(--body);font-weight:700;letter-spacing:.08em;}
+  /* the label face is wide, so a badge carrying a belt's name has to be allowed to wrap */
+  .badge{white-space:normal;max-width:100%;line-height:1.35;}
   /* buttons: the primary is a hot slab with dark ink (5.2 to 1), ghosts are steel frames */
   button{
     background:var(--brandred);color:var(--onaccent);border:0;
@@ -1895,7 +1897,7 @@
   button:disabled{filter:grayscale(.8) brightness(.7);cursor:not-allowed;}
   button.big{font-size:14px;padding:13px 26px;}
   /* the bars: solid, steel edged, no blur */
-  .sitebar{background:#0f0d14;-webkit-backdrop-filter:none;backdrop-filter:none;border-bottom:2px solid var(--steel);}
+  .sitebar{background:#0f0d14;-webkit-backdrop-filter:none;backdrop-filter:none;border-bottom:2px solid var(--steel);box-shadow:inset 0 -4px 0 -2px var(--promo,transparent);}
   .sitebar .sb-home,.sitebar .sb-prof,.sitebar .sb-coin{background:var(--panel);border:0;box-shadow:0 -2px 0 0 var(--steel),0 2px 0 0 var(--steel),-2px 0 0 0 var(--steel),2px 0 0 0 var(--steel);}
   .sitebar .sb-home{font-family:var(--label);}
   .sb-mark{font-family:var(--display);font-size:22px;letter-spacing:.06em;}
@@ -1903,7 +1905,8 @@
   .botnav button{background:transparent;box-shadow:none;color:var(--text-faint);margin:0;}
   .botnav button.on{color:var(--gold);}
   .botnav .navfab{background:transparent;}
-  .topbar{background:#15121b;border-bottom:2px solid var(--brandred);}
+  .topbar{background:#15121b;border-bottom:2px solid var(--promo,var(--brandred));}
+  h2{border-bottom-color:color-mix(in srgb,var(--promo,var(--steel)) 55%,var(--steel));}
   .hud .value{font-family:var(--display);font-size:22px;font-weight:400;color:var(--cream);line-height:1;}
   .hud .label{font-family:var(--label);color:var(--text-faint);font-weight:400;font-size:8px;}
   .topbar h1{color:var(--cream);}
@@ -7299,7 +7302,17 @@ function tell(title,body,label){
   return new Promise(res=>modal(title,body,[{label:label||'Got it',fn:()=>{closeModal(); res();}}]));
 }
 
+/* PROMOTION THEMING. The promotion you work for lends its colour to the edges
+   of the page (the bars and the heading rules), never to text, so a promotion
+   colour can never fail a contrast check. Signing somewhere new repaints it. */
+function applyPromoTheme(){
+  try{
+    const id=G&&G.car&&G.car.deal&&G.car.deal.promo, p=id&&PROMOS.find(x=>x.id===id);
+    document.documentElement.style.setProperty('--promo', (p&&p.color)||'#ea4a36');
+  }catch(_){}
+}
 function go(s){
+  applyPromoTheme();
   // the walkthrough is anchored to the hub; leaving it must not strand the overlay
   if(TOUR_I>=0 && TOURN==='hub' && s!=='career') endTour();
   if(G) G.screen=s;
