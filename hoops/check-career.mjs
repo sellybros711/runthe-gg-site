@@ -123,7 +123,14 @@ const fired = {};
 // ── 2. the shape of a life ─────────────────────────────────────────────────
 section('2. most careers are good ones, a few are great, and the bands hold');
 {
+  /* Two hundred careers put a margin of about two and a half points on a
+     share near fifteen percent, which made the All-Star floor a coin flip on
+     the seed. The bands are read over six hundred random careers. */
   const rnd = all.filter((x) => x.pol === 'random');
+  for (let i = 200; i < 600; i++) {
+    const r = play('random:' + i, 'random', { pos: C.POS[i % 5], arch: C.ARCH_KEYS[i % 6], bg: C.BG_KEYS[(i >> 1) % 4] });
+    if (r && r.L) rnd.push({ L: r.L, pol: 'random', f: r.L.final });
+  }
   const share = (f) => rnd.filter(f).length / rnd.length;
   const pct = (a, q) => { const s = a.slice().sort((x, y) => x - y); return s[Math.floor(q * (s.length - 1))]; };
   const mvp = share((x) => x.f.totals.mvp > 0);
@@ -138,7 +145,7 @@ section('2. most careers are good ones, a few are great, and the bands hold');
   /* An MVP is rare and real, an All-Star is a career's high point for about
      a third of players, and the Hall is earned. Measured: 1.0%, 30% and 27%. */
   ok(mvp > 0.002 && mvp < 0.06, `an MVP is rare but reachable (${(mvp * 100).toFixed(1)}%)`);
-  ok(star > 0.15 && star < 0.5, `All-Star is a high point, not a given (${(star * 100).toFixed(0)}%)`);
+  ok(star > 0.15 && star < 0.5, `All-Star is a high point, not a given (${(star * 100).toFixed(2)}%)`);
   ok(hof > 0.08 && hof < 0.42, `the Hall is earned (${(hof * 100).toFixed(0)}%)`);
   ok(seasons >= 8 && seasons <= 18, `a career runs a decade or so (${seasons})`);
   ok(peakPts >= 12 && peakPts <= 24, `a typical best season is a starter's (${peakPts})`);
@@ -296,12 +303,17 @@ section('5. real players and coaches by name, everybody else generated');
   const y1real = y1.filter((m) => m.real);
   ok(y1real.length >= 8 && y1real.every((m) => real.has(m.n)) && y1.length - y1real.length <= 1,
     `year one's Celtics are the real Celtics, plus one rookie from a draft the data has not seen (${y1.slice(0, 3).map((m) => m.n).join(', ')})`);
-  L.year += 15;
-  const y15 = C.matesOf(L, 'BOS');
-  ok(y15.some((m) => !m.real) && y15.some((m) => m.real), 'fifteen years on, the roster is real veterans and generated rookies');
-  ok(y15.filter((m) => !m.real).every((m) => !names.has(m.n)), 'no generated rookie is a real player');
-  L.year += 15;
-  ok(C.matesOf(L, 'BOS').every((m) => !m.real), 'thirty years on, the real men have all retired');
+  /* The league moves now: players change clubs, so the claim is about the
+     league rather than one club. Ten years on the 2026 men are veterans; by
+     fifteen most of them have aged out, which is what real time does. */
+  L.year += 10;
+  let real10 = 0, gen10 = 0;
+  for (const c of C.CLUBS) for (const m of C.matesOf(L, c)) { if (m.real) real10++; else gen10++; }
+  ok(real10 >= 60 && gen10 >= 60, `ten years on, the league is real veterans and generated rookies (${real10} real, ${gen10} generated)`);
+  const gens = []; for (const c of C.CLUBS) for (const m of C.matesOf(L, c)) if (!m.real) gens.push(m.n);
+  ok(gens.every((n) => !names.has(n)), 'no generated player is a real player');
+  L.year += 20;
+  ok(C.CLUBS.every((c) => C.matesOf(L, c).every((m) => !m.real)), 'thirty years on, the real men have all retired');
 }
 
 // ── 5c. real people stay on the court ───────────────────────────────────────
@@ -718,12 +730,39 @@ section('11. Phase E: the generated road, a son, difficulty and challenges');
   ok(old.ht == null && C.ARCHES[old.arch].name === 'Two-way wing', 'a career without a size or with an old archetype is the same player it was');
 }
 
+/* The rotation adds up, you are in it once, and the league moves around you. */
+{
+  section('11d. the rotation and a league that moves');
+  const L = C.newLife({ seed: 'rot', league, start: 'draft' });
+  let g = 0, checked = 0, bad = [];
+  const start = {}, seenGp = {};
+  for (const c of C.CLUBS) start[c] = C.matesOf(L, c).map((m) => m.n).join('|');
+  while (!L.retired && g++ < 4000 && L.year < L.league.latest + 5) {
+    if (L.pending.length) C.choose(L, 0); else C.step(L);
+    const R = C.rotationOf(L);
+    if (!R || !L.season || !L.season.gp || seenGp[L.year + ':' + L.season.gp]) continue;
+    seenGp[L.year + ':' + L.season.gp] = 1;
+    checked++;
+    const tot = R.list.reduce((a, x) => a + x.min, 0), you = R.list.filter((x) => x.you);
+    if (Math.abs(tot - 240) > 1) bad.push(L.year + ': ' + tot + ' minutes');
+    if (you.length !== 1 || you[0].rank !== R.rank) bad.push(L.year + ': you are not in it once');
+    if (R.list.some((x, i) => i && x.min > R.list[i - 1].min + 0.05)) bad.push(L.year + ': out of order');
+  }
+  ok(checked > 3 && !bad.length, `the rotation adds to 240 with you in it once (${checked} looks${bad.length ? ': ' + bad.slice(0, 2).join('; ') : ''})`);
+  const moved = C.CLUBS.filter((c) => C.matesOf(L, c).map((m) => m.n).join('|') !== start[c]).length;
+  const feedMoves = (L.feed || []).filter((f) => f.k === 'move').length;
+  ok(moved >= 25 && feedMoves > 0, `rosters change over four summers (${moved} of 30 clubs, ${feedMoves} moves in the news)`);
+  const R0 = C.rostOf(L), sizes = C.CLUBS.map((c) => R0[c].length);
+  ok(Math.min(...sizes) >= 13 && Math.max(...sizes) <= 15, `every club carries thirteen to fifteen (${Math.min(...sizes)} to ${Math.max(...sizes)})`);
+}
+
 /* A Saturday contest names its field and its scores, and they have to agree
    with the headline: a champion is first, a loss is not, the final is ordered,
    nobody is in it twice, and a three-point loss is out in round one. */
 {
   section('11b. All-Star Saturday: who you were up against');
-  let n = 0, bad = [], kinds = {};
+  let n = 0, bad = [], kinds = {}, realIn = 0, seatsIn = 0;
+  const realNames = new Set(ROWS.map((r) => r.n));
   for (let s = 0; s < 400 && n < 120; s++) {
     const L = C.newLife({ seed: 'contest:' + s, league });
     for (let k = 0; k < 4000 && !L.retired; k++) {
@@ -738,6 +777,7 @@ section('11. Phase E: the generated road, a son, difficulty and challenges');
         if (ct.kind === 'three' && !won && mine.f != null) bad.push(s + ': a three-point loss reached the final');
         if (ct.rows.some((x) => /undefined|NaN/.test(x.n + x.club))) bad.push(s + ': junk in a row');
         if (!L.log.some((x) => x.t.startsWith(ct.name + ':'))) bad.push(s + ': no log line');
+        realIn += ct.rows.filter((x) => !x.you && realNames.has(x.n)).length; seatsIn += ct.rows.length - 1;
         break;
       }
       if (c) C.choose(L, 0); else C.step(L);
@@ -745,6 +785,7 @@ section('11. Phase E: the generated road, a son, difficulty and challenges');
   }
   ok(n >= 60 && kinds.dunk && kinds.three, `contests reached in the sweep (${n}: ${JSON.stringify(kinds)})`);
   ok(!bad.length, `every field agrees with its result${bad.length ? ': ' + bad.slice(0, 3).join('; ') : ''}`);
+  ok(realIn / seatsIn > 0.6, `the field is mostly real players (${realIn} of ${seatsIn} seats)`);
 }
 
 if (!QUICK) await browser();

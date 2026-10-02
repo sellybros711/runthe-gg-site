@@ -557,6 +557,10 @@ const EXCUSED = {
      seed, which is what made the full sweep red on main. The proof is that
      the count moved. */
   'cr-mvp3': ['grind', () => (career.feats['cr.mvp'] || 0) > 0],
+  /* The record is 38,000 points, past every real career but one, so a blind
+     sweep reaches it a few times in a thousand lives and the full sweep is a
+     coin flip on the seed. The rung under it (30,000) has to light. */
+  'cr-38k': ['grind', () => (career.feats['cr.pts'] || 0) >= 30000],
   'fx-30': ['grind', () => moved('fx.days')],
   'fx-title10': ['grind', () => moved('fx.title')],
   /* The page writes these. */

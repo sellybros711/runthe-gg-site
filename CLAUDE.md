@@ -10977,10 +10977,33 @@ out of a chair and real assistants, the third field saying who has run a bench. 
 there and nowhere else. **Teammates are never typed**: `seedLeague` writes `roster` (the
 club's top twelve, name, position, an estimated birth year off the draft year, win shares)
 onto the life, and `matesOf` ages them a year at a time and retires them at an age seeded per
-man. Each draft class after that adds one generated rookie a club for about ten years. Nobody
-is traded: the league around you is a picture of who was there. An old save with no roster
-gets the page's when it opens on the same season of data, and otherwise reads year one's
-stars and ages them.
+man. Each draft class after that adds one generated rookie a club for about ten years. An old
+save with no roster gets the page's when it opens on the same season of data, and otherwise
+reads year one's stars and ages them.
+
+**ON A STORY CAREER THE ROSTERS MOVE** (`rostOf`, `rosterSummer` from `driftLeague`). They start
+as the data's last season (2025-26) and live in `L.league.rost`. Every summer: the old retire, a
+rookie a club, five to nine like-for-like trades, ten to seventeen free agents (mostly toward a
+thin roster), and about one summer in three a star moves. Every club carries thirteen to
+fifteen; a waived man goes to a pool the short clubs sign from before any journeyman is
+generated, or a real player would vanish on a roster cap. A club that gained talent gains a
+little net rating (a share of the change, the league kept centred). Moves go to the feed, and
+anything touching your club to the beats and the log. A reader that jumps years plays the
+missed summers quietly (`rostNow`). The rosters are not kept on a Hall card (`trimLeague` drops
+them, with `lines`): a son's league rebuilds them, which is right, because the 2026 men have
+aged out by then.
+
+**THE TEAM TAB** (story careers, NBA only) is `rotationOf`: your club in minutes order, you
+placed by your real minutes (the season's average once a game is played, the coach's plan
+before), the rest of 240 shared off a real rotation's shape. It is display only: the season
+sim reads minutes from `roleOf` and never from this. A teammate's points are last season's
+rate (`lines`, off the data) at this season's minutes.
+
+**THE SATURDAY CONTESTS ARE REAL PLAYERS** (`contestField`). A dunk contest or a three-point
+contest is basketball, so the field comes off the league's rosters (young wings and guards for
+the dunk, the men who take the most threes for the other), then the invented stars, then
+generated names. The result is drawn first and the field is written around it on its own
+stream; check-career 11b holds the field to the headline.
 
 **THE CAROUSEL** (`coachCarousel`, run from `driftLeague` every summer, the road years too):
 a club fires on how it played (your club on the record you actually played, and never after a

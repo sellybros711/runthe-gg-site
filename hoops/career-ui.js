@@ -227,6 +227,21 @@ var CSS = [
 '.cr-rt .k-row.is-key span:first-child:after{content:"";display:inline-block;width:5px;height:5px;margin-left:6px;vertical-align:2px;background:var(--k-good);}',
 '.cr-tabs{margin:0 0 12px;}',
 '.cr-tabs .k-tab{min-width:0;font-size:11px;letter-spacing:.08em;}',
+/* the rotation: one row a player, names give way before numbers do */
+'.cr-rot{list-style:none;margin:8px 0 0;padding:0;display:grid;gap:2px;}',
+'.cr-rot li{display:grid;grid-template-columns:2em minmax(0,1fr) 3.2em 3.2em;gap:8px;align-items:center;padding:6px 8px;background:rgba(143,160,214,.07);font-size:13px;color:var(--k-ink-2);}',
+'.cr-rot .who{min-width:0;display:grid;}',
+'.cr-rot .who b,.cr-rot .who small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}',
+'.cr-rot .who b{color:var(--k-ink);font-weight:600;}',
+'.cr-rot .who small{color:var(--k-ink-3);font-size:11px;}',
+'.cr-rot .v{text-align:right;font-variant-numeric:tabular-nums;}',
+'.cr-rot .n{font-family:var(--k-f-pixel);font-size:9px;color:var(--k-ink-3);}',
+'.cr-rot li.you{box-shadow:inset 3px 0 0 var(--k-accent);background:rgba(255,140,40,.10);}',
+'.cr-rot li.you .who b{font-weight:800;}',
+'.cr-rot li.dnp{opacity:.6;}',
+'.cr-rot li.cr-rot-h,.cr-rot li.cr-rot-sep{background:none;padding-top:8px;padding-bottom:2px;font:800 10px var(--k-f-text);letter-spacing:.12em;text-transform:uppercase;color:var(--k-ink-3);}',
+'.cr-rot li.cr-rot-sep{display:block;}',
+'.cr-rot-line{margin:10px 0 0;}',
 /* six tabs are two rows of three on a phone */
 '@media (max-width:519px){.cr-tabs.k-tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));}}',
 /* the people around you: a name, who they are, a meter that runs both ways */
@@ -924,15 +939,36 @@ function tabsHtml(L){
   if (tab === 'log') {
     var log = L.log.slice().reverse().slice(0, 160);
     body = '<ul class="cr-log">' + log.map(function(e){ return '<li class="' + (e.tone || '') + '"><span class="yr">' + e.y + '</span><span>' + esc(e.t) + '</span></li>'; }).join('') + '</ul>';
-  } else if (tab === 'seasons') body = seasonsTable(L);
+  } else if (tab === 'team' && C.rotationOf && C.rotationOf(L)) body = teamHtml(L);
+  else if (tab === 'seasons') body = seasonsTable(L);
   else if (tab === 'people') body = peopleHtml(L);
   else if (tab === 'legacy') body = legacyHtml(L);
   else if (tab === 'news') body = newsHtml(L);
   else body = trophies(L);
   var t = function(id, name){ var on = tab === id; return '<button class="k-tab" role="tab" aria-selected="' + on + '" data-tab="' + id + '">' + name + '</button>'; };
-  return '<div class="k-panel cr-sec"><div class="k-tabs cr-tabs" role="tablist">' + t('log', 'Story') + t('seasons', 'Seasons') + t('trophies', 'Trophies')
+  return '<div class="k-panel cr-sec"><div class="k-tabs cr-tabs" role="tablist">' + t('log', 'Story') + (L.opt && L.opt.story && C.rotationOf && C.rotationOf(L) ? t('team', 'Team') : '') + t('seasons', 'Seasons') + t('trophies', 'Trophies')
     + (L.opt && L.opt.story ? t('people', 'People') + t('legacy', 'Legacy') + t('news', 'News') : '') + '</div>'
     + '<div role="tabpanel">' + body + '</div></div>';
+}
+/* YOUR CLUB: the thirteen in rotation order, where you stand, and the
+   minutes. A teammate's points are an estimate at this season's minutes (see
+   rotationOf); yours are the season you are playing. */
+function teamHtml(L){
+  var R = C.rotationOf(L), s = L.season, pg = s && s.gp ? C.perGame(s) : null;
+  var ord = function(n){ var v = n % 100, x = ['th', 'st', 'nd', 'rd']; return n + (x[(v - 20) % 10] || x[v] || x[0]); };
+  var head = '<div class="cr-leg"><div><b>' + ord(R.rank) + '</b><span>In the rotation</span></div>'
+    + '<div><b>' + R.min + '</b><span>' + (R.played ? 'Minutes a night' : 'Minutes planned') + '</span></div>'
+    + '<div><b>' + esc(R.role) + '</b><span>Your role</span></div></div>';
+  var line = esc(teamName(R.club)) + (s && s.gp ? ' · ' + s.w + '-' + s.l : '') + (pg ? ' · You: ' + pg.pts + ' points, ' + pg.reb + (pg.reb === 1 ? ' rebound, ' : ' rebounds, ') + pg.ast + (pg.ast === 1 ? ' assist' : ' assists') : '');
+  var rows = R.list.map(function(x, i){
+    var pts = x.you ? (pg ? pg.pts : '-') : x.min > 0 ? x.pts : '-';
+    var sep = i === 5 ? '<li class="cr-rot-sep" aria-hidden="true">Bench</li>' : '';
+    return sep + '<li class="cr-rot-r' + (x.you ? ' you' : '') + (x.min <= 0 ? ' dnp' : '') + '"><span class="n">' + x.rank + '</span>'
+      + '<span class="who"><b>' + esc(x.you ? x.n + ' (you)' : x.n) + '</b><small>' + esc(x.pos || '') + ' · ' + x.age + ' · ' + esc(x.role) + '</small></span>'
+      + '<span class="v">' + (x.min > 0 ? x.min : '-') + '</span><span class="v">' + pts + '</span></li>';
+  }).join('');
+  return head + '<p class="k-small cr-rot-line">' + line + '</p>'
+    + '<ol class="cr-rot" aria-label="Rotation"><li class="cr-rot-h" aria-hidden="true"><span class="n">#</span><span class="who">Starters</span><span class="v">Min</span><span class="v">Pts</span></li>' + rows + '</ol>';
 }
 /* The people a career has met, closest and furthest first. */
 function peopleHtml(L){
@@ -1335,7 +1371,7 @@ function collegeOf(L){
    everything. The news flags only stop a headline twice and are left. */
 function trimLeague(lg){
   var o = {};
-  for (var k in lg) if (k !== 'news') o[k] = lg[k];
+  for (var k in lg) if (k !== 'news' && k !== 'rost' && k !== 'rostY' && k !== 'lines') o[k] = lg[k];
   if (o.figs) o.figs = o.figs.filter(function(f){ return !f.gone; });
   if (o.champs) { var ks = Object.keys(o.champs).sort().slice(-40), c = {}; ks.forEach(function(y){ c[y] = o.champs[y]; }); o.champs = c; }
   return JSON.parse(JSON.stringify(o));

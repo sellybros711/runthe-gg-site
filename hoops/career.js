@@ -323,7 +323,11 @@ function seedLeague(rows) {
     } else net[c] = 0;
     stars[c] = list.slice().sort((a, b) => b.w - a.w).slice(0, 3).map((r) => r.n);
   }
-  return { latest: latest || 2026, net: normaliseNets(net), stars, roster: rosterSeed(rows, latest) };
+  /* What each man did in that season, for the rotation screen and the
+     Saturday contests: minutes, points, rebounds, assists, threes taken. */
+  const lines = {};
+  for (const c in by) for (const r of by[c]) lines[r.n] = [round1(r.mp || 0), round1(r.pts || 0), round1(r.reb || 0), round1(r.ast || 0), round1(r.tpa || 0)];
+  return { latest: latest || 2026, net: normaliseNets(net), stars, roster: rosterSeed(rows, latest), lines };
 }
 /* Mean zero, a spread of 4.6 points, which is roughly the real league's. */
 function normaliseNets(net) {
@@ -342,6 +346,7 @@ function driftLeague(L, beats) {
   for (const c of CLUBS) net[c] = (L.league.net[c] || 0) * 0.62 + norm(rng) * 3.6;
   L.league.net = normaliseNets(net);
   leagueSummer(L);
+  rosterSummer(L, beats);
 }
 const clubNet = (L, c) => L.league.net[c] || 0;
 function clubTier(net) {
@@ -581,9 +586,9 @@ function midseasonFirings(L, beats) {
 
 /* REAL TEAMMATES. Every club opens with its real roster from the data's last
    season, and those men age a year at a time and retire when their careers
-   would. Nobody is traded: the league around you is a picture of who was
-   there, not a model of what the front offices will do. Each draft class
-   after that adds one generated rookie a club, who stays about ten years. */
+   would. Each draft class after that adds one generated rookie a club, who
+   stays about ten years. On a story career the rosters also move (rostOf,
+   below); a career without the story keeps this still picture. */
 function bornOf(r, first) {
   if (r.dr) return r.dr - 20;
   return (first || r.s) - 23;
@@ -606,10 +611,143 @@ function retireAge(L, name, w) {
   const r = E.createSeededRNG(E.hashSeed(String(L.seed) + ':ret:' + name));
   return 33 + Math.floor(r() * 4) + (w >= 8 ? 3 : w >= 5 ? 2 : w >= 2 ? 1 : 0);
 }
+/* THE LEAGUE MOVES (story careers). The rosters start as the data's last
+   season and then live: every summer the old retire, a rookie arrives on each
+   club, a handful of players change clubs in trades, more in free agency, and
+   now and then a star moves. A club that gets better gets a little better on
+   the floor. A career saved before this builds its rosters the first time it
+   reads them, from the same seed rosters, so nobody it knew disappears. */
+function rostCurW(e, Y) {
+  const age = Y - e.b;
+  const grow = e.g ? Math.min(1, 0.35 + (Y - e.d) * 0.2) : 1;
+  return round1(e.w * grow * (age <= 30 ? 1 : Math.max(0.1, 1 - (age - 30) * 0.08)));
+}
+function rostGone(L, e, Y) {
+  const age = Y - e.b;
+  return e.g ? (age > 34 || Y - e.d >= 11) : age > retireAge(L, e.n, e.w);
+}
+function rookieFor(L, c, d) {
+  const r = E.createSeededRNG(E.hashSeed(String(L.seed) + ':rook:' + c + ':' + d));
+  const n = pick(r, FIRST) + ' ' + pick(r, PEOPLE_LAST);
+  const peak = r() < 0.08 ? 9 : 1.5 + r() * 4;
+  return { n, pos: pick(r, R_POS), b: d - 20, w: round1(peak), g: 1, d };
+}
+function rostOf(L) {
+  if (!storyOn(L) || !L.league.roster) return null;
+  const lg = L.league;
+  if (lg.rost) return lg.rost;
+  const R = {};
+  for (const c of CLUBS) {
+    R[c] = ((lg.roster && lg.roster[c]) || []).map((p) => ({ n: p[0], pos: p[1], b: p[2], w: p[3] }));
+    for (let d = (lg.latest || 2026) + 1; d <= L.year; d++) R[c].push(rookieFor(L, c, d));
+    R[c] = R[c].filter((e) => !rostGone(L, e, L.year));
+  }
+  lg.rost = R; lg.rostY = L.year;
+  return R;
+}
+/* A reader that jumps years plays the summers it missed, quietly. */
+function rostNow(L) {
+  const R = rostOf(L);
+  if (R) for (let k = 0; L.league.rostY < L.year && k < 60; k++) rosterSummer(L, null, L.league.rostY + 1);
+  return R;
+}
+/* The position a club has fewest of, so a new man fills a hole. Ties keep
+   the position he was drawn at. */
+function thinPos(list, drawn) {
+  const n = {}; for (const p of R_POS) n[p] = 0;
+  for (const e of list) if (n[e.pos] != null) n[e.pos]++;
+  const lo = Math.min(...R_POS.map((p) => n[p]));
+  return n[drawn] === lo ? drawn : R_POS.find((p) => n[p] === lo);
+}
+const clubTalent = (R, c, Y) => R[c].map((e) => rostCurW(e, Y)).sort((a, b) => b - a).slice(0, 8).reduce((a, x) => a + x, 0);
+function rosterSummer(L, beats, quietY) {
+  const R = rostOf(L);
+  const Y = quietY || L.year;
+  if (!R || L.league.rostY >= Y) return;
+  const rng = E.createSeededRNG(E.hashSeed(String(L.seed) + ':' + Y + ':moves')), lg = L.league;
+  lg.rostY = Y;
+  const before = {};
+  for (const c of CLUBS) before[c] = clubTalent(R, c, Y - 1);
+  const news = [];
+  const mine = L.stage === 'nba' && L.team;
+  for (const c of CLUBS) {
+    for (const e of R[c]) if (rostGone(L, e, Y) && !e.g && rostCurW(e, Y - 1) >= 3) news.push({ w: rostCurW(e, Y - 1), t: e.n + ' retires.', c });
+    R[c] = R[c].filter((e) => !rostGone(L, e, Y));
+    const rk = rookieFor(L, c, Y); rk.pos = thinPos(R[c], rk.pos); R[c].push(rk);
+  }
+  const other = (c) => { let o = c; while (o === c) o = pick(rng, CLUBS); return o; };
+  const move = (from, i, to, how) => {
+    const e = R[from].splice(i, 1)[0];
+    R[to].push(e);
+    news.push({ w: rostCurW(e, Y), t: e.n + (how === 'trade' ? ' is traded to the ' : ' signs with the ') + nick(to) + '.', c: from, to });
+    return e;
+  };
+  /* Trades: two clubs swap players of about the same value. */
+  const trades = 5 + Math.floor(rng() * 5);
+  for (let k = 0; k < trades; k++) {
+    const a = pick(rng, CLUBS), b = other(a);
+    if (!R[a].length || !R[b].length) continue;
+    const i = Math.floor(rng() * R[a].length), wa = rostCurW(R[a][i], Y);
+    let j = -1, best = 99;
+    R[b].forEach((e, x) => { const d = Math.abs(rostCurW(e, Y) - wa); if (d < best) { best = d; j = x; } });
+    if (j < 0 || best > 1.5 + wa * 0.25) continue;
+    const eb = R[b][j];
+    move(a, i, b, 'trade');
+    move(b, R[b].indexOf(eb), a, 'trade');
+  }
+  /* Now and then a star asks out. */
+  if (rng() < 0.35) {
+    const pool = [];
+    for (const c of CLUBS) R[c].forEach((e) => { const w = rostCurW(e, Y); if (w >= 7 && Y - e.b >= 25) pool.push([c, e, w]); });
+    if (pool.length) { const [c, e] = pick(rng, pool); move(c, R[c].indexOf(e), other(c), 'trade'); }
+  }
+  /* Free agency: veterans change teams, mostly toward a thin roster. */
+  const fa = 10 + Math.floor(rng() * 8);
+  for (let k = 0; k < fa; k++) {
+    const c = pick(rng, CLUBS);
+    const vets = R[c].map((e, i) => [e, i]).filter(([e]) => Y - e.b >= 24);
+    if (!vets.length) continue;
+    const [, i] = pick(rng, vets);
+    const thin = CLUBS.slice().sort((x, y) => R[x].length - R[y].length).slice(0, 8);
+    const to = rng() < 0.6 ? pick(rng, thin.filter((x) => x !== c).length ? thin.filter((x) => x !== c) : [other(c)]) : other(c);
+    move(c, i, to, 'fa');
+  }
+  /* Every club carries thirteen to fifteen. A short one signs a journeyman;
+     a long one waives its last man. */
+  /* Waived men go to a pool the short clubs sign from first, so a real
+     player is cut from one roster and turns up on another. */
+  const waived = [];
+  for (const c of CLUBS) if (R[c].length > 15) { R[c].sort((x, y) => rostCurW(y, Y) - rostCurW(x, Y)); waived.push(...R[c].splice(15)); }
+  waived.sort((x, y) => rostCurW(y, Y) - rostCurW(x, Y));
+  for (const c of CLUBS.slice().sort((x, y) => R[x].length - R[y].length)) {
+    while (R[c].length < 13 && waived.length) R[c].push(waived.shift());
+  }
+  for (const c of CLUBS) {
+    while (R[c].length < 13) { const r = E.createSeededRNG(E.hashSeed(String(L.seed) + ':vet:' + c + ':' + Y + ':' + R[c].length)); R[c].push({ n: pick(r, FIRST) + ' ' + pick(r, PEOPLE_LAST), pos: thinPos(R[c], pick(r, R_POS)), b: Y - 27 - Math.floor(r() * 6), w: round1(0.4 + r() * 1.6), g: 1, d: Y - 6 }); }
+  }
+  /* A club that got better plays a little better: a share of the talent it
+     gained, with the league kept centred. */
+  const d = {};
+  let sum = 0;
+  for (const c of CLUBS) { d[c] = clamp((clubTalent(R, c, Y) - before[c]) * 0.15, -2, 2); sum += d[c]; }
+  for (const c of CLUBS) lg.net[c] = round1((lg.net[c] || 0) + d[c] - sum / CLUBS.length);
+  /* The news: the biggest names, and anything that touches your club. */
+  news.sort((x, y) => y.w - x.w);
+  const told = news.filter((x) => mine && (x.c === L.team || x.to === L.team)).slice(0, 3);
+  for (const x of news.slice(0, 2)) if (told.indexOf(x) < 0) told.push(x);
+  for (const x of quietY ? [] : told) {
+    const ours = mine && (x.c === L.team || x.to === L.team);
+    if (beats && L.stage === 'nba') beats.push({ kind: 'news', text: (ours ? 'Your club: ' : 'Around the league: ') + x.t, tone: '' });
+    feed(L, 'move', x.t);
+    if (ours) logIt(L, x.t, '');
+  }
+}
 /* Who is on club c in the current year, best first. */
 function matesOf(L, c) {
   const lg = L.league;
   const Y = L.year;
+  const R = rostNow(L);
+  if (R && R[c]) return R[c].filter((e) => !rostGone(L, e, Y)).map((e) => ({ n: e.n, pos: e.pos, age: Y - e.b, w: rostCurW(e, Y), real: e.g ? 0 : 1 })).sort((a, b) => b.w - a.w);
   const out = [];
   const base = lg.roster && lg.roster[c];
   if (base) {
@@ -883,6 +1021,8 @@ function newLife(opts) {
     mem: {}, people: {}, traits: rollTraits(seed), opt: { legend: o.legend !== false, moments: o.moments !== false },
   };
   if (o.story !== false) L.opt.story = STORY_VERSION;
+  /* Last season's lines, for the rotation screen and the Saturday contests. */
+  if (L.opt.story && league.lines) L.league.lines = league.lines;
   /* Phase E: a difficulty and a challenge are story career settings. A
      challenge can fix the difficulty; Normal is never written, so a career
      without one is the same object it always was. */
@@ -896,14 +1036,13 @@ function newLife(opts) {
   const rng = E.createSeededRNG(E.hashSeed(seed + ':create'));
   if (L.num == null) L.num = Math.floor(rng() * 100);
   /* A size is kept when the builder picked one, or on a story career, which
-     draws one off its own stream when nobody did. A sweep that passes neither
-     makes the same player it always made. */
+     stands at the middle of its position when nobody did, so a sweep that
+     passes none makes the same player it always made. */
   const z = POS_SIZE[pos];
   if (Number.isFinite(+o.ht) || L.opt.story) {
-    const zr = E.createSeededRNG(E.hashSeed(seed + ':size'));
-    L.ht = Number.isFinite(+o.ht) ? clamp(Math.round(+o.ht), z.ht[0], z.ht[1]) : clamp(Math.round(z.mid + norm(zr) * 1.3), z.ht[0], z.ht[1]);
+    L.ht = Number.isFinite(+o.ht) ? clamp(Math.round(+o.ht), z.ht[0], z.ht[1]) : z.mid;
     const wr = wtRange(L.ht);
-    L.wt = Number.isFinite(+o.wt) ? clamp(Math.round(+o.wt / 5) * 5, wr[0], wr[1]) : clamp(Math.round((wtFor(L.ht) + norm(zr) * 12) / 5) * 5, wr[0], wr[1]);
+    L.wt = Number.isFinite(+o.wt) ? clamp(Math.round(+o.wt / 5) * 5, wr[0], wr[1]) : wtFor(L.ht);
   }
   const st = Number.isFinite(L.ht) ? sizeTilt(pos, L.ht, L.wt) : {};
   const prof = POS_PROFILE[pos], tilt = ARCHES[arch].tilt, bt = road ? {} : (bg.tilt || {});
@@ -1208,6 +1347,41 @@ function roleOf(L) {
   const label = (diff >= 12 && min >= 33) ? 'Franchise player' : min >= 30 ? 'Starter' : min >= 24 ? 'Starter' : min >= 15 ? 'Rotation' : 'End of bench';
   return { min: round1(min), diff, label, starter: min >= 24 };
 }
+/* THE ROTATION: your club's thirteen, ordered by minutes, with you placed by
+   the minutes you are actually getting (this season's average once a game is
+   played, the coach's plan before that). Teammates take the rest of 240 off a
+   real rotation's shape, best man first. Display only: the season sim reads
+   your minutes from roleOf, never from this. */
+const ROT_SHAPE = [35, 33, 31, 29, 27, 24, 20, 16, 12, 8, 5, 0, 0, 0, 0];
+const ROT_WORD = ['', 'Starter', 'Starter', 'Starter', 'Starter', 'Starter', 'Sixth man', 'Rotation', 'Rotation', 'Rotation', 'Bench', 'Bench', 'Bench', 'Bench', 'Bench', 'Bench', 'Bench'];
+function rotationOf(L) {
+  if (L.stage !== 'nba' || !L.team) return null;
+  const s = L.season, role = roleOf(L);
+  const played = s && s.gp > 0 && s.tot && s.tot.min > 0;
+  const mine = round1(played ? s.tot.min / s.gp : role.min);
+  /* The coach starts two guards, two forwards and a big when he has them,
+     best man first at each, and brings the rest off the bench by value. */
+  const all = matesOf(L, L.team).slice(0, 14), mates = [];
+  const fits = [['PG', 'SG'], ['PG', 'SG'], ['SF', 'PF'], ['SF', 'PF'], ['C', 'PF']];
+  for (const f of fits) { const m = all.find((x) => mates.indexOf(x) < 0 && f.indexOf(x.pos) >= 0); if (m) mates.push(m); }
+  for (const m of all) if (mates.indexOf(m) < 0) mates.push(m);
+  let at = ROT_SHAPE.findIndex((m) => m <= mine);
+  if (at < 0 || at > mates.length) at = mates.length;
+  const slots = ROT_SHAPE.slice(0, mates.length + 1);
+  slots.splice(at, 1);
+  const tot = slots.reduce((a, x) => a + x, 0) || 1, left = Math.max(0, 240 - mine);
+  const lines = L.league.lines || {};
+  const list = mates.map((m, i) => {
+    const min = round1(slots[i] * left / tot), ln = lines[m.n];
+    /* Points: last season's rate for a man the data has, otherwise one off
+       his value; at the minutes he is getting now. */
+    const rate = ln && ln[0] > 0 ? ln[1] / ln[0] : 0.18 + Math.max(0, m.w) * 0.035;
+    return { n: m.n, pos: m.pos, age: m.age, real: m.real, min, pts: min > 0 ? round1(rate * min) : 0 };
+  });
+  list.splice(at, 0, { n: L.name, pos: L.pos, age: L.age, you: true, min: mine, pts: null });
+  list.forEach((x, i) => { x.rank = i + 1; x.role = x.min <= 0 ? 'Out of the rotation' : ROT_WORD[i + 1] || 'Bench'; });
+  return { list, rank: at + 1, min: mine, played, role: list[at].role, plan: role.label, club: L.team, gp: s ? s.gp : 0 };
+}
 function usageOf(L, role) {
   const a = ARCHES[L.arch];
   const u = 0.13 + 0.17 * clamp(role.diff / 22 + 0.35, 0, 1.25) + a.usage + (L.season ? L.season.mods.usage : 0);
@@ -1465,8 +1639,9 @@ function allStarCheck(L, beats) {
 /* The field and the scores of a Saturday contest you entered. The result is
    drawn before this runs; this only names who you were up against and writes
    the scores around it, on its own stream, so nothing else in the career
-   moves. Everybody in it is invented: a league star or two, then names off
-   the same lists. A dunk is judged out of 100 a round, a three-point round out
+   moves. The field is real players off the league's rosters (a contest is
+   basketball, where real people belong), then the league's invented stars,
+   then generated names if a long career has run the real ones out. A dunk is judged out of 100 a round, a three-point round out
    of 40. Out in round one is a hyphen in the final column. */
 const CONTEST = {
   dunk: { name: 'Dunk contest', n: 4, fin: 2, stars: 1, r1: [62, 96], f: [72, 100] },
@@ -1480,8 +1655,28 @@ function contestField(L, kind, won) {
   const taken = new Set([L.name]), clubs = new Set([L.team]);
   const club = () => { for (let k = 0; k < 20; k++) { const c = pick(rng, CLUBS); if (!clubs.has(c)) { clubs.add(c); return c; } } return pick(rng, CLUBS); };
   const others = [];
+  /* Real players first: a dunk contest is young wings and guards, a
+     three-point contest is the men who take the most threes. */
+  const lines = (L.league && L.league.lines) || {}, pool = [];
+  for (const c of CLUBS) {
+    if (c === L.team) continue;
+    for (const m of matesOf(L, c)) {
+      if (!m.real || taken.has(m.n)) continue;
+      const ln = lines[m.n], tpa = ln ? ln[4] : 0;
+      const w = kind === 'dunk' ? (m.pos !== 'C' && m.age <= 27 ? (m.age <= 24 ? 3 : 1.5) + (m.pos === 'SF' || m.pos === 'SG' ? 1 : 0) : 0)
+        : (tpa >= 5 ? tpa : m.pos !== 'C' && m.pos !== 'PF' && m.age >= 22 ? 0.5 : 0);
+      if (w > 0) pool.push({ n: m.n, club: c, w });
+    }
+  }
+  while (others.length < C.n - 1 && pool.length) {
+    let t = pool.reduce((a, x) => a + x.w, 0) * rng(), i = 0;
+    while (i < pool.length - 1 && (t -= pool[i].w) > 0) i++;
+    const p = pool.splice(i, 1)[0];
+    if (taken.has(p.n) || clubs.has(p.club)) continue;
+    taken.add(p.n); clubs.add(p.club); others.push({ n: p.n, club: p.club });
+  }
   const stars = ((L.league && L.league.figs) || []).filter((f) => !f.gone && f.club !== L.team);
-  for (let k = 0; k < C.stars && stars.length && rng() < 0.6; k++) {
+  for (let k = 0; k < C.stars && others.length < C.n - 1 && stars.length && rng() < 0.6; k++) {
     const f = stars.splice(Math.floor(rng() * stars.length), 1)[0];
     if (taken.has(f.n) || clubs.has(f.club)) continue;
     taken.add(f.n); clubs.add(f.club); others.push({ n: f.n, club: f.club });
@@ -7264,7 +7459,7 @@ const publicAPI = {
   CAREER_API_VERSION, LIFE_VERSION,
   CONF, CLUBS, confOf, POS, POS_NAME, RATINGS, RATING_NAME, RATING_SHORT, WEIGHTS,
   ARCHES, ARCH_KEYS, POS_ARCHES, archesFor, archBase, POS_SIZE, wtFor, wtRange, sizeOf, sizeTilt, heightText, BACKGROUNDS, BG_KEYS, AGENTS, AWARD_NAME, ROUNDS, VERDICTS, EVENTS,
-  seedLeague, normaliseNets, newLife, randomName, overall, ovrOf, step, choose, nextLabel,
+  seedLeague, normaliseNets, newLife, rotationOf, rostOf, randomName, overall, ovrOf, step, choose, nextLabel,
   view, perGame, totals, legacy, legacyScore, clubNet, clubTier, rotationBar,
   roleOf, lineMeans, capFor, marketSalary, projectedPick, draftOrder, money, ordinal,
   clutchOptions, offers, ACTS, actsOpen, act, retireNow, lifeOf, lifeLine, sonsOf, rivalOn, featSummary, boardSummary, verdictOf,
