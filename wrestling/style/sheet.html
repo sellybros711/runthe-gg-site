@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Wrestler Sample Sheet</title>
+<style>
+body{margin:0;background:#0e0c10;color:#efe6d8;font:15px/1.4 system-ui,sans-serif;padding:16px}
+h2{font:700 13px system-ui;letter-spacing:.14em;text-transform:uppercase;color:#e0b341;margin:22px 0 10px}
+.row{display:flex;flex-wrap:wrap;gap:6px;align-items:flex-end}
+.cell{background:#17141b;padding:6px 6px 8px;text-align:center}
+.cell b{display:block;font-size:12px;margin-top:2px}.cell i{display:block;font-style:normal;font-size:10px;color:#a99d8e}
+img.rtr-px,img.rtf-baller,canvas{image-rendering:pixelated;display:block;margin:0 auto}
+</style></head><body>
+<h2>Five builds, frame A and frame B</h2><div class="row" id="builds"></div>
+<h2>Sample cast</h2><div class="row" id="cast"></div>
+<h2>One wrestler, every pose</h2><div class="row" id="poses"></div>
+<h2>Family check: Run The Floor at the same cell size</h2><div class="row" id="family"></div>
+<script src="../pxwrestler.js"></script>
+<script src="../../hoops/baller.js"></script>
+<script src="samples.js"></script>
+<script>
+const P=RTR_PX, S=3;
+const cell=(html,name,tag)=>`<div class="cell">${html}${name?`<b>${name}</b>`:''}${tag?`<i>${tag}</i>`:''}</div>`;
+document.getElementById('builds').innerHTML=['m','f'].map(f=>Object.keys(P.BODY).map(b=>cell(P.img({build:b,figure:f,hair:f==='f'?'pony':'short',bottom:'trunks',gear:'#5b6170',trim:'#c8ccd4',boots:'low',wrists:'none'},{pose:'idle',scale:S}),b,f==='f'?'frame B':'frame A')).join('')).join('');
+document.getElementById('cast').innerHTML=RTR_SAMPLES.map(w=>cell(P.img(w.look,{pose:w.pose,age:w.age,scale:S}),w.name,w.tag)).join('');
+const m=RTR_SAMPLES[9];
+document.getElementById('poses').innerHTML=P.POSES.map(p=>cell(P.img(m.look,{pose:p,scale:S}),p)).join('');
+const B=RTF_BALLER;
+document.getElementById('family').innerHTML=
+  cell(B.img({skin:3,hair:'fade',build:'strong'},{pose:'stand',c1:'#c6392c',c2:'#f2d27a',num:23,scale:S}),'Run The Floor','44 by 64')+
+  cell(P.img(RTR_SAMPLES[9].look,{pose:'idle',scale:S}),'Run The Ropes','56 by 72')+
+  cell(P.img(RTR_SAMPLES[1].look,{pose:'idle',scale:S}),'Run The Ropes','super heavyweight');
+</script></body></html>
