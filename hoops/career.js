@@ -851,6 +851,10 @@ function migrate(L) {
 function remember(L, key, val) { if (!L.mem) L.mem = {}; L.mem[key] = { y: L.year, v: val === undefined ? true : val }; return L.mem[key]; }
 function recall(L, key) { return L.mem && L.mem[key] ? L.mem[key] : null; }
 function hasTrait(L, k) { return !!(L.traits && L.traits[k] && L.traits[k].has); }
+/* A STORY CAREER is one started after Phase C. Everything that changes what a
+   career is dealt is behind this, so a save from before plays on unchanged. */
+const STORY_VERSION = 1;
+const storyOn = (L) => !!(L && L.opt && L.opt.story);
 
 // ─── draft night ────────────────────────────────────────────────────────────
 
@@ -1967,7 +1971,7 @@ function choosePresser(L, card, opt, rng) {
 }
 const EVENTS = {
   vet_mentor: {
-    phases: ['early'], once: true, when: (L) => L.seasonsDone === 0, weight: () => 4,
+    phases: ['early'], once: true, req: { seasons: [0, 0] }, weight: () => 4,
     title: '{tvet} pulls you aside.',
     text: () => 'The oldest man in the locker room. He offers to show you how he stayed in the league.',
     options: [
@@ -1977,7 +1981,7 @@ const EVENTS = {
     ],
   },
   rookie_duty: {
-    phases: ['early'], once: true, when: (L) => L.seasonsDone === 0, weight: () => 3,
+    phases: ['early'], once: true, req: { seasons: [0, 0] }, weight: () => 3,
     title: 'Rookie duty.',
     text: () => '{tvet} hands you the order. Breakfast for the plane, every road trip. You are buying.',
     options: [
@@ -1997,7 +2001,7 @@ const EVENTS = {
     ],
   },
   hot_streak: {
-    phases: ['early', 'mid', 'late'], when: (L) => L.season && L.season.role && L.season.role.min >= 22, weight: () => 3,
+    phases: ['early', 'mid', 'late'], req: { minutes: [22, null] }, weight: () => 3,
     title: 'You are on fire.',
     text: () => 'Thirty points three straight nights. The cameras find your locker.',
     options: [
@@ -2007,7 +2011,7 @@ const EVENTS = {
     ],
   },
   slump: {
-    phases: ['early', 'mid', 'late'], when: (L) => L.season && L.season.role && L.season.role.min >= 14, weight: () => 3,
+    phases: ['early', 'mid', 'late'], req: { minutes: [14, null] }, weight: () => 3,
     title: 'You cannot buy a bucket.',
     text: () => 'Twenty-six percent from three for a month. The fans have opinions.',
     options: [
@@ -2047,7 +2051,7 @@ const EVENTS = {
     ],
   },
   teammate_touches: {
-    phases: ['mid', 'late'], when: (L) => L.season && L.season.role && L.season.role.starter, weight: () => 2,
+    phases: ['mid', 'late'], req: { starter: true }, weight: () => 2,
     title: '{tco} wants the ball.',
     text: () => 'He says he is open on every possession. He tells {beat} too.',
     options: [
@@ -2087,7 +2091,7 @@ const EVENTS = {
     ],
   },
   shoe_deal: {
-    phases: ['pre', 'mid', 'off'], once: true, when: (L) => L.m.fame >= 55, weight: () => 4,
+    phases: ['pre', 'mid', 'off'], once: true, req: { fame: [55, null] }, weight: () => 4,
     title: 'Two shoe companies want you.',
     text: () => 'One is the biggest brand in the world. One will give you your own shoe.',
     options: [
@@ -2097,7 +2101,7 @@ const EVENTS = {
     ],
   },
   local_ad: {
-    phases: ['pre', 'early', 'off'], when: (L) => L.m.fame >= 25, weight: () => 2,
+    phases: ['pre', 'early', 'off'], req: { fame: [25, null] }, weight: () => 2,
     title: 'A car dealership wants a commercial.',
     text: () => 'Thirty seconds. You hold a key and point at the camera.',
     options: [
@@ -2106,7 +2110,7 @@ const EVENTS = {
     ],
   },
   online_beef: {
-    phases: ['early', 'mid', 'late'], when: (L) => L.m.fame >= 30, weight: () => 2,
+    phases: ['early', 'mid', 'late'], req: { fame: [30, null] }, weight: () => 2,
     title: '{topp} called you overrated.',
     text: () => 'Online. In front of everybody. You play him Friday.',
     options: [
@@ -2125,7 +2129,7 @@ const EVENTS = {
     ],
   },
   heckler: {
-    phases: ['mid', 'late'], when: (L) => L.m.fame >= 20, weight: () => 1.2,
+    phases: ['mid', 'late'], req: { fame: [20, null] }, weight: () => 1.2,
     title: 'A fan courtside is saying things about your family.',
     text: () => 'All night. Security is not doing anything.',
     options: [
@@ -2135,7 +2139,7 @@ const EVENTS = {
     ],
   },
   charity: {
-    phases: ['pre', 'off', 'mid'], when: (L) => L.cash >= 0.5, weight: () => 2,
+    phases: ['pre', 'off', 'mid'], req: { cash: 0.5 }, weight: () => 2,
     title: 'Your old high school gym is falling apart.',
     text: () => 'The roof leaks onto the court. They ask if you can help.',
     options: [
@@ -2145,7 +2149,7 @@ const EVENTS = {
     ],
   },
   family_money: {
-    phases: ['pre', 'off', 'early'], when: (L) => L.cash >= 1, weight: () => 2,
+    phases: ['pre', 'off', 'early'], req: { cash: 1 }, weight: () => 2,
     title: 'Your cousin {cousin:first} needs money.',
     text: () => 'It is the third time this year. It is a lot.',
     options: [
@@ -2155,7 +2159,7 @@ const EVENTS = {
     ],
   },
   investment: {
-    phases: ['pre', 'off'], when: (L) => L.cash >= 1.5, weight: () => 2,
+    phases: ['pre', 'off'], req: { cash: 1.5 }, weight: () => 2,
     title: '{friend}, a friend from home, has a business idea.',
     text: () => 'Streetwear. Or a burger chain. Or an app. He needs a partner.',
     options: [
@@ -2165,7 +2169,7 @@ const EVENTS = {
     ],
   },
   podcast: {
-    phases: ['off', 'pre'], once: true, when: (L) => L.m.fame >= 45 && L.seasonsDone >= 2, weight: () => 1.5,
+    phases: ['off', 'pre'], once: true, req: { fame: [45, null], seasons: [2, null] }, weight: () => 1.5,
     title: 'A network wants you to host a podcast.',
     text: () => 'Weekly. Unfiltered. Good money.',
     options: [
@@ -2174,7 +2178,7 @@ const EVENTS = {
     ],
   },
   body_care: {
-    phases: ['pre', 'off'], once: true, when: (L) => L.age >= 27 && L.cash >= 1, weight: () => 3,
+    phases: ['pre', 'off'], once: true, req: { age: [27, null], cash: 1 }, weight: () => 3,
     title: '{guru}, a longevity coach, pitches a full program.',
     text: () => 'Chef, sleep coach, cold tub, the works. It is not cheap.',
     options: [
@@ -2193,7 +2197,7 @@ const EVENTS = {
     ],
   },
   mentor_rookie: {
-    phases: ['early'], when: (L) => L.age >= 29 && L.seasonsDone >= 6, weight: () => 2,
+    phases: ['early'], req: { age: [29, null], seasons: [6, null] }, weight: () => 2,
     title: '{trook} follows you everywhere.',
     text: () => 'The rookie grew up with your poster on his wall.',
     options: [
@@ -2202,7 +2206,7 @@ const EVENTS = {
     ],
   },
   contract_year: {
-    phases: ['early'], when: (L) => L.contract && L.contract.years === 1, weight: () => 4,
+    phases: ['early'], req: { contract: [1, 1] }, weight: () => 4,
     title: 'Contract year.',
     text: () => 'Everybody knows. Every shot is a negotiation.',
     options: [
@@ -2246,7 +2250,7 @@ const EVENTS = {
     ],
   },
   buzzer: {
-    phases: ['early', 'mid', 'late'], when: (L) => L.season && L.season.role && L.season.role.min >= 24, weight: () => 2.5,
+    phases: ['early', 'mid', 'late'], req: { minutes: [24, null] }, weight: () => 2.5,
     title: 'Down one. Four seconds. Your ball.',
     text: () => 'Regular season, but the building does not know that.',
     options: [
@@ -2274,7 +2278,7 @@ const EVENTS = {
     ],
   },
   rap_album: {
-    phases: ['off'], once: true, when: (L) => L.m.fame >= 50, weight: () => 1,
+    phases: ['off'], once: true, req: { fame: [50, null] }, weight: () => 1,
     title: 'You have been making music.',
     text: () => 'A label heard the demos. They want an album.',
     options: [
@@ -2313,7 +2317,7 @@ const EVENTS = {
     ],
   },
   meet_someone: {
-    phases: ['off', 'pre'], when: (L) => lifeOf(L).rel === 'single' && L.age >= 21, weight: () => 2.2,
+    phases: ['off', 'pre'], req: { rel: 'single', age: [21, null] }, weight: () => 2.2,
     title: 'Somebody catches your eye.',
     text: () => 'Their name is {partner}. You meet at {friend:first}\'s birthday dinner. They have no idea who you are.',
     options: [
@@ -2331,7 +2335,7 @@ const EVENTS = {
     ],
   },
   wedding: {
-    phases: ['off'], when: (L) => lifeOf(L).rel === 'engaged', weight: () => 6,
+    phases: ['off'], req: { rel: 'engaged' }, weight: () => 6,
     title: 'Wedding planning.',
     text: () => '{partner} has a list. {tm} has opinions.',
     options: [
@@ -2367,7 +2371,7 @@ const EVENTS = {
     ],
   },
   docuseries: {
-    phases: ['pre', 'off'], once: true, when: (L) => L.m.fame >= 60, weight: () => 2,
+    phases: ['pre', 'off'], once: true, req: { fame: [60, null] }, weight: () => 2,
     title: 'A streaming service wants a documentary.',
     text: () => 'Cameras everywhere for a season. Your house, your locker, your car.',
     options: [
@@ -2377,7 +2381,7 @@ const EVENTS = {
     ],
   },
   teammate_fight: {
-    phases: ['early', 'mid'], when: (L) => L.season && L.season.role && L.season.role.min >= 18, weight: () => 1.6,
+    phases: ['early', 'mid'], req: { minutes: [18, null] }, weight: () => 1.6,
     title: '{tm} shoves you in practice.',
     text: () => 'Hard foul, harder words. Everybody stops.',
     options: [
@@ -2406,7 +2410,7 @@ const EVENTS = {
     ],
   },
   christmas: {
-    phases: ['early'], when: (L) => L.m.fame >= 45 && L.season && L.season.role && L.season.role.starter, weight: () => 2,
+    phases: ['early'], req: { fame: [45, null], starter: true }, weight: () => 2,
     title: 'You are on the Christmas Day schedule.',
     text: () => 'The biggest regular season stage there is. Every family in the country has it on.',
     options: [
@@ -2597,6 +2601,107 @@ const TRAIN = [
   { sho: 2, iq: 1 }, { ath: 1, fin: 1, reb: 1 }, { pla: 2, iq: 1 }, { def: 2, ath: 1 }, null,
 ];
 
+// ─── the event schema ───────────────────────────────────────────────────────
+
+/* AN EVENT IS DATA (NARRATIVE.md section 2). defineEvents() reads each entry
+   once and fills in every field the picker asks about, so an event written
+   with three fields and one written with twelve are read by the same code:
+
+     phases    the slots it can be dealt in ('early', 'off', 'hs', 'col_pre')
+     tags      what it is about, for arcs and the media layer
+     req       prerequisites as data, read by reqOk(); `when` is the escape
+               hatch for a rule that will not fit in a field
+     weight    a number (times its rarity) or a function of the career
+     rarity    common, uncommon or rare
+     once      never again in this career
+     cooldown  seasons before it may be dealt again (a story career only)
+     cap       the most times in one career (a story career only)
+
+   The version 1 rule is kept for every career: an event is dealt at most once
+   a season. Cooldowns and caps are recorded only on a story career, because a
+   migrated save has to play exactly as the old engine played it (check-saves). */
+const RARITY = { common: 1, uncommon: 0.55, rare: 0.25 };
+const EVENT_TAGS = {
+  locker: ['vet_mentor', 'rookie_duty', 'teammate_touches', 'teammate_fight', 'mentor_rookie', 'young_star', 'film_session'],
+  court: ['hot_streak', 'slump', 'buzzer', 'christmas', 'ref_heat', 'double_team', 'rival_school', 'rivalry_col'],
+  coach: ['coach_bench', 'stuck', 'coach_fired', 'coach_son', 'coach_leaves', 'tank', 'load_mgmt'],
+  front: ['trade_rumor', 'superteam', 'buyout', 'contract_year', 'hometown_call', 'agent_pitch'],
+  money: ['shoe_deal', 'local_ad', 'family_money', 'investment', 'body_care', 'nil_deal', 'booster', 'street_agent', 'charity'],
+  media: ['online_beef', 'podcast', 'docuseries', 'rap_album', 'media_day', 'playoff_guarantee', 'mixtape', 'heckler'],
+  body: ['injury_tweak', 'rehab_summer', 'body_care', 'load_mgmt', 'freshman_wall', 'growth'],
+  heart: ['meet_someone', 'propose', 'wedding', 'baby', 'breakup', 'homecoming', 'roommate'],
+  rival: ['rival_trash', 'rival_tv', 'online_beef'],
+  school: ['grades', 'class_skip', 'nba_scouts', 'camp_invite', 'prep_transfer', 'investigation', 'summer_league'],
+};
+function defineEvents(pool, kind) {
+  const tagsOf = {};
+  for (const t in EVENT_TAGS) for (const id of EVENT_TAGS[t]) (tagsOf[id] = tagsOf[id] || []).push(t);
+  for (const id in pool) {
+    const ev = pool[id];
+    ev.id = id;
+    ev.pool = kind;
+    ev.tags = ev.tags || tagsOf[id] || [];
+    ev.req = ev.req || null;
+    ev.cooldown = ev.cooldown || 0;
+    ev.cap = ev.cap || 0;
+    if (!ev.rarity) {
+      const w = typeof ev.weight === 'number' ? ev.weight : 0;
+      ev.rarity = w >= 3 ? 'common' : 'uncommon';
+    }
+    if (!ev.when) ev.when = () => true;
+    if (typeof ev.weight === 'number') { const w = ev.weight * RARITY[ev.rarity]; ev.weight = () => w; }
+  }
+  return pool;
+}
+/* Prerequisites as data. Every key is optional and all of them must hold. A
+   range is [min, max] with either end null. */
+const inRange = (v, r) => (r[0] == null || v >= r[0]) && (r[1] == null || v <= r[1]);
+const REQ = {
+  seasons: (L, r) => inRange(L.seasonsDone, r),
+  age: (L, r) => inRange(L.age, r),
+  fame: (L, r) => inRange(L.m.fame, r),
+  morale: (L, r) => inRange(L.m.morale, r),
+  health: (L, r) => inRange(L.m.health, r),
+  ovr: (L, r) => inRange(ovrOf(L), r),
+  cash: (L, v) => L.cash >= v,
+  minutes: (L, r) => !!(L.season && L.season.role) && inRange(L.season.role.min, r),
+  starter: (L, v) => !!(L.season && L.season.role && L.season.role.starter) === v,
+  team: (L, v) => !!L.team === v,
+  contract: (L, r) => !!L.contract && inRange(L.contract.years, r),
+  rel: (L, v) => [].concat(v).indexOf(lifeOf(L).rel) >= 0,
+  flags: (L, a) => a.every((k) => !!L.flags[k]),
+  notFlags: (L, a) => a.every((k) => !L.flags[k]),
+  mem: (L, a) => a.every((k) => !!recall(L, k)),
+  notMem: (L, a) => a.every((k) => !recall(L, k)),
+  traits: (L, a) => a.every((k) => hasTrait(L, k)),
+  rival: (L, v) => rivalOn(L) === v,
+  story: (L, v) => storyOn(L) === v,
+};
+function reqOk(L, req) {
+  if (!req) return true;
+  for (const k in req) { if (!REQ[k]) throw new Error('unknown requirement ' + k); if (!REQ[k](L, req[k])) return false; }
+  return true;
+}
+/* A story career keeps a ledger of what it was dealt and when, which is what
+   cooldowns and caps are read off. A migrated save has none and needs none. */
+function evSeen(L) { return L.evlog || (L.evlog = {}); }
+function evOpen(L, ev) {
+  if (!storyOn(L)) return true;
+  const h = (L.evlog || {})[ev.id];
+  if (!h || !h.length) return true;
+  if (ev.cap && h.length >= ev.cap) return false;
+  if (ev.cooldown && L.year - h[h.length - 1] < ev.cooldown) return false;
+  return true;
+}
+function eligible(L, ev, phase, used, once) {
+  if (ev.phases.indexOf(phase) < 0) return false;
+  if (used[ev.id]) return false;
+  if (ev.once && once[ev.id]) return false;
+  if (!evOpen(L, ev)) return false;
+  if (!reqOk(L, ev.req)) return false;
+  return !!ev.when(L);
+}
+
 const SUMMERY = { off: 1, pre: 1, hs_sum: 1, hs_off: 1, col_pre: 1, col_off: 1 };
 function queueEvents(L, phase, n, pool) {
   pool = pool || EVENTS;
@@ -2605,17 +2710,12 @@ function queueEvents(L, phase, n, pool) {
   const once = L.flags.once = L.flags.once || {};
   const rng = rngAt(L, 'ev:' + phase + ':' + L.pending.length);
   for (let k = 0; k < n; k++) {
-    const ids = Object.keys(pool).filter((id) => {
-      const ev = pool[id];
-      if (ev.phases.indexOf(phase) < 0) return false;
-      if (used[id]) return false;
-      if (ev.once && once[id]) return false;
-      return ev.when(L);
-    });
+    const ids = Object.keys(pool).filter((id) => eligible(L, pool[id], phase, used, once));
     const id = weighted(rng, ids, (x) => pool[x].weight(L));
     if (!id) return;
     used[id] = 1;
     if (pool[id].once) once[id] = 1;
+    if (storyOn(L)) (evSeen(L)[id] = evSeen(L)[id] || []).push(L.year);
     const ev = pool[id];
     if (ev.queue) ev.queue(L);
     L.pending.push({
@@ -3578,6 +3678,8 @@ const AM_EVENTS = {
     ],
   },
 };
+defineEvents(EVENTS, 'nba');
+defineEvents(AM_EVENTS, 'am');
 
 /* Answers to the road's own cards. Null means the card is not one of these. */
 function chooseAm(L, card, i, opt, rng, beats, touch) {
@@ -4251,6 +4353,7 @@ const publicAPI = {
   COACHES_NOW, COACH_POOL, COACH_NAMES, PEOPLE_M, PEOPLE_F, PEOPLE_X, PEOPLE_LAST, FIRST, LAST, RIVAL_FIRST, RIVAL_LAST,
   coachState, coachOf, coachName, coachCarousel, myCoach, matesOf, myMates, personName, peopleKey, say, CLUBS,
   lockerOf, CAST, TRAITS, rollTraits, migrate, remember, recall, hasTrait, REAL_TOKENS, INVENTED_TOKENS, BASKETBALL_ONLY,
+  STORY_VERSION, storyOn, RARITY, EVENT_TAGS, REQ, reqOk, defineEvents,
 };
 
 if (typeof module !== 'undefined' && module.exports) module.exports = publicAPI;
