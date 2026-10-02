@@ -6927,10 +6927,10 @@ function roadStory(L) {
   if (hs.length) {
     const school = hs[hs.length - 1].school;
     const best = Math.min(...hs.map((h) => h.rank || 999));
-    out.push((hs.length === 1 ? 'One season' : NUMWORDS[hs.length] + ' seasons') + ' at ' + school + '.');
+    out.push((hs.length === 1 ? 'One season' : numWord(hs.length) + ' seasons') + ' at ' + school + '.');
     out.push(best > 600 ? 'Nobody ranked you.' : 'A ' + starsOf(best) + '-star recruit. #' + best + ' in the class.');
     const st = hs.filter((h) => /State champion/.test(h.finish)).length;
-    if (st) out.push(st === 1 ? 'A state title.' : NUMWORDS[st] + ' state titles.');
+    if (st) out.push(st === 1 ? 'A state title.' : numWord(st) + ' state titles.');
     if (hs.some((h) => (h.aw || []).indexOf('hs_mrbb') >= 0)) out.push('Mr. Basketball.');
   }
   if (recall(L, 'route.reclass')) out.push('You reclassified and skipped a year.');
@@ -6942,7 +6942,7 @@ function roadStory(L) {
   if (col.length) {
     const schools = [];
     col.forEach((h) => { if (schools.indexOf(h.school) < 0) schools.push(h.school); });
-    out.push((col.length === 1 ? 'One season at ' : NUMWORDS[col.length] + ' seasons at ') + schools.join(', then ') + '.');
+    out.push((col.length === 1 ? 'One season at ' : numWord(col.length) + ' seasons at ') + schools.join(', then ') + '.');
     const rank = (f) => f === 'National champion' ? 9 : Math.max(-1, NCAA_ROUNDS.findIndex((r) => f === 'Lost in the ' + r));
     const top = col.slice().sort((a, b) => rank(b.finish) - rank(a.finish))[0];
     if (top && top.finish === 'National champion') out.push('National champions.');
@@ -6961,6 +6961,8 @@ function roadStory(L) {
   return out;
 }
 const NUMWORDS = ['No', 'One', 'Two', 'Three', 'Four', 'Five', 'Six'];
+/* A count as a word up to six and as a number after: eight rings is "8 rings". */
+const numWord = (n) => NUMWORDS[n] || String(n);
 
 /* THE WRITTEN CAREER STORY (Phase E), kept on the Hall card and read in the
    Vault. It is built from what the career recorded, never from a template
@@ -6998,7 +7000,7 @@ function careerStory(L) {
     if (champs.length) {
       const by = {};
       champs.forEach((h) => { (by[h.t] = by[h.t] || []).push(h.y); });
-      const p = Object.keys(by).map((c) => (by[c].length === 1 ? 'A ring' : NUMWORDS[by[c].length] + ' rings') + ' with the ' + nick(c) + ' (' + by[c].join(', ') + ').');
+      const p = Object.keys(by).map((c) => (by[c].length === 1 ? 'A ring' : numWord(by[c].length) + ' rings') + ' with the ' + nick(c) + ' (' + by[c].join(', ') + ').');
       if (T.fmvp) p.push(T.fmvp === 1 ? 'Finals MVP once.' : 'Finals MVP ' + T.fmvp + ' times.');
       if (fin) p.push(fin === 1 ? 'One more Finals you lost.' : fin + ' more Finals you lost.');
       out.push({ h: 'The rings', p: p.join(' ') });

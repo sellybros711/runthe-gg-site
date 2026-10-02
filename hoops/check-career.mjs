@@ -1020,6 +1020,15 @@ async function scenesWalk(b, serve) {
   /* The look chosen in the builder is the career's. */
   await page.click('[data-lk="hair"][data-lv="afro"]');
   await page.click('[data-start="gen"]');
+  /* The road is generated, and a road can end off the board. This walk is
+     about draft night on a podium, so it asks for a road the board likes:
+     New draws another, which is what a player does too. */
+  for (let k = 0; k < 40; k++) {
+    const p = await page.evaluate(() => { const m = /around (\d+)/.exec((document.querySelector('#cr-roadbox') || {}).textContent || ''); return m ? +m[1] : 99; });
+    if (p <= 20) break;
+    await page.click('#cr-dice');
+  }
+  await page.click('[data-lk="hair"][data-lv="afro"]');
   await page.fill('#cr-name', 'Scene McTest');
   await page.click('#cr-go');
   const look = await page.evaluate(() => RTF_CAREER_UI.state().cur.look);
